@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>郭宥君｜The Split — 1/3 Strive × 2/3 Freedom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Serif+TC:wght@300;400;500&family=DM+Sans:wght@400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --wine: #3d0c1c;
+            --wine-mid: #5a1a2e;
+            --wine-light: #7a2940;
+            --honey: #e8a838;
+            --cream: #faf5eb;
+            --cream-dim: #e8e0d0;
+            --charcoal: #1a1a1a;
+            --charcoal-light: #2d2d2d;
+            --emerald: #00c9a7;
+            --emerald-deep: #00846e;
+            --text-display: 'Playfair Display', 'Noto Serif TC', serif;
+            --text-impact: 'Bebas Neue', sans-serif;
+            --text-body: 'DM Sans', 'Noto Serif TC', sans-serif;
+            --text-cn: 'Noto Serif TC', serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { overflow: hidden; }
+        html.page-ready { overflow-y: auto; overflow-x: hidden; }
+
+        body {
+            background: var(--charcoal);
+            color: var(--cream);
+            font-family: var(--text-body);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::selection {
+            background: var(--honey);
+            color: var(--wine);
+        }
+
+        /* ===== GATE: SHIELD CRACK ===== */
+        .gate {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: var(--wine);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .gate::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 30% 40%, rgba(232, 168, 56, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(0, 201, 167, 0.05) 0%, transparent 40%);
+        }
+
+        .gate-hex-grid {
+            position: absolute;
+            inset: 0;
+            opacity: 0.06;
+            background-image:
+                linear-gradient(30deg, var(--honey) 12%, transparent 12.5%, transparent 87%, var(--honey) 87.5%, var(--honey)),
+                linear-gradient(150deg, var(--honey) 12%, transparent 12.5%, transparent 87%, var(--honey) 87.5%, var(--honey)),
+                linear-gradient(30deg, var(--honey) 12%, transparent 12.5%, transparent 87%, var(--honey) 87.5%, var(--honey)),
+                linear-gradient(150deg, var(--honey) 12%, transparent 12.5%, transparent 87%, var(--honey) 87.5%, var(--honey)),
+                linear-gradient(60deg, rgba(232,168,56,0.3) 25%, transparent 25.5%, transparent 75%, rgba(232,168,56,0.3) 75%, rgba(232,168,56,0.3)),
+                linear-gradient(60deg, rgba(232,168,56,0.3) 25%, transparent 25.5%, transparent 75%, rgba(232,168,56,0.3) 75%, rgba(232,168,56,0.3));
+            background-size: 80px 140px;
+            background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
+        }
+
+        .gate-center {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .gate-fraction {
+            font-family: var(--text-impact);
+            font-size: clamp(6rem, 15vw, 12rem);
+            color: var(--honey);
+            line-height: 0.9;
+            letter-spacing: 0.05em;
+            text-shadow: 0 0 80px rgba(232, 168, 56, 0.3);
+        }
+
+        .gate-fraction span {
+            display: inline-block;
+            color: var(--emerald);
+        }
+
+        .gate-divider-line {
+            width: 120px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--honey), transparent);
+            margin: 1.5rem auto;
+        }
+
+        .gate-name {
+            font-family: var(--text-cn);
+            font-size: 1.1rem;
+            font-weight: 300;
+            letter-spacing: 0.5em;
+            color: var(--cream);
+            opacity: 0.6;
+        }
+
+        .gate-hint {
+            position: fixed;
+            bottom: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            font-family: var(--text-body);
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--honey);
+            opacity: 0.5;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ===== BACK LINK ===== */
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 24px;
+            z-index: 200;
+            font-family: var(--text-body);
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--honey);
+            text-decoration: none;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border: 1px solid rgba(232, 168, 56, 0.15);
+            backdrop-filter: blur(12px);
+            background: rgba(26, 26, 26, 0.5);
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            border-color: var(--honey);
+            background: rgba(232, 168, 56, 0.1);
+            transform: translateX(-3px);
+        }
+
+        /* ===== THREE.JS ===== */
+        #three-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* ===== P5 EMBERS ===== */
+        #p5-embers {
+            position: fixed;
+            inset: 0;
+            z-index: 51;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        #p5-embers canvas { display: block; }
+
+        /* ===== MAIN ===== */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* ===== HERO: THE SPLIT ===== */
+        .hero-split {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-left {
+            background: var(--wine);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-left::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 50% 30%, rgba(232, 168, 56, 0.1), transparent 60%),
+                linear-gradient(180deg, rgba(0,0,0,0.2) 0%, transparent 40%, rgba(0,0,0,0.3) 100%);
+        }
+
+        .hero-left::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--honey), var(--honey), transparent);
+            opacity: 0.4;
+        }
+
+        .hero-avatar-wrap {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin-bottom: 2rem;
+        }
+
+        .hero-avatar {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+            filter: contrast(1.05) saturate(1.1);
+        }
+
+        .hex-border {
+            position: absolute;
+            inset: -6px;
+            clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+            background: linear-gradient(135deg, var(--honey), var(--emerald));
+            z-index: -1;
+        }
+
+        .hero-left-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .hero-fraction-small {
+            font-family: var(--text-impact);
+            font-size: 3.5rem;
+            color: var(--honey);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-role {
+            font-family: var(--text-cn);
+            font-size: 0.8rem;
+            letter-spacing: 0.25em;
+            color: var(--cream);
+            opacity: 0.5;
+            text-transform: uppercase;
+        }
+
+        .hero-strive-label {
+            font-family: var(--text-impact);
+            font-size: 1.2rem;
+            letter-spacing: 0.3em;
+            color: var(--honey);
+            margin-top: 1.5rem;
+            opacity: 0.7;
+        }
+
+        .hero-right {
+            background: var(--cream);
+            color: var(--charcoal);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 6rem;
+            position: relative;
+        }
+
+        .hero-right::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 80% 20%, rgba(0, 201, 167, 0.06), transparent 40%),
+                radial-gradient(circle at 20% 80%, rgba(232, 168, 56, 0.04), transparent 40%);
+        }
+
+        .hero-name-en {
+            font-family: var(--text-impact);
+            font-size: clamp(3rem, 7vw, 6rem);
+            line-height: 0.95;
+            color: var(--charcoal);
+            letter-spacing: 0.03em;
+            position: relative;
+        }
+
+        .hero-name-cn {
+            font-family: var(--text-cn);
+            font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+            font-weight: 300;
+            color: var(--wine-mid);
+            margin: 1rem 0 0.5rem;
+            letter-spacing: 0.15em;
+        }
+
+        .hero-tagline {
+            font-family: var(--text-display);
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--wine-light);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .hero-badges {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .badge {
+            font-family: var(--text-body);
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            padding: 6px 14px;
+            border: 1.5px solid var(--charcoal);
+            color: var(--charcoal);
+            background: transparent;
+            transition: all 0.3s;
+        }
+
+        .badge:hover {
+            background: var(--charcoal);
+            color: var(--cream);
+        }
+
+        .badge.accent {
+            border-color: var(--emerald-deep);
+            color: var(--emerald-deep);
+        }
+
+        .badge.accent:hover {
+            background: var(--emerald-deep);
+            color: var(--cream);
+        }
+
+        .hero-freedom-label {
+            position: absolute;
+            top: 3rem;
+            right: 4rem;
+            font-family: var(--text-impact);
+            font-size: 1.2rem;
+            letter-spacing: 0.3em;
+            color: var(--emerald-deep);
+            opacity: 0.4;
+        }
+
+        .hero-scroll-cue {
+            position: absolute;
+            bottom: 2rem;
+            right: 4rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-family: var(--text-body);
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--charcoal);
+            opacity: 0.3;
+        }
+
+        .scroll-bar {
+            width: 40px;
+            height: 2px;
+            background: var(--charcoal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scroll-bar::after {
+            content: '';
+            position: absolute;
+            left: -100%;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--honey);
+            animation: scrollSlide 2s ease-in-out infinite;
+        }
+
+        @keyframes scrollSlide {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
+        }
+
+        /* ===== FULL-BLEED SECTIONS ===== */
+        .section-dark {
+            background: var(--charcoal);
+            color: var(--cream);
+            padding: 8rem 2rem;
+            position: relative;
+        }
+
+        .section-light {
+            background: var(--cream);
+            color: var(--charcoal);
+            padding: 8rem 2rem;
+            position: relative;
+        }
+
+        .section-wine {
+            background: var(--wine);
+            color: var(--cream);
+            padding: 8rem 2rem;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* ===== ORIGIN SECTION ===== */
+        .origin-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 6rem;
+            align-items: center;
+        }
+
+        .origin-big-quote {
+            font-family: var(--text-impact);
+            font-size: clamp(4rem, 8vw, 7rem);
+            line-height: 0.95;
+            color: var(--honey);
+            opacity: 0.15;
+            position: relative;
+        }
+
+        .origin-label {
+            font-family: var(--text-body);
+            font-size: 0.65rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--honey);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .origin-label::before {
+            content: '';
+            width: 30px;
+            height: 1px;
+            background: var(--honey);
+        }
+
+        .origin-title {
+            font-family: var(--text-display);
+            font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+            font-weight: 700;
+            margin-bottom: 2rem;
+            line-height: 1.3;
+        }
+
+        .origin-text {
+            font-family: var(--text-cn);
+            font-size: 1.05rem;
+            line-height: 2.2;
+            font-weight: 300;
+            color: var(--cream-dim);
+        }
+
+        .origin-text strong {
+            color: var(--honey);
+            font-weight: 500;
+        }
+
+        .origin-blockquote {
+            margin: 3rem 0;
+            padding: 2rem 2.5rem;
+            border-left: 3px solid var(--honey);
+            background: rgba(232, 168, 56, 0.04);
+            font-family: var(--text-cn);
+            font-size: 1.15rem;
+            line-height: 2.2;
+            color: var(--cream);
+            font-weight: 400;
+        }
+
+        /* ===== MISSION — FULL BLEED CARDS ===== */
+        .mission-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            min-height: 60vh;
+        }
+
+        .mission-cell {
+            padding: 4rem 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s;
+        }
+
+        .mission-cell:nth-child(1) {
+            background: var(--wine);
+            color: var(--cream);
+        }
+
+        .mission-cell:nth-child(2) {
+            background: var(--charcoal);
+            color: var(--cream);
+        }
+
+        .mission-cell:nth-child(3) {
+            background: var(--cream);
+            color: var(--charcoal);
+        }
+
+        .mission-cell:hover {
+            padding-bottom: 5rem;
+        }
+
+        .mission-cell::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--honey);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s;
+        }
+
+        .mission-cell:hover::before {
+            transform: scaleX(1);
+        }
+
+        .mission-number {
+            font-family: var(--text-impact);
+            font-size: 8rem;
+            line-height: 1;
+            opacity: 0.07;
+            position: absolute;
+            top: 1.5rem;
+            right: 2rem;
+        }
+
+        .mission-icon {
+            font-size: 1.8rem;
+            color: var(--honey);
+            margin-bottom: 1.5rem;
+        }
+
+        .mission-cell:nth-child(3) .mission-icon { color: var(--emerald-deep); }
+
+        .mission-h3 {
+            font-family: var(--text-impact);
+            font-size: 1.8rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .mission-p {
+            font-family: var(--text-cn);
+            font-size: 0.95rem;
+            line-height: 1.9;
+            font-weight: 300;
+            opacity: 0.8;
+        }
+
+        /* ===== BALANCE — THE 1/3 SECTION ===== */
+        .balance-split {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            min-height: 80vh;
+            position: relative;
+        }
+
+        .balance-left {
+            background: var(--wine);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        .balance-left::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--honey), transparent);
+            opacity: 0.3;
+        }
+
+        .balance-number {
+            font-family: var(--text-impact);
+            font-size: clamp(5rem, 10vw, 9rem);
+            color: var(--honey);
+            line-height: 1;
+        }
+
+        .balance-word {
+            font-family: var(--text-impact);
+            font-size: 1.2rem;
+            letter-spacing: 0.5em;
+            color: var(--honey);
+            opacity: 0.5;
+            margin-top: 0.5rem;
+        }
+
+        .balance-right {
+            background: var(--cream);
+            color: var(--charcoal);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 5rem;
+            position: relative;
+        }
+
+        .balance-right-number {
+            font-family: var(--text-impact);
+            font-size: clamp(5rem, 10vw, 9rem);
+            color: var(--emerald);
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        .balance-right-word {
+            font-family: var(--text-impact);
+            font-size: 1.2rem;
+            letter-spacing: 0.5em;
+            color: var(--emerald-deep);
+            opacity: 0.5;
+            margin-bottom: 2rem;
+        }
+
+        .balance-philosophy {
+            font-family: var(--text-display);
+            font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+            font-weight: 400;
+            font-style: italic;
+            line-height: 1.8;
+            color: var(--charcoal);
+            margin-bottom: 2.5rem;
+        }
+
+        .balance-list {
+            list-style: none;
+        }
+
+        .balance-list li {
+            font-family: var(--text-cn);
+            font-size: 1rem;
+            line-height: 2.4;
+            font-weight: 300;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--charcoal-light);
+        }
+
+        .balance-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.85em;
+            width: 8px;
+            height: 2px;
+            background: var(--emerald);
+        }
+
+        /* ===== ARENA ===== */
+        .arena-hero-text {
+            font-family: var(--text-impact);
+            font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 0.95;
+            letter-spacing: 0.02em;
+            margin-bottom: 3rem;
+        }
+
+        .arena-hero-text .emerald { color: var(--emerald); }
+
+        .arena-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: rgba(232, 168, 56, 0.1);
+            margin-top: 3rem;
+        }
+
+        .arena-cell {
+            padding: 2rem;
+            background: var(--charcoal);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .arena-cell:hover {
+            background: var(--charcoal-light);
+        }
+
+        .arena-cell i {
+            font-size: 1.3rem;
+            color: var(--emerald);
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .arena-cell .label {
+            font-family: var(--text-body);
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--cream-dim);
+            margin-bottom: 0.3rem;
+        }
+
+        .arena-cell .value {
+            font-family: var(--text-cn);
+            font-size: 0.95rem;
+            color: var(--cream);
+        }
+
+        /* ===== COMMANDER SECTION ===== */
+        .commander-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .commander-type {
+            font-family: var(--text-impact);
+            font-size: clamp(6rem, 12vw, 10rem);
+            line-height: 0.85;
+            color: var(--wine);
+            opacity: 0.08;
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+        }
+
+        .trait-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .trait-card {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+            padding: 1.5rem;
+            border: 1px solid rgba(232, 168, 56, 0.08);
+            transition: all 0.3s;
+        }
+
+        .trait-card:hover {
+            border-color: var(--honey);
+            background: rgba(232, 168, 56, 0.03);
+            transform: translateX(8px);
+        }
+
+        .trait-icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: var(--honey);
+            border: 1px solid var(--honey);
+            flex-shrink: 0;
+        }
+
+        .trait-title {
+            font-family: var(--text-impact);
+            font-size: 1.1rem;
+            letter-spacing: 0.1em;
+            color: var(--honey);
+            margin-bottom: 0.3rem;
+        }
+
+        .trait-desc {
+            font-family: var(--text-cn);
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: var(--cream-dim);
+            font-weight: 300;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--charcoal);
+            border-top: 1px solid rgba(232, 168, 56, 0.1);
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .footer-social {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-social a {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--honey);
+            border: 1px solid rgba(232, 168, 56, 0.15);
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .footer-social a:hover {
+            border-color: var(--honey);
+            background: rgba(232, 168, 56, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .footer-line {
+            width: 40px;
+            height: 1px;
+            background: var(--honey);
+            margin: 1.5rem auto;
+            opacity: 0.2;
+        }
+
+        .footer-credit {
+            font-family: var(--text-body);
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--cream-dim);
+            opacity: 0.3;
+        }
+
+        /* ===== PROFILE SECTION ===== */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: rgba(232, 168, 56, 0.1);
+            margin-top: 2.5rem;
+        }
+
+        .profile-stat {
+            background: var(--wine);
+            padding: 1.8rem 1.5rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .profile-stat:hover {
+            background: var(--wine-mid);
+        }
+
+        .profile-stat .stat-number {
+            font-family: var(--text-impact);
+            font-size: 2rem;
+            color: var(--honey);
+            line-height: 1;
+            margin-bottom: 0.3rem;
+        }
+
+        .profile-stat .stat-label {
+            font-family: var(--text-cn);
+            font-size: 0.8rem;
+            color: var(--cream-dim);
+            font-weight: 300;
+        }
+
+        .profile-timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .profile-timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(to bottom, var(--honey), transparent);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2.5rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2rem;
+            top: 0.6rem;
+            width: 7px;
+            height: 7px;
+            background: var(--honey);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        .timeline-year {
+            font-family: var(--text-impact);
+            font-size: 0.85rem;
+            letter-spacing: 0.15em;
+            color: var(--honey);
+            margin-bottom: 0.3rem;
+        }
+
+        .timeline-title {
+            font-family: var(--text-cn);
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--cream);
+            margin-bottom: 0.3rem;
+        }
+
+        .timeline-desc {
+            font-family: var(--text-cn);
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: var(--cream-dim);
+            font-weight: 300;
+        }
+
+        /* ===== LIFESTYLE TAGS IN BALANCE ===== */
+        .lifestyle-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .lifestyle-card {
+            padding: 1.2rem 1.5rem;
+            border: 1px solid rgba(0, 201, 167, 0.15);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .lifestyle-card i {
+            font-size: 1.1rem;
+            color: var(--emerald);
+        }
+
+        .lifestyle-card span {
+            font-family: var(--text-cn);
+            font-size: 0.9rem;
+            color: var(--charcoal-light);
+        }
+
+        .lifestyle-card:hover {
+            border-color: var(--emerald);
+            background: rgba(0, 201, 167, 0.03);
+            transform: translateY(-2px);
+        }
+
+        /* ===== REVEAL ===== */
+        .rv { opacity: 0; transform: translateY(30px); }
+        .rv-l { opacity: 0; transform: translateX(-30px); }
+        .rv-r { opacity: 0; transform: translateX(30px); }
+        .rv-s { opacity: 0; transform: scale(0.95); }
+
+        /* ===== MOBILE ===== */
+        @media (max-width: 900px) {
+            .hero-split { grid-template-columns: 1fr; }
+            .hero-left {
+                padding: 4rem 2rem 3rem;
+                min-height: 50vh;
+            }
+            .hero-right {
+                padding: 3rem 2rem;
+                min-height: 50vh;
+            }
+            .hero-freedom-label { top: 1.5rem; right: 2rem; }
+            .hero-scroll-cue { display: none; }
+            .origin-layout { grid-template-columns: 1fr; gap: 2rem; }
+            .origin-big-quote { font-size: 4rem; }
+            .mission-strip { grid-template-columns: 1fr; }
+            .mission-cell { min-height: 40vh; }
+            .balance-split { grid-template-columns: 1fr; }
+            .balance-left { min-height: 40vh; }
+            .balance-right { padding: 3rem 2rem; }
+            .arena-grid { grid-template-columns: repeat(2, 1fr); }
+            .profile-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .profile-stats { grid-template-columns: 1fr 1fr; }
+            .lifestyle-grid { grid-template-columns: 1fr; }
+            .commander-layout { grid-template-columns: 1fr; gap: 2rem; }
+            .section-dark, .section-light, .section-wine { padding: 5rem 1.5rem; }
+            .gate-fraction { font-size: clamp(4rem, 12vw, 8rem); }
+        }
+
+        @media (max-width: 480px) {
+            .hero-avatar-wrap { width: 140px; height: 140px; }
+            .arena-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- GATE -->
+    <div class="gate" id="gate">
+        <div class="gate-hex-grid"></div>
+        <div class="gate-center">
+            <div class="gate-fraction">1/3 <span>×</span> 2/3</div>
+            <div class="gate-divider-line"></div>
+            <div class="gate-name">郭 宥 君</div>
+        </div>
+    </div>
+    <div class="gate-hint" id="gateHint">Click to enter</div>
+
+    <!-- BACK -->
+    <a href="/guild/" class="back-link" id="backLink">
+        <i class="fa-solid fa-arrow-left"></i> Archive
+    </a>
+
+    <!-- THREE.JS -->
+    <div id="three-bg"></div>
+
+    <!-- P5.JS -->
+    <div id="p5-embers"></div>
+
+    <!-- MAIN -->
+    <main>
+
+        <!-- HERO: THE SPLIT -->
+        <section class="hero-split" id="hero">
+            <div class="hero-left">
+                <div class="hero-left-content">
+                    <div class="hero-avatar-wrap rv-s">
+                        <div class="hex-border"></div>
+                        <img src="/assets/img/guild/kyc_0127/avatar.webp" alt="郭宥君" class="hero-avatar">
+                    </div>
+                    <div class="hero-fraction-small rv">1/3</div>
+                    <div class="hero-role rv">Fubon Life · Business Director</div>
+                    <div class="hero-strive-label rv">STRIVE</div>
+                </div>
+            </div>
+            <div class="hero-right">
+                <div class="hero-freedom-label">2/3 FREEDOM</div>
+                <h1 class="hero-name-en rv">YU-CHUN<br>KUO</h1>
+                <p class="hero-name-cn rv">郭宥君｜生活規劃師 × 小郭</p>
+                <p class="hero-tagline rv">ENTJ Commander · Guardian of Families</p>
+                <div class="hero-badges rv">
+                    <span class="badge"><i class="fa-solid fa-shield-halved"></i> 守護者</span>
+                    <span class="badge"><i class="fa-solid fa-people-group"></i> 領航者</span>
+                    <span class="badge accent"><i class="fa-solid fa-baseball-bat-ball"></i> 羽球團長</span>
+                    <span class="badge accent"><i class="fa-solid fa-chart-line"></i> 財商創作</span>
+                </div>
+                <div class="hero-scroll-cue">
+                    <div class="scroll-bar"></div>
+                    Scroll to explore
+                </div>
+            </div>
+        </section>
+
+        <!-- PROFILE -->
+        <section class="section-wine" id="profile">
+            <div class="container">
+                <div class="profile-grid">
+                    <div>
+                        <div class="origin-label rv">Chapter I — Profile</div>
+                        <h2 class="origin-title rv" style="color: var(--cream);">我是小郭，郭宥君</h2>
+                        <p class="origin-text rv">
+                            我是<strong>富邦人壽業務主任</strong>，深耕保險業多年。從一個人的起步，到帶領團隊、經營財商品牌，我用行動證明保險不只是銷售，而是一份<strong>守護家庭的專業</strong>。
+                        </p>
+                        <p class="origin-text rv" style="margin-top: 1.5rem;">
+                            我同時是<strong>郭芭羽球團</strong>的創辦人與團長，每週帶團打球；也經營 IG 財商帳號 <strong>@kyc_0.1.2.7</strong>，用輕鬆有趣的方式分享保險與理財觀念，打破大眾對保險的刻板印象。
+                        </p>
+                        <div class="profile-stats rv">
+                            <div class="profile-stat">
+                                <div class="stat-number">1+8</div>
+                                <div class="stat-label">團隊目標陣容</div>
+                            </div>
+                            <div class="profile-stat">
+                                <div class="stat-number">16人</div>
+                                <div class="stat-label">每週羽球開團</div>
+                            </div>
+                            <div class="profile-stat">
+                                <div class="stat-number">ENTJ</div>
+                                <div class="stat-label">指揮官型人格</div>
+                            </div>
+                            <div class="profile-stat">
+                                <div class="stat-number">1/3</div>
+                                <div class="stat-label">拚搏換自由</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-timeline">
+                        <div class="timeline-item rv">
+                            <div class="timeline-year">ORIGIN</div>
+                            <div class="timeline-title">家庭的啟發</div>
+                            <div class="timeline-desc">因為哥哥的長照經歷，我深刻體會到保障規劃的重要性，決心投入保險業。</div>
+                        </div>
+                        <div class="timeline-item rv">
+                            <div class="timeline-year">GROWTH</div>
+                            <div class="timeline-title">富邦人壽 · 業務主任</div>
+                            <div class="timeline-desc">從新人到主任，我用真心與專業服務每一個家庭，累積深厚的客戶信任。</div>
+                        </div>
+                        <div class="timeline-item rv">
+                            <div class="timeline-year">EXPAND</div>
+                            <div class="timeline-title">團隊擴編 · 1+8 陣容</div>
+                            <div class="timeline-desc">我想培育有溫度的夥伴團隊，將保障的價值觀傳承給更多人。</div>
+                        </div>
+                        <div class="timeline-item rv">
+                            <div class="timeline-year">CREATE</div>
+                            <div class="timeline-title">IG 財商品牌經營</div>
+                            <div class="timeline-desc">我用簡單有趣的內容打破保險刻板印象，讓理財走進日常生活。</div>
+                        </div>
+                        <div class="timeline-item rv">
+                            <div class="timeline-year">COMMUNITY</div>
+                            <div class="timeline-title">郭芭羽球團 · 創辦人</div>
+                            <div class="timeline-desc">每週六我在三重開團，從初學到中階都歡迎，用運動凝聚人心。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ORIGIN: THE WHY -->
+        <section class="section-dark" id="origin">
+            <div class="container">
+                <div class="origin-layout">
+                    <div class="origin-big-quote rv-l">THE<br>WHY</div>
+                    <div>
+                        <div class="origin-label rv">Chapter II — Origin</div>
+                        <h2 class="origin-title rv" style="color: var(--cream);">一切始於家庭的守護</h2>
+                        <p class="origin-text rv">
+                            我的起點，不是數字、不是業績，而是<strong>一段深刻的家庭記憶</strong>。
+                        </p>
+                        <blockquote class="origin-blockquote rv">
+                            因為親身經歷過哥哥的長照照護，看過父親的辛勞，
+                            我深知一份完整的規劃能為家庭帶來多大的安定。
+                            這份過去的經歷，是我現在守護客戶最強大的動力。
+                        </blockquote>
+                        <p class="origin-text rv">
+                            從家人的故事中淬煉出的信念，讓我把保險從一份工作昇華成一份<strong>志業</strong> —
+                            我要為每個家庭撐起一面看不見的盾牌。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MISSION: FULL-BLEED TRIPTYCH -->
+        <div class="mission-strip" id="mission">
+            <div class="mission-cell rv">
+                <div class="mission-number">01</div>
+                <div class="mission-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3 class="mission-h3">守護者</h3>
+                <p class="mission-p">我用專業與真心為每個家庭規劃完整保障藍圖，讓風險來臨時不再手足無措。</p>
+            </div>
+            <div class="mission-cell rv">
+                <div class="mission-number">02</div>
+                <div class="mission-icon"><i class="fa-solid fa-people-group"></i></div>
+                <h3 class="mission-h3">領航者</h3>
+                <p class="mission-p">我帶領團隊邁向「1+8」陣容，培育有溫度的夥伴，將保障的價值傳承下去。</p>
+            </div>
+            <div class="mission-cell rv">
+                <div class="mission-number">03</div>
+                <div class="mission-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                <h3 class="mission-h3">啟蒙者</h3>
+                <p class="mission-p">我經營 IG 財商帳號，用簡單有趣的方式打破刻板印象，讓理財走進日常。</p>
+            </div>
+        </div>
+
+        <!-- BALANCE: PHYSICAL 1/3 SPLIT -->
+        <section class="balance-split" id="balance">
+            <div class="balance-left">
+                <div class="balance-number rv-l">1/3</div>
+                <div class="balance-word rv-l">STRIVE</div>
+            </div>
+            <div class="balance-right">
+                <div class="balance-right-number rv-r">2/3</div>
+                <div class="balance-right-word rv-r">FREEDOM</div>
+                <p class="balance-philosophy rv">
+                    「用 1/3 的時間專業拚搏，<br>換取 2/3 的自由人生。」
+                </p>
+                <ul class="balance-list">
+                    <li class="rv">做保險是我的驕傲與責任，但不是人生的全部</li>
+                    <li class="rv">陪伴家人、享受生活，才是真正的「資產配置」</li>
+                    <li class="rv">閱讀帶來靈感，運動帶來能量，兩者缺一不可</li>
+                    <li class="rv">夫妻日常、親子時光，是最珍貴的 2/3</li>
+                </ul>
+                <div class="lifestyle-grid">
+                    <div class="lifestyle-card rv"><i class="fa-solid fa-table-tennis-paddle-ball"></i> <span>撞球日常</span></div>
+                    <div class="lifestyle-card rv"><i class="fa-solid fa-motorcycle"></i> <span>騎車出遊</span></div>
+                    <div class="lifestyle-card rv"><i class="fa-solid fa-mountain-sun"></i> <span>露營初體驗</span></div>
+                    <div class="lifestyle-card rv"><i class="fa-solid fa-book-open"></i> <span>閱讀靈感</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ARENA -->
+        <section class="section-dark" id="arena">
+            <div class="container">
+                <div class="origin-label rv">Chapter V — Arena</div>
+                <h2 class="arena-hero-text rv">
+                    郭芭<br><span class="emerald">羽球團</span>
+                </h2>
+                <p class="origin-text rv" style="max-width: 600px;">
+                    場上揮汗如雨，場下凝聚人心。我每週在三重開團，
+                    從初學到中階都歡迎，在球場上不分職業、不論年齡。
+                    這不只是一個球團，更是我用運動串連人與人之間的社群。
+                </p>
+                <div class="arena-grid rv">
+                    <div class="arena-cell">
+                        <i class="fa-regular fa-calendar"></i>
+                        <div class="label">Time</div>
+                        <div class="value">每週六 14:00–16:00</div>
+                    </div>
+                    <div class="arena-cell">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <div class="label">Location</div>
+                        <div class="value">三重二重國小羽球館</div>
+                    </div>
+                    <div class="arena-cell">
+                        <i class="fa-solid fa-bullseye"></i>
+                        <div class="label">Level</div>
+                        <div class="value">初學–中階友善場</div>
+                    </div>
+                    <div class="arena-cell">
+                        <i class="fa-solid fa-user-group"></i>
+                        <div class="label">Capacity</div>
+                        <div class="value">二面場 / 16 人</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMMANDER -->
+        <section class="section-light" id="commander">
+            <div class="commander-type">ENTJ</div>
+            <div class="container">
+                <div class="commander-layout">
+                    <div>
+                        <div class="origin-label rv" style="color: var(--wine-light);">Chapter VI — Personality</div>
+                        <h2 class="origin-title rv" style="color: var(--charcoal);">
+                            指揮官型人格
+                        </h2>
+                        <p class="origin-text rv" style="color: var(--charcoal-light);">
+                            我是天生的領導者。以戰略思維驅動行動，以溫暖與幽默打動人心。
+                            我不只是保險顧問，更是陪你一起成長的朋友。
+                        </p>
+                    </div>
+                    <div class="trait-cards">
+                        <div class="trait-card rv" style="border-color: rgba(61,12,28,0.15);">
+                            <div class="trait-icon" style="color: var(--wine-mid); border-color: var(--wine-mid);">
+                                <i class="fa-solid fa-chess-queen"></i>
+                            </div>
+                            <div>
+                                <div class="trait-title" style="color: var(--wine-mid);">戰略思維</div>
+                                <div class="trait-desc" style="color: var(--charcoal-light);">從「1+8」團隊擴編到 IG 帳號經營，我的每一步都是有計劃的佈局。</div>
+                            </div>
+                        </div>
+                        <div class="trait-card rv" style="border-color: rgba(61,12,28,0.15);">
+                            <div class="trait-icon" style="color: var(--wine-mid); border-color: var(--wine-mid);">
+                                <i class="fa-solid fa-heart"></i>
+                            </div>
+                            <div>
+                                <div class="trait-title" style="color: var(--wine-mid);">溫暖連結</div>
+                                <div class="trait-desc" style="color: var(--charcoal-light);">我用關懷取代推銷，用理解取代話術。不只是顧問，更是你的成長夥伴。</div>
+                            </div>
+                        </div>
+                        <div class="trait-card rv" style="border-color: rgba(61,12,28,0.15);">
+                            <div class="trait-icon" style="color: var(--wine-mid); border-color: var(--wine-mid);">
+                                <i class="fa-solid fa-face-laugh-squint"></i>
+                            </div>
+                            <div>
+                                <div class="trait-title" style="color: var(--wine-mid);">幽默破冰</div>
+                                <div class="trait-desc" style="color: var(--charcoal-light);">我用有趣的梗和貼近生活的比喻，讓嚴肅的保險話題變得輕鬆好懂。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer" id="footer">
+            <div class="footer-social rv">
+                <a href="https://www.threads.com/@kyc_0.1.2.7" target="_blank" rel="noopener noreferrer" title="Threads">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/kyc_0.1.2.7/" target="_blank" rel="noopener noreferrer" title="Instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSewbpDyOjM_4LwiYATTIvJ3mqCxtJbv4_QI3HMvw7JF6XDu0g/viewform" target="_blank" rel="noopener noreferrer" title="風險市場調查表">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                </a>
+            </div>
+            <div class="footer-line"></div>
+            <p class="footer-credit">Made with ♥ by SuperGalen's Dungeon</p>
+        </footer>
+    </main>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        /* ===== GATE ===== */
+        const gate = document.getElementById('gate');
+        const gateHint = document.getElementById('gateHint');
+
+        function openGate() {
+            const tl = gsap.timeline({
+                onComplete: () => {
+                    gate.remove();
+                    gateHint.remove();
+                    document.documentElement.classList.add('page-ready');
+                    initAll();
+                }
+            });
+
+            tl.to(gateHint, { opacity: 0, duration: 0.2 })
+              .to('.gate-center', {
+                  scale: 30,
+                  opacity: 0,
+                  duration: 1.2,
+                  ease: 'power3.in'
+              }, 0)
+              .to('.gate', {
+                  opacity: 0,
+                  duration: 0.4,
+                  ease: 'power2.out'
+              }, 0.9)
+              .to('#backLink', { opacity: 0.6, duration: 0.5 }, 1.2);
+        }
+
+        gate.addEventListener('click', openGate);
+        gateHint.addEventListener('click', openGate);
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && gate.parentNode) {
+                e.preventDefault();
+                openGate();
+            }
+        });
+
+        /* ===== INIT ALL ===== */
+        function initAll() {
+            initReveal();
+            initThree();
+            initP5();
+        }
+
+        /* ===== REVEAL ===== */
+        function initReveal() {
+            // Hero staggered entry
+            const heroEls = document.querySelectorAll('#hero .rv, #hero .rv-s');
+            gsap.to(heroEls, {
+                opacity: 1, y: 0, scale: 1,
+                duration: 0.8, stagger: 0.15,
+                ease: 'power3.out', delay: 0.2
+            });
+
+            // Scroll reveals
+            document.querySelectorAll('.rv').forEach(el => {
+                if (el.closest('#hero')) return;
+                gsap.to(el, {
+                    opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+                    scrollTrigger: { trigger: el, start: 'top 88%' }
+                });
+            });
+
+            document.querySelectorAll('.rv-l').forEach(el => {
+                gsap.to(el, {
+                    opacity: 1, x: 0, duration: 0.8, ease: 'power3.out',
+                    scrollTrigger: { trigger: el, start: 'top 88%' }
+                });
+            });
+
+            document.querySelectorAll('.rv-r').forEach(el => {
+                gsap.to(el, {
+                    opacity: 1, x: 0, duration: 0.8, ease: 'power3.out',
+                    scrollTrigger: { trigger: el, start: 'top 88%' }
+                });
+            });
+
+            document.querySelectorAll('.rv-s').forEach(el => {
+                if (el.closest('#hero')) return;
+                gsap.to(el, {
+                    opacity: 1, scale: 1, duration: 0.8, ease: 'power3.out',
+                    scrollTrigger: { trigger: el, start: 'top 88%' }
+                });
+            });
+
+            // Mission cells stagger
+            gsap.to('.mission-cell', {
+                opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: 'power3.out',
+                scrollTrigger: { trigger: '.mission-strip', start: 'top 80%' }
+            });
+        }
+
+        /* ===== THREE.JS — HEXAGONAL SHIELD MESH ===== */
+        function initThree() {
+            const container = document.getElementById('three-bg');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 25;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            container.appendChild(renderer.domElement);
+
+            // Shared geometry + 2 shared materials
+            const hexShape = new THREE.Shape();
+            const size = 0.3;
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i - Math.PI / 6;
+                if (i === 0) hexShape.moveTo(size * Math.cos(angle), size * Math.sin(angle));
+                else hexShape.lineTo(size * Math.cos(angle), size * Math.sin(angle));
+            }
+            hexShape.closePath();
+            const hexGeo = new THREE.ShapeGeometry(hexShape);
+            const matWarm = new THREE.MeshBasicMaterial({ color: 0xe8a838, transparent: true, opacity: 0.06, side: THREE.DoubleSide });
+            const matCool = new THREE.MeshBasicMaterial({ color: 0x00c9a7, transparent: true, opacity: 0.04, side: THREE.DoubleSide });
+
+            const hexes = [];
+            for (let i = 0; i < 50; i++) {
+                const mesh = new THREE.Mesh(hexGeo, i % 3 !== 0 ? matWarm : matCool);
+                mesh.position.set((Math.random() - 0.5) * 50, (Math.random() - 0.5) * 35, (Math.random() - 0.5) * 15);
+                mesh.rotation.z = Math.random() * Math.PI;
+                const s = Math.random() * 1.5 + 0.5;
+                mesh.scale.set(s, s, s);
+                scene.add(mesh);
+                hexes.push({
+                    mesh, vx: (Math.random() - 0.5) * 0.005, vr: (Math.random() - 0.5) * 0.002,
+                    baseY: mesh.position.y, amp: Math.random() * 1.5 + 0.5, freq: Math.random() * 0.3 + 0.2
+                });
+            }
+
+            let scrollY = 0, mouseX = 0, mouseY = 0;
+            window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
+            window.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+                mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+            }, { passive: true });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const t = Date.now() * 0.001;
+                for (let i = 0; i < hexes.length; i++) {
+                    const h = hexes[i];
+                    h.mesh.position.x += h.vx;
+                    h.mesh.position.y = h.baseY + Math.sin(t * h.freq) * h.amp;
+                    h.mesh.rotation.z += h.vr;
+                    if (h.mesh.position.x > 30) h.mesh.position.x = -30;
+                    if (h.mesh.position.x < -30) h.mesh.position.x = 30;
+                }
+                camera.position.x += (mouseX * 2 - camera.position.x) * 0.02;
+                camera.position.y += (-mouseY * 1.5 - scrollY * 0.003 - camera.position.y) * 0.02;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        /* ===== NATIVE CANVAS — WARM EMBERS (replaces p5.js) ===== */
+        function initP5() {
+            const wrap = document.getElementById('p5-embers');
+            const canvas = document.createElement('canvas');
+            canvas.style.display = 'block';
+            wrap.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const embers = [];
+            const w = () => canvas.width, h = () => canvas.height;
+            for (let i = 0; i < 25; i++) {
+                embers.push({
+                    x: Math.random() * w(), y: Math.random() * h(),
+                    vx: (Math.random() - 0.5) * 0.6, vy: -(Math.random() * 0.4 + 0.1),
+                    size: Math.random() * 2.5 + 1.5, alpha: Math.random() * 0.1 + 0.04,
+                    color: i % 3 === 0 ? '0,201,167' : '232,168,56',
+                    life: Math.random() * 500 + 300, maxLife: 800
+                });
+            }
+
+            let frame = 0;
+            function draw() {
+                requestAnimationFrame(draw);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                frame++;
+                for (let i = 0; i < embers.length; i++) {
+                    const e = embers[i];
+                    e.x += e.vx + Math.sin(frame * 0.01 + e.y * 0.01) * 0.2;
+                    e.y += e.vy;
+                    e.life--;
+                    if (e.life <= 0 || e.y < -10) {
+                        e.x = Math.random() * canvas.width;
+                        e.y = canvas.height + 10;
+                        e.life = Math.random() * 500 + 300;
+                    }
+                    const a = (e.life / e.maxLife) * e.alpha;
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${e.color},${a})`;
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, e.size * 4, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${e.color},${a * 0.25})`;
+                    ctx.fill();
+                }
+            }
+            draw();
+        }
+    </script>
+</body>
+</html>
