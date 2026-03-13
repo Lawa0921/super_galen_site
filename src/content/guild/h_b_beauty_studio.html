@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H.B.beauty studio — 溫手 The Healing Touch</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Noto+Serif+TC:wght@200;300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+    <style>
+        :root {
+            --deep: #1A110B;
+            --wood: #3D261A;
+            --amber: #C8956C;
+            --amber-light: #E2B890;
+            --amber-glow: 200,149,108;
+            --gold: #D4A84B;
+            --gold-glow: 212,168,75;
+            --cream: #F5EDE4;
+            --cream-dim: #D4C8BA;
+            --sage: #8B9E7E;
+            --sage-glow: 139,158,126;
+            --font-display: 'Playfair Display', serif;
+            --font-elegant: 'Cormorant Garamond', serif;
+            --font-body: 'Noto Serif TC', serif;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--deep);
+            color: var(--cream);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            cursor: none;
+        }
+        ::selection { background: var(--amber); color: var(--deep); }
+
+        /* ── Custom Cursor ── */
+        .cursor-glow {
+            position: fixed; width: 220px; height: 220px;
+            background: radial-gradient(circle, rgba(var(--amber-glow), .08) 0%, rgba(var(--amber-glow), .02) 40%, transparent 70%);
+            border-radius: 50%; pointer-events: none; z-index: 9998;
+            transform: translate(-50%, -50%); transition: width .4s, height .4s;
+        }
+        .cursor-dot {
+            position: fixed; width: 8px; height: 8px;
+            background: var(--amber); border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(var(--amber-glow), .5), 0 0 40px rgba(var(--amber-glow), .2);
+        }
+        .cursor-ring {
+            position: fixed; width: 40px; height: 40px;
+            border: 1.5px solid rgba(var(--amber-glow), .3);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width .3s, height .3s, border-color .3s;
+        }
+
+        /* ── Three.js & p5 Canvas ── */
+        #oil-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+        #botanical-canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+        /* ── Film Grain ── */
+        body::after {
+            content: ''; position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: .025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+        }
+
+        /* ── Scroll Progress ── */
+        .scroll-progress {
+            position: fixed; top: 0; left: 0; width: 0; height: 2px;
+            background: linear-gradient(90deg, var(--sage), var(--amber), var(--gold));
+            z-index: 100;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 1.2rem 2.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 90;
+            background: linear-gradient(to bottom, rgba(26,17,11,.7), transparent);
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+        }
+        .nav-back {
+            color: var(--cream-dim); text-decoration: none;
+            font-family: var(--font-elegant); font-size: .95rem;
+            letter-spacing: .2em; transition: color .3s;
+        }
+        .nav-back:hover { color: var(--amber-light); }
+        .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+        .nav-links a {
+            color: var(--cream-dim); text-decoration: none;
+            font-size: 1.1rem; transition: color .3s, transform .3s;
+        }
+        .nav-links a:hover { color: var(--amber-light); transform: translateY(-2px); }
+
+        /* ── Content ── */
+        .content { position: relative; z-index: 5; }
+
+        /* ═══ HERO ═══ */
+        .hero {
+            min-height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            padding: 6rem 2rem 4rem; position: relative;
+        }
+        .hero::before {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 300px;
+            background: linear-gradient(to bottom, transparent, var(--deep));
+            pointer-events: none;
+        }
+
+        /* Oil Drop Animation */
+        .oil-drop-container {
+            position: relative; width: 200px; height: 200px;
+            margin-bottom: 3rem;
+        }
+        .oil-drop {
+            position: absolute; top: 50%; left: 50%;
+            width: 120px; height: 120px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%,
+                rgba(var(--gold-glow), .6),
+                rgba(var(--amber-glow), .3) 50%,
+                transparent 70%);
+            animation: oil-pulse 4s ease-in-out infinite;
+        }
+        .oil-ripple {
+            position: absolute; inset: -20px;
+            border: 1px solid rgba(var(--amber-glow), .15);
+            border-radius: 50%; animation: oil-ripple-out 3s ease-out infinite;
+        }
+        .oil-ripple:nth-child(2) { inset: -40px; animation-delay: 1s; }
+        .oil-ripple:nth-child(3) { inset: -60px; animation-delay: 2s; }
+        @keyframes oil-pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .8; }
+            50% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+        }
+        @keyframes oil-ripple-out {
+            0% { transform: scale(.9); opacity: .3; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        .avatar-frame {
+            position: absolute; top: 50%; left: 50%;
+            width: 140px; height: 140px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%; overflow: hidden;
+            border: 2px solid rgba(var(--amber-glow), .4);
+            box-shadow: 0 0 60px rgba(var(--amber-glow), .2), 0 0 120px rgba(var(--amber-glow), .08);
+            z-index: 2;
+        }
+        .avatar-frame img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform .8s;
+        }
+        .avatar-frame:hover img { transform: scale(1.1); }
+
+        .hero-tagline {
+            font-family: var(--font-elegant); font-weight: 300;
+            font-size: clamp(.85rem, 1.5vw, 1rem);
+            color: var(--sage); letter-spacing: .5em;
+            text-transform: uppercase; margin-bottom: 1rem;
+            opacity: 0;
+        }
+        .hero-title {
+            font-family: var(--font-display); font-weight: 400;
+            font-size: clamp(2.5rem, 7vw, 5rem);
+            color: var(--cream); line-height: 1.15;
+            letter-spacing: .03em; margin-bottom: .5rem;
+            text-shadow: 0 0 80px rgba(var(--amber-glow), .2);
+        }
+        .hero-title .char {
+            display: inline-block; opacity: 0;
+            transform: translateY(50px);
+        }
+        .hero-sub {
+            font-family: var(--font-elegant); font-weight: 300;
+            font-style: italic; font-size: clamp(1.1rem, 2vw, 1.5rem);
+            color: var(--amber-light); letter-spacing: .15em;
+            margin-bottom: 2.5rem; opacity: 0;
+        }
+        .hero-quote {
+            max-width: 500px;
+            font-family: var(--font-body); font-weight: 200;
+            font-size: 1.05rem; line-height: 2.2;
+            color: var(--cream-dim); opacity: 0;
+        }
+        .hero-quote em {
+            color: var(--amber); font-style: normal;
+            font-weight: 400;
+        }
+
+        .scroll-cue {
+            position: absolute; bottom: 3rem; left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--font-elegant); font-size: .8rem;
+            color: rgba(var(--amber-glow), .4); letter-spacing: .4em;
+            animation: cue-float 2.5s ease-in-out infinite;
+        }
+        .scroll-cue i { display: block; margin-top: .6rem; font-size: .9rem; }
+        @keyframes cue-float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(8px); }
+        }
+
+        /* ═══ DIVIDER ═══ */
+        .divider {
+            display: flex; align-items: center; justify-content: center;
+            gap: 1.5rem; padding: 4rem 2rem; opacity: .4;
+        }
+        .divider-line {
+            width: 60px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--amber), transparent);
+        }
+        .divider-icon { color: var(--sage); font-size: .7rem; }
+
+        /* ═══ ABOUT ═══ */
+        .about {
+            padding: 6rem 2rem; max-width: 900px;
+            margin: 0 auto; position: relative;
+        }
+        .section-label {
+            font-family: var(--font-elegant); font-weight: 300;
+            font-size: .85rem; color: var(--sage);
+            letter-spacing: .5em; text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .section-title {
+            font-family: var(--font-display); font-weight: 400;
+            font-size: clamp(2rem, 4vw, 3rem);
+            color: var(--cream); margin-bottom: 2.5rem;
+            line-height: 1.3;
+        }
+        .about-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 3rem; align-items: start;
+        }
+        .about-text {
+            font-weight: 200; font-size: 1rem; line-height: 2.2;
+            color: var(--cream-dim);
+        }
+        .about-text p { margin-bottom: 1.5rem; }
+        .about-text strong {
+            color: var(--amber); font-weight: 400;
+        }
+        .about-stats {
+            display: flex; flex-direction: column; gap: 2rem;
+            padding-top: 1rem;
+        }
+        .stat-item {
+            border-left: 2px solid rgba(var(--amber-glow), .3);
+            padding-left: 1.5rem;
+        }
+        .stat-number {
+            font-family: var(--font-display); font-size: 2.5rem;
+            color: var(--amber); line-height: 1;
+            margin-bottom: .3rem;
+        }
+        .stat-label {
+            font-family: var(--font-elegant); font-size: .9rem;
+            color: var(--cream-dim); letter-spacing: .15em;
+        }
+
+        /* ═══ PHILOSOPHY ═══ */
+        .philosophy {
+            padding: 8rem 2rem; position: relative;
+            overflow: hidden;
+        }
+        .philosophy::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg,
+                var(--deep) 0%,
+                rgba(var(--sage-glow), .04) 30%,
+                rgba(var(--sage-glow), .06) 50%,
+                rgba(var(--sage-glow), .04) 70%,
+                var(--deep) 100%);
+            pointer-events: none;
+        }
+        .philosophy-inner {
+            max-width: 800px; margin: 0 auto;
+            text-align: center; position: relative;
+        }
+        .philosophy-quote {
+            font-family: var(--font-display);
+            font-style: italic; font-weight: 400;
+            font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+            color: var(--cream); line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+        .philosophy-quote .highlight {
+            color: var(--amber);
+            text-decoration: underline;
+            text-decoration-color: rgba(var(--sage-glow), .4);
+            text-underline-offset: 8px;
+        }
+        .philosophy-author {
+            font-family: var(--font-elegant); font-weight: 300;
+            font-size: 1rem; color: var(--sage);
+            letter-spacing: .3em;
+        }
+
+        .belief-cards {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 2rem; max-width: 900px;
+            margin: 4rem auto 0;
+        }
+        .belief-card {
+            background: rgba(var(--amber-glow), .03);
+            border: 1px solid rgba(var(--amber-glow), .1);
+            border-radius: 16px; padding: 2.5rem 1.5rem;
+            text-align: center;
+            transition: transform .4s, border-color .4s, background .4s;
+        }
+        .belief-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(var(--amber-glow), .3);
+            background: rgba(var(--amber-glow), .06);
+        }
+        .belief-icon {
+            font-size: 2rem; color: var(--amber);
+            margin-bottom: 1.2rem;
+        }
+        .belief-title {
+            font-family: var(--font-display); font-size: 1.15rem;
+            color: var(--cream); margin-bottom: .8rem;
+        }
+        .belief-desc {
+            font-weight: 200; font-size: .9rem;
+            line-height: 1.9; color: var(--cream-dim);
+        }
+
+        /* ═══ ASMR VIDEO ═══ */
+        .asmr { padding: 6rem 2rem; position: relative; }
+        .asmr::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg,
+                var(--deep) 0%, rgba(var(--amber-glow), .04) 50%, var(--deep) 100%);
+            pointer-events: none;
+        }
+        .asmr-inner {
+            max-width: 700px; margin: 0 auto; position: relative;
+            text-align: center;
+        }
+        .asmr-header { margin-bottom: 3rem; }
+        .video-frame {
+            position: relative; border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(var(--amber-glow), .15);
+            box-shadow: 0 20px 60px rgba(0,0,0,.4), 0 0 80px rgba(var(--amber-glow), .08);
+        }
+        .video-frame video {
+            width: 100%; display: block;
+            border-radius: 16px;
+        }
+        .video-overlay {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(26,17,11,.4);
+            cursor: pointer; transition: background .4s;
+            z-index: 2;
+        }
+        .video-overlay.playing { background: transparent; pointer-events: none; }
+        .video-overlay .play-btn {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            background: rgba(var(--amber-glow), .2);
+            border: 2px solid rgba(var(--amber-glow), .5);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--cream); font-size: 1.5rem;
+            transition: all .4s;
+            backdrop-filter: blur(8px);
+        }
+        .video-overlay .play-btn i { margin-left: 4px; }
+        .video-overlay:hover .play-btn {
+            background: rgba(var(--amber-glow), .35);
+            border-color: var(--amber);
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(var(--amber-glow), .3);
+        }
+        .video-overlay.playing .play-btn { display: none; }
+        .video-caption {
+            margin-top: 1.5rem;
+            font-family: var(--font-elegant); font-style: italic;
+            font-size: 1rem; color: var(--cream-dim);
+            letter-spacing: .1em;
+        }
+        /* Sound wave visualizer */
+        .sound-waves {
+            display: flex; align-items: center; justify-content: center;
+            gap: 3px; height: 30px; margin-top: 1.2rem;
+        }
+        .sound-wave {
+            width: 3px; background: var(--amber);
+            border-radius: 2px; opacity: .3;
+            transition: opacity .3s;
+        }
+        .sound-waves.active .sound-wave {
+            opacity: .7;
+            animation: wave-dance 0.8s ease-in-out infinite;
+        }
+        .sound-wave:nth-child(1) { height: 8px; animation-delay: 0s; }
+        .sound-wave:nth-child(2) { height: 14px; animation-delay: .1s; }
+        .sound-wave:nth-child(3) { height: 20px; animation-delay: .2s; }
+        .sound-wave:nth-child(4) { height: 26px; animation-delay: .15s; }
+        .sound-wave:nth-child(5) { height: 18px; animation-delay: .25s; }
+        .sound-wave:nth-child(6) { height: 24px; animation-delay: .1s; }
+        .sound-wave:nth-child(7) { height: 12px; animation-delay: .3s; }
+        .sound-wave:nth-child(8) { height: 20px; animation-delay: .05s; }
+        .sound-wave:nth-child(9) { height: 16px; animation-delay: .2s; }
+        @keyframes wave-dance {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.3); }
+        }
+
+        /* ═══ ESSENCE — Interactive Oil Blending ═══ */
+        .essence { padding: 6rem 2rem; position: relative; overflow: hidden; }
+        .essence-inner { max-width: 900px; margin: 0 auto; position: relative; }
+        .essence-header { text-align: center; margin-bottom: 3rem; }
+        .oil-bottles {
+            display: flex; justify-content: center; gap: 2rem;
+            flex-wrap: wrap; margin-bottom: 2rem;
+        }
+        .oil-bottle {
+            width: 100px; text-align: center; cursor: pointer;
+            transition: transform .4s;
+        }
+        .oil-bottle:hover { transform: translateY(-8px); }
+        .oil-bottle-icon {
+            width: 64px; height: 64px; margin: 0 auto 1rem;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem;
+            border: 2px solid rgba(255,255,255,.1);
+            transition: all .4s;
+            position: relative;
+        }
+        .oil-bottle.active .oil-bottle-icon {
+            border-color: var(--amber);
+            box-shadow: 0 0 30px var(--oil-color, rgba(var(--amber-glow), .3));
+        }
+        .oil-bottle-name {
+            font-family: var(--font-elegant); font-size: .85rem;
+            color: var(--cream-dim); letter-spacing: .08em;
+            transition: color .3s;
+        }
+        .oil-bottle.active .oil-bottle-name { color: var(--amber); }
+        .oil-bottle-effect {
+            font-size: .75rem; color: rgba(var(--cream-dim), .5);
+            margin-top: .3rem;
+        }
+        .blend-result {
+            text-align: center; padding: 2rem;
+            border: 1px solid rgba(var(--amber-glow), .1);
+            border-radius: 16px;
+            background: rgba(var(--amber-glow), .02);
+            min-height: 100px;
+            transition: all .5s;
+        }
+        .blend-result.active {
+            border-color: rgba(var(--amber-glow), .3);
+            background: rgba(var(--amber-glow), .05);
+        }
+        .blend-text {
+            font-family: var(--font-display); font-style: italic;
+            font-size: 1.2rem; color: var(--cream); line-height: 1.8;
+        }
+        .blend-hint {
+            font-family: var(--font-elegant); font-size: .9rem;
+            color: var(--cream-dim); letter-spacing: .15em;
+        }
+
+        /* ═══ GALLERY ═══ */
+        .gallery { padding: 6rem 2rem; }
+        .gallery-inner {
+            max-width: 1100px; margin: 0 auto;
+        }
+        .gallery-header {
+            text-align: center; margin-bottom: 4rem;
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1.5rem;
+        }
+        .gallery-item {
+            position: relative; overflow: hidden;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .gallery-item::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(26,17,11,.6) 0%, transparent 50%);
+            opacity: 0; transition: opacity .4s;
+        }
+        .gallery-item:hover::after { opacity: 1; }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform .8s cubic-bezier(.25,.46,.45,.94);
+        }
+        .gallery-item:hover img { transform: scale(1.06); }
+        .gallery-item:nth-child(1) { grid-row: 1 / 3; }
+        .gallery-item:nth-child(2) { grid-column: 2; }
+        .gallery-item:nth-child(3) { grid-column: 3; grid-row: 1 / 3; }
+        .gallery-caption {
+            position: absolute; bottom: 1.5rem; left: 1.5rem; right: 1.5rem;
+            z-index: 2; opacity: 0; transform: translateY(10px);
+            transition: opacity .4s, transform .4s;
+            font-family: var(--font-elegant); font-size: .9rem;
+            color: var(--cream); letter-spacing: .1em;
+        }
+        .gallery-item:hover .gallery-caption {
+            opacity: 1; transform: translateY(0);
+        }
+
+        /* ═══ JOURNEY ═══ */
+        .journey { padding: 6rem 2rem; }
+        .journey-inner { max-width: 700px; margin: 0 auto; }
+        .journey-header { text-align: center; margin-bottom: 4rem; }
+        .timeline { position: relative; }
+        .timeline::before {
+            content: ''; position: absolute;
+            left: 50%; top: 0; bottom: 0; width: 1px;
+            background: linear-gradient(to bottom,
+                transparent, rgba(var(--amber-glow), .3) 10%,
+                rgba(var(--amber-glow), .3) 90%, transparent);
+            transform: translateX(-50%);
+        }
+        .timeline-item {
+            display: flex; align-items: flex-start;
+            margin-bottom: 3rem; position: relative;
+        }
+        .timeline-item:nth-child(odd) { flex-direction: row; }
+        .timeline-item:nth-child(even) { flex-direction: row-reverse; }
+        .timeline-dot {
+            position: absolute; left: 50%; top: .5rem;
+            width: 12px; height: 12px;
+            background: var(--amber); border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px rgba(var(--amber-glow), .4);
+            z-index: 2;
+        }
+        .timeline-content {
+            width: calc(50% - 2rem);
+            padding: 1.5rem;
+            background: rgba(var(--amber-glow), .03);
+            border: 1px solid rgba(var(--amber-glow), .08);
+            border-radius: 12px;
+            transition: border-color .3s;
+        }
+        .timeline-content:hover { border-color: rgba(var(--amber-glow), .25); }
+        .timeline-year {
+            font-family: var(--font-display); font-size: 1.3rem;
+            color: var(--amber); margin-bottom: .5rem;
+        }
+        .timeline-text {
+            font-weight: 200; font-size: .95rem;
+            line-height: 1.9; color: var(--cream-dim);
+        }
+
+        /* ═══ FUN FACTS ═══ */
+        .funfacts { padding: 6rem 2rem; position: relative; }
+        .funfacts::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg,
+                var(--deep) 0%,
+                rgba(var(--amber-glow), .03) 50%,
+                var(--deep) 100%);
+        }
+        .funfacts-inner {
+            max-width: 1000px; margin: 0 auto; position: relative;
+        }
+        .funfacts-header { text-align: center; margin-bottom: 4rem; }
+        .facts-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+        .fact-card {
+            display: flex; align-items: flex-start; gap: 1.5rem;
+            padding: 2rem;
+            background: rgba(var(--amber-glow), .02);
+            border: 1px solid rgba(var(--amber-glow), .08);
+            border-radius: 16px;
+            transition: all .4s;
+        }
+        .fact-card:hover {
+            border-color: rgba(var(--amber-glow), .25);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,.2);
+        }
+        .fact-icon {
+            flex-shrink: 0;
+            width: 48px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(var(--amber-glow), .06);
+            border: 1px solid rgba(var(--amber-glow), .1);
+            border-radius: 12px;
+            color: var(--amber);
+            font-size: 1.1rem;
+        }
+        .fact-text h4 {
+            font-family: var(--font-display); font-size: 1.1rem;
+            color: var(--cream); margin-bottom: .5rem;
+        }
+        .fact-text p {
+            font-weight: 200; font-size: .9rem;
+            line-height: 1.8; color: var(--cream-dim);
+        }
+
+        /* ═══ FOOTER ═══ */
+        footer {
+            padding: 5rem 2rem 3rem;
+            text-align: center; position: relative;
+        }
+        footer::before {
+            content: ''; position: absolute; top: 0; left: 10%; right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(var(--amber-glow), .2), transparent);
+        }
+        .footer-cta {
+            font-family: var(--font-display); font-weight: 400;
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            color: var(--cream); margin-bottom: 1rem;
+        }
+        .footer-sub {
+            font-family: var(--font-elegant); font-weight: 300;
+            font-size: 1rem; color: var(--cream-dim);
+            letter-spacing: .15em; margin-bottom: 2.5rem;
+        }
+        .social-links {
+            display: flex; justify-content: center; gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        .social-link {
+            width: 52px; height: 52px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(var(--amber-glow), .2);
+            border-radius: 50%; color: var(--cream-dim);
+            font-size: 1.2rem; text-decoration: none;
+            transition: all .4s;
+        }
+        .social-link:hover {
+            border-color: var(--amber);
+            color: var(--amber);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(var(--amber-glow), .2);
+        }
+        .footer-credit {
+            font-family: var(--font-elegant); font-size: .8rem;
+            color: rgba(var(--cream-dim), .3); letter-spacing: .2em;
+        }
+        .footer-credit a {
+            color: rgba(var(--amber-glow), .4);
+            text-decoration: none;
+        }
+
+        /* ═══ FLOATING BOTANICALS ═══ */
+        .float-leaf {
+            position: fixed; pointer-events: none; z-index: 1;
+            color: rgba(var(--sage-glow), .06);
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+        }
+
+        /* ═══ MOBILE ═══ */
+        @media (max-width: 768px) {
+            body { cursor: auto; }
+            .cursor-glow, .cursor-dot, .cursor-ring { display: none; }
+            nav { padding: 1rem 1.2rem; }
+            .nav-back { font-size: .8rem; letter-spacing: .15em; }
+            .nav-links a { font-size: .95rem; }
+            .about-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .about-stats {
+                flex-direction: row; flex-wrap: wrap; gap: 1.5rem;
+            }
+            .stat-item { flex: 1; min-width: 120px; }
+            .belief-cards { grid-template-columns: 1fr; gap: 1.5rem; }
+            .gallery-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+            .gallery-item:nth-child(1),
+            .gallery-item:nth-child(3) { grid-row: auto; }
+            .gallery-item:nth-child(2) { grid-column: auto; }
+            .gallery-item:nth-child(3) { grid-column: auto; }
+            .gallery-item { aspect-ratio: 4/3; }
+            .oil-bottles { gap: .8rem; flex-wrap: wrap; }
+            .oil-bottle { width: 60px; }
+            .oil-bottle-icon { width: 46px; height: 46px; }
+            .oil-bottle-icon svg { width: 22px; height: 22px; }
+            .oil-bottle-name { font-size: .75rem; }
+            .oil-bottle-effect { font-size: .65rem; }
+            .blend-result { padding: 1.2rem; min-height: 80px; }
+            .blend-text { font-size: 1rem; }
+            .video-frame { max-width: 100%; margin: 0 1rem; }
+            .asmr { padding: 4rem 1rem; }
+            .essence { padding: 4rem 1rem; }
+            .fact-icon { width: 40px; height: 40px; font-size: .95rem; }
+            .fact-card { gap: 1rem; }
+            footer { padding: 3rem 1.5rem 2rem; }
+            .footer-sub { margin-bottom: 1.5rem; }
+            .timeline::before { left: 1.5rem; }
+            .timeline-item,
+            .timeline-item:nth-child(even) { flex-direction: row; padding-left: 3rem; }
+            .timeline-dot { left: 1.5rem; }
+            .timeline-content { width: 100%; }
+            .facts-grid { grid-template-columns: 1fr; }
+            .fact-card { padding: 1.5rem; }
+            .hero { padding: 5rem 1.5rem 3rem; }
+            .oil-drop-container { width: 160px; height: 160px; }
+            .avatar-frame { width: 110px; height: 110px; }
+            .oil-drop { width: 90px; height: 90px; }
+            .social-links { gap: 1rem; }
+            .social-link { width: 46px; height: 46px; font-size: 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title { font-size: 2rem; }
+            .section-title { font-size: 1.6rem; }
+            .philosophy-quote { font-size: 1.2rem; }
+            .oil-bottles { gap: .6rem; }
+            .oil-bottle { width: 56px; }
+            .oil-bottle-icon { width: 42px; height: 42px; }
+            .oil-bottle-icon svg { width: 20px; height: 20px; }
+            .oil-bottle-name { font-size: .7rem; }
+            .oil-bottle-effect { font-size: .6rem; }
+            .blend-text { font-size: .9rem; line-height: 1.7; }
+            .fact-card { padding: 1.2rem; }
+            .fact-text h4 { font-size: .95rem; }
+            .fact-text p { font-size: .82rem; }
+        }
+
+        /* ── Loading ── */
+        .page-loader {
+            position: fixed; inset: 0; z-index: 10000;
+            background: var(--deep);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: opacity .8s, visibility .8s;
+        }
+        .page-loader.hidden { opacity: 0; visibility: hidden; }
+        .loader-oil {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%,
+                rgba(var(--gold-glow), .5), rgba(var(--amber-glow), .2) 60%, transparent);
+            animation: loader-breathe 2s ease-in-out infinite;
+        }
+        .loader-text {
+            margin-top: 1.5rem;
+            font-family: var(--font-elegant); font-size: .9rem;
+            color: var(--cream-dim); letter-spacing: .4em;
+            animation: loader-fade 2s ease-in-out infinite;
+        }
+        @keyframes loader-breathe {
+            0%, 100% { transform: scale(1); opacity: .6; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+        @keyframes loader-fade {
+            0%, 100% { opacity: .3; }
+            50% { opacity: .8; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loader -->
+    <div class="page-loader" id="loader">
+        <div class="loader-oil"></div>
+        <div class="loader-text">HEALING TOUCH</div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-glow" id="cursorGlow"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+    <div class="cursor-dot" id="cursorDot"></div>
+
+    <!-- Three.js Background -->
+    <canvas id="oil-bg"></canvas>
+
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Floating Botanicals -->
+    <div class="float-leaf" style="top:8%;left:4%"><i class="fas fa-leaf"></i></div>
+    <div class="float-leaf" style="top:25%;right:6%"><i class="fas fa-seedling"></i></div>
+    <div class="float-leaf" style="top:50%;left:2%"><i class="fas fa-spa"></i></div>
+    <div class="float-leaf" style="top:70%;right:3%"><i class="fas fa-leaf"></i></div>
+    <div class="float-leaf" style="top:90%;left:5%"><i class="fas fa-seedling"></i></div>
+
+    <!-- NAV -->
+    <nav>
+        <a href="/guild/" class="nav-back"><i class="fas fa-arrow-left"></i>&ensp;ARCHIVE</a>
+        <div class="nav-links">
+            <a href="https://www.threads.com/@h.b.beauty_studio" target="_blank" rel="noopener"><i class="fab fa-threads"></i></a>
+            <a href="https://www.instagram.com/h.b.beauty_studio/" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
+            <a href="https://line.me/R/ti/p/@976rfijw" target="_blank" rel="noopener"><i class="fab fa-line"></i></a>
+        </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+        <!-- ═══ HERO ═══ -->
+        <section class="hero">
+            <div class="oil-drop-container">
+                <div class="oil-ripple"></div>
+                <div class="oil-ripple"></div>
+                <div class="oil-ripple"></div>
+                <div class="oil-drop"></div>
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/h_b_beauty_studio/avatar.webp" alt="H.B.beauty studio" loading="eager">
+                </div>
+            </div>
+            <div class="hero-tagline">TAICHUNG · ESSENTIAL OIL THERAPY</div>
+            <h1 class="hero-title">H.B.beauty studio</h1>
+            <div class="hero-sub">溫手 — The Healing Touch</div>
+            <p class="hero-quote">
+                <em>沒什麼超強技能</em><br>
+                但有一雙<em>溫暖的手</em>
+            </p>
+            <div class="scroll-cue">
+                EXPLORE
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </section>
+
+        <!-- DIVIDER -->
+        <div class="divider">
+            <div class="divider-line"></div>
+            <div class="divider-icon"><i class="fas fa-spa"></i></div>
+            <div class="divider-line"></div>
+        </div>
+
+        <!-- ═══ ABOUT ═══ -->
+        <section class="about" id="about">
+            <div class="section-label">ABOUT ME</div>
+            <h2 class="section-title">以溫柔卻又深層的力道<br>緩慢的速度，放鬆緊繃的身心</h2>
+            <div class="about-grid">
+                <div class="about-text">
+                    <p>
+                        我是一位<strong>精油按摩放鬆師</strong>，在服務業裡學習四年後，鼓起勇氣開設了自己的工作室。如今，這間位於台中西屯的小天地已經走過第四個年頭。
+                    </p>
+                    <p>
+                        擁有<strong>八年的豐富經驗</strong>，曾擔任<strong>TSIA 美業比賽評審</strong>。我自認技術一般，但每一位客人都能在我的雙手中找到深層的放鬆與療癒。
+                    </p>
+                    <p>
+                        「身心靈平衡，才是健康的起點。」這不僅是我的信念，更是我每一次服務背後的堅持。
+                    </p>
+                </div>
+                <div class="about-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">8+</div>
+                        <div class="stat-label">Years of Experience</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">Years Running Studio</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">TSIA</div>
+                        <div class="stat-label">Beauty Competition Judge</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DIVIDER -->
+        <div class="divider">
+            <div class="divider-line"></div>
+            <div class="divider-icon"><i class="fas fa-hand-holding-droplet"></i></div>
+            <div class="divider-line"></div>
+        </div>
+
+        <!-- ═══ PHILOSOPHY ═══ -->
+        <section class="philosophy" id="philosophy">
+            <div class="philosophy-inner">
+                <div class="section-label">PHILOSOPHY</div>
+                <blockquote class="philosophy-quote">
+                    「<span class="highlight">身心靈平衡</span><br>
+                    才是健康的起點」
+                </blockquote>
+                <div class="philosophy-author">— H.B.beauty studio</div>
+
+                <div class="belief-cards">
+                    <div class="belief-card">
+                        <div class="belief-icon"><i class="fas fa-hand-sparkles"></i></div>
+                        <h3 class="belief-title">溫暖的觸感</h3>
+                        <p class="belief-desc">以溫柔卻深層的力道，用雙手傳遞最真摯的療癒能量</p>
+                    </div>
+                    <div class="belief-card">
+                        <div class="belief-icon"><i class="fas fa-flask-vial"></i></div>
+                        <h3 class="belief-title">精油的智慧</h3>
+                        <p class="belief-desc">甜橙帶來好運、佛手柑冷靜決策、廣藿香穩固根基</p>
+                    </div>
+                    <div class="belief-card">
+                        <div class="belief-icon"><i class="fas fa-yin-yang"></i></div>
+                        <h3 class="belief-title">身心靈平衡</h3>
+                        <p class="belief-desc">不只是身體的舒緩，更是心靈與精神的全面呵護</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ ASMR VIDEO ═══ -->
+        <section class="asmr" id="asmr">
+            <div class="asmr-inner">
+                <div class="asmr-header">
+                    <div class="section-label">HEALING ASMR</div>
+                    <h2 class="section-title">感受療癒的聲音</h2>
+                </div>
+                <div class="video-frame">
+                    <video id="asmrVideo" loop muted playsinline preload="metadata">
+                        <source src="/assets/img/guild/h_b_beauty_studio/massage_video.mp4" type="video/mp4">
+                    </video>
+                    <div class="video-overlay" id="videoOverlay">
+                        <div class="play-btn"><i class="fas fa-play"></i></div>
+                    </div>
+                </div>
+                <div class="sound-waves" id="soundWaves">
+                    <div class="sound-wave"></div><div class="sound-wave"></div>
+                    <div class="sound-wave"></div><div class="sound-wave"></div>
+                    <div class="sound-wave"></div><div class="sound-wave"></div>
+                    <div class="sound-wave"></div><div class="sound-wave"></div>
+                    <div class="sound-wave"></div>
+                </div>
+                <div class="video-caption">「好奇你們喜歡速度快的還是慢的？」— 揉麵團的聲音</div>
+            </div>
+        </section>
+
+        <!-- ═══ ESSENCE — Interactive Oil Blending ═══ -->
+        <section class="essence" id="essence">
+            <div class="essence-inner">
+                <div class="essence-header">
+                    <div class="section-label">ESSENTIAL OILS</div>
+                    <h2 class="section-title">調配你的精油能量</h2>
+                </div>
+                <div class="oil-bottles" id="oilBottles">
+                    <div class="oil-bottle" data-oil="orange" data-effect="大吉大利・和氣生財" style="--oil-color: rgba(255,165,0,.4)">
+                        <div class="oil-bottle-icon" style="background: rgba(255,165,0,.08);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,165,0,.8)" stroke-width="1.5"><circle cx="12" cy="12" r="7"/><path d="M12 5c0-2 1-3 1-3"/><path d="M10 5.5c-1-1.5-.5-3-.5-3"/></svg>
+                        </div>
+                        <div class="oil-bottle-name">甜橙</div>
+                        <div class="oil-bottle-effect">好運</div>
+                    </div>
+                    <div class="oil-bottle" data-oil="bergamot" data-effect="冷靜決策・吸引好運" style="--oil-color: rgba(180,220,80,.4)">
+                        <div class="oil-bottle-icon" style="background: rgba(180,220,80,.08);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(180,220,80,.8)" stroke-width="1.5"><ellipse cx="12" cy="13" rx="6" ry="7"/><path d="M12 6c0-3 2-4 2-4"/><path d="M10 6.5c-1-2 0-4 0-4"/></svg>
+                        </div>
+                        <div class="oil-bottle-name">佛手柑</div>
+                        <div class="oil-bottle-effect">冷靜</div>
+                    </div>
+                    <div class="oil-bottle" data-oil="patchouli" data-effect="穩固財基・土地能量" style="--oil-color: rgba(139,90,43,.4)">
+                        <div class="oil-bottle-icon" style="background: rgba(139,90,43,.08);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(139,90,43,.8)" stroke-width="1.5"><path d="M12 22V8"/><path d="M8 12c-3-1-4-4-2-6"/><path d="M16 12c3-1 4-4 2-6"/><path d="M9 16c-2 0-4-1-4-3"/><path d="M15 16c2 0 4-1 4-3"/></svg>
+                        </div>
+                        <div class="oil-bottle-name">廣藿香</div>
+                        <div class="oil-bottle-effect">穩固</div>
+                    </div>
+                    <div class="oil-bottle" data-oil="vetiver" data-effect="抓地力強・守住財庫" style="--oil-color: rgba(85,107,47,.4)">
+                        <div class="oil-bottle-icon" style="background: rgba(85,107,47,.08);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(85,107,47,.8)" stroke-width="1.5"><path d="M12 22V4"/><path d="M8 8l4-4 4 4"/><path d="M7 14l5-2 5 2"/><path d="M6 19l6-2 6 2"/></svg>
+                        </div>
+                        <div class="oil-bottle-name">岩蘭草</div>
+                        <div class="oil-bottle-effect">守護</div>
+                    </div>
+                    <div class="oil-bottle" data-oil="cinnamon" data-effect="激發行動・顯化財富" style="--oil-color: rgba(210,105,30,.4)">
+                        <div class="oil-bottle-icon" style="background: rgba(210,105,30,.08);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(210,105,30,.8)" stroke-width="1.5"><path d="M8 4c0 0 2 2 2 6s-2 6-2 6"/><path d="M12 4c0 0 2 2 2 6s-2 6-2 6"/><path d="M16 4c0 0 2 2 2 6s-2 6-2 6"/></svg>
+                        </div>
+                        <div class="oil-bottle-name">肉桂</div>
+                        <div class="oil-bottle-effect">行動</div>
+                    </div>
+                </div>
+                <div class="blend-result" id="blendResult">
+                    <div class="blend-hint">點選精油，調配屬於你的能量配方</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DIVIDER -->
+        <div class="divider">
+            <div class="divider-line"></div>
+            <div class="divider-icon"><i class="fas fa-camera-retro"></i></div>
+            <div class="divider-line"></div>
+        </div>
+
+        <!-- ═══ GALLERY ═══ -->
+        <section class="gallery" id="gallery">
+            <div class="gallery-inner">
+                <div class="gallery-header">
+                    <div class="section-label">STUDIO MOMENTS</div>
+                    <h2 class="section-title">療癒的日常</h2>
+                </div>
+                <div class="gallery-grid">
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/h_b_beauty_studio/massage1.webp" alt="經絡按摩工具" loading="lazy">
+                        <div class="gallery-caption">專業經絡按摩工具</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/h_b_beauty_studio/massage2.webp" alt="臉部護理" loading="lazy">
+                        <div class="gallery-caption">溫柔的臉部護理</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/h_b_beauty_studio/massage3.webp" alt="精油療程" loading="lazy">
+                        <div class="gallery-caption">精油緩緩流淌，療癒開始</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ JOURNEY ═══ -->
+        <section class="journey" id="journey">
+            <div class="journey-inner">
+                <div class="journey-header">
+                    <div class="section-label">MY STORY</div>
+                    <h2 class="section-title">成長軌跡</h2>
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-year">起點</div>
+                            <div class="timeline-text">我踏入美業服務業，從零開始學習精油按摩的技藝與溫度</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-year">深耕</div>
+                            <div class="timeline-text">在服務業裡學習四年，我累積了扎實經驗，磨練出溫柔卻深層的獨特手法</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-year">創業</div>
+                            <div class="timeline-text">我在台中西屯開設了 H.B.beauty studio，成為一人公司的老闆、行銷、會計、美容師⋯⋯身兼數職</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-year">肯定</div>
+                            <div class="timeline-text">受邀擔任 TSIA 美業比賽評審，八年的努力獲得了業界認可</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-year">現在</div>
+                            <div class="timeline-text">我持續用一雙溫暖的手，療癒每一位走進工作室的人。不要擔心走得慢，因為沒有一個標準的進度條</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DIVIDER -->
+        <div class="divider">
+            <div class="divider-line"></div>
+            <div class="divider-icon"><i class="fas fa-heart"></i></div>
+            <div class="divider-line"></div>
+        </div>
+
+        <!-- ═══ FUN FACTS ═══ -->
+        <section class="funfacts" id="funfacts">
+            <div class="funfacts-inner">
+                <div class="funfacts-header">
+                    <div class="section-label">BEYOND THE STUDIO</div>
+                    <h2 class="section-title">工作室以外的我</h2>
+                </div>
+                <div class="facts-grid">
+                    <div class="fact-card">
+                        <div class="fact-icon"><i class="fas fa-cat"></i></div>
+                        <div class="fact-text">
+                            <h4>兩隻貓咪叫肚皮</h4>
+                            <p>家裡有兩位毛孩室友，名字都叫肚皮，是我最柔軟的日常</p>
+                        </div>
+                    </div>
+                    <div class="fact-card">
+                        <div class="fact-icon"><i class="fas fa-mountain-sun"></i></div>
+                        <div class="fact-text">
+                            <h4>風景控</h4>
+                            <p>比起逛百貨公司，我更喜歡看風景。大自然是我充電的來源</p>
+                        </div>
+                    </div>
+                    <div class="fact-card">
+                        <div class="fact-icon"><i class="fas fa-utensils"></i></div>
+                        <div class="fact-text">
+                            <h4>超級愛吃的早起族</h4>
+                            <p>超級愛吃但會自律早起煮飯帶便當，享受美食也照顧身體</p>
+                        </div>
+                    </div>
+                    <div class="fact-card">
+                        <div class="fact-icon"><i class="fas fa-dumbbell"></i></div>
+                        <div class="fact-text">
+                            <h4>不愛運動但在重訓</h4>
+                            <p>不喜歡運動，但還是堅持重訓。我相信：堅持是成長的過程</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ FOOTER ═══ -->
+        <footer>
+            <div class="footer-cta">感受溫暖的療癒</div>
+            <div class="footer-sub">Book your healing session</div>
+            <div class="social-links">
+                <a href="https://www.threads.com/@h.b.beauty_studio" target="_blank" rel="noopener" class="social-link" title="Threads">
+                    <i class="fab fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/h.b.beauty_studio/" target="_blank" rel="noopener" class="social-link" title="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="https://line.me/R/ti/p/@976rfijw" target="_blank" rel="noopener" class="social-link" title="LINE">
+                    <i class="fab fa-line"></i>
+                </a>
+            </div>
+            <div class="footer-credit">
+                Made with ♥ by <a href="/">SuperGalen's Dungeon</a>
+            </div>
+        </footer>
+
+    </div><!-- .content -->
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const isMobile = window.innerWidth <= 768;
+
+    /* ═══════════════════════════════════════
+       THREE.JS — Golden Oil Waves Background (Desktop only)
+       ═══════════════════════════════════════ */
+    if (!isMobile) {
+    (function initThreeBackground() {
+        const canvas = document.getElementById('oil-bg');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 3;
+
+        const geometry = new THREE.PlaneGeometry(8, 8, 64, 64);
+        const material = new THREE.ShaderMaterial({
+            transparent: true,
+            uniforms: {
+                uTime: { value: 0 },
+                uScroll: { value: 0 },
+                uColor1: { value: new THREE.Color('#1A110B') },
+                uColor2: { value: new THREE.Color('#3D261A') },
+                uColor3: { value: new THREE.Color('#C8956C') }
+            },
+            vertexShader: `
+                uniform float uTime;
+                uniform float uScroll;
+                varying vec2 vUv;
+                varying float vElevation;
+                void main() {
+                    vUv = uv;
+                    vec3 pos = position;
+                    float wave1 = sin(pos.x * 2.0 + uTime * 0.3) * 0.08;
+                    float wave2 = sin(pos.y * 3.0 + uTime * 0.2) * 0.06;
+                    float wave3 = sin((pos.x + pos.y) * 1.5 + uTime * 0.15 + uScroll * 0.5) * 0.1;
+                    pos.z = wave1 + wave2 + wave3;
+                    vElevation = pos.z;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 uColor1;
+                uniform vec3 uColor2;
+                uniform vec3 uColor3;
+                uniform float uTime;
+                varying vec2 vUv;
+                varying float vElevation;
+                void main() {
+                    float mixVal = (vElevation + 0.15) / 0.35;
+                    vec3 color = mix(uColor1, uColor2, smoothstep(0.0, 0.5, mixVal));
+                    color = mix(color, uColor3, smoothstep(0.5, 1.0, mixVal) * 0.15);
+                    float alpha = 0.3 + vElevation * 0.8;
+                    alpha *= smoothstep(0.0, 0.2, vUv.x) * smoothstep(1.0, 0.8, vUv.x);
+                    alpha *= smoothstep(0.0, 0.2, vUv.y) * smoothstep(1.0, 0.8, vUv.y);
+                    gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.35));
+                }
+            `
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.rotation.x = -0.3;
+        scene.add(mesh);
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        function animate(time) {
+            material.uniforms.uTime.value = time * 0.001;
+            material.uniforms.uScroll.value = window.scrollY / document.body.scrollHeight;
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+    })();
+    }
+
+    /* ═══════════════════════════════
+       P5.JS — Floating Oil Particles
+       ═══════════════════════════════ */
+    new p5(function(p) {
+        let particles = [];
+        const NUM = isMobile ? 15 : 35;
+
+        p.setup = function() {
+            const c = p.createCanvas(p.windowWidth, p.windowHeight);
+            c.parent(document.body);
+            c.style('position', 'fixed');
+            c.style('inset', '0');
+            c.style('z-index', '1');
+            c.style('pointer-events', 'none');
+            c.id('botanical-canvas');
+
+            for (let i = 0; i < NUM; i++) {
+                particles.push({
+                    x: p.random(p.width),
+                    y: p.random(p.height),
+                    size: p.random(2, 6),
+                    speedX: p.random(-0.15, 0.15),
+                    speedY: p.random(-0.3, -0.08),
+                    opacity: p.random(15, 40),
+                    wobble: p.random(1000),
+                    type: p.random() > 0.6 ? 'drop' : 'leaf'
+                });
+            }
+        };
+
+        p.draw = function() {
+            p.clear();
+            for (let pt of particles) {
+                pt.x += pt.speedX + p.sin(p.frameCount * 0.01 + pt.wobble) * 0.2;
+                pt.y += pt.speedY;
+                if (pt.y < -20) { pt.y = p.height + 20; pt.x = p.random(p.width); }
+                if (pt.x < -20) pt.x = p.width + 20;
+                if (pt.x > p.width + 20) pt.x = -20;
+
+                p.push();
+                p.translate(pt.x, pt.y);
+                p.noStroke();
+
+                if (pt.type === 'drop') {
+                    p.fill(200, 149, 108, pt.opacity);
+                    p.ellipse(0, 0, pt.size, pt.size * 1.3);
+                } else {
+                    p.rotate(p.sin(p.frameCount * 0.008 + pt.wobble) * 0.3);
+                    p.fill(139, 158, 126, pt.opacity * 0.7);
+                    p.ellipse(0, 0, pt.size * 2, pt.size * 0.8);
+                    p.ellipse(pt.size * 0.5, -pt.size * 0.3, pt.size * 1.2, pt.size * 0.5);
+                }
+                p.pop();
+            }
+        };
+
+        p.windowResized = function() {
+            p.resizeCanvas(p.windowWidth, p.windowHeight);
+        };
+    });
+
+    /* ═══════════════════════
+       CUSTOM CURSOR (Desktop only)
+       ═══════════════════════ */
+    if (!isMobile) {
+    (function initCursor() {
+        const glow = document.getElementById('cursorGlow');
+        const ring = document.getElementById('cursorRing');
+        const dot = document.getElementById('cursorDot');
+        let mx = 0, my = 0, rx = 0, ry = 0, gx = 0, gy = 0;
+
+        document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+        function tick() {
+            rx += (mx - rx) * 0.15;
+            ry += (my - ry) * 0.15;
+            gx += (mx - gx) * 0.06;
+            gy += (my - gy) * 0.06;
+            dot.style.left = mx + 'px';
+            dot.style.top = my + 'px';
+            ring.style.left = rx + 'px';
+            ring.style.top = ry + 'px';
+            glow.style.left = gx + 'px';
+            glow.style.top = gy + 'px';
+            requestAnimationFrame(tick);
+        }
+        tick();
+
+        document.querySelectorAll('a, button, .gallery-item, .belief-card, .fact-card').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                ring.style.width = '60px';
+                ring.style.height = '60px';
+                ring.style.borderColor = 'rgba(200,149,108,.5)';
+                glow.style.width = '320px';
+                glow.style.height = '320px';
+            });
+            el.addEventListener('mouseleave', () => {
+                ring.style.width = '40px';
+                ring.style.height = '40px';
+                ring.style.borderColor = 'rgba(200,149,108,.3)';
+                glow.style.width = '220px';
+                glow.style.height = '220px';
+            });
+        });
+    })();
+    }
+
+    /* ═══════════════════════
+       SCROLL PROGRESS
+       ═══════════════════════ */
+    window.addEventListener('scroll', () => {
+        const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+        document.getElementById('scrollProgress').style.width = pct + '%';
+    }, { passive: true });
+
+    /* ═══════════════════════
+       GSAP ANIMATIONS
+       ═══════════════════════ */
+    gsap.registerPlugin(ScrollTrigger);
+
+    function startApp() {
+        document.getElementById('loader').classList.add('hidden');
+        initAnimations();
+    }
+
+    if (document.readyState === 'complete') {
+        setTimeout(startApp, 300);
+    } else {
+        window.addEventListener('load', () => {
+            setTimeout(startApp, 1200);
+        });
+        setTimeout(() => {
+            const loader = document.getElementById('loader');
+            if (loader && !loader.classList.contains('hidden')) {
+                startApp();
+            }
+        }, 4000);
+    }
+
+    function initAnimations() {
+        // Hero title char animation
+        const title = document.querySelector('.hero-title');
+        const text = title.textContent;
+        title.innerHTML = '';
+        for (let ch of text) {
+            const span = document.createElement('span');
+            span.className = 'char';
+            span.textContent = ch === ' ' ? '\u00A0' : ch;
+            title.appendChild(span);
+        }
+
+        const tl = gsap.timeline({ delay: 0.2 });
+        tl.to('.hero-tagline', { opacity: 1, duration: 1, ease: 'power2.out' })
+          .to('.hero-title .char', {
+              opacity: 1, y: 0,
+              duration: 0.6, stagger: 0.04,
+              ease: 'back.out(1.7)'
+          }, '-=0.5')
+          .to('.hero-sub', { opacity: 1, duration: 0.8, ease: 'power2.out' }, '-=0.3')
+          .to('.hero-quote', { opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.4');
+
+        // Float leaves
+        gsap.utils.toArray('.float-leaf').forEach((leaf, i) => {
+            gsap.to(leaf, {
+                y: -30, duration: 3 + i * 0.5,
+                yoyo: true, repeat: -1,
+                ease: 'sine.inOut', delay: i * 0.3
+            });
+            gsap.to(leaf, {
+                rotation: 10, duration: 4 + i,
+                yoyo: true, repeat: -1,
+                ease: 'sine.inOut'
+            });
+        });
+
+        // Helper: scroll-triggered animation with proper once behavior
+        function scrollReveal(targets, triggerEl, fromVars, extra) {
+            gsap.fromTo(targets,
+                fromVars,
+                Object.assign({
+                    scrollTrigger: { trigger: triggerEl, start: 'top 85%', once: true },
+                    duration: 0.8, ease: 'power3.out'
+                }, extra, { opacity: 1, y: 0, x: 0, scale: 1 })
+            );
+        }
+
+        // Section reveals
+        gsap.utils.toArray('.section-label, .section-title').forEach(el => {
+            scrollReveal(el, el, { opacity: 0, y: 40 }, { duration: 0.8 });
+        });
+
+        // About grid
+        scrollReveal('.about-text', '.about', { opacity: 0, x: -40 }, { duration: 1 });
+        scrollReveal('.stat-item', '.about-stats', { opacity: 0, x: 40 }, { duration: 0.8, stagger: 0.2 });
+
+        // Philosophy
+        gsap.fromTo('.philosophy-quote',
+            { opacity: 0, scale: 0.95 },
+            { opacity: 1, scale: 1, scrollTrigger: { trigger: '.philosophy', start: 'top 65%', once: true }, duration: 1.2, ease: 'power2.out' }
+        );
+        gsap.fromTo('.belief-card',
+            { opacity: 0, y: 50 },
+            { opacity: 1, y: 0, scrollTrigger: { trigger: '.belief-cards', start: 'top 80%', once: true }, duration: 0.8, stagger: 0.15, ease: 'back.out(1.4)' }
+        );
+
+        // Gallery
+        gsap.fromTo('.gallery-item',
+            { opacity: 0, y: 60, scale: 0.95 },
+            { opacity: 1, y: 0, scale: 1, scrollTrigger: { trigger: '.gallery-grid', start: 'top 75%', once: true }, duration: 0.9, stagger: 0.2, ease: 'power3.out' }
+        );
+
+        // Timeline
+        gsap.fromTo('.timeline-item',
+            { opacity: 0, y: 40 },
+            { opacity: 1, y: 0, scrollTrigger: { trigger: '.timeline', start: 'top 75%', once: true }, duration: 0.7, stagger: 0.2, ease: 'power3.out' }
+        );
+
+        // Fun facts
+        gsap.fromTo('.fact-card',
+            { opacity: 0, y: 40 },
+            { opacity: 1, y: 0, scrollTrigger: { trigger: '.facts-grid', start: 'top 85%', once: true }, duration: 0.7, stagger: 0.12, ease: 'back.out(1.3)' }
+        );
+
+        // ASMR Video section
+        gsap.fromTo('.video-frame',
+            { opacity: 0, y: 50, scale: 0.96 },
+            { opacity: 1, y: 0, scale: 1, scrollTrigger: { trigger: '.asmr', start: 'top 70%', once: true }, duration: 1, ease: 'power3.out' }
+        );
+
+        // Essence section
+        gsap.fromTo('.oil-bottle',
+            { opacity: 0, y: 30 },
+            { opacity: 1, y: 0, scrollTrigger: { trigger: '.oil-bottles', start: 'top 80%', once: true }, duration: 0.6, stagger: 0.1, ease: 'back.out(1.5)' }
+        );
+        gsap.fromTo('.blend-result',
+            { opacity: 0, y: 20 },
+            { opacity: 1, y: 0, scrollTrigger: { trigger: '.blend-result', start: 'top 85%', once: true }, duration: 0.8, ease: 'power3.out' }
+        );
+
+        // Footer
+        gsap.fromTo('.footer-cta, .footer-sub, .social-links',
+            { opacity: 0, y: 30 },
+            { opacity: 1, y: 0, scrollTrigger: { trigger: 'footer', start: 'top 85%', once: true }, duration: 0.8, stagger: 0.15, ease: 'power3.out' }
+        );
+    }
+
+    /* ═══════════════════════
+       ASMR VIDEO PLAYER
+       ═══════════════════════ */
+    (function initVideoPlayer() {
+        const video = document.getElementById('asmrVideo');
+        const overlay = document.getElementById('videoOverlay');
+        const waves = document.getElementById('soundWaves');
+        if (!video || !overlay) return;
+
+        overlay.addEventListener('click', () => {
+            if (video.paused) {
+                video.muted = false;
+                video.play();
+                overlay.classList.add('playing');
+                waves.classList.add('active');
+            }
+        });
+
+        video.addEventListener('click', () => {
+            if (!video.paused) {
+                video.pause();
+                overlay.classList.remove('playing');
+                waves.classList.remove('active');
+            }
+        });
+
+        video.addEventListener('ended', () => {
+            overlay.classList.remove('playing');
+            waves.classList.remove('active');
+        });
+
+        // Auto-play muted when scrolled into view
+        ScrollTrigger.create({
+            trigger: '.asmr',
+            start: 'top 60%',
+            end: 'bottom 20%',
+            onEnter: () => { video.muted = true; video.play(); overlay.classList.add('playing'); },
+            onLeave: () => { video.pause(); overlay.classList.remove('playing'); waves.classList.remove('active'); },
+            onEnterBack: () => { video.muted = true; video.play(); overlay.classList.add('playing'); },
+            onLeaveBack: () => { video.pause(); overlay.classList.remove('playing'); waves.classList.remove('active'); }
+        });
+    })();
+
+    /* ═══════════════════════
+       ESSENTIAL OIL BLENDING
+       ═══════════════════════ */
+    (function initOilBlending() {
+        const bottles = document.querySelectorAll('.oil-bottle');
+        const result = document.getElementById('blendResult');
+        const selected = new Set();
+
+        // 單一精油的描述
+        const soloMessages = {
+            orange:   '甜橙的陽光氣息，喚醒內在的喜悅與好運，讓每一天都從微笑開始。',
+            bergamot: '佛手柑的清新智慧，帶來冷靜與清晰，在紛擾中找到內心的篤定。',
+            patchouli:'廣藿香的大地氣息，深沉而穩固，為你的根基注入踏實的力量。',
+            vetiver:  '岩蘭草的深層守護，如同大地之錨，牢牢守住你最珍貴的一切。',
+            cinnamon: '肉桂的溫暖火焰，點燃行動的勇氣，讓夢想不再只是空想。'
+        };
+
+        // 雙精油組合：用排序後的 key 作為索引
+        const duoMessages = {
+            'bergamot+orange':   '甜橙的好運遇上佛手柑的冷靜 — 好運降臨時，你能做出最明智的選擇。',
+            'orange+patchouli':  '甜橙帶來機會，廣藿香穩住根基 — 運氣來了，也要有實力接住。',
+            'orange+vetiver':    '甜橙開路，岩蘭草守護 — 財運亨通的同時，守住你的財庫。',
+            'cinnamon+orange':   '甜橙招來好運，肉桂點燃行動 — 不只等運氣，更要創造運氣。',
+            'bergamot+patchouli':'佛手柑的決策力搭配廣藿香的穩定 — 冷靜判斷，穩步前行。',
+            'bergamot+vetiver':  '佛手柑帶來清明，岩蘭草守住成果 — 智慧與守護的完美結合。',
+            'bergamot+cinnamon': '佛手柑冷靜思考，肉桂果斷行動 — 想清楚就去做，不再猶豫。',
+            'patchouli+vetiver': '廣藿香與岩蘭草，雙重大地能量 — 如磐石般穩固，不可動搖。',
+            'cinnamon+patchouli':'廣藿香紮根，肉桂向上 — 根基越深，能量越強。',
+            'cinnamon+vetiver':  '岩蘭草守護內在，肉桂激發外在 — 內外兼修，動靜皆宜。'
+        };
+
+        // 三精油組合
+        const trioMessages = {
+            'bergamot+orange+patchouli':  '好運、冷靜、穩固 — 運氣來時保持清醒，腳踏實地穩步向前。',
+            'orange+patchouli+vetiver':   '好運、穩固、守護 — 三重大地祝福，讓豐盛自然而然地來到身邊。',
+            'cinnamon+orange+patchouli':  '好運、穩固、行動 — 機會青睞有準備的人，準備好就出發。',
+            'cinnamon+orange+vetiver':    '好運、守護、行動 — 積極進取的同時，守住最重要的東西。',
+            'bergamot+orange+vetiver':    '好運、冷靜、守護 — 智慧地迎接每一個機遇，穩穩地守住成果。',
+            'bergamot+cinnamon+orange':   '好運、冷靜、行動 — 看準時機，果斷出手，讓好運化為現實。',
+            'bergamot+patchouli+vetiver': '冷靜、穩固、守護 — 如深山老樹，沉穩而有力量。',
+            'bergamot+cinnamon+patchouli':'冷靜、穩固、行動 — 深思熟慮後的行動，最有穿透力。',
+            'bergamot+cinnamon+vetiver':  '冷靜、守護、行動 — 守中帶攻，攻中有守，進退自如。',
+            'cinnamon+patchouli+vetiver': '穩固、守護、行動 — 大地能量全面啟動，勢不可擋。'
+        };
+
+        // 四精油組合
+        const quadMessages = {
+            'bergamot+cinnamon+orange+patchouli':  '只差守護的最後一塊拼圖 — 四種能量已近乎完美，加入岩蘭草即可圓滿。',
+            'bergamot+cinnamon+orange+vetiver':    '只差穩固的根基 — 四種力量蓄勢待發，廣藿香將為你扎下最深的根。',
+            'bergamot+orange+patchouli+vetiver':   '只差行動的火花 — 萬事俱備，只欠肉桂點燃那股衝勁。',
+            'cinnamon+orange+patchouli+vetiver':   '只差冷靜的智慧 — 力量充沛但需要佛手柑帶來的清明方向。',
+            'bergamot+cinnamon+patchouli+vetiver': '只差好運的加持 — 實力已經到位，甜橙將為你開啟幸運之門。'
+        };
+
+        const fullMessage = '五行俱全，最完整的療癒能量配方 — 好運、冷靜、穩固、守護、行動，身心靈全面啟動。這正是我說的：「身心靈平衡，才是健康的起點。」';
+
+        function getComboKey() {
+            return Array.from(selected).sort().join('+');
+        }
+
+        bottles.forEach(bottle => {
+            bottle.addEventListener('click', () => {
+                const oil = bottle.dataset.oil;
+                if (selected.has(oil)) {
+                    selected.delete(oil);
+                    bottle.classList.remove('active');
+                } else {
+                    selected.add(oil);
+                    bottle.classList.add('active');
+                    gsap.fromTo(bottle.querySelector('.oil-bottle-icon'),
+                        { scale: 1 }, { scale: 1.15, duration: 0.2, yoyo: true, repeat: 1 });
+                }
+                updateBlend();
+            });
+        });
+
+        function updateBlend() {
+            const count = selected.size;
+            if (count === 0) {
+                result.classList.remove('active');
+                result.innerHTML = '<div class="blend-hint">點選精油，調配屬於你的能量配方</div>';
+                return;
+            }
+
+            result.classList.add('active');
+            const key = getComboKey();
+            let msg = '';
+
+            if (count === 1) {
+                msg = soloMessages[key] || '';
+            } else if (count === 2) {
+                msg = duoMessages[key] || '兩種能量交融，獨特的配方正在成形。';
+            } else if (count === 3) {
+                msg = trioMessages[key] || '三重能量交織，療癒的力量正在擴散。';
+            } else if (count === 4) {
+                msg = quadMessages[key] || '四種能量匯聚，強大的能量場已經成形。';
+            } else {
+                msg = fullMessage;
+            }
+
+            // 取得選中精油名稱
+            const names = [];
+            bottles.forEach(b => {
+                if (selected.has(b.dataset.oil)) names.push(b.querySelector('.oil-bottle-name').textContent);
+            });
+
+            result.innerHTML = `
+                <div class="blend-names" style="font-family:var(--font-elegant);font-size:.8rem;color:var(--amber);letter-spacing:.2em;margin-bottom:1rem;text-transform:uppercase">${names.join(' + ')}</div>
+                <div class="blend-text">${msg}</div>
+            `;
+            gsap.fromTo(result.querySelector('.blend-text'), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' });
+        }
+    })();
+
+    /* ═══════════════════════
+       WARM HANDS — Cursor Heat Trail (Desktop)
+       ═══════════════════════ */
+    if (!isMobile) {
+    (function initHeatTrail() {
+        const canvas = document.createElement('canvas');
+        canvas.style.cssText = 'position:fixed;inset:0;z-index:3;pointer-events:none;';
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        let w, h, trails = [];
+
+        function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+        resize();
+        window.addEventListener('resize', resize);
+
+        document.addEventListener('mousemove', e => {
+            trails.push({ x: e.clientX, y: e.clientY, life: 1, size: 15 + Math.random() * 10 });
+            if (trails.length > 25) trails.shift();
+        });
+
+        function draw() {
+            ctx.clearRect(0, 0, w, h);
+            for (let i = trails.length - 1; i >= 0; i--) {
+                const t = trails[i];
+                t.life -= 0.025;
+                if (t.life <= 0) { trails.splice(i, 1); continue; }
+                const alpha = t.life * 0.06;
+                const grad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.size * (2 - t.life));
+                grad.addColorStop(0, `rgba(200,149,108,${alpha})`);
+                grad.addColorStop(0.5, `rgba(200,120,80,${alpha * 0.5})`);
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.fillRect(t.x - t.size * 2, t.y - t.size * 2, t.size * 4, t.size * 4);
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+    }
+    }); // DOMContentLoaded
+    </script>
+</body>
+</html>
