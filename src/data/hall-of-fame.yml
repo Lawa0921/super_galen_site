@@ -1181,3 +1181,15 @@ members:
         label: "零成本創作者"
       - id: "pixel_musician"
         label: "像素樂迷/小說家"
+
+  - id: "sii_tarottt"
+    name: "Sii ✦ 星語塔羅"
+    avatar: "/assets/img/guild/sii_tarottt/avatar.webp"
+    page: "/guild/sii_tarottt.html"
+    tags:
+      - id: "tarot_reader"
+        label: "塔羅師"
+      - id: "star_chaser"
+        label: "追星族"
+      - id: "guitar_player"
+        label: "吉他手"

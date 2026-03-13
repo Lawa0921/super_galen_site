@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sii | Dreamy Tarot Portal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800;900&family=Sacramento&family=Comfortaa:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            --yellow: #FFD966;
+
+            --yellow-soft: #FFF8E7;
+            --yellow-glow: #FFECB3;
+            --blue: #7EC8E3;
+
+            --blue-soft: #E8F4FD;
+            --blue-deep: #5BA3C9;
+            --mint: #6DCDB1;
+
+            --mint-soft: #E0F5EC;
+            --mint-deep: #3EB489;
+            --cream: #FFFDF7;
+            --gold: #DAA520;
+            --gold-glow: rgba(218, 165, 32, 0.4);
+            --text-dark: #3D3427;
+            --text-body: #5A4E40;
+            --text-muted: #8A7F72;
+            --card-bg: rgba(255, 253, 247, 0.92);
+            --font-display: 'Playfair Display', 'Noto Serif TC', serif;
+            --font-script: 'Sacramento', cursive;
+            --font-body: 'Comfortaa', 'Noto Serif TC', sans-serif;
+            --font-cn: 'Noto Serif TC', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
+
+        body {
+            background: var(--cream);
+            color: var(--text-body);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            line-height: 1.8;
+            font-weight: 500;
+            cursor: none;
+        }
+
+        /* Custom cursor */
+        .cursor-star {
+            position: fixed;
+            width: 20px; height: 20px;
+            pointer-events: none;
+            z-index: 99999;
+            transition: width 0.3s, height 0.3s;
+        }
+        .cursor-circle {
+            position: fixed;
+            width: 40px; height: 40px;
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 99998;
+            transition: width 0.3s, height 0.3s, border-color 0.3s;
+        }
+        .cursor-circle.hovering {
+            width: 20px; height: 20px;
+            border-color: var(--mint);
+        }
+        .cursor-star.hovering svg {
+            transform: scale(1.8);
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed; inset: 0; z-index: 100000;
+            display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1.5rem;
+            background: linear-gradient(135deg, var(--yellow-soft) 0%, var(--blue-soft) 50%, var(--mint-soft) 100%);
+        }
+        .loading-spinner {
+            width: 60px; height: 60px;
+            border: 3px solid transparent;
+            border-top-color: var(--yellow);
+            border-right-color: var(--blue);
+            border-bottom-color: var(--mint);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            font-family: var(--font-script);
+            font-size: 2rem;
+            color: var(--mint-deep);
+        }
+
+        /* Three.js BG canvas */
+        #three-bg {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            will-change: contents;
+        }
+
+        /* Particle canvas */
+        #particle-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 2;
+            pointer-events: none;
+            will-change: contents;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 5;
+            overflow-x: clip;
+        }
+
+        /* Back Nav */
+        .back-nav {
+            position: fixed; top: 1.5rem; left: 1.5rem; z-index: 100;
+            display: flex; align-items: center; gap: 0.5rem;
+            text-decoration: none; color: var(--text-dark);
+            font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase;
+            font-family: var(--font-body); font-weight: 700;
+            transition: all 0.4s;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            padding: 0.6rem 1.2rem; border-radius: 30px;
+            background: rgba(255, 253, 247, 0.85);
+            border: 2px solid var(--yellow);
+            box-shadow: 0 4px 15px rgba(218, 165, 32, 0.15);
+            cursor: none;
+        }
+        .back-nav:hover {
+            color: var(--mint-deep); border-color: var(--mint);
+            transform: translateX(-3px);
+            box-shadow: 0 4px 20px rgba(109, 205, 177, 0.25);
+        }
+
+        /* ==================== HERO ==================== */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; padding: 2rem; overflow: hidden;
+        }
+
+        .hero-content {
+            position: relative; z-index: 2;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .hero-avatar-wrap {
+            position: relative; margin-bottom: 2rem;
+        }
+
+        .hero-avatar {
+            width: 180px; height: 180px; border-radius: 50%; object-fit: cover;
+            border: 5px solid var(--yellow);
+            box-shadow: 0 0 0 8px rgba(255, 217, 102, 0.25), 0 0 60px rgba(126, 200, 227, 0.3), 0 0 100px rgba(109, 205, 177, 0.15);
+            position: relative; z-index: 2;
+            animation: avatarFloat 4s ease-in-out infinite;
+        }
+        @keyframes avatarFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .avatar-wing {
+            position: absolute; top: 50%; transform: translateY(-50%); z-index: 1; opacity: 0.5;
+        }
+        .avatar-wing-left { right: 100%; margin-right: -20px; animation: wingL 4s ease-in-out infinite; }
+        .avatar-wing-right { left: 100%; margin-left: -20px; animation: wingR 4s ease-in-out infinite; }
+        @keyframes wingL {
+            0%, 100% { opacity: 0.4; transform: translateY(-50%) rotate(-5deg); }
+            50% { opacity: 0.7; transform: translateY(-55%) rotate(5deg); }
+        }
+        @keyframes wingR {
+            0%, 100% { opacity: 0.4; transform: translateY(-50%) scaleX(-1) rotate(-5deg); }
+            50% { opacity: 0.7; transform: translateY(-55%) scaleX(-1) rotate(5deg); }
+        }
+
+        .orbit-container {
+            position: absolute; top: 50%; left: 50%;
+            width: 260px; height: 260px;
+            transform: translate(-50%, -50%);
+        }
+        .orbit-ring {
+            position: absolute; inset: 0;
+            border: 2px dashed rgba(126, 200, 227, 0.4);
+            border-radius: 50%;
+            animation: orbitSpin 15s linear infinite;
+        }
+        .orbit-item {
+            position: absolute; animation: orbitSpin 12s linear infinite;
+            top: 50%; left: 50%; width: 260px; height: 260px;
+            transform-origin: center;
+        }
+        .orbit-item:nth-child(2) { animation-delay: -4s; }
+        .orbit-item:nth-child(3) { animation-delay: -8s; }
+        .orbit-icon {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+        }
+        @keyframes orbitSpin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(4rem, 10vw, 8rem);
+            color: var(--text-dark);
+            text-align: center; margin-bottom: 0.3rem;
+            text-shadow: 0 2px 20px rgba(218, 165, 32, 0.2);
+            overflow: hidden;
+        }
+        .hero-title .char {
+            display: inline-block; opacity: 0;
+            transform: scale(0) rotate(180deg);
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-script);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: var(--mint-deep);
+            text-align: center; margin-bottom: 0.5rem;
+            font-weight: 400;
+            overflow: hidden;
+        }
+        .hero-subtitle .typechar { opacity: 0; }
+
+        .hero-tagline {
+            font-family: var(--font-body);
+            font-size: 1rem; color: var(--text-muted);
+            letter-spacing: 0.3em; text-align: center;
+            margin-bottom: 2.5rem; opacity: 0;
+        }
+
+        /* Hero Card Spread */
+        .hero-card-spread {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 2rem auto;
+            perspective: 1200px;
+        }
+
+        .floating-card {
+            position: relative;
+            width: 150px; height: 220px;
+            cursor: pointer;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.6s;
+            animation: card-float 4s ease-in-out infinite;
+            animation-delay: calc(var(--i) * 0.6s);
+            border-radius: 14px;
+        }
+
+        .floating-card.center-card {
+            width: 170px; height: 250px;
+        }
+
+        @keyframes card-float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(0.5deg); }
+        }
+
+        .floating-card:hover {
+            transform: translateY(-20px) scale(1.08) !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            animation-play-state: paused;
+        }
+
+        .floating-card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%; height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card-face {
+            position: absolute; inset: 0;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, var(--yellow-glow) 0%, var(--blue-soft) 50%, var(--mint-soft) 100%);
+            border: 2px solid rgba(218, 165, 32, 0.3);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 0 30px rgba(255,255,255,0.5);
+        }
+
+        .card-pattern {
+            position: absolute; inset: 8px;
+            border: 1px dashed rgba(218, 165, 32, 0.25);
+            border-radius: 8px;
+        }
+
+        .card-symbol {
+            font-size: 2rem;
+            color: var(--gold);
+            text-shadow: 0 0 20px var(--gold-glow);
+            z-index: 1;
+        }
+
+        .card-label {
+            font-family: var(--font-body);
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            text-transform: uppercase;
+            z-index: 1;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: var(--cream);
+        }
+
+        .card-back-design {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: linear-gradient(135deg, var(--yellow-soft), var(--blue-soft), var(--mint-soft));
+            background-size: 200% 200%;
+            animation: card-bg-shift 6s ease-in-out infinite;
+        }
+        .card-back-icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.5rem;
+            filter: drop-shadow(0 2px 8px rgba(218,165,32,0.3));
+        }
+        .card-back-text {
+            font-family: var(--font-script);
+            font-size: 0.9rem;
+            color: var(--gold);
+            letter-spacing: 0.1em;
+        }
+        @keyframes card-bg-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .fortune-reveal {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--yellow-soft), var(--mint-soft));
+            text-align: center;
+        }
+
+        .fortune-reveal .fortune-text {
+            font-family: var(--font-cn);
+            font-size: 0.85rem;
+            color: var(--text-dark);
+            line-height: 1.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .fortune-author {
+            font-family: var(--font-script);
+            font-size: 1rem;
+            color: var(--gold);
+        }
+
+        .hero-hint {
+            text-align: center; font-family: var(--font-script);
+            font-size: 1.3rem; color: var(--blue-deep);
+            margin-top: 1rem; opacity: 0;
+            animation: pulsePrompt 2.5s ease-in-out infinite;
+        }
+        @keyframes pulsePrompt {
+            0%, 100% { opacity: 0.5; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-3px); }
+        }
+
+        .scroll-hint {
+            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+            opacity: 0; z-index: 2;
+        }
+        .scroll-hint span { font-family: var(--font-script); font-size: 1.2rem; color: var(--text-muted); }
+        .scroll-arrow {
+            width: 20px; height: 20px;
+            border-right: 2px solid var(--blue); border-bottom: 2px solid var(--blue);
+            transform: rotate(45deg); animation: bounceArrow 2s ease-in-out infinite;
+        }
+        @keyframes bounceArrow {
+            0%, 100% { transform: rotate(45deg) translateY(0); }
+            50% { transform: rotate(45deg) translateY(6px); }
+        }
+
+        /* ==================== SECTIONS SHARED ==================== */
+        .section-inner { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+        .section-header { text-align: center; margin-bottom: 3rem; }
+        .section-label {
+            font-family: var(--font-script); font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+            color: var(--mint-deep); margin-bottom: 0.2rem;
+        }
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            color: var(--text-dark); margin-bottom: 0.8rem; font-weight: 800;
+        }
+        .section-divider-wrap {
+            display: flex; align-items: center; justify-content: center; gap: 0.8rem;
+        }
+        .section-divider-line { width: 50px; height: 2px; border-radius: 2px; }
+        .section-divider-line.yellow { background: var(--yellow); }
+        .section-divider-line.blue { background: var(--blue); }
+        .section-divider-line.mint { background: var(--mint); }
+        .divider-bow { width: 28px; height: 20px; flex-shrink: 0; }
+
+        /* Clip-path section reveals (GSAP-driven) */
+        .clip-section {
+            clip-path: circle(0% at 50% 50%);
+        }
+
+        /* ==================== ABOUT ==================== */
+        .about-section {
+            position: relative; padding: 6rem 0; overflow-x: clip;
+            background: rgba(255, 248, 231, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .about-grid {
+            display: grid; grid-template-columns: 1fr 1.2fr; gap: 4rem; align-items: center;
+        }
+        .about-image-wrap { position: relative; }
+        .about-image {
+            width: 100%; border-radius: 24px;
+            box-shadow: 0 25px 70px rgba(218, 165, 32, 0.18), 0 8px 25px rgba(0, 0, 0, 0.08);
+            border: 4px solid var(--yellow);
+        }
+        .about-image-deco { position: absolute; pointer-events: none; }
+        .about-image-deco-tl { top: -15px; left: -15px; }
+        .about-image-deco-br { bottom: -15px; right: -15px; }
+
+        .about-content p {
+            font-family: var(--font-cn); font-size: 1.05rem;
+            line-height: 2.1; color: var(--text-body);
+            margin-bottom: 1.5rem; font-weight: 400;
+        }
+        .identity-tags { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.5rem; }
+        .identity-tag {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.5rem 1.1rem; border-radius: 30px;
+            font-size: 0.85rem; font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0; transform: translateY(20px); cursor: none;
+        }
+        .identity-tag:hover { transform: translateY(-3px) scale(1.08); }
+        .tag-yellow {
+            background: linear-gradient(135deg, var(--yellow-soft), var(--yellow-glow));
+            color: #8B6914; border: 2px solid var(--yellow);
+            box-shadow: 0 3px 12px rgba(255, 217, 102, 0.3);
+        }
+        .tag-blue {
+            background: linear-gradient(135deg, var(--blue-soft), #E8F4FF);
+            color: #2E7BA8; border: 2px solid var(--blue);
+            box-shadow: 0 3px 12px rgba(126, 200, 227, 0.3);
+        }
+        .tag-mint {
+            background: linear-gradient(135deg, var(--mint-soft), #D4F5E9);
+            color: #2D7A5A; border: 2px solid var(--mint);
+            box-shadow: 0 3px 12px rgba(109, 205, 177, 0.3);
+        }
+        .tag-gold {
+            background: linear-gradient(135deg, #FFF8DC, var(--yellow-glow));
+            color: #8B6914; border: 2px solid var(--gold);
+            box-shadow: 0 3px 12px var(--gold-glow);
+        }
+
+        /* ==================== STYLE CARDS (Magnetic Tilt) ==================== */
+        .style-section {
+            position: relative; padding: 6rem 0; overflow-x: clip;
+            background: rgba(232, 244, 253, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .style-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; perspective: 1000px; }
+        .style-card {
+            border-radius: 24px; padding: 2.5rem 2rem; text-align: center;
+            position: relative; overflow: hidden;
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.5s;
+            opacity: 0; transform: translateY(40px);
+            transform-style: preserve-3d;
+            cursor: none;
+        }
+        .style-card-light {
+            position: absolute; width: 200px; height: 200px;
+            border-radius: 50%; pointer-events: none;
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+            transform: translate(-50%, -50%); opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .style-card:hover .style-card-light { opacity: 1; }
+        .style-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+        }
+        .style-card-yellow {
+            background: linear-gradient(180deg, #FFF8DC, var(--card-bg));
+            border: 2px solid var(--yellow); box-shadow: 0 8px 30px rgba(255, 217, 102, 0.15);
+        }
+        .style-card-yellow::before { background: linear-gradient(90deg, var(--yellow), var(--gold)); }
+        .style-card-blue {
+            background: linear-gradient(180deg, #E8F4FF, var(--card-bg));
+            border: 2px solid var(--blue); box-shadow: 0 8px 30px rgba(126, 200, 227, 0.15);
+        }
+        .style-card-blue::before { background: linear-gradient(90deg, var(--blue), var(--blue-deep)); }
+        .style-card-mint {
+            background: linear-gradient(180deg, #D4F5E9, var(--card-bg));
+            border: 2px solid var(--mint); box-shadow: 0 8px 30px rgba(109, 205, 177, 0.15);
+        }
+        .style-card-mint::before { background: linear-gradient(90deg, var(--mint), var(--mint-deep)); }
+        .style-card-yellow:hover { box-shadow: 0 25px 60px rgba(255, 217, 102, 0.35); }
+        .style-card-blue:hover { box-shadow: 0 25px 60px rgba(126, 200, 227, 0.35); }
+        .style-card-mint:hover { box-shadow: 0 25px 60px rgba(109, 205, 177, 0.35); }
+        .style-card-icon {
+            width: 70px; height: 70px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.2rem; font-size: 1.8rem;
+        }
+        .style-card-yellow .style-card-icon {
+            background: linear-gradient(135deg, var(--yellow), var(--gold));
+            color: white; box-shadow: 0 4px 15px rgba(218, 165, 32, 0.4);
+        }
+        .style-card-blue .style-card-icon {
+            background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+            color: white; box-shadow: 0 4px 15px rgba(91, 163, 201, 0.4);
+        }
+        .style-card-mint .style-card-icon {
+            background: linear-gradient(135deg, var(--mint), var(--mint-deep));
+            color: white; box-shadow: 0 4px 15px rgba(62, 180, 137, 0.4);
+        }
+        .style-card h3 {
+            font-family: var(--font-cn); font-size: 1.3rem;
+            font-weight: 700; margin-bottom: 0.8rem; color: var(--text-dark);
+        }
+        .style-card p {
+            font-family: var(--font-cn); font-size: 0.92rem;
+            line-height: 1.9; color: var(--text-body); font-weight: 400;
+        }
+        .style-layout {
+            display: flex; flex-direction: column; align-items: center; gap: 3rem;
+        }
+        .style-showcase-gallery {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+            max-width: 600px; margin: 0 auto;
+        }
+        .style-showcase {
+            text-align: center;
+        }
+        .style-showcase-img {
+            max-width: 280px; width: 100%; border-radius: 16px;
+            box-shadow: 0 16px 50px rgba(0,0,0,0.12);
+            border: 3px solid rgba(255,255,255,0.6);
+            transition: transform 0.5s, box-shadow 0.5s;
+        }
+        .style-showcase-img:hover {
+            transform: rotate(-2deg) scale(1.03);
+            box-shadow: 0 20px 60px rgba(126,200,227,0.25);
+        }
+        .style-showcase-caption {
+            font-family: var(--font-cn); font-size: 0.85rem;
+            color: var(--text-muted); margin-top: 1rem; font-style: italic;
+        }
+
+
+        /* ==================== TESTIMONIALS ==================== */
+        .testimonials-section {
+            padding: 5rem 0; overflow: hidden;
+            background: rgba(255, 248, 231, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .testimonial-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem; max-width: 800px; margin: 0 auto;
+        }
+        .testimonial-card {
+            background: rgba(255,255,255,0.7);
+            border: 2px solid rgba(255,217,102,0.2);
+            border-radius: 16px; padding: 1.8rem;
+            position: relative; transition: transform 0.4s, box-shadow 0.4s;
+        }
+        .testimonial-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(255,217,102,0.15);
+        }
+        .testimonial-card:nth-child(2) { border-color: rgba(126,200,227,0.2); }
+        .testimonial-card:nth-child(2):hover { box-shadow: 0 12px 35px rgba(126,200,227,0.15); }
+        .testimonial-card:nth-child(3) { border-color: rgba(109,205,177,0.2); }
+        .testimonial-card:nth-child(3):hover { box-shadow: 0 12px 35px rgba(109,205,177,0.15); }
+        .testimonial-card:nth-child(4) { border-color: rgba(218,165,32,0.2); }
+        .testimonial-card:nth-child(4):hover { box-shadow: 0 12px 35px rgba(218,165,32,0.15); }
+        .testimonial-quote {
+            font-family: var(--font-display); font-size: 2.5rem;
+            color: var(--yellow); line-height: 1; margin-bottom: 0.5rem;
+        }
+        .testimonial-card p {
+            font-family: var(--font-cn); font-size: 0.9rem;
+            line-height: 1.9; color: var(--text-body); margin-bottom: 1rem;
+        }
+        .testimonial-stars {
+            color: var(--yellow); font-size: 0.75rem; letter-spacing: 0.1em;
+        }
+
+        /* ==================== SERVICES HERO IMG ==================== */
+        .services-hero-img {
+            max-width: 320px; margin: 0 auto 3rem;
+            border-radius: 16px; overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            border: 3px solid rgba(255,255,255,0.6);
+        }
+        .services-hero-img img {
+            width: 100%; display: block;
+        }
+        .pricing-card-gold {
+            background: linear-gradient(135deg, rgba(255,248,231,0.95), rgba(255,236,179,0.9));
+            border-color: var(--gold);
+        }
+        .pricing-card-gold .pricing-badge {
+            background: var(--gold); color: white;
+        }
+        .pricing-card-gold .pricing-price {
+            color: var(--gold);
+        }
+        .pricing-card-gold .pricing-features li::before {
+            content: ''; display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; background: var(--gold); flex-shrink: 0;
+        }
+
+        /* ==================== FORTUNE COOKIE ==================== */
+        .fortune-section {
+            position: relative; padding: 5rem 0; overflow: hidden;
+            background: rgba(255, 248, 231, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .fortune-section-inner {
+            max-width: 600px; margin: 0 auto; text-align: center; padding: 0 2rem;
+        }
+        .fortune-cookie-wrap {
+            position: relative; display: inline-block;
+            cursor: none; margin: 2rem 0;
+        }
+        .fortune-cookie-svg {
+            width: 80px; height: 80px; display: block; margin: 0 auto;
+            filter: drop-shadow(0 8px 20px rgba(218, 165, 32, 0.3));
+            transition: transform 0.3s ease;
+        }
+        .fortune-cookie-wrap:hover .fortune-cookie-svg {
+            transform: scale(1.1);
+        }
+        .fortune-cookie-wrap.cracked .fortune-cookie-svg {
+            animation: crackShake 0.5s ease;
+        }
+        @keyframes crackShake {
+            0%, 100% { transform: rotate(0) scale(1); }
+            20% { transform: rotate(-12deg) scale(1.1); }
+            40% { transform: rotate(10deg) scale(1.05); }
+            60% { transform: rotate(-6deg) scale(1.02); }
+            80% { transform: rotate(4deg); }
+        }
+        .fortune-click-hint {
+            font-family: var(--font-script); font-size: 1.3rem;
+            color: var(--gold);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .fortune-click-hint.hidden {
+            opacity: 0; transform: translateY(-10px); pointer-events: none;
+        }
+        .fortune-slip {
+            background: linear-gradient(135deg, var(--card-bg), var(--yellow-glow));
+            border: 2px solid var(--yellow); padding: 1.8rem 2rem; border-radius: 16px;
+            margin-top: 1.5rem; font-family: var(--font-cn); font-size: 1.05rem;
+            line-height: 1.9; color: var(--text-dark);
+            box-shadow: 0 12px 35px rgba(218, 165, 32, 0.15);
+            opacity: 0; transform: translateY(20px) scale(0.95);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .fortune-slip.visible { opacity: 1; transform: translateY(0) scale(1); }
+        .fortune-slip-author {
+            display: block; margin-top: 0.8rem;
+            font-family: var(--font-script); font-size: 1.5rem;
+            color: var(--mint-deep);
+        }
+
+        /* ==================== QUOTE (Full Cinematic) ==================== */
+        .quote-section {
+            position: relative; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; overflow: hidden; padding: 4rem 2rem;
+            background: linear-gradient(135deg, var(--yellow) 0%, var(--blue) 50%, var(--mint) 100%);
+        }
+        .quote-section::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .quote-inner { position: relative; z-index: 2; max-width: 800px; }
+        .quote-big-mark {
+            position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
+            font-size: 20rem; font-family: var(--font-display);
+            color: rgba(255, 255, 255, 0.1); line-height: 1;
+            pointer-events: none; user-select: none;
+        }
+        .quote-text {
+            font-family: var(--font-cn);
+            font-size: clamp(1.6rem, 4vw, 2.8rem);
+            font-weight: 700; line-height: 2.2;
+            position: relative; z-index: 1;
+        }
+        .quote-text .qchar {
+            display: inline-block; opacity: 0;
+            background: linear-gradient(135deg, var(--yellow-soft), #fff, var(--mint-soft));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+        }
+        .quote-author {
+            font-family: var(--font-script); font-size: 2rem;
+            color: rgba(255, 255, 255, 0.9);
+            position: relative; z-index: 1; opacity: 0;
+            margin-top: 1.5rem;
+        }
+
+        /* ==================== SERVICES / PRICING ==================== */
+        .services-section {
+            position: relative; padding: 6rem 0;
+            background: rgba(255, 248, 231, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+        .pricing-card {
+            background: var(--card-bg); border-radius: 28px;
+            padding: 2.5rem 2rem; text-align: center;
+            position: relative; overflow: hidden;
+            opacity: 0; transform: translateY(30px);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: none;
+        }
+        .pricing-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+        }
+        .pricing-card-yellow { border: 2px solid var(--yellow); }
+        .pricing-card-yellow::before { background: linear-gradient(90deg, var(--yellow), var(--gold)); }
+        .pricing-card-blue { border: 2px solid var(--blue); }
+        .pricing-card-blue::before { background: linear-gradient(90deg, var(--blue), var(--blue-deep)); }
+        .pricing-card-mint { border: 2px solid var(--mint); }
+        .pricing-card-mint::before { background: linear-gradient(90deg, var(--mint), var(--mint-deep)); }
+        .pricing-card:hover { transform: translateY(-8px); }
+        .pricing-card-yellow:hover { box-shadow: 0 20px 50px rgba(255, 217, 102, 0.3); }
+        .pricing-card-blue:hover { box-shadow: 0 20px 50px rgba(126, 200, 227, 0.3); }
+        .pricing-card-mint:hover { box-shadow: 0 20px 50px rgba(109, 205, 177, 0.3); }
+        .pricing-badge {
+            display: inline-block; padding: 0.35rem 1rem; border-radius: 20px;
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1rem;
+        }
+        .pricing-card-yellow .pricing-badge { background: var(--yellow); color: #6B5000; }
+        .pricing-card-blue .pricing-badge { background: var(--blue); color: white; }
+        .pricing-card-mint .pricing-badge { background: var(--mint); color: white; }
+        .pricing-name {
+            font-family: var(--font-cn); font-size: 1.5rem;
+            font-weight: 700; color: var(--text-dark); margin-bottom: 0.5rem;
+        }
+        .pricing-price { font-family: var(--font-display); font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .pricing-card-yellow .pricing-price { color: var(--gold); }
+        .pricing-card-blue .pricing-price { color: var(--blue-deep); }
+        .pricing-card-mint .pricing-price { color: var(--mint-deep); }
+        .pricing-desc {
+            font-family: var(--font-cn); font-size: 0.88rem;
+            color: var(--text-muted); line-height: 1.8; margin-bottom: 1.5rem;
+        }
+        .pricing-features { list-style: none; text-align: left; margin-bottom: 1.5rem; }
+        .pricing-features li {
+            font-size: 0.88rem; color: var(--text-dark);
+            padding: 0.4rem 0; display: flex; align-items: center; gap: 0.5rem; font-weight: 500;
+        }
+        .pricing-card-yellow .pricing-features li::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); flex-shrink: 0; }
+        .pricing-card-blue .pricing-features li::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+        .pricing-card-mint .pricing-features li::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--mint); flex-shrink: 0; }
+        .pricing-note {
+            font-family: var(--font-cn); font-size: 0.88rem;
+            color: var(--text-muted); margin-top: 2.5rem; font-style: italic;
+        }
+
+        /* ==================== FOOTER ==================== */
+        .site-footer {
+            text-align: center; padding: 4rem 2rem 3rem;
+            background: rgba(232, 244, 253, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            position: relative;
+        }
+        .footer-avatar {
+            width: 60px; height: 60px; border-radius: 50%;
+            border: 3px solid var(--yellow); margin-bottom: 1.2rem;
+            box-shadow: 0 4px 15px rgba(255, 217, 102, 0.3);
+        }
+        .footer-name { font-family: var(--font-display); font-size: 1.3rem; color: var(--text-dark); margin-bottom: 0.3rem; }
+        .footer-handle { font-family: var(--font-script); font-size: 1.3rem; color: var(--mint-deep); margin-bottom: 1.5rem; }
+        .footer-social { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
+        .footer-social a {
+            display: flex; align-items: center; justify-content: center;
+            width: 52px; height: 52px; border-radius: 50%;
+            text-decoration: none; font-size: 1.3rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: none;
+        }
+        .footer-social .threads-btn {
+            background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+            color: white; box-shadow: 0 4px 15px rgba(126, 200, 227, 0.4);
+        }
+        .footer-social .ig-btn {
+            background: linear-gradient(135deg, var(--mint), var(--mint-deep));
+            color: white; box-shadow: 0 4px 15px rgba(109, 205, 177, 0.4);
+        }
+        .footer-social a:hover { transform: translateY(-4px) scale(1.1); }
+        .footer-credit { font-size: 0.78rem; color: var(--text-muted); letter-spacing: 0.12em; }
+        .footer-credit a { color: var(--mint-deep); text-decoration: none; font-weight: 600; cursor: none; }
+
+        /* ==================== FLOATING DECOR LAYER ==================== */
+        .floating-decor-layer {
+            position: fixed; inset: 0;
+            pointer-events: none;
+            z-index: 4;
+            overflow: hidden;
+        }
+        .floating-decor-layer svg {
+            position: absolute;
+            opacity: 0.15;
+        }
+        .float-1 { top: 15%; left: 8%; animation: float-drift-1 8s ease-in-out infinite; }
+        .float-2 { top: 35%; right: 12%; animation: float-drift-2 10s ease-in-out infinite; }
+        .float-3 { top: 60%; left: 15%; animation: float-drift-3 12s ease-in-out infinite; }
+        .float-4 { top: 80%; right: 8%; animation: float-drift-1 9s ease-in-out infinite; animation-delay: -3s; }
+        .float-5 { top: 45%; left: 85%; animation: float-drift-2 11s ease-in-out infinite; animation-delay: -5s; }
+        .float-6 { top: 20%; right: 25%; animation: float-drift-3 7s ease-in-out infinite; animation-delay: -2s; }
+
+        @keyframes float-drift-1 {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(8deg); }
+            66% { transform: translateY(10px) rotate(-5deg); }
+        }
+        @keyframes float-drift-2 {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            33% { transform: translateY(15px) rotate(-10deg); }
+            66% { transform: translateY(-25px) rotate(6deg); }
+        }
+        @keyframes float-drift-3 {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            33% { transform: translateY(-15px) rotate(12deg); }
+            66% { transform: translateY(20px) rotate(-8deg); }
+        }
+
+        /* ==================== STYLE CARD GLOW ==================== */
+        .card-glow {
+            position: absolute;
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            transform: translate(-50%, -50%);
+        }
+        .style-card:hover .card-glow {
+            opacity: 1;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 1024px) {
+            .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            body { cursor: auto; }
+            .cursor-star, .cursor-circle { display: none; }
+            * { cursor: auto; }
+            .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+            .about-image-wrap { max-width: 300px; margin: 0 auto; }
+            .about-image { max-width: 100%; margin: 0 auto; }
+            .style-cards { grid-template-columns: 1fr; gap: 1.5rem; }
+            .pricing-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+            .hero-avatar { width: 140px; height: 140px; }
+            .orbit-container { width: 200px; height: 200px; }
+            .orbit-item { width: 200px; height: 200px; }
+            .avatar-wing { display: none; }
+            .hero-card-spread { gap: 1rem; }
+            .floating-card { width: 110px; height: 165px; }
+            .floating-card.center-card { width: 130px; height: 195px; }
+            .section-inner { padding: 0 1.5rem; }
+            .about-section, .style-section, .fortune-section, .services-section, .testimonials-section { padding: 4rem 0; }
+            .quote-section { padding: 5rem 1.5rem; min-height: 60vh; }
+            .testimonial-grid { grid-template-columns: 1fr; }
+            .style-showcase-gallery { grid-template-columns: 1fr; max-width: 280px; }
+            .style-showcase-img { max-width: 220px; }
+        }
+
+        @media (max-width: 480px) {
+            .hero-card-spread { gap: 0.75rem; }
+            .floating-card { width: 90px; height: 135px; }
+            .floating-card.center-card { width: 110px; height: 165px; }
+            .card-symbol { font-size: 1.5rem; }
+            .card-label { font-size: 0.45rem; }
+            .hero-title { font-size: 3.5rem; }
+        }
+
+        /* GSAP utility classes */
+        .gs-reveal { opacity: 0; transform: translateY(40px); }
+        .gs-reveal-left { opacity: 0; transform: translateX(-60px); }
+        .gs-reveal-right { opacity: 0; transform: translateX(60px); }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Reading the stars...</div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-star" id="cursor-star">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="var(--gold)">
+            <path d="M10 0L12 7L20 10L12 13L10 20L8 13L0 10L8 7Z"/>
+        </svg>
+    </div>
+    <div class="cursor-circle" id="cursor-circle"></div>
+
+    <!-- Three.js BG -->
+    <canvas id="three-bg"></canvas>
+
+    <!-- Particle Canvas -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Floating Decorative Layer -->
+    <div class="floating-decor-layer">
+        <svg class="float-1" viewBox="0 0 36 24" width="40" fill="none">
+            <path d="M18 12C18 12 8 4 3 6C-2 8 2 14 6 14C10 14 18 12 18 12Z" fill="var(--yellow)" opacity="0.8"/>
+            <path d="M18 12C18 12 28 4 33 6C38 8 34 14 30 14C26 14 18 12 18 12Z" fill="var(--yellow)" opacity="0.8"/>
+            <circle cx="18" cy="12" r="2" fill="var(--gold)"/>
+        </svg>
+        <svg class="float-2" viewBox="0 0 20 20" width="24" fill="var(--blue)">
+            <path d="M10 0L12 7L20 10L12 13L10 20L8 13L0 10L8 7Z"/>
+        </svg>
+        <svg class="float-3" viewBox="0 0 24 24" width="20" fill="var(--mint)">
+            <ellipse cx="7" cy="5" rx="2.5" ry="3"/>
+            <ellipse cx="17" cy="5" rx="2.5" ry="3"/>
+            <ellipse cx="4" cy="11" rx="2" ry="2.5"/>
+            <ellipse cx="20" cy="11" rx="2" ry="2.5"/>
+            <path d="M8 15C8 15 10 21 12 21C14 21 16 15 16 15C16 15 14 12 12 12C10 12 8 15 8 15Z"/>
+        </svg>
+        <svg class="float-4" viewBox="0 0 20 20" width="18" fill="var(--gold)">
+            <path d="M10 0L12 7L20 10L12 13L10 20L8 13L0 10L8 7Z"/>
+        </svg>
+        <svg class="float-5" viewBox="0 0 36 24" width="30" fill="none">
+            <path d="M18 12C18 12 8 4 3 6C-2 8 2 14 6 14C10 14 18 12 18 12Z" fill="var(--mint)" opacity="0.7"/>
+            <path d="M18 12C18 12 28 4 33 6C38 8 34 14 30 14C26 14 18 12 18 12Z" fill="var(--mint)" opacity="0.7"/>
+            <circle cx="18" cy="12" r="2" fill="var(--mint-deep)"/>
+        </svg>
+        <svg class="float-6" viewBox="0 0 24 24" width="16" fill="var(--yellow)">
+            <ellipse cx="7" cy="5" rx="2.5" ry="3"/>
+            <ellipse cx="17" cy="5" rx="2.5" ry="3"/>
+            <ellipse cx="4" cy="11" rx="2" ry="2.5"/>
+            <ellipse cx="20" cy="11" rx="2" ry="2.5"/>
+            <path d="M8 15C8 15 10 21 12 21C14 21 16 15 16 15C16 15 14 12 12 12C10 12 8 15 8 15Z"/>
+        </svg>
+    </div>
+
+    <!-- Back Nav -->
+    <a href="/guild/" class="back-nav">
+        <i class="fas fa-arrow-left"></i>
+        <span>ARCHIVE</span>
+    </a>
+
+    <!-- ============ CONTENT ============ -->
+    <div class="content-layer">
+
+        <!-- ====== HERO ====== -->
+        <section class="hero" id="hero">
+            <div class="hero-content">
+                <div class="hero-avatar-wrap">
+                    <svg class="avatar-wing avatar-wing-left" width="70" height="90" viewBox="0 0 70 90" fill="none">
+                        <path d="M65 45C55 20 30 5 5 10C15 18 22 28 25 40C18 25 8 18 2 15C12 28 18 38 20 50C10 35 5 30 1 28C10 40 15 52 18 62C8 52 4 48 1 47C8 55 14 63 20 70C28 80 45 82 60 75C68 65 70 55 65 45Z" fill="var(--blue)" opacity="0.3"/>
+                        <path d="M60 45C52 25 32 12 10 16C18 22 24 30 26 40C20 28 12 22 8 20C16 30 20 40 22 48C14 38 10 34 7 32C14 42 18 50 20 58C12 50 9 47 6 46C12 52 16 58 22 65C28 73 42 76 54 70C60 62 62 54 60 45Z" fill="var(--yellow)" opacity="0.2"/>
+                    </svg>
+                    <svg class="avatar-wing avatar-wing-right" width="70" height="90" viewBox="0 0 70 90" fill="none">
+                        <path d="M65 45C55 20 30 5 5 10C15 18 22 28 25 40C18 25 8 18 2 15C12 28 18 38 20 50C10 35 5 30 1 28C10 40 15 52 18 62C8 52 4 48 1 47C8 55 14 63 20 70C28 80 45 82 60 75C68 65 70 55 65 45Z" fill="var(--blue)" opacity="0.3"/>
+                        <path d="M60 45C52 25 32 12 10 16C18 22 24 30 26 40C20 28 12 22 8 20C16 30 20 40 22 48C14 38 10 34 7 32C14 42 18 50 20 58C12 50 9 47 6 46C12 52 16 58 22 65C28 73 42 76 54 70C60 62 62 54 60 45Z" fill="var(--yellow)" opacity="0.2"/>
+                    </svg>
+
+                    <img src="/assets/img/guild/sii_tarottt/avatar.webp" alt="Sii avatar" class="hero-avatar">
+                    <div class="orbit-container">
+                        <div class="orbit-ring"></div>
+                        <div class="orbit-item" style="animation-delay: 0s;">
+                            <div class="orbit-icon">
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="var(--yellow)"><path d="M10 0L12 7L20 10L12 13L10 20L8 13L0 10L8 7Z"/></svg>
+                            </div>
+                        </div>
+                        <div class="orbit-item" style="animation-delay: -5s;">
+                            <div class="orbit-icon">
+                                <svg width="14" height="10" viewBox="0 0 36 24" fill="none"><path d="M18 12C18 12 8 4 3 6C-2 8 2 14 6 14C10 14 18 12 18 12Z" fill="var(--blue)"/><path d="M18 12C18 12 28 4 33 6C38 8 34 14 30 14C26 14 18 12 18 12Z" fill="var(--blue)"/><circle cx="18" cy="12" r="2" fill="var(--blue-deep)"/></svg>
+                            </div>
+                        </div>
+                        <div class="orbit-item" style="animation-delay: -10s;">
+                            <div class="orbit-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--mint)"><ellipse cx="7" cy="5" rx="2.5" ry="3"/><ellipse cx="17" cy="5" rx="2.5" ry="3"/><ellipse cx="4" cy="11" rx="2" ry="2.5"/><ellipse cx="20" cy="11" rx="2" ry="2.5"/><path d="M8 15C8 15 10 21 12 21C14 21 16 15 16 15C16 15 14 12 12 12C10 12 8 15 8 15Z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h1 class="hero-title" id="hero-title">Sii</h1>
+                <p class="hero-subtitle" id="hero-subtitle">Warm & Bold Tarot</p>
+                <p class="hero-tagline">@_sii_tarottt</p>
+
+                <div class="hero-card-spread">
+                    <div class="floating-card" style="--i: 0;">
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <div class="card-pattern"></div>
+                                <span class="card-symbol">&#9789;</span>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="card-back-design">
+                                    <span class="card-back-icon">&#9789;</span>
+                                    <span class="card-back-text">Moon</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="floating-card center-card" style="--i: 1;">
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <div class="card-pattern"></div>
+                                <span class="card-symbol">&#9728;</span>
+                                <span class="card-label">DRAW YOUR CARD</span>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="fortune-reveal">
+                                    <p class="fortune-text"></p>
+                                    <span class="fortune-author">&#8212; Sii &#10022;</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="floating-card" style="--i: 2;">
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <div class="card-pattern"></div>
+                                <span class="card-symbol">&#9889;</span>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="card-back-design">
+                                    <span class="card-back-icon">&#9733;</span>
+                                    <span class="card-back-text">Star</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="hero-hint">~ hover to peek, click to flip ~</p>
+            </div>
+
+            <div class="scroll-hint" id="scroll-hint">
+                <span>scroll down</span>
+                <div class="scroll-arrow"></div>
+            </div>
+        </section>
+
+        <!-- ====== ABOUT ====== -->
+        <section class="about-section clip-section" id="about">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label gs-reveal">about me</div>
+                    <h2 class="section-title gs-reveal">About Sii</h2>
+                    <div class="section-divider-wrap gs-reveal">
+                        <div class="section-divider-line yellow"></div>
+                        <svg class="divider-bow" viewBox="0 0 36 24" fill="none">
+                            <path d="M18 12C18 12 8 4 3 6C-2 8 2 14 6 14C10 14 18 12 18 12Z" fill="var(--yellow)" opacity="0.8"/>
+                            <path d="M18 12C18 12 28 4 33 6C38 8 34 14 30 14C26 14 18 12 18 12Z" fill="var(--yellow)" opacity="0.8"/>
+                            <circle cx="18" cy="12" r="3" fill="var(--gold)"/>
+                            <path d="M16 14C16 14 14 22 18 22C22 22 20 14 20 14" stroke="var(--yellow)" stroke-width="1.5" fill="none" opacity="0.6"/>
+                        </svg>
+                        <div class="section-divider-line yellow"></div>
+                    </div>
+                </div>
+
+                <div class="about-grid">
+                    <div class="about-image-wrap gs-reveal-left">
+                        <svg class="about-image-deco about-image-deco-tl" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                            <path d="M5 35L5 10C5 6 8 3 12 3L37 3" stroke="var(--yellow)" stroke-width="3" stroke-linecap="round" fill="none"/>
+                            <circle cx="5" cy="35" r="4" fill="var(--gold)" opacity="0.6"/>
+                        </svg>
+                        <img src="/assets/img/guild/sii_tarottt/the_sun.webp" alt="The Sun tarot card" class="about-image" loading="lazy">
+                        <svg class="about-image-deco about-image-deco-br" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                            <path d="M35 5L35 30C35 34 32 37 28 37L3 37" stroke="var(--yellow)" stroke-width="3" stroke-linecap="round" fill="none"/>
+                            <circle cx="35" cy="5" r="4" fill="var(--gold)" opacity="0.6"/>
+                        </svg>
+                    </div>
+                    <div class="about-content gs-reveal-right">
+                        <p>嗨，我是 Sii！來自高雄，目前在台北念大學。我學習塔羅的初衷，是想替自己解惑——在人生卡關、情緒混亂的時候，塔羅給了我一個停下來整理內心的出口。後來我發現，如果這份理解與陪伴能延伸給別人，那就更有意義了。</p>
+                        <p>在塔羅之外，我是 200% 的狗派人、追星女孩（K-pop / J-pop 都追），喜歡甜點、唱歌和彈吉他。那些看似日常的小熱愛，其實都跟我很像——容易被情緒打動、對人很有感覺，也習慣用自己的方式陪伴與傾聽。如果你想要的不是冷冰冰的答案，而是一場被理解、被好好陪著整理心情的塔羅體驗，歡迎來找我 😚</p>
+                        <div class="identity-tags">
+                            <span class="identity-tag tag-mint"><i class="fas fa-star"></i> 塔羅占卜師</span>
+                            <span class="identity-tag tag-blue"><i class="fas fa-graduation-cap"></i> 大學生</span>
+                            <span class="identity-tag tag-yellow"><i class="fas fa-dog"></i> 200% 狗派</span>
+                            <span class="identity-tag tag-blue"><i class="fas fa-music"></i> 追星族</span>
+                            <span class="identity-tag tag-gold"><i class="fas fa-guitar"></i> 吉他手</span>
+                            <span class="identity-tag tag-mint"><i class="fas fa-heart"></i> ENFP</span>
+                            <span class="identity-tag tag-yellow"><i class="fas fa-cake-candles"></i> 甜點控</span>
+                            <span class="identity-tag tag-blue"><i class="fas fa-microphone"></i> 愛唱歌</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ====== TAROT STYLE ====== -->
+        <section class="style-section clip-section" id="tarot-style">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label gs-reveal">my magic touch</div>
+                    <h2 class="section-title gs-reveal">Reading Style</h2>
+                    <div class="section-divider-wrap gs-reveal">
+                        <div class="section-divider-line blue"></div>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="var(--blue-deep)">
+                            <path d="M10 0L12 7L20 10L12 13L10 20L8 13L0 10L8 7Z"/>
+                        </svg>
+                        <div class="section-divider-line blue"></div>
+                    </div>
+                </div>
+
+                <div class="style-layout">
+                    <div class="style-cards">
+                        <div class="style-card style-card-yellow">
+                            <div class="style-card-light"></div>
+                            <div class="style-card-icon"><i class="fas fa-heart"></i></div>
+                            <h3>溫暖共情</h3>
+                            <p>我的解牌風格偏向有溫度、重視人文與情緒脈絡。不只是照牌義解讀，而是陪你一起理解「你現在為什麼會這樣想、這樣感覺」。</p>
+                        </div>
+                        <div class="style-card style-card-blue">
+                            <div class="style-card-light"></div>
+                            <div class="style-card-icon"><i class="fas fa-bolt"></i></div>
+                            <h3>犀利直接</h3>
+                            <p>除了占卜本身，我也會額外提供 10 分鐘的聊天時間，透過交流解惑，並給出來自塔羅師本人、真實且主觀的建議。</p>
+                        </div>
+                        <div class="style-card style-card-mint">
+                            <div class="style-card-light"></div>
+                            <div class="style-card-icon"><i class="fas fa-sun"></i></div>
+                            <h3>正向賦能</h3>
+                            <p>我不只是解讀牌面，更想給你面對困境的勇氣與方向。希望你離開時能帶著滿滿的能量重新出發。</p>
+                        </div>
+                    </div>
+                    <div class="style-showcase-gallery">
+                        <div class="style-showcase gs-reveal">
+                            <img src="/assets/img/guild/sii_tarottt/ig_post3_star.webp" alt="追星向大眾占卜" class="style-showcase-img" loading="lazy">
+                            <p class="style-showcase-caption">追星向大眾占卜 — 你擔想對你傳遞的訊息？</p>
+                        </div>
+                        <div class="style-showcase gs-reveal">
+                            <img src="/assets/img/guild/sii_tarottt/the_world.webp" alt="The World 塔羅牌組" class="style-showcase-img" loading="lazy">
+                            <p class="style-showcase-caption">經典韋特塔羅 — 戰車、權杖六、世界</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ====== FORTUNE COOKIE ====== -->
+        <section class="fortune-section clip-section" id="fortune">
+            <div class="fortune-section-inner">
+                <div class="section-header">
+                    <div class="section-label gs-reveal">a little gift</div>
+                    <h2 class="section-title gs-reveal">Fortune Cookie</h2>
+                    <div class="section-divider-wrap gs-reveal">
+                        <div class="section-divider-line yellow"></div>
+                        <svg class="divider-bow" viewBox="0 0 36 24" fill="none">
+                            <path d="M18 12C18 12 8 4 3 6C-2 8 2 14 6 14C10 14 18 12 18 12Z" fill="var(--gold)" opacity="0.7"/>
+                            <path d="M18 12C18 12 28 4 33 6C38 8 34 14 30 14C26 14 18 12 18 12Z" fill="var(--gold)" opacity="0.7"/>
+                            <circle cx="18" cy="12" r="2.5" fill="var(--yellow)"/>
+                        </svg>
+                        <div class="section-divider-line yellow"></div>
+                    </div>
+                </div>
+
+                <div class="fortune-cookie-wrap" id="fortune-cookie">
+                    <svg class="fortune-cookie-svg" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="fortune cookie">
+                        <path d="M50 8C28 8 10 28 10 48C10 52 12 56 16 58C20 60 26 58 30 54C36 48 44 44 50 44C56 44 64 48 70 54C74 58 80 60 84 58C88 56 90 52 90 48C90 28 72 8 50 8Z" fill="#E8B84B"/>
+                        <path d="M50 8C36 8 24 16 18 28C22 24 30 22 38 24C44 26 48 30 50 36C52 30 56 26 62 24C70 22 78 24 82 28C76 16 64 8 50 8Z" fill="#F5D06B"/>
+                        <path d="M16 58C20 62 28 64 36 60C42 56 46 50 50 44C54 50 58 56 64 60C72 64 80 62 84 58C80 66 66 72 50 72C34 72 20 66 16 58Z" fill="#D4A03C"/>
+                        <path d="M42 40L58 40" stroke="#FFF8E7" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                        <ellipse cx="50" cy="44" rx="3" ry="1.5" fill="#D4A03C" opacity="0.4"/>
+                        <path d="M30 26C34 22 42 20 50 22" stroke="#FFF8E7" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+                    </svg>
+                </div>
+                <p class="fortune-click-hint">click the cookie!</p>
+
+                <div class="fortune-slip" id="fortune-slip">
+                    <span id="cookie-message"></span>
+                    <span class="fortune-slip-author">- Sii</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== QUOTE (Full Cinematic) ====== -->
+        <section class="quote-section" id="quote">
+            <div class="quote-big-mark">&ldquo;</div>
+            <div class="quote-inner">
+                <blockquote class="quote-text" id="quote-text">我相信每一張塔羅牌都是一面鏡子，映照出你內心早就知道的答案。</blockquote>
+                <p class="quote-author">&#8212; Sii</p>
+            </div>
+        </section>
+
+        <!-- ====== TESTIMONIALS ====== -->
+        <section class="testimonials-section clip-section" id="testimonials">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label gs-reveal">real voices</div>
+                    <h2 class="section-title gs-reveal">好評回饋</h2>
+                    <div class="section-divider-wrap gs-reveal">
+                        <div class="section-divider-line yellow"></div>
+                        <svg class="divider-bow" viewBox="0 0 36 24" fill="none">
+                            <path d="M18 12C18 12 8 4 3 6C-2 8 2 14 6 14C10 14 18 12 18 12Z" fill="var(--yellow)" opacity="0.8"/>
+                            <path d="M18 12C18 12 28 4 33 6C38 8 34 14 30 14C26 14 18 12 18 12Z" fill="var(--yellow)" opacity="0.8"/>
+                            <circle cx="18" cy="12" r="3" fill="var(--gold)"/>
+                        </svg>
+                        <div class="section-divider-line yellow"></div>
+                    </div>
+                </div>
+                <div class="testimonial-grid">
+                    <div class="testimonial-card gs-reveal">
+                        <div class="testimonial-quote">&ldquo;</div>
+                        <p>很像在跟朋友聊天的舒服感，不會讓人覺得你是老師的感覺。解釋得很剛好，不會太多太少。</p>
+                        <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    </div>
+                    <div class="testimonial-card gs-reveal">
+                        <div class="testimonial-quote">&ldquo;</div>
+                        <p>有安慰到我，讓我沒那麼焦慮。剛好在推薦看到你，應該是緣分，也有給我明確的方向。</p>
+                        <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    </div>
+                    <div class="testimonial-card gs-reveal">
+                        <div class="testimonial-quote">&ldquo;</div>
+                        <p>分析得很有耐心，問題很多也都有解答。感覺到是很有耐心再給我解題的，也都有細節。</p>
+                        <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    </div>
+                    <div class="testimonial-card gs-reveal">
+                        <div class="testimonial-quote">&ldquo;</div>
+                        <p>聽完後終於比較有方向也比較釋懷了！謝謝妳願意陪我聊那麼久，說出來心情變得蠻好的。</p>
+                        <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SERVICES ====== -->
+        <section class="services-section clip-section" id="services">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label gs-reveal">book a reading</div>
+                    <h2 class="section-title gs-reveal">Services</h2>
+                    <div class="section-divider-wrap gs-reveal">
+                        <div class="section-divider-line mint"></div>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="var(--gold)">
+                            <path d="M10 0L12 7L20 10L12 13L10 20L8 13L0 10L8 7Z"/>
+                        </svg>
+                        <div class="section-divider-line mint"></div>
+                    </div>
+                </div>
+
+                <div class="services-hero-img gs-reveal">
+                    <img src="/assets/img/guild/sii_tarottt/ig_post1_price.webp" alt="Sii 的占卜服務" loading="lazy">
+                </div>
+
+                <div class="pricing-grid">
+                    <div class="pricing-card pricing-card-yellow">
+                        <span class="pricing-badge">Single</span>
+                        <h3 class="pricing-name">文字占卜</h3>
+                        <div class="pricing-price">$70 <span style="font-size:0.45em;opacity:0.7">/題</span></div>
+                        <p class="pricing-desc">針對一個具體問題，我會為你進行塔羅解讀</p>
+                        <ul class="pricing-features">
+                            <li>一個明確問題</li>
+                            <li>文字詳細回覆</li>
+                            <li>附牌面照片</li>
+                        </ul>
+                    </div>
+                    <div class="pricing-card pricing-card-blue">
+                        <span class="pricing-badge">Popular</span>
+                        <h3 class="pricing-name">20 分鐘問到飽</h3>
+                        <div class="pricing-price">$200</div>
+                        <p class="pricing-desc">不限問題數量，陪你盡情探索</p>
+                        <ul class="pricing-features">
+                            <li>20 分鐘不限題數</li>
+                            <li>即時文字互動</li>
+                            <li>附牌面照片</li>
+                        </ul>
+                    </div>
+                    <div class="pricing-card pricing-card-mint">
+                        <span class="pricing-badge">Deep Dive</span>
+                        <h3 class="pricing-name">30 分鐘問到飽</h3>
+                        <div class="pricing-price">$300</div>
+                        <p class="pricing-desc">深度諮詢，我會從容解讀每個面向</p>
+                        <ul class="pricing-features">
+                            <li>30 分鐘不限題數</li>
+                            <li>多面向深度解讀</li>
+                            <li>即時文字互動</li>
+                            <li>附牌面照片</li>
+                        </ul>
+                    </div>
+                    <div class="pricing-card pricing-card-gold">
+                        <span class="pricing-badge">Premium</span>
+                        <h3 class="pricing-name">流年占卜</h3>
+                        <div class="pricing-price">$600<span style="font-size:0.45em;opacity:0.7">+</span></div>
+                        <p class="pricing-desc">我會為你做完整年度運勢深度解析</p>
+                        <ul class="pricing-features">
+                            <li>全面年度運勢解讀</li>
+                            <li>各領域詳細分析</li>
+                            <li>深度文字報告</li>
+                            <li>附完整牌陣照片</li>
+                            <li>隨喜加價</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="pricing-note gs-reveal">＊ 目前為試營運階段，預約請透過 Instagram 私訊我</p>
+            </div>
+        </section>
+
+        <!-- ====== FOOTER ====== -->
+        <footer class="site-footer">
+            <img src="/assets/img/guild/sii_tarottt/avatar.webp" alt="Sii" class="footer-avatar">
+            <div class="footer-name">Sii</div>
+            <div class="footer-handle">@_sii_tarottt</div>
+            <div class="footer-social">
+                <a href="https://www.threads.com/@_sii_tarottt" target="_blank" rel="noopener noreferrer" aria-label="Threads" class="threads-btn">
+                    <i class="fab fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/_sii_tarottt/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" class="ig-btn">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+            <p class="footer-credit">Made with &#9829; by <a href="/">SuperGalen's Dungeon</a></p>
+        </footer>
+
+    </div><!-- /content-layer -->
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <script>
+    (function() {
+        'use strict';
+
+        /* ======================================================
+           1. THREE.JS ANIMATED GRADIENT MESH BACKGROUND
+           ====================================================== */
+        var threeBG = (function() {
+            var canvas = document.getElementById('three-bg');
+            var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            var scene = new THREE.Scene();
+            var camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+            var mouse = { x: 0.5, y: 0.5 };
+            var scrollProgress = 0;
+
+            var vertexShader = [
+                'varying vec2 vUv;',
+                'void main() {',
+                '  vUv = uv;',
+                '  gl_Position = vec4(position, 1.0);',
+                '}'
+            ].join('\n');
+
+            var fragmentShader = [
+                'precision mediump float;',
+                'varying vec2 vUv;',
+                'uniform float uTime;',
+                'uniform vec2 uMouse;',
+                'uniform float uScroll;',
+                '',
+                '// Simplex-like noise',
+                'vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }',
+                'vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }',
+                'vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }',
+                'float snoise(vec2 v) {',
+                '  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);',
+                '  vec2 i = floor(v + dot(v, C.yy));',
+                '  vec2 x0 = v - i + dot(i, C.xx);',
+                '  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);',
+                '  vec4 x12 = x0.xyxy + C.xxzz;',
+                '  x12.xy -= i1;',
+                '  i = mod289(i);',
+                '  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));',
+                '  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);',
+                '  m = m*m; m = m*m;',
+                '  vec3 x = 2.0 * fract(p * C.www) - 1.0;',
+                '  vec3 h = abs(x) - 0.5;',
+                '  vec3 ox = floor(x + 0.5);',
+                '  vec3 a0 = x - ox;',
+                '  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);',
+                '  vec3 g;',
+                '  g.x = a0.x * x0.x + h.x * x0.y;',
+                '  g.yz = a0.yz * x12.xz + h.yz * x12.yw;',
+                '  return 130.0 * dot(m, g);',
+                '}',
+                '',
+                'void main() {',
+                '  vec2 uv = vUv;',
+                '',
+                '  // Yellow blob',
+                '  vec2 p1 = vec2(',
+                '    0.3 + 0.15 * sin(uTime * 0.3) + (uMouse.x - 0.5) * 0.08,',
+                '    0.7 + 0.1 * cos(uTime * 0.4) + (uMouse.y - 0.5) * 0.06',
+                '  );',
+                '  // Blue blob',
+                '  vec2 p2 = vec2(',
+                '    0.7 + 0.12 * cos(uTime * 0.35) - (uMouse.x - 0.5) * 0.06,',
+                '    0.3 + 0.15 * sin(uTime * 0.45) - (uMouse.y - 0.5) * 0.08',
+                '  );',
+                '  // Mint blob',
+                '  vec2 p3 = vec2(',
+                '    0.5 + 0.18 * sin(uTime * 0.25 + 1.5),',
+                '    0.5 + 0.12 * cos(uTime * 0.3 + 2.0)',
+                '  );',
+                '  // Gold accent blob',
+                '  vec2 p4 = vec2(',
+                '    0.4 + 0.1 * cos(uTime * 0.5),',
+                '    0.6 + 0.1 * sin(uTime * 0.4)',
+                '  );',
+                '',
+                '  float d1 = smoothstep(0.5, 0.0, length(uv - p1));',
+                '  float d2 = smoothstep(0.45, 0.0, length(uv - p2));',
+                '  float d3 = smoothstep(0.4, 0.0, length(uv - p3));',
+                '  float d4 = smoothstep(0.3, 0.0, length(uv - p4));',
+                '',
+                '  // Scroll-driven color shifting',
+                '  // 0: yellow dominant, 0.3: golden, 0.5: blue, 0.7: mint, 1.0: balanced',
+                '  float s = uScroll;',
+                '  float yellowW = mix(1.0, 0.4, smoothstep(0.0, 0.5, s));',
+                '  float blueW = mix(0.3, 1.0, smoothstep(0.2, 0.6, s)) * mix(1.0, 0.5, smoothstep(0.6, 1.0, s));',
+                '  float mintW = mix(0.2, 1.0, smoothstep(0.4, 0.8, s));',
+                '',
+                '  vec3 yellow = vec3(1.0, 0.851, 0.4);',
+                '  vec3 blue = vec3(0.494, 0.784, 0.89);',
+                '  vec3 mint = vec3(0.427, 0.804, 0.694);',
+                '  vec3 gold = vec3(0.855, 0.647, 0.125);',
+                '  vec3 cream = vec3(1.0, 0.992, 0.969);',
+                '',
+                '  vec3 col = cream;',
+                '  col = mix(col, yellow, d1 * 0.7 * yellowW);',
+                '  col = mix(col, blue, d2 * 0.6 * blueW);',
+                '  col = mix(col, mint, d3 * 0.55 * mintW);',
+                '  col = mix(col, gold, d4 * 0.25);',
+                '',
+                '  // Noise grain',
+                '  float grain = snoise(uv * 200.0 + uTime * 0.5) * 0.02;',
+                '  col += grain;',
+                '',
+                '  gl_FragColor = vec4(col, 1.0);',
+                '}'
+            ].join('\n');
+
+            var geometry = new THREE.PlaneGeometry(2, 2);
+            var material = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                uniforms: {
+                    uTime: { value: 0 },
+                    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                    uScroll: { value: 0 }
+                }
+            });
+
+            var mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            document.addEventListener('mousemove', function(e) {
+                mouse.x = e.clientX / window.innerWidth;
+                mouse.y = 1.0 - e.clientY / window.innerHeight;
+            }, { passive: true });
+
+            window.addEventListener('scroll', function() {
+                var maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                scrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+            }, { passive: true });
+
+            window.addEventListener('resize', function() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            function animate(t) {
+                material.uniforms.uTime.value = t * 0.001;
+                material.uniforms.uMouse.value.x += (mouse.x - material.uniforms.uMouse.value.x) * 0.05;
+                material.uniforms.uMouse.value.y += (mouse.y - material.uniforms.uMouse.value.y) * 0.05;
+                material.uniforms.uScroll.value += (scrollProgress - material.uniforms.uScroll.value) * 0.05;
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+            }
+
+            return { start: function() { requestAnimationFrame(animate); } };
+        })();
+
+        /* ======================================================
+           2. INTERACTIVE PARTICLE SYSTEM
+           ====================================================== */
+        var particleSystem = (function() {
+            var canvas = document.getElementById('particle-canvas');
+            var ctx = canvas.getContext('2d');
+            var particles = [];
+            var colors = ['#FFD966', '#7EC8E3', '#6DCDB1', '#DAA520', '#FFF8E7'];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            function Particle(x, y, opts) {
+                this.x = x; this.y = y;
+                this.vx = opts.vx || (Math.random() - 0.5) * 2;
+                this.vy = opts.vy || -Math.random() * 1.5 - 0.5;
+                this.size = opts.size || Math.random() * 3 + 1;
+                this.color = opts.color || colors[Math.floor(Math.random() * colors.length)];
+                this.life = 1;
+                this.decay = opts.decay || 0.005 + Math.random() * 0.005;
+                this.isStar = opts.isStar !== undefined ? opts.isStar : Math.random() > 0.5;
+            }
+
+            var maxParticles = window.innerWidth <= 768 ? 25 : 60;
+
+            function spawnAmbient() {
+                if (particles.length < maxParticles) {
+                    particles.push(new Particle(
+                        Math.random() * canvas.width,
+                        canvas.height + 10,
+                        { vy: -Math.random() * 0.8 - 0.3, vx: (Math.random() - 0.5) * 0.3, decay: 0.002, size: Math.random() * 2.5 + 0.5 }
+                    ));
+                }
+            }
+
+            function burst(x, y, count, opts) {
+                for (var i = 0; i < count; i++) {
+                    var angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+                    var speed = 2 + Math.random() * 4;
+                    particles.push(new Particle(x, y, {
+                        vx: Math.cos(angle) * speed * (opts.spread || 1),
+                        vy: Math.sin(angle) * speed * (opts.spread || 1),
+                        size: Math.random() * 4 + 1,
+                        decay: 0.015 + Math.random() * 0.01,
+                        color: opts.color || colors[Math.floor(Math.random() * colors.length)],
+                        isStar: true
+                    }));
+                }
+            }
+
+            function drawStar4(cx, cy, size) {
+                ctx.beginPath();
+                for (var i = 0; i < 4; i++) {
+                    var a = (Math.PI * 2 / 4) * i - Math.PI / 2;
+                    var ox = Math.cos(a) * size;
+                    var oy = Math.sin(a) * size;
+                    var ix = Math.cos(a + Math.PI / 4) * size * 0.3;
+                    var iy = Math.sin(a + Math.PI / 4) * size * 0.3;
+                    if (i === 0) ctx.moveTo(cx + ox, cy + oy);
+                    else ctx.lineTo(cx + ox, cy + oy);
+                    ctx.lineTo(cx + ix, cy + iy);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                spawnAmbient();
+
+                for (var i = particles.length - 1; i >= 0; i--) {
+                    var p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= p.decay;
+                    p.vx *= 0.99;
+                    p.vy *= 0.99;
+
+                    if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+                    ctx.globalAlpha = p.life * 0.7;
+                    ctx.fillStyle = p.color;
+
+                    if (p.isStar) {
+                        drawStar4(p.x, p.y, p.size);
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(animate);
+            }
+
+            return { start: animate, burst: burst };
+        })();
+
+        /* ======================================================
+           3. CUSTOM ANIMATED CURSOR
+           ====================================================== */
+        (function() {
+            if (window.innerWidth <= 768) return;
+
+            var star = document.getElementById('cursor-star');
+            var circle = document.getElementById('cursor-circle');
+            var mx = 0, my = 0, sx = 0, sy = 0, cx = 0, cy = 0;
+
+            document.addEventListener('mousemove', function(e) {
+                mx = e.clientX; my = e.clientY;
+            }, { passive: true });
+
+            // Hover detection
+            document.addEventListener('mouseover', function(e) {
+                var t = e.target;
+                if (t.closest('a, button, .floating-card, .fortune-cookie-wrap, .style-card, .pricing-card, .identity-tag')) {
+                    star.classList.add('hovering');
+                    circle.classList.add('hovering');
+                } else {
+                    star.classList.remove('hovering');
+                    circle.classList.remove('hovering');
+                }
+            });
+
+            function animateCursor() {
+                // Star follows with slight lag
+                sx += (mx - sx) * 0.15;
+                sy += (my - sy) * 0.15;
+                star.style.left = (sx - 10) + 'px';
+                star.style.top = (sy - 10) + 'px';
+
+                // Circle follows with more lag
+                cx += (mx - cx) * 0.08;
+                cy += (my - cy) * 0.08;
+                var w = circle.classList.contains('hovering') ? 20 : 40;
+                circle.style.left = (cx - w / 2) + 'px';
+                circle.style.top = (cy - w / 2) + 'px';
+
+                requestAnimationFrame(animateCursor);
+            }
+            animateCursor();
+        })();
+
+        /* ======================================================
+           4. FORTUNE DATA
+           ====================================================== */
+        var cookieMessages = [
+            '你比你想像的更勇敢、更強大、更被愛著。',
+            '每一個結束都是新的開始，別害怕放手。',
+            '今天對自己說一句「辛苦了」，你值得。',
+            '有時候迷路是為了發現更美的風景。',
+            '你的存在本身就是一份禮物。',
+            '深呼吸，一切都會好起來的。',
+            '相信直覺，它比你想的更準確。',
+            '允許自己不完美，那才是最真實的美。',
+            '好運正在路上，請保持期待。',
+            '你今天的微笑，可能是某個人最需要的陽光。',
+            '休息不是偷懶，是為了走更遠的路。',
+            '宇宙聽到了你的願望，耐心等待吧。'
+        ];
+
+        /* ======================================================
+           5. CARD SPREAD (5 Floating Tarot Cards)
+           ====================================================== */
+        var heroFortunes = [
+            '你的勇氣會為你打開一扇新的門。',
+            '相信你的直覺，它不會騙你。',
+            '一段重要的關係正在等著你。',
+            '改變即將來臨，請保持開放的心。',
+            '你值得擁有你所追求的一切。',
+            '放下過去，迎接更好的未來。',
+            '今天是你重新開始的好日子。',
+            '你心中的答案比你想像的更清晰。'
+        ];
+
+        function createParticleBurst(rect) {
+            particleSystem.burst(
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+                25, { spread: 0.8 }
+            );
+        }
+
+        document.querySelectorAll('.floating-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                if (this.classList.contains('flipped')) {
+                    this.classList.remove('flipped');
+                } else {
+                    this.classList.add('flipped');
+                    createParticleBurst(this.getBoundingClientRect());
+                    if (this.classList.contains('center-card')) {
+                        var ft = this.querySelector('.fortune-text');
+                        if (ft) {
+                            ft.textContent = heroFortunes[Math.floor(Math.random() * heroFortunes.length)];
+                        }
+                    }
+                }
+            });
+        });
+
+        /* ======================================================
+           6. FORTUNE COOKIE (with Particle Burst)
+           ====================================================== */
+        var fortuneCookie = document.getElementById('fortune-cookie');
+        var fortuneSlip = document.getElementById('fortune-slip');
+        var cookieMsg = document.getElementById('cookie-message');
+
+        var fortuneHint = document.querySelector('.fortune-click-hint');
+
+        fortuneCookie.addEventListener('click', function() {
+            this.classList.add('cracked');
+            var msg = cookieMessages[Math.floor(Math.random() * cookieMessages.length)];
+
+            // If already showing a message, fade out first then fade in new one
+            if (fortuneSlip.classList.contains('visible')) {
+                fortuneSlip.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+                fortuneSlip.style.opacity = '0';
+                fortuneSlip.style.transform = 'translateY(10px) scale(0.97)';
+                setTimeout(function() {
+                    cookieMsg.textContent = msg;
+                    fortuneSlip.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    fortuneSlip.style.opacity = '';
+                    fortuneSlip.style.transform = '';
+                }, 280);
+            } else {
+                cookieMsg.textContent = msg;
+                fortuneSlip.classList.add('visible');
+            }
+
+            // Fade out the hint text
+            if (fortuneHint) fortuneHint.classList.add('hidden');
+
+            // Particle burst
+            var rect = this.getBoundingClientRect();
+            particleSystem.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 35, { spread: 1.2 });
+
+            var self = this;
+            setTimeout(function() { self.classList.remove('cracked'); }, 500);
+        });
+
+        /* ======================================================
+           7. HERO TITLE: Staggered Character Animation
+           ====================================================== */
+        function setupHeroTitle() {
+            var titleEl = document.getElementById('hero-title');
+            var text = titleEl.textContent;
+            titleEl.innerHTML = '';
+            for (var i = 0; i < text.length; i++) {
+                var span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = text[i];
+                titleEl.appendChild(span);
+            }
+        }
+
+        function setupHeroSubtitle() {
+            var subtitleEl = document.getElementById('hero-subtitle');
+            var text = subtitleEl.textContent;
+            subtitleEl.innerHTML = '';
+            for (var i = 0; i < text.length; i++) {
+                var span = document.createElement('span');
+                span.className = 'typechar';
+                span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
+                subtitleEl.appendChild(span);
+            }
+        }
+
+        /* ======================================================
+           8. QUOTE: Per-Character Scroll Reveal
+           ====================================================== */
+        function setupQuoteText() {
+            var quoteEl = document.getElementById('quote-text');
+            var text = quoteEl.textContent;
+            quoteEl.innerHTML = '';
+            for (var i = 0; i < text.length; i++) {
+                var span = document.createElement('span');
+                span.className = 'qchar';
+                span.textContent = text[i];
+                if (text[i] === '，' || text[i] === '。') {
+                    span.style.display = 'inline';
+                }
+                quoteEl.appendChild(span);
+            }
+        }
+
+        setupHeroTitle();
+        setupHeroSubtitle();
+        setupQuoteText();
+
+        /* ======================================================
+           9. MAGNETIC TILT CARDS
+           ====================================================== */
+        document.querySelectorAll('.style-card').forEach(function(card) {
+            var light = card.querySelector('.style-card-light');
+            // Add card-glow element for ripple effect
+            var glow = card.querySelector('.card-glow');
+            if (!glow) { glow = document.createElement('div'); glow.className = 'card-glow'; card.appendChild(glow); }
+            card.addEventListener('mouseenter', function() {
+                card.style.transition = 'none';
+            });
+            card.addEventListener('mousemove', function(e) {
+                var rect = card.getBoundingClientRect();
+                var x = (e.clientX - rect.left) / rect.width;
+                var y = (e.clientY - rect.top) / rect.height;
+                var tiltX = (y - 0.5) * -20;
+                var tiltY = (x - 0.5) * 20;
+                card.style.transform = 'perspective(800px) rotateX(' + tiltX + 'deg) rotateY(' + tiltY + 'deg) translateY(-10px) scale(1.03)';
+                if (light) {
+                    light.style.left = e.clientX - rect.left + 'px';
+                    light.style.top = e.clientY - rect.top + 'px';
+                }
+                glow.style.left = (e.clientX - rect.left) + 'px';
+                glow.style.top = (e.clientY - rect.top) + 'px';
+            });
+            card.addEventListener('mouseleave', function() {
+                card.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.5s';
+                card.style.transform = '';
+            });
+        });
+
+        /* ======================================================
+           GSAP ANIMATIONS
+           ====================================================== */
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Start systems
+        threeBG.start();
+        particleSystem.start();
+
+        // Loading
+        window.addEventListener('load', function() {
+            gsap.to('#loading-overlay', {
+                opacity: 0, duration: 0.6, delay: 0.5,
+                onComplete: function() {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    initHeroAnimations();
+                }
+            });
+        });
+
+        function initHeroAnimations() {
+            var tl = gsap.timeline();
+
+            // Avatar entry
+            tl.fromTo('.hero-avatar-wrap', { opacity: 0, scale: 0.3 },
+                { opacity: 1, scale: 1, duration: 1, ease: 'back.out(1.7)' }, 0);
+
+            // Title chars stagger
+            tl.to('.hero-title .char', {
+                opacity: 1, scale: 1, rotation: 0,
+                duration: 0.6, stagger: 0.12,
+                ease: 'back.out(2.5)'
+            }, 0.4);
+
+            // Subtitle typewriter
+            tl.to('.hero-subtitle .typechar', {
+                opacity: 1, duration: 0.03, stagger: 0.05
+            }, 0.9);
+
+            // Tagline
+            tl.fromTo('.hero-tagline', { opacity: 0, y: 15 },
+                { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 1.5);
+
+            // Card spread
+            tl.fromTo('.hero-card-spread', { opacity: 0, y: 50, rotateX: 20 },
+                { opacity: 1, y: 0, rotateX: 0, duration: 0.9, ease: 'power3.out' }, 1.6);
+
+            tl.fromTo('.hero-hint', { opacity: 0 }, { opacity: 0.6, duration: 0.5 }, 2.2);
+
+            // Scroll hint
+            tl.fromTo('#scroll-hint', { opacity: 0, y: -10 },
+                { opacity: 0.7, y: 0, duration: 0.5 }, 2.5);
+
+            // Hide scroll hint on scroll
+            ScrollTrigger.create({
+                trigger: '.hero', start: 'top top', end: '+=100',
+                onLeave: function() { gsap.to('#scroll-hint', { opacity: 0, duration: 0.3 }); },
+                onEnterBack: function() { gsap.to('#scroll-hint', { opacity: 0.7, duration: 0.3 }); }
+            });
+        }
+
+        // Enhanced section reveals with blur-to-sharp + slide-up
+        gsap.utils.toArray('.clip-section').forEach(function(section) {
+            gsap.fromTo(section,
+                { opacity: 0.3, filter: 'blur(10px)', y: 60 },
+                {
+                    opacity: 1, filter: 'blur(0px)', y: 0,
+                    clipPath: 'circle(150% at 50% 50%)',
+                    duration: 1.2,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: section,
+                        start: 'top 85%',
+                        end: 'top 30%',
+                        scrub: 0.5
+                    }
+                }
+            );
+        });
+
+        // Generic scroll reveals
+        gsap.utils.toArray('.gs-reveal').forEach(function(el) {
+            gsap.fromTo(el, { opacity: 0, y: 40 },
+                { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+                  scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' } });
+        });
+        gsap.utils.toArray('.gs-reveal-left').forEach(function(el) {
+            gsap.fromTo(el, { opacity: 0, x: -60 },
+                { opacity: 1, x: 0, duration: 0.9, ease: 'power3.out',
+                  scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' } });
+        });
+        gsap.utils.toArray('.gs-reveal-right').forEach(function(el) {
+            gsap.fromTo(el, { opacity: 0, x: 60 },
+                { opacity: 1, x: 0, duration: 0.9, ease: 'power3.out',
+                  scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' } });
+        });
+
+        // Style cards stagger
+        ScrollTrigger.create({
+            trigger: '.style-cards', start: 'top 80%',
+            onEnter: function() {
+                gsap.to('.style-card', { opacity: 1, y: 0, duration: 0.7, stagger: 0.15, ease: 'back.out(1.4)' });
+            }, once: true
+        });
+
+        // Identity tags stagger
+        ScrollTrigger.create({
+            trigger: '.identity-tags', start: 'top 85%',
+            onEnter: function() {
+                gsap.to('.identity-tag', { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'back.out(1.7)' });
+            }, once: true
+        });
+
+        // Quote per-character reveal
+        ScrollTrigger.create({
+            trigger: '.quote-section', start: 'top 70%', end: 'center center',
+            onEnter: function() {
+                gsap.to('.quote-text .qchar', {
+                    opacity: 1, duration: 0.05, stagger: 0.04, ease: 'none'
+                });
+                gsap.fromTo('.quote-author', { opacity: 0, y: 15 },
+                    { opacity: 1, y: 0, duration: 0.8, delay: 1.5, ease: 'power2.out' });
+            }, once: true
+        });
+
+        // Pricing cards stagger
+        ScrollTrigger.create({
+            trigger: '.pricing-grid', start: 'top 80%',
+            onEnter: function() {
+                gsap.to('.pricing-card', { opacity: 1, y: 0, duration: 0.7, stagger: 0.2, ease: 'back.out(1.4)' });
+            }, once: true
+        });
+
+    })();
+    </script>
+</body>
+</html>
