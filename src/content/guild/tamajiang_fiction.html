@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔瑪醬 | Tamajiang — 節氣繪卷</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Antique+Soft&family=Noto+Serif+TC:wght@300;400;600;700&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&family=Yuji+Mai&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --paper:#FDF6F0;--pink:#E8829E;--pink-soft:#F5C0D0;--pink-rgb:232,130,158;
+            --lav:#9B85C0;--lav-rgb:155,133,192;--blue:#7BAAC8;--blue-rgb:123,170,200;
+            --gold:#D4A05A;--gold-rgb:212,160,90;--coral:#E89878;--coral-rgb:232,152,120;
+            --text:#3A2838;--text-dim:#7A6A78;
+            --dark:#120E20;--dark-text:#DDD4F0;--dark-dim:#8070A0;
+            --spring-bg:#FFE0EE;--summer-bg:#FFF2C8;--autumn-bg:#FFE4D0;--winter-bg:#DCE8FA;
+            --jp:'Zen Antique Soft',serif;--novel:'Shippori Mincho',serif;
+            --body:'Noto Serif TC',serif;--ui:'Zen Kaku Gothic New',sans-serif;--hand:'Yuji Mai',serif;
+        }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        html{scrollbar-width:thin;scrollbar-color:var(--pink-soft) var(--paper)}
+        body{background:var(--paper);color:var(--text);font-family:var(--body);overflow-x:hidden}
+        ::selection{background:var(--pink);color:#fff}
+        @media(hover:hover){body{cursor:none}}
+        #trail{position:fixed;inset:0;z-index:9998;pointer-events:none}
+        .cursor{position:fixed;z-index:9999;pointer-events:none;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:var(--pink);box-shadow:0 0 12px rgba(var(--pink-rgb),.4);transition:transform .12s}
+        .splat{position:fixed;pointer-events:none;z-index:9997;border-radius:50%;animation:sp .6s ease-out forwards}
+        @keyframes sp{0%{transform:scale(0);opacity:.4}100%{transform:scale(1);opacity:0}}
+
+        /* ═══ NAV ═══ */
+        nav{position:fixed;top:0;left:0;right:0;padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;z-index:200;mix-blend-mode:difference}
+        nav a{color:#fff;text-decoration:none;font-family:var(--ui);font-size:.82rem;letter-spacing:.1em;opacity:.6;transition:opacity .3s}
+        nav a:hover{opacity:1}
+        .nav-r{display:flex;gap:1.3rem}.nav-r a{font-size:1.05rem}
+
+        /* ═══ INTRO ═══ */
+        .intro{height:100vh;position:relative;display:flex;align-items:center;overflow:hidden;background:var(--paper)}
+        .intro-text{position:relative;z-index:5;padding-left:clamp(2rem,8vw,8rem);max-width:55%}
+        .mega{font-family:var(--jp);font-size:clamp(5rem,17vw,15rem);line-height:.88;color:var(--pink);display:block}
+        .intro-sub{font-family:var(--hand);font-size:clamp(.9rem,2vw,1.2rem);color:var(--text-dim);margin-top:1.5rem;line-height:2.2;max-width:320px}
+        .intro-tag{display:inline-block;font-family:var(--ui);font-size:.65rem;letter-spacing:.3em;color:var(--lav);border:1px solid rgba(var(--lav-rgb),.2);padding:.3rem 1rem;border-radius:20px;margin-top:1.5rem;text-transform:uppercase}
+        .intro-scroll{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);font-family:var(--ui);font-size:.65rem;letter-spacing:.25em;color:var(--text-dim);opacity:.4;display:flex;flex-direction:column;align-items:center;gap:.4rem;z-index:5}
+        .intro-scroll .bar{width:1px;height:28px;background:linear-gradient(var(--pink-soft),transparent);animation:pulse 2s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:.3;transform:scaleY(1)}50%{opacity:.7;transform:scaleY(.6)}}
+        .intro-img{position:absolute;right:-3%;top:0;bottom:0;width:58%;z-index:2;display:flex;align-items:center;justify-content:flex-end}
+        .intro-img img{height:88%;max-height:90vh;object-fit:contain;-webkit-mask-image:linear-gradient(to left,#000 30%,transparent 85%);mask-image:linear-gradient(to left,#000 30%,transparent 85%);filter:saturate(1.1)}
+
+        /* ═══ JOURNEY (scroll-driven 24 節氣) ═══ */
+        .journey{position:relative;height:100vh;overflow:hidden}
+        .j-bg{position:absolute;inset:0;transition:background 1.2s ease;z-index:0}
+        .j-illust-bg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(40px) saturate(1.3);opacity:0;transition:opacity 1.2s ease;z-index:1}
+        .j-progress{position:absolute;top:2rem;left:50%;transform:translateX(-50%);display:flex;gap:3px;z-index:20}
+        .jp{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--text-dim);opacity:.25;transition:all .4s}
+        .jp.cur{opacity:1;transform:scale(1.4);border-color:var(--pink);background:var(--pink)}
+        .jp.done{border-color:var(--pink);background:rgba(var(--pink-rgb),.4)}
+        .jp.past{opacity:.5}
+        .j-season{position:absolute;top:4rem;left:clamp(1rem,5vw,4rem);font-family:var(--jp);font-size:clamp(1.2rem,3vw,2rem);z-index:20;opacity:.5;transition:color .6s}
+        .j-count{position:absolute;top:4rem;right:clamp(1rem,5vw,4rem);font-family:var(--ui);font-size:.72rem;letter-spacing:.15em;z-index:20;opacity:.4}
+        .j-frame{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;text-align:center;padding:0 2rem}
+        .j-name{font-family:var(--jp);font-size:clamp(4rem,14vw,11rem);line-height:1;opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+        .j-name.show{opacity:1;transform:translateY(0)}
+        .j-name.fade-out{opacity:0;transform:translateY(-12px);transition:opacity .3s ease,transform .3s ease}
+        .j-desc{font-family:var(--hand);font-size:clamp(.9rem,2vw,1.15rem);color:var(--text-dim);margin-top:1.2rem;max-width:400px;line-height:2;opacity:0;transform:translateY(10px);transition:opacity .5s ease .1s,transform .5s ease .1s}
+        .j-desc.show{opacity:1;transform:translateY(0)}
+        .j-desc.fade-out{opacity:0;transform:translateY(-8px);transition:opacity .25s ease,transform .25s ease}
+        .j-card{margin-top:2rem;width:min(80vw,520px);border-radius:16px;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,.12);opacity:0;transform:scale(.92);transition:opacity .6s ease .15s,transform .6s cubic-bezier(.4,0,.2,1) .15s;position:relative;z-index:5}
+        .j-card.show{opacity:1;transform:scale(1)}
+        .j-card.fade-out{opacity:0;transform:scale(.95);transition:opacity .25s ease,transform .25s ease}
+        .j-card img{width:100%;max-height:60vh;object-fit:contain;display:block;background:rgba(255,255,255,.3)}
+        .j-card .j-card-label{position:absolute;bottom:0;left:0;right:0;padding:1.2rem 1.5rem;background:linear-gradient(transparent,rgba(0,0,0,.5));color:#fff;font-family:var(--ui);font-size:.75rem;letter-spacing:.1em}
+        .j-empty{margin-top:3rem;opacity:0;transition:opacity .5s ease .15s}
+        .j-empty.show{opacity:1}
+        .j-empty.fade-out{opacity:0;transition:opacity .25s ease}
+        .j-empty i{font-size:2.5rem;color:rgba(var(--pink-rgb),.15)}
+        .j-empty p{font-family:var(--hand);font-size:.8rem;color:var(--text-dim);opacity:.5;margin-top:.5rem}
+        .j-deco{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+        .j-deco span{position:absolute;font-size:clamp(1.5rem,4vw,3rem);opacity:.06;animation:drift 12s ease-in-out infinite alternate}
+        @keyframes drift{0%{transform:translate(0,0) rotate(0deg)}100%{transform:translate(20px,-15px) rotate(8deg)}}
+        .j-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);font-family:var(--ui);font-size:.62rem;letter-spacing:.15em;opacity:.3;z-index:20}
+
+        /* ═══ DUALITY SPLIT ═══ */
+        .duality{position:relative;height:100vh;overflow:hidden;z-index:5}
+        .dual-light{position:absolute;inset:0;background:var(--paper);clip-path:polygon(0 0,60% 0,40% 100%,0 100%);display:flex;align-items:center;padding:0 0 0 clamp(2rem,6vw,6rem);z-index:2}
+        .dual-dark{position:absolute;inset:0;background:var(--dark);clip-path:polygon(60% 0,100% 0,100% 100%,40% 100%);display:flex;align-items:center;justify-content:flex-end;padding:0 clamp(2rem,6vw,6rem) 0 0;z-index:2}
+        .dual-dark canvas{position:absolute;inset:0;z-index:0;pointer-events:none}
+        .dl-content{max-width:340px;position:relative;z-index:2}
+        .dd-content{max-width:340px;text-align:right;position:relative;z-index:2}
+        .dl-quote{font-family:var(--hand);font-size:clamp(1.1rem,2.5vw,1.4rem);color:var(--pink);line-height:2.4}
+        .dl-who{font-family:var(--ui);font-size:.68rem;color:var(--text-dim);margin-top:1rem;letter-spacing:.2em;opacity:.5}
+        .dd-quote{font-family:var(--novel);font-size:clamp(1rem,2.2vw,1.25rem);color:rgba(var(--lav-rgb),.6);line-height:2.4}
+        .dd-title{font-family:var(--novel);font-size:clamp(1.5rem,3.5vw,2.2rem);color:#C8B0F0;margin-top:1.5rem;text-shadow:0 0 30px rgba(var(--lav-rgb),.2)}
+        .dd-vol{font-family:var(--ui);font-size:.72rem;color:var(--dark-dim);margin-top:.3rem;letter-spacing:.1em}
+        .dd-tags{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:flex-end;margin-top:1rem}
+        .ddt{font-family:var(--ui);font-size:.65rem;padding:.2rem .5rem;border-radius:10px;border:1px solid rgba(var(--lav-rgb),.15);color:var(--dark-dim)}
+        .dual-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;font-family:var(--hand);font-size:.72rem;color:var(--lav);writing-mode:vertical-rl;letter-spacing:.8em;opacity:.4}
+
+        /* ═══ FAMILY ═══ */
+        .family{position:relative;z-index:5;min-height:80vh;display:flex;align-items:center;background:rgba(255,242,246,.6);overflow:hidden;padding:5rem 0}
+        .family-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:center;padding:0 2rem;position:relative}
+        .family-img{border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(var(--lav-rgb),.12);position:relative;z-index:2}
+        .family-img img{width:100%;display:block}
+        .family-text{padding-left:clamp(2rem,4vw,4rem);position:relative;z-index:3}
+        .family-text h2{font-family:var(--jp);font-size:clamp(2rem,5vw,3rem);color:var(--pink);margin-bottom:1rem;line-height:1.2}
+        .family-voice{font-family:var(--hand);font-size:1.05rem;color:var(--pink);line-height:2.2;margin-bottom:1.2rem;opacity:.7}
+        .family-text p{font-size:.95rem;line-height:2.2;color:var(--text-dim);font-weight:300}
+        .family-wm{position:absolute;font-family:var(--hand);font-size:clamp(5rem,14vw,10rem);color:rgba(var(--pink-rgb),.025);right:-2rem;top:-2rem;pointer-events:none;z-index:0;line-height:1}
+
+        /* ═══ SHOP ═══ */
+        .shop{padding:5rem 2rem;text-align:center;z-index:5;position:relative;background:rgba(253,246,240,.8)}
+        .shop h2{font-family:var(--hand);font-size:clamp(1.2rem,3vw,1.6rem);color:var(--text);margin-bottom:2rem}
+        .shop-card{max-width:380px;margin:0 auto;padding:2rem;background:rgba(255,255,255,.7);border:1px solid rgba(var(--gold-rgb),.1);border-radius:16px;backdrop-filter:blur(10px);transition:all .4s}
+        .shop-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(var(--gold-rgb),.1)}
+        .shop-card h4{font-family:var(--jp);font-size:1rem;color:var(--text)}
+        .shop-price{font-family:var(--ui);font-size:1.4rem;color:var(--gold);font-weight:700;margin:.4rem 0}
+        .shop-card p{font-family:var(--ui);font-size:.78rem;color:var(--text-dim);line-height:1.8;margin-bottom:1rem}
+        .shop-btn{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--ui);font-size:.78rem;color:var(--gold);border:2px solid rgba(var(--gold-rgb),.2);padding:.45rem 1.2rem;border-radius:18px;text-decoration:none;transition:all .4s}
+        .shop-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+
+        footer{padding:3rem 2rem 1.5rem;text-align:center;z-index:5;position:relative}
+        .ft-links{display:flex;justify-content:center;gap:.8rem;margin-bottom:1rem}
+        .ft-links a{width:34px;height:34px;border-radius:50%;border:1px solid rgba(var(--pink-rgb),.1);display:flex;align-items:center;justify-content:center;color:var(--text-dim);text-decoration:none;font-size:.85rem;transition:all .3s}
+        .ft-links a:hover{color:var(--pink);border-color:var(--pink);transform:translateY(-2px)}
+        .ft-sig{font-family:var(--ui);font-size:.65rem;color:var(--text-dim);opacity:.25;letter-spacing:.1em}
+        .ft-sig a{color:var(--pink);opacity:.5;text-decoration:none}
+
+        /* ═══ GATE (入場水彩破紙) ═══ */
+        .gate{position:fixed;inset:0;z-index:10000;pointer-events:none}
+        .gate canvas{width:100%;height:100%}
+        .gate-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:2;opacity:0}
+        .gate-text span{font-family:var(--jp);font-size:clamp(3rem,10vw,7rem);color:var(--pink);display:block;line-height:1}
+        .gate-text p{font-family:var(--hand);font-size:clamp(.8rem,1.8vw,1rem);color:var(--text-dim);margin-top:1rem;letter-spacing:.3em;opacity:0}
+        body.gated{overflow:hidden}
+        body.gated .intro-text,body.gated .intro-img,body.gated .intro-scroll,body.gated nav{opacity:0}
+        .intro-text,.intro-img,.intro-scroll{transition:opacity .8s ease .1s}
+        nav{transition:opacity .6s ease .3s}
+
+        .rv{opacity:0;transform:translateY(24px)}
+
+        @media(max-width:768px){
+            .intro{flex-direction:column;justify-content:center;text-align:center}
+            .intro-text{padding:0 2rem;max-width:100%}.intro-sub{margin:1rem auto 0}
+            .intro-img{position:relative;width:100%;height:40vh;right:auto;top:auto;bottom:auto;margin-top:2rem;justify-content:center}
+            .intro-img img{height:100%;-webkit-mask-image:linear-gradient(to top,#000 40%,transparent 95%);mask-image:linear-gradient(to top,#000 40%,transparent 95%)}
+            .duality{height:auto;min-height:100vh;flex-direction:column}
+            .dual-light,.dual-dark{position:relative;clip-path:none;height:50vh;padding:3rem 2rem;justify-content:center}
+            .dual-light{display:flex;justify-content:center}
+            .dual-dark{display:flex;justify-content:center}
+            .dl-content,.dd-content{text-align:center;max-width:100%}
+            .dd-tags{justify-content:center}
+            .dual-center{display:none}
+            .family-inner{grid-template-columns:1fr;gap:2rem;padding:0 1.5rem}
+            .family-text{padding-left:0}
+            .family-img{max-width:320px;margin:0 auto}
+        }
+        @media(max-width:480px){
+            .mega{font-size:clamp(4rem,20vw,6rem)}
+            .j-name{font-size:clamp(3rem,15vw,5rem)}
+        }
+    </style>
+</head>
+<body class="gated">
+    <!-- ═══ GATE OVERLAY ═══ -->
+    <div class="gate" id="gate">
+        <canvas id="gateCanvas"></canvas>
+        <div class="gate-text" id="gateText">
+            <span>繪卷展開</span>
+            <p>塔瑪醬的二十四節氣</p>
+        </div>
+    </div>
+
+    <canvas id="trail"></canvas>
+    <div class="cursor" id="cur"></div>
+
+    <nav>
+        <a href="/guild/"><i class="fas fa-arrow-left"></i>&ensp;ARCHIVE</a>
+        <div class="nav-r">
+            <a href="https://www.threads.com/@tamajiang_fiction" target="_blank"><i class="fab fa-threads"></i></a>
+            <a href="https://www.instagram.com/tamajiang_chiang" target="_blank"><i class="fab fa-instagram"></i></a>
+        </div>
+    </nav>
+
+    <!-- ═══ INTRO ═══ -->
+    <section class="intro">
+        <div class="intro-text">
+            <span class="mega">塔瑪醬</span>
+            <p class="intro-sub">我是塔瑪醬，一個技能樹有點歪的奇怪靈魂。<br>白天用粉彩色畫世界的可愛，夜裡用文字潛入幻想的深淵。</p>
+            <span class="intro-tag">節氣插畫師 · 小說家 · 母親</span>
+        </div>
+        <div class="intro-img"><img src="/assets/img/guild/tamajiang_fiction/illust2.webp" alt="塔瑪醬插畫"></div>
+        <div class="intro-scroll"><span>展開我的繪卷</span><div class="bar"></div></div>
+    </section>
+
+    <!-- ═══ JOURNEY — scroll-driven 24 節氣 ═══ -->
+    <section class="journey" id="journey">
+        <div class="j-bg" id="jBg"></div>
+        <div class="j-illust-bg" id="jIllustBg"></div>
+        <div class="j-deco" id="jDeco"></div>
+        <div class="j-progress" id="jProgress"></div>
+        <div class="j-season" id="jSeason"></div>
+        <div class="j-count" id="jCount"></div>
+        <div class="j-frame">
+            <h2 class="j-name" id="jName"></h2>
+            <p class="j-desc" id="jDesc"></p>
+            <div class="j-card" id="jCard"><img id="jImg" src="" alt=""><div class="j-card-label" id="jCardLabel"></div></div>
+            <div class="j-empty" id="jEmpty"><i class="fas fa-paint-brush"></i><p>等我畫完它</p></div>
+        </div>
+        <p class="j-hint">↓ 繼續捲動穿越四季</p>
+    </section>
+
+    <!-- ═══ DUALITY SPLIT ═══ -->
+    <section class="duality" id="duality">
+        <div class="dual-light">
+            <div class="dl-content rv">
+                <p class="dl-quote">我的畫筆是粉彩色的，<br>負責捕捉光亮與可愛的瞬間。</p>
+                <p class="dl-who">— 插畫師的我</p>
+            </div>
+        </div>
+        <div class="dual-dark">
+            <canvas id="dualStars"></canvas>
+            <div class="dd-content rv">
+                <p class="dd-quote">但有些情緒、有些故事，<br>畫筆太輕，承載不了。<br>所以我開始寫字。</p>
+                <h3 class="dd-title">幻靈學院</h3>
+                <p class="dd-vol">第二卷「慾望的深淵」連載中</p>
+                <div class="dd-tags"><span class="ddt">奇幻</span><span class="ddt">學院</span><span class="ddt">角色羈絆</span><span class="ddt">黑暗面</span></div>
+            </div>
+        </div>
+        <span class="dual-center">兩面</span>
+    </section>
+
+    <!-- ═══ FAMILY ═══ -->
+    <section class="family" id="family">
+        <div class="family-inner">
+            <div class="family-img rv"><img src="/assets/img/guild/tamajiang_fiction/illust4.webp" alt="一家人" loading="lazy"></div>
+            <div class="family-text rv">
+                <span class="family-wm" aria-hidden="true">愛</span>
+                <h2>因為她，<br>我重新拿起了畫筆</h2>
+                <p class="family-voice">以前的我只是單純喜歡畫畫。<br>現在的我，是因為女兒。</p>
+                <p>家裡有一位快三歲的小朋友。為了讓她擁有更可愛的學習素材，我開始了幼教主題貼紙企劃——這是我 2026 年最重要的專案。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ SHOP ═══ -->
+    <section class="shop">
+        <h2 class="rv">如果你喜歡我的創作</h2>
+        <div class="shop-card rv">
+            <h4>「攏馬賀」明信片</h4>
+            <div class="shop-price">NT$ 100</div>
+            <p>以柔克剛的堅持。低飽和粉彩藍與清透粉紅暈染。</p>
+            <a href="https://mall.iopenmall.tw/107449/index.php?action=product_detail&prod_no=P10744914256184" target="_blank" class="shop-btn">前往我的小店 <i class="fas fa-external-link-alt"></i></a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="ft-links">
+            <a href="https://www.threads.com/@tamajiang_fiction" target="_blank"><i class="fab fa-threads"></i></a>
+            <a href="https://www.instagram.com/tamajiang_chiang" target="_blank"><i class="fab fa-instagram"></i></a>
+            <a href="https://mall.iopenmall.tw/107449/" target="_blank"><i class="fas fa-store"></i></a>
+        </div>
+        <p class="ft-sig">Made with &#9829; by <a href="/guild/">SuperGalen's Dungeon</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script>
+    const mob = innerWidth < 768;
+
+    /* ═══ GATE — watercolor bloom reveal ═══ */
+    (() => {
+        const gate = document.getElementById('gate');
+        const cv = document.getElementById('gateCanvas');
+        const gText = document.getElementById('gateText');
+        const ctx = cv.getContext('2d');
+        const dpr = devicePixelRatio || 1;
+        let W, H;
+
+        function resize() {
+            W = innerWidth; H = innerHeight;
+            cv.width = W * dpr; cv.height = H * dpr;
+            cv.style.width = W + 'px'; cv.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resize();
+
+        // Fill with paper color initially
+        ctx.fillStyle = '#FDF6F0';
+        ctx.fillRect(0, 0, W, H);
+
+        // Watercolor ink drops
+        const drops = [
+            { x: .5, y: .5, color: 'rgba(232,130,158,', delay: 400, maxR: Math.max(W, H) * .75 },
+            { x: .35, y: .4, color: 'rgba(155,133,192,', delay: 650, maxR: Math.max(W, H) * .55 },
+            { x: .65, y: .55, color: 'rgba(123,170,200,', delay: 800, maxR: Math.max(W, H) * .6 },
+            { x: .45, y: .65, color: 'rgba(212,160,90,', delay: 950, maxR: Math.max(W, H) * .5 },
+            { x: .55, y: .35, color: 'rgba(232,152,120,', delay: 1100, maxR: Math.max(W, H) * .45 },
+        ];
+
+        const startTime = performance.now();
+
+        // Phase 1: Show gate text with fade-in
+        setTimeout(() => {
+            gText.style.transition = 'opacity .6s ease';
+            gText.style.opacity = '1';
+            gText.querySelector('p').style.transition = 'opacity .5s ease .3s';
+            gText.querySelector('p').style.opacity = '.6';
+        }, 100);
+
+        // Phase 2: Start watercolor blooms erasing the paper
+        function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+
+        function drawFrame(now) {
+            const elapsed = now - startTime;
+
+            // Clear and redraw paper
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#FDF6F0';
+            ctx.fillRect(0, 0, W, H);
+
+            // Punch holes with watercolor blooms
+            ctx.globalCompositeOperation = 'destination-out';
+
+            let allDone = true;
+            for (const drop of drops) {
+                const t = Math.max(0, elapsed - drop.delay) / 1600;
+                if (t <= 0) { allDone = false; continue; }
+                if (t < 1) allDone = false;
+                const progress = easeOutQuart(Math.min(t, 1));
+                const r = drop.maxR * progress;
+
+                // Main circle punch
+                const grad = ctx.createRadialGradient(
+                    drop.x * W, drop.y * H, r * .1,
+                    drop.x * W, drop.y * H, r
+                );
+                grad.addColorStop(0, 'rgba(0,0,0,1)');
+                grad.addColorStop(.6, 'rgba(0,0,0,.95)');
+                grad.addColorStop(.85, 'rgba(0,0,0,.5)');
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(drop.x * W, drop.y * H, r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Organic edge blobs for watercolor feel
+                if (progress > .1) {
+                    for (let b = 0; b < 12; b++) {
+                        const angle = (b / 12) * Math.PI * 2 + drop.delay * .01;
+                        const dist = r * (.7 + Math.sin(b * 3.7 + drop.delay) * .25);
+                        const bx = drop.x * W + Math.cos(angle) * dist;
+                        const by = drop.y * H + Math.sin(angle) * dist;
+                        const br = r * (.1 + Math.sin(b * 2.1) * .06);
+                        const bg = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+                        bg.addColorStop(0, 'rgba(0,0,0,.8)');
+                        bg.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = bg;
+                        ctx.beginPath();
+                        ctx.arc(bx, by, br, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Fade out the text as blooms expand
+            if (elapsed > 1200) {
+                const textFade = Math.max(0, 1 - (elapsed - 1200) / 500);
+                gText.style.opacity = textFade;
+            }
+
+            if (!allDone || elapsed < 2800) {
+                requestAnimationFrame(drawFrame);
+            } else {
+                // Animation complete — remove gate
+                gate.style.transition = 'opacity .4s ease';
+                gate.style.opacity = '0';
+                setTimeout(() => {
+                    gate.remove();
+                    document.body.classList.remove('gated');
+                }, 450);
+            }
+        }
+
+        // Start bloom animation after a brief pause showing text
+        setTimeout(() => requestAnimationFrame(drawFrame), 600);
+    })();
+
+    /* ═══ CURSOR ═══ */
+    (() => {
+        if(mob)return;
+        const c=document.getElementById('cur'),tc=document.getElementById('trail'),ctx=tc.getContext('2d');
+        let w,h,rafId=0,resizeTimer;const trails=[];
+        const pal=['rgba(232,130,158,','rgba(155,133,192,','rgba(123,170,200,','rgba(232,152,120,','rgba(212,160,90,'];
+        function rs(){w=innerWidth;h=innerHeight;tc.width=w*devicePixelRatio;tc.height=h*devicePixelRatio;tc.style.width=w+'px';tc.style.height=h+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+        rs();addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(rs,150)});
+        function startLoop(){if(!rafId)rafId=requestAnimationFrame(draw)}
+        document.addEventListener('mousemove',e=>{c.style.left=e.clientX+'px';c.style.top=e.clientY+'px';trails.push({x:e.clientX,y:e.clientY,r:1+Math.random()*2,a:.18,c:pal[Math.random()*5|0],d:.005+Math.random()*.004});if(trails.length>250)trails.splice(0,50);startLoop()});
+        document.addEventListener('mousedown',e=>{c.style.transform='translate(-50%,-50%) scale(2)';for(let i=0;i<5;i++){const s=document.createElement('div');s.className='splat';const sz=8+Math.random()*20,a=Math.random()*6.28,d=10+Math.random()*25;s.style.cssText=`left:${e.clientX+Math.cos(a)*d-sz/2}px;top:${e.clientY+Math.sin(a)*d-sz/2}px;width:${sz}px;height:${sz}px;background:${pal[Math.random()*5|0]}.15)`;document.body.appendChild(s);setTimeout(()=>s.remove(),650)}});
+        document.addEventListener('mouseup',()=>c.style.transform='translate(-50%,-50%) scale(1)');
+        function draw(){ctx.clearRect(0,0,w,h);for(let i=trails.length-1;i>=0;i--){const t=trails[i];t.a-=t.d;if(t.a<=0){trails.splice(i,1);continue}ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,6.28);ctx.fillStyle=t.c+t.a+')';ctx.fill()}if(trails.length)rafId=requestAnimationFrame(draw);else{rafId=0;ctx.clearRect(0,0,w,h)}}
+    })();
+
+    /* ═══ SCROLL-DRIVEN SOLAR JOURNEY ═══ */
+    (() => {
+        const imgBase='/assets/img/guild/tamajiang_fiction/';
+        const terms=[
+            {n:'立春',s:'spring',d:'春天的序曲，我還沒畫到這裡'},
+            {n:'雨水',s:'spring',d:'等春雨來的那天，我會畫柳芽'},
+            {n:'驚蟄',s:'spring',d:'春雷的聲音，應該很適合畫'},
+            {n:'春分',s:'spring',d:'晝夜均分，春暖花開的日子'},
+            {n:'清明',s:'spring',d:'想畫一片清透的綠'},
+            {n:'穀雨',s:'spring',d:'播種的季節，也是我的'},
+            {n:'立夏',s:'summer',d:'夏天來了，要畫什麼好呢'},
+            {n:'小滿',s:'summer',d:'小有盈滿，剛好就好'},
+            {n:'芒種',s:'summer',d:'忙碌的季節，但要記得畫畫'},
+            {n:'夏至',s:'summer',d:'最長的白天，想畫陽光'},
+            {n:'小暑',s:'summer',d:'蟬鳴開始的時候'},
+            {n:'大暑',s:'summer',img:imgBase+'illust6.webp',d:'最熱的日子，畫了夏夜祭典的金魚與燈籠'},
+            {n:'立秋',s:'autumn',d:'秋意初至，楓葉快紅了'},
+            {n:'處暑',s:'autumn',d:'暑氣退場，涼風登場'},
+            {n:'白露',s:'autumn',d:'露珠的光芒，一定很美'},
+            {n:'秋分',s:'autumn',d:'又一個均分的時刻'},
+            {n:'寒露',s:'autumn',d:'想畫一片紅楓'},
+            {n:'霜降',s:'autumn',d:'初霜的季節，冬天近了'},
+            {n:'立冬',s:'winter',d:'冬天來了，等著第一碗湯圓'},
+            {n:'小雪',s:'winter',d:'等第一場雪'},
+            {n:'大雪',s:'winter',d:'大雪紛飛的場景在腦海裡'},
+            {n:'冬至',s:'winter',img:imgBase+'illust4.webp',d:'最長的夜裡，一家人圍在一起吃湯圓'},
+            {n:'小寒',s:'winter',img:imgBase+'illust2.webp',d:'寒氣中撐著傘，接住了第一片雪花'},
+            {n:'大寒',s:'winter',d:'嚴冬盡頭就是春天了'},
+        ];
+
+        const sLabel={spring:'春 · SPRING',summer:'夏 · SUMMER',autumn:'秋 · AUTUMN',winter:'冬 · WINTER'};
+        const sBg={spring:'var(--spring-bg)',summer:'var(--summer-bg)',autumn:'var(--autumn-bg)',winter:'var(--winter-bg)'};
+        const sColor={spring:'var(--pink)',summer:'var(--gold)',autumn:'var(--coral)',winter:'var(--blue)'};
+
+        const jBg=document.getElementById('jBg');
+        const jIllustBg=document.getElementById('jIllustBg');
+        const jProgress=document.getElementById('jProgress');
+        const jSeason=document.getElementById('jSeason');
+        const jCount=document.getElementById('jCount');
+        const jName=document.getElementById('jName');
+        const jDesc=document.getElementById('jDesc');
+        const jCard=document.getElementById('jCard');
+        const jImg=document.getElementById('jImg');
+        const jCardLabel=document.getElementById('jCardLabel');
+        const jEmpty=document.getElementById('jEmpty');
+        const jDeco=document.getElementById('jDeco');
+
+        const seasonEmoji={spring:['🌸','🌿','🦋','💮','🌷','🐝'],summer:['☀️','🌻','🍉','🌊','🪷','🦗'],autumn:['🍂','🍁','🌾','🎑','🦊','🍄'],winter:['❄️','⛄','🌨️','🎐','🕯️','🫖']};
+
+        // Build progress dots
+        terms.forEach((t,i)=>{
+            const d=document.createElement('div');d.className='jp'+(t.img?' done':'');
+            jProgress.appendChild(d);
+        });
+        const dots=[...jProgress.children];
+
+        let prevIdx=-1;
+        const FADE_OUT=280;
+        // Pre-create reusable deco elements
+        const decoEls=[];
+        for(let i=0;i<8;i++){const sp=document.createElement('span');jDeco.appendChild(sp);decoEls.push(sp)}
+
+        function showTerm(idx){
+            if(idx===prevIdx)return;
+            const isFirst=prevIdx===-1;
+            prevIdx=idx;
+            const t=terms[idx];
+
+            // BG + season (these always transition smoothly via CSS transition)
+            jBg.style.background=sBg[t.s];
+            jName.style.color=sColor[t.s];
+            jSeason.textContent=sLabel[t.s];
+            jSeason.style.color=sColor[t.s];
+            jCount.textContent=(idx+1)+' / 24';
+
+            // Progress dots
+            dots.forEach((d,i)=>{
+                d.classList.toggle('cur',i===idx);
+                d.classList.toggle('past',i<idx);
+            });
+
+            // Seasonal deco (reuse existing elements)
+            const emojis=seasonEmoji[t.s];
+            decoEls.forEach((sp,i)=>{sp.textContent=emojis[i%emojis.length];sp.style.cssText=`left:${5+Math.random()*85}%;top:${8+Math.random()*80}%;animation-delay:${-Math.random()*12}s;animation-duration:${8+Math.random()*8}s;font-size:${1.5+Math.random()*2.5}rem`})
+
+            if(isFirst){
+                // First load — just fade in directly
+                jName.textContent=t.n;jDesc.textContent=t.d;
+                requestAnimationFrame(()=>{jName.classList.add('show');jDesc.classList.add('show')});
+                if(t.img){
+                    jImg.src=t.img;jImg.alt=t.n;
+                    jCardLabel.textContent=sLabel[t.s]+' · '+t.n;
+                    jCard.style.display='';jEmpty.style.display='none';
+                    jIllustBg.style.backgroundImage='url('+t.img+')';
+                    jIllustBg.style.opacity='.15';
+                    requestAnimationFrame(()=>jCard.classList.add('show'));
+                }else{
+                    jCard.style.display='none';jEmpty.style.display='';
+                    jIllustBg.style.opacity='0';
+                    requestAnimationFrame(()=>jEmpty.classList.add('show'));
+                }
+                return;
+            }
+
+            // Subsequent: fade out → update content → fade in
+            jName.classList.add('fade-out');jName.classList.remove('show');
+            jDesc.classList.add('fade-out');jDesc.classList.remove('show');
+            jCard.classList.add('fade-out');jCard.classList.remove('show');
+            jEmpty.classList.add('fade-out');jEmpty.classList.remove('show');
+
+            setTimeout(()=>{
+                // Update content after fade-out completes
+                jName.textContent=t.n;jDesc.textContent=t.d;
+                jName.classList.remove('fade-out');jDesc.classList.remove('fade-out');
+                jCard.classList.remove('fade-out');jEmpty.classList.remove('fade-out');
+
+                requestAnimationFrame(()=>{
+                    jName.classList.add('show');jDesc.classList.add('show');
+
+                    if(t.img){
+                        jImg.src=t.img;jImg.alt=t.n;
+                        jCardLabel.textContent=sLabel[t.s]+' · '+t.n;
+                        jCard.style.display='';jEmpty.style.display='none';
+                        jIllustBg.style.backgroundImage='url('+t.img+')';
+                        jIllustBg.style.opacity='.15';
+                        requestAnimationFrame(()=>jCard.classList.add('show'));
+                    }else{
+                        jCard.style.display='none';jEmpty.style.display='';
+                        jIllustBg.style.opacity='0';
+                        requestAnimationFrame(()=>jEmpty.classList.add('show'));
+                    }
+                });
+            },FADE_OUT);
+        }
+
+        showTerm(0);
+
+        gsap.registerPlugin(ScrollTrigger);
+        ScrollTrigger.create({
+            trigger:'#journey',
+            start:'top top',
+            end:'+=5800',
+            pin:true,
+            scrub:.3,
+            onUpdate(self){
+                const idx=Math.min(23,Math.floor(self.progress*24));
+                showTerm(idx);
+            }
+        });
+    })();
+
+    /* ═══ DUALITY STARS ═══ */
+    (() => {
+        const cv=document.getElementById('dualStars');if(!cv)return;
+        const ctx=cv.getContext('2d');
+        const sec=cv.parentElement;let resizeTimer;
+        function rs(){cv.width=sec.clientWidth*devicePixelRatio;cv.height=sec.clientHeight*devicePixelRatio;cv.style.width=sec.clientWidth+'px';cv.style.height=sec.clientHeight+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+        rs();addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(rs,150)});
+        const stars=[];for(let i=0;i<60;i++)stars.push({x:Math.random()*2e3,y:Math.random()*1200,r:.3+Math.random()*1,p:Math.random()*6.28,sp:.3+Math.random()*.7});
+        let rafId=0;
+        function draw(){const w=sec.clientWidth,h=sec.clientHeight;ctx.clearRect(0,0,w,h);const t=Date.now()*.001;stars.forEach(s=>{const al=.12+Math.sin(t*s.sp+s.p)*.12;ctx.beginPath();ctx.arc(s.x%w,s.y%h,s.r,0,6.28);ctx.fillStyle=`rgba(200,176,240,${al})`;ctx.fill()});rafId=requestAnimationFrame(draw)}
+        new IntersectionObserver(e=>{if(e[0].isIntersecting){if(!rafId)rafId=requestAnimationFrame(draw)}else{if(rafId){cancelAnimationFrame(rafId);rafId=0}}},{threshold:.1}).observe(sec);
+    })();
+
+    /* ═══ GSAP SCROLL ═══ */
+    gsap.utils.toArray('.rv').forEach(el=>gsap.to(el,{opacity:1,y:0,duration:1,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 88%'}}));
+    gsap.to('.family-img img',{yPercent:8,ease:'none',scrollTrigger:{trigger:'.family-img',start:'top bottom',end:'bottom top',scrub:2}});
+    </script>
+</body>
+</html>
