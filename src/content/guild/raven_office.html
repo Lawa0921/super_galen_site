@@ -3,27 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raven Office | Mystical Alchemy</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>渡鴉事務所 | Raven Office</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --mystic-purple: #c084fc;
+            --deep-purple: #7c3aed;
             --dark-bg: #050308;
             --gold: #fcd34d;
+            --emerald: #34d399;
         }
 
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100vh;
-            background-color: var(--dark-bg);
+            width: 100%; height: 100vh;
+            background: var(--dark-bg);
             color: #e5e7eb;
             font-family: 'Noto Serif TC', serif;
             overflow: hidden;
             user-select: none;
         }
 
-        /* Loading Screen */
+        /* ── Loading Screen ── */
         #loader {
             position: fixed; inset: 0; background: #050308; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -31,331 +34,1064 @@
             transition: opacity 1s ease-out;
         }
         .spinner {
-            width: 60px; height: 60px; border: 3px solid rgba(192, 132, 252, 0.2);
+            width: 60px; height: 60px;
+            border: 3px solid rgba(192,132,252,0.2);
             border-radius: 50%; border-top-color: var(--mystic-purple);
             animation: spin 1s ease-in-out infinite; margin-bottom: 1.5rem;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* V2 Scene Layout: Aspect Ratio Container */
+        /* ── Navigation ── */
+        .nav-back {
+            position: fixed; top: 1.5rem; left: 1.5rem; z-index: 200;
+            color: var(--mystic-purple); text-decoration: none;
+            font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.15em;
+            background: rgba(0,0,0,0.6); padding: 0.5rem 1rem; border-radius: 8px;
+            border: 1px solid rgba(192,132,252,0.3);
+            transition: all 0.3s;
+        }
+        .nav-back:hover { color: #fff; border-color: #fff; background: rgba(192,132,252,0.2); }
+
+        .social-icons {
+            position: fixed; top: 1.5rem; right: 1.5rem; z-index: 200;
+            display: flex; gap: 0.8rem;
+        }
+        .social-icons a {
+            color: var(--mystic-purple); font-size: 1.3rem;
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(192,132,252,0.3);
+            text-decoration: none; transition: all 0.3s;
+        }
+        .social-icons a:hover {
+            color: #fff; border-color: #fff;
+            box-shadow: 0 0 15px rgba(192,132,252,0.5);
+        }
+
+        /* ── Scene System ── */
         #scene-container {
-            position: relative;
-            width: 100vw; height: 100vh;
+            position: relative; width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
             background: #000;
         }
-
         .scene {
-            position: absolute;
-            inset: 0;
+            position: absolute; inset: 0;
             opacity: 0; pointer-events: none;
-            transition: opacity 1.5s ease;
+            transition: opacity 1.2s ease;
             display: flex; align-items: center; justify-content: center;
         }
         .scene.active { opacity: 1; pointer-events: auto; z-index: 10; }
 
-        /* Background blurring wrapper for non-3:2 viewports */
         .scene-bg-blur {
             position: absolute; inset: -5%; width: 110%; height: 110%;
             background-size: cover; background-position: center;
             filter: blur(40px) brightness(0.3); z-index: 0;
         }
-
-        /* Inner container maintaining exact image aspect ratio (1536x1024) */
         .scene-inner {
             position: relative;
-            width: 100%; max-width: 100vw; max-height: 100vh;
+            width: min(100vw, calc(100vh * 1536 / 1024));
             aspect-ratio: 1536 / 1024;
-            background-size: contain; background-repeat: no-repeat; background-position: center;
+            margin: 0 auto;
             z-index: 1;
-            box-shadow: 0 0 50px rgba(0,0,0,1);
+            overflow: visible;
         }
-
-        /* Ambient Fog / Glow Overlay */
+        .scene-inner img {
+            width: 100%; height: 100%;
+            display: block;
+        }
         .fog-overlay {
             position: absolute; inset: 0; z-index: 2; pointer-events: none;
-            background: radial-gradient(circle at center, transparent 30%, rgba(5, 3, 8, 0.8) 100%);
-            mix-blend-mode: multiply;
+            background: radial-gradient(circle at center, transparent 30%, rgba(5,3,8,0.7) 100%);
         }
 
-        /* Scene Background Images */
-        #scene-exterior .scene-bg-blur, #scene-exterior .scene-inner { background-image: url('/assets/raven_office/content.webp'); }
-        #scene-interior .scene-bg-blur, #scene-interior .scene-inner { background-image: url('/assets/raven_office/content4.webp'); }
-
-        /* Interactive Hitboxes */
+        /* ── Hitboxes — polygon click area (invisible) ── */
         .hitbox {
             position: absolute; cursor: pointer; z-index: 5;
-            border: 2px dashed rgba(192, 132, 252, 0.4);
-            background: rgba(192, 132, 252, 0.05);
-            transition: all 0.3s ease;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 8px;
-            animation: pulse-border 2s infinite alternate;
-        }
-        .hitbox:hover {
-            border: 2px solid rgba(192, 132, 252, 0.9);
-            background: rgba(192, 132, 252, 0.2);
-            box-shadow: 0 0 30px rgba(192, 132, 252, 0.8), inset 0 0 20px rgba(192, 132, 252, 0.5);
-            transform: scale(1.02);
-        }
-        .hitbox span {
-            font-family: 'Cinzel', serif; font-size: 1.2rem; font-weight: bold;
-            color: #fff; text-shadow: 0 0 10px #c084fc; letter-spacing: 0.2em;
-            opacity: 0.6; transition: opacity 0.3s;
-        }
-        .hitbox:hover span { opacity: 1; }
-
-        @keyframes pulse-border {
-            0% { border-color: rgba(192, 132, 252, 0.2); box-shadow: inset 0 0 10px rgba(192, 132, 252, 0.1); }
-            100% { border-color: rgba(192, 132, 252, 0.6); box-shadow: inset 0 0 20px rgba(192, 132, 252, 0.3); }
         }
 
-        /* Gate Scene Specifics */
-        #scene-gate { background: radial-gradient(circle at center, #110822 0%, #050308 100%); flex-direction: column; gap: 2rem; }
-        .mystic-door {
-            font-size: 6rem; color: rgba(192, 132, 252, 0.4); cursor: pointer;
+        /* ── Glow — sibling element, NOT clipped by polygon ── */
+        .hitbox-glow {
+            position: absolute; pointer-events: none; z-index: 4;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center,
+                rgba(252,211,77,0.45) 0%,
+                rgba(252,211,77,0.2) 35%,
+                rgba(252,211,77,0.05) 60%,
+                transparent 80%);
+            filter: blur(14px);
             transition: all 0.5s ease;
-            text-shadow: 0 0 20px rgba(192, 132, 252, 0.2);
+            animation: breathe-glow 3.5s ease-in-out infinite alternate;
+        }
+        .hitbox-glow.active {
+            background: radial-gradient(ellipse at center,
+                rgba(252,211,77,0.7) 0%,
+                rgba(252,211,77,0.35) 30%,
+                rgba(252,211,77,0.1) 55%,
+                transparent 80%);
+            filter: blur(20px);
+            transform: scale(1.2);
+            animation: none;
+        }
+        @keyframes breathe-glow {
+            0% { opacity: 0.35; }
+            100% { opacity: 1; }
+        }
+
+        /* ── Hover hint — floating label ── */
+        .hint-label {
+            position: absolute; z-index: 600;
+            font-family: 'Cinzel', serif; font-size: 0.8rem;
+            letter-spacing: 0.15em; white-space: nowrap;
+            color: #fef3c7;
+            background: rgba(5,3,8,0.88);
+            backdrop-filter: blur(8px);
+            padding: 0.4rem 1rem; border-radius: 20px;
+            border: 1px solid rgba(252,211,77,0.3);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 0 12px rgba(252,211,77,0.12);
+            pointer-events: none;
+            opacity: 0; transform: translateY(4px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .hint-label.visible {
+            opacity: 1; transform: translateY(0);
+        }
+
+        /* ── Vestibule (content.webp 1536x1024) ── */
+        /* 門 — coords: 304,318 301,491 437,801 498,805 501,318 */
+        #btn-enter {
+            left: 19.6%; top: 31.05%; width: 13.02%; height: 47.56%;
+            clip-path: polygon(1.5% 0%, 0% 35.5%, 68% 99.2%, 98.5% 100%, 100% 0%);
+        }
+        /* 畫框 — coords: 199,504 235,671 362,690 301,499 */
+        #btn-painting {
+            left: 12.96%; top: 48.73%; width: 10.61%; height: 18.65%;
+            clip-path: polygon(0% 2.6%, 22.1% 90.1%, 100% 100%, 62.6% 0%);
+        }
+        /* 壁畫 — coords: 61,341 57,527 113,519 113,345 */
+        #btn-wallart {
+            left: 3.71%; top: 33.3%; width: 3.65%; height: 18.16%;
+            clip-path: polygon(7.1% 0%, 0% 100%, 100% 95.7%, 100% 2.2%);
+        }
+        /* 桌面藥瓶 — coords: 202,674 183,744 232,743 221,679 */
+        #btn-tablepotions {
+            left: 11.91%; top: 65.82%; width: 3.19%; height: 6.84%;
+            clip-path: polygon(38.8% 0%, 0% 100%, 100% 98.6%, 77.6% 7.1%);
+        }
+        /* 小抽屜 — coords: 620,600 680,593 681,623 616,619 */
+        #btn-smalldrawer {
+            left: 40.1%; top: 57.91%; width: 4.23%; height: 2.93%;
+            clip-path: polygon(6.2% 23.3%, 98.5% 0%, 100% 100%, 0% 86.7%);
+        }
+        /* 大抽屜 — coords: 623,673 890,675 887,710 615,708 */
+        #btn-bigdrawer {
+            left: 40.04%; top: 65.72%; width: 17.9%; height: 3.61%;
+            clip-path: polygon(2.9% 0%, 100% 5.4%, 98.9% 100%, 0% 94.6%);
+        }
+        /* 藥櫥 — coords: 924,311 1217,312 1213,571 921,574 */
+        #btn-cabinet {
+            left: 59.96%; top: 30.37%; width: 19.27%; height: 25.68%;
+            clip-path: polygon(1% 0%, 100% 0.4%, 98.6% 98.9%, 0% 100%);
+        }
+        /* 書本 — coords: 1083,641 1029,672 1163,688 1208,658 */
+        #btn-vestbook {
+            left: 66.99%; top: 62.6%; width: 11.65%; height: 4.59%;
+            clip-path: polygon(30.2% 0%, 0% 66%, 74.9% 100%, 100% 36.2%);
+        }
+
+        /* ── Workshop (content4.webp 1536x1024) ── */
+        /* 藥鍋 — coords: 376,520 335,557 335,601 408,604 417,566 */
+        #btn-altar {
+            left: 21.81%; top: 50.78%; width: 5.34%; height: 8.2%;
+            clip-path: polygon(50% 0%, 0% 44%, 0% 96.4%, 89% 100%, 100% 54.8%);
+        }
+        /* 藥櫃 — coords: 539,211 543,639 932,630 1067,521 1172,485 1176,197 */
+        #btn-crystal {
+            left: 35.09%; top: 19.24%; width: 41.47%; height: 43.16%;
+            clip-path: polygon(0% 3.2%, 0.6% 100%, 61.7% 98%, 82.9% 73.3%, 99.4% 65.2%, 100% 0%);
+        }
+        /* 書本 — coords: 1091,638 1004,675 1167,713 1236,676 */
+        #btn-books {
+            left: 65.36%; top: 62.3%; width: 15.1%; height: 7.32%;
+            clip-path: polygon(37.5% 0%, 0% 49.3%, 70.3% 100%, 100% 50.7%);
+        }
+        /* 藥瓶桌 — coords: 205,623 118,661 104,768 289,776 354,702 318,619 */
+        #btn-potions {
+            left: 6.77%; top: 60.45%; width: 16.28%; height: 15.33%;
+            clip-path: polygon(40.4% 2.5%, 5.6% 26.8%, 0% 94.9%, 74% 100%, 100% 52.9%, 85.6% 0%);
+        }
+        /* 書櫃 — coords: 1228,371 1425,373 1434,516 1358,596 1224,554 */
+        #btn-bookshelf {
+            left: 79.69%; top: 36.23%; width: 13.67%; height: 21.97%;
+            clip-path: polygon(1.9% 0%, 95.7% 0.9%, 100% 64.4%, 63.8% 100%, 0% 81.3%);
+        }
+        /* 箱子 — coords: 600,817 598,864 674,866 688,850 692,812 628,804 */
+        #btn-chest {
+            left: 38.93%; top: 78.52%; width: 6.12%; height: 6.05%;
+            clip-path: polygon(2.1% 21%, 0% 96.8%, 80.9% 100%, 95.7% 74.2%, 100% 12.9%, 31.9% 0%);
+        }
+
+        /* ── Scene-specific ── */
+        .btn-back {
+            position: absolute; left: 2%; bottom: 2%; z-index: 100;
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(192,132,252,0.3);
+            color: var(--mystic-purple); padding: 0.5rem 1rem; border-radius: 8px;
+            cursor: pointer; font-family: 'Cinzel', serif; font-size: 0.85rem;
+            letter-spacing: 0.1em; display: flex; align-items: center; gap: 0.5rem;
+            transition: all 0.3s;
+        }
+        .btn-back:hover { background: rgba(192,132,252,0.2); color: #fff; border-color: #fff; }
+
+        /* Gate Scene */
+        #scene-gate {
+            background: var(--dark-bg); flex-direction: column; gap: 1.5rem;
+            overflow: hidden;
+        }
+        #scene-gate::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5L55 30L30 55L5 30Z' fill='none' stroke='rgba(192,132,252,0.06)' stroke-width='0.5'/%3E%3Ccircle cx='30' cy='30' r='12' fill='none' stroke='rgba(192,132,252,0.04)' stroke-width='0.5'/%3E%3C/svg%3E");
+            animation: runeShift 20s linear infinite;
+        }
+        @keyframes runeShift { to { background-position: 60px 60px; } }
+
+        .gate-title { text-align: center; pointer-events: none; z-index: 2; }
+        .gate-sub { font-size: 0.85rem; color: rgba(192,132,252,0.5); letter-spacing: 0.4em; margin-bottom: 0.5rem; }
+        .gate-title h1 {
+            font-family: 'Cinzel Decorative', serif; font-size: clamp(2.5rem, 6vw, 4.5rem);
+            color: var(--mystic-purple); margin-bottom: 0.8rem;
+        }
+        .gate-title p { font-size: 1.1rem; color: #d1d5db; letter-spacing: 0.2em; }
+        .gate-title .gate-quote {
+            font-size: 0.9rem; color: rgba(192,132,252,0.5);
+            font-style: italic; margin-top: 0.3rem;
+        }
+        .gate-hint {
+            font-size: 0.85rem; color: rgba(192,132,252,0.4);
+            font-family: 'Cormorant Garamond', serif; font-style: italic;
+        }
+
+        .mystic-door {
+            font-size: 5rem; color: rgba(192,132,252,0.4); cursor: pointer; z-index: 2;
+            transition: all 0.5s; text-shadow: 0 0 20px rgba(192,132,252,0.2);
         }
         .mystic-door:hover {
             color: #fff; transform: scale(1.1);
-            text-shadow: 0 0 40px rgba(192, 132, 252, 0.8);
+            text-shadow: 0 0 40px rgba(192,132,252,0.8);
         }
 
-        /* Intro Title overlay */
-        .intro-title {
+
+        /* ── Overlay System (Side Panel) ── */
+        .overlay-backdrop {
+            position: fixed; inset: 0; z-index: 790;
+            background: rgba(5,3,8,0.35);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .overlay-backdrop.open { opacity: 1; pointer-events: auto; }
+        .overlay {
+            position: fixed; top: 0; right: 0; bottom: 0; z-index: 800;
+            width: min(460px, 88vw);
+            background: rgba(10,5,20,0.96); backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(192,132,252,0.2);
+            box-shadow: -8px 0 40px rgba(0,0,0,0.5), 0 0 80px rgba(192,132,252,0.05);
+            transform: translateX(100%);
+            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow-y: auto;
+            pointer-events: none;
+            will-change: transform;
+        }
+        .overlay.open { transform: translateX(0); pointer-events: auto; }
+        .ov-close {
+            position: sticky; top: 1rem; float: right; margin-right: 1rem; z-index: 810;
+            background: rgba(192,132,252,0.15); border: 1px solid rgba(192,132,252,0.4);
+            color: var(--mystic-purple); width: 40px; height: 40px; border-radius: 50%;
+            cursor: pointer; font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
+        }
+        .ov-close:hover { background: rgba(192,132,252,0.4); color: #fff; transform: rotate(90deg); }
+        .ov-content {
+            width: 100%; padding: 2rem 1.8rem 3rem;
+        }
+        .ov-content h2 {
+            font-family: 'Cinzel Decorative', serif; color: var(--mystic-purple);
+            font-size: clamp(1.8rem, 4vw, 2.5rem); text-align: center; margin-bottom: 0.5rem;
+        }
+        .ov-content .ov-sub {
+            text-align: center; color: rgba(192,132,252,0.5);
+            font-family: 'Cormorant Garamond', serif; font-style: italic;
+            font-size: 1rem; margin-bottom: 2rem;
+        }
+        .ov-divider {
+            width: 120px; height: 1px; margin: 0 auto 2rem;
+            background: linear-gradient(90deg, transparent, var(--mystic-purple), transparent);
+        }
+        .ov-footer {
+            text-align: center; color: rgba(192,132,252,0.3);
+            font-size: 0.75rem; margin-top: 3rem; padding-top: 1.5rem;
+            border-top: 1px solid rgba(192,132,252,0.1);
+            font-family: 'Cormorant Garamond', serif; font-style: italic;
+        }
+
+        /* ── Cauldron Overlay ── */
+        .cauldron-wrap { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+        .cauldron {
+            position: relative; width: 180px; height: 130px;
+        }
+        .cauldron-body {
+            width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(88,28,135,0.6), rgba(34,197,94,0.3));
+            border-radius: 0 0 50% 50%;
+            border: 3px solid rgba(192,132,252,0.4);
+            border-top: 3px solid rgba(192,132,252,0.2);
+            position: relative; overflow: hidden;
+        }
+        .cauldron-liquid {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 75%;
+            background: linear-gradient(180deg, rgba(52,211,153,0.4), rgba(124,58,237,0.6));
+            border-radius: 0 0 50% 50%;
+            animation: liquidWave 3s ease-in-out infinite;
+        }
+        @keyframes liquidWave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .cauldron-bubble {
+            position: absolute; border-radius: 50%;
+            background: rgba(192,132,252,0.4); animation: bubbleUp 2s infinite;
+        }
+        .cauldron-bubble:nth-child(1) { width: 8px; height: 8px; left: 30%; bottom: 10%; animation-delay: 0s; }
+        .cauldron-bubble:nth-child(2) { width: 5px; height: 5px; left: 55%; bottom: 5%; animation-delay: 0.7s; }
+        .cauldron-bubble:nth-child(3) { width: 6px; height: 6px; left: 70%; bottom: 15%; animation-delay: 1.3s; }
+        @keyframes bubbleUp {
+            0% { transform: translateY(0) scale(1); opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-50px) scale(0.3); opacity: 0; }
+        }
+        .cauldron-fire {
+            display: flex; justify-content: center; gap: 4px; margin-top: 2px;
+        }
+        .flame {
+            width: 10px; height: 16px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            background: linear-gradient(to top, #f97316, #fbbf24);
+            animation: flicker 0.4s infinite alternate;
+        }
+        .flame:nth-child(2) { animation-delay: 0.1s; height: 20px; }
+        .flame:nth-child(3) { animation-delay: 0.2s; }
+        .flame:nth-child(4) { animation-delay: 0.15s; height: 18px; }
+        @keyframes flicker {
+            0% { transform: scaleY(1) scaleX(1); opacity: 0.9; }
+            100% { transform: scaleY(1.2) scaleX(0.9); opacity: 1; }
+        }
+
+        .brew-btn {
+            font-family: 'Cinzel', serif; font-size: 1.1rem; letter-spacing: 0.2em;
+            color: var(--emerald); background: transparent;
+            border: 2px solid rgba(52,211,153,0.4); padding: 0.8rem 2.5rem;
+            border-radius: 30px; cursor: pointer; transition: all 0.3s;
+        }
+        .brew-btn:hover { background: rgba(52,211,153,0.15); border-color: var(--emerald); color: #fff; }
+
+        .buff-card {
+            perspective: 600px; width: 240px; height: 360px;
+            margin: 1rem auto; display: none;
+        }
+        .buff-card.revealed { display: block; }
+        .buff-card-inner {
+            width: 100%; height: 100%; position: relative;
+            transform-style: preserve-3d;
+            animation: cardFlip 0.8s ease forwards;
+        }
+        @keyframes cardFlip {
+            0% { transform: rotateY(180deg); }
+            100% { transform: rotateY(0deg); }
+        }
+        .buff-front, .buff-back {
+            position: absolute; inset: 0; backface-visibility: hidden;
+            border-radius: 16px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            border: 2px solid rgba(192,132,252,0.4);
+        }
+        .buff-front { background: rgba(10,5,20,0.95); }
+        .buff-back {
+            background: linear-gradient(135deg, #1a0a2e, #0a0512);
+            transform: rotateY(180deg);
+        }
+        .buff-icon {
+            width: 140px; height: 130px; margin: 0 auto 1rem;
+            background-image: url('/assets/raven_office/content3.webp');
+            background-size: 300% 200%;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            border-radius: 12px;
+        }
+        .buff-name {
+            font-family: 'Cinzel Decorative', serif; font-size: 1.5rem;
+            margin-bottom: 0.3rem;
+        }
+        .buff-en { font-family: 'Cormorant Garamond', serif; font-size: 0.9rem; color: rgba(255,255,255,0.5); margin-bottom: 1rem; }
+        .buff-desc {
+            font-size: 0.85rem; color: rgba(255,255,255,0.7); text-align: center;
+            padding: 0 1.5rem; line-height: 1.6;
+        }
+        .buff-rebrew {
+            font-size: 0.8rem; color: rgba(192,132,252,0.5); cursor: pointer;
+            margin-top: 1.5rem; transition: color 0.3s;
+        }
+        .buff-rebrew:hover { color: var(--mystic-purple); }
+
+        /* ── Grimoire Overlay ── */
+        .grimoire-tabs {
+            display: flex; justify-content: center; gap: 0.5rem;
+            margin-bottom: 2rem; flex-wrap: wrap;
+        }
+        .grimoire-tab {
+            font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.1em;
+            color: rgba(192,132,252,0.5); background: transparent;
+            border: 1px solid rgba(192,132,252,0.2); padding: 0.5rem 1.2rem;
+            border-radius: 6px; cursor: pointer; transition: all 0.3s;
+        }
+        .grimoire-tab:hover { border-color: var(--mystic-purple); color: var(--mystic-purple); }
+        .grimoire-tab.active {
+            color: var(--gold); border-color: var(--gold);
+            background: rgba(252,211,77,0.08);
+        }
+        .grimoire-page { display: none; }
+        .grimoire-page.active { display: block; }
+
+        .grimoire-page h3 {
+            font-family: 'Cinzel Decorative', serif; color: var(--gold);
+            font-size: 1.5rem; margin-bottom: 1rem;
+        }
+        .grimoire-page p {
+            color: #d1d5db; line-height: 1.9; margin-bottom: 1rem; font-size: 1.05rem;
+        }
+        .grimoire-page .highlight { color: #f3e8ff; font-weight: 700; }
+        .grimoire-page .quote-block {
+            text-align: center; color: var(--gold);
+            font-family: 'Cormorant Garamond', serif; font-style: italic;
+            font-size: 1.1rem; margin: 1.5rem 0; line-height: 1.8;
+        }
+        .grimoire-page .tag-box {
+            background: rgba(192,132,252,0.06);
+            border-left: 3px solid var(--mystic-purple);
+            padding: 1rem 1.5rem; border-radius: 0 8px 8px 0; margin: 1.5rem 0;
+        }
+        .grimoire-page .tag-label {
+            font-family: 'Cinzel', serif; color: var(--gold);
+            font-size: 0.85rem; letter-spacing: 0.15em; margin-bottom: 0.5rem;
+        }
+        .grimoire-page .tag-content { font-size: 0.9rem; color: rgba(192,132,252,0.7); }
+
+        .grimoire-avatar {
+            width: 120px; height: 120px; border-radius: 50%;
+            border: 2px solid var(--mystic-purple);
+            box-shadow: 0 0 20px rgba(192,132,252,0.4);
+            object-fit: cover; display: block; margin: 0 auto 1rem;
+        }
+        .grimoire-badge {
+            text-align: center; color: var(--mystic-purple);
+            font-size: 0.85rem; letter-spacing: 0.15em; margin-bottom: 1.5rem;
+        }
+        .grimoire-blessed {
+            text-align: center; color: var(--gold);
+            font-family: 'Cormorant Garamond', serif; font-style: italic;
+            font-size: 1rem; letter-spacing: 0.1em; margin: 2rem 0;
+        }
+        .grimoire-img {
+            width: 100%; max-width: 400px; border-radius: 12px;
+            margin: 1.5rem auto; display: block;
+            border: 1px solid rgba(192,132,252,0.15);
+        }
+        .guardian-card {
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(192,132,252,0.25);
+            border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
             text-align: center;
-            pointer-events: none; text-shadow: 0 5px 20px rgba(0,0,0,0.8);
         }
-        .intro-title h1 { font-family: 'Cinzel', serif; font-size: 4rem; color: var(--mystic-purple); margin-bottom: 0.5rem;}
-        .intro-title p { font-size: 1.2rem; color: #e5e7eb; letter-spacing: 0.2em; }
-
-
-        /* Bright Room (content.webp) - The Door is on the left */
-        #btn-enter { left: 18%; top: 28%; width: 14%; height: 49%; }
-
-        /* Dark Workshop (content4.webp) */
-        /* Table with open book */
-        #btn-books { left: 60%; top: 62%; width: 20%; height: 18%; }
-        /* Shelves full of potions in the back */
-        #btn-crystal { left: 34%; top: 28%; width: 44%; height: 32%; }
-        /* Fireplace with cauldron */
-        #btn-altar { left: 13%; top: 41%; width: 17%; height: 25%; border-radius: 50% 50% 10px 10px; }
-
-        .btn-back {
-            position: absolute; left: 2%; bottom: 2%; width: auto; height: auto;
-            border: none !important; z-index: 100; cursor: pointer;
-            animation: none; background: rgba(0,0,0,0.6);
+        .guardian-card img {
+            height: 160px; object-fit: contain; margin: 0 auto 1rem;
+            display: block; filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
         }
-        .btn-back:hover { background: rgba(192, 132, 252, 0.3); transform: scale(1.05); }
-
-        /* Info Panels */
-        .info-panel {
-            position: fixed; right: -600px; top: 0;
-            width: 600px; max-width: 100vw; height: 100vh;
-            background: rgba(10, 5, 20, 0.95);
-            backdrop-filter: blur(12px); border-left: 1px solid rgba(192, 132, 252, 0.3);
-            padding: 3rem 3rem; overflow-y: auto; z-index: 1000;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
-            transition: right 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        .guardian-card h4 {
+            font-family: 'Cinzel', serif; font-size: 1.2rem; margin-bottom: 0.5rem;
         }
-        @media (max-width: 768px) {
-            .info-panel { width: 100vw; padding: 3rem 1.5rem; }
-        }
-        .info-panel.open { right: 0; }
+        .guardian-card p { font-size: 0.95rem; color: #d1d5db; }
 
-        .info-panel h2 {
+        /* ── Apothecary Overlay ── */
+        .potion-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem; margin-bottom: 2rem;
+        }
+        .potion-bottle {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(192,132,252,0.2);
+            border-radius: 12px; padding: 1.2rem 0.8rem;
+            text-align: center; cursor: pointer; transition: all 0.3s;
+        }
+        .potion-bottle:hover {
+            border-color: var(--mystic-purple);
+            background: rgba(192,132,252,0.08);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(192,132,252,0.15);
+        }
+        .potion-bottle .potion-icon { font-size: 2.2rem; margin-bottom: 0.6rem; }
+        .potion-bottle .potion-name {
+            font-family: 'Cinzel', serif; font-size: 0.85rem; color: #e5e7eb;
+            margin-bottom: 0.3rem;
+        }
+        .potion-bottle .potion-price {
+            font-size: 0.75rem; color: var(--mystic-purple);
+        }
+        .potion-detail {
+            display: none; background: rgba(10,5,20,0.95);
+            border: 1px solid rgba(192,132,252,0.3); border-radius: 12px;
+            padding: 1.5rem; margin-bottom: 1.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+        .potion-detail.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .potion-detail h3 {
             font-family: 'Cinzel', serif; color: var(--mystic-purple);
-            font-size: 2.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(192, 132, 252, 0.3);
-            padding-bottom: 0.5rem;
+            font-size: 1.2rem; margin-bottom: 0.8rem;
         }
-        .info-panel p { color: #d1d5db; line-height: 1.8; margin-bottom: 1rem; font-size: 1.1rem; }
-        .info-panel .highlight { color: #f3e8ff; font-weight: 700; }
-        .info-panel .close-btn {
-            position: absolute; top: 1.5rem; right: 2rem;
-            color: var(--mystic-purple); font-size: 2rem; cursor: pointer;
-            transition: transform 0.3s, color 0.3s;
+        .potion-detail p { color: #d1d5db; font-size: 0.95rem; line-height: 1.7; }
+        .potion-detail .potion-note {
+            font-size: 0.8rem; color: var(--mystic-purple);
+            margin-top: 0.8rem; padding: 0.6rem;
+            background: rgba(192,132,252,0.06); border-radius: 6px;
+            border-left: 2px solid var(--mystic-purple);
         }
-        .info-panel .close-btn:hover { color: #fff; transform: scale(1.2) rotate(90deg); }
 
-        ul.service-list { list-style: none; padding: 0; margin: 0; }
-        ul.service-list li { margin-bottom: 2rem; position: relative; padding-left: 1.5rem; }
-        ul.service-list li::before { content: '✧'; position: absolute; left: 0; top: 0; color: var(--mystic-purple); font-size: 1.2rem; }
-        ul.service-list h3 { font-size: 1.3rem; margin-bottom: 0.5rem; color: #e9d5ff; font-weight: bold; }
+        .book-section {
+            background: rgba(192,132,252,0.04);
+            border: 1px solid rgba(192,132,252,0.15);
+            border-radius: 12px; padding: 1.5rem; text-align: center;
+        }
+        .book-section p {
+            color: #d1d5db; font-size: 0.9rem; line-height: 1.7; margin-bottom: 0.5rem;
+        }
+        .book-label {
+            font-family: 'Cinzel', serif; color: var(--gold);
+            font-size: 0.9rem; letter-spacing: 0.15em; margin-bottom: 0.8rem;
+        }
+        .book-section .book-quote {
+            font-style: italic; color: rgba(192,132,252,0.6); font-size: 0.85rem; margin-top: 0.8rem;
+        }
 
-        /* p5 Canvas Overlay */
+        /* ── p5 Canvas ── */
         #p5-container {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: fixed; inset: 0;
             z-index: 500; pointer-events: none; mix-blend-mode: screen;
         }
 
-        .social-icons {
-            position: fixed; top: 2rem; right: 2rem;
-            z-index: 200; display: flex; gap: 1rem;
+        /* ── Portrait orientation blocker ── */
+        #rotate-notice {
+            display: none;
+            position: fixed; inset: 0; z-index: 99999;
+            background: #050308;
+            flex-direction: column; align-items: center; justify-content: center;
+            gap: 1.5rem; color: var(--mystic-purple);
+            font-family: 'Cinzel', serif; text-align: center;
+            padding: 2rem;
         }
-        .social-icons a {
-            color: var(--mystic-purple); font-size: 1.5rem;
-            transition: color 0.3s, transform 0.3s, text-shadow 0.3s;
-            background: rgba(0,0,0,0.6); width: 45px; height: 45px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; border: 1px solid rgba(192, 132, 252, 0.3);
+        #rotate-notice .rotate-icon {
+            font-size: 3.5rem; animation: rotateHint 2s ease-in-out infinite;
         }
-        .social-icons a:hover {
-            color: #fff; transform: scale(1.1); border-color: #fff;
-            text-shadow: 0 0 15px rgba(192, 132, 252, 0.8);
-            box-shadow: 0 0 15px rgba(192, 132, 252, 0.5);
+        #rotate-notice h2 {
+            font-family: 'Cinzel Decorative', serif; font-size: 1.4rem;
+            letter-spacing: 0.15em; color: var(--mystic-purple);
+        }
+        #rotate-notice p {
+            font-size: 0.9rem; color: rgba(192,132,252,0.5);
+            font-family: 'Noto Serif TC', serif; line-height: 1.7;
+            max-width: 280px;
+        }
+        @keyframes rotateHint {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-20deg); }
+            75% { transform: rotate(90deg); }
+        }
+        @media (max-width: 768px) and (orientation: portrait) {
+            #rotate-notice { display: flex; }
+            #scene-container, .nav-back, .social-icons, #p5-container,
+            .overlay, .overlay-backdrop { display: none !important; }
         }
     </style>
 </head>
 <body>
+    <!-- Loading -->
     <div id="loader">
         <div class="spinner"></div>
-        <div class="tracking-widest">GATHERING MANA...</div>
+        <div style="letter-spacing:0.3em; font-family:'Cinzel',serif;">GATHERING MANA...</div>
     </div>
 
-    <!-- Audio Effects -->
-    <audio id="sfx-door-open" src="https://actions.google.com/sounds/v1/doors/wood_door_open.ogg" preload="auto"></audio>
+    <!-- Rotate Notice (portrait phones) -->
+    <div id="rotate-notice">
+        <div class="rotate-icon"><i class="fas fa-mobile-alt"></i></div>
+        <h2>Rotate Your Device</h2>
+        <p>此頁面為沉浸式橫式體驗，請將裝置旋轉為橫向以進入渡鴉事務所。</p>
+    </div>
 
+    <!-- Overlay Backdrop -->
+    <div id="overlay-backdrop" class="overlay-backdrop"></div>
+
+    <!-- Audio -->
+    <audio id="sfx-door-open" src="https://actions.google.com/sounds/v1/doors/wood_door_open.ogg" preload="none"></audio>
+
+    <!-- p5 Canvas -->
     <div id="p5-container"></div>
 
+    <!-- Navigation -->
+    <a href="/guild/" class="nav-back"><i class="fas fa-arrow-left"></i> ARCHIVE</a>
     <div class="social-icons">
-        <a href="https://www.instagram.com/raven.office/" target="_blank"><i class="fab fa-instagram"></i></a>
-        <a href="https://www.threads.net/@raven.office" target="_blank"><i class="fa-brands fa-threads"></i></a>
-        <a href="https://www.facebook.com/profile.php?id=61550929252486" target="_blank"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://www.instagram.com/raven.office/" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
+        <a href="https://www.threads.net/@raven.office" target="_blank" rel="noopener"><i class="fa-brands fa-threads"></i></a>
+        <a href="https://www.facebook.com/profile.php?id=61550929252486" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
     </div>
 
+    <!-- ════ SCENES ════ -->
     <div id="scene-container">
 
-        <!-- Stage 1: The Gate -->
+        <!-- Gate -->
         <div id="scene-gate" class="scene active">
-            <div class="intro-title z-10">
+            <div class="gate-title">
+                <div class="gate-sub">渡 鴉 事 務 所</div>
                 <h1>Raven Office</h1>
-                <p>密契主義 ✧ 自學女巫</p>
-                <div class="mt-8 text-sm text-purple-300 opacity-70 italic">Knock to enter...</div>
+                <p>密契主義 ✧ 自學靈媒</p>
+                <div class="gate-quote">「一位 INTJ-T 的靈媒，平常跟搭檔互嘴邏輯戰居多。」</div>
             </div>
-
-            <div id="btn-gate" class="mystic-door z-10">
+            <div class="gate-hint">Knock to enter...</div>
+            <div id="btn-gate" class="mystic-door">
                 <i class="fas fa-door-closed" id="gate-icon"></i>
             </div>
         </div>
 
-        <!-- Stage 2: Exterior (Bright Room) -->
+        <!-- Vestibule -->
         <div id="scene-exterior" class="scene">
-            <div class="scene-bg-blur"></div>
+            <div class="scene-bg-blur" style="background-image:url('/assets/raven_office/content.webp')"></div>
             <div class="scene-inner">
+                <img src="/assets/raven_office/content.webp" alt="The Vestibule">
                 <div class="fog-overlay"></div>
-
-                <div class="absolute top-[10%] right-[10%] text-right z-10 pointer-events-none text-shadow-lg bg-black/50 p-6 rounded-xl backdrop-blur border border-purple-500/20">
-                    <p class="text-xl text-purple-300 tracking-widest font-serif mb-2">The Vestibule</p>
-                    <p class="text-sm text-gray-400 italic">Find the inner door...</p>
-                </div>
-
-                <!-- Hitbox over the white door -->
-                <div id="btn-enter" class="hitbox" title="Enter the Workshop"><span>ENTER</span></div>
+                <div id="btn-enter" class="hitbox" data-hint="進入工作室"></div>
+                <div id="btn-painting" class="hitbox" data-hint="烏列爾之畫"></div>
+                <div id="btn-wallart" class="hitbox" data-hint="Mishipeshu 護符"></div>
+                <div id="btn-tablepotions" class="hitbox" data-hint="附魔素材"></div>
+                <div id="btn-smalldrawer" class="hitbox" data-hint="秘密抽屜"></div>
+                <div id="btn-bigdrawer" class="hitbox" data-hint="收納抽屜"></div>
+                <div id="btn-cabinet" class="hitbox" data-hint="藥劑櫥櫃"></div>
+                <div id="btn-vestbook" class="hitbox" data-hint="魔法書"></div>
             </div>
-
-            <button class="btn-back flex items-center gap-2 text-purple-400 hover:text-white px-4 py-3 rounded-lg backdrop-blur" onclick="changeScene('scene-gate')">
-                <i class="fas fa-arrow-left"></i> Leave
-            </button>
+            <button class="btn-back" onclick="changeScene('scene-gate')"><i class="fas fa-arrow-left"></i> Leave</button>
         </div>
 
-        <!-- Stage 3: Interior (Dark Workshop) -->
+        <!-- Workshop -->
         <div id="scene-interior" class="scene">
-            <div class="scene-bg-blur"></div>
+            <div class="scene-bg-blur" style="background-image:url('/assets/raven_office/content4.webp')"></div>
             <div class="scene-inner">
+                <img src="/assets/raven_office/content4.webp" alt="The Workshop" loading="lazy" decoding="async">
                 <div class="fog-overlay"></div>
-                <!-- Table with open book -->
-                <div id="btn-books" class="hitbox" title="The Awakening"><span>ABOUT</span></div>
-                <!-- Potions on shelf -->
-                <div id="btn-crystal" class="hitbox" title="Mystical Services"><span>SERVICES</span></div>
-                <!-- Cauldron in fireplace -->
-                <div id="btn-altar" class="hitbox" title="The Guardians"><span>GUARDIANS</span></div>
+                <div id="btn-altar" class="hitbox" data-hint="煉藥鍋"></div>
+                <div id="btn-crystal" class="hitbox" data-hint="藥劑櫃"></div>
+                <div id="btn-books" class="hitbox" data-hint="魔法書"></div>
+                <div id="btn-potions" class="hitbox" data-hint="藥瓶桌"></div>
+                <div id="btn-bookshelf" class="hitbox" data-hint="書架"></div>
+                <div id="btn-chest" class="hitbox" data-hint="???"></div>
             </div>
-
-            <button class="btn-back flex items-center gap-2 text-purple-400 hover:text-white px-4 py-3 rounded-lg backdrop-blur" onclick="changeScene('scene-exterior')">
-                <i class="fas fa-door-open"></i> Back to Vestibule
-            </button>
+            <button class="btn-back" onclick="changeScene('scene-exterior')"><i class="fas fa-door-open"></i> Vestibule</button>
         </div>
     </div>
 
-    <!-- Info Panels -->
-    <div id="panel-about" class="info-panel">
-        <i class="fas fa-times close-btn" onclick="closePanel('panel-about')"></i>
-        <h2>The Awakening</h2>
-        <div class="flex justify-center mb-8">
-            <img src="/assets/raven_office/profile.webp" alt="Raven" class="w-40 h-40 rounded-full border-2 border-purple-500 shadow-[0_0_20px_rgba(192,132,252,0.6)] object-cover">
-        </div>
-        <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。</p>
-        <p>那些難以解釋的相遇，讓我帶著不安長大，也讓我開始尋求答案。我閱讀、查找、試圖理解，卻始終與這身分無法產生共鳴。直到人生瀕臨崩潰萬念俱灰時，我遇見了守護著我的靈性存在。</p>
-        <p>在我幾乎撐不下去的日子裡，祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。於是我明白，人生只能從有限的選擇去做出決定，也是等待既定的時間軌道到來而啟動。</p>
-        <p>現在，我會用輕鬆甚至有點幽默的方式，分享靈界的日常趣事。不是為了神秘，而是為了讓那些曾經孤單的人知道——<span class="highlight">你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。</span></p>
-        <p class="text-center text-purple-400 my-10 font-serif tracking-widest text-sm text-shadow-glow">| ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |</p>
-        <p class="text-sm opacity-80 border-t border-purple-900 pt-6">喜歡慢步調的閱讀，有時候會查查資料科普一下。</p>
-    </div>
+    <!-- ════ OVERLAYS ════ -->
 
-    <div id="panel-services" class="info-panel">
-        <i class="fas fa-times close-btn" onclick="closePanel('panel-services')"></i>
-        <h2>Mystical Services</h2>
-        <div class="mb-8 w-full">
-            <img src="/assets/raven_office/content3.webp" alt="Mystical Objects" class="w-full rounded-xl shadow-[0_0_15px_rgba(192,132,252,0.3)] object-cover border border-purple-500/20" style="image-rendering: pixelated;">
-        </div>
-        <p class="mb-8 opacity-80 text-sm italic border-l-2 border-purple-500 pl-4">最近積極探索與擴展靈性業務。其他未列出的業務，歡迎委託人來跟我詢問 (∗ ˊωˋ ∗)</p>
-        <ul class="service-list">
-            <li>
-                <h3>高我連結溝通</h3>
-                <p class="text-sm m-0">需遠端語音進行高我連結與溝通，可藉由與高我的溝通更了解自身的困境跟疑問，也能知曉此生的人生大方向。</p>
-            </li>
-            <li>
-                <h3>前世解讀</h3>
-                <p class="text-sm m-0">需遠端語音進行解讀，依每次隨機抓取訊號為主，前世解讀最多三世。從過去的篇章去了解累世的經驗，不指定時間軸。</p>
-            </li>
-            <li>
-                <h3>靈界 / 離世溝通 / 礦靈媒合</h3>
-                <p class="text-sm m-0">需遠端語音進行，去連結離世的親人解讀、或宿緣對象協調、守護或指導靈溝通。<br>
-                <span class="text-purple-400 text-xs mt-3 p-2 bg-purple-900/30 rounded border border-purple-500/30 block">* 請提前整理好想詢問的內容，不包含敏感爭議議題。溝通時間約一到兩小時。預約需付1000元定金。</span></p>
-            </li>
-            <li>
-                <h3>詛咒移除</h3>
-                <p class="text-sm m-0">需評估詛咒的複雜程度來決定處理方式。</p>
-            </li>
-            <li>
-                <h3>物品加持</h3>
-                <p class="text-sm m-0">需接觸到實體物品，附魔種類有：智慧、健康、運氣、魅力、財富、防護等。</p>
-            </li>
-        </ul>
-    </div>
+    <!-- Cauldron -->
+    <div id="ov-cauldron" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-cauldron')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>The Cauldron</h2>
+            <p class="ov-sub">Stir the brew, receive a blessing</p>
+            <div class="ov-divider"></div>
 
-    <div id="panel-guardians" class="info-panel">
-        <i class="fas fa-times close-btn" onclick="closePanel('panel-guardians')"></i>
-        <h2>The Guardians</h2>
-        <p class="mb-6 text-lg">有兩位超愛我的守護者，平常他們都會打打鬧鬧：</p>
-
-        <div class="mt-8 space-y-8">
-            <div class="p-6 rounded-xl bg-black/60 border border-purple-500/40 relative overflow-hidden shadow-lg">
-                <div class="w-full mb-4 flex justify-center bg-white/5 rounded-lg py-2">
-                    <img src="/assets/raven_office/content2.webp" alt="Uriel" class="h-48 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
+            <div class="cauldron-wrap">
+                <div class="cauldron">
+                    <div class="cauldron-body">
+                        <div class="cauldron-liquid">
+                            <div class="cauldron-bubble"></div>
+                            <div class="cauldron-bubble"></div>
+                            <div class="cauldron-bubble"></div>
+                        </div>
+                    </div>
+                    <div class="cauldron-fire">
+                        <div class="flame"></div>
+                        <div class="flame"></div>
+                        <div class="flame"></div>
+                        <div class="flame"></div>
+                    </div>
                 </div>
-                <h3 class="text-2xl text-[#fcd34d] font-bold mb-2">𝟙. 大天使烏列爾</h3>
-                <p class="m-0 text-md">合作的天使，帶來智慧與光芒的指引。</p>
+                <button class="brew-btn" id="brew-btn">✧ BREW ✧</button>
+                <div class="buff-card" id="buff-card">
+                    <div class="buff-card-inner" id="buff-card-inner">
+                        <div class="buff-front">
+                            <div class="buff-icon" id="buff-icon"></div>
+                            <div class="buff-name" id="buff-name"></div>
+                            <div class="buff-en" id="buff-en"></div>
+                            <div class="buff-desc" id="buff-desc"></div>
+                            <div class="buff-rebrew" id="buff-rebrew">✧ brew again ✧</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="p-6 rounded-xl bg-black/60 border border-purple-500/40 relative overflow-hidden shadow-lg">
-                <div class="w-full mb-4 flex justify-center bg-white/5 rounded-lg py-2">
-                    <img src="/assets/raven_office/content1.webp" alt="Mishipeshu" class="h-48 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
-                </div>
-                <h3 class="text-2xl text-[#fca5a5] font-bold mb-2">𝟚. Mishipeshu</h3>
-                <p class="m-0 text-md">美洲虎守護獸（意為「偉大的猞猁」或「水下豹」），強大的守護力量。</p>
-            </div>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Grimoire -->
+    <div id="ov-grimoire" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-grimoire')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <nav class="grimoire-tabs">
+                <button class="grimoire-tab active" data-page="page-awakening">I. The Awakening</button>
+                <button class="grimoire-tab" data-page="page-paradox">II. The Paradox</button>
+            </nav>
+
+            <!-- Page 1: Awakening -->
+            <div id="page-awakening" class="grimoire-page active">
+                <img src="/assets/raven_office/cards.webp" alt="Marcus" class="grimoire-avatar">
+                <div class="grimoire-badge">INTJ-T ✧ 密契主義者 ✧ 自學靈媒</div>
+                <h3>瑪庫斯 ✧ Marcus</h3>
+                <p>初次見面，我叫瑪庫斯。</p>
+                <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。那些難以解釋的相遇，讓我帶著不安長大，也讓我開始尋求答案。</p>
+                <p>我閱讀、查找、試圖理解，卻始終與這身分無法產生共鳴。直到人生瀕臨崩潰萬念俱灰時，<span class="highlight">我遇見了守護著我的靈性存在。</span></p>
+                <p>在我幾乎撐不下去的日子裡，祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。於是我明白，人生只能從有限的選擇去做出決定，也是等待既定的時間軌道到來而啟動。</p>
+                <p>現在，我會用輕鬆甚至有點幽默的方式，分享靈界的日常趣事。不是為了神秘，而是為了讓那些曾經孤單的人知道——<span class="highlight">你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。</span></p>
+                <div class="quote-block">
+                    「每個人的選擇不同，有的人為了回到過去去擁抱當時的創傷，<br>
+                    有的人雖然帶有創傷但同時也能背負創傷去展望未來。<br>
+                    不論如何，有做出選擇的人都是勇敢的。」
+                </div>
+                <div class="grimoire-blessed">| ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |</div>
+                <img src="/assets/raven_office/cards.webp" alt="The Witch" class="grimoire-img">
+            </div>
+
+            <!-- Page 2: Paradox -->
+            <div id="page-paradox" class="grimoire-page">
+                <h3>The INTJ Paradox</h3>
+                <p>一個用理性解構玄學的靈媒。</p>
+                <p>別人的通靈是莊嚴肅穆、焚香祈禱；我的日常是跟搭檔互嘴邏輯戰，然後被天使用高超的話術拐一輪。</p>
+                <p>身為 INTJ-T，我對所有事情都想找到邏輯和系統。包括靈性世界。結果就是我發現——<span class="highlight">靈界的運作邏輯比人類世界還要荒謬。</span></p>
+                <div class="quote-block">
+                    「天使會撒潑打滾搶著排第一、<br>
+                    守護獸會翻白眼酸溜溜地嘖一聲、<br>
+                    高我不分國界——從八岐大蛇的孩子到希臘神祇都有。<br>
+                    歡迎來到我的日常。」
+                </div>
+                <p>曾經接觸過十位數以上的高我。有一次問八岐大蛇最小的孩子「你老爹被人討伐你會不高興嗎？」結果他回答：<span class="highlight">「那是他自己自作自受，所以我並不會不高興。」</span>——不愧是高我，價值觀跟人類的差異性都很大。</p>
+                <p>靈性不需要高深莫測，它可以很接地氣，甚至很好笑。同時也絕不容許拿靈界的事情到處消費的神棍——<span class="highlight">「大家都同樣在這人世間受苦受難還試著苦中作樂，實在沒必要利用靈能去散播恐慌跟混亂。」</span></p>
+                <div class="tag-box">
+                    <div class="tag-label">DAILY TAGS</div>
+                    <div class="tag-content">#卿卿我我 #搭檔相處日常 #高我溝通趣事 #借運解方 #密契主義</div>
+                </div>
+            </div>
+
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Apothecary -->
+    <div id="ov-apothecary" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-apothecary')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>The Apothecary</h2>
+            <p class="ov-sub">Choose your potion wisely</p>
+            <div class="ov-divider"></div>
+
+            <div class="potion-grid" id="potion-grid"></div>
+            <div id="potion-detail-area"></div>
+
+            <div class="book-section">
+                <div class="book-label">HOW TO BOOK</div>
+                <p>透過 Instagram 或 Threads 私訊預約</p>
+                <p><i class="fab fa-instagram" style="color:var(--mystic-purple)"></i> @raven.office / <i class="fa-brands fa-threads" style="color:var(--mystic-purple)"></i> @raven.office</p>
+                <p><i class="fab fa-discord" style="color:var(--deep-purple)"></i> Discord / <i class="fas fa-video" style="color:var(--emerald)"></i> Google Meet（需遠端語音進行）</p>
+                <p style="color:var(--gold); font-size:0.85rem;">預約需先付 NT$ 1,000 定金，棄單視同放棄定金 ✧ 溝通約一到兩小時</p>
+                <div class="book-quote">溝通前準備好想問的問題，才能有效率地進行溝通。</div>
+            </div>
+
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Uriel -->
+    <div id="ov-uriel" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-uriel')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>Archangel Uriel</h2>
+            <p class="ov-sub">1 号小夥伴 — 指導搭檔</p>
+            <div class="ov-divider"></div>
+            <div class="guardian-card">
+                <img src="/assets/raven_office/content2.webp" alt="Uriel">
+                <h4 style="color: var(--gold);">大天使烏列爾</h4>
+                <p>第三個來找瑪庫斯的靈性存在，前兩個都翻白眼鄙視瑪庫斯，只有烏列爾沒有生氣。於是瑪庫斯主動提出簽約——但後來才發現自己被做局了。</p>
+            </div>
+            <div class="quote-block">
+                「天使並沒有大家想像的這麼好，他們會說謊還會睜眼說瞎話，<br>
+                甚至利用高超的邏輯智慧去拐你——<br>
+                我都稱呼他們為靈界的強盜集團。」
+            </div>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:1.5rem;">昨日在打脆自介的時候，正在決定小夥伴的前後順序時，在一旁預謀蓄勢待發已久的N歲男子開口了。</p>
+            <p style="color:#d1d5db; line-height:1.8;">他：瑪庫斯我要排第一個！</p>
+            <p style="color:#d1d5db; line-height:1.8;">我：可是貓貓是最先來的欸……</p>
+            <p style="color:#d1d5db; line-height:1.8;">他：我不管我不管～我就想要～～（開始撒潑打滾兼耍賴）</p>
+            <p style="color:#d1d5db; line-height:1.8;">有時候真的很想吐槽他說都已經是個天使還一把年紀了為何要這麼幼稚欸，而且臉皮還很厚不怕被酸。</p>
+            <p style="color:rgba(252,211,77,0.6); font-size:0.85rem; text-align:center; margin-top:1.5rem;">相處到現在真的徹底認為，他真的府城好深。</p>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Mishipeshu -->
+    <div id="ov-mishipeshu" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-mishipeshu')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>Mishipeshu</h2>
+            <p class="ov-sub">2 号小夥伴 — 守護獸</p>
+            <div class="ov-divider"></div>
+            <div class="guardian-card">
+                <img src="/assets/raven_office/content1.webp" alt="Mishipeshu">
+                <h4 style="color: #fca5a5;">Mishipeshu — 大貓貓</h4>
+                <p>守護獸，意為「偉大的猞猁」或「水下豹」。比烏列爾更早來到瑪庫斯身邊，是最先到的夥伴。</p>
+            </div>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:1.5rem;">被暱稱為「大貓貓」，在排名順序的討論中——</p>
+            <p style="color:#d1d5db; line-height:1.8;">瑪庫斯：貓貓你覺得如何？</p>
+            <p style="color:#d1d5db; line-height:1.8;">貓貓：（先翻個白眼後無奈的開口）好吧好吧，看他可憐讓給他啦，金價系五告摳蓮欸～（酸溜溜的說完時還不滿地嘖了一聲）</p>
+            <div class="quote-block">
+                「會翻白眼、會酸溜溜地嘖舌、還會講台語。<br>
+                這就是我的守護獸。」
+            </div>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Mineral Spirits (礦靈) -->
+    <div id="ov-minerals" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-minerals')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>Mineral Spirits</h2>
+            <p class="ov-sub">Every crystal has its own soul</p>
+            <div class="ov-divider"></div>
+            <img src="/assets/raven_office/crystals.webp" alt="Lapis Lazuli" class="grimoire-img" style="max-width:280px;">
+            <h3 style="font-family:'Cinzel Decorative',serif; color:var(--gold); text-align:center; margin:1rem 0;">礦靈媒合</h3>
+            <p style="color:#d1d5db; line-height:1.8;">為你尋找命定的礦孩夥伴。每顆礦石都有自己的個性與偏好，配對需礦孩同意。綁定成功後會手繪礦孩專屬小卡。</p>
+            <div class="tag-box" style="margin-top:1.5rem;">
+                <div class="tag-label">案例 — 青金石「盧娜」</div>
+                <div class="tag-content" style="line-height:1.7;">邀請金額 NT$2,800 / 含礦石 + 專屬小卡 + 包裝盒<br>可加購：礦訊解讀 NT$2,800、加持 NT$6,400</div>
+            </div>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:1.5rem; font-size:0.95rem;">附魔種類有：智慧、健康、運氣、魅力、財富、防護等。每一瓶素材都是瑪庫斯親手調配的。</p>
+            <div class="book-section" style="margin-top:2rem;">
+                <div class="book-label">注意事項</div>
+                <p style="font-size:0.85rem;">不接受未成年購買（除非監護人擔保）</p>
+                <p style="font-size:0.85rem;">無科學依據或醫療用途，一切僅供娛樂參考</p>
+            </div>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- The Archive (知識庫) -->
+    <div id="ov-archive" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-archive')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>The Archive</h2>
+            <p class="ov-sub">Fragments of wisdom from the other side</p>
+            <div class="ov-divider"></div>
+
+            <h3 style="font-family:'Cinzel Decorative',serif; color:var(--gold); margin-bottom:1rem;">借運解方</h3>
+            <p style="color:#d1d5db; line-height:1.8;">不管你身處何方做什麼事情，只要有人鬼鬼祟祟的靠近你，就是沒安好心。他會趁你不備的時候撞你一下，這就是借運。</p>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:0.8rem;">該如何解？其實你可以對別的地方突然大吼大叫讓他被嚇一跳，因為這種不成熟的做法很怕會被人發現，如果在偷的過程被人發現會拿不住自己偷來的運氣，會返還給你。</p>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:0.8rem;">更狠的方式你甚至可以召回自己的能量，讓他被嚇到又被抽回他得手以來不屬於他的能量（但前提是你能做到召回的部分）。</p>
+
+            <div class="ov-divider" style="margin-top:2rem;"></div>
+
+            <h3 style="font-family:'Cinzel Decorative',serif; color:var(--gold); margin-bottom:1rem;">生命觀</h3>
+            <div class="quote-block">
+                「每個人的選擇不同，有的人為了回到過去去擁抱當時的創傷，<br>
+                而有的人雖然帶有創傷但同時也能背負創傷去展望未來。<br>
+                不論如何，有做出選擇的人都是勇敢的。」
+            </div>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:1rem;">有些身心靈的文章倡導要跟內在的自己和解。但老實說這點是要看個人，除非真的很想要這樣做才去執行，不然真的沒有必要因為沒做到這件事情而感到焦慮。</p>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:0.8rem;">每個人的選擇不同，有的人為了回到過去去擁抱當時的創傷，而有的人雖然帶有創傷但同時也能背負創傷去展望未來，這些都沒有對錯而是每個人選擇的結果。不論如何，有做出選擇的人都是勇敢的讓人感到敬佩的人。</p>
+
+            <div class="tag-box" style="margin-top:2rem;">
+                <div class="tag-label">DAILY TAGS</div>
+                <div class="tag-content">#卿卿我我 #搭檔相處日常 #高我溝通趣事 #借運解方 #密契主義</div>
+            </div>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Enchant Materials (附魔素材) -->
+    <div id="ov-enchant" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-enchant')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>Enchant Materials</h2>
+            <p class="ov-sub">The raw essence of blessings</p>
+            <div class="ov-divider"></div>
+            <img src="/assets/raven_office/content3.webp" alt="Enchantment Icons" class="grimoire-img" style="max-width:300px;">
+            <p style="color:#d1d5db; line-height:1.8; margin-top:1rem;">幾瓶發光的小藥瓶，對應不同的附魔屬性。這些是物品加持（NT$6,000）的原始素材，每一瓶都是瑪庫斯親手調配的。</p>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0.8rem; margin-top:1.5rem;">
+                <div style="text-align:center; padding:0.8rem; background:rgba(167,139,250,0.08); border-radius:8px; border:1px solid rgba(167,139,250,0.2);">
+                    <i class="fas fa-book-open" style="color:#a78bfa; font-size:1.3rem;"></i>
+                    <div style="font-size:0.8rem; color:#a78bfa; margin-top:0.4rem;">智慧</div>
+                </div>
+                <div style="text-align:center; padding:0.8rem; background:rgba(96,165,250,0.08); border-radius:8px; border:1px solid rgba(96,165,250,0.2);">
+                    <i class="fas fa-shield-alt" style="color:#60a5fa; font-size:1.3rem;"></i>
+                    <div style="font-size:0.8rem; color:#60a5fa; margin-top:0.4rem;">防護</div>
+                </div>
+                <div style="text-align:center; padding:0.8rem; background:rgba(74,222,128,0.08); border-radius:8px; border:1px solid rgba(74,222,128,0.2);">
+                    <i class="fas fa-dice" style="color:#4ade80; font-size:1.3rem;"></i>
+                    <div style="font-size:0.8rem; color:#4ade80; margin-top:0.4rem;">運氣</div>
+                </div>
+                <div style="text-align:center; padding:0.8rem; background:rgba(248,113,113,0.08); border-radius:8px; border:1px solid rgba(248,113,113,0.2);">
+                    <i class="fas fa-heart" style="color:#f87171; font-size:1.3rem;"></i>
+                    <div style="font-size:0.8rem; color:#f87171; margin-top:0.4rem;">健康</div>
+                </div>
+                <div style="text-align:center; padding:0.8rem; background:rgba(244,114,182,0.08); border-radius:8px; border:1px solid rgba(244,114,182,0.2);">
+                    <i class="fas fa-star" style="color:#f472b6; font-size:1.3rem;"></i>
+                    <div style="font-size:0.8rem; color:#f472b6; margin-top:0.4rem;">魅力</div>
+                </div>
+                <div style="text-align:center; padding:0.8rem; background:rgba(251,191,36,0.08); border-radius:8px; border:1px solid rgba(251,191,36,0.2);">
+                    <i class="fas fa-gem" style="color:#fbbf24; font-size:1.3rem;"></i>
+                    <div style="font-size:0.8rem; color:#fbbf24; margin-top:0.4rem;">財富</div>
+                </div>
+            </div>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Secret Drawer (秘密抽屜) -->
+    <div id="ov-secret" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-secret')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>Secret Drawer</h2>
+            <p class="ov-sub">What did the cat leave behind?</p>
+            <div class="ov-divider"></div>
+            <div style="text-align:center; margin:1.5rem 0;">
+                <i class="fas fa-scroll" style="font-size:3rem; color:var(--gold); opacity:0.6;"></i>
+            </div>
+            <p style="color:#d1d5db; line-height:1.8;">拉開來只有一張紙條：</p>
+            <div class="quote-block" style="margin:1.5rem 0;">
+                「Mishipeshu 到此一遊」
+            </div>
+            <p style="color:#d1d5db; line-height:1.8;">大貓貓又趁瑪庫斯不在時亂翻東西了。據說被發現時，貓貓翻了個白眼還酸溜溜地嘖了一聲：</p>
+            <p style="color:#fca5a5; line-height:1.8; text-align:center; margin-top:0.8rem;">「金價系五告摳蓮欸～」</p>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Storage Drawer (收納抽屜) -->
+    <div id="ov-storage" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-storage')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>The Organizer</h2>
+            <p class="ov-sub">INTJ-T precision, even in the occult</p>
+            <div class="ov-divider"></div>
+            <p style="color:#d1d5db; line-height:1.8;">身為 INTJ-T，就算是玄學道具也要分門別類。水晶擺錘、薰香、手寫筆記整齊排列。</p>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:0.8rem;">最底下壓著一份與烏列爾的「簽約紀錄」——當初是瑪庫斯主動提出簽約的，但後來才知道自己被做局了。</p>
+            <div class="quote-block" style="margin:1.5rem 0;">
+                「天使並沒有大家想像的這麼好，<br>
+                他們會說謊還會睜眼說瞎話。」
+            </div>
+            <div class="tag-box" style="margin-top:1.5rem;">
+                <div class="tag-label"><i class="fas fa-folder-open"></i> DRAWER CONTENTS</div>
+                <div class="tag-content">水晶擺錘 / 薰香組 / 手寫筆記 / 烏列爾簽約紀錄 / 靈媒工具組</div>
+            </div>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Cabinet (藥劑櫥櫃) -->
+    <div id="ov-cabinet" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-cabinet')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>Potion Cabinet</h2>
+            <p class="ov-sub">Three shelves of carefully labeled elixirs</p>
+            <div class="ov-divider"></div>
+            <p style="color:#d1d5db; line-height:1.8;">三層木架上排列著數十瓶精心標記的藥劑與礦石精華，用於高我連結、前世解讀、靈界溝通等服務。</p>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:0.8rem;">最上層那瓶琥珀色的——某位N歲的天使搶著說是他「認證」的配方。</p>
+            <div class="quote-block" style="margin:1.5rem 0;">
+                「我不管我不管～<br>我就想要～～」<br>
+                <span style="font-size:0.85rem; opacity:0.6;">—— 烏列爾，據稱是個天使</span>
+            </div>
+            <div class="book-section" style="margin-top:1.5rem;">
+                <div class="book-label"><i class="fas fa-flask"></i> SERVICES POWERED BY THIS CABINET</div>
+                <p style="font-size:0.85rem;">高我連結溝通 / 前世解讀 / 離世連結 / 礦靈媒合 / 詛咒移除 / 物品加持</p>
+            </div>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Vestibule Book (翻開的魔法書) -->
+    <div id="ov-vestbook" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-vestbook')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>The Open Grimoire</h2>
+            <p class="ov-sub">Notes scrawled in purple ink</p>
+            <div class="ov-divider"></div>
+            <p style="color:#d1d5db; line-height:1.8;">書頁停留在密契主義的章節，旁邊寫滿紫色墨水的筆記。</p>
+            <p style="color:#d1d5db; line-height:1.8; margin-top:0.8rem;">瑪庫斯接觸過十位數以上的高我——從八岐大蛇最小的孩子到希臘神祇，高我不分國界。</p>
+            <div class="tag-box" style="margin-top:1.5rem;">
+                <div class="tag-label"><i class="fas fa-feather-alt"></i> MARGIN NOTE</div>
+                <div class="tag-content" style="line-height:1.7;">問八岐大蛇最小的孩子「你老爹被人討伐你會不高興嗎？」<br>他回答：「那是他自己自作自受，所以我並不會不高興。」<br>——不愧是高我，價值觀跟人類的差異性都很大。</div>
+            </div>
+            <p style="color:rgba(192,132,252,0.5); font-size:0.85rem; text-align:center; margin-top:1.5rem; font-style:italic;">書籤夾著一片大貓貓的「鱗片」。</p>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- Mystery Chest -->
+    <div id="ov-chest" class="overlay">
+        <button class="ov-close" onclick="closeOverlay('ov-chest')"><i class="fas fa-times"></i></button>
+        <div class="ov-content">
+            <h2>Mystery Chest</h2>
+            <p class="ov-sub">What secrets does it hold?</p>
+            <div class="ov-divider"></div>
+            <div style="text-align:center; margin:1.5rem 0;">
+                <i class="fas fa-lock" style="font-size:3rem; color:var(--mystic-purple); opacity:0.5;"></i>
+            </div>
+            <p style="color:#d1d5db; line-height:1.8; text-align:center;">這個箱子上著鎖，表面刻著奇怪的符文。</p>
+            <p style="color:#d1d5db; line-height:1.8; text-align:center; margin-top:0.8rem;">隱約可以聽到裡面傳來微弱的嗡鳴聲，彷彿有什麼東西在裡面沉睡。</p>
+            <div class="quote-block" style="margin:1.5rem 0;">
+                「有些東西，時機到了自然會開啟。」<br>
+                <span style="font-size:0.85rem; opacity:0.5;">—— 瑪庫斯</span>
+            </div>
+            <p style="color:rgba(192,132,252,0.4); font-size:0.8rem; text-align:center; font-style:italic;">... 也許下次來訪時，鎖就會解開了。</p>
+            <div class="ov-footer">Made with ♥ by SuperGalen's Dungeon</div>
+        </div>
+    </div>
+
+    <!-- ════ SCRIPTS ════ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-
     <script>
-        // Audio elements
-        const doorSfx = document.getElementById('sfx-door-open');
+        /* ── Data ── */
+        /* Sprite positions in content3.webp (3x2 grid):
+           Row 0: Intelligence(0,0) Protection(1,0) Luck(2,0)
+           Row 1: Health(0,1)       Charm(1,1)      Wealth(2,1) */
+        const BUFFS = [
+            { name: '智慧', en: 'Intelligence', bgPos: '0% 0%', color: '#a78bfa', desc: '來自烏列爾的智慧加持——「不過他可能會順便拐你一輪邏輯戰。」' },
+            { name: '防護', en: 'Protection', bgPos: '50% 0%', color: '#60a5fa', desc: '大貓貓 Mishipeshu 的護盾。有人鬼鬼祟祟靠近你，就是沒安好心——護盾已啟動。' },
+            { name: '運氣', en: 'Luck', bgPos: '100% 0%', color: '#4ade80', desc: '好運正向你匯聚。如果有人想借你的運，大吼一聲把他嚇跑就行了。' },
+            { name: '健康', en: 'Health', bgPos: '0% 100%', color: '#f87171', desc: '身心靈的療癒能量溫柔包覆著你。帶有創傷也能展望未來，有做出選擇的人都是勇敢的。' },
+            { name: '魅力', en: 'Charm', bgPos: '50% 100%', color: '#f472b6', desc: '增幅你的氣場。用自己的腳步踏行在大地，感受一切的美，體會身邊的小確幸。' },
+            { name: '財富', en: 'Wealth', bgPos: '100% 100%', color: '#fbbf24', desc: '豐盛的能量流正在匯聯。這世界不完美，但同時也是完美的。' }
+        ];
 
-        // Loading Screen Removal
+        const POTIONS = [
+            { icon: '<i class="fas fa-eye"></i>', name: '高我連結溝通', price: 'NT$ 4,000', desc: '遠端語音進行高我連結與溝通，了解自身困境與疑問，也能知曉此生的人生大方向。高我不分國界——從八岐大蛇的孩子到希臘神祇都有可能。', note: '溝通時間約 1-2 小時，依困題複雜度調整。' },
+            { icon: '<i class="fas fa-scroll"></i>', name: '前世解讀', price: 'NT$ 3,500', desc: '遠端語音進行解讀，依每次隨機抓取訊號為主，前世解讀最多三世。從過去的篇章去了解累世的經驗，不指定時間軸。', note: '' },
+            { icon: '<i class="fas fa-language"></i>', name: '靈界翻譯溝通', price: '需估價', desc: '遠端語音進行靈界翻譯溝通，視情況報價。', note: '' },
+            { icon: '<i class="fas fa-dove"></i>', name: '離世連結溝通', price: '需估價', desc: '連結離世親人進行解讀，或宿緣對象協調、守護靈與指導靈溝通。', note: '請提前整理好想詢問的內容，不包含敏感爭議議題。' },
+            { icon: '<i class="fas fa-gem"></i>', name: '礦靈媒合', price: '個別定價', desc: '為你尋找命定的礦孩夥伴。每顆礦石都有自己的個性與偏好，配對需礦孩同意。綁定成功後會手繪礦孩專屬小卡。', note: '邀請金額依礦孩而異（例：青金石「盧娜」NT$2,800）。可加購礦訊解讀或加持。' },
+            { icon: '<i class="fas fa-bolt"></i>', name: '詛咒移除', price: '需估價', desc: '需評估詛咒的複雜程度來決定處理方式與報價。', note: '' },
+            { icon: '<i class="fas fa-flask"></i>', name: '物品加持', price: 'NT$ 6,000', desc: '需接觸到實體物品，附魔種類有：智慧、健康、運氣、魅力、財富、防護等。', note: '' }
+        ];
+
+        /* ── Loading ── */
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const loader = document.getElementById('loader');
@@ -364,112 +1100,240 @@
             }, 1000);
         });
 
-        // Scene Transition Logic
+        /* ── Scene Transitions ── */
         let activeScene = 'scene-gate';
+        const doorSfx = document.getElementById('sfx-door-open');
 
-        function changeScene(newSceneId) {
-            // Fade out current
+        function changeScene(id) {
             document.getElementById(activeScene).classList.remove('active');
-
-            // Fade in new
-            activeScene = newSceneId;
-            document.getElementById(activeScene).classList.add('active');
+            activeScene = id;
+            document.getElementById(id).classList.add('active');
         }
 
-        function openPanel(panelId) {
-            document.getElementById(panelId).classList.add('open');
+        let currentOverlay = null;
+        const backdrop = document.getElementById('overlay-backdrop');
+
+        function openOverlay(id) {
+            if (currentOverlay) closeOverlay(currentOverlay);
+            document.getElementById(id).classList.add('open');
+            backdrop.classList.add('open');
+            currentOverlay = id;
         }
-
-        function closePanel(panelId) {
-            document.getElementById(panelId).classList.remove('open');
+        function closeOverlay(id) {
+            document.getElementById(id).classList.remove('open');
+            backdrop.classList.remove('open');
+            currentOverlay = null;
         }
+        backdrop.addEventListener('click', () => {
+            if (currentOverlay) closeOverlay(currentOverlay);
+        });
 
-        // Interaction Bindings
-
-        // Stage 1 -> Stage 2 (Gate -> Bright Room)
+        // Gate → Vestibule
         document.getElementById('btn-gate').addEventListener('click', () => {
-            // Play sound
-            doorSfx.currentTime = 0;
-            doorSfx.volume = 0.5;
-            doorSfx.play().catch(e => console.log("Audio play failed:", e));
-
-            // Visual feedback: change icon to open door
-            document.getElementById('gate-icon').classList.remove('fa-door-closed');
-            document.getElementById('gate-icon').classList.add('fa-door-open');
+            doorSfx.currentTime = 0; doorSfx.volume = 0.4;
+            doorSfx.play().catch(() => {});
+            const icon = document.getElementById('gate-icon');
+            icon.classList.replace('fa-door-closed', 'fa-door-open');
             triggerMagicBurst();
-
-            // Transition
             setTimeout(() => {
                 changeScene('scene-exterior');
-                // Reset icon for when user comes back
-                setTimeout(() => {
-                    document.getElementById('gate-icon').classList.remove('fa-door-open');
-                    document.getElementById('gate-icon').classList.add('fa-door-closed');
-                }, 1000);
+                setTimeout(() => icon.classList.replace('fa-door-open', 'fa-door-closed'), 1000);
             }, 800);
         });
 
-        // Stage 2 -> Stage 3 (Bright Room -> Workshop)
+        // Vestibule → Workshop
         document.getElementById('btn-enter').addEventListener('click', () => {
-            // Play sound
-            doorSfx.currentTime = 0;
-            doorSfx.volume = 0.5;
-            doorSfx.play().catch(e => console.log("Audio play failed:", e));
-
+            doorSfx.currentTime = 0; doorSfx.volume = 0.4;
+            doorSfx.play().catch(() => {});
             triggerMagicBurst();
-            setTimeout(() => {
-                changeScene('scene-interior');
-            }, 500);
+            setTimeout(() => changeScene('scene-interior'), 500);
         });
 
-        document.getElementById('btn-books').addEventListener('click', () => {
-            openPanel('panel-about');
+        // Vestibule hitboxes → Guardian Overlays
+        document.getElementById('btn-painting').addEventListener('click', (e) => { e.stopPropagation(); openOverlay('ov-uriel'); triggerMagicBurst(); });
+        document.getElementById('btn-wallart').addEventListener('click', (e) => { e.stopPropagation(); openOverlay('ov-mishipeshu'); triggerMagicBurst(); });
+
+        // Vestibule hitboxes → overlays
+        document.getElementById('btn-tablepotions').addEventListener('click', (e) => { e.stopPropagation(); openOverlay('ov-enchant'); triggerMagicBurst(); });
+        document.getElementById('btn-smalldrawer').addEventListener('click', (e) => { e.stopPropagation(); openOverlay('ov-secret'); triggerMagicBurst(); });
+        document.getElementById('btn-bigdrawer').addEventListener('click', (e) => { e.stopPropagation(); openOverlay('ov-storage'); triggerMagicBurst(); });
+        document.getElementById('btn-cabinet').addEventListener('click', (e) => { e.stopPropagation(); openOverlay('ov-cabinet'); triggerMagicBurst(); });
+        document.getElementById('btn-vestbook').addEventListener('click', (e) => { e.stopPropagation(); openOverlay('ov-vestbook'); triggerMagicBurst(); });
+
+        // Workshop hitboxes → each unique
+        document.getElementById('btn-altar').addEventListener('click', () => { openOverlay('ov-cauldron'); triggerMagicBurst(); });
+        document.getElementById('btn-crystal').addEventListener('click', () => openOverlay('ov-apothecary'));
+        document.getElementById('btn-books').addEventListener('click', () => openOverlay('ov-grimoire'));
+        document.getElementById('btn-potions').addEventListener('click', () => openOverlay('ov-minerals'));
+        document.getElementById('btn-bookshelf').addEventListener('click', () => openOverlay('ov-archive'));
+        document.getElementById('btn-chest').addEventListener('click', () => { openOverlay('ov-chest'); triggerMagicBurst(); });
+
+        /* ── Hitbox Glow Elements ── */
+        function createGlows() {
+            document.querySelectorAll('.scene-inner').forEach(scene => {
+                const pw = scene.offsetWidth;
+                const ph = scene.offsetHeight;
+                if (!pw || !ph) return;
+                scene.querySelectorAll('.hitbox').forEach(hb => {
+                    if (hb._glow) return; // already created
+                    const glow = document.createElement('div');
+                    glow.className = 'hitbox-glow';
+                    // Get hitbox position as percentage of parent
+                    const l = hb.offsetLeft / pw * 100;
+                    const t = hb.offsetTop / ph * 100;
+                    const w = hb.offsetWidth / pw * 100;
+                    const h = hb.offsetHeight / ph * 100;
+                    // Expand glow 100% outward from center (2x size)
+                    glow.style.left = (l - w * 0.5) + '%';
+                    glow.style.top = (t - h * 0.5) + '%';
+                    glow.style.width = (w * 2) + '%';
+                    glow.style.height = (h * 2) + '%';
+                    scene.appendChild(glow);
+                    hb._glow = glow;
+                    hb.addEventListener('mouseenter', () => glow.classList.add('active'));
+                    hb.addEventListener('mouseleave', () => glow.classList.remove('active'));
+                });
+            });
+        }
+        // Run after layout is ready
+        requestAnimationFrame(() => requestAnimationFrame(createGlows));
+
+        /* ── Hitbox Hover Hint System ── */
+        const hintLabel = document.createElement('div');
+        hintLabel.className = 'hint-label';
+        document.body.appendChild(hintLabel);
+
+        document.querySelectorAll('.hitbox[data-hint]').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                hintLabel.textContent = el.dataset.hint;
+                const rect = el.getBoundingClientRect();
+                let top = rect.top - 36;
+                let left = rect.left + rect.width / 2;
+                // If too close to top, show below
+                if (top < 10) top = rect.bottom + 8;
+                // Keep in viewport horizontally
+                hintLabel.style.left = Math.max(60, Math.min(left, window.innerWidth - 60)) + 'px';
+                hintLabel.style.top = top + 'px';
+                hintLabel.style.transform = 'translateX(-50%) translateY(0)';
+                hintLabel.classList.add('visible');
+            });
+            el.addEventListener('mouseleave', () => {
+                hintLabel.classList.remove('visible');
+            });
         });
 
-        document.getElementById('btn-crystal').addEventListener('click', () => {
-            openPanel('panel-services');
-            triggerMagicBurst();
+        /* ── Grimoire Tabs ── */
+        document.querySelectorAll('.grimoire-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.grimoire-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.grimoire-page').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.page).classList.add('active');
+            });
         });
 
-        document.getElementById('btn-altar').addEventListener('click', () => {
-            openPanel('panel-guardians');
+        /* ── Cauldron Brew ── */
+        const brewBtn = document.getElementById('brew-btn');
+        const buffCard = document.getElementById('buff-card');
+        const buffCardInner = document.getElementById('buff-card-inner');
+        const buffRebrew = document.getElementById('buff-rebrew');
+
+        function brewBuff() {
+            const buff = BUFFS[Math.floor(Math.random() * BUFFS.length)];
+            document.getElementById('buff-icon').style.backgroundPosition = buff.bgPos;
+            document.getElementById('buff-name').textContent = buff.name;
+            document.getElementById('buff-name').style.color = buff.color;
+            document.getElementById('buff-en').textContent = buff.en;
+            document.getElementById('buff-desc').textContent = buff.desc;
+            buffCard.classList.add('revealed');
+            // Re-trigger flip animation
+            buffCardInner.style.animation = 'none';
+            buffCardInner.offsetHeight; // force reflow
+            buffCardInner.style.animation = 'cardFlip 0.8s ease forwards';
+            brewBtn.style.display = 'none';
+        }
+
+        brewBtn.addEventListener('click', brewBuff);
+        buffRebrew.addEventListener('click', () => {
+            buffCard.classList.remove('revealed');
+            brewBtn.style.display = '';
         });
 
-        // ==== p5.js Magical Particles & Cursor ====
+        /* ── Apothecary Potion Grid ── */
+        const potionGrid = document.getElementById('potion-grid');
+        const potionDetailArea = document.getElementById('potion-detail-area');
+        let activePotionIdx = -1;
+
+        POTIONS.forEach((p, i) => {
+            const el = document.createElement('div');
+            el.className = 'potion-bottle';
+            el.innerHTML = `<div class="potion-icon">${p.icon}</div><div class="potion-name">${p.name}</div><div class="potion-price">${p.price}</div>`;
+            el.addEventListener('click', () => togglePotionDetail(i));
+            potionGrid.appendChild(el);
+        });
+
+        function togglePotionDetail(idx) {
+            if (activePotionIdx === idx) {
+                potionDetailArea.innerHTML = '';
+                activePotionIdx = -1;
+                return;
+            }
+            activePotionIdx = idx;
+            const p = POTIONS[idx];
+            potionDetailArea.innerHTML = `
+                <div class="potion-detail active">
+                    <h3>${p.icon} ${p.name} — ${p.price}</h3>
+                    <p>${p.desc}</p>
+                    ${p.note ? `<div class="potion-note">* ${p.note}</div>` : ''}
+                </div>`;
+        }
+
+        /* ── p5.js Particles ── */
         let triggerMagicBurst = () => {};
 
         const sketch = (p) => {
-            let trails = [];
-            let bursts = [];
-            let ambientMotes = [];
+            let trails = [], bursts = [], motes = [];
+            // Color palettes — gold/amber for witch atmosphere
+            const GOLD_COLS = [
+                [252, 211, 77],   // bright gold
+                [251, 191, 36],   // amber
+                [245, 158, 11],   // warm orange-gold
+                [254, 243, 199],  // pale gold
+                [217, 180, 100],  // muted gold
+            ];
+            const PURPLE_COLS = [
+                [192, 132, 252],  // mystic purple
+                [167, 139, 250],  // soft lavender
+            ];
 
             p.setup = () => {
-                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-container');
+                p.createCanvas(p.windowWidth, p.windowHeight).parent('p5-container');
                 p.noStroke();
-
-                // Initialize ambient motes (dust/fireflies)
-                for(let i=0; i<80; i++) {
-                    ambientMotes.push({
-                        x: p.random(p.width),
-                        y: p.random(p.height),
-                        vx: p.random(-0.5, 0.5),
-                        vy: p.random(-0.5, -0.1),
-                        size: p.random(1, 4),
-                        offset: p.random(1000)
+                // Mix of gold and purple motes — 70% gold, 30% purple
+                for (let i = 0; i < 50; i++) {
+                    const isGold = p.random() < 0.7;
+                    const col = isGold
+                        ? GOLD_COLS[Math.floor(p.random(GOLD_COLS.length))]
+                        : PURPLE_COLS[Math.floor(p.random(PURPLE_COLS.length))];
+                    motes.push({
+                        x: p.random(p.width), y: p.random(p.height),
+                        vx: p.random(-0.3, 0.3), vy: p.random(-0.35, -0.05),
+                        size: p.random(1, isGold ? 4 : 3),
+                        offset: p.random(1000), col: col,
+                        twinkleSpeed: p.random(0.02, 0.06),
+                        brightness: isGold ? p.random(0.8, 1.2) : 0.7
                     });
                 }
-
                 triggerMagicBurst = () => {
-                    for(let i=0; i<40; i++) {
+                    for (let i = 0; i < 25; i++) {
+                        const col = p.random() < 0.6
+                            ? GOLD_COLS[Math.floor(p.random(GOLD_COLS.length))]
+                            : PURPLE_COLS[Math.floor(p.random(PURPLE_COLS.length))];
                         bursts.push({
-                            x: p.width/2 + p.random(-100, 100),
-                            y: p.height/2 + p.random(-100, 100),
-                            life: 255,
-                            vx: p.random(-6, 6),
-                            vy: p.random(-6, 6),
-                            size: p.random(4, 15),
-                            col: [192, 132, 252]
+                            x: p.width / 2 + p.random(-100, 100),
+                            y: p.height / 2 + p.random(-100, 100),
+                            life: 255, vx: p.random(-6, 6), vy: p.random(-6, 6),
+                            size: p.random(3, 14), col: col
                         });
                     }
                 };
@@ -477,65 +1341,61 @@
 
             p.draw = () => {
                 p.clear();
-
-                // Render Ambient Motes
-                p.fill(192, 132, 252, 100);
-                for(let i=0; i<ambientMotes.length; i++) {
-                    let m = ambientMotes[i];
-                    m.x += m.vx + p.sin(p.frameCount * 0.01 + m.offset) * 0.5;
-                    m.y += m.vy;
-
-                    if(m.y < -10) m.y = p.height + 10;
-                    if(m.x < -10) m.x = p.width + 10;
-                    if(m.x > p.width + 10) m.x = -10;
-
-                    let alpha = p.map(p.sin(p.frameCount * 0.05 + m.offset), -1, 1, 50, 150);
-                    p.fill(192, 132, 252, alpha);
+                // Ambient motes — floating witch dust
+                for (let m of motes) {
+                    m.x += m.vx + p.sin(p.frameCount * 0.008 + m.offset) * 0.5;
+                    m.y += m.vy + p.cos(p.frameCount * 0.006 + m.offset) * 0.15;
+                    if (m.y < -10) { m.y = p.height + 10; m.x = p.random(p.width); }
+                    if (m.x < -10) m.x = p.width + 10;
+                    if (m.x > p.width + 10) m.x = -10;
+                    // Twinkle effect
+                    let a = p.map(p.sin(p.frameCount * m.twinkleSpeed + m.offset), -1, 1, 25, 140) * m.brightness;
+                    // Outer glow
+                    p.fill(m.col[0], m.col[1], m.col[2], a * 0.3);
+                    p.circle(m.x, m.y, m.size * 2.5);
+                    // Core
+                    p.fill(m.col[0], m.col[1], m.col[2], a);
                     p.circle(m.x, m.y, m.size);
+                    // White hot center for gold motes
+                    if (m.brightness > 0.9 && a > 80) {
+                        p.fill(255, 255, 240, a * 0.6);
+                        p.circle(m.x, m.y, m.size * 0.35);
+                    }
                 }
-
-                // Cursor trails
-                if (p.mouseX !== 0 && p.mouseY !== 0 && (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY)) {
-                    for(let i=0; i<3; i++) {
+                // Cursor trails — golden sparkle
+                if (trails.length < 100 && p.mouseX && (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY)) {
+                    for (let i = 0; i < 2; i++) {
+                        const col = p.random() < 0.65
+                            ? GOLD_COLS[Math.floor(p.random(GOLD_COLS.length))]
+                            : PURPLE_COLS[Math.floor(p.random(PURPLE_COLS.length))];
                         trails.push({
-                            x: p.mouseX + p.random(-15, 15),
-                            y: p.mouseY + p.random(-15, 15),
-                            life: 255,
-                            vx: p.random(-1, 1),
-                            vy: p.random(-2, 0.5),
-                            size: p.random(2, 6),
-                            col: p.random() > 0.5 ? [192, 132, 252] : [232, 121, 249]
+                            x: p.mouseX + p.random(-10, 10), y: p.mouseY + p.random(-10, 10),
+                            life: 255, vx: p.random(-0.6, 0.6), vy: p.random(-1.2, 0.2),
+                            size: p.random(2, 5), col: col
                         });
                     }
                 }
-
-                // Render Trails
                 for (let i = trails.length - 1; i >= 0; i--) {
-                    let t = trails[i];
-                    t.x += t.vx; t.y += t.vy; t.life -= 7;
-
-                    if (t.life <= 0) trails.splice(i, 1);
-                    else {
-                        p.fill(t.col[0], t.col[1], t.col[2], t.life * 0.6);
-                        p.circle(t.x, t.y, t.size * 1.5);
-                        p.fill(255, 255, 255, t.life);
-                        p.circle(t.x, t.y, t.size * 0.5);
-                    }
+                    let t = trails[i]; t.x += t.vx; t.y += t.vy; t.life -= 6;
+                    if (t.life <= 0) { trails.splice(i, 1); continue; }
+                    p.fill(t.col[0], t.col[1], t.col[2], t.life * 0.35);
+                    p.circle(t.x, t.y, t.size * 2);
+                    p.fill(t.col[0], t.col[1], t.col[2], t.life * 0.6);
+                    p.circle(t.x, t.y, t.size);
+                    p.fill(255, 255, 240, t.life * 0.8);
+                    p.circle(t.x, t.y, t.size * 0.3);
                 }
-
-                // Render Bursts
+                // Bursts
                 for (let i = bursts.length - 1; i >= 0; i--) {
-                    let b = bursts[i];
-                    b.x += b.vx; b.y += b.vy; b.life -= 8;
-                    b.vx *= 0.95; b.vy *= 0.95; // Friction
-
-                    if (b.life <= 0) bursts.splice(i, 1);
-                    else {
-                        p.fill(b.col[0], b.col[1], b.col[2], b.life);
-                        p.circle(b.x, b.y, b.size);
-                        p.fill(255, 255, 255, b.life * 0.8);
-                        p.circle(b.x, b.y, b.size * 0.5);
-                    }
+                    let b = bursts[i]; b.x += b.vx; b.y += b.vy; b.life -= 7;
+                    b.vx *= 0.94; b.vy *= 0.94;
+                    if (b.life <= 0) { bursts.splice(i, 1); continue; }
+                    p.fill(b.col[0], b.col[1], b.col[2], b.life * 0.4);
+                    p.circle(b.x, b.y, b.size * 2);
+                    p.fill(b.col[0], b.col[1], b.col[2], b.life);
+                    p.circle(b.x, b.y, b.size);
+                    p.fill(255, 255, 240, b.life * 0.6);
+                    p.circle(b.x, b.y, b.size * 0.35);
                 }
             };
 

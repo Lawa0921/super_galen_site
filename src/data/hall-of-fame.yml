@@ -1074,13 +1074,13 @@ members:
 
   - id: "raven_office"
     name: "Raven"
-    avatar: "/assets/raven_office/profile.webp"
+    avatar: "/assets/raven_office/cards.webp"
     page: "/guild/raven_office.html"
     tags:
       - id: "mystic"
         label: "密契主義"
-      - id: "witch"
-        label: "女巫"
+      - id: "medium"
+        label: "靈媒"
       - id: "alchemy"
         label: "煉金"
 
