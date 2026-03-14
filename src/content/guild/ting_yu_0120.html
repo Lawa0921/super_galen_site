@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Experiment Report #0120 -- Ting</title>
+  <meta name="description" content="Experiment #0120: The Pathfinder -- a formal laboratory report." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Noto+Sans+TC:wght@400&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    :root {
+      --paper: #f5f0e8;
+      --paper-dark: #ddd5c3;
+      --grid-line: rgba(100, 140, 190, 0.12);
+      --grid-line-thick: rgba(100, 140, 190, 0.22);
+      --margin-red: rgba(200, 60, 60, 0.35);
+      --ink: #1a1a2e;
+      --ink-faded: #3d3d5c;
+      --ink-light: #6b6b8a;
+      --blue-pen: #1e40af;
+      --red-pen: #b91c1c;
+      --green-pen: #166534;
+      --pencil: #8b8680;
+      --stamp-red: #c0392b;
+      --stamp-blue: #2563eb;
+      --highlight-yellow: rgba(250, 204, 21, 0.35);
+      --highlight-green: rgba(74, 222, 128, 0.25);
+      --binder-hole: #c4b8a4;
+      --shadow: rgba(0,0,0,0.08);
+      --coffee: rgba(139, 90, 43, 0.08);
+
+      --f-typewriter: 'Special Elite', 'Courier New', monospace;
+      --f-body: 'Noto Sans TC', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+      --f-hand: 'Caveat', cursive;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: #d5cfc3;
+      color: var(--ink);
+      font-family: var(--f-body);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #c4b8a4; }
+    ::-webkit-scrollbar-thumb { background: #a09484; border-radius: 3px; }
+
+    /* ===== NAV ===== */
+    .nav-back {
+      position: fixed; top: 16px; left: 16px; z-index: 9100;
+      text-decoration: none; color: var(--ink-light);
+      font: 400 11px/1 var(--f-mono); letter-spacing: 2px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 6px;
+      background: var(--paper); padding: 6px 12px; border-radius: 2px;
+      box-shadow: 1px 2px 4px var(--shadow);
+      transition: all 0.3s;
+    }
+    .nav-back:hover { color: var(--blue-pen); box-shadow: 1px 2px 8px var(--shadow); }
+
+    /* ===== REPORT CONTAINER ===== */
+    .report {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 20px 20px 60px;
+      perspective: 1200px;
+    }
+
+    /* ===== PAPER PAGE ===== */
+    .page {
+      background: var(--paper);
+      border: 1px solid var(--paper-dark);
+      box-shadow: 2px 3px 12px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+      padding: 60px 60px 60px 90px;
+      position: relative;
+      transform-origin: center bottom;
+      will-change: transform, opacity;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(var(--grid-line-thick) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line-thick) 1px, transparent 1px);
+      background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+      background-color: var(--paper);
+    }
+
+    /* Red margin line */
+    .page::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; left: 72px;
+      width: 2px;
+      background: var(--margin-red);
+    }
+
+    /* Binder holes */
+    .page::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 22px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--binder-hole);
+      border: 2px solid #b0a490;
+      transform: translateY(-50%);
+      box-shadow:
+        0 -180px 0 0 var(--binder-hole),
+        0 -178px 0 0 var(--binder-hole),
+        0 180px 0 0 var(--binder-hole),
+        0 182px 0 0 var(--binder-hole);
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 20px; right: 30px;
+      font: 400 10px/1 var(--f-mono);
+      color: var(--pencil);
+    }
+
+    /* Initial state for page-flip animation */
+    .page-flip {
+      opacity: 0;
+      transform: rotateX(-4deg) translateY(40px) scale(0.98);
+    }
+
+    /* ===== COVER PAGE ===== */
+    .cover {
+      text-align: center;
+      padding: 80px 60px;
+      min-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cover-uni {
+      font: 400 14px/1 var(--f-typewriter);
+      color: var(--ink-faded);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .cover-dept {
+      font: 400 11px/1 var(--f-mono);
+      color: var(--ink-light);
+      letter-spacing: 3px;
+      margin-bottom: 60px;
+    }
+
+    .cover-title-line {
+      width: 100%;
+      max-width: 480px;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .cover-title-line h1 {
+      font: 700 28px/1.2 var(--f-typewriter);
+      color: var(--ink);
+      letter-spacing: 2px;
+    }
+    .cover-subtitle {
+      font: 500 15px/1.4 var(--f-typewriter);
+      color: var(--ink-faded);
+      margin-bottom: 50px;
+      letter-spacing: 1px;
+    }
+
+    .cover-meta {
+      text-align: left;
+      max-width: 380px;
+      width: 100%;
+    }
+    .cover-field {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--ink-light);
+      padding-bottom: 4px;
+    }
+    .cover-field-label {
+      font: 400 10px/1 var(--f-mono);
+      color: var(--ink-light);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      width: 120px;
+      flex-shrink: 0;
+    }
+    .cover-field-value {
+      font: 400 16px/1.2 var(--f-hand);
+      color: var(--blue-pen);
+      flex: 1;
+    }
+
+    /* Photo attached with "tape" */
+    .cover-photo-area {
+      margin: 40px auto 30px;
+      position: relative;
+      display: inline-block;
+    }
+    .cover-photo {
+      width: 140px; height: 140px;
+      object-fit: cover;
+      border: 4px solid white;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
+      transform: rotate(-2deg);
+    }
+    .tape {
+      position: absolute;
+      width: 60px; height: 20px;
+      background: rgba(255,255,220,0.6);
+      border: 1px solid rgba(200,190,160,0.4);
+    }
+    .tape-tl { top: -8px; left: -10px; transform: rotate(-15deg); }
+    .tape-br { bottom: -8px; right: -10px; transform: rotate(10deg); }
+
+    .cover-stamp {
+      position: absolute;
+      bottom: 60px; right: 40px;
+      font: 700 22px/1 var(--f-typewriter);
+      color: var(--stamp-red);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      border: 3px solid var(--stamp-red);
+      padding: 8px 16px;
+      transform: rotate(-8deg);
+      opacity: 0.7;
+    }
+
+    /* Coffee stain */
+    .coffee-stain {
+      position: absolute;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, transparent 30%, var(--coffee) 31%, var(--coffee) 38%, transparent 39%);
+      pointer-events: none;
+    }
+
+    /* ===== SECTION HEADERS ===== */
+    .section-num {
+      font: 400 11px/1 var(--f-mono);
+      color: var(--ink-light);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .section-title {
+      font: 700 20px/1.3 var(--f-typewriter);
+      color: var(--ink);
+      margin-bottom: 24px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--ink-light);
+    }
+
+    /* ===== TYPEWRITER BODY TEXT ===== */
+    .body-text {
+      font: 400 14px/2.0 var(--f-body);
+      color: var(--ink);
+      margin-bottom: 20px;
+    }
+    .body-text em {
+      font-style: normal;
+      background: var(--highlight-yellow);
+      padding: 1px 3px;
+    }
+
+    /* ===== HANDWRITTEN MARGIN NOTES ===== */
+    .margin-note {
+      position: absolute;
+      left: 8px;
+      width: 56px;
+      font: 500 13px/1.3 var(--f-hand);
+      color: var(--red-pen);
+      text-align: right;
+      transform: rotate(-3deg);
+    }
+
+    /* ===== HANDWRITTEN ANNOTATION ===== */
+    .hand-note {
+      font: 500 18px/1.4 var(--f-hand);
+      color: var(--blue-pen);
+    }
+    .hand-note-red {
+      font: 600 18px/1.4 var(--f-hand);
+      color: var(--red-pen);
+    }
+
+    /* ===== ABSTRACT BOX ===== */
+    .abstract-box {
+      border: 1px solid var(--ink-light);
+      padding: 20px 24px;
+      margin: 20px 0;
+      position: relative;
+    }
+    .abstract-label {
+      position: absolute;
+      top: -10px; left: 16px;
+      background: var(--paper);
+      padding: 0 8px;
+      font: 400 10px/1 var(--f-mono);
+      color: var(--ink-light);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .abstract-text {
+      font: 400 15px/1.8 var(--f-body);
+      color: var(--ink-faded);
+    }
+    .abstract-text .underline {
+      text-decoration: underline;
+      text-decoration-color: var(--red-pen);
+      text-underline-offset: 3px;
+    }
+
+    /* ===== PROTOCOL TABLE ===== */
+    .protocol-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    .protocol-table th {
+      font: 400 10px/1 var(--f-mono);
+      color: var(--ink-light);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+    .protocol-table td {
+      font: 400 13px/1.6 var(--f-body);
+      color: var(--ink);
+      padding: 12px;
+      border-bottom: 1px solid var(--grid-line-thick);
+      vertical-align: top;
+    }
+    .protocol-table .step-num {
+      font: 700 14px/1 var(--f-typewriter);
+      color: var(--blue-pen);
+    }
+    .protocol-table .step-name {
+      font: 600 13px/1 var(--f-mono);
+      color: var(--ink);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .protocol-table .checked {
+      color: var(--green-pen);
+      font-size: 16px;
+    }
+
+    /* ===== OBSERVATION (Turning Point) ===== */
+    .obs-alert {
+      border: 2px solid var(--red-pen);
+      background: rgba(185, 28, 28, 0.04);
+      padding: 24px;
+      margin: 20px 0;
+      position: relative;
+    }
+    .obs-alert-label {
+      position: absolute;
+      top: -12px; left: 16px;
+      background: var(--red-pen);
+      color: white;
+      font: 700 10px/1 var(--f-mono);
+      letter-spacing: 2px;
+      padding: 4px 10px;
+    }
+    .obs-alert-quote {
+      font: 700 36px/1.2 var(--f-hand);
+      color: var(--red-pen);
+      margin: 12px 0;
+      text-align: center;
+    }
+    .obs-alert-body {
+      font: 400 14px/1.8 var(--f-body);
+      color: var(--ink);
+    }
+
+    /* ===== RESULTS: BAR CHART ===== */
+    .chart-container { margin: 24px 0; padding: 20px 0; }
+    .chart-title {
+      font: 400 10px/1 var(--f-mono);
+      color: var(--ink-light);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+    .bar-label {
+      width: 110px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .bar-label .bar-symbol {
+      font: 700 14px/1 var(--f-typewriter);
+      color: var(--ink);
+      display: block;
+    }
+    .bar-label .bar-name {
+      font: 400 10px/1 var(--f-mono);
+      color: var(--ink-light);
+      letter-spacing: 1px;
+    }
+    .bar-track {
+      flex: 1; height: 24px;
+      background: rgba(0,0,0,0.03);
+      border: 1px solid var(--grid-line-thick);
+      position: relative; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; width: 0;
+      transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: relative;
+    }
+    .bar-fill::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.25) 3px, rgba(255,255,255,0.25) 6px);
+    }
+    .bar-value {
+      font: 400 11px/1 var(--f-hand);
+      color: var(--ink-faded);
+      width: 40px; flex-shrink: 0;
+    }
+    .bar-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink); color: var(--paper);
+      font: 400 12px/1.4 var(--f-body);
+      padding: 8px 12px; border-radius: 3px;
+      max-width: 220px; white-space: normal;
+      z-index: 10; pointer-events: none;
+    }
+    .bar-tooltip::after {
+      content: '';
+      position: absolute; top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--ink);
+    }
+    .bar-row:hover .bar-tooltip { display: block; }
+
+    /* ===== DISCUSSION: CATALYST CARDS ===== */
+    .catalyst-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px; margin: 20px 0;
+    }
+    .catalyst-card {
+      border: 1px solid var(--ink-light);
+      padding: 20px 16px; text-align: center;
+      position: relative; background: var(--paper);
+    }
+    .catalyst-card::before {
+      content: attr(data-num);
+      position: absolute; top: -10px; left: 12px;
+      font: 700 11px/1 var(--f-typewriter);
+      color: var(--blue-pen);
+      background: var(--paper); padding: 0 4px;
+    }
+    .catalyst-icon { font-size: 28px; margin-bottom: 12px; display: block; }
+    .catalyst-name {
+      font: 700 13px/1 var(--f-typewriter);
+      color: var(--ink); letter-spacing: 2px; margin-bottom: 4px;
+    }
+    .catalyst-formula {
+      font: 400 12px/1 var(--f-mono);
+      color: var(--ink-light); margin-bottom: 12px;
+    }
+    .catalyst-desc {
+      font: 400 12px/1.6 var(--f-body);
+      color: var(--ink-faded);
+    }
+
+    /* ===== CONCLUSION ===== */
+    .conclusion-block {
+      border-top: 2px solid var(--ink);
+      padding-top: 24px; margin-top: 20px;
+    }
+    .conclusion-text {
+      font: 400 15px/2.0 var(--f-body);
+      color: var(--ink); margin-bottom: 24px;
+    }
+    .conclusion-text .key-phrase {
+      background: var(--highlight-green);
+      padding: 1px 4px;
+    }
+    .sig-area {
+      display: flex; justify-content: space-between;
+      align-items: flex-end; margin-top: 40px; padding-top: 20px;
+    }
+    .sig-block { text-align: center; }
+    .sig-line {
+      width: 160px; border-bottom: 1px solid var(--ink);
+      margin-bottom: 6px; padding-bottom: 4px;
+    }
+    .sig-name { font: 600 20px/1 var(--f-hand); color: var(--blue-pen); }
+    .sig-label {
+      font: 400 9px/1 var(--f-mono);
+      color: var(--ink-light); letter-spacing: 2px; text-transform: uppercase;
+    }
+    .sig-date { font: 400 14px/1 var(--f-hand); color: var(--blue-pen); }
+
+    .final-stamp {
+      display: inline-block;
+      font: 700 18px/1 var(--f-typewriter);
+      color: var(--stamp-blue); letter-spacing: 4px;
+      text-transform: uppercase;
+      border: 3px solid var(--stamp-blue);
+      padding: 10px 20px; transform: rotate(-6deg);
+      opacity: 0.75; margin-top: 20px;
+    }
+
+    /* ===== ATTACHED PHOTOS ===== */
+    .attached-photo {
+      position: relative; display: inline-block; margin: 20px 0;
+    }
+    .attached-photo img {
+      max-width: 280px; border: 3px solid white;
+      box-shadow: 2px 3px 8px rgba(0,0,0,0.12);
+    }
+    .attached-photo .tape {
+      position: absolute; width: 50px; height: 18px;
+      background: rgba(255,255,220,0.6);
+      border: 1px solid rgba(200,190,160,0.4);
+    }
+    .attached-photo .tape-top { top: -6px; left: 50%; transform: translateX(-50%) rotate(2deg); }
+    .attached-photo-caption {
+      font: 400 11px/1.3 var(--f-hand);
+      color: var(--pencil); text-align: center; margin-top: 6px;
+    }
+    .photo-row {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      align-items: flex-start; margin: 20px 0;
+    }
+    .photo-row .attached-photo img { max-width: 200px; }
+    .id-badge {
+      display: inline-flex; align-items: center; gap: 12px;
+      border: 1px dashed var(--ink-light);
+      padding: 8px 12px; margin: 12px 0;
+      background: rgba(255,255,255,0.3);
+    }
+    .id-badge img {
+      width: 48px; height: 48px; object-fit: cover;
+      border-radius: 4px; border: 1px solid var(--paper-dark);
+    }
+    .id-badge-text {
+      font: 400 10px/1.4 var(--f-mono);
+      color: var(--ink-light); letter-spacing: 1px;
+    }
+    .id-badge-name {
+      font: 600 13px/1 var(--f-typewriter);
+      color: var(--ink); display: block; margin-bottom: 2px;
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      max-width: 820px; margin: 0 auto 40px;
+      padding: 20px; text-align: center;
+    }
+    .footer-threads {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none;
+      font: 400 12px/1 var(--f-mono);
+      color: var(--ink-light); letter-spacing: 1px; transition: color 0.3s;
+    }
+    .footer-threads:hover { color: var(--ink); }
+    .footer-credit {
+      margin-top: 12px;
+      font: 400 11px/1.4 var(--f-mono); color: var(--pencil);
+    }
+    .footer-credit a { color: var(--pencil); text-decoration: none; }
+    .footer-credit a:hover { color: var(--ink); }
+
+    /* ===== GATE ANIMATION ===== */
+    .gate {
+      position: fixed; inset: 0; z-index: 10000;
+      background: var(--paper);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .gate-line {
+      font: 400 14px/1.8 var(--f-typewriter);
+      color: var(--ink-faded); letter-spacing: 2px; opacity: 0;
+    }
+    .gate-line.accent { color: var(--blue-pen); }
+    .gate-cursor {
+      display: inline-block; width: 8px; height: 16px;
+      background: var(--ink); animation: blink .6s step-end infinite;
+      vertical-align: middle; margin-left: 2px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .report { padding: 12px; perspective: 800px; }
+      .page {
+        padding: 40px 20px 40px 48px;
+        background-size: 16px 16px, 16px 16px, 80px 80px, 80px 80px;
+      }
+      .page::before { left: 36px; }
+      .page::after { left: 10px; width: 14px; height: 14px;
+        box-shadow: 0 -120px 0 0 var(--binder-hole), 0 120px 0 0 var(--binder-hole);
+      }
+      .cover { padding: 50px 20px; min-height: auto; }
+      .cover-title-line h1 { font-size: 22px; }
+      .cover-stamp { position: relative; bottom: auto; right: auto; margin-top: 30px; }
+      .margin-note { display: none; }
+      .catalyst-grid { grid-template-columns: 1fr; }
+      .sig-area { flex-direction: column; align-items: center; gap: 24px; }
+      .bar-label { width: 80px; }
+      .bar-label .bar-name { font-size: 9px; }
+      .section-title { font-size: 17px; }
+      .obs-alert-quote { font-size: 28px; }
+      .attached-photo img { max-width: 220px; }
+      .photo-row .attached-photo img { max-width: 160px; }
+      .photo-row { gap: 12px; }
+    }
+
+    @media (max-width: 480px) {
+      .page { padding: 30px 16px 30px 40px; }
+      .page::before { left: 28px; }
+      .cover-photo { width: 110px; height: 110px; }
+      .cover-field-label { width: 90px; font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Gate -->
+<div class="gate" id="gate">
+  <div class="gate-line" id="gate-l1"></div>
+  <div class="gate-line" id="gate-l2"></div>
+  <div class="gate-line accent" id="gate-l3"></div>
+</div>
+
+<!-- Nav -->
+<a href="/guild/" class="nav-back" aria-label="Back to guild">
+  <span>&larr;</span> ARCHIVE
+</a>
+
+<div class="report">
+
+  <!-- ===================== COVER PAGE ===================== -->
+  <div class="page cover page-flip" id="cover-page">
+    <div class="cover-uni">Chang Gung University</div>
+    <div class="cover-dept">Department of Chemical Engineering & Materials Science</div>
+
+    <div class="cover-photo-area">
+      <img src="/assets/img/guild/ting_yu_0120/illustration.webp" alt="Ting" class="cover-photo" fetchpriority="high" />
+      <div class="tape tape-tl"></div>
+      <div class="tape tape-br"></div>
+    </div>
+
+    <div class="cover-title-line" style="margin-top: 24px;">
+      <h1>EXPERIMENT REPORT</h1>
+    </div>
+    <div class="cover-subtitle">Synthesis &amp; Characterization of a Pathfinder</div>
+
+    <div class="id-badge">
+      <img src="/assets/img/guild/ting_yu_0120/avatar.webp" alt="Ting profile" />
+      <div class="id-badge-text">
+        <span class="id-badge-name">HUANG TING-YU</span>
+        CGU CHEMENG / ID: 0120
+      </div>
+    </div>
+
+    <div class="cover-meta">
+      <div class="cover-field">
+        <div class="cover-field-label">Experiment No.</div>
+        <div class="cover-field-value">#0120</div>
+      </div>
+      <div class="cover-field">
+        <div class="cover-field-label">Investigator</div>
+        <div class="cover-field-value">Ting</div>
+      </div>
+      <div class="cover-field">
+        <div class="cover-field-label">Date</div>
+        <div class="cover-field-value">2022.09 -- Present</div>
+      </div>
+      <div class="cover-field">
+        <div class="cover-field-label">Status</div>
+        <div class="cover-field-value" style="color:var(--green-pen);">Ongoing</div>
+      </div>
+    </div>
+
+    <div class="cover-stamp">APPROVED</div>
+    <div class="coffee-stain" style="top: 40px; right: 30px;"></div>
+    <span class="page-number">i</span>
+  </div>
+
+  <!-- ===================== PAGE 1: ABSTRACT ===================== -->
+  <div class="page page-flip" id="page-abstract">
+    <div class="margin-note" style="top: 70px;">core<br/>thesis!</div>
+
+    <div class="section-num">Section I</div>
+    <div class="section-title">Abstract</div>
+
+    <div class="abstract-box">
+      <div class="abstract-label">Abstract</div>
+      <div class="abstract-text">
+        我覺得我是一個<span class="underline">能力普通但對世界有獨特理解</span>的人。
+        我樂於觀察現場的一切，並從不同角度反思自己。
+      </div>
+    </div>
+
+    <div class="body-text">
+      這份報告記錄了我的自我發現歷程。
+      透過系統性的觀察、行動與反思，追蹤我從迷惘到覺醒的反應路徑，
+      並分析構成我人格的核心元素與催化因子。
+    </div>
+
+    <div class="hand-note" style="margin-top: 16px;">
+      Keywords: observation, reflection, pragmatism, authenticity
+    </div>
+
+    <span class="page-number">1</span>
+  </div>
+
+  <!-- ===================== PAGE 2: INTRODUCTION ===================== -->
+  <div class="page page-flip" id="page-intro">
+    <div class="margin-note" style="top: 80px;">starting<br/>point</div>
+
+    <div class="section-num">Section II</div>
+    <div class="section-title">Introduction</div>
+
+    <div class="body-text">
+      我是長庚大學化工與材料科學系的學生。<br/>
+      在實驗室裡，我學會了<em>觀察與覆盤</em>的思維。
+    </div>
+
+    <div class="body-text">
+      每一次實驗，都是我對假設的驗證；<br/>
+      每一次失敗，都是新的數據點。
+    </div>
+
+    <div class="body-text">
+      這種思維方式不只留在實驗室 ——
+      它成為了我看待世界的方式。
+    </div>
+
+    <div class="hand-note" style="margin-top: 20px;">
+      <em>observe, hypothesize, act, analyze, iterate.</em>
+    </div>
+
+    <div class="attached-photo" style="margin-top: 24px; transform: rotate(1.5deg);">
+      <img src="/assets/img/guild/ting_yu_0120/notebook.webp" alt="CGU notebook" loading="lazy" />
+      <div class="tape tape-top"></div>
+      <div class="attached-photo-caption">Fig. A -- CGU lab notebook, 2023</div>
+    </div>
+
+    <div class="margin-note" style="top: 260px;">lab<br/>mindset<br/>--> life<br/>mindset</div>
+
+    <span class="page-number">2</span>
+  </div>
+
+  <!-- ===================== PAGE 3: MATERIALS & METHODS ===================== -->
+  <div class="page page-flip" id="page-method">
+    <div class="margin-note" style="top: 80px;">the<br/>method!</div>
+
+    <div class="section-num">Section III</div>
+    <div class="section-title">Materials &amp; Methods</div>
+
+    <div class="body-text">
+      我採用四步驟循環操作法。每一個步驟都經過反覆驗證，形成穩定的迭代迴路。
+    </div>
+
+    <table class="protocol-table">
+      <thead>
+        <tr>
+          <th style="width:40px;">Step</th>
+          <th style="width:140px;">Operation</th>
+          <th>Description</th>
+          <th style="width:50px;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="step-name">Observe</span></td>
+          <td>觀察現場的一切，記錄每個細節</td>
+          <td class="checked">&#10003;</td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="step-name">Act</span></td>
+          <td>不空想、不猶豫，直接行動</td>
+          <td class="checked">&#10003;</td>
+        </tr>
+        <tr>
+          <td><span class="step-num">3</span></td>
+          <td><span class="step-name">Reflect</span></td>
+          <td>從不同角度反思，覆盤每一步</td>
+          <td class="checked">&#10003;</td>
+        </tr>
+        <tr>
+          <td><span class="step-num">4</span></td>
+          <td><span class="step-name">Iterate</span></td>
+          <td>修正假設，再來一次</td>
+          <td class="checked">&#10003;</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="hand-note-red" style="margin-top: 16px; transform: rotate(-1deg);">
+      * Repeat until convergence. No shortcut.
+    </div>
+
+    <span class="page-number">3</span>
+  </div>
+
+  <!-- ===================== PAGE 4: OBSERVATIONS ===================== -->
+  <div class="page page-flip" id="page-obs">
+    <div class="section-num">Section IV</div>
+    <div class="section-title">Observations</div>
+
+    <div class="body-text">
+      在實驗過程中，我偵測到一次非預期的放熱反應，發生於大三下學期。
+      這個事件導致我整個反應系統的根本性重組。
+    </div>
+
+    <div class="obs-alert">
+      <div class="obs-alert-label">ANOMALOUS REACTION</div>
+      <div class="obs-alert-quote">活在當下</div>
+      <div class="obs-alert-body">
+        大三下的一次頓悟，成為我人生最重要的轉捩點。<br/>
+        我曾經迷惘過，很低潮不想站起來。<br/>
+        但黑暗是轉變的前奏。<br/><br/>
+        <span class="hand-note" style="font-size: 16px;">
+          Observation: darkness precedes transformation.
+        </span>
+      </div>
+    </div>
+
+    <div class="margin-note" style="top: 100px; color: var(--red-pen);">!!!<br/>turning<br/>point</div>
+
+    <div class="coffee-stain" style="bottom: 30px; left: 70%; width: 60px; height: 60px;"></div>
+    <span class="page-number">4</span>
+  </div>
+
+  <!-- ===================== PAGE 5: RESULTS ===================== -->
+  <div class="page page-flip" id="page-results">
+    <div class="margin-note" style="top: 70px;">element<br/>profile</div>
+
+    <div class="section-num">Section V</div>
+    <div class="section-title">Results &mdash; Elemental Analysis</div>
+
+    <div class="body-text">
+      以下是我的核心元素分析結果。
+      我偵測到六種主要組成成分，各元素濃度以相對百分比呈現。
+    </div>
+
+    <div class="chart-container" id="chart">
+      <div class="chart-title">Fig. 1 &mdash; Elemental Composition Profile</div>
+
+      <div class="bar-row" data-fill="92" data-color="#d97706">
+        <div class="bar-label">
+          <span class="bar-symbol">Hp</span>
+          <span class="bar-name">HELPER</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background: #d97706;"></div>
+          <div class="bar-tooltip">幫助別人是我最深的慣性，也是最大的成就感來源</div>
+        </div>
+        <div class="bar-value">92%</div>
+      </div>
+
+      <div class="bar-row" data-fill="88" data-color="#2563eb">
+        <div class="bar-label">
+          <span class="bar-symbol">Rf</span>
+          <span class="bar-name">REFLECTOR</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background: #2563eb;"></div>
+          <div class="bar-tooltip">我喜歡從不同角度反思自己。行動、觀察、覆盤</div>
+        </div>
+        <div class="bar-value">88%</div>
+      </div>
+
+      <div class="bar-row" data-fill="85" data-color="#0891b2">
+        <div class="bar-label">
+          <span class="bar-symbol">Pg</span>
+          <span class="bar-name">PRAGMATIC</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background: #0891b2;"></div>
+          <div class="bar-tooltip">我是務實的行動派。不空想，用行動來靠近答案</div>
+        </div>
+        <div class="bar-value">85%</div>
+      </div>
+
+      <div class="bar-row" data-fill="90" data-color="#7c3aed">
+        <div class="bar-label">
+          <span class="bar-symbol">Au</span>
+          <span class="bar-name">AUTHENTIC</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background: #7c3aed;"></div>
+          <div class="bar-tooltip">真誠是我的元色。不偽裝，做最真實的自己</div>
+        </div>
+        <div class="bar-value">90%</div>
+      </div>
+
+      <div class="bar-row" data-fill="78" data-color="#dc2626">
+        <div class="bar-label">
+          <span class="bar-symbol">Fe</span>
+          <span class="bar-name">FITNESS</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background: #dc2626;"></div>
+          <div class="bar-tooltip">健身是我的日常。身體的鍛鍊也是心靈的鍛鍊</div>
+        </div>
+        <div class="bar-value">78%</div>
+      </div>
+
+      <div class="bar-row" data-fill="95" data-color="#ea580c">
+        <div class="bar-label">
+          <span class="bar-symbol">Sb</span>
+          <span class="bar-name">SHIBA</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background: #ea580c;"></div>
+          <div class="bar-tooltip">柴犬在我心中的地位無可動搖</div>
+        </div>
+        <div class="bar-value">95%</div>
+      </div>
+    </div>
+
+    <div class="hand-note" style="margin-top: 8px; transform: rotate(-1deg);">
+      Note: Shiba concentration exceeds expected threshold.
+      <span style="color: var(--red-pen);">Not an error.</span>
+    </div>
+
+    <span class="page-number">5</span>
+  </div>
+
+  <!-- ===================== PAGE 6: DISCUSSION ===================== -->
+  <div class="page page-flip" id="page-discussion">
+    <div class="section-num">Section VI</div>
+    <div class="section-title">Discussion &mdash; Catalytic Factors</div>
+
+    <div class="body-text">
+      在我的分析中，有三種外部催化因子對我的反應速率與成長品質有顯著影響。
+      以下是它們的特性與作用機制。
+    </div>
+
+    <div class="catalyst-grid">
+      <div class="catalyst-card" data-num="6.1">
+        <span class="catalyst-icon">&#9835;</span>
+        <div class="catalyst-name">MUSIC</div>
+        <div class="catalyst-formula">hip-hop + rock + kpop</div>
+        <div class="catalyst-desc">嘻哈的態度、搖滾的能量、韓文歌的節奏，不同頻率共振出我獨特的內在</div>
+      </div>
+      <div class="catalyst-card" data-num="6.2">
+        <span class="catalyst-icon">&#9918;</span>
+        <div class="catalyst-name">BASEBALL</div>
+        <div class="catalyst-formula">scorekeeping</div>
+        <div class="catalyst-desc">棒球記帳是我觀察力的修煉。每一球、每一個跑壘，都是對細節的專注</div>
+      </div>
+      <div class="catalyst-card" data-num="6.3">
+        <span class="catalyst-icon">&#9971;</span>
+        <div class="catalyst-name">FITNESS</div>
+        <div class="catalyst-formula">mind + body</div>
+        <div class="catalyst-desc">身體是最誠實的實驗對象。進步的數據不會說謊</div>
+      </div>
+    </div>
+
+    <div class="photo-row" style="margin-top: 24px;">
+      <div class="attached-photo" style="transform: rotate(-1.5deg);">
+        <img src="/assets/img/guild/ting_yu_0120/twice_poster.webp" alt="TWICE World Tour" loading="lazy" />
+        <div class="tape tape-top"></div>
+        <div class="attached-photo-caption">Ref. 6.1 -- TWICE World Tour 2025</div>
+      </div>
+      <div class="attached-photo" style="transform: rotate(2deg);">
+        <img src="/assets/img/guild/ting_yu_0120/spotify_screenshot.webp" alt="Spotify" loading="lazy" />
+        <div class="tape tape-top"></div>
+        <div class="attached-photo-caption">Ref. 6.2 -- Spotify listening data</div>
+      </div>
+    </div>
+
+    <div class="margin-note" style="top: 80px;">catalyst<br/>= growth<br/>factor</div>
+
+    <span class="page-number">6</span>
+  </div>
+
+  <!-- ===================== PAGE 7: CONCLUSION ===================== -->
+  <div class="page page-flip" id="page-conclusion">
+    <div class="section-num">Section VII</div>
+    <div class="section-title">Conclusion</div>
+
+    <div class="conclusion-block">
+      <div class="conclusion-text">
+        我是一個能力普通但對世界有獨特理解的人。<br/>
+        我不追求天才的光環，而是選擇用最笨的方式 ——<br/>
+        <span class="key-phrase">觀察、行動、反思、再來一次。</span><br/><br/>
+        這個實驗沒有終點。<br/>
+        我的每一天都是新的數據，每一次覆盤都是新的假設。
+      </div>
+
+      <div class="sig-area">
+        <div class="sig-block">
+          <div class="sig-line">
+            <div class="sig-name">Ting</div>
+          </div>
+          <div class="sig-label">Investigator</div>
+        </div>
+        <div class="sig-block">
+          <div class="sig-line">
+            <div class="sig-date">2026</div>
+          </div>
+          <div class="sig-label">Date</div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 40px;">
+        <div class="final-stamp">EXPERIMENT CONTINUES</div>
+      </div>
+    </div>
+
+    <span class="page-number">7</span>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <a href="https://www.threads.com/@ting_yu_0120" target="_blank" rel="noopener" class="footer-threads">
+    <svg width="14" height="14" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true"><path d="M331.5 235.7c2.2 .9 4.2 1.9 6.3 2.8c29.2 14.1 50.6 35.2 61.8 61.4c15.7 36.9 17.6 98.8-26.4 140.6c-51.2 48.7-142.4 53.2-211.2 0c-50.2-38.8-72.7-100.4-66.5-173.3c.6-7.2 1.5-14.3 2.7-21.4c3.4-20.1 9.5-39.3 18.1-57.3c23.9-49.7 66.5-88.1 124.7-97.4c66.5-10.6 120.3 17.1 154.3 67.8l-42.8 29.5C331.6 158.4 296.7 140 256 144.6c-39.2 4.4-71.6 30.2-87.9 68.2c-5.6 13.1-9.3 27.2-11.2 42c50.1-17.5 104.3-18.2 154.7 .5zm-70.8 65.8c-37.3-14.1-78.2-12.1-113.8 5.5c-1.8 35.3 6.3 66.1 24.2 87c24.5 28.7 64.5 42.2 114.6 38.4c36.6-2.8 56.6-16.4 66.5-33.5c12.6-21.8 12.2-52.3-1.2-71.4c-11.6-16.5-33.5-27.4-65.2-33.5c-8.2-1.6-16.5-2.6-25.1-2.6c.1 3.4 .1 6.8 .1 10.2z"/></svg> @ting_yu_0120
+  </a>
+  <div class="footer-credit">
+    Made with <span style="color:var(--red-pen);">&#9829;</span> by
+    <a href="/guild/">SuperGalen's Dungeon</a>
+  </div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ===== GATE ===== */
+  const gate = document.getElementById('gate');
+  const gl = [
+    { el: document.getElementById('gate-l1'), text: 'EXPERIMENT REPORT #0120' },
+    { el: document.getElementById('gate-l2'), text: 'LOADING RECORDS...' },
+    { el: document.getElementById('gate-l3'), text: '> ACCESS GRANTED' },
+  ];
+
+  function typeText(el, text, speed) {
+    return new Promise(resolve => {
+      el.style.opacity = '1';
+      let i = 0;
+      const cur = document.createElement('span');
+      cur.className = 'gate-cursor';
+      el.appendChild(cur);
+      const iv = setInterval(() => {
+        if (i < text.length) { el.insertBefore(document.createTextNode(text[i]), cur); i++; }
+        else { clearInterval(iv); setTimeout(() => { cur.remove(); resolve(); }, 200); }
+      }, speed);
+    });
+  }
+
+  async function runGate() {
+    await typeText(gl[0].el, gl[0].text, 40);
+    await new Promise(r => setTimeout(r, 300));
+    await typeText(gl[1].el, gl[1].text, 30);
+    await new Promise(r => setTimeout(r, 400));
+    await typeText(gl[2].el, gl[2].text, 50);
+    await new Promise(r => setTimeout(r, 500));
+    gsap.to(gate, { opacity: 0, duration: 0.6, ease: 'power2.inOut',
+      onComplete: () => { gate.style.display = 'none'; startPageFlips(); }
+    });
+  }
+
+  /* ===== GSAP PAGE-FLIP ANIMATIONS ===== */
+  gsap.registerPlugin(ScrollTrigger);
+
+  function startPageFlips() {
+    const pages = document.querySelectorAll('.page-flip');
+
+    // Cover: flip in immediately
+    gsap.to(pages[0], {
+      opacity: 1,
+      rotateX: 0,
+      y: 0,
+      scale: 1,
+      duration: 0.9,
+      ease: 'power3.out',
+      onStart: () => {
+        // Stagger cover stamp after page lands
+        gsap.from('.cover-stamp', {
+          scale: 2.5, opacity: 0, rotation: -20,
+          duration: 0.4, delay: 0.6, ease: 'back.out(2)',
+        });
+      },
+    });
+
+    // Other pages: flip in on scroll with staggered shadow
+    for (let i = 1; i < pages.length; i++) {
+      const page = pages[i];
+
+      // Page flip timeline
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: page,
+          start: 'top 85%',
+          end: 'top 40%',
+          scrub: 0.6,
+        },
+      });
+
+      tl.to(page, {
+        opacity: 1,
+        rotateX: 0,
+        y: 0,
+        scale: 1,
+        boxShadow: '2px 3px 12px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.06)',
+        duration: 1,
+        ease: 'power2.out',
+      });
+
+      // During flip: exaggerated shadow for depth
+      gsap.to(page, {
+        scrollTrigger: {
+          trigger: page,
+          start: 'top 85%',
+          end: 'top 60%',
+          scrub: 0.4,
+        },
+        boxShadow: '4px 20px 40px rgba(0,0,0,0.2), 0 8px 16px rgba(0,0,0,0.1)',
+      });
+
+      // After settling: return shadow to normal
+      gsap.to(page, {
+        scrollTrigger: {
+          trigger: page,
+          start: 'top 60%',
+          end: 'top 40%',
+          scrub: 0.4,
+        },
+        boxShadow: '2px 3px 12px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.06)',
+      });
+    }
+
+    /* ===== INNER ELEMENT ANIMATIONS ===== */
+
+    // Abstract box: draw border
+    gsap.from('.abstract-box', {
+      scrollTrigger: { trigger: '.abstract-box', start: 'top 80%', once: true },
+      scaleX: 0, transformOrigin: 'left center',
+      duration: 0.6, ease: 'power2.out',
+    });
+
+    // Protocol table rows: stagger in from left
+    gsap.from('.protocol-table tbody tr', {
+      scrollTrigger: { trigger: '.protocol-table', start: 'top 75%', once: true },
+      x: -30, opacity: 0,
+      stagger: 0.15, duration: 0.5, ease: 'power2.out',
+    });
+
+    // Observation alert: shake on enter
+    ScrollTrigger.create({
+      trigger: '.obs-alert',
+      start: 'top 70%',
+      once: true,
+      onEnter: () => {
+        gsap.from('.obs-alert', {
+          x: -8, duration: 0.08, repeat: 5, yoyo: true,
+          ease: 'power2.inOut',
+        });
+        gsap.from('.obs-alert-quote', {
+          scale: 0.5, opacity: 0, duration: 0.6, delay: 0.3,
+          ease: 'back.out(2)',
+        });
+      },
+    });
+
+    // Bar chart: animated fills
+    ScrollTrigger.create({
+      trigger: '#chart',
+      start: 'top 75%',
+      once: true,
+      onEnter: () => {
+        document.querySelectorAll('.bar-row').forEach((row, i) => {
+          const fill = row.dataset.fill;
+          const bar = row.querySelector('.bar-fill');
+          setTimeout(() => { bar.style.width = fill + '%'; }, i * 150);
+        });
+      },
+    });
+
+    // Catalyst cards: stagger pop in
+    gsap.from('.catalyst-card', {
+      scrollTrigger: { trigger: '.catalyst-grid', start: 'top 75%', once: true },
+      y: 20, opacity: 0, scale: 0.95,
+      stagger: 0.12, duration: 0.5, ease: 'back.out(1.5)',
+    });
+
+    // Attached photos: tilt in
+    gsap.from('.attached-photo', {
+      scrollTrigger: { trigger: '.photo-row', start: 'top 80%', once: true },
+      rotation: -10, opacity: 0, y: 30,
+      stagger: 0.2, duration: 0.6, ease: 'power3.out',
+    });
+
+    // Conclusion stamp
+    ScrollTrigger.create({
+      trigger: '#page-conclusion',
+      start: 'top 60%',
+      once: true,
+      onEnter: () => {
+        gsap.from('.final-stamp', {
+          scale: 3, opacity: 0, rotation: -30,
+          duration: 0.5, ease: 'back.out(2)',
+        });
+      },
+    });
+
+    // Signature: write in
+    ScrollTrigger.create({
+      trigger: '.sig-area',
+      start: 'top 80%',
+      once: true,
+      onEnter: () => {
+        gsap.from('.sig-name', {
+          width: 0, opacity: 0, duration: 0.8, ease: 'power2.out',
+        });
+        gsap.from('.sig-date', {
+          width: 0, opacity: 0, duration: 0.6, delay: 0.3, ease: 'power2.out',
+        });
+      },
+    });
+  }
+
+  runGate();
+})();
+</script>
+</body>
+</html>
