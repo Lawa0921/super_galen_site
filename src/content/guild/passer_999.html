@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adam | AI 影視造物師</title>
+  <meta name="description" content="Adam (@passer_999) — AI影視、廣告、動畫造物師。用AI讓藝術不被技術與思維局限。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="preload" href="/assets/img/guild/passer_999/post_image.webp" as="image" />
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Noto+Serif+TC:wght@400;700;900&family=Sora:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    :root {
+      --noir: #08080a;
+      --noir-warm: #0e0c09;
+      --amber: #c9a24e;
+      --amber-glow: #e8b84a;
+      --amber-dim: #8a6d2f;
+      --cyan: #4a8c8c;
+      --cyan-glow: #5eb8b8;
+      --cyan-dim: #2d5a5a;
+      --cream: #f0e8d8;
+      --cream-dim: #b8ac96;
+      --smoke: #6b6459;
+      --charcoal: #1a1814;
+      --font-display: 'Playfair Display', serif;
+      --font-serif: 'Noto Serif TC', serif;
+      --font-body: 'Sora', sans-serif;
+      --font-script: 'Courier Prime', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: auto; }
+
+    body {
+      background: var(--noir);
+      color: var(--cream);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      cursor: none;
+    }
+    body.loading { overflow: hidden; }
+
+    /* ==================== LOADER ==================== */
+    .loader-screen {
+      position: fixed; inset: 0; z-index: 99999;
+      background: var(--noir);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .loader-burn-canvas {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    }
+    .loader-seal {
+      width: 80px; height: 80px; margin-bottom: 40px;
+      opacity: 0; transform: scale(0.6) rotate(-20deg);
+    }
+    .loader-seal svg { width: 100%; height: 100%; }
+    .loader-title {
+      font-family: var(--font-display); font-size: clamp(36px, 6vw, 64px);
+      font-weight: 900; color: var(--cream); opacity: 0;
+      letter-spacing: -0.02em; margin-bottom: 8px;
+    }
+    .loader-sub {
+      font-family: var(--font-body); font-size: 12px; font-weight: 300;
+      letter-spacing: 6px; text-transform: uppercase;
+      color: var(--amber-dim); opacity: 0; margin-bottom: 48px;
+    }
+    .loader-progress-wrap {
+      width: min(240px, 50vw); height: 1px;
+      background: rgba(240,232,216,0.08); border-radius: 1px;
+      overflow: hidden; opacity: 0;
+    }
+    .loader-progress-fill {
+      width: 0%; height: 100%;
+      background: linear-gradient(90deg, var(--cyan-dim), var(--amber));
+      border-radius: 1px;
+      transition: width 0.3s ease;
+    }
+    .loader-pct {
+      font-family: var(--font-script); font-size: 11px;
+      color: var(--smoke); margin-top: 16px; opacity: 0;
+      letter-spacing: 2px;
+    }
+    .loader-enter {
+      margin-top: 36px; opacity: 0; pointer-events: none;
+      font-family: var(--font-body); font-size: 11px; font-weight: 300;
+      letter-spacing: 5px; text-transform: uppercase;
+      color: var(--amber); cursor: pointer;
+      background: none; border: 1px solid rgba(201,162,78,0.3);
+      padding: 12px 32px; border-radius: 2px;
+      transition: border-color 0.3s, background 0.3s, transform 0.1s;
+    }
+    .loader-enter:hover {
+      border-color: var(--amber);
+      background: rgba(201,162,78,0.08);
+    }
+    .loader-enter:active { transform: scale(0.97); }
+
+    /* Custom cursor */
+    .cursor-dot {
+      position: fixed; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--amber); z-index: 99999; pointer-events: none;
+      transition: transform 0.1s;
+    }
+    .cursor-glow {
+      position: fixed; width: 280px; height: 280px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,162,78,0.06) 0%, transparent 70%);
+      z-index: 1; pointer-events: none; transform: translate(-50%, -50%);
+    }
+
+    /* Film grain overlay */
+    .film-grain {
+      position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 128px;
+    }
+
+    /* Scroll progress */
+    .scroll-progress {
+      position: fixed; top: 0; left: 0; width: 0%; height: 2px;
+      background: var(--amber); z-index: 9500;
+      box-shadow: 0 0 12px rgba(201,162,78,0.5);
+    }
+
+    .sc {
+      font-family: var(--font-body); font-size: 9px; font-weight: 600;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--amber-dim); opacity: 0.5;
+    }
+
+    /* Nav */
+    .nav-back {
+      position: fixed; top: 28px; left: 28px; z-index: 9100;
+      text-decoration: none; color: var(--smoke);
+      font-family: var(--font-body); font-size: 11px; font-weight: 300;
+      letter-spacing: 3px; text-transform: uppercase;
+      transition: color 0.3s; display: flex; align-items: center; gap: 8px;
+      cursor: none;
+    }
+    .nav-back:hover { color: var(--amber); }
+
+    /* ===== SCROLL-DRIVEN VIDEO SECTION ===== */
+    .video-section {
+      position: relative;
+      height: 400vh; /* scroll runway */
+      z-index: 10;
+    }
+    .video-sticky {
+      position: sticky; top: 0;
+      width: 100%; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; background: #000;
+    }
+    .video-sticky video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+    .video-progress-track {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      width: min(280px, 60vw); height: 2px;
+      background: rgba(240,232,216,0.1); border-radius: 2px;
+      z-index: 100; overflow: hidden;
+      transition: opacity 0.5s;
+    }
+    .video-progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--cyan), var(--amber));
+      border-radius: 2px;
+      transition: width 0.05s linear;
+    }
+    .video-hint {
+      position: fixed; bottom: 52px; left: 50%; transform: translateX(-50%);
+      font-family: var(--font-body); font-size: 10px; font-weight: 300;
+      letter-spacing: 4px; text-transform: uppercase; color: var(--smoke);
+      z-index: 100; opacity: 0;
+      transition: opacity 0.5s;
+    }
+    /* Brush stroke dividers */
+    .brush-divider {
+      width: 100%; height: 40px; position: relative; margin: 0; opacity: 0.15;
+      overflow: visible;
+    }
+    .brush-divider svg { width: 200px; height: 40px; margin: 0 auto; display: block; }
+    .brush-divider .stroke-path {
+      stroke: var(--cyan); stroke-width: 2; fill: none;
+      stroke-linecap: round; stroke-dasharray: 300; stroke-dashoffset: 300;
+    }
+    .brush-divider.animated .stroke-path {
+      animation: brushDraw 1.5s ease-out forwards;
+    }
+    @keyframes brushDraw { to { stroke-dashoffset: 0; } }
+
+    /* THREE.JS */
+    #three-bg { position: fixed; inset: 0; z-index: 0; }
+
+    /* ==================== CONTENT ==================== */
+    .content { position: relative; z-index: 2; opacity: 0; }
+
+    /* HERO — full bleed portrait */
+    .hero {
+      min-height: 100vh; display: flex; align-items: flex-end;
+      position: relative; padding: 0 6% 8%;
+    }
+    .hero-portrait-wrap {
+      position: absolute; inset: 0; overflow: hidden;
+    }
+    .hero-portrait {
+      width: 100%; height: 100%; object-fit: cover; object-position: center 15%;
+      filter: contrast(1.1) saturate(0.85); opacity: 0;
+      transform: scale(1.05);
+    }
+    .hero-portrait-mask {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, var(--noir) 0%, rgba(8,8,10,0.5) 35%, rgba(8,8,10,0.2) 60%, rgba(8,8,10,0.6) 100%),
+                  linear-gradient(to right, rgba(8,8,10,0.7) 0%, transparent 50%);
+    }
+    .hero-text { position: relative; z-index: 3; max-width: 700px; }
+    .hero-eyebrow {
+      font-family: var(--font-body); font-size: 11px; font-weight: 300;
+      letter-spacing: 6px; text-transform: uppercase;
+      color: var(--amber); margin-bottom: 20px; opacity: 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .hero-eyebrow .verified {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px; background: var(--amber);
+      border-radius: 50%; color: var(--noir); font-size: 7px;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(72px, 12vw, 160px); font-weight: 900;
+      line-height: 0.95; color: var(--cream); margin-bottom: 16px; opacity: 0;
+      letter-spacing: -0.03em;
+    }
+    .hero-tagline {
+      font-family: var(--font-serif); font-size: clamp(16px, 2vw, 22px);
+      font-weight: 400; color: var(--cream-dim); line-height: 1.6;
+      margin-bottom: 20px; opacity: 0;
+    }
+    .hero-stats {
+      display: flex; gap: 24px; margin-bottom: 24px; opacity: 0;
+    }
+    .hero-stat {
+      font-size: 11px; font-weight: 300; color: var(--smoke); letter-spacing: 1px;
+    }
+    .hero-stat strong {
+      color: var(--cream); font-weight: 600;
+      font-family: var(--font-display); font-size: 14px;
+    }
+    .hero-desc {
+      font-size: 14px; font-weight: 300; line-height: 2;
+      color: var(--smoke); max-width: 440px; opacity: 0;
+    }
+    .hero-seal {
+      position: absolute; right: 8%; bottom: 20%; z-index: 4; opacity: 0;
+      transform: rotate(8deg);
+      filter: drop-shadow(0 0 20px rgba(74,140,140,0.15));
+    }
+
+    /* ==================== FULLSCREEN VIDEO OVERLAY ==================== */
+    .video-fullscreen-overlay {
+      position: fixed; inset: 0; z-index: 99990;
+      background: rgba(0,0,0,0.95);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .video-fullscreen-overlay.active {
+      opacity: 1; pointer-events: all;
+    }
+    .video-fullscreen-overlay video {
+      max-width: 90vw; max-height: 85vh;
+      border-radius: 4px;
+      box-shadow: 0 0 60px rgba(74,140,140,0.2);
+    }
+    .video-fullscreen-close {
+      position: absolute; top: 24px; right: 32px;
+      font-size: 28px; color: var(--smoke);
+      cursor: pointer; transition: color 0.3s;
+      z-index: 10;
+    }
+    .video-fullscreen-close:hover { color: var(--cream); }
+    .video-fullscreen-hint {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      font-family: var(--font-body); font-size: 11px; font-weight: 300;
+      letter-spacing: 3px; color: var(--smoke); text-transform: uppercase;
+    }
+    /* ==================== FLOATING BG VIDEO CARDS ==================== */
+    .bg-video-card {
+      position: fixed; z-index: 1;
+      border-radius: 6px; overflow: hidden;
+      cursor: none;
+      filter: blur(10px) saturate(0.4) brightness(0.35);
+      opacity: 0.35;
+      transition: filter 0.6s cubic-bezier(0.25,0,0,1),
+                  transform 0.6s cubic-bezier(0.25,0,0,1),
+                  box-shadow 0.6s cubic-bezier(0.25,0,0,1),
+                  border-color 0.4s, opacity 0.6s;
+      border: 1px solid rgba(74,140,140,0.05);
+      box-shadow: 0 0 0 rgba(0,0,0,0);
+      pointer-events: none;
+      will-change: filter, transform;
+    }
+    .bg-video-card video {
+      width: 100%; height: 100%; object-fit: cover;
+      display: block;
+    }
+    .bg-video-card:hover {
+      filter: blur(0) saturate(1) brightness(0.9);
+      opacity: 1;
+      border-color: var(--cyan);
+      box-shadow: 0 8px 40px rgba(74,140,140,0.15);
+      cursor: pointer;
+      z-index: 8;
+    }
+    .bg-video-card .card-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 20px 14px 10px;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+      font-family: var(--font-body); font-size: 9px; font-weight: 300;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--amber); opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .bg-video-card:hover .card-label { opacity: 1; }
+
+    /* Pull-forward animation for clicked card */
+    .bg-video-card.pulling {
+      z-index: 99980 !important;
+      pointer-events: none;
+    }
+    /* Cards hidden during scroll video phase */
+    .bg-video-card.hidden { display: none; }
+
+    /* Tablet: smaller cards, only show 3 */
+    @media (max-width: 1024px) {
+      .bg-video-card { opacity: 0.25; }
+      #bgCard5, #bgCard6 { display: none !important; }
+    }
+    /* Mobile: show 2 tiny cards as subtle atmosphere */
+    @media (max-width: 768px) {
+      .bg-video-card {
+        opacity: 0.2;
+        filter: blur(12px) saturate(0.3) brightness(0.3);
+      }
+      #bgCard4, #bgCard5, #bgCard6 { display: none !important; }
+      #bgCard2 { width: 120px !important; height: 68px !important; top: 8% !important; left: 3% !important; }
+      #bgCard3 { width: 100px !important; height: 56px !important; top: auto !important; bottom: 15% !important; right: 5% !important; left: auto !important; }
+    }
+
+    /* ==================== STATEMENT — full viewport bold text ==================== */
+    .statement {
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; padding: 0 8%; position: relative;
+      overflow: hidden;
+    }
+    .statement-text {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 6vw, 80px); font-weight: 900;
+      line-height: 1.3; color: var(--cream); text-align: center;
+      max-width: 900px; opacity: 0; position: relative; z-index: 1;
+    }
+    .statement-text em {
+      font-style: italic; color: var(--amber);
+      display: inline-block;
+    }
+    .statement-rule {
+      position: absolute; bottom: 15%; left: 50%;
+      transform: translateX(-50%);
+      width: 1px; height: 60px;
+      background: linear-gradient(to bottom, var(--amber-dim), transparent);
+      opacity: 0;
+    }
+
+    /* ==================== THE PITCH — cinematic scene cards ==================== */
+    .pitch { padding: 160px 8%; position: relative; }
+    .pitch-inner { max-width: 750px; margin: 0 auto; }
+    .pitch-head {
+      text-align: center; margin-bottom: 80px;
+    }
+    .pitch-head .label { opacity: 0; margin-bottom: 12px; }
+    .pitch-head h2 {
+      font-family: var(--font-display); font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700; color: var(--cream); opacity: 0;
+    }
+    .pitch-card {
+      padding: 48px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      opacity: 0;
+    }
+    .pitch-card:first-of-type { border-top: 1px solid rgba(255,255,255,0.04); }
+    .pitch-speaker {
+      font-family: var(--font-body); font-size: 9px; font-weight: 600;
+      letter-spacing: 5px; text-transform: uppercase;
+      color: var(--amber-dim); margin-bottom: 16px;
+    }
+    .pitch-text {
+      font-family: var(--font-serif); font-size: clamp(17px, 2.5vw, 24px);
+      font-weight: 400; line-height: 1.9; color: var(--cream-dim);
+    }
+    .pitch-text em { font-style: normal; color: var(--cream); font-weight: 700; }
+    .pitch-beat {
+      text-align: center; padding: 32px 0;
+      font-family: var(--font-body); font-size: 10px;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--amber-dim); opacity: 0.4;
+    }
+    .pitch-highlight {
+      padding: 60px 0; text-align: center;
+    }
+    .pitch-highlight-text {
+      font-family: var(--font-serif);
+      font-size: clamp(28px, 5vw, 56px); font-weight: 900;
+      color: var(--cream); line-height: 1.4;
+      background: linear-gradient(135deg, var(--cream) 0%, var(--amber) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pitch-coda {
+      font-size: 14px; font-weight: 300; line-height: 2.2;
+      color: var(--smoke); text-align: center; padding-top: 32px;
+    }
+
+    /* ==================== ABOUT ==================== */
+    .about { padding: 160px 0; position: relative; }
+    .about-image-full {
+      width: 100%; height: 70vh; object-fit: cover;
+      filter: grayscale(0.15) contrast(1.05); opacity: 0;
+    }
+    .about-copy {
+      max-width: 700px; margin: -120px auto 0; position: relative; z-index: 3;
+      padding: 60px; background: var(--noir);
+      border: 1px solid rgba(201,162,78,0.08);
+    }
+    .about-copy .label {
+      font-family: var(--font-body); font-size: 10px; font-weight: 600;
+      letter-spacing: 5px; text-transform: uppercase;
+      color: var(--amber); margin-bottom: 20px; opacity: 0;
+    }
+    .about-copy h2 {
+      font-family: var(--font-display); font-size: clamp(32px, 4vw, 48px);
+      font-weight: 700; line-height: 1.3; color: var(--cream);
+      margin-bottom: 28px; opacity: 0;
+    }
+    .about-copy h2 em { font-style: italic; color: var(--amber); }
+    .about-copy p {
+      font-size: 14px; font-weight: 300; line-height: 2.2;
+      color: var(--cream-dim); margin-bottom: 16px; opacity: 0;
+    }
+
+    /* Journey */
+    .journey {
+      margin-top: 40px; display: flex; flex-direction: column;
+      position: relative; opacity: 0;
+    }
+    .journey::before {
+      content: ''; position: absolute; left: 7px; top: 12px; bottom: 12px;
+      width: 1px; background: rgba(201,162,78,0.2);
+    }
+    .journey-node { display: flex; align-items: flex-start; gap: 20px; padding: 10px 0; }
+    .journey-dot {
+      width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0;
+      border: 1px solid var(--amber-dim); background: var(--noir);
+      position: relative; z-index: 1; margin-top: 2px;
+    }
+    .journey-node:last-child .journey-dot { background: var(--amber); border-color: var(--amber); }
+    .journey-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--amber); margin-bottom: 2px;
+    }
+    .journey-desc { font-size: 12px; font-weight: 300; color: var(--smoke); line-height: 1.5; }
+
+    .about-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 32px; opacity: 0; }
+    .about-tag {
+      font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+      padding: 6px 14px; border: 1px solid rgba(201,162,78,0.25);
+      color: var(--amber); transition: all 0.3s;
+    }
+    .about-tag:hover { background: rgba(201,162,78,0.1); border-color: var(--amber); }
+
+    /* ==================== WORKS — horizontal film strip ==================== */
+    .works-section { padding: 80px 0 0; overflow: hidden; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+    .works-head {
+      padding: 0 8%; display: flex; align-items: baseline;
+      justify-content: space-between; margin-bottom: 60px;
+    }
+    .works-head h2 {
+      font-family: var(--font-display); font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700; color: var(--cream); opacity: 0;
+    }
+    .works-head .count {
+      font-family: var(--font-body); font-size: 11px; font-weight: 300;
+      letter-spacing: 3px; color: var(--smoke); text-transform: uppercase; opacity: 0;
+    }
+    .film-strip-wrap {
+      position: relative; overflow: hidden; width: 100%;
+    }
+    .film-strip {
+      display: flex; gap: 4px; width: max-content;
+    }
+    .film-frame {
+      width: 50vw; min-width: 400px; height: 60vh; min-height: 400px;
+      position: relative; overflow: hidden; flex-shrink: 0;
+    }
+    .film-frame img {
+      width: 100%; height: 100%; object-fit: cover;
+      filter: saturate(0.7); transition: filter 0.8s, transform 1.2s cubic-bezier(0.25,0,0,1);
+    }
+    .film-frame:hover img { filter: saturate(1); transform: scale(1.05); }
+    .film-frame-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(8,8,10,0.9) 0%, transparent 40%);
+      padding: 32px; display: flex; flex-direction: column;
+      justify-content: flex-end;
+      opacity: 0; transition: opacity 0.5s;
+    }
+    .film-frame:hover .film-frame-overlay { opacity: 1; }
+    .film-frame-overlay h3 {
+      font-family: var(--font-display); font-size: 24px; font-weight: 700;
+      color: var(--cream); margin-bottom: 4px;
+    }
+    .film-frame-overlay span {
+      font-size: 10px; font-weight: 300; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--amber);
+    }
+    /* Sprocket holes */
+    .film-strip-edge {
+      position: absolute; top: 0; width: 100%; height: 4px;
+      background: repeating-linear-gradient(
+        90deg, transparent 0, transparent 46px, var(--charcoal) 46px, var(--charcoal) 50px
+      );
+      opacity: 0.3; z-index: 5;
+    }
+    .film-strip-edge.bottom { top: auto; bottom: 0; }
+
+    /* ==================== VOICES — full-screen rotating quotes ==================== */
+    .voices {
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; padding: 120px 8%;
+      position: relative; overflow: hidden;
+    }
+    .voices-inner { max-width: 800px; width: 100%; text-align: center; position: relative; }
+    .voices-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 5px;
+      text-transform: uppercase; color: var(--amber-dim); margin-bottom: 48px; opacity: 0;
+    }
+    .voice-stage { position: relative; min-height: 240px; }
+    .voice-slide {
+      position: absolute; top: 0; left: 0; width: 100%;
+      opacity: 0; pointer-events: none;
+      transform: translateY(12px);
+      transition: none;
+    }
+    .voice-slide.active {
+      opacity: 1; pointer-events: auto;
+      transform: translateY(0);
+    }
+    .voice-slide .quote-mark {
+      font-family: var(--font-display); font-size: 120px;
+      color: var(--amber); opacity: 0.15; line-height: 0.5;
+      margin-bottom: 24px;
+    }
+    .voice-slide .quote-text {
+      font-family: var(--font-serif);
+      font-size: clamp(20px, 3.5vw, 36px); font-weight: 400;
+      line-height: 1.8; color: var(--cream-dim);
+    }
+    .voice-slide .quote-text em {
+      font-style: normal; color: var(--cream); font-weight: 700;
+    }
+    .voice-slide .quote-src {
+      font-size: 11px; font-weight: 300; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--smoke); margin-top: 32px;
+    }
+    .voice-dots {
+      display: flex; justify-content: center; gap: 12px; margin-top: 48px;
+    }
+    .voice-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      border: 1px solid var(--amber-dim); background: transparent;
+      cursor: none; transition: all 0.3s;
+    }
+    .voice-dot.active { background: var(--amber); border-color: var(--amber); }
+
+    /* ==================== ARSENAL ==================== */
+    .arsenal { padding: 120px 8%; max-width: 1100px; margin: 0 auto; }
+    .section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 60px; border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 20px;
+    }
+    .section-head h2 {
+      font-family: var(--font-display); font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700; color: var(--cream); opacity: 0;
+    }
+    .section-head .count {
+      font-family: var(--font-body); font-size: 11px; font-weight: 300;
+      letter-spacing: 3px; color: var(--smoke); text-transform: uppercase; opacity: 0;
+    }
+    .arsenal-list {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .arsenal-item {
+      background: var(--noir); padding: 36px 24px; text-align: center;
+      transition: background 0.4s;
+    }
+    .arsenal-item:hover { background: var(--charcoal); }
+    .arsenal-item .icon { font-size: 22px; color: var(--amber); margin-bottom: 14px; opacity: 0.7; }
+    .arsenal-item h3 {
+      font-family: var(--font-display); font-size: 15px; font-weight: 700;
+      color: var(--cream); margin-bottom: 8px;
+    }
+    .arsenal-item p { font-size: 12px; font-weight: 300; line-height: 1.6; color: var(--smoke); }
+
+    /* ==================== CREED ==================== */
+    .creed { padding: 160px 8%; max-width: 900px; margin: 0 auto; position: relative; }
+    .creed-head { text-align: center; margin-bottom: 80px; }
+    .creed-head .label {
+      font-size: 10px; font-weight: 600; letter-spacing: 5px;
+      text-transform: uppercase; color: var(--amber-dim); margin-bottom: 16px; opacity: 0;
+    }
+    .creed-head h2 {
+      font-family: var(--font-serif); font-size: clamp(32px, 5vw, 52px);
+      font-weight: 700; color: var(--cream); opacity: 0;
+    }
+    .creed-item {
+      display: flex; gap: 32px; align-items: flex-start;
+      padding: 48px 0; border-bottom: 1px solid rgba(255,255,255,0.04); opacity: 0;
+    }
+    .creed-item:first-child { border-top: 1px solid rgba(255,255,255,0.04); }
+    .creed-num {
+      font-family: var(--font-display); font-size: clamp(48px, 6vw, 80px);
+      font-weight: 400; font-style: italic; color: var(--amber);
+      opacity: 0.2; line-height: 1; flex-shrink: 0;
+    }
+    .creed-item p {
+      font-size: 16px; font-weight: 300; line-height: 2; color: var(--cream-dim);
+      padding-top: 8px;
+    }
+    .creed-item p strong { color: var(--cream); font-weight: 600; }
+
+    /* ==================== THE SCRIPT — screenplay prompt display ==================== */
+    .script-section { padding: 0; position: relative; overflow: hidden; }
+    .script-letterbox { width: 100%; height: 60px; background: #000; position: relative; z-index: 5; }
+    .script-letterbox .sc-label {
+      position: absolute; right: 8%; top: 50%; transform: translateY(-50%);
+      font-size: 9px; font-weight: 600; letter-spacing: 4px;
+      text-transform: uppercase; color: var(--amber-dim); opacity: 0.4;
+    }
+    .script-body {
+      background: #0a0906; padding: 80px 8%; position: relative;
+      border-left: 3px solid var(--cyan-dim); margin-left: 8%;
+      max-width: 800px;
+    }
+    .script-body::before {
+      content: ''; position: absolute; left: -3px; top: 0; width: 3px; height: 0;
+      background: var(--amber); z-index: 2;
+    }
+    .script-head {
+      margin-bottom: 48px;
+    }
+    .script-head h2 {
+      font-family: 'Courier Prime', monospace; font-size: clamp(22px, 3vw, 32px);
+      font-weight: 700; color: var(--cream); text-transform: uppercase;
+      letter-spacing: 2px; opacity: 0;
+    }
+    .script-head .script-sub {
+      font-family: var(--font-body); font-size: 12px; font-weight: 300;
+      color: var(--smoke); margin-top: 8px; opacity: 0;
+    }
+    .script-slug {
+      font-family: 'Courier Prime', monospace; font-size: 14px; font-weight: 700;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+    .script-action {
+      font-family: 'Courier Prime', monospace; font-size: 13px; font-weight: 400;
+      line-height: 2; color: var(--cream-dim); margin-bottom: 24px;
+    }
+    .script-action em { color: var(--cyan-glow); font-style: normal; font-weight: 700; }
+    .script-timing {
+      font-family: 'Courier Prime', monospace; font-size: 11px;
+      color: var(--amber-dim); opacity: 0.6; margin-bottom: 8px;
+    }
+    .script-sfx {
+      font-family: 'Courier Prime', monospace; font-size: 11px; font-weight: 400;
+      color: var(--smoke); font-style: italic; margin-top: -16px; margin-bottom: 24px;
+    }
+    .script-note {
+      font-family: var(--font-serif); font-size: 16px; font-weight: 400;
+      color: var(--cream); text-align: center; padding: 40px 0 0;
+      border-top: 1px solid rgba(201,162,78,0.15); margin-top: 20px;
+      line-height: 1.8; opacity: 0;
+    }
+    .script-note em { color: var(--amber); font-style: italic; }
+    .script-block { opacity: 0; }
+    .script-cursor {
+      display: inline-block; width: 8px; height: 16px;
+      background: var(--amber); animation: blink 0.8s infinite;
+      vertical-align: middle; margin-left: 2px;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ==================== PROCESS — workflow pipeline ==================== */
+    .process { padding: 100px 8%; position: relative; overflow: hidden; }
+    .process-head { text-align: center; margin-bottom: 64px; }
+    .process-head h2 {
+      font-family: var(--font-display); font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700; color: var(--cream); opacity: 0;
+    }
+    .process-pipeline {
+      display: flex; align-items: stretch; gap: 0;
+      max-width: 1100px; margin: 0 auto; position: relative;
+    }
+    .process-pipeline::before {
+      content: ''; position: absolute; top: 50%; left: 0; right: 0;
+      height: 1px; background: linear-gradient(90deg, transparent, var(--cyan-dim), var(--amber-dim), transparent);
+      opacity: 0.3;
+    }
+    .process-step {
+      flex: 1; padding: 32px 20px; text-align: center;
+      position: relative; opacity: 0;
+    }
+    .process-step::after {
+      content: ''; position: absolute; right: 0; top: 20%; height: 60%;
+      width: 1px; background: rgba(255,255,255,0.06);
+    }
+    .process-step:last-child::after { display: none; }
+    .process-num {
+      font-family: var(--font-script); font-size: 11px; font-weight: 700;
+      color: var(--cyan-dim); letter-spacing: 2px; margin-bottom: 16px;
+    }
+    .process-icon {
+      width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(74,140,140,0.3); color: var(--cyan);
+      font-size: 18px; background: rgba(74,140,140,0.05);
+    }
+    .process-step h3 {
+      font-family: var(--font-serif); font-size: 15px; font-weight: 700;
+      color: var(--cream); margin-bottom: 8px;
+    }
+    .process-step p {
+      font-size: 11px; font-weight: 300; line-height: 1.8; color: var(--smoke);
+    }
+    .process-arrow {
+      position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+      color: var(--cyan-dim); font-size: 10px; z-index: 2;
+    }
+
+    /* ==================== INTERLUDE — literary moment ==================== */
+    .interlude {
+      min-height: 60vh; display: flex; align-items: center;
+      justify-content: center; padding: 120px 8%;
+      position: relative; overflow: hidden;
+    }
+    .interlude::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 30% 50%, rgba(74,140,140,0.04) 0%, transparent 60%),
+                  radial-gradient(ellipse at 70% 60%, rgba(201,162,78,0.02) 0%, transparent 50%);
+    }
+    .interlude-inner { max-width: 600px; text-align: center; position: relative; z-index: 1; }
+    .interlude-icon {
+      font-size: 28px; color: var(--cyan); opacity: 0.3; margin-bottom: 32px;
+    }
+    .interlude-text {
+      font-family: var(--font-serif);
+      font-size: clamp(18px, 2.5vw, 26px); font-weight: 400;
+      line-height: 2.2; color: var(--cream-dim); font-style: italic; opacity: 0;
+    }
+    .interlude-text em { color: var(--cream); font-style: normal; font-weight: 700; }
+    .interlude-src {
+      font-family: var(--font-body); font-size: 10px; font-weight: 300;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--smoke); margin-top: 32px; opacity: 0;
+    }
+
+    /* ==================== EMPIRE — business ventures ==================== */
+    .empire { padding: 120px 8%; max-width: 1100px; margin: 0 auto; }
+    .empire-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 2px; margin-top: 60px;
+    }
+    .empire-card {
+      background: var(--noir-warm); padding: 48px 28px; position: relative;
+      overflow: hidden; transition: all 0.5s; opacity: 0;
+    }
+    .empire-card::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--amber), transparent);
+      transform: scaleX(0); transform-origin: left; transition: transform 0.5s;
+    }
+    .empire-card:hover::before { transform: scaleX(1); }
+    .empire-card:hover { background: var(--charcoal); }
+    .empire-icon {
+      font-size: 24px; color: var(--amber); margin-bottom: 20px; opacity: 0.7;
+    }
+    .empire-card h3 {
+      font-family: var(--font-display); font-size: 18px; font-weight: 700;
+      color: var(--cream); margin-bottom: 8px;
+    }
+    .empire-card .empire-status {
+      font-size: 9px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--amber-dim); margin-bottom: 12px;
+    }
+    .empire-card p {
+      font-size: 12px; font-weight: 300; line-height: 1.8; color: var(--smoke);
+    }
+
+    /* ==================== FOOTER ==================== */
+    .footer { padding: 80px 8% 60px; text-align: center; }
+    .footer-rule { width: 40px; height: 1px; background: var(--amber-dim); margin: 0 auto 40px; opacity: 0.4; }
+    .social-row { display: flex; justify-content: center; gap: 20px; margin-bottom: 48px; }
+    .social-btn {
+      width: 44px; height: 44px; display: flex; align-items: center;
+      justify-content: center; text-decoration: none; color: var(--smoke);
+      font-size: 16px; border: 1px solid rgba(255,255,255,0.08);
+      transition: all 0.3s; cursor: none;
+    }
+    .social-btn:hover { color: var(--noir); background: var(--amber); border-color: var(--amber); }
+    .footer-sig { font-size: 11px; font-weight: 300; letter-spacing: 1px; color: var(--smoke); opacity: 0.4; }
+    .footer-sig a { color: var(--amber-dim); text-decoration: none; cursor: none; }
+
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 768px) {
+      body { cursor: auto; }
+      .cursor-dot, .cursor-glow { display: none; }
+      a, button, .social-btn, .voice-dot, .nav-back, .footer-sig a { cursor: auto; }
+
+      .hero { padding: 0 6% 12%; }
+      .hero-title { font-size: clamp(56px, 16vw, 100px); }
+      .hero-seal { display: none; }
+      .hero-stats { flex-wrap: wrap; gap: 16px; }
+
+      .statement-text { font-size: clamp(28px, 7vw, 48px); }
+
+      .pitch { padding: 100px 6%; }
+      .pitch-highlight-text { font-size: clamp(22px, 6vw, 36px); }
+
+      .about-image-full { height: 50vh; }
+      .about-copy { margin-top: -60px; padding: 32px; }
+
+      .film-frame { width: 85vw; min-width: 280px; height: 50vh; min-height: 300px; }
+      .film-frame-overlay { opacity: 1; }
+
+      .script-body { margin-left: 4%; padding: 48px 6%; }
+      .script-letterbox { height: 36px; }
+
+      .process-pipeline { flex-direction: column; gap: 0; }
+      .process-step::after { display: none; }
+      .process-arrow { display: none; }
+      .process-pipeline::before {
+        top: 0; bottom: 0; left: 50%; width: 1px; height: 100%;
+        background: linear-gradient(180deg, transparent, var(--cyan-dim), var(--amber-dim), transparent);
+      }
+      .voice-stage { min-height: 200px; }
+
+      .empire-grid { grid-template-columns: repeat(2, 1fr); }
+      .empire-card { padding: 32px 20px; }
+
+      .voice-slide .quote-text { font-size: clamp(18px, 5vw, 28px); }
+      .voice-slide .quote-mark { font-size: 72px; }
+
+      .arsenal-list { grid-template-columns: repeat(2, 1fr); }
+
+      .creed-item { gap: 20px; }
+      .creed-num { font-size: clamp(36px, 10vw, 56px); }
+
+      .section-head, .works-head { flex-direction: column; gap: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .arsenal-list { grid-template-columns: 1fr; }
+      .empire-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="loading">
+
+  <!-- LOADER SCREEN -->
+  <div class="loader-screen" id="loaderScreen">
+    <canvas class="loader-burn-canvas" id="loaderBurnCanvas"></canvas>
+    <div class="loader-seal" id="loaderSeal">
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="46" stroke="var(--cyan)" stroke-width="1" opacity="0.4"/>
+        <circle cx="50" cy="50" r="38" stroke="var(--amber-dim)" stroke-width="0.5" opacity="0.3"/>
+        <line x1="30" y1="50" x2="70" y2="50" stroke="var(--cyan)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+        <line x1="50" y1="30" x2="50" y2="70" stroke="var(--amber-dim)" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+      </svg>
+    </div>
+    <div class="loader-title" id="loaderTitle">Adam</div>
+    <div class="loader-sub" id="loaderSub">AI 影視造物師</div>
+    <div class="loader-progress-wrap" id="loaderProgressWrap">
+      <div class="loader-progress-fill" id="loaderProgressFill"></div>
+    </div>
+    <div class="loader-pct" id="loaderPct">0%</div>
+    <button class="loader-enter" id="loaderEnter">Enter</button>
+  </div>
+
+  <div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="film-grain"></div>
+  <div class="scroll-progress" id="scrollProgress"></div>
+  <canvas id="three-bg"></canvas>
+
+  <!-- Fullscreen video overlay -->
+  <div class="video-fullscreen-overlay" id="videoFullscreen">
+    <div class="video-fullscreen-close" id="videoFullscreenClose"><i class="fas fa-times"></i></div>
+    <video id="fullscreenVideo" controls playsinline></video>
+    <div class="video-fullscreen-hint">esc or click × to close</div>
+  </div>
+
+  <a href="/guild/" class="nav-back">
+    <i class="fas fa-arrow-left" style="font-size:9px"></i> Archive
+  </a>
+
+  <!-- SCROLL-DRIVEN VIDEO SECTION -->
+  <section class="video-section" id="videoSection">
+    <div class="video-sticky">
+      <video id="scrollVideo" muted playsinline preload="auto"
+        src="/assets/img/guild/passer_999/video_1.mp4">
+      </video>
+    </div>
+  </section>
+  <div class="video-progress-track" id="videoProgressTrack">
+    <div class="video-progress-bar" id="videoProgressBar"></div>
+  </div>
+  <div class="video-hint" id="videoHint">scroll to play</div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <!-- sc.02 HERO -->
+    <section class="hero" id="hero">
+      <div class="hero-portrait-wrap">
+        <img src="/assets/img/guild/passer_999/post_image.webp" alt="Adam" class="hero-portrait" id="heroPortrait" loading="eager" />
+        <div class="hero-portrait-mask"></div>
+      </div>
+      <div class="hero-text">
+        <div class="hero-eyebrow" data-anim="hero">
+          @passer_999
+          <span class="verified"><i class="fas fa-check"></i></span>
+        </div>
+        <h1 class="hero-title" data-anim="hero">Adam</h1>
+        <div class="hero-tagline" data-anim="hero">AI 影視造物師</div>
+        <div class="hero-stats" data-anim="hero">
+          <span class="hero-stat"><strong>7.6K</strong> Threads</span>
+          <span class="hero-stat"><strong>2.5K</strong> Instagram</span>
+          <span class="hero-stat"><strong>239</strong> Posts</span>
+          <span class="hero-stat"><i class="fas fa-certificate" style="color:var(--amber);font-size:10px;margin-right:2px"></i> Verified</span>
+        </div>
+        <p class="hero-desc" data-anim="hero">
+          我把 AI 當畫筆，把二十年的專業當顏料。<br/>
+          別人還在爭論 AI 能不能用的時候，我已經用它拍出了電影。
+        </p>
+      </div>
+      <!-- Hero seal watermark -->
+      <div class="hero-seal" data-anim="hero">
+        <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="72" height="72" fill="none" stroke="var(--cyan)" stroke-width="2.5" opacity="0.25" />
+          <rect x="8" y="8" width="64" height="64" fill="none" stroke="var(--cyan)" stroke-width="0.5" opacity="0.15" />
+          <text x="40" y="34" text-anchor="middle" fill="var(--cyan)" font-family="'Noto Serif TC', serif" font-size="20" font-weight="900" opacity="0.2">青萍</text>
+          <text x="40" y="58" text-anchor="middle" fill="var(--cyan)" font-family="'Noto Serif TC', serif" font-size="20" font-weight="900" opacity="0.2">劍印</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Brush stroke divider -->
+    <div class="brush-divider" id="brushDiv1">
+      <svg viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
+        <path class="stroke-path" d="M10,20 Q30,8 60,18 T120,15 T180,22 190,20" />
+      </svg>
+    </div>
+
+    <!-- STATEMENT — full viewport bold text -->
+    <section class="statement" id="statement">
+      <h2 class="statement-text" data-anim="stmt">
+        工具誰都買得到，<br/><em>但眼光是我的。</em>
+      </h2>
+      <div class="statement-rule" data-anim="stmt-rule"></div>
+    </section>
+
+    <!-- sc.03 THE PITCH -->
+    <section class="pitch" id="pitch">
+      <div class="pitch-inner">
+        <div class="pitch-head">
+          <div class="label" data-anim="pitch-h"><span class="sc">sc. 03</span> &mdash; The Pitch</div>
+          <h2 data-anim="pitch-h">那天的會議室</h2>
+        </div>
+
+        <div class="pitch-card" data-anim="pitch">
+          <div class="pitch-speaker">回憶</div>
+          <div class="pitch-text">
+            桌上攤著三家報價單，最便宜的那張 <em>三萬</em>。客戶指著它問我：「人家 AI 也能做，你憑什麼報這個價？」
+          </div>
+        </div>
+
+        <div class="pitch-beat">[ Beat. ]</div>
+
+        <div class="pitch-card" data-anim="pitch">
+          <div class="pitch-speaker">我</div>
+          <div class="pitch-text">
+            我沒回話。打開作品集，<em>把畫面放到最大</em>。我不需要解釋，光影會替我說。
+          </div>
+        </div>
+
+        <div class="pitch-highlight" data-anim="pitch-hl">
+          <div class="pitch-highlight-text">我做的東西，<br/>打開就知道不一樣。</div>
+        </div>
+
+        <div class="pitch-card" data-anim="pitch">
+          <div class="pitch-text" style="text-align:center">
+            別人在比 prompt 的字數，我在比鏡頭的呼吸感。<br/>塑膠感跟電影感之間的距離，用肉眼就看得出來。
+          </div>
+        </div>
+
+        <div class="pitch-coda" data-anim="pitch">
+          從一個人扛到資方入場，從接案到籌備自己的公司。<br/>每一幀燒過的肝，終於值得了。
+        </div>
+      </div>
+    </section>
+
+    <!-- THE SCRIPT — screenplay prompt display -->
+    <section class="script-section" id="scriptSection">
+      <div class="script-letterbox">
+        <span class="sc-label">sc. 03.5 — The Script</span>
+      </div>
+      <div class="script-body" id="scriptBody">
+        <div class="script-head">
+          <h2 data-anim="script-h">TITLE SEQUENCE: "ADAM"<span class="script-cursor"></span></h2>
+          <div class="script-sub" data-anim="script-h">即夢 Seedance 2.0 — 片頭動畫提示詞</div>
+        </div>
+
+        <div class="script-block" data-anim="script">
+          <div class="script-timing">0-3 SEC</div>
+          <div class="script-slug">INT. 混沌初開 — 虛空</div>
+          <div class="script-action">
+            純黑背景中，<em>青黑與赤金詭霧</em>緩緩湧動，如幽冥鬼域初醒。
+            固定機位，鏡頭微微呼吸起伏，營造壓抑的張力。
+            霧氣深處有極細的青色光絲明滅不定。
+          </div>
+          <div class="script-sfx">SFX: 低沉骨笛嗚咽，遠處隱約獸吼</div>
+        </div>
+
+        <div class="script-block" data-anim="script">
+          <div class="script-timing">3-6 SEC</div>
+          <div class="script-slug">EXT. 劍起 — 破空</div>
+          <div class="script-action">
+            一道<em>青色劍氣</em>從畫面左側破空而來，筆鋒銳利如切玉。
+            驟然停頓，形成「A」字起筆。劍氣邊緣迸發青色碎屑，如螢火四射。
+            鏡頭跟隨俯衝，停頓瞬間<em>輕微震顫</em>。
+          </div>
+          <div class="script-sfx">SFX: 清亮劍鳴 + 重鼓點，破空尖銳風聲</div>
+        </div>
+
+        <div class="script-block" data-anim="script">
+          <div class="script-timing">6-12 SEC</div>
+          <div class="script-slug">INT. 劍走龍蛇 — 成形</div>
+          <div class="script-action">
+            「A」收筆延伸出蜿蜒青色劍光，如遊龍盤繞，一次勾勒出「dam」三字。
+            轉折處迸發<em>青綠山水粒子</em>，每一粒碎光都彷彿一座山、一片竹葉的縮影。
+            青萍印記從頂部飛入，落在「A」左上方，迸發金色火焰粒子。
+          </div>
+          <div class="script-sfx">SFX: 金石碰撞，鍾鳴，無數劍氣歸鞘</div>
+        </div>
+
+        <div class="script-note" data-anim="script-note">
+          這不是 prompt。<br/>這是我腦中的<em>分鏡表</em>。
+        </div>
+      </div>
+      <div class="script-letterbox">
+        <span class="sc-label">end script</span>
+      </div>
+    </section>
+
+    <!-- sc.04 ABOUT -->
+    <section class="about" id="about">
+      <img src="/assets/img/guild/passer_999/work_hair.webp" alt="AI Portrait by Adam" class="about-image-full" data-anim="about-img" loading="lazy" />
+      <div class="about-copy">
+        <div class="label" data-anim="about"><span class="sc">sc. 04</span> &mdash; Origin Story</div>
+        <h2 data-anim="about">我選了一條<br/><em>沒有人走過</em>的路</h2>
+        <p data-anim="about">
+          DePaul 大學畢業，拿了 ESG 永續管理師認證，走的是一條看起來穩穩的路。
+          但我心裡一直知道，那些證照裝點的是履歷，不是我真正想做的事。
+        </p>
+        <p data-anim="about">
+          直到 AI 影視出現。我突然發現，過去累積的一切 —— 美學直覺、品牌思維、
+          說故事的能力 —— 在這個全新的領域全部派上了用場。
+          不是轉行，是我走過的每一步終於匯流在一起了。
+        </p>
+        <p data-anim="about">
+          現在我同時是創作者、AI 講師、品牌行銷顧問。
+          我拿 Gemini 當導演助手，用 Kling 鍛造電影級畫面。
+          AI 是我專業的延伸，不是取代。
+        </p>
+
+        <div class="journey" data-anim="about">
+          <div class="journey-node">
+            <div class="journey-dot"></div>
+            <div>
+              <div class="journey-label">DePaul University</div>
+              <div class="journey-desc">美國 &middot; Inventor Science Teacher</div>
+            </div>
+          </div>
+          <div class="journey-node">
+            <div class="journey-dot"></div>
+            <div>
+              <div class="journey-label">ESG 永續認證</div>
+              <div class="journey-desc">TUV ISO 14064/67 &middot; AFNOR 永續策略管理師</div>
+            </div>
+          </div>
+          <div class="journey-node">
+            <div class="journey-dot"></div>
+            <div>
+              <div class="journey-label">AI 影視創作</div>
+              <div class="journey-desc">影視 &middot; 廣告 &middot; 動畫 &middot; AI 講師</div>
+            </div>
+          </div>
+          <div class="journey-node">
+            <div class="journey-dot"></div>
+            <div>
+              <div class="journey-label">公司籌備中</div>
+              <div class="journey-desc">資方到位 &middot; 品牌行銷 &middot; 多角經營</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-tags" data-anim="about">
+          <span class="about-tag">AI 影視</span>
+          <span class="about-tag">廣告動畫</span>
+          <span class="about-tag">品牌行銷</span>
+          <span class="about-tag">AI 講師</span>
+          <span class="about-tag">ESG 永續</span>
+          <span class="about-tag">DePaul Univ.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- sc.04.5 PROCESS — workflow pipeline -->
+    <section class="process" id="process">
+      <div class="process-head">
+        <div class="label" data-anim="proc-h"><span class="sc">sc. 04.5</span> &mdash; My Process</div>
+        <h2 data-anim="proc-h">我怎麼把想法<br/>變成電影</h2>
+      </div>
+      <div class="process-pipeline">
+        <div class="process-step" data-anim="proc">
+          <div class="process-num">01</div>
+          <div class="process-icon"><i class="fas fa-brain"></i></div>
+          <h3>餵養 Gemini</h3>
+          <p>把二十年的專業知識、美學判斷、品牌語言持續灌給 AI，讓它成為我的導演助手</p>
+          <span class="process-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+        <div class="process-step" data-anim="proc">
+          <div class="process-num">02</div>
+          <div class="process-icon"><i class="fas fa-scroll"></i></div>
+          <h3>分鏡劇本</h3>
+          <p>不是打一句 prompt。是寫一份完整分鏡：秒數、鏡位、粒子、音效、情緒曲線全部拆解</p>
+          <span class="process-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+        <div class="process-step" data-anim="proc">
+          <div class="process-num">03</div>
+          <div class="process-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+          <h3>AI 鍛造</h3>
+          <p>Seedance、Kling、Lovart、tapnow — 不同工具各司其職。抽卡不是碰運氣，是用專業篩選</p>
+          <span class="process-arrow"><i class="fas fa-chevron-right"></i></span>
+        </div>
+        <div class="process-step" data-anim="proc">
+          <div class="process-num">04</div>
+          <div class="process-icon"><i class="fas fa-eye"></i></div>
+          <h3>導演之眼</h3>
+          <p>塑膠感和電影感的差距，用肉眼就看得出來。最後的品質把關，永遠是人的審美</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Brush stroke divider -->
+    <div class="brush-divider" id="brushDiv2">
+      <svg viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
+        <path class="stroke-path" d="M5,22 Q40,10 80,25 T140,12 T195,20" />
+      </svg>
+    </div>
+
+    <!-- INTERLUDE — literary moment -->
+    <section class="interlude" id="interlude">
+      <div class="interlude-inner">
+        <div class="interlude-icon" data-anim="inter"><i class="fas fa-pen-nib"></i></div>
+        <div class="interlude-text" data-anim="inter-text">
+          味道之間的搭配像是<em>樂器間的協奏</em>，<br/>
+          菜單上的材料，可以想像它們單一的味道，<br/>
+          卻難以想像它們的和諧。<br/>
+          像是孤獨的旅者遇上寂寞的歸人，<br/>
+          從未想過有人陪伴，<br/>
+          卻遇見<em>合拍與共鳴的腳步</em>。
+        </div>
+        <div class="interlude-src" data-anim="inter">— 深夜隨筆，松山區某酒吧</div>
+      </div>
+    </section>
+
+    <!-- Floating background video cards — blur until hover, click to pull forward -->
+    <!-- Staggered: left-right-left-right-center for even distribution -->
+    <div class="bg-video-card hidden" id="bgCard2" style="width:260px;height:146px;top:8%;left:3%;" data-src="/assets/img/guild/passer_999/video_2.mp4" data-float-y="8" data-float-x="3" data-phase="0.5">
+      <video src="/assets/img/guild/passer_999/video_2.mp4" muted playsinline loop preload="none"></video>
+      <div class="card-label">click to play</div>
+    </div>
+    <div class="bg-video-card hidden" id="bgCard3" style="width:240px;height:135px;top:20%;right:4%;" data-src="/assets/img/guild/passer_999/video_3.mp4" data-float-y="20" data-float-x="4" data-phase="1.8">
+      <video src="/assets/img/guild/passer_999/video_3.mp4" muted playsinline loop preload="none"></video>
+      <div class="card-label">click to play</div>
+    </div>
+    <div class="bg-video-card hidden" id="bgCard4" style="width:220px;height:124px;top:48%;left:2%;" data-src="/assets/img/guild/passer_999/video_4.mp4" data-float-y="48" data-float-x="2" data-phase="3.2">
+      <video src="/assets/img/guild/passer_999/video_4.mp4" muted playsinline loop preload="none"></video>
+      <div class="card-label">click to play</div>
+    </div>
+    <div class="bg-video-card hidden" id="bgCard5" style="width:280px;height:158px;top:55%;right:3%;" data-src="/assets/img/guild/passer_999/video_5.mp4" data-float-y="55" data-float-x="3" data-phase="0">
+      <video src="/assets/img/guild/passer_999/video_5.mp4" muted playsinline loop preload="none"></video>
+      <div class="card-label">click to play</div>
+    </div>
+    <div class="bg-video-card hidden" id="bgCard6" style="width:200px;height:112px;top:78%;left:8%;" data-src="/assets/img/guild/passer_999/video_6.mp4" data-float-y="78" data-float-x="8" data-phase="4.5">
+      <video src="/assets/img/guild/passer_999/video_6.mp4" muted playsinline loop preload="none"></video>
+      <div class="card-label">click to play</div>
+    </div>
+
+    <!-- sc.05 WORKS — horizontal film strip -->
+    <section class="works-section" id="works">
+      <div class="works-head">
+        <h2 data-anim="works-h"><span class="sc">sc. 05</span> Selected Works</h2>
+        <span class="count" data-anim="works-h">06 Pieces</span>
+      </div>
+      <div class="film-strip-wrap" id="filmStripWrap">
+        <div class="film-strip-edge"></div>
+        <div class="film-strip" id="filmStrip">
+          <div class="film-frame">
+            <img src="/assets/img/guild/passer_999/work_sword.webp" alt="劍影燃空" loading="lazy" />
+            <div class="film-frame-overlay">
+              <h3>劍影燃空</h3>
+              <span>AI Cinema &middot; Kling</span>
+            </div>
+          </div>
+          <div class="film-frame">
+            <img src="/assets/img/guild/passer_999/work_title_seq.webp" alt="青萍序章" loading="lazy" />
+            <div class="film-frame-overlay">
+              <h3>青萍序章</h3>
+              <span>Title Sequence &middot; Seedance 2.0</span>
+            </div>
+          </div>
+          <div class="film-frame">
+            <img src="/assets/img/guild/passer_999/work_scene_a.webp" alt="烈焰凝視" loading="lazy" />
+            <div class="film-frame-overlay">
+              <h3>烈焰凝視</h3>
+              <span>AI Cinema &middot; Cinematic Close-up</span>
+            </div>
+          </div>
+          <div class="film-frame">
+            <img src="/assets/img/guild/passer_999/work_scene_b.webp" alt="雨中劍客" loading="lazy" />
+            <div class="film-frame-overlay">
+              <h3>雨中劍客</h3>
+              <span>AI Animation &middot; Xianxia Series</span>
+            </div>
+          </div>
+          <div class="film-frame">
+            <img src="/assets/img/guild/passer_999/work_sword2.webp" alt="蒼海鍛神" loading="lazy" />
+            <div class="film-frame-overlay">
+              <h3>蒼海鍛神</h3>
+              <span>Mythical Sea Creature Challenge</span>
+            </div>
+          </div>
+          <div class="film-frame">
+            <img src="/assets/img/guild/passer_999/work_scene_c.webp" alt="光影廣告" loading="lazy" />
+            <div class="film-frame-overlay">
+              <h3>光影廣告</h3>
+              <span>Commercial &middot; Product Visualization</span>
+            </div>
+          </div>
+        </div>
+        <div class="film-strip-edge bottom"></div>
+      </div>
+    </section>
+
+    <!-- sc.06 VOICES — rotating quotes -->
+    <section class="voices" id="voices">
+      <div class="voices-inner">
+        <div class="voices-label" data-anim="voice-h"><span class="sc">sc. 06</span> &mdash; 我的話</div>
+
+        <div class="voice-stage">
+        <div class="voice-slide active" data-voice="0">
+          <div class="quote-mark">&ldquo;</div>
+          <div class="quote-text">
+            <em>AI 放大的是你的專業，不是你的懶惰。</em>我給它越精準的東西，它回饋的品質就越高。前提是，我自己得先夠強。
+          </div>
+          <div class="quote-src">關於創作</div>
+        </div>
+
+        <div class="voice-slide" data-voice="1">
+          <div class="quote-mark">&ldquo;</div>
+          <div class="quote-text">
+            經營品牌不是在發廣告，是在<em>讓它活起來</em>。我的每一則回覆、每一個表態，都是在替帳號注入體溫。
+          </div>
+          <div class="quote-src">關於品牌</div>
+        </div>
+
+        <div class="voice-slide" data-voice="2">
+          <div class="quote-mark">&ldquo;</div>
+          <div class="quote-text">
+            ESG、能源、茶品牌、影視 —— 這些看起來八竿子打不著的經歷，<em>在某個瞬間突然全部串聯了</em>。那種炸開的感覺，你得走過才會懂。
+          </div>
+          <div class="quote-src">關於累積</div>
+        </div>
+
+        <div class="voice-slide" data-voice="3">
+          <div class="quote-mark">&ldquo;</div>
+          <div class="quote-text">
+            我不是要用 AI 取代誰。我想做的是<em>拆掉技術的圍牆</em>，讓有故事的人都能把畫面做到電影級。這是我給自己的使命。
+          </div>
+          <div class="quote-src">關於使命</div>
+        </div>
+
+        <div class="voice-slide" data-voice="4">
+          <div class="quote-mark">&ldquo;</div>
+          <div class="quote-text">
+            別人的 prompt 是一句話。我的 prompt 是一份<em>分鏡表</em>：幾秒到幾秒、鏡頭怎麼運、粒子怎麼炸、音效怎麼壓。導演不會只說「拍一個帥的」。
+          </div>
+          <div class="quote-src">關於 Prompt</div>
+        </div>
+
+        <div class="voice-slide" data-voice="5">
+          <div class="quote-mark">&ldquo;</div>
+          <div class="quote-text">
+            經營帳號要做<em>海巡</em>，但不是亂留言。垂直海巡打專業，價值觀海巡打溫度。品牌跟 IP 的差別就是鮮活度，你的帳號有沒有在呼吸。
+          </div>
+          <div class="quote-src">關於經營</div>
+        </div>
+
+        </div><!-- end voice-stage -->
+        <div class="voice-dots" id="voiceDots">
+          <div class="voice-dot active" data-idx="0"></div>
+          <div class="voice-dot" data-idx="1"></div>
+          <div class="voice-dot" data-idx="2"></div>
+          <div class="voice-dot" data-idx="3"></div>
+          <div class="voice-dot" data-idx="4"></div>
+          <div class="voice-dot" data-idx="5"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- sc.07 ARSENAL -->
+    <section class="arsenal" id="arsenal">
+      <div class="section-head">
+        <h2 data-anim="ars-h"><span class="sc">sc. 07</span> Arsenal</h2>
+        <span class="count" data-anim="ars-h">Tools &amp; Skills</span>
+      </div>
+      <div class="arsenal-list">
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-film"></i></div>
+          <h3>Kling</h3>
+          <p>AI 影片生成<br/>電影級動態畫面</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-music"></i></div>
+          <h3>Suno</h3>
+          <p>AI 音樂創作<br/>原創配樂</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+          <h3>Seedance 2.0</h3>
+          <p>即夢影片模型<br/>卡點變裝 &amp; 片頭</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-palette"></i></div>
+          <h3>Lovart</h3>
+          <p>AI 藝術生成<br/>魔幻視覺設計</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-bolt"></i></div>
+          <h3>tapnow</h3>
+          <p>AI 影像工具<br/>快速原型製作</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-cat"></i></div>
+          <h3>nanobanana2</h3>
+          <p>AI 影片模型<br/>修仙系列 &amp; 特效</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-brain"></i></div>
+          <h3>Gemini</h3>
+          <p>AI 導演助手<br/>分鏡 &amp; 動作指導</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-bullhorn"></i></div>
+          <h3>Brand</h3>
+          <p>品牌行銷顧問<br/>策略到影像落地</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-chart-line"></i></div>
+          <h3>ViralArc</h3>
+          <p>AI 社群工具<br/>數據分析 &amp; 海巡</p>
+        </div>
+        <div class="arsenal-item" data-anim="ars">
+          <div class="icon"><i class="fas fa-leaf"></i></div>
+          <h3>ESG</h3>
+          <p>TUV ISO 14064/67<br/>AFNOR 永續策略</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- sc.07.5 EMPIRE — business ventures -->
+    <section class="empire" id="empire">
+      <div class="section-head">
+        <h2 data-anim="emp-h"><span class="sc">sc. 07.5</span> Empire</h2>
+        <span class="count" data-anim="emp-h">版圖</span>
+      </div>
+      <div class="empire-grid">
+        <div class="empire-card" data-anim="emp">
+          <div class="empire-icon"><i class="fas fa-clapperboard"></i></div>
+          <h3>AI 影視製作</h3>
+          <div class="empire-status">● 核心業務</div>
+          <p>從廣告到動畫、從片頭到完整影片。用 AI 打造電影級視覺，客戶打開作品集就簽約。</p>
+        </div>
+        <div class="empire-card" data-anim="emp">
+          <div class="empire-icon"><i class="fas fa-building"></i></div>
+          <h3>公司籌備</h3>
+          <div class="empire-status">● 資方到位</div>
+          <p>從一個人扛到資方入場，正在籌備自己的公司。從接案走向規模化經營。</p>
+        </div>
+        <div class="empire-card" data-anim="emp">
+          <div class="empire-icon"><i class="fas fa-mug-hot"></i></div>
+          <h3>茶品牌</h3>
+          <div class="empire-status">● 尋找合作</div>
+          <p>三角茶包品牌，目標 200 間門市上架。從選茶到通路，跨界經營。</p>
+        </div>
+        <div class="empire-card" data-anim="emp">
+          <div class="empire-icon"><i class="fas fa-graduation-cap"></i></div>
+          <h3>AI 講師</h3>
+          <div class="empire-status">● 進行中</div>
+          <p>教品牌和創作者用 AI 做出「不像 AI」的東西。知識變現，經驗傳承。</p>
+        </div>
+        <div class="empire-card" data-anim="emp">
+          <div class="empire-icon"><i class="fas fa-chart-pie"></i></div>
+          <h3>品牌行銷顧問</h3>
+          <div class="empire-status">● 進行中</div>
+          <p>從社群策略到內容規劃，用「海巡」心法經營帳號。品牌和 IP 的差別在於鮮活度。</p>
+        </div>
+        <div class="empire-card" data-anim="emp">
+          <div class="empire-icon"><i class="fas fa-link"></i></div>
+          <h3>AI 工具聯盟</h3>
+          <div class="empire-status">● 被動收入</div>
+          <p>串流影音與 AI 工具合租平台。把自己實測過的好工具推給需要的人。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- sc.08 CREED -->
+    <section class="creed" id="creed">
+      <div class="creed-head">
+        <div class="label" data-anim="creed-h"><span class="sc">sc. 08</span> &mdash; Philosophy</div>
+        <h2 data-anim="creed-h">我的信條</h2>
+      </div>
+      <div class="creed-list">
+        <div class="creed-item" data-anim="creed">
+          <div class="creed-num">01</div>
+          <p><strong>專業是我在 AI 時代的護城河。</strong>工具越來越便宜，但能餵給它什麼、能從結果裡挑出什麼，取決於我的底蘊。Prompt 人人會下，但品味是練出來的。</p>
+        </div>
+        <div class="creed-item" data-anim="creed">
+          <div class="creed-num">02</div>
+          <p><strong>我不辯論，我用作品說話。</strong>不需要解釋我的定價，不需要跟人爭 AI 該不該用。把畫面打開，光影會替我回答一切。</p>
+        </div>
+        <div class="creed-item" data-anim="creed">
+          <div class="creed-num">03</div>
+          <p><strong>我走過的每一段彎路，都是鍛造。</strong>教育、永續、能源、茶品牌 —— 看起來散亂的經歷，在 AI 影視這個交叉口全部匯流。沒有白走的路，只有還沒連上的點。</p>
+        </div>
+        <div class="creed-item" data-anim="creed">
+          <div class="creed-num">04</div>
+          <p><strong>我不只做一件事。</strong>影視、茶品牌、講課、行銷顧問 —— 有人說太雜，但我知道這些全部都是同一件事的不同面向。掌握「把東西做好看」這件事，什麼行業都是我的賽道。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-rule"></div>
+      <div class="social-row">
+        <a href="https://www.threads.com/@passer_999" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="Threads"><i class="fab fa-threads"></i></a>
+        <a href="https://www.instagram.com/passer_999/" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="https://premlogin.com/BxtnxACA" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="AI Tools"><i class="fas fa-robot"></i></a>
+      </div>
+      <div class="footer-sig">Made with &hearts; by <a href="/guild/">SuperGalen's Dungeon</a></div>
+    </footer>
+
+  </div>
+
+  <script>
+    /* ==================== CUSTOM CURSOR ==================== */
+    (function() {
+      if (window.innerWidth <= 768) return;
+      const dot = document.getElementById('cursorDot');
+      const glow = document.getElementById('cursorGlow');
+      let mx = -100, my = -100;
+
+      document.addEventListener('mousemove', e => {
+        mx = e.clientX; my = e.clientY;
+        dot.style.left = mx - 3 + 'px';
+        dot.style.top = my - 3 + 'px';
+        glow.style.left = mx + 'px';
+        glow.style.top = my + 'px';
+      });
+
+      document.addEventListener('mousedown', () => dot.style.transform = 'scale(2.5)');
+      document.addEventListener('mouseup', () => dot.style.transform = 'scale(1)');
+    })();
+
+    /* ==================== THREE.JS + VIDEO PLANES ==================== */
+    (function() {
+      const canvas = document.getElementById('three-bg');
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 50;
+
+      /* ---------- PARTICLES ---------- */
+      const count = 200;
+      const pos = new Float32Array(count * 3);
+      const col = new Float32Array(count * 3);
+      const vel = [];
+      const amber = new THREE.Color(0xc9a24e);
+      const cyan = new THREE.Color(0x4a8c8c);
+      const cyanGlow = new THREE.Color(0x5eb8b8);
+      const warm = new THREE.Color(0xf0e8d8);
+
+      for (let i = 0; i < count; i++) {
+        pos[i*3] = (Math.random()-0.5)*160;
+        pos[i*3+1] = (Math.random()-0.5)*160;
+        pos[i*3+2] = (Math.random()-0.5)*80;
+        const r = Math.random();
+        const c = r < 0.4 ? cyan : r < 0.7 ? amber : r < 0.9 ? cyanGlow : warm;
+        col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+        vel.push({
+          x:(Math.random()-0.5)*0.008,
+          y:Math.random()*0.012+0.003 * (r < 0.4 ? -1 : 1),
+          z:(Math.random()-0.5)*0.004
+        });
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+
+      const tc = document.createElement('canvas');
+      tc.width = 32; tc.height = 32;
+      const tx = tc.getContext('2d');
+      const gr = tx.createRadialGradient(16,16,0,16,16,16);
+      gr.addColorStop(0,'rgba(255,255,255,1)');
+      gr.addColorStop(0.4,'rgba(255,255,255,0.4)');
+      gr.addColorStop(1,'rgba(255,255,255,0)');
+      tx.fillStyle = gr; tx.fillRect(0,0,32,32);
+
+      const mat = new THREE.PointsMaterial({
+        size: 1, map: new THREE.CanvasTexture(tc),
+        vertexColors: true, transparent: true, opacity: 0.35,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      });
+
+      const pts = new THREE.Points(geo, mat);
+      scene.add(pts);
+
+      /* ---------- VIDEO PLANES REMOVED — now using CSS floating cards ---------- */
+      window._showVideoPlanes = function() {}; // no-op, cards handle their own visibility
+      window._startBgVideos = function() {}; // will be overridden by floating cards IIFE
+
+      /* ---------- MOUSE PARALLAX ---------- */
+      let pmx = 0, pmy = 0;
+      document.addEventListener('mousemove', e => {
+        pmx = (e.clientX/window.innerWidth - 0.5)*2;
+        pmy = (e.clientY/window.innerHeight - 0.5)*2;
+      });
+
+      /* ---------- RENDER LOOP ---------- */
+      let time = 0;
+      function tick() {
+        requestAnimationFrame(tick);
+        time += 0.016;
+
+        // Particles
+        const p = geo.attributes.position.array;
+        for (let i = 0; i < count; i++) {
+          p[i*3] += vel[i].x; p[i*3+1] += vel[i].y; p[i*3+2] += vel[i].z;
+          if (p[i*3+1] > 80) p[i*3+1] = -80;
+          if (Math.abs(p[i*3]) > 80) p[i*3] *= -0.95;
+        }
+        geo.attributes.position.needsUpdate = true;
+        pts.rotation.y += 0.0002 + pmx*0.0005;
+        pts.rotation.x = pmy*0.03;
+
+        renderer.render(scene, camera);
+      }
+      tick();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    })();
+
+    /* ==================== SCROLL PROGRESS ==================== */
+    window.addEventListener('scroll', () => {
+      const pct = (document.documentElement.scrollTop / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+      document.getElementById('scrollProgress').style.width = pct + '%';
+    });
+
+    /* ==================== RESOURCE LOADER ==================== */
+    (function() {
+      const loaderScreen = document.getElementById('loaderScreen');
+      const loaderSeal = document.getElementById('loaderSeal');
+      const loaderTitle = document.getElementById('loaderTitle');
+      const loaderSub = document.getElementById('loaderSub');
+      const loaderProgressWrap = document.getElementById('loaderProgressWrap');
+      const loaderProgressFill = document.getElementById('loaderProgressFill');
+      const loaderPct = document.getElementById('loaderPct');
+      const loaderEnter = document.getElementById('loaderEnter');
+
+      // Animate loader elements in sequence
+      const tl = gsap.timeline({ delay: 0.3 });
+      tl.to(loaderSeal, { opacity: 1, scale: 1, rotation: 0, duration: 1.2, ease: 'back.out(1.5)' })
+        .to(loaderTitle, { opacity: 1, duration: 0.6, ease: 'power2.out' }, '-=0.4')
+        .to(loaderSub, { opacity: 1, duration: 0.5, ease: 'power2.out' }, '-=0.2')
+        .to(loaderProgressWrap, { opacity: 1, duration: 0.3 }, '-=0.1')
+        .to(loaderPct, { opacity: 1, duration: 0.3 }, '-=0.2');
+
+      // Track resource loading — real progress
+      const resources = [];
+      let loaded = 0;
+
+      function addResource(promise) {
+        const tracked = promise.then(() => { loaded++; updateProgress(); });
+        resources.push(tracked);
+      }
+
+      let displayPct = 0;
+      function updateProgress() {
+        const realPct = Math.round((loaded / resources.length) * 100);
+        gsap.to({ v: displayPct }, {
+          v: realPct, duration: 0.4, ease: 'power1.out',
+          onUpdate: function() {
+            displayPct = Math.round(this.targets()[0].v);
+            loaderProgressFill.style.width = displayPct + '%';
+            loaderPct.textContent = displayPct + '%';
+          }
+        });
+      }
+
+      // 1. Scroll video — must be fully buffered
+      const scrollVid = document.getElementById('scrollVideo');
+      addResource(new Promise(resolve => {
+        if (scrollVid.readyState >= 4) { resolve(); return; }
+        scrollVid.addEventListener('canplaythrough', resolve, { once: true });
+      }));
+
+      // 2. Hero portrait image
+      const heroImg = document.getElementById('heroPortrait');
+      addResource(new Promise(resolve => {
+        if (heroImg.complete && heroImg.naturalWidth) { resolve(); return; }
+        heroImg.addEventListener('load', resolve, { once: true });
+        heroImg.addEventListener('error', resolve, { once: true });
+      }));
+
+      // 3. Fonts
+      addResource(document.fonts.ready);
+
+      // 4. All eager/important images
+      document.querySelectorAll('img[loading="eager"]').forEach(img => {
+        if (img === heroImg) return;
+        addResource(new Promise(resolve => {
+          if (img.complete && img.naturalWidth) { resolve(); return; }
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+        }));
+      });
+
+      // When all loaded, show enter button
+      Promise.all(resources).then(() => {
+        gsap.to({ v: displayPct }, {
+          v: 100, duration: 0.3,
+          onUpdate: function() {
+            const v = Math.round(this.targets()[0].v);
+            loaderProgressFill.style.width = v + '%';
+            loaderPct.textContent = v + '%';
+          },
+          onComplete: () => {
+            scrollVid.currentTime = 0;
+            gsap.to(loaderEnter, {
+              opacity: 1, duration: 0.5, ease: 'power2.out',
+              onComplete: () => { loaderEnter.style.pointerEvents = 'auto'; }
+            });
+          }
+        });
+      });
+
+      // ===== BURN EFFECT =====
+      function burnAwayLoader() {
+        const canvas = document.getElementById('loaderBurnCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width = window.innerWidth;
+        const H = canvas.height = window.innerHeight;
+
+        // Capture current loader as pixel data reference — we'll burn from edges
+        const particles = [];
+        const COLS = 80;
+        const ROWS = Math.round(COLS * (H / W));
+        const cellW = W / COLS;
+        const cellH = H / ROWS;
+
+        // Build burn particles from a grid
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const x = c * cellW + cellW / 2;
+            const y = r * cellH + cellH / 2;
+            // Distance from bottom-center — burn starts from bottom
+            const dist = Math.sqrt(Math.pow((x - W / 2) / W, 2) + Math.pow((H - y) / H, 2));
+            particles.push({
+              x, y, w: cellW + 1, h: cellH + 1,
+              delay: dist * 0.6 + Math.random() * 0.15,
+              life: 1,
+              ember: { x, y: y, vx: (Math.random() - 0.5) * 3, vy: -(2 + Math.random() * 4), size: 2 + Math.random() * 3, alpha: 0 }
+            });
+          }
+        }
+
+        const duration = 1.8;
+        const start = performance.now();
+
+        // Hide loader text content immediately
+        const tl = gsap.timeline();
+        tl.to([loaderEnter, loaderPct, loaderProgressWrap], { opacity: 0, duration: 0.15 })
+          .to([loaderSub], { opacity: 0, duration: 0.15 }, '-=0.1')
+          .to(loaderTitle, { opacity: 0, duration: 0.15 }, '-=0.1')
+          .to(loaderSeal, { opacity: 0, scale: 1.2, duration: 0.2 }, '-=0.1');
+
+        // Set loader bg transparent so canvas shows
+        loaderScreen.style.background = 'transparent';
+
+        // Draw initial noir fill on canvas
+        ctx.fillStyle = '#08080a';
+        ctx.fillRect(0, 0, W, H);
+
+        function frame(now) {
+          const elapsed = (now - start) / 1000;
+          const t = elapsed / duration;
+
+          ctx.clearRect(0, 0, W, H);
+
+          let allDone = true;
+          for (const p of particles) {
+            if (t < p.delay) {
+              // Still solid
+              ctx.fillStyle = '#08080a';
+              ctx.fillRect(p.x - p.w / 2, p.y - p.h / 2, p.w, p.h);
+              allDone = false;
+            } else {
+              const localT = Math.min((t - p.delay) / 0.4, 1);
+              if (localT < 1) {
+                allDone = false;
+                // Burning edge — amber/orange glow
+                const burnAlpha = 1 - localT;
+                // Dark core shrinking
+                const shrink = 1 - localT * 0.5;
+                ctx.fillStyle = `rgba(8,8,10,${burnAlpha * 0.5})`;
+                ctx.fillRect(
+                  p.x - (p.w * shrink) / 2, p.y - (p.h * shrink) / 2,
+                  p.w * shrink, p.h * shrink
+                );
+                // Ember glow
+                const glowAlpha = Math.sin(localT * Math.PI) * 0.8;
+                const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.w);
+                gradient.addColorStop(0, `rgba(232,184,74,${glowAlpha})`);
+                gradient.addColorStop(0.4, `rgba(201,100,30,${glowAlpha * 0.6})`);
+                gradient.addColorStop(1, `rgba(201,100,30,0)`);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(p.x - p.w, p.y - p.h, p.w * 2, p.h * 2);
+
+                // Rising ember particle
+                const e = p.ember;
+                e.alpha = glowAlpha * 0.6;
+                e.x += e.vx * 0.016;
+                e.y += e.vy * 0.016;
+                if (e.alpha > 0.05) {
+                  ctx.beginPath();
+                  ctx.arc(e.x, e.y, e.size * (1 - localT * 0.5), 0, Math.PI * 2);
+                  ctx.fillStyle = `rgba(232,184,74,${e.alpha})`;
+                  ctx.fill();
+                }
+              }
+              // else fully burned — transparent
+            }
+          }
+
+          if (!allDone) {
+            requestAnimationFrame(frame);
+          } else {
+            // Burn complete — remove loader
+            loaderScreen.style.display = 'none';
+            document.body.classList.remove('loading');
+            initScrollVideo();
+          }
+        }
+        requestAnimationFrame(frame);
+      }
+
+      // Enter button — trigger burn effect
+      loaderEnter.addEventListener('click', () => {
+        loaderEnter.style.pointerEvents = 'none';
+        burnAwayLoader();
+      });
+    })();
+
+    /* ==================== SCROLL-DRIVEN VIDEO SECTION ==================== */
+    function initScrollVideo() {
+      const video = document.getElementById('scrollVideo');
+      const section = document.getElementById('videoSection');
+      const progressBar = document.getElementById('videoProgressBar');
+      const progressTrack = document.getElementById('videoProgressTrack');
+      const hint = document.getElementById('videoHint');
+
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Ensure page starts at top
+      window.scrollTo(0, 0);
+
+      setTimeout(() => { hint.style.opacity = '1'; }, 600);
+      video.currentTime = 0;
+
+      let videoDone = false;
+      const videoDuration = video.duration || 1;
+
+      // Use ScrollTrigger pin — section is pinned to viewport,
+      // scroll drives video playback. Cannot be skipped.
+      ScrollTrigger.create({
+        trigger: section,
+        start: 'top top',
+        end: 'bottom bottom',
+        pin: section.querySelector('.video-sticky'),
+        scrub: 0.1,
+        onUpdate: (self) => {
+          if (videoDone) return;
+          const progress = self.progress;
+          const t = progress * videoDuration;
+
+          // Seek video
+          video.currentTime = t;
+
+          // Update progress bar
+          if (progress > 0 && progress < 0.98) {
+            progressTrack.style.opacity = '1';
+            hint.style.opacity = '1';
+          }
+          progressBar.style.width = (progress * 100) + '%';
+
+          // Video complete — smooth crossfade to content
+          if (progress >= 0.98 && !videoDone) {
+            videoDone = true;
+
+            // Start bg videos & show 3D planes early
+            if (window._startBgVideos) window._startBgVideos();
+            if (window._showVideoPlanes) window._showVideoPlanes();
+
+            const content = document.getElementById('content');
+            const sticky = section.querySelector('.video-sticky');
+
+            // Kill ScrollTrigger first so scroll position can change freely
+            ScrollTrigger.getAll().forEach(st => {
+              if (st.trigger === section || st.vars.trigger === section) st.kill();
+            });
+
+            // Make sticky fixed-position so it stays in view during collapse
+            sticky.style.position = 'fixed';
+            sticky.style.top = '0';
+            sticky.style.left = '0';
+            sticky.style.width = '100%';
+            sticky.style.height = '100vh';
+            sticky.style.zIndex = '10';
+
+            // Collapse section height instantly (it's behind the fixed sticky)
+            section.style.height = '0';
+            section.style.overflow = 'hidden';
+            window.scrollTo(0, 0);
+
+            // Now crossfade: video fades out while content fades in simultaneously
+            const fadeTl = gsap.timeline();
+            fadeTl
+              .set(progressTrack, { display: 'none' })
+              .set(hint, { display: 'none' })
+              .to(content, { opacity: 1, duration: 0.8, ease: 'power2.out' }, 0)
+              .to(sticky, { opacity: 0, duration: 1.0, ease: 'power2.inOut' }, 0.2)
+              .call(() => {
+                sticky.style.display = 'none';
+                animateContent();
+              });
+          }
+        }
+      });
+    }
+
+    /* ==================== FLOATING BG VIDEO CARDS ==================== */
+    (function() {
+      const cards = document.querySelectorAll('.bg-video-card');
+      const overlay = document.getElementById('videoFullscreen');
+      const fullVid = document.getElementById('fullscreenVideo');
+      const closeBtn = document.getElementById('videoFullscreenClose');
+      let floatRaf = null;
+      let floatTime = 0;
+
+      // Show cards after scroll video completes
+      const origStartBg = window._startBgVideos;
+      window._startBgVideos = function() {
+        if (origStartBg) origStartBg();
+        // Reveal floating cards with stagger
+        cards.forEach((card, i) => {
+          card.classList.remove('hidden');
+          const vid = card.querySelector('video');
+          vid.play().catch(() => {});
+          const mobileOp = window.innerWidth <= 768 ? 0.2 : (window.innerWidth <= 1024 ? 0.25 : 0.35);
+          gsap.fromTo(card, { opacity: 0, scale: 0.8 }, {
+            opacity: mobileOp, scale: 1, duration: 0.8,
+            delay: i * 0.2, ease: 'back.out(1.2)'
+          });
+        });
+        // Start float animation
+        floatRaf = requestAnimationFrame(floatLoop);
+      };
+
+      // Gentle floating drift
+      function floatLoop() {
+        floatTime += 0.01;
+        cards.forEach(card => {
+          if (card.classList.contains('pulling')) return;
+          const phase = parseFloat(card.dataset.phase) || 0;
+          const dy = Math.sin(floatTime * 0.5 + phase) * 8;
+          const dx = Math.sin(floatTime * 0.35 + phase + 1) * 5;
+          card.style.transform = `translate(${dx}px, ${dy}px)`;
+        });
+        floatRaf = requestAnimationFrame(floatLoop);
+      }
+
+      // Proximity hover — cards have pointer-events:none by default
+      // Enable interaction when mouse is directly over a card
+      let activeCard = null;
+      document.addEventListener('mousemove', (e) => {
+        let found = null;
+        cards.forEach(card => {
+          if (card.classList.contains('hidden') || card.classList.contains('pulling')) return;
+          const rect = card.getBoundingClientRect();
+          if (e.clientX >= rect.left && e.clientX <= rect.right &&
+              e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            found = card;
+          }
+        });
+        if (found && found !== activeCard) {
+          if (activeCard) {
+            activeCard.style.pointerEvents = 'none';
+            activeCard.style.filter = '';
+            activeCard.style.opacity = '';
+            activeCard.style.borderColor = '';
+            activeCard.style.boxShadow = '';
+            activeCard.style.cursor = '';
+            activeCard.style.zIndex = '';
+            const lbl = activeCard.querySelector('.card-label');
+            if (lbl) lbl.style.opacity = '';
+          }
+          activeCard = found;
+          activeCard.style.pointerEvents = 'auto';
+          activeCard.style.filter = 'blur(0) saturate(1) brightness(0.9)';
+          activeCard.style.opacity = '1';
+          activeCard.style.borderColor = 'var(--cyan)';
+          activeCard.style.boxShadow = '0 8px 40px rgba(74,140,140,0.15)';
+          activeCard.style.cursor = 'pointer';
+          activeCard.style.zIndex = '8';
+          const lbl = activeCard.querySelector('.card-label');
+          if (lbl) lbl.style.opacity = '1';
+        } else if (!found && activeCard) {
+          activeCard.style.pointerEvents = 'none';
+          activeCard.style.filter = '';
+          activeCard.style.opacity = '';
+          activeCard.style.borderColor = '';
+          activeCard.style.boxShadow = '';
+          activeCard.style.cursor = '';
+          activeCard.style.zIndex = '';
+          const lbl = activeCard.querySelector('.card-label');
+          if (lbl) lbl.style.opacity = '';
+          activeCard = null;
+        }
+      });
+
+      // Close fullscreen
+      function closeFullscreen() {
+        overlay.classList.remove('active');
+        fullVid.pause();
+        fullVid.removeAttribute('src');
+      }
+      closeBtn.addEventListener('click', closeFullscreen);
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeFullscreen();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('active')) closeFullscreen();
+      });
+
+      // Click — pull card forward then open fullscreen
+      cards.forEach(card => {
+        card.addEventListener('click', () => {
+          const src = card.dataset.src;
+          const rect = card.getBoundingClientRect();
+          card.classList.add('pulling');
+
+          // Animate card to center + scale up
+          const centerX = window.innerWidth / 2 - rect.width / 2;
+          const centerY = window.innerHeight / 2 - rect.height / 2;
+          const scaleUp = Math.min(
+            (window.innerWidth * 0.8) / rect.width,
+            (window.innerHeight * 0.8) / rect.height
+          );
+
+          gsap.to(card, {
+            x: centerX - rect.left,
+            y: centerY - rect.top,
+            scale: scaleUp,
+            filter: 'blur(0px) saturate(1) brightness(1)',
+            duration: 0.5,
+            ease: 'power3.out',
+            onComplete: () => {
+              // Open fullscreen overlay
+              fullVid.src = src;
+              fullVid.muted = false;
+              fullVid.currentTime = 0;
+              overlay.classList.add('active');
+              fullVid.play().catch(() => {});
+
+              // Reset card back
+              const resetOp = window.innerWidth <= 768 ? 0.2 : (window.innerWidth <= 1024 ? 0.25 : 0.35);
+              gsap.to(card, {
+                x: 0, y: 0, scale: 1,
+                filter: 'blur(10px) saturate(0.4) brightness(0.35)',
+                opacity: resetOp,
+                duration: 0.3, delay: 0.1,
+                onComplete: () => { card.classList.remove('pulling'); }
+              });
+            }
+          });
+        });
+      });
+    })();
+
+    /* ==================== VOICES ROTATION — GSAP crossfade ==================== */
+    let currentVoice = 0;
+    let voiceAnimating = false;
+    const voiceSlides = document.querySelectorAll('.voice-slide');
+    const voiceDots = document.querySelectorAll('.voice-dot');
+
+    function showVoice(idx) {
+      if (idx === currentVoice || voiceAnimating) return;
+      voiceAnimating = true;
+      const outSlide = voiceSlides[currentVoice];
+      const inSlide = voiceSlides[idx];
+
+      // Crossfade with GSAP
+      gsap.to(outSlide, {
+        opacity: 0, y: -12, duration: 0.5, ease: 'power2.in',
+        onComplete: () => {
+          outSlide.classList.remove('active');
+          gsap.set(outSlide, { y: 12 });
+        }
+      });
+      gsap.set(inSlide, { opacity: 0, y: 16 });
+      inSlide.classList.add('active');
+      gsap.to(inSlide, {
+        opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', delay: 0.25,
+        onComplete: () => { voiceAnimating = false; }
+      });
+
+      voiceDots.forEach((d, i) => d.classList.toggle('active', i === idx));
+      currentVoice = idx;
+    }
+
+    voiceDots.forEach(d => {
+      d.addEventListener('click', () => showVoice(+d.dataset.idx));
+    });
+
+    setInterval(() => {
+      showVoice((currentVoice + 1) % voiceSlides.length);
+    }, 5000);
+
+    /* ==================== CONTENT ANIMATIONS ==================== */
+    function animateContent() {
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Hero — portrait parallax + text stagger
+      gsap.to('#heroPortrait', { opacity:1, scale:1, duration:2, ease:'power2.out', delay:0.3 });
+      gsap.set('[data-anim="hero"]', { opacity:0, y:30 });
+      gsap.to('[data-anim="hero"]', { opacity:1, y:0, duration:1, stagger:0.12, ease:'power3.out', delay:0.4 });
+
+      gsap.to('#heroPortrait', {
+        y: -80,
+        scrollTrigger: { trigger:'#hero', start:'top top', end:'bottom top', scrub:1 }
+      });
+
+      // BRUSH DIVIDERS
+      document.querySelectorAll('.brush-divider').forEach(bd => {
+        ScrollTrigger.create({
+          trigger: bd, start:'top 80%', once:true,
+          onEnter: () => bd.classList.add('animated')
+        });
+      });
+
+      // STATEMENT
+      gsap.set('[data-anim="stmt"]', { opacity:0, y:60 });
+      gsap.set('[data-anim="stmt-rule"]', { opacity:0, height:0 });
+      ScrollTrigger.create({
+        trigger:'#statement', start:'top 65%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="stmt"]', { opacity:1, y:0, duration:1.2, ease:'power3.out' });
+          gsap.to('[data-anim="stmt-rule"]', { opacity:0.3, height:60, duration:0.8, delay:0.6 });
+        }
+      });
+
+      // PITCH
+      gsap.set('[data-anim="pitch-h"]', { opacity:0, y:20 });
+      gsap.set('[data-anim="pitch"]', { opacity:0, y:36 });
+      gsap.set('[data-anim="pitch-hl"]', { opacity:0, scale:0.9 });
+      ScrollTrigger.create({
+        trigger:'#pitch', start:'top 65%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="pitch-h"]', { opacity:1, y:0, duration:0.8, stagger:0.1, ease:'power3.out' });
+          gsap.to('[data-anim="pitch"]', { opacity:1, y:0, duration:1, stagger:0.25, ease:'power3.out', delay:0.3 });
+          gsap.to('[data-anim="pitch-hl"]', { opacity:1, scale:1, duration:1.2, ease:'back.out(1.4)', delay:1 });
+        }
+      });
+
+      // SCRIPT — screenplay reveal
+      gsap.set('[data-anim="script-h"]', { opacity:0, y:20 });
+      gsap.set('[data-anim="script"]', { opacity:0, x:-20 });
+      gsap.set('[data-anim="script-note"]', { opacity:0, y:20 });
+      ScrollTrigger.create({
+        trigger:'#scriptSection', start:'top 65%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="script-h"]', { opacity:1, y:0, duration:0.8, stagger:0.15, ease:'power3.out' });
+          gsap.to('[data-anim="script"]', { opacity:1, x:0, duration:1, stagger:0.3, ease:'power3.out', delay:0.4 });
+          gsap.to('[data-anim="script-note"]', { opacity:1, y:0, duration:1, ease:'power3.out', delay:1.6 });
+          // Animate the left border color — cyan sword qi
+          const borderEl = document.querySelector('#scriptBody');
+          if (borderEl) {
+            gsap.to(borderEl, { borderColor:'#5eb8b8', duration:2, ease:'power2.out', delay:0.5 });
+          }
+        }
+      });
+
+      // INTERLUDE
+      gsap.set('[data-anim="inter"]', { opacity:0, y:16 });
+      gsap.set('[data-anim="inter-text"]', { opacity:0, y:30 });
+      ScrollTrigger.create({
+        trigger:'#interlude', start:'top 65%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="inter"]', { opacity:1, y:0, duration:0.8, stagger:0.2, ease:'power3.out' });
+          gsap.to('[data-anim="inter-text"]', { opacity:1, y:0, duration:1.4, ease:'power3.out', delay:0.3 });
+        }
+      });
+
+      // (Reel section removed — videos now in Three.js scene)
+
+      // PROCESS
+      gsap.set('[data-anim="proc-h"]', { opacity:0, y:20 });
+      gsap.set('[data-anim="proc"]', { opacity:0, y:24 });
+      ScrollTrigger.create({
+        trigger:'#process', start:'top 65%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="proc-h"]', { opacity:1, y:0, duration:0.8, stagger:0.1, ease:'power3.out' });
+          gsap.to('[data-anim="proc"]', { opacity:1, y:0, duration:0.8, stagger:0.15, ease:'power3.out', delay:0.3 });
+        }
+      });
+
+      // ABOUT — image reveal + text
+      gsap.set('[data-anim="about-img"]', { opacity:0, y:40 });
+      gsap.set('[data-anim="about"]', { opacity:0, y:24 });
+      ScrollTrigger.create({
+        trigger:'#about', start:'top 65%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="about-img"]', { opacity:1, y:0, duration:1.4, ease:'power3.out' });
+          gsap.to('[data-anim="about"]', { opacity:1, y:0, duration:1, stagger:0.12, ease:'power3.out', delay:0.4 });
+        }
+      });
+
+      // WORKS — horizontal scroll
+      const strip = document.getElementById('filmStrip');
+      const wrap = document.getElementById('filmStripWrap');
+      if (strip && wrap) {
+        const totalScroll = strip.scrollWidth - wrap.offsetWidth;
+        gsap.set('[data-anim="works-h"]', { opacity:0, y:20 });
+        ScrollTrigger.create({
+          trigger:'#works', start:'top 68%', once:true,
+          onEnter: () => {
+            gsap.to('[data-anim="works-h"]', { opacity:1, y:0, duration:0.8, stagger:0.1, ease:'power3.out' });
+          }
+        });
+        gsap.to(strip, {
+          x: -totalScroll,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '#works',
+            start: 'top top',
+            end: () => '+=' + (totalScroll * 1.5),
+            scrub: 1,
+            pin: true,
+            anticipatePin: 1
+          }
+        });
+      }
+
+      // VOICES
+      gsap.set('[data-anim="voice-h"]', { opacity:0, y:20 });
+      ScrollTrigger.create({
+        trigger:'#voices', start:'top 65%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="voice-h"]', { opacity:1, y:0, duration:0.8, ease:'power3.out' });
+        }
+      });
+
+      // ARSENAL
+      gsap.set('[data-anim="ars-h"]', { opacity:0, y:20 });
+      gsap.set('[data-anim="ars"]', { opacity:0, y:30 });
+      ScrollTrigger.create({
+        trigger:'#arsenal', start:'top 68%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="ars-h"]', { opacity:1, y:0, duration:0.8, stagger:0.1, ease:'power3.out' });
+          gsap.to('[data-anim="ars"]', { opacity:1, y:0, duration:0.7, stagger:0.06, ease:'back.out(1.2)', delay:0.2 });
+        }
+      });
+
+      // EMPIRE
+      gsap.set('[data-anim="emp-h"]', { opacity:0, y:20 });
+      gsap.set('[data-anim="emp"]', { opacity:0, y:30 });
+      ScrollTrigger.create({
+        trigger:'#empire', start:'top 68%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="emp-h"]', { opacity:1, y:0, duration:0.8, stagger:0.1, ease:'power3.out' });
+          gsap.to('[data-anim="emp"]', { opacity:1, y:0, duration:0.8, stagger:0.1, ease:'back.out(1.2)', delay:0.2 });
+        }
+      });
+
+      // CREED
+      gsap.set('[data-anim="creed-h"]', { opacity:0, y:20 });
+      gsap.set('[data-anim="creed"]', { opacity:0, x:-30 });
+      ScrollTrigger.create({
+        trigger:'#creed', start:'top 65%', once:true,
+        onEnter: () => {
+          gsap.to('[data-anim="creed-h"]', { opacity:1, y:0, duration:0.8, stagger:0.1, ease:'power3.out' });
+          gsap.to('[data-anim="creed"]', { opacity:1, x:0, duration:1, stagger:0.2, ease:'power3.out', delay:0.3 });
+        }
+      });
+
+    }
+
+    // animateContent() is called after video section completes
+
+    // Guard: prevent animateContent from being called multiple times
+    let contentAnimated = false;
+    const origAnimateContent = animateContent;
+    animateContent = function() {
+      if (contentAnimated) return;
+      contentAnimated = true;
+      origAnimateContent();
+    };
+
+    // Only skip video if the video file fails to load (network error)
+    const scrollVidFallback = document.getElementById('scrollVideo');
+    const videoSection = document.getElementById('videoSection');
+    const contentEl = document.getElementById('content');
+
+    function skipVideoSection() {
+      if (contentAnimated) return;
+      if (videoSection) {
+        videoSection.style.height = '0';
+        videoSection.style.overflow = 'hidden';
+      }
+      const pt = document.getElementById('videoProgressTrack');
+      const vh = document.getElementById('videoHint');
+      if (pt) pt.style.display = 'none';
+      if (vh) vh.style.display = 'none';
+      if (contentEl) contentEl.style.opacity = '1';
+      if (window._startBgVideos) window._startBgVideos();
+      if (window._showVideoPlanes) window._showVideoPlanes();
+      animateContent();
+    }
+
+    // Only skip if video has a loading error — no timeout fallbacks
+    if (scrollVidFallback) {
+      scrollVidFallback.addEventListener('error', skipVideoSection);
+    }
+  </script>
+
+</body>
+</html>
