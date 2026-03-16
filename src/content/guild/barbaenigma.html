@@ -1,0 +1,2901 @@
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>barbaenigma — Controlled Chaos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg: #070b14;
+            --bg-panel: #0c1221;
+            --bg-panel-hover: #101a2e;
+            --signal: #00e5ff;
+            --signal-dim: rgba(0, 229, 255, 0.12);
+            --signal-glow: rgba(0, 229, 255, 0.25);
+            --warm: #ff6b35;
+            --gold: #ffd700;
+            --text: #d4d9e1;
+            --text-muted: #5a6577;
+            --text-dim: #3a4455;
+            --danger: #ff3344;
+            --success: #00ff88;
+            --border: rgba(0, 229, 255, 0.18);
+            --font-display: 'Bodoni Moda', serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+            --font-cn: 'Noto Serif TC', serif;
+            --font-body: 'Crimson Pro', serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { overflow: hidden; height: 100%; }
+        body {
+            font-family: var(--font-body);
+            color: var(--text);
+            background: #000;
+            overflow: hidden; height: 100%;
+            line-height: 1.7;
+        }
+        ::selection { background: rgba(0,229,255,0.25); color: #fff; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--signal-dim); border-radius: 2px; }
+
+        /* ===== TV FRAME ===== */
+        .tv-frame {
+            position: fixed; inset: 0; z-index: 9995;
+            pointer-events: none;
+        }
+        /* Bezel edges */
+        .tv-bezel-top, .tv-bezel-bottom, .tv-bezel-left, .tv-bezel-right {
+            position: absolute;
+            background: linear-gradient(145deg, #0e0e0e 0%, #1a1a1a 40%, #111 100%);
+            z-index: 2;
+        }
+        .tv-bezel-top { top: 0; left: 0; right: 0; height: 28px;
+            border-bottom: 1px solid rgba(0,229,255,0.08);
+            box-shadow: inset 0 -2px 8px rgba(0,0,0,0.5);
+        }
+        .tv-bezel-bottom { bottom: 0; left: 0; right: 0; height: 52px;
+            border-top: 1px solid rgba(0,229,255,0.08);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 2rem;
+        }
+        .tv-bezel-left { top: 28px; bottom: 52px; left: 0; width: 18px;
+            border-right: 1px solid rgba(0,229,255,0.05);
+        }
+        .tv-bezel-right { top: 28px; bottom: 52px; right: 0; width: 18px;
+            border-left: 1px solid rgba(0,229,255,0.05);
+        }
+        /* CRT screen curvature (subtle vignette) */
+        .tv-screen-curve {
+            position: fixed;
+            top: 28px; bottom: 52px; left: 18px; right: 18px;
+            z-index: 9994; pointer-events: none;
+            box-shadow:
+                inset 0 0 80px rgba(0,0,0,0.4),
+                inset 0 0 200px rgba(0,0,0,0.15);
+            border-radius: 4px;
+        }
+        /* Top bezel content */
+        .tv-top-info {
+            position: absolute; top: 0; left: 0; right: 0; height: 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 2rem; z-index: 3;
+            font-family: var(--font-mono); font-size: 0.55rem;
+            letter-spacing: 0.12em; color: var(--text-dim);
+        }
+        .tv-top-info .tv-brand {
+            color: var(--text-muted); letter-spacing: 0.4em; font-size: 0.5rem;
+        }
+        .tv-top-info .tv-signal {
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .tv-top-info .tv-signal-bar {
+            width: 3px; background: var(--success); border-radius: 1px;
+            animation: pulse-dot 2s infinite;
+        }
+        .tv-top-info .tv-signal-bar:nth-child(1) { height: 4px; }
+        .tv-top-info .tv-signal-bar:nth-child(2) { height: 7px; animation-delay: 0.2s; }
+        .tv-top-info .tv-signal-bar:nth-child(3) { height: 10px; animation-delay: 0.4s; }
+        .tv-top-info .tv-signal-bar:nth-child(4) { height: 13px; animation-delay: 0.6s; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Bottom bezel - channel display + controls */
+        .tv-channel-display {
+            display: flex; align-items: center; gap: 1rem;
+            pointer-events: auto;
+        }
+        .tv-ch-label {
+            font-family: var(--font-mono); font-size: 0.5rem;
+            letter-spacing: 0.3em; color: var(--text-dim);
+        }
+        .tv-ch-num {
+            font-family: var(--font-mono); font-size: 1.4rem;
+            font-weight: 500; color: var(--signal);
+            min-width: 3ch; text-align: center;
+            text-shadow: 0 0 12px rgba(0,229,255,0.4);
+            transition: all 0.15s;
+        }
+        .tv-ch-num.switching {
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.8);
+        }
+        .tv-ch-name {
+            font-family: var(--font-mono); font-size: 0.55rem;
+            letter-spacing: 0.15em; color: var(--text-muted);
+            max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* TV knobs */
+        .tv-controls {
+            display: flex; align-items: center; gap: 1.2rem;
+            pointer-events: auto;
+        }
+        .tv-knob {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #333, #111);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.05);
+            position: relative;
+        }
+        .tv-knob::after {
+            content: ''; position: absolute;
+            top: 3px; left: 50%; transform: translateX(-50%);
+            width: 1px; height: 5px; background: rgba(255,255,255,0.15);
+            border-radius: 1px;
+        }
+        .tv-clock {
+            font-family: var(--font-mono); font-size: 0.55rem;
+            letter-spacing: 0.1em; color: var(--text-dim);
+            font-variant-numeric: tabular-nums;
+        }
+        .tv-power-led {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px rgba(0,255,136,0.4);
+            animation: pulse-dot 3s infinite;
+        }
+
+        /* Static noise overlay for channel transitions */
+        .tv-static-overlay {
+            position: fixed;
+            top: 28px; bottom: 52px; left: 18px; right: 18px;
+            z-index: 9993; pointer-events: none;
+            opacity: 0;
+            background: var(--bg);
+        }
+        #tvStaticCanvas {
+            width: 100%; height: 100%;
+            display: block;
+        }
+        .tv-static-overlay.active {
+            opacity: 1;
+        }
+
+        /* Channel transition indicator (big CH number flash) */
+        .tv-ch-flash {
+            position: fixed;
+            top: 50px; right: 40px;
+            z-index: 9992; pointer-events: none;
+            font-family: var(--font-mono);
+            font-size: 1.2rem; font-weight: 500;
+            color: #fff; letter-spacing: 0.1em;
+            opacity: 0;
+            text-shadow: 0 0 15px rgba(0,229,255,0.5);
+            transition: opacity 0.2s;
+            background: rgba(0,0,0,0.6);
+            padding: 0.3rem 0.8rem;
+            border: 1px solid rgba(0,229,255,0.2);
+            border-radius: 2px;
+        }
+        .tv-ch-flash.show { opacity: 1; }
+
+        @media (max-width: 768px) {
+            .tv-bezel-top { height: 20px; }
+            .tv-bezel-bottom { height: 40px; padding: 0 0.8rem; }
+            .tv-bezel-left { top: 20px; bottom: 40px; width: 6px; }
+            .tv-bezel-right { top: 20px; bottom: 40px; width: 6px; }
+            .tv-screen-curve { top: 20px; bottom: 40px; left: 6px; right: 6px; }
+            .tv-static-overlay { top: 20px; bottom: 40px; left: 6px; right: 6px; }
+            .tv-top-info { height: 20px; padding: 0 0.8rem; font-size: 0.45rem; }
+            .tv-ch-num { font-size: 1rem; }
+            .tv-ch-name { max-width: 100px; font-size: 0.45rem; }
+            .tv-knob { width: 14px; height: 14px; }
+            .tv-ch-flash { top: 30px; right: 15px; font-size: 0.9rem; }
+        }
+
+        /* ===== SCANLINE OVERLAY ===== */
+        .scanlines {
+            position: fixed; top: 28px; bottom: 52px; left: 18px; right: 18px;
+            z-index: 9996; pointer-events: none;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px);
+            border-radius: 4px;
+        }
+        @media (max-width: 768px) {
+            .scanlines { top: 20px; bottom: 40px; left: 6px; right: 6px; }
+        }
+
+        /* ===== SCROLL PROGRESS ===== */
+        .scroll-progress {
+            position: fixed; bottom: 52px; left: 18px; height: 2px; z-index: 9997;
+            right: 18px;
+            background: linear-gradient(90deg, var(--signal), var(--warm), var(--gold));
+            transform-origin: left; transform: scaleX(0);
+        }
+        @media (max-width: 768px) {
+            .scroll-progress { bottom: 40px; left: 6px; right: 6px; }
+        }
+
+        /* ===== ENTRY TERMINAL ===== */
+        #entry {
+            position: fixed; top: 28px; bottom: 52px; left: 18px; right: 18px;
+            z-index: 10000;
+            background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        @media (max-width: 768px) {
+            #entry { top: 20px; bottom: 40px; left: 6px; right: 6px; }
+        }
+        .terminal {
+            font-family: var(--font-mono); font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            color: var(--signal); max-width: 550px; padding: 2rem;
+        }
+        .terminal-line {
+            opacity: 0; transform: translateY(8px);
+            margin-bottom: 0.6rem; line-height: 1.6;
+        }
+        .terminal-line .prompt { color: var(--warm); }
+        .terminal-line.success { color: var(--success); font-weight: 500; }
+        .terminal-cursor {
+            display: inline-block; width: 8px; height: 1.1em;
+            background: var(--signal); animation: blink-cursor 0.7s step-end infinite;
+            vertical-align: text-bottom; margin-left: 2px;
+        }
+        @keyframes blink-cursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .terminal-skip {
+            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em;
+            color: var(--text-dim); opacity: 0;
+        }
+
+        /* ===== TV CONTENT AREA ===== */
+        main, .site-footer {
+            position: relative;
+            margin: 0 18px;
+            background: var(--bg);
+        }
+        @media (max-width: 768px) {
+            main, .site-footer { margin: 0 6px; }
+        }
+
+        /* ===== DASHBOARD (channel container) ===== */
+        #dashboard {
+            position: fixed; inset: 0; z-index: 1;
+            overflow: hidden;
+        }
+
+        /* ===== TV CHANNEL (JS-controlled fullscreen channels) ===== */
+        .tv-channel {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: safe center;
+            opacity: 0; pointer-events: none;
+            transition: none;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        /* Fallback for browsers without 'safe center': auto margins on panel */
+        @supports not (justify-content: safe center) {
+            .tv-channel > .panel-border { margin-top: auto; margin-bottom: auto; }
+        }
+        .tv-channel.active {
+            opacity: 1; pointer-events: auto;
+        }
+        /* Allow hero to handle its own layout */
+        .tv-channel--hero { display: block; }
+
+        /* ===== CHANNEL ATMOSPHERIC IMAGES ===== */
+        .ch-img {
+            position: absolute; z-index: 0;
+            overflow: hidden; opacity: 0;
+            transition: opacity 1.2s ease;
+            border: none;
+        }
+        .tv-channel.active .ch-img { opacity: 1; }
+        .ch-img img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: saturate(0.4) brightness(0.45) contrast(1.15);
+            transition: filter 0.6s ease;
+        }
+        .tv-channel.active:hover .ch-img img {
+            filter: saturate(0.5) brightness(0.5) contrast(1.1);
+        }
+        .ch-img::after {
+            content: ''; position: absolute; inset: 0;
+            pointer-events: none;
+        }
+        /* Right-side images: fade left */
+        .ch-img--right::after {
+            background: linear-gradient(90deg, rgba(7,11,20,1) 0%, rgba(7,11,20,0.85) 30%, rgba(7,11,20,0.4) 60%, transparent 80%);
+        }
+        /* Left-side images: fade right */
+        .ch-img--left::after {
+            background: linear-gradient(270deg, rgba(7,11,20,1) 0%, rgba(7,11,20,0.85) 30%, rgba(7,11,20,0.4) 60%, transparent 80%);
+        }
+        /* Full-bleed images: stronger center darkening for text readability */
+        .ch-img--full::after {
+            background:
+                radial-gradient(ellipse at center, rgba(7,11,20,0.5) 0%, rgba(7,11,20,0.72) 40%, rgba(7,11,20,0.95) 75%);
+        }
+        /* Bottom images: fade up */
+        .ch-img--bottom::after {
+            background: linear-gradient(0deg, transparent 0%, rgba(7,11,20,0.5) 40%, rgba(7,11,20,0.95) 70%);
+        }
+        .ch-img-caption {
+            position: absolute; bottom: 1rem; right: 1rem;
+            padding: 4px 10px;
+            font-family: var(--font-mono); font-size: 7px;
+            color: var(--signal); letter-spacing: 2px;
+            background: rgba(7,11,20,0.6);
+            text-transform: uppercase; opacity: 0;
+            transition: opacity 0.4s;
+            z-index: 2; border-radius: 1px;
+        }
+        .tv-channel.active:hover .ch-img-caption { opacity: 0.6; }
+        @media (max-width: 768px) {
+            .ch-img { display: none; }
+        }
+
+        /* ===== CHANNEL NAV (right side) ===== */
+        .channel-nav {
+            position: fixed; right: 22px; top: 50%; transform: translateY(-50%);
+            z-index: 9998; display: flex; flex-direction: column; gap: 6px;
+            align-items: center; opacity: 0;
+        }
+        .channel-nav-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--text-dim); border: 1px solid var(--border);
+            cursor: pointer; transition: all 0.3s ease;
+            position: relative;
+        }
+        .channel-nav-dot:hover {
+            background: var(--signal); transform: scale(1.5);
+            box-shadow: 0 0 8px var(--signal);
+        }
+        .channel-nav-dot.active {
+            background: var(--signal); border-color: var(--signal);
+            box-shadow: 0 0 12px var(--signal-glow);
+            transform: scale(1.4);
+        }
+        .channel-nav-dot::before {
+            content: attr(data-label);
+            position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+            font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.5px;
+            color: var(--signal); white-space: nowrap;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease;
+            text-transform: uppercase;
+        }
+        .channel-nav-dot:hover::before { opacity: 1; }
+        .channel-nav-label {
+            font-family: var(--font-mono); font-size: 8px;
+            color: var(--text-dim); letter-spacing: 1px;
+            writing-mode: vertical-lr; text-orientation: mixed;
+            margin-bottom: 6px;
+        }
+        @media (max-width: 768px) {
+            .channel-nav { right: 8px; gap: 5px; }
+            .channel-nav-dot { width: 6px; height: 6px; }
+            .channel-nav-dot::before { display: none; }
+            .channel-nav-label { display: none; }
+        }
+
+        /* ===== PANELS ===== */
+        .panel {
+            position: relative; z-index: 2;
+            margin: 0 auto; padding: 0;
+        }
+        .panel-header {
+            display: none; /* hidden — TV bezel already shows channel info */
+        }
+        .panel-body {
+            padding: clamp(2.5rem, 6vw, 5rem) clamp(3rem, 6vw, 6rem);
+            position: relative; z-index: 1;
+            text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+        }
+        .panel-border {
+            border: none;
+            margin: 0 clamp(1rem, 3vw, 3rem);
+            background: transparent;
+            border-radius: 0;
+            overflow: visible;
+        }
+
+        /* ===== SECTION LABEL + TITLE ===== */
+        .s-label {
+            font-family: var(--font-mono); font-size: 0.55rem;
+            letter-spacing: 0.4em; color: var(--signal);
+            margin-bottom: 1rem; text-transform: uppercase;
+            position: relative; display: inline-block;
+            padding-left: 1.5rem;
+        }
+        .s-label::before {
+            content: ''; position: absolute; left: 0; top: 50%;
+            width: 1rem; height: 1px;
+            background: var(--signal);
+            transform: translateY(-50%);
+        }
+        .s-title {
+            font-family: var(--font-cn); font-weight: 700;
+            font-size: clamp(1.8rem, 4.5vw, 3rem);
+            line-height: 1.35; margin-bottom: 2.5rem;
+            color: #fff;
+            letter-spacing: 0.02em;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+        }
+        .s-title span { display: block; }
+        .s-title span:last-child { color: var(--signal); }
+
+        /* ===== HERO ===== */
+        .hero-section {
+            min-height: 100vh; display: flex; align-items: center;
+            padding: clamp(4rem, 8vh, 8rem) clamp(1.5rem, 5vw, 5rem);
+            padding-top: calc(28px + clamp(4rem, 8vh, 8rem));
+            position: relative; overflow: hidden;
+        }
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: clamp(2rem, 5vw, 5rem);
+            align-items: center;
+            max-width: 1100px; margin: 0 auto; width: 100%;
+        }
+        @media (max-width: 768px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 2rem;
+            }
+        }
+
+        /* Radar */
+        .radar-container {
+            position: relative;
+            width: 280px; height: 280px;
+            margin: 0 auto;
+        }
+        .radar-ring {
+            position: absolute; border-radius: 50%;
+            border: 1px solid var(--signal-dim);
+        }
+        .radar-ring:nth-child(1) { inset: 0; }
+        .radar-ring:nth-child(2) { inset: 18%; }
+        .radar-ring:nth-child(3) { inset: 36%; }
+        .radar-crosshair-h, .radar-crosshair-v {
+            position: absolute; background: var(--signal-dim);
+        }
+        .radar-crosshair-h { top: 50%; left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+        .radar-crosshair-v { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
+        .radar-sweep {
+            position: absolute; inset: 0; border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 0%, transparent 75%, rgba(0,229,255,0.15) 90%, rgba(0,229,255,0.35) 98%, transparent 100%);
+            animation: sweep 3s linear infinite;
+        }
+        @keyframes sweep { to { transform: rotate(360deg); } }
+        .radar-avatar {
+            position: absolute; inset: 30%; border-radius: 50%;
+            overflow: hidden; border: 2px solid var(--signal);
+            box-shadow: 0 0 30px rgba(0,229,255,0.2);
+        }
+        .radar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .radar-blip {
+            position: absolute; width: 6px; height: 6px;
+            border-radius: 50%; background: var(--warm);
+            animation: blip 3s infinite;
+        }
+        .radar-blip:nth-child(6) { top: 15%; left: 25%; animation-delay: 0.5s; }
+        .radar-blip:nth-child(7) { top: 70%; left: 75%; animation-delay: 1.2s; }
+        .radar-blip:nth-child(8) { top: 30%; left: 80%; animation-delay: 2s; }
+        .radar-blip:nth-child(9) { top: 80%; left: 20%; animation-delay: 0.8s; }
+        @keyframes blip { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.5); } }
+
+        /* Hero text */
+        .hero-badge {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            letter-spacing: 0.3em; color: var(--text-muted);
+            margin-bottom: 1rem;
+            padding: 0.3rem 0.8rem; border: 1px solid var(--border);
+            display: inline-block; border-radius: 2px;
+        }
+        .hero-name {
+            font-family: var(--font-display); font-weight: 700;
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            line-height: 0.95; color: #fff;
+            letter-spacing: -0.02em; margin-bottom: 1.2rem;
+        }
+        .hero-name em {
+            font-style: italic; color: var(--signal);
+            font-weight: 400;
+        }
+        .hero-tagline {
+            font-family: var(--font-cn); font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+            color: var(--text-muted); margin-bottom: 2rem;
+            font-style: italic; max-width: 400px;
+        }
+        @media (max-width: 768px) { .hero-tagline { margin-left: auto; margin-right: auto; } }
+        .hero-stats {
+            display: flex; gap: 2.5rem;
+        }
+        @media (max-width: 768px) { .hero-stats { justify-content: center; } }
+        .hero-stat-num {
+            font-family: var(--font-mono); font-size: 1.8rem;
+            font-weight: 500; color: var(--gold);
+            line-height: 1;
+        }
+        .hero-stat-label {
+            font-family: var(--font-mono); font-size: 0.55rem;
+            letter-spacing: 0.15em; color: var(--text-dim);
+            margin-top: 0.3rem; text-transform: uppercase;
+        }
+
+        /* ===== TRANSMISSION (Manifesto) ===== */
+        .transmission-meta {
+            font-family: var(--font-mono); font-size: 0.55rem;
+            color: var(--text-dim); letter-spacing: 0.12em;
+            margin-bottom: 2.5rem; line-height: 2;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,229,255,0.06);
+        }
+        .transmission-meta span { color: var(--signal); }
+        .transmission-text {
+            font-family: var(--font-cn); font-size: clamp(1.3rem, 2.8vw, 1.8rem);
+            line-height: 2.2; color: var(--text);
+            border: none; padding: 0; margin: 0;
+            max-width: 680px;
+            position: relative;
+        }
+        .transmission-text::before {
+            content: '"';
+            position: absolute; top: -1.5rem; left: -0.5rem;
+            font-family: var(--font-display); font-size: 4rem;
+            color: rgba(0,229,255,0.1); line-height: 1;
+        }
+        .transmission-text mark {
+            background: none; color: var(--warm);
+            font-weight: 700;
+            text-decoration: none;
+            position: relative;
+        }
+        .transmission-text mark::after {
+            content: ''; position: absolute;
+            bottom: 2px; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, rgba(255,107,53,0.5), rgba(255,107,53,0.1));
+        }
+        .transmission-footer {
+            font-family: var(--font-mono); font-size: 0.65rem;
+            color: var(--text-dim); letter-spacing: 0.25em;
+            margin-top: 3rem; text-align: center;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0,229,255,0.06);
+        }
+
+        /* ===== WORLD MAP ===== */
+        .map-container {
+            position: relative; width: 100%;
+            aspect-ratio: 2 / 1; min-height: 250px;
+            margin: 2rem 0;
+        }
+        .world-map { width: 100%; height: 100%; }
+        .world-map .grid-dot { fill: rgba(0,229,255,0.08); }
+        .world-map .flight-path {
+            fill: none; stroke: var(--signal);
+            stroke-width: 1.5; stroke-linecap: round;
+            opacity: 0.7; filter: drop-shadow(0 0 3px rgba(0,229,255,0.4));
+        }
+        .world-map .flight-path-bg {
+            fill: none; stroke: rgba(0,229,255,0.06);
+            stroke-width: 1; stroke-dasharray: 4 8;
+        }
+        .world-map .city-dot {
+            fill: var(--warm);
+            filter: drop-shadow(0 0 4px rgba(255,107,53,0.6));
+        }
+        .world-map .city-dot.origin { fill: var(--gold); filter: drop-shadow(0 0 6px rgba(255,215,0,0.6)); }
+        .world-map .city-ring {
+            fill: none; stroke: var(--warm); stroke-width: 0.5;
+            opacity: 0; animation: city-ping 3s infinite;
+        }
+        .world-map .city-ring.origin { stroke: var(--gold); }
+        @keyframes city-ping {
+            0% { opacity: 0.8; r: 4; } 100% { opacity: 0; r: 18; }
+        }
+        .world-map .city-label {
+            font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+            fill: var(--text-muted); letter-spacing: 0.1em;
+        }
+        .route-legend {
+            display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1.5rem;
+            font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted);
+        }
+        .route-legend .leg { display: flex; align-items: center; gap: 0.5rem; }
+        .route-legend .leg-arrow { color: var(--signal); font-size: 0.8rem; }
+
+        /* ===== HIGHLIGHTS (Bento Grid) ===== */
+        .hl-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: auto auto;
+            gap: 0.8rem;
+        }
+        .hl-card--featured { grid-column: span 2; }
+        .hl-card--dramatic { grid-column: span 2; }
+        @media (max-width: 768px) {
+            .hl-grid { grid-template-columns: repeat(2, 1fr); }
+            .hl-card--featured, .hl-card--dramatic { grid-column: span 2; }
+        }
+        @media (max-width: 480px) {
+            .hl-grid { grid-template-columns: 1fr; }
+            .hl-card--featured, .hl-card--dramatic { grid-column: span 1; }
+        }
+        .hl-card {
+            padding: 1.6rem;
+            border: 1px solid rgba(0,229,255,0.08);
+            border-radius: 2px;
+            background: linear-gradient(145deg, rgba(0,229,255,0.03), rgba(12,18,33,0.8));
+            transition: all 0.5s cubic-bezier(.23,1,.32,1);
+            position: relative; overflow: hidden;
+        }
+        .hl-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, var(--signal), transparent 70%);
+            opacity: 0.3; transition: opacity 0.4s;
+        }
+        .hl-card:hover { background: var(--bg-panel-hover); border-color: rgba(0,229,255,0.25); transform: translateY(-2px); }
+        .hl-card:hover::before { opacity: 1; }
+        /* Featured card — larger numbers, horizontal layout */
+        .hl-card--featured {
+            padding: 2rem 2.2rem;
+            background: linear-gradient(135deg, rgba(0,229,255,0.06), rgba(12,18,33,0.9));
+            border-color: rgba(0,229,255,0.15);
+            display: flex; align-items: center; gap: 1.5rem;
+        }
+        .hl-card--featured .hl-value {
+            font-size: 3rem; line-height: 1;
+        }
+        .hl-card--featured .hl-label {
+            font-size: 0.7rem; max-width: 120px;
+        }
+        .hl-card--featured .hl-icon {
+            width: 44px; height: 44px; font-size: 1.3rem;
+            border-color: rgba(0,229,255,0.2);
+        }
+        .hl-card--featured .hl-meta {
+            flex: 1;
+        }
+        /* Dramatic card — for "重生" */
+        .hl-card--dramatic {
+            background: linear-gradient(135deg, rgba(255,51,68,0.08), rgba(12,18,33,0.9));
+            border-color: rgba(255,51,68,0.2);
+            display: flex; align-items: center; gap: 1.5rem;
+        }
+        .hl-card--dramatic::before {
+            background: linear-gradient(90deg, var(--danger), transparent 70%);
+        }
+        .hl-card--dramatic .hl-value {
+            font-size: 2.4rem; color: var(--danger);
+        }
+        .hl-card--dramatic .hl-icon {
+            border-color: rgba(255,51,68,0.25); color: var(--danger);
+            width: 44px; height: 44px; font-size: 1.3rem;
+        }
+        .hl-card--dramatic .hl-label {
+            font-size: 0.7rem; color: rgba(255,51,68,0.6);
+        }
+        .hl-card--dramatic .hl-meta { flex: 1; }
+        .hl-card--dramatic:hover {
+            border-color: rgba(255,51,68,0.4);
+            box-shadow: 0 0 30px rgba(255,51,68,0.08);
+        }
+        .hl-icon {
+            font-size: 1.1rem; color: var(--signal); margin-bottom: 0.8rem;
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--signal-dim); border-radius: 2px;
+        }
+        .hl-value {
+            font-family: var(--font-display); font-size: 1.6rem;
+            font-weight: 700; color: var(--gold); line-height: 1.1;
+            margin-bottom: 0.3rem;
+        }
+        .hl-label {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            letter-spacing: 0.1em; color: var(--text-muted);
+        }
+        .hl-subtitle {
+            font-family: var(--font-body); font-size: 0.75rem;
+            color: var(--text-dim); font-style: italic;
+            margin-top: 0.3rem;
+        }
+
+        /* ===== DOSSIER (Career) ===== */
+        .dossier-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .dossier-card {
+            background: var(--bg-panel); border: 1px solid var(--border);
+            border-radius: 2px; padding: 2rem; position: relative;
+            transition: all 0.4s cubic-bezier(.23,1,.32,1);
+        }
+        .dossier-card:hover {
+            border-color: rgba(0,229,255,0.35);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,229,255,0.08);
+        }
+        .dossier-stamp {
+            position: absolute; top: 1rem; right: 1rem;
+            font-family: var(--font-mono); font-size: 0.5rem;
+            color: var(--warm); letter-spacing: 0.15em;
+            padding: 0.2rem 0.5rem; border: 1px solid rgba(255,107,53,0.3);
+            border-radius: 2px; transform: rotate(3deg);
+        }
+        .dossier-icon {
+            font-size: 1.2rem; color: var(--signal); margin-bottom: 1rem;
+        }
+        .dossier-title {
+            font-family: var(--font-cn); font-weight: 700;
+            font-size: 1.15rem; color: #fff; margin-bottom: 0.3rem;
+        }
+        .dossier-role {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            letter-spacing: 0.2em; color: var(--warm); margin-bottom: 1rem;
+        }
+        .dossier-desc {
+            font-size: 0.9rem; color: var(--text-muted); line-height: 1.7;
+        }
+
+        /* ===== JOURNEY TIMELINE ===== */
+        .journey-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0; position: relative;
+        }
+        .journey-center {
+            position: absolute; left: 50%; top: 0; bottom: 0;
+            width: 1px; background: var(--border);
+            transform: translateX(-50%);
+        }
+        .journey-center::before, .journey-center::after {
+            content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+            width: 8px; height: 8px; border-radius: 50%;
+            border: 1px solid var(--signal); background: var(--bg);
+        }
+        .journey-center::before { top: 0; }
+        .journey-center::after { bottom: 0; }
+        .jt-item {
+            padding: 2rem; position: relative;
+        }
+        .jt-item:nth-child(odd) { text-align: right; padding-right: 3rem; border-right: 1px solid transparent; }
+        .jt-item:nth-child(even) { padding-left: 3rem; }
+        .jt-item::before {
+            content: ''; position: absolute; top: 2.5rem;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--signal); border: 2px solid var(--bg);
+            box-shadow: 0 0 10px rgba(0,229,255,0.3);
+            z-index: 1;
+        }
+        .jt-item:nth-child(odd)::before { right: -5px; }
+        .jt-item:nth-child(even)::before { left: -6px; }
+        .jt-tag {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            letter-spacing: 0.25em; color: var(--warm); margin-bottom: 0.6rem;
+            text-transform: uppercase;
+        }
+        .jt-content {
+            font-size: 0.9rem; color: var(--text-muted); line-height: 1.8;
+        }
+        .jt-content strong {
+            display: block; font-family: var(--font-cn);
+            font-size: 1rem; color: var(--text); margin-bottom: 0.15rem;
+        }
+        @media (max-width: 768px) {
+            .journey-grid { grid-template-columns: 1fr; }
+            .journey-center { left: 1rem; }
+            .jt-item:nth-child(odd), .jt-item:nth-child(even) {
+                text-align: left; padding-left: 3rem; padding-right: 1rem;
+            }
+            .jt-item::before { left: 6px !important; right: auto !important; }
+        }
+
+        /* ===== SIGNAL LOST (Rebirth) ===== */
+        .signal-lost {
+            text-align: center;
+            padding: clamp(4rem, 10vh, 8rem) clamp(1.5rem, 4vw, 4rem);
+            position: relative;
+        }
+        .signal-year {
+            font-family: var(--font-mono); font-size: clamp(5rem, 15vw, 12rem);
+            font-weight: 500; color: var(--danger);
+            line-height: 0.85; letter-spacing: -0.03em;
+            opacity: 0.85;
+            text-shadow: 0 0 60px rgba(255,51,68,0.3);
+        }
+        .signal-subtitle {
+            font-family: var(--font-mono); font-size: 0.65rem;
+            letter-spacing: 0.4em; color: var(--text-dim);
+            margin: 1.5rem 0 2.5rem;
+        }
+        .signal-story {
+            font-family: var(--font-cn); font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+            color: var(--text); line-height: 2.4;
+            max-width: 480px; margin: 0 auto;
+            letter-spacing: 0.03em;
+            text-shadow: 0 1px 10px rgba(0,0,0,0.6);
+        }
+        .signal-story strong {
+            color: var(--warm);
+            position: relative;
+        }
+        .signal-mantra {
+            font-family: var(--font-cn); font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+            color: transparent; margin-top: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--warm));
+            -webkit-background-clip: text;
+            background-clip: text;
+            letter-spacing: 0.05em;
+        }
+        /* EKG line */
+        .ekg-container {
+            width: 100%; max-width: 600px; height: 60px;
+            margin: 2rem auto; position: relative; overflow: hidden;
+        }
+        .ekg-line {
+            fill: none; stroke: var(--danger); stroke-width: 2;
+            stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(255,51,68,0.5));
+        }
+
+        /* ===== GALLERY ===== */
+        .gallery-mosaic {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: 180px;
+            gap: 0.5rem;
+        }
+        @media (max-width: 768px) { .gallery-mosaic { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 150px; } }
+        .gallery-mosaic .g-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+        .gallery-mosaic .g-item:nth-child(5) { grid-column: span 2; }
+        .gallery-mosaic .g-item:nth-child(9) { grid-column: span 2; }
+        .g-item {
+            position: relative; overflow: hidden; border-radius: 2px;
+            border: 1px solid var(--border);
+            cursor: pointer; transition: border-color 0.3s;
+        }
+        .g-item:hover { border-color: var(--signal); }
+        .g-item img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.6s cubic-bezier(.23,1,.32,1), filter 0.4s;
+            filter: saturate(0.8) brightness(0.85);
+        }
+        .g-item:hover img { transform: scale(1.08); filter: saturate(1) brightness(1); }
+        .g-item .g-tag {
+            position: absolute; bottom: 0.6rem; left: 0.6rem;
+            font-family: var(--font-mono); font-size: 0.5rem;
+            letter-spacing: 0.15em; color: var(--signal);
+            background: rgba(7,11,20,0.8); padding: 0.2rem 0.5rem;
+            border-radius: 1px; backdrop-filter: blur(4px);
+            opacity: 0; transform: translateY(5px);
+            transition: all 0.3s;
+        }
+        .g-item:hover .g-tag { opacity: 1; transform: translateY(0); }
+
+        /* ===== DIVIDER ===== */
+        .divider {
+            height: 1px; margin: 0 clamp(1rem, 3vw, 3rem);
+            background: linear-gradient(90deg, transparent 0%, var(--border) 30%, var(--border) 70%, transparent 100%);
+        }
+
+        /* ===== CRT SHUTDOWN ===== */
+        .crt-shutdown {
+            position: fixed; inset: 0; z-index: 10001;
+            pointer-events: none; opacity: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .crt-shutdown.active { pointer-events: auto; opacity: 1; }
+        .crt-shutdown-bg {
+            position: absolute; inset: 0; background: #000;
+        }
+        .crt-line {
+            position: absolute; left: 5%; right: 5%;
+            height: 2px; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 0 30px rgba(0,229,255,0.6), 0 0 60px rgba(0,229,255,0.3);
+            opacity: 0;
+        }
+        .crt-dot {
+            position: absolute; width: 4px; height: 4px;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #fff; border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0,229,255,0.8), 0 0 40px rgba(0,229,255,0.4);
+            opacity: 0;
+        }
+        .crt-contact {
+            position: relative; z-index: 2;
+            text-align: center; opacity: 0;
+        }
+        .crt-contact .crt-label {
+            font-family: var(--font-mono); font-size: 0.55rem;
+            letter-spacing: 0.4em; color: var(--text-dim);
+            margin-bottom: 1.5rem;
+        }
+        .crt-contact .crt-name {
+            font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.5rem);
+            color: #fff; letter-spacing: 0.05em;
+            margin-bottom: 1.5rem;
+        }
+        .crt-contact .crt-links {
+            display: flex; align-items: center; justify-content: center; gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .crt-contact .crt-links a {
+            font-family: var(--font-mono); font-size: 0.7rem;
+            letter-spacing: 0.15em; color: var(--signal);
+            text-decoration: none; padding: 0.5rem 1.2rem;
+            border: 1px solid var(--border); border-radius: 2px;
+            transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .crt-contact .crt-links a:hover {
+            background: rgba(0,229,255,0.08); border-color: var(--signal);
+        }
+        .crt-contact .crt-back {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            letter-spacing: 0.3em; color: var(--text-muted);
+            text-decoration: none; transition: color 0.3s;
+        }
+        .crt-contact .crt-back:hover { color: var(--signal); }
+        .crt-contact .crt-credit {
+            font-family: var(--font-mono); font-size: 0.45rem;
+            letter-spacing: 0.2em; color: var(--text-dim);
+            margin-top: 2rem;
+        }
+
+        /* ===== FOOTER ===== */
+        .site-footer {
+            text-align: center;
+            padding: 4rem clamp(1.5rem, 4vw, 4rem) 3rem;
+            display: none; /* hidden — replaced by CRT shutdown */
+        }
+        .footer-end {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            letter-spacing: 0.3em; color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+        .footer-back {
+            display: inline-block;
+            font-family: var(--font-mono); font-size: 0.65rem;
+            letter-spacing: 0.3em; color: var(--text-muted);
+            text-decoration: none; margin-bottom: 1.5rem;
+            padding: 0.5rem 1.2rem; border: 1px solid var(--border);
+            border-radius: 2px; transition: all 0.3s;
+        }
+        .footer-back:hover { color: var(--signal); border-color: var(--signal); }
+        .footer-social {
+            display: flex; gap: 1rem; justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .footer-social a {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 1px solid var(--border); display: flex;
+            align-items: center; justify-content: center;
+            color: var(--text-muted); text-decoration: none;
+            font-size: 0.9rem; transition: all 0.3s;
+        }
+        .footer-social a:hover { border-color: var(--signal); color: var(--signal); }
+        .footer-credit {
+            font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.12em;
+        }
+
+        /* ===== STAR FIELD BG ===== */
+        #starField {
+            position: fixed; inset: 0; z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ===== 3D GLOBE ===== */
+        .globe-wrap {
+            position: relative;
+            width: 100%; height: 65vh; min-height: 450px;
+            margin: 1rem 0 2rem;
+        }
+        #globeCanvas {
+            width: 100%; height: 100%; display: block;
+        }
+        .globe-glow {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 55%; aspect-ratio: 1;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(0,229,255,0.07) 0%, rgba(0,229,255,0.02) 40%, transparent 70%);
+            pointer-events: none; z-index: -1;
+        }
+
+        /* ===== BABEL INTERFERENCE LAYER ===== */
+        .babel-layer {
+            position: fixed; inset: 0; z-index: 3;
+            pointer-events: none; overflow: hidden;
+        }
+        .babel-fragment {
+            position: absolute;
+            font-family: var(--font-mono);
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.6s;
+            will-change: transform;
+        }
+        .babel-fragment.active { opacity: 1; }
+        .babel-fragment.lang-zh { font-family: var(--font-cn); color: rgba(255,215,0,0.08); font-size: clamp(2rem, 6vw, 5rem); font-weight: 700; }
+        .babel-fragment.lang-en { color: rgba(0,229,255,0.06); font-size: clamp(1.2rem, 3vw, 2.5rem); letter-spacing: 0.3em; font-weight: 500; }
+        .babel-fragment.lang-fr { color: rgba(255,107,53,0.07); font-size: clamp(1.5rem, 4vw, 3rem); font-style: italic; font-family: var(--font-display); }
+        .babel-fragment.lang-it { color: rgba(0,255,136,0.06); font-size: clamp(1.3rem, 3.5vw, 2.8rem); font-family: var(--font-body); font-style: italic; }
+        .babel-fragment.lang-de { color: rgba(255,51,68,0.06); font-size: clamp(1.1rem, 2.5vw, 2rem); letter-spacing: 0.15em; text-transform: uppercase; }
+
+        /* ===== FREQUENCY ANALYSIS (Languages) ===== */
+        .freq-section {
+            padding: clamp(2rem, 5vw, 4rem) 0;
+        }
+        .freq-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+        .freq-row {
+            display: grid;
+            grid-template-columns: 120px 1fr 60px;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.2rem 0;
+            border-bottom: 1px solid rgba(0,229,255,0.06);
+            position: relative;
+            overflow: hidden;
+        }
+        .freq-row::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: var(--signal);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .freq-row:hover::before { opacity: 1; }
+        .freq-row:hover { background: rgba(0,229,255,0.02); }
+        .freq-lang-name {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .freq-lang-native {
+            display: block;
+            font-family: var(--font-cn);
+            font-size: 1rem;
+            color: #fff;
+            letter-spacing: 0;
+            text-transform: none;
+            margin-top: 0.2rem;
+        }
+        .freq-bar-container {
+            position: relative;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .freq-bar-wave {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 100%;
+            width: 100%;
+        }
+        .freq-bar-segment {
+            flex: 1;
+            border-radius: 1px;
+            min-width: 2px;
+            transition: height 0.3s cubic-bezier(.23,1,.32,1);
+        }
+        .freq-level {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            color: var(--signal);
+            text-align: right;
+        }
+        .freq-phrase {
+            grid-column: 1 / -1;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-style: italic;
+            padding: 0.5rem 0 0 120px;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s;
+        }
+        .freq-row:hover .freq-phrase {
+            opacity: 1;
+            max-height: 3rem;
+            padding-top: 0.8rem;
+        }
+        @media (max-width: 768px) {
+            .freq-row { grid-template-columns: 90px 1fr 50px; gap: 0.5rem; padding: 1rem 0; }
+            .freq-phrase { padding-left: 0; }
+            .freq-row:hover .freq-phrase { max-height: 4rem; }
+        }
+
+        /* ===== PASSPORT STAMPS ===== */
+        .passport-section {
+            position: relative;
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 3rem 1rem;
+        }
+        .passport-field {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            min-height: 400px;
+            margin: 0 auto;
+            /* Passport page texture */
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,229,255,0.03) 28px, rgba(0,229,255,0.03) 29px),
+                repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(0,229,255,0.03) 28px, rgba(0,229,255,0.03) 29px);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 2rem;
+        }
+        .passport-watermark {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-display);
+            font-size: clamp(4rem, 12vw, 10rem);
+            font-weight: 700;
+            color: rgba(0,229,255,0.03);
+            white-space: nowrap;
+            pointer-events: none;
+            letter-spacing: 0.1em;
+        }
+        .stamp {
+            position: absolute;
+            padding: 0.8rem 1.2rem;
+            border: 3px solid;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            text-align: center;
+            opacity: 0;
+            transform: scale(2.5) rotate(var(--rot, 0deg));
+            transition: none;
+            pointer-events: none;
+        }
+        .stamp.stamped {
+            opacity: 1;
+            transform: scale(1) rotate(var(--rot, 0deg));
+        }
+        .stamp-country {
+            font-size: 0.7rem;
+            letter-spacing: 0.25em;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        .stamp-year {
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0.2rem 0;
+        }
+        .stamp-detail {
+            font-size: 0.5rem;
+            letter-spacing: 0.15em;
+            opacity: 0.7;
+        }
+        .stamp-tw { border-color: var(--gold); color: var(--gold); --rot: -5deg; top: 8%; left: 5%; }
+        .stamp-us { border-color: var(--signal); color: var(--signal); --rot: 3deg; top: 5%; right: 15%; }
+        .stamp-fr { border-color: var(--warm); color: var(--warm); --rot: -8deg; top: 40%; left: 8%; }
+        .stamp-it { border-color: var(--success); color: var(--success); --rot: 5deg; top: 35%; right: 5%; }
+        .stamp-de { border-color: var(--danger); color: var(--danger); --rot: -3deg; bottom: 20%; left: 25%; }
+        .stamp-uk { border-color: var(--signal); color: var(--signal); --rot: 7deg; bottom: 15%; right: 20%; }
+        .stamp-cn { border-color: var(--gold); color: var(--gold); --rot: -6deg; bottom: 5%; left: 50%; transform-origin: center; }
+        @media (max-width: 768px) {
+            .passport-field { min-height: 550px; padding: 1rem; }
+            .stamp { padding: 0.5rem 0.8rem; border-width: 2px; }
+            .stamp-country { font-size: 0.55rem; }
+            .stamp-year { font-size: 1rem; }
+            .stamp-detail { font-size: 0.4rem; }
+            .stamp-tw { top: 2%; left: 2%; }
+            .stamp-us { top: 2%; right: 2%; }
+            .stamp-fr { top: 28%; left: 2%; }
+            .stamp-it { top: 28%; right: 2%; }
+            .stamp-de { top: 54%; left: 5%; }
+            .stamp-uk { top: 54%; right: 5%; }
+            .stamp-cn { top: 78%; left: 20%; bottom: auto; }
+        }
+
+        /* ===== COMM QUOTE SECTION ===== */
+        .comm-quote {
+            text-align: center;
+            padding: clamp(3rem, 8vh, 6rem) clamp(1.5rem, 4vw, 4rem);
+            position: relative;
+        }
+        .comm-quote::before, .comm-quote::after {
+            content: '';
+            position: absolute; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--signal), transparent);
+        }
+        .comm-quote::before { top: 0; }
+        .comm-quote::after { bottom: 0; }
+        .comm-quote-text {
+            font-family: var(--font-cn);
+            font-size: clamp(1.5rem, 3.5vw, 2.6rem);
+            font-weight: 700;
+            line-height: 2;
+            color: transparent;
+            background: linear-gradient(135deg, var(--signal) 0%, var(--gold) 40%, var(--warm) 70%, var(--danger) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            letter-spacing: 0.05em;
+        }
+        .comm-quote-sub {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 0.5em;
+            color: var(--text-dim);
+        }
+
+        /* ===== REVEAL ===== */
+        .reveal { opacity: 0; transform: translateY(30px); }
+        .hl-card { opacity: 0; transform: translateY(20px); }
+        .dossier-card { opacity: 0; transform: translateY(20px); }
+        .jt-item { opacity: 0; transform: translateY(15px); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .panel-header { padding: 0.5rem 1rem; font-size: 0.55rem; }
+            .panel-body { padding: 1.5rem 1rem; }
+            .panel-border { margin: 1.5rem 0.5rem; }
+        }
+
+        /* ===== ORIENTATION PROMPT ===== */
+        .orientation-prompt {
+            display: none;
+            position: fixed; inset: 0; z-index: 99999;
+            background: #000;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 1.5rem;
+            text-align: center;
+            padding: 2rem;
+        }
+        .orientation-prompt .op-icon {
+            width: 60px; height: 60px;
+            border: 2px solid var(--signal);
+            border-radius: 8px;
+            position: relative;
+            animation: op-rotate 2s ease-in-out infinite;
+        }
+        .orientation-prompt .op-icon::before {
+            content: '';
+            position: absolute; bottom: -8px; left: 50%;
+            transform: translateX(-50%);
+            width: 16px; height: 3px;
+            background: var(--signal);
+            border-radius: 2px;
+        }
+        .orientation-prompt .op-icon::after {
+            content: '';
+            position: absolute; top: 6px; left: 50%;
+            transform: translateX(-50%);
+            width: 6px; height: 6px;
+            background: var(--signal);
+            border-radius: 50%;
+        }
+        @keyframes op-rotate {
+            0%, 30% { transform: rotate(0deg); }
+            50%, 80% { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .orientation-prompt .op-text {
+            font-family: var(--font-cn);
+            font-size: 1.1rem; color: var(--text);
+            line-height: 1.8;
+        }
+        .orientation-prompt .op-sub {
+            font-family: var(--font-mono);
+            font-size: 0.6rem; color: var(--text-muted);
+            letter-spacing: 0.15em;
+        }
+        .orientation-prompt .op-signal {
+            color: var(--signal);
+        }
+        @media (max-width: 768px) and (orientation: portrait) {
+            .orientation-prompt { display: flex; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Orientation prompt for mobile portrait -->
+<div class="orientation-prompt" id="orientationPrompt">
+    <div class="op-icon"></div>
+    <div class="op-text">
+        請將手機<span class="op-signal">橫式</span>閱讀<br>
+        以獲得最佳的頻道體驗
+    </div>
+    <div class="op-sub">ROTATE DEVICE TO LANDSCAPE MODE</div>
+</div>
+
+<canvas id="starField"></canvas>
+
+<!-- TV FRAME -->
+<div class="tv-frame" id="tvFrame">
+    <!-- Top bezel -->
+    <div class="tv-bezel-top">
+        <div class="tv-top-info">
+            <span class="tv-brand">BARBAENIGMA™</span>
+            <div class="tv-signal">
+                <div class="tv-signal-bar"></div>
+                <div class="tv-signal-bar"></div>
+                <div class="tv-signal-bar"></div>
+                <div class="tv-signal-bar"></div>
+            </div>
+        </div>
+    </div>
+    <!-- Side bezels -->
+    <div class="tv-bezel-left"></div>
+    <div class="tv-bezel-right"></div>
+    <!-- Bottom bezel -->
+    <div class="tv-bezel-bottom">
+        <div class="tv-channel-display">
+            <div class="tv-power-led"></div>
+            <span class="tv-ch-label">CH</span>
+            <span class="tv-ch-num" id="tvChNum">--</span>
+            <span class="tv-ch-name" id="tvChName">STANDBY</span>
+        </div>
+        <div class="tv-controls">
+            <div class="tv-clock" id="clock"></div>
+            <div class="tv-knob" title="VOL"></div>
+            <div class="tv-knob" title="CH"></div>
+        </div>
+    </div>
+    <!-- CRT screen curvature -->
+    <div class="tv-screen-curve"></div>
+</div>
+
+<!-- Static noise overlay -->
+<div class="tv-static-overlay" id="tvStatic">
+    <canvas id="tvStaticCanvas"></canvas>
+</div>
+
+<!-- Channel flash indicator -->
+<div class="tv-ch-flash" id="tvChFlash">CH-01</div>
+
+<!-- BABEL INTERFERENCE LAYER -->
+<div class="babel-layer" id="babelLayer" aria-hidden="true">
+    <div class="babel-fragment lang-zh" style="top:12%;left:-5%">連結</div>
+    <div class="babel-fragment lang-en" style="top:8%;right:2%">CONNECT</div>
+    <div class="babel-fragment lang-fr" style="top:25%;right:-3%">communiquer</div>
+    <div class="babel-fragment lang-zh" style="top:35%;left:2%">溝通</div>
+    <div class="babel-fragment lang-de" style="top:42%;right:5%">VERSTEHEN</div>
+    <div class="babel-fragment lang-it" style="top:55%;left:-2%">capire</div>
+    <div class="babel-fragment lang-en" style="top:60%;right:-5%">TRANSLATE</div>
+    <div class="babel-fragment lang-fr" style="top:72%;left:3%">liberté</div>
+    <div class="babel-fragment lang-zh" style="top:78%;right:1%">自由</div>
+    <div class="babel-fragment lang-de" style="top:85%;left:5%">WANDERN</div>
+    <div class="babel-fragment lang-it" style="top:92%;right:8%">viaggio</div>
+    <div class="babel-fragment lang-zh" style="top:48%;left:60%">理解</div>
+    <div class="babel-fragment lang-en" style="top:18%;left:40%">FREQUENCY</div>
+    <div class="babel-fragment lang-fr" style="top:65%;left:45%">réseau</div>
+</div>
+
+<div class="scanlines"></div>
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- ===== ENTRY TERMINAL ===== -->
+<div id="entry">
+    <div class="terminal" id="terminal">
+        <div class="terminal-line"><span class="prompt">&gt;</span> INITIATING SECURE CONNECTION...</div>
+        <div class="terminal-line"><span class="prompt">&gt;</span> SCANNING FREQUENCY <span style="color:var(--gold)">66.7 MHz</span>...</div>
+        <div class="terminal-line"><span class="prompt">&gt;</span> SIGNAL DETECTED: <span style="color:var(--warm)">barbaenigma</span></div>
+        <div class="terminal-line"><span class="prompt">&gt;</span> NODES VERIFIED: <span style="color:var(--gold)">7 COUNTRIES</span> // <span style="color:var(--gold)">3 CONTINENTS</span></div>
+        <div class="terminal-line"><span class="prompt">&gt;</span> DECRYPTING TRANSMISSION...</div>
+        <div class="terminal-line success"><span class="prompt">&gt;</span> ACCESS GRANTED — WELCOME TO NODE #barbaenigma<span class="terminal-cursor"></span></div>
+    </div>
+    <div class="terminal-skip" id="terminalSkip">[ CLICK ANYWHERE TO SKIP ]</div>
+</div>
+
+<!-- ===== MAIN DASHBOARD ===== -->
+<main id="dashboard" style="opacity:0">
+
+    <!-- CH-01: HERO + TRANSMISSION -->
+    <div class="tv-channel tv-channel--hero">
+    <div class="ch-img ch-img--right" style="right:0;top:0;bottom:0;width:45%">
+        <img src="/assets/img/guild/barbaenigma/photo8_activewear.webp" alt="" style="object-position:center top">
+        <div class="ch-img-caption">drive // energy</div>
+    </div>
+    <section class="hero-section" id="hero">
+        <div class="hero-grid">
+            <div class="radar-container reveal">
+                <div class="radar-ring"></div>
+                <div class="radar-ring"></div>
+                <div class="radar-ring"></div>
+                <div class="radar-crosshair-h"></div>
+                <div class="radar-crosshair-v"></div>
+                <div class="radar-sweep"></div>
+                <div class="radar-blip"></div>
+                <div class="radar-blip"></div>
+                <div class="radar-blip"></div>
+                <div class="radar-blip"></div>
+                <div class="radar-avatar">
+                    <img src="/assets/img/guild/barbaenigma/headshot.webp" alt="barbaenigma">
+                </div>
+            </div>
+            <div>
+                <div class="hero-badge reveal">GUILD MEMBER // BARBAENIGMA</div>
+                <h1 class="hero-name reveal">Controlled<br><em>Chaos</em></h1>
+                <p class="hero-tagline reveal">跨國市場拓展 · 跨文化團隊領導 · 品牌國際化策略</p>
+                <div class="hero-stats reveal">
+                    <div class="hero-stat">
+                        <div class="hero-stat-num" data-count="66">0</div>
+                        <div class="hero-stat-label">Countries</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-num" data-count="7">0</div>
+                        <div class="hero-stat-label">Lived In</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-num" data-count="3">0</div>
+                        <div class="hero-stat-label">Continents</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    </div>
+
+    <!-- CH-01b: TRANSMISSION (Manifesto) -->
+    <div class="tv-channel">
+    <div class="ch-img ch-img--right" style="right:0;top:0;bottom:0;width:50%">
+        <img src="/assets/img/guild/barbaenigma/photo4_hair.webp" alt="">
+        <div class="ch-img-caption">portrait // threads</div>
+    </div>
+    <div class="panel-border reveal">
+        <div class="panel-header">
+            <span class="channel">CH-01</span>
+            <span>INCOMING TRANSMISSION</span>
+            <span class="status live">DECODING</span>
+        </div>
+        <div class="panel-body" id="transmission">
+            <div class="transmission-meta">
+                FROM: <span>barbaenigma</span> // FREQ: <span>66.7 MHz</span> // ENCRYPTION: <span>CHAOS-256</span> // STATUS: <span>DECODED</span>
+            </div>
+            <blockquote class="transmission-text" id="transmissionText">
+                人不是被位置定義，而是被<mark>選擇</mark>與<mark>認知</mark>定義。如果人生是遊戲，我會選擇把<mark>自癒值拉滿</mark>，防禦值拉到最低。因為人生等於體驗，我寧可不設防地經歷，再完整自癒，也不願帶著防禦機制錯過人生。
+            </blockquote>
+            <div class="transmission-footer">— Controlled Chaos 不是狀態，而是一種方法 —</div>
+        </div>
+    </div>
+
+    </div><!-- /tv-channel -->
+    <div class="tv-channel">
+
+    <div class="ch-img ch-img--full" style="inset:0;width:100%;height:100%">
+        <img src="/assets/img/guild/barbaenigma/photo3_headscarf.webp" alt="" style="object-position:center 30%">
+        <div class="ch-img-caption">somewhere // asia</div>
+    </div>
+    <!-- NETWORK MAP -->
+    <div class="panel-border reveal">
+        <div class="panel-header">
+            <span class="channel">CH-02</span>
+            <span>NETWORK TOPOLOGY</span>
+            <span class="status live">TRACKING</span>
+        </div>
+        <div class="panel-body" id="network">
+            <div class="s-label">FLIGHT ROUTES</div>
+            <div class="s-title"><span>我穿越三大洲的</span><span>人生航線</span></div>
+            <div class="globe-wrap" id="globeWrap">
+                <div class="globe-glow"></div>
+                <canvas id="globeCanvas"></canvas>
+            </div>
+            <div class="route-legend">
+                <div class="leg">TAIPEI <span class="leg-arrow">→</span> OHIO</div>
+                <div class="leg">→ PARIS</div>
+                <div class="leg">→ TURIN</div>
+                <div class="leg">→ BERLIN</div>
+                <div class="leg">→ LONDON</div>
+                <div class="leg">→ CHINA</div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /tv-channel -->
+    <div class="tv-channel">
+
+    <div class="ch-img ch-img--right" style="right:0;top:0;bottom:0;width:45%">
+        <img src="/assets/img/guild/barbaenigma/photo1_fur_dress.webp" alt="">
+        <div class="ch-img-caption">fashion // europe</div>
+    </div>
+    <!-- FREQUENCY ANALYSIS (Languages) -->
+    <div class="panel-border reveal">
+        <div class="panel-header">
+            <span class="channel">CH-03</span>
+            <span>FREQUENCY ANALYSIS</span>
+            <span class="status live">SCANNING</span>
+        </div>
+        <div class="panel-body freq-section" id="freqAnalysis">
+            <div class="s-label">BABEL PROTOCOL</div>
+            <div class="s-title"><span>我的五種語言，</span><span>五個世界的入口</span></div>
+            <div class="freq-grid" id="freqGrid">
+                <div class="freq-row" data-freq="0.95">
+                    <div class="freq-lang-name">MANDARIN<span class="freq-lang-native">中文</span></div>
+                    <div class="freq-bar-container"><div class="freq-bar-wave" data-level="95"></div></div>
+                    <div class="freq-level">NATIVE</div>
+                    <div class="freq-phrase">「語言是最小單位的文化載體」</div>
+                </div>
+                <div class="freq-row" data-freq="0.92">
+                    <div class="freq-lang-name">ENGLISH<span class="freq-lang-native">英語</span></div>
+                    <div class="freq-bar-container"><div class="freq-bar-wave" data-level="92"></div></div>
+                    <div class="freq-level">C2</div>
+                    <div class="freq-phrase">TOEFL iBT 118/120 — Near-native fluency</div>
+                </div>
+                <div class="freq-row" data-freq="0.75">
+                    <div class="freq-lang-name">FRENCH<span class="freq-lang-native">Français</span></div>
+                    <div class="freq-bar-container"><div class="freq-bar-wave" data-level="75"></div></div>
+                    <div class="freq-level">B2+</div>
+                    <div class="freq-phrase">Apprendre à penser dans une autre logique</div>
+                </div>
+                <div class="freq-row" data-freq="0.55">
+                    <div class="freq-lang-name">ITALIAN<span class="freq-lang-native">Italiano</span></div>
+                    <div class="freq-bar-container"><div class="freq-bar-wave" data-level="55"></div></div>
+                    <div class="freq-level">B1</div>
+                    <div class="freq-phrase">La bellezza della comunicazione spontanea</div>
+                </div>
+                <div class="freq-row" data-freq="0.45">
+                    <div class="freq-lang-name">GERMAN<span class="freq-lang-native">Deutsch</span></div>
+                    <div class="freq-bar-container"><div class="freq-bar-wave" data-level="45"></div></div>
+                    <div class="freq-level">A2+</div>
+                    <div class="freq-phrase">Ordnung und Struktur — eine neue Denkweise</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /tv-channel -->
+    <div class="tv-channel">
+
+    <div class="ch-img ch-img--left" style="left:0;top:0;bottom:0;width:40%">
+        <img src="/assets/img/guild/barbaenigma/photo5_sundress.webp" alt="">
+        <div class="ch-img-caption">nature // wandering</div>
+    </div>
+    <!-- PASSPORT CONTROL -->
+    <div class="panel-border reveal">
+        <div class="panel-header">
+            <span class="channel">CH-04</span>
+            <span>PASSPORT CONTROL</span>
+            <span class="status live">STAMPING</span>
+        </div>
+        <div class="panel-body" id="passportSection">
+            <div class="s-label">ENTRY RECORDS</div>
+            <div class="s-title"><span>七個國家，</span><span>七次在地化實戰</span></div>
+            <div class="passport-section">
+                <div class="passport-field" id="passportField">
+                    <div class="passport-watermark">BARBAENIGMA</div>
+                    <div class="stamp stamp-tw">
+                        <div class="stamp-country">TAIWAN 台灣</div>
+                        <div class="stamp-year">1996</div>
+                        <div class="stamp-detail">ORIGIN — HOME BASE</div>
+                    </div>
+                    <div class="stamp stamp-us">
+                        <div class="stamp-country">UNITED STATES</div>
+                        <div class="stamp-year">2014</div>
+                        <div class="stamp-detail">OHIO — NEUROSCIENCE + PHILOSOPHY</div>
+                    </div>
+                    <div class="stamp stamp-fr">
+                        <div class="stamp-country">FRANCE</div>
+                        <div class="stamp-year">2018</div>
+                        <div class="stamp-detail">PARIS — ESCP BUSINESS SCHOOL</div>
+                    </div>
+                    <div class="stamp stamp-it">
+                        <div class="stamp-country">ITALIA</div>
+                        <div class="stamp-year">2019</div>
+                        <div class="stamp-detail">TORINO — ESCP CAMPUS</div>
+                    </div>
+                    <div class="stamp stamp-de">
+                        <div class="stamp-country">DEUTSCHLAND</div>
+                        <div class="stamp-year">2019</div>
+                        <div class="stamp-detail">BERLIN — ESCP CAMPUS</div>
+                    </div>
+                    <div class="stamp stamp-uk">
+                        <div class="stamp-country">UNITED KINGDOM</div>
+                        <div class="stamp-year">2020</div>
+                        <div class="stamp-detail">LONDON — POKER INDUSTRY</div>
+                    </div>
+                    <div class="stamp stamp-cn">
+                        <div class="stamp-country">CHINA 中國</div>
+                        <div class="stamp-year">2022</div>
+                        <div class="stamp-detail">SHANGHAI — MARKET EXPANSION</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /tv-channel -->
+    <div class="tv-channel">
+
+    <div class="ch-img ch-img--full" style="inset:0;width:100%;height:100%">
+        <img src="/assets/img/guild/barbaenigma/photo2_costume_mic.webp" alt="" style="object-position:center 20%">
+        <div class="ch-img-caption">performance // voice</div>
+    </div>
+    <!-- COMMUNICATION PHILOSOPHY -->
+    <div class="panel-border reveal">
+        <div class="panel-header">
+            <span class="channel">CH-05</span>
+            <span>DECODED SIGNAL</span>
+            <span class="status live">CLEAR</span>
+        </div>
+        <div class="comm-quote" id="commQuote">
+            <div class="s-label">COMMUNICATION PROTOCOL</div>
+            <div class="comm-quote-text reveal">每一種語言，<br>都是我打開一個市場的鑰匙。<br>每一個國家，<br>都是我理解一種商業邏輯的入口。</div>
+            <div class="comm-quote-sub reveal">— BABEL PROTOCOL DECODED —</div>
+            <div class="harbor-quote reveal" style="margin-top:3rem;padding:2rem 2rem 2rem 2.5rem;border-left:2px solid rgba(255,107,53,0.4);background:rgba(7,11,20,0.85);position:relative;backdrop-filter:blur(4px)">
+                <div style="position:absolute;top:-0.5rem;left:1.5rem;font-family:var(--font-display);font-size:2rem;color:rgba(255,107,53,0.15);line-height:1">"</div>
+                <div style="font-family:var(--font-cn);font-size:1rem;line-height:2.2;color:var(--text);letter-spacing:0.03em">
+                    對我來說，溝通不只是語言的轉換，<br>
+                    <span style="font-family:var(--font-body);font-style:italic;color:var(--text-muted);font-size:0.9rem;letter-spacing:0.02em">Communication is not just translation — it's context switching.</span><br><br>
+                    我能幫你的品牌<strong style="color:var(--signal)">打入不同文化圈</strong>，<br>
+                    用當地人能理解的語言、邏輯和情感去溝通。
+                </div>
+                <div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--warm);margin-top:1.2rem;letter-spacing:0.15em;opacity:0.7">— CROSS-CULTURAL PROTOCOL —</div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /tv-channel -->
+    <div class="tv-channel">
+
+    <div class="ch-img ch-img--right" style="right:0;top:0;bottom:0;width:50%">
+        <img src="/assets/img/guild/barbaenigma/photo6_costume_makeup.webp" alt="">
+        <div class="ch-img-caption">style // identity</div>
+    </div>
+    <!-- HIGHLIGHTS -->
+    <div class="panel-border reveal">
+        <div class="panel-header">
+            <span class="channel">CH-06</span>
+            <span>DATA READOUT</span>
+            <span class="status live">VERIFIED</span>
+        </div>
+        <div class="panel-body" id="highlights">
+            <div class="s-label">HIGHLIGHTS</div>
+            <div class="s-title"><span>不只是數字，</span><span>是我能提供的實力</span></div>
+            <div class="hl-grid">
+                <!-- Row 1: Featured (2-col) + two regular -->
+                <div class="hl-card hl-card--featured reveal">
+                    <div class="hl-icon"><i class="fas fa-globe-americas"></i></div>
+                    <div class="hl-meta">
+                        <div class="hl-value">66</div>
+                        <div class="hl-label">COUNTRIES VISITED</div>
+                        <div class="hl-subtitle">三大洲，七個居住國</div>
+                    </div>
+                </div>
+                <div class="hl-card reveal">
+                    <div class="hl-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="hl-value">118</div>
+                    <div class="hl-label">TOEFL iBT / 120</div>
+                </div>
+                <div class="hl-card reveal">
+                    <div class="hl-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="hl-value">首位</div>
+                    <div class="hl-label">ESCP 非歐裔學生會長</div>
+                </div>
+                <!-- Row 2: two regular + dramatic (2-col) -->
+                <div class="hl-card reveal">
+                    <div class="hl-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="hl-value">500%+</div>
+                    <div class="hl-label">YoY 市場年成長</div>
+                </div>
+                <div class="hl-card reveal">
+                    <div class="hl-icon"><i class="fas fa-users"></i></div>
+                    <div class="hl-value">20+</div>
+                    <div class="hl-label">跨國團隊管理人數</div>
+                </div>
+                <div class="hl-card hl-card--dramatic reveal">
+                    <div class="hl-icon"><i class="fas fa-earth-americas"></i></div>
+                    <div class="hl-meta">
+                        <div class="hl-value">150+</div>
+                        <div class="hl-label">服務國家與市場</div>
+                        <div class="hl-subtitle">B2B2C 全球商業開發</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /tv-channel -->
+    <div class="tv-channel">
+
+    <div class="ch-img ch-img--right" style="right:0;top:0;bottom:0;width:45%">
+        <img src="/assets/img/guild/barbaenigma/photo7_swimming_turtle.webp" alt="" style="object-position:center 40%">
+        <div class="ch-img-caption">adventure // ocean</div>
+    </div>
+    <!-- DOSSIER: JOURNEY + OPERATIONS (merged) -->
+    <div class="panel-border reveal">
+        <div class="panel-header">
+            <span class="channel">CH-07</span>
+            <span>CLASSIFIED DOSSIER</span>
+            <span class="status live">AUTHORIZED</span>
+        </div>
+        <div class="panel-body" id="journey">
+            <div class="s-label">DOSSIER</div>
+            <div class="s-title"><span>我穿越三大洲的</span><span>人生檔案</span></div>
+            <div class="dossier-grid">
+                <div class="dossier-card reveal">
+                    <div class="dossier-stamp">ACTIVE</div>
+                    <div class="dossier-icon"><i class="fas fa-diagram-project"></i></div>
+                    <div class="dossier-title">Node# 井節點</div>
+                    <div class="dossier-role">FOUNDER & CEO</div>
+                    <div class="dossier-desc">我用科技結合社群，幫助個人品牌與組織建立可擴張的價值網絡。如果你想讓自己的品牌被更多人看見、與對的人連結，這就是我在做的事。</div>
+                </div>
+                <div class="dossier-card reveal">
+                    <div class="dossier-stamp">500%+ YoY</div>
+                    <div class="dossier-icon"><i class="fas fa-spade"></i></div>
+                    <div class="dossier-title">線上撲克產業</div>
+                    <div class="dossier-role">歐美區經理</div>
+                    <div class="dossier-desc">我從零建立歐美市場，管理跨國團隊與 30+ 市場的商業開發。如果你的產品需要跨國拓展策略、在地化營運，我有實戰經驗。</div>
+                </div>
+                <div class="dossier-card reveal">
+                    <div class="dossier-stamp">ESCP</div>
+                    <div class="dossier-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="dossier-title">學術 + 領導</div>
+                    <div class="dossier-role">STUDENT COUNCIL PRESIDENT</div>
+                    <div class="dossier-desc">ESCP 歐洲高等商學院企管碩士，全額獎學金。我擅長跨文化團隊領導，曾管理 6 國 7 校區的 20 人國際團隊。</div>
+                </div>
+            </div>
+            <div class="journey-grid" style="margin-top:2rem">
+                <div class="journey-center"></div>
+                <div class="jt-item reveal">
+                    <div class="jt-tag">策略</div>
+                    <div class="jt-content">
+                        <strong>策略諮詢分析師</strong>
+                        服務台灣上市櫃公司<br>
+                        企業結構・ESG・品牌形象<br>海外市場進入策略
+                    </div>
+                </div>
+                <div class="jt-item reveal">
+                    <div class="jt-tag">學歷</div>
+                    <div class="jt-content">
+                        <strong>College of Wooster</strong>
+                        神經科學＋哲學雙主修・全額獎學金<br>
+                        （無聊到設計＋製作衣服賣同學）
+                    </div>
+                </div>
+                <div class="jt-item reveal">
+                    <div class="jt-tag">演說</div>
+                    <div class="jt-content">
+                        長期公眾演說訓練<br>
+                        英文辯論・模擬聯合國<br>
+                        中英雙語簡報與商務談判
+                    </div>
+                </div>
+                <div class="jt-item reveal">
+                    <div class="jt-tag">足跡</div>
+                    <div class="jt-content">
+                        台灣 → 美國 → 法國<br>
+                        → 義大利 → 德國 → 英國 → 中國<br>
+                        每個市場我都從零建立在地人脈
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /tv-channel -->
+    <div class="tv-channel">
+
+    <div class="ch-img ch-img--full" style="inset:0;width:100%;height:100%">
+        <img src="/assets/img/guild/barbaenigma/photo9_snake.webp" alt="" style="object-position:center 30%">
+        <div class="ch-img-caption">vision // next</div>
+    </div>
+    <!-- NEXT SIGNAL -->
+    <div class="panel-border reveal">
+        <div class="panel-header">
+            <span class="channel">CH-08</span>
+            <span>NEXT SIGNAL</span>
+            <span class="status live">ACTIVE</span>
+        </div>
+        <div class="signal-lost" id="signalLost">
+            <div class="s-label">NEXT CHAPTER</div>
+            <div class="signal-year reveal" style="color:var(--signal)">NODE#</div>
+            <div class="signal-subtitle reveal">BUILDING THE NETWORK</div>
+            <div class="ekg-container reveal">
+                <svg viewBox="0 0 600 60" width="100%" height="100%" id="ekgSvg">
+                    <path class="ekg-line" id="ekgPath" style="stroke:var(--signal);filter:drop-shadow(0 0 4px rgba(0,229,255,0.5))" d="M0,30 L100,30 L120,30 L130,8 L140,52 L150,20 L160,30 L250,30 L270,30 L280,8 L290,52 L300,20 L310,30 L400,30 L420,30 L430,8 L440,52 L450,20 L460,30 L600,30"/>
+                </svg>
+            </div>
+            <div class="signal-story reveal">
+                從神經科學到商學院，從撲克產業到社群創業——<br>
+                我的每一次身份重建，都是<strong>一次認知升級</strong>。<br><br>
+                現在，我正在打造<strong>井節點 Node#</strong>——<br>
+                一個將人、品牌、組織節點化的價值網絡。
+            </div>
+            <div class="signal-mantra reveal">「把複雜的世界，變成可連結的節點」</div>
+            <div class="harbor-quote reveal" style="margin-top:3rem;padding:2rem 2rem 2rem 2.5rem;border-left:2px solid rgba(0,229,255,0.3);background:rgba(7,11,20,0.85);max-width:520px;margin-left:auto;margin-right:auto;text-align:left;position:relative;backdrop-filter:blur(4px)">
+                <div style="font-family:var(--font-mono);font-size:0.5rem;color:var(--signal);letter-spacing:0.2em;margin-bottom:1rem;opacity:0.7">WHAT I CAN DO FOR YOU</div>
+                <div style="font-family:var(--font-cn);font-size:0.95rem;line-height:2.2;color:var(--text);letter-spacing:0.03em">
+                    <strong style="color:var(--signal)">跨國市場拓展</strong> — 從策略規劃到在地化落地<br>
+                    <strong style="color:var(--signal)">跨文化團隊建立</strong> — 招募、管理、激勵多國團隊<br>
+                    <strong style="color:var(--signal)">品牌國際化溝通</strong> — 五種語言的商務溝通與談判<br>
+                    <strong style="color:var(--signal)">社群節點串連</strong> — 透過 Node# 連結人與價值<br>
+                </div>
+                <div style="font-family:var(--font-mono);font-size:0.45rem;color:var(--signal);margin-top:1rem;letter-spacing:0.12em;opacity:0.7">— SIGNAL CONTINUES —</div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /tv-channel signal lost -->
+
+</main>
+
+<!-- FOOTER (hidden, replaced by CRT shutdown) -->
+<footer class="site-footer">
+    <div class="footer-end">// TRANSMISSION COMPLETE — END OF FILE //</div>
+    <a href="/guild/" class="footer-back">← BACK TO ARCHIVE</a>
+    <div class="footer-social">
+        <a href="https://www.threads.com/@barbaenigma" target="_blank" rel="noopener" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+        <a href="https://www.instagram.com/barbaenigma/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+    </div>
+    <div class="footer-credit">Made with ♥ by SuperGalen's Dungeon</div>
+</footer>
+
+<!-- CHANNEL NAV (right side) -->
+<nav class="channel-nav" id="channelNav">
+    <div class="channel-nav-label">CH</div>
+    <div class="channel-nav-dot" data-ch="0" data-label="CH-01 Profile"></div>
+    <div class="channel-nav-dot" data-ch="1" data-label="CH-01 Transmission"></div>
+    <div class="channel-nav-dot" data-ch="2" data-label="CH-02 Network"></div>
+    <div class="channel-nav-dot" data-ch="3" data-label="CH-03 Babel"></div>
+    <div class="channel-nav-dot" data-ch="4" data-label="CH-04 Passport"></div>
+    <div class="channel-nav-dot" data-ch="5" data-label="CH-05 Protocol"></div>
+    <div class="channel-nav-dot" data-ch="6" data-label="CH-06 Highlights"></div>
+    <div class="channel-nav-dot" data-ch="7" data-label="CH-07 Dossier"></div>
+    <div class="channel-nav-dot" data-ch="8" data-label="CH-08 Next Signal"></div>
+</nav>
+
+<!-- CRT SHUTDOWN OVERLAY -->
+<div class="crt-shutdown" id="crtShutdown">
+    <div class="crt-shutdown-bg"></div>
+    <div class="crt-line" id="crtLine"></div>
+    <div class="crt-dot" id="crtDot"></div>
+    <div class="crt-contact" id="crtContact">
+        <div class="crt-label">// TRANSMISSION COMPLETE //</div>
+        <div class="crt-name">barbaenigma</div>
+        <div class="crt-links">
+            <a href="https://www.threads.com/@barbaenigma" target="_blank" rel="noopener"><i class="fa-brands fa-threads"></i> Threads</a>
+            <a href="https://www.instagram.com/barbaenigma/" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i> Instagram</a>
+        </div>
+        <div class="crt-retune" id="crtRetune" style="margin-top:1.5rem">
+            <button onclick="retuneTV()" style="
+                font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.25em;
+                color:var(--signal);background:transparent;
+                border:1px solid var(--border);border-radius:2px;
+                padding:0.6rem 1.8rem;cursor:pointer;
+                transition:all 0.3s;text-transform:uppercase;
+            " onmouseover="this.style.background='rgba(0,229,255,0.08)';this.style.borderColor='var(--signal)'" onmouseout="this.style.background='transparent';this.style.borderColor='var(--border)'">
+                <i class="fas fa-rotate-right" style="margin-right:0.5rem"></i>RETUNE
+            </button>
+        </div>
+        <a href="/guild/" class="crt-back" style="display:inline-block;margin-top:1rem">← BACK TO ARCHIVE</a>
+        <div class="crt-credit">Made with ♥ by SuperGalen's Dungeon</div>
+    </div>
+</div>
+
+<script>
+/* ===== CLOCK ===== */
+function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    const el = document.getElementById('clock');
+    if (el) el.textContent = `${h}:${m}:${s} UTC+${-now.getTimezoneOffset()/60}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ===== CONNECTION SOUND ===== */
+function playConnectionSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [800, 1000, 1200, 800];
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.06, ctx.currentTime + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.15);
+            osc.start(ctx.currentTime + i * 0.12);
+            osc.stop(ctx.currentTime + i * 0.12 + 0.15);
+        });
+    } catch(e) {}
+}
+
+/* ===== ENTRY TERMINAL ===== */
+(() => {
+    const entry = document.getElementById('entry');
+    const lines = entry.querySelectorAll('.terminal-line');
+    const skip = document.getElementById('terminalSkip');
+    const dashboard = document.getElementById('dashboard');
+    const statusBar = document.getElementById('statusBar');
+    let completed = false;
+
+    function showDashboard() {
+        if (completed) return;
+        completed = true;
+        playConnectionSound();
+        gsap.to(entry, { opacity: 0, duration: 0.6, onComplete: () => { entry.style.display = 'none'; } });
+        gsap.to(dashboard, { opacity: 1, duration: 0.8, delay: 0.3 });
+        // Show channel nav
+        const channelNav = document.getElementById('channelNav');
+        if (channelNav) gsap.to(channelNav, { opacity: 1, duration: 0.6, delay: 0.5 });
+        // Show TV channel indicator
+        const chNum = document.getElementById('tvChNum');
+        const chName = document.getElementById('tvChName');
+        if (chNum) { chNum.textContent = '01'; }
+        if (chName) { chName.textContent = 'PROFILE'; }
+        initBabelInterference();
+        initTVChannelSwitch();
+        initCRTShutdown();
+    }
+
+    // Animate terminal lines
+    lines.forEach((line, i) => {
+        gsap.to(line, {
+            opacity: 1, y: 0, duration: 0.4,
+            delay: 0.3 + i * 0.45,
+            ease: 'power2.out',
+            onComplete: () => { if (i === lines.length - 1) setTimeout(showDashboard, 800); }
+        });
+    });
+    gsap.to(skip, { opacity: 1, delay: 1.5, duration: 0.5 });
+
+    // Click to skip
+    entry.addEventListener('click', showDashboard);
+})();
+
+/* ===== BABEL INTERFERENCE ===== */
+let _babelRAF = 0;
+function initBabelInterference() {
+    const fragments = document.querySelectorAll('.babel-fragment');
+    if (!fragments.length) return;
+
+    function animateBabel() {
+        if (window._getActiveChannel && window._getActiveChannel() !== 3) {
+            _babelRAF = 0;
+            return;
+        }
+        const t = Date.now() * 0.0005;
+        fragments.forEach((frag, i) => {
+            const drift = (i % 2 === 0) ? 30 : -30;
+            const phase = t + i * 0.7;
+            const opacity = Math.max(0, Math.sin(phase * 1.3) * 0.6);
+            frag.style.opacity = Math.max(0, opacity);
+            frag.style.transform = `translateY(${Math.sin(phase) * drift}px) translateX(${Math.sin(phase * 1.5) * 15}px)`;
+        });
+        _babelRAF = requestAnimationFrame(animateBabel);
+    }
+
+    // Start/stop based on channel visibility
+    window._startBabel = function() { if (!_babelRAF) animateBabel(); };
+    window._startBabel();
+}
+
+/* ===== FREQUENCY BARS ===== */
+function initFrequencyBars() {
+    const waves = document.querySelectorAll('.freq-bar-wave');
+    if (!waves.length) return;
+
+    const colors = [
+        { h: 45, s: 100, l: 50 },   // gold - Mandarin
+        { h: 187, s: 100, l: 50 },   // cyan - English
+        { h: 20, s: 100, l: 56 },    // warm - French
+        { h: 151, s: 100, l: 50 },   // green - Italian
+        { h: 350, s: 100, l: 60 },   // red - German
+    ];
+
+    waves.forEach((wave, waveIdx) => {
+        const level = parseInt(wave.dataset.level);
+        const segCount = 40;
+        const c = colors[waveIdx];
+
+        for (let i = 0; i < segCount; i++) {
+            const seg = document.createElement('div');
+            seg.className = 'freq-bar-segment';
+            const filled = (i / segCount) * 100 < level;
+            const baseH = 4 + Math.random() * 20;
+
+            if (filled) {
+                const lightness = c.l + (i / segCount) * 15;
+                seg.style.background = `hsl(${c.h}, ${c.s}%, ${lightness}%)`;
+                seg.style.height = baseH + 'px';
+                seg.style.boxShadow = `0 0 4px hsla(${c.h}, ${c.s}%, ${lightness}%, 0.3)`;
+            } else {
+                seg.style.background = 'rgba(255,255,255,0.04)';
+                seg.style.height = '3px';
+            }
+            wave.appendChild(seg);
+        }
+
+        // Animate bars immediately when channel is shown
+        const segsAnim = wave.querySelectorAll('.freq-bar-segment');
+        segsAnim.forEach((seg, si) => {
+            const filled = (si / segCount) * 100 < level;
+            if (!filled) return;
+            const targetH = 6 + Math.sin(si * 0.5) * 14 + Math.random() * 10;
+            gsap.fromTo(seg,
+                { height: 0, opacity: 0 },
+                {
+                    height: targetH, opacity: 1,
+                    duration: 0.4 + Math.random() * 0.3,
+                    delay: si * 0.015,
+                    ease: 'elastic.out(1, 0.5)'
+                }
+            );
+        });
+
+        // Continuous subtle animation for filled bars (pauses when not on CH-03)
+        let waveRAF = 0;
+        function animateWave() {
+            if (window._getActiveChannel && window._getActiveChannel() !== 3) {
+                waveRAF = 0;
+                return;
+            }
+            const segs = wave.querySelectorAll('.freq-bar-segment');
+            segs.forEach((seg, si) => {
+                const filled = (si / segCount) * 100 < level;
+                if (!filled) return;
+                const t = Date.now() * 0.002;
+                const h = 8 + Math.sin(t + si * 0.3 + waveIdx) * 10 + Math.sin(t * 1.5 + si * 0.5) * 5;
+                seg.style.height = Math.max(3, h) + 'px';
+            });
+            waveRAF = requestAnimationFrame(animateWave);
+        }
+        const startWave = () => { if (!waveRAF) animateWave(); };
+        if (!window._freqStarters) window._freqStarters = [];
+        window._freqStarters.push(startWave);
+        setTimeout(startWave, 2000 + waveIdx * 500);
+    });
+}
+
+/* ===== PASSPORT STAMPS ===== */
+function initPassportStamps() {
+    const stamps = document.querySelectorAll('.stamp');
+    if (!stamps.length) return;
+
+    // Sound effect for stamp
+    function playStampSound(delay) {
+        setTimeout(() => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.015));
+                }
+                const src = ctx.createBufferSource();
+                src.buffer = buffer;
+                const gain = ctx.createGain();
+                gain.gain.value = 0.04;
+                src.connect(gain);
+                gain.connect(ctx.destination);
+                src.start();
+            } catch(e) {}
+        }, delay);
+    }
+
+    // Animate stamps immediately when channel is shown
+    stamps.forEach((stamp, i) => {
+        const delay = i * 280;
+        setTimeout(() => {
+            stamp.classList.add('stamped');
+            stamp.style.transition = 'transform 0.15s cubic-bezier(.17,.67,.24,1.2), opacity 0.1s';
+            playStampSound(0);
+
+            const field = document.getElementById('passportField');
+            if (field) {
+                field.style.transform = `translate(${(Math.random()-0.5)*4}px, ${(Math.random()-0.5)*3}px)`;
+                setTimeout(() => { field.style.transform = 'none'; }, 100);
+            }
+        }, delay);
+    });
+}
+
+/* ===== TV CHANNEL SWITCH + STATIC NOISE ===== */
+let currentChannel = '--';
+
+function updateTVChannel(num, name) {
+    if (num === currentChannel) return;
+    currentChannel = num;
+
+    const chNum = document.getElementById('tvChNum');
+    const chName = document.getElementById('tvChName');
+    const chFlash = document.getElementById('tvChFlash');
+
+    // Flash channel indicator
+    if (chNum) {
+        chNum.classList.add('switching');
+        chNum.textContent = num;
+        setTimeout(() => chNum.classList.remove('switching'), 300);
+    }
+    if (chName) chName.textContent = name;
+
+    // Show channel flash in corner
+    if (chFlash) {
+        chFlash.textContent = `CH-${num}`;
+        chFlash.classList.add('show');
+        setTimeout(() => chFlash.classList.remove('show'), 1200);
+    }
+
+    // Trigger static noise — longer for more dramatic channel switch feel
+    triggerStatic(300);
+}
+
+function triggerStatic(durationMs) {
+    const overlay = document.getElementById('tvStatic');
+    const canvas = document.getElementById('tvStaticCanvas');
+    if (!overlay || !canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = Math.min(window.innerWidth, 600);
+    canvas.height = Math.min(window.innerHeight, 400);
+
+    overlay.classList.add('active');
+    const startTime = performance.now();
+
+    function drawNoise(time) {
+        if (time - startTime > durationMs) {
+            overlay.classList.remove('active');
+            return;
+        }
+        const progress = (time - startTime) / durationMs;
+        const w = canvas.width;
+        const h = canvas.height;
+        const imgData = ctx.createImageData(w, h);
+        const data = imgData.data;
+        // Stronger noise at start, fading out
+        const alpha = (1 - progress) * 180 + 30;
+        for (let i = 0; i < data.length; i += 4) {
+            const v = Math.random() * 255;
+            data[i] = data[i+1] = data[i+2] = v;
+            data[i+3] = Math.random() * alpha;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        requestAnimationFrame(drawNoise);
+    }
+    requestAnimationFrame(drawNoise);
+
+    // Static sound burst
+    try {
+        const actx = new (window.AudioContext || window.webkitAudioContext)();
+        const dur = Math.min(durationMs / 1000, 0.15);
+        const buf = actx.createBuffer(1, actx.sampleRate * dur, actx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (actx.sampleRate * dur * 0.4));
+        }
+        const src = actx.createBufferSource();
+        src.buffer = buf;
+        const gain = actx.createGain();
+        gain.gain.value = 0.03;
+        src.connect(gain);
+        gain.connect(actx.destination);
+        src.start();
+    } catch(e) {}
+}
+
+function initTVChannelSwitch() {
+    // Initial static burst when TV "turns on"
+    setTimeout(() => triggerStatic(350), 100);
+
+    const channels = document.querySelectorAll('.tv-channel');
+    const navDots = document.querySelectorAll('.channel-nav-dot');
+    const channelNav = document.getElementById('channelNav');
+    const totalChannels = channels.length;
+    let activeIdx = 0;
+    let switching = false;
+    const SWITCH_COOLDOWN = 600; // ms
+
+    const chLabels = ['PROFILE', 'PROFILE', 'NETWORK', 'BABEL PROTOCOL', 'PASSPORT CONTROL', 'COMM PROTOCOL', 'DATA READOUT', 'DOSSIER', 'NEXT SIGNAL'];
+    const chNums = ['01', '01', '02', '03', '04', '05', '06', '07', '08'];
+
+    // Show first channel
+    channels[0].classList.add('active');
+    navDots[0].classList.add('active');
+    if (channelNav) channelNav.style.opacity = '1';
+
+    function switchTo(idx, direction) {
+        if (idx < 0 || idx >= totalChannels || idx === activeIdx || switching) return;
+        switching = true;
+
+        const from = channels[activeIdx];
+        const to = channels[idx];
+        const dir = direction || (idx > activeIdx ? 1 : -1);
+
+        // Update nav dots
+        navDots[activeIdx].classList.remove('active');
+        navDots[idx].classList.add('active');
+
+        // Update TV channel display
+        updateTVChannel(chNums[idx], chLabels[idx]);
+
+        // Animate transition
+        to.classList.add('active');
+        to.style.opacity = '0';
+
+        // Quick fade out current, fade in next
+        gsap.to(from, {
+            opacity: 0, duration: 0.25, ease: 'power2.in',
+            onComplete: () => { from.classList.remove('active'); }
+        });
+        gsap.fromTo(to,
+            { opacity: 0 },
+            { opacity: 1, duration: 0.35, delay: 0.15, ease: 'power2.out',
+              onComplete: () => {
+                  // Reset scroll position inside channel
+                  to.scrollTop = 0;
+                  setTimeout(() => { switching = false; }, SWITCH_COOLDOWN - 400);
+              }
+            }
+        );
+
+        // Trigger per-channel animations
+        triggerChannelAnimations(idx);
+
+        // Restart paused rAF loops for the target channel
+        if (idx === 2 && window._startGlobe) window._startGlobe();
+        if (idx === 3) {
+            if (window._startBabel) window._startBabel();
+            if (window._freqStarters) window._freqStarters.forEach(fn => fn());
+        }
+
+        activeIdx = idx;
+
+        // Update scroll progress bar
+        const progress = idx / (totalChannels - 1);
+        gsap.to('#scrollProgress', { scaleX: progress, duration: 0.4, ease: 'power2.out' });
+    }
+
+    // Wheel event — scroll within channel, switch when at boundary
+    let wheelAccum = 0;
+    const WHEEL_THRESHOLD = 60;
+    const BOUNDARY_TOLERANCE = 2; // px tolerance for scroll boundary detection
+
+    function isAtTop(el) {
+        return el.scrollTop <= BOUNDARY_TOLERANCE;
+    }
+    function isAtBottom(el) {
+        return el.scrollTop + el.clientHeight >= el.scrollHeight - BOUNDARY_TOLERANCE;
+    }
+    function isScrollable(el) {
+        return el.scrollHeight > el.clientHeight + BOUNDARY_TOLERANCE;
+    }
+
+    document.addEventListener('wheel', (e) => {
+        if (switching || window._crtFired) return;
+
+        const ch = channels[activeIdx];
+        const scrollingDown = e.deltaY > 0;
+        const scrollingUp = e.deltaY < 0;
+
+        // If channel has scrollable content and we're NOT at the boundary, let it scroll naturally
+        if (isScrollable(ch)) {
+            if (scrollingDown && !isAtBottom(ch)) {
+                wheelAccum = 0;
+                return; // let native scroll happen
+            }
+            if (scrollingUp && !isAtTop(ch)) {
+                wheelAccum = 0;
+                return; // let native scroll happen
+            }
+        }
+
+        // At boundary or non-scrollable — accumulate for channel switch
+        e.preventDefault();
+        wheelAccum += e.deltaY;
+
+        if (Math.abs(wheelAccum) >= WHEEL_THRESHOLD) {
+            if (wheelAccum > 0) {
+                if (activeIdx === totalChannels - 1) {
+                    if (!window._crtFired && typeof window._playCRTShutdown === 'function') {
+                        window._crtFired = true;
+                        window._playCRTShutdown();
+                    }
+                } else {
+                    switchTo(activeIdx + 1, 1);
+                }
+            } else {
+                switchTo(activeIdx - 1, -1);
+            }
+            wheelAccum = 0;
+        }
+    }, { passive: false });
+
+    // Touch support for mobile
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let touchStartScrollTop = 0;
+    document.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        touchStartScrollTop = channels[activeIdx].scrollTop;
+    }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+        if (switching || window._crtFired) return;
+        const deltaY = touchStartY - e.changedTouches[0].clientY;
+        const elapsed = Date.now() - touchStartTime;
+        const ch = channels[activeIdx];
+
+        // If channel scrolled during this touch, don't switch
+        if (Math.abs(ch.scrollTop - touchStartScrollTop) > 5) return;
+
+        // Require a meaningful swipe (> 40px in < 500ms)
+        if (Math.abs(deltaY) > 40 && elapsed < 500) {
+            const swipingDown = deltaY > 0;
+            // Only switch if at boundary
+            if (swipingDown && (!isScrollable(ch) || isAtBottom(ch))) {
+                if (activeIdx === totalChannels - 1) {
+                    if (!window._crtFired && typeof window._playCRTShutdown === 'function') {
+                        window._crtFired = true;
+                        window._playCRTShutdown();
+                    }
+                } else {
+                    switchTo(activeIdx + 1, 1);
+                }
+            } else if (!swipingDown && (!isScrollable(ch) || isAtTop(ch))) {
+                switchTo(activeIdx - 1, -1);
+            }
+        }
+    }, { passive: true });
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+        if (switching || window._crtFired) return;
+        const ch = channels[activeIdx];
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+            // If scrollable and not at bottom, let it scroll
+            if (isScrollable(ch) && !isAtBottom(ch)) return;
+            e.preventDefault();
+            if (activeIdx === totalChannels - 1) {
+                if (!window._crtFired && typeof window._playCRTShutdown === 'function') {
+                    window._crtFired = true;
+                    window._playCRTShutdown();
+                }
+            } else {
+                switchTo(activeIdx + 1, 1);
+            }
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+            if (isScrollable(ch) && !isAtTop(ch)) return;
+            e.preventDefault();
+            switchTo(activeIdx - 1, -1);
+        }
+    });
+
+    // Nav dot click handlers
+    navDots.forEach(dot => {
+        dot.addEventListener('click', () => {
+            const target = parseInt(dot.dataset.ch);
+            if (target !== activeIdx && !switching && !window._crtFired) {
+                switchTo(target);
+            }
+        });
+    });
+
+    // Per-channel animation triggers (replaces ScrollTrigger-based ones)
+    const channelAnimated = new Set();
+    function triggerChannelAnimations(idx) {
+        if (channelAnimated.has(idx)) return;
+        channelAnimated.add(idx);
+
+        const ch = channels[idx];
+
+        // Reveal animations inside this channel
+        ch.querySelectorAll('.reveal').forEach((el, i) => {
+            gsap.to(el, { opacity: 1, y: 0, duration: 0.8, delay: i * 0.1, ease: 'power3.out' });
+        });
+
+        // Counter animations
+        ch.querySelectorAll('[data-count]').forEach(el => {
+            const target = parseInt(el.dataset.count);
+            const obj = { val: 0 };
+            gsap.to(obj, {
+                val: target, duration: 2, ease: 'power2.out',
+                onUpdate: () => { el.textContent = Math.round(obj.val); }
+            });
+        });
+
+        // Channel-specific animations
+        if (idx === 2 && window.initGlobe) window.initGlobe(); // Globe
+        if (idx === 3) initFrequencyBars(); // Babel frequency bars
+        if (idx === 4) initPassportStamps(); // Passport stamps
+
+        // EKG animation for Signal Lost (now idx 8)
+        if (idx === 8) {
+            const ekgPath = document.getElementById('ekgPath');
+            if (ekgPath) {
+                const ekgLen = ekgPath.getTotalLength();
+                ekgPath.style.strokeDasharray = ekgLen;
+                ekgPath.style.strokeDashoffset = ekgLen;
+                gsap.to(ekgPath, { strokeDashoffset: 0, duration: 2.5, ease: 'none' });
+            }
+        }
+
+        // Highlight cards
+        if (idx === 6) {
+            ch.querySelectorAll('.hl-card').forEach((card, i) => {
+                gsap.to(card, { opacity: 1, y: 0, duration: 0.6, delay: i * 0.1, ease: 'power3.out' });
+            });
+        }
+
+        // Dossier cards + journey timeline (merged journey + operations at idx 7)
+        if (idx === 7) {
+            ch.querySelectorAll('.dossier-card').forEach((card, i) => {
+                gsap.to(card, { opacity: 1, y: 0, duration: 0.6, delay: i * 0.15, ease: 'power3.out' });
+            });
+            ch.querySelectorAll('.jt-item').forEach((item, i) => {
+                gsap.to(item, { opacity: 1, y: 0, duration: 0.5, delay: 0.5 + i * 0.12, ease: 'power3.out' });
+            });
+        }
+
+        // Transmission text
+        if (idx === 1) {
+            const txText = document.getElementById('transmissionText');
+            if (txText) gsap.fromTo(txText, { opacity: 0.15 }, { opacity: 1, duration: 1.5, ease: 'power2.out' });
+        }
+    }
+
+    // Trigger animations for first channel immediately
+    triggerChannelAnimations(0);
+
+    // Expose for external use
+    window._channelSwitch = switchTo;
+    window._getActiveChannel = () => activeIdx;
+}
+
+/* ===== CRT SHUTDOWN ===== */
+function initCRTShutdown() {
+    const shutdown = document.getElementById('crtShutdown');
+    const crtLine = document.getElementById('crtLine');
+    const crtDot = document.getElementById('crtDot');
+    const crtContact = document.getElementById('crtContact');
+    if (!shutdown) return;
+
+    // CRT shutdown triggered when user reaches last channel (CH-10)
+    // Called from updateTVChannel when channel 10 is detected
+    window._crtFired = false;
+    window._playCRTShutdown = playCRTShutdown;
+
+    function playCRTShutdown() {
+        shutdown.classList.add('active');
+        shutdown.style.opacity = '1';
+
+        const tl = gsap.timeline();
+
+        // Phase 1: Screen content fades to white flash
+        tl.to('#dashboard', { opacity: 0, duration: 0.15 })
+          // Phase 2: White flash
+          .set('.crt-shutdown-bg', { background: '#fff' })
+          .to('.crt-shutdown-bg', { background: '#000', duration: 0.2 })
+          // Phase 3: Horizontal line appears
+          .to(crtLine, { opacity: 1, duration: 0.1 }, '+=0.1')
+          // Phase 4: Line shrinks to dot
+          .to(crtLine, { left: '49.8%', right: '49.8%', duration: 0.5, ease: 'power2.in' })
+          .to(crtLine, { opacity: 0, duration: 0.1 })
+          .set(crtDot, { opacity: 1 })
+          // Phase 5: Dot fades
+          .to(crtDot, { opacity: 0, scale: 0.5, duration: 0.8, ease: 'power2.out' }, '+=0.3')
+          // Phase 6: Contact info fades in
+          .to(crtContact, { opacity: 1, duration: 1.2, ease: 'power2.out' }, '+=0.5');
+
+        // Hide TV frame bezels
+        tl.to('.tv-frame', { opacity: 0, duration: 0.8 }, '-=1.5');
+        tl.to('.scanlines', { opacity: 0, duration: 0.3 }, 0);
+        tl.to('.tv-screen-curve', { opacity: 0, duration: 0.3 }, 0);
+        tl.to('#scrollProgress', { opacity: 0, duration: 0.3 }, 0);
+        tl.to('#channelNav', { opacity: 0, duration: 0.3 }, 0);
+
+        // Play CRT shutdown sound
+        try {
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            // Descending tone
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.connect(gain); gain.connect(actx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, actx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(60, actx.currentTime + 0.6);
+            gain.gain.setValueAtTime(0.06, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.8);
+            osc.start(); osc.stop(actx.currentTime + 0.8);
+        } catch(e) {}
+    }
+}
+
+/* ===== RETUNE TV (restart from CH-01) ===== */
+function retuneTV() {
+    const shutdown = document.getElementById('crtShutdown');
+    const dashboard = document.getElementById('dashboard');
+    const crtContact = document.getElementById('crtContact');
+    const crtLine = document.getElementById('crtLine');
+    const crtDot = document.getElementById('crtDot');
+
+    // Reset CRT state
+    window._crtFired = false;
+
+    // Static burst for "powering on" effect
+    const tl = gsap.timeline();
+
+    tl.to(crtContact, { opacity: 0, duration: 0.3 })
+      .set('.crt-shutdown-bg', { background: '#fff' })
+      .to('.crt-shutdown-bg', { background: '#000', duration: 0.15 })
+      .set(crtLine, { opacity: 0, left: '5%', right: '5%' })
+      .set(crtDot, { opacity: 0, scale: 1 })
+      .call(() => {
+          // Remove active class and force hide CRT overlay
+          shutdown.classList.remove('active');
+          shutdown.style.opacity = '0';
+          shutdown.style.pointerEvents = 'none';
+
+          // Restore dashboard
+          gsap.set(dashboard, { opacity: 1 });
+
+          // Show TV frame elements again
+          gsap.to('.tv-frame', { opacity: 1, duration: 0.4 });
+          gsap.to('.scanlines', { opacity: 1, duration: 0.3 });
+          gsap.to('.tv-screen-curve', { opacity: 1, duration: 0.3 });
+          gsap.to('#scrollProgress', { opacity: 1, duration: 0.3 });
+          gsap.to('#channelNav', { opacity: 1, duration: 0.3 });
+
+          // Switch back to CH-01 (index 0)
+          if (window._channelSwitch) {
+              window._channelSwitch(0);
+          }
+
+          // Trigger static for "turning back on" effect
+          setTimeout(() => triggerStatic(400), 100);
+      });
+}
+
+/* ===== STAR FIELD BACKGROUND ===== */
+(() => {
+    const canvas = document.getElementById('starField');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    let w, h;
+
+    function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+    }
+
+    function createStars() {
+        stars = [];
+        const count = Math.floor((w * h) / 8000);
+        for (let i = 0; i < count; i++) {
+            stars.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                r: Math.random() * 1.2 + 0.3,
+                a: Math.random() * 0.6 + 0.1,
+                speed: Math.random() * 0.0008 + 0.0003,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+    }
+
+    let starRAF = 0;
+    function drawStars(time) {
+        if (document.hidden) { starRAF = 0; return; }
+        ctx.clearRect(0, 0, w, h);
+        stars.forEach(s => {
+            const flicker = Math.sin(time * s.speed * 1000 + s.phase) * 0.3 + 0.7;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 229, 255, ${s.a * flicker})`;
+            ctx.fill();
+        });
+        starRAF = requestAnimationFrame(drawStars);
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !starRAF) starRAF = requestAnimationFrame(drawStars);
+    });
+
+    resize();
+    createStars();
+    starRAF = requestAnimationFrame(drawStars);
+    window.addEventListener('resize', () => { resize(); createStars(); });
+})();
+
+/* ===== THREE.JS 3D GLOBE ===== */
+window.initGlobe = function() {
+    const container = document.getElementById('globeWrap');
+    const canvas = document.getElementById('globeCanvas');
+    if (!canvas || !container || !window.THREE) return;
+
+    const W = container.clientWidth;
+    const H = container.clientHeight;
+    const GLOBE_RADIUS = Math.min(W, H) * 0.32;
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, W / H, 1, 2000);
+    camera.position.z = GLOBE_RADIUS * 3.2;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Globe group
+    const globeGroup = new THREE.Group();
+    scene.add(globeGroup);
+
+    // --- Wireframe sphere (lat/lon grid) ---
+    const latLines = 12;
+    const lonLines = 24;
+    const gridMat = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.18 });
+
+    // Latitude lines
+    for (let i = 1; i < latLines; i++) {
+        const phi = (i / latLines) * Math.PI;
+        const r = GLOBE_RADIUS * Math.sin(phi);
+        const y = GLOBE_RADIUS * Math.cos(phi);
+        const curve = new THREE.EllipseCurve(0, 0, r, r, 0, Math.PI * 2, false, 0);
+        const pts2d = curve.getPoints(64);
+        const pts3d = pts2d.map(p => new THREE.Vector3(p.x, y, p.y));
+        const geo = new THREE.BufferGeometry().setFromPoints(pts3d);
+        globeGroup.add(new THREE.Line(geo, gridMat));
+    }
+
+    // Longitude lines
+    for (let i = 0; i < lonLines; i++) {
+        const theta = (i / lonLines) * Math.PI * 2;
+        const pts = [];
+        for (let j = 0; j <= 64; j++) {
+            const phi = (j / 64) * Math.PI;
+            pts.push(new THREE.Vector3(
+                GLOBE_RADIUS * Math.sin(phi) * Math.cos(theta),
+                GLOBE_RADIUS * Math.cos(phi),
+                GLOBE_RADIUS * Math.sin(phi) * Math.sin(theta)
+            ));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        globeGroup.add(new THREE.Line(geo, gridMat));
+    }
+
+    // --- Atmosphere glow ---
+    const glowGeo = new THREE.SphereGeometry(GLOBE_RADIUS * 1.15, 32, 32);
+    const glowMat = new THREE.ShaderMaterial({
+        vertexShader: `
+            varying vec3 vNormal;
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vNormal;
+            void main() {
+                float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0);
+                gl_FragColor = vec4(0.0, 0.9, 1.0, 1.0) * intensity * 0.18;
+            }
+        `,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        transparent: true
+    });
+    globeGroup.add(new THREE.Mesh(glowGeo, glowMat));
+
+    // --- City markers ---
+    const cities = [
+        { name: 'Taipei',   lat: 25.03,  lon: 121.56, origin: true },
+        { name: 'Ohio',     lat: 40.81,  lon: -81.94 },
+        { name: 'Paris',    lat: 48.86,  lon: 2.35 },
+        { name: 'Turin',    lat: 45.07,  lon: 7.69 },
+        { name: 'Berlin',   lat: 52.52,  lon: 13.41 },
+        { name: 'London',   lat: 51.51,  lon: -0.13 },
+        { name: 'Shanghai', lat: 31.23,  lon: 121.47 }
+    ];
+
+    function latLonToVec3(lat, lon, r) {
+        const phi = (90 - lat) * (Math.PI / 180);
+        const theta = (lon + 180) * (Math.PI / 180);
+        return new THREE.Vector3(
+            -r * Math.sin(phi) * Math.cos(theta),
+             r * Math.cos(phi),
+             r * Math.sin(phi) * Math.sin(theta)
+        );
+    }
+
+    const cityPositions = [];
+    cities.forEach(city => {
+        const pos = latLonToVec3(city.lat, city.lon, GLOBE_RADIUS);
+        cityPositions.push(pos);
+
+        // Dot
+        const dotGeo = new THREE.SphereGeometry(GLOBE_RADIUS * 0.015, 8, 8);
+        const dotMat = new THREE.MeshBasicMaterial({ color: city.origin ? 0xffd700 : 0xff6b35 });
+        const dot = new THREE.Mesh(dotGeo, dotMat);
+        dot.position.copy(pos);
+        globeGroup.add(dot);
+
+        // Ping ring
+        const ringGeo = new THREE.RingGeometry(GLOBE_RADIUS * 0.02, GLOBE_RADIUS * 0.035, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: city.origin ? 0xffd700 : 0xff6b35,
+            transparent: true, opacity: 0.6, side: THREE.DoubleSide
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.copy(pos);
+        ring.lookAt(new THREE.Vector3(0, 0, 0));
+        ring.userData = { baseScale: 1, phase: Math.random() * Math.PI * 2 };
+        globeGroup.add(ring);
+    });
+
+    // --- Flight arcs ---
+    const routes = [
+        [0, 1], // Taipei → Ohio
+        [1, 2], // Ohio → Paris
+        [2, 3], // Paris → Turin
+        [3, 4], // Turin → Berlin
+        [4, 5], // Berlin → London
+        [5, 6], // London → Shanghai
+    ];
+
+    const arcColors = [0x00e5ff, 0x00e5ff, 0xff6b35, 0xffd700, 0x00e5ff, 0xff6b35];
+    const arcs = [];
+    const particles = [];
+
+    routes.forEach(([fromIdx, toIdx], routeI) => {
+        const from = cityPositions[fromIdx];
+        const to = cityPositions[toIdx];
+
+        // Calculate arc midpoint elevated above globe surface
+        const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5);
+        const dist = from.distanceTo(to);
+        const elevation = GLOBE_RADIUS + dist * 0.35;
+        mid.normalize().multiplyScalar(elevation);
+
+        // Quadratic bezier curve
+        const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
+        const pts = curve.getPoints(64);
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({
+            color: arcColors[routeI],
+            transparent: true, opacity: 0
+        });
+        const line = new THREE.Line(geo, mat);
+        globeGroup.add(line);
+        arcs.push({ line, mat, curve, progress: 0 });
+
+        // Traveling particle
+        const pGeo = new THREE.SphereGeometry(GLOBE_RADIUS * 0.012, 6, 6);
+        const pMat = new THREE.MeshBasicMaterial({
+            color: arcColors[routeI], transparent: true, opacity: 0
+        });
+        const particle = new THREE.Mesh(pGeo, pMat);
+        globeGroup.add(particle);
+        particles.push({ mesh: particle, mat: pMat, curve, delay: routeI * 0.4 });
+    });
+
+    // --- Entrance animation: arcs draw in ---
+    arcs.forEach((arc, i) => {
+        gsap.to(arc.mat, {
+            opacity: 0.6, duration: 1.2,
+            delay: 0.5 + i * 0.3,
+            ease: 'power2.out'
+        });
+    });
+    particles.forEach((p, i) => {
+        gsap.to(p.mat, {
+            opacity: 1, duration: 0.5,
+            delay: 1.0 + i * 0.3
+        });
+    });
+
+    // --- Mouse interaction ---
+    let mouseX = 0, mouseY = 0;
+    let targetRotY = 0, targetRotX = 0;
+
+    container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        mouseX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+        mouseY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+    });
+
+    // Initial rotation to show Asia (Taipei faces camera)
+    globeGroup.rotation.y = -2.1;
+
+    // --- Animation loop (pauses when not on CH-02) ---
+    const clock = new THREE.Clock();
+    let globeRAF = 0;
+
+    function animate() {
+        if (window._getActiveChannel && window._getActiveChannel() !== 2) {
+            globeRAF = 0;
+            clock.stop();
+            return;
+        }
+        if (!clock.running) clock.start();
+        globeRAF = requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+
+        // Auto rotate + mouse influence
+        targetRotY = t * 0.08 + mouseX * 0.4;
+        targetRotX = mouseY * 0.15;
+        globeGroup.rotation.y += (targetRotY - globeGroup.rotation.y) * 0.02;
+        globeGroup.rotation.x += (targetRotX - globeGroup.rotation.x) * 0.02;
+
+        // Animate ping rings
+        globeGroup.children.forEach(child => {
+            if (child.userData && child.userData.baseScale !== undefined) {
+                const s = 1 + Math.sin(t * 2 + child.userData.phase) * 0.5;
+                child.scale.set(s, s, s);
+                child.material.opacity = 0.6 * (1 - (s - 1));
+            }
+        });
+
+        // Animate traveling particles
+        particles.forEach(p => {
+            if (p.mat.opacity < 0.1) return;
+            const progress = ((t - p.delay) * 0.15) % 1;
+            if (progress < 0) return;
+            const pos = p.curve.getPoint(progress);
+            p.mesh.position.copy(pos);
+            // Pulse effect
+            const pulse = Math.sin(t * 4) * 0.3 + 0.7;
+            p.mesh.scale.set(pulse, pulse, pulse);
+        });
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // Handle resize
+    function onResize() {
+        const newW = container.clientWidth;
+        const newH = container.clientHeight;
+        camera.aspect = newW / newH;
+        camera.updateProjectionMatrix();
+        renderer.setSize(newW, newH);
+    }
+    window.addEventListener('resize', onResize);
+
+    // Expose restart function
+    window._startGlobe = function() { if (!globeRAF) animate(); };
+};
+</script>
+
+</body>
+</html>
