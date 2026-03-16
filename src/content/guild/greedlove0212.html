@@ -1,0 +1,1134 @@
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GREEDLOVE — The Infinite Classroom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Fredoka:wght@400;500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        :root {
+            --cream: #fef9f0;
+            --peach: #ffd6c0;
+            --pink: #ffb5c2;
+
+            --mint: #c5e8d5;
+            --sky: #b8dff0;
+            --lavender: #d4c5f0;
+            --lemon: #fff3b0;
+
+            --brown-light: #8a6d5e;
+            --text: #4a3728;
+            --text-light: #8a7568;
+            --accent: #e06b80;
+            --blue-accent: #5da5d4;
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html{scroll-behavior:smooth}
+        body{
+            font-family:'Fredoka','Noto Sans TC',sans-serif;
+            color:var(--text);
+            background:var(--cream);
+            overflow-x:hidden;
+        }
+
+        /* ===== FLOATING MATH ELEMENTS (p5.js canvas) ===== */
+        #math-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+        /* ===== PASTEL WATERCOLOR SECTIONS ===== */
+        .wc-section{
+            position:relative;z-index:1;
+            overflow:hidden;
+        }
+        .wc-section::before{
+            content:'';position:absolute;inset:0;
+            opacity:0.4;pointer-events:none;
+            background:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.4' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+        }
+
+        /* ===== COMIC PANEL FRAME ===== */
+        .comic-panel{
+            background:#fff;
+            border:3px solid var(--text);
+            border-radius:12px;
+            box-shadow:4px 4px 0 rgba(0,0,0,0.08);
+            overflow:hidden;
+            position:relative;
+        }
+        .comic-panel img{width:100%;display:block}
+
+        /* ===== SPEECH BUBBLE ===== */
+        .bubble{
+            background:#fff;
+            border:2.5px solid var(--text);
+            border-radius:20px;
+            padding:0.8rem 1.2rem;
+            position:relative;
+            display:inline-block;
+            font-family:'Patrick Hand','Caveat',cursive;
+            font-size:1.1rem;
+            line-height:1.6;
+            color:var(--text);
+        }
+        .bubble::after{
+            content:'';position:absolute;bottom:-12px;left:30px;
+            width:0;height:0;
+            border-left:12px solid transparent;
+            border-right:12px solid transparent;
+            border-top:14px solid var(--text);
+        }
+        .bubble::before{
+            content:'';position:absolute;bottom:-8px;left:32px;
+            width:0;height:0;
+            border-left:10px solid transparent;
+            border-right:10px solid transparent;
+            border-top:12px solid #fff;
+            z-index:1;
+        }
+        .bubble.right::after{left:auto;right:30px}
+        .bubble.right::before{left:auto;right:32px}
+
+        /* ===== GATE ===== */
+        .gate{
+            position:fixed;inset:0;z-index:9999;
+            background:linear-gradient(135deg,var(--peach),var(--lemon),var(--mint),var(--sky),var(--lavender));
+            background-size:400% 400%;
+            animation:gateGrad 6s ease infinite;
+            display:flex;align-items:center;justify-content:center;
+            cursor:pointer;
+        }
+        @keyframes gateGrad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .gate-card{
+            background:#fff;border:3px solid var(--text);border-radius:20px;
+            padding:2.5rem;text-align:center;max-width:420px;
+            box-shadow:6px 6px 0 rgba(0,0,0,0.1);
+            position:relative;
+        }
+        .gate-card .deco-star{position:absolute;color:var(--lemon);opacity:0.6}
+        .gate-title{font-family:'Caveat',cursive;font-size:2.5rem;font-weight:700;color:var(--text);opacity:0}
+        .gate-sub{font-family:'Patrick Hand',cursive;font-size:1rem;color:var(--accent);margin-top:0.5rem;opacity:0}
+        .gate-hint{font-size:0.8rem;color:var(--text-light);margin-top:1.5rem;opacity:0}
+
+        /* ===== NAV ===== */
+        .back-nav{
+            position:fixed;top:1rem;left:1rem;z-index:60;
+            text-decoration:none;color:var(--text-light);
+            font-family:'Patrick Hand',cursive;font-size:0.9rem;
+            background:rgba(255,255,255,0.7);backdrop-filter:blur(6px);
+            padding:0.4rem 0.8rem;border-radius:20px;border:2px solid rgba(0,0,0,0.08);
+            transition:all 0.3s;
+        }
+        .back-nav:hover{color:var(--accent);border-color:var(--accent)}
+
+        /* ===== HERO ===== */
+        .hero{
+            min-height:100vh;
+            background:linear-gradient(180deg,
+                rgba(255,214,192,0.4) 0%,
+                rgba(197,232,213,0.3) 30%,
+                rgba(184,223,240,0.3) 60%,
+                rgba(254,249,240,1) 100%);
+            display:flex;align-items:center;justify-content:center;
+            text-align:center;padding:2rem;
+            position:relative;z-index:1;
+        }
+        #fish-canvas{
+            position:absolute;inset:0;z-index:0;pointer-events:none;
+        }
+        .hero-inner{max-width:700px;position:relative;z-index:1}
+        .hero-badge{
+            display:inline-flex;align-items:center;gap:0.5rem;
+            background:var(--lemon);color:var(--text);
+            padding:0.3rem 1rem;border-radius:20px;
+            font-size:0.75rem;font-weight:600;
+            border:2px solid rgba(0,0,0,0.08);
+            margin-bottom:1rem;
+        }
+        .hero-name{
+            font-family:'Caveat',cursive;font-size:clamp(3.5rem,12vw,8rem);
+            font-weight:700;color:var(--text);line-height:0.95;
+            letter-spacing:-0.02em;
+        }
+        .hero-name .fish-icon{color:var(--blue-accent);font-size:0.7em}
+        .hero-tagline{
+            font-family:'Patrick Hand',cursive;
+            font-size:clamp(1rem,2.5vw,1.4rem);
+            color:var(--text-light);margin-top:0.8rem;line-height:1.6;
+        }
+        .hero-tags{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem}
+        .htag{
+            padding:0.3rem 0.8rem;border-radius:20px;font-size:0.75rem;font-weight:600;
+            display:flex;align-items:center;gap:0.3rem;
+            border:2px solid;
+        }
+        .htag.t1{background:rgba(255,181,194,0.2);border-color:var(--pink);color:var(--accent)}
+        .htag.t2{background:rgba(184,223,240,0.2);border-color:var(--sky);color:var(--blue-accent)}
+        .htag.t3{background:rgba(197,232,213,0.2);border-color:var(--mint);color:#4a8a6a}
+        .htag.t4{background:rgba(212,197,240,0.2);border-color:var(--lavender);color:#7a5ea0}
+        .scroll-hint{
+            position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+            color:var(--text-light);font-size:0.8rem;
+            font-family:'Patrick Hand',cursive;
+            animation:bounce 2s ease-in-out infinite;
+        }
+        @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}
+
+        /* ===== MATH DIVIDERS ===== */
+        .math-divider{
+            position:relative;z-index:1;
+            padding:1rem 0;overflow:visible;
+            max-width:900px;margin:0 auto;
+        }
+        .math-divider svg{
+            display:block;width:100%;height:80px;
+            overflow:visible;
+        }
+        .math-divider path.md-path{
+            fill:none;stroke-width:2.5;stroke-linecap:round;
+        }
+        .math-divider .axis-label{
+            font-family:'Caveat',cursive;font-size:11px;
+            fill:var(--brown-light);opacity:0.6;
+        }
+        /* tiny axis ticks on dividers */
+        .math-divider .axis-line{
+            stroke:var(--text-light);stroke-width:0.5;opacity:0.15;
+        }
+
+        /* ===== SCROLL-DRAWN GEOMETRY ===== */
+        .geo-deco{
+            position:relative;pointer-events:none;z-index:1;
+            margin:0 auto;max-width:900px;height:0;
+        }
+        .geo-deco-inner{position:absolute}
+        .geo-deco svg{overflow:visible}
+        .geo-deco path, .geo-deco circle, .geo-deco line, .geo-deco polyline{
+            fill:none;stroke-linecap:round;stroke-linejoin:round;
+        }
+
+        /* ===== GRID PAPER BACKGROUND ===== */
+        .grid-paper{
+            background-image:
+                linear-gradient(rgba(93,165,212,0.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(93,165,212,0.12) 1px, transparent 1px);
+            background-size:28px 28px;
+        }
+
+        /* ===== CHAPTER HEADERS ===== */
+        .ch-header{
+            text-align:center;padding:4rem 2rem 2rem;
+            position:relative;z-index:1;
+        }
+        .ch-num{
+            font-family:'Caveat',cursive;font-size:0.8rem;
+            color:var(--accent);letter-spacing:0.2em;font-weight:700;
+            margin-bottom:0.3rem;
+        }
+        .ch-title{
+            font-family:'Caveat',cursive;font-size:clamp(2rem,5vw,3rem);
+            font-weight:700;color:var(--text);line-height:1.2;
+        }
+        .ch-desc{
+            font-family:'Patrick Hand',cursive;font-size:1rem;
+            color:var(--text-light);margin-top:0.5rem;max-width:500px;margin-inline:auto;
+        }
+
+        /* ===== ABOUT ===== */
+        .about-section{
+            padding:0 2rem 4rem;position:relative;z-index:1;
+        }
+        .about-card{
+            max-width:850px;margin:0 auto;
+            background:#fff;border:3px solid var(--text);border-radius:20px;
+            padding:2.5rem;display:grid;grid-template-columns:auto 1fr;gap:2rem;
+            box-shadow:5px 5px 0 rgba(0,0,0,0.06);
+            align-items:center;
+        }
+        .about-avatar{
+            width:150px;height:150px;border-radius:50%;
+            background:linear-gradient(135deg,var(--peach),var(--pink));
+            display:flex;align-items:center;justify-content:center;
+            font-size:4rem;color:#fff;
+            border:3px solid var(--text);
+            box-shadow:3px 3px 0 rgba(0,0,0,0.08);
+        }
+        .about-body p{font-size:0.95rem;line-height:2;color:var(--text);margin-bottom:0.6rem}
+        .about-body h2{font-family:'Caveat',cursive;font-size:2rem;font-weight:700;color:var(--accent);margin-bottom:0.8rem}
+
+        /* ===== MEME GALLERY ===== */
+        .gallery-section{
+            padding:0 2rem 4rem;position:relative;z-index:1;
+        }
+        .gallery-bg{
+            background:linear-gradient(135deg,
+                rgba(212,197,240,0.15),rgba(255,181,194,0.15),
+                rgba(255,243,176,0.15),rgba(197,232,213,0.15));
+            border-radius:24px;max-width:1100px;margin:0 auto;padding:2rem;
+        }
+        .gallery-grid{
+            display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+            gap:1rem;
+        }
+        .g-card{
+            background:#fff;border:3px solid var(--text);border-radius:14px;
+            overflow:hidden;transition:all 0.3s;cursor:pointer;
+        }
+        .g-card:hover{transform:translateY(-6px) rotate(-1deg);box-shadow:6px 8px 0 rgba(0,0,0,0.1)}
+        .g-card img{width:100%;height:240px;object-fit:cover;display:block;border-bottom:3px solid var(--text)}
+        .g-card-info{padding:0.6rem 0.8rem}
+        .g-card-title{font-family:'Caveat',cursive;font-size:1.1rem;font-weight:700;color:var(--text)}
+        .g-card-tag{
+            display:inline-block;padding:0.1rem 0.5rem;border-radius:10px;
+            font-size:0.6rem;font-weight:600;margin-top:0.2rem;
+        }
+        .g-card-tag.bio{background:rgba(197,232,213,0.4);color:#4a8a6a}
+        .g-card-tag.math{background:rgba(184,223,240,0.4);color:var(--blue-accent)}
+
+        /* ===== LOVE STORY — INTERACTIVE COMIC ===== */
+        .love-section{
+            padding:0 2rem 4rem;position:relative;z-index:1;
+        }
+        .love-bg{
+            background:linear-gradient(180deg,rgba(255,181,194,0.1),rgba(255,214,192,0.15));
+            border-radius:24px;max-width:1000px;margin:0 auto;padding:2.5rem;
+        }
+        .comic-row{
+            display:grid;gap:1rem;margin-bottom:1rem;
+        }
+        .comic-row.r2{grid-template-columns:1fr 1fr}
+        .comic-row.r3{grid-template-columns:1fr 1fr 1fr}
+        .comic-row.r1{grid-template-columns:1fr}
+        .love-narration{
+            text-align:center;margin-top:2rem;
+            font-family:'Patrick Hand',cursive;font-size:1.1rem;
+            color:var(--text-light);line-height:2;
+        }
+        .love-narration .heart{color:var(--accent);font-size:1.3rem}
+        /* SFX text */
+        .sfx{
+            font-family:'Caveat',cursive;font-weight:700;
+            color:var(--accent);text-align:center;
+            font-size:clamp(1.5rem,4vw,2.5rem);
+            margin:1rem 0;
+            animation:sfxPulse 2s ease-in-out infinite;
+        }
+        @keyframes sfxPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+        /* ===== CAREER SECTION ===== */
+        .career-section{padding:0 2rem 4rem;position:relative;z-index:1}
+        .career-grid{
+            display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+            gap:1rem;max-width:900px;margin:0 auto;
+        }
+        .c-card{
+            background:#fff;border:3px solid var(--text);border-radius:16px;
+            padding:1.5rem;text-align:center;transition:all 0.3s;
+            box-shadow:3px 3px 0 rgba(0,0,0,0.06);
+        }
+        .c-card:hover{transform:translateY(-4px) rotate(1deg);box-shadow:5px 6px 0 rgba(0,0,0,0.1)}
+        .c-card i{font-size:2rem;margin-bottom:0.5rem;display:block}
+        .c-card h3{font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;margin-bottom:0.2rem}
+        .c-card p{font-size:0.75rem;color:var(--text-light);line-height:1.5}
+
+        /* ===== MUSIC ===== */
+        .music-section{padding:0 2rem 4rem;position:relative;z-index:1}
+        .music-card{
+            max-width:650px;margin:0 auto;
+            background:linear-gradient(135deg,rgba(184,223,240,0.2),rgba(212,197,240,0.2));
+            border:3px solid var(--text);border-radius:20px;
+            padding:2.5rem;text-align:center;
+            box-shadow:5px 5px 0 rgba(0,0,0,0.06);
+        }
+        .music-band{
+            font-family:'Caveat',cursive;font-size:clamp(2rem,6vw,3.5rem);
+            font-weight:700;color:var(--blue-accent);
+        }
+        .music-icons{display:flex;gap:1rem;justify-content:center;margin:1rem 0;font-size:1.5rem;color:var(--blue-accent);opacity:0.5}
+        .music-quote{
+            font-family:'Patrick Hand',cursive;font-size:1rem;
+            color:var(--text-light);line-height:2;margin:1rem 0;
+        }
+        .music-cta{
+            display:inline-flex;align-items:center;gap:0.5rem;
+            padding:0.5rem 1.5rem;border:2.5px solid var(--accent);
+            border-radius:25px;color:var(--accent);text-decoration:none;
+            font-weight:600;font-size:0.85rem;transition:all 0.3s;
+        }
+        .music-cta:hover{background:var(--accent);color:#fff;transform:scale(1.05)}
+
+        /* ===== PHILOSOPHY ===== */
+        .philo-section{padding:0 2rem 4rem;position:relative;z-index:1}
+        .philo-list{max-width:700px;margin:0 auto;display:grid;gap:1.5rem}
+        .philo-item{
+            background:#fff;border:3px solid var(--text);border-radius:16px;
+            padding:1.5rem;display:grid;grid-template-columns:50px 1fr;gap:1rem;
+            box-shadow:3px 3px 0 rgba(0,0,0,0.06);
+            align-items:start;transition:all 0.3s;
+        }
+        .philo-item:hover{transform:translateX(4px)}
+        .philo-icon{
+            width:50px;height:50px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            font-size:1.2rem;color:#fff;
+        }
+        .philo-item h3{font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:var(--text);margin-bottom:0.2rem}
+        .philo-item p{font-size:0.85rem;color:var(--text-light);line-height:1.8}
+
+        /* ===== CLASSROOM PHOTO ===== */
+        .classroom-section{padding:0 2rem 4rem;position:relative;z-index:1}
+        .classroom-frame{
+            max-width:700px;margin:0 auto;
+            border:3px solid var(--text);border-radius:20px;overflow:hidden;
+            box-shadow:5px 5px 0 rgba(0,0,0,0.08);
+            position:relative;
+        }
+        .classroom-frame img{width:100%;display:block}
+        .classroom-caption{
+            padding:1rem;background:#fff;text-align:center;
+            font-family:'Patrick Hand',cursive;font-size:1rem;color:var(--text-light);
+            border-top:3px solid var(--text);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer{
+            padding:3rem 2rem;text-align:center;position:relative;z-index:1;
+            background:linear-gradient(180deg,var(--cream),rgba(255,214,192,0.3));
+        }
+        .footer-links{display:flex;gap:1rem;justify-content:center;margin-bottom:1.5rem}
+        .f-link{
+            width:44px;height:44px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            border:2.5px solid var(--text);color:var(--text);
+            text-decoration:none;font-size:1rem;transition:all 0.3s;
+            background:#fff;box-shadow:2px 2px 0 rgba(0,0,0,0.06);
+        }
+        .f-link:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-3px)}
+        .footer-id{font-size:0.7rem;color:var(--text-light);font-weight:600;letter-spacing:0.1em}
+        .footer-made{font-size:0.65rem;color:rgba(0,0,0,0.2);margin-top:0.3rem}
+
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:768px){
+            .about-card{grid-template-columns:1fr;text-align:center;justify-items:center}
+            .about-avatar{width:120px;height:120px;font-size:3rem}
+            .gallery-grid{grid-template-columns:1fr 1fr}
+            .g-card img{height:180px}
+            .comic-row.r2,.comic-row.r3{grid-template-columns:1fr}
+            .career-grid{grid-template-columns:1fr 1fr}
+        }
+        @media(max-width:480px){
+            .gallery-grid{grid-template-columns:1fr}
+            .career-grid{grid-template-columns:1fr}
+        }
+
+        /* ===== REVEAL ===== */
+        .rv{opacity:0;transform:translateY(25px)}
+    </style>
+</head>
+<body>
+
+<div id="math-bg"></div>
+
+<!-- GATE -->
+<div class="gate" id="gate">
+    <div class="gate-card">
+        <span class="deco-star" style="top:-10px;left:15px;font-size:1.5rem"><i class="fa-solid fa-star"></i></span>
+        <span class="deco-star" style="top:10px;right:20px;font-size:1rem"><i class="fa-solid fa-star"></i></span>
+        <span class="deco-star" style="bottom:15px;left:25px;font-size:0.8rem"><i class="fa-solid fa-heart"></i></span>
+        <div class="gate-title" id="gt"><i class="fa-solid fa-fish" style="color:var(--blue-accent)"></i> Class is Starting!</div>
+        <div class="gate-sub" id="gs2">GREEDLOVE0212</div>
+        <div class="gate-hint" id="gh2"><i class="fa-solid fa-hand-pointer"></i> click to enter</div>
+    </div>
+</div>
+
+<a href="/guild/" class="back-nav"><i class="fa-solid fa-arrow-left"></i> ARCHIVE</a>
+
+<!-- ===== HERO ===== -->
+<section class="hero wc-section" id="hero">
+    <canvas id="fish-canvas"></canvas>
+    <div class="hero-inner">
+        <div class="hero-badge rv"><i class="fa-solid fa-graduation-cap"></i> SUPERGALEN GUILD</div>
+        <h1 class="hero-name rv">
+            GREED<span class="fish-icon"><i class="fa-solid fa-fish"></i></span>LOVE
+        </h1>
+        <p class="hero-tagline rv">
+            把方程式變成歌曲、把課本變成梗圖、把雞排變成求婚道具的數學老師。
+        </p>
+        <div class="hero-tags rv">
+            <span class="htag t1"><i class="fa-solid fa-chalkboard-user"></i> Math Teacher</span>
+            <span class="htag t2"><i class="fa-solid fa-microphone-lines"></i> Band Vocalist</span>
+            <span class="htag t3"><i class="fa-solid fa-wand-magic-sparkles"></i> Meme Creator</span>
+            <span class="htag t4"><i class="fa-solid fa-heart"></i> Romantic</span>
+        </div>
+    </div>
+    <div class="scroll-hint"><i class="fa-solid fa-chevron-down"></i> 往下捲動開始旅程</div>
+</section>
+
+<!-- MATH DIVIDER: sine wave -->
+<div class="math-divider" aria-hidden="true">
+    <svg viewBox="0 0 900 80" preserveAspectRatio="none">
+        <line class="axis-line" x1="0" y1="40" x2="900" y2="40"/>
+        <path class="md-path" d="M0,40 C50,5 100,75 150,40 C200,5 250,75 300,40 C350,5 400,75 450,40 C500,5 550,75 600,40 C650,5 700,75 750,40 C800,5 850,75 900,40" stroke="var(--pink)" opacity="0.45" stroke-dasharray="2000" stroke-dashoffset="2000"/>
+        <text class="axis-label" x="10" y="75">y = sin(x)</text>
+    </svg>
+</div>
+
+<!-- ===== CH1: ABOUT ===== -->
+<div class="ch-header rv">
+    <div class="ch-num"><i class="fa-solid fa-fish" style="font-size:0.6em;opacity:0.5"></i> CHAPTER 01</div>
+    <h2 class="ch-title">The Teacher Who Rocks</h2>
+    <p class="ch-desc">白天是數學老師，晚上是樂團主唱，全天候梗圖製造機。</p>
+</div>
+<section class="about-section" id="cz-about">
+    <div class="about-card rv">
+        <div class="about-avatar"><i class="fa-solid fa-fish"></i></div>
+        <div class="about-body">
+            <h2>Hey, I'm Greedlove <i class="fa-solid fa-fish" style="color:var(--blue-accent);font-size:0.7em"></i></h2>
+            <p>我是一位數學老師，也是業餘樂團「雙魚作樂團」的主唱。在人生的旅途中，我斜槓過法警、臨時演員、詞曲創作人。繞了一大圈之後，我發現最愛的還是那三尺講台 — 看著學生眼中亮起理解的光芒，就是我最大的成就感。</p>
+            <p>因為要幫女兒準備國一生物考試，加上對吉伊卡哇的瘋狂熱愛，我開始用可愛角色製作教育梗圖。從細胞分裂到等差級數，從基因轉殖到三角形的三心 — 如果課本讓你打瞌睡，那就讓烏薩齊來叫醒你吧。</p>
+        </div>
+    </div>
+</section>
+
+<!-- MATH DIVIDER: parabola -->
+<div class="math-divider" aria-hidden="true">
+    <svg viewBox="0 0 900 80" preserveAspectRatio="none">
+        <line class="axis-line" x1="0" y1="75" x2="900" y2="75"/>
+        <path class="md-path" d="M0,75 Q225,-20 450,75 Q675,-20 900,75" stroke="var(--sky)" opacity="0.4" stroke-dasharray="2000" stroke-dashoffset="2000"/>
+        <text class="axis-label" x="10" y="75">y = x<tspan baseline-shift="super" font-size="0.6em">2</tspan></text>
+    </svg>
+</div>
+
+<!-- GEO DECO: triangle -->
+<div class="geo-deco" aria-hidden="true">
+    <div class="geo-deco-inner" style="right:5%;top:-30px;width:80px;height:80px;position:absolute;">
+        <svg viewBox="0 0 80 80" width="80" height="80">
+            <polyline class="geo-draw" points="10,70 40,10 70,70 10,70" stroke="var(--mint)" stroke-width="2" opacity="0.4" stroke-dasharray="300" stroke-dashoffset="300"/>
+            <path class="geo-draw" d="M22,65 Q25,55 34,60" stroke="var(--accent)" stroke-width="1.5" opacity="0.35" stroke-dasharray="50" stroke-dashoffset="50"/>
+        </svg>
+    </div>
+</div>
+
+<!-- ===== CH2: WHAT I CAN DO ===== -->
+<div class="ch-header rv">
+    <div class="ch-num"><i class="fa-solid fa-fish" style="font-size:0.6em;opacity:0.5"></i> CHAPTER 02</div>
+    <h2 class="ch-title">What I Can Do For You</h2>
+    <p class="ch-desc">從課堂到舞台，這些是我能帶給你的。</p>
+</div>
+<section class="career-section" id="sec-career">
+    <div class="career-grid">
+        <div class="c-card rv"><i class="fa-solid fa-chalkboard-user" style="color:#c9882f"></i><h3>數學教學</h3><p>國中數學全科輔導，擅長用生活化的方式拆解抽象觀念，讓你不再怕數學</p></div>
+        <div class="c-card rv"><i class="fa-solid fa-dna" style="color:var(--accent)"></i><h3>生物梗圖教材</h3><p>用吉伊卡哇角色製作的教育梗圖，讓生物和數學知識變得好記又好笑</p></div>
+        <div class="c-card rv"><i class="fa-solid fa-palette" style="color:#4a8a6a"></i><h3>教育內容創作</h3><p>客製化的可愛風教育圖文、漫畫式教學內容，幫老師和家長讓學習變有趣</p></div>
+        <div class="c-card rv"><i class="fa-solid fa-microphone-lines" style="color:#7a5ea0"></i><h3>樂團演出</h3><p>雙魚作樂團主唱，承接各類活動表演、校園演唱、小型聚會音樂演出</p></div>
+        <div class="c-card rv"><i class="fa-solid fa-pen-fancy" style="color:var(--blue-accent)"></i><h3>詞曲創作</h3><p>能把你的人生故事寫成一首歌，用音樂記錄那些值得被記住的瞬間</p></div>
+    </div>
+</section>
+
+<!-- MATH DIVIDER: tangent-like spikes -->
+<div class="math-divider" aria-hidden="true">
+    <svg viewBox="0 0 900 80" preserveAspectRatio="none">
+        <line class="axis-line" x1="0" y1="40" x2="900" y2="40"/>
+        <path class="md-path" d="M0,40 L100,40 Q120,40 130,10 Q140,-25 150,40 L300,40 Q320,40 330,70 Q340,105 350,40 L500,40 Q520,40 530,10 Q540,-25 550,40 L700,40 Q720,40 730,70 Q740,105 750,40 L900,40" stroke="var(--lavender)" opacity="0.4" stroke-dasharray="2500" stroke-dashoffset="2500"/>
+        <text class="axis-label" x="10" y="75">y = tan(x)</text>
+    </svg>
+</div>
+
+<!-- GEO DECO: circle with radius -->
+<div class="geo-deco" aria-hidden="true">
+    <div class="geo-deco-inner" style="left:3%;top:-10px;width:70px;height:70px;position:absolute;">
+        <svg viewBox="0 0 70 70" width="70" height="70">
+            <circle class="geo-draw" cx="35" cy="35" r="26" stroke="var(--sky)" stroke-width="2" opacity="0.35" stroke-dasharray="200" stroke-dashoffset="200"/>
+            <line class="geo-draw" x1="35" y1="35" x2="61" y2="35" stroke="var(--accent)" stroke-width="1.5" opacity="0.3" stroke-dasharray="30" stroke-dashoffset="30"/>
+            <text x="45" y="30" font-size="10" fill="var(--text-light)" opacity="0.4" font-family="Caveat">r</text>
+        </svg>
+    </div>
+</div>
+
+<!-- ===== CH3: THE CLASSROOM ===== -->
+<div class="ch-header rv">
+    <div class="ch-num"><i class="fa-solid fa-fish" style="font-size:0.6em;opacity:0.5"></i> CHAPTER 03</div>
+    <h2 class="ch-title"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent)"></i> The Chiikawa Classroom</h2>
+    <p class="ch-desc">當吉伊卡哇遇上國中數學和生物 — 這些是我為學生們做的教育梗圖。每一張都是為了讓知識更好記、更好玩而誕生的。</p>
+</div>
+
+<section class="classroom-section">
+    <div class="classroom-frame rv">
+        <img src="/assets/img/guild/greedlove0212/studying.webp" alt="Teaching in classroom" loading="lazy">
+        <div class="classroom-caption"><i class="fa-solid fa-camera"></i> 真實教室：帶學生用數字桌遊玩數學，學習從來不該是痛苦的事</div>
+    </div>
+</section>
+
+<section class="gallery-section" id="sec-gallery">
+    <div class="gallery-bg grid-paper">
+        <div class="gallery-grid">
+            <div class="g-card rv"><img src="/assets/img/guild/greedlove0212/cell_division.webp" alt="細胞分裂" loading="lazy"><div class="g-card-info"><div class="g-card-title"><i class="fa-solid fa-dna"></i> 細胞分裂的魔法</div><span class="g-card-tag bio">生物</span></div></div>
+            <div class="g-card rv"><img src="/assets/img/guild/greedlove0212/mutation_biology.webp" alt="突變因子" loading="lazy"><div class="g-card-info"><div class="g-card-title"><i class="fa-solid fa-radiation"></i> 突變的人為誘發</div><span class="g-card-tag bio">生物</span></div></div>
+            <div class="g-card rv"><img src="/assets/img/guild/greedlove0212/gene_transfer.webp" alt="基因轉殖" loading="lazy"><div class="g-card-info"><div class="g-card-title"><i class="fa-solid fa-fish"></i> 基因轉殖的應用</div><span class="g-card-tag bio">生物</span></div></div>
+            <div class="g-card rv"><img src="/assets/img/guild/greedlove0212/math_equation.webp" alt="解方程式" loading="lazy"><div class="g-card-info"><div class="g-card-title"><i class="fa-solid fa-square-root-variable"></i> 一元一次方程式</div><span class="g-card-tag math">數學</span></div></div>
+            <div class="g-card rv"><img src="/assets/img/guild/greedlove0212/math_three_centers.webp" alt="三心大冒險" loading="lazy"><div class="g-card-info"><div class="g-card-title"><i class="fa-solid fa-draw-polygon"></i> 國中數學三心大冒險</div><span class="g-card-tag math">數學</span></div></div>
+            <div class="g-card rv"><img src="/assets/img/guild/greedlove0212/tree_planting.webp" alt="植樹問題" loading="lazy"><div class="g-card-info"><div class="g-card-title"><i class="fa-solid fa-tree"></i> 植樹問題攻略</div><span class="g-card-tag math">數學</span></div></div>
+            <div class="g-card rv"><img src="/assets/img/guild/greedlove0212/arithmetic_series.webp" alt="等差級數" loading="lazy"><div class="g-card-info"><div class="g-card-title"><i class="fa-solid fa-chart-line"></i> 等差級數的和</div><span class="g-card-tag math">數學</span></div></div>
+            <div class="g-card rv"><img src="/assets/img/guild/greedlove0212/centroid_review.webp" alt="重心" loading="lazy"><div class="g-card-info"><div class="g-card-title"><i class="fa-solid fa-bullseye"></i> 烏薩齊的重心教室</div><span class="g-card-tag math">數學</span></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- MATH DIVIDER: heart curve -->
+<div class="math-divider" aria-hidden="true">
+    <svg viewBox="0 0 900 80" preserveAspectRatio="none">
+        <line class="axis-line" x1="0" y1="50" x2="900" y2="50"/>
+        <path class="md-path" d="M0,50 L80,50 C120,50 160,-5 210,20 C240,35 240,55 210,60 C185,65 170,50 170,50 C170,50 155,65 130,60 C100,55 100,35 130,20 C180,-5 220,50 260,50 L360,50 C400,50 440,-5 490,20 C520,35 520,55 490,60 C465,65 450,50 450,50 C450,50 435,65 410,60 C380,55 380,35 410,20 C460,-5 500,50 540,50 L640,50 C680,50 720,-5 770,20 C800,35 800,55 770,60 C745,65 730,50 730,50 C730,50 715,65 690,60 C660,55 660,35 690,20 C740,-5 780,50 820,50 L900,50" stroke="var(--pink)" opacity="0.4" stroke-dasharray="3000" stroke-dashoffset="3000"/>
+        <text class="axis-label" x="10" y="75">r = 1 - sin(theta)</text>
+    </svg>
+</div>
+
+<!-- GEO DECO: coordinate axes + chart -->
+<div class="geo-deco" aria-hidden="true">
+    <div class="geo-deco-inner" style="right:4%;top:-20px;width:80px;height:80px;position:absolute;">
+        <svg viewBox="0 0 80 80" width="80" height="80">
+            <line class="geo-draw" x1="10" y1="65" x2="70" y2="65" stroke="var(--text-light)" stroke-width="1.5" opacity="0.3" stroke-dasharray="70" stroke-dashoffset="70"/>
+            <line class="geo-draw" x1="10" y1="65" x2="10" y2="10" stroke="var(--text-light)" stroke-width="1.5" opacity="0.3" stroke-dasharray="60" stroke-dashoffset="60"/>
+            <polyline class="geo-draw" points="10,58 22,42 34,48 46,25 58,32 70,10" stroke="var(--accent)" stroke-width="2" opacity="0.4" stroke-dasharray="200" stroke-dashoffset="200"/>
+            <text x="72" y="68" font-size="9" fill="var(--text-light)" opacity="0.4" font-family="Caveat">x</text>
+            <text x="5" y="8" font-size="9" fill="var(--text-light)" opacity="0.4" font-family="Caveat">y</text>
+        </svg>
+    </div>
+</div>
+
+<!-- ===== CH4: THE PTT LOVE STORY ===== -->
+<div class="ch-header rv">
+    <div class="ch-num"><i class="fa-solid fa-fish" style="font-size:0.6em;opacity:0.5"></i> CHAPTER 04</div>
+    <h2 class="ch-title" style="color:var(--accent)"><i class="fa-solid fa-heart-pulse"></i> The PTT Love Story</h2>
+    <p class="ch-desc">在 PTT 歐兔版和 MSN Messenger 的年代，一封回信開啟了我們的故事。我把這段經歷畫成了漫畫 — 因為有些回憶值得被好好收藏。</p>
+</div>
+<section class="love-section" id="sec-love">
+    <div class="love-bg">
+        <!-- Episode 1: How they met -->
+        <div class="bubble rv" style="max-width:350px;margin:0 auto 1.5rem">
+            <i class="fa-solid fa-computer"></i> 一切從 PTT 歐兔版的一封回信開始...
+        </div>
+        <div class="comic-row r1 rv">
+            <div class="comic-panel"><img src="/assets/img/guild/greedlove0212/love_story_ptt.webp" alt="PTT & MSN Love Story"></div>
+        </div>
+
+        <div class="sfx rv"><i class="fa-solid fa-heart"></i> 撲通！撲通！ <i class="fa-solid fa-heart"></i></div>
+
+        <!-- Episode 2: The proposal -->
+        <div class="bubble right rv" style="max-width:380px;margin:0 0 1.5rem auto">
+            <i class="fa-solid fa-drumstick-bite"></i> 夜市雞排 + 戒指 = 最完美的告白方程式。
+        </div>
+        <div class="comic-row r2 rv">
+            <div class="comic-panel"><img src="/assets/img/guild/greedlove0212/love_story_proposal.webp" alt="The Proposal"></div>
+            <div class="comic-panel"><img src="/assets/img/guild/greedlove0212/love_story_night.webp" alt="The Night"></div>
+        </div>
+
+        <div class="love-narration rv">
+            從「你也是高雄人！超巧！」到夜市的雞排和戒指<br>
+            從「慘了，比微積分考試還緊張」到「我好像被你馴養了」<br>
+            <span class="heart"><i class="fa-solid fa-heart"></i> <i class="fa-solid fa-heart"></i> <i class="fa-solid fa-heart"></i></span><br>
+            我把這段故事畫成了漫畫，也寫成了一首歌。<br>
+            因為有些愛情，值得被永遠記住。
+        </div>
+    </div>
+</section>
+
+<!-- MATH DIVIDER: sound wave / cosine -->
+<div class="math-divider" aria-hidden="true">
+    <svg viewBox="0 0 900 80" preserveAspectRatio="none">
+        <line class="axis-line" x1="0" y1="40" x2="900" y2="40"/>
+        <path class="md-path" d="M0,40 C25,15 50,15 75,40 C100,65 125,65 150,40 C175,15 200,15 225,40 C250,65 275,65 300,40 C325,15 350,15 375,40 C400,65 425,65 450,40 C475,15 500,15 525,40 C550,65 575,65 600,40 C625,15 650,15 675,40 C700,65 725,65 750,40 C775,15 800,15 825,40 C850,65 875,65 900,40" stroke="var(--blue-accent)" opacity="0.4" stroke-dasharray="2500" stroke-dashoffset="2500"/>
+        <path class="md-path" d="M0,40 C25,25 50,25 75,40 C100,55 125,55 150,40 C175,25 200,25 225,40 C250,55 275,55 300,40 C325,25 350,25 375,40 C400,55 425,55 450,40 C475,25 500,25 525,40 C550,55 575,55 600,40 C625,25 650,25 675,40 C700,55 725,55 750,40 C775,25 800,25 825,40 C850,55 875,55 900,40" stroke="var(--cyan)" opacity="0.3" stroke-dasharray="2000" stroke-dashoffset="2000"/>
+        <text class="axis-label" x="10" y="75">y = cos(2x)</text>
+    </svg>
+</div>
+
+<!-- ===== CH5: MUSIC ===== -->
+<div class="ch-header rv">
+    <div class="ch-num"><i class="fa-solid fa-fish" style="font-size:0.6em;opacity:0.5"></i> CHAPTER 05</div>
+    <h2 class="ch-title" style="color:var(--blue-accent)"><i class="fa-solid fa-guitar"></i> When the Bell Rings</h2>
+    <p class="ch-desc">下課鐘響之後，我從老師變成主唱。教書和唱歌其實是同一件事 — 都是用聲音把心裡的東西傳出去。</p>
+</div>
+<section class="music-section" id="sec-music">
+    <div class="music-card rv">
+        <div class="music-band"><i class="fa-solid fa-fish"></i> 雙魚作樂團</div>
+        <div class="music-icons"><i class="fa-solid fa-guitar"></i><i class="fa-solid fa-microphone-lines"></i><i class="fa-solid fa-drum"></i><i class="fa-solid fa-music"></i></div>
+        <div class="music-quote">
+            白天用粉筆寫下方程式，夜晚用歌聲唱出心方程。我們的歌裡有生活的酸甜苦辣，有和太太認識的故事，也有對教育的熱情。如果你需要一個能唱能教、能寫歌也能解方程式的樂團 — 我們就是那條雙魚。
+        </div>
+        <a href="https://www.youtube.com/@%E9%9B%99%E9%AD%9A%E4%BD%9C%E6%A8%82%E5%9C%98" target="_blank" rel="noopener" class="music-cta"><i class="fa-brands fa-youtube"></i> 聽聽我們的歌</a>
+    </div>
+</section>
+
+<!-- MATH DIVIDER: exponential growth -->
+<div class="math-divider" aria-hidden="true">
+    <svg viewBox="0 0 900 80" preserveAspectRatio="none">
+        <line class="axis-line" x1="0" y1="75" x2="900" y2="75"/>
+        <path class="md-path" d="M0,74 C100,73 200,70 300,62 C400,50 500,35 600,18 C700,6 800,2 900,0" stroke="#c9a030" stroke-width="3" opacity="0.45" stroke-dasharray="1500" stroke-dashoffset="1500"/>
+        <text class="axis-label" x="10" y="75">y = e<tspan baseline-shift="super" font-size="0.6em">x</tspan></text>
+    </svg>
+</div>
+
+<!-- GEO DECO: golden spiral -->
+<div class="geo-deco" aria-hidden="true">
+    <div class="geo-deco-inner" style="left:3%;top:0;width:80px;height:80px;position:absolute;">
+        <svg viewBox="0 0 80 80" width="80" height="80">
+            <path class="geo-draw" d="M40,40 Q40,18 60,18 Q78,18 78,40 Q78,62 55,68 Q28,74 15,50 Q2,28 22,12" stroke="#c9a030" stroke-width="2" opacity="0.35" fill="none" stroke-dasharray="250" stroke-dashoffset="250"/>
+        </svg>
+    </div>
+</div>
+
+<!-- ===== CH6: PHILOSOPHY ===== -->
+<div class="ch-header rv">
+    <div class="ch-num"><i class="fa-solid fa-fish" style="font-size:0.6em;opacity:0.5"></i> CHAPTER 06</div>
+    <h2 class="ch-title"><i class="fa-solid fa-lightbulb" style="color:var(--lemon)"></i> Teaching Philosophy</h2>
+    <p class="ch-desc">關於教學、關於人生，這些是我一路走來最深的體悟。</p>
+</div>
+<section class="philo-section" id="sec-philo">
+    <div class="philo-list">
+        <div class="philo-item rv">
+            <div class="philo-icon" style="background:linear-gradient(135deg,var(--peach),var(--pink))"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div><h3>Make It Fun, Make It Stick</h3><p>知識不該是枯燥的負擔，而是讓人會心一笑的驚喜。我用吉伊卡哇角色來解釋細胞分裂，用烏薩齊來教重心定理 — 當學生笑著把知識記住的時候，我知道這條路走對了。每一張梗圖都是一個記憶的鉤子，讓學習變成一件值得期待的事。</p></div>
+        </div>
+        <div class="philo-item rv">
+            <div class="philo-icon" style="background:linear-gradient(135deg,var(--sky),var(--lavender))"><i class="fa-solid fa-infinity"></i></div>
+            <div><h3>Life is the Ultimate Equation</h3><p>人生就像一道複雜的方程式 — 有未知數、有變數、有時候還有無解的時刻。但正因為這些不確定性，解題的過程才是最精彩的部分。我當過法警、當過演員、寫過歌、教過書，每一次斜槓都在為最終的答案加上新的已知條件。</p></div>
+        </div>
+        <div class="philo-item rv">
+            <div class="philo-icon" style="background:linear-gradient(135deg,var(--mint),#a0d4a8)"><i class="fa-solid fa-heart"></i></div>
+            <div><h3>Passion Has No Formula</h3><p>有人問我為什麼不專心做一件事就好。答案是：世界太精彩了，一個身分裝不下我想體驗的一切。從法庭到片場，從教室到舞台，看似風馬牛不相及的經歷，最終都匯聚成同一個核心 — 我是一個想要連結人心的人，無論用的是粉筆還是麥克風。</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="footer-links">
+        <a href="https://www.threads.com/@greedlove0212" target="_blank" rel="noopener" class="f-link" title="Threads"><i class="fa-brands fa-threads"></i></a>
+        <a href="https://www.instagram.com/greedlove0212/" target="_blank" rel="noopener" class="f-link" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://www.youtube.com/@%E9%9B%99%E9%AD%9A%E4%BD%9C%E6%A8%82%E5%9C%98" target="_blank" rel="noopener" class="f-link" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+    </div>
+    <div class="footer-id">GREEDLOVE0212 &mdash; SUPERGALEN GUILD</div>
+    <div class="footer-made">Made with <span style="color:var(--accent)">&hearts;</span> by SuperGalen's Dungeon</div>
+</footer>
+
+<script>
+(function(){
+    /* =============================================
+       P5.JS — Floating Math Elements
+       Numbers, rulers, compasses, protractors, hearts, stars
+       drift across the page like in their meme backgrounds
+       ============================================= */
+    const bgDiv = document.getElementById('math-bg');
+
+    const sketch = (p) => {
+        const elements = [];
+        const symbols = ['1','2','3','4','5','6','7','8','9','0',
+                         '+','-','=','x','y','f','n',
+                         '\u00F7','\u03C0','\u221A','\u2211','\u221E','\u0394','\u03B8'];
+        const pastelColors = ['#ff8fa3','#6db8e0','#6dba8a','#e8c840','#a68dd4','#f0a070'];
+        const isMobile = window.innerWidth < 768;
+        const count = isMobile ? 28 : 55;
+
+        p.setup = function(){
+            const cnv = p.createCanvas(window.innerWidth, window.innerHeight);
+            cnv.parent(bgDiv);
+            cnv.style('position','fixed');
+            cnv.style('inset','0');
+            cnv.style('pointer-events','none');
+            cnv.style('z-index','0');
+
+            for(let i=0;i<count;i++){
+                elements.push({
+                    x: p.random(p.width),
+                    y: p.random(p.height),
+                    symbol: symbols[Math.floor(Math.random()*symbols.length)],
+                    size: p.random(20,48),
+                    color: pastelColors[Math.floor(Math.random()*pastelColors.length)],
+                    speedX: p.random(-0.4,0.4),
+                    speedY: p.random(-0.2,-0.03),
+                    rotation: p.random(p.TWO_PI),
+                    rotSpeed: p.random(-0.008,0.008),
+                    opacity: p.random(60,150),
+                    isShape: Math.random() < 0.25,
+                    shapeType: Math.floor(Math.random()*4)
+                });
+            }
+        };
+
+        p.draw = function(){
+            if(document.hidden) return;
+            p.clear();
+            elements.forEach(el => {
+                el.x += el.speedX;
+                el.y += el.speedY;
+                el.rotation += el.rotSpeed;
+
+                if(el.y < -40) { el.y = p.height + 40; el.x = p.random(p.width); }
+                if(el.x < -40) el.x = p.width + 40;
+                if(el.x > p.width+40) el.x = -40;
+
+                p.push();
+                p.translate(el.x, el.y);
+                p.rotate(el.rotation);
+
+                if(el.isShape){
+                    const c = p.color(el.color);
+                    c.setAlpha(el.opacity * 0.5);
+                    p.fill(c);
+                    const sc = p.color(el.color);
+                    sc.setAlpha(el.opacity * 0.8);
+                    p.stroke(sc);
+                    p.strokeWeight(1.5);
+                    if(el.shapeType===0){
+                        p.ellipse(0,0,el.size*0.9);
+                    } else if(el.shapeType===1){
+                        p.triangle(0,-el.size*0.45, -el.size*0.4,el.size*0.35, el.size*0.4,el.size*0.35);
+                    } else if(el.shapeType===2){
+                        drawStar(p,0,0,el.size*0.2,el.size*0.45,5);
+                    } else {
+                        p.quad(0,-el.size*0.4, el.size*0.3,0, 0,el.size*0.4, -el.size*0.3,0);
+                    }
+                } else {
+                    p.noStroke();
+                    const c = p.color(el.color);
+                    c.setAlpha(el.opacity);
+                    p.fill(c);
+                    p.textSize(el.size);
+                    p.textAlign(p.CENTER, p.CENTER);
+                    p.textStyle(p.BOLD);
+                    p.textFont('Caveat');
+                    p.text(el.symbol, 0, 0);
+                }
+                p.pop();
+            });
+        };
+
+        function drawStar(p,x,y,r1,r2,n){
+            p.beginShape();
+            for(let i=0;i<n*2;i++){
+                const a = p.TWO_PI/(n*2)*i - p.HALF_PI;
+                const r = i%2===0 ? r2 : r1;
+                p.vertex(x+p.cos(a)*r, y+p.sin(a)*r);
+            }
+            p.endShape(p.CLOSE);
+        }
+
+        p.windowResized = function(){
+            p.resizeCanvas(window.innerWidth, window.innerHeight);
+        };
+    };
+
+    new p5(sketch);
+
+    /* =============================================
+       DUAL FISH — The Pisces Hero Animation
+       Two kawaii fish orbit each other, trailing math bubbles.
+       Mouse interaction nudges them. Responsive.
+       ============================================= */
+    (function initFishCanvas(){
+        const fc = document.getElementById('fish-canvas');
+        const fctx = fc.getContext('2d');
+        const heroEl = document.getElementById('hero');
+        let W, H;
+        const mouse = {x:9999, y:9999};
+
+        function resize(){
+            W = heroEl.clientWidth; H = heroEl.clientHeight;
+            fc.width = W; fc.height = H;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        heroEl.addEventListener('mousemove', e=>{
+            const r = heroEl.getBoundingClientRect();
+            mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+        });
+        heroEl.addEventListener('mouseleave', ()=>{ mouse.x=9999; mouse.y=9999; });
+        heroEl.addEventListener('touchmove', e=>{
+            if(!e.touches[0]) return;
+            const r = heroEl.getBoundingClientRect();
+            mouse.x = e.touches[0].clientX - r.left; mouse.y = e.touches[0].clientY - r.top;
+        },{passive:true});
+
+        // Fish
+        const fish = [
+            {angle:0, fx:0,fy:0,dir:0, color:'#ff8fa3', bodyColor:'#ffc2d1', eyeColor:'#4a3728', tailColor:'#e06b80', trailColor:'rgba(255,143,163,'},
+            {angle:Math.PI, fx:0,fy:0,dir:0, color:'#6db8e0', bodyColor:'#a8d8f0', eyeColor:'#4a3728', tailColor:'#4a9cc8', trailColor:'rgba(109,184,224,'}
+        ];
+
+        // Trails
+        const trails = [];
+        const trailSymbols = ['+','-','=','x','y','3','7','\u03C0','\u221E','\u0394','\u2211','n','f'];
+        function addTrail(x,y,fi){
+            if(trails.length>50) trails.shift();
+            trails.push({x,y, vx:(Math.random()-0.5)*1, vy:(Math.random()-0.5)*1-0.2,
+                life:1, decay:0.01+Math.random()*0.008,
+                symbol:trailSymbols[Math.floor(Math.random()*trailSymbols.length)],
+                size:9+Math.random()*9, color:fish[fi].trailColor, rot:Math.random()*Math.PI*2
+            });
+        }
+
+        function drawFish(x,y,angle,f,s){
+            fctx.save();
+            fctx.translate(x,y);
+            fctx.rotate(angle);
+            // Tail
+            const tw=Math.sin(Date.now()*0.008)*0.3;
+            fctx.save(); fctx.translate(-28*s,0); fctx.rotate(tw);
+            fctx.beginPath(); fctx.moveTo(0,0);
+            fctx.quadraticCurveTo(-18*s,-16*s,-8*s,-22*s); fctx.lineTo(0,0);
+            fctx.quadraticCurveTo(-18*s,16*s,-8*s,22*s); fctx.closePath();
+            fctx.fillStyle=f.tailColor; fctx.fill(); fctx.restore();
+            // Body
+            fctx.beginPath(); fctx.ellipse(0,0,30*s,18*s,0,0,Math.PI*2);
+            fctx.fillStyle=f.bodyColor; fctx.fill();
+            fctx.strokeStyle=f.color; fctx.lineWidth=2.5*s; fctx.stroke();
+            // Fin
+            fctx.beginPath(); fctx.moveTo(-5*s,-16*s); fctx.quadraticCurveTo(5*s,-30*s,15*s,-16*s);
+            fctx.fillStyle=f.tailColor; fctx.globalAlpha=0.7; fctx.fill(); fctx.globalAlpha=1;
+            // Eye
+            fctx.beginPath(); fctx.arc(12*s,-4*s,6*s,0,Math.PI*2);
+            fctx.fillStyle='#fff'; fctx.fill();
+            fctx.strokeStyle=f.eyeColor; fctx.lineWidth=1.5*s; fctx.stroke();
+            fctx.beginPath(); fctx.arc(14*s,-4*s,3*s,0,Math.PI*2);
+            fctx.fillStyle=f.eyeColor; fctx.fill();
+            fctx.beginPath(); fctx.arc(15*s,-5.5*s,1.2*s,0,Math.PI*2);
+            fctx.fillStyle='#fff'; fctx.fill();
+            // Blush
+            fctx.beginPath(); fctx.ellipse(8*s,6*s,5*s,3*s,0,0,Math.PI*2);
+            fctx.fillStyle='rgba(255,150,150,0.35)'; fctx.fill();
+            // Mouth
+            fctx.beginPath(); fctx.arc(16*s,2*s,3*s,0.1,Math.PI*0.8);
+            fctx.strokeStyle=f.eyeColor; fctx.lineWidth=1.2*s; fctx.lineCap='round'; fctx.stroke();
+            fctx.restore();
+        }
+
+        let time=0, fishVisible=true, fishRafId=null;
+
+        // Pause fish animation when hero is out of view
+        function checkFishVisibility(){
+            const r = heroEl.getBoundingClientRect();
+            fishVisible = r.bottom > 0 && r.top < window.innerHeight;
+        }
+        window.addEventListener('scroll', checkFishVisibility, {passive:true});
+        document.addEventListener('visibilitychange', ()=>{ fishVisible = !document.hidden; });
+
+        function animate(){
+            fishRafId = requestAnimationFrame(animate);
+            if(!fishVisible){ fctx.clearRect(0,0,W,H); return; }
+            fctx.clearRect(0,0,W,H);
+            time+=0.012;
+            const isMob=W<768;
+            const s=isMob?0.75:1.05;
+
+            const cx=W/2, cy=H/2;
+            const orbitR=Math.min(W,H)*(isMob?0.18:0.22);
+            const dynR=orbitR*(0.93+Math.sin(time*0.4)*0.07);
+            const curCx=cx, curCy=cy;
+
+            fish.forEach((f,i)=>{
+                f.angle+=0.009*(i===0?1:-1);
+                let fx=curCx+Math.cos(f.angle)*dynR;
+                let fy=curCy+Math.sin(f.angle)*dynR*0.6;
+                // Mouse repulsion
+                const dx=fx-mouse.x, dy=fy-mouse.y;
+                const md=Math.sqrt(dx*dx+dy*dy);
+                if(md<100){const p=(100-md)/100*20; fx+=dx/md*p; fy+=dy/md*p;}
+                // Clamp to viewport
+                fx=Math.max(20,Math.min(W-20,fx));
+                fy=Math.max(20,Math.min(H-20,fy));
+                f.fx=fx; f.fy=fy;
+                const na=f.angle+0.05*(i===0?1:-1);
+                f.dir=Math.atan2(curCy+Math.sin(na)*dynR*0.6-fy, curCx+Math.cos(na)*dynR-fx);
+                // Trails
+                if(Math.random()<0.3){
+                    addTrail(fx+Math.cos(f.dir+Math.PI)*28*s, fy+Math.sin(f.dir+Math.PI)*28*s, i);
+                }
+            });
+
+            // Orbit path
+            fctx.save(); fctx.setLineDash([4,8]);
+            fctx.strokeStyle='rgba(0,0,0,0.03)'; fctx.lineWidth=1;
+            fctx.beginPath(); fctx.ellipse(curCx,curCy,dynR,dynR*0.6,0,0,Math.PI*2);
+            fctx.stroke(); fctx.restore();
+
+            // Trails
+            for(let i=trails.length-1;i>=0;i--){
+                const t=trails[i]; t.x+=t.vx; t.y+=t.vy; t.life-=t.decay; t.rot+=0.01;
+                if(t.life<=0){trails.splice(i,1);continue;}
+                fctx.save(); fctx.translate(t.x,t.y); fctx.rotate(t.rot);
+                fctx.font=`bold ${t.size}px Caveat`;
+                fctx.textAlign='center'; fctx.textBaseline='middle';
+                fctx.fillStyle=t.color+(t.life*0.5)+')';
+                fctx.fillText(t.symbol,0,0); fctx.restore();
+            }
+
+            // Bond line
+            fctx.save(); fctx.strokeStyle='rgba(0,0,0,0.03)'; fctx.lineWidth=1;
+            fctx.setLineDash([3,6]); fctx.beginPath();
+            fctx.moveTo(fish[0].fx,fish[0].fy);
+            fctx.quadraticCurveTo(curCx,curCy,fish[1].fx,fish[1].fy);
+            fctx.stroke(); fctx.restore();
+
+            // Draw fish
+            const back=fish[0].fy>fish[1].fy?1:0, front=1-back;
+            drawFish(fish[back].fx,fish[back].fy,fish[back].dir,fish[back],s*0.9);
+            drawFish(fish[front].fx,fish[front].fy,fish[front].dir,fish[front],s);
+        }
+        animate();
+    })();
+
+    /* =============================================
+       GATE
+       ============================================= */
+    const gate = document.getElementById('gate');
+    gsap.timeline()
+        .to('#gt',{opacity:1,duration:0.7,delay:0.4})
+        .to('#gs2',{opacity:1,duration:0.5},'-=0.2')
+        .to('#gh2',{opacity:1,duration:0.4});
+
+    gate.addEventListener('click',()=>{
+        gsap.to(gate,{opacity:0,scale:1.03,duration:0.6,ease:'power2.inOut',onComplete:()=>{
+            gate.style.display='none';
+            initAnims();
+        }});
+    });
+
+    /* =============================================
+       SCROLL ANIMATIONS
+       ============================================= */
+    function initAnims(){
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Reveal all .rv elements
+        gsap.utils.toArray('.rv').forEach(el=>{
+            gsap.to(el,{
+                opacity:1,y:0,duration:0.7,ease:'power2.out',
+                scrollTrigger:{trigger:el,start:'top 88%',once:true}
+            });
+        });
+
+        // ---- MATH DIVIDERS: scroll-driven SVG path drawing ----
+        document.querySelectorAll('.md-path').forEach(path=>{
+            // Use the inline stroke-dasharray as the total length
+            let len;
+            try { len = path.getTotalLength(); } catch(e) { len = 2000; }
+            path.setAttribute('stroke-dasharray', len);
+            path.setAttribute('stroke-dashoffset', len);
+            gsap.to(path,{
+                attr: { 'stroke-dashoffset': 0 },
+                ease:'none',
+                scrollTrigger:{
+                    trigger: path.closest('.math-divider'),
+                    start:'top 92%',
+                    end:'top 40%',
+                    scrub:0.6
+                }
+            });
+        });
+
+        // ---- GEO DECORATIONS: scroll-triggered draw ----
+        document.querySelectorAll('.geo-draw').forEach(el=>{
+            let len;
+            if(el.tagName==='circle'){
+                len = 2 * Math.PI * parseFloat(el.getAttribute('r'));
+            } else if(el.tagName==='line'){
+                const x1=parseFloat(el.getAttribute('x1')),y1=parseFloat(el.getAttribute('y1'));
+                const x2=parseFloat(el.getAttribute('x2')),y2=parseFloat(el.getAttribute('y2'));
+                len = Math.sqrt((x2-x1)**2+(y2-y1)**2);
+            } else {
+                try{ len = el.getTotalLength(); }catch(e){ len = 200; }
+            }
+            el.setAttribute('stroke-dasharray', len);
+            el.setAttribute('stroke-dashoffset', len);
+            gsap.to(el,{
+                attr: { 'stroke-dashoffset': 0 },
+                duration: 1.5,
+                ease:'power2.out',
+                scrollTrigger:{
+                    trigger: el.closest('.geo-deco'),
+                    start:'top 88%',
+                    once:true
+                }
+            });
+        });
+
+        // Gallery cards stagger
+        ScrollTrigger.create({
+            trigger:'.gallery-grid',start:'top 85%',once:true,
+            onEnter:()=>{
+                gsap.utils.toArray('.g-card').forEach((c,i)=>{
+                    gsap.fromTo(c,
+                        {opacity:0,y:20,rotation:Math.random()*4-2},
+                        {opacity:1,y:0,rotation:0,duration:0.5,delay:i*0.07,ease:'back.out(1.2)'}
+                    );
+                });
+            }
+        });
+
+        // Career cards stagger
+        ScrollTrigger.create({
+            trigger:'.career-grid',start:'top 85%',once:true,
+            onEnter:()=>{
+                gsap.utils.toArray('.c-card').forEach((c,i)=>{
+                    gsap.fromTo(c,
+                        {opacity:0,scale:0.9,rotation:Math.random()*6-3},
+                        {opacity:1,scale:1,rotation:0,duration:0.5,delay:i*0.1,ease:'back.out(1.5)'}
+                    );
+                });
+            }
+        });
+
+        // Comic panels animate in from sides
+        gsap.utils.toArray('.comic-panel').forEach((panel,i)=>{
+            const fromX = i%2===0 ? -30 : 30;
+            gsap.fromTo(panel,
+                {opacity:0,x:fromX,rotation:i%2===0?-2:2},
+                {opacity:1,x:0,rotation:0,duration:0.7,ease:'back.out(1.2)',
+                    scrollTrigger:{trigger:panel,start:'top 85%',once:true}
+                }
+            );
+        });
+
+        // Love SFX pulse
+        gsap.utils.toArray('.sfx').forEach(sfx=>{
+            ScrollTrigger.create({
+                trigger:sfx,start:'top 80%',once:true,
+                onEnter:()=>{
+                    gsap.fromTo(sfx,
+                        {opacity:0,scale:0.5},
+                        {opacity:1,scale:1,duration:0.8,ease:'elastic.out(1,0.4)'}
+                    );
+                }
+            });
+        });
+
+        // Scroll arrow fade
+        gsap.to('.scroll-hint',{
+            scrollTrigger:{trigger:'.hero',start:'top top',end:'30% top',scrub:1},
+            opacity:0,y:-15
+        });
+
+        // Music icons float
+        gsap.utils.toArray('.music-icons i').forEach((ic,i)=>{
+            gsap.to(ic,{y:-5,duration:1.5+i*0.3,repeat:-1,yoyo:true,ease:'sine.inOut'});
+        });
+
+        // Philosophy items hover wobble on scroll
+        gsap.utils.toArray('.philo-item').forEach((item,i)=>{
+            gsap.fromTo(item,
+                {opacity:0,x:-20,rotation:-2},
+                {opacity:1,x:0,rotation:0,duration:0.6,delay:i*0.12,ease:'back.out(1.2)',
+                    scrollTrigger:{trigger:item,start:'top 85%',once:true}
+                }
+            );
+        });
+    }
+})();
+</script>
+</body>
+</html>

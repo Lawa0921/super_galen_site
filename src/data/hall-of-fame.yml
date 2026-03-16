@@ -8,6 +8,30 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "newpower1121"
+    name: "青草街小英"
+    avatar: "/assets/img/guild/newpower1121/avatar.webp"
+    page: "/guild/newpower1121.html"
+    tags:
+      - id: "herbal_medicine"
+        label: "草藥傳人"
+      - id: "heritage"
+        label: "五代傳承"
+      - id: "wellness"
+        label: "養生茶飲"
+
+  - id: "kohbai_tw"
+    name: "紅梅 Kohbai"
+    avatar: "/assets/img/guild/kohbai_tw/avatar.webp"
+    page: "/guild/kohbai_tw.html"
+    tags:
+      - id: "vtuber"
+        label: "VTuber"
+      - id: "streamer"
+        label: "實況主"
+      - id: "illustrator"
+        label: "繪師"
+
   - id: "loyu"
     name: "羅玉 Lo Yu"
     avatar: "/assets/img/guild/loyu/avatar.webp"
@@ -1289,3 +1313,29 @@ members:
         label: "創業家"
       - id: "controlled_chaos"
         label: "受控混沌"
+
+  - id: "greedlove0212"
+    name: "雙魚老師"
+    avatar: "/assets/img/guild/greedlove0212/cell_division.webp"
+    page: "/guild/greedlove0212.html"
+    tags:
+      - id: "math_teacher"
+        label: "數學老師"
+      - id: "band_vocalist"
+        label: "樂團主唱"
+      - id: "meme_creator"
+        label: "梗圖教育家"
+
+  - id: "qishermo"
+    name: "俊瑋 邱"
+    avatar: "/assets/img/guild/qishermo/avatar.webp"
+    page: "/guild/qishermo.html"
+    title: "The Cipher Broker"
+    description: "密碼譯電士出身，23年不動產實戰，從工讀生到店東。超級I人卻做到業務頂尖，靠的是別人做一遍、我做十遍百遍的意志力。"
+    tags:
+      - id: "real_estate"
+        label: "不動產店東"
+      - id: "cipher_soldier"
+        label: "密碼譯電士"
+      - id: "fighter"
+        label: "泰拳/踢拳"
