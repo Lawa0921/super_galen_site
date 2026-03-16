@@ -8,10 +8,24 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "tera_happiness"
+    name: "Tera"
+    avatar: "/assets/img/guild/tera_happiness/avatar.webp"
+    page: "/guild/tera_happiness.html"
+    tags:
+      - id: "mayan_calendar"
+        label: "馬雅曆解讀師"
+      - id: "life_coach"
+        label: "生活教練"
+      - id: "healing"
+        label: "身心靈療癒"
+
   - id: "newpower1121"
     name: "青草街小英"
     avatar: "/assets/img/guild/newpower1121/avatar.webp"
     page: "/guild/newpower1121.html"
+    title: "The Herbal Alchemist"
+    description: "蕭涼心蔘藥行第五代傳人，被草藥救回三次的人生。融合父系蕭百草店與母系春盛中藥房的智慧，在台中青草街守護八十年的草藥溫度。"
     tags:
       - id: "herbal_medicine"
         label: "草藥傳人"
@@ -1339,3 +1353,17 @@ members:
         label: "密碼譯電士"
       - id: "fighter"
         label: "泰拳/踢拳"
+
+  - id: "geolead01"
+    name: "蕾妮婭 Lynia"
+    avatar: "/assets/img/guild/geolead01/art_01.webp"
+    page: "/guild/geolead01.html"
+    title: "Stellar Scribe"
+    description: "同步聽打冠軍、國小教師、動漫插畫創作者。一位全職媽媽以指尖上的閃電，書寫星光下的多元人生。"
+    tags:
+      - id: "stenographer"
+        label: "聽打冠軍"
+      - id: "teacher"
+        label: "國小教師"
+      - id: "illustrator"
+        label: "動漫塗鴉"
