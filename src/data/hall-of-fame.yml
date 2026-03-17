@@ -36,7 +36,7 @@ members:
 
   - id: "kohbai_tw"
     name: "紅梅 Kohbai"
-    avatar: "/assets/img/guild/kohbai_tw/avatar.webp"
+    avatar: "/assets/img/guild/kohbai_tw/bsky_avatar.webp"
     page: "/guild/kohbai_tw.html"
     tags:
       - id: "vtuber"
