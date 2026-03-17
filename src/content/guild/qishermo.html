@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qishermo - The Cipher Broker | 密碼仲介人</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@300;400;700&family=Space+Mono:wght@400&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            --noir: #06060a;
+            --steel: #16161e;
+            --panel: rgba(8, 8, 14, 0.92);
+            --gold: #d4a84b;
+            --gold-bright: #f0cc60;
+            --gold-dim: rgba(212, 168, 75, 0.12);
+            --crimson: #c42828;
+            --cipher-green: #33dd88;
+            --text-primary: #f0ece4;
+            --text-body: #d0ccc0;
+            --text-secondary: #9a9488;
+            --text-dim: #5a5650;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-heading: 'Oswald', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scrollbar-width: thin; scrollbar-color: var(--gold) var(--noir); }
+        body { background: var(--noir); color: var(--text-body); font-family: var(--font-body); overflow-x: hidden; cursor: none; }
+
+        .cursor-dot {
+            position: fixed; width: 8px; height: 8px; background: var(--gold);
+            border-radius: 50%; pointer-events: none; z-index: 99999; mix-blend-mode: difference;
+        }
+        .cursor-ring {
+            position: fixed; width: 40px; height: 40px; border: 1px solid var(--gold);
+            border-radius: 50%; pointer-events: none; z-index: 99998;
+            transition: all 0.15s ease-out; opacity: 0.5;
+        }
+        .cursor-ring.hover { width: 60px; height: 60px; border-color: var(--crimson); opacity: 1; }
+
+        .scroll-progress {
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: linear-gradient(90deg, var(--cipher-green), var(--gold), var(--crimson));
+            z-index: 9999; width: 0%;
+        }
+
+        .back-nav {
+            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            text-decoration: none; color: var(--gold);
+            font-family: var(--font-mono); font-size: 0.75rem;
+            letter-spacing: 2px; text-transform: uppercase; opacity: 0.7;
+            transition: all 0.3s; display: flex; align-items: center; gap: 8px;
+            background: var(--panel); padding: 6px 14px;
+            border: 1px solid rgba(212,168,75,0.2);
+        }
+        .back-nav:hover { opacity: 1; color: var(--gold-bright); transform: translateX(-4px); }
+
+        #three-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        #cipher-rain { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; opacity: 0.04; }
+
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2; pointer-events: none; opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        main { position: relative; z-index: 10; }
+
+        .content-panel {
+            background: var(--panel); backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(240,236,228,0.04);
+        }
+
+        .boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--noir); z-index: 100000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-family: var(--font-mono);
+        }
+        .boot-text { color: var(--cipher-green); font-size: 0.85rem; line-height: 1.8; max-width: 600px; width: 90%; }
+        .boot-text .line { opacity: 0; transform: translateY(5px); }
+        .boot-bar { width: 300px; height: 2px; background: var(--steel); margin-top: 2rem; overflow: hidden; }
+        .boot-bar-fill { height: 100%; width: 0%; background: var(--gold); }
+
+        .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; padding: 2rem; }
+        .hero-inner { text-align: center; padding: 3rem 4rem; background: radial-gradient(ellipse at center, rgba(6,6,10,0.9) 0%, rgba(6,6,10,0.6) 55%, transparent 100%); }
+        .hero-subtitle { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 6px; color: var(--cipher-green); text-transform: uppercase; margin-bottom: 1rem; opacity: 0; }
+        .hero-title { font-family: var(--font-display); font-size: clamp(5rem, 14vw, 12rem); line-height: 0.85; color: var(--text-primary); text-align: center; letter-spacing: 6px; opacity: 0; text-shadow: 0 0 80px rgba(212,168,75,0.2); transform: scale(1.3); }
+        .hero-title .stroke-text { -webkit-text-stroke: 2px var(--gold); color: transparent; display: block; font-size: 0.55em; letter-spacing: 14px; }
+        .hero-divider { width: 120px; height: 1px; background: var(--gold); margin: 2rem auto; transform: scaleX(0); }
+        .hero-tagline { font-family: var(--font-heading); font-size: 1.1rem; letter-spacing: 8px; color: var(--text-secondary); text-transform: uppercase; opacity: 0; }
+        .hero-avatar { width: 130px; height: 130px; border-radius: 50%; border: 2px solid var(--gold); margin-top: 2rem; opacity: 0; object-fit: cover; box-shadow: 0 0 60px rgba(212,168,75,0.3); transform: scale(0) rotate(180deg); }
+        .scroll-indicator { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 4px; text-transform: uppercase; animation: pulse-down 2s infinite; }
+        @keyframes pulse-down {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 0.8; transform: translateX(-50%) translateY(8px); }
+        }
+
+        .section-wrap { padding: 6rem 2rem; position: relative; }
+        .section-inner { max-width: 860px; margin: 0 auto; }
+        .section-header { text-align: center; margin-bottom: 3rem; }
+        .section-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cipher-green); letter-spacing: 6px; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .section-title { font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 3.8rem); color: var(--gold); letter-spacing: 4px; }
+        .section-divider { width: 80px; height: 1px; background: var(--gold); margin: 0 auto 3rem; transform: scaleX(0); transform-origin: center; }
+
+        .intro-text { font-size: 1.1rem; line-height: 2; color: var(--text-body); font-weight: 300; padding: 3rem; }
+        .intro-text p { margin-bottom: 1.5rem; }
+        .intro-text strong { color: var(--gold); font-weight: 700; }
+        .intro-text .accent { color: var(--crimson); font-weight: 700; }
+        .intro-text .word { display: inline-block; opacity: 0; transform: translateY(15px); }
+
+        .dossier-grid { display: grid; grid-template-columns: 130px 1fr; gap: 0; border-top: 1px solid rgba(240,236,228,0.08); padding: 2rem 3rem; }
+        .dossier-row { display: contents; }
+        .dossier-row > div { opacity: 0; transform: translateX(-20px); }
+        .dossier-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; padding: 1rem 0; border-bottom: 1px solid rgba(240,236,228,0.05); }
+        .dossier-value { font-size: 1rem; color: var(--text-primary); padding: 1rem 0; border-bottom: 1px solid rgba(240,236,228,0.05); font-weight: 400; }
+        .dossier-value .highlight { color: var(--gold-bright); font-weight: 700; }
+        .dossier-value .cipher-tag { display: inline-block; background: rgba(51,221,136,0.1); border: 1px solid var(--cipher-green); color: var(--cipher-green); font-family: var(--font-mono); font-size: 0.6rem; padding: 2px 8px; letter-spacing: 1px; margin-left: 8px; }
+
+        .quote-section { padding: 10rem 2rem; display: flex; justify-content: center; align-items: center; min-height: 60vh; }
+        .quote-block { max-width: 750px; text-align: center; padding: 4rem 3rem; position: relative; }
+        .quote-mark { font-family: var(--font-display); font-size: 10rem; color: rgba(212,168,75,0.08); line-height: 0.5; position: absolute; top: 0; left: 0; pointer-events: none; }
+        .quote-text { font-family: var(--font-heading); font-size: clamp(2.2rem, 5.5vw, 3.5rem); font-weight: 400; letter-spacing: 3px; line-height: 1.7; color: var(--text-primary); position: relative; z-index: 1; }
+        .quote-text .accent { color: var(--crimson); font-weight: 700; }
+        .quote-text .q-char { display: inline-block; opacity: 0; transform: translateY(40px) rotateX(90deg); }
+        .quote-sub { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); letter-spacing: 4px; margin-top: 2rem; opacity: 0; }
+
+        .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
+        .service-card { padding: 2.5rem 2rem; text-align: center; opacity: 0; transform: translateY(40px) scale(0.95); transition: all 0.4s; position: relative; overflow: hidden; }
+        .service-card::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--gold); transform: scaleX(0); transition: transform 0.4s; transform-origin: left; }
+        .service-card:hover::after { transform: scaleX(1); }
+        .service-card:hover { border-color: var(--gold); transform: translateY(-8px) scale(1); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+        .service-icon { font-size: 2rem; color: var(--gold); margin-bottom: 1.2rem; transition: transform 0.3s; }
+        .service-card:hover .service-icon { transform: scale(1.2) rotate(-5deg); }
+        .service-title { font-family: var(--font-heading); font-size: 1.1rem; letter-spacing: 2px; color: var(--text-primary); text-transform: uppercase; margin-bottom: 0.8rem; }
+        .service-desc { font-size: 0.88rem; color: var(--text-body); line-height: 1.7; font-weight: 300; }
+
+        .building { position: relative; }
+        .building::before { content: ''; position: absolute; left: 28px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, transparent, var(--gold) 5%, var(--gold) 95%, transparent); }
+        .floor { display: flex; gap: 1.5rem; padding: 1.8rem 0; opacity: 0; transform: translateY(30px); }
+        .floor-number { flex-shrink: 0; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.1rem; color: var(--gold); border: 1px solid var(--gold); background: var(--noir); position: relative; z-index: 2; transition: all 0.4s; }
+        .floor:hover .floor-number { box-shadow: 0 0 20px rgba(212,168,75,0.3); transform: scale(1.1); }
+        .floor-content { flex: 1; background: var(--panel); padding: 1.5rem 2rem; border: 1px solid rgba(240,236,228,0.04); transition: all 0.3s; }
+        .floor:hover .floor-content { border-color: rgba(212,168,75,0.15); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        .floor-age { font-family: var(--font-mono); font-size: 0.6rem; color: var(--cipher-green); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 0.3rem; }
+        .floor-title { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 600; color: var(--text-primary); letter-spacing: 2px; margin-bottom: 0.5rem; }
+        .floor-desc { font-size: 0.9rem; color: var(--text-body); line-height: 1.75; font-weight: 300; }
+        .floor.milestone .floor-number { background: var(--gold); color: var(--noir); box-shadow: 0 0 25px rgba(212,168,75,0.3); }
+
+        .career-path { display: flex; flex-wrap: wrap; justify-content: center; gap: 0; padding: 2rem; }
+        .career-node { display: flex; align-items: center; opacity: 0; transform: scale(0.5); }
+        .career-title-box { background: var(--steel); border: 1px solid rgba(240,236,228,0.08); padding: 0.8rem 1.5rem; font-family: var(--font-heading); font-size: 0.95rem; letter-spacing: 2px; color: var(--text-primary); white-space: nowrap; transition: all 0.3s; cursor: default; }
+        .career-title-box:hover { border-color: var(--gold); box-shadow: 0 0 25px var(--gold-dim); transform: translateY(-5px); }
+        .career-arrow { color: var(--gold); font-size: 1rem; padding: 0 0.5rem; font-family: var(--font-mono); }
+        .career-node.current .career-title-box { background: var(--gold); color: var(--noir); border-color: var(--gold); font-weight: 700; }
+
+        .fight-ring { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+        .fight-card { padding: 2.5rem 1.5rem; text-align: center; opacity: 0; transform: scale(0.8) rotateY(15deg); transition: all 0.4s; position: relative; overflow: hidden; }
+        .fight-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--crimson); transform: scaleX(0); transition: transform 0.4s; }
+        .fight-card:hover::before { transform: scaleX(1); }
+        .fight-card:hover { border-color: var(--crimson); transform: scale(1.05) rotateY(0); box-shadow: 0 15px 40px rgba(196,40,40,0.2); }
+        .fight-icon { font-size: 2.2rem; color: var(--crimson); margin-bottom: 1.2rem; transition: transform 0.3s; }
+        .fight-card:hover .fight-icon { transform: scale(1.3); }
+        .fight-stat { font-family: var(--font-display); font-size: 2.8rem; color: var(--text-primary); letter-spacing: 2px; }
+        .fight-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-secondary); letter-spacing: 3px; text-transform: uppercase; margin-top: 0.5rem; }
+
+        .counter { font-variant-numeric: tabular-nums; }
+
+        .site-footer { padding: 6rem 2rem 3rem; text-align: center; position: relative; z-index: 10; }
+        .footer-socials { display: flex; justify-content: center; gap: 2rem; margin-bottom: 3rem; }
+        .footer-socials a { color: var(--text-dim); font-size: 1.3rem; transition: all 0.3s; text-decoration: none; }
+        .footer-socials a:hover { color: var(--gold); transform: translateY(-3px); }
+        .footer-credit { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 3px; }
+
+        @media (max-width: 768px) {
+            .hero-inner { padding: 2rem 1.5rem; }
+            .dossier-grid { grid-template-columns: 1fr; padding: 1.5rem; }
+            .dossier-label { padding-bottom: 0; border-bottom: none; }
+            .dossier-value { padding-top: 0.3rem; }
+            .intro-text { padding: 2rem 1.5rem; font-size: 1rem; }
+            .building::before { left: 14px; }
+            .floor { gap: 1rem; }
+            .floor-number { width: 28px; height: 28px; font-size: 0.65rem; }
+            .floor-content { padding: 1rem 1.2rem; }
+            .career-path { flex-direction: column; align-items: center; padding: 1rem; }
+            .career-arrow { transform: rotate(90deg); padding: 0.3rem 0; }
+            .fight-ring { grid-template-columns: 1fr 1fr; }
+            .quote-block { padding: 3rem 1.5rem; }
+            .quote-mark { font-size: 5rem; }
+            .services-grid { grid-template-columns: 1fr; }
+            .two-col { grid-template-columns: 1fr !important; }
+            .section-wrap { padding: 4rem 1rem; }
+            .back-nav { top: 10px; left: 10px; font-size: 0.65rem; padding: 4px 10px; }
+        }
+        @media (max-width: 480px) {
+            .fight-ring { grid-template-columns: 1fr; }
+            .hero-title { font-size: 3.5rem; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+    <div class="scroll-progress"></div>
+    <div class="noise-overlay"></div>
+    <canvas id="three-bg"></canvas>
+    <canvas id="cipher-rain"></canvas>
+
+    <div class="boot-screen">
+        <div class="boot-text">
+            <div class="line">> INITIATING CIPHER_BROKER.SYS...</div>
+            <div class="line">> DECRYPTING AGENT PROFILE [136TH CIPHER BATTALION]</div>
+            <div class="line">> LOADING 23 YEARS OF FIELD DATA...</div>
+            <div class="line">> AUTHENTICATION: <span style="color:var(--gold)">CLEARANCE GRANTED</span></div>
+            <div class="line">> ESTABLISHING SECURE CONNECTION...</div>
+            <div class="line">> <span style="color:var(--gold)">WELCOME, OPERATOR.</span></div>
+        </div>
+        <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+    </div>
+
+    <a href="/guild/" class="back-nav"><i class="fas fa-chevron-left"></i> ARCHIVE</a>
+
+    <main>
+        <section class="hero">
+            <div class="hero-inner">
+                <div class="hero-subtitle">CLASSIFIED DOSSIER // AGENT #136</div>
+                <h1 class="hero-title">CIPHER<span class="stroke-text">BROKER</span></h1>
+                <div class="hero-divider"></div>
+                <div class="hero-tagline">23 YEARS IN THE FIELD</div>
+                <img src="/assets/img/guild/qishermo/avatar.webp" alt="Qishermo" class="hero-avatar">
+            </div>
+            <div class="scroll-indicator"><i class="fas fa-chevron-down"></i> SCROLL TO DECRYPT</div>
+        </section>
+
+        <section class="section-wrap">
+            <div class="section-inner content-panel intro-text" data-split-words>
+                <p>我叫<strong>邱俊瑋</strong>，今年42歲。做了23年的房仲。</p>
+                <p>我是一個極致臉盲、路痴、害怕跟人講電話的<span class="accent">超級I人</span>。但我偏偏選了全世界最需要社交的行業，然後在裡面待了超過二十年，而且做到了被公認的頂尖。</p>
+                <p>不是因為我有天賦。恰恰相反 --- 別人跑一遍就記住的路線，我要跑十遍。別人聊一次就拉近的關係，我需要反覆準備。至今每次出門帶看前，我都還是要先自己去好幾次。我的秘密？往下滾。</p>
+            </div>
+        </section>
+
+        <section class="section-wrap">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label">// AGENT PROFILE</div>
+                    <h2 class="section-title" data-scramble>CLASSIFIED</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="content-panel dossier-grid">
+                    <div class="dossier-row"><div class="dossier-label">CODENAME</div><div class="dossier-value"><span class="highlight">QISHERMO</span> <span class="cipher-tag">ACTIVE</span></div></div>
+                    <div class="dossier-row"><div class="dossier-label">IDENTITY</div><div class="dossier-value">邱俊瑋 / 42歲 / 73年次</div></div>
+                    <div class="dossier-row"><div class="dossier-label">UNIT</div><div class="dossier-value">密碼譯電士官班 <span class="highlight">第136期</span></div></div>
+                    <div class="dossier-row"><div class="dossier-label">SPECIALTY</div><div class="dossier-value">專業密碼編譯與解碼 <span class="cipher-tag">CLASSIFIED</span></div></div>
+                    <div class="dossier-row"><div class="dossier-label">CURRENT OP</div><div class="dossier-value"><span class="highlight">臣德地產</span> 創辦人 / 店東</div></div>
+                    <div class="dossier-row"><div class="dossier-label">FIELD EXP</div><div class="dossier-value"><span class="counter" data-target="23">0</span>+ 年不動產實戰 <span class="cipher-tag">ELITE</span></div></div>
+                    <div class="dossier-row"><div class="dossier-label">EDUCATION</div><div class="dossier-value">長榮大學不動產經營管理碩士 / 中正大學法學碩士（<span class="counter" data-target="60">0</span>學分）</div></div>
+                    <div class="dossier-row"><div class="dossier-label">BASE</div><div class="dossier-value">新北市<span class="highlight">板橋區</span>中正路</div></div>
+                    <div class="dossier-row"><div class="dossier-label">MISSION</div><div class="dossier-value">教人低成本開業，讓每個人都能當負責人 <span class="cipher-tag">VISION</span></div></div>
+                    <div class="dossier-row"><div class="dossier-label">TYPE</div><div class="dossier-value">超級I人 <span class="cipher-tag">INTROVERT</span></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="quote-section">
+            <div class="quote-block content-panel">
+                <span class="quote-mark">"</span>
+                <p class="quote-text" data-quote-reveal>別人做一遍<br>我要做<span class="accent">十遍百遍</span></p>
+                <p class="quote-sub">--- 我的操作哲學 ---</p>
+            </div>
+        </section>
+
+        <section class="section-wrap">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label">// CONSTRUCTION LOG</div>
+                    <h2 class="section-title" data-scramble>BUILDING FLOORS</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="building">
+                    <div class="floor"><div class="floor-number">B1</div><div class="floor-content"><div class="floor-age">ORIGIN</div><div class="floor-title">工專電機系</div><div class="floor-desc">五年制專科讀到五上，我做了一個決定 --- 休學，即刻入伍。不是逃避，是我知道教室裡的東西不是我要的。</div></div></div>
+                    <div class="floor"><div class="floor-number">B2</div><div class="floor-content"><div class="floor-age">MILITARY SERVICE</div><div class="floor-title">密碼譯電士官班 136期</div><div class="floor-desc">專業密碼與解碼訓練。在大多數人還在找方向的年紀，我已經學會怎麼解開別人看不懂的東西。這個技能後來被我用在了完全不同的戰場上。</div></div></div>
+                    <div class="floor milestone"><div class="floor-number">01</div><div class="floor-content"><div class="floor-age">19 歲</div><div class="floor-title">入行房仲</div><div class="floor-desc">從工讀生做起。一個極致臉盲、路痴、害怕跟人講電話的人，偏偏選了最需要這些能力的行業。別人帶看一次就熟的路線，我要走十遍。但我就是走了。</div></div></div>
+                    <div class="floor"><div class="floor-number">02</div><div class="floor-content"><div class="floor-age">22 歲</div><div class="floor-title">買下第一間房</div><div class="floor-desc">入行三年，我買了自己的房子。別人覺得快，但只有我知道這三年我做了多少別人不願意做的事。</div></div></div>
+                    <div class="floor milestone"><div class="floor-number">03</div><div class="floor-content"><div class="floor-age">25 歲</div><div class="floor-title">三件大事同時發生</div><div class="floor-desc">當上店長、企管二技畢業、第一個孩子出生。同一年。人生的建築有時候不是一層一層蓋，而是一次把三層都蓋完。</div></div></div>
+                    <div class="floor milestone"><div class="floor-number">04</div><div class="floor-content"><div class="floor-age">27 歲</div><div class="floor-title">成立臣德地產</div><div class="floor-desc">從工讀生到自己開業當店東，用了八年。這棟建築是我一磚一瓦蓋出來的。</div></div></div>
+                    <div class="floor"><div class="floor-number">05</div><div class="floor-content"><div class="floor-age">30-33 歲</div><div class="floor-title">持續擴建</div><div class="floor-desc">第二個孩子出生、換房、買店面、辦公室。拿到不動產經營管理碩士。受邀全台品牌授課，台灣環繞了三次。我的戰場開始從一間店變成整個產業。</div></div></div>
+                    <div class="floor"><div class="floor-number">06</div><div class="floor-content"><div class="floor-age">39 歲</div><div class="floor-title">考上法學研究所</div><div class="floor-desc">大多數人在這個年紀早就停止學習了。但我考上了法學研究所，因為我覺得這個產業需要更深的理解，而我永遠可以更專業。</div></div></div>
+                    <div class="floor milestone"><div class="floor-number">07</div><div class="floor-content"><div class="floor-age">41 歲</div><div class="floor-title">格鬥元年</div><div class="floor-desc">考過踢拳教練裁判證、站上中正盃泰拳100公斤級擂台、跑完烏來全馬42.195公里。在擂台上和在談判桌上一樣，靠的從來不是天賦。</div></div></div>
+                    <div class="floor"><div class="floor-number">08</div><div class="floor-content"><div class="floor-age">42 歲 // CURRENT</div><div class="floor-title">仍在第一線</div><div class="floor-desc">法研所已修完60學分。還在房仲堅持第一線做業務。外商銀行主管去過了、跨國飯店營運長的邀約也推掉了。我留下來，因為這裡就是我的戰場。</div></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-wrap">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label">// RANK PROGRESSION</div>
+                    <h2 class="section-title" data-scramble>CAREER PATH</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="content-panel career-path">
+                    <div class="career-node"><div class="career-title-box">工讀生</div></div>
+                    <div class="career-node"><span class="career-arrow"><i class="fas fa-chevron-right"></i></span></div>
+                    <div class="career-node"><div class="career-title-box">主任</div></div>
+                    <div class="career-node"><span class="career-arrow"><i class="fas fa-chevron-right"></i></span></div>
+                    <div class="career-node"><div class="career-title-box">副理</div></div>
+                    <div class="career-node"><span class="career-arrow"><i class="fas fa-chevron-right"></i></span></div>
+                    <div class="career-node"><div class="career-title-box">副店長</div></div>
+                    <div class="career-node"><span class="career-arrow"><i class="fas fa-chevron-right"></i></span></div>
+                    <div class="career-node"><div class="career-title-box">店長</div></div>
+                    <div class="career-node"><span class="career-arrow"><i class="fas fa-chevron-right"></i></span></div>
+                    <div class="career-node current"><div class="career-title-box">店東</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-wrap" id="fight-section">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label">// COMBAT RECORD</div>
+                    <h2 class="section-title" data-scramble>FIGHTING STATS</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="fight-ring">
+                    <div class="fight-card content-panel"><div class="fight-icon"><i class="fas fa-hand-fist"></i></div><div class="fight-stat"><span class="counter" data-target="100">0</span>KG</div><div class="fight-label">MUAY THAI WEIGHT CLASS</div></div>
+                    <div class="fight-card content-panel"><div class="fight-icon"><i class="fas fa-certificate"></i></div><div class="fight-stat">CERTIFIED</div><div class="fight-label">KICKBOXING COACH & JUDGE</div></div>
+                    <div class="fight-card content-panel"><div class="fight-icon"><i class="fas fa-person-running"></i></div><div class="fight-stat"><span class="counter" data-target="42" data-suffix=".195">0</span></div><div class="fight-label">FULL MARATHON (KM)</div></div>
+                    <div class="fight-card content-panel"><div class="fight-icon"><i class="fas fa-trophy"></i></div><div class="fight-stat">CKF</div><div class="fight-label">ZHONGZHENG CUP MUAY THAI</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-wrap">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label">// BASE OF OPERATIONS</div>
+                    <h2 class="section-title" data-scramble>BANQIAO HQ</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
+                    <div class="content-panel" style="padding:2rem;display:flex;flex-direction:column;justify-content:center">
+                        <div style="font-family:var(--font-heading);font-size:1.6rem;color:var(--text-primary);letter-spacing:3px;margin-bottom:1rem">臣德地產</div>
+                        <div style="font-size:0.9rem;color:var(--text-body);line-height:1.8;font-weight:300">
+                            <p>新北市板橋區中正路250巷。我的基地。</p>
+                            <p style="margin-top:0.8rem">我的願景：<strong style="color:var(--gold)">讓不動產經紀業每一個人都有能力執業當負責人。</strong></p>
+                            <p style="margin-top:0.8rem">我贊助在地的<strong>春聯義寫活動</strong>，也擔任<strong>板橋領航社</strong>的顧問。做生意最重要的不是成交，是在這個地方留下什麼。</p>
+                        </div>
+                    </div>
+                    <div class="content-panel" style="padding:0;overflow:hidden;max-height:400px">
+                        <img src="/assets/img/guild/qishermo/calligraphy.webp" alt="臣德地產春聯義寫活動" style="width:100%;height:100%;object-fit:cover;object-position:center 30%;opacity:0.85;display:block">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-wrap">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label">// WHAT I BRING TO THE TABLE</div>
+                    <h2 class="section-title" data-scramble>MY EXPERTISE</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="services-grid">
+                    <div class="service-card content-panel"><div class="service-icon"><i class="fas fa-building"></i></div><div class="service-title">不動產全方位服務</div><div class="service-desc">23年中古屋、土地、店面、辦公室成交經驗。懂法律、懂估價、懂經營管理。</div></div>
+                    <div class="service-card content-panel"><div class="service-icon"><i class="fas fa-chalkboard-user"></i></div><div class="service-title">房仲培訓與低成本開業</div><div class="service-desc">全台授課講師。我教你用最低成本開業當負責人。</div></div>
+                    <div class="service-card content-panel"><div class="service-icon"><i class="fas fa-hand-fist"></i></div><div class="service-title">格鬥訓練</div><div class="service-desc">踢拳C級教練與裁判。格鬥跟做業務一樣 --- 紀律、不放棄。</div></div>
+                    <div class="service-card content-panel"><div class="service-icon"><i class="fas fa-route"></i></div><div class="service-title">I人深耕指南</div><div class="service-desc">極致內向者如何在最外向的行業做到頂尖？聊聊。</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="quote-section">
+            <div class="quote-block content-panel">
+                <span class="quote-mark">"</span>
+                <p class="quote-text" data-quote-reveal>人生到底有多長<br>我也不知道<br>但我知道<br>我<span class="accent">還在這裡</span></p>
+                <p class="quote-sub">--- 42歲，仍在第一線 ---</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-socials">
+            <a href="https://www.threads.com/@qishermo" target="_blank" rel="noopener"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/qishermo/" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+        <div class="footer-credit">Made with <span style="color:var(--crimson)">&hearts;</span> by SuperGalen's Dungeon</div>
+    </footer>
+
+    <script>
+        // ===== CURSOR =====
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorRing = document.querySelector('.cursor-ring');
+        let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+
+        document.addEventListener('mousemove', e => {
+            mouseX = e.clientX; mouseY = e.clientY;
+            cursorDot.style.left = mouseX - 4 + 'px';
+            cursorDot.style.top = mouseY - 4 + 'px';
+        });
+
+        (function animateCursor() {
+            ringX += (mouseX - ringX) * 0.12;
+            ringY += (mouseY - ringY) * 0.12;
+            cursorRing.style.left = ringX - 20 + 'px';
+            cursorRing.style.top = ringY - 20 + 'px';
+            requestAnimationFrame(animateCursor);
+        })();
+
+        document.querySelectorAll('a, .career-title-box, .fight-card, .service-card').forEach(el => {
+            el.addEventListener('mouseenter', () => cursorRing.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursorRing.classList.remove('hover'));
+        });
+
+        if ('ontouchstart' in window) {
+            cursorDot.style.display = 'none';
+            cursorRing.style.display = 'none';
+            document.body.style.cursor = 'auto';
+        }
+
+        // ===== SCROLL PROGRESS =====
+        const scrollProgress = document.querySelector('.scroll-progress');
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement;
+            scrollProgress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100 + '%';
+        });
+
+        // ===== BOOT =====
+        function bootSequence() {
+            const lines = document.querySelectorAll('.boot-text .line');
+            const barFill = document.querySelector('.boot-bar-fill');
+            const bootScreen = document.querySelector('.boot-screen');
+            const tl = gsap.timeline();
+            lines.forEach((line, i) => { tl.to(line, { opacity: 1, y: 0, duration: 0.25 }, i * 0.3); });
+            tl.to(barFill, { width: '100%', duration: 1, ease: 'power2.inOut' }, '-=0.5');
+            tl.to(bootScreen, { opacity: 0, duration: 0.3, delay: 0.15, onComplete: () => {
+                bootScreen.style.display = 'none';
+                const htl = gsap.timeline();
+                htl.to('.hero-subtitle', { opacity: 1, duration: 0.6, ease: 'power3.out' })
+                   .to('.hero-title', { opacity: 1, scale: 1, duration: 1.2, ease: 'expo.out' }, '-=0.2')
+                   .to('.hero-divider', { scaleX: 1, duration: 0.6, ease: 'power2.inOut' }, '-=0.6')
+                   .to('.hero-tagline', { opacity: 1, duration: 0.5 }, '-=0.3')
+                   .to('.hero-avatar', { opacity: 1, scale: 1, rotation: 0, duration: 0.8, ease: 'back.out(1.7)' }, '-=0.2');
+            }});
+        }
+
+        // ===== GSAP =====
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Text scramble
+        const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
+        document.querySelectorAll('[data-scramble]').forEach(el => {
+            const original = el.textContent;
+            ScrollTrigger.create({
+                trigger: el, start: 'top 85%', once: true,
+                onEnter: () => {
+                    let iter = 0;
+                    const iv = setInterval(() => {
+                        el.textContent = original.split('').map((c, i) => c === ' ' ? ' ' : i < iter ? original[i] : scrambleChars[Math.floor(Math.random() * scrambleChars.length)]).join('');
+                        iter += 0.5;
+                        if (iter >= original.length) { clearInterval(iv); el.textContent = original; }
+                    }, 30);
+                }
+            });
+        });
+
+        // Section dividers
+        gsap.utils.toArray('.section-divider').forEach(d => {
+            gsap.to(d, { scaleX: 1, duration: 0.8, ease: 'power2.inOut', scrollTrigger: { trigger: d, start: 'top 85%' } });
+        });
+
+        // Quote char reveal
+        document.querySelectorAll('[data-quote-reveal]').forEach(qEl => {
+            const html = qEl.innerHTML;
+            qEl.innerHTML = html.replace(/(<[^>]+>)|([^<])/g, (m, tag, c) => tag || c === '\n' ? (tag || c) : `<span class="q-char" style="display:inline-block">${c}</span>`);
+            const chars = qEl.querySelectorAll('.q-char');
+            ScrollTrigger.create({
+                trigger: qEl, start: 'top 80%', once: true,
+                onEnter: () => { gsap.to(chars, { opacity: 1, y: 0, rotateX: 0, duration: 0.5, stagger: 0.03, ease: 'back.out(1.7)' }); }
+            });
+        });
+
+        gsap.utils.toArray('.quote-sub').forEach(q => {
+            gsap.to(q, { opacity: 1, duration: 0.6, delay: 1.5, scrollTrigger: { trigger: q, start: 'top 85%' } });
+        });
+
+        // Intro word reveal
+        document.querySelectorAll('[data-split-words]').forEach(container => {
+            container.querySelectorAll('p').forEach(p => {
+                // Use TreeWalker to safely wrap only text nodes
+                const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+                const textNodes = [];
+                while (walker.nextNode()) textNodes.push(walker.currentNode);
+                textNodes.forEach(node => {
+                    const words = node.textContent.split(/(\s+)/);
+                    const frag = document.createDocumentFragment();
+                    words.forEach(w => {
+                        if (!w.trim()) { frag.appendChild(document.createTextNode(w)); return; }
+                        const span = document.createElement('span');
+                        span.className = 'word';
+                        span.textContent = w;
+                        frag.appendChild(span);
+                    });
+                    node.parentNode.replaceChild(frag, node);
+                });
+            });
+            const words = container.querySelectorAll('.word');
+            ScrollTrigger.create({
+                trigger: container, start: 'top 80%', once: true,
+                onEnter: () => { gsap.to(words, { opacity: 1, y: 0, duration: 0.4, stagger: 0.02, ease: 'power2.out' }); }
+            });
+        });
+
+        // Dossier rows
+        gsap.utils.toArray('.dossier-row > div').forEach((cell, i) => {
+            gsap.to(cell, { opacity: 1, x: 0, duration: 0.4, delay: i * 0.06, scrollTrigger: { trigger: cell, start: 'top 92%' } });
+        });
+
+        // Timeline floors
+        gsap.utils.toArray('.floor').forEach((f, i) => {
+            gsap.to(f, { opacity: 1, y: 0, duration: 0.7, delay: i * 0.08, ease: 'power3.out', scrollTrigger: { trigger: f, start: 'top 88%' } });
+        });
+
+        // Career nodes
+        gsap.utils.toArray('.career-node').forEach((n, i) => {
+            gsap.to(n, { opacity: 1, scale: 1, duration: 0.4, delay: i * 0.1, ease: 'back.out(1.7)', scrollTrigger: { trigger: '.career-path', start: 'top 80%' } });
+        });
+
+        // Fight cards
+        gsap.utils.toArray('.fight-card').forEach((c, i) => {
+            gsap.to(c, { opacity: 1, scale: 1, rotateY: 0, duration: 0.6, delay: i * 0.15, ease: 'power3.out', scrollTrigger: { trigger: c, start: 'top 88%' } });
+        });
+
+        // Service cards
+        gsap.utils.toArray('.service-card').forEach((c, i) => {
+            gsap.to(c, { opacity: 1, y: 0, scale: 1, duration: 0.6, delay: i * 0.1, ease: 'power3.out', scrollTrigger: { trigger: c, start: 'top 88%' } });
+        });
+
+        // Counter
+        document.querySelectorAll('.counter').forEach(counter => {
+            const target = parseInt(counter.dataset.target);
+            const suffix = counter.dataset.suffix || '';
+            ScrollTrigger.create({
+                trigger: counter, start: 'top 90%', once: true,
+                onEnter: () => {
+                    gsap.to({ v: 0 }, { v: target, duration: 1.5, ease: 'power2.out',
+                        onUpdate: function() { counter.textContent = Math.floor(this.targets()[0].v) + suffix; }
+                    });
+                }
+            });
+        });
+
+        // ===== SCROLL Y for Three.js =====
+        let scrollY = 0;
+        window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
+        // ===== THREE.JS CITY =====
+        (function() {
+            const canvas = document.getElementById('three-bg');
+            const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x030308, 15, 80);
+            const camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.1, 150);
+
+            scene.add(new THREE.AmbientLight(0x0a0a18, 0.4));
+            const headlight = new THREE.PointLight(0xd4a84b, 1.5, 35);
+            scene.add(headlight);
+            const fillLight = new THREE.PointLight(0x2244aa, 0.5, 20);
+            scene.add(fillLight);
+
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 300), new THREE.MeshBasicMaterial({ color: 0x050510 }));
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+
+            function winTex(sw, sh) {
+                const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+                const g = c.getContext('2d');
+                g.fillStyle = '#06060c'; g.fillRect(0, 0, 64, 128);
+                for (let r = 0; r < 10; r++) for (let col = 0; col < 5; col++) {
+                    if (Math.random() < 0.15) continue;
+                    const on = Math.random() > 0.3;
+                    g.fillStyle = on ? `rgba(${200+Math.random()*55|0},${150+Math.random()*50|0},${50+Math.random()*30|0},${0.4+Math.random()*0.5})` : 'rgba(8,8,16,0.9)';
+                    g.fillRect(3 + col * 12, 3 + r * 12, 9, 9);
+                }
+                const t = new THREE.CanvasTexture(c);
+                t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                t.repeat.set(Math.max(1, Math.round(sw / 2.5)), Math.max(1, Math.round(sh / 5)));
+                return t;
+            }
+
+            const topMat = new THREE.MeshBasicMaterial({ color: 0x080810 });
+            const goldMat = new THREE.MeshBasicMaterial({ color: 0xd4a84b });
+
+            function bld(x, z, w, d, h) {
+                const t = winTex(w, h);
+                const sm = new THREE.MeshStandardMaterial({ color: 0x0a0a14, roughness: 0.7, metalness: 0.3, emissiveMap: t, emissive: 0xd4a84b, emissiveIntensity: 0.8 });
+                const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [sm, sm.clone(), topMat, topMat, sm.clone(), sm.clone()]);
+                m.position.set(x, h / 2, z);
+                scene.add(m);
+                if (h > 18 && Math.random() > 0.6) {
+                    const cr = new THREE.Mesh(new THREE.BoxGeometry(w + 0.1, 0.4, d + 0.1), goldMat);
+                    cr.position.set(x, h + 0.2, z); scene.add(cr);
+                }
+            }
+
+            const D = 150, step = 4;
+            const centerLine = z => Math.sin(z * 0.04) * 2.5;
+
+            function randH() {
+                const r = Math.random();
+                if (r < 0.25) return 3 + Math.random() * 5;
+                if (r < 0.6) return 10 + Math.random() * 8;
+                if (r < 0.85) return 18 + Math.random() * 10;
+                return 28 + Math.random() * 8;
+            }
+
+            for (let z = 8; z > -D; z -= step) {
+                const cx = centerLine(z), sw = 2.2, ld = step - 0.3;
+                const lw = 2.5 + Math.random() * 3;
+                bld(cx - sw - lw / 2, z, lw, ld, randH());
+                if (Math.random() > 0.5) { const lw2 = 2 + Math.random() * 3; bld(cx - sw - lw - lw2 / 2 - 0.3, z, lw2, ld * 0.8, randH() * 0.7); }
+                const rw = 2.5 + Math.random() * 3;
+                bld(cx + sw + rw / 2, z, rw, ld, randH());
+                if (Math.random() > 0.5) { const rw2 = 2 + Math.random() * 3; bld(cx + sw + rw + rw2 / 2 + 0.3, z, rw2, ld * 0.8, randH() * 0.7); }
+            }
+
+            bld(centerLine(-D), -D - 5, 5, 5, 35);
+            const spire = new THREE.Mesh(new THREE.ConeGeometry(0.2, 4, 4), goldMat);
+            spire.position.set(centerLine(-D), 37, -D - 5);
+            scene.add(spire);
+
+            // Road dashes merged
+            const dv = [];
+            for (let z = 8; z > -D - 5; z -= 2.5) {
+                const cx = centerLine(z), y = 0.02;
+                dv.push(cx-0.04,y,z-0.6, cx+0.04,y,z-0.6, cx+0.04,y,z+0.6, cx-0.04,y,z-0.6, cx+0.04,y,z+0.6, cx-0.04,y,z+0.6);
+            }
+            const dg = new THREE.BufferGeometry();
+            dg.setAttribute('position', new THREE.Float32BufferAttribute(dv, 3));
+            scene.add(new THREE.Mesh(dg, new THREE.MeshBasicMaterial({ color: 0xd4a84b, transparent: true, opacity: 0.2 })));
+
+            // Particles
+            const pN = 60, pg = new THREE.BufferGeometry(), pp = new Float32Array(pN * 3);
+            for (let i = 0; i < pN * 3; i += 3) { pp[i] = (Math.random()-0.5)*10; pp[i+1] = Math.random()*20; pp[i+2] = -Math.random()*D; }
+            pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+            const pts = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xd4a84b, size: 0.05, transparent: true, opacity: 0.3 }));
+            scene.add(pts);
+
+            // Camera path
+            const camRange = D * 0.65, cpPts = [];
+            for (let i = 0; i <= 20; i++) {
+                const t = i / 20, z = 6 - t * camRange, cx = centerLine(z);
+                cpPts.push(new THREE.Vector3(cx + Math.sin(t*Math.PI*3)*0.4, 1.8 + t*0.8 + Math.sin(t*Math.PI*5)*0.4, z));
+            }
+            const camPath = new THREE.CatmullRomCurve3(cpPts);
+
+            let smoothProgress = 0;
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const t = Date.now() * 0.001;
+                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                smoothProgress += (Math.min(scrollY / Math.max(maxScroll, 1), 1) - smoothProgress) * 0.12;
+
+                const pos = camPath.getPointAt(smoothProgress);
+                pos.x += Math.sin(t * 0.4) * 0.15;
+                pos.y += Math.sin(t * 0.6) * 0.08;
+                camera.position.copy(pos);
+
+                const la = camPath.getPointAt(Math.min(smoothProgress + 0.06, 0.99));
+                la.y = pos.y + 0.2;
+                camera.lookAt(la);
+
+                headlight.position.set(pos.x, pos.y + 0.5, pos.z + 2);
+                fillLight.position.set(pos.x - 1.5, pos.y + 0.5, pos.z - 1);
+
+                const pa = pts.geometry.attributes.position.array;
+                for (let i = 1; i < pa.length; i += 3) { pa[i] += 0.003; if (pa[i] > 20) pa[i] = 0; }
+                pts.geometry.attributes.position.needsUpdate = true;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        })();
+
+        // ===== CIPHER RAIN (native canvas) =====
+        (function() {
+            const c = document.getElementById('cipher-rain');
+            const ctx = c.getContext('2d');
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%密碼譯電解鍵'.split('');
+            const fontSize = 14;
+            let cols, drops, rafId;
+
+            function init() {
+                c.width = window.innerWidth;
+                c.height = window.innerHeight;
+                cols = Math.floor(c.width / fontSize);
+                drops = Array.from({ length: cols }, () => Math.floor(Math.random() * -50));
+            }
+            init();
+
+            function draw() {
+                ctx.fillStyle = 'rgba(6,6,10,0.15)';
+                ctx.fillRect(0, 0, c.width, c.height);
+                ctx.fillStyle = 'rgba(51,221,136,0.7)';
+                ctx.font = fontSize + 'px monospace';
+                for (let i = 0; i < drops.length; i++) {
+                    ctx.fillText(chars[Math.random() * chars.length | 0], i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > c.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+                rafId = requestAnimationFrame(draw);
+            }
+            draw();
+
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    cancelAnimationFrame(rafId);
+                    init();
+                    draw();
+                }, 200);
+            });
+        })();
+
+        window.addEventListener('load', bootSequence);
+    </script>
+</body>
+</html>
