@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>紅梅喫茶 | Kohbai's Kissaten</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;700;800&family=Zen+Maru+Gothic:wght@400;500;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        :root{
+            --plum:#8B1A3A;--plum-light:#C75B7A;--plum-deep:#5C0A24;
+            --sakura:#FFB7C5;--sakura-hot:#FF6B8A;
+            --amber:#FFBF00;
+            --wood:#2A1810;--cream:#FFF8F0;--ink:#1A0E08;
+            --jp:'Shippori Mincho','Noto Serif TC',serif;
+            --rd:'Zen Maru Gothic',sans-serif;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{overflow-x:hidden;scroll-behavior:smooth}
+        body{background:var(--ink);color:var(--cream);font-family:var(--rd);overflow-x:hidden;line-height:1.8}
+        body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+            background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity:0.35;mix-blend-mode:overlay}
+        #steam-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+        /* KISSATEN BG — persistent */
+        .kissaten-wall{position:fixed;inset:0;z-index:0;
+            background:url('/assets/img/guild/kohbai_tw/kohbai_tea.webp') center/cover;
+            filter:brightness(0.18) saturate(0.7) blur(2px);transform:scale(1.05)}
+        .kissaten-vig{position:fixed;inset:0;z-index:0;
+            background:radial-gradient(ellipse at 50% 40%,transparent 20%,rgba(26,14,8,0.8) 100%)}
+
+        /* NAV */
+        .back-nav{position:fixed;top:1rem;left:1rem;z-index:300;display:flex;align-items:center;gap:0.4rem;
+            color:var(--sakura);background:rgba(26,14,8,0.6);backdrop-filter:blur(12px);text-decoration:none;
+            font-size:0.65rem;font-weight:700;padding:0.4rem 0.9rem;border-radius:20px;
+            border:1px solid rgba(255,183,197,0.12);transition:all 0.3s;letter-spacing:0.08em}
+        .back-nav:hover{border-color:var(--sakura-hot);transform:translateX(-3px)}
+
+        /* ===== GATE ===== */
+        .gate{position:fixed;inset:0;z-index:1000;background:var(--ink);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;flex-direction:column}
+        .gate-noren{display:flex;gap:5px;margin-bottom:1.5rem}
+        .noren-s{width:42px;height:70px;background:linear-gradient(180deg,var(--plum),var(--plum-deep));
+            border-radius:0 0 10px 10px;display:flex;align-items:center;justify-content:center;
+            font-family:var(--jp);color:var(--cream);font-size:1rem;font-weight:700;writing-mode:vertical-rl;
+            border-top:3px solid var(--plum-light);animation:sw 3s ease-in-out infinite alternate;transform-origin:top}
+        .noren-s:nth-child(2){animation-delay:-0.7s}.noren-s:nth-child(3){animation-delay:-1.4s}.noren-s:nth-child(4){animation-delay:-2.1s}
+        @keyframes sw{0%{transform:rotate(-2deg)}100%{transform:rotate(2deg)}}
+        .gate-txt{font-family:var(--jp);color:var(--sakura);font-size:clamp(1rem,3vw,1.5rem);font-weight:600;letter-spacing:0.3em;opacity:0}
+        .gate-sub{font-size:0.6rem;color:rgba(255,183,197,0.35);letter-spacing:0.15em;margin-top:0.4rem;opacity:0}
+
+        /* ===== FIXED SIDEBAR MENU ===== */
+        .side-menu{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:250;
+            display:flex;flex-direction:column;gap:2px;opacity:0;pointer-events:none;transition:all 0.5s}
+        .side-menu.show{opacity:1;pointer-events:auto}
+        .side-menu a{display:flex;align-items:center;gap:0.5rem;
+            padding:0.5rem 0.8rem 0.5rem 0.6rem;
+            background:rgba(26,14,8,0.6);backdrop-filter:blur(10px);
+            border:1px solid rgba(255,183,197,0.06);border-left:3px solid transparent;
+            text-decoration:none;color:rgba(255,183,197,0.4);
+            font-family:var(--jp);font-size:0.6rem;font-weight:600;
+            letter-spacing:0.05em;transition:all 0.3s;
+            border-radius:0 8px 8px 0}
+        .side-menu a:hover,.side-menu a.active{
+            color:var(--sakura);background:rgba(139,26,58,0.3);
+            border-left-color:var(--sakura-hot);padding-left:1rem}
+        .side-menu a i{font-size:0.7rem;width:16px;text-align:center}
+
+        /* ===== COURSE SECTIONS ===== */
+        .course{position:relative;z-index:1;min-height:100vh;
+            display:flex;align-items:center;justify-content:center;
+            padding:clamp(3rem,6vh,5rem) clamp(1.5rem,5vw,4rem)}
+
+        /* Course header — menu item style */
+        .course-header{
+            position:absolute;top:clamp(1.5rem,3vh,2.5rem);left:50%;transform:translateX(-50%);
+            display:flex;align-items:center;gap:0.8rem;
+            background:rgba(26,14,8,0.6);backdrop-filter:blur(12px);
+            padding:0.4rem 1.5rem;border-radius:30px;
+            border:1px solid rgba(255,183,197,0.1);
+            font-family:var(--jp);white-space:nowrap;z-index:5}
+        .course-header .dish{font-size:0.8rem;color:var(--sakura);font-weight:700;letter-spacing:0.1em}
+        .course-header .dots{flex:none;width:40px;border-bottom:1px dotted rgba(255,183,197,0.2)}
+        .course-header .price{font-size:0.6rem;color:rgba(255,183,197,0.3);letter-spacing:0.1em}
+        .course-header .num{font-size:0.5rem;color:var(--plum-light);margin-right:0.3rem}
+
+        .course-body{max-width:1100px;width:100%;position:relative}
+
+        /* ===== COURSE 0: HERO (WELCOME) ===== */
+        .c-hero .course-body{text-align:center;max-width:700px}
+        .c-hero .char-img{height:clamp(250px,40vh,420px);
+            filter:drop-shadow(0 0 40px rgba(255,183,197,0.3)) drop-shadow(0 10px 30px rgba(0,0,0,0.5));
+            margin-bottom:1.5rem}
+        .c-hero h1{font-family:var(--jp);font-weight:800;font-size:clamp(3rem,10vw,6.5rem);
+            line-height:1;letter-spacing:0.08em;
+            text-shadow:0 0 40px rgba(255,183,197,0.4),0 4px 20px rgba(0,0,0,0.6);margin-bottom:0.8rem}
+        .c-hero h1 .ac{color:var(--sakura-hot);text-shadow:0 0 30px rgba(255,107,138,0.8)}
+        .c-hero .sub{font-family:var(--jp);color:rgba(255,183,197,0.65);
+            font-size:clamp(0.8rem,1.8vw,1rem);letter-spacing:0.15em;line-height:2.2}
+        .c-hero .scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+            color:rgba(255,183,197,0.25);font-size:0.55rem;letter-spacing:0.2em;text-align:center;
+            animation:sh 2s ease-in-out infinite}
+        .c-hero .scroll-hint i{display:block;font-size:1rem;margin-bottom:0.2rem}
+        @keyframes sh{0%,100%{opacity:0.2;transform:translateX(-50%)}50%{opacity:0.7;transform:translateX(-50%) translateY(6px)}}
+
+        /* ===== COURSE 1: ABOUT (角色設定圖 + 菜單) ===== */
+        .c-about .course-body{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1.5rem,3vw,3rem);align-items:start}
+        .c-about .sheet-img{border-radius:10px;overflow:hidden;border:1px solid rgba(255,183,197,0.08);
+            box-shadow:0 10px 30px rgba(0,0,0,0.3)}
+        .c-about .sheet-img img{width:100%;display:block}
+        .c-about .info-stack{display:flex;flex-direction:column;gap:1.2rem}
+        .info-card{background:rgba(62,39,35,0.35);border:1px solid rgba(255,183,197,0.06);
+            border-radius:10px;padding:1rem 1.2rem;backdrop-filter:blur(8px)}
+        .info-card h3{font-family:var(--jp);font-size:0.9rem;color:var(--sakura);margin-bottom:0.5rem;
+            letter-spacing:0.08em;font-weight:700}
+        .ml{display:flex;justify-content:space-between;align-items:baseline;padding:0.3rem 0;
+            border-bottom:1px solid rgba(255,183,197,0.04)}
+        .ml .k{font-family:var(--jp);font-size:0.7rem;color:var(--sakura-hot);font-weight:600;min-width:55px}
+        .ml .d{flex:1;margin:0 0.3rem;border-bottom:1px dotted rgba(255,183,197,0.06);
+            min-width:12px;align-self:end;margin-bottom:3px}
+        .ml .v{font-size:0.7rem;color:rgba(255,240,243,0.55);text-align:right}
+        .tag-row{display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.4rem}
+        .tag{display:inline-flex;align-items:center;gap:0.2rem;
+            background:rgba(255,107,138,0.07);border:1px solid rgba(255,107,138,0.12);
+            color:var(--sakura);padding:0.15rem 0.5rem;border-radius:12px;
+            font-size:0.55rem;font-weight:500;transition:all 0.3s}
+        .tag:hover{background:rgba(255,107,138,0.18);transform:translateY(-1px)}
+
+        /* ===== COURSE 2: WORKS ===== */
+        .works-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;max-width:900px;margin:0 auto}
+        .wk{position:relative;border-radius:10px;overflow:hidden;border:1px solid rgba(255,183,197,0.06);
+            background:rgba(62,39,35,0.25);transition:all 0.4s cubic-bezier(0.23,1,0.32,1)}
+        .wk:hover{border-color:var(--sakura-hot);box-shadow:0 8px 25px rgba(255,107,138,0.12)}
+        .wk img{width:100%;display:block}
+        .wk .wi{padding:0.7rem 0.9rem}
+        .wk .wi h4{font-family:var(--jp);font-size:0.75rem;color:var(--sakura);margin-bottom:0.2rem;font-weight:700}
+        .wk .wi p{font-size:0.6rem;color:rgba(255,240,243,0.35);line-height:1.5}
+
+        /* ===== COURSE 3: MY ROOM ===== */
+        .c-room{background:url('/assets/img/guild/kohbai_tw/kohbai_art.webp') center/cover;background-attachment:fixed}
+        .c-room::before{content:'';position:absolute;inset:0;
+            background:linear-gradient(180deg,rgba(26,14,8,0.25),rgba(26,14,8,0.15) 40%,rgba(26,14,8,0.5) 100%)}
+        .room-card{max-width:420px;background:rgba(26,14,8,0.7);backdrop-filter:blur(14px);
+            border:1px solid rgba(255,183,197,0.1);border-radius:14px;padding:clamp(1.5rem,3vw,2.2rem);
+            box-shadow:0 15px 40px rgba(0,0,0,0.4)}
+        .room-card h2{font-family:var(--jp);font-size:1.4rem;color:var(--sakura);letter-spacing:0.08em;margin-bottom:0.8rem}
+        .room-card p{font-size:0.8rem;color:rgba(255,240,243,0.55);line-height:2;margin-bottom:0.7rem}
+        .room-card .hl{color:var(--sakura-hot);font-weight:600}
+        .room-card .profile-row{display:flex;align-items:center;gap:0.8rem;margin-top:0.8rem;
+            padding-top:0.8rem;border-top:1px solid rgba(255,183,197,0.06)}
+        .room-card .profile-row img{width:45px;height:45px;border-radius:50%;border:2px solid var(--sakura-hot);
+            box-shadow:0 0 12px rgba(255,107,138,0.25);object-fit:cover}
+        .room-card .profile-row .pi{font-size:0.65rem;color:rgba(255,240,243,0.4)}
+        .room-card .profile-row .pi strong{color:var(--sakura);font-weight:700}
+
+        /* ===== COURSE 4: TIMELINE ===== */
+        .timeline{max-width:600px;margin:0 auto;position:relative;padding-left:45px}
+        .timeline::before{content:'';position:absolute;left:18px;top:0;bottom:0;width:2px;
+            background:linear-gradient(180deg,transparent,var(--sakura-hot),var(--plum),var(--sakura-hot),transparent)}
+        .tl-i{position:relative;margin-bottom:2.5rem;padding-left:1.5rem}
+        .tl-i::before{content:'';position:absolute;left:-33px;top:4px;width:14px;height:14px;
+            background:var(--plum);border:2px solid var(--sakura-hot);border-radius:50%;
+            box-shadow:0 0 12px rgba(255,107,138,0.8)}
+        .tl-i .date{font-size:0.6rem;color:var(--sakura-hot);font-weight:700;letter-spacing:0.12em;margin-bottom:0.15rem}
+        .tl-i .tt{font-family:var(--jp);font-size:1rem;color:var(--sakura);font-weight:700;margin-bottom:0.2rem}
+        .tl-i .desc{font-size:0.75rem;color:rgba(255,240,243,0.4);line-height:1.7}
+
+        /* ===== COURSE 5: SERVICES ===== */
+        .svc-card{max-width:600px;margin:0 auto;background:rgba(62,39,35,0.3);
+            border:1px solid rgba(255,183,197,0.08);border-radius:14px;
+            padding:clamp(1.5rem,3vw,2.5rem);backdrop-filter:blur(10px)}
+        .svc-card h3{font-family:var(--jp);font-size:1.3rem;color:var(--sakura);
+            letter-spacing:0.1em;margin-bottom:0.8rem;text-align:center}
+        .svc-card .intro{font-size:0.8rem;color:rgba(255,240,243,0.5);margin-bottom:1.2rem;text-align:center;line-height:1.8}
+        .svc-line{display:flex;align-items:center;gap:0.6rem;padding:0.6rem 0;
+            border-bottom:1px solid rgba(255,183,197,0.05)}
+        .svc-line i{font-size:0.9rem;color:var(--sakura-hot);width:20px;text-align:center;flex-shrink:0}
+        .svc-line .svc-name{font-family:var(--jp);font-size:0.8rem;color:var(--sakura);font-weight:600;min-width:80px}
+        .svc-line .svc-desc{font-size:0.7rem;color:rgba(255,240,243,0.45)}
+        .svc-link{display:block;text-align:center;margin-top:1.2rem;font-size:0.7rem;color:rgba(255,183,197,0.35)}
+        .svc-link a{color:var(--sakura);text-decoration:underline}
+
+        /* ===== COURSE 6: BILL / SOCIAL ===== */
+        .bill-card{max-width:500px;margin:0 auto;background:rgba(62,39,35,0.25);
+            border:1px solid rgba(255,183,197,0.06);border-radius:10px;
+            padding:2rem;text-align:center}
+        .bill-card h3{font-family:var(--jp);font-size:1.3rem;color:var(--sakura);
+            letter-spacing:0.1em;margin-bottom:1.2rem}
+        .bill-card .bill-total{font-family:var(--jp);font-size:0.7rem;color:rgba(255,183,197,0.3);
+            margin-bottom:1.5rem;letter-spacing:0.1em}
+        .social-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:0.7rem}
+        .sn{display:flex;flex-direction:column;align-items:center;gap:0.3rem;
+            padding:0.7rem 0.9rem;background:rgba(255,107,138,0.04);
+            border:1px solid rgba(255,107,138,0.08);border-radius:10px;
+            text-decoration:none;color:var(--sakura);font-size:0.6rem;font-weight:600;
+            transition:all 0.4s;min-width:75px}
+        .sn i{font-size:1.1rem;transition:all 0.3s}
+        .sn:hover{background:rgba(255,107,138,0.1);border-color:var(--sakura-hot);
+            transform:translateY(-4px);box-shadow:0 6px 20px rgba(255,107,138,0.1)}
+
+        /* FOOTER */
+        footer{position:relative;z-index:1;text-align:center;padding:2rem;background:var(--ink);
+            border-top:1px solid rgba(255,183,197,0.04)}
+        footer .sig{font-size:0.55rem;color:rgba(255,183,197,0.2);letter-spacing:0.1em}
+        footer .sig i{color:var(--sakura-hot)}
+
+        /* BROADCAST BREAK — show full image, no cropping */
+        .bb{position:relative;z-index:1;overflow:hidden}
+        .bb img{width:100%;display:block;filter:saturate(0.6) contrast(1.1)}
+        .bb .scan{position:absolute;inset:0;
+            background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px)}
+        .bb .bb-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+            background:rgba(26,14,8,0.25)}
+        .bb .bb-text span{font-family:var(--rd);font-size:0.65rem;color:var(--cream);
+            letter-spacing:0.3em;font-weight:700;
+            background:rgba(139,26,58,0.65);padding:0.25rem 1.2rem;border-radius:3px}
+
+        /* ===== ORDER RECEIPT — tracks visited courses ===== */
+        #order-receipt{
+            position:fixed;top:1rem;right:1rem;z-index:260;
+            width:160px;
+            background:var(--cream);color:var(--wood);
+            border-radius:2px;padding:0.8rem;
+            box-shadow:0 4px 20px rgba(0,0,0,0.4);
+            font-family:var(--rd);font-size:0.55rem;
+            opacity:0;pointer-events:none;transition:all 0.5s;
+            transform:translateY(-10px) rotate(1deg);
+            border-bottom:2px dashed rgba(62,39,35,0.2);
+        }
+        #order-receipt.show{opacity:1;pointer-events:auto;transform:translateY(0) rotate(1deg)}
+        #order-receipt .receipt-title{
+            font-family:var(--jp);font-size:0.7rem;font-weight:800;
+            text-align:center;color:var(--plum);
+            letter-spacing:0.1em;margin-bottom:0.3rem;
+            border-bottom:1px solid rgba(139,26,58,0.15);
+            padding-bottom:0.3rem;
+        }
+        #order-receipt .receipt-time{
+            text-align:center;font-size:0.45rem;color:rgba(62,39,35,0.4);
+            margin-bottom:0.5rem;
+        }
+        .receipt-item{
+            display:flex;justify-content:space-between;
+            padding:0.15rem 0;color:rgba(62,39,35,0.35);
+            font-size:0.5rem;transition:all 0.4s;
+        }
+        .receipt-item.checked{color:var(--plum);font-weight:600}
+        .receipt-item.checked::after{
+            content:' ';font-size:0.55rem;
+        }
+        .receipt-item .ri-name{font-family:var(--jp)}
+        .receipt-item .ri-price{font-family:var(--rd);letter-spacing:0.05em}
+        #receipt-total{
+            margin-top:0.4rem;padding-top:0.4rem;
+            border-top:1px dashed rgba(62,39,35,0.15);
+            display:flex;justify-content:space-between;
+            font-family:var(--jp);font-size:0.55rem;
+            font-weight:700;color:var(--plum);
+        }
+        #receipt-stamp{
+            text-align:center;margin-top:0.5rem;
+            font-size:0.45rem;color:rgba(139,26,58,0.3);
+            letter-spacing:0.08em;
+        }
+
+        /* ===== WIND CHIME NOTIFICATION ===== */
+        #wind-chime{
+            position:fixed;top:50%;right:0;z-index:260;
+            transform:translateY(-50%);
+            display:flex;flex-direction:column;align-items:center;
+            opacity:0;pointer-events:none;
+        }
+        #wind-chime .chime-rod{width:2px;height:18px;background:rgba(255,191,0,0.4)}
+        #wind-chime .chime-bell{
+            width:14px;height:18px;
+            background:linear-gradient(180deg,var(--amber),#DAA520);
+            border-radius:0 0 50% 50%;
+            box-shadow:0 0 6px rgba(255,191,0,0.3);
+        }
+        #wind-chime .chime-tag{
+            width:10px;height:35px;background:var(--plum);
+            border-radius:0 0 4px 4px;margin-top:2px;
+            transform-origin:top center;
+        }
+        #wind-chime .chime-label{
+            font-family:var(--jp);font-size:0.5rem;
+            color:var(--sakura);writing-mode:vertical-rl;
+            margin-top:4px;letter-spacing:0.1em;
+            opacity:0;transition:opacity 0.3s;
+        }
+
+        /* ===== TEA RIPPLE ON HOVER (for work cards) ===== */
+        .wk::after{
+            content:'';position:absolute;
+            width:0;height:0;border-radius:50%;
+            background:radial-gradient(circle,rgba(255,183,197,0.15),transparent 70%);
+            top:50%;left:50%;transform:translate(-50%,-50%);
+            transition:width 0.6s ease,height 0.6s ease;
+            pointer-events:none;
+        }
+        .wk:hover::after{width:300px;height:300px}
+
+        /* ===== LANTERN GLOW CURSOR ===== */
+        #lantern-glow{position:fixed;width:300px;height:300px;border-radius:50%;
+            pointer-events:none;z-index:1;
+            background:radial-gradient(circle,rgba(255,191,0,0.06) 0%,rgba(255,191,0,0.02) 30%,transparent 70%);
+            transform:translate(-50%,-50%);transition:left 0.3s ease,top 0.3s ease}
+
+        /* ===== CLICK BLOSSOM BURST ===== */
+        .blossom-particle{position:fixed;pointer-events:none;z-index:998;
+            font-size:14px;color:var(--sakura)}
+
+        /* ===== FLOATING DECORATIONS ===== */
+        @keyframes floatA{0%{transform:translateY(0) rotate(-3deg)}100%{transform:translateY(-12px) rotate(3deg)}}
+        @keyframes floatB{0%{transform:translateY(0) rotate(2deg)}100%{transform:translateY(-10px) rotate(-2deg)}}
+        @keyframes floatC{0%{transform:translateY(-5px) rotate(-2deg)}100%{transform:translateY(5px) rotate(2deg)}}
+
+        /* ===== SCATTERED ELEMENTS ===== */
+        .scattered{position:absolute;pointer-events:auto;cursor:pointer;
+            transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),filter 0.3s;z-index:3;
+            filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3))}
+        .scattered:hover{transform:scale(1.15) rotate(5deg) !important;
+            filter:drop-shadow(0 8px 20px rgba(255,107,138,0.3))}
+
+        /* ===== OUTFIT SECTION ===== */
+        .outfit-body{display:flex;align-items:center;justify-content:center;gap:clamp(1rem,4vw,3rem)}
+        .outfit-item{text-align:center}
+        .outfit-item img{max-height:clamp(250px,45vh,450px);
+            filter:drop-shadow(0 10px 30px rgba(0,0,0,0.5));transition:transform 0.5s}
+        .outfit-item:hover img{transform:translateY(-8px) scale(1.03)}
+        .outfit-label{margin-top:1rem;font-family:var(--jp);font-size:0.85rem;color:var(--sakura);font-weight:600;letter-spacing:0.08em}
+        .outfit-sub{font-size:0.6rem;color:rgba(255,240,243,0.35);margin-top:0.2rem}
+        .outfit-vs{font-family:var(--jp);font-size:clamp(1.2rem,3vw,2rem);font-weight:800;
+            color:var(--plum-light);text-shadow:0 0 15px rgba(255,107,138,0.8)}
+
+        /* ===== LIVE2D SIM — hero char tilt ===== */
+        .c-hero .char-img{transition:transform 0.15s ease-out}
+
+        /* ===== TOAST CAT — clickable dialogue icon ===== */
+        #toast-peek{position:fixed;bottom:1rem;right:1rem;z-index:260;
+            width:55px;cursor:pointer;pointer-events:auto;
+            filter:drop-shadow(0 2px 8px rgba(255,183,197,0.3));
+            transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+        #toast-peek:hover{transform:scale(1.1)}
+        #toast-peek img{width:100%}
+
+        /* ===== SPEECH BUBBLE ===== */
+        #speech-bubble{
+            position:fixed;bottom:70px;right:1rem;z-index:261;
+            max-width:200px;padding:0.65rem 0.9rem;
+            background:rgba(255,240,243,0.95);color:var(--plum);
+            border-radius:14px 14px 4px 14px;
+            font-family:var(--rd);font-size:0.72rem;font-weight:500;
+            line-height:1.6;letter-spacing:0.02em;
+            box-shadow:0 4px 20px rgba(139,26,58,0.15);
+            opacity:0;pointer-events:none;
+            transform:translateY(8px) scale(0.95);
+            transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #speech-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+        #speech-bubble::after{
+            content:'';position:absolute;bottom:-8px;right:16px;
+            border-left:8px solid transparent;border-right:8px solid transparent;
+            border-top:8px solid rgba(255,240,243,0.95);
+        }
+
+        .rv{opacity:0;transform:translateY(30px)}
+        /* Receipt — collapsed by default, toggle on tap */
+        #order-receipt.collapsed{
+            width:auto;padding:0.5rem 0.8rem;cursor:pointer;
+            border-radius:20px;transform:rotate(0)
+        }
+        #order-receipt.collapsed .receipt-title{margin-bottom:0;padding-bottom:0;border:none;font-size:0.6rem}
+        #order-receipt.collapsed .receipt-time,
+        #order-receipt.collapsed .receipt-item,
+        #order-receipt.collapsed #receipt-total,
+        #order-receipt.collapsed #receipt-stamp{display:none}
+
+        @media(max-width:768px){
+            .c-about .course-body{grid-template-columns:1fr}
+            .outfit-body{flex-direction:column;gap:1.5rem}
+            .outfit-item img{max-height:clamp(200px,35vh,350px)}
+            .outfit-vs{font-size:1.2rem}
+            /* Hide wind chime on mobile */
+            #wind-chime{display:none}
+            /* Course header — push down to avoid ARCHIVE overlap */
+            .course-header{top:0.8rem;padding:0.3rem 0.8rem;font-size:0.9em}
+            .course-header .dots{display:none}
+            /* Prevent text truncation in menu lines */
+            .ml{flex-wrap:wrap;gap:0.1rem}
+            .ml .v{text-align:left;min-width:0;word-break:break-word}
+            .ml .d{display:none}
+            .ml .k{min-width:auto;margin-right:0.5rem}
+            .side-menu{display:none}
+            .c-room{background-attachment:scroll}
+            /* Receipt — always collapsed on mobile, tap to expand */
+            #order-receipt{width:auto;padding:0.5rem 0.8rem;border-radius:20px;
+                transform:rotate(0);cursor:pointer;top:auto;bottom:4.5rem;right:1rem}
+            #order-receipt .receipt-time,
+            #order-receipt .receipt-item,
+            #order-receipt #receipt-total,
+            #order-receipt #receipt-stamp{display:none}
+            #order-receipt .receipt-title{margin-bottom:0;padding-bottom:0;border:none;font-size:0.6rem}
+            #order-receipt.expanded{
+                width:150px;padding:0.7rem;border-radius:2px;
+                transform:rotate(1deg)}
+            #order-receipt.expanded .receipt-time,
+            #order-receipt.expanded .receipt-item,
+            #order-receipt.expanded #receipt-total,
+            #order-receipt.expanded #receipt-stamp{display:flex}
+            #order-receipt.expanded .receipt-title{
+                margin-bottom:0.3rem;padding-bottom:0.3rem;
+                border-bottom:1px solid rgba(139,26,58,0.15);font-size:0.7rem}
+            #order-receipt.expanded #receipt-stamp{display:block}
+            /* Broadcast break — no forced crop */
+            /* Works grid single column */
+            .works-grid{grid-template-columns:1fr;max-width:100%}
+            /* Hide scattered on mobile */
+            .scattered{display:none}
+            /* Course header smaller */
+            .course-header{padding:0.3rem 1rem}
+            .course-header .dish{font-size:0.7rem}
+            .course-header .dots{width:20px}
+            /* Social grid tighter */
+            .social-grid{gap:0.5rem}
+            .sn{min-width:65px;padding:0.5rem 0.6rem;font-size:0.55rem}
+            .sn i{font-size:0.9rem}
+            /* Toast cat smaller on mobile */
+            #toast-peek{width:45px}
+        }
+        @media(min-width:769px){
+            #order-receipt{cursor:pointer;transition:all 0.3s}
+        }
+    </style>
+</head>
+<body>
+<div class="kissaten-wall"></div>
+<div class="kissaten-vig"></div>
+<div id="steam-bg"></div>
+
+<!-- GATE -->
+<div class="gate" id="gate">
+    <img src="/assets/img/guild/kohbai_tw/kohbai_02.webp" alt="紅梅 Kohbai's Channel"
+        style="width:clamp(120px,25vw,200px);margin-bottom:1.5rem;filter:drop-shadow(0 0 30px rgba(255,183,197,0.3));opacity:0" id="gate-logo">
+    <div class="gate-noren"><div class="noren-s">紅</div><div class="noren-s">梅</div><div class="noren-s">喫</div><div class="noren-s">茶</div></div>
+    <div class="gate-txt" id="gw">いらっしゃいませ</div>
+    <div class="gate-sub" id="gs"><i class="fa-solid fa-hand-pointer"></i> tap to enter</div>
+</div>
+
+<a href="/guild/" class="back-nav"><i class="fa-solid fa-arrow-left"></i> ARCHIVE</a>
+
+<!-- LANTERN GLOW — warm light follows cursor -->
+<div id="lantern-glow"></div>
+
+<!-- TOAST CAT PEEK -->
+<div id="toast-peek"><img src="/assets/img/guild/kohbai_tw/toast_cat_peek.webp" alt="吐司貓貓"></div>
+
+<div id="speech-bubble"></div>
+
+<!-- ORDER RECEIPT — tracks your "order" -->
+<div id="order-receipt">
+    <div class="receipt-title">紅梅喫茶店</div>
+    <div class="receipt-time" id="receipt-time"></div>
+    <div class="receipt-item" data-course="about"><span class="ri-name">本日特調</span><span class="ri-price">&yen;0</span></div>
+    <div class="receipt-item" data-course="works"><span class="ri-name">甜點拼盤</span><span class="ri-price">&yen;0</span></div>
+    <div class="receipt-item" data-course="room"><span class="ri-name">後門私室</span><span class="ri-price">&yen;0</span></div>
+    <div class="receipt-item" data-course="outfit"><span class="ri-name">衣帽架</span><span class="ri-price">&yen;0</span></div>
+    <div class="receipt-item" data-course="story"><span class="ri-name">店主日記</span><span class="ri-price">&yen;0</span></div>
+    <div class="receipt-item" data-course="services"><span class="ri-name">外帶區</span><span class="ri-price">&yen;0</span></div>
+    <div class="receipt-item" data-course="bill"><span class="ri-name">帳單</span><span class="ri-price">&yen;0</span></div>
+    <div id="receipt-total"><span>合計</span><span>滿滿的愛</span></div>
+    <div id="receipt-stamp">Thank you! - 紅梅</div>
+</div>
+
+<!-- WIND CHIME — rings on section change -->
+<div id="wind-chime">
+    <div class="chime-rod"></div>
+    <div class="chime-bell"></div>
+    <div class="chime-tag"></div>
+    <div class="chime-label" id="chime-label"></div>
+</div>
+
+<!-- SIDEBAR MENU (kissaten order slip) -->
+<nav class="side-menu" id="side-menu">
+    <a href="#welcome" data-course="welcome"><i class="fa-solid fa-mug-hot"></i>入店</a>
+    <a href="#about" data-course="about"><i class="fa-solid fa-scroll"></i>本日特調</a>
+    <a href="#works" data-course="works"><i class="fa-solid fa-cake-candles"></i>甜點拼盤</a>
+    <a href="#room" data-course="room"><i class="fa-solid fa-door-open"></i>後門私室</a>
+    <a href="#outfit" data-course="outfit"><i class="fa-solid fa-shirt"></i>衣帽架</a>
+    <a href="#story" data-course="story"><i class="fa-solid fa-book"></i>店主日記</a>
+    <a href="#services" data-course="services"><i class="fa-solid fa-gift"></i>外帶區</a>
+    <a href="#bill" data-course="bill"><i class="fa-solid fa-receipt"></i>帳單</a>
+</nav>
+
+<!-- ===== COURSE 0: WELCOME — 用 Kohbai_fix2 (日常裝) + logo + 裝飾素材 ===== -->
+<section class="course c-hero" id="welcome">
+    <div class="course-body">
+        <img src="/assets/img/guild/kohbai_tw/Kohbai_fix2.webp" alt="紅梅" class="char-img rv">
+        <h1 class="rv">紅<span class="ac">梅</span></h1>
+        <p class="sub rv">台灣 VTuber / 實況主 / 繪師<br>加點粉紅色的酸甜滋味<br>歡迎光臨我的喫茶店</p>
+    </div>
+    <div class="scroll-hint"><i class="fa-solid fa-chevron-down"></i>MENU</div>
+</section>
+
+<!-- ===== COURSE 1: 本日特調 (ABOUT) ===== -->
+<section class="course c-about" id="about">
+    <div class="course-header"><span class="num">01</span><span class="dish">本日特調</span><span class="dots"></span><span class="price">TODAY'S SPECIAL</span></div>
+    <div class="course-body">
+        <div class="sheet-img rv"><img src="/assets/img/guild/kohbai_tw/channel_info.webp" alt="紅梅角色設定" loading="lazy"></div>
+        <div class="info-stack">
+            <div class="info-card rv">
+                <h3>基本資料</h3>
+                <div class="ml"><span class="k">名字</span><span class="d"></span><span class="v">紅梅 Kohbai</span></div>
+                <div class="ml"><span class="k">我是</span><span class="d"></span><span class="v">VTuber / 實況主 / 繪師</span></div>
+                <div class="ml"><span class="k">出道日</span><span class="d"></span><span class="v">2021.07.24</span></div>
+                <div class="ml"><span class="k">生日</span><span class="d"></span><span class="v">04.13</span></div>
+                <div class="ml"><span class="k">粉絲叫做</span><span class="d"></span><span class="v">梅朋友</span></div>
+                <div class="ml"><span class="k">夥伴</span><span class="d"></span><span class="v">吐司貓貓</span></div>
+            </div>
+            <div class="info-card rv">
+                <h3>我的實況菜單</h3>
+                <div class="ml"><span class="k">主要</span><span class="d"></span><span class="v">獨立遊戲實況</span></div>
+                <div class="ml"><span class="k">也常做</span><span class="d"></span><span class="v">雜談 / 繪畫 / 節日企劃</span></div>
+                <div class="ml"><span class="k">偶爾</span><span class="d"></span><span class="v">跳舞給你看</span></div>
+                <div class="ml"><span class="k">特調</span><span class="d"></span><span class="v">戀愛能量補給</span></div>
+                <div class="ml"><span class="k">直播 Tag</span><span class="d"></span><span class="v">#梅干控肉</span></div>
+                <div class="ml"><span class="k">二創 Tag</span><span class="d"></span><span class="v">#梅軼畫</span></div>
+            </div>
+            <div class="info-card rv">
+                <h3>找到我的關鍵字</h3>
+                <div class="tag-row">
+                    <span class="tag"><i class="fa-solid fa-gamepad"></i> 獨立遊戲</span>
+                    <span class="tag"><i class="fa-solid fa-palette"></i> 繪畫創作</span>
+                    <span class="tag"><i class="fa-solid fa-heart"></i> 戀愛主食</span>
+                    <span class="tag"><i class="fa-solid fa-cat"></i> 吐司貓貓</span>
+                    <span class="tag"><i class="fa-solid fa-spa"></i> 梅花控</span>
+                    <span class="tag"><i class="fa-solid fa-music"></i> 偶爾跳舞</span>
+                    <span class="tag"><i class="fa-solid fa-wand-magic-sparkles"></i> IP 化中</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- BROADCAST BREAK — end_card 橫幅 -->
+<div class="bb">
+    <img src="/assets/img/guild/kohbai_tw/end_card.webp" loading="lazy" alt="紅梅 — ON AIR">
+    <div class="scan"></div>
+    <div class="bb-text"><span>NEXT COURSE</span></div>
+</div>
+
+<!-- ===== COURSE 2: 甜點拼盤 (WORKS) ===== -->
+<section class="course" id="works">
+    <div class="course-header"><span class="num">02</span><span class="dish">甜點拼盤</span><span class="dots"></span><span class="price">DESSERT PLATTER</span></div>
+    <div class="course-body">
+        <div class="works-grid">
+            <div class="wk rv"><img src="/assets/img/guild/kohbai_tw/yt_live2d.webp" loading="lazy" alt="Live2D"><div class="wi"><h4>Live2D 雜談 / 歌枠</h4><p>我的日常實況樣貌。雜談和唱歌是我最喜歡的企劃。</p></div></div>
+            <div class="wk rv"><img src="/assets/img/guild/kohbai_tw/sacabambaspis.webp" loading="lazy" alt="Sacabambaspis"><div class="wi"><h4>Sacabambaspis L2D</h4><p>免費 Live2D 角色，BOOTH 上提供下載。</p></div></div>
+            <div class="wk rv"><img src="/assets/img/guild/kohbai_tw/onsen.webp" loading="lazy" alt="溫泉素材"><div class="wi"><h4>溫泉配信素材</h4><p>免費配信背景，1920x1080，歡迎使用。</p></div></div>
+            <div class="wk rv"><img src="/assets/img/guild/kohbai_tw/merch_standee.webp" loading="lazy" alt="周邊"><div class="wi"><h4>NiCE 展會 IP 商品</h4><p>炫光立牌、吐司貓貓擦手巾、果茶飯友鑰匙圈。</p></div></div>
+            <div class="wk rv"><img src="/assets/img/guild/kohbai_tw/merch_wedding.webp" loading="lazy" alt="婚紗周邊"><div class="wi"><h4>婚紗造型周邊</h4><p>狐梅婚禮拍立得、搖搖吊飾、躺姿滑鼠墊。</p></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== COURSE 3: 後門私室 (MY ROOM) — 用 kohbai_art 背景 + illust1 半身 ===== -->
+<section class="course c-room" id="room">
+    <div class="course-header"><span class="num">03</span><span class="dish">後門私室</span><span class="dots"></span><span class="price">STAFF ONLY</span></div>
+    <div class="course-body" style="display:flex;align-items:flex-end;justify-content:flex-start">
+        <div class="room-card rv">
+            <h2>關於我</h2>
+            <p>嗨，我是紅梅。粉色短髮、圓眼鏡、梅花髮飾，還有一條偶爾不聽話亂晃的<span class="hl">尾巴</span>，這就是站在你面前的我。</p>
+            <p>我以<span class="hl">戀愛為主食</span>，但人類世界的戀愛能量不夠吃，所以我靠畫筆跟實況養活自己。每天晚上你都能在 <span class="hl">Twitch</span> 和 <span class="hl">YouTube</span> 找到我，陪我一起探索獨立遊戲。</p>
+            <p>這間粉色的房間就是我的秘密基地 — 書架上放滿了參考書，床上躺著吐司貓貓，架子上的玩偶都是我最珍貴的收藏。</p>
+            <div class="profile-row">
+                <img src="/assets/img/guild/kohbai_tw/illust1.webp" loading="lazy" alt="紅梅">
+                <div class="pi"><strong>紅梅 Kohbai</strong><br>台灣 VTuber / 出道 2021.07.24</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== COURSE 3.5: 衣帽架 (OUTFIT) ===== -->
+<section class="course" id="outfit" style="min-height:80vh">
+    <div class="course-header"><span class="num"></span><span class="dish">衣帽架</span><span class="dots"></span><span class="price">COAT RACK</span></div>
+    <div class="course-body outfit-body">
+        <div class="outfit-item rv">
+            <img src="/assets/img/guild/kohbai_tw/kohbai_v2.webp" loading="lazy" alt="喫茶店裝">
+            <div class="outfit-label">喫茶店女僕裝</div>
+            <div class="outfit-sub">圍裙 / 格紋裙 / 梅花別針</div>
+        </div>
+        <div class="outfit-vs rv">VS</div>
+        <div class="outfit-item rv">
+            <img src="/assets/img/guild/kohbai_tw/bsky_avatar.webp" loading="lazy" alt="梅花女僕近照" style="border-radius:12px;border:2px solid rgba(255,183,197,0.15)">
+            <div class="outfit-label">梅花女僕裝</div>
+            <div class="outfit-sub">荷葉邊 / 蝴蝶結 / 梅花枝背景</div>
+        </div>
+    </div>
+</section>
+
+<!-- INTERMISSION — NiCE 展會完整海報 -->
+<div class="bb">
+    <img src="/assets/img/guild/kohbai_tw/merch_poster.webp" loading="lazy" alt="NiCE 梅氏雜貨" style="max-width:100%;max-height:70vh;width:auto;margin:0 auto;display:block;filter:none;padding:1rem">
+    <div class="scan"></div>
+</div>
+
+<!-- ===== COURSE 4: 店主日記 (TIMELINE) ===== -->
+<section class="course" id="story">
+    <div class="course-header"><span class="num">04</span><span class="dish">店主日記</span><span class="dots"></span><span class="price">OWNER'S DIARY</span></div>
+    <div class="course-body">
+        <div class="timeline">
+            <div class="tl-i rv"><div class="date">2021 / 07 / 24</div><div class="tt">我的出道日</div><div class="desc">決定踏上 VTuber 這條路，在 Twitch 和 YouTube 開始了第一場實況。那天起，紅梅喫茶店正式開門營業。</div></div>
+            <div class="tl-i rv"><div class="date">2021 ~ 2022</div><div class="tt">打造自己的品牌</div><div class="desc">自己設計了 Logo、表情符號、頻道視覺。開始經營各大社群平台，一步步讓更多人認識粉紅色的我。</div></div>
+            <div class="tl-i rv"><div class="date">2022</div><div class="tt">換上新衣服了！</div><div class="desc">請繪師朋友畫了全新立繪 — 粉色格子裙搭配梅花圖案，還有一套喫茶店女僕裝。</div></div>
+            <div class="tl-i rv"><div class="date">2023</div><div class="tt">從螢幕走到現實</div><div class="desc">開始做實體商品和 LINE 貼圖，也跟朋友合作了 L2D 模型。你可以在現實中擁有一小塊「紅梅」。</div></div>
+            <div class="tl-i rv"><div class="date">2024 ~ NOW</div><div class="tt">672 支影片，還在路上</div><div class="desc">YouTube 訂閱突破 2190 人。持續接遊戲試玩和工商合作，讓更多人走進這間喫茶店。</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== COURSE 5: 外帶區 (SERVICES) — ppt_bg 作為背景紋理 ===== -->
+<section class="course" id="services" style="position:relative">
+    <div style="position:absolute;inset:0;background:url('/assets/img/guild/kohbai_tw/ppt_bg.webp') center top/cover;opacity:0.04;pointer-events:none;z-index:0"></div>
+    <div class="course-header"><span class="num">05</span><span class="dish">外帶區</span><span class="dots"></span><span class="price">TAKEOUT</span></div>
+    <div class="course-body">
+        <div class="svc-card rv">
+            <h3>我能為你做的事</h3>
+            <p class="intro">從 2021 年一路走來，累積了繪畫、實況、IP 經營的實戰經驗。<br>如果你有以下需求，歡迎找我聊聊：</p>
+            <div class="svc-line"><i class="fa-solid fa-pen-nib"></i><span class="svc-name">繪畫委託</span><span class="svc-desc">角色設計 / 立繪 / 表情差分 / Q 版</span></div>
+            <div class="svc-line"><i class="fa-solid fa-gamepad"></i><span class="svc-name">遊戲實況</span><span class="svc-desc">獨立遊戲推廣 / 試玩合作</span></div>
+            <div class="svc-line"><i class="fa-solid fa-handshake"></i><span class="svc-name">工商業配</span><span class="svc-desc">品牌合作 / 產品介紹 / 活動企劃</span></div>
+            <div class="svc-line"><i class="fa-solid fa-store"></i><span class="svc-name">IP 商品</span><span class="svc-desc">實體周邊 / LINE 貼圖 / 設計授權</span></div>
+            <div class="svc-line"><i class="fa-solid fa-wand-magic-sparkles"></i><span class="svc-name">L2D 販售</span><span class="svc-desc">Live2D 角色模型 / BOOTH / Ko-fi</span></div>
+            <div class="svc-line"><i class="fa-solid fa-gift"></i><span class="svc-name">配信素材</span><span class="svc-desc">免費 / 付費實況背景素材</span></div>
+            <div class="svc-link">委託詳情 <a href="https://kohbai-tw.mystrikingly.com/" target="_blank" rel="noopener">作品集網站</a></div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== COURSE 6: 帳單 (SOCIAL / BILL) ===== -->
+<section class="course" id="bill">
+    <div class="course-header"><span class="num">06</span><span class="dish">帳單</span><span class="dots"></span><span class="price">THE BILL</span></div>
+    <div class="course-body">
+        <div class="bill-card rv">
+            <h3>來找我吧</h3>
+            <div class="bill-total">本次消費：滿滿的戀愛能量 &mdash; 免費招待</div>
+            <div class="social-grid">
+                <a href="https://www.youtube.com/c/Kohbai_tw/" target="_blank" rel="noopener" class="sn"><i class="fa-brands fa-youtube"></i>YouTube</a>
+                <a href="https://www.twitch.tv/kohbai_tw" target="_blank" rel="noopener" class="sn"><i class="fa-brands fa-twitch"></i>Twitch</a>
+                <a href="https://twitter.com/Kohbai_tw" target="_blank" rel="noopener" class="sn"><i class="fa-brands fa-x-twitter"></i>X</a>
+                <a href="https://www.plurk.com/Kohbai_tw" target="_blank" rel="noopener" class="sn"><i class="fa-solid fa-message"></i>Plurk</a>
+                <a href="https://bsky.app/profile/kohbai-tw.bsky.social" target="_blank" rel="noopener" class="sn"><i class="fa-solid fa-cloud"></i>Bluesky</a>
+                <a href="https://www.facebook.com/Kohbai.tw" target="_blank" rel="noopener" class="sn"><i class="fa-brands fa-facebook"></i>Facebook</a>
+                <a href="https://discord.gg/SW4jcSwWah" target="_blank" rel="noopener" class="sn"><i class="fa-brands fa-discord"></i>Discord</a>
+                <a href="https://ko-fi.com/kohbaitw" target="_blank" rel="noopener" class="sn"><i class="fa-solid fa-mug-hot"></i>Ko-fi</a>
+                <a href="https://kohbaitw.booth.pm/" target="_blank" rel="noopener" class="sn"><i class="fa-solid fa-shop"></i>BOOTH</a>
+                <a href="https://kohbai-tw.mystrikingly.com/" target="_blank" rel="noopener" class="sn"><i class="fa-solid fa-palette"></i>Portfolio</a>
+                <a href="https://www.threads.com/@kohbai_tw" target="_blank" rel="noopener" class="sn"><i class="fa-brands fa-threads"></i>Threads</a>
+                <a href="https://marshmallow-qa.com/kohbai_tw" target="_blank" rel="noopener" class="sn"><i class="fa-solid fa-comment-dots"></i>棉花糖</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== SCATTERED INTERACTIVE ELEMENTS ===== -->
+<!-- 尾巴 — 從「甜點拼盤」邊緣伸出 -->
+<img src="/assets/img/guild/kohbai_tw/tail.webp" alt="" class="scattered" id="sc-tail"
+    style="position:absolute;width:clamp(80px,12vw,150px);opacity:0.1;animation:floatB 7s ease-in-out infinite alternate;transform:rotate(-20deg)">
+<!-- 眼鏡 — 漂浮在「本日特調」旁邊 -->
+<img src="/assets/img/guild/kohbai_tw/glass.webp" alt="" class="scattered" id="sc-glass"
+    style="position:absolute;width:clamp(60px,8vw,100px);opacity:0.12;animation:floatA 8s ease-in-out infinite alternate">
+<!-- Logo 梅花 — 散落在「店主日記」附近 -->
+<img src="/assets/img/guild/kohbai_tw/booth_logo.webp" alt="" class="scattered" id="sc-logo"
+    style="position:absolute;width:40px;opacity:0.08;animation:floatC 6s ease-in-out infinite alternate">
+<!-- Q版皺梅頭 — 藏在「外帶區」旁邊 -->
+<img src="/assets/img/guild/kohbai_tw/kohbai_head.webp" alt="" class="scattered" id="sc-chibi"
+    style="position:absolute;width:55px;opacity:0.15;border-radius:8px;animation:floatA 5s ease-in-out infinite alternate">
+<footer>
+    <img src="/assets/img/guild/kohbai_tw/kahbai_01.webp" alt="紅梅 Kohb"
+        style="width:80px;margin:0 auto 0.8rem;display:block;opacity:0.3;filter:grayscale(0.3)">
+    <div class="sig">Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon</div>
+</footer>
+
+<script>
+/* ===== GATE ===== */
+const gate=document.getElementById('gate');
+const sideMenu=document.getElementById('side-menu');
+gsap.timeline()
+    .to('#gate-logo',{opacity:1,duration:0.8,delay:0.3,ease:'power2.out'})
+    .to('#gw',{opacity:1,duration:0.8},'-=0.3')
+    .to('#gs',{opacity:1,duration:0.5},'-=0.2');
+gate.addEventListener('click',()=>{
+    // Door chime sound — 2-tone Japanese kissaten bell
+    try{
+        const ac=new(window.AudioContext||window.webkitAudioContext)();
+        [880,1108.7].forEach((freq,i)=>{
+            const osc=ac.createOscillator();
+            const gain=ac.createGain();
+            osc.type='sine';osc.frequency.value=freq;
+            gain.gain.setValueAtTime(0.15,ac.currentTime+i*0.15);
+            gain.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.15+1.2);
+            osc.connect(gain);gain.connect(ac.destination);
+            osc.start(ac.currentTime+i*0.15);
+            osc.stop(ac.currentTime+i*0.15+1.5);
+        });
+    }catch(e){}
+    gsap.to(gate,{opacity:0,scale:1.05,duration:0.8,ease:'power3.inOut',
+        onComplete:()=>{gate.style.display='none';sideMenu.classList.add('show');
+            document.getElementById('order-receipt').classList.add('show')}});
+});
+
+/* ===== P5: KISSATEN STEAM + PETALS ===== */
+new p5(p=>{
+    const steam=[];const petals=[];const mob=window.innerWidth<768;
+    const petalCols=['#FFB7C5','#FF6B8A','#C75B7A','#FFE0E8'];
+    p.setup=function(){
+        const c=p.createCanvas(window.innerWidth,window.innerHeight);
+        c.parent('steam-bg');c.style('position','fixed');c.style('inset','0');
+        c.style('pointer-events','none');c.style('z-index','0');
+        for(let i=0;i<(mob?12:25);i++) steam.push({
+            x:p.random(p.width*0.15,p.width*0.85),y:p.random(p.height,p.height+200),
+            sz:p.random(15,40),speed:p.random(0.3,0.7),
+            sway:p.random(0.5,1.5),swS:p.random(0.003,0.008),swO:p.random(p.TWO_PI),
+            maxOp:p.random(12,30),life:p.random(0,1)});
+        for(let i=0;i<(mob?8:18);i++) petals.push({
+            x:p.random(p.width),y:p.random(-p.height,p.height),
+            sz:p.random(4,mob?9:13),sy:p.random(0.15,0.45),sx:p.random(-0.12,0.12),
+            rot:p.random(p.TWO_PI),rs:p.random(-0.01,0.01),
+            sw:p.random(0.3,1),swS:p.random(0.003,0.01),swO:p.random(p.TWO_PI),
+            col:petalCols[~~(Math.random()*petalCols.length)],op:p.random(20,55)});
+    };
+    p.draw=function(){p.clear();
+        const km=window._kissatenMouse||{x:9999,y:9999};
+        steam.forEach(s=>{
+            s.y-=s.speed;s.x+=Math.sin(p.frameCount*s.swS+s.swO)*s.sway*0.5;s.life+=0.003;
+            // Blow interaction — steam scatters away from cursor
+            const dx=s.x-km.x,dy=s.y-km.y;
+            const dist=Math.sqrt(dx*dx+dy*dy);
+            if(dist<120){
+                const force=(120-dist)/120*2.5;
+                s.x+=dx/dist*force;
+                s.y+=dy/dist*force*0.5;
+                s.speed=Math.min(s.speed+0.1,2); // speed up when blown
+            }else{
+                s.speed+=(p.random(0.3,0.7)-s.speed)*0.02; // recover normal speed
+            }
+            const ny=1-(s.y/p.height);const op=s.maxOp*Math.sin(ny*Math.PI);
+            if(s.y<-s.sz*2||op<0.5){s.y=p.height+p.random(20,80);s.x=p.random(p.width*0.1,p.width*0.9);s.life=0}
+            p.push();p.translate(s.x,s.y);p.noStroke();
+            const c=p.color(255,250,240);c.setAlpha(op);p.fill(c);
+            p.ellipse(0,0,s.sz*1.2,s.sz*(0.6+Math.sin(s.life*2)*0.12));p.pop()});
+        petals.forEach(pt=>{
+            pt.y+=pt.sy;pt.x+=pt.sx+Math.sin(p.frameCount*pt.swS+pt.swO)*pt.sw*0.3;pt.rot+=pt.rs;
+            if(pt.y>p.height+20){pt.y=-20;pt.x=p.random(p.width)}
+            if(pt.x<-20)pt.x=p.width+20;if(pt.x>p.width+20)pt.x=-20;
+            p.push();p.translate(pt.x,pt.y);p.rotate(pt.rot);p.noStroke();
+            const c=p.color(pt.col);c.setAlpha(pt.op);p.fill(c);
+            p.beginShape();for(let a=0;a<p.TWO_PI;a+=0.1){const r=pt.sz*(0.7+0.3*Math.cos(a*5));
+                p.vertex(r*Math.cos(a),r*Math.sin(a))}p.endShape(p.CLOSE);
+            const dc=p.color('#8B1A3A');dc.setAlpha(pt.op*0.3);p.fill(dc);p.circle(0,0,pt.sz*0.2);
+            p.pop()})};
+    p.windowResized=function(){p.resizeCanvas(window.innerWidth,window.innerHeight)};
+});
+
+/* ===== GSAP ===== */
+gsap.registerPlugin(ScrollTrigger);
+
+/* Scroll reveals */
+document.querySelectorAll('.rv').forEach(el=>{
+    gsap.to(el,{opacity:1,y:0,duration:0.8,ease:'power3.out',
+        scrollTrigger:{trigger:el,start:'top 88%',once:true}})});
+
+/* Timeline items */
+gsap.utils.toArray('.tl-i').forEach(it=>{
+    gsap.fromTo(it,{x:-30,opacity:0},{x:0,opacity:1,duration:0.6,
+        scrollTrigger:{trigger:it,start:'top 88%',once:true}})});
+
+/* Work cards */
+gsap.utils.toArray('.wk').forEach((c,i)=>{
+    gsap.fromTo(c,{y:30,opacity:0},{y:0,opacity:1,duration:0.5,delay:i*0.06,
+        scrollTrigger:{trigger:c,start:'top 92%',once:true}})});
+
+/* Social nodes */
+gsap.utils.toArray('.sn').forEach((n,i)=>{
+    gsap.fromTo(n,{scale:0,opacity:0},{scale:1,opacity:1,duration:0.35,delay:i*0.03,ease:'back.out(1.7)',
+        scrollTrigger:{trigger:'.social-grid',start:'top 88%',once:true}})});
+
+/* Broadcast breaks */
+document.querySelectorAll('.bb').forEach(bb=>{
+    const span=bb.querySelector('.bb-text span');
+    if(span) gsap.fromTo(span,{opacity:0,scale:0.8},{opacity:1,scale:1,duration:0.5,
+        scrollTrigger:{trigger:bb,start:'top 80%',once:true}})});
+
+/* ===== SIDEBAR ACTIVE STATE ===== */
+const courses=document.querySelectorAll('.course');
+const menuLinks=document.querySelectorAll('.side-menu a');
+courses.forEach(course=>{
+    ScrollTrigger.create({
+        trigger:course,start:'top center',end:'bottom center',
+        onToggle:self=>{
+            if(self.isActive){
+                menuLinks.forEach(l=>l.classList.remove('active'));
+                const link=document.querySelector(`.side-menu a[data-course="${course.id}"]`);
+                if(link)link.classList.add('active');
+            }
+        }
+    });
+});
+
+/* Room parallax */
+if(window.innerWidth>768){
+    gsap.to('.c-room',{backgroundPositionY:'30%',
+        scrollTrigger:{trigger:'.c-room',start:'top bottom',end:'bottom top',scrub:1}});
+}
+
+/* ===== ORDER RECEIPT: Toggle + track visited courses ===== */
+(function(){
+    const receipt=document.getElementById('order-receipt');
+    if(!receipt) return;
+    const isMobile=window.innerWidth<=768;
+
+    // Toggle behavior
+    if(!isMobile){
+        receipt.classList.add('collapsed');
+        receipt.addEventListener('mouseenter',()=>receipt.classList.remove('collapsed'));
+        receipt.addEventListener('mouseleave',()=>receipt.classList.add('collapsed'));
+    }
+    receipt.addEventListener('click',e=>{if(isMobile){e.stopPropagation();receipt.classList.toggle('expanded')}});
+    document.addEventListener('click',()=>{if(isMobile) receipt.classList.remove('expanded')});
+
+    // Timestamp
+    const now=new Date();
+    document.getElementById('receipt-time').textContent=
+        now.getFullYear()+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+String(now.getDate()).padStart(2,'0')+
+        ' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+
+    // Track visited courses
+    const visited=new Set();
+    ['about','works','room','outfit','story','services','bill'].forEach(id=>{
+        ScrollTrigger.create({trigger:'#'+id,start:'top 60%',
+            onEnter:()=>{
+                if(visited.has(id)) return;visited.add(id);
+                const item=document.querySelector(`.receipt-item[data-course="${id}"]`);
+                if(item){item.classList.add('checked');
+                    gsap.fromTo(item,{backgroundColor:'rgba(255,183,197,0.15)'},{backgroundColor:'transparent',duration:0.8})}
+            }});
+    });
+})();
+
+/* ===== WIND CHIME: Rings on section transitions ===== */
+(function(){
+    const chime=document.getElementById('wind-chime');
+    const tag=chime.querySelector('.chime-tag');
+    const label=document.getElementById('chime-label');
+    const courseNames={welcome:'入店',about:'本日特調',works:'甜點拼盤',room:'後門私室',outfit:'衣帽架',story:'店主日記',services:'外帶區',bill:'帳單'};
+    let currentCourse='';
+
+    document.querySelectorAll('.course').forEach(c=>{
+        ScrollTrigger.create({
+            trigger:c,start:'top center',end:'bottom center',
+            onEnter:()=>ringChime(c.id),
+            onEnterBack:()=>ringChime(c.id)
+        });
+    });
+
+    function ringChime(id){
+        if(id===currentCourse) return;
+        currentCourse=id;
+        label.textContent=courseNames[id]||'';
+
+        // Show chime, ring it, then hide
+        gsap.to(chime,{opacity:1,x:-10,duration:0.3});
+        gsap.to(label,{opacity:1,duration:0.3,delay:0.1});
+        gsap.to(tag,{rotation:15,duration:0.12,yoyo:true,repeat:6,ease:'power1.inOut',
+            onComplete:()=>gsap.set(tag,{rotation:0})});
+
+        // Hide after 2s
+        gsap.to(chime,{opacity:0,x:0,duration:0.4,delay:2.5});
+        gsap.to(label,{opacity:0,duration:0.3,delay:2.3});
+    }
+})();
+
+/* ===== SHARED MOUSE POSITION ===== */
+const _mouse={x:9999,y:9999};
+const _glow=document.getElementById('lantern-glow');
+document.addEventListener('mousemove',e=>{
+    _mouse.x=e.clientX;_mouse.y=e.clientY;
+    if(_glow){_glow.style.left=e.clientX+'px';_glow.style.top=e.clientY+'px'}
+});
+window._kissatenMouse=_mouse;
+
+/* ===== SCATTERED ELEMENTS — GSAP parallax (GPU-accelerated) ===== */
+(function(){
+    const items=[
+        {id:'sc-tail', anchor:'#works', x:'-3%', y:'55%'},
+        {id:'sc-glass', anchor:'#about', x:'85%', y:'15%'},
+        {id:'sc-logo', anchor:'#story', x:'90%', y:'20%'},
+        {id:'sc-chibi', anchor:'#services', x:'88%', y:'70%'},
+    ];
+    function position(){
+        items.forEach(p=>{
+            const el=document.getElementById(p.id);
+            const anchor=document.querySelector(p.anchor);
+            if(!el||!anchor) return;
+            const top=anchor.offsetTop+anchor.offsetHeight*parseFloat(p.y)/100;
+            el.style.top=top+'px';
+            el.style.left=p.x;
+        });
+    }
+    position();
+    window.addEventListener('resize',position);
+
+    // Use GSAP ScrollTrigger for GPU-accelerated parallax instead of scroll listener
+    items.forEach(p=>{
+        const el=document.getElementById(p.id);
+        if(!el) return;
+        gsap.to(el,{y:-80,ease:'none',
+            scrollTrigger:{trigger:el,start:'top bottom',end:'bottom top',scrub:2}});
+    });
+
+    // Click to spin
+    document.querySelectorAll('.scattered').forEach(el=>{
+        el.addEventListener('click',()=>{
+            gsap.to(el,{rotation:'+=360',scale:1.3,duration:0.5,ease:'back.out(2)',
+                onComplete:()=>gsap.to(el,{scale:1,duration:0.3})});
+        });
+    });
+})();
+
+/* ===== 3D TILT ON WORK CARDS ===== */
+document.querySelectorAll('.wk').forEach(card=>{
+    card.addEventListener('mousemove',e=>{
+        const r=card.getBoundingClientRect();
+        const x=(e.clientX-r.left)/r.width-0.5;
+        const y=(e.clientY-r.top)/r.height-0.5;
+        card.style.transform=`translateY(-4px) rotateY(${x*8}deg) rotateX(${-y*6}deg)`;
+    });
+    card.addEventListener('mouseleave',()=>{
+        card.style.transform='';
+    });
+});
+
+/* ===== LIVE2D SIM: Hero char follows mouse ===== */
+(function(){
+    const heroChar=document.querySelector('.c-hero .char-img');
+    const heroSection=document.querySelector('.c-hero');
+    if(heroChar&&heroSection){
+        heroSection.addEventListener('mousemove',e=>{
+            const rect=heroSection.getBoundingClientRect();
+            const x=(e.clientX-rect.left)/rect.width-0.5;
+            const y=(e.clientY-rect.top)/rect.height-0.5;
+            heroChar.style.transform=
+                `perspective(800px) rotateY(${x*8}deg) rotateX(${-y*4}deg) translateX(${x*15}px) translateY(${y*8}px)`;
+        });
+        heroSection.addEventListener('mouseleave',()=>{
+            heroChar.style.transform='';
+        });
+    }
+})();
+
+/* ===== TOAST CAT DIALOGUE: Click to speak ===== */
+(function(){
+    const cat=document.getElementById('toast-peek');
+    const bubble=document.getElementById('speech-bubble');
+    if(!cat||!bubble) return;
+
+    const lines=[
+        '今天的你戀愛了嗎？',
+        '加點粉紅色的酸甜滋味！',
+        '歡迎光臨紅梅喫茶店～',
+        '我是不上班就會餓肚子的打工仔！',
+        '吐司貓貓今天也很乖呢。',
+        '想看我跳舞的話...偶爾啦。',
+        '梅朋友們晚安！今天要玩什麼遊戲呢？',
+        '人類世界的戀愛能量不夠吃啊...',
+        '要來杯貓薄荷特調嗎？',
+        '有興趣委託我畫畫的話，歡迎找我聊聊！',
+        '梅干控肉開動～！',
+        '嗚嗚，這個遊戲好難...',
+        '謝謝你來我的喫茶店坐坐。',
+        '喜歡我的 Logo 嗎？我自己設計的喔。',
+        '偷偷告訴你，我其實是個內向宅宅。',
+        '今天也要努力靠畫筆養活自己！',
+        '以戀愛為主食！喜好是偏食的！',
+        '好想去泡溫泉啊～',
+    ];
+    let lastLine=-1;let timer=null;
+
+    cat.addEventListener('click',e=>{
+        e.stopPropagation();
+        let idx;
+        do{idx=~~(Math.random()*lines.length)}while(idx===lastLine&&lines.length>1);
+        lastLine=idx;
+        bubble.textContent=lines[idx];
+        bubble.classList.add('show');
+        gsap.fromTo(cat,{y:0},{y:-8,duration:0.12,yoyo:true,repeat:1,ease:'power2.out'});
+        clearTimeout(timer);
+        timer=setTimeout(()=>bubble.classList.remove('show'),3500);
+    });
+})();
+
+/* ===== CLICK BLOSSOM BURST: Plum petals explode on click ===== */
+(function(){
+    const petalShapes=['<i class="fa-solid fa-spa"></i>','<i class="fa-solid fa-heart"></i>'];
+    const colors=['#FFB7C5','#FF6B8A','#C75B7A','#FFE0E8','#8B1A3A'];
+
+    document.addEventListener('click',e=>{
+        // Don't fire on links/buttons
+        if(e.target.closest('a,button,.side-menu,.back-nav,.gate')) return;
+
+        const count=6+~~(Math.random()*4);
+        for(let i=0;i<count;i++){
+            const el=document.createElement('div');
+            el.className='blossom-particle';
+            el.innerHTML=petalShapes[~~(Math.random()*petalShapes.length)];
+            el.style.left=e.clientX+'px';
+            el.style.top=e.clientY+'px';
+            el.style.color=colors[~~(Math.random()*colors.length)];
+            el.style.fontSize=(8+Math.random()*10)+'px';
+            document.body.appendChild(el);
+
+            const angle=Math.random()*Math.PI*2;
+            const dist=40+Math.random()*80;
+            const tx=Math.cos(angle)*dist;
+            const ty=Math.sin(angle)*dist-30;
+
+            gsap.to(el,{
+                x:tx,y:ty,rotation:Math.random()*360,
+                opacity:0,scale:0.3,
+                duration:0.6+Math.random()*0.4,
+                ease:'power2.out',
+                onComplete:()=>el.remove()
+            });
+        }
+    });
+})();
+</script>
+</body>
+</html>
