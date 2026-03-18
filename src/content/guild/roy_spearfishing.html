@@ -1,0 +1,1848 @@
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roy — The Abyss Hunter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;700&family=Noto+Sans+TC:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        :root {
+            --abyss: #020810;
+            --deep: #061422;
+            --midnight: #0a1e36;
+            --trench: #0d2847;
+            --cyan: #00e5ff;
+            --cyan-dim: rgba(0, 229, 255, 0.15);
+            --cyan-glow: rgba(0, 229, 255, 0.4);
+            --coral: #ff6b4a;
+            --coral-dim: rgba(255, 107, 74, 0.2);
+            --biolum: #00ffc8;
+            --biolum-dim: rgba(0, 255, 200, 0.1);
+            --gold: #d4a852;
+            --text: #c8d8e8;
+            --text-muted: #5a7a9a;
+            --text-dim: #2a4a6a;
+            --white: #e8f0f8;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'Barlow Condensed', sans-serif;
+            --font-cn: 'Noto Sans TC', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            background: var(--abyss);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        ::selection { background: var(--cyan-glow); color: #fff; }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: var(--abyss); }
+        ::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+
+        .back-nav {
+            position: fixed; top: 1.5rem; left: 1.5rem; z-index: 100;
+            text-decoration: none; color: var(--cyan);
+            font-family: var(--font-mono); font-size: 0.75rem;
+            letter-spacing: 0.1em; opacity: 0.6;
+            transition: opacity 0.3s;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .back-nav:hover { opacity: 1; }
+        .back-nav i { font-size: 0.6rem; }
+
+        .depth-indicator {
+            position: fixed; right: 1.5rem; top: 50%;
+            transform: translateY(-50%); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+        }
+        .depth-bar {
+            width: 2px; height: 120px;
+            background: linear-gradient(to bottom, var(--cyan), var(--coral));
+            border-radius: 1px; position: relative;
+        }
+        .depth-marker {
+            position: absolute; left: -3px; top: 0;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 12px var(--cyan-glow);
+            transition: top 0.3s ease;
+        }
+        .depth-label {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            color: var(--text-muted); letter-spacing: 0.1em;
+            writing-mode: vertical-rl; margin-top: 0.5rem;
+        }
+
+        #underwater-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            position: relative; height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 1; overflow: hidden;
+        }
+        .hero::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 50% 30%, rgba(0,229,255,0.06) 0%, transparent 60%),
+                        radial-gradient(ellipse at 20% 80%, rgba(255,107,74,0.04) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .hero::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
+            background: linear-gradient(to bottom, transparent, var(--abyss));
+            pointer-events: none;
+        }
+        .hero-subtitle {
+            font-family: var(--font-mono); font-size: 0.7rem;
+            color: var(--cyan); letter-spacing: 0.4em;
+            text-transform: uppercase; margin-bottom: 1rem; opacity: 0;
+        }
+        .hero-title {
+            font-family: var(--font-display); font-size: clamp(4rem, 12vw, 10rem);
+            color: var(--white); line-height: 0.9;
+            letter-spacing: 0.05em; text-align: center;
+            text-shadow: 0 0 60px rgba(0,229,255,0.2); opacity: 0;
+        }
+        .hero-title span {
+            display: block; color: var(--cyan);
+            font-size: 0.4em; letter-spacing: 0.3em;
+            font-family: var(--font-body); font-weight: 300;
+        }
+        .hero-tagline {
+            font-family: var(--font-cn); font-size: 1.1rem;
+            color: var(--text-muted); margin-top: 1.5rem;
+            letter-spacing: 0.15em; font-weight: 300; opacity: 0;
+        }
+        .hero-depth-text {
+            position: absolute; bottom: 8rem;
+            font-family: var(--font-mono); font-size: 0.65rem;
+            color: var(--text-dim); letter-spacing: 0.2em; opacity: 0;
+        }
+        .hero-scroll-hint {
+            position: absolute; bottom: 3rem;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 0.5rem; opacity: 0;
+        }
+        .hero-scroll-hint span {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            color: var(--text-dim); letter-spacing: 0.15em;
+        }
+        .scroll-line {
+            width: 1px; height: 40px;
+            background: linear-gradient(to bottom, var(--cyan), transparent);
+            animation: scrollPulse 2s ease-in-out infinite;
+        }
+        @keyframes scrollPulse {
+            0%, 100% { opacity: 0.3; transform: scaleY(1); }
+            50% { opacity: 1; transform: scaleY(1.3); }
+        }
+        .avatar-container { position: relative; margin-bottom: 2rem; opacity: 0; }
+        .avatar-ring {
+            width: 140px; height: 140px; border-radius: 50%;
+            padding: 3px; position: relative;
+            background: conic-gradient(from 0deg, var(--cyan), var(--coral), var(--biolum), var(--cyan));
+            animation: ringRotate 8s linear infinite;
+        }
+        @keyframes ringRotate { to { filter: hue-rotate(360deg); } }
+        .avatar-ring img {
+            width: 100%; height: 100%; border-radius: 50%;
+            object-fit: cover; display: block;
+            border: 3px solid var(--abyss);
+        }
+        .avatar-sonar {
+            position: absolute; inset: -20px;
+            border: 1px solid var(--cyan-dim); border-radius: 50%;
+            animation: sonarPing 3s ease-out infinite;
+        }
+        .avatar-sonar:nth-child(2) { animation-delay: 1s; }
+        .avatar-sonar:nth-child(3) { animation-delay: 2s; }
+        @keyframes sonarPing {
+            0% { transform: scale(0.8); opacity: 0.6; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            position: relative; z-index: 1;
+            padding: 6rem 2rem; max-width: 1200px; margin: 0 auto;
+        }
+        .section-label {
+            font-family: var(--font-mono); font-size: 0.65rem;
+            color: var(--cyan); letter-spacing: 0.3em;
+            text-transform: uppercase; margin-bottom: 0.5rem;
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .section-label::before { content: ''; width: 30px; height: 1px; background: var(--cyan); }
+        .section-title {
+            font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 4.5rem);
+            color: var(--white); letter-spacing: 0.05em; line-height: 1;
+        }
+        .section-title-cn {
+            font-family: var(--font-cn); font-size: 1rem;
+            color: var(--text-muted); font-weight: 300;
+            letter-spacing: 0.1em; margin-top: 0.3rem;
+        }
+
+        /* ===== MANIFESTO ===== */
+        .manifesto { padding: 8rem 2rem; position: relative; z-index: 1; }
+        .manifesto-inner { max-width: 800px; margin: 0 auto; }
+        .manifesto-quote {
+            font-family: var(--font-cn); font-size: clamp(1.3rem, 3vw, 2rem);
+            color: var(--white); line-height: 1.8; font-weight: 300;
+            position: relative; padding-left: 2rem;
+            border-left: 2px solid var(--cyan);
+        }
+        .manifesto-quote .highlight { color: var(--cyan); text-shadow: 0 0 20px var(--cyan-dim); }
+        .manifesto-attribution {
+            font-family: var(--font-mono); font-size: 0.7rem;
+            color: var(--text-muted); margin-top: 1.5rem;
+            letter-spacing: 0.15em; padding-left: 2rem;
+        }
+
+        /* ===== PHILOSOPHY ===== */
+        .philosophy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem; }
+        .philo-card {
+            background: linear-gradient(135deg, var(--deep), var(--midnight));
+            border: 1px solid var(--cyan-dim); border-radius: 2px; padding: 2rem;
+            position: relative; overflow: hidden;
+            transition: border-color 0.4s, transform 0.4s;
+        }
+        .philo-card:hover { border-color: var(--cyan); transform: translateY(-4px); }
+        .philo-card::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(to right, var(--cyan), transparent);
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .philo-card:hover::before { opacity: 1; }
+        .philo-icon { font-size: 1.8rem; color: var(--cyan); margin-bottom: 1rem; opacity: 0.8; }
+        .philo-card h3 { font-family: var(--font-display); font-size: 1.4rem; color: var(--white); letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+        .philo-card p { font-family: var(--font-cn); font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; font-weight: 300; }
+
+        /* ===== CATCH SPECIES ===== */
+        .species-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-top: 3rem; }
+        .species-card {
+            background: var(--deep); border: 1px solid transparent;
+            border-radius: 2px; padding: 1.5rem; text-align: center;
+            cursor: pointer; transition: all 0.4s; position: relative; overflow: hidden;
+        }
+        .species-card:hover { border-color: var(--cyan); transform: translateY(-6px); }
+        .species-card:hover .species-glow {
+            opacity: 1;
+        }
+        .species-glow {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 50%, var(--cyan-dim), transparent 70%);
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .species-card > * { position: relative; z-index: 1; }
+        .species-icon {
+            font-size: 2.2rem; margin-bottom: 0.8rem;
+            display: block; color: var(--cyan);
+            filter: drop-shadow(0 0 8px var(--cyan-dim));
+        }
+        .species-name {
+            font-family: var(--font-display); font-size: 1.1rem;
+            color: var(--white); letter-spacing: 0.08em;
+        }
+        .species-name-cn {
+            font-family: var(--font-cn); font-size: 0.75rem;
+            color: var(--text-muted); margin-top: 0.2rem;
+        }
+        .species-tag {
+            display: inline-block; margin-top: 0.6rem;
+            font-family: var(--font-mono); font-size: 0.55rem;
+            color: var(--cyan); letter-spacing: 0.1em;
+            padding: 2px 8px; border: 1px solid var(--cyan-dim);
+            border-radius: 1px;
+        }
+
+        /* ===== STATS ===== */
+        .stats-bar {
+            display: flex; justify-content: center; gap: 4rem;
+            padding: 4rem 2rem; position: relative; z-index: 1;
+            border-top: 1px solid var(--cyan-dim);
+            border-bottom: 1px solid var(--cyan-dim);
+            margin: 2rem auto; max-width: 900px;
+        }
+        .stat-item { text-align: center; }
+        .stat-value { font-family: var(--font-display); font-size: 2.8rem; color: var(--cyan); line-height: 1; }
+        .stat-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.2em; margin-top: 0.3rem; text-transform: uppercase; }
+
+        /* ===== VESSEL ===== */
+        .vessel-section {
+            position: relative; z-index: 1;
+            padding: 6rem 2rem; overflow: hidden;
+        }
+        .vessel-inner {
+            max-width: 1200px; margin: 0 auto;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+        }
+        .vessel-visual {
+            position: relative; height: 400px;
+            border: 1px solid var(--cyan-dim); border-radius: 2px;
+            overflow: hidden; background: var(--deep);
+        }
+        .vessel-visual img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: saturate(0.7) brightness(0.85);
+            transition: filter 0.5s;
+        }
+        .vessel-visual:hover img { filter: saturate(1) brightness(1); }
+        .vessel-visual::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(0,229,255,0.08), transparent 60%);
+        }
+        .vessel-hud {
+            position: absolute; top: 1rem; left: 1rem; z-index: 2;
+            font-family: var(--font-mono); font-size: 0.6rem;
+            color: var(--cyan); letter-spacing: 0.15em;
+            padding: 0.5rem 0.8rem;
+            background: rgba(2,8,16,0.7); border: 1px solid var(--cyan-dim);
+        }
+        .vessel-content h3 {
+            font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem);
+            color: var(--white); letter-spacing: 0.05em;
+        }
+        .vessel-content .vessel-cn {
+            font-family: var(--font-cn); font-size: 0.9rem;
+            color: var(--coral); margin-bottom: 1.5rem;
+        }
+        .vessel-content p {
+            font-family: var(--font-cn); font-size: 0.9rem;
+            color: var(--text-muted); line-height: 1.8; font-weight: 300;
+            margin-bottom: 1rem;
+        }
+        .vessel-specs {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 1rem; margin-top: 2rem;
+        }
+        .vessel-spec {
+            padding: 1rem; background: rgba(0,229,255,0.03);
+            border: 1px solid var(--cyan-dim); border-radius: 2px;
+        }
+        .vessel-spec-value {
+            font-family: var(--font-display); font-size: 1.4rem;
+            color: var(--cyan);
+        }
+        .vessel-spec-label {
+            font-family: var(--font-mono); font-size: 0.55rem;
+            color: var(--text-muted); letter-spacing: 0.15em;
+        }
+
+        /* ===== SERVICES ===== */
+        .services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 3rem; }
+        .service-card {
+            background: var(--deep); border: 1px solid transparent;
+            border-radius: 2px; padding: 2.5rem;
+            position: relative; overflow: hidden; transition: all 0.5s;
+        }
+        .service-card::after {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--cyan-dim), transparent 60%);
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .service-card:hover { border-color: var(--cyan-dim); }
+        .service-card:hover::after { opacity: 1; }
+        .service-card > * { position: relative; z-index: 1; }
+        .service-icon {
+            width: 50px; height: 50px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--cyan-dim); border-radius: 50%;
+            margin-bottom: 1.5rem; font-size: 1.2rem; color: var(--cyan);
+        }
+        .service-card h3 { font-family: var(--font-display); font-size: 1.5rem; color: var(--white); letter-spacing: 0.08em; }
+        .service-card .service-cn { font-family: var(--font-cn); font-size: 0.8rem; color: var(--coral); margin-bottom: 1rem; }
+        .service-card p { font-family: var(--font-cn); font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; font-weight: 300; }
+
+        /* ===== GALLERY ===== */
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 200px);
+            gap: 0.75rem; margin-top: 3rem;
+        }
+        .gallery-grid .g-item {
+            position: relative; overflow: hidden; border-radius: 2px;
+            border: 1px solid var(--cyan-dim); cursor: pointer;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .gallery-grid .g-item:hover { border-color: var(--cyan); transform: scale(1.02); z-index: 2; }
+        .gallery-grid .g-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+        .gallery-grid .g-item img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+            filter: saturate(0.8) brightness(0.85); transition: filter 0.5s, transform 0.5s;
+        }
+        .gallery-grid .g-item:hover img { filter: saturate(1.1) brightness(1.05); transform: scale(1.05); }
+        .gallery-grid .g-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(2,8,16,0.85) 0%, transparent 50%);
+            display: flex; align-items: flex-end; padding: 0.8rem;
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .gallery-grid .g-item:hover .g-overlay { opacity: 1; }
+        .g-overlay span {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            color: var(--text); letter-spacing: 0.1em;
+        }
+
+        /* ===== CATCH TOAST ===== */
+        .catch-toast {
+            position: fixed; bottom: 2rem; left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            z-index: 200; pointer-events: none;
+            background: rgba(2,8,16,0.85);
+            border: 1px solid var(--cyan);
+            border-radius: 2px; padding: 0.8rem 2rem;
+            display: flex; align-items: center; gap: 1rem;
+            opacity: 0; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 30px rgba(0,229,255,0.15);
+        }
+        .catch-toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .catch-toast .toast-icon {
+            color: var(--cyan); font-size: 1.2rem;
+        }
+        .catch-toast .toast-text {
+            font-family: var(--font-cn); font-size: 0.85rem;
+            color: var(--white); font-weight: 400;
+        }
+        .catch-toast .toast-sub {
+            font-family: var(--font-mono); font-size: 0.6rem;
+            color: var(--text-muted); letter-spacing: 0.1em;
+            display: block; margin-top: 0.15rem;
+        }
+        .patience-hint {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 150; pointer-events: none;
+            font-family: var(--font-cn); font-size: 0.8rem;
+            color: var(--cyan); letter-spacing: 0.15em;
+            opacity: 0; transition: opacity 0.8s;
+            text-shadow: 0 0 20px rgba(0,229,255,0.3);
+        }
+        .patience-hint.visible { opacity: 0.6; }
+
+        /* ===== SONAR ===== */
+        #sonar-canvas { width: 100%; height: 300px; border: 1px solid var(--cyan-dim); border-radius: 2px; margin-top: 2rem; }
+
+        /* ===== FISH SCHOOL p5 ===== */
+        #fish-canvas { width: 100%; height: 200px; margin-top: 2rem; position: relative; z-index: 1; }
+
+        /* ===== SPEARFISHING GAME ===== */
+        .game-wrapper { position: relative; margin-top: 2rem; }
+        #game-canvas {
+            width: 100%; height: 450px;
+            border: 1px solid var(--cyan-dim); border-radius: 2px;
+            cursor: crosshair;
+        }
+        .game-hud {
+            position: absolute; top: 0; left: 0; right: 0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.8rem 1.2rem; pointer-events: none; z-index: 2;
+        }
+        .game-hud-item {
+            font-family: var(--font-mono); font-size: 0.7rem;
+            color: var(--cyan); letter-spacing: 0.12em;
+            background: rgba(2,8,16,0.75); padding: 0.4rem 0.8rem;
+            border: 1px solid var(--cyan-dim); border-radius: 2px;
+        }
+        .game-hud-item .hud-val { color: var(--white); font-size: 1rem; font-family: var(--font-display); }
+        .game-instructions {
+            font-family: var(--font-cn); font-size: 0.8rem;
+            color: var(--text-muted); margin-top: 1rem; text-align: center;
+            font-weight: 300; letter-spacing: 0.05em;
+        }
+        .game-instructions i { color: var(--cyan); margin: 0 0.3rem; }
+
+        /* ===== TIMELINE ===== */
+        .timeline { position: relative; margin-top: 3rem; padding-left: 2rem; }
+        .timeline::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px;
+            background: linear-gradient(to bottom, var(--cyan), var(--coral), transparent);
+        }
+        .timeline-item { position: relative; margin-bottom: 3rem; padding-left: 2rem; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -2.35rem; top: 0.5rem;
+            width: 10px; height: 10px; border-radius: 50%;
+            border: 2px solid var(--cyan); background: var(--abyss);
+        }
+        .timeline-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cyan); letter-spacing: 0.15em; }
+        .timeline-title { font-family: var(--font-cn); font-size: 1.1rem; color: var(--white); margin: 0.3rem 0; font-weight: 500; }
+        .timeline-desc { font-family: var(--font-cn); font-size: 0.85rem; color: var(--text-muted); font-weight: 300; line-height: 1.7; }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            position: relative; z-index: 1; padding: 4rem 2rem 2rem;
+            text-align: center; border-top: 1px solid var(--cyan-dim);
+        }
+        .footer-motto { font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.5rem); color: var(--white); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+        .footer-motto-cn { font-family: var(--font-cn); font-size: 1rem; color: var(--text-muted); font-weight: 300; letter-spacing: 0.15em; margin-bottom: 2rem; }
+        .social-links { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 3rem; }
+        .social-link {
+            width: 44px; height: 44px; border: 1px solid var(--cyan-dim);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); text-decoration: none; transition: all 0.3s; font-size: 1rem;
+        }
+        .social-link:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 20px var(--cyan-dim); transform: translateY(-2px); }
+        .footer-credit { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.1em; }
+
+        /* ===== WATER SURFACE ===== */
+        .water-surface {
+            position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 99;
+            background: linear-gradient(to right, transparent 0%, var(--cyan-dim) 20%, var(--cyan-glow) 50%, var(--cyan-dim) 80%, transparent 100%);
+            opacity: 0.5; animation: waterShimmer 4s ease-in-out infinite;
+        }
+        @keyframes waterShimmer { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+
+        .bubble {
+            position: fixed; z-index: 98;
+            width: var(--size); height: var(--size); border-radius: 50%;
+            border: 1px solid var(--cyan-dim);
+            background: radial-gradient(circle at 30% 30%, rgba(0,229,255,0.1), transparent);
+            pointer-events: none;
+            animation: bubbleRise var(--duration) linear infinite;
+            animation-delay: var(--delay); left: var(--x); bottom: -20px;
+        }
+        @keyframes bubbleRise {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; } 90% { opacity: 0.3; }
+            100% { transform: translateY(-110vh) translateX(calc(var(--drift))); opacity: 0; }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .philosophy-grid { grid-template-columns: 1fr; }
+            .species-grid { grid-template-columns: repeat(2, 1fr); }
+            .services-grid { grid-template-columns: 1fr; }
+            .stats-bar { flex-wrap: wrap; gap: 2rem; }
+            .vessel-inner { grid-template-columns: 1fr; gap: 2rem; }
+            .vessel-visual { height: 250px; }
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 160px); }
+            .gallery-grid .g-item:nth-child(1) { grid-column: span 2; grid-row: span 1; }
+            .depth-indicator { display: none; }
+            .section { padding: 4rem 1.2rem; }
+            .manifesto { padding: 4rem 1.2rem; }
+            .vessel-section { padding: 4rem 1.2rem; }
+            .hero-title { font-size: clamp(3rem, 15vw, 5rem); }
+        }
+        @media (max-width: 480px) {
+            .stats-bar { gap: 1.5rem; padding: 3rem 1rem; }
+            .stat-value { font-size: 2rem; }
+            .species-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+            .species-card { padding: 1rem; }
+            .vessel-specs { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="water-surface"></div>
+<div class="bubble" style="--size:6px;--duration:12s;--delay:0s;--x:10%;--drift:30px"></div>
+<div class="bubble" style="--size:4px;--duration:15s;--delay:2s;--x:25%;--drift:-20px"></div>
+<div class="bubble" style="--size:8px;--duration:10s;--delay:4s;--x:45%;--drift:40px"></div>
+<div class="bubble" style="--size:3px;--duration:18s;--delay:1s;--x:60%;--drift:-35px"></div>
+<div class="bubble" style="--size:5px;--duration:14s;--delay:6s;--x:75%;--drift:25px"></div>
+<div class="bubble" style="--size:7px;--duration:11s;--delay:3s;--x:90%;--drift:-15px"></div>
+<div class="bubble" style="--size:4px;--duration:16s;--delay:5s;--x:35%;--drift:20px"></div>
+<div class="bubble" style="--size:6px;--duration:13s;--delay:7s;--x:55%;--drift:-30px"></div>
+
+<canvas id="underwater-canvas"></canvas>
+
+<!-- Catch toast notification -->
+<div class="catch-toast" id="catchToast">
+    <i class="fas fa-crosshairs toast-icon"></i>
+    <div>
+        <div class="toast-text" id="toastText"></div>
+        <span class="toast-sub" id="toastSub"></span>
+    </div>
+</div>
+<!-- Patience hint -->
+<div class="patience-hint" id="patienceHint">像礁石一樣靜止...</div>
+
+<a href="/guild/" class="back-nav"><i class="fas fa-chevron-left"></i> ARCHIVE</a>
+
+<div class="depth-indicator">
+    <div class="depth-bar"><div class="depth-marker" id="depthMarker"></div></div>
+    <span class="depth-label">DEPTH</span>
+</div>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+    <div class="avatar-container">
+        <div class="avatar-sonar"></div>
+        <div class="avatar-sonar"></div>
+        <div class="avatar-sonar"></div>
+        <div class="avatar-ring">
+            <img src="/assets/img/guild/roy_spearfishing/avatar.webp" alt="Roy">
+        </div>
+    </div>
+    <div class="hero-subtitle">FREEDIVE SPEARFISHER / TAIWAN</div>
+    <h1 class="hero-title">
+        THE ABYSS<br>HUNTER
+        <span>ROY_SPEARFISHING</span>
+    </h1>
+    <p class="hero-tagline">從憋氣開始的獵人之路</p>
+    <div class="hero-depth-text">SURFACE // 0m</div>
+    <div class="hero-scroll-hint">
+        <span>DIVE DEEPER</span>
+        <div class="scroll-line"></div>
+    </div>
+</section>
+
+<!-- ===== MANIFESTO ===== -->
+<section class="manifesto" id="manifesto">
+    <div class="manifesto-inner">
+        <div class="section-label"><span>01 // MANIFESTO</span></div>
+        <div class="manifesto-quote">
+            漁獵運動是一場與大海、與魚群、與<span class="highlight">自我意志</span>的深層博弈。
+            當我推開波浪，進入那個只有<span class="highlight">心跳與氣泡聲</span>的世界，
+            所有城市的喧囂都會消失。
+            <br><br>
+            每一次憋氣下潛，我學會了如何安靜地觀察海流的脈動，
+            如何像礁石一樣靜止，只為了等待<span class="highlight">一擊命中</span>的瞬間。
+        </div>
+        <div class="manifesto-attribution">
+            <i class="fas fa-water"></i> ROY // SPEARFISHER // TAITUNG, TAIWAN
+        </div>
+    </div>
+</section>
+
+<!-- ===== CATCH SPECIES ===== -->
+<section class="section" id="species">
+    <div class="section-label"><span>02 // TARGET SPECIES</span></div>
+    <div class="section-title">CATCH INDEX</div>
+    <div class="section-title-cn">獵場物種圖鑑</div>
+
+    <div class="species-grid">
+        <div class="species-card">
+            <div class="species-glow"></div>
+            <i class="fas fa-fish species-icon"></i>
+            <div class="species-name">BLACK SEABREAM</div>
+            <div class="species-name-cn">黑鯛（黑格）</div>
+            <span class="species-tag">13 KILL STREAK</span>
+        </div>
+        <div class="species-card">
+            <div class="species-glow"></div>
+            <i class="fas fa-shrimp species-icon"></i>
+            <div class="species-name">LOBSTER</div>
+            <div class="species-name-cn">龍蝦</div>
+            <span class="species-tag">BARE HANDS</span>
+        </div>
+        <div class="species-card">
+            <div class="species-glow"></div>
+            <i class="fas fa-disease species-icon"></i>
+            <div class="species-name">OCTOPUS</div>
+            <div class="species-name-cn">章魚</div>
+            <span class="species-tag">FREEDIVE</span>
+        </div>
+        <div class="species-card">
+            <div class="species-glow"></div>
+            <i class="fas fa-fish-fins species-icon"></i>
+            <div class="species-name">GIANT TREVALLY</div>
+            <div class="species-name-cn">GT 牛港鰺</div>
+            <span class="species-tag">20KG CLASS</span>
+        </div>
+        <div class="species-card">
+            <div class="species-glow"></div>
+            <i class="fas fa-worm species-icon"></i>
+            <div class="species-name">SQUID</div>
+            <div class="species-name-cn">花枝 / 軟絲</div>
+            <span class="species-tag">NIGHT DIVE</span>
+        </div>
+        <div class="species-card">
+            <div class="species-glow"></div>
+            <i class="fas fa-fish species-icon" style="color:var(--coral)"></i>
+            <div class="species-name">GROUPER</div>
+            <div class="species-name-cn">石斑（石佬）</div>
+            <span class="species-tag">REEF HUNT</span>
+        </div>
+        <div class="species-card">
+            <div class="species-glow"></div>
+            <i class="fas fa-spider species-icon" style="color:var(--biolum)"></i>
+            <div class="species-name">BLUE CRAB</div>
+            <div class="species-name-cn">藍花蟹</div>
+            <span class="species-tag">SHORE CATCH</span>
+        </div>
+        <div class="species-card">
+            <div class="species-glow"></div>
+            <i class="fas fa-skull-crossbones species-icon" style="color:var(--gold)"></i>
+            <div class="species-name">LIONFISH</div>
+            <div class="species-name-cn">獅子魚（有毒）</div>
+            <span class="species-tag">TOXIC DELICACY</span>
+        </div>
+    </div>
+</section>
+
+<!-- ===== P5 FISH SCHOOL ===== -->
+<div id="fish-canvas" style="max-width:1200px;margin:0 auto;"></div>
+
+<!-- ===== PHILOSOPHY ===== -->
+<section class="section" id="philosophy">
+    <div class="section-label"><span>03 // PHILOSOPHY</span></div>
+    <div class="section-title">HUNTING CODE</div>
+    <div class="section-title-cn">漁獵哲學</div>
+    <div class="philosophy-grid">
+        <div class="philo-card">
+            <div class="philo-icon"><i class="fas fa-crosshairs"></i></div>
+            <h3>SELECTIVE HUNT</h3>
+            <p>選擇性漁獵 -- 我只拿我需要的，那些成熟、符合法規的海鮮。這是全世界最公平、最永續的捕魚方式。</p>
+        </div>
+        <div class="philo-card">
+            <div class="philo-icon"><i class="fas fa-lungs"></i></div>
+            <h3>ONE BREATH</h3>
+            <p>一口氣的極限。自由潛水不靠裝備，只靠自己的肺活量與意志力，在深海中與魚群平等對峙。</p>
+        </div>
+        <div class="philo-card">
+            <div class="philo-icon"><i class="fas fa-infinity"></i></div>
+            <h3>GIVE & TAKE</h3>
+            <p>尊重海洋的給予與收取。每一次下水都是向大海借取，帶著敬畏之心，只取所需，永不貪婪。</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===== STATS ===== -->
+<div class="stats-bar" id="stats">
+    <div class="stat-item"><div class="stat-value" data-count="4930">0</div><div class="stat-label">YT SUBSCRIBERS</div></div>
+    <div class="stat-item"><div class="stat-value" data-count="106">0</div><div class="stat-label">VIDEOS</div></div>
+    <div class="stat-item"><div class="stat-value" data-count="648">0</div><div class="stat-label">THREADS FOLLOWERS</div></div>
+    <div class="stat-item"><div class="stat-value" data-count="20">0</div><div class="stat-label">SEAFOOD GRAB SERIES</div></div>
+</div>
+
+<!-- ===== THE VESSEL ===== -->
+<section class="vessel-section" id="vessel">
+    <div class="vessel-inner">
+        <div class="vessel-visual">
+            <img src="/assets/img/guild/roy_spearfishing/vid_penghu_hq.webp" alt="Roy's fishing vessel" loading="lazy">
+            <div class="vessel-hud"><i class="fas fa-satellite-dish"></i> VESSEL // TAITUNG PORT</div>
+        </div>
+        <div class="vessel-content">
+            <div class="section-label"><span>04 // THE VESSEL</span></div>
+            <h3>THE FISHING BOAT</h3>
+            <div class="vessel-cn">花百萬買船，正式成為漁民</div>
+            <p>我在台東買下了自己的漁船，從獵人 YouTuber 正式進階為職業漁民。台東有黑潮經過，這裡的魚又大又粗，上次出海就釣到 20 公斤級的 GT 牛港鰺。</p>
+            <p>我正式邀請 -- 有沒有人要來台東當職業釣手？可以先體驗半個月，跟船長一起釣魚、賣魚，油錢平分。住宿也安排好了，職業釣手每週背包房只要 $1000。</p>
+            <div class="vessel-specs">
+                <div class="vessel-spec"><div class="vessel-spec-value">1M+</div><div class="vessel-spec-label">VESSEL COST (NTD)</div></div>
+                <div class="vessel-spec"><div class="vessel-spec-value">20KG</div><div class="vessel-spec-label">BIGGEST GT CATCH</div></div>
+                <div class="vessel-spec"><div class="vessel-spec-value">43L</div><div class="vessel-spec-label">COOLER CAPACITY</div></div>
+                <div class="vessel-spec"><div class="vessel-spec-value">$1K</div><div class="vessel-spec-label">WEEKLY STAY COST</div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== SERVICES ===== -->
+<section class="section" id="services">
+    <div class="section-label"><span>05 // WHAT I DO</span></div>
+    <div class="section-title">FIELD OPS</div>
+    <div class="section-title-cn">我能為你做什麼</div>
+    <div class="services-grid">
+        <div class="service-card">
+            <div class="service-icon"><i class="fas fa-video"></i></div>
+            <h3>ADVENTURE CONTENT</h3>
+            <div class="service-cn">冒險影像製作</div>
+            <p>透過我的鏡頭，讓你身歷其境地體驗水下獵魚、荒島求生、夜潛石斑的刺激冒險。從拍攝、剪輯到故事敘述，我用影像把大海的故事帶回陸地。</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon"><i class="fas fa-anchor"></i></div>
+            <h3>FISHING EXPEDITIONS</h3>
+            <div class="service-cn">漁獵遠征體驗</div>
+            <p>在台東跟著我出海船釣，或是潛入水下一起漁獵。我擁有自己的漁船，提供職業釣手體驗 -- 釣魚、賣魚、漁民生活完整體驗，住宿也幫你安排好了。</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon"><i class="fas fa-campground"></i></div>
+            <h3>ISLAND SURVIVAL</h3>
+            <div class="service-cn">荒島露營求生</div>
+            <p>組織無人島冒險計畫。三天兩夜的海灘露營，自己潛水抓海鮮、營火料理、觀星。從澎湖到台東的離島，帶你找回那份野孩子的激情。</p>
+        </div>
+        <div class="service-card">
+            <div class="service-icon"><i class="fas fa-graduation-cap"></i></div>
+            <h3>SPEARFISHING TRAINING</h3>
+            <div class="service-cn">漁獵技術教學</div>
+            <p>從分離式魚叉操作、珊瑚礁獵魚技巧，到徒手抓龍蝦、夜潛石斑。我會手把手教你如何安全、有效率、且永續地在海中捕獲獵物。</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===== GALLERY ===== -->
+<section class="section" id="gallery">
+    <div class="section-label"><span>06 // GALLERY</span></div>
+    <div class="section-title">CATCH LOG</div>
+    <div class="section-title-cn">狩獵紀錄</div>
+    <div class="gallery-grid">
+        <div class="g-item">
+            <img src="/assets/img/guild/roy_spearfishing/vid_island_hq.webp" alt="無人島求生" loading="lazy">
+            <div class="g-overlay"><span>ISLAND // 無人島求生 Day 2 -- 潛水放棍抓魚</span></div>
+        </div>
+        <div class="g-item">
+            <img src="/assets/img/guild/roy_spearfishing/vid_lobster_hq.webp" alt="漁獵週記" loading="lazy">
+            <div class="g-overlay"><span>EP.1 // 徒手抓龍蝦 13連殺</span></div>
+        </div>
+        <div class="g-item">
+            <img src="/assets/img/guild/roy_spearfishing/vid_crab_hq.webp" alt="螃蟹" loading="lazy">
+            <div class="g-overlay"><span>HUNT // 上山抓鱉下海抓蟹</span></div>
+        </div>
+        <div class="g-item">
+            <img src="/assets/img/guild/roy_spearfishing/vid_turtle_hq.webp" alt="海龜同行" loading="lazy">
+            <div class="g-overlay"><span>DIVE // 與海龜同行捕魚</span></div>
+        </div>
+        <div class="g-item">
+            <img src="/assets/img/guild/roy_spearfishing/vid_squid.webp" alt="夜釣小管" loading="lazy">
+            <div class="g-overlay"><span>NIGHT // 船釣小管</span></div>
+        </div>
+        <div class="g-item">
+            <img src="/assets/img/guild/roy_spearfishing/vid_island3.webp" alt="荒島最後一天" loading="lazy">
+            <div class="g-overlay"><span>FINAL // 荒島最後一天</span></div>
+        </div>
+        <div class="g-item">
+            <img src="/assets/img/guild/roy_spearfishing/spear2.webp" alt="深海獵手" loading="lazy">
+            <div class="g-overlay"><span>HUNTER // 深海獵手裝備</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== SPEARFISHING GAME ===== -->
+<section class="section" id="game">
+    <div class="section-label"><span>07 // MINI GAME</span></div>
+    <div class="section-title">SPEAR HUNT</div>
+    <div class="section-title-cn">魚叉狩獵</div>
+    <div class="game-wrapper">
+        <div class="game-hud">
+            <div class="game-hud-item"><i class="fas fa-crosshairs"></i> SCORE: <span class="hud-val" id="gameScore">0</span></div>
+            <div class="game-hud-item"><i class="fas fa-fish"></i> COMBO: <span class="hud-val" id="gameCombo">x1</span></div>
+            <div class="game-hud-item"><i class="fas fa-lungs"></i> O2: <span class="hud-val" id="gameO2">100</span>%</div>
+        </div>
+        <div id="game-canvas"></div>
+    </div>
+    <div class="game-instructions">
+        <i class="fas fa-mouse-pointer"></i> 點擊魚群來獵捕 -- 連續命中可累積 COMBO 倍率 -- 氧氣會緩慢消耗，捕獲魚類可回復
+    </div>
+</section>
+
+<!-- ===== SONAR ===== -->
+<section class="section" id="sonar">
+    <div class="section-label"><span>08 // SONAR</span></div>
+    <div class="section-title">FISH RADAR</div>
+    <div class="section-title-cn">獵場聲納</div>
+    <div id="sonar-canvas"></div>
+</section>
+
+<!-- ===== TIMELINE ===== -->
+<section class="section" id="journey">
+    <div class="section-label"><span>09 // JOURNEY</span></div>
+    <div class="section-title">DIVE LOG</div>
+    <div class="section-title-cn">冒險航海日誌</div>
+    <div class="timeline">
+        <div class="timeline-item">
+            <div class="timeline-date">ORIGIN</div>
+            <div class="timeline-title">第一次憋氣下潛</div>
+            <div class="timeline-desc">從城市的喧囂中逃離，第一次推開波浪潛入海中。那個只有心跳與氣泡聲的世界，從此成為我的歸屬。硬碟裡開始塞滿水下射魚片段。</div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-date">YOUTUBE</div>
+            <div class="timeline-title">創立「漁獵小哥 Roy」頻道</div>
+            <div class="timeline-desc">一個簡單的念頭：「把大海的故事，帶回陸地上分享。」將過去累積的冒險片段串聯、上傳、分享。從零開始，一步步建立屬於獵人的冒險頻道。</div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-date">SERIES</div>
+            <div class="timeline-title">「一分鐘抓海鮮」系列誕生</div>
+            <div class="timeline-desc">1min Seafood Grab 系列突破 20 集。龍蝦、章魚、石斑、花枝 -- 用最短的影片展示最真實的水下狩獵瞬間。</div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-date">EXPEDITION</div>
+            <div class="timeline-title">澎湖荒島三天兩夜遠征</div>
+            <div class="timeline-desc">組織了一場真正的荒島大冒險。登陸無人島，潛水放棍抓魚、煙燻章魚、營火料理。與浪廚飲食鋪 Ronin eatery 跨界合作，觀看數突破萬次。</div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-date">MILESTONE</div>
+            <div class="timeline-title">花百萬買船，正式成為漁民</div>
+            <div class="timeline-desc">在台東買下自己的漁船。從獵人 YouTuber 到真正的職業漁民。台東有黑潮經過，魚又大又粗，上次出海釣到 20 公斤級 GT。邀請觀眾來台東一起當職業釣手。</div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-date">NOW // 2026</div>
+            <div class="timeline-title">接近 5000 訂閱，持續冒險中</div>
+            <div class="timeline-desc">頻道持續成長，漁獵週記系列開跑。遠離塵囂，在台東當海上男兒。每一天都是新的冒險，每一次下潛都是與大海的對話。</div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+    <div class="footer-motto">MY PATH IS YOURS</div>
+    <div class="footer-motto-cn">屬於我們的冒險</div>
+    <div class="social-links">
+        <a href="https://www.youtube.com/@ROY_SPEARFISHING" target="_blank" rel="noopener noreferrer" class="social-link" title="YouTube"><i class="fab fa-youtube"></i></a>
+        <a href="https://www.threads.com/@roy_spearfishing" target="_blank" rel="noopener noreferrer" class="social-link" title="Threads"><i class="fab fa-threads"></i></a>
+        <a href="https://www.instagram.com/roy_spearfishing/" target="_blank" rel="noopener noreferrer" class="social-link" title="Instagram"><i class="fab fa-instagram"></i></a>
+    </div>
+    <div class="footer-credit">Made with <i class="fas fa-heart" style="color:var(--coral);font-size:0.5rem"></i> by SuperGalen's Dungeon</div>
+</footer>
+
+<script>
+/* ===== THREE.JS UNDERWATER — PATIENCE HUNTING SYSTEM ===== */
+/* Core concept: you ARE the diver. Stay still = fish approach (Roy's philosophy).
+   Move fast = fish scatter. Lock-on near fish + click = catch it. */
+(function() {
+    const canvas = document.getElementById('underwater-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    camera.position.z = 5;
+
+    // --- Plankton particles ---
+    const particleCount = 600;
+    const positions = new Float32Array(particleCount * 3);
+    const velocities = [];
+    for (let i = 0; i < particleCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 20;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+        velocities.push({ x: (Math.random() - 0.5) * 0.002, y: Math.random() * 0.005 + 0.002, z: (Math.random() - 0.5) * 0.001 });
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.03, color: 0x00e5ff, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+    scene.add(new THREE.Points(geo, mat));
+
+    // --- Light rays ---
+    const rayGeo = new THREE.PlaneGeometry(0.02, 12);
+    const rayMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.03, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+    for (let i = 0; i < 8; i++) {
+        const ray = new THREE.Mesh(rayGeo, rayMat.clone());
+        ray.position.set((Math.random() - 0.5) * 10, 3, (Math.random() - 0.5) * 3 - 2);
+        ray.rotation.z = (Math.random() - 0.5) * 0.3;
+        ray.material.opacity = 0.01 + Math.random() * 0.04;
+        scene.add(ray);
+    }
+
+    // --- Fish creation ---
+    const fishGroup = new THREE.Group();
+    scene.add(fishGroup);
+    const SPECIES = [
+        { name: '黑鯛', en: 'Black Bream', color: 0x5a6478, quote: '選擇性漁獵 -- 只拿我需要的' },
+        { name: '石斑', en: 'Grouper', color: 0x7a5a3a, quote: '在珊瑚礁中像礁石一樣靜止' },
+        { name: '龍蝦', en: 'Lobster', color: 0xb84428, quote: '徒手從岩縫中拉出來的戰利品' },
+        { name: '花枝', en: 'Cuttlefish', color: 0x8a7a8e, quote: '這隻花枝蠻幸運的' },
+        { name: '牛港鰺', en: 'Giant Trevally', color: 0x3c8898, quote: '20公斤級GT -- 台東黑潮的禮物' },
+        { name: '章魚', en: 'Octopus', color: 0x8c3c50, quote: '煙燻章魚，荒島的深夜食堂' },
+        { name: '軟絲', en: 'Squid', color: 0x7a8a78, quote: '夜潛的透明獵物' },
+    ];
+
+    function createDetailedFish(scale, colorHex, opacity) {
+        const group = new THREE.Group();
+        const fMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+        const s = scale;
+        const body = new THREE.Shape();
+        body.moveTo(-s * 2, 0);
+        body.bezierCurveTo(-s * 1.5, s * 0.7, s * 0.5, s * 0.8, s * 2, s * 0.1);
+        body.bezierCurveTo(s * 2.2, 0, s * 2.2, 0, s * 2, -s * 0.1);
+        body.bezierCurveTo(s * 0.5, -s * 0.8, -s * 1.5, -s * 0.7, -s * 2, 0);
+        group.add(new THREE.Mesh(new THREE.ShapeGeometry(body), fMat));
+        const tail = new THREE.Shape();
+        tail.moveTo(-s * 2, 0); tail.lineTo(-s * 3.2, s * 0.9);
+        tail.quadraticCurveTo(-s * 2.5, 0, -s * 3.2, -s * 0.9); tail.lineTo(-s * 2, 0);
+        const tailMesh = new THREE.Mesh(new THREE.ShapeGeometry(tail), fMat.clone());
+        tailMesh.name = 'tail'; group.add(tailMesh);
+        const dorsal = new THREE.Shape();
+        dorsal.moveTo(-s * 0.3, s * 0.6); dorsal.quadraticCurveTo(s * 0.3, s * 1.4, s * 1.0, s * 0.7); dorsal.lineTo(s * 0.5, s * 0.55);
+        const dm = new THREE.Mesh(new THREE.ShapeGeometry(dorsal), fMat.clone()); dm.material.opacity = opacity * 0.7; group.add(dm);
+        const pec = new THREE.Shape();
+        pec.moveTo(s * 0.5, -s * 0.3); pec.quadraticCurveTo(s * 1.0, -s * 0.9, s * 0.2, -s * 0.8); pec.lineTo(s * 0.3, -s * 0.4);
+        const pm = new THREE.Mesh(new THREE.ShapeGeometry(pec), fMat.clone()); pm.material.opacity = opacity * 0.5; pm.name = 'pec'; group.add(pm);
+        const eyeGeo = new THREE.CircleGeometry(s * 0.1, 8);
+        const eye = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: opacity * 1.5 }));
+        eye.position.set(s * 1.3, s * 0.2, 0.01); group.add(eye);
+        // Lock-on ring (hidden by default)
+        const ringGeo = new THREE.RingGeometry(s * 2, s * 2.15, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+        const ring = new THREE.Mesh(ringGeo, ringMat); ring.name = 'lockRing'; ring.position.z = 0.02; group.add(ring);
+        return group;
+    }
+
+    for (let i = 0; i < 14; i++) {
+        const sp = SPECIES[i % SPECIES.length];
+        const s = 0.08 + Math.random() * 0.18;
+        const opacity = 0.04 + Math.random() * 0.06;
+        const fish = createDetailedFish(s, sp.color, opacity);
+        fish.position.set((Math.random() - 0.5) * 18, (Math.random() - 0.5) * 12, -2 - Math.random() * 5);
+        const dir = Math.random() > 0.3 ? 1 : -1;
+        if (dir < 0) fish.scale.x = -1;
+        fish.userData = {
+            speed: (0.004 + Math.random() * 0.012) * dir,
+            baseSpeed: 0, wobble: Math.random() * Math.PI * 2,
+            tailPhase: Math.random() * Math.PI * 2,
+            species: sp, scared: 0, fleeX: 0, fleeY: 0,
+            lockOn: 0, // 0-1 progress toward catch
+            caught: false, catchAnim: 0,
+            curiosity: 0 // attracted to still cursor
+        };
+        fish.userData.baseSpeed = fish.userData.speed;
+        fishGroup.add(fish);
+    }
+
+    // --- Diver state ---
+    let mouseX = 0, mouseY = 0;
+    let mouseWorld = new THREE.Vector3(0, 0, 0);
+    let prevMouseX = 0, prevMouseY = 0;
+    let mouseSpeed = 0; // how fast cursor moves
+    let stillTimer = 0; // how long cursor stayed still
+    const STILL_THRESHOLD = 0.002;
+    const ripples = [];
+    // Bubble trail from cursor (you are the diver)
+    const diverBubbles = [];
+
+    // Toast system
+    const toastEl = document.getElementById('catchToast');
+    const toastText = document.getElementById('toastText');
+    const toastSub = document.getElementById('toastSub');
+    const hintEl = document.getElementById('patienceHint');
+    let toastTimer = 0;
+
+    function showCatchToast(species) {
+        if (!toastEl) return;
+        toastText.textContent = species.name + ' // ' + species.en;
+        toastSub.textContent = species.quote;
+        toastEl.classList.add('visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('visible'), 3500);
+    }
+
+    function createRipple(pos, color) {
+        const ringGeo = new THREE.RingGeometry(0.01, 0.03, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: color || 0x00e5ff, transparent: true, opacity: 0.6, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.copy(pos); ring.position.z = -1;
+        scene.add(ring);
+        ripples.push({ mesh: ring, life: 1 });
+    }
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX / window.innerWidth - 0.5) * 0.5;
+        mouseY = (e.clientY / window.innerHeight - 0.5) * 0.5;
+        const vec = new THREE.Vector3((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1, 0.5);
+        vec.unproject(camera);
+        const dir = vec.sub(camera.position).normalize();
+        const dist = -camera.position.z / dir.z;
+        mouseWorld = camera.position.clone().add(dir.multiplyScalar(dist));
+    });
+
+    // Click: if locked-on to a fish, catch it. Otherwise, ripple + scare.
+    canvas.style.pointerEvents = 'auto';
+    canvas.style.cursor = 'default';
+    document.addEventListener('click', (e) => {
+        const vec = new THREE.Vector3((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1, 0.5);
+        vec.unproject(camera);
+        const dir = vec.sub(camera.position).normalize();
+        const dist = -camera.position.z / dir.z;
+        const clickWorld = camera.position.clone().add(dir.multiplyScalar(dist));
+
+        // Check if any fish is locked on
+        let caught = false;
+        fishGroup.children.forEach(fish => {
+            if (fish.userData.lockOn > 0.9 && !fish.userData.caught) {
+                fish.userData.caught = true;
+                fish.userData.catchAnim = 1;
+                showCatchToast(fish.userData.species);
+                createRipple(fish.position.clone(), 0x00ffc8);
+                caught = true;
+            }
+        });
+
+        if (!caught) {
+            createRipple(clickWorld, 0x00e5ff);
+            // Scare nearby fish (punishment for impatience)
+            fishGroup.children.forEach(fish => {
+                if (fish.userData.caught) return;
+                const dx = fish.position.x - clickWorld.x;
+                const dy = fish.position.y - clickWorld.y;
+                const d = Math.sqrt(dx * dx + dy * dy);
+                if (d < 4) {
+                    fish.userData.fleeX = (dx / (d || 1)) * 0.1 * (4 - d);
+                    fish.userData.fleeY = (dy / (d || 1)) * 0.1 * (4 - d);
+                    fish.userData.scared = 90;
+                    fish.userData.lockOn = 0; // reset lock-on
+                    fish.userData.curiosity = 0;
+                }
+            });
+        }
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const t = Date.now() * 0.001;
+
+        // --- Mouse speed tracking ---
+        const mdx = mouseX - prevMouseX, mdy = mouseY - prevMouseY;
+        mouseSpeed = Math.sqrt(mdx * mdx + mdy * mdy);
+        prevMouseX = mouseX; prevMouseY = mouseY;
+
+        if (mouseSpeed < STILL_THRESHOLD) {
+            stillTimer = Math.min(stillTimer + 1, 300);
+        } else {
+            stillTimer = Math.max(stillTimer - 3, 0);
+        }
+        const isStill = stillTimer > 60; // ~1 second of stillness
+        const stillness = Math.min(stillTimer / 180, 1); // 0-1 over 3 seconds
+
+        // Show patience hint
+        if (hintEl) {
+            if (stillTimer > 40 && stillTimer < 120) hintEl.classList.add('visible');
+            else hintEl.classList.remove('visible');
+        }
+
+        // --- Diver bubble trail ---
+        if (mouseSpeed > STILL_THRESHOLD * 2 && Math.random() < mouseSpeed * 50) {
+            const bGeo = new THREE.SphereGeometry(0.015 + Math.random() * 0.02, 6, 6);
+            const bMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending });
+            const bubble = new THREE.Mesh(bGeo, bMat);
+            bubble.position.copy(mouseWorld);
+            bubble.position.z = -1;
+            bubble.position.x += (Math.random() - 0.5) * 0.3;
+            scene.add(bubble);
+            diverBubbles.push({ mesh: bubble, life: 1, vy: 0.008 + Math.random() * 0.01 });
+        }
+        for (let i = diverBubbles.length - 1; i >= 0; i--) {
+            const b = diverBubbles[i];
+            b.mesh.position.y += b.vy;
+            b.mesh.position.x += Math.sin(t * 3 + i) * 0.002;
+            b.life -= 0.012;
+            b.mesh.material.opacity = b.life * 0.2;
+            b.mesh.scale.setScalar(1 + (1 - b.life) * 0.5);
+            if (b.life <= 0) { scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); diverBubbles.splice(i, 1); }
+        }
+
+        // --- Particles ---
+        const pos = geo.attributes.position.array;
+        for (let i = 0; i < particleCount; i++) {
+            pos[i * 3] += velocities[i].x;
+            pos[i * 3 + 1] += velocities[i].y;
+            pos[i * 3 + 2] += velocities[i].z;
+            if (pos[i * 3 + 1] > 10) { pos[i * 3 + 1] = -10; pos[i * 3] = (Math.random() - 0.5) * 20; }
+        }
+        geo.attributes.position.needsUpdate = true;
+
+        // --- Depth response: darken background based on scroll ---
+        const scrollPct = window.scrollY / (document.body.scrollHeight - window.innerHeight || 1);
+        mat.opacity = 0.3 + scrollPct * 0.3; // more particles visible as you go deeper
+
+        // --- Fish behavior ---
+        fishGroup.children.forEach(fish => {
+            const d = fish.userData;
+            if (d.caught) {
+                // Catch animation: glow bright, scale up, then fade
+                d.catchAnim -= 0.008;
+                fish.children.forEach(child => {
+                    if (child.material) child.material.opacity = Math.max(0, d.catchAnim * 0.3);
+                });
+                const ring = fish.getObjectByName('lockRing');
+                if (ring) ring.material.opacity = Math.max(0, d.catchAnim * 0.5);
+                fish.scale.setScalar(1 + (1 - d.catchAnim) * 0.3);
+                if (d.catchAnim <= 0) {
+                    // Respawn
+                    d.caught = false; d.lockOn = 0; d.catchAnim = 0; d.curiosity = 0;
+                    fish.position.set((Math.random() > 0.5 ? 14 : -14), (Math.random() - 0.5) * 10, -2 - Math.random() * 5);
+                    fish.scale.setScalar(1);
+                    fish.children.forEach(child => {
+                        if (child.material && child.userData?.baseOpacity !== undefined) child.material.opacity = child.userData.baseOpacity;
+                    });
+                }
+                return;
+            }
+
+            const dx = fish.position.x - mouseWorld.x;
+            const dy = fish.position.y - mouseWorld.y;
+            const mouseDist = Math.sqrt(dx * dx + dy * dy);
+
+            // --- Proximity + stillness = fish approaches (curiosity) ---
+            if (isStill && mouseDist < 5 && d.scared <= 0) {
+                d.curiosity = Math.min(d.curiosity + 0.003 * stillness, 1);
+                // Slowly swim toward cursor
+                if (mouseDist > 1.5) {
+                    fish.position.x -= (dx / mouseDist) * 0.003 * d.curiosity;
+                    fish.position.y -= (dy / mouseDist) * 0.003 * d.curiosity;
+                }
+            } else {
+                d.curiosity = Math.max(d.curiosity - 0.01, 0);
+            }
+
+            // --- Fast mouse = scare (too much movement) ---
+            if (mouseSpeed > 0.015 && mouseDist < 3 && d.scared <= 0) {
+                d.fleeX = (dx / (mouseDist || 1)) * 0.04;
+                d.fleeY = (dy / (mouseDist || 1)) * 0.04;
+                d.scared = 40;
+                d.lockOn = 0;
+                d.curiosity = 0;
+            }
+
+            // --- Lock-on mechanic ---
+            if (isStill && mouseDist < 2 && d.curiosity > 0.3 && d.scared <= 0) {
+                d.lockOn = Math.min(d.lockOn + 0.008, 1);
+            } else {
+                d.lockOn = Math.max(d.lockOn - 0.02, 0);
+            }
+            const ring = fish.getObjectByName('lockRing');
+            if (ring) {
+                ring.material.opacity = d.lockOn * 0.6;
+                ring.rotation.z = t * 2;
+                // Scale ring based on lock progress
+                const rs = 1 + (1 - d.lockOn) * 0.5;
+                ring.scale.set(rs, rs, 1);
+            }
+
+            // --- Glow based on curiosity + lock-on ---
+            const glowFactor = d.curiosity * 0.5 + d.lockOn * 0.3;
+            fish.children.forEach(child => {
+                if (child.material && child.name !== 'lockRing') {
+                    if (child.userData?.baseOpacity === undefined) { child.userData = child.userData || {}; child.userData.baseOpacity = child.material.opacity; }
+                    child.material.opacity = (child.userData.baseOpacity || 0.05) + glowFactor * 0.2;
+                }
+            });
+
+            // --- Scared flee ---
+            if (d.scared > 0) {
+                fish.position.x += d.fleeX;
+                fish.position.y += d.fleeY;
+                d.fleeX *= 0.94; d.fleeY *= 0.94;
+                d.scared--;
+            }
+
+            // --- Normal swim ---
+            fish.position.x += d.speed;
+            fish.position.y += Math.sin(t * 1.5 + d.wobble) * 0.004;
+            const tailSpeed = d.scared > 0 ? 14 : (d.curiosity > 0.5 ? 4 : 6);
+            const tailAmp = d.scared > 0 ? 0.5 : (d.curiosity > 0.5 ? 0.15 : 0.25);
+            const tailMesh = fish.getObjectByName('tail');
+            if (tailMesh) tailMesh.rotation.z = Math.sin(t * tailSpeed + d.tailPhase) * tailAmp;
+            const pecMesh = fish.getObjectByName('pec');
+            if (pecMesh) pecMesh.rotation.z = Math.sin(t * (tailSpeed * 0.7) + d.tailPhase) * 0.15;
+
+            // Wrap
+            if (d.speed > 0 && fish.position.x > 12) fish.position.x = -12;
+            if (d.speed < 0 && fish.position.x < -12) fish.position.x = 12;
+            if (fish.position.y > 8) fish.position.y = 8;
+            if (fish.position.y < -8) fish.position.y = -8;
+        });
+
+        // --- Ripples ---
+        for (let i = ripples.length - 1; i >= 0; i--) {
+            const r = ripples[i];
+            r.life -= 0.015;
+            r.mesh.scale.setScalar(1 + (1 - r.life) * 8);
+            r.mesh.material.opacity = r.life * 0.5;
+            if (r.life <= 0) { scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); ripples.splice(i, 1); }
+        }
+
+        camera.position.x += (mouseX - camera.position.x) * 0.02;
+        camera.position.y += (-mouseY - camera.position.y) * 0.02;
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+})();
+
+/* ===== p5.js FISH SCHOOL ===== */
+(function() {
+    const container = document.getElementById('fish-canvas');
+    if (!container) return;
+    let w, h;
+    const fishes = [];
+
+    new p5(function(p) {
+        p.setup = function() {
+            w = container.offsetWidth;
+            h = 200;
+            const c = p.createCanvas(w, h);
+            c.parent(container);
+            for (let i = 0; i < 30; i++) {
+                fishes.push({
+                    x: Math.random() * w, y: Math.random() * h,
+                    vx: (Math.random() - 0.3) * 2, vy: (Math.random() - 0.5) * 0.5,
+                    size: 6 + Math.random() * 10,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        };
+        p.draw = function() {
+            p.clear();
+            fishes.forEach(f => {
+                f.x += f.vx;
+                f.y += Math.sin(p.frameCount * 0.03 + f.phase) * 0.5 + f.vy;
+                if (f.x > w + 20) f.x = -20;
+                if (f.x < -20) f.x = w + 20;
+                if (f.y > h - 10) f.vy = -Math.abs(f.vy);
+                if (f.y < 10) f.vy = Math.abs(f.vy);
+
+                p.push();
+                p.translate(f.x, f.y);
+                if (f.vx < 0) p.scale(-1, 1);
+                p.noStroke();
+                p.fill(0, 229, 255, 60);
+                p.beginShape();
+                p.vertex(0, 0);
+                p.bezierVertex(f.size * 0.3, -f.size * 0.3, f.size * 0.7, -f.size * 0.25, f.size, 0);
+                p.bezierVertex(f.size * 0.7, f.size * 0.25, f.size * 0.3, f.size * 0.3, 0, 0);
+                p.endShape();
+                // tail
+                p.beginShape();
+                p.vertex(-f.size * 0.1, 0);
+                p.vertex(-f.size * 0.35, -f.size * 0.2);
+                p.vertex(-f.size * 0.35, f.size * 0.2);
+                p.endShape(p.CLOSE);
+                p.pop();
+            });
+        };
+        p.windowResized = function() { w = container.offsetWidth; p.resizeCanvas(w, h); };
+    });
+})();
+
+/* ===== SPEARFISHING MINI GAME (p5.js) - ENHANCED ===== */
+(function() {
+    const container = document.getElementById('game-canvas');
+    if (!container) return;
+    let w, h;
+    let score = 0, combo = 1, comboTimer = 0, oxygen = 100, screenShake = 0;
+    const fishes = [], bubbles = [], hits = [], spears = [], particles = [], ripples = [];
+    const FISH_TYPES = [
+        { name: 'Black Bream', cn: '黑鯛', color: [80,90,100], size: 22, speed: 1.8, points: 10, o2: 5 },
+        { name: 'Grouper', cn: '石斑', color: [100,70,50], size: 28, speed: 1.0, points: 15, o2: 8 },
+        { name: 'Lobster', cn: '龍蝦', color: [180,60,40], size: 18, speed: 0.6, points: 20, o2: 10 },
+        { name: 'Squid', cn: '花枝', color: [150,120,140], size: 20, speed: 2.5, points: 12, o2: 6 },
+        { name: 'GT', cn: '牛港鰺', color: [60,120,140], size: 35, speed: 2.8, points: 30, o2: 15 },
+        { name: 'Octopus', cn: '章魚', color: [140,60,80], size: 24, speed: 0.8, points: 18, o2: 8 },
+        { name: 'Lionfish', cn: '獅子魚', color: [200,80,60], size: 20, speed: 1.2, points: 25, o2: 5, toxic: true },
+        { name: 'Cuttlefish', cn: '軟絲', color: [130,140,120], size: 22, speed: 1.5, points: 14, o2: 7 },
+    ];
+
+    function spawnFish() {
+        const type = FISH_TYPES[Math.floor(Math.random() * FISH_TYPES.length)];
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        fishes.push({
+            x: dir > 0 ? -40 : w + 40,
+            y: 60 + Math.random() * (h - 120),
+            vx: (type.speed + Math.random() * 0.8) * dir,
+            vy: (Math.random() - 0.5) * 0.4,
+            type, dir, phase: Math.random() * Math.PI * 2,
+            tailAngle: 0, alive: true, flash: 0,
+            scared: 0, origSpeed: 0, deathAnim: 0
+        });
+    }
+
+    new p5(function(p) {
+        p.setup = function() {
+            w = container.offsetWidth; h = 450;
+            p.createCanvas(w, h).parent(container);
+            for (let i = 0; i < 8; i++) spawnFish();
+        };
+
+        p.draw = function() {
+            // Screen shake
+            p.push();
+            if (screenShake > 0) {
+                p.translate((Math.random() - 0.5) * screenShake * 2, (Math.random() - 0.5) * screenShake * 2);
+                screenShake *= 0.9;
+                if (screenShake < 0.5) screenShake = 0;
+            }
+
+            // Deep ocean gradient background
+            for (let y = 0; y < h; y += 2) {
+                const t = y / h;
+                p.stroke(p.lerpColor(p.color(4, 14, 32), p.color(2, 6, 14), t));
+                p.strokeWeight(2); p.line(0, y, w, y);
+            }
+
+            // Animated caustic light rays from top
+            p.noFill(); p.strokeWeight(1);
+            for (let i = 0; i < 6; i++) {
+                const cx = w * 0.15 + Math.sin(p.frameCount * 0.006 + i * 1.2) * w * 0.35;
+                const rayW = 80 + Math.sin(p.frameCount * 0.01 + i) * 40;
+                for (let j = 0; j < 3; j++) {
+                    p.stroke(0, 229, 255, 4 - j);
+                    p.ellipse(cx, 20 + i * 12 + j * 8, rayW + j * 20, 6 + j * 2);
+                }
+            }
+
+            // Seafloor rocks/coral at bottom
+            p.noStroke();
+            for (let rx = 0; rx < w; rx += 60) {
+                const rh = 15 + Math.sin(rx * 0.05) * 10 + Math.cos(rx * 0.08) * 5;
+                p.fill(8, 18, 30);
+                p.ellipse(rx + 30, h - 5, 70, rh * 2);
+                // coral bits
+                if (rx % 180 === 0) {
+                    p.fill(0, 229 * 0.15, 255 * 0.15, 60);
+                    for (let ci = 0; ci < 3; ci++) {
+                        const cxo = rx + 20 + ci * 15;
+                        const ch = 8 + Math.sin(p.frameCount * 0.02 + ci) * 2;
+                        p.rect(cxo, h - rh - ch, 3, ch, 1);
+                    }
+                }
+            }
+
+            // Background particles (bubbles)
+            if (p.frameCount % 2 === 0) {
+                bubbles.push({ x: Math.random() * w, y: h + 5, size: 1 + Math.random() * 3, speed: 0.5 + Math.random() * 1.5, wobble: Math.random() * 100 });
+            }
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const b = bubbles[i];
+                b.y -= b.speed; b.x += Math.sin(p.frameCount * 0.015 + b.wobble) * 0.4;
+                p.noStroke();
+                p.fill(0, 229, 255, 25); p.ellipse(b.x, b.y, b.size, b.size);
+                p.fill(255, 255, 255, 8); p.ellipse(b.x - b.size * 0.2, b.y - b.size * 0.2, b.size * 0.3, b.size * 0.3);
+                if (b.y < -10) bubbles.splice(i, 1);
+            }
+
+            // Spawn fish
+            if (p.frameCount % 80 === 0 && fishes.length < 14) spawnFish();
+
+            // Ripple waves (from spear impact)
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.radius += 3; r.life -= 0.025;
+                p.noFill(); p.stroke(r.color[0], r.color[1], r.color[2], r.life * 150);
+                p.strokeWeight(1.5); p.ellipse(r.x, r.y, r.radius * 2, r.radius * 1.2);
+                p.strokeWeight(0.8); p.ellipse(r.x, r.y, r.radius * 2.8, r.radius * 1.6);
+                if (r.life <= 0) ripples.splice(i, 1);
+            }
+
+            // Draw fish
+            for (let i = fishes.length - 1; i >= 0; i--) {
+                const f = fishes[i];
+                if (!f.alive) {
+                    // Death animation: fish sinks and fades
+                    f.deathAnim++;
+                    f.y += 1.5;
+                    const dAlpha = Math.max(0, 200 - f.deathAnim * 8);
+                    if (dAlpha <= 0) { fishes.splice(i, 1); continue; }
+                    p.push();
+                    p.translate(f.x, f.y);
+                    p.rotate(f.dir * f.deathAnim * 0.03);
+                    if (f.dir < 0) p.scale(-1, 1);
+                    const s = f.type.size; const c = f.type.color;
+                    p.noStroke(); p.fill(c[0], c[1], c[2], dAlpha * 0.5);
+                    p.beginShape();
+                    p.vertex(-s, 0);
+                    p.bezierVertex(-s * 0.6, -s * 0.5, s * 0.4, -s * 0.45, s * 0.9, 0);
+                    p.bezierVertex(s * 0.4, s * 0.45, -s * 0.6, s * 0.5, -s, 0);
+                    p.endShape(p.CLOSE);
+                    p.pop();
+                    continue;
+                }
+
+                // Scare: nearby fish flee from spear miss
+                if (f.scared > 0) {
+                    f.vx *= 1.02; f.scared--;
+                }
+
+                f.x += f.vx; f.y += f.vy + Math.sin(p.frameCount * 0.04 + f.phase) * 0.5;
+                f.tailAngle = Math.sin(p.frameCount * (f.scared > 0 ? 0.3 : 0.15) + f.phase) * (f.scared > 0 ? 0.7 : 0.4);
+                if (f.y < 50) f.vy = Math.abs(f.vy);
+                if (f.y > h - 60) f.vy = -Math.abs(f.vy);
+                if ((f.dir > 0 && f.x > w + 60) || (f.dir < 0 && f.x < -60)) { fishes.splice(i, 1); continue; }
+                if (f.flash > 0) f.flash--;
+
+                // Mouse proximity detection - fish aware of cursor
+                const mDist = Math.sqrt((p.mouseX - f.x) ** 2 + (p.mouseY - f.y) ** 2);
+                const aware = mDist < 80;
+
+                p.push();
+                p.translate(f.x, f.y);
+                if (f.dir < 0) p.scale(-1, 1);
+                const s = f.type.size;
+                const c = f.type.color;
+                const alpha = f.flash > 0 ? 255 : 200;
+
+                // Shadow underneath
+                p.noStroke(); p.fill(0, 5, 15, 30);
+                p.ellipse(0, s * 0.6, s * 1.8, s * 0.3);
+
+                // Fish body with subtle gradient
+                p.fill(c[0], c[1], c[2], alpha);
+                p.beginShape();
+                p.vertex(-s, 0);
+                p.bezierVertex(-s * 0.6, -s * 0.5, s * 0.4, -s * 0.45, s * 0.9, -s * 0.05);
+                p.bezierVertex(s * 0.95, 0, s * 0.95, 0, s * 0.9, s * 0.05);
+                p.bezierVertex(s * 0.4, s * 0.45, -s * 0.6, s * 0.5, -s, 0);
+                p.endShape(p.CLOSE);
+                // Belly highlight
+                p.fill(c[0] + 30, c[1] + 30, c[2] + 30, alpha * 0.4);
+                p.beginShape();
+                p.vertex(-s * 0.5, s * 0.05);
+                p.bezierVertex(-s * 0.2, s * 0.3, s * 0.3, s * 0.3, s * 0.6, s * 0.05);
+                p.bezierVertex(s * 0.3, s * 0.15, -s * 0.2, s * 0.15, -s * 0.5, s * 0.05);
+                p.endShape(p.CLOSE);
+
+                // Tail with wag
+                p.push(); p.translate(-s, 0); p.rotate(f.tailAngle);
+                p.fill(c[0] * 0.8, c[1] * 0.8, c[2] * 0.8, alpha * 0.8);
+                p.beginShape();
+                p.vertex(0, 0); p.vertex(-s * 0.65, -s * 0.5);
+                p.quadraticVertex(-s * 0.35, 0, -s * 0.65, s * 0.5);
+                p.endShape(p.CLOSE); p.pop();
+
+                // Dorsal fin
+                p.fill(c[0] * 0.9, c[1] * 0.9, c[2] * 0.9, alpha * 0.6);
+                p.beginShape();
+                p.vertex(-s * 0.2, -s * 0.35);
+                p.quadraticVertex(s * 0.1, -s * 0.85, s * 0.5, -s * 0.35);
+                p.endShape(p.CLOSE);
+
+                // Pectoral fin animated
+                p.fill(c[0] * 0.85, c[1] * 0.85, c[2] * 0.85, alpha * 0.5);
+                p.push(); p.translate(s * 0.2, s * 0.15);
+                p.rotate(Math.sin(p.frameCount * 0.12 + f.phase) * 0.25);
+                p.beginShape(); p.vertex(0, 0);
+                p.quadraticVertex(s * 0.2, s * 0.45, -s * 0.1, s * 0.4);
+                p.endShape(p.CLOSE); p.pop();
+
+                // Eye (looks toward mouse when aware)
+                p.fill(220, 230, 240, alpha);
+                p.ellipse(s * 0.55, -s * 0.1, s * 0.2, s * 0.2);
+                const eyeOx = aware ? Math.sign(p.mouseX - f.x) * f.dir * s * 0.03 : 0;
+                const eyeOy = aware ? Math.sign(p.mouseY - f.y) * s * 0.02 : 0;
+                p.fill(10, 15, 25, alpha);
+                p.ellipse(s * 0.57 + eyeOx, -s * 0.1 + eyeOy, s * 0.09, s * 0.12);
+
+                // Awareness indicator (exclamation when mouse is near)
+                if (aware && !f.flash) {
+                    p.fill(255, 200, 50, 150 + Math.sin(p.frameCount * 0.2) * 80);
+                    p.textFont('Bebas Neue'); p.textSize(12);
+                    p.textAlign(p.CENTER); p.text('!', s * 0.55, -s * 0.6);
+                }
+
+                // Hit flash glow
+                if (f.flash > 0) {
+                    p.noFill();
+                    for (let g = 0; g < 3; g++) {
+                        p.stroke(0, 229, 255, f.flash * (12 - g * 3)); p.strokeWeight(2 - g * 0.5);
+                        p.ellipse(0, 0, s * (2.2 + g * 0.5), s * (1.6 + g * 0.3));
+                    }
+                }
+
+                // Toxic spines for lionfish
+                if (f.type.toxic) {
+                    p.stroke(255, 80, 60, 100 + Math.sin(p.frameCount * 0.1) * 50);
+                    p.strokeWeight(1.2);
+                    for (let sp = 0; sp < 6; sp++) {
+                        const sx2 = -s * 0.5 + sp * s * 0.25;
+                        const sway = Math.sin(p.frameCount * 0.08 + sp) * 3;
+                        p.line(sx2, -s * 0.35, sx2 + sway, -s * 0.9);
+                    }
+                    // Glow aura
+                    p.noStroke(); p.fill(255, 60, 40, 15 + Math.sin(p.frameCount * 0.05) * 10);
+                    p.ellipse(0, 0, s * 2.5, s * 2);
+                }
+                p.pop();
+            }
+
+            // Spear projectiles (enhanced with glow trail)
+            for (let i = spears.length - 1; i >= 0; i--) {
+                const sp = spears[i];
+                sp.x += sp.vx * 4; sp.y += sp.vy * 4; sp.life--;
+
+                // Glowing spear head
+                p.noStroke(); p.fill(0, 229, 255, sp.life * 6);
+                p.ellipse(sp.x, sp.y, 5, 5);
+
+                // Spear shaft
+                p.stroke(180, 200, 210, sp.life * 7); p.strokeWeight(2.5);
+                p.line(sp.x, sp.y, sp.x - sp.vx * 12, sp.y - sp.vy * 12);
+
+                // Glow trail
+                for (let tr = 1; tr <= 4; tr++) {
+                    p.stroke(0, 229, 255, sp.life * (5 - tr)); p.strokeWeight(1.5 - tr * 0.3);
+                    const tOff = tr * 6;
+                    p.line(sp.x - sp.vx * tOff, sp.y - sp.vy * tOff, sp.x - sp.vx * (tOff + 8), sp.y - sp.vy * (tOff + 8));
+                }
+
+                // Bubble trail
+                if (sp.life % 2 === 0) {
+                    particles.push({ x: sp.x - sp.vx * 5 + (Math.random()-0.5)*6, y: sp.y - sp.vy * 5 + (Math.random()-0.5)*6, vx: (Math.random()-0.5)*0.8, vy: -0.5 - Math.random()*0.5, size: 1.5 + Math.random()*2, life: 20, color: [0, 229, 255] });
+                }
+
+                if (sp.life <= 0) {
+                    // Miss — combo reset
+                    combo = 1; comboTimer = 0;
+                    // Miss ripple
+                    ripples.push({ x: sp.x, y: sp.y, radius: 5, life: 1, color: [0, 150, 200] });
+                    // Scare nearby fish on miss
+                    fishes.forEach(f => {
+                        if (!f.alive) return;
+                        const d = Math.sqrt((sp.x - f.x) ** 2 + (sp.y - f.y) ** 2);
+                        if (d < 100) { f.scared = 30; f.vx *= 1.5; }
+                    });
+                    spears.splice(i, 1); continue;
+                }
+
+                // Hit detection
+                for (let j = fishes.length - 1; j >= 0; j--) {
+                    const f = fishes[j];
+                    if (!f.alive) continue;
+                    const dx = sp.x - f.x, dy = sp.y - f.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < f.type.size * 1.2) {
+                        f.alive = false;
+                        const pts = f.type.points * combo;
+                        score += pts;
+                        oxygen = Math.min(100, oxygen + f.type.o2);
+                        comboTimer = 150;
+                        combo = Math.min(combo + 1, 8);
+                        screenShake = 4 + combo;
+                        hits.push({ x: f.x, y: f.y - 15, text: '+' + pts, sub: f.type.cn, life: 70, color: f.type.toxic ? [255,80,60] : [0,229,255], scale: 1.5 });
+                        // Big impact ripple
+                        ripples.push({ x: f.x, y: f.y, radius: 5, life: 1, color: f.type.toxic ? [255,80,60] : [0,229,255] });
+                        // Explosion particles
+                        const pc = f.type.color;
+                        for (let k = 0; k < 18; k++) {
+                            const angle = (k / 18) * Math.PI * 2;
+                            const spd = 1.5 + Math.random() * 3;
+                            particles.push({ x: f.x, y: f.y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd, size: 2 + Math.random() * 4, life: 30 + Math.random() * 20, color: k % 3 === 0 ? [0, 229, 255] : [pc[0], pc[1], pc[2]] });
+                        }
+                        // Bonus bubbles
+                        for (let k = 0; k < 6; k++) {
+                            bubbles.push({ x: f.x + (Math.random()-0.5)*30, y: f.y, size: 2+Math.random()*4, speed: 1+Math.random()*3, wobble: Math.random()*100 });
+                        }
+                        spears.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            // Particles (explosion, trail, etc.)
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const pt = particles[i];
+                pt.x += pt.vx; pt.y += pt.vy;
+                pt.vx *= 0.96; pt.vy *= 0.96; pt.vy -= 0.02;
+                pt.life--;
+                p.noStroke(); p.fill(pt.color[0], pt.color[1], pt.color[2], pt.life * 5);
+                p.ellipse(pt.x, pt.y, pt.size * (pt.life / 30), pt.size * (pt.life / 30));
+                if (pt.life <= 0) particles.splice(i, 1);
+            }
+
+            // Hit text popups (enhanced with scale animation)
+            for (let i = hits.length - 1; i >= 0; i--) {
+                const ht = hits[i];
+                ht.y -= 1; ht.life--;
+                if (ht.scale > 1) ht.scale *= 0.92;
+                p.push(); p.translate(ht.x, ht.y); p.scale(Math.max(1, ht.scale));
+                p.noStroke(); p.textAlign(p.CENTER);
+                // Score text
+                p.fill(ht.color[0], ht.color[1], ht.color[2], ht.life * 4);
+                p.textFont('Bebas Neue'); p.textSize(22);
+                p.text(ht.text, 0, 0);
+                // Species name
+                p.fill(ht.color[0], ht.color[1], ht.color[2], ht.life * 3);
+                p.textSize(11);
+                p.text(ht.sub, 0, 16);
+                p.pop();
+                if (ht.life <= 0) hits.splice(i, 1);
+            }
+
+            // Combo & O2
+            if (comboTimer > 0) comboTimer--;
+            else combo = 1;
+            oxygen = Math.max(0, oxygen - 0.018);
+            if (oxygen <= 0) {
+                oxygen = 100; score = Math.max(0, score - 50); combo = 1; screenShake = 15;
+                hits.push({ x: w/2, y: h/2, text: 'OUT OF O2!', sub: '-50 POINTS', life: 100, color: [255,80,60], scale: 2.5 });
+                // Red flash particles
+                for (let k = 0; k < 30; k++) particles.push({ x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, size: 3+Math.random()*5, life: 25, color: [255,60,40] });
+            }
+
+            // O2 warning vignette
+            if (oxygen < 30) {
+                const warn = (30 - oxygen) / 30;
+                p.noStroke(); p.fill(255, 40, 30, warn * 25 + Math.sin(p.frameCount * 0.1) * warn * 15);
+                p.rect(0, 0, w, h);
+            }
+
+            // Combo streak fire effect at top
+            if (combo > 2) {
+                for (let i = 0; i < combo; i++) {
+                    const fx = w * 0.3 + Math.random() * w * 0.4;
+                    p.noStroke(); p.fill(0, 229, 255, 3 * combo);
+                    p.ellipse(fx, Math.random() * 30, 3, 8 + Math.random() * 6);
+                }
+            }
+
+            // HUD update
+            const scoreEl = document.getElementById('gameScore');
+            const comboEl = document.getElementById('gameCombo');
+            const o2El = document.getElementById('gameO2');
+            if (scoreEl) scoreEl.textContent = score;
+            if (comboEl) { comboEl.textContent = 'x' + combo; comboEl.style.color = combo > 5 ? '#ff6b4a' : combo > 2 ? '#00ffc8' : '#e8f0f8'; }
+            if (o2El) { o2El.textContent = Math.floor(oxygen); o2El.style.color = oxygen < 30 ? '#ff6b4a' : '#e8f0f8'; }
+
+            // Crosshair (enhanced with rotation and pulse)
+            p.push(); p.translate(p.mouseX, p.mouseY);
+            p.rotate(p.frameCount * 0.01);
+            p.noFill(); p.stroke(0, 229, 255, 100); p.strokeWeight(1);
+            p.ellipse(0, 0, 28, 28);
+            p.stroke(0, 229, 255, 50); p.ellipse(0, 0, 36 + Math.sin(p.frameCount * 0.08) * 4, 36 + Math.sin(p.frameCount * 0.08) * 4);
+            p.pop();
+            p.stroke(0, 229, 255, 140); p.strokeWeight(1.5);
+            p.line(p.mouseX - 18, p.mouseY, p.mouseX - 7, p.mouseY);
+            p.line(p.mouseX + 7, p.mouseY, p.mouseX + 18, p.mouseY);
+            p.line(p.mouseX, p.mouseY - 18, p.mouseX, p.mouseY - 7);
+            p.line(p.mouseX, p.mouseY + 7, p.mouseX, p.mouseY + 18);
+            p.noStroke(); p.fill(0, 229, 255, 60);
+            p.ellipse(p.mouseX, p.mouseY, 3, 3);
+
+            p.pop(); // end screen shake
+        };
+
+        p.mousePressed = function() {
+            if (p.mouseX < 0 || p.mouseX > w || p.mouseY < 0 || p.mouseY > h) return;
+            const sx = w / 2, sy = h + 10;
+            const dx = p.mouseX - sx, dy = p.mouseY - sy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            spears.push({ x: sx, y: sy, vx: dx / dist * 6, vy: dy / dist * 6, life: 45 });
+            screenShake = 2;
+            // Launch bubbles
+            for (let k = 0; k < 4; k++) bubbles.push({ x: sx + (Math.random()-0.5)*20, y: sy - 10, size: 2+Math.random()*3, speed: 2+Math.random()*2, wobble: Math.random()*100 });
+        };
+
+        p.windowResized = function() { w = container.offsetWidth; p.resizeCanvas(w, h); };
+    });
+})();
+
+/* ===== p5.js SONAR RADAR ===== */
+(function() {
+    const container = document.getElementById('sonar-canvas');
+    if (!container) return;
+    let w, h, angle = 0;
+    const blips = [];
+    const fishNames = ['GT 20kg', 'Lobster', 'Grouper', 'Octopus', 'Squid', 'Cuttlefish', 'Black Bream', 'Lionfish', 'Blue Crab', 'Rabbitfish'];
+    for (let i = 0; i < 15; i++) {
+        blips.push({ r: Math.random() * 0.8 + 0.1, a: Math.random() * Math.PI * 2, life: 1, name: fishNames[Math.floor(Math.random() * fishNames.length)], size: Math.random() * 4 + 2 });
+    }
+    new p5(function(p) {
+        p.setup = function() { w = container.offsetWidth; h = 300; p.createCanvas(w, h).parent(container); };
+        p.draw = function() {
+            p.background(2, 8, 16, 30);
+            const cx = w / 2, cy = h / 2, maxR = Math.min(w, h) * 0.42;
+            p.noFill(); p.strokeWeight(0.5);
+            for (let i = 1; i <= 4; i++) { p.stroke(0, 229, 255, 20); p.ellipse(cx, cy, maxR * 2 * i / 4, maxR * 2 * i / 4); }
+            p.stroke(0, 229, 255, 15); p.line(cx - maxR, cy, cx + maxR, cy); p.line(cx, cy - maxR, cx, cy + maxR);
+            // Diagonal lines
+            p.line(cx - maxR * 0.7, cy - maxR * 0.7, cx + maxR * 0.7, cy + maxR * 0.7);
+            p.line(cx + maxR * 0.7, cy - maxR * 0.7, cx - maxR * 0.7, cy + maxR * 0.7);
+            angle += 0.015;
+            p.stroke(0, 229, 255, 80); p.strokeWeight(1.5);
+            p.line(cx, cy, cx + Math.cos(angle) * maxR, cy + Math.sin(angle) * maxR);
+            for (let i = 0; i < 40; i++) {
+                const a = angle - i * 0.015;
+                p.stroke(0, 229, 255, 50 - i * 1.2); p.strokeWeight(1);
+                p.line(cx, cy, cx + Math.cos(a) * maxR, cy + Math.sin(a) * maxR);
+            }
+            blips.forEach(b => {
+                const da = ((angle % (Math.PI * 2)) - b.a + Math.PI * 2) % (Math.PI * 2);
+                if (da < 0.3) b.life = 1; else b.life *= 0.993;
+                if (b.life > 0.1) {
+                    const bx = cx + Math.cos(b.a) * maxR * b.r, by = cy + Math.sin(b.a) * maxR * b.r;
+                    p.noStroke();
+                    p.fill(0, 229, 255, b.life * 200); p.ellipse(bx, by, b.size * b.life, b.size * b.life);
+                    p.fill(0, 229, 255, b.life * 80); p.ellipse(bx, by, b.size * 3 * b.life, b.size * 3 * b.life);
+                    if (b.life > 0.7) { p.fill(0, 229, 255, b.life * 100); p.textFont('JetBrains Mono'); p.textSize(8); p.text(b.name, bx + 6, by - 4); }
+                }
+            });
+            p.noStroke(); p.fill(0, 229, 255, 180); p.ellipse(cx, cy, 4, 4);
+            p.fill(0, 229, 255, 40); p.ellipse(cx, cy, 12, 12);
+            // Labels
+            p.fill(0, 229, 255, 30); p.textFont('JetBrains Mono'); p.textSize(7);
+            p.textAlign(p.CENTER); p.text('5m', cx, cy - maxR * 0.25 + 3); p.text('10m', cx, cy - maxR * 0.5 + 3);
+            p.text('15m', cx, cy - maxR * 0.75 + 3); p.text('20m', cx, cy - maxR + 3);
+        };
+        p.windowResized = function() { w = container.offsetWidth; p.resizeCanvas(w, h); };
+    });
+})();
+
+/* ===== GSAP ===== */
+gsap.registerPlugin(ScrollTrigger);
+const heroTl = gsap.timeline({ delay: 0.3 });
+heroTl.to('.avatar-container', { opacity: 1, duration: 1, y: 0, ease: 'power2.out' })
+      .to('.hero-subtitle', { opacity: 1, duration: 0.8, y: 0, ease: 'power2.out' }, '-=0.5')
+      .to('.hero-title', { opacity: 1, duration: 1, y: 0, ease: 'power2.out' }, '-=0.5')
+      .to('.hero-tagline', { opacity: 1, duration: 0.8 }, '-=0.4')
+      .to('.hero-depth-text', { opacity: 1, duration: 0.6 }, '-=0.3')
+      .to('.hero-scroll-hint', { opacity: 1, duration: 0.6 }, '-=0.2');
+
+gsap.from('.manifesto-quote', { scrollTrigger: { trigger: '.manifesto', start: 'top 80%' }, opacity: 0, x: -40, duration: 1.2, ease: 'power2.out' });
+
+gsap.from('.species-card', { scrollTrigger: { trigger: '.species-grid', start: 'top 85%' }, opacity: 0, y: 30, scale: 0.9, stagger: 0.08, duration: 0.6, ease: 'back.out(1.5)' });
+
+gsap.from('.philo-card', { scrollTrigger: { trigger: '.philosophy-grid', start: 'top 80%' }, opacity: 0, y: 40, stagger: 0.2, duration: 0.8, ease: 'power2.out' });
+
+ScrollTrigger.create({
+    trigger: '.stats-bar', start: 'top 80%',
+    onEnter: () => {
+        document.querySelectorAll('.stat-value').forEach(el => {
+            const target = parseInt(el.dataset.count);
+            gsap.to(el, { innerText: target, duration: 2, snap: { innerText: 1 }, ease: 'power2.out',
+                onUpdate() { el.textContent = Math.floor(parseFloat(el.textContent)).toLocaleString(); } });
+        });
+    }, once: true
+});
+
+// Vessel parallax
+gsap.from('.vessel-visual', { scrollTrigger: { trigger: '.vessel-section', start: 'top 80%' }, opacity: 0, x: -60, duration: 1.2, ease: 'power3.out' });
+gsap.from('.vessel-content', { scrollTrigger: { trigger: '.vessel-section', start: 'top 80%' }, opacity: 0, x: 60, duration: 1.2, ease: 'power3.out' });
+gsap.from('.vessel-spec', { scrollTrigger: { trigger: '.vessel-specs', start: 'top 90%' }, opacity: 0, y: 20, stagger: 0.1, duration: 0.6, ease: 'power2.out' });
+
+gsap.from('.service-card', { scrollTrigger: { trigger: '.services-grid', start: 'top 80%' }, opacity: 0, y: 50, stagger: 0.15, duration: 0.8, ease: 'power2.out' });
+
+gsap.from('.g-item', { scrollTrigger: { trigger: '.gallery-grid', start: 'top 85%' }, opacity: 0, scale: 0.9, stagger: 0.1, duration: 0.7, ease: 'power2.out' });
+
+gsap.from('.timeline-item', { scrollTrigger: { trigger: '.timeline', start: 'top 80%' }, opacity: 0, x: -30, stagger: 0.2, duration: 0.8, ease: 'power2.out' });
+
+gsap.from('.footer-motto', { scrollTrigger: { trigger: '.footer', start: 'top 90%' }, opacity: 0, y: 30, duration: 1, ease: 'power2.out' });
+
+/* ===== UNIFIED SCROLL HANDLER ===== */
+const _depthMarker = document.getElementById('depthMarker');
+const _depthText = document.querySelector('.hero-depth-text');
+let _scrollTick = false;
+window.addEventListener('scroll', () => {
+    if (_scrollTick) return;
+    _scrollTick = true;
+    requestAnimationFrame(() => {
+        const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight || 1);
+        if (_depthMarker) _depthMarker.style.top = (pct * 112) + 'px';
+        if (_depthText) _depthText.textContent = 'DEPTH // ' + Math.floor(window.scrollY / 8) + 'm';
+        _scrollTick = false;
+    });
+});
+
+/* ===== SERVICE CARD MOUSE GLOW ===== */
+document.querySelectorAll('.service-card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+        card.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+    });
+});
+</script>
+</body>
+</html>
