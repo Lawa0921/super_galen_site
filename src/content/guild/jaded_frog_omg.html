@@ -7,7 +7,7 @@
 <meta name="description" content="魔法青蛙 - 動物溝通師、占卜師與魔法實用主義者。十年東西方玄學修行，致力於優化人類與無形眾生的溝通效率。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
@@ -935,7 +935,7 @@ body {
         </div>
       </div>
       <div class="hero-illust">
-        <img src="/assets/img/guild/jaded_frog_omg/frog_wizard.webp" class="hero-frog" alt="魔法青蛙" loading="lazy">
+        <img src="/assets/img/guild/jaded_frog_omg/frog_wizard.webp" class="hero-frog" alt="魔法青蛙">
       </div>
     </div>
     <div class="scroll-cue" id="scrollCue">
@@ -1229,6 +1229,8 @@ body {
       if (heroFrogEl && st < window.innerHeight) {
         heroFrogEl.style.transform = 'translateY(' + (-st * 0.15) + 'px)';
       }
+      // Frog companion image update
+      if (window._updateFrogImage) window._updateFrogImage();
       _ticking = false;
     });
   });
@@ -1447,9 +1449,8 @@ body {
       ctx.stroke();
     }
 
-    var rafId;
     function draw() {
-      rafId = requestAnimationFrame(draw);
+      requestAnimationFrame(draw);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       var scrollY = window.scrollY || 0;
       ctx.lineWidth = 1.5;
@@ -1693,10 +1694,8 @@ body {
       requestAnimationFrame(animate);
     }, 1500);
 
-    // Update image on scroll
-    window.addEventListener('scroll', function() {
-      updateFrogImage();
-    });
+    // Expose for unified scroll handler
+    window._updateFrogImage = updateFrogImage;
   })();
 
 
