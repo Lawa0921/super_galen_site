@@ -8,6 +8,34 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "jaded_frog_omg"
+    name: "魔法青蛙"
+    avatar: "/assets/img/guild/jaded_frog_omg/avatar.webp"
+    page: "/guild/jaded_frog_omg.html"
+    title: "The Enchanted Pond"
+    description: "動物溝通師、占卜師與魔法實用主義者。十年東西方玄學修行，致力於優化人類與無形眾生的溝通效率。表裡如一的厭世，但魔法很入世。"
+    tags:
+      - id: "animal_communication"
+        label: "動物溝通"
+      - id: "tarot_divination"
+        label: "塔羅占卜"
+      - id: "magic_practitioner"
+        label: "魔法師"
+
+  - id: "roy_spearfishing"
+    name: "漁獵小哥Roy"
+    avatar: "/assets/img/guild/roy_spearfishing/avatar.webp"
+    page: "/guild/roy_spearfishing.html"
+    title: "The Abyss Hunter"
+    description: "自由潛水漁獵YouTuber，花百萬買船正式成為漁民。用選擇性漁獵的永續哲學，把大海的故事帶回陸地分享。台東海上男兒，帶你一起冒險。"
+    tags:
+      - id: "spearfishing"
+        label: "漁獵"
+      - id: "youtube"
+        label: "YouTuber"
+      - id: "ocean_adventure"
+        label: "海洋冒險"
+
   - id: "tera_happiness"
     name: "Tera"
     avatar: "/assets/img/guild/tera_happiness/avatar.webp"
@@ -1367,3 +1395,31 @@ members:
         label: "國小教師"
       - id: "illustrator"
         label: "動漫塗鴉"
+
+  - id: "dongdong_527"
+    name: "倲倲姓名貼"
+    avatar: "/assets/img/guild/dongdong_527/avatar.webp"
+    page: "/guild/dongdong_527.html"
+    title: "The Night Market Stamp Master"
+    description: "台南第一姓名貼、印章品牌。禮贈品在台南服務三十年以上，姓名貼和印章深耕十年。經濟部2024樂活名攤三星評核認證，在三大夜市巡迴擺攤的印章職人。"
+    tags:
+      - id: "stamp_master"
+        label: "印章職人"
+      - id: "night_market"
+        label: "夜市達人"
+      - id: "tainan_local"
+        label: "台南在地"
+
+  - id: "lighthealing_tarot"
+    name: "小晴"
+    avatar: "/assets/img/guild/lighthealing_tarot/avatar.webp"
+    page: "/guild/lighthealing_tarot.html"
+    title: "Light Healing Tarot"
+    description: "自學塔羅占卜師，創業兩年打造「光癒塔羅占卜」品牌。國小課輔老師兼塔羅療癒師，用光的力量引導每個人找到自己的答案。台中身心靈創業家。"
+    tags:
+      - id: "tarot_reader"
+        label: "塔羅占卜"
+      - id: "crystal_craft"
+        label: "水晶手作"
+      - id: "spiritual_healing"
+        label: "身心靈療癒"

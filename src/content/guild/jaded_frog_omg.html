@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>魔法青蛙 | The Enchanted Pond</title>
+<meta name="description" content="魔法青蛙 - 動物溝通師、占卜師與魔法實用主義者。十年東西方玄學修行，致力於優化人類與無形眾生的溝通效率。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+:root {
+  --ink: #1a3a5c;
+  --ink-faint: #4a7fad;
+  --frog-body: #a8dce6;
+  --frog-light: #d0eef5;
+  --frog-glow: #7cc6d4;
+  --page-bg: #f0f6fa;
+  --star-cyan: #5ecece;
+  --accent-gold: #e8a838;
+  --accent-purple: #7b68ae;
+  --accent-green: #5aaa8a;
+  --text-dark: #1a2a3a;
+  --text-body: #3a5068;
+  --text-muted: #7a96aa;
+  --font-hand: 'Caveat', cursive;
+  --font-doodle: 'Patrick Hand', cursive;
+  --font-cn: 'Noto Sans TC', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--page-bg);
+  color: var(--text-body);
+  font-family: var(--font-cn);
+  overflow-x: hidden;
+}
+
+/* Loader */
+.loader {
+  position: fixed; inset: 0;
+  background: var(--page-bg);
+  z-index: 99999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: opacity 0.6s, visibility 0.6s;
+}
+.loader.hidden { opacity: 0; visibility: hidden; }
+.loader-frog {
+  width: 80px; height: 80px;
+  animation: hop 0.6s ease-in-out infinite alternate;
+}
+@keyframes hop {
+  0% { transform: translateY(0) scaleY(1); }
+  100% { transform: translateY(-20px) scaleY(1.05); }
+}
+.loader-text {
+  margin-top: 16px;
+  font-family: var(--font-hand);
+  font-size: 22px;
+  color: var(--ink);
+  letter-spacing: 1px;
+}
+
+/* p5 canvas for hand-drawn stars */
+#stars-canvas {
+  position: fixed; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Content */
+.content { position: relative; z-index: 5; }
+
+/* Back link */
+.back-link {
+  position: fixed; top: 20px; left: 20px; z-index: 1000;
+  text-decoration: none;
+  font-family: var(--font-hand);
+  font-size: 20px;
+  color: var(--ink);
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  border: 2px solid var(--ink);
+  border-radius: 24px;
+  transition: all 0.3s;
+}
+.back-link:hover {
+  background: var(--ink);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* ====== HERO ====== */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  max-width: 1100px;
+  align-items: center;
+  width: 100%;
+}
+.hero-text { position: relative; z-index: 2; }
+.hero-greeting {
+  font-family: var(--font-hand);
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+}
+.hero-name {
+  font-family: var(--font-hand);
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+.hero-name .outline-text {
+  -webkit-text-stroke: 2px var(--ink);
+  -webkit-text-fill-color: transparent;
+}
+.hero-desc {
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  color: var(--text-body);
+  line-height: 1.9;
+  max-width: 460px;
+  margin-bottom: 24px;
+}
+.hero-tags {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.htag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 24px;
+  font-family: var(--font-doodle);
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: white;
+  transition: all 0.3s;
+}
+.htag:hover {
+  background: var(--ink);
+  color: white;
+  transform: translateY(-3px) rotate(-2deg);
+  box-shadow: 4px 4px 0 var(--frog-glow);
+}
+.hero-illust {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-frog {
+  width: 100%;
+  max-width: 420px;
+  filter: drop-shadow(8px 12px 0 rgba(26,58,92,0.1));
+  position: relative;
+  z-index: 2;
+}
+.scroll-cue {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+}
+.scroll-cue span {
+  font-family: var(--font-hand);
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.scroll-cue .arrow {
+  width: 24px; height: 24px;
+  border-right: 2px solid var(--ink-faint);
+  border-bottom: 2px solid var(--ink-faint);
+  transform: rotate(45deg);
+  animation: bounce 1.5s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: rotate(45deg) translateY(0); opacity: 0.4; }
+  50% { transform: rotate(45deg) translateY(8px); opacity: 1; }
+}
+
+/* ====== SECTION SHARED ====== */
+.section {
+  padding: 100px 20px;
+  position: relative;
+}
+.section-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.section-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 18px;
+  background: white;
+  border: 2px solid var(--ink);
+  border-radius: 20px;
+  font-family: var(--font-hand);
+  font-size: 16px;
+  color: var(--ink);
+  margin-bottom: 16px;
+  box-shadow: 3px 3px 0 var(--frog-body);
+}
+.section-title {
+  font-family: var(--font-hand);
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.section-sub {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-bottom: 40px;
+  max-width: 600px;
+}
+.hand-line {
+  display: block;
+  width: 80px;
+  height: 4px;
+  background: var(--ink);
+  border-radius: 4px;
+  margin: 16px 0 32px;
+}
+
+/* ====== ABOUT ====== */
+.about-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 48px;
+  align-items: start;
+}
+.about-card {
+  background: white;
+  border: 2px solid var(--ink);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 6px 6px 0 var(--frog-body);
+  position: relative;
+  overflow: hidden;
+}
+.about-card::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 120px; height: 120px;
+  background: var(--frog-light);
+  border-radius: 50%;
+  opacity: 0.3;
+}
+.about-illust {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 16px;
+  border: 2px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--frog-body);
+}
+.about-card h3 {
+  font-family: var(--font-hand);
+  font-size: 1.6rem;
+  color: var(--ink);
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+.about-card p {
+  font-size: 0.95rem;
+  line-height: 2;
+  color: var(--text-body);
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+.about-card .highlight {
+  color: var(--ink);
+  font-weight: 700;
+  background: linear-gradient(transparent 60%, var(--frog-light) 60%);
+  padding: 0 4px;
+}
+.stats-row {
+  display: flex; gap: 16px;
+  margin-top: 24px;
+}
+.stat {
+  flex: 1;
+  text-align: center;
+  padding: 16px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--page-bg);
+  transition: all 0.3s;
+}
+.stat:hover {
+  transform: translateY(-4px) rotate(-1deg);
+  box-shadow: 4px 4px 0 var(--frog-glow);
+}
+.stat i {
+  font-size: 1.2rem;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+  display: block;
+}
+.stat-val {
+  font-family: var(--font-hand);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  display: block;
+}
+.stat-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ====== QUOTE ====== */
+.quote-band {
+  background: var(--ink);
+  padding: 80px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.quote-band::before,
+.quote-band::after {
+  content: '';
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  opacity: 0.08;
+  background: var(--frog-body);
+}
+.quote-band::before { top: -60px; left: -60px; }
+.quote-band::after { bottom: -80px; right: -80px; width: 300px; height: 300px; }
+.quote-mark {
+  font-family: var(--font-hand);
+  font-size: 5rem;
+  color: var(--frog-glow);
+  opacity: 0.5;
+  line-height: 1;
+}
+.quote-text {
+  font-family: var(--font-hand);
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  color: white;
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+.quote-text .qchar {
+  display: inline-block;
+  opacity: 0;
+  transition: opacity 0.05s;
+}
+.quote-author {
+  margin-top: 20px;
+  font-family: var(--font-doodle);
+  font-size: 1rem;
+  color: var(--frog-glow);
+}
+.quote-frog-float {
+  position: absolute;
+  bottom: 20px; right: 40px;
+  width: 80px;
+  opacity: 0.15;
+}
+
+/* ====== SERVICES ====== */
+.services-flex {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+.svc-card {
+  background: white;
+  border: 2px solid var(--ink);
+  border-radius: 20px;
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.svc-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6px; height: 100%;
+  border-radius: 20px 0 0 20px;
+}
+.svc-card.east::before { background: var(--accent-gold); }
+.svc-card.west::before { background: var(--accent-purple); }
+.svc-card:hover {
+  transform: translateY(-6px) rotate(-0.5deg);
+  box-shadow: 6px 8px 0 var(--frog-body);
+}
+.svc-icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  border: 2px solid var(--ink);
+}
+.svc-icon.gold { background: #fef3c7; color: var(--accent-gold); }
+.svc-icon.green { background: #d1fae5; color: var(--accent-green); }
+.svc-icon.cyan { background: var(--frog-light); color: var(--ink-faint); }
+.svc-icon.purple { background: #ede9fe; color: var(--accent-purple); }
+.svc-card h3 {
+  font-family: var(--font-cn);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+.svc-card p {
+  font-size: 0.88rem;
+  line-height: 1.8;
+  color: var(--text-body);
+}
+.svc-tag {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-family: var(--font-doodle);
+  font-size: 0.78rem;
+}
+.svc-tag.east { background: #fef3c7; color: #92400e; }
+.svc-tag.west { background: #ede9fe; color: #5b21b6; }
+
+/* ====== GALLERY (Scattered doodle style) ====== */
+.gallery-scatter {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+.gal-item {
+  background: white;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+.gal-item:nth-child(odd) { transform: rotate(-1.5deg); }
+.gal-item:nth-child(even) { transform: rotate(1.5deg); }
+.gal-item:hover {
+  transform: rotate(0deg) scale(1.06) translateY(-8px);
+  box-shadow: 8px 10px 0 var(--frog-body);
+  z-index: 10;
+}
+.gal-item img {
+  width: 100%; aspect-ratio: 1;
+  object-fit: cover; display: block;
+}
+.gal-caption {
+  padding: 12px 14px;
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  color: var(--ink);
+  display: flex; align-items: center; gap: 6px;
+  border-top: 2px dashed var(--frog-body);
+}
+
+/* ====== TAROT ====== */
+.tarot-section {
+  background: var(--ink);
+  padding: 100px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.tarot-section .section-badge {
+  background: transparent;
+  border-color: var(--frog-glow);
+  color: var(--frog-glow);
+  box-shadow: 3px 3px 0 rgba(124,198,212,0.3);
+}
+.tarot-section .section-title { color: white; }
+.tarot-section .section-sub { color: var(--frog-glow); margin-left: auto; margin-right: auto; }
+.tarot-deck {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+.tarot-wrap {
+  perspective: 1000px;
+  width: 190px; height: 290px;
+  cursor: pointer;
+}
+.tarot-inner {
+  position: relative;
+  width: 100%; height: 100%;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.tarot-wrap.flipped .tarot-inner { transform: rotateY(180deg); }
+.tarot-face, .tarot-back {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  border: 3px solid var(--frog-glow);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px;
+}
+.tarot-face {
+  background: linear-gradient(160deg, #0d1f33 0%, #162d4a 100%);
+}
+.tarot-face .card-pattern {
+  position: absolute; inset: 8px;
+  border: 1px dashed rgba(124,198,212,0.3);
+  border-radius: 12px;
+}
+.tarot-face i {
+  font-size: 2.8rem;
+  color: var(--frog-glow);
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+.tarot-face span {
+  font-family: var(--font-hand);
+  font-size: 14px;
+  color: var(--frog-glow);
+  opacity: 0.7;
+  position: relative;
+  z-index: 1;
+}
+.tarot-back {
+  background: white;
+  border-color: var(--ink);
+  transform: rotateY(180deg);
+  text-align: center;
+}
+.tarot-back h4 {
+  font-family: var(--font-hand);
+  font-size: 1.4rem;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.tarot-back p {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text-body);
+}
+
+/* ====== PHILOSOPHY ====== */
+.philo {
+  text-align: center;
+  padding: 100px 20px;
+}
+.philo-text {
+  font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+  line-height: 2.2;
+  color: var(--text-body);
+  max-width: 650px;
+  margin: 0 auto 48px;
+}
+.philo-text .highlight {
+  color: var(--ink);
+  font-weight: 700;
+  background: linear-gradient(transparent 60%, var(--frog-light) 60%);
+  padding: 0 4px;
+}
+.values-row {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.val-item {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+  transition: all 0.3s;
+}
+.val-item:hover { transform: translateY(-6px); }
+.val-icon {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  background: white;
+  box-shadow: 3px 3px 0 var(--frog-body);
+  transition: all 0.3s;
+}
+.val-item:hover .val-icon {
+  box-shadow: 5px 5px 0 var(--frog-glow);
+  transform: rotate(-5deg);
+}
+.val-label {
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+/* ====== FOOTER ====== */
+.site-footer {
+  text-align: center;
+  padding: 60px 20px 40px;
+  background: white;
+  border-top: 2px solid var(--ink);
+}
+.footer-ava {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--frog-body);
+  margin-bottom: 12px;
+}
+.footer-name {
+  font-family: var(--font-hand);
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+.footer-handle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.footer-links a {
+  width: 44px; height: 44px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink);
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+.footer-links a:hover {
+  background: var(--ink);
+  color: white;
+  transform: translateY(-3px) rotate(-5deg);
+  box-shadow: 3px 3px 0 var(--frog-body);
+}
+.footer-credit {
+  font-family: var(--font-doodle);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.footer-credit a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* ====== REVEAL ====== */
+.gs-reveal { opacity: 0; transform: translateY(30px); }
+.gs-reveal-left { opacity: 0; transform: translateX(-30px); }
+.gs-reveal-right { opacity: 0; transform: translateX(30px); }
+
+/* ====== WALKING FROG COMPANION ====== */
+.frog-companion {
+  position: fixed;
+  z-index: 999;
+  pointer-events: auto;
+  cursor: pointer;
+  bottom: 20px;
+  left: 40px;
+  transition: none;
+}
+.frog-companion img {
+  width: 72px;
+  height: auto;
+  filter: drop-shadow(3px 4px 0 rgba(26,58,92,0.15));
+  transition: filter 0.3s;
+}
+.frog-companion:hover img {
+  filter: drop-shadow(3px 4px 0 rgba(26,58,92,0.3));
+}
+.frog-companion .speech {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-family: var(--font-hand);
+  font-size: 15px;
+  color: var(--ink);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 3px 3px 0 var(--frog-body);
+  transition: opacity 0.3s, transform 0.3s;
+  transform: translateX(-50%) translateY(8px);
+}
+.frog-companion .speech::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: var(--ink);
+}
+.frog-companion .speech.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-6px);
+}
+/* Frog footprints */
+.footprint {
+  position: fixed;
+  pointer-events: none;
+  z-index: 998;
+  font-size: 10px;
+  color: var(--frog-body);
+  opacity: 0.5;
+}
+/* Click ripple on frog */
+.frog-click-ring {
+  position: fixed;
+  pointer-events: none;
+  z-index: 998;
+  border: 2px solid var(--frog-glow);
+  border-radius: 50%;
+  width: 20px; height: 20px;
+}
+/* Easter egg: konami hint */
+.easter-egg-flash {
+  position: fixed; inset: 0;
+  background: var(--frog-light);
+  z-index: 100001;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; text-align: center; }
+  .hero-text { order: 2; }
+  .hero-illust { order: 1; }
+  .hero-frog { max-width: 260px; }
+  .hero-tags { justify-content: center; }
+  .hero-desc { margin-left: auto; margin-right: auto; }
+  .about-layout { grid-template-columns: 1fr; }
+  .about-illust { max-width: 240px; margin: 0 auto; display: block; }
+  .services-flex { grid-template-columns: 1fr; }
+  .gallery-scatter { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .tarot-wrap { width: 160px; height: 250px; }
+  .section { padding: 70px 16px; }
+  .frog-companion img { width: 52px; }
+  .frog-companion .speech { font-size: 13px; }
+  .stats-row { flex-wrap: wrap; }
+  .stat { min-width: 80px; }
+}
+@media (max-width: 480px) {
+  .gallery-scatter { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tarot-wrap { width: 140px; height: 220px; }
+  .tarot-deck { gap: 14px; }
+  .values-row { gap: 20px; }
+  .back-link { font-size: 16px; padding: 6px 12px; }
+}
+
+/* ====== CURSOR TRAIL ====== */
+.cursor-star {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99998;
+  font-size: 14px;
+  color: var(--ink-faint);
+  opacity: 0;
+  transition: none;
+}
+
+/* ====== LIGHTBOX ====== */
+.lightbox {
+  position: fixed; inset: 0;
+  background: rgba(26,58,92,0.85);
+  backdrop-filter: blur(12px);
+  z-index: 100000;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.4s, visibility 0.4s;
+  cursor: zoom-out;
+}
+.lightbox.active { opacity: 1; visibility: visible; }
+.lightbox img {
+  max-width: 85vw; max-height: 85vh;
+  border-radius: 20px;
+  border: 3px solid white;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  transform: scale(0.8);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.lightbox.active img { transform: scale(1); }
+.lightbox-close {
+  position: absolute; top: 24px; right: 24px;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: transparent;
+  color: white; font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.lightbox-close:hover {
+  background: white; color: var(--ink);
+  transform: rotate(90deg);
+}
+
+/* ====== SPARKLE BURST ====== */
+.sparkle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 100;
+  width: 8px; height: 8px;
+  background: var(--star-cyan);
+  border-radius: 50%;
+}
+
+/* ====== TILT GLOW ====== */
+.svc-card .tilt-glow {
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,198,212,0.15) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.svc-card:hover .tilt-glow { opacity: 1; }
+
+
+/* ====== SCROLL PROGRESS BAR ====== */
+.scroll-progress {
+  position: fixed; top: 0; left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--frog-glow), var(--ink-faint), var(--accent-purple));
+  z-index: 99999;
+  width: 0%;
+  transition: width 0.1s;
+}
+
+/* ====== SECTION WAVE DIVIDERS ====== */
+.wave-divider {
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  position: relative;
+  margin: -2px 0;
+}
+.wave-divider svg {
+  width: 100%;
+  height: 40px;
+  display: block;
+}
+
+</style>
+</head>
+<body>
+
+<!-- Loader -->
+<div class="loader" id="loader">
+  <img src="/assets/img/guild/jaded_frog_omg/frog_wizard.webp" class="loader-frog" alt="Loading...">
+  <div class="loader-text">summoning the frog...</div>
+</div>
+
+<!-- Scroll progress bar -->
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('active')">
+  <button class="lightbox-close" onclick="event.stopPropagation();document.getElementById('lightbox').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- Hand-drawn stars background (vanilla Canvas) -->
+<canvas id="stars-canvas"></canvas>
+
+<!-- Walking frog companion -->
+<div class="frog-companion" id="frogCompanion">
+  <div class="speech" id="frogSpeech"></div>
+  <img src="/assets/img/guild/jaded_frog_omg/frog_doodle1.webp" id="frogImg" alt="魔法青蛙">
+</div>
+<div class="easter-egg-flash" id="easterFlash"></div>
+
+<!-- Back link -->
+<a href="/guild/" class="back-link">
+  <i class="fa-solid fa-arrow-left"></i> GUILD
+</a>
+
+<div class="content">
+
+  <!-- ====== HERO ====== -->
+  <section class="hero" id="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <p class="hero-greeting">hello, I'm</p>
+        <h1 class="hero-name">
+          <span class="outline-text">Jaded</span><br>Frog
+        </h1>
+        <p class="hero-desc">
+          在魔法池塘的深處，棲息著一隻走過十年修行的青蛙。
+          東西方玄學的守門人，無形眾生的翻譯官。
+          表裡如一的厭世，這是我對這個世界最大的誠意。
+        </p>
+        <div class="hero-tags">
+          <span class="htag"><i class="fa-solid fa-paw"></i> 動物溝通</span>
+          <span class="htag"><i class="fa-solid fa-eye"></i> 塔羅占卜</span>
+          <span class="htag"><i class="fa-solid fa-torii-gate"></i> 廟宇指引</span>
+          <span class="htag"><i class="fa-solid fa-wand-sparkles"></i> 魔法師</span>
+        </div>
+      </div>
+      <div class="hero-illust">
+        <img src="/assets/img/guild/jaded_frog_omg/frog_wizard.webp" class="hero-frog" alt="魔法青蛙" loading="lazy">
+      </div>
+    </div>
+    <div class="scroll-cue" id="scrollCue">
+      <span>scroll down</span>
+      <div class="arrow"></div>
+    </div>
+  </section>
+
+  <!-- ====== ABOUT ====== -->
+  <section class="section" id="about">
+    <div class="section-inner">
+      <div class="section-badge gs-reveal"><i class="fa-solid fa-feather"></i> Origin Story</div>
+      <h2 class="section-title gs-reveal">池塘裡的魔法師</h2>
+      <div class="hand-line gs-reveal"></div>
+      <div class="about-layout">
+        <div class="gs-reveal-left">
+          <img src="/assets/img/guild/jaded_frog_omg/frog_book.webp" alt="讀書蛙" class="about-illust" loading="lazy">
+        </div>
+        <div class="about-card gs-reveal-right">
+          <h3>我是魔法青蛙，一隻表裡如一的厭世蛙</h3>
+          <p>
+            十年前，我只是背著一個青蛙錢包的普通人。結果不小心就把自己活成了一個 IP。
+            從 2016 年「厭世青蛙會」開始，我踏上了東西方玄學的修行之路。
+          </p>
+          <p>
+            我是動物溝通師、占卜師與魔法師。身兼多重身分，但核心使命只有一個 ——
+            <span class="highlight">優化人類與無形眾生的溝通效率。</span>
+          </p>
+          <p>
+            可以跟動物、神明對話，加上我家地基主。其他的都要擲筊。
+            脾氣很差，有耐心只是因為我願意。台派、LGBTQ+ 友善、非典型關係支持者。
+          </p>
+          <div class="stats-row">
+            <div class="stat">
+              <i class="fa-solid fa-hat-wizard"></i>
+              <span class="stat-val">10+</span>
+              <span class="stat-label">修行年數</span>
+            </div>
+            <div class="stat">
+              <i class="fa-solid fa-users"></i>
+              <span class="stat-val">16K</span>
+              <span class="stat-label">追蹤者</span>
+            </div>
+            <div class="stat">
+              <i class="fa-solid fa-cat"></i>
+              <span class="stat-val">2</span>
+              <span class="stat-label">貓主子</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Wave divider -->
+  <div class="wave-divider">
+    <svg viewBox="0 0 1200 40" preserveAspectRatio="none">
+      <path d="M0,20 C200,40 400,0 600,20 C800,40 1000,0 1200,20 L1200,40 L0,40 Z" fill="#1a3a5c"/>
+    </svg>
+  </div>
+
+  <!-- ====== QUOTE ====== -->
+  <section class="quote-band" id="quote">
+    <div class="quote-mark">"</div>
+    <div class="quote-text" id="quoteText">一路走來我始終如一的厭世，但我的魔法，很入世。</div>
+    <div class="quote-author">-- 魔法青蛙</div>
+    <img src="/assets/img/guild/jaded_frog_omg/frog_pendulum.webp" class="quote-frog-float" alt="" loading="lazy">
+  </section>
+
+  <!-- Wave divider (inverted) -->
+  <div class="wave-divider">
+    <svg viewBox="0 0 1200 40" preserveAspectRatio="none">
+      <path d="M0,20 C200,0 400,40 600,20 C800,0 1000,40 1200,20 L1200,0 L0,0 Z" fill="#1a3a5c"/>
+    </svg>
+  </div>
+
+  <!-- ====== EASTERN SERVICES ====== -->
+  <section class="section" id="eastern">
+    <div class="section-inner">
+      <div class="section-badge gs-reveal"><i class="fa-solid fa-torii-gate"></i> Eastern Mysticism</div>
+      <h2 class="section-title gs-reveal">東方玄學服務</h2>
+      <div class="hand-line gs-reveal"></div>
+      <div class="services-flex">
+        <div class="svc-card east">
+          <div class="svc-icon gold"><i class="fa-solid fa-calendar-days"></i></div>
+          <h3>神隊友數位拜拜指南</h3>
+          <p>大家都想求保佑，但沒人知道什麼時間最有效。這是一份玄學界的 SOP，解決現代人「不懂什麼日子適合拜拜」的痛點。免費日曆，可以加在手機桌面。</p>
+          <span class="svc-tag east">免費服務</span>
+        </div>
+        <div class="svc-card east">
+          <div class="svc-icon green"><i class="fa-solid fa-torii-gate"></i></div>
+          <h3>廟宇詢問服務</h3>
+          <p>神明也有分科別，拜錯神就像掛錯號。每月 13-17 號限時 5 天開放。依照你的具體需求 -- 求財、求緣、求生存 -- 指引你前往最適合的廟宇。</p>
+          <span class="svc-tag east">每月限定</span>
+        </div>
+        <div class="svc-card east">
+          <div class="svc-icon cyan"><i class="fa-solid fa-spray-can-sparkles"></i></div>
+          <h3>甘露噴霧</h3>
+          <p>每月 1 號固定開放預購。經過神明加持的能量噴霧，為你的日常增添一份來自無形世界的守護力量。</p>
+          <span class="svc-tag east">每月預購</span>
+        </div>
+        <div class="svc-card east">
+          <div class="svc-icon gold"><i class="fa-solid fa-envelope-open-text"></i></div>
+          <h3>月度電子報</h3>
+          <p>每月 25 號定期定額，娘娘要求青蛙書寫的電子報。包含本月注意事項、適合拜的神明、參拜流程與供品清單、神明生日介紹。</p>
+          <span class="svc-tag east">訂閱制</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== WESTERN SERVICES ====== -->
+  <section class="section" id="western">
+    <div class="section-inner">
+      <div class="section-badge gs-reveal"><i class="fa-solid fa-moon"></i> Western Occultism</div>
+      <h2 class="section-title gs-reveal">西方玄學領域</h2>
+      <div class="hand-line gs-reveal"></div>
+      <div class="services-flex">
+        <div class="svc-card west">
+          <div class="svc-icon purple"><i class="fa-solid fa-moon"></i></div>
+          <h3>黑卡蒂 Hecate 祭壇</h3>
+          <p>在西門天后宮，除了拜媽祖，主要擺的是黑卡蒂的祭壇。作為三叉路口的女神，黑卡蒂守護著魔法、月光與十字路口的選擇。</p>
+          <span class="svc-tag west">神祕學</span>
+        </div>
+        <div class="svc-card west">
+          <div class="svc-icon purple"><i class="fa-solid fa-eye"></i></div>
+          <h3>塔羅牌占卜</h3>
+          <p>透過塔羅牌的古老智慧，在混沌中找到指引。無論是愛情、事業或人生抉擇，牌面上的圖像是靈魂深處的鏡子。</p>
+          <span class="svc-tag west">占卜</span>
+        </div>
+        <div class="svc-card west">
+          <div class="svc-icon purple"><i class="fa-solid fa-hands-praying"></i></div>
+          <h3>所羅門七十二魔神</h3>
+          <p>敬拜巴巴隆以及所羅門小鑰七十二魔神的實踐者。願魔法永遠對所有需要幫助的人有益處。</p>
+          <span class="svc-tag west">魔法實踐</span>
+        </div>
+        <div class="svc-card west">
+          <div class="svc-icon purple"><i class="fa-solid fa-flask-vial"></i></div>
+          <h3>胡督魔法 Hoodoo</h3>
+          <p>結合民俗魔法傳統的實踐者，透過草藥、蠟燭、靈擺等工具，將實用主義的魔法帶入日常生活之中。</p>
+          <span class="svc-tag west">靈擺</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== TAROT ====== -->
+  <section class="tarot-section" id="tarot">
+    <div class="section-inner">
+      <div class="section-badge gs-reveal"><i class="fa-solid fa-star"></i> Draw a Card</div>
+      <h2 class="section-title gs-reveal">翻牌揭示</h2>
+      <p class="section-sub gs-reveal">點擊卡牌，看看池塘裡的蛙有什麼話想對你說</p>
+      <div class="tarot-deck">
+        <div class="tarot-wrap" data-tarot>
+          <div class="tarot-inner">
+            <div class="tarot-face"><div class="card-pattern"></div><i class="fa-solid fa-star-of-david"></i><span>tap to reveal</span></div>
+            <div class="tarot-back"><h4>The Jaded Frog</h4><p>厭世不是放棄，而是看透之後依然選擇行動的勇氣。</p></div>
+          </div>
+        </div>
+        <div class="tarot-wrap" data-tarot>
+          <div class="tarot-inner">
+            <div class="tarot-face"><div class="card-pattern"></div><i class="fa-solid fa-eye"></i><span>tap to reveal</span></div>
+            <div class="tarot-back"><h4>The Communicator</h4><p>跨越可見與不可見的邊界，傳遞那些無法用語言表達的訊息。</p></div>
+          </div>
+        </div>
+        <div class="tarot-wrap" data-tarot>
+          <div class="tarot-inner">
+            <div class="tarot-face"><div class="card-pattern"></div><i class="fa-solid fa-hand-sparkles"></i><span>tap to reveal</span></div>
+            <div class="tarot-back"><h4>The Pragmatist</h4><p>魔法不在雲端，在你每天走過的路口。1+1=5 啦，不客氣呱。</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== GALLERY ====== -->
+  <section class="section" id="gallery">
+    <div class="section-inner">
+      <div class="section-badge gs-reveal"><i class="fa-solid fa-book-open"></i> Grimoire</div>
+      <h2 class="section-title gs-reveal">蛙的多重宇宙</h2>
+      <div class="hand-line gs-reveal"></div>
+      <div class="gallery-scatter">
+        <div class="gal-item">
+          <img src="/assets/img/guild/jaded_frog_omg/frog_wizard.webp" alt="施法蛙" loading="lazy">
+          <div class="gal-caption"><i class="fa-solid fa-wand-sparkles"></i> 施法模式 ON</div>
+        </div>
+        <div class="gal-item">
+          <img src="/assets/img/guild/jaded_frog_omg/frog_tarot.webp" alt="塔羅蛙" loading="lazy">
+          <div class="gal-caption"><i class="fa-solid fa-eye"></i> 今日運勢如何</div>
+        </div>
+        <div class="gal-item">
+          <img src="/assets/img/guild/jaded_frog_omg/frog_book.webp" alt="讀書蛙" loading="lazy">
+          <div class="gal-caption"><i class="fa-solid fa-book-open"></i> 魔法書研讀中</div>
+        </div>
+        <div class="gal-item">
+          <img src="/assets/img/guild/jaded_frog_omg/frog_pendulum.webp" alt="水晶球蛙" loading="lazy">
+          <div class="gal-caption"><i class="fa-solid fa-circle"></i> 凝視未來</div>
+        </div>
+        <div class="gal-item">
+          <img src="/assets/img/guild/jaded_frog_omg/frog_temple.webp" alt="藥水蛙" loading="lazy">
+          <div class="gal-caption"><i class="fa-solid fa-flask-vial"></i> 秘藥調配</div>
+        </div>
+        <div class="gal-item">
+          <img src="/assets/img/guild/jaded_frog_omg/frog_doodle1.webp" alt="旅行蛙" loading="lazy">
+          <div class="gal-caption"><i class="fa-solid fa-suitcase"></i> 出發吧</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== PHILOSOPHY ====== -->
+  <section class="philo" id="philosophy">
+    <div class="section-inner">
+      <div class="section-badge gs-reveal"><i class="fa-solid fa-droplet"></i> Pond Philosophy</div>
+      <h2 class="section-title gs-reveal">池塘哲學</h2>
+      <div class="hand-line gs-reveal" style="margin-left:auto;margin-right:auto;"></div>
+      <p class="philo-text gs-reveal">
+        在這座魔法池塘裡，<span class="highlight">東方的廟宇香火</span>與<span class="highlight">西方的月光祭壇</span>共存。
+        我不相信只有一條路通往答案。黑卡蒂守護十字路口，媽祖庇佑海上歸人，
+        而我，就是那隻蹲在池塘裡幫你翻譯這一切的青蛙。<br><br>
+        辦過五次市集、開過課、上過一堆課，有些東西甚至是夢中學會的。
+        不管你需要的是動物溝通、塔羅占卜、廟宇指引，還是一瓶甘露噴霧 ——
+        <span class="highlight">魔法永遠對所有需要幫助的人有益處。</span>
+      </p>
+      <div class="values-row">
+        <div class="val-item">
+          <div class="val-icon"><i class="fa-solid fa-yin-yang" style="color:var(--ink-faint)"></i></div>
+          <span class="val-label">東西融合</span>
+        </div>
+        <div class="val-item">
+          <div class="val-icon"><i class="fa-solid fa-paw" style="color:var(--accent-gold)"></i></div>
+          <span class="val-label">萬物有靈</span>
+        </div>
+        <div class="val-item">
+          <div class="val-icon"><i class="fa-solid fa-rainbow" style="color:var(--accent-purple)"></i></div>
+          <span class="val-label">多元友善</span>
+        </div>
+        <div class="val-item">
+          <div class="val-icon"><i class="fa-solid fa-hand-holding-heart" style="color:var(--accent-green)"></i></div>
+          <span class="val-label">實用主義</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== FOOTER ====== -->
+  <footer class="site-footer">
+    <img src="/assets/img/guild/jaded_frog_omg/avatar.webp" alt="魔法青蛙" class="footer-ava" loading="lazy">
+    <div class="footer-name">魔法青蛙</div>
+    <div class="footer-handle">@jaded.frog.omg</div>
+    <div class="footer-links">
+      <a href="https://www.threads.com/@jaded.frog.omg" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+      <a href="https://www.instagram.com/jaded.frog.omg/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      <a href="https://godsend.nty.lol/" target="_blank" rel="noopener noreferrer" aria-label="神隊友日曆"><i class="fa-solid fa-calendar-days"></i></a>
+    </div>
+    <div class="footer-credit">
+      Made with <i class="fa-solid fa-heart" style="color:var(--frog-glow)"></i> by
+      <a href="/guild/">SuperGalen's Dungeon</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var isMobile = window.innerWidth < 900;
+
+  // ====== LOADER ======
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      document.getElementById('loader').classList.add('hidden');
+      heroTimeline();
+    }, 600);
+  });
+
+  // ====== UNIFIED SCROLL HANDLER ======
+  var progressBar = document.getElementById('scrollProgress');
+  var heroFrogEl = document.querySelector('.hero-frog');
+  var _ticking = false;
+  window.addEventListener('scroll', function() {
+    if (_ticking) return;
+    _ticking = true;
+    requestAnimationFrame(function() {
+      var st = window.scrollY;
+      var h = document.documentElement.scrollHeight - window.innerHeight;
+      // Progress bar
+      progressBar.style.width = (st / h * 100) + '%';
+      // Hero parallax
+      if (heroFrogEl && st < window.innerHeight) {
+        heroFrogEl.style.transform = 'translateY(' + (-st * 0.15) + 'px)';
+      }
+      _ticking = false;
+    });
+  });
+
+  // ====== CURSOR STAR TRAIL (desktop only) ======
+  if (!isMobile) {
+    var trailPool = [];
+    var trailIdx = 0;
+    var starSymbols = ['\u2606', '\u2729', '\u2727', '\u00b7'];
+    for (var ti = 0; ti < 16; ti++) {
+      var s = document.createElement('div');
+      s.className = 'cursor-star';
+      s.textContent = starSymbols[ti % starSymbols.length];
+      document.body.appendChild(s);
+      trailPool.push(s);
+    }
+    var lastTrailTime = 0;
+    document.addEventListener('mousemove', function(e) {
+      var now = Date.now();
+      if (now - lastTrailTime < 40) return;
+      lastTrailTime = now;
+      var star = trailPool[trailIdx % trailPool.length];
+      trailIdx++;
+      star.style.left = e.clientX + 'px';
+      star.style.top = e.clientY + 'px';
+      star.style.opacity = '0.7';
+      star.style.fontSize = (10 + Math.random() * 10) + 'px';
+      star.style.transform = 'translate(-50%,-50%) rotate(' + (Math.random() * 360) + 'deg)';
+      gsap.to(star, {
+        opacity: 0,
+        y: -20 - Math.random() * 30,
+        x: (Math.random() - 0.5) * 30,
+        scale: 0.3,
+        duration: 0.8,
+        ease: 'power2.out'
+      });
+    });
+  }
+
+  // ====== HERO FROG FOLLOWS MOUSE ======
+  if (!isMobile) {
+    var heroFrog = document.querySelector('.hero-frog');
+    var heroSection = document.querySelector('.hero');
+    heroSection.addEventListener('mousemove', function(e) {
+      var rect = heroSection.getBoundingClientRect();
+      var cx = (e.clientX - rect.left) / rect.width - 0.5;
+      var cy = (e.clientY - rect.top) / rect.height - 0.5;
+      gsap.to(heroFrog, {
+        x: cx * 25,
+        y: cy * 15,
+        rotationY: cx * 8,
+        rotationX: -cy * 5,
+        duration: 0.6,
+        ease: 'power2.out'
+      });
+    });
+    heroSection.addEventListener('mouseleave', function() {
+      gsap.to(heroFrog, { x: 0, y: 0, rotationY: 0, rotationX: 0, duration: 0.6, ease: 'power2.out' });
+    });
+  }
+
+  // ====== MAGNETIC BUTTONS ======
+  if (!isMobile) {
+    document.querySelectorAll('.htag, .back-link, .footer-links a').forEach(function(btn) {
+      btn.addEventListener('mousemove', function(e) {
+        var rect = btn.getBoundingClientRect();
+        var cx = e.clientX - rect.left - rect.width / 2;
+        var cy = e.clientY - rect.top - rect.height / 2;
+        gsap.to(btn, { x: cx * 0.3, y: cy * 0.3, duration: 0.3, ease: 'power2.out' });
+      });
+      btn.addEventListener('mouseleave', function() {
+        gsap.to(btn, { x: 0, y: 0, duration: 0.4, ease: 'elastic.out(1, 0.5)' });
+      });
+    });
+  }
+
+  // ====== 3D TILT ON SERVICE CARDS ======
+  if (!isMobile) {
+    document.querySelectorAll('.svc-card').forEach(function(card) {
+      var glow = document.createElement('div');
+      glow.className = 'tilt-glow';
+      card.appendChild(glow);
+      card.addEventListener('mousemove', function(e) {
+        var rect = card.getBoundingClientRect();
+        var cx = (e.clientX - rect.left) / rect.width;
+        var cy = (e.clientY - rect.top) / rect.height;
+        var rotX = (0.5 - cy) * 12;
+        var rotY = (cx - 0.5) * 12;
+        gsap.to(card, {
+          rotationX: rotX, rotationY: rotY,
+          transformPerspective: 600,
+          duration: 0.3, ease: 'power2.out'
+        });
+        glow.style.left = (e.clientX - rect.left - 100) + 'px';
+        glow.style.top = (e.clientY - rect.top - 100) + 'px';
+      });
+      card.addEventListener('mouseleave', function() {
+        gsap.to(card, { rotationX: 0, rotationY: 0, duration: 0.4, ease: 'power2.out' });
+      });
+    });
+  }
+
+  // ====== TAROT FLIP + SPARKLE BURST ======
+  document.querySelectorAll('[data-tarot]').forEach(function(wrap) {
+    wrap.addEventListener('click', function() {
+      var isFlipping = !wrap.classList.contains('flipped');
+      wrap.classList.toggle('flipped');
+      if (isFlipping) {
+        var rect = wrap.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        for (var si = 0; si < 12; si++) {
+          var spark = document.createElement('div');
+          spark.className = 'sparkle';
+          spark.style.position = 'fixed';
+          spark.style.left = cx + 'px';
+          spark.style.top = cy + 'px';
+          spark.style.width = (4 + Math.random() * 6) + 'px';
+          spark.style.height = spark.style.width;
+          spark.style.background = ['#5ecece','#7cc6d4','#e8a838','#7b68ae','#fff'][Math.floor(Math.random()*5)];
+          document.body.appendChild(spark);
+          var angle = (si / 12) * Math.PI * 2 + Math.random() * 0.5;
+          var dist = 40 + Math.random() * 80;
+          gsap.to(spark, {
+            x: Math.cos(angle) * dist,
+            y: Math.sin(angle) * dist,
+            opacity: 0, scale: 0,
+            duration: 0.6 + Math.random() * 0.4,
+            ease: 'power2.out',
+            onComplete: function() { spark.remove(); }
+          });
+        }
+      }
+    });
+  });
+
+  // ====== GALLERY LIGHTBOX ======
+  var lightbox = document.getElementById('lightbox');
+  var lightboxImg = document.getElementById('lightboxImg');
+  document.querySelectorAll('.gal-item img').forEach(function(img) {
+    img.style.cursor = 'zoom-in';
+    img.addEventListener('click', function() {
+      lightboxImg.src = img.src;
+      lightboxImg.alt = img.alt;
+      lightbox.classList.add('active');
+    });
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') lightbox.classList.remove('active');
+  });
+
+  // ====== COUNTER ANIMATION ======
+  var counted = false;
+  function animateCounters() {
+    if (counted) return;
+    counted = true;
+    document.querySelectorAll('.stat-val').forEach(function(el) {
+      var text = el.textContent.trim();
+      var suffix = text.replace(/[\d.]/g, '');
+      var num = parseFloat(text);
+      if (isNaN(num)) return;
+      var isK = suffix.includes('K');
+      var obj = { val: 0 };
+      gsap.to(obj, {
+        val: num,
+        duration: 1.5,
+        ease: 'power2.out',
+        onUpdate: function() {
+          el.textContent = (isK ? obj.val.toFixed(0) : Math.round(obj.val)) + suffix;
+        }
+      });
+    });
+  }
+  ScrollTrigger.create({
+    trigger: '.stats-row', start: 'top 85%', once: true,
+    onEnter: animateCounters
+  });
+
+  // ====== VANILLA CANVAS - Hand-drawn stars ======
+  (function initStars() {
+    var canvas = document.getElementById('stars-canvas');
+    var ctx = canvas.getContext('2d');
+    var stars = [];
+    var PI2 = Math.PI * 2;
+    var HALF_PI = Math.PI / 2;
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (var i = 0; i < 40; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height * 3,
+        size: 8 + Math.random() * 14,
+        rot: Math.random() * PI2,
+        speed: 0.003 + Math.random() * 0.007,
+        drift: -0.15 + Math.random() * 0.3,
+        alpha: 0.12 + Math.random() * 0.2,
+        points: 4 + Math.floor(Math.random() * 3)
+      });
+    }
+
+    function drawStar(x, y, r1, r2, n) {
+      var angle = PI2 / n;
+      var half = angle / 2;
+      ctx.beginPath();
+      for (var a = -HALF_PI; a < PI2 - HALF_PI; a += angle) {
+        ctx.lineTo(x + Math.cos(a) * r2, y + Math.sin(a) * r2);
+        ctx.lineTo(x + Math.cos(a + half) * r1, y + Math.sin(a + half) * r1);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    var rafId;
+    function draw() {
+      rafId = requestAnimationFrame(draw);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var scrollY = window.scrollY || 0;
+      ctx.lineWidth = 1.5;
+      for (var i = 0; i < stars.length; i++) {
+        var s = stars[i];
+        var screenY = s.y - scrollY * 0.3;
+        if (screenY < -30 || screenY > canvas.height + 30) continue;
+        s.rot += s.speed;
+        s.x += s.drift;
+        if (s.x < -30) s.x = canvas.width + 30;
+        if (s.x > canvas.width + 30) s.x = -30;
+        ctx.save();
+        ctx.translate(s.x, screenY);
+        ctx.rotate(s.rot);
+        ctx.strokeStyle = 'rgba(26,58,92,' + s.alpha + ')';
+        drawStar(0, 0, s.size * 0.4, s.size, s.points);
+        ctx.restore();
+      }
+    }
+    draw();
+  })();
+
+  // ====== WALKING FROG COMPANION ======
+  (function initFrogCompanion() {
+    var frog = document.getElementById('frogCompanion');
+    var frogImg = document.getElementById('frogImg');
+    var speech = document.getElementById('frogSpeech');
+    var flash = document.getElementById('easterFlash');
+
+    var imgs = {
+      walk: '/assets/img/guild/jaded_frog_omg/frog_doodle1.webp',
+      magic: '/assets/img/guild/jaded_frog_omg/frog_wizard.webp',
+      read: '/assets/img/guild/jaded_frog_omg/frog_book.webp',
+      tarot: '/assets/img/guild/jaded_frog_omg/frog_tarot.webp',
+      potion: '/assets/img/guild/jaded_frog_omg/frog_temple.webp',
+      crystal: '/assets/img/guild/jaded_frog_omg/frog_pendulum.webp'
+    };
+
+    var quotes = [
+      '厭世歸厭世，班還是要上 呱',
+      '今天的運勢...算了不想講',
+      '1+1=5 不客氣呱',
+      '你是不是偷看我',
+      '要占卜嗎？先排隊 呱',
+      '黑卡蒂說 hi',
+      '我家黑貓叫我回去了',
+      'MBTI 是 MDFK 呱',
+      '拜拜記得帶水果',
+      '脾氣很差 有耐心是因為我願意'
+    ];
+
+    var state = {
+      x: 60,
+      targetX: 60,
+      facing: 1,
+      action: 'idle',
+      timer: 0,
+      hopPhase: 0,
+      idleTime: 0,
+      clickCount: 0
+    };
+
+    // Frog decides what to do
+    function think() {
+      var roll = Math.random();
+      if (roll < 0.4) {
+        // Walk to a new position
+        state.action = 'walk';
+        state.targetX = 40 + Math.random() * (window.innerWidth - 120);
+        state.facing = state.targetX > state.x ? 1 : -1;
+      } else if (roll < 0.6) {
+        // Hop in place
+        state.action = 'hop';
+        state.timer = 3;
+      } else if (roll < 0.8) {
+        // Say something
+        state.action = 'talk';
+        state.timer = 3;
+        showSpeech(quotes[Math.floor(Math.random() * quotes.length)]);
+      } else {
+        // Just chill
+        state.action = 'idle';
+        state.timer = 2 + Math.random() * 3;
+      }
+    }
+
+    function showSpeech(text) {
+      speech.textContent = text;
+      speech.classList.add('show');
+      setTimeout(function() { speech.classList.remove('show'); }, 2500);
+    }
+
+    // Change frog image based on scroll position
+    var sectionImgs = [
+      { id: 'hero', img: 'walk' },
+      { id: 'about', img: 'read' },
+      { id: 'quote', img: 'crystal' },
+      { id: 'eastern', img: 'potion' },
+      { id: 'western', img: 'magic' },
+      { id: 'tarot', img: 'tarot' },
+      { id: 'gallery', img: 'walk' },
+      { id: 'philosophy', img: 'crystal' }
+    ];
+
+    function updateFrogImage() {
+      var scrollY = window.scrollY + window.innerHeight * 0.7;
+      var currentImg = 'walk';
+      for (var i = sectionImgs.length - 1; i >= 0; i--) {
+        var sec = document.getElementById(sectionImgs[i].id);
+        if (sec && scrollY >= sec.offsetTop) {
+          currentImg = sectionImgs[i].img;
+          break;
+        }
+      }
+      if (frogImg.src.indexOf(imgs[currentImg]) === -1) {
+        frogImg.src = imgs[currentImg];
+      }
+    }
+
+    // Leave footprints
+    var footprintCount = 0;
+    function leaveFootprint(x) {
+      if (footprintCount > 20) return;
+      footprintCount++;
+      var fp = document.createElement('div');
+      fp.className = 'footprint';
+      fp.textContent = '\u00b7';
+      fp.style.left = x + 'px';
+      fp.style.bottom = '8px';
+      document.body.appendChild(fp);
+      gsap.to(fp, { opacity: 0, duration: 3, delay: 1, onComplete: function() {
+        fp.remove();
+        footprintCount--;
+      }});
+    }
+
+    // Click handler
+    frog.addEventListener('click', function(e) {
+      e.stopPropagation();
+      state.clickCount++;
+
+      // Click ripple
+      var ring = document.createElement('div');
+      ring.className = 'frog-click-ring';
+      ring.style.left = (state.x + 36 - 10) + 'px';
+      ring.style.bottom = '40px';
+      document.body.appendChild(ring);
+      gsap.to(ring, {
+        width: 80, height: 80, opacity: 0,
+        x: -30, y: -30,
+        duration: 0.6, ease: 'power2.out',
+        onComplete: function() { ring.remove(); }
+      });
+
+      // Hop reaction
+      gsap.to(frogImg, {
+        y: -30, rotation: state.facing * 15,
+        duration: 0.2, ease: 'power2.out',
+        yoyo: true, repeat: 1
+      });
+
+      // Say something on click
+      var clickQuotes = [
+        '幹嘛戳我 呱！',
+        '不要碰！...好啦再一次',
+        '你這樣我會收費的 呱',
+        '嗯？你需要占卜？',
+        '厭世中 請勿打擾',
+        '呱呱呱（翻譯：走開）'
+      ];
+      showSpeech(clickQuotes[state.clickCount % clickQuotes.length]);
+
+      // Easter egg: click 7 times
+      if (state.clickCount === 7) {
+        gsap.to(flash, {
+          opacity: 0.6, duration: 0.15,
+          yoyo: true, repeat: 3,
+          onComplete: function() { gsap.set(flash, { opacity: 0 }); }
+        });
+        showSpeech('你觸發了隱藏魔法！...才怪 呱');
+        state.clickCount = 0;
+      }
+    });
+
+    // Animation loop
+    var lastTime = 0;
+    function animate(time) {
+      requestAnimationFrame(animate);
+      var dt = Math.min((time - lastTime) / 1000, 0.1);
+      lastTime = time;
+
+      if (state.action === 'walk') {
+        var dx = state.targetX - state.x;
+        if (Math.abs(dx) < 3) {
+          state.action = 'idle';
+          state.timer = 1 + Math.random() * 2;
+        } else {
+          var speed = 80 * dt;
+          state.x += Math.sign(dx) * Math.min(speed, Math.abs(dx));
+          state.facing = dx > 0 ? 1 : -1;
+          // Hop while walking
+          state.hopPhase += dt * 8;
+          var hopY = Math.abs(Math.sin(state.hopPhase)) * 8;
+          frogImg.style.transform = 'scaleX(' + state.facing + ') translateY(' + (-hopY) + 'px) rotate(' + (state.facing * Math.sin(state.hopPhase) * 3) + 'deg)';
+          // Footprints while walking
+          if (Math.random() < 0.03) leaveFootprint(state.x + 30);
+        }
+      } else if (state.action === 'hop') {
+        state.timer -= dt;
+        state.hopPhase += dt * 6;
+        var hy = Math.abs(Math.sin(state.hopPhase)) * 15;
+        frogImg.style.transform = 'scaleX(' + state.facing + ') translateY(' + (-hy) + 'px)';
+        if (state.timer <= 0) think();
+      } else if (state.action === 'talk') {
+        state.timer -= dt;
+        // Gentle bob
+        var bob = Math.sin(time * 0.003) * 3;
+        frogImg.style.transform = 'scaleX(' + state.facing + ') translateY(' + (-bob) + 'px)';
+        if (state.timer <= 0) think();
+      } else {
+        // Idle
+        state.timer -= dt;
+        state.idleTime += dt;
+        var idleBob = Math.sin(time * 0.002) * 2;
+        frogImg.style.transform = 'scaleX(' + state.facing + ') translateY(' + (-idleBob) + 'px)';
+        // Occasionally look the other way
+        if (state.idleTime > 2 && Math.random() < 0.005) {
+          state.facing *= -1;
+          state.idleTime = 0;
+        }
+        if (state.timer <= 0) think();
+      }
+
+      frog.style.left = state.x + 'px';
+      frog.style.bottom = '20px';
+    }
+
+    // Start
+    setTimeout(function() {
+      think();
+      requestAnimationFrame(animate);
+    }, 1500);
+
+    // Update image on scroll
+    window.addEventListener('scroll', function() {
+      updateFrogImage();
+    });
+  })();
+
+
+  // ====== GSAP ======
+  gsap.registerPlugin(ScrollTrigger);
+
+  function heroTimeline() {
+    var tl = gsap.timeline();
+    tl.from('.hero-greeting', { opacity: 0, y: 20, duration: 0.6, ease: 'power3.out' }, 0)
+      .from('.hero-name', { opacity: 0, y: 40, duration: 0.8, ease: 'power3.out' }, 0.15)
+      .from('.hero-desc', { opacity: 0, y: 30, duration: 0.7, ease: 'power3.out' }, 0.35)
+      .from('.hero-tags', { opacity: 0, y: 20, duration: 0.6, ease: 'power3.out' }, 0.5)
+      .from('.hero-frog', { opacity: 0, scale: 0.7, rotation: -10, duration: 1, ease: 'back.out(1.6)' }, 0.2)
+      .from('#scrollCue', { opacity: 0, duration: 0.5 }, 0.8);
+
+    ScrollTrigger.create({
+      trigger: '#about', start: 'top 90%',
+      onEnter: function() { gsap.to('#scrollCue', { opacity: 0, duration: 0.3 }); },
+      onLeaveBack: function() { gsap.to('#scrollCue', { opacity: 1, duration: 0.3 }); }
+    });
+  }
+
+  // Generic scroll reveals
+  gsap.utils.toArray('.gs-reveal').forEach(function(el) {
+    gsap.to(el, {
+      scrollTrigger: { trigger: el, start: 'top 87%', once: true },
+      opacity: 1, y: 0, duration: 0.7, ease: 'power3.out'
+    });
+  });
+  gsap.utils.toArray('.gs-reveal-left').forEach(function(el) {
+    gsap.to(el, {
+      scrollTrigger: { trigger: el, start: 'top 87%', once: true },
+      opacity: 1, x: 0, duration: 0.7, ease: 'power3.out'
+    });
+  });
+  gsap.utils.toArray('.gs-reveal-right').forEach(function(el) {
+    gsap.to(el, {
+      scrollTrigger: { trigger: el, start: 'top 87%', once: true },
+      opacity: 1, x: 0, duration: 0.7, ease: 'power3.out'
+    });
+  });
+
+  // Service cards stagger
+  document.querySelectorAll('.services-flex').forEach(function(grid) {
+    var cards = grid.querySelectorAll('.svc-card');
+    gsap.set(cards, { opacity: 0, y: 40 });
+    ScrollTrigger.create({
+      trigger: grid, start: 'top 85%', once: true,
+      onEnter: function() {
+        gsap.to(cards, { opacity: 1, y: 0, stagger: 0.1, duration: 0.6, ease: 'back.out(1.2)' });
+      }
+    });
+  });
+
+  // Gallery cards stagger with rotation
+  gsap.set('.gal-item', { opacity: 0, scale: 0.85 });
+  ScrollTrigger.create({
+    trigger: '.gallery-scatter', start: 'top 85%', once: true,
+    onEnter: function() {
+      gsap.to('.gal-item', {
+        opacity: 1, scale: 1, stagger: 0.08, duration: 0.6, ease: 'back.out(1.4)',
+        onComplete: function() {
+          // Re-apply rotation after animation
+          document.querySelectorAll('.gal-item').forEach(function(el, i) {
+            el.style.transform = i % 2 === 0 ? 'rotate(-1.5deg)' : 'rotate(1.5deg)';
+          });
+        }
+      });
+    }
+  });
+
+  // Tarot cards
+  gsap.set('.tarot-wrap', { opacity: 0, y: 40 });
+  ScrollTrigger.create({
+    trigger: '.tarot-deck', start: 'top 85%', once: true,
+    onEnter: function() {
+      gsap.to('.tarot-wrap', { opacity: 1, y: 0, stagger: 0.15, duration: 0.7, ease: 'back.out(1.4)' });
+    }
+  });
+
+  // Quote per-character
+  (function() {
+    var el = document.getElementById('quoteText');
+    var text = el.textContent.trim();
+    el.innerHTML = '';
+    for (var i = 0; i < text.length; i++) {
+      var span = document.createElement('span');
+      span.className = 'qchar';
+      span.textContent = text[i];
+      el.appendChild(span);
+    }
+    ScrollTrigger.create({
+      trigger: '#quote', start: 'top 75%', once: true,
+      onEnter: function() {
+        gsap.to('.qchar', { opacity: 1, stagger: 0.04, duration: 0.08, ease: 'none' });
+      }
+    });
+  })();
+
+  // Values
+  gsap.set('.val-item', { opacity: 0, y: 20, scale: 0.85 });
+  ScrollTrigger.create({
+    trigger: '.values-row', start: 'top 85%', once: true,
+    onEnter: function() {
+      gsap.to('.val-item', { opacity: 1, y: 0, scale: 1, stagger: 0.1, duration: 0.5, ease: 'back.out(1.4)' });
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
