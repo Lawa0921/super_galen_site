@@ -1358,7 +1358,7 @@ members:
 
   - id: "greedlove0212"
     name: "雙魚老師"
-    avatar: "/assets/img/guild/greedlove0212/cell_division.webp"
+    avatar: "/assets/img/guild/greedlove0212/avatar.webp"
     page: "/guild/greedlove0212.html"
     tags:
       - id: "math_teacher"
