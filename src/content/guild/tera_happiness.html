@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tera | The 13 Moons</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300;0,400;1,300&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <style>
+:root{
+    --void:#08060e;
+    --crystal:#7b5ea7;--crystal-bright:#a78bfa;
+    --gold:#c9952a;--gold-light:#e8bf5a;
+    --moon:#e4ddd0;--moon-dim:rgba(228,221,208,.5);
+    --heal:#5a9e6f;--heal-soft:#7ec994;
+    --red:#cc2200;--blue:#003399;--yellow:#ccaa00;
+    --f-display:'Cormorant Infant',serif;
+    --f-brush:'Ma Shan Zheng',cursive;
+    --f-tc:'Noto Serif TC',serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden}
+body{background:var(--void);color:var(--moon);font-family:var(--f-tc);overflow-x:hidden;line-height:1.8}
+
+/* === LOADER === */
+.loader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2rem;background:var(--void)}
+.ld-moon{width:50px;height:50px;border-radius:50%;background:var(--moon);position:relative;overflow:hidden}
+.ld-shadow{position:absolute;top:0;width:50px;height:50px;background:var(--void);border-radius:50%;animation:ldM 2s ease-in-out infinite}
+@keyframes ldM{0%{left:-10px}50%{left:50px}100%{left:-10px}}
+.ld-text{font-family:var(--f-display);font-size:.7rem;letter-spacing:6px;text-transform:uppercase;color:var(--gold);opacity:.5}
+
+/* === CANVAS === */
+#cosmos{position:fixed;inset:0;z-index:0}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.03;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* === NAV === */
+.back-nav{position:fixed;top:1.5rem;left:1.5rem;z-index:90;color:var(--moon);text-decoration:none;font-family:var(--f-display);font-size:.7rem;letter-spacing:3px;text-transform:uppercase;padding:.4rem .8rem;border:1px solid rgba(228,221,208,.1);border-radius:2px;backdrop-filter:blur(8px);background:rgba(8,6,14,.4);transition:all .4s}
+.back-nav:hover{border-color:var(--gold);color:var(--gold)}
+.social-fix{position:fixed;top:1.5rem;right:1.5rem;z-index:90;display:flex;gap:.4rem}
+.social-fix a{width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--moon);text-decoration:none;font-size:.7rem;border:1px solid rgba(228,221,208,.1);border-radius:2px;backdrop-filter:blur(8px);background:rgba(8,6,14,.4);transition:all .4s}
+.social-fix a:hover{border-color:var(--gold);color:var(--gold)}
+
+/* === PROGRESS BAR === */
+.scroll-progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(to right,var(--gold),var(--crystal-bright));z-index:95;width:0;transition:none}
+
+/* === CHAPTER === */
+.ch{position:relative;z-index:5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(4rem,8vw,6rem) clamp(1.5rem,4vw,4rem);overflow:hidden}
+.ch-inner{max-width:900px;width:100%;position:relative}
+
+/* === HERO === */
+.hero-wrap{text-align:center}
+.hero-av{width:130px;height:130px;border-radius:50%;object-fit:cover;border:2px solid rgba(201,149,42,.3);margin-bottom:1.5rem}
+.hero-name{font-family:var(--f-brush);font-size:clamp(3rem,8vw,5rem);color:var(--gold-light);line-height:1.1;text-shadow:0 0 60px rgba(201,149,42,.25)}
+.hero-en{font-family:var(--f-display);font-size:clamp(.55rem,.9vw,.7rem);letter-spacing:8px;text-transform:uppercase;color:rgba(228,221,208,.25);margin:.3rem 0 2rem;font-weight:300}
+.hero-tagline{font-family:var(--f-brush);font-size:clamp(1.4rem,3vw,2.2rem);color:var(--moon);line-height:1.6}
+.hero-sub{font-weight:300;font-size:clamp(.78rem,1.2vw,.9rem);color:var(--moon-dim);max-width:380px;margin:1rem auto 0;line-height:2;letter-spacing:1px}
+.hero-scroll{position:absolute;bottom:-3rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.3rem}
+.hero-scroll span{font-family:var(--f-display);font-size:.5rem;letter-spacing:4px;text-transform:uppercase;color:var(--gold);opacity:.3}
+.scroll-line{width:1px;height:35px;position:relative;overflow:hidden}
+.scroll-line::after{content:'';position:absolute;top:-35px;left:0;width:1px;height:35px;background:linear-gradient(to bottom,transparent,var(--gold));animation:sDown 2s ease-in-out infinite}
+@keyframes sDown{0%{top:-35px}100%{top:35px}}
+
+/* === LABELS === */
+.ch-label{font-family:var(--f-display);font-size:.55rem;letter-spacing:6px;text-transform:uppercase;color:var(--gold);opacity:.35;text-align:center;margin-bottom:.5rem}
+.ch-title{font-family:var(--f-brush);font-size:clamp(1.6rem,4vw,2.8rem);text-align:center;color:var(--moon);margin-bottom:.6rem}
+.ch-sub{font-weight:300;font-size:clamp(.75rem,1.1vw,.88rem);text-align:center;color:var(--moon-dim);max-width:520px;margin:0 auto 3rem;line-height:2}
+
+/* === PRAYER === */
+.prayer-wrap{text-align:center;max-width:700px;margin:0 auto}
+.prayer-context{font-family:var(--f-brush);font-size:clamp(1rem,2.2vw,1.4rem);color:var(--moon-dim);line-height:2;margin-bottom:2rem}
+.prayer-main{font-family:var(--f-brush);font-size:clamp(1.4rem,3.5vw,2.4rem);color:var(--gold-light);line-height:1.8}
+.prayer-note{font-family:var(--f-display);font-size:.55rem;letter-spacing:4px;text-transform:uppercase;color:rgba(228,221,208,.2);margin-top:2rem}
+
+/* === TIMELINE === */
+.tl{position:relative;max-width:650px;margin:0 auto;padding-left:30px}
+.tl::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,var(--gold) 10%,var(--crystal) 50%,var(--gold) 90%,transparent)}
+.tl-n{position:relative;margin-bottom:2.5rem;padding-left:1.5rem}
+.tl-dot{position:absolute;left:-27px;top:6px;width:8px;height:8px;border-radius:50%;border:2px solid var(--gold);background:var(--void);transition:all .4s}
+.tl-n.lit .tl-dot{background:var(--gold);box-shadow:0 0 12px rgba(201,149,42,.5)}
+.tl-era{font-family:var(--f-display);font-size:.55rem;letter-spacing:4px;text-transform:uppercase;color:var(--gold);opacity:.4}
+.tl-title{font-weight:700;font-size:1rem;margin:.1rem 0 .3rem}
+.tl-desc{font-size:.8rem;color:var(--moon-dim);line-height:2;font-weight:300}
+
+/* === TRIPTYCH === */
+.tri-row{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.tri{padding:2.5rem 1.5rem;text-align:center;background:rgba(255,255,255,.02);border:1px solid rgba(228,221,208,.04);transition:background .4s}
+.tri:hover{background:rgba(255,255,255,.05)}
+.tri-char{font-family:var(--f-brush);font-size:clamp(2.5rem,5vw,4rem);line-height:1;margin-bottom:1rem}
+.tri-char.c-body{color:var(--heal)}.tri-char.c-mind{color:var(--crystal-bright)}.tri-char.c-spirit{color:var(--gold)}
+.tri-en{font-family:var(--f-display);font-size:.5rem;letter-spacing:5px;text-transform:uppercase;color:rgba(228,221,208,.2);margin-bottom:1rem}
+.tri-list{list-style:none;text-align:left;display:inline-block}
+.tri-list li{font-size:.78rem;color:var(--moon-dim);line-height:2.2;padding-left:.8rem;position:relative}
+.tri-list li::before{content:'';position:absolute;left:0;top:50%;width:3px;height:3px;border-radius:50%;transform:translateY(-50%)}
+.c-body ~ .tri-en ~ .tri-list li::before{background:var(--heal-soft)}
+.c-mind ~ .tri-en ~ .tri-list li::before{background:var(--crystal-bright)}
+.c-spirit ~ .tri-en ~ .tri-list li::before{background:var(--gold-light)}
+@media(max-width:768px){.tri-row{grid-template-columns:1fr}}
+
+/* === MAYA === */
+.maya-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-bottom:3rem}
+.maya-n{padding:1.5rem;text-align:center;border:1px solid rgba(228,221,208,.05);background:rgba(255,255,255,.02);border-radius:2px}
+.maya-n-val{font-family:var(--f-display);font-size:2.2rem;font-weight:300;font-style:italic;color:var(--gold-light);line-height:1}
+.maya-n-label{font-size:.8rem;font-weight:600;margin:.3rem 0 .2rem}
+.maya-n-desc{font-size:.72rem;color:var(--moon-dim);line-height:1.8}
+@media(max-width:768px){.maya-nums{grid-template-columns:1fr;max-width:320px;margin-left:auto;margin-right:auto}}
+
+/* Seals carousel */
+.seals-wrap{overflow:hidden;margin:2rem 0}
+.seals-track{display:flex;animation:sealR 28s linear infinite;will-change:transform}
+.seals-track:hover{animation-play-state:paused}
+.seal{min-width:70px;display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.3rem;flex-shrink:0}
+.seal-icon{width:38px;height:42px;border-radius:5px 5px 2px 2px;display:flex;align-items:center;justify-content:center;font-size:.95rem;border:1px solid rgba(255,255,255,.08)}
+.seal-icon.r{background:rgba(204,34,0,.15);color:#e63000}.seal-icon.w{background:rgba(240,237,224,.1);color:#f0ede0}
+.seal-icon.b{background:rgba(0,51,153,.2);color:#4488cc}.seal-icon.y{background:rgba(204,170,0,.15);color:#e6c000}
+.seal-cn{font-size:.6rem}.seal-en{font-size:.5rem;color:var(--moon-dim)}
+@keyframes sealR{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* Seal Glossary */
+.seal-glossary{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:2.5rem 0}
+.sg-item{display:flex;gap:.8rem;padding:1.2rem;border:1px solid rgba(228,221,208,.05);background:rgba(255,255,255,.02);border-radius:2px;transition:all .3s}
+.sg-item:hover{border-color:rgba(201,149,42,.12);background:rgba(255,255,255,.04)}
+.sg-color{width:4px;border-radius:2px;flex-shrink:0}
+.sg-red{background:var(--red)}.sg-white{background:rgba(240,237,224,.5)}.sg-blue{background:var(--blue)}.sg-yellow{background:var(--yellow)}
+.sg-name{font-size:.85rem;font-weight:700;margin-bottom:.3rem}
+.sg-name span{font-family:var(--f-display);font-weight:300;font-size:.7rem;letter-spacing:1px;color:var(--moon-dim);margin-left:.3rem}
+.sg-meaning{font-size:.72rem;color:var(--moon-dim);line-height:1.9;font-weight:300}
+@media(max-width:768px){.seal-glossary{grid-template-columns:1fr}}
+
+/* Kin Cross */
+.kin-cross{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto auto;gap:.8rem;max-width:500px;margin:2rem auto 0;place-items:center}
+.kp{padding:1rem;border:1px solid rgba(228,221,208,.05);background:rgba(255,255,255,.02);text-align:center;width:100%;border-radius:2px;transition:all .4s}
+.kp:hover{border-color:rgba(201,149,42,.15);transform:translateY(-2px)}
+.kp.top{grid-column:2;grid-row:1}.kp.left{grid-column:1;grid-row:2}.kp.ctr{grid-column:2;grid-row:2;border-color:rgba(201,149,42,.15);background:rgba(201,149,42,.03)}.kp.right{grid-column:3;grid-row:2}.kp.btm{grid-column:2;grid-row:3}
+.kp-role{font-family:var(--f-display);font-size:.5rem;letter-spacing:3px;text-transform:uppercase;margin-bottom:.2rem}
+.kp.ctr .kp-role{color:var(--gold)}.kp.top .kp-role{color:var(--crystal-bright)}.kp.left .kp-role{color:var(--heal-soft)}.kp.right .kp-role{color:#e66050}.kp.btm .kp-role{color:#4488cc}
+.kp-name{font-size:.8rem;font-weight:600;margin-bottom:.1rem}
+.kp-desc{font-size:.65rem;color:var(--moon-dim);line-height:1.6}
+
+/* Transforms */
+.tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:2rem}
+.tf{padding:1.5rem;border:1px solid rgba(228,221,208,.05);background:rgba(255,255,255,.02);border-radius:2px;position:relative;overflow:hidden}
+.tf::before{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:var(--gold);opacity:.2}
+.tf-from{font-size:.72rem;color:rgba(228,221,208,.3);text-decoration:line-through;margin-bottom:.3rem}
+.tf-to{font-size:.85rem;font-weight:600;margin-bottom:.4rem}
+.tf-desc{font-size:.72rem;color:var(--moon-dim);line-height:1.9}
+@media(max-width:768px){.tf-grid{grid-template-columns:1fr}}
+
+/* === QUIZ === */
+.quiz-box{max-width:550px;margin:0 auto;text-align:center}
+.quiz-q{display:none;animation:qIn .4s ease}.quiz-q.on{display:block}
+@keyframes qIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
+.quiz-question{font-size:.95rem;font-weight:600;margin-bottom:1.5rem}
+.quiz-prog{font-family:var(--f-display);font-size:.55rem;letter-spacing:3px;color:var(--gold);opacity:.35;margin-bottom:1rem}
+.quiz-opts{display:flex;flex-direction:column;gap:.6rem;max-width:400px;margin:0 auto}
+.quiz-opt{padding:.8rem 1.2rem;border:1px solid rgba(228,221,208,.08);background:rgba(255,255,255,.02);color:var(--moon-dim);font-size:.82rem;text-align:left;cursor:pointer;transition:all .25s;line-height:1.6;border-radius:2px}
+.quiz-opt:hover{border-color:var(--gold);color:var(--moon);background:rgba(201,149,42,.05)}
+.quiz-result{display:none;text-align:center;animation:qIn .5s ease}.quiz-result.on{display:block}
+.qr-type{font-family:var(--f-brush);font-size:clamp(1.6rem,3.5vw,2.2rem);color:var(--gold-light);margin-bottom:.3rem}
+.qr-maya{font-family:var(--f-display);font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--crystal-bright);margin-bottom:1.2rem}
+.qr-desc{font-size:.85rem;color:var(--moon-dim);line-height:2;max-width:450px;margin:0 auto 1.5rem}
+.qr-advice{font-size:.88rem;padding:1.2rem;border:1px solid rgba(201,149,42,.12);background:rgba(201,149,42,.03);line-height:2;border-radius:2px;max-width:450px;margin:0 auto 1.2rem}
+.qr-cta{display:inline-block;padding:.5rem 1.5rem;font-size:.8rem;color:var(--gold);border:1px solid var(--gold);border-radius:2px;text-decoration:none;transition:all .3s}
+.qr-cta:hover{background:var(--gold);color:var(--void)}
+
+/* === SERVICES === */
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.svc{border:1px solid rgba(228,221,208,.06);background:rgba(255,255,255,.02);border-radius:3px;overflow:hidden;transition:all .4s}
+.svc:hover{border-color:rgba(201,149,42,.15);background:rgba(255,255,255,.04);transform:translateY(-4px)}
+.svc-img{width:100%;height:160px;object-fit:cover;opacity:.7;transition:opacity .4s}
+.svc:hover .svc-img{opacity:1}
+.svc-body{padding:1.5rem}
+.svc-name{font-size:.95rem;font-weight:700;margin-bottom:.4rem}
+.svc-desc{font-size:.75rem;color:var(--moon-dim);line-height:2}
+.svc-badge{display:inline-block;margin-top:.8rem;padding:.2rem .6rem;font-size:.6rem;letter-spacing:1px;border:1px solid rgba(201,149,42,.15);color:var(--gold);border-radius:2px}
+@media(max-width:768px){.svc-grid{grid-template-columns:1fr;max-width:350px;margin-left:auto;margin-right:auto}}
+
+/* === TESTIMONIALS === */
+.testi-wrap{max-width:650px;margin:0 auto;overflow:hidden;position:relative}
+.testi-inner{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.testi-slide{min-width:100%;padding:1.5rem}
+.testi-text{font-size:clamp(.85rem,1.1vw,.95rem);font-weight:300;line-height:2.2;text-align:center;max-width:550px;margin:0 auto 1rem}
+.testi-from{font-family:var(--f-display);font-size:.55rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);opacity:.4;text-align:center}
+.testi-dots{display:flex;justify-content:center;gap:.4rem;margin-top:1rem}
+.testi-dot{width:5px;height:5px;border-radius:50%;border:1px solid rgba(228,221,208,.12);cursor:pointer;transition:all .3s}
+.testi-dot.on{background:var(--gold);border-color:var(--gold)}
+
+/* === WORKS === */
+.works-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
+.work{position:relative;overflow:hidden;border-radius:2px;aspect-ratio:4/5;cursor:default}
+.work img{width:100%;height:100%;object-fit:cover;transition:transform .5s,filter .3s;filter:brightness(.8)}
+.work:hover img{transform:scale(1.06);filter:brightness(1)}
+.work-ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,6,14,.8) 0%,transparent 55%);display:flex;flex-direction:column;justify-content:flex-end;padding:1rem;opacity:0;transition:opacity .3s}
+.work:hover .work-ov{opacity:1}
+.work-tag{font-family:var(--f-display);font-size:.45rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:.2rem}
+.work-title{font-size:.75rem;font-weight:600;line-height:1.5}
+@media(max-width:768px){.works-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* === IMPACT === */
+.impact-row{display:flex;justify-content:center;gap:clamp(2.5rem,5vw,5rem);flex-wrap:wrap;margin:3rem 0}
+.imp-n{font-family:var(--f-display);font-size:clamp(2.5rem,5vw,4rem);font-weight:300;font-style:italic;color:var(--gold-light);line-height:1;text-align:center}
+.imp-l{font-family:var(--f-display);font-size:.5rem;letter-spacing:3px;text-transform:uppercase;color:rgba(228,221,208,.25);text-align:center;margin-top:.3rem}
+
+/* === ARTICLES === */
+.art-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem}
+.art{padding:1.2rem;border:1px solid rgba(228,221,208,.04);background:rgba(255,255,255,.015);border-radius:2px;text-decoration:none;color:inherit;display:block;transition:all .3s}
+.art:hover{border-color:rgba(201,149,42,.1);background:rgba(255,255,255,.03)}
+.art-tag{font-family:var(--f-display);font-size:.5rem;letter-spacing:3px;text-transform:uppercase;color:var(--gold);opacity:.35;margin-bottom:.2rem}
+.art-title{font-size:.82rem;font-weight:600;line-height:1.7}
+@media(max-width:768px){.art-grid{grid-template-columns:1fr}}
+
+/* === QUOTE === */
+.quote-wrap{text-align:center;max-width:600px;margin:0 auto}
+.quote-line{width:35px;height:1px;background:var(--gold);margin:0 auto 2.5rem;opacity:.2}
+.quote-text{font-family:var(--f-brush);font-size:clamp(1.2rem,2.8vw,2rem);line-height:1.8}
+.quote-from{margin-top:1.5rem;font-family:var(--f-display);font-size:.55rem;letter-spacing:5px;text-transform:uppercase;color:var(--gold);opacity:.3}
+
+/* === FOOTER === */
+.footer{text-align:center;padding:3rem 2rem 2rem;border-top:1px solid rgba(228,221,208,.04)}
+.footer-links{display:flex;justify-content:center;gap:.6rem;margin-bottom:1.5rem}
+.footer-links a{width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--moon);text-decoration:none;font-size:.8rem;border:1px solid rgba(228,221,208,.05);border-radius:2px;transition:all .3s}
+.footer-links a:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px)}
+.footer-credit{font-family:var(--f-display);font-size:.55rem;letter-spacing:3px;color:rgba(228,221,208,.12)}
+.footer-credit a{color:var(--crystal-bright);text-decoration:none}
+
+/* === ANIM STATES === */
+.reveal{opacity:0;transform:translateY(40px)}
+    </style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader" id="loader"><div class="ld-moon"><div class="ld-shadow"></div></div><div class="ld-text">The 13 Moons</div></div>
+
+<!-- CANVAS -->
+<canvas id="cosmos"></canvas>
+<div class="grain"></div>
+<div class="scroll-progress" id="progBar"></div>
+
+<!-- NAV -->
+<a href="/guild/" class="back-nav"><i class="fas fa-arrow-left"></i> Guild</a>
+<div class="social-fix">
+    <a href="https://www.threads.net/@tera.happiness" target="_blank" rel="noopener"><i class="fab fa-threads"></i></a>
+    <a href="https://www.instagram.com/tera.happiness/" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
+    <a href="https://line.me/R/ti/p/@802evrqy" target="_blank" rel="noopener"><i class="fab fa-line"></i></a>
+</div>
+
+<!-- ===================== CHAPTERS ===================== -->
+
+<!-- CH1: HERO — visible immediately, no reveal class -->
+<section class="ch" id="ch-hero">
+<div class="ch-inner hero-wrap">
+    <img class="hero-av" src="/assets/img/guild/tera_happiness/avatar_hd.webp" alt="Tera">
+    <h1 class="hero-name">Tera</h1>
+    <div class="hero-en">Mayan Calendar Reader · Life Coach · Healer</div>
+    <div class="hero-tagline">從身不由己 到我也可以</div>
+    <p class="hero-sub">陪伴你與高敏共存、擺脫內耗<br>拿回人生的情緒主導權</p>
+    <div class="hero-scroll"><span>Scroll</span><div class="scroll-line"></div></div>
+</div>
+</section>
+
+<!-- CH2: PRAYER WOOD -->
+<section class="ch" id="ch-prayer">
+<div class="ch-inner prayer-wrap">
+    <div class="ch-label">The Origin</div>
+    <p class="prayer-context">當大家在祈願木上寫著「台大經濟」、「政大法律」</p>
+    <p class="prayer-main">我寫的是：<br>願我成為一粒美麗的塵埃，那就足夠了。</p>
+    <p class="prayer-note">— 1,120 likes</p>
+</div>
+</section>
+
+<!-- CH3: TIMELINE -->
+<section class="ch" id="ch-story" style="align-items:flex-start;padding-top:clamp(6rem,12vw,10rem)">
+<div class="ch-inner">
+    <div class="ch-label reveal">The Journey</div>
+    <h2 class="ch-title reveal">生命的轉折</h2>
+    <div class="tl">
+        <div class="tl-n reveal"><div class="tl-dot"></div><div class="tl-era">The Teacher</div><div class="tl-title">國中資優班國文老師</div><div class="tl-desc">站在講台上，陪伴一屆又一屆的孩子成長。在文字裡看見人心的複雜，在教室裡種下對「人」的深刻理解。</div></div>
+        <div class="tl-n reveal"><div class="tl-dot"></div><div class="tl-era">The Scholar</div><div class="tl-title">嘉大輔導與諮商碩士</div><div class="tl-desc">深入榮格、阿德勒、完形治療的世界。取得教育部家庭教育專業認證，成為 1980 義務張老師。</div></div>
+        <div class="tl-n reveal"><div class="tl-dot"></div><div class="tl-era">The Awakening</div><div class="tl-title">遇見馬雅十三月亮曆</div><div class="tl-desc">透過馬雅曆陪伴自己和家人度過生命的無助與低潮。這套古老的宇宙智慧，成為助人的工具。</div></div>
+        <div class="tl-n reveal"><div class="tl-dot"></div><div class="tl-era">Now</div><div class="tl-title">幸福指引教練</div><div class="tl-desc">馬雅曆解讀師、塔羅占卜師、生活教練。七屆信念改寫陪跑營，150+ 個案。興趣廣泛到停不下來 — 健身、水晶礦石、莊子哲學。曾把迪士尼城堡設為手機桌布，那年夏天真的免費玩遍四座美國迪士尼。和先生撐過四年跨國遠距離戀愛。我相信顯化，更相信行動。</div></div>
+    </div>
+</div>
+</section>
+
+<!-- CH4: BODY MIND SPIRIT -->
+<section class="ch" id="ch-bms">
+<div class="ch-inner">
+    <div class="ch-label reveal">Body, Mind, Spirit</div>
+    <h2 class="ch-title reveal">真正的身心靈</h2>
+    <div class="ch-sub reveal">不是玄學，而是有心理學根基的整合療癒。</div>
+    <div class="tri-row">
+        <div class="tri reveal" data-realm="body"><div class="tri-char c-body">身</div><div class="tri-en">Body</div><ul class="tri-list"><li>穴位按摩與撥筋保養</li><li>健身有氧訓練</li><li>皮拉提斯 Pilates</li><li>身體覺察與深度放鬆</li></ul></div>
+        <div class="tri reveal" data-realm="mind"><div class="tri-char c-mind">心</div><div class="tri-en">Mind</div><ul class="tri-list"><li>榮格 / 阿德勒 / 完形</li><li>莊子與蘇軾的哲思</li><li>自我覺察與內省</li><li>情緒辨識與調適</li></ul></div>
+        <div class="tri reveal" data-realm="spirit"><div class="tri-char c-spirit">靈</div><div class="tri-en">Spirit</div><ul class="tri-list"><li>馬雅十三月亮曆</li><li>水晶與原礦能量</li><li>靈魂訊息接收</li><li>塔羅牌占卜</li></ul></div>
+    </div>
+</div>
+</section>
+
+<!-- CH5: MAYA -->
+<section class="ch" id="ch-maya" style="align-items:flex-start;padding-top:clamp(4rem,8vw,6rem);min-height:auto">
+<div class="ch-inner">
+    <div class="ch-label">The Map</div>
+    <h2 class="ch-title">你的星際印記</h2>
+    <div class="ch-sub">每個人出生的那一刻，宇宙就在你身上蓋了一枚獨特的印記。<br>馬雅曆不是算命，而是一張讀懂自己的地圖。</div>
+    <div class="maya-nums">
+        <div class="maya-n"><div class="maya-n-val">13</div><div class="maya-n-label">你的節奏</div><div class="maya-n-desc">13 種銀河音調，對應你的內在運作節拍。</div></div>
+        <div class="maya-n"><div class="maya-n-val">20</div><div class="maya-n-label">你的天賦</div><div class="maya-n-desc">20 種太陽圖騰，每一種都是獨特的能量原型。</div></div>
+        <div class="maya-n"><div class="maya-n-val">260</div><div class="maya-n-label">你的密碼</div><div class="maya-n-desc">13 x 20 = 260 組獨一無二的星際印記。</div></div>
+    </div>
+    <div class="seals-wrap"><div class="seals-track" id="sealsTrack"></div></div>
+
+    <!-- What IS the Mayan Calendar? -->
+    <div style="max-width:650px;margin:3rem auto 0;text-align:center" class="reveal">
+        <p style="font-size:.82rem;color:var(--moon-dim);line-height:2.2;font-weight:300">馬雅十三月亮曆不是「占卜」，它是一套時間哲學。古馬雅人相信時間不是直線前進，而是像螺旋一樣循環上升。每個人出生的那一天，對應一個獨特的「Kin」（星際印記），由一個<strong style="color:var(--moon)">音調</strong>和一個<strong style="color:var(--moon)">圖騰</strong>組合而成。</p>
+    </div>
+
+    <!-- Four color families -->
+    <div style="display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;margin:2.5rem 0 1rem" class="reveal">
+        <div style="text-align:center"><div style="width:10px;height:10px;border-radius:50%;background:var(--red);margin:0 auto .4rem"></div><div style="font-size:.65rem;color:var(--moon-dim)">紅 · 東方<br><span style="font-family:var(--f-display);font-size:.55rem;letter-spacing:1px">啟動 Initiate</span></div></div>
+        <div style="text-align:center"><div style="width:10px;height:10px;border-radius:50%;background:rgba(240,237,224,.6);margin:0 auto .4rem"></div><div style="font-size:.65rem;color:var(--moon-dim)">白 · 北方<br><span style="font-family:var(--f-display);font-size:.55rem;letter-spacing:1px">精煉 Refine</span></div></div>
+        <div style="text-align:center"><div style="width:10px;height:10px;border-radius:50%;background:var(--blue);margin:0 auto .4rem"></div><div style="font-size:.65rem;color:var(--moon-dim)">藍 · 西方<br><span style="font-family:var(--f-display);font-size:.55rem;letter-spacing:1px">轉化 Transform</span></div></div>
+        <div style="text-align:center"><div style="width:10px;height:10px;border-radius:50%;background:var(--yellow);margin:0 auto .4rem"></div><div style="font-size:.65rem;color:var(--moon-dim)">黃 · 南方<br><span style="font-family:var(--f-display);font-size:.55rem;letter-spacing:1px">成熟 Ripen</span></div></div>
+    </div>
+    <p style="text-align:center;font-size:.72rem;color:rgba(228,221,208,.35);margin-bottom:2rem;font-weight:300" class="reveal">每個圖騰屬於一個顏色家族，代表不同的能量方向。</p>
+
+    <!-- Seal Glossary: expanded with 8 key seals -->
+    <div class="seal-glossary">
+        <div class="sg-item"><div class="sg-color sg-red"></div><div class="sg-body"><div class="sg-name">紅龍 <span>Red Dragon</span></div><div class="sg-meaning">創始與滋養。馬雅曆的第一個圖騰，象徵生命的起源與母性的力量。紅龍人天生有照顧他人的本能，但也需要學會接受被照顧。</div></div></div>
+        <div class="sg-item"><div class="sg-color sg-white"></div><div class="sg-body"><div class="sg-name">白風 <span>White Wind</span></div><div class="sg-meaning">溝通與靈感。白風是精神的呼吸，善於透過語言、文字、音樂傳遞訊息。他們是天生的傳遞者，把看不見的感受化為看得見的表達。</div></div></div>
+        <div class="sg-item"><div class="sg-color sg-blue"></div><div class="sg-body"><div class="sg-name">藍夜 <span>Blue Night</span></div><div class="sg-meaning">夢想與豐盛。藍夜掌管潛意識和夢境的領域。他們的內在世界極其豐富，擅長把夢想落地為現實。直覺是他們最強的武器。</div></div></div>
+        <div class="sg-item"><div class="sg-color sg-yellow"></div><div class="sg-body"><div class="sg-name">黃種子 <span>Yellow Seed</span></div><div class="sg-meaning">覺醒與耐心。黃種子相信每一個想法都是一顆種子，需要時間和養分才能開花。他們是播種者，用知識和啟發改變周圍的人。</div></div></div>
+        <div class="sg-item"><div class="sg-color sg-white"></div><div class="sg-body"><div class="sg-name">白世界橋 <span>White World-Bridger</span></div><div class="sg-meaning">放下與連結。幫助你釋放不再需要的執著，在不同世界之間建立橋樑。白世界橋教你：放手，才能接住新的可能。</div></div></div>
+        <div class="sg-item"><div class="sg-color sg-blue"></div><div class="sg-body"><div class="sg-name">藍手 <span>Blue Hand</span></div><div class="sg-meaning">療癒與完成。藍手是天生的療癒者，用雙手創造、修復、實踐。他們需要「做」才能理解 — 知道、感受、然後完成。</div></div></div>
+        <div class="sg-item"><div class="sg-color sg-red"></div><div class="sg-body"><div class="sg-name">紅月亮 <span>Red Moon</span></div><div class="sg-meaning">流動與淨化。紅月亮教你跟著感覺走，不抗拒情緒的流動。水能載舟，情緒不是敵人 — 它是你最誠實的訊號。</div></div></div>
+        <div class="sg-item"><div class="sg-color sg-yellow"></div><div class="sg-body"><div class="sg-name">黃太陽 <span>Yellow Sun</span></div><div class="sg-meaning">光明與覺醒。馬雅曆的最後一個圖騰，象徵無條件的愛與生命的圓滿。黃太陽人自帶光源，他們的課題是學會不被自己的光灼傷。</div></div></div>
+    </div>
+
+    <div style="margin-top:2rem">
+        <div class="ch-label">Your 5 Imprints</div>
+        <p class="ch-sub">在一次解讀中，我會幫你看這 5 個位置。<br>它們組成你的「星際十字」。</p>
+        <div class="kin-cross">
+            <div class="kp top"><div class="kp-role">Guide</div><div class="kp-name">引導力量</div><div class="kp-desc">指引你前進方向的能量</div></div>
+            <div class="kp left"><div class="kp-role">Support</div><div class="kp-name">支持力量</div><div class="kp-desc">總是在背後撐住你的能量</div></div>
+            <div class="kp ctr"><div class="kp-role">Main Seal</div><div class="kp-name">主印記</div><div class="kp-desc">你的核心本質與天賦</div></div>
+            <div class="kp right"><div class="kp-role">Challenge</div><div class="kp-name">挑戰力量</div><div class="kp-desc">推動你成長的課題</div></div>
+            <div class="kp btm"><div class="kp-role">Hidden</div><div class="kp-name">隱藏力量</div><div class="kp-desc">壓力下反而會爆發的天賦</div></div>
+        </div>
+    </div>
+    <div style="margin-top:3rem">
+        <div class="ch-label">The Shift</div>
+        <p style="text-align:center;font-family:var(--f-brush);font-size:clamp(1.2rem,2.2vw,1.6rem);margin-bottom:1.5rem" class="reveal">一次解讀，四個轉變</p>
+        <div class="tf-grid">
+            <div class="tf"><div class="tf-from">內在節奏混亂，不知道自己的步調</div><div class="tf-to">聽見自己的節拍，找到你的時區</div><div class="tf-desc">你不需要跟上別人的速度。馬雅曆告訴你，你的靈魂本來就有自己的運行節奏。</div></div>
+            <div class="tf"><div class="tf-from">懷疑自己的特質是缺點</div><div class="tf-to">理解那就是你的能量本質</div><div class="tf-desc">「三分鐘熱度」也許不是缺陷，而是你天生的創意設計模式。</div></div>
+            <div class="tf"><div class="tf-from">迷失方向，不知道該往哪走</div><div class="tf-to">看見你的靈魂藍圖</div><div class="tf-desc">你來到這個世界是有使命的，你的星際印記裡已經寫好了答案。</div></div>
+            <div class="tf"><div class="tf-from">總是照顧別人，忘了自己</div><div class="tf-to">學會照顧自己的能量場</div><div class="tf-desc">你的付出是真心的，但你也值得被接住。</div></div>
+        </div>
+    </div>
+</div>
+</section>
+
+<!-- CH6: QUIZ -->
+<section class="ch" id="ch-quiz">
+<div class="ch-inner">
+    <div class="ch-label reveal">Discover Yourself</div>
+    <h2 class="ch-title reveal">你的隱藏情緒卡在哪裡？</h2>
+    <div class="quiz-box" id="quizBox"></div>
+</div>
+</section>
+
+<!-- CH7: SERVICES -->
+<section class="ch" id="ch-svc" style="align-items:flex-start;padding-top:clamp(5rem,10vw,8rem)">
+<div class="ch-inner">
+    <div class="ch-label reveal">Services</div>
+    <h2 class="ch-title reveal">我能陪你做的事</h2>
+    <div class="svc-grid">
+        <div class="svc reveal"><div class="svc-body"><div style="font-size:1.5rem;color:var(--gold);opacity:.4;margin-bottom:.8rem"><i class="fas fa-sun"></i></div><div class="svc-name">馬雅曆一對一解讀</div><div class="svc-desc">找到你的星際印記，理解你的靈魂節奏。約 60-90 分鐘，透過出生日解碼你的專屬天賦地圖。</div><span class="svc-badge">預約諮詢制</span></div></div>
+        <div class="svc reveal"><img class="svc-img" loading="lazy" src="/assets/img/guild/tera_happiness/belief_rewriting.webp" alt=""><div class="svc-body"><div class="svc-name">21 天信念改寫陪跑</div><div class="svc-desc">一支筆＋一本筆記本＋對話覺察 = 翻轉限制性信念的書寫旅程。每日一對一批改、2 次諮詢、2 場讀書討論。</div><span class="svc-badge">已開設 7 屆</span></div></div>
+        <div class="svc reveal"><img class="svc-img" loading="lazy" src="/assets/img/guild/tera_happiness/family_healing.webp" alt=""><div class="svc-body"><div class="svc-name">原生家庭故事療癒</div><div class="svc-desc">四週深度陪伴課程，結合心理學、馬雅曆與人類圖，探索內在小孩，重新改寫家庭帶給你的故事。</div><span class="svc-badge">四週陪伴課程</span></div></div>
+    </div>
+</div>
+</section>
+
+<!-- CH8: PROOF -->
+<section class="ch" id="ch-proof" style="align-items:flex-start;padding-top:clamp(5rem,10vw,8rem)">
+<div class="ch-inner">
+    <div class="ch-label reveal">Voices</div>
+    <h2 class="ch-title reveal">他們這樣說</h2>
+    <div class="testi-wrap" id="testiWrap">
+        <div class="testi-inner" id="testiInner">
+            <div class="testi-slide"><p class="testi-text">「Tera 的話語充滿溫暖和肯定，不管是馬雅曆還是塔羅，都非常有洞察力，能針對我的個人圖騰特質給出實際建議。最重要的是，讓我感受到真正被聽見。」</p><p class="testi-from">— Maya Calendar Client</p></div>
+            <div class="testi-slide"><p class="testi-text">「自我覺察能力提高了，跟他人之間的界線也更清楚。透過書寫，感覺這幾天的結被撫平了。」</p><p class="testi-from">— Belief Rewriting Cohort 6</p></div>
+            <div class="testi-slide"><p class="testi-text">「我原本不太相信塔羅或占卜⋯⋯但這次在十字路口有個兩難抉擇，想說試試看⋯⋯沒想到跟我實際狀況很吻合，確實幫助我下定決心。」</p><p class="testi-from">— Tarot Reading Client</p></div>
+            <div class="testi-slide"><p class="testi-text">「透過馬雅曆分析幫助我和媽媽的關係溝通。原本很衝突的母女，卻找到了共通點，加深了信任和連結。」</p><p class="testi-from">— Family Healing Client</p></div>
+        </div>
+    </div>
+    <div class="testi-dots" id="testiDots"></div>
+
+    <div class="impact-row">
+        <div class="reveal"><div class="imp-n" data-to="150">0</div><div class="imp-l">Cases Guided</div></div>
+        <div class="reveal"><div class="imp-n" data-to="7">0</div><div class="imp-l">Cohorts Led</div></div>
+        <div class="reveal"><div class="imp-n" data-to="13">0</div><div class="imp-l">Articles</div></div>
+    </div>
+
+    <div class="ch-label reveal" style="margin-top:3rem">My Work</div>
+    <h2 class="ch-title reveal">療癒的日常</h2>
+    <div class="works-grid">
+        <div class="work reveal"><img loading="lazy" src="/assets/img/guild/tera_happiness/belief_rewriting.webp" alt=""><div class="work-ov"><div class="work-tag">Course</div><div class="work-title">21天信念改寫陪跑 7.0</div></div></div>
+        <div class="work reveal"><img loading="lazy" src="/assets/img/guild/tera_happiness/family_healing.webp" alt=""><div class="work-ov"><div class="work-tag">Course</div><div class="work-title">原生家庭故事療癒改寫課</div></div></div>
+        <div class="work reveal"><img loading="lazy" src="/assets/img/guild/tera_happiness/workshop.webp" alt=""><div class="work-ov"><div class="work-tag">Workshop</div><div class="work-title">春分覺察 x 重拾生活的溫柔</div></div></div>
+        <div class="work reveal"><img loading="lazy" src="/assets/img/guild/tera_happiness/infographic.webp" alt=""><div class="work-ov"><div class="work-tag">Education</div><div class="work-title">了解「親職化」(小大人)</div></div></div>
+        <div class="work reveal"><img loading="lazy" src="/assets/img/guild/tera_happiness/conversation.webp" alt=""><div class="work-ov"><div class="work-tag">Conversation</div><div class="work-title">你也在追求一份安定感嗎？</div></div></div>
+        <div class="work reveal"><img loading="lazy" src="/assets/img/guild/tera_happiness/past_vs_present.webp" alt=""><div class="work-ov"><div class="work-tag">Story</div><div class="work-title">從教室到療癒室的蛻變</div></div></div>
+    </div>
+
+    <div style="margin-top:3rem">
+        <div class="ch-label reveal">Writings</div>
+        <h2 class="ch-title reveal">療癒草原專欄</h2>
+        <div class="art-grid">
+            <a class="art reveal" href="https://healingrassland.com/2879/" target="_blank" rel="noopener"><div class="art-tag">Psychology</div><div class="art-title">從阿德勒心理學看「受害者情節」與「自卑補償」</div></a>
+            <a class="art reveal" href="https://healingrassland.com/2986/" target="_blank" rel="noopener"><div class="art-tag">Maya + Tarot</div><div class="art-title">從塔羅牌與馬雅曆看愛人愛己的平衡</div></a>
+            <a class="art reveal" href="https://healingrassland.com/2949/" target="_blank" rel="noopener"><div class="art-tag">Career</div><div class="art-title">從塔羅牌與馬雅曆看職涯選擇與自我定位</div></a>
+            <a class="art reveal" href="https://healingrassland.com/2875/" target="_blank" rel="noopener"><div class="art-tag">Self-Growth</div><div class="art-title">人生最大的成就是成為你自己</div></a>
+        </div>
+    </div>
+</div>
+</section>
+
+<!-- CH9: CLOSE -->
+<section class="ch" id="ch-close">
+<div class="ch-inner" style="text-align:center;max-width:600px">
+    <div class="quote-line"></div>
+    <p class="quote-text reveal">容許自己是一個會疲累、會犯錯、且正在過程中的人，是通往自由的第一步。</p>
+    <div class="quote-from reveal">— Tera Happiness</div>
+
+    <!-- CTA -->
+    <div class="reveal" style="margin-top:3.5rem">
+        <p style="font-size:.82rem;color:var(--moon-dim);line-height:2;margin-bottom:1.5rem">如果這裡的文字讓你有一點點被觸動，<br>也許這就是你的靈魂在提醒你：<br>是時候好好認識自己了。</p>
+        <a href="https://line.me/R/ti/p/@802evrqy" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 2rem;font-size:.82rem;color:var(--gold);border:1px solid var(--gold);border-radius:2px;text-decoration:none;transition:all .3s;font-family:var(--f-tc)"><i class="fab fa-line"></i> 預約一對一諮詢</a>
+    </div>
+
+    <!-- Social -->
+    <div class="reveal" style="margin-top:3rem;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap">
+        <a href="https://www.threads.net/@tera.happiness" target="_blank" rel="noopener" style="font-size:.7rem;color:var(--moon-dim);text-decoration:none;display:flex;align-items:center;gap:.3rem;transition:color .3s"><i class="fab fa-threads"></i> Threads</a>
+        <a href="https://www.instagram.com/tera.happiness/" target="_blank" rel="noopener" style="font-size:.7rem;color:var(--moon-dim);text-decoration:none;display:flex;align-items:center;gap:.3rem;transition:color .3s"><i class="fab fa-instagram"></i> Instagram</a>
+        <a href="https://linkgoods.com/terahappiness" target="_blank" rel="noopener" style="font-size:.7rem;color:var(--moon-dim);text-decoration:none;display:flex;align-items:center;gap:.3rem;transition:color .3s"><i class="fas fa-link"></i> LinkGoods</a>
+        <a href="https://healingrassland.com/author/h25329" target="_blank" rel="noopener" style="font-size:.7rem;color:var(--moon-dim);text-decoration:none;display:flex;align-items:center;gap:.3rem;transition:color .3s"><i class="fas fa-pen-fancy"></i> 療癒草原</a>
+    </div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <p class="footer-credit">Made with <span style="color:var(--crystal-bright)">♥</span> by <a href="/">SuperGalen's Dungeon</a></p>
+</footer>
+
+<!-- ===================== SCRIPTS ===================== -->
+<script>
+(function(){
+'use strict';
+gsap.registerPlugin(ScrollTrigger);
+
+/* ===== LOADER ===== */
+window.addEventListener('load',function(){setTimeout(function(){gsap.to('#loader',{opacity:0,duration:.8,onComplete:function(){document.getElementById('loader').style.display='none'}})},500)});
+
+/* ===== CANVAS: CONTENT-DRIVEN COSMOS ===== */
+var cv=document.getElementById('cosmos'),ctx=cv.getContext('2d'),W,H;
+var MX=0,MY=0; // mouse for parallax
+function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight}
+resize();window.addEventListener('resize',resize);
+document.addEventListener('mousemove',function(e){MX=e.clientX;MY=e.clientY});
+
+// Stars: each has home position + current position (for convergence)
+var N_STARS=500;var STARS=[];
+for(var i=0;i<N_STARS;i++){
+    var hx=Math.random(),hy=Math.random();
+    STARS.push({hx:hx,hy:hy,x:hx,y:hy,s:Math.random()*.7+.3,ph:Math.random()*Math.PI*2,sp:Math.random()*.0005+.0001,chaos:Math.random()*.003});
+}
+
+// Ripple system: content interactions trigger visible ripples
+var ripples=[];
+function addRipple(nx,ny,r,g,b){ripples.push({x:nx,y:ny,r:0,maxR:Math.max(W,H)*.6,a:1,cr:r,cg:g,cb:b})}
+
+// State
+var S={
+    ring:0,warmth:0,starDim:0,converge:0,
+    bmsBody:0,bmsMind:0,bmsSpirit:0, // hover-driven BMS nebulae
+    quizTint:[0,0,0], // accumulated quiz answer color
+    closeP:0
+};
+
+// BMS hover: when mouse hovers a .tri column, that realm's nebula flares
+document.querySelectorAll('.tri[data-realm]').forEach(function(el){
+    el.addEventListener('mouseenter',function(){S['bms'+el.dataset.realm.charAt(0).toUpperCase()+el.dataset.realm.slice(1)]=1});
+    el.addEventListener('mouseleave',function(){S['bms'+el.dataset.realm.charAt(0).toUpperCase()+el.dataset.realm.slice(1)]=0});
+});
+
+function draw(){
+    requestAnimationFrame(draw);
+    var t=Date.now()*.001;
+    ctx.clearRect(0,0,W,H);
+
+    // Mouse parallax offset (subtle)
+    var px=(MX/W-.5)*.015, py=(MY/H-.5)*.015;
+
+    // Background
+    var wr=S.warmth;
+    var bgR=8+wr*22,bgG=6+wr*12,bgB=14-wr*10;
+    var grd=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);
+    grd.addColorStop(0,'rgb('+~~(bgR+10)+','+~~(bgG+8)+','+~~(bgB+10)+')');
+    grd.addColorStop(1,'rgb('+~~bgR+','+~~bgG+','+~~bgB+')');
+    ctx.fillStyle=grd;ctx.fillRect(0,0,W,H);
+
+    // === STARS with convergence + chaos ===
+    var cf=S.converge,sd=S.starDim;
+    var alpha=1-sd*.7;
+    ctx.save();
+    for(var i=0;i<N_STARS;i++){
+        var s=STARS[i];
+        s.ph+=s.sp;
+        // Target position: home or center (converge)
+        var tx=s.hx*(1-cf)+.5*cf;
+        var ty=s.hy*(1-cf)+.5*cf;
+        s.x+=(tx-s.x)*.06;
+        s.y+=(ty-s.y)*.06;
+        // Chaos: slight random drift when converge=0
+        if(cf<.1){s.x+=Math.sin(t*s.chaos*50+i)*.0003;s.y+=Math.cos(t*s.chaos*50+i*.7)*.0003}
+
+        var fl=(.4+Math.sin(s.ph)*.6)*alpha;
+        var sz=s.s*(1+cf*3); // grow when converging
+        var sx=(s.x+px*.5)*W, sy=(s.y+py*.5)*H;
+
+        ctx.globalAlpha=fl;
+        ctx.fillStyle='#e4ddd0';
+        ctx.beginPath();ctx.arc(sx,sy,sz,0,Math.PI*2);ctx.fill();
+        // Glow
+        if(sz>1.2){ctx.globalAlpha=fl*.1;ctx.beginPath();ctx.arc(sx,sy,sz*4,0,Math.PI*2);ctx.fill()}
+    }
+    ctx.restore();
+
+    // === CENTRAL LIGHT: "一粒美麗的塵埃" — the single beautiful speck ===
+    if(cf>.02){
+        ctx.save();
+        var intensity=cf;
+        // Core blaze
+        var g2=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,40+250*(1-intensity));
+        g2.addColorStop(0,'rgba(255,240,200,'+(intensity*.7)+')');
+        g2.addColorStop(.15,'rgba(232,191,90,'+(intensity*.4)+')');
+        g2.addColorStop(.5,'rgba(201,149,42,'+(intensity*.1)+')');
+        g2.addColorStop(1,'transparent');
+        ctx.fillStyle=g2;ctx.fillRect(0,0,W,H);
+        // Inner white-hot core
+        if(intensity>.5){
+            ctx.globalAlpha=(intensity-.5)*1.5;
+            ctx.fillStyle='#fff8e8';
+            ctx.beginPath();ctx.arc(W/2,H/2,3+intensity*5,0,Math.PI*2);ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // === MAYAN RINGS with mouse parallax ===
+    if(S.ring>.01){
+        var rFactor=S.ring;
+        var baseR=Math.min(W,H)*(.1+rFactor*.45);
+        var rA=rFactor*.85;
+        var rSpd=.2+rFactor*2.5;
+        var lw=.4+rFactor*2.5;
+        // Parallax offset: rings tilt with mouse
+        var rcx=W/2+px*50*rFactor, rcy=H/2+py*50*rFactor;
+
+        ctx.save();ctx.translate(rcx,rcy);
+
+        // Outer ring (gold) + thick glow
+        ctx.save();ctx.rotate(t*.15*rSpd);
+        ctx.strokeStyle='#c9952a';
+        ctx.globalAlpha=rA*.12;ctx.lineWidth=lw*8;ctx.beginPath();ctx.arc(0,0,baseR,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=rA;ctx.lineWidth=lw;ctx.beginPath();ctx.arc(0,0,baseR,0,Math.PI*2);ctx.stroke();
+        ctx.restore();
+
+        // Middle ring (purple)
+        ctx.save();ctx.rotate(-t*.25*rSpd);
+        ctx.strokeStyle='#7b5ea7';
+        ctx.globalAlpha=rA*.08;ctx.lineWidth=lw*5;ctx.beginPath();ctx.arc(0,0,baseR*.68,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=rA*.55;ctx.lineWidth=lw*.7;ctx.beginPath();ctx.arc(0,0,baseR*.68,0,Math.PI*2);ctx.stroke();
+        ctx.restore();
+
+        // Inner ring (bright gold)
+        ctx.save();ctx.rotate(t*.4*rSpd);
+        ctx.strokeStyle='#e8bf5a';ctx.globalAlpha=rA*.8;ctx.lineWidth=lw*.5;
+        ctx.beginPath();ctx.arc(0,0,baseR*.38,0,Math.PI*2);ctx.stroke();
+        ctx.restore();
+
+        // 13 moon dots with glow trails
+        ctx.save();ctx.rotate(t*.15*rSpd);
+        for(var m=0;m<13;m++){
+            var a=(m/13)*Math.PI*2;
+            var dotSz=2+rFactor*5;
+            var dx=Math.cos(a)*baseR,dy=Math.sin(a)*baseR;
+            var pulse=.4+Math.sin(t*1.8+m*.5)*.4;
+            // Glow
+            ctx.globalAlpha=rA*pulse*.1;ctx.fillStyle='#e8bf5a';
+            ctx.beginPath();ctx.arc(dx,dy,dotSz*5,0,Math.PI*2);ctx.fill();
+            // Dot
+            ctx.globalAlpha=rA*pulse;
+            ctx.beginPath();ctx.arc(dx,dy,dotSz,0,Math.PI*2);ctx.fill();
+        }
+        ctx.restore();
+
+        // Radial lines
+        ctx.save();ctx.rotate(t*.15*rSpd);
+        ctx.strokeStyle='#c9952a';ctx.lineWidth=lw*.25;
+        for(var l=0;l<13;l++){
+            var la=(l/13)*Math.PI*2;
+            ctx.globalAlpha=rA*.2+Math.sin(t+l)*.05;
+            ctx.beginPath();ctx.moveTo(Math.cos(la)*baseR*.25,Math.sin(la)*baseR*.25);
+            ctx.lineTo(Math.cos(la)*baseR*1.05,Math.sin(la)*baseR*1.05);ctx.stroke();
+        }
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    // === BMS: HOVER-REACTIVE NEBULAE ===
+    // Each nebula lerps toward its target (0 or 1) based on hover
+    var bmsColors=[[90,158,111],[167,139,250],[201,149,42]];
+    var bmsKeys=['bmsBody','bmsMind','bmsSpirit'];
+    var bmsX=[.22,.5,.78];
+    for(var bi=0;bi<3;bi++){
+        var target=S[bmsKeys[bi]];
+        var key='_bms'+bi;
+        if(!S[key]) S[key]=0;
+        S[key]+=(target-S[key])*.08; // smooth lerp
+        if(S[key]>.005){
+            var bc=bmsColors[bi];
+            ctx.save();
+            // Large nebula bloom — VERY visible
+            ctx.globalAlpha=S[key]*.45;
+            var g4=ctx.createRadialGradient(bmsX[bi]*W,H/2,0,bmsX[bi]*W,H/2,H*.5);
+            g4.addColorStop(0,'rgb('+bc[0]+','+bc[1]+','+bc[2]+')');
+            g4.addColorStop(.4,'rgba('+bc[0]+','+bc[1]+','+bc[2]+',0.3)');
+            g4.addColorStop(1,'transparent');
+            ctx.fillStyle=g4;ctx.fillRect(0,0,W,H);
+            // Inner bright core
+            ctx.globalAlpha=S[key]*.7;
+            var g5=ctx.createRadialGradient(bmsX[bi]*W,H/2,0,bmsX[bi]*W,H/2,80);
+            g5.addColorStop(0,'rgba(255,255,255,.2)');g5.addColorStop(1,'transparent');
+            ctx.fillStyle=g5;ctx.fillRect(0,0,W,H);
+            ctx.restore();
+        }
+    }
+
+    // === RIPPLES (from quiz answers, service hovers, etc.) ===
+    for(var ri=ripples.length-1;ri>=0;ri--){
+        var rp=ripples[ri];
+        rp.r+=rp.maxR*.012;
+        rp.a=Math.max(0,1-rp.r/rp.maxR);
+        if(rp.a<=0){ripples.splice(ri,1);continue}
+        ctx.save();ctx.globalAlpha=rp.a*.15;
+        ctx.strokeStyle='rgb('+rp.cr+','+rp.cg+','+rp.cb+')';
+        ctx.lineWidth=2+rp.r*.01;
+        ctx.beginPath();ctx.arc(rp.x*W,rp.y*H,rp.r,0,Math.PI*2);ctx.stroke();
+        // Inner glow ring
+        ctx.globalAlpha=rp.a*.06;ctx.lineWidth=rp.r*.15;
+        ctx.beginPath();ctx.arc(rp.x*W,rp.y*H,rp.r,0,Math.PI*2);ctx.stroke();
+        ctx.restore();
+    }
+
+    // === QUIZ TINT: accumulated answer colors stain the cosmos ===
+    var qt=S.quizTint;
+    if(qt[0]+qt[1]+qt[2]>0){
+        ctx.save();ctx.globalAlpha=.04;
+        ctx.fillStyle='rgb('+~~qt[0]+','+~~qt[1]+','+~~qt[2]+')';
+        ctx.fillRect(0,0,W,H);
+        ctx.restore();
+    }
+
+    // === CLOSE: MOON ===
+    if(S.closeP>.01){
+        ctx.save();ctx.globalAlpha=S.closeP*.25;
+        // Moon glow
+        var mg=ctx.createRadialGradient(W/2,H*.32,0,W/2,H*.32,120);
+        mg.addColorStop(0,'rgba(228,221,208,.08)');mg.addColorStop(1,'transparent');
+        ctx.fillStyle=mg;ctx.fillRect(0,0,W,H);
+        // Moon body
+        ctx.fillStyle='#e4ddd0';
+        ctx.beginPath();ctx.arc(W/2,H*.32,30+S.closeP*8,0,Math.PI*2);ctx.fill();
+        ctx.globalCompositeOperation='destination-out';
+        ctx.beginPath();ctx.arc(W/2+12,H*.32-5,28+S.closeP*8,0,Math.PI*2);ctx.fill();
+        ctx.globalCompositeOperation='source-over';
+        ctx.restore();
+    }
+
+    // Progress bar
+    var sp=window.pageYOffset/(document.documentElement.scrollHeight-window.innerHeight)*100;
+    document.getElementById('progBar').style.width=sp+'%';
+}
+draw();
+
+/* ===== PINNED HERO — content visible immediately, fades out on scroll ===== */
+var heroTL=gsap.timeline({scrollTrigger:{trigger:'#ch-hero',start:'top top',end:'+=50%',pin:true,scrub:.8}});
+heroTL.to({},{duration:1.2})
+    .to('.hero-wrap',{opacity:0,y:-30,scale:.97,duration:.8});
+
+ScrollTrigger.create({trigger:'#ch-hero',start:'top top',end:'+=50%',scrub:true,
+    onUpdate:function(self){}});
+
+/* ===== PINNED PRAYER — stars converge ===== */
+var prayerTL=gsap.timeline({scrollTrigger:{trigger:'#ch-prayer',start:'top top',end:'+=80%',pin:true,scrub:.8}});
+prayerTL.from('.prayer-context',{opacity:0,y:40,duration:1})
+    .to({},{duration:.2})
+    .from('.prayer-main',{opacity:0,scale:.8,y:20,duration:1})
+    .to({},{duration:.3})
+    .from('.prayer-note',{opacity:0,duration:.4});
+
+ScrollTrigger.create({trigger:'#ch-prayer',start:'top top',end:'+=80%',scrub:true,
+    onUpdate:function(self){
+        S.converge=Math.sin(self.progress*Math.PI); // stars converge then release
+        S.starDim=self.progress*.5;
+        // no ring during prayer
+    }});
+
+/* ===== TIMELINE — normal scroll with reveals ===== */
+gsap.utils.toArray('#ch-story .reveal').forEach(function(el){
+    gsap.to(el,{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+});
+gsap.utils.toArray('.tl-n').forEach(function(n){
+    ScrollTrigger.create({trigger:n,start:'top 75%',onEnter:function(){n.classList.add('lit')},once:true});
+});
+ScrollTrigger.create({trigger:'#ch-story',start:'top 60%',end:'bottom 40%',scrub:true,
+    onUpdate:function(self){S.warmth=self.progress*.2}});
+
+/* ===== BMS — three colors bloom ===== */
+gsap.utils.toArray('#ch-bms .reveal').forEach(function(el){
+    gsap.to(el,{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+});
+ScrollTrigger.create({trigger:'#ch-bms',start:'top 60%',end:'bottom 40%',scrub:true,
+    onUpdate:function(self){S.bmsP=Math.sin(self.progress*Math.PI);S.warmth=self.progress*.15}});
+
+/* ===== MAYA — normal scroll, no pin ===== */
+// Each sub-section reveals as you scroll to it
+gsap.utils.toArray('#ch-maya .ch-label, #ch-maya .ch-title, #ch-maya .ch-sub').forEach(function(el){
+    gsap.from(el,{opacity:0,y:25,duration:.7,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 88%'}});
+});
+gsap.utils.toArray('.maya-n').forEach(function(el){
+    gsap.from(el,{opacity:0,y:30,duration:.6,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 88%'}});
+});
+gsap.from('.seals-wrap',{opacity:0,duration:.6,scrollTrigger:{trigger:'.seals-wrap',start:'top 90%'}});
+gsap.utils.toArray('.seal-glossary .sg-item').forEach(function(el){
+    gsap.from(el,{opacity:0,y:20,duration:.5,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 90%'}});
+});
+gsap.utils.toArray('.kin-cross .kp').forEach(function(el){
+    gsap.from(el,{opacity:0,scale:.85,duration:.5,ease:'back.out(1.5)',scrollTrigger:{trigger:el,start:'top 90%'}});
+});
+gsap.utils.toArray('.tf').forEach(function(el){
+    gsap.from(el,{opacity:0,x:-20,duration:.5,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 90%'}});
+});
+
+// Rings: tied to how far through Maya section you've scrolled
+ScrollTrigger.create({trigger:'#ch-maya',start:'top 80%',end:'bottom 20%',scrub:true,
+    onUpdate:function(self){
+        var p=self.progress;
+        // Ring: 0→1 (first 40%) → hold (40-60%) → 1→0 (60-100%)
+        if(p<.4) S.ring=Math.min(1,p*2.5);
+        else if(p<.6) S.ring=1;
+        else S.ring=Math.max(0,1-(p-.6)*2.5);
+        S.warmth=0;S.bmsP=0;S.converge=0;S.starDim=p*.3;
+    }});
+
+/* ===== QUIZ ===== */
+gsap.utils.toArray('#ch-quiz .reveal').forEach(function(el){
+    gsap.to(el,{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+});
+ScrollTrigger.create({trigger:'#ch-quiz',start:'top 60%',end:'bottom 40%',scrub:true,
+    onUpdate:function(self){S.starDim=0}});
+
+/* ===== SERVICES ===== */
+gsap.utils.toArray('#ch-svc .reveal').forEach(function(el){
+    gsap.to(el,{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+});
+ScrollTrigger.create({trigger:'#ch-svc',start:'top 60%',end:'bottom 40%',scrub:true,
+    onUpdate:function(self){S.warmth=self.progress*.6}});
+// Service card hover → spotlight ripple
+document.querySelectorAll('.svc').forEach(function(card){
+    card.addEventListener('mouseenter',function(){
+        var r=card.getBoundingClientRect();
+        addRipple((r.left+r.width/2)/W,(r.top+r.height/2)/H,201,149,42);
+    });
+});
+
+/* ===== PROOF ===== */
+gsap.utils.toArray('#ch-proof .reveal').forEach(function(el){
+    gsap.to(el,{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 88%'}});
+});
+ScrollTrigger.create({trigger:'#ch-proof',start:'top 60%',end:'bottom 40%',scrub:true,
+    onUpdate:function(self){S.warmth=.6-self.progress*.5}});
+
+/* ===== CLOSE ===== */
+gsap.utils.toArray('#ch-close .reveal').forEach(function(el){
+    gsap.to(el,{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+});
+ScrollTrigger.create({trigger:'#ch-close',start:'top 60%',end:'bottom 40%',scrub:true,
+    onUpdate:function(self){S.closeP=self.progress;S.warmth=0}});
+
+/* ===== SEALS CAROUSEL ===== */
+(function(){
+    var seals=[
+        {n:'Dragon',cn:'紅龍',c:'r',i:'fa-dragon'},{n:'Wind',cn:'白風',c:'w',i:'fa-wind'},
+        {n:'Night',cn:'藍夜',c:'b',i:'fa-moon'},{n:'Seed',cn:'黃種子',c:'y',i:'fa-seedling'},
+        {n:'Serpent',cn:'紅蛇',c:'r',i:'fa-worm'},{n:'World-Bridger',cn:'白世界橋',c:'w',i:'fa-bridge'},
+        {n:'Hand',cn:'藍手',c:'b',i:'fa-hand'},{n:'Star',cn:'黃星',c:'y',i:'fa-star'},
+        {n:'Moon',cn:'紅月亮',c:'r',i:'fa-moon'},{n:'Dog',cn:'白狗',c:'w',i:'fa-dog'},
+        {n:'Monkey',cn:'藍猴',c:'b',i:'fa-face-grin-wide'},{n:'Human',cn:'黃人類',c:'y',i:'fa-person'},
+        {n:'Skywalker',cn:'紅天行者',c:'r',i:'fa-person-walking'},{n:'Wizard',cn:'白巫師',c:'w',i:'fa-hat-wizard'},
+        {n:'Eagle',cn:'藍老鷹',c:'b',i:'fa-crow'},{n:'Warrior',cn:'黃戰士',c:'y',i:'fa-shield'},
+        {n:'Earth',cn:'紅地球',c:'r',i:'fa-earth-americas'},{n:'Mirror',cn:'白鏡子',c:'w',i:'fa-clone'},
+        {n:'Storm',cn:'藍風暴',c:'b',i:'fa-bolt'},{n:'Sun',cn:'黃太陽',c:'y',i:'fa-sun'}
+    ];
+    var html='';for(var r=0;r<2;r++) seals.forEach(function(s){
+        html+='<div class="seal"><div class="seal-icon '+s.c+'"><i class="fas '+s.i+'"></i></div><div class="seal-cn">'+s.cn+'</div><div class="seal-en">'+s.n+'</div></div>';
+    });
+    document.getElementById('sealsTrack').innerHTML=html;
+})();
+
+/* ===== QUIZ ===== */
+(function(){
+    var qs=[
+        {q:'當你在人群中感到不自在時，你通常會？',o:[{t:'主動照顧別人讓自己有事做',v:'A'},{t:'要求自己表現得完美不出錯',v:'B'},{t:'安靜觀察，內心不斷分析',v:'C'},{t:'想做些什麼但最後什麼都沒做',v:'D'}]},
+        {q:'面對批評時，你的第一反應是？',o:[{t:'覺得是自己不夠好，想立刻改',v:'A'},{t:'告訴自己不能難過，必須更努力',v:'B'},{t:'表面冷靜但心裡反覆咀嚼很久',v:'C'},{t:'覺得果然自己不行，很沮喪',v:'D'}]},
+        {q:'你覺得自己的價值通常來自？',o:[{t:'能幫助別人解決問題',v:'A'},{t:'做到別人做不到的事',v:'B'},{t:'想得比別人深、看得比別人遠',v:'C'},{t:'還在尋找中，不太確定',v:'D'}]},
+        {q:'當你有一個很想做的事，你通常？',o:[{t:'先確認別人需不需要我再說',v:'A'},{t:'立刻行動但三天後沒動力了',v:'B'},{t:'想了很久分析所有風險才動',v:'C'},{t:'期待了很久但一直沒開始',v:'D'}]}
+    ];
+    var res={
+        A:{type:'溫柔守護者',maya:'White Wind / Yellow Star',desc:'你傾向壓抑情緒，把照顧他人當作存在價值。你的付出是真心的，但有時候忘了自己也需要被接住。',advice:'練習讓自己「被照顧」。今天起，允許自己說：「我也需要。」'},
+        B:{type:'靈魂燃燒者',maya:'Red Serpent / Blue Hand',desc:'完美主義讓你燃燒殆盡。你總覺得「別人都可以為什麼我不行」，然後更用力鞭策自己。',advice:'停止鞭打自己。試試每週寫一封信給自己，不是檢討，而是感謝。'},
+        C:{type:'沉默思考者',maya:'Blue Night / White Wizard',desc:'你習慣用理性鎖住情緒，什麼都想通了但從來不釋放。你的世界很深，但有時候太安靜。',advice:'讓情緒有出口。試試用聲音、畫畫或書寫來表達，不需要邏輯，只需要流動。'},
+        D:{type:'慢開花的夢想家',maya:'Red Dragon / Yellow Seed',desc:'你有很多想法，但完美主義加上害怕失敗讓你停在原地。你不是沒能力，而是還沒允許自己開始。',advice:'一週一場小冒險。不用完美，只要開始。你的種子已經準備好了。'}
+    };
+    var box=document.getElementById('quizBox'),sc={A:0,B:0,C:0,D:0},qi=0;
+    function renderQ(){
+        if(qi>=qs.length){showR();return}
+        var q=qs[qi];
+        var h='<div class="quiz-q on"><div class="quiz-prog">Question '+(qi+1)+' / '+qs.length+'</div><div class="quiz-question">'+q.q+'</div><div class="quiz-opts">';
+        q.o.forEach(function(o){h+='<div class="quiz-opt" data-v="'+o.v+'">'+o.t+'</div>'});
+        h+='</div></div>';box.innerHTML=h;
+        box.querySelectorAll('.quiz-opt').forEach(function(opt){
+            opt.addEventListener('click',function(){
+                sc[opt.dataset.v]++;qi++;
+                // Quiz answer → ripple + tint the cosmos
+                var rect=opt.getBoundingClientRect();
+                var nx=(rect.left+rect.width/2)/window.innerWidth;
+                var ny=(rect.top+rect.height/2)/window.innerHeight;
+                var colors={A:[201,149,42],B:[204,34,0],C:[0,80,180],D:[90,158,111]};
+                var c=colors[opt.dataset.v];
+                addRipple(nx,ny,c[0],c[1],c[2]);
+                S.quizTint[0]+=c[0]*.25;S.quizTint[1]+=c[1]*.25;S.quizTint[2]+=c[2]*.25;
+                renderQ();
+            });
+        });
+    }
+    function showR(){
+        var mx='A',mn=0;Object.keys(sc).forEach(function(k){if(sc[k]>mn){mn=sc[k];mx=k}});
+        var r=res[mx];
+        box.innerHTML='<div class="quiz-result on"><div class="qr-type">'+r.type+'</div><div class="qr-maya">Maya: '+r.maya+'</div><div class="qr-desc">'+r.desc+'</div><div class="qr-advice">'+r.advice+'</div><a class="qr-cta" href="https://line.me/R/ti/p/@802evrqy" target="_blank" rel="noopener"><i class="fab fa-line"></i> 預約諮詢</a></div>';
+    }
+    renderQ();
+})();
+
+/* ===== TESTIMONIALS ===== */
+(function(){
+    var inner=document.getElementById('testiInner'),dots=document.getElementById('testiDots');
+    var slides=inner.querySelectorAll('.testi-slide'),total=slides.length,cur=0;
+    for(var i=0;i<total;i++){var d=document.createElement('div');d.className='testi-dot'+(i===0?' on':'');d.dataset.i=i;dots.appendChild(d)}
+    var allDots=dots.querySelectorAll('.testi-dot');
+    function go(n){cur=n;inner.style.transform='translateX(-'+cur*100+'%)';allDots.forEach(function(d,i){d.classList.toggle('on',i===cur)})}
+    allDots.forEach(function(d){d.addEventListener('click',function(){go(+d.dataset.i)})});
+    setInterval(function(){go((cur+1)%total)},5000);
+})();
+
+/* ===== IMPACT COUNTER ===== */
+ScrollTrigger.create({trigger:'.impact-row',start:'top 80%',onEnter:function(){
+    document.querySelectorAll('.imp-n').forEach(function(el){
+        var to=+el.dataset.to,o={v:0};gsap.to(o,{v:to,duration:2,ease:'power2.out',onUpdate:function(){el.textContent=Math.round(o.v)+'+'}});
+    });
+},once:true});
+
+})();
+</script>
+</body>
+</html>
