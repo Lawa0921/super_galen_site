@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>馬農 | 黑豹程式開發</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+/* ========================================
+   BLACK LEOPARD - CYBERPUNK TERMINAL
+   ======================================== */
+:root {
+  --void: #030508;
+  --obsidian: #0a0e14;
+  --neon-green: #00ff88;
+  --neon-cyan: #00e5ff;
+  --leopard-gold: #c9a84c;
+  --leopard-amber: #e8a330;
+  --blood-red: #ff2d4a;
+  --mandala-violet: #9b59f0;
+  --text-primary: #d0dce8;
+  --text-muted: #5a7088;
+  --text-dim: #2e3d50;
+  --glow-green: 0 0 20px rgba(0,255,136,0.4), 0 0 40px rgba(0,255,136,0.15);
+  --glow-gold: 0 0 20px rgba(201,168,76,0.4), 0 0 40px rgba(201,168,76,0.15);
+  --glow-violet: 0 0 20px rgba(155,89,240,0.4), 0 0 40px rgba(155,89,240,0.15);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--void);
+  color: var(--text-primary);
+  font-family: 'Noto Sans TC', 'Rajdhani', sans-serif;
+  overflow-x: hidden;
+  cursor: default;
+  line-height: 1.6;
+}
+
+::selection {
+  background: var(--neon-green);
+  color: var(--void);
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--obsidian); }
+::-webkit-scrollbar-thumb { background: var(--neon-green); border-radius: 2px; }
+
+/* ========================================
+   SCANLINE OVERLAY
+   ======================================== */
+.scanline-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,255,136,0.015) 2px,
+    rgba(0,255,136,0.015) 4px
+  );
+}
+
+/* ========================================
+   MATRIX RAIN CANVAS
+   ======================================== */
+#matrix-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.12;
+}
+
+/* ========================================
+   BACK NAVIGATION
+   ======================================== */
+.back-nav {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--neon-green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+  background: rgba(0,255,136,0.05);
+  padding: 8px 16px;
+  border: 1px solid rgba(0,255,136,0.15);
+  border-radius: 2px;
+}
+
+.back-nav:hover {
+  opacity: 1;
+  background: rgba(0,255,136,0.1);
+  box-shadow: var(--glow-green);
+}
+
+.back-nav i { font-size: 11px; }
+
+/* ========================================
+   TERMINAL HEADER (fixed top bar)
+   ======================================== */
+.terminal-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--neon-green) 20%,
+    var(--neon-cyan) 50%,
+    var(--neon-green) 80%,
+    transparent 100%
+  );
+  z-index: 200;
+  opacity: 0.8;
+}
+
+/* ========================================
+   SYSTEM STATUS BAR
+   ======================================== */
+.system-bar {
+  position: fixed;
+  top: 12px;
+  right: 24px;
+  z-index: 100;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--neon-green);
+  opacity: 0.5;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.system-bar .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--neon-green);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--neon-green); }
+  50% { opacity: 0.3; box-shadow: none; }
+}
+
+/* ========================================
+   HERO SECTION
+   ======================================== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  padding: 40px 20px;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(0,255,136,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 70%, rgba(155,89,240,0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Leopard eyes glow */
+.leopard-eyes {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 300px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.leopard-eye {
+  position: absolute;
+  width: 12px;
+  height: 6px;
+  background: var(--leopard-gold);
+  border-radius: 50%;
+  box-shadow: 0 0 30px var(--leopard-gold), 0 0 60px var(--leopard-amber), 0 0 100px rgba(232,163,48,0.3);
+  animation: eye-blink 6s ease infinite;
+}
+
+.leopard-eye.left { left: 38%; top: 48%; }
+.leopard-eye.right { right: 38%; top: 48%; }
+
+@keyframes eye-blink {
+  0%, 90%, 100% { transform: scaleY(1); opacity: 1; }
+  93% { transform: scaleY(0.1); opacity: 0.5; }
+  96% { transform: scaleY(1); opacity: 1; }
+}
+
+/* Avatar */
+.avatar-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin-bottom: 30px;
+}
+
+.avatar-container img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--neon-green);
+  position: relative;
+  z-index: 2;
+}
+
+.avatar-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,255,136,0.3);
+  animation: ring-rotate 8s linear infinite;
+}
+
+.avatar-ring::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: var(--neon-green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--neon-green);
+}
+
+.avatar-ring-outer {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  border: 1px dashed rgba(0,255,136,0.15);
+  animation: ring-rotate 15s linear infinite reverse;
+}
+
+@keyframes ring-rotate { to { transform: rotate(360deg); } }
+
+/* Hero text */
+.hero-subtitle {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  color: var(--neon-green);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0;
+}
+
+.hero-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 900;
+  color: var(--text-primary);
+  text-shadow: 0 0 40px rgba(0,255,136,0.15);
+  margin-bottom: 8px;
+  letter-spacing: 3px;
+  opacity: 0;
+}
+
+.hero-name-cn {
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 8px;
+  margin-bottom: 20px;
+  opacity: 0;
+}
+
+.hero-tagline {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  color: var(--leopard-gold);
+  max-width: 500px;
+  text-align: center;
+  line-height: 1.8;
+  opacity: 0;
+}
+
+.hero-tagline .cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background: var(--neon-green);
+  margin-left: 4px;
+  animation: cursor-blink 1s step-end infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Scroll indicator */
+.scroll-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: float-down 2s ease infinite;
+}
+
+.scroll-hint span {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 3px;
+}
+
+.scroll-hint .line {
+  width: 1px;
+  height: 30px;
+  background: linear-gradient(to bottom, var(--neon-green), transparent);
+}
+
+@keyframes float-down {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(8px); }
+}
+
+/* ========================================
+   SECTION COMMON
+   ======================================== */
+.section {
+  position: relative;
+  z-index: 1;
+  padding: 100px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--neon-green);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-label::before {
+  content: '>';
+  font-size: 14px;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.section-desc {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: 700px;
+  line-height: 1.9;
+  margin-bottom: 50px;
+}
+
+/* Separator line */
+.sep-line {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+  opacity: 0.2;
+  margin: 0 auto;
+}
+
+/* ========================================
+   MANIFESTO (about)
+   ======================================== */
+.manifesto {
+  padding: 120px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.manifesto-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.manifesto-text {
+  font-size: 16px;
+  line-height: 2;
+  color: var(--text-primary);
+}
+
+.manifesto-text p {
+  margin-bottom: 20px;
+}
+
+.manifesto-text .highlight {
+  color: var(--neon-green);
+  font-weight: 700;
+}
+
+.manifesto-text .gold {
+  color: var(--leopard-gold);
+  font-weight: 500;
+}
+
+.manifesto-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.stat-card {
+  background: rgba(0,255,136,0.03);
+  border: 1px solid rgba(0,255,136,0.1);
+  padding: 24px;
+  border-radius: 2px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(0,255,136,0.3);
+  box-shadow: var(--glow-green);
+  transform: translateY(-2px);
+}
+
+.stat-card .number {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--neon-green);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.stat-card .label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ========================================
+   TERMINAL CODE BLOCK
+   ======================================== */
+.terminal-block {
+  background: rgba(10,14,20,0.9);
+  border: 1px solid rgba(0,255,136,0.15);
+  border-radius: 4px;
+  margin: 60px auto;
+  max-width: 800px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0,255,136,0.05);
+  border-bottom: 1px solid rgba(0,255,136,0.1);
+}
+
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.terminal-dot.red { background: #ff5f56; }
+.terminal-dot.yellow { background: #ffbd2e; }
+.terminal-dot.green { background: #27c93f; }
+
+.terminal-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 12px;
+}
+
+.terminal-body {
+  padding: 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--neon-green);
+  overflow-x: auto;
+}
+
+.terminal-body .comment { color: var(--text-dim); }
+.terminal-body .keyword { color: var(--neon-cyan); }
+.terminal-body .string { color: var(--leopard-gold); }
+.terminal-body .method { color: var(--mandala-violet); }
+.terminal-body .prompt { color: var(--text-muted); }
+
+/* ========================================
+   SERVICES (Leopard Prowl Cards)
+   ======================================== */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.service-card {
+  position: relative;
+  background: var(--obsidian);
+  border: 1px solid rgba(0,255,136,0.08);
+  padding: 40px 30px;
+  border-radius: 2px;
+  overflow: hidden;
+  transition: all 0.4s ease;
+  cursor: default;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.service-card:hover::before { transform: scaleX(1); }
+
+.service-card:hover {
+  border-color: rgba(0,255,136,0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4), var(--glow-green);
+}
+
+.service-card .card-icon {
+  font-size: 28px;
+  color: var(--neon-green);
+  margin-bottom: 20px;
+  display: block;
+}
+
+.service-card h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.service-card p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+.service-card .price-tag {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0,255,136,0.1);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--leopard-gold);
+  letter-spacing: 1px;
+}
+
+/* ========================================
+   PRODUCTS SHOWCASE
+   ======================================== */
+.products-section {
+  position: relative;
+  z-index: 1;
+  padding: 100px 20px;
+}
+
+.product-showcase {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.product-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  margin-bottom: 100px;
+  opacity: 0;
+}
+
+.product-item:nth-child(even) { direction: rtl; }
+.product-item:nth-child(even) > * { direction: ltr; }
+
+.product-visual {
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(0,255,136,0.1);
+}
+
+.product-visual img {
+  width: 100%;
+  display: block;
+  transition: transform 0.6s ease;
+}
+
+.product-visual:hover img { transform: scale(1.03); }
+
+.product-visual .product-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--neon-green);
+  color: var(--void);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.product-info h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.product-info .product-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--neon-green);
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+
+.product-info p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.9;
+  margin-bottom: 20px;
+}
+
+.product-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.product-features .feat {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 4px 12px;
+  border: 1px solid rgba(0,255,136,0.15);
+  border-radius: 2px;
+  color: var(--neon-green);
+  background: rgba(0,255,136,0.04);
+}
+
+/* ========================================
+   MANDALA SECTION
+   ======================================== */
+.mandala-section {
+  position: relative;
+  z-index: 1;
+  padding: 120px 20px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.mandala-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(155,89,240,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+#mandala-canvas {
+  width: 100%;
+  max-width: 500px;
+  height: 500px;
+  margin: 40px auto;
+  display: block;
+}
+
+.mandala-quote {
+  max-width: 600px;
+  margin: 0 auto;
+  font-size: 16px;
+  line-height: 2.2;
+  color: var(--text-muted);
+  font-style: italic;
+  position: relative;
+}
+
+.mandala-quote::before {
+  content: '\f10d';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-style: normal;
+  font-size: 20px;
+  color: var(--mandala-violet);
+  opacity: 0.4;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.mandala-quote .author {
+  display: block;
+  margin-top: 16px;
+  font-style: normal;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--mandala-violet);
+  letter-spacing: 2px;
+}
+
+/* ========================================
+   TIMELINE
+   ======================================== */
+.timeline {
+  position: relative;
+  max-width: 800px;
+  margin: 60px auto 0;
+  padding-left: 40px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--neon-green), var(--mandala-violet), transparent);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 50px;
+  opacity: 0;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -44px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  background: var(--neon-green);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--neon-green);
+}
+
+.timeline-year {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--neon-green);
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+
+.timeline-content h4 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.timeline-content p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+/* ========================================
+   GALLERY (App Screenshots)
+   ======================================== */
+.gallery-section {
+  position: relative;
+  z-index: 1;
+  padding: 100px 20px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 1000px;
+  margin: 40px auto 0;
+}
+
+.gallery-item {
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(0,255,136,0.08);
+  aspect-ratio: auto;
+  cursor: pointer;
+  transition: all 0.4s ease;
+}
+
+.gallery-item:hover {
+  border-color: rgba(0,255,136,0.3);
+  transform: scale(1.02);
+  z-index: 10;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-item .gallery-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  background: linear-gradient(transparent, rgba(3,5,8,0.9));
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--neon-green);
+  letter-spacing: 1px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gallery-item:hover .gallery-label { opacity: 1; }
+
+/* ========================================
+   CONTACT / CTA
+   ======================================== */
+.contact-section {
+  position: relative;
+  z-index: 1;
+  padding: 120px 20px;
+  text-align: center;
+}
+
+.contact-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.contact-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 40px;
+  background: transparent;
+  border: 1px solid var(--neon-green);
+  color: var(--neon-green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+  cursor: pointer;
+  margin: 10px;
+}
+
+.contact-cta:hover {
+  background: var(--neon-green);
+  color: var(--void);
+  box-shadow: var(--glow-green);
+}
+
+.contact-cta.gold {
+  border-color: var(--leopard-gold);
+  color: var(--leopard-gold);
+}
+
+.contact-cta.gold:hover {
+  background: var(--leopard-gold);
+  color: var(--void);
+  box-shadow: var(--glow-gold);
+}
+
+.contact-cta.violet {
+  border-color: var(--mandala-violet);
+  color: var(--mandala-violet);
+}
+
+.contact-cta.violet:hover {
+  background: var(--mandala-violet);
+  color: #fff;
+  box-shadow: var(--glow-violet);
+}
+
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.social-link {
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(0,255,136,0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 18px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.social-link:hover {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  box-shadow: var(--glow-green);
+  transform: translateY(-3px);
+}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+.footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 40px 20px;
+  border-top: 1px solid rgba(0,255,136,0.05);
+}
+
+.footer-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+.footer-text a {
+  color: var(--neon-green);
+  text-decoration: none;
+}
+
+/* ========================================
+   3D SCENE CONTAINER
+   ======================================== */
+#three-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ========================================
+   LEOPARD PROWL INDICATOR (right side)
+   ======================================== */
+.prowl-indicator {
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prowl-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,255,136,0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.prowl-dot.active {
+  background: var(--neon-green);
+  border-color: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+}
+
+/* ========================================
+   LIGHTBOX
+   ======================================== */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(3,5,8,0.95);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lightbox.active { display: flex; }
+
+.lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border: 1px solid rgba(0,255,136,0.2);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  font-size: 24px;
+  color: var(--neon-green);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+/* ========================================
+   INTERACTIVE TERMINAL
+   ======================================== */
+.interactive-terminal {
+  background: rgba(10,14,20,0.95);
+  border: 1px solid rgba(0,255,136,0.2);
+  border-radius: 4px;
+  margin: 60px auto;
+  max-width: 800px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.interactive-terminal .terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0,255,136,0.05);
+  border-bottom: 1px solid rgba(0,255,136,0.1);
+}
+
+.interactive-terminal .terminal-output {
+  padding: 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--neon-green);
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.interactive-terminal .terminal-input-line {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid rgba(0,255,136,0.1);
+  background: rgba(0,255,136,0.02);
+}
+
+.interactive-terminal .terminal-prompt {
+  color: var(--text-muted);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.interactive-terminal .terminal-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--neon-green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  caret-color: var(--neon-green);
+}
+
+.interactive-terminal .terminal-hint {
+  padding: 8px 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-top: 1px solid rgba(0,255,136,0.05);
+}
+
+.terminal-output .cmd-response { color: var(--text-primary); }
+.terminal-output .cmd-error { color: var(--blood-red); }
+.terminal-output .cmd-gold { color: var(--leopard-gold); }
+.terminal-output .cmd-violet { color: var(--mandala-violet); }
+
+/* ========================================
+   MANDALA GENERATOR (participatory)
+   ======================================== */
+.mandala-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+}
+
+.mandala-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(155,89,240,0.08);
+  border: 1px solid rgba(155,89,240,0.3);
+  color: var(--mandala-violet);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+
+.mandala-btn:hover {
+  background: rgba(155,89,240,0.15);
+  box-shadow: var(--glow-violet);
+  transform: translateY(-2px);
+}
+
+.mandala-btn:active {
+  transform: translateY(0);
+}
+
+.mandala-seed-display {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--mandala-violet);
+  text-align: center;
+  margin-top: 16px;
+  opacity: 0.6;
+  min-height: 20px;
+}
+
+/* ========================================
+   DUALITY BRIDGE (code → spirit transition)
+   ======================================== */
+.duality-bridge {
+  position: relative;
+  height: 200px;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.duality-bridge canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* ========================================
+   LEOPARD SILHOUETTE (scroll parallax)
+   ======================================== */
+.leopard-silhouette {
+  position: fixed;
+  bottom: -50px;
+  right: -100px;
+  width: 400px;
+  height: 200px;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  filter: blur(1px);
+}
+
+.leopard-silhouette svg {
+  width: 100%;
+  height: 100%;
+  fill: rgba(0,255,136,0.03);
+}
+
+body.scrolled .leopard-silhouette {
+  opacity: 1;
+}
+
+/* ========================================
+   SCROLL-DRIVEN ATMOSPHERE
+   ======================================== */
+.atmosphere-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(ellipse at center, rgba(155,89,240,0.05) 0%, transparent 70%);
+}
+
+/* ========================================
+   EASTER EGG - click leopard eyes
+   ======================================== */
+.leopard-eyes {
+  cursor: pointer;
+}
+
+.leopard-eyes.activated .leopard-eye {
+  box-shadow: 0 0 60px var(--leopard-gold), 0 0 120px var(--leopard-amber), 0 0 200px rgba(232,163,48,0.5);
+  width: 20px;
+  height: 10px;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: rgba(10,14,20,0.95);
+  border: 1px solid var(--leopard-gold);
+  color: var(--leopard-gold);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  padding: 12px 24px;
+  border-radius: 4px;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 768px) {
+  .manifesto-inner {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .product-item {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .product-item:nth-child(even) { direction: ltr; }
+
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prowl-indicator { display: none; }
+
+  .system-bar { display: none; }
+
+  .interactive-terminal { margin: 40px 10px; }
+
+  .mandala-actions { flex-direction: column; align-items: center; }
+
+  .hero-title { font-size: 2rem; }
+
+  .section { padding: 60px 16px; }
+}
+
+@media (max-width: 480px) {
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manifesto-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .back-nav {
+    top: 12px;
+    left: 12px;
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+
+  .contact-cta {
+    padding: 12px 24px;
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- Scanline overlay -->
+<div class="scanline-overlay"></div>
+
+<!-- Terminal header bar -->
+<div class="terminal-header"></div>
+
+<!-- Matrix rain background -->
+<canvas id="matrix-canvas"></canvas>
+
+<!-- Three.js 3D background -->
+<div id="three-container"></div>
+
+<!-- Back navigation -->
+<a href="/" class="back-nav">
+  <i class="fas fa-chevron-left"></i>
+  <span>RETURN://GUILD</span>
+</a>
+
+<!-- System status bar -->
+<div class="system-bar">
+  <div class="dot"></div>
+  <span>SYS:ONLINE</span>
+  <span>|</span>
+  <span id="sys-time">00:00:00</span>
+</div>
+
+<!-- Prowl indicator (scroll progress) -->
+<div class="prowl-indicator">
+  <div class="prowl-dot active" data-section="hero"></div>
+  <div class="prowl-dot" data-section="manifesto"></div>
+  <div class="prowl-dot" data-section="services"></div>
+  <div class="prowl-dot" data-section="products"></div>
+  <div class="prowl-dot" data-section="mandala"></div>
+  <div class="prowl-dot" data-section="gallery"></div>
+  <div class="prowl-dot" data-section="contact"></div>
+</div>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="hero">
+  <div class="leopard-eyes">
+    <div class="leopard-eye left"></div>
+    <div class="leopard-eye right"></div>
+  </div>
+
+  <div class="avatar-container">
+    <img src="../assets/img/guild/twno10/avatar.webp" alt="馬農 avatar">
+    <div class="avatar-ring"></div>
+    <div class="avatar-ring-outer"></div>
+  </div>
+
+  <div class="hero-subtitle">BLACK LEOPARD DEVELOPMENT</div>
+  <h1 class="hero-title">TWNO10</h1>
+  <div class="hero-name-cn">黑豹程式開發</div>
+  <div class="hero-tagline">
+    <span id="typewriter-text"></span><span class="cursor"></span>
+  </div>
+
+  <div class="scroll-hint">
+    <span>SCROLL</span>
+    <div class="line"></div>
+  </div>
+</section>
+
+<!-- ===== MANIFESTO ===== -->
+<section class="section" id="manifesto">
+  <div class="section-label">ABOUT_ME</div>
+  <h2 class="section-title">LEOPARD.INIT()</h2>
+
+  <div class="manifesto-inner">
+    <div class="manifesto-text">
+      <p>
+        我是馬農，網路上的人都叫我<span class="highlight">碼農</span>。
+        說實話，這個名字一開始是自嘲，後來卻變成了驕傲。
+        在程式的世界裡，我已經<span class="gold">潛伏了超過 15 年</span>。
+      </p>
+      <p>
+        我創辦了<span class="highlight">黑豹程式開發有限公司</span>，
+        用十五年磨出來的爪子，替每一個找上門的客戶撕開商業困境。
+        從一行程式碼到一整套系統，從網站設計到 SEO 佈局、
+        從 Chrome 插件到心靈修行軟體 ── 我什麼都做，而且做到極致。
+      </p>
+      <p>
+        你可能覺得奇怪：一個寫程式的人怎麼會去開發念經軟體？
+        但對我來說，<span class="gold">寫程式本身就是一種修行</span>。
+        每一次 debug 都是面對自己的不完美，
+        每一次部署都是對世界的一次善意。
+      </p>
+    </div>
+
+    <div class="manifesto-stats">
+      <div class="stat-card">
+        <span class="number" data-target="15">0</span>
+        <span class="label">YEARS EXP</span>
+      </div>
+      <div class="stat-card">
+        <span class="number" data-target="100">0</span>
+        <span class="label">TEMPLATES+</span>
+      </div>
+      <div class="stat-card">
+        <span class="number" data-target="8">0</span>
+        <span class="label">LANGUAGES</span>
+      </div>
+      <div class="stat-card">
+        <span class="number" data-target="70">0</span>
+        <span class="label">MEMBERS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== INTERACTIVE TERMINAL (Signature Moment #1) ===== -->
+<div class="interactive-terminal" id="interactive-terminal">
+  <div class="terminal-titlebar">
+    <div class="terminal-dot red"></div>
+    <div class="terminal-dot yellow"></div>
+    <div class="terminal-dot green"></div>
+    <span class="terminal-title">leopard@blackpanther:~/hunt</span>
+  </div>
+  <div class="terminal-output" id="terminal-output">
+    <div><span class="comment">// 歡迎進入黑豹系統。試試輸入指令探索我的世界。</span></div>
+    <div><span class="cmd-gold">leopard@blackpanther:~$</span> help</div>
+    <div class="cmd-response">
+      可用指令：<br>
+      &nbsp;&nbsp;<span style="color:var(--neon-green)">skills</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 查看技能樹<br>
+      &nbsp;&nbsp;<span style="color:var(--neon-green)">hunt</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- 搜尋服務<br>
+      &nbsp;&nbsp;<span style="color:var(--neon-green)">pray</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- 進入修行模式<br>
+      &nbsp;&nbsp;<span style="color:var(--neon-green)">motto</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 顯示座右銘<br>
+      &nbsp;&nbsp;<span style="color:var(--neon-green)">stats</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 顯示戰績<br>
+      &nbsp;&nbsp;<span style="color:var(--neon-green)">about</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 關於黑豹<br>
+      &nbsp;&nbsp;<span style="color:var(--neon-green)">clear</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 清除畫面
+    </div>
+  </div>
+  <div class="terminal-input-line">
+    <span class="terminal-prompt">leopard@blackpanther:~$</span>
+    <input type="text" class="terminal-input" id="terminal-input" placeholder="輸入指令..." autocomplete="off" spellcheck="false">
+  </div>
+  <div class="terminal-hint"><i class="fas fa-keyboard" style="margin-right:6px;"></i>試試輸入 skills, hunt, pray, motto, stats, about</div>
+</div>
+
+<!-- ===== SERVICES ===== -->
+<section class="section" id="services">
+  <div class="section-label">SERVICES</div>
+  <h2 class="section-title">DEPLOY.SERVICES()</h2>
+  <p class="section-desc">
+    我能幫你做的事很多。從零開始打造網站，或是把你現有的爛網站翻修成門面。
+    不管你是個人品牌、中小企業、還是需要跨國佈局的公司，我都能搞定。
+  </p>
+
+  <div class="services-grid">
+    <div class="service-card">
+      <i class="fas fa-code card-icon"></i>
+      <h3>客製化網站開發</h3>
+      <p>從企業官網到電商平台，從旅遊住宿到醫療診所，超過 100+ 個模板的實戰經驗。每一個網站都是為你量身打造的數位武器。</p>
+      <div class="price-tag">FROM NT$35,000</div>
+    </div>
+
+    <div class="service-card">
+      <i class="fas fa-search-dollar card-icon"></i>
+      <h3>SEO / GEO 最佳化</h3>
+      <p>不只是傳統搜尋引擎優化。我專注於 GEO（Generative Engine Optimization），讓你的網站被 AI 搜尋引擎推薦。JSON-LD 結構化資料、Core Web Vitals 全面優化。</p>
+      <div class="price-tag">AI 時代的流量密碼</div>
+    </div>
+
+    <div class="service-card">
+      <i class="fas fa-puzzle-piece card-icon"></i>
+      <h3>Chrome 插件開發</h3>
+      <p>我開發了 Threads 平台最實用的免費插件「脆粉絲」，支援 8 國語系、粉絲排序、資料匯出 Excel。堅持無廣告、無訂閱、完全免費。</p>
+      <div class="price-tag">FREE / 客製開發另議</div>
+    </div>
+
+    <div class="service-card">
+      <i class="fas fa-plug card-icon"></i>
+      <h3>API 串接整合</h3>
+      <p>第三方 API 串接、支付系統、LINE 機器人、社群登入、自動化流程，任何你需要讓系統互相對話的整合工作。</p>
+      <div class="price-tag">依專案報價</div>
+    </div>
+
+    <div class="service-card">
+      <i class="fas fa-server card-icon"></i>
+      <h3>主機搬家與維護</h3>
+      <p>SSL 憑證安裝、網站搬家遷移、主機代管。讓你不用煩惱技術細節，專注在你的事業上。</p>
+      <div class="price-tag">FROM NT$2,000</div>
+    </div>
+
+    <div class="service-card">
+      <i class="fas fa-gamepad card-icon"></i>
+      <h3>網頁遊戲開發</h3>
+      <p>互動式網頁遊戲、活動小遊戲、抽獎系統。用遊戲化的方式讓你的品牌更有趣、更有黏性。</p>
+      <div class="price-tag">依專案報價</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRODUCTS ===== -->
+<section class="products-section" id="products">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="section-label">PRODUCTS</div>
+    <h2 class="section-title">LEOPARD.CREATIONS()</h2>
+    <p class="section-desc">
+      我不只接案。我也打造自己的產品，用程式解決真實世界的問題。
+    </p>
+  </div>
+
+  <div class="product-showcase">
+    <div class="product-item">
+      <div class="product-visual">
+        <img src="../assets/img/guild/twno10/guanyin.webp" alt="心經祈福會" loading="lazy">
+        <span class="product-badge">FREE TOOL</span>
+      </div>
+      <div class="product-info">
+        <h3>心經祈福會</h3>
+        <div class="product-sub">MANDALA GARDEN // WUSHI619.COM</div>
+        <p>
+          一個純粹的修行工具。我用程式把念經祈福數位化，
+          加入了排行榜、徽章系統、修行境界、祈福歷史統計、抽卡系統。
+          目前有超過 70 位會員、累積超過 12,000 次祈福。
+          完全免費，因為我相信：寫程式也可以是一種修行。
+        </p>
+        <div class="product-features">
+          <span class="feat">祈福排行榜</span>
+          <span class="feat">修行境界系統</span>
+          <span class="feat">曼陀羅徽章</span>
+          <span class="feat">祝福卡抽卡</span>
+          <span class="feat">統計儀表板</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-item">
+      <div class="product-visual">
+        <img src="../assets/img/guild/twno10/badges.webp" alt="脆粉絲 Chrome Extension" loading="lazy">
+        <span class="product-badge">CHROME EXT</span>
+      </div>
+      <div class="product-info">
+        <h3>脆粉絲 Threads 插件</h3>
+        <div class="product-sub">CHROME WEB STORE // FREE</div>
+        <p>
+          市面上唯一一款能在 Threads 貼文旁直接顯示作者地點與粉絲數的插件。
+          還能把好友資料用粉絲數排序、匯出 Excel。
+          支援 8 國語系，堅持無廣告、無訂閱、完全免費。
+          安裝後你的 Threads 體驗會跟別人完全不同。
+        </p>
+        <div class="product-features">
+          <span class="feat">粉絲數顯示</span>
+          <span class="feat">地點標記</span>
+          <span class="feat">排序功能</span>
+          <span class="feat">Excel 匯出</span>
+          <span class="feat">8 國語系</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MANDALA SPIRITUAL SECTION ===== -->
+<section class="mandala-section" id="mandala">
+  <div class="section-label" style="justify-content:center;">SPIRITUAL_CODE</div>
+  <h2 class="section-title" style="color:var(--mandala-violet);">MANDALA.RENDER()</h2>
+
+  <canvas id="mandala-canvas"></canvas>
+
+  <div class="mandala-actions">
+    <button class="mandala-btn" onclick="regenerateMandala()">
+      <i class="fas fa-dharma-wheel"></i> 生成你的曼陀羅
+    </button>
+    <button class="mandala-btn" onclick="changeMandalaStyle()">
+      <i class="fas fa-palette"></i> 切換風格
+    </button>
+  </div>
+  <div class="mandala-seed-display" id="mandala-seed"></div>
+
+  <div class="mandala-quote">
+    你可能覺得一個碼農幹嘛開發念經軟體。但你有沒有想過，
+    當你在凌晨三點 debug 到想摔電腦的時候，
+    那種「一切都會好起來的」的信念，跟修行其實沒什麼不同。
+    念經不只是祈求，更是讓心沉澱的儀式。
+    寫程式也是。
+    <span class="author">-- 馬農 // 凌晨三點的頓悟</span>
+  </div>
+</section>
+
+<!-- ===== TIMELINE ===== -->
+<section class="section" id="timeline">
+  <div class="section-label">JOURNEY</div>
+  <h2 class="section-title">COMMIT.LOG()</h2>
+  <p class="section-desc">
+    從第一行 PHP 到如今的全棧獵殺能力，這是黑豹的進化史。
+  </p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-year">CIRCA 2011</div>
+      <div class="timeline-content">
+        <h4>初入叢林</h4>
+        <p>開始接觸 PHP 與網站開發，踏上了碼農之路。那時的網路還很簡單，但我已經看到了無限的可能性。</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2015+</div>
+      <div class="timeline-content">
+        <h4>磨利爪子</h4>
+        <p>累積了大量的網站設計經驗，開始專注於 CRM 系統、API 整合、客製化開發。接案量穩定成長，技術棧不斷擴展。</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2020</div>
+      <div class="timeline-content">
+        <h4>黑豹成形</h4>
+        <p>正式成立黑豹程式開發有限公司。統編 96816191，開始以公司名義承接更大規模的專案。</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2024</div>
+      <div class="timeline-content">
+        <h4>心靈修行</h4>
+        <p>開發心經祈福會（wushi619.com），將修行與程式結合。從此不只是碼農，更是一個用科技輔助修行的實踐者。</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2026</div>
+      <div class="timeline-content">
+        <h4>AI 時代出擊</h4>
+        <p>布局 GEO 優化，成功讓中國客戶透過 AI 搜尋找到我。開發 Threads「脆粉絲」Chrome 插件，籌劃台灣百大網站排行榜。在 AI 浪潮中不被淘汰，反而更加銳利。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== GALLERY ===== -->
+<section class="gallery-section" id="gallery">
+  <div style="max-width:1000px;margin:0 auto;">
+    <div class="section-label">GALLERY</div>
+    <h2 class="section-title">SCREENSHOT.DUMP()</h2>
+    <p class="section-desc">心經祈福會的實際畫面，每一個介面都是我親手設計與開發。</p>
+  </div>
+
+  <div class="gallery-grid">
+    <div class="gallery-item" onclick="openLightbox(this)">
+      <img src="../assets/img/guild/twno10/leaderboard.webp" alt="祈福排行榜" loading="lazy">
+      <div class="gallery-label">LEADERBOARD // 祈福排行榜</div>
+    </div>
+    <div class="gallery-item" onclick="openLightbox(this)">
+      <img src="../assets/img/guild/twno10/badges.webp" alt="榮譽徽章" loading="lazy">
+      <div class="gallery-label">BADGES // 曼陀羅榮譽徽章</div>
+    </div>
+    <div class="gallery-item" onclick="openLightbox(this)">
+      <img src="../assets/img/guild/twno10/card_draw.webp" alt="抽卡系統" loading="lazy">
+      <div class="gallery-label">CARD DRAW // 祝福卡系統</div>
+    </div>
+    <div class="gallery-item" onclick="openLightbox(this)">
+      <img src="../assets/img/guild/twno10/prayer_history.webp" alt="祈福歷史" loading="lazy">
+      <div class="gallery-label">HISTORY // 祈福歷史統計</div>
+    </div>
+    <div class="gallery-item" onclick="openLightbox(this)">
+      <img src="../assets/img/guild/twno10/guanyin.webp" alt="觀音菩薩" loading="lazy">
+      <div class="gallery-label">GUANYIN // 觀音菩薩</div>
+    </div>
+    <div class="gallery-item" onclick="openLightbox(this)">
+      <img src="../assets/img/guild/twno10/guanyin2.webp" alt="觀音雕像" loading="lazy">
+      <div class="gallery-label">STATUE // 觀音雕像</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONTACT ===== -->
+<section class="contact-section" id="contact">
+  <div class="contact-inner">
+    <div class="section-label" style="justify-content:center;">CONNECT</div>
+    <h2 class="section-title" style="text-align:center;">INITIATE.CONTACT()</h2>
+    <p class="section-desc" style="text-align:center;margin:0 auto 40px;">
+      不管你是半夜三點被網站 bug 折磨的創業者，
+      還是想讓自己的品牌被全世界看見的夢想家，
+      又或者只是想找個人聊聊 AI 浪潮下怎麼活下去 ──
+      私訊我就對了。黑豹 24 小時待命。
+    </p>
+
+    <div style="margin-bottom:20px;">
+      <a href="https://phpmytool.com/" target="_blank" rel="noopener" class="contact-cta">
+        <i class="fas fa-globe"></i> 黑豹官網
+      </a>
+      <a href="https://wushi619.com/" target="_blank" rel="noopener" class="contact-cta violet">
+        <i class="fas fa-pray"></i> 心經祈福會
+      </a>
+    </div>
+
+    <div class="social-links">
+      <a href="https://www.threads.com/@twno10" target="_blank" rel="noopener" class="social-link" title="Threads">
+        <i class="fab fa-threads"></i>
+      </a>
+      <a href="https://www.instagram.com/twno10/" target="_blank" rel="noopener" class="social-link" title="Instagram">
+        <i class="fab fa-instagram"></i>
+      </a>
+      <a href="https://phpmytool.com/" target="_blank" rel="noopener" class="social-link" title="Website">
+        <i class="fas fa-globe"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <p class="footer-text">
+    DESIGNED BY <a href="https://supergalen.com" target="_blank" rel="noopener">SUPER GALEN</a>
+    &nbsp;|&nbsp; BLACK LEOPARD DEVELOPMENT &copy; 2026
+  </p>
+</footer>
+
+<!-- Atmosphere layer (scroll-driven) -->
+<div class="atmosphere-layer" id="atmosphere-layer"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close"><i class="fas fa-times"></i></button>
+  <img id="lightbox-img" src="" alt="enlarged">
+</div>
+
+<!-- ========================================
+     SCRIPTS
+     ======================================== -->
+<script>
+// ============================================
+// MATRIX RAIN (Canvas)
+// ============================================
+(function() {
+  const canvas = document.getElementById('matrix-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*(){}[]|;:<>,.?/~`心經祈福黑豹程式碼農PHP'.split('');
+  const fontSize = 14;
+  let columns = Math.floor(canvas.width / fontSize);
+  let drops = Array(columns).fill(1);
+
+  window.addEventListener('resize', () => {
+    columns = Math.floor(canvas.width / fontSize);
+    drops = Array(columns).fill(1);
+  });
+
+  function drawMatrix() {
+    ctx.fillStyle = 'rgba(3, 5, 8, 0.06)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff88';
+    ctx.font = fontSize + 'px "Share Tech Mono", monospace';
+
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+    requestAnimationFrame(drawMatrix);
+  }
+  drawMatrix();
+})();
+
+// ============================================
+// THREE.JS WIREFRAME LEOPARD GRID
+// ============================================
+(function() {
+  const container = document.getElementById('three-container');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  // Create wireframe grid
+  const gridGeo = new THREE.PlaneGeometry(80, 80, 40, 40);
+  const gridMat = new THREE.MeshBasicMaterial({
+    color: 0x00ff88,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.04
+  });
+  const grid = new THREE.Mesh(gridGeo, gridMat);
+  grid.rotation.x = -Math.PI / 2.5;
+  grid.position.y = -10;
+  scene.add(grid);
+
+  // Floating particles
+  const particlesGeo = new THREE.BufferGeometry();
+  const particleCount = 200;
+  const positions = new Float32Array(particleCount * 3);
+  for (let i = 0; i < particleCount; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 60;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 40;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+  }
+  particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const particlesMat = new THREE.PointsMaterial({
+    color: 0x00ff88,
+    size: 0.15,
+    transparent: true,
+    opacity: 0.4
+  });
+  const particles = new THREE.Points(particlesGeo, particlesMat);
+  scene.add(particles);
+
+  camera.position.set(0, 8, 25);
+  camera.lookAt(0, 0, 0);
+
+  let mouseX = 0, mouseY = 0;
+  document.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  // Scroll-driven color morphing: green → violet (updated by unified scroll handler)
+  let scrollColor = { r: 0, g: 1, b: 0.53 }; // #00ff88
+  window._threeScrollColor = scrollColor;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    grid.rotation.z += 0.0005;
+    particles.rotation.y += 0.0003;
+
+    // Update colors based on scroll
+    const c = new THREE.Color(scrollColor.r, scrollColor.g, scrollColor.b);
+    gridMat.color = c;
+    particlesMat.color = c;
+
+    // Subtle wave on grid
+    const posArr = gridGeo.attributes.position.array;
+    const time = Date.now() * 0.001;
+    for (let i = 0; i < posArr.length; i += 3) {
+      posArr[i + 2] = Math.sin(posArr[i] * 0.3 + time) * 0.5 +
+                       Math.cos(posArr[i + 1] * 0.3 + time * 0.7) * 0.3;
+    }
+    gridGeo.attributes.position.needsUpdate = true;
+
+    camera.position.x += (mouseX * 3 - camera.position.x) * 0.02;
+    camera.position.y += (-mouseY * 2 + 8 - camera.position.y) * 0.02;
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+
+// ============================================
+// MANDALA GLOBAL STATE (must be before p5.js)
+// ============================================
+if (typeof mandalaStyle === 'undefined') {
+  window.mandalaStyle = 0;
+  window.mandalaSeed = Math.random() * 10000;
+}
+
+// ============================================
+// P5.JS MANDALA DRAWING (Interactive Generator)
+// ============================================
+(function() {
+  const mandalaContainer = document.getElementById('mandala-canvas');
+
+  new p5(function(p) {
+    let angle = 0;
+    let prevSeed = mandalaSeed;
+    let prevStyle = mandalaStyle;
+    let transitionProgress = 1;
+
+    p.setup = function() {
+      const size = Math.min(mandalaContainer.clientWidth, 500);
+      const cnv = p.createCanvas(size, size);
+      cnv.parent(mandalaContainer);
+      p.angleMode(p.DEGREES);
+      p.noFill();
+    };
+
+    function drawLotus(layers) {
+      const seedOffset = mandalaSeed * 0.01;
+      for (let layer = 0; layer < layers; layer++) {
+        const radius = 40 + layer * 35;
+        const segments = 8 + layer * 4;
+        const rot = angle * (layer % 2 === 0 ? 1 : -1) * 0.3 + seedOffset * layer;
+        const alpha = p.map(layer, 0, layers, 180, 40);
+
+        p.push();
+        p.rotate(rot);
+        p.stroke(155, 89, 240, alpha);
+        p.strokeWeight(0.8);
+
+        for (let i = 0; i < segments; i++) {
+          const a = (360 / segments) * i;
+          const x1 = p.cos(a) * radius;
+          const y1 = p.sin(a) * radius;
+          const x2 = p.cos(a + 360 / segments) * radius;
+          const y2 = p.sin(a + 360 / segments) * radius;
+          const bulge = 15 + p.sin(angle + layer * 30 + seedOffset) * 5;
+          const cx = p.cos(a + 360 / segments / 2) * (radius + bulge);
+          const cy = p.sin(a + 360 / segments / 2) * (radius + bulge);
+
+          p.beginShape();
+          p.vertex(x1, y1);
+          p.quadraticVertex(cx, cy, x2, y2);
+          p.endShape();
+          p.line(0, 0, x1 * 0.3, y1 * 0.3);
+        }
+        p.ellipse(0, 0, radius * 2, radius * 2);
+        p.pop();
+      }
+    }
+
+    function drawGeometric(layers) {
+      const seedOffset = mandalaSeed * 0.01;
+      for (let layer = 0; layer < layers; layer++) {
+        const radius = 50 + layer * 30;
+        const sides = 6 + Math.floor(seedOffset % 4);
+        const rot = angle * (layer % 2 === 0 ? 0.2 : -0.2) + seedOffset * layer;
+
+        p.push();
+        p.rotate(rot);
+        const alpha = p.map(layer, 0, layers, 200, 50);
+        p.stroke(0, 229, 255, alpha);
+        p.strokeWeight(0.6);
+
+        // Sacred geometry polygons
+        p.beginShape();
+        for (let i = 0; i <= sides; i++) {
+          const a = (360 / sides) * i;
+          const wobble = p.sin(angle * 2 + layer * 45 + i * 20 + seedOffset) * 8;
+          p.vertex(p.cos(a) * (radius + wobble), p.sin(a) * (radius + wobble));
+        }
+        p.endShape(p.CLOSE);
+
+        // Inner star lines
+        for (let i = 0; i < sides; i++) {
+          const a = (360 / sides) * i;
+          const a2 = (360 / sides) * ((i + 2) % sides);
+          p.line(p.cos(a) * radius * 0.5, p.sin(a) * radius * 0.5,
+                 p.cos(a2) * radius * 0.5, p.sin(a2) * radius * 0.5);
+        }
+        p.pop();
+      }
+    }
+
+    function drawNebula(layers) {
+      const seedOffset = mandalaSeed * 0.01;
+      for (let layer = 0; layer < layers; layer++) {
+        const radius = 30 + layer * 40;
+        const points = 60 + layer * 20;
+        const rot = angle * 0.1 * (layer + 1) + seedOffset;
+
+        p.push();
+        p.rotate(rot);
+        const alpha = p.map(layer, 0, layers, 120, 20);
+
+        // Nebula spirals
+        p.stroke(201, 168, 76, alpha);
+        p.strokeWeight(0.5);
+        p.beginShape();
+        p.noFill();
+        for (let i = 0; i < points; i++) {
+          const t = i / points;
+          const a = t * 720 + seedOffset * 100;
+          const r = radius * t + p.sin(angle + i * 3 + seedOffset) * 10;
+          p.curveVertex(p.cos(a) * r, p.sin(a) * r);
+        }
+        p.endShape();
+
+        // Scattered stars
+        p.fill(201, 168, 76, alpha * 0.5);
+        p.noStroke();
+        for (let i = 0; i < 8; i++) {
+          const a = seedOffset * 100 + i * 45 + angle * 0.3;
+          const r = radius * 0.7 + p.sin(angle + i * 30 + seedOffset) * 15;
+          p.ellipse(p.cos(a) * r, p.sin(a) * r, 2, 2);
+        }
+        p.pop();
+      }
+    }
+
+    p.draw = function() {
+      p.clear();
+      p.translate(p.width / 2, p.height / 2);
+
+      // Detect seed/style change for smooth transition
+      if (prevSeed !== mandalaSeed || prevStyle !== mandalaStyle) {
+        transitionProgress = 0;
+        prevSeed = mandalaSeed;
+        prevStyle = mandalaStyle;
+      }
+      if (transitionProgress < 1) transitionProgress += 0.02;
+
+      const layers = 6;
+      const drawFn = [drawLotus, drawGeometric, drawNebula][mandalaStyle] || drawLotus;
+      drawFn(layers);
+
+      // Center glow
+      p.fill(155, 89, 240, 80 + p.sin(angle) * 30);
+      p.noStroke();
+      p.ellipse(0, 0, 10 + p.sin(angle * 2) * 3, 10 + p.sin(angle * 2) * 3);
+
+      // Orbiting particles
+      for (let i = 0; i < 16; i++) {
+        const a = angle * 0.5 + i * 22.5 + mandalaSeed;
+        const r = 210 + p.sin(angle * 1.5 + i * 20) * 15;
+        p.fill(0, 229, 255, 50);
+        p.ellipse(p.cos(a) * r, p.sin(a) * r, 2.5, 2.5);
+      }
+
+      angle += 0.3;
+    };
+
+    p.windowResized = function() {
+      const size = Math.min(mandalaContainer.clientWidth, 500);
+      p.resizeCanvas(size, size);
+    };
+  });
+})();
+
+// ============================================
+// TYPEWRITER EFFECT
+// ============================================
+(function() {
+  const text = '> 15 年全棧開發經驗 // 黑豹出沒，百戰不殆\n> 用程式解決問題，用 SEO 征服世界';
+  const el = document.getElementById('typewriter-text');
+  let idx = 0;
+
+  function type() {
+    if (idx < text.length) {
+      const char = text[idx];
+      if (char === '\n') {
+        el.innerHTML += '<br>';
+      } else {
+        el.innerHTML += char;
+      }
+      idx++;
+      setTimeout(type, 40 + Math.random() * 30);
+    }
+  }
+
+  setTimeout(type, 2000);
+})();
+
+// ============================================
+// GSAP ANIMATIONS
+// ============================================
+gsap.registerPlugin(ScrollTrigger);
+
+// Hero entrance
+const heroTl = gsap.timeline({ delay: 0.5 });
+heroTl
+  .from('.avatar-container', { scale: 0, opacity: 0, duration: 0.8, ease: 'back.out(1.7)' })
+  .to('.hero-subtitle', { opacity: 1, y: 0, duration: 0.6 }, '-=0.3')
+  .to('.hero-title', { opacity: 1, y: 0, duration: 0.6 }, '-=0.3')
+  .to('.hero-name-cn', { opacity: 1, duration: 0.5 }, '-=0.2')
+  .to('.hero-tagline', { opacity: 1, duration: 0.5 }, '-=0.2')
+  .to('.scroll-hint', { opacity: 0.6, duration: 0.5 }, '-=0.1')
+  .to('.leopard-eyes', { opacity: 0.6, duration: 1.5, ease: 'power2.inOut' }, '-=1');
+
+// Section reveals
+document.querySelectorAll('.section-label, .section-title, .section-desc').forEach(el => {
+  gsap.from(el, {
+    scrollTrigger: { trigger: el, start: 'top 85%' },
+    opacity: 0, y: 30, duration: 0.8, ease: 'power2.out'
+  });
+});
+
+// Stat counter animation
+document.querySelectorAll('.stat-card .number').forEach(el => {
+  const target = parseInt(el.dataset.target);
+  gsap.to(el, {
+    scrollTrigger: { trigger: el, start: 'top 85%' },
+    innerText: target,
+    duration: 2,
+    ease: 'power1.out',
+    snap: { innerText: 1 },
+    onUpdate: function() {
+      el.textContent = Math.round(parseFloat(el.textContent));
+    }
+  });
+});
+
+// Service cards stagger
+gsap.from('.service-card', {
+  scrollTrigger: { trigger: '.services-grid', start: 'top 80%' },
+  opacity: 0, y: 40, stagger: 0.1, duration: 0.6, ease: 'power2.out'
+});
+
+// Product items
+document.querySelectorAll('.product-item').forEach(item => {
+  gsap.to(item, {
+    scrollTrigger: { trigger: item, start: 'top 80%' },
+    opacity: 1, y: 0, duration: 0.8, ease: 'power2.out'
+  });
+  item.style.transform = 'translateY(40px)';
+});
+
+// Timeline items stagger
+gsap.from('.timeline-item', {
+  scrollTrigger: { trigger: '.timeline', start: 'top 80%' },
+  opacity: 0, x: -30, stagger: 0.15, duration: 0.6, ease: 'power2.out'
+});
+document.querySelectorAll('.timeline-item').forEach(item => {
+  gsap.to(item, {
+    scrollTrigger: { trigger: item, start: 'top 85%' },
+    opacity: 1, duration: 0.6
+  });
+});
+
+// Gallery items
+gsap.from('.gallery-item', {
+  scrollTrigger: { trigger: '.gallery-grid', start: 'top 80%' },
+  opacity: 0, scale: 0.9, stagger: 0.08, duration: 0.5, ease: 'power2.out'
+});
+
+// Interactive terminal
+gsap.from('.interactive-terminal', {
+  scrollTrigger: { trigger: '.interactive-terminal', start: 'top 80%' },
+  opacity: 0, y: 40, duration: 0.8, ease: 'power2.out'
+});
+
+// Mandala section
+gsap.from('#mandala-canvas', {
+  scrollTrigger: { trigger: '.mandala-section', start: 'top 70%' },
+  opacity: 0, scale: 0.8, rotation: -30, duration: 1.2, ease: 'power2.out'
+});
+
+gsap.from('.mandala-quote', {
+  scrollTrigger: { trigger: '.mandala-quote', start: 'top 85%' },
+  opacity: 0, y: 30, duration: 0.8, ease: 'power2.out'
+});
+
+// Contact
+gsap.from('.contact-cta', {
+  scrollTrigger: { trigger: '.contact-section', start: 'top 80%' },
+  opacity: 0, y: 20, stagger: 0.1, duration: 0.6, ease: 'power2.out'
+});
+
+gsap.from('.social-link', {
+  scrollTrigger: { trigger: '.social-links', start: 'top 90%' },
+  opacity: 0, scale: 0, stagger: 0.1, duration: 0.4, ease: 'back.out(1.7)'
+});
+
+// ============================================
+// PROWL INDICATOR (scroll progress dots)
+// ============================================
+const sections = ['hero', 'manifesto', 'services', 'products', 'mandala', 'gallery', 'contact'];
+const prowlDots = document.querySelectorAll('.prowl-dot');
+
+prowlDots.forEach(dot => {
+  dot.addEventListener('click', () => {
+    const target = document.getElementById(dot.dataset.section);
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// (prowl dots updated by unified scroll handler below)
+
+// ============================================
+// SYSTEM TIME
+// ============================================
+function updateTime() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const el = document.getElementById('sys-time');
+  if (el) el.textContent = h + ':' + m + ':' + s;
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// ============================================
+// LIGHTBOX
+// ============================================
+function openLightbox(el) {
+  const img = el.querySelector('img');
+  if (!img) return;
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox').classList.add('active');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
+});
+
+// ============================================
+// INTERACTIVE TERMINAL (Signature Moment #1)
+// ============================================
+(function() {
+  const input = document.getElementById('terminal-input');
+  const output = document.getElementById('terminal-output');
+  if (!input || !output) return;
+
+  const commands = {
+    skills: () => `<span class="cmd-response">
+<span style="color:var(--neon-green)">  [COMBAT SKILLS]</span>
+  ├── 網站設計與開發 ████████████ 15yr
+  ├── API 串接整合 &nbsp;&nbsp;██████████&nbsp; 12yr
+  ├── SEO / GEO 優化 ████████&nbsp;&nbsp;&nbsp; 8yr
+  ├── Chrome 插件 &nbsp;&nbsp;██████&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3yr
+  ├── CRM 系統建置 &nbsp;████████████ 10yr
+  ├── SSL / 主機維護 ████████████ 15yr
+  └── 多語系國際化 &nbsp;████████&nbsp;&nbsp;&nbsp; 8yr
+<span style="color:var(--mandala-violet)">  [SPIRITUAL SKILLS]</span>
+  ├── 心經祈福系統 &nbsp;██████&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2yr
+  └── 曼陀羅花園 &nbsp;&nbsp;&nbsp;████&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1yr
+</span>`,
+    hunt: () => `<span class="cmd-response">
+<span style="color:var(--leopard-gold)">  ╔══════════════════════════════════╗
+  ║ &nbsp;&nbsp; 黑 豹 狩 獵 清 單 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;║
+  ╠══════════════════════════════════╣
+  ║ &nbsp;[1] 客製化網站 &nbsp;&nbsp;&nbsp;NT$35,000+ &nbsp;║
+  ║ &nbsp;[2] 全功能網站 &nbsp;&nbsp;&nbsp;NT$60,000+ &nbsp;║
+  ║ &nbsp;[3] 完全客製 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NT$100,000+ ║
+  ║ &nbsp;[4] SEO/GEO 佈局 &nbsp;依規模議價 &nbsp;║
+  ║ &nbsp;[5] Chrome 插件 &nbsp;&nbsp;免費 / 客製 &nbsp;║
+  ║ &nbsp;[6] 主機搬家 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NT$2,000+ &nbsp;&nbsp;║
+  ╚══════════════════════════════════╝</span>
+  <span style="color:var(--text-muted)">私訊 Threads @twno10 立即開始</span>
+</span>`,
+    pray: () => {
+      // Trigger mandala section scroll
+      const mandala = document.getElementById('mandala');
+      if (mandala) mandala.scrollIntoView({ behavior: 'smooth' });
+      return `<span class="cmd-violet">
+  南無觀世音菩薩...
+  正在載入修行模式...
+  <span style="color:var(--text-muted)">[ 已導航至曼陀羅花園 ]</span>
+</span>`;
+    },
+    motto: () => `<span class="cmd-gold">
+  "雞蛋不能只放一個籃子，
+  &nbsp;流量也不能只靠一個入口。"
+
+  &nbsp;── 馬農，在又一個凌晨三點的 commit message 裡
+</span>`,
+    stats: () => `<span class="cmd-response">
+  ┌─ LEOPARD STATS ─────────────────┐
+  │ 經驗值 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;15+ 年 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 網站模板 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;100+ 套 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 支援語系 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8 國 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 社群平台 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;活躍經營中 &nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 祈福總次數 &nbsp;&nbsp;&nbsp;12,128 次 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 祈福會員 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;70+ 人 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 狀態 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--neon-green)">HUNTING</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  └─────────────────────────────────┘
+</span>`,
+    about: () => `<span class="cmd-response">
+  <span style="color:var(--leopard-gold)">黑豹程式開發有限公司</span>
+  統編：96816191
+  地點：新北市 / 台北市松山區
+  創辦人：馬農 (twno10)
+
+  一個白天狩獵客戶、晚上修行念經的碼農。
+  相信程式可以改變世界，也相信念經可以改變自己。
+  <span style="color:var(--text-muted)">如果你正在找一個靠譜的網站開發團隊，你找到了。</span>
+</span>`,
+    clear: () => 'CLEAR',
+  };
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const cmd = input.value.trim().toLowerCase();
+    if (!cmd) return;
+
+    // Add user command to output
+    const cmdLine = document.createElement('div');
+    cmdLine.innerHTML = `<span class="cmd-gold">leopard@blackpanther:~$</span> ${cmd}`;
+    output.appendChild(cmdLine);
+
+    // Process command
+    const handler = commands[cmd];
+    if (handler) {
+      const result = handler();
+      if (result === 'CLEAR') {
+        output.innerHTML = '<div><span class="comment">// 畫面已清除。輸入 help 查看指令。</span></div>';
+      } else {
+        const response = document.createElement('div');
+        response.innerHTML = result;
+        output.appendChild(response);
+      }
+    } else if (cmd === 'help') {
+      const helpDiv = document.createElement('div');
+      helpDiv.innerHTML = `<span class="cmd-response">
+      可用指令：skills, hunt, pray, motto, stats, about, clear
+      </span>`;
+      output.appendChild(helpDiv);
+    } else {
+      const errDiv = document.createElement('div');
+      errDiv.innerHTML = `<span class="cmd-error">  command not found: ${cmd}</span><br><span class="cmd-response">  輸入 <span style="color:var(--neon-green)">help</span> 查看可用指令</span>`;
+      output.appendChild(errDiv);
+    }
+
+    input.value = '';
+    output.scrollTop = output.scrollHeight;
+  });
+
+  // Auto-focus on click
+  document.querySelector('.interactive-terminal').addEventListener('click', () => {
+    input.focus();
+  });
+})();
+
+// ============================================
+// MANDALA GENERATOR (Signature Moment #2)
+// ============================================
+function regenerateMandala() {
+  window.mandalaSeed = Math.random() * 10000;
+  const seedText = 'SEED: ' + Math.floor(window.mandalaSeed).toString(16).toUpperCase().padStart(4, '0');
+  const el = document.getElementById('mandala-seed');
+  if (el) el.textContent = seedText + ' // 你的專屬曼陀羅';
+  showToast('為你生成了新的曼陀羅圖案');
+}
+
+function changeMandalaStyle() {
+  window.mandalaStyle = (window.mandalaStyle + 1) % 3;
+  const styles = ['蓮花紋', '幾何紋', '星雲紋'];
+  const el = document.getElementById('mandala-seed');
+  if (el) el.textContent = '風格：' + styles[window.mandalaStyle];
+  showToast('切換至「' + styles[mandalaStyle] + '」風格');
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ============================================
+// LEOPARD EYES EASTER EGG
+// ============================================
+(function() {
+  const eyes = document.querySelector('.leopard-eyes');
+  if (!eyes) return;
+  let clickCount = 0;
+  eyes.addEventListener('click', () => {
+    clickCount++;
+    if (clickCount === 1) {
+      eyes.classList.add('activated');
+      showToast('黑豹已注意到你...');
+      setTimeout(() => eyes.classList.remove('activated'), 3000);
+    } else if (clickCount === 3) {
+      showToast('黑豹的眼神透露著：「找我做網站。」');
+    } else if (clickCount >= 5) {
+      showToast('好了好了，別再戳了。直接私訊我比較快。');
+      clickCount = 0;
+    }
+  });
+})();
+
+// ============================================
+// UNIFIED SCROLL HANDLER (consolidated)
+// ============================================
+(function() {
+  const atmosphere = document.getElementById('atmosphere-layer');
+  const matrixCanvas = document.getElementById('matrix-canvas');
+  const threeColor = window._threeScrollColor;
+  let ticking = false;
+
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const scrollPercent = Math.min(window.scrollY / (document.body.scrollHeight - window.innerHeight), 1);
+      const scrollMid = window.scrollY + window.innerHeight / 2;
+
+      // 1. Atmosphere transition (green → violet)
+      if (atmosphere) atmosphere.style.opacity = Math.min(scrollPercent * 1.5, 0.8);
+      if (matrixCanvas) matrixCanvas.style.opacity = Math.max(0.12 - scrollPercent * 0.12, 0.02);
+      document.body.classList.toggle('scrolled', window.scrollY > 200);
+
+      // 2. Three.js color morph
+      if (threeColor) {
+        threeColor.r = scrollPercent * 0.608;
+        threeColor.g = 1 - scrollPercent * 0.651;
+        threeColor.b = 0.53 + scrollPercent * 0.411;
+      }
+
+      // 3. Prowl indicator dots
+      sections.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el && prowlDots[i]) {
+          const top = el.offsetTop;
+          const bottom = top + el.offsetHeight;
+          prowlDots[i].classList.toggle('active', scrollMid >= top && scrollMid < bottom);
+        }
+      });
+
+      ticking = false;
+    });
+  });
+})();
+
+// ============================================
+// SERVICE CARD MOUSE GLOW
+// ============================================
+document.querySelectorAll('.service-card').forEach(card => {
+  card.addEventListener('mousemove', (e) => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    card.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(0,255,136,0.06) 0%, var(--obsidian) 60%)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.background = 'var(--obsidian)';
+  });
+});
+</script>
+
+</body>
+</html>
