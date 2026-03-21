@@ -281,7 +281,7 @@
             margin: 2rem auto; max-width: 900px;
         }
         .stat-item { text-align: center; }
-        .stat-value { font-family: var(--font-display); font-size: 2.8rem; color: var(--cyan); line-height: 1; }
+        .stat-value { font-family: var(--font-display); font-size: clamp(1.4rem, 3vw, 2.2rem); color: var(--cyan); line-height: 1; letter-spacing: 0.05em; }
         .stat-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.2em; margin-top: 0.3rem; text-transform: uppercase; }
 
         /* ===== VESSEL ===== */
@@ -719,10 +719,10 @@
 
 <!-- ===== STATS ===== -->
 <div class="stats-bar" id="stats">
-    <div class="stat-item"><div class="stat-value" data-count="4930">0</div><div class="stat-label">YT SUBSCRIBERS</div></div>
-    <div class="stat-item"><div class="stat-value" data-count="106">0</div><div class="stat-label">VIDEOS</div></div>
-    <div class="stat-item"><div class="stat-value" data-count="648">0</div><div class="stat-label">THREADS FOLLOWERS</div></div>
-    <div class="stat-item"><div class="stat-value" data-count="20">0</div><div class="stat-label">SEAFOOD GRAB SERIES</div></div>
+    <div class="stat-item"><div class="stat-value">TAITUNG</div><div class="stat-label">BASE CAMP</div></div>
+    <div class="stat-item"><div class="stat-value">20KG</div><div class="stat-label">BIGGEST GT CATCH</div></div>
+    <div class="stat-item"><div class="stat-value">1 BREATH</div><div class="stat-label">FREEDIVE STYLE</div></div>
+    <div class="stat-item"><div class="stat-value">OWN BOAT</div><div class="stat-label">VESSEL STATUS</div></div>
 </div>
 
 <!-- ===== THE VESSEL ===== -->
@@ -1790,35 +1790,40 @@ heroTl.to('.avatar-container', { opacity: 1, duration: 1, y: 0, ease: 'power2.ou
       .to('.hero-depth-text', { opacity: 1, duration: 0.6 }, '-=0.3')
       .to('.hero-scroll-hint', { opacity: 1, duration: 0.6 }, '-=0.2');
 
-gsap.from('.manifesto-quote', { scrollTrigger: { trigger: '.manifesto', start: 'top 80%' }, opacity: 0, x: -40, duration: 1.2, ease: 'power2.out' });
+// --- Set initial hidden states ---
+gsap.set('.manifesto-quote', { opacity: 0, x: -40 });
+gsap.set('.species-card', { opacity: 0, y: 30, scale: 0.9 });
+gsap.set('.philo-card', { opacity: 0, y: 40 });
+gsap.set('.stat-item', { opacity: 0, y: 20 });
+gsap.set('.vessel-visual', { opacity: 0, x: -60 });
+gsap.set('.vessel-content', { opacity: 0, x: 60 });
+gsap.set('.vessel-spec', { opacity: 0, y: 20 });
+gsap.set('.service-card', { opacity: 0, y: 50 });
+gsap.set('.g-item', { opacity: 0, scale: 0.9 });
+gsap.set('.timeline-item', { opacity: 0, x: -30 });
+gsap.set('.footer-motto', { opacity: 0, y: 30 });
 
-gsap.from('.species-card', { scrollTrigger: { trigger: '.species-grid', start: 'top 85%' }, opacity: 0, y: 30, scale: 0.9, stagger: 0.08, duration: 0.6, ease: 'back.out(1.5)' });
+// --- Scroll-triggered reveal animations ---
+gsap.to('.manifesto-quote', { scrollTrigger: { trigger: '.manifesto', start: 'top 80%' }, opacity: 1, x: 0, duration: 1.2, ease: 'power2.out' });
 
-gsap.from('.philo-card', { scrollTrigger: { trigger: '.philosophy-grid', start: 'top 80%' }, opacity: 0, y: 40, stagger: 0.2, duration: 0.8, ease: 'power2.out' });
+gsap.to('.species-card', { scrollTrigger: { trigger: '.species-grid', start: 'top 85%' }, opacity: 1, y: 0, scale: 1, stagger: 0.08, duration: 0.6, ease: 'back.out(1.5)' });
 
-ScrollTrigger.create({
-    trigger: '.stats-bar', start: 'top 80%',
-    onEnter: () => {
-        document.querySelectorAll('.stat-value').forEach(el => {
-            const target = parseInt(el.dataset.count);
-            gsap.to(el, { innerText: target, duration: 2, snap: { innerText: 1 }, ease: 'power2.out',
-                onUpdate() { el.textContent = Math.floor(parseFloat(el.textContent)).toLocaleString(); } });
-        });
-    }, once: true
-});
+gsap.to('.philo-card', { scrollTrigger: { trigger: '.philosophy-grid', start: 'top 80%' }, opacity: 1, y: 0, stagger: 0.2, duration: 0.8, ease: 'power2.out' });
+
+gsap.to('.stat-item', { scrollTrigger: { trigger: '.stats-bar', start: 'top 80%' }, opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: 'power2.out' });
 
 // Vessel parallax
-gsap.from('.vessel-visual', { scrollTrigger: { trigger: '.vessel-section', start: 'top 80%' }, opacity: 0, x: -60, duration: 1.2, ease: 'power3.out' });
-gsap.from('.vessel-content', { scrollTrigger: { trigger: '.vessel-section', start: 'top 80%' }, opacity: 0, x: 60, duration: 1.2, ease: 'power3.out' });
-gsap.from('.vessel-spec', { scrollTrigger: { trigger: '.vessel-specs', start: 'top 90%' }, opacity: 0, y: 20, stagger: 0.1, duration: 0.6, ease: 'power2.out' });
+gsap.to('.vessel-visual', { scrollTrigger: { trigger: '.vessel-section', start: 'top 80%' }, opacity: 1, x: 0, duration: 1.2, ease: 'power3.out' });
+gsap.to('.vessel-content', { scrollTrigger: { trigger: '.vessel-section', start: 'top 80%' }, opacity: 1, x: 0, duration: 1.2, ease: 'power3.out' });
+gsap.to('.vessel-spec', { scrollTrigger: { trigger: '.vessel-specs', start: 'top 90%' }, opacity: 1, y: 0, stagger: 0.1, duration: 0.6, ease: 'power2.out' });
 
-gsap.from('.service-card', { scrollTrigger: { trigger: '.services-grid', start: 'top 80%' }, opacity: 0, y: 50, stagger: 0.15, duration: 0.8, ease: 'power2.out' });
+gsap.to('.service-card', { scrollTrigger: { trigger: '.services-grid', start: 'top 80%' }, opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: 'power2.out' });
 
-gsap.from('.g-item', { scrollTrigger: { trigger: '.gallery-grid', start: 'top 85%' }, opacity: 0, scale: 0.9, stagger: 0.1, duration: 0.7, ease: 'power2.out' });
+gsap.to('.g-item', { scrollTrigger: { trigger: '.gallery-grid', start: 'top 85%' }, opacity: 1, scale: 1, stagger: 0.1, duration: 0.7, ease: 'power2.out' });
 
-gsap.from('.timeline-item', { scrollTrigger: { trigger: '.timeline', start: 'top 80%' }, opacity: 0, x: -30, stagger: 0.2, duration: 0.8, ease: 'power2.out' });
+gsap.to('.timeline-item', { scrollTrigger: { trigger: '.timeline', start: 'top 80%' }, opacity: 1, x: 0, stagger: 0.2, duration: 0.8, ease: 'power2.out' });
 
-gsap.from('.footer-motto', { scrollTrigger: { trigger: '.footer', start: 'top 90%' }, opacity: 0, y: 30, duration: 1, ease: 'power2.out' });
+gsap.to('.footer-motto', { scrollTrigger: { trigger: '.footer', start: 'top 90%' }, opacity: 1, y: 0, duration: 1, ease: 'power2.out' });
 
 /* ===== UNIFIED SCROLL HANDLER ===== */
 const _depthMarker = document.getElementById('depthMarker');
