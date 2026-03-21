@@ -115,7 +115,7 @@
 
     /* ====== HERO SECTION ====== */
     .hero {
-      height: 200vh; /* extra tall for pin */
+      height: 140vh;
       position: relative;
     }
     .hero-inner {
@@ -289,59 +289,141 @@
     }
     .timeline-content strong { color: var(--cream); font-weight: 500; }
 
-    /* ====== ALCHEMY (pinned section) ====== */
+    /* ====== ALCHEMY: CAULDRON (pinned section) ====== */
     .alchemy-pin-wrap {
-      height: 250vh;
+      height: 220vh;
       position: relative;
     }
     .alchemy-pin-inner {
       position: sticky; top: 0;
       height: 100vh;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; align-items: stretch; justify-content: center;
       overflow: hidden;
+      padding: 2rem 0;
     }
     .alchemy-content {
-      max-width: 900px; padding: 0 clamp(1.5rem, 5vw, 4rem); width: 100%;
+      max-width: 1000px; padding: 0 clamp(1.5rem, 5vw, 4rem); width: 100%;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100%;
     }
-    .alchemy-container {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;
+    .alchemy-header {
+      text-align: center; margin-bottom: 0.5rem; width: 100%;
+      flex-shrink: 0;
     }
-    .alchemy-card {
-      padding: 2.5rem 2rem; border-radius: 4px; position: relative; overflow: hidden;
+    .alchemy-header .section-label { justify-content: center; }
+    .alchemy-header .section-title { margin-bottom: 0.3rem; }
+    .alchemy-header .section-text { max-width: 600px; margin: 0 auto; }
+    .alchemy-header .section-text p { margin-bottom: 0; font-size: 0.9rem; }
+
+    /* Cauldron stage */
+    .cauldron-stage {
+      position: relative; width: 100%; max-width: 700px;
+      flex: 1; min-height: 350px; max-height: 480px;
     }
-    .alchemy-card::before {
-      content: ''; position: absolute; inset: 0;
-      border: 1px solid rgba(201,169,110,0.15); border-radius: 4px;
-      pointer-events: none;
+
+    /* Ingredient cards floating on sides */
+    .ingredient-card {
+      position: absolute; top: 10%;
+      width: 200px; padding: 1.5rem 1.2rem;
+      border-radius: 6px; z-index: 3;
+      opacity: 0; transform: translateY(20px);
+      transition: none; /* GSAP controls */
     }
-    .alchemy-cool { background: linear-gradient(135deg, rgba(61,107,79,0.15), rgba(15,31,23,0.8)); }
-    .alchemy-warm { background: linear-gradient(135deg, rgba(139,105,20,0.15), rgba(15,31,23,0.8)); }
-    .alchemy-icon { font-size: 2rem; margin-bottom: 1rem; color: var(--gold); }
-    .alchemy-card h3 {
-      font-family: var(--font-display); font-size: 1.4rem; font-weight: 400;
-      margin-bottom: 1rem; color: var(--cream);
+    .ingredient-cool {
+      left: -30px;
+      background: linear-gradient(135deg, rgba(61,107,79,0.25), rgba(15,31,23,0.9));
+      border: 1px solid rgba(90,158,111,0.2);
     }
-    .alchemy-card p {
-      font-size: 0.9rem; line-height: 1.8;
-      color: rgba(245,240,230,0.7); font-weight: 300;
+    .ingredient-warm {
+      right: -30px;
+      background: linear-gradient(135deg, rgba(139,105,20,0.25), rgba(15,31,23,0.9));
+      border: 1px solid rgba(201,169,110,0.2);
     }
-    /* balance bar */
-    .balance-bar {
-      margin-top: 2.5rem; height: 4px; border-radius: 2px;
-      background: linear-gradient(to right, var(--herb-green), var(--gold), var(--earth-brown));
-      position: relative; overflow: visible;
+    .ingredient-card .ing-icon {
+      font-size: 1.6rem; margin-bottom: 0.6rem;
+      color: var(--gold);
     }
-    .balance-indicator {
-      position: absolute; top: -6px; left: 50%;
-      width: 16px; height: 16px; border-radius: 50%;
-      background: var(--gold); border: 2px solid var(--cream);
-      box-shadow: 0 0 12px rgba(201,169,110,0.5);
+    .ingredient-card h3 {
+      font-family: var(--font-display); font-size: 1.15rem;
+      font-weight: 400; color: var(--cream); margin-bottom: 0.5rem;
+    }
+    .ingredient-card p {
+      font-size: 0.78rem; line-height: 1.7;
+      color: rgba(245,240,230,0.65); font-weight: 300;
+    }
+
+    /* The cauldron SVG */
+    .cauldron-svg-wrap {
+      position: absolute; bottom: 0; left: 50%;
       transform: translateX(-50%);
+      width: 320px; height: 280px; z-index: 2;
     }
-    .balance-label {
-      display: flex; justify-content: space-between; margin-top: 1rem;
-      font-family: var(--font-accent); font-size: 0.7rem;
-      letter-spacing: 0.2em; color: var(--sage);
+    .cauldron-svg-wrap svg { width: 100%; height: 100%; }
+
+    /* Liquid inside cauldron — no CSS transition, GSAP scrub handles smoothing */
+    .cauldron-liquid {}
+    /* Liquid surface shine */
+    .cauldron-liquid-shine {
+      animation: liquid-shimmer 3s ease-in-out infinite;
+    }
+    @keyframes liquid-shimmer {
+      0%, 100% { opacity: 0.15; rx: 55; }
+      50% { opacity: 0.3; rx: 60; }
+    }
+
+    /* Bubbles canvas — only inside cauldron opening */
+    .cauldron-bubbles {
+      position: absolute; bottom: 155px; left: 50%;
+      transform: translateX(-50%);
+      width: 180px; height: 100px;
+      pointer-events: none; z-index: 3;
+    }
+
+    /* Fire under cauldron — positioned fully below pot base */
+    .cauldron-fire {
+      position: absolute; bottom: -45px; left: 50%;
+      transform: translateX(-50%);
+      width: 140px; height: 50px;
+      pointer-events: none; z-index: 1;
+    }
+
+    /* Steam rising */
+    .cauldron-steam {
+      position: absolute; bottom: 160px; left: 50%;
+      transform: translateX(-50%);
+      width: 240px; height: 200px;
+      pointer-events: none; z-index: 4;
+      opacity: 0;
+    }
+
+    /* Ingredient drops falling into cauldron */
+    .drop-particle {
+      position: absolute; width: 8px; height: 8px;
+      border-radius: 50%; z-index: 5;
+      pointer-events: none; opacity: 0;
+    }
+    .drop-cool { background: var(--leaf-green); box-shadow: 0 0 8px rgba(90,158,111,0.6); }
+    .drop-warm { background: var(--gold); box-shadow: 0 0 8px rgba(201,169,110,0.6); }
+
+    /* Balance tagline at bottom */
+    .cauldron-tagline {
+      position: absolute; bottom: -50px; left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-display); font-size: clamp(0.9rem, 2vw, 1.15rem);
+      font-weight: 300; font-style: italic;
+      color: var(--light-gold); white-space: nowrap;
+      opacity: 0; z-index: 5;
+    }
+
+    /* Subtle rim glow behind cauldron at balance */
+    .cauldron-glow {
+      position: absolute; bottom: 110px; left: 50%;
+      transform: translateX(-50%);
+      width: 200px; height: 60px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(201,169,110,0.2) 0%, transparent 70%);
+      z-index: 0; opacity: 0;
+      pointer-events: none;
+      filter: blur(8px);
     }
 
     /* ====== HORIZONTAL TEA SCROLL ====== */
@@ -444,6 +526,7 @@
       transition: color 0.3s; cursor: none;
     }
     .footer-brand a:hover { color: var(--gold); }
+    .footer-heart { color: var(--herb-green); }
 
     /* ====== DIVIDERS ====== */
     .herb-divider { max-width: 900px; margin: 0 auto; padding: 0 clamp(1.5rem, 5vw, 4rem); }
@@ -473,15 +556,39 @@
       .timeline-line { left: 12px; }
       .timeline-item { padding-left: 45px; margin-bottom: 2rem; }
       .timeline-dot { left: 6px; }
-      .alchemy-container { grid-template-columns: 1fr; }
-      .alchemy-card { padding: 2rem 1.5rem; }
       .alchemy-pin-wrap { height: auto; }
       .alchemy-pin-inner {
         position: relative; height: auto;
         padding: clamp(3rem,8vw,5rem) 0;
       }
-      .alchemy-content { padding: 0 1.2rem; }
-      .balance-bar { margin-top: 1.5rem; }
+      .alchemy-content { padding: 0 1.2rem; height: auto; }
+      .cauldron-stage {
+        position: relative; height: auto; min-height: auto; max-height: none;
+        display: flex; flex-direction: column; align-items: center; gap: 1.2rem;
+      }
+      /* Cauldron first on mobile via order */
+      .cauldron-svg-wrap {
+        position: relative; left: auto; bottom: auto;
+        transform: none; width: 220px; height: 195px; margin: 0 auto;
+        order: -1;
+      }
+      /* CSS-only liquid animation on mobile */
+      .cauldron-svg-wrap .cauldron-liquid {
+        fill: rgba(140, 120, 60, 0.8);
+      }
+      .cauldron-bubbles, .cauldron-steam, .cauldron-fire, .cauldron-glow, .drop-particle { display: none; }
+      .ingredient-card {
+        position: relative; top: auto; left: auto; right: auto;
+        width: 100%; opacity: 1; transform: none;
+      }
+      .ingredient-card .ing-icon { display: inline-block; margin-right: 0.5rem; margin-bottom: 0; }
+      .ingredient-card h3 { display: inline; }
+      .cauldron-tagline {
+        position: relative; bottom: auto; left: auto;
+        transform: none; opacity: 1; text-align: center;
+        white-space: normal; margin-top: 0.5rem;
+        font-size: 0.85rem;
+      }
       .tea-scroll-wrap { overflow: visible; }
       .tea-scroll-inner {
         min-height: auto;
@@ -643,34 +750,79 @@
       </div>
     </section>
 
-    <!-- ====== ALCHEMY: Pinned ====== -->
+    <!-- ====== ALCHEMY: The Cauldron ====== -->
     <div class="alchemy-pin-wrap" id="alchemyWrap">
       <div class="alchemy-pin-inner">
         <div class="alchemy-content">
-          <div class="section-label"><span>The Alchemy</span></div>
-          <h2 class="section-title">一涼一溫的平衡</h2>
-          <div class="section-text">
-            <p>爸爸家是台中祖傳的蕭百草店，媽媽家則是潮州世代相傳的春盛中藥房。輪到媽媽接手時，她選擇將兩個家族的智慧融合。</p>
-          </div>
-          <div class="alchemy-container">
-            <div class="alchemy-card alchemy-cool" id="cardCool">
-              <div class="alchemy-icon"><i class="fas fa-leaf"></i></div>
-              <h3>涼 &middot; 青草</h3>
-              <p>寒涼的青草，來自台灣這片土地的原生力量。清熱降火，疏風解毒。每一株草，都是大自然寫給人類的處方箋。</p>
-            </div>
-            <div class="alchemy-card alchemy-warm" id="cardWarm">
-              <div class="alchemy-icon"><i class="fas fa-fire"></i></div>
-              <h3>溫 &middot; 中藥</h3>
-              <p>溫補的中藥，承襲潮州世代的醫藥智慧。補氣養血，調和臟腑。在慢火熬煮中，釋放千年累積的療癒能量。</p>
+          <div class="alchemy-header">
+            <div class="section-label"><span>The Alchemy</span></div>
+            <h2 class="section-title">一涼一溫的平衡</h2>
+            <div class="section-text">
+              <p>爸爸家是台中祖傳的蕭百草店，媽媽家則是潮州世代相傳的春盛中藥房。輪到媽媽接手時，她選擇將兩個家族的智慧融合。</p>
             </div>
           </div>
-          <div class="balance-bar">
-            <div class="balance-indicator" id="balanceIndicator"></div>
-          </div>
-          <div class="balance-label">
-            <span>COOL &middot; 涼</span>
-            <span>BALANCE &middot; 衡</span>
-            <span>WARM &middot; 溫</span>
+
+          <div class="cauldron-stage" id="cauldronStage">
+            <!-- Cool ingredient card (left) -->
+            <div class="ingredient-card ingredient-cool" id="cardCool">
+              <div class="ing-icon"><i class="fas fa-leaf"></i></div>
+              <h3>涼 · 青草</h3>
+              <p>寒涼的青草，來自台灣這片土地的原生力量。清熱降火，疏風解毒。</p>
+            </div>
+
+            <!-- Warm ingredient card (right) -->
+            <div class="ingredient-card ingredient-warm" id="cardWarm">
+              <div class="ing-icon"><i class="fas fa-fire"></i></div>
+              <h3>溫 · 中藥</h3>
+              <p>溫補的中藥，承襲潮州世代的醫藥智慧。補氣養血，調和臟腑。</p>
+            </div>
+
+            <!-- Glow ring -->
+            <div class="cauldron-glow" id="cauldronGlow"></div>
+
+            <!-- Fire under cauldron -->
+            <canvas class="cauldron-fire" id="cauldronFire" width="140" height="50"></canvas>
+
+            <!-- Cauldron SVG -->
+            <div class="cauldron-svg-wrap">
+              <svg viewBox="0 0 320 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Cauldron body -->
+                <ellipse cx="160" cy="240" rx="100" ry="14" fill="rgba(30,20,10,0.5)" />
+                <path d="M60 120 C60 120, 50 200, 70 240 C90 265, 230 265, 250 240 C270 200, 260 120, 260 120" fill="#1a1a1a" stroke="#4a3520" stroke-width="2" />
+                <!-- Cauldron rim -->
+                <ellipse cx="160" cy="120" rx="105" ry="22" fill="#2a1f14" stroke="#6b4226" stroke-width="2.5" />
+                <ellipse cx="160" cy="118" rx="95" ry="17" fill="#0f1f17" />
+                <!-- Liquid surface -->
+                <ellipse class="cauldron-liquid" id="cauldronLiquid" cx="160" cy="118" rx="90" ry="14" fill="rgba(61,107,79,0.8)" />
+                <!-- Liquid highlight/shine -->
+                <ellipse class="cauldron-liquid-shine" cx="140" cy="115" rx="55" ry="6" fill="rgba(255,255,255,0.15)" />
+                <!-- Liquid ripple lines -->
+                <ellipse cx="160" cy="118" rx="70" ry="9" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5">
+                  <animate attributeName="rx" values="65;75;65" dur="4s" repeatCount="indefinite" />
+                  <animate attributeName="ry" values="8;10;8" dur="4s" repeatCount="indefinite" />
+                </ellipse>
+                <ellipse cx="160" cy="118" rx="45" ry="6" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5">
+                  <animate attributeName="rx" values="50;40;50" dur="3s" repeatCount="indefinite" />
+                  <animate attributeName="ry" values="7;5;7" dur="3s" repeatCount="indefinite" />
+                </ellipse>
+                <!-- Handles -->
+                <path d="M55 140 C30 140, 25 170, 55 170" stroke="#6b4226" stroke-width="3" fill="none" stroke-linecap="round" />
+                <path d="M265 140 C290 140, 295 170, 265 170" stroke="#6b4226" stroke-width="3" fill="none" stroke-linecap="round" />
+                <!-- Rim highlight -->
+                <ellipse cx="160" cy="117" rx="80" ry="10" fill="none" stroke="rgba(201,169,110,0.15)" stroke-width="1" />
+              </svg>
+            </div>
+
+            <!-- Bubbles -->
+            <canvas class="cauldron-bubbles" id="cauldronBubbles" width="180" height="100"></canvas>
+
+            <!-- Steam -->
+            <canvas class="cauldron-steam" id="cauldronSteam" width="240" height="200"></canvas>
+
+            <!-- Drop particles (created by JS) -->
+
+            <!-- Tagline -->
+            <div class="cauldron-tagline" id="cauldronTagline">在一涼一溫之間，慢慢熬出最適合身體的平衡</div>
           </div>
         </div>
       </div>
@@ -786,7 +938,7 @@
         <a href="https://www.google.com.tw/maps/place/%E8%95%AD%E6%B6%BC%E5%BF%83%E7%99%BE%E8%8D%89%E5%BA%97%EF%BC%88%E5%8E%9F77%E5%B9%B4%E8%80%81%E5%BA%97+%E8%95%AD%E7%99%BE%E8%8D%89%E5%BA%97%EF%BC%89/@24.1401017,120.6740564,15z" target="_blank" rel="noopener" title="Google Maps" aria-label="Google Maps"><i class="fa-solid fa-map-location-dot"></i></a>
       </div>
       <p class="footer-brand">
-        Made with <i class="fas fa-heart" style="color: var(--herb-green);"></i> by <a href="/guild/">SuperGalen's Dungeon</a>
+        Made with <i class="fas fa-heart footer-heart"></i> by <a href="/guild/">SuperGalen's Dungeon</a>
       </p>
     </footer>
 
@@ -882,7 +1034,7 @@
       y: -150, opacity: 0, scale: 0.95,
       ease: 'none',
       scrollTrigger: {
-        trigger: '#hero-section', start: 'top top', end: '60% top', scrub: true
+        trigger: '#hero-section', start: 'top top', end: '85% top', scrub: true
       }
     });
   }
@@ -959,29 +1111,261 @@
   });
 
   /* ================================================
-     ALCHEMY: Pinned section + balance indicator
+     ALCHEMY: The Cauldron — scroll-driven brewing
   ================================================ */
-  if (window.innerWidth > 768) {
+  (function initCauldron() {
+    if (window.innerWidth <= 768) return;
+
+    const liquid = document.getElementById('cauldronLiquid');
+    const bubblesCanvas = document.getElementById('cauldronBubbles');
+    const steamCanvas = document.getElementById('cauldronSteam');
+    const fireCanvas = document.getElementById('cauldronFire');
+    const stage = document.getElementById('cauldronStage');
+    const bCtx = bubblesCanvas.getContext('2d');
+    const sCtx = steamCanvas.getContext('2d');
+    const fCtx = fireCanvas.getContext('2d');
+
+    let progress = 0;
+    let bubbles = [];
+    let steamParticles = [];
+    let fireParticles = [];
+    let lastDropTime = 0;
+
+    // Liquid color interpolation
+    function lerpColor(a, b, t) {
+      const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
+      const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+      const r = Math.round(ar + (br - ar) * t);
+      const g = Math.round(ag + (bg - ag) * t);
+      const bl = Math.round(ab + (bb - ab) * t);
+      return `rgba(${r},${g},${bl},0.85)`;
+    }
+
+    // Bubble system — confined to cauldron opening
+    function spawnBubble() {
+      bubbles.push({
+        x: 50 + Math.random() * 80,
+        y: 85 + Math.random() * 12,
+        r: 1.5 + Math.random() * 3,
+        vy: -0.3 - Math.random() * 0.6,
+        vx: (Math.random() - 0.5) * 0.3,
+        alpha: 0.35 + Math.random() * 0.25,
+        wobble: Math.random() * Math.PI * 2,
+      });
+    }
+
+    function drawBubbles() {
+      bCtx.clearRect(0, 0, 180, 100);
+      const intensity = Math.min(progress * 3, 1);
+      if (intensity < 0.05) return;
+
+      if (Math.random() < intensity * 0.35) spawnBubble();
+
+      bubbles = bubbles.filter(b => b.alpha > 0.02 && b.y > -5);
+      bubbles.forEach(b => {
+        b.y += b.vy * (0.5 + intensity);
+        b.x += Math.sin(b.wobble) * 0.25 + b.vx;
+        b.wobble += 0.05;
+        b.alpha *= 0.991;
+        b.r += 0.008;
+
+        const g = Math.round(107 + progress * 60);
+        const r = Math.round(61 + progress * 140);
+        const bl = Math.round(79 - progress * 30);
+        bCtx.beginPath();
+        bCtx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        bCtx.fillStyle = `rgba(${r},${g},${bl},${b.alpha * intensity})`;
+        bCtx.fill();
+
+        bCtx.beginPath();
+        bCtx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.25, 0, Math.PI * 2);
+        bCtx.fillStyle = `rgba(255,255,255,${b.alpha * 0.12 * intensity})`;
+        bCtx.fill();
+      });
+    }
+
+    // Steam system — wispy streaks instead of blobs
+    function spawnSteam() {
+      const baseX = 120 + (Math.random() - 0.5) * 40;
+      steamParticles.push({
+        x: baseX, y: 190,
+        prevX: baseX, prevY: 190,
+        vy: -0.6 - Math.random() * 0.8,
+        vx: (Math.random() - 0.5) * 0.3,
+        alpha: 0.18 + Math.random() * 0.1,
+        width: 1 + Math.random() * 2,
+        wobbleSpeed: 0.02 + Math.random() * 0.02,
+        wobbleAmp: 0.5 + Math.random() * 1,
+      });
+    }
+
+    function drawSteam() {
+      sCtx.clearRect(0, 0, 240, 200);
+      const intensity = Math.max(0, (progress - 0.45) * 2.2);
+      if (intensity < 0.02) return;
+
+      if (Math.random() < intensity * 0.35) spawnSteam();
+
+      steamParticles = steamParticles.filter(s => s.alpha > 0.008 && s.y > -10);
+      steamParticles.forEach(s => {
+        s.prevX = s.x;
+        s.prevY = s.y;
+        s.y += s.vy;
+        s.x += s.vx + Math.sin(s.y * s.wobbleSpeed) * s.wobbleAmp;
+        s.alpha *= 0.988;
+        s.width *= 1.008;
+
+        // Draw as wispy line segments
+        sCtx.beginPath();
+        sCtx.moveTo(s.prevX, s.prevY);
+        sCtx.lineTo(s.x, s.y);
+        sCtx.strokeStyle = `rgba(210,200,185,${s.alpha * intensity * 0.6})`;
+        sCtx.lineWidth = s.width;
+        sCtx.lineCap = 'round';
+        sCtx.stroke();
+      });
+    }
+
+    // Fire system — constrained below cauldron base
+    function spawnFire() {
+      fireParticles.push({
+        x: 40 + Math.random() * 60,
+        y: 42 + Math.random() * 6,
+        r: 2 + Math.random() * 3,
+        vy: -0.5 - Math.random() * 0.8,
+        vx: (Math.random() - 0.5) * 0.6,
+        alpha: 0.6 + Math.random() * 0.3,
+        hue: Math.random(),
+      });
+    }
+
+    function drawFire() {
+      fCtx.clearRect(0, 0, 140, 50);
+      const intensity = Math.min(progress * 2.5, 1);
+      if (intensity < 0.05) return;
+
+      if (Math.random() < intensity * 0.5) spawnFire();
+
+      fireParticles = fireParticles.filter(f => f.alpha > 0.02 && f.y > 5);
+      fireParticles.forEach(f => {
+        f.y += f.vy * intensity;
+        f.x += f.vx;
+        f.alpha *= 0.94;
+        f.r *= 0.97;
+        const r = Math.round(200 + f.hue * 55);
+        const g = Math.round(80 + f.hue * 100 + (1 - f.alpha) * 40);
+        const b = Math.round(10 + f.hue * 20);
+        // Soft glow core
+        fCtx.beginPath();
+        fCtx.arc(f.x, f.y, f.r * 1.5, 0, Math.PI * 2);
+        fCtx.fillStyle = `rgba(${r},${g},${b},${f.alpha * intensity * 0.15})`;
+        fCtx.fill();
+        // Bright center
+        fCtx.beginPath();
+        fCtx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+        fCtx.fillStyle = `rgba(${r},${g},${b},${f.alpha * intensity * 0.6})`;
+        fCtx.fill();
+      });
+    }
+
+    // Drop particles falling into cauldron
+    function spawnDrop(side) {
+      const now = Date.now();
+      if (now - lastDropTime < 300) return;
+      lastDropTime = now;
+
+      const drop = document.createElement('div');
+      drop.className = `drop-particle drop-${side}`;
+      stage.appendChild(drop);
+
+      const startX = side === 'cool' ? '25%' : '75%';
+      const startY = side === 'cool' ? '30%' : '30%';
+
+      gsap.set(drop, { left: startX, top: startY, opacity: 1 });
+      gsap.to(drop, {
+        left: '50%', top: '65%', opacity: 0,
+        duration: 0.8, ease: 'power2.in',
+        onComplete: () => drop.remove(),
+      });
+    }
+
+    // Animation loop — runs continuously when section is visible
+    let animVisible = false;
+    function animLoop() {
+      if (!animVisible) return;
+      drawBubbles();
+      drawSteam();
+      drawFire();
+      requestAnimationFrame(animLoop);
+    }
+
+    // Use IntersectionObserver for continuous animation
+    const alchemyObs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !animVisible) {
+          animVisible = true;
+          animLoop();
+        } else if (!entry.isIntersecting) {
+          animVisible = false;
+        }
+      });
+    }, { threshold: 0.1 });
+    alchemyObs.observe(document.getElementById('alchemyWrap'));
+
+    // Scroll trigger for scroll-driven progress (cards, liquid color, tagline)
     ScrollTrigger.create({
       trigger: '#alchemyWrap',
       start: 'top top',
       end: 'bottom bottom',
       scrub: true,
       onUpdate: self => {
-        const p = self.progress;
-        // Balance indicator slides from left(cool) to right(warm)
-        gsap.set('#balanceIndicator', { left: (15 + p * 70) + '%' });
-        // Cards opacity shift
-        gsap.set('#cardCool', { opacity: 1 - p * 0.5 });
-        gsap.set('#cardWarm', { opacity: 0.5 + p * 0.5 });
+        progress = self.progress;
+        const p = progress;
+
+        // Liquid color: green(0x3d6b4f) → gold(0xc9a96e) → amber(0x8b6914)
+        let liquidColor;
+        if (p < 0.5) {
+          liquidColor = lerpColor(0x3d6b4f, 0xc9a96e, p * 2);
+        } else {
+          liquidColor = lerpColor(0xc9a96e, 0x8b6914, (p - 0.5) * 2);
+        }
+        liquid.setAttribute('fill', liquidColor);
+
+        // Cool card: fly in from left (0-30%), then float
+        if (p < 0.3) {
+          const cp = p / 0.3;
+          gsap.set('#cardCool', { opacity: cp, x: -60 + cp * 60, y: 20 - cp * 20 });
+        } else {
+          gsap.set('#cardCool', { opacity: 1 - Math.max(0, (p - 0.7)) * 3, x: 0, y: 0 });
+        }
+
+        // Warm card: fly in from right (20-50%)
+        if (p < 0.2) {
+          gsap.set('#cardWarm', { opacity: 0, x: 60, y: 20 });
+        } else if (p < 0.5) {
+          const wp = (p - 0.2) / 0.3;
+          gsap.set('#cardWarm', { opacity: wp, x: 60 - wp * 60, y: 20 - wp * 20 });
+        } else {
+          gsap.set('#cardWarm', { opacity: 1 - Math.max(0, (p - 0.7)) * 3, x: 0, y: 0 });
+        }
+
+        // Drop particles at certain thresholds
+        if (p > 0.15 && p < 0.45 && Math.random() < 0.08) spawnDrop('cool');
+        if (p > 0.35 && p < 0.65 && Math.random() < 0.08) spawnDrop('warm');
+
+        // Steam canvas opacity
+        gsap.set('#cauldronSteam', { opacity: Math.max(0, (p - 0.4) * 2) });
+
+        // Glow at balance point (60-90%)
+        const glowP = p > 0.6 ? Math.min(1, (p - 0.6) / 0.2) : 0;
+        gsap.set('#cauldronGlow', { opacity: glowP * 0.8 });
+
+        // Tagline fades in at 75-90%
+        const tagP = p > 0.75 ? Math.min(1, (p - 0.75) / 0.15) : 0;
+        gsap.set('#cauldronTagline', { opacity: tagP, y: 10 - tagP * 10 });
       }
     });
-  }
-
-  gsap.from('.alchemy-card', {
-    opacity: 0, y: 40, stagger: 0.2, duration: 0.9,
-    scrollTrigger: { trigger: '.alchemy-container', start: 'top 80%' }
-  });
+  })();
 
   /* ================================================
      TEA HORIZONTAL SCROLL (pinned)
