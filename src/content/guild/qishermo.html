@@ -173,6 +173,43 @@
 
         .counter { font-variant-numeric: tabular-nums; }
 
+        /* === HQ CARD === */
+        .hq-card-wrap { position: relative; perspective: 800px; max-width: 520px; margin: 2rem auto 0; }
+        .hq-card { position: relative; border: 1px solid rgba(212,168,75,0.15); background: linear-gradient(145deg, rgba(22,22,30,0.95), rgba(8,8,14,0.98)); padding: 0; overflow: hidden; transition: transform 0.5s ease, box-shadow 0.5s ease; transform-style: preserve-3d; }
+        .hq-card:hover { transform: rotateY(-2deg) rotateX(1deg) scale(1.02); box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(212,168,75,0.08); }
+        .hq-card-img { width: 100%; display: block; opacity: 0.88; transition: opacity 0.4s; }
+        .hq-card:hover .hq-card-img { opacity: 1; }
+        .hq-card-stamp { position: absolute; top: 12px; right: 12px; font-family: var(--font-mono); font-size: 0.55rem; color: var(--cipher-green); letter-spacing: 3px; background: rgba(6,6,10,0.85); padding: 4px 10px; border: 1px solid rgba(51,221,136,0.2); pointer-events: none; }
+        .hq-card-scanline { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(51,221,136,0.015) 2px, rgba(51,221,136,0.015) 4px); }
+        .hq-card-corner { position: absolute; width: 16px; height: 16px; border-color: var(--gold); border-style: solid; pointer-events: none; opacity: 0.4; }
+        .hq-card-corner.tl { top: 6px; left: 6px; border-width: 1px 0 0 1px; }
+        .hq-card-corner.tr { top: 6px; right: 6px; border-width: 1px 1px 0 0; }
+        .hq-card-corner.bl { bottom: 6px; left: 6px; border-width: 0 0 1px 1px; }
+        .hq-card-corner.br { bottom: 6px; right: 6px; border-width: 0 1px 1px 0; }
+
+        /* === AWARDS EVIDENCE BOARD === */
+        .evidence-board { position: relative; min-height: 480px; margin-top: 2rem; }
+        .evidence-file { position: absolute; cursor: pointer; transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); opacity: 0; }
+        .evidence-file:hover { z-index: 10; filter: brightness(1.1); }
+        .evidence-file-inner { position: relative; background: rgba(22,22,30,0.9); border: 1px solid rgba(240,236,228,0.08); padding: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); transition: all 0.4s; }
+        .evidence-file:hover .evidence-file-inner { border-color: var(--gold); box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 20px rgba(212,168,75,0.1); transform: scale(1.08); }
+        .evidence-file img { width: 100%; height: 100%; object-fit: cover; display: block; filter: sepia(0.2) brightness(0.8) contrast(1.05); transition: filter 0.4s; }
+        .evidence-file:hover img { filter: sepia(0) brightness(1) contrast(1); }
+        .evidence-file-label { position: absolute; bottom: -1px; left: -1px; right: -1px; background: rgba(6,6,10,0.92); padding: 6px 8px; font-family: var(--font-mono); font-size: 0.5rem; color: var(--cipher-green); letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid rgba(51,221,136,0.15); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .evidence-pin { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; border-radius: 50%; background: var(--crimson); box-shadow: 0 0 6px rgba(196,40,40,0.5); z-index: 2; }
+        .evidence-string { position: absolute; top: 0; left: 50%; width: 1px; height: 20px; background: rgba(240,236,228,0.1); z-index: 1; }
+        .evidence-counter { text-align: center; margin-top: 1.5rem; position: relative; }
+        .evidence-counter-inner { display: inline-block; font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 4px; padding: 8px 20px; border: 1px solid rgba(240,236,228,0.06); background: var(--panel); }
+        .evidence-counter-inner .ev-num { color: var(--gold); font-weight: 700; }
+
+        /* === LIGHTBOX === */
+        .award-lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6,6,10,0.96); z-index: 50000; display: none; justify-content: center; align-items: center; cursor: pointer; backdrop-filter: blur(8px); }
+        .award-lightbox.active { display: flex; }
+        .award-lightbox img { max-width: 85vw; max-height: 80vh; object-fit: contain; border: 1px solid rgba(212,168,75,0.15); box-shadow: 0 0 80px rgba(0,0,0,0.8); }
+        .lightbox-close { position: absolute; top: 30px; right: 30px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); letter-spacing: 3px; cursor: pointer; transition: color 0.3s; }
+        .lightbox-close:hover { color: var(--gold); }
+        .lightbox-label { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 4px; }
+
         .site-footer { padding: 6rem 2rem 3rem; text-align: center; position: relative; z-index: 10; }
         .footer-socials { display: flex; justify-content: center; gap: 2rem; margin-bottom: 3rem; }
         .footer-socials a { color: var(--text-dim); font-size: 1.3rem; transition: all 0.3s; text-decoration: none; }
@@ -196,6 +233,8 @@
             .quote-mark { font-size: 5rem; }
             .services-grid { grid-template-columns: 1fr; }
             .two-col { grid-template-columns: 1fr !important; }
+            .evidence-board { min-height: 420px; }
+            .hq-card-wrap { max-width: 100%; }
             .section-wrap { padding: 4rem 1rem; }
             .back-nav { top: 10px; left: 10px; font-size: 0.65rem; padding: 4px 10px; }
         }
@@ -263,7 +302,7 @@
                     <div class="dossier-row"><div class="dossier-label">CURRENT OP</div><div class="dossier-value"><span class="highlight">臣德地產</span> 創辦人 / 店東</div></div>
                     <div class="dossier-row"><div class="dossier-label">FIELD EXP</div><div class="dossier-value"><span class="counter" data-target="23">0</span>+ 年不動產實戰 <span class="cipher-tag">ELITE</span></div></div>
                     <div class="dossier-row"><div class="dossier-label">EDUCATION</div><div class="dossier-value">長榮大學不動產經營管理碩士 / 中正大學法學碩士（<span class="counter" data-target="60">0</span>學分）</div></div>
-                    <div class="dossier-row"><div class="dossier-label">BASE</div><div class="dossier-value">新北市<span class="highlight">板橋區</span>中正路</div></div>
+                    <div class="dossier-row"><div class="dossier-label">BASE</div><div class="dossier-value">新北市<span class="highlight">板橋區</span></div></div>
                     <div class="dossier-row"><div class="dossier-label">MISSION</div><div class="dossier-value">教人低成本開業，讓每個人都能當負責人 <span class="cipher-tag">VISION</span></div></div>
                     <div class="dossier-row"><div class="dossier-label">TYPE</div><div class="dossier-value">超級I人 <span class="cipher-tag">INTROVERT</span></div></div>
                 </div>
@@ -346,17 +385,23 @@
                     <h2 class="section-title" data-scramble>BANQIAO HQ</h2>
                     <div class="section-divider"></div>
                 </div>
-                <div class="two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
-                    <div class="content-panel" style="padding:2rem;display:flex;flex-direction:column;justify-content:center">
-                        <div style="font-family:var(--font-heading);font-size:1.6rem;color:var(--text-primary);letter-spacing:3px;margin-bottom:1rem">臣德地產</div>
-                        <div style="font-size:0.9rem;color:var(--text-body);line-height:1.8;font-weight:300">
-                            <p>新北市板橋區中正路250巷。我的基地。</p>
-                            <p style="margin-top:0.8rem">我的願景：<strong style="color:var(--gold)">讓不動產經紀業每一個人都有能力執業當負責人。</strong></p>
-                            <p style="margin-top:0.8rem">我贊助在地的<strong>春聯義寫活動</strong>，也擔任<strong>板橋領航社</strong>的顧問。做生意最重要的不是成交，是在這個地方留下什麼。</p>
-                        </div>
+                <div class="content-panel" style="padding:2.5rem 3rem;margin-bottom:2rem">
+                    <div style="display:flex;align-items:baseline;gap:1rem;margin-bottom:1.2rem">
+                        <span style="font-family:var(--font-display);font-size:2.2rem;color:var(--gold);letter-spacing:4px">臣德地產</span>
+                        <span class="cipher-tag">ACTIVE SINCE 2011</span>
                     </div>
-                    <div class="content-panel" style="padding:0;overflow:hidden;max-height:400px">
-                        <img src="/assets/img/guild/qishermo/calligraphy.webp" alt="臣德地產春聯義寫活動" style="width:100%;height:100%;object-fit:cover;object-position:center 30%;opacity:0.85;display:block">
+                    <p style="font-size:0.95rem;color:var(--text-body);line-height:1.9;font-weight:300;max-width:600px">新北市板橋區。我的基地。做生意最重要的不是成交，是在這個地方留下什麼。</p>
+                    <p style="font-family:var(--font-heading);font-size:1.05rem;color:var(--gold-bright);letter-spacing:2px;margin-top:1.2rem;font-weight:400">「讓不動產經紀業每一個人都有能力執業當負責人。」</p>
+                </div>
+                <div class="hq-card-wrap">
+                    <div class="hq-card">
+                        <img src="/assets/img/guild/qishermo/business_card.webp" alt="邱俊瑋 臣德地產 名片" class="hq-card-img">
+                        <div class="hq-card-scanline"></div>
+                        <div class="hq-card-stamp">FIELD ID // VERIFIED</div>
+                        <div class="hq-card-corner tl"></div>
+                        <div class="hq-card-corner tr"></div>
+                        <div class="hq-card-corner bl"></div>
+                        <div class="hq-card-corner br"></div>
                     </div>
                 </div>
             </div>
@@ -377,6 +422,76 @@
                 </div>
             </div>
         </section>
+
+        <section class="section-wrap">
+            <div class="section-inner">
+                <div class="section-header">
+                    <div class="section-label">// DECLASSIFIED COMMENDATIONS</div>
+                    <h2 class="section-title" data-scramble>EVIDENCE WALL</h2>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="evidence-board" id="evidenceBoard">
+                    <div class="evidence-file" data-label="FILE-001 // CHARITY">
+                        <div class="evidence-pin"></div>
+                        <div class="evidence-file-inner">
+                            <img src="/assets/img/guild/qishermo/award_charity.webp" alt="台灣天慈同心會感謝狀" loading="lazy">
+                            <div class="evidence-file-label">天慈同心會 // 105年</div>
+                        </div>
+                    </div>
+                    <div class="evidence-file" data-label="FILE-002 // DEAF ASSOC">
+                        <div class="evidence-pin"></div>
+                        <div class="evidence-file-inner">
+                            <img src="/assets/img/guild/qishermo/award_deaf_association.webp" alt="台中市聾人協會感謝狀" loading="lazy">
+                            <div class="evidence-file-label">聾人協會 // 105年</div>
+                        </div>
+                    </div>
+                    <div class="evidence-file" data-label="FILE-003 // PERSONAL">
+                        <div class="evidence-pin"></div>
+                        <div class="evidence-file-inner">
+                            <img src="/assets/img/guild/qishermo/award_deaf_personal.webp" alt="台中市聾人協會個人感謝狀" loading="lazy">
+                            <div class="evidence-file-label">聾人協會 個人 // 105年</div>
+                        </div>
+                    </div>
+                    <div class="evidence-file" data-label="FILE-004 // URBAN RENEWAL">
+                        <div class="evidence-pin"></div>
+                        <div class="evidence-file-inner">
+                            <img src="/assets/img/guild/qishermo/award_urban_renewal.webp" alt="臺北市危老重建推動師聘書" loading="lazy">
+                            <div class="evidence-file-label">危老重建推動師 // 107年</div>
+                        </div>
+                    </div>
+                    <div class="evidence-file" data-label="FILE-005 // CORRECTIONS">
+                        <div class="evidence-pin"></div>
+                        <div class="evidence-file-inner">
+                            <img src="/assets/img/guild/qishermo/award_prison_event.webp" alt="法務部矯正署感謝狀" loading="lazy">
+                            <div class="evidence-file-label">矯正署 // 102年</div>
+                        </div>
+                    </div>
+                    <div class="evidence-file" data-label="FILE-006 // AUTISM">
+                        <div class="evidence-pin"></div>
+                        <div class="evidence-file-inner">
+                            <img src="/assets/img/guild/qishermo/award_autism.webp" alt="台北市自閉症家長協會感謝狀" loading="lazy">
+                            <div class="evidence-file-label">自閉症協會 // 106年</div>
+                        </div>
+                    </div>
+                    <div class="evidence-file" data-label="FILE-007 // COMMUNITY">
+                        <div class="evidence-pin"></div>
+                        <div class="evidence-file-inner">
+                            <img src="/assets/img/guild/qishermo/award_community_meal.webp" alt="台灣百業共餐交流協會感謝狀" loading="lazy">
+                            <div class="evidence-file-label">百業共餐 // 109年</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="evidence-counter">
+                    <div class="evidence-counter-inner">DISPLAYING <span class="ev-num">7</span> OF <span class="ev-num">100+</span> CLASSIFIED FILES</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="award-lightbox" id="awardLightbox">
+            <img src="" alt="獎狀放大檢視" id="lightboxImg">
+            <div class="lightbox-close">[ESC] CLOSE FILE</div>
+            <div class="lightbox-label" id="lightboxLabel"></div>
+        </div>
 
         <section class="quote-section">
             <div class="quote-block content-panel">
@@ -415,7 +530,7 @@
             requestAnimationFrame(animateCursor);
         })();
 
-        document.querySelectorAll('a, .career-title-box, .fight-card, .service-card').forEach(el => {
+        document.querySelectorAll('a, .career-title-box, .fight-card, .service-card, .evidence-file').forEach(el => {
             el.addEventListener('mouseenter', () => cursorRing.classList.add('hover'));
             el.addEventListener('mouseleave', () => cursorRing.classList.remove('hover'));
         });
@@ -543,6 +658,76 @@
         gsap.utils.toArray('.service-card').forEach((c, i) => {
             gsap.to(c, { opacity: 1, y: 0, scale: 1, duration: 0.6, delay: i * 0.1, ease: 'power3.out', scrollTrigger: { trigger: c, start: 'top 88%' } });
         });
+
+        // Evidence board layout
+        (function() {
+            const board = document.getElementById('evidenceBoard');
+            const files = board.querySelectorAll('.evidence-file');
+            const cols = window.innerWidth < 768 ? 3 : 4;
+            const fileW = window.innerWidth < 768 ? 110 : 160;
+            const fileH = window.innerWidth < 768 ? 150 : 210;
+            const boardW = board.offsetWidth;
+            const padX = Math.max(0, (boardW - cols * (fileW + 16)) / 2);
+            const rotations = [-4, 2.5, -1.5, 3.2, -2.8, 1.8, -3.5];
+
+            files.forEach((file, i) => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const x = padX + col * (fileW + 16) + (Math.random() * 12 - 6);
+                const y = row * (fileH + 30) + (Math.random() * 10 - 5);
+                const r = rotations[i] || 0;
+                file.style.left = x + 'px';
+                file.style.top = y + 'px';
+                file.style.width = fileW + 'px';
+                file.style.height = fileH + 'px';
+                file.style.transform = 'rotate(' + r + 'deg)';
+                file.querySelector('img').style.height = (fileH - 28) + 'px';
+            });
+
+            const lastFile = files[files.length - 1];
+            const lastRow = Math.floor((files.length - 1) / cols);
+            board.style.minHeight = (lastRow + 1) * (fileH + 30) + 40 + 'px';
+
+            ScrollTrigger.create({
+                trigger: board, start: 'top 85%', once: true,
+                onEnter: () => {
+                    files.forEach((file, i) => {
+                        gsap.to(file, {
+                            opacity: 1, duration: 0.6, delay: i * 0.12,
+                            ease: 'power3.out'
+                        });
+                    });
+                }
+            });
+        })();
+
+        // HQ card tilt
+        const hqCard = document.querySelector('.hq-card');
+        if (hqCard) {
+            hqCard.addEventListener('mousemove', e => {
+                const rect = hqCard.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                hqCard.style.transform = 'rotateY(' + (x * 6) + 'deg) rotateX(' + (-y * 4) + 'deg) scale(1.02)';
+            });
+            hqCard.addEventListener('mouseleave', () => {
+                hqCard.style.transform = 'rotateY(0) rotateX(0) scale(1)';
+            });
+        }
+
+        // Award lightbox
+        const lightbox = document.getElementById('awardLightbox');
+        const lightboxImg = document.getElementById('lightboxImg');
+        const lightboxLabel = document.getElementById('lightboxLabel');
+        document.querySelectorAll('.evidence-file').forEach(file => {
+            file.addEventListener('click', () => {
+                lightboxImg.src = file.querySelector('img').src;
+                lightboxLabel.textContent = file.dataset.label || '';
+                lightbox.classList.add('active');
+            });
+        });
+        lightbox.addEventListener('click', () => { lightbox.classList.remove('active'); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') lightbox.classList.remove('active'); });
 
         // Counter
         document.querySelectorAll('.counter').forEach(counter => {
