@@ -1026,7 +1026,7 @@
 
         /* ===== BABEL INTERFERENCE LAYER ===== */
         .babel-layer {
-            position: fixed; inset: 0; z-index: 3;
+            position: fixed; inset: 0; z-index: 0;
             pointer-events: none; overflow: hidden;
         }
         .babel-fragment {
@@ -1058,10 +1058,9 @@
             grid-template-columns: 120px 1fr 60px;
             align-items: center;
             gap: 1rem;
-            padding: 1.2rem 0;
+            padding: 1.2rem 0 1.2rem 0.75rem;
             border-bottom: 1px solid rgba(0,229,255,0.06);
             position: relative;
-            overflow: hidden;
         }
         .freq-row::before {
             content: '';
@@ -1603,7 +1602,7 @@
                     <div class="passport-watermark">BARBAENIGMA</div>
                     <div class="stamp stamp-tw">
                         <div class="stamp-country">TAIWAN 台灣</div>
-                        <div class="stamp-year">1996</div>
+                        <div class="stamp-year">1998</div>
                         <div class="stamp-detail">ORIGIN — HOME BASE</div>
                     </div>
                     <div class="stamp stamp-us">
@@ -2270,6 +2269,8 @@ function initTVChannelSwitch() {
             }
         );
 
+        activeIdx = idx;
+
         // Trigger per-channel animations
         triggerChannelAnimations(idx);
 
@@ -2279,8 +2280,6 @@ function initTVChannelSwitch() {
             if (window._startBabel) window._startBabel();
             if (window._freqStarters) window._freqStarters.forEach(fn => fn());
         }
-
-        activeIdx = idx;
 
         // Update scroll progress bar
         const progress = idx / (totalChannels - 1);
