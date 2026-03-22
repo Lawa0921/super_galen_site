@@ -1,0 +1,1474 @@
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC — The Silent Frame</title>
+    <meta name="description" content="Albert Chang — 台灣出生、紐約磨練的演員。在沉默中演繹，在光影間穿行。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Archivo+Narrow:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500&family=Special+Elite&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --curtain: #4a0e0e;
+            --curtain-deep: #2d0808;
+            --curtain-highlight: #6b1a1a;
+            --stage-wood: #1a1410;
+            --stage-warm: #2a2018;
+            --backstage: #0c0a08;
+            --spotlight-warm: #f5deb3;
+            --spotlight-bright: #fff8e7;
+            --script-cream: #d4c8a8;
+            --text: #c0b8a0;
+            --text-muted: #7a7060;
+            --text-dim: #3a352e;
+            --font-display: 'Cormorant Garamond', 'Georgia', serif;
+            --font-body: 'Archivo Narrow', sans-serif;
+            --font-cn: 'Noto Sans TC', sans-serif;
+            --font-script: 'Special Elite', cursive;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
+        body {
+            font-family: var(--font-body);
+            background: var(--backstage);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.7;
+            max-width: 100vw;
+        }
+        ::selection { background: var(--curtain); color: var(--spotlight-warm); }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: var(--backstage); }
+        ::-webkit-scrollbar-thumb { background: var(--curtain-deep); border-radius: 2px; }
+
+        /* ===== CINEMATIC OVERLAYS ===== */
+        .film-grain {
+            position: fixed; inset: 0; z-index: 999;
+            pointer-events: none; opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-size: 128px;
+            animation: grain-shift 0.3s steps(3) infinite;
+        }
+        @keyframes grain-shift {
+            0% { transform: translate(0, 0); }
+            33% { transform: translate(-2px, 1px); }
+            66% { transform: translate(1px, -1px); }
+            100% { transform: translate(0, 0); }
+        }
+        .vignette {
+            position: fixed; inset: 0; z-index: 998;
+            pointer-events: none;
+            background: radial-gradient(ellipse 70% 60% at 50% 50%, transparent 50%, rgba(0,0,0,0.6) 100%);
+        }
+        .letterbox-top, .letterbox-bottom {
+            position: fixed; left: 0; right: 0; z-index: 997;
+            height: 0; background: #000; pointer-events: none;
+            transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .letterbox-top { top: 0; }
+        .letterbox-bottom { bottom: 0; }
+        .letterbox-top.active, .letterbox-bottom.active { height: 40px; }
+
+        /* ===== SCENE COUNTER ===== */
+        .scene-counter {
+            position: fixed; right: 2rem; top: 50%;
+            transform: translateY(-50%); z-index: 200;
+            display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+            opacity: 0; transition: opacity 0.6s;
+        }
+        .scene-counter.visible { opacity: 1; }
+        .scene-counter-label {
+            font-family: var(--font-script); font-size: 0.5rem;
+            color: var(--curtain-highlight); letter-spacing: 0.2em;
+            writing-mode: vertical-rl; text-orientation: mixed;
+            margin-bottom: 0.5rem;
+        }
+        .scene-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            border: 1px solid var(--text-dim);
+            background: transparent;
+            transition: all 0.4s;
+            cursor: pointer;
+        }
+        .scene-dot.active {
+            background: var(--curtain-highlight);
+            border-color: var(--curtain-highlight);
+            box-shadow: 0 0 8px rgba(107,26,26,0.5);
+        }
+        .scene-dot:hover { border-color: var(--curtain-highlight); }
+
+        /* ===== FILMSTRIP SIDE DECORATION ===== */
+        .filmstrip-deco {
+            position: fixed; left: 0; top: 0; bottom: 0; width: 24px;
+            z-index: 100; pointer-events: none; opacity: 0;
+            transition: opacity 0.6s;
+            background:
+                repeating-linear-gradient(180deg,
+                    transparent 0px, transparent 20px,
+                    var(--backstage) 20px, var(--backstage) 22px
+                ),
+                linear-gradient(90deg, #1a1410 0%, #1a1410 100%);
+        }
+        .filmstrip-deco::before {
+            content: '';
+            position: absolute; left: 4px; top: 0; bottom: 0; width: 8px;
+            background:
+                repeating-linear-gradient(180deg,
+                    rgba(245,222,179,0.06) 0px, rgba(245,222,179,0.06) 12px,
+                    transparent 12px, transparent 24px
+                );
+        }
+        .filmstrip-deco.visible { opacity: 0.5; }
+
+        /* ===== BACK NAV ===== */
+        .back-nav {
+            position: fixed; top: 1.5rem; left: 1.5rem; z-index: 200;
+            text-decoration: none; color: var(--spotlight-warm);
+            font-family: var(--font-script); font-size: 0.75rem;
+            letter-spacing: 0.1em; opacity: 0.4;
+            transition: opacity 0.4s;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .back-nav:hover { opacity: 1; }
+
+        /* ===== DUST PARTICLES ===== */
+        #dust-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ===== ACT I: THE THEATER (CURTAIN) ===== */
+        .theater-entrance {
+            position: relative; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 10; overflow: hidden;
+            background: var(--backstage);
+        }
+        .curtain-left, .curtain-right {
+            position: absolute; top: 0; width: 51%;
+            height: 100%; z-index: 5;
+            background:
+                repeating-linear-gradient(90deg,
+                    var(--curtain) 0px, var(--curtain-highlight) 15px,
+                    var(--curtain) 30px, var(--curtain-deep) 45px,
+                    var(--curtain) 60px
+                );
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.5);
+            will-change: transform;
+        }
+        .curtain-left { left: 0; transform-origin: left center; }
+        .curtain-right { right: 0; transform-origin: right center; }
+        .curtain-left.opened, .curtain-right.opened { display: none; }
+        .curtain-valance {
+            position: absolute; top: 0; left: 0; width: 100%;
+            height: 80px; z-index: 6;
+            background: linear-gradient(180deg, var(--curtain-deep) 0%, var(--curtain) 60%, transparent 100%);
+            clip-path: polygon(0 0, 100% 0, 100% 60%, 95% 100%, 85% 70%, 75% 100%, 65% 70%, 55% 100%, 45% 70%, 35% 100%, 25% 70%, 15% 100%, 5% 70%, 0 60%);
+        }
+        .theater-text {
+            position: relative; z-index: 4;
+            text-align: center; opacity: 0;
+        }
+        .theater-text .now-presenting {
+            font-family: var(--font-script); font-size: 0.9rem;
+            color: var(--text-muted); letter-spacing: 0.3em;
+            text-transform: uppercase; margin-bottom: 1rem;
+        }
+        .theater-text h1 {
+            font-family: var(--font-display); font-size: clamp(3rem, 9vw, 8rem);
+            font-weight: 700; color: var(--spotlight-warm);
+            line-height: 0.9; letter-spacing: 0.02em;
+            text-shadow: 0 0 80px rgba(245,222,179,0.3), 0 0 160px rgba(245,222,179,0.1);
+        }
+        .theater-text h1 .the {
+            display: block; font-weight: 400; font-style: italic;
+            font-size: 0.35em; letter-spacing: 0.3em;
+            color: var(--script-cream); opacity: 0.7;
+            margin-bottom: 0.3em;
+        }
+        .theater-text .subtitle {
+            font-family: var(--font-body); font-size: 0.85rem;
+            color: var(--text-muted); letter-spacing: 0.4em;
+            text-transform: uppercase; margin-top: 1.5rem;
+        }
+        .scroll-cue {
+            position: absolute; bottom: 2rem; left: 50%;
+            transform: translateX(-50%); z-index: 4;
+            text-align: center; opacity: 0;
+        }
+        .scroll-cue span {
+            font-family: var(--font-script); font-size: 0.65rem;
+            color: var(--text-dim); letter-spacing: 0.2em;
+        }
+        .scroll-cue .arrow {
+            display: block; margin-top: 0.5rem;
+            font-size: 0.8rem; color: var(--text-dim);
+            animation: bounce-down 2s ease-in-out infinite;
+        }
+        @keyframes bounce-down {
+            0%, 100% { transform: translateY(0); opacity: 0.3; }
+            50% { transform: translateY(8px); opacity: 0.7; }
+        }
+
+        /* ===== STAGE SPOTLIGHT ===== */
+        .spotlight-layer {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: 0;
+            pointer-events: none; opacity: 0;
+            background: radial-gradient(ellipse 30% 40% at 50% 30%, rgba(245,222,179,0.06) 0%, transparent 100%);
+        }
+
+        /* ===== ACT II: THE ACTOR (STAGE) ===== */
+        .stage-section {
+            position: relative; z-index: 2;
+            padding: 5rem 2rem;
+            max-width: 800px; margin: 0 auto;
+            background: transparent;
+        }
+        .stage-section::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100vw; max-width: 100vw; height: 100%; z-index: -1;
+            background: linear-gradient(180deg, var(--backstage) 0%, var(--stage-wood) 30%, var(--stage-warm) 50%, var(--stage-wood) 70%, var(--backstage) 100%);
+            opacity: 0.3;
+        }
+
+        .act-label {
+            font-family: var(--font-script); font-size: 0.7rem;
+            color: var(--curtain-highlight); letter-spacing: 0.25em;
+            text-transform: uppercase; margin-bottom: 1.5rem;
+            position: relative; display: inline-block;
+        }
+        .act-label::after {
+            content: ''; position: absolute; bottom: -4px; left: 0;
+            width: 100%; height: 1px;
+            background: linear-gradient(90deg, var(--curtain-highlight), transparent);
+        }
+
+        .stage-title {
+            font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700; color: var(--spotlight-warm);
+            line-height: 1.1; margin-bottom: 2.5rem;
+        }
+        .stage-title em { color: var(--curtain-highlight); font-style: italic; }
+
+        /* ===== AVATAR ON STAGE ===== */
+        .actor-spotlight {
+            display: flex; align-items: flex-start; gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+        .actor-avatar-stage {
+            position: relative; flex-shrink: 0;
+        }
+        .actor-avatar-stage img {
+            width: 130px; height: 130px; border-radius: 50%;
+            object-fit: cover; filter: contrast(1.1) saturate(0.9);
+            border: 3px solid var(--curtain);
+            box-shadow: 0 0 40px rgba(74,14,14,0.4), 0 0 80px rgba(245,222,179,0.08);
+        }
+        .actor-avatar-stage::after {
+            content: ''; position: absolute; inset: -12px;
+            border: 1px solid var(--curtain); border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .actor-monologue {
+            font-family: var(--font-cn); font-size: 1.05rem;
+            color: var(--text); line-height: 2;
+        }
+        .actor-monologue p { margin-bottom: 1.5rem; }
+        .actor-monologue .hl { color: var(--spotlight-warm); font-weight: 500; }
+        .actor-monologue .stage-direction {
+            font-family: var(--font-script); font-style: normal;
+            font-size: 0.85rem; color: var(--curtain-highlight);
+            display: block; margin: 2rem 0;
+            padding-left: 1.5rem; opacity: 0.8;
+        }
+
+        /* ===== DOSSIER CARD (static) ===== */
+        .clapboard-section {
+            position: relative; z-index: 2;
+            padding: 4rem 2rem 5rem;
+            text-align: center;
+        }
+        .dossier-card {
+            display: inline-block; position: relative;
+            background: var(--backstage);
+            border: 1px solid var(--text-dim);
+            max-width: 500px; width: 100%;
+            box-shadow: 0 0 40px rgba(0,0,0,0.3);
+        }
+        .dossier-card::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--curtain-deep), var(--curtain-highlight), var(--curtain-deep));
+        }
+        .dossier-body { padding: 1.5rem 2rem; text-align: left; }
+        .clapboard-row {
+            display: flex; justify-content: space-between;
+            border-bottom: 1px solid var(--text-dim);
+            padding: 0.6rem 0;
+        }
+        .clapboard-row:last-child { border-bottom: none; }
+        .clapboard-label {
+            font-family: var(--font-script); font-size: 0.7rem;
+            color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .clapboard-value {
+            font-family: var(--font-body); font-size: 0.85rem;
+            color: var(--spotlight-warm); text-align: right;
+        }
+
+        /* ===== FILMOGRAPHY TIMELINE (vertical) ===== */
+        .timeline-section {
+            position: relative; z-index: 2;
+            padding: 5rem 2rem;
+            max-width: 800px; margin: 0 auto;
+        }
+        .timeline {
+            position: relative; margin-top: 3rem;
+            padding-left: 3rem;
+        }
+        .timeline::before {
+            content: ''; position: absolute; left: 0; top: 0;
+            width: 1px; height: 100%;
+            background: linear-gradient(180deg, var(--curtain-highlight), var(--curtain-deep), transparent);
+        }
+        .timeline-entry {
+            position: relative; margin-bottom: 3rem;
+            padding-left: 1.5rem;
+        }
+        .timeline-entry::before {
+            content: ''; position: absolute; left: -3rem; top: 0.4rem;
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--curtain-highlight);
+            border: 2px solid var(--backstage);
+            box-shadow: 0 0 8px rgba(107, 26, 26, 0.4);
+        }
+        .timeline-entry.now::before {
+            background: #cc3333;
+            box-shadow: 0 0 12px rgba(204, 51, 51, 0.5);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 8px rgba(204, 51, 51, 0.4); }
+            50% { box-shadow: 0 0 16px rgba(204, 51, 51, 0.7); }
+        }
+        .timeline-year {
+            font-family: var(--font-script); font-size: 0.65rem;
+            color: var(--curtain-highlight); letter-spacing: 0.15em;
+            margin-bottom: 0.3rem;
+        }
+        .timeline-title {
+            font-family: var(--font-display); font-size: 1.4rem;
+            color: var(--spotlight-warm); font-weight: 700;
+            line-height: 1.2; margin-bottom: 0.3rem;
+            transition: text-shadow 0.4s;
+        }
+        .timeline-entry:hover .timeline-title {
+            text-shadow: 0 0 20px rgba(245,222,179,0.2);
+        }
+        .timeline-entry {
+            transition: transform 0.3s ease;
+        }
+        .timeline-entry:hover {
+            transform: translateX(6px);
+        }
+        .timeline-meta {
+            display: flex; align-items: center; gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .timeline-role {
+            font-family: var(--font-cn); font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .timeline-badge {
+            font-family: var(--font-script); font-size: 0.5rem;
+            color: var(--curtain-highlight); letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: 1px solid var(--curtain-deep); padding: 0.1rem 0.4rem;
+        }
+        .timeline-rating {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            font-family: var(--font-script); font-size: 0.65rem;
+            color: var(--spotlight-warm);
+        }
+        .timeline-live {
+            font-family: var(--font-script); font-size: 0.6rem;
+            color: #cc3333;
+        }
+        .timeline-live i { font-size: 0.3rem; margin-right: 0.2rem; vertical-align: middle; }
+
+        /* ===== CRAFT: SCRIPT PAGES ===== */
+        .script-section {
+            position: relative; z-index: 2;
+            padding: 5rem 2rem;
+            max-width: 800px; margin: 0 auto;
+        }
+        .script-pages {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 2rem; margin-top: 3rem;
+        }
+        .script-page {
+            position: relative; padding: 2rem;
+            background: linear-gradient(145deg, #1a1610 0%, #14100c 100%);
+            border: 1px solid #2a2418;
+            transition: transform 0.4s, border-color 0.4s;
+            overflow: hidden;
+        }
+        .script-page:hover {
+            transform: translateY(-4px) rotate(-0.5deg);
+            border-color: var(--curtain);
+        }
+        .script-page::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: var(--curtain); opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .script-page:hover::before { opacity: 1; }
+        .script-page-icon {
+            font-size: 1.3rem; color: var(--curtain-highlight);
+            margin-bottom: 1rem; opacity: 0.7;
+        }
+        .script-page h3 {
+            font-family: var(--font-display); font-size: 1.2rem;
+            color: var(--spotlight-warm); margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+        .script-page p {
+            font-family: var(--font-cn); font-size: 0.82rem;
+            color: var(--text-muted); line-height: 1.9;
+        }
+        .script-page-number {
+            position: absolute; bottom: 0.8rem; right: 1rem;
+            font-family: var(--font-script); font-size: 0.55rem;
+            color: var(--text-dim);
+        }
+
+        /* ===== BACKSTAGE WALL (Gallery) ===== */
+        .backstage-section {
+            position: relative; z-index: 2;
+            padding: 5rem 2rem;
+            max-width: 900px; margin: 0 auto;
+        }
+        .backstage-wall {
+            display: grid; grid-template-columns: 1.2fr 0.8fr;
+            gap: 1.5rem; margin-top: 3rem;
+        }
+        .backstage-photo {
+            position: relative; overflow: hidden;
+        }
+        .backstage-photo:first-child {
+            grid-row: span 2;
+        }
+        .backstage-photo img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: sepia(15%) contrast(1.05);
+            transition: filter 0.5s, transform 0.6s;
+        }
+        .backstage-photo:hover img {
+            filter: sepia(0%) contrast(1.1);
+            transform: scale(1.03);
+        }
+        .backstage-photo::after {
+            content: ''; position: absolute; inset: 0;
+            border: 1px solid var(--curtain-deep);
+            pointer-events: none;
+        }
+        .photo-tape {
+            position: absolute; top: -4px; left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            width: 60px; height: 16px;
+            background: rgba(245,222,179,0.15);
+            z-index: 2;
+        }
+        .photo-label {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 0.8rem 1rem;
+            background: linear-gradient(transparent, rgba(12,10,8,0.9));
+            font-family: var(--font-script); font-size: 0.65rem;
+            color: var(--script-cream); letter-spacing: 0.1em;
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .backstage-photo:hover .photo-label { opacity: 1; }
+        .backstage-photo .photo-caption-secret {
+            position: absolute; bottom: 2.5rem; left: 1rem;
+            font-family: var(--font-cn); font-size: 0.7rem;
+            color: var(--spotlight-warm); opacity: 0;
+            font-style: italic;
+            transition: opacity 0.5s 0.2s;
+        }
+        .backstage-photo:hover .photo-caption-secret { opacity: 0.7; }
+
+        /* ===== FINAL MONOLOGUE ===== */
+        .final-monologue {
+            position: relative; z-index: 2;
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+        .final-monologue::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(74,14,14,0.06), transparent);
+        }
+        .monologue-text {
+            font-family: var(--font-display); font-size: clamp(1.4rem, 3.5vw, 2.5rem);
+            font-style: italic; color: var(--spotlight-warm);
+            max-width: 650px; margin: 0 auto;
+            line-height: 1.5; position: relative;
+        }
+        .monologue-text::before {
+            content: '\201C'; position: absolute; top: -2.5rem; left: -1rem;
+            font-size: 5rem; color: var(--curtain-deep);
+            font-family: var(--font-display); line-height: 1;
+        }
+        .monologue-attr {
+            font-family: var(--font-script); font-size: 0.7rem;
+            color: var(--text-muted); letter-spacing: 0.2em;
+            margin-top: 2rem;
+        }
+
+        /* ===== CURTAIN CALL (FOOTER) ===== */
+        .curtain-call {
+            position: relative; z-index: 2;
+            padding: 5rem 2rem; text-align: center;
+        }
+        .curtain-call::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 120px;
+            background:
+                linear-gradient(180deg, transparent, var(--curtain-deep) 50%, var(--curtain) 80%, var(--curtain-deep));
+            opacity: 0.4;
+            clip-path: polygon(0 0, 100% 0, 100% 60%, 95% 100%, 85% 70%, 75% 100%, 65% 70%, 55% 100%, 45% 70%, 35% 100%, 25% 70%, 15% 100%, 5% 70%, 0 60%);
+        }
+        .curtain-call::after {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(74,14,14,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .curtain-call-title {
+            font-family: var(--font-display); font-size: 1.5rem;
+            color: var(--curtain-highlight); font-style: italic;
+            margin-bottom: 2rem;
+        }
+        .curtain-call-socials {
+            display: flex; justify-content: center; gap: 2.5rem;
+            margin-bottom: 2.5rem;
+        }
+        .curtain-call-socials a {
+            color: var(--text-muted); font-size: 1.3rem;
+            transition: color 0.3s, transform 0.3s;
+            text-decoration: none;
+        }
+        .curtain-call-socials a:hover {
+            color: var(--spotlight-warm); transform: translateY(-3px);
+        }
+        .curtain-call-credit {
+            font-family: var(--font-script); font-size: 0.55rem;
+            color: var(--text-dim); letter-spacing: 0.15em;
+        }
+
+        /* ===== SECTION TRANSITIONS ===== */
+        .curtain-transition {
+            position: relative; height: 80px; z-index: 2;
+            overflow: hidden;
+        }
+        .curtain-transition::before {
+            content: ''; position: absolute; inset: 0;
+            background:
+                linear-gradient(180deg,
+                    transparent 0%,
+                    rgba(74,14,14,0.15) 25%,
+                    rgba(74,14,14,0.25) 50%,
+                    rgba(74,14,14,0.15) 75%,
+                    transparent 100%
+                );
+        }
+        .curtain-transition::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 100%;
+            background:
+                repeating-linear-gradient(90deg,
+                    transparent 0px, transparent 60px,
+                    rgba(74,14,14,0.08) 60px, rgba(74,14,14,0.08) 62px
+                );
+        }
+        .curtain-transition .drape {
+            position: absolute; top: 50%; left: 50%;
+            transform: translateX(-50%);
+            width: 120px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--curtain-highlight), transparent);
+            opacity: 0.5;
+        }
+        .curtain-transition .drape::before,
+        .curtain-transition .drape::after {
+            content: ''; position: absolute; top: 0;
+            width: 4px; height: 1px;
+            background: var(--curtain-highlight);
+        }
+        .curtain-transition .drape::before { left: -8px; }
+        .curtain-transition .drape::after { right: -8px; }
+
+        /* ===== STAGE LIGHTING STATES ===== */
+        .stage-section::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse 60% 40% at 30% 20%, rgba(245,222,179,0.03) 0%, transparent 70%);
+            pointer-events: none; z-index: -1;
+        }
+        .timeline-section::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100vw; max-width: 100vw; height: 100%; z-index: -1;
+            background:
+                radial-gradient(ellipse 50% 30% at 20% 10%, rgba(107,26,26,0.06) 0%, transparent 70%),
+                linear-gradient(180deg, rgba(26,20,16,0.3) 0%, transparent 30%, transparent 70%, rgba(26,20,16,0.3) 100%);
+        }
+        .script-section::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100vw; max-width: 100vw; height: 100%; z-index: -1;
+            background:
+                radial-gradient(ellipse 40% 50% at 70% 50%, rgba(245,222,179,0.025) 0%, transparent 70%),
+                linear-gradient(180deg, rgba(26,20,16,0.3) 0%, transparent 40%, transparent 60%, rgba(26,20,16,0.3) 100%);
+        }
+        .backstage-section::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100vw; max-width: 100vw; height: 100%; z-index: -1;
+            background:
+                radial-gradient(ellipse 60% 40% at 50% 30%, rgba(245,222,179,0.03) 0%, transparent 60%),
+                radial-gradient(ellipse 30% 30% at 80% 70%, rgba(107,26,26,0.05) 0%, transparent 60%);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .actor-spotlight { flex-direction: column; align-items: center; text-align: center; gap: 1.5rem; }
+            .actor-avatar-stage img { width: 100px; height: 100px; }
+            .script-pages { grid-template-columns: 1fr; }
+            .backstage-wall { grid-template-columns: 1fr; }
+            .backstage-photo:first-child { grid-row: auto; }
+            .stage-section, .script-section, .backstage-section, .timeline-section { padding: 5rem 1.5rem; }
+            .timeline { padding-left: 2rem; }
+            .timeline-entry::before { left: -2rem; }
+            .back-nav { top: 1rem; left: 1rem; }
+            .clapboard-body { padding: 1rem 1.2rem; }
+            .scene-counter { right: 0.8rem; }
+            .scene-counter-label { display: none; }
+            .scene-dot { width: 5px; height: 5px; }
+            .filmstrip-deco { display: none; }
+            .letterbox-top.active, .letterbox-bottom.active { height: 24px; }
+        }
+        @media (max-width: 480px) {
+            .theater-text h1 { font-size: 2.8rem; }
+            .final-monologue { padding: 6rem 1.5rem; }
+        }
+
+        /* (clap-flash removed — dossier is now static) */
+
+        /* ===== SPOTLIGHT NARROW ===== */
+        .spotlight-narrow {
+            position: fixed; inset: 0; z-index: 3;
+            pointer-events: none; opacity: 0;
+            background: radial-gradient(ellipse 25% 35% at 50% 40%, transparent 0%, rgba(0,0,0,0.7) 100%);
+            transition: opacity 0.8s ease;
+        }
+        .spotlight-narrow.active { opacity: 1; }
+
+        /* ===== EASTER EGG ===== */
+        .easter-egg-tooltip {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(12,10,8,0.92); color: var(--spotlight-warm);
+            font-family: var(--font-script); font-size: 0.9rem;
+            padding: 1rem 1.8rem; border: 1px solid var(--curtain);
+            white-space: nowrap; opacity: 0; pointer-events: none;
+            transition: opacity 0.4s, transform 0.4s;
+            z-index: 10; backdrop-filter: blur(4px);
+        }
+        .easter-egg-tooltip.show {
+            opacity: 1; transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* ===== STAGE DIRECTION GLOW ===== */
+        .stage-direction {
+            position: relative;
+        }
+        .stage-direction::before {
+            content: ''; position: absolute; left: -10px; top: 50%;
+            transform: translateY(-50%);
+            width: 3px; height: 0;
+            background: var(--curtain-highlight);
+            transition: height 0.6s ease;
+            border-radius: 2px;
+        }
+        .stage-direction.lit::before {
+            height: 100%;
+        }
+
+        /* ===== REVEAL (GSAP-only, CSS initial state) ===== */
+        .reveal {
+            opacity: 0; transform: translateY(25px);
+        }
+        /* Fallback: if JS fails, show content after 4s */
+        @media (prefers-reduced-motion: no-preference) {
+            .reveal { animation: fallback-reveal 0s 4s forwards; }
+            @keyframes fallback-reveal { to { opacity: 1; transform: none; } }
+        }
+
+        /* ===== MOUSE SPOTLIGHT ===== */
+        .mouse-spotlight {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: 2;
+            pointer-events: none; opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .mouse-spotlight.active { opacity: 1; }
+
+        /* ===== TAKE COUNTER ===== */
+        .take-counter {
+            position: fixed; top: 1.5rem; right: 1.5rem; z-index: 200;
+            font-family: var(--font-script); font-size: 0.6rem;
+            color: var(--curtain-highlight); letter-spacing: 0.15em;
+            opacity: 0; transition: opacity 0.6s;
+            text-align: right;
+        }
+        .take-counter.visible { opacity: 0.6; }
+        .take-counter .take-num {
+            font-size: 1.1rem; color: var(--spotlight-warm);
+            display: block; margin-top: 0.1rem;
+        }
+
+        /* ===== SCROLL MONOLOGUE PERFORMANCE ===== */
+        .scroll-monologue {
+            position: relative; z-index: 2;
+            height: 100vh; overflow: hidden;
+        }
+        .scroll-monologue-inner {
+            position: relative;
+            width: 100%; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .monologue-stage-bg {
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse 40% 50% at 50% 50%, rgba(74,14,14,0.12) 0%, var(--backstage) 100%);
+        }
+        .monologue-lines {
+            position: relative; z-index: 2;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 1.8rem;
+            max-width: 700px; padding: 0 2rem;
+            text-align: center;
+        }
+        .mono-line {
+            font-family: var(--font-cn); font-size: clamp(1rem, 2.5vw, 1.4rem);
+            color: var(--text-dim);
+            line-height: 1.8;
+            opacity: 0;
+            transform: translateY(20px);
+            will-change: opacity, transform, color;
+        }
+        .mono-line.active {
+            color: var(--spotlight-warm);
+            text-shadow: 0 0 30px rgba(245,222,179,0.25);
+        }
+        .mono-line.past {
+            color: var(--text-muted);
+            text-shadow: none;
+        }
+        .mono-line-final {
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            font-weight: 700; font-style: italic;
+            letter-spacing: 0.05em;
+        }
+        .mono-line-final.active {
+            color: var(--spotlight-bright);
+            text-shadow: 0 0 60px rgba(245,222,179,0.5), 0 0 120px rgba(245,222,179,0.2);
+        }
+        .letterbox-top.mono-active,
+        .letterbox-bottom.mono-active { height: 60px; }
+
+
+        @media (max-width: 768px) {
+            .monologue-lines { gap: 1.2rem; padding: 0 1.5rem; }
+            .letterbox-top.mono-active,
+            .letterbox-bottom.mono-active { height: 36px; }
+            .take-counter { top: 1rem; right: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mouse spotlight (follows cursor) -->
+    <canvas class="mouse-spotlight" id="mouseSpotlight"></canvas>
+
+    <!-- Take counter -->
+    <div class="take-counter" id="takeCounter">
+        TAKE<span class="take-num" id="takeNum">1</span>
+    </div>
+
+    <!-- Cinematic overlays -->
+    <div class="film-grain"></div>
+    <div class="vignette"></div>
+    <div class="letterbox-top" id="letterboxTop"></div>
+    <div class="letterbox-bottom" id="letterboxBottom"></div>
+    <div class="filmstrip-deco" id="filmstripDeco"></div>
+
+    <!-- Scene counter (right side) -->
+    <nav class="scene-counter" id="sceneCounter">
+        <span class="scene-counter-label">SCENE</span>
+        <div class="scene-dot active" data-scene="0" title="Entrance"></div>
+        <div class="scene-dot" data-scene="1" title="The Actor"></div>
+        <div class="scene-dot" data-scene="2" title="Dossier"></div>
+        <div class="scene-dot" data-scene="3" title="Filmography"></div>
+        <div class="scene-dot" data-scene="4" title="Monologue"></div>
+        <div class="scene-dot" data-scene="5" title="The Craft"></div>
+        <div class="scene-dot" data-scene="6" title="Backstage"></div>
+        <div class="scene-dot" data-scene="7" title="Curtain Call"></div>
+    </nav>
+
+    <!-- (clapboard overlays removed) -->
+
+    <!-- Spotlight narrow overlay -->
+    <div class="spotlight-narrow" id="spotlightNarrow"></div>
+
+    <!-- Dust particles (stage dust in spotlight) -->
+    <canvas id="dust-canvas"></canvas>
+
+    <!-- Ambient spotlight layer -->
+    <div class="spotlight-layer" id="spotlightLayer"></div>
+
+    <!-- Navigation -->
+    <a href="/guild/" class="back-nav">
+        <i class="fas fa-chevron-left"></i> ARCHIVE
+    </a>
+
+    <!-- ===== ACT I: THE THEATER — CURTAIN OPENS ===== -->
+    <section class="theater-entrance" id="theater">
+        <div class="curtain-valance"></div>
+        <div class="curtain-left" id="curtainLeft"></div>
+        <div class="curtain-right" id="curtainRight"></div>
+        <div class="theater-text" id="theaterText">
+            <div class="now-presenting">Now Presenting</div>
+            <h1><span class="the">the silent</span>FRAME</h1>
+            <div class="subtitle">Albert Chang &mdash; Actor / Stunt Performer</div>
+        </div>
+        <div class="scroll-cue" id="scrollCue">
+            <span>Enter the theater</span>
+            <i class="fas fa-chevron-down arrow"></i>
+        </div>
+    </section>
+
+    <!-- ===== ACT II: THE ACTOR ===== -->
+    <div class="curtain-transition"><div class="drape"></div></div>
+
+    <section class="stage-section" id="actor">
+        <div class="act-label reveal">Act I &mdash; The Actor</div>
+        <h2 class="stage-title reveal">In <em>Silence</em>,<br>I Speak</h2>
+        <div class="actor-spotlight">
+            <div class="actor-avatar-stage reveal">
+                <img src="/assets/img/guild/acthestar/avatar.webp" alt="AC" loading="lazy">
+            </div>
+            <div class="actor-monologue">
+                <p class="reveal">
+                    我是 <span class="hl">AC</span>，一位出生於台灣、目前定居紐約市的演員。
+                    在不同文化之間成長的經歷塑造了我的視角和表演方式。從台北的巷弄到曼哈頓的舞台，
+                    每一次跨越都讓我更理解 — 身份並非單一的標籤，而是無數故事的交疊。
+                </p>
+                <span class="stage-direction reveal">(A pause. The spotlight narrows.)</span>
+                <p class="reveal">
+                    我不是家喻戶曉的名字，也沒有過著好萊塢式的夢幻生活。但我致力於表演這門藝術，
+                    並專注於講述<span class="hl">有意義的故事</span>。紐約是我持續磨練技藝、
+                    試鏡、合作的地方，也是我追求熱愛的表演工作的舞台。
+                </p>
+                <span class="stage-direction reveal">(He turns to face the audience.)</span>
+                <p class="reveal">
+                    作為 SAG-AFTRA 工會成員，我持續在獨立電影、電視劇與舞台之間穿行。
+                    表演的核心不在於聲量，而在於<span class="hl">真實</span>。
+                    每個角色都是一次機會，用每一個沉默證明：不需要被看見，也能被感受到。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CLAPBOARD ===== -->
+    <div class="curtain-transition"><div class="drape"></div></div>
+
+    <section class="clapboard-section">
+        <div class="act-label reveal">Dossier</div>
+        <div class="dossier-card reveal">
+            <div class="dossier-body">
+                <div class="clapboard-row"><span class="clapboard-label">Production</span><span class="clapboard-value">The Silent Frame</span></div>
+                <div class="clapboard-row"><span class="clapboard-label">Actor</span><span class="clapboard-value">Albert Chang (AC)</span></div>
+                <div class="clapboard-row"><span class="clapboard-label">Origin</span><span class="clapboard-value">Taiwan &rarr; New York City</span></div>
+                <div class="clapboard-row"><span class="clapboard-label">Guild</span><span class="clapboard-value">SAG-AFTRA</span></div>
+                <div class="clapboard-row"><span class="clapboard-label">Height</span><span class="clapboard-value">5'11" (180 cm)</span></div>
+                <div class="clapboard-row"><span class="clapboard-label">Status</span><span class="clapboard-value">Currently Filming</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== ACT III: THE REEL (vertical timeline) ===== -->
+    <div class="curtain-transition"><div class="drape"></div></div>
+
+    <section class="timeline-section" id="filmography">
+        <div class="act-label reveal">Act II &mdash; The Reel</div>
+        <h2 class="stage-title reveal">Filmography</h2>
+        <div class="timeline">
+            <div class="timeline-entry now reveal">
+                <div class="timeline-year">2026</div>
+                <div class="timeline-title">Power: Original Sins</div>
+                <div class="timeline-meta">
+                    <span class="timeline-role">Character Role</span>
+                    <span class="timeline-badge">Starz</span>
+                    <span class="timeline-live"><i class="fas fa-circle"></i> Now Filming</span>
+                </div>
+            </div>
+            <div class="timeline-entry reveal">
+                <div class="timeline-year">2022</div>
+                <div class="timeline-title">Fire Island</div>
+                <div class="timeline-meta">
+                    <span class="timeline-role">Pool Party Guest</span>
+                    <span class="timeline-badge">Film</span>
+                    <span class="timeline-rating"><i class="fas fa-star"></i> 6.7</span>
+                </div>
+            </div>
+            <div class="timeline-entry reveal">
+                <div class="timeline-year">2020</div>
+                <div class="timeline-title">Breaking the Silence</div>
+                <div class="timeline-meta">
+                    <span class="timeline-role">Japanese Soldier</span>
+                    <span class="timeline-badge">Short</span>
+                    <span class="timeline-rating"><i class="fas fa-star"></i> 8.6</span>
+                </div>
+            </div>
+            <div class="timeline-entry reveal">
+                <div class="timeline-year">2019</div>
+                <div class="timeline-title">Bare Knuckle Brawler</div>
+                <div class="timeline-meta">
+                    <span class="timeline-role">Fight Club Attendee</span>
+                    <span class="timeline-badge">Film</span>
+                    <span class="timeline-rating"><i class="fas fa-star"></i> 3.1</span>
+                </div>
+            </div>
+            <div class="timeline-entry reveal">
+                <div class="timeline-year">2019</div>
+                <div class="timeline-title">Crashing</div>
+                <div class="timeline-meta">
+                    <span class="timeline-role">Comedy Club Patron</span>
+                    <span class="timeline-badge">HBO</span>
+                    <span class="timeline-rating"><i class="fas fa-star"></i> 7.6</span>
+                </div>
+            </div>
+            <div class="timeline-entry reveal">
+                <div class="timeline-year">2018</div>
+                <div class="timeline-title">Succession</div>
+                <div class="timeline-meta">
+                    <span class="timeline-role">Actor + Stunt Coordinator</span>
+                    <span class="timeline-badge">HBO</span>
+                    <span class="timeline-rating"><i class="fas fa-star"></i> 8.8</span>
+                </div>
+            </div>
+            <div class="timeline-entry reveal">
+                <div class="timeline-year">2015</div>
+                <div class="timeline-title">Hunting Season</div>
+                <div class="timeline-meta">
+                    <span class="timeline-role">Bar Patron</span>
+                    <span class="timeline-badge">Series</span>
+                    <span class="timeline-rating"><i class="fas fa-star"></i> 7.3</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== SCROLL MONOLOGUE PERFORMANCE ===== -->
+    <section class="scroll-monologue" id="scrollMonologue">
+        <div class="scroll-monologue-inner">
+            <div class="monologue-stage-bg" id="monologueBg"></div>
+            <div class="monologue-lines">
+                <p class="mono-line" data-line="0">我不是家喻戶曉的名字。</p>
+                <p class="mono-line" data-line="1">也沒有過著好萊塢式的夢幻生活。</p>
+                <p class="mono-line" data-line="2">但我致力於表演這門藝術。</p>
+                <p class="mono-line" data-line="3">每一次試鏡，都是一次重新認識自己的機會。</p>
+                <p class="mono-line" data-line="4">每一次被拒絕，都是離角色更近一步。</p>
+                <p class="mono-line" data-line="5">在沉默中，我學會了用身體說故事。</p>
+                <p class="mono-line" data-line="6">不需要被看見，也能被感受到。</p>
+                <p class="mono-line mono-line-final" data-line="7">This is my stage.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== ACT IV: THE CRAFT (script pages) ===== -->
+    <div class="curtain-transition"><div class="drape"></div></div>
+
+    <section class="script-section" id="craft">
+        <div class="act-label reveal">Act III &mdash; The Craft</div>
+        <h2 class="stage-title reveal">What I <em>Bring</em> to the Stage</h2>
+        <div class="script-pages">
+            <div class="script-page reveal">
+                <div class="script-page-icon"><i class="fas fa-theater-masks"></i></div>
+                <h3>Screen Acting</h3>
+                <p>
+                    從 HBO 的 Succession 到獨立短片 Breaking the Silence，
+                    我在鏡頭前呈現從沉默的張力到爆發的衝突。無論是主角或配角，
+                    每個角色都值得被完整地活過一次。
+                </p>
+                <span class="script-page-number">p.1</span>
+            </div>
+            <div class="script-page reveal">
+                <div class="script-page-icon"><i class="fas fa-bolt"></i></div>
+                <h3>Stunt Coordination</h3>
+                <p>
+                    不只是演，還要讓動作說話。在 Succession 擔任特技協調師的經驗，
+                    讓我理解如何在安全與真實之間找到最完美的平衡。
+                    身體就是最誠實的敘事工具。
+                </p>
+                <span class="script-page-number">p.2</span>
+            </div>
+            <div class="script-page reveal">
+                <div class="script-page-icon"><i class="fas fa-globe-asia"></i></div>
+                <h3>Cross-Cultural Bridge</h3>
+                <p>
+                    在台灣出生、紐約淬鍊。我能自然切換東西方的表演語彙，
+                    理解不同文化背景下的情感表達方式。
+                    這讓我成為跨文化製作中獨特的資產。
+                </p>
+                <span class="script-page-number">p.3</span>
+            </div>
+            <div class="script-page reveal">
+                <div class="script-page-icon"><i class="fas fa-film"></i></div>
+                <h3>Cinema Advocate</h3>
+                <p>
+                    電影不只是工作，更是信仰。從 del Toro 的 Frankenstein
+                    到 David Archuleta 的真實告白，我持續探索影像如何觸動人心，
+                    如何讓沉默的情感在銀幕上被聽見。
+                </p>
+                <span class="script-page-number">p.4</span>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ===== ACT V: BACKSTAGE (photos) ===== -->
+    <div class="curtain-transition"><div class="drape"></div></div>
+
+    <section class="backstage-section" id="backstage">
+        <div class="act-label reveal">Act IV &mdash; Backstage</div>
+        <h2 class="stage-title reveal">Behind the <em>Curtain</em></h2>
+        <div class="backstage-wall">
+            <div class="backstage-photo reveal" id="cooperPhoto" style="position:relative;cursor:pointer;">
+                <div class="photo-tape"></div>
+                <img src="/assets/img/guild/acthestar/bradley_cooper.webp" alt="With Bradley Cooper at Frankenstein screening" loading="lazy">
+                <span class="photo-label">Frankenstein screening, with Bradley Cooper</span>
+                <span class="easter-egg-tooltip" id="easterEgg">"No selfies"... well, almost.</span>
+            </div>
+            <div class="backstage-photo reveal">
+                <div class="photo-tape"></div>
+                <img src="/assets/img/guild/acthestar/frankenstein.webp" alt="Frankenstein Premiere" loading="lazy">
+                <span class="photo-label">Guillermo del Toro's Frankenstein</span>
+            </div>
+            <div class="backstage-photo reveal">
+                <div class="photo-tape"></div>
+                <img src="/assets/img/guild/acthestar/devout.webp" alt="Devout by David Archuleta" loading="lazy">
+                <span class="photo-label">Devout &mdash; David Archuleta</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FINAL QUOTE ===== -->
+    <section class="final-monologue">
+        <div>
+            <p class="monologue-text reveal">
+                God didn't make a mistake when He made me. The mistake was me believing I was a mistake.
+            </p>
+            <div class="monologue-attr reveal">&mdash; David Archuleta, shared by AC</div>
+        </div>
+    </section>
+
+    <!-- ===== CURTAIN CALL ===== -->
+    <footer class="curtain-call">
+        <div class="curtain-call-title reveal">Curtain Call</div>
+        <div class="curtain-call-socials">
+            <a href="https://www.threads.com/@acthestar" target="_blank" rel="noopener noreferrer" aria-label="Threads">
+                <i class="fab fa-threads"></i>
+            </a>
+            <a href="https://www.instagram.com/acthestar/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://m.imdb.com/name/nm9922349/" target="_blank" rel="noopener noreferrer" aria-label="IMDb">
+                <i class="fab fa-imdb"></i>
+            </a>
+        </div>
+        <p class="curtain-call-credit">Made with <i class="fas fa-heart" style="color:var(--curtain);font-size:0.5rem;margin:0 0.2rem;"></i> by SuperGalen's Dungeon</p>
+    </footer>
+
+    <script>
+    /* ===== MAIN SCRIPT ===== */
+    (function() {
+        gsap.registerPlugin(ScrollTrigger);
+
+        // === TAKE COUNTER (localStorage) ===
+        const takeKey = 'acthestar_takes';
+        let takes = parseInt(localStorage.getItem(takeKey) || '0', 10) + 1;
+        localStorage.setItem(takeKey, takes);
+        const takeNum = document.getElementById('takeNum');
+        if (takeNum) takeNum.textContent = takes;
+
+        // === CURTAIN OPEN ===
+        const tl = gsap.timeline({ delay: 0.5 });
+        tl.to('#curtainLeft', { scaleX: 0, duration: 1.8, ease: 'power2.inOut' }, 0)
+          .to('#curtainRight', { scaleX: 0, duration: 1.8, ease: 'power2.inOut' }, 0)
+          .to('#theaterText', { opacity: 1, duration: 1, ease: 'power2.out' }, 0.8)
+          .to('#scrollCue', { opacity: 1, duration: 0.6 }, 2)
+          .to('#spotlightLayer', { opacity: 1, duration: 1.5 }, 1)
+          .call(() => {
+              document.getElementById('curtainLeft').classList.add('opened');
+              document.getElementById('curtainRight').classList.add('opened');
+              // Show cinematic UI
+              document.getElementById('filmstripDeco')?.classList.add('visible');
+              document.getElementById('sceneCounter')?.classList.add('visible');
+              document.getElementById('takeCounter')?.classList.add('visible');
+              document.getElementById('mouseSpotlight')?.classList.add('active');
+          }, null, 2);
+
+        // === UNIFIED GSAP SCROLL REVEALS (no IntersectionObserver) ===
+        gsap.utils.toArray('.reveal').forEach(el => {
+            // Determine animation based on context
+            const isTimeline = el.closest('.timeline');
+            const isScriptPage = el.classList.contains('script-page');
+            const isBackstagePhoto = el.classList.contains('backstage-photo');
+            const isActLabel = el.classList.contains('act-label');
+            const isStageTitle = el.classList.contains('stage-title');
+
+            // Set initial state explicitly
+            gsap.set(el, { opacity: 0, y: 25, clearProps: 'transform' });
+
+            if (isActLabel) {
+                gsap.set(el, { opacity: 0, x: -30, y: 0 });
+                gsap.to(el, {
+                    scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+                    x: 0, opacity: 1, duration: 0.8, ease: 'power3.out'
+                });
+            } else if (isStageTitle) {
+                gsap.set(el, { opacity: 0, y: 30 });
+                gsap.to(el, {
+                    scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' },
+                    y: 0, opacity: 1, duration: 1, ease: 'power3.out', delay: 0.15
+                });
+            } else if (isTimeline) {
+                const siblings = Array.from(isTimeline.querySelectorAll('.reveal'));
+                const idx = siblings.indexOf(el);
+                gsap.set(el, { opacity: 0, x: -20, y: 0 });
+                gsap.to(el, {
+                    scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+                    x: 0, opacity: 1, duration: 0.7, ease: 'power2.out', delay: idx * 0.06
+                });
+            } else if (isScriptPage) {
+                const pages = Array.from(el.parentElement.children);
+                const idx = pages.indexOf(el);
+                const rot = idx % 2 === 0 ? -1.5 : 1.5;
+                gsap.set(el, { opacity: 0, y: 40, rotation: rot });
+                gsap.to(el, {
+                    scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+                    y: 0, opacity: 1, rotation: 0, duration: 0.8, ease: 'power3.out', delay: idx * 0.12
+                });
+            } else if (isBackstagePhoto) {
+                const photos = Array.from(el.parentElement.children);
+                const idx = photos.indexOf(el);
+                gsap.set(el, { opacity: 0, scale: 0.88, y: 0 });
+                gsap.to(el, {
+                    scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+                    scale: 1, opacity: 1, duration: 1, ease: 'power2.out', delay: idx * 0.15
+                });
+            } else {
+                // Default reveal
+                gsap.to(el, {
+                    scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+                    y: 0, opacity: 1, duration: 0.7, ease: 'power2.out'
+                });
+            }
+        });
+
+        // === MONOLOGUE QUOTES PARALLAX ===
+        gsap.utils.toArray('.monologue-text').forEach(q => {
+            gsap.fromTo(q,
+                { opacity: 0, y: 40, scale: 0.95 },
+                {
+                    scrollTrigger: { trigger: q, start: 'top 80%', toggleActions: 'play none none none' },
+                    opacity: 1, y: 0, scale: 1, duration: 1.2, ease: 'power3.out'
+                }
+            );
+        });
+
+        // === SCENE COUNTER NAVIGATION ===
+        const scenes = [
+            document.getElementById('theater'),
+            document.getElementById('actor'),
+            document.querySelector('.clapboard-section'),
+            document.getElementById('filmography'),
+            document.getElementById('scrollMonologue'),
+            document.getElementById('craft'),
+            document.getElementById('backstage'),
+            document.querySelector('.curtain-call')
+        ];
+        const sceneDots = document.querySelectorAll('.scene-dot');
+        sceneDots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                const idx = parseInt(dot.dataset.scene);
+                if (scenes[idx]) scenes[idx].scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // === SPOTLIGHT FOLLOWS SCROLL + SCENE COUNTER UPDATE ===
+        ScrollTrigger.create({
+            trigger: document.body,
+            start: 'top top', end: 'bottom bottom',
+            onUpdate: self => {
+                const layer = document.getElementById('spotlightLayer');
+                if (layer) {
+                    const yPos = 20 + self.progress * 60;
+                    const size = 30 + Math.sin(self.progress * Math.PI) * 15;
+                    layer.style.background = `radial-gradient(ellipse ${size}% 40% at 50% ${yPos}%, rgba(245,222,179,0.06) 0%, transparent 100%)`;
+                }
+                // Update active scene dot
+                const scrollY = window.scrollY;
+                const vh = window.innerHeight;
+                let activeIdx = 0;
+                scenes.forEach((s, i) => {
+                    if (s && scrollY >= s.offsetTop - vh * 0.4) activeIdx = i;
+                });
+                sceneDots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+            }
+        });
+
+        // === LETTERBOX EFFECT ON QUOTE SECTIONS ===
+        document.querySelectorAll('.final-monologue').forEach(mono => {
+            ScrollTrigger.create({
+                trigger: mono,
+                start: 'top 60%', end: 'bottom 40%',
+                onEnter: () => {
+                    document.getElementById('letterboxTop').classList.add('active');
+                    document.getElementById('letterboxBottom').classList.add('active');
+                },
+                onLeave: () => {
+                    document.getElementById('letterboxTop').classList.remove('active');
+                    document.getElementById('letterboxBottom').classList.remove('active');
+                },
+                onEnterBack: () => {
+                    document.getElementById('letterboxTop').classList.add('active');
+                    document.getElementById('letterboxBottom').classList.add('active');
+                },
+                onLeaveBack: () => {
+                    document.getElementById('letterboxTop').classList.remove('active');
+                    document.getElementById('letterboxBottom').classList.remove('active');
+                }
+            });
+        });
+
+        // === STAGE DIRECTION → SPOTLIGHT NARROWS ===
+        document.querySelectorAll('.stage-direction').forEach(sd => {
+            ScrollTrigger.create({
+                trigger: sd,
+                start: 'top 70%', end: 'bottom 30%',
+                onEnter: () => {
+                    sd.classList.add('lit');
+                    document.getElementById('spotlightNarrow').classList.add('active');
+                },
+                onLeave: () => {
+                    document.getElementById('spotlightNarrow').classList.remove('active');
+                },
+                onEnterBack: () => {
+                    document.getElementById('spotlightNarrow').classList.add('active');
+                },
+                onLeaveBack: () => {
+                    sd.classList.remove('lit');
+                    document.getElementById('spotlightNarrow').classList.remove('active');
+                }
+            });
+        });
+
+        // === MOUSE SPOTLIGHT (canvas) ===
+        const spotCanvas = document.getElementById('mouseSpotlight');
+        if (spotCanvas) {
+            const ctx = spotCanvas.getContext('2d');
+            let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+            let targetX = mouseX, targetY = mouseY;
+
+            function resizeSpotlight() {
+                spotCanvas.width = window.innerWidth;
+                spotCanvas.height = window.innerHeight;
+            }
+            resizeSpotlight();
+            window.addEventListener('resize', resizeSpotlight);
+
+            document.addEventListener('mousemove', e => {
+                targetX = e.clientX;
+                targetY = e.clientY;
+            });
+
+            function drawSpotlight() {
+                mouseX += (targetX - mouseX) * 0.08;
+                mouseY += (targetY - mouseY) * 0.08;
+
+                ctx.clearRect(0, 0, spotCanvas.width, spotCanvas.height);
+                const grad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, 350);
+                grad.addColorStop(0, 'rgba(245,222,179,0.035)');
+                grad.addColorStop(0.5, 'rgba(245,222,179,0.01)');
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, spotCanvas.width, spotCanvas.height);
+                requestAnimationFrame(drawSpotlight);
+            }
+            drawSpotlight();
+        }
+
+        // === SCROLL MONOLOGUE PERFORMANCE ===
+        const monoSection = document.getElementById('scrollMonologue');
+        if (monoSection) {
+            const monoLines = monoSection.querySelectorAll('.mono-line');
+            const totalLines = monoLines.length;
+            const monoBg = document.getElementById('monologueBg');
+            const filmGrain = document.querySelector('.film-grain');
+            const lbTop = document.getElementById('letterboxTop');
+            const lbBot = document.getElementById('letterboxBottom');
+            const finalLine = monoSection.querySelector('.mono-line-final');
+
+            ScrollTrigger.create({
+                trigger: monoSection,
+                start: 'top top',
+                end: '+=300%',
+                pin: true,
+                scrub: 0.8,
+                onUpdate: (self) => {
+                    const p = self.progress;
+                    monoLines.forEach((line, i) => {
+                        const ls = i / (totalLines + 1);
+                        const lp = ls + (1 / (totalLines + 1)) * 0.4;
+                        const le = (i + 1) / (totalLines + 1);
+                        const isFinal = line.classList.contains('mono-line-final');
+
+                        if (p < ls) {
+                            gsap.set(line, { opacity: 0, y: 20 });
+                            line.classList.remove('active', 'past');
+                        } else if (p < lp) {
+                            const localP = (p - ls) / (lp - ls);
+                            gsap.set(line, { opacity: localP, y: 20 * (1 - localP) });
+                            line.classList.remove('active', 'past');
+                        } else if (p < le || isFinal) {
+                            gsap.set(line, { opacity: 1, y: 0 });
+                            line.classList.add('active');
+                            line.classList.remove('past');
+                        } else {
+                            gsap.set(line, { opacity: 1, y: 0 });
+                            line.classList.remove('active');
+                            line.classList.add('past');
+                        }
+                    });
+
+                    // Background warmth grows
+                    if (monoBg) {
+                        monoBg.style.background = `radial-gradient(ellipse ${40 + p * 20}% ${50 + p * 10}% at 50% 50%, rgba(245,222,179,${0.02 + p * 0.08}) 0%, var(--backstage) 100%)`;
+                    }
+
+                    // Film grain intensifies mid-monologue
+                    if (filmGrain) {
+                        filmGrain.style.opacity = 0.04 + Math.sin(p * Math.PI) * 0.06;
+                    }
+
+                    // Final line scale
+                    if (finalLine && p > (totalLines - 1) / (totalLines + 1)) {
+                        const sp = (p - (totalLines - 1) / (totalLines + 1)) * (totalLines + 1);
+                        gsap.set(finalLine, { scale: 1 + Math.min(sp, 1) * 0.6 });
+                    } else if (finalLine) {
+                        gsap.set(finalLine, { scale: 1 });
+                    }
+                },
+                onEnter: () => { lbTop.classList.add('active', 'mono-active'); lbBot.classList.add('active', 'mono-active'); },
+                onLeave: () => { lbTop.classList.remove('active', 'mono-active'); lbBot.classList.remove('active', 'mono-active'); },
+                onEnterBack: () => { lbTop.classList.add('active', 'mono-active'); lbBot.classList.add('active', 'mono-active'); },
+                onLeaveBack: () => { lbTop.classList.remove('active', 'mono-active'); lbBot.classList.remove('active', 'mono-active'); }
+            });
+        }
+
+        // === EASTER EGG: COOPER PHOTO ===
+        const cooperPhoto = document.getElementById('cooperPhoto');
+        const easterEgg = document.getElementById('easterEgg');
+        let eggClicks = 0;
+        if (cooperPhoto && easterEgg) {
+            cooperPhoto.addEventListener('click', () => {
+                eggClicks++;
+                if (eggClicks >= 2) {
+                    easterEgg.classList.add('show');
+                    setTimeout(() => easterEgg.classList.remove('show'), 3000);
+                    eggClicks = 0;
+                }
+            });
+        }
+
+    })();
+
+    /* ===== STAGE DUST (Three.js) ===== */
+    (function() {
+        const canvas = document.getElementById('dust-canvas');
+        if (!canvas || typeof THREE === 'undefined') return;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 3;
+
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const count = 200;
+        const positions = new Float32Array(count * 3);
+        const velocities = [];
+        for (let i = 0; i < count; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 8;
+            positions[i*3+1] = (Math.random() - 0.5) * 8;
+            positions[i*3+2] = (Math.random() - 0.5) * 4;
+            velocities.push({
+                x: (Math.random() - 0.5) * 0.001,
+                y: -(Math.random() * 0.002 + 0.0005),
+                z: (Math.random() - 0.5) * 0.0005
+            });
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const material = new THREE.PointsMaterial({
+            size: 0.012, color: 0xf5deb3, transparent: true,
+            opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const pos = geometry.attributes.position.array;
+            for (let i = 0; i < count; i++) {
+                pos[i*3] += velocities[i].x;
+                pos[i*3+1] += velocities[i].y;
+                pos[i*3+2] += velocities[i].z;
+                if (pos[i*3+1] < -4) { pos[i*3+1] = 4; pos[i*3] = (Math.random()-0.5)*8; }
+            }
+            geometry.attributes.position.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    })();
+    </script>
+</body>
+</html>
