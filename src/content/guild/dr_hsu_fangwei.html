@@ -1,0 +1,665 @@
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>筋骨百科 Dr. Bone | The Bone Architect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&family=Noto+Sans+TC:wght@300;400;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{--cold-bg:#040810;--cold-steel:#4a6a82;--cold-light:#c8dce8;--scalpel:#e8f4ff;--red:#ff4466;--gold:#d4a855;--amber:#c48a3f;--warm-light:#f5e6cc;--text:#d0dce8;--text-muted:#7a92a8;--text-dim:#3a5060;--fd:'Orbitron',sans-serif;--fb:'Rajdhani','Noto Sans TC',sans-serif;--fz:'Noto Sans TC',sans-serif;--fm:'JetBrains Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:var(--cold-bg);color:var(--text);line-height:1.6}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--cold-bg)}
+::-webkit-scrollbar-thumb{background:var(--cold-steel);border-radius:2px}
+::selection{background:var(--gold);color:var(--cold-bg)}
+
+.back-nav{position:fixed;top:20px;left:20px;z-index:1000;display:flex;align-items:center;gap:8px;color:var(--cold-light);font-family:var(--fd);font-size:.65rem;letter-spacing:2px;text-decoration:none;text-transform:uppercase;padding:8px 14px;border:1px solid rgba(200,220,232,.15);background:rgba(4,8,16,.85);backdrop-filter:blur(8px);transition:all .3s}
+.back-nav:hover{border-color:var(--cold-light);box-shadow:0 0 15px rgba(180,220,255,.15)}
+
+#spine-scene{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.7}
+
+.ecg-bar{position:fixed;bottom:0;left:0;right:0;height:50px;z-index:998;pointer-events:none;background:linear-gradient(to top,rgba(4,8,16,.95),transparent)}
+#ecg-canvas{width:100%;height:100%;display:block}
+
+.hud{position:fixed;right:16px;top:50%;transform:translateY(-50%);z-index:999;font-family:var(--fm);font-size:.55rem;color:var(--cold-steel);letter-spacing:1px;text-align:right;transition:color 1s}
+.hud-act{font-size:.7rem;color:var(--cold-light);margin-bottom:4px;transition:color 1s}
+.hud-bar{width:2px;height:50px;background:rgba(200,220,232,.1);margin-left:auto;margin-top:8px;margin-bottom:8px;position:relative;overflow:hidden}
+.hud-fill{position:absolute;bottom:0;width:100%;background:var(--cold-light);transition:height .4s,background 1s}
+.hud-dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:auto;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1;box-shadow:0 0 8px var(--red)}}
+
+.scene-section{position:relative;z-index:10;display:flex;align-items:center;padding:80px 24px;min-height:0}
+.scene-section .cb{position:relative;z-index:2;max-width:560px;padding:40px;border:1px solid rgba(200,220,232,.08);background:rgba(4,8,16,.93);backdrop-filter:blur(16px);box-shadow:0 0 80px 40px rgba(4,8,16,.8)}
+/* Spacers between sections let the 3D scene show through */
+.scene-spacer{position:relative;z-index:1;height:50vh;pointer-events:none}
+.content-left .cb{margin-right:auto}
+.content-right .cb{margin-left:auto}
+.content-center{justify-content:center;text-align:center}
+.content-center .cb{margin:0 auto;text-align:center}
+.cb .sl{font-family:var(--fm);font-size:.55rem;color:var(--cold-steel);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;transition:color 1s}
+.cb .st{font-family:var(--fz);font-size:clamp(1.4rem,3vw,2rem);font-weight:900;color:var(--scalpel);margin-bottom:14px;line-height:1.3;transition:color 1s}
+.cb p{font-family:var(--fz);font-size:.86rem;color:var(--text-muted);line-height:2;margin-bottom:10px}
+.cb p em{font-style:normal;color:var(--scalpel);font-weight:400}
+.cb .mono{font-family:var(--fm);font-size:.6rem;color:var(--cold-steel);letter-spacing:2px;text-transform:uppercase}
+.warm-block{border-color:rgba(212,168,85,.12)!important}
+.warm-block .sl{color:var(--amber)!important}
+.warm-block .st{color:var(--warm-light)!important}
+.warm-block p em{color:var(--warm-light)!important}
+.warm-block .mono{color:var(--amber)!important}
+
+.portrait-section{position:relative;z-index:10;padding:80px 24px}
+.portrait-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:44px;flex-wrap:wrap;background:rgba(18,14,8,.93);backdrop-filter:blur(16px);padding:40px;box-shadow:0 0 80px 40px rgba(18,14,8,.8);border:1px solid rgba(212,168,85,.08)}
+.pf{position:relative;width:270px;height:360px;flex-shrink:0}
+.pf img{width:100%;height:100%;object-fit:cover;filter:contrast(1.05) saturate(1.1)}
+.pf::before{content:'';position:absolute;inset:-6px;border:1px solid rgba(212,168,85,.25)}
+.pf::after{content:'DR.HSU // VERIFIED';position:absolute;bottom:-20px;left:0;font-family:var(--fm);font-size:.5rem;color:var(--amber);letter-spacing:2px}
+/* X-ray scan effect on portrait hover */
+.pf .xray-scan{position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(to bottom,transparent,rgba(0,229,255,.4),transparent);opacity:0;pointer-events:none;transition:opacity .3s}
+.pf:hover .xray-scan{opacity:1;animation:xraySweep 2s ease-in-out infinite}
+.pf:hover img{filter:contrast(1.3) saturate(.3) brightness(1.2)}
+@keyframes xraySweep{0%{top:0}100%{top:calc(100% - 4px)}}
+.pt{flex:1;min-width:250px}
+.pt .tag{font-family:var(--fd);font-size:.5rem;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+.pt h3{font-family:var(--fz);font-size:1.5rem;font-weight:900;color:var(--warm-light);margin-bottom:4px}
+.pt .cred{font-family:var(--fm);font-size:.6rem;color:var(--amber);letter-spacing:1px;margin-bottom:14px}
+.pt p{font-family:var(--fz);font-size:.86rem;color:var(--text-muted);line-height:1.9;margin-bottom:10px}
+
+.cq{position:relative;z-index:10;text-align:center;padding:50px 40px;max-width:580px;margin:0 auto;background:rgba(18,14,8,.93);backdrop-filter:blur(16px);box-shadow:0 0 80px 40px rgba(18,14,8,.8);border:1px solid rgba(212,168,85,.06)}
+.cq::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.cq blockquote{font-family:var(--fz);font-size:clamp(1rem,2vw,1.25rem);font-weight:300;color:var(--warm-light);line-height:2.2;letter-spacing:1px}
+.cq cite{display:block;margin-top:14px;font-family:var(--fm);font-size:.6rem;color:var(--amber);letter-spacing:3px;font-style:normal;text-transform:uppercase}
+
+.svc-sec{position:relative;z-index:10;padding:40px;max-width:960px;margin:0 auto;background:rgba(18,14,8,.93);backdrop-filter:blur(16px);box-shadow:0 0 80px 40px rgba(18,14,8,.8);border:1px solid rgba(212,168,85,.06)}
+.svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.sc{padding:22px 18px;border:1px solid rgba(212,168,85,.1);background:rgba(212,168,85,.02);transition:all .3s;position:relative;overflow:hidden}
+.sc::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(212,168,85,.06),transparent);transition:none}
+.sc:hover{border-color:rgba(212,168,85,.3);background:rgba(212,168,85,.06)}
+.sc:hover::after{left:100%;transition:left .8s ease}
+.sc .si{font-size:1rem;color:var(--gold);margin-bottom:8px}
+.sc h4{font-family:var(--fz);font-size:.9rem;font-weight:700;color:var(--warm-light);margin-bottom:5px}
+.sc p{font-family:var(--fz);font-size:.76rem;color:var(--text-muted);line-height:1.8}
+.edu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.ec{border:1px solid rgba(212,168,85,.1);overflow:hidden;transition:all .3s;cursor:pointer;position:relative}
+.ec:hover{border-color:rgba(212,168,85,.3);transform:translateY(-3px);box-shadow:0 6px 20px rgba(212,168,85,.08)}
+.ec .ec-zoom{position:absolute;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s;pointer-events:none}
+.ec .ec-zoom span{font-family:var(--fm);font-size:.6rem;color:var(--gold);letter-spacing:2px}
+.ec:hover .ec-zoom{opacity:1}
+.ec img{width:100%;height:auto;display:block}
+.ec-cap{padding:8px 10px;font-family:var(--fz);font-size:.68rem;color:var(--amber);line-height:1.5;background:rgba(212,168,85,.03)}
+
+/* ===== CUSTOM CURSOR ===== */
+.cursor-dot{position:fixed;width:6px;height:6px;border-radius:50%;background:rgba(0,229,255,.6);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:background .5s}
+.cursor-ring{position:fixed;width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,229,255,.25);pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .2s,height .2s,border-color .5s}
+.cursor-ring.hover{width:48px;height:48px;border-color:rgba(212,168,85,.4)}
+body{cursor:none}
+a,button,.sc,.ec{cursor:none}
+
+/* ===== CONTENT TILT ===== */
+.cb{transition:transform .15s ease,box-shadow .3s}
+
+
+/* ===== BURST PARTICLES (DOM) ===== */
+.burst{position:fixed;pointer-events:none;z-index:9997}
+.burst-dot{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--gold);opacity:0}
+
+.followup{position:relative;z-index:10;padding:50px 40px;text-align:center;max-width:580px;margin:0 auto;background:rgba(18,14,8,.93);backdrop-filter:blur(16px);box-shadow:0 0 80px 40px rgba(18,14,8,.8);border:1px solid rgba(212,168,85,.06)}
+.fu-box{padding:32px 24px;border:1px solid rgba(212,168,85,.15);background:rgba(212,168,85,.02);margin-bottom:36px;position:relative}
+.fu-box::before{content:'';position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:50px;height:1px;background:var(--gold)}
+.fu-box h3{font-family:var(--fz);font-size:1.1rem;font-weight:700;color:var(--warm-light);margin-bottom:8px}
+.fu-box p{font-family:var(--fz);font-size:.8rem;color:var(--text-muted);line-height:1.8;margin-bottom:14px}
+.fu-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 22px;font-family:var(--fd);font-size:.63rem;letter-spacing:2px;text-transform:uppercase;color:var(--cold-bg);background:var(--gold);text-decoration:none;transition:all .3s}
+.fu-btn:hover{background:#e8bc6a;box-shadow:0 0 20px rgba(212,168,85,.2)}
+
+.guild-footer{position:relative;z-index:10;padding:32px 24px 24px;text-align:center;background:rgba(18,14,8,.93);backdrop-filter:blur(16px);box-shadow:0 0 80px 40px rgba(18,14,8,.8);border-top:1px solid rgba(212,168,85,.08)}
+.sr{display:flex;justify-content:center;gap:14px;margin-bottom:16px}
+.sl2{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid rgba(212,168,85,.15);color:var(--gold);font-size:.8rem;text-decoration:none;transition:all .3s}
+.sl2:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(212,168,85,.2);color:var(--warm-light)}
+.fc{font-family:var(--fm);font-size:.5rem;color:var(--text-dim);letter-spacing:2px}
+
+@media(max-width:768px){
+  #spine-scene{opacity:.3}
+  .hud{display:none}
+  .svc-grid,.edu-grid{grid-template-columns:1fr}
+  .cursor-dot,.cursor-ring{display:none}
+  body{cursor:auto}
+  .portrait-inner{flex-direction:column;gap:24px}
+  .pf{width:200px;height:265px}
+  .cb{padding:24px 18px!important}
+  .scene-section{min-height:auto;padding:40px 16px}
+}
+</style>
+</head>
+<body>
+
+<canvas id="spine-scene"></canvas>
+<div class="cursor-dot" id="cursor-dot"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+<div class="burst" id="burst-container"></div>
+<div class="ecg-bar"><canvas id="ecg-canvas"></canvas></div>
+<a href="/guild/" class="back-nav"><i class="fas fa-chevron-left"></i> ARCHIVE</a>
+<div class="hud">
+  <div class="hud-act" id="hud-act">VERTEBRA 01</div>
+  <div style="font-size:.5rem;text-transform:uppercase;letter-spacing:2px" id="hud-name">FRAGMENTED</div>
+  <div class="hud-bar"><div class="hud-fill" id="hud-fill" style="height:0%"></div></div>
+  <div class="hud-dot"></div>
+  <div style="margin-top:4px;font-size:.5rem" id="hud-status">OPERATING</div>
+</div>
+
+<section class="scene-section content-center" data-v="1">
+  <div class="cb">
+    <div class="sl">Operating Room 01 // Scroll to Reconstruct</div>
+    <h1 class="st" style="font-size:clamp(2rem,5vw,3rem);letter-spacing:4px">許芳偉 醫師</h1>
+    <div class="mono" style="margin-bottom:20px;font-size:.7rem;letter-spacing:6px">THE BONE ARCHITECT</div>
+    <p>我的醫學生涯起點，是站在巨人的肩膀上。在台北榮總，我接受了最嚴格的骨科訓練。那裡是<em>與死神拔河的前線</em>。</p>
+    <div class="mono" style="margin-top:14px"><i class="fas fa-chevron-down"></i> SCROLL TO BEGIN</div>
+  </div>
+</section>
+
+<!-- ====== ACT I: 看見 (冷色，連續不斷) ====== -->
+
+<section class="scene-section content-left" data-v="2">
+  <div class="cb">
+    <div class="sl"><i class="fas fa-hospital"></i> Act I // 巨塔之內</div>
+    <h2 class="st">站在巨人的肩膀上</h2>
+    <p>台北榮總。台中榮總。最嚴格的骨科訓練，最前線的脊椎手術研究。我的雙手在這裡學會了在骨骼與神經之間精確地舞蹈 -- 如何在<em>幾毫米的誤差間，重建病人的脊梁</em>。</p>
+    <p>但在那些燈火通明的手術室外，我卻常看見另一種無奈的風景。</p>
+  </div>
+</section>
+
+<section class="scene-section content-right" data-v="3">
+  <div class="cb">
+    <div class="sl"><i class="fas fa-eye"></i> Act I // 看見裂痕</div>
+    <h2 class="st">被遺忘的等待</h2>
+    <p>疼痛難耐的長者蜷縮在冰冷的候診椅上，只為了等那一兩分鐘的問診。焦急的家屬為了排一個 MRI，不得不等待數週甚至數個月。</p>
+    <p>那一來一回的折返跑，消耗的不只是時間，更是病人對於<em>康復的信心</em>。我帶著這份反思離開醫學中心，來到沙鹿光田、三重宏仁 -- 視角變了，看見的問題也更清晰了。</p>
+  </div>
+</section>
+
+<!-- === 第一個呼吸空間：3D 脊椎在此清楚可見 === -->
+<div class="scene-spacer"></div>
+
+<!-- ====== ACT II: 轉折 (肖像 + 問題) ====== -->
+
+<section class="portrait-section">
+  <div class="portrait-inner">
+    <div class="pf"><img src="/assets/img/guild/dr_hsu_fangwei/clinic_portrait.webp" alt="許芳偉醫師" loading="lazy" /><div class="xray-scan"></div></div>
+    <div class="pt">
+      <div class="tag"><i class="fas fa-certificate"></i> Board Certified Orthopedic Surgeon</div>
+      <h3>許芳偉</h3>
+      <div class="cred">筋骨百科 Dr. Bone // Regenerative Medicine</div>
+      <p>行醫十數載，從榮總的學術殿堂到三重的街頭巷尾。身分變了、頭銜變了，但那顆始終站在病人立場著想的心，隨著歲月洗鍊得更加通透。</p>
+      <p>希波克拉底誓詞說：「採用對病人有利的療法。」所謂的「有利」，難道僅僅是手術的成功嗎？如果在那之前，病人必須忍受漫長的煎熬與恐懼，<em>這是否也是一種醫療的缺憾？</em></p>
+    </div>
+  </div>
+</section>
+
+<div class="cq">
+  <blockquote>難道病人就不值得擁有一個<br>既有醫學中心的專業高度<br>又有私人管家般細膩溫度的<br>就醫環境嗎？</blockquote>
+  <cite>-- Dr. Hsu Fang-Wei</cite>
+</div>
+
+<!-- === 第二個呼吸空間 === -->
+<div class="scene-spacer"></div>
+
+<!-- ====== ACT III: 重建 (暖色，連續推進) ====== -->
+
+<section class="scene-section content-left warm-section" data-v="5">
+  <div class="cb warm-block">
+    <div class="sl"><i class="fas fa-shield-halved"></i> Act III // 重建脊梁</div>
+    <h2 class="st">上醫治未病</h2>
+    <p>讓大家讀懂身體的訊號，在疾病發生之前就啟動防護機制。定期健檢、骨密度篩檢、姿勢評估、運動處方。<em>不是等到壞了才修，而是讓它不會壞。</em></p>
+    <p>很多人以為「痠痛是正常老化」-- 其實那是身體在發出警訊。</p>
+  </div>
+</section>
+
+<section class="scene-section content-right warm-section" data-v="6">
+  <div class="cb warm-block">
+    <div class="sl"><i class="fas fa-syringe"></i> Act III // 積極介入</div>
+    <h2 class="st">中醫治欲病</h2>
+    <p>對於進入「亞健康」狀態的朋友，利用再生醫學積極介入。PRP 增生注射、玻尿酸關節潤滑、體外震波。<em>在骨頭還沒斷之前，先讓它重新長回來。</em></p>
+    <p>人工關節是最後手段。在三級退化之前，保住原裝的膝蓋絕對是更好的選擇。</p>
+  </div>
+</section>
+
+<section class="scene-section content-left warm-section" data-v="7">
+  <div class="cb warm-block">
+    <div class="sl"><i class="fas fa-hand-holding-medical"></i> Act III // 完整修復</div>
+    <h2 class="st">下醫治已病</h2>
+    <p>微創脊椎手術、人工關節置換、骨折復位固定。對於已經面臨疾病與老化困擾的長輩，提供最優質的醫療品質。</p>
+    <p><em>不只修好，更要讓病人重新好好走路。</em>每一位患者都應該擁有「奢侈」的對話時間。</p>
+  </div>
+</section>
+
+<section class="scene-section content-center warm-section" data-v="8">
+  <div class="cb warm-block">
+    <div class="sl"><i class="fas fa-heart-pulse"></i> Act III // 使命</div>
+    <h2 class="st">健立醫療</h2>
+    <p>名為「健立」，意在「建立健康」。一座既有醫學中心專業高度，又有私人管家般細膩溫度的避風港。使命是為每一位信任我的人，<em>重啟再生活力</em>。</p>
+    <p>在繁忙的門診之外，我用「筋骨百科 Dr. Bone」在社群上進行人性化衛教 -- 用阿嬤和小孩都聽得懂的話，讓每個人都能讀懂自己身體的訊號。</p>
+  </div>
+</section>
+
+<!-- === 第三個呼吸空間 === -->
+<div class="scene-spacer"></div>
+
+<section class="svc-sec">
+  <div class="sl" style="font-family:var(--fd);font-size:.55rem;color:var(--gold);letter-spacing:3px;margin-bottom:6px"><i class="fas fa-briefcase-medical"></i> What I Can Do For You</div>
+  <h2 style="font-family:var(--fz);font-size:clamp(1.2rem,2.5vw,1.7rem);font-weight:700;color:var(--warm-light);margin-bottom:20px">我能為你做的事</h2>
+  <div class="svc-grid">
+    <div class="sc"><div class="si"><i class="fas fa-bone"></i></div><h4>骨科專業診療</h4><p>骨折、關節疼痛、脊椎疾患。台北榮總訓練背景，專精脊椎手術。</p></div>
+    <div class="sc"><div class="si"><i class="fas fa-dna"></i></div><h4>再生醫學</h4><p>PRP 注射、增生療法。啟動身體自癒力，讓組織自行修復與再生。</p></div>
+    <div class="sc"><div class="si"><i class="fas fa-user-doctor"></i></div><h4>全人健康管理</h4><p>專屬諮詢師關懷恢復進度。就醫不再冰冷，而是被支持的療癒旅程。</p></div>
+    <div class="sc"><div class="si"><i class="fas fa-book-medical"></i></div><h4>線上衛教科普</h4><p>用阿嬤和小孩都聽得懂的話，讓你的筋骨多用 20 年。</p></div>
+  </div>
+  <div style="font-family:var(--fd);font-size:.55rem;color:var(--gold);letter-spacing:3px;margin:36px 0 6px"><i class="fas fa-images"></i> From My Feed</div>
+  <h2 style="font-family:var(--fz);font-size:clamp(1.2rem,2.5vw,1.7rem);font-weight:700;color:var(--warm-light);margin-bottom:14px">筋骨白話文</h2>
+  <div class="edu-grid">
+    <div class="ec"><img src="/assets/img/guild/dr_hsu_fangwei/edu_knee.webp" alt="關節退化四階段" loading="lazy" /><div class="ec-zoom"><span><i class="fas fa-search"></i> SCAN DETAIL</span></div><div class="ec-cap">關節退化 K-L 分級</div></div>
+    <div class="ec"><img src="/assets/img/guild/dr_hsu_fangwei/edu_bone_spur.webp" alt="骨刺衛教" loading="lazy" /><div class="ec-zoom"><span><i class="fas fa-search"></i> SCAN DETAIL</span></div><div class="ec-cap">骨刺是骨頭的「白頭髮」</div></div>
+    <div class="ec"><img src="/assets/img/guild/dr_hsu_fangwei/edu_weight.webp" alt="減重治療" loading="lazy" /><div class="ec-zoom"><span><i class="fas fa-search"></i> SCAN DETAIL</span></div><div class="ec-cap">減重 5% = 痛感降 20-30%</div></div>
+  </div>
+</section>
+
+<div class="scene-spacer"></div>
+
+<section class="followup">
+  <div class="fu-box">
+    <h3><i class="fas fa-envelope-open-text" style="color:var(--gold);margin-right:6px"></i>筋骨百科電子報</h3>
+    <p>脫下白袍的距離感，用最紮實的醫學實證，破解坊間保養迷思。深度衛教、私密診間故事、優先提問權。</p>
+    <a href="https://dr-bone.netlify.app" target="_blank" rel="noopener noreferrer" class="fu-btn"><i class="fas fa-arrow-right"></i> Subscribe</a>
+  </div>
+</section>
+
+<footer class="guild-footer">
+  <div class="sr">
+    <a href="https://www.threads.com/@dr.hsu_fangwei" target="_blank" rel="noopener noreferrer" class="sl2" title="Threads"><i class="fab fa-threads"></i></a>
+    <a href="https://www.instagram.com/dr.hsu_fangwei/" target="_blank" rel="noopener noreferrer" class="sl2" title="Instagram"><i class="fab fa-instagram"></i></a>
+    <a href="https://linktr.ee/Dr.regen.bone.beauty" target="_blank" rel="noopener noreferrer" class="sl2" title="Linktree"><i class="fas fa-link"></i></a>
+    <a href="https://dr-bone.netlify.app" target="_blank" rel="noopener noreferrer" class="sl2" title="Newsletter"><i class="fas fa-newspaper"></i></a>
+  </div>
+  <p class="fc">Made with <span style="color:var(--red)">&#9829;</span> by SuperGalen's Dungeon</p>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* ===== THREE.JS SCROLL-DRIVEN SPINE ===== */
+(function(){
+  const canvas = document.getElementById('spine-scene');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(3, 0, 6);
+  camera.lookAt(0, 0, 0);
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  let scrollPct = 0, mouseX = 0, mouseY = 0;
+  const VCOUNT = 8;
+  const vertebrae = [];
+
+  for(let i = 0; i < VCOUNT; i++){
+    const size = 0.28 + (2.5 - Math.abs(i - 3.5)) * 0.04;
+    const group = new THREE.Group();
+
+    const ringGeo = new THREE.TorusGeometry(size, size * 0.18, 8, 20);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x6aaad4, wireframe: true, transparent: true, opacity: 0.35 });
+    group.add(new THREE.Mesh(ringGeo, ringMat));
+
+    const canalGeo = new THREE.TorusGeometry(size * 0.35, size * 0.06, 6, 12);
+    const canalMat = new THREE.MeshBasicMaterial({ color: 0x6aaad4, wireframe: true, transparent: true, opacity: 0.15 });
+    const canal = new THREE.Mesh(canalGeo, canalMat);
+    group.add(canal);
+
+    // Wings
+    const wingMat = new THREE.MeshBasicMaterial({ color: 0x6aaad4, transparent: true, opacity: 0.2 });
+    [-1, 1].forEach(side => {
+      const wg = new THREE.CylinderGeometry(0.006, 0.006, size * 0.7, 4);
+      const w = new THREE.Mesh(wg, wingMat);
+      w.position.x = side * size * 0.9;
+      w.rotation.z = Math.PI / 2;
+      group.add(w);
+    });
+
+    // Spike
+    const spikeMat = new THREE.MeshBasicMaterial({ color: 0x6aaad4, transparent: true, opacity: 0.2 });
+    const sg = new THREE.CylinderGeometry(0.008, 0.008, size * 1.2, 4);
+    const spike = new THREE.Mesh(sg, spikeMat);
+    spike.position.z = -size * 0.8;
+    spike.rotation.x = Math.PI / 2;
+    group.add(spike);
+
+    // All rings rotated to face camera
+    group.children.forEach(c => { if(c.geometry && c.geometry.type.includes('Torus')) c.rotation.x = Math.PI / 2; });
+
+    const angle = (i / VCOUNT) * Math.PI * 2 + Math.random() * 0.5;
+    const dist = 4 + Math.random() * 2;
+    group.userData = {
+      sx: Math.cos(angle) * dist,
+      sy: Math.sin(angle) * dist * 0.6 + (Math.random() - 0.5) * 3,
+      sz: (Math.random() - 0.5) * 3,
+      srx: Math.random() * Math.PI * 2,
+      sry: Math.random() * Math.PI * 2,
+      srz: Math.random() * Math.PI * 2,
+      ty: (i - VCOUNT / 2 + 0.5) * 0.55,
+      ringMat, canalMat, spikeMat, wingMat
+    };
+    group.position.set(group.userData.sx, group.userData.sy, group.userData.sz);
+    group.rotation.set(group.userData.srx, group.userData.sry, group.userData.srz);
+    scene.add(group);
+    vertebrae.push(group);
+  }
+
+  // Particles — mouse-reactive
+  const pCount = 400;
+  const pGeo = new THREE.BufferGeometry();
+  const pp = new Float32Array(pCount * 3);
+  const pSizes = new Float32Array(pCount);
+  const pv = [];
+  for(let i = 0; i < pCount; i++){
+    pp[i*3]=(Math.random()-.5)*14; pp[i*3+1]=(Math.random()-.5)*14; pp[i*3+2]=(Math.random()-.5)*8;
+    pSizes[i] = Math.random() * 0.03 + 0.01;
+    pv.push({x:(Math.random()-.5)*.005,y:(Math.random()-.5)*.005,z:(Math.random()-.5)*.003});
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+  const pMat = new THREE.PointsMaterial({ color: 0x6aaad4, size: 0.025, transparent: true, opacity: 0.3, sizeAttenuation: true });
+  scene.add(new THREE.Points(pGeo, pMat));
+
+  // Spine line
+  const linePos = new Float32Array(VCOUNT * 3);
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+  const lineMat = new THREE.LineBasicMaterial({ color: 0x6aaad4, transparent: true, opacity: 0 });
+  scene.add(new THREE.Line(lineGeo, lineMat));
+
+  // Energy pulse rings — appear when vertebrae lock in
+  const pulseRings = [];
+  for(let i = 0; i < VCOUNT; i++){
+    const rGeo = new THREE.RingGeometry(0.01, 0.02, 32);
+    const rMat = new THREE.MeshBasicMaterial({ color: 0x6aaad4, transparent: true, opacity: 0, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(rGeo, rMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.userData = { scale: 0.01, active: false, mat: rMat };
+    scene.add(ring);
+    pulseRings.push(ring);
+  }
+
+  // Mouse world position for particle interaction
+  let mouseWorld = new THREE.Vector3(10, 10, 0);
+  const raycaster = new THREE.Raycaster();
+  const mouseNDC = new THREE.Vector2();
+  const interPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+
+  function animate(){
+    requestAnimationFrame(animate);
+    const t = Date.now() * 0.001;
+
+    // Update mouse world position
+    raycaster.setFromCamera(mouseNDC, camera);
+    const mTarget = new THREE.Vector3();
+    raycaster.ray.intersectPlane(interPlane, mTarget);
+    if(mTarget) mouseWorld.lerp(mTarget, 0.1);
+
+    vertebrae.forEach((g, i) => {
+      const d = g.userData;
+      const threshold = i / VCOUNT;
+      const localP = Math.max(0, Math.min(1, (scrollPct - threshold * 0.8) / 0.15));
+      const ease = localP * localP * (3 - 2 * localP);
+      const wasLocked = d._locked || false;
+
+      g.position.x = d.sx * (1 - ease);
+      g.position.y = d.sy * (1 - ease) + d.ty * ease;
+      g.position.z = d.sz * (1 - ease);
+
+      // Mouse influence on scattered vertebrae — they drift away from cursor
+      if(ease < 0.9){
+        const dx = g.position.x - mouseWorld.x;
+        const dy = g.position.y - mouseWorld.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 2.5){
+          const force = (2.5 - dist) * 0.008 * (1 - ease);
+          g.position.x += (dx / dist) * force;
+          g.position.y += (dy / dist) * force;
+        }
+      }
+
+      g.rotation.x = d.srx * (1 - ease) + Math.sin(t * 0.3 + i) * 0.06 * ease;
+      g.rotation.y = d.sry * (1 - ease) + Math.sin(t * 0.2 + i * 0.5) * 0.04 * ease;
+      g.rotation.z = d.srz * (1 - ease);
+
+      const warmth = Math.max(0, Math.min(1, (scrollPct - 0.4) / 0.35));
+      const col = new THREE.Color(0.42 + warmth * 0.41, 0.67 - warmth * 0.01, 0.83 - warmth * 0.5);
+      [d.ringMat, d.canalMat, d.spikeMat, d.wingMat].forEach(m => { m.color = col; });
+      d.ringMat.opacity = 0.15 + ease * 0.5;
+      d.canalMat.opacity = 0.08 + ease * 0.22;
+      d.spikeMat.opacity = 0.1 + ease * 0.25;
+      d.wingMat.opacity = 0.1 + ease * 0.25;
+
+      linePos[i*3] = g.position.x;
+      linePos[i*3+1] = g.position.y;
+      linePos[i*3+2] = g.position.z;
+
+      // Trigger pulse ring + DOM burst when vertebra locks in
+      if(ease > 0.95 && !wasLocked){
+        d._locked = true;
+        const pr = pulseRings[i];
+        pr.position.copy(g.position);
+        pr.userData.active = true;
+        pr.userData.scale = 0.01;
+        pr.userData.mat.opacity = 0.6;
+        pr.userData.mat.color = col.clone();
+        // DOM particle burst at screen position
+        const v = g.position.clone().project(camera);
+        const bx = (v.x * 0.5 + 0.5) * window.innerWidth;
+        const by = (-v.y * 0.5 + 0.5) * window.innerHeight;
+        if(typeof spawnBurst === 'function') spawnBurst(bx, by, warmth > 0.3 ? '#d4a855' : '#8ab4d0');
+      }
+    });
+
+    // Animate pulse rings
+    pulseRings.forEach(pr => {
+      if(!pr.userData.active) return;
+      pr.userData.scale += 0.04;
+      pr.scale.set(pr.userData.scale, pr.userData.scale, pr.userData.scale);
+      pr.userData.mat.opacity *= 0.96;
+      if(pr.userData.mat.opacity < 0.01) pr.userData.active = false;
+    });
+
+    lineGeo.attributes.position.needsUpdate = true;
+    lineMat.opacity = Math.min(0.35, Math.max(0, (scrollPct - 0.3) * 0.9));
+    const w = Math.max(0, Math.min(1, (scrollPct - 0.4) / 0.35));
+    lineMat.color = new THREE.Color(0.42 + w * 0.41, 0.67 - w * 0.01, 0.83 - w * 0.5);
+    pMat.color = lineMat.color.clone();
+    pMat.opacity = 0.15 + scrollPct * 0.25;
+
+    // Particles — mouse-reactive: attracted towards mouse gently, repelled when too close
+    const pa = pGeo.attributes.position.array;
+    for(let i = 0; i < pCount; i++){
+      let px = pa[i*3], py = pa[i*3+1], pz = pa[i*3+2];
+      // Base drift
+      px += pv[i].x; py += pv[i].y; pz += pv[i].z;
+      // Mouse interaction
+      const dx = px - mouseWorld.x;
+      const dy = py - mouseWorld.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist < 1.8 && dist > 0.01){
+        // Repel close particles
+        const force = (1.8 - dist) * 0.002;
+        px += (dx / dist) * force;
+        py += (dy / dist) * force;
+      } else if(dist < 4 && dist > 1.8){
+        // Gently attract distant particles
+        const force = (4 - dist) * 0.0003;
+        px -= (dx / dist) * force;
+        py -= (dy / dist) * force;
+      }
+      // Bounds
+      if(Math.abs(px)>7) px *= -.92;
+      if(Math.abs(py)>7) py *= -.92;
+      if(Math.abs(pz)>4) pz *= -.92;
+      pa[i*3]=px; pa[i*3+1]=py; pa[i*3+2]=pz;
+    }
+    pGeo.attributes.position.needsUpdate = true;
+
+    // Camera — stronger mouse follow + subtle zoom with scroll
+    camera.position.x = 3 + mouseX * 2;
+    camera.position.y = mouseY * 1.5;
+    camera.position.z = 6 - scrollPct * 1.5;
+    camera.lookAt(0, 0, 0);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  document.addEventListener('mousemove', e => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * -2;
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  });
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+  window.addEventListener('scroll', () => {
+    const docH = document.documentElement.scrollHeight - window.innerHeight;
+    scrollPct = docH > 0 ? window.scrollY / docH : 0;
+  }, { passive: true });
+})();
+
+/* ===== CUSTOM CURSOR ===== */
+(function(){
+  const dot = document.getElementById('cursor-dot');
+  const ring = document.getElementById('cursor-ring');
+  if(!dot || !ring) return;
+  let mx = -100, my = -100, rx = -100, ry = -100;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  // Hover detection for interactive elements
+  document.addEventListener('mouseover', e => {
+    if(e.target.closest('a,button,.sc,.ec')) ring.classList.add('hover');
+  });
+  document.addEventListener('mouseout', e => {
+    if(e.target.closest('a,button,.sc,.ec')) ring.classList.remove('hover');
+  });
+  function update(){
+    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+    rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15;
+    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    requestAnimationFrame(update);
+  }
+  update();
+})();
+
+/* ===== CONTENT BLOCK TILT ===== */
+(function(){
+  document.querySelectorAll('.cb').forEach(block => {
+    block.addEventListener('mousemove', e => {
+      const r = block.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      block.style.transform = `perspective(800px) rotateY(${x*4}deg) rotateX(${-y*4}deg)`;
+    });
+    block.addEventListener('mouseleave', () => {
+      block.style.transform = '';
+    });
+  });
+})();
+
+
+/* ===== BURST PARTICLES ===== */
+function spawnBurst(x, y, color){
+  const container = document.getElementById('burst-container');
+  if(!container) return;
+  const count = 12;
+  for(let i = 0; i < count; i++){
+    const d = document.createElement('div');
+    d.className = 'burst-dot';
+    d.style.left = x + 'px'; d.style.top = y + 'px';
+    d.style.background = color || 'var(--gold)';
+    container.appendChild(d);
+    const angle = (i / count) * Math.PI * 2;
+    const dist = 40 + Math.random() * 60;
+    gsap.to(d, {
+      x: Math.cos(angle) * dist,
+      y: Math.sin(angle) * dist,
+      opacity: 1, duration: 0.15,
+      onComplete: () => {
+        gsap.to(d, { opacity: 0, duration: 0.5, onComplete: () => d.remove() });
+      }
+    });
+  }
+}
+
+/* ===== ECG ===== */
+(function(){
+  const c = document.getElementById('ecg-canvas'), ctx = c.getContext('2d');
+  let w, h, warmth = 0;
+  function resize(){ w = c.width = c.offsetWidth*2; h = c.height = c.offsetHeight*2; }
+  resize();
+  const data = []; const spd = 3; let x = 0, scrollSpeed = 0, lastScroll = 0;
+  function val(t){
+    // Cycle length shrinks with scroll speed (faster heartbeat)
+    const cycle = t % Math.max(80, 200 - scrollSpeed * 400);
+    const amp = 1 + scrollSpeed * 2; // amplitude increases
+    if(cycle>60&&cycle<65)return-.3*amp; if(cycle>65&&cycle<70)return.8*amp; if(cycle>70&&cycle<75)return-.15*amp; if(cycle>80&&cycle<90)return.15*amp; return 0;
+  }
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    data.push(val(x)); if(data.length>w/spd)data.shift(); x+=spd;
+    const r=Math.round(106+(212-106)*warmth),g=Math.round(170+(168-170)*warmth),b=Math.round(212+(85-212)*warmth);
+    ctx.beginPath();ctx.strokeStyle=`rgba(${r},${g},${b},.45)`;ctx.lineWidth=1.5;
+    ctx.shadowColor=`rgba(${r},${g},${b},.3)`;ctx.shadowBlur=6;
+    for(let i=0;i<data.length;i++){const px=i*spd,py=h/2-data[i]*h*.35;i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}
+    ctx.stroke();requestAnimationFrame(draw);
+  }
+  draw();window.addEventListener('resize',resize);
+  window.addEventListener('scroll',()=>{
+    const docH=document.documentElement.scrollHeight-window.innerHeight;
+    warmth=Math.max(0,Math.min(1,((docH>0?window.scrollY/docH:0)-.35)/.4));
+    // Scroll speed for heartbeat
+    scrollSpeed = Math.min(1, Math.abs(window.scrollY - lastScroll) / 100);
+    lastScroll = window.scrollY;
+  },{passive:true});
+  // Decay scroll speed
+  setInterval(() => { scrollSpeed *= 0.9; }, 100);
+})();
+
+/* ===== GSAP ===== */
+gsap.utils.toArray('.scene-section').forEach(s=>{
+  gsap.from(s.querySelector('.cb'),{opacity:0,y:40,duration:1,scrollTrigger:{trigger:s,start:'top 75%'}});
+});
+gsap.from('.pf',{opacity:0,x:-40,duration:1,scrollTrigger:{trigger:'.portrait-section',start:'top 70%'}});
+gsap.from('.pt',{opacity:0,x:40,duration:1,delay:.2,scrollTrigger:{trigger:'.portrait-section',start:'top 70%'}});
+gsap.from('.cq blockquote',{opacity:0,y:30,duration:1,scrollTrigger:{trigger:'.cq',start:'top 75%'}});
+gsap.utils.toArray('.sc').forEach((c,i)=>{gsap.from(c,{opacity:0,y:20,duration:.6,delay:i*.08,scrollTrigger:{trigger:'.svc-grid',start:'top 78%'}});});
+gsap.utils.toArray('.ec').forEach((c,i)=>{gsap.from(c,{opacity:0,y:20,duration:.6,delay:i*.1,scrollTrigger:{trigger:'.edu-grid',start:'top 80%'}});});
+
+/* ===== SCROLL HUD ===== */
+const secs=document.querySelectorAll('[data-v]');
+const vl=['FRAGMENTED','FRACTURE SITE','TRANSITION','DIAGNOSIS','PREVENTION','INTERVENTION','RESTORATION','COMPLETE'];
+window.addEventListener('scroll',()=>{
+  const docH=document.documentElement.scrollHeight-window.innerHeight;
+  const pct=docH>0?window.scrollY/docH:0;
+  document.getElementById('hud-fill').style.height=(pct*100)+'%';
+  let cv=1;secs.forEach(s=>{if(s.getBoundingClientRect().top<window.innerHeight*.5)cv=parseInt(s.dataset.v);});
+  document.getElementById('hud-act').textContent='VERTEBRA '+String(cv).padStart(2,'0');
+  document.getElementById('hud-name').textContent=vl[cv-1]||'';
+  document.getElementById('hud-status').textContent=pct>.9?'STABILIZED':'OPERATING';
+  const w=Math.max(0,Math.min(1,(pct-.35)/.4));
+  const hc=w>.5?'var(--gold)':'var(--cold-light)';
+  document.getElementById('hud-act').style.color=hc;
+  document.getElementById('hud-fill').style.background=hc;
+  const r=Math.round(4+(18-4)*w),g=Math.round(8+(14-8)*w),b=Math.round(16+(8-16)*w);
+  document.body.style.background=`rgb(${r},${g},${b})`;
+},{passive:true});
+</script>
+</body>
+</html>
