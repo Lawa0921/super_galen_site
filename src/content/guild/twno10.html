@@ -406,14 +406,7 @@ body {
   margin-bottom: 50px;
 }
 
-/* Separator line */
-.sep-line {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
-  opacity: 0.2;
-  margin: 0 auto;
-}
+/* (sep-line removed) */
 
 /* ========================================
    MANIFESTO (about)
@@ -492,19 +485,8 @@ body {
 }
 
 /* ========================================
-   TERMINAL CODE BLOCK
+   TERMINAL SHARED STYLES
    ======================================== */
-.terminal-block {
-  background: rgba(10,14,20,0.9);
-  border: 1px solid rgba(0,255,136,0.15);
-  border-radius: 4px;
-  margin: 60px auto;
-  max-width: 800px;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
-}
-
 .terminal-titlebar {
   display: flex;
   align-items: center;
@@ -531,20 +513,7 @@ body {
   margin-left: 12px;
 }
 
-.terminal-body {
-  padding: 20px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 13px;
-  line-height: 1.8;
-  color: var(--neon-green);
-  overflow-x: auto;
-}
-
-.terminal-body .comment { color: var(--text-dim); }
-.terminal-body .keyword { color: var(--neon-cyan); }
-.terminal-body .string { color: var(--leopard-gold); }
-.terminal-body .method { color: var(--mandala-violet); }
-.terminal-body .prompt { color: var(--text-muted); }
+/* (terminal-body removed — replaced by interactive-terminal) */
 
 /* ========================================
    SERVICES (Leopard Prowl Cards)
@@ -775,124 +744,7 @@ body {
   letter-spacing: 2px;
 }
 
-/* ========================================
-   TIMELINE
-   ======================================== */
-.timeline {
-  position: relative;
-  max-width: 800px;
-  margin: 60px auto 0;
-  padding-left: 40px;
-}
-
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(to bottom, var(--neon-green), var(--mandala-violet), transparent);
-}
-
-.timeline-item {
-  position: relative;
-  margin-bottom: 50px;
-  opacity: 0;
-}
-
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  left: -44px;
-  top: 6px;
-  width: 10px;
-  height: 10px;
-  background: var(--neon-green);
-  border-radius: 50%;
-  box-shadow: 0 0 10px var(--neon-green);
-}
-
-.timeline-year {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--neon-green);
-  margin-bottom: 6px;
-  letter-spacing: 2px;
-}
-
-.timeline-content h4 {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 6px;
-}
-
-.timeline-content p {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.7;
-}
-
-/* ========================================
-   GALLERY (App Screenshots)
-   ======================================== */
-.gallery-section {
-  position: relative;
-  z-index: 1;
-  padding: 100px 20px;
-}
-
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  max-width: 1000px;
-  margin: 40px auto 0;
-}
-
-.gallery-item {
-  position: relative;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(0,255,136,0.08);
-  aspect-ratio: auto;
-  cursor: pointer;
-  transition: all 0.4s ease;
-}
-
-.gallery-item:hover {
-  border-color: rgba(0,255,136,0.3);
-  transform: scale(1.02);
-  z-index: 10;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-}
-
-.gallery-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.gallery-item .gallery-label {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px;
-  background: linear-gradient(transparent, rgba(3,5,8,0.9));
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
-  color: var(--neon-green);
-  letter-spacing: 1px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.gallery-item:hover .gallery-label { opacity: 1; }
+/* (timeline + gallery CSS removed — content integrated into origin/products) */
 
 /* ========================================
    CONTACT / CTA
@@ -1084,6 +936,232 @@ body {
 }
 
 /* ========================================
+   BUG HUNT GAME
+   ======================================== */
+.bughunt-arena {
+  padding: 0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+}
+
+.bughunt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: rgba(201,168,76,0.06);
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+}
+
+.bughunt-label {
+  color: var(--leopard-gold);
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.bughunt-filename {
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.bughunt-score {
+  color: var(--neon-green);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.bughunt-accuracy {
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.bughunt-code {
+  padding: 16px 20px;
+  line-height: 1.9;
+  max-height: 350px;
+  overflow-y: auto;
+  counter-reset: line-num;
+}
+
+.bughunt-line {
+  display: flex;
+  gap: 16px;
+  padding: 2px 0;
+  border-radius: 2px;
+}
+
+.bughunt-line:hover { background: rgba(255,255,255,0.02); }
+
+.bughunt-linenum {
+  color: var(--text-dim);
+  min-width: 24px;
+  text-align: right;
+  user-select: none;
+}
+
+.bughunt-token {
+  cursor: crosshair;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.bughunt-token:hover {
+  text-decoration: underline;
+  text-decoration-color: rgba(201,168,76,0.3);
+  text-underline-offset: 3px;
+}
+
+/* Bug tokens have a subtle red underline hint */
+.bughunt-token[data-bug] {
+  border-bottom: 1px dashed rgba(255,45,74,0.35);
+  padding-bottom: 1px;
+}
+
+.bughunt-token[data-bug]:hover {
+  text-decoration-color: var(--blood-red);
+  background: rgba(255,45,74,0.08);
+}
+
+.bughunt-token.found {
+  text-decoration: line-through;
+  text-decoration-color: var(--blood-red);
+  opacity: 0.5;
+}
+
+.bughunt-token.found::after {
+  content: attr(data-fix);
+  color: var(--neon-green);
+  text-decoration: none;
+  margin-left: 4px;
+  opacity: 1;
+}
+
+.bughunt-token.miss {
+  animation: shake-token 0.3s ease;
+}
+
+@keyframes shake-token {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+.bughunt-float {
+  position: fixed;
+  color: var(--leopard-gold);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  pointer-events: none;
+  z-index: 600;
+  white-space: nowrap;
+}
+
+.bughunt-pounce {
+  position: fixed;
+  pointer-events: none;
+  z-index: 600;
+  width: 60px;
+  height: 60px;
+}
+
+.bughunt-pounce line {
+  stroke: var(--leopard-gold);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  filter: drop-shadow(0 0 4px var(--leopard-gold));
+}
+
+.bughunt-insight {
+  padding: 0 20px;
+  min-height: 0;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.bughunt-insight.show {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(155,89,240,0.15);
+  border-left: 3px solid var(--mandala-violet);
+  margin: 8px 20px;
+  background: rgba(155,89,240,0.04);
+  border-radius: 0 2px 2px 0;
+}
+
+.bughunt-insight p {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.8;
+}
+
+.bughunt-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid rgba(0,255,136,0.05);
+  position: sticky;
+  bottom: 0;
+  background: var(--obsidian);
+  z-index: 5;
+}
+
+.bughunt-btn {
+  padding: 8px 20px;
+  background: rgba(0,255,136,0.06);
+  border: 1px solid rgba(0,255,136,0.2);
+  color: var(--neon-green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.bughunt-btn:hover {
+  background: rgba(0,255,136,0.12);
+  box-shadow: var(--glow-green);
+}
+
+.bughunt-exit {
+  border-color: rgba(255,45,74,0.2);
+  color: var(--text-muted);
+  background: none;
+}
+
+.bughunt-exit:hover {
+  color: var(--blood-red);
+  border-color: var(--blood-red);
+  box-shadow: none;
+}
+
+.bughunt-summary {
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.bughunt-summary .rank {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--leopard-gold);
+  margin: 16px 0;
+  letter-spacing: 3px;
+}
+
+.bughunt-summary .final-quote {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  max-width: 500px;
+  margin: 20px auto;
+  line-height: 1.9;
+}
+
+/* ========================================
    INTERACTIVE TERMINAL
    ======================================== */
 .interactive-terminal {
@@ -1157,68 +1235,9 @@ body {
 .terminal-output .cmd-gold { color: var(--leopard-gold); }
 .terminal-output .cmd-violet { color: var(--mandala-violet); }
 
-/* ========================================
-   MANDALA GENERATOR (participatory)
-   ======================================== */
-.mandala-actions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 30px;
-  flex-wrap: wrap;
-}
+/* (prayer compiler removed) */
 
-.mandala-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: rgba(155,89,240,0.08);
-  border: 1px solid rgba(155,89,240,0.3);
-  color: var(--mandala-violet);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 12px;
-  letter-spacing: 2px;
-  cursor: pointer;
-  border-radius: 2px;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-}
-
-.mandala-btn:hover {
-  background: rgba(155,89,240,0.15);
-  box-shadow: var(--glow-violet);
-  transform: translateY(-2px);
-}
-
-.mandala-btn:active {
-  transform: translateY(0);
-}
-
-.mandala-seed-display {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 12px;
-  color: var(--mandala-violet);
-  text-align: center;
-  margin-top: 16px;
-  opacity: 0.6;
-  min-height: 20px;
-}
-
-/* ========================================
-   DUALITY BRIDGE (code → spirit transition)
-   ======================================== */
-.duality-bridge {
-  position: relative;
-  height: 200px;
-  z-index: 1;
-  overflow: hidden;
-}
-
-.duality-bridge canvas {
-  width: 100%;
-  height: 100%;
-}
+/* (mandala-seed-display removed) */
 
 /* ========================================
    LEOPARD SILHOUETTE (scroll parallax)
@@ -1312,10 +1331,6 @@ body.scrolled .leopard-silhouette {
 
   .product-item:nth-child(even) { direction: ltr; }
 
-  .gallery-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .services-grid {
     grid-template-columns: 1fr;
   }
@@ -1326,7 +1341,7 @@ body.scrolled .leopard-silhouette {
 
   .interactive-terminal { margin: 40px 10px; }
 
-  .mandala-actions { flex-direction: column; align-items: center; }
+  /* (prayer compiler removed) */
 
   .hero-title { font-size: 2rem; }
 
@@ -1334,10 +1349,6 @@ body.scrolled .leopard-silhouette {
 }
 
 @media (max-width: 480px) {
-  .gallery-grid {
-    grid-template-columns: 1fr;
-  }
-
   .manifesto-stats {
     grid-template-columns: 1fr;
   }
@@ -1391,7 +1402,6 @@ body.scrolled .leopard-silhouette {
   <div class="prowl-dot" data-section="services"></div>
   <div class="prowl-dot" data-section="products"></div>
   <div class="prowl-dot" data-section="mandala"></div>
-  <div class="prowl-dot" data-section="gallery"></div>
   <div class="prowl-dot" data-section="contact"></div>
 </div>
 
@@ -1421,9 +1431,9 @@ body.scrolled .leopard-silhouette {
   </div>
 </section>
 
-<!-- ===== MANIFESTO ===== -->
+<!-- ===== ACT 1: ORIGIN — 我從哪裡來 ===== -->
 <section class="section" id="manifesto">
-  <div class="section-label">ABOUT_ME</div>
+  <div class="section-label">ORIGIN</div>
   <h2 class="section-title">LEOPARD.INIT()</h2>
 
   <div class="manifesto-inner">
@@ -1431,19 +1441,22 @@ body.scrolled .leopard-silhouette {
       <p>
         我是馬農，網路上的人都叫我<span class="highlight">碼農</span>。
         說實話，這個名字一開始是自嘲，後來卻變成了驕傲。
-        在程式的世界裡，我已經<span class="gold">潛伏了超過 15 年</span>。
       </p>
       <p>
-        我創辦了<span class="highlight">黑豹程式開發有限公司</span>，
-        用十五年磨出來的爪子，替每一個找上門的客戶撕開商業困境。
-        從一行程式碼到一整套系統，從網站設計到 SEO 佈局、
-        從 Chrome 插件到心靈修行軟體 ── 我什麼都做，而且做到極致。
+        2011 年，我寫下第一行 PHP。那時的網路還很簡單，但我已經看到了無限的可能性。
+        接下來的十五年，我把爪子磨得越來越利 ──
+        從 CRM 系統到 API 整合，從網站設計到 SEO 佈局。
+        2020 年，<span class="highlight">黑豹程式開發有限公司</span>正式成形。
       </p>
       <p>
-        你可能覺得奇怪：一個寫程式的人怎麼會去開發念經軟體？
-        但對我來說，<span class="gold">寫程式本身就是一種修行</span>。
-        每一次 debug 都是面對自己的不完美，
-        每一次部署都是對世界的一次善意。
+        2024 年，事情開始不一樣了。我開發了<span class="gold">心經祈福會</span>，
+        把修行和程式結合在一起。從此我不只是碼農，更是一個用科技輔助修行的人。
+      </p>
+      <p>
+        2026 年，中國客戶透過 AI「豆包」搜尋「台灣靠譜網路開發公司」找到我。
+        第一個回覆、支援國際付款，案子直接到手。
+        同年開發 Threads「脆粉絲」插件，籌劃台灣百大網站排行榜。
+        <span class="gold">在 AI 浪潮中不被淘汰，反而更加銳利。</span>
       </p>
     </div>
 
@@ -1468,258 +1481,197 @@ body.scrolled .leopard-silhouette {
   </div>
 </section>
 
-<!-- ===== INTERACTIVE TERMINAL (Signature Moment #1) ===== -->
-<div class="interactive-terminal" id="interactive-terminal">
-  <div class="terminal-titlebar">
-    <div class="terminal-dot red"></div>
-    <div class="terminal-dot yellow"></div>
-    <div class="terminal-dot green"></div>
-    <span class="terminal-title">leopard@blackpanther:~/hunt</span>
-  </div>
-  <div class="terminal-output" id="terminal-output">
-    <div><span class="comment">// 歡迎進入黑豹系統。試試輸入指令探索我的世界。</span></div>
-    <div><span class="cmd-gold">leopard@blackpanther:~$</span> help</div>
-    <div class="cmd-response">
-      可用指令：<br>
-      &nbsp;&nbsp;<span style="color:var(--neon-green)">skills</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 查看技能樹<br>
-      &nbsp;&nbsp;<span style="color:var(--neon-green)">hunt</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- 搜尋服務<br>
-      &nbsp;&nbsp;<span style="color:var(--neon-green)">pray</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- 進入修行模式<br>
-      &nbsp;&nbsp;<span style="color:var(--neon-green)">motto</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 顯示座右銘<br>
-      &nbsp;&nbsp;<span style="color:var(--neon-green)">stats</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 顯示戰績<br>
-      &nbsp;&nbsp;<span style="color:var(--neon-green)">about</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 關於黑豹<br>
-      &nbsp;&nbsp;<span style="color:var(--neon-green)">clear</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 清除畫面
-    </div>
-  </div>
-  <div class="terminal-input-line">
-    <span class="terminal-prompt">leopard@blackpanther:~$</span>
-    <input type="text" class="terminal-input" id="terminal-input" placeholder="輸入指令..." autocomplete="off" spellcheck="false">
-  </div>
-  <div class="terminal-hint"><i class="fas fa-keyboard" style="margin-right:6px;"></i>試試輸入 skills, hunt, pray, motto, stats, about</div>
-</div>
-
-<!-- ===== SERVICES ===== -->
+<!-- ===== ACT 2: THE HUNT — 我在叢林裡做什麼 ===== -->
 <section class="section" id="services">
-  <div class="section-label">SERVICES</div>
-  <h2 class="section-title">DEPLOY.SERVICES()</h2>
+  <div class="section-label">THE_HUNT</div>
+  <h2 class="section-title">DEPLOY.HUNT()</h2>
   <p class="section-desc">
-    我能幫你做的事很多。從零開始打造網站，或是把你現有的爛網站翻修成門面。
-    不管你是個人品牌、中小企業、還是需要跨國佈局的公司，我都能搞定。
+    黑豹不挑食。從個人品牌到跨國企業，從爛到翻的舊網站到從零開始的新系統，
+    我什麼都獵。以下是我的狩獵範圍 ── 試試在終端機輸入 <span style="color:var(--neon-green)">debug</span> 體驗一下黑豹的除錯本能。
   </p>
 
   <div class="services-grid">
     <div class="service-card">
       <i class="fas fa-code card-icon"></i>
       <h3>客製化網站開發</h3>
-      <p>從企業官網到電商平台，從旅遊住宿到醫療診所，超過 100+ 個模板的實戰經驗。每一個網站都是為你量身打造的數位武器。</p>
+      <p>從企業官網到電商平台，超過 100+ 個模板的實戰經驗。每一個網站都是為你量身打造的數位武器。</p>
       <div class="price-tag">FROM NT$35,000</div>
     </div>
 
     <div class="service-card">
       <i class="fas fa-search-dollar card-icon"></i>
       <h3>SEO / GEO 最佳化</h3>
-      <p>不只是傳統搜尋引擎優化。我專注於 GEO（Generative Engine Optimization），讓你的網站被 AI 搜尋引擎推薦。JSON-LD 結構化資料、Core Web Vitals 全面優化。</p>
+      <p>我專注於 GEO（Generative Engine Optimization），讓你的網站被 AI 搜尋引擎推薦。這就是中國客戶透過豆包找到我的秘密。</p>
       <div class="price-tag">AI 時代的流量密碼</div>
     </div>
 
     <div class="service-card">
-      <i class="fas fa-puzzle-piece card-icon"></i>
-      <h3>Chrome 插件開發</h3>
-      <p>我開發了 Threads 平台最實用的免費插件「脆粉絲」，支援 8 國語系、粉絲排序、資料匯出 Excel。堅持無廣告、無訂閱、完全免費。</p>
-      <div class="price-tag">FREE / 客製開發另議</div>
-    </div>
-
-    <div class="service-card">
       <i class="fas fa-plug card-icon"></i>
-      <h3>API 串接整合</h3>
-      <p>第三方 API 串接、支付系統、LINE 機器人、社群登入、自動化流程，任何你需要讓系統互相對話的整合工作。</p>
+      <h3>API 串接 / 插件開發</h3>
+      <p>支付系統、LINE 機器人、社群登入、Chrome 插件。任何你需要讓系統互相對話的整合工作，我都做。</p>
       <div class="price-tag">依專案報價</div>
     </div>
 
     <div class="service-card">
       <i class="fas fa-server card-icon"></i>
       <h3>主機搬家與維護</h3>
-      <p>SSL 憑證安裝、網站搬家遷移、主機代管。讓你不用煩惱技術細節，專注在你的事業上。</p>
+      <p>SSL 憑證、網站搬家、主機代管。讓你不用煩惱技術細節，專注在事業上。</p>
       <div class="price-tag">FROM NT$2,000</div>
     </div>
+  </div>
 
-    <div class="service-card">
-      <i class="fas fa-gamepad card-icon"></i>
-      <h3>網頁遊戲開發</h3>
-      <p>互動式網頁遊戲、活動小遊戲、抽獎系統。用遊戲化的方式讓你的品牌更有趣、更有黏性。</p>
-      <div class="price-tag">依專案報價</div>
+  <!-- Interactive Terminal embedded in the hunt section -->
+  <div class="interactive-terminal" id="interactive-terminal" style="margin-top:50px;">
+    <div class="terminal-titlebar">
+      <div class="terminal-dot red"></div>
+      <div class="terminal-dot yellow"></div>
+      <div class="terminal-dot green"></div>
+      <span class="terminal-title">leopard@blackpanther:~/hunt</span>
+    </div>
+    <div class="terminal-output" id="terminal-output">
+      <div><span class="comment">// 歡迎進入黑豹系統。試試輸入指令探索我的世界。</span></div>
+      <div><span class="cmd-gold">leopard@blackpanther:~$</span> help</div>
+      <div class="cmd-response">
+        可用指令：<br>
+        &nbsp;&nbsp;<span style="color:var(--neon-green)">skills</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 查看技能樹<br>
+        &nbsp;&nbsp;<span style="color:var(--neon-green)">hunt</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- 搜尋服務<br>
+        &nbsp;&nbsp;<span style="color:var(--neon-green)">pray</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- 進入修行模式<br>
+        &nbsp;&nbsp;<span style="color:var(--neon-green)">motto</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 顯示座右銘<br>
+        &nbsp;&nbsp;<span style="color:var(--neon-green)">stats</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 顯示戰績<br>
+        &nbsp;&nbsp;<span style="color:var(--neon-green)">about</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 關於黑豹<br>
+        &nbsp;&nbsp;<span style="color:var(--neon-green)">clear</span>&nbsp;&nbsp;&nbsp;&nbsp;-- 清除畫面<br>
+        &nbsp;&nbsp;<span style="color:var(--leopard-gold)">debug</span>&nbsp;&nbsp;&nbsp;&nbsp;-- <span style="color:var(--leopard-gold)">Bug Hunt 除錯遊戲</span>
+      </div>
+    </div>
+    <div class="terminal-input-line">
+      <span class="terminal-prompt">leopard@blackpanther:~$</span>
+      <input type="text" class="terminal-input" id="terminal-input" placeholder="輸入指令..." autocomplete="off" spellcheck="false">
+    </div>
+    <div class="terminal-hint"><i class="fas fa-keyboard" style="margin-right:6px;"></i>試試輸入 skills, hunt, pray, motto, stats, about, debug</div>
+
+    <div id="bughunt-arena" class="bughunt-arena" style="display:none;">
+      <div class="bughunt-header">
+        <span class="bughunt-label">LEOPARD.DEBUG() <span class="bughunt-filename" id="bughunt-filename"></span></span>
+        <div class="bughunt-score">
+          <i class="fas fa-bug" style="margin-right:4px;"></i>
+          <span id="bughunt-found">0</span>/<span id="bughunt-total">0</span>
+          <span class="bughunt-accuracy" id="bughunt-accuracy"></span>
+        </div>
+      </div>
+      <div class="bughunt-code" id="bughunt-code"></div>
+      <div id="bughunt-remaining" style="padding:8px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blood-red);"></div>
+      <div class="bughunt-insight" id="bughunt-insight"></div>
+      <div class="bughunt-controls">
+        <button class="bughunt-btn" id="bughunt-next" style="display:none;">NEXT TARGET <i class="fas fa-chevron-right"></i></button>
+        <button class="bughunt-btn bughunt-exit" id="bughunt-exit"><i class="fas fa-sign-out-alt"></i> EXIT HUNT</button>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ===== PRODUCTS ===== -->
+<!-- ===== ACT 3: CREATIONS — 我打造了什麼 ===== -->
 <section class="products-section" id="products">
   <div style="max-width:1100px;margin:0 auto;">
-    <div class="section-label">PRODUCTS</div>
-    <h2 class="section-title">LEOPARD.CREATIONS()</h2>
+    <div class="section-label">CREATIONS</div>
+    <h2 class="section-title">LEOPARD.CRAFT()</h2>
     <p class="section-desc">
-      我不只接案。我也打造自己的產品，用程式解決真實世界的問題。
+      接案是生存，但打造自己的產品才是使命。
     </p>
   </div>
 
   <div class="product-showcase">
+    <!-- 心經祈福會 -->
     <div class="product-item">
-      <div class="product-visual">
-        <img src="../assets/img/guild/twno10/guanyin.webp" alt="心經祈福會" loading="lazy">
+      <div class="product-visual" style="max-height:400px;">
+        <img src="../assets/img/guild/twno10/guanyin.webp" alt="心經祈福會" loading="lazy" style="object-position:top;">
         <span class="product-badge">FREE TOOL</span>
       </div>
       <div class="product-info">
         <h3>心經祈福會</h3>
         <div class="product-sub">MANDALA GARDEN // WUSHI619.COM</div>
         <p>
-          一個純粹的修行工具。我用程式把念經祈福數位化，
-          加入了排行榜、徽章系統、修行境界、祈福歷史統計、抽卡系統。
-          目前有超過 70 位會員、累積超過 12,000 次祈福。
-          完全免費，因為我相信：寫程式也可以是一種修行。
+          「以無私心為人祈福，以清淨心為地球療癒。」
+          九重修行境界、曼陀羅榮譽徽章、觀音祝福卡、心靈花園、祈福統計。
+          你可以為陌生人祈福、為家人祈福、甚至為整個地球祈福。
+          完全免費。因為有些事情，不該用錢來衡量。
         </p>
         <div class="product-features">
-          <span class="feat">祈福排行榜</span>
-          <span class="feat">修行境界系統</span>
+          <span class="feat">九重修行境界</span>
           <span class="feat">曼陀羅徽章</span>
-          <span class="feat">祝福卡抽卡</span>
-          <span class="feat">統計儀表板</span>
+          <span class="feat">觀音祝福卡</span>
+          <span class="feat">心靈花園</span>
         </div>
       </div>
     </div>
 
-    <div class="product-item">
-      <div class="product-visual">
-        <img src="../assets/img/guild/twno10/badges.webp" alt="脆粉絲 Chrome Extension" loading="lazy">
-        <span class="product-badge">CHROME EXT</span>
-      </div>
+    <!-- 脆粉絲 + 台灣百大（並列，無圖片） -->
+    <div class="product-item" style="grid-template-columns:1fr;direction:ltr;">
       <div class="product-info">
         <h3>脆粉絲 Threads 插件</h3>
         <div class="product-sub">CHROME WEB STORE // FREE</div>
         <p>
-          市面上唯一一款能在 Threads 貼文旁直接顯示作者地點與粉絲數的插件。
-          還能把好友資料用粉絲數排序、匯出 Excel。
+          搜尋「脆粉絲」或「讚爆」就能找到。安裝後你的 Threads 會跟別人完全不同 ──
+          每篇貼文旁邊直接顯示作者的地點和粉絲數，好友資料可以排序匯出。
           支援 8 國語系，堅持無廣告、無訂閱、完全免費。
-          安裝後你的 Threads 體驗會跟別人完全不同。
         </p>
         <div class="product-features">
           <span class="feat">粉絲數顯示</span>
           <span class="feat">地點標記</span>
-          <span class="feat">排序功能</span>
+          <span class="feat">自訂標籤</span>
           <span class="feat">Excel 匯出</span>
-          <span class="feat">8 國語系</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-item" style="grid-template-columns:1fr;direction:ltr;">
+      <div class="product-info" style="text-align:center;">
+        <h3 style="color: var(--leopard-gold);">台灣百大網站排行榜</h3>
+        <div class="product-sub">COMING SOON // 2026</div>
+        <p>
+          「台灣百大最醜網站」和「國家級百大門面網站」兩個票選平台。
+          市場如果不被刺激，就只會慢慢死亡。所以我來下猛藥。
+        </p>
+        <div class="product-features" style="justify-content:center;">
+          <span class="feat" style="border-color:rgba(201,168,76,0.3);color:var(--leopard-gold);">反向行銷</span>
+          <span class="feat" style="border-color:rgba(201,168,76,0.3);color:var(--leopard-gold);">票選平台</span>
+          <span class="feat" style="border-color:rgba(201,168,76,0.3);color:var(--leopard-gold);">國際曝光</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== MANDALA SPIRITUAL SECTION ===== -->
+<!-- ===== ACT 4: AWAKENING — 代碼深處的另一個自己 ===== -->
 <section class="mandala-section" id="mandala">
-  <div class="section-label" style="justify-content:center;">SPIRITUAL_CODE</div>
-  <h2 class="section-title" style="color:var(--mandala-violet);">MANDALA.RENDER()</h2>
+  <div class="section-label" style="justify-content:center;">AWAKENING</div>
+  <h2 class="section-title" style="color:var(--mandala-violet);">CODE.MEETS.SOUL()</h2>
+
+  <div style="max-width:700px;margin:0 auto;text-align:center;">
+    <img src="../assets/img/guild/twno10/guanyin2.webp" alt="觀音菩薩" loading="lazy"
+         style="width:200px;height:200px;object-fit:cover;border-radius:50%;border:2px solid rgba(155,89,240,0.15);margin-bottom:30px;opacity:0.85;">
+
+    <div class="mandala-quote" style="text-align:center;font-size:17px;line-height:2.4;">
+      你可能覺得奇怪：一個寫程式的人怎麼會去開發念經軟體？
+      <br><br>
+      但你有沒有想過，當你在凌晨三點 debug 到想摔電腦的時候，
+      那種「一切都會好起來的」的信念，跟修行其實沒什麼不同。
+      <br><br>
+      <span style="color:var(--mandala-violet);font-style:normal;font-weight:500;">
+        寫程式本身就是一種修行。
+      </span>
+      <br>
+      每一次 debug 都是面對自己的不完美，
+      <br>
+      每一次部署都是對世界的一次善意。
+      <br><br>
+      有些事情，不該用錢來衡量。
+      <br>
+      所以心經祈福會永遠免費。
+      <span class="author">-- 馬農 // 凌晨三點的頓悟</span>
+    </div>
+  </div>
 
   <canvas id="mandala-canvas"></canvas>
-
-  <div class="mandala-actions">
-    <button class="mandala-btn" onclick="regenerateMandala()">
-      <i class="fas fa-dharma-wheel"></i> 生成你的曼陀羅
-    </button>
-    <button class="mandala-btn" onclick="changeMandalaStyle()">
-      <i class="fas fa-palette"></i> 切換風格
-    </button>
-  </div>
-  <div class="mandala-seed-display" id="mandala-seed"></div>
-
-  <div class="mandala-quote">
-    你可能覺得一個碼農幹嘛開發念經軟體。但你有沒有想過，
-    當你在凌晨三點 debug 到想摔電腦的時候，
-    那種「一切都會好起來的」的信念，跟修行其實沒什麼不同。
-    念經不只是祈求，更是讓心沉澱的儀式。
-    寫程式也是。
-    <span class="author">-- 馬農 // 凌晨三點的頓悟</span>
-  </div>
-</section>
-
-<!-- ===== TIMELINE ===== -->
-<section class="section" id="timeline">
-  <div class="section-label">JOURNEY</div>
-  <h2 class="section-title">COMMIT.LOG()</h2>
-  <p class="section-desc">
-    從第一行 PHP 到如今的全棧獵殺能力，這是黑豹的進化史。
-  </p>
-
-  <div class="timeline">
-    <div class="timeline-item">
-      <div class="timeline-year">CIRCA 2011</div>
-      <div class="timeline-content">
-        <h4>初入叢林</h4>
-        <p>開始接觸 PHP 與網站開發，踏上了碼農之路。那時的網路還很簡單，但我已經看到了無限的可能性。</p>
-      </div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2015+</div>
-      <div class="timeline-content">
-        <h4>磨利爪子</h4>
-        <p>累積了大量的網站設計經驗，開始專注於 CRM 系統、API 整合、客製化開發。接案量穩定成長，技術棧不斷擴展。</p>
-      </div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2020</div>
-      <div class="timeline-content">
-        <h4>黑豹成形</h4>
-        <p>正式成立黑豹程式開發有限公司。統編 96816191，開始以公司名義承接更大規模的專案。</p>
-      </div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2024</div>
-      <div class="timeline-content">
-        <h4>心靈修行</h4>
-        <p>開發心經祈福會（wushi619.com），將修行與程式結合。從此不只是碼農，更是一個用科技輔助修行的實踐者。</p>
-      </div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2026</div>
-      <div class="timeline-content">
-        <h4>AI 時代出擊</h4>
-        <p>布局 GEO 優化，成功讓中國客戶透過 AI 搜尋找到我。開發 Threads「脆粉絲」Chrome 插件，籌劃台灣百大網站排行榜。在 AI 浪潮中不被淘汰，反而更加銳利。</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== GALLERY ===== -->
-<section class="gallery-section" id="gallery">
-  <div style="max-width:1000px;margin:0 auto;">
-    <div class="section-label">GALLERY</div>
-    <h2 class="section-title">SCREENSHOT.DUMP()</h2>
-    <p class="section-desc">心經祈福會的實際畫面，每一個介面都是我親手設計與開發。</p>
-  </div>
-
-  <div class="gallery-grid">
-    <div class="gallery-item" onclick="openLightbox(this)">
-      <img src="../assets/img/guild/twno10/leaderboard.webp" alt="祈福排行榜" loading="lazy">
-      <div class="gallery-label">LEADERBOARD // 祈福排行榜</div>
-    </div>
-    <div class="gallery-item" onclick="openLightbox(this)">
-      <img src="../assets/img/guild/twno10/badges.webp" alt="榮譽徽章" loading="lazy">
-      <div class="gallery-label">BADGES // 曼陀羅榮譽徽章</div>
-    </div>
-    <div class="gallery-item" onclick="openLightbox(this)">
-      <img src="../assets/img/guild/twno10/card_draw.webp" alt="抽卡系統" loading="lazy">
-      <div class="gallery-label">CARD DRAW // 祝福卡系統</div>
-    </div>
-    <div class="gallery-item" onclick="openLightbox(this)">
-      <img src="../assets/img/guild/twno10/prayer_history.webp" alt="祈福歷史" loading="lazy">
-      <div class="gallery-label">HISTORY // 祈福歷史統計</div>
-    </div>
-    <div class="gallery-item" onclick="openLightbox(this)">
-      <img src="../assets/img/guild/twno10/guanyin.webp" alt="觀音菩薩" loading="lazy">
-      <div class="gallery-label">GUANYIN // 觀音菩薩</div>
-    </div>
-    <div class="gallery-item" onclick="openLightbox(this)">
-      <img src="../assets/img/guild/twno10/guanyin2.webp" alt="觀音雕像" loading="lazy">
-      <div class="gallery-label">STATUE // 觀音雕像</div>
-    </div>
-  </div>
 </section>
 
 <!-- ===== CONTACT ===== -->
@@ -1752,6 +1704,9 @@ body.scrolled .leopard-silhouette {
       </a>
       <a href="https://phpmytool.com/" target="_blank" rel="noopener" class="social-link" title="Website">
         <i class="fas fa-globe"></i>
+      </a>
+      <a href="https://lin.ee/KT2fxF2" target="_blank" rel="noopener" class="social-link" title="LINE">
+        <i class="fab fa-line"></i>
       </a>
     </div>
   </div>
@@ -1826,7 +1781,7 @@ body.scrolled .leopard-silhouette {
 })();
 
 // ============================================
-// THREE.JS WIREFRAME LEOPARD GRID
+// THREE.JS LEOPARD'S PATH (scroll-driven journey)
 // ============================================
 (function() {
   const container = document.getElementById('three-container');
@@ -1837,73 +1792,160 @@ body.scrolled .leopard-silhouette {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   container.appendChild(renderer.domElement);
 
-  // Create wireframe grid
-  const gridGeo = new THREE.PlaneGeometry(80, 80, 40, 40);
-  const gridMat = new THREE.MeshBasicMaterial({
-    color: 0x00ff88,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.04
-  });
+  // --- Scroll state (updated by unified scroll handler) ---
+  window._threeScroll = { pct: 0 };
+
+  // --- 4-stop color system ---
+  const colorStops = [
+    { at: 0.0,  c: new THREE.Color(0x00ff88) }, // neon green
+    { at: 0.30, c: new THREE.Color(0xc9a84c) }, // leopard gold
+    { at: 0.65, c: new THREE.Color(0xb278c8) }, // blend violet
+    { at: 1.0,  c: new THREE.Color(0x9b59f0) }, // mandala violet
+  ];
+  function getColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    for (let i = 0; i < colorStops.length - 1; i++) {
+      if (t >= colorStops[i].at && t <= colorStops[i + 1].at) {
+        const local = (t - colorStops[i].at) / (colorStops[i + 1].at - colorStops[i].at);
+        return new THREE.Color().lerpColors(colorStops[i].c, colorStops[i + 1].c, local);
+      }
+    }
+    return colorStops[colorStops.length - 1].c.clone();
+  }
+
+  // --- Object 1: Grid → Mandala ---
+  const isMobile = window.innerWidth < 768;
+  const gridSeg = isMobile ? 20 : 30;
+  const gridGeo = new THREE.PlaneGeometry(60, 60, gridSeg, gridSeg);
+  const gridMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true, transparent: true, opacity: 0.05 });
   const grid = new THREE.Mesh(gridGeo, gridMat);
-  grid.rotation.x = -Math.PI / 2.5;
-  grid.position.y = -10;
+  grid.rotation.x = -Math.PI / 2.3;
+  grid.position.y = -8;
   scene.add(grid);
 
-  // Floating particles
-  const particlesGeo = new THREE.BufferGeometry();
-  const particleCount = 200;
-  const positions = new Float32Array(particleCount * 3);
-  for (let i = 0; i < particleCount; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 60;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 40;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+  // Store grid positions & compute mandala target positions
+  const gridPos = new Float32Array(gridGeo.attributes.position.array);
+  const mandalaPos = new Float32Array(gridPos.length);
+  const vCount = gridPos.length / 3;
+  for (let i = 0; i < vCount; i++) {
+    const x = gridPos[i * 3], y = gridPos[i * 3 + 1];
+    const dist = Math.sqrt(x * x + y * y);
+    const angle = Math.atan2(y, x);
+    // Map to concentric rings
+    const ringR = (dist / 42) * 28; // normalize to mandala radius
+    mandalaPos[i * 3] = Math.cos(angle) * ringR;
+    mandalaPos[i * 3 + 1] = Math.sin(angle) * ringR;
+    mandalaPos[i * 3 + 2] = 0;
   }
-  particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const particlesMat = new THREE.PointsMaterial({
-    color: 0x00ff88,
-    size: 0.15,
-    transparent: true,
-    opacity: 0.4
-  });
-  const particles = new THREE.Points(particlesGeo, particlesMat);
-  scene.add(particles);
 
-  camera.position.set(0, 8, 25);
-  camera.lookAt(0, 0, 0);
+  // --- Object 2: Leopard Trail (particles) ---
+  const pCount = isMobile ? 80 : 150;
+  const pGeo = new THREE.BufferGeometry();
+  const pPositions = new Float32Array(pCount * 3);
+  const pBaseAngles = new Float32Array(pCount);
+  const pBaseRadii = new Float32Array(pCount);
+  for (let i = 0; i < pCount; i++) {
+    pBaseAngles[i] = (i / pCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    pBaseRadii[i] = 3 + Math.random() * 15;
+    pPositions[i * 3] = Math.cos(pBaseAngles[i]) * pBaseRadii[i];
+    pPositions[i * 3 + 1] = (Math.random() - 0.5) * 8;
+    pPositions[i * 3 + 2] = Math.sin(pBaseAngles[i]) * pBaseRadii[i];
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+  const pMat = new THREE.PointsMaterial({ color: 0x00ff88, size: 0.12, transparent: true, opacity: 0.5 });
+  const pMesh = new THREE.Points(pGeo, pMat);
+  scene.add(pMesh);
 
+  // --- Object 3: Sacred Ring ---
+  const ringGeo = new THREE.TorusGeometry(8, 0.08, 8, 60);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0x9b59f0, wireframe: true, transparent: true, opacity: 0 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.position.y = 6;
+  ring.rotation.x = -Math.PI / 3;
+  ring.scale.set(0.01, 0.01, 0.01);
+  scene.add(ring);
+  // Inner ring
+  const ring2Geo = new THREE.TorusGeometry(5, 0.06, 6, 40);
+  const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x9b59f0, wireframe: true, transparent: true, opacity: 0 });
+  const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+  ring2.rotation.z = Math.PI / 4;
+  ring.add(ring2);
+
+  // --- Camera & mouse ---
+  camera.position.set(0, 5, 25);
   let mouseX = 0, mouseY = 0;
   document.addEventListener('mousemove', (e) => {
     mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
     mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
   });
 
-  // Scroll-driven color morphing: green → violet (updated by unified scroll handler)
-  let scrollColor = { r: 0, g: 1, b: 0.53 }; // #00ff88
-  window._threeScrollColor = scrollColor;
+  // --- Helpers ---
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function ease(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; } // easeInOutQuad
 
+  // --- Animate ---
   function animate() {
     requestAnimationFrame(animate);
-    grid.rotation.z += 0.0005;
-    particles.rotation.y += 0.0003;
-
-    // Update colors based on scroll
-    const c = new THREE.Color(scrollColor.r, scrollColor.g, scrollColor.b);
-    gridMat.color = c;
-    particlesMat.color = c;
-
-    // Subtle wave on grid
-    const posArr = gridGeo.attributes.position.array;
+    const s = window._threeScroll.pct;
     const time = Date.now() * 0.001;
-    for (let i = 0; i < posArr.length; i += 3) {
-      posArr[i + 2] = Math.sin(posArr[i] * 0.3 + time) * 0.5 +
-                       Math.cos(posArr[i + 1] * 0.3 + time * 0.7) * 0.3;
+    const col = getColor(s);
+
+    // -- Grid morph --
+    const posArr = gridGeo.attributes.position.array;
+    const morphT = ease(s);
+    const waveAmp = 1.2 * (1 - s * 0.85); // waves calm down
+    for (let i = 0; i < vCount; i++) {
+      const gx = gridPos[i * 3], gy = gridPos[i * 3 + 1];
+      const mx = mandalaPos[i * 3], my = mandalaPos[i * 3 + 1];
+      posArr[i * 3] = lerp(gx, mx, morphT);
+      posArr[i * 3 + 1] = lerp(gy, my, morphT);
+      // Wave displacement (sharp→calm)
+      const wave = Math.sin(gx * 0.4 + time * 1.2) * waveAmp +
+                   Math.cos(gy * 0.4 + time * 0.8) * waveAmp * 0.6;
+      posArr[i * 3 + 2] = wave;
     }
     gridGeo.attributes.position.needsUpdate = true;
+    gridMat.color.copy(col);
+    grid.rotation.z += 0.0003 + s * 0.0005;
 
-    camera.position.x += (mouseX * 3 - camera.position.x) * 0.02;
-    camera.position.y += (-mouseY * 2 + 8 - camera.position.y) * 0.02;
-    camera.lookAt(0, 0, 0);
+    // -- Particles --
+    const pArr = pGeo.attributes.position.array;
+    const orbitSpeed = lerp(0.3, 0.08, s);
+    const orbitRadius = lerp(1.0, 0.6, ease(s));
+    const ringY = lerp(0, 5, ease(s));
+    const ySpread = lerp(8, 0.5, ease(s));
+    for (let i = 0; i < pCount; i++) {
+      const a = pBaseAngles[i] + time * orbitSpeed * (i % 2 === 0 ? 1 : -0.7);
+      const r = pBaseRadii[i] * orbitRadius;
+      pArr[i * 3] = Math.cos(a) * r;
+      pArr[i * 3 + 1] = ringY + Math.sin(a * 2 + time * 0.5) * ySpread * 0.3 + (pBaseRadii[i] - 10) * (1 - ease(s)) * 0.3;
+      pArr[i * 3 + 2] = Math.sin(a) * r;
+    }
+    pGeo.attributes.position.needsUpdate = true;
+    pMat.color.copy(col);
+    pMat.size = lerp(0.12, 0.18, s);
+    pMat.opacity = lerp(0.4, 0.25, s);
+
+    // -- Sacred Ring --
+    const ringAppear = Math.max(0, (s - 0.4) / 0.6); // 0 at 40%, 1 at 100%
+    ringMat.opacity = ringAppear * 0.07;
+    ring2Mat.opacity = ringAppear * 0.05;
+    const ringScale = lerp(0.01, 1.0, ease(ringAppear));
+    ring.scale.set(ringScale, ringScale, ringScale);
+    ring.rotation.z += 0.002;
+    // Breathing pulse
+    const breathe = 1 + Math.sin(time * 0.8) * 0.03 * ringAppear;
+    ring.scale.multiplyScalar(breathe);
+
+    // -- Camera --
+    const parallaxDamp = 1 - s * 0.7;
+    const camTargetX = mouseX * 2.5 * parallaxDamp;
+    const camTargetY = lerp(5, 18, ease(s)) + mouseY * -1.5 * parallaxDamp;
+    const camTargetZ = lerp(25, 15, ease(s));
+    camera.position.x += (camTargetX - camera.position.x) * 0.02;
+    camera.position.y += (camTargetY - camera.position.y) * 0.02;
+    camera.position.z += (camTargetZ - camera.position.z) * 0.02;
+    camera.lookAt(0, lerp(-2, 5, ease(s)), 0);
 
     renderer.render(scene, camera);
   }
@@ -1917,170 +1959,59 @@ body.scrolled .leopard-silhouette {
 })();
 
 // ============================================
-// MANDALA GLOBAL STATE (must be before p5.js)
+// MANDALA STATE
 // ============================================
-if (typeof mandalaStyle === 'undefined') {
-  window.mandalaStyle = 0;
-  window.mandalaSeed = Math.random() * 10000;
-}
+window.mandalaSeed = Math.random() * 10000;
 
 // ============================================
-// P5.JS MANDALA DRAWING (Interactive Generator)
+// P5.JS AMBIENT MANDALA
 // ============================================
 (function() {
-  const mandalaContainer = document.getElementById('mandala-canvas');
-
+  const container = document.getElementById('mandala-canvas');
   new p5(function(p) {
     let angle = 0;
-    let prevSeed = mandalaSeed;
-    let prevStyle = mandalaStyle;
-    let transitionProgress = 1;
-
     p.setup = function() {
-      const size = Math.min(mandalaContainer.clientWidth, 500);
-      const cnv = p.createCanvas(size, size);
-      cnv.parent(mandalaContainer);
+      const size = Math.min(container.clientWidth, 500);
+      p.createCanvas(size, size).parent(container);
       p.angleMode(p.DEGREES);
       p.noFill();
     };
-
-    function drawLotus(layers) {
-      const seedOffset = mandalaSeed * 0.01;
-      for (let layer = 0; layer < layers; layer++) {
-        const radius = 40 + layer * 35;
-        const segments = 8 + layer * 4;
-        const rot = angle * (layer % 2 === 0 ? 1 : -1) * 0.3 + seedOffset * layer;
-        const alpha = p.map(layer, 0, layers, 180, 40);
-
-        p.push();
-        p.rotate(rot);
-        p.stroke(155, 89, 240, alpha);
-        p.strokeWeight(0.8);
-
-        for (let i = 0; i < segments; i++) {
-          const a = (360 / segments) * i;
-          const x1 = p.cos(a) * radius;
-          const y1 = p.sin(a) * radius;
-          const x2 = p.cos(a + 360 / segments) * radius;
-          const y2 = p.sin(a + 360 / segments) * radius;
-          const bulge = 15 + p.sin(angle + layer * 30 + seedOffset) * 5;
-          const cx = p.cos(a + 360 / segments / 2) * (radius + bulge);
-          const cy = p.sin(a + 360 / segments / 2) * (radius + bulge);
-
-          p.beginShape();
-          p.vertex(x1, y1);
-          p.quadraticVertex(cx, cy, x2, y2);
-          p.endShape();
-          p.line(0, 0, x1 * 0.3, y1 * 0.3);
-        }
-        p.ellipse(0, 0, radius * 2, radius * 2);
-        p.pop();
-      }
-    }
-
-    function drawGeometric(layers) {
-      const seedOffset = mandalaSeed * 0.01;
-      for (let layer = 0; layer < layers; layer++) {
-        const radius = 50 + layer * 30;
-        const sides = 6 + Math.floor(seedOffset % 4);
-        const rot = angle * (layer % 2 === 0 ? 0.2 : -0.2) + seedOffset * layer;
-
-        p.push();
-        p.rotate(rot);
-        const alpha = p.map(layer, 0, layers, 200, 50);
-        p.stroke(0, 229, 255, alpha);
-        p.strokeWeight(0.6);
-
-        // Sacred geometry polygons
-        p.beginShape();
-        for (let i = 0; i <= sides; i++) {
-          const a = (360 / sides) * i;
-          const wobble = p.sin(angle * 2 + layer * 45 + i * 20 + seedOffset) * 8;
-          p.vertex(p.cos(a) * (radius + wobble), p.sin(a) * (radius + wobble));
-        }
-        p.endShape(p.CLOSE);
-
-        // Inner star lines
-        for (let i = 0; i < sides; i++) {
-          const a = (360 / sides) * i;
-          const a2 = (360 / sides) * ((i + 2) % sides);
-          p.line(p.cos(a) * radius * 0.5, p.sin(a) * radius * 0.5,
-                 p.cos(a2) * radius * 0.5, p.sin(a2) * radius * 0.5);
-        }
-        p.pop();
-      }
-    }
-
-    function drawNebula(layers) {
-      const seedOffset = mandalaSeed * 0.01;
-      for (let layer = 0; layer < layers; layer++) {
-        const radius = 30 + layer * 40;
-        const points = 60 + layer * 20;
-        const rot = angle * 0.1 * (layer + 1) + seedOffset;
-
-        p.push();
-        p.rotate(rot);
-        const alpha = p.map(layer, 0, layers, 120, 20);
-
-        // Nebula spirals
-        p.stroke(201, 168, 76, alpha);
-        p.strokeWeight(0.5);
-        p.beginShape();
-        p.noFill();
-        for (let i = 0; i < points; i++) {
-          const t = i / points;
-          const a = t * 720 + seedOffset * 100;
-          const r = radius * t + p.sin(angle + i * 3 + seedOffset) * 10;
-          p.curveVertex(p.cos(a) * r, p.sin(a) * r);
-        }
-        p.endShape();
-
-        // Scattered stars
-        p.fill(201, 168, 76, alpha * 0.5);
-        p.noStroke();
-        for (let i = 0; i < 8; i++) {
-          const a = seedOffset * 100 + i * 45 + angle * 0.3;
-          const r = radius * 0.7 + p.sin(angle + i * 30 + seedOffset) * 15;
-          p.ellipse(p.cos(a) * r, p.sin(a) * r, 2, 2);
-        }
-        p.pop();
-      }
-    }
-
     p.draw = function() {
       p.clear();
       p.translate(p.width / 2, p.height / 2);
-
-      // Detect seed/style change for smooth transition
-      if (prevSeed !== mandalaSeed || prevStyle !== mandalaStyle) {
-        transitionProgress = 0;
-        prevSeed = mandalaSeed;
-        prevStyle = mandalaStyle;
+      const seed = window.mandalaSeed * 0.01;
+      for (let layer = 0; layer < 5; layer++) {
+        const r = 40 + layer * 38;
+        const segs = 8 + layer * 4;
+        p.push();
+        p.rotate(angle * (layer % 2 === 0 ? 0.3 : -0.2) + seed * layer);
+        p.stroke(155, 89, 240, p.map(layer, 0, 5, 120, 30));
+        p.strokeWeight(0.6);
+        for (let i = 0; i < segs; i++) {
+          const a = (360 / segs) * i;
+          const x1 = p.cos(a) * r, y1 = p.sin(a) * r;
+          const x2 = p.cos(a + 360/segs) * r, y2 = p.sin(a + 360/segs) * r;
+          const bulge = 12 + p.sin(angle + layer * 30 + seed) * 4;
+          const cx = p.cos(a + 180/segs) * (r + bulge);
+          const cy = p.sin(a + 180/segs) * (r + bulge);
+          p.beginShape(); p.vertex(x1,y1); p.quadraticVertex(cx,cy,x2,y2); p.endShape();
+        }
+        p.ellipse(0, 0, r*2, r*2);
+        p.pop();
       }
-      if (transitionProgress < 1) transitionProgress += 0.02;
-
-      const layers = 6;
-      const drawFn = [drawLotus, drawGeometric, drawNebula][mandalaStyle] || drawLotus;
-      drawFn(layers);
-
-      // Center glow
-      p.fill(155, 89, 240, 80 + p.sin(angle) * 30);
+      p.fill(155, 89, 240, 60 + p.sin(angle) * 20);
       p.noStroke();
-      p.ellipse(0, 0, 10 + p.sin(angle * 2) * 3, 10 + p.sin(angle * 2) * 3);
-
-      // Orbiting particles
-      for (let i = 0; i < 16; i++) {
-        const a = angle * 0.5 + i * 22.5 + mandalaSeed;
-        const r = 210 + p.sin(angle * 1.5 + i * 20) * 15;
-        p.fill(0, 229, 255, 50);
-        p.ellipse(p.cos(a) * r, p.sin(a) * r, 2.5, 2.5);
+      p.ellipse(0, 0, 8 + p.sin(angle * 2) * 2, 8 + p.sin(angle * 2) * 2);
+      for (let i = 0; i < 12; i++) {
+        const a = angle * 0.4 + i * 30 + window.mandalaSeed;
+        const r = 215 + p.sin(angle * 1.5 + i * 20) * 12;
+        p.fill(0, 229, 255, 40);
+        p.ellipse(p.cos(a) * r, p.sin(a) * r, 2, 2);
       }
-
       angle += 0.3;
     };
-
     p.windowResized = function() {
-      const size = Math.min(mandalaContainer.clientWidth, 500);
+      const size = Math.min(container.clientWidth, 500);
       p.resizeCanvas(size, size);
     };
   });
@@ -2128,17 +2059,18 @@ heroTl
 
 // Section reveals
 document.querySelectorAll('.section-label, .section-title, .section-desc').forEach(el => {
-  gsap.from(el, {
-    scrollTrigger: { trigger: el, start: 'top 85%' },
-    opacity: 0, y: 30, duration: 0.8, ease: 'power2.out'
-  });
+  gsap.fromTo(el,
+    { opacity: 0, y: 30 },
+    { scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' },
+      opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }
+  );
 });
 
 // Stat counter animation
 document.querySelectorAll('.stat-card .number').forEach(el => {
   const target = parseInt(el.dataset.target);
   gsap.to(el, {
-    scrollTrigger: { trigger: el, start: 'top 85%' },
+    scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' },
     innerText: target,
     duration: 2,
     ease: 'power1.out',
@@ -2150,70 +2082,69 @@ document.querySelectorAll('.stat-card .number').forEach(el => {
 });
 
 // Service cards stagger
-gsap.from('.service-card', {
-  scrollTrigger: { trigger: '.services-grid', start: 'top 80%' },
-  opacity: 0, y: 40, stagger: 0.1, duration: 0.6, ease: 'power2.out'
-});
+gsap.fromTo('.service-card',
+  { opacity: 0, y: 40 },
+  { scrollTrigger: { trigger: '.services-grid', start: 'top 90%', toggleActions: 'play none none none' },
+    opacity: 1, y: 0, stagger: 0.1, duration: 0.6, ease: 'power2.out' }
+);
 
 // Product items
 document.querySelectorAll('.product-item').forEach(item => {
-  gsap.to(item, {
-    scrollTrigger: { trigger: item, start: 'top 80%' },
-    opacity: 1, y: 0, duration: 0.8, ease: 'power2.out'
-  });
-  item.style.transform = 'translateY(40px)';
+  gsap.fromTo(item,
+    { opacity: 0, y: 40 },
+    { scrollTrigger: { trigger: item, start: 'top 90%', toggleActions: 'play none none none' },
+      opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }
+  );
 });
 
 // Timeline items stagger
-gsap.from('.timeline-item', {
-  scrollTrigger: { trigger: '.timeline', start: 'top 80%' },
-  opacity: 0, x: -30, stagger: 0.15, duration: 0.6, ease: 'power2.out'
-});
-document.querySelectorAll('.timeline-item').forEach(item => {
-  gsap.to(item, {
-    scrollTrigger: { trigger: item, start: 'top 85%' },
-    opacity: 1, duration: 0.6
-  });
+document.querySelectorAll('.timeline-item').forEach((item, i) => {
+  gsap.fromTo(item,
+    { opacity: 0, x: -30 },
+    { scrollTrigger: { trigger: item, start: 'top 90%', toggleActions: 'play none none none' },
+      opacity: 1, x: 0, duration: 0.6, delay: i * 0.1, ease: 'power2.out' }
+  );
 });
 
-// Gallery items
-gsap.from('.gallery-item', {
-  scrollTrigger: { trigger: '.gallery-grid', start: 'top 80%' },
-  opacity: 0, scale: 0.9, stagger: 0.08, duration: 0.5, ease: 'power2.out'
-});
+// (gallery removed - integrated into products)
 
 // Interactive terminal
-gsap.from('.interactive-terminal', {
-  scrollTrigger: { trigger: '.interactive-terminal', start: 'top 80%' },
-  opacity: 0, y: 40, duration: 0.8, ease: 'power2.out'
-});
+gsap.fromTo('.interactive-terminal',
+  { opacity: 0, y: 40 },
+  { scrollTrigger: { trigger: '.interactive-terminal', start: 'top 90%', toggleActions: 'play none none none' },
+    opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }
+);
 
 // Mandala section
-gsap.from('#mandala-canvas', {
-  scrollTrigger: { trigger: '.mandala-section', start: 'top 70%' },
-  opacity: 0, scale: 0.8, rotation: -30, duration: 1.2, ease: 'power2.out'
-});
+gsap.fromTo('#mandala-canvas',
+  { opacity: 0, scale: 0.8, rotation: -30 },
+  { scrollTrigger: { trigger: '.mandala-section', start: 'top 80%', toggleActions: 'play none none none' },
+    opacity: 1, scale: 1, rotation: 0, duration: 1.2, ease: 'power2.out' }
+);
 
-gsap.from('.mandala-quote', {
-  scrollTrigger: { trigger: '.mandala-quote', start: 'top 85%' },
-  opacity: 0, y: 30, duration: 0.8, ease: 'power2.out'
-});
+gsap.fromTo('.mandala-quote',
+  { opacity: 0, y: 30 },
+  { scrollTrigger: { trigger: '.mandala-quote', start: 'top 90%', toggleActions: 'play none none none' },
+    opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }
+);
 
 // Contact
-gsap.from('.contact-cta', {
-  scrollTrigger: { trigger: '.contact-section', start: 'top 80%' },
-  opacity: 0, y: 20, stagger: 0.1, duration: 0.6, ease: 'power2.out'
-});
+gsap.fromTo('.contact-cta',
+  { opacity: 0, y: 20 },
+  { scrollTrigger: { trigger: '.contact-section', start: 'top 90%', toggleActions: 'play none none none' },
+    opacity: 1, y: 0, stagger: 0.1, duration: 0.6, ease: 'power2.out' }
+);
 
-gsap.from('.social-link', {
-  scrollTrigger: { trigger: '.social-links', start: 'top 90%' },
-  opacity: 0, scale: 0, stagger: 0.1, duration: 0.4, ease: 'back.out(1.7)'
-});
+gsap.fromTo('.social-link',
+  { opacity: 0, scale: 0 },
+  { scrollTrigger: { trigger: '.social-links', start: 'top 95%', toggleActions: 'play none none none' },
+    opacity: 1, scale: 1, stagger: 0.1, duration: 0.4, ease: 'back.out(1.7)' }
+);
 
 // ============================================
 // PROWL INDICATOR (scroll progress dots)
 // ============================================
-const sections = ['hero', 'manifesto', 'services', 'products', 'mandala', 'gallery', 'contact'];
+const sections = ['hero', 'manifesto', 'services', 'products', 'mandala', 'contact'];
 const prowlDots = document.querySelectorAll('.prowl-dot');
 
 prowlDots.forEach(dot => {
@@ -2293,29 +2224,31 @@ document.addEventListener('keydown', (e) => {
   <span style="color:var(--text-muted)">私訊 Threads @twno10 立即開始</span>
 </span>`,
     pray: () => {
-      // Trigger mandala section scroll
       const mandala = document.getElementById('mandala');
       if (mandala) mandala.scrollIntoView({ behavior: 'smooth' });
       return `<span class="cmd-violet">
   南無觀世音菩薩...
-  正在載入修行模式...
-  <span style="color:var(--text-muted)">[ 已導航至曼陀羅花園 ]</span>
+  <span style="color:var(--text-muted)">[ 已導航至 CODE.MEETS.SOUL() ]</span>
 </span>`;
     },
-    motto: () => `<span class="cmd-gold">
-  "雞蛋不能只放一個籃子，
-  &nbsp;流量也不能只靠一個入口。"
-
-  &nbsp;── 馬農，在又一個凌晨三點的 commit message 裡
-</span>`,
+    motto: () => {
+      const quotes = [
+        '"雞蛋不能只放一個籃子，\n  &nbsp;流量也不能只靠一個入口。"\n\n  &nbsp;── 馬農，論全通路佈局',
+        '"AI 無法給你一件東西──動力。"\n\n  &nbsp;── 馬農，論 AI 時代的生存法則',
+        '"市場如果不被刺激，就只會慢慢死亡。"\n\n  &nbsp;── 馬農，論台灣百大最醜網站排行榜',
+        '"寫程式本身就是一種修行。\n  &nbsp;每一次 debug 都是面對自己的不完美。"\n\n  &nbsp;── 馬農，凌晨三點的頓悟',
+      ];
+      return `<span class="cmd-gold">\n  ${quotes[Math.floor(Math.random() * quotes.length)]}\n</span>`;
+    },
     stats: () => `<span class="cmd-response">
   ┌─ LEOPARD STATS ─────────────────┐
   │ 經驗值 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;15+ 年 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
   │ 網站模板 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;100+ 套 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
   │ 支援語系 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8 國 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
-  │ 社群平台 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;活躍經營中 &nbsp;&nbsp;&nbsp;&nbsp;│
-  │ 祈福總次數 &nbsp;&nbsp;&nbsp;12,128 次 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
-  │ 祈福會員 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;70+ 人 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 插件版本 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v1.2.8 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 祈福會員 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;持續增長中 &nbsp;&nbsp;&nbsp;│
+  │ 修行境界 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;修行者 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
+  │ 計劃中 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;百大網站排行 &nbsp;│
   │ 狀態 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--neon-green)">HUNTING</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│
   └─────────────────────────────────┘
 </span>`,
@@ -2330,6 +2263,8 @@ document.addEventListener('keydown', (e) => {
   <span style="color:var(--text-muted)">如果你正在找一個靠譜的網站開發團隊，你找到了。</span>
 </span>`,
     clear: () => 'CLEAR',
+    debug: () => { startBugHunt(); return 'BUGHUNT'; },
+    bughunt: () => { startBugHunt(); return 'BUGHUNT'; },
   };
 
   input.addEventListener('keydown', (e) => {
@@ -2337,17 +2272,17 @@ document.addEventListener('keydown', (e) => {
     const cmd = input.value.trim().toLowerCase();
     if (!cmd) return;
 
-    // Add user command to output
     const cmdLine = document.createElement('div');
     cmdLine.innerHTML = `<span class="cmd-gold">leopard@blackpanther:~$</span> ${cmd}`;
     output.appendChild(cmdLine);
 
-    // Process command
     const handler = commands[cmd];
     if (handler) {
       const result = handler();
       if (result === 'CLEAR') {
         output.innerHTML = '<div><span class="comment">// 畫面已清除。輸入 help 查看指令。</span></div>';
+      } else if (result === 'BUGHUNT') {
+        // handled by startBugHunt
       } else {
         const response = document.createElement('div');
         response.innerHTML = result;
@@ -2356,7 +2291,7 @@ document.addEventListener('keydown', (e) => {
     } else if (cmd === 'help') {
       const helpDiv = document.createElement('div');
       helpDiv.innerHTML = `<span class="cmd-response">
-      可用指令：skills, hunt, pray, motto, stats, about, clear
+      可用指令：skills, hunt, pray, motto, stats, about, clear, <span style="color:var(--leopard-gold)">debug</span>
       </span>`;
       output.appendChild(helpDiv);
     } else {
@@ -2369,30 +2304,331 @@ document.addEventListener('keydown', (e) => {
     output.scrollTop = output.scrollHeight;
   });
 
-  // Auto-focus on click
-  document.querySelector('.interactive-terminal').addEventListener('click', () => {
-    input.focus();
+  document.querySelector('.interactive-terminal').addEventListener('click', (e) => {
+    if (!e.target.closest('.bughunt-arena')) input.focus();
   });
 })();
 
 // ============================================
-// MANDALA GENERATOR (Signature Moment #2)
+// BUG HUNT GAME (Signature Moment #1)
 // ============================================
-function regenerateMandala() {
-  window.mandalaSeed = Math.random() * 10000;
-  const seedText = 'SEED: ' + Math.floor(window.mandalaSeed).toString(16).toUpperCase().padStart(4, '0');
-  const el = document.getElementById('mandala-seed');
-  if (el) el.textContent = seedText + ' // 你的專屬曼陀羅';
-  showToast('為你生成了新的曼陀羅圖案');
-}
+(function() {
+  // Helper: create bug entry by searching for text in code string
+  function makeBug(code, text, fix, insight) {
+    const start = code.indexOf(text);
+    if (start === -1) return null;
+    return { start, end: start + text.length, text, fix, insight };
+  }
 
-function changeMandalaStyle() {
-  window.mandalaStyle = (window.mandalaStyle + 1) % 3;
-  const styles = ['蓮花紋', '幾何紋', '星雲紋'];
-  const el = document.getElementById('mandala-seed');
-  if (el) el.textContent = '風格：' + styles[window.mandalaStyle];
-  showToast('切換至「' + styles[mandalaStyle] + '」風格');
-}
+  const challengeData = [
+    {
+      file: 'heart_sutra_api.js', desc: '心經祈福會 API 路由',
+      lines: [
+        { code: 'const express = require("express");', bugText: null },
+        { code: 'const router = express.Router;', bugText: 'Router', fix: 'Router()', insight: '「少一個括號，整個系統癱瘓。Debug 跟狩獵一樣，耐心看清每一個角落。」' },
+        { code: 'const db = require("../models/prayer");', bugText: null },
+        { code: '', bugText: null },
+        { code: 'router.get("/blessings", async (req, res) => {', bugText: null },
+        { code: '  const count = await db.find({}).count;', bugText: '.count;', fix: '.count();', insight: '「每一次 debug 都是面對自己的不完美，每一次修復都是成長。」' },
+        { code: '  res.json({ total: count, status: "ok" });', bugText: null },
+        { code: '});', bugText: null },
+      ]
+    },
+    {
+      file: 'threads_extension.js', desc: '脆粉絲插件排序邏輯',
+      lines: [
+        { code: 'function sortByFollowers(users) {', bugText: null },
+        { code: '  return users.sort((a, b) => {', bugText: null },
+        { code: '    return a.followers - b.followers;', bugText: 'a.followers - b.followers', fix: 'b.followers - a.followers', insight: '「排序方向反了，世界就反了。很多 bug 不是邏輯錯，是方向錯。人生也是。」' },
+        { code: '  });', bugText: null },
+        { code: '}', bugText: null },
+        { code: '', bugText: null },
+        { code: 'function getLocation(user) {', bugText: null },
+        { code: '  if (user.location == undefined) {', bugText: '==', fix: '===', insight: '「== 和 === 差一個符號，卻是兩個世界。嚴謹，是黑豹的本能。」' },
+        { code: '    return "未知";', bugText: null },
+        { code: '  }', bugText: null },
+        { code: '  return user.location;', bugText: null },
+        { code: '}', bugText: null },
+      ]
+    },
+    {
+      file: 'seo_crawler.js', desc: 'SEO/GEO 分析模組',
+      lines: [
+        { code: 'async function analyzeURL(url) {', bugText: null },
+        { code: '  const response = fetch(url);', bugText: 'fetch(url)', fix: 'await fetch(url)', insight: '「忘了 await，就像黑豹忘了蹲下。沒有等待，就沒有時機。」' },
+        { code: '  const html = await response.text();', bugText: null },
+        { code: '  const title = html.match(/<title>(.*)<\\/title>/);', bugText: null },
+        { code: '  return {', bugText: null },
+        { code: '    url: url,', bugText: null },
+        { code: '    title: title[1],', bugText: 'title[1]', fix: 'title?.[1]', insight: '「不檢查 null 就取值，是新手最常犯的錯。老手犯的時候更痛。」' },
+        { code: '    timestamp: Date.now()', bugText: null },
+        { code: '  };', bugText: null },
+        { code: '}', bugText: null },
+      ]
+    },
+  ];
+
+  // Convert to runtime format with computed start/end positions
+  const challenges = challengeData.map(ch => ({
+    file: ch.file, desc: ch.desc,
+    lines: ch.lines.map(line => {
+      if (!line.bugText) return { code: line.code, bugs: [] };
+      const bug = makeBug(line.code, line.bugText, line.fix, line.insight);
+      return { code: line.code, bugs: bug ? [bug] : [] };
+    })
+  }));
+
+  let currentIdx = 0;
+  let bugsFound = 0;
+  let totalBugs = 0;
+  let wrongClicks = 0;
+
+  function startBugHunt() {
+    currentIdx = 0;
+    bugsFound = 0;
+    totalBugs = challenges.reduce((s, c) => s + c.lines.reduce((s2, l) => s2 + l.bugs.length, 0), 0);
+    wrongClicks = 0;
+
+    document.getElementById('terminal-output').style.display = 'none';
+    document.querySelector('.terminal-input-line').style.display = 'none';
+    document.querySelector('.terminal-hint').style.display = 'none';
+    const arena = document.getElementById('bughunt-arena');
+    arena.style.display = 'block';
+    gsap.fromTo(arena, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4 });
+
+    loadChallenge(0);
+  }
+  window.startBugHunt = startBugHunt;
+
+  function loadChallenge(idx) {
+    const ch = challenges[idx];
+    document.getElementById('bughunt-filename').textContent = '// ' + ch.file;
+    document.getElementById('bughunt-found').textContent = bugsFound;
+    document.getElementById('bughunt-total').textContent = totalBugs;
+    document.getElementById('bughunt-next').style.display = 'none';
+    document.getElementById('bughunt-insight').className = 'bughunt-insight';
+    document.getElementById('bughunt-insight').innerHTML = '';
+    const bugsInChallenge = ch.lines.reduce((s, l) => s + l.bugs.length, 0);
+    updateRemaining(bugsInChallenge);
+
+    const codeEl = document.getElementById('bughunt-code');
+    codeEl.innerHTML = '';
+
+    ch.lines.forEach((line, li) => {
+      const div = document.createElement('div');
+      div.className = 'bughunt-line';
+      div.innerHTML = `<span class="bughunt-linenum">${li + 1}</span>`;
+
+      if (!line.code) {
+        div.innerHTML += '<span>&nbsp;</span>';
+        codeEl.appendChild(div);
+        return;
+      }
+
+      // Build tokens
+      let pos = 0;
+      const codeStr = line.code;
+      const bugRanges = line.bugs.map(b => ({ ...b }));
+
+      // Sort bugs by position
+      bugRanges.sort((a, b) => a.start - b.start);
+
+      const contentSpan = document.createElement('span');
+      bugRanges.forEach(bug => {
+        // Text before bug
+        if (pos < bug.start) {
+          const before = document.createElement('span');
+          before.className = 'bughunt-token';
+          before.textContent = codeStr.substring(pos, bug.start);
+          before.addEventListener('click', (e) => onMiss(e));
+          contentSpan.appendChild(before);
+        }
+        // Bug token
+        const bugSpan = document.createElement('span');
+        bugSpan.className = 'bughunt-token';
+        bugSpan.textContent = codeStr.substring(bug.start, bug.end);
+        bugSpan.style.color = 'inherit';
+        bugSpan.dataset.bug = '1';
+        bugSpan.dataset.fix = ' ' + bug.fix;
+        bugSpan.dataset.insight = bug.insight;
+        bugSpan.addEventListener('click', (e) => onHit(e, bugSpan, ch));
+        contentSpan.appendChild(bugSpan);
+        pos = bug.end;
+      });
+      if (bugRanges.length > 0) {
+        // Remaining text after last bug
+        if (pos < codeStr.length) {
+          const after = document.createElement('span');
+          after.className = 'bughunt-token';
+          after.textContent = codeStr.substring(pos);
+          after.addEventListener('click', (e) => onMiss(e));
+          contentSpan.appendChild(after);
+        }
+      } else {
+        // No bugs on this line
+        const full = document.createElement('span');
+        full.className = 'bughunt-token';
+        full.textContent = codeStr;
+        full.addEventListener('click', (e) => onMiss(e));
+        contentSpan.appendChild(full);
+      }
+
+      div.appendChild(contentSpan);
+      codeEl.appendChild(div);
+
+      // Stagger reveal
+      gsap.fromTo(div, { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.3, delay: li * 0.05 });
+    });
+  }
+
+  function updateRemaining(total) {
+    const found = document.querySelectorAll('#bughunt-code .bughunt-token.found').length;
+    const rem = total - found;
+    const el = document.getElementById('bughunt-remaining');
+    if (el) el.textContent = rem > 0 ? `<i class="fas fa-crosshairs"></i> ${rem} bug${rem > 1 ? 's' : ''} remaining — 點擊紅色虛線標記的程式碼` : '';
+    if (el) el.innerHTML = rem > 0 ? `<i class="fas fa-crosshairs" style="margin-right:4px;"></i> 還有 ${rem} 個 bug ── 點擊<span style="border-bottom:1px dashed var(--blood-red);padding-bottom:1px;">紅色虛線</span>標記的程式碼` : '<span style="color:var(--neon-green)"><i class="fas fa-check" style="margin-right:4px;"></i>所有 bug 已找到！</span>';
+  }
+
+  function onHit(e, span, ch) {
+    if (span.classList.contains('found')) return;
+    span.classList.add('found');
+    bugsFound++;
+    document.getElementById('bughunt-found').textContent = bugsFound;
+    updateAccuracy();
+
+    // Pounce animation - claw marks at click position
+    showPounce(e.clientX, e.clientY);
+
+    // Screen shake
+    gsap.to('.bughunt-code', { x: 3, duration: 0.05, yoyo: true, repeat: 3, ease: 'power2.inOut' });
+
+    // Show insight
+    const insightEl = document.getElementById('bughunt-insight');
+    insightEl.className = 'bughunt-insight show';
+    insightEl.innerHTML = `<p>${span.dataset.insight}</p>`;
+    gsap.fromTo(insightEl, { opacity: 0 }, { opacity: 1, duration: 0.5 });
+
+    // Check if all bugs in current challenge found
+    const totalInChallenge = ch.lines.reduce((s, l) => s + l.bugs.length, 0);
+    updateRemaining(totalInChallenge);
+    const allFound = document.querySelectorAll('#bughunt-code .bughunt-token.found').length;
+    if (allFound >= totalInChallenge) {
+      if (currentIdx < challenges.length - 1) {
+        const nextBtn = document.getElementById('bughunt-next');
+        nextBtn.style.display = 'inline-flex';
+        nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        setTimeout(() => showSummary(), 1500);
+      }
+    }
+  }
+
+  function onMiss(e) {
+    const span = e.target;
+    if (!span.classList.contains('bughunt-token') || span.dataset.bug) return;
+    wrongClicks++;
+    updateAccuracy();
+    span.classList.add('miss');
+    setTimeout(() => span.classList.remove('miss'), 300);
+
+    // Float text
+    const msgs = ['黑豹靜待中...', '再仔細看看...', '耐心...', '不是這裡...'];
+    const float = document.createElement('div');
+    float.className = 'bughunt-float';
+    float.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+    float.style.left = e.clientX + 'px';
+    float.style.top = e.clientY + 'px';
+    document.body.appendChild(float);
+    gsap.to(float, { y: -40, opacity: 0, duration: 1.2, ease: 'power2.out', onComplete: () => float.remove() });
+  }
+
+  function showPounce(x, y) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 60 60');
+    svg.className = 'bughunt-pounce';
+    svg.style.left = (x - 30) + 'px';
+    svg.style.top = (y - 30) + 'px';
+    svg.innerHTML = `
+      <line x1="10" y1="10" x2="50" y2="50"/>
+      <line x1="20" y1="5" x2="55" y2="40"/>
+      <line x1="5" y1="20" x2="40" y2="55"/>
+    `;
+    document.body.appendChild(svg);
+    const lines = svg.querySelectorAll('line');
+    lines.forEach((line, i) => {
+      gsap.to(line, { strokeDashoffset: 0, duration: 0.2, delay: i * 0.07 });
+    });
+    gsap.to(svg, { opacity: 0, scale: 1.5, duration: 0.5, delay: 0.4, onComplete: () => svg.remove() });
+  }
+
+  function updateAccuracy() {
+    const total = bugsFound + wrongClicks;
+    const pct = total > 0 ? Math.round((bugsFound / total) * 100) : 100;
+    document.getElementById('bughunt-accuracy').textContent = `(${pct}% ACC)`;
+  }
+
+  function showSummary() {
+    const accuracy = bugsFound + wrongClicks > 0 ? Math.round((bugsFound / (bugsFound + wrongClicks)) * 100) : 100;
+    let rank, rankColor;
+    if (accuracy >= 90) { rank = 'LEOPARD'; rankColor = 'var(--leopard-gold)'; }
+    else if (accuracy >= 70) { rank = 'HUNTER'; rankColor = 'var(--neon-green)'; }
+    else { rank = 'APPRENTICE'; rankColor = 'var(--text-muted)'; }
+
+    const arena = document.getElementById('bughunt-arena');
+    arena.innerHTML = `
+      <div class="bughunt-summary">
+        <div style="font-size:12px;color:var(--text-muted);letter-spacing:3px;">HUNT COMPLETE</div>
+        <div class="rank" style="color:${rankColor}">${rank} RANK</div>
+        <div style="margin:20px 0;color:var(--text-primary);font-size:13px;">
+          <i class="fas fa-bug"></i> ${bugsFound}/${totalBugs} bugs found
+          &nbsp;&nbsp;<i class="fas fa-crosshairs"></i> ${accuracy}% accuracy
+          &nbsp;&nbsp;<i class="fas fa-times"></i> ${wrongClicks} misses
+        </div>
+        <div class="final-quote">
+          「你剛剛做的，就是我每天在做的事。<br>
+          在看似正常的程式碼中，找出隱藏的問題。<br>
+          這需要耐心、專注、和不怕犯錯的勇氣。」<br>
+          <span style="color:var(--leopard-gold);font-style:normal;">── 馬農</span>
+        </div>
+        <button class="bughunt-btn" onclick="exitBugHunt()" style="margin-top:20px;">
+          <i class="fas fa-terminal"></i> RETURN TO TERMINAL
+        </button>
+      </div>
+    `;
+  }
+
+  document.getElementById('bughunt-next').addEventListener('click', () => {
+    currentIdx++;
+    loadChallenge(currentIdx);
+  });
+
+  window.exitBugHunt = function() {
+    document.getElementById('bughunt-arena').style.display = 'none';
+    document.getElementById('terminal-output').style.display = '';
+    document.querySelector('.terminal-input-line').style.display = '';
+    document.querySelector('.terminal-hint').style.display = '';
+    // Reset arena for next play
+    document.getElementById('bughunt-arena').innerHTML = `
+      <div class="bughunt-header">
+        <span class="bughunt-label">LEOPARD.DEBUG() <span class="bughunt-filename" id="bughunt-filename"></span></span>
+        <div class="bughunt-score"><i class="fas fa-bug" style="margin-right:4px;"></i><span id="bughunt-found">0</span>/<span id="bughunt-total">0</span><span class="bughunt-accuracy" id="bughunt-accuracy"></span></div>
+      </div>
+      <div class="bughunt-code" id="bughunt-code"></div>
+      <div id="bughunt-remaining" style="padding:8px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blood-red);"></div>
+      <div class="bughunt-insight" id="bughunt-insight"></div>
+      <div class="bughunt-controls">
+        <button class="bughunt-btn" id="bughunt-next" style="display:none;">NEXT TARGET <i class="fas fa-chevron-right"></i></button>
+        <button class="bughunt-btn bughunt-exit" id="bughunt-exit"><i class="fas fa-sign-out-alt"></i> EXIT HUNT</button>
+      </div>
+    `;
+    document.getElementById('bughunt-next').addEventListener('click', () => { currentIdx++; loadChallenge(currentIdx); });
+    document.getElementById('bughunt-exit').addEventListener('click', window.exitBugHunt);
+  };
+
+  document.getElementById('bughunt-exit').addEventListener('click', window.exitBugHunt);
+})();
+
+// (prayer compiler removed — mandala is now purely ambient)
 
 function showToast(msg) {
   const toast = document.getElementById('toast');
@@ -2430,7 +2666,6 @@ function showToast(msg) {
 (function() {
   const atmosphere = document.getElementById('atmosphere-layer');
   const matrixCanvas = document.getElementById('matrix-canvas');
-  const threeColor = window._threeScrollColor;
   let ticking = false;
 
   window.addEventListener('scroll', () => {
@@ -2445,12 +2680,8 @@ function showToast(msg) {
       if (matrixCanvas) matrixCanvas.style.opacity = Math.max(0.12 - scrollPercent * 0.12, 0.02);
       document.body.classList.toggle('scrolled', window.scrollY > 200);
 
-      // 2. Three.js color morph
-      if (threeColor) {
-        threeColor.r = scrollPercent * 0.608;
-        threeColor.g = 1 - scrollPercent * 0.651;
-        threeColor.b = 0.53 + scrollPercent * 0.411;
-      }
+      // 2. Three.js scroll state (4-stop color handled inside Three.js)
+      if (window._threeScroll) window._threeScroll.pct = scrollPercent;
 
       // 3. Prowl indicator dots
       sections.forEach((id, i) => {
