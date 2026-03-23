@@ -1467,3 +1467,17 @@ members:
         label: "SEO/GEO"
       - id: "chrome_extension"
         label: "插件開發"
+
+  - id: "heifan001"
+    name: "Hei Fan"
+    avatar: "/assets/img/guild/heifan001/avatar.webp"
+    page: "/guild/heifan001.html"
+    title: "The Crossing"
+    description: "來自香港的國中生，深深著迷於台灣文化的渡海少年。學校風紀隊成員、公民教育組員，正在學習程式設計，夢想打造自己的 Discord 機器人，用程式為港台架起數位橋樑。"
+    tags:
+      - id: "taiwan_culture"
+        label: "台灣文化"
+      - id: "programming"
+        label: "程式學習"
+      - id: "food_explorer"
+        label: "美食探索"

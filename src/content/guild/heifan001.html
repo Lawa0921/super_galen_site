@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hei Fan | The Crossing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Zen+Dots&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* ========================================
+   THE CROSSING — 渡海
+   A scroll-driven journey from HK to TW
+   ======================================== */
+:root {
+  --abyss: #010810;
+  --harbor: #06101f;
+  --hk-pink: #ff1a6c;
+  --hk-blue: #0af;
+  --ocean: #064e5a;
+  --ocean-deep: #021a2a;
+  --tw-amber: #ffa726;
+  --tw-warm: #ff7043;
+  --tw-lantern: #e53935;
+  --signal: #00e5ff;
+  --code-green: #4cff8e;
+  --txt: #d8e4ee;
+  --txt-m: #6a8aa8;
+  --txt-d: #263646;
+  --mono: 'Fira Code', monospace;
+  --display: 'Zen Dots', cursive;
+  --body: 'Noto Sans TC', sans-serif;
+  --pixel: 'Press Start 2P', monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--abyss);color:var(--txt);font-family:var(--body);overflow-x:hidden;line-height:1.7}
+::selection{background:var(--hk-pink);color:#fff}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--abyss)}
+::-webkit-scrollbar-thumb{background:linear-gradient(to bottom,var(--hk-pink),var(--signal));border-radius:2px}
+
+/* ── LOADER ── */
+.loader{position:fixed;inset:0;z-index:9999;background:var(--abyss);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s,visibility .8s}
+.loader.done{opacity:0;visibility:hidden;pointer-events:none}
+.loader-beacon{width:60px;height:60px;border:2px solid rgba(0,229,255,.2);border-top-color:var(--signal);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-txt{font-family:var(--mono);font-size:11px;color:var(--txt-d);letter-spacing:3px}
+
+/* ── THREE.JS OCEAN ── */
+#ocean-scene{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+/* ── BACK NAV ── */
+.back-nav{position:fixed;top:20px;left:20px;z-index:100;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--signal);font-family:var(--mono);font-size:11px;letter-spacing:1px;opacity:.5;transition:all .3s;background:rgba(0,229,255,.04);padding:7px 14px;border:1px solid rgba(0,229,255,.12);border-radius:2px}
+.back-nav:hover{opacity:1;box-shadow:0 0 16px rgba(0,229,255,.2)}
+.back-nav i{font-size:9px}
+
+/* ── VOYAGE PROGRESS BAR ── */
+.voyage-bar{position:fixed;top:0;left:0;right:0;height:3px;z-index:200;background:rgba(255,255,255,.03)}
+.voyage-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--hk-pink),var(--signal),var(--tw-amber));transition:width .1s}
+
+/* ── DEPTH GAUGE (right side) ── */
+.depth-gauge{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:6px}
+.depth-gauge .track{width:2px;height:120px;background:rgba(0,229,255,.1);border-radius:1px;position:relative}
+.depth-gauge .thumb{position:absolute;top:0;left:-3px;width:8px;height:8px;background:var(--signal);border-radius:50%;box-shadow:0 0 8px var(--signal);transition:top .3s}
+.depth-gauge .label{font-family:var(--mono);font-size:8px;color:var(--txt-d);letter-spacing:2px;writing-mode:vertical-rl;margin-top:8px}
+
+/* ── HERO: HK HARBOR ── */
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;padding:40px 20px;overflow:hidden}
+
+/* HK Skyline */
+.skyline{position:absolute;bottom:0;left:0;right:0;height:200px;z-index:2;pointer-events:none;opacity:.7}
+.skyline svg{width:100%;height:100%}
+
+/* Neon signs */
+.neon{position:absolute;pointer-events:none;font-family:var(--body);font-weight:900;writing-mode:vertical-rl;letter-spacing:8px;animation:buzz 4s ease infinite}
+.neon.n1{top:8%;right:6%;font-size:clamp(1.5rem,3vw,2.5rem);color:var(--hk-pink);text-shadow:0 0 8px var(--hk-pink),0 0 30px var(--hk-pink),0 0 60px rgba(255,26,108,.3);opacity:.35}
+.neon.n2{top:18%;left:4%;font-size:clamp(1.2rem,2.5vw,2rem);color:var(--tw-amber);text-shadow:0 0 8px var(--tw-amber),0 0 30px var(--tw-amber);opacity:.25;animation-delay:1.5s}
+@keyframes buzz{0%,100%{opacity:.35}4%{opacity:.08}5%{opacity:.35}50%{opacity:.28}51%{opacity:.06}52%{opacity:.35}}
+
+.avatar-wrap{position:relative;width:130px;height:130px;margin-bottom:28px}
+.avatar-wrap img{width:100%;height:100%;border-radius:10px;object-fit:cover;border:2px solid var(--signal);position:relative;z-index:2;box-shadow:0 0 20px rgba(0,229,255,.3)}
+.avatar-ring{position:absolute;inset:-10px;border-radius:14px;border:1px solid rgba(0,229,255,.2);animation:ring-spin 10s linear infinite}
+.avatar-ring::after{content:'';position:absolute;top:-3px;left:50%;width:6px;height:6px;background:var(--hk-pink);border-radius:50%;box-shadow:0 0 8px var(--hk-pink)}
+@keyframes ring-spin{to{transform:rotate(360deg)}}
+
+.hero-label{font-family:var(--mono);font-size:11px;color:var(--signal);letter-spacing:5px;text-transform:uppercase;margin-bottom:8px;opacity:0}
+.hero-title{font-family:var(--display);font-size:clamp(2.8rem,7vw,5.5rem);color:var(--txt);text-shadow:0 0 40px rgba(0,229,255,.15);margin-bottom:4px;letter-spacing:4px;opacity:0}
+.hero-sub{font-size:clamp(1rem,2.5vw,1.3rem);font-weight:300;color:var(--txt-m);letter-spacing:10px;margin-bottom:20px;opacity:0}
+.hero-tagline{font-family:var(--mono);font-size:13px;color:var(--tw-amber);max-width:480px;text-align:center;line-height:1.9;opacity:0}
+.hero-tagline .cur{display:inline-block;width:8px;height:15px;background:var(--signal);margin-left:3px;animation:blink 1s step-end infinite;vertical-align:text-bottom}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+.bridge-badge{display:flex;align-items:center;gap:14px;margin-top:28px;opacity:0}
+.badge-node{font-family:var(--mono);font-size:12px;padding:5px 14px;border-radius:2px;letter-spacing:2px;display:flex;align-items:center;gap:6px}
+.badge-node.hk{background:rgba(255,26,108,.1);border:1px solid rgba(255,26,108,.35);color:var(--hk-pink)}
+.badge-node.tw{background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.35);color:var(--signal)}
+.badge-wire{width:50px;height:2px;position:relative;background:linear-gradient(90deg,var(--hk-pink),var(--signal))}
+.badge-wire .pulse{position:absolute;top:-3px;left:0;width:8px;height:8px;border-radius:50%;background:var(--tw-amber);box-shadow:0 0 10px var(--tw-amber);animation:wire-go 2s ease-in-out infinite}
+@keyframes wire-go{0%{left:0}50%{left:calc(100% - 8px)}100%{left:0}}
+
+.scroll-cue{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0}
+.scroll-cue span{font-family:var(--mono);font-size:9px;color:var(--txt-d);letter-spacing:3px}
+.scroll-cue .bar{width:1px;height:28px;background:linear-gradient(to bottom,var(--signal),transparent);animation:float-bar 2s ease infinite}
+@keyframes float-bar{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+/* ── CROSSING SCENE: pinned scroll-driven ── */
+.crossing-wrap{position:relative;height:300vh;z-index:1}
+.crossing-pin{position:relative;width:100%;height:100vh;overflow:hidden}
+.crossing-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;display:block}
+.crossing-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none}
+.crossing-msg{font-family:var(--display);font-size:clamp(1.4rem,3.5vw,2.5rem);color:var(--txt);text-align:center;opacity:0;max-width:600px;padding:0 20px;line-height:1.8;text-shadow:0 0 30px rgba(0,0,0,.8)}
+.crossing-msg .sm{display:block;font-family:var(--mono);font-size:12px;color:var(--txt-m);margin-top:12px;letter-spacing:3px}
+
+/* ── SECTIONS ── */
+.section{position:relative;z-index:1;padding:100px 20px;max-width:1100px;margin:0 auto}
+.sec-label{font-family:var(--mono);font-size:10px;color:var(--signal);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-label::before{content:'>';color:var(--hk-pink);animation:blink 1s step-end infinite}
+.sec-title{font-family:var(--display);font-size:clamp(1.8rem,4vw,3rem);color:var(--txt);margin-bottom:16px;letter-spacing:2px}
+.sec-desc{font-size:15px;color:var(--txt-m);max-width:680px;line-height:2;margin-bottom:44px}
+.hl{color:var(--signal);font-weight:500}
+.hl-p{color:var(--hk-pink);font-weight:500}
+.hl-a{color:var(--tw-amber);font-weight:500}
+.hl-g{color:var(--code-green);font-weight:500}
+
+/* ── ABOUT ── */
+.about-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:50px;align-items:start}
+.about-text p{font-size:15px;color:var(--txt-m);line-height:2.2;margin-bottom:18px}
+.signal-card{background:linear-gradient(135deg,rgba(6,16,31,.9),rgba(6,78,90,.15));border:1px solid rgba(0,229,255,.1);border-radius:10px;padding:28px;position:relative;overflow:hidden}
+.signal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--hk-pink),var(--signal),var(--tw-amber))}
+.id-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.id-cell{text-align:center;padding:16px 10px;border:1px solid rgba(0,229,255,.06);border-radius:6px;background:rgba(0,229,255,.02);transition:all .3s}
+.id-cell:hover{border-color:rgba(0,229,255,.2);box-shadow:inset 0 0 20px rgba(0,229,255,.04)}
+.id-cell i{font-size:20px;margin-bottom:8px;display:block}
+.id-cell .label{font-family:var(--mono);font-size:9px;color:var(--txt-d);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.id-cell .val{font-size:13px;font-weight:500}
+.role-tags{display:flex;flex-wrap:wrap;gap:8px}
+.role-tag{font-family:var(--mono);font-size:10px;padding:5px 12px;border-radius:3px;display:flex;align-items:center;gap:5px;letter-spacing:1px}
+.role-tag.t1{background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);color:var(--signal)}
+.role-tag.t2{background:rgba(255,167,38,.08);border:1px solid rgba(255,167,38,.2);color:var(--tw-amber)}
+.role-tag.t3{background:rgba(255,26,108,.08);border:1px solid rgba(255,26,108,.2);color:var(--hk-pink)}
+
+/* ── DREAMS: what I want to build ── */
+.dream-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.dream-card{background:rgba(6,16,31,.6);border:1px solid rgba(0,229,255,.06);border-radius:8px;padding:30px 22px;transition:all .4s;position:relative;overflow:hidden}
+.dream-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--signal),var(--hk-pink));transform:scaleX(0);transition:transform .4s}
+.dream-card:hover::before{transform:scaleX(1)}
+.dream-card:hover{border-color:rgba(0,229,255,.18);transform:translateY(-4px);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.dream-card i{font-size:26px;margin-bottom:14px;display:block}
+.dream-card h3{font-family:var(--display);font-size:15px;color:var(--txt);margin-bottom:10px;letter-spacing:1px}
+.dream-card p{font-size:13px;color:var(--txt-m);line-height:1.9}
+
+/* ── ROBLOX ── */
+.roblox-layout{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.roblox-frame{position:relative;border-radius:8px;overflow:hidden;border:3px solid rgba(255,26,108,.2);transition:all .4s;cursor:pointer}
+.roblox-frame:hover{border-color:rgba(255,26,108,.5);box-shadow:0 0 30px rgba(255,26,108,.15)}
+.roblox-frame img{width:100%;display:block;transition:transform .5s;image-rendering:pixelated}
+.roblox-frame:hover img{transform:scale(1.08)}
+.roblox-frame::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none}
+.roblox-frame .tag{position:absolute;bottom:10px;left:10px;font-family:var(--pixel);font-size:7px;color:var(--hk-pink);letter-spacing:1px;background:rgba(1,8,16,.85);padding:4px 10px;border-radius:2px;z-index:2}
+.roblox-info h3{font-family:var(--display);font-size:22px;color:var(--hk-pink);margin-bottom:14px}
+.roblox-info p{font-size:14px;color:var(--txt-m);line-height:2;margin-bottom:12px}
+
+/* ── DISCORD BOT ── */
+.bot-sim{background:#2b2d31;border-radius:10px;overflow:hidden;max-width:700px;margin:40px auto 0;border:1px solid #3f4147}
+.bot-hd{background:#1e1f22;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #3f4147}
+.bot-hd .hash{color:#80848e;font-size:18px}
+.bot-hd .ch{font-size:14px;font-weight:700;color:#f2f3f5}
+.bot-hd .tp{font-size:12px;color:#80848e;margin-left:auto}
+.bot-msgs{padding:16px;min-height:200px;max-height:300px;overflow-y:auto}
+.bot-msg{display:flex;gap:12px;margin-bottom:14px;animation:msg-in .3s ease}
+@keyframes msg-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.bot-msg .av{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.bot-msg .av.usr{background:#5865f2;color:#fff}
+.bot-msg .av.bot{background:#57f287;color:#2b2d31}
+.bot-msg .ct{flex:1}
+.bot-msg .au{font-size:14px;font-weight:600;margin-bottom:2px}
+.bot-msg .au.un{color:#5865f2}
+.bot-msg .au.bn{color:#57f287;display:flex;align-items:center;gap:6px}
+.bot-msg .au .badge{font-size:9px;background:#5865f2;color:#fff;padding:1px 5px;border-radius:2px;font-family:var(--mono);letter-spacing:.5px}
+.bot-msg .tx{font-size:14px;color:#dbdee1;line-height:1.6}
+.bot-msg .tx .ci{background:#1e1f22;color:#e8912d;padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:13px}
+.bot-in{padding:0 16px 16px}
+.bot-in-wrap{display:flex;align-items:center;gap:10px;background:#383a40;border-radius:8px;padding:10px 14px}
+.bot-in input{flex:1;background:none;border:none;color:#f2f3f5;font-family:var(--body);font-size:14px;outline:none}
+.bot-in input::placeholder{color:#5d5f63}
+.bot-in button{background:none;border:none;color:#5865f2;cursor:pointer;font-size:18px;padding:4px;transition:color .2s}
+.bot-in button:hover{color:#7289da}
+
+/* ── CONTACT ── */
+.contact-zone{position:relative;z-index:1;padding:100px 20px;text-align:center}
+.contact-zone .inner{max-width:600px;margin:0 auto}
+.social-row{display:flex;justify-content:center;gap:18px;margin-top:32px}
+.soc-link{width:46px;height:46px;border:1px solid rgba(0,229,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--txt-m);font-size:17px;text-decoration:none;transition:all .3s}
+.soc-link:hover{color:var(--signal);border-color:var(--signal);box-shadow:0 0 16px rgba(0,229,255,.2);transform:translateY(-3px)}
+.soc-link.pk:hover{color:var(--hk-pink);border-color:var(--hk-pink);box-shadow:0 0 16px rgba(255,26,108,.2)}
+
+/* ── FOOTER ── */
+.footer{position:relative;z-index:1;text-align:center;padding:36px 20px;border-top:1px solid rgba(0,229,255,.04)}
+.footer-text{font-family:var(--mono);font-size:10px;color:var(--txt-d);letter-spacing:2px}
+.footer-text a{color:var(--signal);text-decoration:none}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .about-grid{grid-template-columns:1fr;gap:36px}
+  .roblox-layout{grid-template-columns:1fr;gap:28px}
+  .dream-cards{grid-template-columns:1fr}
+  .neon{display:none}
+  .skyline{height:120px}
+  .depth-gauge{display:none}
+  .section{padding:70px 16px}
+  .hero-title{font-size:2.5rem}
+  .id-grid{grid-template-columns:1fr}
+  .crossing-msg{font-size:1.2rem}
+}
+@media(max-width:480px){
+  .back-nav{top:10px;left:10px;font-size:9px;padding:5px 10px}
+  .bridge-badge{flex-direction:column;gap:8px}
+  .badge-wire{width:2px;height:20px;background:linear-gradient(to bottom,var(--hk-pink),var(--signal))}
+  .badge-wire .pulse{animation:wire-v 2s ease-in-out infinite;top:0;left:-3px}
+  .role-tags{flex-direction:column}
+  .bot-sim{margin:30px 10px 0}
+}
+@keyframes wire-v{0%{top:0}50%{top:calc(100% - 8px)}100%{top:0}}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+  <div class="loader-beacon"></div>
+  <div class="loader-txt" id="loader-txt">CHARTING COURSE...</div>
+</div>
+
+<!-- THREE.JS OCEAN -->
+<div id="ocean-scene"></div>
+
+<!-- NAV -->
+<a href="/guild/" class="back-nav"><i class="fas fa-chevron-left"></i> RETURN://GUILD</a>
+
+<!-- VOYAGE BAR -->
+<div class="voyage-bar"><div class="voyage-fill" id="voyage-fill"></div></div>
+
+<!-- DEPTH GAUGE -->
+<div class="depth-gauge">
+  <div class="track"><div class="thumb" id="depth-thumb"></div></div>
+  <div class="label" id="depth-label">HK</div>
+</div>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="hero">
+  <div class="neon n1">港台連線</div>
+  <div class="neon n2">渡海少年</div>
+
+  <div class="avatar-wrap">
+    <img src="/assets/img/guild/heifan001/avatar.webp" alt="Hei Fan">
+    <div class="avatar-ring"></div>
+  </div>
+
+  <div class="hero-label">THE CROSSING</div>
+  <h1 class="hero-title">HEI FAN</h1>
+  <div class="hero-sub">渡 海 少 年</div>
+  <div class="hero-tagline">
+    <span id="tw-text"></span><span class="cur"></span>
+  </div>
+
+  <div class="bridge-badge">
+    <div class="badge-node hk"><i class="fas fa-city"></i> HK</div>
+    <div class="badge-wire"><div class="pulse"></div></div>
+    <div class="badge-node tw"><i class="fas fa-mountain-sun"></i> TW</div>
+  </div>
+
+  <div class="skyline">
+    <svg viewBox="0 0 1200 200" preserveAspectRatio="none">
+      <path d="M0,200 L0,160 40,160 40,110 55,110 55,130 75,130 75,85 95,85 95,115 110,115 110,70 125,70 125,40 140,40 140,90 160,90 160,55 175,35 190,55 190,100 210,100 210,75 230,75 230,130 270,130 270,95 290,95 290,60 310,60 310,100 340,100 340,140 370,140 370,85 385,85 385,50 400,30 415,50 415,85 440,85 440,115 470,115 470,70 490,70 490,105 520,105 520,140 550,140 550,95 570,95 570,70 585,50 600,70 600,105 630,105 630,130 670,130 670,80 690,80 690,55 710,55 710,90 740,90 740,120 780,120 780,75 800,75 800,45 815,25 830,45 830,80 860,80 860,110 890,110 890,90 910,90 910,65 930,65 930,100 960,100 960,135 1000,135 1000,95 1020,95 1020,60 1040,60 1040,105 1070,105 1070,80 1090,80 1090,120 1120,120 1120,140 1160,140 1160,100 1200,100 1200,200Z" fill="#060d18" opacity=".85"/>
+      <path d="M0,200 L0,180 50,180 50,160 100,160 100,145 150,145 150,165 200,165 200,150 250,150 250,170 350,170 350,155 400,150 450,155 500,160 550,155 600,160 650,165 700,155 750,160 800,170 850,165 900,155 950,160 1000,170 1050,165 1100,175 1150,170 1200,175 1200,200Z" fill="#040a14" opacity=".6"/>
+    </svg>
+  </div>
+
+  <div class="scroll-cue">
+    <span>SCROLL TO CROSS</span>
+    <div class="bar"></div>
+  </div>
+</section>
+
+<!-- ===== THE CROSSING: pinned Three.js ocean scroll ===== -->
+<div class="crossing-wrap" id="crossing-wrap">
+  <div class="crossing-pin" id="crossing-pin">
+    <canvas id="crossing-canvas" class="crossing-canvas"></canvas>
+    <div class="crossing-text">
+      <div class="crossing-msg" id="crossing-msg">
+        從香港出發，穿越 130 公里的海峽
+        <span class="sm">CROSSING THE STRAIT</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ABOUT ===== -->
+<section class="section" id="about">
+  <div class="sec-label">ABOUT_ME</div>
+  <h2 class="sec-title">WHO I AM</h2>
+
+  <div class="about-grid">
+    <div class="about-text">
+      <p>
+        我是 <span class="hl">Hei Fan</span>，一個在香港長大的國中生。
+        窗外是密密麻麻的高樓和維多利亞港的燈火，但我的心一直往海的另一邊漂。
+        <span class="hl-p">台灣</span>，
+        對我來說從來不只是一個地名 —— 它是我每天花大量時間研究、思考、嚮往的地方。
+      </p>
+      <p>
+        從交通系統到街道文化、從飲食習慣到社會運作，
+        我都想搞清楚。同學常常問我為什麼這麼迷台灣，
+        我也說不太上來 —— 就是覺得那裡有一種讓人想靠近的<span class="hl-a">溫度</span>。
+      </p>
+      <p>
+        在學校裡，我是風紀隊員、公民教育組的成員，也參與校園建設。
+        課餘時間，我正在努力學<span class="hl-g">程式</span>。
+        說真的，常常覺得學不會，但我不想放棄。
+        如果有一天能用程式碼，在港台之間架起一座看不見的橋，那就值得了。
+      </p>
+    </div>
+
+    <div class="signal-card">
+      <div class="sec-label" style="margin-bottom:16px">PROFILE_DATA</div>
+      <div class="id-grid">
+        <div class="id-cell">
+          <i class="fas fa-user-graduate" style="color:var(--signal)"></i>
+          <div class="label">STATUS</div>
+          <div class="val">HK Student</div>
+        </div>
+        <div class="id-cell">
+          <i class="fas fa-heart" style="color:var(--hk-pink)"></i>
+          <div class="label">PASSION</div>
+          <div class="val">Taiwan Culture</div>
+        </div>
+        <div class="id-cell">
+          <i class="fas fa-terminal" style="color:var(--code-green)"></i>
+          <div class="label">LEARNING</div>
+          <div class="val">Programming</div>
+        </div>
+        <div class="id-cell">
+          <i class="fas fa-utensils" style="color:var(--tw-amber)"></i>
+          <div class="label">HOBBY</div>
+          <div class="val">Food Explorer</div>
+        </div>
+      </div>
+      <div class="role-tags">
+        <div class="role-tag t1"><i class="fas fa-shield-halved"></i> Prefect</div>
+        <div class="role-tag t2"><i class="fas fa-landmark"></i> Civic Ed</div>
+        <div class="role-tag t3"><i class="fas fa-hammer"></i> Campus Builder</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DREAMS ===== -->
+<section class="section" id="dreams">
+  <div class="sec-label">FUTURE_PLANS</div>
+  <h2 class="sec-title">WHAT I WANT TO BUILD</h2>
+  <p class="sec-desc">
+    現在還是個學生，但我已經在為未來做準備。每一次學習、每一個小嘗試，都是在為那座橋多加一塊磚。
+  </p>
+  <div class="dream-cards">
+    <div class="dream-card">
+      <i class="fab fa-discord" style="color:var(--signal)"></i>
+      <h3>Discord Bot</h3>
+      <p>我最想做的就是寫一個 Discord 機器人。一個能幫港台兩地的朋友即時交流、打破語言隔閡的工具。這是我學程式最大的動力。</p>
+    </div>
+    <div class="dream-card">
+      <i class="fas fa-route" style="color:var(--hk-pink)"></i>
+      <h3>Taiwan Explorer</h3>
+      <p>我想親自走一遍台灣的每個角落。把那些在網路上反覆研究的路線、景點、小吃攤，都變成真實的腳印和記憶。</p>
+    </div>
+    <div class="dream-card">
+      <i class="fas fa-bridge" style="color:var(--tw-amber)"></i>
+      <h3>Cultural Bridge</h3>
+      <p>不只是旅行，我想成為港台之間的文化橋樑。用我對兩邊的了解，幫助更多人看見彼此的美好。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ROBLOX ===== -->
+<section class="section" id="roblox">
+  <div class="sec-label">GAME_WORLD</div>
+  <h2 class="sec-title">VIRTUAL CROSSING</h2>
+  <p class="sec-desc">
+    在虛擬世界裡，我已經完成了第一次「渡海」。
+    穿上台灣警察的制服，站在 Roblox 的虛擬街頭 —— 這是我離台灣最近的時刻。
+  </p>
+  <div class="roblox-layout">
+    <div class="roblox-frame">
+      <img src="/assets/img/guild/heifan001/roblox_police.webp" alt="Roblox TW Police">
+      <span class="tag">TW-POLICE // ROBLOX</span>
+    </div>
+    <div class="roblox-info">
+      <h3>Virtual Taiwan Life</h3>
+      <p>
+        在去不了台灣的日子裡，Roblox 是我的<span class="hl-p">文化模擬器</span>。
+        我選擇扮演台灣警察 —— 不是因為好玩，而是因為穿上那套制服的瞬間，
+        感覺自己真的屬於那片土地。
+      </p>
+      <p>
+        走在虛擬的台灣街道上，看著像素化的招牌和路燈，
+        我會想像真正的台灣是什麼樣子。
+        也許有一天，我會站在真實的台灣街頭，
+        回想起這段在螢幕前<span class="hl">練習抵達</span>的日子。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DISCORD BOT SIMULATOR ===== -->
+<section class="section" id="bot">
+  <div class="sec-label">DREAM_PROJECT</div>
+  <h2 class="sec-title">THE BOT I WANT TO BUILD</h2>
+  <p class="sec-desc">
+    這是我夢想中的 Discord Bot 的原型。
+    它還不是真的 —— 但試著跟它聊聊，你會看到我想讓它變成什麼樣子。
+  </p>
+
+  <div class="bot-sim" id="bot-sim">
+    <div class="bot-hd">
+      <span class="hash">#</span>
+      <span class="ch">cross-sea-bot</span>
+      <span class="tp">prototype</span>
+    </div>
+    <div class="bot-msgs" id="bot-msgs">
+      <div class="bot-msg">
+        <div class="av bot"><i class="fas fa-robot"></i></div>
+        <div class="ct">
+          <div class="au bn">CrossSeaBot <span class="badge">BOT</span></div>
+          <div class="tx">
+            Hey! I'm CrossSeaBot, Hei Fan's dream project.<br>
+            Try: <span class="ci">!hello</span>
+            <span class="ci">!about</span>
+            <span class="ci">!taiwan</span>
+            <span class="ci">!dream</span>
+            <span class="ci">!help</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bot-in">
+      <div class="bot-in-wrap">
+        <input id="bot-input" type="text" placeholder="Type a command..." maxlength="100" autocomplete="off">
+        <button id="bot-send"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONTACT ===== -->
+<section class="contact-zone" id="contact">
+  <div class="inner">
+    <div class="sec-label" style="justify-content:center">CONNECT</div>
+    <h2 class="sec-title" style="text-align:center">LINK.ESTABLISH()</h2>
+    <p class="sec-desc" style="text-align:center;margin:0 auto 24px;">
+      不管你在世界的哪一邊，我都很開心能認識你。<br>
+      跟我說聲 Hello 吧。
+    </p>
+    <div class="social-row">
+      <a href="https://www.threads.com/@heifan001" target="_blank" rel="noopener" class="soc-link" title="Threads"><i class="fab fa-threads"></i></a>
+      <a href="https://www.instagram.com/heifan001/" target="_blank" rel="noopener" class="soc-link pk" title="Instagram"><i class="fab fa-instagram"></i></a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p class="footer-text">Made with <span style="color:var(--hk-pink)">&#9829;</span> by <a href="https://supergalen.com" target="_blank" rel="noopener noreferrer">SuperGalen's Dungeon</a></p>
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+/* ═══════════ LOADER ═══════════ */
+const loader = document.getElementById('loader');
+const loaderTxt = document.getElementById('loader-txt');
+const loadMsgs = ['CHARTING COURSE...','SCANNING HARBOR...','RAISING ANCHOR...','SETTING SAIL...'];
+let lmi = 0;
+const lti = setInterval(() => {
+  if (lmi < loadMsgs.length) loaderTxt.textContent = loadMsgs[lmi++];
+  else { clearInterval(lti); setTimeout(() => { loader.classList.add('done'); initPage(); }, 300); }
+}, 500);
+
+/* ═══════════ THREE.JS OCEAN SCENE ═══════════ */
+let oceanUniforms;
+(function(){
+  const container = document.getElementById('ocean-scene');
+  if (!container) return;
+
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 800);
+  cam.position.set(0, 12, 30);
+  cam.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  // Ocean plane with vertex displacement
+  const oceanGeo = new THREE.PlaneGeometry(120, 80, 120, 80);
+  oceanGeo.rotateX(-Math.PI / 2);
+  const oceanMat = new THREE.ShaderMaterial({
+    transparent: true,
+    uniforms: {
+      uTime: { value: 0 },
+      uScroll: { value: 0 },
+      uColor1: { value: new THREE.Color(0x064e5a) },
+      uColor2: { value: new THREE.Color(0x021a2a) },
+    },
+    vertexShader: `
+      uniform float uTime;
+      uniform float uScroll;
+      varying vec2 vUv;
+      varying float vElevation;
+      void main(){
+        vUv = uv;
+        vec3 pos = position;
+        float wave1 = sin(pos.x * 0.15 + uTime * 0.8) * cos(pos.z * 0.1 + uTime * 0.6) * 1.2;
+        float wave2 = sin(pos.x * 0.3 + uTime * 1.2) * 0.4;
+        float wave3 = cos(pos.z * 0.25 + uTime * 0.5 + pos.x * 0.1) * 0.6;
+        pos.y += wave1 + wave2 + wave3;
+        pos.y += uScroll * 2.0;
+        vElevation = pos.y;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor1;
+      uniform vec3 uColor2;
+      uniform float uScroll;
+      varying vec2 vUv;
+      varying float vElevation;
+      void main(){
+        float mixVal = smoothstep(-1.5, 2.0, vElevation);
+        vec3 col = mix(uColor2, uColor1, mixVal);
+        float foam = smoothstep(0.8, 1.2, vElevation) * 0.15;
+        col += foam;
+        float alpha = 0.25 + uScroll * 0.1;
+        gl_FragColor = vec4(col, alpha);
+      }
+    `
+  });
+  oceanUniforms = oceanMat.uniforms;
+  const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+  ocean.position.y = -5;
+  scene.add(ocean);
+
+  // Floating particles (stars / sea spray)
+  const N = 1200;
+  const pPos = new Float32Array(N * 3);
+  const pCol = new Float32Array(N * 3);
+  const cCyan = new THREE.Color(0x00e5ff);
+  const cPink = new THREE.Color(0xff1a6c);
+  const cAmber = new THREE.Color(0xffa726);
+  for (let i = 0; i < N; i++){
+    pPos[i*3] = (Math.random()-0.5)*80;
+    pPos[i*3+1] = Math.random()*30 - 5;
+    pPos[i*3+2] = (Math.random()-0.5)*50;
+    const t = Math.random();
+    const cc = t < 0.45 ? cCyan : t < 0.75 ? cPink : cAmber;
+    pCol[i*3] = cc.r; pCol[i*3+1] = cc.g; pCol[i*3+2] = cc.b;
+  }
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+  const pMat = new THREE.PointsMaterial({
+    size: 0.06, vertexColors: true, transparent: true,
+    opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const pts = new THREE.Points(pGeo, pMat);
+  scene.add(pts);
+
+  (function anim(){
+    requestAnimationFrame(anim);
+    oceanMat.uniforms.uTime.value = performance.now() * 0.001;
+    const pp = pGeo.attributes.position.array;
+    const t = performance.now() * 0.0003;
+    for (let i = 0; i < N; i++){
+      pp[i*3+1] += Math.sin(t + i * 0.08) * 0.002;
+    }
+    pGeo.attributes.position.needsUpdate = true;
+    pts.rotation.y += 0.0001;
+    renderer.render(scene, cam);
+  })();
+
+  addEventListener('resize', () => {
+    cam.aspect = innerWidth / innerHeight;
+    cam.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+})();
+
+/* ═══════════ CROSSING SCENE (Canvas 2D) ═══════════ */
+function initCrossing(){
+  const canvas = document.getElementById('crossing-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+  const msgEl = document.getElementById('crossing-msg');
+
+  const messages = [
+    { text: '從香港出發，穿越 130 公里的海峽', sub: 'LEAVING HONG KONG HARBOR' },
+    { text: '海面上什麼都沒有，只有想抵達的念頭', sub: 'OPEN SEA' },
+    { text: '遠方的燈火越來越近 —— 那是台灣', sub: 'APPROACHING TAIWAN' },
+  ];
+
+  // Pre-generate stable random data
+  var stars = [];
+  for (var si = 0; si < 120; si++){
+    stars.push({
+      x: Math.random(), y: Math.random() * 0.45,
+      r: Math.random() * 1.5 + 0.3,
+      twinkleSpeed: 1 + Math.random() * 3,
+      twinkleOffset: Math.random() * Math.PI * 2
+    });
+  }
+
+  var hkBuildings = [];
+  for (var hbi = 0; hbi < 18; hbi++){
+    hkBuildings.push({
+      w: 10 + Math.random() * 14,
+      h: 30 + Math.random() * 80 + hbi * 4,
+      windows: Math.floor(2 + Math.random() * 5),
+      gap: 2 + Math.random() * 4
+    });
+  }
+
+  var twPeaks = [];
+  for (var ti = 0; ti < 7; ti++){
+    twPeaks.push({
+      h: 40 + Math.random() * 90,
+      w: 30 + Math.random() * 50,
+      layer: Math.floor(Math.random() * 3)
+    });
+  }
+
+  function resize(){
+    var parent = document.getElementById('crossing-pin');
+    w = canvas.width = parent ? parent.offsetWidth : window.innerWidth;
+    h = canvas.height = parent ? parent.offsetHeight : window.innerHeight;
+    particles = [];
+    for (var i = 0; i < 200; i++){
+      particles.push({
+        x: Math.random() * w, y: Math.random() * h,
+        r: Math.random() * 2 + 0.3,
+        speed: 0.2 + Math.random() * 0.6,
+        hue: Math.random() < 0.5 ? 190 : Math.random() < 0.7 ? 340 : 35
+      });
+    }
+  }
+
+  // Delay resize until layout is settled
+  setTimeout(resize, 100);
+  addEventListener('resize', resize);
+
+  var progress = 0;
+
+  // GSAP ScrollTrigger for pinning
+  ScrollTrigger.create({
+    trigger: '#crossing-wrap',
+    start: 'top top',
+    end: 'bottom bottom',
+    pin: '#crossing-pin',
+    pinSpacing: false,
+    scrub: 0.5,
+    onUpdate: function(self){
+      progress = self.progress;
+      // Update ocean uniforms
+      if (oceanUniforms) oceanUniforms.uScroll.value = progress;
+      // Update message
+      var idx = Math.min(Math.floor(progress * messages.length), messages.length - 1);
+      var msg = messages[idx];
+      if (msgEl) {
+        msgEl.innerHTML = msg.text + '<span class="sm">' + msg.sub + '</span>';
+      }
+      // Message fades in sync with act brightness
+      var mb = 1;
+      // Act 1 text
+      if (progress < 0.05) mb = progress / 0.05;
+      else if (progress < 0.22) mb = 1;
+      else if (progress < 0.37) mb = Math.max(0, 1 - (progress - 0.22) / 0.1);
+      // Act 2 text
+      else if (progress < 0.42) mb = (progress - 0.37) / 0.05;
+      else if (progress < 0.55) mb = 1;
+      else if (progress < 0.70) mb = Math.max(0, 1 - (progress - 0.55) / 0.1);
+      // Act 3 text
+      else if (progress < 0.75) mb = (progress - 0.70) / 0.05;
+      else if (progress < 0.88) mb = 1;
+      else mb = Math.max(0, 1 - (progress - 0.88) / 0.08);
+      msgEl.style.opacity = mb;
+    },
+    onRefresh: function(){ resize(); }
+  });
+
+  function actBright(p){
+    if(p<.05)return p/.05;
+    if(p<.25)return 1;
+    if(p<.37)return 1-(p-.25)/.12;
+    if(p<.42)return(p-.37)/.05;
+    if(p<.58)return 1;
+    if(p<.70)return 1-(p-.58)/.12;
+    if(p<.75)return(p-.70)/.05;
+    if(p<.92)return 1;
+    return 1-(p-.92)/.08;
+  }
+  function actIdx(p){ return p<.33?0:p<.66?1:2; }
+
+  var T = 0;
+
+  function draw(){
+    requestAnimationFrame(draw);
+    if(!w) return;
+    T = performance.now() * 0.001;
+    var B = actBright(progress);
+    var act = actIdx(progress);
+    var hz = h * 0.50 + Math.sin(T * 0.6) * 5;
+
+    // ── SKY GRADIENT ──
+    var skyG = ctx.createLinearGradient(0, 0, 0, hz);
+    if(act===0){
+      skyG.addColorStop(0,'#020612');
+      skyG.addColorStop(1,'#0a0e22');
+    } else if(act===1){
+      skyG.addColorStop(0,'#010c16');
+      skyG.addColorStop(1,'#042030');
+    } else {
+      skyG.addColorStop(0,'#020e18');
+      skyG.addColorStop(1,'#0a2838');
+    }
+    ctx.fillStyle = skyG;
+    ctx.fillRect(0, 0, w, hz);
+
+    // ── OCEAN GRADIENT ──
+    var seaG = ctx.createLinearGradient(0, hz, 0, h);
+    if(act===0){
+      seaG.addColorStop(0,'#0a1428');
+      seaG.addColorStop(1,'#020810');
+    } else if(act===1){
+      seaG.addColorStop(0,'#062838');
+      seaG.addColorStop(1,'#021420');
+    } else {
+      seaG.addColorStop(0,'#0a3040');
+      seaG.addColorStop(1,'#041820');
+    }
+    ctx.fillStyle = seaG;
+    ctx.fillRect(0, hz, w, h - hz);
+
+    if(B < 0.01){
+      ctx.fillStyle = 'rgba(0,0,0,0.97)';
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
+      return;
+    }
+
+    ctx.globalAlpha = B;
+
+    // ── STARS (sky only) ──
+    for(var si=0;si<stars.length;si++){
+      var st = stars[si];
+      var sx = st.x * w;
+      var sy = st.y * h;
+      // Parallax: stars drift slightly left as we travel
+      sx = (sx - progress * 40 * (1 + st.r)) % w;
+      if(sx < 0) sx += w;
+      if(sy > hz - 5) continue;
+      var twinkle = 0.3 + 0.7 * Math.abs(Math.sin(T * st.twinkleSpeed + st.twinkleOffset));
+      ctx.fillStyle = 'rgba(200,220,255,' + twinkle * B * 0.6 + ')';
+      ctx.beginPath();
+      ctx.arc(sx, sy, st.r * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ── MOON ──
+    var moonX = w * 0.75 - progress * w * 0.3;
+    var moonY = h * 0.12 + Math.sin(progress * Math.PI) * h * 0.05;
+    // Moon glow
+    var moonG = ctx.createRadialGradient(moonX, moonY, 4, moonX, moonY, 60);
+    moonG.addColorStop(0, 'rgba(200,220,255,' + 0.12 * B + ')');
+    moonG.addColorStop(1, 'rgba(200,220,255,0)');
+    ctx.fillStyle = moonG;
+    ctx.fillRect(moonX - 60, moonY - 60, 120, 120);
+    // Moon body
+    ctx.fillStyle = 'rgba(220,235,255,' + 0.7 * B + ')';
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── MOON REFLECTION ON WATER ──
+    for(var ri=0; ri<8; ri++){
+      var ry = hz + 8 + ri * 12;
+      var rw = 20 - ri * 2;
+      var rx = moonX + Math.sin(T * 1.2 + ri * 0.8) * (4 + ri * 2);
+      ctx.fillStyle = 'rgba(200,220,255,' + (0.06 - ri * 0.006) * B + ')';
+      ctx.fillRect(rx - rw/2, ry, rw, 2);
+    }
+
+    // ── HORIZON LINE (main) ──
+    ctx.strokeStyle = 'rgba(0,229,255,' + 0.15 * B + ')';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for(var hx=0; hx<w; hx+=3){
+      var hy2 = hz + Math.sin(hx * 0.015 + T * 1.2) * 4 + Math.sin(hx * 0.04 + T * 2) * 1.5;
+      hx===0 ? ctx.moveTo(hx, hy2) : ctx.lineTo(hx, hy2);
+    }
+    ctx.stroke();
+
+    // ── WAVE LAYERS ──
+    for(var wl=0; wl<8; wl++){
+      var wly = hz + 12 + wl * 16;
+      var wlAlpha = (0.015 + wl * 0.006) * B;
+      ctx.strokeStyle = 'rgba(0,229,255,' + wlAlpha + ')';
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      for(var wx=0; wx<w; wx+=4){
+        var wy = wly + Math.sin(wx * 0.01 + T * 0.7 + wl * 1.5) * (3 + wl * 2)
+                     + Math.sin(wx * 0.025 + T * 1.3 + wl) * 1.5;
+        wx===0 ? ctx.moveTo(wx, wy) : ctx.lineTo(wx, wy);
+      }
+      ctx.stroke();
+    }
+
+    // ── WATER STREAKS (motion lines drifting left) ──
+    for(var sl=0; sl<16; sl++){
+      var sly = hz + 6 + sl * 14;
+      var spd = 60 + sl * 25;
+      var soff = (T * spd) % (w + 100);
+      var sLen = 40 + sl * 15;
+      var ssx = w - soff;
+      if(ssx < -sLen) continue;
+      ctx.strokeStyle = 'rgba(0,229,255,' + (0.02 + sl * 0.003) * B + ')';
+      ctx.lineWidth = 0.4;
+      ctx.beginPath();
+      ctx.moveTo(ssx, sly + Math.sin(T + sl) * 2);
+      ctx.lineTo(ssx + sLen, sly + Math.sin(T + sl + 1) * 2);
+      ctx.stroke();
+    }
+
+    // ── BOAT WAKE (V-shape from bottom center) ──
+    var wakeAlpha = 0.06 * B;
+    ctx.strokeStyle = 'rgba(255,255,255,' + wakeAlpha + ')';
+    ctx.lineWidth = 0.8;
+    var wakeCx = w * 0.5;
+    var wakeCy = h + 20;
+    // Left wake line
+    ctx.beginPath();
+    for(var wk=0; wk<15; wk++){
+      var wkx = wakeCx - wk * 18 - Math.sin(T * 2 + wk * 0.5) * 3;
+      var wky = wakeCy - wk * 22;
+      wk===0 ? ctx.moveTo(wkx, wky) : ctx.lineTo(wkx, wky);
+    }
+    ctx.stroke();
+    // Right wake line
+    ctx.beginPath();
+    for(var wk2=0; wk2<15; wk2++){
+      var wkx2 = wakeCx + wk2 * 18 + Math.sin(T * 2 + wk2 * 0.5) * 3;
+      var wky2 = wakeCy - wk2 * 22;
+      wk2===0 ? ctx.moveTo(wkx2, wky2) : ctx.lineTo(wkx2, wky2);
+    }
+    ctx.stroke();
+
+    // ── SPRAY PARTICLES (near horizon, drifting left) ──
+    for(var pi=0; pi<particles.length; pi++){
+      var pt = particles[pi];
+      pt.x -= pt.speed + progress * 0.6;
+      if(pt.x < -5) pt.x = w + 5 + Math.random() * 20;
+      var pAlpha = (0.2 + Math.sin(T * 1.5 + pi * 0.3) * 0.12) * B;
+      ctx.fillStyle = 'hsla(' + pt.hue + ',80%,60%,' + pAlpha + ')';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ── DISTANCE MARKER ──
+    var km = Math.floor(progress * 130);
+    ctx.fillStyle = 'rgba(0,229,255,' + 0.25 * B + ')';
+    ctx.font = '10px "Fira Code"';
+    ctx.textAlign = 'right';
+    ctx.fillText(km + ' km / 130 km', w - 30, h - 20);
+
+    // ── ACT 1: HONG KONG SKYLINE (receding left) ──
+    if(act === 0){
+      var hkP = progress / 0.33; // 0→1 within act
+      var hkDrift = hkP * w * 0.15; // drift left as we leave
+      var hkShrink = 1 - hkP * 0.4;
+      ctx.save();
+      ctx.translate(-hkDrift, 0);
+      ctx.scale(hkShrink, hkShrink);
+      var bx = 15;
+      for(var bi=0; bi<hkBuildings.length; bi++){
+        var bb = hkBuildings[bi];
+        var by = hz / hkShrink - bb.h;
+        // Building body
+        ctx.fillStyle = 'rgba(255,26,108,' + 0.12 * B + ')';
+        ctx.fillRect(bx, by, bb.w, bb.h);
+        // Building edge highlight
+        ctx.fillStyle = 'rgba(255,26,108,' + 0.25 * B + ')';
+        ctx.fillRect(bx, by, 1, bb.h);
+        // Windows
+        ctx.fillStyle = 'rgba(255,200,220,' + 0.3 * B + ')';
+        for(var wi2=0; wi2<bb.windows; wi2++){
+          var wy2 = by + 6 + wi2 * (bb.h / (bb.windows + 1));
+          ctx.fillRect(bx + 3, wy2, 3, 2);
+          if(bb.w > 14) ctx.fillRect(bx + bb.w - 6, wy2, 3, 2);
+        }
+        bx += bb.w + bb.gap;
+      }
+      // HK neon glow
+      var hkGlow = ctx.createRadialGradient(bx/2, hz/hkShrink - 30, 10, bx/2, hz/hkShrink - 30, 120);
+      hkGlow.addColorStop(0, 'rgba(255,26,108,' + 0.06 * B + ')');
+      hkGlow.addColorStop(1, 'rgba(255,26,108,0)');
+      ctx.fillStyle = hkGlow;
+      ctx.fillRect(0, hz/hkShrink - 150, bx, 180);
+      // Label
+      ctx.fillStyle = 'rgba(255,26,108,' + 0.6 * B * (1-hkP) + ')';
+      ctx.font = 'bold 13px "Fira Code"';
+      ctx.textAlign = 'left';
+      ctx.fillText('HONG KONG', 15, hz/hkShrink - hkBuildings[hkBuildings.length-1].h - 15);
+      ctx.restore();
+    }
+
+    // ── ACT 3: TAIWAN MOUNTAINS (approaching from right) ──
+    if(act === 2){
+      var twP = (progress - 0.66) / 0.34; // 0→1 within act
+      var twDrift = (1 - twP) * w * 0.2; // drift in from right
+      ctx.save();
+      ctx.translate(twDrift, 0);
+      // Layered mountains (back to front)
+      for(var layer = 2; layer >= 0; layer--){
+        var layerAlpha = (0.04 + layer * 0.04) * B * twP;
+        var layerColor = layer === 0 ? '0,229,255' : layer === 1 ? '0,180,200' : '0,140,160';
+        var layerShift = layer * 30;
+        ctx.fillStyle = 'rgba(' + layerColor + ',' + layerAlpha + ')';
+        ctx.beginPath();
+        ctx.moveTo(w, hz);
+        var peakX = w - 20;
+        for(var pk=0; pk<twPeaks.length; pk++){
+          if(twPeaks[pk].layer !== layer) continue;
+          var pkH = twPeaks[pk].h * twP;
+          var pkW = twPeaks[pk].w;
+          ctx.lineTo(peakX, hz - pkH - layerShift);
+          peakX -= pkW;
+          ctx.lineTo(peakX, hz - pkH * 0.5 - layerShift);
+          peakX -= pkW * 0.5;
+        }
+        ctx.lineTo(peakX, hz);
+        ctx.fill();
+      }
+      // TW warm glow on horizon
+      var twGlow = ctx.createRadialGradient(w - 100, hz, 10, w - 100, hz, 180 * twP);
+      twGlow.addColorStop(0, 'rgba(255,167,38,' + 0.1 * B * twP + ')');
+      twGlow.addColorStop(0.5, 'rgba(255,112,67,' + 0.04 * B * twP + ')');
+      twGlow.addColorStop(1, 'rgba(255,167,38,0)');
+      ctx.fillStyle = twGlow;
+      ctx.fillRect(w - 300, hz - 180, 300, 360);
+      // Label
+      ctx.fillStyle = 'rgba(0,229,255,' + 0.6 * B * twP + ')';
+      ctx.font = 'bold 13px "Fira Code"';
+      ctx.textAlign = 'right';
+      ctx.fillText('TAIWAN', w - 20, hz - 120 * twP);
+      // Tiny harbor lights on shore
+      for(var hl=0; hl<6; hl++){
+        var hlx = w - 30 - hl * 35;
+        var hly = hz - 3 + Math.sin(T * 3 + hl) * 1;
+        var hlFlicker = 0.3 + 0.7 * Math.abs(Math.sin(T * 4 + hl * 2));
+        ctx.fillStyle = 'rgba(255,200,100,' + 0.4 * B * twP * hlFlicker + ')';
+        ctx.beginPath();
+        ctx.arc(hlx, hly, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // ── ATMOSPHERIC HAZE near horizon ──
+    var hazeG = ctx.createLinearGradient(0, hz - 30, 0, hz + 20);
+    hazeG.addColorStop(0, 'rgba(0,0,0,0)');
+    var hazeColor = act === 2 ? '20,40,50' : '5,15,25';
+    hazeG.addColorStop(1, 'rgba(' + hazeColor + ',' + 0.15 * B + ')');
+    ctx.fillStyle = hazeG;
+    ctx.fillRect(0, hz - 30, w, 50);
+
+    // ── VIGNETTE ──
+    ctx.globalAlpha = 1;
+    var vigS = 0.25 + (1 - B) * 0.75;
+    var vig = ctx.createRadialGradient(w/2, h/2, h * 0.25, w/2, h/2, h * 0.85);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(0,0,0,' + vigS + ')');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.globalAlpha = 1;
+  }
+  draw();
+}
+
+/* ═══════════ TYPEWRITER ═══════════ */
+const lines = [
+  "Hello~ 我是來自香港的 Hei Fan",
+  "一個深深著迷於台灣的少年",
+  "正在學習寫程式，夢想架起港台的橋",
+  "總有一天，我會親自完成這趟渡海"
+];
+let li=0,ci=0,del=false;
+const twEl=document.getElementById('tw-text');
+function tw(){
+  if(!twEl)return;
+  const cur=lines[li];
+  if(!del){twEl.textContent=cur.substring(0,ci+1);ci++;if(ci>=cur.length){setTimeout(()=>{del=true;tw()},2200);return}setTimeout(tw,55+Math.random()*35)}
+  else{twEl.textContent=cur.substring(0,ci-1);ci--;if(ci<=0){del=false;li=(li+1)%lines.length;setTimeout(tw,400);return}setTimeout(tw,25)}
+}
+
+/* ═══════════ DEPTH GAUGE + VOYAGE BAR ═══════════ */
+function initGauges(){
+  const fill = document.getElementById('voyage-fill');
+  const thumb = document.getElementById('depth-thumb');
+  const label = document.getElementById('depth-label');
+  const labels = ['HK','SEA','SEA','TW','TW'];
+
+  ScrollTrigger.create({
+    trigger: 'body',
+    start: 'top top',
+    end: 'bottom bottom',
+    onUpdate: self => {
+      const p = self.progress;
+      if (fill) fill.style.width = (p * 100) + '%';
+      if (thumb) thumb.style.top = (p * 112) + 'px';
+      if (label) label.textContent = labels[Math.min(Math.floor(p * labels.length), labels.length - 1)];
+    }
+  });
+}
+
+/* ═══════════ DISCORD BOT ═══════════ */
+function initBot(){
+  const input = document.getElementById('bot-input');
+  const sendBtn = document.getElementById('bot-send');
+  const msgBox = document.getElementById('bot-msgs');
+  if(!input) return;
+
+  const responses = {
+    '!hello': 'Hey there! I\'m CrossSeaBot, a prototype of the bot Hei Fan dreams of building. One day I\'ll be real code, not just a simulation.',
+    '!about': 'Hei Fan is a student from Hong Kong who is deeply fascinated by Taiwan. He\'s learning to code so he can build tools that connect people across the strait.',
+    '!taiwan': [
+      'Taiwan has over 300 night markets. Hei Fan has studied the menus of at least 50 of them... from Hong Kong.',
+      'The Taiwan Strait is about 130km wide. That\'s roughly the distance of Hei Fan\'s daydream every morning in class.',
+      'Taiwan\'s convenience store density is legendary. Hei Fan\'s dream: visiting every single one.',
+      'Taipei MRT is one of the cleanest in the world. Hei Fan knows the entire route map by heart.'
+    ][Math.floor(Math.random()*4)],
+    '!dream': 'My creator wants to be a bridge between Hong Kong and Taiwan. Through code, through culture, through food recommendations. This bot is step one.',
+    '!help': 'Commands: <span class="ci">!hello</span> <span class="ci">!about</span> <span class="ci">!taiwan</span> <span class="ci">!dream</span> <span class="ci">!hk</span>',
+    '!hk': 'Hong Kong: where Hei Fan calls home. Victoria Harbour, dim sum mornings, neon-lit streets. It\'s beautiful — but his heart keeps drifting south.'
+  };
+
+  function addMsg(author, text, isBot){
+    const d=document.createElement('div');d.className='bot-msg';
+    d.innerHTML=`<div class="av ${isBot?'bot':'usr'}"><i class="fas fa-${isBot?'robot':'user'}"></i></div>
+    <div class="ct"><div class="au ${isBot?'bn':'un'}">${author} ${isBot?'<span class="badge">BOT</span>':''}</div>
+    <div class="tx">${text}</div></div>`;
+    msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;
+  }
+
+  function proc(raw){
+    const cmd=raw.trim().toLowerCase();
+    addMsg('You',raw,false);
+    setTimeout(()=>{
+      if(responses[cmd]){
+        addMsg('CrossSeaBot',typeof responses[cmd]==='string'?responses[cmd]:responses[cmd],true);
+      } else {
+        addMsg('CrossSeaBot','Unknown command: <span class="ci">'+cmd+'</span>. Try <span class="ci">!help</span>',true);
+      }
+    },400+Math.random()*300);
+  }
+
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&input.value.trim()){proc(input.value);input.value=''}});
+  sendBtn.addEventListener('click',()=>{if(input.value.trim()){proc(input.value);input.value=''}});
+}
+
+/* ═══════════ GSAP ANIMATIONS ═══════════ */
+function initPage(){
+  gsap.registerPlugin(ScrollTrigger);
+  initCrossing();
+  initGauges();
+  initBot();
+
+  // Helper: safe reveal animation that guarantees visibility
+  function reveal(targets, fromVars, triggerEl, startPos){
+    const els = gsap.utils.toArray(targets);
+    if (!els.length) return;
+    // Set initial hidden state via GSAP
+    gsap.set(els, fromVars);
+    // Animate on scroll
+    ScrollTrigger.create({
+      trigger: triggerEl || els[0],
+      start: startPos || 'top 90%',
+      once: true,
+      onEnter: function(){
+        gsap.to(els, {
+          opacity: 1, x: 0, y: 0, scale: 1,
+          duration: fromVars.duration || 0.5,
+          stagger: fromVars.stagger || 0,
+          ease: fromVars.ease || 'power2.out',
+          clearProps: 'opacity,transform'
+        });
+      }
+    });
+    // Safety net: if still hidden after 5s of page load, force reveal
+    setTimeout(function(){
+      els.forEach(function(el){
+        if (getComputedStyle(el).opacity < 0.1){
+          gsap.to(el, { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.3, clearProps: 'opacity,transform' });
+        }
+      });
+    }, 5000);
+  }
+
+  // Hero entrance (always plays immediately, no ScrollTrigger needed)
+  gsap.set('.avatar-wrap', { opacity: 0, scale: 0.7 });
+  gsap.set(['.hero-label','.hero-title','.hero-sub','.bridge-badge'], { opacity: 0, y: 22 });
+  gsap.set('.hero-tagline', { opacity: 0 });
+
+  const htl = gsap.timeline({ delay: 0.2 });
+  htl.to('.avatar-wrap', { opacity: 1, scale: 1, duration: 0.7, ease: 'back.out(1.5)' })
+    .to('.hero-label', { opacity: 1, y: 0, duration: 0.4 }, '-=.2')
+    .to('.hero-title', { opacity: 1, y: 0, duration: 0.5 }, '-=.15')
+    .to('.hero-sub', { opacity: 1, y: 0, duration: 0.4 }, '-=.15')
+    .to('.hero-tagline', { opacity: 1, duration: 0.4 }, '-=.1')
+    .to('.bridge-badge', { opacity: 1, y: 0, duration: 0.4 }, '-=.1')
+    .to('.scroll-cue', { opacity: 0.5, duration: 0.4 }, '-=.1')
+    .call(tw);
+
+  // Section labels & titles
+  document.querySelectorAll('.section').forEach(function(s){
+    var lab = s.querySelector('.sec-label');
+    var ttl = s.querySelector('.sec-title');
+    var desc = s.querySelector('.sec-desc');
+    if (lab) reveal(lab, { opacity: 0, x: -25, duration: 0.5 }, s, 'top 92%');
+    if (ttl) reveal(ttl, { opacity: 0, y: 18, duration: 0.5 }, s, 'top 92%');
+    if (desc) reveal(desc, { opacity: 0, y: 12, duration: 0.4 }, s, 'top 88%');
+  });
+
+  // About
+  reveal('.about-text p', { opacity: 0, y: 18, duration: 0.45, stagger: 0.12 }, '#about', 'top 92%');
+  reveal('.signal-card', { opacity: 0, x: 30, duration: 0.6 }, '#about', 'top 92%');
+  reveal('.id-cell', { opacity: 0, scale: 0.85, duration: 0.35, stagger: 0.08 }, '#about', 'top 88%');
+  reveal('.role-tag', { opacity: 0, x: -15, duration: 0.3, stagger: 0.08 }, '.role-tags', 'top 95%');
+
+  // Dreams
+  reveal('.dream-card', { opacity: 0, y: 28, duration: 0.45, stagger: 0.12 }, '#dreams', 'top 92%');
+
+  // Roblox
+  reveal('.roblox-frame', { opacity: 0, x: -35, duration: 0.6 }, '#roblox', 'top 92%');
+  reveal('.roblox-info', { opacity: 0, x: 35, duration: 0.6 }, '#roblox', 'top 92%');
+
+  // Bot
+  reveal('.bot-sim', { opacity: 0, y: 30, duration: 0.6 }, '#bot', 'top 92%');
+
+  // Contact
+  reveal('.soc-link', { opacity: 0, y: 15, duration: 0.35, stagger: 0.08 }, '#contact', 'top 95%');
+
+  // Hide scroll cue
+  ScrollTrigger.create({ trigger: '#crossing-wrap', start: 'top 90%', once: true,
+    onEnter: function(){ gsap.to('.scroll-cue', { opacity: 0, duration: 0.3 }); }
+  });
+
+  // Force ScrollTrigger refresh after layout settles
+  setTimeout(function(){ ScrollTrigger.refresh(); }, 500);
+}
+
+})();
+</script>
+</body>
+</html>
