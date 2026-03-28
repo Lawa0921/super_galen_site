@@ -14,7 +14,6 @@
     <style>
         :root {
             --scoreboard-black: #0a0c10;
-            --scoreboard-dark: #111418;
             --diamond-green: #1a3a1a;
             --stadium-amber: #f5a623;
             --led-red: #ff2d2d;
@@ -48,11 +47,6 @@
             pointer-events: none;
         }
 
-        /* Make all sections transparent so Three.js shows through */
-        .hero, .scoreboard-section, .triple-section, .terminal-section,
-        .pipeline-section, .cards-section, .timeline-section, .footer-section {
-            background: transparent;
-        }
 
         /* Chalk line section divider */
         .chalk-line {
@@ -300,7 +294,6 @@
         .scoreboard-section {
             position: relative; z-index: 1;
             padding: 120px 20px;
-            background: linear-gradient(180deg, var(--night-sky) 0%, var(--scoreboard-dark) 30%, var(--scoreboard-dark) 70%, var(--night-sky) 100%);
         }
 
         .scoreboard {
@@ -327,7 +320,7 @@
         .scoreboard-val strong { color: var(--chalk-white); font-weight: 700; }
 
         /* === TRIPLE PLAY === */
-        .triple-section { position: relative; z-index: 1; padding: 120px 20px; background: var(--night-sky); }
+        .triple-section { position: relative; z-index: 1; padding: 120px 20px; }
         .triple-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1100px; margin: 0 auto; }
 
         .triple-card {
@@ -358,7 +351,6 @@
         .terminal-section {
             position: relative; z-index: 1;
             padding: 120px 20px;
-            background: linear-gradient(180deg, var(--night-sky) 0%, #080c12 50%, var(--night-sky) 100%);
         }
 
         .terminal {
@@ -434,7 +426,6 @@
         .pipeline-section {
             position: relative; z-index: 1;
             padding: 120px 20px;
-            background: var(--night-sky);
         }
 
         .pipeline-motto { margin-top: 40px; text-align: center; opacity: 0; transition: opacity 1s; }
@@ -546,7 +537,6 @@
         .cards-section {
             position: relative; z-index: 1;
             padding: 120px 20px;
-            background: linear-gradient(180deg, var(--night-sky) 0%, var(--scoreboard-dark) 50%, var(--night-sky) 100%);
         }
 
         .cards-grid {
@@ -636,7 +626,6 @@
         .timeline-section {
             position: relative; z-index: 1;
             padding: 120px 20px;
-            background: linear-gradient(180deg, var(--night-sky) 0%, var(--scoreboard-dark) 50%, var(--night-sky) 100%);
         }
         .timeline { max-width: 600px; margin: 0 auto; position: relative; padding-left: 40px; }
         .timeline::before {
@@ -664,7 +653,6 @@
         .footer-section {
             position: relative; z-index: 1;
             padding: 100px 20px 60px;
-            background: var(--night-sky);
             text-align: center;
         }
         .footer-cta { font-family: var(--font-score); font-size: clamp(1.2rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: 3px; color: var(--chalk-white); margin-bottom: 12px; }

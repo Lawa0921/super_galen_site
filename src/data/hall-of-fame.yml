@@ -1486,8 +1486,8 @@ members:
     name: "泰倫斯 Terence"
     avatar: "/assets/img/guild/hotbu168/avatar.webp"
     page: "/guild/hotbu168.html"
-    title: "Soul Navigator"
-    description: "從海軍軍官到澳洲冒險者，從健身業務到半導體HR，最終決定跟隨靈魂的直覺，航向全職演員的夢想。陽光率真、直來直往，用多幕人生的底蘊詮釋每一個角色。"
+    title: "The Forge"
+    description: "田玉麟，職業演員。22部戲劇、7部電影、11支廣告 — 從《我們與惡的距離》到《紅衣小女孩3》。海軍軍官出身，歷經澳洲打工度假、健身業務、半導體HR，42歲全職投入演員事業。每一段人生都是鍛造的過程。"
     tags:
       - id: "actor"
         label: "演員"
