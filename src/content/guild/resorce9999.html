@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jerry Chen | The Diamond Architect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Rajdhani:wght@300&family=Noto+Sans+TC:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --scoreboard-black: #0a0c10;
+            --scoreboard-dark: #111418;
+            --diamond-green: #1a3a1a;
+            --stadium-amber: #f5a623;
+            --led-red: #ff2d2d;
+            --led-green: #00e676;
+            --chalk-white: #f0ede6;
+            --plate-silver: #c8cdd3;
+            --night-sky: #060a14;
+            --terminal-green: #39ff14;
+
+            --font-score: 'Orbitron', sans-serif;
+            --font-ui: 'Rajdhani', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+            --font-mono: 'Share Tech Mono', monospace;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
+        body {
+            font-family: var(--font-body);
+            background: var(--night-sky);
+            color: var(--chalk-white);
+            overflow-x: hidden;
+        }
+
+        /* Three.js background canvas */
+        #field-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Make all sections transparent so Three.js shows through */
+        .hero, .scoreboard-section, .triple-section, .terminal-section,
+        .pipeline-section, .cards-section, .timeline-section, .footer-section {
+            background: transparent;
+        }
+
+        /* Chalk line section divider */
+        .chalk-line {
+            width: 100%;
+            max-width: 300px;
+            height: 1px;
+            margin: 0 auto;
+            background: linear-gradient(90deg, transparent, rgba(240, 237, 230, 0.12), transparent);
+            position: relative;
+        }
+        .chalk-line::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: 50%; transform: translateX(-50%);
+            width: 6px; height: 6px;
+            background: rgba(240, 237, 230, 0.08);
+            border-radius: 50%;
+        }
+
+        /* === INNING TRACKER (Fixed sidebar) === */
+        .inning-tracker {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+        }
+        .inning-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(200, 205, 211, 0.15);
+            border: 1px solid rgba(200, 205, 211, 0.2);
+            transition: all 0.4s;
+            cursor: pointer;
+            position: relative;
+        }
+        .inning-dot.active {
+            background: var(--stadium-amber);
+            border-color: var(--stadium-amber);
+            box-shadow: 0 0 10px rgba(245, 166, 35, 0.5);
+            transform: scale(1.4);
+        }
+        .inning-dot .inning-label {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 1px;
+            color: var(--stadium-amber);
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .inning-dot:hover .inning-label { opacity: 1; }
+        .inning-number {
+            font-family: var(--font-score);
+            font-size: 0.5rem;
+            color: rgba(245, 166, 35, 0.3);
+            letter-spacing: 1px;
+            writing-mode: vertical-rl;
+            margin-top: 8px;
+        }
+
+        /* Scroll Progress */
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0;
+            width: 0%; height: 3px;
+            background: linear-gradient(90deg, var(--led-green), var(--stadium-amber), var(--led-red));
+            z-index: 9999;
+            box-shadow: 0 0 10px var(--stadium-amber);
+        }
+
+        /* Back Nav */
+        .back-nav {
+            position: fixed;
+            top: 16px; left: 16px;
+            z-index: 1000;
+            color: var(--stadium-amber);
+            text-decoration: none;
+            font-family: var(--font-score);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 8px 16px;
+            border: 1px solid rgba(245, 166, 35, 0.4);
+            background: rgba(10, 12, 16, 0.85);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .back-nav:hover { background: var(--stadium-amber); color: var(--scoreboard-black); }
+
+        /* === HERO === */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .hero-diamond {
+            position: absolute;
+            width: 400px; height: 400px;
+            top: 50%; left: 50%;
+            margin-left: -200px; margin-top: -200px;
+            z-index: 0;
+            opacity: 0;
+        }
+        .hero-diamond-svg {
+            width: 100%; height: 100%;
+            transform: rotate(45deg);
+        }
+        .hero-diamond-svg line {
+            stroke: rgba(245, 166, 35, 0.08);
+            stroke-width: 0.5;
+        }
+
+        .hero-content { position: relative; z-index: 2; text-align: center; padding: 0 20px; }
+
+        .hero-avatar {
+            width: 130px; height: 130px;
+            border-radius: 50%;
+            border: 3px solid var(--stadium-amber);
+            box-shadow: 0 0 60px rgba(245, 166, 35, 0.25), 0 0 120px rgba(245, 166, 35, 0.08);
+            margin-bottom: 24px;
+            opacity: 0;
+            object-fit: cover;
+        }
+
+        .hero-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--stadium-amber);
+            margin-bottom: 12px;
+            opacity: 0;
+        }
+
+        .hero-name {
+            font-family: var(--font-score);
+            font-size: clamp(2.5rem, 7vw, 5rem);
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: var(--chalk-white);
+            margin-bottom: 8px;
+            opacity: 0;
+            background: linear-gradient(180deg, #ffffff 0%, #c8cdd3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-ui);
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            font-weight: 300;
+            color: var(--plate-silver);
+            letter-spacing: 3px;
+            margin-bottom: 40px;
+            opacity: 0;
+        }
+
+        .hero-stats { display: flex; gap: 48px; justify-content: center; flex-wrap: wrap; opacity: 0; }
+        .hero-stat { text-align: center; }
+        .hero-stat-value {
+            font-family: var(--font-score);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--stadium-amber);
+        }
+        .hero-stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--plate-silver);
+            margin-top: 4px;
+        }
+
+        .scroll-cue {
+            position: absolute;
+            bottom: 40px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            text-align: center;
+            opacity: 0;
+        }
+        .scroll-cue span {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 3px;
+            color: rgba(245, 166, 35, 0.4);
+        }
+        .scroll-cue .chevrons {
+            display: block;
+            margin-top: 8px;
+            color: rgba(245, 166, 35, 0.3);
+            animation: chevron-pulse 2s ease-in-out infinite;
+        }
+        .chevron-dim { opacity: 0.5; margin-top: -4px; display: block; }
+        @keyframes chevron-pulse {
+            0%, 100% { transform: translateY(0); opacity: 0.3; }
+            50% { transform: translateY(5px); opacity: 0.7; }
+        }
+
+        /* === SECTION SHARED === */
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--stadium-amber);
+            text-align: center;
+            margin-bottom: 8px;
+            opacity: 0.6;
+        }
+        .section-title {
+            font-family: var(--font-score);
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 800;
+            text-align: center;
+            color: var(--chalk-white);
+            margin-bottom: 60px;
+            letter-spacing: 3px;
+        }
+
+        /* === SCOREBOARD === */
+        .scoreboard-section {
+            position: relative; z-index: 1;
+            padding: 120px 20px;
+            background: linear-gradient(180deg, var(--night-sky) 0%, var(--scoreboard-dark) 30%, var(--scoreboard-dark) 70%, var(--night-sky) 100%);
+        }
+
+        .scoreboard {
+            max-width: 900px; margin: 0 auto;
+            background: linear-gradient(135deg, #0d1117, #161b22);
+            border: 1px solid rgba(245, 166, 35, 0.15);
+            padding: 40px; position: relative; overflow: hidden;
+        }
+        .scoreboard::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--stadium-amber), transparent);
+        }
+
+        .scoreboard-row {
+            display: grid; grid-template-columns: 120px 1fr;
+            gap: 20px; align-items: start;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(245, 166, 35, 0.06);
+        }
+        .scoreboard-row:last-child { border-bottom: none; }
+        .scoreboard-key { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--stadium-amber); }
+        .scoreboard-val { font-size: 1rem; line-height: 1.8; color: var(--plate-silver); }
+        .scoreboard-val strong { color: var(--chalk-white); font-weight: 700; }
+
+        /* === TRIPLE PLAY === */
+        .triple-section { position: relative; z-index: 1; padding: 120px 20px; background: var(--night-sky); }
+        .triple-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1100px; margin: 0 auto; }
+
+        .triple-card {
+            position: relative;
+            background: rgba(17, 20, 24, 0.9);
+            border: 1px solid rgba(245, 166, 35, 0.1);
+            padding: 40px 28px;
+            text-align: center;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            opacity: 0; transform: translateY(40px);
+        }
+        .triple-card::before {
+            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 0; height: 2px; background: var(--stadium-amber); transition: width 0.6s;
+        }
+        .triple-card:hover::before { width: 100%; }
+        .triple-card:hover { border-color: rgba(245, 166, 35, 0.25); transform: translateY(-6px); box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+
+        .triple-icon { font-size: 2.5rem; color: var(--stadium-amber); margin-bottom: 20px; transition: transform 0.3s; }
+        .triple-card:hover .triple-icon { transform: scale(1.15) rotate(-5deg); }
+        .triple-number { font-family: var(--font-score); font-size: 0.6rem; letter-spacing: 4px; color: rgba(245, 166, 35, 0.35); margin-bottom: 12px; }
+        .triple-name { font-family: var(--font-score); font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; color: var(--chalk-white); margin-bottom: 16px; }
+        .triple-desc { font-size: 0.9rem; line-height: 1.8; color: var(--plate-silver); }
+        .triple-tag { display: inline-block; margin-top: 16px; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 2px; padding: 4px 12px; border: 1px solid rgba(245, 166, 35, 0.15); color: var(--stadium-amber); }
+
+        /* === FIRMWARE TERMINAL (Interactive) === */
+        .terminal-section {
+            position: relative; z-index: 1;
+            padding: 120px 20px;
+            background: linear-gradient(180deg, var(--night-sky) 0%, #080c12 50%, var(--night-sky) 100%);
+        }
+
+        .terminal {
+            max-width: 700px; margin: 0 auto;
+            background: #0c0c0c;
+            border: 1px solid #333;
+            border-radius: 6px;
+            overflow: hidden;
+            font-family: var(--font-mono);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+        }
+        .terminal-bar {
+            background: #1a1a1a;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid #333;
+        }
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .terminal-dot.red { background: #ff5f57; }
+        .terminal-dot.yellow { background: #ffbd2e; }
+        .terminal-dot.green { background: #28c840; }
+        .terminal-title {
+            flex: 1; text-align: center;
+            font-size: 0.65rem; letter-spacing: 1px;
+            color: #888;
+        }
+        .terminal-body {
+            padding: 20px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            line-height: 1.8;
+            color: var(--terminal-green);
+        }
+        .terminal-body::-webkit-scrollbar { width: 4px; }
+        .terminal-body::-webkit-scrollbar-thumb { background: #333; }
+
+        .terminal-line { margin-bottom: 2px; }
+        .terminal-line .prompt { color: var(--stadium-amber); }
+        .terminal-line .cmd { color: var(--chalk-white); }
+        .terminal-line .output { color: var(--terminal-green); }
+        .terminal-line .comment { color: #666; }
+        .terminal-line .error { color: var(--led-red); }
+
+        .terminal-input-line {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 8px;
+        }
+        .terminal-input-line .prompt { color: var(--stadium-amber); white-space: nowrap; }
+        .terminal-input {
+            background: none; border: none; outline: none;
+            color: var(--chalk-white);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            flex: 1;
+            caret-color: var(--terminal-green);
+        }
+
+        .terminal-hint {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            color: var(--plate-silver);
+            text-align: center;
+            margin-top: 16px;
+            opacity: 0.5;
+        }
+
+        /* === INPUT→OUTPUT PIPELINE === */
+        .pipeline-section {
+            position: relative; z-index: 1;
+            padding: 120px 20px;
+            background: var(--night-sky);
+        }
+
+        .pipeline-motto { margin-top: 40px; text-align: center; opacity: 0; transition: opacity 1s; }
+        .pipeline-motto-text { font-family: var(--font-score); font-size: clamp(0.8rem, 2vw, 1rem); letter-spacing: 8px; color: var(--stadium-amber); }
+        .pipeline-desc { color: var(--plate-silver); max-width: 600px; margin: 0 auto 40px; font-size: 0.9rem; line-height: 1.6; text-align: center; }
+        .pipeline {
+            max-width: 800px; margin: 0 auto;
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            min-height: 340px;
+        }
+
+        .pipeline-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .pipeline-col-label {
+            font-family: var(--font-score);
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            color: var(--stadium-amber);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .pipeline-arrow {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 0 24px; position: relative;
+        }
+        .pipeline-arrow-line {
+            width: 60px; height: 2px;
+            background: linear-gradient(90deg, rgba(245,166,35,0.1), var(--stadium-amber), rgba(245,166,35,0.1));
+            position: relative;
+        }
+        .pipeline-arrow-line::after {
+            content: ''; position: absolute;
+            right: -4px; top: -4px;
+            border: 5px solid transparent;
+            border-left: 8px solid var(--stadium-amber);
+        }
+        .pipeline-arrow-text {
+            font-family: var(--font-mono);
+            font-size: 0.55rem; letter-spacing: 2px;
+            color: var(--stadium-amber);
+            margin-top: 8px;
+            opacity: 0.5;
+        }
+
+        .input-chip {
+            padding: 12px 16px;
+            border: 1px solid rgba(100, 138, 255, 0.2);
+            background: rgba(68, 138, 255, 0.05);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: #88aaff;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .input-chip::before {
+            content: ''; position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(68,138,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+        .input-chip:hover::before { left: 100%; }
+        .input-chip:hover { border-color: rgba(100, 138, 255, 0.5); background: rgba(68,138,255,0.1); }
+        .input-chip.consumed {
+            border-color: rgba(245, 166, 35, 0.3);
+            background: rgba(245, 166, 35, 0.05);
+            color: var(--stadium-amber);
+        }
+        .input-chip i { margin-right: 6px; }
+
+        .output-chip {
+            padding: 12px 16px;
+            border: 1px solid rgba(245, 166, 35, 0.1);
+            background: rgba(245, 166, 35, 0.02);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: rgba(245, 166, 35, 0.3);
+            position: relative;
+            transition: all 0.5s;
+        }
+        .output-chip.revealed {
+            border-color: rgba(245, 166, 35, 0.4);
+            background: rgba(245, 166, 35, 0.06);
+            color: var(--stadium-amber);
+            box-shadow: 0 0 20px rgba(245, 166, 35, 0.08);
+        }
+        .output-chip i { margin-right: 6px; }
+
+        .pipeline-counter {
+            text-align: center;
+            margin-top: 20px;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            color: var(--plate-silver);
+        }
+        .pipeline-counter .count { color: var(--stadium-amber); font-weight: 700; }
+
+        /* === BASEBALL CARDS GALLERY === */
+        .cards-section {
+            position: relative; z-index: 1;
+            padding: 120px 20px;
+            background: linear-gradient(180deg, var(--night-sky) 0%, var(--scoreboard-dark) 50%, var(--night-sky) 100%);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .baseball-card {
+            perspective: 1000px;
+            cursor: pointer;
+            height: 320px;
+        }
+        .baseball-card-inner {
+            position: relative;
+            width: 100%; height: 100%;
+            transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-style: preserve-3d;
+        }
+        .baseball-card.flipped .baseball-card-inner { transform: rotateY(180deg); }
+
+        .card-front, .card-back {
+            position: absolute; inset: 0;
+            backface-visibility: hidden;
+            border: 1px solid rgba(245, 166, 35, 0.15);
+            overflow: hidden;
+        }
+        .card-front img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: contrast(1.1);
+            transition: filter 0.3s;
+        }
+        .baseball-card:hover .card-front img { filter: contrast(1.05) brightness(1.1); }
+        .card-front-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(180deg, transparent 40%, rgba(10,12,16,0.9) 100%);
+        }
+        .card-front-label {
+            position: absolute; bottom: 12px; left: 12px; right: 12px;
+            font-family: var(--font-mono);
+            font-size: 0.6rem; letter-spacing: 1px;
+            color: var(--plate-silver);
+        }
+        .card-flip-hint {
+            position: absolute; top: 12px; right: 12px;
+            font-family: var(--font-mono);
+            font-size: 0.5rem; letter-spacing: 1px;
+            color: var(--stadium-amber);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .baseball-card:hover .card-flip-hint { opacity: 1; }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .card-back-title {
+            font-family: var(--font-score);
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: var(--stadium-amber);
+            margin-bottom: 16px;
+        }
+        .card-back-text {
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: var(--plate-silver);
+        }
+        .card-back-tag {
+            margin-top: auto;
+            padding-top: 16px;
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            letter-spacing: 2px;
+            color: rgba(245, 166, 35, 0.4);
+        }
+
+        /* === TIMELINE === */
+        .timeline-section {
+            position: relative; z-index: 1;
+            padding: 120px 20px;
+            background: linear-gradient(180deg, var(--night-sky) 0%, var(--scoreboard-dark) 50%, var(--night-sky) 100%);
+        }
+        .timeline { max-width: 600px; margin: 0 auto; position: relative; padding-left: 40px; }
+        .timeline::before {
+            content: ''; position: absolute;
+            left: 8px; top: 0; bottom: 0; width: 1px;
+            background: linear-gradient(180deg, transparent, var(--stadium-amber), transparent);
+        }
+        .timeline-item {
+            position: relative; padding: 0 0 48px;
+            opacity: 0; transform: translateX(20px);
+        }
+        .timeline-item::before {
+            content: ''; position: absolute;
+            left: -36px; top: 6px; width: 10px; height: 10px;
+            border-radius: 50%;
+            background: rgba(245, 166, 35, 0.3);
+            border: 2px solid var(--stadium-amber);
+            transition: all 0.3s;
+        }
+        .timeline-item:hover::before { background: var(--stadium-amber); box-shadow: 0 0 15px rgba(245, 166, 35, 0.5); transform: scale(1.3); }
+        .timeline-year { font-family: var(--font-score); font-size: 0.75rem; font-weight: 700; color: var(--stadium-amber); letter-spacing: 2px; margin-bottom: 6px; }
+        .timeline-text { font-size: 0.95rem; line-height: 1.7; color: var(--plate-silver); }
+
+        /* === FOOTER === */
+        .footer-section {
+            position: relative; z-index: 1;
+            padding: 100px 20px 60px;
+            background: var(--night-sky);
+            text-align: center;
+        }
+        .footer-cta { font-family: var(--font-score); font-size: clamp(1.2rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: 3px; color: var(--chalk-white); margin-bottom: 12px; }
+        .footer-sub { font-size: 0.95rem; color: var(--plate-silver); margin-bottom: 40px; line-height: 1.6; }
+        .social-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 60px; flex-wrap: wrap; }
+        .social-link {
+            display: flex; align-items: center; gap: 8px;
+            padding: 14px 28px;
+            border: 1px solid rgba(245, 166, 35, 0.2);
+            color: var(--plate-silver);
+            text-decoration: none;
+            font-family: var(--font-mono);
+            font-size: 0.7rem; letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: all 0.4s;
+        }
+        .social-link:hover {
+            border-color: var(--stadium-amber);
+            color: var(--stadium-amber);
+            box-shadow: 0 0 30px rgba(245, 166, 35, 0.1);
+            transform: translateY(-3px);
+        }
+        .social-link i { font-size: 1.1rem; }
+        .footer-badge { font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 3px; color: rgba(200, 205, 211, 0.2); text-transform: uppercase; }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .triple-grid { grid-template-columns: 1fr; }
+            .scoreboard-row { grid-template-columns: 1fr; gap: 8px; }
+            .scoreboard { padding: 24px 20px; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .inning-tracker { display: none; }
+            .pipeline { flex-direction: column; }
+            .pipeline-arrow { flex-direction: row; padding: 16px 0; }
+            .pipeline-arrow-line { width: 2px; height: 40px; }
+            .pipeline-arrow-line::after { right: auto; bottom: -4px; top: auto; left: -4px; border: 5px solid transparent; border-top: 8px solid var(--stadium-amber); border-left: 5px solid transparent; }
+        }
+        @media (max-width: 480px) {
+            .hero-name { letter-spacing: 2px; }
+            .hero-stat-value { font-size: 1.5rem; }
+            .hero-stats { gap: 24px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <a href="/guild/" class="back-nav"><i class="fas fa-arrow-left"></i> GUILD</a>
+
+    <canvas id="field-canvas"></canvas>
+
+    <!-- Inning Tracker -->
+    <nav class="inning-tracker" id="inningTracker">
+        <div class="inning-dot" data-section="hero"><span class="inning-label">WARMUP</span></div>
+        <div class="inning-dot" data-section="scoreboard"><span class="inning-label">1ST</span></div>
+        <div class="inning-dot" data-section="triple"><span class="inning-label">2ND</span></div>
+        <div class="inning-dot" data-section="terminal"><span class="inning-label">3RD</span></div>
+        <div class="inning-dot" data-section="pipeline"><span class="inning-label">4TH</span></div>
+        <div class="inning-dot" data-section="cards"><span class="inning-label">5TH</span></div>
+        <div class="inning-dot" data-section="timeline"><span class="inning-label">6TH</span></div>
+        <div class="inning-dot" data-section="footer"><span class="inning-label">7TH</span></div>
+        <span class="inning-number">INNING</span>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="hero" id="sec-hero">
+        <div class="hero-diamond" id="heroDiamond">
+            <svg class="hero-diamond-svg" viewBox="0 0 400 400">
+                <line x1="200" y1="0" x2="400" y2="200"/><line x1="400" y1="200" x2="200" y2="400"/>
+                <line x1="200" y1="400" x2="0" y2="200"/><line x1="0" y1="200" x2="200" y2="0"/>
+                <line x1="200" y1="40" x2="360" y2="200"/><line x1="360" y1="200" x2="200" y2="360"/>
+                <line x1="200" y1="360" x2="40" y2="200"/><line x1="40" y1="200" x2="200" y2="40"/>
+            </svg>
+        </div>
+        <div class="hero-content">
+            <img src="/assets/img/guild/resorce9999/avatar.webp" alt="Jerry Chen" class="hero-avatar" id="heroAvatar">
+            <div class="hero-label" id="heroLabel">FIRMWARE ARCHITECT / CAREER GUIDE / BASEBALL NOMAD</div>
+            <h1 class="hero-name" id="heroName">JERRY CHEN</h1>
+            <p class="hero-subtitle" id="heroSub">The Diamond Architect</p>
+            <div class="hero-stats" id="heroStats">
+                <div class="hero-stat"><div class="hero-stat-value" id="statGames">0</div><div class="hero-stat-label">Games Watched</div></div>
+                <div class="hero-stat"><div class="hero-stat-value" id="statPosts">0</div><div class="hero-stat-label">Daily Posts</div></div>
+                <div class="hero-stat"><div class="hero-stat-value">INTJ</div><div class="hero-stat-label">Archetype</div></div>
+            </div>
+        </div>
+        <div class="scroll-cue" id="scrollCue">
+            <span>SCROLL TO PLAY BALL</span>
+            <span class="chevrons"><i class="fas fa-chevron-down"></i><i class="fas fa-chevron-down chevron-dim"></i></span>
+        </div>
+    </section>
+
+    <div class="chalk-line"></div>
+
+    <!-- ==================== SCOREBOARD ==================== -->
+    <section class="scoreboard-section" id="sec-scoreboard">
+        <div class="section-label">// 1ST INNING</div>
+        <h2 class="section-title">SCOUTING REPORT</h2>
+        <div class="scoreboard" id="scoreboard">
+            <div class="scoreboard-row"><div class="scoreboard-key">Identity</div><div class="scoreboard-val">我是 <strong>Jerry 위유</strong>，一個人生狀態長期處於<strong>上班模式 x 球迷模式 x 思考模式</strong>三線並行的韌體架構師。朋友都知道我不是在看球，就是在看球的路上。偶爾會迷路去當一日店長的球迷 -- 然後意外收到球員的生日祝福。</div></div>
+            <div class="scoreboard-row"><div class="scoreboard-key">Day Job</div><div class="scoreboard-val">白天在科技業當<strong>韌體架構師</strong>，設計系統底層的邏輯和架構。你手上的裝置能正常運作？有一部分功勞可能是像我這樣的人在底層默默除錯。跟棒球一樣，最精彩的東西往往在表面之下。</div></div>
+            <div class="scoreboard-row"><div class="scoreboard-key">Mission</div><div class="scoreboard-val">身為 <strong>104 Giver 職涯引導師</strong>，我相信每個人的職涯都像一場漫長的球季。有高潮有低谷，重要的是你怎麼調整自己的揮棒策略。我不會直接告訴你答案 -- 好的教練從來不會這樣做。</div></div>
+            <div class="scoreboard-row"><div class="scoreboard-key">Confession</div><div class="scoreboard-val">老實說，我的<strong>人生技能樹持續亂點中</strong>。但我開始覺得，也許「亂」本身就是一種策略 -- 棒球、韌體、投資、AI，這些看似毫不相關的東西，其實都在訓練同一種能力：在混沌中看見結構。</div></div>
+        </div>
+    </section>
+
+    <div class="chalk-line"></div>
+
+    <!-- ==================== TRIPLE PLAY ==================== -->
+    <section class="triple-section" id="sec-triple">
+        <div class="section-label">// 2ND INNING</div>
+        <h2 class="section-title">THREE LINES PARALLEL</h2>
+        <div class="triple-grid">
+            <div class="triple-card"><div class="triple-icon"><i class="fas fa-baseball"></i></div><div class="triple-number">MODE 01</div><div class="triple-name">BALLPARK</div><div class="triple-desc">WBC 世界棒球經典賽的死忠觀眾，從台灣隊到韓國職棒都有涉獵。比起單純追星，更喜歡觀察比賽背後的決策邏輯。每一場比賽都是一堂管理學。</div><span class="triple-tag">BASEBALL NOMAD</span></div>
+            <div class="triple-card"><div class="triple-icon"><i class="fas fa-microchip"></i></div><div class="triple-number">MODE 02</div><div class="triple-name">FIRMWARE</div><div class="triple-desc">在科技業的深水區工作，擅長把複雜的系統拆解成可執行的架構。韌體就像棒球的暗號系統 -- 外人看不見，但它決定了比賽的走向。</div><span class="triple-tag">SYSTEM ARCHITECT</span></div>
+            <div class="triple-card"><div class="triple-icon"><i class="fas fa-compass"></i></div><div class="triple-number">MODE 03</div><div class="triple-name">GUIDANCE</div><div class="triple-desc">透過 104 Giver 平台擔任職涯引導師，幫助迷惘的人找到方向。就像好的教練不是告訴你怎麼打，而是幫你看見自己原本就有的揮棒姿勢。</div><span class="triple-tag">CAREER NAVIGATOR</span></div>
+        </div>
+    </section>
+
+    <div class="chalk-line"></div>
+
+    <!-- ==================== FIRMWARE TERMINAL ==================== -->
+    <section class="terminal-section" id="sec-terminal">
+        <div class="section-label">// 3RD INNING</div>
+        <h2 class="section-title">FIRMWARE CONSOLE</h2>
+        <div class="terminal" id="terminal">
+            <div class="terminal-bar">
+                <div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div>
+                <div class="terminal-title">jerry@firmware ~ $</div>
+            </div>
+            <div class="terminal-body" id="terminalBody">
+                <div class="terminal-line"><span class="comment"># Welcome to Jerry's firmware console.</span></div>
+                <div class="terminal-line"><span class="comment"># Type 'help' to see available commands.</span></div>
+                <div class="terminal-line"><span class="comment"># Try: whoami, skills, baseball, motto, contact</span></div>
+                <div class="terminal-input-line">
+                    <span class="prompt">jerry@firmware:~$</span>
+                    <input type="text" class="terminal-input" id="terminalInput" autocomplete="off" spellcheck="false" placeholder="type a command...">
+                </div>
+            </div>
+        </div>
+        <div class="terminal-hint">TRY: help / whoami / skills / baseball / motto / stack / contact</div>
+    </section>
+
+    <div class="chalk-line"></div>
+
+    <!-- ==================== INPUT→OUTPUT PIPELINE ==================== -->
+    <section class="pipeline-section" id="sec-pipeline">
+        <div class="section-label">// 4TH INNING</div>
+        <h2 class="section-title">THE CRESCENDO PIPELINE</h2>
+        <p class="pipeline-desc">
+            點擊左邊的輸入，看它如何被轉化為右邊的輸出。<br>這就是我每天在做的事。
+        </p>
+        <div class="pipeline">
+            <div class="pipeline-col" id="inputCol">
+                <div class="pipeline-col-label">INPUT</div>
+                <div class="input-chip" data-pair="0"><i class="fas fa-baseball"></i> WBC 經典賽轉播</div>
+                <div class="input-chip" data-pair="1"><i class="fas fa-microchip"></i> RTOS 技術文件</div>
+                <div class="input-chip" data-pair="2"><i class="fas fa-chart-line"></i> 產業趨勢報告</div>
+                <div class="input-chip" data-pair="3"><i class="fas fa-user-tie"></i> 職涯諮詢對話</div>
+                <div class="input-chip" data-pair="4"><i class="fas fa-robot"></i> AI 科技新知</div>
+            </div>
+            <div class="pipeline-arrow">
+                <div class="pipeline-arrow-line"></div>
+                <div class="pipeline-arrow-text">PROCESS</div>
+            </div>
+            <div class="pipeline-col" id="outputCol">
+                <div class="pipeline-col-label">OUTPUT</div>
+                <div class="output-chip" data-pair="0"><i class="fas fa-pen-nib"></i> 比賽決策分析文</div>
+                <div class="output-chip" data-pair="1"><i class="fas fa-diagram-project"></i> 架構設計方法論</div>
+                <div class="output-chip" data-pair="2"><i class="fas fa-lightbulb"></i> 投資觀點筆記</div>
+                <div class="output-chip" data-pair="3"><i class="fas fa-route"></i> 職涯路徑指引</div>
+                <div class="output-chip" data-pair="4"><i class="fas fa-bolt"></i> 科技應用洞察</div>
+            </div>
+        </div>
+        <div class="pipeline-counter">TRANSFORMED: <span class="count" id="pipelineCount">0</span> / 5</div>
+        <div class="pipeline-motto" id="pipelineMotto">
+            <div class="pipeline-motto-text">LIVE LIFE IN CRESCENDO</div>
+        </div>
+    </section>
+
+    <div class="chalk-line"></div>
+
+    <!-- ==================== BASEBALL CARDS GALLERY ==================== -->
+    <section class="cards-section" id="sec-cards">
+        <div class="section-label">// 5TH INNING</div>
+        <h2 class="section-title">COLLECTOR'S CARDS</h2>
+        <div class="cards-grid">
+            <div class="baseball-card" onclick="this.classList.toggle('flipped')">
+                <div class="baseball-card-inner">
+                    <div class="card-front">
+                        <img src="/assets/img/guild/resorce9999/wbc_champ.webp" alt="WBC 2026" loading="lazy">
+                        <div class="card-front-overlay"></div>
+                        <div class="card-front-label">WBC 2026 CHAMPIONSHIP</div>
+                        <div class="card-flip-hint">CLICK TO FLIP</div>
+                    </div>
+                    <div class="card-back">
+                        <div class="card-back-title">WBC 2026 FINAL</div>
+                        <div class="card-back-text">2026 經典賽冠軍戰，委內瑞拉完美封王。最後一球，調整步調，完美出手，收工。身為觀眾，見證了棒球最純粹的美。四年後再見。</div>
+                        <div class="card-back-tag">SERIES // BALLPARK MOMENTS</div>
+                    </div>
+                </div>
+            </div>
+            <div class="baseball-card" onclick="this.classList.toggle('flipped')">
+                <div class="baseball-card-inner">
+                    <div class="card-front">
+                        <img src="/assets/img/guild/resorce9999/signed_plate1.webp" alt="Yeom Se-bin Autograph" loading="lazy">
+                        <div class="card-front-overlay"></div>
+                        <div class="card-front-label">SIGNED BY YEOM SE-BIN</div>
+                        <div class="card-flip-hint">CLICK TO FLIP</div>
+                    </div>
+                    <div class="card-back">
+                        <div class="card-back-title">BIRTHDAY TREASURE</div>
+                        <div class="card-back-text">生日當天收到的廉世彬親筆簽名盤。在一日店長活動中被記住名字、收到生日祝福 -- 比起單純追星，球迷和球員之間的溫暖連結才是棒球最動人的部分。一輩子的寶物。</div>
+                        <div class="card-back-tag">SERIES // FAN COLLECTION</div>
+                    </div>
+                </div>
+            </div>
+            <div class="baseball-card" onclick="this.classList.toggle('flipped')">
+                <div class="baseball-card-inner">
+                    <div class="card-front">
+                        <img src="/assets/img/guild/resorce9999/espresso_wbc.webp" alt="Italy Espresso" loading="lazy">
+                        <div class="card-front-overlay"></div>
+                        <div class="card-front-label">ITALY'S HOLY WATER</div>
+                        <div class="card-flip-hint">CLICK TO FLIP</div>
+                    </div>
+                    <div class="card-back">
+                        <div class="card-back-title">ESPRESSO AT WBC</div>
+                        <div class="card-back-text">義大利休息區的聖水 -- Espresso 機。觀察比賽不只看場上，休息區的文化差異也是一場精彩的比賽。義大利隊把這台機器拿出來拍賣了！</div>
+                        <div class="card-back-tag">SERIES // OBSERVER'S EYE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TIMELINE ==================== -->
+    <section class="timeline-section" id="sec-timeline">
+        <div class="section-label">// 6TH INNING</div>
+        <h2 class="section-title">SEASON MILESTONES</h2>
+        <div class="timeline">
+            <div class="timeline-item"><div class="timeline-year">EARLY INNINGS</div><div class="timeline-text">踏入科技業，開始韌體工程師的修煉之路。在看不見的底層世界裡，學會了系統性思考。</div></div>
+            <div class="timeline-item"><div class="timeline-year">MID GAME</div><div class="timeline-text">晉升為韌體架構師，負責系統級的設計與決策。同時開始深入棒球的世界，從一個球迷變成一個觀察者。</div></div>
+            <div class="timeline-item"><div class="timeline-year">STRETCH RUN</div><div class="timeline-text">加入 104 Giver 職涯引導師計畫，開始把自己的經歷轉化為能幫助別人的指引。在球場和職場之間找到了共通的管理哲學。</div></div>
+            <div class="timeline-item"><div class="timeline-year">2026 SEASON</div><div class="timeline-text">正式啟動日更挑戰與輸出練習。關注三大主線：棒球、投資、AI 科技新知。目標是建構一個從輸入到輸出的完整系統。</div></div>
+            <div class="timeline-item"><div class="timeline-year">NEXT INNING</div><div class="timeline-text">持續把混亂的輸入整理成有價值的輸出系統，把經驗轉化成能幫助別人的工具與路徑。球季還很長，比賽繼續。</div></div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <section class="footer-section" id="sec-footer">
+        <div class="section-label">// 7TH INNING</div>
+        <div class="footer-cta">PLAY BALL WITH ME</div>
+        <div class="footer-sub">不論你是想聊棒球、聊職涯、聊韌體架構，<br>還是單純想找個人一起看球 -- 歡迎隨時找我。</div>
+        <div class="social-links">
+            <a href="https://www.threads.com/@resorce9999" target="_blank" rel="noopener" class="social-link"><i class="fab fa-threads"></i> Threads</a>
+            <a href="https://www.instagram.com/resorce9999/" target="_blank" rel="noopener" class="social-link"><i class="fab fa-instagram"></i> Instagram</a>
+        </div>
+        <div class="footer-badge">SUPER GALEN GUILD // MEMBER #124 // THE DIAMOND ARCHITECT</div>
+    </section>
+
+    <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    /* === INNING TRACKER === */
+    const sections = ['hero','scoreboard','triple','terminal','pipeline','cards','timeline','footer'];
+    const dots = document.querySelectorAll('.inning-dot');
+    sections.forEach((id, i) => {
+        const el = document.getElementById('sec-' + id);
+        if (!el) return;
+        ScrollTrigger.create({
+            trigger: el, start: 'top center', end: 'bottom center',
+            onEnter: () => { dots.forEach(d => d.classList.remove('active')); dots[i].classList.add('active'); },
+            onEnterBack: () => { dots.forEach(d => d.classList.remove('active')); dots[i].classList.add('active'); },
+        });
+        dots[i].addEventListener('click', () => el.scrollIntoView({ behavior: 'smooth' }));
+    });
+
+    /* === HERO === */
+    const heroTl = gsap.timeline({ delay: 0.3 });
+    heroTl
+        .to('#heroDiamond', { opacity: 1, duration: 1.5, ease: 'power2.out' })
+        .to('#heroAvatar', { opacity: 1, duration: 0.8, ease: 'back.out(1.7)' }, '-=0.8')
+        .to('#heroLabel', { opacity: 0.7, duration: 0.6 }, '-=0.4')
+        .to('#heroName', { opacity: 1, duration: 0.6 }, '-=0.3')
+        .to('#heroSub', { opacity: 1, duration: 0.5 }, '-=0.2')
+        .to('#heroStats', { opacity: 1, duration: 0.6 }, '-=0.2')
+        .to('#scrollCue', { opacity: 1, duration: 0.5 }, '-=0.1');
+
+    function animateNum(el, target, dur) {
+        let s = 0; const step = target / (dur / 16);
+        const t = setInterval(() => { s += step; if (s >= target) { el.textContent = target + '+'; clearInterval(t); } else { el.textContent = Math.floor(s); } }, 16);
+    }
+    setTimeout(() => {
+        animateNum(document.getElementById('statGames'), 500, 2000);
+        animateNum(document.getElementById('statPosts'), 365, 1500);
+    }, 1200);
+
+    /* === SCROLL PROGRESS === */
+    window.addEventListener('scroll', () => {
+        const p = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+        document.getElementById('scrollProgress').style.width = p + '%';
+    });
+
+    /* === GSAP ANIMATIONS === */
+    gsap.from('#scoreboard', { scrollTrigger: { trigger: '#scoreboard', start: 'top 80%' }, opacity: 0, y: 40, duration: 1 });
+    document.querySelectorAll('.triple-card').forEach((c, i) => gsap.to(c, { scrollTrigger: { trigger: c, start: 'top 85%' }, opacity: 1, y: 0, duration: 0.8, delay: i * 0.15 }));
+    document.querySelectorAll('.timeline-item').forEach((c, i) => gsap.to(c, { scrollTrigger: { trigger: c, start: 'top 85%' }, opacity: 1, x: 0, duration: 0.7, delay: i * 0.1 }));
+
+    /* === FIELD <-> PAGE CONNECTIONS === */
+
+    // Triple Play cards: hover lights up corresponding base (1st, 2nd, 3rd)
+    document.querySelectorAll('.triple-card').forEach((card, i) => {
+        card.addEventListener('mouseenter', () => {
+            if (window.fieldScene) window.fieldScene.highlightBase(i + 1); // 1=first, 2=second, 3=third
+        });
+    });
+
+    // Baseball cards: flip triggers base highlight + light flash
+    document.querySelectorAll('.baseball-card').forEach((card, i) => {
+        card.addEventListener('click', () => {
+            if (window.fieldScene) {
+                window.fieldScene.highlightBase(i % 4);
+                window.fieldScene.flashLights();
+            }
+        });
+    });
+
+    // Avatar easter egg -- click to cycle messages
+    (function initAvatarEgg() {
+        const avatar = document.getElementById('heroAvatar');
+        const messages = [
+            'Not watching a game? Must be on the way to one.',
+            'INTJ who accidentally became a baseball nomad.',
+            'Currently debugging: life.c (line 9999)',
+            'Firmware by day, ballpark by night.',
+            'Input -> Process -> Output. That\'s the whole game.',
+        ];
+        let clickCount = 0;
+        avatar.style.cursor = 'pointer';
+        avatar.addEventListener('click', () => {
+            clickCount++;
+            const msg = messages[(clickCount - 1) % messages.length];
+            // Create floating message
+            const toast = document.createElement('div');
+            toast.textContent = msg;
+            toast.style.cssText = `
+                position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+                font-family:var(--font-mono); font-size:0.75rem; letter-spacing:1px;
+                color:var(--stadium-amber); background:rgba(10,12,16,0.9);
+                padding:16px 28px; border:1px solid rgba(245,166,35,0.3);
+                z-index:10000; pointer-events:none; white-space:nowrap;
+                max-width:90vw; text-align:center;
+            `;
+            document.body.appendChild(toast);
+            gsap.fromTo(toast, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3 });
+            gsap.to(toast, { opacity: 0, y: -20, duration: 0.5, delay: 2, onComplete: () => toast.remove() });
+
+            // Pulse the avatar
+            gsap.fromTo(avatar, { boxShadow: '0 0 60px rgba(245,166,35,0.6)' },
+                { boxShadow: '0 0 60px rgba(245,166,35,0.25)', duration: 0.8 });
+        });
+    })();
+
+    // Chalk lines fade in on scroll
+    document.querySelectorAll('.chalk-line').forEach(line => {
+        gsap.fromTo(line, { width: 0 }, {
+            width: '300px',
+            scrollTrigger: { trigger: line, start: 'top 90%' },
+            duration: 1, ease: 'power2.out'
+        });
+    });
+
+    /* === FIRMWARE TERMINAL === */
+    (function initTerminal() {
+        const input = document.getElementById('terminalInput');
+        const body = document.getElementById('terminalBody');
+        const commands = {
+            help: 'Available commands: whoami, skills, baseball, motto, stack, contact, clear, fortune\n\n...and maybe a few hidden ones, if you know where to look.',
+            whoami: 'Jerry Chen | Firmware Architect | 104 Giver Career Guide | INTJ\nA triple-threat running three parallel threads:\n  > Work Mode: firmware architecture @ tech industry\n  > Fan Mode: WBC / CPBL / MLB / KBO observer\n  > Think Mode: turning input into output, daily',
+            skills: 'SKILL TREE (randomly allocated):\n  [####------] Firmware Architecture\n  [########--] Baseball Analysis\n  [######----] Career Coaching\n  [###-------] Content Creation\n  [#####-----] Investment Research\n  [########--] System Design\n  [##########] Watching Games',
+            baseball: 'BASEBALL STATS:\n  Favorite: WBC, Team Taiwan, KBO\n  Treasured: Yeom Se-bin signed plate\n  Philosophy: Every game is a management class\n  Status: Not watching a game? On the way to one.',
+            motto: '"Live life in Crescendo."\n\nGrowth is not explosive change.\nIt is structural evolution,\none small increment at a time.',
+            stack: 'FIRMWARE STACK:\n  > Languages: C, C++, Python, Assembly\n  > RTOS: FreeRTOS, Zephyr\n  > Protocols: SPI, I2C, UART, USB\n  > Tools: JTAG, Logic Analyzer, Oscilloscope\n  > Philosophy: If it compiles, ship it (jk)',
+            contact: 'CONNECT:\n  > Threads: @resorce9999\n  > Instagram: @resorce9999\n  > Role: 104 Giver Career Guide\n\n  Ready to talk? Bring snacks to the ballpark.',
+            fortune: () => {
+                const fortunes = [
+                    '"The best pitch is the one the batter doesn\'t expect."',
+                    '"Debug your career like you debug code: one breakpoint at a time."',
+                    '"Every strikeout brings you closer to a home run."',
+                    '"The firmware of life runs silently, but it runs everything."',
+                    '"Input without output is just hoarding. Start publishing."',
+                ];
+                return fortunes[Math.floor(Math.random() * fortunes.length)];
+            },
+            clear: 'CLEAR',
+            secret: '>>> HIDDEN ACHIEVEMENT UNLOCKED <<<\n\nYou found the secret command!\nJerry\'s guilty pleasure: watching WBC replays at 2AM\nwhile debugging firmware race conditions.\n\nSometimes the best solutions come\nbetween the 7th and 8th inning.',
+            '42': 'The answer to life, the universe, and everything.\nAlso the number of Jackie Robinson.\nCoincidence? I think not.',
+            debug: 'ENTERING DEBUG MODE...\n> Checking career_path.c ... OK\n> Checking baseball_obsession.h ... WARNING: overflow detected\n> Checking sleep_schedule.c ... CRITICAL: null pointer\n> Checking motivation.c ... OK (running in Crescendo mode)\n\nDiagnosis: Healthy system. Baseball buffer slightly overflowing.\nRecommendation: Watch one more game. It\'s fine.',
+        };
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const cmd = input.value.trim().toLowerCase();
+            input.value = '';
+            if (!cmd) return;
+
+            // Remove the input line temporarily
+            const inputLine = body.querySelector('.terminal-input-line');
+            inputLine.remove();
+
+            // Show command
+            addLine(`<span class="prompt">jerry@firmware:~$</span> <span class="cmd">${cmd}</span>`);
+
+            // Flash stadium lights on every command
+            if (window.fieldScene) window.fieldScene.flashLights();
+
+            if (cmd === 'clear') {
+                body.innerHTML = '';
+            } else if (commands[cmd]) {
+                const result = typeof commands[cmd] === 'function' ? commands[cmd]() : commands[cmd];
+                result.split('\n').forEach(line => addLine(`<span class="output">${line}</span>`));
+                // Special field reactions for specific commands
+                if (window.fieldScene) {
+                    if (cmd === 'baseball') window.fieldScene.fieldPulse();
+                    if (cmd === 'skills') { window.fieldScene.highlightBase(1); setTimeout(() => window.fieldScene.highlightBase(2), 300); setTimeout(() => window.fieldScene.highlightBase(3), 600); }
+                    if (cmd === 'secret' || cmd === 'debug') window.fieldScene.fireBall();
+                }
+            } else {
+                addLine(`<span class="error">command not found: ${cmd}</span>`);
+                addLine(`<span class="comment">try 'help' for available commands</span>`);
+            }
+
+            // Re-add input line
+            body.appendChild(inputLine);
+            input.focus();
+            body.scrollTop = body.scrollHeight;
+        });
+
+        function addLine(html) {
+            const div = document.createElement('div');
+            div.className = 'terminal-line';
+            div.innerHTML = html;
+            body.appendChild(div);
+        }
+    })();
+
+    /* === INPUT→OUTPUT PIPELINE === */
+    (function initPipeline() {
+        let count = 0;
+        document.querySelectorAll('.input-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                if (chip.classList.contains('consumed')) return;
+                chip.classList.add('consumed');
+                const pair = chip.dataset.pair;
+                const output = document.querySelector(`.output-chip[data-pair="${pair}"]`);
+
+                // Animate the transformation + fire a ball across the diamond
+                gsap.fromTo(chip, { scale: 1 }, { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1 });
+                if (window.fieldScene) window.fieldScene.fireBall();
+
+                setTimeout(() => {
+                    output.classList.add('revealed');
+                    gsap.fromTo(output, { x: -10, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: 'power2.out' });
+                    count++;
+                    document.getElementById('pipelineCount').textContent = count;
+                    // Light up the corresponding base when output is revealed
+                    if (window.fieldScene) window.fieldScene.highlightBase(parseInt(pair) % 4);
+                    // All 5 transformed? Full field celebration
+                    if (count === 5) {
+                        if (window.fieldScene) window.fieldScene.fieldPulse();
+                        document.getElementById('pipelineMotto').style.opacity = '1';
+                    }
+                }, 300);
+            });
+        });
+    })();
+
+    /* ============================================================
+       THREE.JS - Scroll-Driven Baseball Diamond Background
+       ============================================================ */
+    (function initFieldBackground() {
+        const canvas = document.getElementById('field-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
+        camera.position.set(0, 60, 40);
+        camera.lookAt(0, 0, 0);
+
+        // --- Materials ---
+        const chalkMat = new THREE.LineBasicMaterial({ color: 0xf0ede6, transparent: true, opacity: 0.25 });
+        const amberMat = new THREE.LineBasicMaterial({ color: 0xf5a623, transparent: true, opacity: 0.15 });
+        const baseMat = new THREE.MeshBasicMaterial({ color: 0xf0ede6, transparent: true, opacity: 0.1 });
+        const amberGlowMat = new THREE.MeshBasicMaterial({ color: 0xf5a623, transparent: true, opacity: 0.1 });
+        const fieldMat = new THREE.MeshBasicMaterial({ color: 0x1a3a1a, transparent: true, opacity: 0.04, side: THREE.DoubleSide });
+
+        // --- Diamond field surface ---
+        const fieldGeo = new THREE.PlaneGeometry(80, 80);
+        const fieldMesh = new THREE.Mesh(fieldGeo, fieldMat);
+        fieldMesh.rotation.x = -Math.PI / 2;
+        fieldMesh.position.y = -0.1;
+        scene.add(fieldMesh);
+
+        // --- Foul lines (two lines from home plate outward) ---
+        const foulLineLen = 50;
+        const createLine = (points) => {
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            return new THREE.Line(geo, chalkMat);
+        };
+        // Home plate at (0, 0, 0), 1st base direction, 3rd base direction
+        const foulLine1 = createLine([new THREE.Vector3(0, 0, 0), new THREE.Vector3(foulLineLen, 0, 0)]);
+        const foulLine2 = createLine([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -foulLineLen)]);
+        scene.add(foulLine1, foulLine2);
+
+        // --- Diamond basepaths ---
+        const D = 18; // base distance
+        const diamondPts = [
+            new THREE.Vector3(0, 0.05, 0),    // home
+            new THREE.Vector3(D, 0.05, 0),    // 1st
+            new THREE.Vector3(D, 0.05, -D),   // 2nd
+            new THREE.Vector3(0, 0.05, -D),   // 3rd
+            new THREE.Vector3(0, 0.05, 0),    // back to home
+        ];
+        const diamondGeo = new THREE.BufferGeometry().setFromPoints(diamondPts);
+        const diamondLine = new THREE.Line(diamondGeo, amberMat);
+        scene.add(diamondLine);
+
+        // --- Bases (small squares) ---
+        const baseSize = 0.8;
+        const baseGeo = new THREE.PlaneGeometry(baseSize, baseSize);
+        const bases = [];
+        const basePositions = [
+            [0, 0.1, 0],     // home
+            [D, 0.1, 0],     // 1st
+            [D, 0.1, -D],    // 2nd
+            [0, 0.1, -D],    // 3rd
+        ];
+        basePositions.forEach(pos => {
+            const mesh = new THREE.Mesh(baseGeo, baseMat.clone());
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.rotation.z = Math.PI / 4;
+            mesh.position.set(...pos);
+            scene.add(mesh);
+            bases.push(mesh);
+        });
+
+        // --- Pitcher's mound ---
+        const moundGeo = new THREE.CircleGeometry(1, 16);
+        const moundMesh = new THREE.Mesh(moundGeo, amberGlowMat);
+        moundMesh.rotation.x = -Math.PI / 2;
+        moundMesh.position.set(D/2, 0.05, -D/2);
+        scene.add(moundMesh);
+
+        // --- Infield arc ---
+        const arcCurve = new THREE.EllipseCurve(D/2, -D/2, 14, 14, -Math.PI * 0.15, Math.PI * 0.65, false);
+        const arcPts = arcCurve.getPoints(40).map(p => new THREE.Vector3(p.x, 0.05, p.y));
+        const arcGeo = new THREE.BufferGeometry().setFromPoints(arcPts);
+        const arcLine = new THREE.Line(arcGeo, chalkMat.clone());
+        scene.add(arcLine);
+
+        // --- Stadium light points (high above) ---
+        const lightPtGeo = new THREE.SphereGeometry(0.3, 8, 8);
+        const lightPtMat = new THREE.MeshBasicMaterial({ color: 0xf5a623, transparent: true, opacity: 0.15 });
+        const stadiumLights = [];
+        const lightPositions = [
+            [-25, 50, -25], [25, 50, -25], [25, 50, 15], [-25, 50, 15],
+            [0, 55, -35], [D, 55, 10],
+        ];
+        lightPositions.forEach(pos => {
+            const mesh = new THREE.Mesh(lightPtGeo, lightPtMat.clone());
+            mesh.position.set(...pos);
+            scene.add(mesh);
+            stadiumLights.push(mesh);
+        });
+
+        // --- Dust particles ---
+        const dustCount = 80;
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPos = new Float32Array(dustCount * 3);
+        for (let i = 0; i < dustCount; i++) {
+            dustPos[i * 3] = (Math.random() - 0.5) * 60 + D/2;
+            dustPos[i * 3 + 1] = Math.random() * 30;
+            dustPos[i * 3 + 2] = (Math.random() - 0.5) * 60 - D/2;
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+        const dustMat = new THREE.PointsMaterial({ color: 0xf5a623, size: 0.2, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false });
+        const dustPts = new THREE.Points(dustGeo, dustMat);
+        scene.add(dustPts);
+
+        // --- Center the diamond visually ---
+        const group = new THREE.Group();
+        // Move everything so diamond center is at origin
+        scene.children.forEach(child => {
+            if (child !== group) {
+                child.position.x -= D/2;
+                child.position.z += D/2;
+            }
+        });
+
+        // --- Scroll state ---
+        let scrollProgress = 0;
+        window.addEventListener('scroll', () => {
+            scrollProgress = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+        });
+
+        // --- Mouse parallax ---
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
+
+        // --- Interaction state (var to avoid TDZ with hoisted animate) ---
+        var baseHighlights = [0, 0, 0, 0];
+        var stadiumFlash = 0;
+        var moundFlash = 0;
+        var flyingBalls = [];
+        var ballGeo = new THREE.SphereGeometry(0.5, 12, 12);
+        var ballMatTemplate = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+
+        // --- Render loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const p = scrollProgress; // 0 to 1
+
+            // Camera orbit: starts high bird's eye, orbits around and zooms in
+            const angle = p * Math.PI * 1.2 - 0.3;
+            const radius = 60 - p * 25;
+            const height = 60 - p * 35;
+            camera.position.x = Math.sin(angle) * radius * 0.5 + mouseX * 3;
+            camera.position.z = Math.cos(angle) * radius * 0.5 + mouseY * 2;
+            camera.position.y = Math.max(15, height);
+            camera.lookAt(0, 0, 0);
+
+            // Field surface fades in
+            fieldMat.opacity = 0.03 + Math.min(0.1, p * 0.3);
+
+            // Diamond basepaths: visible from start, brighter with scroll
+            amberMat.opacity = 0.15 + Math.min(0.5, p * 1.0);
+
+            // Chalk lines brighten
+            chalkMat.opacity = 0.2 + p * 0.3;
+
+            // Bases light up progressively
+            bases.forEach((base, i) => {
+                const threshold = 0.05 + i * 0.18;
+                const baseOpacity = 0.1 + Math.max(0, Math.min(0.7, (p - threshold) * 3));
+                base.material.opacity = baseOpacity;
+                if (p > threshold) {
+                    base.material.color.setHex(0xf5a623);
+                } else {
+                    base.material.color.setHex(0xf0ede6);
+                }
+            });
+
+            // Pitcher's mound glows
+            amberGlowMat.opacity = 0.08 + Math.max(0, Math.min(0.5, (p - 0.2) * 2));
+
+            // Stadium lights turn on progressively
+            stadiumLights.forEach((light, i) => {
+                const threshold = 0.02 + i * 0.1;
+                light.material.opacity = 0.1 + Math.max(0, Math.min(0.8, (p - threshold) * 3));
+                // Subtle pulse
+                const pulse = 1 + Math.sin(Date.now() * 0.002 + i) * 0.15;
+                light.scale.setScalar(pulse);
+            });
+
+            // Dust particles
+            dustMat.opacity = 0.08 + Math.min(0.3, p * 0.6);
+            dustPts.rotation.y += 0.0003;
+            // Animate dust upward
+            const positions = dustGeo.attributes.position.array;
+            for (let i = 0; i < dustCount; i++) {
+                positions[i * 3 + 1] += 0.005;
+                if (positions[i * 3 + 1] > 30) positions[i * 3 + 1] = 0;
+            }
+            dustGeo.attributes.position.needsUpdate = true;
+
+            // Late game: diamond line color shifts to brighter
+            if (p > 0.7) {
+                const intensity = (p - 0.7) / 0.3;
+                amberMat.opacity = 0.35 + intensity * 0.2;
+            }
+
+            // --- Process interaction effects ---
+            // Base highlight decay
+            baseHighlights.forEach((h, i) => {
+                if (h > 0) {
+                    baseHighlights[i] = Math.max(0, h - 0.015);
+                    bases[i].material.emissive && bases[i].material.emissive.setHex(0xf5a623);
+                    bases[i].scale.setScalar(1 + baseHighlights[i] * 0.8);
+                } else {
+                    bases[i].scale.setScalar(1);
+                }
+            });
+
+            // Stadium flash decay
+            if (stadiumFlash > 0) {
+                stadiumFlash = Math.max(0, stadiumFlash - 0.01);
+                stadiumLights.forEach(light => {
+                    light.material.opacity = Math.min(1, light.material.opacity + stadiumFlash * 0.5);
+                    light.scale.setScalar(1 + stadiumFlash * 2);
+                });
+            }
+
+            // Mound flash
+            if (moundFlash > 0) {
+                moundFlash = Math.max(0, moundFlash - 0.02);
+                moundMesh.scale.setScalar(1 + moundFlash * 3);
+                amberGlowMat.opacity = Math.min(1, amberGlowMat.opacity + moundFlash * 0.5);
+            }
+
+            // Animate flying balls
+            flyingBalls = flyingBalls.filter(ball => {
+                ball.progress += 0.025;
+                if (ball.progress >= 1) {
+                    scene.remove(ball.mesh);
+                    return false;
+                }
+                const t = ball.progress;
+                // Parabolic arc from pitcher's mound to home plate
+                ball.mesh.position.x = ball.startX * (1 - t) + ball.endX * t;
+                ball.mesh.position.z = ball.startZ * (1 - t) + ball.endZ * t;
+                ball.mesh.position.y = 0.5 + Math.sin(t * Math.PI) * 8;
+                ball.mesh.material.opacity = t < 0.8 ? 0.9 : (1 - t) * 4.5;
+                // Trail glow
+                ball.mesh.scale.setScalar(1 - t * 0.5);
+                return true;
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // --- Expose API for page interactions ---
+        window.fieldScene = {
+            // Light up a specific base (0=home, 1=first, 2=second, 3=third)
+            highlightBase(index) {
+                if (index >= 0 && index < 4) {
+                    baseHighlights[index] = 1;
+                    bases[index].material.color.setHex(0xffd500);
+                }
+            },
+            // Flash all stadium lights
+            flashLights() {
+                stadiumFlash = 1;
+            },
+            // Fire a ball from pitcher's mound toward home plate
+            fireBall() {
+                const mesh = new THREE.Mesh(ballGeo, ballMatTemplate.clone());
+                // Pitcher's mound is at (0, 0.05, 0) after centering
+                mesh.position.set(0, 0.5, 0);
+                scene.add(mesh);
+                flyingBalls.push({
+                    mesh,
+                    progress: 0,
+                    startX: 0, startZ: 0,       // pitcher's mound (centered)
+                    endX: -D/2, endZ: D/2,       // home plate (centered)
+                });
+                moundFlash = 1;
+            },
+            // Pulse the whole field brightness
+            fieldPulse() {
+                stadiumFlash = 0.8;
+                baseHighlights.forEach((_, i) => { baseHighlights[i] = 0.6; });
+                moundFlash = 0.5;
+            },
+        };
+    })();
+
+    </script>
+</body>
+</html>
