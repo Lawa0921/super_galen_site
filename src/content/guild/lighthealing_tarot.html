@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>光癒塔羅占卜 | lighthealing_tarot</title>
+    <meta name="description" content="光癒塔羅占卜 — 把力量放回自己身上。你心裡早就有答案了，我只是幫你把它翻出來。自學塔羅占卜師小晴的個人頁面。" />
+    <meta property="og:title" content="光癒塔羅占卜 — 小晴" />
+    <meta property="og:description" content="把力量放回自己身上 — 用直覺翻開屬於你的牌" />
+    <meta property="og:image" content="/assets/img/guild/lighthealing_tarot/avatar.webp" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500&family=Noto+Serif+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <style>
+/* =============================== */
+/* CSS Variables                    */
+/* =============================== */
+:root {
+    --bg: #0d0b0a;
+    --bg-panel: #181412;
+    --text: #e8ddd4;
+    --text-dim: #7a6e64;
+    --accent: #c4956a;
+    --border: rgba(196,149,106,0.15);
+    --font-body: 'Source Serif 4', 'Noto Serif TC', serif;
+    --font-cn: 'Noto Serif TC', serif;
+    --font-mono: 'Courier New', monospace;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+    line-height: 1.8;
+    font-size: 17px;
+}
+
+/* =============================== */
+/* Three.js & p5.js Canvases        */
+/* =============================== */
+#threejs-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+#p5-canvas-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+#p5-canvas-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* =============================== */
+/* Grain Overlay                    */
+/* =============================== */
+.grain-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+}
+
+/* =============================== */
+/* Scroll Progress Bar              */
+/* =============================== */
+.scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    width: 0%;
+    background: var(--accent);
+    z-index: 10001;
+    transition: width 0.1s linear;
+}
+
+/* =============================== */
+/* Back Link                        */
+/* =============================== */
+.back-link {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    z-index: 10000;
+    color: rgba(232,221,212,0.5);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.4s ease;
+}
+.back-link:hover { color: var(--text); }
+
+/* =============================== */
+/* Content sections — above 3D      */
+/* =============================== */
+.content-layer {
+    position: relative;
+    z-index: 2;
+}
+
+/* =============================== */
+/* Section 1 — HERO                 */
+/* =============================== */
+.hero {
+    position: relative;
+    height: 100vh;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 2;
+}
+.hero-title {
+    font-family: var(--font-cn);
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+    letter-spacing: 0.05em;
+    text-align: center;
+    text-shadow: 0 0 60px rgba(196,149,106,0.3);
+}
+.hero-title .char {
+    display: inline-block;
+    opacity: 0;
+}
+.hero-sub {
+    font-family: var(--font-cn);
+    font-size: clamp(16px, 2.5vw, 22px);
+    color: var(--text-dim);
+    margin-top: 16px;
+    font-weight: 300;
+    text-align: center;
+    opacity: 0;
+}
+.hero-handle {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: rgba(122,110,100,0.5);
+    margin-top: 10px;
+    letter-spacing: 0.1em;
+    text-align: center;
+    opacity: 0;
+}
+.hero-scroll {
+    position: absolute;
+    bottom: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    z-index: 3;
+}
+.hero-scroll span {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: rgba(232,221,212,0.4);
+    text-transform: uppercase;
+}
+.hero-scroll-arrow {
+    width: 1px;
+    height: 32px;
+    background: rgba(232,221,212,0.3);
+    animation: scrollPulse 2s ease-in-out infinite;
+}
+@keyframes scrollPulse {
+    0%, 100% { transform: scaleY(0.3); opacity: 0.3; }
+    50% { transform: scaleY(1); opacity: 1; }
+}
+
+/* =============================== */
+/* Section 2 — ABOUT                */
+/* =============================== */
+.about {
+    position: relative;
+    z-index: 2;
+    padding: 120px 24px 100px;
+}
+.about-inner {
+    max-width: 700px;
+    margin: 0 auto;
+}
+.about-avatar-wrap {
+    text-align: center;
+    margin-bottom: 48px;
+}
+.about-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(196,149,106,0.3);
+    box-shadow: 0 0 20px rgba(196,149,106,0.1);
+    opacity: 0;
+    transform: scale(0.8);
+}
+.about-paragraphs {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+.about-p {
+    font-family: var(--font-cn);
+    font-size: clamp(16px, 2.2vw, 19px);
+    color: var(--text);
+    line-height: 2;
+    opacity: 0;
+    transform: translateX(-40px) rotate(-1deg);
+}
+.about-p:nth-child(even) {
+    transform: translateX(40px) rotate(1deg);
+}
+.about-quote {
+    font-family: var(--font-cn);
+    font-size: clamp(17px, 2.5vw, 21px);
+    color: var(--accent);
+    font-style: italic;
+    line-height: 2;
+    margin-top: 16px;
+    opacity: 0;
+    text-align: center;
+}
+
+/* =============================== */
+/* Section 3 — SERVICES             */
+/* =============================== */
+.services {
+    position: relative;
+    z-index: 2;
+    padding: 120px 24px;
+}
+.services-title {
+    text-align: center;
+    font-family: var(--font-cn);
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 64px;
+    opacity: 0;
+}
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+.services-grid .service-item:nth-child(n+4) {
+    grid-column: span 1;
+}
+.service-item {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px 24px;
+    text-align: center;
+    opacity: 0;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.service-item:hover {
+    border-color: rgba(196,149,106,0.4);
+    box-shadow: 0 0 30px rgba(196,149,106,0.12);
+}
+.service-icon {
+    font-size: 28px;
+    color: var(--accent);
+    margin-bottom: 16px;
+}
+.service-name {
+    font-family: var(--font-cn);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+}
+.service-desc {
+    font-family: var(--font-cn);
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+}
+
+/* =============================== */
+/* Section 4 — RITUAL (preserved)   */
+/* =============================== */
+.ritual-section {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 3;
+}
+.ritual-breathe-wrap {
+    text-align: center;
+    margin-bottom: 48px;
+    opacity: 0;
+}
+.ritual-breathe-text {
+    font-family: var(--font-cn);
+    font-size: clamp(16px, 2.5vw, 20px);
+    color: rgba(232,221,212,0.7);
+    line-height: 2.2;
+}
+.ritual-breathe-text .pulse-word {
+    display: inline-block;
+    animation: breathePulse 3s ease-in-out infinite;
+}
+@keyframes breathePulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.06); }
+}
+.ritual-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13,11,10,0.95);
+    z-index: 0;
+}
+.ritual-container {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 60px 20px;
+    width: 100%;
+    max-width: 800px;
+}
+.ritual-intro-line {
+    font-family: var(--font-cn);
+    font-size: clamp(20px, 3vw, 28px);
+    color: var(--text);
+    margin-bottom: 12px;
+    opacity: 0;
+}
+.ritual-title {
+    font-family: var(--font-cn);
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 600;
+    color: #f0e6dc;
+    margin-bottom: 8px;
+    opacity: 0;
+    text-shadow: 0 0 30px rgba(196,149,106,0.4);
+}
+.ritual-subtitle {
+    font-family: var(--font-cn);
+    font-size: clamp(14px, 2.5vw, 17px);
+    color: var(--accent);
+    font-weight: 300;
+    letter-spacing: 2px;
+    margin-bottom: 48px;
+    opacity: 0;
+}
+.ritual-table {
+    position: relative;
+    width: 100%;
+    height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+.ritual-table::before {
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(196,149,106,0.12) 0%, rgba(196,149,106,0.04) 40%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+.ritual-spread {
+    position: relative;
+    width: 500px;
+    height: 300px;
+    perspective: 1200px;
+}
+.ritual-card {
+    position: absolute;
+    width: 120px;
+    height: 180px;
+    cursor: pointer;
+    left: 50%;
+    bottom: 0;
+    margin-left: -60px;
+    transform-origin: center 300px;
+    transform-style: preserve-3d;
+    transition: filter 0.4s ease;
+}
+.ritual-card:nth-child(1) { transform: rotate(-25deg); }
+.ritual-card:nth-child(2) { transform: rotate(-15deg); }
+.ritual-card:nth-child(3) { transform: rotate(-5deg); }
+.ritual-card:nth-child(4) { transform: rotate(5deg); }
+.ritual-card:nth-child(5) { transform: rotate(15deg); }
+.ritual-card:nth-child(6) { transform: rotate(25deg); }
+.ritual-card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(25deg);
+    transition: box-shadow 0.3s ease;
+}
+.ritual-card:hover .ritual-card-inner {
+    transform: rotateX(25deg) translateZ(30px) scale(1.05);
+    box-shadow: 0 0 30px rgba(196,149,106,0.5), 0 0 60px rgba(196,149,106,0.2);
+}
+.ritual-card-back, .ritual-card-front {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    overflow: hidden;
+    border-radius: 4px;
+}
+.ritual-card-back {
+    background: linear-gradient(135deg, #1e1b19 0%, #2a2420 50%, var(--accent) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: var(--accent);
+    border: 1px solid rgba(196,149,106,0.2);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 0 30px rgba(196,149,106,0.08);
+    text-shadow: 0 0 12px rgba(196,149,106,0.5);
+}
+.ritual-card-front {
+    transform: rotateY(180deg);
+    background: #1e1b19;
+}
+.ritual-card-front img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.ritual-message {
+    font-family: var(--font-cn);
+    font-size: clamp(16px, 2.5vw, 20px);
+    color: #f0e6dc;
+    line-height: 1.8;
+    max-width: 500px;
+    margin: 0 auto 24px;
+    opacity: 0;
+    min-height: 40px;
+    text-shadow: 0 0 20px rgba(196,149,106,0.3);
+}
+.ritual-mirror-text {
+    font-family: var(--font-cn);
+    font-size: clamp(15px, 2vw, 18px);
+    color: rgba(232,221,212,0.6);
+    margin-bottom: 24px;
+    opacity: 0;
+    font-style: italic;
+}
+.ritual-reset {
+    display: none;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 14px 36px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+    opacity: 0;
+    border-radius: 2px;
+}
+.ritual-reset:hover {
+    background: var(--accent);
+    color: var(--bg);
+}
+.ritual-sparkle-particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+}
+.ritual-card-sparkle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 1px;
+    pointer-events: none;
+    z-index: 10;
+    transform: rotate(45deg);
+}
+.ritual-card-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(196,149,106,0.8) 0%, rgba(196,149,106,0.4) 40%, transparent 70%);
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+}
+
+/* =============================== */
+/* Section 5 — FAREWELL             */
+/* =============================== */
+.farewell {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    padding: 80px 24px;
+    overflow: hidden;
+}
+.farewell-brand-wrap {
+    position: relative;
+    margin-bottom: 48px;
+    cursor: pointer;
+    opacity: 0;
+}
+.farewell-brand {
+    width: clamp(200px, 40vw, 400px);
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 0 0 2px rgba(196,149,106,0.2);
+    transition: box-shadow 0.6s ease;
+    animation: brandBreath 4s ease-in-out infinite;
+}
+@keyframes brandBreath {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(196,149,106,0.2), 0 0 20px rgba(196,149,106,0.1); }
+    50% { box-shadow: 0 0 0 3px rgba(196,149,106,0.4), 0 0 40px rgba(196,149,106,0.25); }
+}
+.farewell-brand-wrap:hover .farewell-brand {
+    box-shadow: 0 0 0 3px rgba(196,149,106,0.5), 0 0 60px rgba(196,149,106,0.35);
+}
+.farewell-hidden-text {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-cn);
+    font-size: 18px;
+    color: var(--accent);
+    opacity: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 0 0 20px rgba(196,149,106,0.5);
+}
+.farewell-question {
+    font-family: var(--font-cn);
+    font-size: clamp(20px, 3vw, 28px);
+    color: var(--text);
+    margin-bottom: 40px;
+    text-align: center;
+    opacity: 0;
+    transform: scale(0.9);
+}
+.farewell-buttons {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 64px;
+}
+.farewell-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 32px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    border-radius: 2px;
+    transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(20px);
+}
+.farewell-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 0 20px rgba(196,149,106,0.3);
+}
+.farewell-footer {
+    text-align: center;
+    opacity: 0;
+}
+.farewell-socials {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+.farewell-socials a {
+    color: var(--text-dim);
+    font-size: 20px;
+    transition: color 0.3s ease;
+    text-decoration: none;
+}
+.farewell-socials a:hover { color: var(--accent); }
+.farewell-credit {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+}
+
+/* =============================== */
+/* Responsive                       */
+/* =============================== */
+@media (max-width: 768px) {
+    .services-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    /* Ritual mobile */
+    .ritual-table { height: auto; }
+    .ritual-table::before { width: 320px; height: 320px; }
+    .ritual-spread {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        gap: 12px;
+        justify-content: center;
+        width: auto;
+        height: auto;
+        perspective: none;
+    }
+    .ritual-card {
+        position: relative;
+        left: auto;
+        bottom: auto;
+        margin-left: 0;
+        width: 100px;
+        height: 150px;
+        transform-origin: center center;
+    }
+    .ritual-card:nth-child(1),
+    .ritual-card:nth-child(2),
+    .ritual-card:nth-child(3),
+    .ritual-card:nth-child(4),
+    .ritual-card:nth-child(5),
+    .ritual-card:nth-child(6) {
+        transform: rotate(0deg);
+    }
+    .ritual-card-inner { transform: rotateX(0deg); }
+    .ritual-card:hover .ritual-card-inner {
+        transform: rotateX(0deg) translateZ(15px) scale(1.05);
+    }
+    .farewell-buttons { flex-direction: column; align-items: center; }
+    .farewell-btn { width: 100%; max-width: 280px; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+    .ritual-spread {
+        grid-template-columns: repeat(3, 85px);
+        gap: 8px;
+    }
+    .ritual-card {
+        width: 85px;
+        height: 128px;
+    }
+}
+    </style>
+</head>
+<body>
+
+<div class="grain-overlay"></div>
+<div class="scroll-progress" id="scrollProgress"></div>
+<a href="/guild/" class="back-link" id="backLink"><i class="fas fa-arrow-left"></i> Guild</a>
+
+<!-- Three.js background canvas -->
+<canvas id="threejs-bg"></canvas>
+<!-- p5.js particle canvas -->
+<div id="p5-canvas-container"></div>
+
+<div class="content-layer">
+
+<!-- ===== SECTION 1 — HERO ===== -->
+<section class="hero" id="hero">
+    <div class="hero-title" id="heroTitle">
+        <span class="char">光</span><span class="char">癒</span><span class="char">塔</span><span class="char">羅</span><span class="char">占</span><span class="char">卜</span>
+    </div>
+    <div class="hero-sub" id="heroSub">by 小晴</div>
+    <div class="hero-handle" id="heroHandle">lighthealing_tarot</div>
+    <div class="hero-scroll" id="heroScroll">
+        <span>Scroll</span>
+        <div class="hero-scroll-arrow"></div>
+    </div>
+</section>
+
+<!-- ===== SECTION 2 — ABOUT ===== -->
+<section class="about" id="about">
+    <div class="about-inner">
+        <div class="about-avatar-wrap">
+            <img class="about-avatar" id="aboutAvatar" src="/assets/img/guild/lighthealing_tarot/avatar.webp" alt="小晴" loading="lazy" />
+        </div>
+        <div class="about-paragraphs" id="aboutParagraphs">
+            <p class="about-p">我是小晴，一個自學的塔羅占卜師。白天在國小當課輔老師，晚上幫人翻牌。</p>
+            <p class="about-p">我的風格很直接也很溫暖 — 有什麼就說什麼。不繞圈子，不講空話。</p>
+            <p class="about-p">兩年下來，做了將近四百篇大眾占卜，也幫助了許多朋友找到方向。</p>
+            <p class="about-p">除了塔羅，我也做水晶手鍊和療癒蠟燭，把能量帶進你的日常。</p>
+            <p class="about-p">牌不會告訴你該怎麼做，但它能照出你心裡已經有的那個答案。</p>
+        </div>
+        <p class="about-quote" id="aboutQuote">「把力量放回自己身上。你心裡早就有答案了，我只是幫你把它翻出來。」</p>
+    </div>
+</section>
+
+<!-- ===== SECTION 3 — SERVICES ===== -->
+<section class="services" id="services">
+    <div class="services-title" id="servicesTitle">我能為你做的事</div>
+    <div class="services-grid" id="servicesGrid">
+        <div class="service-item">
+            <div class="service-icon"><i class="fas fa-heart"></i></div>
+            <div class="service-name">感情塔羅占卜</div>
+            <div class="service-desc">曖昧、復合、對方心意</div>
+        </div>
+        <div class="service-item">
+            <div class="service-icon"><i class="fas fa-compass"></i></div>
+            <div class="service-name">全方位塔羅占卜</div>
+            <div class="service-desc">事業、人際、人生方向</div>
+        </div>
+        <div class="service-item">
+            <div class="service-icon"><i class="fas fa-users"></i></div>
+            <div class="service-name">ABC 大眾占卜</div>
+            <div class="service-desc">每週免費三選一</div>
+        </div>
+        <div class="service-item">
+            <div class="service-icon"><i class="fas fa-gem"></i></div>
+            <div class="service-name">水晶手鍊訂製</div>
+            <div class="service-desc">天然水晶能量手鍊</div>
+        </div>
+        <div class="service-item">
+            <div class="service-icon"><i class="fas fa-fire"></i></div>
+            <div class="service-name">療癒蠟燭製作</div>
+            <div class="service-desc">手工香氛療癒蠟燭</div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== SECTION 4 — RITUAL (preserved) ===== -->
+<section class="ritual-section" id="ritual">
+    <div class="ritual-overlay"></div>
+    <div class="ritual-container">
+        <div class="ritual-intro-line" id="ritualIntroLine">好，我們開始吧。</div>
+        <div class="ritual-breathe-wrap" id="ritualBreathe">
+            <div class="ritual-breathe-text">
+                閉上眼睛，<span class="pulse-word">深呼吸</span>一次。
+            </div>
+        </div>
+        <div class="ritual-title" id="ritualTitle">選一張牌</div>
+        <div class="ritual-subtitle" id="ritualSubtitle">憑直覺，點擊你最有感覺的那張牌</div>
+        <div class="ritual-table">
+            <div class="ritual-spread" id="ritualSpread">
+                <div class="ritual-card" data-index="0">
+                    <div class="ritual-card-inner">
+                        <div class="ritual-card-back">&#10022;</div>
+                        <div class="ritual-card-front">
+                            <img src="" loading="lazy" alt="Tarot Reading" />
+                        </div>
+                    </div>
+                </div>
+                <div class="ritual-card" data-index="1">
+                    <div class="ritual-card-inner">
+                        <div class="ritual-card-back">&#10022;</div>
+                        <div class="ritual-card-front">
+                            <img src="" loading="lazy" alt="Tarot Reading" />
+                        </div>
+                    </div>
+                </div>
+                <div class="ritual-card" data-index="2">
+                    <div class="ritual-card-inner">
+                        <div class="ritual-card-back">&#10022;</div>
+                        <div class="ritual-card-front">
+                            <img src="" loading="lazy" alt="Tarot Reading" />
+                        </div>
+                    </div>
+                </div>
+                <div class="ritual-card" data-index="3">
+                    <div class="ritual-card-inner">
+                        <div class="ritual-card-back">&#10022;</div>
+                        <div class="ritual-card-front">
+                            <img src="" loading="lazy" alt="Tarot Reading" />
+                        </div>
+                    </div>
+                </div>
+                <div class="ritual-card" data-index="4">
+                    <div class="ritual-card-inner">
+                        <div class="ritual-card-back">&#10022;</div>
+                        <div class="ritual-card-front">
+                            <img src="" loading="lazy" alt="Tarot Reading" />
+                        </div>
+                    </div>
+                </div>
+                <div class="ritual-card" data-index="5">
+                    <div class="ritual-card-inner">
+                        <div class="ritual-card-back">&#10022;</div>
+                        <div class="ritual-card-front">
+                            <img src="" loading="lazy" alt="Tarot Reading" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ritual-message" id="ritualMessage"></div>
+        <div class="ritual-mirror-text" id="ritualMirror">記住，牌只是一面鏡子。答案一直都在你心裡。</div>
+        <button class="ritual-reset" id="ritualReset">再抽一次</button>
+    </div>
+</section>
+
+<!-- ===== SECTION 5 — FAREWELL ===== -->
+<section class="farewell" id="farewell">
+    <div class="farewell-brand-wrap" id="farewellBrandWrap">
+        <img class="farewell-brand" src="/assets/img/guild/lighthealing_tarot/light_healing_brand.webp" alt="光癒塔羅占卜" loading="lazy" />
+        <div class="farewell-hidden-text" id="farewellHidden">願光與你同在</div>
+    </div>
+    <div class="farewell-question" id="farewellQuestion">想讓我為你翻一張牌嗎？</div>
+    <div class="farewell-buttons" id="farewellButtons">
+        <a href="https://line.me/R/ti/p/@571adelw" class="farewell-btn" target="_blank" rel="noopener noreferrer"><i class="fab fa-line"></i> LINE 預約</a>
+        <a href="https://www.instagram.com/lighthealing_tarot/" class="farewell-btn" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i> Instagram</a>
+        <a href="https://www.threads.net/@lighthealing_tarot" class="farewell-btn" target="_blank" rel="noopener noreferrer"><i class="fab fa-threads"></i> Threads</a>
+    </div>
+    <div class="farewell-footer" id="farewellFooter">
+        <div class="farewell-socials">
+            <a href="https://www.instagram.com/lighthealing_tarot/" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.threads.net/@lighthealing_tarot" target="_blank" rel="noopener noreferrer"><i class="fab fa-threads"></i></a>
+        </div>
+        <div class="farewell-credit">Made with &hearts; by SuperGalen's Dungeon</div>
+    </div>
+</section>
+
+</div><!-- .content-layer -->
+
+<script>
+/* ===================================================================
+   GSAP Registration
+   =================================================================== */
+gsap.registerPlugin(ScrollTrigger);
+const isMobile = window.innerWidth <= 768;
+
+/* ===================================================================
+   Scroll Progress Bar
+   =================================================================== */
+(function() {
+    const bar = document.getElementById('scrollProgress');
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        bar.style.width = pct + '%';
+    });
+})();
+
+/* ===================================================================
+   THREE.JS — The Mystical Chamber
+   =================================================================== */
+(function() {
+    const canvas = document.getElementById('threejs-bg');
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: !isMobile });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0d0b0a, 0.02);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 15);
+
+    /* --- Lighting --- */
+    const ambientLight = new THREE.AmbientLight(0x1a1412, 0.2);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffe8d0, 0.25);
+    dirLight.position.set(3, 5, 4);
+    scene.add(dirLight);
+
+    /* --- Ambient warm point lights (no visible geometry, just light) --- */
+    const orbs = [];
+    const orbConfigs = [
+        [-5, -2, 3, 0xc4956a, 2.0],
+        [5, -1, 2, 0xd4a574, 1.8],
+        [-3, 3, -3, 0xc97b7b, 1.5],
+        [4, 2, -4, 0xc4956a, 1.6],
+    ];
+    for (let i = 0; i < orbConfigs.length; i++) {
+        const cfg = orbConfigs[i];
+        const light = new THREE.PointLight(cfg[3], cfg[4], 15);
+        light.position.set(cfg[0], cfg[1], cfg[2]);
+        scene.add(light);
+        orbs.push({ userData: { light: light, baseIntensity: cfg[4] } });
+    }
+
+    /* --- Luminous Tarot Card helper (upgraded from wireframe) --- */
+    function createLuminousCard(color, index) {
+        const group = new THREE.Group();
+
+        /* Card body: frosted glass effect */
+        var bodyGeo = new THREE.PlaneGeometry(2.2, 3.2, 1, 1);
+        var bodyMat = new THREE.MeshPhysicalMaterial({
+            color: 0x0d0b0a,
+            metalness: 0.1,
+            roughness: 0.15,
+            transmission: 0.3,
+            thickness: 0.5,
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.DoubleSide,
+        });
+        group.add(new THREE.Mesh(bodyGeo, bodyMat));
+
+        /* Glowing border: 4 thin emissive strips */
+        var borderMat = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.7,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        /* Top */
+        var bTop = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.03), borderMat.clone());
+        bTop.position.set(0, 1.6, 0.01);
+        group.add(bTop);
+        /* Bottom */
+        var bBot = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.03), borderMat.clone());
+        bBot.position.set(0, -1.6, 0.01);
+        group.add(bBot);
+        /* Left */
+        var bLeft = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 3.2), borderMat.clone());
+        bLeft.position.set(-1.1, 0, 0.01);
+        group.add(bLeft);
+        /* Right */
+        var bRight = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 3.2), borderMat.clone());
+        bRight.position.set(1.1, 0, 0.01);
+        group.add(bRight);
+
+        /* Inner decorative frame (inset border) */
+        var innerMat = borderMat.clone();
+        innerMat.opacity = 0.3;
+        var iTop = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.02), innerMat);
+        iTop.position.set(0, 1.35, 0.01);
+        group.add(iTop);
+        var iBot = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.02), innerMat);
+        iBot.position.set(0, -1.35, 0.01);
+        group.add(iBot);
+        var iLeft = new THREE.Mesh(new THREE.PlaneGeometry(0.02, 2.7), innerMat);
+        iLeft.position.set(-0.9, 0, 0.01);
+        group.add(iLeft);
+        var iRight = new THREE.Mesh(new THREE.PlaneGeometry(0.02, 2.7), innerMat);
+        iRight.position.set(0.9, 0, 0.01);
+        group.add(iRight);
+
+        /* Center mandala symbol (concentric elements) */
+        /* Outer circle */
+        var circleGeo = new THREE.RingGeometry(0.55, 0.58, 32);
+        var circleMat = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        var circle = new THREE.Mesh(circleGeo, circleMat);
+        circle.position.z = 0.02;
+        group.add(circle);
+
+        /* Inner circle */
+        var innerCircle = new THREE.Mesh(
+            new THREE.RingGeometry(0.25, 0.27, 32),
+            circleMat.clone()
+        );
+        innerCircle.position.z = 0.02;
+        innerCircle.material.opacity = 0.3;
+        group.add(innerCircle);
+
+        /* Diamond at center */
+        var diamondShape = new THREE.Shape();
+        diamondShape.moveTo(0, 0.18);
+        diamondShape.lineTo(0.12, 0);
+        diamondShape.lineTo(0, -0.18);
+        diamondShape.lineTo(-0.12, 0);
+        diamondShape.closePath();
+        var diamondGeo = new THREE.ShapeGeometry(diamondShape);
+        var diamondMat = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        var diamond = new THREE.Mesh(diamondGeo, diamondMat);
+        diamond.position.z = 0.02;
+        group.add(diamond);
+
+        /* 4 small dots at cardinal positions on outer circle */
+        [0, Math.PI/2, Math.PI, Math.PI*1.5].forEach(function(angle) {
+            var dot = new THREE.Mesh(
+                new THREE.CircleGeometry(0.03, 8),
+                new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })
+            );
+            dot.position.set(Math.cos(angle) * 0.565, Math.sin(angle) * 0.565, 0.02);
+            group.add(dot);
+        });
+
+        /* Back glow aura */
+        var auraGeo = new THREE.PlaneGeometry(3, 4);
+        var auraMat = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.04,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        });
+        var aura = new THREE.Mesh(auraGeo, auraMat);
+        aura.position.set(0, 0, -0.05);
+        group.add(aura);
+
+        group.userData = { bodyMat: bodyMat, borderMat: borderMat, color: color, circleMat: circleMat, diamondMat: diamondMat, auraMat: auraMat, innerCircle: innerCircle };
+        return group;
+    }
+
+    /* --- Floating luminous cards --- */
+    const cardColors = [0xc4956a, 0xc97b7b, 0x8b6fad, 0x6aab9a, 0xd4a574];
+    const cardCount = isMobile ? 4 : 5;
+    const cards = [];
+    for (let i = 0; i < cardCount; i++) {
+        const card = createLuminousCard(cardColors[i % cardColors.length], i);
+        /* Initial position: portal circle around center */
+        const angle = (i / cardCount) * Math.PI * 2;
+        const radius = 6;
+        card.position.set(
+            Math.cos(angle) * radius,
+            Math.sin(angle) * radius,
+            -2
+        );
+        card.rotation.set(0, 0, angle + Math.PI / 2);
+        scene.add(card);
+        cards.push({
+            mesh: card,
+            index: i,
+            driftPhase: Math.random() * Math.PI * 2,
+            driftSpeed: 0.2 + Math.random() * 0.3
+        });
+    }
+    /* Track current scroll section for card animation */
+    let cardScrollSection = 'hero';
+
+    /* Global state targets (smoothly interpolated in animate loop) */
+    const state = {
+        cards: cards.map(() => ({
+            x: 0, y: 0, z: -2,
+            rotX: 0, rotY: 0, rotZ: 0,
+            opacity: 0.3,
+            borderOpacity: 0.3,
+            auraOpacity: 0.02,
+            spin: 0
+        })),
+        mandala: { scale: 0.5, opacity: 1, rotSpeed: 0.0008 },
+        streamSpeed: 1,
+        orbIntensityMult: 1,
+        orbGlowMult: 1,
+    };
+    /* Initialize card state targets to match starting positions */
+    cards.forEach((c, i) => {
+        const angle = (i / cards.length) * Math.PI * 2;
+        state.cards[i].x = Math.cos(angle) * 6;
+        state.cards[i].y = Math.sin(angle) * 6;
+        state.cards[i].rotZ = angle + Math.PI / 2;
+    });
+
+    /* --- Celestial Mandala (upgraded from simple rings) --- */
+    function createCelestialMandala() {
+        const group = new THREE.Group();
+        var matFn = function(opacity) {
+            return new THREE.MeshBasicMaterial({
+                color: 0xc4956a,
+                transparent: true,
+                opacity: opacity,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+            });
+        };
+
+        /* 3 concentric rings */
+        [3.5, 2.5, 1.5].forEach(function(r, i) {
+            group.add(new THREE.Mesh(new THREE.RingGeometry(r, r + 0.03, 64), matFn(0.12 - i * 0.02)));
+        });
+
+        /* 12 radial lines (like a clock face) */
+        for (var i = 0; i < 12; i++) {
+            var angle = (i / 12) * Math.PI * 2;
+            var pts = [
+                new THREE.Vector3(Math.cos(angle) * 1.5, Math.sin(angle) * 1.5, 0),
+                new THREE.Vector3(Math.cos(angle) * 3.5, Math.sin(angle) * 3.5, 0),
+            ];
+            group.add(new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints(pts),
+                new THREE.LineBasicMaterial({ color: 0xd4a574, transparent: true, opacity: 0.06 })
+            ));
+        }
+
+        /* 12 dots on outer ring */
+        for (var i = 0; i < 12; i++) {
+            var angle = (i / 12) * Math.PI * 2;
+            var dot = new THREE.Mesh(
+                new THREE.CircleGeometry(0.05, 8),
+                matFn(0.25)
+            );
+            dot.position.set(Math.cos(angle) * 3.5, Math.sin(angle) * 3.5, 0);
+            group.add(dot);
+        }
+
+        /* 8 dots on middle ring */
+        for (var i = 0; i < 8; i++) {
+            var angle = (i / 8) * Math.PI * 2 + Math.PI / 8;
+            var dot = new THREE.Mesh(new THREE.CircleGeometry(0.04, 8), matFn(0.2));
+            dot.position.set(Math.cos(angle) * 2.5, Math.sin(angle) * 2.5, 0);
+            group.add(dot);
+        }
+
+        /* Center: 6-pointed star (two overlapping triangles) */
+        var starMat = matFn(0.2);
+        var tri1 = new THREE.Shape();
+        tri1.moveTo(0, 0.8);
+        tri1.lineTo(0.7, -0.4);
+        tri1.lineTo(-0.7, -0.4);
+        tri1.closePath();
+        var star1 = new THREE.Mesh(new THREE.ShapeGeometry(tri1), starMat.clone());
+        star1.position.set(0, 0, 0.01);
+        group.add(star1);
+
+        var tri2 = new THREE.Shape();
+        tri2.moveTo(0, -0.8);
+        tri2.lineTo(0.7, 0.4);
+        tri2.lineTo(-0.7, 0.4);
+        tri2.closePath();
+        var star2 = new THREE.Mesh(new THREE.ShapeGeometry(tri2), starMat.clone());
+        star2.position.set(0, 0, 0.01);
+        group.add(star2);
+
+        group.position.set(0, 0, -6);
+        group.userData = {};
+        return group;
+    }
+
+    const mandala = createCelestialMandala();
+    scene.add(mandala);
+
+    /* --- Particle Streams (dual spiral, denser, varied colors) --- */
+    const streamCount = isMobile ? 200 : 500;
+    const streamGeo = new THREE.BufferGeometry();
+    const streamPositions = new Float32Array(streamCount * 3);
+    const streamColors = new Float32Array(streamCount * 3);
+    const streamSpeeds = new Float32Array(streamCount);
+    const streamDirs = new Float32Array(streamCount); /* 1 or -1 for dual spiral */
+
+    for (let i = 0; i < streamCount; i++) {
+        const t = Math.random() * Math.PI * 4;
+        const r = 3 + Math.random() * 4;
+        streamPositions[i*3] = Math.cos(t) * r;
+        streamPositions[i*3+1] = (Math.random() - 0.5) * 15;
+        streamPositions[i*3+2] = Math.sin(t) * r;
+        streamSpeeds[i] = 0.2 + Math.random() * 0.3;
+        /* Dual spiral: half go up, half go down */
+        streamDirs[i] = i < streamCount * 0.5 ? 1 : -1;
+
+        /* Varied colors: 70% gold, 15% rose, 15% purple */
+        var roll = Math.random();
+        if (roll < 0.7) {
+            /* Gold: d4a574 */
+            streamColors[i*3] = 0.831; streamColors[i*3+1] = 0.647; streamColors[i*3+2] = 0.455;
+        } else if (roll < 0.85) {
+            /* Rose: c97b7b */
+            streamColors[i*3] = 0.788; streamColors[i*3+1] = 0.482; streamColors[i*3+2] = 0.482;
+        } else {
+            /* Purple: 8b6fad */
+            streamColors[i*3] = 0.545; streamColors[i*3+1] = 0.435; streamColors[i*3+2] = 0.678;
+        }
+    }
+
+    streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPositions, 3));
+    streamGeo.setAttribute('color', new THREE.BufferAttribute(streamColors, 3));
+    const streamMat = new THREE.PointsMaterial({
+        size: 0.045,
+        transparent: true,
+        opacity: 0.55,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        vertexColors: true,
+    });
+    const stream = new THREE.Points(streamGeo, streamMat);
+    scene.add(stream);
+
+    /* Stream speed is now managed via state.streamSpeed with lerp in animate() */
+
+    /* --- Mouse tilt (desktop) --- */
+    let mouseX = 0, mouseY = 0;
+    if (!isMobile) {
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
+    }
+
+    /* --- GSAP ScrollTrigger: section-based card choreography --- */
+    /* ScrollTriggers now only set TARGET values in `state`.
+       The animate loop smoothly lerps toward those targets. */
+    const cameraState = { z: 12 };
+    const cameraTarget = { z: 12 };
+
+    /* Hero (0-18%): Cards form a PORTAL frame (circle shrinks), full glow */
+    ScrollTrigger.create({
+        trigger: 'body',
+        start: 'top top',
+        end: '18% top',
+        scrub: 1,
+        onUpdate: (self) => {
+            cardScrollSection = 'hero';
+            const p = self.progress;
+            const count = cards.length;
+            state.cards.forEach((s, i) => {
+                const angle = (i / count) * Math.PI * 2;
+                const radius = 6 - p * 3;
+                s.x = Math.cos(angle) * radius;
+                s.y = Math.sin(angle) * radius;
+                s.z = -2;
+                s.rotZ = angle + Math.PI / 2;
+                s.rotX = 0;
+                s.rotY = 0;
+                s.opacity = 0.3 + p * 0.5;
+                s.borderOpacity = 0.3 + p * 0.5;
+                s.auraOpacity = 0.02 + p * 0.06;
+                s.spin = 0;
+            });
+            state.mandala.scale = 0.5 + p * 0.3;
+            state.mandala.opacity = 1;
+            state.streamSpeed = 1;
+            state.orbIntensityMult = 1;
+            state.orbGlowMult = 1;
+            cameraTarget.z = 12 - p * 4;
+        }
+    });
+
+    /* About (18-35%): Cards SCATTER to sides, opacity DIMS, glow fades */
+    ScrollTrigger.create({
+        trigger: 'body',
+        start: '18% top',
+        end: '35% top',
+        scrub: 1,
+        onUpdate: (self) => {
+            cardScrollSection = 'about';
+            const p = self.progress;
+            state.cards.forEach((s, i) => {
+                const side = i % 2 === 0 ? -1 : 1;
+                s.x = side * (6 + Math.abs(i - 2) * 1.5);
+                s.y = (i - cards.length / 2) * 1.8;
+                s.z = -2;
+                s.rotZ = side * 0.3;
+                s.rotX = 0;
+                s.rotY = side * 0.2;
+                s.opacity = 0.8 - p * 0.5;
+                s.borderOpacity = 0.8 - p * 0.5;
+                s.auraOpacity = 0.08 - p * 0.06;
+                s.spin = 0;
+            });
+            state.mandala.scale = 0.8 + p * 0.2;
+            state.mandala.opacity = 1;
+            state.streamSpeed = 0.5;
+            state.orbIntensityMult = 1;
+            state.orbGlowMult = 1;
+            cameraTarget.z = 8;
+        }
+    });
+
+    /* Services (35-50%): Cards line up, rotate to show back/front */
+    ScrollTrigger.create({
+        trigger: 'body',
+        start: '35% top',
+        end: '50% top',
+        scrub: 1,
+        onUpdate: (self) => {
+            cardScrollSection = 'services';
+            const p = self.progress;
+            state.cards.forEach((s, i) => {
+                s.x = (i - (cards.length - 1) / 2) * 2.5;
+                s.y = 4;
+                s.z = -2;
+                s.rotZ = 0;
+                s.rotX = 0;
+                s.rotY = Math.sin(p * Math.PI + i * 0.5) * 0.6;
+                s.opacity = 0.6;
+                s.borderOpacity = 0.6;
+                s.auraOpacity = 0.04;
+                s.spin = 0;
+            });
+            state.mandala.scale = 1;
+            state.mandala.opacity = 1;
+            state.streamSpeed = 1;
+            state.orbIntensityMult = 1;
+            state.orbGlowMult = 1;
+            cameraTarget.z = 8;
+        }
+    });
+
+    /* Ritual (50-70%): Cards EXPLODE, opacity->0, SPIN fast */
+    ScrollTrigger.create({
+        trigger: 'body',
+        start: '50% top',
+        end: '70% top',
+        scrub: 1,
+        onUpdate: (self) => {
+            cardScrollSection = 'ritual';
+            const p = self.progress;
+            state.cards.forEach((s, i) => {
+                const angle = (i / cards.length) * Math.PI * 2;
+                s.x = Math.cos(angle) * (5 + p * 12);
+                s.y = Math.sin(angle) * (4 + p * 10);
+                s.z = -2 - p * 5;
+                s.rotZ = p * Math.PI * 2;
+                s.rotX = 0;
+                s.rotY = 0;
+                s.opacity = Math.max(0, 0.6 - p * 1.2);
+                s.borderOpacity = Math.max(0, 0.7 - p * 1.4);
+                s.auraOpacity = Math.max(0, 0.04 - p * 0.08);
+                s.spin = p * 0.08;
+            });
+            state.mandala.scale = 1 + p * 0.5;
+            state.mandala.opacity = 1 - p * 0.7;
+            state.streamSpeed = 1 + p * 2;
+            state.orbIntensityMult = 1 - p * 0.8;
+            state.orbGlowMult = 1 - p * 0.8;
+            cameraTarget.z = 8;
+        }
+    });
+
+    /* Farewell (70-100%): Cards converge, opacity returns to 0.8, SLOWLY rotate back */
+    ScrollTrigger.create({
+        trigger: 'body',
+        start: '70% top',
+        end: '100% top',
+        scrub: 1,
+        onUpdate: (self) => {
+            cardScrollSection = 'farewell';
+            const p = self.progress;
+            state.cards.forEach((s, i) => {
+                s.x = Math.cos(i * 1.2) * (8 * (1 - p));
+                s.y = Math.sin(i * 0.8) * (6 * (1 - p));
+                s.z = -2 + i * 0.12 * p;
+                s.rotZ = 0;
+                s.rotX = 0;
+                s.rotY = Math.PI * 2 * p * 0.3;
+                s.opacity = 0 + p * 0.8;
+                s.borderOpacity = 0 + p * 0.8;
+                s.auraOpacity = 0.08 * p;
+                s.spin = 0;
+            });
+            state.mandala.scale = 1.5 - p * 0.5;
+            state.mandala.opacity = 0.3 + p * 0.7;
+            state.streamSpeed = 3 - p * 2.7;
+            state.orbIntensityMult = 0.3 + p * 0.7;
+            state.orbGlowMult = 0.3 + p * 0.7;
+            cameraTarget.z = 8;
+        }
+    });
+
+    /* --- Resize --- */
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    /* --- Animation Loop with Centralized Lerp --- */
+    const clock = new THREE.Clock();
+    /* Current interpolated stream speed (lerped toward state.streamSpeed) */
+    let currentStreamSpeed = 1;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const elapsed = clock.getElapsedTime();
+        const t = performance.now() * 0.001;
+        const LERP = 0.04; /* Smoothing factor (lower = smoother) */
+
+        /* Camera position: smooth lerp toward target */
+        cameraState.z += (cameraTarget.z - cameraState.z) * LERP;
+        camera.position.z = cameraState.z;
+
+        /* Mouse tilt — stronger */
+        if (!isMobile) {
+            camera.position.x += (mouseX * 2.5 - camera.position.x) * 0.035;
+            camera.position.y += (-mouseY * 1.8 - camera.position.y) * 0.035;
+        }
+        camera.lookAt(0, 0, camera.position.z - 10);
+
+        /* Ambient lights: smooth intensity lerp */
+        orbs.forEach((orb, i) => {
+            var basePulse = 0.8 + Math.sin(t * 2 + i * 1.5) * 0.2;
+            var targetIntensity = orb.userData.baseIntensity * basePulse * state.orbIntensityMult;
+            orb.userData.light.intensity += (targetIntensity - orb.userData.light.intensity) * LERP;
+        });
+
+        /* Cards: smooth lerp toward state targets + floating + mouse interaction */
+        cards.forEach((c, i) => {
+            const st = state.cards[i];
+
+            /* Smooth position lerp */
+            c.mesh.position.x += (st.x - c.mesh.position.x) * LERP;
+            c.mesh.position.y += (st.y - c.mesh.position.y) * LERP;
+            c.mesh.position.z += (st.z - c.mesh.position.z) * LERP;
+
+            /* Smooth rotation lerp */
+            c.mesh.rotation.x += (st.rotX - c.mesh.rotation.x) * LERP;
+            c.mesh.rotation.y += (st.rotY - c.mesh.rotation.y) * LERP;
+            c.mesh.rotation.z += (st.rotZ - c.mesh.rotation.z) * LERP;
+
+            /* Additive spin (for ritual explosion) */
+            c.mesh.rotation.z += st.spin;
+
+            /* Smooth opacity lerp */
+            var curBodyOp = c.mesh.userData.bodyMat.opacity;
+            c.mesh.userData.bodyMat.opacity = curBodyOp + (st.opacity - curBodyOp) * LERP;
+            var curBorderOp = c.mesh.userData.borderMat.opacity;
+            c.mesh.userData.borderMat.opacity = curBorderOp + (st.borderOpacity - curBorderOp) * LERP;
+            c.mesh.userData.auraMat.opacity += (st.auraOpacity - c.mesh.userData.auraMat.opacity) * LERP;
+
+            /* Gentle floating on top of lerped position */
+            const floatY = Math.sin(elapsed * c.driftSpeed + c.driftPhase) * 0.15;
+            const floatX = Math.cos(elapsed * c.driftSpeed * 0.7 + c.driftPhase) * 0.1;
+            c.mesh.position.y += floatY * 0.02;
+            c.mesh.position.x += floatX * 0.02;
+
+            /* Gentle rotation oscillation during services */
+            if (cardScrollSection === 'services') {
+                c.mesh.rotation.y += Math.sin(elapsed * 0.8 + c.index) * 0.01;
+            }
+            c.mesh.rotation.z += Math.sin(elapsed * 0.3 + c.driftPhase) * 0.0005;
+
+            /* Inner circle counter-rotation for visual depth */
+            if (c.mesh.userData.innerCircle) {
+                c.mesh.userData.innerCircle.rotation.z = -elapsed * 0.5;
+            }
+
+            /* Mouse interaction: cards tilt toward mouse and nearest glows brighter */
+            if (!isMobile) {
+                var cardScreenPos = c.mesh.position.clone().project(camera);
+                var dx = mouseX - cardScreenPos.x;
+                var dy = mouseY - cardScreenPos.y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                var influence = Math.max(0, 1 - dist * 2);
+
+                /* Tilt toward mouse */
+                c.mesh.rotation.x += (dy * 0.3 * influence) * 0.1;
+
+                /* Nearest card glows brighter */
+                if (c.mesh.userData.auraMat) {
+                    c.mesh.userData.auraMat.opacity = Math.max(c.mesh.userData.auraMat.opacity, c.mesh.userData.auraMat.opacity + influence * 0.08);
+                }
+            }
+        });
+
+        /* Mandala: smooth scale lerp + slow rotation + counter-rotate + mouse react */
+        var mScale = mandala.scale.x + (state.mandala.scale - mandala.scale.x) * LERP;
+        mandala.scale.setScalar(mScale);
+        mandala.rotation.z += 0.0008;
+        /* Counter-rotate the middle ring (child index 1) */
+        if (mandala.children[1]) {
+            mandala.children[1].rotation.z -= 0.002;
+        }
+        /* Smooth mandala child opacity toward target */
+        mandala.children.forEach(function(child) {
+            if (child.material && child.material.opacity !== undefined) {
+                /* Store base opacity on first encounter */
+                if (child.material._baseOpacity === undefined) {
+                    child.material._baseOpacity = child.material.opacity;
+                }
+                var targetOp = child.material._baseOpacity * state.mandala.opacity;
+                child.material.opacity += (targetOp - child.material.opacity) * LERP;
+            }
+        });
+        /* Mandala reacts to mouse */
+        if (!isMobile) {
+            mandala.rotation.x += (mouseY * 0.05 - mandala.rotation.x) * 0.05;
+            mandala.rotation.y += (mouseX * 0.05 - mandala.rotation.y) * 0.05;
+        }
+
+        /* Smooth stream speed lerp */
+        currentStreamSpeed += (state.streamSpeed - currentStreamSpeed) * LERP;
+
+        /* Particle stream dual-spiral motion */
+        const positions = stream.geometry.attributes.position.array;
+        for (let i = 0; i < streamCount; i++) {
+            const speed = streamSpeeds[i] * currentStreamSpeed;
+            const dir = streamDirs[i];
+            positions[i*3+1] += speed * 0.02 * dir;
+            /* Rotate around Y axis (opposite directions for dual spiral) */
+            const x = positions[i*3];
+            const z = positions[i*3+2];
+            const angle = 0.002 * speed * dir;
+            positions[i*3] = x * Math.cos(angle) - z * Math.sin(angle);
+            positions[i*3+2] = x * Math.sin(angle) + z * Math.cos(angle);
+            /* Reset if too high or too low */
+            if (positions[i*3+1] > 8) positions[i*3+1] = -8;
+            if (positions[i*3+1] < -8) positions[i*3+1] = 8;
+        }
+        stream.geometry.attributes.position.needsUpdate = true;
+
+        renderer.render(scene, camera);
+    }
+    animate();
+})();
+
+/* ===================================================================
+   P5.JS — Living Candlelight
+   =================================================================== */
+(function() {
+    const container = document.getElementById('p5-canvas-container');
+
+    new p5(function(p) {
+        let embers = [];
+        let fireflies = [];
+        const fireflyCount = isMobile ? 10 : 20;
+        let scrollSpeed = 0;
+        let lastScrollY = 0;
+        let scrollProgress = 0;
+
+        p.setup = function() {
+            const c = p.createCanvas(window.innerWidth, window.innerHeight);
+            c.parent(container);
+            p.noStroke();
+
+            /* Initialize fireflies */
+            for (let i = 0; i < fireflyCount; i++) {
+                fireflies.push({
+                    x: p.random(p.width),
+                    y: p.random(p.height),
+                    vx: p.random(-0.3, 0.3),
+                    vy: p.random(-0.3, 0.3),
+                    phase: p.random(p.TWO_PI),
+                    size: p.random(1.5, 3.5)
+                });
+            }
+        };
+
+        p.draw = function() {
+            p.clear();
+
+            /* Track scroll speed */
+            const currentScroll = window.scrollY;
+            scrollSpeed = Math.abs(currentScroll - lastScrollY);
+            lastScrollY = currentScroll;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            scrollProgress = docHeight > 0 ? currentScroll / docHeight : 0;
+
+            /* Determine section color */
+            let particleR = 212, particleG = 165, particleB = 116; /* gold */
+            if (scrollProgress > 0.5 && scrollProgress < 0.7) {
+                /* Ritual section — shift to purple */
+                const t = (scrollProgress - 0.5) / 0.2;
+                const blend = Math.min(t * 2, 1);
+                particleR = p.lerp(212, 139, blend);
+                particleG = p.lerp(165, 111, blend);
+                particleB = p.lerp(116, 173, blend);
+            } else if (scrollProgress >= 0.7) {
+                /* Farewell — shift to rose */
+                const t = (scrollProgress - 0.7) / 0.3;
+                const blend = Math.min(t * 2, 1);
+                particleR = p.lerp(212, 201, blend);
+                particleG = p.lerp(165, 123, blend);
+                particleB = p.lerp(116, 123, blend);
+            }
+
+            /* Mouse trail embers (desktop only) */
+            if (!isMobile && p.mouseX > 0 && p.mouseX < p.width && p.mouseY > 0 && p.mouseY < p.height) {
+                if (p.frameCount % 2 === 0) {
+                    embers.push({
+                        x: p.mouseX + p.random(-4, 4),
+                        y: p.mouseY + p.random(-4, 4),
+                        vx: p.random(-0.8, 0.8),
+                        vy: p.random(-2, -0.5),
+                        life: 60,
+                        maxLife: 60,
+                        size: p.random(3, 6)
+                    });
+                }
+            }
+
+            /* Limit ember count */
+            if (embers.length > 20) embers.splice(0, embers.length - 20);
+
+            /* Update and draw embers */
+            for (let i = embers.length - 1; i >= 0; i--) {
+                const e = embers[i];
+                e.x += e.vx;
+                e.y += e.vy;
+                e.life--;
+                if (e.life <= 0) { embers.splice(i, 1); continue; }
+                const alpha = (e.life / e.maxLife) * 200;
+                const sz = e.size * (e.life / e.maxLife);
+                p.push();
+                p.translate(e.x, e.y);
+                p.rotate(p.PI / 4);
+                p.fill(particleR, particleG, particleB, alpha);
+                p.rect(-sz / 2, -sz / 2, sz, sz);
+                p.pop();
+            }
+
+            /* Fireflies — dramatic scroll burst */
+            const scatter = Math.min(scrollSpeed * 0.8, 12);
+            const sizeBoost = 1 + Math.min(scrollSpeed * 0.08, 2);
+            const centerX = p.width / 2;
+            const centerY = p.height / 2;
+            for (let i = 0; i < fireflies.length; i++) {
+                const f = fireflies[i];
+
+                /* When scrolling, burst outward from center */
+                if (scrollSpeed > 2) {
+                    const dx = f.x - centerX;
+                    const dy = f.y - centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const burstForce = Math.min(scrollSpeed * 0.15, 4);
+                    f.x += (dx / dist) * burstForce;
+                    f.y += (dy / dist) * burstForce;
+                } else {
+                    /* When stopped, slowly converge back toward center region */
+                    f.x += (centerX + (p.noise(i * 0.1, p.frameCount * 0.002) - 0.5) * p.width * 0.8 - f.x) * 0.005;
+                    f.y += (centerY + (p.noise(i * 0.2, p.frameCount * 0.002) - 0.5) * p.height * 0.8 - f.y) * 0.005;
+                }
+
+                f.x += f.vx + p.random(-scatter, scatter);
+                f.y += f.vy + p.random(-scatter, scatter);
+                f.phase += 0.03;
+
+                /* Wrap around */
+                if (f.x < -20) f.x = p.width + 20;
+                if (f.x > p.width + 20) f.x = -20;
+                if (f.y < -20) f.y = p.height + 20;
+                if (f.y > p.height + 20) f.y = -20;
+
+                const pulse = (Math.sin(f.phase) + 1) * 0.5;
+                const alpha = 40 + pulse * 120;
+                p.fill(particleR, particleG, particleB, alpha);
+                p.ellipse(f.x, f.y, f.size * (0.7 + pulse * 0.3) * sizeBoost);
+            }
+        };
+
+        p.windowResized = function() {
+            p.resizeCanvas(window.innerWidth, window.innerHeight);
+        };
+    });
+})();
+
+/* ===================================================================
+   Section 1 — HERO: Letter Stagger + Parallax
+   =================================================================== */
+(function() {
+    const chars = document.querySelectorAll('.hero-title .char');
+    chars.forEach((char, i) => {
+        gsap.to(char, {
+            opacity: 1,
+            duration: 0.6,
+            delay: 0.5 + i * 0.15,
+            ease: 'power2.out'
+        });
+    });
+
+    gsap.to('#heroSub', {
+        opacity: 1,
+        duration: 0.8,
+        delay: 1.6,
+        ease: 'power2.out'
+    });
+
+    gsap.to('#heroHandle', {
+        opacity: 1,
+        duration: 0.8,
+        delay: 2.0,
+        ease: 'power2.out'
+    });
+
+    setTimeout(() => {
+        gsap.to('#heroScroll', { opacity: 1, duration: 1, ease: 'power2.out' });
+    }, 3000);
+
+    /* Parallax: hero text scrolls away faster */
+    gsap.to('.hero-title', {
+        y: -120,
+        ease: 'none',
+        scrollTrigger: {
+            trigger: '#hero',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1
+        }
+    });
+    gsap.to('#heroSub', {
+        y: -80,
+        ease: 'none',
+        scrollTrigger: {
+            trigger: '#hero',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1
+        }
+    });
+})();
+
+/* ===================================================================
+   Section 2 — ABOUT: Alternating slide-in + avatar scale
+   =================================================================== */
+(function() {
+    /* Avatar scale */
+    gsap.to('#aboutAvatar', {
+        opacity: 1,
+        scale: 1,
+        boxShadow: '0 0 40px rgba(196,149,106,0.2)',
+        duration: 0.8,
+        ease: 'power2.out',
+        scrollTrigger: {
+            trigger: '#about',
+            start: 'top 75%',
+            once: true,
+        }
+    });
+
+    /* Paragraphs alternate sides */
+    document.querySelectorAll('.about-p').forEach((p, i) => {
+        gsap.to(p, {
+            opacity: 1,
+            x: 0,
+            rotation: 0,
+            duration: 0.8,
+            ease: 'power2.out',
+            scrollTrigger: {
+                trigger: p,
+                start: 'top 85%',
+                once: true,
+            }
+        });
+    });
+
+    /* Quote */
+    gsap.to('#aboutQuote', {
+        opacity: 1,
+        duration: 1,
+        ease: 'power2.out',
+        scrollTrigger: {
+            trigger: '#aboutQuote',
+            start: 'top 85%',
+            once: true,
+        }
+    });
+})();
+
+/* ===================================================================
+   Section 3 — SERVICES: Stagger up with random rotation
+   =================================================================== */
+(function() {
+    gsap.to('#servicesTitle', {
+        opacity: 1,
+        duration: 0.8,
+        ease: 'power2.out',
+        scrollTrigger: {
+            trigger: '#services',
+            start: 'top 75%',
+            once: true,
+        }
+    });
+
+    const items = document.querySelectorAll('.service-item');
+    items.forEach((item, i) => {
+        const randomRot = (Math.random() - 0.5) * 6;
+        gsap.fromTo(item, {
+            opacity: 0,
+            y: 40,
+            rotation: randomRot,
+        }, {
+            opacity: 1,
+            y: 0,
+            rotation: 0,
+            duration: 0.6,
+            delay: i * 0.12,
+            ease: 'power2.out',
+            scrollTrigger: {
+                trigger: '#services',
+                start: 'top 65%',
+                once: true,
+            }
+        });
+    });
+
+    /* Mouse tilt on hover (desktop) */
+    if (!isMobile) {
+        items.forEach(item => {
+            item.addEventListener('mousemove', (e) => {
+                const rect = item.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                item.style.transform = 'perspective(600px) rotateY(' + (x * 8) + 'deg) rotateX(' + (-y * 8) + 'deg)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = 'perspective(600px) rotateY(0deg) rotateX(0deg)';
+            });
+        });
+    }
+})();
+
+/* ===================================================================
+   Section 4 — RITUAL (preserved as-is)
+   =================================================================== */
+(function() {
+    const ritualImages = [
+        '/assets/img/guild/lighthealing_tarot/tarot_future_a.webp',
+        '/assets/img/guild/lighthealing_tarot/tarot_future_b.webp',
+        '/assets/img/guild/lighthealing_tarot/tarot_luck_a.webp',
+        '/assets/img/guild/lighthealing_tarot/tarot_luck_b.webp',
+    ];
+    const ritualMessages = [
+        '感情當中，你可以找到一位和你心靈相通的對象。',
+        '你會重拾童年的愛好和理想，未來的豐盛都會自己找上你。',
+        '你的直覺和感知能力非常準，好好善用它。',
+        '你就像一顆小太陽般光亮，他人會想靠近你。',
+        '他的心很明確的向著你，就先互相為彼此加油打氣。',
+        '試著放慢速度感受當下，很多彼此的價值觀還需要了解。',
+        '他覺得你很值得被好好對待，竭盡所能地對你好。',
+        '你不受傳統框架限制，走出一條屬於你的道路。',
+        '你擅長與人溝通交流，已經足夠完整了。',
+        '有堅定的心靈力量，經驗會化為你成長的養分。',
+        '他在你面前能真實做自己，這段關係走得長久。',
+        '你做各種事都可以成功，突破舒適圈，財源就會滾滾來。',
+    ];
+
+    let ritualActive = false;
+    let ritualAnimating = false;
+    const isMobileRitual = window.innerWidth <= 768;
+
+    function shuffleArray(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function assignRitualCards() {
+        const shuffled = shuffleArray(ritualImages);
+        const finalAssignments = [
+            ...shuffled,
+            ritualImages[Math.floor(Math.random() * ritualImages.length)],
+            ritualImages[Math.floor(Math.random() * ritualImages.length)],
+        ];
+        const shuffledMessages = shuffleArray(ritualMessages).slice(0, 6);
+
+        const cards = document.querySelectorAll('.ritual-card');
+        cards.forEach((card, i) => {
+            const img = card.querySelector('.ritual-card-front img');
+            img.src = finalAssignments[i];
+            card.dataset.message = shuffledMessages[i];
+        });
+    }
+
+    let ambientSparkleInterval = null;
+    function startAmbientSparkles() {
+        const container = document.querySelector('.ritual-container');
+        if (!container) return;
+        ambientSparkleInterval = setInterval(() => {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'ritual-sparkle-particle';
+            sparkle.style.left = (Math.random() * 100) + '%';
+            sparkle.style.top = (Math.random() * 100) + '%';
+            const colors = ['var(--accent)', '#d4a574', '#e8a8b2', '#c4956a'];
+            sparkle.style.background = colors[Math.floor(Math.random() * colors.length)];
+            sparkle.style.width = (2 + Math.random() * 3) + 'px';
+            sparkle.style.height = sparkle.style.width;
+            container.appendChild(sparkle);
+            gsap.fromTo(sparkle, {
+                opacity: 0, y: 0, scale: 0,
+            }, {
+                opacity: 0.6 + Math.random() * 0.4,
+                y: -40 - Math.random() * 60,
+                x: (Math.random() - 0.5) * 40,
+                scale: 1,
+                duration: 2 + Math.random() * 2,
+                ease: 'power1.out',
+                onComplete: () => {
+                    gsap.to(sparkle, {
+                        opacity: 0,
+                        duration: 0.8,
+                        onComplete: () => sparkle.remove(),
+                    });
+                }
+            });
+        }, 200);
+    }
+
+    function stopAmbientSparkles() {
+        if (ambientSparkleInterval) {
+            clearInterval(ambientSparkleInterval);
+            ambientSparkleInterval = null;
+        }
+    }
+
+    function initRitual() {
+        assignRitualCards();
+
+        const cards = document.querySelectorAll('.ritual-card');
+        const messageEl = document.getElementById('ritualMessage');
+        const mirrorEl = document.getElementById('ritualMirror');
+        const resetBtn = document.getElementById('ritualReset');
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                if (ritualAnimating || ritualActive) return;
+                ritualAnimating = true;
+                ritualActive = true;
+
+                const selectedIndex = parseInt(card.dataset.index);
+                const inner = card.querySelector('.ritual-card-inner');
+                const message = card.dataset.message;
+
+                cards.forEach((otherCard, i) => {
+                    if (i !== selectedIndex) {
+                        gsap.to(otherCard, {
+                            opacity: 0,
+                            scale: 0.8,
+                            duration: 0.5,
+                            ease: 'power2.in',
+                        });
+                    }
+                });
+
+                const spread = document.getElementById('ritualSpread');
+                const spreadRect = spread.getBoundingClientRect();
+                const cardRect = card.getBoundingClientRect();
+                const centerX = spreadRect.width / 2 - cardRect.width / 2;
+                const centerY = spreadRect.height / 2 - cardRect.height / 2;
+
+                const tl = gsap.timeline();
+
+                if (!isMobileRitual) {
+                    tl.to(card, {
+                        left: centerX,
+                        bottom: 'auto',
+                        top: centerY,
+                        marginLeft: 0,
+                        transform: 'rotate(0deg)',
+                        duration: 0.7,
+                        ease: 'power2.inOut',
+                    })
+                    .to(inner, {
+                        transform: 'rotateX(0deg)',
+                        duration: 0.4,
+                        ease: 'power2.out',
+                    }, '-=0.3')
+                    .to(card, {
+                        scale: 1.3,
+                        duration: 0.3,
+                        ease: 'power2.out',
+                    }, '-=0.2');
+                } else {
+                    tl.to(card, {
+                        scale: 1.4,
+                        zIndex: 10,
+                        duration: 0.5,
+                        ease: 'power2.out',
+                    });
+                }
+
+                tl.to(inner, {
+                    rotateY: 180,
+                    duration: 0.8,
+                    ease: 'power3.inOut',
+                    onStart: () => {
+                        const flash = document.createElement('div');
+                        flash.className = 'ritual-card-flash';
+                        inner.appendChild(flash);
+                        gsap.fromTo(flash, { opacity: 0 }, {
+                            opacity: 1,
+                            duration: 0.2,
+                            ease: 'power2.in',
+                            onComplete: () => {
+                                gsap.to(flash, {
+                                    opacity: 0,
+                                    duration: 0.6,
+                                    delay: 0.2,
+                                    onComplete: () => flash.remove(),
+                                });
+                            }
+                        });
+                    },
+                    onComplete: () => {
+                        for (let i = 0; i < 16; i++) {
+                            const sparkle = document.createElement('div');
+                            sparkle.className = 'ritual-card-sparkle';
+                            sparkle.style.left = '50%';
+                            sparkle.style.top = '50%';
+                            const colors = ['var(--accent)', '#d4a574', '#e8a8b2', '#c4b0e8', '#fff'];
+                            sparkle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                            card.appendChild(sparkle);
+                            const angle = (i / 16) * Math.PI * 2 + Math.random() * 0.3;
+                            const distance = 50 + Math.random() * 60;
+                            gsap.fromTo(sparkle, {
+                                x: 0, y: 0, opacity: 1, scale: 1,
+                            }, {
+                                x: Math.cos(angle) * distance,
+                                y: Math.sin(angle) * distance,
+                                opacity: 0,
+                                scale: 0,
+                                duration: 0.6 + Math.random() * 0.4,
+                                ease: 'power2.out',
+                                onComplete: () => sparkle.remove(),
+                            });
+                        }
+
+                        messageEl.textContent = message;
+                        gsap.to(messageEl, {
+                            opacity: 1,
+                            y: 0,
+                            duration: 0.8,
+                            delay: 0.3,
+                            ease: 'power2.out',
+                        });
+
+                        gsap.to(mirrorEl, {
+                            opacity: 1,
+                            duration: 0.8,
+                            delay: 1,
+                            ease: 'power2.out',
+                        });
+
+                        resetBtn.style.display = 'inline-block';
+                        gsap.to(resetBtn, {
+                            opacity: 1,
+                            duration: 0.6,
+                            delay: 1.4,
+                            ease: 'power2.out',
+                        });
+
+                        ritualAnimating = false;
+                    }
+                });
+            });
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if (ritualAnimating) return;
+            ritualAnimating = true;
+
+            gsap.to([messageEl, resetBtn, mirrorEl], {
+                opacity: 0,
+                duration: 0.3,
+                onComplete: () => {
+                    resetBtn.style.display = 'none';
+                    messageEl.textContent = '';
+                }
+            });
+
+            const cards = document.querySelectorAll('.ritual-card');
+            cards.forEach(card => {
+                const inner = card.querySelector('.ritual-card-inner');
+                gsap.to(card, {
+                    opacity: 0,
+                    scale: 0.5,
+                    duration: 0.3,
+                    onComplete: () => {
+                        card.style.cssText = '';
+                        inner.style.cssText = '';
+                        gsap.set(card, { clearProps: 'all' });
+                        gsap.set(inner, { clearProps: 'all' });
+                    }
+                });
+            });
+
+            setTimeout(() => {
+                assignRitualCards();
+                ritualActive = false;
+                const newCards = document.querySelectorAll('.ritual-card');
+                newCards.forEach((card, i) => {
+                    gsap.fromTo(card, {
+                        opacity: 0,
+                        scale: 0.8,
+                    }, {
+                        opacity: 1,
+                        scale: 1,
+                        duration: 0.5,
+                        delay: i * 0.08,
+                        ease: 'back.out(1.4)',
+                    });
+                });
+                ritualAnimating = false;
+            }, 600);
+        });
+    }
+
+    /* Ritual entrance animation */
+    ScrollTrigger.create({
+        trigger: '#ritual',
+        start: 'top 70%',
+        once: true,
+        onEnter: () => {
+            startAmbientSparkles();
+            const tl = gsap.timeline();
+            tl.to('#ritualIntroLine', { opacity: 1, duration: 0.8, ease: 'power2.out' })
+              .to('#ritualBreathe', { opacity: 1, duration: 0.8, ease: 'power2.out' }, '+=0.4')
+              .to('#ritualTitle', { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, '+=0.8')
+              .to('#ritualSubtitle', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, '-=0.4');
+
+            document.querySelectorAll('.ritual-card').forEach((card, i) => {
+                gsap.fromTo(card, {
+                    opacity: 0,
+                    scale: 0.5,
+                    y: 60,
+                }, {
+                    opacity: 1,
+                    scale: 1,
+                    y: 0,
+                    duration: 0.6,
+                    delay: 2.6 + i * 0.1,
+                    ease: 'back.out(1.4)',
+                });
+            });
+        }
+    });
+
+    function pulseTableGlow() {
+        const table = document.querySelector('.ritual-table');
+        if (!table) return;
+        gsap.to(table, {
+            '--glow-opacity': 0.8,
+            duration: 2,
+            ease: 'sine.inOut',
+            yoyo: true,
+            repeat: -1,
+        });
+    }
+
+    initRitual();
+    pulseTableGlow();
+
+    ScrollTrigger.create({
+        trigger: '#ritual',
+        start: 'top bottom',
+        end: 'bottom top',
+        onLeave: () => stopAmbientSparkles(),
+        onEnterBack: () => startAmbientSparkles(),
+    });
+})();
+
+/* ===================================================================
+   Section 5 — FAREWELL: Parallax + Scale + Stagger
+   =================================================================== */
+(function() {
+    const brandWrap = document.getElementById('farewellBrandWrap');
+    const hiddenText = document.getElementById('farewellHidden');
+    let hiddenVisible = false;
+
+    brandWrap.addEventListener('click', () => {
+        if (hiddenVisible) return;
+        hiddenVisible = true;
+        gsap.to(hiddenText, {
+            opacity: 1,
+            duration: 0.8,
+            ease: 'power2.out',
+            onComplete: () => {
+                gsap.to(hiddenText, {
+                    opacity: 0,
+                    duration: 0.8,
+                    delay: 2,
+                    ease: 'power2.in',
+                    onComplete: () => { hiddenVisible = false; }
+                });
+            }
+        });
+    });
+
+    /* Parallax on brand image (slower than scroll) */
+    gsap.to('.farewell-brand', {
+        y: -40,
+        ease: 'none',
+        scrollTrigger: {
+            trigger: '#farewell',
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1,
+        }
+    });
+
+    /* Entrance animations */
+    ScrollTrigger.create({
+        trigger: '#farewell',
+        start: 'top 70%',
+        once: true,
+        onEnter: () => {
+            gsap.to('#farewellBrandWrap', { opacity: 1, duration: 0.8, ease: 'power2.out' });
+            gsap.to('#farewellQuestion', {
+                opacity: 1,
+                scale: 1,
+                duration: 0.8,
+                delay: 0.3,
+                ease: 'power2.out'
+            });
+
+            const btns = document.querySelectorAll('.farewell-btn');
+            btns.forEach((btn, i) => {
+                gsap.to(btn, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.6,
+                    delay: 0.6 + i * 0.15,
+                    ease: 'power2.out'
+                });
+            });
+
+            gsap.to('#farewellFooter', { opacity: 1, duration: 0.8, delay: 1.2, ease: 'power2.out' });
+        }
+    });
+})();
+</script>
+</body>
+</html>
