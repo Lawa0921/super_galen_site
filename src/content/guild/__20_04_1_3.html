@@ -1,0 +1,1282 @@
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小蓁 — The Spotlight Shift</title>
+    <meta name="description" content="從舞台到螢幕，聚光燈下的華麗轉場。舞者之心、媒體之眼。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Bebas+Neue&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <!-- Canvas 2D flowing ribbon background -->
+    <style>
+        :root {
+            --void: #050508;
+            --spotlight-gold: #f0c850;
+            --neon-pink: #ff2d78;
+            --lens-cyan: #38d9f5;
+            --text-bright: #f0ece4;
+            --text: #c8c0b4;
+            --text-muted: #6a6458;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'Outfit', sans-serif;
+            --font-cn: 'Noto Sans TC', sans-serif;
+            --font-handwrite: 'Caveat', cursive;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
+        body {
+            font-family: var(--font-body);
+            background: var(--void);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.7;
+            max-width: 100vw;
+            -webkit-font-smoothing: antialiased;
+        }
+        ::selection { background: var(--neon-pink); color: #fff; }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: var(--void); }
+        ::-webkit-scrollbar-thumb { background: var(--neon-pink); border-radius: 2px; }
+
+        /* THREE.JS CANVAS */
+        #three-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+        /* LOADER */
+        .loader {
+            position: fixed; inset: 0; z-index: 9999;
+            background: var(--void);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 1.5rem;
+        }
+        .loader-spotlight {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: radial-gradient(circle, var(--spotlight-gold) 0%, transparent 70%);
+            animation: loader-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes loader-pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.4; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+        .loader-text {
+            font-family: var(--font-display);
+            font-size: 1rem; letter-spacing: 0.5em; color: var(--text-muted);
+        }
+
+        /* NOISE */
+        .noise-overlay {
+            position: fixed; inset: 0; z-index: 998;
+            pointer-events: none; opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 128px;
+            animation: grain 0.3s steps(3) infinite;
+        }
+        @keyframes grain {
+            0%{transform:translate(0,0)}33%{transform:translate(-1px,1px)}66%{transform:translate(1px,-1px)}100%{transform:translate(0,0)}
+        }
+
+        /* NAV + PROGRESS */
+        .back-nav {
+            position: fixed; top: 1.5rem; left: 1.5rem; z-index: 500;
+            display: flex; align-items: center; gap: 0.5rem;
+            text-decoration: none; color: var(--text-muted);
+            font-family: var(--font-display); font-size: 0.85rem;
+            letter-spacing: 0.15em; transition: color 0.3s;
+        }
+        .back-nav:hover { color: var(--spotlight-gold); }
+        .stage-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 999; height: 3px; background: rgba(255,255,255,0.05); }
+        .stage-progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--spotlight-gold), var(--neon-pink), var(--lens-cyan)); transition: width 0.1s; }
+
+        /* ACT LABELS */
+        .act-label {
+            font-family: var(--font-display);
+            font-size: clamp(0.6rem, 1vw, 0.75rem);
+            letter-spacing: 0.5em; color: var(--neon-pink);
+            margin-bottom: 0.5rem;
+            display: flex; align-items: center; gap: 1rem;
+        }
+        .act-label::before { content: ''; width: 30px; height: 1px; background: var(--neon-pink); }
+        .section-title {
+            font-family: var(--font-cn);
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            font-weight: 900; color: var(--text-bright);
+            margin-bottom: 2rem; line-height: 1.3;
+        }
+        .section-text {
+            font-family: var(--font-cn);
+            font-size: clamp(0.88rem, 1.4vw, 1.02rem);
+            color: var(--text); line-height: 2; max-width: 640px;
+        }
+
+        /* ALL SECTIONS */
+        section { position: relative; z-index: 1; }
+
+        /* ======== HERO ======== */
+        .hero {
+            position: relative; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(5,5,8,0.6) 0%, rgba(14,11,8,0.55) 70%, rgba(26,20,8,0.5) 100%);
+        }
+        .hero::before {
+            content: ''; position: absolute;
+            bottom: 0; left: 0; right: 0; height: 45%;
+            background: repeating-linear-gradient(90deg, transparent 0px, transparent 80px, rgba(240,200,80,0.03) 80px, rgba(240,200,80,0.03) 82px);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
+        }
+        .hero-spotlight {
+            position: absolute; top: -5%; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 200px solid transparent; border-right: 200px solid transparent;
+            border-top: 600px solid rgba(240,200,80,0.06);
+            filter: blur(30px); pointer-events: none; opacity: 0;
+        }
+        .hero-lamp {
+            position: absolute; top: 2%; left: 50%; transform: translateX(-50%);
+            width: 30px; height: 12px;
+            background: rgba(240,200,80,0.5); border-radius: 50%;
+            box-shadow: 0 0 40px 10px rgba(240,200,80,0.3); opacity: 0;
+        }
+        .hero-reflection {
+            position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%);
+            width: 350px; height: 120px;
+            background: radial-gradient(ellipse, rgba(240,200,80,0.08) 0%, transparent 70%);
+            border-radius: 50%; opacity: 0;
+        }
+        .hero-content { position: relative; z-index: 10; text-align: center; padding: 2rem; }
+        .hero-avatar {
+            width: 110px; height: 110px; border-radius: 50%;
+            border: 2px solid var(--spotlight-gold);
+            box-shadow: 0 0 60px rgba(240,200,80,0.4), 0 0 120px rgba(240,200,80,0.15);
+            object-fit: cover; margin-bottom: 2rem; opacity: 0;
+        }
+        .hero-name {
+            font-family: var(--font-display);
+            font-size: clamp(3.5rem, 11vw, 9rem);
+            letter-spacing: 0.15em; color: var(--text-bright);
+            line-height: 0.9; opacity: 0;
+        }
+        .hero-subtitle {
+            font-family: var(--font-cn);
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            color: var(--spotlight-gold); letter-spacing: 0.4em;
+            margin-top: 1.2rem; opacity: 0;
+        }
+        .hero-tagline {
+            font-family: var(--font-handwrite);
+            font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+            color: var(--neon-pink); margin-top: 0.8rem; opacity: 0;
+        }
+        .scroll-cue {
+            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 0.5rem; opacity: 0;
+        }
+        .scroll-cue span { font-family: var(--font-cn); font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.3em; }
+        .scroll-cue .arrow {
+            width: 1px; height: 30px;
+            background: linear-gradient(to bottom, var(--neon-pink), transparent);
+            animation: pulse-down 2s ease-in-out infinite;
+        }
+        @keyframes pulse-down { 0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(8px)} }
+
+        /* ======== ACT I ======== */
+        .act-origin-section {
+            position: relative; min-height: 100vh;
+            padding: clamp(6rem, 12vh, 10rem) clamp(1.5rem, 5vw, 4rem);
+            background: linear-gradient(160deg, rgba(18,16,10,0.7) 0%, rgba(26,21,12,0.65) 40%, rgba(15,13,8,0.7) 100%);
+            overflow: hidden;
+        }
+        .act-origin-section::before {
+            content: ''; position: absolute; top: -10%; left: -5%;
+            width: 60%; height: 60%;
+            background: radial-gradient(ellipse, rgba(240,200,80,0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .act-origin-section::after {
+            content: ''; position: absolute; top: 0; right: 0;
+            width: 3px; height: 100%;
+            background: linear-gradient(to bottom, transparent 10%, rgba(240,200,80,0.15) 30%, rgba(240,200,80,0.08) 50%, rgba(240,200,80,0.15) 70%, transparent 90%);
+        }
+        .act-origin {
+            display: flex; align-items: center;
+            gap: clamp(2rem, 5vw, 6rem);
+            max-width: 1200px; margin: 0 auto;
+        }
+        .act-origin .visual { flex: 0 0 38%; position: relative; overflow: hidden; border-radius: 4px; }
+        .act-origin .visual img { width: 100%; border-radius: 4px; filter: saturate(0.85) contrast(1.05); }
+        .act-origin .visual::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(240,200,80,0.1), transparent 50%); border-radius: 4px;
+        }
+        .beat-dots { position: absolute; left: -20px; top: 10%; bottom: 10%; display: flex; flex-direction: column; justify-content: space-around; }
+        .beat-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--spotlight-gold); opacity: 0.2; }
+        .beat-dot.active { opacity: 1; box-shadow: 0 0 8px var(--spotlight-gold); }
+        .act-origin .narrative { flex: 1; }
+
+        /* ======== ACT II ======== */
+        .act-turning-section {
+            position: relative; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(139,26,26,0.25) 0%, rgba(5,5,8,0.65) 70%);
+        }
+        .crack-bg { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+        .crack-bg svg { width: 100%; height: 100%; }
+        .crack-bg path { stroke: var(--neon-pink); stroke-width: 1; fill: none; opacity: 0.3; stroke-dasharray: 2000; stroke-dashoffset: 2000; }
+        .broken-spotlight {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 500px; height: 500px; border-radius: 50%;
+            border: 1px solid rgba(255,45,120,0.08);
+            box-shadow: inset 0 0 80px rgba(139,26,26,0.1);
+            pointer-events: none; opacity: 0;
+        }
+        .turning-container { max-width: 800px; text-align: center; position: relative; z-index: 2; padding: 2rem; }
+        .turning-quote {
+            font-family: var(--font-cn);
+            font-size: clamp(1.3rem, 3vw, 2.2rem);
+            font-weight: 300; color: var(--text-bright); line-height: 2; opacity: 0;
+        }
+        .turning-quote em { color: var(--neon-pink); font-style: normal; font-weight: 700; }
+        .heartbeat-line { width: 200px; height: 40px; margin: 2rem auto; opacity: 0; }
+        .heartbeat-line svg { width: 100%; height: 100%; }
+        .heartbeat-line path { stroke: var(--neon-pink); stroke-width: 2; fill: none; stroke-dasharray: 300; stroke-dashoffset: 300; }
+
+        /* ======== ACT III ======== */
+        .act-rebirth-section {
+            position: relative;
+            padding: clamp(6rem, 12vh, 10rem) clamp(1.5rem, 5vw, 4rem);
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(5,5,8,0.6) 0%, rgba(8,10,20,0.55) 50%, rgba(10,12,24,0.6) 100%);
+        }
+        .viewfinder { position: absolute; inset: clamp(1rem, 3vw, 3rem); pointer-events: none; z-index: 1; opacity: 0; }
+        .viewfinder-corner { position: absolute; width: 30px; height: 30px; }
+        .viewfinder-corner::before, .viewfinder-corner::after { content: ''; position: absolute; background: rgba(255,255,255,0.15); }
+        .vf-tl { top: 0; left: 0; } .vf-tl::before { width: 30px; height: 1px; } .vf-tl::after { width: 1px; height: 30px; }
+        .vf-tr { top: 0; right: 0; } .vf-tr::before { width: 30px; height: 1px; top: 0; right: 0; } .vf-tr::after { width: 1px; height: 30px; top: 0; right: 0; }
+        .vf-bl { bottom: 0; left: 0; } .vf-bl::before { width: 30px; height: 1px; bottom: 0; } .vf-bl::after { width: 1px; height: 30px; bottom: 0; }
+        .vf-br { bottom: 0; right: 0; } .vf-br::before { width: 30px; height: 1px; bottom: 0; right: 0; } .vf-br::after { width: 1px; height: 30px; bottom: 0; right: 0; }
+        .rec-indicator {
+            position: absolute; top: clamp(1.5rem, 3vw, 3.5rem); right: clamp(2rem, 4vw, 5rem);
+            display: flex; align-items: center; gap: 8px;
+            font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 0.15em;
+            color: var(--neon-pink); z-index: 2; opacity: 0;
+        }
+        .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--neon-pink); animation: rec-blink 1.2s ease-in-out infinite; }
+        @keyframes rec-blink { 0%,100%{opacity:1}50%{opacity:.2} }
+        .act-rebirth { max-width: 1200px; margin: 0 auto; position: relative; z-index: 2; }
+        .rebirth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem; }
+        .rebirth-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 2rem; position: relative; overflow: hidden;
+            cursor: pointer; transition: transform 0.4s, border-color 0.4s;
+        }
+        .rebirth-card:hover { transform: translateY(-4px); border-color: rgba(56,217,245,0.3); }
+        .rebirth-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--lens-cyan), var(--neon-pink));
+            transform: scaleX(0); transform-origin: left; transition: transform 0.6s;
+        }
+        .rebirth-card:hover::before { transform: scaleX(1); }
+        .rebirth-card .card-icon { font-size: 1.6rem; margin-bottom: 1rem; color: var(--lens-cyan); }
+        .rebirth-card h3 { font-family: var(--font-cn); font-size: 1.05rem; font-weight: 700; color: var(--text-bright); margin-bottom: 0.6rem; }
+        .rebirth-card p { font-family: var(--font-cn); font-size: 0.83rem; color: var(--text); line-height: 1.8; }
+
+        /* ======== GALLERY — Scroll-pinned Reels showcase ======== */
+        .gallery-section {
+            position: relative;
+            background: rgba(5,5,8,0.6); overflow: hidden;
+        }
+        .gallery-stage {
+            position: relative; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .gallery-header {
+            position: absolute; top: clamp(2rem, 4vh, 3.5rem);
+            left: 0; right: 0; z-index: 10;
+            padding: 0 clamp(1.5rem, 5vw, 4rem);
+        }
+        .gallery-progress {
+            display: flex; gap: 4px;
+            margin-top: 1.2rem;
+        }
+        .gallery-progress-bar {
+            flex: 1; height: 2px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 1px; overflow: hidden;
+        }
+        .gallery-progress-fill {
+            height: 100%; width: 0;
+            background: var(--spotlight-gold);
+            border-radius: 1px;
+        }
+        .gallery-item {
+            position: absolute;
+            width: clamp(260px, 32vw, 380px);
+            aspect-ratio: 9/16;
+            border-radius: 12px; overflow: hidden;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .gallery-item:first-child { opacity: 1; }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .gallery-item::after {
+            content: ''; position: absolute; inset: 0;
+            border: 1.5px solid rgba(255,255,255,0.06);
+            border-radius: 12px; pointer-events: none;
+        }
+        .gallery-counter {
+            position: absolute; bottom: clamp(2rem, 4vh, 3rem);
+            left: 50%; transform: translateX(-50%);
+            font-family: var(--font-display); font-size: 0.75rem;
+            letter-spacing: 0.3em; color: var(--text-muted); z-index: 10;
+        }
+
+        /* ======== RHYTHM — FULL WIDTH WAVEFORM ======== */
+        .rhythm-section {
+            position: relative; min-height: 85vh;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(180deg, var(--void) 0%, #0c0818 30%, #0a0614 70%, var(--void) 100%);
+            overflow: hidden;
+        }
+        #rhythm-canvas {
+            position: absolute; inset: 0; z-index: 0;
+        }
+        .rhythm-overlay {
+            position: relative; z-index: 2;
+            text-align: center; padding: 2rem;
+        }
+        .rhythm-overlay .big-quote {
+            font-family: var(--font-cn);
+            font-size: clamp(1.5rem, 4vw, 2.8rem);
+            font-weight: 900; color: var(--text-bright);
+            line-height: 1.8; max-width: 640px; margin: 0 auto;
+            text-shadow: 0 0 40px rgba(240,200,80,0.3), 0 0 80px rgba(255,45,120,0.15);
+        }
+        .rhythm-overlay .big-quote span { color: var(--spotlight-gold); }
+        .rhythm-cta {
+            font-family: var(--font-cn); font-size: 0.7rem;
+            color: var(--text-muted); margin-top: 1rem; letter-spacing: 0.15em;
+        }
+
+        /* ======== SERVICES ======== */
+        .act-services-section {
+            position: relative;
+            padding: clamp(6rem, 12vh, 10rem) clamp(1.5rem, 5vw, 4rem);
+            background: linear-gradient(180deg, rgba(10,12,24,0.6) 0%, rgba(14,12,10,0.6) 100%);
+            overflow: hidden;
+        }
+        .on-air {
+            position: absolute; top: clamp(2rem, 4vh, 4rem); right: clamp(1.5rem, 4vw, 4rem);
+            font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 0.3em;
+            color: var(--neon-pink); padding: 6px 16px;
+            border: 1px solid rgba(255,45,120,0.3); border-radius: 3px; opacity: 0;
+            animation: on-air-glow 2s ease-in-out infinite;
+        }
+        @keyframes on-air-glow { 0%,100%{box-shadow:0 0 10px rgba(255,45,120,.1)}50%{box-shadow:0 0 20px rgba(255,45,120,.25)} }
+        .act-services { max-width: 1000px; margin: 0 auto; position: relative; z-index: 2; }
+        .services-list { margin-top: 3rem; display: flex; flex-direction: column; }
+        .service-item {
+            display: flex; align-items: center; padding: 1.8rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer; position: relative; overflow: hidden;
+        }
+        .service-item::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+            background: linear-gradient(90deg, rgba(255,45,120,0.06), transparent);
+            transition: width 0.6s;
+        }
+        .service-item:hover::before { width: 100%; }
+        .service-num {
+            font-family: var(--font-display); font-size: 2.2rem;
+            color: rgba(255,255,255,0.06); margin-right: 1.5rem; min-width: 50px;
+            transition: color 0.4s;
+        }
+        .service-item:hover .service-num { color: var(--neon-pink); }
+        .service-info { flex: 1; position: relative; z-index: 1; }
+        .service-info h3 { font-family: var(--font-cn); font-size: clamp(0.95rem, 1.8vw, 1.2rem); font-weight: 700; color: var(--text-bright); margin-bottom: 0.2rem; transition: color 0.3s; }
+        .service-item:hover .service-info h3 { color: var(--spotlight-gold); }
+        .service-info p { font-family: var(--font-cn); font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; }
+        .service-arrow { font-size: 1rem; color: var(--text-muted); transition: all 0.3s; position: relative; z-index: 1; }
+        .service-item:hover .service-arrow { color: var(--neon-pink); transform: translateX(6px); }
+
+        /* ======== CAFE ======== */
+        .cafe-section-wrap {
+            position: relative;
+            padding: clamp(4rem, 8vh, 6rem) clamp(1.5rem, 5vw, 4rem);
+            background: linear-gradient(180deg, rgba(14,12,10,0.6) 0%, rgba(18,15,8,0.55) 50%, rgba(14,12,10,0.6) 100%);
+            overflow: hidden;
+        }
+        .steam {
+            position: absolute; bottom: 40%; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(240,200,80,0.04) 0%, transparent 60%);
+            border-radius: 50%; animation: steam-rise 6s ease-in-out infinite; pointer-events: none;
+        }
+        @keyframes steam-rise { 0%,100%{transform:translateX(-50%) translateY(0);opacity:.5}50%{transform:translateX(-50%) translateY(-30px);opacity:1} }
+        .cafe-section { max-width: 800px; margin: 0 auto; text-align: center; position: relative; z-index: 2; }
+        .cafe-pins { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-top: 2rem; }
+        .cafe-pin { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; cursor: pointer; transition: transform 0.3s; }
+        .cafe-pin:hover { transform: translateY(-4px); }
+        .cafe-pin .pin-icon {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--spotlight-gold), #c49030);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; color: #fff; box-shadow: 0 4px 20px rgba(240,200,80,0.2);
+        }
+        .cafe-pin span { font-family: var(--font-cn); font-size: 0.7rem; color: var(--text-muted); }
+
+        /* ======== TIMELINE ======== */
+        .timeline-section {
+            position: relative;
+            padding: clamp(6rem, 12vh, 10rem) clamp(1.5rem, 5vw, 4rem);
+            background: linear-gradient(180deg, rgba(14,12,10,0.6) 0%, rgba(5,5,8,0.6) 100%);
+        }
+        .timeline-wrap { max-width: 800px; margin: 0 auto; }
+        .timeline { position: relative; margin-top: 3rem; padding-left: 2.5rem; }
+        .timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.06); }
+        .timeline-glow {
+            position: absolute; left: -3px; top: 0; width: 8px; height: 60px;
+            background: linear-gradient(to bottom, var(--spotlight-gold), transparent);
+            border-radius: 4px; filter: blur(2px); pointer-events: none;
+        }
+        .timeline-item { position: relative; padding: 0 0 2.5rem 2rem; opacity: 0; transform: translateX(-20px); }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -2.5rem; top: 0.4rem;
+            width: 8px; height: 8px; border-radius: 50%;
+            border: 2px solid var(--text-muted); background: var(--void);
+            transition: border-color 0.4s, box-shadow 0.4s;
+        }
+        .timeline-item.lit::before { border-color: var(--spotlight-gold); box-shadow: 0 0 12px rgba(240,200,80,0.5); }
+        .timeline-item .year { font-family: var(--font-display); font-size: 1.6rem; color: var(--spotlight-gold); letter-spacing: 0.1em; }
+        .timeline-item h3 { font-family: var(--font-cn); font-size: 1rem; font-weight: 700; color: var(--text-bright); margin: 0.2rem 0; }
+        .timeline-item p { font-family: var(--font-cn); font-size: 0.83rem; color: var(--text); line-height: 1.7; }
+
+        /* ======== FOOTER ======== */
+        .guild-footer {
+            text-align: center; padding: 6rem 2rem; position: relative;
+            background:
+                radial-gradient(ellipse 40% 60% at 35% 50%, rgba(240,200,80,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 60% at 65% 50%, rgba(56,217,245,0.03) 0%, transparent 60%),
+                var(--void);
+        }
+        .footer-divider { width: 60px; height: 1px; background: linear-gradient(90deg, var(--spotlight-gold), var(--neon-pink), var(--lens-cyan)); margin: 0 auto 2rem; }
+        .footer-avatar { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--spotlight-gold); object-fit: cover; margin-bottom: 1.5rem; }
+        .footer-name { font-family: var(--font-display); font-size: 2.5rem; color: var(--text-bright); letter-spacing: 0.2em; }
+        .footer-bio { font-family: var(--font-cn); font-size: 0.88rem; color: var(--text-muted); margin-top: 0.5rem; max-width: 400px; margin-left: auto; margin-right: auto; }
+        .social-links { display: flex; justify-content: center; gap: 1.5rem; margin-top: 2rem; }
+        .social-links a {
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); text-decoration: none;
+            transition: all 0.3s; font-size: 1.1rem;
+        }
+        .social-links a:hover { border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 20px rgba(255,45,120,0.2); }
+        .footer-credit { margin-top: 4rem; font-family: var(--font-cn); font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.1em; }
+        .footer-credit a { color: var(--neon-pink); text-decoration: none; }
+
+        /* ======== LIGHTBOX ======== */
+        .lightbox {
+            position: fixed; inset: 0; z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+        }
+        .lightbox.active { opacity: 1; pointer-events: all; }
+        .lightbox-bg { position: absolute; inset: 0; background: rgba(5,5,8,0.92); cursor: pointer; }
+        .lightbox-spotlight {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(240,200,80,0.08) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .lightbox-img {
+            position: relative; z-index: 2;
+            max-width: 85vw; max-height: 85vh; border-radius: 4px;
+            box-shadow: 0 0 80px rgba(240,200,80,0.2);
+            transform: scale(0.8);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .lightbox.active .lightbox-img { transform: scale(1); }
+        .lightbox-caption {
+            position: absolute; bottom: 5vh; left: 50%; transform: translateX(-50%);
+            font-family: var(--font-cn); font-size: 0.85rem;
+            color: var(--spotlight-gold); letter-spacing: 0.1em; z-index: 3;
+            opacity: 0; transition: opacity 0.4s 0.3s;
+        }
+        .lightbox.active .lightbox-caption { opacity: 1; }
+        .lightbox-close { position: absolute; top: 2rem; right: 2rem; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; z-index: 3; transition: color 0.3s; }
+        .lightbox-close:hover { color: var(--text-bright); }
+        .lightbox-frame {
+            position: absolute; top: 4vh; left: 50%; transform: translateX(-50%);
+            font-family: var(--font-display); font-size: 0.6rem; letter-spacing: 0.3em;
+            color: rgba(255,255,255,0.15); z-index: 3; white-space: nowrap;
+        }
+
+        /* ======== RESPONSIVE ======== */
+        @media (max-width: 768px) {
+            .act-origin { flex-direction: column; text-align: center; }
+            .act-origin .visual { flex: none; width: 85%; max-width: 320px; }
+            .beat-dots { display: none; }
+            .rebirth-grid { grid-template-columns: 1fr; }
+            .gallery-item { width: clamp(220px, 70vw, 300px); }
+            .service-num { font-size: 1.6rem; min-width: 36px; margin-right: 1rem; }
+            .viewfinder { inset: 1rem; }
+            .rec-indicator { top: 1.5rem; right: 1.5rem; }
+            .on-air { top: 1.5rem; right: 1.5rem; }
+        }
+        @media (max-width: 480px) {
+            .gallery-item { width: 80vw; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="loader" id="loader">
+    <div class="loader-spotlight"></div>
+    <div class="loader-text">SPOTLIGHT SHIFT</div>
+</div>
+
+<canvas id="three-bg"></canvas>
+<div class="noise-overlay"></div>
+<div class="stage-progress"><div class="stage-progress-fill" id="progress-fill"></div></div>
+<a href="/guild/" class="back-nav"><i class="fas fa-arrow-left"></i> ARCHIVE</a>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+    <div class="hero-spotlight" id="hero-spotlight"></div>
+    <div class="hero-lamp" id="hero-lamp"></div>
+    <div class="hero-reflection" id="hero-reflection"></div>
+    <div class="hero-content">
+        <img src="/assets/img/guild/__20_04_1_3/avatar.webp" alt="小蓁" class="hero-avatar">
+        <h1 class="hero-name">SPOTLIGHT<br>SHIFT</h1>
+        <p class="hero-subtitle">從舞台到螢幕的華麗轉場</p>
+        <p class="hero-tagline">When the music stops, the story begins.</p>
+    </div>
+    <div class="scroll-cue"><span>SCROLL</span><div class="arrow"></div></div>
+</section>
+
+<!-- ACT I -->
+<section class="act-origin-section" id="act-origin">
+    <div class="act-origin">
+        <div class="visual">
+            <img src="/assets/img/guild/__20_04_1_3/photo2_dance.webp" alt="Dance">
+            <div class="beat-dots" id="beat-dots">
+                <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
+                <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
+            </div>
+        </div>
+        <div class="narrative">
+            <div class="act-label">ACT I &mdash; ORIGIN</div>
+            <h2 class="section-title">三歲那年，<br>我踏上了舞台</h2>
+            <div class="section-text">
+                <p>我叫小蓁，今年 21 歲，是靜宜大學大眾傳播學系的大四生。但在成為傳播人之前，我的身份是一名舞者。</p><br>
+                <p>三歲開始學現代舞，那是我記憶中最早的畫面 -- 鏡子裡一個小小的身影，跟著節拍擺動。一路跳到大一，我遇見了街舞，Jazz 和 Twerk 成為了我的新語言。身體的每一寸肌肉都在訴說故事，每一個 beat 都是我與世界對話的方式。</p><br>
+                <p>大三那年，我終於接到了舞蹈教室的課程邀約。成為舞蹈老師 -- 這個從小到大的夢想，觸手可及。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ACT II -->
+<section class="act-turning-section" id="act-turning">
+    <div class="crack-bg" id="crack-bg">
+        <svg viewBox="0 0 1440 900" preserveAspectRatio="none">
+            <path d="M720,0 L718,150 L700,280 L730,350 L690,450 L720,500 L710,600 L725,700 L720,900"/>
+            <path d="M720,350 L650,380 L580,370"/><path d="M720,350 L790,390 L860,380"/>
+            <path d="M720,500 L670,540 L620,530"/><path d="M720,500 L780,530 L840,520"/>
+        </svg>
+    </div>
+    <div class="broken-spotlight" id="broken-spotlight"></div>
+    <div class="turning-container">
+        <div class="turning-quote" id="turning-quote">
+            然後，我的腳受傷了。<br><br>
+            那種痛不只在腳踝，而是整個夢想<em>斷裂</em>的聲音。<br><br>
+            無法長時間走路，無法再像從前那樣跳舞。<br>
+            但我決定 -- <em>聚光燈不會熄滅</em>，只是換一個舞台。
+        </div>
+        <div class="heartbeat-line" id="heartbeat">
+            <svg viewBox="0 0 200 40"><path d="M0,20 L40,20 L50,5 L60,35 L70,10 L80,30 L90,20 L200,20"/></svg>
+        </div>
+    </div>
+</section>
+
+<!-- ACT III -->
+<section class="act-rebirth-section" id="act-rebirth">
+    <div class="viewfinder" id="viewfinder">
+        <div class="viewfinder-corner vf-tl"></div><div class="viewfinder-corner vf-tr"></div>
+        <div class="viewfinder-corner vf-bl"></div><div class="viewfinder-corner vf-br"></div>
+    </div>
+    <div class="rec-indicator" id="rec-indicator"><div class="rec-dot"></div> REC</div>
+    <div class="act-rebirth">
+        <div class="act-label">ACT III &mdash; REBIRTH</div>
+        <h2 class="section-title">新的舞台，<br>更大的世界</h2>
+        <div class="section-text" style="margin-bottom: 1rem;">
+            <p>我把舞者的節奏感帶進了鏡頭前。大眾傳播不只是我的科系，它成了我全新的表達方式。在靜宜大學，我創立了「自媒體研究社」，教大家如何在這個時代經營自己、打造個人品牌。</p>
+        </div>
+        <div class="rebirth-grid">
+            <div class="rebirth-card"><i class="fas fa-microphone-alt card-icon"></i><h3>全中運主播</h3><p>舉重項目的現場播報員。把舞台上的臨場感帶進了播報席，邊工作邊感受每一次槓鈴落地的震撼。</p></div>
+            <div class="rebirth-card"><i class="fas fa-users card-icon"></i><h3>自媒體研究社創辦人</h3><p>在大學裡建立了一個社群，致力於讓每個社員離開社團後都能將自媒體和自身專業完美結合。</p></div>
+            <div class="rebirth-card"><i class="fas fa-video card-icon"></i><h3>TikTok 影像創作</h3><p>參與台南永續主題短片比賽，用影像說故事，用鏡頭捕捉七股的永續之美。作品更入圍「長照挺你獎」。</p></div>
+            <div class="rebirth-card"><i class="fas fa-music card-icon"></i><h3>草地音樂會發起人</h3><p>在靜宜大學發起小型草地音樂會 -- 大家一起躺在草地上曬太陽、聽音樂。簡單的快樂，最珍貴。</p></div>
+            <div class="rebirth-card"><i class="fas fa-camera card-icon"></i><h3>攝影 & 視覺企劃</h3><p>與多位攝影師合作拍攝個人作品。我相信最好的照片不需要修圖 -- 用原相機，無調色，真實即美。</p></div>
+            <div class="rebirth-card"><i class="fas fa-bullhorn card-icon"></i><h3>品牌合作推廣</h3><p>用自身的影響力為好的產品發聲。不只是業配，而是真心推薦我生活中喜歡的一切。</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- GALLERY -->
+<section class="gallery-section" id="gallery">
+    <div class="gallery-stage" id="gallery-stage">
+        <div class="gallery-header">
+            <div class="act-label">GALLERY</div>
+            <h2 class="section-title" style="margin-bottom:0.8rem;">我的不同面貌</h2>
+            <div class="gallery-progress" id="gallery-progress">
+                <div class="gallery-progress-bar"><div class="gallery-progress-fill" id="gpf-0"></div></div>
+                <div class="gallery-progress-bar"><div class="gallery-progress-fill" id="gpf-1"></div></div>
+                <div class="gallery-progress-bar"><div class="gallery-progress-fill" id="gpf-2"></div></div>
+                <div class="gallery-progress-bar"><div class="gallery-progress-fill" id="gpf-3"></div></div>
+                <div class="gallery-progress-bar"><div class="gallery-progress-fill" id="gpf-4"></div></div>
+                <div class="gallery-progress-bar"><div class="gallery-progress-fill" id="gpf-5"></div></div>
+            </div>
+        </div>
+        <div class="gallery-item"><img src="/assets/img/guild/__20_04_1_3/photo1_selfie.webp" alt="工作中的我" loading="lazy"></div>
+        <div class="gallery-item"><img src="/assets/img/guild/__20_04_1_3/photo4_hat.webp" alt="街頭風格" loading="lazy"></div>
+        <div class="gallery-item"><img src="/assets/img/guild/__20_04_1_3/photo6_hotel.webp" alt="Laundromat" loading="lazy"></div>
+        <div class="gallery-item"><img src="/assets/img/guild/__20_04_1_3/photo7_outfit.webp" alt="Neon Night" loading="lazy"></div>
+        <div class="gallery-item"><img src="/assets/img/guild/__20_04_1_3/photo5_costume.webp" alt="Playful" loading="lazy"></div>
+        <div class="gallery-item"><img src="/assets/img/guild/__20_04_1_3/photo3_group.webp" alt="On the road" loading="lazy"></div>
+        <div class="gallery-counter" id="gallery-counter">01 / 06</div>
+    </div>
+</section>
+
+<!-- RHYTHM -->
+<section class="rhythm-section" id="rhythm">
+    <canvas id="rhythm-canvas"></canvas>
+    <div class="rhythm-overlay">
+        <p class="big-quote">樂在其中，<br>你就會<span>全力以赴</span>。</p>
+        <p class="rhythm-cta">-- 移動滑鼠，感受節奏 --</p>
+    </div>
+</section>
+
+<!-- SERVICES -->
+<section class="act-services-section" id="act-services">
+    <div class="on-air" id="on-air">ON AIR</div>
+    <div class="act-services">
+        <div class="act-label">ACT IV &mdash; WHAT I CAN DO</div>
+        <h2 class="section-title">我能為你做什麼</h2>
+        <div class="section-text"><p>如果你也在尋找讓自己被看見的方式，歡迎找我聊聊。我的經驗或許能給你一些靈感。</p></div>
+        <div class="services-list">
+            <div class="service-item"><div class="service-num">01</div><div class="service-info"><h3>自媒體經營諮詢</h3><p>從零開始建立個人品牌，選擇適合你的平台，找到你的聲音。</p></div><i class="fas fa-arrow-right service-arrow"></i></div>
+            <div class="service-item"><div class="service-num">02</div><div class="service-info"><h3>短影片企劃 & 拍攝</h3><p>TikTok、IG Reels、YouTube Shorts -- 從腳本到執行，把想法變成會動的故事。</p></div><i class="fas fa-arrow-right service-arrow"></i></div>
+            <div class="service-item"><div class="service-num">03</div><div class="service-info"><h3>活動企劃 & 主持</h3><p>草地音樂會、社團活動、品牌發布 -- 從企劃到主持，一條龍服務。</p></div><i class="fas fa-arrow-right service-arrow"></i></div>
+            <div class="service-item"><div class="service-num">04</div><div class="service-info"><h3>賽事播報 & 口條訓練</h3><p>全中運主播經驗。如果你想練口條或需要活動播報人選，我可以幫忙。</p></div><i class="fas fa-arrow-right service-arrow"></i></div>
+            <div class="service-item"><div class="service-num">05</div><div class="service-info"><h3>品牌合作 & 推廣</h3><p>真實的使用心得搭配有溫度的內容。我只推薦我真正喜歡的東西。</p></div><i class="fas fa-arrow-right service-arrow"></i></div>
+        </div>
+    </div>
+</section>
+
+<!-- CAFE -->
+<section class="cafe-section-wrap" id="cafe-explorer">
+    <div class="steam"></div>
+    <div class="cafe-section">
+        <div class="act-label" style="justify-content:center;">SIDE QUEST</div>
+        <h2 class="section-title" style="text-align:center;">咖啡廳征服計畫</h2>
+        <div class="section-text" style="margin:0 auto 1rem;text-align:center;"><p>我的人生目標之一：跑遍台灣每一間有靈魂的咖啡廳。如果你知道哪裡有好喝的咖啡，拜託告訴我。</p></div>
+        <div class="cafe-pins">
+            <div class="cafe-pin"><div class="pin-icon"><i class="fas fa-mug-hot"></i></div><span>台中</span></div>
+            <div class="cafe-pin"><div class="pin-icon"><i class="fas fa-mug-hot"></i></div><span>屏東</span></div>
+            <div class="cafe-pin"><div class="pin-icon"><i class="fas fa-mug-hot"></i></div><span>台南</span></div>
+            <div class="cafe-pin"><div class="pin-icon"><i class="fas fa-mug-hot"></i></div><span>高雄</span></div>
+            <div class="cafe-pin" style="opacity:0.35;"><div class="pin-icon" style="background:var(--text-muted);"><i class="fas fa-question"></i></div><span>NEXT?</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="timeline-section" id="timeline">
+    <div class="timeline-wrap">
+        <div class="act-label">TIMELINE</div>
+        <h2 class="section-title">我的旅程</h2>
+        <div class="timeline" id="timeline-list">
+            <div class="timeline-glow" id="timeline-glow"></div>
+            <div class="timeline-item"><div class="year">2008</div><h3>踏上舞台</h3><p>三歲開始學習現代舞，從此與舞蹈結下不解之緣。</p></div>
+            <div class="timeline-item"><div class="year">2023</div><h3>街舞新世界</h3><p>大一接觸街舞，找到了 Jazz 和 Twerk。節奏成為了新的母語。</p></div>
+            <div class="timeline-item"><div class="year">2024</div><h3>夢想的裂痕</h3><p>腳部受傷，舞蹈老師的夢暫時擱淺。但轉換跑道的勇氣，讓一切有了全新的可能。</p></div>
+            <div class="timeline-item"><div class="year">2025</div><h3>自媒體研究社誕生</h3><p>在靜宜大學創立自媒體研究社。同年擔任全中運舉重項目主播。</p></div>
+            <div class="timeline-item"><div class="year">2026</div><h3>持續發光</h3><p>TikTok 比賽、長照挺你獎、草地音樂會... 聚光燈永遠不會熄滅。</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="guild-footer" id="footer">
+    <div class="footer-divider"></div>
+    <img src="/assets/img/guild/__20_04_1_3/avatar.webp" alt="小蓁" class="footer-avatar" loading="lazy">
+    <h2 class="footer-name">XIAO ZHEN</h2>
+    <p class="footer-bio">舞者之心，媒體之眼。<br>我是小蓁，很高興認識你。</p>
+    <div class="social-links">
+        <a href="https://www.threads.com/@__20_04_1_3" target="_blank" rel="noopener" aria-label="Threads"><i class="fab fa-threads"></i></a>
+        <a href="https://www.instagram.com/__20_04_1_3/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    </div>
+    <p class="footer-credit">Made with <i class="fas fa-heart" style="color:var(--neon-pink);"></i> by <a href="https://supergalen.com" target="_blank" rel="noopener noreferrer">SuperGalen's Dungeon</a></p>
+</footer>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+    <div class="lightbox-bg" id="lightbox-bg"></div>
+    <div class="lightbox-spotlight"></div>
+    <div class="lightbox-frame" id="lightbox-frame-top"></div>
+    <img class="lightbox-img" id="lightbox-img" src="" alt="">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+    <div class="lightbox-close" id="lightbox-close"><i class="fas fa-times"></i></div>
+</div>
+
+<script>
+/* ============================================================
+   FLOWING LIGHT RIBBONS — Aurora-like silk streams
+   Organic curves that react to mouse + shift color with scroll
+   The flowing motion itself evokes dance & movement
+   ============================================================ */
+function initThreeBg() {
+    const canvas = document.getElementById('three-bg');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
+
+    let scrollP = 0;
+    window.addEventListener('scroll', () => {
+        scrollP = Math.min(window.scrollY / (document.body.scrollHeight - window.innerHeight), 1);
+    });
+
+    let mx = W / 2, my = H / 2;
+    document.addEventListener('mousemove', (e) => { mx = e.clientX; my = e.clientY; });
+    let smx = W / 2, smy = H / 2;
+
+    // --- Ribbon definitions ---
+    const NUM_RIBBONS = 5;
+    const PTS_PER_RIBBON = 9;
+    const ribbons = [];
+    for (let r = 0; r < NUM_RIBBONS; r++) {
+        const pts = [];
+        for (let i = 0; i < PTS_PER_RIBBON; i++) {
+            pts.push({
+                baseX: (i / (PTS_PER_RIBBON - 1)),
+                baseY: 0.25 + r * 0.12,
+                x: 0, y: 0,
+                vx: 0, vy: 0
+            });
+        }
+        ribbons.push({
+            pts,
+            speed: 0.25 + r * 0.12,
+            amp: 0.06 + r * 0.02,
+            width: 80 - r * 10,
+            alpha: 0.14 - r * 0.02,
+            freq: 1.5 + r * 0.4,
+            offset: r * 1.3
+        });
+    }
+
+    function draw() {
+        requestAnimationFrame(draw);
+        ctx.clearRect(0, 0, W, H);
+
+        smx += (mx - smx) * 0.06;
+        smy += (my - smy) * 0.06;
+
+        const t = Date.now() * 0.001;
+
+        // --- Scroll-driven color ---
+        let cr, cg, cb, cr2, cg2, cb2;
+        if (scrollP < 0.25) {
+            cr = 240; cg = 200; cb = 80;     // gold
+            cr2 = 200; cg2 = 160; cb2 = 50;
+        } else if (scrollP < 0.45) {
+            const lp = (scrollP - 0.25) / 0.20;
+            cr = 240 + lp * 15; cg = 200 - lp * 160; cb = 80 + lp * 40;
+            cr2 = 200 + lp * 55; cg2 = 160 - lp * 130; cb2 = 50 + lp * 70;
+        } else if (scrollP < 0.65) {
+            const lp = (scrollP - 0.45) / 0.20;
+            cr = 255 - lp * 200; cg = 40 + lp * 180; cb = 120 + lp * 125;
+            cr2 = 255 - lp * 210; cg2 = 30 + lp * 170; cb2 = 120 + lp * 100;
+        } else {
+            cr = 55; cg = 220; cb = 245;     // cyan
+            cr2 = 45; cg2 = 190; cb2 = 220;
+        }
+
+        // --- Injury phase: flickering ---
+        let globalFlicker = 1;
+        if (scrollP > 0.2 && scrollP < 0.45) {
+            const ip = Math.max(0, 1 - Math.abs(scrollP - 0.33) * 8);
+            globalFlicker = 1 - ip * 0.4 * Math.max(0, Math.sin(t * 12) * Math.sin(t * 7.3));
+        }
+
+        // --- Update & draw ribbons ---
+        for (let ri = 0; ri < NUM_RIBBONS; ri++) {
+            const R = ribbons[ri];
+
+            // Update control points
+            for (let i = 0; i < PTS_PER_RIBBON; i++) {
+                const p = R.pts[i];
+
+                // Base wave motion
+                const wave1 = Math.sin(t * R.speed + i * R.freq + R.offset) * R.amp;
+                const wave2 = Math.sin(t * R.speed * 0.6 + i * R.freq * 1.7 + R.offset * 2) * R.amp * 0.5;
+                const wave3 = Math.cos(t * R.speed * 0.3 + i * R.freq * 0.5) * R.amp * 0.3;
+
+                const targetX = p.baseX * W;
+                const targetY = (p.baseY + wave1 + wave2 + wave3) * H;
+
+                // Mouse influence: push curve away from cursor
+                const dx = targetX - smx;
+                const dy = targetY - smy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const mouseRadius = 250;
+                if (dist < mouseRadius) {
+                    const force = (1 - dist / mouseRadius) * 80;
+                    p.vx += (dx / dist) * force * 0.08;
+                    p.vy += (dy / dist) * force * 0.08;
+                }
+
+                // Spring back + damping
+                p.vx *= 0.88;
+                p.vy *= 0.88;
+
+                p.x = targetX + p.vx;
+                p.y = targetY + p.vy;
+            }
+
+            // Draw ribbon as filled smooth curve with gradient
+            const alpha = R.alpha * globalFlicker;
+            if (alpha < 0.005) continue;
+
+            const halfW = R.width * 0.5;
+
+            // Top edge
+            ctx.beginPath();
+            ctx.moveTo(R.pts[0].x, R.pts[0].y - halfW);
+            for (let i = 1; i < PTS_PER_RIBBON - 1; i++) {
+                const xc = (R.pts[i].x + R.pts[i + 1].x) / 2;
+                const yc = (R.pts[i].y + R.pts[i + 1].y - halfW * 2) / 2;
+                ctx.quadraticCurveTo(R.pts[i].x, R.pts[i].y - halfW, xc, yc);
+            }
+            const last = R.pts[PTS_PER_RIBBON - 1];
+            ctx.lineTo(last.x, last.y - halfW);
+            // Bottom edge (reverse)
+            ctx.lineTo(last.x, last.y + halfW);
+            for (let i = PTS_PER_RIBBON - 2; i >= 1; i--) {
+                const xc = (R.pts[i].x + R.pts[i - 1].x) / 2;
+                const yc = (R.pts[i].y + R.pts[i - 1].y + halfW * 2) / 2;
+                ctx.quadraticCurveTo(R.pts[i].x, R.pts[i].y + halfW, xc, yc);
+            }
+            ctx.lineTo(R.pts[0].x, R.pts[0].y + halfW);
+            ctx.closePath();
+
+            // Gradient fill along the ribbon
+            const grad = ctx.createLinearGradient(0, 0, W, 0);
+            grad.addColorStop(0, `rgba(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)},0)`);
+            grad.addColorStop(0.2, `rgba(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)},${alpha})`);
+            grad.addColorStop(0.5, `rgba(${Math.round(cr2)},${Math.round(cg2)},${Math.round(cb2)},${alpha * 1.3})`);
+            grad.addColorStop(0.8, `rgba(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)},${alpha})`);
+            grad.addColorStop(1, `rgba(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)},0)`);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Bright center line (the "core" of the ribbon)
+            ctx.beginPath();
+            ctx.moveTo(R.pts[0].x, R.pts[0].y);
+            for (let i = 1; i < PTS_PER_RIBBON - 1; i++) {
+                const xc = (R.pts[i].x + R.pts[i + 1].x) / 2;
+                const yc = (R.pts[i].y + R.pts[i + 1].y) / 2;
+                ctx.quadraticCurveTo(R.pts[i].x, R.pts[i].y, xc, yc);
+            }
+            ctx.lineTo(last.x, last.y);
+            ctx.strokeStyle = `rgba(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)},${alpha * 1.5})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+
+        // --- Ambient glow at center ---
+        const glowGrad = ctx.createRadialGradient(W * 0.5, H * 0.45, 0, W * 0.5, H * 0.45, W * 0.5);
+        glowGrad.addColorStop(0, `rgba(${Math.round(cr)},${Math.round(cg)},${Math.round(cb)},0.04)`);
+        glowGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(0, 0, W, H);
+    }
+    draw();
+}
+
+/* ============================================================
+   RHYTHM CANVAS — FULL-WIDTH AUDIO WAVEFORM
+   ============================================================ */
+function initRhythmCanvas() {
+    const c = document.getElementById('rhythm-canvas');
+    const ctx = c.getContext('2d');
+    const section = document.getElementById('rhythm');
+    let W, H, mx = 0.5, my = 0.5, inSection = false;
+
+    function resize() {
+        const r = section.getBoundingClientRect();
+        W = c.width = r.width;
+        H = c.height = r.height;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    document.addEventListener('mousemove', (e) => {
+        const r = section.getBoundingClientRect();
+        inSection = e.clientY >= r.top && e.clientY <= r.bottom;
+        mx = e.clientX / window.innerWidth;
+        my = (e.clientY - r.top) / r.height;
+    });
+
+    let t = 0;
+    // Persistent particles for sparkle trails
+    const sparkles = [];
+    for (let i = 0; i < 40; i++) {
+        sparkles.push({ x: Math.random(), y: Math.random(), vx: (Math.random()-0.5)*0.002, vy: -Math.random()*0.003-0.001, life: Math.random(), size: Math.random()*3+1 });
+    }
+
+    function draw() {
+        requestAnimationFrame(draw);
+        t += 0.018;
+        ctx.clearRect(0, 0, W, H);
+
+        const cx = W / 2, cy = H / 2;
+
+        // === LAYER 0: Background pulse glow (beat effect) ===
+        const beatPulse = Math.abs(Math.sin(t * 3)) * 0.3 + Math.abs(Math.sin(t * 4.7)) * 0.15;
+        const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.6);
+        bgGrad.addColorStop(0, `rgba(240,200,80,${0.04 + beatPulse * 0.06})`);
+        bgGrad.addColorStop(0.4, `rgba(255,45,120,${0.02 + beatPulse * 0.03})`);
+        bgGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, W, H);
+
+        // === LAYER 1: Wide ambient wave bands ===
+        for (let layer = 0; layer < 5; layer++) {
+            ctx.beginPath();
+            const layerSpeed = [1.2, 0.8, 1.6, 2.2, 0.5][layer];
+            const layerAmp = [0.18, 0.12, 0.09, 0.06, 0.15][layer];
+            const layerAlpha = [0.15, 0.10, 0.08, 0.05, 0.07][layer];
+            const colors = [
+                [240,200,80],[255,45,120],[56,217,245],[240,200,80],[255,45,120]
+            ][layer];
+
+            const yOff = [0, 0.08, -0.06, 0.12, -0.1][layer] * H;
+            ctx.moveTo(0, cy + yOff);
+            for (let x = 0; x <= W; x += 2) {
+                const norm = x / W;
+                const y = cy + yOff
+                    + Math.sin(norm * Math.PI * 3 + t * layerSpeed) * H * layerAmp
+                    + Math.sin(norm * Math.PI * 7 - t * layerSpeed * 0.7) * H * layerAmp * 0.5
+                    + Math.sin(norm * Math.PI * 11 + t * layerSpeed * 1.3) * H * layerAmp * 0.25;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+            ctx.fillStyle = `rgba(${colors[0]},${colors[1]},${colors[2]},${layerAlpha})`;
+            ctx.fill();
+        }
+
+        // === LAYER 2: Equalizer bars (dense, prominent) ===
+        const barW = 2, gap = 1, total = Math.floor(W / (barW + gap));
+        for (let i = 0; i < total; i++) {
+            const x = i * (barW + gap);
+            const norm = (x - cx) / (W * 0.5);
+
+            const wave1 = Math.sin(norm * 4 + t * 2.5) * 0.5;
+            const wave2 = Math.sin(norm * 8 - t * 1.8) * 0.35;
+            const wave3 = Math.cos(norm * 3 + t * 1.2) * 0.3;
+            const wave4 = Math.sin(norm * 12 + t * 3) * 0.2;
+            const wave5 = Math.sin(norm * 6 + t * 4.5) * 0.15;
+
+            const mouseDist = inSection ? Math.max(0, 1 - Math.abs(mx - x/W) * 2) : 0;
+            const mouseBoost = mouseDist * 0.8;
+
+            const amp = (Math.abs(wave1 + wave2 + wave3 + wave4 + wave5) + mouseBoost) * H * 0.5;
+            const h = Math.max(2, amp);
+
+            const edgeness = Math.abs(norm);
+            const r = Math.round(240 + edgeness * 15);
+            const g = Math.round(200 - edgeness * 160);
+            const b = Math.round(80 + edgeness * 45);
+            const a = 0.3 + mouseBoost * 0.7 + Math.abs(wave1) * 0.3;
+
+            ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+            ctx.fillRect(x, cy - h/2, barW, h);
+
+            // Mirror glow line at tips
+            if (h > 30) {
+                ctx.fillStyle = `rgba(${r},${g},${b},${a * 0.5})`;
+                ctx.fillRect(x, cy - h/2 - 2, barW, 2);
+                ctx.fillRect(x, cy + h/2, barW, 2);
+            }
+        }
+
+        // === LAYER 3: Orbiting rhythm dots (two rings) ===
+        for (let ring = 0; ring < 2; ring++) {
+            const dotCount = ring === 0 ? 16 : 10;
+            const baseRadius = ring === 0 ? 100 : 160;
+            const speed = ring === 0 ? 0.5 : -0.3;
+            for (let i = 0; i < dotCount; i++) {
+                const angle = (i / dotCount) * Math.PI * 2 + t * speed;
+                const radius = baseRadius + Math.sin(t * 0.8 + i) * 30;
+                const dx = cx + Math.cos(angle) * radius * (W / 500);
+                const dy = cy + Math.sin(angle) * radius * 0.35;
+                const size = 3 + Math.sin(t + i * 0.5) * 2.5;
+                const alpha = 0.4 + Math.sin(t * 2 + i) * 0.2;
+
+                ctx.beginPath();
+                ctx.arc(dx, dy, size, 0, Math.PI * 2);
+                const dotColors = ring === 0
+                    ? (i % 3 === 0 ? [240,200,80] : i % 3 === 1 ? [255,45,120] : [56,217,245])
+                    : (i % 2 === 0 ? [255,45,120] : [56,217,245]);
+                ctx.fillStyle = `rgba(${dotColors[0]},${dotColors[1]},${dotColors[2]},${alpha})`;
+                ctx.fill();
+
+                // Dot glow
+                ctx.beginPath();
+                ctx.arc(dx, dy, size * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${dotColors[0]},${dotColors[1]},${dotColors[2]},${alpha * 0.15})`;
+                ctx.fill();
+            }
+        }
+
+        // === LAYER 4: Rising sparkle particles ===
+        for (const sp of sparkles) {
+            sp.x += sp.vx;
+            sp.y += sp.vy;
+            sp.life -= 0.005;
+            if (sp.life <= 0 || sp.y < 0) {
+                sp.x = Math.random(); sp.y = 0.8 + Math.random() * 0.2;
+                sp.vx = (Math.random()-0.5)*0.002; sp.vy = -Math.random()*0.003-0.001;
+                sp.life = 1; sp.size = Math.random()*3+1;
+            }
+            const sx = sp.x * W, sy = sp.y * H;
+            const sa = sp.life * 0.5;
+            ctx.beginPath();
+            ctx.arc(sx, sy, sp.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(240,200,80,${sa})`;
+            ctx.fill();
+        }
+
+        // === Center text glow ===
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.3);
+        grad.addColorStop(0, 'rgba(240,200,80,0.1)');
+        grad.addColorStop(0.4, 'rgba(255,45,120,0.05)');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+    }
+    draw();
+}
+
+/* ============================================================
+   MAIN INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const loader = document.getElementById('loader');
+    gsap.to(loader, { opacity: 0, duration: 0.6, delay: 1.5, onComplete: () => { loader.style.display = 'none'; initAll(); } });
+});
+
+function initAll() {
+    gsap.registerPlugin(ScrollTrigger);
+    initThreeBg();
+    initRhythmCanvas();
+
+    // Progress bar
+    window.addEventListener('scroll', () => {
+        const p = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+        document.getElementById('progress-fill').style.width = p + '%';
+    });
+
+    // Beat dots
+    const dots = document.querySelectorAll('.beat-dot');
+    let di = 0;
+    setInterval(() => { dots.forEach(d => d.classList.remove('active')); dots[di].classList.add('active'); di = (di+1)%dots.length; }, 300);
+
+    // --- HERO ---
+    const htl = gsap.timeline({ delay: 0.2 });
+    htl.to('#hero-spotlight', { opacity: 1, duration: 1.2 }, 0)
+       .to('#hero-lamp', { opacity: 1, duration: 0.6 }, 0)
+       .to('#hero-reflection', { opacity: 1, duration: 1 }, 0.3)
+       .to('.hero-avatar', { opacity: 1, duration: 0.8, ease: 'back.out(1.4)' }, 0.4)
+       .from('.hero-avatar', { scale: 0.6, duration: 0.8, ease: 'back.out(1.4)' }, 0.4)
+       .to('.hero-name', { opacity: 1, duration: 0.7 }, 0.6)
+       .from('.hero-name', { y: 30, duration: 0.7 }, 0.6)
+       .to('.hero-subtitle', { opacity: 1, duration: 0.5 }, 0.9)
+       .to('.hero-tagline', { opacity: 1, duration: 0.5 }, 1.1)
+       .to('.scroll-cue', { opacity: 1, duration: 0.5 }, 1.5);
+    gsap.to('#hero-spotlight', { opacity: 0, scrollTrigger: { trigger: '.hero', start: 'top top', end: '80% top', scrub: true } });
+
+    // --- ACT I: DANCE PHOTO ---
+    const danceImg = document.querySelector('.act-origin .visual img');
+    if (danceImg) {
+        gsap.to(danceImg, { scale: 1.03, duration: 3, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+        const vis = document.querySelector('.act-origin .visual');
+        vis.addEventListener('mousemove', (e) => {
+            const r = vis.getBoundingClientRect();
+            const x = (e.clientX - r.left) / r.width - 0.5;
+            const y = (e.clientY - r.top) / r.height - 0.5;
+            gsap.to(danceImg, { rotateY: x*8, rotateX: -y*8, duration: 0.5, overwrite: 'auto' });
+        });
+        vis.addEventListener('mouseleave', () => { gsap.to(danceImg, { rotateY: 0, rotateX: 0, duration: 0.6, overwrite: 'auto' }); });
+    }
+    gsap.from('.act-origin .visual', { scrollTrigger: { trigger: '#act-origin', start: 'top 70%' }, x: -80, opacity: 0, rotation: -3, duration: 1.2, ease: 'power3.out' });
+    document.querySelectorAll('.act-origin .narrative p').forEach((p, i) => {
+        gsap.from(p, { scrollTrigger: { trigger: p, start: 'top 85%' }, y: 25, opacity: 0, duration: 0.6, delay: i*0.12, ease: 'power3.out' });
+    });
+
+    // --- ACT II ---
+    gsap.to('#crack-bg', { scrollTrigger: { trigger: '#act-turning', start: 'top 60%' }, opacity: 1, duration: 0.5 });
+    gsap.to('#crack-bg path', { scrollTrigger: { trigger: '#act-turning', start: 'top 55%' }, strokeDashoffset: 0, duration: 2, stagger: 0.2 });
+    gsap.fromTo('#broken-spotlight', { opacity: 0, scale: 0.6 }, { scrollTrigger: { trigger: '#act-turning', start: 'top 60%' }, opacity: 1, scale: 1, duration: 1.5 });
+    gsap.to('#turning-quote', { scrollTrigger: { trigger: '#act-turning', start: 'top 50%' }, opacity: 1, duration: 1, delay: 0.5 });
+    gsap.to('#heartbeat', { scrollTrigger: { trigger: '#act-turning', start: 'top 40%' }, opacity: 1, duration: 0.5, delay: 1 });
+    gsap.to('#heartbeat path', { scrollTrigger: { trigger: '#act-turning', start: 'top 40%' }, strokeDashoffset: 0, duration: 1.5, delay: 1.2 });
+
+    // --- ACT III ---
+    gsap.fromTo('#viewfinder', { opacity: 0, scale: 1.3 }, { scrollTrigger: { trigger: '#act-rebirth', start: 'top 70%' }, opacity: 1, scale: 1, duration: 1.2 });
+    gsap.to('#rec-indicator', { scrollTrigger: { trigger: '#act-rebirth', start: 'top 55%' }, opacity: 1, duration: 0.3, delay: 0.8 });
+    gsap.utils.toArray('.rebirth-card').forEach((card, i) => {
+        gsap.from(card, { scrollTrigger: { trigger: card, start: 'top 85%' }, x: i%2===0?-50:50, y: 30, opacity: 0, rotation: i%2===0?-2:2, duration: 0.7, delay: i*0.08 });
+        card.addEventListener('mouseenter', () => { const ic = card.querySelector('.card-icon'); if(ic) gsap.to(ic, {scale:1.2, duration:0.3, ease:'back.out(2)'}); });
+        card.addEventListener('mouseleave', () => { const ic = card.querySelector('.card-icon'); if(ic) gsap.to(ic, {scale:1, duration:0.3}); });
+    });
+
+    // --- GALLERY: scroll-pinned reels showcase ---
+    const galleryItems = document.querySelectorAll('.gallery-item');
+    const photoCount = galleryItems.length;
+    const counterEl = document.getElementById('gallery-counter');
+    const progressFills = [];
+    for (let i = 0; i < photoCount; i++) { progressFills.push(document.getElementById('gpf-' + i)); }
+
+    // Set first photo visible
+    gsap.set(galleryItems[0], { opacity: 1, scale: 1, y: 0 });
+
+    ScrollTrigger.create({
+        trigger: '#gallery',
+        start: 'top top',
+        end: '+=' + (photoCount * 100) + '%',
+        pin: '#gallery-stage',
+        scrub: 0.3,
+        onUpdate: (self) => {
+            const p = self.progress;
+            const segment = 1 / photoCount;
+
+            for (let i = 0; i < photoCount; i++) {
+                const segStart = i * segment;
+                const segEnd = (i + 1) * segment;
+                const localP = Math.min(Math.max((p - segStart) / segment, 0), 1);
+
+                if (p >= segStart && p < segEnd) {
+                    // Current photo: visible
+                    gsap.set(galleryItems[i], { opacity: 1, scale: 1, y: 0 });
+                    // Progress fill
+                    progressFills[i].style.width = (localP * 100) + '%';
+                    // Counter
+                    counterEl.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(photoCount).padStart(2, '0');
+
+                    // Next photo: peek in from below
+                    if (i + 1 < photoCount) {
+                        const enterP = Math.max(0, (localP - 0.6) / 0.4);
+                        gsap.set(galleryItems[i + 1], { opacity: enterP, scale: 0.9 + enterP * 0.1, y: (1 - enterP) * 80 });
+                        // Current fades slightly as next enters
+                        if (enterP > 0) {
+                            gsap.set(galleryItems[i], { opacity: 1 - enterP * 0.7, scale: 1 + enterP * 0.05, y: -enterP * 30 });
+                        }
+                    }
+                } else if (p >= segEnd) {
+                    // Past photos: hidden
+                    gsap.set(galleryItems[i], { opacity: 0, scale: 1.05, y: -30 });
+                    progressFills[i].style.width = '100%';
+                } else {
+                    // Future photos: hidden below
+                    gsap.set(galleryItems[i], { opacity: 0, scale: 0.9, y: 80 });
+                    progressFills[i].style.width = '0%';
+                }
+            }
+        }
+    });
+
+    // --- LIGHTBOX ---
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lightbox-img');
+    const lbCap = document.getElementById('lightbox-caption');
+    const lbFrame = document.getElementById('lightbox-frame-top');
+    galleryItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const img = item.querySelector('img');
+            lbImg.src = img.src; lbImg.alt = img.alt;
+            lbCap.textContent = '';
+            lbFrame.textContent = '';
+            lb.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+    function closeLb() { lb.classList.remove('active'); document.body.style.overflow = ''; }
+    document.getElementById('lightbox-close').addEventListener('click', closeLb);
+    document.getElementById('lightbox-bg').addEventListener('click', closeLb);
+    document.addEventListener('keydown', (e) => { if(e.key==='Escape') closeLb(); });
+
+    // --- RHYTHM: text entrance ---
+    gsap.from('.rhythm-overlay .big-quote', {
+        scrollTrigger: { trigger: '#rhythm', start: 'top 60%' },
+        opacity: 0, y: 40, scale: 0.9, duration: 1.2, ease: 'power3.out'
+    });
+    gsap.from('.rhythm-cta', {
+        scrollTrigger: { trigger: '#rhythm', start: 'top 50%' },
+        opacity: 0, duration: 0.8, delay: 0.6
+    });
+
+    // --- SERVICES ---
+    ScrollTrigger.create({
+        trigger: '#act-services', start: 'top 60%', once: true,
+        onEnter: () => {
+            const oa = document.getElementById('on-air');
+            gsap.timeline()
+                .to(oa,{opacity:1,duration:0.05}).to(oa,{opacity:0,duration:0.05})
+                .to(oa,{opacity:1,duration:0.05}).to(oa,{opacity:0.3,duration:0.1})
+                .to(oa,{opacity:1,duration:0.05}).to(oa,{opacity:0,duration:0.08})
+                .to(oa,{opacity:1,duration:0.1});
+        }
+    });
+    gsap.utils.toArray('.service-item').forEach((item, i) => {
+        gsap.from(item, { scrollTrigger: { trigger: item, start: 'top 85%' }, x: -50, opacity: 0, duration: 0.6, delay: i*0.1 });
+    });
+
+    // --- CAFE ---
+    gsap.utils.toArray('.cafe-pin').forEach((pin, i) => {
+        gsap.from(pin, { scrollTrigger: { trigger: '.cafe-section', start: 'top 75%' }, y: 25, opacity: 0, duration: 0.4, delay: i*0.12, ease: 'back.out(1.4)' });
+    });
+
+    // --- TIMELINE ---
+    const tItems = document.querySelectorAll('.timeline-item');
+    const tGlow = document.getElementById('timeline-glow');
+    const tList = document.getElementById('timeline-list');
+    tItems.forEach((item, i) => {
+        gsap.to(item, {
+            scrollTrigger: { trigger: item, start: 'top 80%' },
+            opacity: 1, x: 0, duration: 0.7, delay: i*0.1,
+            onComplete: () => {
+                item.classList.add('lit');
+                gsap.fromTo(item, { backgroundColor: 'rgba(240,200,80,0.06)' }, { backgroundColor: 'transparent', duration: 0.8 });
+            }
+        });
+    });
+    ScrollTrigger.create({
+        trigger: '#timeline-list', start: 'top 60%', end: 'bottom 40%', scrub: true,
+        onUpdate: (self) => { tGlow.style.top = (self.progress * (tList.scrollHeight - 60)) + 'px'; }
+    });
+}
+</script>
+</body>
+</html>

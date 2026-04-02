@@ -8,6 +8,20 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "lydia"
+    name: "Lydia 小烯"
+    avatar: "/assets/img/guild/lydia/avatar.webp"
+    page: "/guild/lydia.html"
+    title: "跨域備忘錄"
+    description: "跨領域管理師、Podcaster、整復推拿師。工業設計到資訊管理，HR到行銷，每一次跨域都是一頁新的備忘錄。用觀點和文字記錄跨域路上的風景。"
+    tags:
+      - id: "cross_domain"
+        label: "跨領域管理"
+      - id: "healing"
+        label: "療癒筆記"
+      - id: "content_creator"
+        label: "內容創作"
+
   - id: "jaded_frog_omg"
     name: "魔法青蛙"
     avatar: "/assets/img/guild/jaded_frog_omg/avatar.webp"
