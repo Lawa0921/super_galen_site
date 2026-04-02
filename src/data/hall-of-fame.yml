@@ -1523,3 +1523,17 @@ members:
         label: "職涯引導"
       - id: "baseball"
         label: "棒球觀察"
+
+  - id: "andrewshih1210"
+    name: "施育廷 Andrew Shih"
+    avatar: "/assets/img/guild/andrewshih1210/avatar.webp"
+    page: "/guild/andrewshih1210.html"
+    title: "The Neural Scholar"
+    description: "教育科技實踐者、NTCU博士候選人、中華民國發明專利持有者。用生成式AI重新定義教育現場，堅持有趣、實用、能實作的教學理念。所有內容免費分享，知識不應該有門檻。"
+    tags:
+      - id: "edtech"
+        label: "教育科技"
+      - id: "ai_education"
+        label: "AI教育"
+      - id: "interactive_robot"
+        label: "互動機器人"

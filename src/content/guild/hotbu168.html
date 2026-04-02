@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>田玉麟 Terence | 五幕人生</title>
+<meta name="description" content="田玉麟 Terence — 職業演員，45+部影視作品。海軍軍官→澳洲背包客→健身業務→半導體HR→全職演員。人生本身就是最精彩的劇本。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Mono:ital,wght@0,400;0,700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+/* ============================================
+   五幕人生 — Five Acts of Life
+   田玉麟 Terence 的演員頁面
+   設計概念：整個頁面就是一部電影，
+   每個 section 是一幕（Act）。
+   溫暖色調，如同午後片場的光線。
+   ============================================ */
+
+:root {
+  --warm-cream: #faf5eb;
+  --warm-bg: #f2ead8;
+  --warm-paper: #e8dcc8;
+  --warm-gold: #c4953a;
+  --warm-gold-soft: rgba(196, 149, 58, 0.15);
+  --warm-bronze: #8b6914;
+  --warm-brown: #5a4528;
+  --warm-darkest: #1a150e;
+  --film-red: #8b2020;
+  --text-dark: #2a2118;
+  --text-body: #4a3f30;
+  --text-muted: #8a7d6a;
+  --text-light: #b8a88a;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-cn: 'Noto Sans TC', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'Lora', Georgia, serif;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+body {
+  background: var(--warm-cream);
+  color: var(--text-body);
+  font-family: var(--font-body);
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--warm-gold); color: white; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--warm-cream); }
+::-webkit-scrollbar-thumb { background: var(--warm-gold); border-radius: 3px; }
+
+img { display: block; max-width: 100%; }
+
+/* ── Three.js — 3D film strip (BEHIND content, not on top) ── */
+#three-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+/* ── Spotlight overlay (soft enhancement layer) ── */
+#spotlight-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+}
+/* ── p5.js film sprocket strip (behind content) ── */
+#p5-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.3;
+  mix-blend-mode: multiply;
+}
+
+/* ── Back nav ── */
+.back-nav {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10000;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  background: rgba(250, 245, 235, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border: 1px solid var(--warm-gold-soft);
+  transition: all 0.4s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.back-nav:hover {
+  color: var(--warm-gold);
+  border-color: var(--warm-gold);
+}
+
+/* ══════════════════════════════════════════
+   CLAPPERBOARD HERO
+   打板開場 — 整個 hero 就是一塊場記板
+   ══════════════════════════════════════════ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 5vw 60px;
+  background: var(--warm-darkest);
+  overflow: hidden;
+}
+
+/* 場記板：頂部黑白斜紋 */
+.clap-stripes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--warm-darkest) 0px,
+    var(--warm-darkest) 20px,
+    #f5deb3 20px,
+    #f5deb3 40px
+  );
+  opacity: 0.9;
+}
+.clap-stripes::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--warm-gold);
+}
+
+.hero-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 48px;
+  max-width: 900px;
+  width: 100%;
+  align-items: center;
+}
+
+.hero-photo-wrap {
+  position: relative;
+}
+.hero-photo-frame {
+  background: white;
+  padding: 10px 10px 40px 10px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2);
+  transform: rotate(-2deg);
+  position: relative;
+}
+.hero-photo-frame img {
+  width: 100%;
+  aspect-ratio: 9/16;
+  object-fit: cover;
+  object-position: center 20%;
+}
+.hero-photo-label {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.hero-text {
+  color: var(--warm-cream);
+}
+.hero-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--warm-gold);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-tag::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--warm-gold);
+}
+.hero-name {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 5rem);
+  font-weight: 900;
+  line-height: 1;
+  color: #f5deb3;
+  margin-bottom: 4px;
+}
+.hero-cn-name {
+  font-family: var(--font-cn);
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 300;
+  color: var(--text-light);
+  margin-bottom: 20px;
+}
+.hero-stats-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.hero-stat {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-light);
+}
+.hero-stat strong {
+  color: var(--warm-gold);
+  font-size: 13px;
+}
+.hero-quote {
+  font-family: var(--font-cn);
+  font-size: 15px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.6);
+  line-height: 2;
+  max-width: 420px;
+  margin-bottom: 24px;
+}
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--warm-gold);
+  text-decoration: none;
+  padding: 12px 24px;
+  border: 1px solid rgba(196,149,58,0.4);
+  transition: all 0.4s;
+}
+.hero-cta:hover {
+  background: rgba(196,149,58,0.1);
+  border-color: var(--warm-gold);
+  box-shadow: 0 0 30px rgba(196,149,58,0.15);
+}
+
+/* Film-strip perforations on sides of hero */
+.hero::before,
+.hero::after {
+  content: '';
+  position: absolute;
+  top: 100px;
+  bottom: 0;
+  width: 28px;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 12px,
+    rgba(255,255,255,0.06) 12px,
+    rgba(255,255,255,0.06) 24px,
+    transparent 24px,
+    transparent 36px
+  );
+  z-index: 1;
+}
+.hero::before { left: 8px; }
+.hero::after { right: 8px; }
+
+/* ══════════════════════════════════════════
+   TRANSITION — 溫暖的波浪過渡
+   從深色 hero 流入溫暖的主體
+   ══════════════════════════════════════════ */
+.hero-to-warm {
+  height: 120px;
+  background: linear-gradient(to bottom, var(--warm-darkest), var(--warm-cream));
+  position: relative;
+}
+.hero-to-warm::after {
+  content: 'FIVE ACTS';
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 6px;
+  color: var(--text-light);
+}
+
+/* ══════════════════════════════════════════
+   MANIFESTO — 大字金句
+   ══════════════════════════════════════════ */
+.manifesto {
+  padding: clamp(60px, 10vh, 120px) 5vw;
+  text-align: center;
+  background: var(--warm-cream);
+  position: relative;
+}
+.manifesto-text {
+  font-family: var(--font-cn);
+  font-size: clamp(28px, 5vw, 56px);
+  font-weight: 900;
+  color: var(--warm-brown);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+.manifesto-text .char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(30px);
+}
+.manifesto-sub {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 16px;
+  opacity: 0;
+}
+/* Decorative quote marks */
+.manifesto::before,
+.manifesto::after {
+  font-family: var(--font-display);
+  font-size: 80px;
+  color: var(--warm-gold-soft);
+  position: absolute;
+  line-height: 1;
+}
+.manifesto::before { content: '\201C'; top: clamp(30px,6vh,80px); left: clamp(20px,8vw,120px); }
+.manifesto::after { content: '\201D'; bottom: clamp(20px,4vh,60px); right: clamp(20px,8vw,120px); }
+
+/* ══════════════════════════════════════════
+   FIVE ACTS — 五幕人生旅程
+   每一幕是一個完整的視覺場景
+   ══════════════════════════════════════════ */
+.act {
+  position: relative;
+  padding: clamp(60px, 8vh, 100px) 5vw;
+  overflow: hidden;
+}
+
+/* ACT header — 像電影分幕標題 */
+.act-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.act-number {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 6vw, 72px);
+  font-weight: 900;
+  color: var(--warm-gold);
+  line-height: 1;
+  opacity: 0.3;
+}
+.act-label-group {
+  border-left: 3px solid var(--warm-gold);
+  padding-left: 16px;
+}
+.act-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--warm-gold);
+  margin-bottom: 2px;
+}
+.act-title {
+  font-family: var(--font-cn);
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.3;
+}
+
+.act-body {
+  max-width: 800px;
+}
+.act-desc {
+  font-family: var(--font-cn);
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text-body);
+  line-height: 2.2;
+  max-width: 560px;
+}
+
+/* ACT 1: 海軍軍官 — 深藍色調 */
+.act--navy {
+  background: linear-gradient(135deg, #e8eef5 0%, var(--warm-cream) 100%);
+}
+.act--navy .act-number { color: #3a5a7c; }
+.act--navy .act-label { color: #3a5a7c; }
+.act--navy .act-label-group { border-color: #3a5a7c; }
+
+/* ACT 2: 澳洲 — 天空藍+沙漠橙 */
+.act--aus {
+  background: linear-gradient(135deg, #faf0e0 0%, #e8f0f0 100%);
+}
+.act--aus .act-number { color: #c87533; }
+.act--aus .act-label { color: #c87533; }
+.act--aus .act-label-group { border-color: #c87533; }
+
+/* ACT 3: 健身業務 — 活力橙 */
+.act--gym {
+  background: linear-gradient(135deg, var(--warm-bg) 0%, #f0e8d8 100%);
+}
+
+/* ACT 4: 半導體 HR — 帶有辦公室感 */
+.act--hr {
+  background: linear-gradient(135deg, #f0ece4 0%, var(--warm-cream) 100%);
+}
+
+/* ACT 5: 演員 — 聚光燈金色 */
+.act--actor {
+  background: linear-gradient(135deg, #faf2e0 0%, #f5ead4 100%);
+}
+
+/* Photo inside act — 大張清晰的前景照片 */
+.act-photo {
+  margin-top: 28px;
+  display: inline-block;
+  position: relative;
+}
+.act-photo-inner {
+  background: white;
+  padding: 8px 8px 32px 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+  transform: rotate(1.5deg);
+  max-width: 280px;
+}
+.act-photo-inner img {
+  width: 100%;
+  aspect-ratio: 9/16;
+  object-fit: cover;
+}
+.act-photo-caption {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+.act-photo-inner.tilt-left { transform: rotate(-2deg); }
+.act-photo-inner.tilt-right { transform: rotate(2.5deg); }
+
+/* ACT with photo on right */
+.act-layout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: clamp(24px, 4vw, 60px);
+  align-items: start;
+}
+.act-layout--reverse {
+  grid-template-columns: auto 1fr;
+}
+.act-layout--reverse .act-body { order: 2; }
+.act-layout--reverse .act-photo { order: 1; }
+
+/* ══════════════════════════════════════════
+   FILMOGRAPHY — 電影片尾字幕風格
+   黑底白字，像真正的 credits roll
+   ══════════════════════════════════════════ */
+.credits-section {
+  background: var(--warm-darkest);
+  color: var(--warm-cream);
+  padding: clamp(80px, 10vh, 120px) 5vw;
+  position: relative;
+}
+
+/* Film strip top edge */
+.credits-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0px,
+    transparent 20px,
+    rgba(255,255,255,0.04) 20px,
+    rgba(255,255,255,0.04) 30px,
+    transparent 30px,
+    transparent 50px
+  );
+}
+
+.credits-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.credits-title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 700;
+  color: #f5deb3;
+  margin-bottom: 8px;
+}
+.credits-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--text-light);
+}
+
+/* 大數字統計 */
+.credits-stats {
+  display: flex;
+  justify-content: center;
+  gap: clamp(20px, 4vw, 48px);
+  margin-bottom: 48px;
+  padding: 28px 0;
+  border-top: 1px solid rgba(245,222,179,0.1);
+  border-bottom: 1px solid rgba(245,222,179,0.1);
+  flex-wrap: wrap;
+}
+.credit-stat {
+  text-align: center;
+}
+.credit-stat-num {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 900;
+  color: var(--warm-gold);
+  line-height: 1;
+}
+.credit-stat-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+/* 分類卡片 */
+.credits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.credit-category {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(245,222,179,0.06);
+  padding: 24px;
+}
+.credit-cat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(245,222,179,0.08);
+}
+.credit-cat-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: #f5deb3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.credit-cat-name i {
+  color: var(--warm-gold);
+  font-size: 12px;
+}
+.credit-cat-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-light);
+  letter-spacing: 2px;
+}
+.credit-list {
+  list-style: none;
+}
+.credit-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  font-size: 13px;
+}
+.credit-list li:last-child { border-bottom: none; }
+.credit-work {
+  font-family: var(--font-cn);
+  color: rgba(255,255,255,0.75);
+}
+.credit-role {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-light);
+  text-align: right;
+  flex-shrink: 0;
+}
+.credit-list .highlight .credit-work {
+  color: #f5deb3;
+  font-weight: 500;
+}
+
+/* ══════════════════════════════════════════
+   OFF STAGE — 鏡頭之外的場景照
+   溫暖的磚色背景
+   ══════════════════════════════════════════ */
+.offstage {
+  background: var(--warm-bg);
+  padding: clamp(60px, 8vh, 100px) 5vw;
+}
+.offstage-header {
+  margin-bottom: 32px;
+}
+.offstage-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--warm-gold);
+  margin-bottom: 4px;
+}
+.offstage-title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 36px);
+  color: var(--text-dark);
+}
+
+/* ── Scattered polaroid desk ── */
+.offstage-grid {
+  position: relative;
+  min-height: 650px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.offstage-item {
+  position: absolute;
+  width: clamp(170px, 20vw, 240px);
+  background: #f8f4ec;
+  padding: 8px 8px 32px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.08);
+  cursor: grab;
+  transition: box-shadow .4s, z-index 0s;
+  z-index: 1;
+  /* Scattered positions via nth-child */
+}
+.offstage-item:active { cursor: grabbing; }
+.offstage-item:hover {
+  box-shadow: 0 12px 40px rgba(0,0,0,.2), 0 4px 12px rgba(0,0,0,.1);
+  z-index: 100;
+}
+.offstage-item img {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  display: block;
+  transition: filter .4s;
+}
+.offstage-item:hover img { filter: contrast(1.05) saturate(1.1); }
+.offstage-item-label {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+/* Scattered positions — tighter clustering, more overlap for realism */
+.offstage-item:nth-child(1)  { top: 0;     left: 2%;   transform: rotate(-4deg); }
+.offstage-item:nth-child(2)  { top: 20px;  left: 24%;  transform: rotate(2.5deg); }
+.offstage-item:nth-child(3)  { top: 40px;  left: 50%;  transform: rotate(-1deg); }
+.offstage-item:nth-child(4)  { top: 10px;  left: 73%;  transform: rotate(3.5deg); }
+.offstage-item:nth-child(5)  { top: 220px; left: 8%;   transform: rotate(2deg); }
+.offstage-item:nth-child(6)  { top: 200px; left: 30%;  transform: rotate(-3deg); }
+.offstage-item:nth-child(7)  { top: 230px; left: 54%;  transform: rotate(1.5deg); }
+.offstage-item:nth-child(8)  { top: 210px; left: 75%;  transform: rotate(-2.5deg); }
+.offstage-item:nth-child(9)  { top: 420px; left: 4%;   transform: rotate(-1.5deg); }
+.offstage-item:nth-child(10) { top: 440px; left: 27%;  transform: rotate(4deg); }
+.offstage-item:nth-child(11) { top: 430px; left: 52%;  transform: rotate(-3deg); }
+.offstage-item:nth-child(12) { top: 420px; left: 74%;  transform: rotate(2deg); }
+
+/* ══════════════════════════════════════════
+   SERVICES — 我能帶來什麼
+   ══════════════════════════════════════════ */
+.services {
+  background: var(--warm-cream);
+  padding: clamp(60px, 8vh, 100px) 5vw;
+}
+.services-header {
+  margin-bottom: 40px;
+}
+.services-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--warm-gold);
+  margin-bottom: 4px;
+}
+.services-title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 36px);
+  color: var(--text-dark);
+}
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 800px;
+}
+.service-card {
+  padding: clamp(20px, 3vw, 36px);
+  background: white;
+  border: 1px solid var(--warm-gold-soft);
+  transition: all 0.4s;
+}
+.service-card:hover {
+  box-shadow: 0 8px 30px rgba(196,149,58,0.1);
+  transform: translateY(-2px);
+}
+.service-card i {
+  font-size: 22px;
+  color: var(--warm-gold);
+  margin-bottom: 14px;
+  display: block;
+}
+.service-card h3 {
+  font-family: var(--font-cn);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+}
+.service-card p {
+  font-family: var(--font-cn);
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text-muted);
+  line-height: 2;
+}
+
+/* ══════════════════════════════════════════
+   ENERGY — Work Hard / Play Hard
+   ══════════════════════════════════════════ */
+.energy {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.energy-half {
+  padding: clamp(40px, 6vw, 80px);
+}
+.energy-half--work {
+  background: var(--warm-paper);
+}
+.energy-half--play {
+  background: linear-gradient(135deg, #f5edd8 0%, #f0e8d0 100%);
+}
+.energy-half i {
+  font-size: 24px;
+  color: var(--warm-gold);
+  margin-bottom: 14px;
+  display: block;
+}
+.energy-half h3 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+.energy-half p {
+  font-family: var(--font-cn);
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text-muted);
+  line-height: 2;
+}
+.energy-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+.energy-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--warm-bronze);
+  padding: 3px 10px;
+  border: 1px solid var(--warm-gold-soft);
+  background: rgba(255,255,255,0.5);
+}
+
+/* ══════════════════════════════════════════
+   CREED — 核心信念
+   ══════════════════════════════════════════ */
+.creed {
+  background: var(--warm-cream);
+  padding: clamp(60px, 8vh, 100px) 5vw;
+  text-align: center;
+}
+.creed-row {
+  display: flex;
+  justify-content: center;
+  gap: clamp(32px, 6vw, 80px);
+  flex-wrap: wrap;
+}
+.creed-item {
+  max-width: 200px;
+}
+.creed-word {
+  font-family: var(--font-cn);
+  font-size: clamp(36px, 5vw, 52px);
+  font-weight: 900;
+  color: var(--warm-brown);
+  margin-bottom: 8px;
+}
+.creed-meaning {
+  font-family: var(--font-cn);
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-muted);
+  line-height: 2;
+}
+
+/* ══════════════════════════════════════════
+   CONTACT — Casting Call
+   ══════════════════════════════════════════ */
+.contact {
+  background: var(--warm-darkest);
+  color: var(--warm-cream);
+  padding: clamp(60px, 8vh, 100px) 5vw;
+  text-align: center;
+}
+.contact-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--warm-gold);
+  margin-bottom: 12px;
+}
+.contact-h {
+  font-family: var(--font-cn);
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 700;
+  color: #f5deb3;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.contact-sub {
+  font-family: var(--font-cn);
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--text-light);
+  margin-bottom: 28px;
+}
+.contact-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 1.3vw, 15px);
+  color: var(--warm-gold);
+  text-decoration: none;
+  padding: 14px 32px;
+  border: 1px solid rgba(196,149,58,0.3);
+  transition: all 0.4s;
+}
+.contact-email:hover {
+  border-color: var(--warm-gold);
+  background: rgba(196,149,58,0.08);
+  box-shadow: 0 0 40px rgba(196,149,58,0.12);
+}
+.contact-socials {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.contact-socials a {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(245,222,179,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-light);
+  font-size: 15px;
+  transition: all 0.4s;
+}
+.contact-socials a:hover {
+  color: var(--warm-gold);
+  border-color: var(--warm-gold);
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════ */
+.site-footer {
+  background: var(--warm-darkest);
+  border-top: 1px solid rgba(245,222,179,0.06);
+  padding: 32px 5vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: #f5deb3;
+}
+.footer-sub {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--text-light);
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+.footer-credit {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-light);
+  letter-spacing: 1px;
+}
+.footer-credit .heart { color: var(--film-red); }
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .hero-card {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    text-align: center;
+  }
+  .hero-photo-wrap {
+    display: flex;
+    justify-content: center;
+  }
+  .hero-photo-frame {
+    max-width: 220px;
+  }
+  .hero-tag { justify-content: center; }
+  .hero-tag::before { display: none; }
+  .hero-stats-row { justify-content: center; }
+  .hero-quote { margin: 0 auto 24px; }
+  .hero-cta { margin: 0 auto; }
+  .hero::before, .hero::after { display: none; }
+
+  .act-layout,
+  .act-layout--reverse {
+    grid-template-columns: 1fr;
+  }
+  .act-layout--reverse .act-body { order: 1; }
+  .act-layout--reverse .act-photo { order: 2; }
+  .act-photo-inner { max-width: 220px; }
+
+  .offstage-grid { min-height: 1800px; }
+  .offstage-item { width: 42%; }
+  .offstage-item:nth-child(1)  { top: 0;     left: 2%; }
+  .offstage-item:nth-child(2)  { top: 10px;  left: 52%; }
+  .offstage-item:nth-child(3)  { top: 300px; left: 0%; }
+  .offstage-item:nth-child(4)  { top: 310px; left: 50%; }
+  .offstage-item:nth-child(5)  { top: 600px; left: 4%; }
+  .offstage-item:nth-child(6)  { top: 610px; left: 52%; }
+  .offstage-item:nth-child(7)  { top: 900px; left: 0%; }
+  .offstage-item:nth-child(8)  { top: 910px; left: 50%; }
+  .offstage-item:nth-child(9)  { top: 1200px; left: 2%; }
+  .offstage-item:nth-child(10) { top: 1210px; left: 52%; }
+  .offstage-item:nth-child(11) { top: 1500px; left: 0%; }
+  .offstage-item:nth-child(12) { top: 1510px; left: 50%; }
+  .services-grid { grid-template-columns: 1fr; }
+  .energy { grid-template-columns: 1fr; }
+  .credits-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .hero { padding: 100px 5vw 40px; }
+  .hero-photo-frame { max-width: 180px; padding: 6px 6px 28px; }
+  .clap-stripes { height: 50px; }
+  .offstage-grid { display: flex; flex-direction: column; align-items: center; min-height: auto; }
+  .offstage-item:nth-child(n) { position: relative; top: auto; left: auto; width: 85%; margin-bottom: 16px; }
+  .creed-row { gap: 24px; }
+  .credits-stats { flex-wrap: wrap; gap: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Three.js 3D film light rig -->
+<canvas id="three-canvas"></canvas>
+<!-- Three.js spotlight overlay -->
+<canvas id="spotlight-canvas"></canvas>
+<!-- p5.js film sprocket overlay -->
+<div id="p5-overlay"></div>
+
+<a href="/guild/" class="back-nav"><i class="fas fa-arrow-left"></i> GUILD</a>
+
+<!-- ════════════════════════════════════════
+     HERO — 場記板開場
+     ════════════════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="clap-stripes"></div>
+  <div class="hero-card">
+    <div class="hero-photo-wrap">
+      <div class="hero-photo-frame">
+        <img src="/assets/img/guild/hotbu168/party_suit.webp" alt="田玉麟 Terence" loading="eager">
+        <div class="hero-photo-label">TERENCE / 2025</div>
+      </div>
+    </div>
+    <div class="hero-text">
+      <div class="hero-tag">ACTOR / HOST / PERFORMER</div>
+      <h1 class="hero-name">Terence</h1>
+      <div class="hero-cn-name">田玉麟 &mdash; 職業演員</div>
+      <div class="hero-stats-row">
+        <span class="hero-stat"><strong>175</strong>cm</span>
+        <span class="hero-stat"><strong>75</strong>kg</span>
+        <span class="hero-stat"><strong>42</strong>歲</span>
+        <span class="hero-stat"><strong>45+</strong> 作品</span>
+      </div>
+      <p class="hero-quote">人生的每一段經歷，都是一場試鏡。<br>我演過軍人、背包客、業務、上班族 &mdash; 不是在戲裡，是在真實人生。最好的演技，來自真正活過的人生。</p>
+      <a href="mailto:sunnyboy0928@gmail.com" class="hero-cta"><i class="fas fa-envelope"></i> CASTING INQUIRY</a>
+    </div>
+  </div>
+</section>
+
+<!-- Transition -->
+<div class="hero-to-warm"></div>
+
+<!-- ════════════════════════════════════════
+     MANIFESTO — 金句
+     ════════════════════════════════════════ -->
+<section class="manifesto" id="manifesto">
+  <div class="manifesto-text" id="manifesto-text">跟隨靈魂的直覺走</div>
+  <div class="manifesto-sub" id="manifesto-sub">Follow your soul's intuition</div>
+</section>
+
+<!-- ════════════════════════════════════════
+     ACT 1 — 海軍軍官
+     ════════════════════════════════════════ -->
+<section class="act act--navy" id="act1">
+  <div class="act-layout">
+    <div class="act-body">
+      <div class="act-header">
+        <div class="act-number">01</div>
+        <div class="act-label-group">
+          <div class="act-label">ACT ONE</div>
+          <h2 class="act-title">海軍軍官</h2>
+        </div>
+      </div>
+      <p class="act-desc">大學畢業後穿上白色軍服，成為志願役海軍軍官。在艦艇上學會紀律、領導力，還有在風浪中保持航向的能力。真正的勇氣不是無所畏懼，而是即使害怕也選擇前行。</p>
+    </div>
+    <div class="act-photo">
+      <div class="act-photo-inner tilt-left">
+        <img src="/assets/img/guild/hotbu168/navy_uniform.webp" alt="海軍軍官制服照" loading="lazy">
+        <div class="act-photo-caption">NAVY OFFICER</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     ACT 2 — 澳洲冒險者
+     ════════════════════════════════════════ -->
+<section class="act act--aus" id="act2">
+  <div class="act-layout act-layout--reverse">
+    <div class="act-photo">
+      <div class="act-photo-inner tilt-right">
+        <img src="/assets/img/guild/hotbu168/australia_pier.webp" alt="澳洲碼頭" loading="lazy">
+        <div class="act-photo-caption">AUSTRALIA</div>
+      </div>
+    </div>
+    <div class="act-body">
+      <div class="act-header">
+        <div class="act-number">02</div>
+        <div class="act-label-group">
+          <div class="act-label">ACT TWO</div>
+          <h2 class="act-title">澳洲冒險者</h2>
+        </div>
+      </div>
+      <p class="act-desc">服役期滿，飛往澳洲打工度假一年半。南半球的陽光下，打過各種工、遇見世界各地的靈魂。世界比想像的更大，而我的可能性也是。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     ACT 3 — 超強業務
+     ════════════════════════════════════════ -->
+<section class="act act--gym" id="act3">
+  <div class="act-layout">
+    <div class="act-body">
+      <div class="act-header">
+        <div class="act-number">03</div>
+        <div class="act-label-group">
+          <div class="act-label">ACT THREE</div>
+          <h2 class="act-title">超強業務</h2>
+        </div>
+      </div>
+      <p class="act-desc">進入健身俱樂部當業務，業績啵棒。天生擅長與人交流、感染他人。站在會員面前介紹方案，跟站在舞台上表演沒兩樣 — 都是用真誠打動人心。</p>
+    </div>
+    <div class="act-photo">
+      <div class="act-photo-inner tilt-left">
+        <img src="/assets/img/guild/hotbu168/gym_selfie2.webp" alt="健身房 WORLD GYM" loading="lazy">
+        <div class="act-photo-caption">WORLD GYM</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     ACT 4 — 半導體 HR & 尾牙王牌主持人
+     ════════════════════════════════════════ -->
+<section class="act act--hr" id="act4">
+  <div class="act-layout act-layout--reverse">
+    <div class="act-photo">
+      <div class="act-photo-inner tilt-right">
+        <img src="/assets/img/guild/hotbu168/formal_host.webp" alt="正裝主持" loading="lazy">
+        <div class="act-photo-caption">HOST / MC</div>
+      </div>
+    </div>
+    <div class="act-body">
+      <div class="act-header">
+        <div class="act-number">04</div>
+        <div class="act-label-group">
+          <div class="act-label">ACT FOUR</div>
+          <h2 class="act-title">半導體 HR &amp; 尾牙王牌主持人</h2>
+        </div>
+      </div>
+      <p class="act-desc">進入半導體公司 HR，學會識人和組織運作。同時成為公司尾牙的王牌主持人 — 因為舞台就是我最自在的地方。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     ACT 5 — 職業演員（Now）
+     ════════════════════════════════════════ -->
+<section class="act act--actor" id="act5">
+  <div class="act-layout">
+    <div class="act-body">
+      <div class="act-header">
+        <div class="act-number">05</div>
+        <div class="act-label-group">
+          <div class="act-label">ACT FIVE / NOW</div>
+          <h2 class="act-title">職業演員</h2>
+        </div>
+      </div>
+      <p class="act-desc">其實我一直都在演。從大愛、公視、三立到民視，累積超過 22 部戲劇、7 部電影、11 支廣告。這不是轉行，是回家。從《我們與惡的距離》到《紅衣小女孩3》，這些年我學到：最好的演技，來自真正活過的人生。</p>
+    </div>
+    <div class="act-photo">
+      <div class="act-photo-inner">
+        <img src="/assets/img/guild/hotbu168/tv_show.webp" alt="電視節目現場 田玉麟" loading="lazy">
+        <div class="act-photo-caption">ON SET</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     FILMOGRAPHY — 片尾字幕
+     ════════════════════════════════════════ -->
+<section class="credits-section" id="credits">
+  <div class="credits-header">
+    <h2 class="credits-title">Filmography</h2>
+    <div class="credits-subtitle">45+ CREDITS AND COUNTING</div>
+  </div>
+
+  <div class="credits-stats">
+    <div class="credit-stat"><div class="credit-stat-num">22</div><div class="credit-stat-label">DRAMAS</div></div>
+    <div class="credit-stat"><div class="credit-stat-num">7</div><div class="credit-stat-label">FILMS</div></div>
+    <div class="credit-stat"><div class="credit-stat-num">11</div><div class="credit-stat-label">ADS</div></div>
+    <div class="credit-stat"><div class="credit-stat-num">5</div><div class="credit-stat-label">SHORTS</div></div>
+    <div class="credit-stat"><div class="credit-stat-num">6</div><div class="credit-stat-label">TV SHOWS</div></div>
+  </div>
+
+  <div class="credits-grid">
+    <!-- 戲劇 22 -->
+    <div class="credit-category">
+      <div class="credit-cat-header">
+        <div class="credit-cat-name"><i class="fas fa-tv"></i> 戲劇</div>
+        <div class="credit-cat-count">22</div>
+      </div>
+      <ul class="credit-list">
+        <li class="highlight"><span class="credit-work">我們與惡的距離</span><span class="credit-role">刑警</span></li>
+        <li class="highlight"><span class="credit-work">憤怒的菩薩</span><span class="credit-role">警察</span></li>
+        <li><span class="credit-work">20之後</span><span class="credit-role">火車乘客</span></li>
+        <li><span class="credit-work">生日願望</span><span class="credit-role">醫師</span></li>
+        <li><span class="credit-work">台北歌手</span><span class="credit-role">軍人&amp;上流社會男子</span></li>
+        <li><span class="credit-work">姐的時代</span><span class="credit-role">公園情侶</span></li>
+        <li><span class="credit-work">1006的房客</span><span class="credit-role">記者</span></li>
+        <li><span class="credit-work">實習醫生鬥格</span><span class="credit-role">醫師</span></li>
+        <li><span class="credit-work">幸福來了</span><span class="credit-role">飯店服務員</span></li>
+        <li><span class="credit-work">女兵日記</span><span class="credit-role">宋志強班長同學</span></li>
+        <li><span class="credit-work">高塔公主</span><span class="credit-role">宴會高層</span></li>
+        <li><span class="credit-work">魂囚西門</span><span class="credit-role">服務生</span></li>
+        <li><span class="credit-work">三年七班</span><span class="credit-role">廚師&amp;保全</span></li>
+        <li><span class="credit-work">種菜女神</span><span class="credit-role">劇組攝影師</span></li>
+        <li><span class="credit-work">重婚大作戰</span><span class="credit-role">FHM員工</span></li>
+        <li><span class="credit-work">高校英雄傳</span><span class="credit-role">有錢人家長</span></li>
+        <li><span class="credit-work">遺失的1/2</span><span class="credit-role">系辦工作人員</span></li>
+        <li><span class="credit-work">八號公園</span><span class="credit-role">警察</span></li>
+        <li><span class="credit-work">幸福遲到了</span><span class="credit-role">遊覽車司機</span></li>
+        <li><span class="credit-work">洪瑞芬師姐的故事</span><span class="credit-role">年輕爸爸</span></li>
+        <li><span class="credit-work">王金福師兄的故事</span><span class="credit-role">金福同袍</span></li>
+        <li><span class="credit-work">千里路</span><span class="credit-role">病人</span></li>
+      </ul>
+    </div>
+
+    <!-- 電影 7 -->
+    <div class="credit-category">
+      <div class="credit-cat-header">
+        <div class="credit-cat-name"><i class="fas fa-film"></i> 電影</div>
+        <div class="credit-cat-count">7</div>
+      </div>
+      <ul class="credit-list">
+        <li class="highlight"><span class="credit-work">紅衣小女孩3</span><span class="credit-role">刑警</span></li>
+        <li class="highlight"><span class="credit-work">花甲大人轉男孩</span><span class="credit-role">兄弟象球迷</span></li>
+        <li><span class="credit-work">鹿沼</span><span class="credit-role">日本電影 / 特種部隊</span></li>
+        <li><span class="credit-work">殺手不笨</span><span class="credit-role">特種部隊</span></li>
+        <li><span class="credit-work">喜從天降</span><span class="credit-role">豪宅高爾夫派對男</span></li>
+        <li><span class="credit-work">失路人</span><span class="credit-role">喜宴服務生</span></li>
+        <li><span class="credit-work">繩角</span><span class="credit-role">攝影記者</span></li>
+      </ul>
+    </div>
+
+    <!-- 廣告 11 -->
+    <div class="credit-category">
+      <div class="credit-cat-header">
+        <div class="credit-cat-name"><i class="fas fa-bullhorn"></i> 廣告</div>
+        <div class="credit-cat-count">11</div>
+      </div>
+      <ul class="credit-list">
+        <li><span class="credit-work">BenQ 企業形象</span><span class="credit-role">家庭父親</span></li>
+        <li><span class="credit-work">SAMSUNG S9</span><span class="credit-role">面試官</span></li>
+        <li><span class="credit-work">SYM 機車</span><span class="credit-role">SYM員工</span></li>
+        <li><span class="credit-work">花唄銀行</span><span class="credit-role">保全</span></li>
+        <li><span class="credit-work">黑道風雲手遊</span><span class="credit-role">黑道小弟</span></li>
+        <li><span class="credit-work">玉山銀行</span><span class="credit-role">剪綵典禮上班族</span></li>
+        <li><span class="credit-work">大魯閣遊樂場</span><span class="credit-role">陳金鋒同事</span></li>
+        <li><span class="credit-work">桂格完膳</span><span class="credit-role">婚宴賓客</span></li>
+        <li><span class="credit-work">黑人牙膏</span><span class="credit-role">Cartier員工</span></li>
+        <li><span class="credit-work">新希望活潤世界盃優酪乳</span><span class="credit-role">足球派對年輕人</span></li>
+        <li><span class="credit-work">慕思寢具</span><span class="credit-role">上流社會家長</span></li>
+      </ul>
+    </div>
+
+    <!-- 微電影 5 + 電視節目 6 -->
+    <div class="credit-category">
+      <div class="credit-cat-header">
+        <div class="credit-cat-name"><i class="fas fa-clapperboard"></i> 微電影/短片</div>
+        <div class="credit-cat-count">5</div>
+      </div>
+      <ul class="credit-list">
+        <li><span class="credit-work">高雄影展參展短片</span><span class="credit-role">出版社開會主管</span></li>
+        <li><span class="credit-work">年代MUCH台廣告</span><span class="credit-role">上班族盧先生</span></li>
+        <li><span class="credit-work">圓山飯店婚禮形象影片</span><span class="credit-role">新郎好友</span></li>
+        <li><span class="credit-work">台北市銀髮族就業微電影</span><span class="credit-role">主管Peter</span></li>
+        <li><span class="credit-work">國泰人壽微電影</span><span class="credit-role">進香民眾</span></li>
+      </ul>
+    </div>
+
+    <div class="credit-category">
+      <div class="credit-cat-header">
+        <div class="credit-cat-name"><i class="fas fa-satellite-dish"></i> 電視節目</div>
+        <div class="credit-cat-count">6</div>
+      </div>
+      <ul class="credit-list">
+        <li><span class="credit-work">來自星星的事</span><span class="credit-role">素人來賓</span></li>
+        <li><span class="credit-work">麻辣天后宮</span><span class="credit-role">競技啦啦隊單元</span></li>
+        <li><span class="credit-work">男生女生配</span><span class="credit-role">配對男女</span></li>
+        <li><span class="credit-work">完全娛樂</span><span class="credit-role">宅男變型男單元</span></li>
+        <li><span class="credit-work">青春大王</span><span class="credit-role">素人高中生</span></li>
+        <li><span class="credit-work">一呼百應</span><span class="credit-role">call in答題者</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     OFF STAGE — 場景照片
+     ════════════════════════════════════════ -->
+<section class="offstage" id="offstage">
+  <div class="offstage-header">
+    <div class="offstage-label">OFF STAGE</div>
+    <h2 class="offstage-title">The Other Scenes</h2>
+  </div>
+  <div class="offstage-grid">
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/childhood.webp" alt="童年與媽媽" loading="lazy"><div class="offstage-item-label">CHILDHOOD</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/navy_piano.webp" alt="海軍白色軍裝鋼琴" loading="lazy"><div class="offstage-item-label">NAVY DAYS</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/australia_beach.webp" alt="澳洲海灘" loading="lazy"><div class="offstage-item-label">AUSTRALIA</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/hotel_casual.webp" alt="飯店休閒" loading="lazy"><div class="offstage-item-label">OFF DUTY</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/hosting_mc.webp" alt="尾牙主持" loading="lazy"><div class="offstage-item-label">MC NIGHT</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/grooming.webp" alt="陽光街頭" loading="lazy"><div class="offstage-item-label">SUNSHINE</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/temple_family.webp" alt="家人旅遊" loading="lazy"><div class="offstage-item-label">FAMILY</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/spring_run.webp" alt="晨跑花園" loading="lazy"><div class="offstage-item-label">NATURE</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/mirror_selfie.webp" alt="鏡中自拍" loading="lazy"><div class="offstage-item-label">MIRROR</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/new_year.webp" alt="跨年" loading="lazy"><div class="offstage-item-label">NEW YEAR</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/gym_legpress.webp" alt="健身重訓" loading="lazy"><div class="offstage-item-label">THE FORGE</div></div>
+    <div class="offstage-item"><img src="/assets/img/guild/hotbu168/office_cat.webp" alt="公司貓" loading="lazy"><div class="offstage-item-label">MAGNETISM</div></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SERVICES
+     ════════════════════════════════════════ -->
+<section class="services" id="services">
+  <div class="services-header">
+    <div class="services-label">WHAT I BRING TO SET</div>
+    <h2 class="services-title">What I Can Offer</h2>
+  </div>
+  <div class="services-grid">
+    <div class="service-card">
+      <i class="fas fa-theater-masks"></i>
+      <h3>影視演出</h3>
+      <p>22 部戲劇、7 部電影、11 支廣告的實戰經驗。刑警、軍人、醫師、上流社會 — 五段人生淬鍊出的表演質地。</p>
+    </div>
+    <div class="service-card">
+      <i class="fas fa-microphone-lines"></i>
+      <h3>活動主持</h3>
+      <p>尾牙王牌主持人。掌控節奏、點燃氣氛。企業活動、婚禮、典禮皆可。</p>
+    </div>
+    <div class="service-card">
+      <i class="fas fa-music"></i>
+      <h3>唱跳表演</h3>
+      <p>唱歌跳舞是與生俱來的熱情。舞台演出或商演活動，都能帶來充滿感染力的演出。</p>
+    </div>
+    <div class="service-card">
+      <i class="fas fa-handshake"></i>
+      <h3>品牌合作</h3>
+      <p>陽光率真的形象、正能量社群。適合健身、戶外、靈性成長、生活風格品牌。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     ENERGY — Work Hard / Play Hard
+     ════════════════════════════════════════ -->
+<section class="energy" id="energy">
+  <div class="energy-half energy-half--work">
+    <i class="fas fa-dumbbell"></i>
+    <h3>Work Hard</h3>
+    <p>重訓是我的日常修煉。每一次突破重量極限，都是在告訴自己：你比你以為的更強大。100kg 不只是數字，更是我對人生的態度 — 全力以赴，絕不退縮。</p>
+    <div class="energy-tags">
+      <span class="energy-tag">重訓日記</span>
+      <span class="energy-tag">晨跑</span>
+      <span class="energy-tag">突破極限</span>
+    </div>
+  </div>
+  <div class="energy-half energy-half--play">
+    <i class="fas fa-om"></i>
+    <h3>Play Hard</h3>
+    <p>我相信同頻共振的力量。每一次晨跑時突然出現的陽光、散步時飛來的蝴蝶，都是宇宙對我磁場乾淨的回應。花若盛開蝴蝶自來，人若精彩天自安排。</p>
+    <div class="energy-tags">
+      <span class="energy-tag">同頻共振</span>
+      <span class="energy-tag">靈性成長</span>
+      <span class="energy-tag">吸引力法則</span>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CREED
+     ════════════════════════════════════════ -->
+<section class="creed" id="creed">
+  <div class="creed-row">
+    <div class="creed-item">
+      <div class="creed-word">簡單</div>
+      <div class="creed-meaning">喜歡簡單乾淨，不適合太複雜的人事物。最純粹的東西，往往最有力量。</div>
+    </div>
+    <div class="creed-item">
+      <div class="creed-word">真誠</div>
+      <div class="creed-meaning">直來直往，重質不重量。友誼不靠時間堆砌，而是真心換真心。</div>
+    </div>
+    <div class="creed-item">
+      <div class="creed-word">勇氣</div>
+      <div class="creed-meaning">你不一定要攀登 101，但你絕對可以活出最代表自己的那道光。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CONTACT — Casting Call
+     ════════════════════════════════════════ -->
+<section class="contact" id="contact">
+  <div class="contact-label">CASTING CALL</div>
+  <h2 class="contact-h">導演、編劇、選角、經紀人<br>我準備好了</h2>
+  <p class="contact-sub">戲劇、電影、廣告、微電影、活動主持、品牌合作</p>
+  <a href="mailto:sunnyboy0928@gmail.com" class="contact-email"><i class="fas fa-envelope"></i> sunnyboy0928@gmail.com</a>
+  <div class="contact-socials">
+    <a href="https://www.threads.com/@hotbu168" target="_blank" rel="noopener" aria-label="Threads"><i class="fab fa-threads"></i></a>
+    <a href="https://www.instagram.com/hotbu168/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     FOOTER
+     ════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div>
+    <div class="footer-name">Terence / 田玉麟</div>
+    <div class="footer-sub">ACTOR / HOST / PERFORMER</div>
+  </div>
+  <div class="footer-credit">Made with <i class="fas fa-heart heart"></i> by SuperGalen's Dungeon</div>
+</footer>
+
+<script>
+/* ============================================
+   THREE.JS — 3D FILM STRIP + SPOTLIGHT + STARS
+   一條膠卷帶蜿蜒穿過 3D 空間，隨滾動推進
+   聚光燈跟著滑鼠，星星代表作品成就
+   ============================================ */
+(function() {
+  /* ── Spotlight shader (warm glow follows cursor = you are the casting director) ── */
+  var spotCanvas = document.getElementById('spotlight-canvas');
+  var spotR = new THREE.WebGLRenderer({ canvas: spotCanvas, alpha: true });
+  spotR.setSize(innerWidth, innerHeight);
+  spotR.setPixelRatio(Math.min(devicePixelRatio, 2));
+  var spotScene = new THREE.Scene();
+  var spotCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  var asp = (innerWidth/innerHeight).toFixed(4);
+  var spotMat = new THREE.ShaderMaterial({
+    transparent:true,
+    uniforms:{u:{value:new THREE.Vector2(.5,.5)},t:{value:0}},
+    vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=vec4(position,1.);}',
+    fragmentShader:'varying vec2 v;uniform vec2 u;uniform float t;void main(){float a='+asp+';vec2 p=v;p.x*=a;vec2 m=u;m.x*=a;float d=distance(p,m);float g=smoothstep(.45,.0,d)*.28;float s=smoothstep(.9,.0,d)*.07;float f=1.+sin(t*2.)*.015;gl_FragColor=vec4(1.,.92,.72,(g+s)*f);}'
+  });
+  spotScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),spotMat));
+
+  /* ── 3D Scene: Film strip + Film reels + Stars ── */
+  var c3 = document.getElementById('three-canvas');
+  var r3 = new THREE.WebGLRenderer({ canvas: c3, alpha: true, antialias: true });
+  r3.setSize(innerWidth, innerHeight);
+  r3.setPixelRatio(Math.min(devicePixelRatio, 2));
+  var scene = new THREE.Scene();
+  var cam = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+  cam.position.set(0, 0, 8);
+
+  var matAlpha = function(color, opacity) {
+    return new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: opacity, side: THREE.DoubleSide, depthWrite: false });
+  };
+
+  /* ── FILM STRIP: curving strip with REAL PHOTO textures ── */
+  var filmGroup = new THREE.Group();
+  var borderMat = matAlpha(0xc4953a, 0.07);
+  var holeMat = matAlpha(0xc4953a, 0.09);
+  var loader = new THREE.TextureLoader();
+
+  /* Photos to load onto the film strip frames */
+  var filmPhotos = [
+    '/assets/img/guild/hotbu168/childhood.webp',
+    '/assets/img/guild/hotbu168/navy_piano.webp',
+    '/assets/img/guild/hotbu168/navy_uniform.webp',
+    '/assets/img/guild/hotbu168/australia_beach.webp',
+    '/assets/img/guild/hotbu168/australia_pier.webp',
+    '/assets/img/guild/hotbu168/gym_selfie2.webp',
+    '/assets/img/guild/hotbu168/formal_host.webp',
+    '/assets/img/guild/hotbu168/tv_show.webp',
+    '/assets/img/guild/hotbu168/party_suit.webp',
+    '/assets/img/guild/hotbu168/hotel_casual.webp',
+    '/assets/img/guild/hotbu168/grooming.webp',
+    '/assets/img/guild/hotbu168/mirror_selfie.webp'
+  ];
+  var frameCount = filmPhotos.length;
+
+  filmPhotos.forEach(function(src, i) {
+    var angle = (i / frameCount) * Math.PI * 2.5 - Math.PI * 0.5;
+    var radius = 4.5;
+    var x = Math.cos(angle) * radius;
+    var y = (i / frameCount) * 6 - 3;
+    var z = Math.sin(angle) * radius * 0.4 - 3;
+
+    /* Photo frame with real texture */
+    var tex = loader.load(src);
+    tex.minFilter = THREE.LinearFilter;
+    var photoMat = new THREE.MeshBasicMaterial({
+      map: tex, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false
+    });
+    var frame = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), photoMat);
+    frame.position.set(x, y, z);
+    frame.lookAt(0, y, 0);
+    filmGroup.add(frame);
+
+    /* Gold border around frame */
+    var border = new THREE.Mesh(new THREE.PlaneGeometry(0.68, 0.88), borderMat);
+    border.position.set(x, y, z - 0.01);
+    border.lookAt(0, y, 0);
+    filmGroup.add(border);
+
+    /* Sprocket holes */
+    var holeGeo = new THREE.PlaneGeometry(0.05, 0.05);
+    [-0.48, 0.48].forEach(function(dy) {
+      [-0.22, -0.07, 0.07, 0.22].forEach(function(dx) {
+        var hole = new THREE.Mesh(holeGeo, holeMat);
+        hole.position.set(x, y + dy, z + 0.02);
+        hole.lookAt(0, y + dy, 0);
+        filmGroup.add(hole);
+      });
+    });
+  });
+  scene.add(filmGroup);
+
+  /* (Film reels removed — looked like random floating circles) */
+
+  /* ── STARS: represent his 45+ acting credits ── */
+  var stars = [];
+  function makeStarShape() {
+    var shape = new THREE.Shape();
+    for (var i = 0; i < 5; i++) {
+      var angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+      var method = i === 0 ? 'moveTo' : 'lineTo';
+      shape[method](Math.cos(angle) * 0.15, Math.sin(angle) * 0.15);
+      var innerAngle = angle + (2 * Math.PI) / 10;
+      shape.lineTo(Math.cos(innerAngle) * 0.06, Math.sin(innerAngle) * 0.06);
+    }
+    shape.closePath();
+    return shape;
+  }
+  var starGeo = new THREE.ShapeGeometry(makeStarShape());
+  for (var s = 0; s < 8; s++) {
+    var star = new THREE.Mesh(starGeo, matAlpha(0xc4953a, 0.05 + Math.random() * 0.05));
+    star.position.set(
+      (Math.random() - 0.5) * 10,
+      (Math.random() - 0.5) * 8,
+      -2 - Math.random() * 3
+    );
+    star.rotation.z = Math.random() * Math.PI;
+    star.userData.baseY = star.position.y;
+    star.userData.speed = 0.3 + Math.random() * 0.5;
+    scene.add(star);
+    stars.push(star);
+  }
+
+  /* ── Mouse + Scroll ── */
+  var mx = 0.5, my = 0.5, scrollY = 0;
+  document.addEventListener('mousemove', function(e) {
+    mx = e.clientX / innerWidth;
+    my = 1 - e.clientY / innerHeight;
+  });
+  window.addEventListener('scroll', function() { scrollY = pageYOffset; });
+
+  /* ── Page height for scroll normalization ── */
+  var pageH = 1;
+  function updatePageH() { pageH = Math.max(1, document.body.scrollHeight - innerHeight); }
+  setTimeout(updatePageH, 500);
+  window.addEventListener('resize', updatePageH);
+
+  /* ── Animate ── */
+  function animate() {
+    requestAnimationFrame(animate);
+    var time = Date.now() * 0.001;
+    var scrollPct = Math.min(scrollY / pageH, 1); /* 0→1 over full page */
+
+    /* ─── FILM STRIP: scrolling = advancing the reel ─── */
+    /* The strip rotates proportionally to scroll — like turning a projector crank */
+    filmGroup.rotation.y = scrollPct * Math.PI * 3 + time * 0.03;
+    filmGroup.rotation.x = Math.sin(time * 0.12) * 0.04 + scrollPct * 0.2;
+    /* Strip moves upward as you scroll, like film feeding through a gate */
+    filmGroup.position.y = -scrollPct * 2;
+
+
+    /* ─── STARS: glow brighter at Credits section (~60-75% scroll) ─── */
+    var creditsProximity = 1 - Math.min(Math.abs(scrollPct - 0.65) * 4, 1);
+    stars.forEach(function(st, i) {
+      st.position.y = st.userData.baseY + Math.sin(time * st.userData.speed + scrollPct * 3) * 0.4;
+      st.rotation.z += 0.003;
+      st.material.opacity = 0.04 + creditsProximity * 0.12;
+      st.scale.setScalar(1 + creditsProximity * 0.5);
+    });
+
+    /* ─── CAMERA: parallax with mouse + subtle zoom with scroll ─── */
+    cam.position.x += ((mx - 0.5) * 2 - cam.position.x) * 0.025;
+    cam.position.y += ((my - 0.5) * 1 - cam.position.y) * 0.025;
+    cam.position.z = 8 - scrollPct * 1.5;
+    cam.lookAt(0, filmGroup.position.y * 0.3, -2);
+
+    /* ─── 3D CANVAS: fade out in light sections, show in dark ones ─── */
+    var isDarkSection = scrollPct < 0.08 || (scrollPct > 0.55 && scrollPct < 0.8) || scrollPct > 0.9;
+    var targetCanvasOpacity = isDarkSection ? 0.6 : 0.06;
+    var curOp = parseFloat(c3.style.opacity || 0.7);
+    c3.style.opacity = curOp + (targetCanvasOpacity - curOp) * 0.05;
+
+    /* ─── SPOTLIGHT: brighter on dark sections ─── */
+    spotMat.uniforms.u.value.lerp(new THREE.Vector2(mx, my), 0.05);
+    spotMat.uniforms.t.value += 0.016;
+    spotCanvas.style.opacity = isDarkSection ? 1 : 0.4;
+
+    spotR.render(spotScene, spotCam);
+    r3.render(scene, cam);
+  }
+  animate();
+
+  window.addEventListener('resize', function() {
+    spotR.setSize(innerWidth, innerHeight);
+    r3.setSize(innerWidth, innerHeight);
+    cam.aspect = innerWidth / innerHeight;
+    cam.updateProjectionMatrix();
+  });
+})();
+
+/* ============================================
+   P5.JS — FILM SPROCKET STRIP
+   膠卷邊孔裝飾條，隨頁面滾動移動
+   讓整個頁面有「透過膠卷看世界」的感覺
+   ============================================ */
+(function() {
+  var container = document.getElementById('p5-overlay');
+  new p5(function(p) {
+    var scrollOffset = 0;
+    window.addEventListener('scroll', function() { scrollOffset = window.pageYOffset; });
+
+    p.setup = function() {
+      var c = p.createCanvas(p.windowWidth, p.windowHeight);
+      c.parent(container);
+      p.noStroke();
+    };
+
+    p.draw = function() {
+      p.clear();
+      var holeSize = 10;
+      var holeGap = 28;
+      var stripW = 28;
+      var offset = (scrollOffset * 0.5) % holeGap;
+
+      /* Left film strip */
+      p.fill(196, 149, 58, 8);
+      p.rect(0, 0, stripW, p.height);
+      p.fill(250, 245, 235, 25);
+      for (var y = -offset; y < p.height + holeGap; y += holeGap) {
+        p.rect(9, y, holeSize, holeSize * 0.7, 2);
+      }
+
+      /* Right film strip */
+      p.fill(196, 149, 58, 8);
+      p.rect(p.width - stripW, 0, stripW, p.height);
+      p.fill(250, 245, 235, 25);
+      for (var yr = -offset; yr < p.height + holeGap; yr += holeGap) {
+        p.rect(p.width - stripW + 9, yr, holeSize, holeSize * 0.7, 2);
+      }
+
+      /* Subtle light leak blobs (keep a few for warmth) */
+      for (var i = 0; i < 3; i++) {
+        var lx = p.width * (0.3 + i * 0.2) + p.sin(p.frameCount * 0.005 + i * 2) * 100;
+        var ly = p.height * 0.5 + p.cos(p.frameCount * 0.003 + i) * 200;
+        var pulse = p.sin(p.frameCount * 0.01 + i) * 4;
+        p.fill(255, 220, 140, 6 + pulse);
+        p.ellipse(lx, ly, 250, 150);
+      }
+    };
+
+    p.windowResized = function() {
+      p.resizeCanvas(p.windowWidth, p.windowHeight);
+    };
+  });
+})();
+
+/* ============================================
+   GSAP + SCROLLTRIGGER ANIMATIONS
+   每個動畫都跟內容的含義相關
+   ============================================ */
+gsap.registerPlugin(ScrollTrigger);
+
+/* Hero card slides up from below like an actor stepping onto stage */
+gsap.from('.hero-card', {
+  y: 60,
+  opacity: 0,
+  duration: 1.2,
+  ease: 'power3.out',
+  delay: 0.3
+});
+
+/* Clap stripes slam down like a clapperboard */
+gsap.from('.clap-stripes', {
+  y: -80,
+  duration: 0.4,
+  ease: 'power4.in',
+  delay: 0.1
+});
+
+/* Manifesto — characters revealed one by one, like a script being typed */
+ScrollTrigger.create({
+  trigger: '#manifesto',
+  start: 'top 65%',
+  once: true,
+  onEnter: function() {
+    var el = document.getElementById('manifesto-text');
+    var text = el.textContent;
+    el.innerHTML = '';
+    var chars = text.split('');
+    chars.forEach(function(ch) {
+      var span = document.createElement('span');
+      span.className = 'char';
+      span.textContent = ch;
+      el.appendChild(span);
+    });
+    document.querySelectorAll('.char').forEach(function(ch, i) {
+      gsap.to(ch, {
+        opacity: 1,
+        y: 0,
+        duration: 0.3,
+        delay: i * 0.08,
+        ease: 'power3.out'
+      });
+    });
+    gsap.to('#manifesto-sub', {
+      opacity: 1,
+      duration: 0.8,
+      delay: chars.length * 0.08 + 0.3
+    });
+  }
+});
+
+/* ACT sections — each slides in from the direction of its layout */
+gsap.utils.toArray('.act').forEach(function(act, index) {
+  var isReverse = act.querySelector('.act-layout--reverse');
+  var xFrom = isReverse ? -40 : 40;
+
+  gsap.from(act.querySelector('.act-body'), {
+    x: isReverse ? 40 : -40,
+    opacity: 0,
+    duration: 0.8,
+    ease: 'power2.out',
+    scrollTrigger: { trigger: act, start: 'top 75%' }
+  });
+
+  var photo = act.querySelector('.act-photo');
+  if (photo) {
+    gsap.from(photo, {
+      x: xFrom,
+      opacity: 0,
+      duration: 0.8,
+      delay: 0.15,
+      ease: 'power2.out',
+      scrollTrigger: { trigger: act, start: 'top 75%' }
+    });
+  }
+});
+
+/* Credits — numbers count up */
+ScrollTrigger.create({
+  trigger: '.credits-stats',
+  start: 'top 80%',
+  once: true,
+  onEnter: function() {
+    document.querySelectorAll('.credit-stat-num').forEach(function(el) {
+      var target = parseInt(el.textContent);
+      var obj = { val: 0 };
+      gsap.to(obj, {
+        val: target,
+        duration: 1.5,
+        ease: 'power2.out',
+        onUpdate: function() {
+          el.textContent = Math.round(obj.val);
+        }
+      });
+    });
+  }
+});
+
+/* Credit categories rise from below like rolling credits */
+gsap.utils.toArray('.credit-category').forEach(function(cat, i) {
+  gsap.from(cat, {
+    y: 30,
+    opacity: 0,
+    duration: 0.6,
+    delay: i * 0.1,
+    scrollTrigger: { trigger: cat, start: 'top 90%' }
+  });
+});
+
+/* Offstage photos — fade in with slight scale */
+gsap.utils.toArray('.offstage-item').forEach(function(item, i) {
+  gsap.from(item, {
+    scale: 0.95,
+    opacity: 0,
+    duration: 0.6,
+    delay: i * 0.1,
+    scrollTrigger: { trigger: item, start: 'top 88%' }
+  });
+});
+
+/* Service cards — stagger from bottom */
+gsap.utils.toArray('.service-card').forEach(function(card, i) {
+  gsap.from(card, {
+    y: 24,
+    opacity: 0,
+    duration: 0.5,
+    delay: i * 0.08,
+    scrollTrigger: { trigger: card, start: 'top 88%' }
+  });
+});
+
+/* Energy — left side slides from left, right from right */
+gsap.from('.energy-half--work', {
+  x: -30,
+  opacity: 0,
+  duration: 0.7,
+  scrollTrigger: { trigger: '.energy', start: 'top 80%' }
+});
+gsap.from('.energy-half--play', {
+  x: 30,
+  opacity: 0,
+  duration: 0.7,
+  delay: 0.1,
+  scrollTrigger: { trigger: '.energy', start: 'top 80%' }
+});
+
+/* Creed — each word drops in with weight */
+gsap.utils.toArray('.creed-item').forEach(function(item, i) {
+  gsap.from(item, {
+    y: -20,
+    opacity: 0,
+    duration: 0.5,
+    delay: i * 0.12,
+    ease: 'bounce.out',
+    scrollTrigger: { trigger: '.creed', start: 'top 78%' }
+  });
+});
+
+/* ═══════════════════════════════════════
+   OFFSTAGE — Photos scatter in like tossed polaroids
+   + Draggable interaction
+   ═══════════════════════════════════════ */
+ScrollTrigger.create({
+  trigger: '#offstage',
+  start: 'top 75%',
+  once: true,
+  onEnter: function() {
+    document.querySelectorAll('.offstage-item').forEach(function(item, i) {
+      /* Each photo flies in from a random direction */
+      var fromX = (Math.random() - 0.5) * 300;
+      var fromY = 200 + Math.random() * 100;
+      var fromRot = (Math.random() - 0.5) * 30;
+      gsap.from(item, {
+        x: fromX,
+        y: fromY,
+        rotation: fromRot,
+        opacity: 0,
+        duration: 0.7 + Math.random() * 0.3,
+        delay: i * 0.08,
+        ease: 'back.out(1.2)'
+      });
+    });
+  }
+});
+
+/* Drag polaroids around the desk */
+(function() {
+  var items = document.querySelectorAll('.offstage-item');
+  var topZ = 10;
+  items.forEach(function(item) {
+    var startX, startY, origX, origY, dragging = false;
+
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      dragging = true;
+      item.style.zIndex = ++topZ;
+      item.style.transition = 'box-shadow .2s';
+      item.style.boxShadow = '0 16px 48px rgba(0,0,0,.25)';
+      startX = e.clientX;
+      startY = e.clientY;
+      var rect = item.getBoundingClientRect();
+      var parentRect = item.parentElement.getBoundingClientRect();
+      origX = rect.left - parentRect.left;
+      origY = rect.top - parentRect.top;
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      item.style.left = (origX + dx) + 'px';
+      item.style.top = (origY + dy) + 'px';
+      item.style.transform = 'rotate(' + (dx * 0.02) + 'deg)';
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (!dragging) return;
+      dragging = false;
+      item.style.boxShadow = '';
+      item.style.transition = 'box-shadow .4s, transform .3s';
+    });
+  });
+})();
+
+/* Contact — rises like a curtain call */
+gsap.from('.contact-h', {
+  y: 20,
+  opacity: 0,
+  duration: 0.8,
+  scrollTrigger: { trigger: '#contact', start: 'top 75%' }
+});
+
+/* ═══════════════════════════════════════════════
+   SCROLL-DRIVEN BACKGROUND COLOR TRANSITIONS
+   暖色 → 暗色片場 → 金色聚光 → 暖色
+   像電影的場景燈光在切換
+   ═══════════════════════════════════════════════ */
+/* The credits section already has a dark bg. Let's add smooth transitions
+   for the surrounding areas to make the shift feel cinematic. */
+
+/* Before credits: warm paper gradually darkens */
+gsap.to('body', {
+  backgroundColor: '#1a150e',
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '#credits',
+    start: 'top 80%',
+    end: 'top 20%',
+    scrub: true
+  }
+});
+
+/* After credits: back to warm */
+gsap.to('body', {
+  backgroundColor: '#faf5eb',
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '#credits',
+    start: 'bottom 80%',
+    end: 'bottom 20%',
+    scrub: true
+  }
+});
+
+/* Contact section: darken again for dramatic ending */
+gsap.to('body', {
+  backgroundColor: '#1a150e',
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '#contact',
+    start: 'top 80%',
+    end: 'top 30%',
+    scrub: true
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   SCROLL-DRIVEN PARALLAX on Act photos
+   照片以不同速率移動 = 深度感
+   ═══════════════════════════════════════════════ */
+gsap.utils.toArray('.act-photo').forEach(function(photo) {
+  gsap.to(photo.querySelector('img'), {
+    yPercent: -15,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: photo,
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: true
+    }
+  });
+});
+
+</script>
+</body>
+</html>
