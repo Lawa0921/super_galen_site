@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lydia | 跨域備忘錄</title>
+<meta name="description" content="Lydia — 跨領域管理師、Podcaster、整復推拿師。工業設計到資訊管理，HR到行銷，每一次跨域都是一頁新的備忘錄。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Noto+Sans+TC:wght@300;700&family=Cormorant+Garamond:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* ============================================
+   跨域星圖 — Cross-Domain Constellation
+   整個頁面是一場穿越星座圖的旅程。
+   攝影機隨滾動在 7 個領域節點間移動，
+   每個 section 對應一個節點，
+   內容以玻璃擬態卡片浮在星圖之上。
+   ============================================ */
+
+:root {
+  --bg-void: #08070a;
+  --bg-card: rgba(16, 14, 20, 0.7);
+  --bg-card-hover: rgba(24, 20, 30, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-border-hover: rgba(255, 255, 255, 0.12);
+  --text-bright: #f0ece4;
+  --text-body: rgba(240, 236, 228, 0.75);
+  --text-muted: rgba(240, 236, 228, 0.4);
+  --text-dim: rgba(240, 236, 228, 0.2);
+  --node-mint: #7ecdb5;
+  --node-sky: #7ab8d9;
+  --node-coral: #e88a7a;
+  --node-lavender: #b8a9d4;
+  --node-lemon: #f0d76e;
+  --node-teal: #8ed4b8;
+  --node-peach: #f0a090;
+  --font-handwrite: 'Caveat', cursive;
+  --font-cn: 'Noto Sans TC', sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+html, body { overflow-x: hidden; }
+body {
+  background: var(--bg-void);
+  color: var(--text-body);
+  font-family: var(--font-cn);
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: rgba(126, 205, 181, 0.3); color: var(--text-bright); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-void); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+img { display: block; max-width: 100%; }
+
+/* ── Three.js — fixed full-page constellation ── */
+#three-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+/* ── Vignette overlay — draws the eye to center ── */
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(8,7,10,0.5) 100%);
+}
+
+/* ── Grain texture — subtle film grain for visual richness ── */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ── Tooltip for hovered nodes ── */
+.node-tooltip {
+  position: fixed;
+  z-index: 10001;
+  pointer-events: none;
+  font-family: var(--font-cn);
+  background: rgba(8, 7, 10, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  padding: 12px 18px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  max-width: 260px;
+}
+.node-tooltip.visible { opacity: 1; }
+.node-tooltip .tt-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.node-tooltip .tt-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 8px currentColor;
+}
+.node-tooltip .tt-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Persistent domain labels */
+.domain-lbl {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.domain-lbl .lbl-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* ── Back nav ── */
+.back-nav {
+  position: fixed;
+  top: 20px; left: 20px;
+  z-index: 10000;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  background: rgba(8, 7, 10, 0.5);
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+.back-nav:hover {
+  color: var(--text-bright);
+  border-color: var(--glass-border-hover);
+}
+
+/* ── Notebook tabs (right side) ── */
+.notebook-tabs {
+  position: fixed; right: 0; top: 50%;
+  transform: translateY(-50%);
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.notebook-tab {
+  width: 36px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 1px;
+  color: var(--text-bright);
+  border-radius: 0 6px 6px 0;
+  transition: all 0.3s ease;
+  position: relative; cursor: pointer;
+  writing-mode: vertical-rl;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid transparent;
+  border-left: none;
+}
+.notebook-tab:hover, .notebook-tab.active {
+  width: 44px;
+  background: rgba(255,255,255,0.08);
+  border-color: var(--glass-border);
+}
+.notebook-tab.active::before {
+  content: '';
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 16px; border-radius: 2px;
+}
+.tab-mint.active::before { background: var(--node-mint); }
+.tab-coral.active::before { background: var(--node-coral); }
+.tab-lemon.active::before { background: var(--node-lemon); }
+.tab-lavender.active::before { background: var(--node-lavender); }
+.tab-sky.active::before { background: var(--node-sky); }
+
+/* ── Page content (above canvas) ── */
+.page-content {
+  position: relative;
+  z-index: 5;
+}
+
+/* ── Section base ── */
+.memo-section {
+  position: relative;
+  min-height: 100vh;
+  padding: 100px 0;
+}
+.memo-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ── Glass card ── */
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 40px;
+  transition: border-color 0.4s ease, background 0.4s ease;
+}
+.glass:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--glass-border-hover);
+}
+
+/* ── Section label & title ── */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem; letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 30px;
+  font-style: italic;
+}
+.node-indicator {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-right: 12px;
+  vertical-align: middle;
+  box-shadow: 0 0 12px currentColor;
+}
+
+/* ════════════════════════════════
+   HERO
+   ════════════════════════════════ */
+.hero-section {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.hero-section::before { display: none; }
+.hero-inner {
+  text-align: center;
+  position: relative; z-index: 5;
+}
+.hero-cover {
+  display: inline-block;
+  background: rgba(8, 7, 10, 0.45);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 50px 70px;
+}
+.hero-avatar {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.12);
+  box-shadow: 0 0 30px rgba(126, 205, 181, 0.15);
+  margin: 0 auto 24px;
+}
+.hero-brand {
+  font-family: var(--font-mono);
+  font-size: 0.65rem; letter-spacing: 6px;
+  color: var(--text-dim); margin-bottom: 12px;
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 6vw, 4.2rem);
+  font-weight: 700; color: var(--text-bright);
+  line-height: 1.2; margin-bottom: 4px; font-style: italic;
+}
+.hero-subtitle {
+  font-family: var(--font-handwrite);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  color: var(--node-mint); font-weight: 600;
+  margin-bottom: 20px;
+  text-shadow: 0 0 20px rgba(126,205,181,0.25);
+}
+.hero-tagline {
+  font-size: 0.88rem; color: var(--text-muted);
+  font-weight: 300; max-width: 380px;
+  margin: 0 auto 24px; line-height: 1.9;
+}
+.hero-tags { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.hero-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem; letter-spacing: 1px;
+  padding: 4px 12px; border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-muted);
+}
+.scroll-hint {
+  position: absolute; bottom: 40px; left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-handwrite);
+  font-size: 1rem; color: var(--text-dim);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px; z-index: 10;
+}
+.scroll-hint i { animation: bounce 2s ease-in-out infinite; }
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+/* ════════════════════════════════
+   ABOUT
+   ════════════════════════════════ */
+.about-text { font-size: 1rem; line-height: 2; }
+.about-text p { margin-bottom: 1.2em; }
+.sticky-note {
+  padding: 24px 28px;
+  border-radius: 8px;
+  font-family: var(--font-handwrite);
+  font-size: 1.1rem; line-height: 1.6;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  transition: border-color 0.3s;
+}
+.sticky-note:hover { border-color: var(--glass-border-hover); }
+.sticky-mint { border-left: 3px solid var(--node-mint); }
+.sticky-coral { border-left: 3px solid var(--node-coral); }
+.about-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 20px; margin-top: 30px;
+}
+.tag-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+.tag-list li {
+  padding: 10px 16px; border-radius: 6px;
+  background: rgba(255,255,255,0.03);
+  border-left: 3px solid transparent;
+  font-size: 0.9rem;
+}
+
+/* ════════════════════════════════
+   CAREER PATH
+   ════════════════════════════════ */
+.career-path { margin-top: 40px; }
+.career-node {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr;
+  gap: 0; align-items: start;
+  margin-bottom: 30px;
+}
+.career-node:nth-child(odd) .career-card { grid-column: 1; text-align: right; }
+.career-node:nth-child(odd) .career-mid { grid-column: 2; }
+.career-node:nth-child(odd) .career-spacer { grid-column: 3; }
+.career-node:nth-child(even) .career-spacer { grid-column: 1; }
+.career-node:nth-child(even) .career-mid { grid-column: 2; }
+.career-node:nth-child(even) .career-card { grid-column: 3; text-align: left; }
+.career-mid {
+  display: flex; flex-direction: column;
+  align-items: center; padding-top: 20px;
+}
+.career-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 0 0 12px currentColor;
+  position: relative; z-index: 2;
+}
+.career-line-seg {
+  width: 1px; height: 60px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
+}
+.career-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 24px;
+  transition: all 0.4s ease;
+}
+.career-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--glass-border-hover);
+  transform: translateY(-3px);
+}
+.career-era {
+  font-family: var(--font-mono);
+  font-size: 0.6rem; letter-spacing: 2px;
+  color: var(--text-dim); margin-bottom: 6px;
+}
+.career-role {
+  font-size: 1.1rem; font-weight: 700;
+  color: var(--text-bright); margin-bottom: 8px;
+}
+.career-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+
+/* ════════════════════════════════
+   SERVICES
+   ════════════════════════════════ */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px; margin-top: 40px;
+}
+.service-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 32px 28px;
+  transition: all 0.4s ease;
+  position: relative; overflow: hidden;
+}
+.service-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+}
+.service-card:hover {
+  border-color: var(--glass-border-hover);
+  transform: translateY(-4px);
+}
+.service-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; margin-bottom: 16px;
+  background: rgba(255,255,255,0.05);
+}
+.service-title { font-size: 1.05rem; font-weight: 700; color: var(--text-bright); margin-bottom: 10px; }
+.service-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+
+/* ════════════════════════════════
+   PLATFORMS
+   ════════════════════════════════ */
+.platforms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px; margin-top: 40px;
+}
+.platform-card {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px; padding: 28px;
+  transition: all 0.3s ease;
+}
+.platform-card:hover {
+  border-color: var(--glass-border-hover);
+  transform: translateY(-3px);
+}
+.platform-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.platform-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; color: white;
+}
+.platform-icon-ig { background: linear-gradient(135deg, #f09433, #dc2743, #bc1888); }
+.platform-icon-podcast { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+.platform-icon-vocus { background: linear-gradient(135deg, #1a73e8, #0d47a1); }
+.platform-icon-threads { background: #fff; color: #000; }
+.platform-name { font-weight: 700; color: var(--text-bright); }
+.platform-handle { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+.platform-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+.platform-tag {
+  display: inline-block; margin-top: 12px;
+  font-family: var(--font-mono); font-size: 0.6rem;
+  letter-spacing: 1px; padding: 3px 8px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+}
+
+/* ════════════════════════════════
+   HEALING
+   ════════════════════════════════ */
+.healing-content {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 50px; align-items: center; margin-top: 40px;
+}
+.healing-visual { position: relative; height: 350px; }
+#healing-canvas {
+  width: 100%; height: 100%; border-radius: 12px;
+  background: rgba(126,205,181,0.03);
+  border: 1px solid var(--glass-border);
+}
+.healing-text h3 {
+  font-family: var(--font-handwrite);
+  font-size: 1.6rem; color: var(--text-bright); margin-bottom: 14px;
+}
+.healing-text p { font-size: 0.9rem; line-height: 2; margin-bottom: 14px; }
+.healing-quote {
+  padding: 20px 24px; margin-top: 16px;
+  background: var(--bg-card);
+  border-left: 3px solid var(--node-mint);
+  border-radius: 0 8px 8px 0;
+  font-family: var(--font-handwrite);
+  font-size: 1.1rem; color: var(--text-bright);
+}
+
+/* ════════════════════════════════
+   VALUES
+   ════════════════════════════════ */
+.values-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 20px; margin-top: 40px;
+}
+.value-card {
+  padding: 32px 24px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  transition: all 0.4s ease;
+}
+.value-card:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--glass-border-hover);
+  transform: translateY(-3px);
+}
+.value-number {
+  font-family: var(--font-display);
+  font-size: 2.5rem; font-weight: 700;
+  color: rgba(255,255,255,0.04);
+  float: right; line-height: 1;
+}
+.value-icon { font-size: 1.4rem; margin-bottom: 14px; }
+.value-title { font-size: 1.05rem; font-weight: 700; color: var(--text-bright); margin-bottom: 10px; }
+.value-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
+
+/* ════════════════════════════════
+   FOOTER
+   ════════════════════════════════ */
+.footer-section { padding: 60px 0; text-align: center; }
+.footer-brand {
+  font-family: var(--font-handwrite);
+  font-size: 1.4rem; color: var(--text-bright); margin-bottom: 20px;
+}
+.footer-social { display: flex; gap: 14px; justify-content: center; margin-bottom: 24px; }
+.footer-social a {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); border: 1px solid var(--glass-border);
+  text-decoration: none; transition: all 0.3s ease; font-size: 0.9rem;
+}
+.footer-social a:hover {
+  color: var(--text-bright);
+  border-color: var(--glass-border-hover);
+  transform: translateY(-2px);
+}
+.footer-divider { width: 40px; height: 1px; background: var(--glass-border); margin: 16px auto; }
+.footer-credit {
+  font-family: var(--font-mono);
+  font-size: 0.6rem; letter-spacing: 2px; color: var(--text-dim);
+}
+.footer-credit a { color: var(--node-mint); text-decoration: none; }
+
+/* ════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════ */
+@media (max-width: 768px) {
+  .memo-inner { padding: 0 20px; }
+  .hero-cover { padding: 36px 28px; }
+  .about-grid { grid-template-columns: 1fr; }
+  .career-node { grid-template-columns: 20px 1fr; }
+  .career-node:nth-child(odd) .career-card,
+  .career-node:nth-child(even) .career-card { grid-column: 2; text-align: left; }
+  .career-node:nth-child(odd) .career-mid,
+  .career-node:nth-child(even) .career-mid { grid-column: 1; }
+  .career-spacer { display: none; }
+  .services-grid, .platforms-grid { grid-template-columns: 1fr; }
+  .healing-content { grid-template-columns: 1fr; }
+  .healing-visual { height: 240px; }
+  .values-grid { grid-template-columns: 1fr; }
+  .notebook-tabs { display: none; }
+  .memo-section { padding: 60px 0; }
+}
+@media (max-width: 480px) {
+  .hero-cover { padding: 28px 20px; }
+  .hero-avatar { width: 90px; height: 90px; }
+}
+
+/* ════════════════════════════════
+   HERO QUOTE (real IG quote)
+   ════════════════════════════════ */
+.hero-quote {
+  font-family: var(--font-handwrite);
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.25);
+  text-align: center;
+  margin-top: 16px;
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
+/* ════════════════════════════════
+   MY UNIVERSE (interests)
+   ════════════════════════════════ */
+.universe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 36px;
+}
+.universe-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 24px 20px;
+  text-align: center;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.universe-card:hover {
+  border-color: var(--glass-border-hover);
+  transform: translateY(-3px);
+}
+.universe-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.universe-card:hover::after { opacity: 1; }
+.universe-icon {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+  display: block;
+}
+.universe-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 6px;
+}
+.universe-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.universe-badge {
+  display: inline-block;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+}
+
+/* ════════════════════════════════
+   PULL QUOTES (scattered real quotes)
+   ════════════════════════════════ */
+.pull-quote {
+  padding: 20px 24px;
+  margin: 30px 0;
+  border-left: 2px solid;
+  font-family: var(--font-handwrite);
+  font-size: 1.05rem;
+  color: var(--text-bright);
+  line-height: 1.6;
+  position: relative;
+}
+.pull-quote-src {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 768px) {
+  .universe-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .universe-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Animations ── */
+.fade-up { opacity: 0; transform: translateY(30px); }
+.fade-left { opacity: 0; transform: translateX(-30px); }
+.fade-right { opacity: 0; transform: translateX(30px); }
+.scale-in { opacity: 0; transform: scale(0.95); }
+</style>
+</head>
+<body>
+
+<a href="/guild/" class="back-nav"><i class="fas fa-arrow-left"></i>&nbsp; ARCHIVE</a>
+
+<nav class="notebook-tabs">
+  <a href="#hero" class="notebook-tab tab-mint active" data-section="hero">ME</a>
+  <a href="#about" class="notebook-tab tab-coral" data-section="about">BIO</a>
+  <a href="#career" class="notebook-tab tab-lemon" data-section="career">PATH</a>
+  <a href="#services" class="notebook-tab tab-lavender" data-section="services">HELP</a>
+  <a href="#platforms" class="notebook-tab tab-sky" data-section="platforms">FIND</a>
+</nav>
+
+<!-- Three.js — fixed, full-page constellation -->
+<canvas id="three-canvas"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<!-- Node hover tooltip -->
+<div class="node-tooltip" id="node-tooltip">
+  <div class="tt-name"><span class="tt-dot"></span><span class="tt-label"></span></div>
+  <div class="tt-desc"></div>
+</div>
+
+<!-- Persistent domain labels (always visible, positioned by JS) -->
+<div id="domain-labels" style="position:fixed;inset:0;z-index:4;pointer-events:none;"></div>
+
+<div class="page-content">
+
+  <!-- HERO -->
+  <section id="hero" class="hero-section memo-section">
+    <div class="hero-inner">
+      <div class="hero-cover scale-in">
+        <img src="/assets/img/guild/lydia/avatar.webp" alt="Lydia" class="hero-avatar">
+        <div class="hero-brand">CROSS-DOMAIN MEMO</div>
+        <h1 class="hero-title">Lydia's</h1>
+        <div class="hero-subtitle">跨域備忘錄</div>
+        <p class="hero-tagline">
+          這裡是我的觀點角落。<br>
+          從工業設計到資訊管理，從 HR 到行銷，<br>
+          每一次跨域，都是一頁值得記錄的備忘。
+        </p>
+        <div class="hero-tags">
+          <span class="hero-tag">#跨領域管理</span>
+          <span class="hero-tag">#療癒筆記</span>
+          <span class="hero-tag">#嘗試新鮮事</span>
+        </div>
+        <div class="hero-quote">"有些事真的要親眼看到、親腳走過，才會記得。"</div>
+      </div>
+    </div>
+    <div class="scroll-hint"><span>翻開備忘錄</span><i class="fas fa-chevron-down"></i></div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="memo-section">
+    <div class="memo-inner">
+      <div class="section-label fade-up">PAGE 01</div>
+      <h2 class="section-title fade-up">關於我 <i>About Me</i></h2>
+      <div class="glass fade-up">
+        <div class="about-text">
+          <p>嗨嗨，我是 Lydia，大家也叫我小烯。如果要用一句話形容自己，大概就是「不務正業的跨領域管理師」。聽起來很飄？但我的每一步，都是認真思考後的選擇。</p>
+          <p>大學讀工業設計，研究所轉向資訊管理，工作之後更是在 HR、PM、行銷之間自由切換，偶爾還要充當 IT 救火隊。有人說這叫三心二意，但我覺得，這叫「看見不同領域之間的縫隙，然後把自己填進去」。</p>
+          <p>後來我發現，我最擅長的事情其實不是任何一個「專業」，而是在不同領域之間翻譯、銜接、串連。HR 需要懂 PM 的邏輯，行銷要理解產品的語言，而我恰好都走過一遍。</p>
+        </div>
+      </div>
+      <div class="about-grid">
+        <div class="sticky-note sticky-mint fade-left">除了正職，我還自學了柔派傳統整復推拿。用運動理論調整骨頭，身體放鬆了，心理自然也鬆。身心一體，這是我最相信的事。</div>
+        <div class="sticky-note sticky-coral fade-right">我和好夥伴一起經營 Podcast「現在要幹嘛 chit-chat」。雖然阿海暫時不在，但我會繼續 High 下去，等她回來繼續一起聊。</div>
+      </div>
+      <ul class="tag-list fade-up" style="margin-top: 30px;">
+        <li style="border-color: var(--node-mint);">跨領域管理師 -- 串接不同部門的翻譯官</li>
+        <li style="border-color: var(--node-coral);">柔派整復推拿 -- 用運動科學讓身體回到舒適狀態</li>
+        <li style="border-color: var(--node-lemon);">Podcaster -- 「現在要幹嘛」的小烯</li>
+        <li style="border-color: var(--node-lavender);">內容創作者 -- Vocus 專欄、IG 觀點分享</li>
+        <li style="border-color: var(--node-sky);">終身學習者 -- 準備進修研究所中</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- MY UNIVERSE (personal interests) -->
+  <section class="memo-section">
+    <div class="memo-inner">
+      <div class="section-label fade-up">FIELD NOTE</div>
+      <h2 class="section-title fade-up">我的小宇宙 <i>My Universe</i></h2>
+      <p class="fade-up" style="color: var(--text-muted); max-width: 500px; margin-bottom: 10px;">工作以外的我，也是個認真生活的人。這些是讓我充電、讓我快樂的角落。</p>
+
+      <div class="universe-grid">
+        <div class="universe-card fade-up">
+          <span class="universe-icon" style="color: var(--node-lemon);"><i class="fas fa-dog"></i></span>
+          <div class="universe-name">Snoopy 收藏</div>
+          <div class="universe-desc">全家都是史努比控。北海道 Snoopy Village 是人生清單之一。收藏量已經數不清了。</div>
+          <span class="universe-badge">姊妹同好</span>
+        </div>
+        <div class="universe-card fade-up">
+          <span class="universe-icon" style="color: var(--node-teal);"><i class="fas fa-leaf"></i></span>
+          <div class="universe-name">Pikmin</div>
+          <div class="universe-desc">皮克敏明信片收集中。帶著他們一起散步、一起走過不同的城市和風景。</div>
+          <span class="universe-badge">明信片控</span>
+        </div>
+        <div class="universe-card fade-up">
+          <span class="universe-icon" style="color: var(--node-lavender);"><i class="fas fa-music"></i></span>
+          <div class="universe-name">SEVENTEEN</div>
+          <div class="universe-desc">我推 Woozi。是個安靜但堅定的克拉。偶爾隨手拍，偶爾尖叫。</div>
+          <span class="universe-badge">CARAT</span>
+        </div>
+        <div class="universe-card fade-up">
+          <span class="universe-icon" style="color: var(--node-coral);"><i class="fas fa-torii-gate"></i></span>
+          <div class="universe-name">日本散步</div>
+          <div class="universe-desc">明治神宮沒有牌子、原宿車站走過去比較近。有些事要親腳走過才知道。</div>
+          <span class="universe-badge">旅人筆記</span>
+        </div>
+      </div>
+
+      <div class="pull-quote fade-up" style="border-color: var(--node-mint); margin-top: 40px;">
+        這趟旅程再次體悟，有些事真的要親眼看到、親腳走過，才會記得。
+        <span class="pull-quote-src">-- from my Japan travel notes</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAREER -->
+  <section id="career" class="memo-section">
+    <div class="memo-inner">
+      <div class="section-label fade-up">PAGE 02</div>
+      <h2 class="section-title fade-up"><span class="node-indicator" style="color:var(--node-mint);background:var(--node-mint);"></span>跨域路徑圖 <i>My Journey</i></h2>
+      <div class="pull-quote fade-up" style="border-color: var(--node-coral); max-width: 520px; margin-bottom: 30px;">
+        為什麼跨領域人才在台灣特別吃虧？當你能同時理解設計、流程、溝通與執行，老闆看到的往往不是你的「判斷力」，而是這個人可以「多做一點」。
+        <span class="pull-quote-src">-- from my Vocus column</span>
+      </div>
+
+      <div class="career-path">
+        <div class="career-node fade-up"><div class="career-card"><div class="career-era">CHAPTER 01</div><div class="career-role" style="color:var(--node-mint);">工業設計</div><div class="career-desc">在造型與功能之間找到平衡的第一堂課。設計思維不只是畫圖，而是一種解決問題的方式。這裡是一切跨域的起點。</div></div><div class="career-mid"><div class="career-dot" style="background:var(--node-mint);color:var(--node-mint);"></div><div class="career-line-seg"></div></div><div class="career-spacer"></div></div>
+
+        <div class="career-node fade-up"><div class="career-spacer"></div><div class="career-mid"><div class="career-dot" style="background:var(--node-sky);color:var(--node-sky);"></div><div class="career-line-seg"></div></div><div class="career-card"><div class="career-era">CHAPTER 02</div><div class="career-role" style="color:var(--node-sky);">資訊管理</div><div class="career-desc">從實體設計跳進數位世界。學會用系統思維理解流程，讓我開始看見組織運作背後的邏輯和資料的力量。</div></div></div>
+
+        <div class="career-node fade-up"><div class="career-card"><div class="career-era">CHAPTER 03</div><div class="career-role" style="color:var(--node-coral);">人力資源 HR</div><div class="career-desc">開始理解「人」才是組織最重要的資產。面談、招募、制度設計，每一個環節都在處理人與人之間的關係。</div></div><div class="career-mid"><div class="career-dot" style="background:var(--node-coral);color:var(--node-coral);"></div><div class="career-line-seg"></div></div><div class="career-spacer"></div></div>
+
+        <div class="career-node fade-up"><div class="career-spacer"></div><div class="career-mid"><div class="career-dot" style="background:var(--node-lavender);color:var(--node-lavender);"></div><div class="career-line-seg"></div></div><div class="career-card"><div class="career-era">CHAPTER 04</div><div class="career-role" style="color:var(--node-lavender);">專案管理 PM</div><div class="career-desc">學會在混亂中找出秩序。排程、資源分配、風險控管 -- 把不同領域的人串在一起，朝同一個目標前進。</div></div></div>
+
+        <div class="career-node fade-up"><div class="career-card"><div class="career-era">CHAPTER 05</div><div class="career-role" style="color:var(--node-lemon);">行銷企劃</div><div class="career-desc">把好東西說成好故事。行銷不只是投廣告，而是理解受眾、打造共鳴。設計背景讓我在視覺溝通上多了一份直覺。</div></div><div class="career-mid"><div class="career-dot" style="background:var(--node-lemon);color:var(--node-lemon);"></div><div class="career-line-seg"></div></div><div class="career-spacer"></div></div>
+
+        <div class="career-node fade-up"><div class="career-spacer"></div><div class="career-mid"><div class="career-dot" style="background:var(--node-teal);color:var(--node-teal);"></div><div class="career-line-seg"></div></div><div class="career-card"><div class="career-era">CHAPTER 06</div><div class="career-role" style="color:var(--node-teal);">柔派整復推拿</div><div class="career-desc">自學柔派傳統整復推拿。用運動理論調整骨頭的位置，身體放鬆了，心理自然也鬆。這是我的療癒實踐。</div></div></div>
+
+        <div class="career-node fade-up"><div class="career-card"><div class="career-era">NOW</div><div class="career-role" style="color:var(--node-peach);">內容創作 & 準備進修</div><div class="career-desc">經營 IG、Threads、Vocus 專欄和 Podcast，把跨域的觀察化為文字和聲音。同時準備研究所，持續為下一次跨域做準備。</div></div><div class="career-mid"><div class="career-dot" style="background:var(--node-peach);color:var(--node-peach);"></div></div><div class="career-spacer"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services" class="memo-section">
+    <div class="memo-inner">
+      <div class="section-label fade-up">PAGE 03</div>
+      <h2 class="section-title fade-up">我能幫你什麼 <i>How I Help</i></h2>
+      <p class="fade-up" style="color: var(--text-muted); margin-bottom: 10px; max-width: 560px;">這些年走過的路，讓我累積了一些或許能幫到你的能力。不管是職場困擾、身體不適，或是想聊聊人生方向，歡迎來找我。</p>
+      <div class="services-grid">
+        <div class="service-card fade-up"><div class="service-icon" style="color:var(--node-mint);"><i class="fas fa-compass"></i></div><div class="service-title">職涯諮詢</div><div class="service-desc">拿到 Offer 別只看月薪 — 公司在談薪水時看的不只是你領多少，而是你一年需要花費多少成本。以 HR 的實戰經驗，幫你看懂全局。</div></div>
+        <div class="service-card fade-up"><div class="service-icon" style="color:var(--node-coral);"><i class="fas fa-hand-sparkles"></i></div><div class="service-title">整復推拿</div><div class="service-desc">柔派傳統手法，用運動科學的邏輯調整骨骼肌肉。不是硬壓硬推，而是讓身體自己找回舒適的位置。</div></div>
+        <div class="service-card fade-up"><div class="service-icon" style="color:var(--node-lavender);"><i class="fas fa-lightbulb"></i></div><div class="service-title">職場觀點分享</div><div class="service-desc">從 HR 看面試、從 PM 看溝通、從行銷看個人品牌。跨領域的視角，讓你看見更多可能。</div></div>
+        <div class="service-card fade-up"><div class="service-icon" style="color:var(--node-lemon);"><i class="fas fa-microphone-lines"></i></div><div class="service-title">Podcast 對談</div><div class="service-desc">在「現在要幹嘛」聊各種有趣的話題。歡迎來當我的來賓，一起用聲音記錄生活。</div></div>
+        <div class="service-card fade-up"><div class="service-icon" style="color:var(--node-sky);"><i class="fas fa-pen-fancy"></i></div><div class="service-title">內容策劃與撰寫</div><div class="service-desc">行銷文案、社群經營、專欄寫作。把複雜的事情說得簡單，把專業的知識變得親近。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATFORMS -->
+  <section id="platforms" class="memo-section">
+    <div class="memo-inner">
+      <div class="section-label fade-up">PAGE 04</div>
+      <h2 class="section-title fade-up">在哪找到我 <i>Find Me</i></h2>
+      <div class="platforms-grid">
+        <a href="https://www.instagram.com/lydia_20201001/" target="_blank" rel="noopener noreferrer" class="platform-card fade-up"><div class="platform-header"><div class="platform-icon platform-icon-ig"><i class="fab fa-instagram"></i></div><div><div class="platform-name">Instagram</div><div class="platform-handle">@lydia_20201001</div></div></div><div class="platform-desc">我的觀點角落。分享嘗試新事物、日常生活、職涯觀察。</div><span class="platform-tag">觀點分享 / 日常</span></a>
+        <a href="https://www.threads.com/@lydia_20201001" target="_blank" rel="noopener noreferrer" class="platform-card fade-up"><div class="platform-header"><div class="platform-icon platform-icon-threads"><i class="fab fa-threads"></i></div><div><div class="platform-name">Threads</div><div class="platform-handle">@lydia_20201001</div></div></div><div class="platform-desc">比 IG 更即時的碎碎念。生活觀察、時事看法、跨域思考。</div><span class="platform-tag">即時觀點</span></a>
+        <a href="https://podcasts.apple.com/tw/podcast/%E7%8F%BE%E5%9C%A8%E8%A6%81%E5%B9%B9%E5%98%9B-chit-chat/id1732824263" target="_blank" rel="noopener noreferrer" class="platform-card fade-up"><div class="platform-header"><div class="platform-icon platform-icon-podcast"><i class="fas fa-podcast"></i></div><div><div class="platform-name">現在要幹嘛 chit-chat</div><div class="platform-handle">Podcast</div></div></div><div class="platform-desc">和好夥伴一起經營的 Podcast。聊生活、聊工作、聊人生。</div><span class="platform-tag">Podcast / 閒聊</span></a>
+        <div class="platform-card fade-up"><div class="platform-header"><div class="platform-icon platform-icon-vocus"><i class="fas fa-feather-pointed"></i></div><div><div class="platform-name">Vocus 方格子</div><div class="platform-handle">跨域備忘錄</div></div></div><div class="platform-desc">長文觀點的主戰場。每週三更新，給你不一樣的角度看世界。</div><span class="platform-tag">專欄 / 深度文章</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HEALING -->
+  <section class="memo-section">
+    <div class="memo-inner">
+      <div class="section-label fade-up">PAGE 05</div>
+      <h2 class="section-title fade-up"><span class="node-indicator" style="color:var(--node-teal);background:var(--node-teal);"></span>療癒備忘 <i>Healing Note</i></h2>
+      <div class="healing-content">
+        <div class="healing-visual fade-left"><canvas id="healing-canvas"></canvas></div>
+        <div class="healing-text fade-right">
+          <h3>身體放鬆了，心也會跟著鬆</h3>
+          <p>自學柔派傳統整復推拿，不是因為想當推拿師，而是發現身心真的是一體的。很多人肩頸痠痛，以為是姿勢問題，但其實是壓力。</p>
+          <p>柔派的手法不是硬壓硬推。用運動理論去理解骨頭的位置，輕柔地引導身體回到它本來應該在的地方。</p>
+          <div class="healing-quote"><i class="fas fa-quote-left" style="color:var(--node-mint);margin-right:8px;font-size:0.8rem;"></i>用運動理論調整骨頭，身體放鬆心理自然也鬆。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALUES -->
+  <section class="memo-section">
+    <div class="memo-inner">
+      <div class="section-label fade-up">PAGE 06</div>
+      <h2 class="section-title fade-up">我的跨域哲學</h2>
+      <div class="values-grid">
+        <div class="value-card fade-up"><div class="value-number">01</div><div class="value-icon" style="color:var(--node-mint);"><i class="fas fa-route"></i></div><div class="value-title">彎路不是錯路</div><div class="value-desc">每一段看似無關的經歷，都會在未來某個時刻派上用場。設計的美感幫了行銷，HR 的同理心幫了管理，沒有白走的路。</div></div>
+        <div class="value-card fade-up"><div class="value-number">02</div><div class="value-icon" style="color:var(--node-coral);"><i class="fas fa-puzzle-piece"></i></div><div class="value-title">填補縫隙的人</div><div class="value-desc">組織裡最缺的不是專家，而是能在不同專業之間翻譯、串連的人。我不是最厲害的設計師或 HR，但我是最能把他們連在一起的那個人。</div></div>
+        <div class="value-card fade-up"><div class="value-number">03</div><div class="value-icon" style="color:var(--node-lemon);"><i class="fas fa-seedling"></i></div><div class="value-title">持續學習永遠不晚</div><div class="value-desc">正在準備研究所，同時經營多個平台。學習不是為了文憑，而是為了讓自己的觀點更有深度。保持好奇心，是我最重要的能力。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer-section memo-section" style="min-height:auto;padding:60px 0;">
+    <div class="memo-inner">
+      <div class="footer-brand">Lydia's 跨域備忘錄</div>
+      <div class="footer-social">
+        <a href="https://www.instagram.com/lydia_20201001/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="https://www.threads.com/@lydia_20201001" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fab fa-threads"></i></a>
+        <a href="https://podcasts.apple.com/tw/podcast/%E7%8F%BE%E5%9C%A8%E8%A6%81%E5%B9%B9%E5%98%9B-chit-chat/id1732824263" target="_blank" rel="noopener noreferrer" aria-label="Podcast"><i class="fas fa-podcast"></i></a>
+      </div>
+      <div class="footer-divider"></div>
+      <div class="footer-credit">Made with <span style="color:var(--node-coral);">&hearts;</span> by <a href="/guild/">SuperGalen's Dungeon</a></div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ══════════════════════════════════════════════
+     THREE.JS — CROSS-DOMAIN CONSTELLATION
+     ──────────────────────────────────────────────
+     The camera travels through the constellation
+     as you scroll. Each section corresponds to a
+     node that lights up when in view. Mouse hover
+     triggers raycasting for tooltips and gravity.
+     The constellation IS the page.
+     ══════════════════════════════════════════════ */
+  (function initConstellation() {
+    const canvas = document.getElementById('three-canvas');
+    if (!canvas) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 300);
+    camera.position.set(0, 8, 22);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setClearColor(0x08070a, 1);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    /* ── Domain nodes ── */
+    const domains = [
+      { label: '工業設計',  desc: '造型與功能的平衡 — 跨域的起點',    color: 0x7ecdb5, hex: '#7ecdb5', pos: new THREE.Vector3(-8,  8, -3)  },
+      { label: '資訊管理',  desc: '系統思維與資料的力量',              color: 0x7ab8d9, hex: '#7ab8d9', pos: new THREE.Vector3(-3,  5,  2)  },
+      { label: '人力資源',  desc: '人是組織最重要的資產',              color: 0xe88a7a, hex: '#e88a7a', pos: new THREE.Vector3( 3,  1, -1)  },
+      { label: '專案管理',  desc: '在混亂中找出秩序',                  color: 0xb8a9d4, hex: '#b8a9d4', pos: new THREE.Vector3( 7, -3,  2)  },
+      { label: '行銷企劃',  desc: '把好東西說成好故事',                color: 0xf0d76e, hex: '#f0d76e', pos: new THREE.Vector3(10, -7, -1)  },
+      { label: '整復推拿',  desc: '身體放鬆，心理自然也鬆',            color: 0x8ed4b8, hex: '#8ed4b8', pos: new THREE.Vector3( 5,-11,  1)  },
+      { label: '內容創作',  desc: '用文字和聲音記錄觀察',              color: 0xf0a090, hex: '#f0a090', pos: new THREE.Vector3(-1,-15, -2)  },
+    ];
+
+    const connections = [
+      [0,1],[1,2],[2,3],[3,4],[4,5],[5,6], // main path
+      [0,4],[1,3],[2,6], // cross-links
+    ];
+
+    const group = new THREE.Group();
+    scene.add(group);
+
+    /* Build nodes */
+    const nodes = [];
+    domains.forEach((d, i) => {
+      /* Clean node: bright core + single soft glow */
+      const core = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 24, 24),
+        new THREE.MeshBasicMaterial({ color: d.color, transparent: true, opacity: 0.95 })
+      );
+      core.position.copy(d.pos);
+
+      const glow = new THREE.Mesh(
+        new THREE.SphereGeometry(0.6, 16, 16),
+        new THREE.MeshBasicMaterial({ color: d.color, transparent: true, opacity: 0.1 })
+      );
+      glow.position.copy(d.pos);
+
+      group.add(glow, core);
+      nodes.push({ core, glow, data: d });
+    });
+
+    /* Build connections — multi-layer: glow outer + bright core + flowing particles */
+    const lines = [];
+    connections.forEach(([a, b], idx) => {
+      const pA = domains[a].pos, pB = domains[b].pos;
+      const mid = pA.clone().add(pB).multiplyScalar(0.5);
+      mid.z += (Math.random() - 0.5) * 2;
+      const isMain = idx < 6;
+      const blendColor = new THREE.Color(domains[a].color).lerp(new THREE.Color(domains[b].color), 0.5);
+
+      /* Layer 1: soft glow line (wider feel via TubeGeometry) */
+      const curve0 = new THREE.QuadraticBezierCurve3(pA.clone(), mid.clone(), pB.clone());
+      const tubeGeo = new THREE.TubeGeometry(curve0, 40, isMain ? 0.06 : 0.03, 6, false);
+      const tubeMat = new THREE.MeshBasicMaterial({
+        color: blendColor, transparent: true,
+        opacity: isMain ? 0.06 : 0.025,
+      });
+      const tube = new THREE.Mesh(tubeGeo, tubeMat);
+      group.add(tube);
+
+      /* Layer 2: bright core line */
+      const curve1 = new THREE.QuadraticBezierCurve3(pA.clone(), mid.clone(), pB.clone());
+      const coreGeo = new THREE.BufferGeometry().setFromPoints(curve1.getPoints(60));
+      const coreMat = new THREE.LineBasicMaterial({
+        color: isMain ? blendColor : 0x2a2520,
+        transparent: true, opacity: isMain ? 0.2 : 0.08,
+      });
+      const coreLine = new THREE.Line(coreGeo, coreMat);
+      group.add(coreLine);
+
+      /* Layer 3: flowing energy particles along the path */
+      const flowCount = isMain ? 8 : 3;
+      const flowGeo = new THREE.BufferGeometry();
+      const flowPos = new Float32Array(flowCount * 3);
+      const flowData = [];
+      for (let i = 0; i < flowCount; i++) {
+        flowData.push({ t: Math.random(), speed: 0.003 + Math.random() * 0.004 });
+        flowPos[i*3] = pA.x; flowPos[i*3+1] = pA.y; flowPos[i*3+2] = pA.z;
+      }
+      flowGeo.setAttribute('position', new THREE.BufferAttribute(flowPos, 3));
+      const flowMat = new THREE.PointsMaterial({
+        color: blendColor, size: isMain ? 0.1 : 0.06,
+        transparent: true, opacity: isMain ? 0.6 : 0.3,
+        sizeAttenuation: true,
+      });
+      const flowPts = new THREE.Points(flowGeo, flowMat);
+      group.add(flowPts);
+
+      lines.push({
+        tube, coreLine, flowPts, flowGeo, flowData, flowCount,
+        userData: { a, b, isMain, blendColor },
+      });
+    });
+
+    /* ── Subtle grid (備忘錄 notebook grid in space) ── */
+    const gridMat = new THREE.LineBasicMaterial({ color: 0xfaf6f0, transparent: true, opacity: 0.018 });
+    const gridGroup = new THREE.Group();
+    for (let x = -30; x <= 30; x += 4) {
+      const pts = [new THREE.Vector3(x, -30, -12), new THREE.Vector3(x, 30, -12)];
+      gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gridMat));
+    }
+    for (let y = -30; y <= 30; y += 4) {
+      const pts = [new THREE.Vector3(-30, y, -12), new THREE.Vector3(30, y, -12)];
+      gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gridMat));
+    }
+    group.add(gridGroup);
+
+    /* ── Generate soft-glow star texture ── */
+    function makeStarTexture(size, softness) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      const half = size / 2;
+      const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
+      grad.addColorStop(0, 'rgba(255,255,255,1)');
+      grad.addColorStop(softness, 'rgba(255,255,255,0.3)');
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+      return new THREE.CanvasTexture(c);
+    }
+
+    /* ── Generate cross-spike bright star texture ── */
+    function makeBrightStarTexture(size) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      const half = size / 2;
+      /* Core glow */
+      const grad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.4);
+      grad.addColorStop(0, 'rgba(255,252,240,1)');
+      grad.addColorStop(0.3, 'rgba(255,248,230,0.6)');
+      grad.addColorStop(1, 'rgba(255,248,230,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+      /* Cross spikes */
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = 'rgba(255,252,245,0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(half, 0); ctx.lineTo(half, size); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, half); ctx.lineTo(size, half); ctx.stroke();
+      /* Diagonal spikes (fainter) */
+      ctx.strokeStyle = 'rgba(255,252,245,0.15)';
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(size, size); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(size, 0); ctx.lineTo(0, size); ctx.stroke();
+      return new THREE.CanvasTexture(c);
+    }
+
+    const softStarTex = makeStarTexture(64, 0.3);
+    const brightStarTex = makeBrightStarTexture(128);
+
+    /* ── Color temperatures for star layers ── */
+    const starColors = [
+      [0xc8c4be, 0xb0ada8, 0xa8a5a0],  // far: cool grey
+      [0xddd8d0, 0xd4cfc5, 0xe0d8cc],  // mid: warm grey
+      [0xfff8e8, 0xffeedd, 0xe8e0ff],  // near: warm white, hint of blue-white
+    ];
+
+    /* ── Multi-layer star field ── */
+    const starLayers = [];
+    const layerConfigs = [
+      { count: 250, spread: 120, depth: 60, size: 0.04, opacity: 0.2  }, // far
+      { count: 220, spread: 80,  depth: 40, size: 0.06, opacity: 0.3  }, // mid
+      { count: 160, spread: 50,  depth: 20, size: 0.09, opacity: 0.5  }, // near
+    ];
+    const starPhases = [];
+    layerConfigs.forEach((cfg, li) => {
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(cfg.count * 3);
+      const sizes = new Float32Array(cfg.count);
+      const colors = new Float32Array(cfg.count * 3);
+      const palette = starColors[li];
+      for (let i = 0; i < cfg.count; i++) {
+        pos[i*3]   = (Math.random()-0.5) * cfg.spread;
+        pos[i*3+1] = (Math.random()-0.5) * cfg.spread;
+        pos[i*3+2] = (Math.random()-0.5) * cfg.depth - 5;
+        sizes[i] = cfg.size * (0.3 + Math.random() * 0.9);
+        /* Random color from palette */
+        const col = new THREE.Color(palette[Math.floor(Math.random() * palette.length)]);
+        colors[i*3] = col.r; colors[i*3+1] = col.g; colors[i*3+2] = col.b;
+        if (li === 2) starPhases.push({ phase: Math.random()*Math.PI*2, speed: 0.5+Math.random()*2.5 });
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      const mat = new THREE.PointsMaterial({
+        size: cfg.size, transparent: true, opacity: cfg.opacity,
+        sizeAttenuation: true,
+        map: softStarTex,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const pts = new THREE.Points(geo, mat);
+      group.add(pts);
+      starLayers.push({ geo, mat, pts, cfg });
+    });
+    const nearStarGeo = starLayers[2].geo;
+    const nearStarSizes = nearStarGeo.attributes.size.array;
+    const nearStarBaseSizes = Float32Array.from(nearStarSizes);
+
+    /* ── Feature stars (handful of bright stars with cross spikes) ── */
+    const featureStarCount = 12;
+    const fsGeo = new THREE.BufferGeometry();
+    const fsPos = new Float32Array(featureStarCount * 3);
+    const fsSizes = new Float32Array(featureStarCount);
+    const fsPhases = [];
+    for (let i = 0; i < featureStarCount; i++) {
+      fsPos[i*3]   = (Math.random()-0.5) * 60;
+      fsPos[i*3+1] = (Math.random()-0.5) * 60;
+      fsPos[i*3+2] = (Math.random()-0.5) * 25 - 3;
+      fsSizes[i] = 0.15 + Math.random() * 0.2;
+      fsPhases.push({ phase: Math.random()*Math.PI*2, speed: 0.3+Math.random()*1.5 });
+    }
+    fsGeo.setAttribute('position', new THREE.BufferAttribute(fsPos, 3));
+    fsGeo.setAttribute('size', new THREE.BufferAttribute(fsSizes, 1));
+    const fsMat = new THREE.PointsMaterial({
+      color: 0xfffcf0, size: 0.2, transparent: true, opacity: 0.6,
+      sizeAttenuation: true,
+      map: brightStarTex,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const featureStars = new THREE.Points(fsGeo, fsMat);
+    group.add(featureStars);
+
+    /* ── Node orbital particles (small dots circling each node) ── */
+    const orbitals = [];
+    nodes.forEach((n, ni) => {
+      const orbCount = 5;
+      const orbGeo = new THREE.BufferGeometry();
+      const orbPos = new Float32Array(orbCount * 3);
+      const orbData = [];
+      for (let i = 0; i < orbCount; i++) {
+        orbData.push({
+          radius: 0.5 + Math.random() * 0.6,
+          speed: 0.4 + Math.random() * 0.6,
+          phase: Math.random() * Math.PI * 2,
+          tilt: Math.random() * 0.5,
+        });
+      }
+      orbGeo.setAttribute('position', new THREE.BufferAttribute(orbPos, 3));
+      const orbMat = new THREE.PointsMaterial({
+        color: n.data.color, size: 0.04, transparent: true, opacity: 0.5, sizeAttenuation: true,
+      });
+      const orbPts = new THREE.Points(orbGeo, orbMat);
+      group.add(orbPts);
+      orbitals.push({ geo: orbGeo, data: orbData, pts: orbPts, count: orbCount });
+    });
+
+    /* ── Floating memo keywords (Lydia's interests scattered in space) ── */
+    const memoWords = [
+      { text: 'Snoopy', color: '#f0d76e' },
+      { text: 'Pikmin', color: '#8ed4b8' },
+      { text: 'CARAT', color: '#b8a9d4' },
+      { text: 'Podcast', color: '#e88a7a' },
+      { text: 'HR', color: '#e88a7a' },
+      { text: 'PM', color: '#b8a9d4' },
+      { text: 'Vocus', color: '#7ab8d9' },
+      { text: '療癒', color: '#8ed4b8' },
+      { text: '觀點', color: '#f0d76e' },
+      { text: '跨域', color: '#7ecdb5' },
+    ];
+    const memoSprites = [];
+    memoWords.forEach((mw, i) => {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 128; canvas2d.height = 32;
+      const c2d = canvas2d.getContext('2d');
+      c2d.font = '14px "JetBrains Mono", monospace';
+      c2d.fillStyle = mw.color;
+      c2d.globalAlpha = 0.5;
+      c2d.textAlign = 'center';
+      c2d.fillText(mw.text, 64, 22);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const spMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.2 });
+      const sprite = new THREE.Sprite(spMat);
+      sprite.scale.set(2.5, 0.6, 1);
+      sprite.position.set(
+        (Math.random()-0.5) * 35,
+        (Math.random()-0.5) * 40,
+        -3 + Math.random() * -5
+      );
+      group.add(sprite);
+      memoSprites.push({ sprite, baseY: sprite.position.y, speed: 0.05 + Math.random() * 0.1, phase: Math.random() * Math.PI * 2 });
+    });
+
+    /* ── Traveler Light (Lydia) — bright warm beacon ── */
+    const travelerCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.3, 20, 20),
+      new THREE.MeshBasicMaterial({ color: 0xffe8c0, transparent: true, opacity: 1.0 })
+    );
+    const travelerGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.7, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xffd4a0, transparent: true, opacity: 0.15 })
+    );
+    const travelerHalo = new THREE.Mesh(
+      new THREE.SphereGeometry(1.8, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffd4a0, transparent: true, opacity: 0.04 })
+    );
+    group.add(travelerHalo, travelerGlow, travelerCore);
+
+    /* Trail particles behind the traveler — longer, more visible */
+    const trailCount = 40;
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPos = new Float32Array(trailCount * 3);
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+    const trailMat = new THREE.PointsMaterial({
+      color: 0xffd4a0, size: 0.14, transparent: true, opacity: 0.5, sizeAttenuation: true
+    });
+    const trailPts = new THREE.Points(trailGeo, trailMat);
+    group.add(trailPts);
+    const trailHistory = [];
+
+    /* ── Ripple rings (expand when traveler reaches a node) ── */
+    const ripples = [];
+    function spawnRipple(pos, color) {
+      const rGeo = new THREE.RingGeometry(0.1, 0.15, 32);
+      const rMat = new THREE.MeshBasicMaterial({
+        color: color, transparent: true, opacity: 0.5, side: THREE.DoubleSide
+      });
+      const ring = new THREE.Mesh(rGeo, rMat);
+      ring.position.copy(pos);
+      ring.lookAt(camera.position);
+      group.add(ring);
+      ripples.push({ mesh: ring, scale: 0.1, opacity: 0.5 });
+    }
+    let lastActiveNode = -1;
+
+    /* Raycaster */
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2(-999, -999);
+    const tooltip = document.getElementById('node-tooltip');
+    const ttLabel = tooltip.querySelector('.tt-label');
+    const ttDot = tooltip.querySelector('.tt-dot');
+    const ttDesc = tooltip.querySelector('.tt-desc');
+    let hoveredIdx = -1;
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      tooltip.style.left = (e.clientX + 18) + 'px';
+      tooltip.style.top  = (e.clientY - 8) + 'px';
+    }, { passive: true });
+
+    /* Scroll state */
+    let scrollY = 0;
+    window.addEventListener('scroll', () => { scrollY = window.pageYOffset; }, { passive: true });
+
+    /* Create persistent domain label elements */
+    const labelsContainer = document.getElementById('domain-labels');
+    const domainLabelEls = [];
+    domains.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'domain-lbl';
+      el.style.color = d.hex;
+      el.innerHTML = '<span class="lbl-dot" style="background:' + d.hex + ';box-shadow:0 0 6px ' + d.hex + ';"></span>' + d.label;
+      labelsContainer.appendChild(el);
+      domainLabelEls.push(el);
+    });
+
+    /* Camera path — from overview (hero) through each node */
+    const cameraPath = [
+      { pos: [0, 8, 22], look: [0, 0, 0] },       // hero: overview
+      { pos: [-4, 6, 14], look: [-2, 4, 0] },      // about
+      { pos: [-6, 7, 10], look: [-8, 8, -3] },     // career start (design)
+      { pos: [0, 2, 10],  look: [3, 1, -1] },      // career mid (HR)
+      { pos: [7, -3, 10], look: [10, -7, -1] },    // career end (marketing)
+      { pos: [4, -8, 12], look: [5, -11, 1] },     // healing
+      { pos: [0, -10, 14], look: [-1, -15, -2] },  // content/values
+      { pos: [0, -12, 18], look: [0, -12, 0] },    // footer
+    ];
+
+    function lerpVec(a, b, t) {
+      return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = Date.now() * 0.001;
+      const totalH = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = totalH > 0 ? scrollY / totalH : 0;
+
+      /* Camera follows scroll through path */
+      const segCount = cameraPath.length - 1;
+      const rawIdx = progress * segCount;
+      const segIdx = Math.min(Math.floor(rawIdx), segCount - 1);
+      const segT = rawIdx - segIdx;
+      const smoothT = segT * segT * (3 - 2 * segT); // smoothstep
+
+      const camPos = lerpVec(cameraPath[segIdx].pos, cameraPath[segIdx+1].pos, smoothT);
+      const camLook = lerpVec(cameraPath[segIdx].look, cameraPath[segIdx+1].look, smoothT);
+
+      camera.position.set(camPos[0], camPos[1], camPos[2]);
+      camera.lookAt(camLook[0], camLook[1], camLook[2]);
+
+      /* Slight idle sway */
+      camera.position.x += Math.sin(t * 0.15) * 0.3;
+      camera.position.y += Math.cos(t * 0.1) * 0.2;
+
+      /* Global breathing rhythm (4-second cycle, like calm breathing) */
+      const breath = Math.sin(t * 0.4) * 0.5 + 0.5; // 0..1
+
+      /* ── Traveler light — Lydia moving through her career path ── */
+      const travelerProgress = Math.min(1, progress * 1.4); // slightly ahead of scroll
+      const mainPath = [0,1,2,3,4,5,6]; // node indices
+      const travelerSegCount = mainPath.length - 1;
+      const tRaw = travelerProgress * travelerSegCount;
+      const tSeg = Math.min(Math.floor(tRaw), travelerSegCount - 1);
+      const tT = tRaw - tSeg;
+      const nFrom = nodes[mainPath[tSeg]], nTo = nodes[mainPath[tSeg + 1]];
+      const travPos = nFrom.data.pos.clone().lerp(nTo.data.pos, tT);
+      travPos.x += Math.sin(t * 0.5) * 0.15;
+      travPos.y += Math.cos(t * 0.4) * 0.1;
+
+      travelerCore.position.copy(travPos);
+      travelerGlow.position.copy(travPos);
+      travelerHalo.position.copy(travPos);
+      travelerGlow.scale.setScalar(1 + breath * 0.5);
+      travelerHalo.scale.setScalar(1 + breath * 0.4);
+      travelerCore.material.opacity = 0.85 + breath * 0.15;
+      travelerGlow.material.opacity = 0.12 + breath * 0.08;
+      travelerHalo.material.opacity = 0.03 + breath * 0.025;
+
+      /* Trail — store history and update */
+      trailHistory.unshift(travPos.clone());
+      if (trailHistory.length > trailCount) trailHistory.pop();
+      const tp = trailGeo.attributes.position.array;
+      for (let i = 0; i < trailCount; i++) {
+        const h = trailHistory[Math.min(i, trailHistory.length - 1)];
+        tp[i*3] = h.x; tp[i*3+1] = h.y; tp[i*3+2] = h.z;
+      }
+      trailGeo.attributes.position.needsUpdate = true;
+      trailMat.opacity = 0.35 + breath * 0.2;
+
+      /* Ripple when traveler reaches a new node */
+      const activeNodeIdx = Math.round(travelerProgress * travelerSegCount);
+      if (activeNodeIdx !== lastActiveNode && activeNodeIdx < domains.length) {
+        lastActiveNode = activeNodeIdx;
+        const nd = nodes[activeNodeIdx];
+        spawnRipple(nd.core.position.clone(), nd.data.color);
+      }
+
+      /* Update ripples */
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const r = ripples[i];
+        r.scale += 0.04;
+        r.opacity -= 0.008;
+        r.mesh.scale.setScalar(r.scale);
+        r.mesh.material.opacity = Math.max(0, r.opacity);
+        r.mesh.lookAt(camera.position);
+        if (r.opacity <= 0) {
+          group.remove(r.mesh);
+          r.mesh.geometry.dispose();
+          r.mesh.material.dispose();
+          ripples.splice(i, 1);
+        }
+      }
+
+      /* Animate nodes — clean, with breathing */
+      nodes.forEach((n, i) => {
+        const wobble = t * (0.12 + i * 0.02);
+        n.core.position.x = n.data.pos.x + Math.cos(wobble) * 0.25;
+        n.core.position.y = n.data.pos.y + Math.sin(wobble * 0.7) * 0.15;
+        n.glow.position.copy(n.core.position);
+
+        const dist = camera.position.distanceTo(n.core.position);
+        const proximity = Math.max(0, 1 - dist / 18);
+        n.core.material.opacity = 0.5 + proximity * 0.5 + breath * 0.05;
+        n.core.scale.setScalar(0.7 + proximity * 0.6);
+        n.glow.material.opacity = 0.06 + proximity * 0.12 + breath * 0.03;
+        n.glow.scale.setScalar(1 + proximity * 0.4 + breath * 0.1);
+
+        /* Project 3D → 2D for persistent label */
+        const screenPos = n.core.position.clone().project(camera);
+        if (domainLabelEls[i] && screenPos.z < 1) {
+          const sx = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+          const sy = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+          domainLabelEls[i].style.left = (sx + 12) + 'px';
+          domainLabelEls[i].style.top = (sy - 4) + 'px';
+          domainLabelEls[i].style.opacity = Math.min(1, 0.3 + proximity * 0.7);
+        }
+      });
+
+      /* Update connection lines (multi-layer) */
+      lines.forEach(l => {
+        const { a, b, isMain, blendColor } = l.userData;
+        const nA = nodes[a], nB = nodes[b];
+        const pA = nA.core.position, pB = nB.core.position;
+        const mid = pA.clone().add(pB).multiplyScalar(0.5);
+        mid.z += Math.sin(t * 0.4 + a) * 0.6;
+        const curve = new THREE.QuadraticBezierCurve3(pA, mid, pB);
+
+        /* Update core line geometry */
+        l.coreLine.geometry.setFromPoints(curve.getPoints(60));
+
+        /* Update tube geometry (recreate — cheap for low-poly tubes) */
+        l.tube.geometry.dispose();
+        l.tube.geometry = new THREE.TubeGeometry(curve, 40, isMain ? 0.06 : 0.03, 6, false);
+
+        /* Proximity-based brightness */
+        const lineMid = pA.clone().add(pB).multiplyScalar(0.5);
+        const lineDist = camera.position.distanceTo(lineMid);
+        const lineProx = Math.max(0, 1 - lineDist / 18);
+
+        l.coreLine.material.opacity = (isMain ? 0.25 : 0.1) + lineProx * 0.3 + breath * 0.05;
+        l.tube.material.opacity = (isMain ? 0.06 : 0.025) + lineProx * 0.08 + breath * 0.02;
+
+        /* Brighten color when close */
+        if (lineProx > 0.2) {
+          l.coreLine.material.color.copy(blendColor);
+          l.tube.material.color.copy(blendColor);
+        } else {
+          l.coreLine.material.color.setHex(isMain ? 0x3a3530 : 0x201d18);
+          l.tube.material.color.copy(blendColor);
+        }
+
+        /* Animate flowing particles along curve */
+        const fp = l.flowGeo.attributes.position.array;
+        for (let i = 0; i < l.flowCount; i++) {
+          const fd = l.flowData[i];
+          fd.t += fd.speed;
+          if (fd.t > 1) fd.t -= 1;
+          const pt = curve.getPoint(fd.t);
+          fp[i*3] = pt.x; fp[i*3+1] = pt.y; fp[i*3+2] = pt.z;
+        }
+        l.flowGeo.attributes.position.needsUpdate = true;
+        l.flowPts.material.opacity = (isMain ? 0.3 : 0.15) + lineProx * 0.4;
+      });
+
+      /* Raycasting — smooth hover with lerp, not sudden snap */
+      raycaster.setFromCamera(mouse, camera);
+      const coreMeshes = nodes.map(n => n.core);
+      const hits = raycaster.intersectObjects(coreMeshes);
+      const prevHovered = hoveredIdx;
+      hoveredIdx = -1;
+
+      if (hits.length > 0 && hits[0].distance < 18) {
+        hoveredIdx = coreMeshes.indexOf(hits[0].object);
+      }
+
+      /* Smooth hover states via lerp */
+      nodes.forEach((n, i) => {
+        const isHovered = i === hoveredIdx;
+        const targetScale = isHovered ? 1.5 : (0.7 + Math.max(0, 1 - camera.position.distanceTo(n.core.position) / 18) * 0.6);
+        const targetGlowOp = isHovered ? 0.25 : n.glow.material.opacity;
+        const targetGlowScale = isHovered ? 1.6 : n.glow.scale.x;
+
+        /* Lerp scale smoothly */
+        const curScale = n.core.scale.x;
+        n.core.scale.setScalar(curScale + (targetScale - curScale) * 0.1);
+        n.glow.material.opacity += (targetGlowOp - n.glow.material.opacity) * 0.08;
+        const gs = n.glow.scale.x;
+        n.glow.scale.setScalar(gs + (targetGlowScale - gs) * 0.08);
+      });
+
+      /* Show/hide tooltip */
+      if (hoveredIdx >= 0) {
+        const d = nodes[hoveredIdx].data;
+        ttLabel.textContent = d.label;
+        ttDot.style.background = d.hex;
+        ttDot.style.color = d.hex;
+        ttDesc.textContent = d.desc;
+        tooltip.classList.add('visible');
+
+        /* Smoothly brighten connected lines */
+        lines.forEach(l => {
+          if (l.userData.a === hoveredIdx || l.userData.b === hoveredIdx) {
+            const targetOp = l.userData.isMain ? 0.5 : 0.3;
+            l.coreLine.material.opacity += (targetOp - l.coreLine.material.opacity) * 0.08;
+            l.coreLine.material.color.lerp(new THREE.Color(d.color), 0.08);
+            l.tube.material.opacity += ((l.userData.isMain ? 0.12 : 0.06) - l.tube.material.opacity) * 0.08;
+            l.flowPts.material.opacity += (0.8 - l.flowPts.material.opacity) * 0.08;
+          }
+        });
+      } else {
+        tooltip.classList.remove('visible');
+      }
+
+      /* Animate multi-layer starfield */
+      starLayers.forEach((layer, li) => {
+        const sp = layer.geo.attributes.position.array;
+        const driftSpeed = (li === 0 ? 0.0003 : li === 1 ? 0.0006 : 0.001);
+        for (let i = 0; i < layer.cfg.count; i++) {
+          sp[i*3]   += Math.sin(t * 0.15 + i * 0.02) * driftSpeed;
+          sp[i*3+1] += Math.cos(t * 0.1 + i * 0.03) * driftSpeed;
+        }
+        layer.geo.attributes.position.needsUpdate = true;
+      });
+
+      /* Near-layer twinkle */
+      for (let i = 0; i < starLayers[2].cfg.count; i++) {
+        const tw = starPhases[i];
+        nearStarSizes[i] = nearStarBaseSizes[i] * (0.5 + 0.5 * Math.sin(t * tw.speed + tw.phase));
+      }
+      nearStarGeo.attributes.size.needsUpdate = true;
+
+      /* Near-star gentle drift toward traveler only (no sudden gravity snaps) */
+      const nearPos = nearStarGeo.attributes.position.array;
+      for (let i = 0; i < starLayers[2].cfg.count; i++) {
+        const dx = travelerCore.position.x - nearPos[i*3];
+        const dy = travelerCore.position.y - nearPos[i*3+1];
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 8 && dist > 0.5) {
+          nearPos[i*3]   += dx * 0.0002;
+          nearPos[i*3+1] += dy * 0.0002;
+        }
+      }
+
+      /* Animate node orbital particles */
+      nodes.forEach((n, ni) => {
+        const orb = orbitals[ni];
+        const op = orb.geo.attributes.position.array;
+        for (let i = 0; i < orb.count; i++) {
+          const od = orb.data[i];
+          const angle = t * od.speed + od.phase;
+          op[i*3]   = n.core.position.x + Math.cos(angle) * od.radius;
+          op[i*3+1] = n.core.position.y + Math.sin(angle) * od.radius * (1 - od.tilt);
+          op[i*3+2] = n.core.position.z + Math.sin(angle + 1) * od.radius * od.tilt;
+        }
+        orb.geo.attributes.position.needsUpdate = true;
+        /* Orbital brightness follows node proximity */
+        const dist = camera.position.distanceTo(n.core.position);
+        const prox = Math.max(0, 1 - dist / 16);
+        orb.pts.material.opacity = 0.15 + prox * 0.5;
+      });
+
+      /* Grid subtle parallax */
+      gridGroup.position.y = -scrollY * 0.001;
+
+      /* Feature stars twinkle */
+      const fss = fsGeo.attributes.size.array;
+      for (let i = 0; i < featureStarCount; i++) {
+        fss[i] = (0.15 + Math.random() * 0.2) * (0.6 + 0.4 * Math.sin(t * fsPhases[i].speed + fsPhases[i].phase));
+      }
+      fsGeo.attributes.size.needsUpdate = true;
+
+      /* Animate floating memo keywords */
+      memoSprites.forEach(ms => {
+        ms.sprite.position.y = ms.baseY + Math.sin(t * ms.speed + ms.phase) * 0.8;
+        /* Fade based on camera distance */
+        const dist = camera.position.distanceTo(ms.sprite.position);
+        ms.sprite.material.opacity = Math.max(0.05, Math.min(0.25, 0.3 - dist * 0.015));
+      });
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  })();
+
+  /* ── Healing canvas ── */
+  (function() {
+    const c = document.getElementById('healing-canvas');
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    function resize() {
+      const r = c.parentElement.getBoundingClientRect();
+      c.width = r.width * devicePixelRatio;
+      c.height = r.height * devicePixelRatio;
+      c.style.width = r.width + 'px';
+      c.style.height = r.height + 'px';
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+    }
+    resize(); window.addEventListener('resize', resize);
+
+    const pts = [];
+    for (let i = 0; i < 50; i++) pts.push({
+      x: Math.random()*500, y: Math.random()*400,
+      r: 2+Math.random()*5,
+      col: ['rgba(126,205,181,','rgba(184,169,212,','rgba(122,184,217,'][~~(Math.random()*3)],
+      spd: 0.2+Math.random()*0.4, ang: Math.random()*Math.PI*2, off: Math.random()*Math.PI*2
+    });
+    function draw() {
+      requestAnimationFrame(draw);
+      const w = c.width/devicePixelRatio, h = c.height/devicePixelRatio;
+      ctx.clearRect(0,0,w,h);
+      const t = Date.now()*0.001, b = Math.sin(t*0.5)*0.5+0.5;
+      const cx=w/2, cy=h/2, mr=Math.min(w,h)*0.28, cr=mr*(0.6+b*0.4);
+      for (let r=3;r>=0;r--) {
+        ctx.beginPath(); ctx.arc(cx,cy,cr+r*18,0,Math.PI*2);
+        ctx.fillStyle='rgba(126,205,181,'+Math.max(0,0.03-r*0.006)+')'; ctx.fill();
+      }
+      pts.forEach(p => {
+        const dx=cx-p.x, dy=cy-p.y;
+        p.x += Math.cos(p.ang+t*0.3)*p.spd + dx*b*0.002;
+        p.y += Math.sin(p.ang+t*0.3)*p.spd + dy*b*0.002;
+        if(p.x<0)p.x=w; if(p.x>w)p.x=0; if(p.y<0)p.y=h; if(p.y>h)p.y=0;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r*(0.8+b*0.4),0,Math.PI*2);
+        ctx.fillStyle=p.col+(0.12+Math.sin(t+p.off)*0.08)+')'; ctx.fill();
+      });
+    }
+    draw();
+  })();
+
+  /* ── GSAP ── */
+  gsap.registerPlugin(ScrollTrigger);
+  document.querySelectorAll('.fade-up').forEach(el => {
+    gsap.to(el, { scrollTrigger:{trigger:el,start:'top 88%'}, opacity:1, y:0, duration:0.7, ease:'power2.out' });
+  });
+  document.querySelectorAll('.fade-left').forEach(el => {
+    gsap.to(el, { scrollTrigger:{trigger:el,start:'top 88%'}, opacity:1, x:0, duration:0.7, ease:'power2.out' });
+  });
+  document.querySelectorAll('.fade-right').forEach(el => {
+    gsap.to(el, { scrollTrigger:{trigger:el,start:'top 88%'}, opacity:1, x:0, duration:0.7, ease:'power2.out' });
+  });
+  document.querySelectorAll('.scale-in').forEach(el => {
+    gsap.to(el, { scrollTrigger:{trigger:el,start:'top 88%'}, opacity:1, scale:1, duration:0.9, ease:'back.out(1.2)' });
+  });
+
+  gsap.set(['.hero-brand','.hero-title','.hero-subtitle','.hero-tagline','.hero-tags','.scroll-hint'], { opacity:0, y:15 });
+  const tl = gsap.timeline({ delay: 0.3 });
+  tl.to('.hero-cover',{opacity:1,scale:1,duration:0.9,ease:'back.out(1.3)'})
+    .to('.hero-brand',{opacity:1,y:0,duration:0.4},'-=0.2')
+    .to('.hero-title',{opacity:1,y:0,duration:0.5},'-=0.15')
+    .to('.hero-subtitle',{opacity:1,y:0,duration:0.4},'-=0.15')
+    .to('.hero-tagline',{opacity:1,y:0,duration:0.4},'-=0.15')
+    .to('.hero-tags',{opacity:1,y:0,duration:0.3},'-=0.1')
+    .to('.scroll-hint',{opacity:1,duration:0.4},'-=0.1');
+
+  /* Tab active state */
+  const sections = document.querySelectorAll('.memo-section[id]');
+  const tabs = document.querySelectorAll('.notebook-tab');
+  window.addEventListener('scroll', () => {
+    const sp = scrollY + innerHeight/3;
+    let cur = '';
+    sections.forEach(s => { if(s.offsetTop <= sp) cur = s.id; });
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.section === cur));
+  }, { passive: true });
+  tabs.forEach(tab => {
+    tab.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.getElementById(tab.dataset.section);
+      if(target) target.scrollIntoView({ behavior:'smooth' });
+    });
+  });
+
+})();
+</script>
+</body>
+</html>

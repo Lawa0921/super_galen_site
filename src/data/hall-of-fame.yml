@@ -1551,3 +1551,17 @@ members:
         label: "AI教育"
       - id: "interactive_robot"
         label: "互動機器人"
+
+  - id: "dylaner1"
+    name: "阿凃"
+    avatar: "/assets/img/guild/dylaner1/avatar.webp"
+    page: "/guild/dylaner1.html"
+    title: "The Lucid Path"
+    description: "催眠療癒師兼餐飲修行者。38歲才進餐飲業，走過網路行銷、直銷、居家清潔、創業、催眠師六段人生。擅長創傷療癒、放鬆減壓與科學觀元辰，用佛系的節奏陪你找到自己。"
+    tags:
+      - id: "hypnotherapist"
+        label: "催眠療癒師"
+      - id: "mind_body_spirit"
+        label: "身心靈"
+      - id: "food_service"
+        label: "餐飲修行"
