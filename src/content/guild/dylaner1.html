@@ -1,0 +1,717 @@
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿凃 — The Lucid Path</title>
+    <meta name="description" content="從熱血吉他社青年到穿梭現實與心靈之間的催眠師兼餐飲小白。40歲，六次轉身，每一次都是更深的清醒。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Noto+Sans+TC:wght@300;400;700;900&family=DM+Mono:wght@400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --void: #06050c;
+            --candle: #d4a853;
+            --incense: #7b4fbf;
+            --teal: #3ddbd0;
+            --copper: #b87333;
+            --bright: #ede8f5;
+            --text: #b8aec8;
+            --muted: #4a4060;
+            --font-display: 'Cormorant Garamond', serif;
+            --font-heading: 'Syne', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+            --font-mono: 'DM Mono', monospace;
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html{scroll-behavior:smooth;overflow-x:hidden}
+        body{font-family:var(--font-body);background:var(--void);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+        ::selection{background:var(--incense);color:#fff}
+        ::-webkit-scrollbar{width:3px}
+        ::-webkit-scrollbar-track{background:var(--void)}
+        ::-webkit-scrollbar-thumb{background:var(--incense);border-radius:2px}
+
+        /* THREE.JS — THE WORLD */
+        #world{position:fixed;inset:0;z-index:0}
+        .noise{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.025;
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size:128px;animation:grain .3s steps(3) infinite}
+        @keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-1px,1px)}66%{transform:translate(1px,-1px)}100%{transform:translate(0,0)}}
+
+        /* LOADER */
+        .loader{position:fixed;inset:0;z-index:9999;background:var(--void);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2rem}
+        .loader-ring{width:80px;height:80px;border:2px solid transparent;border-top-color:var(--incense);border-radius:50%;animation:spin 1.5s linear infinite;position:relative}
+        .loader-ring::after{content:'';position:absolute;inset:8px;border:2px solid transparent;border-bottom-color:var(--candle);border-radius:50%;animation:spin 1s linear infinite reverse}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .loader-text{font-family:var(--font-display);font-size:1rem;font-style:italic;color:var(--muted);letter-spacing:.15em}
+
+        /* NAV */
+        .back-nav{position:fixed;top:1.5rem;left:1.5rem;z-index:500;display:flex;align-items:center;gap:.5rem;text-decoration:none;color:var(--muted);font-family:var(--font-mono);font-size:.75rem;letter-spacing:.1em;transition:color .3s}
+        .back-nav:hover{color:var(--candle)}
+        .scroll-bar{position:fixed;top:0;left:0;right:0;z-index:999;height:2px;background:rgba(255,255,255,.03)}
+        .scroll-bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--incense),var(--candle),var(--teal));transition:width .1s}
+
+        /* ALL CONTENT floats above Three.js */
+        .content-layer{position:relative;z-index:2;pointer-events:none}
+        .content-layer section,.content-layer footer,.content-layer a,.content-layer .tarot-card,.content-layer .breath-wrap,.content-layer .cta-link{pointer-events:auto}
+
+        /* SHARED */
+        .label{font-family:var(--font-mono);font-size:clamp(.5rem,.8vw,.65rem);letter-spacing:.5em;color:var(--incense);margin-bottom:.5rem;display:flex;align-items:center;gap:1rem}
+        .label::before{content:'';width:25px;height:1px;background:var(--incense)}
+        .stitle{font-family:var(--font-body);font-size:clamp(1.6rem,3.5vw,2.8rem);font-weight:900;color:var(--bright);margin-bottom:1.5rem;line-height:1.3}
+        .stext{font-family:var(--font-body);font-size:clamp(.85rem,1.3vw,1rem);color:var(--text);line-height:2;max-width:620px}
+
+        /* ======== HERO ======== */
+        .hero{height:100vh;display:flex;align-items:center;justify-content:center;position:relative}
+        .hero-inner{text-align:center;padding:2rem}
+        .hero-avatar{width:120px;height:120px;border-radius:50%;border:2px solid rgba(212,168,83,.35);object-fit:cover;display:block;margin:0 auto 1.5rem;box-shadow:0 0 50px rgba(212,168,83,.15),0 0 100px rgba(123,79,191,.1);opacity:0}
+        .hero-title{font-family:var(--font-heading);font-size:clamp(3rem,10vw,8rem);font-weight:800;color:var(--bright);line-height:.95;letter-spacing:-.02em;opacity:0}
+        .hero-cn{font-family:var(--font-body);font-size:clamp(1.1rem,2.2vw,1.6rem);font-weight:300;color:var(--candle);letter-spacing:.6em;margin-top:.8rem;opacity:0}
+        .hero-tag{font-family:var(--font-display);font-size:clamp(1rem,1.8vw,1.4rem);font-style:italic;color:var(--teal);margin-top:1rem;opacity:0}
+        .hero-roles{display:flex;gap:1.2rem;justify-content:center;margin-top:1.3rem;opacity:0;flex-wrap:wrap}
+        .hero-role{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.12em;color:var(--muted);padding:4px 10px;border:1px solid rgba(123,79,191,.2);border-radius:2px}
+        .hero-hint{font-family:var(--font-mono);font-size:.55rem;color:var(--muted);letter-spacing:.2em;margin-top:2rem;opacity:0}
+        .scroll-cue{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.4rem;opacity:0}
+        .scroll-cue span{font-family:var(--font-body);font-size:.55rem;color:var(--muted);letter-spacing:.3em}
+        .scroll-cue .arrow{width:1px;height:25px;background:linear-gradient(to bottom,var(--incense),transparent);animation:pd 2s ease-in-out infinite}
+        @keyframes pd{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(6px)}}
+
+        /* ======== ORIGIN ======== */
+        .origin{padding:clamp(4rem,8vh,7rem) clamp(1.5rem,5vw,4rem)}
+        .origin-wrap{display:flex;align-items:flex-start;gap:clamp(2rem,4vw,5rem);max-width:1100px;margin:0 auto}
+        .origin-vis{flex:0 0 260px}
+        .origin-doodle{width:100%;border-radius:14px;filter:drop-shadow(0 8px 30px rgba(123,79,191,.2));transition:transform .5s}
+        .origin-doodle:hover{transform:scale(1.03) rotate(1deg)}
+        .origin-quote{margin-top:1.2rem;padding:1.2rem;background:linear-gradient(135deg,rgba(123,79,191,.06),rgba(212,168,83,.03));border-left:2px solid var(--incense);border-radius:0 6px 6px 0;font-family:var(--font-display);font-size:clamp(.95rem,1.5vw,1.15rem);font-style:italic;color:var(--bright);line-height:1.8}
+        .origin-body{flex:1}
+
+        /* ======== JOURNEY ======== */
+        .journey{padding:clamp(4rem,8vh,7rem) clamp(1.5rem,5vw,4rem)}
+        .journey-wrap{max-width:900px;margin:0 auto}
+        .jtl{position:relative;margin-top:2.5rem;padding-left:55px}
+        .jtl-line{position:absolute;left:18px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--incense),var(--candle),var(--teal),var(--copper),var(--candle));opacity:.25}
+        .jn{position:relative;margin-bottom:2rem;padding:1.3rem 1.6rem;background:rgba(255,255,255,.012);border:1px solid rgba(123,79,191,.05);border-radius:8px;cursor:default;transition:all .4s}
+        .jn:hover{transform:translateX(6px);border-color:rgba(123,79,191,.18);background:rgba(123,79,191,.03)}
+        .jd{position:absolute;left:-45px;top:1.5rem;width:12px;height:12px;border-radius:50%;border:2px solid var(--incense);background:var(--void);transition:all .3s}
+        .jn:hover .jd{background:var(--incense);box-shadow:0 0 12px rgba(123,79,191,.5)}
+        .jn h3{font-size:1rem;font-weight:700;color:var(--bright);margin-bottom:.25rem}
+        .jn p{font-size:.82rem;color:var(--text);line-height:1.8}
+        .ji{font-size:1.1rem;margin-bottom:.4rem;display:inline-block}
+
+        /* ======== HYPNO — BREATHING ======== */
+        .hypno{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+        .hypno-inner{max-width:700px;text-align:center}
+        .hypno-big{font-family:var(--font-body);font-size:clamp(1.2rem,2.8vw,2rem);font-weight:900;color:var(--bright);line-height:1.8;margin-bottom:1.5rem}
+        .hypno-big em{color:var(--incense);font-style:normal;text-shadow:0 0 25px rgba(123,79,191,.35)}
+        .hypno-big .a{color:var(--candle);text-shadow:0 0 20px rgba(212,168,83,.25)}
+        .breath-wrap{margin:2.5rem auto;width:180px;height:180px;cursor:pointer;position:relative}
+        .breath-ring{width:100%;height:100%;border-radius:50%;border:1.5px solid rgba(123,79,191,.25);display:flex;align-items:center;justify-content:center;transition:transform 4s cubic-bezier(.37,0,.63,1),border-color 4s,box-shadow 4s}
+        .breath-ring.in{transform:scale(1.35);border-color:rgba(212,168,83,.45);box-shadow:0 0 60px rgba(212,168,83,.12),inset 0 0 30px rgba(123,79,191,.04)}
+        .breath-ring.out{transform:scale(1);border-color:rgba(123,79,191,.25);box-shadow:none}
+        .breath-label{font-family:var(--font-display);font-size:1rem;font-style:italic;color:var(--muted);transition:color 1s}
+        .breath-ring.in .breath-label{color:var(--candle)}
+        .breath-hint{font-family:var(--font-mono);font-size:.55rem;color:var(--muted);letter-spacing:.15em;margin-top:.8rem;opacity:.6}
+        .hypno-desc{margin-top:2rem}
+
+        /* ======== SERVICES — TAROT CARDS ======== */
+        .services{padding:clamp(4rem,8vh,7rem) clamp(1.5rem,5vw,4rem)}
+        .services-wrap{max-width:1100px;margin:0 auto}
+        .sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin-top:2.5rem}
+        .sgrid2{grid-template-columns:repeat(2,1fr)}
+        .tarot-card{perspective:800px;height:320px;cursor:pointer}
+        .tc-inner{position:relative;width:100%;height:100%;transition:transform .7s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d}
+        .tarot-card.flipped .tc-inner{transform:rotateY(180deg)}
+        .tc-f,.tc-b{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;padding:1.8rem;overflow:hidden}
+        .tc-f{background:linear-gradient(160deg,rgba(123,79,191,.07),rgba(212,168,83,.03));border:1px solid rgba(123,79,191,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.8rem}
+        .tc-f::before{content:'';position:absolute;inset:5px;border:1px solid rgba(123,79,191,.05);border-radius:8px;pointer-events:none}
+        .tc-f .ci{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+        .tc-f h3{font-size:1.1rem;font-weight:700;color:var(--bright)}
+        .tc-f .ch{font-family:var(--font-mono);font-size:.5rem;color:var(--muted);letter-spacing:.2em;margin-top:.3rem}
+        .tc-f .cs{font-family:var(--font-display);font-size:2.8rem;color:rgba(123,79,191,.08);position:absolute;bottom:12px;right:18px}
+        .tc-b{background:linear-gradient(160deg,rgba(26,16,48,.95),rgba(12,10,20,.98));border:1px solid rgba(212,168,83,.12);transform:rotateY(180deg);display:flex;flex-direction:column;justify-content:center;padding:1.8rem 1.5rem}
+        .tc-b h4{font-size:.95rem;font-weight:700;color:var(--candle);margin-bottom:.6rem}
+        .tc-b p{font-size:.8rem;color:var(--text);line-height:1.9}
+        .tc-b .cd{margin-top:.8rem;padding-top:.6rem;border-top:1px solid rgba(212,168,83,.08);font-family:var(--font-mono);font-size:.6rem;color:var(--muted)}
+        [data-c="v"] .ci{background:rgba(123,79,191,.1);color:var(--incense)}
+        [data-c="t"] .ci{background:rgba(61,219,208,.08);color:var(--teal)}
+        [data-c="a"] .ci{background:rgba(212,168,83,.08);color:var(--candle)}
+        [data-c="u"] .ci{background:rgba(184,115,51,.08);color:var(--copper)}
+
+        /* ======== PHILOSOPHY ======== */
+        .philo{min-height:45vh;display:flex;align-items:center;justify-content:center;padding:clamp(3rem,6vh,5rem) 2rem}
+        .philo-inner{max-width:680px;text-align:center}
+        .philo-q{font-family:var(--font-display);font-size:clamp(1.4rem,3.5vw,2.5rem);font-weight:300;font-style:italic;color:var(--bright);line-height:1.8}
+        .philo-q .v{color:var(--incense)} .philo-q .a{color:var(--candle)}
+        .philo-a{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);letter-spacing:.3em;margin-top:1.5rem}
+
+        /* ======== CTA ======== */
+        .cta{padding:clamp(4rem,8vh,7rem) clamp(1.5rem,5vw,4rem)}
+        .cta-inner{max-width:650px;margin:0 auto;text-align:center}
+        .cta-doodle{width:75px;border-radius:50%;margin:0 auto 1.2rem;filter:drop-shadow(0 4px 15px rgba(123,79,191,.25));animation:gfloat 4s ease-in-out infinite;display:block}
+        @keyframes gfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        .cta-links{display:flex;gap:1rem;justify-content:center;margin-top:2rem;flex-wrap:wrap}
+        .cta-link{display:flex;align-items:center;gap:.5rem;padding:.7rem 1.5rem;background:rgba(123,79,191,.06);border:1px solid rgba(123,79,191,.18);border-radius:6px;text-decoration:none;color:var(--bright);font-size:.85rem;transition:all .4s}
+        .cta-link:hover{background:rgba(123,79,191,.12);border-color:var(--incense);transform:translateY(-2px);box-shadow:0 6px 25px rgba(123,79,191,.15)}
+        .cta-link i{font-size:.95rem;color:var(--incense)}
+        .cta-link.al{background:rgba(212,168,83,.04);border-color:rgba(212,168,83,.18)}
+        .cta-link.al:hover{background:rgba(212,168,83,.1);border-color:var(--candle);box-shadow:0 6px 25px rgba(212,168,83,.12)}
+        .cta-link.al i{color:var(--candle)}
+
+        /* ======== DEPTH METER — right side ======== */
+        .depth-meter{position:fixed;right:1.2rem;top:50%;transform:translateY(-50%);z-index:500;display:flex;flex-direction:column;align-items:center;gap:.4rem;opacity:0;transition:opacity .6s}
+        .depth-meter.visible{opacity:1}
+        .dm-track{width:3px;height:120px;background:rgba(123,79,191,.1);border-radius:2px;position:relative;overflow:hidden}
+        .dm-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--candle),var(--incense));border-radius:2px;transition:height .15s}
+        .dm-label{font-family:var(--font-mono);font-size:.45rem;letter-spacing:.15em;color:var(--muted);writing-mode:vertical-rl;text-orientation:mixed}
+        .dm-level{font-family:var(--font-mono);font-size:.55rem;color:var(--candle);letter-spacing:.1em}
+
+        /* ======== JOURNEY EXPAND ======== */
+        .jn{cursor:pointer}
+        .jn-insight{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .4s;opacity:0;margin-top:0}
+        .jn.expanded .jn-insight{max-height:120px;opacity:1;margin-top:.6rem}
+        .jn-insight p{font-family:var(--font-display);font-size:.85rem;font-style:italic;color:var(--candle);line-height:1.7;padding-left:.8rem;border-left:1px solid rgba(212,168,83,.2)}
+        .jn-expand-hint{font-family:var(--font-mono);font-size:.45rem;color:var(--muted);letter-spacing:.1em;margin-top:.3rem;transition:opacity .3s}
+        .jn.expanded .jn-expand-hint{opacity:0}
+
+        /* ======== GUITAR STRINGS INTERACTIVE ======== */
+        .guitar-section{position:relative;padding:1rem 0;margin:1.5rem auto;max-width:500px}
+        .g-string-row{display:flex;align-items:center;gap:.8rem;padding:.4rem 0;cursor:pointer;position:relative}
+        .g-string-line{flex:1;height:1px;position:relative;overflow:visible}
+        .g-string-line::after{content:'';position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent 5%,var(--copper) 20%,var(--copper) 80%,transparent 95%);transition:all .15s}
+        .g-string-row:hover .g-string-line::after{height:2px;top:-0.5px;box-shadow:0 0 8px rgba(184,115,51,.4)}
+        .g-string-row.plucked .g-string-line::after{animation:vibrate .4s ease-out}
+        @keyframes vibrate{0%{transform:translateY(0)}10%{transform:translateY(-3px)}20%{transform:translateY(2px)}30%{transform:translateY(-2px)}40%{transform:translateY(1px)}50%{transform:translateY(-1px)}60%{transform:translateY(.5px)}100%{transform:translateY(0)}}
+        .g-note{font-family:var(--font-mono);font-size:.55rem;color:var(--copper);min-width:16px;text-align:center;opacity:.4;transition:opacity .3s}
+        .g-string-row:hover .g-note{opacity:1}
+        .guitar-hint{font-family:var(--font-mono);font-size:.5rem;color:var(--muted);text-align:center;letter-spacing:.15em;margin-top:.5rem}
+
+        /* ======== ORACLE DRAW ======== */
+        .oracle{padding:3rem clamp(1.5rem,5vw,4rem);text-align:center}
+        .oracle-inner{max-width:500px;margin:0 auto}
+        .oracle-btn{display:inline-flex;align-items:center;gap:.6rem;padding:.8rem 2rem;background:linear-gradient(135deg,rgba(123,79,191,.08),rgba(212,168,83,.06));border:1px solid rgba(123,79,191,.2);border-radius:8px;color:var(--bright);font-family:var(--font-body);font-size:.9rem;cursor:pointer;transition:all .4s;outline:none}
+        .oracle-btn:hover{border-color:var(--incense);transform:translateY(-2px);box-shadow:0 8px 30px rgba(123,79,191,.15)}
+        .oracle-btn i{color:var(--candle)}
+        .oracle-result{margin-top:1.5rem;min-height:80px;display:flex;align-items:center;justify-content:center}
+        .oracle-card{background:linear-gradient(160deg,rgba(26,16,48,.7),rgba(12,10,20,.8));border:1px solid rgba(212,168,83,.15);border-radius:10px;padding:1.5rem 2rem;max-width:400px;opacity:0;transform:translateY(15px) scale(.95);transition:all .6s cubic-bezier(.23,1,.32,1)}
+        .oracle-card.show{opacity:1;transform:translateY(0) scale(1)}
+        .oracle-card p{font-family:var(--font-display);font-size:1.1rem;font-style:italic;color:var(--bright);line-height:1.7}
+        .oracle-card .oracle-src{font-family:var(--font-mono);font-size:.5rem;color:var(--muted);margin-top:.8rem;letter-spacing:.1em}
+
+        footer{position:relative;z-index:2;padding:1.5rem;text-align:center;border-top:1px solid rgba(123,79,191,.06)}
+        footer a{font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-decoration:none;letter-spacing:.12em;transition:color .3s}
+        footer a:hover{color:var(--candle)}
+
+        @media(max-width:768px){
+            .origin-wrap{flex-direction:column}
+            .origin-vis{flex:none;width:100%;max-width:240px;margin:0 auto}
+            .sgrid,.sgrid2{grid-template-columns:1fr}
+            .tarot-card{height:280px}
+            .jtl{padding-left:40px}
+            .jd{left:-30px}
+            .hero-title{font-size:clamp(2.2rem,13vw,4rem)}
+            .cta-links{flex-direction:column;align-items:center}
+        }
+    </style>
+</head>
+<body>
+    <div class="loader" id="loader">
+        <div class="loader-ring"></div>
+        <div class="loader-text">entering the trance...</div>
+    </div>
+    <div class="noise"></div>
+    <canvas id="world"></canvas>
+
+    <div class="scroll-bar"><div class="scroll-bar-fill" id="pbar"></div></div>
+    <a href="/guild/" class="back-nav"><i class="fas fa-chevron-left"></i> GUILD</a>
+
+    <!-- DEPTH METER -->
+    <div class="depth-meter" id="depthMeter">
+        <div class="dm-label">TRANCE DEPTH</div>
+        <div class="dm-track"><div class="dm-fill" id="dmFill" style="height:0%"></div></div>
+        <div class="dm-level" id="dmLevel">0%</div>
+    </div>
+
+    <div class="content-layer">
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-inner">
+            <img class="hero-avatar" id="hAvatar" src="/assets/img/guild/dylaner1/avatar.webp" alt="阿凃">
+            <div class="hero-title" id="hTitle">THE LUCID<br>PATH</div>
+            <div class="hero-cn" id="hCn">阿 凃</div>
+            <div class="hero-tag" id="hTag">Every detour was the real path all along.</div>
+            <div class="hero-roles" id="hRoles">
+                <span class="hero-role"><i class="fas fa-brain" style="margin-right:4px;color:var(--incense)"></i> 催眠療癒師</span>
+                <span class="hero-role"><i class="fas fa-utensils" style="margin-right:4px;color:var(--candle)"></i> 餐飲修行者</span>
+                <span class="hero-role"><i class="fas fa-guitar" style="margin-right:4px;color:var(--copper)"></i> 吉他社老屁股</span>
+            </div>
+            <div class="hero-hint" id="hHint">移動滑鼠，推動擺錘</div>
+        </div>
+        <div class="scroll-cue" id="sCue"><span>深入意識</span><div class="arrow"></div></div>
+    </section>
+
+    <!-- ORIGIN -->
+    <section class="origin">
+        <div class="origin-wrap">
+            <div class="origin-vis">
+                <img src="/assets/img/guild/dylaner1/doodle.webp" alt="阿凃 Q版" class="origin-doodle" loading="lazy">
+                <div class="origin-quote">一個38歲才半路出家的人，走過的每一條彎路，都是通往自己的捷徑。</div>
+            </div>
+            <div class="origin-body">
+                <div class="label">Layer 01 — Origin</div>
+                <h2 class="stitle">我不是半路出家，<br>是每一段路都修行到底</h2>
+                <div class="stext">
+                    <p>你好，我是阿凃。今年 40 歲，人生軌跡轉了幾個大彎。38 歲才踏進餐飲業，但這不是我人生的起點 — 這是我第六次重新開始。</p><br>
+                    <p>從網路行銷到直銷，從居家清潔到自己創業成立「伶妡有限公司」，公司結束經營後踏入身心靈領域成為催眠師，現在更是半路出家，成了一個在餐飲業打滾的小白。別人看是迷路，我看是蒐集人生素材。</p><br>
+                    <p>回想學生時期，我是個熱衷於吉他社教學的熱血青年，喜歡去各校串門子。那時還跟學弟組團做了公開演出。對當時的我來說，與人聊天、認識新朋友，就是幫自己「充電」與補充能量的方式。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- JOURNEY -->
+    <section class="journey">
+        <div class="journey-wrap">
+            <div class="label">Layer 02 — The Winding Road</div>
+            <h2 class="stitle">六次重生，一條清醒的路</h2>
+            <div class="stext" style="margin-bottom:.8rem"><p>每換一次跑道，都是一次脫皮。不是逃跑，是我知道那不是終點。</p></div>
+            <div class="jtl">
+                <div class="jtl-line"></div>
+                <div class="jn" onclick="this.classList.toggle('expanded')"><div class="jd"></div><div class="ji" style="color:var(--teal)"><i class="fas fa-globe"></i></div><h3>網路行銷</h3><p>第一次嚐到數位世界的味道。學會了流量不等於真心。</p><div class="jn-insight"><p>那時候覺得會打廣告就是厲害，後來才知道，能讓一個人真正停下來聽你說話，比十萬次曝光更珍貴。</p></div><div class="jn-expand-hint">CLICK TO REVEAL</div></div>
+                <div class="jn" onclick="this.classList.toggle('expanded')"><div class="jd"></div><div class="ji" style="color:var(--candle)"><i class="fas fa-handshake"></i></div><h3>直銷</h3><p>面對面的說服與被拒絕，最大的收穫不是業績，是看懂了人心。</p><div class="jn-insight"><p>被拒絕一百次之後，你會開始分辨什麼是客套、什麼是真心。這個能力後來在催眠裡派上了大用場。</p></div><div class="jn-expand-hint">CLICK TO REVEAL</div></div>
+                <div class="jn" onclick="this.classList.toggle('expanded')"><div class="jd"></div><div class="ji" style="color:var(--teal)"><i class="fas fa-spray-can-sparkles"></i></div><h3>居家清潔</h3><p>把別人的空間恢復秩序，意外發現勞動是一種冥想。</p><div class="jn-insight"><p>手在動、腦袋放空，那種狀態其實跟催眠裡的輕度恍惚很像。我在擦窗戶的時候第一次體驗到「無念」。</p></div><div class="jn-expand-hint">CLICK TO REVEAL</div></div>
+                <div class="jn" onclick="this.classList.toggle('expanded')"><div class="jd"></div><div class="ji" style="color:var(--candle)"><i class="fas fa-rocket"></i></div><h3>創業 — 伶妡有限公司</h3><p>自己當老闆才知道，最難管理的是自己那顆不甘平凡的心。</p><div class="jn-insight"><p>公司關門那天我沒有哭，反而鬆了一口氣。有些路走到底了就該轉彎，這不是失敗，是畢業。</p></div><div class="jn-expand-hint">CLICK TO REVEAL</div></div>
+                <div class="jn" onclick="this.classList.toggle('expanded')"><div class="jd"></div><div class="ji" style="color:var(--incense)"><i class="fas fa-eye"></i></div><h3>催眠師</h3><p>35歲後開始喜歡獨處，發現幫助別人走出創傷的過程，也療癒了自己。這不是職業，是天命。</p><div class="jn-insight"><p>第一次成功引導個案回溯創傷的時候，我自己也在旁邊默默流淚。原來療癒是雙向的。</p></div><div class="jn-expand-hint">CLICK TO REVEAL</div></div>
+                <div class="jn" onclick="this.classList.toggle('expanded')"><div class="jd"></div><div class="ji" style="color:var(--copper)"><i class="fas fa-fire-burner"></i></div><h3>餐飲業</h3><p>另一種修煉。觀察平常不會注意到的人事物。每天久站走動 — 不瘦都難！</p><div class="jn-insight"><p>你知道嗎？切菜的節奏跟催眠引導的語速其實很像 — 穩定、重複、帶著一點催眠感。廚房就是我的另一間療程室。</p></div><div class="jn-expand-hint">CLICK TO REVEAL</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HYPNO -->
+    <section class="hypno">
+        <div class="hypno-inner">
+            <div class="label" style="justify-content:center">Layer 03 — The Trance</div>
+            <h2 class="stitle" style="text-align:center">閉上眼，才看得見真正的自己</h2>
+            <div class="hypno-big">我擅長用<em>催眠</em>帶你回到<br>那個被遺忘的角落，<br>不是要你重新經歷痛苦，<br>而是讓你終於可以<span class="a">放下</span>。</div>
+            <div class="breath-wrap" id="bWrap">
+                <div class="breath-ring" id="bRing"><span class="breath-label" id="bLabel">點我開始</span></div>
+            </div>
+            <div class="breath-hint">點擊圓圈，跟我一起呼吸</div>
+            <div class="hypno-desc stext" style="text-align:center;margin:2rem auto 0">
+                <p>我喜歡使用牌卡諮詢來釐清個案或自己當下的狀態。催眠接案很佛系。不急、不催、不推銷。能在幫助他人的過程中，看見對方的成長與改變，就是讓自己最開心的事。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES — TAROT -->
+    <section class="services">
+        <div class="services-wrap">
+            <div class="label">Layer 04 — Draw a Card</div>
+            <h2 class="stitle">翻開一張牌，看看我能為你做什麼</h2>
+            <div class="stext"><p>點擊翻牌。不是所有問題都需要答案，有時候你只需要一個安全的空間。</p></div>
+            <div class="sgrid">
+                <div class="tarot-card" data-c="v" onclick="this.classList.toggle('flipped')"><div class="tc-inner"><div class="tc-f"><div class="ci"><i class="fas fa-heart-pulse"></i></div><h3>創傷療癒</h3><div class="ch">CLICK TO REVEAL</div><div class="cs">I</div></div><div class="tc-b"><h4><i class="fas fa-heart-pulse" style="margin-right:5px"></i>創傷療癒</h4><p>透過催眠引導，安全地回溯與釋放深層創傷記憶。不是挖舊傷，是讓傷口終於有機會癒合。</p><div class="cd"><i class="fas fa-clock" style="margin-right:4px"></i>單次約 60-90 分鐘</div></div></div></div>
+                <div class="tarot-card" data-c="t" onclick="this.classList.toggle('flipped')"><div class="tc-inner"><div class="tc-f"><div class="ci"><i class="fas fa-spa"></i></div><h3>放鬆減壓</h3><div class="ch">CLICK TO REVEAL</div><div class="cs">II</div></div><div class="tc-b"><h4><i class="fas fa-spa" style="margin-right:5px"></i>放鬆減壓</h4><p>現代人的壓力不是做太少，是想太多。催眠進入深度放鬆，讓身體和心靈都好好休息。</p><div class="cd"><i class="fas fa-leaf" style="margin-right:4px"></i>適合高壓族群、失眠者</div></div></div></div>
+                <div class="tarot-card" data-c="a" onclick="this.classList.toggle('flipped')"><div class="tc-inner"><div class="tc-f"><div class="ci"><i class="fas fa-eye"></i></div><h3>科學觀元辰</h3><div class="ch">CLICK TO REVEAL</div><div class="cs">III</div></div><div class="tc-b"><h4><i class="fas fa-eye" style="margin-right:5px"></i>科學觀元辰</h4><p>結合催眠技法與元辰宮概念，科學化探索你的內在空間。看見潛意識裡的風景。</p><div class="cd"><i class="fas fa-compass" style="margin-right:4px"></i>探索你的意識地圖</div></div></div></div>
+            </div>
+            <div style="margin-top:1.5rem"><div class="sgrid sgrid2">
+                <div class="tarot-card" data-c="u" onclick="this.classList.toggle('flipped')"><div class="tc-inner"><div class="tc-f"><div class="ci"><i class="fas fa-cards"></i></div><h3>牌卡釐清</h3><div class="ch">CLICK TO REVEAL</div><div class="cs">IV</div></div><div class="tc-b"><h4><i class="fas fa-cards" style="margin-right:5px"></i>牌卡釐清</h4><p>牌卡是一面鏡子。我用它幫你看清現在的位置，而不是預測未來。</p><div class="cd"><i class="fas fa-hand-sparkles" style="margin-right:4px"></i>釐清現狀，不算命</div></div></div></div>
+                <div class="tarot-card" data-c="a" onclick="this.classList.toggle('flipped')"><div class="tc-inner"><div class="tc-f"><div class="ci"><i class="fas fa-comments"></i></div><h3>一對一聊天</h3><div class="ch">CLICK TO REVEAL</div><div class="cs">V</div></div><div class="tc-b"><h4><i class="fas fa-comments" style="margin-right:5px"></i>一對一聊天</h4><p>不需要正式療程，只需要一個真的在聽的人。輕鬆、沒壓力。</p><div class="cd"><i class="fas fa-mug-hot" style="margin-right:4px"></i>來杯咖啡，聊聊吧</div></div></div></div>
+            </div></div>
+        </div>
+    </section>
+
+    <!-- ORACLE DRAW -->
+    <section class="oracle">
+        <div class="oracle-inner">
+            <div class="label" style="justify-content:center">Layer 05 — The Oracle</div>
+            <h2 class="stitle" style="text-align:center;font-size:clamp(1.2rem,2.5vw,1.8rem)">今天的你，需要聽到什麼？</h2>
+            <button class="oracle-btn" id="oracleBtn"><i class="fas fa-hand-sparkles"></i> 抽一張靈感牌</button>
+            <div class="oracle-result" id="oracleResult"></div>
+        </div>
+    </section>
+
+    <!-- PHILOSOPHY + GUITAR -->
+    <section class="philo">
+        <div class="philo-inner">
+            <div class="label" style="justify-content:center">Layer 06 — The Philosophy</div>
+            <div class="philo-q" id="pQuote">從熱血的吉他社青年，<br>到穿梭在<span class="v">現實與心靈之間</span>的<br>催眠師兼餐飲小白，<br><span class="a">這就是現在的我。</span></div>
+            <div class="philo-a">-- 阿凃，在第六次重生之後</div>
+            <!-- Interactive guitar strings -->
+            <div class="guitar-section" id="guitarSection">
+                <div class="g-string-row" data-note="E2"><span class="g-note">E</span><div class="g-string-line"></div></div>
+                <div class="g-string-row" data-note="A2"><span class="g-note">A</span><div class="g-string-line"></div></div>
+                <div class="g-string-row" data-note="D3"><span class="g-note">D</span><div class="g-string-line"></div></div>
+                <div class="g-string-row" data-note="G3"><span class="g-note">G</span><div class="g-string-line"></div></div>
+                <div class="g-string-row" data-note="B3"><span class="g-note">B</span><div class="g-string-line"></div></div>
+                <div class="g-string-row" data-note="E4"><span class="g-note">E</span><div class="g-string-line"></div></div>
+                <div class="guitar-hint">hover to pluck — 那些年的吉他社時光</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="cta-inner">
+            <img src="/assets/img/guild/dylaner1/doodle.webp" alt="阿凃" class="cta-doodle" loading="lazy">
+            <div class="label" style="justify-content:center">Layer 07 — Connect</div>
+            <h2 class="stitle">想聊聊嗎？</h2>
+            <div class="stext" style="text-align:center;margin:0 auto"><p>不管你是對催眠好奇、想處理心裡的結、或者只是需要一個願意聽你說話的人。找我，沒有門檻。</p></div>
+            <div class="cta-links">
+                <a href="https://www.threads.com/@dylaner1" target="_blank" rel="noopener noreferrer" class="cta-link"><i class="fab fa-threads"></i> Threads</a>
+                <a href="https://www.instagram.com/dylaner1/" target="_blank" rel="noopener noreferrer" class="cta-link al"><i class="fab fa-instagram"></i> Instagram</a>
+            </div>
+        </div>
+    </section>
+
+    <footer><a href="/guild/"><i class="fas fa-arrow-left" style="margin-right:5px"></i>BACK TO GUILD</a></footer>
+    </div><!-- /content-layer -->
+
+<script>
+/* =====================================================
+   THREE.JS — THE HYPNOTIC WORLD
+   A persistent 3D scene that IS the page atmosphere:
+   - Interactive pendulum with mouse-driven physics
+   - Consciousness rings that rotate & pulse with scroll
+   - 500+ smoke particles drifting like incense
+   - Dynamic point light follows the pendulum bob
+   ===================================================== */
+(function(){
+const canvas = document.getElementById('world');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x06050c, 0.08);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
+camera.position.set(0, 1, 7);
+
+/* --- PENDULUM (interactive) --- */
+const PIVOT = new THREE.Vector3(0, 5, 0);
+const STRING_LEN = 4.5;
+let pendAngle = 0.08;
+let pendVel = 0;
+const pendGravity = 0.00008;
+const pendDamping = 0.9995;
+
+// String
+const stringMat = new THREE.LineBasicMaterial({color:0x7b4fbf, transparent:true, opacity:0.5});
+const stringGeo = new THREE.BufferGeometry();
+stringGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+const pendString = new THREE.Line(stringGeo, stringMat);
+scene.add(pendString);
+
+// Bob
+const bobGeo = new THREE.SphereGeometry(0.18, 32, 32);
+const bobMat = new THREE.MeshStandardMaterial({color:0xd4a853, emissive:0xd4a853, emissiveIntensity:0.5, metalness:0.8, roughness:0.2});
+const bob = new THREE.Mesh(bobGeo, bobMat);
+scene.add(bob);
+
+// Bob glow
+const bobLight = new THREE.PointLight(0xd4a853, 2, 8, 2);
+scene.add(bobLight);
+
+/* --- CONSCIOUSNESS RINGS --- */
+const rings = [];
+for(let i=0; i<8; i++){
+    const r = 1.5 + i * 0.7;
+    const geo = new THREE.TorusGeometry(r, 0.008, 8, 100);
+    const hue = i%3===0 ? 0x7b4fbf : i%3===1 ? 0xd4a853 : 0x3ddbd0;
+    const mat = new THREE.MeshBasicMaterial({color:hue, transparent:true, opacity:0.06 + (7-i)*0.008});
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = Math.PI/2 + (Math.random()-0.5)*0.3;
+    mesh.position.y = 0.5;
+    mesh.position.z = -2 - i*0.5;
+    scene.add(mesh);
+    rings.push({mesh, baseRotZ: Math.random()*Math.PI, speed: 0.1 + i*0.05, idx:i});
+}
+
+/* --- SMOKE PARTICLES --- */
+const smokeCount = 500;
+const sPos = new Float32Array(smokeCount*3);
+const sCol = new Float32Array(smokeCount*3);
+const sVel = []; // velocity per particle
+for(let i=0;i<smokeCount;i++){
+    sPos[i*3]   = (Math.random()-0.5)*14;
+    sPos[i*3+1] = (Math.random()-0.5)*14;
+    sPos[i*3+2] = (Math.random()-0.5)*10 - 3;
+    const isViolet = Math.random()>0.4;
+    sCol[i*3]   = isViolet ? 0.48 : 0.83;
+    sCol[i*3+1] = isViolet ? 0.31 : 0.66;
+    sCol[i*3+2] = isViolet ? 0.75 : 0.33;
+    sVel.push({
+        vx: (Math.random()-0.5)*0.003,
+        vy: 0.003 + Math.random()*0.005,
+        vz: (Math.random()-0.5)*0.002
+    });
+}
+const smokeGeo = new THREE.BufferGeometry();
+smokeGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+smokeGeo.setAttribute('color', new THREE.BufferAttribute(sCol, 3));
+const smokeMat = new THREE.PointsMaterial({size:0.06, vertexColors:true, transparent:true, opacity:0.35, blending:THREE.AdditiveBlending, depthWrite:false});
+const smoke = new THREE.Points(smokeGeo, smokeMat);
+scene.add(smoke);
+
+/* --- AMBIENT LIGHT --- */
+scene.add(new THREE.AmbientLight(0x7b4fbf, 0.3));
+const dirLight = new THREE.DirectionalLight(0xd4a853, 0.4);
+dirLight.position.set(2, 5, 3);
+scene.add(dirLight);
+
+/* --- MOUSE INTERACTION --- */
+let mouseX = 0, mouseY = 0;
+let mouseForce = 0;
+document.addEventListener('mousemove', (e) => {
+    const nx = (e.clientX / window.innerWidth) * 2 - 1;
+    const ny = (e.clientY / window.innerHeight) * 2 - 1;
+    // Apply force to pendulum based on mouse horizontal movement
+    mouseForce = (nx - mouseX) * 0.003;
+    mouseX = nx; mouseY = ny;
+});
+
+/* --- UNIFIED SCROLL HANDLER --- */
+let scrollProgress = 0;
+const _pbar = document.getElementById('pbar');
+const _dm = document.getElementById('depthMeter');
+const _dmFill = document.getElementById('dmFill');
+const _dmLevel = document.getElementById('dmLevel');
+const _dmLabels = ['表層','淺層','意識','潛意識','深層','核心','本我'];
+let _dmShown = false;
+let _scrollTick = false;
+window.addEventListener('scroll', () => {
+    if(_scrollTick) return;
+    _scrollTick = true;
+    requestAnimationFrame(() => {
+        const total = document.documentElement.scrollHeight - window.innerHeight;
+        scrollProgress = total > 0 ? window.scrollY / total : 0;
+        // Progress bar
+        _pbar.style.width = (scrollProgress*100)+'%';
+        // Depth meter
+        if(scrollProgress > 0.05 && !_dmShown){ _dm.classList.add('visible'); _dmShown=true; }
+        if(scrollProgress < 0.02 && _dmShown){ _dm.classList.remove('visible'); _dmShown=false; }
+        _dmFill.style.height = (scrollProgress*100)+'%';
+        const li = Math.min(Math.floor(scrollProgress*_dmLabels.length), _dmLabels.length-1);
+        _dmLevel.textContent = _dmLabels[li];
+        _scrollTick = false;
+    });
+});
+
+/* --- ANIMATE --- */
+function animate(){
+    requestAnimationFrame(animate);
+    const t = Date.now() * 0.001;
+
+    // Pendulum physics
+    const acc = -pendGravity * Math.sin(pendAngle);
+    pendVel += acc + mouseForce;
+    mouseForce *= 0.9; // decay mouse force
+    pendVel *= pendDamping;
+    pendAngle += pendVel;
+
+    const bx = PIVOT.x + Math.sin(pendAngle) * STRING_LEN;
+    const by = PIVOT.y - Math.cos(pendAngle) * STRING_LEN;
+    bob.position.set(bx, by, 0);
+    bobLight.position.set(bx, by, 0.5);
+    bobLight.intensity = 1.5 + Math.sin(t*3)*0.5; // flicker
+
+    const sp = pendString.geometry.attributes.position.array;
+    sp[0]=PIVOT.x; sp[1]=PIVOT.y; sp[2]=0;
+    sp[3]=bx; sp[4]=by; sp[5]=0;
+    pendString.geometry.attributes.position.needsUpdate = true;
+
+    // Rings rotate & pulse with scroll
+    rings.forEach(r => {
+        r.mesh.rotation.z = r.baseRotZ + t * r.speed * (0.3 + scrollProgress * 0.7);
+        const pulse = 1 + Math.sin(t*0.8 + r.idx*0.5) * 0.03;
+        r.mesh.scale.setScalar(pulse);
+        r.mesh.material.opacity = (0.04 + (7-r.idx)*0.007) * (0.6 + scrollProgress * 0.4);
+    });
+
+    // Smoke particles drift
+    const posArr = smoke.geometry.attributes.position.array;
+    for(let i=0;i<smokeCount;i++){
+        const v = sVel[i];
+        posArr[i*3]   += v.vx + Math.sin(t*0.5 + i*0.1)*0.001;
+        posArr[i*3+1] += v.vy;
+        posArr[i*3+2] += v.vz;
+        // Reset if too high
+        if(posArr[i*3+1] > 8){
+            posArr[i*3]   = (Math.random()-0.5)*14;
+            posArr[i*3+1] = -7;
+            posArr[i*3+2] = (Math.random()-0.5)*10 - 3;
+        }
+    }
+    smoke.geometry.attributes.position.needsUpdate = true;
+
+    // Camera responds to scroll depth
+    camera.position.y = 1 - scrollProgress * 3;
+    camera.position.z = 7 - scrollProgress * 2;
+    camera.lookAt(0, camera.position.y - 0.5, -2);
+
+    // Fog thickens deeper
+    scene.fog.density = 0.08 - scrollProgress * 0.03;
+
+    renderer.render(scene, camera);
+}
+animate();
+
+/* --- CLICK → CONSCIOUSNESS RIPPLE --- */
+const rippleRings = [];
+document.addEventListener('click', (e) => {
+    const ndcX = (e.clientX / window.innerWidth) * 2 - 1;
+    const ndcY = -(e.clientY / window.innerHeight) * 2 + 1;
+    const vec = new THREE.Vector3(ndcX, ndcY, 0.5).unproject(camera);
+    const dir = vec.sub(camera.position).normalize();
+    const dist = -camera.position.z / dir.z;
+    const pos = camera.position.clone().add(dir.multiplyScalar(dist));
+    const rGeo = new THREE.RingGeometry(0.05, 0.08, 48);
+    const rMat = new THREE.MeshBasicMaterial({color:0x7b4fbf, transparent:true, opacity:0.4, side:THREE.DoubleSide});
+    const rMesh = new THREE.Mesh(rGeo, rMat);
+    rMesh.position.set(pos.x, pos.y, 0);
+    scene.add(rMesh);
+    rippleRings.push({mesh:rMesh, life:0});
+});
+setInterval(() => {
+    for(let i=rippleRings.length-1; i>=0; i--){
+        const r = rippleRings[i];
+        r.life += 0.015;
+        r.mesh.scale.setScalar(1 + r.life * 8);
+        r.mesh.material.opacity = Math.max(0, 0.35 - r.life * 0.35);
+        if(r.life > 1){ scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); rippleRings.splice(i,1); }
+    }
+}, 16);
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+})();
+
+/* ======== BREATHING ======== */
+(function(){
+const ring = document.getElementById('bRing');
+const label = document.getElementById('bLabel');
+let on=false, cyc=null;
+function go(){
+    ring.classList.remove('out'); ring.classList.add('in');
+    label.textContent='吸氣...';
+    cyc=setTimeout(()=>{
+        ring.classList.remove('in'); ring.classList.add('out');
+        label.textContent='吐氣...';
+        cyc=setTimeout(()=>{ if(on) go(); },4000);
+    },4000);
+}
+document.getElementById('bWrap').addEventListener('click',()=>{
+    if(on){on=false;clearTimeout(cyc);ring.classList.remove('in','out');label.textContent='點我開始';}
+    else{on=true;go();}
+});
+})();
+
+/* ======== GSAP ======== */
+(function(){
+gsap.registerPlugin(ScrollTrigger);
+const ld=document.getElementById('loader');
+function killLoader(){
+    if(!ld || ld.style.display==='none') return;
+    gsap.to(ld,{opacity:0,duration:.5,onComplete:()=>{ld.style.display='none'}});
+}
+// Kill loader on window load or after 3s max — whichever comes first
+if(document.readyState==='complete') setTimeout(killLoader, 800);
+else window.addEventListener('load', ()=> setTimeout(killLoader, 800));
+setTimeout(killLoader, 3000); // absolute fallback
+const ht=gsap.timeline({delay:1.5});
+ht.to('#hAvatar',{opacity:1,scale:1,duration:.8,ease:'back.out(1.7)'},0)
+  .to('#hTitle',{opacity:1,y:0,duration:1,ease:'power3.out'},.3)
+  .to('#hCn',{opacity:1,duration:.8,ease:'power3.out'},.6)
+  .to('#hTag',{opacity:1,duration:.8,ease:'power3.out'},.9)
+  .to('#hRoles',{opacity:1,y:0,duration:.8,ease:'power3.out'},1.1)
+  .to('#hHint',{opacity:1,duration:.6},1.4)
+  .to('#sCue',{opacity:1,duration:.5},1.6);
+
+gsap.from('.origin-doodle',{scrollTrigger:{trigger:'.origin',start:'top 70%'},y:30,opacity:0,rotation:-2,duration:.8,ease:'power3.out'});
+gsap.from('.origin-quote',{scrollTrigger:{trigger:'.origin',start:'top 60%'},x:-30,opacity:0,duration:.7,ease:'power3.out',delay:.2});
+gsap.from('.origin-body',{scrollTrigger:{trigger:'.origin',start:'top 55%'},x:40,opacity:0,duration:.9,ease:'power3.out',delay:.15});
+gsap.from('.jtl-line',{scrollTrigger:{trigger:'.jtl',start:'top 70%'},scaleY:0,transformOrigin:'top',duration:1.8,ease:'power2.out'});
+gsap.utils.toArray('.jn').forEach((n,i)=>{gsap.from(n,{scrollTrigger:{trigger:n,start:'top 82%'},x:-25,opacity:0,duration:.6,ease:'power3.out',delay:i*.06});});
+gsap.from('.hypno-big',{scrollTrigger:{trigger:'.hypno',start:'top 60%'},y:25,opacity:0,duration:.9,ease:'power3.out'});
+gsap.from('.breath-wrap',{scrollTrigger:{trigger:'.hypno',start:'top 40%'},scale:.5,opacity:0,duration:1,ease:'elastic.out(1,.5)'});
+gsap.utils.toArray('.tarot-card').forEach((c,i)=>{gsap.from(c,{scrollTrigger:{trigger:c,start:'top 85%'},y:40,opacity:0,rotateY:-12,duration:.7,ease:'power3.out',delay:i*.1});});
+gsap.from('#pQuote',{scrollTrigger:{trigger:'.philo',start:'top 60%'},scale:.93,opacity:0,duration:1,ease:'power3.out'});
+gsap.from('.cta-doodle',{scrollTrigger:{trigger:'.cta',start:'top 70%'},scale:.5,opacity:0,duration:.7,ease:'back.out(1.7)'});
+gsap.from('.cta-links',{scrollTrigger:{trigger:'.cta',start:'top 60%'},y:25,opacity:0,duration:.7,ease:'power3.out',delay:.15});
+gsap.from('.guitar-section',{scrollTrigger:{trigger:'.guitar-section',start:'top 80%'},y:20,opacity:0,duration:.8,ease:'power3.out'});
+gsap.from('.oracle-btn',{scrollTrigger:{trigger:'.oracle',start:'top 70%'},scale:.8,opacity:0,duration:.7,ease:'back.out(1.7)'});
+})();
+
+/* ======== GUITAR STRINGS — Web Audio ======== */
+(function(){
+const noteFreqs = {E2:82.41, A2:110, D3:146.83, G3:196, B3:246.94, E4:329.63};
+let audioCtx = null;
+function pluck(freq){
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 1.5);
+}
+document.querySelectorAll('.g-string-row').forEach(row => {
+    row.addEventListener('mouseenter', () => {
+        const note = row.dataset.note;
+        if(noteFreqs[note]){
+            pluck(noteFreqs[note]);
+            row.classList.add('plucked');
+            setTimeout(() => row.classList.remove('plucked'), 400);
+        }
+    });
+});
+})();
+
+/* ======== ORACLE DRAW ======== */
+(function(){
+const wisdoms = [
+    {text:'有時候繞遠路，是宇宙在幫你避開一場你看不見的災難。', src:'關於迷路'},
+    {text:'你不需要被所有人理解。被自己理解就夠了。', src:'關於孤獨'},
+    {text:'放下不是放棄，是終於不再緊握那些從來就不屬於你的東西。', src:'關於放下'},
+    {text:'每一次覺得撐不下去的時候，其實都是你在突破的前一秒。', src:'關於堅持'},
+    {text:'真正的強大不是不會受傷，是受了傷還能溫柔地對待別人。', src:'關於溫柔'},
+    {text:'你現在走的這條路，未來的自己會感謝你沒有放棄。', src:'關於信任'},
+    {text:'不用急。你的節奏不需要跟任何人一樣。佛系一點，也很好。', src:'關於節奏'},
+    {text:'有些答案不在腦子裡，在你安靜下來之後，心會告訴你。', src:'關於直覺'},
+];
+let lastIdx = -1;
+const btn = document.getElementById('oracleBtn');
+const result = document.getElementById('oracleResult');
+btn.addEventListener('click', () => {
+    // Remove old card
+    const old = result.querySelector('.oracle-card');
+    if(old){ old.classList.remove('show'); setTimeout(()=>old.remove(), 300); }
+    // Pick random (avoid repeat)
+    let idx;
+    do { idx = Math.floor(Math.random()*wisdoms.length); } while(idx===lastIdx);
+    lastIdx = idx;
+    const w = wisdoms[idx];
+    setTimeout(() => {
+        const card = document.createElement('div');
+        card.className = 'oracle-card';
+        card.innerHTML = `<p>${w.text}</p><div class="oracle-src"><i class="fas fa-feather" style="margin-right:4px"></i>${w.src}</div>`;
+        result.appendChild(card);
+        requestAnimationFrame(() => card.classList.add('show'));
+    }, old ? 350 : 50);
+});
+})();
+
+</script>
+</body>
+</html>
