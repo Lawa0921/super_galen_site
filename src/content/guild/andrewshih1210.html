@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>施育廷的教室 — The Late-Night Classroom</title>
+    <meta name="description" content="施育廷 Andrew Shih — 走進一間深夜還亮著燈的教室，黑板上寫著 Python 和古詩。教育科技實踐者，中華民國發明專利 I918530 持有者。" />
+    <meta property="og:title" content="施育廷的教室 — The Late-Night Classroom" />
+    <meta property="og:description" content="走進一間深夜還亮著燈的教室。黑板上寫著 Python 和古詩。" />
+    <meta property="og:image" content="/assets/img/guild/andrewshih1210/avatar.webp" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600;700&family=Caveat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=Klee+One:wght@400;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <style>
+:root{
+    --board:#1a3328;
+    --chalk:#e8e4dc;
+    --chalkDim:rgba(232,228,220,0.35);
+    --chalkGhost:rgba(232,228,220,0.08);
+    --lineGreen:#00cc66;
+    --termCyan:#50e8d0;
+    --wood:#1a1410;
+    --woodLight:#2a2018;
+    --fn:'Klee One','Noto Serif TC',serif;
+    --fc:'Noto Serif TC',serif;
+    --fh:'Caveat',cursive;
+    --fm:'IBM Plex Mono',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:hidden}
+html{scroll-behavior:smooth}
+body{background:#1a3328;color:var(--chalk);font-family:var(--fn);font-size:16px;line-height:1.8}
+
+canvas#board3d{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.back{position:fixed;top:16px;left:16px;z-index:100;color:var(--chalkDim);text-decoration:none;font-family:var(--fm);font-size:11px;letter-spacing:0.12em;display:flex;align-items:center;gap:6px;transition:color 0.3s}
+.back:hover{color:var(--chalk)}
+
+/* ---- CHALK DUST GRAIN ---- */
+.dust{position:fixed;inset:0;pointer-events:none;z-index:9998;opacity:0.04;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:200px}
+
+.layers{position:relative;z-index:2}
+.layers-body{position:relative;z-index:2}
+
+/* ============================================= */
+/* HERO — THE CLASSROOM ENTRANCE                 */
+/* ============================================= */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;padding:60px 20px;overflow:hidden}
+.blackboard{background:none;border:none;box-shadow:none;max-width:900px;width:100%;padding:clamp(40px,6vw,72px);position:relative;z-index:1}
+
+.bb-pre{font-family:var(--fm);font-size:10px;letter-spacing:0.3em;color:var(--chalkDim);margin-bottom:20px;opacity:0}
+.bb-name{font-family:var(--fh);font-size:clamp(3.5rem,8vw,6.5rem);color:var(--chalk);line-height:1.1;opacity:0;text-shadow:0 0 20px rgba(232,228,220,0.1)}
+.bb-cn-name{font-family:var(--fc);font-size:clamp(1.2rem,2.5vw,1.8rem);font-weight:300;color:var(--chalkDim);margin-top:4px;opacity:0}
+.bb-line{width:100%;height:1px;background:var(--chalkGhost);margin:24px 0;opacity:0}
+.bb-poem{font-family:var(--fc);font-size:clamp(15px,1.8vw,18px);line-height:2.4;color:var(--chalkDim);opacity:0}
+.bb-poem .ac{color:var(--chalk);font-weight:700;font-size:1.1em;text-shadow:0 0 8px rgba(232,228,220,0.15)}
+.bb-tagline{font-family:var(--fm);font-size:12px;color:var(--termCyan);margin-top:20px;opacity:0;letter-spacing:0.05em}
+
+/* chalk marks */
+.chalk-smudge{position:absolute;width:80px;height:30px;background:radial-gradient(ellipse,rgba(232,228,220,0.04),transparent);border-radius:50%;pointer-events:none}
+
+/* ============================================= */
+/* SECTION BASE — NOTEBOOK STYLE                 */
+/* ============================================= */
+.section{max-width:800px;margin:0 auto;padding:clamp(60px,10vh,120px) 20px}
+
+.note{background:rgba(14,22,16,0.88);border-left:3px solid var(--chalkGhost);border-radius:0 8px 8px 0;padding:clamp(28px,4vw,48px);opacity:0;transform:translateY(30px);position:relative;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 30px rgba(0,0,0,0.5)}
+.note::before{content:'';position:absolute;top:0;left:-3px;width:3px;height:0;background:var(--lineGreen);transition:height 1.2s ease}
+.note.visible::before{height:100%}
+
+.note-label{font-family:var(--fm);font-size:10px;letter-spacing:0.25em;color:var(--termCyan);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.note-label i{font-size:12px}
+.note h2{font-family:var(--fc);font-size:clamp(1.3rem,2.5vw,1.7rem);font-weight:700;margin-bottom:14px;color:var(--chalk)}
+.note p{margin-bottom:14px;color:rgba(232,228,220,0.65);font-size:15px}
+.note p:last-child{margin-bottom:0}
+.note .hl{color:var(--lineGreen);font-weight:600}
+.note .am{color:#ffb840;font-weight:500}
+
+/* ============================================= */
+/* PORTRAIT ROW                                  */
+/* ============================================= */
+.portrait-row{display:flex;gap:clamp(20px,3vw,40px);align-items:center}
+.portrait-img{width:clamp(140px,18vw,200px);flex-shrink:0;border-radius:8px;overflow:hidden;box-shadow:0 4px 30px rgba(0,0,0,0.4);border:2px solid rgba(232,228,220,0.06)}
+.portrait-img img{width:100%;display:block}
+
+/* ============================================= */
+/* INTERACTIVE CHATBOT DEMO                      */
+/* ============================================= */
+.chatbot-demo{background:var(--woodLight);border:1px solid rgba(232,228,220,0.06);border-radius:12px;overflow:hidden;margin-top:20px}
+.chatbot-header{display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(0,204,102,0.06);border-bottom:1px solid rgba(0,204,102,0.1)}
+.chatbot-header i{color:var(--lineGreen);font-size:16px}
+.chatbot-header span{font-family:var(--fm);font-size:12px;color:var(--lineGreen)}
+.chatbot-body{padding:16px;min-height:180px;display:flex;flex-direction:column;gap:10px}
+.chatbot-msg{max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;animation:msgIn 0.3s ease}
+.chatbot-msg.bot{background:rgba(0,204,102,0.08);border:1px solid rgba(0,204,102,0.12);color:var(--chalk);align-self:flex-start;border-bottom-left-radius:2px}
+.chatbot-msg.user{background:rgba(232,228,220,0.06);border:1px solid rgba(232,228,220,0.08);color:var(--chalkDim);align-self:flex-end;border-bottom-right-radius:2px}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chatbot-actions{padding:12px 16px;border-top:1px solid rgba(232,228,220,0.04);display:flex;gap:8px;flex-wrap:wrap}
+.chatbot-btn{font-family:var(--fm);font-size:11px;padding:6px 14px;border-radius:20px;border:1px solid rgba(0,204,102,0.2);background:transparent;color:var(--lineGreen);cursor:pointer;transition:all 0.2s}
+.chatbot-btn:hover{background:rgba(0,204,102,0.1);border-color:var(--lineGreen)}
+
+/* ============================================= */
+/* EXPERTISE — CHALK CARDS                       */
+/* ============================================= */
+.chalk-cards{display:grid;gap:14px;margin-top:16px}
+.chalk-card{background:rgba(22,48,36,0.4);border:1px dashed var(--chalkGhost);border-radius:8px;padding:20px;position:relative;transition:border-color 0.3s}
+.chalk-card:hover{border-color:rgba(232,228,220,0.15)}
+.chalk-card h4{font-family:var(--fh);font-size:20px;margin-bottom:6px;color:var(--chalk)}
+.chalk-card p{font-size:13px;color:var(--chalkDim);line-height:1.7}
+.chalk-card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.chalk-card-tags span{font-family:var(--fm);font-size:9px;padding:2px 8px;border-radius:10px;border:1px solid var(--chalkGhost);color:var(--chalkDim)}
+.chalk-card-icon{position:absolute;top:16px;right:16px;font-size:20px;color:var(--chalkGhost)}
+
+/* ============================================= */
+/* PATENT TERMINAL                               */
+/* ============================================= */
+.term{background:#0a0e14;border:1px solid rgba(80,232,208,0.1);border-radius:8px;overflow:hidden;margin-top:16px;font-family:var(--fm);font-size:12px}
+.term-bar{display:flex;align-items:center;gap:5px;padding:8px 12px;border-bottom:1px solid rgba(80,232,208,0.06)}
+.td{width:8px;height:8px;border-radius:50%}
+.td.r{background:#ff5f57}.td.y{background:#ffbd2e}.td.g{background:#28ca41}
+.term-bar span{margin-left:8px;font-size:10px;color:rgba(80,232,208,0.4)}
+.term-body{padding:14px;line-height:2;color:rgba(80,232,208,0.5)}
+.term-body .pr{color:var(--termCyan)}
+.term-body .am{color:#ffb840}
+.term-body .gr{color:#28ca41}
+
+/* ============================================= */
+/* GALLERY                                       */
+/* ============================================= */
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.gallery-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid rgba(232,228,220,0.04);transition:transform 0.5s;filter:brightness(0.85)}
+.gallery-grid img:hover{transform:scale(1.03);filter:brightness(1)}
+
+/* ============================================= */
+/* FAREWELL                                      */
+/* ============================================= */
+.farewell{text-align:center;padding:clamp(50px,8vh,100px) 20px 40px;position:relative}
+.fw-board{display:inline-block;background:rgba(14,22,16,0.85);border:1px solid rgba(232,228,220,0.08);border-radius:8px;padding:32px 48px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 30px rgba(0,0,0,0.4);position:relative;opacity:0}
+.fw-quote{font-family:var(--fh);font-size:clamp(1.3rem,3vw,1.8rem);line-height:1.8;color:var(--chalk)}
+.fw-sub{font-family:var(--fm);font-size:11px;color:var(--chalkDim);margin-top:12px;letter-spacing:0.1em}
+.fw-links{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:36px 0 48px}
+.fw-link{display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid rgba(232,228,220,0.08);border-radius:6px;color:var(--chalkDim);text-decoration:none;font-family:var(--fm);font-size:11px;transition:all 0.3s;opacity:0;transform:translateY(8px)}
+.fw-link:hover{border-color:var(--lineGreen);color:var(--lineGreen)}
+.fw-foot{font-family:var(--fm);font-size:10px;color:rgba(232,228,220,0.08);letter-spacing:0.1em}
+
+/* ---- RESPONSIVE ---- */
+@media(max-width:768px){
+    .portrait-row{flex-direction:column;text-align:center}
+    .portrait-img{width:160px;margin:0 auto}
+    .gallery-grid{grid-template-columns:1fr 1fr}
+    .fw-links{flex-direction:column;align-items:center}
+    .fw-board{padding:24px 32px}
+}
+    </style>
+</head>
+<body>
+
+<div class="dust"></div>
+<a href="/guild/" class="back"><i class="fa-solid fa-arrow-left"></i> ARCHIVE</a>
+
+<canvas id="board3d"></canvas>
+
+<div class="layers">
+
+<!-- ======== HERO: THE BLACKBOARD ======== -->
+<section class="hero" id="hero">
+    <div class="blackboard" id="blackboard">
+        <div class="bb-pre" id="bbPre">LATE-NIGHT CLASSROOM &mdash; ROOM 404</div>
+        <div class="bb-name" id="bbName">Andrew Shih</div>
+        <div class="bb-cn-name" id="bbCnName">施育廷</div>
+        <div class="bb-line" id="bbLine"></div>
+        <div class="bb-poem" id="bbPoem">
+            <span class="ac">施</span>教無私傳智慧，<span class="ac">育</span>才有道啟新程。<br/>
+            <span class="ac">廷</span>上風華照四方。
+        </div>
+        <div class="bb-tagline" id="bbTag">$ echo "教育科技實踐 | AI、互動設計與創新教學推廣"</div>
+    </div>
+</section>
+
+<div class="layers-body">
+<!-- ======== ABOUT ======== -->
+<div class="section">
+    <div class="note" data-note>
+        <div class="note-label"><i class="fa-solid fa-chalkboard-user"></i> ABOUT THE TEACHER</div>
+        <div class="portrait-row">
+            <div class="portrait-img"><img src="/assets/img/guild/andrewshih1210/carousel-1.webp" alt="施育廷" /></div>
+            <div class="portrait-text">
+                <h2>深夜教室裡還亮著的那盞燈</h2>
+                <p>我是施育廷。在<span class="hl">國立臺中教育大學</span>，我一邊讀博士一邊教書。研究領域是生成式 AI 應用、Line Bot 整合、互動機器人設計。</p>
+                <p>以前在<span class="am">采威國際資訊</span>寫企業系統，在<span class="am">國立自然科學博物館</span>做過計畫。後來回到教室 &mdash; 因為我發現一行好的教學設計比一千行程式碼更有影響力。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======== MISSION ======== -->
+<div class="section">
+    <div class="note" data-note>
+        <div class="note-label"><i class="fa-solid fa-lightbulb"></i> MISSION</div>
+        <h2>如果學生上完課沒有做出東西，那堂課就是失敗的。</h2>
+        <p>「<span class="hl">資料科學與問題解決</span>」用 Python 解真實問題。「<span class="hl">互動機器人設計與創作</span>」讓學生親手打造會對話的 AI。我的教室沒有死板教科書，只有動手做的機會。</p>
+        <p>所有內容<span class="hl">免費分享</span>，無收費、無利益交換。盡量用全免費的工具完成功能。因為知識不應該有門檻。</p>
+    </div>
+</div>
+
+<!-- ======== CHATBOT DEMO (Signature Moment #1) ======== -->
+<div class="section">
+    <div class="note" data-note>
+        <div class="note-label"><i class="fa-solid fa-robot"></i> CHATBOT DEMO &mdash; Patent I918530</div>
+        <h2>來，跟我的 AI 助教聊聊</h2>
+        <p>我的中華民國發明專利是「基於對話式介面之多源資訊整合與自動化內容生成」。下面是一個簡化的概念展示 &mdash; 按按鈕試試看。</p>
+        <div class="chatbot-demo" id="chatbotDemo">
+            <div class="chatbot-header">
+                <i class="fa-solid fa-robot"></i>
+                <span>Andrew's Teaching Bot v1.0</span>
+            </div>
+            <div class="chatbot-body" id="chatbotBody">
+                <div class="chatbot-msg bot">Hi! 我是施老師的 AI 助教。有什麼想了解的嗎？</div>
+            </div>
+            <div class="chatbot-actions" id="chatbotActions">
+                <button class="chatbot-btn" data-q="你教什麼課？" data-a="目前在台中教育大學教「資料科學與問題解決」和「互動機器人設計與創作」。前者用 Python 帶學生做數據分析，後者讓學生實際做出 Line Bot 和 Chatbot。">你教什麼課？</button>
+                <button class="chatbot-btn" data-q="什麼是 Patent I918530？" data-a="這是施老師的中華民國發明專利 &mdash; 「基於對話式介面之多源資訊整合與自動化內容生成之系統與方法」。簡單說，就是讓 AI 透過對話介面整合各種資訊來源，自動產生有用的內容。你現在跟我聊天的體驗，就是這個概念的簡化版。">什麼是 Patent I918530？</button>
+                <button class="chatbot-btn" data-q="AI 怎麼融入教育？" data-a="施老師的做法不是「教學生用 ChatGPT」這麼簡單。而是重新設計整個教學流程 &mdash; 讓 AI 成為備課助手、課堂互動工具、作業批改夥伴。關鍵是「AI 原生」的課程設計，不是把 AI 硬塞進舊框架裡。">AI 怎麼融入教育？</button>
+                <button class="chatbot-btn" data-q="可以免費學嗎？" data-a="當然。施老師所有的教學內容都是免費分享的 &mdash; 無收費、無利益交換。盡量用全免費的工具完成教學。知識不應該有門檻。歡迎追蹤 Threads 和 Instagram 獲取最新教學內容！">可以免費學嗎？</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======== EXPERTISE ======== -->
+<div class="section">
+    <div class="note" data-note>
+        <div class="note-label"><i class="fa-solid fa-flask"></i> EXPERTISE</div>
+        <h2>黑板上寫了什麼</h2>
+        <div class="chalk-cards">
+            <div class="chalk-card">
+                <div class="chalk-card-icon"><i class="fa-solid fa-brain"></i></div>
+                <h4>AI + Education</h4>
+                <p>Gemini、ChatGPT、AI Studio &mdash; 不只是工具介紹，是幫你設計一套 AI 原生的教學系統。從 Prompt Engineering 到 AI Literacy 課程規劃。</p>
+                <div class="chalk-card-tags"><span>Gemini</span><span>AI Studio</span><span>Prompt Design</span><span>AI Literacy</span></div>
+            </div>
+            <div class="chalk-card">
+                <div class="chalk-card-icon"><i class="fa-solid fa-comments"></i></div>
+                <h4>Chatbot / Line Bot</h4>
+                <p>對話式 AI 是我的專利領域。Line Bot 開發、教育聊天機器人、自然語言理解 &mdash; 從概念到部署。</p>
+                <div class="chalk-card-tags"><span>Line Bot</span><span>Chatbot</span><span>NLU</span><span>Patent I918530</span></div>
+            </div>
+            <div class="chalk-card">
+                <div class="chalk-card-icon"><i class="fa-solid fa-code"></i></div>
+                <h4>Python / Data Science</h4>
+                <p>用 Python 建立資料思維。數據清洗、視覺化、問題建模。Google Apps Script 自動化。上完課就能自己分析數據。</p>
+                <div class="chalk-card-tags"><span>Python</span><span>Data Science</span><span>Google Apps Script</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======== PATENT ======== -->
+<div class="section">
+    <div class="note" data-note>
+        <div class="note-label"><i class="fa-solid fa-certificate"></i> PATENT</div>
+        <h2>中華民國發明專利 I918530</h2>
+        <div class="term">
+            <div class="term-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>andrew@ntcu:~/patents</span></div>
+            <div class="term-body">
+                <span class="pr">$</span> <span class="am">cat I918530.cert</span><br/>
+                <span>&ensp;&ensp;<span class="gr">[GRANTED]</span> Republic of China Invention Patent</span><br/>
+                <span>&ensp;&ensp;No: <span class="am">I918530</span></span><br/>
+                <span>&ensp;&ensp;基於對話式介面之多源資訊整合</span><br/>
+                <span>&ensp;&ensp;與自動化內容生成之系統與方法</span><br/>
+                <span>&ensp;&ensp;Inventor &amp; Owner: 施育廷</span><br/>
+                <span class="pr">$</span> <span style="display:inline-block;width:7px;height:14px;background:var(--termCyan);animation:blink 1s step-end infinite;vertical-align:middle"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======== GALLERY ======== -->
+<div class="section">
+    <div class="note" data-note>
+        <div class="note-label"><i class="fa-solid fa-image"></i> AFTER HOURS</div>
+        <h2>下課後的另一面</h2>
+        <div class="gallery-grid">
+            <img src="/assets/img/guild/andrewshih1210/carousel-3.webp" alt="月光湖畔" loading="lazy" />
+            <img src="/assets/img/guild/andrewshih1210/carousel-4.webp" alt="望月沉思" loading="lazy" />
+            <img src="/assets/img/guild/andrewshih1210/carousel-2.webp" alt="書齋夜讀" loading="lazy" />
+        </div>
+    </div>
+</div>
+
+<!-- ======== FAREWELL ======== -->
+<section class="farewell">
+    <div class="fw-board" id="fwBoard">
+        <div class="fw-quote">教室的門永遠開著。<br/>歡迎旁聽，免費。</div>
+        <div class="fw-sub">// Knowledge is free. Always.</div>
+    </div>
+    <div class="fw-links" id="fwLinks">
+        <a href="https://www.threads.com/@andrewshih1210" target="_blank" rel="noopener noreferrer" class="fw-link"><i class="fa-brands fa-threads"></i> Threads</a>
+        <a href="https://www.instagram.com/andrewshih1210/" target="_blank" rel="noopener noreferrer" class="fw-link"><i class="fa-brands fa-instagram"></i> Instagram</a>
+        <a href="https://www.youtube.com/@ytshihclassworld" target="_blank" rel="noopener noreferrer" class="fw-link"><i class="fa-brands fa-youtube"></i> YouTube</a>
+        <a href="https://sites.google.com/view/bc-andrewshih" target="_blank" rel="noopener noreferrer" class="fw-link"><i class="fa-solid fa-globe"></i> Website</a>
+    </div>
+    <div class="fw-foot">Made with &#9829; by SuperGalen's Dungeon</div>
+</section>
+
+</div><!-- .layers-body -->
+</div><!-- .layers -->
+
+<!-- ============================================= -->
+<!-- THREE.JS — THE INFINITE CHALKBOARD            -->
+<!-- Real 3D lit scene with interactive drawing     -->
+<!-- ============================================= -->
+<script>
+(function(){
+    const canvas = document.getElementById('board3d');
+    const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setClearColor(0x121210);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x121210,35,80);
+    const camera = new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,200);
+    camera.position.set(0,6,18);
+    camera.lookAt(0,6,-5);
+
+    const isMobile = window.innerWidth < 768;
+
+    // ---- LIGHTING ----
+    const ambient = new THREE.AmbientLight(0x2a4038,0.8);
+    scene.add(ambient);
+
+    // Desk lamp (warm point light)
+    const lampLight = new THREE.PointLight(0xffd080,1.8,20,1.5);
+    lampLight.position.set(-4,5,3);
+    scene.add(lampLight);
+
+    // Subtle overhead fill (simulates classroom ceiling light)
+    const overheadLight = new THREE.PointLight(0xd0e0d0,0.3,50,1.5);
+    overheadLight.position.set(0,15,0);
+    scene.add(overheadLight);
+
+    // ---- CHALKBOARD (the hero surface) ----
+    // Create chalk text texture
+    const chalkCanvas = document.createElement('canvas');
+    chalkCanvas.width = 2048;
+    chalkCanvas.height = 1024;
+    const chalkCtx = chalkCanvas.getContext('2d');
+
+    function drawChalkboard(){
+        // Board base — slightly lighter than clearColor so it stands out
+        chalkCtx.fillStyle = '#243d32';
+        chalkCtx.fillRect(0,0,2048,1024);
+        // Subtle noise / chalk dust texture
+        for(let i=0;i<4000;i++){
+            chalkCtx.fillStyle = `rgba(${25+Math.random()*25},${50+Math.random()*30},${35+Math.random()*25},0.3)`;
+            chalkCtx.fillRect(Math.random()*2048,Math.random()*1024,Math.random()*3+1,Math.random()*3+1);
+        }
+        // Chalk smear patches (faint horizontal streaks like erased areas)
+        for(let i=0;i<8;i++){
+            const sx = Math.random()*1600;
+            const sy = Math.random()*800+100;
+            chalkCtx.fillStyle = `rgba(180,190,170,${0.03+Math.random()*0.04})`;
+            chalkCtx.fillRect(sx,sy,Math.random()*300+100,Math.random()*20+5);
+        }
+
+        // Chalk text - Python code (left side)
+        chalkCtx.font = '600 30px IBM Plex Mono, monospace';
+        chalkCtx.fillStyle = '#e8e4dc';
+        const codeLines = [
+            'class Teacher:',
+            '    def __init__(self):',
+            '        self.name = "施育廷"',
+            '        self.passion = "AI+Education"',
+            '        self.fee = 0  # always free',
+            '',
+            '    def teach(self, student):',
+            '        knowledge = self.ai_integrate()',
+            '        return student.grow(knowledge)'
+        ];
+        codeLines.forEach((line,i)=>{
+            for(let c=0;c<line.length;c++){
+                const x = 60 + c*17 + (Math.random()-0.5)*1.5;
+                const y = 100 + i*48 + (Math.random()-0.5)*1.5;
+                chalkCtx.globalAlpha = 0.7+Math.random()*0.25;
+                chalkCtx.fillText(line[c],x,y);
+            }
+        });
+
+        // Chinese acrostic poem (right side) — 藏頭「施育廷」
+        chalkCtx.font = '700 56px Noto Serif TC, serif';
+        const poemLines = ['施教無私傳智慧','育才有道啟新程','廷上風華照四方'];
+        poemLines.forEach((line,i)=>{
+            for(let c=0;c<line.length;c++){
+                const x = 1200 + c*64 + (Math.random()-0.5)*2;
+                const y = 180 + i*100 + (Math.random()-0.5)*2;
+                chalkCtx.globalAlpha = 0.65+Math.random()*0.3;
+                chalkCtx.fillStyle = c===0 ? '#ffcc70' : '#e8e4dc';
+                chalkCtx.fillText(line[c],x,y);
+            }
+        });
+
+        // Neural network diagram (bigger, more visible)
+        chalkCtx.globalAlpha = 0.55;
+        chalkCtx.strokeStyle = '#e8e4dc';
+        chalkCtx.lineWidth = 2.5;
+        const nodes = [[750,620],[840,540],[930,620],[840,700],[750,780],[930,780],[840,860]];
+        nodes.forEach(n=>{
+            chalkCtx.beginPath();
+            chalkCtx.arc(n[0],n[1],10,0,Math.PI*2);
+            chalkCtx.stroke();
+            chalkCtx.globalAlpha = 0.15;
+            chalkCtx.fillStyle = '#50e8d0';
+            chalkCtx.fill();
+            chalkCtx.globalAlpha = 0.55;
+        });
+        for(let i=0;i<nodes.length;i++){
+            for(let j=i+1;j<nodes.length;j++){
+                if(Math.random()>0.35){
+                    chalkCtx.beginPath();
+                    chalkCtx.moveTo(nodes[i][0],nodes[i][1]);
+                    chalkCtx.lineTo(nodes[j][0],nodes[j][1]);
+                    chalkCtx.stroke();
+                }
+            }
+        }
+        chalkCtx.font = '500 22px IBM Plex Mono';
+        chalkCtx.fillStyle = '#50e8d0';
+        chalkCtx.globalAlpha = 0.6;
+        chalkCtx.fillText('Neural Network',720,910);
+
+        // Patent number (prominent)
+        chalkCtx.font = '600 36px IBM Plex Mono';
+        chalkCtx.fillStyle = '#ffcc70';
+        chalkCtx.globalAlpha = 0.65;
+        chalkCtx.fillText('Patent I918530',80,580);
+
+        // Arrow & label
+        chalkCtx.strokeStyle = '#e8e4dc';
+        chalkCtx.globalAlpha = 0.5;
+        chalkCtx.lineWidth = 2;
+        chalkCtx.beginPath();
+        chalkCtx.moveTo(80,610);chalkCtx.lineTo(380,610);
+        chalkCtx.lineTo(370,604);chalkCtx.moveTo(380,610);chalkCtx.lineTo(370,616);
+        chalkCtx.stroke();
+        chalkCtx.font = '400 20px IBM Plex Mono';
+        chalkCtx.fillStyle = '#e8e4dc';
+        chalkCtx.globalAlpha = 0.55;
+        chalkCtx.fillText('Conversational AI Interface',400,616);
+
+        // Additional: underline the title
+        chalkCtx.strokeStyle = '#ffcc70';
+        chalkCtx.globalAlpha = 0.4;
+        chalkCtx.lineWidth = 1.5;
+        chalkCtx.beginPath();
+        chalkCtx.moveTo(55,115);chalkCtx.lineTo(290,115);
+        chalkCtx.stroke();
+
+        chalkCtx.globalAlpha = 1;
+    }
+    drawChalkboard();
+
+    const chalkTexture = new THREE.CanvasTexture(chalkCanvas);
+    chalkTexture.minFilter = THREE.LinearFilter;
+
+    // ---- CLASSROOM ENVIRONMENT ----
+    const wallZ = -5.5;
+    const roomW = 50, roomH = 22;
+
+    // === BACK WALL (textured plaster) ===
+    const wallCanvas = document.createElement('canvas');
+    wallCanvas.width = 1024; wallCanvas.height = 512;
+    const wCtx = wallCanvas.getContext('2d');
+    wCtx.fillStyle = '#3d3832';
+    wCtx.fillRect(0,0,1024,512);
+    // Plaster texture noise
+    for(let i=0;i<6000;i++){
+        const v = 48+Math.random()*22;
+        wCtx.fillStyle = `rgba(${v},${v-5},${v-10},0.2)`;
+        wCtx.fillRect(Math.random()*1024,Math.random()*512,Math.random()*5+1,Math.random()*5+1);
+    }
+    // Faint horizontal paint drip stains
+    for(let i=0;i<5;i++){
+        wCtx.strokeStyle = `rgba(30,28,22,${0.08+Math.random()*0.06})`;
+        wCtx.lineWidth = 1;
+        wCtx.beginPath();
+        const sy = 200+Math.random()*250;
+        wCtx.moveTo(Math.random()*200,sy);
+        wCtx.lineTo(Math.random()*200+800,sy+Math.random()*3);
+        wCtx.stroke();
+    }
+    const wallTex = new THREE.CanvasTexture(wallCanvas);
+    const wallMat = new THREE.MeshPhongMaterial({map:wallTex,shininess:3,specular:0x111111});
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(roomW,roomH),wallMat);
+    wall.position.set(0,8,wallZ);
+    scene.add(wall);
+
+    // === SIDE WALLS (textured) ===
+    const sideWallCanvas = document.createElement('canvas');
+    sideWallCanvas.width = 512; sideWallCanvas.height = 512;
+    const swCtx = sideWallCanvas.getContext('2d');
+    swCtx.fillStyle = '#35302c';
+    swCtx.fillRect(0,0,512,512);
+    for(let i=0;i<3000;i++){
+        const v = 42+Math.random()*18;
+        swCtx.fillStyle = `rgba(${v},${v-4},${v-8},0.2)`;
+        swCtx.fillRect(Math.random()*512,Math.random()*512,Math.random()*4+1,Math.random()*4+1);
+    }
+    const sideWallTex = new THREE.CanvasTexture(sideWallCanvas);
+    const sideWallMat = new THREE.MeshPhongMaterial({map:sideWallTex,shininess:3});
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(30,roomH),sideWallMat);
+    leftWall.position.set(-25,8,7);leftWall.rotation.y=Math.PI/2;
+    scene.add(leftWall);
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(30,roomH),sideWallMat);
+    rightWall.position.set(25,8,7);rightWall.rotation.y=-Math.PI/2;
+    scene.add(rightWall);
+
+    // === FLOOR (dark wood planks) ===
+    const floorCanvas = document.createElement('canvas');
+    floorCanvas.width = 1024; floorCanvas.height = 512;
+    const fCtx = floorCanvas.getContext('2d');
+    fCtx.fillStyle = '#2a201a';
+    fCtx.fillRect(0,0,1024,512);
+    // Wood plank lines
+    for(let py=0;py<512;py+=64){
+        fCtx.strokeStyle = `rgba(15,10,5,${0.3+Math.random()*0.15})`;
+        fCtx.lineWidth = 1;
+        fCtx.beginPath();fCtx.moveTo(0,py);fCtx.lineTo(1024,py);fCtx.stroke();
+        // Wood grain within each plank
+        for(let g=0;g<12;g++){
+            fCtx.strokeStyle = `rgba(50,35,20,${0.06+Math.random()*0.05})`;
+            fCtx.lineWidth = 0.5;
+            const gy = py+Math.random()*60;
+            fCtx.beginPath();fCtx.moveTo(0,gy);fCtx.lineTo(1024,gy+(Math.random()-0.5)*3);fCtx.stroke();
+        }
+    }
+    // Plank end joints (vertical gaps at random intervals)
+    for(let i=0;i<20;i++){
+        fCtx.strokeStyle = 'rgba(10,5,2,0.25)';
+        fCtx.lineWidth = 1;
+        const jx = Math.random()*1024;
+        const jy = Math.floor(Math.random()*8)*64;
+        fCtx.beginPath();fCtx.moveTo(jx,jy);fCtx.lineTo(jx,jy+64);fCtx.stroke();
+    }
+    const floorTex = new THREE.CanvasTexture(floorCanvas);
+    floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+    floorTex.repeat.set(3,2);
+    const floorMat = new THREE.MeshPhongMaterial({map:floorTex,shininess:20,specular:0x222211});
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(50,30),floorMat);
+    floor.rotation.x = -Math.PI/2;
+    floor.position.set(0,-0.8,5);
+    scene.add(floor);
+
+    // === CEILING ===
+    const ceilMat = new THREE.MeshPhongMaterial({color:0x2e2a26,shininess:2});
+    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(50,30),ceilMat);
+    ceil.rotation.x = Math.PI/2;
+    ceil.position.set(0,19,5);
+    scene.add(ceil);
+
+    // === BASEBOARD / WAINSCOTING (dark strip at bottom of walls) ===
+    const baseboardMat = new THREE.MeshPhongMaterial({color:0x2a1e12,shininess:10,emissive:0x080402,emissiveIntensity:0.15});
+    // Back wall baseboard
+    const bbBack = new THREE.Mesh(new THREE.BoxGeometry(roomW,0.8,0.12),baseboardMat);
+    bbBack.position.set(0,-0.4,wallZ+0.1);scene.add(bbBack);
+    // Left wall baseboard
+    const bbLeft = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.8,30),baseboardMat);
+    bbLeft.position.set(-24.9,-0.4,7);scene.add(bbLeft);
+    // Right wall baseboard
+    const bbRight = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.8,30),baseboardMat);
+    bbRight.position.set(24.9,-0.4,7);scene.add(bbRight);
+
+    // === CROWN MOLDING (top of back wall) ===
+    const crownMat = new THREE.MeshPhongMaterial({color:0x3a3028,shininess:8});
+    const crown = new THREE.Mesh(new THREE.BoxGeometry(roomW,0.4,0.15),crownMat);
+    crown.position.set(0,18.8,wallZ+0.1);scene.add(crown);
+
+    // === WINDOW (left wall, with frame and faint blue glow) ===
+    // Window frame
+    const winFrameMat = new THREE.MeshPhongMaterial({color:0x4a3a28,shininess:12});
+    const winW = 4, winH = 5;
+    const winX = -24.8, winY = 9, winZ = 0;
+    // Window glass (faint moonlight blue)
+    const winGlass = new THREE.Mesh(
+        new THREE.PlaneGeometry(winW,winH),
+        new THREE.MeshPhongMaterial({color:0x1a2a40,emissive:0x0a1520,emissiveIntensity:0.6,shininess:50,transparent:true,opacity:0.85})
+    );
+    winGlass.position.set(winX+0.05,winY,winZ);winGlass.rotation.y=Math.PI/2;
+    scene.add(winGlass);
+    // Window frame pieces
+    const wfTop = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.25,winW+0.5),winFrameMat);
+    wfTop.position.set(winX,winY+winH/2,winZ);scene.add(wfTop);
+    const wfBot = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.25,winW+0.5),winFrameMat);
+    wfBot.position.set(winX,winY-winH/2,winZ);scene.add(wfBot);
+    // Window sill (thicker)
+    const winSill = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.12,winW+0.8),winFrameMat);
+    winSill.position.set(winX+0.1,winY-winH/2-0.1,winZ);scene.add(winSill);
+    const wfLeft = new THREE.Mesh(new THREE.BoxGeometry(0.15,winH+0.5,0.25),winFrameMat);
+    wfLeft.position.set(winX,winY,winZ-winW/2);scene.add(wfLeft);
+    const wfRight = new THREE.Mesh(new THREE.BoxGeometry(0.15,winH+0.5,0.25),winFrameMat);
+    wfRight.position.set(winX,winY,winZ+winW/2);scene.add(wfRight);
+    // Window cross bars
+    const wfMidH = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.12,winW),winFrameMat);
+    wfMidH.position.set(winX+0.05,winY,winZ);scene.add(wfMidH);
+    const wfMidV = new THREE.Mesh(new THREE.BoxGeometry(0.1,winH,0.12),winFrameMat);
+    wfMidV.position.set(winX+0.05,winY,winZ);scene.add(wfMidV);
+    // Faint moonlight from window
+    const moonLight = new THREE.PointLight(0x4060a0,0.4,25,2);
+    moonLight.position.set(-22,10,0);scene.add(moonLight);
+    // Small potted plant on window sill
+    const potMat = new THREE.MeshPhongMaterial({color:0x8a4a2a,shininess:8});
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.2,0.4,12),potMat);
+    pot.position.set(winX+0.3,winY-winH/2+0.15,winZ+0.8);pot.rotation.z=0;scene.add(pot);
+    const plantMat = new THREE.MeshPhongMaterial({color:0x2a5a2a,shininess:5,emissive:0x0a1a0a,emissiveIntensity:0.2});
+    const plant = new THREE.Mesh(new THREE.SphereGeometry(0.35,12,8),plantMat);
+    plant.position.set(winX+0.3,winY-winH/2+0.55,winZ+0.8);plant.scale.y=1.2;scene.add(plant);
+
+    // === BOOKSHELF (right wall) ===
+    const shelfMat = new THREE.MeshPhongMaterial({color:0x3a2a1a,shininess:10,emissive:0x080402,emissiveIntensity:0.15});
+    const shelfX = 24.7, shelfZ = -1;
+    // Shelf frame (back panel)
+    const shelfBack = new THREE.Mesh(new THREE.BoxGeometry(0.1,6,3),shelfMat);
+    shelfBack.position.set(shelfX,3,shelfZ);scene.add(shelfBack);
+    // Shelf planks (4 levels)
+    for(let si=0;si<4;si++){
+        const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.1,3),shelfMat);
+        shelf.position.set(shelfX-0.3,0.5+si*1.7,shelfZ);scene.add(shelf);
+        // Books on each shelf
+        const bookCount = 4+Math.floor(Math.random()*4);
+        let bx = shelfZ - 1.2;
+        for(let bi=0;bi<bookCount;bi++){
+            const bw = 0.12+Math.random()*0.1;
+            const bh = 0.8+Math.random()*0.7;
+            const bookColor = [0x8a3030,0x2a4a7a,0x3a6a3a,0x7a5a2a,0x5a2a5a,0x2a6a6a][Math.floor(Math.random()*6)];
+            const book = new THREE.Mesh(
+                new THREE.BoxGeometry(0.6,bh,bw),
+                new THREE.MeshPhongMaterial({color:bookColor,shininess:8,emissive:bookColor,emissiveIntensity:0.08})
+            );
+            book.position.set(shelfX-0.35,0.5+si*1.7+0.05+bh/2,bx+bw/2);
+            book.rotation.y = (Math.random()-0.5)*0.05;
+            scene.add(book);
+            bx += bw + 0.02;
+        }
+    }
+    // Shelf side panels
+    const shelfSide1 = new THREE.Mesh(new THREE.BoxGeometry(0.8,6,0.1),shelfMat);
+    shelfSide1.position.set(shelfX-0.3,3,shelfZ-1.5);scene.add(shelfSide1);
+    const shelfSide2 = new THREE.Mesh(new THREE.BoxGeometry(0.8,6,0.1),shelfMat);
+    shelfSide2.position.set(shelfX-0.3,3,shelfZ+1.5);scene.add(shelfSide2);
+
+    // === WALL CLOCK (right of chalkboard, canvas-textured) ===
+    const clockCanvas = document.createElement('canvas');
+    clockCanvas.width = 256; clockCanvas.height = 256;
+    const ckCtx = clockCanvas.getContext('2d');
+    const ckCx = 128, ckCy = 128, ckR = 118;
+    // Clock body shadow
+    ckCtx.beginPath();ckCtx.arc(ckCx+2,ckCy+2,ckR+6,0,Math.PI*2);
+    ckCtx.fillStyle='rgba(0,0,0,0.3)';ckCtx.fill();
+    // Outer rim
+    ckCtx.beginPath();ckCtx.arc(ckCx,ckCy,ckR+5,0,Math.PI*2);
+    ckCtx.fillStyle='#2a2a2a';ckCtx.fill();
+    // Inner rim highlight
+    ckCtx.beginPath();ckCtx.arc(ckCx,ckCy,ckR+2,0,Math.PI*2);
+    ckCtx.fillStyle='#3a3a3a';ckCtx.fill();
+    // Face
+    ckCtx.beginPath();ckCtx.arc(ckCx,ckCy,ckR,0,Math.PI*2);
+    ckCtx.fillStyle='#f0ead0';ckCtx.fill();
+    // Subtle face gradient
+    const ckGrad = ckCtx.createRadialGradient(ckCx-20,ckCy-20,10,ckCx,ckCy,ckR);
+    ckGrad.addColorStop(0,'rgba(255,255,245,0.15)');ckGrad.addColorStop(1,'rgba(180,170,140,0.1)');
+    ckCtx.fillStyle=ckGrad;ckCtx.fill();
+    // Hour numbers
+    ckCtx.fillStyle='#1a1a1a';ckCtx.font='bold 22px serif';ckCtx.textAlign='center';ckCtx.textBaseline='middle';
+    for(let h=1;h<=12;h++){
+        const ang = (h/12)*Math.PI*2 - Math.PI/2;
+        ckCtx.fillText(h.toString(), ckCx+Math.cos(ang)*88, ckCy+Math.sin(ang)*88+1);
+    }
+    // Tick marks (60 minute marks)
+    for(let m=0;m<60;m++){
+        const ang = (m/60)*Math.PI*2 - Math.PI/2;
+        const isHour = m%5===0;
+        const inner = isHour ? 96 : 103;
+        const outer = 110;
+        ckCtx.strokeStyle = '#1a1a1a';
+        ckCtx.lineWidth = isHour ? 2.5 : 1;
+        ckCtx.beginPath();
+        ckCtx.moveTo(ckCx+Math.cos(ang)*inner, ckCy+Math.sin(ang)*inner);
+        ckCtx.lineTo(ckCx+Math.cos(ang)*outer, ckCy+Math.sin(ang)*outer);
+        ckCtx.stroke();
+    }
+    // Hour hand (pointing to ~10:10)
+    const hrAng = (10/12)*Math.PI*2 + (10/60)*(Math.PI*2/12) - Math.PI/2;
+    ckCtx.strokeStyle='#1a1a1a';ckCtx.lineWidth=5;ckCtx.lineCap='round';
+    ckCtx.beginPath();ckCtx.moveTo(ckCx,ckCy);
+    ckCtx.lineTo(ckCx+Math.cos(hrAng)*55, ckCy+Math.sin(hrAng)*55);ckCtx.stroke();
+    // Minute hand
+    const mnAng = (10/60)*Math.PI*2 - Math.PI/2;
+    ckCtx.lineWidth=3;
+    ckCtx.beginPath();ckCtx.moveTo(ckCx,ckCy);
+    ckCtx.lineTo(ckCx+Math.cos(mnAng)*78, ckCy+Math.sin(mnAng)*78);ckCtx.stroke();
+    // Second hand (thin red)
+    const scAng = (35/60)*Math.PI*2 - Math.PI/2;
+    ckCtx.strokeStyle='#aa3030';ckCtx.lineWidth=1;
+    ckCtx.beginPath();ckCtx.moveTo(ckCx-Math.cos(scAng)*15,ckCy-Math.sin(scAng)*15);
+    ckCtx.lineTo(ckCx+Math.cos(scAng)*85, ckCy+Math.sin(scAng)*85);ckCtx.stroke();
+    // Center cap
+    ckCtx.beginPath();ckCtx.arc(ckCx,ckCy,4,0,Math.PI*2);
+    ckCtx.fillStyle='#1a1a1a';ckCtx.fill();
+    ckCtx.beginPath();ckCtx.arc(ckCx,ckCy,2,0,Math.PI*2);
+    ckCtx.fillStyle='#aa3030';ckCtx.fill();
+
+    const clockTex = new THREE.CanvasTexture(clockCanvas);
+    // Clock body (cylinder for depth)
+    const clockBody = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.2,1.2,0.25,32),
+        new THREE.MeshPhongMaterial({color:0x2a2a2a,shininess:25})
+    );
+    clockBody.position.set(15.5,12,wallZ+0.25);
+    clockBody.rotation.x=Math.PI/2;
+    scene.add(clockBody);
+    // Clock face (textured circle on front)
+    const clockFace = new THREE.Mesh(
+        new THREE.CircleGeometry(1.15,32),
+        new THREE.MeshPhongMaterial({map:clockTex,shininess:15})
+    );
+    clockFace.position.set(15.5,12,wallZ+0.4);
+    scene.add(clockFace);
+
+    // === POSTER (left of chalkboard) ===
+    const posterTxtCanvas = document.createElement('canvas');
+    posterTxtCanvas.width=256;posterTxtCanvas.height=384;
+    const ptCtx = posterTxtCanvas.getContext('2d');
+    ptCtx.fillStyle='#d4c8a0';ptCtx.fillRect(0,0,256,384);
+    ptCtx.fillStyle='#5a4a30';ptCtx.font='bold 28px sans-serif';
+    ptCtx.fillText('AI 教育',60,60);
+    ptCtx.font='18px sans-serif';ptCtx.fillStyle='#6a5a40';
+    ptCtx.fillText('免費課程',80,100);
+    ptCtx.fillText('每週三 19:00',65,135);
+    for(let i=0;i<8;i++){
+        ptCtx.fillStyle=`rgba(90,74,48,${0.2+Math.random()*0.2})`;
+        ptCtx.fillRect(30,170+i*22,196,8);
+    }
+    const posterTex = new THREE.CanvasTexture(posterTxtCanvas);
+    const poster = new THREE.Mesh(new THREE.PlaneGeometry(2.5,3.5),
+        new THREE.MeshPhongMaterial({map:posterTex,shininess:5}));
+    poster.position.set(-16,10,wallZ+0.15);scene.add(poster);
+
+    // === SECOND POSTER (further left, colorful) ===
+    const poster2Canvas = document.createElement('canvas');
+    poster2Canvas.width=256;poster2Canvas.height=320;
+    const p2Ctx = poster2Canvas.getContext('2d');
+    p2Ctx.fillStyle='#e8d8b8';p2Ctx.fillRect(0,0,256,320);
+    p2Ctx.fillStyle='#3a6a5a';p2Ctx.font='bold 24px sans-serif';
+    p2Ctx.fillText('Python',85,50);
+    p2Ctx.font='16px sans-serif';p2Ctx.fillStyle='#4a5a50';
+    p2Ctx.fillText('Workshop',88,80);
+    // Simple code icon
+    p2Ctx.strokeStyle='#3a6a5a';p2Ctx.lineWidth=3;
+    p2Ctx.beginPath();p2Ctx.moveTo(70,120);p2Ctx.lineTo(50,160);p2Ctx.lineTo(70,200);p2Ctx.stroke();
+    p2Ctx.beginPath();p2Ctx.moveTo(186,120);p2Ctx.lineTo(206,160);p2Ctx.lineTo(186,200);p2Ctx.stroke();
+    p2Ctx.beginPath();p2Ctx.moveTo(145,110);p2Ctx.lineTo(111,210);p2Ctx.stroke();
+    const poster2Tex = new THREE.CanvasTexture(poster2Canvas);
+    const poster2 = new THREE.Mesh(new THREE.PlaneGeometry(2,2.8),
+        new THREE.MeshPhongMaterial({map:poster2Tex,shininess:5}));
+    poster2.position.set(-19,6,wallZ+0.15);poster2.rotation.z=0.02;scene.add(poster2);
+
+    // === FLUORESCENT LIGHT FIXTURE (ceiling, dim/off) ===
+    const fixtureMat = new THREE.MeshPhongMaterial({color:0x555550,shininess:15});
+    const fixture = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.1,6),fixtureMat);
+    fixture.position.set(0,18.9,4);scene.add(fixture);
+    // Dim tube glow
+    const tube = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.05,5.5),
+        new THREE.MeshBasicMaterial({color:0x303530,transparent:true,opacity:0.4}));
+    tube.position.set(0,18.84,4);scene.add(tube);
+
+    // Board dimensions (must match frame)
+    const boardW = 25, boardH = 15;
+    const boardCY = 8; // center Y
+    const boardGeo = new THREE.PlaneGeometry(boardW, boardH);
+    const boardMat = new THREE.MeshPhongMaterial({
+        map:chalkTexture,
+        shininess:5,
+        specular:0x111111
+    });
+    const board = new THREE.Mesh(boardGeo,boardMat);
+    board.position.set(0, boardCY, -5);
+    scene.add(board);
+
+    // Chalkboard wooden frame
+    const frameMat = new THREE.MeshPhongMaterial({color:0x5a3a1a,shininess:15,emissive:0x1a0e05,emissiveIntensity:0.2});
+    const frameW = 0.4;
+    const fHalfW = boardW/2 + frameW/2;
+    const fHalfH = boardH/2;
+    const fTop2 = boardCY + fHalfH;
+    const fBot2 = boardCY - fHalfH;
+    // Top frame
+    const fTop = new THREE.Mesh(new THREE.BoxGeometry(boardW+frameW*2, frameW, 0.3),frameMat);
+    fTop.position.set(0, fTop2, -4.9);scene.add(fTop);
+    // Bottom frame
+    const fBot = new THREE.Mesh(new THREE.BoxGeometry(boardW+frameW*2, frameW, 0.3),frameMat);
+    fBot.position.set(0, fBot2, -4.9);scene.add(fBot);
+    // Left frame
+    const fLeft = new THREE.Mesh(new THREE.BoxGeometry(frameW, boardH, 0.3),frameMat);
+    fLeft.position.set(-fHalfW, boardCY, -4.9);scene.add(fLeft);
+    // Right frame
+    const fRight = new THREE.Mesh(new THREE.BoxGeometry(frameW, boardH, 0.3),frameMat);
+    fRight.position.set(fHalfW, boardCY, -4.9);scene.add(fRight);
+    // Chalk tray (ledge at bottom of frame)
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(boardW+frameW*2, 0.15, 0.6),frameMat);
+    tray.position.set(0, fBot2 - 0.25, -4.6);scene.add(tray);
+    // Small chalk pieces on tray
+    const chalkMat = new THREE.MeshPhongMaterial({color:0xf0ead8,shininess:5});
+    [{x:-2,l:0.5},{x:0.5,l:0.35},{x:3,l:0.6}].forEach(ch=>{
+        const chalk = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,ch.l,8),chalkMat);
+        chalk.position.set(ch.x, fBot2 - 0.1, -4.55);chalk.rotation.z=Math.PI/2;
+        scene.add(chalk);
+    });
+
+    // ---- DESK ----
+    const deskMat = new THREE.MeshPhongMaterial({color:0x3a2a1a,shininess:15,specular:0x222211,emissive:0x0a0804,emissiveIntensity:0.3});
+    const deskTop = new THREE.Mesh(new THREE.BoxGeometry(22,0.25,7),deskMat);
+    deskTop.position.set(0,-0.5,2);
+    scene.add(deskTop);
+
+    // ---- DESK LAMP (simple pole lamp with angled arm) ----
+    const metalMat = new THREE.MeshPhongMaterial({color:0x505050,shininess:60,specular:0x888888,emissive:0x151515,emissiveIntensity:0.2});
+
+    const lampGrp = new THREE.Group();
+    lampGrp.position.set(-5,-0.37,3);
+    scene.add(lampGrp);
+
+    // Heavy round base
+    const lBase = new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.6,0.08,32),metalMat);
+    lampGrp.add(lBase);
+
+    // Vertical pole
+    const lPole = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,3.0,12),metalMat);
+    lPole.position.set(0,1.54,0);
+    lampGrp.add(lPole);
+
+    // Joint at top of pole (ball)
+    const lJoint = new THREE.Mesh(new THREE.SphereGeometry(0.07,16,16),metalMat);
+    lJoint.position.set(0,3.05,0);
+    lampGrp.add(lJoint);
+
+    // Angled arm: compute start and end explicitly
+    // Start = top of pole (0, 3.05, 0), end = where shade will be
+    const armStart = new THREE.Vector3(0, 3.05, 0);
+    const armEnd = new THREE.Vector3(0.8, 2.6, 1.2);
+    const armMid = armStart.clone().add(armEnd).multiplyScalar(0.5);
+    const armDir = armEnd.clone().sub(armStart);
+    const armLen = armDir.length();
+
+    const lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,armLen,10),metalMat);
+    lArm.position.copy(armMid);
+    // Align cylinder along the direction vector
+    lArm.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), armDir.normalize());
+    lampGrp.add(lArm);
+
+    // Shade at arm end — truncated cone (LatheGeometry) for proper 3D shape
+    const shadePos = armEnd.clone();
+    // Profile: top-narrow to bottom-wide, creating a classic lamp shade shape
+    const shadeProfile = [
+        new THREE.Vector2(0.12, 0.25),   // top (narrow opening)
+        new THREE.Vector2(0.15, 0.2),
+        new THREE.Vector2(0.45, -0.1),
+        new THREE.Vector2(0.6, -0.25),    // bottom rim (wide opening)
+        new THREE.Vector2(0.58, -0.25),   // bottom edge thickness
+        new THREE.Vector2(0.43, -0.08),
+        new THREE.Vector2(0.13, 0.18),
+        new THREE.Vector2(0.10, 0.25),    // inner top
+    ];
+    const shadeGeo = new THREE.LatheGeometry(shadeProfile, 32);
+    const shadeMat = new THREE.MeshPhongMaterial({color:0x3a3525,shininess:12,side:THREE.DoubleSide,emissive:0x201510,emissiveIntensity:0.35});
+    const lShade = new THREE.Mesh(shadeGeo, shadeMat);
+    lShade.position.copy(shadePos);
+    lampGrp.add(lShade);
+
+    // Inner shade warm glow (separate inner surface)
+    const innerProfile = [
+        new THREE.Vector2(0.10, 0.24),
+        new THREE.Vector2(0.42, -0.08),
+        new THREE.Vector2(0.57, -0.24),
+    ];
+    const innerGeo = new THREE.LatheGeometry(innerProfile, 32);
+    const innerMat = new THREE.MeshPhongMaterial({color:0xb08050,shininess:5,side:THREE.BackSide,emissive:0x4a3010,emissiveIntensity:0.6});
+    const lInner = new THREE.Mesh(innerGeo, innerMat);
+    lInner.position.copy(shadePos);
+    lampGrp.add(lInner);
+
+    // Shade top cap (small disc closing the top)
+    const shadeCap = new THREE.Mesh(new THREE.CircleGeometry(0.12,16), shadeMat);
+    shadeCap.position.set(shadePos.x, shadePos.y+0.25, shadePos.z);
+    shadeCap.rotation.x = -Math.PI/2;
+    lampGrp.add(shadeCap);
+
+    // Bulb (slightly larger, warm glow)
+    const bulbMat = new THREE.MeshBasicMaterial({color:0xffecc0});
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09,16,16), bulbMat);
+    bulb.position.set(shadePos.x, shadePos.y - 0.05, shadePos.z);
+    lampGrp.add(bulb);
+
+    // Light source at bulb position (world coords)
+    lampLight.position.set(-5 + shadePos.x, -0.37 + shadePos.y, 3 + shadePos.z);
+
+    // ---- LAPTOP (with screen content) ----
+    const laptopMat = new THREE.MeshPhongMaterial({color:0x2a2a30,shininess:60,specular:0x444444,emissive:0x080808,emissiveIntensity:0.3});
+    // Base with keyboard area
+    const lbBase2 = new THREE.Mesh(new THREE.BoxGeometry(2.5,0.06,1.6),laptopMat);
+    lbBase2.position.set(2,-0.34,2.5);scene.add(lbBase2);
+    // Keyboard texture
+    const kbCanvas = document.createElement('canvas');
+    kbCanvas.width=256;kbCanvas.height=160;
+    const kbCtx = kbCanvas.getContext('2d');
+    kbCtx.fillStyle='#28282e';kbCtx.fillRect(0,0,256,160);
+    // Key rows
+    for(let row=0;row<5;row++){
+        const keyCount = row===4?1:10+Math.floor(Math.random()*3);
+        for(let k=0;k<keyCount;k++){
+            const kw = row===4?160:18;
+            const kx = row===4?48:15+k*22;
+            kbCtx.fillStyle='#1e1e24';
+            kbCtx.fillRect(kx,15+row*26,kw,20);
+            kbCtx.fillStyle='#36363e';
+            kbCtx.fillRect(kx+1,15+row*26+1,kw-2,18);
+        }
+    }
+    // Trackpad
+    kbCtx.strokeStyle='#3a3a42';kbCtx.lineWidth=1;
+    kbCtx.strokeRect(88,140,80,15);
+    const kbTex = new THREE.CanvasTexture(kbCanvas);
+    const kbSurf = new THREE.Mesh(new THREE.PlaneGeometry(2.3,1.4),new THREE.MeshPhongMaterial({map:kbTex,shininess:8}));
+    kbSurf.position.set(2,-0.3,2.5);kbSurf.rotation.x=-Math.PI/2;scene.add(kbSurf);
+    // Screen (with hinge)
+    const lbScr = new THREE.Mesh(new THREE.BoxGeometry(2.5,1.6,0.04),laptopMat);
+    lbScr.position.set(2,0.45,1.7);lbScr.rotation.x=-0.15;scene.add(lbScr);
+    // Screen content (code editor look)
+    const scrCanvas = document.createElement('canvas');
+    scrCanvas.width=256;scrCanvas.height=160;
+    const scCtx = scrCanvas.getContext('2d');
+    scCtx.fillStyle='#1a1a2e';scCtx.fillRect(0,0,256,160);
+    // Title bar
+    scCtx.fillStyle='#252540';scCtx.fillRect(0,0,256,16);
+    scCtx.fillStyle='#ff5555';scCtx.beginPath();scCtx.arc(10,8,3,0,Math.PI*2);scCtx.fill();
+    scCtx.fillStyle='#ffaa33';scCtx.beginPath();scCtx.arc(22,8,3,0,Math.PI*2);scCtx.fill();
+    scCtx.fillStyle='#55ff55';scCtx.beginPath();scCtx.arc(34,8,3,0,Math.PI*2);scCtx.fill();
+    // Code lines
+    const codeColors = ['#50e8d0','#e8d050','#e8e8e8','#5080e8','#e85050','#a0e850'];
+    for(let cl=0;cl<12;cl++){
+        const indent = Math.floor(Math.random()*3)*12;
+        const lineW = 30+Math.random()*120;
+        scCtx.fillStyle = codeColors[Math.floor(Math.random()*codeColors.length)];
+        scCtx.globalAlpha = 0.6+Math.random()*0.3;
+        scCtx.fillRect(8+indent,22+cl*11,lineW,6);
+        // Sometimes a second segment
+        if(Math.random()>0.5){
+            scCtx.fillStyle = codeColors[Math.floor(Math.random()*codeColors.length)];
+            scCtx.fillRect(8+indent+lineW+4,22+cl*11,20+Math.random()*50,6);
+        }
+    }
+    scCtx.globalAlpha=1;
+    // Line numbers
+    scCtx.fillStyle='rgba(100,100,120,0.5)';scCtx.font='7px monospace';
+    for(let ln=0;ln<12;ln++) scCtx.fillText((ln+1).toString(),2,28+ln*11);
+    const scrTex = new THREE.CanvasTexture(scrCanvas);
+    const scrDisp = new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.35),new THREE.MeshBasicMaterial({map:scrTex}));
+    scrDisp.position.set(2,0.46,1.735);scrDisp.rotation.x=-0.15;scene.add(scrDisp);
+    // Screen ambient light
+    const screenLight = new THREE.PointLight(0x50e8d0,0.4,10,2);
+    screenLight.position.set(2,1,2.5);scene.add(screenLight);
+    // Hinge
+    const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,2.5,8),laptopMat);
+    hinge.position.set(2,-0.32,1.7);hinge.rotation.z=Math.PI/2;scene.add(hinge);
+
+    // ---- BOOKS (with spine labels) ----
+    const bookData = [
+        {c:0x9b3030,w:1.3,label:'AI'},
+        {c:0x2a4a7a,w:1.4,label:'Python'},
+        {c:0x3a6a3a,w:1.2,label:'NLP'},
+        {c:0x7a5a2a,w:1.35,label:'教育'}
+    ];
+    bookData.forEach((b,i)=>{
+        const bk = new THREE.Mesh(
+            new THREE.BoxGeometry(b.w,0.22,1.6),
+            new THREE.MeshPhongMaterial({color:b.c,shininess:12,emissive:b.c,emissiveIntensity:0.12})
+        );
+        bk.position.set(7,-0.27+i*0.23,2);bk.rotation.y=(Math.random()-0.5)*0.08;scene.add(bk);
+        // Page edges
+        const pg = new THREE.Mesh(
+            new THREE.BoxGeometry(b.w-0.06,0.16,1.54),
+            new THREE.MeshPhongMaterial({color:0xf0e8d8,shininess:3,emissive:0x201810,emissiveIntensity:0.15})
+        );
+        pg.position.copy(bk.position);pg.position.x+=0.02;pg.rotation.copy(bk.rotation);scene.add(pg);
+        // Spine label (canvas on the front face)
+        const spCanvas = document.createElement('canvas');
+        spCanvas.width=128;spCanvas.height=24;
+        const spCtx = spCanvas.getContext('2d');
+        spCtx.fillStyle='rgba(255,255,255,0.12)';spCtx.fillRect(0,0,128,24);
+        spCtx.fillStyle='rgba(255,255,255,0.7)';spCtx.font='bold 14px sans-serif';
+        spCtx.textAlign='center';spCtx.fillText(b.label,64,17);
+        const spTex = new THREE.CanvasTexture(spCanvas);
+        const spine = new THREE.Mesh(new THREE.PlaneGeometry(b.w*0.8,0.18),
+            new THREE.MeshBasicMaterial({map:spTex,transparent:true}));
+        spine.position.set(7,-0.27+i*0.23,2.81);spine.rotation.copy(bk.rotation);scene.add(spine);
+    });
+
+    // ---- COFFEE MUG (with coffee inside) ----
+    // Outer body (LatheGeometry for proper mug shape)
+    const mugProfile = [
+        new THREE.Vector2(0.22, 0),       // bottom
+        new THREE.Vector2(0.22, 0.02),
+        new THREE.Vector2(0.24, 0.08),
+        new THREE.Vector2(0.26, 0.3),
+        new THREE.Vector2(0.27, 0.45),
+        new THREE.Vector2(0.28, 0.5),     // top rim
+        new THREE.Vector2(0.26, 0.5),     // inner rim
+        new THREE.Vector2(0.24, 0.44),
+        new THREE.Vector2(0.22, 0.28),
+        new THREE.Vector2(0.21, 0.06),
+        new THREE.Vector2(0.20, 0),       // inner bottom
+    ];
+    const mugGeo = new THREE.LatheGeometry(mugProfile, 20);
+    const mugMat = new THREE.MeshPhongMaterial({color:0xf0e8d0,shininess:25,emissive:0x302818,emissiveIntensity:0.2});
+    const mugBody2 = new THREE.Mesh(mugGeo,mugMat);
+    mugBody2.position.set(6,-0.37,4);scene.add(mugBody2);
+    // Coffee surface
+    const coffee = new THREE.Mesh(new THREE.CircleGeometry(0.22,16),
+        new THREE.MeshPhongMaterial({color:0x3a2008,shininess:40,specular:0x222211}));
+    coffee.position.set(6,0.08,4);coffee.rotation.x=-Math.PI/2;scene.add(coffee);
+    // Handle (torus)
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.14,0.035,8,16,Math.PI),mugMat);
+    handle.position.set(6.28,-0.1,4);handle.rotation.y=Math.PI/2;handle.rotation.z=Math.PI/2;scene.add(handle);
+
+    // ---- PEN HOLDER (with detail) ----
+    const holderMat = new THREE.MeshPhongMaterial({color:0x2a2a3a,shininess:30,emissive:0x0a0a12,emissiveIntensity:0.3});
+    const penHolder = new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.17,0.55,16),holderMat);
+    penHolder.position.set(-1.5,-0.1,4);scene.add(penHolder);
+    // Inner rim
+    const holderInner = new THREE.Mesh(new THREE.TorusGeometry(0.19,0.015,8,16),holderMat);
+    holderInner.position.set(-1.5,0.17,4);holderInner.rotation.x=Math.PI/2;scene.add(holderInner);
+    // Pens and pencils with tips
+    const penData = [{c:0x3355aa,dx:-0.06,tilt:-0.08},{c:0xcc3333,dx:0,tilt:0.05},{c:0x333333,dx:0.06,tilt:0.1},{c:0xddaa22,dx:0.03,tilt:-0.12}];
+    penData.forEach(p=>{
+        // Pen body
+        const pen = new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.75,6),
+            new THREE.MeshPhongMaterial({color:p.c,emissive:p.c,emissiveIntensity:0.1}));
+        pen.position.set(-1.5+p.dx,0.3,4+p.dx*0.5);
+        pen.rotation.z=p.tilt;pen.rotation.x=p.tilt*0.3;scene.add(pen);
+        // Pen tip
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.022,0.06,6),
+            new THREE.MeshPhongMaterial({color:0x1a1a1a}));
+        tip.position.set(-1.5+p.dx,0.68+p.tilt*0.1,4+p.dx*0.5);
+        tip.rotation.z=p.tilt;scene.add(tip);
+    });
+
+    // ---- NOTEBOOK (open, with text) ----
+    const nbCanvas = document.createElement('canvas');
+    nbCanvas.width=256;nbCanvas.height=180;
+    const nbCtx = nbCanvas.getContext('2d');
+    // Left page
+    nbCtx.fillStyle='#f5eed8';nbCtx.fillRect(0,0,126,180);
+    // Right page
+    nbCtx.fillStyle='#f0e8d0';nbCtx.fillRect(130,0,126,180);
+    // Spine shadow
+    nbCtx.fillStyle='rgba(0,0,0,0.15)';nbCtx.fillRect(124,0,8,180);
+    // Ruled lines
+    nbCtx.strokeStyle='rgba(120,160,200,0.2)';nbCtx.lineWidth=0.5;
+    for(let rl=0;rl<10;rl++){
+        const ry=20+rl*16;
+        nbCtx.beginPath();nbCtx.moveTo(8,ry);nbCtx.lineTo(118,ry);nbCtx.stroke();
+        nbCtx.beginPath();nbCtx.moveTo(136,ry);nbCtx.lineTo(248,ry);nbCtx.stroke();
+    }
+    // Handwritten scribbles (left page)
+    nbCtx.fillStyle='rgba(30,30,80,0.5)';nbCtx.font='8px serif';
+    const scribbles = ['AI + 教育 = ?','LLM fine-tuning','prompt engineering','attention mechanism'];
+    scribbles.forEach((s,i)=> nbCtx.fillText(s,12,28+i*16));
+    // Diagram on right page
+    nbCtx.strokeStyle='rgba(30,30,80,0.35)';nbCtx.lineWidth=1;
+    nbCtx.beginPath();nbCtx.rect(155,30,60,40);nbCtx.stroke();
+    nbCtx.beginPath();nbCtx.rect(155,90,60,40);nbCtx.stroke();
+    nbCtx.beginPath();nbCtx.moveTo(185,70);nbCtx.lineTo(185,90);nbCtx.stroke();
+    nbCtx.beginPath();nbCtx.moveTo(183,85);nbCtx.lineTo(185,90);nbCtx.lineTo(187,85);nbCtx.stroke();
+    nbCtx.fillStyle='rgba(30,30,80,0.4)';nbCtx.font='7px sans-serif';
+    nbCtx.fillText('Input',170,55);nbCtx.fillText('Model',170,115);
+
+    const nbTex = new THREE.CanvasTexture(nbCanvas);
+    const notebook = new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.05),
+        new THREE.MeshPhongMaterial({map:nbTex,shininess:3}));
+    notebook.position.set(-2.5,-0.36,3.5);notebook.rotation.x=-Math.PI/2;notebook.rotation.z=0.08;scene.add(notebook);
+
+    // ---- SECOND PAPER (loose sheet with notes) ----
+    const paperCanvas = document.createElement('canvas');
+    paperCanvas.width=128;paperCanvas.height=180;
+    const ppCtx = paperCanvas.getContext('2d');
+    ppCtx.fillStyle='#f0e8d8';ppCtx.fillRect(0,0,128,180);
+    ppCtx.fillStyle='rgba(30,30,60,0.3)';ppCtx.font='7px serif';
+    ppCtx.fillText('TODO:',10,20);
+    ['review slides','grade papers','office hours 3pm'].forEach((t,i)=>{
+        ppCtx.fillText('☐ '+t,10,38+i*16);
+    });
+    const ppTex = new THREE.CanvasTexture(paperCanvas);
+    const loosePaper = new THREE.Mesh(new THREE.PlaneGeometry(0.8,1.1),
+        new THREE.MeshPhongMaterial({map:ppTex,shininess:3,side:THREE.DoubleSide}));
+    loosePaper.position.set(-0.5,-0.36,3.8);loosePaper.rotation.x=-Math.PI/2;loosePaper.rotation.z=-0.15;scene.add(loosePaper);
+
+    // ---- ERASER on chalk tray ----
+    const eraserMat = new THREE.MeshPhongMaterial({color:0x8a7a6a,shininess:5});
+    const eraser = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.2,0.3),eraserMat);
+    eraser.position.set(5,fBot2+0.05,-4.45);scene.add(eraser);
+    // Felt bottom
+    const felt = new THREE.Mesh(new THREE.BoxGeometry(0.58,0.02,0.28),
+        new THREE.MeshPhongMaterial({color:0x3a3a3a}));
+    felt.position.set(5,fBot2-0.05,-4.45);scene.add(felt);
+
+    // ---- CHALK DUST PARTICLES ----
+    const dustCount = isMobile ? 50 : 120;
+    const dustPos = new Float32Array(dustCount*3);
+    const dustSizes = new Float32Array(dustCount);
+    for(let i=0;i<dustCount;i++){
+        dustPos[i*3]=(Math.random()-0.5)*20;
+        dustPos[i*3+1]=Math.random()*12;
+        dustPos[i*3+2]=(Math.random()-0.5)*12+2;
+        dustSizes[i]=0.03+Math.random()*0.06;
+    }
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
+    const dustMat = new THREE.PointsMaterial({color:0xe8e4dc,size:0.06,transparent:true,opacity:0.4,sizeAttenuation:true});
+    const dust = new THREE.Points(dustGeo,dustMat);
+    scene.add(dust);
+
+    // ---- INTERACTIVE: Mouse draws chalk on the board ----
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let isDrawing = false;
+
+    canvas.addEventListener('mousedown',e=>{
+        isDrawing=true;
+        handleDraw(e);
+    });
+    canvas.addEventListener('mousemove',e=>{
+        mouse.x=(e.clientX/window.innerWidth)*2-1;
+        mouse.y=-(e.clientY/window.innerHeight)*2+1;
+        if(isDrawing) handleDraw(e);
+    });
+    canvas.addEventListener('mouseup',()=>{isDrawing=false});
+    canvas.addEventListener('mouseleave',()=>{isDrawing=false});
+
+    function handleDraw(e){
+        raycaster.setFromCamera(mouse,camera);
+        const hits = raycaster.intersectObject(board);
+        if(hits.length>0){
+            const uv = hits[0].uv;
+            const cx = uv.x*2048;
+            const cy = (1-uv.y)*1024;
+            // Draw chalk mark
+            for(let i=0;i<5;i++){
+                chalkCtx.fillStyle = `rgba(232,228,220,${0.15+Math.random()*0.2})`;
+                chalkCtx.beginPath();
+                chalkCtx.arc(cx+(Math.random()-0.5)*6, cy+(Math.random()-0.5)*6, 1+Math.random()*2.5, 0, Math.PI*2);
+                chalkCtx.fill();
+            }
+            chalkTexture.needsUpdate = true;
+        }
+    }
+
+    // Touch support for mobile
+    canvas.addEventListener('touchstart',e=>{isDrawing=true;handleTouch(e);},{passive:true});
+    canvas.addEventListener('touchmove',e=>{if(isDrawing)handleTouch(e);},{passive:true});
+    canvas.addEventListener('touchend',()=>{isDrawing=false});
+    function handleTouch(e){
+        const t=e.touches[0];
+        mouse.x=(t.clientX/window.innerWidth)*2-1;
+        mouse.y=-(t.clientY/window.innerHeight)*2+1;
+        raycaster.setFromCamera(mouse,camera);
+        const hits=raycaster.intersectObject(board);
+        if(hits.length>0){
+            const uv=hits[0].uv;
+            for(let i=0;i<4;i++){
+                chalkCtx.fillStyle=`rgba(232,228,220,${0.12+Math.random()*0.15})`;
+                chalkCtx.beginPath();
+                chalkCtx.arc(uv.x*2048+(Math.random()-0.5)*6,(1-uv.y)*1024+(Math.random()-0.5)*6,1+Math.random()*2,0,Math.PI*2);
+                chalkCtx.fill();
+            }
+            chalkTexture.needsUpdate=true;
+        }
+    }
+
+    // ---- ANIMATION ----
+    let scrollY=0, mouseX=0, mouseY=0;
+    window.addEventListener('scroll',()=>{scrollY=window.scrollY});
+    document.addEventListener('mousemove',e=>{
+        mouseX=(e.clientX/window.innerWidth-0.5)*2;
+        mouseY=(e.clientY/window.innerHeight-0.5)*2;
+    });
+
+    let frame=0;
+    function animate(){
+        requestAnimationFrame(animate);
+        frame++;
+        const t=frame*0.008;
+        const docH=document.documentElement.scrollHeight-window.innerHeight;
+        const sp=docH>0?scrollY/docH:0;
+
+        // Camera journey through the classroom
+        // sp=0: chalkboard overview → sp=0.3: desk+lamp → sp=0.6: laptop area → sp=1: back to board
+        const camPoints = [
+            {px:0,py:6,pz:18, lx:0,ly:6,lz:-5},        // wide chalkboard overview
+            {px:-3,py:4,pz:14, lx:-3,ly:3,lz:0},       // desk lamp area
+            {px:2,py:3.5,pz:12, lx:2,ly:3,lz:0},       // laptop area
+            {px:4,py:4,pz:14, lx:4,ly:3,lz:0},         // books+mug
+            {px:0,py:5.5,pz:17, lx:0,ly:6,lz:-5},      // wide overview
+            {px:-1,py:6,pz:16, lx:0,ly:7,lz:-5},       // chalkboard gentle
+        ];
+        const seg = camPoints.length - 1;
+        const ci = Math.min(Math.floor(sp * seg), seg - 1);
+        const ct = (sp * seg) - ci;
+        const ce = ct * ct * (3 - 2 * ct);
+        const ca = camPoints[ci], cb = camPoints[ci+1];
+        const mix = (a,b,t)=>a+(b-a)*t;
+
+        camera.position.x = mix(ca.px,cb.px,ce) + mouseX*0.6 + Math.sin(t*0.04)*0.15;
+        camera.position.y = mix(ca.py,cb.py,ce) - mouseY*0.25;
+        camera.position.z = mix(ca.pz,cb.pz,ce);
+        camera.lookAt(
+            mix(ca.lx,cb.lx,ce) + mouseX*0.15,
+            mix(ca.ly,cb.ly,ce),
+            mix(ca.lz,cb.lz,ce)
+        );
+
+        // Lamp flicker
+        lampLight.intensity = 1.7 + 0.15*Math.sin(t*3) + 0.1*Math.sin(t*7.3);
+
+        // Screen pulse
+        screenLight.intensity = 0.35 + 0.1*Math.sin(t*1.5);
+
+        // Dust drift
+        const dPos=dust.geometry.attributes.position.array;
+        for(let i=0;i<dustCount;i++){
+            dPos[i*3]+=Math.sin(t*0.2+i)*0.003;
+            dPos[i*3+1]+=0.003;
+            dPos[i*3+2]+=Math.cos(t*0.15+i*0.5)*0.002;
+            if(dPos[i*3+1]>12){dPos[i*3+1]=0;dPos[i*3]=(Math.random()-0.5)*20;}
+        }
+        dust.geometry.attributes.position.needsUpdate=true;
+        dustMat.opacity = 0.3+0.15*Math.sin(t*0.3);
+
+        renderer.render(scene,camera);
+    }
+    animate();
+
+    window.addEventListener('resize',()=>{
+        camera.aspect=window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth,window.innerHeight);
+    });
+})();
+</script>
+
+<!-- ============================================= -->
+<!-- CHATBOT INTERACTION                           -->
+<!-- ============================================= -->
+<script>
+(function(){
+    const body = document.getElementById('chatbotBody');
+    const actions = document.getElementById('chatbotActions');
+    if(!body || !actions) return;
+
+    actions.addEventListener('click',function(e){
+        const btn = e.target.closest('.chatbot-btn');
+        if(!btn) return;
+        const q = btn.getAttribute('data-q');
+        const a = btn.getAttribute('data-a');
+
+        // User message
+        const uMsg = document.createElement('div');
+        uMsg.className = 'chatbot-msg user';
+        uMsg.textContent = q;
+        body.appendChild(uMsg);
+
+        // Typing delay then bot response
+        setTimeout(()=>{
+            const bMsg = document.createElement('div');
+            bMsg.className = 'chatbot-msg bot';
+            bMsg.innerHTML = a;
+            body.appendChild(bMsg);
+            body.scrollTop = body.scrollHeight;
+        },600);
+
+        btn.style.opacity='0.3';
+        btn.style.pointerEvents='none';
+        body.scrollTop = body.scrollHeight;
+    });
+})();
+</script>
+
+<!-- ============================================= -->
+<!-- GSAP                                          -->
+<!-- ============================================= -->
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    gsap.registerPlugin(ScrollTrigger);
+
+    // ---- BLACKBOARD HERO ----
+    const tl = gsap.timeline({delay:0.4});
+    tl.to('#bbPre',{opacity:1,duration:0.5})
+      .to('#bbName',{opacity:1,duration:0.6,ease:'power2.out'})
+      .to('#bbCnName',{opacity:1,duration:0.4},'+=0.1')
+      .to('#bbLine',{opacity:1,duration:0.3})
+      .to('#bbPoem',{opacity:1,duration:0.6})
+      .to('#bbTag',{opacity:1,duration:0.4},'+=0.1');
+
+    // ---- NOTES ----
+    document.querySelectorAll('[data-note]').forEach(note=>{
+        gsap.to(note,{opacity:1,y:0,duration:0.7,ease:'power2.out',
+            scrollTrigger:{trigger:note,start:'top 85%',once:true,
+                onEnter:()=>note.classList.add('visible')
+            }
+        });
+    });
+
+    // ---- FAREWELL ----
+    gsap.to('#fwBoard',{opacity:1,duration:0.7,scrollTrigger:{trigger:'#fwBoard',start:'top 85%',once:true}});
+    document.querySelectorAll('.fw-link').forEach((l,i)=>{
+        gsap.to(l,{opacity:1,y:0,duration:0.35,delay:i*0.08,scrollTrigger:{trigger:l,start:'top 92%',once:true}});
+    });
+});
+</script>
+<style>@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}</style>
+</body>
+</html>

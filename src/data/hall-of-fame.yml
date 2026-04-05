@@ -8,6 +8,33 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "a_lei_tw"
+    name: "阿雷"
+    avatar: "/assets/img/guild/a_lei_tw/avatar.webp"
+    page: "/guild/a_lei_tw.html"
+    title: "數位廟祝"
+    description: "退伍軍人 / 美編主管 / 廟會月報執行長。用 Notion 系統化一切，用鏡頭記錄信仰，用服務回饋鄉里。"
+    tags:
+      - id: "notion"
+        label: "Notion 系統"
+      - id: "temple_culture"
+        label: "廟會文化"
+      - id: "automation"
+        label: "流程自動化"
+  - id: "summerday202030"
+    name: "Helen 海倫老師"
+    avatar: "/assets/img/guild/summerday202030/avatar.webp"
+    page: "/guild/summerday202030.html"
+    title: "紫微星命殿"
+    description: "外商 HRBP / 紫微斗數命理師 / 水晶手鍊設計。白天替企業把脈人才，夜晚為你解讀星命。結合 AI 與傳統命理，看盤收入固定捐贈公益。"
+    tags:
+      - id: "ziwei"
+        label: "紫微斗數"
+      - id: "hr"
+        label: "人資顧問"
+      - id: "crystal"
+        label: "水晶能量"
+
   - id: "lydia"
     name: "Lydia 小烯"
     avatar: "/assets/img/guild/lydia/avatar.webp"
