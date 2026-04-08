@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="阿雷 — 退伍軍人、美編主管、廟會月報執行長。用 Notion 系統化一切，用鏡頭記錄信仰，用服務回饋鄉里。">
+<title>阿雷 | 數位廟祝</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Ma+Shan+Zheng&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  --vermillion:#C41E3A;
+  --gold:#D4A017;
+  --gold-light:#F0D060;
+  --lacquer:#1A0A0A;
+  --ink:#0D0505;
+  --incense:#F5E6C8;
+
+  --ember:#FF6B35;
+  --jade:#2D6A4F;
+  --text:#E8D5B5;
+  --muted:rgba(232,213,181,.4);
+  --font-display:'Ma Shan Zheng',cursive;
+  --font-heading:'Noto Serif TC',serif;
+  --font-body:'Noto Sans TC',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--ink);color:var(--text);font-family:var(--font-body);overflow-x:hidden;cursor:default}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--lacquer)}
+::-webkit-scrollbar-thumb{background:var(--vermillion)}
+
+/* P5 CANVAS */
+#p5-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+.noise{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.025;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.back-nav{position:fixed;top:1.5rem;left:1.5rem;z-index:500;font-family:var(--font-mono);font-size:.7rem;color:var(--muted);text-decoration:none;letter-spacing:2px;transition:color .3s}
+.back-nav:hover{color:var(--gold)}
+.content-layer{position:relative;z-index:2;pointer-events:auto}
+
+/* LOADER */
+.loader{position:fixed;inset:0;z-index:9999;background:var(--ink);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.loader-gate{width:200px;height:120px;position:relative;display:flex;justify-content:center}
+.loader-gate .pillar{width:8px;height:100px;background:linear-gradient(to bottom,var(--vermillion),#8B1A1A);position:absolute;bottom:0}
+.loader-gate .pillar.left{left:20px}
+.loader-gate .pillar.right{right:20px}
+.loader-gate .beam{position:absolute;top:0;width:180px;height:12px;background:var(--vermillion);border-radius:2px}
+.loader-gate .beam2{position:absolute;top:18px;width:160px;height:6px;background:rgba(196,30,58,.6)}
+.loader-text{font-family:var(--font-display);font-size:1.2rem;color:var(--gold);margin-top:2rem;letter-spacing:8px;opacity:0;animation:loaderFade 1.5s ease .3s forwards}
+@keyframes loaderFade{to{opacity:1}}
+.loader-lantern{width:16px;height:22px;background:radial-gradient(ellipse,var(--gold-light),var(--gold));border-radius:3px 3px 6px 6px;position:absolute;top:20px;animation:lanternSwing 2s ease-in-out infinite;transform-origin:top center;box-shadow:0 0 15px rgba(240,208,96,.4)}
+.loader-lantern.l1{left:50px;animation-delay:0s}
+.loader-lantern.l2{right:50px;animation-delay:.5s}
+@keyframes lanternSwing{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+
+/* SCROLL PROGRESS */
+.scroll-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--vermillion),var(--gold));z-index:600;width:0%;transition:width .1s}
+
+/* SECTIONS COMMON */
+section{padding:clamp(4rem,8vh,7rem) clamp(1.5rem,5vw,4rem);position:relative}
+.label{font-family:var(--font-mono);font-size:.6rem;letter-spacing:4px;text-transform:uppercase;color:var(--vermillion);margin-bottom:1rem;display:block}
+.stitle{font-family:var(--font-heading);font-size:clamp(1.8rem,4vw,3rem);font-weight:900;color:var(--incense);line-height:1.3;margin-bottom:1.5rem}
+.stext{font-family:var(--font-body);font-size:clamp(.85rem,1.2vw,.95rem);color:var(--text);line-height:2;max-width:600px;font-weight:300;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+
+/* UTILITY CLASSES */
+.text-center{text-align:center}
+.gold-display{color:var(--gold);font-family:var(--font-display)}
+.stext-center{margin:0 auto;text-align:center}
+.stext-hint{margin:0 auto 1rem;text-align:center;opacity:.5;font-size:.8rem}
+.stext-hint-sm{margin:0 auto;text-align:center;opacity:.4;font-size:.75rem}
+.mr-xs{margin-right:5px}
+.mb-0{margin-bottom:0}
+.mb-md{margin-bottom:2rem}
+.hidden{display:none}
+
+/* SECTION DIVIDERS - temple eave curves */
+.eave-divider{height:50px;position:relative;overflow:hidden;pointer-events:none}
+.eave-divider svg{position:absolute;width:100%;height:100%}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(to top,var(--ink),transparent);pointer-events:none;z-index:1}
+.hero-inner{position:relative;z-index:2}
+.avatar-wrap{position:relative;margin-bottom:2rem;cursor:pointer}
+.avatar-wrap img{width:140px;height:140px;border-radius:50%;object-fit:cover;border:3px solid var(--gold);box-shadow:0 0 40px rgba(212,160,23,.25),0 0 80px rgba(196,30,58,.1);transition:transform .5s,box-shadow .5s}
+.avatar-wrap:hover img{transform:scale(1.05);box-shadow:0 0 60px rgba(212,160,23,.4),0 0 100px rgba(196,30,58,.2)}
+.avatar-seal{position:absolute;bottom:-6px;right:-6px;width:38px;height:38px;background:var(--vermillion);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:var(--gold);box-shadow:0 0 15px rgba(196,30,58,.5);border:2px solid var(--gold);animation:sealPulse 3s ease-in-out infinite}
+@keyframes sealPulse{0%,100%{box-shadow:0 0 15px rgba(196,30,58,.5)}50%{box-shadow:0 0 25px rgba(196,30,58,.8)}}
+.hero-title{font-family:var(--font-display);font-size:clamp(3.5rem,9vw,6rem);color:var(--gold);text-shadow:0 0 60px rgba(212,160,23,.25),0 2px 4px rgba(0,0,0,.5);line-height:1.1;margin-bottom:.3rem}
+.hero-sub{font-family:var(--font-heading);font-size:clamp(.85rem,1.4vw,1rem);color:var(--incense);opacity:.8;letter-spacing:8px;margin-bottom:2.5rem;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.hero-verse{font-family:var(--font-heading);font-size:clamp(.78rem,1.1vw,.9rem);color:var(--incense);opacity:.6;max-width:420px;line-height:1.9;margin-bottom:2rem;font-style:italic;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+.hero-tags{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-bottom:2rem}
+.hero-tag{font-family:var(--font-mono);font-size:.5rem;padding:.25rem .7rem;border:1px solid rgba(212,160,23,.2);color:var(--gold);letter-spacing:2px;text-transform:uppercase;background:rgba(212,160,23,.02);transition:all .3s}
+.hero-tag:hover{background:rgba(212,160,23,.08);border-color:rgba(212,160,23,.4)}
+.scroll-cue{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;z-index:2}
+.scroll-cue span{font-family:var(--font-mono);font-size:.45rem;color:var(--muted);letter-spacing:4px}
+.scroll-line{width:1px;height:30px;background:linear-gradient(to bottom,var(--gold),transparent);animation:scroll-pulse 2s ease-in-out infinite}
+@keyframes scroll-pulse{0%,100%{opacity:.3;height:30px}50%{opacity:1;height:45px}}
+
+/* TEMPLE PLAQUE */
+.plaque{position:relative;display:inline-block;padding:0 2rem;margin-bottom:.5rem}
+.plaque::before,.plaque::after{content:'';position:absolute;top:50%;width:clamp(30px,5vw,60px);height:2px;background:linear-gradient(90deg,transparent,var(--gold));transform:translateY(-50%)}
+.plaque::before{right:100%;background:linear-gradient(90deg,transparent,var(--gold))}
+.plaque::after{left:100%;background:linear-gradient(270deg,transparent,var(--gold))}
+.plaque-corner{position:absolute;width:12px;height:12px;border:1px solid var(--gold);opacity:.3}
+.plaque-corner.tl{top:-.8rem;left:.5rem;border-right:none;border-bottom:none}
+.plaque-corner.tr{top:-.8rem;right:.5rem;border-left:none;border-bottom:none}
+.plaque-corner.bl{bottom:-.8rem;left:.5rem;border-right:none;border-top:none}
+.plaque-corner.br{bottom:-.8rem;right:.5rem;border-left:none;border-top:none}
+
+/* INCENSE OFFERING - Signature Moment 1 */
+.incense-altar{display:flex;justify-content:center;gap:2rem;margin:3rem 0;position:relative}
+.incense-stick{width:3px;height:80px;background:linear-gradient(to top,#8B4513,#D2691E,var(--ember));border-radius:1px;position:relative;cursor:pointer;transition:filter .3s}
+.incense-stick::after{content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--ember);opacity:0;transition:opacity .3s;box-shadow:0 0 8px var(--ember)}
+.incense-stick.lit::after{opacity:1;animation:emberGlow 1.5s ease-in-out infinite}
+@keyframes emberGlow{0%,100%{box-shadow:0 0 8px var(--ember)}50%{box-shadow:0 0 16px var(--ember),0 0 30px rgba(255,107,53,.3)}}
+.incense-smoke-particle{position:absolute;width:3px;height:3px;background:var(--incense);border-radius:50%;pointer-events:none;opacity:0}
+.incense-holder{width:60px;height:20px;background:linear-gradient(to bottom,#8B6914,#654B0F);border-radius:2px 2px 4px 4px;margin:0 auto;margin-top:-5px;position:relative}
+.incense-holder::before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:50px;height:8px;background:linear-gradient(to bottom,rgba(212,160,23,.3),rgba(101,75,15,.8));border-radius:2px}
+.blessing-text{font-family:var(--font-display);font-size:1rem;color:var(--gold);opacity:0;transform:translateY(10px);transition:all .8s;text-align:center;margin-top:1rem;min-height:2rem}
+.blessing-text.show{opacity:.7;transform:translateY(0)}
+.incense-hint{font-family:var(--font-mono);font-size:.5rem;color:var(--gold);letter-spacing:3px;text-align:center;opacity:.5;margin-top:.5rem}
+
+/* ORIGIN */
+.origin{max-width:1100px;margin:0 auto;position:relative}
+.origin-flex{display:flex;gap:clamp(2rem,4vw,4rem);align-items:flex-start}
+.origin-visual{flex:0 0 300px;position:relative}
+.origin-photo{width:100%;aspect-ratio:3/4;background:linear-gradient(135deg,rgba(196,30,58,.05),rgba(212,160,23,.03));border:1px solid rgba(212,160,23,.08);overflow:hidden;position:relative}
+.origin-photo img{width:100%;height:100%;object-fit:cover;filter:sepia(.15) contrast(1.05);transition:filter .5s}
+.origin-photo:hover img{filter:sepia(0) contrast(1.1)}
+.origin-photo .photo-label{position:absolute;bottom:0;left:0;right:0;padding:.8rem;background:linear-gradient(to top,rgba(13,5,5,.9),transparent);font-family:var(--font-mono);font-size:.5rem;color:var(--muted);letter-spacing:2px}
+.origin-quote{position:relative;padding:1.5rem;margin-top:1.5rem;font-family:var(--font-heading);font-size:.85rem;color:var(--incense);line-height:1.8;font-style:italic}
+.origin-quote::before{content:'\201C';font-family:var(--font-display);font-size:3rem;color:var(--vermillion);opacity:.3;position:absolute;top:-.5rem;left:0}
+.origin-content{flex:1}
+.origin-content .stext em{color:var(--gold);font-weight:500;font-style:normal}
+
+/* JOURNEY */
+.journey{max-width:900px;margin:0 auto;position:relative}
+.timeline{position:relative;padding-left:50px}
+.timeline::before{content:'';position:absolute;left:18px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--vermillion),var(--gold),var(--jade),var(--ember),var(--vermillion))}
+.timeline-node{position:relative;margin-bottom:2.5rem;padding:1.5rem 1.5rem 1.5rem 1.5rem;background:linear-gradient(135deg,rgba(26,10,10,.6),rgba(26,10,10,.3));border:1px solid rgba(196,30,58,.06);transition:all .5s cubic-bezier(.25,.46,.45,.94);cursor:default}
+.timeline-node::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--vermillion);opacity:0;transition:opacity .5s}
+.timeline-node:hover::before{opacity:1}
+.timeline-node:hover{background:linear-gradient(135deg,rgba(196,30,58,.04),rgba(26,10,10,.4));border-color:rgba(196,30,58,.15);transform:translateX(4px)}
+.timeline-dot{position:absolute;left:-40px;top:1.5rem;width:14px;height:14px;border-radius:50%;border:2px solid var(--gold);background:var(--ink);transition:all .4s;z-index:1}
+.timeline-node:hover .timeline-dot{background:var(--gold);box-shadow:0 0 15px var(--gold);transform:scale(1.2)}
+.timeline-era{font-family:var(--font-mono);font-size:.5rem;color:var(--vermillion);letter-spacing:4px;margin-bottom:.4rem;display:flex;align-items:center;gap:.5rem}
+.timeline-era::after{content:'';flex:1;height:1px;background:rgba(196,30,58,.15)}
+.timeline-title{font-family:var(--font-heading);font-size:1.15rem;color:var(--incense);margin-bottom:.6rem;font-weight:700}
+.timeline-desc{font-size:.8rem;color:var(--text);line-height:1.9;opacity:.75;font-weight:300}
+.timeline-insight{font-size:.7rem;color:var(--gold);opacity:0;max-height:0;overflow:hidden;transition:all .5s;line-height:1.8;padding-top:0;font-style:italic}
+.timeline-node:hover .timeline-insight{opacity:.6;max-height:60px;padding-top:.8rem}
+.timeline-icon{position:absolute;right:1.2rem;top:50%;transform:translateY(-50%);font-size:1.5rem;color:var(--vermillion);opacity:.08;transition:opacity .4s}
+.timeline-node:hover .timeline-icon{opacity:.2}
+
+/* TEMPLE SECTION */
+.temple{text-align:center;position:relative;overflow:hidden;padding-top:clamp(5rem,10vh,8rem);padding-bottom:clamp(5rem,10vh,8rem)}
+.temple::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(196,30,58,.05) 0%,transparent 60%);pointer-events:none}
+.temple-header{margin-bottom:3rem}
+.temple-header .stitle{font-family:var(--font-display);font-size:clamp(2.8rem,6vw,4.5rem);color:var(--gold);text-shadow:0 0 40px rgba(212,160,23,.2)}
+.temple-header .stext{margin:0 auto}
+.temple-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;max-width:900px;margin:0 auto}
+.temple-card{background:linear-gradient(180deg,rgba(26,10,10,.7),rgba(26,10,10,.4));border:1px solid rgba(212,160,23,.08);padding:2.5rem 1.5rem 2rem;text-align:center;transition:all .6s cubic-bezier(.25,.46,.45,.94);position:relative;overflow:hidden}
+.temple-card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:30px;height:3px;background:var(--gold);transition:width .5s;opacity:.5}
+.temple-card:hover::before{width:100%;opacity:1}
+.temple-card::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center bottom,rgba(196,30,58,.06),transparent);opacity:0;transition:opacity .5s}
+.temple-card:hover::after{opacity:1}
+.temple-card:hover{border-color:rgba(212,160,23,.25);transform:translateY(-6px)}
+.temple-card i{font-size:2rem;color:var(--vermillion);margin-bottom:1.2rem;display:block;position:relative;z-index:1;transition:color .4s,transform .4s}
+.temple-card:hover i{color:var(--gold);transform:scale(1.1)}
+.temple-card h3{font-family:var(--font-heading);font-size:.95rem;color:var(--incense);margin-bottom:.8rem;position:relative;z-index:1}
+.temple-card p{font-size:.75rem;color:var(--text);line-height:1.9;opacity:.75;position:relative;z-index:1}
+
+/* NOTION DATABASE */
+.notion-sec{max-width:1000px;margin:0 auto}
+.notion-db{margin-top:2.5rem;border:1px solid rgba(245,230,200,.06);background:rgba(245,230,200,.01)}
+.notion-toolbar{display:flex;justify-content:space-between;align-items:center;padding:.8rem 1.2rem;border-bottom:1px solid rgba(245,230,200,.06)}
+.notion-db-title{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);letter-spacing:2px}
+.notion-db-title i{margin-right:.5rem;color:var(--gold);opacity:.6}
+.notion-views{display:flex;gap:.3rem}
+.notion-view-btn{background:none;border:1px solid rgba(245,230,200,.08);color:var(--muted);padding:.3rem .5rem;cursor:pointer;font-size:.65rem;transition:all .3s}
+.notion-view-btn.active{color:var(--gold);border-color:rgba(212,160,23,.3);background:rgba(212,160,23,.05)}
+.notion-view-btn:hover{border-color:rgba(245,230,200,.2)}
+/* Table view */
+.notion-row{display:grid;grid-template-columns:1.2fr .5fr 2fr;gap:1rem;padding:.8rem 1.2rem;border-bottom:1px solid rgba(245,230,200,.03);transition:background .3s;align-items:center}
+.notion-row:last-child{border-bottom:none}
+.notion-row:not(.notion-header):hover{background:rgba(245,230,200,.02)}
+.notion-header{border-bottom:1px solid rgba(245,230,200,.06)}
+.notion-cell{font-size:.75rem;color:var(--text);opacity:.65}
+.notion-cell.name{font-weight:500;opacity:.9;display:flex;align-items:center;gap:.5rem}
+.notion-cell.name i{color:var(--gold);opacity:.5;font-size:.7rem}
+.notion-header .notion-cell{font-family:var(--font-mono);font-size:.55rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;opacity:.5}
+.notion-tag{font-family:var(--font-mono);font-size:.5rem;padding:.15rem .5rem;letter-spacing:1px;border-radius:2px}
+.notion-tag.gold{background:rgba(212,160,23,.1);color:var(--gold)}
+.notion-tag.ember{background:rgba(255,107,53,.1);color:var(--ember)}
+.notion-tag.jade{background:rgba(45,106,79,.15);color:#5DAF8E}
+.notion-tag.vermillion{background:rgba(196,30,58,.1);color:#E85A78}
+/* Card view */
+.notion-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(245,230,200,.04)}
+.notion-card{background:var(--ink);padding:1.8rem;transition:all .4s;position:relative;overflow:hidden}
+.notion-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;opacity:.5;transition:opacity .4s}
+.notion-card[data-color="gold"]::before{background:var(--gold)}
+.notion-card[data-color="ember"]::before{background:var(--ember)}
+.notion-card[data-color="jade"]::before{background:var(--jade)}
+.notion-card[data-color="vermillion"]::before{background:var(--vermillion)}
+.notion-card:hover{background:rgba(26,10,10,.8)}
+.notion-card:hover::before{opacity:1}
+.notion-card-head{margin-bottom:.8rem}
+.notion-card h3{font-family:var(--font-heading);font-size:.85rem;color:var(--incense);margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem}
+.notion-card h3 i{font-size:.75rem;opacity:.4}
+.notion-card p{font-size:.7rem;color:var(--text);line-height:1.8;opacity:.65}
+
+/* FORTUNE / QIAN - Signature Moment 2 */
+.fortune{text-align:center;padding:clamp(5rem,10vh,8rem) clamp(1.5rem,5vw,4rem);position:relative}
+.fortune::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(212,160,23,.04) 0%,transparent 50%);pointer-events:none}
+.fortune-container{max-width:500px;margin:0 auto;position:relative}
+.fortune-tube{width:80px;height:160px;margin:0 auto 1.5rem;position:relative;cursor:pointer;transition:transform .1s}
+.fortune-tube-body{width:100%;height:100%;background:linear-gradient(90deg,#5C3A1E,#8B5E3C,#6B4226);border-radius:6px 6px 10px 10px;position:relative;overflow:hidden;box-shadow:inset -4px 0 8px rgba(0,0,0,.3),inset 4px 0 8px rgba(0,0,0,.1),0 4px 20px rgba(0,0,0,.5)}
+.fortune-tube-body::before{content:'籤';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font-display);font-size:1.3rem;color:var(--gold);opacity:.4}
+.fortune-stick{position:absolute;width:3px;height:120px;background:linear-gradient(to top,#D4A017,#B8860B,#8B6914);border-radius:1px;bottom:50px;transition:transform .3s}
+.fortune-stick:nth-child(1){left:20px;transform:rotate(-2deg)}
+.fortune-stick:nth-child(2){left:30px;transform:rotate(1deg)}
+.fortune-stick:nth-child(3){left:38px;transform:rotate(-1deg)}
+.fortune-stick:nth-child(4){left:46px;transform:rotate(2deg)}
+.fortune-stick:nth-child(5){left:54px;transform:rotate(-3deg)}
+.fortune-tube.shaking{animation:tubeShake .15s ease-in-out 6}
+.fortune-tube.shaking .fortune-stick{animation:stickJump .15s ease-in-out 6}
+@keyframes tubeShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+@keyframes stickJump{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.fortune-stick.chosen{animation:stickRise .8s ease-out forwards!important;z-index:10}
+@keyframes stickRise{to{transform:translateY(-80px) rotate(5deg)}}
+.fortune-hint{font-family:var(--font-mono);font-size:.5rem;color:var(--muted);letter-spacing:3px;margin-bottom:1.5rem;opacity:.5}
+.fortune-result{margin-top:1.5rem;min-height:140px;display:flex;align-items:center;justify-content:center;perspective:800px}
+.fortune-card{background:linear-gradient(135deg,rgba(196,30,58,.06),rgba(212,160,23,.04));border:1px solid rgba(212,160,23,.15);padding:2rem 2.5rem;max-width:420px;opacity:0;transform:translateY(30px) rotateX(10deg);transition:all .8s cubic-bezier(.25,.46,.45,.94)}
+.fortune-card.show{opacity:1;transform:translateY(0) rotateX(0)}
+.fortune-card .fortune-num{font-family:var(--font-display);font-size:1rem;color:var(--vermillion);margin-bottom:.8rem;letter-spacing:4px}
+.fortune-card .fortune-text{font-family:var(--font-heading);font-size:1.05rem;color:var(--incense);line-height:1.8;font-weight:700}
+.fortune-card .fortune-interpret{font-size:.75rem;color:var(--text);margin-top:1rem;opacity:.5;line-height:1.7;border-top:1px solid rgba(212,160,23,.08);padding-top:.8rem}
+
+/* CTA */
+.cta{text-align:center;padding:clamp(5rem,10vh,7rem) clamp(1.5rem,5vw,4rem);position:relative}
+.cta::before{content:'';position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(to top,rgba(196,30,58,.03),transparent);pointer-events:none}
+.cta .stitle{color:var(--gold);font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem)}
+.cta .stext{margin:0 auto 2rem;text-align:center;opacity:.6}
+.cta-links{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.cta-link{font-family:var(--font-mono);font-size:.65rem;padding:.7rem 2rem;text-decoration:none;letter-spacing:2px;transition:all .4s;display:inline-flex;align-items:center;gap:.6rem;position:relative;overflow:hidden}
+.cta-link::before{content:'';position:absolute;inset:0;transform:scaleX(0);transform-origin:left;transition:transform .4s;z-index:-1}
+.cta-link:hover::before{transform:scaleX(1)}
+.cta-link.threads{color:var(--text);border:1px solid rgba(232,213,181,.12)}
+.cta-link.threads::before{background:rgba(232,213,181,.05)}
+.cta-link.threads:hover{border-color:rgba(232,213,181,.3)}
+.cta-link.ig{color:var(--vermillion);border:1px solid rgba(196,30,58,.15)}
+.cta-link.ig::before{background:rgba(196,30,58,.05)}
+.cta-link.ig:hover{border-color:rgba(196,30,58,.4)}
+
+/* TEMPLE DRUM */
+.drum-section{text-align:center;padding:clamp(4rem,8vh,6rem) clamp(1.5rem,5vw,4rem)}
+.drum-wrap{position:relative;width:200px;height:200px;margin:2rem auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.drum-face{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#8B2500,#5C1A0A 50%,#3A0F07);border:6px solid #8B6914;box-shadow:0 0 0 3px #654B0F,0 0 30px rgba(196,30,58,.15),inset 0 0 40px rgba(0,0,0,.4);position:relative;transition:transform .05s}
+.drum-face::before{content:'';position:absolute;inset:15px;border-radius:50%;border:2px solid rgba(212,160,23,.15)}
+.drum-face::after{content:'鼓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font-display);font-size:2.5rem;color:var(--gold);opacity:.15;pointer-events:none}
+.drum-face:active{transform:scale(.97)}
+.drum-nails{position:absolute;inset:0;border-radius:50%;pointer-events:none}
+.drum-nail{position:absolute;width:5px;height:5px;background:var(--gold);border-radius:50%;opacity:.3}
+.drum-ripple{position:absolute;border-radius:50%;border:2px solid var(--gold);opacity:0;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%)}
+.drum-flash{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(212,160,23,.2),transparent 60%);opacity:0;pointer-events:none}
+.drum-stand{width:220px;height:12px;margin:0 auto;background:linear-gradient(to bottom,#654B0F,#3A2A08);border-radius:0 0 6px 6px;position:relative}
+.drum-stand::before,.drum-stand::after{content:'';position:absolute;bottom:0;width:8px;height:30px;background:linear-gradient(to bottom,#654B0F,#3A2A08);border-radius:0 0 3px 3px}
+.drum-stand::before{left:20px;transform:rotate(-8deg)}
+.drum-stand::after{right:20px;transform:rotate(8deg)}
+.drum-counter{font-family:var(--font-mono);font-size:.5rem;color:var(--muted);letter-spacing:3px;margin-top:2rem;opacity:.4}
+
+/* PHOTO VIEWFINDER */
+.gallery-sec{max-width:1000px;margin:0 auto;padding:clamp(4rem,8vh,7rem) clamp(1.5rem,5vw,4rem)}
+.viewfinder-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem}
+.viewfinder{position:relative;overflow:hidden;cursor:crosshair;aspect-ratio:4/3;background:var(--lacquer);border:1px solid rgba(212,160,23,.06)}
+.viewfinder img{width:100%;height:100%;object-fit:cover;filter:grayscale(.6) contrast(1.1);transition:filter .6s,transform .6s}
+.viewfinder:hover img{filter:grayscale(0) contrast(1.05) saturate(1.1);transform:scale(1.03)}
+.viewfinder::before{content:'';position:absolute;inset:0;border:1px solid rgba(212,160,23,.08);z-index:2;pointer-events:none;transition:border-color .4s}
+.viewfinder:hover::before{border-color:rgba(212,160,23,.25)}
+.viewfinder::after{content:'';position:absolute;inset:12px;border:1px solid rgba(212,160,23,.04);z-index:2;pointer-events:none;transition:border-color .4s}
+.viewfinder:hover::after{border-color:rgba(212,160,23,.12)}
+.viewfinder-cross{position:absolute;top:50%;left:50%;width:30px;height:30px;z-index:3;pointer-events:none;opacity:0;transition:opacity .4s;transform:translate(-50%,-50%)}
+.viewfinder-cross::before,.viewfinder-cross::after{content:'';position:absolute;background:var(--gold);opacity:.4}
+.viewfinder-cross::before{width:1px;height:100%;left:50%;top:0}
+.viewfinder-cross::after{height:1px;width:100%;top:50%;left:0}
+.viewfinder:hover .viewfinder-cross{opacity:1}
+.viewfinder-label{position:absolute;bottom:0;left:0;right:0;padding:.8rem 1rem;background:linear-gradient(to top,rgba(13,5,5,.9),transparent);z-index:3;display:flex;justify-content:space-between;align-items:flex-end;transform:translateY(100%);transition:transform .5s}
+.viewfinder:hover .viewfinder-label{transform:translateY(0)}
+.viewfinder-label span{font-family:var(--font-mono);font-size:.5rem;color:var(--muted);letter-spacing:2px}
+.viewfinder-label em{font-family:var(--font-heading);font-size:.75rem;color:var(--incense);font-style:normal}
+
+/* TIMELINE PHASE ACCENTS */
+.timeline-node[data-phase="military"]{border-left:2px solid rgba(85,107,47,.2)}
+.timeline-node[data-phase="military"] .timeline-dot{border-color:#6B8E23}
+.timeline-node[data-phase="military"]:hover .timeline-dot{background:#6B8E23;box-shadow:0 0 12px #6B8E23}
+.timeline-node[data-phase="print"]{border-left:2px solid rgba(0,174,239,.15)}
+.timeline-node[data-phase="print"] .timeline-dot{border-color:#00AEEF}
+.timeline-node[data-phase="print"]:hover .timeline-dot{background:#00AEEF;box-shadow:0 0 12px #00AEEF}
+.timeline-node[data-phase="print"] .timeline-era::before{content:'C M Y K';font-size:.4rem;color:rgba(0,174,239,.4);margin-right:.3rem}
+.timeline-node[data-phase="ecom"]{border-left:2px solid rgba(138,43,226,.15)}
+.timeline-node[data-phase="ecom"] .timeline-dot{border-color:#9B59B6}
+.timeline-node[data-phase="ecom"]:hover .timeline-dot{background:#9B59B6;box-shadow:0 0 12px #9B59B6}
+.timeline-node[data-phase="fire"]{border-left:2px solid rgba(255,107,53,.2)}
+.timeline-node[data-phase="fire"] .timeline-dot{border-color:var(--ember)}
+.timeline-node[data-phase="fire"]:hover .timeline-dot{background:var(--ember);box-shadow:0 0 12px var(--ember)}
+.timeline-node[data-phase="now"]{border-left:2px solid rgba(212,160,23,.25)}
+.timeline-node[data-phase="now"] .timeline-dot{border-color:var(--gold)}
+.timeline-node[data-phase="now"]:hover .timeline-dot{background:var(--gold);box-shadow:0 0 15px var(--gold)}
+
+/* SKY LANTERN */
+.lantern-wish{display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+.lantern-body{width:120px;position:relative;transition:all 1.5s cubic-bezier(.25,.46,.45,.94)}
+.lantern-body.flying{transform:translateY(-300px) scale(.3);opacity:0}
+.lantern-top{width:40px;height:8px;background:linear-gradient(to bottom,#8B6914,#654B0F);margin:0 auto;border-radius:3px 3px 0 0}
+.lantern-paper{width:120px;min-height:140px;background:linear-gradient(180deg,rgba(240,208,96,.15),rgba(196,30,58,.12));border:1px solid rgba(212,160,23,.2);display:flex;align-items:center;justify-content:center;position:relative;border-radius:4px;box-shadow:inset 0 0 30px rgba(240,208,96,.05)}
+.wish-input{background:none;border:none;color:var(--gold);font-family:var(--font-display);font-size:1.1rem;text-align:center;width:100%;padding:1rem .5rem;outline:none;letter-spacing:2px}
+.wish-input::placeholder{color:rgba(212,160,23,.25);font-size:.85rem}
+.lantern-bottom{width:50px;height:6px;background:linear-gradient(to top,#654B0F,#8B6914);margin:0 auto;border-radius:0 0 3px 3px}
+.lantern-flame{width:6px;height:10px;background:radial-gradient(ellipse,var(--gold-light),var(--ember));border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;margin:4px auto 0;animation:flame 0.8s ease-in-out infinite alternate;box-shadow:0 0 10px rgba(240,208,96,.4)}
+@keyframes flame{from{transform:scaleY(1) scaleX(1)}to{transform:scaleY(1.3) scaleX(.8)}}
+.lantern-release-btn{font-family:var(--font-display);font-size:1rem;color:var(--gold);background:none;border:1px solid rgba(212,160,23,.2);padding:.7rem 2rem;cursor:pointer;letter-spacing:3px;transition:all .4s}
+.lantern-release-btn:hover{border-color:var(--gold);background:rgba(212,160,23,.05)}
+.lantern-release-btn i{margin-right:.3rem}
+.cta-after .cta-links{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+
+/* FOOTER */
+footer{position:relative;z-index:2;padding:2rem 1.5rem;text-align:center;border-top:1px solid rgba(196,30,58,.04)}
+footer a{font-family:var(--font-mono);font-size:.55rem;color:var(--muted);text-decoration:none;letter-spacing:3px;transition:color .3s}
+footer a:hover{color:var(--gold)}
+footer .credit{margin-top:.6rem;font-size:.4rem;color:rgba(232,213,181,.15);letter-spacing:2px}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .origin-flex{flex-direction:column}
+  .origin-visual{flex:none;width:100%}
+  .temple-grid{grid-template-columns:1fr}
+  .notion-row{grid-template-columns:1fr;gap:.3rem}
+  .notion-header{display:none}
+  .notion-cell.desc{display:none}
+  .notion-card-grid{grid-template-columns:1fr}
+  .viewfinder-grid{grid-template-columns:1fr}
+  .drum-wrap{width:160px;height:160px}
+  .drum-stand{width:180px}
+  .timeline{padding-left:35px}
+  .timeline::before{left:12px}
+  .timeline-dot{left:-31px}
+  .incense-altar{gap:1.5rem}
+  .fortune-tube{width:70px;height:140px}
+}
+</style>
+</head>
+<body>
+<div id="p5-bg"></div>
+<div class="noise"></div>
+
+<!-- LOADER: Temple Gate -->
+<div class="loader" id="loader">
+  <div class="loader-gate">
+    <div class="beam"></div>
+    <div class="beam2"></div>
+    <div class="pillar left"></div>
+    <div class="pillar right"></div>
+    <div class="loader-lantern l1"></div>
+    <div class="loader-lantern l2"></div>
+  </div>
+  <div class="loader-text">步入殿堂</div>
+</div>
+
+<div class="scroll-bar" id="scrollBar"></div>
+<a href="/guild/" class="back-nav"><i class="fas fa-chevron-left"></i> GUILD</a>
+
+<div class="content-layer">
+
+  <!-- HERO: Entering the temple -->
+  <section class="hero" id="hero">
+    <div class="hero-inner">
+      <div class="avatar-wrap" id="avatarWrap">
+        <img src="/assets/img/guild/a_lei_tw/avatar.webp" alt="阿雷">
+        <div class="avatar-seal"><i class="fas fa-torii-gate"></i></div>
+      </div>
+      <div class="plaque">
+        <span class="plaque-corner tl"></span><span class="plaque-corner tr"></span>
+        <span class="plaque-corner bl"></span><span class="plaque-corner br"></span>
+        <h1 class="hero-title" id="heroTitle">阿雷</h1>
+      </div>
+      <p class="hero-sub" id="heroSub">數 位 廟 祝</p>
+      <p class="hero-verse" id="heroVerse">退伍軍人的紀律，美編主管的眼光，廟會記錄者的熱忱<br>我用系統化的思維，守護每一份信仰的溫度</p>
+      <div class="hero-tags" id="heroTags">
+        <span class="hero-tag">Notion 系統</span>
+        <span class="hero-tag">廟會月報</span>
+        <span class="hero-tag">攝影紀實</span>
+        <span class="hero-tag">流程自動化</span>
+      </div>
+    </div>
+    <div class="scroll-cue">
+      <span>ENTER</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <div class="eave-divider"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0,35 C200,35 250,5 600,5 C950,5 1000,35 1200,35" fill="none" stroke="rgba(212,160,23,.12)" stroke-width="1.5"/><path d="M0,38 C200,38 250,8 600,8 C950,8 1000,38 1200,38" fill="none" stroke="rgba(196,30,58,.06)" stroke-width="1"/></svg></div>
+
+  <!-- ORIGIN: The backstory -->
+  <section class="origin" id="origin">
+    <div class="origin-flex">
+      <div class="origin-visual">
+        <div class="origin-photo">
+          <img src="/assets/img/guild/a_lei_tw/gallery_02.webp" alt="廟會月報" loading="lazy">
+          <div class="photo-label">TEMPLE MONTHLY BULLETIN</div>
+        </div>
+        <div class="origin-quote">
+          可惡的勞基法加班不給加，讓我頓時收入變少，只好另謀高就。<br>
+          從軍營到螢幕前，我的每一步都是為了多走一步。
+        </div>
+      </div>
+      <div class="origin-content">
+        <span class="label">壹 / 起源</span>
+        <h2 class="stitle">從迷彩到像素</h2>
+        <p class="stext">
+          我是阿雷，一位退伍職業軍人。脫下軍服後，我走進了印刷廠，從油墨味道中學會了第一個設計軟體。
+          我天生就是閒不下來的人 — 與其在家耍廢玩遊戲，不如把時間拿來<em>創造價值</em>。
+        </p>
+        <br>
+        <p class="stext">
+          後來轉戰電商網拍美編，從基層一路幹到主管，再幹到老闆心腹。幾乎涉略公司所有部門業務，
+          但最後才發現每一樣都只學到皮毛。唯有在擔任<em>美編主管</em>的那段時間，
+          我才真正體會到學以致用的快感 — 把所學經驗傳授給部門夥伴，看著他們在職涯上茁壯成長。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="eave-divider"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0,35 C200,35 250,5 600,5 C950,5 1000,35 1200,35" fill="none" stroke="rgba(212,160,23,.12)" stroke-width="1.5"/><path d="M0,38 C200,38 250,8 600,8 C950,8 1000,38 1200,38" fill="none" stroke="rgba(196,30,58,.06)" stroke-width="1"/></svg></div>
+
+  <!-- JOURNEY: Walking through the temple corridor -->
+  <section class="journey" id="journey">
+    <span class="label">貳 / 修行</span>
+    <h2 class="stitle">每個階段都是修行</h2>
+    <div class="timeline">
+      <div class="timeline-node" data-phase="military">
+        <div class="timeline-dot"></div>
+        <div class="timeline-era">PHASE 01</div>
+        <h3 class="timeline-title">職業軍人</h3>
+        <p class="timeline-desc">在部隊裡學會了紀律、服從與執行力。這些看似與設計無關的特質，後來成為我做任何事情的底層作業系統。</p>
+        <p class="timeline-insight">軍隊教會我的不只是服從命令，更是在高壓下保持冷靜判斷的能力。</p>
+        <i class="fas fa-shield-halved timeline-icon"></i>
+      </div>
+      <div class="timeline-node" data-phase="print">
+        <div class="timeline-dot"></div>
+        <div class="timeline-era">PHASE 02</div>
+        <h3 class="timeline-title">印刷廠美編</h3>
+        <p class="timeline-desc">退伍後的第一份工作。在這裡我愛上了視覺設計，從 CMYK 色彩到排版規範，從油墨到數位，奠定了設計的基本功。</p>
+        <p class="timeline-insight">油墨的味道讓我想起部隊的柴油味 — 都是認真幹活的味道。</p>
+        <i class="fas fa-palette timeline-icon"></i>
+      </div>
+      <div class="timeline-node" data-phase="ecom">
+        <div class="timeline-dot"></div>
+        <div class="timeline-era">PHASE 03</div>
+        <h3 class="timeline-title">電商美編主管</h3>
+        <p class="timeline-desc">從基層幹到主管，從主管幹到老闆心腹。管過設計、碰過行銷、摸過營運。最珍貴的收穫是學會帶人 — 把經驗傳承給團隊夥伴。</p>
+        <p class="timeline-insight">帶人比做設計難十倍，但看到夥伴成長的成就感也是十倍。</p>
+        <i class="fas fa-users-gear timeline-icon"></i>
+      </div>
+      <div class="timeline-node" data-phase="fire">
+        <div class="timeline-dot"></div>
+        <div class="timeline-era">PHASE 04</div>
+        <h3 class="timeline-title">浴火重生</h3>
+        <p class="timeline-desc">二寶即將誕生之際，公司廠房發生惡火。老闆變了一個人，違背公司核心文化。我無法繼續共識，決定在育嬰留停後離開，開啟全新的篇章。</p>
+        <p class="timeline-insight">有些火燒掉的是建築，有些火燒掉的是信任。但灰燼之中，才能長出真正屬於自己的東西。</p>
+        <i class="fas fa-fire-flame-curved timeline-icon"></i>
+      </div>
+      <div class="timeline-node" data-phase="now">
+        <div class="timeline-dot"></div>
+        <div class="timeline-era">PHASE 05 — NOW</div>
+        <h3 class="timeline-title">數位廟祝 / 系統建造者</h3>
+        <p class="timeline-desc">育嬰留停期間不斷充實自己。三年的 Notion 修煉、AI 工具的探索、廟會月報品牌的經營。未來要用服務致上的態度，在自動化流程上佔有一席之地。</p>
+        <p class="timeline-insight">36 歲，兩個孩子的爸，正在證明人生沒有太晚的開始。</p>
+        <i class="fas fa-torii-gate timeline-icon"></i>
+      </div>
+    </div>
+  </section>
+
+  <div class="eave-divider"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0,35 C200,35 250,5 600,5 C950,5 1000,35 1200,35" fill="none" stroke="rgba(212,160,23,.12)" stroke-width="1.5"/><path d="M0,38 C200,38 250,8 600,8 C950,8 1000,38 1200,38" fill="none" stroke="rgba(196,30,58,.06)" stroke-width="1"/></svg></div>
+
+  <!-- INCENSE OFFERING: Signature Moment 1 -->
+  <section class="text-center" id="offering">
+    <span class="label">參 / 點香</span>
+    <h2 class="stitle gold-display" style="font-size:clamp(2rem,4vw,3rem)">心誠則靈</h2>
+    <p class="stext stext-hint">點一炷香，許一個願</p>
+    <div class="incense-altar" id="incenseAltar">
+      <div class="incense-stick" id="incense1" data-idx="0"></div>
+      <div class="incense-stick" id="incense2" data-idx="1"></div>
+      <div class="incense-stick" id="incense3" data-idx="2"></div>
+    </div>
+    <div class="incense-holder"></div>
+    <div class="blessing-text" id="blessingText"></div>
+    <div class="incense-hint" id="incenseHint">CLICK TO LIGHT</div>
+  </section>
+
+  <div class="eave-divider"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0,35 C200,35 250,5 600,5 C950,5 1000,35 1200,35" fill="none" stroke="rgba(212,160,23,.12)" stroke-width="1.5"/><path d="M0,38 C200,38 250,8 600,8 C950,8 1000,38 1200,38" fill="none" stroke="rgba(196,30,58,.06)" stroke-width="1"/></svg></div>
+
+  <!-- TEMPLE: What I do for temple culture -->
+  <section class="temple" id="temple">
+    <div class="temple-header">
+      <span class="label">肆 / 信仰</span>
+      <h2 class="stitle">廟會月報</h2>
+      <p class="stext stext-center mb-0">
+        我是「廟會月報」的執行長。用鏡頭記錄台灣民間信仰的溫度，用數位工具保存陣頭文化的脈動。
+        每一次的廟會不只是熱鬧，更是百年傳承的活歷史。
+      </p>
+    </div>
+    <div class="temple-grid">
+      <div class="temple-card">
+        <i class="fas fa-camera-retro"></i>
+        <h3>廟會攝影</h3>
+        <p>走遍全台大小廟會，用鏡頭捕捉陣頭的力與美、香火的虔誠、信眾的笑容。從北港朝天宮到地方宮廟，每一幀都是文化的切片。</p>
+      </div>
+      <div class="temple-card">
+        <i class="fas fa-newspaper"></i>
+        <h3>資訊彙整</h3>
+        <p>正在打造廟會資訊品牌網站，整合全台廟會活動日程、路線、文化背景。讓信仰不再只是口耳相傳，而是有系統的數位資產。</p>
+      </div>
+      <div class="temple-card">
+        <i class="fas fa-video"></i>
+        <h3>影音紀實</h3>
+        <p>以短影音的形式記錄廟會現場的震撼，讓更多年輕世代認識台灣獨特的民間信仰文化，在數位時代延續傳統的溫度。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEMPLE DRUM: Signature Moment - 陣頭鼓面 -->
+  <section class="drum-section" id="drumSection">
+    <span class="label text-center">肆之貳 / 鼓聲</span>
+    <h2 class="stitle gold-display text-center" style="font-size:clamp(1.8rem,3.5vw,2.5rem)">擂 鼓</h2>
+    <p class="stext stext-hint-sm">每一聲鼓響，都是陣頭的心跳</p>
+    <div class="drum-wrap" id="drumWrap">
+      <div class="drum-face" id="drumFace">
+        <div class="drum-nails" id="drumNails"></div>
+      </div>
+      <div class="drum-flash" id="drumFlash"></div>
+    </div>
+    <div class="drum-stand"></div>
+    <div class="drum-counter" id="drumCounter"></div>
+  </section>
+
+  <!-- PHOTO GALLERY: 攝影紀實 -->
+  <section class="gallery-sec" id="gallery">
+    <span class="label">肆之參 / 紀實</span>
+    <h2 class="stitle">透過觀景窗</h2>
+    <p class="stext">每一次按下快門，都是為了留住那些轉瞬即逝的瞬間。從北港朝天宮的香火到街邊的人情味，我用鏡頭說台灣的故事。</p>
+    <div class="viewfinder-grid">
+      <div class="viewfinder">
+        <img src="/assets/img/guild/a_lei_tw/gallery_01.webp" alt="北海岸紀實" loading="lazy">
+        <div class="viewfinder-cross"></div>
+        <div class="viewfinder-label">
+          <em>路邊的好滋味</em>
+          <span>f/2.8 ISO400</span>
+        </div>
+      </div>
+      <div class="viewfinder">
+        <img src="/assets/img/guild/a_lei_tw/gallery_02.webp" alt="廟會月報" loading="lazy">
+        <div class="viewfinder-cross"></div>
+        <div class="viewfinder-label">
+          <em>廟會月報</em>
+          <span>BRAND IDENTITY</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="eave-divider"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0,35 C200,35 250,5 600,5 C950,5 1000,35 1200,35" fill="none" stroke="rgba(212,160,23,.12)" stroke-width="1.5"/><path d="M0,38 C200,38 250,8 600,8 C950,8 1000,38 1200,38" fill="none" stroke="rgba(196,30,58,.06)" stroke-width="1"/></svg></div>
+
+  <!-- NOTION: System thinking -->
+  <section class="notion-sec" id="notion">
+    <span class="label">伍 / 系統</span>
+    <h2 class="stitle">用 Notion 系統化一切</h2>
+    <p class="stext">
+      三年前開始接觸 Notion，從個人筆記到企業級系統，我把軍隊的紀律思維注入數位工具。
+      結合 AI 服務與自動化流程，幫助團隊把複雜的事情變得輕鬆簡單。
+    </p>
+    <div class="notion-db">
+      <div class="notion-toolbar">
+        <span class="notion-db-title"><i class="fas fa-database"></i> 服務項目</span>
+        <div class="notion-views">
+          <button class="notion-view-btn active" data-view="table"><i class="fas fa-table-list"></i></button>
+          <button class="notion-view-btn" data-view="card"><i class="fas fa-grip"></i></button>
+        </div>
+      </div>
+      <div class="notion-table-view" id="notionTable">
+        <div class="notion-row notion-header">
+          <span class="notion-cell name">服務名稱</span>
+          <span class="notion-cell tag">類型</span>
+          <span class="notion-cell desc">說明</span>
+        </div>
+        <div class="notion-row" data-color="gold">
+          <span class="notion-cell name"><i class="fas fa-database"></i> 企業 Notion 系統建置</span>
+          <span class="notion-cell tag"><span class="notion-tag gold">系統</span></span>
+          <span class="notion-cell desc">從零打造專屬 Notion 工作空間，專案管理、知識庫、SOP 全部模組化</span>
+        </div>
+        <div class="notion-row" data-color="ember">
+          <span class="notion-cell name"><i class="fas fa-robot"></i> AI 工具整合</span>
+          <span class="notion-cell tag"><span class="notion-tag ember">AI</span></span>
+          <span class="notion-cell desc">結合 Gemini 等 AI 服務與 Notion，打造智慧化工作流程</span>
+        </div>
+        <div class="notion-row" data-color="jade">
+          <span class="notion-cell name"><i class="fas fa-gears"></i> 流程自動化</span>
+          <span class="notion-cell tag"><span class="notion-tag jade">自動化</span></span>
+          <span class="notion-cell desc">設計自動化流程串接，減少人工操作錯誤，讓效率翻倍</span>
+        </div>
+        <div class="notion-row" data-color="vermillion">
+          <span class="notion-cell name"><i class="fas fa-chalkboard-user"></i> 教學與傳承</span>
+          <span class="notion-cell tag"><span class="notion-tag vermillion">培訓</span></span>
+          <span class="notion-cell desc">一對一教學與團隊培訓，工具再好，不會用就是廢鐵</span>
+        </div>
+      </div>
+      <div class="notion-card-view hidden" id="notionCards">
+        <div class="notion-card-grid">
+          <div class="notion-card" data-color="gold">
+            <div class="notion-card-head"><span class="notion-tag gold">系統</span></div>
+            <h3><i class="fas fa-database"></i> 企業 Notion 系統建置</h3>
+            <p>從零開始為企業打造專屬的 Notion 工作空間。專案管理、知識庫、SOP 流程，全部數位化、模組化，讓團隊協作不再混亂。</p>
+          </div>
+          <div class="notion-card" data-color="ember">
+            <div class="notion-card-head"><span class="notion-tag ember">AI</span></div>
+            <h3><i class="fas fa-robot"></i> AI 工具整合</h3>
+            <p>結合 Gemini 等 AI 服務與 Notion 生態系，打造智慧化的工作流程。讓 AI 處理重複性工作，把人力留給真正需要創意的地方。</p>
+          </div>
+          <div class="notion-card" data-color="jade">
+            <div class="notion-card-head"><span class="notion-tag jade">自動化</span></div>
+            <h3><i class="fas fa-gears"></i> 流程自動化</h3>
+            <p>設計自動化流程串接，減少人工操作的錯誤與時間成本。從資料收集到報表產出，用系統取代手動，讓效率真正翻倍。</p>
+          </div>
+          <div class="notion-card" data-color="vermillion">
+            <div class="notion-card-head"><span class="notion-tag vermillion">培訓</span></div>
+            <h3><i class="fas fa-chalkboard-user"></i> 教學與傳承</h3>
+            <p>過去帶領團隊的經驗讓我深信：工具再好，不會用就是廢鐵。提供一對一教學與團隊培訓，讓每個人都能真正上手。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="eave-divider"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0,35 C200,35 250,5 600,5 C950,5 1000,35 1200,35" fill="none" stroke="rgba(212,160,23,.12)" stroke-width="1.5"/><path d="M0,38 C200,38 250,8 600,8 C950,8 1000,38 1200,38" fill="none" stroke="rgba(196,30,58,.06)" stroke-width="1"/></svg></div>
+
+  <!-- FORTUNE: Signature Moment 2 -->
+  <section class="fortune" id="fortune">
+    <span class="label">陸 / 籤詩</span>
+    <h2 class="stitle gold-display" style="font-size:clamp(2.2rem,5vw,3.5rem)">求 籤</h2>
+    <div class="fortune-container">
+      <div class="fortune-tube" id="fortuneTube">
+        <div class="fortune-stick"></div>
+        <div class="fortune-stick"></div>
+        <div class="fortune-stick"></div>
+        <div class="fortune-stick"></div>
+        <div class="fortune-stick"></div>
+        <div class="fortune-tube-body"></div>
+      </div>
+      <div class="fortune-hint">CLICK THE TUBE TO SHAKE</div>
+      <div class="fortune-result" id="fortuneResult"></div>
+    </div>
+  </section>
+
+  <!-- CTA: Sky Lantern -->
+  <section class="cta" id="cta">
+    <span class="label">柒 / 結緣</span>
+    <h2 class="stitle gold-display">放一盞天燈</h2>
+    <p class="stext stext-center mb-md" style="opacity:.5">
+      寫下你的心願，讓它隨著天燈飛向天際
+    </p>
+    <div class="lantern-wish">
+      <div class="lantern-body" id="lanternBody">
+        <div class="lantern-top"></div>
+        <div class="lantern-paper">
+          <input type="text" id="wishInput" class="wish-input" placeholder="寫下你的心願..." maxlength="20">
+        </div>
+        <div class="lantern-bottom"></div>
+        <div class="lantern-flame"></div>
+      </div>
+      <button class="lantern-release-btn" id="lanternBtn">
+        <i class="fas fa-hand-holding-heart"></i> 施放天燈
+      </button>
+    </div>
+    <div class="cta-after hidden" id="ctaAfter">
+      <p class="stext stext-center" style="margin-bottom:1.5rem">
+        願你的心願成真。<br>如果想聊聊，我都在這裡。
+      </p>
+      <div class="cta-links">
+        <a href="https://www.threads.com/@a.lei_tw" target="_blank" rel="noopener" class="cta-link threads"><i class="fab fa-threads"></i> THREADS</a>
+        <a href="https://www.instagram.com/a.lei_tw/" target="_blank" rel="noopener" class="cta-link ig"><i class="fab fa-instagram"></i> INSTAGRAM</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <a href="/guild/"><i class="fas fa-arrow-left mr-xs"></i>BACK TO GUILD</a>
+    <div class="credit">Made with &#9829; by SuperGalen's Dungeon</div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ── P5.JS: TEMPLE ATMOSPHERE — Story-driven background ── */
+  const p5Sketch = function(p){
+    let jossPapers=[], lanterns=[], embers=[], smokeTrails=[], ripples=[], inkTrail=[];
+    let scrollY=0, mouseX=0, mouseY=0, prevMX=0, prevMY=0, mouseXNorm=0.5, windX=0;
+
+    /* ── 金紙 ── */
+    class JossPaper {
+      constructor(){this.reset(true)}
+      reset(init){
+        this.x=p.random(p.width);this.y=init?p.random(-p.height,p.height):-p.random(20,80);
+        this.w=p.random(8,16);this.h=this.w*p.random(1.3,1.8);
+        this.speed=p.random(0.3,0.8);this.rotSpeed=p.random(-0.02,0.02);
+        this.rot=p.random(p.TWO_PI);this.tilt=p.random(p.TWO_PI);this.tiltSpeed=p.random(0.01,0.03);
+        this.drift=p.random(-0.3,0.3);this.baseAlpha=p.random(15,35);this.isGold=p.random()>0.3;
+      }
+      update(sf){
+        // Scroll-driven density: more visible in temple/fortune sections (40-80%)
+        let densityMul = sf>0.3&&sf<0.8 ? 1.5 : 0.7;
+        this.y+=this.speed*densityMul;
+        this.x+=this.drift+windX*0.4+p.sin(p.frameCount*0.008+this.rot)*0.4;
+        this.rot+=this.rotSpeed;this.tilt+=this.tiltSpeed;
+        if(this.y>p.height+50)this.reset(false);
+      }
+      draw(sf){
+        let scaleX=p.abs(p.sin(this.tilt));if(scaleX<0.05)scaleX=0.05;
+        let a=this.baseAlpha*(sf>0.3&&sf<0.8?1.3:0.8);
+        p.push();p.translate(this.x,this.y);p.rotate(this.rot);p.scale(scaleX,1);p.noStroke();
+        p.fill(this.isGold?212:245,this.isGold?160:230,this.isGold?23:200,a);
+        p.rect(-this.w/2,-this.h/2,this.w,this.h,1);
+        if(this.isGold&&scaleX>0.3){p.fill(240,208,96,a*0.5);let i=2;p.rect(-this.w/2+i,-this.h/2+i,this.w-i*2,this.h-i*2,1)}
+        p.pop();
+      }
+    }
+
+    /* ── 燈籠 ── */
+    class Lantern {
+      constructor(x,y,size){
+        this.x=x;this.baseY=y;this.y=y;this.size=size||p.random(18,30);
+        this.phase=p.random(p.TWO_PI);this.swingSpeed=p.random(0.006,0.012);
+        this.glowPhase=p.random(p.TWO_PI);this.angle=0;
+      }
+      update(){
+        this.y=this.baseY+p.sin(p.frameCount*this.swingSpeed+this.phase)*4;
+        this.angle=p.sin(p.frameCount*this.swingSpeed+this.phase)*0.06+windX*0.02;
+      }
+      draw(sf){
+        let s=this.size;
+        // Lanterns glow brighter in temple section
+        let glowBoost=sf>0.3&&sf<0.7?1.6:1;
+        let glow=(10+p.sin(p.frameCount*0.025+this.glowPhase)*4)*glowBoost;
+        p.push();p.translate(this.x,this.y);p.rotate(this.angle);
+        p.stroke(80,60,40,20);p.strokeWeight(1);p.line(0,-s*0.8,0,-s*0.8-20);p.noStroke();
+        p.fill(212,160,23,glow*0.4);p.ellipse(0,0,s*4,s*4);
+        p.fill(255,107,53,glow*0.2);p.ellipse(0,0,s*3,s*3);
+        p.fill(196,30,58,35*glowBoost);
+        p.beginShape();let bw=s*0.5,bh=s*0.8;
+        p.vertex(-bw*0.6,-bh);p.vertex(bw*0.6,-bh);p.vertex(bw,-bh*0.3);p.vertex(bw,bh*0.3);
+        p.vertex(bw*0.6,bh);p.vertex(-bw*0.6,bh);p.vertex(-bw,bh*0.3);p.vertex(-bw,-bh*0.3);
+        p.endShape(p.CLOSE);
+        p.fill(240,180,50,glow*1.2);p.ellipse(0,0,s*0.6,s*0.9);
+        p.fill(120,80,30,30);p.rect(-bw*0.5,-bh-2,bw,4,1);p.rect(-bw*0.5,bh-2,bw,4,1);
+        p.stroke(196,30,58,20);p.strokeWeight(1);let ty=bh+3;
+        p.line(-2,ty,-3,ty+s*0.4);p.line(0,ty,0,ty+s*0.45);p.line(2,ty,3,ty+s*0.4);
+        p.pop();
+      }
+    }
+
+    /* ── 火星 — scroll-driven behavior ── */
+    class Ember {
+      constructor(){this.reset(true)}
+      reset(init){
+        this.x=p.random(p.width);this.y=init?p.random(p.height):p.height+p.random(30);
+        this.size=p.random(1.5,4);this.baseSpeed=p.random(0.4,1.2);
+        this.drift=p.random(-0.3,0.3);this.baseAlpha=p.random(20,50);
+        this.seed=p.random(1000);this.life=p.random(200,500);this.age=0;
+        // Color shifts with scroll context
+        this.colorMode=0; // 0=ember, 1=military-green, 2=digital-blue
+      }
+      update(sf){
+        this.age++;
+        // Speed varies: faster during fire section (35-45%), calmer at start
+        let speedMul = sf>0.25&&sf<0.4 ? 2.0 : 1.0;
+        this.y-=this.baseSpeed*speedMul;
+        this.x+=this.drift+windX*0.6+p.noise(this.seed+p.frameCount*0.005)*1.5-0.75;
+        let lifeFrac=this.age/this.life;
+        if(this.age>this.life||this.y<-20)this.reset(false);
+        // Assign color based on scroll position
+        if(sf<0.15) this.colorMode=1; // military green
+        else if(sf>0.6&&sf<0.8) this.colorMode=2; // digital/notion blue
+        else this.colorMode=0; // temple ember
+      }
+      draw(sf){
+        let lifeFrac=this.age/this.life;
+        let a=this.baseAlpha*(1-lifeFrac);
+        let r,g,b;
+        if(this.colorMode===1){r=107;g=142;b=35;} // olive
+        else if(this.colorMode===2){r=100;g=160;b=220;} // digital blue
+        else {r=p.random()>0.5?255:212;g=p.random()>0.5?107:160;b=p.random()>0.5?53:23;}
+        p.noStroke();
+        p.fill(r,g,b,a*0.3);p.ellipse(this.x,this.y,this.size*4);
+        p.fill(r,g,b,a);p.ellipse(this.x,this.y,this.size);
+      }
+    }
+
+    /* ── 煙霧 ── */
+    class SmokeTrail {
+      constructor(){this.reset(true)}
+      reset(init){
+        this.x=p.random(p.width*0.2,p.width*0.8);this.y=init?p.random(p.height):p.height+p.random(100);
+        this.seed=p.random(1000);this.speed=p.random(0.3,0.7);
+        this.alpha=p.random(4,12);this.maxSize=p.random(40,120);this.age=0;this.maxAge=p.random(300,600);
+      }
+      update(){
+        this.age++;this.y-=this.speed;
+        this.x+=(p.noise(this.seed,this.age*0.003)-0.5)*2+windX*0.15;
+        if(this.age>this.maxAge||this.y<-this.maxSize)this.reset(false);
+      }
+      draw(){
+        let lifeFrac=this.age/this.maxAge;
+        let size=this.maxSize*p.sin(lifeFrac*p.PI);let a=this.alpha*(1-lifeFrac);
+        p.noStroke();
+        p.fill(245,230,200,a*0.3);p.ellipse(this.x,this.y,size*1.5,size);
+        p.fill(245,230,200,a);p.ellipse(this.x-size*0.05,this.y,size*0.5,size*0.35);
+      }
+    }
+
+    /* ── 鼓點漣漪 (click anywhere) ── */
+    class Ripple {
+      constructor(x,y){this.x=x;this.y=y;this.age=0;this.maxAge=40;this.maxR=120}
+      update(){this.age++;return this.age<this.maxAge}
+      draw(){
+        let frac=this.age/this.maxAge;let r=this.maxR*frac;let a=(1-frac)*0.5;
+        p.noFill();
+        p.stroke(212,160,23,a*255);p.strokeWeight(2*(1-frac));p.ellipse(this.x,this.y,r*2);
+        p.stroke(196,30,58,a*180);p.strokeWeight(1.5*(1-frac));p.ellipse(this.x,this.y,r*1.5);
+        p.noStroke();
+        // Center flash
+        if(frac<0.15){p.fill(255,220,150,(0.15-frac)/0.15*60);p.ellipse(this.x,this.y,30*(1-frac/0.15))}
+      }
+    }
+
+    /* ── 墨跡拖尾 (cursor brush trail) ── */
+    class InkDot {
+      constructor(x,y,size){this.x=x;this.y=y;this.size=size;this.alpha=18;this.maxAlpha=18}
+      update(){this.alpha-=0.15;return this.alpha>0}
+      draw(){
+        p.noStroke();p.fill(196,30,58,this.alpha);p.ellipse(this.x,this.y,this.size);
+        p.fill(212,160,23,this.alpha*0.4);p.ellipse(this.x,this.y,this.size*0.5);
+      }
+    }
+
+    function makeLanterns(){
+      lanterns=[];
+      let lpos=[
+        [p.width*0.06,p.height*0.12,26],[p.width*0.94,p.height*0.10,24],
+        [p.width*0.12,p.height*0.45,20],[p.width*0.90,p.height*0.48,22],
+        [p.width*0.04,p.height*0.78,18],[p.width*0.96,p.height*0.82,20],
+        [p.width*0.18,p.height*0.18,16],[p.width*0.84,p.height*0.72,16],
+      ];
+      for(let lp of lpos) lanterns.push(new Lantern(lp[0],lp[1],lp[2]));
+    }
+
+    p.setup=function(){
+      let cnv=p.createCanvas(p.windowWidth,p.windowHeight);
+      cnv.parent('p5-bg');cnv.style('position','fixed');cnv.style('top','0');cnv.style('left','0');
+      for(let i=0;i<20;i++)jossPapers.push(new JossPaper());
+      for(let i=0;i<50;i++)embers.push(new Ember());
+      for(let i=0;i<12;i++)smokeTrails.push(new SmokeTrail());
+      makeLanterns();
+    };
+
+    p.draw=function(){
+      p.clear();
+      let scrollMax=document.documentElement.scrollHeight-window.innerHeight||1;
+      let sf=scrollY/scrollMax; // scroll fraction 0-1
+
+      // ── Scroll-driven background color: tells his story ──
+      // 0-15%: dark blue-grey (military night), 15-35%: warm amber (design era)
+      // 35-45%: hot red (fire), 45-70%: deep vermillion (temple), 70-100%: calm gold (future)
+      let bgR,bgG,bgB,bgA;
+      if(sf<0.15){bgR=20;bgG=25;bgB=30;bgA=p.map(sf,0,0.15,0,8);} // military steel
+      else if(sf<0.35){bgR=80;bgG=50;bgB=20;bgA=p.map(sf,0.15,0.35,4,8);} // warm amber
+      else if(sf<0.45){bgR=196;bgG=30;bgB=20;bgA=p.map(sf,0.35,0.45,8,18);} // fire burst
+      else if(sf<0.70){bgR=140;bgG=20;bgB=40;bgA=p.map(sf,0.45,0.70,12,10);} // temple deep
+      else{bgR=120;bgG=90;bgB=30;bgA=p.map(sf,0.70,1,8,5);} // calm gold
+      p.noStroke();p.fill(bgR,bgG,bgB,bgA);p.rect(0,0,p.width,p.height);
+
+      // Wind from mouse
+      let targetWind=(mouseXNorm-0.5)*0.8;windX+=(targetWind-windX)*0.02;
+
+      // ── Mouse lantern glow ──
+      let mGlow=60+p.sin(p.frameCount*0.04)*10;
+      p.fill(212,160,23,8);p.ellipse(mouseX,mouseY,mGlow*4,mGlow*4);
+      p.fill(255,200,100,5);p.ellipse(mouseX,mouseY,mGlow*2,mGlow*2);
+
+      // ── Ink trail from cursor ──
+      let dx=mouseX-prevMX,dy=mouseY-prevMY;
+      let speed=p.sqrt(dx*dx+dy*dy);
+      if(speed>3&&speed<100){
+        let sz=p.map(speed,3,100,3,12);
+        inkTrail.push(new InkDot(mouseX+p.random(-2,2),mouseY+p.random(-2,2),sz));
+      }
+      inkTrail=inkTrail.filter(d=>{d.update();d.draw();return d.alpha>0});
+      prevMX=mouseX;prevMY=mouseY;
+
+      // ── Render layers ──
+      for(let s of smokeTrails){s.update();s.draw()}
+      for(let l of lanterns){l.update();l.draw(sf)}
+      for(let jp of jossPapers){jp.update(sf);jp.draw(sf)}
+      for(let e of embers){e.update(sf);e.draw(sf)}
+
+      // ── Click ripples ──
+      ripples=ripples.filter(r=>{r.update();r.draw();return r.age<r.maxAge});
+
+      // ── Vignette ──
+      let grd=p.drawingContext.createRadialGradient(
+        p.width/2,p.height/2,p.min(p.width,p.height)*0.3,
+        p.width/2,p.height/2,p.max(p.width,p.height)*0.7
+      );
+      grd.addColorStop(0,'rgba(13,5,5,0)');grd.addColorStop(1,'rgba(13,5,5,0.12)');
+      p.drawingContext.fillStyle=grd;p.drawingContext.fillRect(0,0,p.width,p.height);
+    };
+
+    p.windowResized=function(){p.resizeCanvas(p.windowWidth,p.windowHeight);makeLanterns()};
+
+    window.addEventListener('scroll',()=>{scrollY=window.scrollY});
+    window.addEventListener('mousemove',e=>{
+      mouseX=e.clientX;mouseY=e.clientY;mouseXNorm=e.clientX/window.innerWidth;
+    });
+    // Click anywhere = drum ripple
+    window.addEventListener('click',e=>{ripples.push(new Ripple(e.clientX,e.clientY))});
+  };
+
+  new p5(p5Sketch);
+
+  /* ── SCROLL TRACKING ── */
+  const scrollBar = document.getElementById('scrollBar');
+  window.addEventListener('scroll', () => {
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = window.scrollY / maxScroll;
+    scrollBar.style.width = (progress * 100) + '%';
+  });
+
+  /* ── GSAP ANIMATIONS ── */
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Loader: Gate opens
+  const loaderTl = gsap.timeline();
+  loaderTl
+    .to('.loader-gate .pillar.left', {x: -30, opacity: 0, duration: 0.6, delay: 1.5, ease:'power2.in'})
+    .to('.loader-gate .pillar.right', {x: 30, opacity: 0, duration: 0.6, ease:'power2.in'}, '<')
+    .to('.loader-gate .beam, .loader-gate .beam2', {scaleX: 1.5, opacity: 0, duration: 0.5}, '-=0.3')
+    .to('.loader-lantern', {y: -30, opacity: 0, duration: 0.4}, '-=0.4')
+    .to('.loader-text', {opacity: 0, duration: 0.3}, '-=0.2')
+    .to('#loader', {opacity: 0, duration: 0.4, onComplete: () => {
+      document.getElementById('loader').style.display = 'none';
+    }});
+
+  // Hero entrance
+  const heroTl = gsap.timeline({delay: 2.2});
+  heroTl
+    .from('#avatarWrap', {scale: 0.5, opacity: 0, duration: 1, ease:'back.out(1.4)'})
+    .from('#heroTitle', {y: 50, opacity: 0, duration: 0.7, ease:'power3.out'}, '-=0.4')
+    .from('#heroSub', {y: 25, opacity: 0, duration: 0.5, ease:'power2.out'}, '-=0.3')
+    .from('#heroVerse', {y: 20, opacity: 0, duration: 0.6}, '-=0.2')
+    .from('#heroTags .hero-tag', {y: 12, opacity: 0, stagger: 0.08, duration: 0.4}, '-=0.3')
+    .from('.scroll-cue', {opacity: 0, y: 10, duration: 0.5}, '-=0.1');
+
+  // Origin - staggered reveal
+  gsap.from('.origin-photo', {
+    scrollTrigger:{trigger:'#origin', start:'top 75%'},
+    clipPath:'inset(100% 0 0 0)', duration:1, ease:'power3.out'
+  });
+  gsap.from('.origin-quote', {
+    scrollTrigger:{trigger:'#origin', start:'top 65%'},
+    x:-30, opacity:0, duration:0.8, delay:0.3
+  });
+  gsap.from('.origin-content .label', {
+    scrollTrigger:{trigger:'.origin-content', start:'top 75%'},
+    x:20, opacity:0, duration:0.5
+  });
+  gsap.from('.origin-content .stitle', {
+    scrollTrigger:{trigger:'.origin-content', start:'top 72%'},
+    y:30, opacity:0, duration:0.6, delay:0.1
+  });
+  gsap.from('.origin-content .stext', {
+    scrollTrigger:{trigger:'.origin-content', start:'top 68%'},
+    y:20, opacity:0, duration:0.6, delay:0.2, stagger:0.15
+  });
+
+  // Journey nodes - slide in with stagger
+  gsap.utils.toArray('.timeline-node').forEach((node, i) => {
+    gsap.from(node, {
+      scrollTrigger:{trigger:node, start:'top 82%'},
+      x:-40, opacity:0, duration:0.7, delay:i*0.08, ease:'power2.out'
+    });
+    gsap.from(node.querySelector('.timeline-dot'), {
+      scrollTrigger:{trigger:node, start:'top 82%'},
+      scale:0, duration:0.4, delay:i*0.08 + 0.3, ease:'back.out(2)'
+    });
+  });
+
+  // Temple cards - rise from below
+  gsap.from('.temple-header', {
+    scrollTrigger:{trigger:'#temple', start:'top 70%'},
+    y:40, opacity:0, duration:0.8
+  });
+  gsap.utils.toArray('.temple-card').forEach((card, i) => {
+    gsap.from(card, {
+      scrollTrigger:{trigger:card, start:'top 85%'},
+      y:50, opacity:0, duration:0.7, delay:i*0.12, ease:'power2.out'
+    });
+  });
+
+  // Notion database
+  gsap.from('.notion-db', {
+    scrollTrigger:{trigger:'#notion', start:'top 75%'},
+    y:30, opacity:0, duration:0.7, ease:'power2.out'
+  });
+
+  // Fortune
+  gsap.from('.fortune-tube', {
+    scrollTrigger:{trigger:'#fortune', start:'top 70%'},
+    scale:0.8, opacity:0, duration:0.8, ease:'back.out(1.5)'
+  });
+
+  // CTA
+  gsap.from('#cta .stitle', {
+    scrollTrigger:{trigger:'#cta', start:'top 75%'},
+    y:30, opacity:0, duration:0.6
+  });
+  gsap.from('.cta-links', {
+    scrollTrigger:{trigger:'#cta', start:'top 70%'},
+    y:20, opacity:0, duration:0.5, delay:0.2
+  });
+
+  /* ── INCENSE OFFERING: Signature Moment 1 ── */
+  const blessings = [
+    '願你所求皆如願',
+    '平安順遂，萬事亨通',
+    '心想事成，前程似錦',
+    '貴人相助，逢凶化吉',
+    '步步高升，功成名就',
+    '闔家平安，幸福美滿'
+  ];
+  let litCount = 0;
+  const blessingEl = document.getElementById('blessingText');
+  const hintEl = document.getElementById('incenseHint');
+
+  document.querySelectorAll('.incense-stick').forEach((stick) => {
+    stick.addEventListener('click', function(){
+      if(this.classList.contains('lit')) return;
+      this.classList.add('lit');
+      litCount++;
+
+      // Create rising smoke particles
+      const altar = document.getElementById('incenseAltar');
+      const rect = this.getBoundingClientRect();
+      const altarRect = altar.getBoundingClientRect();
+
+      for(let i = 0; i < 8; i++){
+        const particle = document.createElement('div');
+        particle.className = 'incense-smoke-particle';
+        particle.style.left = (rect.left - altarRect.left + 1) + 'px';
+        particle.style.top = (rect.top - altarRect.top - 5) + 'px';
+        altar.appendChild(particle);
+
+        gsap.to(particle, {
+          y: -(40 + Math.random()*60),
+          x: (Math.random()-0.5)*30,
+          opacity: 0.3,
+          scale: 1 + Math.random()*3,
+          duration: 0.3 + Math.random()*0.5,
+          ease:'power1.out',
+          onComplete: () => {
+            gsap.to(particle, {
+              y: '-=40',
+              x: '+=' + (Math.random()-0.5)*20,
+              opacity: 0,
+              scale: '+=2',
+              duration: 1 + Math.random(),
+              ease:'power1.out',
+              onComplete: () => particle.remove()
+            });
+          }
+        });
+      }
+
+      // Show blessing when all 3 are lit
+      if(litCount >= 3){
+        const blessing = blessings[Math.floor(Math.random()*blessings.length)];
+        blessingEl.textContent = blessing;
+        blessingEl.classList.add('show');
+        hintEl.style.opacity = '0';
+      } else {
+        hintEl.textContent = `${3 - litCount} MORE TO LIGHT`;
+      }
+    });
+  });
+
+  /* ── FORTUNE DRAW: Signature Moment 2 ── */
+  const fortunes = [
+    {num:'第壹籤', text:'天行健，君子以自強不息。', interpret:'你的努力不會白費，堅持走下去，前方就是光明。'},
+    {num:'第貳籤', text:'千里之行，始於足下。', interpret:'別想太多，先踏出第一步。每一個偉大的系統都是從一個小模組開始。'},
+    {num:'第參籤', text:'水到渠成，功不唐捐。', interpret:'時機未到不代表方向錯誤。持續累積，成果自然浮現。'},
+    {num:'第肆籤', text:'心誠則靈，行正則安。', interpret:'做人做事保持正直，就是最好的護身符。'},
+    {num:'第伍籤', text:'日拱一卒，功不唐捐。', interpret:'每天進步一點點，一年後你會驚訝自己走了多遠。'},
+    {num:'第陸籤', text:'苦盡甘來，否極泰來。', interpret:'你正在經歷的困難，正是通往下一個階段的必經之路。'},
+    {num:'第柒籤', text:'貴人相助，不期而遇。', interpret:'保持開放的心態，你需要的幫助就在身邊。'},
+    {num:'第捌籤', text:'謀事在人，成事在天。', interpret:'做好你該做的，剩下的交給時間和命運。'}
+  ];
+
+  let lastFortuneIdx = -1;
+  let isShaking = false;
+  const fortuneTube = document.getElementById('fortuneTube');
+  const fortuneResult = document.getElementById('fortuneResult');
+
+  fortuneTube.addEventListener('click', () => {
+    if(isShaking) return;
+    isShaking = true;
+
+    // Clear previous
+    fortuneResult.innerHTML = '';
+
+    // Shake animation
+    fortuneTube.classList.add('shaking');
+
+    setTimeout(() => {
+      fortuneTube.classList.remove('shaking');
+
+      // Pick a fortune
+      let idx;
+      do { idx = Math.floor(Math.random() * fortunes.length); } while(idx === lastFortuneIdx);
+      lastFortuneIdx = idx;
+
+      // Animate one stick rising
+      const sticks = fortuneTube.querySelectorAll('.fortune-stick');
+      const chosenStick = sticks[Math.floor(Math.random() * sticks.length)];
+      chosenStick.classList.add('chosen');
+
+      setTimeout(() => {
+        chosenStick.classList.remove('chosen');
+        const f = fortunes[idx];
+        fortuneResult.innerHTML = `
+          <div class="fortune-card" id="fCard">
+            <div class="fortune-num">${f.num}</div>
+            <div class="fortune-text">${f.text}</div>
+            <div class="fortune-interpret">${f.interpret}</div>
+          </div>
+        `;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            document.getElementById('fCard').classList.add('show');
+          });
+        });
+        isShaking = false;
+      }, 800);
+    }, 900);
+  });
+
+  /* ── TEMPLE DRUM: Signature Moment ── */
+  (function(){
+    const drumWrap = document.getElementById('drumWrap');
+    const drumFace = document.getElementById('drumFace');
+    const drumFlash = document.getElementById('drumFlash');
+    const drumNails = document.getElementById('drumNails');
+    const drumCounter = document.getElementById('drumCounter');
+    let hitCount = 0;
+
+    // Place decorative nails around the rim
+    for(let i = 0; i < 24; i++){
+      const nail = document.createElement('div');
+      nail.className = 'drum-nail';
+      const angle = (i / 24) * Math.PI * 2;
+      const r = 93;
+      nail.style.left = (100 + Math.cos(angle) * r - 2.5) + 'px';
+      nail.style.top = (100 + Math.sin(angle) * r - 2.5) + 'px';
+      drumNails.appendChild(nail);
+    }
+
+    drumWrap.addEventListener('click', function(e){
+      hitCount++;
+      drumCounter.textContent = hitCount + ' BEATS';
+
+      // Flash
+      gsap.fromTo(drumFlash, {opacity:0.6}, {opacity:0, duration:0.4, ease:'power2.out'});
+
+      // Create ripple from click point
+      const rect = drumWrap.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      for(let i = 0; i < 3; i++){
+        const ripple = document.createElement('div');
+        ripple.className = 'drum-ripple';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        ripple.style.transform = 'translate(-50%,-50%)';
+        drumWrap.appendChild(ripple);
+
+        gsap.fromTo(ripple,
+          {width:0, height:0, opacity:0.6, borderColor: i === 0 ? 'rgba(212,160,23,.7)' : 'rgba(196,30,58,.4)'},
+          {width:200+i*60, height:200+i*60, opacity:0, duration:0.8+i*0.2, delay:i*0.08,
+           ease:'power2.out', onComplete:() => ripple.remove()}
+        );
+      }
+
+      // Screen shake effect
+      gsap.fromTo(drumWrap, {x:0}, {x: (Math.random()-0.5)*6, duration:0.05, yoyo:true, repeat:3, ease:'none'});
+    });
+  })();
+
+  /* ── GALLERY GSAP ── */
+  gsap.utils.toArray('.viewfinder').forEach((vf, i) => {
+    gsap.from(vf, {
+      scrollTrigger:{trigger:vf, start:'top 82%'},
+      clipPath:'inset(0 50% 0 50%)', opacity:0, duration:0.8, delay:i*0.15, ease:'power3.out'
+    });
+  });
+
+  /* ── DRUM GSAP ── */
+  gsap.from('.drum-wrap', {
+    scrollTrigger:{trigger:'#drumSection', start:'top 70%'},
+    scale:0.7, opacity:0, duration:0.8, ease:'back.out(1.5)'
+  });
+
+  /* ── NOTION VIEW TOGGLE ── */
+  document.querySelectorAll('.notion-view-btn').forEach(btn => {
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.notion-view-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const view = this.dataset.view;
+      document.getElementById('notionTable').classList.toggle('hidden', view !== 'table');
+      document.getElementById('notionCards').classList.toggle('hidden', view !== 'card');
+    });
+  });
+
+  /* ── SKY LANTERN: Signature Moment 3 ── */
+  const lanternBtn = document.getElementById('lanternBtn');
+  const lanternBody = document.getElementById('lanternBody');
+  const wishInput = document.getElementById('wishInput');
+  const ctaAfter = document.getElementById('ctaAfter');
+
+  lanternBtn.addEventListener('click', () => {
+    if(!wishInput.value.trim()) wishInput.value = '平安順遂';
+    wishInput.disabled = true;
+    lanternBody.classList.add('flying');
+    lanternBtn.style.opacity = '0';
+    lanternBtn.style.pointerEvents = 'none';
+    setTimeout(() => {
+      lanternBody.classList.add('hidden');
+      ctaAfter.classList.remove('hidden');
+      gsap.from('#ctaAfter', {y: 20, opacity: 0, duration: 0.8});
+    }, 1500);
+  });
+
+})();
+</script>
+</body>
+</html>
