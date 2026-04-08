@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tints 庭思 | Chromatic Sanctuary</title>
+    <meta name="description" content="用色彩與光影，描繪靈魂的故事 — Tints 庭思，靈魂能量畫創作者與希塔療癒師">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400;1,6..96,700&family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,300;1,500&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --indigo-deep: #0d0b2e;
+            --indigo: #1a1455;
+            --purple: #4a2d7a;
+            --violet: #c4a0e8;
+            --lavender: #a8a3f3;
+            --pink-cloud: #e8a0d0;
+            --pink-soft: #f4c6e0;
+            --gold-star: #ffd866;
+            --teal: #5ecfcf;
+            --mint: #b8e8d0;
+            --blue-sky: #6eb4f0;
+            --white-glow: #f0eaff;
+            --font-display: 'Bodoni Moda', serif;
+            --font-body-en: 'Cormorant Garamond', serif;
+            --font-body: 'LXGW WenKai TC', 'Cormorant Garamond', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: var(--lavender) var(--indigo-deep);
+        }
+
+        body {
+            background: var(--indigo-deep);
+            color: var(--white-glow);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* === CUSTOM CURSOR === */
+        .cursor-star {
+            position: fixed;
+            width: 24px; height: 24px;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: transform 0.15s ease, opacity 0.3s;
+        }
+        .cursor-star::before,
+        .cursor-star::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            background: var(--gold-star);
+            border-radius: 1px;
+        }
+        .cursor-star::before {
+            width: 2px; height: 24px;
+            transform: translate(-50%, -50%);
+        }
+        .cursor-star::after {
+            width: 24px; height: 2px;
+            transform: translate(-50%, -50%);
+        }
+        .cursor-glow {
+            position: fixed;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(168,163,243,0.3) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background 0.3s;
+        }
+        body.hovering .cursor-glow {
+            width: 60px; height: 60px;
+            background: radial-gradient(circle, rgba(255,216,102,0.4) 0%, transparent 70%);
+        }
+        body.hovering .cursor-star { transform: translate(-50%, -50%) scale(1.3) rotate(45deg); }
+
+        /* === THREE.JS CANVAS === */
+        #aurora-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        /* === P5 CANVAS === */
+        #particle-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* === SCROLL PROGRESS === */
+        .scroll-progress {
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--lavender), var(--pink-cloud), var(--gold-star));
+            z-index: 1000;
+            transform-origin: left;
+            transform: scaleX(0);
+        }
+
+        /* === NAVIGATION === */
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--lavender);
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.7;
+            transition: opacity 0.3s, color 0.3s;
+        }
+        .nav-back:hover { opacity: 1; color: var(--gold-star); }
+        .nav-back i { font-size: 0.7rem; }
+
+        /* === SECTIONS COMMON === */
+        .section {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 2rem;
+        }
+
+        .section-inner {
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        /* === HERO SECTION === */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            padding: 2rem;
+        }
+
+        .hero-avatar {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(168,163,243,0.4);
+            box-shadow: 0 0 60px rgba(168,163,243,0.3), 0 0 120px rgba(168,163,243,0.1);
+            opacity: 0;
+            transform: scale(0.8);
+            margin-bottom: 2rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 400;
+            letter-spacing: 8px;
+            color: var(--white-glow);
+            text-shadow: 0 0 40px rgba(168,163,243,0.5);
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-body);
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            font-weight: 300;
+            color: var(--pink-soft);
+            margin-top: 1rem;
+            letter-spacing: 6px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .hero-tagline {
+            font-family: var(--font-body-en);
+            font-style: italic;
+            font-weight: 300;
+            font-size: clamp(1.1rem, 2vw, 1.5rem);
+            color: var(--lavender);
+            margin-top: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .hero-scroll-hint {
+            position: absolute;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0;
+        }
+        .hero-scroll-hint span {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--lavender);
+            opacity: 0.6;
+        }
+        .scroll-line {
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--lavender), transparent);
+            animation: scrollPulse 2s ease-in-out infinite;
+        }
+        @keyframes scrollPulse {
+            0%, 100% { opacity: 0.3; transform: scaleY(0.5); }
+            50% { opacity: 1; transform: scaleY(1); }
+        }
+
+        /* === DIVIDER === */
+        .section-divider {
+            position: relative;
+            z-index: 10;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .divider-star {
+            width: 6px; height: 6px;
+            background: var(--gold-star);
+            transform: rotate(45deg);
+            box-shadow: 0 0 10px var(--gold-star);
+            position: relative;
+        }
+        .divider-star::before, .divider-star::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 100px;
+            height: 1px;
+            background: linear-gradient(to var(--dir, right), rgba(255,216,102,0.4), transparent);
+        }
+        .divider-star::before { right: 20px; --dir: right; transform: translateY(-50%); }
+        .divider-star::after { left: 20px; --dir: left; transform: translateY(-50%); }
+
+        /* === STORY SECTION === */
+        .story-quote {
+            font-family: var(--font-body);
+            font-size: clamp(1.6rem, 3vw, 2.4rem);
+            font-weight: 300;
+            line-height: 2;
+            text-align: center;
+            color: var(--pink-soft);
+            max-width: 700px;
+            margin: 0 auto 4rem;
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        .story-quote .highlight {
+            color: var(--gold-star);
+            text-shadow: 0 0 20px rgba(255,216,102,0.3);
+        }
+
+        .story-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .story-text {
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+
+        .story-text h2 {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--lavender);
+            margin-bottom: 1.5rem;
+        }
+
+        .story-text p {
+            font-size: 1.05rem;
+            line-height: 2;
+            color: rgba(240,234,255,0.85);
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+        }
+
+        .story-image {
+            position: relative;
+            opacity: 0;
+            transform: translateX(50px);
+        }
+
+        .story-image img {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(74,45,122,0.4);
+        }
+
+        .story-image::before {
+            content: '';
+            position: absolute;
+            inset: -15px;
+            border: 1px solid rgba(168,163,243,0.2);
+            border-radius: 25px;
+            pointer-events: none;
+        }
+
+        /* === SERVICES SECTION === */
+        .services-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .services-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 400;
+            letter-spacing: 6px;
+            margin-bottom: 1rem;
+        }
+        .services-header p {
+            font-family: var(--font-body-en);
+            font-style: italic;
+            font-size: 1.1rem;
+            color: var(--lavender);
+            letter-spacing: 2px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .service-card {
+            background: linear-gradient(135deg, rgba(74,45,122,0.3), rgba(13,11,46,0.6));
+            border: 1px solid rgba(168,163,243,0.15);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.5s, box-shadow 0.5s;
+            opacity: 0;
+            transform: translateY(40px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(168,163,243,0.05), transparent);
+            transition: left 0.8s;
+        }
+        .service-card:hover::before { left: 100%; }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(168,163,243,0.4);
+            box-shadow: 0 20px 60px rgba(74,45,122,0.3);
+        }
+
+        .service-icon {
+            width: 70px; height: 70px;
+            margin: 0 auto 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, var(--purple), var(--indigo));
+            border: 1px solid rgba(168,163,243,0.3);
+        }
+
+        .service-card h3 {
+            font-family: var(--font-body);
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--pink-soft);
+        }
+
+        .service-card .service-en {
+            font-family: var(--font-body-en);
+            font-style: italic;
+            font-size: 0.85rem;
+            color: var(--lavender);
+            margin-bottom: 1.2rem;
+            letter-spacing: 1px;
+        }
+
+        .service-card p {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: rgba(240,234,255,0.75);
+            font-weight: 300;
+        }
+
+        /* === GALLERY SECTION === */
+        .gallery-section {
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+        }
+        .gallery-header {
+            text-align: center;
+            padding: 4rem 2rem 2rem;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .gallery-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 400;
+            letter-spacing: 6px;
+            margin-bottom: 0.5rem;
+        }
+        .gallery-header p {
+            font-family: var(--font-body-en);
+            font-style: italic;
+            font-size: 1.1rem;
+            color: var(--lavender);
+        }
+
+        .gallery-pin-wrap {
+            display: flex;
+            align-items: center;
+            height: 100vh;
+            width: fit-content;
+            padding: 0 8vw;
+            gap: 3rem;
+        }
+
+        .gallery-item {
+            flex: 0 0 380px;
+            height: 420px;
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            perspective: 800px;
+            transition: box-shadow 0.5s;
+        }
+        .gallery-item:hover {
+            box-shadow: 0 25px 80px rgba(74,45,122,0.5), 0 0 40px rgba(168,163,243,0.15);
+        }
+
+        .gallery-item-inner {
+            width: 100%; height: 100%;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .gallery-item:hover img { transform: scale(1.12); }
+
+        .gallery-item .gallery-overlay {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 3rem 1.5rem 1.5rem;
+            background: linear-gradient(to top, rgba(13,11,46,0.95) 20%, transparent);
+            transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .gallery-item:hover .gallery-overlay { transform: translateY(0); }
+
+        .gallery-overlay h4 {
+            font-family: var(--font-body);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold-star);
+            margin-bottom: 0.3rem;
+        }
+        .gallery-overlay span {
+            font-family: var(--font-body-en);
+            font-style: italic;
+            font-size: 0.9rem;
+            color: var(--lavender);
+        }
+
+        .gallery-count {
+            text-align: center;
+            padding: 2rem;
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            letter-spacing: 4px;
+            color: var(--lavender);
+            opacity: 0.5;
+        }
+
+        /* === FREQUENCY SECTION === */
+        .freq-section {
+            padding: 8rem 2rem;
+        }
+
+        .freq-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .freq-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 400;
+            letter-spacing: 6px;
+            margin-bottom: 0.5rem;
+        }
+        .freq-header p {
+            font-family: var(--font-body-en);
+            font-style: italic;
+            font-size: 1.1rem;
+            color: var(--lavender);
+        }
+
+        .freq-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        /* Offset every other card for zigzag feel */
+        .freq-card:nth-child(even) { margin-top: 2.5rem; }
+        .freq-card:nth-child(odd) { margin-bottom: 2.5rem; }
+
+        .freq-card {
+            position: relative;
+            border-radius: 24px;
+            padding: 2rem 1.8rem;
+            cursor: pointer;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s;
+            backdrop-filter: blur(8px);
+        }
+        .freq-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            border: 1px solid currentColor;
+            opacity: 0.2;
+            transition: opacity 0.4s;
+        }
+        .freq-card:hover::before { opacity: 0.5; }
+        .freq-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .freq-card-wave {
+            width: 100%;
+            height: 70px;
+            margin-bottom: 1.2rem;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .freq-card-wave canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .freq-card .freq-top {
+            display: flex;
+            align-items: baseline;
+            gap: 0.7rem;
+            margin-bottom: 0.5rem;
+        }
+        .freq-card .freq-name {
+            font-family: var(--font-body);
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+        .freq-card .freq-label {
+            font-family: var(--font-body-en);
+            font-style: italic;
+            font-size: 0.95rem;
+            opacity: 0.7;
+        }
+        .freq-card .freq-hz {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            opacity: 0.5;
+            margin-bottom: 1rem;
+        }
+        .freq-card .freq-desc {
+            font-size: 0.95rem;
+            line-height: 1.9;
+            font-weight: 300;
+            opacity: 0.85;
+        }
+
+        .freq-card .freq-play-icon {
+            position: absolute;
+            top: 1.4rem; right: 1.4rem;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 1px solid currentColor;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            opacity: 0.4;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .freq-card:hover .freq-play-icon { opacity: 0.8; transform: scale(1.1); }
+        .freq-card.playing .freq-play-icon { opacity: 1; animation: freqPulse 1.5s ease-in-out infinite; }
+
+        @keyframes freqPulse {
+            0%, 100% { box-shadow: 0 0 0 0 currentColor; }
+            50% { box-shadow: 0 0 15px 3px currentColor; }
+        }
+
+        .freq-card.light { background: linear-gradient(135deg, rgba(255,216,102,0.15), rgba(255,216,102,0.04)); color: var(--gold-star); }
+        .freq-card.freedom { background: linear-gradient(135deg, rgba(110,180,240,0.15), rgba(110,180,240,0.04)); color: var(--blue-sky); }
+        .freq-card.peace { background: linear-gradient(135deg, rgba(184,232,208,0.15), rgba(184,232,208,0.04)); color: var(--mint); }
+        .freq-card.joy { background: linear-gradient(135deg, rgba(232,160,208,0.15), rgba(232,160,208,0.04)); color: var(--pink-cloud); }
+        .freq-card.trust { background: linear-gradient(135deg, rgba(196,160,232,0.18), rgba(196,160,232,0.05)); color: var(--violet); }
+        .freq-card.serenity { background: linear-gradient(135deg, rgba(94,207,207,0.15), rgba(94,207,207,0.04)); color: var(--teal); }
+
+
+        /* === ABOUT-ME SECTION === */
+        .aboutme-section {
+            padding: 6rem 2rem;
+        }
+
+        .aboutme-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        .aboutme-left {
+            opacity: 0;
+            transform: translateX(-40px);
+        }
+
+        .aboutme-left h2 {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--lavender);
+            margin-bottom: 2rem;
+        }
+
+        .aboutme-card {
+            background: linear-gradient(135deg, rgba(74,45,122,0.2), rgba(13,11,46,0.4));
+            border: 1px solid rgba(168,163,243,0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .aboutme-card h3 {
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--pink-soft);
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .aboutme-card h3 i {
+            color: var(--lavender);
+            font-size: 0.9rem;
+        }
+
+        .aboutme-card p {
+            font-size: 0.95rem;
+            line-height: 1.9;
+            color: rgba(240,234,255,0.75);
+            font-weight: 300;
+        }
+
+        .aboutme-right {
+            opacity: 0;
+            transform: translateX(40px);
+        }
+
+        .aboutme-right img {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(74,45,122,0.4);
+            margin-bottom: 2rem;
+        }
+
+        .aboutme-quote {
+            font-family: var(--font-body);
+            font-size: 1.15rem;
+            font-weight: 300;
+            line-height: 2;
+            color: var(--pink-soft);
+            text-align: center;
+            padding: 1.5rem;
+            border-left: 2px solid var(--lavender);
+            margin-left: 1rem;
+        }
+
+        /* === FOOTER === */
+        .site-footer {
+            position: relative;
+            z-index: 10;
+            padding: 4rem 2rem 3rem;
+            text-align: center;
+            border-top: 1px solid rgba(168,163,243,0.1);
+        }
+
+        .footer-socials {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-socials a {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(168,163,243,0.3);
+            color: var(--lavender);
+            font-size: 1.2rem;
+            text-decoration: none;
+            transition: all 0.3s;
+            background: rgba(74,45,122,0.2);
+        }
+        .footer-socials a:hover {
+            border-color: var(--gold-star);
+            color: var(--gold-star);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255,216,102,0.2);
+        }
+
+        .footer-email {
+            font-family: var(--font-body-en);
+            font-style: italic;
+            font-size: 0.95rem;
+            color: var(--lavender);
+            margin-bottom: 2rem;
+        }
+        .footer-email a {
+            color: var(--lavender);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(168,163,243,0.3);
+            transition: color 0.3s, border-color 0.3s;
+        }
+        .footer-email a:hover { color: var(--gold-star); border-color: var(--gold-star); }
+
+        .footer-credit {
+            font-size: 0.8rem;
+            color: rgba(168,163,243,0.4);
+            letter-spacing: 2px;
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .nav-back { top: 1rem; left: 1rem; font-size: 0.75rem; }
+            .hero-avatar { width: 140px; height: 140px; }
+            .hero-title { letter-spacing: 4px; }
+            .hero-subtitle { letter-spacing: 3px; }
+            .story-content { grid-template-columns: 1fr; gap: 2rem; }
+            .story-text { order: 2; }
+            .story-image { order: 1; }
+            .services-grid { grid-template-columns: 1fr; }
+            .gallery-pin-wrap { flex-direction: column; height: auto; width: 100%; padding: 2rem; gap: 2rem; align-items: center; }
+            .gallery-item { flex: 0 0 auto; width: 90%; max-width: 350px; height: 350px; }
+            .freq-grid { grid-template-columns: 1fr; }
+            .freq-card:nth-child(even) { margin-top: 0; }
+            .freq-card:nth-child(odd) { margin-bottom: 0; }
+            .aboutme-grid { grid-template-columns: 1fr; }
+            .aboutme-right { order: -1; }
+            .section { padding: 4rem 1.5rem; }
+            .freq-section { padding: 4rem 1.5rem; }
+            .aboutme-section { padding: 4rem 1.5rem; }
+        }
+
+        @media (max-width: 480px) {
+            .hero-avatar { width: 120px; height: 120px; }
+            .freq-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .freq-card:nth-child(even) { margin-top: 0; }
+            .freq-card:nth-child(odd) { margin-bottom: 0; }
+            .footer-socials { gap: 1rem; }
+            .footer-socials a { width: 44px; height: 44px; font-size: 1rem; }
+        }
+
+        /* === LOADING SCREEN === */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: var(--indigo-deep);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loading-orb {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--lavender), var(--purple));
+            animation: loadFloat 2s ease-in-out infinite;
+            box-shadow: 0 0 40px rgba(168,163,243,0.4);
+        }
+        @keyframes loadFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.05); }
+        }
+        .loading-text {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--lavender);
+            margin-top: 2rem;
+            opacity: 0.7;
+        }
+
+        /* === WAVE DIVIDER CANVAS === */
+        .wave-canvas {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 120px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading">
+        <div class="loading-orb"></div>
+        <div class="loading-text">Entering the Sanctuary</div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-star" id="cursorStar"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Three.js Aurora Background -->
+    <canvas id="aurora-canvas"></canvas>
+
+    <!-- p5.js Particle Layer -->
+    <div id="particle-canvas"></div>
+
+
+    <!-- Navigation -->
+    <a href="/guild/" class="nav-back"><i class="fas fa-chevron-left"></i> Archive</a>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+        <img src="/assets/img/guild/thehealingtints/avatar.webp" alt="Tints 庭思" class="hero-avatar" id="heroAvatar">
+        <h1 class="hero-title" id="heroTitle">Tints 庭思</h1>
+        <p class="hero-subtitle" id="heroSubtitle">Energy Art & Healing</p>
+        <p class="hero-tagline" id="heroTagline">"用色彩與光影，描繪靈魂的故事"</p>
+        <div class="hero-scroll-hint" id="scrollHint">
+            <span>Explore</span>
+            <div class="scroll-line"></div>
+        </div>
+    </section>
+
+    <!-- Divider -->
+    <div class="section-divider"><div class="divider-star"></div></div>
+
+    <!-- STORY -->
+    <section class="section" id="story">
+        <div class="section-inner">
+            <div class="story-quote" id="storyQuote">
+                在成為<span class="highlight">母親</span>之後，我從生命最深的低谷裡，重新拾起了<span class="highlight">畫筆</span>。那是一場與自己的重逢，也是靈魂覺醒的起點。
+            </div>
+            <div class="story-content">
+                <div class="story-text" id="storyText">
+                    <h2>My Awakening</h2>
+                    <p>
+                        我是庭思，一個在成為媽媽之後才真正覺醒的藝術家。產後的那段日子，我經歷了前所未有的低潮 —— 身體與心靈都像是被掏空了一般。
+                    </p>
+                    <p>
+                        直到有一天，我重新拿起畫筆，讓色彩在紙上流動。那一刻，我感受到了久違的平靜，彷彿靈魂深處有個聲音在說：「你找到了。」
+                    </p>
+                    <p>
+                        從那之後，我開始學習希塔療癒，用冥想連結更高的意識。我發現，畫畫和療癒原來是同一件事 —— 都是在為靈魂找到回家的路。現在的我，用畫筆陪伴內在小孩探索與玩樂，紀錄每一個被感受到的情緒與能量。
+                    </p>
+                </div>
+                <div class="story-image" id="storyImage">
+                    <img src="/assets/img/guild/thehealingtints/og.webp" alt="Tints 庭思的創作世界" loading="lazy">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Wave Divider -->
+    <canvas class="wave-canvas" id="waveCanvas1"></canvas>
+
+    <!-- SERVICES -->
+    <section class="section" id="services">
+        <div class="section-inner">
+            <div class="services-header" id="servicesHeader">
+                <h2>我能為你做的事</h2>
+                <p>What I Can Do for You</p>
+            </div>
+            <div class="services-grid">
+                <div class="service-card" id="serviceCard1">
+                    <div class="service-icon"><i class="fas fa-feather-pointed"></i></div>
+                    <h3>靈魂深度療癒</h3>
+                    <div class="service-en">Soul Script Rewriting</div>
+                    <p>透過希塔療癒技術，我會帶你深入潛意識，找到那些限制你的舊信念與靈魂劇本，溫柔地改寫它們。讓你從根本上釋放恐懼，重拾內在的力量與自由。</p>
+                </div>
+                <div class="service-card" id="serviceCard2">
+                    <div class="service-icon"><i class="fas fa-palette"></i></div>
+                    <h3>客製靈魂能量畫</h3>
+                    <div class="service-en">Soul Energy Portrait</div>
+                    <p>每個靈魂都有獨特的色彩與頻率。我會連結你的能量場，將你靈魂此刻的狀態化為一幅專屬的能量畫。它不只是一幅畫，更是你靈魂故事的視覺化呈現。</p>
+                </div>
+                <div class="service-card" id="serviceCard3">
+                    <div class="service-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                    <h3>能量繪畫療癒</h3>
+                    <div class="service-en">Art Healing Workshop</div>
+                    <p>一對一的藝術療癒工作坊，你不需要任何繪畫基礎。在安全的空間裡，我會引導你用色彩表達內在的情緒，讓畫筆成為療癒自己的工具。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Divider -->
+    <div class="section-divider"><div class="divider-star"></div></div>
+
+    <!-- GALLERY -->
+    <section class="gallery-section" id="gallery">
+        <div class="gallery-header" id="galleryHeader">
+            <h2>靈魂的色彩</h2>
+            <p>Colors of the Soul</p>
+        </div>
+        <div class="gallery-pin-wrap" id="galleryPinWrap">
+            <div class="gallery-item" data-tilt>
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/thehealingtints/work3.webp" alt="靈魂能量畫 - 祈願" loading="lazy">
+                    <div class="gallery-overlay">
+                        <h4>祈願</h4>
+                        <span>The Frequency of Light</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-item" data-tilt>
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/thehealingtints/work1.webp" alt="靈魂能量畫 - 等夢" loading="lazy">
+                    <div class="gallery-overlay">
+                        <h4>等夢</h4>
+                        <span>The Frequency of Freedom</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-item" data-tilt>
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/thehealingtints/work4.webp" alt="靈魂能量畫 - 清颸" loading="lazy">
+                    <div class="gallery-overlay">
+                        <h4>清颸</h4>
+                        <span>The Frequency of Peace</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-item" data-tilt>
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/thehealingtints/work2.webp" alt="靈魂能量畫 - 玥燭" loading="lazy">
+                    <div class="gallery-overlay">
+                        <h4>玥燭</h4>
+                        <span>The Frequency of Trust</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="gallery-count">Scroll to explore</div>
+    </section>
+
+    <!-- Wave Divider -->
+    <canvas class="wave-canvas" id="waveCanvas2"></canvas>
+
+    <!-- FREQUENCY -->
+    <section class="section freq-section" id="frequency">
+        <div class="section-inner">
+            <div class="freq-header" id="freqHeader">
+                <h2>六大頻率</h2>
+                <p>Six Frequencies of the Soul</p>
+            </div>
+            <div class="freq-grid" id="freqGrid">
+                <div class="freq-card light" data-freq="light" data-hz="528">
+                    <div class="freq-play-icon"><i class="fas fa-play"></i></div>
+                    <div class="freq-card-wave"><canvas></canvas></div>
+                    <div class="freq-top">
+                        <span class="freq-name">祈願</span>
+                        <span class="freq-label">Light</span>
+                    </div>
+                    <div class="freq-hz">528 Hz &mdash; Solfeggio</div>
+                    <p class="freq-desc">在最深的靜默之中，我看見了光。那是靈魂最原初的祈願 —— 渴望被看見，渴望回到光裡。</p>
+                </div>
+                <div class="freq-card freedom" data-freq="freedom" data-hz="396">
+                    <div class="freq-play-icon"><i class="fas fa-play"></i></div>
+                    <div class="freq-card-wave"><canvas></canvas></div>
+                    <div class="freq-top">
+                        <span class="freq-name">等夢</span>
+                        <span class="freq-label">Freedom</span>
+                    </div>
+                    <div class="freq-hz">396 Hz &mdash; Liberation</div>
+                    <p class="freq-desc">自由不是飛得多高，而是終於放下了那些不屬於你的重量。在彩虹與雲朵之間，靈魂輕盈地等待著夢的到來。</p>
+                </div>
+                <div class="freq-card peace" data-freq="peace" data-hz="432">
+                    <div class="freq-play-icon"><i class="fas fa-play"></i></div>
+                    <div class="freq-card-wave"><canvas></canvas></div>
+                    <div class="freq-top">
+                        <span class="freq-name">清颸</span>
+                        <span class="freq-label">Peace</span>
+                    </div>
+                    <div class="freq-hz">432 Hz &mdash; Natural Tuning</div>
+                    <p class="freq-desc">像一片柔軟的雲，閉上眼睛就能感受到的安靜。不需要做什麼，只是存在本身，就已經足夠美好。</p>
+                </div>
+                <div class="freq-card joy" data-freq="joy" data-hz="639">
+                    <div class="freq-play-icon"><i class="fas fa-play"></i></div>
+                    <div class="freq-card-wave"><canvas></canvas></div>
+                    <div class="freq-top">
+                        <span class="freq-name">映趣</span>
+                        <span class="freq-label">Joy</span>
+                    </div>
+                    <div class="freq-hz">639 Hz &mdash; Connection</div>
+                    <p class="freq-desc">內在小孩最喜歡的頻率。當你願意像孩子一樣玩耍，世界就會變成一座充滿驚喜的遊樂場。</p>
+                </div>
+                <div class="freq-card trust" data-freq="trust" data-hz="741">
+                    <div class="freq-play-icon"><i class="fas fa-play"></i></div>
+                    <div class="freq-card-wave"><canvas></canvas></div>
+                    <div class="freq-top">
+                        <span class="freq-name">玥燭</span>
+                        <span class="freq-label">Trust</span>
+                    </div>
+                    <div class="freq-hz">741 Hz &mdash; Awakening</div>
+                    <p class="freq-desc">在星光與蓮花之間，信任是最溫柔的力量。即使在最深的夜裡，也總有一盞燭光為你而亮。</p>
+                </div>
+                <div class="freq-card serenity" data-freq="serenity" data-hz="852">
+                    <div class="freq-play-icon"><i class="fas fa-play"></i></div>
+                    <div class="freq-card-wave"><canvas></canvas></div>
+                    <div class="freq-top">
+                        <span class="freq-name">雲境</span>
+                        <span class="freq-label">Serenity</span>
+                    </div>
+                    <div class="freq-hz">852 Hz &mdash; Intuition</div>
+                    <p class="freq-desc">雲的境界 —— 不追不趕，隨風而行。這是靈魂最高的悠然，也是我在冥想中最常到達的地方。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Divider -->
+    <div class="section-divider"><div class="divider-star"></div></div>
+
+    <!-- ABOUT ME DEEPER -->
+    <section class="section aboutme-section" id="aboutme">
+        <div class="section-inner">
+            <div class="aboutme-grid">
+                <div class="aboutme-left" id="aboutmeLeft">
+                    <h2>More About Me</h2>
+                    <div class="aboutme-card">
+                        <h3><i class="fas fa-star"></i> 希塔療癒師</h3>
+                        <p>透過希塔療癒（ThetaHealing），我能夠進入深層冥想狀態，連結造物主的能量，協助你清理潛意識中的限制性信念，找回靈魂原本的光芒。</p>
+                    </div>
+                    <div class="aboutme-card">
+                        <h3><i class="fas fa-paint-brush"></i> 能量畫創作者</h3>
+                        <p>每一幅能量畫都是我在深度冥想中與靈魂對話後的創作。我用色鉛筆和數位工具，將看不見的能量頻率轉化為看得見的色彩。那個穿著紅色斗篷的小人物，是我的內在小孩，也是每個人心中那個渴望被看見的自己。</p>
+                    </div>
+                    <div class="aboutme-card">
+                        <h3><i class="fas fa-heart"></i> 母親的力量</h3>
+                        <p>成為母親是我生命中最大的轉捩點。它讓我學會了無條件的愛，也讓我看見了自己內在需要被療癒的傷口。正是這段旅程，讓我找到了用藝術療癒靈魂的道路。</p>
+                    </div>
+                </div>
+                <div class="aboutme-right" id="aboutmeRight">
+                    <img src="/assets/img/guild/thehealingtints/work5.webp" alt="能量桌布作品" loading="lazy">
+                    <div class="aboutme-quote">
+                        當火的能量，被白光的溫柔與智慧承接，它會化成粉紅色的火焰，帶著慈悲、愛、包容與信任的能量陪伴你前行。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-socials">
+            <a href="https://www.threads.com/@thehealingtints" target="_blank" rel="noopener noreferrer" aria-label="Threads">
+                <i class="fab fa-threads"></i>
+            </a>
+            <a href="https://www.instagram.com/thehealingtints/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://portaly.cc/thehealingtints" target="_blank" rel="noopener noreferrer" aria-label="Portaly">
+                <i class="fas fa-link"></i>
+            </a>
+            <a href="mailto:thehealingtints@gmail.com" aria-label="Email">
+                <i class="fas fa-envelope"></i>
+            </a>
+        </div>
+        <div class="footer-email">
+            <a href="mailto:thehealingtints@gmail.com">thehealingtints@gmail.com</a>
+        </div>
+        <div class="footer-credit">Made with &#9829; by SuperGalen's Dungeon</div>
+    </footer>
+
+    <!-- === SCRIPTS === -->
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <script>
+    (function() {
+        'use strict';
+
+        /* ============================
+         * CUSTOM CURSOR
+         * ============================ */
+        const cursorStar = document.getElementById('cursorStar');
+        const cursorGlow = document.getElementById('cursorGlow');
+        let mouseX = 0, mouseY = 0;
+        let cursorX = 0, cursorY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorStar.style.left = mouseX + 'px';
+            cursorStar.style.top = mouseY + 'px';
+        });
+
+        function animateCursor() {
+            cursorX += (mouseX - cursorX) * 0.15;
+            cursorY += (mouseY - cursorY) * 0.15;
+            cursorGlow.style.left = cursorX + 'px';
+            cursorGlow.style.top = cursorY + 'px';
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        document.querySelectorAll('a, .service-card, .gallery-item, .freq-card').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // Hide cursor on mobile
+        if ('ontouchstart' in window) {
+            cursorStar.style.display = 'none';
+            cursorGlow.style.display = 'none';
+            document.body.style.cursor = 'auto';
+        }
+
+        /* ============================
+         * THREE.JS AURORA BACKGROUND
+         * ============================ */
+        const canvas = document.getElementById('aurora-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+        const auroraShader = {
+            uniforms: {
+                uTime: { value: 0 },
+                uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                uScroll: { value: 0 },
+                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float uTime;
+                uniform vec2 uMouse;
+                uniform float uScroll;
+                uniform vec2 uResolution;
+                varying vec2 vUv;
+
+                // Simplex-like noise
+                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+                float snoise(vec2 v) {
+                    const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+                                       -0.577350269189626, 0.024390243902439);
+                    vec2 i  = floor(v + dot(v, C.yy));
+                    vec2 x0 = v - i + dot(i, C.xx);
+                    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                    vec4 x12 = x0.xyxy + C.xxzz;
+                    x12.xy -= i1;
+                    i = mod289(i);
+                    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+                    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+                    m = m*m; m = m*m;
+                    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                    vec3 h = abs(x) - 0.5;
+                    vec3 ox = floor(x + 0.5);
+                    vec3 a0 = x - ox;
+                    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+                    vec3 g;
+                    g.x = a0.x * x0.x + h.x * x0.y;
+                    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                    return 130.0 * dot(m, g);
+                }
+
+                void main() {
+                    vec2 uv = vUv;
+                    float t = uTime * 0.15;
+                    float scroll = uScroll;
+
+                    // Base aurora noise layers
+                    float n1 = snoise(uv * 2.0 + vec2(t * 0.3, t * 0.2));
+                    float n2 = snoise(uv * 4.0 + vec2(-t * 0.2, t * 0.4));
+                    float n3 = snoise(uv * 1.5 + vec2(t * 0.1, -t * 0.15));
+
+                    // Mouse influence
+                    float mouseDist = length(uv - uMouse) * 2.0;
+                    float mouseInfluence = smoothstep(1.0, 0.0, mouseDist) * 0.15;
+
+                    // Color palette - deep indigo to purple to pink
+                    vec3 deepIndigo = vec3(0.051, 0.043, 0.18);
+                    vec3 purple = vec3(0.29, 0.18, 0.48);
+                    vec3 violet = vec3(0.48, 0.37, 0.65);
+                    vec3 pinkCloud = vec3(0.91, 0.63, 0.82);
+                    vec3 gold = vec3(1.0, 0.85, 0.4);
+                    vec3 teal = vec3(0.37, 0.81, 0.81);
+
+                    // Mix colors based on noise and scroll
+                    float colorMix = (n1 + n2 * 0.5 + n3 * 0.3) * 0.5 + 0.5;
+                    colorMix += mouseInfluence;
+
+                    // Scroll shifts the palette
+                    float scrollShift = scroll * 0.3;
+
+                    vec3 col = deepIndigo;
+                    col = mix(col, purple, smoothstep(0.2, 0.5, colorMix + scrollShift * 0.2));
+                    col = mix(col, violet, smoothstep(0.4, 0.7, colorMix) * 0.5);
+                    col = mix(col, pinkCloud, smoothstep(0.65, 0.9, colorMix) * 0.3);
+
+                    // Aurora streaks
+                    float aurora = snoise(vec2(uv.x * 3.0 + t * 0.5, uv.y * 0.5)) * 0.5 + 0.5;
+                    aurora *= smoothstep(0.3, 0.7, uv.y) * smoothstep(1.0, 0.6, uv.y);
+                    col = mix(col, mix(violet, teal, aurora), aurora * 0.2);
+
+                    // Subtle golden highlights
+                    float goldHighlight = snoise(uv * 6.0 + vec2(t * 0.8, 0.0));
+                    goldHighlight = smoothstep(0.7, 0.9, goldHighlight);
+                    col = mix(col, gold, goldHighlight * 0.08);
+
+                    // Vignette
+                    float vignette = 1.0 - length((uv - 0.5) * 1.3);
+                    vignette = smoothstep(0.0, 0.7, vignette);
+                    col *= vignette * 0.7 + 0.3;
+
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `
+        };
+
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const material = new THREE.ShaderMaterial(auroraShader);
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        let scrollY = 0;
+        let targetScroll = 0;
+
+        window.addEventListener('scroll', () => {
+            targetScroll = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            material.uniforms.uMouse.value.set(
+                e.clientX / window.innerWidth,
+                1.0 - e.clientY / window.innerHeight
+            );
+        });
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+            material.uniforms.uTime.value += 0.016;
+            scrollY += (targetScroll - scrollY) * 0.05;
+            material.uniforms.uScroll.value = scrollY;
+            renderer.render(scene, camera);
+        }
+        animateThree();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+        });
+
+        /* ============================
+         * P5.JS STAR PARTICLES
+         * ============================ */
+        const particleSketch = (p) => {
+            let particles = [];
+            const NUM = 60;
+
+            p.setup = () => {
+                const c = p.createCanvas(p.windowWidth, p.windowHeight);
+                c.parent('particle-canvas');
+                c.style('pointer-events', 'none');
+                for (let i = 0; i < NUM; i++) {
+                    particles.push({
+                        x: p.random(p.width),
+                        y: p.random(p.height),
+                        size: p.random(1, 4),
+                        speedX: p.random(-0.3, 0.3),
+                        speedY: p.random(-0.2, -0.05),
+                        alpha: p.random(50, 200),
+                        pulse: p.random(0, p.TWO_PI),
+                        pulseSpeed: p.random(0.01, 0.04),
+                        hue: p.random([
+                            [255, 216, 102],
+                            [168, 163, 243],
+                            [232, 160, 208],
+                            [94, 207, 207],
+                            [240, 234, 255]
+                        ])
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.clear();
+                for (let pt of particles) {
+                    pt.x += pt.speedX;
+                    pt.y += pt.speedY;
+                    pt.pulse += pt.pulseSpeed;
+
+                    if (pt.y < -10) { pt.y = p.height + 10; pt.x = p.random(p.width); }
+                    if (pt.x < -10) pt.x = p.width + 10;
+                    if (pt.x > p.width + 10) pt.x = -10;
+
+                    let a = pt.alpha * (0.5 + 0.5 * p.sin(pt.pulse));
+                    let s = pt.size * (0.8 + 0.3 * p.sin(pt.pulse));
+
+                    p.noStroke();
+                    // Glow
+                    p.fill(pt.hue[0], pt.hue[1], pt.hue[2], a * 0.3);
+                    p.ellipse(pt.x, pt.y, s * 4, s * 4);
+                    // Core
+                    p.fill(pt.hue[0], pt.hue[1], pt.hue[2], a);
+                    p.ellipse(pt.x, pt.y, s, s);
+                    // Cross sparkle
+                    if (s > 2.5) {
+                        p.stroke(pt.hue[0], pt.hue[1], pt.hue[2], a * 0.5);
+                        p.strokeWeight(0.5);
+                        p.line(pt.x - s * 2, pt.y, pt.x + s * 2, pt.y);
+                        p.line(pt.x, pt.y - s * 2, pt.x, pt.y + s * 2);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+        new p5(particleSketch);
+
+        /* ============================
+         * WAVE DIVIDER CANVAS
+         * ============================ */
+        function initWave(canvasId) {
+            const wc = document.getElementById(canvasId);
+            if (!wc) return;
+            const ctx = wc.getContext('2d');
+            let ww = wc.parentElement.offsetWidth;
+            wc.width = ww;
+            wc.height = 120;
+            let phase = 0;
+
+            function drawWave() {
+                ctx.clearRect(0, 0, wc.width, wc.height);
+                phase += 0.008;
+                for (let layer = 0; layer < 3; layer++) {
+                    ctx.beginPath();
+                    let alpha = 0.08 + layer * 0.04;
+                    let amp = 15 + layer * 8;
+                    let freq = 0.005 - layer * 0.001;
+                    let offset = layer * 1.5;
+                    ctx.moveTo(0, 60);
+                    for (let x = 0; x <= wc.width; x += 2) {
+                        let y = 60 + Math.sin(x * freq + phase + offset) * amp
+                                   + Math.sin(x * freq * 2.3 + phase * 1.5) * amp * 0.3;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.lineTo(wc.width, 120);
+                    ctx.lineTo(0, 120);
+                    ctx.closePath();
+                    ctx.fillStyle = `rgba(168, 163, 243, ${alpha})`;
+                    ctx.fill();
+                }
+                requestAnimationFrame(drawWave);
+            }
+            drawWave();
+
+            window.addEventListener('resize', () => {
+                ww = wc.parentElement.offsetWidth;
+                wc.width = ww;
+            });
+        }
+        initWave('waveCanvas1');
+        initWave('waveCanvas2');
+
+        /* ============================
+         * GSAP ANIMATIONS
+         * ============================ */
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Loading screen
+        window.addEventListener('load', () => {
+            gsap.to('#loading', {
+                opacity: 0,
+                duration: 0.8,
+                delay: 1,
+                onComplete: () => {
+                    document.getElementById('loading').classList.add('hidden');
+                    animateHero();
+                }
+            });
+        });
+
+        // Hero entrance
+        function animateHero() {
+            const tl = gsap.timeline();
+            tl.to('#heroAvatar', { opacity: 1, scale: 1, duration: 1.2, ease: 'back.out(1.4)' })
+              .to('#heroTitle', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.6')
+              .to('#heroSubtitle', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.5')
+              .to('#heroTagline', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.4')
+              .to('#scrollHint', { opacity: 1, duration: 0.6 }, '-=0.2');
+        }
+
+        // Scroll progress bar
+        gsap.to('#scrollProgress', {
+            scaleX: 1,
+            ease: 'none',
+            scrollTrigger: {
+                trigger: document.body,
+                start: 'top top',
+                end: 'bottom bottom',
+                scrub: 0.3
+            }
+        });
+
+        // Story quote
+        gsap.to('#storyQuote', {
+            opacity: 1, y: 0, duration: 1.2,
+            scrollTrigger: { trigger: '#storyQuote', start: 'top 80%', toggleActions: 'play none none reverse' }
+        });
+
+        // Story content
+        gsap.to('#storyText', {
+            opacity: 1, x: 0, duration: 1,
+            scrollTrigger: { trigger: '#storyText', start: 'top 80%', toggleActions: 'play none none reverse' }
+        });
+        gsap.to('#storyImage', {
+            opacity: 1, x: 0, duration: 1,
+            scrollTrigger: { trigger: '#storyImage', start: 'top 80%', toggleActions: 'play none none reverse' }
+        });
+
+        // Services
+        gsap.to('#servicesHeader', {
+            opacity: 1, y: 0, duration: 1,
+            scrollTrigger: { trigger: '#servicesHeader', start: 'top 80%', toggleActions: 'play none none reverse' }
+        });
+
+        ['#serviceCard1', '#serviceCard2', '#serviceCard3'].forEach((sel, i) => {
+            gsap.to(sel, {
+                opacity: 1, y: 0, duration: 0.8, delay: i * 0.15,
+                scrollTrigger: { trigger: sel, start: 'top 85%', toggleActions: 'play none none reverse' }
+            });
+        });
+
+        // Gallery header
+        gsap.to('#galleryHeader', {
+            opacity: 1, y: 0, duration: 1,
+            scrollTrigger: { trigger: '#galleryHeader', start: 'top 80%', toggleActions: 'play none none reverse' }
+        });
+
+        // Gallery horizontal scroll (desktop only)
+        if (window.innerWidth > 768) {
+            const galleryWrap = document.getElementById('galleryPinWrap');
+            const galleryItems = galleryWrap.querySelectorAll('.gallery-item');
+            galleryItems.forEach(item => { item.style.opacity = '1'; });
+
+            const scrollWidth = galleryWrap.scrollWidth - window.innerWidth;
+            gsap.to(galleryWrap, {
+                x: () => -scrollWidth,
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: '#gallery',
+                    start: 'top top',
+                    end: () => '+=' + scrollWidth,
+                    pin: true,
+                    scrub: 1,
+                    invalidateOnRefresh: true,
+                    anticipatePin: 1
+                }
+            });
+        } else {
+            document.querySelectorAll('.gallery-item').forEach((item, i) => {
+                gsap.to(item, {
+                    opacity: 1, y: 0, duration: 0.8, delay: i * 0.12,
+                    scrollTrigger: { trigger: item, start: 'top 85%', toggleActions: 'play none none reverse' }
+                });
+            });
+        }
+
+        // Frequency cards
+        gsap.to('#freqHeader', {
+            opacity: 1, y: 0, duration: 1,
+            scrollTrigger: { trigger: '#freqHeader', start: 'top 80%', toggleActions: 'play none none reverse' }
+        });
+
+        document.querySelectorAll('.freq-card').forEach((card, i) => {
+            gsap.to(card, {
+                opacity: 1, y: 0, duration: 0.7, delay: i * 0.1,
+                ease: 'power3.out',
+                scrollTrigger: { trigger: '#freqGrid', start: 'top 80%', toggleActions: 'play none none reverse' }
+            });
+        });
+
+        // About me
+        gsap.to('#aboutmeLeft', {
+            opacity: 1, x: 0, duration: 1,
+            scrollTrigger: { trigger: '#aboutmeLeft', start: 'top 80%', toggleActions: 'play none none reverse' }
+        });
+        gsap.to('#aboutmeRight', {
+            opacity: 1, x: 0, duration: 1,
+            scrollTrigger: { trigger: '#aboutmeRight', start: 'top 80%', toggleActions: 'play none none reverse' }
+        });
+
+        /* ============================
+         * FREQUENCY CARD INTERACTION
+         * ============================ */
+        let activeAudioCtx = null;
+        let activeNodes = [];
+        const freqCards = document.querySelectorAll('.freq-card');
+
+        // Each frequency gets a unique sound profile
+        const freqProfiles = {
+            light: {   // 528Hz - warm, bright, singing bowl
+                hz: 528, type: 'sine',
+                harmonics: [1, 2, 3],
+                harmonicGains: [0.12, 0.04, 0.015],
+                attack: 0.3, decay: 4, detune: [0, 3, -2]
+            },
+            freedom: { // 396Hz - deep, liberating, grounding
+                hz: 396, type: 'triangle',
+                harmonics: [1, 1.5, 2],
+                harmonicGains: [0.10, 0.05, 0.03],
+                attack: 0.5, decay: 5, detune: [0, 7, -5]
+            },
+            peace: {   // 432Hz - pure, natural, crystal bowl
+                hz: 432, type: 'sine',
+                harmonics: [1, 2, 4],
+                harmonicGains: [0.11, 0.06, 0.02],
+                attack: 0.8, decay: 6, detune: [0, 1, 2]
+            },
+            joy: {     // 639Hz - playful, bright, chime-like
+                hz: 639, type: 'sine',
+                harmonics: [1, 2.5, 3, 5],
+                harmonicGains: [0.09, 0.04, 0.03, 0.01],
+                attack: 0.1, decay: 3, detune: [0, 5, -3, 8]
+            },
+            trust: {   // 741Hz - ethereal, bell-like
+                hz: 741, type: 'sine',
+                harmonics: [1, 1.5, 3.17],
+                harmonicGains: [0.08, 0.05, 0.025],
+                attack: 0.05, decay: 4, detune: [0, -4, 6]
+            },
+            serenity: {// 852Hz - airy, high, flute-like
+                hz: 852, type: 'sine',
+                harmonics: [1, 2, 0.5],
+                harmonicGains: [0.07, 0.03, 0.04],
+                attack: 1.0, decay: 5, detune: [0, 2, -1]
+            }
+        };
+
+        // Initialize waveform canvases
+        const waveAnimations = [];
+        freqCards.forEach(card => {
+            const cvs = card.querySelector('canvas');
+            const ctx2d = cvs.getContext('2d');
+            const hz = parseInt(card.dataset.hz);
+            const color = getComputedStyle(card).color;
+            let phase = Math.random() * Math.PI * 2;
+            let active = false;
+
+            function resizeWaveCanvas() {
+                const rect = cvs.parentElement.getBoundingClientRect();
+                cvs.width = rect.width * (window.devicePixelRatio || 1);
+                cvs.height = rect.height * (window.devicePixelRatio || 1);
+                ctx2d.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+            }
+            resizeWaveCanvas();
+            window.addEventListener('resize', resizeWaveCanvas);
+
+            const w = { card, ctx2d, cvs, hz, color, phase, active };
+            waveAnimations.push(w);
+        });
+
+        function animateWaves() {
+            for (const w of waveAnimations) {
+                const { ctx2d, cvs, hz, color, active } = w;
+                const cw = cvs.width / (window.devicePixelRatio || 1);
+                const ch = cvs.height / (window.devicePixelRatio || 1);
+                ctx2d.clearRect(0, 0, cw, ch);
+                w.phase += active ? 0.06 : 0.015;
+
+                const amp = active ? ch * 0.35 : ch * 0.18;
+                const layers = active ? 3 : 2;
+                for (let l = 0; l < layers; l++) {
+                    ctx2d.beginPath();
+                    const a = active ? 0.4 - l * 0.1 : 0.15 - l * 0.04;
+                    ctx2d.strokeStyle = color.replace(')', `, ${a})`).replace('rgb', 'rgba');
+                    ctx2d.lineWidth = active ? 2 : 1;
+                    const freq = (hz / 200) + l * 0.5;
+                    for (let x = 0; x <= cw; x += 2) {
+                        const y = ch / 2 + Math.sin(x * 0.02 * freq + w.phase + l) * amp * (0.7 + l * 0.15)
+                                         + Math.sin(x * 0.01 * freq * 1.7 + w.phase * 0.7) * amp * 0.2;
+                        if (x === 0) ctx2d.moveTo(x, y);
+                        else ctx2d.lineTo(x, y);
+                    }
+                    ctx2d.stroke();
+                }
+            }
+            requestAnimationFrame(animateWaves);
+        }
+        animateWaves();
+
+        function stopAllAudio() {
+            activeNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+            activeNodes = [];
+            if (activeAudioCtx) { try { activeAudioCtx.close(); } catch(e) {} activeAudioCtx = null; }
+        }
+
+        function playFrequency(freqKey) {
+            stopAllAudio();
+            const p = freqProfiles[freqKey];
+            if (!p) return;
+
+            try {
+                activeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = activeAudioCtx.currentTime;
+
+                // Master gain with reverb-like tail
+                const masterGain = activeAudioCtx.createGain();
+                masterGain.gain.setValueAtTime(0, now);
+                masterGain.gain.linearRampToValueAtTime(1, now + p.attack);
+                masterGain.gain.exponentialRampToValueAtTime(0.001, now + p.decay);
+                masterGain.connect(activeAudioCtx.destination);
+
+                // Create each harmonic layer
+                p.harmonics.forEach((mult, i) => {
+                    const osc = activeAudioCtx.createOscillator();
+                    const gain = activeAudioCtx.createGain();
+
+                    osc.type = p.type;
+                    osc.frequency.setValueAtTime(p.hz * mult, now);
+                    osc.detune.setValueAtTime(p.detune[i] || 0, now);
+
+                    // Slight vibrato for organic feel
+                    const lfo = activeAudioCtx.createOscillator();
+                    const lfoGain = activeAudioCtx.createGain();
+                    lfo.frequency.setValueAtTime(3 + i * 0.5, now);
+                    lfoGain.gain.setValueAtTime(2 + i, now);
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(osc.frequency);
+                    lfo.start(now);
+                    lfo.stop(now + p.decay);
+                    activeNodes.push(lfo);
+
+                    gain.gain.setValueAtTime(p.harmonicGains[i], now);
+                    // Higher harmonics decay faster
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + p.decay * (1 - i * 0.15));
+
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start(now);
+                    osc.stop(now + p.decay);
+                    activeNodes.push(osc);
+                });
+            } catch(e) {}
+        }
+
+        freqCards.forEach((card, idx) => {
+            card.addEventListener('click', () => {
+                const isPlaying = card.classList.contains('playing');
+
+                // Stop all
+                freqCards.forEach(c => c.classList.remove('playing'));
+                waveAnimations.forEach(w => w.active = false);
+                stopAllAudio();
+
+                if (!isPlaying) {
+                    card.classList.add('playing');
+                    waveAnimations[idx].active = true;
+                    const freqKey = card.dataset.freq;
+                    const profile = freqProfiles[freqKey];
+                    playFrequency(freqKey);
+
+                    setTimeout(() => {
+                        card.classList.remove('playing');
+                        waveAnimations[idx].active = false;
+                    }, (profile ? profile.decay : 3) * 1000);
+                }
+            });
+        });
+
+        /* ============================
+         * GALLERY TILT EFFECT
+         * ============================ */
+        document.querySelectorAll('[data-tilt]').forEach(el => {
+            const inner = el.querySelector('.gallery-item-inner');
+            if (!inner) return;
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                inner.style.transform = `rotateY(${x * 12}deg) rotateX(${-y * 12}deg)`;
+            });
+            el.addEventListener('mouseleave', () => {
+                inner.style.transform = 'rotateY(0deg) rotateX(0deg)';
+            });
+        });
+
+
+        /* ============================
+         * PARALLAX ON HERO AVATAR
+         * ============================ */
+        const heroAvatar = document.getElementById('heroAvatar');
+        document.addEventListener('mousemove', (e) => {
+            if (!heroAvatar) return;
+            const rect = heroAvatar.getBoundingClientRect();
+            if (rect.top > window.innerHeight || rect.bottom < 0) return;
+            const dx = (e.clientX - window.innerWidth / 2) / window.innerWidth * 15;
+            const dy = (e.clientY - window.innerHeight / 2) / window.innerHeight * 15;
+            heroAvatar.style.transform = `scale(1) translate(${dx}px, ${dy}px)`;
+        });
+
+        /* ============================
+         * SERVICE CARD MAGNETIC HOVER
+         * ============================ */
+        document.querySelectorAll('.service-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                card.style.transform = `translateY(-8px) translate(${x * 0.05}px, ${y * 0.05}px)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
+        });
+
+    })();
+    </script>
+</body>
+</html>

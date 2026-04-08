@@ -1592,3 +1592,17 @@ members:
         label: "身心靈"
       - id: "food_service"
         label: "餐飲修行"
+
+  - id: "thehealingtints"
+    name: "Tints 庭思"
+    avatar: "/assets/img/guild/thehealingtints/avatar.webp"
+    page: "/guild/thehealingtints.html"
+    title: "色彩聖域"
+    description: "靈魂能量畫創作者與希塔療癒師。成為母親後覺醒的藝術家，用色彩與光影描繪靈魂的故事，用畫筆陪伴內在小孩探索情緒與能量的世界。"
+    tags:
+      - id: "energy_art"
+        label: "靈魂能量畫"
+      - id: "theta_healing"
+        label: "希塔療癒"
+      - id: "illustration"
+        label: "療癒插畫"
