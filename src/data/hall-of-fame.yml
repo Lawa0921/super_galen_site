@@ -1606,3 +1606,17 @@ members:
         label: "希塔療癒"
       - id: "illustration"
         label: "療癒插畫"
+
+  - id: "yang0910657734"
+    name: "王春洋"
+    avatar: "/assets/img/guild/yang0910657734/avatar.webp"
+    page: "/guild/yang0910657734.html"
+    title: "深夜的療癒之手"
+    description: "桃園 / 南崁的五師合一療癒師。經絡紓壓、整復、美容、體管、夜間洗髮。從 16 歲開始的雙手溫度，從 76 公斤走回自由的 8 年見證。"
+    tags:
+      - id: "meridian_spa"
+        label: "經絡紓壓"
+      - id: "body_management"
+        label: "體重管理"
+      - id: "night_wash"
+        label: "夜間洗髮"
