@@ -1,0 +1,2425 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="taiwanfukuoka -- 你的福岡在地嚮導。旅遊規劃、地陪、包車、美食推薦，用台灣人的溫度帶你走進福岡最深處。">
+<title>taiwanfukuoka | 福岡在地嚮導</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Shippori+Mincho:wght@400;600;800&family=DM+Mono:wght@400&family=Caveat:wght@400;600&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  --sakura:#f4b8c1;
+  --sakura-pale:#fce4ec;
+  --night:#0a0e1a;
+  --yatai:#cc5522;
+  --yatai-glow:#ff8844;
+  --lantern:#d4a04a;
+  --lantern-glow:#f0d060;
+  --text:#e8ddd0;
+  --text-muted:rgba(232,221,208,.5);
+  --font-jp:'Shippori Mincho',serif;
+  --font-heading:'Noto Serif TC',serif;
+  --font-body:'Noto Sans TC',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--night);color:var(--text);font-family:var(--font-body);overflow-x:hidden;cursor:default}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--night)}
+::-webkit-scrollbar-thumb{background:var(--yatai);border-radius:2px}
+
+/* P5 CANVAS - Fukuoka cityscape */
+#p5-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* GUIDE LANTERN CURSOR - the visitor is being guided */
+@media(hover:hover){
+  body{cursor:none}
+  .guide-lantern{position:fixed;pointer-events:none;z-index:9998;transform:translate(-50%,-50%)}
+  .guide-lantern-glow{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(240,208,96,.08) 0%,rgba(212,160,23,.03) 40%,transparent 70%);transform:translate(-50%,-50%);position:absolute;top:50%;left:50%;transition:width .4s,height .4s}
+  .guide-lantern-dot{width:6px;height:6px;background:var(--lantern-glow);border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px rgba(240,208,96,.6)}
+  body.hov .guide-lantern-glow{width:260px;height:260px}
+  body.hov .guide-lantern-dot{background:var(--sakura);box-shadow:0 0 12px rgba(244,184,193,.6)}
+}
+
+.back-nav{position:fixed;top:1.5rem;left:1.5rem;z-index:500;font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);text-decoration:none;letter-spacing:2px;transition:color .3s}
+.back-nav:hover{color:var(--lantern)}
+.content-layer{position:relative;z-index:2;pointer-events:auto}
+
+/* SCROLL PROGRESS */
+.scroll-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--yatai),var(--lantern-glow),var(--sakura));z-index:600;width:0%;transition:width .1s}
+
+/* LOADER - yatai noren (暖簾) parting */
+.loader{position:fixed;inset:0;z-index:9999;background:var(--night);display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden}
+.loader-noren{display:flex;gap:4px;margin-bottom:2rem}
+.loader-noren-strip{width:24px;height:80px;border-radius:0 0 12px 12px;animation:norenSway 2s ease-in-out infinite}
+.loader-noren-strip:nth-child(1){background:linear-gradient(180deg,var(--yatai),#aa3300);animation-delay:0s}
+.loader-noren-strip:nth-child(2){background:linear-gradient(180deg,var(--yatai),#aa3300);animation-delay:.15s}
+.loader-noren-strip:nth-child(3){background:linear-gradient(180deg,var(--yatai),#aa3300);animation-delay:.3s}
+.loader-noren-strip:nth-child(4){background:linear-gradient(180deg,var(--yatai),#aa3300);animation-delay:.45s}
+.loader-noren-strip:nth-child(5){background:linear-gradient(180deg,var(--yatai),#aa3300);animation-delay:.6s}
+@keyframes norenSway{0%,100%{transform:rotate(-2deg) scaleY(1)}50%{transform:rotate(2deg) scaleY(.97)}}
+.loader-text{font-family:var(--font-jp);font-size:1.1rem;color:var(--lantern);letter-spacing:8px;opacity:0;animation:loaderFade 1s ease .3s forwards}
+.loader-sub{font-family:var(--font-mono);font-size:.55rem;color:var(--text-muted);letter-spacing:3px;margin-top:.5rem;opacity:0;animation:loaderFade 1s ease .6s forwards}
+@keyframes loaderFade{to{opacity:1}}
+
+/* SECTIONS */
+section{padding:clamp(4rem,8vh,7rem) clamp(1.5rem,5vw,4rem);position:relative;overflow:hidden}
+section > *:not(.section-kanji){position:relative;z-index:1}
+.label{font-family:var(--font-mono);font-size:.6rem;letter-spacing:4px;text-transform:uppercase;color:var(--yatai);margin-bottom:1rem;display:block}
+.stitle{font-family:var(--font-heading);font-size:clamp(1.8rem,4vw,3rem);font-weight:900;color:var(--sakura-pale);line-height:1.3;margin-bottom:1.5rem}
+.stext{font-family:var(--font-body);font-size:clamp(.85rem,1.2vw,.95rem);color:var(--text);line-height:2;max-width:600px;font-weight:300;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.text-center{text-align:center}
+.stext-center{margin:0 auto;text-align:center}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;position:relative;overflow:hidden}
+.hero-inner{position:relative;z-index:2}
+.avatar-wrap{position:relative;margin-bottom:2rem;cursor:pointer}
+.avatar-wrap img{width:130px;height:130px;border-radius:50%;object-fit:cover;border:3px solid var(--lantern);box-shadow:0 0 40px rgba(212,160,23,.25),0 0 80px rgba(204,85,34,.1);transition:transform .5s,box-shadow .5s}
+.avatar-wrap:hover img{transform:scale(1.08);box-shadow:0 0 60px rgba(212,160,23,.4),0 0 100px rgba(204,85,34,.15)}
+.hero-title{font-family:var(--font-jp);font-size:clamp(2.8rem,7vw,5rem);color:var(--lantern-glow);text-shadow:0 0 60px rgba(212,160,23,.2),0 2px 4px rgba(0,0,0,.6);line-height:1.1;margin-bottom:.5rem}
+.hero-handle{font-family:var(--font-mono);font-size:clamp(.7rem,1vw,.85rem);color:var(--yatai);letter-spacing:3px;margin-bottom:1.5rem}
+.hero-sub{font-family:var(--font-heading);font-size:clamp(.9rem,1.5vw,1.1rem);color:var(--text);opacity:.7;letter-spacing:6px;margin-bottom:2rem}
+.hero-verse{font-family:var(--font-heading);font-size:clamp(.78rem,1.1vw,.88rem);color:var(--lantern);opacity:.7;max-width:420px;line-height:1.9;margin-bottom:2rem;font-style:italic}
+.hero-tags{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-bottom:2rem}
+.hero-tag{font-family:var(--font-mono);font-size:.5rem;padding:.25rem .7rem;border:1px solid rgba(204,85,34,.2);color:var(--yatai-glow);letter-spacing:2px;text-transform:uppercase;background:rgba(204,85,34,.04);transition:all .3s;border-radius:2px}
+.hero-tag:hover{background:rgba(204,85,34,.1);border-color:rgba(204,85,34,.4)}
+.scroll-hint{font-family:var(--font-mono);font-size:.55rem;color:var(--text-muted);letter-spacing:3px;margin-top:2rem;animation:hintFloat 2s ease-in-out infinite}
+.scroll-hint i{display:block;margin-top:.5rem;font-size:.7rem}
+@keyframes hintFloat{0%,100%{opacity:.4}50%{opacity:.8}}
+
+/* STORY */
+.story-grid{max-width:900px;margin:0 auto;display:grid;gap:3rem}
+.story-card{background:rgba(204,85,34,.03);border:1px solid rgba(204,85,34,.08);border-radius:8px;padding:clamp(1.5rem,3vw,2.5rem);backdrop-filter:blur(8px);transition:border-color .4s}
+.story-card:hover{border-color:rgba(204,85,34,.18)}
+.story-card .stitle{font-size:clamp(1.3rem,2.5vw,1.8rem);margin-bottom:1rem}
+.story-quote{font-family:var(--font-heading);font-size:clamp(.9rem,1.3vw,1rem);color:var(--lantern);line-height:2;font-style:italic;border-left:3px solid var(--yatai);padding-left:1.5rem;margin:1.5rem 0;opacity:.8}
+
+/* SERVICES - styled as yatai menu board */
+.services-grid{max-width:1000px;margin:2rem auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem}
+.service-card{background:rgba(20,14,8,.6);border:1px solid rgba(204,85,34,.1);border-radius:4px;padding:2rem;position:relative;overflow:hidden;transition:all .4s;cursor:default}
+.service-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--yatai),var(--lantern-glow));opacity:0;transition:opacity .4s}
+.service-card:hover{border-color:rgba(204,85,34,.25);transform:translateY(-4px);box-shadow:0 8px 30px rgba(204,85,34,.08)}
+.service-card:hover::before{opacity:1}
+.service-icon{width:48px;height:48px;border-radius:50%;background:rgba(204,85,34,.08);display:flex;align-items:center;justify-content:center;margin-bottom:1.2rem;font-size:1.2rem;color:var(--yatai-glow);transition:all .4s}
+.service-card:hover .service-icon{background:rgba(204,85,34,.15);color:var(--lantern-glow)}
+.service-card h3{font-family:var(--font-jp);font-size:1.1rem;color:var(--lantern-glow);margin-bottom:.6rem;letter-spacing:1px}
+.service-card p{font-size:.82rem;color:var(--text);line-height:1.8;opacity:.7}
+
+/* SEASONS */
+.seasons-wrap{max-width:1100px;margin:2rem auto 0}
+.season-tabs{display:flex;gap:.5rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
+.season-tab{font-family:var(--font-jp);font-size:.9rem;padding:.5rem 1.5rem;border:1px solid rgba(204,85,34,.12);background:rgba(204,85,34,.03);color:var(--text-muted);cursor:pointer;transition:all .3s;border-radius:2px;letter-spacing:2px}
+.season-tab.active{background:rgba(204,85,34,.1);border-color:var(--yatai);color:var(--lantern-glow)}
+.season-tab:hover{border-color:rgba(204,85,34,.25)}
+.season-content{display:none;animation:seasonFade .5s ease}
+.season-content.active{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center}
+@keyframes seasonFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.season-img-wrap{border-radius:4px;overflow:hidden;position:relative;aspect-ratio:4/3}
+.season-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform .6s}
+.season-img-wrap:hover img{transform:scale(1.05)}
+.season-img-wrap::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 50%,rgba(10,14,26,.5));pointer-events:none}
+.season-info h3{font-family:var(--font-jp);font-size:clamp(1.3rem,3vw,2rem);color:var(--lantern-glow);margin-bottom:1rem}
+.season-info p{font-size:.85rem;line-height:2;color:var(--text);opacity:.8}
+.season-spots{margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:.5rem}
+.season-spot{font-family:var(--font-mono);font-size:.6rem;padding:.3rem .8rem;border:1px solid rgba(204,85,34,.15);color:var(--yatai-glow);letter-spacing:1px;border-radius:2px;transition:all .3s}
+.season-spot:hover{background:rgba(204,85,34,.1);border-color:var(--yatai)}
+
+/* ============ CHAPTER NAVIGATOR (side indicator) ============ */
+.chapter-nav{position:fixed;top:50%;right:1.8rem;transform:translateY(-50%);z-index:450;display:flex;flex-direction:column;gap:1rem;font-family:var(--font-mono);font-size:.55rem;color:var(--text-muted);letter-spacing:1px;pointer-events:auto}
+.chapter-nav::before{content:'';position:absolute;top:6px;bottom:6px;left:5px;width:1px;background:rgba(204,85,34,.12)}
+.chapter-item{display:flex;align-items:center;gap:.8rem;cursor:pointer;position:relative;transition:color .4s;text-decoration:none}
+.chapter-item .ch-dot{width:11px;height:11px;border:1px solid rgba(204,85,34,.4);border-radius:50%;background:var(--night);transition:all .4s;flex-shrink:0;position:relative;z-index:1}
+.chapter-item .ch-dot::after{content:'';position:absolute;inset:2px;border-radius:50%;background:var(--yatai);opacity:0;transition:opacity .4s}
+.chapter-item .ch-label{opacity:0;transform:translateX(10px);transition:all .4s;white-space:nowrap;color:var(--text);text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none}
+.chapter-item .ch-num{opacity:0;transform:translateX(10px);transition:all .4s;font-family:'Shippori Mincho',serif;font-size:.7rem;color:var(--yatai-glow);font-weight:600;pointer-events:none}
+.chapter-item:hover .ch-dot,.chapter-item.active .ch-dot{border-color:var(--lantern-glow);transform:scale(1.15);box-shadow:0 0 12px rgba(212,160,74,.4)}
+.chapter-item.active .ch-dot::after{opacity:1}
+.chapter-item:hover .ch-label,.chapter-item.active .ch-label{opacity:.9;transform:translateX(0)}
+.chapter-item:hover .ch-num,.chapter-item.active .ch-num{opacity:.7;transform:translateX(0)}
+.chapter-item.active{color:var(--lantern-glow)}
+@media(max-width:900px){.chapter-nav{display:none}}
+
+/* ============ SECTION KANJI DECORATION ============ */
+.section-kanji{position:absolute;font-family:'Shippori Mincho',serif;font-weight:900;color:rgba(212,160,74,.03);pointer-events:none;user-select:none;font-size:clamp(8rem,20vw,16rem);line-height:.8;z-index:0}
+.section-kanji.top-left{top:1rem;left:1rem}
+.section-kanji.top-right{top:1rem;right:2rem}
+.section-kanji.bottom-left{bottom:2rem;left:1rem}
+.section-kanji.bottom-right{bottom:2rem;right:2rem}
+.section-kanji.center{top:50%;left:50%;transform:translate(-50%,-50%)}
+@media(max-width:768px){.section-kanji{font-size:clamp(6rem,15vw,10rem)}}
+
+/* ============ PHRASE CARDS - 台日旅行用語 ============ */
+.phrase-section{position:relative}
+.phrase-wrap{max-width:560px;margin:2.5rem auto 0;position:relative}
+.phrase-deck{position:relative;height:340px;perspective:1800px}
+.phrase-card{position:absolute;top:0;left:50%;width:420px;max-width:92vw;height:300px;margin-left:-210px;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.4,.0,.2,1),opacity .5s,filter .5s;cursor:pointer;will-change:transform}
+@media(max-width:460px){
+  .phrase-card{width:calc(100vw - 40px);margin-left:calc(-50vw + 20px)}
+}
+.phrase-card.active{z-index:10;opacity:1;filter:none}
+.phrase-card.behind-1{transform:translateY(8px) scale(.96);z-index:9;opacity:.7;filter:brightness(.85)}
+.phrase-card.behind-2{transform:translateY(16px) scale(.92);z-index:8;opacity:.4;filter:brightness(.7)}
+.phrase-card.behind-3{transform:translateY(24px) scale(.88);z-index:7;opacity:.15;filter:brightness(.6)}
+.phrase-card.gone-left{transform:translateX(-120%) rotate(-12deg);opacity:0;pointer-events:none}
+.phrase-card.gone-right{transform:translateX(120%) rotate(12deg);opacity:0;pointer-events:none}
+
+.phrase-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;will-change:transform}
+.phrase-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:linear-gradient(145deg,#faf6eb 0%,#f0e8d0 100%);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.15) inset;padding:2rem;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;overflow:hidden}
+.phrase-face::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.5' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.15 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");mix-blend-mode:multiply;pointer-events:none;opacity:.5}
+.phrase-face::after{content:'';position:absolute;top:10px;left:10px;right:10px;bottom:10px;border:1px dashed rgba(58,46,31,.2);border-radius:6px;pointer-events:none}
+.phrase-front{background:linear-gradient(145deg,#faf6eb 0%,#f0e8d0 100%)}
+.phrase-back{transform:rotateY(180deg);background:linear-gradient(145deg,#fff8e8 0%,#f5ead0 100%)}
+
+.phrase-label{font-family:var(--font-mono);font-size:.55rem;color:var(--yatai);letter-spacing:3px;text-transform:uppercase;margin-bottom:1rem;position:relative;z-index:1}
+.phrase-label::before,.phrase-label::after{content:'—';margin:0 .5rem;opacity:.5}
+.phrase-text-zh{font-family:var(--font-heading);font-size:clamp(1.4rem,3vw,2rem);color:#1f1508;font-weight:700;line-height:1.4;margin-bottom:.5rem;position:relative;z-index:1;letter-spacing:2px}
+.phrase-hint{font-family:var(--font-mono);font-size:.55rem;color:#6e5638;margin-top:1.5rem;letter-spacing:1px;opacity:.7;position:relative;z-index:1}
+.phrase-hint i{margin-right:.3rem;color:var(--yatai)}
+
+.phrase-text-jp{font-family:'Shippori Mincho',serif;font-size:clamp(1.3rem,2.8vw,1.7rem);color:#1f1508;font-weight:700;line-height:1.5;margin-bottom:.6rem;position:relative;z-index:1;letter-spacing:1px}
+.phrase-kana{font-family:'Shippori Mincho',serif;font-size:clamp(.75rem,1.3vw,.95rem);color:#6b5430;margin-bottom:.8rem;position:relative;z-index:1;letter-spacing:1px}
+.phrase-romaji{font-family:var(--font-mono);font-size:clamp(.7rem,1.1vw,.85rem);color:#8b3a1f;margin-top:.3rem;position:relative;z-index:1;letter-spacing:2px;padding:.3rem .8rem;border:1px dashed rgba(139,58,31,.4);border-radius:3px;display:inline-block}
+
+/* Flip affordance icon on phrase cards - always visible on active card */
+.phrase-flip-hint{position:absolute;bottom:14px;right:18px;display:flex;align-items:center;gap:.3rem;font-family:var(--font-mono);font-size:.5rem;color:#8b3a1f;opacity:.55;letter-spacing:1px;z-index:2;pointer-events:none}
+.phrase-flip-hint i{font-size:.7rem;animation:phraseFlipHint 2s ease-in-out infinite}
+@keyframes phraseFlipHint{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
+.phrase-card.active .phrase-flip-hint{animation:phraseFlipHintFade 3s ease-in-out infinite}
+@keyframes phraseFlipHintFade{0%,100%{opacity:.55}50%{opacity:.9}}
+
+/* Card number corner */
+.phrase-num{position:absolute;top:14px;right:18px;font-family:var(--font-mono);font-size:.6rem;color:#8b3a1f;opacity:.6;letter-spacing:1px;z-index:2}
+/* Stamp mark in corner */
+.phrase-stamp{position:absolute;bottom:14px;left:18px;font-family:var(--font-mono);font-size:.5rem;color:#8b3a1f;opacity:.5;border:1px solid rgba(139,58,31,.4);padding:1px 5px;letter-spacing:1px;z-index:2;border-radius:1px}
+
+/* Controls */
+.phrase-controls{display:flex;justify-content:center;align-items:center;gap:1.5rem;margin-top:1.5rem}
+.phrase-btn{background:rgba(204,85,34,.08);border:1px solid rgba(204,85,34,.25);border-radius:50%;width:44px;height:44px;color:var(--lantern-glow);font-size:.9rem;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center}
+.phrase-btn:hover{background:rgba(204,85,34,.18);border-color:var(--yatai);transform:scale(1.08)}
+.phrase-btn:active{transform:scale(.95)}
+.phrase-btn:disabled{opacity:.3;cursor:not-allowed}
+.phrase-counter{font-family:var(--font-mono);font-size:.75rem;color:var(--text-muted);letter-spacing:2px;min-width:70px;text-align:center}
+.phrase-counter .pc-current{color:var(--lantern-glow);font-size:1rem;font-weight:600}
+
+/* Hint text */
+.phrase-instructions{text-align:center;margin-top:1.2rem;font-family:var(--font-mono);font-size:.55rem;color:var(--text-muted);letter-spacing:2px}
+.phrase-instructions i{color:var(--yatai-glow);margin:0 .3rem}
+
+/* ============ LINE CHAT SIMULATOR ============ */
+.linechat-section{position:relative}
+.linechat-wrap{max-width:460px;margin:2rem auto 0;background:#8ba0b3;border-radius:18px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);height:640px;display:flex;flex-direction:column;position:relative;cursor:pointer;user-select:none}
+.linechat-wrap::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:1}
+
+.linechat-header{background:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e5e5e5;position:relative;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.linechat-header::after{content:'';position:absolute;bottom:-1px;left:0;width:var(--chat-progress,0%);height:2px;background:linear-gradient(90deg,#06c755,#4fd68f);transition:width .5s ease}
+.lc-header-back{color:#333;font-size:1rem;cursor:pointer}
+.lc-header-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1.5px solid #e5e5e5}
+.lc-header-info{flex:1;min-width:0}
+.lc-header-name{font-family:var(--font-body);font-size:.85rem;color:#222;font-weight:600;display:flex;align-items:center}
+.lc-header-status{font-size:.6rem;color:#888;margin-top:.1rem}
+.lc-header-status::before{content:'●';color:#06c755;margin-right:.3rem;font-size:.55rem}
+.lc-header-icons{display:flex;gap:12px;color:#666;font-size:.9rem}
+
+.linechat-body{flex:1;overflow-y:auto;padding:16px 14px;background:#8ba0b3;background-image:radial-gradient(circle at 20% 30%,rgba(139,160,179,.3),transparent 40%),radial-gradient(circle at 80% 70%,rgba(120,140,160,.3),transparent 40%);position:relative;z-index:2;scroll-behavior:smooth}
+.linechat-body::-webkit-scrollbar{width:4px}
+.linechat-body::-webkit-scrollbar-track{background:transparent}
+.linechat-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:2px}
+
+.lc-day-divider{text-align:center;margin:.5rem 0 1rem}
+.lc-day-divider span{display:inline-block;font-size:.6rem;padding:.2rem .7rem;background:rgba(0,0,0,.35);color:#fff;border-radius:10px;letter-spacing:.5px}
+
+.lc-msg{display:flex;margin-bottom:.5rem;align-items:flex-end;gap:6px;animation:lcMsgIn .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes lcMsgIn{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.lc-msg.from-guide{justify-content:flex-start}
+.lc-msg.from-user{justify-content:flex-end}
+
+.lc-msg-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(255,255,255,.3)}
+.lc-msg-avatar.hidden{visibility:hidden}
+
+.lc-bubble-wrap{max-width:72%;display:flex;flex-direction:column;gap:2px}
+.lc-msg.from-user .lc-bubble-wrap{align-items:flex-end}
+.lc-msg.from-guide .lc-bubble-wrap{align-items:flex-start}
+
+.lc-bubble{padding:8px 12px;border-radius:14px;font-size:.8rem;line-height:1.5;word-wrap:break-word;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.08);font-family:var(--font-body);color:#1a1a1a}
+.lc-msg.from-guide .lc-bubble{background:#fff;border-top-left-radius:4px}
+.lc-msg.from-user .lc-bubble{background:#06c755;color:#fff;border-top-right-radius:4px}
+
+.lc-meta{display:flex;gap:4px;font-size:.5rem;color:rgba(255,255,255,.8);text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.lc-meta .lc-read{color:#7ee0a7;font-weight:600}
+.lc-msg.from-guide .lc-meta{order:1;align-self:flex-end;margin-left:.3rem;margin-bottom:.1rem}
+.lc-msg.from-user .lc-meta{order:-1;align-self:flex-end;margin-right:.3rem;margin-bottom:.1rem}
+
+/* Typing indicator */
+.lc-typing{background:#fff;padding:10px 14px;border-radius:14px;border-top-left-radius:4px;display:inline-flex;gap:4px;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.lc-typing span{width:7px;height:7px;background:#999;border-radius:50%;animation:lcTyping 1.4s ease-in-out infinite}
+.lc-typing span:nth-child(2){animation-delay:.15s}
+.lc-typing span:nth-child(3){animation-delay:.3s}
+@keyframes lcTyping{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+/* Image/location message animation */
+@keyframes lcImageIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+
+/* Location card */
+.lc-location{max-width:240px;background:#fff;border-radius:14px;border-top-left-radius:4px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.2);animation:lcImageIn .5s cubic-bezier(.2,.8,.2,1)}
+.lc-location-thumb{width:100%;height:120px;object-fit:cover;display:block}
+.lc-location-body{padding:10px 12px}
+.lc-location-name{font-size:.8rem;color:#1a1a1a;font-weight:600;margin-bottom:2px;display:flex;align-items:center;gap:.3rem}
+.lc-location-name i{color:#ff6b35;font-size:.7rem}
+.lc-location-addr{font-size:.6rem;color:#888;line-height:1.4}
+.lc-location-tags{margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.2rem}
+.lc-location-tags span{font-size:.55rem;padding:.1rem .4rem;background:#f0f5f8;color:#2e86ab;border-radius:6px;font-family:var(--font-mono)}
+
+/* Sticker message */
+.lc-sticker{font-size:2.8rem;line-height:1;animation:lcStickerIn .6s cubic-bezier(.2,1.8,.4,1);filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
+@keyframes lcStickerIn{from{opacity:0;transform:scale(.3) rotate(-15deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+
+/* System message */
+.lc-system{text-align:center;font-size:.6rem;color:rgba(255,255,255,.85);margin:.8rem 0;padding:.3rem;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.lc-system::before,.lc-system::after{content:'···';margin:0 .5rem;opacity:.5}
+
+/* Footer input */
+.linechat-footer{background:#fff;padding:10px 14px;border-top:1px solid #e5e5e5;position:relative;z-index:2}
+.lc-input{display:flex;align-items:center;gap:10px;background:#f5f5f5;border-radius:18px;padding:8px 12px}
+.lc-input i{color:#888;font-size:.85rem;flex-shrink:0}
+.lc-input-text{flex:1;font-size:.72rem;color:#999;font-family:var(--font-body)}
+
+/* Tap hint */
+.linechat-tap-hint{text-align:center;font-family:var(--font-mono);font-size:.6rem;color:var(--text-muted);letter-spacing:2px;margin-top:1.2rem;opacity:.7;animation:tapHintPulse 2s ease-in-out infinite}
+.linechat-tap-hint i{color:var(--yatai-glow);margin-right:.4rem}
+@keyframes tapHintPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.linechat-tap-hint.finished{animation:none;opacity:.4}
+
+/* Waiting glow - indicates user should tap */
+.linechat-wrap.waiting{animation:lcWaitGlow 2s ease-in-out infinite}
+@keyframes lcWaitGlow{0%,100%{box-shadow:0 25px 60px rgba(0,0,0,.6),0 0 0 2px rgba(6,199,85,.2),0 0 25px rgba(6,199,85,.1)}50%{box-shadow:0 25px 60px rgba(0,0,0,.6),0 0 0 2px rgba(6,199,85,.5),0 0 40px rgba(6,199,85,.3)}}
+
+/* Click feedback - subtle flash when user taps */
+.linechat-wrap.tapped{animation:lcTapFlash .5s ease-out}
+@keyframes lcTapFlash{0%{box-shadow:0 25px 60px rgba(0,0,0,.6),0 0 0 3px rgba(6,199,85,.7),0 0 60px rgba(6,199,85,.4)}100%{box-shadow:0 25px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08),0 0 0 rgba(6,199,85,0)}}
+
+/* Waiting green dot in input area */
+.lc-waiting-dot{display:inline-block;width:7px;height:7px;background:#06c755;border-radius:50%;margin-left:.4rem;vertical-align:middle;opacity:0;box-shadow:0 0 6px rgba(6,199,85,.6)}
+.linechat-wrap.waiting .lc-waiting-dot{opacity:1;animation:lcWaitDot 1.2s ease-in-out infinite}
+@keyframes lcWaitDot{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.4);opacity:1}}
+
+@media(max-width:520px){
+  .linechat-wrap{max-width:100%;height:580px}
+}
+
+/* ============ POLAROID PHOTO ALBUM ============ */
+.album-section{position:relative}
+.album-wall{max-width:1100px;margin:3rem auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:50px 60px;padding:2rem 1rem;perspective:2000px}
+.album-wall::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.4 0 0 0 0 0.2 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;mix-blend-mode:overlay;border-radius:4px}
+
+.polaroid{width:200px;height:260px;cursor:pointer;position:relative;filter:drop-shadow(0 6px 18px rgba(0,0,0,.4));transition:filter .4s,opacity .4s;perspective:1800px;-webkit-perspective:1800px}
+/* Sibling dimming when album is being hovered */
+.album-wall.hovering .polaroid:not(.hov):not(.polaroid-secret){opacity:.5;filter:drop-shadow(0 4px 10px rgba(0,0,0,.3)) blur(.5px)}
+.album-wall.hovering .polaroid.hov{filter:drop-shadow(0 15px 40px rgba(0,0,0,.7)) drop-shadow(0 0 25px rgba(240,208,96,.15));z-index:50}
+.album-wall.hovering .polaroid.flipping{z-index:100}
+
+.polaroid-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d}
+
+.polaroid-front,.polaroid-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:linear-gradient(180deg,#f8f3e8 0%,#ede5d2 100%);box-shadow:0 6px 20px rgba(0,0,0,.5),0 1px 2px rgba(255,255,255,.1) inset;border-radius:2px;padding:12px 12px 0 12px;display:flex;flex-direction:column}
+
+.polaroid-front img{width:100%;height:178px;object-fit:cover;filter:sepia(.08) saturate(.93) brightness(.95);display:block}
+.polaroid-caption{flex:1;display:flex;align-items:center;justify-content:center;font-family:'Caveat',cursive;font-size:1.45rem;color:#3a2e1f;font-weight:600;letter-spacing:1px;text-align:center;padding:.4rem 0}
+
+.polaroid-back{transform:rotateY(180deg);padding:18px 16px;background:linear-gradient(135deg,#f8f3e8 0%,#ebe2cf 100%);text-align:left;justify-content:space-between;overflow:hidden}
+.polaroid-back::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='3' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 .12 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");pointer-events:none;mix-blend-mode:multiply;opacity:.5}
+.polaroid-back-title{font-family:'Caveat',cursive;font-size:1.1rem;color:#3a2e1f;font-weight:600;border-bottom:1px solid rgba(58,46,31,.25);padding-bottom:.3rem;margin-bottom:.4rem;position:relative;z-index:1}
+.polaroid-back-text{font-family:'Kalam',cursive;font-size:.78rem;color:#3a2e1f;line-height:1.6;flex:1;position:relative;z-index:1}
+.polaroid-back-meta{font-family:'Caveat',cursive;font-size:.85rem;color:#6e5638;margin-top:.4rem;display:flex;justify-content:space-between;align-items:flex-end;position:relative;z-index:1}
+.polaroid-back-stamp{display:inline-block;border:1.5px solid #8b3a1f;color:#8b3a1f;padding:.1rem .35rem;font-family:var(--font-mono);font-size:.45rem;letter-spacing:1px;border-radius:1px;transform:rotate(-8deg);opacity:.7}
+
+/* Flip affordance icon - shows on front face indicating it's flippable */
+.polaroid-flip-hint{position:absolute;bottom:10px;right:10px;width:24px;height:24px;border-radius:50%;background:rgba(139,58,31,.9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.6rem;z-index:3;box-shadow:0 2px 6px rgba(0,0,0,.4);pointer-events:none;opacity:0;transform:scale(.6);transition:opacity .3s,transform .3s;border:1.5px solid rgba(255,255,255,.3)}
+.album-wall.hovering .polaroid.hov .polaroid-flip-hint{opacity:1;transform:scale(1);animation:flipHintPulse 1.5s ease-in-out infinite}
+@keyframes flipHintPulse{0%,100%{transform:scale(1);box-shadow:0 2px 6px rgba(0,0,0,.4),0 0 0 rgba(139,58,31,.4)}50%{transform:scale(1.08);box-shadow:0 2px 6px rgba(0,0,0,.4),0 0 0 8px rgba(139,58,31,0)}}
+.polaroid-flip-hint i{animation:flipIconSpin 2s linear infinite}
+@keyframes flipIconSpin{to{transform:rotateY(360deg)}}
+
+/* Washi tape */
+.polaroid-tape{position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(-3deg);width:64px;height:18px;background:rgba(244,184,193,.55);box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .5s;z-index:5}
+.polaroid-tape::before,.polaroid-tape::after{content:'';position:absolute;top:0;bottom:0;width:8px;background:repeating-linear-gradient(45deg,rgba(255,255,255,.3) 0 2px,transparent 2px 4px)}
+.polaroid-tape::before{left:0}.polaroid-tape::after{right:0}
+.polaroid:nth-child(2n) .polaroid-tape{background:rgba(212,160,74,.5)}
+.polaroid:nth-child(3n) .polaroid-tape{background:rgba(94,184,212,.5)}
+.polaroid:nth-child(5n) .polaroid-tape{background:rgba(168,212,94,.5)}
+
+/* Sticky note on one polaroid */
+.polaroid-sticky{position:absolute;top:-12px;right:-18px;width:50px;height:50px;background:#fff8a8;box-shadow:0 4px 10px rgba(0,0,0,.3);transform:rotate(8deg);font-family:'Caveat',cursive;font-size:.7rem;color:#3a2e1f;padding:6px;display:flex;align-items:center;justify-content:center;z-index:6;text-align:center;line-height:1.1;font-weight:600}
+
+/* Secret polaroid - hidden until all flipped */
+.polaroid-secret{opacity:0;pointer-events:none;transform:rotate(var(--rot,0deg)) scale(.7);transition:all 1.5s cubic-bezier(.2,.8,.2,1)}
+.polaroid-secret.unlocked{opacity:1;pointer-events:auto;transform:rotate(0) scale(1);animation:secretGlow 2s ease 1.5s infinite}
+@keyframes secretGlow{0%,100%{box-shadow:0 0 0 rgba(240,208,96,0)}50%{filter:drop-shadow(0 0 25px rgba(240,208,96,.6))}}
+
+/* Album progress counter */
+.album-progress{max-width:600px;margin:2rem auto 0;text-align:center;font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);letter-spacing:2px;padding:1rem;border-top:1px solid rgba(204,85,34,.1)}
+.album-progress i{color:var(--yatai);margin-right:.5rem}
+.album-progress .progress-num{color:var(--lantern-glow);font-size:1.1rem;font-weight:600;margin:0 .3rem}
+.album-progress .album-bar{display:block;width:100%;max-width:300px;height:3px;margin:.8rem auto 0;background:rgba(204,85,34,.1);border-radius:2px;overflow:hidden}
+.album-progress .album-bar-fill{display:block;height:100%;background:linear-gradient(90deg,var(--yatai),var(--lantern-glow));width:0%;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.album-progress .progress-msg{display:block;margin-top:.6rem;font-family:'Caveat',cursive;font-size:.95rem;color:var(--lantern);text-transform:none;letter-spacing:0;opacity:0;transition:opacity .5s}
+.album-progress .progress-msg.visible{opacity:1}
+
+/* QUOTE */
+.quote-section{min-height:60vh;display:flex;align-items:center;justify-content:center;text-align:center;position:relative}
+.quote-inner{max-width:600px;padding:0 2rem}
+.quote-mark{font-family:var(--font-jp);font-size:4rem;color:var(--yatai);opacity:.3;line-height:1}
+.quote-text{font-family:var(--font-heading);font-size:clamp(1.1rem,2vw,1.4rem);color:var(--lantern-glow);line-height:2.2;margin:1rem 0}
+.quote-author{font-family:var(--font-mono);font-size:.65rem;color:var(--text-muted);letter-spacing:3px}
+
+/* RECS */
+.map-wrap{max-width:900px;margin:2rem auto 0}
+.map-card{background:rgba(20,14,8,.5);border:1px solid rgba(204,85,34,.08);border-radius:4px;padding:2rem}
+.recommendation{margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid rgba(204,85,34,.06)}
+.recommendation:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.rec-title{font-family:var(--font-jp);font-size:1rem;color:var(--lantern-glow);margin-bottom:.4rem;display:flex;align-items:center;gap:.5rem}
+.rec-title i{color:var(--yatai);font-size:.8rem}
+.rec-desc{font-size:.82rem;color:var(--text);line-height:1.8;opacity:.7}
+.rec-tag{display:inline-block;font-family:var(--font-mono);font-size:.55rem;padding:.15rem .5rem;border:1px solid rgba(204,85,34,.15);color:var(--yatai-glow);margin-top:.5rem;letter-spacing:1px;border-radius:2px}
+
+/* CONTACT */
+.contact{text-align:center}
+.contact-links{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:2rem}
+.contact-link{display:flex;flex-direction:column;align-items:center;gap:.5rem;text-decoration:none;color:var(--text);transition:all .3s;padding:1.5rem;border-radius:4px;border:1px solid rgba(204,85,34,.08);background:rgba(204,85,34,.03);min-width:120px}
+.contact-link:hover{border-color:rgba(204,85,34,.2);transform:translateY(-4px);color:var(--lantern-glow)}
+.contact-link i{font-size:1.5rem;color:var(--yatai-glow);transition:color .3s}
+.contact-link:hover i{color:var(--lantern-glow)}
+.contact-link span{font-size:.7rem;font-family:var(--font-mono);letter-spacing:1px}
+.contact-line{display:inline-flex;align-items:center;gap:.8rem;margin-top:1.5rem;padding:1rem 2rem;border:1px solid rgba(0,195,0,.15);border-radius:4px;background:rgba(0,195,0,.03);transition:all .3s}
+.contact-line:hover{border-color:rgba(0,195,0,.3);background:rgba(0,195,0,.06)}
+.contact-line .line-icon{color:#00c300;font-size:1.2rem}
+.contact-line .line-id{font-family:var(--font-mono);font-size:.8rem;color:#00c300;letter-spacing:2px}
+
+/* FOOTER */
+.footer{text-align:center;padding:3rem 2rem;border-top:1px solid rgba(204,85,34,.06)}
+.footer-sig{font-family:var(--font-mono);font-size:.6rem;color:var(--text-muted);letter-spacing:2px}
+.footer-sig a{color:var(--yatai);text-decoration:none}
+.footer-sig a:hover{color:var(--lantern-glow)}
+
+/* ============ SAKURA BLOOM FORECAST WIDGET ============ */
+.sakura-forecast{margin-top:1.5rem;padding:1.2rem;background:linear-gradient(135deg,rgba(244,184,193,.05),rgba(204,85,34,.04));border:1px solid rgba(244,184,193,.15);border-radius:6px;position:relative;overflow:hidden}
+.sakura-forecast::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(244,184,193,.15),transparent 70%);pointer-events:none}
+.forecast-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
+.forecast-title{font-family:var(--font-jp);font-size:.85rem;color:var(--sakura-pale);display:flex;align-items:center;gap:.5rem}
+.forecast-title i{color:var(--sakura)}
+.forecast-status{font-family:var(--font-mono);font-size:.6rem;color:var(--sakura);letter-spacing:1px;padding:.2rem .6rem;background:rgba(244,184,193,.08);border:1px solid rgba(244,184,193,.2);border-radius:10px}
+.forecast-bar-wrap{height:14px;background:rgba(10,14,26,.6);border:1px solid rgba(244,184,193,.15);border-radius:7px;position:relative;overflow:hidden}
+.forecast-bar{height:100%;background:linear-gradient(90deg,#f4b8c1,#ff8fa3,#f4b8c1);border-radius:6px;position:relative;width:0;transition:width 2s cubic-bezier(.2,.8,.2,1)}
+.forecast-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);animation:forecastShine 3s ease-in-out infinite}
+@keyframes forecastShine{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
+.forecast-marks{display:flex;justify-content:space-between;margin-top:.5rem;font-family:var(--font-jp);font-size:.55rem;color:var(--text-muted);letter-spacing:1px}
+.forecast-marks span.active{color:var(--sakura);font-weight:600}
+.forecast-meta{margin-top:.8rem;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.55rem;color:var(--text-muted);letter-spacing:1px}
+.forecast-meta .live-dot{display:inline-block;width:6px;height:6px;background:#5ee05e;border-radius:50%;margin-right:.4rem;animation:livePulse 1.5s ease-in-out infinite;box-shadow:0 0 8px rgba(94,224,94,.6)}
+@keyframes livePulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+
+/* ============ LANTERN TIP POPUP ============ */
+.lantern-tip{position:fixed;background:rgba(20,14,8,.95);border:1px solid var(--yatai);border-radius:4px;padding:.8rem 1rem;max-width:240px;font-family:var(--font-body);font-size:.72rem;color:var(--lantern-glow);line-height:1.7;z-index:9500;pointer-events:none;box-shadow:0 0 30px rgba(204,85,34,.4),0 8px 20px rgba(0,0,0,.6);transform-origin:center bottom;will-change:transform,opacity}
+.lantern-tip::before{content:'';position:absolute;bottom:-6px;left:50%;width:10px;height:10px;background:rgba(20,14,8,.95);border-right:1px solid var(--yatai);border-bottom:1px solid var(--yatai);transform:translateX(-50%) rotate(45deg)}
+.lantern-tip.below::before{bottom:auto;top:-6px;border-right:none;border-bottom:none;border-left:1px solid var(--yatai);border-top:1px solid var(--yatai)}
+.lantern-tip.below{transform-origin:center top}
+.lantern-tip.center-screen::before{display:none}
+.lantern-tip .tip-label{display:block;font-family:var(--font-mono);font-size:.5rem;color:var(--yatai);letter-spacing:2px;margin-bottom:.3rem;text-transform:uppercase}
+.lantern-tip .tip-text{display:block;font-family:var(--font-jp)}
+.lantern-tip.center-screen{transform-origin:center center}
+/* Minimal lantern counter - bottom-left */
+.lantern-counter{position:fixed;bottom:1.2rem;left:1.2rem;z-index:400;font-family:var(--font-mono);font-size:.6rem;color:var(--lantern-glow);letter-spacing:1px;background:rgba(20,14,8,.7);padding:.4rem .7rem;border-radius:3px;backdrop-filter:blur(6px);pointer-events:none;border:1px solid rgba(204,85,34,.15);animation:counterIn 1s ease 1.5s both;display:flex;align-items:center;gap:.4rem}
+.lantern-counter i{color:var(--yatai);font-size:.55rem}
+.lantern-counter span{color:var(--lantern-glow);font-weight:600}
+@keyframes counterIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Lantern proximity ring - shows "點亮" text near unlit lanterns */
+.lantern-prox{position:fixed;pointer-events:none;z-index:90;width:50px;height:50px;border-radius:50%;border:1.5px dashed var(--yatai);transform:translate(-50%,-50%) scale(.6);opacity:0;transition:transform .3s,opacity .3s;background:radial-gradient(circle,rgba(204,85,34,.06),transparent 70%)}
+.lantern-prox.visible{opacity:1;transform:translate(-50%,-50%) scale(1);animation:proxRotate 4s linear infinite}
+@keyframes proxRotate{to{transform:translate(-50%,-50%) scale(1) rotate(360deg)}}
+.lantern-prox::after{content:'點亮';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font-jp);font-size:9px;color:var(--lantern-glow);background:rgba(20,14,8,.9);padding:1px 5px;border-radius:1px;letter-spacing:1px;white-space:nowrap}
+
+/* ============ FUKUOKA REAL-TIME CLOCK ============ */
+.fukuoka-clock{position:fixed;top:1.5rem;right:1.5rem;z-index:500;font-family:var(--font-mono);background:rgba(15,10,5,.85);border:1px solid rgba(204,85,34,.2);border-radius:4px;padding:.6rem .9rem;backdrop-filter:blur(8px);min-width:140px;text-align:right;transition:all .3s;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.fukuoka-clock:hover{border-color:rgba(204,85,34,.4);transform:translateY(-2px)}
+.fkclock-label{font-size:.5rem;color:var(--text-muted);letter-spacing:2px;display:flex;align-items:center;justify-content:flex-end;gap:.4rem;margin-bottom:.2rem}
+.fkclock-label::before{content:'';width:5px;height:5px;background:#5ee05e;border-radius:50%;animation:livePulse 1.5s ease-in-out infinite;box-shadow:0 0 6px rgba(94,224,94,.6)}
+.fkclock-time{font-size:1.05rem;color:var(--lantern-glow);font-weight:600;letter-spacing:1px;line-height:1.1;font-variant-numeric:tabular-nums}
+.fkclock-time .fkclock-sec{color:var(--yatai);font-size:.7rem;font-weight:400;margin-left:.2rem}
+.fkclock-status{font-size:.5rem;color:var(--yatai-glow);letter-spacing:1px;margin-top:.3rem;font-family:'Shippori Mincho',serif}
+.fkclock-status i{font-size:.6rem;margin-right:.2rem;color:var(--yatai)}
+
+/* ============ TEXT SELECTION ============ */
+::selection{background:rgba(204,85,34,.4);color:var(--lantern-glow);text-shadow:0 0 8px rgba(240,208,96,.5)}
+::-moz-selection{background:rgba(204,85,34,.4);color:var(--lantern-glow)}
+
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .season-content.active{grid-template-columns:1fr}
+  .services-grid{grid-template-columns:1fr}
+  .hero-title{font-size:clamp(2.5rem,8vw,3.5rem)}
+  .lantern-counter{display:none}
+}
+@media(max-width:480px){
+  .contact-links{flex-direction:column;align-items:center}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER - yatai noren parting -->
+<div class="loader" id="loader">
+  <div class="loader-noren">
+    <div class="loader-noren-strip"></div>
+    <div class="loader-noren-strip"></div>
+    <div class="loader-noren-strip"></div>
+    <div class="loader-noren-strip"></div>
+    <div class="loader-noren-strip"></div>
+  </div>
+  <div class="loader-text">福岡</div>
+  <div class="loader-sub">ENTERING FUKUOKA</div>
+</div>
+
+<!-- GUIDE LANTERN CURSOR -->
+<div class="guide-lantern" id="guideLantern">
+  <div class="guide-lantern-glow"></div>
+  <div class="guide-lantern-dot"></div>
+</div>
+
+<!-- SCROLL PROGRESS -->
+<div class="scroll-bar" id="scrollBar"></div>
+
+<!-- LANTERN DISCOVERY COUNTER (minimal) -->
+<div class="lantern-counter" id="lanternCounter">
+  <i class="fas fa-fire"></i> <span id="lanternCount">0</span> / 12
+</div>
+
+<!-- LANTERN PROXIMITY RING -->
+<div class="lantern-prox" id="lanternProx"></div>
+
+<div id="p5-bg"></div>
+
+<a href="/guild/" class="back-nav"><i class="fas fa-torii-gate" style="margin-right:6px"></i> ARCHIVE</a>
+
+<!-- CHAPTER NAVIGATOR (floating side indicator) -->
+<nav class="chapter-nav" id="chapterNav">
+  <a href="#hero" class="chapter-item" data-ch="hero"><div class="ch-dot"></div><span class="ch-num">序</span><span class="ch-label">HERO</span></a>
+  <a href="#story" class="chapter-item" data-ch="story"><div class="ch-dot"></div><span class="ch-num">壱</span><span class="ch-label">STORY</span></a>
+  <a href="#services" class="chapter-item" data-ch="services"><div class="ch-dot"></div><span class="ch-num">弐</span><span class="ch-label">SERVICES</span></a>
+  <a href="#seasons" class="chapter-item" data-ch="seasons"><div class="ch-dot"></div><span class="ch-num">参</span><span class="ch-label">SEASONS</span></a>
+  <a href="#linechat" class="chapter-item" data-ch="linechat"><div class="ch-dot"></div><span class="ch-num">肆</span><span class="ch-label">CHAT</span></a>
+  <a href="#phrase" class="chapter-item" data-ch="phrase"><div class="ch-dot"></div><span class="ch-num">伍</span><span class="ch-label">PHRASES</span></a>
+  <a href="#album" class="chapter-item" data-ch="album"><div class="ch-dot"></div><span class="ch-num">陸</span><span class="ch-label">ALBUM</span></a>
+  <a href="#recs" class="chapter-item" data-ch="recs"><div class="ch-dot"></div><span class="ch-num">漆</span><span class="ch-label">PICKS</span></a>
+  <a href="#contact" class="chapter-item" data-ch="contact"><div class="ch-dot"></div><span class="ch-num">捌</span><span class="ch-label">CONTACT</span></a>
+</nav>
+
+<!-- FUKUOKA REAL-TIME CLOCK -->
+<div class="fukuoka-clock" id="fukuokaClock">
+  <div class="fkclock-label">FUKUOKA · JST</div>
+  <div class="fkclock-time" id="fkclockTime">--:--<span class="fkclock-sec">--</span></div>
+  <div class="fkclock-status" id="fkclockStatus"><i class="fas fa-moon"></i> 深夜</div>
+</div>
+
+<div class="content-layer">
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-inner">
+      <div class="avatar-wrap" id="avatarWrap">
+        <img src="/assets/img/guild/taiwanfukuoka/avatar.webp" alt="taiwanfukuoka" loading="eager">
+      </div>
+      <h1 class="hero-title">福岡嚮導</h1>
+      <div class="hero-handle">@taiwanfukuoka</div>
+      <p class="hero-sub">你的在地台灣嚮導</p>
+      <p class="hero-verse">「來福岡，我帶你走一趟在地人的夜晚」</p>
+      <div class="hero-tags">
+        <span class="hero-tag">FUKUOKA</span>
+        <span class="hero-tag">LOCAL GUIDE</span>
+        <span class="hero-tag">TRAVEL PLANNING</span>
+        <span class="hero-tag">KYUSHU</span>
+      </div>
+      <div class="scroll-hint">
+        SCROLL TO EXPLORE
+        <i class="fas fa-chevron-down"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- STORY -->
+  <section class="story" id="story">
+    <div class="section-kanji top-right">物語</div>
+    <div class="story-grid">
+      <div class="story-card">
+        <span class="label">about me</span>
+        <h2 class="stitle">我在福岡，等你來玩</h2>
+        <p class="stext">
+          我是一個住在日本福岡的台灣人。離開了熟悉的島嶼，來到九州這座溫暖的城市。福岡不像東京那麼喧鬧，也不像大阪那麼擁擠，它有自己的步調 -- 屋台裡的熱湯拉麵、博多灣的海風、舞鶴公園裡的四季流轉。
+        </p>
+        <div class="story-quote">
+          「這座城市教會我的，不只是怎麼生活，而是怎麼慢下來，好好感受每一個季節。」
+        </div>
+        <p class="stext">
+          住久了，我開始想把這些美好分享出去。不是那種觀光手冊上的制式行程，而是只有在地人才知道的巷弄美食、只有當地人才會去的秘境景點、只有住在這裡才能掌握的即時花況。我想讓每一個來福岡的台灣朋友，都能擁有一趟不踩雷的旅程。
+        </p>
+      </div>
+
+      <div class="story-card">
+        <span class="label">what i do</span>
+        <h2 class="stitle">不只是嚮導，是你在福岡的朋友</h2>
+        <p class="stext">
+          我做的不只是安排行程。我會根據你的預算、喜好、旅伴組成，量身打造最適合你的福岡體驗。帶著小孩？我知道哪裡有最棒的親子景點。想要深度文化之旅？我帶你去看磯崎新設計的美術館、收藏葛飾北齋浮世繪的殿堂。只想放鬆？糸島的海邊等著你。
+        </p>
+        <p class="stext" style="margin-top:1rem">
+          從機票到住宿、從機場接送到在地導覽，我一手包辦。口碑經營，每一次服務都是朋友介紹朋友。這不是生意，這是我把福岡介紹給世界的方式。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="services" id="services">
+    <div class="section-kanji bottom-left">奉仕</div>
+    <div class="text-center">
+      <span class="label">services</span>
+      <h2 class="stitle stext-center">我能為你做什麼</h2>
+    </div>
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="service-icon"><i class="fas fa-person-walking-luggage"></i></div>
+        <h3>專業地陪</h3>
+        <p>不需要自己查攻略、不怕迷路。我親自帶你走訪福岡大街小巷，從觀光名所到隱藏版巷弄，講中文、聊台灣，像朋友一樣輕鬆自在。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="fas fa-plane-departure"></i></div>
+        <h3>機加酒套裝</h3>
+        <p>我從旅行社取得團體票清倉名額，含稅、含托運、含早餐、市區飯店連泊。價格透明，省去你比價的時間。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="fas fa-car-side"></i></div>
+        <h3>包車與接送</h3>
+        <p>機場接送、九州自駕遊、包車一日遊。不用擔心日本右駕、不用煩惱停車，輕鬆出發就對了。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="fas fa-route"></i></div>
+        <h3>客製化行程</h3>
+        <p>告訴我天數、預算、旅伴組成，我幫你規劃最適合的路線。小團體、家族旅、員工旅遊，從半天到一週都能安排。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="fas fa-utensils"></i></div>
+        <h3>美食情報</h3>
+        <p>博多豚骨拉麵、牛雜鍋、明太子、和牛燒肉、新鮮生魚片。我推薦的都是在地人真正會去的店，不是觀光客排隊名店。</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon"><i class="fas fa-calendar-days"></i></div>
+        <h3>季節活動</h3>
+        <p>櫻花季即時花況、花火大會最佳觀賞位置、聖誕燈飾秘境。跟著在地人的節奏，體驗最道地的福岡四季。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEASONS -->
+  <section class="seasons" id="seasons">
+    <div class="section-kanji top-right">四季</div>
+    <div class="text-center">
+      <span class="label">four seasons</span>
+      <h2 class="stitle stext-center">福岡的四季</h2>
+      <p class="stext stext-center" style="margin-bottom:2rem;opacity:.6">每個季節都有專屬的風景，選一個來體驗吧</p>
+    </div>
+    <div class="seasons-wrap">
+      <div class="season-tabs">
+        <div class="season-tab active" data-season="spring">春 - 桜</div>
+        <div class="season-tab" data-season="summer">夏 - 海</div>
+        <div class="season-tab" data-season="autumn">秋 - 紅葉</div>
+        <div class="season-tab" data-season="winter">冬 - 燈</div>
+      </div>
+      <div class="season-content active" id="season-spring">
+        <div class="season-img-wrap"><img src="/assets/img/guild/taiwanfukuoka/sakura_day.webp" alt="福岡櫻花" loading="lazy"></div>
+        <div class="season-info">
+          <h3>桜の季節</h3>
+          <p>三月底到四月初，福岡被粉色覆蓋。舞鶴公園一千多棵櫻花同時綻放，福岡城蹟的夜櫻點燈如夢似幻。我會即時回報花況，帶你在最美的時刻抵達最美的角落。</p>
+          <div class="season-spots"><span class="season-spot">舞鶴公園</span><span class="season-spot">福岡城蹟</span><span class="season-spot">大濠公園</span><span class="season-spot">天神中央公園</span></div>
+
+          <div class="sakura-forecast">
+            <div class="forecast-header">
+              <div class="forecast-title"><i class="fas fa-fan"></i> 今年花況預報</div>
+              <div class="forecast-status" id="forecastStatus">滿開</div>
+            </div>
+            <div class="forecast-bar-wrap">
+              <div class="forecast-bar" id="forecastBar" data-target="92"></div>
+            </div>
+            <div class="forecast-marks">
+              <span>蕾</span>
+              <span>三分</span>
+              <span>五分</span>
+              <span>七分</span>
+              <span class="active">滿開</span>
+              <span>葉桜</span>
+            </div>
+            <div class="forecast-meta">
+              <span><span class="live-dot"></span>LIVE FROM 舞鶴公園</span>
+              <span id="forecastDate">UPDATED 04 / 09</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="season-content" id="season-summer">
+        <div class="season-img-wrap"><img src="/assets/img/guild/taiwanfukuoka/beach.webp" alt="糸島海邊" loading="lazy"></div>
+        <div class="season-info">
+          <h3>海の季節</h3>
+          <p>夏天的福岡是海的城市。糸島半島的白色沙灘、能古島的向日葵花海、東區的花火大會，七千發煙火照亮博多灣的夜空。帶著孩子來白絲瀑布玩水，是最棒的親子記憶。</p>
+          <div class="season-spots"><span class="season-spot">糸島海岸</span><span class="season-spot">能古島</span><span class="season-spot">白絲瀑布</span><span class="season-spot">東區花火大會</span></div>
+        </div>
+      </div>
+      <div class="season-content" id="season-autumn">
+        <div class="season-img-wrap"><img src="/assets/img/guild/taiwanfukuoka/park.webp" alt="福岡秋景" loading="lazy"></div>
+        <div class="season-info">
+          <h3>紅葉の季節</h3>
+          <p>秋天的九州是紅葉的天堂。竈門神社的楓紅隧道、太宰府天滿宮的銀杏大道、秋月城下町的和風秋色。這個季節最適合自駕，沿著山路一路追楓。</p>
+          <div class="season-spots"><span class="season-spot">竈門神社</span><span class="season-spot">太宰府天滿宮</span><span class="season-spot">秋月城跡</span><span class="season-spot">柳川</span></div>
+        </div>
+      </div>
+      <div class="season-content" id="season-winter">
+        <div class="season-img-wrap"><img src="/assets/img/guild/taiwanfukuoka/lantern_night.webp" alt="福岡冬季燈飾" loading="lazy"></div>
+        <div class="season-info">
+          <h3>灯の季節</h3>
+          <p>冬天的福岡被溫暖的燈光包裹。博多站前的聖誕燈飾、天神的冬季點燈、門司港的懷舊夜景。在寒冷的夜裡鑽進屋台，點一碗熱騰騰的豚骨拉麵，這就是福岡的冬天。</p>
+          <div class="season-spots"><span class="season-spot">博多站燈飾</span><span class="season-spot">天神點燈</span><span class="season-spot">門司港懷舊</span><span class="season-spot">屋台拉麵</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LINE CHAT SIMULATOR -->
+  <section class="linechat-section" id="linechat">
+    <div class="section-kanji top-left">会話</div>
+    <div class="text-center">
+      <span class="label">simulator</span>
+      <h2 class="stitle stext-center">如果你問我...</h2>
+      <p class="stext stext-center" style="margin-bottom:2rem;opacity:.65">這就是跟我聊天會發生的事 · 點擊任何地方繼續</p>
+    </div>
+
+    <div class="linechat-wrap" id="linechatWrap">
+      <div class="linechat-header">
+        <div class="lc-header-back"><i class="fas fa-chevron-left"></i></div>
+        <img class="lc-header-avatar" src="/assets/img/guild/taiwanfukuoka/avatar.webp" alt="taiwanfukuoka">
+        <div class="lc-header-info">
+          <div class="lc-header-name">taiwanfukuoka<i class="fas fa-circle-check" style="color:#06c755;font-size:.7rem;margin-left:.3rem"></i></div>
+          <div class="lc-header-status">線上 · 福岡市</div>
+        </div>
+        <div class="lc-header-icons">
+          <i class="fas fa-phone"></i>
+          <i class="fas fa-video"></i>
+        </div>
+      </div>
+
+      <div class="linechat-body" id="linechatBody">
+        <div class="lc-day-divider"><span>今天</span></div>
+      </div>
+
+      <div class="linechat-footer">
+        <div class="lc-input">
+          <i class="fas fa-plus"></i>
+          <div class="lc-input-text" id="lcInputText">點擊任何地方繼續對話...</div>
+          <i class="fas fa-microphone"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="linechat-tap-hint" id="lcTapHint">
+      <i class="fas fa-hand-pointer"></i> TAP THE CHAT TO CONTINUE
+    </div>
+  </section>
+
+  <!-- PHRASE CARDS - 台日旅行用語 -->
+  <section class="phrase-section" id="phrase">
+    <div class="section-kanji top-right">言葉</div>
+    <div class="text-center">
+      <span class="label">phrase cards</span>
+      <h2 class="stitle stext-center">旅行必備用語</h2>
+      <p class="stext stext-center" style="margin-bottom:2rem;opacity:.65">最常被問的中日翻譯 · 點卡片翻面、按箭頭換下一張</p>
+    </div>
+
+    <div class="phrase-wrap">
+      <div class="phrase-deck" id="phraseDeck">
+        <!-- cards will be generated by JS -->
+      </div>
+
+      <div class="phrase-controls">
+        <button class="phrase-btn" id="phrasePrev" aria-label="上一張"><i class="fas fa-chevron-left"></i></button>
+        <div class="phrase-counter"><span class="pc-current" id="phraseCurrent">1</span> / <span id="phraseTotal">10</span></div>
+        <button class="phrase-btn" id="phraseNext" aria-label="下一張"><i class="fas fa-chevron-right"></i></button>
+      </div>
+
+      <div class="phrase-instructions">
+        <i class="fas fa-hand-pointer"></i> CLICK TO FLIP <i class="fas fa-arrows-left-right"></i> ARROWS TO NAVIGATE
+      </div>
+    </div>
+  </section>
+
+  <!-- POLAROID PHOTO ALBUM -->
+  <section class="album-section" id="album">
+    <div class="section-kanji bottom-right">写真</div>
+    <div class="text-center">
+      <span class="label">photo album</span>
+      <h2 class="stitle stext-center">嚮導的相簿</h2>
+      <p class="stext stext-center" style="margin-bottom:1rem;opacity:.65">每張照片背後都藏著一段故事 · 點擊翻面看看</p>
+    </div>
+
+    <div class="album-wall" id="albumWall">
+
+      <!-- Polaroid 1: Sakura Day -->
+      <div class="polaroid" data-pid="0" style="--rot:-4deg">
+        <div class="polaroid-tape"></div>
+        <div class="polaroid-inner">
+          <div class="polaroid-front">
+            <img src="/assets/img/guild/taiwanfukuoka/sakura_day.webp" alt="舞鶴公園春櫻" loading="lazy">
+            <div class="polaroid-caption">舞鶴公園 · 春</div>
+          </div>
+          <div class="polaroid-back">
+            <div class="polaroid-back-title">舞鶴公園 · 春日</div>
+            <div class="polaroid-back-text">三月底的某個清晨，五點半到公園，整個地方還沒被觀光客佔領，只有早起的攝影師。那天的陽光剛好穿過花瓣，灑在石垣上 -- 我永遠不會忘記那個畫面。</div>
+            <div class="polaroid-back-meta">
+              <span>2024.03.28</span>
+              <span class="polaroid-back-stamp">FUKUOKA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Polaroid 2: Sakura Night -->
+      <div class="polaroid" data-pid="1" style="--rot:3deg">
+        <div class="polaroid-tape"></div>
+        <div class="polaroid-inner">
+          <div class="polaroid-front">
+            <img src="/assets/img/guild/taiwanfukuoka/sakura_night.webp" alt="舞鶴夜櫻" loading="lazy">
+            <div class="polaroid-caption">夜の桜</div>
+          </div>
+          <div class="polaroid-back">
+            <div class="polaroid-back-title">舞鶴夜櫻 · 點燈時刻</div>
+            <div class="polaroid-back-text">點燈那一瞬間，整個公園的氣氛都變了。攝影師擠在橋上互相讓位置，情侶在櫻花下偷親嘴，孩子在草地上跑來跑去。每年這個時候我都來，從不會膩。</div>
+            <div class="polaroid-back-meta">
+              <span>2024.04.02</span>
+              <span class="polaroid-back-stamp">NIGHT VIEW</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Polaroid 3: Beach -->
+      <div class="polaroid" data-pid="2" style="--rot:-2deg">
+        <div class="polaroid-tape"></div>
+        <div class="polaroid-sticky">最愛的<br>日落點!</div>
+        <div class="polaroid-inner">
+          <div class="polaroid-front">
+            <img src="/assets/img/guild/taiwanfukuoka/beach.webp" alt="糸島海邊" loading="lazy">
+            <div class="polaroid-caption">糸島海邊</div>
+          </div>
+          <div class="polaroid-back">
+            <div class="polaroid-back-title">糸島 · 夫婦岩日落</div>
+            <div class="polaroid-back-text">那天我和朋友坐在沙灘上喝啤酒，看著太陽慢慢沉入海裡。福岡最美的日落就在這裡。下次帶你來，記得別忘了相機。</div>
+            <div class="polaroid-back-meta">
+              <span>2023.10.14</span>
+              <span class="polaroid-back-stamp">ITOSHIMA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Polaroid 4: Castle -->
+      <div class="polaroid" data-pid="3" style="--rot:5deg">
+        <div class="polaroid-tape"></div>
+        <div class="polaroid-inner">
+          <div class="polaroid-front">
+            <img src="/assets/img/guild/taiwanfukuoka/castle.webp" alt="福岡城蹟" loading="lazy">
+            <div class="polaroid-caption">福岡城跡</div>
+          </div>
+          <div class="polaroid-back">
+            <div class="polaroid-back-title">福岡城蹟 · 石垣的記憶</div>
+            <div class="polaroid-back-text">石垣已經默默站了四百年。每次來這裡，我都會想像當年的城下町長什麼樣子。沒什麼觀光客，卻是我最愛的散步路線。</div>
+            <div class="polaroid-back-meta">
+              <span>2024.05.20</span>
+              <span class="polaroid-back-stamp">HISTORY</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Polaroid 5: Fireworks -->
+      <div class="polaroid" data-pid="4" style="--rot:-3deg">
+        <div class="polaroid-tape"></div>
+        <div class="polaroid-inner">
+          <div class="polaroid-front">
+            <img src="/assets/img/guild/taiwanfukuoka/fireworks.webp" alt="東區花火大會" loading="lazy">
+            <div class="polaroid-caption">夏 · 花火</div>
+          </div>
+          <div class="polaroid-back">
+            <div class="polaroid-back-title">東區花火大會 · 夏夜</div>
+            <div class="polaroid-back-text">八月最後的週末，七千發煙火打在博多灣上。最佳觀賞點要早來佔位 -- 我都帶野餐墊和啤酒，下午四點就到。煙火上去那一瞬間，整片海都亮了。</div>
+            <div class="polaroid-back-meta">
+              <span>2024.08.30</span>
+              <span class="polaroid-back-stamp">SUMMER</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Polaroid 6: Dazaifu Shrine -->
+      <div class="polaroid" data-pid="5" style="--rot:2deg">
+        <div class="polaroid-tape"></div>
+        <div class="polaroid-inner">
+          <div class="polaroid-front">
+            <img src="/assets/img/guild/taiwanfukuoka/park.webp" alt="太宰府天滿宮" loading="lazy">
+            <div class="polaroid-caption">太宰府詣で</div>
+          </div>
+          <div class="polaroid-back">
+            <div class="polaroid-back-title">太宰府天滿宮 · 學業神</div>
+            <div class="polaroid-back-text">考生跟家長必拜的學問之神。我喜歡早上開門時就來，鳥還在叫，神社很安靜。買一塊剛烤好的梅枝餅邊走邊吃，是我的小儀式。</div>
+            <div class="polaroid-back-meta">
+              <span>2024.03.10</span>
+              <span class="polaroid-back-stamp">DAZAIFU</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Polaroid 7: Lit Sakura Path -->
+      <div class="polaroid" data-pid="6" style="--rot:-5deg">
+        <div class="polaroid-tape"></div>
+        <div class="polaroid-inner">
+          <div class="polaroid-front">
+            <img src="/assets/img/guild/taiwanfukuoka/lantern_night.webp" alt="夜櫻燈籠步道" loading="lazy">
+            <div class="polaroid-caption">灯と桜</div>
+          </div>
+          <div class="polaroid-back">
+            <div class="polaroid-back-title">舞鶴公園 · 燈籠步道</div>
+            <div class="polaroid-back-text">櫻花季限定的紙燈籠步道。沿著石階一路向上，每個拐彎都被燈光打亮。雨後特別美 -- 地面反射著燈光，像走進一條光的隧道。</div>
+            <div class="polaroid-back-meta">
+              <span>2024.04.05</span>
+              <span class="polaroid-back-stamp">LANTERN</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Polaroid 8: SECRET (hidden until all 7 flipped) -->
+      <div class="polaroid polaroid-secret" id="polaroidSecret" data-pid="7" style="--rot:0deg">
+        <div class="polaroid-tape" style="background:rgba(255,255,255,.6)"></div>
+        <div class="polaroid-inner">
+          <div class="polaroid-front">
+            <img src="/assets/img/guild/taiwanfukuoka/avatar.webp" alt="嚮導本人" loading="lazy">
+            <div class="polaroid-caption">給你的信</div>
+          </div>
+          <div class="polaroid-back">
+            <div class="polaroid-back-title">★ 寫給有緣人</div>
+            <div class="polaroid-back-text">你都翻看完了？感謝你願意花時間看完這些。福岡還有上千個故事我沒拍下來 -- 等你來，我親自講給你聽。LINE: violin0707</div>
+            <div class="polaroid-back-meta">
+              <span style="font-family:Caveat,cursive">-- @taiwanfukuoka</span>
+              <span class="polaroid-back-stamp">SECRET</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="album-progress">
+      <i class="fas fa-camera-retro"></i>
+      已翻看 <span class="progress-num" id="flippedCount">0</span> / 7 張照片
+      <span class="album-bar"><span class="album-bar-fill" id="albumBarFill"></span></span>
+      <span class="progress-msg" id="progressMsg">★ 解鎖了一張秘密照片！</span>
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <section class="quote-section" id="quote">
+    <div class="quote-inner">
+      <div class="quote-mark">「</div>
+      <p class="quote-text">福岡不是一個你路過的城市。<br>它是一個你會想要停下來的地方。<br>而我，會在這裡等你。</p>
+      <span class="quote-author">-- taiwanfukuoka</span>
+    </div>
+  </section>
+
+  <!-- LOCAL RECOMMENDATIONS -->
+  <section class="map-section" id="recs">
+    <div class="text-center">
+      <span class="label">local picks</span>
+      <h2 class="stitle stext-center">在地人的口袋名單</h2>
+      <p class="stext stext-center" style="margin-bottom:2rem;opacity:.6">這些是我自己會去的地方，不是觀光客排隊店</p>
+    </div>
+    <div class="map-wrap">
+      <div class="map-card" data-anim="fade-up">
+        <div class="recommendation">
+          <div class="rec-title"><i class="fas fa-bowl-food"></i> 屋台文化</div>
+          <p class="rec-desc">天神屋台是福岡的靈魂。入夜後路邊擺出的小攤，一碗豚骨拉麵、幾串烤雞肉、一杯啤酒，和旁邊的日本人聊起來，這就是最正宗的博多夜晚。</p>
+          <span class="rec-tag">MUST TRY</span>
+        </div>
+        <div class="recommendation">
+          <div class="rec-title"><i class="fas fa-fish"></i> 柳橋連合市場</div>
+          <p class="rec-desc">早起的話，來這個在地人的廚房逛逛。新鮮的生魚片、明太子、海鮮丼，價格實惠品質一流。觀光客幾乎不知道這裡。</p>
+          <span class="rec-tag">HIDDEN GEM</span>
+        </div>
+        <div class="recommendation">
+          <div class="rec-title"><i class="fas fa-landmark-dome"></i> 北九州市立美術館</div>
+          <p class="rec-desc">收藏了葛飾北齋《富嶽三十六景》等一千三百件浮世繪精品，建築本身由普立茲克獎得主磯崎新設計。是藝術愛好者不能錯過的殿堂。</p>
+          <span class="rec-tag">CULTURE</span>
+        </div>
+        <div class="recommendation">
+          <div class="rec-title"><i class="fas fa-child-reaching"></i> 親子推薦路線</div>
+          <p class="rec-desc">市區去麵包超人館，郊外去糸島海邊玩沙、白絲瀑布戲水，離島能古島餵小動物。小倉城裡有滿滿的親子互動設施，一天都玩不完。</p>
+          <span class="rec-tag">FAMILY</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact" id="contact">
+    <span class="label">contact</span>
+    <h2 class="stitle">找到我</h2>
+    <p class="stext stext-center" style="opacity:.6">來福岡之前，先跟我聊聊吧</p>
+    <div class="contact-links">
+      <a href="https://www.threads.com/@taiwanfukuoka" target="_blank" rel="noopener noreferrer" class="contact-link"><i class="fab fa-threads"></i><span>Threads</span></a>
+      <a href="https://www.instagram.com/taiwanfukuoka/" target="_blank" rel="noopener noreferrer" class="contact-link"><i class="fab fa-instagram"></i><span>Instagram</span></a>
+    </div>
+    <div class="contact-line">
+      <i class="fab fa-line line-icon"></i>
+      <span class="line-id">violin0707</span>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p class="footer-sig">Made with <span style="color:var(--yatai)"><i class="fas fa-heart"></i></span> by <a href="/guild/">SuperGalen's Dungeon</a></p>
+  </footer>
+
+</div>
+
+<script>
+/* ==================== LOADER ==================== */
+window.addEventListener('load', () => {
+  const loader = document.getElementById('loader');
+  gsap.to(loader, { opacity: 0, duration: .8, delay: 1.5, onComplete: () => { loader.style.display = 'none'; }});
+});
+
+/* ==================== GUIDE LANTERN CURSOR ==================== */
+const gLantern = document.getElementById('guideLantern');
+if (window.matchMedia('(hover:hover)').matches && gLantern) {
+  let mx = 0, my = 0, lx = 0, ly = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  (function loop() {
+    lx += (mx - lx) * .12;
+    ly += (my - ly) * .12;
+    gLantern.style.left = lx + 'px';
+    gLantern.style.top = ly + 'px';
+    requestAnimationFrame(loop);
+  })();
+  document.querySelectorAll('a, button, .season-tab, .service-card, .gallery-item, .contact-link').forEach(el => {
+    el.addEventListener('mouseenter', () => document.body.classList.add('hov'));
+    el.addEventListener('mouseleave', () => document.body.classList.remove('hov'));
+  });
+}
+
+/* ==================== SCROLL PROGRESS (handler defined here, attached later in unified scroll) ==================== */
+const scrollBar = document.getElementById('scrollBar');
+function updateScrollBar() {
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  scrollBar.style.width = (window.scrollY / h * 100) + '%';
+}
+
+/* ==================== P5.JS - FUKUOKA CITYSCAPE NIGHTSCAPE ==================== */
+window.litLanterns = window.litLanterns || new Set();
+window.guideClicks = 0;
+const p5Sketch = new p5(function(p) {
+  let stars = [];
+  let buildings = [];
+  let yataiLanterns = [];
+  let petals = [];
+  let waterY;
+  let fukuokaTowerX, fukuokaTowerH;
+  let mouseGlow = { x: 0, y: 0 };
+
+  // Walking guide character - the local guide leading you through Fukuoka
+  let guide = {
+    x: -30,
+    y: 0,
+    dir: 1,
+    walkPhase: 0,
+    speed: 0.4,
+    paused: false,
+    pauseTimer: 0,
+    bobPhase: 0
+  };
+  window.guideHitbox = { x: 0, y: 0 };
+
+  p.setup = function() {
+    const c = p.createCanvas(p.windowWidth, p.windowHeight);
+    c.parent('p5-bg');
+    waterY = p.height * .82;
+    generateCity();
+    generateStars();
+    for (let i = 0; i < 15; i++) petals.push(newPetal(true));
+    guide.y = waterY - 4;
+
+    // Expose pause function so click handler can pause the guide
+    window.p5GuidePause = function(frames) {
+      guide.paused = true;
+      guide.pauseTimer = frames || 180;
+    };
+  };
+
+  function generateStars() {
+    stars = [];
+    for (let i = 0; i < 120; i++) {
+      stars.push({
+        x: p.random(p.width),
+        y: p.random(waterY * .6),
+        size: p.random(.5, 2.5),
+        twinkle: p.random(1000),
+        speed: p.random(.005, .02)
+      });
+    }
+  }
+
+  function generateCity() {
+    buildings = [];
+    const baseY = waterY;
+    fukuokaTowerX = p.width * .72;
+    fukuokaTowerH = p.height * .28;
+
+    // Background buildings (distant, shorter)
+    for (let x = 0; x < p.width; x += p.random(30, 70)) {
+      const h = p.random(30, 80);
+      buildings.push({
+        x: x, w: p.random(20, 50), h: h, y: baseY - h,
+        layer: 0, windows: Math.floor(p.random(2, 8)),
+        color: [12, 18, 35]
+      });
+    }
+    // Midground buildings
+    for (let x = 0; x < p.width; x += p.random(40, 90)) {
+      const h = p.random(50, 130);
+      buildings.push({
+        x: x, w: p.random(25, 60), h: h, y: baseY - h,
+        layer: 1, windows: Math.floor(p.random(3, 12)),
+        color: [8, 12, 25]
+      });
+    }
+
+    // Yatai lanterns along the street
+    yataiLanterns = [];
+    const streetY = baseY - 8;
+    for (let i = 0; i < 12; i++) {
+      yataiLanterns.push({
+        x: p.random(p.width * .05, p.width * .95),
+        y: streetY - p.random(15, 35),
+        size: p.random(6, 12),
+        phase: p.random(p.TWO_PI),
+        swaySpeed: p.random(.008, .02),
+        brightness: p.random(.5, 1)
+      });
+    }
+  }
+
+  function newPetal(init) {
+    return {
+      x: p.random(-30, p.width + 30),
+      y: init ? p.random(-p.height * .5, waterY) : p.random(-80, -10),
+      size: p.random(3, 7),
+      vy: p.random(.2, .8),
+      vx: p.random(-.2, .4),
+      rot: p.random(p.TWO_PI),
+      rotS: p.random(-.015, .015),
+      alpha: p.random(15, 45),
+      wobble: p.random(100),
+      wobbleS: p.random(.01, .025)
+    };
+  }
+
+  p.draw = function() {
+    p.clear();
+    const scrollPct = (window.scrollY || 0) / Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+
+    // Sky gradient (gets subtly warmer as you scroll - entering the city)
+    const skyWarmth = scrollPct * 30;
+    for (let y = 0; y < waterY; y++) {
+      const t = y / waterY;
+      p.stroke(
+        10 + skyWarmth * t * .5,
+        14 + t * 8,
+        26 + t * 15 - skyWarmth * t * .3
+      );
+      p.line(0, y, p.width, y);
+    }
+
+    // Stars
+    stars.forEach(s => {
+      s.twinkle += s.speed;
+      const a = (p.sin(s.twinkle) * .5 + .5) * 180 + 30;
+      const fade = 1 - scrollPct * .5; // dim as scroll deeper
+      p.noStroke();
+      p.fill(220, 220, 240, a * fade);
+      p.ellipse(s.x, s.y, s.size, s.size);
+    });
+
+    // Buildings silhouettes (back to front)
+    buildings.sort((a, b) => a.layer - b.layer);
+    buildings.forEach(b => {
+      p.noStroke();
+      p.fill(b.color[0], b.color[1], b.color[2]);
+      p.rect(b.x, b.y, b.w, b.h);
+      // Windows - warm amber lights
+      p.fill(212, 160, 74, p.random() > .7 ? 60 : 25);
+      for (let i = 0; i < b.windows; i++) {
+        const wx = b.x + p.random(3, b.w - 5);
+        const wy = b.y + p.random(5, b.h - 5);
+        p.rect(wx, wy, 2, 2);
+      }
+    });
+
+    // Fukuoka Tower silhouette (distinctive triangular shape)
+    const tx = fukuokaTowerX;
+    const ty = waterY;
+    const th = fukuokaTowerH;
+    const tw = 12;
+    p.noStroke();
+    p.fill(6, 10, 20);
+    p.beginShape();
+    p.vertex(tx - tw, ty);
+    p.vertex(tx - tw * .3, ty - th);
+    p.vertex(tx, ty - th - 15); // antenna
+    p.vertex(tx + tw * .3, ty - th);
+    p.vertex(tx + tw, ty);
+    p.endShape(p.CLOSE);
+    // Tower lights
+    for (let i = 0; i < 5; i++) {
+      const ly = ty - th * .2 - (th * .6 * i / 5);
+      const lw = tw * (1 - i * .12);
+      p.fill(204, 85, 34, 30 + p.sin(p.frameCount * .03 + i) * 15);
+      p.rect(tx - lw * .3, ly, lw * .6, 2);
+    }
+    // Antenna blink
+    p.fill(255, 50, 50, p.sin(p.frameCount * .05) > 0 ? 150 : 40);
+    p.ellipse(tx, ty - th - 15, 3, 3);
+
+    // Street level - warm glow strip
+    const streetGlow = 40 + scrollPct * 20;
+    p.noStroke();
+    p.fill(204, 85, 34, streetGlow * .15);
+    p.rect(0, waterY - 12, p.width, 12);
+
+    // Yatai lanterns (the soul of Fukuoka) - clickable!
+    window.lanternHitboxes = [];
+    yataiLanterns.forEach((l, idx) => {
+      l.phase += l.swaySpeed;
+      const sway = p.sin(l.phase) * 2;
+      const lx = l.x + sway;
+      const ly = l.y;
+      const lit = window.litLanterns && window.litLanterns.has(idx);
+      const baseGlow = l.brightness * (0.7 + p.sin(l.phase * 1.3) * .3);
+      const glow = lit ? baseGlow * 2.5 : baseGlow;
+
+      // Lantern glow (much brighter when lit)
+      p.noStroke();
+      if (lit) {
+        // Big halo for lit lanterns
+        p.fill(240, 208, 96, 18 * glow);
+        p.ellipse(lx, ly, l.size * 10, l.size * 8);
+        p.fill(255, 180, 80, 30 * glow);
+        p.ellipse(lx, ly, l.size * 5, l.size * 4);
+      } else {
+        p.fill(204, 85, 34, 12 * glow);
+        p.ellipse(lx, ly, l.size * 6, l.size * 4);
+        p.fill(240, 136, 68, 20 * glow);
+        p.ellipse(lx, ly, l.size * 3, l.size * 2);
+      }
+
+      // Lantern body
+      const bodyR = lit ? 240 : 204;
+      const bodyG = lit ? 180 : 85;
+      const bodyB = lit ? 80 : 34;
+      p.fill(bodyR, bodyG, bodyB, 200 * glow);
+      p.ellipse(lx, ly, l.size, l.size * 1.3);
+
+      // String
+      p.stroke(100, 80, 60, 60);
+      p.strokeWeight(.5);
+      p.line(lx, ly - l.size * .65, lx - sway * .5, ly - l.size * 2);
+
+      // Track hitbox position for click detection (in screen coords)
+      window.lanternHitboxes.push({ id: idx, x: lx, y: ly, lit: lit });
+    });
+
+    // ============ WALKING GUIDE CHARACTER ============
+    // The local guide walks back and forth across the cityscape, holding a lantern
+    if (!guide.paused) {
+      guide.x += guide.speed * guide.dir;
+      guide.walkPhase += 0.18;
+      guide.bobPhase += 0.05;
+      // Turn around at edges
+      if (guide.x > p.width + 20) {
+        guide.dir = -1;
+      } else if (guide.x < -20) {
+        guide.dir = 1;
+      }
+    } else {
+      guide.pauseTimer--;
+      if (guide.pauseTimer <= 0) guide.paused = false;
+    }
+
+    const gx = guide.x;
+    const gy = guide.y + p.sin(guide.bobPhase) * 0.6; // gentle bob
+    const legSwing = p.sin(guide.walkPhase) * 2;
+    const armSwing = p.sin(guide.walkPhase + p.PI) * 1.5;
+
+    // Lantern halo (the guide carries a lantern - this is the soul of the figure)
+    const lanternX = gx + guide.dir * 4;
+    const lanternY = gy - 14;
+    p.noStroke();
+    p.fill(240, 208, 96, 30);
+    p.ellipse(lanternX, lanternY, 50, 50);
+    p.fill(255, 180, 80, 50);
+    p.ellipse(lanternX, lanternY, 25, 25);
+    p.fill(255, 220, 130, 200);
+    p.ellipse(lanternX, lanternY, 5, 6);
+
+    // Lantern string (from hand to lantern)
+    p.stroke(80, 60, 40, 180);
+    p.strokeWeight(.6);
+    p.line(gx + guide.dir * 3, gy - 6, lanternX, lanternY - 2);
+
+    // Body silhouette (very small ~14px tall figure)
+    p.noStroke();
+    p.fill(0, 0, 0, 220);
+
+    // Head
+    p.ellipse(gx, gy - 12, 4, 4);
+    // Body (slightly tapered)
+    p.beginShape();
+    p.vertex(gx - 2.5, gy - 10);
+    p.vertex(gx + 2.5, gy - 10);
+    p.vertex(gx + 2, gy - 4);
+    p.vertex(gx - 2, gy - 4);
+    p.endShape(p.CLOSE);
+    // Arms
+    p.strokeWeight(1.2);
+    p.stroke(0, 0, 0, 220);
+    p.line(gx - 2, gy - 9, gx - 2 + armSwing * .5, gy - 5); // back arm
+    p.line(gx + 2, gy - 9, gx + 2 + guide.dir * 3, gy - 6); // front arm holding lantern
+    // Legs (walking animation)
+    p.line(gx - 1, gy - 4, gx - 1 + legSwing, gy);
+    p.line(gx + 1, gy - 4, gx + 1 - legSwing, gy);
+
+    // Track guide hitbox in screen coords for clicking
+    window.guideHitbox = { x: gx, y: gy - 6 };
+
+    // Water (Hakata Bay reflection)
+    for (let y = waterY; y < p.height; y++) {
+      const t = (y - waterY) / (p.height - waterY);
+      p.stroke(8, 14, 30, 255 - t * 80);
+      p.line(0, y, p.width, y);
+    }
+    // Water reflections - shimmering lights
+    for (let i = 0; i < 20; i++) {
+      const rx = (p.noise(i * .5, p.frameCount * .003) * p.width);
+      const ry = waterY + p.random(5, p.height - waterY - 5);
+      const rw = p.random(8, 40);
+      const reflAlpha = p.random(5, 20) * (1 - (ry - waterY) / (p.height - waterY));
+      p.noStroke();
+      p.fill(212, 160, 74, reflAlpha);
+      p.rect(rx, ry, rw, 1);
+    }
+    // Water surface line
+    p.stroke(90, 160, 220, 15);
+    p.strokeWeight(1);
+    for (let x = 0; x < p.width; x += 3) {
+      const waveY = waterY + p.sin(x * .02 + p.frameCount * .02) * 1.5;
+      p.point(x, waveY);
+    }
+
+    // Sakura petals (subtle, seasonal accent)
+    petals.forEach((pt, i) => {
+      pt.y += pt.vy;
+      pt.x += pt.vx + p.sin(pt.wobble) * .2;
+      pt.rot += pt.rotS;
+      pt.wobble += pt.wobbleS;
+      if (pt.y > waterY + 5) petals[i] = newPetal(false);
+
+      p.push();
+      p.translate(pt.x, pt.y);
+      p.rotate(pt.rot);
+      p.noStroke();
+      p.fill(244, 184, 193, pt.alpha);
+      p.beginShape();
+      const s = pt.size;
+      p.vertex(0, -s);
+      p.bezierVertex(s * .7, -s * .5, s * .4, s * .3, 0, s * .4);
+      p.bezierVertex(-s * .4, s * .3, -s * .7, -s * .5, 0, -s);
+      p.endShape(p.CLOSE);
+      p.pop();
+    });
+
+    // Mouse glow (guide's lantern illuminating the city)
+    if (window.matchMedia('(hover:hover)').matches) {
+      mouseGlow.x += ((p.mouseX || p.width / 2) - mouseGlow.x) * .08;
+      mouseGlow.y += ((p.mouseY || p.height / 2) - mouseGlow.y) * .08;
+      p.noStroke();
+      p.fill(240, 208, 96, 6);
+      p.ellipse(mouseGlow.x, mouseGlow.y, 250, 250);
+      p.fill(240, 208, 96, 3);
+      p.ellipse(mouseGlow.x, mouseGlow.y, 400, 400);
+    }
+  };
+
+  p.windowResized = function() {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+    waterY = p.height * .82;
+    generateCity();
+    generateStars();
+  };
+}, document.createElement('div'));
+
+/* ==================== GSAP ==================== */
+gsap.registerPlugin(ScrollTrigger);
+gsap.to('.hero-inner', { y: 100, opacity: .3, scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true }});
+
+document.querySelectorAll('[data-anim="fade-up"]').forEach(el => {
+  gsap.from(el, { y: 40, opacity: 0, duration: .8, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }});
+});
+gsap.utils.toArray('.story-card').forEach((card, i) => {
+  gsap.from(card, { y: 50, opacity: 0, duration: .8, delay: i * .15, ease: 'power2.out', scrollTrigger: { trigger: card, start: 'top 85%', toggleActions: 'play none none none' }});
+});
+gsap.utils.toArray('.service-card').forEach((card, i) => {
+  gsap.from(card, { y: 30, opacity: 0, duration: .6, delay: i * .1, ease: 'power2.out', scrollTrigger: { trigger: card, start: 'top 88%', toggleActions: 'play none none none' }});
+});
+gsap.utils.toArray('.gallery-item').forEach((item, i) => {
+  gsap.from(item, { scale: .9, opacity: 0, duration: .6, delay: i * .1, ease: 'power2.out', scrollTrigger: { trigger: item, start: 'top 88%', toggleActions: 'play none none none' }});
+});
+gsap.from('.quote-inner', { scale: .95, opacity: 0, duration: 1, ease: 'power2.out', scrollTrigger: { trigger: '.quote-section', start: 'top 70%', toggleActions: 'play none none none' }});
+
+/* ==================== SEASON TABS ==================== */
+document.querySelectorAll('.season-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.season-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.season-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('season-' + tab.dataset.season).classList.add('active');
+  });
+});
+
+/* ==================== FUKUOKA REAL-TIME CLOCK ==================== */
+const fkclockTime = document.getElementById('fkclockTime');
+const fkclockStatus = document.getElementById('fkclockStatus');
+
+function getFukuokaTime() {
+  // Convert any local time to JST (UTC+9)
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc + (9 * 3600000));
+}
+
+function updateFukuokaClock() {
+  const t = getFukuokaTime();
+  const h = t.getHours();
+  const m = t.getMinutes();
+  const s = t.getSeconds();
+  const hh = h.toString().padStart(2, '0');
+  const mm = m.toString().padStart(2, '0');
+  const ss = s.toString().padStart(2, '0');
+  fkclockTime.innerHTML = `${hh}:${mm}<span class="fkclock-sec">:${ss}</span>`;
+
+  // Status based on hour
+  let status, icon;
+  if (h >= 5 && h < 9) {
+    status = '清晨'; icon = 'fa-mug-hot';
+  } else if (h >= 9 && h < 12) {
+    status = '上午'; icon = 'fa-sun';
+  } else if (h >= 12 && h < 14) {
+    status = '午餐時段'; icon = 'fa-bowl-food';
+  } else if (h >= 14 && h < 17) {
+    status = '下午'; icon = 'fa-sun';
+  } else if (h >= 17 && h < 19) {
+    status = '黃昏'; icon = 'fa-cloud-sun';
+  } else if (h >= 19 && h < 23) {
+    status = '屋台時間'; icon = 'fa-fire';
+  } else {
+    status = '深夜'; icon = 'fa-moon';
+  }
+  fkclockStatus.innerHTML = `<i class="fas ${icon}"></i> ${status}`;
+}
+updateFukuokaClock();
+setInterval(updateFukuokaClock, 1000);
+
+/* ==================== SAKURA BLOOM FORECAST ==================== */
+const forecastBar = document.getElementById('forecastBar');
+if (forecastBar) {
+  // Animate bar when spring tab is shown
+  function animateForecast() {
+    const target = parseInt(forecastBar.dataset.target);
+    forecastBar.style.width = '0%';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { forecastBar.style.width = target + '%'; });
+    });
+  }
+  // Trigger when visible (initially shown)
+  ScrollTrigger.create({
+    trigger: forecastBar,
+    start: 'top 90%',
+    onEnter: animateForecast,
+    once: true
+  });
+  // Re-animate when spring tab is clicked
+  document.querySelector('[data-season="spring"]').addEventListener('click', () => {
+    setTimeout(animateForecast, 100);
+  });
+}
+
+/* ==================== CLICKABLE YATAI LANTERNS ==================== */
+// Tips that pop up when lanterns are lit
+const lanternTips = [
+  { label: 'TIP 01', text: '屋台凌晨一兩點才是真正的高峰，跟在地大叔聊天最有趣。' },
+  { label: 'TIP 02', text: '博多拉麵的「替玉」就是加麵，記得湯快喝完再點。' },
+  { label: 'TIP 03', text: '福岡的計程車起跳價只要 670 円，三人以上比地鐵划算。' },
+  { label: 'TIP 04', text: '逛街要去天神，吃飯要去大名，住宿選在中洲川端。' },
+  { label: 'TIP 05', text: '便利商店的「明太子飯糰」絕對不能錯過，是福岡限定。' },
+  { label: 'TIP 06', text: '太宰府的梅枝餅一定要吃剛烤好的，外脆內軟才是真功夫。' },
+  { label: 'TIP 07', text: '櫻花季舞鶴公園夜櫻六點半開始點燈，別太早去。' },
+  { label: 'TIP 08', text: '糸島的夫婦岩日落最美，但要注意潮汐時間。' },
+  { label: 'TIP 09', text: '門司港的香蕉冰是當地人從小吃到大的回憶。' },
+  { label: 'TIP 10', text: '想避開觀光客？早上六點的柳橋市場是在地人的世界。' },
+  { label: 'TIP 11', text: '福岡塔晚上點燈會有季節限定圖案，七夕的銀河最美。' },
+  { label: 'TIP 12', text: '回國前一定要去博多站買「博多通饌」，最經典的伴手禮。' }
+];
+
+// These will be populated by p5.js with current lantern positions
+window.lanternHitboxes = [];
+window.litLanterns = new Set();
+
+const lanternCounter = document.getElementById('lanternCounter');
+const lanternCount = document.getElementById('lanternCount');
+const lanternProx = document.getElementById('lanternProx');
+
+// Walking guide special messages (cycles through these)
+const guideGreetings = [
+  { label: 'GUIDE SAYS', text: '嗨！我正在繞著福岡的夜街走。要不要跟我一起？' },
+  { label: 'GUIDE SAYS', text: '看到那盞橘色的燈了嗎？那是屋台老闆在等客人來。' },
+  { label: 'GUIDE SAYS', text: '夜晚的福岡比白天更精彩，因為靈魂藏在巷弄裡。' },
+  { label: 'GUIDE SAYS', text: '想知道在地人最愛的拉麵店嗎？來找我，我帶你去。' },
+  { label: 'GUIDE SAYS', text: '每天晚上我都會走過這條街，從沒膩過。' },
+  { label: 'GUIDE SAYS', text: '夜晚的街道永遠比白天精彩 -- 如果你有緣來，我一定帶你走一趟。' }
+];
+
+// Unified check: is the cursor over the background (where lanterns/guide live)?
+// Used by both click and hover handlers to keep behavior consistent.
+function isLanternInteractable(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return false;
+  // Always allow on raw background elements
+  if (el === document.body || el === document.documentElement) return true;
+  // Allow on bare section elements (no content card under cursor)
+  if (el.tagName === 'SECTION') return true;
+  // Allow on the noise overlay and content-layer wrapper
+  if (el.classList.contains('content-layer')) return true;
+  if (el.classList.contains('noise')) return true;
+  // Allow when hovering over our own counter/popup (won't actually click but shouldn't cancel proximity ring)
+  if (el.closest('.lantern-counter') || el.closest('.lantern-prox') || el.closest('.lantern-tip')) return true;
+  return false;
+}
+
+document.addEventListener('click', (e) => {
+  // Skip if click is on actual content (cards, buttons, links, etc.)
+  if (!isLanternInteractable(e.clientX, e.clientY)) return;
+
+  const cx = e.clientX;
+  const cy = e.clientY;
+
+  // Check if click is on the walking guide
+  if (window.guideHitbox) {
+    const gd = Math.hypot(cx - window.guideHitbox.x, cy - window.guideHitbox.y);
+    if (gd < 25) {
+      // Pause the guide for 4 seconds and show a greeting
+      if (window.p5GuidePause) window.p5GuidePause(240);
+      const greeting = guideGreetings[window.guideClicks % guideGreetings.length];
+      window.guideClicks++;
+      showTipPopup({
+        label: greeting.label,
+        text: greeting.text,
+        x: window.guideHitbox.x,
+        y: window.guideHitbox.y - 20,
+        duration: 4500
+      });
+      return;
+    }
+  }
+
+  // Check if click is on a lantern
+  const hit = window.lanternHitboxes.find(l => {
+    const dx = cx - l.x;
+    const dy = cy - l.y;
+    return Math.sqrt(dx * dx + dy * dy) < 20;
+  });
+
+  if (hit && !window.litLanterns.has(hit.id)) {
+    window.litLanterns.add(hit.id);
+    hit.lit = true;
+
+    // Show tip popup
+    const tip = lanternTips[hit.id % lanternTips.length];
+    showTipPopup({
+      label: tip.label,
+      text: tip.text,
+      x: cx,
+      y: cy - 10,
+      duration: 4000
+    });
+
+    // Update counter
+    lanternCount.textContent = window.litLanterns.size;
+
+    // All lit celebration
+    if (window.litLanterns.size === window.lanternHitboxes.length) {
+      setTimeout(() => {
+        showTipPopup({
+          label: '★ ALL LANTERNS LIT',
+          text: '你已經點亮了所有的屋台燈籠。歡迎來福岡，我會在這裡等你。',
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+          duration: 5000,
+          centerScreen: true
+        });
+      }, 600);
+    }
+  }
+});
+
+// Track the single active popup - only one at a time prevents overlap
+let activePopup = null;
+let activePopupTl = null;
+
+// Unified popup factory with viewport-aware positioning and single-active enforcement
+function showTipPopup({ label, text, x, y, duration = 4000, centerScreen = false }) {
+  // Dismiss any existing popup quickly before showing new one
+  if (activePopup && activePopupTl) {
+    activePopupTl.kill();
+    const old = activePopup;
+    gsap.to(old, {
+      opacity: 0,
+      scale: .9,
+      duration: .18,
+      ease: 'power2.in',
+      onComplete: () => old.remove()
+    });
+    activePopup = null;
+    activePopupTl = null;
+  }
+
+  const popup = document.createElement('div');
+  popup.className = 'lantern-tip' + (centerScreen ? ' center-screen' : '');
+  popup.innerHTML = `<span class="tip-label">${label}</span><span class="tip-text">${text}</span>`;
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
+  document.body.appendChild(popup);
+
+  // Measure the popup's natural size
+  const rect = popup.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+
+  // Smart positioning: center horizontally, place above click, clamp to viewport
+  let baseX, baseY;
+
+  if (centerScreen) {
+    baseX = -w / 2;
+    baseY = -h / 2;
+  } else {
+    const margin = 16;
+    baseX = -w / 2;
+    baseY = -h - 10;
+
+    // Horizontal clamp - shift popup to stay within viewport
+    const absLeft = x + baseX;
+    const absRight = absLeft + w;
+    if (absLeft < margin) {
+      baseX += (margin - absLeft);
+    } else if (absRight > window.innerWidth - margin) {
+      baseX -= (absRight - (window.innerWidth - margin));
+    }
+
+    // Vertical clamp - if popup would go above viewport, flip it below the click point
+    const absTop = y + baseY;
+    if (absTop < margin) {
+      baseY = 14; // place below click point
+      popup.classList.add('below');
+    }
+  }
+
+  // Initial state for fade-in animation
+  gsap.set(popup, {
+    x: baseX,
+    y: baseY + (popup.classList.contains('below') ? -8 : 8),
+    scale: .92,
+    opacity: 0
+  });
+
+  activePopup = popup;
+  activePopupTl = gsap.timeline({
+    onComplete: () => {
+      if (activePopup === popup) {
+        activePopup = null;
+        activePopupTl = null;
+      }
+      popup.remove();
+    }
+  })
+  .to(popup, {
+    x: baseX,
+    y: baseY,
+    scale: 1,
+    opacity: 1,
+    duration: .4,
+    ease: 'back.out(1.4)'
+  })
+  .to(popup, {
+    y: baseY + (popup.classList.contains('below') ? 14 : -14),
+    opacity: 0,
+    duration: .55,
+    ease: 'power2.in'
+  }, '+=' + (duration / 1000));
+}
+
+// Track lantern proximity - show ring when cursor near unlit lantern
+// Uses the same isLanternInteractable check so hover and click behavior stay consistent
+document.addEventListener('mousemove', (e) => {
+  if (!window.lanternHitboxes.length) return;
+  const cx = e.clientX;
+  const cy = e.clientY;
+
+  // Skip if cursor is over actual content (matches click handler behavior)
+  if (!isLanternInteractable(cx, cy)) {
+    lanternProx.classList.remove('visible');
+    return;
+  }
+
+  // Find nearest unlit lantern within 70px
+  let nearest = null;
+  let nearestDist = Infinity;
+  window.lanternHitboxes.forEach(l => {
+    if (window.litLanterns.has(l.id)) return;
+    const d = Math.hypot(cx - l.x, cy - l.y);
+    if (d < 70 && d < nearestDist) {
+      nearest = l;
+      nearestDist = d;
+    }
+  });
+
+  if (nearest) {
+    // Show proximity ring on the lantern position (not cursor)
+    lanternProx.style.left = nearest.x + 'px';
+    lanternProx.style.top = nearest.y + 'px';
+    lanternProx.classList.add('visible');
+  } else {
+    lanternProx.classList.remove('visible');
+  }
+});
+
+
+/* ==================== LINE CHAT SIMULATOR ==================== */
+const linechatWrap = document.getElementById('linechatWrap');
+const linechatBody = document.getElementById('linechatBody');
+const lcTapHint = document.getElementById('lcTapHint');
+const lcInputText = document.getElementById('lcInputText');
+
+// The conversation script - tight and natural pacing
+const lcMessages = [
+  { type: 'user', text: '嗨～看到你在 Threads 上分享的福岡照片，好美！', time: '21:14' },
+  { type: 'typing' },
+  { type: 'guide', text: '哈囉！謝謝你 😊 你是要來福岡玩嗎？', time: '21:14' },
+  { type: 'user', text: '對！但不知道從哪裡開始規劃 😅', time: '21:15' },
+  { type: 'typing' },
+  { type: 'guide', text: '沒問題我幫你！先問幾個問題', time: '21:15' },
+  { type: 'guide', text: '你打算待幾天？跟誰去？', time: '21:15' },
+  { type: 'user', text: '4 天 3 夜，跟女朋友', time: '21:16' },
+  { type: 'typing' },
+  { type: 'guide', text: '完美的天數 ✨ 情侶來福岡我最會安排了 😏', time: '21:16' },
+  { type: 'guide', text: '我先給你看幾個地方～', time: '21:16' },
+  { type: 'location', name: '糸島海岸', addr: '福岡県糸島市 · 距市區 30 分鐘', img: '/assets/img/guild/taiwanfukuoka/beach.webp', tags: ['海邊', '情侶', '日落'], time: '21:17' },
+  { type: 'guide', text: '放鬆浪漫的一天，糸島絕對首選', time: '21:17' },
+  { type: 'guide', text: '下午去看日落，找間海邊咖啡廳坐到晚上', time: '21:18' },
+  { type: 'user', text: '這個太可以了 🥰', time: '21:18' },
+  { type: 'typing' },
+  { type: 'location', name: '竈門神社', addr: '太宰府 · 鬼滅之刃取景地', img: '/assets/img/guild/taiwanfukuoka/castle.webp', tags: ['神社', '結緣', '情侶'], time: '21:19' },
+  { type: 'guide', text: '這裡是戀愛結緣的神社，五月新綠最美', time: '21:19' },
+  { type: 'user', text: '天啊都好吸引人！那晚上呢？', time: '21:20' },
+  { type: 'typing' },
+  { type: 'sticker', content: '🏮', time: '21:20' },
+  { type: 'guide', text: '晚上當然是屋台！', time: '21:20' },
+  { type: 'guide', text: '我帶你去在地人才知道的幾攤，不是觀光客排隊那種', time: '21:21' },
+  { type: 'guide', text: '博多拉麵、烤雞肉串、關東煮 + 啤酒 + 跟老闆聊天 = 福岡的夜晚', time: '21:21' },
+  { type: 'user', text: '聽起來超讚 🤤', time: '21:22' },
+  { type: 'typing' },
+  { type: 'guide', text: '我可以幫你們規劃完整 4 天行程', time: '21:22' },
+  { type: 'guide', text: '交通、住宿、預算、美食、行程 -- 全部包含', time: '21:23' },
+  { type: 'guide', text: '還可以根據天氣和你們當下的狀態彈性調整', time: '21:23' },
+  { type: 'user', text: '拜託了！怎麼開始？', time: '21:24' },
+  { type: 'typing' },
+  { type: 'guide', text: '加我 LINE：violin0707', time: '21:24' },
+  { type: 'guide', text: '把預計日期、預算、想體驗的東西告訴我', time: '21:24' },
+  { type: 'guide', text: '我會用 2-3 天整理一份專屬你們的行程提案 ✨', time: '21:25' },
+  { type: 'system', text: '這就是跟我聊天的真實體驗' }
+];
+
+let lcIndex = 0;
+let lcIsProcessing = false;
+let lcFinished = false;
+
+function lcAddMessage(msg) {
+  const div = document.createElement('div');
+
+  if (msg.type === 'system') {
+    div.className = 'lc-system';
+    div.textContent = msg.text;
+    linechatBody.appendChild(div);
+    lcScrollToBottom();
+    return;
+  }
+
+  div.className = 'lc-msg from-' + (msg.type === 'user' ? 'user' : 'guide');
+
+  // Avatar (only for guide messages)
+  if (msg.type !== 'user') {
+    const lastMsg = linechatBody.querySelector('.lc-msg:last-child');
+    const isConsecutive = lastMsg && lastMsg.classList.contains('from-guide');
+    const avatar = document.createElement('img');
+    avatar.className = 'lc-msg-avatar' + (isConsecutive ? ' hidden' : '');
+    avatar.src = '/assets/img/guild/taiwanfukuoka/avatar.webp';
+    avatar.alt = '';
+    div.appendChild(avatar);
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'lc-bubble-wrap';
+
+  if (msg.type === 'guide' || msg.type === 'user') {
+    const bubble = document.createElement('div');
+    bubble.className = 'lc-bubble';
+    bubble.textContent = msg.text;
+    wrap.appendChild(bubble);
+  } else if (msg.type === 'sticker') {
+    const sticker = document.createElement('div');
+    sticker.className = 'lc-sticker';
+    sticker.textContent = msg.content;
+    wrap.appendChild(sticker);
+  } else if (msg.type === 'location') {
+    const loc = document.createElement('div');
+    loc.className = 'lc-location';
+    loc.innerHTML = `
+      <img class="lc-location-thumb" src="${msg.img}" alt="${msg.name}">
+      <div class="lc-location-body">
+        <div class="lc-location-name"><i class="fas fa-location-dot"></i>${msg.name}</div>
+        <div class="lc-location-addr">${msg.addr}</div>
+        <div class="lc-location-tags">${msg.tags.map(t => '<span>' + t + '</span>').join('')}</div>
+      </div>`;
+    wrap.appendChild(loc);
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'lc-meta';
+  if (msg.type === 'user') {
+    meta.innerHTML = `<span class="lc-read">已讀</span><span>${msg.time}</span>`;
+  } else {
+    meta.innerHTML = `<span>${msg.time}</span>`;
+  }
+  wrap.appendChild(meta);
+
+  div.appendChild(wrap);
+  linechatBody.appendChild(div);
+  lcScrollToBottom();
+}
+
+function lcShowTyping() {
+  const div = document.createElement('div');
+  div.className = 'lc-msg from-guide lc-typing-wrap';
+
+  const avatar = document.createElement('img');
+  avatar.className = 'lc-msg-avatar';
+  avatar.src = '/assets/img/guild/taiwanfukuoka/avatar.webp';
+  avatar.alt = '';
+  div.appendChild(avatar);
+
+  const typing = document.createElement('div');
+  typing.className = 'lc-typing';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  div.appendChild(typing);
+
+  linechatBody.appendChild(div);
+  lcScrollToBottom();
+  return div;
+}
+
+function lcScrollToBottom() {
+  // Use GSAP for reliable, smooth scroll that always works (native smooth can be janky)
+  gsap.to(linechatBody, {
+    scrollTop: linechatBody.scrollHeight,
+    duration: .45,
+    ease: 'power2.out',
+    overwrite: true
+  });
+}
+
+// Calculate typing delay based on next message length (realistic pacing)
+function lcTypingDelay(msg) {
+  if (msg.delay) return msg.delay;
+  // Find next non-typing message to estimate text length
+  for (let i = lcIndex; i < lcMessages.length; i++) {
+    const next = lcMessages[i];
+    if (next.type !== 'typing') {
+      if (next.type === 'guide' && next.text) {
+        // ~50ms per character with min 800ms, max 2200ms
+        return Math.min(2200, Math.max(800, next.text.length * 50));
+      }
+      if (next.type === 'location') return 1400;
+      if (next.type === 'sticker') return 900;
+      return 1200;
+    }
+  }
+  return 1200;
+}
+
+function lcUpdateProgress() {
+  const pct = Math.min(100, (lcIndex / lcMessages.length) * 100);
+  linechatWrap.style.setProperty('--chat-progress', pct + '%');
+}
+
+function lcAdvance() {
+  if (lcIsProcessing || lcFinished) return;
+  if (lcIndex >= lcMessages.length) {
+    lcFinished = true;
+    linechatWrap.classList.remove('waiting');
+    lcTapHint.classList.add('finished');
+    lcTapHint.innerHTML = '<i class="fas fa-check"></i> 對話結束 · 往下看看更多嚮導的故事';
+    lcInputText.innerHTML = '對話結束 ✓';
+    linechatWrap.style.setProperty('--chat-progress', '100%');
+    return;
+  }
+
+  const msg = lcMessages[lcIndex];
+  lcIndex++;
+  lcUpdateProgress();
+
+  if (msg.type === 'typing') {
+    lcIsProcessing = true;
+    linechatWrap.classList.remove('waiting');
+    lcInputText.innerHTML = '對方正在輸入 <span style="color:#888">...</span>';
+    const typingEl = lcShowTyping();
+    const delay = lcTypingDelay(msg);
+    setTimeout(() => {
+      typingEl.remove();
+      lcIsProcessing = false;
+      lcAdvance(); // auto-show the next actual message
+    }, delay);
+  } else {
+    lcAddMessage(msg);
+    // Auto-chain: consecutive guide messages flow together naturally
+    const next = lcMessages[lcIndex];
+    const shouldChain = next && msg.type === 'guide' &&
+      (next.type === 'guide' || next.type === 'sticker' || next.type === 'location');
+
+    if (shouldChain) {
+      lcIsProcessing = true;
+      linechatWrap.classList.remove('waiting');
+      // Longer gap for location/sticker messages, shorter for text-to-text
+      const chainDelay = (next.type === 'location' || next.type === 'sticker') ? 1200 : 950;
+      setTimeout(() => {
+        lcIsProcessing = false;
+        lcAdvance();
+      }, chainDelay);
+    } else {
+      // Wait for user tap
+      linechatWrap.classList.add('waiting');
+      lcInputText.innerHTML = '點擊繼續對話 <span class="lc-waiting-dot"></span>';
+    }
+  }
+}
+
+// Click handler with visual feedback
+linechatWrap.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (lcIsProcessing || lcFinished) return;
+  // Visual feedback on click
+  linechatWrap.classList.remove('tapped');
+  void linechatWrap.offsetWidth; // force reflow
+  linechatWrap.classList.add('tapped');
+  setTimeout(() => linechatWrap.classList.remove('tapped'), 500);
+  lcAdvance();
+});
+
+// Auto-start when chat section scrolls into view
+const lcObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && lcIndex === 0) {
+      setTimeout(() => {
+        linechatWrap.classList.add('waiting');
+      }, 500);
+      lcObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.3 });
+lcObserver.observe(document.getElementById('linechat'));
+
+/* ==================== CHAPTER NAVIGATOR (scroll-spy) ==================== */
+const chapterItems = document.querySelectorAll('.chapter-item');
+const chapterSections = Array.from(chapterItems).map(item => ({
+  item,
+  section: document.querySelector(item.getAttribute('href'))
+})).filter(c => c.section);
+
+function updateActiveChapter() {
+  const scrollMid = window.scrollY + window.innerHeight / 2;
+  let activeIdx = 0;
+  chapterSections.forEach((c, i) => {
+    const top = c.section.offsetTop;
+    if (top <= scrollMid) activeIdx = i;
+  });
+  chapterItems.forEach((item, i) => {
+    item.classList.toggle('active', i === activeIdx);
+  });
+}
+
+// Unified scroll handler with rAF throttling - merges scroll bar + chapter navigator
+let scrollRaf = null;
+window.addEventListener('scroll', () => {
+  if (scrollRaf) return;
+  scrollRaf = requestAnimationFrame(() => {
+    updateScrollBar();
+    updateActiveChapter();
+    scrollRaf = null;
+  });
+}, { passive: true });
+updateScrollBar();
+updateActiveChapter();
+
+// Smooth scroll on click
+chapterItems.forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = document.querySelector(item.getAttribute('href'));
+    if (target) {
+      window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+    }
+  });
+});
+
+/* ==================== PHRASE CARDS - 台日旅行用語 ==================== */
+const phraseData = [
+  { zh: '你好 / 午安', jp: 'こんにちは', kana: 'こんにちは', romaji: 'kon-ni-chi-wa', hint: '白天通用招呼' },
+  { zh: '謝謝', jp: 'ありがとう\nございます', kana: 'ありがとうございます', romaji: 'a-ri-ga-tou go-zai-ma-su', hint: '完整禮貌版' },
+  { zh: '多少錢？', jp: 'いくらですか？', kana: 'いくらですか', romaji: 'i-ku-ra de-su ka', hint: '問價格' },
+  { zh: '請給我這個', jp: 'これを\nください', kana: 'これをください', romaji: 'ko-re o ku-da-sai', hint: '指著東西用' },
+  { zh: '推薦什麼？', jp: 'おすすめは\n何ですか？', kana: 'おすすめはなんですか', romaji: 'o-su-su-me wa nan de-su ka', hint: '在餐廳超好用' },
+  { zh: '好吃！', jp: '美味しい！', kana: 'おいしい', romaji: 'oi-shii', hint: '稱讚老闆會開心' },
+  { zh: '不辣的', jp: '辛くない\nものを', kana: 'からくないものを', romaji: 'ka-ra-ku-nai mo-no o', hint: '不吃辣必學' },
+  { zh: '我不會說日文', jp: '日本語が\n話せません', kana: 'にほんごがはなせません', romaji: 'ni-hon-go ga ha-na-se ma-sen', hint: '誠實但客氣' },
+  { zh: '廁所在哪裡？', jp: 'トイレは\nどこですか？', kana: 'トイレはどこですか', romaji: 'toi-re wa do-ko de-su ka', hint: '緊急必備' },
+  { zh: '結帳', jp: 'お会計\nお願いします', kana: 'おかいけいおねがいします', romaji: 'o-kai-kei o-ne-gai shi-ma-su', hint: '吃完飯要這樣說' }
+];
+
+const phraseDeck = document.getElementById('phraseDeck');
+const phraseCurrentEl = document.getElementById('phraseCurrent');
+const phraseTotalEl = document.getElementById('phraseTotal');
+const phrasePrev = document.getElementById('phrasePrev');
+const phraseNext = document.getElementById('phraseNext');
+let phraseIndex = 0;
+let phraseAnimating = false;
+
+phraseTotalEl.textContent = phraseData.length;
+
+// Build cards
+function buildPhraseCards() {
+  phraseData.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'phrase-card';
+    card.dataset.idx = i;
+    card.innerHTML = `
+      <div class="phrase-inner">
+        <div class="phrase-face phrase-front">
+          <span class="phrase-num">#${String(i + 1).padStart(2, '0')}</span>
+          <span class="phrase-label">中文</span>
+          <div class="phrase-text-zh">${p.zh}</div>
+          <div class="phrase-hint"><i class="fas fa-lightbulb"></i>${p.hint}</div>
+          <span class="phrase-stamp">TAIWAN</span>
+          <span class="phrase-flip-hint"><i class="fas fa-rotate"></i> TAP TO FLIP</span>
+        </div>
+        <div class="phrase-face phrase-back">
+          <span class="phrase-num">#${String(i + 1).padStart(2, '0')}</span>
+          <span class="phrase-label">日本語</span>
+          <div class="phrase-text-jp">${p.jp.replace(/\n/g, '<br>')}</div>
+          <div class="phrase-kana">${p.kana}</div>
+          <div class="phrase-romaji">${p.romaji}</div>
+          <span class="phrase-stamp">JAPAN</span>
+          <span class="phrase-flip-hint"><i class="fas fa-rotate"></i> TAP BACK</span>
+        </div>
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      if (parseInt(card.dataset.idx) === phraseIndex) {
+        flipPhraseCard(card);
+      }
+    });
+    phraseDeck.appendChild(card);
+  });
+  updatePhraseStack();
+}
+
+// Smooth GSAP-based phrase card flip - GSAP is the single source of truth for rotation
+function flipPhraseCard(card) {
+  if (card._flipping) return;
+  card._flipping = true;
+  const inner = card.querySelector('.phrase-inner');
+  // Track flip state via numeric variable, not CSS class
+  if (typeof card._flipY !== 'number') card._flipY = 0;
+  const wasFlipped = card._flipY >= 90;
+  const targetRot = wasFlipped ? 0 : 180;
+  card._flipY = targetRot;
+
+  const tl = gsap.timeline({
+    onComplete: () => { card._flipping = false; }
+  });
+
+  // Phase 1: Lift card slightly off the stack
+  tl.to(card, {
+    y: -12,
+    scale: 1.04,
+    duration: .32,
+    ease: 'power2.out'
+  }, 0)
+
+  // Phase 2: Smooth continuous rotation (no class-based transform override)
+  .to(inner, {
+    rotationY: targetRot,
+    duration: 1.0,
+    ease: 'power2.inOut'
+  }, .1)
+
+  // Phase 3: Settle back with subtle bounce
+  .to(card, {
+    y: 0,
+    scale: 1,
+    duration: .45,
+    ease: 'back.out(1.3)'
+  }, .85);
+}
+
+function updatePhraseStack() {
+  const cards = phraseDeck.querySelectorAll('.phrase-card');
+  cards.forEach((c, i) => {
+    c.classList.remove('active', 'behind-1', 'behind-2', 'behind-3', 'gone-left', 'gone-right');
+    const diff = i - phraseIndex;
+    if (diff === 0) c.classList.add('active');
+    else if (diff === 1) c.classList.add('behind-1');
+    else if (diff === 2) c.classList.add('behind-2');
+    else if (diff === 3) c.classList.add('behind-3');
+    else if (diff < 0) c.classList.add('gone-left');
+    else c.classList.add('gone-right');
+
+    // Reset flip state on non-active cards
+    if (diff !== 0 && c._flipY) {
+      c._flipY = 0;
+      gsap.set(c.querySelector('.phrase-inner'), { rotationY: 0 });
+    }
+  });
+  phraseCurrentEl.textContent = phraseIndex + 1;
+  phrasePrev.disabled = phraseIndex === 0;
+  phraseNext.disabled = phraseIndex === phraseData.length - 1;
+}
+
+function nextPhraseCard() {
+  if (phraseIndex >= phraseData.length - 1 || phraseAnimating) return;
+  phraseAnimating = true;
+  phraseIndex++;
+  updatePhraseStack();
+  setTimeout(() => { phraseAnimating = false; }, 600);
+}
+
+function prevPhraseCard() {
+  if (phraseIndex <= 0 || phraseAnimating) return;
+  phraseAnimating = true;
+  phraseIndex--;
+  updatePhraseStack();
+  setTimeout(() => { phraseAnimating = false; }, 600);
+}
+
+phraseNext.addEventListener('click', nextPhraseCard);
+phrasePrev.addEventListener('click', prevPhraseCard);
+
+// Keyboard navigation when phrase section is in view
+const phraseObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      document.addEventListener('keydown', phraseKeyHandler);
+    } else {
+      document.removeEventListener('keydown', phraseKeyHandler);
+    }
+  });
+}, { threshold: 0.4 });
+function phraseKeyHandler(e) {
+  if (e.key === 'ArrowRight') nextPhraseCard();
+  else if (e.key === 'ArrowLeft') prevPhraseCard();
+  else if (e.key === ' ' || e.key === 'Enter') {
+    const current = phraseDeck.querySelector('.phrase-card.active');
+    if (current) flipPhraseCard(current);
+    e.preventDefault();
+  }
+}
+phraseObserver.observe(document.getElementById('phrase'));
+
+// Swipe support
+let phraseTouchStartX = 0;
+phraseDeck.addEventListener('touchstart', e => { phraseTouchStartX = e.touches[0].clientX; }, { passive: true });
+phraseDeck.addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].clientX - phraseTouchStartX;
+  if (Math.abs(diff) > 50) {
+    if (diff < 0) nextPhraseCard();
+    else prevPhraseCard();
+  }
+});
+
+buildPhraseCards();
+
+/* ==================== POLAROID PHOTO ALBUM (GSAP refined) ==================== */
+const albumWall = document.getElementById('albumWall');
+const polaroids = document.querySelectorAll('.polaroid:not(.polaroid-secret)');
+const polaroidSecret = document.getElementById('polaroidSecret');
+const flippedCountEl = document.getElementById('flippedCount');
+const albumBarFill = document.getElementById('albumBarFill');
+const progressMsg = document.getElementById('progressMsg');
+const flippedSet = new Set();
+
+// Initialize polaroid - rotation lives on INNER (not parent) to keep backface-visibility working
+function initPolaroid(p) {
+  const rot = parseFloat(getComputedStyle(p).getPropertyValue('--rot')) || 0;
+  p._restRot = rot;
+  p._flipY = 0; // current flip rotation
+  const inner = p.querySelector('.polaroid-inner');
+  // All transforms on inner: rest tilt (Z) + flip (Y)
+  gsap.set(inner, { rotationZ: rot, rotationY: 0 });
+  // Parent only gets y/scale (no rotation, no 2D transform that breaks 3D)
+  gsap.set(p, { y: 0, scale: 1 });
+  const tape = p.querySelector('.polaroid-tape');
+  if (tape) gsap.set(tape, { scaleY: 1, y: 0 });
+
+  // Inject flip affordance icons (one on front, one on back)
+  const front = p.querySelector('.polaroid-front');
+  const back = p.querySelector('.polaroid-back');
+  if (front && !front.querySelector('.polaroid-flip-hint')) {
+    const hint = document.createElement('div');
+    hint.className = 'polaroid-flip-hint';
+    hint.innerHTML = '<i class="fas fa-rotate"></i>';
+    hint.title = '點擊翻面';
+    front.appendChild(hint);
+  }
+  if (back && !back.querySelector('.polaroid-flip-hint')) {
+    const hint = document.createElement('div');
+    hint.className = 'polaroid-flip-hint';
+    hint.innerHTML = '<i class="fas fa-rotate"></i>';
+    hint.title = '翻回正面';
+    back.appendChild(hint);
+  }
+}
+
+[...polaroids, polaroidSecret].forEach(p => { if (p) initPolaroid(p); });
+
+function animateHover(p, hovered) {
+  const inner = p.querySelector('.polaroid-inner');
+  const tape = p.querySelector('.polaroid-tape');
+  // Kill only hover tweens, don't interrupt flip
+  if (p._hoverTweens) p._hoverTweens.forEach(t => t.kill());
+  p._hoverTweens = [];
+
+  if (hovered) {
+    p._hoverTweens.push(gsap.to(inner, {
+      rotationZ: 0,
+      duration: .5,
+      ease: 'power3.out'
+    }));
+    p._hoverTweens.push(gsap.to(p, {
+      y: -14,
+      scale: 1.06,
+      duration: .5,
+      ease: 'power3.out'
+    }));
+    if (tape) p._hoverTweens.push(gsap.to(tape, { scaleY: 1.15, y: -2, duration: .4, ease: 'power2.out' }));
+  } else {
+    if (p.classList.contains('flipping')) return;
+    p._hoverTweens.push(gsap.to(inner, {
+      rotationZ: p._restRot || 0,
+      duration: .6,
+      ease: 'power2.out'
+    }));
+    p._hoverTweens.push(gsap.to(p, {
+      y: 0,
+      scale: 1,
+      duration: .6,
+      ease: 'power2.out'
+    }));
+    if (tape) p._hoverTweens.push(gsap.to(tape, { scaleY: 1, y: 0, duration: .5, ease: 'power2.out' }));
+  }
+}
+
+function flipPolaroid(p) {
+  if (p.classList.contains('flipping')) return;
+  p.classList.add('flipping');
+
+  const tape = p.querySelector('.polaroid-tape');
+  const inner = p.querySelector('.polaroid-inner');
+  const wasFlipped = p._flipY >= 90;
+  const targetRotY = wasFlipped ? 0 : 180;
+  p._flipY = targetRotY;
+
+  const tl = gsap.timeline({
+    onComplete: () => {
+      p.classList.remove('flipping');
+      if (!p.matches(':hover')) animateHover(p, false);
+    }
+  });
+
+  // Lift slightly higher during flip (hover may already have lifted it)
+  tl.to(p, {
+    y: -22,
+    scale: 1.1,
+    duration: .4,
+    ease: 'sine.out'
+  }, 0)
+  // Straighten the tilt simultaneously
+  .to(inner, {
+    rotationZ: 0,
+    duration: .4,
+    ease: 'sine.out'
+  }, 0)
+  .to(tape, {
+    scaleY: 1.3,
+    y: -2,
+    duration: .4,
+    ease: 'sine.out'
+  }, 0)
+  // The flip itself - continuous smooth rotation
+  .to(inner, {
+    rotationY: targetRotY,
+    duration: 1.0,
+    ease: 'power2.inOut'
+  }, .15)
+  // Update flipped tracking at mid-point (secret polaroid doesn't count)
+  .call(() => {
+    const isSecret = p.classList.contains('polaroid-secret');
+    if (wasFlipped) {
+      p.classList.remove('flipped');
+      if (!isSecret) flippedSet.delete(p.dataset.pid);
+    } else {
+      p.classList.add('flipped');
+      if (!isSecret) flippedSet.add(p.dataset.pid);
+    }
+    updateAlbumProgress();
+  }, null, .65)
+  // Settle back down
+  .to(p, {
+    y: 0,
+    scale: 1,
+    duration: .45,
+    ease: 'sine.inOut'
+  }, .85)
+  .to(tape, {
+    scaleY: 1,
+    y: 0,
+    duration: .45,
+    ease: 'sine.inOut'
+  }, .85);
+}
+
+polaroids.forEach(p => {
+  p.addEventListener('mouseenter', () => {
+    p.classList.add('hov');
+    albumWall.classList.add('hovering');
+    animateHover(p, true);
+  });
+  p.addEventListener('mouseleave', () => {
+    p.classList.remove('hov');
+    // Only remove hovering class if no other polaroid is hovered
+    if (!document.querySelector('.polaroid.hov')) {
+      albumWall.classList.remove('hovering');
+    }
+    animateHover(p, false);
+  });
+  p.addEventListener('click', (e) => {
+    e.stopPropagation();
+    flipPolaroid(p);
+  });
+});
+
+if (polaroidSecret) {
+  polaroidSecret.addEventListener('mouseenter', () => {
+    polaroidSecret.classList.add('hov');
+    albumWall.classList.add('hovering');
+    animateHover(polaroidSecret, true);
+  });
+  polaroidSecret.addEventListener('mouseleave', () => {
+    polaroidSecret.classList.remove('hov');
+    if (!document.querySelector('.polaroid.hov')) {
+      albumWall.classList.remove('hovering');
+    }
+    animateHover(polaroidSecret, false);
+  });
+  polaroidSecret.addEventListener('click', (e) => {
+    e.stopPropagation();
+    flipPolaroid(polaroidSecret);
+  });
+}
+
+function updateAlbumProgress() {
+  const count = flippedSet.size;
+  flippedCountEl.textContent = count;
+  albumBarFill.style.width = (count / 7 * 100) + '%';
+
+  // Unlock secret polaroid PERMANENTLY once 7 is reached - never hide it again
+  if (count >= 7 && polaroidSecret && !polaroidSecret.classList.contains('unlocked')) {
+    polaroidSecret.classList.add('unlocked');
+    progressMsg.classList.add('visible');
+    // Scroll the secret into view smoothly after a moment
+    setTimeout(() => {
+      polaroidSecret.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 800);
+  }
+  // Once unlocked, keep it unlocked even if user un-flips some cards
+}
+
+/* ==================== EASTER EGG: Click avatar = yatai steam burst ==================== */
+document.getElementById('avatarWrap').addEventListener('click', () => {
+  for (let i = 0; i < 25; i++) {
+    const particle = document.createElement('div');
+    const isLantern = Math.random() > .6;
+    particle.style.cssText = `
+      position:fixed;width:${isLantern ? 8 : 5}px;height:${isLantern ? 10 : 5}px;
+      background:${isLantern ? 'var(--yatai-glow)' : 'rgba(255,255,255,.6)'};
+      border-radius:${isLantern ? '2px 2px 5px 5px' : '50%'};
+      pointer-events:none;z-index:9000;left:50%;top:40%;opacity:.9;
+    `;
+    document.body.appendChild(particle);
+    gsap.to(particle, {
+      x: (Math.random() - .5) * 350,
+      y: -50 - Math.random() * 200,
+      rotation: Math.random() * 180,
+      opacity: 0,
+      duration: 1.2 + Math.random() * .8,
+      ease: 'power2.out',
+      onComplete: () => particle.remove()
+    });
+  }
+});
+</script>
+</body>
+</html>

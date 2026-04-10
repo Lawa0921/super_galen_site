@@ -8,6 +8,19 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "taiwanfukuoka"
+    name: "taiwanfukuoka"
+    avatar: "/assets/img/guild/taiwanfukuoka/avatar.webp"
+    page: "/guild/taiwanfukuoka.html"
+    title: "福岡在地嚮導"
+    description: "定居日本福岡的台灣人。專業地陪、機加酒、包車接送、客製化行程。用台灣人的溫度，帶你走進福岡最深處。"
+    tags:
+      - id: "fukuoka_guide"
+        label: "福岡地陪"
+      - id: "travel_planning"
+        label: "旅遊規劃"
+      - id: "local_food"
+        label: "在地美食"
   - id: "a_lei_tw"
     name: "阿雷"
     avatar: "/assets/img/guild/a_lei_tw/avatar.webp"
