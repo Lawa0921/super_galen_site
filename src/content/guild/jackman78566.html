@@ -1,0 +1,2748 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="依筆朗老師 -- 易經會長、大學教授、逢甲大學博士。17年易經研究，輔導超過三萬名學員。易經是在救人，不是在算命。">
+<title>依筆朗老師 | 易經引路人</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@300;700&family=Ma+Shan+Zheng&family=DM+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  /* Ink Wash Palette - derived from 水墨畫 */
+  --paper:#f2ebe0;
+  --paper-dark:#ddd3c3;
+  --ink:#2c2620;
+  --ink-mid:#4a4035;
+  --ink-light:#7a6e5e;
+  --ink-wash:rgba(42,38,32,.12);
+  --vermillion:#b5302a;
+  --vermillion-glow:rgba(181,48,42,.15);
+  --gold:#a8861a;
+  --gold-pale:#c9b57a;
+  --text-body:#4a4035;
+  --font-display:'Ma Shan Zheng',cursive;
+  --font-heading:'Noto Serif TC',serif;
+  --font-body:'Noto Sans TC',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--paper);color:var(--text-body);font-family:var(--font-body);overflow-x:hidden;cursor:default}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--paper-dark)}
+::-webkit-scrollbar-thumb{background:var(--ink-light);border-radius:3px}
+
+/* === CARTOON TEACHER GUIDE (卡通老師引導) === */
+.teacher-guide{position:absolute;width:90px;height:90px;z-index:20;pointer-events:none;opacity:0;transition:opacity .6s}
+.teacher-guide.show{opacity:1}
+.teacher-avatar{width:70px;height:70px;border-radius:50%;border:2px solid var(--gold-pale);box-shadow:0 4px 15px rgba(42,38,32,.15);object-fit:cover;background:var(--paper)}
+.teacher-bubble{position:absolute;background:var(--paper);border:1px solid var(--ink);padding:.5rem .8rem;border-radius:12px;font-family:var(--font-heading);font-size:.72rem;color:var(--ink);line-height:1.6;white-space:nowrap;box-shadow:0 3px 12px rgba(42,38,32,.1);opacity:0;transform:translateY(8px);transition:opacity .4s .2s,transform .4s .2s}
+.teacher-bubble::after{content:'';position:absolute;width:8px;height:8px;background:var(--paper);border:1px solid var(--ink);border-top:none;border-left:none;transform:rotate(45deg)}
+.teacher-guide.show .teacher-bubble{opacity:1;transform:translateY(0)}
+
+/* Different positions for different sections */
+.teacher-guide.pos-left .teacher-bubble{left:78px;top:20px}
+.teacher-guide.pos-left .teacher-bubble::after{left:-5px;top:18px;border-right:none;border-bottom:none;border-top:1px solid var(--ink);border-left:1px solid var(--ink)}
+.teacher-guide.pos-right .teacher-bubble{right:78px;top:20px}
+.teacher-guide.pos-right .teacher-bubble::after{right:-5px;top:18px}
+
+@media(max-width:900px){
+  .teacher-guide{display:none !important}
+}
+
+/* === RICE PAPER TEXTURE === */
+.paper-grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.35;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='.12'/%3E%3C/svg%3E")}
+
+/* === P5 INK WASH CANVAS === */
+#p5-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+.content-layer{position:relative;z-index:2;pointer-events:auto}
+
+/* === BACK NAV === */
+.back-nav{position:fixed;top:1.5rem;left:1.5rem;z-index:500;font-family:var(--font-mono);font-size:.65rem;color:var(--ink-light);text-decoration:none;letter-spacing:2px;transition:color .3s;mix-blend-mode:multiply}
+.back-nav:hover{color:var(--vermillion)}
+
+/* === SCROLL PROGRESS === */
+.scroll-bar{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--ink-light),var(--vermillion),var(--gold));z-index:600;width:0%;transition:width .1s}
+
+/* === LOADER === */
+.loader{position:fixed;inset:0;z-index:9999;background:var(--paper);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.loader-brush{width:3px;height:80px;background:linear-gradient(to bottom,var(--ink),transparent);animation:brushDrop 1.5s ease-in-out infinite;transform-origin:top}
+@keyframes brushDrop{0%{transform:scaleY(0);opacity:0}30%{transform:scaleY(1);opacity:1}70%{transform:scaleY(1);opacity:1}100%{transform:scaleY(0);opacity:0}}
+.loader-text{font-family:var(--font-display);font-size:1.3rem;color:var(--ink-mid);margin-top:2rem;letter-spacing:6px;opacity:0;animation:loaderFade 1.5s ease .5s forwards}
+@keyframes loaderFade{to{opacity:1}}
+
+/* === COMMON === */
+section{padding:clamp(5rem,10vh,8rem) clamp(1.5rem,5vw,4rem);position:relative}
+.label{font-family:var(--font-mono);font-size:.55rem;letter-spacing:4px;text-transform:uppercase;color:var(--ink-light);margin-bottom:1rem;display:block}
+.stitle{font-family:var(--font-heading);font-size:clamp(1.6rem,3.5vw,2.6rem);font-weight:900;color:var(--ink);line-height:1.4;margin-bottom:1.5rem}
+.stext{font-family:var(--font-body);font-size:clamp(.88rem,1.1vw,.95rem);color:var(--text-body);line-height:2.1;max-width:580px;font-weight:300}
+.text-center{text-align:center}
+.stext-center{margin-left:auto;margin-right:auto;text-align:center}
+.reveal{opacity:0;transform:translateY(25px);transition:opacity .8s,transform .8s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+/* gsap-fade: managed entirely by GSAP, no CSS hiding (so visible by default if GSAP fails) */
+.gsap-fade{opacity:1}
+
+/* === INK WASH TRANSITION (replaces hex dividers) === */
+.ink-wave{height:100px;position:relative;overflow:hidden;pointer-events:none;opacity:.15}
+.ink-wave svg{width:100%;height:100%;display:block}
+
+/* === HERO === */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;position:relative;overflow:hidden}
+/* Ink mountain layers */
+.mountain-layer{position:absolute;bottom:0;left:0;right:0;pointer-events:none}
+.mountain-far{height:35vh;background:linear-gradient(to top,rgba(42,38,32,.08),transparent);clip-path:polygon(0 60%,8% 45%,18% 55%,28% 30%,38% 50%,48% 20%,58% 45%,68% 25%,78% 40%,88% 15%,100% 35%,100% 100%,0 100%)}
+.mountain-mid{height:28vh;background:linear-gradient(to top,rgba(42,38,32,.05),transparent);clip-path:polygon(0 70%,12% 50%,25% 65%,35% 40%,50% 55%,62% 35%,75% 50%,85% 30%,100% 45%,100% 100%,0 100%)}
+.hero-mist{position:absolute;bottom:0;left:0;right:0;height:30%;background:linear-gradient(to top,var(--paper),transparent);z-index:1;pointer-events:none}
+.hero-inner{position:relative;z-index:2}
+.avatar-wrap{position:relative;margin-bottom:2rem}
+.avatar-wrap img{width:140px;height:140px;border-radius:50%;object-fit:cover;border:3px solid var(--gold-pale);box-shadow:0 4px 30px rgba(168,134,26,.12);transition:transform .5s,box-shadow .5s}
+.avatar-wrap:hover img{transform:scale(1.05);box-shadow:0 8px 40px rgba(168,134,26,.2)}
+/* Vermillion seal stamp on avatar */
+.avatar-seal{position:absolute;bottom:-4px;right:-4px;width:36px;height:36px;background:var(--vermillion);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:.85rem;color:var(--paper);box-shadow:0 2px 8px rgba(181,48,42,.3);transform:rotate(-5deg)}
+.hero-title{font-family:var(--font-display);font-size:clamp(3.5rem,9vw,6rem);color:var(--ink);line-height:1.1;margin-bottom:.5rem;text-shadow:0 1px 0 rgba(242,235,224,.8)}
+.hero-sub{font-family:var(--font-heading);font-size:clamp(.78rem,1.2vw,.92rem);color:var(--ink-light);letter-spacing:6px;margin-bottom:2.5rem}
+.hero-philosophy{font-family:var(--font-heading);font-size:clamp(1.1rem,2vw,1.5rem);color:var(--vermillion);max-width:500px;line-height:2;margin:0 auto 2rem;position:relative;padding:1rem 0}
+.hero-philosophy::before,.hero-philosophy::after{content:'';position:absolute;left:50%;transform:translateX(-50%);width:60px;height:1px;background:var(--vermillion);opacity:.3}
+.hero-philosophy::before{top:0}
+.hero-philosophy::after{bottom:0}
+.hero-tags{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:2rem}
+.hero-tag{font-family:var(--font-mono);font-size:.48rem;padding:.2rem .6rem;border:1px solid var(--ink-wash);color:var(--ink-light);letter-spacing:2px;text-transform:uppercase;background:rgba(242,235,224,.5);backdrop-filter:blur(4px);transition:all .3s}
+.hero-tag:hover{border-color:var(--vermillion);color:var(--vermillion)}
+.scroll-hint{position:absolute;bottom:3rem;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.scroll-hint span{font-family:var(--font-mono);font-size:.55rem;letter-spacing:3px;color:var(--ink-light);opacity:.5}
+.scroll-line{width:1px;height:35px;background:linear-gradient(to bottom,var(--ink-light),transparent);animation:scrollPulse 2s ease-in-out infinite}
+@keyframes scrollPulse{0%,100%{opacity:.2;transform:scaleY(.7)}50%{opacity:.6;transform:scaleY(1)}}
+
+/* === TODAY'S ALMANAC === */
+.almanac-section{padding:clamp(5rem,10vh,8rem) clamp(1.5rem,5vw,4rem);position:relative}
+.almanac-wrap{max-width:680px;margin:0 auto;text-align:center;position:relative}
+.almanac-card{background:rgba(242,235,224,.8);border:2px solid var(--ink);padding:2.5rem 2rem 1.8rem;position:relative;box-shadow:0 8px 35px rgba(42,38,32,.1),inset 0 0 0 1px rgba(42,38,32,.05);margin-top:1rem;backdrop-filter:blur(6px)}
+/* Traditional almanac corner ornaments */
+.almanac-corner{position:absolute;width:20px;height:20px;border:2px solid var(--vermillion)}
+.almanac-corner.tl{top:-2px;left:-2px;border-right:none;border-bottom:none}
+.almanac-corner.tr{top:-2px;right:-2px;border-left:none;border-bottom:none}
+.almanac-corner.bl{bottom:-2px;left:-2px;border-right:none;border-top:none}
+.almanac-corner.br{bottom:-2px;right:-2px;border-left:none;border-top:none}
+
+.almanac-header{text-align:center;padding-bottom:1.2rem;border-bottom:1px solid rgba(42,38,32,.1);margin-bottom:1.5rem;position:relative}
+.almanac-date-row{display:flex;justify-content:center;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:.5rem}
+.almanac-gregorian{font-family:var(--font-heading);font-size:1rem;color:var(--ink);font-weight:700;letter-spacing:1px}
+.almanac-zodiac{font-family:var(--font-display);font-size:1.4rem;color:var(--vermillion);padding:.15rem .6rem;border:1px solid var(--vermillion);border-radius:2px;letter-spacing:2px}
+.almanac-lunar{font-family:var(--font-heading);font-size:.85rem;color:var(--ink-mid);letter-spacing:2px}
+
+.almanac-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;padding:0 .5rem}
+.pillar{padding:.9rem .4rem;border:1px solid rgba(42,38,32,.1);text-align:center;border-radius:2px;background:rgba(242,235,224,.5);transition:all .3s}
+.pillar.primary{border-color:var(--vermillion);background:rgba(181,48,42,.04)}
+.pillar-label{font-family:var(--font-heading);font-size:.72rem;color:var(--ink-light);letter-spacing:2px;margin-bottom:.3rem}
+.pillar-value{font-family:var(--font-display);font-size:1.6rem;color:var(--ink);line-height:1;letter-spacing:3px}
+
+.almanac-yiji{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:stretch;margin-bottom:1.2rem;padding:1.2rem .8rem;background:rgba(242,235,224,.5);border:1px solid rgba(42,38,32,.08);border-radius:2px}
+.yiji-block{display:flex;align-items:center;gap:.9rem;text-align:left}
+.yiji-block.ji{flex-direction:row-reverse;text-align:right}
+.yiji-char{font-family:var(--font-display);font-size:2.2rem;line-height:1;min-width:45px;text-align:center;padding:.3rem .5rem;border-radius:2px;flex-shrink:0}
+.yi .yiji-char{color:var(--paper);background:#3a6b50}
+.ji .yiji-char{color:var(--paper);background:var(--vermillion)}
+.yiji-list{font-family:var(--font-heading);font-size:.82rem;color:var(--ink-mid);line-height:1.8;letter-spacing:1px}
+.yiji-divider{width:1px;background:linear-gradient(to bottom,transparent,rgba(42,38,32,.2),transparent)}
+
+.almanac-footer{display:flex;justify-content:space-between;align-items:center;padding-top:1rem;border-top:1px dashed rgba(42,38,32,.1);gap:1rem;flex-wrap:wrap}
+.almanac-seal{font-family:var(--font-display);font-size:.85rem;color:var(--paper);background:var(--vermillion);padding:.25rem .7rem;border-radius:2px;letter-spacing:1px;transform:rotate(-3deg)}
+.almanac-note{font-family:var(--font-body);font-size:.72rem;color:var(--ink-light)}
+.almanac-note a{color:var(--vermillion);text-decoration:none;font-weight:700;margin-left:.3rem}
+.almanac-note a:hover{text-decoration:underline}
+
+@media(max-width:640px){
+  .almanac-card{padding:2rem 1.2rem 1.5rem}
+  .almanac-pillars{gap:.5rem;padding:0}
+  .pillar{padding:.7rem .2rem}
+  .pillar-value{font-size:1.3rem;letter-spacing:2px}
+  .almanac-yiji{grid-template-columns:1fr;gap:.8rem}
+  .yiji-divider{width:100%;height:1px;background:linear-gradient(to right,transparent,rgba(42,38,32,.2),transparent)}
+  .yiji-block,.yiji-block.ji{flex-direction:row;text-align:left}
+}
+
+/* === NAME ANALYZER (signature feature) === */
+.analyzer-section{padding:clamp(5rem,10vh,8rem) clamp(1.5rem,5vw,4rem);position:relative}
+.analyzer-wrap{max-width:720px;margin:0 auto;text-align:center;position:relative}
+.analyzer-stage{min-height:420px;background:rgba(242,235,224,.5);border:1px solid rgba(42,38,32,.08);border-radius:4px;padding:clamp(2rem,4vw,3rem);position:relative;box-shadow:0 4px 30px rgba(42,38,32,.04);backdrop-filter:blur(8px)}
+.analyzer-stage::before,.analyzer-stage::after{content:'';position:absolute;width:24px;height:24px;border-color:var(--vermillion)}
+.analyzer-stage::before{top:8px;left:8px;border-top:1px solid;border-left:1px solid}
+.analyzer-stage::after{bottom:8px;right:8px;border-bottom:1px solid;border-right:1px solid}
+.analyzer-step{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:360px}
+.analyzer-step.hidden{display:none}
+.name-input-row{display:flex;gap:.8rem;width:100%;max-width:440px;margin-bottom:1rem;flex-wrap:wrap;justify-content:center}
+#nameInput{flex:1;min-width:180px;padding:.9rem 1.2rem;border:1px solid rgba(42,38,32,.15);background:var(--paper);color:var(--ink);font-family:var(--font-heading);font-size:1.1rem;text-align:center;border-radius:3px;outline:none;transition:border-color .3s;letter-spacing:3px}
+#nameInput::placeholder{color:var(--ink-light);letter-spacing:0;font-size:.92rem}
+#nameInput:focus{border-color:var(--vermillion)}
+.analyzer-btn{padding:.9rem 1.8rem;background:var(--ink);color:var(--paper);border:none;font-family:var(--font-heading);font-size:.92rem;letter-spacing:4px;cursor:pointer;border-radius:3px;transition:all .3s;font-weight:700}
+.analyzer-btn:hover{background:var(--vermillion);transform:translateY(-1px)}
+.analyzer-hint{font-family:var(--font-mono);font-size:.6rem;color:var(--ink-light);letter-spacing:2px;margin-top:.5rem;opacity:.6}
+.analyzer-tips{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem}
+.tip-tag{font-family:var(--font-body);font-size:.72rem;padding:.35rem .8rem;background:transparent;border:1px dashed rgba(42,38,32,.15);color:var(--ink-light);cursor:pointer;transition:all .3s;border-radius:2px}
+.tip-tag:hover{border-color:var(--vermillion);border-style:solid;color:var(--vermillion)}
+
+/* Countdown */
+.countdown-ring{position:relative;width:140px;height:140px;margin-bottom:1.5rem}
+.countdown-ring svg{width:100%;height:100%;transform:rotate(0deg)}
+.countdown-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.countdown-num{font-family:var(--font-display);font-size:3.5rem;color:var(--ink);line-height:1}
+.countdown-unit{font-family:var(--font-mono);font-size:.5rem;letter-spacing:3px;color:var(--ink-light);margin-top:.3rem}
+.countdown-status{font-family:var(--font-heading);font-size:.88rem;color:var(--ink-mid);letter-spacing:2px;min-height:1.5em;transition:opacity .3s}
+
+/* Result */
+.result-name{display:flex;gap:1rem;justify-content:center;margin-bottom:1.8rem;flex-wrap:wrap}
+.name-char-box{display:flex;flex-direction:column;align-items:center;padding:.8rem 1rem;background:var(--paper);border:1px solid rgba(42,38,32,.1);border-radius:3px;min-width:65px}
+.name-char-box .char{font-family:var(--font-display);font-size:2rem;color:var(--ink);line-height:1;margin-bottom:.4rem}
+.name-char-box .strokes{font-family:var(--font-mono);font-size:.55rem;letter-spacing:1px;color:var(--vermillion);text-transform:uppercase}
+
+.five-grids{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:1.5rem;width:100%;max-width:500px}
+.grid-box{background:var(--paper);border:1px solid rgba(42,38,32,.08);padding:.8rem .4rem;text-align:center;border-radius:3px;position:relative;transition:all .3s}
+.grid-box.primary{border-color:var(--vermillion);background:rgba(181,48,42,.03)}
+.grid-box .grid-label{font-family:var(--font-heading);font-size:.72rem;color:var(--ink-light);letter-spacing:2px;margin-bottom:.3rem}
+.grid-box .grid-num{font-family:var(--font-display);font-size:1.8rem;color:var(--ink);line-height:1;margin-bottom:.2rem}
+.grid-box .grid-fortune{font-family:var(--font-heading);font-size:.68rem;letter-spacing:1px;font-weight:700}
+.grid-box .grid-fortune.good{color:#2d6a4f}
+.grid-box .grid-fortune.bad{color:#b5302a}
+.grid-box .grid-fortune.mid{color:#a8861a}
+
+.result-verdict{display:inline-block;padding:.5rem 1.5rem;background:var(--vermillion);color:var(--paper);font-family:var(--font-display);font-size:1.2rem;letter-spacing:4px;border-radius:2px;transform:rotate(-2deg);margin-bottom:1rem;box-shadow:0 3px 12px rgba(181,48,42,.2)}
+.result-meaning{font-family:var(--font-heading);font-size:.88rem;color:var(--text-body);line-height:2;max-width:500px;margin:0 auto 1.5rem;padding:0 1rem}
+.analyzer-btn-secondary{padding:.7rem 1.5rem;background:transparent;color:var(--ink-mid);border:1px solid var(--ink-mid);font-family:var(--font-heading);font-size:.82rem;letter-spacing:3px;cursor:pointer;border-radius:3px;transition:all .3s;margin-bottom:1rem}
+.analyzer-btn-secondary:hover{background:var(--ink);color:var(--paper)}
+.result-note{font-family:var(--font-body);font-size:.68rem;color:var(--ink-light);letter-spacing:1px;opacity:.7}
+.result-note a{color:var(--vermillion);text-decoration:none;font-weight:700}
+.result-note a:hover{text-decoration:underline}
+
+@media(max-width:640px){
+  .five-grids{grid-template-columns:repeat(5,1fr);gap:.3rem}
+  .grid-box{padding:.5rem .2rem}
+  .grid-box .grid-num{font-size:1.3rem}
+  .grid-box .grid-label{font-size:.6rem}
+  .grid-box .grid-fortune{font-size:.55rem}
+  .name-char-box{min-width:50px;padding:.5rem}
+  .name-char-box .char{font-size:1.5rem}
+}
+
+/* === ABOUT === */
+.about-section{max-width:880px;margin:0 auto;position:relative}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start;margin-top:2rem}
+.about-img{position:relative;border-radius:4px;overflow:hidden}
+.about-img img{width:100%;height:auto;border-radius:4px;filter:sepia(.2) contrast(1.02) brightness(1.02)}
+.about-img::after{content:'';position:absolute;inset:0;border:1px solid rgba(42,38,32,.08);border-radius:4px;pointer-events:none}
+/* Seal stamp overlay */
+.seal-stamp{position:absolute;top:1rem;right:1rem;width:60px;height:60px;border:2px solid var(--vermillion);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.2rem;color:var(--vermillion);transform:rotate(-8deg);opacity:.6;background:rgba(242,235,224,.5);backdrop-filter:blur(2px)}
+
+/* === QUOTE SCROLL (feels like an unrolled bamboo scroll) === */
+.quote-scroll{max-width:650px;margin:0 auto;padding:4rem 2rem;position:relative;text-align:center}
+.quote-scroll::before{content:'';position:absolute;inset:1rem;border:1px solid rgba(42,38,32,.06);border-radius:2px;pointer-events:none}
+.quote-text{font-family:var(--font-display);font-size:clamp(1.5rem,3vw,2.2rem);color:var(--ink);line-height:2;letter-spacing:2px}
+/* Vermillion seal beside quote */
+.quote-seal{display:inline-block;width:45px;height:45px;background:var(--vermillion);border-radius:3px;color:var(--paper);font-family:var(--font-display);font-size:1.1rem;line-height:45px;text-align:center;transform:rotate(-6deg);margin-top:1rem;box-shadow:0 2px 8px rgba(181,48,42,.15)}
+
+/* === FIVE ELEMENTS WHEEL === */
+.wuxing-section{padding:clamp(5rem,10vh,8rem) clamp(1.5rem,5vw,4rem);position:relative;overflow:hidden}
+.wuxing-wrap{max-width:860px;margin:0 auto;text-align:center}
+.wuxing-stage{display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;align-items:center;margin-top:2rem}
+.wuxing-wheel{width:100%;max-width:500px;height:auto;margin:0 auto;display:block;cursor:pointer}
+
+/* SVG nodes styling */
+.wuxing-node{cursor:pointer;transition:transform .3s}
+.wuxing-node .node-bg{fill:var(--paper);stroke:var(--ink);stroke-width:2;transition:all .3s}
+.wuxing-node .node-char{font-family:'Ma Shan Zheng',cursive;font-size:44px;fill:var(--ink);text-anchor:middle;transition:fill .3s;pointer-events:none}
+.wuxing-node[data-element="wood"] .node-bg{stroke:#3a6b50}
+.wuxing-node[data-element="fire"] .node-bg{stroke:#b5302a}
+.wuxing-node[data-element="earth"] .node-bg{stroke:#a8861a}
+.wuxing-node[data-element="metal"] .node-bg{stroke:#7d7d7d}
+.wuxing-node[data-element="water"] .node-bg{stroke:#2d4a6b}
+.wuxing-node:hover .node-bg,.wuxing-node.active .node-bg{transform:scale(1.1)}
+.wuxing-node[data-element="wood"].active .node-bg{fill:#3a6b50}
+.wuxing-node[data-element="fire"].active .node-bg{fill:#b5302a}
+.wuxing-node[data-element="earth"].active .node-bg{fill:#a8861a}
+.wuxing-node[data-element="metal"].active .node-bg{fill:#7d7d7d}
+.wuxing-node[data-element="water"].active .node-bg{fill:#2d4a6b}
+.wuxing-node.active .node-char{fill:var(--paper)}
+
+/* Animated lines */
+.sheng-line.highlight{opacity:1 !important;stroke-width:3;animation:flowDash 2s linear infinite}
+.ke-line.highlight{opacity:1 !important;stroke-width:3;animation:flowDashRev 2s linear infinite}
+@keyframes flowDash{to{stroke-dashoffset:-20}}
+@keyframes flowDashRev{to{stroke-dashoffset:20}}
+
+.wuxing-info{text-align:left;padding:1.5rem;background:rgba(242,235,224,.5);border:1px solid rgba(42,38,32,.08);border-radius:3px;min-height:200px}
+.wuxing-info-label{font-family:var(--font-display);font-size:1.6rem;color:var(--ink);margin-bottom:.8rem;letter-spacing:2px;padding-bottom:.6rem;border-bottom:1px solid rgba(42,38,32,.1)}
+.wuxing-info-label.wood{color:#3a6b50}
+.wuxing-info-label.fire{color:#b5302a}
+.wuxing-info-label.earth{color:#a8861a}
+.wuxing-info-label.metal{color:#7d7d7d}
+.wuxing-info-label.water{color:#2d4a6b}
+.wuxing-info-text{font-family:var(--font-heading);font-size:.88rem;color:var(--text-body);line-height:2;margin-bottom:1.2rem}
+.wuxing-legend{display:flex;gap:1rem;flex-wrap:wrap;padding-top:.8rem;border-top:1px dashed rgba(42,38,32,.1)}
+.legend-item{display:flex;align-items:center;gap:.5rem;font-family:var(--font-body);font-size:.72rem;color:var(--ink-light)}
+.legend-line{display:inline-block;width:26px;height:2px}
+.legend-line.sheng{background:#3a6b50}
+.legend-line.ke{background:#b5302a;background:repeating-linear-gradient(90deg,#b5302a 0,#b5302a 3px,transparent 3px,transparent 6px)}
+
+@media(max-width:768px){
+  .wuxing-stage{grid-template-columns:1fr;gap:1.5rem}
+  .wuxing-info{min-height:auto}
+  .wuxing-wheel{max-width:360px}
+}
+
+/* === 3D COMPASS === */
+.compass-section{padding:clamp(5rem,10vh,8rem) clamp(1.5rem,5vw,4rem);position:relative;background:linear-gradient(180deg,var(--paper),rgba(42,38,32,.04),var(--paper));overflow:hidden}
+.compass-wrap{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:1fr 1.05fr;gap:3.5rem;align-items:center}
+.compass-text{text-align:left;padding-right:1rem}
+.compass-text .stitle{text-align:left;margin-bottom:1.2rem}
+.compass-text .stext{max-width:none;margin:0}
+.compass-hint{font-family:var(--font-body);font-size:.72rem;color:var(--ink-light);letter-spacing:1px;margin-top:2rem;opacity:.7;display:flex;align-items:center;gap:.5rem}
+.compass-hint i{font-size:.8rem;color:var(--vermillion)}
+.compass-visual{position:relative;aspect-ratio:1/1;max-width:450px;margin-left:auto;width:100%}
+#compass-canvas{width:100%!important;height:100%!important;display:block;cursor:grab}
+#compass-canvas:active{cursor:grabbing}
+.compass-label-tl,.compass-label-tr,.compass-label-bl,.compass-label-br{position:absolute;font-family:var(--font-display);font-size:1.4rem;color:var(--ink-light);opacity:.4;pointer-events:none;transition:opacity .5s,color .5s}
+.compass-visual:hover .compass-label-tl,
+.compass-visual:hover .compass-label-tr,
+.compass-visual:hover .compass-label-bl,
+.compass-visual:hover .compass-label-br{opacity:.75;color:var(--vermillion)}
+.compass-label-tl{top:0;left:0}
+.compass-label-tr{top:0;right:0}
+.compass-label-bl{bottom:0;left:0}
+.compass-label-br{bottom:0;right:0}
+
+@media(max-width:860px){
+  .compass-wrap{grid-template-columns:1fr;gap:2rem}
+  .compass-text{text-align:center;padding-right:0}
+  .compass-text .stitle{text-align:center}
+  .compass-text .stext{max-width:520px;margin:0 auto}
+  .compass-hint{justify-content:center}
+  .compass-visual{max-width:340px;margin:0 auto}
+}
+
+/* === SERVICES (presented as scroll/catalog entries) === */
+.services-wrap{max-width:900px;margin:0 auto}
+.service-entry{display:grid;grid-template-columns:60px 1fr;gap:1.5rem;padding:2rem 0;border-bottom:1px solid rgba(42,38,32,.06);align-items:start}
+.service-entry:last-child{border-bottom:none}
+.service-num{font-family:var(--font-display);font-size:2.2rem;color:var(--vermillion);opacity:.4;line-height:1}
+.service-title{font-family:var(--font-heading);font-size:1.15rem;color:var(--ink);margin-bottom:.4rem;font-weight:700}
+.service-desc{font-size:.88rem;color:var(--text-body);line-height:2;font-weight:300}
+.service-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem}
+.service-tag{font-size:.6rem;font-family:var(--font-mono);padding:.15rem .5rem;border:1px solid rgba(42,38,32,.08);color:var(--ink-light);letter-spacing:1px}
+
+/* === CASES === */
+.case-section{max-width:750px;margin:0 auto}
+.case-item{display:flex;gap:1rem;align-items:flex-start;padding:1.5rem 0;border-bottom:1px solid rgba(42,38,32,.05)}
+.case-item:last-child{border-bottom:none}
+.case-seal{width:32px;height:32px;min-width:32px;background:var(--vermillion);border-radius:3px;display:flex;align-items:center;justify-content:center;color:var(--paper);font-size:.7rem;transform:rotate(-3deg);opacity:.7}
+.case-text{font-size:.9rem;line-height:1.9;color:var(--text-body)}
+.case-text strong{color:var(--ink);font-weight:700}
+
+/* === GALLERY (masonry-ish, integrated with ink wash borders) === */
+.gallery-wrap{max-width:900px;margin:2rem auto 0}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
+.gallery-item{position:relative;border-radius:3px;overflow:hidden;aspect-ratio:4/3;cursor:pointer}
+.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .6s;filter:sepia(.12) contrast(1.03)}
+.gallery-item:hover img{transform:scale(1.06)}
+/* Ink wash vignette */
+.gallery-item::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 30px rgba(42,38,32,.15);pointer-events:none;transition:box-shadow .3s}
+.gallery-item:hover::after{box-shadow:inset 0 0 15px rgba(42,38,32,.08)}
+.gallery-item .g-label{position:absolute;bottom:.6rem;left:.6rem;font-family:var(--font-mono);font-size:.5rem;color:var(--paper);letter-spacing:2px;opacity:0;transform:translateY(8px);transition:all .3s;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.gallery-item:hover .g-label{opacity:1;transform:translateY(0)}
+@media(max-width:640px){.gallery-grid{grid-template-columns:1fr 1fr;gap:.5rem}}
+
+/* === COIN ORACLE === */
+.oracle-section{text-align:center;padding:5rem 2rem;position:relative;background:linear-gradient(180deg,var(--paper),rgba(42,38,32,.03),var(--paper))}
+.oracle-section>.teacher-guide{left:calc(50% + 140px)}
+.coin-oracle{max-width:450px;margin:2.5rem auto 0;display:flex;flex-direction:column;align-items:center}
+
+/* Hexagram being built */
+.hex-building{display:flex;flex-direction:column;gap:6px;margin-bottom:.8rem;padding:1rem 2rem;background:rgba(242,235,224,.5);border:1px solid rgba(42,38,32,.08);border-radius:3px;min-height:130px;justify-content:center}
+.hex-line-slot{width:90px;height:8px;position:relative;border-radius:1px;background:rgba(42,38,32,.06)}
+.hex-line-slot.filled.solid{background:var(--ink)}
+.hex-line-slot.filled.broken{background:transparent}
+.hex-line-slot.filled.broken::before,.hex-line-slot.filled.broken::after{content:'';position:absolute;top:0;height:8px;width:35px;background:var(--ink);border-radius:1px}
+.hex-line-slot.filled.broken::before{left:0}
+.hex-line-slot.filled.broken::after{right:0}
+.hex-line-slot.filled.changing{animation:changingPulse 2s ease-in-out infinite}
+@keyframes changingPulse{0%,100%{background:var(--ink)}50%{background:var(--vermillion)}}
+.hex-labels{font-family:var(--font-mono);font-size:.65rem;letter-spacing:2px;color:var(--ink-light);margin-bottom:1.5rem}
+
+/* Three.js coin physics stage */
+.coin-physics-stage{position:relative;width:100%;max-width:520px;height:300px;margin:0 auto 1.5rem}
+#coinCanvas{width:100%!important;height:100%!important;display:block;cursor:pointer}
+.coin-last-result{position:absolute;top:.5rem;right:.8rem;font-family:var(--font-mono);font-size:.62rem;letter-spacing:2px;color:var(--ink-light);background:rgba(242,235,224,.7);padding:.2rem .5rem;border-radius:2px;opacity:0;transition:opacity .4s}
+.coin-last-result.show{opacity:1}
+.coin-last-result.yang{color:#3a6b50}
+.coin-last-result.yin{color:var(--vermillion)}
+
+.coin-btn{font-family:var(--font-display);font-size:1.3rem;color:var(--ink);background:transparent;border:1px solid var(--ink-mid);padding:.8rem 2.4rem;border-radius:2px;cursor:pointer;transition:all .4s;letter-spacing:4px;min-width:160px}
+.coin-btn:hover:not(:disabled){border-color:var(--vermillion);color:var(--vermillion);box-shadow:0 0 20px var(--vermillion-glow)}
+.coin-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.coin-result{margin-top:2rem;opacity:0;transition:opacity .6s;display:none}
+.coin-result.show{opacity:1;display:block}
+.oracle-name{font-family:var(--font-display);font-size:3rem;color:var(--ink);margin-bottom:.5rem}
+.oracle-meaning{font-family:var(--font-heading);font-size:.92rem;color:var(--text-body);line-height:2;max-width:340px;margin:0 auto}
+
+/* === VALUES (brushstroke style) === */
+.values-section{text-align:center;padding:5rem 2rem;position:relative}
+.values-text{font-family:var(--font-display);font-size:clamp(1.4rem,3vw,2rem);color:var(--ink);line-height:2.2;letter-spacing:3px}
+.values-text span{display:inline-block;position:relative}
+.values-text span::after{content:'';position:absolute;bottom:-.1em;left:0;right:0;height:8px;background:var(--vermillion-glow);border-radius:2px;z-index:-1}
+
+/* === CTA === */
+.cta-section{text-align:center;padding:5rem 2rem}
+.cta-links{display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;margin-top:2rem}
+.cta-link{display:flex;align-items:center;gap:.5rem;padding:.7rem 1.3rem;border:1px solid rgba(42,38,32,.1);border-radius:3px;text-decoration:none;color:var(--ink-mid);font-family:var(--font-body);font-size:.82rem;transition:all .3s;background:rgba(242,235,224,.6);backdrop-filter:blur(4px)}
+.cta-link:hover{border-color:var(--vermillion);color:var(--vermillion);transform:translateY(-2px);box-shadow:0 4px 15px rgba(42,38,32,.06)}
+.cta-link i{font-size:1.1rem}
+
+/* === FOOTER === */
+.guild-footer{text-align:center;padding:2.5rem 2rem 2rem;border-top:1px solid rgba(42,38,32,.05)}
+.guild-footer a{color:var(--ink-light);text-decoration:none;font-family:var(--font-mono);font-size:.6rem;letter-spacing:2px;transition:color .3s}
+.guild-footer a:hover{color:var(--vermillion)}
+
+/* === MOBILE === */
+@media(max-width:768px){
+  section{padding:3rem 1.2rem}
+  .about-grid{grid-template-columns:1fr;gap:2rem}
+  .service-entry{grid-template-columns:40px 1fr;gap:1rem}
+  .cta-links{flex-direction:column;align-items:center}
+  .hero-title{font-size:clamp(2.5rem,12vw,4rem)}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+  <div class="loader-brush"></div>
+  <div class="loader-text">墨 落 成 卦</div>
+</div>
+
+<!-- SCROLL PROGRESS -->
+<div class="scroll-bar" id="scrollBar"></div>
+
+<!-- P5 INK WASH BACKGROUND -->
+<div id="p5-bg"></div>
+<div class="paper-grain"></div>
+
+<!-- BACK NAV -->
+<a href="/guild/" class="back-nav"><i class="fas fa-arrow-left"></i> GUILD</a>
+
+<!-- CONTENT -->
+<div class="content-layer">
+
+  <!-- ====== HERO ====== -->
+  <section class="hero" id="hero">
+    <div class="mountain-layer mountain-far" id="mtnFar"></div>
+    <div class="mountain-layer mountain-mid" id="mtnMid"></div>
+    <div class="hero-mist"></div>
+    <div class="hero-inner">
+      <div class="avatar-wrap">
+        <img src="../assets/img/guild/jackman78566/avatar_yt.webp" alt="依筆朗老師" loading="eager">
+        <div class="avatar-seal">易</div>
+      </div>
+      <h1 class="hero-title">依筆朗老師</h1>
+      <p class="hero-sub">易經會長 &middot; 大學教授 &middot; 逢甲大學博士</p>
+      <div class="hero-philosophy">易經是在救人，不是在算命</div>
+      <div class="hero-tags">
+        <span class="hero-tag">I-Ching</span>
+        <span class="hero-tag">Feng Shui</span>
+        <span class="hero-tag">Naming</span>
+        <span class="hero-tag">Auspicious Dates</span>
+        <span class="hero-tag">17+ Years</span>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>SCROLL</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- INK WAVE TRANSITION -->
+  <div class="ink-wave"><svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0,60 C180,20 360,80 540,40 C720,0 900,70 1080,30 C1260,-10 1380,50 1440,40 L1440,100 L0,100Z" fill="currentColor" style="color:var(--ink-mid)"/></svg></div>
+
+  <!-- ====== TODAY'S ALMANAC (今日黃曆) ====== -->
+  <section class="almanac-section" id="almanac">
+    <div class="almanac-wrap">
+      <span class="label text-center gsap-fade" style="display:block">today's almanac</span>
+      <h2 class="stitle text-center gsap-fade">今日黃曆</h2>
+      <p class="stext stext-center reveal" style="margin-bottom:2rem">擇日是我的專業之一 -- 每一天都有屬於它的能量與節奏</p>
+
+      <div class="teacher-guide pos-right" data-trigger="almanac" style="top:4rem;right:calc(50% - 340px)">
+        <img src="../assets/img/guild/jackman78566/avatar_yt.webp" alt="依筆朗老師" class="teacher-avatar">
+        <div class="teacher-bubble">擇日學問很大的</div>
+      </div>
+      <div class="almanac-card">
+        <div class="almanac-header">
+          <div class="almanac-corner tl"></div>
+          <div class="almanac-corner tr"></div>
+          <div class="almanac-corner bl"></div>
+          <div class="almanac-corner br"></div>
+
+          <div class="almanac-date-row">
+            <div class="almanac-gregorian" id="almGregorian">-</div>
+            <div class="almanac-zodiac" id="almZodiac">-</div>
+          </div>
+          <div class="almanac-lunar" id="almLunar">歲次 - &middot; - 月</div>
+        </div>
+
+        <div class="almanac-pillars">
+          <div class="pillar">
+            <div class="pillar-label">年柱</div>
+            <div class="pillar-value" id="almYearPillar">-</div>
+          </div>
+          <div class="pillar">
+            <div class="pillar-label">月柱</div>
+            <div class="pillar-value" id="almMonthPillar">-</div>
+          </div>
+          <div class="pillar primary">
+            <div class="pillar-label">日柱</div>
+            <div class="pillar-value" id="almDayPillar">-</div>
+          </div>
+        </div>
+
+        <div class="almanac-yiji">
+          <div class="yiji-block yi">
+            <div class="yiji-char">宜</div>
+            <div class="yiji-list" id="almYi">-</div>
+          </div>
+          <div class="yiji-divider"></div>
+          <div class="yiji-block ji">
+            <div class="yiji-char">忌</div>
+            <div class="yiji-list" id="almJi">-</div>
+          </div>
+        </div>
+
+        <div class="almanac-footer">
+          <div class="almanac-seal">依筆朗</div>
+          <div class="almanac-note">需要專業擇日？<a href="https://line.me/R/ti/p/@750oeiim" target="_blank" rel="noopener noreferrer">LINE 預約諮詢</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INK WAVE TRANSITION -->
+  <div class="ink-wave" style="transform:scaleY(-1)"><svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0,50 C200,10 400,80 600,30 C800,-10 1000,60 1200,20 C1350,50 1420,30 1440,40 L1440,100 L0,100Z" fill="currentColor" style="color:var(--ink-mid)"/></svg></div>
+
+  <!-- ====== SEVEN SECONDS NAME ANALYZER (signature feature) ====== -->
+  <section class="analyzer-section" id="analyzer">
+    <div class="analyzer-wrap">
+      <span class="label text-center gsap-fade" style="display:block">seven seconds</span>
+      <h2 class="stitle text-center gsap-fade">給我七秒，讀懂你的名字</h2>
+      <p class="stext stext-center reveal" style="margin-bottom:2.5rem">這是我的招牌 -- 「七秒識人學」。輸入你的中文姓名，讓易經姓名學的五格推演為你解讀命盤密碼。</p>
+
+      <div class="teacher-guide pos-left" data-trigger="analyzer" style="top:3rem;left:calc(50% - 420px)">
+        <img src="../assets/img/guild/jackman78566/avatar_yt.webp" alt="依筆朗老師" class="teacher-avatar">
+        <div class="teacher-bubble">輸入你的名字試試看！</div>
+      </div>
+      <div class="analyzer-stage">
+        <!-- Step 1: Input -->
+        <div class="analyzer-step" id="stepInput">
+          <div class="name-input-row">
+            <input type="text" id="nameInput" placeholder="請輸入中文姓名" maxlength="4" autocomplete="off">
+            <button class="analyzer-btn" onclick="startAnalysis()">開始解讀</button>
+          </div>
+          <p class="analyzer-hint">限 2-4 個中文字 &middot; 不會儲存任何資料</p>
+          <div class="analyzer-tips">
+            <span class="tip-tag" onclick="fillName('王小明')">試試：王小明</span>
+            <span class="tip-tag" onclick="fillName('陳美華')">試試：陳美華</span>
+            <span class="tip-tag" onclick="fillName('依筆朗')">試試：依筆朗</span>
+          </div>
+        </div>
+
+        <!-- Step 2: Countdown -->
+        <div class="analyzer-step hidden" id="stepCountdown">
+          <div class="countdown-ring">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="54" stroke="rgba(42,38,32,.1)" stroke-width="2" fill="none"/>
+              <circle id="countdownCircle" cx="60" cy="60" r="54" stroke="var(--vermillion)" stroke-width="2" fill="none" stroke-dasharray="339.29" stroke-dashoffset="0" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s linear"/>
+            </svg>
+            <div class="countdown-center">
+              <div class="countdown-num" id="countdownNum">7</div>
+              <div class="countdown-unit">seconds</div>
+            </div>
+          </div>
+          <div class="countdown-status" id="countdownStatus">正在計算筆劃...</div>
+        </div>
+
+        <!-- Step 3: Result -->
+        <div class="analyzer-step hidden" id="stepResult">
+          <div class="result-name" id="resultName"></div>
+          <div class="five-grids">
+            <div class="grid-box"><div class="grid-label">天格</div><div class="grid-num" id="numHeaven">-</div><div class="grid-fortune" id="fortHeaven">-</div></div>
+            <div class="grid-box"><div class="grid-label">人格</div><div class="grid-num" id="numHuman">-</div><div class="grid-fortune" id="fortHuman">-</div></div>
+            <div class="grid-box primary"><div class="grid-label">地格</div><div class="grid-num" id="numEarth">-</div><div class="grid-fortune" id="fortEarth">-</div></div>
+            <div class="grid-box"><div class="grid-label">外格</div><div class="grid-num" id="numOuter">-</div><div class="grid-fortune" id="fortOuter">-</div></div>
+            <div class="grid-box"><div class="grid-label">總格</div><div class="grid-num" id="numTotal">-</div><div class="grid-fortune" id="fortTotal">-</div></div>
+          </div>
+          <div class="result-verdict" id="resultVerdict"></div>
+          <div class="result-meaning" id="resultMeaning"></div>
+          <button class="analyzer-btn-secondary" onclick="resetAnalysis()">再解讀一個名字</button>
+          <div class="result-note">這是簡易版姓名學參考 &middot; 完整解讀請預約<a href="https://line.me/R/ti/p/@750oeiim" target="_blank" rel="noopener noreferrer">依筆朗老師專業諮詢</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INK WAVE TRANSITION -->
+  <div class="ink-wave" style="transform:scaleY(-1)"><svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0,60 C180,20 360,80 540,40 C720,0 900,70 1080,30 C1260,-10 1380,50 1440,40 L1440,100 L0,100Z" fill="currentColor" style="color:var(--ink-mid)"/></svg></div>
+
+  <!-- ====== ORIGIN ====== -->
+  <section class="about-section" id="about">
+    <span class="label reveal">origin</span>
+    <h2 class="stitle reveal">七秒識人，十七年悟道</h2>
+    <div class="about-grid">
+      <div class="stext reveal">
+        <p>我是依筆朗，來自台中。走上易經這條路，源自一個簡單的好奇心 -- 一個人的名字，真的能承載命運的密碼嗎？</p>
+        <br>
+        <p>這個問題，我花了十七年尋找答案。從逢甲大學的博士論文到無數個深夜的研究，從課堂上的理論推演到幾十萬筆真實姓名的數據分析。我漸漸明白：易經不是玄學，而是一套理解天地運行規律的智慧系統。</p>
+        <br>
+        <p>十七年間，我分析了數十萬個姓名案例，輔導超過三萬名學員。他們來自台灣、港澳、馬來西亞、中國大陸、甚至美國。每次看到學員因為名字的調整而轉運，因為風水佈局而順遂，我就更確信 -- 這條路值得走下去。</p>
+      </div>
+      <div class="about-img reveal">
+        <img src="../assets/img/guild/jackman78566/studying.webp" alt="大學授課現場" loading="lazy">
+        <div class="seal-stamp">授</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INK WAVE TRANSITION -->
+  <div class="ink-wave" style="transform:scaleX(-1)"><svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0,50 C200,10 400,80 600,30 C800,-10 1000,60 1200,20 C1350,50 1420,30 1440,40 L1440,100 L0,100Z" fill="currentColor" style="color:var(--ink-mid)"/></svg></div>
+
+  <!-- ====== PHILOSOPHY (scroll-like) ====== -->
+  <section class="quote-scroll reveal" id="philosophy">
+    <div class="quote-text">
+      名字，是一個人的能量<br>
+      格局，是一個家的氣場<br>
+      時間，是一生的關鍵
+    </div>
+    <div class="quote-seal">道</div>
+  </section>
+
+  <!-- ====== FIVE ELEMENTS WHEEL (五行相生相剋) ====== -->
+  <section class="wuxing-section" id="wuxing">
+    <div class="wuxing-wrap">
+      <span class="label text-center gsap-fade" style="display:block">five elements</span>
+      <h2 class="stitle text-center gsap-fade">五行相生，五行相剋</h2>
+      <p class="stext stext-center reveal" style="margin-bottom:2rem">金木水火土 -- 這不是玄學，而是古人觀察萬物運行的能量分類系統。點擊或懸停任一元素，看見它的生剋關係。</p>
+
+      <div class="wuxing-stage">
+        <svg class="wuxing-wheel" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-sheng" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+              <path d="M0,0 L12,6 L0,12 L3,6 z" fill="#3a6b50"/>
+            </marker>
+            <marker id="arrow-ke" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+              <path d="M0,0 L12,6 L0,12 L3,6 z" fill="#b5302a"/>
+            </marker>
+          </defs>
+
+          <!-- Outer decorative circle -->
+          <circle cx="250" cy="250" r="230" fill="none" stroke="rgba(42,38,32,0.08)" stroke-width="1" stroke-dasharray="4 8"/>
+          <circle cx="250" cy="250" r="200" fill="none" stroke="rgba(42,38,32,0.06)" stroke-width="1"/>
+
+          <!-- Sheng cycle (相生) - pentagon outer edges -->
+          <g id="shengLines" class="wuxing-lines sheng">
+            <line class="sheng-line" data-from="wood" data-to="fire" x1="250" y1="50" x2="440" y2="190" stroke="#3a6b50" stroke-width="2" opacity="0.15" marker-end="url(#arrow-sheng)"/>
+            <line class="sheng-line" data-from="fire" data-to="earth" x1="440" y1="190" x2="368" y2="412" stroke="#3a6b50" stroke-width="2" opacity="0.15" marker-end="url(#arrow-sheng)"/>
+            <line class="sheng-line" data-from="earth" data-to="metal" x1="368" y1="412" x2="132" y2="412" stroke="#3a6b50" stroke-width="2" opacity="0.15" marker-end="url(#arrow-sheng)"/>
+            <line class="sheng-line" data-from="metal" data-to="water" x1="132" y1="412" x2="60" y2="190" stroke="#3a6b50" stroke-width="2" opacity="0.15" marker-end="url(#arrow-sheng)"/>
+            <line class="sheng-line" data-from="water" data-to="wood" x1="60" y1="190" x2="250" y2="50" stroke="#3a6b50" stroke-width="2" opacity="0.15" marker-end="url(#arrow-sheng)"/>
+          </g>
+
+          <!-- Ke cycle (相剋) - inner star lines -->
+          <g id="keLines" class="wuxing-lines ke">
+            <line class="ke-line" data-from="wood" data-to="earth" x1="250" y1="50" x2="368" y2="412" stroke="#b5302a" stroke-width="2" opacity="0.15" stroke-dasharray="5 5" marker-end="url(#arrow-ke)"/>
+            <line class="ke-line" data-from="earth" data-to="water" x1="368" y1="412" x2="60" y2="190" stroke="#b5302a" stroke-width="2" opacity="0.15" stroke-dasharray="5 5" marker-end="url(#arrow-ke)"/>
+            <line class="ke-line" data-from="water" data-to="fire" x1="60" y1="190" x2="440" y2="190" stroke="#b5302a" stroke-width="2" opacity="0.15" stroke-dasharray="5 5" marker-end="url(#arrow-ke)"/>
+            <line class="ke-line" data-from="fire" data-to="metal" x1="440" y1="190" x2="132" y2="412" stroke="#b5302a" stroke-width="2" opacity="0.15" stroke-dasharray="5 5" marker-end="url(#arrow-ke)"/>
+            <line class="ke-line" data-from="metal" data-to="wood" x1="132" y1="412" x2="250" y2="50" stroke="#b5302a" stroke-width="2" opacity="0.15" stroke-dasharray="5 5" marker-end="url(#arrow-ke)"/>
+          </g>
+
+          <!-- Elements (五行節點) -->
+          <g id="wuxingNodes">
+            <g class="wuxing-node" data-element="wood" transform="translate(250,50)">
+              <circle r="42" class="node-bg"/>
+              <text class="node-char" y="12">木</text>
+            </g>
+            <g class="wuxing-node" data-element="fire" transform="translate(440,190)">
+              <circle r="42" class="node-bg"/>
+              <text class="node-char" y="12">火</text>
+            </g>
+            <g class="wuxing-node" data-element="earth" transform="translate(368,412)">
+              <circle r="42" class="node-bg"/>
+              <text class="node-char" y="12">土</text>
+            </g>
+            <g class="wuxing-node" data-element="metal" transform="translate(132,412)">
+              <circle r="42" class="node-bg"/>
+              <text class="node-char" y="12">金</text>
+            </g>
+            <g class="wuxing-node" data-element="water" transform="translate(60,190)">
+              <circle r="42" class="node-bg"/>
+              <text class="node-char" y="12">水</text>
+            </g>
+          </g>
+        </svg>
+
+        <div class="wuxing-info">
+          <div class="wuxing-info-label" id="wuxingLabel">懸停或點擊元素</div>
+          <div class="wuxing-info-text" id="wuxingText">金木水火土，各自有其性質、方位、季節、臟腑，也有彼此相生相剋的能量循環。這是易經姓名學判斷一個名字能量平衡的核心依據。</div>
+          <div class="wuxing-legend">
+            <span class="legend-item"><span class="legend-line sheng"></span>相生 (滋養)</span>
+            <span class="legend-item"><span class="legend-line ke"></span>相剋 (制約)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 3D COMPASS ====== -->
+  <section class="compass-section" id="compass">
+    <div class="compass-wrap">
+      <div class="compass-text">
+        <span class="label">feng shui</span>
+        <h2 class="stitle">以羅盤為眼<br>觀天下格局</h2>
+        <p class="stext">陽宅風水不是迷信，而是對空間能量的精準解讀。每一次到訪客戶的家，我都帶著羅盤丈量方位、分析格局。</p>
+        <p class="stext" style="margin-top:1rem">一個沙發的擺放、一扇窗的朝向，都可能影響整個家庭的運勢。我做的事情，就是把看不見的能量，變成看得見的改變。</p>
+        <p class="compass-hint"><i class="fas fa-mouse-pointer"></i> 移動滑鼠，讓指針追尋方位</p>
+      </div>
+      <div class="compass-visual">
+        <canvas id="compass-canvas"></canvas>
+        <div class="compass-label-tl">天</div>
+        <div class="compass-label-tr">地</div>
+        <div class="compass-label-bl">人</div>
+        <div class="compass-label-br">和</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SERVICES (catalog entries) ====== -->
+  <section id="services" style="overflow:hidden">
+    <div class="services-wrap">
+      <span class="label gsap-fade">services</span>
+      <h2 class="stitle gsap-fade">我能幫你做什麼</h2>
+
+      <div class="service-entry gsap-card">
+        <div class="service-num">壹</div>
+        <div>
+          <div class="service-title">開運命名</div>
+          <div class="service-desc">寶寶取名、成人改名、寵物命名、公司取名、新建案命名。透過姓名學的精密計算，為你量身打造能量滿滿的好名字。七秒之間，我就能看出一個名字的吉凶。</div>
+          <div class="service-tags"><span class="service-tag">BABY NAME</span><span class="service-tag">ADULT RENAME</span><span class="service-tag">COMPANY</span></div>
+        </div>
+      </div>
+
+      <div class="service-entry gsap-card">
+        <div class="service-num">貳</div>
+        <div>
+          <div class="service-title">陽宅風水</div>
+          <div class="service-desc">居家風水調整、辦公室招財佈局、加盟門市規劃、全宅運勢佈局。從羅盤定位到格局調整一次完成。合作案例包含遠雄建設等知名品牌。</div>
+          <div class="service-tags"><span class="service-tag">HOME</span><span class="service-tag">OFFICE</span><span class="service-tag">COMMERCIAL</span></div>
+        </div>
+      </div>
+
+      <div class="service-entry gsap-card">
+        <div class="service-num">參</div>
+        <div>
+          <div class="service-title">擇日服務</div>
+          <div class="service-desc">剖腹產擇日、結婚訂婚擇日、合婚擇日、開幕招財日、創業吉日。人生的每個重要時刻，都值得在對的時間發生。</div>
+          <div class="service-tags"><span class="service-tag">WEDDING</span><span class="service-tag">BIRTH</span><span class="service-tag">BUSINESS</span></div>
+        </div>
+      </div>
+
+      <div class="service-entry gsap-card">
+        <div class="service-num">肆</div>
+        <div>
+          <div class="service-title">八字流年解析</div>
+          <div class="service-desc">八字流年解析、開運行事曆設計、夫妻招財規劃、各類疑問諮詢。結合易經智慧與現代數據分析，為你的人生導航。</div>
+          <div class="service-tags"><span class="service-tag">BAZI</span><span class="service-tag">ANNUAL FORECAST</span><span class="service-tag">CONSULT</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== ACHIEVEMENTS ====== -->
+  <section id="achievements" style="overflow:hidden">
+    <div class="case-section">
+      <span class="label gsap-fade">achievements</span>
+      <h2 class="stitle gsap-fade">實證見真章</h2>
+      <p class="stext reveal" style="margin-bottom:2rem">每一個案例，都是一個真實的人生轉折</p>
+
+      <div class="case-item gsap-case">
+        <div class="case-seal"><i class="fas fa-trophy"></i></div>
+        <div class="case-text">中部學生經開運調整後，<strong>榮獲選美冠軍</strong>。從名字的能量開始，整個人生格局煥然一新。</div>
+      </div>
+      <div class="case-item gsap-case">
+        <div class="case-seal"><i class="fas fa-globe-asia"></i></div>
+        <div class="case-text">輔導學生開運後，於<strong>馬來西亞國際比賽獲得第一名</strong>。易經的力量不分國界。</div>
+      </div>
+      <div class="case-item gsap-case">
+        <div class="case-seal"><i class="fas fa-chart-line"></i></div>
+        <div class="case-text">雙北學生經<strong>陽宅風水調整後業績持續長紅</strong>，空間能量的改變直接反映在事業成果上。</div>
+      </div>
+      <div class="case-item gsap-case">
+        <div class="case-seal"><i class="fas fa-building"></i></div>
+        <div class="case-text">受<strong>遠雄建設</strong>邀請擔任風水顧問，為大型建案提供專業的格局規劃建議。</div>
+      </div>
+      <div class="case-item gsap-case">
+        <div class="case-seal"><i class="fas fa-microphone"></i></div>
+        <div class="case-text">受邀<strong>臺北電台專訪</strong>，分享易經應用於現代生活的實務經驗。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== GALLERY ====== -->
+  <section id="gallery">
+    <div class="gallery-wrap">
+      <span class="label reveal text-center" style="display:block">scenes</span>
+      <h2 class="stitle reveal text-center" style="max-width:600px;margin:0 auto 1.5rem">那些現場的瞬間</h2>
+      <div class="gallery-grid">
+        <div class="gallery-item gsap-gallery">
+          <img src="../assets/img/guild/jackman78566/office_study.webp" alt="建案風水講座" loading="lazy">
+          <span class="g-label">SEMINAR</span>
+        </div>
+        <div class="gallery-item gsap-gallery">
+          <img src="../assets/img/guild/jackman78566/floorplan.webp" alt="羅盤定位" loading="lazy">
+          <span class="g-label">LUOPAN</span>
+        </div>
+        <div class="gallery-item gsap-gallery">
+          <img src="../assets/img/guild/jackman78566/indoor_design.webp" alt="室內勘查" loading="lazy">
+          <span class="g-label">ON SITE</span>
+        </div>
+        <div class="gallery-item gsap-gallery">
+          <img src="../assets/img/guild/jackman78566/better_future.webp" alt="泳泰添好運" loading="lazy">
+          <span class="g-label">BRAND</span>
+        </div>
+        <div class="gallery-item gsap-gallery">
+          <img src="../assets/img/guild/jackman78566/yijing_calligraphy.webp" alt="易經哲學" loading="lazy">
+          <span class="g-label">PHILOSOPHY</span>
+        </div>
+        <div class="gallery-item gsap-gallery">
+          <img src="../assets/img/guild/jackman78566/game_screenshot.webp" alt="守護者意象" loading="lazy">
+          <span class="g-label">GUARDIAN</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== COIN ORACLE (traditional 3-coin method) ====== -->
+  <section class="oracle-section" id="oracle">
+    <span class="label gsap-fade">divination</span>
+    <h2 class="stitle text-center gsap-fade">三錢成卦，問心求道</h2>
+    <p class="stext stext-center reveal">易經擲卦最古老的方法 -- 三枚銅錢，連擲六次，由下往上建構卦象。<br>專心一念，輕觸銅錢開始。</p>
+
+    <div class="teacher-guide pos-right" data-trigger="oracle" style="top:2rem;right:calc(50% - 300px)">
+      <img src="../assets/img/guild/jackman78566/avatar_yt.webp" alt="依筆朗老師" class="teacher-avatar">
+      <div class="teacher-bubble">心誠則靈</div>
+    </div>
+    <div class="coin-oracle" id="coinOracle">
+      <!-- Build progress (6 lines) -->
+      <div class="hex-building" id="hexBuilding">
+        <div class="hex-line-slot" data-pos="5"></div>
+        <div class="hex-line-slot" data-pos="4"></div>
+        <div class="hex-line-slot" data-pos="3"></div>
+        <div class="hex-line-slot" data-pos="2"></div>
+        <div class="hex-line-slot" data-pos="1"></div>
+        <div class="hex-line-slot" data-pos="0"></div>
+      </div>
+      <div class="hex-labels">
+        <span id="tossLabel">第 1 / 6 爻</span>
+      </div>
+
+      <!-- Three.js physics canvas for coins -->
+      <div class="coin-physics-stage">
+        <canvas id="coinCanvas"></canvas>
+        <div class="coin-last-result" id="coinLastResult"></div>
+      </div>
+
+      <button class="coin-btn" id="coinBtn" onclick="tossCoins()">擲 錢</button>
+
+      <!-- Final result -->
+      <div class="coin-result" id="coinResult">
+        <div class="oracle-name" id="oracleName"></div>
+        <div class="oracle-meaning" id="oracleMeaning"></div>
+        <button class="analyzer-btn-secondary" onclick="resetOracle()" style="margin-top:1rem">重新起卦</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== VALUES ====== -->
+  <section class="values-section reveal">
+    <div class="values-text">
+      <span>存好心</span><br>
+      <span>說好話</span><br>
+      <span>做好事</span><br>
+      <span>走好路</span>
+    </div>
+    <p style="font-size:.78rem;color:var(--ink-light);margin-top:1.5rem;letter-spacing:3px">-- 依筆朗老師的處世哲學</p>
+  </section>
+
+  <!-- ====== CTA ====== -->
+  <section class="cta-section" id="contact">
+    <span class="label gsap-fade">connect</span>
+    <h2 class="stitle text-center gsap-fade">讓專業為你導航</h2>
+    <p class="stext stext-center reveal">無論你是想為新生命取個好名字、為家宅調整格局，或是在人生的十字路口需要一盞明燈 -- 我都在這裡。支援線上視訊會議，不論身在何處，都能為你服務。</p>
+    <div class="cta-links reveal">
+      <a href="https://www.youtube.com/channel/UCsWy3gOq_HbJHcJ9bEp2mpA" target="_blank" rel="noopener noreferrer" class="cta-link"><i class="fab fa-youtube"></i> YouTube 依筆朗老師</a>
+      <a href="https://line.me/R/ti/p/@750oeiim" target="_blank" rel="noopener noreferrer" class="cta-link"><i class="fab fa-line"></i> LINE @750oeiim</a>
+      <a href="https://www.instagram.com/jackman78566/" target="_blank" rel="noopener noreferrer" class="cta-link"><i class="fab fa-instagram"></i> Instagram</a>
+      <a href="https://www.threads.com/@jackman78566" target="_blank" rel="noopener noreferrer" class="cta-link"><i class="fab fa-threads"></i> Threads</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="guild-footer">
+    <a href="/guild/">supergalen.com/guild</a>
+  </footer>
+
+</div>
+
+<script>
+/* ========== LOADER ========== */
+window.addEventListener('load',()=>{
+  const loader=document.getElementById('loader');
+  gsap.to(loader,{opacity:0,duration:.6,delay:1.8,onComplete:()=>{loader.style.display='none'}});
+});
+
+/* ========== SCROLL PROGRESS ========== */
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  const pct=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100;
+  document.getElementById('scrollBar').style.width=pct+'%';
+});
+
+/* ========== REVEAL ========== */
+const observer=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}});
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+/* ========== GSAP ========== */
+gsap.registerPlugin(ScrollTrigger);
+
+// Hero parallax mountains
+gsap.to('#mtnFar',{y:-60,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:1}});
+gsap.to('#mtnMid',{y:-30,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:1}});
+gsap.to('.hero-inner',{y:-50,opacity:0,ease:'none',scrollTrigger:{trigger:'.hero',start:'50% top',end:'bottom top',scrub:1}});
+
+// Service entries
+gsap.set('.gsap-card',{opacity:0,x:-20});
+gsap.utils.toArray('.gsap-card').forEach((card,i)=>{
+  gsap.to(card,{
+    x:0,opacity:1,duration:.55,
+    scrollTrigger:{trigger:card,start:'top bottom-=30',toggleActions:'play none none none'}
+  });
+});
+
+// Case items
+gsap.set('.gsap-case',{opacity:0,x:-15});
+gsap.utils.toArray('.gsap-case').forEach((item,i)=>{
+  gsap.to(item,{
+    x:0,opacity:1,duration:.45,
+    scrollTrigger:{trigger:item,start:'top bottom-=30',toggleActions:'play none none none'}
+  });
+});
+
+// Gallery
+gsap.set('.gsap-gallery',{opacity:0,scale:.95});
+gsap.utils.toArray('.gsap-gallery').forEach((item,i)=>{
+  gsap.to(item,{
+    scale:1,opacity:1,duration:.45,
+    scrollTrigger:{trigger:item,start:'top bottom-=30',toggleActions:'play none none none'}
+  });
+});
+
+// === ALMANAC CARD entrance ===
+gsap.set('.pillar',{opacity:0,y:25});
+gsap.set('.almanac-corner',{opacity:0,scale:0});
+gsap.set('.yiji-block.yi',{opacity:0,x:-30});
+gsap.set('.yiji-block.ji',{opacity:0,x:30});
+gsap.from('.almanac-card',{
+  y:40,opacity:0,duration:.7,ease:'power2.out',
+  scrollTrigger:{trigger:'.almanac-card',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.almanac-corner',{
+  scale:1,opacity:1,duration:.5,stagger:.08,delay:.3,ease:'back.out(2)',
+  scrollTrigger:{trigger:'.almanac-card',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.pillar',{
+  y:0,opacity:1,duration:.5,stagger:.12,delay:.5,ease:'back.out(1.5)',
+  scrollTrigger:{trigger:'.almanac-card',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.yiji-block.yi',{
+  x:0,opacity:1,duration:.5,delay:.9,ease:'power2.out',
+  scrollTrigger:{trigger:'.almanac-card',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.yiji-block.ji',{
+  x:0,opacity:1,duration:.5,delay:.9,ease:'power2.out',
+  scrollTrigger:{trigger:'.almanac-card',start:'top 88%',toggleActions:'play none none none'}
+});
+
+// === ANALYZER STAGE entrance ===
+gsap.set('#nameInput,.analyzer-btn',{opacity:0,y:15});
+gsap.set('.tip-tag',{opacity:0,scale:0});
+gsap.from('.analyzer-stage',{
+  y:30,opacity:0,duration:.7,ease:'power2.out',
+  scrollTrigger:{trigger:'.analyzer-stage',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('#nameInput,.analyzer-btn',{
+  y:0,opacity:1,duration:.5,stagger:.1,delay:.3,ease:'power2.out',
+  scrollTrigger:{trigger:'.analyzer-stage',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.tip-tag',{
+  scale:1,opacity:1,duration:.4,stagger:.1,delay:.6,ease:'back.out(2)',
+  scrollTrigger:{trigger:'.analyzer-stage',start:'top 88%',toggleActions:'play none none none'}
+});
+
+// === WUXING WHEEL entrance ===
+gsap.set('.wuxing-node',{opacity:0,scale:0,transformOrigin:'center'});
+gsap.set('.sheng-line,.ke-line',{opacity:0});
+gsap.set('.wuxing-info',{opacity:0,x:30});
+gsap.from('.wuxing-stage',{
+  y:30,opacity:0,duration:.6,ease:'power2.out',
+  scrollTrigger:{trigger:'.wuxing-stage',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.wuxing-node',{
+  scale:1,opacity:1,duration:.5,stagger:.12,delay:.3,ease:'back.out(1.8)',
+  scrollTrigger:{trigger:'.wuxing-stage',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.sheng-line',{
+  opacity:.15,duration:.5,stagger:.06,delay:.9,
+  scrollTrigger:{trigger:'.wuxing-stage',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.ke-line',{
+  opacity:.15,duration:.5,stagger:.06,delay:1.0,
+  scrollTrigger:{trigger:'.wuxing-stage',start:'top 88%',toggleActions:'play none none none'}
+});
+gsap.to('.wuxing-info',{
+  x:0,opacity:1,duration:.6,delay:.5,ease:'power2.out',
+  scrollTrigger:{trigger:'.wuxing-stage',start:'top 88%',toggleActions:'play none none none'}
+});
+
+// === COMPASS section entrance ===
+gsap.set('.compass-text > *',{opacity:0,x:-25});
+gsap.set('.compass-visual',{opacity:0,scale:.85});
+gsap.set('.compass-label-tl,.compass-label-tr,.compass-label-bl,.compass-label-br',{opacity:0,scale:0});
+gsap.to('.compass-text > *',{
+  x:0,opacity:1,duration:.7,stagger:.12,ease:'power2.out',
+  scrollTrigger:{trigger:'.compass-section',start:'top 85%',toggleActions:'play none none none'}
+});
+gsap.to('.compass-visual',{
+  scale:1,opacity:1,duration:1,delay:.4,ease:'power3.out',
+  scrollTrigger:{trigger:'.compass-section',start:'top 85%',toggleActions:'play none none none'}
+});
+gsap.to('.compass-label-tl,.compass-label-tr,.compass-label-bl,.compass-label-br',{
+  scale:1,opacity:.4,duration:.5,stagger:.1,delay:1.2,ease:'back.out(2)',
+  scrollTrigger:{trigger:'.compass-section',start:'top 85%',toggleActions:'play none none none'}
+});
+
+// === COIN ORACLE entrance ===
+gsap.set('.coin-physics-stage',{opacity:0,y:25});
+gsap.from('.hex-building',{
+  scale:.9,opacity:0,y:20,duration:.6,ease:'power2.out',
+  scrollTrigger:{trigger:'.coin-oracle',start:'top 85%',toggleActions:'play none none none'}
+});
+gsap.to('.coin-physics-stage',{
+  y:0,opacity:1,duration:.7,delay:.2,ease:'power2.out',
+  scrollTrigger:{trigger:'.coin-oracle',start:'top 85%',toggleActions:'play none none none'}
+});
+gsap.from('.coin-btn',{
+  scale:.6,opacity:0,duration:.5,delay:.5,ease:'back.out(2)',
+  scrollTrigger:{trigger:'.coin-oracle',start:'top 85%',toggleActions:'play none none none'}
+});
+
+// === Generic gsap-fade title animations (services, achievements, oracle, contact, etc) ===
+gsap.utils.toArray('.gsap-fade').forEach(el=>{
+  gsap.set(el,{opacity:0,y:18});
+  gsap.to(el,{
+    opacity:1,y:0,duration:.7,ease:'power2.out',
+    scrollTrigger:{trigger:el,start:'top 90%',toggleActions:'play none none none'}
+  });
+});
+
+// === GALLERY hover labels (no entrance, just for labels) - skip the .g-label ===
+
+// === VALUES section letters reveal one by one ===
+gsap.from('.values-text span',{
+  scale:0,opacity:0,duration:.6,stagger:.18,ease:'back.out(2)',
+  scrollTrigger:{trigger:'.values-section',start:'top 80%',toggleActions:'play none none none'}
+});
+
+// === CTA links staggered entrance ===
+gsap.set('.cta-link',{opacity:0,y:20});
+gsap.to('.cta-link',{
+  y:0,opacity:1,duration:.5,stagger:.1,delay:.3,ease:'power2.out',
+  scrollTrigger:{trigger:'.cta-section',start:'top 85%',toggleActions:'play none none none'}
+});
+
+// Quote scroll - pin briefly
+ScrollTrigger.create({
+  trigger:'#philosophy',
+  start:'top 30%',
+  end:'+=200',
+  pin:false,
+  onEnter:()=>{
+    gsap.from('.quote-text',{opacity:0,y:20,duration:.8,ease:'power2.out'});
+    gsap.from('.quote-seal',{scale:0,rotation:-20,duration:.5,delay:.4,ease:'back.out(2)'});
+  },
+  once:true
+});
+
+/* ========== P5.JS: FLOATING CHARACTERS + TRIGRAMS ========== */
+// Characters from his actual world: I-Ching, naming, feng shui, time, fate, destiny
+const FLOAT_CHARS=['易','經','命','名','宅','時','卦','道','運','福','德','氣','象','爻','吉','緣','數','悟','靜','觀'];
+// 8 trigrams (八卦) - Unicode symbols
+const TRIGRAMS_SYM=['\u2630','\u2631','\u2632','\u2633','\u2634','\u2635','\u2636','\u2637'];
+
+new p5((p)=>{
+  let floaters=[];
+  let inkWashes=[];
+
+  p.setup=()=>{
+    const c=p.createCanvas(p.windowWidth,p.windowHeight);
+    c.parent('p5-bg');
+
+    // Large floating Chinese characters (subtle, background)
+    for(let i=0;i<14;i++){
+      floaters.push({
+        type:'char',
+        text:FLOAT_CHARS[Math.floor(p.random(FLOAT_CHARS.length))],
+        x:p.random(p.width),
+        y:p.random(p.height),
+        size:p.random(45,95),
+        alpha:p.random(6,16),
+        drift:p.random(-.12,.12),
+        yDrift:p.random(-.06,.06),
+        rotation:p.random(-.08,.08),
+        pulse:p.random(p.TWO_PI),
+        pulseSpeed:p.random(.003,.008)
+      });
+    }
+
+    // Trigram symbols (八卦) - smaller, more numerous
+    for(let i=0;i<10;i++){
+      floaters.push({
+        type:'trigram',
+        text:TRIGRAMS_SYM[Math.floor(p.random(TRIGRAMS_SYM.length))],
+        x:p.random(p.width),
+        y:p.random(p.height),
+        size:p.random(30,55),
+        alpha:p.random(10,20),
+        drift:p.random(-.1,.1),
+        yDrift:p.random(-.05,.05),
+        rotation:0,
+        pulse:p.random(p.TWO_PI),
+        pulseSpeed:p.random(.004,.009)
+      });
+    }
+
+    // Background ink wash (very subtle, behind characters)
+    for(let i=0;i<6;i++){
+      inkWashes.push({
+        x:p.random(p.width),
+        y:p.random(p.height),
+        size:p.random(200,400),
+        alpha:p.random(2,5),
+        drift:p.random(-.05,.05),
+        yDrift:p.random(-.03,.03)
+      });
+    }
+  };
+
+  p.draw=()=>{
+    p.clear();
+
+    // Subtle ink wash layer (very faint background blobs)
+    inkWashes.forEach(w=>{
+      w.x+=w.drift;
+      w.y+=w.yDrift;
+      if(w.x<-w.size)w.x=p.width+w.size;
+      if(w.x>p.width+w.size)w.x=-w.size;
+      if(w.y<-w.size)w.y=p.height+w.size;
+      if(w.y>p.height+w.size)w.y=-w.size;
+
+      p.noStroke();
+      p.fill(42,38,32,w.alpha);
+      p.ellipse(w.x,w.y,w.size);
+    });
+
+    // Floating characters and trigrams
+    floaters.forEach(f=>{
+      f.x+=f.drift;
+      f.y+=f.yDrift;
+      f.pulse+=f.pulseSpeed;
+
+      if(f.x<-f.size*2)f.x=p.width+f.size;
+      if(f.x>p.width+f.size*2)f.x=-f.size;
+      if(f.y<-f.size*2)f.y=p.height+f.size;
+      if(f.y>p.height+f.size*2)f.y=-f.size;
+
+      const pulsedAlpha=f.alpha+Math.sin(f.pulse)*3;
+
+      p.push();
+      p.translate(f.x,f.y);
+      if(f.rotation)p.rotate(f.rotation+Math.sin(f.pulse)*.02);
+
+      if(f.type==='char'){
+        p.textFont('Ma Shan Zheng, serif');
+        p.fill(42,38,32,pulsedAlpha);
+      }else{
+        p.textFont('serif');
+        p.fill(181,48,42,pulsedAlpha*.7);
+      }
+
+      p.textSize(f.size);
+      p.textAlign(p.CENTER,p.CENTER);
+      p.noStroke();
+      p.text(f.text,0,0);
+      p.pop();
+    });
+  };
+
+  p.windowResized=()=>{p.resizeCanvas(p.windowWidth,p.windowHeight)};
+});
+
+/* ========== THREE.JS COMPASS ========== */
+(function(){
+  const canvas=document.getElementById('compass-canvas');
+  const container=canvas?canvas.parentElement:null;
+  if(!canvas||!container)return;
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(45,1,.1,1000);
+  camera.position.set(0,2.5,5.5);
+  camera.lookAt(0,0,0);
+
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  const size=container.clientWidth;
+  renderer.setSize(size,size,false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+
+  // Warm lighting for ink-wash feel
+  scene.add(new THREE.AmbientLight(0xa8861a,.25));
+  const dLight=new THREE.DirectionalLight(0xf2ebe0,.7);
+  dLight.position.set(3,5,3);scene.add(dLight);
+  const pLight=new THREE.PointLight(0xb5302a,.2,10);
+  pLight.position.set(-2,2,-2);scene.add(pLight);
+
+  // Compass disc - bronze/wood tone
+  const disc=new THREE.Mesh(
+    new THREE.CylinderGeometry(2,.15,.12,64),
+    new THREE.MeshStandardMaterial({color:0x3a3020,metalness:.3,roughness:.7})
+  );
+  scene.add(disc);
+
+  // Gold ring
+  const ring=new THREE.Mesh(
+    new THREE.TorusGeometry(2,.04,16,64),
+    new THREE.MeshStandardMaterial({color:0xa8861a,metalness:.7,roughness:.3})
+  );
+  ring.rotation.x=Math.PI/2;ring.position.y=.07;scene.add(ring);
+
+  [1.5,1.0,0.5].forEach((r,i)=>{
+    const m=new THREE.Mesh(
+      new THREE.TorusGeometry(r,.015,8,64),
+      new THREE.MeshStandardMaterial({color:0xa8861a,metalness:.6,roughness:.4,transparent:true,opacity:.25+i*.1})
+    );
+    m.rotation.x=Math.PI/2;m.position.y=.08;scene.add(m);
+  });
+
+  // Needle - vermillion
+  const needle=new THREE.Mesh(
+    new THREE.BoxGeometry(.05,0.015,1.5),
+    new THREE.MeshStandardMaterial({color:0xb5302a,metalness:.4,roughness:.4})
+  );
+  needle.position.y=.1;scene.add(needle);
+
+  const knob=new THREE.Mesh(
+    new THREE.SphereGeometry(.08,16,16),
+    new THREE.MeshStandardMaterial({color:0xa8861a,metalness:.8,roughness:.2})
+  );
+  knob.position.y=.13;scene.add(knob);
+
+  // Cardinal markers
+  ['N','E','S','W'].forEach((d,i)=>{
+    const a=i*Math.PI/2;
+    const m=new THREE.Mesh(
+      new THREE.BoxGeometry(.06,.025,.16),
+      new THREE.MeshStandardMaterial({color:d==='N'?0xb5302a:0xa8861a,metalness:.5,roughness:.4})
+    );
+    m.position.set(Math.sin(a)*1.75,.08,Math.cos(a)*1.75);
+    m.rotation.y=-a;scene.add(m);
+  });
+
+  let mx=0,my=0;
+  container.addEventListener('mousemove',(e)=>{
+    const r=container.getBoundingClientRect();
+    mx=((e.clientX-r.left)/r.width-.5)*2;
+    my=((e.clientY-r.top)/r.height-.5)*2;
+  });
+
+  let na=0;
+  function animate(){
+    requestAnimationFrame(animate);
+    disc.rotation.y+=.002;
+    ring.rotation.z+=.002;
+    const ta=Math.atan2(mx,-my);
+    na+=(ta-na)*.025;
+    needle.rotation.y=na;
+    camera.position.x=mx*.4;
+    camera.position.z=6+my*.25;
+    camera.lookAt(0,0,0);
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  ScrollTrigger.create({
+    trigger:'.compass-section',start:'top bottom',end:'bottom top',
+    onUpdate:(s)=>{disc.rotation.y=s.progress*Math.PI*3;}
+  });
+
+  window.addEventListener('resize',()=>{
+    const newSize=container.clientWidth;
+    renderer.setSize(newSize,newSize,false);
+  });
+})();
+
+/* ========== CARTOON TEACHER GUIDE ========== */
+(function(){
+  const guides=document.querySelectorAll('.teacher-guide');
+  if(!guides.length)return;
+  const guideObserver=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        setTimeout(()=>e.target.classList.add('show'),300);
+      }
+    });
+  },{threshold:.3});
+  guides.forEach(g=>guideObserver.observe(g));
+})();
+
+/* ========== FIVE ELEMENTS WHEEL (五行相生相剋) ========== */
+const WUXING_DATA={
+  wood:{
+    name:'木',
+    color:'wood',
+    info:'木主仁，屬東方，色青，對應春天、肝臟。性質生發、柔韌、向上。在姓名學中代表成長、創造、仁慈之意。木旺之人溫和仁厚，但過旺則固執。',
+    sheng:'fire',
+    ke:'earth',
+    shengBy:'water',
+    keBy:'metal'
+  },
+  fire:{
+    name:'火',
+    color:'fire',
+    info:'火主禮，屬南方，色赤，對應夏天、心臟。性質炎上、明亮、熱情。在姓名學中代表熱誠、光明、禮節之意。火旺之人活潑熱情，但過旺則急躁。',
+    sheng:'earth',
+    ke:'metal',
+    shengBy:'wood',
+    keBy:'water'
+  },
+  earth:{
+    name:'土',
+    color:'earth',
+    info:'土主信，屬中央，色黃，對應長夏、脾胃。性質承載、化育、穩定。在姓名學中代表誠信、穩重、厚德之意。土旺之人忠厚誠信，但過旺則遲緩。',
+    sheng:'metal',
+    ke:'water',
+    shengBy:'fire',
+    keBy:'wood'
+  },
+  metal:{
+    name:'金',
+    color:'metal',
+    info:'金主義，屬西方，色白，對應秋天、肺臟。性質肅殺、收斂、堅毅。在姓名學中代表義理、果決、剛強之意。金旺之人講義氣重原則，但過旺則嚴苛。',
+    sheng:'water',
+    ke:'wood',
+    shengBy:'earth',
+    keBy:'fire'
+  },
+  water:{
+    name:'水',
+    color:'water',
+    info:'水主智，屬北方，色黑，對應冬天、腎臟。性質潤下、流動、智慧。在姓名學中代表智慧、靈活、包容之意。水旺之人聰明靈活，但過旺則飄浮。',
+    sheng:'wood',
+    ke:'fire',
+    shengBy:'metal',
+    keBy:'earth'
+  }
+};
+
+let wuxingActiveEl=null;
+
+function wuxingActivate(elem){
+  // Clear previous
+  document.querySelectorAll('.wuxing-node').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.sheng-line,.ke-line').forEach(l=>l.classList.remove('highlight'));
+
+  const data=WUXING_DATA[elem];
+  if(!data)return;
+
+  // Highlight node
+  const node=document.querySelector(`.wuxing-node[data-element="${elem}"]`);
+  if(node)node.classList.add('active');
+
+  // Highlight outgoing sheng (this → sheng)
+  const shengOut=document.querySelector(`.sheng-line[data-from="${elem}"][data-to="${data.sheng}"]`);
+  if(shengOut)shengOut.classList.add('highlight');
+
+  // Highlight outgoing ke (this → ke)
+  const keOut=document.querySelector(`.ke-line[data-from="${elem}"][data-to="${data.ke}"]`);
+  if(keOut)keOut.classList.add('highlight');
+
+  // Update info panel
+  const labelEl=document.getElementById('wuxingLabel');
+  const textEl=document.getElementById('wuxingText');
+  if(labelEl){
+    labelEl.textContent=`${data.name} — ${elemName(elem)}`;
+    labelEl.className='wuxing-info-label '+data.color;
+  }
+  if(textEl){
+    const shengName=WUXING_DATA[data.sheng].name;
+    const keName=WUXING_DATA[data.ke].name;
+    const shengByName=WUXING_DATA[data.shengBy].name;
+    const keByName=WUXING_DATA[data.keBy].name;
+    textEl.innerHTML=`${data.info}<br><br><strong>${data.name}生${shengName}</strong>、<strong>${data.name}剋${keName}</strong>；<strong>${shengByName}生${data.name}</strong>、<strong>${keByName}剋${data.name}</strong>。`;
+  }
+
+  wuxingActiveEl=elem;
+}
+
+function elemName(e){
+  return {wood:'東方青龍',fire:'南方朱雀',earth:'中央勾陳',metal:'西方白虎',water:'北方玄武'}[e]||'';
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.wuxing-node').forEach(node=>{
+    const el=node.dataset.element;
+    node.addEventListener('mouseenter',()=>wuxingActivate(el));
+    node.addEventListener('click',()=>wuxingActivate(el));
+  });
+
+  // Auto-cycle demonstration on load
+  const cycle=['wood','fire','earth','metal','water'];
+  let idx=0;
+  const autoCycle=setInterval(()=>{
+    if(wuxingActiveEl && wuxingActiveEl!==cycle[idx-1])return clearInterval(autoCycle);
+    wuxingActivate(cycle[idx]);
+    idx=(idx+1)%cycle.length;
+    if(idx===0)clearInterval(autoCycle);
+  },1500);
+});
+
+/* ========== TODAY'S ALMANAC (今日黃曆) ========== */
+const STEMS=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const BRANCHES=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const ZODIACS=['鼠','牛','虎','兔','龍','蛇','馬','羊','猴','雞','狗','豬'];
+const LUNAR_MONTHS=['正','二','三','四','五','六','七','八','九','十','冬','臘'];
+
+const YI_POOL=['嫁娶','出行','祭祀','祈福','求嗣','入宅','移徙','納采','會親友','訂盟','冠笄','納財','栽種','開市','立券','開光','塑繪','開業','簽約','赴任','修造','安床','動土','安葬','掃舍','修墳','求醫','經絡','出火','豎柱','上樑','開池'];
+const JI_POOL=['動土','破屋','掘井','安葬','伐木','作灶','開倉','嫁娶','出行','入宅','移徙','上樑','築堤','治病','栽種','納畜','修造','豎柱','開廁','造橋','破土','經絡','詞訟','赴任','結網','牧養','詣謁','行喪','求醫','針灸'];
+
+function calcAlmanac(){
+  const now=new Date();
+  const year=now.getFullYear();
+  const month=now.getMonth()+1;
+  const date=now.getDate();
+  const day=now.getDay();
+  const dayNames=['日','一','二','三','四','五','六'];
+
+  // Year stem/branch (天干地支年) - formula: (year - 4) mod 10/12
+  const ySIdx=((year-4)%10+10)%10;
+  const yBIdx=((year-4)%12+12)%12;
+  const yearPillar=STEMS[ySIdx]+BRANCHES[yBIdx];
+  const zodiac=ZODIACS[yBIdx];
+
+  // Day stem/branch - reference: 1900-01-01 was 甲戌日 (index 10 in 60-cycle)
+  // More accurately, 2000-01-01 was 乙丑日 (壬午年丙子月乙丑日)
+  // Using reference: 2000-01-01 = 乙丑 → stem=1, branch=1
+  const ref=new Date(2000,0,1);
+  const daysDiff=Math.floor((now-ref)/(1000*60*60*24));
+  const dSIdx=((daysDiff+1)%10+10)%10;
+  const dBIdx=((daysDiff+1)%12+12)%12;
+  const dayPillar=STEMS[dSIdx]+BRANCHES[dBIdx];
+
+  // Month stem/branch (simplified - each month has its fixed branch, stem follows year)
+  // 正月建寅, so branches: 寅(1)卯(2)辰(3)巳(4)午(5)未(6)申(7)酉(8)戌(9)亥(10)子(11)丑(12)
+  const monthBranch=BRANCHES[(month+1)%12];
+  // Month stem depends on year stem: 五虎遁公式
+  // 甲己之年起丙寅, 乙庚之年起戊寅, 丙辛之年起庚寅, 丁壬之年起壬寅, 戊癸之年起甲寅
+  const mStemStart=[2,4,6,8,0,2,4,6,8,0][ySIdx];
+  const monthStemIdx=(mStemStart+month-1)%10;
+  const monthPillar=STEMS[monthStemIdx]+monthBranch;
+
+  // Simplified lunar date (use day of year mod 30 as lunar day approximation)
+  const start=new Date(year,0,1);
+  const doy=Math.floor((now-start)/(1000*60*60*24));
+  const lunarMonthIdx=Math.floor(doy/30)%12;
+  const lunarDay=(doy%30)+1;
+  const lunarDayStr=lunarDay<=10?'初'+['一','二','三','四','五','六','七','八','九','十'][lunarDay-1]:
+                    lunarDay<20?'十'+['一','二','三','四','五','六','七','八','九'][lunarDay-11]:
+                    lunarDay===20?'二十':
+                    lunarDay<30?'廿'+['一','二','三','四','五','六','七','八','九'][lunarDay-21]:
+                    '三十';
+
+  // Pick 宜/忌 deterministically based on day
+  const seed=daysDiff;
+  const yi=[];
+  const ji=[];
+  const yiIndices=new Set();
+  const jiIndices=new Set();
+  while(yi.length<4){
+    const idx=(seed*7+yi.length*13)%YI_POOL.length;
+    if(!yiIndices.has(idx)){yiIndices.add(idx);yi.push(YI_POOL[idx]);}
+    else yi.push(YI_POOL[(idx+1)%YI_POOL.length]);
+  }
+  while(ji.length<3){
+    const idx=(seed*11+ji.length*17+5)%JI_POOL.length;
+    if(!jiIndices.has(idx)){jiIndices.add(idx);ji.push(JI_POOL[idx]);}
+    else ji.push(JI_POOL[(idx+1)%JI_POOL.length]);
+  }
+
+  return {
+    gregorian:`${year} 年 ${month} 月 ${date} 日 &middot; 星期${dayNames[day]}`,
+    zodiac,
+    yearPillar,
+    monthPillar,
+    dayPillar,
+    lunar:`歲次 ${yearPillar} &middot; ${LUNAR_MONTHS[lunarMonthIdx]}月 ${lunarDayStr}`,
+    yi:yi.join('、'),
+    ji:ji.join('、')
+  };
+}
+
+function renderAlmanac(){
+  const a=calcAlmanac();
+  const el=(id)=>document.getElementById(id);
+  if(!el('almGregorian'))return;
+  el('almGregorian').innerHTML=a.gregorian;
+  el('almZodiac').textContent=a.zodiac+' 年';
+  el('almLunar').innerHTML=a.lunar;
+  el('almYearPillar').textContent=a.yearPillar;
+  el('almMonthPillar').textContent=a.monthPillar;
+  el('almDayPillar').textContent=a.dayPillar;
+  el('almYi').textContent=a.yi;
+  el('almJi').textContent=a.ji;
+}
+document.addEventListener('DOMContentLoaded',renderAlmanac);
+if(document.readyState!=='loading')renderAlmanac();
+
+/* ========== NAME ANALYZER (七秒姓名學) ========== */
+// Stroke count lookup - common surnames + given name characters
+const STROKES={
+'丁':2,'于':3,'大':3,'小':3,'山':3,'川':3,'工':3,'千':3,
+'方':4,'王':4,'毛':4,'文':4,'孔':4,'牛':4,'尹':4,'中':4,'月':4,'木':4,'水':4,'火':4,'心':4,'天':4,'日':4,'太':4,'少':4,'仁':4,'升':4,
+'史':5,'白':5,'石':5,'田':5,'平':5,'冬':5,'玉':5,'世':5,'丘':5,'古':5,'功':5,'正':5,'永':5,'可':5,
+'任':6,'朱':6,'向':6,'安':6,'地':6,'光':6,'宇':6,'吉':6,'竹':6,'羽':6,'冰':6,'灰':6,'如':6,'成':7,'江':7,
+'李':7,'呂':7,'吳':7,'沈':7,'宋':7,'何':7,'余':7,'杜':7,'江':7,'秀':7,'志':7,'孝':7,'希':7,'杏':7,'宏':7,'辛':7,'克':7,
+'林':8,'周':8,'沈':8,'金':8,'孟':8,'武':8,'易':8,'汪':8,'明':8,'宗':8,'和':8,'忠':8,'欣':8,'宜':8,'昆':8,'松':8,'花':8,'佳':8,'青':8,'雨':8,
+'姍':8,'依':8,'侑':8,'忻':8,'東':8,'果':8,
+'胡':9,'柯':9,'侯':9,'段':9,'姜':9,'施':9,'姚':9,'勇':9,'建':9,'軍':9,'信':9,'紅':9,'美':9,'春':9,'秋':9,'星':9,'香':9,'風':9,'怡':9,'泉':9,'柳':9,'柏':9,'俊':9,'柔':9,'皇':9,'帝':9,
+'孫':10,'徐':10,'高':10,'馬':10,'袁':10,'夏':10,'唐':10,'秦':10,'倪':10,'洪':10,'家':10,'珊':10,'芳':10,'芬':10,'書':10,'真':10,'素':10,'純':10,'軒':10,'朗':10,'晉':10,'哲':10,'桃':10,'栢':10,'庭':10,
+'張':11,'許':11,'范':11,'梁':11,'崔':11,'康':11,'曹':11,'偉':11,'英':11,'梅':11,'雪':11,'婉':11,'敏':11,'健':11,'彩':11,'望':11,'悅':11,'晟':11,'紫':11,
+'黃':12,'曾':12,'傅':12,'彭':12,'馮':12,'邱':12,'邵':12,'喬':12,'湯':12,'賀':12,'程':12,'項':12,'華':12,'智':12,'善':12,'富':12,'貴':12,'順':12,'發':12,'盛':12,'福':12,'喜':12,'雲':12,'雯':12,'翔':12,'傑':12,'菊':12,'婷':12,
+'楊':13,'董':13,'雷':13,'湯':13,'賈':13,'廉':13,'義':13,'愛':13,'想':13,'楓':13,'溫':13,'暖':13,'當':13,'聖':13,'祿':13,
+'趙':14,'廖':14,'熊':14,'郝':14,'壽':14,'蓉':14,'鳳':14,'華':14,'福':14,'瑤':14,'榮':14,'瑜':14,'綠':14,'銀':14,'睿':14,'夢':14,'實':14,'誠':14,'源':14,'賓':14,
+'劉':15,'郭':15,'董':15,'葉':15,'潘':15,'蕭':15,'樂':15,'德':15,'輝':15,'慧':15,'範':15,'寬':15,'瑤':15,'賢':15,'穎':15,'黎':15,
+'陳':16,'鄧':16,'陸':16,'盧':16,'錢':16,'蒲':16,'龍':16,'靜':16,'燕':16,'賴':16,'興':16,'潘':16,'蕙':16,'頴':16,'達':16,
+'謝':17,'韓':17,'蔡':17,'蔣':17,'鍾':17,'聰':17,'優':17,'勵':17,'燦':17,
+'戴':18,'魏':18,'顏':18,'禮':18,'豐':18,'藍':18,'雙':18,'嬪':18,
+'鄭':19,'蕭':19,'薛':19,'譚':19,'鄧':19,'麗':19,'繡':19,'藍':19,'龐':19,
+'羅':20,'釋':20,'寶':20,'耀':20,'議':20,'繼':20,
+'顧':21,'櫻':21,'顧':21,'鶴':21,
+'蘇':22,'龔':22,'權':22,'歡':22,'讀':22,
+'蘭':23,
+'靈':24,'鳳':14,'凰':11
+};
+
+// Fortune lookup (81 numbers - simplified judgment)
+const FORTUNES={
+1:{type:'大吉',meaning:'太極之數，萬物開泰'},2:{type:'凶',meaning:'兩儀之數，混沌未開'},
+3:{type:'大吉',meaning:'三才之象，進取如意'},4:{type:'凶',meaning:'四象之數，待於生發'},
+5:{type:'大吉',meaning:'五行俱權，福祿長壽'},6:{type:'大吉',meaning:'六爻之數，安穩余慶'},
+7:{type:'吉',meaning:'七政之數，精悍獨行'},8:{type:'吉',meaning:'八卦之數，志剛意健'},
+9:{type:'凶',meaning:'大成之數，蘊含凶險'},10:{type:'凶',meaning:'萬事終局，充滿損耗'},
+11:{type:'大吉',meaning:'草木逢春，萬事發達'},12:{type:'凶',meaning:'意志薄弱，家庭寂寞'},
+13:{type:'大吉',meaning:'天賦吉運，富有智慧'},14:{type:'凶',meaning:'家族緣薄，浮沉破散'},
+15:{type:'大吉',meaning:'福壽圓滿，德高望重'},16:{type:'大吉',meaning:'厚重資望，得眾從之'},
+17:{type:'吉',meaning:'意志堅定，突破萬難'},18:{type:'吉',meaning:'有志竟成，內外和順'},
+19:{type:'凶',meaning:'成功雖早，慎防障礙'},20:{type:'凶',meaning:'實而不華，空虛浮沉'},
+21:{type:'大吉',meaning:'明月光照，獨立權威'},22:{type:'凶',meaning:'秋草逢霜，力不從心'},
+23:{type:'大吉',meaning:'旭日東升，壯麗發達'},24:{type:'大吉',meaning:'家門余慶，金錢豐盈'},
+25:{type:'吉',meaning:'資性英敏，才能奇特'},26:{type:'吉凶參半',meaning:'變怪奇異，英雄波亂'},
+27:{type:'吉凶參半',meaning:'一成一敗，先苦後甜'},28:{type:'凶',meaning:'魚臨旱地，奮鬥乾坤'},
+29:{type:'吉',meaning:'智謀兼備，才略奏功'},30:{type:'吉凶參半',meaning:'吉凶相伴，投機難料'},
+31:{type:'大吉',meaning:'智勇德全，名實合一'},32:{type:'大吉',meaning:'池中之龍，風雲際會'},
+33:{type:'大吉',meaning:'家門隆昌，才德開展'},34:{type:'凶',meaning:'破家之數，見難避災'},
+35:{type:'吉',meaning:'溫和平靜，智達通暢'},36:{type:'凶',meaning:'風浪不靜，諸難而起'},
+37:{type:'大吉',meaning:'權威顯達，貫徹志望'},38:{type:'吉',meaning:'意志薄弱，藝界有成'},
+39:{type:'大吉',meaning:'雲開見月，光明坦途'},40:{type:'凶',meaning:'退保平安，忍耐穩重'},
+41:{type:'大吉',meaning:'德望兼備，繼續努力'},42:{type:'凶',meaning:'事業不專，十九不成'},
+43:{type:'凶',meaning:'雨夜之花，外祥內苦'},44:{type:'凶',meaning:'雖用心計，事難遂願'},
+45:{type:'大吉',meaning:'楊柳遇春，綠葉發枝'},46:{type:'凶',meaning:'坎坷不平，艱難重重'},
+47:{type:'大吉',meaning:'有貴人助，可成大業'},48:{type:'大吉',meaning:'美化濟世，有德且智'},
+49:{type:'凶',meaning:'遇吉則吉，遇凶則凶'},50:{type:'吉凶參半',meaning:'吉凶互見，一成一敗'},
+51:{type:'吉凶參半',meaning:'一盛一衰，浮沉不定'},52:{type:'大吉',meaning:'草木逢春，雨過天晴'},
+53:{type:'凶',meaning:'盛衰參半，外祥內苦'},54:{type:'凶',meaning:'雖傾全力，難免失敗'},
+55:{type:'吉凶參半',meaning:'外觀隆昌，內隱禍患'},56:{type:'凶',meaning:'事與願違，終難成功'},
+57:{type:'吉',meaning:'努力春風，一掃寒氣'},58:{type:'吉凶參半',meaning:'半凶半吉，先苦後甜'},
+59:{type:'凶',meaning:'大雨之鳥，逆境前行'},60:{type:'凶',meaning:'黑暗無光，心迷意亂'},
+61:{type:'吉',meaning:'雲遮半月，百隱風波'},62:{type:'凶',meaning:'煙花落盡，慎防衰敗'},
+63:{type:'大吉',meaning:'萬物化育，繁榮之象'},64:{type:'凶',meaning:'見異思遷，十九不成'},
+65:{type:'大吉',meaning:'吉運自來，能享盛名'},66:{type:'凶',meaning:'黑夜漫長，進退維谷'},
+67:{type:'大吉',meaning:'事事如意，功成名就'},68:{type:'吉',meaning:'思慮周密，勤勉發達'},
+69:{type:'凶',meaning:'動搖不安，常陷逆境'},70:{type:'凶',meaning:'慘澹經營，難免貧困'},
+71:{type:'吉凶參半',meaning:'吉凶互見，先吉後凶'},72:{type:'凶',meaning:'利害混集，凶多於吉'},
+73:{type:'吉',meaning:'安樂自來，自然吉祥'},74:{type:'凶',meaning:'逆來順受，無功勞苦'},
+75:{type:'吉凶參半',meaning:'吉中帶凶，進不如守'},76:{type:'凶',meaning:'此數大凶，破產之象'},
+77:{type:'吉凶參半',meaning:'先苦後甜，先甜後苦'},78:{type:'吉凶參半',meaning:'有得有失，華而不實'},
+79:{type:'凶',meaning:'如走夜路，前途無光'},80:{type:'凶',meaning:'早離幸運，可保安順'},
+81:{type:'大吉',meaning:'最極之數，能得繁榮'}
+};
+
+function getStrokes(ch){
+  if(STROKES[ch])return STROKES[ch];
+  // Fallback: estimate from Unicode codepoint
+  const cp=ch.charCodeAt(0);
+  if(cp<0x4e00)return 5;
+  return 8+((cp-0x4e00)%15);
+}
+
+function fillName(n){document.getElementById('nameInput').value=n;}
+
+function startAnalysis(){
+  const name=document.getElementById('nameInput').value.trim();
+  if(!name||name.length<2){
+    gsap.fromTo('#nameInput',{x:-8},{x:0,duration:.1,repeat:5,yoyo:true});
+    document.getElementById('nameInput').style.borderColor='var(--vermillion)';
+    setTimeout(()=>{document.getElementById('nameInput').style.borderColor=''},800);
+    return;
+  }
+  // Validate Chinese chars
+  if(!/^[\u4e00-\u9fa5]{2,4}$/.test(name)){
+    gsap.fromTo('#nameInput',{x:-8},{x:0,duration:.1,repeat:5,yoyo:true});
+    return;
+  }
+
+  document.getElementById('stepInput').classList.add('hidden');
+  document.getElementById('stepCountdown').classList.remove('hidden');
+
+  const statuses=[
+    '正在計算筆劃...',
+    '推演天地人三才...',
+    '對照八十一數理...',
+    '分析五格相生相剋...',
+    '查閱姓名密碼...',
+    '生成易經解讀...',
+    '完成'
+  ];
+
+  let count=7;
+  const numEl=document.getElementById('countdownNum');
+  const statusEl=document.getElementById('countdownStatus');
+  const circleEl=document.getElementById('countdownCircle');
+  const circumference=339.29;
+
+  circleEl.style.strokeDashoffset='0';
+  numEl.textContent=count;
+  statusEl.textContent=statuses[0];
+
+  const tick=()=>{
+    count--;
+    const offset=circumference*((7-count)/7);
+    circleEl.style.strokeDashoffset=offset;
+
+    if(count>=0){
+      gsap.fromTo(numEl,{scale:1.3,opacity:.3},{scale:1,opacity:1,duration:.4,ease:'back.out(2)'});
+      numEl.textContent=count;
+      statusEl.textContent=statuses[7-count-1]||statuses[6];
+    }
+
+    if(count<=0){
+      setTimeout(()=>showResult(name),600);
+      return;
+    }
+    setTimeout(tick,1000);
+  };
+  setTimeout(tick,1000);
+}
+
+function showResult(name){
+  const chars=name.split('');
+  const strokes=chars.map(getStrokes);
+
+  // Five Grids calculation (姓名學五格)
+  const surnameStrokes=strokes[0];
+  const givenStrokes=strokes.slice(1);
+  const firstGiven=givenStrokes[0];
+
+  // 天格 = 姓氏筆劃 + 1 (single surname)
+  const heaven=surnameStrokes+1;
+  // 人格 = 姓氏末字 + 名字首字
+  const human=surnameStrokes+firstGiven;
+  // 地格 = 名字筆劃總和 (+1 if single char)
+  const earth=givenStrokes.length===1?givenStrokes[0]+1:givenStrokes.reduce((a,b)=>a+b,0);
+  // 總格 = 所有字筆劃總和
+  const total=strokes.reduce((a,b)=>a+b,0);
+  // 外格 = 總格 - 人格 + 1
+  const outer=total-human+1;
+
+  // Lookup fortunes
+  const getFortune=(n)=>{
+    const key=((n-1)%81)+1;
+    return FORTUNES[key]||FORTUNES[1];
+  };
+
+  const setFortune=(numId,fortId,val)=>{
+    document.getElementById(numId).textContent=val;
+    const f=getFortune(val);
+    const el=document.getElementById(fortId);
+    el.textContent=f.type;
+    el.className='grid-fortune '+(f.type.includes('大吉')||f.type==='吉'?'good':f.type==='凶'?'bad':'mid');
+  };
+
+  setFortune('numHeaven','fortHeaven',heaven);
+  setFortune('numHuman','fortHuman',human);
+  setFortune('numEarth','fortEarth',earth);
+  setFortune('numOuter','fortOuter',outer);
+  setFortune('numTotal','fortTotal',total);
+
+  // Name character display
+  const nameHtml=chars.map((c,i)=>`<div class="name-char-box"><span class="char">${c}</span><span class="strokes">${strokes[i]} strokes</span></div>`).join('');
+  document.getElementById('resultName').innerHTML=nameHtml;
+
+  // Overall verdict based on 人格 (主格)
+  const mainFortune=getFortune(human);
+  const verdictMap={
+    '大吉':'上上之名',
+    '吉':'上吉之名',
+    '吉凶參半':'吉凶並見',
+    '凶':'有待調整'
+  };
+  document.getElementById('resultVerdict').textContent=verdictMap[mainFortune.type]||'可堪一用';
+
+  // Overall meaning based on 人格
+  const meaningText=`人格 ${human} 數：${mainFortune.meaning}。人格是姓名學中的「主運」，掌管一生的命運格局。此名五格推演完畢，若想獲得針對個人八字與生辰的完整解讀，建議尋求專業諮詢。`;
+  document.getElementById('resultMeaning').textContent=meaningText;
+
+  // Transition
+  document.getElementById('stepCountdown').classList.add('hidden');
+  document.getElementById('stepResult').classList.remove('hidden');
+
+  // Animate
+  gsap.from('.name-char-box',{y:20,opacity:0,duration:.5,stagger:.1,ease:'power2.out'});
+  gsap.from('.grid-box',{scale:0,opacity:0,duration:.4,stagger:.08,delay:.3,ease:'back.out(1.5)'});
+  gsap.from('.result-verdict',{scale:0,rotation:-10,opacity:0,duration:.5,delay:.9,ease:'back.out(2)'});
+  gsap.from('.result-meaning',{y:15,opacity:0,duration:.6,delay:1.2});
+}
+
+function resetAnalysis(){
+  document.getElementById('stepResult').classList.add('hidden');
+  document.getElementById('stepInput').classList.remove('hidden');
+  document.getElementById('nameInput').value='';
+  document.getElementById('nameInput').focus();
+}
+
+// Enter key support
+document.addEventListener('DOMContentLoaded',()=>{
+  const input=document.getElementById('nameInput');
+  if(input)input.addEventListener('keydown',(e)=>{if(e.key==='Enter')startAnalysis()});
+});
+
+/* ========== COIN ORACLE (traditional 3-coin method) ========== */
+// Traditional 3-coin method:
+// Each coin: yang=3, yin=2
+// Sum of 3 coins: 6=old yin (changing), 7=young yang, 8=young yin, 9=old yang (changing)
+// We collect 6 lines from bottom up
+
+// 64 hexagram lookup - key = 6-digit string (top to bottom), value = {name, meaning}
+// We use the lower-trigram × upper-trigram mapping
+const TRIGRAMS={
+  '111':'乾','011':'兌','101':'離','001':'震',
+  '110':'巽','010':'坎','100':'艮','000':'坤'
+};
+const HEX_TABLE={
+  '乾乾':{name:'乾',meaning:'天行健，君子以自強不息。創始之力，積極進取開創新局，正是大展鴻圖之時。'},
+  '坤坤':{name:'坤',meaning:'地勢坤，君子以厚德載物。包容承載，以柔順之德行事，默默耕耘必有豐收。'},
+  '坎震':{name:'屯',meaning:'雲雷屯，萬物草創。雖有困難在前，如春草破土，堅持下去終將突破。'},
+  '艮坎':{name:'蒙',meaning:'山水蒙，啟蒙之時。保持謙虛學習的態度，虛心請教，智慧自然開啟。'},
+  '坎乾':{name:'需',meaning:'水天需，等待的智慧。時機尚未成熟，耐心等候。機會來臨時水到渠成。'},
+  '乾坎':{name:'訟',meaning:'天水訟，慎防爭端。退一步海闊天空，以和為貴，謀事宜有長者指引。'},
+  '坤坎':{name:'師',meaning:'地水師，紀律統帥。統率眾人需要正直與智慧，以德服人方能成大事。'},
+  '坎坤':{name:'比',meaning:'水地比，親比輔佐。貴人就在身邊，善於結交志同道合之人，互助互利。'},
+  '巽乾':{name:'小畜',meaning:'風天小畜，蓄養以待。小有積蓄但尚需時日，循序漸進，不宜冒進。'},
+  '乾兌':{name:'履',meaning:'天澤履，如履薄冰。做事需謹慎小心，步步為營，最終可以化險為夷。'},
+  '坤乾':{name:'泰',meaning:'地天泰，通達順暢。陰陽和合，正是大展鴻圖的吉祥之時，萬事亨通。'},
+  '乾坤':{name:'否',meaning:'天地否，閉塞不通。此時宜守不宜攻，堅守本心靜待時機轉變。'},
+  '乾離':{name:'同人',meaning:'天火同人，同心合力。與志同道合者攜手，共同前行必有所成。'},
+  '離乾':{name:'大有',meaning:'火天大有，豐盛擁有。事業興隆廣納天下英才，以德行守之則吉。'},
+  '坤艮':{name:'謙',meaning:'地山謙，謙受益。越有實力越該謙虛，謙謙君子吉無不利。'},
+  '震坤':{name:'豫',meaning:'雷地豫，喜悅和樂。順應天時而動，萬民喜悅，適合啟動新計畫。'},
+  '兌震':{name:'隨',meaning:'澤雷隨，隨順時勢。順應潮流而動，以柔克剛，必有所獲。'},
+  '艮巽':{name:'蠱',meaning:'山風蠱，整頓積弊。面對舊問題需徹底整頓，方能重啟新局。'},
+  '坤兌':{name:'臨',meaning:'地澤臨，親臨督導。以誠意與實力親臨現場，事業可成。'},
+  '巽坤':{name:'觀',meaning:'風地觀，觀察體悟。靜觀其變，以更高視角看待問題，答案自現。'},
+  '離震':{name:'噬嗑',meaning:'火雷噬嗑，去除障礙。果斷排除阻礙，方能繼續前行。'},
+  '艮離':{name:'賁',meaning:'山火賁，文飾修養。內外兼修，以文雅的態度處世，自然受人敬重。'},
+  '艮坤':{name:'剝',meaning:'山地剝，剝落衰敗。此時宜韜光養晦，等待時機反轉。'},
+  '坤震':{name:'復',meaning:'地雷復，一陽來復。轉機已現，回到初心重新整理，循序漸進。'},
+  '乾震':{name:'無妄',meaning:'天雷無妄，順其自然。不妄為不妄想，以真心待人處事，自然亨通。'},
+  '艮乾':{name:'大畜',meaning:'山天大畜，積蓄實力。厚積薄發，此時需要累積實力為未來做準備。'},
+  '艮震':{name:'頤',meaning:'山雷頤，養生之道。注意言語飲食，修養身心，自我充實方能照顧他人。'},
+  '兌巽':{name:'大過',meaning:'澤風大過，非常之時。此刻需要非常手段，但切勿過於極端。'},
+  '坎坎':{name:'坎',meaning:'重坎水險，險中求勝。面對重重困難需保持本心，誠信為上。'},
+  '離離':{name:'離',meaning:'重離光明，如日中天。以智慧之光引導他人，前途一片光明。'},
+  '兌艮':{name:'咸',meaning:'澤山咸，感應交流。與人真誠相處，相互感應，可得良緣。'},
+  '震巽':{name:'恆',meaning:'雷風恆，恆常持久。以恆心毅力堅持，必能達成目標。'},
+  '乾艮':{name:'遯',meaning:'天山遯，退隱保身。面對不利形勢宜退讓避禍，等待時機。'},
+  '震乾':{name:'大壯',meaning:'雷天大壯，壯盛有力。實力強盛之時，但需要謹慎使用避免過剛則折。'},
+  '離坤':{name:'晉',meaning:'火地晉，日出地面。前途光明一路晉升，得貴人相助。'},
+  '坤離':{name:'明夷',meaning:'地火明夷，光明受挫。才智暫被掩蓋，宜韜光養晦等待時機。'},
+  '巽離':{name:'家人',meaning:'風火家人，家道和睦。家庭和諧是一切成功的基礎，宜重視親情。'},
+  '離兌':{name:'睽',meaning:'火澤睽，意見相左。暫時有分歧但可化解，求同存異。'},
+  '坎艮':{name:'蹇',meaning:'水山蹇，行路艱難。遇到困難宜暫停反思，不宜強行推進。'},
+  '震坎':{name:'解',meaning:'雷水解，解除困境。困難即將解除，正是大步向前的時機。'},
+  '艮兌':{name:'損',meaning:'山澤損，有所損失。適度的捨棄反而能獲得更大收益，損下益上。'},
+  '巽震':{name:'益',meaning:'風雷益，增益豐厚。此時是受益之時，貴人相助事業順遂。'},
+  '乾兌':{name:'夬',meaning:'澤天夬，果斷決策。面對問題需要當機立斷，切勿猶豫不決。'},
+  '乾巽':{name:'姤',meaning:'天風姤，不期而遇。會遇到意想不到的人事，需要慎重應對。'},
+  '兌坤':{name:'萃',meaning:'澤地萃，聚集成群。人才匯聚事業興旺，善加運用眾人之力。'},
+  '坤巽':{name:'升',meaning:'地風升，循序上升。腳踏實地一步一步向上發展，必有所成。'},
+  '兌坎':{name:'困',meaning:'澤水困，困頓之時。暫時遭遇困境，保持信心修身養性待時而動。'},
+  '坎巽':{name:'井',meaning:'水風井，井水養人。以德養人如井水不竭，助人即助己。'},
+  '兌離':{name:'革',meaning:'澤火革，變革革新。時機已到需要大刀闊斧改革，順應潮流必得成功。'},
+  '離巽':{name:'鼎',meaning:'火風鼎，鼎新之象。建立新格局新秩序，功成名就之時。'},
+  '震震':{name:'震',meaning:'重震雷動，震驚而動。突如其來的變化，保持鎮定必能化險為夷。'},
+  '艮艮':{name:'艮',meaning:'重艮山止，知止而定。該停止時就停止，安於本分內心自有靜定。'},
+  '巽艮':{name:'漸',meaning:'風山漸，循序漸進。不疾不徐按部就班，必能達成遠大目標。'},
+  '震兌':{name:'歸妹',meaning:'雷澤歸妹，歸於本位。回歸本分安於其位，不可妄動。'},
+  '震離':{name:'豐',meaning:'雷火豐，豐盛之象。事業達到頂峰，需居安思危保持初心。'},
+  '離艮':{name:'旅',meaning:'火山旅，在外奔波。異地發展或出差商旅，謹慎小心必有收穫。'},
+  '巽巽':{name:'巽',meaning:'重巽風行，順遂通達。柔順謙讓，以德服人事事順心。'},
+  '兌兌':{name:'兌',meaning:'重兌澤潤，喜悅祥和。與人和睦相處，內心喜悅生活圓滿。'},
+  '巽坎':{name:'渙',meaning:'風水渙，散而復聚。原本渙散的力量重新凝聚，事業將有轉機。'},
+  '坎兌':{name:'節',meaning:'水澤節，節制有度。凡事適可而止，過猶不及節制方能長久。'},
+  '巽兌':{name:'中孚',meaning:'風澤中孚，誠信立身。以誠信待人，內外如一，感動天地。'},
+  '震艮':{name:'小過',meaning:'雷山小過，小有過越。小事可為大事需慎，知進退明得失。'},
+  '坎離':{name:'既濟',meaning:'水火既濟，事已完成。功德圓滿但需居安思危，慎終如始。'},
+  '離坎':{name:'未濟',meaning:'火水未濟，事未完成。雖未成功但前景光明，持續努力終有所成。'},
+};
+
+let coinLines=[];
+let tossCount=0;
+let coinPhysicsReady=false;
+let coinPhysicsTossFn=null;
+let coinIsTossing=false;
+
+// Initialize Three.js coin physics scene
+(function initCoinPhysics(){
+  const canvas=document.getElementById('coinCanvas');
+  if(!canvas||typeof THREE==='undefined')return;
+  const container=canvas.parentElement;
+
+  const scene=new THREE.Scene();
+  const W=container.clientWidth,H=container.clientHeight;
+  const camera=new THREE.PerspectiveCamera(38,W/H,.1,100);
+  camera.position.set(0,3.8,5);
+  camera.lookAt(0,.4,0);
+
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  renderer.setSize(W,H,false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.2;
+
+  // === Fake environment map for metallic reflections ===
+  // Creates a warm studio-light equirectangular texture for PBR reflections
+  function createEnvMap(){
+    const w=512,h=256;
+    const ec=document.createElement('canvas');
+    ec.width=w;ec.height=h;
+    const ectx=ec.getContext('2d');
+    // Warm gradient: bright top → horizon → dark ground
+    const g=ectx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#fff4d6');
+    g.addColorStop(.35,'#f0d8a0');
+    g.addColorStop(.5,'#c9a558');
+    g.addColorStop(.55,'#8a6e20');
+    g.addColorStop(.75,'#3d2f08');
+    g.addColorStop(1,'#1a1205');
+    ectx.fillStyle=g;
+    ectx.fillRect(0,0,w,h);
+    // Studio light hotspots for specular catch-light
+    const spots=[[100,45,40],[260,30,25],[400,55,35],[150,90,20],[350,95,22]];
+    spots.forEach(([x,y,r])=>{
+      const sg=ectx.createRadialGradient(x,y,0,x,y,r);
+      sg.addColorStop(0,'rgba(255,255,255,.95)');
+      sg.addColorStop(.4,'rgba(255,244,214,.4)');
+      sg.addColorStop(1,'rgba(255,244,214,0)');
+      ectx.fillStyle=sg;
+      ectx.fillRect(x-r,y-r,r*2,r*2);
+    });
+    const tex=new THREE.CanvasTexture(ec);
+    tex.mapping=THREE.EquirectangularReflectionMapping;
+    tex.colorSpace=THREE.SRGBColorSpace;
+    return tex;
+  }
+  const envMap=createEnvMap();
+  scene.environment=envMap;// all MeshStandardMaterials auto-use this
+
+  // Three-point lighting focused on coins
+  scene.add(new THREE.AmbientLight(0xf2ebe0,.3));
+  // Key light - warm from upper right
+  const keyLight=new THREE.DirectionalLight(0xfff2d6,1.4);
+  keyLight.position.set(3.5,7,4);
+  keyLight.castShadow=true;
+  keyLight.shadow.mapSize.width=1024;
+  keyLight.shadow.mapSize.height=1024;
+  keyLight.shadow.camera.left=-3;
+  keyLight.shadow.camera.right=3;
+  keyLight.shadow.camera.top=3;
+  keyLight.shadow.camera.bottom=-3;
+  keyLight.shadow.camera.near=1;
+  keyLight.shadow.camera.far=15;
+  keyLight.shadow.radius=5;
+  keyLight.shadow.bias=-0.0001;
+  scene.add(keyLight);
+  // Fill light - cooler from left
+  const fillLight=new THREE.DirectionalLight(0xc9b57a,.55);
+  fillLight.position.set(-3,3,2);
+  scene.add(fillLight);
+  // Rim light - vermillion accent from back
+  const rimLight=new THREE.PointLight(0xb5302a,.5,8);
+  rimLight.position.set(0,2,-3);
+  scene.add(rimLight);
+
+  // Invisible shadow-receiving plane (no visible tray, just soft shadows on paper)
+  const shadowPlane=new THREE.Mesh(
+    new THREE.PlaneGeometry(8,8),
+    new THREE.ShadowMaterial({opacity:.2})
+  );
+  shadowPlane.rotation.x=-Math.PI/2;
+  shadowPlane.position.y=0;
+  shadowPlane.receiveShadow=true;
+  scene.add(shadowPlane);
+
+  // Coin face texture: 512×512 metallic surface with raised rim and engraved characters
+  // The square hole is now real geometry - no need to draw it in texture
+  function createCoinTexture(isYang){
+    const size=512;
+    const c=document.createElement('canvas');
+    c.width=size;c.height=size;
+    const ctx=c.getContext('2d');
+    const cx=size/2,cy=size/2,r=size/2-2;
+
+    // Transparent background (non-coin area) so envMap shows through edges
+    ctx.clearRect(0,0,size,size);
+
+    // === Base bronze fill with directional highlight ===
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.clip();
+
+    const bgGrad=ctx.createRadialGradient(cx-80,cy-80,20,cx,cy,r);
+    if(isYang){
+      // Bright warm gold (clearly distinct from yin)
+      bgGrad.addColorStop(0,'#fff2b0');
+      bgGrad.addColorStop(.2,'#f0cd68');
+      bgGrad.addColorStop(.5,'#cc8a20');
+      bgGrad.addColorStop(.85,'#66380a');
+      bgGrad.addColorStop(1,'#2a1a04');
+    }else{
+      // Dark aged bronze (clearly distinct from yang)
+      bgGrad.addColorStop(0,'#9a7e3a');
+      bgGrad.addColorStop(.2,'#6d5820');
+      bgGrad.addColorStop(.5,'#423310');
+      bgGrad.addColorStop(.85,'#1f1706');
+      bgGrad.addColorStop(1,'#0a0702');
+    }
+    ctx.fillStyle=bgGrad;
+    ctx.fillRect(0,0,size,size);
+
+    // Subtle wear marks
+    for(let i=0;i<50;i++){
+      const ang=Math.random()*Math.PI*2;
+      const dist=Math.random()*(r-10);
+      const nx=cx+Math.cos(ang)*dist;
+      const ny=cy+Math.sin(ang)*dist;
+      const nr=Math.random()*5+1;
+      ctx.fillStyle=`rgba(40, 28, 5, ${Math.random()*0.18})`;
+      ctx.beginPath();
+      ctx.arc(nx,ny,nr,0,Math.PI*2);
+      ctx.fill();
+    }
+    // Fine scratches
+    for(let i=0;i<12;i++){
+      const ang=Math.random()*Math.PI*2;
+      const dist=Math.random()*(r-15);
+      const nx=cx+Math.cos(ang)*dist;
+      const ny=cy+Math.sin(ang)*dist;
+      const len=Math.random()*15+4;
+      const scrAng=Math.random()*Math.PI*2;
+      ctx.strokeStyle=`rgba(30, 20, 5, ${Math.random()*0.12})`;
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(nx,ny);
+      ctx.lineTo(nx+Math.cos(scrAng)*len,ny+Math.sin(scrAng)*len);
+      ctx.stroke();
+    }
+
+    // Raised outer rim - dark shadow inside, bright edge outside
+    ctx.strokeStyle='rgba(30, 18, 3, 0.75)';
+    ctx.lineWidth=8;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r-10,0,Math.PI*2);
+    ctx.stroke();
+    ctx.strokeStyle='rgba(255, 230, 150, 0.45)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r-3,0,Math.PI*2);
+    ctx.stroke();
+
+    // Inner decorative ring (around the where the square hole will be)
+    ctx.strokeStyle='rgba(30, 18, 3, 0.5)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r-42,0,Math.PI*2);
+    ctx.stroke();
+
+    // Inner shadow around the square hole area (for depth illusion)
+    // Note: the actual hole is cut geometrically, but shadow enhances perception
+    const holeR=110;
+    const shadowGrad=ctx.createRadialGradient(cx,cy,holeR*.85,cx,cy,holeR*1.35);
+    shadowGrad.addColorStop(0,'rgba(0,0,0,.55)');
+    shadowGrad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=shadowGrad;
+    ctx.fillRect(cx-holeR*1.4,cy-holeR*1.4,holeR*2.8,holeR*2.8);
+
+    // Four engraved characters around the square hole
+    ctx.font='bold 76px "Noto Serif TC", serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    const chars=isYang?['乾','元','亨','利']:['坤','德','載','物'];
+    const textColor=isYang?'#1a1002':'#0f0801';
+    const positions=[
+      [cx,82],[size-82,cy],[cx,size-82],[82,cy]
+    ];
+    positions.forEach((pos,i)=>{
+      // Deep shadow offset for embossed effect
+      ctx.fillStyle='rgba(0, 0, 0, 0.7)';
+      ctx.fillText(chars[i],pos[0]+3,pos[1]+3);
+      // Main dark engraving
+      ctx.fillStyle=textColor;
+      ctx.fillText(chars[i],pos[0],pos[1]);
+      // Subtle highlight edge
+      ctx.fillStyle='rgba(255, 220, 140, 0.2)';
+      ctx.fillText(chars[i],pos[0]-1,pos[1]-1);
+    });
+
+    ctx.restore();
+
+    const tex=new THREE.CanvasTexture(c);
+    tex.anisotropy=8;
+    tex.needsUpdate=true;
+    return tex;
+  }
+
+  const yangTex=createCoinTexture(true);
+  const yinTex=createCoinTexture(false);
+
+  // === Coin geometry: circular disc with ACTUAL square hole (not just textured) ===
+  const COIN_RADIUS_VAL=.65;
+  const COIN_THICKNESS=.045;// much thinner - real coins are ~6% of diameter
+  const COIN_HOLE_HALF=.13;
+
+  function createCoinShape(){
+    const shape=new THREE.Shape();
+    const segments=72;
+    for(let i=0;i<=segments;i++){
+      const a=(i/segments)*Math.PI*2;
+      const x=Math.cos(a)*COIN_RADIUS_VAL;
+      const y=Math.sin(a)*COIN_RADIUS_VAL;
+      if(i===0)shape.moveTo(x,y);
+      else shape.lineTo(x,y);
+    }
+    // Square hole in the middle
+    const hole=new THREE.Path();
+    hole.moveTo(-COIN_HOLE_HALF,-COIN_HOLE_HALF);
+    hole.lineTo(COIN_HOLE_HALF,-COIN_HOLE_HALF);
+    hole.lineTo(COIN_HOLE_HALF,COIN_HOLE_HALF);
+    hole.lineTo(-COIN_HOLE_HALF,COIN_HOLE_HALF);
+    hole.lineTo(-COIN_HOLE_HALF,-COIN_HOLE_HALF);
+    shape.holes.push(hole);
+    return shape;
+  }
+
+  // Configure textures for ExtrudeGeometry UV mapping
+  // ExtrudeGeometry UVs use raw XY coordinates, so we need to remap
+  [yangTex,yinTex].forEach(tex=>{
+    tex.wrapS=THREE.ClampToEdgeWrapping;
+    tex.wrapT=THREE.ClampToEdgeWrapping;
+    tex.repeat.set(1/(2*COIN_RADIUS_VAL),1/(2*COIN_RADIUS_VAL));
+    tex.offset.set(0.5,0.5);
+    tex.needsUpdate=true;
+  });
+
+  // Create a coin mesh with real geometric hole + full metallic PBR
+  function makeCoin(){
+    const shape=createCoinShape();
+    const geo=new THREE.ExtrudeGeometry(shape,{
+      depth:COIN_THICKNESS,
+      bevelEnabled:true,
+      bevelThickness:.003,
+      bevelSize:.003,
+      bevelSegments:2,
+      curveSegments:8
+    });
+    // Center along depth axis then lay flat on XZ plane
+    geo.translate(0,0,-COIN_THICKNESS/2);
+    geo.rotateX(-Math.PI/2);
+    // After rotateX(-PI/2): z→-y, so original z=+depth/2 → y=-depth/2 (bottom)
+    // and original z=-depth/2 → y=+depth/2 (top)
+
+    // Split the cap group into top face + bottom face for different materials
+    const oldGroups=geo.groups.map(g=>({start:g.start,count:g.count,materialIndex:g.materialIndex}));
+    geo.clearGroups();
+    if(oldGroups.length>=2){
+      const capGroup=oldGroups[0];
+      const halfCap=Math.floor(capGroup.count/2);
+      // First half = originally at z=+depth (front), now at y=-depth/2 (bottom) → YIN
+      // Second half = originally at z=0 (back), now at y=+depth/2 (top) → YANG
+      // (verified by testing; if inverted, swap material indices)
+      geo.addGroup(capGroup.start,halfCap,1);// bottom = yin (material 1)
+      geo.addGroup(capGroup.start+halfCap,capGroup.count-halfCap,0);// top = yang (material 0)
+      geo.addGroup(oldGroups[1].start,oldGroups[1].count,2);// sides = bronze (material 2)
+    }
+
+    // === Materials - PBR metallic with env map reflections ===
+    // Yang: polished bright gold (high reflection, low roughness)
+    const yangMat=new THREE.MeshStandardMaterial({
+      map:yangTex,
+      metalness:1.0,
+      roughness:.22,
+      envMapIntensity:1.5
+    });
+    // Yin: aged dark bronze (dulled reflection, higher roughness)
+    const yinMat=new THREE.MeshStandardMaterial({
+      map:yinTex,
+      metalness:1.0,
+      roughness:.48,
+      envMapIntensity:.7
+    });
+    // Side: bronze metal edge
+    const sideMat=new THREE.MeshStandardMaterial({
+      color:0x5d4408,
+      metalness:1.0,
+      roughness:.3,
+      envMapIntensity:1.2
+    });
+
+    const mesh=new THREE.Mesh(geo,[yangMat,yinMat,sideMat]);
+    mesh.castShadow=true;
+    mesh.receiveShadow=true;
+
+    mesh.phys={
+      pos:new THREE.Vector3(),
+      vel:new THREE.Vector3(),
+      angVel:new THREE.Vector3(),
+      quat:new THREE.Quaternion(),
+      resting:true,
+      settling:false,
+      targetQuat:new THREE.Quaternion(),
+      result:null,
+      radius:COIN_RADIUS_VAL,
+      thickness:COIN_THICKNESS,
+      totalTime:0
+    };
+    return mesh;
+  }
+
+  const coins=[makeCoin(),makeCoin(),makeCoin()];
+  coins.forEach((c,i)=>{
+    c.position.set(-1.4+i*1.4,.06,0);
+    c.phys.pos.copy(c.position);
+    scene.add(c);
+  });
+
+  // Dust particle system - small motes that puff up when coins land
+  const dustParticles=[];
+  const dustGeo=new THREE.SphereGeometry(.04,6,6);
+  const dustMat=new THREE.MeshBasicMaterial({color:0xc9b57a,transparent:true,opacity:.7});
+  for(let i=0;i<24;i++){
+    const p=new THREE.Mesh(dustGeo,dustMat.clone());
+    p.visible=false;
+    p.userData={vel:new THREE.Vector3(),life:0,maxLife:0};
+    scene.add(p);
+    dustParticles.push(p);
+  }
+  function spawnDust(x,y,z,count){
+    let spawned=0;
+    for(const p of dustParticles){
+      if(p.userData.life<=0){
+        p.position.set(x+(Math.random()-.5)*.3,y,z+(Math.random()-.5)*.3);
+        p.userData.vel.set(
+          (Math.random()-.5)*1.5,
+          1+Math.random()*1.2,
+          (Math.random()-.5)*1.5
+        );
+        p.userData.maxLife=.4+Math.random()*.3;
+        p.userData.life=p.userData.maxLife;
+        p.material.opacity=.7;
+        p.scale.setScalar(.6+Math.random()*.6);
+        p.visible=true;
+        if(++spawned>=count)break;
+      }
+    }
+  }
+  function updateDust(dt){
+    for(const p of dustParticles){
+      if(p.userData.life>0){
+        p.userData.life-=dt;
+        p.userData.vel.y-=4*dt;
+        p.position.addScaledVector(p.userData.vel,dt);
+        p.material.opacity=.7*(p.userData.life/p.userData.maxLife);
+        if(p.userData.life<=0)p.visible=false;
+      }
+    }
+  }
+
+  const GRAVITY=-22;
+  const GROUND_Y=COIN_THICKNESS/2;// half of thickness so coin sits flush
+  const RESTITUTION=.4;
+  const FRICTION=.68;
+  const ANG_DAMP=.82;
+  const COIN_RADIUS=COIN_RADIUS_VAL;
+
+  // Coin-to-coin collision - 3D sphere check for reliable mid-air collisions
+  // Uses full 3D distance so coins at different heights still collide
+  function resolveCoinCollisions(){
+    for(let i=0;i<coins.length;i++){
+      for(let j=i+1;j<coins.length;j++){
+        const a=coins[i].phys,b=coins[j].phys;
+        // Skip if either is in settling animation
+        if(a.settling||b.settling)continue;
+        // Skip if both are fully resting
+        if(a.resting&&b.resting)continue;
+
+        const dx=b.pos.x-a.pos.x;
+        const dy=b.pos.y-a.pos.y;
+        const dz=b.pos.z-a.pos.z;
+        const dist3D=Math.sqrt(dx*dx+dy*dy+dz*dz);
+
+        // Use spherical approximation - radius = disc radius
+        // This overestimates collision slightly but is reliable mid-air
+        const minDist=COIN_RADIUS*1.92;
+
+        if(dist3D<minDist && dist3D>.001){
+          const nx=dx/dist3D;
+          const ny=dy/dist3D;
+          const nz=dz/dist3D;
+          const overlap=(minDist-dist3D)*.5;
+
+          // Position separation
+          if(!a.resting){
+            a.pos.x-=nx*overlap;
+            a.pos.y-=ny*overlap;
+            a.pos.z-=nz*overlap;
+          }
+          if(!b.resting){
+            b.pos.x+=nx*overlap;
+            b.pos.y+=ny*overlap;
+            b.pos.z+=nz*overlap;
+          }
+
+          // Relative velocity along collision normal
+          const rvx=b.vel.x-a.vel.x;
+          const rvy=b.vel.y-a.vel.y;
+          const rvz=b.vel.z-a.vel.z;
+          const velAlongN=rvx*nx+rvy*ny+rvz*nz;
+
+          // Only apply impulse if objects are approaching
+          if(velAlongN<0){
+            const e=.55;// restitution
+            const imp=-(1+e)*velAlongN*.5;
+            if(!a.resting){
+              a.vel.x-=imp*nx;
+              a.vel.y-=imp*ny;
+              a.vel.z-=imp*nz;
+            }
+            if(!b.resting){
+              b.vel.x+=imp*nx;
+              b.vel.y+=imp*ny;
+              b.vel.z+=imp*nz;
+            }
+            // Add angular impulse for visible spin from collision
+            const torqueMag=Math.min(Math.abs(velAlongN)*2,6);
+            a.angVel.x+=(Math.random()-.5)*torqueMag;
+            a.angVel.z+=(Math.random()-.5)*torqueMag;
+            b.angVel.x+=(Math.random()-.5)*torqueMag;
+            b.angVel.z+=(Math.random()-.5)*torqueMag;
+
+            // Wake resting coins on real collision (not weak contact)
+            if(Math.abs(velAlongN)>.3){
+              if(a.resting){a.resting=false;a.result=null;}
+              if(b.resting){b.resting=false;b.result=null;}
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Compute the target quaternion (fully flat) for a given current orientation
+  function computeFlatTarget(currentQuat){
+    const coinUpV=new THREE.Vector3(0,1,0).applyQuaternion(currentQuat);
+    const faceUp=coinUpV.y>=0;
+    // Preserve current Y rotation so the snap is as small as possible
+    const forward=new THREE.Vector3(1,0,0).applyQuaternion(currentQuat);
+    const yRot=Math.atan2(forward.z,forward.x);
+    const target=new THREE.Quaternion();
+    const upAxis=new THREE.Vector3(0,1,0);
+    if(faceUp){
+      target.setFromAxisAngle(upAxis,-yRot);
+    }else{
+      const flip=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI);
+      const yr=new THREE.Quaternion().setFromAxisAngle(upAxis,-yRot);
+      target.multiplyQuaternions(yr,flip);
+    }
+    return {target,faceUp};
+  }
+
+  // Single physics step (called with fixed dt from animate loop)
+  function stepPhysics(dt){
+    coins.forEach(coin=>{
+      const p=coin.phys;
+      if(p.resting)return;
+
+      p.totalTime+=dt;
+
+      // === SETTLING: minimal slerp to finalise already-near-flat coin ===
+      if(p.settling){
+        // Gentle slerp (coin should already be very close to target)
+        p.quat.slerp(p.targetQuat,.2);
+        // Gradual Y approach to ground (no sudden snap)
+        p.pos.y+=(GROUND_Y-p.pos.y)*.35;
+        // Decay remaining velocity gently
+        p.vel.multiplyScalar(.7);
+        p.angVel.multiplyScalar(.7);
+        // Finalise when close enough
+        const dot=Math.abs(p.quat.dot(p.targetQuat));
+        if(dot>.9997 && Math.abs(p.pos.y-GROUND_Y)<.002){
+          p.quat.copy(p.targetQuat);
+          p.pos.y=GROUND_Y;
+          p.vel.set(0,0,0);
+          p.angVel.set(0,0,0);
+          p.settling=false;
+          p.resting=true;
+        }
+        coin.position.copy(p.pos);
+        coin.quaternion.copy(p.quat);
+        return;
+      }
+
+      // === FREE PHYSICS: gravity, integration, collisions ===
+      p.vel.y+=GRAVITY*dt;
+      p.pos.addScaledVector(p.vel,dt);
+
+      // Integrate rotation
+      const axis=p.angVel.clone();
+      const angle=axis.length()*dt;
+      if(angle>1e-6){
+        axis.normalize();
+        const dq=new THREE.Quaternion().setFromAxisAngle(axis,angle);
+        p.quat.premultiply(dq).normalize();
+      }
+
+      // === BOX CONTAINER: 4 invisible walls keeps coins from escaping ===
+      const BOX_HALF_X=1.7;
+      const BOX_HALF_Z=1.15;
+      const WALL_BOUNCE=.55;
+      // X walls (left/right)
+      if(p.pos.x>BOX_HALF_X){
+        p.pos.x=BOX_HALF_X;
+        if(p.vel.x>0){
+          p.vel.x=-p.vel.x*WALL_BOUNCE;
+          p.angVel.multiplyScalar(.85);
+        }
+      }else if(p.pos.x<-BOX_HALF_X){
+        p.pos.x=-BOX_HALF_X;
+        if(p.vel.x<0){
+          p.vel.x=-p.vel.x*WALL_BOUNCE;
+          p.angVel.multiplyScalar(.85);
+        }
+      }
+      // Z walls (front/back)
+      if(p.pos.z>BOX_HALF_Z){
+        p.pos.z=BOX_HALF_Z;
+        if(p.vel.z>0){
+          p.vel.z=-p.vel.z*WALL_BOUNCE;
+          p.angVel.multiplyScalar(.85);
+        }
+      }else if(p.pos.z<-BOX_HALF_Z){
+        p.pos.z=-BOX_HALF_Z;
+        if(p.vel.z<0){
+          p.vel.z=-p.vel.z*WALL_BOUNCE;
+          p.angVel.multiplyScalar(.85);
+        }
+      }
+
+      // Ground collision
+      if(p.pos.y<GROUND_Y){
+        const impactVy=p.vel.y;
+        p.pos.y=GROUND_Y;
+        if(impactVy<-.6){
+          if(impactVy<-2.5){
+            spawnDust(p.pos.x,GROUND_Y,p.pos.z,Math.min(4,Math.floor(-impactVy*.5)));
+          }
+          p.vel.y=-impactVy*RESTITUTION;
+          p.vel.x*=FRICTION;
+          p.vel.z*=FRICTION;
+          p.angVel.multiplyScalar(ANG_DAMP);
+        }else if(impactVy<0){
+          // Too slow to bounce - clamp to rest on ground
+          p.vel.y=0;
+        }
+      }
+
+      // === ON-GROUND INTERACTION: gravity torque + rolling friction ===
+      const coinUpV=new THREE.Vector3(0,1,0).applyQuaternion(p.quat);
+      const flatness=Math.abs(coinUpV.y);
+      const onGround=p.pos.y<=GROUND_Y+.015;
+
+      if(onGround){
+        // === CORRECTIVE TORQUE: pushes tilted coins toward the NEAREST flat state ===
+        // Uses cross-product direction to rotate coinUp back toward ±Y
+        // For positive leanX: need +Z rotation to bring coinUp back to +Y
+        // For positive leanZ: need -X rotation to bring coinUp back to +Y
+        if(flatness<.95){
+          const leanX=coinUpV.x;
+          const leanZ=coinUpV.z;
+          const leanMag=Math.sqrt(leanX*leanX+leanZ*leanZ);
+          if(leanMag>.005){
+            // Direction sign based on which hemisphere the coin is in.
+            // If coinUp.y > 0 (upper hemisphere), push toward +Y (right-side-up).
+            // If coinUp.y < 0 (lower hemisphere), push toward -Y (upside-down).
+            // This preserves whichever face is currently dominant.
+            const hemiSign=coinUpV.y>=0?1:-1;
+            const tipStrength=28;
+            p.angVel.x-=leanZ*tipStrength*dt*hemiSign;
+            p.angVel.z+=leanX*tipStrength*dt*hemiSign;
+          }
+        }
+
+        // === ROLLING FRICTION: strong damping when on ground ===
+        // Per-frame at 120Hz, 0.985^120 ≈ 0.164 → drops to 16% in 1 second
+        p.vel.x*=.985;
+        p.vel.z*=.985;
+        // Angular damping - 0.975^120 ≈ 0.048 → drops to 5% in 1 second
+        p.angVel.multiplyScalar(.975);
+      }
+
+      // === Settling condition (strict - only when naturally near rest) ===
+      const horizSpeed=Math.sqrt(p.vel.x*p.vel.x+p.vel.z*p.vel.z);
+      const angMag=p.angVel.length();
+
+      // Require: on ground, near-still, AND near-flat
+      // Slight relaxation only after 2 seconds to avoid rare stuck cases
+      const relax=Math.max(0,Math.min((p.totalTime-2)/1.5,1));
+      const vLimit=.18+relax*.15;
+      const aLimit=.7+relax*.6;
+      const fLimit=.96-relax*.08;// 0.96 → 0.88 (always quite flat)
+
+      if(onGround && horizSpeed<vLimit && Math.abs(p.vel.y)<vLimit && angMag<aLimit && flatness>fLimit){
+        const {target,faceUp}=computeFlatTarget(p.quat);
+        p.targetQuat.copy(target);
+        p.result=faceUp?'yang':'yin';
+        p.settling=true;
+      }else if(p.totalTime>3.5){
+        // Ultimate safety net
+        const {target,faceUp}=computeFlatTarget(p.quat);
+        p.targetQuat.copy(target);
+        p.result=faceUp?'yang':'yin';
+        p.settling=true;
+      }
+
+      coin.position.copy(p.pos);
+      coin.quaternion.copy(p.quat);
+    });
+
+    // Coin-to-coin collisions
+    for(let iter=0;iter<2;iter++)resolveCoinCollisions();
+  }
+
+  // Generate a uniformly random quaternion (not just random Euler, which isn't uniform)
+  function randomQuaternion(){
+    const u1=Math.random(),u2=Math.random()*Math.PI*2,u3=Math.random()*Math.PI*2;
+    const q=new THREE.Quaternion(
+      Math.sqrt(1-u1)*Math.sin(u2),
+      Math.sqrt(1-u1)*Math.cos(u2),
+      Math.sqrt(u1)*Math.sin(u3),
+      Math.sqrt(u1)*Math.cos(u3)
+    );
+    return q;
+  }
+
+  // Toss function - simulates "picking up and dropping" the coins
+  coinPhysicsTossFn=function(onDone){
+    // === Pre-toss: spread overlapping coins ===
+    for(let iter=0;iter<6;iter++){
+      let moved=false;
+      for(let i=0;i<coins.length;i++){
+        for(let j=i+1;j<coins.length;j++){
+          const a=coins[i].phys,b=coins[j].phys;
+          const dx=b.pos.x-a.pos.x,dz=b.pos.z-a.pos.z;
+          const d=Math.sqrt(dx*dx+dz*dz);
+          const minD=COIN_RADIUS*2.1;
+          if(d<minD){
+            const ox=d>.001?dx/d:1;
+            const oz=d>.001?dz/d:0;
+            const push=(minD-d)*.55;
+            a.pos.x-=ox*push;
+            a.pos.z-=oz*push;
+            b.pos.x+=ox*push;
+            b.pos.z+=oz*push;
+            moved=true;
+          }
+        }
+      }
+      if(!moved)break;
+    }
+
+    // === GLOBAL TOSS STRENGTH: varies per toss (0.8 ~ 1.5) ===
+    // Each time you click, the overall force is different - sometimes weak, sometimes strong
+    const tossStrength=.8+Math.random()*.7;
+
+    coins.forEach((coin,i)=>{
+      const p=coin.phys;
+      // Slight position nudge so 3 coins don't share identical spot
+      const nudgeAngle=(i/3)*Math.PI*2+Math.random()*1;
+      p.pos.x+=Math.cos(nudgeAngle)*(.1+Math.random()*.15);
+      p.pos.z+=Math.sin(nudgeAngle)*(.1+Math.random()*.15);
+      p.pos.y=Math.max(p.pos.y,GROUND_Y)+.12+Math.random()*.15;
+
+      // === TRULY UNIFORM RANDOM ORIENTATION ===
+      // Uses proper spherical sampling (not Euler angles which bias toward poles)
+      p.quat.copy(randomQuaternion());
+
+      // === PER-COIN RANDOM POWER: each coin has its own force multiplier ===
+      // So the 3 coins don't move identically
+      const coinPower=.75+Math.random()*.75;
+      const combinedPower=tossStrength*coinPower;
+
+      // === DRAMATIC LIFT + WIDE HORIZONTAL SPREAD ===
+      const angle=Math.random()*Math.PI*2;// fully random direction each coin
+      const hBase=3.5+Math.random()*1.8;// horizontal base 3.5 ~ 5.3
+      const vBase=9+Math.random()*3.5;// vertical base 9 ~ 12.5
+      p.vel.set(
+        (Math.cos(angle)*hBase+(Math.random()-.5)*1.8)*combinedPower,
+        vBase*(.9+Math.random()*.3),// vertical varies less
+        (Math.sin(angle)*hBase*.75+(Math.random()-.5)*1.4)*combinedPower
+      );
+
+      // === HIGH-VARIANCE ANGULAR VELOCITY ===
+      // Each coin gets wildly different spin, ensuring different landing
+      const rotPower=.7+Math.random()*1.1;
+      p.angVel.set(
+        (Math.random()-.5)*42*rotPower,
+        (Math.random()-.5)*24*rotPower,
+        (Math.random()-.5)*42*rotPower
+      );
+      p.resting=false;
+      p.settling=false;
+      p.result=null;
+      p.totalTime=0;
+      coin.position.copy(p.pos);
+      coin.quaternion.copy(p.quat);
+    });
+
+    // Wait for all coins to rest (with safety timeout)
+    const startTime=performance.now();
+    const waitForRest=()=>{
+      if(coins.every(c=>c.phys.resting)){
+        const results=coins.map(c=>c.phys.result);
+        if(onDone)onDone(results);
+      }else if(performance.now()-startTime>5000){
+        // Safety: force-rest any still-moving coins
+        coins.forEach(c=>{
+          if(!c.phys.resting){
+            const coinUp=new THREE.Vector3(0,1,0).applyQuaternion(c.phys.quat);
+            c.phys.result=coinUp.y>=0?'yang':'yin';
+            c.phys.resting=true;
+          }
+        });
+        if(onDone)onDone(coins.map(c=>c.phys.result));
+      }else{
+        requestAnimationFrame(waitForRest);
+      }
+    };
+    setTimeout(waitForRest,300);
+  };
+
+  // Initial arrangement - coins lying flat at start
+  coins.forEach(c=>{
+    c.phys.quat.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.random()*Math.PI*2);
+    c.quaternion.copy(c.phys.quat);
+  });
+
+  // Animation loop with FIXED timestep physics (120Hz) to prevent jitter
+  const FIXED_DT=1/120;
+  let last=performance.now();
+  let accumulator=0;
+  function animate(now){
+    requestAnimationFrame(animate);
+    const frameDt=Math.min((now-last)/1000,.1);
+    last=now;
+    accumulator+=frameDt;
+    // Run multiple physics substeps if needed
+    let subSteps=0;
+    while(accumulator>=FIXED_DT && subSteps<8){
+      stepPhysics(FIXED_DT);
+      accumulator-=FIXED_DT;
+      subSteps++;
+    }
+    if(accumulator>FIXED_DT)accumulator=0;// drop accumulated if stalled
+    updateDust(frameDt);
+    renderer.render(scene,camera);
+  }
+  animate(performance.now());
+
+  // Resize handling
+  window.addEventListener('resize',()=>{
+    const w=container.clientWidth,h=container.clientHeight;
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w,h,false);
+  });
+
+  // Click canvas to toss (fun bonus)
+  canvas.addEventListener('click',()=>{
+    if(!coinIsTossing && tossCount<6){tossCoins();}
+  });
+
+  coinPhysicsReady=true;
+})();
+
+function tossCoins(){
+  if(tossCount>=6||coinIsTossing)return;
+  const btn=document.getElementById('coinBtn');
+  btn.disabled=true;
+  btn.textContent='擲錢中...';
+  coinIsTossing=true;
+
+  // Hide last result badge
+  const lastResultEl=document.getElementById('coinLastResult');
+  if(lastResultEl)lastResultEl.classList.remove('show','yang','yin');
+
+  const onAllSettled=(results)=>{
+    const yangCount=results.filter(r=>r==='yang').length;
+    const sum=yangCount*3+(3-yangCount)*2;
+    const isYang=(sum===7||sum===9);
+    const isChanging=(sum===6||sum===9);
+
+    coinLines.push({yang:isYang,changing:isChanging});
+
+    // Fill hex slot (bottom-up)
+    const slot=document.querySelector(`.hex-line-slot[data-pos="${tossCount}"]`);
+    if(slot){
+      slot.classList.add('filled',isYang?'solid':'broken');
+      if(isChanging)slot.classList.add('changing');
+      gsap.fromTo(slot,{scaleX:0},{scaleX:1,duration:.5,ease:'power2.out'});
+    }
+
+    // Show last-result badge
+    if(lastResultEl){
+      const labelMap={6:'老陰 變',7:'少陽',8:'少陰',9:'老陽 變'};
+      lastResultEl.textContent=`${yangCount}陽 &middot; ${labelMap[sum]||''}`;
+      lastResultEl.innerHTML=`${yangCount}陽 &middot; ${labelMap[sum]||''}`;
+      lastResultEl.classList.add('show',isYang?'yang':'yin');
+    }
+
+    tossCount++;
+    coinIsTossing=false;
+    const label=document.getElementById('tossLabel');
+
+    if(tossCount<6){
+      if(label)label.textContent=`第 ${tossCount+1} / 6 爻`;
+      btn.disabled=false;
+      btn.textContent='擲錢';
+    }else{
+      if(label)label.textContent='六爻已成';
+      btn.disabled=true;
+      btn.textContent='卦象生成中...';
+      setTimeout(revealHexagram,900);
+    }
+  };
+
+  if(coinPhysicsReady&&coinPhysicsTossFn){
+    coinPhysicsTossFn(onAllSettled);
+  }else{
+    // Fallback to random if physics not ready
+    setTimeout(()=>{
+      const results=[Math.random()>.5?'yang':'yin',Math.random()>.5?'yang':'yin',Math.random()>.5?'yang':'yin'];
+      onAllSettled(results);
+    },800);
+  }
+}
+
+function revealHexagram(){
+  // Lines are from bottom (index 0) to top (index 5)
+  // Lower trigram = lines 0,1,2  ; Upper trigram = lines 3,4,5
+  const lowerKey=coinLines.slice(0,3).map(l=>l.yang?'1':'0').reverse().join('');
+  const upperKey=coinLines.slice(3,6).map(l=>l.yang?'1':'0').reverse().join('');
+  const lowerName=TRIGRAMS[lowerKey];
+  const upperName=TRIGRAMS[upperKey];
+  const hexKey=upperName+lowerName;
+
+  const hex=HEX_TABLE[hexKey]||{name:upperName+lowerName,meaning:'此卦需深入解讀，建議向依筆朗老師預約專業諮詢，以獲得完整的人生指引。'};
+
+  document.getElementById('oracleName').textContent=hex.name;
+  document.getElementById('oracleMeaning').textContent=hex.meaning;
+  document.getElementById('coinResult').classList.add('show');
+
+  gsap.from('#oracleName',{scale:0,duration:.6,ease:'back.out(2)'});
+  gsap.from('#oracleMeaning',{y:15,opacity:0,duration:.6,delay:.3});
+
+  document.getElementById('coinBtn').style.display='none';
+}
+
+function resetOracle(){
+  coinLines=[];
+  tossCount=0;
+  coinIsTossing=false;
+  document.querySelectorAll('.hex-line-slot').forEach(s=>{
+    s.className='hex-line-slot';
+    s.dataset.pos=s.dataset.pos;
+  });
+  document.getElementById('tossLabel').textContent='第 1 / 6 爻';
+  document.getElementById('coinResult').classList.remove('show');
+  const lastResultEl=document.getElementById('coinLastResult');
+  if(lastResultEl)lastResultEl.classList.remove('show','yang','yin');
+  const btn=document.getElementById('coinBtn');
+  btn.style.display='';
+  btn.disabled=false;
+  btn.textContent='擲錢';
+}
+
+/* ========== HERO MOUSE PARALLAX ========== */
+document.querySelector('.hero').addEventListener('mousemove',(e)=>{
+  const r=e.currentTarget.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width-.5;
+  const y=(e.clientY-r.top)/r.height-.5;
+  gsap.to('#mtnFar',{x:x*20,duration:.8,ease:'power2.out'});
+  gsap.to('#mtnMid',{x:x*10,duration:.8,ease:'power2.out'});
+});
+</script>
+</body>
+</html>
