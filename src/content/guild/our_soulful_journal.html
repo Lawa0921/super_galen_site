@@ -1,0 +1,2882 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星晨日誌 ・ Regina（晨）｜our.soulful.journal</title>
+<meta name="description" content="星晨日誌 — Regina（晨）的還在走的人的紀錄。三十又一歲，一個母親，也是一個仍在學習的大人。即使昨夜再漫長，清晨還是會升起。">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://unpkg.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=Noto+Serif+TC:wght@300;400;500;700;900&family=Caveat&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+<style>
+/* ============================================================
+   星晨日誌 ・ A FIELD JOURNAL ・ Regina (晨)
+   Three movements: I. 夜 → II. 路 → III. 晨
+   The whole page rises slowly from the longest night to morning.
+   ============================================================ */
+
+:root{
+  --paper-night:    #0e1424;
+  --paper-night-2:  #1a2138;
+  --paper-twi:      #2a2438;
+  --paper-warm:     #5a3f3a;
+  --paper-kraft:    #d8c08f;
+  --paper-cream:    #f2e6c8;
+
+  --ink-charcoal:   #1a1a26;
+
+  --seal-red:       #b34030;
+  --seal-red-2:     #d35338;
+  --seal-deep:      #8a2c20;
+
+  --gold-soft:      #f2c478;
+  --gold-pale:      #f8d7a3;
+
+  --teal-glow:      #5dd5d2;
+  --teal-pale:      #aef0ec;
+
+  --c-text-night:   #f3e9c9;
+
+  --font-display:   "Cormorant Garamond", serif;
+  --font-han:       "Noto Serif TC", "Songti TC", serif;
+  --font-quote:     "Noto Serif TC", "Songti TC", serif;
+  --font-hand-en:   "Caveat", cursive;
+  --font-mono:      "JetBrains Mono", monospace;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box }
+html, body{
+  background:var(--paper-night);
+  color:var(--c-text-night);
+  font-family:var(--font-han);
+  font-weight:300;
+  line-height:1.92;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+body{ background:transparent }
+img{ display:block; max-width:100% }
+a{ color:inherit; text-decoration:none }
+button{ font:inherit; color:inherit; background:none; border:none; cursor:pointer }
+::selection{ background:rgba(179,64,48,.4); color:#fff }
+
+/* ============================================================
+   FIXED LAYERS  ・  paper, stars, sun, warmth
+   ============================================================ */
+.paper-bg{
+  position:fixed;
+  inset:0;
+  z-index:-3;
+  background:linear-gradient(180deg,
+    var(--bg-1, var(--paper-night)) 0%,
+    var(--bg-2, var(--paper-night-2)) 25%,
+    var(--bg-3, var(--paper-twi)) 48%,
+    var(--bg-4, var(--paper-warm)) 70%,
+    var(--bg-5, var(--paper-kraft)) 87%,
+    var(--bg-6, var(--paper-cream)) 100%);
+}
+.paper-bg::after{
+  content:"";
+  position:absolute;inset:0;
+  pointer-events:none;
+  background-image:
+    repeating-linear-gradient(78deg,
+      rgba(255,225,170,.020) 0,
+      rgba(255,225,170,.020) 1px,
+      transparent 1px,
+      transparent 7px),
+    repeating-linear-gradient(167deg,
+      rgba(255,225,170,.018) 0,
+      rgba(255,225,170,.018) 1px,
+      transparent 1px,
+      transparent 11px),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.85 0 0 0 0 0.74 0 0 0 0 0.5 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.55;
+  mix-blend-mode:overlay;
+}
+#starfield{ position:fixed; inset:0; z-index:-2; pointer-events:none }
+#sunrise{ position:fixed; inset:0; z-index:-2; pointer-events:none; opacity:0; transition:opacity 1.2s ease; mix-blend-mode:screen }
+.warmth{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  height:78vh;
+  z-index:-1;
+  pointer-events:none;
+  background:radial-gradient(ellipse 70% 100% at 50% 100%,
+    rgba(216,144,47,.18) 0%,
+    rgba(179,64,48,.10) 35%,
+    transparent 70%);
+  opacity:0;
+}
+
+/* page-wide grain (above content) */
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  pointer-events:none;
+  z-index:9000;
+  opacity:.10;
+  mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='3' seed='1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   ARCHIVE BAR  +  TINY SCROLL RAIL  (4 dots only)
+   ============================================================ */
+.archive-bar{
+  position:fixed;top:0;left:0;right:0;
+  z-index:8000;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 32px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  pointer-events:none;
+  mix-blend-mode:exclusion;
+  color:#f3e9c9;
+}
+.archive-bar > *{ pointer-events:auto }
+.archive-bar a, .archive-bar .crumb{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 14px;
+  border:1px solid rgba(243,233,201,.35);
+  border-radius:1px;
+  background:rgba(8,6,18,.32);
+  backdrop-filter:blur(6px);
+  transition:.4s ease;
+}
+.archive-bar a:hover{
+  background:rgba(243,233,201,.92);
+  color:#0a0612;
+  letter-spacing:.3em;
+}
+.archive-bar .crumb i{ opacity:.7 }
+.archive-bar .crumb b{ font-weight:700; letter-spacing:.18em; color:#fbf2dc }
+
+.scroll-rail{
+  position:fixed;
+  right:28px;top:50%;
+  transform:translateY(-50%);
+  z-index:7000;
+  display:flex;flex-direction:column;
+  gap:24px;
+  pointer-events:none;
+}
+.scroll-rail .dot{
+  position:relative;
+  width:32px;height:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:auto;
+  cursor:pointer;
+  font-family:var(--font-han);
+  font-size:14px;
+  font-weight:700;
+  color:rgba(243,233,201,.45);
+  transition:.5s ease;
+}
+.scroll-rail .dot::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border:1px solid rgba(243,233,201,.18);
+  border-radius:50%;
+  transition:.5s ease;
+}
+.scroll-rail .dot::after{
+  content:attr(data-label);
+  position:absolute;
+  right:42px;top:50%;
+  transform:translateY(-50%);
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:.22em;
+  white-space:nowrap;
+  color:rgba(243,233,201,.7);
+  text-transform:uppercase;
+  opacity:0;
+  pointer-events:none;
+  transition:.3s ease;
+}
+.scroll-rail .dot:hover{ color:var(--gold-pale) }
+.scroll-rail .dot:hover::after,
+.scroll-rail .dot.active::after{ opacity:1 }
+.scroll-rail .dot.active{
+  color:var(--seal-red-2);
+}
+.scroll-rail .dot.active::before{
+  border-color:var(--seal-red-2);
+  background:rgba(179,64,48,.12);
+  transform:scale(1.1);
+}
+
+/* ============================================================
+   COMMON LAYOUT
+   ============================================================ */
+main.journal{
+  position:relative;
+  z-index:1;
+}
+
+/* ============================================================
+   HERO  ・  THE NIGHT GLYPH
+   ============================================================ */
+.scene-hero{
+  position:relative;
+  min-height:108vh;
+  padding:24vh 6vw 12vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.hero-stack{
+  text-align:center;
+  position:relative;
+}
+.hero-eyebrow{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.5em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.7);
+  margin-bottom:48px;
+  display:inline-flex;
+  align-items:center;
+  gap:14px;
+}
+.hero-eyebrow .line{
+  width:48px;height:1px;
+  background:rgba(243,233,201,.5);
+}
+.glyph-twin{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(32px, 6vw, 90px);
+  margin:18px auto 36px;
+  font-family:var(--font-han);
+  font-weight:900;
+  font-size:clamp(96px, 16vw, 200px);
+  line-height:.85;
+}
+.glyph-twin .han{
+  position:relative;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(243,233,201,.85);
+  background:linear-gradient(180deg,
+    rgba(248,215,163,.95),
+    rgba(216,144,47,.55) 60%,
+    rgba(179,64,48,.45));
+  -webkit-background-clip:text;
+  background-clip:text;
+  filter:drop-shadow(0 0 30px rgba(216,144,47,.18));
+}
+.glyph-twin .pin{
+  position:absolute;
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--gold-pale);
+  box-shadow:0 0 14px var(--gold-pale), 0 0 28px rgba(173,240,236,.5);
+}
+.glyph-twin .han .pin.tl{ top:18%; left:18% }
+.glyph-twin .han .pin.tr{ top:14%; right:14% }
+.glyph-twin .han .pin.br{ bottom:14%; right:18% }
+.glyph-twin .between-line{
+  position:absolute;
+  top:50%;left:50%;
+  width:clamp(60px, 14vw, 220px);
+  height:1px;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.glyph-twin .between-line svg{
+  position:absolute;
+  inset:-30px -30px;
+  width:calc(100% + 60px);
+  height:60px;
+  overflow:visible;
+}
+.glyph-twin .between-line .draw-line{
+  stroke:var(--teal-glow);
+  stroke-width:1;
+  stroke-dasharray:2 6;
+  opacity:.55;
+  transition:opacity .8s ease;
+}
+.glyph-twin .between-line .solid-line{
+  stroke:var(--gold-pale);
+  stroke-width:1.6;
+  stroke-dasharray:200;
+  stroke-dashoffset:200;
+  opacity:0;
+  filter:drop-shadow(0 0 8px var(--gold-pale));
+  transition:none;
+}
+.glyph-twin[data-connected="true"] .between-line .draw-line{
+  opacity:.15;
+}
+.glyph-twin[data-connected="true"] .between-line .solid-line{
+  stroke-dashoffset:0;
+  opacity:1;
+  transition:stroke-dashoffset 1.6s cubic-bezier(.5,.1,.3,1),
+             opacity .6s ease;
+}
+.glyph-twin[data-connected="true"] .between-line .node{
+  background:var(--gold-pale);
+  box-shadow:0 0 12px var(--gold-pale);
+}
+/* clickable glyph button */
+.han-btn{
+  position:relative;
+  font:inherit;
+  color:inherit;
+  background:none;
+  border:none;
+  padding:0;
+  cursor:pointer;
+  display:inline-block;
+  transition:filter .4s ease, transform .3s ease;
+}
+.han-btn:hover{
+  transform:translateY(-2px);
+}
+.han-btn.picked{
+  filter:drop-shadow(0 0 18px var(--gold-pale));
+}
+.han-btn .glyph-ripple{
+  position:absolute;
+  inset:-8%;
+  border-radius:50%;
+  border:1px solid var(--gold-pale);
+  opacity:0;
+  pointer-events:none;
+  transition:none;
+}
+.han-btn.picked .glyph-ripple{
+  animation:glyphRipple .9s ease-out;
+}
+@keyframes glyphRipple{
+  from{ transform:scale(.6); opacity:.8 }
+  to{ transform:scale(1.3); opacity:0 }
+}
+
+.glyph-hint{
+  position:relative;
+  margin:-14px 0 24px;
+  height:18px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.32em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.5);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.glyph-hint span{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  transition:opacity .4s ease;
+}
+.glyph-hint[data-state="idle"] .ghint-idle{ opacity:1 }
+.glyph-hint[data-state="half"] .ghint-half{ opacity:1; color:var(--gold-soft) }
+.glyph-hint[data-state="done"] .ghint-done{ opacity:1; color:var(--gold-pale); letter-spacing:.42em }
+.glyph-twin .between-line .node{
+  position:absolute;
+  width:6px;height:6px;
+  border-radius:50%;
+  background:var(--teal-glow);
+  top:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 10px var(--teal-glow);
+}
+.glyph-twin .between-line .node.n1{ left:0% }
+.glyph-twin .between-line .node.n2{ left:50% }
+.glyph-twin .between-line .node.n3{ left:100% }
+
+.hero-zh{
+  font-family:var(--font-han);
+  font-weight:300;
+  font-size:clamp(18px, 2.2vw, 26px);
+  letter-spacing:.7em;
+  margin-left:.7em;
+  color:rgba(248,215,163,.92);
+  margin-bottom:8px;
+}
+.hero-en{
+  font-family:var(--font-display);
+  font-style:italic;
+  font-weight:400;
+  font-size:clamp(13px, 1.4vw, 17px);
+  letter-spacing:.32em;
+  color:rgba(173,240,236,.7);
+  text-transform:uppercase;
+  margin-bottom:64px;
+}
+.hero-quote{
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:clamp(24px, 3.2vw, 40px);
+  line-height:1.45;
+  color:var(--gold-pale);
+  max-width:22ch;
+  margin:0 auto;
+  text-align:center;
+  text-shadow:0 0 24px rgba(216,144,47,.18);
+}
+.hero-quote .accent{ color:var(--seal-red-2) }
+.scroll-hint{
+  position:absolute;
+  bottom:5vh; left:50%;
+  transform:translateX(-50%);
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.32em;
+  color:rgba(243,233,201,.55);
+  text-transform:uppercase;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+}
+.scroll-hint::after{
+  content:"";
+  display:block;
+  width:1px;height:48px;
+  background:linear-gradient(180deg, rgba(243,233,201,.55), transparent);
+  animation:hintFall 2.2s ease-in-out infinite;
+}
+@keyframes hintFall{
+  0%,100%{ transform:scaleY(1); opacity:.55 }
+  50%{ transform:scaleY(.4); opacity:1 }
+}
+
+/* ============================================================
+   MOVEMENT  ・  the three big chapters
+   ============================================================ */
+.movement{
+  position:relative;
+  padding:14vh 0 18vh;
+}
+
+/* movement opener — asymmetric editorial grid
+   LEFT RAIL: vertical eye label + roman numeral + 漢字
+   RIGHT: tagline + mono meta strip                        */
+.m-open{
+  position:relative;
+  padding:26vh 6vw 20vh;
+  display:flex;
+  justify-content:center;
+}
+.m-open-inner{
+  width:100%;
+  max-width:1040px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:88px;
+  align-items:start;
+  position:relative;
+}
+.m-open-inner::before{
+  content:"";
+  position:absolute;
+  top:18px;
+  left:220px;
+  width:1px;
+  height:calc(100% - 36px);
+  background:linear-gradient(180deg,
+    rgba(243,233,201,.3) 0%,
+    rgba(243,233,201,.12) 60%,
+    transparent 100%);
+}
+.m-open-aside{
+  display:grid;
+  grid-template-columns:14px auto;
+  gap:18px;
+  align-items:start;
+  width:180px;
+}
+.m-open-eye{
+  font-family:var(--font-mono);
+  font-size:9.5px;
+  letter-spacing:.42em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.55);
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  align-self:start;
+  padding-top:4px;
+  white-space:nowrap;
+}
+.m-open-type{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.m-open-roman{
+  font-family:var(--font-display);
+  font-style:italic;
+  font-weight:400;
+  font-size:54px;
+  line-height:1;
+  color:var(--gold-soft);
+  -webkit-text-stroke:.4px rgba(243,233,201,.35);
+  letter-spacing:.02em;
+}
+.m-open-zh{
+  font-family:var(--font-han);
+  font-weight:900;
+  font-size:112px;
+  line-height:.92;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(248,215,163,.72);
+  background:linear-gradient(180deg, rgba(248,215,163,.88), rgba(216,144,47,.45));
+  -webkit-background-clip:text;
+  background-clip:text;
+  filter:drop-shadow(0 0 26px rgba(216,144,47,.16));
+}
+.m-open-main{
+  padding-top:28px;
+  max-width:42ch;
+}
+.m-open-tagline{
+  font-family:var(--font-han);
+  font-weight:500;
+  font-size:clamp(22px, 2.4vw, 30px);
+  line-height:1.65;
+  color:var(--gold-pale);
+  margin:0 0 28px 0;
+  letter-spacing:.02em;
+}
+.m-open-tagline em{
+  font-style:normal;
+  color:var(--seal-red-2);
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:1.14em;
+}
+.m-open-meta{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:14px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.48);
+}
+.m-open-meta .dash{
+  display:inline-block;
+  width:36px;
+  height:1px;
+  background:rgba(243,233,201,.3);
+}
+@media (max-width:780px){
+  .m-open{ padding:18vh 6vw 14vh }
+  .m-open-inner{ grid-template-columns:1fr; gap:32px }
+  .m-open-inner::before{ display:none }
+  .m-open-aside{
+    display:flex;
+    flex-direction:row;
+    align-items:baseline;
+    gap:22px;
+    width:auto;
+  }
+  .m-open-eye{
+    writing-mode:horizontal-tb;
+    transform:none;
+    padding-top:0;
+  }
+  .m-open-roman{ font-size:40px }
+  .m-open-zh{ font-size:76px }
+  .m-open-main{ padding-top:8px }
+}
+
+/* prose passage — editorial 2-col
+   LEFT RAIL: Nº / tag / date marginalia (sticky)
+   RIGHT:  narrow readable column 52ch max                 */
+.m-prose{
+  position:relative;
+  padding:10vh 6vw;
+  display:flex;
+  justify-content:center;
+}
+.m-prose-inner{
+  width:100%;
+  max-width:880px;
+  display:grid;
+  grid-template-columns:140px 1fr;
+  gap:60px;
+  align-items:start;
+  position:relative;
+}
+.m-prose-rail{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  position:sticky;
+  top:14vh;
+  padding-top:6px;
+  border-top:1px solid rgba(243,233,201,.28);
+}
+.m-prose-rail .m-rail-num{
+  font-family:var(--font-display);
+  font-style:italic;
+  font-size:22px;
+  letter-spacing:.1em;
+  color:var(--gold-soft);
+  line-height:1;
+}
+.m-prose-rail .m-rail-tag{
+  font-family:var(--font-hand-en);
+  font-size:16px;
+  color:rgba(243,233,201,.7);
+  line-height:1.3;
+}
+.m-prose-rail .m-rail-date{
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:.34em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.5);
+  margin-top:4px;
+}
+.m-prose-body{
+  max-width:52ch;
+}
+.m-prose-body .m-lead{
+  font-family:var(--font-han);
+  font-weight:500;
+  font-size:clamp(18px, 1.8vw, 22px);
+  line-height:1.75;
+  color:var(--gold-pale);
+  margin-bottom:26px;
+  letter-spacing:.02em;
+}
+.m-prose-body .m-lead em{
+  font-style:normal;
+  color:var(--seal-red-2);
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:1.14em;
+}
+.m-prose-body p{
+  font-family:var(--font-han);
+  font-weight:300;
+  font-size:clamp(15px, 1.1vw, 16.5px);
+  line-height:2;
+  color:rgba(243,233,201,.84);
+  margin-bottom:1.2em;
+}
+.m-prose-body p strong{
+  color:var(--gold-pale);
+  font-weight:500;
+}
+.m-prose-body p em{
+  font-style:normal;
+  color:var(--gold-soft);
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:1.14em;
+  padding:0 .1em;
+}
+.m-prose-body .m-aside{
+  margin:36px 0 36px -24px;
+  padding:4px 0 4px 22px;
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:clamp(22px, 2.6vw, 30px);
+  line-height:1.55;
+  color:var(--gold-pale);
+  max-width:22ch;
+  border-left:2px solid var(--seal-red-2);
+  text-shadow:0 0 18px rgba(216,144,47,.14);
+}
+
+@media (max-width:900px){
+  .m-prose{ padding:8vh 6vw }
+  .m-prose-inner{
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+  .m-prose-rail{
+    position:static;
+    flex-direction:row;
+    align-items:baseline;
+    gap:18px;
+    padding-top:10px;
+  }
+  .m-prose-rail .m-rail-date{ margin-top:0 }
+}
+
+/* full-bleed visual centerpiece */
+.m-visual{
+  position:relative;
+  padding:8vh 6vw;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+}
+.m-visual .m-visual-eye{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.32em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.55);
+  margin-bottom:24px;
+}
+.m-visual .m-visual-cap{
+  margin-top:24px;
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:clamp(18px, 2vw, 24px);
+  color:var(--gold-pale);
+  max-width:34ch;
+  line-height:1.65;
+}
+
+/* the summit quote — composed moment with corner frame */
+.m-bigquote{
+  position:relative;
+  padding:20vh 6vw;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+.m-bigquote .bq-frame{
+  position:relative;
+  padding:72px 56px 64px;
+  max-width:640px;
+}
+.m-bigquote .bq-frame::before,
+.m-bigquote .bq-frame::after{
+  content:"";
+  position:absolute;
+  width:64px;
+  height:64px;
+  border:1px solid rgba(248,215,163,.55);
+}
+.m-bigquote .bq-frame::before{
+  top:0; left:0;
+  border-right:none;
+  border-bottom:none;
+}
+.m-bigquote .bq-frame::after{
+  bottom:0; right:0;
+  border-left:none;
+  border-top:none;
+}
+.m-bigquote .bq-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:12px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.42em;
+  text-transform:uppercase;
+  color:var(--seal-red-2);
+  margin-bottom:36px;
+}
+.m-bigquote .bq-kicker::before,
+.m-bigquote .bq-kicker::after{
+  content:"";
+  display:inline-block;
+  width:28px;
+  height:1px;
+  background:var(--seal-red-2);
+}
+.m-bigquote .bq{
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:clamp(44px, 6vw, 80px);
+  line-height:1.35;
+  color:var(--gold-pale);
+  max-width:18ch;
+  margin:0 auto;
+  text-shadow:0 0 28px rgba(216,144,47,.2);
+}
+.m-bigquote .bq .seal{ color:var(--seal-red-2) }
+.m-bigquote .bq-en{
+  margin-top:28px;
+  font-family:var(--font-display);
+  font-style:italic;
+  font-size:clamp(13px, 1.2vw, 16px);
+  letter-spacing:.3em;
+  color:rgba(173,240,236,.75);
+  text-transform:uppercase;
+}
+
+/* ============================================================
+   PATHS SVG  (mother + son intertwined)
+   ============================================================ */
+.paths-stage{
+  position:relative;
+  max-width:780px;
+  width:100%;
+  padding:32px 16px 16px;
+  border:1px solid rgba(173,240,236,.18);
+  background:
+    radial-gradient(ellipse 80% 100% at 50% 50%, rgba(248,215,163,.08), transparent 70%),
+    rgba(14,20,36,.32);
+}
+.paths-stage .ps-svg{
+  display:block;
+  width:100%;
+  height:auto;
+}
+.paths-stage .ps-svg path{
+  stroke-dasharray:1200;
+  stroke-dashoffset:1200;
+}
+.paths-stage.run .ps-svg path{
+  animation:psDraw 4.2s cubic-bezier(.5,.1,.3,1) forwards;
+}
+.paths-stage.run .ps-svg path:nth-child(2){ animation-delay:.6s }
+.paths-stage .ps-svg circle{
+  opacity:0;
+}
+.paths-stage.run .ps-svg circle{
+  animation:psDot .4s ease forwards;
+}
+.paths-stage.run .ps-svg circle:nth-of-type(1){ animation-delay:1.5s }
+.paths-stage.run .ps-svg circle:nth-of-type(2){ animation-delay:1.7s }
+.paths-stage.run .ps-svg circle:nth-of-type(3){ animation-delay:1.9s }
+.paths-stage.run .ps-svg circle:nth-of-type(4){ animation-delay:2.1s }
+.paths-stage.run .ps-svg circle:nth-of-type(5){ animation-delay:2.3s }
+.paths-stage.run .ps-svg circle:nth-of-type(6){ animation-delay:2.5s }
+.paths-stage.run .ps-svg circle:nth-of-type(7){ animation-delay:2.7s }
+.paths-stage.run .ps-svg circle:nth-of-type(8){ animation-delay:2.9s }
+.paths-stage.run .ps-svg circle:nth-of-type(9){ animation-delay:1.6s }
+.paths-stage.run .ps-svg circle:nth-of-type(10){ animation-delay:1.8s }
+.paths-stage.run .ps-svg circle:nth-of-type(11){ animation-delay:2s }
+.paths-stage.run .ps-svg circle:nth-of-type(12){ animation-delay:2.2s }
+.paths-stage.run .ps-svg circle:nth-of-type(13){ animation-delay:2.4s }
+.paths-stage.run .ps-svg circle:nth-of-type(14){ animation-delay:2.6s }
+.paths-stage.run .ps-svg circle:nth-of-type(15){ animation-delay:2.8s }
+.paths-stage.run .ps-svg circle:nth-of-type(16){ animation-delay:3s }
+@keyframes psDraw{ to{ stroke-dashoffset:0 } }
+@keyframes psDot{ to{ opacity:1 } }
+
+/* ============================================================
+   ONE-LINE JOURNAL (signature interaction #1)
+   Between Nº 01 and Nº 02 — you write one line for yourself.
+   ============================================================ */
+.journal-entry{
+  position:relative;
+  padding:10vh 6vw;
+  display:flex;
+  justify-content:center;
+}
+.journal-entry-inner{
+  width:100%;
+  max-width:680px;
+  position:relative;
+}
+.journal-entry .je-eye{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.42em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.5);
+  text-align:center;
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+}
+.journal-entry .je-eye::before,
+.journal-entry .je-eye::after{
+  content:"";
+  width:36px; height:1px;
+  background:rgba(243,233,201,.3);
+}
+.journal-entry .je-prompt{
+  font-family:var(--font-han);
+  font-weight:500;
+  font-size:clamp(19px, 2vw, 24px);
+  line-height:1.7;
+  color:var(--gold-pale);
+  text-align:center;
+  margin-bottom:28px;
+  max-width:28ch;
+  margin-left:auto;
+  margin-right:auto;
+}
+/* paper: 32px rules aligned with 32px line-height text */
+.journal-entry .je-paper{
+  --paper-line-h: 32px;
+  position:relative;
+  background:linear-gradient(180deg, rgba(251,242,220,.96), rgba(242,230,200,.94));
+  color:var(--ink-charcoal);
+  padding:40px 36px 28px;
+  box-shadow:
+    0 30px 60px -22px rgba(8,6,18,.55),
+    0 1px 0 rgba(255,255,255,.7) inset;
+  overflow:hidden;
+}
+/* ruled lines — very subtle, drawn only where content sits */
+.journal-entry .je-paper::before{
+  content:"";
+  position:absolute;
+  left:0; right:0;
+  top:40px;
+  height:calc(100% - 64px);
+  pointer-events:none;
+  background:repeating-linear-gradient(180deg,
+    transparent 0,
+    transparent calc(var(--paper-line-h) - 1px),
+    rgba(24,20,42,.07) calc(var(--paper-line-h) - 1px),
+    rgba(24,20,42,.07) var(--paper-line-h));
+  mix-blend-mode:multiply;
+  opacity:.7;
+}
+/* header row: date + subtle rule */
+.journal-entry .je-header{
+  position:relative;
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  padding-bottom:10px;
+  margin-bottom:18px;
+  border-bottom:1px solid rgba(179,64,48,.3);
+}
+.journal-entry .je-header-label{
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:.32em;
+  text-transform:uppercase;
+  color:rgba(24,20,42,.5);
+  white-space:nowrap;
+}
+.journal-entry .je-date{
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:rgba(24,20,42,.55);
+  white-space:nowrap;
+}
+/* previously-saved entry — simple left-rule quote, no heavy 「」 */
+.journal-entry .je-existing{
+  position:relative;
+  font-family:var(--font-han);
+  font-weight:500;
+  font-size:16px;
+  line-height:2;                  /* 32px to match rules */
+  color:var(--ink-charcoal);
+  padding:0 0 0 18px;
+  margin-bottom:20px;
+  border-left:2px solid var(--seal-red);
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+}
+.journal-entry .je-existing:empty{ display:none }
+/* form stacks naturally on narrow screens */
+.journal-entry .je-form{
+  position:relative;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 14px;
+  align-items:flex-end;
+}
+.journal-entry .je-input{
+  flex:1 1 260px;
+  min-width:0;                     /* prevent overflow */
+  font-family:var(--font-han);
+  font-weight:400;
+  font-size:16px;
+  line-height:2;                   /* 32px baseline */
+  color:var(--ink-charcoal);
+  background:transparent;
+  border:none;
+  border-bottom:1px solid rgba(24,20,42,.35);
+  padding:4px 2px;
+  outline:none;
+  transition:border-color .3s ease;
+  resize:none;
+  width:100%;
+}
+.journal-entry .je-input:focus{
+  border-bottom-color:var(--seal-red);
+}
+.journal-entry .je-input::placeholder{
+  color:rgba(24,20,42,.4);
+  font-weight:300;
+}
+.journal-entry .je-save{
+  flex:0 0 auto;
+  padding:10px 18px;
+  font-family:var(--font-han);
+  font-weight:500;
+  font-size:13px;
+  letter-spacing:.18em;
+  color:var(--seal-red);
+  background:transparent;
+  border:1px solid var(--seal-red);
+  cursor:pointer;
+  transition:.3s ease;
+  white-space:nowrap;
+}
+.journal-entry .je-save:hover{
+  background:var(--seal-red);
+  color:var(--paper-cream);
+}
+.journal-entry .je-save:disabled{
+  opacity:.35;
+  cursor:default;
+}
+.journal-entry .je-meta{
+  margin-top:16px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 14px;
+  justify-content:space-between;
+  align-items:baseline;
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:.26em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.55);
+}
+.journal-entry .je-meta .count{ color:var(--seal-red-2) }
+.journal-entry .je-meta .clear{
+  background:none;
+  border:none;
+  color:rgba(243,233,201,.45);
+  font:inherit;
+  cursor:pointer;
+  padding:0;
+  letter-spacing:.26em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.journal-entry .je-meta .clear:hover{ color:var(--seal-red-2) }
+
+@media (max-width:640px){
+  .journal-entry{ padding:8vh 5vw }
+  .journal-entry .je-paper{ padding:28px 22px 22px }
+  .journal-entry .je-header{ flex-wrap:wrap; gap:4px }
+  .journal-entry .je-save{ width:100%; padding:12px }
+  .journal-entry .je-prompt{ font-size:18px }
+}
+
+/* ============================================================
+   IDEC TIMELINE SVG
+   ============================================================ */
+.idec-timeline{
+  display:block;
+  width:100%;
+  max-width:900px;
+  height:auto;
+  margin:0 auto;
+  filter:drop-shadow(0 0 24px rgba(93,213,210,.14));
+}
+
+/* ============================================================
+   LANTERN SVG  +  STAMP ZONE
+   ============================================================ */
+.lantern-stage{
+  position:relative;
+  margin:48px auto 16px;
+  width:240px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  cursor:pointer;
+}
+.lantern-stage .ls-prompt{
+  position:absolute;
+  top:8px;
+  left:50%;
+  transform:translateX(-50%);
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.32em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.7);
+  white-space:nowrap;
+  pointer-events:none;
+  transition:opacity .4s ease;
+}
+.lantern-stage.lit .ls-prompt{ opacity:0 }
+.lantern-stage .ls-caption{
+  margin-top:12px;
+  font-family:var(--font-han);
+  font-weight:500;
+  font-size:14px;
+  letter-spacing:.1em;
+  color:var(--seal-red-2);
+  opacity:0;
+  transform:translateY(-6px);
+  transition:opacity .6s ease .3s, transform .6s ease .3s;
+}
+.lantern-stage.lit .ls-caption{
+  opacity:1;
+  transform:translateY(0);
+}
+.lantern-stage .ls-string{
+  width:1px;
+  height:60px;
+  background:linear-gradient(180deg, transparent, rgba(179,64,48,.6));
+  margin-bottom:-2px;
+}
+.lantern-stage .ls-svg{
+  width:200px;
+  height:280px;
+  display:block;
+  position:relative;
+  z-index:2;
+  animation:lanternSway 6s ease-in-out infinite;
+  transform-origin:50% 0%;
+}
+@keyframes lanternSway{
+  0%, 100%{ transform:rotate(-1.8deg) }
+  50%    { transform:rotate(1.8deg) }
+}
+.lantern-stage .ls-halo{
+  position:absolute;
+  top:60px;
+  left:50%;
+  width:340px;
+  height:340px;
+  margin-left:-170px;
+  border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,
+    rgba(253,230,184,.42) 0%,
+    rgba(246,196,120,.22) 30%,
+    rgba(179,64,48,.06) 55%,
+    transparent 75%);
+  pointer-events:none;
+  z-index:1;
+  animation:lanternGlow 4s ease-in-out infinite;
+  mix-blend-mode:screen;
+  transition:width .9s ease, height .9s ease, margin-left .9s ease;
+}
+.lantern-stage.lit .ls-halo{
+  width:520px;
+  height:520px;
+  margin-left:-260px;
+  background:radial-gradient(circle at 50% 40%,
+    rgba(253,230,184,.72) 0%,
+    rgba(246,196,120,.4) 25%,
+    rgba(216,144,47,.2) 45%,
+    rgba(179,64,48,.08) 60%,
+    transparent 80%);
+}
+@keyframes lanternGlow{
+  0%, 100%{ transform:scale(1); opacity:.85 }
+  50%    { transform:scale(1.05); opacity:1 }
+}
+.lantern-stage.lit .ls-svg{
+  filter:drop-shadow(0 0 30px rgba(253,230,184,.55));
+}
+
+/* stamp zone */
+.stamp-zone{
+  position:relative;
+  margin:48px auto 8px;
+  max-width:520px;
+  padding:32px 24px 28px;
+  background:rgba(244,234,214,.95);
+  border:1px dashed rgba(179,64,48,.55);
+  cursor:pointer;
+  user-select:none;
+  text-align:center;
+}
+.stamp-zone .sz-eye{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:rgba(24,20,42,.55);
+  margin-bottom:6px;
+}
+.stamp-zone .sz-title{
+  font-family:var(--font-han);
+  font-weight:700;
+  font-size:20px;
+  color:var(--ink-charcoal);
+  margin-bottom:4px;
+  letter-spacing:.04em;
+}
+.stamp-zone .sz-sub{
+  font-family:var(--font-han);
+  font-weight:300;
+  font-size:13px;
+  color:rgba(24,20,42,.7);
+  line-height:1.7;
+}
+.stamp-zone .sz-counter{
+  margin-top:12px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.18em;
+  color:rgba(179,64,48,.85);
+}
+.stamp-zone .sz-canvas{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  overflow:hidden;
+}
+.stamp-mark{
+  position:absolute;
+  width:74px;height:74px;
+  border:2px solid var(--seal-red);
+  border-radius:50%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font-han);
+  font-weight:900;
+  font-size:14px;
+  letter-spacing:.18em;
+  color:var(--seal-red);
+  background:radial-gradient(circle at 30% 30%, rgba(179,64,48,.10), rgba(179,64,48,.22));
+  text-align:center;
+  line-height:1.15;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(2.2) rotate(-12deg);
+  transition:.55s cubic-bezier(.5,.1,.3,1.4);
+  pointer-events:none;
+  filter:drop-shadow(0 4px 10px rgba(8,6,18,.4));
+}
+.stamp-mark::before{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border:1px solid var(--seal-red);
+  border-radius:50%;
+  opacity:.55;
+}
+.stamp-mark.show{
+  opacity:.92;
+  transform:translate(-50%,-50%) scale(1) rotate(-12deg);
+}
+
+/* ============================================================
+   THE INVITATION + SIGNATURE
+   ============================================================ */
+.m-invite{
+  position:relative;
+  padding:14vh 6vw;
+  text-align:center;
+}
+.m-invite .iv-quote{
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:clamp(36px, 5.5vw, 72px);
+  line-height:1.4;
+  color:var(--seal-deep);
+  margin-bottom:32px;
+  text-shadow:0 0 30px rgba(179,64,48,.16);
+}
+.m-invite .iv-sub{
+  font-family:var(--font-han);
+  font-weight:300;
+  font-size:clamp(16px, 1.5vw, 19px);
+  line-height:2;
+  color:var(--ink-charcoal);
+  max-width:48ch;
+  margin:0 auto 32px;
+}
+.m-invite .iv-sub strong{ color:var(--seal-deep); font-weight:500 }
+.invite-avatar{
+  width:120px;height:120px;
+  border-radius:50%;
+  border:2px solid var(--seal-deep);
+  padding:6px;
+  background:rgba(244,234,214,.7);
+  position:relative;
+  margin:48px auto 0;
+}
+.invite-avatar img{
+  width:100%;height:100%;
+  border-radius:50%;
+  object-fit:cover;
+  filter:contrast(1.05) saturate(.95);
+}
+.invite-avatar::after{
+  content:"";
+  position:absolute;
+  inset:-12px;
+  border:1px dashed rgba(179,64,48,.4);
+  border-radius:50%;
+  animation:slowSpin 40s linear infinite;
+}
+@keyframes slowSpin{ to{ transform:rotate(360deg) } }
+.iv-sign{
+  font-family:var(--font-display);
+  font-style:italic;
+  font-size:22px;
+  letter-spacing:.08em;
+  color:var(--seal-deep);
+  margin-top:32px;
+}
+.iv-sign .name{
+  display:block;
+  font-family:var(--font-quote);
+  font-weight:500;
+  letter-spacing:.08em;
+  font-size:54px;
+  color:var(--seal-deep);
+  margin-top:8px;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.guild-foot{
+  position:relative;
+  padding:68px 6vw 80px;
+  text-align:center;
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.18em;
+  color:rgba(24,20,42,.7);
+}
+.guild-foot .links{
+  display:flex;justify-content:center;gap:18px;
+  margin-bottom:32px;
+}
+.guild-foot .links a{
+  width:48px;height:48px;
+  border:1px solid rgba(24,20,42,.4);
+  border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:16px;
+  color:var(--ink-charcoal);
+  transition:.45s ease;
+}
+.guild-foot .links a:hover{
+  background:var(--ink-charcoal);
+  color:var(--gold-pale);
+  transform:translateY(-3px);
+}
+.guild-foot .made{
+  display:inline-flex;align-items:center;gap:8px;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.guild-foot .made i{ color:var(--seal-red) }
+.guild-foot .ret{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:18px;
+  padding:10px 18px;
+  border:1px solid rgba(24,20,42,.5);
+  text-transform:uppercase;
+  transition:.4s ease;
+}
+.guild-foot .ret:hover{
+  background:var(--ink-charcoal);
+  color:var(--gold-pale);
+  letter-spacing:.26em;
+}
+
+/* ============================================================
+   WALKER RAIL  ・  晨 + 你 walking together along scroll
+   (visible only on desktop)
+   ============================================================ */
+.walker-rail{
+  position:fixed;
+  left:30px;
+  top:18vh;
+  bottom:18vh;
+  width:22px;
+  z-index:6500;
+  pointer-events:none;
+  display:none;
+}
+@media (min-width:1180px){ .walker-rail{ display:block } }
+.walker-rail .walker-line{
+  position:absolute;
+  left:50%;
+  top:0; bottom:0;
+  width:1px;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    rgba(243,233,201,.22) 14%,
+    rgba(243,233,201,.22) 86%,
+    transparent 100%);
+}
+.walker-rail .walker-line::before,
+.walker-rail .walker-line::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  width:9px; height:1px;
+  background:rgba(243,233,201,.35);
+  transform:translateX(-50%);
+}
+.walker-rail .walker-line::before{ top:10% }
+.walker-rail .walker-line::after{ bottom:10% }
+.walker{
+  position:absolute;
+  left:50%;
+  transform:translate(-50%, -50%);
+  transition:top .18s cubic-bezier(.3,.1,.25,1);
+  pointer-events:auto;
+  cursor:default;
+}
+.walker-dot{
+  display:block;
+  width:11px;
+  height:11px;
+  border-radius:50%;
+  position:relative;
+}
+.walker-dot::after{
+  content:"";
+  position:absolute;
+  inset:-6px;
+  border-radius:50%;
+  border:1px solid currentColor;
+  opacity:.25;
+}
+.walker.chen{ color:var(--gold-pale) }
+.walker.chen .walker-dot{
+  background:var(--gold-pale);
+  box-shadow:0 0 12px rgba(248,215,163,.7), 0 0 24px rgba(248,215,163,.35);
+}
+.walker.you{ color:var(--teal-glow) }
+.walker.you .walker-dot{
+  background:var(--teal-glow);
+  box-shadow:0 0 12px rgba(93,213,210,.65), 0 0 24px rgba(93,213,210,.3);
+}
+.walker-label{
+  position:absolute;
+  left:24px;
+  top:50%;
+  transform:translateY(-50%);
+  font-family:var(--font-han);
+  font-weight:500;
+  font-size:12px;
+  color:inherit;
+  opacity:0;
+  transition:opacity .4s ease;
+  white-space:nowrap;
+  text-shadow:0 0 8px rgba(8,6,18,.5);
+}
+.walker:hover .walker-label,
+.walker-rail:hover .walker-label{ opacity:.95 }
+/* tiny trailing dot — fades behind each walker */
+.walker-trail{
+  position:absolute;
+  left:50%;
+  width:4px; height:4px;
+  border-radius:50%;
+  transform:translate(-50%, -50%);
+  pointer-events:none;
+  opacity:.55;
+}
+.walker-trail.chen{ background:var(--gold-soft) }
+.walker-trail.you{ background:var(--teal-pale) }
+
+/* pair label at top of rail */
+.walker-rail-head{
+  position:absolute;
+  top:-28px;
+  left:50%;
+  transform:translateX(-50%);
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:.34em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.45);
+  white-space:nowrap;
+}
+
+/* ============================================================
+   KEEP-A-LINE  ・  click .m-lead to bookmark
+   ============================================================ */
+.m-prose-body .m-lead{
+  position:relative;
+  cursor:pointer;
+  padding-left:0;
+  border-left:none;
+  transition:padding-left .35s ease, border-left-color .35s ease, background .35s ease;
+}
+.m-prose-body .m-lead::after{
+  content:"◯ 留一條線";
+  position:absolute;
+  left:-96px;
+  top:50%;
+  transform:translateY(-50%);
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.38);
+  white-space:nowrap;
+  opacity:0;
+  transition:opacity .4s ease, left .35s ease;
+  pointer-events:none;
+}
+@media (min-width:900px){
+  .m-prose-body .m-lead:hover::after{ opacity:1; left:-110px }
+}
+.m-prose-body .m-lead.kept{
+  padding-left:16px;
+  border-left:2px solid var(--gold-pale);
+  background:linear-gradient(90deg,
+    rgba(248,215,163,.12) 0%,
+    rgba(248,215,163,.04) 60%,
+    transparent 100%);
+}
+.m-prose-body .m-lead.kept::after{
+  content:"◉ 留下了";
+  color:var(--gold-pale);
+  opacity:1;
+  left:-110px;
+}
+
+/* keep-a-line counter floating in margin rail */
+.keep-tally{
+  position:fixed;
+  left:30px;
+  bottom:24px;
+  z-index:6500;
+  font-family:var(--font-mono);
+  font-size:9px;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:rgba(243,233,201,.5);
+  pointer-events:none;
+  display:none;
+  max-width:180px;
+}
+@media (min-width:1180px){
+  .keep-tally:not(:empty){ display:block }
+}
+
+/* ============================================================
+   CURSOR STARDUST  ・  gold sparks following cursor in night
+   ============================================================ */
+.stardust{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:7200;
+  overflow:hidden;
+  /* screen blend so white-gold sparks are additive on dark,
+     still visible on warm-paper areas                     */
+  mix-blend-mode:screen;
+}
+.stardust .spark{
+  position:absolute;
+  width:5px;height:5px;
+  border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(255,252,236,1) 0%,
+    rgba(248,215,163,.85) 40%,
+    rgba(216,144,47,.3) 75%,
+    transparent 100%);
+  pointer-events:none;
+  will-change:transform, opacity;
+  filter:blur(.2px);
+}
+/* a second, slightly warmer spark type that shows on light backgrounds too */
+.stardust .spark.warm{
+  background:radial-gradient(circle,
+    rgba(253,246,221,1) 0%,
+    rgba(217,117,100,.6) 50%,
+    transparent 100%);
+}
+
+/* constellation heartbeat pulse once connected */
+.glyph-twin[data-connected="true"] .between-line .solid-line{
+  animation:solidLineBreath 3.8s ease-in-out infinite 2s;
+}
+@keyframes solidLineBreath{
+  0%, 100%{
+    filter:drop-shadow(0 0 6px var(--gold-pale));
+    opacity:.92;
+  }
+  50%{
+    filter:drop-shadow(0 0 16px var(--gold-pale)) drop-shadow(0 0 28px rgba(248,215,163,.35));
+    opacity:1;
+  }
+}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+@media (max-width:780px){
+  .archive-bar{ padding:14px 18px; font-size:9px }
+  .archive-bar .crumb b{ display:none }
+  .scroll-rail{ right:14px; gap:18px }
+  .scroll-rail .dot{ width:26px; height:26px; font-size:12px }
+  .glyph-twin{ font-size:34vw; gap:8vw }
+  .m-pin{ padding:10vh 5vw; gap:36px }
+  .m-prose{ padding:6vh 6vw }
+  .m-bigquote{ padding:18vh 6vw }
+}
+
+.fade-up{ opacity:0; transform:translateY(36px) }
+.draw-line{ stroke-dasharray:200; stroke-dashoffset:200 }
+</style>
+</head>
+<body>
+
+<!-- =======================================================
+     FIXED LAYERS
+     ======================================================= -->
+<div class="paper-bg" id="paperBg"></div>
+<canvas id="starfield"></canvas>
+<canvas id="sunrise"></canvas>
+<div class="warmth" id="warmth"></div>
+
+<!-- =======================================================
+     ARCHIVE BAR + RAIL
+     ======================================================= -->
+<div class="archive-bar">
+  <a href="/guild/" aria-label="Return to guild archive">
+    <i class="fa-solid fa-arrow-left"></i> Archive
+  </a>
+  <div class="crumb">
+    <i class="fa-regular fa-moon"></i>
+    Field Journal <b>#our.soulful.journal</b> · 星晨日誌
+  </div>
+</div>
+
+<!-- WALKER RAIL ・ 晨 + 你 walk together with scroll (desktop only) -->
+<div class="walker-rail" id="walkerRail" aria-hidden="true">
+  <div class="walker-rail-head">— walking —</div>
+  <div class="walker-line"></div>
+  <div class="walker chen" id="walkerChen">
+    <span class="walker-dot"></span>
+    <span class="walker-label">晨</span>
+  </div>
+  <div class="walker you" id="walkerYou">
+    <span class="walker-dot"></span>
+    <span class="walker-label">你</span>
+  </div>
+</div>
+
+<!-- keep-a-line tally (desktop only) -->
+<div class="keep-tally" id="keepTally" aria-live="polite"></div>
+
+<!-- cursor stardust layer (night sections only) -->
+<div class="stardust" id="stardust" aria-hidden="true"></div>
+
+<div class="scroll-rail" id="scrollRail">
+  <button class="dot active" data-target="hero" data-label="Hero ・ 星晨"><i class="fa-regular fa-circle"></i></button>
+  <button class="dot" data-target="m1" data-label="I  ・ 夜">夜</button>
+  <button class="dot" data-target="m2" data-label="II ・ 路">路</button>
+  <button class="dot" data-target="m3" data-label="III ・ 晨">晨</button>
+</div>
+
+<!-- =======================================================
+     JOURNAL
+     ======================================================= -->
+<main class="journal">
+
+  <!-- ===== HERO ===== -->
+  <section class="scene-hero" id="hero">
+    <div class="hero-stack">
+      <div class="hero-eyebrow fade-up">
+        <span class="line"></span>
+        a still-walking journal
+        <span class="line"></span>
+      </div>
+
+      <div class="glyph-twin fade-up" id="glyphTwin">
+        <button class="han han-btn" data-glyph="xing" aria-label="Star 星 — click to join">星
+          <span class="pin tl"></span>
+          <span class="pin br"></span>
+          <span class="glyph-ripple"></span>
+        </button>
+        <span class="between-line" id="betweenLine">
+          <svg viewBox="-30 -30 240 60" preserveAspectRatio="none">
+            <line x1="0" y1="30" x2="180" y2="30" class="draw-line"></line>
+            <line x1="0" y1="30" x2="180" y2="30" class="solid-line"></line>
+          </svg>
+          <span class="node n1"></span>
+          <span class="node n2"></span>
+          <span class="node n3"></span>
+        </span>
+        <button class="han han-btn" data-glyph="chen" aria-label="Morning 晨 — click to join">晨
+          <span class="pin tr"></span>
+          <span class="pin br"></span>
+          <span class="glyph-ripple"></span>
+        </button>
+      </div>
+      <div class="glyph-hint" id="glyphHint" data-state="idle">
+        <span class="ghint-idle">點一下兩個字 ・ 把他們連起來</span>
+        <span class="ghint-half">再點一下另一個字</span>
+        <span class="ghint-done">星晨 ・ 連起來了</span>
+      </div>
+
+      <div class="hero-zh fade-up">星晨日誌</div>
+      <div class="hero-en fade-up">Our Soulful Journal — by Regina &amp; her son 星</div>
+
+      <div class="hero-quote fade-up">
+        天還沒亮的時候，<br>
+        我就<span class="accent">先坐下來</span>寫。
+      </div>
+
+      <div class="scroll-hint">SCROLL ・ 翻到下一頁</div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MOVEMENT  I  ・  夜
+       ============================================================ -->
+  <section class="movement m-night" id="m1">
+
+    <div class="m-open">
+      <div class="m-open-inner">
+        <aside class="m-open-aside fade-up">
+          <span class="m-open-eye">First Movement ・ Nº 01</span>
+          <span class="m-open-type">
+            <span class="m-open-roman">I</span>
+            <span class="m-open-zh">夜</span>
+          </span>
+        </aside>
+        <div class="m-open-main">
+          <h2 class="m-open-tagline fade-up">
+            在最漫長的那一段時間，我選擇<em>開始記錄</em>。
+          </h2>
+          <div class="m-open-meta fade-up">
+            <span>Night</span>
+            <span class="dash"></span>
+            <span>the longest stretch before dawn</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-prose">
+      <div class="m-prose-inner">
+        <aside class="m-prose-rail fade-up">
+          <span class="m-rail-num">Nº 01</span>
+          <span class="m-rail-tag">— on beginning</span>
+          <span class="m-rail-date">2026 · Spring</span>
+        </aside>
+        <div class="m-prose-body">
+          <p class="m-lead fade-up">
+            我叫 Regina。在這個帳號裡，我用「晨」這個名字寫東西。
+          </p>
+          <p class="fade-up">
+            我 31 歲，是一個單親媽媽，同時做三份工作 — 客服、樂高老師、活動主持。事情並沒有都安排好了我才開始寫這些；是在最混亂的那個中間點，我選擇先坐下來、把它寫下來。
+          </p>
+          <p class="fade-up">
+            我不是覺得自己寫得特別好才寫 — 是因為我相信，<em>沒有整理完的、正在發生的狀態</em>，有時候比已經整理好的故事更有用。如果你也卡在一個「還沒成形」的中間點，<strong>這些字也是寫給你的</strong>。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNATURE INTERACTION ・ 一句日誌 -->
+    <div class="journal-entry">
+      <div class="journal-entry-inner fade-up">
+        <div class="je-eye">// your line</div>
+        <div class="je-prompt">
+          這是我每天跟自己說的一句話。<br>
+          如果你也想，這裡給你<em style="color:var(--seal-red-2);font-style:normal;">一行</em>。
+        </div>
+        <div class="je-paper">
+          <div class="je-header">
+            <span class="je-header-label">Today's one line</span>
+            <span class="je-date" id="jeDate">—</span>
+          </div>
+          <div class="je-existing" id="jeExisting"></div>
+          <div class="je-form">
+            <textarea class="je-input" id="jeInput" rows="2"
+                      maxlength="80" placeholder="寫一句給今天的你。"></textarea>
+            <button class="je-save" id="jeSave" disabled>留下</button>
+          </div>
+        </div>
+        <div class="je-meta">
+          <span class="count" id="jeCount">只有你自己看得到 ・ 下次你回來還會在</span>
+          <button class="clear" id="jeClear" hidden>清掉我那句</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-prose">
+      <div class="m-prose-inner">
+        <aside class="m-prose-rail fade-up">
+          <span class="m-rail-num">Nº 02</span>
+          <span class="m-rail-tag">— the name</span>
+          <span class="m-rail-date">星 ＆ 晨</span>
+        </aside>
+        <div class="m-prose-body">
+          <div class="m-aside fade-up">
+            「星」來自我兒子。<br>
+            「晨」是我給自己的名字。
+          </div>
+          <p class="fade-up">
+            兩個字放在一起，是我每天想記住的事 — 他是我夜裡還在的那份光，我是他天亮之後的那份陪伴。這個帳號的名字沒有什麼詩意的出處，就是這兩個字而已。
+          </p>
+          <p class="fade-up">
+            我會在這裡寫的東西滿雜的：讀完一本書之後的感受、每天的覺察練習、為什麼我們家不吃肉、為什麼我和兒子在嘗試自學、一個叫「青色組織」的哲學怎麼被我搬進母子關係。<strong>我不是任何一個的專家 — 這些只是我正在活的事。</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MOVEMENT  II  ・  路
+       ============================================================ -->
+  <section class="movement m-walk" id="m2">
+
+    <div class="m-open">
+      <div class="m-open-inner">
+        <aside class="m-open-aside fade-up">
+          <span class="m-open-eye">Second Movement ・ Nº 02</span>
+          <span class="m-open-type">
+            <span class="m-open-roman">II</span>
+            <span class="m-open-zh">路</span>
+          </span>
+        </aside>
+        <div class="m-open-main">
+          <h2 class="m-open-tagline fade-up">
+            這條路上我帶著的<em>三件事</em>。
+          </h2>
+          <div class="m-open-meta fade-up">
+            <span>The Road</span>
+            <span class="dash"></span>
+            <span>bricks · two trails · twelve chairs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1) WORK / multi-line — flows directly into the LEGO builder -->
+    <div class="m-prose">
+      <div class="m-prose-inner">
+        <aside class="m-prose-rail fade-up">
+          <span class="m-rail-num">Nº 03</span>
+          <span class="m-rail-tag">— on slashes</span>
+          <span class="m-rail-date">weekday · weekend · stage</span>
+        </aside>
+        <div class="m-prose-body">
+          <p class="m-lead fade-up">
+            我同時撐著三條斜線。
+          </p>
+          <p class="fade-up">
+            工作日白天，我回英文的客服工單 — 幫跨時區的陌生人解決一件他憋了三天的事。週末我在樂高教室，陪 6 到 12 歲的小孩把「拼錯了」翻譯成「換一個方法」。中間會接一些活動主持 — 把講者的話接到聽眾的耳朵。
+          </p>
+          <p class="fade-up">
+            不是因為我特別厲害，<strong>是因為生活實際上就需要這麼多條線</strong>。每一條斜線都在教我同一件事 — <em>在資源有限的時候，怎麼把下一步走得穩。</em>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2) THE SON — flows into the intertwined paths -->
+    <div class="m-prose">
+      <div class="m-prose-inner">
+        <aside class="m-prose-rail fade-up">
+          <span class="m-rail-num">Nº 04</span>
+          <span class="m-rail-tag">— walking together</span>
+          <span class="m-rail-date">星 · 6 yrs</span>
+        </aside>
+        <div class="m-prose-body">
+          <p class="m-lead fade-up">
+            我有一個 6 歲的同行者。
+          </p>
+          <p class="fade-up">
+            他叫「星」。從他還在我肚子裡開始，我們家就沒肉了 — 他是胎裡素，到現在快七年。對我來說他不是需要我教的兒子，比較像一個<strong>剛好跟我走同一條路的人</strong>。
+          </p>
+          <p class="fade-up">
+            他看世界的方式和我不一樣。我的功課是 — <em>學習不用我的方式去修正他</em>。他常常比我先冷靜下來，比我先說「沒關係」。這讓我提醒自己：我的工作不是把他教成什麼樣，只是盡量不擋住他。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-visual">
+      <div class="m-visual-eye fade-up">// 因為我們是兩個人走在一條路上 ・ not one leading, one following</div>
+      <div class="paths-stage fade-up" id="pathsStage" aria-hidden="true">
+        <svg class="ps-svg" viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" fill="none" stroke-linecap="round">
+          <path id="pathMother" d="M30 130 C 110 70, 200 200, 290 130 S 470 50, 560 130 S 700 200, 740 130"
+                stroke="#f8d7a3" stroke-width="2.5" opacity="0.85"/>
+          <path id="pathSon" d="M30 110 C 110 180, 200 50, 290 120 S 470 200, 560 110 S 700 60, 740 120"
+                stroke="#5dd5d2" stroke-width="2" opacity="0.85"/>
+          <circle cx="80"  cy="98"  r="3.5" fill="#f8d7a3"/>
+          <circle cx="160" cy="158" r="3.5" fill="#f8d7a3"/>
+          <circle cx="240" cy="148" r="3.5" fill="#f8d7a3"/>
+          <circle cx="320" cy="116" r="3.5" fill="#f8d7a3"/>
+          <circle cx="400" cy="84"  r="3.5" fill="#f8d7a3"/>
+          <circle cx="490" cy="100" r="3.5" fill="#f8d7a3"/>
+          <circle cx="580" cy="142" r="3.5" fill="#f8d7a3"/>
+          <circle cx="660" cy="180" r="3.5" fill="#f8d7a3"/>
+          <circle cx="80"  cy="146" r="3" fill="#5dd5d2"/>
+          <circle cx="160" cy="100" r="3" fill="#5dd5d2"/>
+          <circle cx="240" cy="86"  r="3" fill="#5dd5d2"/>
+          <circle cx="320" cy="138" r="3" fill="#5dd5d2"/>
+          <circle cx="400" cy="170" r="3" fill="#5dd5d2"/>
+          <circle cx="490" cy="156" r="3" fill="#5dd5d2"/>
+          <circle cx="580" cy="98"  r="3" fill="#5dd5d2"/>
+          <circle cx="660" cy="68"  r="3" fill="#5dd5d2"/>
+          <text x="14" y="90" font-family="Noto Serif TC, serif" font-weight="500" font-size="20" fill="#f8d7a3">晨</text>
+          <text x="14" y="170" font-family="Noto Serif TC, serif" font-weight="500" font-size="20" fill="#5dd5d2">星</text>
+        </svg>
+      </div>
+      <div class="m-visual-cap fade-up">
+        兩條線。一條是我，一條是他。<br>
+        沒有同步，也沒有分開。
+      </div>
+    </div>
+
+    <!-- 3) THE MISSION — flows into the round-table SVG -->
+    <div class="m-prose">
+      <div class="m-prose-inner">
+        <aside class="m-prose-rail fade-up">
+          <span class="m-rail-num">Nº 05</span>
+          <span class="m-rail-tag">— a mission</span>
+          <span class="m-rail-date">IDEC · since 2024</span>
+        </aside>
+        <div class="m-prose-body">
+          <p class="m-lead fade-up">
+            有一件事我放在「使命」那一欄。
+          </p>
+          <p class="fade-up">
+            <strong>IDEC</strong>（International Democratic Education Conference）是民主教育圈的國際年會，辦了三十多年。2024 年它第一次來到台灣 — 這中間有很多人撐了很久，才把它接過來。
+          </p>
+          <p class="fade-up">
+            我希望下一屆還有人願意接。我不保證自己做得到多少，但這件事在我每天想的清單上。<em>如果你讀到這裡，覺得自己想幫忙撐下一屆</em> — 那我們可以直接聊。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-visual">
+      <div class="m-visual-eye fade-up">// IDEC ・ 三十多年 ・ 一屆接一屆地讓它發生</div>
+
+      <svg class="idec-timeline fade-up" viewBox="0 0 960 220" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <!-- past axis -->
+        <line x1="80" y1="110" x2="680" y2="110" stroke="#aef0ec" stroke-width="1" opacity=".5"/>
+        <!-- future axis — dashed, uncertain -->
+        <line x1="680" y1="110" x2="900" y2="110" stroke="#aef0ec" stroke-width="1" opacity=".28" stroke-dasharray="3 7"/>
+
+        <!-- annual markers -->
+        <g opacity=".7">
+          <circle cx="130" cy="110" r="3" fill="#aef0ec"/>
+          <circle cx="200" cy="110" r="3" fill="#aef0ec"/>
+          <circle cx="270" cy="110" r="3" fill="#aef0ec"/>
+          <circle cx="340" cy="110" r="3" fill="#aef0ec"/>
+          <circle cx="410" cy="110" r="3" fill="#aef0ec"/>
+          <circle cx="480" cy="110" r="3" fill="#aef0ec"/>
+          <circle cx="550" cy="110" r="3" fill="#aef0ec"/>
+          <circle cx="615" cy="110" r="3" fill="#aef0ec"/>
+        </g>
+
+        <!-- left anchor: "first conference" -->
+        <line x1="80" y1="96" x2="80" y2="124" stroke="#aef0ec" stroke-width="1.5"/>
+        <text x="80" y="64" font-family="Cormorant Garamond, serif" font-style="italic" font-weight="500"
+              font-size="24" fill="#aef0ec" text-anchor="middle" opacity=".85">1990s</text>
+        <text x="80" y="82" font-family="JetBrains Mono, monospace" font-size="9"
+              fill="#aef0ec" text-anchor="middle" letter-spacing="3" opacity=".65">FIRST CONFERENCE</text>
+        <text x="80" y="152" font-family="Noto Serif TC, serif" font-weight="300" font-size="12"
+              fill="#f3e9c9" text-anchor="middle" opacity=".68">三十多年前開始</text>
+
+        <!-- middle rhythm label -->
+        <text x="380" y="82" font-family="JetBrains Mono, monospace" font-size="9"
+              fill="#f3e9c9" text-anchor="middle" letter-spacing="5" opacity=".55">EVERY YEAR ・ A DIFFERENT COUNTRY</text>
+        <path d="M150 90 Q380 74 590 90" stroke="#f3e9c9" stroke-width="1" fill="none" opacity=".18" stroke-dasharray="1 4"/>
+
+        <!-- 2024 TAIWAN seal -->
+        <g transform="translate(680,110)">
+          <circle cx="0" cy="0" r="28" fill="none" stroke="#d35338" stroke-width="2"/>
+          <circle cx="0" cy="0" r="22" fill="none" stroke="#d35338" stroke-width="1" opacity=".5"/>
+          <circle cx="0" cy="0" r="15" fill="#d35338" opacity=".9"/>
+          <text x="0" y="5" font-family="Noto Serif TC, serif" font-weight="900" font-size="16"
+                fill="#fde6b8" text-anchor="middle">台</text>
+        </g>
+        <text x="680" y="62" font-family="Cormorant Garamond, serif" font-style="italic" font-weight="500"
+              font-size="28" fill="#f8d7a3" text-anchor="middle">2024</text>
+        <text x="680" y="82" font-family="JetBrains Mono, monospace" font-size="9"
+              fill="#f8d7a3" text-anchor="middle" letter-spacing="4" opacity=".9">TAIWAN</text>
+        <text x="680" y="168" font-family="Noto Serif TC, serif" font-weight="500" font-size="13"
+              fill="#fbe7c4" text-anchor="middle" letter-spacing="2">第一次在台灣</text>
+        <text x="680" y="188" font-family="Noto Serif TC, serif" font-weight="300" font-size="11"
+              fill="#f3e9c9" text-anchor="middle" opacity=".7">很多人撐了很久才把它接過來</text>
+
+        <!-- next ? -->
+        <text x="820" y="100" font-family="Cormorant Garamond, serif" font-style="italic" font-weight="400"
+              font-size="44" fill="#f8d7a3" text-anchor="middle" opacity=".55">?</text>
+        <text x="820" y="150" font-family="Noto Serif TC, serif" font-weight="300" font-size="11"
+              fill="#f3e9c9" text-anchor="middle" opacity=".6" letter-spacing="2">下一屆</text>
+      </svg>
+
+      <div class="m-visual-cap fade-up">
+        每一年一個國家，辦了三十多年。<br>
+        2024 年的那一次，在台灣。<br>
+        <strong style="color:var(--seal-red-2)">下一次會不會有</strong>—<br>
+        看還有沒有人願意把椅子接過來。
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MOVEMENT  III  ・  晨
+       ============================================================ -->
+  <section class="movement m-dawn" id="m3">
+
+    <div class="m-open">
+      <div class="m-open-inner">
+        <aside class="m-open-aside fade-up">
+          <span class="m-open-eye">Third Movement ・ Nº 03</span>
+          <span class="m-open-type">
+            <span class="m-open-roman">III</span>
+            <span class="m-open-zh">晨</span>
+          </span>
+        </aside>
+        <div class="m-open-main">
+          <h2 class="m-open-tagline fade-up">
+            日子最壞的時候，我學會<em>先回到呼吸</em>。
+          </h2>
+          <div class="m-open-meta fade-up">
+            <span>Morning</span>
+            <span class="dash"></span>
+            <span>the light returns on its own</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-prose">
+      <div class="m-prose-inner">
+        <aside class="m-prose-rail fade-up">
+          <span class="m-rail-num">Nº 06</span>
+          <span class="m-rail-tag">— the ground</span>
+          <span class="m-rail-date">佛學 · daily</span>
+        </aside>
+        <div class="m-prose-body">
+          <p class="m-lead fade-up">
+            我每天都練習呼吸。
+          </p>
+          <p class="fade-up">
+            我練習佛學 — 不是那種很深的出家人修行，只是每天讓自己在情緒來的時候<strong>不要馬上動</strong>。等一個呼吸，再決定。這是我整個人能站得住的地基。
+          </p>
+          <p class="fade-up">
+            不是為了解決什麼問題 — <em>只是先找到一個可以坐下來的地方</em>。然後再看看下一步要去哪裡。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- THE BIG QUOTE — the page's emotional summit -->
+    <div class="m-bigquote">
+      <div class="bq-frame fade-up">
+        <div class="bq-kicker">a note to myself</div>
+        <div class="bq">
+          沒整理好的東西，<br><span class="seal">也可以有力量</span>。
+        </div>
+        <div class="bq-en">— from someone still in the middle</div>
+      </div>
+    </div>
+
+    <!-- INVITATION + LANTERN + STAMP -->
+    <div class="m-invite">
+      <div class="iv-quote fade-up">
+        如果你也停在一個<br>
+        還沒想清楚的地方 —<br>
+        那就<span style="color:var(--seal-red-2)">坐一下</span>吧。
+      </div>
+
+      <p class="iv-sub fade-up">
+        我沒辦法給你答案 — 我自己的也都還在寫。但這個頁面上如果有一段，讓你想停一下，那就停一下。<strong>燈我會留著。</strong>
+      </p>
+
+      <div class="lantern-stage fade-up" id="lanternStage" role="button" tabindex="0"
+           aria-label="點亮這盞燈">
+        <div class="ls-prompt" id="lsPrompt">點一下 ・ 把燈點亮</div>
+        <div class="ls-string"></div>
+        <svg class="ls-svg" viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <line x1="100" y1="0" x2="100" y2="36" stroke="#b34030" stroke-width="1.2"/>
+          <rect x="74" y="34" width="52" height="10" fill="#5a2418" rx="2"/>
+          <line x1="100" y1="44" x2="100" y2="54" stroke="#5a2418" stroke-width="2"/>
+          <ellipse cx="100" cy="124" rx="74" ry="68" fill="#b34030" stroke="#5a2418" stroke-width="2"/>
+          <ellipse cx="100" cy="124" rx="74" ry="68" fill="url(#lanternGlow)"/>
+          <path d="M30 124 Q100 84 170 124 Q100 164 30 124" stroke="#5a2418" stroke-width="1.2" opacity=".7"/>
+          <line x1="100" y1="56" x2="100" y2="192" stroke="#5a2418" stroke-width="1.2" opacity=".5"/>
+          <path d="M62 60 Q60 124 62 188" stroke="#5a2418" stroke-width="1.1" opacity=".55"/>
+          <path d="M138 60 Q140 124 138 188" stroke="#5a2418" stroke-width="1.1" opacity=".55"/>
+          <ellipse cx="100" cy="60" rx="42" ry="6" fill="#5a2418"/>
+          <ellipse cx="100" cy="188" rx="42" ry="6" fill="#5a2418"/>
+          <text x="100" y="138" font-family="Noto Serif TC, serif" font-size="48" font-weight="900"
+                fill="#fde6b8" text-anchor="middle" opacity=".94">晨</text>
+          <line x1="100" y1="194" x2="100" y2="210" stroke="#5a2418" stroke-width="2"/>
+          <rect x="86" y="210" width="28" height="8" fill="#5a2418" rx="1"/>
+          <line x1="92" y1="218" x2="92" y2="246" stroke="#b34030" stroke-width="1.2"/>
+          <line x1="100" y1="218" x2="100" y2="252" stroke="#b34030" stroke-width="1.2"/>
+          <line x1="108" y1="218" x2="108" y2="246" stroke="#b34030" stroke-width="1.2"/>
+          <defs>
+            <radialGradient id="lanternGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#fde6b8" stop-opacity="0.85"/>
+              <stop offset="60%" stop-color="#f6c478" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#b34030" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+        </svg>
+        <div class="ls-halo"></div>
+        <div class="ls-caption">燈亮著，等你走了再說。</div>
+      </div>
+
+      <div class="stamp-zone fade-up" id="stampZone" tabindex="0" role="button"
+           aria-label="蓋章留下你的足跡">
+        <div class="sz-canvas" id="stampCanvas"></div>
+        <div class="sz-eye">// 因為我剛才請你坐一會 ・ 所以這張紙等你的印章</div>
+        <div class="sz-title">留一個章，證明你坐過。</div>
+        <div class="sz-sub">點這張紙的任何地方。它會記得你來過 — 下次你回來，章還在那裡。</div>
+        <div class="sz-counter" id="stampCounter">你還沒蓋過章</div>
+      </div>
+
+      <div class="invite-avatar fade-up">
+        <img src="/assets/img/guild/our_soulful_journal/avatar.webp" alt="Regina (晨) avatar" loading="lazy">
+      </div>
+
+      <div class="iv-sign fade-up">
+        — 還在走的人
+        <span class="name">星 ＆ 晨</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- =======================================================
+     FOOTER
+     ======================================================= -->
+<footer class="guild-foot">
+  <div class="links">
+    <a href="https://www.threads.com/@our.soulful.journal" target="_blank" rel="noopener noreferrer" aria-label="Threads">
+      <i class="fa-brands fa-threads"></i>
+    </a>
+    <a href="https://www.instagram.com/our.soulful.journal/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+      <i class="fa-brands fa-instagram"></i>
+    </a>
+  </div>
+  <div class="made"><i class="fa-solid fa-heart"></i> Made with love by SuperGalen's Dungeon</div>
+  <div>FIELD JOURNAL ・ OUR.SOULFUL.JOURNAL ・ 星晨日誌</div>
+  <a class="ret" href="/guild/"><i class="fa-solid fa-arrow-left"></i> Back to Archive</a>
+</footer>
+
+<!-- =======================================================
+     SCRIPTS
+     ======================================================= -->
+<script>
+/* ============================================================
+   1)  P5 STARFIELD
+   ============================================================ */
+let _stars = [];
+let _meteors = [];
+let _p5Visible = true;
+
+new p5((p) => {
+  p.setup = function(){
+    const c = p.createCanvas(p.windowWidth, p.windowHeight);
+    c.parent(document.body);
+    c.elt.style.position = "fixed";
+    c.elt.style.top = "0";
+    c.elt.style.left = "0";
+    c.elt.style.zIndex = "-2";
+    c.elt.style.pointerEvents = "none";
+    p.noStroke();
+    const COUNT = Math.min(220, Math.floor((window.innerWidth * window.innerHeight) / 8000));
+    for (let i = 0; i < COUNT; i++){
+      _stars.push({
+        x: Math.random() * p.width,
+        y: Math.random() * p.height * 1.2,
+        z: Math.random() * 0.9 + 0.1,
+        r: Math.random() * 1.6 + 0.2,
+        tw: Math.random() * Math.PI * 2,
+        tws: Math.random() * 0.04 + 0.005,
+        col: Math.random() < 0.18 ? [180, 210, 255] : [255, 245, 220],
+      });
+    }
+  };
+  p.draw = function(){
+    if (!_p5Visible){ p.clear(); return }
+    p.clear();
+    const sc = Math.min(1, window.scrollY / (window.innerHeight * 4.0));
+    const fade = 1 - sc;
+    for (let i = 0; i < _stars.length; i++){
+      const s = _stars[i];
+      s.tw += s.tws;
+      const a = (Math.sin(s.tw) * 0.4 + 0.6) * fade;
+      if (a <= 0) continue;
+      p.fill(s.col[0], s.col[1], s.col[2], a * 220);
+      p.circle(s.x, s.y, s.r * 2);
+      if (s.r > 1.2 && a > 0.55){
+        p.fill(s.col[0], s.col[1], s.col[2], a * 60);
+        p.circle(s.x, s.y, s.r * 6);
+      }
+    }
+    if (Math.random() < 0.005 * fade && _meteors.length < 3){
+      const fromLeft = Math.random() < 0.5;
+      _meteors.push({
+        x: fromLeft ? -40 : p.width + 40,
+        y: Math.random() * p.height * 0.5,
+        vx: (fromLeft ? 1 : -1) * (6 + Math.random() * 4),
+        vy: 2 + Math.random() * 2,
+        life: 1,
+      });
+    }
+    for (let i = _meteors.length - 1; i >= 0; i--){
+      const m = _meteors[i];
+      m.x += m.vx; m.y += m.vy; m.life -= 0.012;
+      if (m.life <= 0 || m.x < -100 || m.x > p.width + 100){
+        _meteors.splice(i, 1); continue;
+      }
+      const a = m.life * fade;
+      for (let k = 0; k < 8; k++){
+        const t = k / 8;
+        p.fill(255, 245, 220, a * (1 - t) * 220);
+        p.circle(m.x - m.vx * t * 4, m.y - m.vy * t * 4, (1 - t) * 2);
+      }
+    }
+  };
+  p.windowResized = function(){ p.resizeCanvas(p.windowWidth, p.windowHeight) };
+});
+
+/* ============================================================
+   2)  THREE.JS rising sun
+   ============================================================ */
+(async () => {
+  try {
+    const THREE = await import('three');
+    const canvas = document.getElementById('sunrise');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 10);
+
+    const sun = new THREE.Mesh(
+      new THREE.SphereGeometry(2.4, 64, 64),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color('#fde0a8'), transparent:true, opacity:0.95 })
+    );
+    sun.position.set(0, -8.5, -3);
+    scene.add(sun);
+
+    const haloTex = (() => {
+      const c = document.createElement('canvas');
+      c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(256, 256, 20, 256, 256, 256);
+      g.addColorStop(0, 'rgba(255,236,178,0.95)');
+      g.addColorStop(0.35, 'rgba(247,180,120,0.55)');
+      g.addColorStop(0.7, 'rgba(216,90,90,0.18)');
+      g.addColorStop(1, 'rgba(8,6,18,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,512,512);
+      return new THREE.CanvasTexture(c);
+    })();
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: haloTex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    }));
+    halo.scale.set(18, 18, 1);
+    halo.position.copy(sun.position);
+    scene.add(halo);
+
+    const ringPts = [];
+    for (let i = 0; i <= 64; i++){
+      const a = (i / 64) * Math.PI * 2;
+      ringPts.push(new THREE.Vector3(Math.cos(a) * 4.6, Math.sin(a) * 4.6, -2));
+    }
+    const ring = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(ringPts),
+      new THREE.LineBasicMaterial({ color: 0xaef0ec, transparent:true, opacity:0.4 })
+    );
+    ring.position.set(0, -8, -3);
+    scene.add(ring);
+
+    function resize(){
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+
+    let t = 0;
+    function loop(){
+      t += 0.005;
+      sun.position.x = Math.sin(t * 0.4) * 0.2;
+      halo.position.copy(sun.position);
+      ring.rotation.z = t * 0.4;
+      ring.position.copy(sun.position);
+      ring.position.z = -3;
+      sun.material.color.setHSL(0.08 + Math.sin(t) * 0.01, 0.7, 0.78);
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    }
+    loop();
+
+    window.__sun = sun;
+    window.__halo = halo;
+    window.__ring = ring;
+    window.__sunCanvas = canvas;
+  } catch (e) {
+    console.warn('three init failed', e);
+  }
+})();
+
+/* ============================================================
+   3)  GSAP scroll-driven sky + sun rise + reveals
+   ============================================================ */
+gsap.registerPlugin(ScrollTrigger);
+
+const sky = document.getElementById('paperBg');
+const warmth = document.getElementById('warmth');
+
+/* Sky stops mapped to the 3 movements */
+const stops = [
+  { p:0,    bg1:'#0e1424', bg2:'#1a2138', bg3:'#241c38', bg4:'#2c2236', bg5:'#3a2638', bg6:'#4c2a36', warm:0 },
+  { p:0.30, bg1:'#1a2138', bg2:'#241c38', bg3:'#322336', bg4:'#4c2a36', bg5:'#693432', bg6:'#82402e', warm:0.18 },
+  { p:0.55, bg1:'#241c38', bg2:'#3a2638', bg3:'#5a3f3a', bg4:'#82402e', bg5:'#a4502e', bg6:'#c0703c', warm:0.45 },
+  { p:0.78, bg1:'#3a2638', bg2:'#5a3f3a', bg3:'#82402e', bg4:'#b35a30', bg5:'#d8902f', bg6:'#e6b870', warm:0.7 },
+  { p:1,    bg1:'#5a3f3a', bg2:'#82402e', bg3:'#b35a30', bg4:'#d8902f', bg5:'#f2c478', bg6:'#fbf2dc', warm:0.95 },
+];
+
+function lerpColor(a, b, t){
+  const A = a.match(/[0-9a-f]{2}/gi).map(x=>parseInt(x,16));
+  const B = b.match(/[0-9a-f]{2}/gi).map(x=>parseInt(x,16));
+  return '#' + [
+    Math.round(A[0]+(B[0]-A[0])*t),
+    Math.round(A[1]+(B[1]-A[1])*t),
+    Math.round(A[2]+(B[2]-A[2])*t),
+  ].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function applySky(p){
+  let a = stops[0], b = stops[0];
+  for (let i = 0; i < stops.length-1; i++){
+    if (p >= stops[i].p && p <= stops[i+1].p){
+      a = stops[i]; b = stops[i+1]; break;
+    }
+  }
+  if (p >= 1){ a = b = stops[stops.length-1] }
+  const range = (b.p - a.p) || 1;
+  const t = Math.max(0, Math.min(1, (p - a.p) / range));
+  ['bg1','bg2','bg3','bg4','bg5','bg6'].forEach((k) => {
+    sky.style.setProperty('--' + k, lerpColor(a[k], b[k], t));
+  });
+  if (warmth){
+    warmth.style.opacity = String(a.warm + (b.warm - a.warm) * t);
+  }
+}
+
+ScrollTrigger.create({
+  trigger: 'main.journal',
+  start: 'top top',
+  end: 'bottom bottom',
+  onUpdate: (self) => {
+    applySky(self.progress);
+    if (window.__sun){
+      const rise = Math.max(0, (self.progress - 0.45) / 0.55);
+      window.__sun.position.y = -8.5 + rise * 7.5;
+      window.__halo.position.y = window.__sun.position.y;
+      window.__ring.position.y = window.__sun.position.y - 0.3;
+      const c = document.getElementById('sunrise');
+      if (c) c.style.opacity = String(0.05 + rise * 0.95);
+    }
+  },
+});
+
+applySky(0);
+
+/* fade-up reveals */
+gsap.utils.toArray('.fade-up').forEach((el) => {
+  gsap.fromTo(el, { opacity: 0, y: 36 }, {
+    opacity: 1, y: 0, duration: 1.0, ease: 'power3.out',
+    scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none reverse' },
+  });
+});
+
+/* paths svg run trigger */
+ScrollTrigger.create({
+  trigger: '#pathsStage',
+  start: 'top 75%',
+  onEnter: () => document.getElementById('pathsStage').classList.add('run'),
+});
+
+/* draw constellation in hero */
+gsap.utils.toArray('.draw-line').forEach((el) => {
+  gsap.fromTo(el, { strokeDashoffset: 200 }, {
+    strokeDashoffset: 0, duration: 2.4, ease: 'power2.inOut', delay: 1.2,
+  });
+});
+
+/* scroll rail */
+const dots = document.querySelectorAll('.scroll-rail .dot');
+const dotMap = Array.from(dots).map((d) => ({
+  el: d, target: document.getElementById(d.dataset.target),
+}));
+dots.forEach((d) => {
+  d.addEventListener('click', () => {
+    const t = document.getElementById(d.dataset.target);
+    if (t) t.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+});
+function onScroll(){
+  const sy = window.scrollY + window.innerHeight * 0.4;
+  let active = dotMap[0];
+  for (const m of dotMap){
+    if (m.target && m.target.offsetTop <= sy) active = m;
+  }
+  dots.forEach((d) => d.classList.remove('active'));
+  if (active && active.el) active.el.classList.add('active');
+}
+/* exposed so the single scroll dispatcher at the bottom can call this */
+window.__soulfulOnScroll = onScroll;
+onScroll();
+
+/* fade out p5 once we leave the night */
+ScrollTrigger.create({
+  trigger: '#m3', start: 'top center',
+  onEnter: () => { _p5Visible = false },
+  onLeaveBack: () => { _p5Visible = true },
+});
+
+/* ============================================================
+   6)  CONNECT-THE-STARS  ・  hero constellation
+   Click 星 then 晨 (or vice versa) to complete the line.
+   Persists via localStorage.
+   ============================================================ */
+(function constellation(){
+  const twin = document.getElementById('glyphTwin');
+  const hint = document.getElementById('glyphHint');
+  if (!twin || !hint) return;
+
+  const KEY = 'soulful_constellation';
+
+  // hint messages now also include a 'reconnect' state
+  const idleSpan = hint.querySelector('.ghint-idle');
+  const halfSpan = hint.querySelector('.ghint-half');
+  const doneSpan = hint.querySelector('.ghint-done');
+  if (doneSpan) doneSpan.textContent = '星晨 ・ 連起來了 ・ 再點一下可以拆開';
+
+  // restore
+  if (localStorage.getItem(KEY) === '1'){
+    twin.dataset.connected = 'true';
+    hint.dataset.state = 'done';
+  }
+
+  // picked = which glyph was the most recent "first pick" after a reset
+  let picked = null;
+  // short-debounce so the disconnect-click doesn't immediately re-pick
+  let justDisconnected = 0;
+
+  function disconnect(){
+    twin.dataset.connected = 'false';
+    hint.dataset.state = 'idle';
+    picked = null;
+    localStorage.setItem(KEY, '0');
+    justDisconnected = Date.now();
+  }
+
+  function completeConnect(){
+    twin.dataset.connected = 'true';
+    hint.dataset.state = 'done';
+    picked = null;
+    localStorage.setItem(KEY, '1');
+  }
+
+  twin.querySelectorAll('.han-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const g = btn.dataset.glyph;
+      btn.classList.remove('picked');
+      void btn.offsetWidth;
+      btn.classList.add('picked');
+
+      if (twin.dataset.connected === 'true'){
+        // clicking when already connected → disconnect (allow reconnecting)
+        disconnect();
+        return;
+      }
+      // within 280ms of a disconnect click, ignore — feels weird to re-pick immediately
+      if (Date.now() - justDisconnected < 280) return;
+
+      if (picked === null){
+        picked = g;
+        hint.dataset.state = 'half';
+      } else if (picked === g){
+        // same glyph clicked again — just re-ripple
+      } else {
+        // different glyph — complete
+        completeConnect();
+      }
+    });
+  });
+})();
+
+/* ============================================================
+   6b) WALKER RAIL  ・  two markers move with scroll
+   ============================================================ */
+(function walkers(){
+  const chen = document.getElementById('walkerChen');
+  const you = document.getElementById('walkerYou');
+  const rail = document.getElementById('walkerRail');
+  if (!chen || !you || !rail) return;
+
+  const trails = [];
+  const MAX_TRAILS = 6;
+  let lastSpawnY = -1;
+
+  function update(){
+    const max = document.body.scrollHeight - window.innerHeight;
+    const p = max > 0 ? window.scrollY / max : 0;
+    // chen slightly ahead — 4 points lead
+    const chenP = Math.min(1, p + 0.04);
+    const youP = p;
+    chen.style.top = (chenP * 100) + '%';
+    you.style.top = (youP * 100) + '%';
+
+    // spawn trail dots when scrolled past a threshold
+    if (Math.abs(window.scrollY - lastSpawnY) > 90){
+      lastSpawnY = window.scrollY;
+      spawnTrail('chen', chenP);
+      spawnTrail('you', youP);
+    }
+  }
+
+  function spawnTrail(who, p){
+    const t = document.createElement('span');
+    t.className = 'walker-trail ' + who;
+    t.style.top = (p * 100) + '%';
+    rail.appendChild(t);
+    trails.push(t);
+    // animate fade + shrink
+    requestAnimationFrame(() => {
+      t.style.transition = 'opacity 2.2s ease, transform 2.2s ease';
+      t.style.opacity = '0';
+      t.style.transform = 'translate(-50%, -50%) scale(.35)';
+    });
+    setTimeout(() => { t.remove(); const i = trails.indexOf(t); if (i>=0) trails.splice(i,1); }, 2400);
+    if (trails.length > MAX_TRAILS){
+      const old = trails.shift();
+      if (old && old.parentNode) old.remove();
+    }
+  }
+
+  window.__soulfulWalkersUpdate = update;
+  window.addEventListener('resize', update);
+  update();
+})();
+
+/* ============================================================
+   Unified scroll dispatcher — rAF-throttled.
+   Called instead of having each IIFE attach its own scroll listener.
+   ============================================================ */
+(function scrollDispatcher(){
+  let raf = 0;
+  function tick(){
+    raf = 0;
+    if (window.__soulfulOnScroll) window.__soulfulOnScroll();
+    if (window.__soulfulWalkersUpdate) window.__soulfulWalkersUpdate();
+  }
+  window.addEventListener('scroll', () => {
+    if (raf) return;
+    raf = requestAnimationFrame(tick);
+  }, { passive:true });
+})();
+
+/* ============================================================
+   6c) KEEP-A-LINE  ・  click .m-lead to bookmark
+   ============================================================ */
+(function keepLine(){
+  const leads = document.querySelectorAll('.m-prose-body .m-lead');
+  const tally = document.getElementById('keepTally');
+  if (!leads.length) return;
+
+  const KEY = 'soulful_kept_lines';
+  let kept = [];
+  try { kept = JSON.parse(localStorage.getItem(KEY) || '[]') } catch(_){}
+
+  function save(){
+    localStorage.setItem(KEY, JSON.stringify(kept));
+  }
+  function updateTally(){
+    if (!tally) return;
+    tally.textContent = kept.length > 0
+      ? '你留下了 ' + kept.length + ' 條線'
+      : '';
+  }
+
+  leads.forEach((el, idx) => {
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('aria-label', '點一下留下這一行');
+    if (kept.includes(idx)) el.classList.add('kept');
+
+    function toggle(){
+      const i = kept.indexOf(idx);
+      if (i >= 0){
+        kept.splice(i, 1);
+        el.classList.remove('kept');
+      } else {
+        kept.push(idx);
+        el.classList.add('kept');
+      }
+      save();
+      updateTally();
+    }
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        toggle();
+      }
+    });
+  });
+  updateTally();
+})();
+
+/* ============================================================
+   6d) CURSOR STARDUST  ・  only active in night region (top 2 viewports)
+   ============================================================ */
+(function stardust(){
+  const layer = document.getElementById('stardust');
+  if (!layer) return;
+
+  let active = true;
+  let lastSpawn = 0;
+  let lastX = -1, lastY = -1;
+
+  // pointer-fine only (respect reduced motion preference)
+  const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (mq.matches) return;
+
+  function isLightBg(){
+    // when we're past ~70% of page height we're in dawn territory
+    const total = document.body.scrollHeight - window.innerHeight;
+    const p = total > 0 ? window.scrollY / total : 0;
+    return p > 0.68;
+  }
+
+  document.addEventListener('mousemove', (e) => {
+    if (!active) return;
+    const now = performance.now();
+    if (now - lastSpawn < 45) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    if (lastX >= 0 && Math.hypot(dx, dy) < 12) return;
+    lastSpawn = now;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    const spark = document.createElement('span');
+    spark.className = isLightBg() ? 'spark warm' : 'spark';
+    const jx = (Math.random() - .5) * 16;
+    const jy = (Math.random() - .5) * 16;
+    spark.style.left = (e.clientX + jx) + 'px';
+    spark.style.top  = (e.clientY + jy) + 'px';
+    spark.style.opacity = '0.92';
+    spark.style.transform = 'translate(-50%, -50%) scale(' + (.55 + Math.random() * .75) + ')';
+    layer.appendChild(spark);
+
+    const dxr = (Math.random() - .5) * 40;
+    const dyr = -20 - Math.random() * 30;
+    spark.animate([
+      { transform: spark.style.transform, opacity: .92 },
+      { transform: `translate(calc(-50% + ${dxr}px), calc(-50% + ${dyr}px)) scale(.08)`, opacity: 0 },
+    ], { duration: 900 + Math.random() * 500, easing: 'cubic-bezier(.2,.6,.3,1)' });
+    setTimeout(() => spark.remove(), 1500);
+  }, { passive:true });
+
+  document.addEventListener('visibilitychange', () => {
+    active = !document.hidden;
+  });
+})();
+
+/* ============================================================
+   7)  ONE-LINE JOURNAL
+   ============================================================ */
+(function journalEntry(){
+  const input = document.getElementById('jeInput');
+  const saveBtn = document.getElementById('jeSave');
+  const existing = document.getElementById('jeExisting');
+  const dateEl = document.getElementById('jeDate');
+  const countEl = document.getElementById('jeCount');
+  const clearBtn = document.getElementById('jeClear');
+  if (!input || !saveBtn || !existing) return;
+
+  const ENTRY_KEY = 'soulful_journal_line';
+
+  function fmtDate(ts){
+    const d = new Date(ts);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()} · ${pad(d.getMonth()+1)} · ${pad(d.getDate())}`;
+  }
+
+  function render(){
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(ENTRY_KEY) || 'null') } catch(_){}
+    if (saved && saved.text){
+      existing.textContent = saved.text;
+      dateEl.textContent = fmtDate(saved.ts);
+      clearBtn.hidden = false;
+      input.placeholder = '再寫一句？（會覆蓋上面那句）';
+      countEl.textContent = '你上次在這裡寫了字 ・ 只有你自己看得到';
+    } else {
+      existing.textContent = '';
+      dateEl.textContent = fmtDate(Date.now());
+      clearBtn.hidden = true;
+      input.placeholder = '寫一句給今天的你。';
+      countEl.textContent = '只有你自己看得到 ・ 下次你回來還會在';
+    }
+  }
+  render();
+
+  input.addEventListener('input', () => {
+    saveBtn.disabled = input.value.trim().length === 0;
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      if (!saveBtn.disabled) saveBtn.click();
+    }
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const text = input.value.trim();
+    if (!text) return;
+    localStorage.setItem(ENTRY_KEY, JSON.stringify({ text, ts: Date.now() }));
+    input.value = '';
+    saveBtn.disabled = true;
+    render();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    localStorage.removeItem(ENTRY_KEY);
+    input.value = '';
+    saveBtn.disabled = true;
+    render();
+  });
+})();
+
+/* ============================================================
+   8)  LIGHT THE LANTERN
+   ============================================================ */
+(function lightTheLantern(){
+  const stage = document.getElementById('lanternStage');
+  const prompt = document.getElementById('lsPrompt');
+  if (!stage) return;
+
+  const KEY = 'soulful_lantern_lit';
+  if (localStorage.getItem(KEY) === '1'){
+    stage.classList.add('lit');
+    if (prompt) prompt.textContent = '燈是亮的';
+  }
+
+  function toggle(){
+    const lit = stage.classList.toggle('lit');
+    localStorage.setItem(KEY, lit ? '1' : '0');
+    if (prompt) prompt.textContent = lit ? '燈是亮的' : '點一下 ・ 把燈點亮';
+  }
+  stage.addEventListener('click', toggle);
+  stage.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      toggle();
+    }
+  });
+})();
+
+/* ============================================================
+   9)  STAMP INTERACTION
+   ============================================================ */
+(function stampZone(){
+  const zone = document.getElementById('stampZone');
+  const cv = document.getElementById('stampCanvas');
+  const counterEl = document.getElementById('stampCounter');
+  if (!zone || !cv) return;
+
+  const KEY = 'soulful_stamps';
+  let stamps = [];
+  try { stamps = JSON.parse(localStorage.getItem(KEY) || '[]') } catch(_){}
+  const SEAL_TEXT = ['坐', '一', '會'];
+
+  function render(){
+    cv.innerHTML = '';
+    stamps.forEach((s) => {
+      const el = document.createElement('div');
+      el.className = 'stamp-mark show';
+      el.style.left = s.x + '%';
+      el.style.top = s.y + '%';
+      el.style.transform = `translate(-50%,-50%) scale(1) rotate(${s.r}deg)`;
+      el.innerHTML = SEAL_TEXT.map((c) => `<div>${c}</div>`).join('');
+      cv.appendChild(el);
+    });
+  }
+  function updateCounter(){
+    if (!counterEl) return;
+    const n = stamps.length;
+    counterEl.textContent = n === 0
+      ? '你還沒蓋過章'
+      : '你在這裡留下了 ' + n + ' 個章';
+  }
+  render(); updateCounter();
+
+  function place(e){
+    const rect = zone.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const r = -16 + Math.random() * 32;
+    stamps.push({ x, y, r });
+    if (stamps.length > 14) stamps.shift();
+    localStorage.setItem(KEY, JSON.stringify(stamps));
+    const el = document.createElement('div');
+    el.className = 'stamp-mark';
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    el.innerHTML = SEAL_TEXT.map((c) => `<div>${c}</div>`).join('');
+    cv.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+    updateCounter();
+  }
+  zone.addEventListener('click', place);
+  zone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      const rect = zone.getBoundingClientRect();
+      place({ clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 });
+    }
+  });
+})();
+</script>
+</body>
+</html>
