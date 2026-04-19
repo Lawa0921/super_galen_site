@@ -1,0 +1,2545 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Zhen Huang｜真。從病房走進深海，再走進你家客廳。腹白線修復師、自由潛水員、走過八個城市的志工。高雄／可到府。">
+<title>真 Zhen Huang ｜ 腹白線・Linea Alba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Noto+Serif+TC:wght@300;400;600&family=Yuji+Mai&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  /* === Linea Alba Palette — 解剖圖譜 × 海底寂靜 === */
+  --ink:#070912;
+  --ink-2:#0c1020;
+  --vellum:#f4ead7;          /* 羊皮紙 / 紗布 */
+  --vellum-dim:#cdc1a4;
+  --vellum-faint:#7c7560;
+  --gold:#e0a64a;            /* 縫線金 */
+  --gold-bright:#f3c873;
+  --gold-deep:#9a6b22;
+  --gold-glow:rgba(224,166,74,.22);
+  --abyss:#0e3b52;           /* 深海青 */
+  --abyss-bright:#1a6585;
+  --abyss-faint:#6cb2cf;
+  --separation:#b14543;       /* 分離紅 */
+  --separation-bright:#d96866;
+
+  --font-display:'Cormorant Garamond',serif;
+  --font-brush:'Yuji Mai',serif;
+  --font-body:'Noto Serif TC',serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;background:var(--ink)}
+body{
+  background:
+    radial-gradient(ellipse at 20% 0%, #0f1832 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, #0d2536 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, var(--ink-2) 0%, var(--ink) 80%);
+  background-attachment:fixed;
+  color:var(--vellum-dim);
+  font-family:var(--font-body);
+  font-weight:300;
+  line-height:1.7;
+  overflow-x:hidden;
+  cursor:none;
+  min-height:100vh;
+  letter-spacing:.02em;
+}
+@media (hover:none){ body{cursor:default} .needle-cursor{display:none!important} }
+a,button,.btn,.svc-card,.travel-pin,.belief-card{cursor:none}
+@media (hover:none){ a,button,.btn,.svc-card,.travel-pin,.belief-card{cursor:pointer} }
+::selection{background:var(--gold);color:var(--ink)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--ink-2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--gold-deep),var(--abyss-bright));border-radius:3px}
+
+img{display:block;max-width:100%}
+
+/* === NEEDLE CURSOR — 縫針游標 === */
+.needle-cursor{position:fixed;top:0;left:0;width:50px;height:50px;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:opacity .3s}
+.needle-cursor .nc-eye{position:absolute;top:50%;left:50%;width:9px;height:9px;border:1.5px solid var(--gold-bright);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px var(--gold),0 0 16px rgba(224,166,74,.5)}
+.needle-cursor .nc-needle{position:absolute;top:50%;left:50%;width:24px;height:1px;background:linear-gradient(90deg,var(--gold-bright),var(--gold),transparent);transform-origin:left center;transform:translate(0,-50%) rotate(0deg);box-shadow:0 0 6px var(--gold)}
+.needle-cursor .nc-aura{position:absolute;inset:-6px;border:1px dashed rgba(224,166,74,.35);border-radius:50%;animation:ncSpin 14s linear infinite}
+@keyframes ncSpin{to{transform:rotate(360deg)}}
+.needle-cursor.hover .nc-eye{transform:translate(-50%,-50%) scale(1.4);border-color:var(--vellum)}
+.needle-cursor.hover .nc-needle{background:linear-gradient(90deg,var(--vellum),var(--gold-bright),transparent)}
+
+/* === FIXED BACKGROUND LAYERS === */
+#p5-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+#three-canvas{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.22}
+
+/* === GAUZE WEAVE — her actual postpartum binding cloth === */
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.09;mix-blend-mode:overlay;
+  background:
+    /* Horizontal thread bands */
+    repeating-linear-gradient(0deg,
+      rgba(244,234,215,.6) 0px,
+      rgba(244,234,215,.6) 1px,
+      transparent 1px,
+      transparent 4px),
+    /* Vertical thread bands */
+    repeating-linear-gradient(90deg,
+      rgba(244,234,215,.5) 0px,
+      rgba(244,234,215,.5) 1px,
+      transparent 1px,
+      transparent 4px),
+    /* Subtle cross-weave offset — every 8px a stronger thread */
+    repeating-linear-gradient(45deg,
+      rgba(224,166,74,.08) 0px,
+      rgba(224,166,74,.08) 1px,
+      transparent 1px,
+      transparent 12px);
+  background-size:4px 4px, 4px 4px, 24px 24px;
+}
+
+.vignette{position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 30%, rgba(7,9,18,.55) 80%, var(--ink) 100%)}
+
+/* Depth dimmer — cools the page as you scroll deeper */
+.depth-dim{position:fixed;inset:0;z-index:4;pointer-events:none;
+  background:linear-gradient(180deg, transparent 0%, rgba(8,18,38,calc(var(--depth-dim, 0) * 0.6)) 100%);
+  transition:background .5s ease;
+}
+
+.atlas-grid{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.06;
+  background-image:
+    linear-gradient(to right, var(--vellum) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--vellum) 1px, transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* === VELLUM PAPER TEXTURE — like aged anatomy plate paper === */
+.vellum-tex{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.08;mix-blend-mode:overlay;
+  background-image:
+    radial-gradient(ellipse at 15% 25%, rgba(244,234,215,.5) 0%, transparent 35%),
+    radial-gradient(ellipse at 85% 75%, rgba(244,234,215,.4) 0%, transparent 35%),
+    radial-gradient(ellipse at 50% 50%, rgba(154,107,34,.15) 0%, transparent 60%);
+}
+
+/* === CORNER ORNAMENTS — vintage anatomy plate margins === */
+.corner-ornament{position:fixed;width:90px;height:90px;z-index:3;pointer-events:none;opacity:.45}
+.corner-ornament svg{width:100%;height:100%;color:var(--gold)}
+.corner-ornament.tl{top:14px;left:14px}
+.corner-ornament.tr{top:14px;right:14px;transform:scaleX(-1)}
+.corner-ornament.bl{bottom:14px;left:14px;transform:scaleY(-1)}
+.corner-ornament.br{bottom:14px;right:14px;transform:scale(-1,-1)}
+@media (max-width:760px){.corner-ornament{width:54px;height:54px;opacity:.35}}
+
+/* === DEPTH GAUGE — 自由潛水深度指示器 === */
+.depth-gauge{
+  position:fixed;right:30px;top:50%;transform:translateY(-50%);
+  z-index:60;
+  width:48px;height:340px;
+  pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  opacity:0;
+  transition:opacity 1s ease;
+}
+.depth-gauge.visible{opacity:1}
+.depth-gauge .dg-rail{
+  position:absolute;top:18px;bottom:18px;left:50%;
+  width:1px;
+  background:linear-gradient(to bottom,
+    rgba(108,178,207,.05) 0%,
+    rgba(108,178,207,.45) 18%,
+    rgba(108,178,207,.45) 82%,
+    rgba(108,178,207,.05) 100%);
+  transform:translateX(-50%);
+}
+.depth-gauge .dg-tick{
+  position:absolute;left:50%;
+  display:flex;align-items:center;
+  font-family:var(--font-mono);font-size:.55rem;letter-spacing:.12em;
+  color:rgba(108,178,207,.55);
+  transform:translate(-50%,-50%);
+  white-space:nowrap;
+  pointer-events:none;
+}
+.depth-gauge .dg-tick::before{
+  content:'';display:inline-block;width:8px;height:1px;background:rgba(108,178,207,.55);margin-right:6px;
+}
+.depth-gauge .dg-bubble{
+  position:absolute;left:50%;
+  width:14px;height:14px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, rgba(244,234,215,.9) 0%, rgba(108,178,207,.7) 40%, rgba(14,59,82,.4) 100%);
+  box-shadow:
+    0 0 12px rgba(108,178,207,.6),
+    0 0 24px rgba(108,178,207,.3),
+    inset 0 0 4px rgba(244,234,215,.5);
+  transform:translate(-50%,-50%);
+  transition:top .15s ease-out;
+  z-index:2;
+}
+.depth-gauge .dg-bubble::before{
+  content:'';position:absolute;top:50%;left:100%;
+  width:120px;height:1px;
+  background:linear-gradient(90deg, rgba(108,178,207,.5), transparent);
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.depth-gauge .dg-readout{
+  position:absolute;left:calc(100% + 14px);top:50%;
+  transform:translateY(-50%);
+  font-family:var(--font-display);font-style:italic;
+  color:var(--abyss-faint);
+  font-size:1.05rem;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.depth-gauge .dg-readout small{display:block;font-family:var(--font-mono);font-style:normal;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--vellum-faint);margin-top:2px;text-align:right}
+.depth-gauge .dg-label-top,
+.depth-gauge .dg-label-bot{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-family:var(--font-mono);font-size:.5rem;letter-spacing:.2em;text-transform:uppercase;color:var(--vellum-faint);
+  white-space:nowrap;
+}
+.depth-gauge .dg-label-top{top:-2px}
+.depth-gauge .dg-label-bot{bottom:-2px}
+@media (max-width:880px){.depth-gauge{display:none}}
+
+/* === PAGE BREATH RHYTHM — subtle whole-page expand/contract === */
+@keyframes pageBreath{
+  0%,100%{filter:brightness(1) saturate(1)}
+  50%{filter:brightness(1.04) saturate(1.05)}
+}
+.page{animation:pageBreath 5s ease-in-out infinite}
+
+/* === WATER RIPPLE on click === */
+.water-ripple{
+  position:fixed;
+  width:20px;height:20px;
+  border:1px solid rgba(108,178,207,.6);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:55;
+  transform:translate(-50%,-50%);
+  animation:waterRipple 1.6s cubic-bezier(.2,.8,.3,1) forwards;
+  mix-blend-mode:screen;
+}
+.water-ripple::before,
+.water-ripple::after{
+  content:'';position:absolute;inset:0;
+  border:1px solid rgba(244,180,110,.4);
+  border-radius:50%;
+  animation:waterRipple 1.6s cubic-bezier(.2,.8,.3,1) forwards;
+}
+.water-ripple::before{animation-delay:.15s;border-color:rgba(108,178,207,.4)}
+.water-ripple::after{animation-delay:.3s;border-color:rgba(108,178,207,.25)}
+@keyframes waterRipple{
+  0%{width:14px;height:14px;opacity:1;border-width:1.5px}
+  100%{width:180px;height:180px;opacity:0;border-width:.4px}
+}
+
+/* === GLOBAL THREAD — 細細的金線，不干擾閱讀 === */
+.global-thread{position:fixed;left:50%;top:0;width:1px;height:100vh;z-index:1;pointer-events:auto;transform:translateX(-50%);
+  background:linear-gradient(to bottom,
+    transparent 0%,
+    rgba(224,166,74,.08) 15%,
+    rgba(224,166,74,.22) 45%,
+    rgba(224,166,74,.22) 55%,
+    rgba(224,166,74,.08) 85%,
+    transparent 100%);
+  opacity:.5;
+  mask-image:linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  cursor:crosshair;
+}
+/* Hide the thread entirely on mobile — it becomes noise */
+@media (max-width:880px){.global-thread{display:none}}
+
+/* Side rules removed — they were noise */
+.side-rule{display:none}
+
+/* === LAYOUT === */
+.page{position:relative;z-index:10;max-width:100%;overflow:hidden}
+section{position:relative;padding:140px 32px;max-width:1200px;margin:0 auto}
+@media (max-width:768px){section{padding:90px 22px}}
+
+/* === SPREAD — every section split by the linea alba seam === */
+.spread{
+  position:relative;
+  display:grid;
+  grid-template-columns:1fr 80px 1fr;
+  align-items:start;
+  gap:0;
+  max-width:1180px;
+  margin:0 auto;
+}
+.spread > .seam-l{padding-right:50px;text-align:right}
+.spread > .seam-mid{position:relative;display:flex;align-items:center;justify-content:center;min-height:80px}
+.spread > .seam-r{padding-left:50px;text-align:left}
+
+/* The seam knot — anchors content to the gold line */
+.seam-knot{
+  position:relative;
+  width:18px;height:18px;
+  border:2px solid var(--gold-bright);
+  border-radius:50%;
+  background:radial-gradient(circle, var(--gold-bright) 0%, var(--gold) 50%, var(--ink) 100%);
+  box-shadow:0 0 20px var(--gold), 0 0 40px var(--gold-glow), inset 0 0 4px var(--vellum);
+  animation:knotBreathe 4s ease-in-out infinite;
+}
+.seam-knot::before,
+.seam-knot::after{
+  content:'';position:absolute;left:50%;top:50%;
+  width:1px;height:14px;background:var(--gold-bright);
+  transform-origin:center;
+  box-shadow:0 0 4px var(--gold);
+}
+.seam-knot::before{transform:translate(-50%,-50%) rotate(45deg)}
+.seam-knot::after{transform:translate(-50%,-50%) rotate(-45deg)}
+@keyframes knotBreathe{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.15);opacity:1}}
+
+/* The seam mid can also hold a roman numeral or icon */
+.seam-glyph{
+  font-family:var(--font-display);
+  font-style:italic;
+  color:var(--gold-bright);
+  font-size:1.6rem;
+  text-shadow:0 0 18px var(--gold-glow), 0 0 36px rgba(224,166,74,.3);
+  background:radial-gradient(circle at center, var(--ink) 30%, transparent 70%);
+  padding:8px 14px;
+  z-index:2;
+}
+
+/* Latin voice (left) — distant, professional */
+.voice-latin{font-family:var(--font-display);font-style:italic;color:var(--vellum-dim)}
+.voice-latin .vl-eyebrow{display:block;font-family:var(--font-mono);font-style:normal;font-size:.6rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.voice-latin .vl-name{display:block;font-size:1.6rem;color:var(--gold-bright);line-height:1.1;margin-bottom:4px}
+.voice-latin .vl-meta{display:block;font-family:var(--font-mono);font-style:normal;font-size:.62rem;letter-spacing:.18em;color:var(--vellum-faint);text-transform:uppercase;margin-top:8px}
+
+/* Chinese voice (right) — warm, personal */
+.voice-zh{font-family:var(--font-body);color:var(--vellum)}
+.voice-zh .vz-eyebrow{display:block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.voice-zh .vz-name{display:block;font-size:1.5rem;color:var(--vellum);line-height:1.2;margin-bottom:8px;font-family:var(--font-display);font-weight:500}
+.voice-zh .vz-text{font-size:.96rem;color:var(--vellum-dim);line-height:1.7;max-width:480px}
+.voice-zh .vz-text em{color:var(--gold-bright);font-style:italic}
+
+/* Spread mobile collapse — becomes stacked with horizontal seam */
+@media (max-width:880px){
+  .spread{
+    grid-template-columns:1fr;
+    gap:0;
+  }
+  .spread > .seam-l{padding-right:0;text-align:left;padding-bottom:14px}
+  .spread > .seam-r{padding-left:0;padding-top:14px}
+  .spread > .seam-mid{
+    min-height:auto;
+    padding:18px 0;
+    background:radial-gradient(ellipse at center, var(--gold-glow) 0%, transparent 60%);
+  }
+  .spread > .seam-mid::before{
+    content:'';position:absolute;left:0;right:0;top:50%;
+    height:1px;
+    background:linear-gradient(90deg,transparent,var(--gold) 30%,var(--gold) 70%,transparent);
+    transform:translateY(-50%);
+  }
+  .seam-knot{position:relative;z-index:2;background:var(--ink);border-color:var(--gold-bright);box-shadow:0 0 0 6px var(--ink), 0 0 20px var(--gold)}
+}
+
+h1,h2,h3,h4{font-family:var(--font-display);color:var(--vellum);font-weight:400;letter-spacing:.01em}
+h2{font-size:clamp(2.2rem,5vw,3.6rem);line-height:1.1}
+h3{font-size:clamp(1.4rem,2.8vw,1.9rem);font-weight:500}
+.brush{font-family:var(--font-brush);color:var(--gold-bright)}
+.mono{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:var(--vellum-faint)}
+
+.eyebrow{display:inline-flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);margin-bottom:24px}
+.eyebrow::before,.eyebrow::after{content:'';width:36px;height:1px;background:var(--gold);opacity:.6}
+
+/* === NAVIGATION (back to archive) === */
+.top-nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:22px 36px;color:var(--vellum);background:linear-gradient(180deg, rgba(7,9,18,.78) 0%, rgba(7,9,18,.45) 60%, transparent 100%);backdrop-filter:blur(6px)}
+.top-nav a{color:var(--vellum);text-decoration:none;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;transition:color .3s;display:inline-flex;align-items:center;gap:10px}
+.top-nav a:hover{color:var(--gold-bright)}
+.top-nav .nav-brand{font-family:var(--font-display);font-style:italic;font-size:.95rem;letter-spacing:.04em;color:var(--vellum-dim)}
+@media (max-width:640px){.top-nav{padding:16px 20px}.top-nav .nav-brand{display:none}.top-nav a{font-size:.62rem;letter-spacing:.22em}}
+
+/* === HERO === */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-top:140px;padding-bottom:80px;position:relative}
+.hero-frame{position:relative;max-width:1180px;width:100%}
+
+/* === HERO SPREAD — split by the seam === */
+.hero-spread{margin-bottom:60px;align-items:center}
+.hero-half{padding:30px 0}
+.hero-half.left{padding-right:60px;text-align:right}
+.hero-half.right{padding-left:60px;text-align:left}
+.hero-half .hero-en{font-family:var(--font-display);font-style:italic;font-weight:300;font-size:.9rem;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);line-height:1.5;margin-bottom:18px}
+.hero-half .hero-zh-eyebrow{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:18px}
+.hero-half .hero-name-l,
+.hero-half .hero-name-r{font-family:var(--font-display);font-size:clamp(4rem,10vw,7.5rem);font-weight:300;line-height:.9;color:var(--vellum);margin:0 0 14px}
+.hero-half .hero-name-l{font-style:italic;color:var(--gold-bright);text-shadow:0 0 50px rgba(224,166,74,.3)}
+.hero-half .hero-name-r{font-family:var(--font-brush);font-style:normal;color:var(--vellum);font-size:clamp(4.5rem,11vw,8rem)}
+.hero-half .hn-orn{display:inline-block;color:var(--gold);font-style:normal}
+.hero-half .hero-line-text{font-family:var(--font-display);font-style:italic;font-size:1.05rem;color:var(--vellum-dim);line-height:1.55;margin-bottom:24px}
+.hero-half .hero-line-text em{color:var(--gold-bright);font-style:italic}
+.hero-half .hero-line-text-zh{font-family:var(--font-display);font-style:italic;font-size:1.2rem;color:var(--vellum);line-height:1.5;margin-bottom:24px}
+.hero-half .hero-line-text-zh em{color:var(--gold-bright);font-style:italic}
+.hero-half .hero-meta-list{list-style:none;padding:0;margin:0;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--vellum-faint);line-height:2}
+.hero-half .hero-meta-list i{color:var(--gold);margin-right:8px;font-size:.85rem}
+
+/* The seam middle of hero — holds 真 character + knot */
+.hero-seam{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;position:relative;padding:30px 0;min-height:340px}
+.hero-zh-spine{
+  font-family:var(--font-brush);
+  font-size:clamp(5rem,9vw,7.5rem);
+  color:var(--gold-bright);
+  line-height:1;
+  text-shadow:
+    0 0 50px rgba(224,166,74,.5),
+    0 0 100px rgba(224,166,74,.25),
+    0 0 150px rgba(224,166,74,.1);
+  background:radial-gradient(circle at center, var(--ink) 30%, transparent 80%);
+  padding:20px 30px;
+  position:relative;
+  z-index:3;
+}
+.hero-knot{
+  position:relative;
+  width:24px;height:24px;
+  z-index:3;
+}
+
+/* Hero mobile collapse */
+@media (max-width:880px){
+  .hero-spread{grid-template-columns:1fr;gap:0;margin-bottom:40px}
+  .hero-half{padding:20px 0;text-align:center}
+  .hero-half.left,
+  .hero-half.right{padding-left:20px;padding-right:20px;text-align:center}
+  .hero-half .hero-name-l,
+  .hero-half .hero-name-r{text-align:center}
+  .hero-seam{min-height:auto;padding:14px 0}
+  .hero-zh-spine{padding:14px 24px}
+}
+
+.hero-spec{position:absolute;top:-50px;left:0;right:0;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.65rem;letter-spacing:.22em;color:var(--vellum-faint);opacity:.7}
+.hero-spec span{display:inline-block}
+
+.hero-title{position:relative;display:flex;flex-direction:column;align-items:center;gap:30px;padding:30px 20px}
+
+/* === FIELD JOURNAL TRIPTYCH — three real HD portraits from her travels === */
+.triptych{position:relative;display:flex;justify-content:center;align-items:center;gap:18px;margin-bottom:30px;flex-wrap:nowrap}
+.triptych .tp{
+  position:relative;
+  width:200px;
+  background:linear-gradient(180deg, #f4ead7 0%, #e8dcc1 100%);
+  padding:10px 10px 36px;
+  box-shadow:
+    0 0 0 1px var(--ink),
+    0 14px 36px rgba(0,0,0,.55),
+    0 0 60px rgba(224,166,74,.12);
+  transition:transform .7s cubic-bezier(.2,.9,.2,1), box-shadow .5s;
+  cursor:pointer;
+}
+.triptych .tp:nth-child(1){transform:rotate(-3deg) translateY(8px);width:190px}
+.triptych .tp:nth-child(2){transform:rotate(.5deg) translateY(-12px) scale(1.08);z-index:3;width:230px;box-shadow:0 0 0 1px var(--ink), 0 22px 50px rgba(0,0,0,.65), 0 0 70px rgba(224,166,74,.22)}
+.triptych .tp:nth-child(3){transform:rotate(2.6deg) translateY(6px);width:190px}
+.triptych .tp:hover{transform:rotate(0deg) translateY(-12px) scale(1.12);z-index:5;box-shadow:0 0 0 1px var(--ink), 0 28px 60px rgba(0,0,0,.7), 0 0 80px rgba(224,166,74,.32)}
+.triptych .tp .tp-photo{position:relative;aspect-ratio:1/1;overflow:hidden;background:#0a0e1c}
+.triptych .tp .tp-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.triptych .tp .tp-photo::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.04) 0px, rgba(0,0,0,.04) 1px, transparent 1px, transparent 4px);
+  mix-blend-mode:multiply;opacity:.4;
+}
+.triptych .tp .tp-cap{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-family:var(--font-display);font-style:italic;color:#3a2e16;font-size:.78rem;letter-spacing:.04em;line-height:1.15;padding:0 6px}
+.triptych .tp .tp-cap strong{display:block;font-style:normal;font-weight:500;color:var(--gold-deep);font-family:var(--font-body);font-size:.5rem;letter-spacing:.22em;text-transform:uppercase;margin-bottom:2px}
+
+/* Triptych label/header */
+@media (max-width:880px){
+  .triptych{gap:8px}
+  .triptych .tp{width:150px}
+  .triptych .tp:nth-child(1){width:140px}
+  .triptych .tp:nth-child(2){width:170px}
+  .triptych .tp:nth-child(3){width:140px}
+  .triptych .tp .tp-cap{font-size:.65rem}
+}
+@media (max-width:560px){
+  .triptych{gap:4px}
+  .triptych .tp{width:100px;padding:6px 6px 26px}
+  .triptych .tp:nth-child(1){width:90px}
+  .triptych .tp:nth-child(2){width:115px}
+  .triptych .tp:nth-child(3){width:90px}
+  .triptych .tp .tp-cap{font-size:.55rem}
+  .triptych .tp .tp-cap strong{font-size:.42rem}
+}
+
+.hero-scroll{position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;font-family:var(--font-mono);font-size:.64rem;letter-spacing:.32em;text-transform:uppercase;color:var(--vellum-faint);opacity:.75}
+.hero-scroll::after{content:'';width:1px;height:40px;background:linear-gradient(to bottom,var(--gold),transparent);animation:scrollPulse 2.4s ease-in-out infinite}
+@keyframes scrollPulse{0%,100%{transform:scaleY(.4);opacity:.4}50%{transform:scaleY(1);opacity:1}}
+
+/* === HUGE DISPLAY HEADING — for "腹白線" moments === */
+.huge-display{position:relative;text-align:center;margin:80px 0 40px;font-family:var(--font-brush);font-size:clamp(6rem,18vw,14rem);line-height:.85;color:var(--gold);letter-spacing:.05em;text-shadow:
+  0 0 50px rgba(224,166,74,.35),
+  0 0 100px rgba(224,166,74,.15);
+  position:relative}
+.huge-display .hd-en{display:block;font-family:var(--font-display);font-style:italic;font-size:.18em;color:var(--vellum-faint);letter-spacing:.4em;text-transform:uppercase;margin-top:.4em;text-shadow:none}
+.huge-display::before,
+.huge-display::after{content:'';position:absolute;left:50%;width:160px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);transform:translateX(-50%)}
+.huge-display::before{top:-30px}
+.huge-display::after{bottom:-10px}
+
+/* === BAROQUE ORNAMENT DIVIDER === */
+.ornament-divider{display:flex;align-items:center;justify-content:center;margin:60px auto;max-width:600px;gap:18px}
+.ornament-divider .od-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold-deep),var(--gold),var(--gold-deep),transparent)}
+.ornament-divider .od-center{position:relative;display:flex;align-items:center;justify-content:center}
+.ornament-divider .od-center svg{width:54px;height:34px;color:var(--gold)}
+
+/* === ABSTRACT DRIFT — two parallel lines, separation & reunion === */
+.drift-section{position:relative;padding-top:60px;padding-bottom:40px}
+.drift-intro{max-width:680px;margin:0 auto 50px;text-align:center}
+.drift-intro h3{font-size:clamp(1.6rem,3.2vw,2.2rem);color:var(--vellum);margin-bottom:14px}
+.drift-intro .p-en{display:block;font-family:var(--font-display);font-style:italic;color:var(--gold);font-size:.85rem;letter-spacing:.22em;text-transform:uppercase;margin-bottom:18px}
+.drift-intro p{font-size:1rem;color:var(--vellum-dim);font-family:var(--font-display);font-style:italic}
+.drift-intro p em{color:var(--gold-bright);font-style:italic}
+
+.drift-stage{position:relative;max-width:880px;margin:0 auto;border:1px solid rgba(224,166,74,.22);background:linear-gradient(180deg, rgba(244,234,215,.04), rgba(244,234,215,.01));padding:50px 40px 36px}
+.drift-stage::before{content:'';position:absolute;top:6px;left:6px;right:6px;bottom:6px;border:1px solid rgba(224,166,74,.1);pointer-events:none}
+.drift-stage .ds-label{position:absolute;top:-10px;left:30px;background:var(--ink);padding:0 12px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold)}
+
+.drift-canvas{position:relative;width:100%;height:240px;margin-bottom:30px;display:flex;align-items:center;justify-content:center}
+.drift-canvas svg{width:100%;height:100%;overflow:visible}
+.drift-canvas .drift-phase-label{position:absolute;top:18px;left:50%;transform:translateX(-50%);text-align:center;font-family:var(--font-display);font-style:italic;color:var(--vellum-faint);font-size:.85rem;letter-spacing:.04em;pointer-events:none}
+.drift-canvas .dp-num{display:block;font-family:var(--font-display);font-size:3rem;font-style:italic;color:var(--gold-bright);line-height:1;text-shadow:0 0 24px rgba(224,166,74,.4);transition:color .4s, text-shadow .4s}
+.drift-canvas .dp-num.warn{color:var(--separation-bright);text-shadow:0 0 24px rgba(217,104,102,.4)}
+.drift-canvas .dp-num.severe{color:var(--separation);text-shadow:0 0 30px rgba(217,104,102,.5)}
+
+/* Slider control */
+.drift-control{position:relative;max-width:560px;margin:0 auto 30px}
+.drift-control .dc-track{position:relative;height:6px;background:rgba(224,166,74,.12);border:1px solid rgba(224,166,74,.25);border-radius:3px}
+.drift-control .dc-fill{position:absolute;top:0;left:0;height:100%;width:0;background:linear-gradient(90deg, var(--gold) 0%, var(--gold-bright) 50%, var(--separation-bright) 100%);border-radius:3px;transition:width .3s cubic-bezier(.2,.9,.2,1), background .3s}
+.drift-control .dc-handle{position:absolute;top:50%;left:0;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle, var(--gold-bright) 0%, var(--gold) 60%);border:2px solid var(--gold-bright);transform:translate(-50%,-50%);cursor:grab;box-shadow:0 0 18px var(--gold), 0 4px 14px rgba(0,0,0,.5);transition:left .3s cubic-bezier(.2,.9,.2,1), box-shadow .2s, transform .2s;touch-action:none;z-index:3}
+.drift-control .dc-handle:hover{box-shadow:0 0 28px var(--gold-bright), 0 4px 18px rgba(0,0,0,.6)}
+.drift-control .dc-handle.grabbing{cursor:grabbing;transform:translate(-50%,-50%) scale(1.15);transition:none}
+.drift-control .dc-handle::before{content:'';position:absolute;inset:-6px;border:1px dashed rgba(224,166,74,.4);border-radius:50%;animation:handlePulse 3s ease-in-out infinite}
+@keyframes handlePulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.15);opacity:.9}}
+.drift-control .dc-tick{position:absolute;top:18px;font-family:var(--font-display);font-style:italic;color:var(--vellum-faint);font-size:.78rem;transform:translateX(-50%)}
+.drift-control .dc-tick-0{left:0%;color:var(--gold)}
+.drift-control .dc-tick-1{left:25%}
+.drift-control .dc-tick-2{left:50%}
+.drift-control .dc-tick-3{left:75%}
+.drift-control .dc-tick-4{left:100%;color:var(--separation-bright)}
+.drift-control .dc-instr{display:flex;justify-content:space-between;margin-top:36px;font-family:var(--font-display);font-style:italic;color:var(--vellum-faint);font-size:.85rem}
+.drift-control .dc-instr em{color:var(--gold-bright);font-style:italic}
+
+.drift-voice{text-align:center;max-width:580px;margin:0 auto;padding:22px 30px;border:1px dashed rgba(224,166,74,.3);background:rgba(244,234,215,.03);min-height:96px;display:flex;flex-direction:column;justify-content:center}
+.drift-voice .dv-tier{display:block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-bright);margin-bottom:10px;transition:color .4s}
+.drift-voice .dv-tier.warn{color:var(--separation-bright)}
+.drift-voice .dv-tier.severe{color:var(--separation)}
+.drift-voice .dv-text{font-family:var(--font-display);font-style:italic;font-size:1rem;color:var(--vellum-dim);line-height:1.65;transition:color .4s}
+.drift-voice .dv-text em{color:var(--gold-bright);font-style:italic}
+
+@media (max-width:560px){
+  .drift-stage{padding:40px 22px 28px}
+  .drift-canvas{height:180px}
+  .drift-canvas .dp-num{font-size:2.2rem}
+}
+
+/* === SUTURE THREAD INTERACTION (click to reveal philosophy) === */
+.global-thread{cursor:crosshair;pointer-events:auto !important}
+.suture-knot{position:fixed;left:50%;width:14px;height:14px;border:1.5px solid var(--gold-bright);border-radius:50%;background:radial-gradient(circle, var(--gold-bright) 30%, var(--gold) 60%, transparent 100%);transform:translateX(-50%);box-shadow:0 0 16px var(--gold), 0 0 30px rgba(224,166,74,.4);z-index:50;pointer-events:auto;cursor:pointer;animation:knotIn .6s cubic-bezier(.2,1.2,.4,1)}
+@keyframes knotIn{0%{transform:translateX(-50%) scale(0) rotate(-90deg);opacity:0}60%{transform:translateX(-50%) scale(1.4) rotate(0deg);opacity:1}100%{transform:translateX(-50%) scale(1)}}
+
+.suture-fragment{position:fixed;left:calc(50% + 30px);max-width:280px;padding:14px 18px;background:rgba(7,9,18,.92);border:1px solid var(--gold);font-family:var(--font-display);font-style:italic;color:var(--vellum);font-size:.92rem;line-height:1.55;box-shadow:0 8px 30px rgba(0,0,0,.6), 0 0 24px rgba(224,166,74,.18);z-index:51;animation:fragmentIn .6s ease-out .25s both;backdrop-filter:blur(6px)}
+.suture-fragment::before{content:'';position:absolute;left:-8px;top:14px;width:1px;height:14px;background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.suture-fragment::after{content:'';position:absolute;left:-12px;top:18px;width:6px;height:6px;border:1px solid var(--gold);background:var(--ink);border-radius:50%}
+.suture-fragment.left{left:auto;right:calc(50% + 30px)}
+.suture-fragment.left::before{left:auto;right:-8px}
+.suture-fragment.left::after{left:auto;right:-12px}
+.suture-fragment .sf-num{display:inline-block;font-family:var(--font-mono);font-size:.55rem;color:var(--gold-bright);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;font-style:normal}
+@keyframes fragmentIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Suture progress counter */
+.suture-counter{position:fixed;bottom:24px;right:24px;background:rgba(7,9,18,.9);border:1px solid var(--gold);padding:10px 16px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-bright);z-index:60;backdrop-filter:blur(6px);transform:translateY(80px);transition:transform .5s cubic-bezier(.2,1.2,.4,1)}
+.suture-counter.visible{transform:translateY(0)}
+.suture-counter .sc-num{color:var(--vellum);font-family:var(--font-display);font-style:italic;font-size:.95rem}
+.suture-counter.complete{border-color:var(--gold-bright);box-shadow:0 0 24px var(--gold-glow)}
+
+/* === BREATH WISDOM REVEAL === */
+.breath-wisdom{margin-top:24px;min-height:60px;max-width:340px;text-align:center;font-family:var(--font-display);font-style:italic;color:var(--vellum-dim);font-size:.88rem;line-height:1.55;opacity:0;transition:opacity .8s}
+.breath-wisdom.show{opacity:1}
+.breath-wisdom .bw-tier{display:block;font-family:var(--font-mono);font-size:.55rem;color:var(--gold-bright);letter-spacing:.22em;text-transform:uppercase;margin-bottom:8px;font-style:normal}
+.breath-wisdom .bw-text em{color:var(--gold-bright);font-style:italic}
+
+/* === WARM HAND HOVER AURA — the therapist's touch === */
+.warm-aura{
+  position:fixed;
+  top:0;left:0;
+  width:260px;height:260px;
+  pointer-events:none;
+  z-index:30;
+  transform:translate(-50%,-50%);
+  mix-blend-mode:screen;
+  opacity:0;
+  transition:opacity .6s ease;
+  background:radial-gradient(circle at center,
+    rgba(244, 180, 110, .22) 0%,
+    rgba(224, 166, 74, .12) 25%,
+    rgba(224, 166, 74, .05) 50%,
+    transparent 70%);
+  filter:blur(6px);
+}
+.warm-aura.active{opacity:1}
+@media (hover:none){.warm-aura{display:none}}
+
+/* Paragraphs / text blocks that respond to the warm aura */
+.warm-text{
+  position:relative;
+  color:rgba(205,193,164,.7);
+  transition:color .4s ease;
+}
+.warm-text em{color:rgba(243,200,115,.7);transition:color .4s}
+.warm-text.warmed,
+.warm-text:hover{color:var(--vellum);}
+.warm-text.warmed em,
+.warm-text:hover em{color:var(--gold-bright)}
+
+/* === PULSE FEEL — a slow freediver's heartbeat === */
+.pulse-module{margin:50px auto 0;max-width:520px;text-align:center;padding:36px 30px;border:1px solid rgba(224,166,74,.22);background:linear-gradient(180deg, rgba(244,234,215,.04), rgba(244,234,215,.01));position:relative}
+.pulse-module::before{content:'';position:absolute;top:-10px;left:24px;background:var(--ink);padding:0 12px;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);content:'Feel my pulse · apnea rhythm'}
+.pulse-module .pm-intro{font-family:var(--font-display);font-style:italic;color:var(--vellum-dim);font-size:.94rem;line-height:1.6;margin-bottom:20px}
+.pulse-module .pm-intro em{color:var(--gold-bright);font-style:italic}
+
+.pulse-circle{position:relative;width:160px;height:160px;margin:20px auto}
+.pulse-circle .pc-dot{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at center, var(--gold-bright) 0%, var(--gold) 35%, var(--gold-deep) 60%, transparent 100%);transform:scale(0);transition:transform .15s ease-out;box-shadow:0 0 30px var(--gold), 0 0 60px var(--gold-glow)}
+.pulse-circle .pc-ring{position:absolute;inset:-6px;border:1px solid var(--gold);border-radius:50%;opacity:.3}
+.pulse-circle .pc-ring-2{position:absolute;inset:-18px;border:1px dashed var(--gold-deep);border-radius:50%;opacity:.2;animation:pulseRingSpin 30s linear infinite}
+@keyframes pulseRingSpin{to{transform:rotate(360deg)}}
+.pulse-circle .pc-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.pulse-circle .pc-bpm{font-family:var(--font-display);font-style:italic;font-size:2.4rem;color:var(--vellum);line-height:1}
+.pulse-circle .pc-bpm-label{font-family:var(--font-mono);font-size:.55rem;letter-spacing:.22em;text-transform:uppercase;color:var(--vellum-faint);margin-top:4px}
+.pulse-circle.beating .pc-dot{transform:scale(1)}
+
+.pulse-btn{margin-top:24px;display:inline-flex;align-items:center;gap:12px;padding:14px 28px;border:1px solid var(--gold);background:transparent;color:var(--vellum);font-family:var(--font-mono);font-size:.66rem;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;transition:background .3s, color .3s;user-select:none;touch-action:manipulation}
+.pulse-btn:hover{background:rgba(224,166,74,.08)}
+.pulse-btn.held{background:var(--gold);color:var(--ink)}
+
+.pulse-reveal{margin-top:22px;min-height:60px;font-family:var(--font-display);font-style:italic;color:var(--vellum-dim);font-size:.92rem;line-height:1.6;opacity:0;transition:opacity .8s}
+.pulse-reveal.show{opacity:1}
+.pulse-reveal em{color:var(--gold-bright);font-style:italic}
+
+/* === SECTION MARKERS === */
+.section-mark{display:flex;align-items:center;gap:22px;margin-bottom:50px;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--vellum-faint)}
+.section-mark .mk-num{color:var(--gold);font-family:var(--font-display);font-size:1.4rem;font-style:italic;letter-spacing:0}
+.section-mark .mk-line{flex:1;height:1px;background:linear-gradient(to right,var(--gold) 0%,transparent 100%);opacity:.45}
+.section-mark .mk-en{color:var(--vellum-faint)}
+
+/* === SECTION 1: THREE LIVES (spread layout) === */
+.three-lives{position:relative}
+.life-spread{padding:60px 0;border-bottom:1px dashed rgba(224,166,74,.12);align-items:center}
+.life-spread:last-of-type{border-bottom:none}
+.life-spread .seam-mid{min-height:100px}
+@media (max-width:880px){
+  .life-spread{padding:40px 0}
+  .life-spread .seam-l{text-align:center}
+  .life-spread .seam-r{text-align:center}
+  .life-spread .voice-zh .vz-text{text-align:left}
+}
+
+/* === SECTION 2: LINEA ALBA EXPLAINER === */
+.linea{padding-top:80px}
+.linea-intro{display:grid;grid-template-columns:1fr 80px 1fr;gap:0;align-items:center;max-width:1180px;margin:0 auto}
+.linea-intro > .linea-text{padding-right:50px;text-align:right}
+.linea-intro > .linea-spine{display:flex;align-items:center;justify-content:center;min-height:200px}
+.linea-intro > .atlas-card{margin-left:50px}
+@media (max-width:900px){
+  .linea-intro{grid-template-columns:1fr;gap:50px}
+  .linea-intro > .linea-text{padding-right:0;text-align:left}
+  .linea-intro > .linea-spine{display:none}
+  .linea-intro > .atlas-card{margin-left:0}
+}
+
+.linea-text h2{margin-bottom:24px}
+.linea-text .lead{font-family:var(--font-display);font-style:italic;font-size:1.25rem;color:var(--gold-bright);line-height:1.5;margin-bottom:24px}
+.linea-text p{font-size:.97rem;margin-bottom:18px;max-width:520px;margin-left:auto}
+.linea-text .latin{font-family:var(--font-display);font-style:italic;color:var(--vellum-faint);font-size:.85rem;display:block;margin-top:6px;letter-spacing:.05em}
+@media (max-width:900px){.linea-text p{margin-left:0}}
+
+.atlas-card{position:relative;background:linear-gradient(180deg,rgba(244,234,215,.04) 0%,rgba(244,234,215,.02) 100%);border:1px solid rgba(224,166,74,.2);padding:36px 30px 30px;backdrop-filter:blur(2px)}
+.atlas-card::before{content:'';position:absolute;top:14px;left:14px;right:14px;bottom:14px;border:1px solid rgba(224,166,74,.12);pointer-events:none}
+.atlas-card .atlas-label{position:absolute;top:-10px;left:24px;background:var(--ink);padding:0 10px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold)}
+.atlas-card .caption{font-family:var(--font-display);font-style:italic;text-align:center;color:var(--vellum-dim);font-size:.85rem;margin-top:10px}
+.atlas-card .caption .latin{display:block;color:var(--vellum-faint);font-size:.72rem;letter-spacing:.08em}
+
+/* Diastasis stages */
+.stages{margin-top:70px}
+.stages-title{text-align:center;margin-bottom:36px}
+.stages-title .brush{font-size:1.8rem;display:block;margin-bottom:8px}
+.stages-title .mono{display:block}
+.stages-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+@media (max-width:780px){.stages-grid{grid-template-columns:repeat(2,1fr)}}
+
+.stage-card{position:relative;padding:28px 20px;border:1px solid rgba(244,234,215,.1);background:linear-gradient(180deg,rgba(244,234,215,.025),rgba(244,234,215,.005));text-align:center;transition:all .4s}
+.stage-card:hover{border-color:var(--gold);transform:translateY(-3px)}
+.stage-card .stage-svg{width:60px;height:90px;margin:0 auto 14px}
+.stage-card .stage-fingers{font-family:var(--font-display);font-style:italic;color:var(--gold-bright);font-size:1.35rem;margin-bottom:6px}
+.stage-card .stage-name{font-family:var(--font-body);color:var(--vellum);font-size:.95rem;font-weight:400;margin-bottom:4px}
+.stage-card .stage-desc{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--vellum-faint)}
+.stage-card[data-severity="3"]{border-color:rgba(177,69,67,.35)}
+.stage-card[data-severity="3"] .stage-fingers{color:var(--separation-bright)}
+
+/* === SECTION 3: SERVICES (What my hands do) === */
+.services{padding-top:60px}
+.services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:30px}
+@media (max-width:880px){.services-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.services-grid{grid-template-columns:1fr}}
+
+.svc-card{position:relative;padding:36px 28px 32px;border:1px solid rgba(244,234,215,.1);background:linear-gradient(180deg,rgba(244,234,215,.03),rgba(244,234,215,.005));overflow:hidden;transition:all .5s;text-decoration:none;color:inherit;display:block}
+.svc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);transform:scaleX(0);transform-origin:center;transition:transform .6s}
+.svc-card:hover{border-color:var(--gold);background:linear-gradient(180deg,rgba(224,166,74,.06),rgba(224,166,74,.01));transform:translateY(-4px)}
+.svc-card:hover::before{transform:scaleX(1)}
+.svc-card .svc-num{font-family:var(--font-display);font-style:italic;font-size:.95rem;color:var(--vellum-faint);letter-spacing:.06em;margin-bottom:18px;display:block}
+.svc-card .svc-icon{font-size:1.6rem;color:var(--gold);margin-bottom:18px;display:inline-block}
+.svc-card h3{margin-bottom:12px;font-size:1.3rem}
+.svc-card .svc-en{display:block;font-family:var(--font-display);font-style:italic;color:var(--gold);font-size:.82rem;letter-spacing:.05em;margin-top:-6px;margin-bottom:14px}
+.svc-card p{font-size:.88rem;color:var(--vellum-dim);line-height:1.65}
+
+/* === SECTION 4: CONSTELLATION (Travel) === */
+.constellation{padding-top:80px;position:relative}
+.constellation .section-mark .mk-line{background:linear-gradient(to right,var(--abyss-faint) 0%,transparent 100%)}
+.constellation .section-mark .mk-num{color:var(--abyss-faint)}
+.constellation-intro{max-width:680px;margin-bottom:40px}
+.constellation-intro p{font-size:.95rem;margin-bottom:14px}
+.constellation-intro em{color:var(--abyss-faint);font-style:italic}
+
+#travel-canvas{position:relative;width:100%;height:440px;border:1px solid rgba(108,178,207,.18);background:radial-gradient(ellipse at center,rgba(14,59,82,.45) 0%,rgba(7,9,18,.85) 70%);overflow:hidden}
+@media (max-width:780px){#travel-canvas{height:340px}}
+#travel-canvas .tc-corner{position:absolute;width:18px;height:18px;border:1px solid var(--abyss-faint);opacity:.6}
+#travel-canvas .tc-corner.tl{top:8px;left:8px;border-right:none;border-bottom:none}
+#travel-canvas .tc-corner.tr{top:8px;right:8px;border-left:none;border-bottom:none}
+#travel-canvas .tc-corner.bl{bottom:8px;left:8px;border-right:none;border-top:none}
+#travel-canvas .tc-corner.br{bottom:8px;right:8px;border-left:none;border-top:none}
+#travel-canvas .tc-label{position:absolute;top:14px;left:18px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--abyss-faint);opacity:.7}
+#travel-canvas .tc-coord{position:absolute;bottom:14px;right:18px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.16em;color:var(--abyss-faint);opacity:.55}
+
+.travel-list{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:30px}
+@media (max-width:780px){.travel-list{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.travel-list{grid-template-columns:1fr}}
+.travel-pin{position:relative;padding:14px 16px;border-left:2px solid rgba(108,178,207,.35);background:rgba(14,59,82,.18);transition:all .35s;display:block;text-decoration:none;color:inherit}
+.travel-pin:hover{border-left-color:var(--gold);background:rgba(224,166,74,.06);transform:translateX(4px)}
+.travel-pin.special{border-left-color:var(--separation)}
+.travel-pin.special:hover{border-left-color:var(--separation-bright)}
+.travel-pin .pin-month{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--abyss-faint)}
+.travel-pin.special .pin-month{color:var(--separation-bright)}
+.travel-pin .pin-place{font-family:var(--font-display);font-style:italic;color:var(--vellum);font-size:1.15rem;margin-top:4px}
+.travel-pin .pin-note{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.12em;color:var(--vellum-faint);margin-top:4px;text-transform:uppercase}
+
+/* === SECTION 5: BREATH (Freediving) === */
+.breath{padding-top:60px}
+.breath-intro{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+@media (max-width:880px){.breath-intro{grid-template-columns:1fr;gap:40px}}
+.breath-text h2{margin-bottom:20px}
+.breath-text .lead{font-family:var(--font-display);font-style:italic;font-size:1.2rem;color:var(--abyss-faint);line-height:1.6;margin-bottom:20px}
+.breath-text p{font-size:.95rem;margin-bottom:14px;max-width:480px}
+
+.breath-meter{position:relative;display:flex;flex-direction:column;align-items:center;gap:24px;padding:50px 30px;border:1px solid rgba(108,178,207,.25);background:linear-gradient(180deg,rgba(14,59,82,.25),rgba(14,59,82,.05))}
+.breath-meter .bm-label{position:absolute;top:-10px;left:24px;background:var(--ink);padding:0 10px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--abyss-faint)}
+.breath-meter .bm-instructions{font-family:var(--font-display);font-style:italic;text-align:center;color:var(--vellum-dim);font-size:.95rem}
+.breath-circle{position:relative;width:200px;height:200px}
+.breath-circle svg{width:100%;height:100%;transform:rotate(-90deg)}
+.breath-circle .bc-bg{fill:none;stroke:rgba(108,178,207,.15);stroke-width:2}
+.breath-circle .bc-fill{fill:none;stroke:var(--abyss-faint);stroke-width:2;stroke-linecap:round;stroke-dasharray:565;stroke-dashoffset:565;transition:stroke-dashoffset .15s linear, stroke .4s}
+.breath-circle .bc-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.breath-circle .bc-time{font-family:var(--font-display);font-style:italic;font-size:2.6rem;color:var(--vellum)}
+.breath-circle .bc-state{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;color:var(--abyss-faint)}
+.breath-circle.holding .bc-fill{stroke:var(--gold-bright)}
+.breath-circle.holding .bc-state{color:var(--gold-bright)}
+.breath-meter .bm-record{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.18em;color:var(--vellum-faint)}
+.breath-meter .bm-record b{color:var(--gold-bright);font-weight:400;font-family:var(--font-display);font-style:italic;font-size:1rem}
+
+/* === SECTION 6: THREE CATS === */
+.cats{padding-top:60px}
+
+/* === CATS GALLERY (just photos, no labels) === */
+.cats-gallery{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin:50px auto 0;max-width:680px}
+.cats-gallery figure{margin:0;position:relative}
+.cats-gallery .cat-photo-card .cat-photo{position:relative;aspect-ratio:3/4;overflow:hidden;background:#0a0e1c;border:1px solid rgba(224,166,74,.2)}
+.cats-gallery .cat-photo-card .cat-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:contrast(1.04) saturate(.92);transition:transform 1.2s ease, filter .8s}
+.cats-gallery .cat-photo-card:hover .cat-photo img{transform:scale(1.04);filter:contrast(1.08) saturate(1.05)}
+.cats-gallery .cat-photo-card .cat-photo::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg, transparent 55%, rgba(7,9,18,.45) 100%)}
+.cats-gallery .cat-photo-card .cat-photo::before{content:'';position:absolute;top:8px;left:8px;right:8px;bottom:8px;border:1px solid rgba(224,166,74,.22);pointer-events:none;z-index:2}
+
+@media (max-width:780px){
+  .cats-gallery{grid-template-columns:1fr;gap:20px;max-width:300px}
+}
+
+.cats-note{margin-top:50px;max-width:560px;margin-left:auto;margin-right:auto;text-align:center;padding:22px 30px;border:1px dashed rgba(224,166,74,.22)}
+.cats-note p{font-family:var(--font-display);font-style:italic;color:var(--vellum-dim);font-size:.95rem;line-height:1.8}
+.cats-note p em{color:var(--gold-bright);font-style:italic}
+.cats-note .cn-latin{display:block;margin-top:10px;font-family:var(--font-display);color:var(--vellum-faint);font-size:.75rem;letter-spacing:.06em}
+/* === SECTION 7: BELIEFS === */
+.beliefs{padding-top:80px;padding-bottom:80px}
+.beliefs-grid{display:grid;grid-template-columns:1fr 80px 1fr;gap:0;margin-top:30px;align-items:center;max-width:1180px;margin-left:auto;margin-right:auto}
+.beliefs-grid .belief-card{margin:0 6px}
+.beliefs-grid .belief-spine{display:flex;align-items:center;justify-content:center;min-height:200px}
+@media (max-width:780px){
+  .beliefs-grid{grid-template-columns:1fr;gap:30px}
+  .beliefs-grid .belief-spine{display:none}
+}
+.belief-card{position:relative;padding:42px 36px;border:1px solid rgba(224,166,74,.18);background:linear-gradient(180deg,rgba(224,166,74,.04),rgba(224,166,74,.01));transition:all .5s}
+.belief-card:hover{border-color:var(--gold);background:linear-gradient(180deg,rgba(224,166,74,.08),rgba(224,166,74,.02))}
+.belief-card .quote-mark{font-family:var(--font-display);font-size:5rem;line-height:.6;color:var(--gold);opacity:.4;font-style:italic;display:block;margin-bottom:8px}
+.belief-card blockquote{font-family:var(--font-display);font-style:italic;font-size:1.25rem;color:var(--vellum);line-height:1.55;margin-bottom:18px;font-weight:400}
+.belief-card .belief-attr{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.24em;text-transform:uppercase;color:var(--vellum-faint);display:flex;align-items:center;gap:14px}
+.belief-card .belief-attr::before{content:'';width:24px;height:1px;background:var(--gold)}
+
+/* === SECTION 8: CONTACT === */
+.contact{padding-top:60px;padding-bottom:140px;text-align:center}
+.contact .section-mark{justify-content:center}
+.contact .section-mark .mk-line{display:none}
+.contact h2{margin-bottom:24px}
+.contact .contact-lead{font-family:var(--font-display);font-style:italic;font-size:1.3rem;color:var(--gold-bright);margin-bottom:36px;max-width:680px;margin-left:auto;margin-right:auto;line-height:1.5}
+.contact .contact-info{display:flex;flex-wrap:wrap;justify-content:center;gap:20px 40px;margin-bottom:50px;font-family:var(--font-display);color:var(--vellum-dim);font-size:1.05rem}
+.contact .contact-info span{display:inline-flex;align-items:center;gap:10px}
+.contact .contact-info i{color:var(--gold)}
+
+.contact-links{display:flex;flex-wrap:wrap;justify-content:center;gap:18px}
+.btn{display:inline-flex;align-items:center;gap:12px;padding:18px 32px;border:1px solid var(--gold);color:var(--vellum);text-decoration:none;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;transition:all .4s;background:transparent;position:relative;overflow:hidden}
+.btn::before{content:'';position:absolute;inset:0;background:var(--gold);transform:translateX(-101%);transition:transform .5s ease}
+.btn:hover{color:var(--ink)}
+.btn:hover::before{transform:translateX(0)}
+.btn span{position:relative;z-index:1}
+.btn i{position:relative;z-index:1;font-size:.95rem}
+.btn.primary{background:var(--gold);color:var(--ink)}
+.btn.primary::before{background:var(--vellum)}
+.btn.primary:hover{color:var(--ink)}
+
+/* === FOOTER === */
+.footer{position:relative;padding:60px 32px 50px;text-align:center;border-top:1px dashed rgba(224,166,74,.18);max-width:1200px;margin:0 auto}
+.footer .footer-mark{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:24px}
+.footer .footer-mark .fm-line{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.footer .footer-mark .fm-symbol{font-family:var(--font-brush);font-size:1.5rem;color:var(--gold-bright)}
+.footer p{font-family:var(--font-display);font-style:italic;font-size:.92rem;color:var(--vellum-faint);margin-bottom:8px}
+.footer .footer-meta{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--vellum-faint);opacity:.65;margin-top:14px}
+
+/* === RZ STUDIO BRAND MARK (her actual logo) === */
+.rz-mark{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:34px;opacity:.9}
+.rz-mark img{width:140px;height:auto;mix-blend-mode:screen;filter:brightness(1.15) contrast(1.05) drop-shadow(0 0 18px rgba(224,166,74,.18))}
+.rz-mark .rz-divider{width:60px;height:1px;background:linear-gradient(90deg, transparent, var(--gold), transparent)}
+.rz-mark .rz-text{font-family:var(--font-display);font-style:italic;color:var(--vellum-faint);font-size:.75rem;letter-spacing:.18em;text-transform:uppercase}
+@media (max-width:560px){.rz-mark img{width:110px}.rz-mark{flex-direction:column;gap:10px}.rz-mark .rz-divider{width:120px}}
+
+/* === REAL CHART INTEGRATION === */
+.atlas-card.with-chart{padding:30px 24px 24px}
+.atlas-card .chart-frame{position:relative;border:1px solid rgba(224,166,74,.22);padding:14px;background:rgba(244,234,215,.04)}
+.atlas-card .chart-frame::before,
+.atlas-card .chart-frame::after{content:'';position:absolute;width:14px;height:14px;border:1px solid var(--gold);opacity:.7}
+.atlas-card .chart-frame::before{top:-1px;left:-1px;border-right:none;border-bottom:none}
+.atlas-card .chart-frame::after{bottom:-1px;right:-1px;border-left:none;border-top:none}
+.atlas-card .chart-frame img{width:100%;height:auto;display:block;border-radius:2px}
+.atlas-card .chart-source{display:block;margin-top:10px;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--vellum-faint);text-align:right}
+
+/* === SECTION: PROOF OF WORK (treatment evidence) === */
+.proof{padding-top:80px}
+.proof-intro{max-width:680px;margin-bottom:50px}
+.proof-intro p{font-size:.97rem;margin-bottom:14px}
+.proof-intro em{color:var(--gold-bright);font-style:italic}
+
+.proof-grid{display:grid;grid-template-columns:1.1fr .9fr .9fr;gap:22px}
+@media (max-width:880px){.proof-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.proof-grid{grid-template-columns:1fr}}
+
+.proof-plate{position:relative;background:linear-gradient(180deg,rgba(244,234,215,.04),rgba(244,234,215,.01));border:1px solid rgba(224,166,74,.18);padding:18px 18px 22px}
+.proof-plate::before{content:'';position:absolute;top:6px;left:6px;right:6px;bottom:6px;border:1px solid rgba(224,166,74,.1);pointer-events:none}
+.proof-plate .pl-label{position:absolute;top:-9px;left:18px;background:var(--ink);padding:0 8px;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);z-index:2}
+.proof-plate .pl-img{position:relative;overflow:hidden;background:#0a0e1c;display:flex;align-items:center;justify-content:center;min-height:280px}
+.proof-plate .pl-img img{width:100%;height:auto;display:block;filter:brightness(.92) contrast(1.04) saturate(.85)}
+.proof-plate .pl-img .pl-overlay{position:absolute;inset:0;background:radial-gradient(ellipse at center, transparent 40%, rgba(7,9,18,.45) 100%);pointer-events:none}
+.proof-plate .pl-img .pl-corner{position:absolute;width:14px;height:14px;border:1px solid var(--gold-bright);opacity:.5}
+.proof-plate .pl-img .pl-corner.tl{top:6px;left:6px;border-right:none;border-bottom:none}
+.proof-plate .pl-img .pl-corner.tr{top:6px;right:6px;border-left:none;border-bottom:none}
+.proof-plate .pl-img .pl-corner.bl{bottom:6px;left:6px;border-right:none;border-top:none}
+.proof-plate .pl-img .pl-corner.br{bottom:6px;right:6px;border-left:none;border-top:none}
+.proof-plate .pl-img .pl-coord{position:absolute;bottom:8px;left:10px;font-family:var(--font-mono);font-size:.55rem;letter-spacing:.14em;color:var(--gold-bright);opacity:.65}
+.proof-plate h4{font-family:var(--font-display);font-style:italic;color:var(--vellum);font-size:1.15rem;margin-top:16px;margin-bottom:4px;font-weight:500}
+.proof-plate .pl-en{display:block;font-family:var(--font-display);font-style:italic;color:var(--gold);font-size:.72rem;letter-spacing:.04em;margin-bottom:10px}
+.proof-plate p{font-size:.82rem;color:var(--vellum-dim);line-height:1.55}
+
+/* === FOOTER BRAND IMPRINT === */
+.footer-rz{display:flex;justify-content:center;align-items:center;margin:18px 0 14px;opacity:.55}
+.footer-rz img{width:110px;height:auto;filter:brightness(1.1) drop-shadow(0 0 12px rgba(224,166,74,.15))}
+
+/* === REVEAL ANIMATIONS — JS-progressive (visible if no JS / no ScrollTrigger fire) === */
+.js-on .reveal{opacity:0;transform:translateY(30px)}
+.js-on .reveal-fade{opacity:0}
+
+/* === RESPONSIVE === */
+@media (max-width:560px){
+  section{padding:80px 18px}
+  .hero{padding-top:120px}
+  .hero-spec{position:relative;top:0;flex-direction:column;gap:6px;text-align:center;margin-bottom:14px}
+  .hero-meta{font-size:.62rem;gap:10px 18px}
+  h2{font-size:2rem}
+  .belief-card{padding:32px 24px}
+  .belief-card blockquote{font-size:1.05rem}
+  .global-thread{opacity:.35}
+}
+</style>
+</head>
+<body>
+
+<!-- === BACKGROUND LAYERS === -->
+<div id="p5-canvas"></div>
+<div id="three-canvas"></div>
+<div class="atlas-grid"></div>
+<div class="vellum-tex"></div>
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="depth-dim"></div>
+<div class="side-rule left"></div>
+<div class="side-rule right"></div>
+
+<!-- Corner ornaments — anatomy plate margins -->
+<div class="corner-ornament tl">
+  <svg viewBox="0 0 90 90" fill="none" stroke="currentColor" stroke-width="1">
+    <path d="M0 30 L0 0 L30 0"/>
+    <path d="M0 0 L20 20" stroke-width=".5"/>
+    <path d="M8 8 Q14 4 20 8 Q24 14 20 20 Q14 24 8 20 Q4 14 8 8 Z" stroke-width=".7"/>
+    <circle cx="14" cy="14" r="2" fill="currentColor"/>
+    <path d="M30 0 Q40 6 36 14 Q44 18 40 26 Q48 30 44 38" stroke-width=".7"/>
+    <path d="M0 30 Q6 40 14 36 Q18 44 26 40 Q30 48 38 44" stroke-width=".7"/>
+    <ellipse cx="44" cy="14" rx="3" ry="6" transform="rotate(35 44 14)"/>
+    <ellipse cx="14" cy="44" rx="3" ry="6" transform="rotate(-55 14 44)"/>
+  </svg>
+</div>
+<div class="corner-ornament tr">
+  <svg viewBox="0 0 90 90" fill="none" stroke="currentColor" stroke-width="1">
+    <path d="M0 30 L0 0 L30 0"/>
+    <path d="M0 0 L20 20" stroke-width=".5"/>
+    <path d="M8 8 Q14 4 20 8 Q24 14 20 20 Q14 24 8 20 Q4 14 8 8 Z" stroke-width=".7"/>
+    <circle cx="14" cy="14" r="2" fill="currentColor"/>
+    <path d="M30 0 Q40 6 36 14 Q44 18 40 26 Q48 30 44 38" stroke-width=".7"/>
+    <path d="M0 30 Q6 40 14 36 Q18 44 26 40 Q30 48 38 44" stroke-width=".7"/>
+    <ellipse cx="44" cy="14" rx="3" ry="6" transform="rotate(35 44 14)"/>
+    <ellipse cx="14" cy="44" rx="3" ry="6" transform="rotate(-55 14 44)"/>
+  </svg>
+</div>
+<div class="corner-ornament bl">
+  <svg viewBox="0 0 90 90" fill="none" stroke="currentColor" stroke-width="1">
+    <path d="M0 30 L0 0 L30 0"/>
+    <path d="M0 0 L20 20" stroke-width=".5"/>
+    <path d="M8 8 Q14 4 20 8 Q24 14 20 20 Q14 24 8 20 Q4 14 8 8 Z" stroke-width=".7"/>
+    <circle cx="14" cy="14" r="2" fill="currentColor"/>
+    <path d="M30 0 Q40 6 36 14 Q44 18 40 26 Q48 30 44 38" stroke-width=".7"/>
+    <path d="M0 30 Q6 40 14 36 Q18 44 26 40 Q30 48 38 44" stroke-width=".7"/>
+    <ellipse cx="44" cy="14" rx="3" ry="6" transform="rotate(35 44 14)"/>
+    <ellipse cx="14" cy="44" rx="3" ry="6" transform="rotate(-55 14 44)"/>
+  </svg>
+</div>
+<div class="corner-ornament br">
+  <svg viewBox="0 0 90 90" fill="none" stroke="currentColor" stroke-width="1">
+    <path d="M0 30 L0 0 L30 0"/>
+    <path d="M0 0 L20 20" stroke-width=".5"/>
+    <path d="M8 8 Q14 4 20 8 Q24 14 20 20 Q14 24 8 20 Q4 14 8 8 Z" stroke-width=".7"/>
+    <circle cx="14" cy="14" r="2" fill="currentColor"/>
+    <path d="M30 0 Q40 6 36 14 Q44 18 40 26 Q48 30 44 38" stroke-width=".7"/>
+    <path d="M0 30 Q6 40 14 36 Q18 44 26 40 Q30 48 38 44" stroke-width=".7"/>
+    <ellipse cx="44" cy="14" rx="3" ry="6" transform="rotate(35 44 14)"/>
+    <ellipse cx="14" cy="44" rx="3" ry="6" transform="rotate(-55 14 44)"/>
+  </svg>
+</div>
+
+<div class="global-thread"></div>
+
+<!-- === CUSTOM CURSOR === -->
+<div class="needle-cursor" id="needleCursor">
+  <div class="nc-aura"></div>
+  <div class="nc-eye"></div>
+  <div class="nc-needle"></div>
+</div>
+
+<!-- === WARM HAND AURA (therapist's touch) === -->
+<div class="warm-aura" id="warmAura"></div>
+
+<!-- === DEPTH GAUGE — scroll = freedive descent === -->
+<div class="depth-gauge" id="depthGauge">
+  <div class="dg-label-top">surface</div>
+  <div class="dg-rail"></div>
+  <div class="dg-tick" style="top:18px">0m</div>
+  <div class="dg-tick" style="top:25%">-5m</div>
+  <div class="dg-tick" style="top:50%">-10m</div>
+  <div class="dg-tick" style="top:75%">-15m</div>
+  <div class="dg-tick" style="bottom:18px">-20m</div>
+  <div class="dg-bubble" id="dgBubble" style="top:18px">
+    <div class="dg-readout" id="dgReadout">0.0 m<small>your depth</small></div>
+  </div>
+  <div class="dg-label-bot">apnea limit</div>
+</div>
+
+<!-- === TOP NAV === -->
+<nav class="top-nav">
+  <a href="/guild/"><i class="fa-solid fa-arrow-left-long"></i> ARCHIVE</a>
+  <span class="nav-brand">Linea Alba — Folio 138</span>
+  <a href="https://www.threads.com/@candy199712000" target="_blank" rel="noopener">THREADS <i class="fa-brands fa-threads"></i></a>
+</nav>
+
+<main class="page">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-frame">
+      <div class="hero-spec">
+        <span>Folio · CXXXVIII</span>
+        <span>De Linea Alba</span>
+        <span>MMXXVI</span>
+      </div>
+
+      <!-- HERO SPREAD: left = Latin/professional self · seam = 真 · right = Chinese/personal self -->
+      <div class="hero-spread spread reveal-fade">
+        <div class="seam-l hero-half left">
+          <div class="hero-en">A Postpartum<br>Atlas of Repair</div>
+          <h1 class="hero-name-l">Zhen<span class="hn-orn">.</span></h1>
+          <div class="hero-line-text"><em>Linea Alba</em> — the white line<br>that holds you together</div>
+          <ul class="hero-meta-list">
+            <li><i class="fa-solid fa-stethoscope"></i> Ex-RN · vita prima</li>
+            <li><i class="fa-solid fa-water"></i> Freediver · vita secunda</li>
+          </ul>
+        </div>
+        <div class="seam-mid hero-seam">
+          <div class="hero-zh-spine">真</div>
+          <div class="seam-knot hero-knot"></div>
+        </div>
+        <div class="seam-r hero-half right">
+          <div class="hero-zh-eyebrow">產後修復師 · 第 138 頁</div>
+          <h1 class="hero-name-r">黃<span class="hn-orn">.</span></h1>
+          <div class="hero-line-text-zh">「我把<em>分開的</em>，<br>慢慢縫回去。」</div>
+          <ul class="hero-meta-list right">
+            <li><i class="fa-solid fa-house-medical"></i> 高雄 · 可到府</li>
+            <li><i class="fa-solid fa-hand-holding-heart"></i> Rz 產後療癒室</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- TRIPTYCH BELOW THE SPREAD -->
+      <div class="triptych reveal-fade">
+        <div class="tp">
+          <div class="tp-photo">
+            <img src="/assets/img/guild/candy199712000/zhen_jeju_hanbok.webp" alt="Zhen in Korean hanbok at Jeju, January 2025">
+          </div>
+          <div class="tp-cap"><strong>Folio · I</strong>Jeju · 一月</div>
+        </div>
+        <div class="tp">
+          <div class="tp-photo">
+            <img src="/assets/img/guild/candy199712000/zhen_wynn_night.webp" alt="Zhen at Wynn Palace Macau by night, May 2025">
+          </div>
+          <div class="tp-cap"><strong>Folio · CXXXVIII</strong>Macau · 五月</div>
+        </div>
+        <div class="tp">
+          <div class="tp-photo">
+            <img src="/assets/img/guild/candy199712000/zhen_hualien.webp" alt="Zhen with the Hualien disaster relief volunteer team, October 2025">
+          </div>
+          <div class="tp-cap"><strong>Folio · X</strong>Hualien · 十月救災</div>
+        </div>
+      </div>
+
+      <div class="rz-mark reveal-fade">
+        <div class="rz-divider"></div>
+        <img src="/assets/img/guild/candy199712000/rz_logo.webp" alt="Rz Diastasis Recti Repair — 產後修復 studio brand logo">
+        <div class="rz-divider"></div>
+      </div>
+
+      <div class="hero-scroll">scroll to begin</div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 1: THREE LIVES (as three stitched rows) ============ -->
+  <section class="three-lives">
+    <div class="section-mark">
+      <span class="mk-num">I</span>
+      <span class="mk-line"></span>
+      <span class="mk-en">Three Lives I have lived</span>
+    </div>
+
+    <h2 class="reveal" style="text-align:center">三段人生 <span class="brush" style="font-size:1.6rem;margin-left:14px">我走過的路</span></h2>
+    <p class="reveal" style="max-width:600px;margin:14px auto 60px;text-align:center;font-size:.97rem">
+      二十九歲之前，我換過兩次身份。每一次都把上一次學到的東西<em style="color:var(--gold-bright);font-style:italic">縫在身上</em>帶走。
+    </p>
+
+    <!-- Vita Prima — RN -->
+    <div class="life-spread spread reveal">
+      <div class="seam-l">
+        <div class="voice-latin">
+          <span class="vl-eyebrow">Vita Prima · Stage I</span>
+          <span class="vl-name">stethoscopium</span>
+          <span class="vl-meta">acute care · triage · bedside manner</span>
+        </div>
+      </div>
+      <div class="seam-mid">
+        <div class="seam-glyph">I</div>
+      </div>
+      <div class="seam-r">
+        <div class="voice-zh">
+          <span class="vz-eyebrow">前護理師 · 退役</span>
+          <span class="vz-name">白衣的那段日子</span>
+          <p class="vz-text warm-text">我在病房裡學會看人。學會在很短的時間裡，分辨疼痛是哪一種疼痛、害怕是哪一種害怕。我學會把手放在對的位置上，學會用聲音讓人安心。<em>後來我退役了——但這些東西沒有退役。</em></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vita Secunda — Freediver -->
+    <div class="life-spread spread reveal">
+      <div class="seam-l">
+        <div class="voice-latin">
+          <span class="vl-eyebrow">Vita Secunda · Stage II</span>
+          <span class="vl-name">apnea statica</span>
+          <span class="vl-meta">held breath · body listening · slow heart</span>
+        </div>
+      </div>
+      <div class="seam-mid">
+        <div class="seam-glyph">II</div>
+      </div>
+      <div class="seam-r">
+        <div class="voice-zh">
+          <span class="vz-eyebrow">自由潛水員 · 業餘</span>
+          <span class="vz-name">學會在水裡安靜</span>
+          <p class="vz-text warm-text">我喜歡下水。一個人潛到看不見光的地方，把空氣關在身體裡，聽自己的心跳慢下來。這件事看起來和工作沒關係——可是它教會我一件最重要的事：<em>身體是會說話的</em>。妳只要安靜下來，它就會告訴妳哪裡卡住了。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vita Tertia — Postpartum Therapist -->
+    <div class="life-spread spread reveal">
+      <div class="seam-l">
+        <div class="voice-latin">
+          <span class="vl-eyebrow">Vita Tertia · Stage III</span>
+          <span class="vl-name">manus medica</span>
+          <span class="vl-meta">diastasis recti · core repair · home visit</span>
+        </div>
+      </div>
+      <div class="seam-mid">
+        <div class="seam-glyph">III</div>
+      </div>
+      <div class="seam-r">
+        <div class="voice-zh">
+          <span class="vz-eyebrow">產後修復師 · 現在</span>
+          <span class="vz-name">把分開的縫回去</span>
+          <p class="vz-text warm-text">現在我做這件事：陪剛當媽媽的女人，把懷孕被撐開的腹腔，<em>一吋一吋帶回原本的位置</em>。工作室叫 <strong style="color:var(--vellum);font-weight:400">Rz 產後療癒室</strong>。如果妳問我為什麼做這個——因為我看過太多媽媽以為自己已經回不去了，其實還可以。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2: LINEA ALBA EXPLAINER ============ -->
+  <section class="linea">
+    <div class="section-mark">
+      <span class="mk-num">II</span>
+      <span class="mk-line"></span>
+      <span class="mk-en">De linea alba — On the white line</span>
+    </div>
+
+    <div class="linea-intro">
+      <div class="linea-text">
+        <h2 class="reveal">那條白色的線 <span class="brush" style="font-size:1.5rem;display:block;margin-top:6px">linea alba</span></h2>
+        <p class="lead reveal">在妳的肚子正中央，有一條看不見的線。它把左右兩側的腹肌縫在一起，從胸骨一路走到恥骨。</p>
+        <p class="reveal">懷孕的時候，這條線會被撐開——醫學上叫「腹直肌分離 (diastasis recti)」。它不是病，不是錯，就只是身體為了讓妳的孩子有空間長大，做出的讓步。</p>
+        <p class="reveal">問題是——很多媽媽以為產完之後，肚子就會自己回去。事實上不會。它需要被<em style="color:var(--gold-bright);font-style:italic">引導</em>，需要被<em style="color:var(--gold-bright);font-style:italic">教</em>，需要有人把手放對地方。</p>
+        <p class="reveal">這就是我做的事。<span class="latin">— Quod separatum est, iungere.</span></p>
+      </div>
+
+      <div class="linea-spine"><div class="seam-knot"></div></div>
+
+      <div class="atlas-card with-chart reveal">
+        <div class="atlas-label">PLATE I — Diastasis Recti</div>
+        <div class="chart-frame">
+          <img src="/assets/img/guild/candy199712000/diastasis_chart.webp" alt="腹直肌分離示意圖：懷孕前 / 第一胎 / 第2-3胎，搭配 1指/2-3指/3-4指 的測量手勢" loading="lazy">
+        </div>
+        <div class="caption">
+          Three stages of separation, three measurements
+          <span class="latin">— from Zhen's clinical reference —</span>
+        </div>
+        <span class="chart-source">Source · Rz 產後療癒室</span>
+      </div>
+    </div>
+
+    <!-- ABSTRACT DRIFT — two parallel lines that you bring back together -->
+    <div class="drift-section">
+      <div class="drift-intro reveal">
+        <span class="p-en">The drift · separatio et reditus</span>
+        <h3>分開的，要怎麼回來</h3>
+        <p>產後的身體就像一條被拉開的線。<em style="color:var(--gold-bright);font-style:italic">不會自己回來——但會記得回來的路。</em></p>
+      </div>
+
+      <div class="drift-stage reveal">
+        <span class="ds-label">Phase · separare ↔ iungere</span>
+        <div class="drift-canvas" id="driftCanvas">
+          <svg viewBox="0 0 800 240" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="driftLineGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="0%" stop-color="#e0a64a" stop-opacity="0"/>
+                <stop offset="20%" stop-color="#f3c873" stop-opacity="1"/>
+                <stop offset="80%" stop-color="#f3c873" stop-opacity="1"/>
+                <stop offset="100%" stop-color="#e0a64a" stop-opacity="0"/>
+              </linearGradient>
+              <filter id="driftGlow">
+                <feGaussianBlur stdDeviation="2"/>
+                <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <!-- Two abstract horizontal threads — they drift apart and rejoin -->
+            <path id="driftLineA" d="M40 120 Q400 120 760 120" stroke="url(#driftLineGrad)" stroke-width="2.5" fill="none" filter="url(#driftGlow)" stroke-linecap="round"/>
+            <path id="driftLineB" d="M40 120 Q400 120 760 120" stroke="url(#driftLineGrad)" stroke-width="2.5" fill="none" filter="url(#driftGlow)" stroke-linecap="round"/>
+            <!-- Suture stitches that appear when reunited -->
+            <g id="driftSutures" opacity="0">
+              <line x1="200" y1="115" x2="200" y2="125" stroke="#f3c873" stroke-width="1.2" filter="url(#driftGlow)"/>
+              <line x1="280" y1="115" x2="280" y2="125" stroke="#f3c873" stroke-width="1.2" filter="url(#driftGlow)"/>
+              <line x1="360" y1="115" x2="360" y2="125" stroke="#f3c873" stroke-width="1.2" filter="url(#driftGlow)"/>
+              <line x1="440" y1="115" x2="440" y2="125" stroke="#f3c873" stroke-width="1.2" filter="url(#driftGlow)"/>
+              <line x1="520" y1="115" x2="520" y2="125" stroke="#f3c873" stroke-width="1.2" filter="url(#driftGlow)"/>
+              <line x1="600" y1="115" x2="600" y2="125" stroke="#f3c873" stroke-width="1.2" filter="url(#driftGlow)"/>
+            </g>
+            <!-- Phase markers -->
+            <circle cx="100" cy="120" r="3" fill="var(--gold-deep)" opacity=".5"/>
+            <circle cx="700" cy="120" r="3" fill="var(--gold-deep)" opacity=".5"/>
+          </svg>
+          <!-- Phase indicator label -->
+          <div class="drift-phase-label" id="driftPhase">
+            <span class="dp-num" id="dpNum">0</span>
+            <span class="dp-text" id="dpText">united · 合一</span>
+          </div>
+        </div>
+
+        <!-- Abstract slider — drag to part the lines, release to let them heal -->
+        <div class="drift-control">
+          <div class="dc-track">
+            <div class="dc-fill" id="dcFill"></div>
+            <div class="dc-handle" id="dcHandle"><span></span></div>
+            <div class="dc-tick dc-tick-0">0</div>
+            <div class="dc-tick dc-tick-1">1</div>
+            <div class="dc-tick dc-tick-2">2</div>
+            <div class="dc-tick dc-tick-3">3</div>
+            <div class="dc-tick dc-tick-4">4</div>
+          </div>
+          <div class="dc-instr">
+            <span>← <em>separare</em></span>
+            <span><em>iungere</em> →</span>
+          </div>
+        </div>
+
+        <div class="drift-voice" id="driftVoice">
+          <span class="dv-tier" id="dvTier">— still as a held breath —</span>
+          <span class="dv-text" id="dvText">把刻度從 0 拉開，看那條線怎麼分開。再放開——看它怎麼回來。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUGE DISPLAY: 腹白線 -->
+    <div class="huge-display reveal">
+      腹白線
+      <span class="hd-en">— Linea Alba · the white line that holds you together —</span>
+    </div>
+
+    <!-- Baroque ornament divider -->
+    <div class="ornament-divider reveal">
+      <div class="od-line"></div>
+      <div class="od-center">
+        <svg viewBox="0 0 54 34" fill="none" stroke="currentColor" stroke-width="1">
+          <path d="M27 4 Q15 12 4 17 Q15 22 27 30 Q39 22 50 17 Q39 12 27 4 Z"/>
+          <circle cx="27" cy="17" r="3" fill="currentColor"/>
+          <circle cx="27" cy="17" r="6" fill="none" stroke-width=".5"/>
+          <line x1="0" y1="17" x2="6" y2="17"/>
+          <line x1="48" y1="17" x2="54" y2="17"/>
+        </svg>
+      </div>
+      <div class="od-line"></div>
+    </div>
+
+    <div class="stages">
+      <div class="stages-title">
+        <span class="brush">分離程度</span>
+        <span class="mono">— gradus separationis —</span>
+      </div>
+      <div class="stages-grid">
+        <div class="stage-card reveal" data-severity="0">
+          <svg class="stage-svg" viewBox="0 0 60 90"><line x1="30" y1="0" x2="30" y2="90" stroke="#f3c873" stroke-width="2"/></svg>
+          <div class="stage-fingers">&lt; 1 指</div>
+          <div class="stage-name">正常</div>
+          <div class="stage-desc">Normal · No gap</div>
+        </div>
+        <div class="stage-card reveal" data-severity="1">
+          <svg class="stage-svg" viewBox="0 0 60 90">
+            <line x1="26" y1="0" x2="26" y2="90" stroke="#cdc1a4" stroke-width="1.6"/>
+            <line x1="34" y1="0" x2="34" y2="90" stroke="#cdc1a4" stroke-width="1.6"/>
+          </svg>
+          <div class="stage-fingers">2 – 3 指</div>
+          <div class="stage-name">輕度分離</div>
+          <div class="stage-desc">Mild separation</div>
+        </div>
+        <div class="stage-card reveal" data-severity="2">
+          <svg class="stage-svg" viewBox="0 0 60 90">
+            <line x1="22" y1="0" x2="22" y2="90" stroke="#cdc1a4" stroke-width="1.6"/>
+            <line x1="38" y1="0" x2="38" y2="90" stroke="#cdc1a4" stroke-width="1.6"/>
+            <line x1="22" y1="45" x2="38" y2="45" stroke="#7c7560" stroke-width=".6" stroke-dasharray="2 2"/>
+          </svg>
+          <div class="stage-fingers">3 – 4 指</div>
+          <div class="stage-name">中度分離</div>
+          <div class="stage-desc">Moderate</div>
+        </div>
+        <div class="stage-card reveal" data-severity="3">
+          <svg class="stage-svg" viewBox="0 0 60 90">
+            <line x1="16" y1="0" x2="16" y2="90" stroke="#d96866" stroke-width="1.6"/>
+            <line x1="44" y1="0" x2="44" y2="90" stroke="#d96866" stroke-width="1.6"/>
+            <path d="M16 20 L44 25 M16 40 L44 35 M16 60 L44 65 M16 80 L44 78" stroke="#d96866" stroke-width=".5" opacity=".5"/>
+          </svg>
+          <div class="stage-fingers">&gt; 4 指</div>
+          <div class="stage-name">嚴重分離</div>
+          <div class="stage-desc">Severe · Needs care</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 3: SERVICES ============ -->
+  <section class="services">
+    <div class="section-mark">
+      <span class="mk-num">III</span>
+      <span class="mk-line"></span>
+      <span class="mk-en">What my hands do</span>
+    </div>
+
+    <h2 class="reveal">我的雙手會做的事 <span class="brush" style="font-size:1.5rem;margin-left:14px">manus operis</span></h2>
+    <p class="reveal" style="max-width:680px;margin-top:14px">
+      我幫產後媽媽做的事，比一般人想像的多一些。<em style="color:var(--gold-bright);font-style:italic">這不只是「按摩」</em>——這是用護理師訓練過的眼睛，看妳身體哪裡走錯了路，然後一寸一寸地把它帶回來。
+    </p>
+
+    <div class="services-grid">
+      <div class="svc-card reveal">
+        <span class="svc-num">i.</span>
+        <span class="svc-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+        <h3>腹直肌分離評估</h3>
+        <span class="svc-en">Diastasis Recti Assessment</span>
+        <p>用我的兩根手指，量出妳腹白線分開了多少。告訴妳這是輕度、中度、還是需要更積極處理的程度。妳會知道身體現在的真實狀況。</p>
+      </div>
+      <div class="svc-card reveal">
+        <span class="svc-num">ii.</span>
+        <span class="svc-icon"><i class="fa-solid fa-hands-holding-circle"></i></span>
+        <h3>核心修復療程</h3>
+        <span class="svc-en">Core Repair Therapy</span>
+        <p>從深層筋膜開始，一層一層把腹腔重新喚醒。不是讓妳變瘦，是讓妳的核心<em style="color:var(--gold-bright);font-style:italic">重新有力氣</em>，讓妳抱小孩的時候腰不會痛。</p>
+      </div>
+      <div class="svc-card reveal">
+        <span class="svc-num">iii.</span>
+        <span class="svc-icon"><i class="fa-solid fa-spa"></i></span>
+        <h3>骨盆腔保養</h3>
+        <span class="svc-en">Pelvic Floor Care</span>
+        <p>懷孕生產對骨盆是巨大的工程。我會幫妳處理鬆弛、漏尿、髖關節的位移。這些事情很多醫生不會主動講，但它們會跟妳很久。</p>
+      </div>
+      <div class="svc-card reveal">
+        <span class="svc-num">iv.</span>
+        <span class="svc-icon"><i class="fa-solid fa-droplet"></i></span>
+        <h3>淋巴疏通與循環</h3>
+        <span class="svc-en">Lymphatic Drainage</span>
+        <p>產後身體會囤水、會腫、會卡住。手法很輕——但有方向性。讓妳的身體記得液體應該怎麼流動。</p>
+      </div>
+      <div class="svc-card reveal">
+        <span class="svc-num">v.</span>
+        <span class="svc-icon"><i class="fa-solid fa-house-medical"></i></span>
+        <h3>到府療程</h3>
+        <span class="svc-en">Home Visit Service</span>
+        <p>不用找人帶小孩，不用想辦法出門。我帶我所有的工具和雙手，<em style="color:var(--gold-bright);font-style:italic">走進妳的客廳</em>。妳只要躺下來。</p>
+      </div>
+      <div class="svc-card reveal">
+        <span class="svc-num">vi.</span>
+        <span class="svc-icon"><i class="fa-solid fa-heart-pulse"></i></span>
+        <h3>產後身心諮詢</h3>
+        <span class="svc-en">Postpartum Counseling</span>
+        <p>我是退役護理師。我聽得懂妳說什麼。沒睡覺的疲憊、產後憂鬱、餵奶的痛——我們可以一起談，不會讓妳覺得自己很糟糕。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 3.5: PROOF OF WORK ============ -->
+  <section class="proof">
+    <div class="section-mark">
+      <span class="mk-num">III·b</span>
+      <span class="mk-line"></span>
+      <span class="mk-en">Plates from the studio · evidentia</span>
+    </div>
+
+    <h2 class="reveal">案例與器具 <span class="brush" style="font-size:1.5rem;margin-left:14px">tabulae meae</span></h2>
+    <div class="proof-intro">
+      <p class="reveal">這幾張是我自己工作室拍的——不是 stock photo，不是借來的範例。每一張都是我手做出來的證據。</p>
+      <p class="reveal">我把它們放在這裡，是因為——<em>當妳在 Google 搜「產後修復」時，妳找到的大部分是廣告</em>。我希望妳看到的是真實的東西：肚子真的會這樣分開、束帶真的可以這樣綁、改變真的會發生。</p>
+    </div>
+
+    <div class="proof-grid">
+      <div class="proof-plate reveal">
+        <span class="pl-label">PLATE α — Belly Binding</span>
+        <div class="pl-img">
+          <img src="/assets/img/guild/candy199712000/belly_binding.webp" alt="產後束腹綁帶 — 我在工作室為產婦綁的傳統腹帶，重塑核心線條" loading="lazy">
+          <span class="pl-corner tl"></span><span class="pl-corner tr"></span><span class="pl-corner bl"></span><span class="pl-corner br"></span>
+          <div class="pl-overlay"></div>
+          <div class="pl-coord">N 22.6273° · 高雄工作室</div>
+        </div>
+        <h4>傳統綁帶</h4>
+        <span class="pl-en">— Traditional Belly Binding —</span>
+        <p>用棉布一圈一圈地把腹腔重新「合起來」。看起來像古法，其實有非常精準的張力控制——綁太緊會傷，綁不夠不會修。</p>
+      </div>
+
+      <div class="proof-plate reveal">
+        <span class="pl-label">PLATE β — Front Aspect</span>
+        <div class="pl-img">
+          <img src="/assets/img/guild/candy199712000/before_after_front.webp" alt="正面腹部療程紀錄：白色虛線標示腹直肌的位置與分離程度的測量點" loading="lazy">
+          <span class="pl-corner tl"></span><span class="pl-corner tr"></span><span class="pl-corner bl"></span><span class="pl-corner br"></span>
+          <div class="pl-overlay"></div>
+          <div class="pl-coord">aspectus anterior · before / after</div>
+        </div>
+        <h4>正面測量</h4>
+        <span class="pl-en">— Linea Alba, anterior —</span>
+        <p>白色的虛線是我量出來的腹直肌邊緣。能看見「線在哪裡」，就能知道要把手放在哪裡——妳的身體會給我答案。</p>
+      </div>
+
+      <div class="proof-plate reveal">
+        <span class="pl-label">PLATE γ — Lateral View</span>
+        <div class="pl-img">
+          <img src="/assets/img/guild/candy199712000/before_after_side.webp" alt="側面腹部療程紀錄：四宮格對照，顯示腹腔線條的變化" loading="lazy">
+          <span class="pl-corner tl"></span><span class="pl-corner tr"></span><span class="pl-corner bl"></span><span class="pl-corner br"></span>
+          <div class="pl-overlay"></div>
+          <div class="pl-coord">aspectus lateralis · 4 panels</div>
+        </div>
+        <h4>側面四宮格</h4>
+        <span class="pl-en">— Lateral, 4 panels —</span>
+        <p>四個側面，兩個時間。改變不會一夕之間，但只要方向是對的，肚子記得回家的路。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 4: BREATH METER ============ -->
+  <section class="breath">
+    <div class="section-mark">
+      <span class="mk-num">IV</span>
+      <span class="mk-line"></span>
+      <span class="mk-en">Held breath, slow tide</span>
+    </div>
+
+    <div class="breath-intro">
+      <div class="breath-text">
+        <h2 class="reveal">深海教我的事 <span class="brush" style="font-size:1.5rem;display:block;margin-top:6px">apnea</span></h2>
+        <p class="lead reveal">自由潛水的第一堂課，老師教我們的不是怎麼游，是怎麼不動。怎麼把空氣關在身體裡，讓心跳<em style="color:var(--abyss-faint);font-style:italic">慢下來</em>。</p>
+        <p class="reveal">這件事現在每天幫到我。當我把手放在一個媽媽的腹部上，我能聽到她身體哪裡在用力、哪裡在屏住、哪裡其實已經很久沒有放鬆了。</p>
+        <p class="reveal">妳要不要試試看？把滑鼠按住，跟著我一起閉氣。看妳能撐多久——這是所有產後修復的<em style="color:var(--abyss-faint);font-style:italic">起點</em>。</p>
+      </div>
+
+      <div class="breath-meter reveal">
+        <span class="bm-label">Static Apnea Trainer</span>
+        <div class="breath-circle" id="breathCircle">
+          <svg viewBox="0 0 200 200">
+            <circle class="bc-bg" cx="100" cy="100" r="90"/>
+            <circle class="bc-fill" cx="100" cy="100" r="90"/>
+          </svg>
+          <div class="bc-center">
+            <div class="bc-time" id="breathTime">0.0″</div>
+            <div class="bc-state" id="breathState">Press &amp; Hold</div>
+          </div>
+        </div>
+        <div class="bm-instructions">按住下面的按鈕，跟著我屏息</div>
+        <button class="btn" id="breathBtn" type="button">
+          <i class="fa-solid fa-water"></i>
+          <span>HOLD BREATH</span>
+        </button>
+        <div class="bm-record">Personal Best: <b id="breathRecord">—</b></div>
+        <div class="breath-wisdom" id="breathWisdom">
+          <span class="bw-tier" id="bwTier">— she will speak when you breathe —</span>
+          <span class="bw-text" id="bwText"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 5: TRAVEL CONSTELLATION ============ -->
+  <section class="constellation">
+    <div class="section-mark">
+      <span class="mk-num">V</span>
+      <span class="mk-line"></span>
+      <span class="mk-en">A constellation of places I walked</span>
+    </div>
+
+    <div class="constellation-intro">
+      <h2 class="reveal">2025 的星圖 <span class="brush" style="font-size:1.5rem;margin-left:14px">stellae viatoris</span></h2>
+      <p class="reveal">這一年我換了工作，也走得很遠。八個月份、八個城市——其中一個是<em>花蓮的廢墟</em>。我在那裡當救災志工。我發現一件事：身體會記得每一個它走過的地方，這些地方<em>都會變成我對妳的雙手有用的東西</em>。</p>
+    </div>
+
+    <div id="travel-canvas" class="reveal">
+      <div class="tc-corner tl"></div>
+      <div class="tc-corner tr"></div>
+      <div class="tc-corner bl"></div>
+      <div class="tc-corner br"></div>
+      <div class="tc-label">Constellation Map · 2025</div>
+      <div class="tc-coord" id="tcCoord">N 22.6273° · E 120.3014°</div>
+    </div>
+
+    <div class="travel-list">
+      <a class="travel-pin reveal" data-lat="33.4996" data-lng="126.5312">
+        <div class="pin-month">January</div>
+        <div class="pin-place">Jeju · 濟州</div>
+        <div class="pin-note">South Korea</div>
+      </a>
+      <a class="travel-pin reveal" data-lat="22.1987" data-lng="113.5439">
+        <div class="pin-month">February</div>
+        <div class="pin-place">Macau · 澳門</div>
+        <div class="pin-note">SAR · First visit</div>
+      </a>
+      <a class="travel-pin reveal" data-lat="13.7563" data-lng="100.5018">
+        <div class="pin-month">April</div>
+        <div class="pin-place">Thailand · 泰國</div>
+        <div class="pin-note">Bangkok</div>
+      </a>
+      <a class="travel-pin reveal" data-lat="22.1987" data-lng="113.5439">
+        <div class="pin-month">May</div>
+        <div class="pin-place">Macau · 澳門</div>
+        <div class="pin-note">Returned</div>
+      </a>
+      <a class="travel-pin reveal" data-lat="22.2761" data-lng="113.5767">
+        <div class="pin-month">June</div>
+        <div class="pin-place">Zhuhai · 珠海</div>
+        <div class="pin-note">+ Hanoi 河內</div>
+      </a>
+      <a class="travel-pin reveal" data-lat="23.5711" data-lng="119.5793">
+        <div class="pin-month">July</div>
+        <div class="pin-place">Penghu · 澎湖</div>
+        <div class="pin-note">Island air</div>
+      </a>
+      <a class="travel-pin reveal" data-lat="34.6937" data-lng="135.5023">
+        <div class="pin-month">August</div>
+        <div class="pin-place">Osaka · 大阪</div>
+        <div class="pin-note">Japan</div>
+      </a>
+      <a class="travel-pin reveal special" data-lat="23.9871" data-lng="121.6015">
+        <div class="pin-month">October · Volunteer</div>
+        <div class="pin-place">Hualien · 花蓮救災</div>
+        <div class="pin-note">Disaster relief</div>
+      </a>
+      <a class="travel-pin reveal" data-lat="22.5431" data-lng="114.0579">
+        <div class="pin-month">October</div>
+        <div class="pin-place">Shenzhen · 深圳</div>
+        <div class="pin-note">Mainland</div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 6: THREE CATS ============ -->
+  <section class="cats">
+    <div class="section-mark">
+      <span class="mk-num">VI</span>
+      <span class="mk-line"></span>
+      <span class="mk-en">Three soft witnesses</span>
+    </div>
+
+    <h2 class="reveal">家裡的貓 <span class="brush" style="font-size:1.5rem;margin-left:14px">felēs</span></h2>
+
+    <div class="cats-gallery reveal">
+      <figure class="cat-photo-card">
+        <div class="cat-photo">
+          <img src="/assets/img/guild/candy199712000/cat_sleeper.webp" alt="One of the cats at home" loading="lazy">
+        </div>
+      </figure>
+      <figure class="cat-photo-card">
+        <div class="cat-photo">
+          <img src="/assets/img/guild/candy199712000/cat_biter.webp" alt="One of the cats at home" loading="lazy">
+        </div>
+      </figure>
+    </div>
+
+    <div class="cats-note reveal">
+      <p>
+        家裡有三隻——<em>但只有兩隻肯讓我拍。</em><br>
+        牠們不在乎我哪一年換了工作，也不知道什麼是腹白線。<br>
+        牠們只在乎——<em>我躺下來的時候，要爬到我身上</em>。<br>
+        每個早上醒來，我身上都會壓著一隻，手臂上會多一個齒印，<br>
+        門口的角落，會有一雙眼睛在看我。<br>
+        <span class="cn-latin">— tres, semper, quietae —</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 7: BELIEFS ============ -->
+  <section class="beliefs">
+    <div class="section-mark">
+      <span class="mk-num">VII</span>
+      <span class="mk-line"></span>
+      <span class="mk-en">What I believe</span>
+    </div>
+
+    <h2 class="reveal">我相信的兩件事 <span class="brush" style="font-size:1.5rem;margin-left:14px">credo</span></h2>
+
+    <div class="beliefs-grid">
+      <div class="belief-card reveal">
+        <span class="quote-mark">"</span>
+        <blockquote>身體會記得回來的路——<br>它只是需要有人在旁邊。</blockquote>
+        <div class="belief-attr">— credo I · de corpore</div>
+      </div>
+      <div class="belief-spine"><div class="seam-knot"></div></div>
+      <div class="belief-card reveal">
+        <span class="quote-mark">"</span>
+        <blockquote>該放在心上的人，<br>就現在去靠近一點。</blockquote>
+        <div class="belief-attr">— credo II · why I went to Hualien</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 8: CONTACT ============ -->
+  <section class="contact">
+    <div class="section-mark">
+      <span class="mk-num">VIII</span>
+      <span class="mk-en">Find me · come to me</span>
+    </div>
+
+    <h2 class="reveal">如果妳想找我 <span class="brush" style="font-size:1.5rem;display:block;margin-top:6px">vocatio</span></h2>
+    <p class="contact-lead reveal">我在高雄，可以到妳家。<br>不用化妝、不用收拾，妳只要躺下來。</p>
+
+    <div class="contact-info reveal">
+      <span><i class="fa-solid fa-map-pin"></i> 高雄 / Kaohsiung</span>
+      <span><i class="fa-solid fa-house-chimney-medical"></i> 可到府服務</span>
+      <span><i class="fa-solid fa-shop"></i> Rz 產後療癒室</span>
+    </div>
+
+    <div class="contact-links">
+      <a class="btn primary" href="https://www.instagram.com/ma_ma00100/" target="_blank" rel="noopener">
+        <i class="fa-brands fa-instagram"></i>
+        <span>WORKSHOP · ma_ma00100</span>
+      </a>
+      <a class="btn" href="https://www.instagram.com/candy199712000/" target="_blank" rel="noopener">
+        <i class="fa-brands fa-instagram"></i>
+        <span>PERSONAL IG</span>
+      </a>
+      <a class="btn" href="https://www.threads.com/@candy199712000" target="_blank" rel="noopener">
+        <i class="fa-brands fa-threads"></i>
+        <span>THREADS</span>
+      </a>
+    </div>
+
+    <!-- PULSE FEEL — a slow freediver's heartbeat -->
+    <div class="pulse-module reveal">
+      <p class="pm-intro">
+        按住下面的按鈕，<em>感覺我的心跳</em>。<br>
+        這是我潛到 20 米時學會的節奏——每分鐘 42 下，很慢，很穩。<br>
+        <em>這就是我的手放在妳身上時的節奏。</em>
+      </p>
+      <div class="pulse-circle" id="pulseCircle">
+        <div class="pc-ring-2"></div>
+        <div class="pc-ring"></div>
+        <div class="pc-dot"></div>
+        <div class="pc-center">
+          <div class="pc-bpm" id="pcBpm">—</div>
+          <div class="pc-bpm-label">bpm</div>
+        </div>
+      </div>
+      <button class="pulse-btn" id="pulseBtn" type="button">
+        <i class="fa-solid fa-hand-holding-heart"></i>
+        <span>PRESS &amp; HOLD</span>
+      </button>
+      <div class="pulse-reveal" id="pulseReveal"></div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-mark">
+      <span class="fm-line"></span>
+      <span class="fm-symbol">真</span>
+      <span class="fm-line"></span>
+    </div>
+    <p>「我從病房走進深海，再走進你家客廳。」</p>
+    <div class="footer-rz">
+      <img src="/assets/img/guild/candy199712000/rz_logo.webp" alt="Rz 產後療癒室 brand mark">
+    </div>
+    <p style="font-style:normal;color:var(--vellum-faint);font-size:.78rem">— Made with ♥ by SuperGalen's Dungeon —</p>
+    <div class="footer-meta">Folio CXXXVIII · De linea alba · MMXXVI</div>
+  </footer>
+</main>
+
+<script>
+/* ===========================================================
+   CANDY199712000 — LINEA ALBA INTERACTIVE LAYER
+   =========================================================== */
+
+(function(){
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Mark JS as enabled so reveals get hidden — without JS, all content stays visible
+  document.documentElement.classList.add('js-on');
+
+  /* ============ CUSTOM NEEDLE CURSOR ============ */
+  const cursor = document.getElementById('needleCursor');
+  let mx = window.innerWidth/2, my = window.innerHeight/2, cx = mx, cy = my;
+  if (cursor && !('ontouchstart' in window)) {
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function loop(){
+      cx += (mx - cx) * 0.18;
+      cy += (my - cy) * 0.18;
+      cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%,-50%)`;
+      requestAnimationFrame(loop);
+    }
+    loop();
+    document.querySelectorAll('a, button, .btn, .svc-card, .life-node, .travel-pin, .cat-card, .belief-card').forEach(el => {
+      el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+      el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+    });
+  }
+
+  /* ============================================================
+     WATER RIPPLE — click anywhere = a stone in water
+     ============================================================ */
+  document.addEventListener('click', e => {
+    const target = e.target;
+    if (target && target.closest && target.closest('a, button, input, .pulse-btn, .dc-handle, .probe-finger, .global-thread, .suture-knot, .suture-fragment')) return;
+    const r = document.createElement('div');
+    r.className = 'water-ripple';
+    r.style.left = e.clientX + 'px';
+    r.style.top = e.clientY + 'px';
+    document.body.appendChild(r);
+    setTimeout(() => r.remove(), 1700);
+  });
+
+  /* ============================================================
+     DEPTH GAUGE — scroll = freedive descent
+     The visitor's "depth" maps to scroll position. 0m at top,
+     20m at the bottom. Background dims slightly with depth.
+     ============================================================ */
+  const depthGauge = document.getElementById('depthGauge');
+  const dgBubble = document.getElementById('dgBubble');
+  const dgReadout = document.getElementById('dgReadout');
+  if (depthGauge && dgBubble){
+    let shown = false;
+    let lastDepth = 0;
+
+    function updateDepth(){
+      const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+      const t = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+      const depthMeters = (t * 20).toFixed(1);
+      // Position bubble: 18px (top) to (gauge height - 18)
+      const gaugeH = 340;
+      const railTop = 18;
+      const railBot = gaugeH - 18;
+      const bubbleY = railTop + (railBot - railTop) * t;
+      dgBubble.style.top = bubbleY + 'px';
+      dgReadout.innerHTML = depthMeters + ' m<small>your depth</small>';
+
+      // Show gauge after first scroll
+      if (!shown && window.scrollY > 100){
+        depthGauge.classList.add('visible');
+        shown = true;
+      }
+
+      // Tint the page slightly cooler/darker as we descend
+      const dimmer = t * 0.18;
+      document.documentElement.style.setProperty('--depth-dim', dimmer.toString());
+      lastDepth = t;
+    }
+
+    window.addEventListener('scroll', updateDepth, {passive:true});
+    window.addEventListener('resize', updateDepth);
+    updateDepth();
+  }
+
+  /* ============ P5.JS BACKGROUND — RISING BUBBLES ============
+     Slow air bubbles ascending from below, like when a freediver
+     exhales. Varying sizes and wobble. Specific to her water world.
+     ============================================================ */
+  const p5Sketch = (p) => {
+    let bubbles = [];
+    let depthOffset = 0;
+    let W = 0, H = 0;
+
+    function spawnBubble(startY){
+      return {
+        x: Math.random() * W,
+        y: startY !== undefined ? startY : H + 20 + Math.random() * 80,
+        r: 2 + Math.random() * 8,           // radius 2–10 px
+        speed: 0.2 + Math.random() * 0.7,   // rise speed (px/frame)
+        wobbleSpeed: 0.008 + Math.random() * 0.012,
+        wobbleAmp: 8 + Math.random() * 18,
+        wobblePhase: Math.random() * Math.PI * 2,
+        opacity: 0.35 + Math.random() * 0.45,
+      };
+    }
+
+    p.setup = function(){
+      W = window.innerWidth;
+      H = window.innerHeight;
+      const c = p.createCanvas(W, H);
+      c.parent('p5-canvas');
+      p.noStroke();
+      p.frameRate(reduceMotion ? 12 : 30);
+      // Seed with some bubbles at random heights
+      const count = reduceMotion ? 10 : 22;
+      for (let i = 0; i < count; i++){
+        bubbles.push(spawnBubble(Math.random() * H));
+      }
+    };
+    p.windowResized = function(){
+      W = window.innerWidth; H = window.innerHeight;
+      p.resizeCanvas(W, H);
+    };
+
+    p.draw = function(){
+      p.clear();
+
+      // Scroll depth slows bubbles (we're deeper, pressure is higher)
+      const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+      const depth = Math.min(1, window.scrollY / maxScroll);
+      depthOffset += (depth - depthOffset) * 0.05;
+      const speedMul = 1 - depthOffset * 0.45;
+
+      for (let i = bubbles.length - 1; i >= 0; i--){
+        const b = bubbles[i];
+        b.wobblePhase += b.wobbleSpeed;
+        b.y -= b.speed * speedMul;
+        const xx = b.x + Math.sin(b.wobblePhase) * b.wobbleAmp;
+
+        // Outer rim — pale cyan circle
+        p.noFill();
+        p.stroke(173, 220, 240, 140 * b.opacity);
+        p.strokeWeight(1);
+        p.circle(xx, b.y, b.r * 2);
+        // Highlight — a small crescent on upper-left (light source from above)
+        p.noStroke();
+        p.fill(244, 234, 215, 90 * b.opacity);
+        p.arc(xx - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.7, b.r * 0.7, Math.PI * 1.1, Math.PI * 1.7);
+        // Faint inner gradient fill
+        p.fill(108, 178, 207, 22 * b.opacity);
+        p.circle(xx, b.y, b.r * 2 - 2);
+
+        if (b.y < -40){
+          bubbles[i] = spawnBubble();
+        }
+      }
+    };
+  };
+  if (typeof p5 !== 'undefined') new p5(p5Sketch);
+
+  /* ============ THREE.JS — CONSTELLATION OF TRAVELS ============ */
+  if (typeof THREE !== 'undefined'){
+    const container = document.getElementById('three-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.z = 60;
+    const renderer = new THREE.WebGLRenderer({alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    // Create a circular particle texture (canvas → three.js texture)
+    const particleTex = (() => {
+      const size = 64;
+      const cv = document.createElement('canvas');
+      cv.width = size; cv.height = size;
+      const cx = cv.getContext('2d');
+      const grad = cx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+      grad.addColorStop(0.0, 'rgba(255,255,255,1)');
+      grad.addColorStop(0.4, 'rgba(255,255,255,0.6)');
+      grad.addColorStop(1.0, 'rgba(255,255,255,0)');
+      cx.fillStyle = grad;
+      cx.fillRect(0, 0, size, size);
+      const tex = new THREE.CanvasTexture(cv);
+      tex.needsUpdate = true;
+      return tex;
+    })();
+
+    // Floating particles — soft tide motes
+    const particleCount = reduceMotion ? 80 : 220;
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++){
+      positions[i*3]   = (Math.random() - 0.5) * 200;
+      positions[i*3+1] = (Math.random() - 0.5) * 120;
+      positions[i*3+2] = (Math.random() - 0.5) * 100;
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color:0xe0a64a, size:1.2, transparent:true, opacity:0.55,
+      map:particleTex, alphaTest:0.01, depthWrite:false,
+      blending:THREE.AdditiveBlending,
+    });
+    const points = new THREE.Points(geom, mat);
+    scene.add(points);
+
+    // A second cooler particle layer
+    const positions2 = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++){
+      positions2[i*3]   = (Math.random() - 0.5) * 240;
+      positions2[i*3+1] = (Math.random() - 0.5) * 140;
+      positions2[i*3+2] = (Math.random() - 0.5) * 120;
+    }
+    const geom2 = new THREE.BufferGeometry();
+    geom2.setAttribute('position', new THREE.BufferAttribute(positions2, 3));
+    const mat2 = new THREE.PointsMaterial({
+      color:0x6cb2cf, size:0.9, transparent:true, opacity:0.5,
+      map:particleTex, alphaTest:0.01, depthWrite:false,
+      blending:THREE.AdditiveBlending,
+    });
+    const points2 = new THREE.Points(geom2, mat2);
+    scene.add(points2);
+
+    function animate(){
+      points.rotation.y += 0.0008;
+      points.rotation.x += 0.0003;
+      points2.rotation.y -= 0.0006;
+      points2.rotation.x += 0.0002;
+      renderer.render(scene, camera);
+      if (!reduceMotion) requestAnimationFrame(animate);
+    }
+    animate();
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+
+  /* ============ TRAVEL CANVAS — CHRONOLOGICAL ARC ============ */
+  const travelCanvas = document.getElementById('travel-canvas');
+  if (travelCanvas){
+    const cv = document.createElement('canvas');
+    cv.style.position = 'absolute';
+    cv.style.inset = '0';
+    cv.style.width = '100%';
+    cv.style.height = '100%';
+    travelCanvas.appendChild(cv);
+    const ctx = cv.getContext('2d');
+    function resize(){
+      const r = travelCanvas.getBoundingClientRect();
+      cv.width = r.width * 2;
+      cv.height = r.height * 2;
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.scale(2, 2);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Travel data — chronological order, each with month number
+    // index drives the horizontal position, arc height adds visual separation
+    const places = [
+      {month:1,  en:'Jeju',     zh:'濟州',    country:'South Korea'},
+      {month:2,  en:'Macau',    zh:'澳門',    country:'SAR'},
+      {month:4,  en:'Thailand', zh:'泰國',    country:'Bangkok'},
+      {month:5,  en:'Macau',    zh:'澳門',    country:'Returned'},
+      {month:6,  en:'Zhuhai',   zh:'珠海',    country:'+ Hanoi 河內'},
+      {month:7,  en:'Penghu',   zh:'澎湖',    country:'Island air'},
+      {month:8,  en:'Osaka',    zh:'大阪',    country:'Japan'},
+      {month:10, en:'Hualien',  zh:'花蓮救災', country:'Disaster relief', special:true},
+      {month:10, en:'Shenzhen', zh:'深圳',    country:'Mainland'},
+    ];
+
+    let t = 0;
+    function draw(){
+      const r = travelCanvas.getBoundingClientRect();
+      const w = r.width, h = r.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Layout: a chronological arc from left to right, bowing upward
+      // Each point gets horizontal slot along x, and y = arc offset + alternating offset for no overlap
+      const marginX = 80;
+      const marginTopForLabels = 50;
+      const marginBottomForLabels = 60;
+      const usableW = w - marginX * 2;
+      const centerY = h * 0.52;
+      const arcAmplitude = Math.min(h * 0.2, 60);
+
+      // Star background (sparse, not busy)
+      ctx.fillStyle = 'rgba(244,234,215,0.08)';
+      for (let i = 0; i < 40; i++){
+        const sx = Math.abs((Math.sin(i * 12.9898) * 43758.5453) % 1) * w;
+        const sy = Math.abs((Math.cos(i * 78.233) * 43758.5453) % 1) * h;
+        const rr = ((Math.sin(i * 5.14 + t * 0.01) + 1) / 2) * 1.2 + 0.3;
+        ctx.beginPath();
+        ctx.arc(sx, sy, rr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Compute x for each place based on chronological index
+      const n = places.length;
+      const stepX = usableW / (n - 1);
+      const pts = places.map((p, i) => {
+        const x = marginX + i * stepX;
+        // Gentle arc curve from center up
+        const arcY = centerY - Math.sin((i / (n - 1)) * Math.PI) * arcAmplitude;
+        return {x, y: arcY, ...p, idx: i};
+      });
+
+      // Draw the connecting arc (dashed)
+      ctx.strokeStyle = 'rgba(108,178,207,0.4)';
+      ctx.lineWidth = 0.9;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++){
+        // Smooth curve between points
+        const prev = pts[i-1], cur = pts[i];
+        const cpx = (prev.x + cur.x) / 2;
+        ctx.quadraticCurveTo(cpx, prev.y, cur.x, cur.y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Horizontal timeline baseline (very faint)
+      ctx.strokeStyle = 'rgba(108,178,207,0.15)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(marginX - 10, centerY + arcAmplitude + 8);
+      ctx.lineTo(w - marginX + 10, centerY + arcAmplitude + 8);
+      ctx.stroke();
+
+      // Month tick marks below the baseline
+      ctx.fillStyle = 'rgba(108,178,207,0.5)';
+      ctx.font = "9px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center';
+      for (let m = 1; m <= 12; m++){
+        const tx = marginX + ((m - 1) / 11) * usableW;
+        ctx.beginPath();
+        ctx.arc(tx, centerY + arcAmplitude + 8, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        if (m % 2 === 1){
+          ctx.fillStyle = 'rgba(108,178,207,0.45)';
+          ctx.fillText(m + '月', tx, centerY + arcAmplitude + 24);
+          ctx.fillStyle = 'rgba(108,178,207,0.5)';
+        }
+      }
+
+      // Draw each place
+      pts.forEach((p, i) => {
+        const pulse = (Math.sin(t * 0.03 + i * 0.7) + 1) / 2;
+        const isSpecial = p.special;
+        const color = isSpecial ? '#d96866' : '#cdc1a4';
+        const glowColor = isSpecial ? 'rgba(217,104,102,' : 'rgba(108,178,207,';
+
+        // Halo
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5 + pulse * 3, 0, Math.PI * 2);
+        ctx.fillStyle = glowColor + (0.15 + pulse * 0.18) + ')';
+        ctx.fill();
+
+        // Star point
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, isSpecial ? 3 : 2.4, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Line from point down to the timeline tick
+        ctx.strokeStyle = isSpecial ? 'rgba(217,104,102,0.35)' : 'rgba(108,178,207,0.25)';
+        ctx.lineWidth = 0.6;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y + 4);
+        const monthTickX = marginX + ((p.month - 1) / 11) * usableW;
+        ctx.lineTo(monthTickX, centerY + arcAmplitude + 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label ABOVE the point — alternating heights to avoid collision
+        const labelY = p.y - 20 - (i % 2) * 16;
+        // Connector from point to label
+        ctx.strokeStyle = isSpecial ? 'rgba(217,104,102,0.35)' : 'rgba(108,178,207,0.25)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 4);
+        ctx.lineTo(p.x, labelY + 2);
+        ctx.stroke();
+
+        // English + Chinese name
+        ctx.fillStyle = isSpecial ? '#d96866' : 'rgba(244,234,215,0.88)';
+        ctx.font = "italic 11px 'Cormorant Garamond', serif";
+        ctx.textAlign = 'center';
+        ctx.fillText(p.en, p.x, labelY - 6);
+        ctx.fillStyle = isSpecial ? 'rgba(217,104,102,0.8)' : 'rgba(244,234,215,0.6)';
+        ctx.font = "9px 'JetBrains Mono', monospace";
+        ctx.fillText(p.zh, p.x, labelY + 6);
+      });
+
+      // Origin label — "Kaohsiung (HOME)" at bottom-left corner
+      ctx.fillStyle = 'rgba(243,200,115,0.75)';
+      ctx.font = "italic 11px 'Cormorant Garamond', serif";
+      ctx.textAlign = 'left';
+      ctx.fillText('Origin · 高雄', marginX - 60, h - 20);
+      ctx.fillStyle = 'rgba(243,200,115,0.45)';
+      ctx.font = "9px 'JetBrains Mono', monospace";
+      ctx.fillText('N 22.6273° · E 120.3014°', marginX - 60, h - 8);
+
+      t++;
+      if (!reduceMotion) requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  /* ============ BREATH METER ============ */
+  const breathBtn = document.getElementById('breathBtn');
+  const breathCircle = document.getElementById('breathCircle');
+  const breathTime = document.getElementById('breathTime');
+  const breathState = document.getElementById('breathState');
+  const breathRecord = document.getElementById('breathRecord');
+  const fillCircle = breathCircle?.querySelector('.bc-fill');
+  let holding = false, startTime = 0, rafId = null, best = 0;
+
+  function updateBreath(){
+    if (!holding) return;
+    const elapsed = (Date.now() - startTime) / 1000;
+    breathTime.textContent = elapsed.toFixed(1) + '″';
+    // Fill circle proportional to elapsed (full at 60s)
+    const progress = Math.min(elapsed / 60, 1);
+    fillCircle.style.strokeDashoffset = (565 - 565 * progress).toString();
+    rafId = requestAnimationFrame(updateBreath);
+  }
+
+  function startHold(e){
+    if (e) e.preventDefault();
+    if (holding) return;
+    holding = true;
+    startTime = Date.now();
+    breathCircle.classList.add('holding');
+    breathState.textContent = 'Holding…';
+    updateBreath();
+  }
+
+  function endHold(){
+    if (!holding) return;
+    holding = false;
+    cancelAnimationFrame(rafId);
+    const elapsed = (Date.now() - startTime) / 1000;
+    if (elapsed > best){
+      best = elapsed;
+      breathRecord.textContent = best.toFixed(1) + '″';
+    }
+    breathCircle.classList.remove('holding');
+    breathState.textContent = 'Released';
+    setTimeout(() => {
+      if (!holding) {
+        breathState.textContent = 'Press & Hold';
+        breathTime.textContent = '0.0″';
+        fillCircle.style.strokeDashoffset = '565';
+      }
+    }, 1500);
+  }
+
+  if (breathBtn){
+    breathBtn.addEventListener('mousedown', startHold);
+    breathBtn.addEventListener('mouseup', endHold);
+    breathBtn.addEventListener('mouseleave', endHold);
+    breathBtn.addEventListener('touchstart', startHold, {passive:false});
+    breathBtn.addEventListener('touchend', endHold);
+    breathBtn.addEventListener('touchcancel', endHold);
+  }
+
+  /* ============ GSAP REVEAL ANIMATIONS ============ */
+  if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined'){
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Hero reveals (staggered)
+    gsap.set('.reveal-fade', {opacity:0, y:30});
+    gsap.to('.reveal-fade', {
+      opacity:1, y:0, duration:1.4, stagger:0.15, ease:'power3.out', delay:0.2
+    });
+
+    // Generic reveals
+    gsap.utils.toArray('.reveal').forEach(el => {
+      gsap.fromTo(el,
+        {opacity:0, y:38},
+        {
+          opacity:1, y:0, duration:1.1, ease:'power2.out',
+          scrollTrigger:{trigger:el, start:'top 85%', once:true}
+        }
+      );
+    });
+
+    // Animate the linea alba in the hero (stitch sutures appear)
+    const lineaPath = document.getElementById('lineaPath');
+    const sutures = document.getElementById('sutures');
+    if (lineaPath){
+      const len = lineaPath.getTotalLength();
+      lineaPath.style.strokeDasharray = len;
+      lineaPath.style.strokeDashoffset = len;
+      gsap.to(lineaPath, {
+        strokeDashoffset: 0,
+        duration: 2.4,
+        ease: 'power2.inOut',
+        delay: 0.8
+      });
+    }
+    if (sutures){
+      gsap.to(sutures, {
+        opacity: 0.85,
+        duration: 1.8,
+        delay: 2.2,
+        ease: 'power2.out'
+      });
+    }
+  }
+
+  /* ============ COORDINATE TICKER ============ */
+  const tcCoord = document.getElementById('tcCoord');
+  if (tcCoord){
+    let i = 0;
+    const coords = [
+      'N 22.6273° · E 120.3014°',  // Kaohsiung
+      'N 33.4996° · E 126.5312°',  // Jeju
+      'N 13.7563° · E 100.5018°',  // Bangkok
+      'N 23.9871° · E 121.6015°',  // Hualien
+      'N 34.6937° · E 135.5023°',  // Osaka
+    ];
+    setInterval(() => {
+      i = (i + 1) % coords.length;
+      tcCoord.textContent = coords[i];
+    }, 3200);
+  }
+
+  /* ============================================================
+     SIGNATURE INTERACTION #1 — ABSTRACT DRIFT
+     Two parallel gold lines that drift apart as the slider moves.
+     When you release, they slowly weave back together with sutures.
+     The metaphor: separation → reunion (her work).
+     ============================================================ */
+  const driftCanvas = document.getElementById('driftCanvas');
+  if (driftCanvas){
+    const lineA = document.getElementById('driftLineA');
+    const lineB = document.getElementById('driftLineB');
+    const sutures = document.getElementById('driftSutures');
+    const dpNum = document.getElementById('dpNum');
+    const dpText = document.getElementById('dpText');
+    const dvTier = document.getElementById('dvTier');
+    const dvText = document.getElementById('dvText');
+    const handle = document.getElementById('dcHandle');
+    const fill = document.getElementById('dcFill');
+    const track = handle.parentElement;
+
+    // Phase definitions — abstract numbers, not anatomical
+    const phases = [
+      {min:0,    max:0.05, num:'0', label:'united · 合一', tier:'phase · quies', text:'這就是身體本來的樣子——<em>一條完整的線</em>。沒有痕跡，沒有需要修的地方。', cls:''},
+      {min:0.05, max:0.3,  num:'I', label:'drifting · 微移', tier:'phase · principium', text:'剛剛開始——肉眼幾乎看不出來，但<em>身體知道</em>。這個階段，我會帶妳重新呼吸。', cls:''},
+      {min:0.3,  max:0.55, num:'II', label:'parted · 分開', tier:'phase · separatio', text:'這就是大部分產後媽媽會在的位置。<em>不是壞事，是訊息</em>——身體在告訴妳，它需要被引導回來。', cls:''},
+      {min:0.55, max:0.8,  num:'III', label:'distance · 距離', tier:'phase · longinquitas', text:'到這裡，妳可能已經感覺到腰會痠、抱小孩會吃力。<em>還是可以回來的</em>，但需要更多耐心，也需要更精準的手。', cls:'warn'},
+      {min:0.8,  max:1.01, num:'IV', label:'far apart · 太遠了', tier:'phase · longe', text:'這是我看過最遠的距離。但妳知道嗎？<em>連這個距離我都看過走回來的</em>。它需要的不是奇蹟，是時間和對的方法。', cls:'severe'}
+    ];
+
+    let value = 0; // 0 to 1
+    let healing = false;
+    let dragging = false;
+    let healAnim = null;
+
+    function update(v){
+      value = Math.max(0, Math.min(1, v));
+      // Move handle and fill
+      const pct = value * 100;
+      handle.style.left = pct + '%';
+      fill.style.width = pct + '%';
+      // Compute the curve offset for the two lines
+      // value=0 → lines coincide; value=1 → lines maximally apart
+      const offset = value * 50; // pixels of vertical separation at midpoint
+      lineA.setAttribute('d', `M40 120 Q400 ${120 - offset} 760 120`);
+      lineB.setAttribute('d', `M40 120 Q400 ${120 + offset} 760 120`);
+      // Sutures only visible when fully reunited
+      if (value < 0.05){
+        sutures.style.opacity = '1';
+        sutures.style.transition = 'opacity 1.4s ease-out';
+      } else {
+        sutures.style.opacity = '0';
+        sutures.style.transition = 'opacity .3s';
+      }
+      // Determine phase
+      const phase = phases.find(p => value >= p.min && value < p.max);
+      if (phase){
+        dpNum.textContent = phase.num;
+        dpText.textContent = phase.label;
+        dvTier.textContent = '— ' + phase.tier + ' —';
+        dvText.innerHTML = phase.text;
+        dpNum.className = 'dp-num ' + phase.cls;
+        dvTier.className = 'dv-tier ' + phase.cls;
+      }
+    }
+
+    function startHeal(){
+      // Cancel any existing heal animation
+      if (healAnim) cancelAnimationFrame(healAnim);
+      const startVal = value;
+      const startTime = Date.now();
+      const duration = Math.max(800, startVal * 2400); // longer to heal if more separated
+      function step(){
+        const elapsed = Date.now() - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        // Ease out — slow start, faster middle, soft landing
+        const ease = 1 - Math.pow(1 - t, 3);
+        const newVal = startVal * (1 - ease);
+        update(newVal);
+        if (t < 1) healAnim = requestAnimationFrame(step);
+        else healAnim = null;
+      }
+      healAnim = requestAnimationFrame(step);
+    }
+
+    function pointerDown(e){
+      e.preventDefault();
+      dragging = true;
+      handle.classList.add('grabbing');
+      if (healAnim){ cancelAnimationFrame(healAnim); healAnim = null; }
+    }
+    function pointerMove(e){
+      if (!dragging) return;
+      e.preventDefault();
+      const rect = track.getBoundingClientRect();
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      const v = (x - rect.left) / rect.width;
+      update(v);
+    }
+    function pointerUp(){
+      if (dragging){
+        dragging = false;
+        handle.classList.remove('grabbing');
+        // Auto-heal back to 0 over time
+        startHeal();
+      }
+    }
+
+    handle.addEventListener('mousedown', pointerDown);
+    handle.addEventListener('touchstart', pointerDown, {passive:false});
+    document.addEventListener('mousemove', pointerMove);
+    document.addEventListener('touchmove', pointerMove, {passive:false});
+    document.addEventListener('mouseup', pointerUp);
+    document.addEventListener('touchend', pointerUp);
+
+    // Click anywhere on track to jump
+    track.addEventListener('click', (e) => {
+      if (e.target === handle || handle.contains(e.target)) return;
+      const rect = track.getBoundingClientRect();
+      update((e.clientX - rect.left) / rect.width);
+      startHeal();
+    });
+
+    update(0);
+  }
+
+  /* ============================================================
+     SIGNATURE INTERACTION #2 — SUTURE PHILOSOPHY
+     Click on the global gold thread to drop a suture knot and
+     reveal one of Zhen's philosophy fragments.
+     ============================================================ */
+  const globalThread = document.querySelector('.global-thread');
+  if (globalThread){
+    const fragments = [
+      {zh:'我相信身體會記得回家的路。', en:'i. corpus meminit'},
+      {zh:'縫合需要的是耐心，不是力氣。', en:'ii. patientia, non vis'},
+      {zh:'產後修復不是讓妳變回從前——是讓妳變成一個新的、更穩的人。', en:'iii. non reditus, sed renatus'},
+      {zh:'每一個媽媽的肚子都是一張獨一無二的地圖。', en:'iv. mappa unica'},
+      {zh:'我在水裡學到的事，現在每天幫到我。', en:'v. ex aqua, ad manus'},
+      {zh:'妳不需要為自己的身體感到抱歉。', en:'vi. nulla excusatio'},
+      {zh:'如果妳累了，就讓我來。', en:'vii. veniam ad te'},
+    ];
+
+    let dropped = 0;
+    const placedY = [];
+    const minGap = 110; // minimum px between knots
+
+    // Counter UI
+    const counter = document.createElement('div');
+    counter.className = 'suture-counter';
+    counter.innerHTML = '<span class="sc-num">0</span> / 7 — sutures discovered';
+    document.body.appendChild(counter);
+
+    globalThread.addEventListener('click', (e) => {
+      if (dropped >= fragments.length) return;
+      const y = e.clientY;
+      // Avoid overlapping previous knots
+      if (placedY.some(py => Math.abs(py - y) < minGap)) return;
+      placedY.push(y);
+
+      const fragment = fragments[dropped];
+      const isLeft = (Math.random() < 0.5);
+      dropped++;
+
+      // Drop a knot at this Y position (relative to the global thread, fixed positioning)
+      const knot = document.createElement('div');
+      knot.className = 'suture-knot';
+      knot.style.top = (y - 7) + 'px';
+      document.body.appendChild(knot);
+
+      // Show fragment text near it
+      const frag = document.createElement('div');
+      frag.className = 'suture-fragment' + (isLeft ? ' left' : '');
+      frag.style.top = (y - 14) + 'px';
+      frag.innerHTML = `<span class="sf-num">Suture ${fragment.en}</span><br>「${fragment.zh}」`;
+      document.body.appendChild(frag);
+
+      // Update counter
+      counter.classList.add('visible');
+      counter.querySelector('.sc-num').textContent = dropped;
+      if (dropped === fragments.length) {
+        counter.classList.add('complete');
+        counter.innerHTML = '<span class="sc-num">7</span> / 7 — fully sutured';
+      }
+    });
+  }
+
+  /* ============================================================
+     SIGNATURE INTERACTION #4 — WARM HAND HOVER AURA
+     As the cursor moves, a soft gold aura follows it like a
+     therapist's warm hand. Paragraphs within the aura become
+     clearer/warmer, representing the clarity brought by touch.
+     ============================================================ */
+  const warmAura = document.getElementById('warmAura');
+  if (warmAura && !('ontouchstart' in window)){
+    let wx = window.innerWidth/2, wy = window.innerHeight/2;
+    let cwx = wx, cwy = wy;
+    let auraActive = false;
+    document.addEventListener('mousemove', e => {
+      wx = e.clientX;
+      wy = e.clientY;
+      if (!auraActive){
+        warmAura.classList.add('active');
+        auraActive = true;
+      }
+    });
+    document.addEventListener('mouseleave', () => {
+      warmAura.classList.remove('active');
+      auraActive = false;
+    });
+    function auraLoop(){
+      // Smooth lag
+      cwx += (wx - cwx) * 0.12;
+      cwy += (wy - cwy) * 0.12;
+      warmAura.style.transform = `translate(${cwx}px, ${cwy}px) translate(-50%,-50%)`;
+      // Warm any .warm-text under the aura
+      const warmEls = document.querySelectorAll('.warm-text');
+      warmEls.forEach(el => {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const dx = cx - cwx;
+        const dy = cy - cwy;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 200) el.classList.add('warmed');
+        else el.classList.remove('warmed');
+      });
+      requestAnimationFrame(auraLoop);
+    }
+    auraLoop();
+  }
+
+  /* ============================================================
+     SIGNATURE INTERACTION #5 — PULSE FEEL
+     Press and hold to feel Zhen's slow freediver pulse (42 bpm).
+     The gold orb beats in rhythm; reveal message after a few beats.
+     ============================================================ */
+  const pulseBtn = document.getElementById('pulseBtn');
+  const pulseCircle = document.getElementById('pulseCircle');
+  const pcBpm = document.getElementById('pcBpm');
+  const pulseReveal = document.getElementById('pulseReveal');
+  if (pulseBtn && pulseCircle){
+    let holding = false;
+    let beatInterval = null;
+    let beatCount = 0;
+    // 42 bpm = 1429ms per beat
+    const BPM = 42;
+    const BEAT_MS = 60000 / BPM;
+
+    const pulseMessages = [
+      {at:1, text:'—— 第一下。<em>妳感覺到了嗎？</em>'},
+      {at:3, text:'—— 繼續聽。我的心跳比妳慢，因為我學會了等待。'},
+      {at:5, text:'—— 這個速度，是我在幫媽媽做修復時的速度。<em>沒有急事</em>。'},
+      {at:8, text:'—— 妳已經比大部分人聽得久了。我在這裡，我在聽。'},
+    ];
+
+    function beat(){
+      pulseCircle.classList.add('beating');
+      setTimeout(() => pulseCircle.classList.remove('beating'), 180);
+      beatCount++;
+      pcBpm.textContent = BPM;
+      const msg = pulseMessages.find(m => m.at === beatCount);
+      if (msg){
+        pulseReveal.classList.remove('show');
+        setTimeout(() => {
+          pulseReveal.innerHTML = msg.text;
+          pulseReveal.classList.add('show');
+        }, 150);
+      }
+    }
+
+    function startPulse(e){
+      if (e) e.preventDefault();
+      if (holding) return;
+      holding = true;
+      beatCount = 0;
+      pulseBtn.classList.add('held');
+      beat();
+      beatInterval = setInterval(beat, BEAT_MS);
+    }
+    function endPulse(){
+      if (!holding) return;
+      holding = false;
+      clearInterval(beatInterval);
+      pulseBtn.classList.remove('held');
+      pulseCircle.classList.remove('beating');
+      pcBpm.textContent = '—';
+      // Keep the last reveal message visible for a while
+      setTimeout(() => {
+        if (!holding){
+          pulseReveal.classList.remove('show');
+        }
+      }, 4000);
+    }
+
+    pulseBtn.addEventListener('mousedown', startPulse);
+    pulseBtn.addEventListener('mouseup', endPulse);
+    pulseBtn.addEventListener('mouseleave', endPulse);
+    pulseBtn.addEventListener('touchstart', startPulse, {passive:false});
+    pulseBtn.addEventListener('touchend', endPulse);
+    pulseBtn.addEventListener('touchcancel', endPulse);
+  }
+
+  /* ============================================================
+     SIGNATURE INTERACTION #3 — BREATH WISDOM REVEAL
+     Hooks into existing breath meter to reveal Zhen's wisdom
+     based on how long you held your breath.
+     ============================================================ */
+  const breathWisdom = document.getElementById('breathWisdom');
+  const bwTier = document.getElementById('bwTier');
+  const bwText = document.getElementById('bwText');
+  if (breathBtn && breathWisdom){
+    const wisdomTiers = [
+      {min:0, max:5, tier:'tier · spectator',
+        text:'這是大部分人第一次的成績。<em>沒關係。</em>身體還沒準備好放棄空氣。'},
+      {min:5, max:15, tier:'tier · novice',
+        text:'10 秒——剛剛好夠妳發現「原來我可以更慢」。我教產後媽媽呼吸，第一週就是要找到這個節奏。'},
+      {min:15, max:30, tier:'tier · diver初階',
+        text:'這個秒數很有意思。我發現能夠在這裡安住的人，<em>對自己的身體有一種溫柔的覺察</em>。妳會是個好個案。'},
+      {min:30, max:45, tier:'tier · diver進階',
+        text:'30 秒以上——妳一定試過冥想或瑜伽，或者妳就是天生會聽身體。我喜歡這樣的妳。'},
+      {min:45, max:60, tier:'tier · 修行人',
+        text:'45 秒。我在自由潛水課第一次過 45 秒的時候，<em>哭了</em>。因為我發現原來我從來沒有真的安靜過。'},
+      {min:60, max:90, tier:'tier · 接近 free diver',
+        text:'1 分鐘。我練了 8 個月才到這裡。妳可能以為這只是憋氣——其實這是<em>妳的身體願意相信妳</em>的證據。'},
+      {min:90, max:9999, tier:'tier · 異類',
+        text:'妳是不是在水裡長大的？一分半以上的人，要不是運動員，就是有過某種長期練習。妳的身體有故事——我會很想聽。'},
+    ];
+
+    // Hook into existing endHold via mutation observation of #breathRecord
+    let lastBest = 0;
+    const recordEl = document.getElementById('breathRecord');
+    const observer = new MutationObserver(() => {
+      const txt = recordEl.textContent || '';
+      const match = txt.match(/([\d.]+)/);
+      if (match){
+        const time = parseFloat(match[1]);
+        if (time > 0 && Math.abs(time - lastBest) > 0.01){
+          lastBest = time;
+          const tier = wisdomTiers.find(t => time >= t.min && time < t.max);
+          if (tier){
+            breathWisdom.classList.remove('show');
+            setTimeout(() => {
+              bwTier.textContent = '— ' + tier.tier + ' —';
+              bwText.innerHTML = tier.text;
+              breathWisdom.classList.add('show');
+            }, 200);
+          }
+        }
+      }
+    });
+    observer.observe(recordEl, {childList:true, characterData:true, subtree:true});
+  }
+
+})();
+</script>
+
+</body>
+</html>
