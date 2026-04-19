@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Elliott Lu — INTJ 策劃者。橫跨房地產、月子中心、有害生物防治三個產業的營運官，會親自爬天花板看門縫的現場顧問。">
+<title>Elliott Lu | Site Survey Report — Subject: E.L.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600;700&family=Caveat:wght@600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  --paper:#fafbfc;
+  --paper-warm:#f6f4ed;
+  --paper-edge:#eef1f5;
+  --ink:#0a2540;
+  --ink-soft:#1a3a5c;
+  --blueprint:#1e6091;
+  --blueprint-pale:#5b8db8;
+  --grid:rgba(30,96,145,.12);
+  --accent:#ff8c42;
+  --accent-soft:rgba(255,140,66,.12);
+  --warn:#c5394a;
+  --warn-soft:rgba(197,57,74,.10);
+  --warn-ink:rgba(197,57,74,.65);
+  --text:#0a2540;
+  --text-muted:rgba(10,37,64,.55);
+  --text-faint:rgba(10,37,64,.32);
+  --hairline:rgba(30,96,145,.18);
+  --font-display:'Manrope',sans-serif;
+  --font-serif:'Cormorant Garamond',serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-hand:'Caveat',cursive;
+  --font-zh:'Noto Sans TC',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--paper);color:var(--text);font-family:var(--font-zh);overflow-x:hidden;cursor:default;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--paper-edge)}
+::-webkit-scrollbar-thumb{background:var(--blueprint-pale);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--blueprint)}
+::selection{background:var(--ink);color:var(--paper)}
+
+/* P5 BLUEPRINT BACKGROUND */
+#p5-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* CUSTOM CURSOR — surveyor crosshair */
+@media(hover:hover) and (pointer:fine){
+  body{cursor:none}
+  .cursor-cross{position:fixed;pointer-events:none;z-index:9998;width:34px;height:34px;transform:translate(-50%,-50%);transition:width .25s,height .25s,opacity .2s}
+  .cursor-cross::before,.cursor-cross::after{content:'';position:absolute;background:var(--blueprint);transition:background .2s}
+  .cursor-cross::before{top:50%;left:0;right:0;height:1px;transform:translateY(-50%)}
+  .cursor-cross::after{left:50%;top:0;bottom:0;width:1px;transform:translateX(-50%)}
+  .cursor-cross-ring{position:absolute;inset:0;border:1px solid var(--blueprint);border-radius:50%;opacity:.6}
+  body.hov .cursor-cross{width:50px;height:50px}
+  body.hov .cursor-cross::before,body.hov .cursor-cross::after{background:var(--warn)}
+  body.hov .cursor-cross-ring{border-color:var(--warn);opacity:.95;border-style:dashed}
+}
+
+/* TOP NAV */
+.back-nav{position:fixed;top:1.5rem;left:1.5rem;z-index:500;font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);text-decoration:none;letter-spacing:3px;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--hairline);background:rgba(250,251,252,.85);backdrop-filter:blur(8px);transition:color .3s,border-color .3s,transform .3s;animation:fadeInLeft 1s ease 1.4s both}
+.back-nav:hover{color:var(--blueprint);border-color:var(--blueprint)}
+@keyframes fadeInLeft{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes inkBleed{0%{transform:scale(0) rotate(-25deg);opacity:0}40%{opacity:.95}60%{transform:scale(1.08) rotate(-8deg)}100%{transform:scale(1) rotate(-6deg);opacity:.92}}
+
+/* SCROLL BAR */
+.scroll-bar{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--blueprint),var(--accent),var(--warn));z-index:600;width:0%;transition:width .1s}
+
+/* CORNER COORDINATES */
+.corner-coord{position:fixed;font-family:var(--font-mono);font-size:.55rem;color:var(--text-faint);letter-spacing:1px;z-index:400;pointer-events:none;animation:fadeInUp 1s ease 1.6s both;line-height:1.6}
+.cc-tr{top:1.5rem;right:1.5rem;text-align:right}
+.cc-bl{bottom:1.5rem;left:1.5rem}
+.cc-br{bottom:1.5rem;right:1.5rem;text-align:right}
+@media(max-width:560px){
+  .corner-coord{display:none}
+}
+
+/* LOADER — site survey scan */
+.loader{position:fixed;inset:0;z-index:9999;background:var(--paper);display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden}
+.loader-grid{position:absolute;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px;opacity:.6}
+.loader-scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blueprint),transparent);top:0;animation:scanDown 1.6s ease-in-out infinite;box-shadow:0 0 14px var(--blueprint)}
+@keyframes scanDown{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+.loader-text{position:relative;font-family:var(--font-mono);font-size:.65rem;color:var(--blueprint);letter-spacing:6px;text-transform:uppercase;text-align:center}
+.loader-text strong{display:block;font-family:var(--font-display);font-size:1.4rem;font-weight:300;color:var(--ink);letter-spacing:2px;margin-top:.6rem}
+.loader-text small{display:block;font-size:.55rem;color:var(--text-faint);letter-spacing:3px;margin-top:.4rem}
+
+/* SECTIONS */
+section{padding:clamp(5rem,9vh,8rem) clamp(1.5rem,5vw,4rem);position:relative}
+.content-layer{position:relative;z-index:2}
+.label{font-family:var(--font-mono);font-size:.55rem;letter-spacing:5px;text-transform:uppercase;color:var(--blueprint);margin-bottom:1rem;display:inline-flex;align-items:center;gap:10px}
+.label::before{content:'';width:24px;height:1px;background:var(--blueprint)}
+.label.warn{color:var(--warn)}
+.label.warn::before{background:var(--warn)}
+.stitle{font-family:var(--font-serif);font-size:clamp(2.2rem,5vw,3.6rem);font-weight:500;color:var(--ink);line-height:1.15;margin-bottom:1.5rem;letter-spacing:.5px}
+.stitle em{font-style:italic;color:var(--blueprint);font-weight:400}
+.stext{font-family:var(--font-zh);font-size:clamp(.9rem,1.05vw,1rem);color:var(--text);line-height:2;max-width:640px;font-weight:300}
+.stext strong{font-weight:500;color:var(--ink);background:linear-gradient(180deg,transparent 60%,var(--accent-soft) 60%);padding:0 2px}
+
+/* SHARED MARGINALIA — handwritten notes */
+.margin-note{position:absolute;font-family:var(--font-hand);color:var(--warn-ink);font-size:1.35rem;line-height:1.1;font-weight:600;pointer-events:none;transform:rotate(-3deg);max-width:200px;z-index:3}
+.margin-note .arrow{display:inline-block;font-size:1.6rem;line-height:0}
+.margin-note.note-blue{color:var(--blueprint);transform:rotate(-1.5deg)}
+
+/* ============================================= */
+/* HERO — Field Survey Report header */
+/* ============================================= */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding-top:clamp(8rem,15vh,10rem)}
+.hero-frame{position:relative;max-width:1200px;margin:0 auto;width:100%;padding:clamp(2rem,4vw,3rem) clamp(1.5rem,4vw,3rem);border:1px solid var(--hairline);background:linear-gradient(180deg,rgba(250,251,252,.4),rgba(246,244,237,.2))}
+.hero-frame::before,.hero-frame::after,.hero-frame > .corner{position:absolute;width:14px;height:14px;border:1px solid var(--blueprint);background:var(--paper)}
+.hero-frame::before{content:'';top:-7px;left:-7px}
+.hero-frame::after{content:'';top:-7px;right:-7px}
+.hero-frame > .corner.bl{bottom:-7px;left:-7px}
+.hero-frame > .corner.br{bottom:-7px;right:-7px}
+
+/* report header bar */
+.report-header{display:grid;grid-template-columns:1fr auto;gap:1rem;padding-bottom:1.4rem;margin-bottom:2rem;border-bottom:1px solid var(--hairline);align-items:end}
+.report-title-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.report-doctype{font-family:var(--font-mono);font-size:.55rem;letter-spacing:5px;color:var(--warn);text-transform:uppercase;padding:5px 9px;border:1px solid var(--warn);background:var(--warn-soft)}
+.report-name{font-family:var(--font-mono);font-size:.65rem;color:var(--text-muted);letter-spacing:3px;text-transform:uppercase}
+.report-name b{color:var(--ink);font-weight:600}
+.report-meta{font-family:var(--font-mono);font-size:.55rem;color:var(--text-faint);letter-spacing:1px;text-align:right;line-height:1.7}
+.report-meta b{color:var(--blueprint);font-weight:500}
+
+.hero-title{font-family:var(--font-serif);font-size:clamp(3.4rem,8.5vw,7rem);font-weight:400;color:var(--ink);line-height:.92;letter-spacing:-1.5px;margin-bottom:1rem;position:relative}
+.hero-title-l1{display:block;font-style:italic;color:var(--blueprint)}
+.hero-title-l2{display:block}
+.hero-title .underline{position:absolute;left:0;bottom:8px;width:0;height:3px;background:var(--warn);opacity:.85}
+
+.hero-sub{font-family:var(--font-display);font-size:clamp(.92rem,1.4vw,1.15rem);color:var(--text-muted);font-weight:300;letter-spacing:.5px;max-width:600px;margin-top:1.5rem;line-height:1.75}
+.hero-sub b{font-weight:500;color:var(--ink);position:relative}
+.hero-sub b::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:1px;background:var(--blueprint);opacity:.4}
+
+/* findings strip */
+.hero-findings{margin-top:clamp(2.2rem,4vh,3rem);padding-top:1.4rem;border-top:1px dashed var(--hairline);display:grid;grid-template-columns:repeat(4,1fr);gap:1.4rem}
+.finding{position:relative}
+.finding-key{font-family:var(--font-mono);font-size:.5rem;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:.4rem;display:flex;align-items:center;gap:6px}
+.finding-key i{color:var(--blueprint);font-size:.55rem}
+.finding-val{font-family:var(--font-display);font-size:.95rem;color:var(--ink);font-weight:500;line-height:1.4}
+.finding-val em{font-style:normal;color:var(--blueprint);font-weight:600}
+
+.hero-bottom{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-top:2.2rem}
+.hero-tags{display:flex;gap:.5rem;flex-wrap:wrap}
+.hero-tag{font-family:var(--font-mono);font-size:.5rem;letter-spacing:2px;text-transform:uppercase;padding:5px 10px;border:1px solid var(--hairline);color:var(--blueprint);cursor:pointer;background:transparent;transition:all .25s;user-select:none}
+.hero-tag:hover{border-color:var(--blueprint);background:rgba(30,96,145,.06);color:var(--ink)}
+.hero-tag.active{background:var(--blueprint);color:var(--paper);border-color:var(--blueprint)}
+
+/* Visit highlight when triggered from tag click */
+.visit{transition:border-color .4s,box-shadow .4s,transform .4s}
+.visit.flash{border-color:var(--warn);box-shadow:0 0 0 3px rgba(197,57,74,.12),0 8px 24px rgba(10,37,64,.08);animation:flashBorder 1.6s ease-out}
+@keyframes flashBorder{
+  0%{box-shadow:0 0 0 0 rgba(197,57,74,.5)}
+  60%{box-shadow:0 0 0 16px rgba(197,57,74,0)}
+  100%{box-shadow:0 0 0 3px rgba(197,57,74,.12),0 8px 24px rgba(10,37,64,.08)}
+}
+.hero-scale{font-family:var(--font-mono);font-size:.5rem;color:var(--text-faint);letter-spacing:2px;text-align:right;line-height:1.6}
+
+.hero-marg-1{top:22%;right:4%;font-size:1.5rem}
+.hero-marg-2{top:50%;right:8%;text-align:right;max-width:160px}
+@media(max-width:1100px){
+  .hero-marg-1,.hero-marg-2{display:none}
+}
+
+/* ============================================= */
+/* IDENTITY PLATE — subject portrait */
+/* ============================================= */
+.identity{padding-top:clamp(4rem,6vh,5rem)}
+.identity-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:minmax(220px,340px) 1fr;gap:clamp(2rem,5vw,4rem);align-items:start;position:relative}
+.id-photo-wrap{position:relative}
+.id-photo{position:relative;aspect-ratio:1/1;background:var(--paper-edge);border:1px solid var(--hairline);overflow:hidden}
+.id-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:contrast(1.05) brightness(1.02) saturate(.95)}
+.id-photo-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(30,96,145,.06),transparent 55%);pointer-events:none}
+.id-photo-corners{position:absolute;inset:8px;border:1px dashed rgba(30,96,145,.4);pointer-events:none}
+.id-photo::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid var(--blueprint);border-left:2px solid var(--blueprint);z-index:2}
+.id-photo::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid var(--blueprint);border-right:2px solid var(--blueprint);z-index:2}
+.id-photo-tag{position:absolute;bottom:10px;left:10px;font-family:var(--font-mono);font-size:.5rem;letter-spacing:2px;color:var(--paper);background:rgba(10,37,64,.78);padding:5px 10px;text-transform:uppercase;backdrop-filter:blur(4px)}
+/* red circle annotation around photo */
+.id-photo-circle{position:absolute;top:-12px;right:-12px;width:90px;height:90px;border:2.5px solid var(--warn);border-radius:50%;opacity:.0;pointer-events:none;transform:rotate(-12deg);box-shadow:inset 0 0 20px rgba(197,57,74,.05)}
+.id-photo-circle::after{content:'subject';position:absolute;top:-22px;left:50%;transform:translateX(-50%) rotate(-4deg);font-family:var(--font-hand);color:var(--warn-ink);font-size:1.2rem;font-weight:600;white-space:nowrap;letter-spacing:1px}
+.id-photo-num{position:absolute;top:-18px;left:-12px;font-family:var(--font-hand);color:var(--warn-ink);font-size:1.6rem;font-weight:700;transform:rotate(-8deg)}
+
+.id-info{padding-top:.5rem;position:relative}
+.id-name{font-family:var(--font-serif);font-size:clamp(2rem,4vw,2.8rem);font-weight:500;color:var(--ink);margin-bottom:.4rem;line-height:1.1}
+.id-name em{font-style:italic;color:var(--blueprint)}
+.id-handle{font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);letter-spacing:1px;margin-bottom:1.8rem;display:inline-flex;align-items:center;gap:8px}
+.id-handle::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulseDot 2s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.4}}
+.id-rows{display:flex;flex-direction:column;gap:.85rem}
+.id-row{display:grid;grid-template-columns:90px 1fr;gap:1rem;align-items:baseline;font-family:var(--font-zh);font-size:.85rem;line-height:1.6;padding-bottom:.85rem;border-bottom:1px solid var(--hairline)}
+.id-row:last-child{border-bottom:none;padding-bottom:0}
+.id-row-key{font-family:var(--font-mono);font-size:.55rem;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;padding-top:3px}
+.id-row-val{color:var(--text);font-weight:400}
+.id-row-val b{color:var(--ink);font-weight:600}
+.id-row-val .check{color:var(--blueprint);margin-right:6px}
+.id-mbti{display:inline-flex;align-items:baseline;gap:6px;margin-top:1.6rem;padding:8px 14px;border:1px solid var(--blueprint);background:rgba(30,96,145,.04);cursor:pointer;transition:background .3s,border-color .3s;user-select:none}
+.id-mbti:hover{background:rgba(30,96,145,.09);border-color:var(--ink-soft)}
+.id-mbti.open{background:rgba(30,96,145,.09);border-color:var(--ink-soft)}
+.id-mbti-tag{font-family:var(--font-mono);font-size:.55rem;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase}
+.id-mbti-val{font-family:var(--font-display);font-weight:700;color:var(--blueprint);font-size:1.05rem;letter-spacing:1px}
+.id-mbti-name{font-family:var(--font-serif);font-style:italic;color:var(--text-muted);font-size:.85rem}
+.id-mbti-toggle{font-family:var(--font-mono);font-size:.55rem;color:var(--text-faint);margin-left:6px;transition:transform .3s}
+.id-mbti.open .id-mbti-toggle{transform:rotate(45deg);color:var(--warn)}
+
+/* MBTI inline detail panel */
+.mbti-detail{margin-top:0;max-height:0;opacity:0;overflow:hidden;transition:max-height .55s ease,opacity .4s ease,margin-top .4s ease;border-left:2px solid var(--blueprint);padding-left:0}
+.mbti-detail.open{max-height:600px;opacity:1;margin-top:1rem;padding-left:1rem}
+.mbti-letter{display:grid;grid-template-columns:34px 1fr;gap:.8rem;align-items:start;padding:.7rem 0;border-bottom:1px dashed var(--hairline)}
+.mbti-letter:last-child{border-bottom:none}
+.mbti-letter-l{font-family:var(--font-serif);font-size:1.6rem;font-weight:700;color:var(--blueprint);line-height:1;font-style:italic;text-align:center}
+.mbti-letter-l b{color:var(--warn);font-weight:700}
+.mbti-letter-name{font-family:var(--font-mono);font-size:.55rem;letter-spacing:1.5px;color:var(--text-faint);text-transform:uppercase;margin-bottom:.25rem}
+.mbti-letter-name b{color:var(--ink);font-weight:600}
+.mbti-letter-quote{font-family:var(--font-serif);font-style:italic;color:var(--ink-soft);font-size:.95rem;line-height:1.5}
+
+.id-marg{position:absolute;top:-20px;right:5%;font-size:1.4rem}
+
+/* ============================================= */
+/* MANIFESTO — first-person voice */
+/* ============================================= */
+.manifesto{background:linear-gradient(180deg,transparent,var(--paper-warm) 40%,transparent);position:relative}
+.manifesto-inner{max-width:780px;margin:0 auto;position:relative}
+.manifesto-quote{font-family:var(--font-serif);font-size:clamp(1.4rem,2.6vw,2rem);font-style:italic;color:var(--ink-soft);line-height:1.55;margin:2rem 0 2.5rem;padding-left:1.8rem;border-left:3px solid var(--warn);font-weight:400;position:relative}
+.manifesto-quote::before{content:'"';position:absolute;left:.6rem;top:-.5rem;font-family:var(--font-serif);font-size:3rem;color:var(--warn);opacity:.4;line-height:1}
+.manifesto p{font-family:var(--font-zh);font-size:clamp(.95rem,1.1vw,1.05rem);line-height:2.05;color:var(--text);font-weight:300;margin-bottom:1.4rem}
+.manifesto p strong{font-weight:500;color:var(--ink);background:linear-gradient(180deg,transparent 62%,var(--accent-soft) 62%);padding:0 3px}
+.manifesto-marg{top:30%;right:-5%}
+
+/* ============================================= */
+/* CAREER — Visit Reports */
+/* ============================================= */
+.career{overflow:visible}
+.career-inner{max-width:1300px;margin:0 auto}
+.career-head{text-align:center;margin-bottom:clamp(3rem,6vh,5rem)}
+.career-head .stitle{margin-left:auto;margin-right:auto}
+.career-head .stext{margin:0 auto;text-align:center}
+
+.visits{display:flex;flex-direction:column;gap:clamp(2rem,4vh,3rem);max-width:1100px;margin:0 auto}
+.visit{position:relative;display:grid;grid-template-columns:90px 1fr;gap:clamp(1.5rem,3vw,2.5rem);background:rgba(250,251,252,.55);border:1px solid var(--hairline);padding:clamp(1.5rem,3vw,2.4rem);transition:border-color .35s,background .35s}
+.visit::before{content:'';position:absolute;top:-1px;left:-1px;width:24px;height:24px;border-top:2px solid var(--blueprint);border-left:2px solid var(--blueprint)}
+.visit::after{content:'';position:absolute;bottom:-1px;right:-1px;width:24px;height:24px;border-bottom:2px solid var(--blueprint);border-right:2px solid var(--blueprint)}
+.visit:hover{border-color:var(--blueprint);background:rgba(250,251,252,.85)}
+.visit-num{font-family:var(--font-mono);font-size:.55rem;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;border-right:1px solid var(--hairline);padding:0 .8rem}
+.visit-num strong{display:block;font-family:var(--font-serif);font-size:2.6rem;font-weight:500;color:var(--blueprint);writing-mode:horizontal-tb;transform:rotate(0);font-style:italic;letter-spacing:0;line-height:1;margin-bottom:.4rem}
+.visit-body{display:grid;grid-template-columns:1fr 1.5fr;gap:clamp(1.5rem,3vw,2.5rem)}
+.visit-meta{font-family:var(--font-mono);font-size:.55rem;color:var(--text-muted);letter-spacing:1px;line-height:1.8;text-transform:uppercase}
+.visit-meta div{padding:.5rem 0;border-bottom:1px dashed var(--hairline)}
+.visit-meta div:last-child{border-bottom:none}
+.visit-meta div b{display:block;font-family:var(--font-display);color:var(--ink);font-size:.78rem;font-weight:600;letter-spacing:.5px;text-transform:none;margin-top:2px}
+.visit-icon{margin-bottom:1rem;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--blueprint);background:var(--paper);color:var(--blueprint);font-size:1rem}
+.visit-content h3{font-family:var(--font-serif);font-size:clamp(1.4rem,2.2vw,1.8rem);color:var(--ink);font-weight:600;line-height:1.2;margin-bottom:.4rem}
+.visit-content h3 em{font-style:italic;color:var(--blueprint);font-weight:500}
+.visit-content .role{font-family:var(--font-mono);font-size:.55rem;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase;margin-bottom:1.2rem}
+.visit-findings{margin-top:1rem;padding-top:1rem;border-top:1px dashed var(--hairline)}
+.visit-findings-key{font-family:var(--font-mono);font-size:.5rem;letter-spacing:2px;color:var(--warn);text-transform:uppercase;margin-bottom:.6rem;display:flex;align-items:center;gap:6px}
+.visit-findings-key i{font-size:.55rem}
+.visit-content p{font-family:var(--font-zh);font-size:.88rem;line-height:1.95;color:var(--text);font-weight:300}
+.visit-content p strong{color:var(--ink);font-weight:500;background:linear-gradient(180deg,transparent 62%,var(--accent-soft) 62%);padding:0 2px}
+.visit-conclusion{margin-top:1.2rem;padding:.8rem 1rem;background:var(--accent-soft);border-left:2px solid var(--accent);font-family:var(--font-serif);font-style:italic;font-size:.95rem;color:var(--ink-soft);line-height:1.55}
+.visit-conclusion span{font-family:var(--font-mono);font-size:.5rem;color:var(--accent);letter-spacing:2px;text-transform:uppercase;display:block;font-style:normal;margin-bottom:.3rem;font-weight:600}
+
+/* Expandable "more findings" toggle */
+.visit-more-toggle{display:inline-flex;align-items:center;gap:6px;margin-top:1rem;padding:6px 12px;background:transparent;border:1px dashed var(--hairline);color:var(--text-muted);font-family:var(--font-mono);font-size:.55rem;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s}
+.visit-more-toggle:hover{border-color:var(--blueprint);color:var(--blueprint);border-style:solid}
+.visit-more-toggle i{font-size:.6rem;transition:transform .35s}
+.visit.expanded .visit-more-toggle{border-color:var(--warn);color:var(--warn);border-style:solid}
+.visit.expanded .visit-more-toggle i{transform:rotate(45deg)}
+.visit-more{max-height:0;opacity:0;overflow:hidden;transition:max-height .55s ease,opacity .4s ease,margin-top .4s ease;border-left:2px solid var(--warn);padding-left:0;margin-top:0}
+.visit.expanded .visit-more{max-height:600px;opacity:1;margin-top:1.1rem;padding-left:1rem}
+.visit-more-key{font-family:var(--font-mono);font-size:.5rem;letter-spacing:2px;color:var(--warn);text-transform:uppercase;margin-bottom:.6rem;display:flex;align-items:center;gap:6px}
+.visit-more-key i{font-size:.55rem}
+.visit-more p{font-family:var(--font-zh);font-size:.82rem;line-height:1.95;color:var(--text);font-weight:300;margin-bottom:.7rem}
+.visit-more p:last-child{margin-bottom:0}
+.visit-more p strong{color:var(--ink);font-weight:500;background:none;padding:0}
+.visit-more ul{list-style:none;padding:0;margin:0}
+.visit-more li{font-family:var(--font-zh);font-size:.8rem;line-height:1.75;color:var(--text);font-weight:300;padding:.4rem 0 .4rem 1.4rem;position:relative;border-bottom:1px dashed var(--hairline)}
+.visit-more li:last-child{border-bottom:none}
+.visit-more li::before{content:'›';position:absolute;left:.4rem;top:.4rem;color:var(--warn);font-weight:700}
+.visit-more li b{color:var(--ink);font-weight:500}
+
+.career-summary{margin-top:clamp(3rem,5vh,4.5rem);text-align:center;font-family:var(--font-serif);font-style:italic;font-size:clamp(1rem,1.4vw,1.2rem);color:var(--text-muted);max-width:680px;margin-left:auto;margin-right:auto;line-height:1.7}
+.career-summary b{color:var(--blueprint);font-style:normal;font-family:var(--font-display);font-weight:500}
+
+/* ============================================= */
+/* BRAIN MAP — interactive INTJ diagram */
+/* ============================================= */
+.brainmap{background:linear-gradient(180deg,transparent,var(--paper-edge) 50%,transparent);overflow:visible}
+.brainmap-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1.05fr;gap:clamp(2rem,5vw,5rem);align-items:center}
+.brainmap-svg-wrap{position:relative;aspect-ratio:1/1;max-width:520px;width:100%;margin:0 auto}
+.brainmap-svg-wrap svg{width:100%;height:100%;display:block;overflow:visible}
+.bm-instructions{position:absolute;bottom:-30px;left:0;right:0;text-align:center;font-family:var(--font-mono);font-size:.55rem;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase}
+.bm-instructions i{color:var(--warn);margin:0 4px}
+
+/* Trace path button */
+.bm-trace-btn{position:absolute;bottom:-58px;left:50%;transform:translateX(-50%);padding:7px 14px;background:transparent;border:1px solid var(--blueprint);color:var(--blueprint);font-family:var(--font-mono);font-size:.55rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .25s}
+.bm-trace-btn:hover{background:var(--blueprint);color:var(--paper)}
+.bm-trace-btn.active{background:var(--warn);border-color:var(--warn);color:var(--paper)}
+.bm-trace-btn i{font-size:.65rem}
+
+/* Trace rays — from center (SOP CORE) outward, one per step */
+.bm-ray{fill:none;stroke:var(--warn);stroke-width:1.8;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(197,57,74,.35));stroke-dasharray:150;stroke-dashoffset:150;opacity:0;transition:stroke-dashoffset .65s cubic-bezier(.3,0,.2,1),opacity .3s}
+.bm-ray.drawn{stroke-dashoffset:0;opacity:.95}
+/* center pulse when trace starts */
+.bm-center-pulse{fill:var(--warn);opacity:0;transform-origin:200px 220px;transform-box:fill-box}
+.bm-center-pulse.active{animation:centerPulse 1s ease-out forwards}
+@keyframes centerPulse{
+  0%{opacity:0;r:4}
+  30%{opacity:.9;r:8}
+  100%{opacity:0;r:22}
+}
+
+/* Step counter */
+.bm-step-counter{position:absolute;top:-2px;left:0;font-family:var(--font-mono);font-size:.55rem;color:var(--warn);letter-spacing:2px;text-transform:uppercase;opacity:0;transition:opacity .3s}
+.bm-step-counter.active{opacity:1}
+.bm-step-counter b{color:var(--ink);font-weight:700;font-size:.85rem}
+.bm-coord{position:absolute;top:0;right:0;font-family:var(--font-mono);font-size:.5rem;color:var(--text-faint);letter-spacing:1px;text-align:right;line-height:1.5}
+
+.brainmap-info{position:relative}
+.brainmap-info .label{margin-bottom:1.4rem;transition:opacity .35s ease,transform .35s ease}
+.brainmap-info .stitle{margin-bottom:1.4rem;overflow:hidden;transition:opacity .35s ease,max-height .45s ease,margin-bottom .35s ease,transform .4s ease;max-height:300px;transform-origin:top left}
+.brainmap-info.has-active .stitle{opacity:0;max-height:0;margin-bottom:0;transform:translateY(-8px);pointer-events:none}
+.brainmap-info.has-active .label{opacity:.5;transform:translateY(-2px)}
+.bm-pane{position:relative;min-height:260px}
+.bm-default{font-family:var(--font-zh);font-size:.95rem;line-height:1.95;color:var(--text-muted);font-weight:300;max-width:480px;transition:opacity .35s ease}
+.bm-default strong{color:var(--ink);font-weight:500}
+.brainmap-info.has-active .bm-default{opacity:0;pointer-events:none;position:absolute;top:0;left:0;right:0}
+
+.bm-detail{position:absolute;top:0;left:0;right:0;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateY(8px)}
+.bm-detail.active{opacity:1;pointer-events:auto;position:relative;transform:translateY(0)}
+.bm-detail-key{font-family:var(--font-mono);font-size:.55rem;color:var(--warn);letter-spacing:3px;text-transform:uppercase;margin-bottom:.6rem;display:flex;align-items:center;gap:8px}
+.bm-detail-key::before{content:'';width:18px;height:1px;background:var(--warn)}
+.bm-detail h4{font-family:var(--font-serif);font-size:1.6rem;color:var(--ink);font-weight:600;line-height:1.25;margin-bottom:.8rem;font-style:italic}
+.bm-detail p{font-family:var(--font-zh);font-size:.9rem;line-height:1.9;color:var(--text);font-weight:300;margin-bottom:.8rem;max-width:480px}
+.bm-detail p strong{color:var(--ink);font-weight:500;background:linear-gradient(180deg,transparent 62%,var(--accent-soft) 62%);padding:0 2px}
+.bm-detail .quote{font-family:var(--font-serif);font-style:italic;color:var(--blueprint);border-left:2px solid var(--warn);padding-left:1rem;font-size:.95rem;line-height:1.55;margin-top:1rem}
+.bm-back{display:inline-flex;align-items:center;gap:6px;margin-top:1.2rem;padding:6px 12px;border:1px dashed var(--hairline);background:transparent;color:var(--text-muted);font-family:var(--font-mono);font-size:.55rem;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s}
+.bm-back:hover{border-color:var(--blueprint);color:var(--blueprint);border-style:solid}
+.bm-back i{font-size:.6rem}
+
+/* SVG hotspot styles */
+.hotspot{opacity:0;transform:scale(.4);transform-origin:center;transform-box:fill-box;transition:opacity .55s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1)}
+.brainmap.in-view .hotspot{opacity:1;transform:scale(1)}
+.brainmap.in-view .hotspot:nth-child(8){transition-delay:0s}
+.brainmap.in-view .hotspot:nth-child(9){transition-delay:.08s}
+.brainmap.in-view .hotspot:nth-child(10){transition-delay:.16s}
+.brainmap.in-view .hotspot:nth-child(11){transition-delay:.24s}
+.brainmap.in-view .hotspot:nth-child(12){transition-delay:.32s}
+.brainmap.in-view .hotspot:nth-child(13){transition-delay:.40s}
+.hotspot-circle{fill:var(--paper);stroke:var(--blueprint);stroke-width:1.5;cursor:pointer;transition:fill .3s,stroke .3s,r .3s}
+.hotspot-circle:hover{fill:var(--warn);stroke:var(--warn)}
+.hotspot.active .hotspot-circle{fill:var(--warn);stroke:var(--warn);r:11}
+.hotspot.active .hotspot-pulse{stroke:var(--warn);opacity:.7}
+.hotspot-label{font-family:var(--font-mono);font-size:9px;fill:var(--text-muted);letter-spacing:1px;text-transform:uppercase;pointer-events:none;transition:fill .3s}
+.hotspot.active .hotspot-label{fill:var(--warn);font-weight:600}
+.hotspot-pulse{fill:none;stroke:var(--blueprint);stroke-width:1;opacity:.3;pointer-events:none}
+.bm-grid-line{stroke:var(--grid);stroke-width:.8;stroke-dasharray:3 3}
+.bm-outline{fill:none;stroke:var(--blueprint);stroke-width:1.2}
+.bm-outline-inner{fill:none;stroke:var(--blueprint-pale);stroke-width:.8;stroke-dasharray:4 4;opacity:.6}
+.bm-axis{stroke:var(--blueprint);stroke-width:.6;stroke-dasharray:2 4;opacity:.4}
+.bm-corner{fill:none;stroke:var(--blueprint);stroke-width:1.2}
+
+/* ============================================= */
+/* SERVICES — checklist style */
+/* ============================================= */
+.services-section{padding-top:clamp(2rem,4vh,3rem)}
+.services-inner{max-width:1100px;margin:0 auto}
+.services-head{margin-bottom:clamp(2.5rem,5vh,3.5rem);max-width:720px}
+.services-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--hairline);background:var(--paper)}
+.service{display:grid;grid-template-columns:54px 1fr auto;gap:1.4rem;align-items:start;padding:1.6rem clamp(1.4rem,3vw,2.2rem);border-bottom:1px solid var(--hairline);transition:padding-left .3s,background .3s;cursor:default;position:relative}
+.service:last-child{border-bottom:none}
+.service:hover{padding-left:calc(clamp(1.4rem,3vw,2.2rem) + 14px);background:linear-gradient(90deg,var(--accent-soft) 0%,transparent 80%)}
+.service-check{width:36px;height:36px;border:1.5px solid var(--blueprint);display:flex;align-items:center;justify-content:center;color:var(--blueprint);font-size:.95rem;background:var(--paper);transition:all .3s;position:relative}
+.service-check::before{content:'';position:absolute;inset:-4px;border:1px dashed var(--hairline);opacity:0;transition:opacity .3s}
+.service:hover .service-check{background:var(--blueprint);color:var(--paper)}
+.service:hover .service-check::before{opacity:1}
+.service-body h4{font-family:var(--font-serif);font-size:1.2rem;font-weight:600;color:var(--ink);margin-bottom:.3rem;line-height:1.3}
+.service-body h4 em{font-style:italic;color:var(--blueprint);font-weight:500}
+.service-body p{font-family:var(--font-zh);font-size:.82rem;color:var(--text-muted);line-height:1.75;font-weight:300}
+.service-body p strong{color:var(--ink);font-weight:500}
+.service-tag{font-family:var(--font-mono);font-size:.5rem;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;padding:5px 9px;border:1px solid var(--accent);align-self:center;white-space:nowrap}
+.service-tag.solid{background:var(--warn);color:var(--paper);border-color:var(--warn)}
+.service.free::after{content:'';position:absolute;top:50%;right:-1px;width:3px;height:60%;background:var(--warn);transform:translateY(-50%)}
+
+.services-note{margin-top:1.5rem;font-family:var(--font-hand);font-size:1.3rem;color:var(--warn-ink);text-align:right;transform:rotate(-1deg)}
+
+/* Checkable services */
+.service{cursor:pointer;user-select:none}
+.service.selected{background:linear-gradient(90deg,rgba(255,140,66,.10) 0%,transparent 90%)}
+.service.selected .service-check{background:var(--warn);color:var(--paper);border-color:var(--warn)}
+.service.selected .service-check .fa-utensils,.service.selected .service-check .fa-sitemap,.service.selected .service-check .fa-handshake,.service.selected .service-check .fa-arrows-spin,.service.selected .service-check .fa-helmet-safety{display:none}
+.service-check-mark{display:none;font-size:1rem}
+.service.selected .service-check-mark{display:inline-block}
+.service.selected{position:relative}
+.service.selected::before{content:'';position:absolute;top:50%;left:-1px;width:3px;height:70%;background:var(--warn);transform:translateY(-50%);z-index:2}
+.svc-counter{margin-top:1.4rem;padding:.9rem 1.2rem;border:1px dashed var(--hairline);background:rgba(255,140,66,.04);font-family:var(--font-mono);font-size:.65rem;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;transition:border-color .35s,background .35s}
+.svc-counter.has-selection{border-color:var(--warn);border-style:solid;background:rgba(255,140,66,.08)}
+.svc-counter-text b{color:var(--warn);font-weight:700;font-size:.85rem;font-family:var(--font-display)}
+.svc-counter-actions{display:flex;gap:.6rem;flex-wrap:wrap}
+.svc-counter-link{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--blueprint);color:var(--blueprint);font-family:var(--font-mono);font-size:.55rem;letter-spacing:1.5px;text-decoration:none;text-transform:uppercase;background:var(--paper);transition:all .25s}
+.svc-counter-link:hover{background:var(--blueprint);color:var(--paper)}
+.svc-counter.has-selection .svc-counter-link{border-color:var(--warn);color:var(--warn)}
+.svc-counter.has-selection .svc-counter-link:hover{background:var(--warn);color:var(--paper)}
+.svc-counter-clear{font-family:var(--font-mono);font-size:.5rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:1.5px;background:none;border:none;cursor:pointer;text-decoration:underline}
+.svc-counter-clear:hover{color:var(--warn)}
+
+/* ============================================= */
+/* PHILOSOPHY — field notes cards */
+/* ============================================= */
+.philosophy{padding:clamp(6rem,12vh,9rem) clamp(1.5rem,5vw,4rem)}
+.philosophy-inner{max-width:1100px;margin:0 auto}
+.philosophy-head{margin-bottom:clamp(2.5rem,5vh,4rem);max-width:720px}
+.philosophy-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}
+.phil-card{padding:1.8rem 1.6rem;background:var(--paper);border:1px solid var(--hairline);position:relative;transition:transform .35s,border-color .35s}
+.phil-card:hover{transform:translateY(-4px);border-color:var(--warn)}
+.phil-card::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid var(--warn);border-left:2px solid var(--warn)}
+.phil-card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid var(--blueprint);border-right:2px solid var(--blueprint)}
+.phil-num{font-family:var(--font-mono);font-size:.55rem;letter-spacing:3px;color:var(--text-faint);text-transform:uppercase;margin-bottom:1rem}
+.phil-quote{font-family:var(--font-serif);font-size:1.15rem;font-style:italic;color:var(--ink);line-height:1.5;margin-bottom:1rem;font-weight:500}
+.phil-text{font-family:var(--font-zh);font-size:.78rem;color:var(--text-muted);line-height:1.85;font-weight:300}
+.phil-text strong{color:var(--ink);font-weight:500}
+
+/* ============================================= */
+/* FUTURE — blueprint dark reverse */
+/* ============================================= */
+.future{background:var(--ink);color:var(--paper);overflow:hidden;position:relative}
+.future::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(91,141,184,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(91,141,184,.06) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+.future-inner{max-width:900px;margin:0 auto;position:relative;z-index:2}
+.future .label{color:var(--accent)}
+.future .label::before{background:var(--accent)}
+.future .stitle{color:var(--paper)}
+.future .stitle em{color:var(--blueprint-pale)}
+.future-text{font-family:var(--font-zh);font-size:clamp(.95rem,1.1vw,1.05rem);line-height:2;color:rgba(250,251,252,.8);font-weight:300;max-width:680px;margin-bottom:1.4rem}
+.future-text strong{color:var(--paper);font-weight:500;background:linear-gradient(180deg,transparent 60%,rgba(255,140,66,.25) 60%);padding:0 3px}
+.future-coords{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3rem;padding-top:2rem;border-top:1px solid rgba(91,141,184,.2)}
+.future-coord{padding:1.2rem 0}
+.future-coord-key{font-family:var(--font-mono);font-size:.55rem;letter-spacing:3px;color:var(--blueprint-pale);text-transform:uppercase;margin-bottom:.5rem}
+.future-coord-val{font-family:var(--font-serif);font-size:1.1rem;color:var(--paper);font-weight:500;line-height:1.4}
+
+/* ============================================= */
+/* CONTACT */
+/* ============================================= */
+.contact{padding:clamp(5rem,9vh,7rem) clamp(1.5rem,5vw,4rem) clamp(2rem,4vh,3rem);position:relative}
+.contact-inner{max-width:900px;margin:0 auto;text-align:center;position:relative}
+.contact-stitle{font-family:var(--font-serif);font-size:clamp(2rem,4vw,3rem);font-weight:500;color:var(--ink);margin-bottom:.8rem;font-style:italic}
+.contact-sub{font-family:var(--font-zh);font-size:.92rem;color:var(--text-muted);margin-bottom:2.5rem;font-weight:300;line-height:1.7}
+.contact-links{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.contact-link{display:inline-flex;align-items:center;gap:10px;padding:14px 24px;border:1px solid var(--blueprint);color:var(--blueprint);font-family:var(--font-mono);font-size:.7rem;letter-spacing:2px;text-transform:uppercase;text-decoration:none;background:var(--paper);transition:all .3s}
+.contact-link:hover{background:var(--blueprint);color:var(--paper);transform:translateY(-2px)}
+.contact-link i{font-size:1rem}
+
+/* APPROVAL STAMP */
+.stamp-wrap{position:relative;display:inline-block;margin-top:3rem}
+.stamp{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:180px;height:180px;border:4px solid var(--warn);border-radius:50%;color:var(--warn);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:3px;background:rgba(250,251,252,.4);transform:scale(0) rotate(-25deg);opacity:0;position:relative;overflow:hidden}
+.stamp::before{content:'';position:absolute;inset:8px;border:1.5px dashed var(--warn);border-radius:50%;opacity:.65}
+.stamp-top{font-size:.6rem;font-weight:700;margin-bottom:.4rem}
+.stamp-mid{font-family:var(--font-serif);font-size:1.6rem;font-weight:700;letter-spacing:2px;font-style:italic;line-height:1;margin:.2rem 0}
+.stamp-mid em{font-style:italic}
+.stamp-bot{font-size:.55rem;font-weight:500;margin-top:.4rem;letter-spacing:2px}
+.stamp-line{width:30px;height:1px;background:var(--warn);margin:.4rem 0;opacity:.7}
+.stamp.active{animation:inkBleed 1s cubic-bezier(.34,1.56,.64,1) forwards}
+
+/* FOOTER */
+.footer{text-align:center;padding:2.5rem 2rem;border-top:1px solid var(--hairline);margin-top:2rem}
+.footer-sig{font-family:var(--font-mono);font-size:.6rem;color:var(--text-faint);letter-spacing:2px}
+.footer-sig a{color:var(--blueprint);text-decoration:none}
+.footer-sig a:hover{color:var(--warn)}
+.footer-meta{margin-top:.8rem;font-family:var(--font-mono);font-size:.5rem;color:var(--text-faint);letter-spacing:2px}
+
+/* ============================================= */
+/* REVEAL — IntersectionObserver-driven entry animations */
+/* ============================================= */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1);will-change:opacity,transform}
+.reveal.in{opacity:1;transform:none}
+.reveal-x{opacity:0;transform:translateX(-40px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
+.reveal-x.in{opacity:1;transform:none}
+.reveal-scale{opacity:0;transform:scale(.88);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
+.reveal-scale.in{opacity:1;transform:none}
+.reveal-slow{opacity:0;transform:translateY(30px);transition:opacity 1.15s cubic-bezier(.2,.7,.2,1) .1s,transform 1.15s cubic-bezier(.2,.7,.2,1) .1s}
+.reveal-slow.in{opacity:1;transform:none}
+/* stagger delays applied via JS by index */
+.reveal[data-delay="1"]{transition-delay:.08s}
+.reveal[data-delay="2"]{transition-delay:.16s}
+.reveal[data-delay="3"]{transition-delay:.24s}
+.reveal[data-delay="4"]{transition-delay:.32s}
+.reveal[data-delay="5"]{transition-delay:.40s}
+.reveal[data-delay="6"]{transition-delay:.48s}
+.reveal[data-delay="7"]{transition-delay:.56s}
+.reveal[data-delay="8"]{transition-delay:.64s}
+.reveal[data-delay="9"]{transition-delay:.72s}
+/* ensure reveal doesn't clash with other opacity/transform states after entry */
+.reveal.in,.reveal-x.in,.reveal-scale.in,.reveal-slow.in{will-change:auto}
+
+/* ============================================= */
+/* PRINT REPORT BUTTON */
+/* ============================================= */
+.print-btn{display:inline-flex;align-items:center;gap:8px;margin-top:1.5rem;padding:10px 18px;border:1px solid var(--text-faint);background:transparent;color:var(--text-muted);font-family:var(--font-mono);font-size:.6rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .3s}
+.print-btn:hover{border-color:var(--warn);color:var(--warn);background:rgba(197,57,74,.04)}
+.print-btn i{font-size:.7rem}
+
+/* ============================================= */
+/* @media print — clean PDF report layout */
+/* ============================================= */
+@media print {
+  @page { size: A4; margin: 18mm 15mm; }
+  html,body{background:#fff !important;color:#000 !important;font-size:11pt}
+  * {color:#000 !important;text-shadow:none !important;box-shadow:none !important;background-color:transparent !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* hide UI chrome */
+  .loader,#p5-bg,.cursor-cross,.back-nav,.scroll-bar,.corner-coord,.tracker,.print-btn,.bm-instructions,
+  .margin-note,.hero-confirm,.bm-coord,.brainmap-svg-wrap .bm-corner,
+  .id-photo-corners,.id-photo-num,.id-photo-tag,.id-photo-blueprint,.id-photo-scan,.inspect-callouts,
+  .career-line,.career-node-circle::after,.id-mbti,.future::before,
+  .keyboard-hint,.svc-counter,.mbti-detail,.bm-trace-btn,.bm-trace-line{display:none !important}
+  /* keep flow simple */
+  section{padding:18pt 0 !important;page-break-inside:avoid;break-inside:avoid}
+  .hero-frame{border:1.5pt solid #000 !important;padding:14pt !important;margin:0 !important;max-width:none !important;width:100% !important;background:#fff !important}
+  .hero-frame::before,.hero-frame::after,.hero-frame > .corner{display:none !important}
+  .report-doctype{border:1pt solid #000 !important;color:#000 !important;background:#fff !important}
+  .hero-title{font-size:36pt !important;line-height:1 !important;margin-bottom:8pt !important}
+  .hero-title-l1{color:#000 !important;font-style:italic}
+  .hero-title-l2{color:#000 !important}
+  .hero-title .underline{display:none}
+  .hero-sub{font-size:11pt !important;max-width:none}
+  .hero-findings{grid-template-columns:repeat(4,1fr) !important;gap:8pt !important;border-top:.5pt dashed #000 !important;padding-top:8pt !important;margin-top:14pt !important}
+  .finding-key i{display:none}
+  .id-photo,.brainmap-svg-wrap{border:1pt solid #000 !important}
+  .id-photo-inner img{filter:none !important;opacity:1 !important}
+  .stitle{font-size:18pt !important;margin-bottom:8pt !important;page-break-after:avoid}
+  .stitle em{font-style:italic;color:#000 !important}
+  .label,.label.warn{color:#000 !important;font-size:7pt !important}
+  .label::before,.label.warn::before{background:#000 !important}
+  .visit{border:.8pt solid #000 !important;padding:10pt !important;page-break-inside:avoid;background:#fff !important}
+  .visit::before,.visit::after{display:none !important}
+  .visit-num{border-right:.5pt solid #000 !important}
+  .visit-num strong{color:#000 !important}
+  .visit-icon{border:.8pt solid #000 !important;color:#000 !important}
+  .visit-content h3 em{color:#000 !important;font-style:italic}
+  .visit-findings-key{color:#000 !important;font-size:7pt !important}
+  .visit-conclusion{border-left:1pt solid #000 !important;background:#f4f4f4 !important;padding:6pt 10pt !important}
+  .visit-conclusion span{color:#000 !important}
+  /* brainmap → simplified */
+  .brainmap-grid{display:block !important}
+  .brainmap-svg-wrap{max-width:280pt !important;margin-bottom:14pt !important}
+  .bm-detail{display:block !important;opacity:1 !important;position:static !important;page-break-inside:avoid;margin-bottom:10pt;border-left:1pt solid #000;padding-left:8pt}
+  .bm-detail-key{color:#000 !important}
+  .bm-detail h4{font-style:italic;color:#000 !important}
+  .bm-detail .quote{color:#000 !important;font-style:italic;border-left:1pt solid #000}
+  /* services */
+  .services-list{border:.8pt solid #000 !important;background:#fff !important}
+  .service{border-bottom:.5pt solid #000 !important;page-break-inside:avoid;padding:8pt !important}
+  .service:hover{padding-left:8pt !important;background:transparent !important}
+  .service-check{border:.8pt solid #000 !important;color:#000 !important;background:#fff !important}
+  .service-body h4 em{color:#000 !important;font-style:italic}
+  .service-tag{border:.8pt solid #000 !important;color:#000 !important;background:#fff !important}
+  .service-tag.solid{background:#000 !important;color:#fff !important}
+  .service.free::after{display:none}
+  .services-note{font-style:italic;color:#000 !important}
+  /* phil cards stack */
+  .philosophy-cards{display:block !important}
+  .phil-card{border:.5pt solid #000 !important;margin-bottom:8pt !important;page-break-inside:avoid;padding:10pt !important;background:#fff !important}
+  .phil-card::before,.phil-card::after{display:none !important}
+  /* future block invert */
+  .future{background:#fff !important;color:#000 !important;border:1pt solid #000 !important;padding:14pt !important}
+  .future .stitle,.future-text strong,.future-coord-val{color:#000 !important}
+  .future-coords{grid-template-columns:repeat(3,1fr) !important;border-top:.5pt solid #000 !important}
+  /* contact + stamp */
+  .contact-link{border:1pt solid #000 !important;color:#000 !important;background:#fff !important}
+  .stamp{border:2pt solid #000 !important;color:#000 !important;transform:scale(1) rotate(-6deg) !important;opacity:1 !important;background:#fff !important}
+  .stamp::before{border-color:#000 !important}
+  .stamp-line{background:#000 !important}
+  .footer{border-top:.5pt solid #000 !important}
+  /* page-breaks */
+  .career,.brainmap,.services-section,.philosophy,.future,.contact{page-break-before:auto;break-inside:avoid}
+}
+
+/* ============================================= */
+/* PHOTO SCAN REVEAL + INSPECTION CALLOUTS */
+/* ============================================= */
+.id-photo{position:relative;aspect-ratio:1/1;background:var(--paper-edge);border:1px solid var(--hairline);overflow:visible}
+.id-photo-inner{position:absolute;inset:0;overflow:hidden}
+.id-photo-inner img{transition:filter 1.4s ease,opacity 1.4s ease;filter:grayscale(1) contrast(1.4) brightness(1.15);opacity:.18}
+.id-photo.scanned .id-photo-inner img{filter:contrast(1.05) brightness(1.02) saturate(.95);opacity:1}
+.id-photo-blueprint{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:.85;transition:opacity 1.2s ease}
+.id-photo.scanned .id-photo-blueprint{opacity:0}
+.id-photo-scan{position:absolute;left:0;right:0;top:-4%;height:6px;background:linear-gradient(180deg,transparent,var(--warn) 50%,transparent);box-shadow:0 0 18px rgba(197,57,74,.55);opacity:0;pointer-events:none;z-index:5}
+.id-photo.scanning .id-photo-scan{animation:scanPhoto 1.5s ease-in-out forwards}
+@keyframes scanPhoto{
+  0%{top:-4%;opacity:0}
+  10%{opacity:1}
+  90%{opacity:1}
+  100%{top:104%;opacity:0}
+}
+
+
+/* ============================================= */
+/* INSPECTION CHECKPOINT TRACKER — fixed UI */
+/* ============================================= */
+.tracker{position:fixed;top:50%;right:1.2rem;transform:translateY(-50%);z-index:450;font-family:var(--font-mono);background:rgba(250,251,252,.9);backdrop-filter:blur(10px);border:1px solid var(--hairline);padding:.85rem .9rem;font-size:.55rem;letter-spacing:1px;color:var(--text-muted);text-transform:uppercase;line-height:1.4;animation:fadeInUp 1s ease 1.8s both;max-width:160px}
+.tracker-head{font-size:.5rem;color:var(--blueprint);letter-spacing:2.5px;font-weight:600;margin-bottom:.5rem;padding-bottom:.4rem;border-bottom:1px solid var(--hairline);display:flex;align-items:center;gap:6px}
+.tracker-head i{font-size:.55rem}
+.tracker-list{display:flex;flex-direction:column;gap:3px}
+.tracker-item{display:flex;align-items:center;gap:8px;padding:2px 0;font-size:.5rem;color:var(--text-faint);transition:color .35s}
+.tracker-dot{width:8px;height:8px;border-radius:50%;border:1.2px solid var(--text-faint);background:transparent;flex-shrink:0;transition:all .4s}
+.tracker-item.done{color:var(--blueprint)}
+.tracker-item.done .tracker-dot{background:var(--blueprint);border-color:var(--blueprint)}
+.tracker-item.current{color:var(--warn);font-weight:600}
+.tracker-item.current .tracker-dot{background:var(--warn);border-color:var(--warn);box-shadow:0 0 0 3px rgba(197,57,74,.18);animation:pulseDot 2s ease-in-out infinite}
+.tracker-foot{font-size:.45rem;color:var(--text-faint);margin-top:.6rem;padding-top:.4rem;border-top:1px dashed var(--hairline);text-align:center;letter-spacing:1.5px}
+.tracker-foot b{color:var(--warn);font-weight:600}
+.tracker.complete{border-color:var(--warn);box-shadow:0 0 0 3px rgba(197,57,74,.08)}
+.tracker.complete .tracker-head{color:var(--warn)}
+.tracker-keys{margin-top:.5rem;font-size:.4rem;color:var(--text-faint);text-align:center;letter-spacing:1px;line-height:1.6}
+.tracker-keys kbd{display:inline-block;padding:1px 4px;border:1px solid var(--hairline);border-radius:2px;background:var(--paper);font-family:var(--font-mono);font-size:.4rem;color:var(--text-muted);margin:0 1px}
+/* Hide at <1366px to avoid overlapping the hero-frame max-width:1200px content */
+@media(max-width:1365px){.tracker{display:none}}
+/* Clickable tracker items */
+.tracker-item{cursor:pointer}
+.tracker-item:hover{color:var(--ink)}
+.tracker-item:hover .tracker-dot{border-color:var(--blueprint)}
+
+/* ============================================= */
+/* HERO TITLE HOVER EASTER EGG */
+/* ============================================= */
+.hero-title{position:relative}
+.hero-frame{position:relative}
+.hero-confirm{position:absolute;left:340px;top:34%;font-family:var(--font-hand);color:var(--warn-ink);font-size:1.6rem;font-weight:600;line-height:1.1;transform:rotate(-4deg) translateX(-14px);opacity:0;pointer-events:none;transition:opacity .5s ease,transform .5s ease;white-space:nowrap;display:flex;align-items:center;gap:6px;z-index:5}
+.hero-confirm i{color:var(--warn);font-size:1rem}
+.hero-confirm i.fa-arrow-left{font-size:.85rem}
+.hero-confirm.show{opacity:.92;transform:rotate(-4deg) translateX(0)}
+@media(max-width:1100px){.hero-confirm{display:none}}
+
+/* ============================================= */
+/* HIGHLIGHTER PEN ON VISIT FINDINGS */
+/* ============================================= */
+.visit-content p strong{
+  background-image:linear-gradient(120deg,rgba(255,140,66,.42) 0%,rgba(255,140,66,.22) 100%);
+  background-repeat:no-repeat;
+  background-size:0% 65%;
+  background-position:0 78%;
+  padding:0 3px;
+  transition:background-size 1s cubic-bezier(.65,.05,.36,1);
+}
+.visit.highlight .visit-content p strong{
+  background-size:100% 65%;
+}
+
+/* RESPONSIVE */
+@media(max-width:1000px){
+  .brainmap-grid{grid-template-columns:1fr;gap:2.5rem}
+  .brainmap-svg-wrap{max-width:420px;margin-bottom:3.5rem}
+  .brainmap-info{min-height:auto}
+  .bm-pane{min-height:auto}
+  /* non-active details fully hidden so they don't stack */
+  .bm-detail{display:none}
+  .bm-detail.active{display:block;position:relative;opacity:1;transform:none;pointer-events:auto}
+  .bm-default{transition:none}
+  /* trace button + instructions flow below SVG, no absolute overlap */
+  .bm-instructions{position:relative;bottom:auto;margin-top:1rem}
+  .bm-trace-btn{position:relative;bottom:auto;left:auto;transform:none;margin:1rem auto 0;display:flex}
+  .bm-coord{top:0;right:0;font-size:.45rem}
+  .bm-step-counter{top:auto;left:auto;position:relative;margin-bottom:.6rem;text-align:center}
+}
+@media(max-width:900px){
+  .identity-grid{grid-template-columns:1fr;max-width:520px}
+  .id-photo-wrap{max-width:280px}
+  .visit{grid-template-columns:60px 1fr}
+  .visit-body{grid-template-columns:1fr;gap:1.5rem}
+  .visit-num strong{font-size:2rem}
+  .philosophy-cards{grid-template-columns:1fr;gap:1rem}
+  .future-coords{grid-template-columns:1fr;gap:1rem}
+  .hero-frame{padding:2rem 1.4rem}
+  .hero-findings{grid-template-columns:repeat(2,1fr)}
+  .hero-bottom{flex-direction:column;align-items:flex-start}
+  .margin-note{display:none}
+}
+@media(max-width:560px){
+  .back-nav{font-size:.6rem;padding:6px 10px;top:1rem;left:1rem}
+  .id-row{grid-template-columns:80px 1fr;font-size:.78rem}
+  .service{grid-template-columns:42px 1fr;gap:.9rem;padding:1.2rem 1.2rem}
+  .service:hover{padding-left:1.4rem}
+  .service-tag{grid-column:1/-1;justify-self:start;margin-top:.6rem}
+  .career-summary{font-size:.95rem}
+  .visit{grid-template-columns:1fr;padding:1.4rem 1.2rem}
+  .visit-num{writing-mode:horizontal-tb;transform:none;border-right:none;border-bottom:1px solid var(--hairline);padding:0 0 .8rem 0;display:flex;align-items:center;gap:.6rem}
+  .visit-num strong{margin-bottom:0}
+  .stamp{width:140px;height:140px}
+  .stamp-mid{font-size:1.3rem}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+  <div class="loader-grid"></div>
+  <div class="loader-scan"></div>
+  <div class="loader-text">
+    drafting site survey
+    <strong>Subject: Elliott Lu</strong>
+    <small>report №E.L.-2026-001</small>
+  </div>
+</div>
+
+<!-- P5 BLUEPRINT BACKGROUND -->
+<div id="p5-bg"></div>
+
+<!-- CURSOR -->
+<div class="cursor-cross" id="cursor"><div class="cursor-cross-ring"></div></div>
+
+<!-- TOP NAV / SCROLL BAR -->
+<a href="/guild/" class="back-nav" data-hov><i class="fas fa-arrow-left"></i> ARCHIVE</a>
+<div class="scroll-bar" id="scrollBar"></div>
+
+<!-- INSPECTION CHECKPOINT TRACKER -->
+<aside class="tracker" id="tracker" aria-hidden="true">
+  <div class="tracker-head"><i class="fas fa-clipboard-list"></i> inspection log</div>
+  <div class="tracker-list">
+    <div class="tracker-item" data-section="hero"><span class="tracker-dot"></span>01 hero</div>
+    <div class="tracker-item" data-section="identity"><span class="tracker-dot"></span>02 subject</div>
+    <div class="tracker-item" data-section="manifesto"><span class="tracker-dot"></span>03 statement</div>
+    <div class="tracker-item" data-section="career"><span class="tracker-dot"></span>04 visits</div>
+    <div class="tracker-item" data-section="brainmap"><span class="tracker-dot"></span>05 brain map</div>
+    <div class="tracker-item" data-section="services"><span class="tracker-dot"></span>06 checklist</div>
+    <div class="tracker-item" data-section="philosophy"><span class="tracker-dot"></span>07 field notes</div>
+    <div class="tracker-item" data-section="future"><span class="tracker-dot"></span>08 forward</div>
+  </div>
+  <div class="tracker-foot">progress <b id="trackerPct">0%</b></div>
+  <div class="tracker-keys">
+    jump <kbd>J</kbd> <kbd>K</kbd> &nbsp; or <kbd>↑</kbd> <kbd>↓</kbd>
+  </div>
+</aside>
+
+<!-- CORNER COORDINATES -->
+<div class="corner-coord cc-tr">
+  N 25°02'<br>
+  E 121°33'<br>
+  TPE / TWN
+</div>
+<div class="corner-coord cc-bl">
+  REPORT №E.L.-2026-001<br>
+  SHEET 01 / 08<br>
+  SCALE 1:1
+</div>
+<div class="corner-coord cc-br">
+  surveyed by<br>
+  E.L. — INTJ<br>
+  ◢
+</div>
+
+<!-- ============================================= -->
+<!-- SECTION 1 — HERO / Field Survey Report header -->
+<!-- ============================================= -->
+<section class="hero content-layer" id="hero">
+  <div class="hero-frame">
+    <span class="corner bl"></span>
+    <span class="corner br"></span>
+
+    <div class="report-header">
+      <div class="report-title-row">
+        <span class="report-doctype">field survey report</span>
+        <span class="report-name">subject: <b>Elliott Lu</b></span>
+      </div>
+      <div class="report-meta">
+        REPORT №<b>E.L.-2026-001</b><br>
+        REVISED: <b>2026.04</b> &nbsp;·&nbsp; SHEET <b>01/08</b>
+      </div>
+    </div>
+
+    <h1 class="hero-title" id="heroTitle">
+      <span class="hero-title-l1">Elliott</span>
+      <span class="hero-title-l2">Lu.<span class="underline" id="heroUnderline"></span></span>
+    </h1>
+    <div class="hero-confirm" id="heroConfirm">
+      <i class="fas fa-arrow-left"></i> subject confirmed <i class="fas fa-check"></i>
+    </div>
+    <p class="hero-sub">
+      I redraw the blueprint of how things actually run. <br>
+      <b>跨產業營運策劃師</b> — 從房地產、月子中心，到跨國 B2B 服務業， <br>
+      會親自爬天花板看門縫的現場顧問。
+    </p>
+
+    <!-- Quick Findings strip -->
+    <div class="hero-findings">
+      <div class="finding">
+        <div class="finding-key"><i class="fas fa-circle"></i> Subject Type</div>
+        <div class="finding-val">INTJ — <em>Strategist</em></div>
+      </div>
+      <div class="finding">
+        <div class="finding-key"><i class="fas fa-circle"></i> Years Surveyed</div>
+        <div class="finding-val"><em>3 industries</em>, 1 mind</div>
+      </div>
+      <div class="finding">
+        <div class="finding-key"><i class="fas fa-circle"></i> Method</div>
+        <div class="finding-val">Root-cause <em>SOP</em></div>
+      </div>
+      <div class="finding">
+        <div class="finding-key"><i class="fas fa-circle"></i> Status</div>
+        <div class="finding-val">Active &nbsp;·&nbsp; <em>open for surveys</em></div>
+      </div>
+    </div>
+
+    <div class="hero-bottom">
+      <div class="hero-tags">
+        <button type="button" class="hero-tag" data-visits="1,2,3" data-hov>Operations Strategy</button>
+        <button type="button" class="hero-tag" data-visits="2,3" data-hov>SOP Architecture</button>
+        <button type="button" class="hero-tag" data-visits="3" data-hov>B2B Account Mgmt</button>
+        <button type="button" class="hero-tag" data-visits="2,3" data-hov>Org Transformation</button>
+      </div>
+      <div class="hero-scale">
+        ◤ scale 1:1 — life-size<br>
+        last revised: 2026
+      </div>
+    </div>
+
+    <!-- handwritten margin notes -->
+    <div class="margin-note hero-marg-1">
+      cross-industry —<br>
+      <span class="arrow">↘</span>
+    </div>
+    <div class="margin-note hero-marg-2 note-blue">
+      "see visit reports" <span class="arrow">↗</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================= -->
+<!-- SECTION 2 — IDENTITY PLATE -->
+<!-- ============================================= -->
+<section class="identity content-layer" id="identity">
+  <div class="identity-grid">
+    <div class="id-photo-wrap">
+      <div class="id-photo" id="idPhoto">
+        <div class="id-photo-inner">
+          <img src="/assets/img/guild/elliott_lu_/hero.webp" alt="Elliott Lu working at a wooden bar in a quiet, traditional Japanese-style space" loading="lazy">
+          <div class="id-photo-overlay"></div>
+        </div>
+        <!-- blueprint outline overlay (cleared after scan) -->
+        <svg class="id-photo-blueprint" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="100" height="100" fill="none" stroke="#1e6091" stroke-width=".4" stroke-dasharray="2 2"/>
+          <line x1="0" y1="50" x2="100" y2="50" stroke="#1e6091" stroke-width=".25" stroke-dasharray="1 2" opacity=".55"/>
+          <line x1="50" y1="0" x2="50" y2="100" stroke="#1e6091" stroke-width=".25" stroke-dasharray="1 2" opacity=".55"/>
+          <line x1="0" y1="25" x2="100" y2="25" stroke="#1e6091" stroke-width=".18" stroke-dasharray="1 2" opacity=".4"/>
+          <line x1="0" y1="75" x2="100" y2="75" stroke="#1e6091" stroke-width=".18" stroke-dasharray="1 2" opacity=".4"/>
+          <line x1="25" y1="0" x2="25" y2="100" stroke="#1e6091" stroke-width=".18" stroke-dasharray="1 2" opacity=".4"/>
+          <line x1="75" y1="0" x2="75" y2="100" stroke="#1e6091" stroke-width=".18" stroke-dasharray="1 2" opacity=".4"/>
+          <text x="50" y="52" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="3" fill="#1e6091" letter-spacing=".5">SUBJECT — SCANNING</text>
+        </svg>
+        <div class="id-photo-corners"></div>
+        <div class="id-photo-tag">subject: E.L. / 01</div>
+        <div class="id-photo-num">№1</div>
+        <!-- scan line -->
+        <div class="id-photo-scan"></div>
+      </div>
+    </div>
+
+    <div class="id-info">
+      <span class="label">subject brief</span>
+      <h2 class="id-name">Elliott <em>Lu</em></h2>
+      <div class="id-handle">@elliott_lu_ &nbsp;·&nbsp; on field</div>
+
+      <div class="id-rows">
+        <div class="id-row">
+          <div class="id-row-key">role</div>
+          <div class="id-row-val"><i class="fas fa-check check"></i>美商有害生物防治部 — <b>台灣區服務暨營運官</b></div>
+        </div>
+        <div class="id-row">
+          <div class="id-row-key">prior</div>
+          <div class="id-row-val"><i class="fas fa-check check"></i>產後護理之家 執行長 · 房地產業務拓展經理</div>
+        </div>
+        <div class="id-row">
+          <div class="id-row-key">edu</div>
+          <div class="id-row-val"><i class="fas fa-check check"></i>政大 不動產管理 → <b>台大 PMBA</b></div>
+        </div>
+        <div class="id-row">
+          <div class="id-row-key">domain</div>
+          <div class="id-row-val"><i class="fas fa-check check"></i>商業開發 · 營運效能 · 組織變革</div>
+        </div>
+        <div class="id-row">
+          <div class="id-row-key">method</div>
+          <div class="id-row-val"><i class="fas fa-check check"></i>系統思維 · 根因分析 · SOP 化整合</div>
+        </div>
+      </div>
+
+      <div class="id-mbti" id="mbtiChip" data-hov role="button" tabindex="0" aria-expanded="false">
+        <span class="id-mbti-tag">MBTI</span>
+        <span class="id-mbti-val">INTJ</span>
+        <span class="id-mbti-name">— the Architect</span>
+        <span class="id-mbti-toggle">+</span>
+      </div>
+
+      <div class="mbti-detail" id="mbtiDetail">
+        <div class="mbti-letter">
+          <div class="mbti-letter-l"><b>I</b>NTJ</div>
+          <div>
+            <div class="mbti-letter-name"><b>Introverted</b> · 內向</div>
+            <div class="mbti-letter-quote">「我會在現場觀察很久才開口 — 看清楚再說。」</div>
+          </div>
+        </div>
+        <div class="mbti-letter">
+          <div class="mbti-letter-l">I<b>N</b>TJ</div>
+          <div>
+            <div class="mbti-letter-name">i<b>N</b>tuitive · 直覺</div>
+            <div class="mbti-letter-quote">「我看的是還沒發生的問題，不是已經出現的症狀。」</div>
+          </div>
+        </div>
+        <div class="mbti-letter">
+          <div class="mbti-letter-l">IN<b>T</b>J</div>
+          <div>
+            <div class="mbti-letter-name"><b>Thinking</b> · 思考</div>
+            <div class="mbti-letter-quote">「我用框架做決策，不靠情緒。但我尊重別人的情緒。」</div>
+          </div>
+        </div>
+        <div class="mbti-letter">
+          <div class="mbti-letter-l">INT<b>J</b></div>
+          <div>
+            <div class="mbti-letter-name"><b>Judging</b> · 判斷</div>
+            <div class="mbti-letter-quote">「我喜歡 SOP 化、結構化、可預測 — 不是為了控制，是為了釋放真正的精神給更難的問題。」</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="margin-note id-marg">
+        always thinks <br>
+        in systems <span class="arrow">↙</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================= -->
+<!-- SECTION 3 — MANIFESTO -->
+<!-- ============================================= -->
+<section class="manifesto content-layer" id="manifesto">
+  <div class="manifesto-inner">
+    <span class="label">opening statement / 01</span>
+    <h2 class="stitle">把每一個產業<br>都當成一張<em>可以重畫的藍圖</em>。</h2>
+
+    <p class="manifesto-quote">
+      我習慣先把整個系統拆開、看清楚每一塊在哪裡卡住，<br>
+      然後重新畫一張不會再出同樣問題的藍圖。
+    </p>
+
+    <p>
+      我是 Elliott。三段職涯，三個完全不同的產業 — <strong>房地產、產後護理、有害生物防治</strong> —
+      它們表面上沒有共通點，但每一個都是「絕對不能出錯」的服務業。客戶花的是大錢、信的是你的判斷，
+      要的是專業、速度、零失誤的整合。
+    </p>
+
+    <p>
+      畢業於政大不動產管理系、取得台大 PMBA 碩士。身為 INTJ 策劃者，
+      我習慣用邏輯思維和數據分析來拆解複雜的商業問題。
+      我的核心專長是把「<strong>商業開發、營運效能、組織變革</strong>」做系統化的整合：
+      從業績目標的設定、成本結構的優化、SOP 流程的建立，到跨部門資源的協調，
+      我始終以企業經營者的宏觀視角，推進每一個營運環節。
+    </p>
+
+    <p>
+      對我來說，卓越的管理不只是經驗，更是一門精確的科學 — <strong>是連結商業目標、團隊潛能與市場價值的最強引擎</strong>。
+    </p>
+
+    <div class="margin-note manifesto-marg">
+      "system &gt; effort"<br>
+      <span class="arrow">↖</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================= -->
+<!-- SECTION 4 — VISIT REPORTS (Career) -->
+<!-- ============================================= -->
+<section class="career content-layer" id="career">
+  <div class="career-inner">
+    <div class="career-head">
+      <span class="label warn">trajectory / three site visits</span>
+      <h2 class="stitle">三個產業，<em>同一套作業系統</em>。</h2>
+      <p class="stext">每一段都不是斷裂，而是同一套「拆解 → 重建 → 標準化」方法論，<br>在三個完全不同的現場一次次被驗證。</p>
+    </div>
+
+    <div class="visits">
+
+      <!-- VISIT 01 -->
+      <div class="visit" data-visit-id="1">
+        <div class="visit-num">
+          <strong>01</strong>
+          visit
+        </div>
+        <div class="visit-body">
+          <div class="visit-meta">
+            <div class="visit-icon"><i class="fas fa-building"></i></div>
+            <div>
+              date<br>
+              <b>phase 01</b>
+            </div>
+            <div>
+              location<br>
+              <b>listed real estate co.</b>
+            </div>
+            <div>
+              role<br>
+              <b>業務拓展暨集團客戶經理</b>
+            </div>
+            <div>
+              context<br>
+              <b>高總價開發案 · 上市公司</b>
+            </div>
+          </div>
+          <div class="visit-content">
+            <h3>客戶<em>不是</em>在買房子。</h3>
+            <div class="role">// in the field — first principles</div>
+            <div class="visit-findings">
+              <div class="visit-findings-key"><i class="fas fa-circle"></i> findings</div>
+              <p>
+                在上市開發商學會的第一件事是 —
+                <strong>客戶在賭的不是房子本身，是未來十年的判斷</strong>。
+                我學會怎麼把複雜的開發案、區段、報酬率拆成客戶能聽懂的故事；
+                也學會怎麼在每一場簡報前，用數據預測客戶的下一個問題。
+              </p>
+            </div>
+            <div class="visit-conclusion">
+              <span>conclusion</span>
+              「在不能出錯的產業裡，預測客戶下一個問題的能力，比簡報本身更重要。」
+            </div>
+
+            <button type="button" class="visit-more-toggle" data-hov><i class="fas fa-plus"></i> additional notes</button>
+            <div class="visit-more">
+              <div class="visit-more-key"><i class="fas fa-circle"></i> what i learned</div>
+              <ul>
+                <li><b>客戶不要解釋，要結論</b>：高總價案的客戶時間昂貴。學會把 30 頁簡報壓成 3 句重點。</li>
+                <li><b>競品研究是基本功</b>：上市場前就要把所有同業優缺點背起來，才有資格開口。</li>
+                <li><b>數字比修辭可信</b>：講「報酬率高」是廢話，講「年化 6.8%、回本 11 年」才是專業。</li>
+                <li><b>後續服務的時間是最貴的</b>：簽約之後的每一通電話都是品牌信任的累積。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISIT 02 -->
+      <div class="visit" data-visit-id="2">
+        <div class="visit-num">
+          <strong>02</strong>
+          visit
+        </div>
+        <div class="visit-body">
+          <div class="visit-meta">
+            <div class="visit-icon"><i class="fas fa-baby"></i></div>
+            <div>
+              date<br>
+              <b>phase 02</b>
+            </div>
+            <div>
+              location<br>
+              <b>largest postpartum facility, taiwan</b>
+            </div>
+            <div>
+              role<br>
+              <b>執行長 (CEO)</b>
+            </div>
+            <div>
+              context<br>
+              <b>客戶在最脆弱時刻信任你</b>
+            </div>
+          </div>
+          <div class="visit-content">
+            <h3>沒有<em>第二次</em>機會的服務業。</h3>
+            <div class="role">// in the field — precision care</div>
+            <div class="visit-findings">
+              <div class="visit-findings-key"><i class="fas fa-circle"></i> findings</div>
+              <p>
+                帶領全台規模最大的產後護理之家。客戶是
+                <strong>剛經歷人生最脆弱時刻的家庭</strong>，沒有第二次機會。
+                我把房地產學到的「精緻簡報能力」轉成「精緻照護 SOP」 —
+                從動線、衛生、人力排班到危機處理，全部標準化。
+                那是我第一次真正體會到：「制度比個人魅力可靠」。
+              </p>
+            </div>
+            <div class="visit-conclusion">
+              <span>conclusion</span>
+              「當客戶處於最脆弱的時刻，制度就是你給他們的安全感。」
+            </div>
+
+            <button type="button" class="visit-more-toggle" data-hov><i class="fas fa-plus"></i> additional notes</button>
+            <div class="visit-more">
+              <div class="visit-more-key"><i class="fas fa-circle"></i> what i learned</div>
+              <ul>
+                <li><b>SOP 是給「最累的那個人」用的</b>：不是給最聰明的人用，是讓凌晨三點累到不行的同仁也能做出標準動作。</li>
+                <li><b>每個錯誤都要回到流程改寫</b>：罵人沒用，「修流程」才有用。一個漏洞補一個 SOP。</li>
+                <li><b>家屬的問題往往不是問題本身</b>：他們真正想聽到的是「我懂你在害怕什麼」。</li>
+                <li><b>數據儀表板是給管理者的，不是給現場的</b>：現場要的是清楚的 yes/no、do/don't。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISIT 03 -->
+      <div class="visit" data-visit-id="3">
+        <div class="visit-num">
+          <strong>03</strong>
+          visit
+        </div>
+        <div class="visit-body">
+          <div class="visit-meta">
+            <div class="visit-icon"><i class="fas fa-shield-virus"></i></div>
+            <div>
+              date<br>
+              <b>phase 03 — current</b>
+            </div>
+            <div>
+              location<br>
+              <b>global B2B pest mgmt</b>
+            </div>
+            <div>
+              role<br>
+              <b>台灣區服務暨營運官</b>
+            </div>
+            <div>
+              context<br>
+              <b>把 low-tech 行業變成 high-trust 諮詢</b>
+            </div>
+          </div>
+          <div class="visit-content">
+            <h3>不是要殺蟲 — 是要讓蟲<em>進不來</em>。</h3>
+            <div class="role">// in the field — boundary &amp; entry points</div>
+            <div class="visit-findings">
+              <div class="visit-findings-key"><i class="fas fa-circle"></i> findings</div>
+              <p>
+                現在我做的是跨國 B2B 系統化管理。對連鎖客戶我們不只「殺蟲」 —
+                我們設計從<strong>中央廚房、物流車、倉儲、垃圾處理</strong>全鏈路的病媒控制 SOP，
+                讓每間分店都做到一樣的標準。從傳統病媒防治轉變為「<strong>有害生物防治顧問</strong>」，
+                是我這幾年最有趣的轉變 — 我們和客戶雙方，都在這個轉換裡得到很多啟發。
+              </p>
+            </div>
+            <div class="visit-conclusion">
+              <span>conclusion</span>
+              「不要解決問題 — 重新設計一個問題不會出現的系統。」
+            </div>
+
+            <button type="button" class="visit-more-toggle" data-hov><i class="fas fa-plus"></i> additional notes</button>
+            <div class="visit-more">
+              <div class="visit-more-key"><i class="fas fa-circle"></i> what i learned</div>
+              <ul>
+                <li><b>蟲不會憑空出現</b>：每一隻都從某個你沒注意的縫進來。「沒看到 ≠ 沒有」。</li>
+                <li><b>客戶要的不是「殺」，是「不要再煩我」</b>：賣的是長期清淨，不是當下的成就感。</li>
+                <li><b>跨部門協作是 80% 的工作</b>：採購、清潔、廚房、物流 — 任何一環失守，整個系統就破功。</li>
+                <li><b>「教會客戶」比「替客戶做」更值錢</b>：能讓客戶自己預防的顧問，才是真正的顧問。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="career-summary">
+      三段職涯，最底層的方法都是同一套 —<br>
+      <b>看清系統 → 找到根因 → 重畫藍圖 → 標準化執行</b>。<br>
+      這也是為什麼，每換一個產業，我都能在最短時間內把營運帶上軌道。
+    </p>
+  </div>
+</section>
+
+<!-- ============================================= -->
+<!-- SECTION 5 — INTERACTIVE BRAIN MAP -->
+<!-- ============================================= -->
+<section class="brainmap content-layer" id="brainmap">
+  <div class="brainmap-grid">
+    <div>
+      <div class="brainmap-svg-wrap">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <!-- corner brackets -->
+          <path class="bm-corner" d="M 8 28 L 8 8 L 28 8" />
+          <path class="bm-corner" d="M 372 8 L 392 8 L 392 28" />
+          <path class="bm-corner" d="M 392 372 L 392 392 L 372 392" />
+          <path class="bm-corner" d="M 28 392 L 8 392 L 8 372" />
+
+          <!-- grid -->
+          <line class="bm-grid-line" x1="0" y1="100" x2="400" y2="100"/>
+          <line class="bm-grid-line" x1="0" y1="200" x2="400" y2="200"/>
+          <line class="bm-grid-line" x1="0" y1="300" x2="400" y2="300"/>
+          <line class="bm-grid-line" x1="100" y1="0" x2="100" y2="400"/>
+          <line class="bm-grid-line" x1="200" y1="0" x2="200" y2="400"/>
+          <line class="bm-grid-line" x1="300" y1="0" x2="300" y2="400"/>
+
+          <!-- axis crosshair -->
+          <line class="bm-axis" x1="200" y1="60" x2="200" y2="340"/>
+          <line class="bm-axis" x1="60" y1="200" x2="340" y2="200"/>
+
+          <!-- INTJ "brain" outline — abstract isometric chamber -->
+          <path class="bm-outline" d="M 200 70 L 320 140 L 320 280 L 200 350 L 80 280 L 80 140 Z"/>
+          <path class="bm-outline-inner" d="M 200 110 L 280 155 L 280 265 L 200 310 L 120 265 L 120 155 Z"/>
+          <line class="bm-outline-inner" x1="200" y1="70" x2="200" y2="350"/>
+          <line class="bm-outline-inner" x1="80" y1="140" x2="320" y2="280"/>
+          <line class="bm-outline-inner" x1="320" y1="140" x2="80" y2="280"/>
+
+          <!-- title labels -->
+          <text x="200" y="40" text-anchor="middle" class="hotspot-label" style="font-size:9px">SUBJECT BRAIN MAP — INTJ / E.L.</text>
+          <text x="200" y="385" text-anchor="middle" class="hotspot-label" style="font-size:8px;fill:var(--text-faint)">CLICK ANY POINT TO INSPECT</text>
+
+          <!-- hotspot 1 — top — vision -->
+          <g class="hotspot" data-hs="1">
+            <circle class="hotspot-pulse" cx="200" cy="100" r="18"/>
+            <circle class="hotspot-circle" cx="200" cy="100" r="9"/>
+            <text x="200" y="82" text-anchor="middle" class="hotspot-label">vision</text>
+          </g>
+
+          <!-- hotspot 2 — left — analysis -->
+          <g class="hotspot" data-hs="2">
+            <circle class="hotspot-pulse" cx="115" cy="180" r="18"/>
+            <circle class="hotspot-circle" cx="115" cy="180" r="9"/>
+            <text x="80" y="184" text-anchor="end" class="hotspot-label">analysis</text>
+          </g>
+
+          <!-- hotspot 3 — right — execution -->
+          <g class="hotspot" data-hs="3">
+            <circle class="hotspot-pulse" cx="285" cy="180" r="18"/>
+            <circle class="hotspot-circle" cx="285" cy="180" r="9"/>
+            <text x="320" y="184" text-anchor="start" class="hotspot-label">execution</text>
+          </g>
+
+          <!-- hotspot 4 — center — sop core -->
+          <g class="hotspot" data-hs="4">
+            <circle class="hotspot-pulse" cx="200" cy="220" r="22"/>
+            <circle class="hotspot-circle" cx="200" cy="220" r="11"/>
+            <text x="200" y="252" text-anchor="middle" class="hotspot-label">sop core</text>
+          </g>
+
+          <!-- hotspot 5 — left bottom — empathy -->
+          <g class="hotspot" data-hs="5">
+            <circle class="hotspot-pulse" cx="135" cy="290" r="18"/>
+            <circle class="hotspot-circle" cx="135" cy="290" r="9"/>
+            <text x="100" y="294" text-anchor="end" class="hotspot-label">empathy</text>
+          </g>
+
+          <!-- hotspot 6 — right bottom — boundary -->
+          <g class="hotspot" data-hs="6">
+            <circle class="hotspot-pulse" cx="265" cy="290" r="18"/>
+            <circle class="hotspot-circle" cx="265" cy="290" r="9"/>
+            <text x="300" y="294" text-anchor="start" class="hotspot-label">boundary</text>
+          </g>
+
+          <!-- trace rays: center (sop core) → outward in clockwise order -->
+          <g id="bmTraceRays">
+            <circle id="bmCenterPulse" class="bm-center-pulse" cx="200" cy="220" r="4"/>
+            <line class="bm-ray" data-step="1" x1="200" y1="220" x2="200" y2="100"/>
+            <line class="bm-ray" data-step="2" x1="200" y1="220" x2="285" y2="180"/>
+            <line class="bm-ray" data-step="3" x1="200" y1="220" x2="265" y2="290"/>
+            <line class="bm-ray" data-step="4" x1="200" y1="220" x2="135" y2="290"/>
+            <line class="bm-ray" data-step="5" x1="200" y1="220" x2="115" y2="180"/>
+          </g>
+        </svg>
+        <div class="bm-coord">brain map<br>v.2026<br>INTJ / E.L.</div>
+        <div class="bm-step-counter" id="bmStepCounter">step <b>0</b>/6 — <span id="bmStepLabel">—</span></div>
+        <div class="bm-instructions"><i class="fas fa-hand-pointer"></i> click any inspection point</div>
+        <button type="button" class="bm-trace-btn" id="bmTraceBtn" data-hov>
+          <i class="fas fa-route"></i> trace E.L.'s thinking
+        </button>
+      </div>
+    </div>
+
+    <div class="brainmap-info" id="brainmapInfo">
+      <span class="label">capability scan / interactive</span>
+      <h2 class="stitle">點任何一個點，<br><em>看我怎麼想事情</em>。</h2>
+      <div class="bm-pane">
+      <p class="bm-default" id="bmDefault">
+        每一個 <strong>檢查點</strong> 對應我大腦裡的一個運作模式。
+        我平常勘查餐廳時會看的「邊界、孔洞、動線」 —
+        這次換成你來檢查我。
+        <br><br>
+        從上方的 <strong>vision</strong>、左邊的 <strong>analysis</strong>、
+        到中間的 <strong>SOP core</strong> —
+        每個點都會告訴你，這個能力是怎麼被三個產業一次次磨出來的。
+      </p>
+
+      <div class="bm-detail" data-key="1">
+        <div class="bm-detail-key">point 01 — vision</div>
+        <h4>看到別人還沒畫出來的那條線</h4>
+        <p>
+          我的工作從來不是優化已經存在的東西，而是<strong>看到還沒有被畫出來的可能性</strong>。
+          在房地產時期，這代表預測客戶五年後會問什麼；
+          在月子中心，是預測一個流程在最壞情況下會在哪裡崩潰；
+          在害蟲防治，是看到「現在沒事」不代表「以後也沒事」。
+        </p>
+        <div class="quote">「先看到別人看不到的問題，才有資格去解決它。」</div>
+        <button type="button" class="bm-back" data-hov><i class="fas fa-arrow-left"></i> back to overview</button>
+      </div>
+
+      <div class="bm-detail" data-key="2">
+        <div class="bm-detail-key">point 02 — analysis</div>
+        <h4>把複雜的東西拆到不能再拆</h4>
+        <p>
+          INTJ 的本能 — <strong>系統拆解</strong>。我會把一個複雜的營運問題切成最小的單位，
+          找出每一塊真正的瓶頸在哪裡。台大 PMBA 訓練我用商業框架思考，
+          但真正讓我成熟的，是<strong>每一次在現場被打臉</strong>後重新拆解模型的經驗。
+        </p>
+        <div class="quote">「不是我比較聰明，是我願意承認上一個假設錯了。」</div>
+        <button type="button" class="bm-back" data-hov><i class="fas fa-arrow-left"></i> back to overview</button>
+      </div>
+
+      <div class="bm-detail" data-key="3">
+        <div class="bm-detail-key">point 03 — execution</div>
+        <h4>從會議室到天花板，我都會親自去</h4>
+        <p>
+          我不是只會畫策略圖的顧問。我會<strong>親自去店裡爬天花板看門縫</strong>，
+          因為策略最後是要靠現場實施的人去落地。
+          餐廳的免費場勘 — 那是我最享受的時刻，因為那是「策略」與「現實」最近的距離。
+        </p>
+        <div class="quote">「能在現場活下來的策略，才是真正的策略。」</div>
+        <button type="button" class="bm-back" data-hov><i class="fas fa-arrow-left"></i> back to overview</button>
+      </div>
+
+      <div class="bm-detail" data-key="4">
+        <div class="bm-detail-key">point 04 — sop core</div>
+        <h4>制度，比個人魅力可靠</h4>
+        <p>
+          這是我整個思維的核心。<strong>SOP 不是束縛，是讓人變聰明的工具</strong>。
+          當你把對的事情標準化，每個人就能在不靠運氣的情況下，做出一樣高品質的成果。
+          我做月子中心、做連鎖門市的全台 SOP 體系 — 都是同一個信念。
+        </p>
+        <div class="quote">「好的制度，能把普通人變成英雄；壞的制度，會把英雄變成普通人。」</div>
+        <button type="button" class="bm-back" data-hov><i class="fas fa-arrow-left"></i> back to overview</button>
+      </div>
+
+      <div class="bm-detail" data-key="5">
+        <div class="bm-detail-key">point 05 — empathy</div>
+        <h4>客戶經理 = 情緒勞動者</h4>
+        <p>
+          我自己在 Threads 寫過：「客戶經理是多工整合師、危機處理專家、
+          <strong>情緒勞動者</strong>，三合一。」當你的客戶在最緊張、最脆弱的時刻找你，
+          你的專業只有 50%，剩下 50% 是讓他們相信「沒事，我在」。
+        </p>
+        <div class="quote">「策略是給對的人聽的；對的人，要先感覺到你懂他。」</div>
+        <button type="button" class="bm-back" data-hov><i class="fas fa-arrow-left"></i> back to overview</button>
+      </div>
+
+      <div class="bm-detail" data-key="6">
+        <div class="bm-detail-key">point 06 — boundary</div>
+        <h4>每一個系統，都是從邊界開始失守的</h4>
+        <p>
+          做病媒防治後，我看世界的方式徹底改變。
+          <strong>蟲不是憑空出現的，是從某個你沒注意的縫隙進來的</strong>。
+          這個道理放在所有營運上都成立 — 客訴、品質崩壞、團隊離心，
+          全都是從「沒人管的那條邊界」開始的。我做的事，是先把邊界畫清楚。
+        </p>
+        <div class="quote">「先封住小洞，才有資格談大格局。」</div>
+        <button type="button" class="bm-back" data-hov><i class="fas fa-arrow-left"></i> back to overview</button>
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================= -->
+<!-- SECTION 6 — SERVICES (checklist) -->
+<!-- ============================================= -->
+<section class="services-section content-layer" id="services">
+  <div class="services-inner">
+    <div class="services-head">
+      <span class="label">checklist / what i can do for you</span>
+      <h2 class="stitle">我可以幫你<em>做什麼</em>。</h2>
+      <p class="stext">以下是我目前能直接出手的事。如果你的問題在這幾個範圍裡，<br>歡迎直接來找我聊聊。</p>
+    </div>
+
+    <div class="services-list" id="servicesList">
+      <div class="service free" data-svc="餐飲店免費病媒場勘" data-hov>
+        <div class="service-check">
+          <i class="fas fa-utensils"></i>
+          <i class="fas fa-check service-check-mark"></i>
+        </div>
+        <div class="service-body">
+          <h4>餐飲店 — <em>免費病媒場勘</em></h4>
+          <p>剛裝潢、準備開業、或是百貨櫃位的餐廳，<strong>我可以實地走一趟</strong>，
+            幫你看門縫、孔洞、毛刷、天花板、垃圾動線 — 在問題變成災難前，先把藍圖修好。</p>
+        </div>
+        <span class="service-tag solid">free survey</span>
+      </div>
+
+      <div class="service" data-svc="連鎖品牌 SOP 系統建構" data-hov>
+        <div class="service-check">
+          <i class="fas fa-sitemap"></i>
+          <i class="fas fa-check service-check-mark"></i>
+        </div>
+        <div class="service-body">
+          <h4>連鎖品牌 — <em>SOP 系統建構</em></h4>
+          <p>當你有 5 間以上的分店、總部開始接到不一致的客訴時，
+            你需要的不是「再加強一點」，而是<strong>一套從中央廚房到末端門市的完整 SOP 體系</strong>。</p>
+        </div>
+        <span class="service-tag">consulting</span>
+      </div>
+
+      <div class="service" data-svc="B2B 集團客戶經營策略" data-hov>
+        <div class="service-check">
+          <i class="fas fa-handshake"></i>
+          <i class="fas fa-check service-check-mark"></i>
+        </div>
+        <div class="service-body">
+          <h4>B2B 集團客戶 — <em>經營策略</em></h4>
+          <p>業界第一的客戶期待你「不能出錯」。
+            我會幫你設計一套能同時兼顧<strong>速度、專業、情緒勞動</strong>的客戶經營框架。</p>
+        </div>
+        <span class="service-tag">advisory</span>
+      </div>
+
+      <div class="service" data-svc="跨產業營運顧問" data-hov>
+        <div class="service-check">
+          <i class="fas fa-arrows-spin"></i>
+          <i class="fas fa-check service-check-mark"></i>
+        </div>
+        <div class="service-body">
+          <h4>跨產業 — <em>營運顧問</em></h4>
+          <p>當你的事業卡住、不知道下一步往哪走，
+            我可以用過去三個產業的視角，<strong>幫你重新定義問題、畫一張新的成長路徑圖</strong>。</p>
+        </div>
+        <span class="service-tag">advisory</span>
+      </div>
+
+      <div class="service" data-svc="組織變革與流程優化" data-hov>
+        <div class="service-check">
+          <i class="fas fa-helmet-safety"></i>
+          <i class="fas fa-check service-check-mark"></i>
+        </div>
+        <div class="service-body">
+          <h4>組織變革 — <em>流程優化</em></h4>
+          <p>從「人靠經驗做事」變成「<strong>制度自動產生結果</strong>」 —
+            這是我擅長的事。特別適合家族企業、二代接班、或正在從小團隊邁向體系化的公司。</p>
+        </div>
+        <span class="service-tag">project</span>
+      </div>
+    </div>
+
+    <div class="svc-counter" id="svcCounter">
+      <div class="svc-counter-text">
+        <span id="svcCounterMsg">click any service above to mark as needed</span>
+      </div>
+      <div class="svc-counter-actions" id="svcCounterActions" style="display:none">
+        <a href="https://www.threads.com/@elliott_lu_" target="_blank" rel="noopener noreferrer" class="svc-counter-link" data-hov><i class="fab fa-threads"></i> ask on Threads</a>
+        <a href="https://www.instagram.com/elliott_lu_/" target="_blank" rel="noopener noreferrer" class="svc-counter-link" data-hov><i class="fab fa-instagram"></i> dm on Instagram</a>
+        <button type="button" class="svc-counter-clear" id="svcClear">clear</button>
+      </div>
+    </div>
+
+    <p class="services-note">↑ 第一項是真的免費 — 別客氣，餐廳老闆們。</p>
+  </div>
+</section>
+
+<!-- ============================================= -->
+<!-- SECTION 7 — PHILOSOPHY -->
+<!-- ============================================= -->
+<section class="philosophy content-layer" id="philosophy">
+  <div class="philosophy-inner">
+    <div class="philosophy-head">
+      <span class="label warn">field notes — three principles</span>
+      <h2 class="stitle">我相信的<em>三件事</em>。</h2>
+      <p class="stext">這些不是書上抄來的，是過去十多年在三個產業裡，被現場一次次教會我的。</p>
+    </div>
+
+    <div class="philosophy-cards">
+      <div class="phil-card" data-hov>
+        <div class="phil-num">principle / 01</div>
+        <p class="phil-quote">「個人代表的不僅是自己 —<br>是整間公司，甚至整個產業的標準。」</p>
+        <p class="phil-text">
+          當你身處業界第一的位子，客戶的期待就是「不能出錯」。回得慢、不夠準，馬上就被放大檢視。
+          這種壓力一開始會壓垮你，但久了你會發現它讓你變強。
+        </p>
+      </div>
+
+      <div class="phil-card" data-hov>
+        <div class="phil-num">principle / 02</div>
+        <p class="phil-quote">「不是要殺蟲 —<br>是要從根本不再讓蟲進來。」</p>
+        <p class="phil-text">
+          我做病媒防治後最大的領悟。當你只解決「<strong>出現的問題</strong>」，問題會永遠出現。
+          當你重新設計「<strong>問題不會出現的系統</strong>」，你才真正在做顧問，而不是消耗品。
+        </p>
+      </div>
+
+      <div class="phil-card" data-hov>
+        <div class="phil-num">principle / 03</div>
+        <p class="phil-quote">「客戶經理 = 多工整合師、<br>危機處理專家、情緒勞動者，三合一。」</p>
+        <p class="phil-text">
+          很多時候，我做的事不是「自己厲害」，而是橋接內外部資源、在各關係人之間拉線、
+          確保每一塊都到位 — 讓整個團隊能打出一場漂亮的仗。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================= -->
+<!-- SECTION 8 — FUTURE -->
+<!-- ============================================= -->
+<section class="future content-layer" id="future">
+  <div class="future-inner">
+    <span class="label">forward sheet / 2026 →</span>
+    <h2 class="stitle">下一張藍圖<br><em>正在繪製中</em>。</h2>
+
+    <p class="future-text">
+      目前，我的職涯發展正全面朝向 <strong>「高階營運管理」與「創新創業」</strong> 推進。
+      我致力於建構具備高擴張力與高韌性的商業模式，把過去累積的跨產業 know-how，
+      轉化為可落地執行的營運路徑。
+    </p>
+
+    <p class="future-text">
+      我也持續學習 — 從日文 N4、AI 工具、到 Podcast 製作。
+      因為我相信，<strong>在 AI 變革時代，能跳脫「老鼠跑圈圈的迴圈」的人，
+      不是擁有最多答案的人，而是不斷把自己重畫成新版本的人</strong>。
+    </p>
+
+    <div class="future-coords">
+      <div class="future-coord">
+        <div class="future-coord-key">next / 01</div>
+        <div class="future-coord-val">建立屬於自己的<br>YouTube 頻道</div>
+      </div>
+      <div class="future-coord">
+        <div class="future-coord-key">next / 02</div>
+        <div class="future-coord-val">啟動營運顧問<br>Podcast（規劃中）</div>
+      </div>
+      <div class="future-coord">
+        <div class="future-coord-key">next / 03</div>
+        <div class="future-coord-val">把跨產業 know-how<br>轉成可創業的模型</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================= -->
+<!-- SECTION 9 — CONTACT + STAMP -->
+<!-- ============================================= -->
+<section class="contact content-layer" id="contact">
+  <div class="contact-inner">
+    <span class="label">end of report / contact</span>
+    <h2 class="contact-stitle">想找我聊聊嗎？</h2>
+    <p class="contact-sub">無論是場勘、SOP、策略，還是只想交個朋友 —<br>我都會親自回。</p>
+    <div class="contact-links">
+      <a href="https://www.threads.com/@elliott_lu_" target="_blank" rel="noopener noreferrer" class="contact-link" data-hov><i class="fab fa-threads"></i><span>Threads</span></a>
+      <a href="https://www.instagram.com/elliott_lu_/" target="_blank" rel="noopener noreferrer" class="contact-link" data-hov><i class="fab fa-instagram"></i><span>Instagram</span></a>
+    </div>
+
+    <div class="stamp-wrap">
+      <div class="stamp" id="reviewStamp">
+        <div class="stamp-top">★ reviewed ★</div>
+        <div class="stamp-line"></div>
+        <div class="stamp-mid">E. <em>Lu.</em></div>
+        <div class="stamp-line"></div>
+        <div class="stamp-bot">2026 / TPE</div>
+      </div>
+    </div>
+
+    <button type="button" class="print-btn" id="printBtn" data-hov>
+      <i class="fas fa-print"></i> print this report
+    </button>
+  </div>
+</section>
+
+<footer class="footer">
+  <p class="footer-sig">Made with <span style="color:var(--warn)"><i class="fas fa-heart"></i></span> by <a href="/guild/">SuperGalen's Dungeon</a></p>
+  <p class="footer-meta">— END OF REPORT №E.L.-2026-001 — TOTAL SHEETS: 08 —</p>
+</footer>
+
+<script>
+/* ============================================= */
+/* LOADER */
+/* ============================================= */
+(() => {
+  function hideLoader() {
+    setTimeout(() => {
+      gsap.to('#loader', {opacity:0, duration:.6, onComplete:()=>{
+        const l = document.getElementById('loader');
+        if (l) l.style.display = 'none';
+      }});
+    }, 1100);
+  }
+  if (document.readyState === 'complete') {
+    hideLoader();
+  } else {
+    window.addEventListener('load', hideLoader);
+  }
+})();
+
+/* ============================================= */
+/* CURSOR */
+/* ============================================= */
+(() => {
+  const cursor = document.getElementById('cursor');
+  if (!cursor) return;
+  if (window.matchMedia('(hover:none)').matches) { cursor.style.display='none'; return; }
+  let x=0,y=0,tx=0,ty=0;
+  document.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY});
+  function loop(){
+    x += (tx-x)*0.22;
+    y += (ty-y)*0.22;
+    cursor.style.left=x+'px'; cursor.style.top=y+'px';
+    requestAnimationFrame(loop);
+  }
+  loop();
+  document.querySelectorAll('a,button,[data-hov],.hotspot').forEach(el=>{
+    el.addEventListener('mouseenter',()=>document.body.classList.add('hov'));
+    el.addEventListener('mouseleave',()=>document.body.classList.remove('hov'));
+  });
+})();
+
+
+/* ============================================= */
+/* P5 BLUEPRINT BACKGROUND */
+/* ============================================= */
+new p5((p)=>{
+  let nodes = [];
+  let measureLines = [];
+  let t = 0;
+  function makeNodes(){
+    nodes = [];
+    for (let i=0;i<14;i++){
+      nodes.push({x:p.random(p.width),y:p.random(p.height),r:p.random(3,7),phase:p.random(p.TWO_PI)});
+    }
+    measureLines = [];
+    for (let i=0;i<5;i++){
+      measureLines.push({
+        x1:p.random(p.width*0.1,p.width*0.85),
+        y1:p.random(p.height*0.1,p.height*0.85),
+        len:p.random(80,180),
+        horiz:p.random()>0.5,
+        opacity:p.random(0.05,0.12)
+      });
+    }
+  }
+  p.setup = () => {
+    const c = p.createCanvas(window.innerWidth, window.innerHeight);
+    c.parent('p5-bg');
+    p.pixelDensity(Math.min(window.devicePixelRatio||1, 2));
+    makeNodes();
+  };
+  p.draw = () => {
+    p.clear();
+    t += 0.005;
+    p.stroke(30,96,145,18);
+    p.strokeWeight(1);
+    const grid = 48;
+    for (let x=0;x<p.width;x+=grid){ p.line(x,0,x,p.height); }
+    for (let y=0;y<p.height;y+=grid){ p.line(0,y,p.width,y); }
+    p.stroke(30,96,145,8);
+    const sub = 12;
+    for (let x=0;x<p.width;x+=sub){ p.line(x,0,x,p.height); }
+    for (let y=0;y<p.height;y+=sub){ p.line(0,y,p.width,y); }
+    p.strokeWeight(1);
+    measureLines.forEach(m=>{
+      p.stroke(30,96,145, 255*m.opacity);
+      p.noFill();
+      if (m.horiz){
+        p.line(m.x1, m.y1, m.x1+m.len, m.y1);
+        p.line(m.x1, m.y1-4, m.x1, m.y1+4);
+        p.line(m.x1+m.len, m.y1-4, m.x1+m.len, m.y1+4);
+      } else {
+        p.line(m.x1, m.y1, m.x1, m.y1+m.len);
+        p.line(m.x1-4, m.y1, m.x1+4, m.y1);
+        p.line(m.x1-4, m.y1+m.len, m.x1+4, m.y1+m.len);
+      }
+    });
+    nodes.forEach(n=>{
+      const breath = (Math.sin(t*2 + n.phase)+1)*0.5;
+      const r = n.r + breath*2;
+      p.noFill();
+      p.stroke(30,96,145, 60+breath*40);
+      p.strokeWeight(1);
+      p.ellipse(n.x, n.y, r*2, r*2);
+      p.stroke(30,96,145, 90+breath*60);
+      p.point(n.x, n.y);
+      p.stroke(30,96,145, 30);
+      p.line(n.x-r-3, n.y, n.x-r-1, n.y);
+      p.line(n.x+r+1, n.y, n.x+r+3, n.y);
+      p.line(n.x, n.y-r-3, n.x, n.y-r-1);
+      p.line(n.x, n.y+r+1, n.x, n.y+r+3);
+    });
+  };
+  p.windowResized = () => {
+    p.resizeCanvas(window.innerWidth, window.innerHeight);
+    makeNodes();
+  };
+});
+
+/* ============================================= */
+/* INTERACTIVE BRAIN MAP — hotspot click */
+/* ============================================= */
+(() => {
+  const hotspots = document.querySelectorAll('.hotspot');
+  const details = document.querySelectorAll('.bm-detail');
+  const backBtns = document.querySelectorAll('.bm-back');
+  const info = document.getElementById('brainmapInfo');
+  let active = null;
+
+  function setActive(key, opts) {
+    opts = opts || {};
+    // null = back to default
+    hotspots.forEach(hs => hs.classList.toggle('active', key && hs.dataset.hs === key));
+    details.forEach(d => d.classList.toggle('active', key && d.dataset.key === key));
+    if (info) info.classList.toggle('has-active', !!key);
+    // when manually resetting (not from trace), also clear the trace line
+    if (!key && !opts.fromTrace) {
+      const line = document.getElementById('bmTraceLine');
+      if (line) line.classList.remove('active');
+      const counter = document.getElementById('bmStepCounter');
+      if (counter) counter.classList.remove('active');
+    }
+    active = key;
+  }
+
+  hotspots.forEach(hs => {
+    const key = hs.dataset.hs;
+    // click toggles: same key → reset, different → switch
+    hs.addEventListener('click', () => setActive(active === key ? null : key));
+  });
+
+  backBtns.forEach(b => b.addEventListener('click', () => setActive(null)));
+})();
+
+/* ============================================= */
+/* PHOTO SCAN REVEAL */
+/* ============================================= */
+(() => {
+  const photo = document.getElementById('idPhoto');
+  if (!photo) return;
+  const trigger = document.querySelector('.identity');
+  if (!trigger) return;
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          photo.classList.add('scanning');
+          setTimeout(() => photo.classList.add('scanned'), 750);
+          io.unobserve(entry.target);
+        }
+      });
+    }, {rootMargin: '0px 0px -10% 0px', threshold: 0.15});
+    io.observe(trigger);
+  } else {
+    photo.classList.add('scanned');
+  }
+})();
+
+/* ============================================= */
+/* SCROLL: unified handler (scroll bar + tracker) with rAF throttle */
+/* ============================================= */
+(() => {
+  const bar = document.getElementById('scrollBar');
+  const tracker = document.getElementById('tracker');
+  const items = tracker ? tracker.querySelectorAll('.tracker-item') : [];
+  const pctEl = document.getElementById('trackerPct');
+  const sections = ['hero','identity','manifesto','career','brainmap','services','philosophy','future']
+    .map(id => ({id, el: document.getElementById(id)}))
+    .filter(s => s.el);
+
+  // tracker items: click to jump
+  items.forEach(it => {
+    it.addEventListener('click', () => {
+      const target = document.getElementById(it.dataset.section);
+      if (target) target.scrollIntoView({behavior: 'smooth', block: 'start'});
+    });
+  });
+
+  let ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      // scroll bar width
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = h > 0 ? (window.scrollY / h * 100) : 0;
+      if (bar) bar.style.width = pct + '%';
+
+      // tracker state (only if tracker exists)
+      if (tracker && sections.length) {
+        const triggerY = window.innerHeight * 0.5;
+        let currentIdx = -1;
+        let doneCount = 0;
+        sections.forEach((s, i) => {
+          const r = s.el.getBoundingClientRect();
+          if (r.top <= triggerY && r.bottom > triggerY) currentIdx = i;
+          if (r.top < triggerY) doneCount = i + 1;
+        });
+        items.forEach((it, i) => {
+          it.classList.toggle('done', i < doneCount && i !== currentIdx);
+          it.classList.toggle('current', i === currentIdx);
+        });
+        const trackerPct = Math.round((doneCount / sections.length) * 100);
+        if (pctEl) pctEl.textContent = trackerPct + '%';
+        tracker.classList.toggle('complete', doneCount >= sections.length);
+      }
+
+      ticking = false;
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, {passive: true});
+  window.addEventListener('resize', onScroll);
+  setTimeout(onScroll, 400);
+})();
+
+/* ============================================= */
+/* VISIT EXPANDABLE — additional notes */
+/* ============================================= */
+(() => {
+  document.querySelectorAll('.visit-more-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const visit = btn.closest('.visit');
+      if (!visit) return;
+      const expanded = visit.classList.toggle('expanded');
+      const icon = btn.querySelector('i');
+      if (icon) icon.className = expanded ? 'fas fa-minus' : 'fas fa-plus';
+      // update label text node (after the icon)
+      btn.childNodes.forEach(n => {
+        if (n.nodeType === 3 && n.textContent.trim()) {
+          n.textContent = expanded ? ' hide notes' : ' additional notes';
+        }
+      });
+    });
+  });
+})();
+
+/* ============================================= */
+/* HIGHLIGHTER PEN ON VISIT FINDINGS */
+/* ============================================= */
+(() => {
+  const visits = document.querySelectorAll('.visit');
+  if (!visits.length) return;
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('highlight'), 350);
+          io.unobserve(entry.target);
+        }
+      });
+    }, {rootMargin: '0px 0px -15% 0px', threshold: 0.2});
+    visits.forEach(v => io.observe(v));
+  } else {
+    visits.forEach(v => v.classList.add('highlight'));
+  }
+})();
+
+/* ============================================= */
+/* PRINT REPORT BUTTON */
+/* ============================================= */
+(() => {
+  const btn = document.getElementById('printBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => window.print());
+})();
+
+/* ============================================= */
+/* HERO TAGS → click to scroll + flash matching visits */
+/* ============================================= */
+(() => {
+  const tags = document.querySelectorAll('.hero-tag[data-visits]');
+  if (!tags.length) return;
+  tags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      const ids = (tag.dataset.visits || '').split(',').map(s => s.trim()).filter(Boolean);
+      if (!ids.length) return;
+      // mark this tag active briefly
+      tags.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      setTimeout(() => tag.classList.remove('active'), 2400);
+
+      // scroll to first matching visit
+      const firstVisit = document.querySelector('.visit[data-visit-id="' + ids[0] + '"]');
+      if (firstVisit) {
+        firstVisit.scrollIntoView({behavior: 'smooth', block: 'center'});
+      }
+      // flash all matching visits after scroll settles
+      setTimeout(() => {
+        ids.forEach(id => {
+          const v = document.querySelector('.visit[data-visit-id="' + id + '"]');
+          if (v) {
+            v.classList.remove('flash');
+            void v.offsetWidth;
+            v.classList.add('flash');
+            setTimeout(() => v.classList.remove('flash'), 2200);
+          }
+        });
+      }, 600);
+    });
+  });
+})();
+
+/* ============================================= */
+/* BRAIN MAP — trace thinking path (rays from center, clockwise) */
+/* ============================================= */
+(() => {
+  const btn = document.getElementById('bmTraceBtn');
+  const rays = document.querySelectorAll('.bm-ray');
+  const pulse = document.getElementById('bmCenterPulse');
+  const counter = document.getElementById('bmStepCounter');
+  const label = document.getElementById('bmStepLabel');
+  if (!btn || !rays.length) return;
+
+  // Sequence: SOP CORE (center) → VISION (top, 12 o'clock) → EXECUTION (right)
+  //          → BOUNDARY (bottom-right) → EMPATHY (bottom-left) → ANALYSIS (left)
+  // 6 narrative steps, first is center highlight, then 5 rays outward
+  const sequence = [
+    {hs: '4', name: 'sop core', ray: null},           // center highlight
+    {hs: '1', name: 'vision',    ray: 1},              // ray 1 → vision
+    {hs: '3', name: 'execution', ray: 2},              // ray 2 → execution
+    {hs: '6', name: 'boundary',  ray: 3},              // ray 3 → boundary
+    {hs: '5', name: 'empathy',   ray: 4},              // ray 4 → empathy
+    {hs: '2', name: 'analysis',  ray: 5},              // ray 5 → analysis
+  ];
+
+  let running = false;
+
+  function reset() {
+    rays.forEach(r => r.classList.remove('drawn'));
+    btn.classList.remove('active');
+    counter.classList.remove('active');
+    if (pulse) pulse.classList.remove('active');
+    document.querySelectorAll('.hotspot').forEach(h => h.classList.remove('active'));
+    void rays[0].getBoundingClientRect();
+  }
+
+  btn.addEventListener('click', () => {
+    if (running) return;
+    running = true;
+    reset();
+    btn.classList.add('active');
+    counter.classList.add('active');
+
+    // center pulse fires first
+    if (pulse) {
+      setTimeout(() => {
+        pulse.classList.remove('active');
+        void pulse.getBoundingClientRect();
+        pulse.classList.add('active');
+      }, 30);
+    }
+
+    // step through — each step highlights hotspot + draws ray + updates detail panel
+    sequence.forEach((step, i) => {
+      setTimeout(() => {
+        // light up current hotspot only
+        document.querySelectorAll('.hotspot').forEach(h => h.classList.remove('active'));
+        const hs = document.querySelector('.hotspot[data-hs="' + step.hs + '"]');
+        if (hs) hs.classList.add('active');
+        // draw corresponding ray (first step has no ray — just center highlight)
+        if (step.ray) {
+          const ray = document.querySelector('.bm-ray[data-step="' + step.ray + '"]');
+          if (ray) ray.classList.add('drawn');
+        }
+        // sync detail panel
+        const info = document.getElementById('brainmapInfo');
+        if (info) info.classList.add('has-active');
+        document.querySelectorAll('.bm-detail').forEach(d => {
+          d.classList.toggle('active', d.dataset.key === step.hs);
+        });
+        // update counter
+        if (label) label.textContent = step.name;
+        if (counter) counter.querySelector('b').textContent = (i + 1) + '/6';
+      }, 200 + i * 750);
+    });
+
+    // finish — leave final state visible, user can click back to reset
+    setTimeout(() => {
+      running = false;
+      btn.classList.remove('active');
+      if (counter) counter.classList.remove('active');
+    }, 200 + sequence.length * 750 + 500);
+  });
+
+  // also clear rays when user clicks back-to-overview
+  document.querySelectorAll('.bm-back').forEach(b => {
+    b.addEventListener('click', () => {
+      rays.forEach(r => r.classList.remove('drawn'));
+      if (pulse) pulse.classList.remove('active');
+    });
+  });
+})();
+
+/* ============================================= */
+/* SERVICES — checkable checklist */
+/* ============================================= */
+(() => {
+  const list = document.getElementById('servicesList');
+  const counter = document.getElementById('svcCounter');
+  const msg = document.getElementById('svcCounterMsg');
+  const actions = document.getElementById('svcCounterActions');
+  const clearBtn = document.getElementById('svcClear');
+  if (!list || !counter || !msg) return;
+
+  const services = list.querySelectorAll('.service');
+
+  function update() {
+    const selected = list.querySelectorAll('.service.selected');
+    const n = selected.length;
+    counter.classList.toggle('has-selection', n > 0);
+    if (n === 0) {
+      msg.innerHTML = 'click any service above to mark as needed';
+      actions.style.display = 'none';
+    } else {
+      const names = Array.from(selected).map(s => s.dataset.svc);
+      msg.innerHTML = '<b>' + n + '</b> service' + (n > 1 ? 's' : '') + ' selected &nbsp;·&nbsp; ready to send to E.L.';
+      actions.style.display = 'flex';
+    }
+  }
+
+  services.forEach(s => {
+    s.addEventListener('click', (e) => {
+      // ignore clicks on internal links
+      if (e.target.tagName === 'A') return;
+      s.classList.toggle('selected');
+      update();
+    });
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      services.forEach(s => s.classList.remove('selected'));
+      update();
+    });
+  }
+})();
+
+/* ============================================= */
+/* MBTI INTJ chip → click to expand letter detail */
+/* ============================================= */
+(() => {
+  const chip = document.getElementById('mbtiChip');
+  const detail = document.getElementById('mbtiDetail');
+  if (!chip || !detail) return;
+  function toggle() {
+    const open = chip.classList.toggle('open');
+    detail.classList.toggle('open', open);
+    chip.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  chip.addEventListener('click', toggle);
+  chip.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+  });
+})();
+
+/* ============================================= */
+/* KEYBOARD NAVIGATION (J/K + Arrow keys) */
+/* ============================================= */
+(() => {
+  const ids = ['hero','identity','manifesto','career','brainmap','services','philosophy','future','contact'];
+  const sections = ids.map(id => document.getElementById(id)).filter(Boolean);
+  function currentIndex() {
+    const y = window.scrollY + window.innerHeight * 0.35;
+    let idx = 0;
+    sections.forEach((s, i) => {
+      if (s.offsetTop <= y) idx = i;
+    });
+    return idx;
+  }
+  function jump(delta) {
+    const next = Math.max(0, Math.min(sections.length - 1, currentIndex() + delta));
+    sections[next].scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+  document.addEventListener('keydown', (e) => {
+    // ignore if user is typing in any input
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      jump(1);
+    } else if (e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      jump(-1);
+    }
+  });
+})();
+
+/* ============================================= */
+/* HERO TITLE HOVER EASTER EGG + auto on idle */
+/* ============================================= */
+(() => {
+  const title = document.getElementById('heroTitle');
+  const confirm = document.getElementById('heroConfirm');
+  if (!title || !confirm) return;
+  // auto-show once after 3.6s on first load (after entry animations)
+  setTimeout(() => {
+    confirm.classList.add('show');
+    setTimeout(() => confirm.classList.remove('show'), 2600);
+  }, 3600);
+  // also on hover
+  title.addEventListener('mouseenter', () => confirm.classList.add('show'));
+  title.addEventListener('mouseleave', () => confirm.classList.remove('show'));
+})();
+
+/* ============================================= */
+/* HERO TITLE UNDERLINE — red ink draw */
+/* ============================================= */
+(() => {
+  const u = document.getElementById('heroUnderline');
+  if (!u) return;
+  gsap.to(u, {width: '70%', duration: 1.4, delay: 2.2, ease: 'power3.out'});
+})();
+
+/* ============================================= */
+/* APPROVAL STAMP — final reveal */
+/* ============================================= */
+(() => {
+  const stamp = document.getElementById('reviewStamp');
+  if (!stamp) return;
+  const trigger = document.querySelector('.contact');
+  if (!trigger) return;
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          stamp.classList.add('active');
+          io.unobserve(entry.target);
+        }
+      });
+    }, {rootMargin: '0px 0px -20% 0px', threshold: 0.1});
+    io.observe(trigger);
+  } else {
+    stamp.classList.add('active');
+  }
+})();
+
+/* ============================================= */
+/* HERO ENTRY (GSAP — time-based, works reliably) */
+/* ============================================= */
+gsap.from('.report-doctype, .report-name', {y:15, opacity:0, stagger:.1, duration:.7, delay:1.3, ease:'power2.out'});
+gsap.from('.report-meta', {opacity:0, duration:.8, delay:1.5});
+gsap.from('.hero-title-l1', {y:60, opacity:0, duration:1.1, delay:1.5, ease:'power3.out'});
+gsap.from('.hero-title-l2', {y:60, opacity:0, duration:1.1, delay:1.65, ease:'power3.out'});
+gsap.from('.hero-sub', {y:30, opacity:0, duration:1, delay:1.95, ease:'power2.out'});
+gsap.from('.finding', {y:20, opacity:0, stagger:.1, duration:.7, delay:2.1, ease:'power2.out'});
+gsap.from('.hero-tag', {y:20, opacity:0, stagger:.06, duration:.5, delay:2.4, ease:'power2.out'});
+gsap.from('.hero-scale', {opacity:0, duration:.8, delay:2.6});
+gsap.from('.hero-marg-1, .hero-marg-2', {opacity:0, scale:.85, duration:.8, delay:2.8, stagger:.15, ease:'back.out(1.4)'});
+
+/* ============================================= */
+/* SCROLL-TRIGGERED REVEALS — IntersectionObserver */
+/* (reliable across programmatic scroll, loader timing, layout shifts) */
+/* ============================================= */
+(() => {
+  // [selector, reveal class, stagger mode]
+  // stagger mode: 'group' = one trigger fades all with stagger delays
+  //               'each'  = each element reveals independently when it enters
+  const groups = [
+    // Identity
+    {sel: '.id-photo', type: 'reveal-x'},
+    {sel: '.id-info > *:not(.mbti-detail):not(.margin-note)', type: 'reveal', stagger: 'group'},
+    // Manifesto
+    {sel: '.manifesto .label, .manifesto .stitle, .manifesto-quote, .manifesto p', type: 'reveal', stagger: 'group'},
+    // Career head + visits
+    {sel: '.career-head > *', type: 'reveal', stagger: 'group'},
+    {sel: '.visit', type: 'reveal-slow', stagger: 'each'},
+    {sel: '.career-summary', type: 'reveal'},
+    // Brain map
+    {sel: '.brainmap-svg-wrap', type: 'reveal-scale'},
+    {sel: '.brainmap-info > .label, .brainmap-info > .stitle', type: 'reveal', stagger: 'group'},
+    {sel: '.brainmap-info .bm-default', type: 'reveal'},
+    // Services
+    {sel: '.services-head > *', type: 'reveal', stagger: 'group'},
+    {sel: '.service', type: 'reveal', stagger: 'group'},
+    {sel: '.services-note', type: 'reveal'},
+    {sel: '.svc-counter', type: 'reveal'},
+    // Philosophy
+    {sel: '.philosophy-head > *', type: 'reveal', stagger: 'group'},
+    {sel: '.phil-card', type: 'reveal', stagger: 'group'},
+    // Future
+    {sel: '.future .label, .future .stitle, .future-text, .future-coord', type: 'reveal', stagger: 'group'},
+    // Contact
+    {sel: '.contact-inner > *:not(.stamp-wrap)', type: 'reveal', stagger: 'group'},
+    // Margin notes
+    {sel: '.manifesto-marg, .id-marg', type: 'reveal-scale'},
+  ];
+
+  // Apply reveal classes to all matched elements with stagger delays
+  groups.forEach(g => {
+    const els = document.querySelectorAll(g.sel);
+    els.forEach((el, i) => {
+      el.classList.add(g.type);
+      if (g.stagger === 'group' && i > 0 && i <= 9) {
+        el.setAttribute('data-delay', String(i));
+      }
+    });
+  });
+
+  // Single IntersectionObserver
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, {
+      // positive bottom → element triggers slightly BEFORE entering viewport
+      // so reveal finishes exactly as user reads it
+      rootMargin: '0px 0px 15% 0px',
+      threshold: 0.01,
+    });
+
+    document.querySelectorAll('.reveal, .reveal-x, .reveal-scale, .reveal-slow').forEach(el => {
+      io.observe(el);
+    });
+
+    // Separate IO for the brainmap section itself → animates SVG hotspots
+    const bm = document.querySelector('.brainmap');
+    if (bm) {
+      const bmIo = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            bmIo.unobserve(entry.target);
+          }
+        });
+      }, {rootMargin: '0px 0px -20% 0px', threshold: 0.1});
+      bmIo.observe(bm);
+    }
+  } else {
+    // Fallback: no IO support → just reveal everything
+    document.querySelectorAll('.reveal, .reveal-x, .reveal-scale, .reveal-slow').forEach(el => el.classList.add('in'));
+    const bm = document.querySelector('.brainmap');
+    if (bm) bm.classList.add('in-view');
+  }
+})();
+
+</script>
+</body>
+</html>
