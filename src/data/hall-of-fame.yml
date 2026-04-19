@@ -1647,10 +1647,10 @@ members:
       - id: "illustration"
         label: "療癒插畫"
 
-  - id: "chatter9981"
-    name: "Jo'ibizan / chatter9981"
-    avatar: "/assets/img/guild/chatter9981/avatar.webp"
-    page: "/guild/chatter9981.html"
+  - id: "joibizan"
+    name: "變異標本 #9981"
+    avatar: "/assets/img/guild/joibizan/avatar.webp"
+    page: "/guild/joibizan.html"
     title: "變異標本 9981"
     description: "一片在夜晚發光的彩色芭樂葉。不露臉、不算 vtuber，主播不綁架觀眾、觀眾不綁架主播。Twitch 開遊戲閒聊台，主玩 LOL / AOE2，YouTube 偶爾放純 ASMR。"
     tags:
