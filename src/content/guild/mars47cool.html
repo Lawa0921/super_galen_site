@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Mars Cheng｜身就道場。一個資深重度精神病患者的療癒日記。20 年身心靈學習、10 年運動康復經驗。士林／江子翠／中山／民權西路。">
+<title>Mars Cheng ｜ 身就道場・Body as Dōjō</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;700;800&family=Noto+Serif+TC:wght@300;400;500;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  /* === 身就道場 Palette — 夜湯・頭燈・蒸氣 === */
+  --ink:#07080A;
+  --ink-2:#0D0F12;
+  --mist:#EAE6DD;         /* 蒸氣白 / 骨色 */
+  --mist-dim:#B8B3A6;
+  --mist-faint:#6E6A62;
+  --ember:#F7C15B;        /* 頭燈金 */
+  --ember-bright:#FFD580;
+  --ember-deep:#9C7223;
+  --pulse:#C93A2A;        /* 160BPM 曾經失控 */
+  --pulse-soft:#7D2B22;
+  --kintsugi:#B2540F;     /* 金繼・傷是接縫 */
+
+  --font-display:'Shippori Mincho',serif;
+  --font-body:'Noto Serif TC',serif;
+  --font-latin:'Cormorant Garamond',serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;background:var(--ink)}
+body{
+  background:
+    radial-gradient(ellipse at 25% -10%, #161315 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 110%, #0a0f14 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, var(--ink-2) 0%, var(--ink) 80%);
+  background-attachment:fixed;
+  color:var(--mist-dim);
+  font-family:var(--font-body);
+  font-weight:300;
+  line-height:1.85;
+  overflow-x:hidden;
+  min-height:100vh;
+  letter-spacing:.025em;
+}
+@media (hover:none){ .lamp-cursor{display:none!important} }
+/* 互動元件顯示 pointer，其餘為預設。頭燈光暈純粹作為背景氛圍跟隨效果 */
+a,button,.hover-pad,.station,.petal,.meditation-cell,.specimen,.hero-title .char,input,textarea,select,label,[role="button"]{cursor:pointer}
+::selection{background:var(--ember);color:var(--ink)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--ink-2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--ember-deep),var(--pulse-soft));border-radius:3px}
+img{display:block;max-width:100%}
+
+/* === 頭燈游標 === */
+.lamp-cursor{position:fixed;top:0;left:0;width:520px;height:520px;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:width .3s,height .3s,opacity .3s}
+.lamp-cursor::before{content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at center, rgba(247,193,91,.42) 0%, rgba(247,193,91,.14) 20%, rgba(247,193,91,.04) 45%, transparent 70%);
+  filter:blur(10px);
+}
+.lamp-cursor::after{content:'';position:absolute;top:50%;left:50%;width:10px;height:10px;border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle, var(--ember-bright) 0%, var(--ember) 40%, transparent 70%);
+  box-shadow:0 0 18px var(--ember),0 0 36px rgba(247,193,91,.6)}
+.lamp-cursor.hover{width:640px;height:640px}
+.lamp-cursor.hover::before{background:radial-gradient(circle at center, rgba(247,193,91,.55) 0%, rgba(247,193,91,.18) 24%, rgba(247,193,91,.06) 50%, transparent 72%)}
+
+/* === 固定背景層 === */
+#three-steam{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55}
+#p5-pulse{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.42}
+
+/* 粗粒 grain */
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.09;mix-blend-mode:overlay;
+  background-image:
+    radial-gradient(rgba(234,230,221,.8) 0.5px, transparent 1px),
+    radial-gradient(rgba(234,230,221,.6) 0.5px, transparent 1px);
+  background-size:3px 3px, 7px 7px;
+  background-position:0 0, 2px 2px;
+}
+
+/* 深度暗角 */
+.vignette{position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 35%, rgba(7,8,10,.5) 78%, var(--ink) 100%)}
+
+/* 細經線陣 */
+.meridian-grid{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.04;
+  background-image:
+    linear-gradient(to right, var(--mist) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--mist) 1px, transparent 1px);
+  background-size:120px 120px;
+  mask-image:radial-gradient(ellipse at center, black 25%, transparent 72%);
+}
+
+/* === LAYOUT === */
+.page{position:relative;z-index:10}
+section{position:relative;padding:120px 28px;max-width:1180px;margin:0 auto}
+@media(max-width:720px){ section{padding:80px 22px} }
+
+/* === ARCHIVE 返回連結 === */
+.archive-link{position:fixed;top:28px;left:28px;z-index:9990;font-family:var(--font-mono);font-size:11px;letter-spacing:.45em;text-transform:uppercase;color:var(--mist-dim);text-decoration:none;padding:10px 16px;border:1px solid rgba(234,230,221,.16);background:rgba(7,8,10,.62);backdrop-filter:blur(10px);transition:all .35s}
+.archive-link:hover{color:var(--ember);border-color:var(--ember);box-shadow:0 0 32px rgba(247,193,91,.22)}
+.archive-link i{margin-right:8px}
+@media(max-width:720px){ .archive-link{top:16px;left:16px;font-size:10px;padding:8px 12px} }
+
+/* === 呼吸指標 (HUD) === */
+.breath-hud{position:fixed;top:28px;right:28px;z-index:9990;font-family:var(--font-mono);font-size:10px;letter-spacing:.25em;color:var(--mist-faint);text-align:right;pointer-events:none;line-height:1.7}
+.breath-hud .bpm{color:var(--ember);font-size:13px;letter-spacing:.08em}
+.breath-hud .bpm.panic{color:var(--pulse);text-shadow:0 0 14px var(--pulse)}
+@media(max-width:720px){ .breath-hud{top:16px;right:16px;font-size:9px} .breath-hud .bpm{font-size:11px} }
+
+/* === HERO === */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:160px 28px 120px;position:relative}
+.hero-mark{font-family:var(--font-mono);font-size:10px;letter-spacing:.7em;color:var(--ember);margin-bottom:48px;opacity:.85}
+.hero-mark i{margin:0 14px;font-size:8px;opacity:.65}
+
+.hero-title{font-family:var(--font-display);font-weight:800;font-size:clamp(76px,14vw,200px);letter-spacing:.08em;color:var(--mist);line-height:.95;margin-bottom:40px;position:relative;display:inline-block}
+.hero-title .char{display:inline-block;position:relative;padding:0 .05em}
+.hero-title .char::after{content:'';position:absolute;left:50%;bottom:-18px;width:6px;height:6px;background:var(--ember);border-radius:50%;transform:translateX(-50%);opacity:0;box-shadow:0 0 16px var(--ember)}
+.hero-title .char.glow::after{opacity:1}
+
+.hero-subtitle{font-family:var(--font-display);font-weight:400;font-size:clamp(15px,2vw,22px);letter-spacing:.4em;color:var(--mist-dim);margin-bottom:24px}
+.hero-subtitle span{display:inline-block;padding:0 .4em;position:relative}
+.hero-subtitle span::before{content:'·';color:var(--ember);margin-right:1em;opacity:.5}
+.hero-subtitle span:first-child::before{display:none}
+
+.hero-heart{font-family:var(--font-display);font-weight:400;font-size:clamp(13px,1.6vw,17px);letter-spacing:.3em;color:var(--mist-faint);margin-top:28px}
+.hero-heart em{font-style:normal;color:var(--ember);letter-spacing:.3em}
+
+.hero-name-plate{margin-top:100px;display:inline-flex;flex-direction:column;align-items:center;gap:10px}
+.hero-avatar{position:relative;width:104px;height:104px;margin-bottom:22px;display:grid;place-items:center;isolation:isolate}
+.hero-avatar img{width:88px;height:88px;border-radius:50%;object-fit:cover;object-position:50% 30%;filter:contrast(1.06) saturate(.92);position:relative;z-index:2}
+.hero-avatar::before{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 210deg, transparent 0deg, var(--ember) 70deg, transparent 140deg, var(--kintsugi) 200deg, transparent 270deg, var(--ember-bright) 340deg, transparent 360deg);animation:haloSpin 12s linear infinite;filter:blur(.4px);z-index:0}
+.hero-avatar::after{content:'';position:absolute;inset:6px;border-radius:50%;background:var(--ink);box-shadow:inset 0 0 0 1px rgba(247,193,91,.45), 0 0 48px rgba(247,193,91,.28);z-index:1}
+@keyframes haloSpin{ to { transform:rotate(360deg) } }
+.hero-avatar-seal{position:absolute;top:-4px;right:-10px;width:28px;height:28px;border-radius:50%;background:var(--ink);border:1px solid var(--ember);display:grid;place-items:center;font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--ember);z-index:3;letter-spacing:0;box-shadow:0 0 14px rgba(247,193,91,.35)}
+.hero-name-plate .latin{font-family:var(--font-latin);font-style:italic;font-size:15px;letter-spacing:.32em;color:var(--ember)}
+.hero-name-plate .cn{font-family:var(--font-display);font-size:28px;letter-spacing:.4em;color:var(--mist)}
+.hero-name-plate .role{font-family:var(--font-mono);font-size:10px;letter-spacing:.55em;color:var(--mist-faint);margin-top:8px}
+
+.hero-scroll{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:9px;letter-spacing:.5em;color:var(--mist-faint);text-align:center}
+.hero-scroll i{display:block;margin:10px auto 0;animation:lampDrift 2.4s ease-in-out infinite}
+@keyframes lampDrift{0%,100%{transform:translateY(0);opacity:.45}50%{transform:translateY(8px);opacity:1}}
+
+/* === CHAPTER 頭 === */
+.chapter-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.55em;color:var(--ember);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:14px}
+.chapter-label::before{content:'';display:block;width:40px;height:1px;background:var(--ember);flex-shrink:0}
+.chapter-label .num{color:var(--mist-dim)}
+
+.chapter-title{font-family:var(--font-display);font-weight:700;font-size:clamp(44px,7vw,88px);letter-spacing:.06em;color:var(--mist);line-height:1.08;margin-bottom:20px}
+.chapter-title .accent{color:var(--ember);font-weight:400}
+.chapter-sub{font-family:var(--font-latin);font-style:italic;font-size:clamp(14px,1.6vw,20px);letter-spacing:.12em;color:var(--mist-faint);margin-bottom:60px}
+
+.body-text{font-size:16px;line-height:2;color:var(--mist-dim);max-width:720px}
+.body-text + .body-text{margin-top:1.1em}
+.body-text .glow{color:var(--ember);font-weight:400}
+.body-text .pulse-red{color:var(--pulse);font-weight:500}
+.body-text .quote-inline{color:var(--mist);font-style:italic;font-family:var(--font-display)}
+
+/* === 01 浮木 — The Driftwood === */
+.driftwood{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start}
+@media(max-width:900px){ .driftwood{grid-template-columns:1fr;gap:44px} }
+.driftwood .left{position:sticky;top:10vh}
+@media(max-width:900px){ .driftwood .left{position:static} }
+
+.ecg-box{border:1px solid rgba(201,58,42,.32);background:rgba(201,58,42,.03);padding:28px 22px;margin-top:24px;font-family:var(--font-mono);position:relative;overflow:hidden}
+.ecg-box::before{content:'◆ PANIC RECORD 02:47 AM';position:absolute;top:10px;left:22px;font-size:9px;letter-spacing:.3em;color:var(--pulse)}
+.ecg-box .ecg-row{display:flex;justify-content:space-between;padding:40px 0 4px;font-size:11px;letter-spacing:.2em;color:var(--mist-faint)}
+.ecg-box .ecg-row strong{color:var(--pulse);font-weight:400;font-size:14px}
+.ecg-canvas{width:100%;height:76px;display:block;margin:4px 0 8px}
+.ecg-note{font-size:10px;letter-spacing:.2em;color:var(--mist-faint);padding-top:10px;border-top:1px dashed rgba(234,230,221,.12)}
+
+.drowning-metaphor{margin-top:28px;padding:26px 30px;border-left:2px solid var(--ember);font-family:var(--font-display);font-size:19px;line-height:1.85;color:var(--mist);letter-spacing:.04em;background:linear-gradient(90deg, rgba(247,193,91,.06), transparent 70%)}
+.drowning-metaphor em{font-style:normal;color:var(--ember)}
+
+/* === 02 身體履歷 — Catalogue of Injuries === */
+.catalogue-title-row{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:24px;margin-bottom:48px}
+.catalogue-caption{font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;color:var(--mist-faint);max-width:320px;text-align:right;line-height:1.8}
+
+.specimens{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0;border-top:1px solid rgba(234,230,221,.14);border-left:1px solid rgba(234,230,221,.14)}
+.specimen{position:relative;border-right:1px solid rgba(234,230,221,.14);border-bottom:1px solid rgba(234,230,221,.14);padding:28px 24px 24px;min-height:180px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;transition:background .4s}
+.specimen:hover{background:rgba(247,193,91,.03)}
+.specimen:hover .spec-no{color:var(--ember)}
+.specimen .spec-no{font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;color:var(--mist-faint);margin-bottom:14px;transition:color .35s}
+.specimen .spec-title{font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--mist);letter-spacing:.05em;line-height:1.3}
+.specimen .spec-latin{font-family:var(--font-latin);font-style:italic;font-size:13px;color:var(--mist-faint);letter-spacing:.1em;margin-top:4px}
+.specimen .spec-stage{font-family:var(--font-mono);font-size:10px;letter-spacing:.3em;margin-top:18px;color:var(--kintsugi)}
+.specimen .spec-icon{position:absolute;top:26px;right:22px;font-size:18px;color:var(--mist-faint);opacity:.4;transition:all .4s}
+.specimen:hover .spec-icon{color:var(--ember);opacity:.9;transform:rotate(8deg)}
+
+.kintsugi-line{margin-top:60px;font-family:var(--font-display);font-size:clamp(18px,2.3vw,26px);letter-spacing:.1em;color:var(--mist);text-align:center;line-height:1.8}
+.kintsugi-line span{color:var(--kintsugi)}
+.kintsugi-line .sep{display:inline-block;width:40px;height:1px;background:var(--kintsugi);margin:0 18px;vertical-align:middle}
+
+/* === 03 道場七方 — Seven Directions === */
+.dojo-intro{text-align:center;margin-bottom:80px}
+.dojo-intro .title{font-family:var(--font-display);font-size:clamp(48px,8vw,92px);color:var(--mist);letter-spacing:.1em;margin:24px 0 18px}
+
+.seven-wheel{position:relative;max-width:780px;margin:0 auto;aspect-ratio:1;}
+@media(max-width:720px){ .seven-wheel{max-width:460px;aspect-ratio:1} }
+@media(max-width:480px){ .seven-wheel{max-width:360px} }
+.seven-wheel .center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 45%, rgba(247,193,91,.15), transparent 62%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.seven-wheel .center .dot{width:8px;height:8px;border-radius:50%;background:var(--ember);box-shadow:0 0 32px var(--ember),0 0 64px var(--ember);animation:pulseDot 3.2s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.55}}
+.seven-wheel .center .ch{font-family:var(--font-display);font-size:clamp(20px,3vw,32px);color:var(--mist);letter-spacing:.4em;margin-top:20px}
+.seven-wheel .center .en{font-family:var(--font-mono);font-size:9px;letter-spacing:.45em;color:var(--mist-faint);margin-top:8px}
+
+.petal{position:absolute;top:50%;left:50%;transform-origin:0 0;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:10px 14px;background:rgba(7,8,10,.7);border:1px solid rgba(234,230,221,.14);backdrop-filter:blur(8px);transition:all .4s;min-width:168px}
+.petal:hover{border-color:var(--ember);background:rgba(247,193,91,.08);box-shadow:0 0 44px rgba(247,193,91,.18)}
+.petal i{color:var(--ember);font-size:16px;width:22px;text-align:center}
+.petal .p-ch{font-family:var(--font-display);font-size:15px;color:var(--mist);letter-spacing:.15em;white-space:nowrap}
+.petal .p-en{font-family:var(--font-mono);font-size:8px;color:var(--mist-faint);letter-spacing:.3em;margin-top:3px}
+.petal .p-text{line-height:1.3}
+
+@media(max-width:560px){ .petal{min-width:112px;padding:7px 10px;gap:9px} .petal i{font-size:13px;width:16px} .petal .p-ch{font-size:12px;letter-spacing:.08em} .petal .p-en{font-size:7px} }
+
+/* === 04 修行 — The Practice === */
+.practice-scroll{max-width:900px;margin:0 auto;text-align:center;padding:120px 20px;position:relative}
+.practice-ornament{width:80px;height:1px;background:linear-gradient(90deg, transparent, var(--ember), transparent);margin:0 auto 40px}
+.practice-open{font-family:var(--font-display);font-size:clamp(26px,4vw,48px);font-weight:600;letter-spacing:.15em;color:var(--mist);line-height:1.7;margin-bottom:46px;white-space:pre-line}
+.practice-open .key{color:var(--ember);position:relative;display:inline-block}
+.practice-open .key::before{content:'';position:absolute;inset:-6px -2px;border:1px dashed rgba(247,193,91,.35);pointer-events:none}
+.practice-attrib{font-family:var(--font-latin);font-style:italic;font-size:14px;letter-spacing:.25em;color:var(--mist-faint)}
+.practice-attrib strong{color:var(--ember);font-weight:400;font-style:normal}
+
+/* === 05 經絡四站 — Four Acupoints === */
+.meridian{display:grid;grid-template-columns:1.1fr 1fr;gap:60px;align-items:center}
+@media(max-width:900px){ .meridian{grid-template-columns:1fr} }
+
+.taipei-map{position:relative;aspect-ratio:5/4;max-width:560px}
+.station{position:absolute;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transform:translate(-50%,-50%);background:transparent;border:none}
+.station .ring{width:22px;height:22px;border-radius:50%;border:1px solid var(--ember);position:relative;display:flex;align-items:center;justify-content:center;background:var(--ink)}
+.station .ring::before{content:'';position:absolute;inset:-7px;border-radius:50%;border:1px solid rgba(247,193,91,.3);animation:acuPulse 2.8s ease-in-out infinite}
+@keyframes acuPulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.4);opacity:0}}
+.station .ring::after{content:'';width:6px;height:6px;border-radius:50%;background:var(--ember);box-shadow:0 0 14px var(--ember)}
+.station .name-ch{font-family:var(--font-display);font-size:15px;color:var(--mist);letter-spacing:.2em;white-space:nowrap;padding:3px 10px;background:rgba(7,8,10,.7);backdrop-filter:blur(6px);border:1px solid rgba(247,193,91,.14);transition:all .35s}
+.station .name-en{font-family:var(--font-mono);font-size:9px;color:var(--mist-faint);letter-spacing:.35em;margin-top:2px}
+.station:hover .name-ch, .station.hover .name-ch{color:var(--ember);border-color:var(--ember)}
+.station.hover .ring{background:var(--ember)}
+
+.meridian-svg{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:visible}
+.meridian-svg path{fill:none;stroke:rgba(247,193,91,.38);stroke-width:1;stroke-dasharray:4 6;vector-effect:non-scaling-stroke}
+
+.meridian-text h3{font-family:var(--font-display);font-size:28px;letter-spacing:.1em;color:var(--mist);margin-bottom:22px}
+.meridian-text h3 .accent{color:var(--ember)}
+.meridian-text p{font-size:15px;line-height:1.95;color:var(--mist-dim);margin-bottom:1em;max-width:420px}
+.meridian-text .direct-book{margin-top:30px;display:inline-block;font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;color:var(--mist-faint);padding-top:16px;border-top:1px solid rgba(234,230,221,.14)}
+
+/* === MEDITATION GALLERY === */
+.gallery-intro{text-align:center;margin-bottom:60px}
+.gallery-quote{font-family:var(--font-display);font-size:clamp(20px,2.6vw,30px);color:var(--mist);letter-spacing:.15em;line-height:1.8;max-width:760px;margin:0 auto;font-weight:500}
+.gallery-quote span{color:var(--ember)}
+.gallery-caption{font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;color:var(--mist-faint);margin-top:20px;text-transform:uppercase}
+
+.meditation-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:1080px;margin:0 auto}
+@media(max-width:900px){ .meditation-grid{grid-template-columns:repeat(2,1fr)} }
+.meditation-cell{position:relative;overflow:hidden;aspect-ratio:3/4;background:var(--ink-2)}
+.meditation-cell img{width:100%;height:100%;object-fit:cover;filter:brightness(.88) contrast(1.04);transition:all .9s ease}
+.meditation-cell:hover img{filter:brightness(1) contrast(1.08);transform:scale(1.04)}
+.meditation-cell .m-label{position:absolute;bottom:14px;left:14px;font-family:var(--font-mono);font-size:9px;letter-spacing:.35em;color:var(--mist);opacity:.82;mix-blend-mode:difference}
+.meditation-cell .m-num{position:absolute;top:14px;right:14px;font-family:var(--font-mono);font-size:18px;color:var(--ember);letter-spacing:.1em;opacity:.6}
+
+/* === CTA === */
+.cta{text-align:center;padding:160px 28px}
+.cta-kanji{font-family:var(--font-display);font-size:clamp(44px,7.6vw,98px);font-weight:800;letter-spacing:.1em;color:var(--mist);line-height:1.2;margin-bottom:28px}
+.cta-kanji .br{color:var(--ember);display:inline-block;white-space:nowrap}
+.cta-kanji .kanji-line{display:block}
+.cta-sub{font-family:var(--font-latin);font-style:italic;font-size:18px;letter-spacing:.2em;color:var(--mist-faint);margin-bottom:60px}
+.cta-btn{display:inline-flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:11px;letter-spacing:.45em;color:var(--mist);text-decoration:none;padding:20px 42px;border:1px solid var(--ember);background:rgba(247,193,91,.06);transition:all .4s;text-transform:uppercase;position:relative;overflow:hidden}
+.cta-btn::before{content:'';position:absolute;inset:0;background:var(--ember);transform:translateX(-101%);transition:transform .5s;z-index:-1}
+.cta-btn:hover{color:var(--ink);border-color:var(--ember-bright)}
+.cta-btn:hover::before{transform:translateX(0)}
+.cta-btn i{font-size:13px}
+
+/* === FOOTER === */
+.footer{padding:70px 28px 40px;text-align:center;border-top:1px solid rgba(234,230,221,.08);margin-top:100px}
+.footer-socials{display:flex;justify-content:center;gap:18px;margin-bottom:26px}
+.footer-socials a{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(234,230,221,.15);color:var(--mist-dim);text-decoration:none;transition:all .35s}
+.footer-socials a:hover{color:var(--ember);border-color:var(--ember);transform:translateY(-3px)}
+.footer-mark{font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;color:var(--mist-faint);text-transform:uppercase}
+.footer-mark .heart{color:var(--pulse)}
+
+/* === REVEAL === */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity 1s cubic-bezier(.22,.78,.32,1), transform 1s cubic-bezier(.22,.78,.32,1)}
+.reveal.show{opacity:1;transform:translateY(0)}
+.reveal-slow{transition-duration:1.6s}
+
+/* === HERO 漢字敲擊頌缽 === */
+.hero-title .char{cursor:pointer;transition:text-shadow .3s, transform .5s cubic-bezier(.22,.78,.32,1)}
+.hero-title .char:hover{color:var(--ember);text-shadow:0 0 40px var(--ember)}
+.hero-title .char.struck{animation:strikeFlash .7s ease-out}
+@keyframes strikeFlash{
+  0%{text-shadow:0 0 60px var(--ember-bright),0 0 120px var(--ember);transform:scale(1.06)}
+  100%{text-shadow:none;transform:scale(1)}
+}
+.gong-ripple{position:absolute;border:1px solid var(--ember);border-radius:50%;pointer-events:none;opacity:.8;transform:translate(-50%,-50%)}
+
+/* === PANIC 模擬器 === */
+.panic-toggle{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:9px 14px;background:rgba(201,58,42,.08);border:1px solid rgba(201,58,42,.4);color:var(--pulse);font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;cursor:pointer;transition:all .3s}
+.panic-toggle:hover{background:rgba(201,58,42,.18);color:var(--mist);border-color:var(--pulse)}
+.panic-toggle.active{background:var(--pulse);color:var(--ink);border-color:var(--pulse)}
+.panic-toggle i{font-size:12px}
+.page.panic-shake{animation:panicShake .12s linear infinite}
+@keyframes panicShake{
+  0%{transform:translate(0,0)}
+  25%{transform:translate(-1px,0.5px)}
+  50%{transform:translate(1.5px,-1px)}
+  75%{transform:translate(-0.5px,1px)}
+  100%{transform:translate(0.8px,-0.5px)}
+}
+.panic-veil{position:fixed;inset:0;z-index:4;pointer-events:none;background:radial-gradient(ellipse at center, transparent 25%, rgba(201,58,42,.22) 90%);opacity:0;transition:opacity .6s}
+.panic-veil.on{opacity:1}
+
+.panic-quote{margin-top:14px;padding-top:14px;border-top:1px dashed rgba(201,58,42,.3);font-family:var(--font-display);font-size:14px;color:var(--mist);letter-spacing:.08em;line-height:1.85;opacity:0;transform:translateY(6px);transition:opacity .8s, transform .8s}
+.panic-quote.show{opacity:1;transform:translateY(0)}
+.panic-quote::before{content:'MARS · ';color:var(--pulse);font-family:var(--font-mono);font-size:10px;letter-spacing:.35em;margin-right:8px}
+
+/* === 與我一起呼吸 === */
+.breathe-section{padding:100px 28px;text-align:center}
+.breathe-card{max-width:760px;margin:0 auto;padding:64px 28px 72px;border:1px solid rgba(247,193,91,.18);background:rgba(247,193,91,.02);position:relative;overflow:hidden}
+.breathe-card::before{content:'';position:absolute;top:0;left:50%;width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--ember),transparent);transform:translateX(-50%)}
+.breathe-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.55em;color:var(--ember);margin-bottom:18px;text-transform:uppercase}
+.breathe-title{font-family:var(--font-display);font-size:clamp(36px,6vw,62px);font-weight:700;color:var(--mist);letter-spacing:.15em;margin-bottom:8px}
+.breathe-sub{font-family:var(--font-latin);font-style:italic;font-size:15px;color:var(--mist-faint);letter-spacing:.15em;margin-bottom:40px}
+
+.breathe-stage{position:relative;width:320px;height:320px;margin:20px auto 28px}
+@media(max-width:560px){ .breathe-stage{width:260px;height:260px} }
+.breathe-ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(247,193,91,.35);transition:transform 4s cubic-bezier(.4,0,.6,1), border-color 1s}
+.breathe-ring-inner{position:absolute;inset:30%;border-radius:50%;background:radial-gradient(circle, rgba(247,193,91,.12) 0%, transparent 70%);transition:inset 4s cubic-bezier(.4,0,.6,1), background 1s}
+.breathe-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-display);color:var(--mist)}
+.breathe-phase{font-size:48px;font-weight:600;letter-spacing:.2em;transition:opacity .3s}
+.breathe-count{font-family:var(--font-mono);font-size:11px;letter-spacing:.4em;color:var(--ember);margin-top:14px;min-height:14px}
+
+.breathe-stage.inhale .breathe-ring{transform:scale(1.12);border-color:var(--ember)}
+.breathe-stage.inhale .breathe-ring-inner{inset:18%;background:radial-gradient(circle, rgba(247,193,91,.28) 0%, transparent 72%)}
+.breathe-stage.hold .breathe-ring{transform:scale(1.12);border-color:var(--ember-bright)}
+.breathe-stage.exhale .breathe-ring{transform:scale(.72);border-color:rgba(247,193,91,.25)}
+.breathe-stage.exhale .breathe-ring-inner{inset:38%;background:radial-gradient(circle, rgba(247,193,91,.06) 0%, transparent 70%)}
+
+.breathe-start-btn{margin-top:10px;display:inline-flex;align-items:center;gap:12px;padding:16px 36px;background:transparent;border:1px solid var(--ember);color:var(--mist);font-family:var(--font-mono);font-size:11px;letter-spacing:.45em;text-transform:uppercase;cursor:pointer;transition:all .3s}
+.breathe-start-btn:hover{background:rgba(247,193,91,.08);box-shadow:0 0 44px rgba(247,193,91,.2)}
+.breathe-start-btn.running{border-color:var(--pulse);color:var(--pulse)}
+
+.breathe-progress{margin-top:28px;display:flex;justify-content:center;gap:10px}
+.breathe-dot{width:8px;height:8px;border-radius:50%;background:rgba(247,193,91,.2);transition:all .4s}
+.breathe-dot.done{background:var(--ember);box-shadow:0 0 14px var(--ember)}
+
+.breathe-after{margin-top:0;font-family:var(--font-display);font-size:18px;color:var(--mist);letter-spacing:.1em;line-height:1.95;max-width:520px;margin-left:auto;margin-right:auto;opacity:0;max-height:0;overflow:hidden;transition:opacity .8s, max-height .8s, margin-top .8s}
+.breathe-after.show{opacity:1;max-height:260px;margin-top:32px}
+.breathe-after em{font-style:normal;color:var(--ember)}
+
+/* === 標本金繼龜裂 === */
+.specimen{position:relative}
+.specimen .kintsugi-svg{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s}
+.specimen:hover .kintsugi-svg{opacity:1}
+.specimen .kintsugi-svg path{fill:none;stroke:url(#kintsugiGold);stroke-width:1.1;stroke-dasharray:400;stroke-dashoffset:400;transition:stroke-dashoffset .9s ease-out}
+.specimen:hover .kintsugi-svg path{stroke-dashoffset:0}
+
+/* === 經絡四站脈動 === */
+.station-card{position:absolute;top:0;left:0;width:260px;padding:14px 18px;background:rgba(7,8,10,.92);border:1px solid var(--ember);backdrop-filter:blur(12px);opacity:0;pointer-events:none;transition:opacity .35s, transform .5s;font-family:var(--font-body);color:var(--mist);z-index:20;box-shadow:0 20px 60px rgba(7,8,10,.85)}
+.station-card.show{opacity:1}
+.station-card .sc-name{font-family:var(--font-display);font-size:16px;color:var(--ember);letter-spacing:.15em;margin-bottom:6px;white-space:nowrap}
+.station-card .sc-teach{font-size:12px;line-height:1.75;color:var(--mist-dim);letter-spacing:.04em}
+.station-card::before{content:'';position:absolute;top:10px;left:-7px;width:12px;height:12px;background:rgba(7,8,10,.92);border-left:1px solid var(--ember);border-bottom:1px solid var(--ember);transform:rotate(45deg)}
+
+.pulse-bead{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--ember);box-shadow:0 0 16px var(--ember), 0 0 32px var(--ember);pointer-events:none;z-index:15;opacity:0;transform:translate(-50%,-50%)}
+.pulse-bead.travel{opacity:1}
+
+.meridian-hint{display:block;margin-top:12px;font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;color:var(--mist-faint);text-transform:uppercase}
+.meridian-hint i{color:var(--ember);margin-right:6px}
+
+/* === RESPONSIVE === */
+@media(max-width:720px){
+  .catalogue-caption{text-align:left;max-width:100%}
+  .catalogue-title-row{flex-direction:column;align-items:flex-start}
+  .body-text{font-size:15px}
+  .hero-subtitle{letter-spacing:.18em}
+  .hero-name-plate{margin-top:60px}
+}
+</style>
+</head>
+<body>
+
+<a href="/guild/" class="archive-link"><i class="fa-solid fa-arrow-left"></i>ARCHIVE</a>
+
+<div class="breath-hud" id="breathHud">
+  <div>PULSE / 脈</div>
+  <div class="bpm" id="bpmValue">— BPM</div>
+  <div id="bpmState">CALM</div>
+</div>
+
+<canvas id="three-steam"></canvas>
+<canvas id="p5-pulse"></canvas>
+<div class="meridian-grid"></div>
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="panic-veil" id="panicVeil"></div>
+
+<!-- 全域 SVG defs (金繼漸層) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="kintsugiGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFD580"/>
+      <stop offset="50%" stop-color="#F7C15B"/>
+      <stop offset="100%" stop-color="#B2540F"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="lamp-cursor" id="lampCursor"></div>
+
+<main class="page">
+
+<!-- ============================================================
+     HERO — 身就道場
+============================================================ -->
+<section class="hero">
+  <div class="hero-mark reveal"><i class="fa-solid fa-circle"></i> MARS CHENG <i class="fa-solid fa-circle"></i> 士林・江子翠・中山・民權西路 <i class="fa-solid fa-circle"></i></div>
+
+  <h1 class="hero-title reveal">
+    <span class="char">身</span><span class="char">就</span><span class="char">道</span><span class="char">場</span>
+  </h1>
+
+  <div class="hero-subtitle reveal"><span>呼吸就是頌缽</span><span>脈搏心跳即是鐘鼓</span></div>
+  <div class="hero-heart reveal">愛心小，<em>小如針尖</em>　／　心大，<em>大容宇宙</em></div>
+
+  <div class="hero-name-plate reveal">
+    <div class="hero-avatar" aria-label="Mars Cheng">
+      <img src="/assets/img/guild/mars47cool/avatar.webp" alt="Mars Cheng 站於山脊剪影" decoding="async" fetchpriority="high">
+      <span class="hero-avatar-seal">印</span>
+    </div>
+    <div class="latin">Mars Cheng / @mars47cool</div>
+    <div class="cn">Body as Dōjō</div>
+    <div class="role">一個資深重度精神病患者的療癒日記</div>
+  </div>
+
+  <div class="hero-scroll reveal">SCROLL <i class="fa-solid fa-chevron-down"></i></div>
+</section>
+
+<!-- ============================================================
+     PROLOGUE — 我是誰
+============================================================ -->
+<section>
+  <div class="reveal" style="max-width:780px;margin:0 auto">
+    <div class="chapter-label"><span class="num">00</span> PROLOGUE · 序</div>
+    <h2 class="chapter-title">我沒有什麼<span class="accent">宏大</span>的開場白</h2>
+    <p class="chapter-sub">I don't have a grand opening line.</p>
+
+    <p class="body-text">我是 Mars。你或許在捷運站附近的健身房看過我，在某一次體位練習之間，我會突然停下來，請你把手掌放在肋骨下方，感受那一口呼吸到底跑到哪裡去了。</p>
+    <p class="body-text">然後我會告訴你，二十年前我就是那個<span class="pulse-red">連一口氣都吸不到底</span>的人。</p>
+    <p class="body-text">我做這行十年。<span class="glow">身體是我的第一個學生，也是最壞的那一個。</span>它從小就在抗議——過敏、神經痛、皮膚癢、腕隧道、坐骨神經痛、腦震盪——然後有一天，它乾脆把我整個人放倒在公司地板上。</p>
+    <p class="body-text">這個頁面是我的病歷，也是我的邀請。如果你身上有某個地方在痛、在慌、在不聽話，<span class="glow">歡迎往下看</span>。</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     01 — 浮木 · The Driftwood
+============================================================ -->
+<section>
+  <div class="driftwood">
+    <div class="left reveal">
+      <div class="chapter-label"><span class="num">01</span> CHAPTER · 浮木</div>
+      <h2 class="chapter-title">當我<span class="accent">溺水</span>的那一天</h2>
+      <p class="chapter-sub">The day I started drowning in plain daylight.</p>
+
+      <div class="ecg-box">
+        <div class="ecg-row"><span>RESTING HR</span><strong id="ecgNum">160</strong></div>
+        <canvas class="ecg-canvas" id="ecgCanvas" width="600" height="76"></canvas>
+        <div class="ecg-row"><span>STATUS</span><span style="color:var(--pulse)">PANIC DISORDER</span></div>
+        <div class="ecg-note">三次大醫院 MRI / ECG 檢查　·　一切顯示正常　·　醫生宣佈：嚴重焦慮症延伸的身心症</div>
+        <button type="button" class="panic-toggle hover-pad" id="panicToggle"><i class="fa-solid fa-triangle-exclamation"></i> TAP TO FEEL IT · 按下感受 3 秒</button>
+        <div class="panic-quote" id="panicQuote">「這就是我過去每一天，不定時發生 3~5 次的事。」</div>
+      </div>
+    </div>
+
+    <div class="right reveal reveal-slow">
+      <p class="body-text">十幾年前，我在工作時<span class="pulse-red">直接暈倒</span>被送醫。醒過來的時候，父親在我右邊，同事在我左邊。</p>
+      <p class="body-text">那之後，我每天會<span class="pulse-red">不定時窒息癱瘓 3 到 5 次</span>。你知道那種感覺嗎？喉嚨像被人從內側掐住，意識還在，但空氣就是進不來。每一次都像死過一次。</p>
+      <p class="body-text">醫院的報告上，所有數字都正常。只有醫生的那張嘴說話：<span class="quote-inline">「這是嚴重的焦慮症、驚恐症延伸的身心症。」</span></p>
+      <p class="body-text">然後他開藥給我。藥會讓症狀輕一點，但不會讓我變回那個在暈倒之前的人。</p>
+
+      <div class="drowning-metaphor">
+        所以我開始學——<br>
+        重訓、瑜珈、正念、靜坐、呼吸法、冥想、身心靈所有能找到的課程。<br>
+        <em>就像一個溺水頻死的人，想抓住求生的漂流樹枝。</em>
+      </div>
+
+      <p class="body-text" style="margin-top:28px">後來我發現，<span class="glow">我要找的不是那根樹枝——我要成為那根樹枝。</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     01.5 — 與我一起呼吸 · Breathe With Me
+     (Mars 教學生的第一件事)
+============================================================ -->
+<section class="breathe-section reveal">
+  <div class="breathe-card">
+    <div class="breathe-label">CHAPTER · 01½ · INTERACTIVE</div>
+    <h2 class="breathe-title">與我一起<br>呼吸一次</h2>
+    <div class="breathe-sub">This is the first thing I teach. Four cycles. That's all.</div>
+
+    <div class="breathe-stage" id="breatheStage">
+      <div class="breathe-ring"></div>
+      <div class="breathe-ring-inner"></div>
+      <div class="breathe-center">
+        <div class="breathe-phase" id="breathePhase">吸</div>
+        <div class="breathe-count" id="breatheCount">&nbsp;</div>
+      </div>
+    </div>
+
+    <button type="button" class="breathe-start-btn hover-pad" id="breatheStart">
+      <i class="fa-solid fa-play"></i> 開始・BEGIN
+    </button>
+
+    <div class="breathe-progress" id="breatheProgress">
+      <div class="breathe-dot"></div>
+      <div class="breathe-dot"></div>
+      <div class="breathe-dot"></div>
+      <div class="breathe-dot"></div>
+    </div>
+
+    <div class="breathe-after" id="breatheAfter">
+      <em>你做到了。</em><br>
+      這四個循環，就是我教每一個學生的第一堂課。<br>
+      當你會了這件事，你的身體就永遠有一個回得去的家。
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     02 — 身體履歷 · Catalogue of Injuries
+============================================================ -->
+<section>
+  <div class="catalogue-title-row reveal">
+    <div>
+      <div class="chapter-label"><span class="num">02</span> CHAPTER · 標本集</div>
+      <h2 class="chapter-title">一份 <span class="accent">很長</span> 的身體履歷</h2>
+      <p class="chapter-sub">Catalogue raisonné of everything my body has survived.</p>
+    </div>
+    <div class="catalogue-caption">以下每一項，都是我在幫你處理你身體時，<br>可以立刻翻回去查的筆記本。</div>
+  </div>
+
+  <div class="specimens reveal">
+    <div class="specimen hover-pad"><svg class="kintsugi-svg" viewBox="0 0 260 180" preserveAspectRatio="none"><path d="M-10,60 C40,50 80,90 130,65 C180,50 220,90 270,70"/></svg><i class="fa-solid fa-wind spec-icon"></i><div><div class="spec-no">EX.01</div><div class="spec-title">鼻過敏</div><div class="spec-latin">Allergic rhinitis</div></div><div class="spec-stage">SINCE CHILDHOOD</div></div>
+    <div class="specimen hover-pad"><svg class="kintsugi-svg" viewBox="0 0 260 180" preserveAspectRatio="none"><path d="M-10,140 C60,130 90,60 150,90 C210,120 230,40 280,70"/></svg><i class="fa-solid fa-bolt spec-icon"></i><div><div class="spec-no">EX.02</div><div class="spec-title">神經痛</div><div class="spec-latin">Chronic neuralgia</div></div><div class="spec-stage">RECURRENT</div></div>
+    <div class="specimen hover-pad"><svg class="kintsugi-svg" viewBox="0 0 260 180" preserveAspectRatio="none"><path d="M-10,100 C40,140 90,30 160,80 C220,130 240,50 280,100"/></svg><i class="fa-solid fa-hand-dots spec-icon"></i><div><div class="spec-no">EX.03</div><div class="spec-title">大範圍皮膚過敏</div><div class="spec-latin">Systemic dermatitis</div></div><div class="spec-stage">CHRONIC</div></div>
+    <div class="specimen hover-pad"><svg class="kintsugi-svg" viewBox="0 0 260 180" preserveAspectRatio="none"><path d="M-10,40 C50,100 120,40 170,120 C210,160 250,80 280,130"/></svg><i class="fa-solid fa-hand-paper spec-icon"></i><div><div class="spec-no">EX.04</div><div class="spec-title">腕隧道症候群</div><div class="spec-latin">Carpal tunnel syndrome</div></div><div class="spec-stage">BILATERAL</div></div>
+    <div class="specimen hover-pad"><svg class="kintsugi-svg" viewBox="0 0 260 180" preserveAspectRatio="none"><path d="M-10,80 C60,30 110,150 170,100 C220,70 250,120 280,90"/></svg><i class="fa-solid fa-person-walking spec-icon"></i><div><div class="spec-no">EX.05</div><div class="spec-title">坐骨神經痛</div><div class="spec-latin">Sciatica</div></div><div class="spec-stage">L4-S1</div></div>
+    <div class="specimen hover-pad"><svg class="kintsugi-svg" viewBox="0 0 260 180" preserveAspectRatio="none"><path d="M-10,50 C60,130 110,30 170,110 C220,80 240,150 280,80"/></svg><i class="fa-solid fa-head-side-virus spec-icon"></i><div><div class="spec-no">EX.06</div><div class="spec-title">腦震盪</div><div class="spec-latin">Concussion</div></div><div class="spec-stage">POST-TRAUMATIC</div></div>
+    <div class="specimen hover-pad"><svg class="kintsugi-svg" viewBox="0 0 260 180" preserveAspectRatio="none"><path d="M-10,100 C50,40 120,160 180,70 C220,30 250,140 280,60"/></svg><i class="fa-solid fa-heart-crack spec-icon"></i><div><div class="spec-no">EX.07</div><div class="spec-title">焦慮症・驚恐症</div><div class="spec-latin">Anxiety / panic disorder</div></div><div class="spec-stage">SOMATIZED</div></div>
+    <div class="specimen hover-pad"><svg class="kintsugi-svg" viewBox="0 0 260 180" preserveAspectRatio="none"><path d="M-10,70 C50,120 110,40 160,130 C210,70 240,110 280,50"/></svg><i class="fa-solid fa-bone spec-icon"></i><div><div class="spec-no">EX.08</div><div class="spec-title">肩鎖關節半脫位</div><div class="spec-latin">AC joint subluxation</div></div><div class="spec-stage">GRADE III</div></div>
+  </div>
+
+  <div class="kintsugi-line reveal reveal-slow">
+    <span>金繼哲學</span><span class="sep"></span>裂痕的地方，用金修補，成為這個器皿最美的一條線。
+  </div>
+</section>
+
+<!-- ============================================================
+     03 — 道場七方 · Seven Directions
+============================================================ -->
+<section>
+  <div class="dojo-intro reveal">
+    <div class="chapter-label" style="justify-content:center"><span class="num">03</span> CHAPTER · 道場</div>
+    <div class="title">七 方</div>
+    <p class="chapter-sub">Seven directions for seven different bodies.</p>
+    <p class="body-text" style="margin:0 auto;text-align:center">我不追求把你訓練成誰。我的工作是陪你回到正確的呼吸、<br>正確的站姿、正確的一次動作——然後讓這些東西變成你的日常。</p>
+  </div>
+
+  <div class="seven-wheel reveal" id="sevenWheel">
+    <div class="center">
+      <div class="dot"></div>
+      <div class="ch">身就道場</div>
+      <div class="en">BODY AS DŌJŌ</div>
+    </div>
+    <div class="petal" data-angle="0" data-radius="290">
+      <i class="fa-solid fa-dumbbell"></i>
+      <div class="p-text"><div class="p-ch">重訓</div><div class="p-en">STRENGTH</div></div>
+    </div>
+    <div class="petal" data-angle="51" data-radius="290">
+      <i class="fa-solid fa-spa"></i>
+      <div class="p-text"><div class="p-ch">瑜珈</div><div class="p-en">YOGA</div></div>
+    </div>
+    <div class="petal" data-angle="103" data-radius="290">
+      <i class="fa-solid fa-brain"></i>
+      <div class="p-text"><div class="p-ch">正念訓練</div><div class="p-en">MINDFULNESS</div></div>
+    </div>
+    <div class="petal" data-angle="154" data-radius="290">
+      <i class="fa-solid fa-om"></i>
+      <div class="p-text"><div class="p-ch">靜坐</div><div class="p-en">MEDITATION</div></div>
+    </div>
+    <div class="petal" data-angle="206" data-radius="290">
+      <i class="fa-solid fa-person-running"></i>
+      <div class="p-text"><div class="p-ch">功能性訓練</div><div class="p-en">FUNCTIONAL</div></div>
+    </div>
+    <div class="petal" data-angle="257" data-radius="290">
+      <i class="fa-solid fa-hand-sparkles"></i>
+      <div class="p-text"><div class="p-ch">筋膜放鬆整復</div><div class="p-en">FASCIA RELEASE</div></div>
+    </div>
+    <div class="petal" data-angle="308" data-radius="290">
+      <i class="fa-solid fa-seedling"></i>
+      <div class="p-text"><div class="p-ch">增肌減脂</div><div class="p-en">BODY RECOMP</div></div>
+    </div>
+  </div>
+
+  <div class="reveal" style="margin:100px auto 0;max-width:640px">
+    <p class="body-text">教了十年，我越來越覺得：<span class="glow">基礎才是奢侈品</span>。</p>
+    <p class="body-text">我很少鼓勵學生去練頭倒立、去解鎖那些誰看了都會拍照的高級體位法。那不壞，但不是我們的第一步。</p>
+    <p class="body-text">我會先問你：<span class="quote-inline">「你為什麼想練這個？是因為內在的原因，還是外部的？做到之後你會得到什麼？或是會失去什麼？」</span></p>
+    <p class="body-text">然後，我們從四足跪姿開始。一個動作就能整合身心靈，很多人聽了會笑，但試過的都會閉嘴。</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     04 — 修行 · The Practice
+============================================================ -->
+<section>
+  <div class="practice-scroll reveal">
+    <div class="practice-ornament"></div>
+    <div class="chapter-label" style="justify-content:center"><span class="num">04</span> CHAPTER · 修</div>
+    <div class="practice-open">
+      <span class="key">修行</span>即是<br>
+      <span class="key">修正</span>錯誤的行為<br>
+      開始<span class="key">正確</span>的使用自己。
+    </div>
+    <div class="practice-attrib">— 聖嚴法師　·　<strong>Master Sheng Yen</strong></div>
+    <div class="practice-ornament" style="margin-top:56px"></div>
+  </div>
+
+  <div class="reveal" style="max-width:640px;margin:0 auto;padding:0 8px">
+    <p class="body-text">這句話我念了二十年。學過的課程多到我自己都記不完，動作、呼吸、脈輪、冥想、能量、筋膜、解剖、心理——<span class="glow">但是到最後，都只是為了這一句話。</span></p>
+    <p class="body-text">你的身體不是敵人，也不是別人手上的實驗品。它只是多年來被你誤用、被別人誤用、被時代壓壞的一台精密器皿。</p>
+    <p class="body-text">我想做的事情很單純：讓你<span class="glow">正確地使用你自己</span>。一口呼吸，一個四足跪姿，一次不硬撐的熱身——然後慢慢地，你會發現那個你以為已經壞掉的自己，其實還可以被修回來。</p>
+    <p class="body-text">大約五年前開始，我已經可以幫到那些被醫院建議開刀的學生——<span class="glow">不開刀，也能好。</span></p>
+  </div>
+</section>
+
+<!-- ============================================================
+     MEDITATION GALLERY — 夜湯四幅
+============================================================ -->
+<section>
+  <div class="gallery-intro reveal">
+    <div class="chapter-label" style="justify-content:center"><span class="num">※</span> INTERMISSION · 夜湯</div>
+    <p class="gallery-quote">身就道場，呼吸就是頌缽；<br>脈搏心跳即是鐘鼓。<br><span>愛心小，小如針尖；心大，大容宇宙。</span></p>
+    <div class="gallery-caption">MARS47COOL · SELF-PORTRAITS · HEADLAMP + HOT SPRING</div>
+  </div>
+
+  <div class="meditation-grid reveal">
+    <div class="meditation-cell"><img src="/assets/img/guild/mars47cool/meditation_1.webp" alt="Mars 夜間冷泉冥想剪影" loading="lazy" decoding="async"><div class="m-num">I</div><div class="m-label">BREATH</div></div>
+    <div class="meditation-cell"><img src="/assets/img/guild/mars47cool/meditation_2.webp" alt="Mars 頭燈光束側面" loading="lazy" decoding="async"><div class="m-num">II</div><div class="m-label">LIGHT</div></div>
+    <div class="meditation-cell"><img src="/assets/img/guild/mars47cool/meditation_3.webp" alt="Mars 岩石間冥想" loading="lazy" decoding="async"><div class="m-num">III</div><div class="m-label">STILL</div></div>
+    <div class="meditation-cell"><img src="/assets/img/guild/mars47cool/meditation_4.webp" alt="Mars 蒸氣中的靜坐" loading="lazy" decoding="async"><div class="m-num">IV</div><div class="m-label">DŌJŌ</div></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     05 — 經絡四站 · Four Acupoints
+============================================================ -->
+<section>
+  <div class="meridian">
+    <div class="taipei-map reveal" id="taipeiMap">
+      <svg class="meridian-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <!-- 士林 (22,28) → 中山 (56,42) -->
+        <path d="M 22,28 Q 38,20 56,42" />
+        <!-- 中山 (56,42) → 民權西路 (84,70) -->
+        <path d="M 56,42 Q 72,54 84,70" />
+        <!-- 士林 (22,28) → 江子翠 (28,62) -->
+        <path d="M 22,28 Q 16,48 28,62" />
+        <!-- 江子翠 (28,62) → 中山 (56,42) -->
+        <path d="M 28,62 Q 46,58 56,42" />
+      </svg>
+      <div class="pulse-bead" id="pulseBead"></div>
+      <button type="button" class="station hover-pad" data-teach="週一夜間時段。重訓 × 功能性訓練為主，適合有運動基礎想矯正動作的人。" style="top:28%;left:22%">
+        <span class="ring"></span>
+        <span class="name-ch">士林</span>
+        <span class="name-en">SHILIN</span>
+      </button>
+      <button type="button" class="station hover-pad" data-teach="週三、五下午。瑜珈與筋膜放鬆課，特別適合長期肩頸/下背疼痛的學生。" style="top:62%;left:28%">
+        <span class="ring"></span>
+        <span class="name-ch">江子翠</span>
+        <span class="name-en">JIANGZICUI</span>
+      </button>
+      <button type="button" class="station hover-pad" data-teach="週二、四。一對一康復訓練主場地，從坐骨神經到肩鎖關節都能在這裡處理。" style="top:42%;left:56%">
+        <span class="ring"></span>
+        <span class="name-ch">中山</span>
+        <span class="name-en">ZHONGSHAN</span>
+      </button>
+      <button type="button" class="station hover-pad" data-teach="週六日。靜坐 × 正念訓練，也接純粹想被陪伴一小時安靜呼吸的學生。" style="top:70%;left:84%">
+        <span class="ring"></span>
+        <span class="name-ch">民權西路</span>
+        <span class="name-en">MINQUAN W.</span>
+      </button>
+      <div class="station-card" id="stationCard">
+        <div class="sc-name" id="scName">—</div>
+        <div class="sc-teach" id="scTeach">—</div>
+      </div>
+    </div>
+
+    <div class="meridian-text reveal">
+      <div class="chapter-label"><span class="num">05</span> CHAPTER · 經絡</div>
+      <h3>台北身體的 <span class="accent">四個穴位</span></h3>
+      <p>如果這張城市是一具身體，我每週會在這四個點，替它放鬆、歸位、重新對齊。</p>
+      <p>捷運能到的地方，就是我們見面的地方。課程一對一，視你的身體狀況客製化：疼痛處理、動作重建、呼吸訓練、或純粹只是想安靜地被陪伴一小時。</p>
+      <p>想預約，直接在 Threads 或 Instagram 私訊我。先告訴我你身體最近最困擾的一件事，我們再約時間。</p>
+      <div class="direct-book">DM · THREADS / INSTAGRAM · @MARS47COOL</div>
+      <div class="meridian-hint"><i class="fa-solid fa-hand-pointer"></i>點擊任一站看我在那裡教什麼</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     CTA
+============================================================ -->
+<section class="cta reveal">
+  <div class="cta-kanji"><span class="kanji-line">如果你也需要</span><span class="kanji-line br">運動康復療癒</span></div>
+  <div class="cta-sub">If your body is calling — come. I've been where you are.</div>
+  <a href="https://www.threads.com/@mars47cool" target="_blank" rel="noopener noreferrer" class="cta-btn hover-pad">
+    <i class="fa-brands fa-threads"></i> 來找我 · FIND MARS
+  </a>
+</section>
+
+<footer class="footer">
+  <div class="footer-socials">
+    <a href="https://www.threads.com/@mars47cool" target="_blank" rel="noopener noreferrer" class="hover-pad" title="Threads"><i class="fa-brands fa-threads"></i></a>
+    <a href="https://www.instagram.com/mars47cool/" target="_blank" rel="noopener noreferrer" class="hover-pad" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+  </div>
+  <div class="footer-mark">MADE WITH <span class="heart"><i class="fa-solid fa-heart"></i></span> BY SUPERGALEN'S DUNGEON</div>
+</footer>
+
+</main>
+
+<script>
+/* =====================================================
+ * 頭燈游標
+ * ===================================================== */
+(() => {
+  const lamp = document.getElementById('lampCursor');
+  if (!lamp || matchMedia('(hover:none)').matches) return;
+  window.addEventListener('mousemove', (e) => {
+    lamp.style.transform = `translate(${e.clientX - 260}px, ${e.clientY - 260}px)`;
+  });
+  document.querySelectorAll('.hover-pad, a, button, .station, .petal, .specimen, .meditation-cell, .hero-title .char').forEach(el => {
+    el.addEventListener('mouseenter', () => lamp.classList.add('hover'));
+    el.addEventListener('mouseleave', () => lamp.classList.remove('hover'));
+  });
+})();
+
+/* =====================================================
+ * three.js 蒸氣粒子場
+ * ===================================================== */
+(() => {
+  const canvas = document.getElementById('three-steam');
+  if (!canvas) return;
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
+  camera.position.z = 12;
+
+  function resize() {
+    renderer.setSize(innerWidth, innerHeight);
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  addEventListener('resize', resize);
+
+  // 蒸氣粒子
+  const count = 260;
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const scales = new Float32Array(count);
+  const speeds = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 24;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 16;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+    scales[i] = 0.3 + Math.random() * 1.6;
+    speeds[i] = 0.004 + Math.random() * 0.012;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
+
+  const vs = `
+    attribute float aScale;
+    varying float vAlpha;
+    void main(){
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mv;
+      gl_PointSize = aScale * (420.0 / -mv.z);
+      vAlpha = aScale * 0.45;
+    }`;
+  const fs = `
+    varying float vAlpha;
+    void main(){
+      vec2 c = gl_PointCoord - 0.5;
+      float d = length(c);
+      if (d > 0.5) discard;
+      float a = smoothstep(0.5, 0.0, d) * vAlpha;
+      gl_FragColor = vec4(0.92, 0.88, 0.78, a * 0.08);
+    }`;
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: vs,
+    fragmentShader: fs,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const points = new THREE.Points(geo, mat);
+  scene.add(points);
+
+  // 頭燈光錐（一束淡淡旋轉的光）
+  const lampGeo = new THREE.ConeGeometry(4, 10, 24, 1, true);
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0xf7c15b, transparent: true, opacity: 0.035, side: THREE.DoubleSide, depthWrite: false });
+  const lampCone = new THREE.Mesh(lampGeo, lampMat);
+  lampCone.position.set(0, 4, -2);
+  lampCone.rotation.z = Math.PI;
+  scene.add(lampCone);
+
+  let scrollY = 0;
+  addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
+
+  function animate(t) {
+    t *= 0.001;
+    const arr = geo.attributes.position.array;
+    for (let i = 0; i < count; i++) {
+      arr[i * 3 + 1] += speeds[i];
+      arr[i * 3] += Math.sin(t * 0.4 + i) * 0.002;
+      if (arr[i * 3 + 1] > 10) {
+        arr[i * 3 + 1] = -10;
+        arr[i * 3] = (Math.random() - 0.5) * 24;
+      }
+    }
+    geo.attributes.position.needsUpdate = true;
+
+    lampCone.rotation.x = Math.sin(t * 0.3) * 0.3;
+    lampCone.rotation.y = Math.cos(t * 0.2) * 0.2;
+    camera.position.y = -scrollY * 0.0008;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+})();
+
+/* =====================================================
+ * p5.js 呼吸・脈搏
+ * ===================================================== */
+let bpm = 82;
+let targetBpm = 82;
+let breathPhase = 0;
+let pulsePhase = 0;
+
+new p5((p) => {
+  p.setup = () => {
+    const c = p.createCanvas(window.innerWidth, window.innerHeight);
+    c.parent(document.body);
+    c.elt.id = 'p5-pulse-c';
+    c.elt.style.position = 'fixed';
+    c.elt.style.inset = '0';
+    c.elt.style.zIndex = '1';
+    c.elt.style.pointerEvents = 'none';
+    c.elt.style.opacity = '0.42';
+    // 移除預先的 canvas（避免重複）
+    const existing = document.getElementById('p5-pulse');
+    if (existing) existing.remove();
+    p.noFill();
+    p.pixelDensity(Math.min(window.devicePixelRatio, 2));
+  };
+
+  p.windowResized = () => p.resizeCanvas(window.innerWidth, window.innerHeight);
+
+  p.draw = () => {
+    p.clear();
+    bpm += (targetBpm - bpm) * 0.03;
+    pulsePhase += (bpm / 60) * (p.deltaTime / 1000) * Math.PI * 2;
+    breathPhase += p.deltaTime / 1000 * 0.2;
+
+    // 呼吸環（大慢圓）
+    const bx = p.width * 0.5;
+    const by = p.height * 0.5;
+    const breathR = 260 + Math.sin(breathPhase) * 80;
+    p.noFill();
+    p.strokeWeight(0.8);
+    p.stroke(247, 193, 91, 18);
+    p.circle(bx, by, breathR * 2);
+    p.stroke(247, 193, 91, 10);
+    p.circle(bx, by, breathR * 2.6);
+    p.stroke(234, 230, 221, 6);
+    p.circle(bx, by, breathR * 3.2);
+
+    // 心跳 — 底部 ECG 線
+    const base = p.height - 80;
+    const amp = Math.min(40, (bpm - 60) * 1.2 + 16);
+    p.strokeWeight(1.1);
+    p.stroke(201, 58, 42, p.map(bpm, 60, 160, 30, 180));
+    p.beginShape();
+    for (let x = 0; x < p.width; x += 2) {
+      const t = x * 0.012 + pulsePhase * 0.2;
+      let y = Math.sin(t) * 1.4;
+      // QRS 波
+      const beat = Math.sin(t * 2.0);
+      if (beat > 0.92) y -= Math.pow((beat - 0.92) / 0.08, 2) * amp;
+      if (beat < -0.92) y += Math.pow((-beat - 0.92) / 0.08, 2) * amp * 0.25;
+      p.vertex(x, base + y);
+    }
+    p.endShape();
+
+    // 更新 HUD
+    const el = document.getElementById('bpmValue');
+    const st = document.getElementById('bpmState');
+    if (el) {
+      el.textContent = Math.round(bpm) + ' BPM';
+      if (bpm > 130) { el.classList.add('panic'); if (st) st.textContent = 'PANIC'; }
+      else if (bpm > 95) { el.classList.remove('panic'); if (st) st.textContent = 'ELEVATED'; }
+      else { el.classList.remove('panic'); if (st) st.textContent = 'CALM'; }
+    }
+  };
+});
+
+/* =====================================================
+ * GSAP Reveal & Chapter-synced BPM
+ * ===================================================== */
+gsap.registerPlugin(ScrollTrigger);
+
+ScrollTrigger.batch('.reveal', {
+  start: 'top 85%',
+  onEnter: batch => batch.forEach(el => el.classList.add('show')),
+  once: true
+});
+
+// Hero title 光點依序亮起
+window.addEventListener('load', () => {
+  const chars = document.querySelectorAll('.hero-title .char');
+  chars.forEach((c, i) => setTimeout(() => c.classList.add('glow'), 900 + i * 260));
+});
+
+// 滾動驅動 BPM —— 隨章節逼近高峰再緩降
+const bpmAnchors = [
+  { sel: '.hero', bpm: 82 },
+  { sel: 'section:nth-of-type(2)', bpm: 88 },
+  { sel: 'section:nth-of-type(3)', bpm: 162 },  // 浮木・Panic peak
+  { sel: 'section:nth-of-type(4)', bpm: 115 },  // 身體履歷
+  { sel: 'section:nth-of-type(5)', bpm: 76 },   // 道場
+  { sel: 'section:nth-of-type(6)', bpm: 64 },   // 修行
+  { sel: 'section:nth-of-type(7)', bpm: 58 },   // gallery
+  { sel: 'section:nth-of-type(8)', bpm: 68 },   // meridian
+];
+bpmAnchors.forEach(a => {
+  const el = document.querySelector(a.sel);
+  if (!el) return;
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top 60%',
+    end: 'bottom 40%',
+    onEnter: () => targetBpm = a.bpm,
+    onEnterBack: () => targetBpm = a.bpm
+  });
+});
+
+// ECG panic box 數值抖動
+(() => {
+  const num = document.getElementById('ecgNum');
+  if (!num) return;
+  const base = 160;
+  setInterval(() => {
+    num.textContent = Math.round(base + (Math.random() - 0.5) * 10);
+  }, 320);
+
+  // Panic ECG canvas drawing
+  const c = document.getElementById('ecgCanvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  let t = 0;
+  function dpr() {
+    const r = window.devicePixelRatio || 1;
+    c.width = c.clientWidth * r;
+    c.height = c.clientHeight * r;
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+  }
+  dpr();
+  addEventListener('resize', dpr);
+  function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    const w = c.clientWidth, h = c.clientHeight;
+    ctx.strokeStyle = 'rgba(201,58,42,.3)';
+    ctx.lineWidth = 0.6;
+    for (let x = 0; x < w; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    ctx.strokeStyle = '#c93a2a';
+    ctx.lineWidth = 1.4;
+    ctx.shadowBlur = 8; ctx.shadowColor = '#c93a2a';
+    ctx.beginPath();
+    for (let x = 0; x < w; x++) {
+      const phase = (x * 0.08) + t;
+      let y = h / 2 + Math.sin(phase * 0.7) * 2;
+      const beat = Math.sin(phase);
+      if (beat > 0.9) y -= Math.pow((beat - 0.9) / 0.1, 2) * 28;
+      if (beat < -0.9) y += Math.pow((-beat - 0.9) / 0.1, 2) * 10;
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    t += 0.22;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* =====================================================
+ * 七方花瓣排列
+ * ===================================================== */
+(() => {
+  function place() {
+    const wheel = document.getElementById('sevenWheel');
+    if (!wheel) return;
+    const petals = wheel.querySelectorAll('.petal');
+    const cw = wheel.clientWidth;
+    // 手機半徑給足，避免花瓣覆蓋中心字
+    const r = cw < 500 ? cw * 0.44 : Math.min(cw * 0.38, 300);
+    petals.forEach(pt => {
+      const a = (parseFloat(pt.dataset.angle) - 90) * Math.PI / 180;
+      const x = Math.cos(a) * r;
+      const y = Math.sin(a) * r;
+      pt.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+    });
+  }
+  place();
+  addEventListener('resize', place);
+  setTimeout(place, 200);
+})();
+
+/* =====================================================
+ * 頭燈滑過七方
+ * ===================================================== */
+document.querySelectorAll('.petal').forEach(p => {
+  p.addEventListener('mouseenter', () => p.style.boxShadow = '0 0 60px rgba(247,193,91,.35)');
+  p.addEventListener('mouseleave', () => p.style.boxShadow = '');
+});
+
+/* =====================================================
+ * Hero 漢字頌缽敲擊 — WebAudio + 水波漣漪
+ * ===================================================== */
+(() => {
+  let audioCtx = null;
+  // 身・就・道・場 對應四個頻率（接近 C4、E4、G4、C5 的頌缽泛音）
+  const tones = { '身': 261.63, '就': 329.63, '道': 392.00, '場': 523.25 };
+
+  function ensureCtx() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e) { return null; }
+    }
+    return audioCtx;
+  }
+
+  function strike(freq) {
+    const ctx = ensureCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    // 主音
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0005, now + 2.8);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 3);
+    // 泛音（頌缽感）
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.value = freq * 2.03;
+    gain2.gain.setValueAtTime(0, now);
+    gain2.gain.linearRampToValueAtTime(0.11, now + 0.04);
+    gain2.gain.exponentialRampToValueAtTime(0.0005, now + 2.2);
+    osc2.connect(gain2).connect(ctx.destination);
+    osc2.start(now);
+    osc2.stop(now + 2.4);
+  }
+
+  function ripple(target) {
+    const rect = target.getBoundingClientRect();
+    const host = document.querySelector('.hero-title');
+    if (!host) return;
+    const hostRect = host.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'gong-ripple';
+    el.style.left = (rect.left + rect.width/2 - hostRect.left) + 'px';
+    el.style.top = (rect.top + rect.height/2 - hostRect.top) + 'px';
+    el.style.width = '40px';
+    el.style.height = '40px';
+    host.appendChild(el);
+    requestAnimationFrame(() => {
+      el.animate([
+        { width: '40px', height: '40px', opacity: 0.85, borderColor: 'rgba(247,193,91,.9)' },
+        { width: '520px', height: '520px', opacity: 0, borderColor: 'rgba(247,193,91,0)' }
+      ], { duration: 1600, easing: 'cubic-bezier(.22,.78,.32,1)' })
+       .addEventListener('finish', () => el.remove());
+    });
+  }
+
+  document.querySelectorAll('.hero-title .char').forEach(c => {
+    c.addEventListener('click', () => {
+      const t = c.textContent.trim();
+      strike(tones[t] || 261.63);
+      ripple(c);
+      c.classList.remove('struck');
+      void c.offsetWidth;
+      c.classList.add('struck');
+    });
+  });
+})();
+
+/* =====================================================
+ * PANIC 模擬器 — 讓使用者感受 3 秒
+ * ===================================================== */
+(() => {
+  const btn = document.getElementById('panicToggle');
+  const veil = document.getElementById('panicVeil');
+  const quote = document.getElementById('panicQuote');
+  const page = document.querySelector('.page');
+  if (!btn) return;
+
+  let panicking = false;
+  btn.addEventListener('click', () => {
+    if (panicking) return;
+    panicking = true;
+    btn.classList.add('active');
+    veil.classList.add('on');
+    page.classList.add('panic-shake');
+    const prevTarget = targetBpm;
+    targetBpm = 168;
+
+    setTimeout(() => {
+      page.classList.remove('panic-shake');
+      veil.classList.remove('on');
+      btn.classList.remove('active');
+      targetBpm = prevTarget;
+      quote.classList.add('show');
+      panicking = false;
+      setTimeout(() => quote.classList.remove('show'), 6000);
+    }, 3000);
+  });
+})();
+
+/* =====================================================
+ * 與我一起呼吸 — 4 循環 4-2-6 box breath
+ * ===================================================== */
+(() => {
+  const startBtn = document.getElementById('breatheStart');
+  const stage = document.getElementById('breatheStage');
+  const phaseEl = document.getElementById('breathePhase');
+  const countEl = document.getElementById('breatheCount');
+  const afterEl = document.getElementById('breatheAfter');
+  const dots = document.querySelectorAll('#breatheProgress .breathe-dot');
+  if (!startBtn || !stage) return;
+
+  const CYCLE = [
+    { name: '吸', phase: 'inhale', dur: 4, label: 'INHALE · 4' },
+    { name: '停', phase: 'hold',   dur: 2, label: 'HOLD · 2' },
+    { name: '吐', phase: 'exhale', dur: 6, label: 'EXHALE · 6' },
+    { name: '息', phase: 'rest',   dur: 1, label: 'REST · 1' }
+  ];
+
+  let running = false;
+  let timer = null;
+  let savedBpm = null;
+
+  function setPhase(p) {
+    stage.classList.remove('inhale', 'hold', 'exhale', 'rest');
+    if (p) stage.classList.add(p);
+  }
+
+  async function runCycle(idx) {
+    dots.forEach((d, i) => d.classList.toggle('done', i <= idx - 1));
+    for (const step of CYCLE) {
+      phaseEl.textContent = step.name;
+      countEl.textContent = step.label;
+      setPhase(step.phase);
+      await wait(step.dur * 1000);
+      if (!running) return;
+    }
+  }
+
+  function wait(ms) { return new Promise(r => { timer = setTimeout(r, ms); }); }
+
+  async function start() {
+    if (running) { stop(); return; }
+    running = true;
+    savedBpm = targetBpm;
+    startBtn.classList.add('running');
+    startBtn.innerHTML = '<i class="fa-solid fa-stop"></i> 中止・STOP';
+    afterEl.classList.remove('show');
+    dots.forEach(d => d.classList.remove('done'));
+
+    for (let i = 1; i <= 4 && running; i++) {
+      // 把 BPM 一圈一圈壓下去
+      targetBpm = Math.max(52, 82 - i * 7);
+      await runCycle(i);
+    }
+    if (running) {
+      afterEl.classList.add('show');
+      phaseEl.textContent = '靜';
+      countEl.textContent = 'SETTLED';
+      setPhase(null);
+    }
+    stop();
+  }
+
+  function stop() {
+    running = false;
+    if (timer) clearTimeout(timer);
+    startBtn.classList.remove('running');
+    startBtn.innerHTML = '<i class="fa-solid fa-play"></i> 開始・BEGIN';
+    if (savedBpm != null) targetBpm = savedBpm;
+    savedBpm = null;
+  }
+
+  startBtn.addEventListener('click', start);
+})();
+
+/* =====================================================
+ * 經絡四站 — 點擊脈珠沿著經絡傳遞 + 揭示教學資訊
+ * ===================================================== */
+(() => {
+  const map = document.getElementById('taipeiMap');
+  const bead = document.getElementById('pulseBead');
+  const card = document.getElementById('stationCard');
+  const scName = document.getElementById('scName');
+  const scTeach = document.getElementById('scTeach');
+  if (!map || !bead) return;
+  const stations = map.querySelectorAll('.station');
+  let active = null;
+
+  function rectOfStation(s) {
+    const mapRect = map.getBoundingClientRect();
+    const sRect = s.querySelector('.ring').getBoundingClientRect();
+    return {
+      x: sRect.left + sRect.width/2 - mapRect.left,
+      y: sRect.top + sRect.height/2 - mapRect.top
+    };
+  }
+
+  function travelFrom(fromRect) {
+    // 從隨機另一站送脈衝過來
+    const others = Array.from(stations).filter(s => s !== active);
+    if (!others.length) return;
+    const src = others[Math.floor(Math.random() * others.length)];
+    const srcPos = rectOfStation(src);
+    const toPos = fromRect;
+    bead.style.left = srcPos.x + 'px';
+    bead.style.top = srcPos.y + 'px';
+    bead.classList.add('travel');
+    bead.animate([
+      { left: srcPos.x + 'px', top: srcPos.y + 'px', opacity: 1, offset: 0 },
+      { left: (srcPos.x + toPos.x)/2 + 'px', top: (srcPos.y + toPos.y)/2 - 30 + 'px', opacity: 1, offset: 0.5 },
+      { left: toPos.x + 'px', top: toPos.y + 'px', opacity: 0.95, offset: 1 }
+    ], { duration: 1200, easing: 'cubic-bezier(.4,.06,.25,1)' })
+     .addEventListener('finish', () => {
+        bead.classList.remove('travel');
+     });
+  }
+
+  stations.forEach(s => {
+    s.addEventListener('click', (e) => {
+      e.preventDefault();
+      active = s;
+      stations.forEach(x => x.classList.remove('hover'));
+      s.classList.add('hover');
+      const pos = rectOfStation(s);
+      const mapRect = map.getBoundingClientRect();
+      // 卡片在地圖右邊不夠空間就放左邊
+      const cardW = 260;
+      let leftPos = pos.x + 18;
+      if (leftPos + cardW > mapRect.width) leftPos = pos.x - cardW - 18;
+      if (leftPos < 0) leftPos = Math.max(8, pos.x - cardW/2);
+      card.style.left = leftPos + 'px';
+      card.style.top = (pos.y + 12) + 'px';
+      card.style.transform = 'translateY(0)';
+      scName.textContent = s.querySelector('.name-ch').textContent + ' · ' + s.querySelector('.name-en').textContent;
+      scTeach.textContent = s.dataset.teach || '';
+      card.classList.add('show');
+      travelFrom(pos);
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (map.contains(e.target)) return;
+    card.classList.remove('show');
+    stations.forEach(x => x.classList.remove('hover'));
+  });
+})();
+</script>
+
+</body>
+</html>

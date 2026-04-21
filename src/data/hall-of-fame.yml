@@ -1702,3 +1702,17 @@ members:
         label: "陽宅風水"
       - id: "auspicious_dates"
         label: "擇日命名"
+
+  - id: "mars47cool"
+    name: "Mars Cheng"
+    avatar: "/assets/img/guild/mars47cool/avatar.webp"
+    page: "/guild/mars47cool.html"
+    title: "身就道場・Body as Dōjō"
+    description: "一個資深重度精神病患者的療癒日記。從 160BPM 的驚恐症走成十年康復教練。重訓、瑜珈、正念、靜坐、功能性、筋膜整復。士林／江子翠／中山／民權西路。"
+    tags:
+      - id: "rehab_coach"
+        label: "運動康復"
+      - id: "mindful_movement"
+        label: "正念瑜珈"
+      - id: "fascia_release"
+        label: "筋膜整復"
