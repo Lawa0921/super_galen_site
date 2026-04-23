@@ -1,0 +1,2229 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心燈燈飾 HL — 把心放進光裡，空間就會有靈魂</title>
+<meta name="description" content="HL 心燈燈飾主理人。壁燈、吊燈、餐桌燈現貨。新北產業園區。用一片真心為每個空間找到合適的光。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,300;1,500&family=Noto+Serif+TC:wght@300;500;700&family=Italiana&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+/* ==========================================================
+   HL LIGHTING — THE LIGHT ATELIER
+   「把心放進光裡，空間就會有靈魂」
+   ========================================================== */
+:root {
+  --void: #08080a;
+  --ink: #0e0d10;
+  --charcoal: #18161a;
+  --smoke: #2a2529;
+  --dust: #4a4248;
+  --paper: #d8c9a8;
+  --paper-dim: #8a7960;
+  --brass: #b8865b;
+  --brass-light: #e4c287;
+  --brass-deep: #7a5a3a;
+  --amber: #f2a541;
+  --amber-glow: #ffd88a;
+  --warm-white: #fff4d6;
+  --ring-glow: 0 0 40px rgba(255,216,138,0.35), 0 0 80px rgba(242,165,65,0.18);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 0; }
+
+body {
+  background: var(--void);
+  color: var(--paper);
+  font-family: 'Noto Serif TC', 'Cormorant Garamond', serif;
+  font-weight: 300;
+  line-height: 1.75;
+  overflow-x: hidden;
+  cursor: none;
+  --room-brightness: 1;
+}
+/* the dim-able room — filter here so cursor (outside) stays pristine */
+.room {
+  filter: brightness(var(--room-brightness));
+  transition: filter 1.2s cubic-bezier(.4,0,.2,1);
+}
+
+::selection { background: var(--amber); color: var(--ink); }
+
+img { max-width: 100%; display: block; }
+
+/* =========================================================
+   CUSTOM CURSOR — A GLOWING BULB
+   ========================================================= */
+.cursor-lamp {
+  position: fixed;
+  top: 0; left: 0;
+  width: 480px; height: 480px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle,
+    rgba(255,230,170,0.35) 0%,
+    rgba(255,200,120,0.22) 18%,
+    rgba(242,165,65,0.10) 40%,
+    transparent 72%);
+  transition: width 0.6s cubic-bezier(.4,0,.2,1), height 0.6s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+}
+.cursor-dot {
+  position: fixed;
+  top: 0; left: 0;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--amber-glow);
+  box-shadow:
+    0 0 4px #fff,
+    0 0 12px var(--amber-glow),
+    0 0 26px rgba(255,216,138,0.85),
+    0 0 50px rgba(242,165,65,0.55);
+  pointer-events: none;
+  z-index: 10000;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+/* a hair-thin inner core that stays bright even over bright backgrounds */
+.cursor-dot::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #fffdf0;
+}
+@media (hover: none) {
+  body { cursor: default; }
+  .cursor-lamp, .cursor-dot { display: none; }
+}
+
+/* =========================================================
+   FILM GRAIN + DUST OVERLAY
+   ========================================================= */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+}
+
+#particles-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* =========================================================
+   DIMMER SWITCH (top-right — control room brightness)
+   ========================================================= */
+.dimmer {
+  position: fixed;
+  top: 28px;
+  right: 32px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px 10px 18px;
+  border: 1px solid var(--smoke);
+  background: rgba(14,13,16,0.7);
+  backdrop-filter: blur(8px);
+  font-family: 'Italiana', serif;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: var(--paper-dim);
+  user-select: none;
+  cursor: none;
+}
+.dimmer .dim-label {
+  text-transform: uppercase;
+}
+.dimmer .dim-knob {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--smoke), var(--ink) 70%);
+  border: 1px solid var(--brass-deep);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.6);
+  cursor: none;
+  touch-action: none;
+}
+.dimmer .dim-knob::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(var(--knob-angle, -120deg));
+  transform-origin: 50% 18px;
+  width: 3px;
+  height: 14px;
+  background: var(--brass);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--amber);
+  transition: box-shadow 0.3s;
+}
+.dimmer .dim-knob.active::before {
+  box-shadow: 0 0 16px var(--amber-glow), 0 0 4px var(--brass-light);
+}
+.dimmer .dim-knob::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 1px dashed var(--brass-deep);
+  border-radius: 50%;
+  opacity: 0.35;
+}
+.dimmer .dim-value {
+  font-size: 10px;
+  color: var(--brass-light);
+  min-width: 26px;
+  text-align: left;
+}
+
+/* =========================================================
+   BACK NAV
+   ========================================================= */
+.back-nav {
+  position: fixed;
+  top: 28px;
+  left: 32px;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--paper-dim);
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  padding: 10px 18px;
+  border: 1px solid var(--smoke);
+  background: rgba(14,13,16,0.7);
+  backdrop-filter: blur(8px);
+  transition: all 0.4s cubic-bezier(.4,0,.2,1);
+}
+.back-nav:hover {
+  color: var(--amber-glow);
+  border-color: var(--brass);
+  box-shadow: var(--ring-glow);
+}
+.back-nav i { font-size: 10px; }
+
+/* =========================================================
+   VERTICAL FLOOR LINE — subtle decoration
+   ========================================================= */
+.left-rail {
+  position: fixed;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: left center;
+  z-index: 40;
+  font-family: 'Italiana', serif;
+  font-size: 10px;
+  letter-spacing: 0.6em;
+  color: var(--paper-dim);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* =========================================================
+   ACT I — HERO "THE SWITCH"
+   ========================================================= */
+.act-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 24px 80px;
+  overflow: hidden;
+}
+
+.brand-mark {
+  font-family: 'Italiana', serif;
+  font-size: 14px;
+  letter-spacing: 0.8em;
+  color: var(--brass);
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: softFade 1.4s 0.2s forwards;
+}
+.brand-mark::before, .brand-mark::after {
+  content: '◆';
+  margin: 0 16px;
+  color: var(--brass-deep);
+  font-size: 8px;
+  vertical-align: middle;
+}
+
+.hero-lamp {
+  position: relative;
+  width: 2px;
+  height: 180px;
+  background: linear-gradient(to bottom, transparent 0%, var(--brass) 100%);
+  margin-bottom: -60px;
+  opacity: 0;
+  animation: dropWire 2s 0.6s cubic-bezier(.4,0,.2,1) forwards;
+}
+.hero-lamp::after {
+  content: '';
+  position: absolute;
+  bottom: -48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 96px;
+  height: 96px;
+  border-radius: 48px 48px 20px 20px;
+  background: radial-gradient(ellipse at 50% 70%,
+    var(--amber-glow) 0%,
+    var(--amber) 35%,
+    var(--brass) 70%,
+    var(--brass-deep) 100%);
+  box-shadow:
+    0 0 40px var(--amber),
+    0 0 80px rgba(242,165,65,0.4),
+    0 0 160px rgba(255,216,138,0.25),
+    inset 0 -16px 24px rgba(0,0,0,0.3);
+  opacity: 0;
+  animation: bulbOn 0.8s 2.2s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+.hero-title {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  line-height: 1.25;
+  text-align: center;
+  margin-top: 120px;
+  color: var(--warm-white);
+  letter-spacing: 0.12em;
+  max-width: 900px;
+  opacity: 0;
+  animation: softFade 1.6s 2.6s forwards;
+}
+.hero-title .accent {
+  color: var(--amber-glow);
+  font-style: italic;
+  font-weight: 500;
+  position: relative;
+}
+.hero-title .accent::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -6px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brass), transparent);
+}
+
+.hero-subtitle {
+  font-family: 'Italiana', serif;
+  font-size: 14px;
+  letter-spacing: 0.5em;
+  color: var(--paper-dim);
+  margin-top: 40px;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: softFade 1.4s 3.2s forwards;
+}
+
+.scroll-hint {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Italiana', serif;
+  font-size: 10px;
+  letter-spacing: 0.5em;
+  color: var(--paper-dim);
+  opacity: 0;
+  animation: softFade 1.2s 3.8s forwards;
+  text-align: center;
+}
+.scroll-hint .line {
+  display: block;
+  width: 1px;
+  height: 48px;
+  background: linear-gradient(to bottom, var(--paper-dim), transparent);
+  margin: 14px auto 0;
+  animation: pulseLine 2s ease-in-out infinite;
+}
+
+@keyframes softFade { to { opacity: 1; } }
+@keyframes dropWire { 0% { height: 0; opacity: 0; } 60% { opacity: 1; } 100% { height: 180px; opacity: 1; } }
+@keyframes bulbOn {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+  60% { opacity: 0.4; transform: translateX(-50%) scale(1.12); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+@keyframes pulseLine { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.5); } }
+
+/* =========================================================
+   ACT II — MANIFESTO (三句心燈箴言)
+   ========================================================= */
+.act-manifesto {
+  padding: 160px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.act-label {
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.6em;
+  color: var(--brass);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 80px;
+}
+.act-label::before, .act-label::after {
+  content: '';
+  flex: 1;
+  max-width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brass-deep), transparent);
+}
+
+.manifesto-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 100px;
+}
+
+.manifesto-line {
+  position: relative;
+  padding: 32px 0;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+.manifesto-line .number {
+  font-family: 'Italiana', serif;
+  font-size: 52px;
+  color: var(--brass-deep);
+  line-height: 1;
+  padding-top: 8px;
+}
+.manifesto-line .lamp-dot {
+  position: absolute;
+  top: -8px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--amber-glow) 0%, var(--amber) 50%, transparent 100%);
+  opacity: 0.15;
+  transition: opacity 1.2s ease;
+  filter: blur(6px);
+}
+.manifesto-line.lit .lamp-dot { opacity: 0.9; }
+.manifesto-line.lit .number { color: var(--amber); transition: color 1.2s ease; }
+
+.manifesto-line .text {
+  font-family: 'Noto Serif TC', serif;
+  font-size: clamp(1.6rem, 2.8vw, 2.6rem);
+  line-height: 1.6;
+  color: var(--paper);
+  font-weight: 300;
+  opacity: 0.25;
+  transition: opacity 0.6s ease, color 0.6s ease;
+}
+.manifesto-line.lit .text { opacity: 1; }
+/* when one line is hovered, others dim */
+.manifesto-stack:hover .manifesto-line.lit .text { opacity: 0.35; }
+.manifesto-stack:hover .manifesto-line.lit .lamp-dot { opacity: 0.35; }
+.manifesto-stack:hover .manifesto-line.lit:hover .text { opacity: 1; }
+.manifesto-stack:hover .manifesto-line.lit:hover .lamp-dot { opacity: 1.2; filter: blur(4px); transform: scale(1.3); }
+.manifesto-line .lamp-dot { transition: opacity 0.6s ease, transform 0.6s ease, filter 0.6s ease; transform-origin: center; }
+.manifesto-line { cursor: none; }
+.manifesto-line .caption {
+  display: block;
+  margin-top: 16px;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--paper-dim);
+  letter-spacing: 0.1em;
+}
+
+.manifesto-line:nth-child(2) .text strong,
+.manifesto-line:nth-child(3) .text strong {
+  color: var(--amber-glow);
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* =========================================================
+   ACT III — ABOUT ME (第一人稱自介)
+   ========================================================= */
+.act-about {
+  padding: 140px 24px;
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 0.9fr 1.4fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.about-portrait {
+  position: relative;
+}
+.about-portrait-frame {
+  position: relative;
+  aspect-ratio: 3/4;
+  background: var(--charcoal);
+  overflow: hidden;
+  border: 1px solid var(--smoke);
+}
+.about-portrait-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, transparent 40%, rgba(255,216,138,0.08) 100%),
+    url('/assets/img/guild/rfogregr8564/hero_brass.webp') center/cover;
+  filter: brightness(0.85) contrast(1.1);
+}
+.about-portrait-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, transparent 10%, rgba(8,8,10,0.7) 85%);
+}
+
+.about-portrait .corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--brass);
+}
+.about-portrait .corner.tl { top: -6px; left: -6px; border-right: none; border-bottom: none; }
+.about-portrait .corner.tr { top: -6px; right: -6px; border-left: none; border-bottom: none; }
+.about-portrait .corner.bl { bottom: -6px; left: -6px; border-right: none; border-top: none; }
+.about-portrait .corner.br { bottom: -6px; right: -6px; border-left: none; border-top: none; }
+
+.about-portrait .stamp {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  font-family: 'Italiana', serif;
+  font-size: 11px;
+  letter-spacing: 0.5em;
+  color: var(--brass-light);
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+.about-text .eyebrow {
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.6em;
+  color: var(--brass);
+  margin-bottom: 28px;
+}
+.about-text h2 {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: clamp(1.9rem, 2.8vw, 2.55rem);
+  line-height: 1.4;
+  color: var(--warm-white);
+  margin-bottom: 32px;
+  letter-spacing: 0.03em;
+}
+.about-text h2 em {
+  font-style: italic;
+  color: var(--amber-glow);
+  font-weight: 500;
+}
+.about-text p {
+  color: var(--paper);
+  font-size: 1.05rem;
+  line-height: 1.9;
+  margin-bottom: 20px;
+  opacity: 0.92;
+}
+.about-text p + p { margin-top: -8px; }
+
+.about-signature {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--smoke);
+}
+.about-signature .sig-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--brass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  font-family: 'Italiana', serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  box-shadow: var(--ring-glow);
+}
+.about-signature .sig-name {
+  font-family: 'Italiana', serif;
+  font-size: 13px;
+  letter-spacing: 0.35em;
+  color: var(--paper-dim);
+}
+.about-signature .sig-name strong {
+  display: block;
+  color: var(--warm-white);
+  font-size: 16px;
+  letter-spacing: 0.3em;
+  margin-bottom: 4px;
+}
+
+/* =========================================================
+   ACT IV — CRAFT / 燈的語言
+   ========================================================= */
+.act-craft {
+  padding: 140px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.craft-header {
+  text-align: center;
+  margin-bottom: 100px;
+}
+.craft-header .eyebrow {
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.6em;
+  color: var(--brass);
+  margin-bottom: 24px;
+  display: inline-block;
+  padding: 0 40px;
+  position: relative;
+}
+.craft-header .eyebrow::before, .craft-header .eyebrow::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 32px;
+  height: 1px;
+  background: var(--brass-deep);
+}
+.craft-header .eyebrow::before { left: 0; }
+.craft-header .eyebrow::after { right: 0; }
+.craft-header h2 {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: clamp(2.2rem, 4.4vw, 3.6rem);
+  color: var(--warm-white);
+  letter-spacing: 0.08em;
+}
+.craft-header p {
+  max-width: 640px;
+  margin: 24px auto 0;
+  color: var(--paper-dim);
+  font-style: italic;
+  font-size: 1.1rem;
+  font-family: 'Cormorant Garamond', serif;
+  letter-spacing: 0.04em;
+}
+
+.craft-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.craft-card {
+  position: relative;
+  padding: 44px 32px;
+  background: linear-gradient(180deg, rgba(24,22,26,0.8), rgba(14,13,16,0.6));
+  border: 1px solid var(--smoke);
+  transition: border-color 0.6s cubic-bezier(.4,0,.2,1), transform 0.6s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+  --mx: 50%; --my: 50%;
+}
+/* top halo decorative */
+.craft-card::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,216,138,0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.6s ease, top 0.6s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+/* mouse-tracked spotlight inside card */
+.craft-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(320px circle at var(--mx) var(--my),
+    rgba(255,216,138,0.22),
+    rgba(242,165,65,0.08) 40%,
+    transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.craft-card:hover {
+  border-color: var(--brass);
+  transform: translateY(-4px);
+}
+.craft-card:hover::before {
+  opacity: 1;
+  top: -60px;
+}
+.craft-card:hover::after {
+  opacity: 1;
+}
+
+.craft-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brass), var(--brass-deep));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  font-size: 22px;
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 2;
+  transition: box-shadow 0.6s;
+}
+.craft-card:hover .craft-icon {
+  box-shadow: var(--ring-glow);
+  background: linear-gradient(135deg, var(--amber-glow), var(--brass));
+}
+
+.craft-card h3 {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--warm-white);
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+  position: relative;
+  z-index: 2;
+}
+.craft-card .en-title {
+  font-family: 'Italiana', serif;
+  font-size: 11px;
+  letter-spacing: 0.5em;
+  color: var(--brass);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+.craft-card p {
+  color: var(--paper);
+  line-height: 1.85;
+  font-size: 0.95rem;
+  opacity: 0.88;
+  position: relative;
+  z-index: 2;
+}
+
+/* =========================================================
+   ACT V — THE GALLERY (產品系列詩集)
+   ========================================================= */
+.act-gallery {
+  padding: 160px 0 120px;
+  position: relative;
+  overflow: hidden;
+}
+
+.gallery-header {
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto 80px;
+  padding: 0 24px;
+}
+.gallery-header .eyebrow {
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.6em;
+  color: var(--brass);
+  margin-bottom: 24px;
+}
+.gallery-header h2 {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  color: var(--warm-white);
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+}
+.gallery-header h2 em { font-style: italic; color: var(--amber-glow); font-weight: 500; }
+.gallery-header p {
+  color: var(--paper-dim);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1.05rem;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.gallery-item {
+  position: relative;
+  aspect-ratio: 3/4;
+  background: var(--charcoal);
+  overflow: hidden;
+  border: 1px solid var(--smoke);
+  transition: border-color 0.5s cubic-bezier(.4,0,.2,1), box-shadow 0.5s;
+  cursor: none;
+  --rx: 0deg; --ry: 0deg;
+  transform: perspective(1000px) rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.gallery-item.tilt-active {
+  box-shadow: 0 30px 50px -20px rgba(0,0,0,0.8), 0 0 40px rgba(255,216,138,0.08);
+}
+.gallery-item.g-a { grid-column: span 5; grid-row: span 2; aspect-ratio: 4/5; }
+.gallery-item.g-b { grid-column: span 4; }
+.gallery-item.g-c { grid-column: span 3; }
+.gallery-item.g-d { grid-column: span 3; }
+.gallery-item.g-e { grid-column: span 4; }
+.gallery-item.g-f { grid-column: span 5; aspect-ratio: 4/3; }
+.gallery-item.g-g { grid-column: span 4; aspect-ratio: 4/3; }
+.gallery-item.g-h { grid-column: span 3; aspect-ratio: 4/3; }
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 14%;
+  filter: brightness(0.55) contrast(1.2) saturate(0.9);
+  transition: filter 0.8s cubic-bezier(.4,0,.2,1), transform 0.8s cubic-bezier(.4,0,.2,1);
+}
+.gallery-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255,216,138,0.25) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 0.7s;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.gallery-item:hover {
+  border-color: var(--brass);
+}
+.gallery-item:hover img {
+  filter: brightness(1.1) contrast(1.05) saturate(1);
+  transform: scale(1.05);
+}
+.gallery-item:hover::before {
+  opacity: 1;
+}
+.gallery-item .name-plate {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 22px 20px 18px;
+  background: linear-gradient(to top, rgba(8,8,10,0.92), transparent);
+  z-index: 2;
+}
+.gallery-item .zh {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--warm-white);
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+.gallery-item .en {
+  font-family: 'Italiana', serif;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: var(--brass);
+  text-transform: uppercase;
+}
+.gallery-item .serial {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-family: 'Italiana', serif;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--brass-deep);
+  z-index: 2;
+}
+
+/* =========================================================
+   ACT VI — WHAT I CAN DO FOR YOU (服務)
+   ========================================================= */
+.act-service {
+  padding: 160px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.service-wrap {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 80px;
+  align-items: start;
+}
+.service-wrap .left {
+  position: sticky;
+  top: 80px;
+}
+.service-wrap .eyebrow {
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.6em;
+  color: var(--brass);
+  margin-bottom: 20px;
+}
+.service-wrap h2 {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: clamp(2rem, 3.6vw, 2.8rem);
+  color: var(--warm-white);
+  letter-spacing: 0.08em;
+  margin-bottom: 28px;
+  line-height: 1.35;
+}
+.service-wrap h2 em {
+  font-style: italic;
+  color: var(--amber-glow);
+  font-weight: 500;
+}
+.service-wrap .left-quote {
+  margin-top: 30px;
+  padding: 20px 22px;
+  border-left: 2px solid var(--brass);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--paper-dim);
+  line-height: 1.8;
+  font-size: 1rem;
+}
+
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  list-style: none;
+}
+.service-item {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 28px;
+  padding: 32px 28px;
+  background: linear-gradient(180deg, rgba(24,22,26,0.6), rgba(8,8,10,0.4));
+  border: 1px solid var(--smoke);
+  transition: all 0.5s ease;
+  position: relative;
+}
+.service-item:hover {
+  border-color: var(--brass);
+  transform: translateX(-6px);
+}
+.service-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--amber), transparent);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.service-item:hover::before { opacity: 1; }
+
+.service-item .num {
+  font-family: 'Italiana', serif;
+  font-size: 32px;
+  color: var(--brass);
+  line-height: 1;
+}
+.service-item h3 {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 500;
+  font-size: 1.35rem;
+  color: var(--warm-white);
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+}
+.service-item .en-tag {
+  display: inline-block;
+  font-family: 'Italiana', serif;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: var(--brass);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.service-item p {
+  color: var(--paper);
+  line-height: 1.85;
+  font-size: 0.97rem;
+  opacity: 0.88;
+}
+
+/* =========================================================
+   ACT VII — CAT INTERLUDE (彩蛋)
+   ========================================================= */
+.act-cat {
+  padding: 120px 24px 100px;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+}
+
+.cat-line {
+  position: relative;
+  padding: 60px 0;
+}
+.cat-shadow {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+  color: var(--paper-dim);
+  font-style: italic;
+  letter-spacing: 0.12em;
+  line-height: 1.8;
+}
+.cat-shadow em {
+  color: var(--amber-glow);
+  font-style: normal;
+  font-weight: 500;
+  position: relative;
+}
+.cat-svg {
+  display: block;
+  margin: 32px auto 24px;
+  color: var(--brass);
+  opacity: 0.4;
+  transition: opacity 0.8s, transform 0.8s cubic-bezier(.4,0,.2,1), color 0.5s;
+  cursor: none;
+}
+.cat-svg:hover {
+  opacity: 1;
+  transform: scale(1.08) rotate(-3deg);
+  color: var(--amber-glow);
+}
+.cat-svg:hover .cat-eye-l, .cat-svg:hover .cat-eye-r {
+  animation: catBlink 2.4s ease-in-out infinite;
+}
+.cat-eye-l, .cat-eye-r {
+  transform-origin: center;
+  transform-box: fill-box;
+}
+@keyframes catBlink {
+  0%, 45%, 55%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.1); }
+}
+/* purr: click animation */
+.cat-svg.purring {
+  animation: catPurr 0.6s cubic-bezier(.4,0,.2,1);
+}
+@keyframes catPurr {
+  0% { transform: scale(1.08); }
+  30% { transform: scale(1.35) rotate(-6deg); }
+  60% { transform: scale(0.95) rotate(2deg); }
+  100% { transform: scale(1.08) rotate(-3deg); }
+}
+/* purr ring of light */
+.cat-purr-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100px;
+  height: 100px;
+  border: 1px solid var(--amber);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+.cat-purr-ring.burst {
+  animation: purrBurst 1.2s cubic-bezier(.2,.7,.3,1);
+}
+@keyframes purrBurst {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.3); border-width: 3px; box-shadow: 0 0 30px var(--amber-glow); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(4); border-width: 1px; box-shadow: 0 0 0 transparent; }
+}
+.cat-meow {
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  transform: translate(-50%, 0);
+  font-family: 'Italiana', serif;
+  font-style: italic;
+  font-size: 20px;
+  color: var(--amber-glow);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(255,216,138,0.6);
+}
+.cat-meow.pop {
+  animation: meowPop 1.6s cubic-bezier(.2,.7,.3,1);
+}
+@keyframes meowPop {
+  0% { opacity: 0; transform: translate(-50%, 20px) scale(0.6); }
+  30% { opacity: 1; transform: translate(-50%, -30px) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -80px) scale(1); }
+}
+.cat-sub {
+  font-family: 'Italiana', serif;
+  font-size: 11px;
+  letter-spacing: 0.5em;
+  color: var(--brass);
+  margin-top: 20px;
+}
+
+/* =========================================================
+   ACT VIII — CONTACT (THE FRONT DESK)
+   ========================================================= */
+.act-contact {
+  padding: 160px 24px 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.contact-wrap {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  padding: 80px 60px;
+  background:
+    radial-gradient(ellipse at 85% 15%, rgba(255,216,138,0.08) 0%, transparent 45%),
+    linear-gradient(180deg, rgba(24,22,26,0.6), rgba(8,8,10,0.4));
+  border: 1px solid var(--smoke);
+  position: relative;
+}
+.contact-wrap::before {
+  content: '';
+  position: absolute;
+  top: 20px; right: 20px;
+  width: 110px; height: 110px;
+  border: 1px solid var(--brass-deep);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,216,138,0.18) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.contact-left .eyebrow {
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.6em;
+  color: var(--brass);
+  margin-bottom: 24px;
+}
+.contact-left h2 {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 300;
+  font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+  color: var(--warm-white);
+  letter-spacing: 0.08em;
+  margin-bottom: 24px;
+  line-height: 1.4;
+}
+.contact-left h2 em { color: var(--amber-glow); font-style: italic; font-weight: 500; }
+.contact-left p {
+  color: var(--paper);
+  line-height: 1.85;
+  font-size: 1rem;
+  margin-bottom: 16px;
+  opacity: 0.9;
+}
+.contact-left .open-hours {
+  margin-top: 28px;
+  padding: 16px 20px;
+  background: var(--ink);
+  border-left: 2px solid var(--amber);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  color: var(--paper);
+}
+.contact-left .open-hours i { color: var(--amber-glow); font-size: 16px; }
+
+.contact-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.contact-row {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 18px 22px;
+  background: rgba(8,8,10,0.5);
+  border: 1px solid var(--smoke);
+  transition: all 0.4s ease;
+  text-decoration: none;
+  color: inherit;
+}
+.contact-row:hover {
+  border-color: var(--brass);
+  background: rgba(14,13,16,0.7);
+  transform: translateX(4px);
+}
+.contact-row .ci {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brass-deep), var(--smoke));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amber-glow);
+  font-size: 16px;
+  transition: all 0.4s;
+}
+.contact-row:hover .ci {
+  background: linear-gradient(135deg, var(--amber), var(--brass));
+  color: var(--ink);
+  box-shadow: var(--ring-glow);
+}
+.contact-row .label {
+  font-family: 'Italiana', serif;
+  font-size: 10px;
+  letter-spacing: 0.5em;
+  color: var(--paper-dim);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.contact-row .value {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 0.98rem;
+  color: var(--warm-white);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+.site-footer {
+  padding: 60px 24px 48px;
+  text-align: center;
+  border-top: 1px solid var(--smoke);
+  position: relative;
+}
+.site-footer .mark {
+  font-family: 'Italiana', serif;
+  font-size: 12px;
+  letter-spacing: 0.6em;
+  color: var(--brass);
+  margin-bottom: 16px;
+}
+.site-footer .motto {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--paper-dim);
+  font-size: 0.95rem;
+  margin-bottom: 28px;
+}
+.site-footer .signature {
+  font-family: 'Italiana', serif;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: var(--dust);
+}
+.site-footer .signature .heart {
+  color: var(--amber);
+  margin: 0 6px;
+}
+
+/* =========================================================
+   THREE.JS HERO CANVAS
+   ========================================================= */
+#lamp3d-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 900px) {
+  .act-about { grid-template-columns: 1fr; gap: 60px; }
+  .service-wrap { grid-template-columns: 1fr; gap: 50px; }
+  .service-wrap .left { position: static; }
+  .craft-grid { grid-template-columns: 1fr; }
+  .gallery-grid { grid-template-columns: repeat(6, 1fr); }
+  .gallery-item.g-a { grid-column: span 6; grid-row: auto; }
+  .gallery-item.g-b, .gallery-item.g-c, .gallery-item.g-d,
+  .gallery-item.g-e, .gallery-item.g-f, .gallery-item.g-g,
+  .gallery-item.g-h { grid-column: span 3; }
+  .contact-wrap { grid-template-columns: 1fr; gap: 40px; padding: 48px 28px; }
+  .left-rail { display: none; }
+  .manifesto-line { grid-template-columns: 50px 1fr; gap: 18px; }
+  .manifesto-line .number { font-size: 38px; }
+  .manifesto-line .lamp-dot { left: 6px; }
+}
+
+@media (max-width: 560px) {
+  .back-nav { top: 16px; left: 16px; padding: 8px 12px; font-size: 10px; }
+  .brand-mark { font-size: 11px; letter-spacing: 0.5em; }
+  .act-manifesto, .act-about, .act-craft, .act-service, .act-contact { padding: 100px 20px; }
+  .act-gallery { padding: 120px 0 80px; }
+  .gallery-grid { padding: 0 16px; gap: 10px; }
+  .gallery-item.g-b, .gallery-item.g-c, .gallery-item.g-d,
+  .gallery-item.g-e, .gallery-item.g-f, .gallery-item.g-g,
+  .gallery-item.g-h { grid-column: span 6; }
+  .contact-wrap { padding: 40px 22px; }
+  .about-text h2 { font-size: 1.75rem; }
+  .manifesto-stack { gap: 60px; }
+  .manifesto-line .text { font-size: 1.25rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- CURSOR LIGHT (outside .room so filter doesn't hide it) -->
+<div class="cursor-lamp" id="cursorLamp"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- THE DIM-ABLE ROOM — everything below scales with brightness -->
+<div class="room">
+
+<!-- OVERLAYS -->
+<div class="grain-overlay"></div>
+<div class="vignette"></div>
+<canvas id="particles-canvas"></canvas>
+
+<!-- NAV -->
+<a href="/guild/" class="back-nav">
+  <i class="fa-solid fa-arrow-left"></i>
+  <span>RETURN TO ARCHIVE</span>
+</a>
+
+<!-- DIMMER SWITCH -->
+<div class="dimmer" id="dimmer">
+  <span class="dim-label">DIMMER</span>
+  <div class="dim-knob active" id="dimKnob" role="slider" aria-label="調光旋鈕 · 拖曳可調整頁面亮度" tabindex="0"></div>
+  <span class="dim-value" id="dimValue">100</span>
+</div>
+
+<div class="left-rail">HEART · LIGHT · ATELIER — EST. 新北產業園區</div>
+
+<!-- =========================================================
+     ACT I — HERO
+     ========================================================= -->
+<section class="act-hero">
+  <canvas id="lamp3d-canvas"></canvas>
+  <div class="brand-mark">H&nbsp;L&nbsp;·&nbsp;心&nbsp;燈&nbsp;燈&nbsp;飾</div>
+  <div class="hero-lamp"></div>
+  <h1 class="hero-title">
+    把心放進<span class="accent">光</span>裡<br>
+    空間就會有靈魂
+  </h1>
+  <div class="hero-subtitle">HEART LIGHT &nbsp;·&nbsp; HL LIGHTING</div>
+
+  <div class="scroll-hint">
+    <span>SCROLL TO ILLUMINATE</span>
+    <span class="line"></span>
+  </div>
+</section>
+
+<!-- =========================================================
+     ACT II — MANIFESTO
+     ========================================================= -->
+<section class="act-manifesto">
+  <div class="act-label">
+    <span>ACT · I &nbsp; — &nbsp; THE MANIFESTO</span>
+  </div>
+
+  <div class="manifesto-stack">
+    <div class="manifesto-line" data-lit="0">
+      <span class="lamp-dot"></span>
+      <div class="number">I.</div>
+      <div class="text">
+        用我的一片真心為顧客做好每一盞燈飾<br>
+        <strong>當這盞燈點亮別人的時候，同樣點亮自己</strong>
+        <span class="caption">心燈・Heart Light No. I — The Mirror of Illumination</span>
+      </div>
+    </div>
+
+    <div class="manifesto-line" data-lit="0">
+      <span class="lamp-dot"></span>
+      <div class="number">II.</div>
+      <div class="text">
+        <strong>好的光，不會第一眼驚豔</strong><br>
+        但會久了，離不開
+        <span class="caption">心燈・Heart Light No. II — On Patient Beauty</span>
+      </div>
+    </div>
+
+    <div class="manifesto-line" data-lit="0">
+      <span class="lamp-dot"></span>
+      <div class="number">III.</div>
+      <div class="text">
+        把心放進光裡<br>
+        <strong>空間就會有靈魂</strong>
+        <span class="caption">心燈・Heart Light No. III — The Soul of a Room</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     ACT III — ABOUT ME (自介)
+     ========================================================= -->
+<section class="act-about">
+  <div class="about-portrait">
+    <div class="about-portrait-frame">
+      <div class="stamp">
+        <span>ATELIER · 新北</span>
+        <span>No. 9101637980</span>
+      </div>
+    </div>
+    <span class="corner tl"></span>
+    <span class="corner tr"></span>
+    <span class="corner bl"></span>
+    <span class="corner br"></span>
+  </div>
+
+  <div class="about-text">
+    <div class="eyebrow">ABOUT ME · 我是誰</div>
+    <h2>
+      我是 <em>HL 心燈燈飾</em> 的主理人<br>
+      做燈，是我和空間對話的方式
+    </h2>
+    <p>
+      我的店在新北產業園區的一條安靜馬路旁，沒有華麗招牌，只有一盞盞點亮著的燈。我不是大廠牌的分店、也不是設計學院出身的藝術家——我只是一個喜歡光、懂光、並且願意花時間陪你把「對的光」找到家裡的人。
+    </p>
+    <p>
+      每一盞走進我店裡的燈，我都會自己測過光線、看過比例、想過安裝的位置。壁燈、吊燈、餐桌燈，我的目錄沒有標榜最多最便宜，但我能保證：當你指著某個型號問我「這盞放在我家會好看嗎」，我會很誠實地告訴你—— <em>不一定會。</em> 然後我們一起找到那盞會的。
+    </p>
+    <p>
+      關於品牌的名字「心燈」，它同時是兩件事：一盞放在空間裡的燈，以及放在我自己裡面、每天點著的那盞。做了這麼多年，我相信：<em>當你為別人點亮一盞燈，自己心裡的那盞也會跟著亮起來。</em>
+    </p>
+
+    <div class="about-signature">
+      <div class="sig-mark">HL</div>
+      <div class="sig-name">
+        <strong>HEART LIGHT ATELIER</strong>
+        MAINTAINED BY HAND · EST. 新北
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     ACT IV — CRAFT (我的手藝)
+     ========================================================= -->
+<section class="act-craft">
+  <div class="craft-header">
+    <div class="eyebrow">ACT · II &nbsp; — &nbsp; 燈 的 語 言</div>
+    <h2>我怎麼為一個空間選一盞燈</h2>
+    <p>A lamp is not a product. It's a decision about how your evening will feel.</p>
+  </div>
+
+  <div class="craft-grid">
+    <div class="craft-card">
+      <span class="en-title">TEMPERATURE</span>
+      <div class="craft-icon"><i class="fa-solid fa-temperature-half"></i></div>
+      <h3>讀色溫</h3>
+      <p>同樣是黃光，3000K 和 2700K 在牆上畫出來是完全不同的故事。我會先問你晚上回家的心情，再決定你需要哪一種溫度的陪伴。</p>
+    </div>
+
+    <div class="craft-card">
+      <span class="en-title">PROPORTION</span>
+      <div class="craft-icon"><i class="fa-solid fa-ruler-combined"></i></div>
+      <h3>量比例</h3>
+      <p>餐桌 140 公分配什麼吊燈？天花板 2 米 8 該掛多高？牆面只剩 30 公分能放什麼壁燈？我靠多年的現場經驗，給你不會後悔的那個尺寸。</p>
+    </div>
+
+    <div class="craft-card">
+      <span class="en-title">SHADOW</span>
+      <div class="craft-icon"><i class="fa-solid fa-moon"></i></div>
+      <h3>留陰影</h3>
+      <p>好的燈光不是把空間打亮，而是 <em>有意識地留下暗面</em>。我喜歡那種牆角有陰影、畫面有層次的光——那是空間真的有了呼吸。</p>
+    </div>
+
+    <div class="craft-card">
+      <span class="en-title">MATERIAL</span>
+      <div class="craft-icon"><i class="fa-solid fa-gem"></i></div>
+      <h3>摸材質</h3>
+      <p>霧黑金屬、拉絲黃銅、磨砂玻璃、亞麻燈罩——不同材質在同一顆燈泡下會折射出不同的溫度。我會選，也會解釋為什麼這個配你家最對。</p>
+    </div>
+
+    <div class="craft-card">
+      <span class="en-title">PURPOSE</span>
+      <div class="craft-icon"><i class="fa-solid fa-compass"></i></div>
+      <h3>分任務</h3>
+      <p>主燈負責骨架，壁燈刻劃情緒，餐桌燈鎖定儀式感。一個空間需要多少盞燈、各自做什麼事，我會幫你排得乾淨清楚。</p>
+    </div>
+
+    <div class="craft-card">
+      <span class="en-title">LONGEVITY</span>
+      <div class="craft-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+      <h3>求長久</h3>
+      <p>我相信「好的光不會第一眼驚豔，但會久了離不開」。我的推薦多半樸素、不搶戲——因為我賣的不是拍一張就收的燈，是你三年後還會擦擦繼續亮的那一盞。</p>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     ACT V — GALLERY (產品系列詩集)
+     ========================================================= -->
+<section class="act-gallery">
+  <div class="gallery-header">
+    <div class="eyebrow">ACT · III &nbsp; — &nbsp; COLLECTION</div>
+    <h2>店裡那些，有<em>名字</em>的燈</h2>
+    <p>每一盞燈進店之前，我都會替它取一個字。因為我相信：<br>能記得名字的東西，才會真正進到生活裡。</p>
+  </div>
+
+  <div class="gallery-grid">
+    <div class="gallery-item g-a">
+      <span class="serial">№ 01</span>
+      <img src="/assets/img/guild/rfogregr8564/product_obsidian.webp" alt="極致黑曜 吊燈" loading="lazy">
+      <div class="name-plate">
+        <div class="zh">極致黑曜</div>
+        <div class="en">OBSIDIAN · Dual-Ring Spotlight Pendant</div>
+      </div>
+    </div>
+
+    <div class="gallery-item g-b">
+      <span class="serial">№ 02</span>
+      <img src="/assets/img/guild/rfogregr8564/product_amber.webp" alt="琥珀時光 吊燈" loading="lazy">
+      <div class="name-plate">
+        <div class="zh">琥珀時光</div>
+        <div class="en">AMBER HOUR · Geometric Glass</div>
+      </div>
+    </div>
+
+    <div class="gallery-item g-c">
+      <span class="serial">№ 03</span>
+      <img src="/assets/img/guild/rfogregr8564/product_eclipse.webp" alt="日蝕 吊燈" loading="lazy">
+      <div class="name-plate">
+        <div class="zh">日蝕</div>
+        <div class="en">ECLIPSE · Disc Art Pendant</div>
+      </div>
+    </div>
+
+    <div class="gallery-item g-d">
+      <span class="serial">№ 04</span>
+      <img src="/assets/img/guild/rfogregr8564/product_gold_beam.webp" alt="鎏金管韻 吊燈" loading="lazy">
+      <div class="name-plate">
+        <div class="zh">鎏金管韻</div>
+        <div class="en">BRASS VERSE · Linear Pendant</div>
+      </div>
+    </div>
+
+    <div class="gallery-item g-e">
+      <span class="serial">№ 05</span>
+      <img src="/assets/img/guild/rfogregr8564/product_crown.webp" alt="曜石金冠 壁燈" loading="lazy">
+      <div class="name-plate">
+        <div class="zh">曜石金冠</div>
+        <div class="en">OBSIDIAN CROWN · Wall Sconce</div>
+      </div>
+    </div>
+
+    <div class="gallery-item g-f">
+      <span class="serial">№ 06</span>
+      <img src="/assets/img/guild/rfogregr8564/product_halo_dome.webp" alt="HALO DOME 壁燈" loading="lazy">
+      <div class="name-plate">
+        <div class="zh">HALO DOME · 半拱光弧</div>
+        <div class="en">Quiet Dome · Ambient Wall</div>
+      </div>
+    </div>
+
+    <div class="gallery-item g-g">
+      <span class="serial">№ 07</span>
+      <img src="/assets/img/guild/rfogregr8564/product_muguang.webp" alt="沐光 壁燈" loading="lazy">
+      <div class="name-plate">
+        <div class="zh">沐光</div>
+        <div class="en">BATHING LIGHT · Minimal Wall</div>
+      </div>
+    </div>
+
+    <div class="gallery-item g-h">
+      <span class="serial">№ 08</span>
+      <img src="/assets/img/guild/rfogregr8564/product_nordic.webp" alt="NORDIC BEAM 壁燈" loading="lazy">
+      <div class="name-plate">
+        <div class="zh">北歐柔光</div>
+        <div class="en">NORDIC BEAM · Soft Wash</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     ACT VI — SERVICE
+     ========================================================= -->
+<section class="act-service">
+  <div class="service-wrap">
+    <div class="left">
+      <div class="eyebrow">ACT · IV &nbsp; — &nbsp; 我能幫你做什麼</div>
+      <h2>
+        如果你有一個<em>燈</em>的問題<br>
+        可以先來問我
+      </h2>
+      <div class="left-quote">
+        「店內燈飾皆有現貨。下單後專人確認尺寸、造型，匯款完成即刻安排發貨。找風格、有疑問，歡迎 Line / FB / Email 私訊洽詢。」
+      </div>
+    </div>
+
+    <ul class="service-list">
+      <li class="service-item">
+        <div class="num">01</div>
+        <div>
+          <span class="en-tag">HOME LIGHTING CONSULTING</span>
+          <h3>居家燈飾建議</h3>
+          <p>我會問你家的坪數、天花板高度、主要活動的空間，還有——你家的「晚上是什麼樣子」。然後幫你把主燈、壁燈、餐桌燈、床頭閱讀燈一次排對。不用買太多，剛好就好。</p>
+        </div>
+      </li>
+
+      <li class="service-item">
+        <div class="num">02</div>
+        <div>
+          <span class="en-tag">COMMERCIAL LIGHTING</span>
+          <h3>商業場所光線效果</h3>
+          <p>餐廳、咖啡廳、辦公空間、展示櫥窗——每個場所需要的光各不相同。我能在預算內，幫你配出能「讓客人想坐下來」的光，或是「讓員工精神比較好」的光。</p>
+        </div>
+      </li>
+
+      <li class="service-item">
+        <div class="num">03</div>
+        <div>
+          <span class="en-tag">CASE-BY-CASE SOURCING</span>
+          <h3>依案場客製選燈</h3>
+          <p>我有豐富的工廠與品牌資源，可以針對每一個案場找到合適的燈。如果你看中店裡沒有的款式，或者你要的是整套風格整合，都能私訊和我討論。</p>
+        </div>
+      </li>
+
+      <li class="service-item">
+        <div class="num">04</div>
+        <div>
+          <span class="en-tag">READY STOCK · FAST SHIP</span>
+          <h3>現貨出貨・不用久等</h3>
+          <p>我不做那種「下訂要等兩個月」的預購。店內燈飾都有現貨，確認造型尺寸、匯款完成後，我馬上排出貨。你能早點把燈點亮，我就早一天安心。</p>
+        </div>
+      </li>
+
+      <li class="service-item">
+        <div class="num">05</div>
+        <div>
+          <span class="en-tag">LINE · FB · EMAIL</span>
+          <h3>隨時歡迎私訊聊聊</h3>
+          <p>不用預約、不用客套——如果你只是想問「這盞配我家好看嗎」、「這個色溫會不會太黃」，都可以直接 Line 我。很多時候，光傳一張你家的照片，我就能給你方向。</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- =========================================================
+     ACT VII — CAT (彩蛋)
+     ========================================================= -->
+<section class="act-cat">
+  <div class="cat-line">
+    <div class="cat-shadow">
+      如果你問我店裡最安靜、最美的事是什麼——<br>
+      我會說：<em>看到貓，跟看到新燈一樣開心。</em>
+    </div>
+
+    <div style="position: relative; display: inline-block;">
+      <span class="cat-meow" id="catMeow">meow — 喵</span>
+      <span class="cat-purr-ring" id="catRing"></span>
+      <svg class="cat-svg" id="catSvg" xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 72 72" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" role="button" aria-label="點我打呼">
+        <path d="M14 24 L18 10 L28 22"/>
+        <path d="M58 24 L54 10 L44 22"/>
+        <ellipse cx="36" cy="34" rx="20" ry="16"/>
+        <ellipse class="cat-eye-l" cx="28" cy="32" rx="1.5" ry="1.5" fill="currentColor"/>
+        <ellipse class="cat-eye-r" cx="44" cy="32" rx="1.5" ry="1.5" fill="currentColor"/>
+        <path d="M33 40 Q36 43 39 40"/>
+        <path d="M16 46 Q24 58 36 54 Q48 58 56 46"/>
+        <path d="M24 46 L24 58"/>
+        <path d="M48 46 L48 58"/>
+        <path d="M36 54 L36 60"/>
+        <path d="M18 42 L10 38"/>
+        <path d="M18 44 L10 44"/>
+        <path d="M54 42 L62 38"/>
+        <path d="M54 44 L62 44"/>
+      </svg>
+    </div>
+
+    <div class="cat-sub">A SOFT CORNER · 店主的日常小聲說 &nbsp;·&nbsp; 點我試試</div>
+  </div>
+</section>
+
+<!-- =========================================================
+     ACT VIII — CONTACT
+     ========================================================= -->
+<section class="act-contact">
+  <div class="contact-wrap">
+    <div class="contact-left">
+      <div class="eyebrow">FINAL ACT &nbsp; — &nbsp; 怎麼找到我</div>
+      <h2>
+        如果你準備好<br>
+        為一個空間<em>找一盞燈</em>
+      </h2>
+      <p>我在新北產業園區的店裡等你，或者先 Line 我把照片丟給我看。我不急——選燈本來就不急。我們慢慢聊，直到那盞對的光出現為止。</p>
+      <div class="open-hours">
+        <i class="fa-regular fa-clock"></i>
+        <span>09:00 &nbsp; — &nbsp; 18:00 &nbsp; · &nbsp; 週一至週六</span>
+      </div>
+    </div>
+
+    <div class="contact-right">
+      <a class="contact-row" href="https://line.me/ti/p/~heartlight2025" target="_blank" rel="noopener noreferrer">
+        <div class="ci"><i class="fa-brands fa-line"></i></div>
+        <div>
+          <div class="label">LINE · 最快聯絡</div>
+          <div class="value">heartlight2025</div>
+        </div>
+      </a>
+
+      <a class="contact-row" href="https://www.heartlight.tw/" target="_blank" rel="noopener noreferrer">
+        <div class="ci"><i class="fa-solid fa-lightbulb"></i></div>
+        <div>
+          <div class="label">官方網站 · 所有現貨</div>
+          <div class="value">heartlight.tw</div>
+        </div>
+      </a>
+
+      <a class="contact-row" href="https://www.facebook.com/share/14KM4fiSPGU/" target="_blank" rel="noopener noreferrer">
+        <div class="ci"><i class="fa-brands fa-facebook-f"></i></div>
+        <div>
+          <div class="label">FACEBOOK · 日常分享</div>
+          <div class="value">心燈燈飾</div>
+        </div>
+      </a>
+
+      <a class="contact-row" href="https://www.threads.com/@rfogregr8564" target="_blank" rel="noopener noreferrer">
+        <div class="ci"><i class="fa-brands fa-threads"></i></div>
+        <div>
+          <div class="label">THREADS</div>
+          <div class="value">@rfogregr8564</div>
+        </div>
+      </a>
+
+      <a class="contact-row" href="tel:0972630338">
+        <div class="ci"><i class="fa-solid fa-phone"></i></div>
+        <div>
+          <div class="label">PHONE</div>
+          <div class="value">0972 &nbsp; 630 &nbsp; 338</div>
+        </div>
+      </a>
+
+      <a class="contact-row" href="mailto:jrfogregr@gmail.com">
+        <div class="ci"><i class="fa-regular fa-envelope"></i></div>
+        <div>
+          <div class="label">EMAIL</div>
+          <div class="value">jrfogregr@gmail.com</div>
+        </div>
+      </a>
+
+      <a class="contact-row" href="https://www.google.com/maps/search/?api=1&amp;query=%E6%96%B0%E5%8C%97%E5%B8%82%E4%BA%94%E8%82%A1%E5%8D%80%E4%BA%94%E6%AC%8A%E4%BA%8C%E8%B7%AF22%E8%99%9F" target="_blank" rel="noopener noreferrer">
+        <div class="ci"><i class="fa-solid fa-location-dot"></i></div>
+        <div>
+          <div class="label">ATELIER · 點擊開啟 Google Maps</div>
+          <div class="value">新北市五股區 &nbsp; 五權二路 22 號 &nbsp;<span style="color:var(--paper-dim);font-size:0.85em;">（新北產業園區內）</span></div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="mark">◆ &nbsp; H L &nbsp; · &nbsp; 心 燈 燈 飾 &nbsp; · &nbsp; HEART LIGHT ATELIER &nbsp; ◆</div>
+  <div class="motto">"A good light does not impress at first sight — but you will never want to live without it."</div>
+  <div class="signature">MADE WITH <span class="heart">♥</span> BY SUPERGALEN'S DUNGEON</div>
+</footer>
+
+</div> <!-- /.room -->
+
+
+<script>
+/* =========================================================
+   CURSOR LAMP — follows mouse with slight lag
+   ========================================================= */
+(() => {
+  const lamp = document.getElementById('cursorLamp');
+  const dot = document.getElementById('cursorDot');
+  let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+  let lx = mx, ly = my;
+
+  window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  window.addEventListener('mouseleave', () => { lamp.style.opacity = '0'; dot.style.opacity = '0'; });
+  window.addEventListener('mouseenter', () => { lamp.style.opacity = ''; dot.style.opacity = ''; });
+
+  function loop() {
+    lx += (mx - lx) * 0.18;
+    ly += (my - ly) * 0.18;
+    lamp.style.transform = `translate(${lx}px, ${ly}px) translate(-50%, -50%)`;
+    dot.style.transform = `translate(${mx}px, ${my}px) translate(-50%, -50%)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  // cursor grows over interactive elements
+  document.querySelectorAll('a, .craft-card, .gallery-item, .service-item, .contact-row, .cat-svg').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      lamp.style.width = '640px'; lamp.style.height = '640px';
+    });
+    el.addEventListener('mouseleave', () => {
+      lamp.style.width = '480px'; lamp.style.height = '480px';
+    });
+  });
+})();
+
+/* =========================================================
+   P5.js — FLOATING LIGHT DUST
+   ========================================================= */
+const dustSketch = (p) => {
+  let particles = [];
+  let canvas;
+
+  p.setup = () => {
+    const c = document.getElementById('particles-canvas');
+    canvas = p.createCanvas(window.innerWidth, window.innerHeight, p.P2D);
+    canvas.parent(document.body);
+    canvas.canvas.id = 'p5-dust';
+    canvas.canvas.style.position = 'fixed';
+    canvas.canvas.style.inset = '0';
+    canvas.canvas.style.zIndex = '1';
+    canvas.canvas.style.pointerEvents = 'none';
+    // remove the placeholder static canvas
+    const ph = document.getElementById('particles-canvas');
+    if (ph && ph !== canvas.canvas) ph.remove();
+
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: p.random(p.width),
+        y: p.random(p.height),
+        r: p.random(0.6, 2.2),
+        sx: p.random(-0.12, 0.12),
+        sy: p.random(-0.35, -0.08),
+        a: p.random(40, 160),
+        phase: p.random(p.TWO_PI),
+      });
+    }
+  };
+
+  p.windowResized = () => p.resizeCanvas(window.innerWidth, window.innerHeight);
+
+  p.draw = () => {
+    p.clear();
+    p.noStroke();
+    for (let q of particles) {
+      q.x += q.sx + Math.sin(q.phase + p.frameCount * 0.01) * 0.12;
+      q.y += q.sy;
+      q.phase += 0.01;
+      if (q.y < -10) { q.y = p.height + 10; q.x = p.random(p.width); }
+      if (q.x < -10) q.x = p.width + 10;
+      if (q.x > p.width + 10) q.x = -10;
+      const flick = 0.75 + Math.sin(p.frameCount * 0.06 + q.phase) * 0.25;
+      p.fill(255, 216, 138, q.a * flick);
+      p.circle(q.x, q.y, q.r);
+      p.fill(242, 165, 65, q.a * flick * 0.25);
+      p.circle(q.x, q.y, q.r * 3);
+    }
+  };
+};
+new p5(dustSketch);
+
+/* =========================================================
+   THREE.js — HERO BRASS PENDANT (swinging chandelier)
+   ========================================================= */
+(() => {
+  const canvas = document.getElementById('lamp3d-canvas');
+  if (!canvas || !window.THREE) return;
+  const hero = canvas.parentElement;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 0, 9);
+
+  // subtle brass ring cluster orbiting slowly
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const rings = [];
+  const ringColors = [0xb8865b, 0xe4c287, 0x7a5a3a];
+  for (let i = 0; i < 3; i++) {
+    const geo = new THREE.TorusGeometry(1.4 + i * 0.55, 0.015, 6, 128);
+    const mat = new THREE.MeshBasicMaterial({
+      color: ringColors[i],
+      transparent: true,
+      opacity: 0.55 - i * 0.12,
+    });
+    const ring = new THREE.Mesh(geo, mat);
+    ring.rotation.x = Math.PI / 2;
+    ring.rotation.z = (Math.PI / 5) * i;
+    rings.push(ring);
+    group.add(ring);
+  }
+
+  // glowing bulb core
+  const bulbGeo = new THREE.SphereGeometry(0.22, 32, 32);
+  const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffd88a, transparent: true, opacity: 0.95 });
+  const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+  group.add(bulb);
+
+  // halo sprite
+  const haloGeo = new THREE.CircleGeometry(1.6, 64);
+  const haloMat = new THREE.MeshBasicMaterial({ color: 0xf2a541, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false });
+  const halo = new THREE.Mesh(haloGeo, haloMat);
+  halo.position.z = -0.1;
+  group.add(halo);
+
+  function resize() {
+    const w = hero.clientWidth;
+    const h = hero.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t0 = performance.now();
+  function animate() {
+    const t = (performance.now() - t0) / 1000;
+    rings.forEach((r, i) => {
+      r.rotation.x = Math.PI / 2 + Math.sin(t * 0.3 + i) * 0.08;
+      r.rotation.z = (Math.PI / 5) * i + t * 0.07 * (i % 2 ? -1 : 1);
+    });
+    const breathe = 0.92 + Math.sin(t * 1.2) * 0.08;
+    bulb.scale.setScalar(breathe);
+    halo.scale.setScalar(1 + Math.sin(t * 0.9) * 0.05);
+    bulbMat.opacity = 0.75 + Math.sin(t * 3) * 0.15;
+    group.rotation.y = Math.sin(t * 0.25) * 0.18;
+    group.rotation.x = Math.cos(t * 0.3) * 0.08;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+/* =========================================================
+   GSAP — SCROLL-TRIGGERED ILLUMINATION
+   ========================================================= */
+if (window.gsap) {
+  gsap.registerPlugin(ScrollTrigger);
+
+  // manifesto lines light up one by one
+  gsap.utils.toArray('.manifesto-line').forEach((el, i) => {
+    ScrollTrigger.create({
+      trigger: el,
+      start: 'top 75%',
+      onEnter: () => {
+        setTimeout(() => el.classList.add('lit'), i * 200);
+      },
+    });
+  });
+
+  // about portrait reveal
+  gsap.from('.about-portrait-frame', {
+    scrollTrigger: { trigger: '.act-about', start: 'top 70%' },
+    opacity: 0,
+    y: 60,
+    duration: 1.2,
+    ease: 'power3.out',
+  });
+  gsap.from('.about-text > *', {
+    scrollTrigger: { trigger: '.act-about', start: 'top 70%' },
+    opacity: 0,
+    y: 30,
+    duration: 1,
+    stagger: 0.15,
+    ease: 'power3.out',
+  });
+
+  // craft cards — subtle slide-up (always visible)
+  gsap.from('.craft-card', {
+    scrollTrigger: { trigger: '.craft-grid', start: 'top 85%', once: true },
+    y: 40,
+    duration: 0.9,
+    stagger: 0.1,
+    ease: 'power3.out',
+    immediateRender: false,
+  });
+
+  // gallery items — subtle scale-in
+  gsap.from('.gallery-item', {
+    scrollTrigger: { trigger: '.gallery-grid', start: 'top 90%', once: true },
+    y: 30,
+    duration: 0.9,
+    stagger: 0.07,
+    ease: 'power3.out',
+    immediateRender: false,
+  });
+
+  // service items — slide from right
+  gsap.from('.service-item', {
+    scrollTrigger: { trigger: '.service-list', start: 'top 85%', once: true },
+    x: 30,
+    duration: 0.8,
+    stagger: 0.1,
+    ease: 'power3.out',
+    immediateRender: false,
+  });
+
+  // cat easter egg
+  gsap.from('.cat-line > *', {
+    scrollTrigger: { trigger: '.act-cat', start: 'top 85%', once: true },
+    y: 24,
+    duration: 1.0,
+    stagger: 0.15,
+    ease: 'power3.out',
+    immediateRender: false,
+  });
+
+  // contact rows — slide from right
+  gsap.from('.contact-row', {
+    scrollTrigger: { trigger: '.contact-right', start: 'top 90%', once: true },
+    x: 24,
+    duration: 0.7,
+    stagger: 0.07,
+    ease: 'power3.out',
+    immediateRender: false,
+  });
+
+  // refresh once everything laid out
+  window.addEventListener('load', () => ScrollTrigger.refresh());
+}
+
+/* =========================================================
+   INTERACTION #1 — DIMMER KNOB
+   Drag (or arrow-keys) to change room brightness
+   ========================================================= */
+(() => {
+  const knob = document.getElementById('dimKnob');
+  const valueEl = document.getElementById('dimValue');
+  if (!knob) return;
+
+  // level 0..100 → brightness 0.25..1.15
+  let level = 100;
+
+  function applyLevel(l) {
+    level = Math.max(0, Math.min(100, l));
+    const brightness = 0.25 + (level / 100) * 0.9;
+    document.body.style.setProperty('--room-brightness', brightness.toFixed(3));
+    const angle = -120 + (level / 100) * 240; // -120° → +120°
+    knob.style.setProperty('--knob-angle', `${angle}deg`);
+    valueEl.textContent = Math.round(level);
+    knob.classList.toggle('active', level > 20);
+  }
+  applyLevel(100);
+
+  let dragging = false;
+  let startY = 0;
+  let startLevel = 100;
+
+  function onDown(e) {
+    dragging = true;
+    startY = (e.touches ? e.touches[0].clientY : e.clientY);
+    startLevel = level;
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY);
+    const delta = startY - y; // up increases
+    applyLevel(startLevel + delta * 0.8);
+    e.preventDefault();
+  }
+  function onUp() { dragging = false; document.body.style.userSelect = ''; }
+
+  knob.addEventListener('mousedown', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  knob.addEventListener('touchstart', onDown, { passive: false });
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onUp);
+
+  // scroll wheel over knob also adjusts
+  knob.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    applyLevel(level - Math.sign(e.deltaY) * 5);
+  }, { passive: false });
+
+  // keyboard control
+  knob.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { applyLevel(level + 5); e.preventDefault(); }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { applyLevel(level - 5); e.preventDefault(); }
+  });
+
+  // click toggles between dim/full
+  knob.addEventListener('click', () => {
+    if (!dragging) applyLevel(level > 50 ? 30 : 100);
+  });
+})();
+
+/* =========================================================
+   INTERACTION #2 — CRAFT CARD MOUSE-TRACKED SPOTLIGHT
+   ========================================================= */
+(() => {
+  document.querySelectorAll('.craft-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width) * 100;
+      const y = ((e.clientY - r.top) / r.height) * 100;
+      card.style.setProperty('--mx', `${x}%`);
+      card.style.setProperty('--my', `${y}%`);
+    });
+  });
+})();
+
+/* =========================================================
+   INTERACTION #3 — GALLERY 3D TILT
+   ========================================================= */
+(() => {
+  const items = document.querySelectorAll('.gallery-item');
+  const max = 8; // max tilt degrees
+  items.forEach(item => {
+    item.addEventListener('mouseenter', () => item.classList.add('tilt-active'));
+    item.addEventListener('mousemove', e => {
+      const r = item.getBoundingClientRect();
+      const cx = e.clientX - r.left - r.width / 2;
+      const cy = e.clientY - r.top - r.height / 2;
+      const ry = (cx / (r.width / 2)) * max;
+      const rx = -(cy / (r.height / 2)) * max;
+      item.style.setProperty('--rx', `${rx.toFixed(2)}deg`);
+      item.style.setProperty('--ry', `${ry.toFixed(2)}deg`);
+    });
+    item.addEventListener('mouseleave', () => {
+      item.classList.remove('tilt-active');
+      item.style.setProperty('--rx', '0deg');
+      item.style.setProperty('--ry', '0deg');
+    });
+  });
+})();
+
+/* =========================================================
+   INTERACTION #4 — CAT PURR ON CLICK
+   ========================================================= */
+(() => {
+  const cat = document.getElementById('catSvg');
+  const ring = document.getElementById('catRing');
+  const meow = document.getElementById('catMeow');
+  if (!cat) return;
+  const meows = ['meow — 喵', 'purr — 呼嚕', '喵 ♡', 'nya—', 'meow — 店主你好'];
+  cat.addEventListener('click', () => {
+    cat.classList.remove('purring');
+    ring.classList.remove('burst');
+    meow.classList.remove('pop');
+    void cat.offsetWidth; // restart animation
+    cat.classList.add('purring');
+    ring.classList.add('burst');
+    meow.textContent = meows[Math.floor(Math.random() * meows.length)];
+    meow.classList.add('pop');
+  });
+})();
+
+/* =========================================================
+   INTERACTION #5 — HERO LAMP DRAGGABLE SWING
+   The 3D bulb in hero can be "pulled" with mouse
+   ========================================================= */
+(() => {
+  const hero = document.querySelector('.act-hero');
+  const lamp = document.querySelector('.hero-lamp');
+  if (!hero || !lamp) return;
+
+  let swing = 0; // current angle
+  let velocity = 0;
+  let dragging = false;
+  let targetSwing = 0;
+
+  hero.addEventListener('mousemove', e => {
+    if (dragging) return;
+    const r = hero.getBoundingClientRect();
+    const cx = r.width / 2;
+    const dx = (e.clientX - r.left - cx) / cx;
+    targetSwing = dx * 8; // passive follow up to 8deg
+  });
+
+  function loop() {
+    if (!dragging) {
+      const diff = targetSwing - swing;
+      velocity += diff * 0.012;
+      velocity *= 0.92;
+      swing += velocity;
+      lamp.style.transform = `rotate(${swing.toFixed(2)}deg)`;
+      lamp.style.transformOrigin = 'top center';
+    }
+    requestAnimationFrame(loop);
+  }
+  // start swing loop only after hero bulb-on animation completes
+  setTimeout(loop, 3100);
+})();
+</script>
+</body>
+</html>

@@ -1716,3 +1716,17 @@ members:
         label: "正念瑜珈"
       - id: "fascia_release"
         label: "筋膜整復"
+
+  - id: "rfogregr8564"
+    name: "心燈燈飾 HL"
+    avatar: "/assets/img/guild/rfogregr8564/avatar.webp"
+    page: "/guild/rfogregr8564.html"
+    title: "Heart Light Atelier"
+    description: "新北產業園區燈飾主理人。「把心放進光裡，空間就會有靈魂。」壁燈、吊燈、餐桌燈現貨，用一片真心為每個空間找到合適的光。看到貓跟看到新燈一樣開心。"
+    tags:
+      - id: "lighting_designer"
+        label: "燈飾設計"
+      - id: "ambient_lighting"
+        label: "氛圍照明"
+      - id: "cat_friendly"
+        label: "愛貓店主"
