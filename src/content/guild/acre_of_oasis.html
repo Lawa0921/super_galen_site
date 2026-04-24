@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="大腦小姐療心室 — 理性腦 × 靈性腦同時在線。彩虹卡七脈輪、自由書寫、職涯定位，把混亂人生整理成可執行地圖。">
+<title>Acre of Oasis ／ 大腦小姐療心室 ・ 內在頻率對齊室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Caveat:wght@400;600&family=JetBrains+Mono:wght@300;400&family=Noto+Serif+TC:wght@300;500&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg-deep:#08051a;
+  --ink:#f6f0e6;
+  --ink-soft:#cdbfb1;
+  --ink-faint:#7a6f87;
+  --cream:#fff5dc;
+  --rose:#ff7da7;
+  --gold:#ffd56b;
+  --halo:#b9a3ff;
+  --c-root:#ff3a55;
+  --c-sacral:#ff8a3d;
+  --c-solar:#ffd23f;
+  --c-heart:#5dd39e;
+  --c-throat:#3aa8ff;
+  --c-third:#5b4bff;
+  --c-crown:#c573ff;
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.92 0 0 0 0 0.88 0 0 0 0.45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.45'/></svg>");
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg-deep);color:var(--ink);font-family:'Noto Serif TC',serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;background-image:var(--grain);opacity:.18;mix-blend-mode:overlay;pointer-events:none;z-index:99}
+body::after{content:"";position:fixed;inset:0;background:radial-gradient(120% 80% at 50% 0%,transparent 60%,#000 130%);pointer-events:none;z-index:1}
+a{color:inherit;text-decoration:none}
+
+/* ═══ NAV ═══ */
+.archive-link{position:fixed;top:1.6rem;left:1.6rem;z-index:120;display:inline-flex;align-items:center;gap:.7rem;padding:.55rem 1.05rem;border:1px solid rgba(246,240,230,.25);border-radius:999px;backdrop-filter:blur(8px);background:rgba(8,5,26,.45);font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);transition:all .35s cubic-bezier(.2,.8,.2,1)}
+.archive-link:hover{color:var(--cream);border-color:var(--gold);box-shadow:0 0 20px rgba(255,213,107,.25)}
+.archive-link i{font-size:.7rem}
+
+.signal-meter{position:fixed;top:1.6rem;right:1.6rem;z-index:120;display:flex;align-items:center;gap:.7rem;padding:.5rem .9rem;border:1px solid rgba(246,240,230,.18);border-radius:999px;background:rgba(8,5,26,.5);backdrop-filter:blur(8px);font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.2em;color:var(--ink-soft)}
+.signal-meter .dot{width:7px;height:7px;border-radius:50%;background:var(--c-heart);box-shadow:0 0 10px var(--c-heart);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+
+/* ═══ HERO ═══ */
+.hero{position:relative;min-height:100vh;display:grid;place-items:center;overflow:hidden;padding:6rem 1.5rem 3rem}
+#cosmos-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+#chakra-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;filter:blur(.5px)}
+.hero-inner{position:relative;z-index:3;max-width:1100px;width:100%;text-align:center}
+.hero-tag{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.45em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:1.6rem;display:inline-flex;gap:1rem;align-items:center}
+.hero-tag span{display:inline-block;width:32px;height:1px;background:var(--ink-faint)}
+.hero-title{font-family:'DM Serif Display',serif;font-style:italic;font-size:clamp(3.2rem,9vw,7.5rem);line-height:.95;color:var(--cream);letter-spacing:-.02em}
+.hero-title .br{display:block}
+.hero-title em{font-style:italic;background:linear-gradient(90deg,var(--c-root),var(--c-sacral),var(--c-solar),var(--c-heart),var(--c-throat),var(--c-third),var(--c-crown));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.hero-zh{font-family:'Noto Serif TC',serif;font-weight:300;font-size:clamp(1.05rem,2vw,1.4rem);color:var(--ink-soft);margin-top:1.7rem;letter-spacing:.18em;line-height:1.9}
+.hero-zh strong{color:var(--cream);font-weight:500;letter-spacing:.25em}
+.hero-meta{margin-top:3rem;display:flex;flex-wrap:wrap;justify-content:center;gap:1.5rem 2.5rem;font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint)}
+.hero-meta b{color:var(--cream);font-weight:400}
+.scroll-cue{position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:5;font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.4em;color:var(--ink-faint);writing-mode:vertical-rl;display:flex;align-items:center;gap:.7rem}
+.scroll-cue::after{content:"";width:1px;height:48px;background:linear-gradient(to bottom,var(--ink-faint),transparent);animation:scroll-fall 2.4s ease-in-out infinite}
+@keyframes scroll-fall{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ═══ SECTION BASE ═══ */
+section{position:relative;z-index:5}
+.section-num{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.4em;color:var(--ink-faint);margin-bottom:1.2rem;display:flex;align-items:center;gap:1rem}
+.section-num::before{content:"";width:36px;height:1px;background:var(--ink-faint)}
+.section-title{font-family:'DM Serif Display',serif;font-style:italic;font-size:clamp(2.4rem,6vw,5rem);line-height:1.05;color:var(--cream);letter-spacing:-.01em;margin-bottom:.8rem}
+.section-title em{background:linear-gradient(90deg,var(--gold),var(--rose));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.section-sub{font-family:'Noto Serif TC',serif;font-size:1.05rem;color:var(--ink-soft);max-width:55ch;line-height:1.85;letter-spacing:.05em}
+
+/* ═══ FREQUENCY ARC ═══ */
+.frequency{padding:8rem 1.5rem 6rem;max-width:1280px;margin:0 auto}
+.freq-grid{display:grid;grid-template-columns:1fr 1.3fr;gap:5rem;align-items:start;margin-top:3rem}
+.freq-meta .quote{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.4rem;line-height:1.5;color:var(--gold);margin-top:2rem;padding-left:1.2rem;border-left:2px solid var(--gold)}
+.freq-meta .quote-zh{font-family:'Noto Serif TC',serif;font-weight:500;font-size:1.05rem;color:var(--ink);margin-top:1rem;padding-left:1.2rem;line-height:1.85}
+.timeline{position:relative;padding-left:2.5rem}
+.timeline::before{content:"";position:absolute;left:8px;top:.5rem;bottom:.5rem;width:1px;background:linear-gradient(to bottom,var(--c-root),var(--c-throat),var(--c-crown))}
+.tl-row{position:relative;padding-bottom:2.8rem}
+.tl-row::before{content:"";position:absolute;left:-2.04rem;top:.45rem;width:17px;height:17px;border-radius:50%;background:var(--bg-deep);border:2px solid var(--cream);box-shadow:0 0 0 4px var(--bg-deep),0 0 18px var(--rose)}
+.tl-row .yr{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.3em;color:var(--gold);margin-bottom:.6rem}
+.tl-row h4{font-family:'Noto Serif TC',serif;font-weight:500;font-size:1.4rem;color:var(--cream);line-height:1.4;margin-bottom:.6rem}
+.tl-row p{font-family:'Noto Serif TC',serif;font-weight:300;font-size:.98rem;color:var(--ink-soft);line-height:1.85}
+.tl-row.glow::before{background:var(--c-heart);box-shadow:0 0 0 4px var(--bg-deep),0 0 26px var(--c-heart)}
+.waveform{height:120px;width:100%;margin:1rem 0 2rem;position:relative}
+.waveform svg{width:100%;height:100%;display:block}
+
+/* ═══ ULGS — Lucky Genius ═══ */
+.lucky-genius{padding:8rem 1.5rem;background:linear-gradient(180deg,transparent,rgba(255,213,107,.04),transparent);position:relative}
+.urlgs-wrap{max-width:1320px;margin:3rem auto 0;display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem}
+.urlgs-card{position:relative;border:1px solid rgba(246,240,230,.12);border-radius:8px;padding:2rem 1.4rem 1.6rem;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent);overflow:hidden;cursor:pointer;transition:all .5s cubic-bezier(.2,.8,.2,1)}
+.urlgs-card::before{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:var(--accent,var(--cream));transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.urlgs-card:hover{border-color:var(--accent,var(--cream));transform:translateY(-6px);background:linear-gradient(180deg,rgba(255,255,255,.05),transparent)}
+.urlgs-card:hover::before{transform:scaleX(1)}
+.urlgs-card .letter{font-family:'DM Serif Display',serif;font-style:italic;font-size:5.5rem;line-height:1;color:var(--accent,var(--cream));text-shadow:0 0 30px rgba(255,255,255,.1)}
+.urlgs-card .word{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-faint);margin:1.2rem 0 .6rem}
+.urlgs-card .title-zh{font-family:'Noto Serif TC',serif;font-size:1.05rem;font-weight:500;color:var(--cream);margin-bottom:.6rem;line-height:1.4}
+.urlgs-card .body-zh{font-family:'Noto Sans TC',sans-serif;font-weight:300;font-size:.85rem;color:var(--ink-soft);line-height:1.75}
+.urlgs-card[data-c="u"]{--accent:var(--c-throat)}
+.urlgs-card[data-c="r"]{--accent:var(--c-root)}
+.urlgs-card[data-c="l"]{--accent:var(--c-solar)}
+.urlgs-card[data-c="g"]{--accent:var(--c-heart)}
+.urlgs-card[data-c="s"]{--accent:var(--c-crown)}
+.acronym-cap{text-align:center;margin-top:3rem;font-family:'Caveat',cursive;font-size:1.5rem;color:var(--gold);letter-spacing:.05em}
+
+/* ═══ CHAKRA SCAN ═══ */
+.chakra-section{padding:8rem 1.5rem;max-width:1280px;margin:0 auto}
+.chakra-stage{display:grid;grid-template-columns:1fr 1.05fr;gap:4rem;margin-top:3rem;align-items:center}
+.chakra-list{display:flex;flex-direction:column;gap:.75rem}
+.chakra-row{position:relative;display:grid;grid-template-columns:36px 1fr auto;gap:1.2rem;align-items:center;padding:1.05rem 1.2rem;border:1px solid rgba(246,240,230,.1);border-radius:6px;cursor:pointer;background:rgba(255,255,255,.015);transition:all .4s cubic-bezier(.2,.8,.2,1)}
+.chakra-row .orb{width:24px;height:24px;border-radius:50%;background:var(--c);box-shadow:0 0 14px var(--c);justify-self:center}
+.chakra-row .label{font-family:'Noto Serif TC',serif;font-weight:500;font-size:1.02rem;color:var(--ink)}
+.chakra-row .label small{display:block;font-family:'JetBrains Mono',monospace;font-weight:300;font-size:.62rem;letter-spacing:.25em;color:var(--ink-faint);margin-top:.2rem;text-transform:uppercase}
+.chakra-row .meta{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase}
+.chakra-row:hover,.chakra-row.active{border-color:var(--c);background:linear-gradient(90deg,rgba(255,255,255,.04),transparent);transform:translateX(6px)}
+.chakra-row:hover .meta,.chakra-row.active .meta{color:var(--c)}
+.chakra-readout{position:relative;padding:2rem;border:1px solid rgba(246,240,230,.12);border-radius:10px;background:radial-gradient(120% 100% at 50% 0%,rgba(255,255,255,.04),transparent);min-height:380px;overflow:hidden}
+.chakra-readout::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,var(--c-active,transparent) 0%,transparent 60%);opacity:.18;transition:all .6s ease}
+.readout-tag{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.35em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:.8rem;position:relative}
+.readout-name{font-family:'DM Serif Display',serif;font-style:italic;font-size:2.6rem;color:var(--c-active,var(--cream));position:relative;line-height:1.05;margin-bottom:.4rem;text-shadow:0 0 30px currentColor}
+.readout-zh{font-family:'Noto Serif TC',serif;font-weight:500;font-size:1.5rem;color:var(--cream);position:relative;margin-bottom:1.5rem}
+.readout-issue{font-family:'Noto Serif TC',serif;font-weight:300;font-size:.95rem;color:var(--ink-soft);line-height:1.85;position:relative;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px dashed rgba(246,240,230,.15)}
+.readout-help{position:relative}
+.readout-help h5{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.35em;color:var(--gold);text-transform:uppercase;margin-bottom:.8rem}
+.readout-help p{font-family:'Noto Serif TC',serif;font-weight:400;font-size:1rem;color:var(--ink);line-height:1.8}
+
+/* ═══ RAINBOW CARDS ═══ */
+.cards-section{padding:8rem 1.5rem 6rem;max-width:1280px;margin:0 auto}
+.cards-row{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:3.5rem;perspective:1400px}
+.card{position:relative;aspect-ratio:3/5;cursor:pointer;transform-style:preserve-3d;transition:transform 1.1s cubic-bezier(.2,.8,.2,1)}
+.card.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.card-back{background:
+  radial-gradient(circle at 30% 30%,rgba(255,255,255,.18),transparent 60%),
+  conic-gradient(from 220deg,var(--c-root),var(--c-sacral),var(--c-solar),var(--c-heart),var(--c-throat),var(--c-third),var(--c-crown),var(--c-root));
+  border:1px solid rgba(255,255,255,.25);
+  display:grid;place-items:center}
+.card-back::after{content:"";position:absolute;inset:14px;border:1px dashed rgba(255,255,255,.5);border-radius:10px;pointer-events:none}
+.card-back .glyph{font-family:'DM Serif Display',serif;font-style:italic;font-size:3.5rem;color:#fff;text-shadow:0 0 20px rgba(255,255,255,.5)}
+.card-back .glyph small{display:block;font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.4em;font-style:normal;margin-top:.4rem;opacity:.85}
+.card-front{transform:rotateY(180deg);background:linear-gradient(160deg,#13092e,#0a0418);border:1px solid var(--accent);padding:2.5rem 1.8rem;display:flex;flex-direction:column;justify-content:space-between}
+.card-front .num{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.35em;color:var(--accent)}
+.card-front .quote{font-family:'Noto Serif TC',serif;font-weight:500;font-size:1.18rem;color:var(--cream);line-height:1.7;letter-spacing:.04em}
+.card-front .quote em{font-family:'Caveat',cursive;font-style:normal;font-size:1.5em;color:var(--accent);letter-spacing:.02em}
+.card-front .signature{font-family:'Caveat',cursive;font-size:1.1rem;color:var(--ink-faint);text-align:right}
+.card[data-c="rose"]{--accent:var(--rose)}
+.card[data-c="gold"]{--accent:var(--gold)}
+.card[data-c="halo"]{--accent:var(--halo)}
+.cards-hint{text-align:center;margin-top:2rem;font-family:'Caveat',cursive;font-size:1.25rem;color:var(--ink-faint)}
+.cards-hint i{margin-right:.4rem;color:var(--gold)}
+
+/* ═══ WIFI SERVICES ═══ */
+.wifi-section{padding:8rem 1.5rem;max-width:1280px;margin:0 auto;position:relative}
+.wifi-art{display:flex;justify-content:center;margin:2rem 0 4rem}
+.wifi-art svg{width:200px;height:auto}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.4rem;margin-top:2rem}
+.svc{position:relative;padding:1.8rem 1.6rem 1.5rem;border:1px solid rgba(246,240,230,.12);border-radius:6px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);transition:all .45s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.svc::before{content:"";position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);transform:translateX(-100%);transition:transform .8s ease}
+.svc:hover{border-color:var(--gold);transform:translateY(-4px)}
+.svc:hover::before{transform:translateX(100%)}
+.svc .ico{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,213,107,.1);color:var(--gold);font-size:1rem;margin-bottom:1rem}
+.svc h5{font-family:'Noto Serif TC',serif;font-weight:500;font-size:1.1rem;color:var(--cream);margin-bottom:.5rem;line-height:1.4}
+.svc p{font-family:'Noto Sans TC',sans-serif;font-weight:300;font-size:.85rem;color:var(--ink-soft);line-height:1.75;margin-bottom:1rem}
+.svc .price{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.svc .price a{display:inline-flex;align-items:center;gap:.4rem;color:var(--ink-soft);font-size:.65rem}
+.svc .price a:hover{color:var(--cream)}
+
+/* ═══ FREE WRITING ═══ */
+.writing-section{padding:6rem 1.5rem 8rem;max-width:1100px;margin:0 auto;text-align:center}
+#writing-canvas{position:relative;width:100%;height:340px;margin:3rem auto 2rem;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.04),transparent);border:1px solid rgba(246,240,230,.1);overflow:hidden}
+#writing-canvas canvas{display:block;width:100%;height:100%}
+.writing-caption{font-family:'Caveat',cursive;font-size:1.3rem;color:var(--ink-soft)}
+.writing-caption b{color:var(--gold);font-weight:600}
+
+/* ═══ INVITATION ═══ */
+.invitation{padding:8rem 1.5rem 6rem;max-width:1100px;margin:0 auto;text-align:center;position:relative}
+.invitation::before{content:"";position:absolute;left:50%;top:0;width:1px;height:80px;background:linear-gradient(to bottom,transparent,var(--gold))}
+.invitation .opener{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:var(--ink-faint);margin:5rem 0 2rem}
+.invitation .pitch{font-family:'DM Serif Display',serif;font-style:italic;font-size:clamp(2rem,4.5vw,3.6rem);color:var(--cream);line-height:1.25;letter-spacing:-.01em}
+.invitation .pitch em{background:linear-gradient(90deg,var(--gold),var(--rose),var(--halo));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.invitation .heart{font-family:'Noto Serif TC',serif;font-weight:300;font-size:1.1rem;line-height:2;color:var(--ink-soft);margin-top:2.5rem;letter-spacing:.05em}
+.invitation .heart strong{color:var(--cream);font-weight:500}
+.cta-row{margin-top:3.5rem;display:flex;flex-wrap:wrap;justify-content:center;gap:1rem}
+.cta{display:inline-flex;align-items:center;gap:.7rem;padding:1rem 1.8rem;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;transition:all .35s ease;border:1px solid}
+.cta-primary{background:linear-gradient(110deg,var(--gold),var(--rose));color:#1a0628;border-color:transparent;font-weight:500}
+.cta-primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,213,107,.25)}
+.cta-ghost{color:var(--ink);border-color:rgba(246,240,230,.25)}
+.cta-ghost:hover{color:var(--cream);border-color:var(--cream)}
+
+/* ═══ FOOTER ═══ */
+footer{padding:4rem 1.5rem 3rem;text-align:center;border-top:1px solid rgba(246,240,230,.08);margin-top:4rem}
+.socials{display:flex;justify-content:center;gap:1.4rem;margin-bottom:2rem;flex-wrap:wrap}
+.socials a{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(246,240,230,.18);color:var(--ink-soft);font-size:1.05rem;transition:all .35s ease}
+.socials a:hover{color:var(--cream);border-color:var(--gold);box-shadow:0 0 18px rgba(255,213,107,.25);transform:translateY(-2px)}
+.foot-id{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.35em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:.5rem}
+.foot-sig{font-family:'Caveat',cursive;font-size:1rem;color:var(--ink-faint)}
+
+/* ═══ CURSOR AURA & FLOATING WORDS ═══ */
+.cursor-aura{position:fixed;top:0;left:0;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,213,107,.16) 0%,rgba(255,125,167,.10) 35%,rgba(185,163,255,.06) 55%,transparent 70%);pointer-events:none;z-index:2;mix-blend-mode:screen;transform:translate(-50%,-50%);will-change:transform}
+.floating-words{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.fw-word{position:absolute;font-family:'Noto Serif TC',serif;font-weight:300;color:rgba(246,240,230,.06);letter-spacing:.4em;white-space:nowrap;will-change:transform}
+.fw-word.en{font-family:'DM Serif Display',serif;font-style:italic;color:rgba(255,213,107,.06);letter-spacing:.08em}
+
+/* ═══ LIFEPATH (GENIUS NUMBER) ═══ */
+.lifepath{padding:8rem 1.5rem;max-width:1320px;margin:0 auto}
+.lp-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:2rem;margin-top:3rem;align-items:stretch}
+.lp-input-wrap{padding:2.2rem;border:1px solid rgba(246,240,230,.12);border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);display:flex;flex-direction:column;justify-content:center}
+.lp-lab{display:block;font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:1.2rem}
+.lp-row{display:flex;align-items:center;gap:.6rem;margin-bottom:1.6rem}
+.lp-row input{background:rgba(255,255,255,.04);border:1px solid rgba(246,240,230,.18);border-radius:8px;color:var(--cream);font-family:'DM Serif Display',serif;font-size:1.6rem;padding:.7rem .8rem;width:100%;text-align:center;transition:all .3s}
+.lp-row input:focus{outline:none;border-color:var(--gold);background:rgba(255,213,107,.06);box-shadow:0 0 14px rgba(255,213,107,.15)}
+.lp-row input::-webkit-outer-spin-button,.lp-row input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.lp-row input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.lp-row span{color:var(--ink-faint);font-family:'DM Serif Display',serif;font-size:1.4rem}
+.lp-btn{background:linear-gradient(110deg,var(--gold),var(--rose));color:#1a0628;border:none;border-radius:999px;padding:1rem 1.7rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.25em;text-transform:uppercase;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:.6rem;transition:all .3s;align-self:flex-start}
+.lp-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,213,107,.3)}
+.lp-note{font-family:'Caveat',cursive;font-size:1.05rem;color:var(--ink-faint);margin-top:1.1rem}
+.lp-result{position:relative;padding:2.2rem;border:1px solid rgba(246,240,230,.12);border-radius:12px;background:radial-gradient(120% 80% at 50% 0%,rgba(255,255,255,.04),transparent);overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:360px}
+.lp-empty{text-align:center;color:var(--ink-faint)}
+.lp-empty i{font-size:2.4rem;color:var(--gold);opacity:.5;margin-bottom:1rem;display:block}
+.lp-empty p{font-family:'Noto Serif TC',serif;font-weight:300;line-height:1.85}
+.lp-content{width:100%}
+.lp-num{font-family:'DM Serif Display',serif;font-style:italic;font-size:6.5rem;line-height:1;background:linear-gradient(135deg,var(--c1,#ffd56b),var(--c2,#ff7da7));-webkit-background-clip:text;background-clip:text;color:transparent;text-align:center;margin-bottom:.4rem;letter-spacing:-.04em}
+.lp-archetype{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;text-align:center;margin-bottom:.6rem}
+.lp-title{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.7rem;color:var(--cream);text-align:center;margin-bottom:1.3rem}
+.lp-desc{font-family:'Noto Serif TC',serif;font-weight:300;font-size:.95rem;color:var(--ink-soft);line-height:1.95;text-align:left;padding-top:1.2rem;border-top:1px dashed rgba(246,240,230,.18)}
+.lp-desc b{color:var(--cream);font-weight:500}
+
+/* ═══ DAILY CARD DRAW ═══ */
+.daily-draw{margin-top:5rem;display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;align-items:center;padding:2.5rem;border:1px solid rgba(246,240,230,.12);border-radius:14px;background:linear-gradient(135deg,rgba(255,213,107,.04),rgba(255,125,167,.04),rgba(185,163,255,.04))}
+.dd-tag{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.35em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:1rem}
+.dd-title{font-family:'DM Serif Display',serif;font-style:italic;font-size:2.4rem;color:var(--cream);line-height:1.15;margin-bottom:1rem}
+.dd-title em{background:linear-gradient(90deg,var(--gold),var(--rose));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.dd-desc{font-family:'Noto Serif TC',serif;font-weight:300;color:var(--ink-soft);line-height:1.85;margin-bottom:1.6rem}
+.dd-btn{background:linear-gradient(110deg,var(--gold),var(--rose));color:#1a0628;border:none;border-radius:999px;padding:1rem 1.7rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.25em;text-transform:uppercase;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:.6rem;transition:all .3s}
+.dd-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,213,107,.3)}
+.dd-display{display:flex;justify-content:center}
+.dd-card{position:relative;width:100%;max-width:300px;aspect-ratio:3/4;perspective:1200px;cursor:pointer}
+.dd-card-back,.dd-card-front{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;transition:transform 1s cubic-bezier(.2,.8,.2,1);padding:1.8rem;text-align:center}
+.dd-card-back{background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.18),transparent 60%),conic-gradient(from 220deg,var(--c-root),var(--c-sacral),var(--c-solar),var(--c-heart),var(--c-throat),var(--c-third),var(--c-crown),var(--c-root));border:1px solid rgba(255,255,255,.25)}
+.dd-card-back::after{content:"";position:absolute;inset:14px;border:1px dashed rgba(255,255,255,.55);border-radius:10px;pointer-events:none}
+.dd-back-mark{font-family:'DM Serif Display',serif;font-style:italic;font-size:5rem;color:#fff;text-shadow:0 0 22px rgba(255,255,255,.55)}
+.dd-card-front{background:linear-gradient(160deg,#13092e,#0a0418);border:1px solid var(--c-active,#ffd56b);transform:rotateY(180deg);flex-direction:column;gap:1.1rem}
+.dd-card.flipped .dd-card-back{transform:rotateY(180deg)}
+.dd-card.flipped .dd-card-front{transform:rotateY(360deg)}
+.dd-chakra-name{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.3em;text-transform:uppercase;color:var(--c-active,var(--ink-faint))}
+.dd-message{font-family:'Noto Serif TC',serif;font-weight:500;font-size:1.08rem;color:var(--cream);line-height:1.7;letter-spacing:.04em}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width:880px){
+  .cursor-aura{display:none}
+  .lp-grid{grid-template-columns:1fr;gap:1.5rem}
+  .lp-row input{font-size:1.3rem}
+  .daily-draw{grid-template-columns:1fr;padding:1.8rem;gap:1.8rem}
+  .dd-display{order:-1}
+  .dd-card{max-width:240px}
+  .dd-title{font-size:1.85rem}
+  #chakra-canvas{opacity:.45;transform:scale(.7);transform-origin:center center}
+  .freq-grid{grid-template-columns:1fr;gap:2.5rem}
+  .urlgs-wrap{grid-template-columns:repeat(2,1fr)}
+  .urlgs-card .letter{font-size:4rem}
+  .chakra-stage{grid-template-columns:1fr;gap:2rem}
+  .chakra-readout{min-height:340px}
+  .cards-row{grid-template-columns:1fr;max-width:340px;margin-left:auto;margin-right:auto}
+  .archive-link{top:1rem;left:1rem;padding:.5rem .85rem;font-size:.65rem}
+  .signal-meter{top:1rem;right:1rem}
+  .hero-meta{gap:1rem 1.5rem;font-size:.6rem}
+  .hero{padding:5rem 1rem 2rem}
+  .scroll-cue{display:none}
+}
+@media (max-width:480px){
+  .urlgs-wrap{grid-template-columns:1fr}
+  .signal-meter span:first-of-type{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-aura" id="cursorAura" aria-hidden="true"></div>
+<div class="floating-words" id="floatingWords" aria-hidden="true"></div>
+
+<a class="archive-link" href="/guild/"><i class="fa-solid fa-arrow-left"></i> Archive</a>
+<div class="signal-meter"><span class="dot"></span><span>FREQ · 528 Hz</span></div>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero">
+  <canvas id="cosmos-canvas"></canvas>
+  <canvas id="chakra-canvas"></canvas>
+  <div class="hero-inner">
+    <div class="hero-tag"><span></span>Acre of Oasis ／ 144 of ∞<span></span></div>
+    <h1 class="hero-title" id="hero-title">
+      <span class="br">welcome to my</span>
+      <span class="br"><em>brain·oasis</em></span>
+    </h1>
+    <p class="hero-zh">
+      嗨，我是 <strong>大腦小姐</strong> ʕ •ᴥ•ʔ<br>
+      理性腦 × 靈性腦・同時在線
+    </p>
+    <div class="hero-meta">
+      <span><b>Role</b> · 內在療癒師</span>
+      <span><b>Method</b> · 彩虹卡 × 七脈輪</span>
+      <span><b>Toolset</b> · 自由書寫・正向心理學・職涯定位</span>
+    </div>
+  </div>
+  <div class="scroll-cue">SCROLL ／ 校 準 中</div>
+</section>
+
+<!-- ═══════ FREQUENCY ═══════ -->
+<section class="frequency">
+  <div class="section-num">01 ／ Frequency Recovery</div>
+  <h2 class="section-title">我曾是頻率最亂的<br>那個 <em>戀愛腦</em></h2>
+  <p class="section-sub">
+    在能量不穩定的那幾年，我以為「找到對的人」就會被救起來。<br>
+    後來才發現—— 是先成為自己，宇宙才開始把對的人遞過來。
+  </p>
+
+  <div class="freq-grid">
+    <div class="freq-meta">
+      <div class="waveform">
+        <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="wg" x1="0%" x2="100%">
+              <stop offset="0%" stop-color="#ff3a55"/>
+              <stop offset="50%" stop-color="#ffd23f"/>
+              <stop offset="100%" stop-color="#5dd39e"/>
+            </linearGradient>
+          </defs>
+          <path id="wave-path" stroke="url(#wg)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="quote">"Luck is not a gift from the sky.<br>It is what shows up when you finally align."</p>
+      <p class="quote-zh">幸運不是天降紅利，<br>而是當你對齊自己，<br>宇宙就懶得再為難你。</p>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-row">
+        <div class="yr">2022 ／ NOISE</div>
+        <h4>感情像一場災難・每段不到三個月</h4>
+        <p>工作壓力大、狀態混亂，我以為戀愛能救我。<br>最後一段被冷暴力收場，我連對自己生氣都來不及。</p>
+      </div>
+      <div class="tl-row">
+        <div class="yr">2022 → 2023 ／ TUNING</div>
+        <h4>把焦慮抓出來談判，把愛的匱乏送回原廠設定</h4>
+        <p>自由書寫、冥想、彩虹卡、深度自我對話。<br>我不是在治癒過去的傷，是在重建一個能承接幸福的自己。</p>
+      </div>
+      <div class="tl-row glow">
+        <div class="yr">2023 → NOW ／ ALIGNED</div>
+        <h4>那個會偷偷記下我喜歡吃的東西的人 出現了</h4>
+        <p>他陪我爬完讓我爆哭的合歡山北峰、陪我跑半馬、<br>在我生病時細心照顧。我才頓悟──不是運氣，是頻率對上了。</p>
+      </div>
+      <div class="tl-row glow">
+        <div class="yr">NOW ／ TRANSMIT</div>
+        <h4>我把自己的方法整理成可以給你的地圖</h4>
+        <p>因為我知道那種「一邊努力一邊懷疑人生」的卡點長什麼樣子。<br>我想陪你走過去，而不是再讓你自己摸黑。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ U R THE LUCKY GENIUS ═══════ -->
+<section class="lucky-genius">
+  <div style="max-width:1320px;margin:0 auto">
+    <div class="section-num">02 ／ The Acronym</div>
+    <h2 class="section-title"><em>U R the</em><br>Lucky GeniuS</h2>
+    <p class="section-sub">
+      這套框架是我為自己拼出來，後來也用來陪別人拼回去的五個面向。<br>每一個字母都是一道門：選一個你最想推開的，我就從那裡接住你。
+    </p>
+
+    <div class="urlgs-wrap">
+      <div class="urlgs-card" data-c="u">
+        <div class="letter">U</div>
+        <div class="word">unique</div>
+        <div class="title-zh">生命靈數定位</div>
+        <div class="body-zh">透過數字工具找到你獨一無二的天才設計，那個「你以為很普通其實是天賦」的點。</div>
+      </div>
+      <div class="urlgs-card" data-c="r">
+        <div class="letter">R</div>
+        <div class="word">rainbow</div>
+        <div class="title-zh">彩虹卡 × 七脈輪</div>
+        <div class="body-zh">用獨家彩虹卡解牌結合脈輪能量定位，把生活的疑難雜症翻譯成可以調整的頻率。</div>
+      </div>
+      <div class="urlgs-card" data-c="l">
+        <div class="letter">L</div>
+        <div class="word">lucky</div>
+        <div class="title-zh">幸運心理學</div>
+        <div class="body-zh">用正向心理學的科學方法打造幸運體質，不是玄學，是被研究證明的習慣與信念設計。</div>
+      </div>
+      <div class="urlgs-card" data-c="g">
+        <div class="letter">G</div>
+        <div class="word">genius</div>
+        <div class="title-zh">職涯定位拆解</div>
+        <div class="body-zh">系統化、科學化的諮詢流程，不要叫魚去爬樹。把混亂人生整理成可執行地圖。</div>
+      </div>
+      <div class="urlgs-card" data-c="s">
+        <div class="letter">S</div>
+        <div class="word">soulmate</div>
+        <div class="title-zh">靈魂伴侶計畫</div>
+        <div class="body-zh">不是教你怎麼把人黏在身邊，是讓你成為對的頻率，讓對的人自然走近。</div>
+      </div>
+    </div>
+    <div class="acronym-cap">U · R · the · Lucky · GeniuS — 你 就 是 那 個 幸 運 天 才</div>
+  </div>
+</section>
+
+<!-- ═══════ LIFEPATH ═══════ -->
+<section class="lifepath">
+  <div style="max-width:1320px;margin:0 auto">
+    <div class="section-num">03 ／ Your Genius Number</div>
+    <h2 class="section-title">把 <em>U</em> 那個字母<br>變成可以摸到的東西</h2>
+    <p class="section-sub">
+      生命靈數是 U（Unique）的入口 —— 用你出生那天的數字算出你的天才設計。<br>輸入生日，我先幫你看見「你以為很普通其實是天賦」的那個點。
+    </p>
+
+    <div class="lp-grid">
+      <div class="lp-input-wrap">
+        <label class="lp-lab">輸入你的生日 ／ ENTER YOUR BIRTHDAY</label>
+        <div class="lp-row">
+          <input type="number" id="lp-y" min="1900" max="2030" placeholder="1990">
+          <span>／</span>
+          <input type="number" id="lp-m" min="1" max="12" placeholder="05">
+          <span>／</span>
+          <input type="number" id="lp-d" min="1" max="31" placeholder="15">
+        </div>
+        <button class="lp-btn" id="lp-go"><i class="fa-solid fa-wand-magic-sparkles"></i> 為我計算</button>
+        <div class="lp-note">不會記錄你的資料，純粹在你的瀏覽器裡計算。</div>
+      </div>
+
+      <div class="lp-result" id="lp-result">
+        <div class="lp-empty">
+          <i class="fa-solid fa-star-of-life"></i>
+          <p>輸入完按下按鈕，<br>我把你的數字翻譯給你看。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ CHAKRA SCAN ═══════ -->
+<section class="chakra-section">
+  <div class="section-num">04 ／ Seven-Chakra Scan</div>
+  <h2 class="section-title">點亮一個脈輪，<br>讓我為你<em>讀一段</em></h2>
+  <p class="section-sub">
+    人生卡的點通常不是「想不開」，是某一條能量管道被堵住了。<br>下面是我每天和個案一起做的七脈輪檢測 —— 點任何一個，看我可以從那裡幫你做什麼。
+  </p>
+
+  <div class="chakra-stage">
+    <div class="chakra-list" id="chakra-list">
+      <div class="chakra-row" data-i="0" style="--c:var(--c-crown)">
+        <div class="orb"></div>
+        <div class="label">頂輪 Sahasrara<small>spiritual connection</small></div>
+        <div class="meta">07</div>
+      </div>
+      <div class="chakra-row" data-i="1" style="--c:var(--c-third)">
+        <div class="orb"></div>
+        <div class="label">眉心輪 Ajna<small>intuition · vision</small></div>
+        <div class="meta">06</div>
+      </div>
+      <div class="chakra-row" data-i="2" style="--c:var(--c-throat)">
+        <div class="orb"></div>
+        <div class="label">喉輪 Vishuddha<small>voice · expression</small></div>
+        <div class="meta">05</div>
+      </div>
+      <div class="chakra-row active" data-i="3" style="--c:var(--c-heart)">
+        <div class="orb"></div>
+        <div class="label">心輪 Anahata<small>love · forgiveness</small></div>
+        <div class="meta">04</div>
+      </div>
+      <div class="chakra-row" data-i="4" style="--c:var(--c-solar)">
+        <div class="orb"></div>
+        <div class="label">太陽神經叢 Manipura<small>power · will</small></div>
+        <div class="meta">03</div>
+      </div>
+      <div class="chakra-row" data-i="5" style="--c:var(--c-sacral)">
+        <div class="orb"></div>
+        <div class="label">臍輪 Svadhisthana<small>creativity · pleasure</small></div>
+        <div class="meta">02</div>
+      </div>
+      <div class="chakra-row" data-i="6" style="--c:var(--c-root)">
+        <div class="orb"></div>
+        <div class="label">海底輪 Muladhara<small>safety · roots</small></div>
+        <div class="meta">01</div>
+      </div>
+    </div>
+
+    <div class="chakra-readout" id="chakra-readout">
+      <div class="readout-tag">DIAGNOSTIC ／ READING #04</div>
+      <div class="readout-name">Anahata</div>
+      <div class="readout-zh">心輪 — 愛與被愛</div>
+      <div class="readout-issue">如果你發現自己一直在感情裡內耗、付出感失衡，或者明明很愛卻無法靠近，這條能量管道大概暫時關起來了。我會用彩虹卡幫你看：是過去的傷、原生家庭的劇本，還是「我配不上幸福」的低頻信念在作怪。</div>
+      <div class="readout-help">
+        <h5>I CAN HELP YOU WITH</h5>
+        <p>戀愛卡點分析、自我價值重建、把「愛的匱乏感」送回原廠設定，重新練習接收與表達愛的能力。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ CARDS ═══════ -->
+<section class="cards-section">
+  <div class="section-num">05 ／ Three Cards Drawn for You</div>
+  <h2 class="section-title">為你抽<em>三張卡</em></h2>
+  <p class="section-sub">
+    這是我每天工作的一小部分。今天先讓我為走進來的你翻三張，看看宇宙想對你說什麼 —— 點任何一張卡牌翻面。
+  </p>
+
+  <div class="cards-row" id="cards-row">
+    <div class="card" data-c="rose">
+      <div class="card-face card-back"><div class="glyph">I<small>past</small></div></div>
+      <div class="card-face card-front">
+        <div class="num">01 ／ PAST</div>
+        <div class="quote">不是<em>你不夠好</em>，<br>是你還沒調整好自己的<em>低頻</em>能量。<br>所以才一直吸引到不對的人。</div>
+        <div class="signature">— 寫給那時候的我</div>
+      </div>
+    </div>
+    <div class="card" data-c="gold">
+      <div class="card-face card-back"><div class="glyph">II<small>present</small></div></div>
+      <div class="card-face card-front">
+        <div class="num">02 ／ PRESENT</div>
+        <div class="quote">現在請你做的事<em>很簡單</em>：<br>把焦慮抓出來談判，<br>把愛的匱乏<em>送回原廠設定</em>。</div>
+        <div class="signature">— 自由書寫的第一行</div>
+      </div>
+    </div>
+    <div class="card" data-c="halo">
+      <div class="card-face card-back"><div class="glyph">III<small>future</small></div></div>
+      <div class="card-face card-front">
+        <div class="num">03 ／ FUTURE</div>
+        <div class="quote">當你<em>對齊</em>自己，<br>宇宙就懶得再為難你。<br>你只是終於成為<em>能承接幸福</em>的人。</div>
+        <div class="signature">— 大腦小姐</div>
+      </div>
+    </div>
+  </div>
+  <div class="cards-hint"><i class="fa-solid fa-hand-pointer"></i> 點一下卡牌，讓它翻面</div>
+
+  <div class="daily-draw" id="dailyDraw">
+    <div class="dd-side">
+      <div class="dd-tag">DAILY DRAW ／ 為今天</div>
+      <h3 class="dd-title">想要再為今天<br><em>抽一張</em>嗎？</h3>
+      <p class="dd-desc">這是我每天和個案做的事。每按一次，宇宙就遞給你一張今天最需要看見的訊息。<br>抽到不喜歡的也別怕——再按一次。</p>
+      <button class="dd-btn" id="dd-btn"><i class="fa-solid fa-shuffle"></i> 為今天抽一張</button>
+    </div>
+    <div class="dd-display">
+      <div class="dd-card" id="dd-card">
+        <div class="dd-card-back"><div class="dd-back-mark">?</div></div>
+        <div class="dd-card-front">
+          <div class="dd-chakra-name" id="dd-chakra-name">— 等你按下按鈕 —</div>
+          <div class="dd-message" id="dd-message">點左邊那顆按鈕，就會有一張卡翻出來。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ WIFI / SERVICES ═══════ -->
+<section class="wifi-section">
+  <div class="section-num">06 ／ Connect Your Inner Wi-Fi</div>
+  <h2 class="section-title">我能<em>具體</em>陪你做的事</h2>
+  <p class="section-sub">
+    我們可以聯合宇宙的能量，和你內心的 Wi-Fi 連線，一起改寫你的理想人生。<br>從一場諮詢對話開始就好 —— 下面是我目前提供的入口。
+  </p>
+
+  <div class="wifi-art">
+    <svg viewBox="0 0 200 130">
+      <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.6" style="color:var(--gold)">
+        <circle class="wifi-arc" cx="100" cy="110" r="14" stroke-width="0" fill="currentColor"/>
+        <path class="wifi-arc" d="M70 80 Q100 50 130 80"/>
+        <path class="wifi-arc" d="M55 65 Q100 20 145 65"/>
+        <path class="wifi-arc" d="M40 50 Q100 -10 160 50"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="services-grid">
+    <div class="svc">
+      <div class="ico"><i class="fa-solid fa-compass"></i></div>
+      <h5>職涯諮詢相談</h5>
+      <p>透過各種探索工具與深度對話，幫你衝破職涯迷惘，找到獨一無二的職涯定位。單次 50 分鐘。</p>
+      <div class="price"><span>NT$ 1,111 / 50min</span><a href="https://docs.google.com/forms/d/e/1FAIpQLScS2miog9E7LguJOXcfWM6s59y383WtVp8DYKea68QGtAwlDQ/viewform" target="_blank" rel="noopener noreferrer">預約 <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+    </div>
+    <div class="svc">
+      <div class="ico"><i class="fa-solid fa-heart-pulse"></i></div>
+      <h5>戀愛 & 關係牌卡諮詢</h5>
+      <p>含牌卡占卜、卡關問題分析、如何脫單。把感情裡的「為什麼」拆給你看，並給你下一步可以做的事。</p>
+      <div class="price"><span>NT$ 1,111 ／ 線上</span><a href="https://docs.google.com/forms/d/e/1FAIpQLScS2miog9E7LguJOXcfWM6s59y383WtVp8DYKea68QGtAwlDQ/viewform" target="_blank" rel="noopener noreferrer">預約 <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+    </div>
+    <div class="svc">
+      <div class="ico"><i class="fa-solid fa-coins"></i></div>
+      <h5>金錢能量 ・ 牌卡諮詢</h5>
+      <p>努力賺錢卻存不到？我們一起破除負面的金錢信念，讓賺錢這件事變得輕盈與豐盛。</p>
+      <div class="price"><span>NT$ 1,111 ／ 線上</span><a href="https://docs.google.com/forms/d/e/1FAIpQLScS2miog9E7LguJOXcfWM6s59y383WtVp8DYKea68QGtAwlDQ/viewform" target="_blank" rel="noopener noreferrer">預約 <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+    </div>
+    <div class="svc">
+      <div class="ico"><i class="fa-solid fa-rainbow"></i></div>
+      <h5>七脈輪深度檢測</h5>
+      <p>七大脈輪逐一掃描，附詳盡文字報告。讓你搞懂現在生活到底卡在哪條能量管道。</p>
+      <div class="price"><span>NT$ 1,111 ／ 文字報告</span><a href="https://docs.google.com/forms/d/e/1FAIpQLScS2miog9E7LguJOXcfWM6s59y383WtVp8DYKea68QGtAwlDQ/viewform" target="_blank" rel="noopener noreferrer">預約 <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+    </div>
+    <div class="svc">
+      <div class="ico"><i class="fa-solid fa-feather"></i></div>
+      <h5>單題文字占卜</h5>
+      <p>有特定問題想問，但暫時不需要完整諮詢？我用文字回覆給你一張卡的訊息。</p>
+      <div class="price"><span>NT$ 333 ／ 文字</span><a href="https://docs.google.com/forms/d/e/1FAIpQLScS2miog9E7LguJOXcfWM6s59y383WtVp8DYKea68QGtAwlDQ/viewform" target="_blank" rel="noopener noreferrer">預約 <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+    </div>
+    <div class="svc">
+      <div class="ico"><i class="fa-solid fa-graduation-cap"></i></div>
+      <h5>「我是幸運天才」師徒陪跑</h5>
+      <p>6 週師徒制陪跑，把我會的全部招式系統化教給你。從學 → 做 → 療癒自己 → 陪伴他人。</p>
+      <div class="price"><span>40 分鐘免費諮詢</span><a href="https://docs.google.com/forms/d/e/1FAIpQLSc3yqZfzy60FenvNlwze0YgKfpJ1z2bylkL5x7Bb7vSOIx3wg/viewform" target="_blank" rel="noopener noreferrer">預約 <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FREE WRITING ═══════ -->
+<section class="writing-section">
+  <div class="section-num" style="justify-content:center">07 ／ Free-Writing Lab</div>
+  <h2 class="section-title">我每天都在做的事 ── <em>自由書寫</em></h2>
+  <p class="section-sub" style="margin-left:auto;margin-right:auto">
+    把游標放上去，就是一筆。把腦中冒出來的東西先丟出來，<br>不審查、不修辭，等紙比你更誠實的時候，答案就出現了。
+  </p>
+  <div id="writing-canvas"></div>
+  <div class="writing-caption">在這裡 <b>放下游標</b> 就會留下筆跡 ── 像我每天清晨第一頁那樣</div>
+</section>
+
+<!-- ═══════ INVITATION ═══════ -->
+<section class="invitation">
+  <div class="opener">A LETTER FROM ME</div>
+  <p class="pitch">如果你一邊努力，<br>一邊<em>懷疑人生版本卡住</em>──<br>我們可以一起改寫。</p>
+  <p class="heart">
+    我不會說「療癒了你就會變好」這種話。<br>
+    療癒不是一場 <strong>頓悟</strong>，是一段你願意陪自己走的旅程。<br>
+    我能做的，是當那個有彩虹卡、有問題清單、有過來人口袋筆記的<br>
+    陪你坐下來把混亂攤開來看的人。<br><br>
+    從一場諮詢對話開始就好。
+  </p>
+  <div class="cta-row">
+    <a class="cta cta-primary" href="https://www.threads.com/@acre_of_oasis" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i> 在 Threads 找到我</a>
+    <a class="cta cta-ghost" href="https://docs.google.com/forms/d/e/1FAIpQLScZBTw2ok2rkDjX0WxntgFvct8I23Dvh1C5jqQ7ZNDmhO6NuQ/viewform" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-gift"></i> 領免費電子書</a>
+  </div>
+</section>
+
+<footer>
+  <div class="socials">
+    <a href="https://www.threads.com/@acre_of_oasis" target="_blank" rel="noopener noreferrer" title="Threads"><i class="fa-brands fa-threads"></i></a>
+    <a href="https://www.instagram.com/acre_of_oasis/" target="_blank" rel="noopener noreferrer" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLScZBTw2ok2rkDjX0WxntgFvct8I23Dvh1C5jqQ7ZNDmhO6NuQ/viewform" target="_blank" rel="noopener noreferrer" title="免費電子書 ／ 顯化理想伴侶的實現秘笈"><i class="fa-solid fa-book-open"></i></a>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSc3yqZfzy60FenvNlwze0YgKfpJ1z2bylkL5x7Bb7vSOIx3wg/viewform" target="_blank" rel="noopener noreferrer" title="師徒陪跑班"><i class="fa-solid fa-graduation-cap"></i></a>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLScS2miog9E7LguJOXcfWM6s59y383WtVp8DYKea68QGtAwlDQ/viewform" target="_blank" rel="noopener noreferrer" title="療癒時間 ／ 諮詢預約"><i class="fa-solid fa-heart"></i></a>
+  </div>
+  <div class="foot-id">@ACRE_OF_OASIS ／ 144 of ∞</div>
+  <div class="foot-sig">Made with ♥ by SuperGalen's Dungeon</div>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* ── COSMOS background (p5) ── */
+new p5((p)=>{
+  let stars=[],nebula=[];
+  let cnv;
+  p.setup=()=>{
+    const wrap=document.getElementById('cosmos-canvas');
+    cnv=p.createCanvas(wrap.offsetWidth,wrap.offsetHeight,p.P2D);
+    cnv.parent('cosmos-canvas'); cnv.canvas.style.display='block';
+    p.colorMode(p.HSB,360,100,100,1);
+    for(let i=0;i<240;i++) stars.push({x:p.random(p.width),y:p.random(p.height),r:p.random(.4,1.6),tw:p.random(0,p.TWO_PI),tws:p.random(.005,.02)});
+    for(let i=0;i<8;i++) nebula.push({x:p.random(p.width),y:p.random(p.height),r:p.random(120,260),h:p.random([260,290,320,200,180]),a:p.random(.04,.1)});
+  };
+  p.draw=()=>{
+    p.background(248,86,8,1);
+    p.noStroke();
+    nebula.forEach(n=>{
+      for(let r=n.r;r>0;r-=12){
+        p.fill(n.h,70,90,n.a*(r/n.r)*.18);
+        p.circle(n.x,n.y,r*2);
+      }
+    });
+    stars.forEach(s=>{
+      const a=.5+.5*Math.sin(s.tw);
+      s.tw+=s.tws;
+      p.fill(50,10,100,a);
+      p.circle(s.x,s.y,s.r*2);
+    });
+  };
+  p.windowResized=()=>{
+    const wrap=document.getElementById('cosmos-canvas');
+    if(wrap) p.resizeCanvas(wrap.offsetWidth,wrap.offsetHeight);
+  };
+});
+
+/* ── CHAKRA halo (three.js) ── */
+(function(){
+  const cv=document.getElementById('chakra-canvas');
+  const w=cv.clientWidth,h=cv.clientHeight;
+  const renderer=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
+  renderer.setSize(w,h);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(45,w/h,.1,100);
+  camera.position.z=14;
+  const colors=[0xff3a55,0xff8a3d,0xffd23f,0x5dd39e,0x3aa8ff,0x5b4bff,0xc573ff];
+  const rings=[];
+  colors.forEach((c,i)=>{
+    const geo=new THREE.TorusGeometry(1.0+i*.28,.008,8,160);
+    const mat=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.32});
+    const m=new THREE.Mesh(geo,mat);
+    m.rotation.x=Math.PI/2 + (i-3)*.05;
+    m.rotation.y=(i-3)*.04;
+    scene.add(m);rings.push(m);
+  });
+  // soft inner glow points
+  const pts=new THREE.BufferGeometry();
+  const pa=new Float32Array(600*3);
+  for(let i=0;i<600;i++){const a=Math.random()*Math.PI*2;const r=.3+Math.random()*2.2;pa[i*3]=Math.cos(a)*r;pa[i*3+1]=Math.sin(a)*r;pa[i*3+2]=(Math.random()-.5)*.3;}
+  pts.setAttribute('position',new THREE.BufferAttribute(pa,3));
+  const pmat=new THREE.PointsMaterial({color:0xfff5dc,size:.014,transparent:true,opacity:.4});
+  const points=new THREE.Points(pts,pmat);scene.add(points);
+  let t=0;
+  function loop(){
+    t+=.005;
+    rings.forEach((r,i)=>{r.rotation.z=t*(.3+i*.06);r.rotation.y=Math.sin(t*.7+i)*.3;});
+    points.rotation.z=t*.2;
+    renderer.render(scene,camera);
+    requestAnimationFrame(loop);
+  }
+  loop();
+  window.addEventListener('resize',()=>{
+    const W=cv.clientWidth,H=cv.clientHeight;
+    renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();
+  });
+})();
+
+/* ── HERO entrance ── */
+gsap.from('.hero-tag',{opacity:0,y:14,duration:1.2,delay:.2,ease:'power2.out'});
+gsap.from('#hero-title .br',{opacity:0,y:60,duration:1.4,stagger:.15,delay:.35,ease:'power3.out'});
+gsap.from('.hero-zh',{opacity:0,y:20,duration:1,delay:.95,ease:'power2.out'});
+gsap.from('.hero-meta span',{opacity:0,y:14,stagger:.1,duration:.8,delay:1.25,ease:'power2.out'});
+gsap.from('.scroll-cue',{opacity:0,duration:1.4,delay:1.6});
+
+/* ── WAVEFORM path (driven by scroll calmness) ── */
+(function(){
+  const path=document.getElementById('wave-path');
+  function build(noise){
+    let d='M 0 60 ';
+    for(let x=2;x<=400;x+=2){
+      const y=60 + Math.sin(x*.07)*8 + (Math.random()-.5)*noise*40;
+      d+=`L ${x} ${y.toFixed(2)} `;
+    }
+    path.setAttribute('d',d);
+  }
+  let n=1;build(n);
+  ScrollTrigger.create({
+    trigger:'.frequency',
+    start:'top 70%',
+    end:'bottom 30%',
+    onUpdate:s=>{n=Math.max(.05,1-s.progress*.95);}
+  });
+  setInterval(()=>build(n),120);
+})();
+
+/* ── Reveal common ── */
+gsap.utils.toArray('.section-num,.section-title,.section-sub').forEach(el=>{
+  gsap.from(el,{opacity:0,y:30,duration:1,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+});
+gsap.utils.toArray('.tl-row').forEach((el,i)=>{
+  gsap.from(el,{opacity:0,x:-30,duration:.9,delay:i*.05,ease:'power2.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+});
+gsap.utils.toArray('.urlgs-card').forEach((el,i)=>{
+  gsap.from(el,{opacity:0,y:50,duration:.9,delay:i*.08,ease:'power3.out',scrollTrigger:{trigger:'.urlgs-wrap',start:'top 80%'}});
+});
+gsap.utils.toArray('.svc').forEach((el,i)=>{
+  gsap.from(el,{opacity:0,y:30,duration:.7,delay:i*.06,ease:'power2.out',scrollTrigger:{trigger:'.services-grid',start:'top 85%'}});
+});
+gsap.utils.toArray('.card').forEach((el,i)=>{
+  gsap.from(el,{opacity:0,y:60,duration:1.1,delay:i*.15,ease:'power3.out',clearProps:'transform,opacity',scrollTrigger:{trigger:'.cards-row',start:'top 80%'}});
+});
+gsap.from('.wifi-art svg',{opacity:0,scale:.6,duration:1.2,ease:'back.out(1.6)',scrollTrigger:{trigger:'.wifi-art',start:'top 80%'}});
+gsap.utils.toArray('.wifi-arc').forEach((el,i)=>{
+  gsap.from(el,{opacity:0,duration:.6,delay:i*.18,ease:'power1.out',scrollTrigger:{trigger:'.wifi-art',start:'top 80%'}});
+});
+
+/* ── CHAKRA select ── */
+const chakraData=[
+  {name:'Sahasrara',zh:'頂輪 — 與更大整體的連結',c:'--c-crown',issue:'如果你最近總覺得「人生失去意義」、做什麼都是空的，這條和高我與宇宙連線的管道大概斷訊了。我們需要重新校準你的內在指北針。',help:'生命方向感重建、靈性修練系統化導入、把焦慮翻譯成「需要被看見的訊號」。',tag:'07'},
+  {name:'Ajna',zh:'眉心輪 — 直覺與洞見',c:'--c-third',issue:'你明明知道答案，卻一直繞著問別人。這是直覺被理性蓋住的典型訊號。我會幫你把「我不知道」翻譯成你早已知道的東西。',help:'自我對話練習、直覺啟動引導、用彩虹卡幫你把潛意識撈到桌面上。',tag:'06'},
+  {name:'Vishuddha',zh:'喉輪 — 表達自己的勇氣',c:'--c-throat',issue:'總是吞回去、總是說「沒關係」，但身體早就累了。這條管道堵住，你會在所有需要表達自己的場合都覺得被掐住喉嚨。',help:'真實表達練習、自我邊界建立、把「不敢說」變成「可以說」的具體腳本。',tag:'05'},
+  {name:'Anahata',zh:'心輪 — 愛與被愛',c:'--c-heart',issue:'如果你發現自己一直在感情裡內耗、付出感失衡，或者明明很愛卻無法靠近，這條能量管道大概暫時關起來了。我會用彩虹卡幫你看：是過去的傷、原生家庭的劇本，還是「我配不上幸福」的低頻信念在作怪。',help:'戀愛卡點分析、自我價值重建、把「愛的匱乏感」送回原廠設定，重新練習接收與表達愛的能力。',tag:'04'},
+  {name:'Manipura',zh:'太陽神經叢 — 個人意志與行動力',c:'--c-solar',issue:'目標明明很想要，卻總是拖延；想跨出那一步，腳就是抬不起來。意志力不足，常常不是懶，而是這個能量中心不平衡。',help:'幸運心理學的科學介入、行動拆解工作坊、把「我做不到」拆成可執行的小步驟。',tag:'03'},
+  {name:'Svadhisthana',zh:'臍輪 — 創造力與愉悅',c:'--c-sacral',issue:'你已經很久沒有「沒有理由地開心」過了嗎？這條主管創造力與愉悅的管道，是你斜槓、副業、靈感的源頭。',help:'創造力解鎖、興趣轉化收入的可能性盤點、設計屬於你的內在「愉悅地圖」。',tag:'02'},
+  {name:'Muladhara',zh:'海底輪 — 安全感與根',c:'--c-root',issue:'錢夠不夠、住得安不安全、人會不會離開你 —— 一旦這些問題在你腦中盤旋，這條管道就在閃紅燈。沒有根，往上的一切都會搖。',help:'金錢能量信念重建、原生家庭課題拆解、安全感的具體系統設計（不是「告訴自己沒事」那種）。',tag:'01'}
+];
+const rows=document.querySelectorAll('#chakra-list .chakra-row');
+const readout=document.getElementById('chakra-readout');
+function pickChakra(i){
+  rows.forEach(r=>r.classList.toggle('active',+r.dataset.i===i));
+  const d=chakraData[i];
+  const cVar=`var(${d.c})`;
+  readout.style.setProperty('--c-active',cVar);
+  readout.querySelector('.readout-tag').textContent=`DIAGNOSTIC ／ READING #${d.tag}`;
+  readout.querySelector('.readout-name').textContent=d.name;
+  readout.querySelector('.readout-zh').textContent=d.zh;
+  readout.querySelector('.readout-issue').textContent=d.issue;
+  readout.querySelector('.readout-help p').textContent=d.help;
+  gsap.fromTo(readout.querySelectorAll('.readout-name,.readout-zh,.readout-issue,.readout-help'),{opacity:0,y:14},{opacity:1,y:0,duration:.6,stagger:.06,ease:'power2.out'});
+}
+rows.forEach(r=>r.addEventListener('click',()=>pickChakra(+r.dataset.i)));
+
+/* ── CARDS flip ── */
+document.querySelectorAll('#cards-row .card').forEach(c=>{
+  c.addEventListener('click',()=>c.classList.toggle('flipped'));
+});
+
+/* ── CURSOR AURA ── */
+(function(){
+  if(window.matchMedia('(max-width:880px)').matches) return;
+  const aura=document.getElementById('cursorAura');
+  let tx=window.innerWidth/2,ty=window.innerHeight/2,cx=tx,cy=ty;
+  window.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY},{passive:true});
+  function loop(){
+    cx+=(tx-cx)*.12;cy+=(ty-cy)*.12;
+    aura.style.transform=`translate(${cx}px,${cy}px) translate(-50%,-50%)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ── FLOATING INTENTION WORDS ── */
+(function(){
+  const wrap=document.getElementById('floatingWords');
+  const cnWords=['對齊','療癒','頻率','書寫','豐盛','自由','顯化','流動','寬恕','安住','信任','原廠設定'];
+  const enWords=['align','allow','bloom','soft','let go','breathe','receive','enough'];
+  const items=[];
+  const total=window.matchMedia('(max-width:880px)').matches?8:16;
+  for(let i=0;i<total;i++){
+    const w=document.createElement('span');
+    const isEn=Math.random()<.4;
+    w.className='fw-word'+(isEn?' en':'');
+    w.textContent=isEn?enWords[Math.floor(Math.random()*enWords.length)]:cnWords[Math.floor(Math.random()*cnWords.length)];
+    w.style.fontSize=(0.95+Math.random()*1.7)+'rem';
+    wrap.appendChild(w);
+    items.push({el:w,x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.12});
+  }
+  function loop(){
+    const W=window.innerWidth,H=window.innerHeight;
+    items.forEach(o=>{
+      o.x+=o.vx;o.y+=o.vy;
+      if(o.x<-200) o.x=W+50;
+      if(o.x>W+50) o.x=-200;
+      if(o.y<-50) o.y=H+50;
+      if(o.y>H+50) o.y=-50;
+      o.el.style.transform=`translate(${o.x}px,${o.y}px)`;
+    });
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ── LIFEPATH CALCULATOR ── */
+(function(){
+  const data={
+    1:{a:'THE PIONEER',t:'拓荒者',c1:'#ff3a55',c2:'#ff8a3d',d:'<b>你是天生的開創者。</b>不適合等別人鋪好路再走，你的能量會在「沒人做過、要我來開」的那種題目上發光。<br><br>專屬卡點 ── 太想證明自己，用力過頭。<br>練習 ── 每天寫下「今天我已經夠好的三件事」。'},
+    2:{a:'THE DIPLOMAT',t:'橋樑者',c1:'#ff8a3d',c2:'#ffd23f',d:'<b>你是關係裡的調頻器。</b>能感受別人的細膩情緒，是天生的合作者與和事佬。<br><br>專屬卡點 ── 把別人的情緒當成自己的責任。<br>練習 ── 學會說「我懂你的感受，但這不是我的責任」。'},
+    3:{a:'THE EXPRESSIVE',t:'表達者',c1:'#ffd23f',c2:'#5dd39e',d:'<b>你是天生的表達者。</b>創意、語言、藝術是你的母語，你越自由越發光。<br><br>專屬卡點 ── 怕被批評就把作品藏起來。<br>練習 ── 先做出來再修，別在腦中就先把自己否決掉。'},
+    4:{a:'THE BUILDER',t:'築基者',c1:'#5dd39e',c2:'#3aa8ff',d:'<b>你是穩固的築基者。</b>系統、流程、長期的事在你手上會變得可靠。<br><br>專屬卡點 ── 太想一次做對而完美主義拖延。<br>練習 ── 把「最終版本」改稱「v0.1」。先有，再好。'},
+    5:{a:'THE EXPLORER',t:'探險者',c1:'#3aa8ff',c2:'#5b4bff',d:'<b>你是自由的探險者。</b>多元嘗試是你的學習方式，不要讓任何人逼你選一條路定終身。<br><br>專屬卡點 ── 怕被綁住而逃避承諾。<br>練習 ── 分清「真的不適合」與「只是怕無聊」。'},
+    6:{a:'THE NURTURER',t:'照顧者',c1:'#5b4bff',c2:'#c573ff',d:'<b>你是天生的照顧者。</b>家、關係、社群是你能量最強的場域。<br><br>專屬卡點 ── 照顧別人忘了自己，最後燃盡。<br>練習 ── 每週至少有一天，把自己排第一順位。'},
+    7:{a:'THE SEEKER',t:'求道者',c1:'#c573ff',c2:'#ff3a55',d:'<b>你是探尋真理的求道者。</b>需要獨處、需要深度、需要時間消化。<br><br>專屬卡點 ── 太內傾就把世界擋在外面。<br>練習 ── 把你想通的事，一週至少分享給一個人。'},
+    8:{a:'THE SOVEREIGN',t:'掌權者',c1:'#ff3a55',c2:'#ffd23f',d:'<b>你是金錢與權力的天才。</b>能看見大局、會運用資源，事業是你最自然的成長場。<br><br>專屬卡點 ── 太硬，跟柔軟的人疏遠。<br>練習 ── 在你最強勢的時候，問一句：「你怎麼看？」'},
+    9:{a:'THE HUMANITARIAN',t:'人道主義者',c1:'#ffd23f',c2:'#c573ff',d:'<b>你是為更大整體而活的人。</b>使命感強、共感力高，會被「服務眾人」的事業吸引。<br><br>專屬卡點 ── 把自己的悲傷藏起來而過度給予。<br>練習 ── 每月一次，為自己做一件「沒有任何理由」的事。'},
+    11:{a:'THE INSPIRATION ／ MASTER 11',t:'靈感大師（11／2）',c1:'#5dd39e',c2:'#c573ff',d:'<b>大師數 11。</b>直覺異常敏銳，是天生的傳訊者與啟發者。<br><br>專屬卡點 ── 能量太強而容易過載、焦慮。<br>練習 ── 建立你自己的「靜電釋放」儀式（書寫、冥想、散步都算）。'},
+    22:{a:'THE MASTER BUILDER ／ 22',t:'大師築造者（22／4）',c1:'#3aa8ff',c2:'#ffd23f',d:'<b>大師數 22。</b>把夢想落地成龐大現實的人，能成就影響很多人的系統與組織。<br><br>專屬卡點 ── 壓力太大而自我懷疑。<br>練習 ── 把大目標拆到「今天可以做完一個」的程度。'},
+    33:{a:'THE MASTER TEACHER ／ 33',t:'大師教導者（33／6）',c1:'#c573ff',c2:'#ff3a55',d:'<b>大師數 33。</b>是這個時代最稀有的編號，自帶老師與療癒師的靈魂編碼。<br><br>專屬卡點 ── 太想救人，讓自己耗盡。<br>練習 ── 先療癒自己，再給出去。氧氣面罩永遠先戴自己。'}
+  };
+  function digits(n){return String(n).split('').reduce((a,b)=>a+ +b,0);}
+  function reduce(n){
+    while(n>9 && n!==11 && n!==22 && n!==33){n=digits(n);}
+    return n;
+  }
+  const r=document.getElementById('lp-result');
+  document.getElementById('lp-go').addEventListener('click',()=>{
+    const y=+document.getElementById('lp-y').value;
+    const m=+document.getElementById('lp-m').value;
+    const d=+document.getElementById('lp-d').value;
+    if(!y||!m||!d||m<1||m>12||d<1||d>31||y<1900||y>2030){
+      r.innerHTML='<div class="lp-empty"><i class="fa-solid fa-circle-exclamation"></i><p>請輸入完整的生日<br>年（1900-2030）／月（1-12）／日（1-31）</p></div>';
+      return;
+    }
+    const sum=digits(y)+digits(m)+digits(d);
+    const num=reduce(sum);
+    const dat=data[num]||data[1];
+    r.innerHTML=`<div class="lp-content" style="--c1:${dat.c1};--c2:${dat.c2}">
+      <div class="lp-num">${num}</div>
+      <div class="lp-archetype">${dat.a}</div>
+      <div class="lp-title">${dat.t}</div>
+      <div class="lp-desc">${dat.d}</div>
+    </div>`;
+    gsap.from(r.querySelectorAll('.lp-num,.lp-archetype,.lp-title,.lp-desc'),{opacity:0,y:18,duration:.7,stagger:.1,ease:'power2.out'});
+  });
+})();
+
+/* ── DAILY CARD DRAW ── */
+(function(){
+  const pool=[
+    {c:'#ff3a55',n:'Root · 海底輪',m:'今天，先把自己安頓好。錢、安全感、能不能睡好──這些不是小事。'},
+    {c:'#ff8a3d',n:'Sacral · 臍輪',m:'允許自己愉悅。不是放縱，是讓你的身體記得「快樂是被允許的」。'},
+    {c:'#ffd23f',n:'Solar · 太陽神經叢',m:'你不是沒有意志力，你只是把它用在「忍耐」上太久了。今天試著用它推動一件想做的事。'},
+    {c:'#5dd39e',n:'Heart · 心輪',m:'有沒有可能，那個你一直想原諒的人，第一個其實是自己。'},
+    {c:'#3aa8ff',n:'Throat · 喉輪',m:'今天那句吞回去的話，找一個安全的地方說出來。寫下來也算。'},
+    {c:'#5b4bff',n:'Third Eye · 眉心輪',m:'你早就知道答案了，只是還不敢承認。先承認，路才會出現。'},
+    {c:'#c573ff',n:'Crown · 頂輪',m:'你不需要做完所有事才被宇宙喜歡。光是醒著，就已經是禮物。'},
+    {c:'#ffd56b',n:'Free Writing · 自由書寫',m:'拿一張紙，計時 5 分鐘，寫「我現在最不想說的事」。寫完你會比現在輕。'},
+    {c:'#ff7da7',n:'Soulmate · 靈魂伴侶',m:'你不需要去吸引誰。先成為一個你自己會愛的人，剩下的宇宙會處理。'},
+    {c:'#b9a3ff',n:'Lucky · 幸運',m:'今天的好事不會敲門，是用一些「我願意接收」的小動作累積出來的。'},
+    {c:'#5dd39e',n:'Money · 豐盛',m:'你跟錢的關係，反映你跟「自我價值」的關係。今天試著對自己慷慨一次。'},
+    {c:'#ff3a55',n:'Career · 職涯',m:'不要叫魚去爬樹。你的卡點不是不夠努力，是用錯了方向。'},
+    {c:'#ffd23f',n:'Inner Child · 內在小孩',m:'去問問你六歲的自己，今天最想做什麼。然後讓他做一件就好。'},
+    {c:'#c573ff',n:'Trust · 信任',m:'你不需要一次就看到整條路。下一步看得到，就走得了。'}
+  ];
+  const card=document.getElementById('dd-card');
+  let last=-1;
+  function doDraw(){
+    let i;do{i=Math.floor(Math.random()*pool.length);}while(i===last && pool.length>1);
+    last=i;
+    const p=pool[i];
+    const front=card.querySelector('.dd-card-front');
+    front.style.setProperty('--c-active',p.c);
+    document.getElementById('dd-chakra-name').textContent=p.n;
+    document.getElementById('dd-chakra-name').style.color=p.c;
+    document.getElementById('dd-message').textContent=p.m;
+    requestAnimationFrame(()=>card.classList.add('flipped'));
+  }
+  document.getElementById('dd-btn').addEventListener('click',()=>{
+    if(card.classList.contains('flipped')){
+      card.classList.remove('flipped');
+      setTimeout(doDraw,500);
+    } else doDraw();
+  });
+  card.addEventListener('click',()=>{
+    if(!card.classList.contains('flipped')) doDraw();
+  });
+})();
+
+/* ── WRITING canvas (p5) — leave a trace where the cursor moves ── */
+new p5((p)=>{
+  let cnv,strokes=[],last=null,fading=[];
+  p.setup=()=>{
+    const wrap=document.getElementById('writing-canvas');
+    cnv=p.createCanvas(wrap.offsetWidth,wrap.offsetHeight);
+    cnv.parent('writing-canvas');
+    p.noFill();
+  };
+  p.draw=()=>{
+    p.background(8,5,26,28);
+    // baseline grid (subtle dotted lines like notebook)
+    p.stroke(255,213,107,18); p.strokeWeight(1);
+    for(let y=40;y<p.height;y+=40){
+      for(let x=0;x<p.width;x+=8){p.point(x,y);}
+    }
+    // pen strokes
+    p.noFill();
+    for(let i=fading.length-1;i>=0;i--){
+      const f=fading[i];
+      p.stroke(f.c[0],f.c[1],f.c[2],f.a);
+      p.strokeWeight(f.w);
+      p.beginShape();
+      f.pts.forEach(pt=>p.vertex(pt.x,pt.y));
+      p.endShape();
+      f.a-=.5;
+      if(f.a<=0) fading.splice(i,1);
+    }
+  };
+  p.mouseMoved=()=>{
+    if(p.mouseX<0||p.mouseX>p.width||p.mouseY<0||p.mouseY>p.height) return;
+    if(!last||p.dist(last.x,last.y,p.mouseX,p.mouseY)>3){
+      if(!strokes.length||strokes[strokes.length-1].pts.length>40){
+        const palette=[[255,213,107],[255,125,167],[185,163,255],[93,211,158]];
+        const c=palette[Math.floor(Math.random()*palette.length)];
+        strokes.push({pts:[],c,w:p.random(1.4,2.2),a:255});
+      }
+      const s=strokes[strokes.length-1];
+      s.pts.push({x:p.mouseX,y:p.mouseY});
+      last={x:p.mouseX,y:p.mouseY};
+      fading.push({pts:s.pts.slice(-12),c:s.c,w:s.w,a:200});
+    }
+  };
+  p.windowResized=()=>{
+    const wrap=document.getElementById('writing-canvas');
+    if(wrap) p.resizeCanvas(wrap.offsetWidth,wrap.offsetHeight);
+  };
+});
+</script>
+</body>
+</html>

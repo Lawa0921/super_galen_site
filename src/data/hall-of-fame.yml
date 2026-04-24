@@ -8,6 +8,20 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "acre_of_oasis"
+    name: "大腦小姐｜Acre of Oasis"
+    avatar: "/assets/img/guild/acre_of_oasis/avatar.webp"
+    page: "/guild/acre_of_oasis.html"
+    title: "內在頻率對齊室主理人"
+    description: "理性腦 × 靈性腦同時在線。用彩虹卡七脈輪、自由書寫、正向心理學與職涯定位，陪你把混亂人生整理成可執行的內在地圖。"
+    tags:
+      - id: "rainbow_chakra"
+        label: "彩虹卡 × 七脈輪"
+      - id: "career_alignment"
+        label: "職涯定位"
+      - id: "free_writing"
+        label: "自由書寫療癒"
+
   - id: "our_soulful_journal"
     name: "Regina（晨）｜星晨日誌"
     avatar: "/assets/img/guild/our_soulful_journal/avatar.webp"
