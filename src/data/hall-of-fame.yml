@@ -22,6 +22,20 @@ members:
       - id: "free_writing"
         label: "自由書寫療癒"
 
+  - id: "yesme_ar"
+    name: "yesme ｜ 阿幕"
+    avatar: "/assets/img/guild/yesme_ar/avatar.webp"
+    page: "/guild/yesme_ar.html"
+    title: "LEAD-HUNTER.OS 打造者"
+    description: "台中網頁設計師 / 短影音製作 / SEO 優化師。正在打造一套自動化獵客系統，先鎖定 10 個產業做 BETA 測試 — 懶惰，是她最高的生產力。"
+    tags:
+      - id: "web_design"
+        label: "網頁設計"
+      - id: "short_video"
+        label: "短影音行銷"
+      - id: "auto_lead_gen"
+        label: "自動獵客系統"
+
   - id: "our_soulful_journal"
     name: "Regina（晨）｜星晨日誌"
     avatar: "/assets/img/guild/our_soulful_journal/avatar.webp"
@@ -1730,6 +1744,20 @@ members:
         label: "正念瑜珈"
       - id: "fascia_release"
         label: "筋膜整復"
+
+  - id: "carriehsu26"
+    name: "Carrie Hsu"
+    avatar: "/assets/img/guild/carriehsu26/avatar.webp"
+    page: "/guild/carriehsu26.html"
+    title: "馬神廟・犬園"
+    description: "旗山祖廟馬神廟旁的守廟人。在日本待了十幾年，回台灣照顧父母；鄰居把一窩六隻丟在廟邊，從此養到二十多隻。日文翻譯、狗園經驗、動保協會籌備中。"
+    tags:
+      - id: "shrine_keeper"
+        label: "守廟人"
+      - id: "stray_dog_sanctuary"
+        label: "流浪狗園"
+      - id: "jp_translator"
+        label: "日文翻譯"
 
   - id: "rfogregr8564"
     name: "心燈燈飾 HL"
