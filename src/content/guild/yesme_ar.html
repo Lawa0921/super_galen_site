@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="yesme｜阿幕 — 台中網頁設計師、短影音行銷、SEO 優化師，正在打造一套自動化的獵客系統，一次鎖定 10 個產業的潛在客戶。">
+<title>yesme · 阿幕 ｜ LEAD-HUNTER.OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@900&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  /* === LEAD-HUNTER.OS palette — 深夜辦公室 + 金句海報 === */
+  --void:#0e0d10;              /* warmer dark — like dim office */
+  --void-2:#17151a;
+  --panel-2:#2a262e;
+  /* SIGNATURE YELLOW — 她的海報底色 */
+  --hunter:#ffdd00;            /* primary highlight */
+  --hunter-dim:#b89f00;
+  /* Secondary cyan — 只用在 system UI 點綴 */
+  --beacon:#4ec5d2;
+  --beacon-dim:#1c5960;
+  /* Warm night amber */
+  --alert:#ff7a33;
+  --alert-bright:#ffa766;
+  --blood:#e53e3e;
+  /* Paper surface — 白色卡片 */
+  --paper:#f6efd8;
+  --paper-2:#ebe1c3;
+  --ink:#0b0b0d;               /* deep ink on paper */
+  /* Text on dark */
+  --bone:#efe8d2;
+  --bone-dim:#a69f8c;
+  --bone-faint:#5e584b;
+
+  --font-headline:'Noto Sans TC',sans-serif;   /* weight 900 for poster-style headings */
+  --font-display:'Rajdhani',sans-serif;        /* reduced to system UI + small Latin caps */
+  --font-term:'VT323',monospace;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-body:'Noto Sans TC',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:clip}
+html{scroll-behavior:smooth;background:var(--void)}
+body{
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(255,122,51,.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 90%, rgba(255,221,0,.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, var(--void-2) 0%, var(--void) 85%);
+  background-attachment:fixed;
+  color:var(--bone-dim);
+  font-family:var(--font-body);
+  font-weight:300;
+  line-height:1.75;
+  overflow-x:hidden;
+  cursor:none;
+  min-height:100vh;
+  letter-spacing:.02em;
+}
+@media (hover:none){ body{cursor:default} .reticle{display:none!important} }
+a,button,.chip,.svc-card,.rule-card,.slot-card,.ind-item{cursor:none}
+@media (hover:none){ a,button,.chip,.svc-card,.rule-card,.slot-card,.ind-item{cursor:pointer} }
+::selection{background:var(--hunter);color:var(--void)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--void-2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--hunter-dim),var(--beacon-dim));border-radius:3px}
+img{display:block;max-width:100%}
+
+/* === SCANNER RETICLE CURSOR === */
+.reticle{position:fixed;top:0;left:0;width:56px;height:56px;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:opacity .3s}
+.reticle::before,.reticle::after{content:"";position:absolute;background:var(--hunter);box-shadow:0 0 6px var(--hunter)}
+.reticle::before{left:50%;top:-6px;width:1px;height:16px;transform:translateX(-50%)}
+.reticle::after{top:50%;left:-6px;width:16px;height:1px;transform:translateY(-50%)}
+.reticle .r-box{position:absolute;inset:12px;border:1px solid var(--hunter);border-radius:2px;box-shadow:inset 0 0 10px rgba(255,221,0,.35),0 0 14px rgba(255,221,0,.3)}
+.reticle .r-dot{position:absolute;top:50%;left:50%;width:3px;height:3px;border-radius:50%;background:var(--hunter);transform:translate(-50%,-50%);box-shadow:0 0 6px var(--hunter)}
+.reticle .r-ring{position:absolute;inset:-4px;border:1px dashed rgba(255,221,0,.45);border-radius:50%;animation:rSpin 7s linear infinite}
+@keyframes rSpin{to{transform:rotate(360deg)}}
+.reticle.hot .r-box{border-color:var(--alert);box-shadow:inset 0 0 14px rgba(255,154,43,.45),0 0 20px rgba(255,154,43,.55)}
+.reticle.hot::before,.reticle.hot::after{background:var(--alert);box-shadow:0 0 8px var(--alert)}
+.reticle.hot .r-dot{background:var(--alert);box-shadow:0 0 8px var(--alert)}
+
+/* === FIXED BACKGROUND CANVASES === */
+#p5-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.32}
+#three-canvas{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.28}
+
+/* === SOFT OFFICE-AMBIENT OVERLAYS === */
+/* scanlines demoted to very subtle paper texture */
+.scanlines{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.04;mix-blend-mode:overlay;
+  background:repeating-linear-gradient(0deg,rgba(255,221,0,.5) 0px,rgba(255,221,0,.5) 1px,transparent 1px,transparent 4px)}
+.matrix-grid{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.05;
+  background-image:
+    linear-gradient(to right, rgba(239,232,210,.5) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(239,232,210,.5) 1px, transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse at center, black 20%, transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse at center, black 20%, transparent 75%)}
+.vignette{position:fixed;inset:0;z-index:4;pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 35%, rgba(14,13,16,.78) 95%)}
+.grain{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:.09;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/></svg>")}
+
+/* === TOP HUD === */
+.hud-top{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;
+  padding:12px 22px;font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;color:var(--hunter);
+  background:linear-gradient(180deg,rgba(5,7,10,.88),transparent);pointer-events:none;text-transform:uppercase}
+.hud-top a{pointer-events:auto;color:var(--bone-dim);text-decoration:none;border:1px solid var(--bone-faint);padding:6px 12px;letter-spacing:.22em;transition:all .3s;background:rgba(9,13,19,.6);backdrop-filter:blur(6px)}
+.hud-top a:hover{color:var(--hunter);border-color:var(--hunter);box-shadow:0 0 14px rgba(255,221,0,.4);transform:translateX(-3px)}
+.hud-top .hud-center{display:flex;gap:14px;align-items:center}
+.hud-top .blink{animation:blink 1.2s infinite;color:var(--blood)}
+@keyframes blink{50%{opacity:.2}}
+.hud-top .hud-right{display:flex;gap:14px}
+@media (max-width:760px){
+  .hud-top{font-size:9px;padding:10px 12px;gap:8px}
+  .hud-top .hud-center span:nth-child(2){display:none}
+  .hud-top .hud-right{display:none}
+}
+
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+
+/* === CORNER BRACKETS (universal) === */
+.cbrak{position:relative}
+.cbrak::before,.cbrak::after{content:"";position:absolute;width:18px;height:18px;border-color:var(--hunter);border-style:solid}
+.cbrak::before{top:-1px;left:-1px;border-width:1px 0 0 1px}
+.cbrak::after{bottom:-1px;right:-1px;border-width:0 1px 1px 0}
+
+/* === SECTION WRAPPER === */
+main{position:relative;z-index:10}
+section{position:relative;min-height:100vh;padding:120px 7vw;display:flex;flex-direction:column;justify-content:center}
+.sec-num{font-family:var(--font-mono);font-size:11px;letter-spacing:.3em;color:var(--beacon);text-transform:uppercase;margin-bottom:10px;display:flex;gap:14px;align-items:center}
+.sec-num::before{content:"";width:26px;height:1px;background:var(--beacon);box-shadow:0 0 6px var(--beacon)}
+.sec-label{font-family:var(--font-headline);font-weight:900;font-size:clamp(2.1rem,5.4vw,4.4rem);color:var(--bone);letter-spacing:.005em;line-height:1.08;margin-bottom:28px}
+.sec-label .accent{background:var(--hunter);color:var(--ink);padding:2px 12px 8px;box-decoration-break:clone;-webkit-box-decoration-break:clone;margin:0 2px}
+.sec-sub{font-family:var(--font-mono);font-size:12px;color:var(--bone-faint);letter-spacing:.18em;margin-bottom:36px;text-transform:uppercase}
+
+/* === HERO — 金句海報美學 === */
+#hero{min-height:100vh;padding:110px 7vw 80px;display:grid;grid-template-columns:1.25fr 1fr;gap:56px;align-items:center;position:relative}
+#hero::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(255,221,0,.06), transparent 55%),
+    radial-gradient(ellipse at 85% 70%, rgba(78,197,210,.05), transparent 50%)}
+#hero > *{position:relative;z-index:1}
+
+/* 主題 manifesto 卡片 — 呼應她的 poster 白卡 */
+.manifesto-card{background:var(--paper);color:var(--ink);padding:38px 36px 34px;position:relative;
+  box-shadow:0 30px 50px -15px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+  transform:rotate(-.6deg)}
+.manifesto-card::before{content:"";position:absolute;inset:-3px -3px auto auto;width:36px;height:36px;
+  background:var(--hunter);clip-path:polygon(100% 0,100% 100%,0 0);opacity:.9}
+.manifesto-card .mc-tag{position:absolute;top:14px;left:28px;font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:#555;text-transform:uppercase}
+.manifesto-card .mc-tag b{color:var(--ink);margin-right:6px}
+.manifesto-card h1{font-family:var(--font-headline);font-weight:900;font-size:clamp(2.6rem,5.5vw,4.6rem);line-height:1.04;color:var(--ink);letter-spacing:.005em;margin-top:28px}
+.manifesto-card h1 .hl{background:var(--hunter);padding:2px 12px 6px;color:var(--ink);box-decoration-break:clone;-webkit-box-decoration-break:clone;margin:0 2px;display:inline}
+.manifesto-card h1 .strike{position:relative;color:#7a7064;font-weight:800}
+.manifesto-card h1 .strike::after{content:"";position:absolute;left:-2%;right:-2%;top:52%;height:6px;background:var(--ink);transform:scaleX(0);transform-origin:left;animation:strike 1s .7s forwards}
+@keyframes strike{to{transform:scaleX(1)}}
+.manifesto-card .sub{margin-top:26px;padding-top:22px;border-top:2px solid var(--ink);display:grid;grid-template-columns:auto 1fr;gap:14px 18px;align-items:baseline}
+.manifesto-card .sub .lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.24em;color:#555;text-transform:uppercase;font-weight:600}
+.manifesto-card .sub .val{font-family:var(--font-headline);font-weight:600;font-size:16px;color:var(--ink);letter-spacing:.02em}
+.manifesto-card .sub .val b{background:var(--hunter);padding:1px 8px 3px;margin-right:4px;font-weight:900}
+.manifesto-card .signoff{margin-top:22px;font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;color:#666;text-transform:uppercase;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.manifesto-card .signoff .pill{background:var(--ink);color:var(--paper);padding:3px 9px;font-weight:600}
+
+/* Terminal 降級成小型 system UI 標籤（移到 manifesto 卡下） */
+.sys-strip{margin-top:24px;padding:14px 18px;background:rgba(14,13,16,.75);border:1px solid var(--bone-faint);
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--bone-dim);line-height:1.8}
+.sys-strip .ok{color:var(--hunter)}
+.sys-strip .warm{color:var(--alert-bright)}
+.sys-strip .dim{color:var(--bone-faint)}
+.sys-strip .prompt{color:var(--hunter)}
+
+.hero-avatar-wrap{position:relative;justify-self:center;align-self:center;display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:440px}
+
+/* Poster sample — 她實際的作品 */
+.her-poster{position:relative;width:clamp(240px,30vw,360px);aspect-ratio:1024/1536;
+  box-shadow:0 40px 70px -15px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.15);
+  transform:rotate(1.2deg);transition:transform .6s cubic-bezier(.19,1,.22,1)}
+.her-poster:hover{transform:rotate(0deg) scale(1.02)}
+.her-poster img{width:100%;height:100%;object-fit:cover;display:block}
+.her-poster .pin{position:absolute;top:-10px;right:16px;width:22px;height:22px;border-radius:50%;background:var(--alert);box-shadow:0 4px 6px rgba(0,0,0,.4),inset 2px 2px 3px rgba(255,255,255,.35)}
+.her-poster .tag-bar{position:absolute;left:-10px;top:14px;padding:5px 12px;background:var(--hunter);color:var(--ink);font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;font-weight:700;text-transform:uppercase;box-shadow:2px 2px 0 rgba(0,0,0,.6)}
+
+.poster-caption{text-align:center;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;color:var(--bone-dim);text-transform:uppercase;max-width:300px;line-height:1.7}
+.poster-caption b{color:var(--hunter);font-weight:500}
+.poster-caption .mu-inline{font-family:'Noto Serif TC',serif;font-weight:900;color:var(--hunter);margin:0 3px}
+
+@media (max-width:900px){
+  #hero{grid-template-columns:1fr;gap:40px;padding-top:140px}
+  .hero-avatar-wrap{order:-1}
+}
+
+/* === IDENTITY TRINITY === */
+#identity{background:linear-gradient(180deg,transparent,rgba(10,20,16,.4),transparent)}
+.trinity{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:30px}
+.trinity-card{position:relative;padding:30px 26px 34px;background:linear-gradient(160deg,rgba(13,18,25,.85),rgba(9,13,19,.55));
+  border:1px solid var(--bone-faint);overflow:hidden;transition:all .5s}
+.trinity-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--hunter),var(--beacon),transparent);transform:scaleX(0);transform-origin:left;transition:transform .7s}
+.trinity-card:hover{transform:translateY(-6px);border-color:var(--hunter);box-shadow:0 18px 40px -10px rgba(255,221,0,.18),0 0 0 1px rgba(255,221,0,.3)}
+.trinity-card:hover::before{transform:scaleX(1)}
+.trinity-card .idx{font-family:var(--font-mono);font-size:10px;letter-spacing:.24em;color:var(--beacon);text-transform:uppercase;margin-bottom:14px}
+.trinity-card .glyph{font-size:36px;color:var(--hunter);margin-bottom:18px;filter:drop-shadow(0 0 8px rgba(255,221,0,.4))}
+.trinity-card h3{font-family:var(--font-display);font-weight:600;font-size:1.7rem;color:var(--bone);letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px}
+.trinity-card .en{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;color:var(--hunter);text-transform:uppercase;margin-bottom:18px}
+.trinity-card p{font-size:14px;line-height:1.85;color:var(--bone-dim)}
+.trinity-card .sig{position:absolute;bottom:-14px;right:14px;font-family:var(--font-term);font-size:52px;color:rgba(255,221,0,.08);letter-spacing:-.06em}
+@media (max-width:900px){.trinity{grid-template-columns:1fr}}
+
+/* === LAZY MANIFESTO === */
+#manifesto{background:
+  radial-gradient(circle at 85% 40%, rgba(255,154,43,.08), transparent 50%),
+  radial-gradient(circle at 10% 80%, rgba(78,197,210,.06), transparent 50%)}
+.manifesto-wrap{max-width:1100px;margin:0 auto;width:100%;display:grid;grid-template-columns:1.2fr 1fr;gap:60px;align-items:center}
+.manifesto-lead{font-family:var(--font-display);font-weight:400;font-size:clamp(2.2rem,4.6vw,3.8rem);color:var(--bone);line-height:1.15;letter-spacing:.02em}
+.manifesto-lead .drop{font-family:var(--font-term);font-size:1.3em;color:var(--alert);text-shadow:0 0 10px rgba(255,154,43,.4);margin-right:6px;line-height:.8;vertical-align:-2px}
+.manifesto-lead .flash{color:var(--ink);background:var(--hunter);padding:1px 10px 6px;box-decoration-break:clone;-webkit-box-decoration-break:clone;font-weight:700}
+.manifesto-lead .dim{color:var(--bone-faint);font-style:italic;font-family:var(--font-body);font-size:.68em;font-weight:300;display:block;margin-top:22px}
+.manifesto-side{font-family:var(--font-mono);font-size:13px;color:var(--bone-dim);line-height:1.8;padding:22px 24px;
+  background:linear-gradient(180deg,rgba(13,18,25,.82),rgba(9,13,19,.5));border-left:2px solid var(--alert)}
+.manifesto-side .pre{font-size:10px;letter-spacing:.26em;color:var(--alert);text-transform:uppercase;display:block;margin-bottom:14px}
+.manifesto-side ol{list-style:none;counter-reset:m;margin-top:10px}
+.manifesto-side li{counter-increment:m;padding:6px 0 6px 38px;position:relative;border-bottom:1px dashed rgba(75,87,99,.3)}
+.manifesto-side li:last-child{border-bottom:none}
+.manifesto-side li::before{content:"0" counter(m);position:absolute;left:0;top:6px;color:var(--hunter);font-weight:500}
+@media (max-width:900px){.manifesto-wrap{grid-template-columns:1fr;gap:36px}}
+
+/* === 10-INDUSTRY RADAR === */
+#radar{padding:120px 5vw;min-height:110vh}
+.radar-stage{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px;align-items:start}
+.radar-3d{position:relative;aspect-ratio:1;max-width:620px;width:100%;margin:0 auto}
+#radar-canvas{width:100%;height:100%;display:block}
+.radar-3d::before{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid rgba(255,221,0,.25);
+  background:radial-gradient(circle at center,transparent 55%,rgba(5,7,10,.5) 95%);
+  clip-path:polygon(0 6%,6% 0,94% 0,100% 6%,100% 94%,94% 100%,6% 100%,0 94%)}
+.radar-3d .radar-readout{position:absolute;bottom:8px;left:10px;right:10px;display:flex;justify-content:space-between;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;color:var(--hunter-dim);text-transform:uppercase;pointer-events:none}
+.ind-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-self:center}
+.ind-item{position:relative;padding:13px 14px;font-family:var(--font-mono);font-size:12px;color:var(--bone-dim);
+  background:rgba(13,18,25,.6);border:1px solid rgba(255,221,0,.15);display:flex;gap:12px;align-items:center;letter-spacing:.08em;transition:all .4s}
+.ind-item:hover{border-color:var(--hunter);color:var(--bone);background:rgba(13,28,20,.85);box-shadow:inset 0 0 12px rgba(255,221,0,.18)}
+.ind-item .ind-id{color:var(--beacon);font-size:9px;letter-spacing:.24em}
+.ind-item .ind-name{flex:1}
+.ind-item .ind-dot{width:6px;height:6px;border-radius:50%;background:var(--hunter-dim);box-shadow:0 0 6px var(--hunter-dim)}
+.ind-item.scanning .ind-dot{background:var(--hunter);box-shadow:0 0 10px var(--hunter);animation:pulseDot 1s infinite}
+.ind-item.locked{border-color:var(--alert);color:var(--alert-bright)}
+.ind-item.locked .ind-dot{background:var(--alert);box-shadow:0 0 10px var(--alert)}
+@media (max-width:900px){.radar-stage{grid-template-columns:1fr}.ind-list{grid-template-columns:1fr}}
+
+/* === Rules · 原版貼文 credit 卡 === */
+.rules-source{margin-top:38px;display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;
+  padding:18px 22px 18px 18px;background:linear-gradient(90deg,rgba(246,239,216,.05),transparent);
+  border-left:2px solid var(--hunter)}
+.rules-source .src-thumb{width:78px;aspect-ratio:1024/1536;flex-shrink:0;
+  box-shadow:0 12px 24px -8px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.2);transform:rotate(-2deg);transition:transform .4s}
+.rules-source .src-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.rules-source:hover .src-thumb{transform:rotate(0) scale(1.06)}
+.rules-source .src-text{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--bone-dim);line-height:1.7;text-transform:uppercase}
+.rules-source .src-text b{color:var(--hunter);font-weight:600;display:block;margin-bottom:4px;font-family:var(--font-headline);font-size:13px;letter-spacing:.05em;text-transform:none}
+.rules-source .src-text a{color:var(--alert-bright);text-decoration:none;border-bottom:1px solid currentColor}
+.rules-source .src-text a:hover{color:var(--hunter)}
+
+/* === FIVE RULES — 她的金句海報樣式 === */
+#rules{background:
+  radial-gradient(ellipse at 30% 40%, rgba(255,221,0,.05), transparent 55%),
+  linear-gradient(180deg,transparent,rgba(22,20,25,.35),transparent)}
+.rules-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:28px}
+.rule-card{position:relative;padding:22px 18px 20px;background:var(--paper);color:var(--ink);
+  overflow:hidden;transition:all .45s;min-height:320px;display:flex;flex-direction:column;
+  box-shadow:0 16px 32px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08)}
+.rule-card:nth-child(odd){transform:rotate(-.4deg)}
+.rule-card:nth-child(even){transform:rotate(.5deg)}
+.rule-card:hover{transform:rotate(0) translateY(-4px);box-shadow:0 20px 42px -10px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.12)}
+.rule-card::before{content:"";position:absolute;top:-3px;right:-3px;width:30px;height:30px;background:var(--hunter);clip-path:polygon(100% 0, 100% 100%, 0 0)}
+.rule-card .r-num{font-family:var(--font-headline);font-weight:900;font-size:62px;line-height:.9;color:var(--ink);margin-bottom:8px;letter-spacing:-.04em}
+.rule-card .r-num::after{content:"";display:inline-block;width:8px;height:8px;background:var(--alert);margin-left:6px;vertical-align:top;margin-top:6px}
+.rule-card .r-verb{display:inline-block;font-family:var(--font-headline);font-weight:900;font-size:1.55rem;color:var(--ink);letter-spacing:.01em;padding:1px 10px 4px;background:var(--hunter);margin-bottom:12px;line-height:1.2}
+.rule-card .r-obj{font-size:.8rem;color:#555;margin-bottom:16px;font-family:var(--font-mono);letter-spacing:.08em;font-weight:500}
+.rule-card .r-body{font-size:13.5px;color:var(--ink);line-height:1.75;flex:1;font-weight:400}
+.rule-card .r-stamp{font-family:var(--font-mono);font-size:9px;letter-spacing:.28em;color:#777;text-transform:uppercase;margin-top:16px;padding-top:12px;border-top:2px solid var(--ink);font-weight:600}
+.rule-card .r-stamp b{color:var(--ink);background:var(--hunter);padding:1px 6px 2px;margin-right:4px;font-weight:700}
+@media (max-width:1100px){.rules-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.rules-grid{grid-template-columns:1fr}}
+
+/* === SERVICES === */
+.svc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+.svc-card{position:relative;padding:26px 20px;background:linear-gradient(175deg,rgba(13,18,25,.92),rgba(9,13,19,.6));
+  border:1px solid rgba(78,197,210,.25);overflow:hidden;transition:all .45s;min-height:280px;display:flex;flex-direction:column}
+.svc-card::before{content:"";position:absolute;top:0;left:0;width:40px;height:40px;
+  background:linear-gradient(135deg,var(--beacon) 0 50%,transparent 50% 100%);opacity:.35}
+.svc-card:hover{border-color:var(--beacon);background:linear-gradient(175deg,rgba(15,30,40,.92),rgba(9,13,19,.6));transform:translateY(-5px);box-shadow:0 14px 32px -8px rgba(78,197,210,.25)}
+.svc-card .s-code{font-family:var(--font-mono);font-size:10px;letter-spacing:.26em;color:var(--beacon);text-transform:uppercase;margin-bottom:22px;align-self:flex-end}
+.svc-card .s-icon{font-size:30px;color:var(--beacon);margin-bottom:16px;filter:drop-shadow(0 0 8px rgba(78,197,210,.4))}
+.svc-card h4{font-family:var(--font-display);font-weight:700;font-size:1.3rem;color:var(--bone);letter-spacing:.03em;text-transform:uppercase;margin-bottom:10px}
+.svc-card p{font-size:13px;line-height:1.75;color:var(--bone-dim);flex:1}
+.svc-card .s-meta{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--bone-faint);text-transform:uppercase;margin-top:16px;padding-top:12px;border-top:1px dashed rgba(78,197,210,.2)}
+.svc-card .s-meta b{color:var(--hunter);font-weight:500}
+@media (max-width:1100px){.svc-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.svc-grid{grid-template-columns:1fr}}
+
+/* === BETA INVITE === */
+#beta{background:
+  radial-gradient(circle at 50% 60%, rgba(255,154,43,.08), transparent 55%)}
+.beta-wrap{max-width:1100px;margin:0 auto;width:100%}
+.beta-call{font-family:var(--font-display);font-weight:400;font-size:clamp(1.5rem,2.6vw,2.2rem);color:var(--bone-dim);line-height:1.45;max-width:760px;margin-bottom:34px}
+.beta-call b{color:var(--alert);font-weight:500}
+.slot-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0 36px}
+.slot-card{position:relative;padding:20px 14px;background:rgba(13,18,25,.7);border:1px dashed rgba(255,154,43,.45);
+  text-align:center;transition:all .4s;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.slot-card .s-num{font-family:var(--font-term);font-size:44px;line-height:1;color:var(--alert)}
+.slot-card .s-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:var(--bone-faint);text-transform:uppercase}
+.slot-card .s-ind{font-size:13px;color:var(--bone);letter-spacing:.05em}
+.slot-card:hover{background:rgba(30,18,10,.8);border-color:var(--alert);transform:translateY(-3px);border-style:solid;box-shadow:0 12px 24px -6px rgba(255,154,43,.25)}
+.beta-cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:20px}
+.beta-cta a{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:12px;letter-spacing:.22em;
+  color:var(--void);background:var(--hunter);padding:14px 22px;text-decoration:none;text-transform:uppercase;border:1px solid var(--hunter);
+  transition:all .35s;position:relative}
+.beta-cta a.secondary{color:var(--beacon);background:transparent;border-color:var(--beacon)}
+.beta-cta a:hover{background:var(--bone);transform:translateY(-2px);box-shadow:0 10px 22px -4px rgba(255,221,0,.35)}
+.beta-cta a.secondary:hover{background:rgba(78,197,210,.12);box-shadow:0 10px 22px -4px rgba(78,197,210,.3)}
+@media (max-width:900px){.slot-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:420px){.slot-grid{grid-template-columns:1fr}}
+
+/* === FOOTER === */
+footer{position:relative;z-index:10;padding:80px 7vw 60px;text-align:center;border-top:1px solid var(--bone-faint);
+  background:linear-gradient(0deg,rgba(5,7,10,.9),transparent)}
+footer .sig-ln{font-family:var(--font-display);font-weight:500;font-size:clamp(1.4rem,2.2vw,2rem);color:var(--bone);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}
+footer .sig-ln .accent{color:var(--hunter)}
+footer .loc{font-family:var(--font-mono);font-size:11px;letter-spacing:.28em;color:var(--bone-faint);text-transform:uppercase;margin-bottom:30px}
+footer .soc{display:flex;justify-content:center;gap:18px;margin-bottom:36px;flex-wrap:wrap}
+footer .soc a{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--bone-dim);text-decoration:none;
+  border:1px solid var(--bone-faint);transition:all .35s;background:rgba(13,18,25,.6)}
+footer .soc a:hover{color:var(--hunter);border-color:var(--hunter);transform:translateY(-3px);box-shadow:0 0 18px rgba(255,221,0,.35)}
+footer .credit{font-family:var(--font-mono);font-size:10px;letter-spacing:.24em;color:var(--bone-faint);text-transform:uppercase}
+footer .credit a{color:var(--beacon);text-decoration:none}
+
+/* === REVEAL ANIMATIONS === */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 1s,transform 1s}
+.reveal.visible{opacity:1;transform:none}
+
+/* === CH·00 CHRONICLE (git-log) === */
+#chronicle{background:linear-gradient(180deg,transparent,rgba(12,18,10,.35),transparent)}
+.chron-wrap{max-width:1020px;margin:0 auto;width:100%}
+.chron-board{margin-top:28px;padding:24px 22px 10px;border:1px solid var(--bone-faint);
+  background:linear-gradient(180deg,rgba(9,13,19,.86),rgba(7,10,14,.7));position:relative;font-family:var(--font-mono)}
+.chron-board::before{content:"~/yesme@taichung — git log --pretty=oneline";
+  position:absolute;top:-12px;left:18px;background:var(--void);padding:0 10px;
+  font-size:10px;letter-spacing:.22em;color:var(--hunter);text-transform:uppercase}
+.chron-commit{display:grid;grid-template-columns:auto 1fr auto;gap:20px;padding:18px 6px;border-bottom:1px dashed rgba(75,87,99,.35);
+  align-items:start;cursor:pointer;transition:background .35s}
+.chron-commit:last-child{border-bottom:none}
+.chron-commit:hover{background:rgba(255,221,0,.04)}
+.chron-hash{font-size:12px;color:var(--hunter);letter-spacing:.1em;padding-top:3px}
+.chron-hash .branch{color:var(--alert);display:block;font-size:9px;letter-spacing:.24em;text-transform:uppercase;margin-top:2px}
+.chron-info{font-size:13px;color:var(--bone)}
+.chron-info .c-msg{color:var(--bone);font-weight:500;letter-spacing:.04em}
+.chron-info .c-meta{display:block;margin-top:4px;font-size:10px;letter-spacing:.22em;color:var(--bone-faint);text-transform:uppercase}
+.chron-info .c-body{display:none;margin-top:14px;padding:14px 16px;background:rgba(5,7,10,.7);border-left:2px solid var(--hunter);
+  font-family:var(--font-body);font-size:13.5px;line-height:1.9;color:var(--bone-dim);white-space:pre-wrap;max-width:720px}
+.chron-commit.open .c-body{display:block;animation:expand .4s ease}
+.chron-commit.open .chron-hash{color:var(--alert-bright)}
+.chron-commit.open .chron-toggle i{transform:rotate(90deg)}
+@keyframes expand{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.chron-toggle{font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:var(--bone-faint);text-transform:uppercase;align-self:center}
+.chron-toggle i{transition:transform .3s;margin-right:6px;color:var(--hunter)}
+.chron-footer{padding:14px 6px 4px;display:flex;justify-content:space-between;font-size:10px;letter-spacing:.2em;color:var(--bone-faint);text-transform:uppercase}
+.chron-footer .status{color:var(--hunter)}
+.chron-footer .status .pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--hunter);margin-right:6px;animation:pulseDot 1.6s infinite;vertical-align:middle;box-shadow:0 0 6px var(--hunter)}
+@media (max-width:760px){
+  .chron-commit{grid-template-columns:1fr;gap:8px}
+  .chron-toggle{justify-self:end}
+}
+
+/* === LAZY TOGGLE (AUTO / MANUAL) === */
+.lazy-demo{margin-top:46px;padding:24px 22px;position:relative;border:1px solid var(--bone-faint);
+  background:linear-gradient(180deg,rgba(9,13,19,.88),rgba(5,7,10,.7))}
+.lazy-demo::before{content:"/ live demo · automation_vs_manual.sh";position:absolute;top:-11px;left:18px;background:var(--void);padding:0 10px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:var(--alert);text-transform:uppercase}
+.lazy-switch{display:inline-flex;border:1px solid var(--bone-faint);margin-bottom:22px;font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+.lazy-switch button{background:transparent;border:none;padding:10px 22px;color:var(--bone-dim);cursor:none;font:inherit;letter-spacing:inherit;text-transform:inherit;position:relative;transition:all .3s}
+@media (hover:none){.lazy-switch button{cursor:pointer}}
+.lazy-switch button.active[data-mode="auto"]{background:var(--hunter);color:var(--void);box-shadow:inset 0 0 12px rgba(11,55,20,.5)}
+.lazy-switch button.active[data-mode="manual"]{background:var(--alert);color:var(--void)}
+.lazy-switch button:not(.active):hover{color:var(--bone)}
+.lazy-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:26px;align-items:stretch}
+.lazy-task{font-family:var(--font-mono);font-size:12px;color:var(--bone-dim);letter-spacing:.1em;margin-bottom:10px;text-transform:uppercase}
+.lazy-task b{color:var(--hunter)}
+.lazy-bar{position:relative;height:28px;border:1px solid var(--bone-faint);background:rgba(5,7,10,.6);overflow:hidden;margin-bottom:10px}
+.lazy-bar .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,var(--hunter-dim),var(--hunter));
+  box-shadow:0 0 10px rgba(255,221,0,.4);transition:width .25s linear}
+.lazy-bar .fill.manual{background:linear-gradient(90deg,#663010,var(--alert));box-shadow:0 0 10px rgba(255,154,43,.4)}
+.lazy-bar .track-lines{position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(255,221,0,.08) 0 1px,transparent 1px 24px)}
+.lazy-bar .pct{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:11px;color:var(--bone);letter-spacing:.1em;z-index:2;text-shadow:0 0 4px var(--void)}
+.lazy-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.lazy-stat{padding:12px 14px;background:rgba(5,7,10,.65);border:1px solid var(--bone-faint);border-left:2px solid var(--hunter);
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--bone-faint);text-transform:uppercase}
+.lazy-stat b{display:block;color:var(--hunter);font-size:18px;letter-spacing:.02em;margin-top:4px;text-transform:none;font-family:var(--font-display);font-weight:600}
+.lazy-stat.warn{border-left-color:var(--alert)}
+.lazy-stat.warn b{color:var(--alert-bright)}
+.lazy-quote{position:relative;padding:22px 20px;background:linear-gradient(180deg,rgba(13,24,14,.92),rgba(5,7,10,.7));
+  border:1px solid rgba(255,221,0,.3);font-family:var(--font-display);font-size:1.25rem;line-height:1.5;color:var(--bone);letter-spacing:.02em}
+.lazy-quote.manual{background:linear-gradient(180deg,rgba(40,22,10,.92),rgba(5,7,10,.7));border-color:rgba(255,154,43,.45)}
+.lazy-quote .q-attr{display:block;margin-top:14px;font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:var(--hunter);text-transform:uppercase}
+.lazy-quote.manual .q-attr{color:var(--alert)}
+.lazy-log{margin-top:16px;padding:14px 16px;background:rgba(5,7,10,.7);border-left:2px solid var(--bone-faint);
+  font-family:var(--font-term);font-size:14px;line-height:1.55;color:var(--hunter-dim);min-height:86px}
+.lazy-log.manual-log{color:var(--alert);border-left-color:var(--alert)}
+.lazy-log .ll-line{display:block;opacity:.85}
+@media (max-width:860px){.lazy-grid{grid-template-columns:1fr}.lazy-stats{grid-template-columns:1fr 1fr}}
+
+/* === INDUSTRY LOCK-ON INPUT === */
+.lockon{margin:0 0 24px;padding:18px 18px 14px;border:1px solid var(--bone-faint);
+  background:linear-gradient(90deg,rgba(9,13,19,.92),rgba(5,7,10,.7));position:relative}
+.lockon::before{content:"/ query_console :: target_industry";position:absolute;top:-11px;left:16px;background:var(--void);padding:0 10px;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:var(--beacon);text-transform:uppercase}
+.lockon-row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}
+.lockon-prompt{font-family:var(--font-mono);font-size:14px;color:var(--hunter);letter-spacing:.05em}
+.lockon-input{background:transparent;border:none;outline:none;font-family:var(--font-term);font-size:22px;color:var(--bone);letter-spacing:.04em;width:100%;caret-color:transparent}
+.lockon-input::placeholder{color:var(--bone-faint)}
+.lockon-blink{display:inline-block;width:10px;height:18px;background:var(--hunter);vertical-align:-2px;margin-left:2px;animation:tblink 1s infinite}
+.lockon-btn{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;color:var(--void);background:var(--hunter);border:none;padding:10px 16px;text-transform:uppercase;cursor:none;transition:all .3s}
+@media (hover:none){.lockon-btn{cursor:pointer}}
+.lockon-btn:hover{background:var(--bone);transform:translateY(-2px);box-shadow:0 6px 14px -4px rgba(255,221,0,.35)}
+.lockon-btn i{margin-right:6px}
+.lockon-out{margin-top:12px;padding:12px 14px;font-family:var(--font-mono);font-size:11px;line-height:1.8;color:var(--bone-dim);letter-spacing:.04em;
+  background:rgba(5,7,10,.55);border-left:2px solid var(--alert);min-height:28px;opacity:0;transition:opacity .4s}
+.lockon-out.show{opacity:1}
+.lockon-out .ok{color:var(--hunter)}
+.lockon-out .warn{color:var(--alert)}
+.lockon-out .target{color:var(--beacon)}
+@media (max-width:640px){.lockon-row{grid-template-columns:1fr;gap:10px}.lockon-btn{width:100%}.lockon-input{font-size:18px}}
+
+/* locked node highlight in ind-list */
+.ind-item.locked-target{border-color:var(--alert);background:rgba(40,22,10,.9);color:var(--bone);box-shadow:0 0 22px rgba(255,154,43,.3)}
+.ind-item.locked-target .ind-dot{background:var(--alert);box-shadow:0 0 14px var(--alert);animation:pulseDot .6s infinite}
+
+/* === AUDIT OVERLAY (rules hover) === */
+.audit-hud{position:fixed;right:20px;bottom:40px;z-index:60;font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;
+  padding:12px 16px;background:rgba(5,7,10,.92);border:1px solid var(--hunter-dim);color:var(--hunter);
+  pointer-events:none;opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;max-width:260px;text-transform:uppercase}
+.audit-hud.show{opacity:1;transform:none}
+.audit-hud .au-tag{display:block;font-size:9px;letter-spacing:.3em;color:var(--alert);margin-bottom:6px}
+.audit-hud .au-line{color:var(--bone)}
+.audit-hud .ok{color:var(--hunter)}
+
+/* === SECTION SEPARATOR (scan line bridge) === */
+.scan-bridge{position:relative;height:70px;margin-top:-35px;pointer-events:none;overflow:hidden}
+.scan-bridge::before{content:"";position:absolute;left:10%;right:10%;top:50%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--hunter-dim),var(--hunter),var(--hunter-dim),transparent);opacity:.55}
+.scan-bridge::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:50%;background:var(--hunter);
+  transform:translate(-50%,-50%);box-shadow:0 0 14px var(--hunter);animation:bridgePulse 2.6s ease-in-out infinite}
+@keyframes bridgePulse{0%,100%{opacity:.35;transform:translate(-50%,-50%) scale(.7)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}}
+
+/* === CH·00.5 NAMESAKE / THE CURTAIN (幕) === */
+#namesake{position:relative;overflow:hidden}
+#namesake::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255,154,43,.10), transparent 55%),
+    linear-gradient(180deg, transparent, rgba(50,14,10,.22), transparent);z-index:0}
+.nm-wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;width:100%;
+  display:grid;grid-template-columns:auto 1fr;gap:60px;align-items:center}
+.nm-glyph{position:relative;font-family:'Noto Serif TC',serif;font-weight:900;color:var(--bone);
+  font-size:clamp(10rem,22vw,20rem);line-height:.9;letter-spacing:-.02em;
+  text-shadow:0 0 60px rgba(255,154,43,.35),0 0 120px rgba(255,154,43,.15);
+  user-select:none}
+.nm-glyph::before{content:"";position:absolute;left:10%;right:10%;top:0;bottom:0;
+  background:repeating-linear-gradient(180deg,transparent 0 3px,rgba(0,0,0,.18) 3px 6px);
+  pointer-events:none;mix-blend-mode:multiply;opacity:.5}
+.nm-glyph::after{content:"";position:absolute;left:0;right:0;top:92%;height:6px;
+  background:radial-gradient(ellipse at center,rgba(255,221,0,.4),transparent 65%);filter:blur(2px)}
+.nm-def{position:relative}
+.nm-def .dict{font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;color:var(--bone-faint);text-transform:uppercase;padding-bottom:12px;border-bottom:1px dashed var(--bone-faint);margin-bottom:18px}
+.nm-def .dict b{color:var(--hunter);font-weight:500;margin-right:8px}
+.nm-def .dict .ipa{color:var(--alert-bright);font-family:var(--font-term);font-size:15px;letter-spacing:.02em;margin:0 10px}
+.nm-def h2{font-family:var(--font-display);font-weight:500;font-size:clamp(1.7rem,3.2vw,2.6rem);color:var(--bone);line-height:1.35;letter-spacing:.02em;margin-bottom:18px}
+.nm-def h2 .accent{color:var(--hunter)}
+.nm-def .meanings{list-style:none;padding:0}
+.nm-def .meanings li{padding:10px 0 10px 44px;position:relative;color:var(--bone-dim);font-size:14.5px;line-height:1.8;border-bottom:1px dashed rgba(75,87,99,.3)}
+.nm-def .meanings li:last-child{border-bottom:none}
+.nm-def .meanings li::before{counter-increment:m;content:counter(m) ".";position:absolute;left:0;top:10px;color:var(--alert);font-family:var(--font-mono);letter-spacing:.14em;font-size:12px}
+.nm-def .meanings{counter-reset:m}
+.nm-def .meanings li b{color:var(--bone);font-weight:500;margin-right:6px}
+.nm-def .kicker{margin-top:28px;padding:18px 22px;font-family:var(--font-display);font-size:clamp(1.1rem,1.9vw,1.5rem);line-height:1.55;color:var(--bone);
+  background:linear-gradient(90deg,rgba(40,22,10,.6),transparent);border-left:3px solid var(--alert);letter-spacing:.02em}
+.nm-def .kicker em{color:var(--alert-bright);font-style:normal;font-weight:500}
+.nm-def .kicker small{display:block;margin-top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.26em;color:var(--hunter);text-transform:uppercase}
+@media (max-width:900px){
+  .nm-wrap{grid-template-columns:1fr;gap:26px}
+  .nm-glyph{font-size:clamp(8rem,40vw,14rem);align-self:start}
+}
+
+/* === TAICHUNG DEV WIDGET (bottom-left fixed) === */
+.devwidget{position:fixed;right:16px;bottom:52px;z-index:45;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;color:var(--bone-dim);text-transform:uppercase;
+  padding:12px 14px;background:rgba(7,10,14,.9);backdrop-filter:blur(8px);border:1px solid rgba(255,221,0,.25);
+  max-width:240px;line-height:1.75;pointer-events:auto;user-select:none;transition:opacity .4s}
+.devwidget::before{content:"";position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:1px solid var(--hunter);border-left:1px solid var(--hunter)}
+.devwidget::after{content:"";position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:1px solid var(--hunter);border-right:1px solid var(--hunter)}
+.devwidget .dw-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;margin-bottom:8px;border-bottom:1px dashed rgba(75,87,99,.4);color:var(--hunter);font-size:9px}
+.devwidget .dw-head .dot{width:6px;height:6px;border-radius:50%;background:var(--hunter);animation:pulseDot 1.6s infinite;box-shadow:0 0 6px var(--hunter)}
+.devwidget .dw-row{display:flex;justify-content:space-between;gap:12px}
+.devwidget .dw-row b{color:var(--bone);font-weight:500;letter-spacing:.1em;text-transform:none;font-family:var(--font-display);font-size:12px}
+.devwidget .dw-row .warm{color:var(--alert-bright)}
+.devwidget .coffee-bar{display:inline-flex;gap:2px}
+.devwidget .coffee-bar i{width:7px;height:10px;background:var(--bone-faint);display:block}
+.devwidget .coffee-bar i.on{background:var(--alert)}
+.devwidget .dw-foot{margin-top:8px;padding-top:8px;border-top:1px dashed rgba(75,87,99,.4);color:var(--hunter);text-align:center;font-size:9px;letter-spacing:.28em}
+@media (max-width:760px){
+  .devwidget{right:10px;bottom:46px;max-width:190px;padding:10px 12px;font-size:9px}
+  .devwidget .dw-row b{font-size:10px}
+}
+@media (max-width:420px){.devwidget{display:none}}
+
+/* === SERP (GOOGLE-STYLE SEARCH RESULTS) === */
+#serp{background:linear-gradient(180deg,transparent,rgba(240,240,240,.02),transparent)}
+.serp-shell{max-width:1020px;margin:26px auto 0;width:100%;
+  background:#f7f7f7;color:#202124;border:1px solid rgba(230,230,230,.4);box-shadow:0 30px 60px -20px rgba(0,0,0,.6);font-family:'Noto Sans TC',Arial,sans-serif;position:relative}
+.serp-shell::before{content:"";position:absolute;inset:-6px -6px auto auto;width:42px;height:42px;background:radial-gradient(circle,var(--hunter),transparent 70%);opacity:.4;pointer-events:none}
+.serp-bar{display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid #e0e0e0;background:#fff}
+.serp-logo{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:22px;letter-spacing:-.01em;display:flex;gap:2px}
+.serp-logo .b{color:#4285F4}.serp-logo .o1{color:#EA4335}.serp-logo .o2{color:#FBBC05}.serp-logo .g1{color:#4285F4}.serp-logo .l{color:#34A853}.serp-logo .e{color:#EA4335}
+.serp-search{flex:1;display:flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid #dfe1e5;border-radius:24px;background:#fff;box-shadow:0 1px 6px rgba(32,33,36,.06)}
+.serp-search .magnifier{color:#9aa0a6;font-size:14px}
+.serp-search input{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;color:#202124}
+.serp-search .mic{color:#4285F4}
+.serp-tabs{display:flex;gap:22px;padding:6px 22px 0;border-bottom:1px solid #ebebeb;background:#fff;font-size:13px;color:#5f6368;overflow-x:auto;scrollbar-width:none}
+.serp-tabs::-webkit-scrollbar{display:none}
+.serp-tabs button{border:none;background:transparent;color:inherit;padding:10px 2px;cursor:none;font-family:inherit;font-size:13px;position:relative;white-space:nowrap;letter-spacing:.02em}
+@media (hover:none){.serp-tabs button{cursor:pointer}}
+.serp-tabs button.active{color:#1a73e8}
+.serp-tabs button.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#1a73e8}
+.serp-tabs button i{margin-right:5px;font-size:11px}
+
+.serp-body{padding:20px 22px 26px}
+.serp-meta{font-size:12px;color:#70757a;margin-bottom:18px}
+.serp-aio{border:1px solid #dadce0;border-radius:24px;padding:18px 20px;margin-bottom:20px;background:linear-gradient(135deg,#f3e8ff,#e7f0fe);position:relative}
+.serp-aio::before{content:"AI OVERVIEW";position:absolute;top:-10px;left:18px;background:#fff;padding:2px 10px;font-size:10px;letter-spacing:.14em;color:#8430ce;font-weight:600;border:1px solid #e3d5f5;border-radius:12px}
+.serp-aio .aio-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:#333;font-size:13px;font-weight:600}
+.serp-aio .aio-head i{color:#8430ce}
+.serp-aio p{font-size:14px;line-height:1.7;color:#202124}
+.serp-aio .src{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.serp-aio .src a{font-size:11px;color:#1a73e8;text-decoration:none;padding:4px 10px;background:#fff;border:1px solid #e1e3e6;border-radius:16px}
+
+.serp-result{margin-bottom:22px}
+.serp-result .rtop{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px;color:#5f6368}
+.serp-result .favicon{width:18px;height:18px;border-radius:50%;background:var(--hunter);color:var(--void);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--font-mono);font-weight:700}
+.serp-result .rurl{color:#5f6368}
+.serp-result .rdots{color:#70757a;margin-left:auto;padding:2px 6px}
+.serp-result h3{font-size:20px;line-height:1.3;margin-bottom:4px;font-weight:500}
+.serp-result h3 a{color:#1a0dab;text-decoration:none}
+.serp-result h3 a:hover{text-decoration:underline}
+.serp-result h3 em{font-style:normal;font-weight:700;color:#1a0dab;background:rgba(252,232,3,.35)}
+.serp-result .snippet{font-size:14px;line-height:1.6;color:#4d5156}
+.serp-result .snippet em{font-style:normal;font-weight:600;background:rgba(252,232,3,.35)}
+.serp-result .sitelinks{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px 20px}
+.serp-result .sitelinks a{color:#1a0dab;font-size:13px;text-decoration:none}
+.serp-result .sitelinks span{color:#4d5156;font-size:12px;display:block}
+
+.serp-cap{text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;color:var(--bone-faint);text-transform:uppercase;margin-top:26px}
+.serp-cap b{color:var(--hunter)}
+
+@media (max-width:760px){
+  .serp-bar{flex-wrap:wrap;padding:10px 12px;gap:10px}
+  .serp-logo{font-size:18px}
+  .serp-search{width:100%;order:3;padding:8px 14px}
+  .serp-tabs{padding:6px 12px 0;gap:16px}
+  .serp-body{padding:16px 14px 20px}
+  .serp-result h3{font-size:17px}
+  .serp-result .sitelinks{grid-template-columns:1fr}
+  .serp-aio{padding:18px 16px}
+}
+
+/* === small 幕 watermark sprinkled in bg === */
+.mu-mark{position:absolute;font-family:'Noto Serif TC',serif;font-weight:900;color:rgba(255,221,0,.05);pointer-events:none;user-select:none;letter-spacing:-.02em;line-height:1;z-index:0}
+
+/* === RESPONSIVE HARDENING — prevent layout breaks at awkward widths === */
+
+/* 全域：長中英混排 / URL / 標籤一律 wrap */
+.sec-label,.manifesto-card h1,.manifesto-lead,.chron-info,.c-msg,.c-body,
+.rule-card p,.svc-card p,.trinity-card p,.ind-item,.slot-card,
+.beta-call,.lazy-task,.lazy-quote,.lockon-out,.lazy-stat{
+  overflow-wrap:anywhere;word-break:break-word
+}
+
+/* HERO: 760–1100 之間避免 2 欄擠成一團 */
+@media (max-width:1100px) and (min-width:901px){
+  #hero{grid-template-columns:1fr 0.85fr;gap:36px}
+  .her-poster{width:clamp(220px,28vw,340px)}
+  .manifesto-card h1{font-size:clamp(2.2rem,5.2vw,4rem)}
+}
+
+/* 中間尺寸（760-1100）時 trinity 給 3 欄但縮一點 padding */
+@media (max-width:1100px) and (min-width:761px){
+  .trinity{gap:18px}
+  .trinity-card{padding:24px 20px 28px}
+  .trinity-card h3{font-size:1.45rem}
+  .trinity-card .glyph{font-size:30px}
+}
+
+/* Rules: 860-1100 用 3 欄（比 2 欄好看） */
+@media (max-width:1100px) and (min-width:861px){
+  .rules-grid{grid-template-columns:repeat(3,1fr)}
+  .rule-card{min-height:300px;padding:20px 16px}
+  .rule-card .r-num{font-size:60px}
+}
+/* Rules 560-860 用 2 欄 */
+@media (max-width:860px) and (min-width:561px){
+  .rules-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Services 861-1100：4 卡改 2×2（比 3+1 好看） */
+@media (max-width:1100px) and (min-width:861px){
+  .svc-grid{grid-template-columns:repeat(2,1fr);gap:14px}
+  .svc-card{min-height:240px;padding:24px 20px}
+  .svc-card h4{font-size:1.2rem}
+}
+
+/* Slot grid 中間尺寸防擠 */
+@media (max-width:1100px) and (min-width:901px){
+  .slot-grid{grid-template-columns:repeat(5,1fr);gap:10px}
+  .slot-card{min-height:130px;padding:14px 10px}
+  .slot-card .s-num{font-size:38px}
+}
+@media (max-width:900px) and (min-width:561px){
+  .slot-grid{grid-template-columns:repeat(3,1fr)}
+}
+
+/* Lazy demo stats 窄螢幕時 1 欄 */
+@media (max-width:560px){
+  .lazy-stats{grid-template-columns:1fr}
+  .lazy-stat{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .lazy-stat b{margin-top:0}
+}
+
+/* Chronicle commit msg 多行時保留縮排 */
+.chron-info .c-msg{line-height:1.55}
+.chron-hash{white-space:nowrap}
+
+/* HUD 在 760–960 區間避免擠到 */
+@media (max-width:960px) and (min-width:761px){
+  .hud-top{font-size:10px;letter-spacing:.14em;padding:10px 14px}
+  .hud-top .hud-center span:nth-child(2){display:none}
+  .hud-top .hud-right span:nth-child(1){display:none}
+}
+
+/* Manifesto lead 在中間尺寸收斂 */
+@media (max-width:1100px) and (min-width:901px){
+  .manifesto-lead{font-size:clamp(1.8rem,3.6vw,2.8rem)}
+  .manifesto-wrap{gap:36px}
+}
+
+/* sys-strip 中間尺寸縮一點 */
+@media (max-width:1100px){
+  .sys-strip{font-size:10px;padding:12px 14px}
+}
+
+/* Radar stage 中間尺寸優化 */
+@media (max-width:1100px) and (min-width:901px){
+  .radar-stage{gap:28px}
+  .radar-3d{max-width:480px}
+  .ind-list{gap:8px}
+  .ind-item{font-size:11px;padding:11px 12px;letter-spacing:.04em}
+}
+
+/* Section padding 中間尺寸縮一點 */
+@media (max-width:1100px){
+  section{padding:100px 6vw}
+  #hero{padding:100px 6vw 70px}
+  #radar{padding:100px 5vw}
+}
+@media (max-width:640px){
+  section{padding:80px 5vw}
+  #hero{padding:120px 5vw 60px}
+}
+
+/* 大螢幕舒適度：避免全寬文字行過長 */
+@media (min-width:1600px){
+  section{padding:140px 10vw}
+}
+
+/* 讓 footer soc 在超窄避免擠出 */
+.soc a{flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- scanner reticle cursor -->
+<div class="reticle" aria-hidden="true">
+  <div class="r-ring"></div>
+  <div class="r-box"></div>
+  <div class="r-dot"></div>
+</div>
+
+<!-- background canvases -->
+<canvas id="three-canvas"></canvas>
+<div id="p5-canvas"></div>
+
+<!-- overlays -->
+<div class="matrix-grid"></div>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<!-- top HUD -->
+<div class="hud-top">
+  <a href="/guild/" aria-label="回到公會名冊"><i class="fa-solid fa-angle-left"></i>&nbsp;&nbsp;ARCHIVE</a>
+  <div class="hud-center"><span class="blink">● REC</span><span>LEAD-HUNTER.OS v0.1-BETA</span><span id="clock">00:00:00 UTC</span></div>
+  <div class="hud-right"><span>SIGNAL: STABLE</span><span>TRACK: yesme_ar</span></div>
+</div>
+
+<main>
+
+<!-- ========== HERO ========== -->
+<section id="hero">
+  <div>
+    <article class="manifesto-card">
+      <div class="mc-tag"><b>BULLETIN · 01</b>yesme / 阿幕 · taichung · auto lead ops</div>
+      <h1>
+        我不是<br>
+        <span class="strike">勤奮的人</span>。<br>
+        我寫了一套<br>
+        <span class="hl">會自己動的系統。</span>
+      </h1>
+      <div class="sub">
+        <span class="lbl">小號</span><span class="val"><b>SMALL ACCOUNT</b>· 夜裡寫 code 的台中自由接案者</span>
+        <span class="lbl">大系統</span><span class="val"><b>10 INDUSTRIES</b>· 正在 BETA 測試的獵客管線</span>
+        <span class="lbl">開放</span><span class="val"><b>10 SLOTS</b>· 每產業 1 席，免費跑一個月</span>
+      </div>
+      <div class="signoff">
+        <span><span class="pill">TAICHUNG</span> 24.15°N · 120.67°E</span>
+        <span>— 懶，是我最高的生產力</span>
+      </div>
+    </article>
+    <div class="sys-strip cbrak">
+      <span class="prompt">~/yesme@taichung:~$</span> boot<br>
+      <span class="dim">[</span><span class="ok">OK</span><span class="dim">]</span> auto_poster / lead_crawler / seo_optimizer<span class="dim">.online</span><br>
+      <span class="dim">[</span><span class="warm">WARN</span><span class="dim">]</span> operator is lazy. engaging autopilot.
+    </div>
+  </div>
+
+  <div class="hero-avatar-wrap">
+    <div class="her-poster">
+      <span class="tag-bar">HELLO · 大家好</span>
+      <span class="pin" aria-hidden="true"></span>
+      <img src="/assets/img/guild/yesme_ar/avatar.webp" alt="阿幕 自介用的 POP ART：氣球、Peanuts、大家好我是阿幕、好久不見、心想事成馬到成功。" />
+    </div>
+    <p class="poster-caption">
+      這張是我打招呼用的自介圖。<br>
+      氣球、Peanuts、好久不見、心想事成 —<br>
+      <b>你看到的這整頁，就是這張圖後面那塊 <span class="mu-inline">幕</span> 延伸出來的我。</b>
+    </p>
+  </div>
+</section>
+
+<div class="scan-bridge" aria-hidden="true"></div>
+
+<!-- ========== NAMESAKE / 幕 THE CURTAIN ========== -->
+<section id="namesake">
+  <span class="mu-mark" style="top:12%;right:6%;font-size:18rem">幕</span>
+  <div class="nm-wrap">
+    <div class="nm-glyph reveal" aria-hidden="true">幕</div>
+    <div class="nm-def">
+      <div class="dict reveal"><b>幕</b>·<span class="ipa">/mù/</span>·noun · zh-TW</div>
+      <h2 class="reveal">我叫阿幕。<br>我是系統前面那塊<span class="accent">幕</span>。</h2>
+      <ol class="meanings reveal">
+        <li><b>布幕、簾幕</b> — 一塊擋在你與舞台之間、讓你先別看到後台的布料。</li>
+        <li><b>屏幕、螢幕</b> — 你現在盯的那塊玻璃。99% 的生意，從這裡開始。</li>
+        <li><b>幕後、幕僚</b> — 真正在跑的不是我，是幕後那台替你自動找客戶的機器。</li>
+      </ol>
+      <div class="kicker reveal">
+        你看到的是我；<em>真正在跑的，是幕後那台機器。</em><br>
+        我只是把那塊幕拉開一點，讓你看見它怎麼做事。
+        <small>&gt; curtain.js · loaded</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="scan-bridge" aria-hidden="true"></div>
+
+<!-- ========== CH·00 CHRONICLE / GIT LOG ========== -->
+<section id="chronicle">
+  <div class="chron-wrap">
+    <div class="sec-num reveal">CH·00 / PROVENANCE</div>
+    <h2 class="sec-label reveal">在我寫這套系統之前，<br><span class="accent">我先被職場寫壞了幾次。</span></h2>
+    <p class="sec-sub reveal">&gt; GIT LOG · HOW · I · GOT · HERE</p>
+
+    <div class="chron-board reveal">
+      <div class="chron-commit" data-idx="0">
+        <div class="chron-hash">#a1b27d<span class="branch">[main]</span></div>
+        <div class="chron-info">
+          <div class="c-msg">init: 徵老闆 — 需要一個不嫌棄我年齡的工作</div>
+          <span class="c-meta">2025 · 10 · 17 &nbsp;·&nbsp; +2 LINES · &nbsp;mood: tired</span>
+          <div class="c-body">那時候我還在問一個問題：「誰願意收留我？」
+履歷裡全是我會做的事 — 企劃、SEO、短影音、剪接、接案 — 但我得在最後加一句「不嫌棄員工太老」，才敢把它發出去。
+某種清楚也不甘願的自知。我以為得先被誰接住，我的能力才有地方施力。</div>
+        </div>
+        <div class="chron-toggle"><i class="fa-solid fa-chevron-right"></i>EXPAND</div>
+      </div>
+
+      <div class="chron-commit" data-idx="1">
+        <div class="chron-hash">#c4e9a8<span class="branch">[main]</span></div>
+        <div class="chron-info">
+          <div class="c-msg">refactor: 把挫折 STRIP 出 5 條硬規矩</div>
+          <span class="c-meta">2026 · 01 · 28 &nbsp;·&nbsp; +42 LINES · &nbsp;mood: no-more-swallowing</span>
+          <div class="c-body">三個月後，我不再追問「誰要我」這個問題。
+我把那些在職場被磨掉的話、被吞下去的句子、被擺上桌沒人接的邊界，一條一條整理出來。
+這 5 條規矩不是寫給老闆看的 — 是我寫給下一個版本的自己。我不要再忍了。</div>
+        </div>
+        <div class="chron-toggle"><i class="fa-solid fa-chevron-right"></i>EXPAND</div>
+      </div>
+
+      <div class="chron-commit" data-idx="2">
+        <div class="chron-hash">#f7d310<span class="branch">[beta]</span></div>
+        <div class="chron-info">
+          <div class="c-msg">feat: 不找老闆了。我寫一套自動幫你找老闆的系統</div>
+          <span class="c-meta">2026 · 02 · 23 &nbsp;·&nbsp; +1240 LINES · &nbsp;mood: autopilot-engaged</span>
+          <div class="c-body">我停止找工作了。
+與其繼續問「誰需要我」，不如反過來蓋一台「誰都可以派上我」的機器 —
+我寫了一套替別人自動找客戶的系統。你現在看到的這頁，就是它的第一道幕。
+從半年前在留言區等回覆的我，走到現在這裡，我花了四個月。</div>
+        </div>
+        <div class="chron-toggle"><i class="fa-solid fa-chevron-right"></i>EXPAND</div>
+      </div>
+    </div>
+    <div class="chron-footer reveal">
+      <span>HEAD → [beta] · 3 commits · clean working tree</span>
+      <span class="status"><span class="pulse"></span>STILL SHIPPING</span>
+    </div>
+  </div>
+</section>
+
+<div class="scan-bridge" aria-hidden="true"></div>
+
+<!-- ========== IDENTITY TRINITY ========== -->
+<section id="identity">
+  <div class="sec-num reveal">CH·01 / IDENTITY</div>
+  <h2 class="sec-label reveal">我的<span class="accent">三顆引擎</span>，<br>同時在轉。</h2>
+  <p class="sec-sub reveal">&gt; THREE ENGINES · RUNNING IN PARALLEL</p>
+
+  <div class="trinity">
+    <div class="trinity-card reveal cbrak">
+      <div class="idx">ENGINE · 01</div>
+      <div class="glyph"><i class="fa-solid fa-code"></i></div>
+      <h3>網頁設計</h3>
+      <div class="en">Web Design</div>
+      <p>我不做只是好看的官網。我做的是會轉換、會被搜尋、會主動把客戶接住的頁面。從結構到 meta、從載入速度到轉換路徑，一次排好。</p>
+      <div class="sig">01</div>
+    </div>
+    <div class="trinity-card reveal cbrak">
+      <div class="idx">ENGINE · 02</div>
+      <div class="glyph"><i class="fa-solid fa-video"></i></div>
+      <h3>短影音製作</h3>
+      <div class="en">Short Video</div>
+      <p>去年我整整一年只做一件事：把短影音做成能賣東西的武器。腳本、拍攝、剪輯、上片節奏、鉤子、CTA — 這不是藝術，是演算法。</p>
+      <div class="sig">02</div>
+    </div>
+    <div class="trinity-card reveal cbrak">
+      <div class="idx">ENGINE · 03</div>
+      <div class="glyph"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+      <h3>SEO 影片優化</h3>
+      <div class="en">SEO & Video Optimization</div>
+      <p>我把影片當作關鍵字載體在經營。標題、描述、tag、縮圖、落地頁 — 一條可以被機器讀懂、被人點進去、被廣告追蹤的鏈。</p>
+      <div class="sig">03</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== LAZY MANIFESTO ========== -->
+<section id="manifesto">
+  <div class="sec-num reveal">CH·02 / DOCTRINE</div>
+  <h2 class="sec-label reveal">懶惰，<span class="accent">是我最高的生產力。</span></h2>
+  <p class="sec-sub reveal">&gt; LAZINESS · IS · MY · HIGHEST · LEVERAGE</p>
+
+  <div class="manifesto-wrap">
+    <div class="manifesto-lead reveal">
+      <span class="drop">▍</span>我沒在每天手動貼文。<br>
+      <span class="flash">夜裡那台機器替我，把想說的丟到時間線上。</span><br>
+      我也沒在每天陌生開發。<br>
+      <span class="flash">白天那台機器替你，把潛在客戶排成一張可用的名單。</span>
+      <span class="dim">— 不是因為勤勞，是因為夠懶；懶的人才願意一次把事情做到不用再做。</span>
+    </div>
+    <aside class="manifesto-side reveal cbrak">
+      <span class="pre">&gt; RULES.exe / automation_creed</span>
+      <ol>
+        <li>我能寫死一次的，就不天天重做。</li>
+        <li>我能交給機器跑的，不交給星期一早上的自己。</li>
+        <li>我做超過三次的動作，下一輪就會被我自動化掉。</li>
+        <li>我省下的時間用來想策略，剩下的拿去滑手機 — 我承認。</li>
+        <li>我相信自動化才是長期的勤勞。</li>
+      </ol>
+    </aside>
+  </div>
+
+  <!-- LAZY DEMO: AUTO vs MANUAL -->
+  <div class="lazy-demo reveal">
+    <div class="lazy-switch" role="tablist" aria-label="示範模式切換">
+      <button type="button" class="active" data-mode="auto" aria-label="自動模式"><i class="fa-solid fa-bolt"></i>&nbsp; AUTO</button>
+      <button type="button" data-mode="manual" aria-label="手動模式"><i class="fa-solid fa-hand"></i>&nbsp; MANUAL</button>
+    </div>
+
+    <div class="lazy-grid">
+      <div>
+        <div class="lazy-task">TASK · <b id="lazy-task-name">批次 PO 100 篇社群短文</b></div>
+        <div class="lazy-bar"><div class="fill" id="lazy-fill"></div><div class="track-lines"></div><span class="pct" id="lazy-pct">0%</span></div>
+        <div class="lazy-stats">
+          <div class="lazy-stat"><span>TIME</span><b id="lazy-time">3.2s</b></div>
+          <div class="lazy-stat"><span>OPERATOR LOAD</span><b id="lazy-load">2%</b></div>
+          <div class="lazy-stat"><span>COFFEE DRUNK</span><b id="lazy-coffee">1 cup</b></div>
+        </div>
+        <div class="lazy-log" id="lazy-log"></div>
+      </div>
+      <blockquote class="lazy-quote" id="lazy-quote">
+        做完了。<br>去喝咖啡。<span class="q-attr">— yesme / auto mode</span>
+      </blockquote>
+    </div>
+  </div>
+</section>
+
+<div class="scan-bridge" aria-hidden="true"></div>
+
+<!-- ========== 10-INDUSTRY RADAR ========== -->
+<section id="radar">
+  <div class="sec-num reveal">CH·03 / TARGETING</div>
+  <h2 class="sec-label reveal">我先鎖定 10 個產業，<br><span class="accent">一次掃進雷達。</span></h2>
+  <p class="sec-sub reveal">&gt; 10-INDUSTRY LEAD-HUNTER GRID · BETA ROLLOUT</p>
+
+  <div class="lockon reveal">
+    <div class="lockon-row">
+      <span class="lockon-prompt">&gt;&nbsp; target_industry_<span class="lockon-blink"></span></span>
+      <input id="lockon-input" class="lockon-input" type="text" placeholder="輸入你的產業（例如：餐飲、美業、醫美、電商…）" autocomplete="off" aria-label="輸入你的產業" />
+      <button id="lockon-btn" class="lockon-btn" type="button"><i class="fa-solid fa-crosshairs"></i>LOCK-ON</button>
+    </div>
+    <div class="lockon-out" id="lockon-out" aria-live="polite"></div>
+  </div>
+
+  <div class="radar-stage">
+    <div class="radar-3d cbrak">
+      <canvas id="radar-canvas"></canvas>
+      <div class="radar-readout">
+        <span>AZIMUTH · 360°</span>
+        <span id="scan-target">SCAN · --</span>
+        <span>RANGE · 10</span>
+      </div>
+    </div>
+    <div class="ind-list" id="ind-list">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ========== FIVE RULES ========== -->
+<section id="rules">
+  <div class="sec-num reveal">CH·04 / FIVE LAWS</div>
+  <h2 class="sec-label reveal">我寫給下一個版本的自己 —<br><span class="accent">5 條不能忘的規矩。</span></h2>
+  <p class="sec-sub reveal">&gt; THE FIVE LAWS · I · LIVE · BY · NOW</p>
+
+  <div class="rules-grid">
+    <div class="rule-card reveal">
+      <div class="r-num">01</div>
+      <div class="r-verb">敢講</div>
+      <div class="r-obj">&gt; say.it_clearly()</div>
+      <p class="r-body">我做工程師，第一道 debug 永遠是把問題講清楚。我會把模糊的期待翻成具體需求，把不合理的地方擺到桌上 — 不再吞回肚子裡。</p>
+      <div class="r-stamp">LAW · 01 · CLARITY</div>
+    </div>
+    <div class="rule-card reveal">
+      <div class="r-num">02</div>
+      <div class="r-verb">敢擋</div>
+      <div class="r-obj">&gt; draw.boundary()</div>
+      <p class="r-body">我寫的系統能跑得動，是因為邊界寫死了。我自己的時間也照同一份規格寫。我說「不」，不是冷漠 — 我是在把 CPU 留給真正該跑的任務。</p>
+      <div class="r-stamp">LAW · 02 · BOUNDARY</div>
+    </div>
+    <div class="rule-card reveal">
+      <div class="r-num">03</div>
+      <div class="r-verb">敢撞</div>
+      <div class="r-obj">&gt; face.conflict()</div>
+      <p class="r-body">對我來說衝突是 debug 流程的一部分。我學過一次 — 假裝沒事，等於把 bug 註解掉繼續上線。它會回來、利息更高，而且通常挑 demo 早上回來找我。</p>
+      <div class="r-stamp">LAW · 03 · CONFRONT</div>
+    </div>
+    <div class="rule-card reveal">
+      <div class="r-num">04</div>
+      <div class="r-verb">敢扛</div>
+      <div class="r-obj">&gt; own.outcome()</div>
+      <p class="r-body">我不追求 PR 留言裡的祝福 emoji，我追求 close issue。討不討喜是我的風格議題；任務做沒做完是事實議題 — 我把兩件事分開算。</p>
+      <div class="r-stamp">LAW · 04 · OWNERSHIP</div>
+    </div>
+    <div class="rule-card reveal">
+      <div class="r-num">05</div>
+      <div class="r-verb">敢站</div>
+      <div class="r-obj">&gt; self.respect()</div>
+      <p class="r-body">我學到一件事：價值是我自己貼上去的一張 label。別人只是照我寫的那個 label 對我下 API — 我寫 admin，對方就給我 admin 權限；我寫 intern，對方就拿 intern 的薪水表來對照我。</p>
+      <div class="r-stamp">LAW · 05 · STANDING</div>
+    </div>
+  </div>
+
+  <aside class="rules-source reveal">
+    <a class="src-thumb" href="https://www.threads.com/@yesme_ar" target="_blank" rel="noopener">
+      <img src="/assets/img/guild/yesme_ar/poster_rules.webp" alt="阿幕 在 Threads 貼的原版海報：問題不會因為你忍，就自己消失" loading="lazy" />
+    </a>
+    <div class="src-text">
+      <b>原版海報 · 我貼在 Threads 的版本</b>
+      上面這 5 張卡，是我從這張海報拆出來、再寫一次的。<br>
+      <a href="https://www.threads.com/@yesme_ar" target="_blank" rel="noopener">看原版 →</a>
+    </div>
+  </aside>
+</section>
+
+<!-- ========== SERVICES ========== -->
+<section id="services">
+  <div class="sec-num reveal">CH·05 / DEPLOYABLE</div>
+  <h2 class="sec-label reveal">你能<span class="accent">直接派我去做</span>的事。</h2>
+  <p class="sec-sub reveal">&gt; WHAT · YOU · CAN · ACTUALLY · DEPLOY · ME · FOR</p>
+
+  <div class="svc-grid">
+    <div class="svc-card reveal">
+      <div class="s-code">SVC · 01</div>
+      <div class="s-icon"><i class="fa-solid fa-window-maximize"></i></div>
+      <h4>一頁式 / 品牌官網</h4>
+      <p>我會把你的服務、信任背書、成交路徑，整理成一頁就能被買單的頁面。RWD、載入速度、SEO 結構、轉換追蹤，我一次幫你做齊，不分包。</p>
+      <div class="s-meta"><b>交付</b>：原始碼 + SEO 基礎 + GA 追蹤</div>
+    </div>
+    <div class="svc-card reveal">
+      <div class="s-code">SVC · 02</div>
+      <div class="s-icon"><i class="fa-solid fa-film"></i></div>
+      <h4>短影音企劃 / 拍攝</h4>
+      <p>我從你的品牌定位反推內容鉤子，幫你寫出 30 秒以內能被看完的腳本。我在台中可以互拍，也可以只接剪輯，或幫你規劃整季系列怎麼推。</p>
+      <div class="s-meta"><b>適合</b>：自媒體 / 服務型品牌 / 店家</div>
+    </div>
+    <div class="svc-card reveal">
+      <div class="s-code">SVC · 03</div>
+      <div class="s-icon"><i class="fa-solid fa-chart-line"></i></div>
+      <h4>SEO / 部落格內容</h4>
+      <p>我做關鍵字研究、內文結構、內外鏈、meta 佈署。我從「你想賣什麼」倒推「誰會搜尋什麼」，一篇一篇把你推上搜尋前排。</p>
+      <div class="s-meta"><b>產出</b>：可被搜尋進來的資產，不是一次性貼文</div>
+    </div>
+    <div class="svc-card reveal">
+      <div class="s-code">SVC · 04</div>
+      <div class="s-icon"><i class="fa-solid fa-robot"></i></div>
+      <h4>自動化獵客系統（BETA）</h4>
+      <p>我寫的那套系統 — 我讓它自動掃產業、整理潛在客戶、自動 PO 文、把回流量化追蹤起來。我目前開放 10 席產業名額，找人一起跑測試。</p>
+      <div class="s-meta"><b>狀態</b>：<b>BETA · 10 SLOTS</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="scan-bridge" aria-hidden="true"></div>
+
+<!-- ========== SERP / GOOGLE SEARCH RESULTS (how you'll find me) ========== -->
+<section id="serp">
+  <div class="sec-num reveal">CH·05.5 / SERP</div>
+  <h2 class="sec-label reveal">你會這樣<br><span class="accent">找到我。</span></h2>
+  <p class="sec-sub reveal">&gt; 這是 SEO 人看世界的眼睛 · SIMULATED SEARCH ENGINE RESULTS PAGE</p>
+
+  <div class="serp-shell reveal">
+    <div class="serp-bar">
+      <div class="serp-logo"><span class="b">G</span><span class="o1">o</span><span class="o2">o</span><span class="g1">g</span><span class="l">l</span><span class="e">e</span></div>
+      <div class="serp-search">
+        <i class="fa-solid fa-magnifying-glass magnifier"></i>
+        <input id="serp-input" value="台中 網頁設計 短影音 SEO 自動化 接案" readonly aria-label="模擬搜尋框" />
+        <i class="fa-solid fa-microphone mic"></i>
+        <i class="fa-solid fa-image" style="color:#4285F4"></i>
+      </div>
+    </div>
+    <div class="serp-tabs">
+      <button type="button" class="active" data-q="all"><i class="fa-solid fa-magnifying-glass"></i>全部</button>
+      <button type="button" data-q="web"><i class="fa-solid fa-window-maximize"></i>網頁</button>
+      <button type="button" data-q="video"><i class="fa-solid fa-film"></i>影片</button>
+      <button type="button" data-q="img"><i class="fa-solid fa-image"></i>圖片</button>
+      <button type="button" data-q="news"><i class="fa-regular fa-newspaper"></i>新聞</button>
+      <button type="button" data-q="more">更多</button>
+    </div>
+    <div class="serp-body">
+      <div class="serp-meta">約 4,210,000 項結果（0.38 秒）· 位置：台中市</div>
+
+      <div class="serp-aio">
+        <div class="aio-head"><i class="fa-solid fa-sparkles"></i> AI 總整理 · yesme / 阿幕</div>
+        <p>yesme（阿幕）是駐點<em>台中</em>的網頁設計師，專長是<em>短影音行銷</em>與<em>SEO 影片優化</em>。目前正在打造一套<em>自動化的獵客系統</em>，先鎖定 10 個產業做 BETA 測試，每個產業只收 1 席，不收費、只收「有用沒用」的回饋。她自稱是懶人，所以寫系統讓機器自動發文、自動找客戶。</p>
+        <div class="src">
+          <a href="#hero">yesme / LEAD-HUNTER.OS</a>
+          <a href="https://www.threads.com/@yesme_ar" target="_blank" rel="noopener">@yesme_ar · Threads</a>
+          <a href="https://www.instagram.com/yesme_ar/" target="_blank" rel="noopener">IG · yesme_ar</a>
+          <a href="#beta">BETA 10 席名單</a>
+        </div>
+      </div>
+
+      <article class="serp-result">
+        <div class="rtop"><span class="favicon">Y</span><span class="rurl">supergalen.com › guild › yesme_ar</span><span class="rdots"><i class="fa-solid fa-ellipsis-vertical"></i></span></div>
+        <h3><a href="#hero">yesme ｜ 阿幕 ｜ <em>LEAD-HUNTER.OS</em> — 自動化獵客系統</a></h3>
+        <p class="snippet">我是<em>阿幕</em>。<em>台中</em>網頁設計 / <em>短影音</em> / <em>SEO</em> 優化師。我寫了一套會自己動的系統，<em>自動幫你找潛在客戶</em>。目前開放 10 個產業 BETA 測試，每個產業只收 1 席…</p>
+        <div class="sitelinks">
+          <a href="#services">四大服務 <span>一頁式官網、短影音、SEO、自動化</span></a>
+          <a href="#rules">5 條職場律 <span>敢講、敢擋、敢撞、敢扛、敢站</span></a>
+          <a href="#radar">10 產業雷達 <span>輸入你的產業立刻 LOCK-ON</span></a>
+          <a href="#chronicle">我的 git log <span>從徵老闆到寫系統的 4 個月</span></a>
+        </div>
+      </article>
+
+      <article class="serp-result">
+        <div class="rtop"><span class="favicon" style="background:#000;color:#fff">T</span><span class="rurl">threads.com › @yesme_ar</span><span class="rdots"><i class="fa-solid fa-ellipsis-vertical"></i></span></div>
+        <h3><a href="https://www.threads.com/@yesme_ar" target="_blank" rel="noopener">阿幕 · Threads 檔案 — 小號、<em>台中</em>、夜裡寫 code</a></h3>
+        <p class="snippet">在 Threads 上追蹤阿幕的日常片段：剛跑完的 <em>自動化</em>測試、新寫的一條職場規矩、半夜想到的短影音鉤子。她不常更新，但一更新通常有東西。</p>
+      </article>
+
+      <article class="serp-result">
+        <div class="rtop"><span class="favicon" style="background:linear-gradient(135deg,#f09433,#dc2743,#bc1888);color:#fff">I</span><span class="rurl">instagram.com › yesme_ar</span><span class="rdots"><i class="fa-solid fa-ellipsis-vertical"></i></span></div>
+        <h3><a href="https://www.instagram.com/yesme_ar/" target="_blank" rel="noopener">yesme (@yesme_ar) · Instagram photos and videos</a></h3>
+        <p class="snippet">yesme｜阿幕。小規模帳號、大規模企圖。<em>台中</em>。短影音 × SEO × 自動化的工作日常。</p>
+      </article>
+
+      <article class="serp-result" data-tag="related">
+        <div class="rtop"><span class="favicon" style="background:var(--alert);color:var(--void)">B</span><span class="rurl">supergalen.com › guild › yesme_ar › #beta</span><span class="rdots"><i class="fa-solid fa-ellipsis-vertical"></i></span></div>
+        <h3><a href="#beta">BETA 招募中 · <em>10 個產業</em>免費跑一個月</a></h3>
+        <p class="snippet">每個產業只收 1 席，用我的系統幫你把潛在客戶名單、內容素材、SEO 佈局跑出一個月的成果。不收費，只收「有用沒用」的回饋。</p>
+      </article>
+    </div>
+  </div>
+
+  <div class="serp-cap reveal">&gt; 如果你在 Google 搜尋這些關鍵字而沒找到我 — <b>那表示我的系統還沒跑到你那邊</b>。<br>&nbsp;&nbsp;留言跟我說，我把你加進第 11 格。</div>
+</section>
+
+<div class="scan-bridge" aria-hidden="true"></div>
+
+<!-- ========== BETA INVITE ========== -->
+<section id="beta">
+  <div class="beta-wrap">
+    <div class="sec-num reveal">CH·06 / BETA INVITE</div>
+    <h2 class="sec-label reveal">10 個位置。<br><span class="accent">我幫你跑一圈。</span></h2>
+    <p class="sec-sub reveal">&gt; 10 SEATS · FIRST-COME · ONE-INDUSTRY-PER-SEAT</p>
+
+    <p class="beta-call reveal">我先規劃 <b>10 個產業</b> 做測試，每個產業只收 1 席。我用我的系統，幫你把潛在客戶名單、內容素材、SEO 佈局，跑出一個月的成果 — <b>不收費</b>，只收一份「有用沒用」的回饋。</p>
+
+    <div class="slot-grid" id="slot-grid"><!-- filled by JS --></div>
+
+    <div class="beta-cta">
+      <a href="https://www.threads.com/@yesme_ar" target="_blank" rel="noopener"><i class="fa-brands fa-threads"></i>&nbsp;&nbsp;去 Threads 留言報名</a>
+      <a href="https://www.instagram.com/yesme_ar/" target="_blank" rel="noopener" class="secondary"><i class="fa-brands fa-instagram"></i>&nbsp;&nbsp;IG 私訊聯絡</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- TAICHUNG DEV WIDGET -->
+<div class="devwidget" id="devwidget" aria-hidden="true">
+  <div class="dw-head"><span><span class="dot" style="display:inline-block;vertical-align:middle"></span> DEV@TAICHUNG</span><span>v0.1-BETA</span></div>
+  <div class="dw-row"><span>COORD</span><b>24.15°N · 120.67°E</b></div>
+  <div class="dw-row"><span>LOCAL</span><b id="dw-time" class="warm">--:-- AM</b></div>
+  <div class="dw-row"><span>OPERATOR</span><b>阿幕 / lazy mode</b></div>
+  <div class="dw-row"><span>COFFEE</span><b class="coffee-bar" id="dw-coffee"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></b></div>
+  <div class="dw-foot" id="dw-foot">&lt; STILL SHIPPING &gt;</div>
+</div>
+
+<!-- audit HUD (shown when hovering rule cards) -->
+<div class="audit-hud" id="audit-hud" aria-hidden="true">
+  <span class="au-tag">PERSONAL.OS / LAW AUDIT</span>
+  <div class="au-line" id="audit-line">&gt; idle</div>
+</div>
+
+<footer>
+  <div class="sig-ln">yesme · <span class="accent">阿幕</span> · LEAD-HUNTER.OS</div>
+  <div class="loc">TAICHUNG · TAIWAN · WEB / VIDEO / SEO / AUTO</div>
+  <div class="soc">
+    <a href="https://www.threads.com/@yesme_ar" target="_blank" rel="noopener" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+    <a href="https://www.instagram.com/yesme_ar/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+  </div>
+  <div class="credit">Made with <i class="fa-solid fa-heart" style="color:#ff4b4b"></i> by SuperGalen's Dungeon · &lt;/> RENDERED IN AUTO MODE</div>
+</footer>
+
+<script>
+/* ========== CLOCK ========== */
+(function(){
+  const el = document.getElementById('clock');
+  if (!el) return;
+  function tick(){
+    const d = new Date();
+    const p = n => String(n).padStart(2,'0');
+    el.textContent = `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())} UTC`;
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+/* ========== SCANNER RETICLE CURSOR ========== */
+(function(){
+  const r = document.querySelector('.reticle');
+  if (!r) return;
+  let tx = innerWidth/2, ty = innerHeight/2, cx = tx, cy = ty;
+  addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; });
+  function loop(){
+    cx += (tx - cx) * 0.28; cy += (ty - cy) * 0.28;
+    r.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+  document.querySelectorAll('a, button, .trinity-card, .rule-card, .svc-card, .slot-card, .ind-item').forEach(el => {
+    el.addEventListener('mouseenter', () => r.classList.add('hot'));
+    el.addEventListener('mouseleave', () => r.classList.remove('hot'));
+  });
+})();
+
+/* ========== GSAP REVEAL ========== */
+gsap.registerPlugin(ScrollTrigger);
+document.querySelectorAll('.reveal').forEach(el => {
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top 85%',
+    onEnter: () => el.classList.add('visible'),
+  });
+});
+
+/* ========== INDUSTRY DATA ========== */
+const INDUSTRIES = [
+  { id: 'F&B', name: '餐飲 / 甜點店',      color: 0xffdd00 },
+  { id: 'BEA', name: '美業 / 髮型 / 美甲',  color: 0x4ec5d2 },
+  { id: 'FIT', name: '健身 / 瑜珈 / 運動',  color: 0xff7a33 },
+  { id: 'RLT', name: '房仲 / 室內設計',    color: 0xffdd00 },
+  { id: 'EDU', name: '補教 / 家教 / 課程',  color: 0x4ec5d2 },
+  { id: 'MED', name: '醫美 / 診所 / 中醫',  color: 0xff7a33 },
+  { id: 'ECM', name: '電商 / 小品牌',      color: 0xffdd00 },
+  { id: 'LAW', name: '法律 / 會計 / 顧問',  color: 0x4ec5d2 },
+  { id: 'AUT', name: '汽修 / 洗車 / 改裝',  color: 0xff7a33 },
+  { id: 'PET', name: '寵物 / 動物醫院',    color: 0xffdd00 },
+];
+
+/* ========== INDUSTRY LIST ========== */
+(function(){
+  const list = document.getElementById('ind-list');
+  if (!list) return;
+  INDUSTRIES.forEach((x, i) => {
+    const el = document.createElement('div');
+    el.className = 'ind-item';
+    el.dataset.idx = i;
+    el.innerHTML = `
+      <span class="ind-id">${String(i+1).padStart(2,'0')} / ${x.id}</span>
+      <span class="ind-name">${x.name}</span>
+      <span class="ind-dot"></span>`;
+    el.addEventListener('click', () => {
+      const input = document.getElementById('lockon-input');
+      if (input){ input.value = x.name.split(' / ')[0]; }
+      document.querySelectorAll('.ind-item').forEach(n => n.classList.remove('locked-target'));
+      el.classList.add('locked-target');
+      window.__yesmeRadarLock?.(i);
+      const out = document.getElementById('lockon-out');
+      if (out){
+        out.classList.add('show');
+        const potential = 42 + Math.floor(Math.random() * 180);
+        out.innerHTML = `<span class="ok">&gt; LOCK-ON acquired</span> · target <span class="target">${x.id} · ${x.name}</span><br>&gt; initial crawl estimate: <span class="target">${potential}</span> potential leads / week`;
+      }
+    });
+    list.appendChild(el);
+  });
+  const slot = document.getElementById('slot-grid');
+  if (slot){
+    INDUSTRIES.forEach((x, i) => {
+      const s = document.createElement('div');
+      s.className = 'slot-card';
+      s.innerHTML = `
+        <div class="s-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="s-label">SLOT · ${x.id}</div>
+        <div class="s-ind">${x.name}</div>`;
+      slot.appendChild(s);
+    });
+  }
+})();
+
+/* ========== THREE.JS — ORBITAL 10-INDUSTRY RADAR ========== */
+(function(){
+  const canvas = document.getElementById('radar-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  cam.position.set(0, 2.4, 6.8);
+  cam.lookAt(0,0,0);
+
+  function fit(){
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    renderer.setSize(w, h, false);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    cam.aspect = w/h; cam.updateProjectionMatrix();
+  }
+  fit(); addEventListener('resize', fit);
+
+  // concentric rings
+  const ringGroup = new THREE.Group();
+  for (let i = 1; i <= 4; i++){
+    const g = new THREE.RingGeometry(i*0.9, i*0.9 + 0.005, 96);
+    const m = new THREE.MeshBasicMaterial({ color: 0xb89f00, side: THREE.DoubleSide, transparent:true, opacity: 0.25 });
+    const r = new THREE.Mesh(g, m);
+    r.rotation.x = -Math.PI/2;
+    ringGroup.add(r);
+  }
+  // cross
+  const crossMat = new THREE.LineBasicMaterial({ color: 0xb89f00, transparent:true, opacity:.3 });
+  [[[-4,0,0],[4,0,0]],[[0,0,-4],[0,0,4]]].forEach(([a,b]) => {
+    const pts = [new THREE.Vector3(...a), new THREE.Vector3(...b)];
+    const geom = new THREE.BufferGeometry().setFromPoints(pts);
+    ringGroup.add(new THREE.Line(geom, crossMat));
+  });
+  scene.add(ringGroup);
+
+  // sweeping scan sector (fan)
+  const fanSegs = 40;
+  const fanPts = [new THREE.Vector3(0,0,0)];
+  const fanAngle = Math.PI * 0.28;
+  for (let i = 0; i <= fanSegs; i++){
+    const a = -fanAngle/2 + (fanAngle * i/fanSegs);
+    fanPts.push(new THREE.Vector3(Math.cos(a)*4.2, 0, Math.sin(a)*4.2));
+  }
+  const fanGeom = new THREE.BufferGeometry().setFromPoints(fanPts);
+  // Build triangle fan indices
+  const idx = [];
+  for (let i = 1; i < fanPts.length - 1; i++){ idx.push(0, i, i+1); }
+  fanGeom.setIndex(idx);
+  fanGeom.computeVertexNormals();
+  const fanMat = new THREE.MeshBasicMaterial({ color: 0xffdd00, transparent:true, opacity:.18, side: THREE.DoubleSide, depthWrite:false });
+  const fan = new THREE.Mesh(fanGeom, fanMat);
+  scene.add(fan);
+
+  // industry markers
+  const nodes = [];
+  INDUSTRIES.forEach((x, i) => {
+    const angle = (i / INDUSTRIES.length) * Math.PI * 2;
+    const radius = 2.4 + (i % 3) * 0.55;
+    const g = new THREE.SphereGeometry(0.08, 16, 16);
+    const m = new THREE.MeshBasicMaterial({ color: x.color });
+    const mesh = new THREE.Mesh(g, m);
+    mesh.position.set(Math.cos(angle)*radius, 0, Math.sin(angle)*radius);
+    scene.add(mesh);
+    // halo
+    const hg = new THREE.RingGeometry(0.14, 0.18, 32);
+    const hm = new THREE.MeshBasicMaterial({ color: x.color, transparent:true, opacity:.45, side: THREE.DoubleSide });
+    const halo = new THREE.Mesh(hg, hm);
+    halo.rotation.x = -Math.PI/2;
+    halo.position.copy(mesh.position);
+    scene.add(halo);
+    // vertical line to indicate contact
+    const lg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(mesh.position.x, 0, mesh.position.z), new THREE.Vector3(mesh.position.x, 0.75, mesh.position.z)]);
+    const lm = new THREE.LineBasicMaterial({ color: x.color, transparent:true, opacity:.55 });
+    scene.add(new THREE.Line(lg, lm));
+    nodes.push({ mesh, halo, angle, radius, id: x.id, name: x.name, idx: i });
+  });
+
+  // center core
+  const core = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.22, 1),
+    new THREE.MeshBasicMaterial({ color: 0xffdd00, wireframe: true })
+  );
+  scene.add(core);
+
+  // starfield
+  const starsGeom = new THREE.BufferGeometry();
+  const N = 260;
+  const arr = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++){
+    arr[i*3]   = (Math.random() - 0.5) * 22;
+    arr[i*3+1] = (Math.random() - 0.5) * 8;
+    arr[i*3+2] = (Math.random() - 0.5) * 22;
+  }
+  starsGeom.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+  const stars = new THREE.Points(starsGeom, new THREE.PointsMaterial({ color: 0x4ec5d2, size: 0.022, transparent:true, opacity:.6 }));
+  scene.add(stars);
+
+  // camera slow orbit
+  let t0 = performance.now();
+  const scanTarget = document.getElementById('scan-target');
+  const indItems = () => document.querySelectorAll('.ind-item');
+  let currentScan = -1;
+  let lockIdx = -1;  // -1 = free sweep
+  let lockAngle = 0;
+
+  // Expose lock-on to external controllers
+  window.__yesmeRadarLock = function(i){
+    if (i == null || i < 0){
+      lockIdx = -1;
+      if (scanTarget) scanTarget.textContent = 'SCAN · --';
+      return;
+    }
+    lockIdx = i;
+    const n = nodes[i];
+    if (!n) return;
+    lockAngle = Math.atan2(n.mesh.position.z, n.mesh.position.x);
+    // pulse the halo
+    n.halo.material.opacity = 0.9;
+    setTimeout(() => { n.halo.material.opacity = 0.45; }, 900);
+  };
+
+  function animate(){
+    const t = (performance.now() - t0) * 0.001;
+    // rotate fan (sweep or locked)
+    if (lockIdx >= 0){
+      fan.rotation.y = -lockAngle - Math.PI*0.5 + 0 * t;
+      // subtle jitter so it still feels alive
+      fan.rotation.y += Math.sin(t * 4) * 0.015;
+      fanMat.opacity = 0.32 + Math.sin(t * 5) * 0.06;
+      fanMat.color.setHex(0xff7a33);
+    } else {
+      fan.rotation.y = -t * 0.9;
+      fanMat.opacity = 0.18;
+      fanMat.color.setHex(0xffdd00);
+    }
+    // rotate rings subtly
+    ringGroup.rotation.y = t * 0.12;
+    // pulse core
+    const s = 1 + Math.sin(t * 2.2) * 0.12;
+    core.scale.setScalar(s);
+    // wiggle nodes
+    nodes.forEach(n => {
+      n.mesh.position.y = Math.sin(t * 1.4 + n.idx) * 0.05;
+      n.halo.position.y = n.mesh.position.y;
+      n.halo.scale.setScalar(1 + Math.sin(t * 3 + n.idx) * 0.15);
+    });
+    if (lockIdx >= 0){
+      // lock pinned — highlight only that one
+      if (currentScan !== lockIdx){
+        currentScan = lockIdx;
+        indItems().forEach((el, j) => el.classList.toggle('scanning', j === lockIdx));
+        if (scanTarget) scanTarget.textContent = `LOCK · ${INDUSTRIES[lockIdx].id}`;
+      }
+    } else {
+      // sweep detection
+      const sweepAngle = (-t * 0.9) % (Math.PI * 2);
+      nodes.forEach((n, i) => {
+        const theta = Math.atan2(n.mesh.position.z, n.mesh.position.x);
+        let diff = theta - sweepAngle;
+        while (diff < -Math.PI) diff += Math.PI*2;
+        while (diff >  Math.PI) diff -= Math.PI*2;
+        const within = Math.abs(diff) < fanAngle/2;
+        if (within && currentScan !== i){
+          currentScan = i;
+          indItems().forEach((el, j) => el.classList.toggle('scanning', j === i));
+          if (scanTarget) scanTarget.textContent = `SCAN · ${INDUSTRIES[i].id}`;
+        }
+      });
+    }
+    // camera slow drift
+    cam.position.x = Math.sin(t * 0.18) * 0.7;
+    cam.lookAt(0,0,0);
+    renderer.render(scene, cam);
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+/* ========== TAICHUNG LOCAL TIME + STATE ========== */
+(function(){
+  const el = document.getElementById('dw-time');
+  const foot = document.getElementById('dw-foot');
+  const coffee = document.getElementById('dw-coffee');
+  if (!el) return;
+  function tick(){
+    // Taichung = UTC+8
+    const d = new Date();
+    const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
+    const taichung = new Date(utcMs + 8 * 3600000);
+    const h = taichung.getHours();
+    const m = taichung.getMinutes();
+    const p = n => String(n).padStart(2,'0');
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const h12 = ((h + 11) % 12) + 1;
+    el.textContent = `${p(h12)}:${p(m)} ${ampm}`;
+    // warmth based on hour: night = warm orange
+    if (h >= 22 || h < 6){ el.style.color = 'var(--alert-bright)'; if (foot) foot.textContent = '< SHE IS AWAKE >'; }
+    else if (h >= 6 && h < 10){ el.style.color = 'var(--bone)'; if (foot) foot.textContent = '< JUST WOKE UP >'; }
+    else { el.style.color = 'var(--hunter)'; if (foot) foot.textContent = '< STILL SHIPPING >'; }
+    // coffee: 1 cup per ~3 hours awake, cap 5
+    if (coffee){
+      const cups = Math.min(5, Math.max(1, Math.floor((h >= 7 ? h - 7 : (h + 17)) / 3) + 1));
+      coffee.querySelectorAll('i').forEach((ic, i) => ic.classList.toggle('on', i < cups));
+    }
+  }
+  tick(); setInterval(tick, 15000);
+})();
+
+/* ========== SERP tabs (visual only) ========== */
+(function(){
+  const tabs = document.querySelectorAll('.serp-tabs button');
+  tabs.forEach(b => b.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  }));
+})();
+
+/* ========== CHRONICLE : git-log expand ========== */
+(function(){
+  document.querySelectorAll('.chron-commit').forEach(el => {
+    el.addEventListener('click', () => el.classList.toggle('open'));
+  });
+})();
+
+/* ========== LAZY DEMO : AUTO vs MANUAL ========== */
+(function(){
+  const fill = document.getElementById('lazy-fill');
+  const pct  = document.getElementById('lazy-pct');
+  const time = document.getElementById('lazy-time');
+  const load = document.getElementById('lazy-load');
+  const coffee = document.getElementById('lazy-coffee');
+  const log  = document.getElementById('lazy-log');
+  const quote = document.getElementById('lazy-quote');
+  const task = document.getElementById('lazy-task-name');
+  const btns = document.querySelectorAll('.lazy-switch button');
+  if (!fill || !log) return;
+
+  const AUTO_LOG = [
+    '> cron.queue -> 100 posts', '> hashtag.match -> 34 tags',
+    '> image.optimize -> OK', '> schedule.push -> 100/100 queued',
+    '> done. elapsed 3.2s'
+  ];
+  const MANUAL_LOG = [
+    '> open tab 01', '> write caption... backspace... rewrite...',
+    '> wait for wifi', '> accidentally open shopee',
+    '> 3 hours in. 7/100 posted. considering resignation.'
+  ];
+
+  let rafId = null;
+  function run(mode){
+    cancelAnimationFrame(rafId);
+    fill.style.width = '0%'; pct.textContent = '0%';
+    log.innerHTML = '';
+    btns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    const isAuto = mode === 'auto';
+    fill.className = 'fill' + (isAuto ? '' : ' manual');
+    log.className = 'lazy-log' + (isAuto ? '' : ' manual-log');
+    quote.className = 'lazy-quote' + (isAuto ? '' : ' manual');
+    task.textContent = '批次 PO 100 篇社群短文';
+
+    if (isAuto){
+      time.textContent = '3.2s'; load.textContent = '2%'; coffee.textContent = '1 cup';
+      quote.innerHTML = '做完了。<br>去喝咖啡。<span class="q-attr">— yesme / auto mode</span>';
+    } else {
+      time.textContent = '14h'; load.textContent = '99%'; coffee.textContent = '4 cups';
+      quote.innerHTML = '還沒好。<br>我快死了。<span class="q-attr">— yesme / manual mode</span>';
+    }
+
+    const logLines = isAuto ? AUTO_LOG : MANUAL_LOG;
+    let logIdx = 0;
+    function pushLog(){
+      if (logIdx >= logLines.length) return;
+      const s = document.createElement('span');
+      s.className = 'll-line';
+      s.textContent = logLines[logIdx++];
+      log.appendChild(s);
+      setTimeout(pushLog, isAuto ? 520 : 780);
+    }
+    pushLog();
+
+    // progress bar animation
+    const duration = isAuto ? 3200 : 12000;
+    const finalPct = isAuto ? 100 : 17;
+    const t0 = performance.now();
+    function step(t){
+      const e = Math.min(1, (t - t0) / duration);
+      // easing: auto is steady; manual staggers
+      let p;
+      if (isAuto) p = e;
+      else p = Math.max(0, e - Math.sin(e*18)*0.04);
+      const val = finalPct * p;
+      fill.style.width = val + '%';
+      pct.textContent = Math.round(val) + '%';
+      if (e < 1) rafId = requestAnimationFrame(step);
+    }
+    rafId = requestAnimationFrame(step);
+  }
+
+  btns.forEach(b => b.addEventListener('click', () => run(b.dataset.mode)));
+
+  // run once when in view
+  const trig = document.querySelector('.lazy-demo');
+  if (trig){
+    ScrollTrigger.create({
+      trigger: trig,
+      start: 'top 80%',
+      once: true,
+      onEnter: () => run('auto')
+    });
+  }
+})();
+
+/* ========== INDUSTRY LOCK-ON ========== */
+(function(){
+  const input = document.getElementById('lockon-input');
+  const btn   = document.getElementById('lockon-btn');
+  const out   = document.getElementById('lockon-out');
+  if (!input || !btn || !out) return;
+
+  function fuzzyMatch(q){
+    q = (q || '').trim();
+    if (!q) return { match: null, score: 0 };
+    // Direct name/id substring match
+    let best = null, bestScore = 0;
+    INDUSTRIES.forEach((ind, i) => {
+      const hay = (ind.name + ' ' + ind.id).toLowerCase();
+      let score = 0;
+      for (const ch of q.toLowerCase()){
+        if (hay.includes(ch)) score++;
+      }
+      if (ind.name.includes(q) || ind.id.toLowerCase() === q.toLowerCase()) score += 20;
+      if (score > bestScore){ bestScore = score; best = { ind, i }; }
+    });
+    return { match: best, score: bestScore };
+  }
+
+  function lockOn(){
+    const q = input.value.trim();
+    if (!q){
+      out.classList.add('show');
+      out.innerHTML = '<span class="warn">ERR · empty query.</span> 請輸入產業關鍵字。';
+      return;
+    }
+    const { match } = fuzzyMatch(q);
+    const items = document.querySelectorAll('.ind-item');
+    items.forEach(el => el.classList.remove('locked-target'));
+    out.classList.add('show');
+    if (!match){
+      out.innerHTML = `<span class="warn">&gt; no match in current grid</span><br>可能是一個我還沒放進去的產業 — 不過沒關係，留言跟我說，我把你加進第 11 格。`;
+      window.__yesmeRadarLock?.(null);
+      return;
+    }
+    const it = items[match.i];
+    if (it){
+      it.classList.add('locked-target');
+      it.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    window.__yesmeRadarLock?.(match.i);
+    const potential = 42 + Math.floor(Math.random() * 180);
+    out.innerHTML = `
+      <span class="ok">&gt; LOCK-ON acquired</span> · target <span class="target">${match.ind.id} · ${match.ind.name}</span><br>
+      &gt; initial crawl estimate: <span class="target">${potential}</span> potential leads / week · priority tags: ${potential>150?'HIGH':'MED'}<br>
+      &gt; BETA slot status: <span class="ok">OPEN</span> · 去下面 CH·06 報名，我直接幫你跑一個月。`;
+  }
+
+  btn.addEventListener('click', lockOn);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') lockOn(); });
+})();
+
+/* ========== AUDIT HUD for rules ========== */
+(function(){
+  const hud = document.getElementById('audit-hud');
+  const line = document.getElementById('audit-line');
+  if (!hud || !line) return;
+  const labels = ['clarity','boundary','confront','ownership','standing'];
+  document.querySelectorAll('.rule-card').forEach((card, idx) => {
+    card.addEventListener('mouseenter', () => {
+      hud.classList.add('show');
+      line.innerHTML = `&gt; enforcing LAW ${String(idx+1).padStart(2,'0')} · <span class="ok">${labels[idx]}</span> ... <span class="ok">PASS</span>`;
+    });
+    card.addEventListener('mouseleave', () => { hud.classList.remove('show'); });
+  });
+})();
+
+/* ========== P5.JS — DRIFTING DATA GRID + CRAWLER BEACONS ========== */
+(function(){
+  if (typeof p5 === 'undefined') return;
+  new p5(p => {
+    let beacons = [];
+    let W, H;
+    p.setup = () => {
+      const c = p.createCanvas(p.windowWidth, p.windowHeight);
+      c.parent('p5-canvas');
+      W = p.windowWidth; H = p.windowHeight;
+      for (let i = 0; i < 36; i++){
+        beacons.push({
+          x: p.random(W), y: p.random(H),
+          vx: p.random(-.4, .4), vy: p.random(-.4, .4),
+          life: p.random(200, 500),
+          type: p.random() < 0.18 ? 'alert' : 'normal'
+        });
+      }
+    };
+    p.windowResized = () => { W = p.windowWidth; H = p.windowHeight; p.resizeCanvas(W, H); };
+    p.draw = () => {
+      p.clear();
+      // connection lines
+      p.strokeWeight(0.5);
+      for (let i = 0; i < beacons.length; i++){
+        for (let j = i+1; j < beacons.length; j++){
+          const a = beacons[i], b = beacons[j];
+          const d = p.dist(a.x, a.y, b.x, b.y);
+          if (d < 170){
+            const alpha = p.map(d, 0, 170, 70, 0);
+            p.stroke(255, 221, 0, alpha * 0.75);
+            p.line(a.x, a.y, b.x, b.y);
+          }
+        }
+      }
+      // beacons
+      for (const b of beacons){
+        b.x += b.vx; b.y += b.vy;
+        if (b.x < 0 || b.x > W) b.vx *= -1;
+        if (b.y < 0 || b.y > H) b.vy *= -1;
+        b.life--;
+        if (b.life <= 0){ b.life = p.random(200,500); b.vx = p.random(-.5,.5); b.vy = p.random(-.5,.5); }
+
+        const col = b.type === 'alert' ? [255, 122, 51] : [255, 221, 0];
+        p.noStroke();
+        p.fill(col[0], col[1], col[2], 40);
+        p.circle(b.x, b.y, 14);
+        p.fill(col[0], col[1], col[2], 210);
+        p.circle(b.x, b.y, 2.4);
+        // pulse ring
+        const r = ((p.frameCount + b.life) % 140) / 140;
+        p.noFill();
+        p.stroke(col[0], col[1], col[2], (1 - r) * 100);
+        p.circle(b.x, b.y, r * 60);
+      }
+    };
+  });
+})();
+</script>
+</body>
+</html>
