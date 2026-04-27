@@ -1772,3 +1772,17 @@ members:
         label: "氛圍照明"
       - id: "cat_friendly"
         label: "愛貓店主"
+
+  - id: "bagel_jie"
+    name: "鄭敏捷｜bagel_jie"
+    avatar: "/assets/img/guild/bagel_jie/avatar.webp"
+    page: "/guild/bagel_jie.html"
+    title: "五段職涯 · 二十年運動 · 鄉下女人"
+    description: "52 歲、住中部鄉下二十幾年。化工檢驗、美髮設計、櫃姐、紋繡、手作 DIY、民宿管家全都做過——什麼都會一點但什麼都不精。唯一二十年沒斷過的是每天 2-3 小時的運動。想找頻率對得上的朋友，可以聊運動、聊健康、聊生活。"
+    tags:
+      - id: "hair_design"
+        label: "美髮・紋繡"
+      - id: "daily_movement"
+        label: "二十年運動"
+      - id: "self_styling"
+        label: "手作・自拍造型"

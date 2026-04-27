@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="鄭敏捷 · bagel_jie｜52 歲、住中部鄉下二十幾年。化工、美髮、櫃姐、紋繡、手作、民宿都做過，唯一二十年沒斷過的是每天 2-3 小時的運動。想找頻率對得上的朋友——可以聊運動、聊健康、聊生活的人。">
+<title>鄭敏捷 ｜ 頻率之身 · Body as Frequency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=LXGW+WenKai+TC:wght@400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  /* === 頻率之身 · Palette （天然・日出・山居） === */
+  --ink:#15140F;
+  --ink-2:#1E1C15;
+  --bone:#EFE7D4;
+  --bone-dim:#C9BFA4;
+  --bone-soft:#8F866F;
+  --bone-faint:#5A5547;
+  --clay:#B47B52;
+  --clay-deep:#7A4A2A;
+  --dawn:#D98A5C;
+  --dawn-soft:#E5AE84;
+  --sage:#7B8E76;
+  --sage-light:#A8B59F;
+  --gold:#C99746;
+  --gold-soft:#E6BB78;
+
+  --font-display:'Noto Serif TC',serif;
+  --font-body:'Noto Serif TC',serif;
+  --font-brush:'LXGW WenKai TC',serif;
+  --font-latin:'Cormorant Garamond',serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;background:var(--ink)}
+body{
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(217,138,92,.14) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 90%, rgba(123,142,118,.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, var(--ink-2) 0%, var(--ink) 80%);
+  background-attachment:fixed;
+  color:var(--bone-dim);
+  font-family:var(--font-body);
+  font-weight:300;
+  line-height:1.95;
+  overflow-x:hidden;
+  min-height:100vh;
+  letter-spacing:.04em;
+  cursor:none;
+}
+@media (max-width:768px){ body{cursor:auto} }
+::selection{background:var(--dawn);color:var(--ink)}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--ink-2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--clay),var(--sage));border-radius:3px}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* === 自訂游標 · 頻率點 === */
+.cursor-dot,.cursor-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;mix-blend-mode:screen}
+.cursor-dot{width:6px;height:6px;border-radius:50%;background:var(--dawn);transform:translate(-50%,-50%);transition:width .25s,height .25s,background .25s}
+.cursor-ring{width:34px;height:34px;border-radius:50%;border:1px solid rgba(217,138,92,.5);transform:translate(-50%,-50%);transition:width .35s ease,height .35s ease,border-color .35s}
+.cursor-ring::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px dashed rgba(201,151,70,.25);animation:rot 18s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.is-hover .cursor-dot{width:14px;height:14px;background:var(--gold-soft)}
+.is-hover .cursor-ring{width:56px;height:56px;border-color:var(--gold-soft)}
+
+/* === 背景層 === */
+#three-wave{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.85}
+#p5-breath{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.6}
+.paper-noise{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.09;mix-blend-mode:overlay;
+  background-image:
+    radial-gradient(circle at 22% 32%, rgba(239,231,212,.55) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 67% 74%, rgba(239,231,212,.45) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 88% 12%, rgba(217,138,92,.4) 0 1px, transparent 1.3px);
+  background-size:200px 200px,220px 220px,170px 170px}
+.grain{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.07;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 0.9 0 0 0 0 0.72 0 0 0 .8 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+
+/* === 邊框・框線 === */
+.page-frame{position:fixed;inset:18px;z-index:4;pointer-events:none;border:1px solid rgba(239,231,212,.08)}
+.page-frame::before,.page-frame::after{content:'';position:absolute;background:var(--clay);opacity:.45}
+.page-frame::before{top:-1px;left:40px;width:60px;height:1px}
+.page-frame::after{bottom:-1px;right:40px;width:60px;height:1px}
+
+/* === 頂部導覽 === */
+.arch-bar{position:fixed;top:30px;left:30px;z-index:40;display:flex;gap:14px;align-items:center;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.28em}
+.arch-bar a{color:var(--bone-dim);padding:9px 15px;border:1px solid rgba(239,231,212,.18);background:rgba(21,20,15,.7);backdrop-filter:blur(8px);transition:all .35s ease;text-transform:uppercase}
+.arch-bar a:hover{color:var(--gold-soft);border-color:var(--gold);box-shadow:0 0 14px rgba(201,151,70,.3);transform:translateY(-1px)}
+.arch-bar a i{margin-right:7px;color:var(--clay)}
+
+.vol-mark{position:fixed;top:30px;right:30px;z-index:40;font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;color:var(--bone-soft);display:flex;align-items:center;gap:14px}
+.vol-mark .pulse{width:7px;height:7px;border-radius:50%;background:var(--dawn);box-shadow:0 0 10px var(--dawn);animation:breath 3.6s ease-in-out infinite}
+@keyframes breath{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.35);opacity:.45}}
+
+/* === Hero === */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;padding:10vh 8vw 8vh;z-index:5}
+.hero-inner{max-width:1340px;width:100%;margin:auto;position:relative;display:grid;grid-template-columns:1.4fr 1fr;gap:80px;align-items:center}
+@media (max-width:980px){.hero-inner{grid-template-columns:1fr;gap:48px}}
+
+.h-meta{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.55em;color:var(--clay-deep);margin-bottom:30px;display:inline-flex;align-items:center;gap:14px;text-transform:uppercase}
+.h-meta::before,.h-meta::after{content:'';width:38px;height:1px;background:linear-gradient(90deg,transparent,var(--clay-deep))}
+.h-meta::after{background:linear-gradient(90deg,var(--clay-deep),transparent)}
+
+.hero-title{font-family:var(--font-display);font-weight:300;font-size:clamp(62px,10.5vw,150px);line-height:.92;color:var(--bone);letter-spacing:.02em;margin-bottom:8px}
+.hero-title .ink-brush{font-family:var(--font-brush);font-weight:400;color:var(--dawn);display:inline-block;position:relative;letter-spacing:.14em}
+.hero-title .ink-brush::after{content:'';position:absolute;left:0;bottom:4px;width:100%;height:2px;background:linear-gradient(90deg,var(--dawn),transparent);opacity:.55}
+
+.hero-handle{font-family:var(--font-latin);font-style:italic;font-weight:300;font-size:clamp(22px,2.4vw,30px);color:var(--sage-light);letter-spacing:.14em;margin-top:4px}
+.hero-handle .at{color:var(--clay);margin-right:4px}
+
+.hero-sub{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:36px;font-family:var(--font-display);font-size:15px;letter-spacing:.38em;color:var(--bone-soft)}
+.hero-sub .dot{width:4px;height:4px;background:var(--clay);border-radius:50%;box-shadow:0 0 9px var(--clay)}
+
+.hero-quote{margin-top:52px;max-width:560px;padding:26px 28px 26px 34px;border-left:1px solid rgba(217,138,92,.45);position:relative;font-family:var(--font-display);font-weight:300;font-style:normal;font-size:17.5px;line-height:2.05;color:var(--bone-dim);letter-spacing:.06em}
+.hero-quote::before{content:'「';position:absolute;top:10px;left:6px;font-family:var(--font-brush);font-size:28px;color:var(--clay);line-height:1}
+.hero-quote em{font-family:var(--font-brush);color:var(--gold-soft);font-style:normal;letter-spacing:.14em;padding:0 2px}
+
+.hero-right{position:relative;display:flex;flex-direction:column;align-items:center;gap:34px}
+
+.avatar-cosmos{position:relative;width:min(360px,74vw);aspect-ratio:1/1;display:grid;place-items:center}
+.avatar-cosmos .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(217,138,92,.28);animation:rot 42s linear infinite}
+.avatar-cosmos .ring.r2{inset:-22px;border:1px dashed rgba(123,142,118,.26);animation:rot 62s linear infinite reverse}
+.avatar-cosmos .ring.r3{inset:-46px;border:1px solid rgba(201,151,70,.16);animation:rot 90s linear infinite}
+.avatar-cosmos .orbit-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--gold-soft);box-shadow:0 0 12px var(--gold-soft);top:50%;left:-4px;transform-origin:182px 0}
+.avatar-cosmos .orbit-dot.od2{background:var(--sage-light);box-shadow:0 0 10px var(--sage-light)}
+.avatar-cosmos .orbit-dot.od3{background:var(--dawn);box-shadow:0 0 10px var(--dawn)}
+
+.avatar-frame{position:relative;width:66%;aspect-ratio:1/1;border-radius:50%;overflow:hidden;border:1px solid var(--clay);box-shadow:0 0 42px rgba(217,138,92,.3),inset 0 0 22px rgba(21,20,15,.55);filter:contrast(1.08) saturate(1.05);z-index:2}
+.avatar-frame img{width:100%;height:100%;object-fit:cover;transition:transform 1.6s cubic-bezier(.2,.7,.2,1)}
+.avatar-frame:hover img{transform:scale(1.06)}
+.avatar-frame::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 28%,rgba(230,187,120,.22) 0%,transparent 45%),linear-gradient(180deg,transparent 60%,rgba(21,20,15,.38));pointer-events:none}
+
+.hd-chip{position:absolute;bottom:-8px;right:-6px;padding:10px 16px;background:rgba(21,20,15,.85);border:1px solid var(--sage);backdrop-filter:blur(8px);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.26em;color:var(--sage-light);text-transform:uppercase;box-shadow:0 6px 22px rgba(0,0,0,.4);z-index:3}
+.hd-chip b{color:var(--gold-soft);margin-right:6px}
+
+.hero-stats{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:6px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.24em;color:var(--bone-soft);text-transform:uppercase}
+.hero-stats b{display:block;font-family:var(--font-display);font-weight:500;font-size:32px;color:var(--bone);letter-spacing:.04em;text-transform:none;margin-bottom:2px}
+
+/* === 章節共用 === */
+section{position:relative;z-index:5}
+.chapter{padding:15vh 8vw;max-width:1340px;margin:0 auto;position:relative}
+.chap-no{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6em;color:var(--clay);display:inline-flex;align-items:center;gap:14px;margin-bottom:26px;text-transform:uppercase}
+.chap-no::before{content:'';width:40px;height:1px;background:var(--clay)}
+.chap-head{font-family:var(--font-display);font-weight:300;font-size:clamp(38px,5.4vw,74px);line-height:1.1;color:var(--bone);letter-spacing:.03em;margin-bottom:18px}
+.chap-head .em{font-family:var(--font-brush);color:var(--dawn)}
+.chap-lede{font-family:var(--font-display);font-size:17px;color:var(--bone-soft);max-width:640px;line-height:1.95;letter-spacing:.05em;margin-bottom:56px}
+.chap-purpose{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.32em;color:var(--clay);text-transform:uppercase;margin:-14px 0 18px;padding:6px 14px;display:inline-block;background:rgba(180,123,82,.08);border-left:2px solid var(--clay)}
+.chap-lede em{color:var(--gold-soft);font-style:normal;font-family:var(--font-brush);letter-spacing:.1em}
+
+/* === 章 II · 二十年節奏 === */
+.rhythm-hero{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-bottom:74px}
+@media (max-width:900px){.rhythm-hero{grid-template-columns:1fr}}
+.rhythm-counter{display:flex;flex-direction:column;gap:22px}
+.rc-row{display:flex;align-items:baseline;gap:22px;padding:22px 0;border-bottom:1px solid rgba(239,231,212,.08)}
+.rc-row:last-child{border-bottom:none}
+.rc-num{font-family:var(--font-display);font-weight:500;font-size:clamp(44px,6vw,80px);line-height:.95;color:var(--bone);letter-spacing:.02em;min-width:130px}
+.rc-num .unit{font-family:var(--font-mono);font-size:.22em;color:var(--clay);letter-spacing:.22em;margin-left:10px;vertical-align:baseline;text-transform:uppercase}
+.rc-label{font-family:var(--font-display);font-size:16px;line-height:1.65;color:var(--bone-soft);letter-spacing:.06em;flex:1}
+.rc-label b{color:var(--gold-soft);font-weight:500;display:block;font-size:18px;margin-bottom:2px}
+
+.rhythm-wheel{position:relative;aspect-ratio:1/1;width:min(480px,90%);margin:0 auto}
+.rhythm-wheel svg{width:100%;height:100%;overflow:visible}
+.rhythm-wheel .spoke-label{position:absolute;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.28em;color:var(--bone-dim);text-transform:uppercase;pointer-events:none;transition:color .35s}
+.rhythm-wheel .spoke-label.on{color:var(--gold-soft)}
+.rhythm-wheel .wheel-core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;font-family:var(--font-brush);font-size:34px;line-height:1.35;color:var(--dawn);letter-spacing:.18em}
+.rhythm-wheel .wheel-core .sub{display:block;font-family:var(--font-mono);font-size:10.5px;color:var(--sage-light);letter-spacing:.4em;margin-top:6px}
+
+.disciplines{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px}
+.disc{position:relative;padding:22px 20px 24px;border:1px solid rgba(239,231,212,.08);background:rgba(21,20,15,.45);transition:all .4s cubic-bezier(.2,.7,.2,1);overflow:hidden}
+.disc::before{content:'';position:absolute;top:0;left:0;width:0;height:1px;background:var(--dawn);transition:width .5s ease}
+.disc:hover{border-color:var(--clay);transform:translateY(-3px);background:rgba(30,28,21,.8)}
+.disc:hover::before{width:100%}
+.disc .d-i{color:var(--clay);font-size:22px;margin-bottom:14px}
+.disc .d-n{font-family:var(--font-brush);font-size:22px;color:var(--bone);letter-spacing:.14em;margin-bottom:4px}
+.disc .d-l{font-family:var(--font-latin);font-style:italic;font-size:13px;color:var(--sage-light);letter-spacing:.08em}
+.disc .d-meta{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.22em;color:var(--bone-faint);text-transform:uppercase;margin-top:14px;padding-top:12px;border-top:1px solid rgba(239,231,212,.06)}
+
+/* === 章 III · 身分光譜 === */
+.spectrum-wrap{position:relative;padding:40px 0 20px}
+.spectrum-track{display:grid;grid-template-columns:repeat(5,1fr);gap:24px;position:relative}
+@media (max-width:900px){.spectrum-track{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.spectrum-track{grid-template-columns:1fr}}
+
+.id-card{position:relative;padding:28px 22px 28px;background:linear-gradient(175deg,rgba(30,28,21,.75),rgba(21,20,15,.5));border:1px solid rgba(239,231,212,.07);transition:all .55s cubic-bezier(.2,.7,.2,1);min-height:320px;display:flex;flex-direction:column}
+.id-card::before{content:attr(data-era);position:absolute;top:14px;right:14px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.22em;color:var(--clay-deep);text-transform:uppercase}
+.id-card::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(217,138,92,.05));opacity:0;transition:opacity .5s}
+.id-card:hover{transform:translateY(-6px);border-color:var(--clay);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.id-card:hover::after{opacity:1}
+.id-card .ic-i{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--clay);border-radius:50%;color:var(--dawn);font-size:18px;margin-bottom:22px;margin-top:10px}
+.id-card .ic-stage{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.4em;color:var(--sage-light);text-transform:uppercase;margin-bottom:10px}
+.id-card .ic-title{font-family:var(--font-brush);font-size:26px;line-height:1.3;color:var(--bone);letter-spacing:.1em;margin-bottom:12px}
+.id-card .ic-desc{font-family:var(--font-display);font-size:14px;line-height:1.8;color:var(--bone-soft);letter-spacing:.04em;flex:1}
+
+.spectrum-line{position:absolute;top:50%;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--clay),var(--sage),var(--gold-soft),transparent);opacity:.35;z-index:-1}
+@media (max-width:900px){.spectrum-line{display:none}}
+
+.spectrum-tail{margin-top:46px;padding:28px 32px;border-left:2px solid var(--sage);background:linear-gradient(90deg,rgba(63,79,61,.1),transparent);font-family:var(--font-brush);font-size:21px;line-height:1.75;color:var(--bone);letter-spacing:.1em}
+.spectrum-tail em{color:var(--dawn);font-style:normal}
+.spectrum-tail .attr{display:block;margin-top:10px;font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;color:var(--sage-light);text-transform:uppercase}
+
+/* === 章 IV · 手藝 === */
+.craft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:22px}
+.craft{position:relative;padding:34px 28px;background:rgba(21,20,15,.5);border:1px solid rgba(239,231,212,.07);overflow:hidden;transition:all .5s cubic-bezier(.2,.7,.2,1)}
+.craft::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at center,rgba(217,138,92,.08),transparent 60%);opacity:0;transition:opacity .5s;pointer-events:none}
+.craft:hover{transform:translateY(-4px);border-color:var(--clay)}
+.craft:hover::before{opacity:1}
+.craft:hover::after{transform:scaleX(1)}
+.craft::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--dawn),var(--gold-soft));transform:scaleX(0);transform-origin:left;transition:transform .6s ease}
+.craft .c-head{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.craft .c-i{width:46px;height:46px;display:grid;place-items:center;border-radius:50%;background:rgba(21,20,15,.75);border:1px solid var(--clay);color:var(--dawn);font-size:17px;flex-shrink:0}
+.craft .c-t{font-family:var(--font-brush);font-size:22px;color:var(--bone);letter-spacing:.14em;line-height:1.3}
+.craft .c-t .lt{display:block;font-family:var(--font-latin);font-style:italic;font-size:12px;color:var(--sage-light);letter-spacing:.1em;margin-top:3px;font-weight:400}
+.craft .c-desc{font-family:var(--font-display);font-size:14.5px;line-height:1.9;color:var(--bone-soft);letter-spacing:.05em;margin-bottom:18px}
+.craft .c-tags{display:flex;flex-wrap:wrap;gap:8px}
+.craft .c-tag{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.22em;color:var(--clay);padding:4px 10px;border:1px solid rgba(180,123,82,.35);text-transform:uppercase}
+
+/* === 章 V · 雲風詩 === */
+.wind-scene{position:relative;min-height:100vh;margin:12vh -8vw 0;padding:14vh 8vw;display:flex;align-items:center;overflow:hidden}
+.wind-bg{position:absolute;inset:0;background-image:url('/assets/img/guild/bagel_jie/cloud_wind.webp');background-size:cover;background-position:center;filter:brightness(.42) saturate(.85);z-index:-2}
+.wind-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,var(--ink) 0%,transparent 25%,transparent 75%,var(--ink) 100%),radial-gradient(ellipse at center,transparent 40%,rgba(21,20,15,.5) 100%);z-index:-1}
+.wind-grain{position:absolute;inset:0;opacity:.1;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");mix-blend-mode:overlay;pointer-events:none}
+.wind-text{max-width:780px;margin:0 auto;text-align:center;position:relative}
+.wind-kai{font-family:var(--font-brush);font-size:clamp(26px,4vw,52px);line-height:1.95;color:var(--bone);letter-spacing:.2em;text-shadow:0 2px 18px rgba(0,0,0,.65)}
+.wind-kai .br{color:var(--dawn-soft)}
+.wind-attr{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.5em;color:var(--gold-soft);margin-top:34px;text-transform:uppercase}
+
+/* === 章 V · 自拍藝廊 (masonry) === */
+.style-gallery{column-count:3;column-gap:18px;margin-top:40px}
+@media (max-width:980px){.style-gallery{column-count:2}}
+@media (max-width:560px){.style-gallery{column-count:1}}
+.style-gallery .sg-item{break-inside:avoid;margin-bottom:18px;position:relative;overflow:hidden;border:1px solid rgba(239,231,212,.08);background:rgba(21,20,15,.5);transition:transform .55s cubic-bezier(.2,.7,.2,1),box-shadow .55s}
+.style-gallery .sg-item:hover{transform:translateY(-4px);box-shadow:0 16px 38px rgba(0,0,0,.45)}
+.style-gallery .sg-item img{width:100%;height:auto;display:block;transition:filter .6s,transform 1.6s cubic-bezier(.2,.7,.2,1);filter:contrast(1.04) saturate(1.02) brightness(.96)}
+.style-gallery .sg-item:hover img{filter:contrast(1.08) saturate(1.1) brightness(1.02);transform:scale(1.04)}
+.style-gallery .sg-item .sg-cap{position:absolute;left:0;right:0;bottom:0;padding:22px 20px 16px;background:linear-gradient(180deg,transparent,rgba(21,20,15,.85) 60%);color:var(--bone);font-family:var(--font-brush);font-size:17px;letter-spacing:.12em;line-height:1.6;opacity:0;transform:translateY(8px);transition:opacity .4s, transform .4s}
+.style-gallery .sg-item:hover .sg-cap{opacity:1;transform:translateY(0)}
+.style-gallery .sg-item .sg-cap .sg-tag{display:block;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.32em;color:var(--gold-soft);margin-bottom:6px;text-transform:uppercase}
+.style-gallery .sg-item .sg-corner{position:absolute;top:12px;left:12px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;color:rgba(239,231,212,.7);background:rgba(21,20,15,.5);padding:4px 9px;backdrop-filter:blur(4px);text-transform:uppercase;border:1px solid rgba(239,231,212,.12)}
+
+.style-divider{display:flex;align-items:center;gap:18px;margin:60px 0 28px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.5em;color:var(--clay);text-transform:uppercase}
+.style-divider::before,.style-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(180,123,82,.4),transparent)}
+
+/* === 章 VII · 可以跟我說 === */
+.offer-banner{margin-top:50px;padding:46px 40px;background:linear-gradient(135deg,rgba(30,28,21,.7),rgba(63,79,61,.2));border:1px solid rgba(123,142,118,.3);position:relative;overflow:hidden}
+.offer-banner::before{content:'';position:absolute;top:-80px;right:-80px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(123,142,118,.25),transparent 70%);pointer-events:none}
+.offer-title{font-family:var(--font-brush);font-size:clamp(26px,3.6vw,42px);color:var(--bone);letter-spacing:.12em;line-height:1.45;margin-bottom:14px;position:relative}
+.offer-title em{color:var(--dawn);font-style:normal}
+.offer-lede{font-family:var(--font-display);font-size:16px;color:var(--bone-dim);line-height:1.95;letter-spacing:.05em;margin-bottom:30px;max-width:720px;position:relative}
+.offer-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 28px;list-style:none;position:relative}
+.offer-list li{display:flex;gap:12px;align-items:flex-start;font-family:var(--font-display);font-size:15px;color:var(--bone-soft);line-height:1.75}
+.offer-list li i{color:var(--gold-soft);margin-top:6px}
+
+/* === CTA === */
+.cta-wrap{padding:20vh 8vw;text-align:center;max-width:1000px;margin:0 auto}
+.cta-title{font-family:var(--font-display);font-weight:300;font-size:clamp(34px,5vw,60px);line-height:1.3;color:var(--bone);letter-spacing:.04em;margin-bottom:16px}
+.cta-title em{font-family:var(--font-brush);color:var(--dawn);font-style:normal;letter-spacing:.12em}
+.cta-desc{font-family:var(--font-display);font-size:17px;color:var(--bone-soft);letter-spacing:.06em;line-height:1.95;margin-bottom:42px}
+.cta-btns{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+.cta-btn{display:inline-flex;align-items:center;gap:12px;padding:18px 32px;font-family:var(--font-display);font-size:14.5px;letter-spacing:.28em;color:var(--bone);border:1px solid rgba(239,231,212,.25);background:rgba(21,20,15,.6);backdrop-filter:blur(6px);text-transform:uppercase;transition:all .4s cubic-bezier(.2,.7,.2,1);position:relative;overflow:hidden}
+.cta-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent,rgba(217,138,92,.18),transparent);transform:translateX(-100%);transition:transform .6s ease}
+.cta-btn:hover{border-color:var(--dawn);color:var(--dawn);transform:translateY(-3px);box-shadow:0 10px 30px rgba(217,138,92,.25)}
+.cta-btn:hover::before{transform:translateX(100%)}
+.cta-btn.primary{background:linear-gradient(120deg,var(--clay),var(--clay-deep));color:var(--bone);border-color:var(--clay)}
+.cta-btn.primary:hover{background:linear-gradient(120deg,var(--dawn),var(--clay));color:var(--ink)}
+
+/* === footer === */
+footer{padding:80px 8vw 50px;text-align:center;border-top:1px solid rgba(239,231,212,.08);margin-top:50px}
+.seal-mark{font-family:var(--font-brush);font-size:18px;color:var(--gold-soft);letter-spacing:.4em;margin-bottom:18px}
+.sig{font-family:var(--font-mono);font-size:10px;letter-spacing:.35em;color:var(--bone-faint);text-transform:uppercase;margin-bottom:22px}
+.sig b{color:var(--bone-dim);font-weight:500}
+.sns{display:flex;gap:18px;justify-content:center;margin-bottom:30px}
+.sns a{width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(239,231,212,.15);color:var(--bone-soft);transition:all .35s;border-radius:50%}
+.sns a:hover{color:var(--dawn);border-color:var(--dawn);transform:translateY(-3px)}
+.back-arch{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.35em;color:var(--bone-soft);padding:12px 22px;border:1px solid rgba(239,231,212,.18);text-transform:uppercase;transition:all .35s}
+.back-arch:hover{color:var(--dawn);border-color:var(--clay)}
+
+/* === SplitText char reveal === */
+.reveal-char{display:inline-block;opacity:0;transform:translateY(30px) rotateX(-40deg);transform-origin:50% 100%}
+.fade-in-up{opacity:0;transform:translateY(40px)}
+
+/* === 身體道輪 · 互動升級 === */
+.wheel-click{cursor:pointer;transition:stroke-width .3s, opacity .3s}
+.wheel-click:hover{opacity:.9}
+.wheel-detail{margin-top:28px;padding:24px 28px;background:linear-gradient(135deg,rgba(30,28,21,.85),rgba(21,20,15,.6));border:1px solid rgba(180,123,82,.35);min-height:140px;display:flex;gap:20px;align-items:flex-start;opacity:0;transform:translateY(10px);transition:all .5s cubic-bezier(.2,.7,.2,1)}
+.wheel-detail.on{opacity:1;transform:translateY(0)}
+.wheel-detail .wd-i{width:54px;height:54px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--clay);background:rgba(21,20,15,.8);color:var(--dawn);font-size:20px;flex-shrink:0}
+.wheel-detail .wd-body{flex:1}
+.wheel-detail .wd-name{font-family:var(--font-brush);font-size:24px;color:var(--bone);letter-spacing:.16em;margin-bottom:4px}
+.wheel-detail .wd-name .lt{font-family:var(--font-latin);font-style:italic;font-size:13px;color:var(--sage-light);margin-left:12px;letter-spacing:.1em}
+.wheel-detail .wd-txt{font-family:var(--font-display);font-size:14.5px;line-height:1.85;color:var(--bone-soft);letter-spacing:.05em;margin-bottom:12px}
+.wheel-detail .wd-meta{font-family:var(--font-mono);font-size:10px;letter-spacing:.3em;color:var(--clay);text-transform:uppercase}
+
+/* === 棒球媽媽縫線邊框 === */
+.baseball-tribute{position:relative;padding:4px;border-radius:4px}
+.baseball-tribute::before,.baseball-tribute::after{content:'';position:absolute;border:2px dashed var(--clay);opacity:0;transition:opacity .6s ease;border-radius:4px;pointer-events:none}
+.baseball-tribute::before{inset:-8px;transform:rotate(.5deg)}
+.baseball-tribute::after{inset:-14px;border-color:var(--dawn);transform:rotate(-.5deg)}
+.baseball-tribute:hover::before,.baseball-tribute:hover::after,.baseball-tribute.force-hover::before,.baseball-tribute.force-hover::after{opacity:.45}
+.baseball-stamp{position:absolute;top:-22px;right:-10px;z-index:3;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#F4EFDF,#EDE5D0 55%,#D5CCB5 100%);border:1.5px solid var(--clay-deep);box-shadow:0 6px 22px rgba(0,0,0,.45);display:grid;place-items:center;transform:rotate(12deg);opacity:0;transition:all .7s cubic-bezier(.2,.7,.2,1);pointer-events:none}
+.baseball-stamp::before,.baseball-stamp::after{content:'';position:absolute;width:70%;height:70%;border:1.2px solid var(--clay-deep);border-radius:50%;border-color:transparent var(--shrine, var(--clay-deep)) transparent transparent}
+.baseball-stamp::before{transform:rotate(20deg);left:8%}
+.baseball-stamp::after{transform:rotate(-160deg);right:8%}
+.baseball-stamp i{color:var(--clay-deep);font-size:14px}
+.baseball-tribute:hover .baseball-stamp,.baseball-tribute.force-hover .baseball-stamp{opacity:1;transform:rotate(0) scale(1.05)}
+
+/* === 30 秒看懂這一頁（讀者導引）=== */
+.page-guide{max-width:1240px;margin:0 auto;padding:8vh 8vw 4vh;position:relative;z-index:5}
+.pg-card{position:relative;padding:46px 48px;background:linear-gradient(165deg,rgba(30,28,21,.86),rgba(21,20,15,.6));border:1px solid rgba(239,231,212,.1);overflow:hidden}
+.pg-card::before{content:'';position:absolute;top:0;left:0;width:6px;height:100%;background:linear-gradient(180deg,var(--dawn),var(--sage),var(--gold-soft))}
+.pg-card::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,var(--clay),transparent 70%);right:-100px;top:-100px;opacity:.12;filter:blur(40px);pointer-events:none}
+.pg-tag{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.4em;color:var(--dawn);text-transform:uppercase;margin-bottom:18px;display:inline-flex;align-items:center;gap:14px}
+.pg-tag::before{content:'';width:32px;height:1px;background:var(--dawn)}
+.pg-thesis{font-family:var(--font-display);font-weight:300;font-size:clamp(26px,3.6vw,42px);line-height:1.45;color:var(--bone);letter-spacing:.05em;margin-bottom:30px;position:relative}
+.pg-thesis em{font-family:var(--font-brush);color:var(--dawn);font-style:normal;letter-spacing:.12em}
+.pg-thesis b{color:var(--gold-soft);font-weight:400}
+.pg-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px 36px;margin-bottom:34px;position:relative}
+.pg-fact{display:flex;gap:14px;align-items:flex-start}
+.pg-fact .pg-i{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:rgba(21,20,15,.7);border:1px solid var(--clay);color:var(--dawn);font-size:13px;flex-shrink:0}
+.pg-fact .pg-k{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;color:var(--sage-light);text-transform:uppercase;margin-bottom:3px}
+.pg-fact .pg-v{font-family:var(--font-display);font-size:15px;color:var(--bone);line-height:1.6;letter-spacing:.04em}
+.pg-fact .pg-v b{color:var(--dawn);font-weight:500}
+.pg-map{padding-top:24px;border-top:1px dashed rgba(217,138,92,.3);position:relative}
+.pg-map-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.35em;color:var(--clay);text-transform:uppercase;margin-bottom:14px}
+.pg-chapters{display:flex;flex-wrap:wrap;gap:10px}
+.pg-chapter{padding:8px 14px;background:rgba(21,20,15,.6);border:1px solid rgba(239,231,212,.1);font-family:var(--font-display);font-size:13px;color:var(--bone-soft);letter-spacing:.05em;cursor:pointer;transition:all .35s}
+.pg-chapter:hover{border-color:var(--dawn);color:var(--dawn);transform:translateY(-2px)}
+.pg-chapter b{color:var(--clay);font-weight:500;margin-right:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:.2em}
+
+/* === 「是真的嗎？」avatar 氣泡 === */
+.hair-bubble{position:absolute;top:-20px;right:-30px;z-index:5;padding:10px 16px;background:rgba(239,231,212,.96);color:var(--ink);font-family:var(--font-brush);font-size:16px;letter-spacing:.1em;white-space:nowrap;border-radius:22px;box-shadow:0 8px 22px rgba(0,0,0,.4);opacity:0;transform:translateY(-8px) scale(.85);transition:all .5s cubic-bezier(.2,.7,.2,1);pointer-events:none}
+.hair-bubble::after{content:'';position:absolute;bottom:-7px;left:30px;width:14px;height:14px;background:rgba(239,231,212,.96);transform:rotate(45deg)}
+.hair-bubble .hb-a{color:var(--clay-deep);margin-left:6px;font-size:13px;letter-spacing:.15em}
+.avatar-cosmos:hover .hair-bubble{opacity:1;transform:translateY(0) scale(1);animation:hairBubFloat 3s ease-in-out infinite}
+@keyframes hairBubFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.hair-strand{position:absolute;top:20%;right:-40px;width:80px;height:120px;z-index:4;opacity:0;transition:opacity .6s ease}
+.avatar-cosmos:hover .hair-strand{opacity:.75}
+.hair-strand path{stroke:var(--gold-soft);stroke-width:1.2;fill:none;stroke-linecap:round;stroke-dasharray:3 4;animation:hairSway 4s ease-in-out infinite}
+@keyframes hairSway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(3deg)}}
+
+/* === 20 年時間機器 === */
+.timemachine{margin-top:48px;padding:36px 38px;background:linear-gradient(180deg,rgba(30,28,21,.85),rgba(21,20,15,.55));border:1px solid rgba(239,231,212,.08);position:relative;overflow:hidden}
+.timemachine::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--dawn),var(--sage-light),var(--gold-soft),transparent)}
+.tm-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;color:var(--clay);text-transform:uppercase;margin-bottom:10px}
+.tm-year{font-family:var(--font-latin);font-weight:500;font-size:clamp(60px,8vw,110px);line-height:.9;color:var(--bone);letter-spacing:.01em;margin-bottom:24px}
+.tm-year .age{font-family:var(--font-mono);font-size:.18em;color:var(--sage-light);letter-spacing:.25em;margin-left:16px;vertical-align:middle;text-transform:uppercase}
+.tm-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-bottom:28px}
+@media (max-width:760px){.tm-grid{grid-template-columns:1fr}}
+.tm-cell{padding:18px 20px;background:rgba(21,20,15,.5);border:1px solid rgba(239,231,212,.07)}
+.tm-cell .t-k{font-family:var(--font-mono);font-size:10px;letter-spacing:.3em;color:var(--sage-light);text-transform:uppercase;margin-bottom:10px}
+.tm-cell .t-v{font-family:var(--font-brush);font-size:22px;color:var(--bone);letter-spacing:.12em;line-height:1.3}
+.tm-cell .t-sub{font-family:var(--font-display);font-size:13px;color:var(--bone-soft);line-height:1.75;letter-spacing:.04em;margin-top:8px}
+.tm-cell .hours{font-family:var(--font-display);font-weight:500;font-size:30px;color:var(--dawn);letter-spacing:.02em;line-height:1;display:block;margin-bottom:4px}
+.tm-quote{font-family:var(--font-brush);font-size:19px;line-height:1.75;color:var(--gold-soft);letter-spacing:.14em;padding:18px 0 8px;border-top:1px dashed rgba(217,138,92,.35);margin-bottom:22px}
+.tm-quote::before{content:'「';margin-right:4px;color:var(--clay)}
+.tm-quote::after{content:'」';margin-left:4px;color:var(--clay)}
+.tm-slider-wrap{position:relative;padding:20px 6px 0}
+.tm-slider{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:linear-gradient(90deg,var(--sage),var(--clay),var(--dawn),var(--gold-soft));outline:none;cursor:pointer}
+.tm-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--dawn);border:3px solid var(--bone);box-shadow:0 0 14px var(--dawn);cursor:grab}
+.tm-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--dawn);border:3px solid var(--bone);box-shadow:0 0 14px var(--dawn);cursor:grab}
+.tm-markers{display:flex;justify-content:space-between;margin-top:14px;font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:var(--bone-faint);text-transform:uppercase}
+.tm-markers span{position:relative;cursor:pointer;transition:color .3s}
+.tm-markers span:hover,.tm-markers span.on{color:var(--gold-soft)}
+.tm-markers span::before{content:'';position:absolute;top:-16px;left:50%;width:1px;height:6px;background:var(--bone-faint);transform:translateX(-50%)}
+
+/* === 情境游標形態 === */
+body.cur-scissors .cursor-dot{width:16px;height:16px;background:var(--gold-soft);mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M9.64 7.64a3 3 0 1 1-4.24 0 3 3 0 0 1 4.24 0zm8.72 8.72a3 3 0 1 1-4.24 0 3 3 0 0 1 4.24 0zM12 9l10-6-2-2-8 4-8-4-2 2z'/></svg>") center/contain no-repeat;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M9.64 7.64a3 3 0 1 1-4.24 0 3 3 0 0 1 4.24 0zm8.72 8.72a3 3 0 1 1-4.24 0 3 3 0 0 1 4.24 0z'/></svg>") center/contain no-repeat}
+body.cur-baseball .cursor-dot{width:18px;height:18px;background:radial-gradient(circle at 40% 35%,#F4EFDF,#EDE5D0 55%,#D5CCB5 100%);border:1.2px solid var(--clay-deep);box-shadow:0 0 10px rgba(217,138,92,.4)}
+body.cur-baseball .cursor-ring{border-color:var(--clay-deep)}
+body.cur-cloud .cursor-dot{width:22px;height:14px;background:rgba(239,231,212,.85);border-radius:50%;filter:blur(2px)}
+body.cur-cloud .cursor-ring{border-color:rgba(239,231,212,.3);border-style:dashed}
+body.cur-cloud .cursor-ring::after,body.cur-scissors .cursor-ring::after,body.cur-baseball .cursor-ring::after{opacity:.5}
+
+/* === IO-reveal baseline === */
+.io-reveal{opacity:0;transform:translateY(40px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
+.io-reveal.is-in{opacity:1;transform:translateY(0)}
+.io-reveal[data-delay="1"]{transition-delay:.08s}
+.io-reveal[data-delay="2"]{transition-delay:.16s}
+.io-reveal[data-delay="3"]{transition-delay:.24s}
+.io-reveal[data-delay="4"]{transition-delay:.32s}
+.io-reveal[data-delay="5"]{transition-delay:.40s}
+.io-reveal[data-delay="6"]{transition-delay:.48s}
+
+@media (max-width:640px){
+  .arch-bar{top:20px;left:20px;font-size:9.5px}
+  .vol-mark{top:20px;right:20px;font-size:9.5px}
+  .chapter{padding:10vh 6vw}
+  .page-frame{inset:10px}
+  .hero{padding:12vh 6vw 8vh}
+  .freq-num{font-size:68px}
+}
+</style>
+</head>
+<body>
+
+<!-- 游標 -->
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<!-- 背景層 -->
+<canvas id="three-wave"></canvas>
+<div id="p5-breath"></div>
+<div class="paper-noise"></div>
+<div class="grain"></div>
+<div class="page-frame"></div>
+
+<!-- 導覽 -->
+<div class="arch-bar">
+  <a href="/guild/"><i class="fa-solid fa-arrow-left"></i>ARCHIVE</a>
+</div>
+<div class="vol-mark"><span class="pulse"></span>VOL. 頻率之身 · 2026</div>
+
+<!-- === Hero === -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="h-meta">52 歲 · 中部鄉下 · 二十年沒斷過運動</div>
+      <h1 class="hero-title" data-split>鄭敏捷</h1>
+      <div class="hero-handle"><span class="at">@</span>bagel_jie</div>
+      <div class="hero-sub fade-in-up">
+        <span>五段職涯</span><span class="dot"></span>
+        <span>二十年運動</span><span class="dot"></span>
+        <span>一個鄉下女人</span>
+      </div>
+      <blockquote class="hero-quote fade-in-up">
+        愛自己，<em>別無選擇</em>。<br>
+        我們對自己的每一聲感謝、<br>
+        每一點照顧<br>
+        都在改變<em>內在的頻率</em>。
+      </blockquote>
+    </div>
+
+    <div class="hero-right fade-in-up">
+      <div class="avatar-cosmos">
+        <div class="hair-bubble">
+          你的頭髮是真的嗎？
+          <span class="hb-a">— 常常被問</span>
+        </div>
+        <svg class="hair-strand" viewBox="0 0 80 120" aria-hidden="true">
+          <path d="M40,5 Q20,30 35,55 Q55,80 30,105"/>
+          <path d="M45,8 Q28,32 42,58 Q60,82 35,108" style="opacity:.6"/>
+          <path d="M50,12 Q35,36 48,62 Q65,86 40,110" style="opacity:.35"/>
+        </svg>
+        <div class="ring r3"></div>
+        <div class="ring r2"></div>
+        <div class="ring"></div>
+        <span class="orbit-dot"></span>
+        <span class="orbit-dot od2" style="transform-origin:200px 0;top:50%;left:-6px;animation:rot 34s linear infinite"></span>
+        <span class="orbit-dot od3" style="transform-origin:226px 0;top:50%;left:-4px;animation:rot 50s linear infinite reverse"></span>
+        <div class="avatar-frame">
+          <img src="/assets/img/guild/bagel_jie/avatar.webp" alt="鄭敏捷 · bagel_jie" />
+        </div>
+        <div class="hd-chip"><b>52</b>歲 · 中部鄉下 · 媽媽</div>
+      </div>
+      <div class="hero-stats">
+        <div><b>20</b>年不斷</div>
+        <div><b>5+</b>段身分</div>
+        <div><b>2–3</b>小時／日</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- === 30 秒看懂這一頁 === -->
+<section class="page-guide">
+  <div class="pg-card">
+    <div class="pg-tag">30 秒 · 看懂這一頁</div>
+    <h2 class="pg-thesis">
+      我叫鄭敏捷，<b>52 歲、住中部鄉下二十幾年</b>。<br>
+      化工檢驗、美髮設計、櫃姐、紋繡、手作 DIY、民宿管家——<br>
+      <em>什麼都做過，什麼都會一點，但什麼都不精</em>。<br>
+      唯一二十年沒斷過的，是<em>每天 2–3 小時的運動</em>。<br>
+      我想找的，是<em>頻率對得上的朋友</em>——可以聊運動、聊靈修、聊生活的人。
+    </h2>
+
+    <div class="pg-facts">
+      <div class="pg-fact">
+        <div class="pg-i"><i class="fa-solid fa-house-chimney"></i></div>
+        <div><div class="pg-k">我住的地方</div><div class="pg-v">台灣<b>中部鄉下</b> · 安身二十年</div></div>
+      </div>
+      <div class="pg-fact">
+        <div class="pg-i"><i class="fa-solid fa-shuffle"></i></div>
+        <div><div class="pg-k">我的職涯</div><div class="pg-v"><b>五段身份</b> · 一條河 · 一直在轉彎</div></div>
+      </div>
+      <div class="pg-fact">
+        <div class="pg-i"><i class="fa-solid fa-heart-pulse"></i></div>
+        <div><div class="pg-k">我的身體</div><div class="pg-v"><b>20 年</b>每日 2-3 小時 · 七種運動輪流</div></div>
+      </div>
+      <div class="pg-fact">
+        <div class="pg-i"><i class="fa-solid fa-baseball"></i></div>
+        <div><div class="pg-k">我的家</div><div class="pg-v">一個<b>瘋棒球的兒子</b> · 正在念大學</div></div>
+      </div>
+      <div class="pg-fact">
+        <div class="pg-i"><i class="fa-solid fa-quote-left"></i></div>
+        <div><div class="pg-k">我的座右銘</div><div class="pg-v">「<b>愛自己，別無選擇</b>」</div></div>
+      </div>
+      <div class="pg-fact">
+        <div class="pg-i"><i class="fa-solid fa-handshake-angle"></i></div>
+        <div><div class="pg-k">我想找的人</div><div class="pg-v"><b>頻率相同</b>就行 · 可以聊很久</div></div>
+      </div>
+    </div>
+
+    <div class="pg-map">
+      <div class="pg-map-label">我把這一頁分成幾段 · 按一下跳到那一段</div>
+      <div class="pg-chapters">
+        <a class="pg-chapter" href="#ch1"><b>I</b>我做過的五份工作</a>
+        <a class="pg-chapter" href="#ch2"><b>II</b>我 20 年沒斷過的身體</a>
+        <a class="pg-chapter" href="#ch4"><b>III</b>我可以給你的手藝</a>
+        <a class="pg-chapter" href="#chwind"><b>IV</b>一片雲、一陣風</a>
+        <a class="pg-chapter" href="#ch6"><b>V</b>我自己做、自己穿、自己拍</a>
+        <a class="pg-chapter" href="#ch7"><b>VI</b>來找我聊聊看</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- === 章 I · 五份工作 === -->
+<section class="chapter" id="ch1">
+  <div class="chap-no">Chapter I · 我做過的五份工作</div>
+  <p class="chap-purpose">這一段：講我這輩子做過什麼 · 認識我從這裡開始</p>
+  <h2 class="chap-head">我是一個<span class="em">什麼都會一點</span><br>但<span class="em">什麼都不精</span>的人。</h2>
+  <p class="chap-lede">
+    我的人生不是一條直路，是一條<em>慢慢走、逢山轉彎、逢水繞道的河</em>。
+    化工檢驗、美髮設計、櫃姐、紋繡、藝品手作、民宿管家——
+    沒有一段是「規劃」來的，全都是當下覺得「<em>這個我可以</em>」就接。
+    每一段都是我。下面五張卡片，照時間順序排——
+  </p>
+
+  <div class="spectrum-wrap">
+    <div class="spectrum-line"></div>
+    <div class="spectrum-track">
+      <article class="id-card" data-era="Phase 01">
+        <div class="ic-i"><i class="fa-solid fa-flask-vial"></i></div>
+        <div class="ic-stage">Analyst</div>
+        <div class="ic-title">化工<br>檢驗</div>
+        <div class="ic-desc">年輕時在化工公司，日子是燒杯、秤重、表單。那時還沒開始聽自己身體的聲音。</div>
+      </article>
+      <article class="id-card" data-era="Phase 02">
+        <div class="ic-i"><i class="fa-solid fa-scissors"></i></div>
+        <div class="ic-stage">Hairstylist</div>
+        <div class="ic-title">美容<br>美髮師</div>
+        <div class="ic-desc">剪出一整間店、擦拭過每一面鏡。最擅長的是——最精簡、最不傷頭髮的那一刀。</div>
+      </article>
+      <article class="id-card" data-era="Phase 03">
+        <div class="ic-i"><i class="fa-solid fa-shirt"></i></div>
+        <div class="ic-stage">Boutique</div>
+        <div class="ic-title">品牌<br>櫃姐</div>
+        <div class="ic-desc">服飾品牌的櫃上，我學會看一個人的氣，順手把最像她的那件拿給她試。</div>
+      </article>
+      <article class="id-card" data-era="Phase 04">
+        <div class="ic-i"><i class="fa-solid fa-palette"></i></div>
+        <div class="ic-stage">Maker</div>
+        <div class="ic-title">藝品<br>手作</div>
+        <div class="ic-desc">食物、飾品、衣服、自己的造型。什麼都自己做、自己拍。自然的素材，就是最好的設計語言。</div>
+      </article>
+      <article class="id-card" data-era="Phase 05">
+        <div class="ic-i"><i class="fa-solid fa-house-chimney"></i></div>
+        <div class="ic-stage">Innkeeper</div>
+        <div class="ic-title">民宿<br>管家</div>
+        <div class="ic-desc">幫老闆守著一間小民宿。把別人的家暫時當自己的家，讓旅人有一個可以靜下來的夜。</div>
+      </article>
+    </div>
+  </div>
+
+  <div class="spectrum-tail">
+    看起來沒有成就，其實我學會了<em>「在任何崗位都站得住」</em>。
+    一個會泡茶、會剪頭髮、會顧小店、會手作、會運動、會陪你聊一下午靈修的人——<br>
+    不是不精，是<em>沒有非要什麼不可</em>。
+    <span class="attr">— Self-Portrait · 鄭敏捷</span>
+  </div>
+</section>
+
+<!-- === 章 II · 我 20 年沒斷過的身體 === -->
+<section class="chapter" id="ch2">
+  <div class="chap-no">Chapter II · 我 20 年沒斷過的身體</div>
+  <p class="chap-purpose">這一段：講我每天 2-3 小時的運動 · 是我這個人的脊椎</p>
+  <h2 class="chap-head">二十年的<span class="em">節奏</span>，<br>從當媽那天開始。</h2>
+  <p class="chap-lede">
+    我的運動不是健身潮流，是<em>一個媽媽為自己找回來的節拍器</em>。
+    二十年沒有斷過——每天兩到三個小時，有氧、重訓、阻力，全都不缺席。
+    這個身體就是<em>我這個人最厚的底</em>——
+    沒成就的我可以接受，沒身體的我活不下去。
+    下面有三組數字、一個七項輪、還有可以拖的時間機器——
+  </p>
+
+  <div class="rhythm-hero">
+    <div class="rhythm-counter">
+      <div class="rc-row">
+        <div class="rc-num" data-counter="20">0<span class="unit">年</span></div>
+        <div class="rc-label"><b>不間斷</b>從當媽養成運動習慣至今，每一天都在。</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-num" data-counter="7300">0<span class="unit">日</span></div>
+        <div class="rc-label"><b>晨昏一如</b>每一個清晨與傍晚都在身體裡起落。</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-num" data-counter="18000">0<span class="unit">小時</span></div>
+        <div class="rc-label"><b>以身入定</b>粗估二十年累積，是三個博士班的時間。</div>
+      </div>
+    </div>
+
+    <div class="rhythm-wheel">
+      <svg viewBox="0 0 400 400" aria-hidden="true">
+        <defs>
+          <radialGradient id="wheelGlow">
+            <stop offset="0%" stop-color="#D98A5C" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#D98A5C" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="200" cy="200" r="170" fill="url(#wheelGlow)"/>
+        <circle cx="200" cy="200" r="150" fill="none" stroke="#7B8E76" stroke-width="1" stroke-dasharray="2 6" opacity=".5"/>
+        <circle cx="200" cy="200" r="110" fill="none" stroke="#B47B52" stroke-width="1" opacity=".4"/>
+        <g id="spokes" stroke="#EFE7D4" stroke-width="1" opacity=".45">
+          <!-- 7 spokes for 7 disciplines -->
+        </g>
+        <circle cx="200" cy="200" r="70" fill="none" stroke="#C99746" stroke-width="1" opacity=".7"/>
+      </svg>
+      <div class="wheel-core">身<br>體<br>道<span class="sub">BODY WAY</span></div>
+    </div>
+  </div>
+
+  <div class="wheel-detail" id="wheelDetail" aria-live="polite">
+    <div class="wd-i"><i class="fa-solid fa-hand-pointer"></i></div>
+    <div class="wd-body">
+      <div class="wd-name">點選身體道輪 · 看我怎麼練這一樣<span class="lt">Click any spoke</span></div>
+      <div class="wd-txt">七項不是我列著好看——每一項都有特定的時段、身體部位、心情用途。點上面的輪盤，我告訴你。</div>
+      <div class="wd-meta"><span>INTERACTIVE</span></div>
+    </div>
+  </div>
+
+  <div class="disciplines">
+    <div class="disc"><div class="d-i"><i class="fa-solid fa-shoe-prints"></i></div><div class="d-n">快走</div><div class="d-l">Brisk Walk</div><div class="d-meta">日常 · 有氧基礎</div></div>
+    <div class="disc"><div class="d-i"><i class="fa-solid fa-person-running"></i></div><div class="d-n">慢跑</div><div class="d-l">Jogging</div><div class="d-meta">心肺 · 節拍器</div></div>
+    <div class="disc"><div class="d-i"><i class="fa-solid fa-spa"></i></div><div class="d-n">瑜珈</div><div class="d-l">Yoga</div><div class="d-meta">柔軟 · 呼吸</div></div>
+    <div class="disc"><div class="d-i"><i class="fa-solid fa-music"></i></div><div class="d-n">舞蹈</div><div class="d-l">Dance</div><div class="d-meta">節奏 · 身體的詩</div></div>
+    <div class="disc"><div class="d-i"><i class="fa-solid fa-yin-yang"></i></div><div class="d-n">太極</div><div class="d-l">Tai Chi</div><div class="d-meta">內勁 · 以慢制快</div></div>
+    <div class="disc"><div class="d-i"><i class="fa-solid fa-dumbbell"></i></div><div class="d-n">阻力</div><div class="d-l">Resistance</div><div class="d-meta">結構 · 骨骼穩定</div></div>
+    <div class="disc"><div class="d-i"><i class="fa-solid fa-weight-hanging"></i></div><div class="d-n">重量</div><div class="d-l">Strength</div><div class="d-meta">肌力 · 對抗重力</div></div>
+  </div>
+
+  <!-- 20 年時間機器 -->
+  <div class="timemachine" id="timemachine">
+    <div class="tm-label">20-YEAR TIME MACHINE · 拖動年份，回到那時</div>
+    <div class="tm-year"><span id="tmY">2016</span><span class="age" id="tmEra">第 10 年 · 擴展</span></div>
+
+    <div class="tm-grid">
+      <div class="tm-cell">
+        <div class="t-k">那時的身份</div>
+        <div class="t-v" id="tmCareer">美髮＋紋繡</div>
+        <div class="t-sub" id="tmCareerSub">在鏡前站一整天。剪出一整間店，擦拭過每一面鏡。</div>
+      </div>
+      <div class="tm-cell">
+        <div class="t-k">當年新加入的運動</div>
+        <div class="t-v" id="tmMove">+ 阻力訓練</div>
+        <div class="t-sub" id="tmMoveSub">彈力帶、啞鈴、自身重量——肩胛和核心的基礎從這裡來。</div>
+      </div>
+      <div class="tm-cell">
+        <div class="t-k">累計鍛鍊時數</div>
+        <span class="hours" id="tmHours">9,000+ 小時</span>
+        <div class="t-sub" id="tmHoursSub">等於 375 個 24 小時日，活過兩次。</div>
+      </div>
+    </div>
+
+    <div class="tm-quote" id="tmQuote">身體開始回來告訴我：妳可以更穩。</div>
+
+    <div class="tm-slider-wrap">
+      <input class="tm-slider" type="range" id="tmSlider" min="2006" max="2026" step="1" value="2016" aria-label="Year slider">
+      <div class="tm-markers">
+        <span data-y="2006">2006 · 起點</span>
+        <span data-y="2011">2011</span>
+        <span data-y="2016" class="on">2016</span>
+        <span data-y="2021">2021</span>
+        <span data-y="2026">2026 · 現在</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- === 章 IV · 手藝 === -->
+<section class="chapter" id="ch4">
+  <div class="chap-no">Chapter III · 我可以給你的手藝</div>
+  <p class="chap-purpose">這一段：講我能替你做什麼 · 以及可以聊什麼</p>
+  <h2 class="chap-head">我能替你做的<br>以及可以<span class="em">和你聊的</span>。</h2>
+  <p class="chap-lede">
+    我不做大師、不做課程銷售，只提供<em>真實生活裡磨出來的手藝</em>與陪伴。
+    下面六項是我能拿出手的——美髮、紋繡、手作、運動心法、生活閒聊、民宿經驗。
+    如果你剛好需要某一項——<em>來找我聊聊看</em>。
+  </p>
+
+  <div class="craft-grid">
+    <article class="craft">
+      <div class="c-head">
+        <div class="c-i"><i class="fa-solid fa-scissors"></i></div>
+        <div class="c-t">美髮設計 · 偷吃步<span class="lt">Hair · The Shortest Cut</span></div>
+      </div>
+      <div class="c-desc">
+        用最精簡、最不傷髮的方法維持髮型。我自己的頭髮常被問「是真的嗎？」——因為從來不過度處理。
+        給你一份能回家自己照顧的髮型，才是真的為你好。
+      </div>
+      <div class="c-tags">
+        <span class="c-tag">Cut</span><span class="c-tag">Color</span><span class="c-tag">低傷害</span><span class="c-tag">可日常打理</span>
+      </div>
+    </article>
+
+    <article class="craft">
+      <div class="c-head">
+        <div class="c-i"><i class="fa-solid fa-feather"></i></div>
+        <div class="c-t">紋繡 · 但更愛天然<span class="lt">PMU · The Un-hewn</span></div>
+      </div>
+      <div class="c-desc">
+        手上也做紋繡，但我自己的臉喜歡不雕琢的樣子。
+        如果你想的是「自然一點、像自己」的紋繡——我們頻率對得上。
+      </div>
+      <div class="c-tags">
+        <span class="c-tag">眉型</span><span class="c-tag">唇色</span><span class="c-tag">極簡</span>
+      </div>
+    </article>
+
+    <article class="craft">
+      <div class="c-head">
+        <div class="c-i"><i class="fa-solid fa-hand-sparkles"></i></div>
+        <div class="c-t">手作 · DIY<span class="lt">Craft · Small Handmade Things</span></div>
+      </div>
+      <div class="c-desc">
+        食物、飾品、衣服、造型、拍照。從小就愛，現在還在做。<br>
+        把日常的材料撿起來，做成一件有生活氣味的東西——這是我最舒服的創作方式。
+      </div>
+      <div class="c-tags">
+        <span class="c-tag">Food</span><span class="c-tag">Jewelry</span><span class="c-tag">Styling</span><span class="c-tag">Photo</span>
+      </div>
+    </article>
+
+    <article class="craft">
+      <div class="c-head">
+        <div class="c-i"><i class="fa-solid fa-heart-pulse"></i></div>
+        <div class="c-t">運動心法<span class="lt">Movement · 20 Year Anchor</span></div>
+      </div>
+      <div class="c-desc">
+        如果你卡在「想動但動不起來」——我走過。
+        從不喜歡到嘗試，再到二十年不斷，中間每一年我都知道發生了什麼。
+        運動不是自律，是一段和自己和解的路。
+      </div>
+      <div class="c-tags">
+        <span class="c-tag">入門</span><span class="c-tag">持續</span><span class="c-tag">身心頻率</span>
+      </div>
+    </article>
+
+    <article class="craft">
+      <div class="c-head">
+        <div class="c-i"><i class="fa-solid fa-mug-hot"></i></div>
+        <div class="c-t">靈修 · 生活閒聊<span class="lt">Spiritual · Quiet Talk</span></div>
+      </div>
+      <div class="c-desc">
+        聊靈修、聊健康、聊生活點滴。
+        不用包裝、不用收費、不用課程大綱——只要頻率對，一杯茶就能聊很久。
+      </div>
+      <div class="c-tags">
+        <span class="c-tag">靈修</span><span class="c-tag">健康</span><span class="c-tag">同頻</span>
+      </div>
+    </article>
+
+    <article class="craft">
+      <div class="c-head">
+        <div class="c-i"><i class="fa-solid fa-bed"></i></div>
+        <div class="c-t">民宿 · 接待經驗<span class="lt">Hospitality · Keeper of a Quiet Room</span></div>
+      </div>
+      <div class="c-desc">
+        曾長期幫老闆照顧一間小民宿。知道怎麼把空間整理得讓旅人一進門就想放下肩膀——
+        也知道一個家需要的是「有在呼吸」，不是硬裝。
+      </div>
+      <div class="c-tags">
+        <span class="c-tag">接待</span><span class="c-tag">整理</span><span class="c-tag">小空間氛圍</span>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- === 章 V · 雲風詩 === -->
+<section class="wind-scene" id="chwind">
+  <div class="wind-bg"></div>
+  <div class="wind-grain"></div>
+  <div class="wind-text">
+    <div class="chap-no" style="color:var(--dawn-soft);justify-content:center;display:inline-flex;margin-bottom:40px">Chapter IV · 一片雲、一陣風（我看世界的眼睛）</div>
+    <div class="wind-kai" data-split-kai>
+      一片雲，<span class="br">一陣風</span>，停下腳步，<br>
+      這個世界的這個當下，<span class="br">美好無處不在</span>。<br>
+      生命有局限，愛也有局限——<br>
+      如果你渴望愛，就<span class="br">去找尋你自己</span>。
+    </div>
+    <div class="wind-attr">Journal · bagel_jie</div>
+  </div>
+</section>
+
+<!-- === 章 V · 我自己做、自己穿、自己拍 === -->
+<section class="chapter" id="ch6">
+  <div class="chap-no">Chapter V · 我自己做、自己穿、自己拍</div>
+  <p class="chap-purpose">這一段：我衣服自己挑、頭髮自己做、照片自己拍 · 是我最自在的時候</p>
+  <h2 class="chap-head">這些都是<span class="em">我</span>。<br>從衣服到頭髮，<span class="em">每一張都自己來</span>。</h2>
+  <p class="chap-lede">
+    我喜歡手作、喜歡拍照、喜歡把<em>大自然的元素信手拈來放進生活</em>。
+    底下這些是我自己挑的衣服、自己做的造型、自己按下快門的紀念。
+    沒有專業攝影、沒有妝髮團隊——<em>就是我跟我自己玩</em>。
+  </p>
+
+  <div class="style-gallery">
+    <figure class="sg-item">
+      <span class="sg-corner">No. 01</span>
+      <img src="/assets/img/guild/bagel_jie/craft_05.webp" alt="翡翠色刺繡旗袍 + 綠色油紙傘" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">Self-styled · 旗袍 × 油紙傘</span>夏日翡翠 · 一個人撐傘走過木棧道</figcaption>
+    </figure>
+    <figure class="sg-item">
+      <span class="sg-corner">No. 02</span>
+      <img src="/assets/img/guild/bagel_jie/craft_00.webp" alt="紫色針織馬甲 + 牛仔短裙 · 櫻花木屋" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">Self-styled · 鄉下櫻花</span>木造老屋前 · 紫色織紋與春櫻一起呼吸</figcaption>
+    </figure>
+    <figure class="sg-item">
+      <span class="sg-corner">No. 03</span>
+      <img src="/assets/img/guild/bagel_jie/craft_06.webp" alt="蓮花瓣乾燥花藝 + 馬賽克花瓶" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">Hand-made · 我做的物件</span>蓮花瓣 + 馬賽克花瓶 · 一束乾燥花、一個午後</figcaption>
+    </figure>
+    <figure class="sg-item">
+      <span class="sg-corner">No. 04</span>
+      <img src="/assets/img/guild/bagel_jie/craft_07.webp" alt="爆炸鬈髮 + 蕾絲洋裝" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">Self-styled · 鬈髮野生</span>頭髮我自己做 · 那天我想當搖滾女主角</figcaption>
+    </figure>
+    <figure class="sg-item">
+      <span class="sg-corner">No. 05</span>
+      <img src="/assets/img/guild/bagel_jie/craft_09.webp" alt="紅色刺繡無袖中式 · 黑色雪紡長裙" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">Self-styled · 紅磚午後</span>紅色刺繡 + 黑紗 · 走進老家的紅磚巷</figcaption>
+    </figure>
+    <figure class="sg-item">
+      <span class="sg-corner">No. 06</span>
+      <img src="/assets/img/guild/bagel_jie/craft_10.webp" alt="橘色立體編織包 + 馬皮件吊飾" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">Hand-made · 我縫的</span>橘色三角編織包 · 一針一線一個下午</figcaption>
+    </figure>
+    <figure class="sg-item">
+      <span class="sg-corner">No. 07</span>
+      <img src="/assets/img/guild/bagel_jie/craft_04.webp" alt="粉色針織 + 米色風衣 + 毛茸帽 + 藍色花包" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">Self-styled · 粉色冬日</span>毛茸帽 + 粉紗裙 · 廟前那天的暖色組合</figcaption>
+    </figure>
+    <figure class="sg-item">
+      <span class="sg-corner">No. 08</span>
+      <img src="/assets/img/guild/bagel_jie/craft_02.webp" alt="蕾絲長袖 + 多彩格紋裙 + 貝雷帽 + 鬈髮" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">Self-styled · 山頂日落</span>多彩格紋 + 貝雷帽 · 換一個顏色換一個我</figcaption>
+    </figure>
+    <figure class="sg-item baseball-tribute" title="給我瘋棒球的兒子">
+      <span class="sg-corner">No. 09</span>
+      <div class="baseball-stamp"><i class="fa-solid fa-baseball"></i></div>
+      <img src="/assets/img/guild/bagel_jie/baseball_rainbow.webp" alt="洲際棒球場彩虹雨" loading="lazy" />
+      <figcaption class="sg-cap"><span class="sg-tag">For My Son · 給兒子的那場雨</span>洲際球場 · 彩虹雨 · 我為他坐到散場</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- === 章 VII · 可以跟我說 === -->
+<section class="chapter" id="ch7">
+  <div class="chap-no">Chapter VI · 來找我聊聊看</div>
+  <p class="chap-purpose">這一段：講我想找什麼樣的朋友 · 也是這頁的結尾</p>
+  <h2 class="chap-head">如果你也<span class="em">熱愛生活</span>、<br>也<span class="em">注重健康</span>。</h2>
+  <p class="chap-lede">
+    我沒有什麼成就，也沒有什麼頭銜。只想在這條河裡，
+    遇到一些<em>頻率相同</em>的朋友——探討人生、交流新知，喝一杯茶、走一趟山。
+  </p>
+
+  <div class="offer-banner">
+    <div class="offer-title">如果你剛好是——<br><em>熱愛生活、注重健康</em>的人。</div>
+    <div class="offer-lede">
+      你來找我，可以做這些事：
+    </div>
+    <ul class="offer-list">
+      <li><i class="fa-solid fa-check"></i>聊剪髮、染髮、紋繡的天然方向</li>
+      <li><i class="fa-solid fa-check"></i>問怎麼開始運動、怎麼持續下去</li>
+      <li><i class="fa-solid fa-check"></i>聊靈修、人類圖、自我照顧</li>
+      <li><i class="fa-solid fa-check"></i>討論手作、拍照、生活美學</li>
+      <li><i class="fa-solid fa-check"></i>中部鄉下偶遇一杯茶</li>
+      <li><i class="fa-solid fa-check"></i>聊當媽、聊兒子、聊陪伴</li>
+    </ul>
+  </div>
+</section>
+
+<!-- === CTA === -->
+<section class="cta-wrap">
+  <h2 class="cta-title">留下一句話，<br>讓我知道<em>你的頻率</em>。</h2>
+  <p class="cta-desc">
+    我不常發文，但每一則都看。<br>
+    如果這一頁有打動你，來 Threads 或 IG 留一句——
+  </p>
+  <div class="cta-btns">
+    <a class="cta-btn primary" href="https://www.threads.com/@bagel_jie" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i>前往 THREADS</a>
+    <a class="cta-btn" href="https://www.instagram.com/bagel_jie/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i>INSTAGRAM</a>
+  </div>
+</section>
+
+<footer>
+  <div class="seal-mark">⟡ 頻率之身 · BODY AS FREQUENCY ⟡</div>
+  <div class="sig">Made with <span style="color:var(--dawn)">♥</span> by <b>SuperGalen&#39;s Dungeon</b> · for 鄭敏捷</div>
+  <div class="sns">
+    <a href="https://www.threads.com/@bagel_jie" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+    <a href="https://www.instagram.com/bagel_jie/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+ * 自訂游標
+ * ============================================================ */
+(function(){
+  const dot = document.querySelector('.cursor-dot');
+  const ring = document.querySelector('.cursor-ring');
+  if (!dot || !ring || window.matchMedia('(max-width:768px)').matches) return;
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  window.addEventListener('mousemove', e=>{ mx = e.clientX; my = e.clientY; dot.style.left = mx+'px'; dot.style.top = my+'px'; });
+  (function loop(){
+    rx += (mx - rx)*0.18;
+    ry += (my - ry)*0.18;
+    ring.style.left = rx+'px';
+    ring.style.top = ry+'px';
+    requestAnimationFrame(loop);
+  })();
+  document.querySelectorAll('a, .disc, .id-card, .craft, .g-item, .cta-btn, .avatar-frame').forEach(el=>{
+    el.addEventListener('mouseenter', ()=>document.body.classList.add('is-hover'));
+    el.addEventListener('mouseleave', ()=>document.body.classList.remove('is-hover'));
+  });
+})();
+
+/* ============================================================
+ * Three.js · 頻率正弦波（背景層）
+ * 多層疊加的 sine wave，以她 20 年的節奏緩慢呼吸
+ * ============================================================ */
+(function(){
+  const canvas = document.getElementById('three-wave');
+  if (!canvas || !window.THREE) return;
+
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(0, 0, 5);
+
+  const waveGroup = new THREE.Group();
+  scene.add(waveGroup);
+
+  const colors = [0xD98A5C, 0x7B8E76, 0xC99746, 0xB47B52];
+  const waves = [];
+  const N = 320;
+
+  for (let w = 0; w < 4; w++) {
+    const geom = new THREE.BufferGeometry();
+    const pos = new Float32Array(N*3);
+    for (let i = 0; i < N; i++) {
+      pos[i*3]   = (i/(N-1))*12 - 6;
+      pos[i*3+1] = 0;
+      pos[i*3+2] = -w*0.4;
+    }
+    geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.LineBasicMaterial({color: colors[w], transparent:true, opacity: 0.22 - w*0.035});
+    const line = new THREE.Line(geom, mat);
+    waveGroup.add(line);
+    waves.push({geom, pos, phase: w*0.6, amp: 0.38 - w*0.05, freq: 1.2 + w*0.3});
+  }
+
+  // pulse dots scattered
+  const pGeo = new THREE.BufferGeometry();
+  const pN = 80;
+  const pPos = new Float32Array(pN*3);
+  for (let i = 0; i < pN; i++){
+    pPos[i*3]   = (Math.random()-0.5)*14;
+    pPos[i*3+1] = (Math.random()-0.5)*6;
+    pPos[i*3+2] = (Math.random()-0.5)*3;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({color:0xE6BB78, size:0.038, transparent:true, opacity:.55, sizeAttenuation:true});
+  const points = new THREE.Points(pGeo, pMat);
+  scene.add(points);
+
+  let mouseX = 0, mouseY = 0;
+  window.addEventListener('mousemove', e => {
+    mouseX = (e.clientX/window.innerWidth - 0.5)*0.6;
+    mouseY = (e.clientY/window.innerHeight - 0.5)*0.4;
+  });
+
+  const clock = new THREE.Clock();
+  function animate(){
+    const t = clock.getElapsedTime();
+    const mult = window.__SGT_FREQ_MULT || 1;
+    waves.forEach((w, idx) => {
+      for (let i = 0; i < N; i++) {
+        const x = (i/(N-1))*12 - 6;
+        // 呼吸式 sine：12 breaths/min → ~0.2 Hz base
+        w.pos[i*3+1] = Math.sin(x*w.freq*mult + t*0.7*mult + w.phase)*w.amp
+                     + Math.sin(x*w.freq*2.3*mult + t*1.1*mult + w.phase)*w.amp*0.25;
+      }
+      w.geom.attributes.position.needsUpdate = true;
+    });
+    waveGroup.rotation.x = mouseY*0.4 + Math.sin(t*0.15)*0.05;
+    waveGroup.rotation.y = mouseX*0.3;
+    points.rotation.y = t*0.03;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  window.addEventListener('resize', ()=>{
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+  });
+})();
+
+/* ============================================================
+ * p5.js · 呼吸粒子（氣息・雲・風）
+ * ============================================================ */
+(function(){
+  if (!window.p5) return;
+  new p5(p => {
+    let particles = [];
+    let c;
+    const N = window.matchMedia('(max-width:768px)').matches ? 44 : 90;
+
+    p.setup = () => {
+      c = p.createCanvas(window.innerWidth, window.innerHeight);
+      c.parent('p5-breath');
+      p.noStroke();
+      for (let i=0;i<N;i++){
+        particles.push({
+          x: p.random(p.width),
+          y: p.random(p.height),
+          r: p.random(1.2, 3.6),
+          s: p.random(0.12, 0.42),
+          vx: p.random(-0.15, 0.45),
+          vy: p.random(-0.25, 0.05),
+          hue: p.random([[239,231,212], [217,138,92], [168,181,159], [230,187,120]]),
+          a: p.random(0.05, 0.32),
+          ph: p.random(p.TWO_PI)
+        });
+      }
+    };
+
+    p.draw = () => {
+      p.clear();
+      const t = p.millis()*0.001;
+      particles.forEach(pt => {
+        pt.x += pt.vx + Math.sin(t*0.3 + pt.ph)*0.12;
+        pt.y += pt.vy + Math.cos(t*0.2 + pt.ph)*0.06;
+        if (pt.x > p.width + 20) pt.x = -20;
+        if (pt.x < -20) pt.x = p.width + 20;
+        if (pt.y < -20) pt.y = p.height + 20;
+        if (pt.y > p.height + 20) pt.y = -20;
+        const breath = 0.5 + Math.sin(t*0.8 + pt.ph)*0.5;
+        const alpha = pt.a * (0.6 + breath*0.4) * 255;
+        p.fill(pt.hue[0], pt.hue[1], pt.hue[2], alpha);
+        p.circle(pt.x, pt.y, pt.r * (0.8 + breath*0.4));
+      });
+    };
+
+    p.windowResized = () => {
+      p.resizeCanvas(window.innerWidth, window.innerHeight);
+    };
+  });
+})();
+
+/* ============================================================
+ * GSAP · 入場與滾動動畫
+ * ============================================================ */
+window.addEventListener('load', () => {
+  if (!window.gsap) return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Hero title: manual char split (Noto Serif TC supports per-char)
+  document.querySelectorAll('[data-split]').forEach(el => {
+    const text = el.textContent;
+    el.textContent = '';
+    [...text].forEach(ch => {
+      const s = document.createElement('span');
+      s.className = 'reveal-char';
+      s.textContent = ch;
+      el.appendChild(s);
+    });
+  });
+  gsap.to('[data-split] .reveal-char', {
+    opacity: 1, y: 0, rotateX: 0, duration: 1.2, stagger: 0.08, ease: 'power3.out', delay: 0.3
+  });
+
+  // Wind text char reveal on scroll
+  document.querySelectorAll('[data-split-kai]').forEach(el => {
+    const nodes = [];
+    const walk = (n) => {
+      if (n.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        [...n.textContent].forEach(ch => {
+          if (ch === ' ' || ch === '\n') { frag.appendChild(document.createTextNode(ch)); return; }
+          const s = document.createElement('span');
+          s.className = 'reveal-char';
+          s.textContent = ch;
+          frag.appendChild(s);
+          nodes.push(s);
+        });
+        n.parentNode.replaceChild(frag, n);
+      } else if (n.nodeType === 1) {
+        [...n.childNodes].forEach(walk);
+      }
+    };
+    walk(el);
+    gsap.to(nodes, {
+      opacity: 1, y: 0, rotateX: 0, duration: 1.0, stagger: 0.025, ease: 'power2.out',
+      scrollTrigger: { trigger: el, start: 'top 80%' }
+    });
+  });
+
+  // Fade-in-up elements
+  gsap.utils.toArray('.fade-in-up').forEach(el => {
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: 1.2, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 90%' }
+    });
+  });
+
+  // Chapter heads, ledes, freq-quote, cta — use io-reveal (robust for jump-scroll)
+  document.querySelectorAll('.chap-head, .chap-lede, .chap-no, .freq-quote, .spectrum-tail, .wind-attr, .cta-title, .cta-desc, .cta-btn').forEach(el => {
+    el.classList.add('io-reveal');
+  });
+
+  // Rhythm counter numbers
+  document.querySelectorAll('.rc-num[data-counter]').forEach(el => {
+    const target = +el.dataset.counter;
+    const unit = el.querySelector('.unit')?.outerHTML || '';
+    const obj = {val: 0};
+    gsap.to(obj, {
+      val: target, duration: 2.4, ease: 'power2.out',
+      onUpdate: () => {
+        el.innerHTML = Math.round(obj.val).toLocaleString() + unit;
+      },
+      scrollTrigger: { trigger: el, start: 'top 85%' }
+    });
+  });
+
+  // Rhythm wheel · draw 7 spokes + rotating animation
+  (function(){
+    const svg = document.querySelector('.rhythm-wheel svg');
+    if (!svg) return;
+    const spokesG = svg.querySelector('#spokes');
+    const wrap = document.querySelector('.rhythm-wheel');
+    const labels = ['快走','慢跑','瑜珈','舞蹈','太極','阻力','重量'];
+    const n = 7;
+    for (let i = 0; i < n; i++){
+      const a = (i/n)*Math.PI*2 - Math.PI/2;
+      const x1 = 200 + Math.cos(a)*70;
+      const y1 = 200 + Math.sin(a)*70;
+      const x2 = 200 + Math.cos(a)*150;
+      const y2 = 200 + Math.sin(a)*150;
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      spokesG.appendChild(line);
+
+      const lx = 200 + Math.cos(a)*182;
+      const ly = 200 + Math.sin(a)*182;
+      const lb = document.createElement('div');
+      lb.className = 'spoke-label';
+      lb.textContent = labels[i];
+      const pct = (p) => (p/400)*100+'%';
+      lb.style.left = pct(lx);
+      lb.style.top = pct(ly);
+      lb.style.transform = 'translate(-50%,-50%)';
+      wrap.appendChild(lb);
+    }
+    // rotate & highlight loop
+    const allLabels = wrap.querySelectorAll('.spoke-label');
+    let idx = 0;
+    setInterval(() => {
+      allLabels.forEach(l => l.classList.remove('on'));
+      allLabels[idx].classList.add('on');
+      idx = (idx+1) % allLabels.length;
+    }, 1500);
+    gsap.to(spokesG, {
+      rotation: 360, transformOrigin: '200px 200px', duration: 120, repeat: -1, ease: 'none'
+    });
+  })();
+
+  // Staggered cards within groups
+  document.querySelectorAll('.disc, .id-card, .craft, .sg-item, .offer-banner, .cta-btn').forEach(el => {
+    el.classList.add('io-reveal');
+    const p = el.parentElement;
+    const siblings = [...p.children].filter(c => c.classList.contains('io-reveal'));
+    const idx = siblings.indexOf(el);
+    el.dataset.delay = Math.min(idx, 6);
+  });
+
+  // Master IntersectionObserver for every .io-reveal element on the page
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('is-in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+  document.querySelectorAll('.io-reveal').forEach(el => io.observe(el));
+
+  // Wind scene parallax
+  gsap.to('.wind-bg', {
+    backgroundPositionY: '30%', ease: 'none',
+    scrollTrigger: { trigger: '.wind-scene', start: 'top bottom', end: 'bottom top', scrub: true }
+  });
+
+  requestAnimationFrame(() => ScrollTrigger.refresh());
+
+  /* === 20-Year Time Machine === */
+  const tmEras = [
+    {y:2006, era:'第 1 年 · 起點', career:'化工公司檢驗', careerSub:'燒杯、秤重、表單。那時還不會聽身體。', move:'+ 快走（每日）', moveSub:'當媽後第一次為自己走出家門，30 分鐘就夠。', hours:'300 小時', hoursSub:'剛開始的那一年——最難也最珍貴。', quote:'我只是想動一下——沒想到這一動就是二十年。'},
+    {y:2011, era:'第 6 年 · 轉向', career:'轉行美容美髮師', careerSub:'從實驗室到剪刀，從數據到人臉。', move:'+ 慢跑 + 瑜珈', moveSub:'瑜珈進來之後，我第一次感覺到「呼吸」這件事。', hours:'2,500 小時', hoursSub:'這一年開始把運動當成一天中的「必要」。', quote:'轉職換跑道。身體沒換——它還在每天等我。'},
+    {y:2016, era:'第 11 年 · 擴展', career:'美髮＋紋繡', careerSub:'在鏡前站一整天。剪出一整間店，擦拭過每一面鏡。', move:'+ 阻力訓練', moveSub:'彈力帶、啞鈴、自身重量——肩胛和核心的基礎從這裡來。', hours:'9,000 小時', hoursSub:'等於 375 個 24 小時日——活過兩次。', quote:'身體開始回來告訴我：妳可以更穩。'},
+    {y:2021, era:'第 16 年 · 整合', career:'旅宿管家＋手作 DIY', careerSub:'幫老闆守一間小民宿。手作食物、飾品、造型——自拍的作品。', move:'+ 重量 + 太極', moveSub:'重訓給我肌肉，太極給我骨頭。五十歲後這兩個缺一不可。', hours:'14,000 小時', hoursSub:'兒子上了大學，換我有時間練自己的身體了。', quote:'孩子不需要我了——我開始真的學會陪我自己。'},
+    {y:2026, era:'第 21 年 · 現在', career:'七種身份 · 一條河', careerSub:'化工、美髮、櫃姐、紋繡、手作、民宿——現在都是我。', move:'七項全在', moveSub:'快走、慢跑、瑜珈、舞蹈、太極、阻力、重量——每天 2–3 小時輪流。', hours:'18,000+ 小時', hoursSub:'等於 750 個日夜。20 年的身體、一句話就是這個數字。', quote:'愛自己，別無選擇——我用二十年證明給自己看。'}
+  ];
+  function pickEra(y) {
+    let best = tmEras[0];
+    for (const e of tmEras) if (y >= e.y) best = e;
+    return best;
+  }
+  const tmSlider = document.getElementById('tmSlider');
+  const tmY = document.getElementById('tmY');
+  const tmEra = document.getElementById('tmEra');
+  const tmCareer = document.getElementById('tmCareer');
+  const tmCareerSub = document.getElementById('tmCareerSub');
+  const tmMove = document.getElementById('tmMove');
+  const tmMoveSub = document.getElementById('tmMoveSub');
+  const tmHours = document.getElementById('tmHours');
+  const tmHoursSub = document.getElementById('tmHoursSub');
+  const tmQuote = document.getElementById('tmQuote');
+  const tmMarkers = document.querySelectorAll('.tm-markers span');
+  function updateTM(y) {
+    const e = pickEra(y);
+    tmY.textContent = y;
+    tmEra.textContent = e.era;
+    tmCareer.textContent = e.career;
+    tmCareerSub.textContent = e.careerSub;
+    tmMove.textContent = e.move;
+    tmMoveSub.textContent = e.moveSub;
+    tmHours.textContent = e.hours;
+    tmHoursSub.textContent = e.hoursSub;
+    tmQuote.textContent = e.quote;
+    tmMarkers.forEach(m => m.classList.toggle('on', +m.dataset.y === e.y));
+  }
+  if (tmSlider) {
+    tmSlider.addEventListener('input', () => updateTM(+tmSlider.value));
+    tmMarkers.forEach(m => m.addEventListener('click', () => {
+      tmSlider.value = m.dataset.y;
+      updateTM(+m.dataset.y);
+    }));
+    updateTM(+tmSlider.value);
+  }
+
+  /* === 情境游標 · 隨章節切換 === */
+  const cursorZones = [
+    {sel:'.avatar-cosmos', cls:'cur-scissors'},
+    {sel:'.baseball-tribute, .baseball-stamp', cls:'cur-baseball'},
+    {sel:'.wind-scene, .wind-text', cls:'cur-cloud'}
+  ];
+  cursorZones.forEach(z => {
+    document.querySelectorAll(z.sel).forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add(z.cls));
+      el.addEventListener('mouseleave', () => document.body.classList.remove(z.cls));
+    });
+  });
+
+  /* === 身體道輪 · 點擊展開 === */
+  const wheelData = {
+    '快走': {icon:'fa-shoe-prints',lt:'Brisk Walk',text:'每天清晨。是我二十年的開場動作。走出門三十分鐘——先讓身體醒過來，再去做更重的。<em>走路的時候我不聽耳機，我聽自己</em>。',meta:['晨間 · 30-45 min','Daily Opener']},
+    '慢跑': {icon:'fa-person-running',lt:'Jogging',text:'慢跑是我的節拍器。不追配速、不比里程。<em>腳步落地的聲音像心跳</em>——我用這個頻率來校正一整天。',meta:['身心校準','心跳節拍']},
+    '瑜珈': {icon:'fa-spa',lt:'Yoga',text:'瑜珈不是伸展，是呼吸。我最常做的姿勢是「嬰兒式」和「下犬」——<em>讓身體休息，讓喉嚨放鬆</em>。練完我的頭腦特別清楚。',meta:['呼吸 · Breathwork','Body Rest']},
+    '舞蹈': {icon:'fa-music',lt:'Dance',text:'舞蹈是我最私密的動作——自己在家，沒有鏡子，沒有觀眾。<em>身體想怎麼走，我就跟</em>。這是我唯一完全不計算的運動。',meta:['Free Flow','Home Only']},
+    '太極': {icon:'fa-yin-yang',lt:'Tai Chi',text:'太極是我五十歲後加的。慢到別人以為我在睡覺——<em>但內勁是往骨頭裡灌的</em>。重量訓練給我肌肉，太極給我骨頭。',meta:['內勁 · Internal','以慢制快']},
+    '阻力': {icon:'fa-dumbbell',lt:'Resistance',text:'彈力帶、自身重量、啞鈴。<em>我不追加大重量，我追穩定</em>。一個 52 歲的女人，骨盆穩、肩胛穩、核心穩——比什麼都重要。',meta:['穩定度 · Stability','無需器材']},
+    '重量': {icon:'fa-weight-hanging',lt:'Strength',text:'真正的重量訓練——深蹲、硬舉、臥推。<em>為了對抗地心引力老化</em>。當一個女人的腿還能抬起自己的身體，她的尊嚴就還在。',meta:['對抗重力','尊嚴訓練']}
+  };
+  const wd = document.getElementById('wheelDetail');
+  function showWheel(name) {
+    const d = wheelData[name];
+    if (!d || !wd) return;
+    wd.classList.remove('on');
+    setTimeout(() => {
+      wd.innerHTML = `
+        <div class="wd-i"><i class="fa-solid ${d.icon}"></i></div>
+        <div class="wd-body">
+          <div class="wd-name">${name}<span class="lt">${d.lt}</span></div>
+          <div class="wd-txt">${d.text.replace(/<em>/g,'<em style="color:var(--dawn);font-style:normal">')}</div>
+          <div class="wd-meta">${d.meta.map(m=>`<span>${m}</span>`).join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</div>
+        </div>
+      `;
+      wd.classList.add('on');
+    }, 180);
+  }
+  // Wheel spoke labels – convert to clickable
+  setTimeout(() => {
+    document.querySelectorAll('.rhythm-wheel .spoke-label').forEach(lb => {
+      lb.style.pointerEvents = 'auto';
+      lb.style.cursor = 'pointer';
+      lb.addEventListener('click', () => showWheel(lb.textContent.trim()));
+      lb.addEventListener('mouseenter', () => showWheel(lb.textContent.trim()));
+    });
+  }, 400);
+
+});
+</script>
+</body>
+</html>
