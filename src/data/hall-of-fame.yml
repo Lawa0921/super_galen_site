@@ -8,6 +8,20 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "francischien88"
+    name: "Francis 簡小姐｜獨家心房"
+    avatar: "/assets/img/guild/francischien88/avatar.webp"
+    page: "/guild/francischien88.html"
+    title: "新竹／竹北不動產業務員 · #獨家心房"
+    description: "園區 PM × OEM Sales 轉戰不動產，入行滿五年。海外長大、印尼住超過 15 年，中英印尼三語。新竹起家、全台都接，用 PM 規格表思維讓買賣透明化。她自己寫：『就說不動產蠻好玩的』。"
+    tags:
+      - id: "real_estate_hsinchu"
+        label: "新竹不動產"
+      - id: "pm_spec_mindset"
+        label: "PM 規格思維"
+      - id: "trilingual_agent"
+        label: "中英印尼三語"
+
   - id: "c_mia_c"
     name: "MIA · ᴹᴵᴬ｜唯朵美學嘉義"
     avatar: "/assets/img/guild/c_mia_c/avatar.webp"

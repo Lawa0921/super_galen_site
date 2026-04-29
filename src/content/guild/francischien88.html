@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Francis Chien｜獨家心房。新竹區不動產業務、全台銷售。從新竹園區 PM × OEM Sales 轉戰不動產，住過印尼 15 年、英語 Bahasa 雙語。用 PM 思維、藍圖視角，讓你買賣透明化。">
+<title>Francis Chien ｜ 簡小姐 · 不動產 · #獨家心房</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@400;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=Noto+Serif+TC:wght@400;500;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+<style>
+:root{
+  /* === 獨家心房 · 單一圖紙世界 === */
+  --paper:#EADFC0;        /* 主圖紙（drafting paper） */
+  --paper-light:#F2E9CE;  /* 較亮米白（卡片高光） */
+  --paper-deep:#D9CDA9;   /* 紙陰影／邊緣 */
+  --ink:#0F1A26;          /* 主墨色 */
+  --ink-2:#1B2A3D;        /* 次墨色 */
+  --blueprint:#1B3B5F;    /* 藍圖藍 */
+  --seal:#B23323;         /* 章印朱紅 */
+  --seal-deep:#7E1D14;
+  --graphite:#3A3A3A;
+
+  --f-display:'Syne', sans-serif;
+  --f-body:'DM Sans', 'Noto Serif TC', sans-serif;
+  --f-serif:'Noto Serif TC', serif;
+  --f-mono:'JetBrains Mono', monospace;
+  --f-brush:'Ma Shan Zheng', 'Noto Serif TC', serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;background:var(--paper)}
+body{
+  background:
+    /* 圖紙陰影（紙邊角） */
+    radial-gradient(ellipse at 50% 0%, rgba(0,0,0,.06) 0%, transparent 38%),
+    radial-gradient(ellipse at 50% 100%, rgba(0,0,0,.05) 0%, transparent 38%),
+    /* 紙紋微暈 */
+    radial-gradient(ellipse at 18% 22%, rgba(178,51,35,.04) 0%, transparent 35%),
+    radial-gradient(ellipse at 82% 78%, rgba(27,59,95,.05) 0%, transparent 35%),
+    var(--paper);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-weight:400;
+  line-height:1.8;
+  overflow-x:hidden;
+  min-height:100vh;
+  letter-spacing:.005em;
+}
+::selection{background:var(--seal);color:var(--paper-light)}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--paper-deep)}
+::-webkit-scrollbar-thumb{background:var(--blueprint);border-radius:0}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* ========== 背景層：紙紋 + 極淡藍圖網格 ========== */
+#bp-grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.16}
+.grain{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.18;mix-blend-mode:multiply;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.32 0 0 0 0 0.18 0 0 0 .9 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+/* ========== 頂部列 — 直接印在紙上 ========== */
+.arch-bar{position:fixed;top:24px;left:24px;z-index:40;display:flex;gap:10px;align-items:center;font-family:var(--f-mono);font-size:11px;letter-spacing:.24em;font-weight:600}
+.arch-bar a{color:var(--ink);padding:8px 14px;border:1.5px solid var(--ink);background:var(--paper-light);transition:all .25s ease;text-transform:uppercase}
+.arch-bar a:hover{color:var(--paper-light);background:var(--ink)}
+.arch-bar a i{margin-right:6px;color:var(--seal)}
+.arch-bar a:hover i{color:var(--paper-light)}
+
+/* ========== 右上角 title block — 印章式 ========== */
+.title-block{position:fixed;top:24px;right:24px;z-index:40;font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:var(--ink);background:var(--paper-light);border:1.5px solid var(--ink);padding:8px 14px;text-transform:uppercase;line-height:1.7;text-align:right;font-weight:500}
+.title-block b{color:var(--blueprint);font-weight:700}
+.title-block span{color:var(--seal);font-weight:700}
+@media (max-width:860px){
+  .arch-bar{top:18px;left:18px}
+  .title-block{display:none}
+}
+
+/* ========== HERO — 自售物件廣告（591 SELF-LISTING） ========== */
+.hero{position:relative;min-height:auto;padding:13vh 7vw 6vh;z-index:5;max-width:1300px;margin:0 auto}
+.hero-listing{position:relative;background:var(--paper-light);border:2px solid var(--ink);box-shadow:0 22px 44px rgba(0,0,0,.22), 0 4px 0 var(--paper-deep);}
+.hero-listing::before{content:'物件編號 · LISTING NO.';position:absolute;top:-11px;left:30px;background:var(--paper);padding:0 12px;font-family:var(--f-mono);font-size:10px;letter-spacing:.3em;color:var(--graphite);font-weight:600;text-transform:uppercase}
+.hero-listing::after{content:'';position:absolute;top:0;right:0;width:32px;height:32px;background:linear-gradient(225deg, transparent 50%, var(--paper-deep) 50%, var(--seal) 100%);pointer-events:none;z-index:3}
+
+.listing-bar{display:flex;justify-content:space-between;align-items:center;padding:18px 60px 18px 32px;border-bottom:1.5px solid var(--ink);background:var(--paper-light);font-family:var(--f-mono);font-size:11px;letter-spacing:.22em;color:var(--ink);text-transform:uppercase;font-weight:600;flex-wrap:wrap;gap:12px;position:relative;z-index:2}
+.listing-bar .lbar-id{color:var(--seal);font-weight:700;font-family:var(--f-display);font-size:18px;letter-spacing:.12em}
+.listing-bar .lbar-status{display:inline-flex;align-items:center;gap:8px;padding:4px 12px;background:var(--seal);color:var(--paper-light);font-weight:700}
+.listing-bar .lbar-status::before{content:'';width:8px;height:8px;background:var(--paper-light);border-radius:50%;animation:listing-blink 1.6s infinite}
+@keyframes listing-blink{0%,60%{opacity:1}80%,100%{opacity:.3}}
+
+.listing-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:0}
+@media (max-width:900px){.listing-grid{grid-template-columns:1fr}}
+
+/* 左：物件主圖（用 Codex 生成的平面圖底紋當紙底） */
+.listing-photo{position:relative;background:
+  linear-gradient(180deg, rgba(234,223,192,.45) 0%, rgba(234,223,192,.7) 100%),
+  url('/assets/img/guild/francischien88/hero-bg-plan.webp') center/cover no-repeat,
+  var(--paper-deep);
+  border-right:1.5px solid var(--ink);min-height:520px;overflow:hidden}
+@media (max-width:900px){.listing-photo{border-right:none;border-bottom:1.5px solid var(--ink);min-height:380px}}
+.listing-photo::before{content:'PHOTO · 主圖';position:absolute;top:14px;left:18px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.3em;color:var(--ink);font-weight:600;text-transform:uppercase;background:var(--paper-light);padding:4px 10px;border:1px solid var(--ink)}
+.agent-portrait{position:absolute;inset:50% 7% auto 7%;transform:translateY(-50%);background:var(--paper-light);border:1.5px solid var(--ink);padding:22px 22px 18px;text-align:center;font-family:var(--f-mono);box-shadow:0 14px 32px rgba(0,0,0,.22)}
+.ap-frame{position:relative;display:inline-block;margin-bottom:14px}
+.ap-frame img{width:160px;height:160px;border:2px solid var(--ink);background:var(--paper-deep);object-fit:cover;display:block;filter:contrast(1.04) saturate(.92)}
+.ap-frame::before{content:'';position:absolute;inset:-6px;border:1px dashed rgba(15,26,38,.35);pointer-events:none}
+.ap-tag{display:block;margin-top:8px;font-size:9px;letter-spacing:.22em;color:var(--graphite);text-transform:uppercase;font-weight:600}
+
+.ap-bio{margin:6px 0 0;padding:14px 16px 12px;border-top:1px dashed var(--ink);text-align:center;font-style:normal}
+.ap-bio-quote{font-family:var(--f-serif);font-weight:500;color:var(--ink);font-size:14.5px;line-height:1.85;letter-spacing:.02em;display:block}
+.ap-bio-quote em{font-style:normal;color:var(--seal);font-weight:600}
+.ap-bio cite{display:block;margin-top:10px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;color:var(--graphite);font-weight:600;text-transform:uppercase;font-style:normal}
+
+.ap-stamp{position:absolute;top:-12px;right:-12px;width:54px;height:54px;background:var(--seal);color:var(--paper-light);border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;line-height:1.05;text-align:center;transform:rotate(12deg);box-shadow:0 4px 12px rgba(178,51,35,.4);font-weight:700}
+
+@media (max-width:900px){
+  .agent-portrait{position:relative;inset:auto;transform:none;margin:24px auto;max-width:340px}
+  .ap-frame img{width:140px;height:140px}
+}
+.listing-photo .photo-meta{position:absolute;bottom:14px;left:18px;right:18px;display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.26em;color:var(--ink);text-transform:uppercase;font-weight:600}
+.listing-photo .photo-meta .l{color:var(--blueprint)}
+.listing-photo .photo-meta .r{color:var(--seal)}
+
+/* 右：物件規格表 */
+.listing-spec{padding:32px 36px 28px}
+.spec-title{font-family:var(--f-serif);font-weight:800;color:var(--ink);font-size:clamp(28px,3.2vw,42px);line-height:1.15;letter-spacing:.02em;margin-bottom:8px}
+.spec-title .name-en{display:block;font-family:var(--f-display);font-weight:800;color:var(--blueprint);font-size:.5em;letter-spacing:.04em;margin-top:2px;text-transform:uppercase}
+.spec-tagline{font-family:var(--f-serif);color:var(--ink-2);font-size:15.5px;line-height:1.7;font-weight:400;padding-bottom:14px;margin-bottom:14px}
+.spec-tagline b{color:var(--seal);font-weight:600}
+.spec-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px dashed rgba(15,26,38,.4)}
+.spec-tags span{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--blueprint);background:rgba(27,59,95,.08);padding:4px 9px;font-weight:600;border:1px solid rgba(27,59,95,.2);border-radius:2px;transition:all .25s}
+.spec-tags span:hover{background:var(--seal);color:var(--paper-light);border-color:var(--seal)}
+.spec-tags span:first-child{background:var(--seal);color:var(--paper-light);border-color:var(--seal)}
+
+.spec-rows{display:flex;flex-direction:column;gap:0;font-family:var(--f-mono);font-size:13px}
+.spec-line{display:grid;grid-template-columns:auto 1fr;gap:0 22px;align-items:baseline;padding:10px 8px 10px 0;border-bottom:1px dashed transparent;cursor:default;position:relative;transition:background .25s ease, border-color .25s ease}
+.spec-line:hover{background:rgba(178,51,35,.06);border-bottom-color:rgba(178,51,35,.3)}
+.spec-line[data-note]:hover::after{
+  content:'// Francis 註解：' attr(data-note);
+  position:absolute;left:0;right:0;top:100%;
+  margin-top:6px;padding:10px 14px;
+  background:var(--ink);color:var(--paper-light);
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;line-height:1.65;
+  white-space:normal;font-weight:500;
+  z-index:6;
+  border:1.5px solid var(--seal);
+  box-shadow:0 12px 24px rgba(0,0,0,.35);
+  animation:spec-tip-in .25s ease;
+}
+@keyframes spec-tip-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.spec-line[data-note]::before{
+  content:'';position:absolute;right:6px;top:14px;width:6px;height:6px;border-radius:50%;background:rgba(178,51,35,.35);
+  transition:background .25s, transform .25s;
+}
+.spec-line[data-note]:hover::before{background:var(--seal);transform:scale(1.3)}
+
+.spec-line dt{color:var(--graphite);letter-spacing:.18em;text-transform:uppercase;font-size:10.5px;font-weight:600;padding-top:2px;white-space:nowrap}
+.spec-line dd{color:var(--ink);font-weight:500;letter-spacing:.01em;line-height:1.55}
+.spec-line dd b{color:var(--seal);font-weight:700}
+.spec-line dd .alt{color:var(--graphite);font-size:11.5px;font-style:italic;font-weight:400;margin-left:6px}
+
+.spec-cta{display:flex;align-items:center;gap:14px;margin-top:26px;padding-top:22px;border-top:1.5px solid var(--ink);flex-wrap:wrap}
+.spec-cta .price-tag{font-family:var(--f-display);font-weight:800;color:var(--ink);font-size:clamp(22px,2.4vw,30px);letter-spacing:.06em;line-height:1}
+.spec-cta .price-tag i{margin-right:8px;color:var(--seal);font-size:.78em}
+.spec-cta .price-tag small{display:block;font-family:var(--f-mono);font-size:9.5px;color:var(--graphite);letter-spacing:.22em;margin-top:4px;font-weight:600;text-transform:uppercase}
+.spec-cta .domain-note{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.18em;color:var(--blueprint);text-transform:uppercase;font-weight:600;border-left:2px solid var(--seal);padding-left:12px}
+.spec-cta .domain-note b{color:var(--ink)}
+
+/* ========== Section 共用 — 章節在同一張紙上，靠分區編號區隔 ========== */
+section.chapter{position:relative;padding:9vh 8vw 8vh;max-width:1180px;margin:0 auto;z-index:5;color:var(--ink)}
+section.chapter + section.chapter{border-top:1.5px solid var(--ink)}
+@media (max-width:740px){section.chapter{padding:7vh 7vw 6vh}}
+
+.ch-head{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-bottom:6vh;position:relative;padding-bottom:22px;border-bottom:1.5px solid var(--ink);flex-wrap:wrap}
+.ch-head::after{content:'';position:absolute;left:0;bottom:-2px;width:72px;height:3px;background:var(--seal)}
+.ch-num{font-family:var(--f-mono);font-size:11px;letter-spacing:.32em;color:var(--graphite);text-transform:uppercase;font-weight:600}
+.ch-num b{color:var(--seal);font-weight:700}
+.ch-zh{font-family:var(--f-serif);font-weight:700;color:var(--ink);font-size:clamp(34px,4.6vw,62px);line-height:1.05;letter-spacing:.03em;margin-top:8px}
+.ch-en{font-family:var(--f-display);color:var(--blueprint);font-weight:700;font-size:clamp(14px,1.5vw,20px);letter-spacing:.04em;text-align:right;text-transform:uppercase;flex-shrink:0}
+.ch-en::before{content:'— ';color:var(--seal);font-family:var(--f-mono);font-weight:400}
+
+section.chapter > *{position:relative;z-index:2}
+section.chapter p{color:var(--ink-2)}
+section.chapter b{color:var(--ink)}
+
+/* ========== CH1 · 玄關：我是誰 — Jakarta↔Hsinchu ========== */
+.entrance{position:relative;display:grid;grid-template-columns:1fr 1.2fr;gap:72px;align-items:center}
+@media (max-width:900px){.entrance{grid-template-columns:1fr;gap:48px}}
+.entrance-text{max-width:560px}
+.entrance-text p{font-family:var(--f-serif);font-size:17.5px;color:#1F3046;line-height:1.95;margin-bottom:22px;letter-spacing:.02em;font-weight:400}
+.entrance-text p b{color:#0B1B2C;font-weight:600;border-bottom:1.5px solid var(--seal);padding-bottom:1px}
+.entrance-text p .id{font-family:var(--f-mono);color:#4E6477;letter-spacing:.1em;font-size:.78em;font-weight:500}
+
+.axis-wrap{position:relative;aspect-ratio:1/.78;background:rgba(241,233,210,.6);border:1px solid rgba(27,59,95,.4);padding:28px}
+.axis-wrap::before{content:'GLOBAL AXIS · 1987–PRESENT';position:absolute;top:-9px;left:20px;background:#F0E6CA;padding:0 10px;font-family:var(--f-mono);font-size:9px;letter-spacing:.3em;color:#1B3B5F;font-weight:600}
+.axis-svg{width:100%;height:100%;overflow:visible}
+.axis-label{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;fill:#1B3B5F;text-transform:uppercase;font-weight:500}
+.axis-city{font-family:var(--f-display);font-weight:800;font-size:17px;fill:#0B1B2C;letter-spacing:.08em}
+.axis-tri{font-family:var(--f-brush);font-size:13px;fill:var(--seal)}
+
+.axis-caption{position:absolute;bottom:14px;right:18px;font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:#4E6477;text-transform:uppercase}
+.axis-caption b{color:#0B1B2C}
+
+/* 語言徽章 — 可點擊，切換下方語言版本 */
+.lang-badges{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.lang-badge{padding:8px 14px;background:rgba(255,255,255,.4);border:1.5px solid rgba(27,59,95,.4);font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:#1B3B5F;text-transform:uppercase;display:flex;gap:8px;align-items:center;font-weight:500;cursor:pointer;transition:all .25s ease}
+.lang-badge i{color:rgba(178,51,35,.4);font-size:9px;transition:color .25s}
+.lang-badge b{color:#0B1B2C;font-weight:700}
+.lang-badge:hover{background:rgba(178,51,35,.08);border-color:var(--seal)}
+.lang-badge.active{background:var(--seal);border-color:var(--seal);color:var(--paper-light)}
+.lang-badge.active b{color:var(--paper-light)}
+.lang-badge.active i{color:var(--paper-light);animation:lang-pulse 1.6s infinite}
+@keyframes lang-pulse{0%,70%{opacity:1}85%,100%{opacity:.4}}
+
+.lang-pane{animation:pane-fade .4s ease}
+.lang-pane[hidden]{display:none}
+@keyframes pane-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ========== CH2 · 客廳：職涯 blueprint timeline ========== */
+.tl-wrap{position:relative;padding:40px 0 60px}
+.tl-rail{position:absolute;left:0;right:0;top:120px;height:2px;background:repeating-linear-gradient(90deg,#1B3B5F 0 12px,transparent 12px 20px);opacity:.55}
+.tl-rail::before,.tl-rail::after{content:'';position:absolute;top:-6px;width:14px;height:14px;border:1.6px solid #1B3B5F;background:#F4ECD2;border-radius:50%}
+.tl-rail::before{left:-7px}
+.tl-rail::after{right:-7px;border-color:var(--seal);background:var(--seal)}
+
+.tl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
+.tl-node{position:relative;padding:150px 18px 0;text-align:center}
+.tl-node::before{content:'';position:absolute;top:114px;left:50%;transform:translateX(-50%);width:16px;height:16px;border:2px solid #1B3B5F;background:#F4ECD2;z-index:2;border-radius:50%}
+.tl-node.active::before{border-color:var(--seal);background:var(--seal)}
+.tl-node::after{content:'';position:absolute;top:30px;left:50%;transform:translateX(-50%);width:1px;height:90px;background:#1B3B5F;opacity:.4}
+.tl-year{position:absolute;top:0;left:0;right:0;font-family:var(--f-mono);font-size:11px;letter-spacing:.3em;color:#4E6477;text-transform:uppercase;font-weight:500}
+.tl-year b{display:block;font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:.02em;color:#0B1B2C;margin-top:6px}
+.tl-title{font-family:var(--f-serif);font-weight:700;color:#0B1B2C;font-size:19px;margin-bottom:10px;letter-spacing:.04em;line-height:1.35}
+.tl-desc{font-family:var(--f-body);font-size:14.5px;color:#1F3046;line-height:1.85;font-weight:400}
+.tl-tag{display:inline-block;margin-top:12px;padding:4px 11px;font-family:var(--f-mono);font-size:9px;letter-spacing:.22em;color:var(--seal);border:1px solid var(--seal);text-transform:uppercase;font-weight:600}
+@media (max-width:820px){
+  .tl-grid{grid-template-columns:1fr;gap:20px}
+  .tl-rail{display:none}
+  .tl-node{padding:20px 24px;text-align:left;border-left:2px solid #1B3B5F;position:relative}
+  .tl-node::before{top:24px;left:-9px;transform:none}
+  .tl-node::after{display:none}
+  .tl-year{position:static;margin-bottom:6px}
+  .tl-year b{display:inline-block;margin-left:10px;margin-top:0;font-size:22px}
+}
+
+/* ========== CH3 · 主臥：服務四象限 ========== */
+.svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+@media (max-width:740px){.svc-grid{grid-template-columns:1fr}}
+.svc-card{position:relative;background:#FBF6E3;border:1.5px solid rgba(27,59,95,.4);padding:34px 30px 30px;min-height:260px;overflow:hidden;transition:all .4s cubic-bezier(.2,.8,.2,1);box-shadow:0 6px 14px rgba(0,0,0,.08)}
+.svc-card::after{content:attr(data-room);position:absolute;top:10px;right:16px;font-family:var(--f-mono);font-size:9px;letter-spacing:.3em;color:#4E6477;text-transform:uppercase;z-index:2;font-weight:600}
+.svc-card .svc-num{font-family:var(--f-mono);font-size:11px;letter-spacing:.28em;color:var(--seal);font-weight:600}
+.svc-card .svc-icon{font-size:30px;color:#1B3B5F;margin:14px 0 18px;display:inline-block}
+.svc-card .svc-icon-img{width:104px;height:104px;display:block;margin:8px 0 12px;object-fit:contain;transition:transform .4s cubic-bezier(.2,.8,.2,1), filter .4s}
+.svc-card:hover .svc-icon-img{transform:translateY(-3px) rotate(-1.5deg);filter:drop-shadow(0 6px 12px rgba(27,59,95,.25))}
+.svc-card h3{font-family:var(--f-serif);font-weight:700;color:#0B1B2C;font-size:26px;letter-spacing:.04em;margin-bottom:12px;display:flex;align-items:baseline;gap:12px;line-height:1.3}
+.svc-card h3 small{font-family:var(--f-display);font-weight:700;font-size:11px;color:#4E6477;letter-spacing:.2em;text-transform:uppercase}
+.svc-card p{font-family:var(--f-serif);color:#1F3046;font-size:16px;line-height:1.85;letter-spacing:.01em;font-weight:400}
+.svc-card .dim-arrow{position:absolute;bottom:16px;right:20px;font-family:var(--f-mono);font-size:10px;color:var(--seal);letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+.svc-card:hover{transform:translateY(-4px);border-color:var(--seal);box-shadow:0 18px 38px rgba(27,59,95,.18)}
+.svc-card:hover .svc-icon{color:var(--seal)}
+
+/* ========== CH4 · SPEC CHECKLIST 互動 ========== */
+.spec-intro{max-width:680px;font-family:var(--f-serif);font-size:17px;color:#1F3046;line-height:1.85;margin-bottom:5vh;letter-spacing:.02em;font-weight:400}
+.spec-intro b{color:#0B1B2C;font-weight:600;border-bottom:1.5px solid var(--seal);padding-bottom:1px}
+.spec-wrap{background:#FBF6E3;border:1.5px solid rgba(27,59,95,.4);position:relative;box-shadow:0 8px 18px rgba(0,0,0,.1)}
+.spec-wrap::before{content:'SPEC SHEET · REV.05 · F.CHIEN';position:absolute;top:-9px;left:24px;background:#FBF6E3;padding:0 12px;font-family:var(--f-mono);font-size:9px;letter-spacing:.3em;color:#1B3B5F;font-weight:600}
+
+.spec-head{display:grid;grid-template-columns:40px 1fr 140px 120px;gap:0;padding:22px 28px 16px;border-bottom:1.5px solid rgba(27,59,95,.3);font-family:var(--f-mono);font-size:10px;letter-spacing:.24em;color:#1B3B5F;text-transform:uppercase;background:rgba(27,59,95,.06);font-weight:600}
+@media (max-width:680px){.spec-head{grid-template-columns:36px 1fr 80px}.spec-head .col-w{display:none}}
+
+.spec-row{display:grid;grid-template-columns:40px 1fr 140px 120px;gap:0;padding:18px 28px;border-bottom:1px dashed rgba(27,59,95,.22);cursor:pointer;transition:background .3s ease;position:relative;align-items:center}
+.spec-row:hover{background:rgba(27,59,95,.05)}
+.spec-row:last-child{border-bottom:none}
+.spec-check{width:22px;height:22px;border:1.5px solid #1B3B5F;background:transparent;display:grid;place-items:center;transition:all .3s ease;color:transparent;font-size:11px}
+.spec-row.done .spec-check{background:var(--seal);border-color:var(--seal);color:#FBF6E3}
+.spec-row.done .spec-label{color:#6A7A8A;text-decoration:line-through;text-decoration-color:rgba(192,57,43,.55)}
+.spec-label{font-family:var(--f-serif);color:#0B1B2C;font-size:16.5px;letter-spacing:.02em;padding-right:18px;line-height:1.5;font-weight:500}
+.spec-label small{display:block;font-family:var(--f-mono);font-size:12px;color:#4E6477;letter-spacing:.05em;margin-top:4px;text-transform:none;font-weight:400}
+.spec-tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;color:#1B3B5F;text-transform:uppercase;padding:4px 10px;border:1px solid rgba(27,59,95,.45);display:inline-block;align-self:center;justify-self:start;font-weight:600}
+.spec-w{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:#4E6477;text-align:right;text-transform:uppercase;font-weight:500}
+.spec-w b{color:#0B1B2C;font-size:15px;letter-spacing:0;font-weight:700}
+@media (max-width:680px){
+  .spec-row{grid-template-columns:36px 1fr 80px;padding:16px 18px}
+  .spec-w{display:none}
+  .spec-label{font-size:15px;padding-right:10px}
+  .spec-tag{font-size:9px;padding:3px 6px;letter-spacing:.14em}
+}
+
+.spec-foot{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;background:rgba(27,59,95,.08);border-top:1.5px solid rgba(27,59,95,.25);font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;color:#4E6477;text-transform:uppercase;flex-wrap:wrap;gap:10px;font-weight:500}
+.spec-foot .count b{color:#0B1B2C;font-size:16px;margin:0 4px;font-weight:700}
+.spec-foot .note{color:var(--seal);font-weight:600}
+
+/* ========== CH5 · 陽台：為什麼選我 ========== */
+.why-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:60px;align-items:flex-start}
+@media (max-width:860px){.why-grid{grid-template-columns:1fr;gap:40px}}
+.why-quote{font-family:var(--f-serif);font-weight:500;color:#0B1B2C;font-size:clamp(22px,2.2vw,30px);line-height:1.6;letter-spacing:.02em;position:relative;padding-left:28px}
+.why-quote::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;background:var(--seal)}
+.why-quote b{color:var(--seal);font-weight:700}
+.why-quote .mute{color:#4E6477;font-size:.55em;font-family:var(--f-mono);display:block;margin-top:24px;letter-spacing:.18em;padding-left:1px;font-weight:500}
+
+.why-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.stat{padding:24px 20px;border:1.5px solid rgba(27,59,95,.4);background:#FBF6E3;position:relative;overflow:hidden;box-shadow:0 5px 12px rgba(0,0,0,.08)}
+.stat::before{content:'';position:absolute;top:10px;left:10px;width:8px;height:8px;border:1.5px solid var(--seal);border-radius:50%}
+.stat::after{content:attr(data-note);position:absolute;bottom:8px;right:12px;font-family:var(--f-mono);font-size:8.5px;letter-spacing:.25em;color:#4E6477;text-transform:uppercase;font-weight:600}
+.stat .n{font-family:var(--f-display);font-weight:800;color:#0B1B2C;font-size:clamp(40px,4.6vw,58px);line-height:1;letter-spacing:-.02em}
+.stat .n small{font-family:var(--f-mono);font-size:.32em;color:#1B3B5F;letter-spacing:.18em;margin-left:6px;vertical-align:top;top:.5em;position:relative;font-weight:600}
+.stat .l{margin-top:10px;font-family:var(--f-serif);color:#1F3046;font-size:15.5px;letter-spacing:.02em;line-height:1.6;font-weight:400}
+.stat .l em{font-style:normal;color:var(--seal);font-weight:600}
+
+/* 多語引用 */
+.trilingual{margin-top:42px;display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:0;background:transparent;border:none}
+@media (max-width:680px){.trilingual{grid-template-columns:1fr}}
+.tri-cell{padding:18px 18px;border-right:1px dashed rgba(27,59,95,.3)}
+.tri-cell:last-child{border-right:none}
+@media (max-width:680px){.tri-cell{border-right:none;border-bottom:1px dashed rgba(27,59,95,.3)}.tri-cell:last-child{border-bottom:none}}
+.tri-cell .lang{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.3em;color:var(--seal);text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.tri-cell .word{font-family:var(--f-display);font-weight:800;color:#0B1B2C;font-size:24px;letter-spacing:.04em}
+.tri-cell .word.zh{font-family:var(--f-brush);font-size:30px}
+.tri-cell .hint{font-family:var(--f-mono);font-size:11px;color:#4E6477;letter-spacing:.06em;margin-top:6px;font-weight:500}
+
+/* ========== CTA · 紙的右下角章印區 ========== */
+.cta{position:relative;padding:14vh 8vw 10vh;text-align:center;max-width:1100px;margin:0 auto;z-index:5;border-top:1.5px solid var(--ink)}
+
+.cta-eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.36em;color:var(--blueprint);text-transform:uppercase;margin-bottom:18px;font-weight:600}
+.cta-zh{font-family:var(--f-serif);font-weight:700;color:var(--ink);font-size:clamp(34px,4.4vw,56px);line-height:1.3;letter-spacing:.04em;margin-bottom:10px}
+.cta-zh em{font-style:normal;color:var(--seal);position:relative}
+.cta-zh em::after{content:'';position:absolute;left:-4%;right:-4%;bottom:-2px;height:3px;background:var(--seal)}
+.cta-en{font-family:var(--f-display);font-weight:700;color:var(--blueprint);font-size:clamp(15px,1.6vw,22px);letter-spacing:.04em;margin-bottom:7vh;text-transform:uppercase}
+.cta-en::before{content:'// ';color:var(--seal);font-family:var(--f-mono);font-weight:400;font-size:.6em}
+
+/* === 名片章 · 仿木刻名片 === */
+.seal-box{position:relative;display:inline-block;margin:0 auto 6vh;cursor:pointer}
+.phone-stamp{position:relative;background:var(--paper-light);border:2.5px solid var(--ink);padding:26px 36px 22px;display:inline-flex;flex-direction:column;gap:14px;align-items:center;min-width:380px;transform:rotate(-1.5deg);transition:transform .4s cubic-bezier(.2,.8,.2,1);box-shadow:8px 10px 0 var(--paper-deep), 10px 14px 28px rgba(0,0,0,.18)}
+.seal-box:hover .phone-stamp{transform:rotate(0) translateY(-2px)}
+.phone-stamp::before{content:'';position:absolute;inset:7px;border:1px dashed var(--ink);pointer-events:none;opacity:.4}
+@media (max-width:520px){.phone-stamp{min-width:260px;padding:20px 22px 18px}}
+
+.ps-name{text-align:center;display:flex;flex-direction:column;gap:2px;border-bottom:1.5px solid var(--ink);padding-bottom:10px;width:100%}
+.ps-name-zh{font-family:var(--f-serif);font-weight:700;color:var(--ink);font-size:24px;letter-spacing:.16em}
+.ps-name-en{font-family:var(--f-display);font-weight:800;color:var(--blueprint);font-size:11px;letter-spacing:.36em;text-transform:uppercase}
+
+.ps-tel{display:flex;align-items:center;gap:12px}
+.ps-tel i{color:var(--seal);font-size:18px}
+.ps-num{font-family:var(--f-display);font-weight:800;color:var(--ink);font-size:clamp(22px,2.6vw,32px);letter-spacing:.06em;line-height:1}
+
+.ps-foot{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.22em;color:var(--graphite);text-transform:uppercase;font-weight:600;padding-top:8px;border-top:1px dashed var(--ink);width:100%;justify-content:center}
+.ps-foot .dot{width:4px;height:4px;border-radius:50%;background:var(--seal)}
+
+.ps-stamp{position:absolute;top:-16px;right:-18px;width:60px;height:60px;background:var(--seal);color:var(--paper-light);border-radius:50%;display:grid;place-items:center;font-family:var(--f-brush);font-size:14px;letter-spacing:.05em;line-height:1.05;text-align:center;transform:rotate(10deg);box-shadow:0 4px 12px rgba(178,51,35,.4);border:2px solid var(--paper-light)}
+
+.seal-box .seal-hint{font-family:var(--f-mono);font-size:10px;letter-spacing:.3em;color:var(--graphite);text-transform:uppercase;margin-top:22px;display:block;font-weight:500}
+
+/* 聯絡方式 */
+.cta-sub{font-family:var(--f-serif);color:var(--ink-2);font-size:16.5px;line-height:1.85;margin-bottom:4vh;font-weight:400}
+.cta-sub b{color:var(--ink);font-weight:600}
+
+.cta-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:2vh}
+.cta-btn{padding:15px 30px;border:1.5px solid var(--ink);color:var(--ink);font-family:var(--f-mono);font-size:11.5px;letter-spacing:.26em;text-transform:uppercase;transition:all .3s ease;display:inline-flex;align-items:center;gap:12px;background:transparent;font-weight:600;cursor:pointer}
+.cta-btn i{font-size:15px;color:var(--seal)}
+.cta-btn:hover{color:var(--paper-light);background:var(--ink);transform:translateY(-2px)}
+.cta-btn:hover i{color:var(--paper-light)}
+.cta-btn.primary{background:var(--seal);border-color:var(--seal);color:var(--paper-light)}
+.cta-btn.primary i{color:var(--paper-light)}
+.cta-btn.primary:hover{background:var(--seal-deep);border-color:var(--seal-deep);color:var(--paper-light)}
+
+/* === 撥號鍵盤（必須輸入他的號碼才解鎖） === */
+.dialpad-wrap{margin:5vh auto 2vh;max-width:380px;background:var(--paper-light);border:2px solid var(--ink);box-shadow:6px 8px 0 var(--paper-deep), 8px 12px 24px rgba(0,0,0,.18);padding:18px 18px 20px}
+.dp-screen{background:var(--ink);color:var(--paper-light);padding:14px 18px 16px;text-align:left;font-family:var(--f-mono);margin-bottom:14px;border:1.5px solid var(--ink-2);position:relative}
+.dp-screen::after{content:'';position:absolute;top:6px;right:8px;width:6px;height:6px;background:#7CFFA8;border-radius:50%;box-shadow:0 0 6px #7CFFA8;animation:dp-pulse 1.6s infinite}
+.dp-screen.locked::after{background:#FFB347;box-shadow:0 0 6px #FFB347}
+.dp-screen.unlocked::after{background:#FF5050;animation:dp-pulse .6s infinite}
+@keyframes dp-pulse{0%,70%{opacity:1}85%,100%{opacity:.3}}
+.dp-prompt{display:block;font-size:10px;letter-spacing:.18em;color:#9DB1C5;text-transform:uppercase;margin-bottom:8px;font-weight:500}
+.dp-prompt b{color:#FFD79A;letter-spacing:.16em;font-weight:700}
+.dp-display{font-family:var(--f-display);font-weight:800;font-size:clamp(22px,2.6vw,30px);letter-spacing:.16em;color:#7CFFA8;line-height:1;text-shadow:0 0 12px rgba(124,255,168,.35);min-height:1em}
+.dp-display.error{color:#FF6B5C;animation:dp-shake .35s ease}
+.dp-display.complete{color:#FFD79A;text-shadow:0 0 14px rgba(255,215,154,.5)}
+@keyframes dp-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.dp-status{font-size:9.5px;letter-spacing:.22em;color:var(--seal);text-transform:uppercase;margin-top:6px;font-weight:600}
+
+.dp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dp-key{font-family:var(--f-display);font-weight:800;font-size:24px;color:var(--ink);background:var(--paper);border:1.5px solid var(--ink);padding:14px 0;cursor:pointer;transition:all .15s cubic-bezier(.2,.8,.2,1);display:grid;place-items:center;letter-spacing:.04em}
+.dp-key:hover{background:var(--ink);color:var(--paper-light);transform:translateY(-1px)}
+.dp-key:active{transform:translateY(1px) scale(.96);background:var(--seal);color:var(--paper-light);border-color:var(--seal)}
+.dp-key.expected{background:rgba(178,51,35,.12);border-color:var(--seal);box-shadow:0 0 0 2px rgba(178,51,35,.2)}
+.dp-key.expected::before{content:'';position:absolute}
+.dp-key.dp-aux{font-size:18px;color:var(--graphite)}
+.dp-key.dp-call{background:var(--seal);color:var(--paper-light);border-color:var(--seal);font-size:18px}
+.dp-key.dp-call:disabled{background:var(--paper-deep);color:var(--graphite);border-color:var(--graphite);cursor:not-allowed;opacity:.5}
+.dp-key.dp-call:not(:disabled){animation:dp-ring 1.2s infinite}
+.dp-key.dp-call:not(:disabled):hover{background:var(--seal-deep);transform:translateY(-2px) scale(1.04)}
+@keyframes dp-ring{0%,100%{box-shadow:0 0 0 0 rgba(178,51,35,.7)}50%{box-shadow:0 0 0 10px rgba(178,51,35,0)}}
+
+.dp-help{margin-top:12px;text-align:center;font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:var(--graphite);text-transform:uppercase;font-weight:500}
+.dp-link{background:none;border:none;color:var(--blueprint);font-family:inherit;font-size:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;font-weight:700;border-bottom:1.5px solid var(--blueprint);padding:0 1px;transition:all .25s}
+.dp-link:hover{color:var(--seal);border-color:var(--seal)}
+
+/* ========== FOOTER · 印製規格 ========== */
+footer{padding:5vh 8vw 4vh;text-align:center;border-top:2px solid var(--ink);position:relative;z-index:5;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.22em;color:var(--graphite);text-transform:uppercase;font-weight:500}
+footer .brand{font-family:var(--f-brush);font-size:22px;color:var(--ink);letter-spacing:.18em;margin-bottom:6px;text-transform:none;font-weight:400}
+footer .sig{margin-bottom:8px}
+footer .sig b{color:var(--seal);font-weight:700}
+footer .footer-meta{font-size:9.5px;letter-spacing:.32em;color:var(--blueprint);font-weight:600}
+
+/* ========== 知更多 · 小互動提示 ========== */
+.hint-chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;color:var(--blueprint);text-transform:uppercase;padding:7px 14px;border:1.2px dashed var(--blueprint);margin-top:22px;cursor:default;background:rgba(255,255,255,.25);font-weight:600}
+.hint-chip i{color:var(--seal);font-size:9px}
+
+/* 時間軸節點可展開 */
+.tl-node{cursor:pointer;transition:background .3s ease}
+.tl-node:hover .tl-title{color:var(--seal)}
+.tl-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .5s ease, opacity .5s ease, margin-top .5s ease;font-family:var(--f-mono);font-size:11.5px;color:#1B3B5F;letter-spacing:.06em;line-height:1.75;text-align:left;border-top:1px dashed rgba(27,59,95,.4);margin-top:0;padding-top:0;font-weight:500}
+.tl-node.open .tl-detail{max-height:220px;opacity:1;margin-top:14px;padding-top:12px}
+
+/* SPEC 完成後蓋章 */
+.spec-pass-stamp{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-12deg) scale(.6);pointer-events:none;opacity:0;z-index:10;transition:all .9s cubic-bezier(.2,.8,.2,1)}
+.spec-pass-stamp.show{opacity:.92;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}
+.spec-pass-stamp .pass-ring{width:200px;height:200px;border:6px double var(--seal);border-radius:50%;display:grid;place-items:center;background:rgba(234,223,192,.7)}
+.spec-pass-stamp .pass-txt{font-family:var(--f-brush);color:var(--seal);font-size:44px;letter-spacing:.12em;line-height:.95;text-align:center}
+.spec-pass-stamp .pass-txt small{display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.3em;margin-top:6px;opacity:.9;font-weight:600}
+
+/* ========== 平面圖小地圖 / Floor-plan mini-map（預設收合，點擊展開） ========== */
+.minimap{position:fixed;right:24px;bottom:24px;z-index:38;background:var(--paper-light);border:1.5px solid var(--ink);box-shadow:0 14px 30px rgba(0,0,0,.25);font-family:var(--f-mono);user-select:none;opacity:0;transform:translateY(14px) scale(.96);transition:all .4s cubic-bezier(.2,.8,.2,1);transform-origin:bottom right}
+.minimap.show{opacity:1;transform:translateY(0) scale(1)}
+
+/* 收合時：縮成最小章片（不擋內容） */
+.minimap.collapsed{width:auto;cursor:pointer}
+.minimap.collapsed .mm-svg,
+.minimap.collapsed .mm-foot,
+.minimap.collapsed .mm-toggle{display:none}
+.minimap.collapsed .mm-head{padding:8px 12px;border-bottom:none;gap:8px;font-size:10.5px;letter-spacing:.16em}
+.minimap.collapsed .mm-head .mm-tag{display:inline-flex;align-items:center}
+.minimap.collapsed .mm-head .mm-tag i{margin-right:6px}
+.minimap.collapsed:hover{background:var(--ink);color:var(--paper-light);transform:translateY(-1px)}
+.minimap.collapsed:hover .mm-here-mini{color:var(--paper-light)}
+.minimap.collapsed:hover .mm-tag i{color:var(--paper-light) !important}
+
+/* 展開時 */
+.minimap:not(.collapsed){width:228px}
+.minimap:not(.collapsed) .mm-tag{display:none}
+
+.minimap .mm-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:9px 12px;border-bottom:1.5px solid var(--ink);font-size:10px;letter-spacing:.24em;color:var(--ink);text-transform:uppercase;font-weight:700;transition:all .3s}
+.minimap .mm-head .mm-here-mini{color:var(--seal);font-weight:700}
+.minimap .mm-head .mm-toggle{cursor:pointer;color:var(--graphite);transition:color .2s;font-size:11px;width:18px;height:18px;display:grid;place-items:center}
+.minimap .mm-head .mm-toggle:hover{color:var(--seal)}
+.minimap .mm-svg{width:100%;height:auto;display:block;padding:10px}
+.minimap .mm-foot{padding:8px 12px;border-top:1px dashed var(--ink);font-size:9.5px;letter-spacing:.22em;color:var(--graphite);text-transform:uppercase;text-align:center;font-weight:600}
+.minimap .mm-foot b{color:var(--ink);font-weight:700}
+
+.mm-room{cursor:pointer;transition:fill .35s ease, stroke .35s ease}
+.mm-room rect{fill:rgba(255,255,255,.4);stroke:var(--blueprint);stroke-width:1;transition:all .35s}
+.mm-room text{fill:var(--ink);font-size:9px;letter-spacing:.08em;font-family:var(--f-mono);text-transform:uppercase;pointer-events:none;font-weight:700}
+.mm-room.active rect{fill:var(--seal);stroke:var(--seal);stroke-width:1.6}
+.mm-room.active text{fill:var(--paper-light)}
+.mm-room:hover rect{fill:rgba(27,59,95,.18);stroke:var(--ink)}
+
+@media (max-width:680px){
+  .minimap:not(.collapsed){width:180px}
+}
+@media (max-width:680px){
+  .minimap{width:140px;right:12px;bottom:12px}
+  .minimap .mm-foot{display:none}
+}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);padding:14px 24px;background:var(--seal);color:var(--paper);font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;z-index:999;opacity:0;transition:all .4s cubic-bezier(.2,.8,.2,1);border:1px solid var(--paper);box-shadow:0 10px 30px rgba(192,57,43,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast i{margin-right:10px}
+
+/* ========== 滑鼠游標 ========== */
+
+</style>
+</head>
+<body>
+
+<canvas id="bp-grid"></canvas>
+<div class="grain"></div>
+
+<div class="arch-bar">
+  <a href="/guild/"><i class="fa-solid fa-arrow-left"></i>ARCHIVE</a>
+  <a href="/"><i class="fa-solid fa-house-chimney"></i>HOME</a>
+</div>
+
+<div class="title-block">
+  SHEET · <b>A-01</b> &nbsp;|&nbsp; PROJECT · <b>FCC1226</b> <br>
+  SCALE · <b>1 : 1</b> &nbsp;|&nbsp; REVISION · <span>05</span>
+</div>
+
+<!-- ========== HERO — 自售物件廣告 ========== -->
+<section class="hero">
+  <article class="hero-listing">
+    <header class="listing-bar">
+      <span class="lbar-id" id="hm">FCC-1226</span>
+      <span style="opacity:.7">FOR SALE BY OWNER · 自售物件</span>
+      <span class="lbar-status">LIVE · 上架中</span>
+    </header>
+
+    <div class="listing-grid">
+      <!-- 主圖：我的頭像 + 我自己寫的 bio -->
+      <figure class="listing-photo">
+        <div class="agent-portrait">
+          <div class="ap-frame">
+            <img src="/assets/img/guild/francischien88/portrait.webp" alt="Francis Chien · 簡小姐 · Threads 公開頭像（口罩）" width="220" height="220" decoding="async">
+            <span class="ap-tag">PORTRAIT · 我 Threads 公開的頭像</span>
+          </div>
+          <blockquote class="ap-bio">
+            <span class="ap-bio-quote">
+              就說不動產蠻好玩的<br>
+              進房子蠻久了 就買賣起來了<br>
+              <em>一起學習 一起看看吧</em>
+            </span>
+            <cite>── 我寫在 Threads 的 bio · @francischien88</cite>
+          </blockquote>
+          <div class="ap-stamp">FCC<br>1226</div>
+        </div>
+        <div class="photo-meta">
+          <span class="l">RUMAH · HOME · 家</span>
+          <span class="r">PHOTO · 1 / 1</span>
+        </div>
+      </figure>
+
+      <!-- 規格表 -->
+      <div class="listing-spec">
+        <h1 class="spec-title">
+          簡小姐 · 不動產業務員（自售）
+          <span class="name-en">FRANCIS CHIEN — REAL ESTATE AGENT, HSINCHU</span>
+        </h1>
+
+        <p class="spec-tagline" id="hl">
+          疫情把我從<b>科技業推進不動產</b>，五年走下來，這是<b>我整理給你看的物件規格表</b> ——<br>
+          內附印尼話、PM 規格腦、加上我自己常用的 hashtag。
+        </p>
+        <div class="spec-tags">
+          <span>#獨家心房</span>
+          <span>#新竹不動產</span>
+          <span>#竹北房屋買賣</span>
+          <span>#不動產買賣</span>
+          <span>#日本旅遊</span>
+        </div>
+
+        <dl class="spec-rows" id="specRows">
+          <div class="spec-line" data-note="入行 5 年聽起來不長，但這是『一單也沒掛在科技業老朋友身上』走出來的五年">
+            <dt>屋齡 / EXP</dt>
+            <dd><b>5 年</b><span class="alt">入行 since 2020 · 疫情接的單</span></dd>
+          </div>
+          <div class="spec-line" data-note="新竹／竹北是我主場，但案子不只在這 — 全台都接，看屋細節打電話聊">
+            <dt>主要區位</dt>
+            <dd>新竹 · <b>竹北</b> · 全台都接案<span class="alt">主場新竹／竹北</span></dd>
+          </div>
+          <div class="spec-line" data-note="台商客戶聊中文、外籍主管聊英文、印尼朋友聊 Bahasa — 你習慣哪一種我就用哪一種">
+            <dt>主結構 / LANG</dt>
+            <dd>中文 · English · <b>Bahasa Indonesia</b><span class="alt">三語可切換</span></dd>
+          </div>
+          <div class="spec-line" data-note="我看過科技業合約怎麼寫地雷 — 同一套眼光拿來看建商合約剛好">
+            <dt>使用履歷</dt>
+            <dd>科學園區 PM × 2 → OEM Sales → 不動產<span class="alt">跨業 reverse</span></dd>
+          </div>
+          <div class="spec-line" data-note="從小到大跨了海，講話客觀少濾鏡 — 對買賣雙方都是">
+            <dt>居住背景</dt>
+            <dd>海外長大 · <b>印尼住超過 15 年</b><span class="alt">國際學校教育</span></dd>
+          </div>
+          <div class="spec-line" data-note="八成轉介紹是這個行業最難的事，每一個都是上一個客戶替我作保">
+            <dt>賣點 / FEAT</dt>
+            <dd>PM 規格腦 / <b>三語切換</b> / 客戶八成轉介紹</dd>
+          </div>
+          <div class="spec-line" data-note="不會推你買你不需要的 — 但你想看農建地稅怎麼算，我也能聊三小時">
+            <dt>產品線</dt>
+            <dd>成屋 / 預售屋 / 農建地 / 稅率資訊</dd>
+          </div>
+          <div class="spec-line" data-note="入行到現在我都沒用過過去在科技業的人脈，都是 591 廣告、陌生開發走出來">
+            <dt>不附帶</dt>
+            <dd><span style="color:var(--graphite);text-decoration:line-through;text-decoration-color:var(--seal)">科技業老人脈</span><span class="alt">陌生開發走出來的</span></dd>
+          </div>
+        </dl>
+
+        <div class="spec-cta">
+          <div class="price-tag">
+            <i class="fa-solid fa-phone-volume"></i>0935 / 753 / 522
+            <small>看屋專線 · 新竹起家 全台接案</small>
+          </div>
+          <div class="domain-note">
+            主場新竹<br><b>全台都接案</b>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <div class="hint-chip" id="heroHint" style="margin-left:4px"><i class="fa-solid fa-arrow-down"></i>下面是這份物件的詳細格局與規格</div>
+</section>
+
+<!-- ========== CH 01 · 玄關 ========== -->
+<section class="chapter" id="ch1">
+  <div class="ch-head">
+    <div>
+      <div class="ch-num"><b>01 /</b> 玄關 · ENTRANCE · PINTU</div>
+      <h2 class="ch-zh">我是誰</h2>
+    </div>
+    <div class="ch-en">WHO'S AT THE DOOR</div>
+  </div>
+
+  <div class="entrance">
+    <div class="entrance-text">
+      <div class="lang-badges" id="langSwitch" role="tablist" aria-label="切換語言版本">
+        <button type="button" class="lang-badge active" data-lang="zh"><i class="fa-solid fa-circle"></i><b>繁中</b> 在地溝通</button>
+        <button type="button" class="lang-badge" data-lang="en"><i class="fa-solid fa-circle"></i><b>English</b> Int'l School</button>
+        <button type="button" class="lang-badge" data-lang="id"><i class="fa-solid fa-circle"></i><b>Bahasa</b> 15+ yrs</button>
+      </div>
+
+      <div class="lang-pane" data-pane="zh">
+        <p>
+          <span class="id">// 檔案 A-01</span><br>
+          我叫 <b>Francis</b>，姓簡，<b>是個簡小姐</b>。<br>
+          出生在海外，<b>唸國際學校長大</b>，在<b>印尼住了超過 15 年</b>，
+          回台後才把中文重新撿回來。
+        </p>
+        <p>
+          所以我身上有三種腔調：<br>
+          中文的穩、英文的直、印尼話的溫。<br>
+          客戶是台商、外籍、印尼朋友，我都能用他們熟悉的那一個語氣聊。<br>
+          這不是賣點，<b>是我走進你家的方式</b>。
+        </p>
+      </div>
+
+      <div class="lang-pane" data-pane="en" hidden>
+        <p>
+          <span class="id">// FILE A-01</span><br>
+          I'm <b>Francis</b>. Born overseas, raised in <b>international schools</b>,
+          spent <b>15+ years in Indonesia</b>. Picked my Mandarin back up
+          only after returning to Taiwan.
+        </p>
+        <p>
+          So I carry three accents:<br>
+          Mandarin steady, English direct, Bahasa warm.<br>
+          My clients are Taiwanese expats, foreigners, Indonesian friends —
+          I just switch into whichever one feels most like home for them.
+          That's not a selling point — <b>it's how I walk into your space</b>.
+        </p>
+      </div>
+
+      <div class="lang-pane" data-pane="id" hidden>
+        <p>
+          <span class="id">// BERKAS A-01</span><br>
+          Saya <b>Francis</b>. Lahir di luar negeri, sekolah <b>internasional</b>,
+          tinggal di <b>Indonesia lebih dari 15 tahun</b>. Mandarin saya
+          baru saya pelajari ulang setelah pulang ke Taiwan.
+        </p>
+        <p>
+          Jadi saya bawa tiga logat:<br>
+          Mandarin yang mantap, Inggris yang lugas, Bahasa Indonesia yang hangat.<br>
+          Klien saya orang Taiwan, ekspatriat, teman-teman Indonesia — saya
+          tinggal pakai bahasa yang paling terasa seperti rumah buat mereka.
+          Bukan jualan, <b>ini cara saya masuk ke ruang Anda</b>.
+        </p>
+      </div>
+    </div>
+
+    <div class="axis-wrap">
+      <svg class="axis-svg" viewBox="0 0 420 330" preserveAspectRatio="xMidYMid meet">
+        <!-- grid -->
+        <defs>
+          <pattern id="grid2" width="30" height="30" patternUnits="userSpaceOnUse">
+            <path d="M30 0 L0 0 0 30" fill="none" stroke="#1B3B5F" stroke-width=".4" opacity=".25"/>
+          </pattern>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 Z" fill="#1B3B5F"/>
+          </marker>
+        </defs>
+        <rect width="420" height="330" fill="url(#grid2)"/>
+
+        <!-- Indonesia dot -->
+        <circle cx="80" cy="232" r="10" fill="rgba(192,57,43,.2)" stroke="#B33324" stroke-width="1.6"/>
+        <circle cx="80" cy="232" r="3" fill="#B33324"/>
+        <text class="axis-label" x="80" y="258" text-anchor="middle">JAKARTA · 6°S</text>
+        <text class="axis-city" x="80" y="274" text-anchor="middle">INDONESIA</text>
+        <text class="axis-tri" x="80" y="216" text-anchor="middle">成長</text>
+
+        <!-- Hsinchu dot -->
+        <circle cx="320" cy="98" r="10" fill="rgba(27,59,95,.2)" stroke="#1B3B5F" stroke-width="1.6"/>
+        <circle cx="320" cy="98" r="3" fill="#1B3B5F"/>
+        <text class="axis-label" x="320" y="86" text-anchor="middle">24.8°N · HSINCHU</text>
+        <text class="axis-city" x="320" y="66" text-anchor="middle">TAIWAN</text>
+        <text class="axis-tri" x="320" y="122" text-anchor="middle">落腳</text>
+
+        <!-- flight path -->
+        <path id="pathArc" d="M80 232 Q 200 40 320 98" fill="none" stroke="#1B3B5F" stroke-width="1.4" stroke-dasharray="4 4" opacity=".85" marker-end="url(#arr)"/>
+
+        <!-- waypoint -->
+        <g>
+          <circle cx="200" cy="106" r="4" fill="#A57A1A"/>
+          <text class="axis-label" x="200" y="96" text-anchor="middle" fill="#A57A1A">INT'L SCHOOL</text>
+        </g>
+
+        <!-- distance label -->
+        <text class="axis-label" x="210" y="180" text-anchor="middle">≈ 3,870 km · ONE-WAY</text>
+
+        <!-- dimension -->
+        <line x1="20" y1="300" x2="400" y2="300" stroke="#1B3B5F" stroke-width=".7" stroke-dasharray="3 3" opacity=".55"/>
+        <line x1="20" y1="294" x2="20" y2="306" stroke="#1B3B5F" stroke-width=".9"/>
+        <line x1="400" y1="294" x2="400" y2="306" stroke="#1B3B5F" stroke-width=".9"/>
+        <text class="axis-label" x="210" y="320" text-anchor="middle">TIMELINE · 1987 — PRESENT</text>
+      </svg>
+      <div class="axis-caption">FIG. 1 · <b>TRANS-HEMI AXIS</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CH 02 · 客廳 ========== -->
+<section class="chapter" id="ch2">
+  <div class="ch-head">
+    <div>
+      <div class="ch-num"><b>02 /</b> 客廳 · LIVING · RUANG</div>
+      <h2 class="ch-zh">我怎麼走到這裡</h2>
+    </div>
+    <div class="ch-en">CAREER · BLUEPRINT TIMELINE</div>
+  </div>
+
+  <div class="tl-wrap">
+    <div class="tl-rail"></div>
+    <div class="tl-grid">
+      <div class="tl-node">
+        <div class="tl-year">PHASE I<br><b>~ 2015</b></div>
+        <h3 class="tl-title">新竹科學園區 PM</h3>
+        <div class="tl-desc">待過兩間不錯的公司擔任 Project Manager。規格書、跨部門協調、時程表 — 園區十幾年訓練出來的結構化腦袋。</div>
+        <span class="tl-tag">PROJECT MGMT</span>
+        <div class="tl-detail">// 學到的：把一個模糊的需求，拆成可驗收的規格項目<br>// 帶走的：不問立場，只問條件</div>
+      </div>
+
+      <div class="tl-node">
+        <div class="tl-year">PHASE II<br><b>2015 – 2020</b></div>
+        <h3 class="tl-title">OEM Sales</h3>
+        <div class="tl-desc">太活潑 + 外語流利，被業務主管挖角去做 OEM Sales。第一次把 PM 的規格思維拿去對客戶 — 發現規格表能變成信任感。</div>
+        <span class="tl-tag">B2B SALES</span>
+        <div class="tl-detail">// 學到的：客戶不是買產品 · 是買你把事情交代清楚的能力<br>// 帶走的：把規格寫給對方看得懂，勝過口才</div>
+      </div>
+
+      <div class="tl-node">
+        <div class="tl-year">PIVOT<br><b>2020</b></div>
+        <h3 class="tl-title">陰錯陽差轉戰不動產</h3>
+        <div class="tl-desc">疫情。科技業 → 服務業，跟多數人反過來走。沒用過園區人脈一天，從 591 廣告、陌生開發一路做起。</div>
+        <span class="tl-tag">THE SHIFT</span>
+        <div class="tl-detail">// 學到的：沒有人脈可以依賴，每一單都是陌生戰<br>// 帶走的：認真 + 重複 + 透明 = 新的人脈系統</div>
+      </div>
+
+      <div class="tl-node active">
+        <div class="tl-year">NOW<br><b>2020 – ∞</b></div>
+        <h3 class="tl-title">物件 #FCC-1226 上架中</h3>
+        <div class="tl-desc">入行滿五年。這兩年靠努力與認真，轉介紹居多。現在透過這個專屬頁面，把幕後視角寫給你 — 讓買賣透明化。</div>
+        <span class="tl-tag">PRESENT</span>
+        <div class="tl-detail">// 在做的：YT 幕後分享 + SPEC 表式看屋 + 不動產知識普及<br>// 下一步：讓買賣方都覺得自己「知道在幹嘛」</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CH 03 · 主臥 ========== -->
+<section class="chapter" id="ch3">
+  <div class="ch-head">
+    <div>
+      <div class="ch-num"><b>03 /</b> 主臥 · MASTER · KAMAR UTAMA</div>
+      <h2 class="ch-zh">你能找我做什麼</h2>
+    </div>
+    <div class="ch-en">SERVICES · FLOOR-PLAN GRID</div>
+  </div>
+
+  <div class="svc-grid">
+    <div class="svc-card" data-room="UNIT · 01">
+      <div class="svc-num">SERVICE · 01</div>
+      <img class="svc-icon-img" src="/assets/img/guild/francischien88/svc-existing.webp" alt="" loading="lazy" width="120" height="120">
+      <h3>成屋 <small>EXISTING</small></h3>
+      <p>已完工、看得到摸得到、銀行能估價的那種。我會把風、光、通風管線、樓上樓下三戶的作息都順便幫你問清楚。</p>
+      <div class="dim-arrow">↘ READY TO MOVE</div>
+    </div>
+
+    <div class="svc-card" data-room="UNIT · 02">
+      <div class="svc-num">SERVICE · 02</div>
+      <img class="svc-icon-img" src="/assets/img/guild/francischien88/svc-presale.webp" alt="" loading="lazy" width="120" height="120">
+      <h3>預售屋 <small>PRE-SALE</small></h3>
+      <p>建商、合約、公設比、交屋保留款，全部用 PM 的 check-list 幫你拆。我看過科技業合約，地雷長什麼樣子我認得。</p>
+      <div class="dim-arrow">↗ OFF-PLAN</div>
+    </div>
+
+    <div class="svc-card" data-room="UNIT · 03">
+      <div class="svc-num">SERVICE · 03</div>
+      <img class="svc-icon-img" src="/assets/img/guild/francischien88/svc-land.webp" alt="" loading="lazy" width="120" height="120">
+      <h3>農建地 <small>LAND</small></h3>
+      <p>農舍、建地、農地變建。地目、容積、坡地限制、地籍圖怎麼看都給你講清楚，不用陪建商的話術演一場。</p>
+      <div class="dim-arrow">← ZONING</div>
+    </div>
+
+    <div class="svc-card" data-room="UNIT · 04">
+      <div class="svc-num">SERVICE · 04</div>
+      <img class="svc-icon-img" src="/assets/img/guild/francischien88/svc-tax.webp" alt="" loading="lazy" width="120" height="120">
+      <h3>稅率 / 房市資訊 <small>INTEL</small></h3>
+      <p>房地合一、自用優惠、奢侈稅、實價登錄。不是要你買，是讓你能問出對的問題 — 我也會在 YouTube 持續分享。</p>
+      <div class="dim-arrow">→ UPDATES</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CH 04 · 書房 SPEC CHECKLIST ========== -->
+<section class="chapter" id="ch4">
+  <div class="ch-head">
+    <div>
+      <div class="ch-num"><b>04 /</b> 書房 · STUDY · RUANG KERJA</div>
+      <h2 class="ch-zh">看屋 SPEC 表</h2>
+    </div>
+    <div class="ch-en">PM MINDSET · QA CHECKLIST</div>
+  </div>
+
+  <p class="spec-intro">
+    以下是我帶看時會幫你跑過一輪的檢查清單 — 來自<b>園區 PM 的規格驗收思維</b>。
+    點一下項目可以打勾，打完你會得到一張「我知道自己要什麼」的檢查表。
+    這張表我實體也會帶出門，不是給你看爽的。
+  </p>
+
+  <div class="spec-wrap">
+    <div class="spec-head">
+      <span>✓</span><span>CHECK ITEM · 項目</span><span class="col-w">CATEGORY</span><span class="col-w">WEIGHT</span>
+    </div>
+
+    <div class="spec-row" data-w="18">
+      <div class="spec-check"><i class="fa-solid fa-check"></i></div>
+      <div class="spec-label">日照・採光・通風<small>上下午各去一次，不只看仲介約的好時段</small></div>
+      <span class="spec-tag">STRUCT</span>
+      <div class="spec-w">WEIGHT · <b>18</b></div>
+    </div>
+
+    <div class="spec-row" data-w="16">
+      <div class="spec-check"><i class="fa-solid fa-check"></i></div>
+      <div class="spec-label">管線・漏水・壁癌<small>天花板、浴室樓上、外牆接縫都要摸過</small></div>
+      <span class="spec-tag">RISK</span>
+      <div class="spec-w">WEIGHT · <b>16</b></div>
+    </div>
+
+    <div class="spec-row" data-w="14">
+      <div class="spec-check"><i class="fa-solid fa-check"></i></div>
+      <div class="spec-label">鄰居與社區人員組成<small>樓上是小孩還是夜班、管委會在不在乎</small></div>
+      <span class="spec-tag">SOCIAL</span>
+      <div class="spec-w">WEIGHT · <b>14</b></div>
+    </div>
+
+    <div class="spec-row" data-w="12">
+      <div class="spec-check"><i class="fa-solid fa-check"></i></div>
+      <div class="spec-label">公設比 vs 實際可用<small>扣掉梯廳、機電房、健身房的誠實坪數</small></div>
+      <span class="spec-tag">SPACE</span>
+      <div class="spec-w">WEIGHT · <b>12</b></div>
+    </div>
+
+    <div class="spec-row" data-w="10">
+      <div class="spec-check"><i class="fa-solid fa-check"></i></div>
+      <div class="spec-label">生活圈半徑 500 公尺<small>超商、菜市場、醫院、公車站實走一次</small></div>
+      <span class="spec-tag">LOC</span>
+      <div class="spec-w">WEIGHT · <b>10</b></div>
+    </div>
+
+    <div class="spec-row" data-w="12">
+      <div class="spec-check"><i class="fa-solid fa-check"></i></div>
+      <div class="spec-label">實價登錄 vs 開價<small>周邊三個月、同社區同面向做對比</small></div>
+      <span class="spec-tag">PRICE</span>
+      <div class="spec-w">WEIGHT · <b>12</b></div>
+    </div>
+
+    <div class="spec-row" data-w="10">
+      <div class="spec-check"><i class="fa-solid fa-check"></i></div>
+      <div class="spec-label">貸款成數・利率條件<small>先估你能借多少，再談你要買多少</small></div>
+      <span class="spec-tag">FIN</span>
+      <div class="spec-w">WEIGHT · <b>10</b></div>
+    </div>
+
+    <div class="spec-row" data-w="8">
+      <div class="spec-check"><i class="fa-solid fa-check"></i></div>
+      <div class="spec-label">出場成本 (稅、代書、履保)<small>買進的當下就要算清楚賣出時怎麼走</small></div>
+      <span class="spec-tag">EXIT</span>
+      <div class="spec-w">WEIGHT · <b>8</b></div>
+    </div>
+
+    <div class="spec-foot">
+      <div class="count">已打勾 <b id="spDone">0</b> / 8 · 完成權重 <b id="spWt">0</b></div>
+      <div class="note" id="spNote">// 點一下項目開始驗收</div>
+    </div>
+
+    <div class="spec-pass-stamp" id="spStamp">
+      <div class="pass-ring">
+        <div class="pass-txt">驗收合格<small>F · C · C · QA PASS</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CH 05 · 陽台 ========== -->
+<section class="chapter" id="ch5">
+  <div class="ch-head">
+    <div>
+      <div class="ch-num"><b>05 /</b> 陽台 · BALCONY · BALKON</div>
+      <h2 class="ch-zh">為什麼是我</h2>
+    </div>
+    <div class="ch-en">WHY THIS AGENT · FINAL INSPECTION</div>
+  </div>
+
+  <div class="why-grid">
+    <div>
+      <div class="why-quote">
+        我入行沒靠過<b>一個</b>科技業的人脈。<br>
+        從 591 廣告、陌生開發，一組一組打出來。<br>
+        <b>被肯定、被推薦、被信任</b> — 才有願意給我的委託。<br>
+        所以我很清楚：<br>
+        這個行業能站穩靠的不是關係，是<b>透明</b>。
+        <span class="mute">— Francis Chien · 從入行那天起的 self-reminder</span>
+      </div>
+
+      <div class="trilingual">
+        <div class="tri-cell"><div class="lang">ZH</div><div class="word zh">家</div><div class="hint">jiā · home + family</div></div>
+        <div class="tri-cell"><div class="lang">EN</div><div class="word">HOME</div><div class="hint">a shelter · a story</div></div>
+        <div class="tri-cell"><div class="lang">ID</div><div class="word">RUMAH</div><div class="hint">bahasa · 15+ yrs</div></div>
+      </div>
+    </div>
+
+    <div class="why-stats">
+      <div class="stat" data-note="UNIT · YR">
+        <div class="n" data-to="5">0<small>YRS</small></div>
+        <div class="l">入行<em> 滿五年 </em>且還在加班的那一種</div>
+      </div>
+      <div class="stat" data-note="UNIT · %">
+        <div class="n" data-to="80">0<small>%</small></div>
+        <div class="l">這兩年客戶<em> 轉介紹 </em>為主</div>
+      </div>
+      <div class="stat" data-note="UNIT · LANG">
+        <div class="n" data-to="3">0<small>LANG</small></div>
+        <div class="l">中・英・<em>Bahasa</em> 看客戶切換</div>
+      </div>
+      <div class="stat" data-note="UNIT · YR">
+        <div class="n" data-to="15">0<small>YRS</small></div>
+        <div class="l">在<em>印尼住過</em>超過 15 年的房仲</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CTA ========== -->
+<section class="cta" id="cta">
+  <div class="cta-eyebrow">// 看屋預約 · SCHEDULE A VIEWING</div>
+  <div class="cta-zh">物件 #FCC-1226 ──<br>願意<em>讓你帶走</em></div>
+  <div class="cta-en">CALL · SIGN · MOVE-IN ANYTIME</div>
+
+  <!-- 名片章（仿手刻木章 · 只放最重要的：我、電話、服務範圍） -->
+  <div class="seal-box" id="sealBox" title="Francis · 0935-753-522">
+    <div class="phone-stamp">
+      <div class="ps-name">
+        <span class="ps-name-zh">簡小姐</span>
+        <span class="ps-name-en">FRANCIS CHIEN</span>
+      </div>
+      <div class="ps-tel">
+        <i class="fa-solid fa-phone-volume"></i>
+        <span class="ps-num">0935 / 753 / 522</span>
+      </div>
+      <div class="ps-foot">
+        <span>HSINCHU</span><span class="dot"></span>
+        <span>全台接案</span><span class="dot"></span>
+        <span>BAHASA</span>
+      </div>
+      <div class="ps-stamp">FCC<br>1226</div>
+    </div>
+    <span class="seal-hint">// 點一下蓋章 · 我給你看的就是這張名片</span>
+  </div>
+
+  <!-- 撥號鍵盤：必須照順序按完 0935-753-522 才解鎖直撥 -->
+  <div class="dialpad-wrap" id="dialpad">
+    <div class="dp-screen">
+      <span class="dp-prompt">請按下 <b>0 9 3 5 7 5 3 5 2 2</b> 撥給我</span>
+      <div class="dp-display" id="dpDisplay">_ _ _ _ - _ _ _ - _ _ _</div>
+      <div class="dp-status" id="dpStatus">// IDLE · 按鍵盤上的下一個數字</div>
+    </div>
+    <div class="dp-grid">
+      <button type="button" class="dp-key" data-d="1">1</button>
+      <button type="button" class="dp-key" data-d="2">2</button>
+      <button type="button" class="dp-key" data-d="3">3</button>
+      <button type="button" class="dp-key" data-d="4">4</button>
+      <button type="button" class="dp-key" data-d="5">5</button>
+      <button type="button" class="dp-key" data-d="6">6</button>
+      <button type="button" class="dp-key" data-d="7">7</button>
+      <button type="button" class="dp-key" data-d="8">8</button>
+      <button type="button" class="dp-key" data-d="9">9</button>
+      <button type="button" class="dp-key dp-aux" id="dpClear" title="清除">×</button>
+      <button type="button" class="dp-key" data-d="0">0</button>
+      <button type="button" class="dp-key dp-call" id="dpCall" disabled title="先按完號碼"><i class="fa-solid fa-phone"></i></button>
+    </div>
+    <div class="dp-help">
+      也可以直接 <button type="button" id="dpSkip" class="dp-link">略過鍵盤 / 直撥</button> · <button type="button" id="dpCopy" class="dp-link">複製 0935-753-522</button>
+    </div>
+  </div>
+
+  <div class="cta-sub" style="margin-top:5vh">
+    打給我 · 或去看我做的<b>幕後分享</b>影片。<br>
+    這頁就是我之前說的「<b>專屬網站</b>」── 內容比公版多一點。
+  </div>
+
+  <div class="cta-actions">
+    <a class="cta-btn" href="https://www.youtube.com/@fcc1226" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-youtube"></i>FCC1226 幕後頻道</a>
+    <a class="cta-btn" href="https://www.threads.com/@francischien88" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i>Threads</a>
+    <a class="cta-btn" href="https://www.instagram.com/francischien88/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i>Instagram</a>
+  </div>
+</section>
+
+<!-- 平面圖小地圖：預設收合成小章，點擊展開 -->
+<aside class="minimap collapsed" id="minimap" aria-label="Floor-plan navigation">
+  <div class="mm-head">
+    <span class="mm-tag"><i class="fa-solid fa-map" style="color:var(--seal)"></i></span>
+    <span class="mm-here-mini" id="mmHereMini">A 玄關</span>
+    <span class="mm-toggle" id="mmToggle" title="展開／收合"><i class="fa-solid fa-plus"></i></span>
+  </div>
+  <svg class="mm-svg" viewBox="0 0 220 168" xmlns="http://www.w3.org/2000/svg">
+    <!-- outer wall -->
+    <rect x="6" y="6" width="208" height="156" fill="none" stroke="#0F1A26" stroke-width="2"/>
+    <!-- door indicator -->
+    <path d="M30 6 a14 14 0 0 1 14 14" fill="none" stroke="#B23323" stroke-width="1.2"/>
+    <line x1="30" y1="6" x2="44" y2="6" stroke="#F2E9CE" stroke-width="2.6"/>
+
+    <!-- ROOM A · 玄關 -->
+    <g class="mm-room" data-target="ch1">
+      <rect x="6" y="6" width="76" height="48"/>
+      <text x="44" y="34" text-anchor="middle">A 玄關</text>
+    </g>
+    <!-- ROOM B · 客廳 -->
+    <g class="mm-room" data-target="ch2">
+      <rect x="82" y="6" width="132" height="48"/>
+      <text x="148" y="34" text-anchor="middle">B 客廳</text>
+    </g>
+    <!-- ROOM C · 主臥 -->
+    <g class="mm-room" data-target="ch3">
+      <rect x="6" y="54" width="108" height="58"/>
+      <text x="60" y="86" text-anchor="middle">C 主臥</text>
+    </g>
+    <!-- ROOM D · 書房 -->
+    <g class="mm-room" data-target="ch4">
+      <rect x="114" y="54" width="100" height="58"/>
+      <text x="164" y="86" text-anchor="middle">D 書房</text>
+    </g>
+    <!-- ROOM E · 陽台 -->
+    <g class="mm-room" data-target="ch5">
+      <rect x="6" y="112" width="208" height="50"/>
+      <text x="110" y="142" text-anchor="middle">E 陽台</text>
+    </g>
+  </svg>
+  <div class="mm-foot">現在在 <b id="mmHere">A 玄關</b></div>
+</aside>
+
+<footer>
+  <div class="brand">簡小姐 · 不動產業務員 · #FCC-1226</div>
+  <div class="sig">Compiled by <b>SuperGalen&#39;s Dungeon</b> · for Francis Chien · Sheet A-01</div>
+  <div class="footer-meta">F.CHIEN · TEL · 0935-753-522 · HSINCHU · REV.05</div>
+</footer>
+
+<script>
+/* =================================================
+ * p5.js — 藍圖網格 + 浮動量尺與標註
+ * ================================================= */
+const bpSketch = (p) => {
+  let labels = [];
+  const fonts = ['R-01','ø 8mm','↔ 3.2m','A-01','REV.05','N ↑','SCALE 1:1','↕ 2.8m','T-100','ø 12','C/L','DOOR · 900','GRID 50','TYP.','FCC1226','★ PIN','R-04','HIDDEN LINE','A3 · LANDSCAPE','DIM · OK'];
+  let t = 0;
+
+  p.setup = () => {
+    const c = p.createCanvas(p.windowWidth, p.windowHeight);
+    c.parent(document.body);
+    c.elt.id = 'bp-p5';
+    c.elt.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5';
+    document.getElementById('bp-grid').remove();
+
+    // labels 只放在 viewport 邊緣 (左 0-18% 與右 82-100%)，避免擋到中央閱讀區
+    for (let i = 0; i < 12; i++) {
+      const onLeft = i % 2 === 0;
+      labels.push({
+        x: onLeft ? p.random(0, p.width * .16) : p.random(p.width * .84, p.width),
+        y: p.random(p.height),
+        txt: p.random(fonts),
+        vx: p.random(-.08, .08),
+        vy: p.random(-.04, .04),
+        a: p.random(70, 130),
+        pulse: p.random(1000),
+        edge: onLeft ? 'L' : 'R'
+      });
+    }
+  };
+
+  p.draw = () => {
+    p.clear();
+    t += 0.008;
+
+    // 紙上的極淡藍圖網格（藍墨色）
+    p.stroke(27, 59, 95, 22);
+    p.strokeWeight(.5);
+    const g = 48;
+    for (let x = 0; x < p.width; x += g) p.line(x, 0, x, p.height);
+    for (let y = 0; y < p.height; y += g) p.line(0, y, p.width, y);
+
+    // 5x 主格較重
+    p.stroke(27, 59, 95, 38);
+    p.strokeWeight(.9);
+    for (let x = 0; x < p.width; x += g * 5) p.line(x, 0, x, p.height);
+    for (let y = 0; y < p.height; y += g * 5) p.line(0, y, p.width, y);
+
+    // 邊緣浮動 CAD 標籤
+    p.noStroke();
+    p.textFont('JetBrains Mono');
+    p.textSize(10);
+    labels.forEach(L => {
+      L.x += L.vx;
+      L.y += L.vy;
+      const lim = L.edge === 'L' ? p.width * .14 : p.width;
+      const minX = L.edge === 'L' ? 0 : p.width * .86;
+      if (L.x < minX) L.x = lim;
+      if (L.x > lim) L.x = minX;
+      if (L.y < -40) L.y = p.height + 40;
+      if (L.y > p.height + 40) L.y = -40;
+      const pulse = 0.6 + 0.4 * p.sin(t * 2 + L.pulse);
+      p.fill(27, 59, 95, L.a * pulse * .6);
+      p.text(L.txt, L.x, L.y);
+      p.stroke(178, 51, 35, 70);
+      p.strokeWeight(.6);
+      p.line(L.x - 6, L.y + 4, L.x - 1, L.y + 4);
+      p.noStroke();
+    });
+  };
+
+  p.windowResized = () => p.resizeCanvas(p.windowWidth, p.windowHeight);
+};
+new p5(bpSketch);
+
+/* =================================================
+ * GSAP · Hero 開場
+ * ================================================= */
+gsap.registerPlugin(ScrollTrigger);
+
+// Hero listing card 進場動畫
+gsap.set('.hero-listing', {opacity:0, y:24});
+gsap.set(['#hm','#hl','.spec-line dt','.spec-line dd','.agent-portrait'], {opacity:0});
+gsap.set('.spec-line dt', {x:-12});
+gsap.set('.spec-line dd', {x:12});
+gsap.set('.agent-portrait', {scale:.94, rotation:-1.5});
+
+gsap.timeline({defaults:{ease:'power3.out'}})
+  .to('.hero-listing', {opacity:1, y:0, duration:.9}, .1)
+  .to('#hm', {opacity:1, duration:.5}, .4)
+  .to('.agent-portrait', {opacity:1, scale:1, rotation:0, duration:.7, ease:'back.out(1.4)'}, .5)
+  .to('#hl', {opacity:1, duration:.6}, .65)
+  .to('.spec-line dt', {opacity:1, x:0, duration:.55, stagger:.05}, .8)
+  .to('.spec-line dd', {opacity:1, x:0, duration:.55, stagger:.05}, .85);
+
+/* chapter scroll reveals */
+gsap.utils.toArray('.chapter').forEach(sec => {
+  gsap.from(sec.querySelector('.ch-head'), {
+    y:40, opacity:0, duration:.9, ease:'power2.out',
+    scrollTrigger:{trigger:sec, start:'top 95%', toggleActions:'play none none none', once:true}
+  });
+});
+
+/* timeline nodes — fromTo + once + early trigger，避免 ScrollTrigger 失準時內容消失 */
+gsap.utils.toArray('.tl-node').forEach((n, i) => {
+  gsap.fromTo(n,
+    {y:30, opacity:0},
+    {y:0, opacity:1, duration:.7, delay:i*.1, ease:'power2.out',
+     scrollTrigger:{trigger:'.tl-wrap', start:'top 95%', toggleActions:'play none none none', once:true}}
+  );
+});
+
+/* service cards */
+gsap.utils.toArray('.svc-card').forEach((c, i) => {
+  gsap.fromTo(c,
+    {y:36, opacity:0},
+    {y:0, opacity:1, duration:.8, delay:i*.08, ease:'power2.out',
+     scrollTrigger:{trigger:'.svc-grid', start:'top 95%', toggleActions:'play none none none', once:true}}
+  );
+});
+
+/* spec rows */
+gsap.utils.toArray('.spec-row').forEach((r, i) => {
+  gsap.fromTo(r,
+    {x:-20, opacity:0},
+    {x:0, opacity:1, duration:.5, delay:i*.04, ease:'power2.out',
+     scrollTrigger:{trigger:'.spec-wrap', start:'top 95%', toggleActions:'play none none none', once:true}}
+  );
+});
+
+/* 安全網：頁面 load 後 2 秒，強制把任何還是 opacity:0 的章節元素設為可見 */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    if (window.ScrollTrigger) ScrollTrigger.refresh();
+    document.querySelectorAll('.tl-node, .svc-card, .spec-row, .stat, .ch-head').forEach(el => {
+      const cs = getComputedStyle(el);
+      if (parseFloat(cs.opacity) < .05) {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      }
+    });
+  }, 2000);
+});
+
+/* stat counters — 數字會 count up；data-static 直接顯示符號 */
+gsap.utils.toArray('.stat .n').forEach(el => {
+  const suffix = el.querySelector('small') ? el.querySelector('small').outerHTML : '';
+  if (el.dataset.static) {
+    // 靜態符號（例如 ∞）直接顯示，做一個淡入
+    el.innerHTML = el.dataset.static + suffix;
+    gsap.fromTo(el, {opacity:0, scale:.7}, {
+      opacity:1, scale:1, duration:.9, ease:'back.out(1.6)',
+      scrollTrigger:{trigger:el, start:'top 90%', once:true}
+    });
+    return;
+  }
+  const to = parseFloat(el.dataset.to);
+  ScrollTrigger.create({
+    trigger: el, start:'top 90%', once:true,
+    onEnter: () => {
+      const obj = {v:0};
+      gsap.to(obj, {
+        v: to, duration:1.6, ease:'power2.out',
+        onUpdate: () => {
+          const val = to < 10 ? obj.v.toFixed(0) : Math.round(obj.v);
+          el.innerHTML = val + suffix;
+        }
+      });
+    }
+  });
+});
+
+/* axis SVG draw-in */
+ScrollTrigger.create({
+  trigger:'#ch1', start:'top 60%', once:true,
+  onEnter: () => {
+    const path = document.getElementById('pathArc');
+    if (!path) return;
+    const len = path.getTotalLength();
+    path.style.strokeDasharray = len;
+    path.style.strokeDashoffset = len;
+    gsap.to(path, {strokeDashoffset:0, duration:2.4, ease:'power2.inOut'});
+  }
+});
+
+/* =================================================
+ * SPEC CHECKLIST 互動
+ * ================================================= */
+(function(){
+  const rows = document.querySelectorAll('.spec-row');
+  const done = document.getElementById('spDone');
+  const wt = document.getElementById('spWt');
+  const note = document.getElementById('spNote');
+  const total = rows.length;
+  const notes = [
+    '// 點一下項目開始驗收',
+    '// 開工了 · 下一條',
+    '// 進度 25% · 抓到節奏',
+    '// 半路了 · 這是最累的時候',
+    '// 過半 · 看見曙光',
+    '// 75% · 要完工了',
+    '// 剩兩條 · 穩住',
+    '// 剩最後一條',
+    '// 驗收完畢 · 蓋章出貨'
+  ];
+
+  rows.forEach(r => {
+    r.addEventListener('click', () => {
+      r.classList.toggle('done');
+      recalc();
+    });
+  });
+
+  function recalc(){
+    let d = 0, w = 0;
+    rows.forEach(r => {
+      if (r.classList.contains('done')) {
+        d++;
+        w += parseInt(r.dataset.w || 0);
+      }
+    });
+    done.textContent = d;
+    wt.textContent = w;
+    note.textContent = notes[d] || notes[notes.length - 1];
+    const stamp = document.getElementById('spStamp');
+    if (d === total) {
+      note.style.color = '#8FD6FF';
+      note.textContent = '// ALL CHECKS PASSED · READY TO SIGN';
+      if (stamp && !stamp.classList.contains('show')) {
+        stamp.classList.add('show');
+        // wobble
+        gsap.fromTo(stamp, {rotation:-28, scale:.3}, {rotation:-12, scale:1, duration:.6, ease:'back.out(1.6)'});
+      }
+    } else {
+      note.style.color = '';
+      if (stamp) stamp.classList.remove('show');
+    }
+  }
+})();
+
+/* =================================================
+ * 時間軸點擊展開
+ * ================================================= */
+(function(){
+  document.querySelectorAll('.tl-node').forEach(n => {
+    n.addEventListener('click', () => n.classList.toggle('open'));
+  });
+})();
+
+/* =================================================
+ * 撥號鍵盤 · 必須照順序按完 0935-753-522 才解鎖直撥
+ * ================================================= */
+(function(){
+  const dp = document.getElementById('dialpad');
+  if (!dp) return;
+  const target = '0935753522';
+  const display = document.getElementById('dpDisplay');
+  const screen = document.querySelector('.dp-screen');
+  const status = document.getElementById('dpStatus');
+  const callKey = document.getElementById('dpCall');
+  const clearKey = document.getElementById('dpClear');
+  const keys = dp.querySelectorAll('.dp-key[data-d]');
+  const skipBtn = document.getElementById('dpSkip');
+  const copyBtn = document.getElementById('dpCopy');
+
+  // toast
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  document.body.appendChild(toast);
+  const showToast = (txt) => {
+    toast.innerHTML = '<i class="fa-solid fa-check"></i>' + txt;
+    toast.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toast.classList.remove('show'), 2400);
+  };
+
+  let entered = '';
+  const fmt = (s) => {
+    // 0935-753-522 格式 (4-3-3)
+    const slots = s.split('').concat(Array(10 - s.length).fill('_'));
+    return slots.slice(0,4).join(' ') + '  -  ' + slots.slice(4,7).join(' ') + '  -  ' + slots.slice(7,10).join(' ');
+  };
+
+  const statusMsgs = [
+    '// IDLE · 按鍵盤上的下一個數字',
+    '// 1/10 · 還剩九個',
+    '// 2/10 · 撥到 0-9',
+    '// 3/10 · 0-9-3',
+    '// 4/10 · 完成「0935」局碼',
+    '// 5/10 · 開始 753',
+    '// 6/10 · 0935-75',
+    '// 7/10 · 完成 753',
+    '// 8/10 · 最後三碼開始',
+    '// 9/10 · 還差最後一個',
+    '// 10/10 · 撥號就緒 · 按下右下角綠鈕'
+  ];
+
+  const highlightExpected = () => {
+    keys.forEach(k => k.classList.remove('expected'));
+    if (entered.length < target.length) {
+      const next = target[entered.length];
+      const k = dp.querySelector(`.dp-key[data-d="${next}"]`);
+      if (k) k.classList.add('expected');
+    }
+  };
+
+  const refresh = () => {
+    display.textContent = fmt(entered);
+    display.classList.remove('error');
+    if (entered.length === target.length) {
+      display.classList.add('complete');
+      screen.classList.remove('locked');
+      screen.classList.add('unlocked');
+      callKey.disabled = false;
+      callKey.title = '撥給 Francis';
+      status.textContent = statusMsgs[10];
+      status.style.color = 'var(--blueprint)';
+    } else if (entered.length > 0) {
+      display.classList.remove('complete');
+      screen.classList.add('locked');
+      screen.classList.remove('unlocked');
+      callKey.disabled = true;
+      status.textContent = statusMsgs[entered.length];
+      status.style.color = '';
+    } else {
+      display.classList.remove('complete');
+      screen.classList.remove('locked','unlocked');
+      callKey.disabled = true;
+      status.textContent = statusMsgs[0];
+      status.style.color = '';
+    }
+    highlightExpected();
+  };
+
+  keys.forEach(k => {
+    k.addEventListener('click', () => {
+      const d = k.dataset.d;
+      const expected = target[entered.length];
+      if (d === expected) {
+        entered += d;
+        refresh();
+        // tactile feedback via tween
+        gsap.fromTo(k, {scale:.92}, {scale:1, duration:.25, ease:'back.out(2)'});
+      } else {
+        // wrong digit — gentle reject
+        display.classList.add('error');
+        status.textContent = '// 錯了 · 順序不對 · 重新開始';
+        status.style.color = 'var(--seal)';
+        gsap.fromTo(k, {x:-3}, {x:0, duration:.08, yoyo:true, repeat:3});
+        setTimeout(() => {
+          entered = '';
+          refresh();
+        }, 700);
+      }
+    });
+  });
+
+  clearKey.addEventListener('click', () => {entered = ''; refresh()});
+
+  callKey.addEventListener('click', () => {
+    if (callKey.disabled) return;
+    location.href = 'tel:0935753522';
+    showToast('撥號中 · 你已經記住我的號碼了');
+  });
+
+  skipBtn?.addEventListener('click', () => {
+    location.href = 'tel:0935753522';
+  });
+
+  copyBtn?.addEventListener('click', () => {
+    navigator.clipboard?.writeText('0935-753-522').then(() => {
+      showToast('號碼已複製 · 0935-753-522');
+    }).catch(() => location.href = 'tel:0935753522');
+  });
+
+  // 也接受實體鍵盤輸入
+  document.addEventListener('keydown', (e) => {
+    if (!/^[0-9]$/.test(e.key)) {
+      if (e.key === 'Backspace' && entered) {entered = entered.slice(0,-1); refresh()}
+      if (e.key === 'Escape') {entered = ''; refresh()}
+      if (e.key === 'Enter' && !callKey.disabled) callKey.click();
+      return;
+    }
+    // 只在 dialpad 可見時接收
+    const r = dp.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) return;
+    const expected = target[entered.length];
+    if (e.key === expected) {entered += e.key; refresh(); const k = dp.querySelector(`.dp-key[data-d="${e.key}"]`); if (k) gsap.fromTo(k, {scale:.92}, {scale:1, duration:.25, ease:'back.out(2)'})}
+    else {display.classList.add('error'); status.textContent = '// 錯了 · 順序不對 · 重新開始'; status.style.color = 'var(--seal)'; setTimeout(()=>{entered = ''; refresh()}, 700)}
+  });
+
+  refresh();
+})();
+
+/* =================================================
+ * 軸圖上城市 pins 提示
+ * ================================================= */
+(function(){
+  const circles = document.querySelectorAll('.axis-wrap svg circle');
+  circles.forEach(c => {
+    c.style.cursor = 'crosshair';
+    c.addEventListener('mouseenter', () => {
+      gsap.to(c, {attr:{r: parseFloat(c.getAttribute('r')) * 1.35}, duration:.3, ease:'power2.out'});
+    });
+    c.addEventListener('mouseleave', () => {
+      if (c.getAttribute('r') > 6) gsap.to(c, {attr:{r: 10}, duration:.3});
+    });
+  });
+})();
+
+/* =================================================
+ * 三語切換 · Ch.01 entrance text
+ * ================================================= */
+(function(){
+  const sw = document.getElementById('langSwitch');
+  if (!sw) return;
+  const panes = document.querySelectorAll('.lang-pane');
+  const buttons = sw.querySelectorAll('.lang-badge');
+  const setLang = (lang) => {
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+    panes.forEach(p => p.hidden = (p.dataset.pane !== lang));
+    try { localStorage.setItem('fc_lang', lang); } catch (e) {}
+  };
+  buttons.forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  // 還原上次選擇
+  try {
+    const saved = localStorage.getItem('fc_lang');
+    if (saved && ['zh','en','id'].includes(saved)) setLang(saved);
+  } catch (e) {}
+})();
+
+
+/* =================================================
+ * 印章互動
+ * ================================================= */
+(function(){
+  const box = document.getElementById('sealBox');
+  if (!box) return;
+  let stamped = 0;
+  box.addEventListener('click', () => {
+    stamped++;
+    const ghost = box.cloneNode(true);
+    ghost.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;opacity:.75';
+    box.parentElement.appendChild(ghost);
+    const ghostStamp = ghost.querySelector('.phone-stamp');
+    const myStamp = box.querySelector('.phone-stamp');
+    if (ghostStamp) {
+      gsap.fromTo(ghostStamp,
+        {scale:1.5, rotation:-8, opacity:0},
+        {scale:1, rotation:(Math.random()*16-8), opacity:.45, duration:.35, ease:'power3.out',
+         onComplete:()=>{gsap.to(ghost,{opacity:0,duration:2.4,delay:1.2,onComplete:()=>ghost.remove()})}}
+      );
+    }
+    if (myStamp) {
+      gsap.fromTo(myStamp,
+        {scale:1.1}, {scale:1, duration:.5, ease:'elastic.out(1,.5)'}
+      );
+    }
+    const hint = box.querySelector('.seal-hint');
+    if (hint) hint.textContent = stamped >= 3 ? '// 好了 · 打電話吧' : '// 再蓋一次也行 · ' + stamped + '/3';
+  });
+})();
+
+/* =================================================
+ * Reading mode · 滾動超過 hero 後降低背景干擾
+ * ================================================= */
+(function(){
+  const hero = document.querySelector('.hero');
+  if (!hero) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      document.body.classList.toggle('reading', !e.isIntersecting);
+    });
+  }, {threshold:.18});
+  io.observe(hero);
+})();
+
+/* =================================================
+ * 平面圖小地圖 · 點擊跳章節 + 滾動高亮當前房間
+ * ================================================= */
+(function(){
+  const map = document.getElementById('minimap');
+  const toggle = document.getElementById('mmToggle');
+  const here = document.getElementById('mmHere');
+  const hereMini = document.getElementById('mmHereMini');
+  if (!map) return;
+
+  const roomLabels = {
+    ch1: 'A 玄關',
+    ch2: 'B 客廳',
+    ch3: 'C 主臥',
+    ch4: 'D 書房',
+    ch5: 'E 陽台',
+    cta: 'F 大門'
+  };
+
+  // hero 滾完才出現
+  const hero = document.querySelector('.hero');
+  if (hero) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        map.classList.toggle('show', !e.isIntersecting);
+      });
+    }, {threshold:.1});
+    io.observe(hero);
+  }
+
+  // 點擊房間跳章節
+  map.querySelectorAll('.mm-room').forEach(r => {
+    r.addEventListener('click', () => {
+      const id = r.dataset.target;
+      const sec = document.getElementById(id);
+      if (sec) sec.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+
+  // 滾動偵測：哪個 chapter 在中央，亮起對應房間
+  const sections = ['ch1','ch2','ch3','ch4','ch5'].map(id => document.getElementById(id)).filter(Boolean);
+  const update = () => {
+    const mid = innerHeight * .42;
+    let cur = null;
+    sections.forEach(s => {
+      const r = s.getBoundingClientRect();
+      if (r.top <= mid && r.bottom >= mid) cur = s.id;
+    });
+    if (!cur) {
+      // fallback: nearest by top
+      let best = Infinity;
+      sections.forEach(s => {
+        const t = Math.abs(s.getBoundingClientRect().top - mid);
+        if (t < best) {best = t; cur = s.id;}
+      });
+    }
+    map.querySelectorAll('.mm-room').forEach(r => {
+      r.classList.toggle('active', r.dataset.target === cur);
+    });
+    if (cur && roomLabels[cur]) {
+      if (here) here.textContent = roomLabels[cur];
+      if (hereMini) hereMini.textContent = roomLabels[cur];
+    }
+  };
+  addEventListener('scroll', update, {passive:true});
+  addEventListener('resize', update);
+  update();
+
+  // 切換收合
+  const setCollapsed = (state) => {
+    map.classList.toggle('collapsed', state);
+    toggle.querySelector('i').className = state ? 'fa-solid fa-plus' : 'fa-solid fa-minus';
+  };
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setCollapsed(!map.classList.contains('collapsed'));
+  });
+  // 收合狀態下整張卡可點擊展開
+  map.addEventListener('click', () => {
+    if (map.classList.contains('collapsed')) setCollapsed(false);
+  });
+})();
+
+</script>
+</body>
+</html>
