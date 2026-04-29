@@ -1800,3 +1800,17 @@ members:
         label: "二十年運動"
       - id: "self_styling"
         label: "手作・自拍造型"
+
+  - id: "bicarbi"
+    name: "Bibi｜Bi 你成長師"
+    avatar: "/assets/img/guild/bicarbi/avatar.webp"
+    page: "/guild/bicarbi.html"
+    title: "Growth Operator · 數位行銷 13 年"
+    description: "宇動數位 (uidon) 創辦人。13 年廣告投放、上百間品牌的成長現場——從乙方磨刀、甲方陪伴新創 0→破億，到自立陪伴中小品牌。ROAS 40、單月千萬營收、客戶 YoY +80%。下廣告不難，難在讓每一塊預算都長出意義。"
+    tags:
+      - id: "performance_ads"
+        label: "廣告投放"
+      - id: "growth_consulting"
+        label: "顧問諮詢"
+      - id: "ai_ops"
+        label: "AI 工具實戰"

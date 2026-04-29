@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Bibi · Bi 你成長師｜13 年廣告投放、100+ 品牌、ROAS 40、單月千萬。我是宇動數位的 Bibi，把廣告預算變成支持品牌的營收，是我每天醒來最想做的事。">
+<title>Bibi｜Growth Operator · Bi 你成長師</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Noto+Serif+TC:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+:root{
+  /* === Editorial Data Salon · Palette === */
+  --paper:#F4EFE3;
+  --paper-2:#EBE3D1;
+  --paper-3:#DCD2BB;
+  --paper-line:#C7BC9F;
+  --ink:#0E1420;
+  --ink-2:#1B2336;
+  --brand:#C9342A;
+  --brand-soft:#E55C4F;
+  --moss:#1F5C3D;
+  --moss-soft:#2F8B5C;
+  --moss-pale:#79B194;
+  --gold:#C9A24A;
+  --gold-soft:#E0BE6C;
+  --char:#5C5440;
+  --char-soft:#8C8266;
+
+  --font-display:'Instrument Serif',serif;
+  --font-tc-serif:'Noto Serif TC',serif;
+  --font-sans:'IBM Plex Sans','IBM Plex Sans TC','Noto Sans TC',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;background:var(--paper)}
+body{
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(201,162,74,.10) 0%, transparent 45%),
+    radial-gradient(ellipse at 88% 100%, rgba(31,92,61,.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, var(--paper) 0%, var(--paper-2) 100%);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-weight:300;
+  line-height:1.7;
+  overflow-x:hidden;
+  letter-spacing:.01em;
+  min-height:100vh;
+  cursor:none;
+}
+@media (max-width:768px){ body{cursor:auto} }
+::selection{background:var(--brand);color:var(--paper)}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--paper-2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--brand),var(--moss));border-radius:3px}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* === Custom Cursor === */
+.cursor-dot,.cursor-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;mix-blend-mode:multiply}
+.cursor-dot{width:5px;height:5px;border-radius:50%;background:var(--brand);transform:translate(-50%,-50%);transition:transform .2s,background .25s}
+.cursor-ring{width:32px;height:32px;border-radius:50%;border:1px solid var(--ink);transform:translate(-50%,-50%);transition:width .35s ease,height .35s ease,border-color .35s}
+.is-hover .cursor-dot{width:11px;height:11px;background:var(--moss)}
+.is-hover .cursor-ring{width:54px;height:54px;border-color:var(--brand)}
+.is-press .cursor-ring{width:22px;height:22px}
+
+/* === Background Layers === */
+#growth-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.85}
+.paper-grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.4;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .31 0 0 0 0 .25 0 0 0 .25 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.tape-edges{position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(14,20,32,.06) 0, transparent 80px),
+    linear-gradient(0deg, rgba(14,20,32,.05) 0, transparent 80px)}
+
+/* === Page Frame · Editorial border === */
+.frame{position:fixed;inset:14px;z-index:3;pointer-events:none;border:1px solid rgba(14,20,32,.12)}
+.frame::before,.frame::after{content:'';position:absolute;background:var(--brand);width:42px;height:1px}
+.frame::before{top:-1px;left:38px}
+.frame::after{bottom:-1px;right:38px}
+.frame .corner{position:absolute;width:11px;height:11px;border:1px solid var(--ink)}
+.frame .corner.tl{top:-6px;left:-6px;border-right:0;border-bottom:0}
+.frame .corner.tr{top:-6px;right:-6px;border-left:0;border-bottom:0}
+.frame .corner.bl{bottom:-6px;left:-6px;border-right:0;border-top:0}
+.frame .corner.br{bottom:-6px;right:-6px;border-left:0;border-top:0}
+
+/* === Top Nav · 編輯室 chrome === */
+.masthead{position:fixed;top:30px;left:30px;z-index:40;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.3em;display:flex;gap:14px;align-items:center}
+.masthead a{padding:8px 14px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);transition:all .3s ease;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.masthead a:hover{background:var(--ink);color:var(--paper);transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--brand)}
+.masthead a i{font-size:9px}
+
+.colophon{position:fixed;top:30px;right:30px;z-index:40;font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;color:var(--ink);display:flex;gap:18px;align-items:center;text-transform:uppercase}
+.colophon .live{display:flex;align-items:center;gap:8px}
+.colophon .live::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--moss-soft);box-shadow:0 0 0 0 rgba(47,139,92,.7);animation:livePulse 2.4s ease-out infinite}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(47,139,92,.7)} 70%{box-shadow:0 0 0 9px rgba(47,139,92,0)} 100%{box-shadow:0 0 0 0 rgba(47,139,92,0)}}
+.colophon .vol{padding:6px 12px;border:1px solid var(--ink);background:var(--paper-2)}
+
+/* === Section Container === */
+section{position:relative;z-index:5;padding:120px max(48px,7vw)}
+.wrap{max-width:1280px;margin:0 auto;position:relative}
+
+/* === Hero === */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-start;padding-top:170px;padding-bottom:90px}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:end}
+.hero-left{position:relative}
+.hero-meta{font-family:var(--font-mono);font-size:11px;letter-spacing:.32em;color:var(--char);text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.hero-meta::after{content:'';flex:1;height:1px;background:var(--paper-line)}
+.hero-title{font-family:var(--font-display);font-size:clamp(54px,8.6vw,128px);line-height:.92;letter-spacing:-.025em;color:var(--ink);margin-bottom:18px}
+.hero-title em{font-style:italic;color:var(--brand)}
+.hero-title .br{display:block}
+.hero-tc{font-family:var(--font-tc-serif);font-weight:500;font-size:clamp(22px,2.6vw,34px);letter-spacing:.08em;color:var(--ink-2);margin-top:14px;margin-bottom:34px}
+.hero-tc .accent{color:var(--brand);position:relative;padding:0 .12em}
+.hero-tc .accent::after{content:'';position:absolute;left:0;right:0;bottom:-3px;height:6px;background:var(--gold);opacity:.55;z-index:-1}
+.hero-lede{font-family:var(--font-tc-serif);font-size:17px;line-height:2.05;color:var(--char);max-width:520px;margin-bottom:36px}
+.hero-cta{display:flex;flex-wrap:wrap;gap:14px}
+.btn-edit{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border:1px solid var(--ink);font-family:var(--font-mono);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;background:var(--paper);transition:all .35s ease}
+.btn-edit:hover{background:var(--ink);color:var(--paper);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--brand)}
+.btn-edit.solid{background:var(--ink);color:var(--paper)}
+.btn-edit.solid:hover{background:var(--brand);border-color:var(--brand);box-shadow:4px 4px 0 var(--ink)}
+
+.hero-right{position:relative;display:flex;justify-content:flex-end;align-items:flex-end}
+.portrait-card{position:relative;width:100%;max-width:420px;aspect-ratio:1/1.18;background:var(--paper-2);border:1px solid var(--ink);overflow:hidden;transform:rotate(.6deg);transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.portrait-card:hover{transform:rotate(-.4deg) translateY(-4px)}
+.portrait-card img{width:100%;height:100%;object-fit:cover;mix-blend-mode:multiply;filter:contrast(1.04) saturate(.92)}
+.portrait-card::before{content:'';position:absolute;inset:0;background:
+  linear-gradient(135deg,transparent 60%,rgba(201,52,42,.18) 95%),
+  radial-gradient(ellipse at 50% 100%, rgba(14,20,32,.4) 0%, transparent 60%);
+  pointer-events:none;z-index:2}
+.portrait-stamp{position:absolute;bottom:-22px;left:-22px;width:130px;height:130px;border-radius:50%;border:1px solid var(--ink);background:var(--paper);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.28em;color:var(--ink);z-index:3;text-align:center;line-height:1.6}
+.portrait-stamp .inner{position:absolute;inset:8px;border-radius:50%;border:1px dashed var(--char-soft);display:flex;align-items:center;justify-content:center;animation:rotate 32s linear infinite}
+@keyframes rotate{to{transform:rotate(360deg)}}
+.portrait-stamp .label{font-family:var(--font-display);font-style:italic;font-size:24px;letter-spacing:.02em;color:var(--brand);text-transform:none}
+.portrait-side{position:absolute;left:-44px;top:30px;writing-mode:vertical-rl;font-family:var(--font-mono);font-size:10px;letter-spacing:.34em;color:var(--char);text-transform:uppercase}
+
+.hero-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);margin-top:80px}
+.hero-strip .cell{padding:18px 20px;border-right:1px solid var(--paper-line);font-family:var(--font-mono);font-size:11px;letter-spacing:.24em;color:var(--ink);text-transform:uppercase;display:flex;flex-direction:column;gap:4px}
+.hero-strip .cell:last-child{border-right:0}
+.hero-strip .cell .k{color:var(--char-soft);font-size:9.5px}
+.hero-strip .cell .v{color:var(--brand);font-weight:500}
+
+/* === Section Header === */
+.s-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:64px;border-bottom:1px solid var(--ink);padding-bottom:24px;gap:32px;flex-wrap:wrap}
+.s-num{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.3em;color:var(--char);text-transform:uppercase}
+.s-title{font-family:var(--font-display);font-size:clamp(38px,5vw,68px);line-height:1;letter-spacing:-.02em;color:var(--ink);max-width:60%}
+.s-title em{font-style:italic;color:var(--brand)}
+.s-tc{font-family:var(--font-tc-serif);font-weight:500;font-size:18px;color:var(--char);letter-spacing:.06em}
+.s-kicker{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.32em;color:var(--char-soft);text-transform:uppercase;text-align:right;max-width:240px;line-height:1.8}
+
+/* === Live Dashboard === */
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--ink);background:var(--paper)}
+.dash-cell{padding:38px 30px 30px;border-right:1px solid var(--paper-line);position:relative;overflow:hidden;transition:background .4s ease}
+.dash-cell:last-child{border-right:0}
+.dash-cell:hover{background:var(--paper-2)}
+.dash-cell::before{content:'';position:absolute;left:0;top:0;width:100%;height:3px;background:var(--brand);transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.dash-cell:hover::before{transform:scaleX(1)}
+.dash-tag{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;color:var(--char);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.dash-tag .pip{width:6px;height:6px;border-radius:50%;background:var(--moss-soft);box-shadow:0 0 8px var(--moss-soft)}
+.dash-num{font-family:var(--font-display);font-size:clamp(48px,5.5vw,80px);line-height:.95;color:var(--ink);letter-spacing:-.02em;display:flex;align-items:baseline;gap:6px}
+.dash-num .unit{font-family:var(--font-mono);font-size:14px;letter-spacing:.18em;color:var(--brand);font-style:normal;text-transform:uppercase}
+.dash-num .pre{font-family:var(--font-mono);font-size:14px;color:var(--char-soft);font-style:normal;letter-spacing:.04em}
+.dash-cap{margin-top:14px;font-family:var(--font-tc-serif);font-size:13px;color:var(--char);line-height:1.6}
+.dash-bar{margin-top:18px;height:2px;background:var(--paper-3);position:relative;overflow:hidden}
+.dash-bar i{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--moss),var(--brand));width:0%}
+
+/* === Three Acts === */
+.acts{position:relative}
+.act-stage{display:grid;grid-template-columns:120px 1fr;gap:24px;align-items:flex-start}
+.act-rail{position:sticky;top:24vh;font-family:var(--font-mono);font-size:11px;letter-spacing:.3em;color:var(--char);text-transform:uppercase;writing-mode:vertical-rl}
+.act-rail .yr{display:block;margin:18px 0;padding:10px 0;border-top:1px dashed var(--paper-line);color:var(--ink)}
+.act-deck{display:flex;flex-direction:column;gap:60px}
+.act{display:grid;grid-template-columns:60px 1fr;gap:36px;padding:42px;border:1px solid var(--ink);background:var(--paper);position:relative;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.act:hover{transform:translateY(-3px)}
+.act::before{content:'';position:absolute;left:-1px;top:-1px;width:90px;height:6px;background:var(--brand)}
+.act-no{font-family:var(--font-display);font-size:64px;line-height:1;color:var(--brand);font-style:italic}
+.act-body{padding-top:8px}
+.act-period{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.32em;color:var(--char);text-transform:uppercase;margin-bottom:10px}
+.act-h{font-family:var(--font-tc-serif);font-weight:600;font-size:30px;color:var(--ink);margin-bottom:6px;letter-spacing:.02em}
+.act-en{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--char);margin-bottom:20px}
+.act-text{font-family:var(--font-tc-serif);font-size:15.5px;line-height:1.95;color:var(--char);max-width:680px}
+.act-text em{font-style:normal;color:var(--brand);font-weight:500}
+.act-stats{display:flex;gap:32px;flex-wrap:wrap;margin-top:22px;padding-top:22px;border-top:1px dashed var(--paper-line)}
+.act-stat{display:flex;flex-direction:column;gap:4px}
+.act-stat .v{font-family:var(--font-display);font-size:30px;color:var(--ink);font-style:italic}
+.act-stat .v em{color:var(--moss)}
+.act-stat .k{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;color:var(--char-soft);text-transform:uppercase}
+
+/* === Growth Engine === */
+.engine{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--ink);background:var(--paper)}
+.engine-step{padding:36px 28px;border-right:1px solid var(--paper-line);position:relative;cursor:pointer;transition:background .35s ease}
+.engine-step:last-child{border-right:0}
+.engine-step:hover{background:var(--ink);color:var(--paper)}
+.engine-step:hover .e-flow{color:var(--gold-soft)}
+.engine-step:hover .e-h,.engine-step:hover .e-cap,.engine-step:hover .e-list li{color:var(--paper)}
+.engine-step:hover .e-icon{background:var(--brand);color:var(--paper);border-color:var(--brand)}
+.e-flow{font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;color:var(--char);text-transform:uppercase;margin-bottom:18px;transition:color .35s}
+.e-icon{width:54px;height:54px;border:1px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink);margin-bottom:20px;transition:all .35s ease}
+.e-h{font-family:var(--font-tc-serif);font-weight:600;font-size:24px;letter-spacing:.04em;color:var(--ink);margin-bottom:6px;transition:color .35s}
+.e-en{font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--brand);margin-bottom:14px}
+.e-cap{font-family:var(--font-tc-serif);font-size:14px;line-height:1.85;color:var(--char);margin-bottom:18px;transition:color .35s}
+.e-list{list-style:none;padding:0;margin:0}
+.e-list li{font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;color:var(--char);padding:6px 0;border-top:1px dashed var(--paper-line);text-transform:uppercase;transition:color .35s}
+.e-list li::before{content:'＞ ';color:var(--brand)}
+
+/* === Service Menu === */
+.menu{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.svc{position:relative;padding:34px 30px;border:1px solid var(--ink);background:var(--paper);overflow:hidden;cursor:pointer;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.svc:hover{transform:translate(-3px,-3px);box-shadow:8px 8px 0 var(--brand)}
+.svc::before{content:'';position:absolute;right:0;top:0;width:0;height:0;border-style:solid;border-width:0 36px 36px 0;border-color:transparent var(--gold) transparent transparent;transition:border-color .35s}
+.svc:hover::before{border-color:transparent var(--brand) transparent transparent}
+.svc-no{position:absolute;top:14px;right:14px;font-family:var(--font-mono);font-size:10px;color:var(--paper);font-weight:500;z-index:2}
+.svc-h{font-family:var(--font-tc-serif);font-weight:600;font-size:26px;color:var(--ink);margin-bottom:4px;letter-spacing:.04em}
+.svc-en{font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--brand);margin-bottom:18px}
+.svc-text{font-family:var(--font-tc-serif);font-size:14.5px;line-height:1.85;color:var(--char);margin-bottom:20px}
+.svc-tags{display:flex;gap:8px;flex-wrap:wrap}
+.svc-tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--moss);padding:4px 10px;border:1px solid var(--moss-pale);border-radius:50px;text-transform:uppercase}
+
+/* === AI Arsenal === */
+.arsenal{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--ink);background:var(--paper)}
+.arsenal-card{padding:30px 22px;border-right:1px solid var(--paper-line);position:relative}
+.arsenal-card:last-child{border-right:0}
+.arsenal-card:hover{background:var(--paper-2)}
+.ar-rank{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.32em;color:var(--char-soft);text-transform:uppercase;margin-bottom:10px}
+.ar-name{font-family:var(--font-display);font-size:30px;color:var(--ink);font-style:italic;margin-bottom:4px;line-height:1.05}
+.ar-zh{font-family:var(--font-tc-serif);font-size:13px;color:var(--brand);margin-bottom:14px;letter-spacing:.06em}
+.ar-text{font-family:var(--font-tc-serif);font-size:13.5px;line-height:1.85;color:var(--char)}
+
+/* === Manifesto === */
+.manifesto{padding:96px 64px;border:1px solid var(--ink);background:var(--paper);position:relative;overflow:hidden}
+.manifesto::before,.manifesto::after{position:absolute;font-family:var(--font-display);font-style:italic;font-size:240px;color:var(--brand);opacity:.13;line-height:1;pointer-events:none}
+.manifesto::before{content:'“';top:-40px;left:30px}
+.manifesto::after{content:'”';bottom:-160px;right:30px}
+.mf-tag{font-family:var(--font-mono);font-size:11px;letter-spacing:.32em;color:var(--char);text-transform:uppercase;margin-bottom:36px;display:flex;align-items:center;gap:14px}
+.mf-tag::after{content:'';flex:1;height:1px;background:var(--paper-line)}
+.mf-text{font-family:var(--font-tc-serif);font-weight:300;font-size:clamp(20px,2.4vw,30px);line-height:2;color:var(--ink);max-width:920px;letter-spacing:.04em}
+.mf-text p{margin-bottom:24px;position:relative;z-index:2}
+.mf-text em{font-family:var(--font-display);font-style:italic;color:var(--brand);font-size:1.06em}
+.mf-text .hl{background:linear-gradient(180deg,transparent 62%,var(--gold) 62%);padding:0 .15em}
+.mf-sign{margin-top:48px;font-family:var(--font-display);font-style:italic;font-size:32px;color:var(--brand);display:flex;align-items:center;gap:18px}
+.mf-sign::before{content:'';display:inline-block;width:48px;height:1px;background:var(--ink)}
+
+/* === CTA Block === */
+.cta{display:grid;grid-template-columns:1.4fr .9fr;gap:24px}
+.cta-main{padding:48px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);position:relative;overflow:hidden}
+.cta-main::before{content:'';position:absolute;left:0;top:0;width:6px;height:100%;background:var(--brand)}
+.cta-main h3{font-family:var(--font-display);font-style:italic;font-size:48px;line-height:1;margin-bottom:6px;color:var(--paper)}
+.cta-main h3 span{color:var(--gold-soft)}
+.cta-main .zh{font-family:var(--font-tc-serif);font-weight:500;font-size:20px;letter-spacing:.06em;color:var(--paper-2);margin-bottom:24px}
+.cta-main p{font-family:var(--font-tc-serif);font-size:15px;line-height:1.95;color:var(--paper-2);margin-bottom:30px;max-width:620px}
+.cta-actions{display:flex;flex-wrap:wrap;gap:12px}
+.cta-btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;border:1px solid var(--paper);background:transparent;color:var(--paper);transition:all .35s ease}
+.cta-btn:hover{background:var(--paper);color:var(--ink);transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--brand)}
+.cta-btn.primary{background:var(--brand);border-color:var(--brand);color:var(--paper)}
+.cta-btn.primary:hover{background:var(--paper);color:var(--brand);box-shadow:4px 4px 0 var(--paper-3)}
+
+.cta-side{display:flex;flex-direction:column;gap:14px}
+.cta-fact{padding:24px 22px;border:1px solid var(--ink);background:var(--paper-2)}
+.cta-fact .label{font-family:var(--font-mono);font-size:10px;letter-spacing:.3em;color:var(--char);text-transform:uppercase;margin-bottom:8px}
+.cta-fact .val{font-family:var(--font-display);font-style:italic;font-size:30px;color:var(--ink);line-height:1}
+.cta-fact .val em{color:var(--brand)}
+.cta-fact .sub{font-family:var(--font-tc-serif);font-size:13px;color:var(--char);margin-top:6px}
+
+/* === Footer === */
+footer{padding:90px max(48px,7vw) 60px;border-top:1px solid var(--ink);position:relative;z-index:5;background:var(--paper)}
+.foot-grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.4fr .8fr .8fr;gap:48px;align-items:flex-start}
+.foot-mast{font-family:var(--font-display);font-style:italic;font-size:46px;line-height:1;color:var(--ink);margin-bottom:8px}
+.foot-mast em{color:var(--brand)}
+.foot-zh{font-family:var(--font-tc-serif);font-size:14px;color:var(--char);margin-bottom:24px;letter-spacing:.08em}
+.foot-meta{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;color:var(--char);line-height:1.9}
+.foot-meta strong{color:var(--ink);font-weight:500}
+.foot-h{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.3em;color:var(--char);text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--paper-line)}
+.foot-list{display:flex;flex-direction:column;gap:11px}
+.foot-list a{display:flex;align-items:center;gap:10px;font-family:var(--font-tc-serif);font-size:14px;color:var(--ink);transition:color .25s,padding-left .25s}
+.foot-list a:hover{color:var(--brand);padding-left:6px}
+.foot-list a i{width:18px;color:var(--char);font-size:13px}
+.colophon-line{max-width:1280px;margin:54px auto 0;padding-top:24px;border-top:1px dashed var(--paper-line);display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:10px;letter-spacing:.3em;color:var(--char-soft);text-transform:uppercase;flex-wrap:wrap;gap:12px}
+.colophon-line em{font-family:var(--font-display);font-style:italic;color:var(--brand);font-size:14px;text-transform:none;letter-spacing:.02em}
+
+/* === Reveal === */
+.reveal{opacity:0;transform:translateY(28px)}
+
+/* === Responsive === */
+@media (max-width:980px){
+  .hero-grid{grid-template-columns:1fr;gap:48px}
+  .hero-strip{grid-template-columns:repeat(2,1fr)}
+  .hero-strip .cell:nth-child(2){border-right:0}
+  .hero-strip .cell:nth-child(1),.hero-strip .cell:nth-child(2){border-bottom:1px solid var(--paper-line)}
+  .dash-grid{grid-template-columns:repeat(2,1fr)}
+  .dash-cell:nth-child(2){border-right:0}
+  .dash-cell:nth-child(1),.dash-cell:nth-child(2){border-bottom:1px solid var(--paper-line)}
+  .engine{grid-template-columns:1fr}
+  .engine-step{border-right:0;border-bottom:1px solid var(--paper-line)}
+  .engine-step:last-child{border-bottom:0}
+  .menu{grid-template-columns:1fr}
+  .arsenal{grid-template-columns:repeat(2,1fr)}
+  .arsenal-card:nth-child(2){border-right:0}
+  .arsenal-card:nth-child(1),.arsenal-card:nth-child(2){border-bottom:1px solid var(--paper-line)}
+  .cta{grid-template-columns:1fr}
+  .act-stage{grid-template-columns:1fr}
+  .act-rail{display:none}
+  .act{grid-template-columns:1fr;padding:32px 28px}
+  .foot-grid{grid-template-columns:1fr;gap:32px}
+}
+@media (max-width:640px){
+  section{padding:80px 26px}
+  .masthead{top:18px;left:18px;font-size:9.5px}
+  .colophon{top:18px;right:18px;font-size:9px;gap:10px}
+  .colophon .live{display:none}
+  .colophon .vol{padding:5px 9px}
+  .frame{inset:8px}
+  .hero{padding-top:120px}
+  .portrait-stamp{width:100px;height:100px;font-size:8.5px;left:auto;right:-18px;bottom:-18px}
+  .manifesto{padding:60px 28px}
+  .manifesto::before{font-size:160px;top:-22px;left:14px}
+  .manifesto::after{font-size:160px;bottom:-110px;right:14px}
+  .cta-main{padding:32px 26px}
+  .cta-main h3{font-size:36px}
+  .s-head{flex-direction:column;align-items:flex-start;gap:14px}
+  .s-kicker{text-align:left;max-width:none}
+}
+
+/* ====== Growth Plotter ====== */
+.plotter{display:grid;grid-template-columns:1fr 320px;gap:0;border:1px solid var(--ink);background:var(--paper)}
+.plotter-canvas-wrap{position:relative;border-right:1px solid var(--paper-line);min-height:380px;cursor:crosshair;overflow:hidden;background:
+  linear-gradient(180deg,var(--paper) 0,var(--paper-2) 100%)}
+.plotter-canvas-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.plotter-cursor-tag{position:absolute;font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;background:var(--ink);color:var(--paper);padding:5px 9px;pointer-events:none;transform:translate(12px,-28px);opacity:0;transition:opacity .2s;text-transform:uppercase;z-index:3;white-space:nowrap}
+.plotter-canvas-wrap:hover .plotter-cursor-tag{opacity:1}
+.plotter-axis-x,.plotter-axis-y{position:absolute;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.22em;color:var(--char-soft);text-transform:uppercase;pointer-events:none}
+.plotter-axis-x{bottom:8px;left:14px;right:14px;display:flex;justify-content:space-between}
+.plotter-axis-y{top:14px;left:14px;writing-mode:vertical-rl;transform:rotate(180deg)}
+.plotter-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--font-tc-serif);font-size:14px;color:var(--char);text-align:center;line-height:2;pointer-events:none;background:rgba(244,239,227,.86);padding:18px 24px;border:1px dashed var(--paper-line);transition:opacity .4s;backdrop-filter:blur(2px)}
+.plotter-hint em{font-family:var(--font-display);font-style:italic;color:var(--brand);font-size:1.2em;display:block;margin-bottom:6px}
+.plotter-hint.gone{opacity:0;pointer-events:none}
+.plotter-side{padding:30px 26px;display:flex;flex-direction:column;gap:18px}
+.plot-row{display:flex;flex-direction:column;gap:5px;padding-bottom:14px;border-bottom:1px dashed var(--paper-line)}
+.plot-row:last-of-type{border-bottom:0}
+.plot-row .lab{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;color:var(--char-soft);text-transform:uppercase}
+.plot-row .val{font-family:var(--font-display);font-size:30px;line-height:1;color:var(--ink);font-style:italic;letter-spacing:-.01em}
+.plot-row .val em{color:var(--brand);font-style:italic}
+.plot-row .val.green em{color:var(--moss-soft)}
+.plot-actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.plot-btn{flex:1;min-width:0;font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:11px 12px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;transition:all .3s ease}
+.plot-btn:hover{background:var(--ink);color:var(--paper);transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--brand)}
+.plot-btn.brand{background:var(--brand);color:var(--paper);border-color:var(--brand)}
+.plot-btn.brand:hover{background:var(--ink);border-color:var(--ink);box-shadow:3px 3px 0 var(--brand)}
+.plot-bibi{padding:14px 16px;border:1px solid var(--ink);background:var(--ink);color:var(--paper-2);font-family:var(--font-tc-serif);font-size:13.5px;line-height:1.85;min-height:60px;letter-spacing:.04em;position:relative}
+.plot-bibi::before{content:'BIBI';position:absolute;top:-8px;left:12px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;background:var(--brand);color:var(--paper);padding:3px 8px}
+.plot-bibi .cursor{display:inline-block;width:7px;height:1em;background:var(--gold-soft);margin-left:2px;vertical-align:text-bottom;animation:cursorBlink 1s step-end infinite}
+@keyframes cursorBlink{50%{opacity:0}}
+
+/* ====== Ad Spend Simulator ====== */
+.sim{display:grid;grid-template-columns:340px 1fr;gap:0;border:1px solid var(--ink);background:var(--paper)}
+.sim-controls{padding:32px 28px;border-right:1px solid var(--paper-line);display:flex;flex-direction:column;gap:24px;background:var(--paper-2)}
+.sim-dial{display:flex;flex-direction:column;gap:10px}
+.sim-dial .label{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-mono);font-size:10px;letter-spacing:.3em;color:var(--char);text-transform:uppercase}
+.sim-dial .label .v{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--brand);letter-spacing:-.01em}
+.sim-dial input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--paper-line);outline:none;cursor:pointer}
+.sim-dial input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;background:var(--brand);border:1px solid var(--ink);border-radius:50%;cursor:pointer;box-shadow:2px 2px 0 var(--ink);transition:transform .15s}
+.sim-dial input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+.sim-dial input[type=range]::-moz-range-thumb{width:18px;height:18px;background:var(--brand);border:1px solid var(--ink);border-radius:50%;cursor:pointer}
+.sim-dial .ticks{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:8.5px;letter-spacing:.2em;color:var(--char-soft);margin-top:2px}
+.sim-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--ink);background:var(--paper);cursor:pointer;font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;transition:all .35s ease}
+.sim-toggle:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--brand)}
+.sim-toggle.on{background:var(--ink);color:var(--paper);box-shadow:3px 3px 0 var(--brand)}
+.sim-toggle .pill{font-size:9px;padding:4px 9px;border:1px solid currentColor;letter-spacing:.18em}
+.sim-toggle.on .pill{background:var(--brand);color:var(--paper);border-color:var(--brand)}
+.sim-readout{padding:30px 28px;display:flex;flex-direction:column;gap:18px;background:var(--paper)}
+.sim-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line)}
+.sim-stat{padding:18px 16px;border-right:1px dashed var(--paper-line)}
+.sim-stat:last-child{border-right:0}
+.sim-stat .k{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.28em;color:var(--char-soft);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sim-stat .k .pip{width:5px;height:5px;border-radius:50%;background:var(--moss-soft);box-shadow:0 0 6px var(--moss-soft)}
+.sim-stat .v{font-family:var(--font-display);font-size:42px;line-height:1;color:var(--ink);font-style:italic;display:flex;align-items:baseline;gap:5px}
+.sim-stat .v .u{font-family:var(--font-mono);font-size:11px;color:var(--brand);letter-spacing:.18em;font-style:normal;text-transform:uppercase}
+.sim-stat .delta{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--moss-soft);margin-top:6px;text-transform:uppercase;height:14px;transition:color .25s,opacity .35s}
+.sim-stat .delta.bad{color:var(--brand)}
+.sim-stat .delta.hidden{opacity:0}
+.sim-chart-wrap{position:relative;height:140px;border:1px solid var(--paper-line);background:linear-gradient(180deg,var(--paper) 0,var(--paper-2) 100%);overflow:hidden}
+.sim-chart-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sim-chart-tag{position:absolute;top:10px;left:14px;font-family:var(--font-mono);font-size:10px;letter-spacing:.28em;color:var(--char);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.sim-chart-tag .pip{width:6px;height:6px;border-radius:50%;background:var(--brand);animation:livePulse 2s infinite}
+.sim-narration{font-family:var(--font-tc-serif);font-size:13.5px;line-height:1.85;color:var(--char);min-height:42px;padding:10px 0;border-top:1px dashed var(--paper-line);letter-spacing:.04em;transition:opacity .35s ease}
+.sim-narration em{color:var(--brand);font-style:normal;font-weight:500}
+.sim-narration.flip{opacity:0}
+.sim-readout.flash{animation:simFlash .55s ease-out}
+@keyframes simFlash{0%{background:var(--paper)} 28%{background:rgba(201,52,42,.08)} 100%{background:var(--paper)}}
+.sim-stat .v{transition:color .35s ease}
+.sim-readout.bibi .sim-stat .v{color:var(--moss)}
+.sim-chart-wrap canvas{transition:opacity .25s ease}
+.sim-chart-wrap canvas.fading{opacity:0}
+
+/* ====== Bibi's Console (floating) ====== */
+.console{position:fixed;right:30px;bottom:30px;z-index:50;background:var(--ink);color:var(--paper);border:1px solid var(--ink);font-family:var(--font-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;min-width:240px;box-shadow:6px 6px 0 var(--brand);transition:transform .4s cubic-bezier(.2,.8,.2,1),box-shadow .4s,opacity .35s;transform:translateY(140%);opacity:0}
+.console.up{transform:translateY(0);opacity:1}
+.console-bar{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-bottom:1px solid rgba(244,239,227,.18);background:rgba(244,239,227,.04)}
+.console-bar .ttl{display:flex;align-items:center;gap:8px;color:var(--gold-soft)}
+.console-bar .ttl::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--moss-soft);box-shadow:0 0 0 0 rgba(47,139,92,.7);animation:livePulse 2s infinite}
+.console-bar button{background:transparent;border:0;color:var(--paper-2);font-family:var(--font-mono);cursor:pointer;font-size:11px;padding:0 4px;letter-spacing:.2em;line-height:1}
+.console-bar button:hover{color:var(--brand-soft)}
+.console-body{padding:10px 13px 11px;display:flex;flex-direction:column;gap:8px}
+.console-line{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+.console-line .k{color:var(--char-soft)}
+.console-line .v{color:var(--paper);font-size:11px;letter-spacing:.14em}
+.console-line .v em{color:var(--brand-soft);font-style:normal}
+.console-line .v.green em{color:var(--moss-pale)}
+.console.min .console-body{display:none}
+.console.min{min-width:auto;box-shadow:4px 4px 0 var(--brand)}
+
+/* ====== Timing Compass ====== */
+.compass{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ink);background:var(--paper)}
+.compass-dial{position:relative;aspect-ratio:1/1;border-right:1px solid var(--paper-line);background:radial-gradient(circle at 50% 50%,var(--paper) 0%,var(--paper-2) 75%,var(--paper-3) 100%);overflow:hidden}
+.compass-dial svg{width:100%;height:100%;display:block;cursor:pointer}
+.compass-dial .month-arc{fill:transparent;transition:fill .25s ease;cursor:pointer}
+.compass-dial .month-arc:hover{fill:rgba(201,52,42,.07)}
+.compass-dial .month-arc.active{fill:var(--brand)}
+.compass-dial .month-divider{stroke:var(--paper-line);stroke-width:.5}
+.compass-dial .ring-outer{fill:none;stroke:var(--ink);stroke-width:1}
+.compass-dial .ring-inner{fill:none;stroke:var(--ink);stroke-width:1}
+.compass-dial .ring-mid{fill:none;stroke:var(--paper-line);stroke-width:.5;stroke-dasharray:2 4}
+.compass-dial .month-label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.18em;fill:var(--ink);pointer-events:none;text-anchor:middle;transition:fill .25s,font-weight .25s}
+.compass-dial .month-label.active{fill:var(--paper);font-weight:500}
+.compass-dial .center-tick{font-family:var(--font-mono);font-size:8px;fill:var(--char-soft);letter-spacing:.18em;text-anchor:middle;pointer-events:none}
+.compass-dial .needle{stroke:var(--ink);stroke-width:1.4;stroke-linecap:round;transition:transform .9s cubic-bezier(.45,.06,.15,1.4);transform-origin:center}
+.compass-dial .needle-tip{fill:var(--brand);stroke:var(--ink);stroke-width:1;transition:transform .9s cubic-bezier(.45,.06,.15,1.4);transform-origin:center}
+.compass-dial .center-dot{fill:var(--ink)}
+.compass-dial .corner-mark{font-family:var(--font-mono);font-size:9px;letter-spacing:.32em;fill:var(--char-soft);text-transform:uppercase}
+.compass-readout{padding:38px 32px;display:flex;flex-direction:column;gap:18px;background:var(--paper)}
+.compass-month{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--ink);padding-bottom:14px}
+.compass-month .num{font-family:var(--font-display);font-style:italic;font-size:68px;line-height:1;color:var(--brand);letter-spacing:-.02em}
+.compass-month .name-block{display:flex;flex-direction:column;gap:3px}
+.compass-month .name-block .en{font-family:var(--font-display);font-style:italic;font-size:22px;color:var(--ink);line-height:1}
+.compass-month .name-block .zh{font-family:var(--font-tc-serif);font-size:14px;color:var(--char);letter-spacing:.1em}
+.compass-festivals{display:flex;flex-wrap:wrap;gap:7px}
+.compass-festival{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;padding:5px 11px;border:1px solid var(--ink);background:var(--paper-2);text-transform:uppercase;color:var(--ink)}
+.compass-festival.major{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.compass-tip{padding:16px 18px;border:1px solid var(--ink);background:var(--ink);color:var(--paper-2);font-family:var(--font-tc-serif);font-size:13.5px;line-height:1.85;letter-spacing:.04em;position:relative;margin-top:4px}
+.compass-tip::before{content:'BIBI 操作筆記';position:absolute;top:-9px;left:14px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.28em;background:var(--brand);color:var(--paper);padding:3px 9px}
+.compass-tip em{color:var(--gold-soft);font-style:normal;font-weight:500}
+.compass-sectors{display:flex;flex-direction:column;gap:7px;margin-top:2px}
+.compass-sectors .row{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed var(--paper-line);padding-bottom:7px;font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:var(--char);text-transform:uppercase}
+.compass-sectors .row:last-child{border-bottom:0}
+.compass-sectors .row .v{font-family:var(--font-display);font-style:italic;font-size:17px;letter-spacing:0;color:var(--ink);text-transform:none}
+.compass-sectors .row .v.green{color:var(--moss-soft)}
+.compass-sectors .row .v.red{color:var(--brand)}
+
+/* ====== One-Minute Brief Builder ====== */
+.brief{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ink);background:var(--paper);overflow:hidden}
+.brief-flow{padding:34px 30px;border-right:1px solid var(--paper-line);display:flex;flex-direction:column;gap:24px;background:var(--paper-2)}
+.brief-progress{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;color:var(--char-soft);text-transform:uppercase;padding-bottom:14px;border-bottom:1px dashed var(--paper-line)}
+.brief-progress .pip{width:14px;height:2px;background:var(--paper-line);transition:background .35s ease}
+.brief-progress .pip.on{background:var(--brand)}
+.brief-step{padding-bottom:6px;transition:opacity .5s ease,filter .5s ease,transform .5s ease}
+.brief-step.locked{opacity:.32;pointer-events:none;filter:grayscale(.4) blur(.4px);transform:translateY(4px)}
+.brief-opt{position:relative;overflow:hidden}
+.brief-opt:active{transform:translate(0,0);box-shadow:0 0 0 var(--brand)}
+.brief-opt::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at var(--rx,50%) var(--ry,50%),rgba(201,52,42,.45),transparent 60%);opacity:0;pointer-events:none;transition:opacity .35s ease}
+.brief-opt.rip::after{opacity:1;animation:briefRip .55s ease-out}
+@keyframes briefRip{from{opacity:.55;transform:scale(.4)}to{opacity:0;transform:scale(2.2)}}
+.brief-progress .pip{transition:background .45s cubic-bezier(.2,.8,.2,1),width .45s ease}
+.brief-progress .pip.on{width:22px}
+.brief-step .qid{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;color:var(--char-soft);text-transform:uppercase;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.brief-step .qid em{font-family:var(--font-display);font-style:italic;font-size:18px;color:var(--brand);letter-spacing:0;text-transform:none}
+.brief-step .q{font-family:var(--font-tc-serif);font-size:17px;color:var(--ink);margin-bottom:12px;letter-spacing:.04em;font-weight:500}
+.brief-options{display:flex;flex-wrap:wrap;gap:7px}
+.brief-opt{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;padding:9px 13px;border:1px solid var(--ink);background:var(--paper);cursor:pointer;color:var(--ink);transition:all .22s ease;line-height:1}
+.brief-opt:hover{background:var(--ink);color:var(--paper);transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--brand)}
+.brief-opt.on{background:var(--brand);color:var(--paper);border-color:var(--brand);box-shadow:3px 3px 0 var(--ink)}
+.brief-card{padding:36px 32px;display:flex;flex-direction:column;gap:14px;position:relative;min-height:460px;background:var(--paper)}
+.brief-card.empty{align-items:center;justify-content:center;text-align:center}
+.brief-empty-msg{font-family:var(--font-tc-serif);font-size:14.5px;color:var(--char);line-height:2;letter-spacing:.06em;max-width:300px}
+.brief-empty-msg em{font-family:var(--font-display);font-style:italic;color:var(--brand);font-size:1.7em;display:block;margin-bottom:8px;line-height:1}
+.brief-empty-deco{font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;color:var(--char-soft);text-transform:uppercase;margin-top:12px;display:flex;align-items:center;gap:14px;justify-content:center}
+.brief-empty-deco::before,.brief-empty-deco::after{content:'';width:30px;height:1px;background:var(--paper-line)}
+.brief-card .stamp{position:absolute;top:18px;right:22px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.28em;color:var(--char-soft);text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.brief-card .stamp::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--moss-soft);box-shadow:0 0 6px var(--moss-soft);animation:livePulse 2s infinite}
+.brief-card h4{font-family:var(--font-display);font-style:italic;font-size:36px;line-height:1.05;color:var(--ink);letter-spacing:-.01em;margin-bottom:0;padding-right:80px}
+.brief-card h4 em{color:var(--brand)}
+.brief-card .ctx{font-family:var(--font-tc-serif);font-size:13px;color:var(--char);letter-spacing:.06em;padding-bottom:12px;border-bottom:1px dashed var(--paper-line)}
+.brief-block{display:flex;flex-direction:column;gap:5px}
+.brief-block .lab{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.3em;color:var(--char);text-transform:uppercase}
+.brief-block .body{font-family:var(--font-tc-serif);font-size:14.5px;line-height:1.85;color:var(--ink);letter-spacing:.04em}
+.brief-block .body em{color:var(--brand);font-style:normal;font-weight:500}
+.brief-mix{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.brief-mix span{font-family:var(--font-mono);font-size:10px;padding:5px 11px;border:1px solid var(--moss-pale);color:var(--moss);letter-spacing:.16em;text-transform:uppercase;border-radius:50px;display:flex;align-items:center;gap:7px}
+.brief-mix span::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--moss-soft)}
+.brief-mix span.heavy{background:var(--moss);color:var(--paper);border-color:var(--moss)}
+.brief-mix span.heavy::before{background:var(--paper)}
+.brief-warn{padding:11px 13px;border-left:3px solid var(--brand);background:rgba(201,52,42,.05);font-family:var(--font-tc-serif);font-size:13.5px;color:var(--char);line-height:1.85}
+.brief-warn em{color:var(--brand);font-style:normal;font-weight:500}
+.brief-actions{display:flex;gap:8px;margin-top:auto;padding-top:8px}
+.brief-act-btn{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;padding:11px 16px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;transition:all .25s ease}
+.brief-act-btn:hover{background:var(--ink);color:var(--paper);transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--brand)}
+.brief-act-btn.brand{background:var(--brand);color:var(--paper);border-color:var(--brand)}
+.brief-act-btn.brand:hover{background:var(--ink);border-color:var(--ink)}
+
+@media (max-width:980px){
+  .plotter{grid-template-columns:1fr}
+  .plotter-canvas-wrap{border-right:0;border-bottom:1px solid var(--paper-line)}
+  .sim{grid-template-columns:1fr}
+  .sim-controls{border-right:0;border-bottom:1px solid var(--paper-line)}
+  .sim-stats{grid-template-columns:repeat(3,1fr)}
+  .compass{grid-template-columns:1fr}
+  .compass-dial{border-right:0;border-bottom:1px solid var(--paper-line);max-width:480px;margin:0 auto;width:100%}
+  .brief{grid-template-columns:1fr}
+  .brief-flow{border-right:0;border-bottom:1px solid var(--paper-line)}
+  .brief-card{min-height:auto}
+}
+@media (max-width:640px){
+  .console{right:14px;bottom:14px;min-width:0;font-size:9px}
+  .console-body{padding:8px 11px 9px}
+  .sim-stat{padding:14px 10px}
+  .sim-stat .v{font-size:28px}
+  .plotter-canvas-wrap{min-height:280px}
+  .plot-bibi{font-size:12.5px}
+  .plotter-side{padding:24px 22px}
+}
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <span class="corner tl"></span><span class="corner tr"></span>
+  <span class="corner bl"></span><span class="corner br"></span>
+</div>
+<canvas id="growth-canvas"></canvas>
+<div class="paper-grain"></div>
+<div class="tape-edges"></div>
+
+<div class="cursor-ring"></div>
+<div class="cursor-dot"></div>
+
+<nav class="masthead">
+  <a href="/guild/"><i class="fa-solid fa-arrow-left-long"></i> Archive</a>
+</nav>
+<div class="colophon">
+  <span class="live">Channel · Live</span>
+  <span class="vol">Vol.148 · Bibi</span>
+</div>
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <div class="hero-meta reveal">
+          <span>The Growth Operator</span>
+          <span style="color:var(--brand)">●</span>
+          <span>Issue No. 148</span>
+        </div>
+        <h1 class="hero-title reveal">
+          <span class="br">Growth is</span>
+          <span class="br">not a <em>guess.</em></span>
+          <span class="br">It is a <em>system.</em></span>
+        </h1>
+        <div class="hero-tc reveal">我是 <span class="accent">Bibi</span>，把廣告預算翻譯成品牌營收。</div>
+        <p class="hero-lede reveal">
+          十三年廣告投放、上百間品牌的成長現場。從乙方磨刀、到甲方陪伴新創 0→破億，
+          現在我自立門戶，把這些經驗值還給每一個想被看見的好品牌。
+          下廣告不難，難的是讓每一塊預算都長出意義。
+        </p>
+        <div class="hero-cta reveal">
+          <a class="btn-edit solid" href="https://lin.ee/vEtHIRH" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-line"></i> Line · 找 Bibi 聊聊</a>
+          <a class="btn-edit" href="https://app.uidon.com/calendar" target="_blank" rel="noopener noreferrer"><i class="fa-regular fa-calendar"></i> 免費電商行事曆</a>
+        </div>
+      </div>
+
+      <div class="hero-right reveal">
+        <div class="portrait-side">FILE · BICARBI / GROWTH OPERATOR · EST. 2025 自立 / SECTOR · D2C, F&amp;B, EC</div>
+        <div class="portrait-card">
+          <img src="/assets/img/guild/bicarbi/avatar.webp" alt="Bibi · Bi 你成長師">
+          <div class="portrait-stamp">
+            <div class="inner">
+              <span class="label">Bi 你成長</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-strip reveal">
+      <div class="cell"><span class="k">Practice</span><span class="v">Performance Marketing</span></div>
+      <div class="cell"><span class="k">Studio</span><span class="v">宇動數位 · uidon.com</span></div>
+      <div class="cell"><span class="k">Base</span><span class="v">Miaoli · 苗栗</span></div>
+      <div class="cell"><span class="k">Mode</span><span class="v">Strategy × Ads × AI</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LIVE DASHBOARD ================= -->
+<section id="dashboard">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 01 ·  Live Performance Desk</div>
+        <h2 class="s-title">The numbers <em>I live by.</em></h2>
+        <div class="s-tc">把每一塊預算 · 換算成品牌看得懂的故事</div>
+      </div>
+      <div class="s-kicker">Updated Continuously<br>Source · Real Campaigns Run by Bibi &amp; Team</div>
+    </header>
+
+    <div class="dash-grid">
+      <div class="dash-cell reveal" data-target="13" data-suffix="">
+        <div class="dash-tag"><span class="pip"></span>Years on Desk</div>
+        <div class="dash-num"><span class="counter">0</span><span class="unit">YR</span></div>
+        <div class="dash-cap">廣告投放與行銷實戰，從乙方走到甲方，再走回自己的桌子前。</div>
+        <div class="dash-bar"><i style="width:96%"></i></div>
+      </div>
+      <div class="dash-cell reveal" data-target="100" data-suffix="+">
+        <div class="dash-tag"><span class="pip"></span>Brands Grown</div>
+        <div class="dash-num"><span class="counter">0</span><span class="unit">+ Brands</span></div>
+        <div class="dash-cap">合作過、陪伴過、把成效跑出來的品牌數。從乙方時期就開始累積。</div>
+        <div class="dash-bar"><i style="width:88%"></i></div>
+      </div>
+      <div class="dash-cell reveal" data-target="40" data-suffix="">
+        <div class="dash-tag"><span class="pip"></span>Peak Group-Buy ROAS</div>
+        <div class="dash-num"><span class="pre">×</span><span class="counter">0</span><span class="unit">ROAS</span></div>
+        <div class="dash-cap">團購廣告專案巔峰：投 1 元換 40 元營收，配合產品力與時機點。</div>
+        <div class="dash-bar"><i style="width:92%"></i></div>
+      </div>
+      <div class="dash-cell reveal" data-target="1000" data-suffix="">
+        <div class="dash-tag"><span class="pip"></span>Single Month Revenue</div>
+        <div class="dash-num"><span class="counter">0</span><span class="unit">萬 / Mo</span></div>
+        <div class="dash-cap">陪伴新創品牌 0→破億過程中，創下單月營收里程碑。</div>
+        <div class="dash-bar"><i style="width:78%"></i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GROWTH PLOTTER (signature interaction) ================= -->
+<section id="plotter">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 01.5 ·  Plot Your Curve · 互動</div>
+        <h2 class="s-title">Click to plot.<br>I'll tell you <em>where it grows.</em></h2>
+        <div class="s-tc">在下方畫布點 3 個以上的點 · 我幫你算出年增率與 12 月後的位置</div>
+      </div>
+      <div class="s-kicker">Interactive Demo<br>Real Math · No Mockup</div>
+    </header>
+
+    <div class="plotter reveal">
+      <div class="plotter-canvas-wrap" id="plotWrap">
+        <canvas id="plotCanvas"></canvas>
+        <div class="plotter-axis-y">Revenue ▲</div>
+        <div class="plotter-axis-x">
+          <span>M0</span><span>M3</span><span>M6</span><span>M9</span><span>M12</span>
+        </div>
+        <div class="plotter-cursor-tag" id="plotTag">Click to plot</div>
+        <div class="plotter-hint" id="plotHint">
+          <em>畫一條你想要的成長</em>
+          在這塊空白上點 3-8 個點 ──<br>
+          時間軸從左到右是 0 到 12 個月<br>
+          往上是營收 · 點完我會給你預估
+        </div>
+      </div>
+      <aside class="plotter-side">
+        <div class="plot-row">
+          <span class="lab">Points Placed</span>
+          <span class="val"><em id="plotCount">0</em>&nbsp;<span style="font-size:14px;color:var(--char-soft)">/ 8 max</span></span>
+        </div>
+        <div class="plot-row">
+          <span class="lab">Implied MoM Growth</span>
+          <span class="val green"><em id="plotMom">—</em></span>
+        </div>
+        <div class="plot-row">
+          <span class="lab">12-Month Forecast</span>
+          <span class="val"><em id="plotForecast">—</em></span>
+        </div>
+        <div class="plot-actions">
+          <button class="plot-btn" id="plotReset" type="button">Reset</button>
+          <button class="plot-btn brand" id="plotAsk" type="button">Bibi 怎麼解？</button>
+        </div>
+        <div class="plot-bibi" id="plotBibi">先點幾個點，我才能讀你的曲線。<span class="cursor"></span></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ================= THREE ACTS ================= -->
+<section id="acts">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 02 ·  A Career in Three Acts</div>
+        <h2 class="s-title">From <em>agency floor</em><br>to <em>my own desk.</em></h2>
+        <div class="s-tc">十三年的成長曲線 · 每一段都是下一段的肌肉記憶</div>
+      </div>
+      <div class="s-kicker">Act I → Act II → Act III<br>Each Chapter Built the Next</div>
+    </header>
+
+    <div class="act-stage">
+      <div class="act-rail">
+        <span class="yr">2012 · Agency</span>
+        <span class="yr">2018 · In-house</span>
+        <span class="yr">2025 · 自立</span>
+      </div>
+
+      <div class="act-deck">
+        <article class="act reveal">
+          <div class="act-no">I</div>
+          <div class="act-body">
+            <div class="act-period">Act I · 2012—2018 · Agency Floor</div>
+            <h3 class="act-h">乙方磨刀</h3>
+            <div class="act-en">When KPIs were strangers, and discipline became home.</div>
+            <p class="act-text">
+              我從乙方代理商起家，被丟進百間品牌的廣告現場：餐飲、電商、保養、3C、品牌再品牌。
+              我學會了怎麼讀數據、怎麼跟客戶吵架、怎麼把一個壞素材救回來。最自豪的是<em>被公司派去 Google 參加代理商大會</em>——那一年我懂了，這個產業不是只有我在解題。
+            </p>
+            <div class="act-stats">
+              <div class="act-stat"><span class="v"><em>100+</em></span><span class="k">Brands Touched</span></div>
+              <div class="act-stat"><span class="v"><em>6yr</em></span><span class="k">Agency Tenure</span></div>
+              <div class="act-stat"><span class="v"><em>Google</em></span><span class="k">Agency Summit</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="act reveal">
+          <div class="act-no">II</div>
+          <div class="act-body">
+            <div class="act-period">Act II · 2018—2024 · In-house · 0→破億</div>
+            <h3 class="act-h">甲方深耕</h3>
+            <div class="act-en">Walking one brand from the first dollar to the first hundred million.</div>
+            <p class="act-text">
+              轉到甲方，我選擇深陪一個品牌：從第一支廣告、第一筆訂單，做到<em>單月千萬營收</em>，
+              累積到破億。這幾年我學到一件事——<em>真正的成長不是跑得快，而是會把整個團隊帶著一起跑起來。</em>
+              我也親自做出短影音，TikTok 三支影片加起來百萬觀看；簡報重新設計過，去台大分享了兩次。
+            </p>
+            <div class="act-stats">
+              <div class="act-stat"><span class="v"><em>0→</em>1B</span><span class="k">Revenue Arc</span></div>
+              <div class="act-stat"><span class="v"><em>10M</em>/mo</span><span class="k">Peak Monthly</span></div>
+              <div class="act-stat"><span class="v"><em>1M+</em></span><span class="k">TikTok Views</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="act reveal">
+          <div class="act-no">III</div>
+          <div class="act-body">
+            <div class="act-period">Act III · 2025— · 自立 · 宇動數位</div>
+            <h3 class="act-h">陪伴中小品牌再次成長</h3>
+            <div class="act-en">Now I bring it all back — to brands that deserve to be seen.</div>
+            <p class="act-text">
+              我把十三年的經驗值濃縮成一張作戰桌，自己開了<em>宇動數位</em>。我們是一支精實的小團，
+              協助客戶 YoY 成長近 80%、做出 ROAS 40 的團購、跑出顧問都稱讚的低 CPA、把甜點電商單月業績拉高 5 倍。
+              我和股東甚至用 vibe coding 親手做了一個免費的<em>電商行事曆</em>——因為太多老闆問同樣的問題。
+            </p>
+            <div class="act-stats">
+              <div class="act-stat"><span class="v"><em>+80%</em></span><span class="k">Client YoY Growth</span></div>
+              <div class="act-stat"><span class="v"><em>×5</em></span><span class="k">Bakery EC MoM</span></div>
+              <div class="act-stat"><span class="v"><em>&lt;100</em></span><span class="k">Consult CPA</span></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TIMING COMPASS (signature interaction) ================= -->
+<section id="compass">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 02.7 ·  Timing Compass · 時機羅盤</div>
+        <h2 class="s-title">When to <em>push.</em><br>When to hold.</h2>
+        <div class="s-tc">廣告操盤裡 · 時機點往往比預算還重要 · 點羅盤上的月份看 Bibi 怎麼安排</div>
+      </div>
+      <div class="s-kicker">12-Month Cycle<br>Click Any Spoke</div>
+    </header>
+
+    <div class="compass reveal">
+      <div class="compass-dial" id="compassDial"><!-- SVG injected by JS --></div>
+      <div class="compass-readout">
+        <div class="compass-month">
+          <span class="num" id="cmpNum">—</span>
+          <div class="name-block">
+            <span class="en" id="cmpEn">Pick a Month</span>
+            <span class="zh" id="cmpZh">點羅盤上的月份開始</span>
+          </div>
+        </div>
+        <div class="compass-festivals" id="cmpFestivals">
+          <span class="compass-festival">Click a spoke</span>
+        </div>
+        <div class="compass-tip" id="cmpTip">時機點是廣告投放裡最被低估的變數。預算可以慢慢加，但<em>節奏錯了就是錯了</em>──點羅盤看 Bibi 怎麼讀每個月。</div>
+        <div class="compass-sectors" id="cmpSectors">
+          <div class="row"><span>Best for</span><span class="v">—</span></div>
+          <div class="row"><span>Hold off</span><span class="v">—</span></div>
+          <div class="row"><span>Budget posture</span><span class="v">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AD SPEND SIMULATOR (signature interaction) ================= -->
+<section id="simulator">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 02.5 ·  Ad Spend Simulator · 操盤台</div>
+        <h2 class="s-title">Turn the dials.<br>Watch <em>the curve react.</em></h2>
+        <div class="s-tc">轉動預算 × 素材力 · 即時跑出 ROAS / CPA / 觸及 · 然後切到「Bibi 操盤」看差異</div>
+      </div>
+      <div class="s-kicker">Live Simulation<br>Numbers Update on the Fly</div>
+    </header>
+
+    <div class="sim reveal">
+      <aside class="sim-controls">
+        <div class="sim-dial">
+          <div class="label"><span>Daily Budget</span><span class="v" id="simBudgetV">NT$ 5,000</span></div>
+          <input type="range" id="simBudget" min="500" max="50000" step="500" value="5000">
+          <div class="ticks"><span>500</span><span>10K</span><span>25K</span><span>50K</span></div>
+        </div>
+        <div class="sim-dial">
+          <div class="label"><span>Creative Hook Score</span><span class="v" id="simHookV">5 / 10</span></div>
+          <input type="range" id="simHook" min="1" max="10" step="1" value="5">
+          <div class="ticks"><span>Weak</span><span>OK</span><span>Strong</span><span>Killer</span></div>
+        </div>
+        <div class="sim-dial">
+          <div class="label"><span>Audience Match</span><span class="v" id="simAudV">60%</span></div>
+          <input type="range" id="simAud" min="20" max="100" step="5" value="60">
+          <div class="ticks"><span>20%</span><span>50%</span><span>80%</span><span>100%</span></div>
+        </div>
+
+        <button class="sim-toggle" id="simBibi" type="button">
+          <span>Hand it to Bibi</span>
+          <span class="pill" id="simBibiPill">OFF</span>
+        </button>
+      </aside>
+
+      <div class="sim-readout">
+        <div class="sim-stats">
+          <div class="sim-stat">
+            <div class="k"><span class="pip"></span>ROAS</div>
+            <div class="v"><span id="simRoas">2.4</span><span class="u">×</span></div>
+            <div class="delta hidden" id="simRoasDelta">+0.0×</div>
+          </div>
+          <div class="sim-stat">
+            <div class="k"><span class="pip"></span>CPA</div>
+            <div class="v"><span class="u">NT$</span><span id="simCpa">320</span></div>
+            <div class="delta hidden" id="simCpaDelta">+0</div>
+          </div>
+          <div class="sim-stat">
+            <div class="k"><span class="pip"></span>Daily Reach</div>
+            <div class="v"><span id="simReach">12K</span></div>
+            <div class="delta hidden" id="simReachDelta">+0</div>
+          </div>
+        </div>
+
+        <div class="sim-chart-wrap">
+          <canvas id="simChart"></canvas>
+          <div class="sim-chart-tag"><span class="pip"></span>7-Day Revenue Projection</div>
+        </div>
+
+        <div class="sim-narration" id="simNarration">
+          這就是你目前的桌面：預算 NT$5,000、素材 5/10、TA 對位 60%。<em>把 dial 推到極致，看看數字會怎麼跑。</em>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GROWTH ENGINE ================= -->
+<section id="engine">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 03 ·  The Growth Engine</div>
+        <h2 class="s-title">How I turn budget<br>into <em>brand revenue.</em></h2>
+        <div class="s-tc">廣告投放這件事 · 拆成三個齒輪你會更懂</div>
+      </div>
+      <div class="s-kicker">Fuel → Engine → Output<br>Linear, Measurable, Repeatable</div>
+    </header>
+
+    <div class="engine reveal">
+      <div class="engine-step">
+        <div class="e-flow">Stage 01 · Fuel</div>
+        <div class="e-icon"><i class="fa-solid fa-flask"></i></div>
+        <div class="e-h">原料盤點</div>
+        <div class="e-en">Audit your fuel.</div>
+        <div class="e-cap">先看你的產品力、消費者輪廓、過往數據與競品討論——還沒下廣告之前，先把預算換算成假設。</div>
+        <ul class="e-list">
+          <li>Brand Audit</li>
+          <li>Audience Mapping</li>
+          <li>Forum / Sentiment Recon</li>
+          <li>Competitor Decode</li>
+        </ul>
+      </div>
+      <div class="engine-step">
+        <div class="e-flow">Stage 02 · Engine</div>
+        <div class="e-icon"><i class="fa-solid fa-gauge-high"></i></div>
+        <div class="e-h">投放策略</div>
+        <div class="e-en">Run the engine.</div>
+        <div class="e-cap">Meta、Google、LINE、TikTok 多平台佈局；每天看數據、調素材、測 hook、跑 A/B；廣告被拒登要會自己解。</div>
+        <ul class="e-list">
+          <li>Multi-Platform Mix</li>
+          <li>Creative × Hook Test</li>
+          <li>A/B &amp; Iteration Loop</li>
+          <li>Policy Troubleshooting</li>
+        </ul>
+      </div>
+      <div class="engine-step">
+        <div class="e-flow">Stage 03 · Output</div>
+        <div class="e-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="e-h">營收與品牌</div>
+        <div class="e-en">Compound the output.</div>
+        <div class="e-cap">不是只看 ROAS——還要看品牌記憶、回購、新舊客結構。讓每一檔活動的成果，都變成下一檔的起跑線。</div>
+        <ul class="e-list">
+          <li>Revenue Attribution</li>
+          <li>Retention &amp; Repeat</li>
+          <li>Brand Recall Tracking</li>
+          <li>Quarter-by-Quarter Plan</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SERVICE MENU ================= -->
+<section id="services">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 04 ·  Services on Offer</div>
+        <h2 class="s-title">What you can <em>book me</em> for.</h2>
+        <div class="s-tc">這是我的桌子 · 你可以從這幾項挑一個開始</div>
+      </div>
+      <div class="s-kicker">Book a chat first<br>Pricing on application</div>
+    </header>
+
+    <div class="menu">
+      <article class="svc reveal">
+        <span class="svc-no">01</span>
+        <h3 class="svc-h">行銷策略</h3>
+        <div class="svc-en">Strategy &amp; Brand Direction</div>
+        <p class="svc-text">陪你看清品牌的下一步：定位、TA、節奏、年度作戰圖。從「我該做什麼」變成「我為什麼這樣做」。</p>
+        <div class="svc-tags">
+          <span class="svc-tag">Brand Audit</span>
+          <span class="svc-tag">Annual Plan</span>
+          <span class="svc-tag">Positioning</span>
+        </div>
+      </article>
+
+      <article class="svc reveal">
+        <span class="svc-no">02</span>
+        <h3 class="svc-h">廣告投放</h3>
+        <div class="svc-en">Performance Ads · Multi-Platform</div>
+        <p class="svc-text">Meta / Google / LINE / TikTok 全平台投放。我們把廣告當作有預算的科學實驗——不是賭運氣。</p>
+        <div class="svc-tags">
+          <span class="svc-tag">Meta Ads</span>
+          <span class="svc-tag">Google Ads</span>
+          <span class="svc-tag">LINE</span>
+          <span class="svc-tag">TikTok</span>
+        </div>
+      </article>
+
+      <article class="svc reveal">
+        <span class="svc-no">03</span>
+        <h3 class="svc-h">顧問諮詢</h3>
+        <div class="svc-en">One-on-one Consulting</div>
+        <p class="svc-text">適合卡關的老闆：我看你的數據、你的素材、你的團隊狀況。一次把問題拆乾淨，給你下一步的具體做法。</p>
+        <div class="svc-tags">
+          <span class="svc-tag">Diagnosis</span>
+          <span class="svc-tag">CPA &lt; 100</span>
+          <span class="svc-tag">Action Plan</span>
+        </div>
+      </article>
+
+      <article class="svc reveal">
+        <span class="svc-no">04</span>
+        <h3 class="svc-h">老闆日常</h3>
+        <div class="svc-en">Founder Sparring · AI &amp; Growth</div>
+        <p class="svc-text">給已經在跑的創業者：陪你做關鍵抉擇、Spar 想法、把 AI 工具變成真正能用的武器。談的是經營，不只是行銷。</p>
+        <div class="svc-tags">
+          <span class="svc-tag">Sparring</span>
+          <span class="svc-tag">AI Stack</span>
+          <span class="svc-tag">Decision Lab</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ONE-MINUTE BRIEF BUILDER (signature interaction) ================= -->
+<section id="brief">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 04.5 ·  One-Minute Brief · 一分鐘給你個方向</div>
+        <h2 class="s-title">Answer <em>three.</em><br>Get my read.</h2>
+        <div class="s-tc">回答三個問題 · 我給你一張可帶走的初步 brief · 不取代真正的諮詢，但夠你開始動</div>
+      </div>
+      <div class="s-kicker">Free Quick Read<br>3 Clicks · 60 Seconds</div>
+    </header>
+
+    <div class="brief reveal">
+      <aside class="brief-flow">
+        <div class="brief-progress">
+          <span>Progress</span>
+          <span class="pip" data-pip="1"></span>
+          <span class="pip" data-pip="2"></span>
+          <span class="pip" data-pip="3"></span>
+        </div>
+        <div class="brief-step" data-step="1">
+          <div class="qid"><em>Q1</em>· Industry</div>
+          <div class="q">你的品牌屬於哪個產業？</div>
+          <div class="brief-options" data-group="industry">
+            <button class="brief-opt" data-val="food" type="button">食品 / 餐飲</button>
+            <button class="brief-opt" data-val="ecom" type="button">電商 / 日用</button>
+            <button class="brief-opt" data-val="service" type="button">服務 / 體驗</button>
+            <button class="brief-opt" data-val="brand" type="button">品牌新創</button>
+          </div>
+        </div>
+        <div class="brief-step locked" data-step="2">
+          <div class="qid"><em>Q2</em>· Stage</div>
+          <div class="q">你目前的階段在哪？</div>
+          <div class="brief-options" data-group="stage">
+            <button class="brief-opt" data-val="seed" type="button">剛起步 · 0→1</button>
+            <button class="brief-opt" data-val="growth" type="button">月營收幾十萬</button>
+            <button class="brief-opt" data-val="scale" type="button">月營收破百萬</button>
+            <button class="brief-opt" data-val="stuck" type="button">卡住 · 業績停滯</button>
+          </div>
+        </div>
+        <div class="brief-step locked" data-step="3">
+          <div class="qid"><em>Q3</em>· Goal</div>
+          <div class="q">這一季你最想達成的是？</div>
+          <div class="brief-options" data-group="goal">
+            <button class="brief-opt" data-val="acquire" type="button">拉新 · 找新客</button>
+            <button class="brief-opt" data-val="retain" type="button">回購 · 養舊客</button>
+            <button class="brief-opt" data-val="awareness" type="button">品牌曝光</button>
+            <button class="brief-opt" data-val="expand" type="button">擴張 · 開新戰線</button>
+          </div>
+        </div>
+      </aside>
+
+      <article class="brief-card empty" id="briefCard">
+        <div class="brief-empty-msg">
+          <em>Bibi's Brief</em>
+          回答完左邊三題<br>我給你一張可帶走的方向卡<br><span class="brief-empty-deco">3 clicks</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AI ARSENAL ================= -->
+<section id="arsenal">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 05 ·  The AI Arsenal</div>
+        <h2 class="s-title">Tools I bring<br>to every <em>desk.</em></h2>
+        <div class="s-tc">AI 不是噱頭 · 是我跟客戶一起把效率擠出來的武器庫</div>
+      </div>
+      <div class="s-kicker">Tested · Mapped · In Rotation</div>
+    </header>
+
+    <div class="arsenal reveal">
+      <div class="arsenal-card">
+        <div class="ar-rank">№ 01 · Strategy Co-Pilot</div>
+        <div class="ar-name">Claude</div>
+        <div class="ar-zh">主筆 · 文案策略</div>
+        <p class="ar-text">寫品牌故事、深度分析、長文書寫——它的品味最接近我想要的版本。</p>
+      </div>
+      <div class="arsenal-card">
+        <div class="ar-rank">№ 02 · Visual Sandbox</div>
+        <div class="ar-name">GPT</div>
+        <div class="ar-zh">產圖 · 主視覺</div>
+        <p class="ar-text">短提示詞下生成最接近可用的圖。產素材的時候我會跑它。</p>
+      </div>
+      <div class="arsenal-card">
+        <div class="ar-rank">№ 03 · Recon Layer</div>
+        <div class="ar-name">Manus</div>
+        <div class="ar-zh">輿情 · 競品偵察</div>
+        <p class="ar-text">論壇正負評分析、品牌與競品討論量比較。下廣告前的偵察兵。</p>
+      </div>
+      <div class="arsenal-card">
+        <div class="ar-rank">№ 04 · Knowledge OS</div>
+        <div class="ar-name">NotebookLM</div>
+        <div class="ar-zh">會議 · 學習快取</div>
+        <p class="ar-text">把長文件變成 podcast 與摘要，是我邊做事邊吸收的祕密武器。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MANIFESTO ================= -->
+<section id="manifesto">
+  <div class="wrap">
+    <div class="manifesto reveal">
+      <div class="mf-tag">§ 06 ·  An Operator's Manifesto · 我的工作信念</div>
+      <div class="mf-text">
+        <p>我做這行十三年，最有成就感的瞬間從來不是<em>數字漂亮</em>那一刻——
+        而是看著一個品牌，<span class="hl">用適合自己的語言</span>，被對的人看見、被對的人買單。</p>
+        <p>下廣告不難，難在有成效。
+        <em>「有人沒方向，我們來推進。」</em>
+        這句是我寫在自己 IG 上的話，也是我每天醒來面對品牌的方式。</p>
+        <p>我不相信運氣，我相信<span class="hl">系統與陪伴</span>。
+        會成功的人，身上一定有滿滿值得拆解、學習、內化的地方。
+        我做的事就是把那些「成功的拆解」變成你品牌可複用的方法。</p>
+        <p>如果你也在某個關卡停下來，<em>來找我聊聊。</em>
+        或許我貢獻的一個觀點，就能讓你那條卡住的曲線，重新往上長一段。</p>
+      </div>
+      <div class="mf-sign">Bibi · Bi 你成長師</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section id="contact">
+  <div class="wrap">
+    <header class="s-head reveal">
+      <div>
+        <div class="s-num">§ 07 ·  Open the Channel</div>
+        <h2 class="s-title">Let's grow<br><em>your line</em>.</h2>
+        <div class="s-tc">先聊聊你卡在哪 · 不收費的對話也能解很多問題</div>
+      </div>
+      <div class="s-kicker">Reply within 24h<br>業務時間內 · 苗栗 GMT+8</div>
+    </header>
+
+    <div class="cta">
+      <div class="cta-main reveal">
+        <h3>Where do you want <span>your curve</span> to go?</h3>
+        <div class="zh">你的成長曲線 · 下一段該往哪裡長？</div>
+        <p>我服務的客戶從電商、餐飲、團購到品牌新創都有。如果你正在思考要不要下廣告、要不要重整品牌節奏、要不要把 AI 引入工作流——這些，都可以從一段 LINE 對話開始。</p>
+        <div class="cta-actions">
+          <a class="cta-btn primary" href="https://lin.ee/vEtHIRH" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-line"></i> 加 LINE · @uidon</a>
+          <a class="cta-btn" href="https://uidon.com/page/about-ads" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> 文章與案例</a>
+          <a class="cta-btn" href="https://app.uidon.com/calendar" target="_blank" rel="noopener noreferrer"><i class="fa-regular fa-calendar"></i> 電商行事曆</a>
+        </div>
+      </div>
+
+      <div class="cta-side">
+        <div class="cta-fact reveal">
+          <div class="label">Studio</div>
+          <div class="val">宇動 <em>數位</em></div>
+          <div class="sub">uidon.com · 苗栗</div>
+        </div>
+        <div class="cta-fact reveal">
+          <div class="label">Best For</div>
+          <div class="val"><em>D2C</em> · F&amp;B · EC</div>
+          <div class="sub">中小品牌 · 想被看見的好品牌</div>
+        </div>
+        <div class="cta-fact reveal">
+          <div class="label">Reply Window</div>
+          <div class="val">＜<em>24</em>h</div>
+          <div class="sub">營業時間內 · 工作日優先</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="foot-grid">
+    <div>
+      <div class="foot-mast">Bi你<em>成長</em>師</div>
+      <div class="foot-zh">Bibi · 數位行銷顧問 · 宇動數位</div>
+      <div class="foot-meta">
+        <strong>FILE</strong> · BICARBI · GROWTH OPERATOR<br>
+        <strong>EST</strong> · 2025 自立 · 13 YR PRACTICE<br>
+        <strong>SECTOR</strong> · D2C / F&amp;B / EC
+      </div>
+    </div>
+    <div>
+      <div class="foot-h">Channels</div>
+      <div class="foot-list">
+        <a href="https://www.threads.com/@bicarbi" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i> Threads · @bicarbi</a>
+        <a href="https://www.instagram.com/bicarbi/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i> Instagram · @bicarbi</a>
+        <a href="https://www.facebook.com/uidontw" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook"></i> FB · Bi 你成長</a>
+        <a href="https://portaly.cc/bicarbi" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i> Portaly · 全平台</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-h">Studio</div>
+      <div class="foot-list">
+        <a href="https://uidon.com" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-globe"></i> uidon.com</a>
+        <a href="https://lin.ee/vEtHIRH" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-line"></i> LINE · @uidon</a>
+        <a href="https://www.instagram.com/uidontw/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i> 公司 IG</a>
+        <a href="https://app.uidon.com/calendar" target="_blank" rel="noopener noreferrer"><i class="fa-regular fa-calendar"></i> 電商行事曆</a>
+      </div>
+    </div>
+  </div>
+  <div class="colophon-line">
+    <span>© 2026 · Vol.148 · Bibi File</span>
+    <em>Made with ♥ by SuperGalen's Dungeon</em>
+    <span>Editorial Data Salon · 1.0</span>
+  </div>
+</footer>
+
+<!-- ================= BIBI'S CONSOLE (floating live terminal) ================= -->
+<aside class="console min" id="bConsole" aria-label="Bibi live console">
+  <div class="console-bar">
+    <span class="ttl">Bibi · Live Desk</span>
+    <button id="bConsoleMin" type="button" aria-label="Minimize">▴</button>
+  </div>
+  <div class="console-body">
+    <div class="console-line"><span class="k">Status</span><span class="v green"><em>OPERATING</em></span></div>
+    <div class="console-line"><span class="k">Visitors</span><span class="v"><em id="bcVisitors">0</em></span></div>
+    <div class="console-line"><span class="k">Last Ping</span><span class="v" id="bcPing">— ms ago</span></div>
+    <div class="console-line"><span class="k">Reply ETA</span><span class="v"><em>&lt; 24h</em></span></div>
+  </div>
+</aside>
+
+<script>
+/* ============================================================
+   Bibi · Growth Operator
+   - Custom cursor
+   - vanilla canvas growth curve background
+   - GSAP reveals + counters
+   ============================================================ */
+
+(() => {
+  const isTouch = matchMedia('(max-width:768px)').matches;
+
+  /* ---------- Custom cursor ---------- */
+  if(!isTouch){
+    const dot = document.querySelector('.cursor-dot');
+    const ring = document.querySelector('.cursor-ring');
+    let mx=window.innerWidth/2, my=window.innerHeight/2;
+    let rx=mx, ry=my;
+    document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; dot.style.transform=`translate(${mx}px,${my}px) translate(-50%,-50%)`; });
+    function rafCursor(){ rx += (mx-rx)*0.15; ry += (my-ry)*0.15; ring.style.transform=`translate(${rx}px,${ry}px) translate(-50%,-50%)`; requestAnimationFrame(rafCursor); }
+    rafCursor();
+    document.querySelectorAll('a, .svc, .engine-step, .dash-cell, .arsenal-card, .act, .portrait-card').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('is-hover'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('is-hover'));
+    });
+    document.addEventListener('mousedown', () => document.body.classList.add('is-press'));
+    document.addEventListener('mouseup', () => document.body.classList.remove('is-press'));
+  }
+
+  /* ---------- Growth curve canvas (background) ---------- */
+  const cvs = document.getElementById('growth-canvas');
+  const ctx = cvs.getContext('2d');
+  let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+  function resize(){
+    W = cvs.clientWidth = window.innerWidth;
+    H = cvs.clientHeight = window.innerHeight;
+    cvs.width = W*DPR; cvs.height = H*DPR;
+    cvs.style.width = W+'px'; cvs.style.height = H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  // Multiple "growth lines" — each lives a full lifecycle: spawn → live → retreat → respawn
+  const palette = ['#C9342A','#1F5C3D','#C9A24A','#0E1420'];
+  function spawnLine(i){
+    const baseY = H*0.62 + (Math.random()-.5)*H*0.32;
+    return {
+      pts: [],
+      x: -40 - Math.random()*80,                  // start off-screen left
+      step: 5 + Math.random()*4,
+      slope: 0.18 + Math.random()*0.32,
+      noise: Math.random()*200,
+      noiseSpd: 0.007 + Math.random()*0.012,
+      baseY,
+      color: palette[Math.floor(Math.random()*palette.length)],
+      width: 0.7 + Math.random()*0.7,
+      alphaTarget: 0.22 + Math.random()*0.25,
+      alpha: 0,                                   // animated current alpha
+      phase: 'live',                              // 'live' | 'retreat'
+      retreatBoost: 0,
+      pings: [],
+      bornAt: performance.now() + i*220          // staggered spawn
+    };
+  }
+  let lines = Array.from({length:5}, (_,i)=>spawnLine(i));
+  window.addEventListener('resize', () => { lines = Array.from({length:5}, (_,i)=>spawnLine(i)); });
+
+  // Idle decorative dot grid (paper)
+  function drawDots(){
+    ctx.save();
+    ctx.fillStyle='rgba(14,20,32,0.05)';
+    const gap=42;
+    for(let y=gap; y<H; y+=gap){
+      for(let x=gap; x<W; x+=gap){
+        ctx.fillRect(x,y,1,1);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawLine(L, idx, now){
+    // not yet born → silent
+    if(now < L.bornAt) return;
+
+    if(L.phase === 'live'){
+      L.x += L.step;
+      L.noise += L.noiseSpd;
+      const y = L.baseY - L.slope*L.x*0.05 + Math.sin(L.noise)*22 + Math.sin(L.noise*2.3)*8;
+      L.pts.push({x:L.x, y});
+      if(L.pts.length > 260) L.pts.shift();
+      // alpha rises smoothly to target
+      L.alpha += (L.alphaTarget - L.alpha) * 0.035;
+
+      // crossed the right edge → enter retreat phase
+      if(L.x > W + 60){
+        L.phase = 'retreat';
+        L.retreatBoost = 0;
+      }
+
+      // sparse milestone ping
+      if(Math.random() < 0.015 && L.pts.length>8){
+        const p = L.pts[L.pts.length-1];
+        L.pings.push({x:p.x,y:p.y,r:0,life:1});
+      }
+    } else if(L.phase === 'retreat'){
+      // retract from the head: line "drains" off-screen left while alpha eases out
+      L.retreatBoost = Math.min(1, L.retreatBoost + 0.025);
+      const drainPerFrame = 2 + L.retreatBoost*4;          // accelerating retract
+      const dropCount = Math.max(1, Math.round(drainPerFrame));
+      L.pts.splice(0, dropCount);
+      L.alpha *= 0.97;
+
+      if(L.pts.length < 4 || L.alpha < 0.008){
+        // reborn — fade back in at a fresh baseY / colour
+        const newBaseY = H*0.62 + (Math.random()-.5)*H*0.32;
+        L.pts = [];
+        L.x = -40 - Math.random()*80;
+        L.baseY = newBaseY;
+        L.noise = Math.random()*200;
+        L.alpha = 0;
+        L.alphaTarget = 0.22 + Math.random()*0.25;
+        L.color = palette[Math.floor(Math.random()*palette.length)];
+        L.width = 0.7 + Math.random()*0.7;
+        L.phase = 'live';
+        L.retreatBoost = 0;
+        L.bornAt = now + 200 + Math.random()*600;          // small breath before respawn
+      }
+    }
+
+    if(L.pts.length < 2){
+      // still draw fading pings even if line is mostly drained
+      drawPings(L);
+      return;
+    }
+
+    // Per-segment alpha gradient → softer head & tail (no abrupt edges)
+    ctx.save();
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.lineWidth = L.width;
+    const total = L.pts.length;
+    const headFade = Math.min(40, Math.floor(total*0.22));
+    const tailFade = Math.min(28, Math.floor(total*0.16));
+    for(let i=1; i<total; i++){
+      const p0 = L.pts[i-1], p1 = L.pts[i];
+      let segAlpha = 1;
+      if(i < headFade) segAlpha *= i/headFade;            // fade in from the back
+      if(total - i < tailFade) segAlpha *= (total-i)/tailFade; // fade out at the front (advancing tip)
+      ctx.globalAlpha = L.alpha * segAlpha;
+      ctx.strokeStyle = L.color;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    // soft glow pass (also gradient)
+    ctx.lineWidth = L.width*4;
+    for(let i=1; i<total; i++){
+      const p0 = L.pts[i-1], p1 = L.pts[i];
+      let segAlpha = 0.28;
+      if(i < headFade) segAlpha *= i/headFade;
+      if(total - i < tailFade) segAlpha *= (total-i)/tailFade;
+      ctx.globalAlpha = L.alpha * segAlpha;
+      ctx.strokeStyle = L.color;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    // leading-edge highlight: a tiny dot at the very front of the line
+    if(L.phase === 'live' && total > 4){
+      const tip = L.pts[total-1];
+      ctx.globalAlpha = L.alpha * 1.2;
+      ctx.fillStyle = L.color;
+      ctx.beginPath(); ctx.arc(tip.x, tip.y, 1.6, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = L.alpha * 0.35;
+      ctx.beginPath(); ctx.arc(tip.x, tip.y, 4, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+
+    drawPings(L);
+  }
+
+  function drawPings(L){
+    L.pings = L.pings.filter(g=>g.life>0);
+    L.pings.forEach(g=>{
+      g.r += 0.55;
+      g.life -= 0.011;
+      ctx.save();
+      ctx.strokeStyle=L.color;
+      ctx.globalAlpha = Math.max(g.life*0.55,0) * Math.max(L.alpha/L.alphaTarget, 0.25);
+      ctx.lineWidth=0.8;
+      ctx.beginPath(); ctx.arc(g.x,g.y,g.r,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle=L.color;
+      ctx.globalAlpha = Math.max(g.life,0) * Math.max(L.alpha/L.alphaTarget, 0.25);
+      ctx.beginPath(); ctx.arc(g.x,g.y,1.6,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function tick(){
+    const now = performance.now();
+    ctx.clearRect(0,0,W,H);
+    drawDots();
+    lines.forEach((L, i) => drawLine(L, i, now));
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  /* ---------- GSAP Reveals ---------- */
+  if(window.gsap && window.ScrollTrigger){
+    gsap.registerPlugin(ScrollTrigger);
+    document.querySelectorAll('.reveal').forEach(el=>{
+      gsap.to(el, {
+        opacity:1, y:0, duration:1.0, ease:'power3.out',
+        scrollTrigger:{ trigger:el, start:'top 88%' }
+      });
+    });
+
+    // Counters
+    document.querySelectorAll('.dash-cell').forEach(cell=>{
+      const target = parseInt(cell.dataset.target||'0',10);
+      const suffix = cell.dataset.suffix||'';
+      const el = cell.querySelector('.counter');
+      const fmt = n => target>=1000 ? Number(n).toLocaleString('en-US') : Math.round(n);
+      const obj = {n:0};
+      ScrollTrigger.create({
+        trigger:cell, start:'top 80%', once:true,
+        onEnter: () => {
+          gsap.to(obj, { n:target, duration:1.8, ease:'power2.out',
+            onUpdate: () => { el.textContent = fmt(obj.n)+suffix; }
+          });
+        }
+      });
+    });
+
+    // Hero title fade-in stagger
+    gsap.from('.hero-title .br', {
+      opacity:0, y:36, duration:1.05, ease:'power3.out', stagger:0.12, delay:0.2
+    });
+  }
+
+  /* ---------- Three Acts horizontal sticky rail ---------- */
+  // (kept simple: rail is sticky in CSS)
+
+  /* ---------- Engine icon micro-tilt on hover ---------- */
+  document.querySelectorAll('.engine-step').forEach(step=>{
+    const icon = step.querySelector('.e-icon');
+    step.addEventListener('mousemove', e => {
+      const r = step.getBoundingClientRect();
+      const x = (e.clientX - r.left)/r.width - 0.5;
+      const y = (e.clientY - r.top)/r.height - 0.5;
+      icon.style.transform = `translate(${x*8}px,${y*8}px)`;
+    });
+    step.addEventListener('mouseleave', ()=>{ icon.style.transform=''; });
+  });
+
+  /* ============================================================
+     Growth Plotter — click-to-plot canvas, MoM forecast, Bibi reply
+     ============================================================ */
+  (() => {
+    const wrap = document.getElementById('plotWrap');
+    const cvs = document.getElementById('plotCanvas');
+    if(!wrap || !cvs) return;
+    const ctx = cvs.getContext('2d');
+    const tag = document.getElementById('plotTag');
+    const hint = document.getElementById('plotHint');
+    const elCount = document.getElementById('plotCount');
+    const elMom = document.getElementById('plotMom');
+    const elFc = document.getElementById('plotForecast');
+    const elBibi = document.getElementById('plotBibi');
+    const btnReset = document.getElementById('plotReset');
+    const btnAsk = document.getElementById('plotAsk');
+
+    let pts = [];
+    let ripples = [];
+    let mouse = { x: -1, y: -1, inside: false };
+    const maxPts = 8;
+    const easeOut = t => 1 - Math.pow(1-t, 3);
+
+    function fit(){
+      const r = wrap.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio||1, 2);
+      cvs.width = r.width * dpr; cvs.height = r.height * dpr;
+      cvs.style.width = r.width+'px'; cvs.style.height = r.height+'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    fit();
+    window.addEventListener('resize', () => { fit(); });
+
+    function gridDraw(){
+      const r = wrap.getBoundingClientRect();
+      ctx.clearRect(0,0,r.width,r.height);
+      // grid
+      ctx.save();
+      ctx.strokeStyle='rgba(14,20,32,.06)';
+      ctx.lineWidth=1;
+      for(let x=0; x<=r.width; x+=r.width/12){
+        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,r.height); ctx.stroke();
+      }
+      for(let y=0; y<=r.height; y+=r.height/8){
+        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(r.width,y); ctx.stroke();
+      }
+      // baseline
+      ctx.strokeStyle='rgba(14,20,32,.18)';
+      ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0, r.height-26); ctx.lineTo(r.width, r.height-26); ctx.stroke();
+      ctx.restore();
+    }
+
+    function smoothPath(points){
+      if(points.length<2) return null;
+      const sorted = points.slice().sort((a,b)=>a.x-b.x);
+      // Catmull-Rom to Bezier
+      const path = new Path2D();
+      path.moveTo(sorted[0].x, sorted[0].y);
+      for(let i=0; i<sorted.length-1; i++){
+        const p0 = sorted[i-1] || sorted[i];
+        const p1 = sorted[i];
+        const p2 = sorted[i+1];
+        const p3 = sorted[i+2] || p2;
+        for(let t=0; t<=1; t+=0.05){
+          const t2 = t*t, t3 = t2*t;
+          const x = .5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3);
+          const y = .5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3);
+          path.lineTo(x,y);
+        }
+      }
+      return { path, sorted };
+    }
+
+    function render(){
+      const r = wrap.getBoundingClientRect();
+      gridDraw();
+
+      // Mouse crosshair (subtle dotted)
+      if(mouse.inside){
+        ctx.save();
+        ctx.setLineDash([2,4]);
+        ctx.strokeStyle='rgba(14,20,32,.18)';
+        ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(mouse.x, 0); ctx.lineTo(mouse.x, r.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, mouse.y); ctx.lineTo(r.width, mouse.y); ctx.stroke();
+        ctx.setLineDash([]);
+        // soft brand dot at cursor
+        ctx.fillStyle='rgba(201,52,42,.7)';
+        ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 2.5, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+
+      // Ripples
+      const now = performance.now();
+      ripples = ripples.filter(r0 => {
+        const t = (now - r0.t)/700;
+        if(t >= 1) return false;
+        const e = easeOut(t);
+        ctx.save();
+        ctx.strokeStyle = `rgba(201,52,42,${(1-e)*0.6})`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(r0.x, r0.y, 4 + e*42, 0, Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = `rgba(14,20,32,${(1-e)*0.18})`;
+        ctx.beginPath(); ctx.arc(r0.x, r0.y, 4 + e*22, 0, Math.PI*2); ctx.stroke();
+        ctx.restore();
+        return true;
+      });
+
+      if(pts.length === 0) return;
+      const sm = smoothPath(pts);
+      // forecast extension (linear from last 2 sorted points)
+      if(sm && sm.sorted.length >= 2){
+        const s = sm.sorted;
+        const last = s[s.length-1];
+        const prev = s[s.length-2];
+        const slope = (last.y - prev.y)/Math.max(last.x-prev.x, 1);
+        // extrapolate to right edge as forecast
+        const fcX = r.width - 12;
+        const fcY = Math.max(8, last.y + slope*(fcX - last.x));
+        ctx.save();
+        ctx.setLineDash([5,5]);
+        ctx.strokeStyle='rgba(201,162,74,.85)';
+        ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(fcX, fcY); ctx.stroke();
+        ctx.setLineDash([]);
+        // forecast dot
+        ctx.fillStyle='#C9A24A';
+        ctx.beginPath(); ctx.arc(fcX, fcY, 5, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle='#0E1420'; ctx.lineWidth=1; ctx.stroke();
+        // forecast label
+        ctx.fillStyle='#0E1420';
+        ctx.font='10px IBM Plex Mono, monospace';
+        ctx.fillText('M12 FORECAST', fcX-94, fcY-10);
+        ctx.restore();
+      }
+      // glow under curve
+      if(sm){
+        ctx.save();
+        ctx.strokeStyle='rgba(201,52,42,.18)';
+        ctx.lineWidth=8;
+        ctx.lineJoin='round'; ctx.lineCap='round';
+        ctx.stroke(sm.path);
+        ctx.restore();
+        // main curve
+        ctx.save();
+        ctx.strokeStyle='#C9342A';
+        ctx.lineWidth=2;
+        ctx.lineJoin='round'; ctx.lineCap='round';
+        ctx.stroke(sm.path);
+        ctx.restore();
+      }
+      // points (with scale-in animation per point)
+      const tNow = performance.now();
+      pts.forEach((p,i)=>{
+        const age = (tNow - (p.t||tNow))/360;
+        const k = age < 1 ? easeOut(age) : 1;
+        const scale = 0.2 + k*0.8;
+        ctx.save();
+        ctx.globalAlpha = k;
+        ctx.fillStyle='#0E1420';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 5*scale, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle='#F4EFE3';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 2.2*scale, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle='#5C5440';
+        ctx.font='10px IBM Plex Mono, monospace';
+        ctx.fillText(`P${i+1}`, p.x+8, p.y-8);
+        ctx.restore();
+      });
+    }
+
+    // RAF loop
+    (function loop(){ render(); requestAnimationFrame(loop); })();
+
+    function recompute(){
+      elCount.textContent = pts.length;
+      if(pts.length < 2){ elMom.textContent = '—'; elFc.textContent = '—'; return; }
+      const r = wrap.getBoundingClientRect();
+      const sorted = pts.slice().sort((a,b)=>a.x-b.x);
+      // map y (canvas) to revenue value (top=high). max=12, base near bottom
+      const yToVal = y => Math.max(0, ((r.height-26) - y) / (r.height-26)) * 12 + 1; // 1..13 normalized "units"
+      const xToMonth = x => (x / r.width) * 12;
+      const v0 = yToVal(sorted[0].y);
+      const vN = yToVal(sorted[sorted.length-1].y);
+      const mStart = xToMonth(sorted[0].x);
+      const mEnd = xToMonth(sorted[sorted.length-1].x);
+      const months = Math.max(0.5, mEnd - mStart);
+      // MoM compounded growth
+      const ratio = vN/Math.max(v0, 0.001);
+      const mom = (Math.pow(ratio, 1/months) - 1) * 100;
+      // 12-month forecast (extrapolate by linear y at x=width-12)
+      const last = sorted[sorted.length-1];
+      const prev = sorted[sorted.length-2] || sorted[0];
+      const slope = (last.y - prev.y)/Math.max(last.x-prev.x, 1);
+      const fcY = last.y + slope*((r.width-12) - last.x);
+      const fcVal = yToVal(fcY);
+      const multiplier = fcVal / Math.max(v0, 0.001);
+      elMom.innerHTML = (mom>=0?'+':'') + mom.toFixed(1) + '<span style="font-size:14px">%</span>';
+      elFc.innerHTML = '×' + multiplier.toFixed(2) + ' <span style="font-size:14px;color:var(--char-soft)">vs M0</span>';
+    }
+
+    function bibiSay(text){
+      elBibi.innerHTML = '';
+      let i = 0;
+      const cur = document.createElement('span'); cur.className='cursor';
+      function step(){
+        if(i <= text.length){
+          elBibi.textContent = text.slice(0, i);
+          elBibi.appendChild(cur);
+          i++;
+          setTimeout(step, 22 + Math.random()*18);
+        }
+      }
+      step();
+    }
+
+    function bibiVerdict(){
+      if(pts.length < 2){ bibiSay('先點 2 個以上的點，我才能讀你的曲線。'); return; }
+      const sorted = pts.slice().sort((a,b)=>a.x-b.x);
+      const r = wrap.getBoundingClientRect();
+      const yToVal = y => Math.max(0, ((r.height-26) - y) / (r.height-26)) * 12 + 1;
+      const vals = sorted.map(p=>yToVal(p.y));
+      const v0 = vals[0], vN = vals[vals.length-1];
+      const xToMonth = x => (x / r.width) * 12;
+      const months = Math.max(0.5, xToMonth(sorted[sorted.length-1].x) - xToMonth(sorted[0].x));
+      const mom = (Math.pow(vN/Math.max(v0,0.001), 1/months) - 1) * 100;
+      // detect dip
+      let maxDip = 0;
+      for(let i=1; i<vals.length; i++) if(vals[i]<vals[i-1]) maxDip = Math.max(maxDip, vals[i-1]-vals[i]);
+
+      let line;
+      if(mom > 25){
+        line = '這條太陡了，看起來像是新品爆量期。我會擔心兩件事：第一是補貨節奏，第二是回購率撐不起這個斜率。先把預算分一塊出來鎖定鐵粉名單。';
+      } else if(mom > 8){
+        line = '健康的成長曲線。這個斜率代表你已經找到對的素材跟 TA。下一步是把 winning ad set 的預算往上推 20%，同時開兩條 A/B 替補。';
+      } else if(mom > 0 && maxDip > 1){
+        line = '整體往上但中間有掉。多半是廣告疲勞或受眾飽和。我會建議你把素材輪換頻率加快，再開一個 lookalike 換新血。';
+      } else if(mom > 0){
+        line = '緩漲。你還沒有真正的成長飛輪。先別加預算──找到一個能壓低 CPA 的 hook，再放量。';
+      } else if(mom > -5){
+        line = '橫盤，這時候堆預算最痛。先停手看數據：素材沒效？TA 飽和？還是商品力到頂？';
+      } else {
+        line = '這條在掉。先別自責——通常是兩個原因：素材撞牆，或舊客回購斷層。我們從這兩個方向各拉一個假設來測。';
+      }
+      bibiSay(line);
+    }
+
+    wrap.addEventListener('mousemove', e => {
+      const r = wrap.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+      mouse.y = e.clientY - r.top;
+      mouse.inside = true;
+      tag.style.left = mouse.x+'px';
+      tag.style.top = mouse.y+'px';
+      const m = (mouse.x/r.width*12).toFixed(1);
+      tag.textContent = `M${m} · click`;
+    });
+    wrap.addEventListener('mouseleave', () => { mouse.inside = false; });
+
+    wrap.addEventListener('click', e => {
+      if(pts.length >= maxPts) return;
+      const r = wrap.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      pts.push({x, y, t: performance.now()});
+      ripples.push({x, y, t: performance.now()});
+      hint.classList.add('gone');
+      recompute();
+      if(pts.length === 3) bibiSay('OK 我看到趨勢了。再加幾個點曲線會更清楚，或直接按「Bibi 怎麼解？」我給你拆解。');
+    });
+
+    btnReset.addEventListener('click', () => {
+      pts = [];
+      ripples = [];
+      hint.classList.remove('gone');
+      recompute();
+      bibiSay('清空了。重新畫一條你想要的曲線。');
+    });
+    btnAsk.addEventListener('click', bibiVerdict);
+  })();
+
+  /* ============================================================
+     Ad Spend Simulator — dials → ROAS/CPA/Reach + 7-day chart
+     ============================================================ */
+  (() => {
+    const $ = id => document.getElementById(id);
+    const elBudget = $('simBudget'), elHook = $('simHook'), elAud = $('simAud');
+    if(!elBudget) return;
+    const elBudgetV = $('simBudgetV'), elHookV = $('simHookV'), elAudV = $('simAudV');
+    const elRoas = $('simRoas'), elCpa = $('simCpa'), elReach = $('simReach');
+    const elRoasD = $('simRoasDelta'), elCpaD = $('simCpaDelta'), elReachD = $('simReachDelta');
+    const elNarr = $('simNarration');
+    const elBibi = $('simBibi'), elBibiPill = $('simBibiPill');
+    const cvs = $('simChart');
+    const ctx = cvs.getContext('2d');
+
+    let bibiOn = false;
+    let prev = { roas:0, cpa:0, reach:0 };
+
+    function fmt(n){ return n>=1000 ? (n/1000).toFixed(1)+'K' : Math.round(n); }
+
+    function compute(){
+      const budget = +elBudget.value;
+      const hook = +elHook.value;
+      const aud = +elAud.value/100;
+
+      // base model — empirical-ish
+      const hookFactor = 0.5 + (hook/10)*1.6;          // 0.66 ~ 2.1
+      const audFactor = 0.5 + aud * 1.0;               // 0.7 ~ 1.5
+      const fatigue = budget > 20000 ? 1 - Math.min(0.25, (budget-20000)/120000) : 1;
+      const baseRoas = 1.3 * hookFactor * audFactor * fatigue;
+      const baseCpa = Math.max(40, 600 / (hookFactor*audFactor) * (0.6 + 0.4*(budget/50000)));
+      const baseReach = budget / (baseCpa) * (0.7 + 0.5*aud) * 1500;
+
+      const k = bibiOn ? 1.55 : 1;        // Bibi alpha
+      const cpaK = bibiOn ? 0.62 : 1;
+      const reachK = bibiOn ? 1.35 : 1;
+
+      return {
+        roas: baseRoas * k,
+        cpa: baseCpa * cpaK,
+        reach: baseReach * reachK,
+        budget, hook, aud
+      };
+    }
+
+    function updateUI(animated){
+      const r = compute();
+      elBudgetV.textContent = 'NT$ ' + (+elBudget.value).toLocaleString();
+      elHookV.textContent = elHook.value + ' / 10';
+      elAudV.textContent = elAud.value + '%';
+
+      if(animated && window.gsap){
+        const o = { roas: prev.roas, cpa: prev.cpa, reach: prev.reach };
+        gsap.to(o, {
+          roas: r.roas, cpa: r.cpa, reach: r.reach, duration: .55, ease:'power2.out',
+          onUpdate(){
+            elRoas.textContent = o.roas.toFixed(1);
+            elCpa.textContent = Math.round(o.cpa);
+            elReach.textContent = fmt(o.reach);
+          }
+        });
+      } else {
+        elRoas.textContent = r.roas.toFixed(1);
+        elCpa.textContent = Math.round(r.cpa);
+        elReach.textContent = fmt(r.reach);
+      }
+
+      // deltas
+      function setDelta(el, diff, fmtFn, invert){
+        if(Math.abs(diff) < 0.001){ el.classList.add('hidden'); return; }
+        el.classList.remove('hidden');
+        const good = invert ? diff < 0 : diff > 0;
+        el.classList.toggle('bad', !good);
+        el.textContent = (diff>0?'+':'') + fmtFn(diff);
+      }
+      setDelta(elRoasD, r.roas-prev.roas, d=>d.toFixed(1)+'×', false);
+      setDelta(elCpaD, r.cpa-prev.cpa, d=>'NT$ '+Math.round(d), true);
+      setDelta(elReachD, r.reach-prev.reach, d=>fmt(d), false);
+
+      prev = { roas: r.roas, cpa: r.cpa, reach: r.reach };
+
+      // narration
+      let n;
+      if(bibiOn){
+        n = `<em>Bibi 操盤中。</em>同樣的預算 NT$${(+r.budget).toLocaleString()}，ROAS 拉到 ${r.roas.toFixed(1)}× / CPA 壓到 NT$${Math.round(r.cpa)}。差距不是運氣，是十三年的調度肌肉。`;
+      } else if(r.roas > 4 && r.hook >= 8){
+        n = `素材夠強、TA 對位${Math.round(r.aud*100)}%——這是會跑的組合。下一步把預算往上推 20%，同時開 A/B 鎖定下一支 hook。`;
+      } else if(r.cpa > 500){
+        n = `CPA 太高了 (NT$${Math.round(r.cpa)})。先別加預算——把 hook 拉到 7 以上，或重新校準 TA。`;
+      } else if(r.budget > 30000 && r.roas < 2){
+        n = `預算大但 ROAS 沒跑出來——典型的廣告疲勞。把素材輪換頻率加快、開新 lookalike 換血。`;
+      } else {
+        n = `目前 ROAS ${r.roas.toFixed(1)}× / CPA NT$${Math.round(r.cpa)}。<em>把 dial 推到極致，看看你品牌的天花板在哪。</em>`;
+      }
+      // Smooth narration swap
+      if(elNarr.dataset.last !== n){
+        elNarr.classList.add('flip');
+        setTimeout(() => { elNarr.innerHTML = n; elNarr.classList.remove('flip'); }, 180);
+        elNarr.dataset.last = n;
+      }
+
+      drawChart(r);
+    }
+
+    function fitChart(){
+      const r = cvs.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio||1, 2);
+      cvs.width = r.width*dpr; cvs.height = r.height*dpr;
+      cvs.style.width = r.width+'px'; cvs.style.height = r.height+'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    fitChart();
+    window.addEventListener('resize', () => { fitChart(); updateUI(false); });
+
+    function drawChart(r){
+      const W = cvs.parentElement.clientWidth;
+      const H = cvs.parentElement.clientHeight;
+      ctx.clearRect(0,0,W,H);
+      // grid
+      ctx.save();
+      ctx.strokeStyle='rgba(14,20,32,.06)';
+      for(let x=0;x<=W;x+=W/7){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+      ctx.restore();
+      // 7-day projection: revenue = budget * roas * day_factor (ramp)
+      const dailyRev = r.budget * r.roas;
+      const days = 7;
+      const padX = 36, padY = 38;
+      const w = W - padX*2;
+      const h = H - padY*2;
+      const ramp = i => bibiOn ? (0.55 + i*0.09) : (0.7 + i*0.045);
+      const series = Array.from({length:days}, (_,i)=> dailyRev * ramp(i));
+      const peakRef = (r.budget * (bibiOn?6:5)); // visual ceiling
+      const max = Math.max(peakRef, ...series);
+      // line
+      ctx.save();
+      ctx.beginPath();
+      series.forEach((v,i)=>{
+        const x = padX + (i/(days-1))*w;
+        const y = padY + h - (v/max)*h;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.strokeStyle = bibiOn ? '#1F5C3D' : '#C9342A';
+      ctx.lineWidth = 1.8;
+      ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.stroke();
+      // glow
+      ctx.strokeStyle = bibiOn ? 'rgba(31,92,61,.2)' : 'rgba(201,52,42,.18)';
+      ctx.lineWidth = 7;
+      ctx.stroke();
+      // dots
+      series.forEach((v,i)=>{
+        const x = padX + (i/(days-1))*w;
+        const y = padY + h - (v/max)*h;
+        ctx.fillStyle = bibiOn ? '#1F5C3D' : '#C9342A';
+        ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#F4EFE3';
+        ctx.beginPath(); ctx.arc(x,y,1.4,0,Math.PI*2); ctx.fill();
+      });
+      // x labels
+      ctx.fillStyle = '#5C5440';
+      ctx.font='9px IBM Plex Mono, monospace';
+      for(let i=0; i<days; i++){
+        const x = padX + (i/(days-1))*w;
+        ctx.fillText('D'+(i+1), x-7, H-8);
+      }
+      // peak revenue
+      const totalRev = series.reduce((a,b)=>a+b,0);
+      ctx.fillStyle='#0E1420';
+      ctx.font='italic 14px Instrument Serif, serif';
+      ctx.fillText('Σ NT$ '+ (totalRev>=10000? (totalRev/10000).toFixed(1)+'萬' : Math.round(totalRev)), W - padX - 110, 22);
+      ctx.restore();
+    }
+
+    [elBudget, elHook, elAud].forEach(el => el.addEventListener('input', () => updateUI(true)));
+    const readout = document.querySelector('.sim-readout');
+    elBibi.addEventListener('click', () => {
+      bibiOn = !bibiOn;
+      elBibi.classList.toggle('on', bibiOn);
+      elBibiPill.textContent = bibiOn ? 'ON' : 'OFF';
+      readout.classList.toggle('bibi', bibiOn);
+      readout.classList.remove('flash'); void readout.offsetWidth; readout.classList.add('flash');
+      // chart fade then redraw
+      cvs.classList.add('fading');
+      setTimeout(() => { updateUI(true); cvs.classList.remove('fading'); }, 220);
+    });
+
+    updateUI(false);
+  })();
+
+  /* ============================================================
+     Timing Compass — 12-month dial · click for Bibi's playbook
+     ============================================================ */
+  (() => {
+    const dial = document.getElementById('compassDial');
+    if(!dial) return;
+
+    // 12 months of marketing playbook (rooted in TW retail/EC calendar)
+    const data = [
+      { en:'January', zh:'一月', festivals:[{t:'Pre-CNY 補貨期',m:1}], tip:'年前最後一波。<em>禮盒、年菜、伴手禮</em>的回報窗口。素材要打「親情/送禮」情緒鉤。', best:'食品禮盒 · 年菜', hold:'高單價耐久財', budget:'升溫期 · 預算往上推 30%' },
+      { en:'February', zh:'二月', festivals:[{t:'春節',m:1},{t:'西洋情人節',m:1}], tip:'前半月年節休眠、後半月情人節 + 開工 dopamine。<em>情人節要打提早</em>，2/8 前就要鋪。', best:'禮盒 · 情人節', hold:'B2B · 大型決策', budget:'兩段式 · 前低後高' },
+      { en:'March', zh:'三月', festivals:[{t:'女神節 3.8',m:1},{t:'白色情人節',m:0}], tip:'女性受眾的廣告週。美妝、保健、輕奢、穿搭全都會打架。<em>素材必須夠精</em>，否則 CPC 會被洗到很高。', best:'美妝 · 保健 · 服飾', hold:'家電 · 男性向', budget:'競價高峰 · 出價要狠' },
+      { en:'April', zh:'四月', festivals:[{t:'清明',m:0},{t:'兒童節',m:1}], tip:'親子向的小高峰，但整體 4 月是<em>「整理期」</em>──適合 audit、養素材、A/B test，為 5 月母親節練兵。', best:'親子 · 玩具 · 童裝', hold:'婚禮 · 年節', budget:'蓄勢期 · 多測少推' },
+      { en:'May', zh:'五月', festivals:[{t:'母親節',m:1},{t:'520',m:0}], tip:'食品電商的<em>第二大檔</em>，僅次於雙 11。提前兩週鋪「給媽媽的故事」型素材，中段轉到價格促銷。', best:'食品 · 美容 · 珠寶', hold:'戶外 · 男士向', budget:'重火力 · 預算翻倍' },
+      { en:'June', zh:'六月', festivals:[{t:'端午',m:1},{t:'618 年中慶',m:1}], tip:'618 是電商<em>練兵打雙 11</em> 的場。把所有想驗證的素材、頁面、TA 都丟進這個月跑數據。', best:'電商全品 · 食品', hold:'觀望類大決策', budget:'大檔 · 全力推進' },
+      { en:'July', zh:'七月', festivals:[{t:'暑假開跑',m:0},{t:'夏季旅遊',m:0}], tip:'<em>暑假紅利期</em>。冷飲、戶外、旅遊、3C、補習都會出來搶眼球。素材要切短、節奏要快。', best:'旅遊 · 冷飲 · 3C', hold:'室內服務', budget:'維持期 · 穩定加碼' },
+      { en:'August', zh:'八月', festivals:[{t:'七夕情人節',m:1},{t:'父親節',m:1}], tip:'父親節 + 七夕雙拳組合。<em>男性向消費的稀有窗口</em>。男士保健、3C、家電、餐酒這時要重押。', best:'男士 · 餐酒 · 3C', hold:'童裝 · 校園品', budget:'雙峰投放 · 分波段' },
+      { en:'September', zh:'九月', festivals:[{t:'中秋',m:1},{t:'開學季',m:1}], tip:'食品禮盒第三大檔。中秋前兩週是<em>素材黃金窗</em>，月餅、蛋黃酥、咖啡禮盒這時 CPA 會最低。', best:'食品 · 文具 · 教育', hold:'夏季商品', budget:'高峰期 · 預算往上推' },
+      { en:'October', zh:'十月', festivals:[{t:'雙 10',m:0},{t:'雙 11 預熱',m:1}], tip:'整個月都是<em>雙 11 預熱戰</em>。10 月底開始素材鋪量、會員加溫、舊客名單清理。',  best:'電商全品 · D2C', hold:'冷門品類', budget:'醞釀期 · 重投素材測試' },
+      { en:'November', zh:'十一月', festivals:[{t:'雙 11',m:1},{t:'黑五',m:1}], tip:'<em>年度最大檔</em>。預算、人力、客服、物流要 stand by。打不贏雙 11，全年 KPI 就要看 12 月補。', best:'電商全品 · 全產業', hold:'低價慢熱品', budget:'年度頂峰 · 火力全開' },
+      { en:'December', zh:'十二月', festivals:[{t:'雙 12',m:1},{t:'聖誕',m:1},{t:'跨年',m:0}], tip:'雙 12 + 聖誕 + 年終獎金潮三疊加。<em>是回收型而不是測試型</em>的月份──用打贏的素材 scale up。', best:'禮品 · 美妝 · 餐酒', hold:'新品測試', budget:'收尾衝刺 · 預算續推' }
+    ];
+
+    function fitSize(){ return dial.clientWidth; }
+    let size = fitSize();
+    const cx = () => size/2, cy = () => size/2;
+    const ROUT = () => size*0.46;
+    const RIN  = () => size*0.30;
+    const RLBL = () => size*0.385;
+
+    function polar(angle, r){
+      const cxv=cx(), cyv=cy();
+      return [cxv + r*Math.cos(angle), cyv + r*Math.sin(angle)];
+    }
+    function arcPath(start, end, ro, ri){
+      const [x1,y1] = polar(start, ro);
+      const [x2,y2] = polar(end, ro);
+      const [x3,y3] = polar(end, ri);
+      const [x4,y4] = polar(start, ri);
+      const large = (end-start) > Math.PI ? 1 : 0;
+      return `M${x1},${y1} A${ro},${ro} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${ri},${ri} 0 ${large} 0 ${x4},${y4} Z`;
+    }
+
+    let active = -1;
+    let arcEls = [], labelEls = [], needleGroup = null;
+
+    function build(){
+      size = fitSize();
+      const slice = (Math.PI*2)/12;
+      let svg = `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
+
+      svg += `<text x="22" y="26" class="corner-mark">12-Mo Cycle</text>`;
+      svg += `<text x="${size-22}" y="26" class="corner-mark" text-anchor="end">Bibi · ${(new Date().getFullYear())}</text>`;
+      svg += `<text x="22" y="${size-16}" class="corner-mark">N</text>`;
+      svg += `<text x="${size-22}" y="${size-16}" class="corner-mark" text-anchor="end">S</text>`;
+
+      svg += `<circle class="ring-outer" cx="${cx()}" cy="${cy()}" r="${ROUT()}"/>`;
+      svg += `<circle class="ring-mid" cx="${cx()}" cy="${cy()}" r="${(ROUT()+RIN())/2}"/>`;
+      svg += `<circle class="ring-inner" cx="${cx()}" cy="${cy()}" r="${RIN()}"/>`;
+
+      for(let i=0; i<12; i++){
+        const start = -Math.PI/2 + slice*i;
+        const end = start + slice;
+        svg += `<path class="month-arc" data-i="${i}" d="${arcPath(start, end, ROUT(), RIN())}"/>`;
+      }
+      for(let i=0; i<12; i++){
+        const a = -Math.PI/2 + slice*i;
+        const [x1,y1] = polar(a, RIN());
+        const [x2,y2] = polar(a, ROUT());
+        svg += `<line class="month-divider" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+      }
+      for(let i=0; i<12; i++){
+        const a = -Math.PI/2 + slice*i + slice/2;
+        const [x,y] = polar(a, RLBL());
+        svg += `<text class="month-label" data-i="${i}" x="${x}" y="${y+4}">${String(i+1).padStart(2,'0')}</text>`;
+      }
+
+      // Tick marks inside inner ring
+      for(let h=0; h<4; h++){
+        const a = -Math.PI/2 + (Math.PI*2/4)*h;
+        const [x,y] = polar(a, RIN()-12);
+        const tickLabels = ['12·1','3','6','9'];
+        svg += `<text class="center-tick" x="${x}" y="${y+3}">${tickLabels[h]}</text>`;
+      }
+
+      // Needle group — built ONCE so CSS transition works on repeated rotations
+      svg += `<g id="cmpNeedle" style="transform:rotate(0deg);transform-origin:${cx()}px ${cy()}px;transition:transform .9s cubic-bezier(.45,.06,.15,1.4)">`;
+      svg += `<line class="needle" x1="${cx()}" y1="${cy()}" x2="${cx()}" y2="${cy()-RIN()+8}"/>`;
+      svg += `<polygon class="needle-tip" points="${cx()-5},${cy()-RIN()+12} ${cx()+5},${cy()-RIN()+12} ${cx()},${cy()-RIN()-2}"/>`;
+      svg += `</g>`;
+      svg += `<circle class="center-dot" cx="${cx()}" cy="${cy()}" r="5"/>`;
+      svg += '</svg>';
+      dial.innerHTML = svg;
+
+      arcEls = [...dial.querySelectorAll('.month-arc')];
+      labelEls = [...dial.querySelectorAll('.month-label')];
+      needleGroup = dial.querySelector('#cmpNeedle');
+      arcEls.forEach((el,i) => el.addEventListener('click', () => select(i)));
+    }
+
+    function paintActive(){
+      arcEls.forEach((el,i) => el.classList.toggle('active', i===active));
+      labelEls.forEach((el,i) => el.classList.toggle('active', i===active));
+      const ang = active>=0 ? (30*active + 15) : 0;
+      if(needleGroup) needleGroup.style.transform = `rotate(${ang}deg)`;
+    }
+
+    function select(i){
+      active = i;
+      const d = data[i];
+      const num = String(i+1).padStart(2,'0');
+      paintActive();
+
+      const blocks = [
+        document.querySelector('.compass-month'),
+        document.getElementById('cmpFestivals'),
+        document.getElementById('cmpTip'),
+        document.getElementById('cmpSectors')
+      ];
+      const writeContent = () => {
+        document.getElementById('cmpNum').textContent = num;
+        document.getElementById('cmpEn').textContent = d.en;
+        document.getElementById('cmpZh').textContent = `${num} · ${d.zh}`;
+        document.getElementById('cmpFestivals').innerHTML = d.festivals.map(f =>
+          `<span class="compass-festival${f.m? ' major':''}">${f.t}</span>`
+        ).join('');
+        document.getElementById('cmpTip').innerHTML = d.tip;
+        document.getElementById('cmpSectors').innerHTML = `
+          <div class="row"><span>Best for</span><span class="v green">${d.best}</span></div>
+          <div class="row"><span>Hold off</span><span class="v red">${d.hold}</span></div>
+          <div class="row"><span>Budget posture</span><span class="v">${d.budget}</span></div>
+        `;
+      };
+      if(window.gsap){
+        gsap.to(blocks, { opacity:.0, y:6, duration:.18, ease:'power1.out', stagger:.04, onComplete(){
+          writeContent();
+          gsap.fromTo(blocks, { opacity:0, y:14 }, { opacity:1, y:0, duration:.55, ease:'power3.out', stagger:.07 });
+        }});
+      } else { writeContent(); }
+    }
+
+    build();
+    const cur = new Date().getMonth();
+    setTimeout(() => select(cur), 700);
+
+    let resizeT;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => { build(); paintActive(); }, 140);
+    });
+  })();
+
+  /* ============================================================
+     One-Minute Brief Builder — 3 clicks → personalized brief
+     ============================================================ */
+  (() => {
+    const root = document.querySelector('#brief');
+    if(!root) return;
+    const card = document.getElementById('briefCard');
+    const pips = root.querySelectorAll('.brief-progress .pip');
+    const steps = root.querySelectorAll('.brief-step');
+
+    const state = { industry:null, stage:null, goal:null };
+    const labels = {
+      industry: { food:'食品/餐飲', ecom:'電商/日用', service:'服務/體驗', brand:'品牌新創' },
+      stage: { seed:'剛起步', growth:'月營收幾十萬', scale:'月營收破百萬', stuck:'業績停滯' },
+      goal: { acquire:'拉新', retain:'回購', awareness:'品牌曝光', expand:'擴張新戰線' }
+    };
+
+    // Platform mix per industry × goal (heuristic, Bibi-flavored)
+    function platformMix(){
+      const base = {
+        food:    { acquire:['Meta','TikTok'], retain:['LINE','Meta'], awareness:['TikTok','Meta'], expand:['Meta','Google','TikTok'] },
+        ecom:    { acquire:['Meta','Google'], retain:['LINE','Meta'], awareness:['Meta','TikTok'], expand:['Google','Meta','LINE'] },
+        service: { acquire:['Google','Meta'], retain:['LINE','Meta'], awareness:['Meta','Google'], expand:['Google','LINE','Meta'] },
+        brand:   { acquire:['Meta','TikTok'], retain:['Meta','LINE'], awareness:['TikTok','Meta','Threads'], expand:['Meta','Google','TikTok'] }
+      };
+      return base[state.industry]?.[state.goal] || ['Meta','Google'];
+    }
+
+    function firstStep(){
+      const i = state.industry, s = state.stage, g = state.goal;
+      const map = {
+        seed: '先別急著開廣告。<em>把 5 個你最想說服的客戶</em>列出來，把產品說明、FAQ、第一支素材打磨到他們點頭，再開投放。',
+        growth: '檢查你的 ROAS 是不是真的賺。<em>把過去 90 天的 winning ad 找出來</em>，把預算往上推 20%，同時開兩條 A/B 替補。',
+        scale: '建立<em>內部創意輪</em>──每週至少 3 支新素材輪換，搭配舊客 LINE 名單做 retargeting。盈虧平衡點以上的擴張靠系統不靠運氣。',
+        stuck: '先別加預算。<em>找一個能壓低 CPA 的新 hook</em>──通常不是預算問題，是素材撞牆或 TA 飽和。從這兩個方向各拉一個假設來測。'
+      };
+      let lead = map[s] || '先把現況數據攤開，再決定下一步。';
+      if(g === 'awareness' && (i==='brand' || i==='food')) lead += ' 因為你要做的是品牌記憶，<em>短影音是必經之路</em>。';
+      if(g === 'retain') lead += ' 別忘了把舊客名單上 LINE，那會是你最便宜的 CPA。';
+      return lead;
+    }
+
+    function warning(){
+      const i = state.industry, s = state.stage, g = state.goal;
+      if(s === 'stuck' && g === 'expand') return '<em>業績停滯就想擴張</em>是創業者最常踩的坑──先把現有戰線跑順，再想下一條。';
+      if(s === 'seed' && g === 'awareness') return '<em>還沒驗證營收模型就花錢做品牌</em>，多半燒不出回報。先讓營收模型穩，再做 brand campaign。';
+      if(g === 'acquire' && s === 'scale') return '到了月百萬等級，<em>拉新成本會明顯變陡</em>。要把 retain 的飛輪做出來，否則 CAC 會吃掉利潤。';
+      if(i === 'food' && g === 'acquire') return '食品<em>季節性是雙面刃</em>──節慶前兩週 CPA 最低，過了節慶峰值會立刻衰退，預算節奏要對。';
+      if(i === 'service' && g === 'awareness') return '服務業做品牌曝光<em>很難量化 ROAS</em>，建議搭配品牌諮詢量、來電量這類 mid-funnel 指標一起看。';
+      if(i === 'ecom' && s === 'growth' && g === 'retain') return '回購是電商最容易被低估的金礦──<em>EDM/LINE 的開信率才是你真正的領先指標</em>，比 ROAS 還誠實。';
+      return '別把 ROAS 當成唯一指標──<em>品牌記憶、回購率、客單價</em>這三個沒上來，廣告再會跑都會撞牆。';
+    }
+
+    function headline(){
+      const g = state.goal;
+      const map = { acquire:'Pull <em>new traffic.</em>', retain:'Compound <em>old fans.</em>', awareness:'Build <em>brand recall.</em>', expand:'Open <em>new lanes.</em>' };
+      return map[g] || 'Your <em>next move.</em>';
+    }
+
+    function render(){
+      pips.forEach((p,idx) => {
+        const filled = (idx===0 && state.industry) || (idx===1 && state.stage) || (idx===2 && state.goal);
+        p.classList.toggle('on', !!filled);
+      });
+      steps.forEach(s => {
+        const n = +s.dataset.step;
+        const unlocked = (n===1) || (n===2 && state.industry) || (n===3 && state.industry && state.stage);
+        s.classList.toggle('locked', !unlocked);
+      });
+
+      if(!state.industry || !state.stage || !state.goal){
+        card.classList.add('empty');
+        card.classList.remove('filled');
+        const filledCount = [state.industry,state.stage,state.goal].filter(Boolean).length;
+        card.innerHTML = `
+          <div class="brief-empty-msg">
+            <em>${filledCount}/3</em>
+            ${filledCount===0?'回答完左邊三題':'再回答 '+(3-filledCount)+' 題'}<br>我給你一張可帶走的方向卡
+            <span class="brief-empty-deco">${filledCount} clicks</span>
+          </div>`;
+        return;
+      }
+
+      const mix = platformMix();
+      card.classList.remove('empty');
+      card.classList.add('filled');
+      card.innerHTML = `
+        <span class="stamp">Bibi's Brief · ${labels.industry[state.industry]}</span>
+        <h4>${headline()}</h4>
+        <div class="ctx">${labels.industry[state.industry]} · ${labels.stage[state.stage]} · 想做 ${labels.goal[state.goal]}</div>
+        <div class="brief-block">
+          <div class="lab">Recommended Channel Mix</div>
+          <div class="brief-mix">
+            ${mix.map((m,idx)=>`<span${idx===0?' class="heavy"':''}>${m}</span>`).join('')}
+          </div>
+        </div>
+        <div class="brief-block">
+          <div class="lab">First Move · 第一步</div>
+          <div class="body">${firstStep()}</div>
+        </div>
+        <div class="brief-warn">
+          <em>注意</em>──${warning()}
+        </div>
+        <div class="brief-actions">
+          <button class="brief-act-btn" type="button" data-act="reset">Start Over</button>
+          <a class="brief-act-btn brand" href="https://lin.ee/vEtHIRH" target="_blank" rel="noopener noreferrer">想深聊 · 加 LINE</a>
+        </div>`;
+      card.querySelector('[data-act="reset"]')?.addEventListener('click', reset);
+
+      // Stagger reveal each block
+      if(window.gsap){
+        const items = card.querySelectorAll('.stamp, h4, .ctx, .brief-block, .brief-warn, .brief-actions');
+        gsap.fromTo(items, { opacity:0, y:14 }, { opacity:1, y:0, duration:.55, ease:'power3.out', stagger:.07 });
+        // mix chips stagger
+        const chips = card.querySelectorAll('.brief-mix span');
+        gsap.fromTo(chips, { opacity:0, scale:.8 }, { opacity:1, scale:1, duration:.45, ease:'back.out(1.6)', stagger:.06, delay:.25 });
+      }
+    }
+
+    function reset(){
+      state.industry = state.stage = state.goal = null;
+      root.querySelectorAll('.brief-opt.on').forEach(b=>b.classList.remove('on'));
+      render();
+    }
+
+    root.querySelectorAll('.brief-opt').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const r = btn.getBoundingClientRect();
+        btn.style.setProperty('--rx', ((e.clientX-r.left)/r.width*100)+'%');
+        btn.style.setProperty('--ry', ((e.clientY-r.top)/r.height*100)+'%');
+        btn.classList.remove('rip'); void btn.offsetWidth; btn.classList.add('rip');
+        const group = btn.closest('.brief-options').dataset.group;
+        const val = btn.dataset.val;
+        state[group] = val;
+        btn.parentElement.querySelectorAll('.brief-opt.on').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        render();
+      });
+    });
+
+    render();
+  })();
+
+  /* ============================================================
+     Bibi's Console — floating live mini-terminal
+     ============================================================ */
+  (() => {
+    const c = document.getElementById('bConsole');
+    if(!c) return;
+    const elV = document.getElementById('bcVisitors');
+    const elP = document.getElementById('bcPing');
+    const minBtn = document.getElementById('bConsoleMin');
+    const start = Math.floor(800 + Math.random()*400);
+    let n = start;
+    let lastPing = Date.now();
+
+    setTimeout(() => c.classList.add('up'), 1200);
+
+    setInterval(() => {
+      n += Math.random() < 0.65 ? 1 : 0;
+      elV.textContent = n.toLocaleString();
+    }, 1800);
+    setInterval(() => {
+      const ago = Math.floor((Date.now()-lastPing)/1000);
+      elP.textContent = ago < 60 ? ago+' s ago' : Math.floor(ago/60)+' m ago';
+    }, 1000);
+    setInterval(() => { lastPing = Date.now(); }, 8000 + Math.random()*4000);
+
+    minBtn.addEventListener('click', () => {
+      const min = c.classList.toggle('min');
+      minBtn.textContent = min ? '▴' : '▾';
+    });
+  })();
+
+})();
+</script>
+
+</body>
+</html>
