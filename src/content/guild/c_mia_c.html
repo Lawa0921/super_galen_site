@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MIA · ᴹᴵᴬ ｜ 唯朵美學嘉義 — 七年美業職人。一朵一朵地顧。美甲・美睫・霧眉・霧唇・無創粉嫩唇・科技育髮・足部護理。慢步調的嘉義小工作室。">
+<title>MIA · ᴹᴵᴬ ｜ 唯朵美學．一朵一朵地顧</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Noto+Serif+TC:wght@300;500&family=Noto+Sans+TC:wght@300;400;700&family=Caveat&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js" defer></script>
+<style>
+:root{
+  --cream:#F5EAE0; --cream-2:#EFE0D2; --paper:#FAF4EC;
+  --rose:#C9A099; --rose-deep:#A87B73; --rose-bloom:#D9B3A8;
+  --mauve:#B8A4C9; --coral:#E8A48A;
+  --gold-deep:#A88B5F;
+  --ink:#3F3530; --ink-deep:#1F1B1A; --ink-soft:#6B5D55; --whisper:#8B7D75;
+  --font-display:'Cormorant Garamond',serif;
+  --font-serif:'Noto Serif TC',serif;
+  --font-body:'Noto Sans TC',sans-serif;
+  --font-script:'Caveat',cursive;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:clip}
+html{scroll-behavior:smooth;background:var(--cream)}
+body{
+  background:
+    radial-gradient(ellipse 80% 60% at 18% 8%, rgba(232,164,138,.20) 0%, transparent 62%),
+    radial-gradient(ellipse 70% 50% at 86% 28%, rgba(184,164,201,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 60% at 50% 92%, rgba(201,160,153,.22) 0%, transparent 65%),
+    linear-gradient(180deg, #FAF4EC 0%, #F5EAE0 28%, #EFE0D2 64%, #E8D5C2 100%);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-weight:300;
+  line-height:1.85;
+  letter-spacing:.02em;
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference){ body{cursor:none} }
+
+/* ===== Cursor (opt-in) ===== */
+.cursor-dot,.cursor-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;border-radius:50%;mix-blend-mode:multiply;will-change:transform;display:none}
+@media (hover:hover) and (prefers-reduced-motion:no-preference){
+  .cursor-dot,.cursor-ring{display:block}
+}
+.cursor-dot{width:6px;height:6px;background:var(--rose-deep);transform:translate(-50%,-50%)}
+.cursor-ring{width:34px;height:34px;border:1px solid rgba(168,123,115,.5);transform:translate(-50%,-50%);transition:width .22s, height .22s, background .22s}
+.cursor-ring.hover{width:58px;height:58px;background:rgba(201,160,153,.18);border-color:rgba(168,123,115,.8)}
+
+/* ===== Background layers (no shader) ===== */
+#mist-p5{position:fixed;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:.55}
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.42;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.32'/></svg>")}
+.softlights{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(circle 280px at 12% 22%, rgba(232,164,138,.32), transparent 70%),
+    radial-gradient(circle 360px at 88% 18%, rgba(184,164,201,.22), transparent 70%),
+    radial-gradient(circle 320px at 78% 78%, rgba(201,160,153,.28), transparent 72%),
+    radial-gradient(circle 260px at 18% 86%, rgba(212,184,150,.24), transparent 70%);
+  filter:blur(2px)}
+
+.page{position:relative;z-index:5}
+section{position:relative;padding:130px 6vw;max-width:100vw}
+@media (max-width:720px){ section{padding:90px 5vw} }
+
+/* ===== Top archive nav ===== */
+.archive-nav{position:fixed;top:24px;left:24px;z-index:9000;text-decoration:none;color:var(--ink-soft);font-family:var(--font-display);font-size:14px;letter-spacing:.18em;padding:8px 14px;background:rgba(250,244,236,.7);backdrop-filter:blur(8px);border:1px solid rgba(168,123,115,.25);border-radius:24px;transition:all .3s}
+.archive-nav:hover{color:var(--ink-deep);background:rgba(250,244,236,.92);border-color:var(--rose-deep)}
+.archive-nav i{margin-right:6px}
+
+/* ===== HERO ===== */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;padding-top:90px}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:80px;max-width:1280px;width:100%;align-items:center}
+@media (max-width:980px){ .hero-grid{grid-template-columns:1fr;gap:50px;text-align:center} }
+
+.hero-text{position:relative}
+.hero-greet{font-family:var(--font-script);font-size:clamp(20px,2.4vw,28px);color:var(--rose-deep);margin-bottom:16px;opacity:0}
+.hero-name{font-family:var(--font-display);font-weight:300;font-size:clamp(78px,12vw,180px);line-height:.92;color:var(--ink-deep);letter-spacing:-.02em;margin-bottom:8px}
+.hero-name .ch{display:inline-block;opacity:0;transform:translateY(40px)}
+.hero-name .ch.gold{color:transparent;-webkit-text-stroke:1.4px var(--gold-deep)}
+.hero-tag{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 24px}
+@media (max-width:980px){ .hero-tag{justify-content:center} }
+.hero-tag span{font-family:var(--font-serif);font-size:13px;letter-spacing:.18em;color:var(--rose-deep);padding:4px 12px;border:1px solid rgba(168,123,115,.35);border-radius:24px;background:rgba(250,244,236,.5);opacity:0}
+.hero-sub{font-family:var(--font-serif);font-weight:300;font-size:clamp(16px,1.4vw,19px);color:var(--ink-soft);max-width:520px;margin-bottom:28px;opacity:0}
+@media (max-width:980px){ .hero-sub{margin-left:auto;margin-right:auto} }
+.hero-meta{display:flex;flex-wrap:wrap;gap:22px;font-family:var(--font-display);font-size:14px;letter-spacing:.16em;color:var(--whisper);opacity:0}
+@media (max-width:980px){ .hero-meta{justify-content:center} }
+.hero-meta i{color:var(--rose-deep);margin-right:6px}
+
+.hero-portrait{position:relative;aspect-ratio:4/5;width:100%;max-width:440px;margin:0 auto}
+.hero-portrait .frame{position:absolute;inset:0;border-radius:8px;overflow:hidden;box-shadow:0 30px 80px rgba(63,53,48,.22), 0 8px 24px rgba(168,123,115,.18);transform:rotate(-2deg);background:#000}
+.hero-portrait .frame img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.05) contrast(1.02)}
+.hero-portrait .frame::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, transparent 60%, rgba(31,27,26,.45) 100%)}
+.hero-portrait .corner-tag{position:absolute;font-family:var(--font-display);font-size:12px;letter-spacing:.22em;color:var(--paper);z-index:5;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.hero-portrait .corner-tag.tl{top:18px;left:18px}
+.hero-portrait .corner-tag.br{bottom:18px;right:18px}
+.hero-portrait .stamp{position:absolute;bottom:-30px;right:-26px;width:128px;height:128px;border-radius:50%;background:radial-gradient(circle, var(--rose) 0%, var(--rose-deep) 100%);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:11px;letter-spacing:.24em;text-align:center;box-shadow:0 12px 30px rgba(168,123,115,.45);transform:rotate(8deg);z-index:6;line-height:1.4}
+.hero-portrait .stamp::before{content:'';position:absolute;inset:8px;border:1px dashed rgba(250,244,236,.55);border-radius:50%}
+.hero-portrait .stamp .small{display:block;font-size:9px;letter-spacing:.3em;margin-top:4px;opacity:.85}
+.hero-portrait .strip{position:absolute;left:-30px;top:24%;background:var(--ink-deep);color:var(--paper);font-family:var(--font-display);font-size:11px;letter-spacing:.32em;padding:8px 18px;writing-mode:vertical-rl;text-orientation:mixed;z-index:6;box-shadow:0 6px 16px rgba(31,27,26,.3)}
+
+/* ===== SECTION HEADERS ===== */
+.sec-num{font-family:var(--font-display);font-size:14px;letter-spacing:.32em;color:var(--rose-deep);margin-bottom:12px;display:block}
+.sec-num::before{content:'';display:inline-block;width:36px;height:1px;background:var(--rose-deep);vertical-align:middle;margin-right:14px}
+.sec-title{font-family:var(--font-display);font-weight:300;font-size:clamp(42px,6vw,82px);line-height:1;color:var(--ink-deep);margin-bottom:18px;letter-spacing:-.01em}
+.sec-title em{font-style:italic;color:var(--rose-deep);font-weight:400}
+.sec-lede{font-family:var(--font-serif);font-weight:300;font-size:clamp(16px,1.3vw,18px);color:var(--ink-soft);max-width:640px;margin-bottom:60px}
+
+/* ===== Section: 流浪四年（嘉義↔台中 timeline） ===== */
+.journey{padding-top:90px}
+.journey-wrap{max-width:1100px;margin:0 auto}
+.journey-line{position:relative;margin:60px 0;padding:0 12px}
+.j-rail{position:absolute;left:0;right:0;top:50%;height:2px;background:linear-gradient(90deg, transparent 0%, var(--rose-deep) 18%, var(--rose-deep) 82%, transparent 100%);transform:translateY(-50%)}
+.j-rail::before,.j-rail::after{content:'';position:absolute;top:50%;width:18px;height:18px;border-radius:50%;background:var(--rose-deep);transform:translateY(-50%);box-shadow:0 0 0 5px var(--cream)}
+.j-rail::before{left:-2px}
+.j-rail::after{right:-2px}
+.j-stops{position:relative;display:flex;justify-content:space-between;align-items:center;min-height:280px;flex-wrap:wrap;gap:20px}
+.j-stop{position:relative;flex:1;min-width:140px;max-width:230px;text-align:center;padding:0 8px}
+.j-stop .pin{width:14px;height:14px;border-radius:50%;background:var(--cream);border:2px solid var(--rose-deep);margin:0 auto;position:relative;z-index:2}
+.j-stop.now .pin{background:var(--rose-deep);box-shadow:0 0 0 6px rgba(168,123,115,.22), 0 0 0 12px rgba(168,123,115,.1);width:18px;height:18px}
+.j-stop .yr{font-family:var(--font-display);font-size:13px;letter-spacing:.24em;color:var(--rose-deep);margin-top:14px}
+.j-stop .place{font-family:var(--font-serif);font-weight:500;font-size:18px;color:var(--ink-deep);margin-top:6px}
+.j-stop .note{font-size:13px;color:var(--ink-soft);margin-top:6px;line-height:1.6;font-family:var(--font-body)}
+@media (max-width:780px){
+  .j-rail{display:none}
+  .j-stops{flex-direction:column;align-items:flex-start}
+  .j-stop{text-align:left;padding-left:24px;border-left:2px dashed var(--rose);max-width:100%;width:100%}
+  .j-stop .pin{position:absolute;left:-9px;top:0}
+}
+
+.journey-quote{margin-top:50px;text-align:center;font-family:var(--font-serif);font-style:italic;font-size:clamp(18px,2vw,24px);color:var(--ink-deep);line-height:1.7;max-width:780px;margin-left:auto;margin-right:auto;font-weight:300}
+.journey-quote::before,.journey-quote::after{font-family:var(--font-display);color:var(--rose);font-size:38px;line-height:0;vertical-align:-12px}
+.journey-quote::before{content:'“ ';margin-right:6px}
+.journey-quote::after{content:' ”';margin-left:6px}
+
+/* ===== Section: 一指多藝（八項服務） ===== */
+.services{padding-top:60px}
+.svc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1180px;margin:0 auto}
+@media (max-width:900px){ .svc-grid{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:480px){ .svc-grid{grid-template-columns:1fr} }
+.svc-card{position:relative;padding:32px 22px;background:rgba(250,244,236,.55);border:1px solid rgba(168,123,115,.18);border-radius:6px;transition:all .35s;backdrop-filter:blur(4px)}
+.svc-card:hover{transform:translateY(-4px);background:rgba(250,244,236,.85);border-color:var(--rose-deep);box-shadow:0 18px 40px rgba(168,123,115,.18)}
+.svc-card .num{font-family:var(--font-display);font-size:11px;letter-spacing:.3em;color:var(--rose-deep);opacity:.7}
+.svc-card .ic{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg, var(--rose-bloom), var(--rose));color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:18px;margin:14px 0 16px}
+.svc-card h4{font-family:var(--font-serif);font-weight:500;font-size:19px;color:var(--ink-deep);margin-bottom:8px}
+.svc-card p{font-size:13px;color:var(--ink-soft);line-height:1.7}
+
+/* ===== Section: 真品畫廊 ===== */
+.gallery{background:linear-gradient(180deg, transparent 0%, rgba(232,213,194,.35) 30%, rgba(232,213,194,.35) 70%, transparent 100%)}
+.gal-track{display:grid;grid-template-columns:repeat(12, 1fr);grid-auto-rows:80px;gap:14px;max-width:1280px;margin:0 auto}
+@media (max-width:900px){ .gal-track{grid-template-columns:repeat(6,1fr);grid-auto-rows:60px} }
+.gal-item{position:relative;overflow:hidden;border-radius:4px;box-shadow:0 12px 30px rgba(63,53,48,.14)}
+.gal-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s ease}
+.gal-item:hover img{transform:scale(1.06)}
+.gal-item::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, transparent 60%, rgba(31,27,26,.35) 100%);pointer-events:none;opacity:0;transition:opacity .4s}
+.gal-item:hover::after{opacity:1}
+.gal-item .cap{position:absolute;left:14px;bottom:12px;color:var(--paper);font-family:var(--font-display);font-size:12px;letter-spacing:.22em;opacity:0;transform:translateY(8px);transition:all .4s;z-index:2}
+.gal-item:hover .cap{opacity:1;transform:translateY(0)}
+
+.gal-1{grid-column:span 5;grid-row:span 5}
+.gal-2{grid-column:span 4;grid-row:span 3}
+.gal-3{grid-column:span 3;grid-row:span 4}
+.gal-4{grid-column:span 4;grid-row:span 4}
+.gal-5{grid-column:span 3;grid-row:span 3}
+.gal-6{grid-column:span 5;grid-row:span 4}
+@media (max-width:900px){
+  .gal-1{grid-column:span 6;grid-row:span 4}
+  .gal-2{grid-column:span 6;grid-row:span 3}
+  .gal-3{grid-column:span 3;grid-row:span 3}
+  .gal-4{grid-column:span 3;grid-row:span 3}
+  .gal-5{grid-column:span 3;grid-row:span 3}
+  .gal-6{grid-column:span 3;grid-row:span 3}
+}
+
+/* ===== Section: 跨界四身分 ===== */
+.identity{padding-top:60px}
+.id-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1180px;margin:0 auto;perspective:1200px}
+@media (max-width:900px){ .id-grid{grid-template-columns:repeat(2,1fr)} }
+.id-card{position:relative;aspect-ratio:3/4;cursor:pointer;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.7,0,.3,1)}
+.id-card.flipped{transform:rotateY(180deg)}
+.id-face{position:absolute;inset:0;border-radius:6px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-shadow:0 14px 36px rgba(63,53,48,.18);display:flex;flex-direction:column;justify-content:flex-end;padding:22px}
+.id-front{background-size:cover;background-position:center;color:var(--paper)}
+.id-front::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(31,27,26,.1) 0%, rgba(31,27,26,.78) 100%)}
+.id-front>*{position:relative;z-index:2}
+.id-front .role{font-family:var(--font-display);font-size:11px;letter-spacing:.32em;opacity:.85;margin-bottom:6px}
+.id-front .role-zh{font-family:var(--font-serif);font-weight:500;font-size:24px;line-height:1.3}
+.id-front .hint{position:absolute;top:18px;right:18px;font-family:var(--font-display);font-size:10px;letter-spacing:.24em;opacity:.85;display:flex;align-items:center;gap:5px;z-index:2}
+.id-back{transform:rotateY(180deg);background:linear-gradient(165deg, var(--paper) 0%, var(--cream-2) 100%);color:var(--ink-deep);justify-content:flex-start;border:1px solid rgba(168,123,115,.2)}
+.id-back .ic{font-size:22px;color:var(--rose-deep);margin-bottom:14px}
+.id-back h5{font-family:var(--font-serif);font-weight:500;font-size:18px;margin-bottom:10px;color:var(--ink-deep)}
+.id-back p{font-size:13px;color:var(--ink-soft);line-height:1.75;flex:1}
+.id-back .stamp{font-family:var(--font-script);font-size:18px;color:var(--rose-deep);text-align:right}
+
+/* ===== Section: 拜天宮 family ===== */
+.family{padding:130px 6vw;background:linear-gradient(180deg, transparent 0%, rgba(232,213,194,.4) 50%, transparent 100%)}
+.family-wrap{max-width:980px;margin:0 auto;text-align:center}
+.family-stage{position:relative;height:200px;margin:50px 0;display:flex;align-items:center;justify-content:center}
+.family-stage svg{width:100%;height:100%;max-width:720px}
+.family-cap{font-family:var(--font-script);font-size:20px;color:var(--rose-deep);margin-top:12px}
+.family-text{font-family:var(--font-serif);font-weight:300;font-size:clamp(16px,1.4vw,19px);color:var(--ink-soft);line-height:1.95;max-width:720px;margin:0 auto}
+.family-text strong{color:var(--rose-deep);font-weight:500}
+
+/* ===== CTA / 預約 ===== */
+.cta{padding:160px 6vw 130px;text-align:center}
+.cta-wrap{max-width:760px;margin:0 auto}
+.cta-eye{font-family:var(--font-script);font-size:26px;color:var(--rose-deep);margin-bottom:8px}
+.cta h2{font-family:var(--font-display);font-weight:300;font-size:clamp(48px,7vw,96px);line-height:1.05;color:var(--ink-deep);margin-bottom:20px;letter-spacing:-.02em}
+.cta h2 em{font-style:italic;color:var(--rose-deep)}
+.cta p{font-family:var(--font-serif);font-size:17px;color:var(--ink-soft);margin-bottom:36px;line-height:1.85}
+.cta-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.cta-btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:14px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;padding:18px 30px;border-radius:30px;transition:all .35s}
+.cta-btn.primary{background:var(--ink-deep);color:var(--paper);border:1px solid var(--ink-deep)}
+.cta-btn.primary:hover{background:var(--rose-deep);border-color:var(--rose-deep);transform:translateY(-2px);box-shadow:0 14px 30px rgba(168,123,115,.32)}
+.cta-btn.ghost{background:transparent;color:var(--ink-deep);border:1px solid var(--ink-deep)}
+.cta-btn.ghost:hover{background:var(--ink-deep);color:var(--paper)}
+.cta-loc{margin-top:30px;font-family:var(--font-display);font-size:12px;letter-spacing:.28em;color:var(--whisper)}
+.cta-loc i{color:var(--rose-deep);margin-right:6px}
+
+/* ===== Footer ===== */
+footer{padding:60px 6vw 40px;text-align:center;border-top:1px solid rgba(168,123,115,.2);background:rgba(250,244,236,.4)}
+footer .made{font-family:var(--font-display);font-size:12px;letter-spacing:.24em;color:var(--whisper)}
+footer .made i{color:var(--rose-deep);margin:0 4px}
+footer .links{display:flex;gap:18px;justify-content:center;margin-top:18px}
+footer .links a{color:var(--ink-soft);font-size:18px;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(168,123,115,.3);transition:all .3s;text-decoration:none}
+footer .links a:hover{background:var(--rose-deep);color:var(--paper);border-color:var(--rose-deep);transform:translateY(-2px)}
+
+/* ===== Fogged mirror canvas (hero portrait) ===== */
+.fog-canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;z-index:3;touch-action:none}
+.fog-canvas:active{cursor:grabbing}
+.fog-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;font-family:var(--font-display);font-size:12px;letter-spacing:.32em;color:var(--paper);background:rgba(31,27,26,.55);backdrop-filter:blur(2px);padding:8px 16px;border-radius:24px;pointer-events:none;animation:fogHintPulse 2.4s ease-in-out infinite;display:flex;align-items:center;gap:8px;white-space:nowrap}
+@keyframes fogHintPulse{0%,100%{opacity:.85;transform:translate(-50%,-50%) scale(1)}50%{opacity:.55;transform:translate(-50%,-50%) scale(1.04)}}
+.frame.fog-cleared .fog-hint{opacity:0;transition:opacity .8s}
+
+/* ===== 唯朵花房 — bloom garden (replaces shrine) ===== */
+.garden{padding:140px 6vw;background:radial-gradient(ellipse at center top, rgba(232,164,138,.12) 0%, transparent 50%)}
+.garden-wrap{max-width:1180px;margin:0 auto}
+.garden-head{text-align:center;margin-bottom:50px}
+.garden-stage{position:relative;background:linear-gradient(180deg, rgba(250,244,236,.6) 0%, rgba(232,213,194,.5) 100%);border-radius:14px;padding:60px 40px 40px;box-shadow:inset 0 1px 0 rgba(250,244,236,.6), 0 18px 50px rgba(63,53,48,.12);overflow:hidden}
+.garden-stage::before{content:'';position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(180deg, transparent 0%, rgba(168,123,115,.18) 100%)}
+.garden-stage::after{content:'';position:absolute;left:5%;right:5%;bottom:32px;height:1px;background:repeating-linear-gradient(90deg, var(--rose-deep) 0 10px, transparent 10px 22px);opacity:.35}
+.garden-svg{display:block;width:100%;height:auto;position:relative;z-index:2}
+.bloom{cursor:pointer;transform-box:fill-box;transform-origin:center bottom;transition:transform .5s cubic-bezier(.5,1.6,.4,1);pointer-events:bounding-box}
+.bloom .petal-grp{transform-box:fill-box;transform-origin:center;transform:scale(.55) rotate(-8deg);opacity:.78;transition:transform .7s cubic-bezier(.5,1.7,.4,1), opacity .5s}
+.bloom .pistil{transform-box:fill-box;transform-origin:center;transform:scale(.6);transition:transform .7s cubic-bezier(.5,1.7,.4,1)}
+.bloom .stem{transform-box:fill-box;transform-origin:center bottom;transform:scaleY(.7);transition:transform .7s cubic-bezier(.4,1,.4,1)}
+.bloom:hover .petal-grp, .bloom.bloomed .petal-grp{transform:scale(1) rotate(0deg);opacity:1}
+.bloom:hover .pistil, .bloom.bloomed .pistil{transform:scale(1)}
+.bloom:hover .stem, .bloom.bloomed .stem{transform:scaleY(1)}
+.bloom:hover{transform:translateY(-2px)}
+.bloom .label{font-family:var(--font-serif);font-size:13px;fill:var(--ink-deep);font-weight:500;opacity:0;transition:opacity .4s}
+.bloom:hover .label, .bloom.bloomed .label{opacity:1}
+.garden-info{margin-top:30px;min-height:80px;text-align:center;font-family:var(--font-serif);font-size:17px;color:var(--ink-soft);line-height:1.85;padding:0 20px}
+.garden-info .ginfo-title{font-weight:500;color:var(--ink-deep);margin-right:10px}
+.garden-info.empty{color:var(--whisper);font-style:italic}
+.garden-quote{margin-top:50px;text-align:center;font-family:var(--font-script);font-size:clamp(22px,2.4vw,28px);color:var(--rose-deep);line-height:1.6}
+.garden-quote .small{display:block;font-family:var(--font-display);font-size:11px;letter-spacing:.32em;color:var(--whisper);margin-top:10px;font-style:normal}
+
+/* ===== Bloom click trail ===== */
+.click-bloom{position:fixed;width:36px;height:36px;pointer-events:none;z-index:9998;transform:translate(-50%,-50%) scale(.2);opacity:0}
+
+/* ===== 美甲試色 nail try-on ===== */
+.tryon{padding:140px 6vw;background:linear-gradient(180deg, transparent 0%, rgba(250,244,236,.6) 50%, transparent 100%)}
+.tryon-wrap{max-width:1100px;margin:0 auto}
+.tryon-stage{display:grid;grid-template-columns:1.4fr .9fr;gap:50px;margin-top:40px;align-items:center}
+@media (max-width:900px){ .tryon-stage{grid-template-columns:1fr;gap:30px} }
+.tryon-hand{background:linear-gradient(180deg, rgba(250,244,236,.7) 0%, rgba(232,213,194,.55) 100%);border-radius:18px;padding:30px 24px 20px;box-shadow:0 18px 50px rgba(63,53,48,.12), inset 0 1px 0 rgba(250,244,236,.6);position:relative;overflow:hidden}
+.tryon-hand::before{content:'';position:absolute;left:0;right:0;top:0;height:60%;background:radial-gradient(ellipse at 50% 0%, rgba(250,244,236,.6), transparent 70%);pointer-events:none}
+.tryon-svg{display:block;width:100%;height:auto;position:relative}
+.nail{cursor:pointer;transition:transform .25s, filter .25s;transform-box:fill-box;transform-origin:center}
+.nail:hover{transform:translateY(-3px) scale(1.04);filter:drop-shadow(0 4px 8px rgba(168,123,115,.3))}
+.nail-base{transition:fill .55s ease}
+.nail-shimmer{opacity:0;transition:opacity .5s}
+.nail-foil{opacity:0;transition:opacity .5s}
+.nail.has-shimmer .nail-shimmer{opacity:1}
+.nail.has-foil .nail-foil{opacity:1}
+.nail-num{font-family:var(--font-display);font-size:9px;letter-spacing:.18em;fill:var(--whisper);font-weight:500}
+.tryon-hint{margin-top:16px;text-align:center;font-family:var(--font-display);font-size:11px;letter-spacing:.28em;color:var(--whisper)}
+.brush-display{display:flex;align-items:center;gap:12px;justify-content:center;margin:0 auto 18px;padding:10px 18px;background:rgba(31,27,26,.88);border-radius:30px;width:fit-content;color:var(--paper);font-family:var(--font-display);font-size:12px;letter-spacing:.22em;box-shadow:0 8px 24px rgba(31,27,26,.22)}
+.brush-display .brush-dot{width:22px;height:22px;border-radius:50%;background:#C9A099;border:2px solid var(--paper);box-shadow:inset 0 1px 3px rgba(255,255,255,.4), 0 2px 6px rgba(0,0,0,.25);transition:background .35s, transform .25s;flex-shrink:0}
+.brush-display.flash .brush-dot{transform:scale(1.25)}
+.brush-display .brush-name{white-space:nowrap}
+.brush-display .brush-add{font-size:10px;letter-spacing:.18em;opacity:.7;padding-left:8px;border-left:1px solid rgba(250,244,236,.3);margin-left:4px}
+.brush-display .brush-add.empty{display:none}
+
+.tryon-controls{display:flex;flex-direction:column;gap:22px}
+.ctrl-group{padding:18px;background:rgba(250,244,236,.55);border-radius:10px;border:1px solid rgba(168,123,115,.15)}
+.ctrl-group h5{font-family:var(--font-display);font-size:11px;letter-spacing:.32em;color:var(--rose-deep);margin-bottom:14px;text-transform:uppercase}
+.swatch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.swatch{width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;border:2px solid rgba(250,244,236,.7);box-shadow:0 4px 10px rgba(63,53,48,.12), inset 0 1px 2px rgba(250,244,236,.4);transition:all .25s;position:relative;overflow:hidden;align-self:stretch}
+.swatch:hover{transform:scale(1.08)}
+.swatch.active{border-color:var(--ink-deep);box-shadow:0 8px 22px rgba(63,53,48,.32), 0 0 0 4px var(--paper), 0 0 0 6px var(--ink-deep);transform:scale(1.16)}
+.swatch.active::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;top:50%;left:50%;color:var(--paper);font-size:14px;transform:translate(-50%,-50%);text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.swatch[data-effect="marble"]{background:radial-gradient(circle at 30% 40%, #F2C4AE 0%, #C9A099 35%, #B8A4C9 70%, #A87B73 100%)}
+.swatch[data-effect="marble"]::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg, transparent 30%, rgba(250,244,236,.3) 50%, transparent 70%);border-radius:50%}
+.swatch-label{font-family:var(--font-body);font-size:10px;text-align:center;color:var(--ink-soft);margin-top:4px;letter-spacing:.05em;line-height:1.3}
+.swatch-cell{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+
+.toggle-row{display:flex;gap:10px}
+.toggle{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border:1px solid rgba(168,123,115,.3);border-radius:24px;background:rgba(250,244,236,.4);font-family:var(--font-display);font-size:11px;letter-spacing:.18em;color:var(--ink-soft);cursor:pointer;transition:all .25s;user-select:none}
+.toggle:hover{border-color:var(--rose-deep);color:var(--ink-deep)}
+.toggle.on{background:var(--ink-deep);color:var(--paper);border-color:var(--ink-deep)}
+.toggle i{font-size:11px}
+
+.tryon-recipe{padding:14px 16px;background:rgba(250,244,236,.7);border-left:3px solid var(--rose-deep);border-radius:0 8px 8px 0;font-family:var(--font-serif);font-size:13px;color:var(--ink-soft);line-height:1.7;min-height:54px}
+.tryon-recipe.empty{font-style:italic;color:var(--whisper)}
+.tryon-recipe strong{color:var(--ink-deep);font-weight:500}
+
+.tryon-reset{font-family:var(--font-display);font-size:11px;letter-spacing:.22em;color:var(--whisper);background:none;border:none;cursor:pointer;padding:6px 0;align-self:flex-start;text-transform:uppercase}
+.tryon-reset:hover{color:var(--ink-deep)}
+.tryon-reset i{margin-right:6px}
+
+/* nail polish stroke animation overlay */
+@keyframes brushStroke{0%{transform:scaleX(0);transform-origin:left}100%{transform:scaleX(1);transform-origin:left}}
+.nail.painting .nail-base{animation:brushStroke .35s ease-out}
+
+
+
+/* ===== Reveal helper ===== */
+.reveal{opacity:0;transform:translateY(30px)}
+</style>
+</head>
+<body>
+<a href="/guild/" class="archive-nav"><i class="fa-solid fa-arrow-left"></i>ARCHIVE</a>
+
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+<div class="softlights"></div>
+<div id="mist-p5"></div>
+<div class="grain"></div>
+
+<div class="page">
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="hero">
+  <div class="hero-grid">
+    <div class="hero-text">
+      <div class="hero-greet">MIA · 唯朵美學．嘉義水上</div>
+      <h1 class="hero-name">
+        <span class="ch">M</span><span class="ch gold">I</span><span class="ch">A</span>
+      </h1>
+      <div class="hero-tag">
+        <span>ᴹᴵᴬ</span><span>唯朵美學</span><span>嘉義．水上</span><span>2018 — Now</span>
+      </div>
+      <p class="hero-sub">七年美業職人，獨立經營一間 <strong>「唯朵」</strong> 工作室。從美甲為起點，逐步擴張為涵蓋美甲、美睫、紋繡、紋繡修護、無創唇色、科技育髮、足部護理的一站式養護空間。採完全預約制，一次認真照顧一位。</p>
+      <div class="hero-meta">
+        <span><i class="fa-solid fa-location-dot"></i>嘉義．水上</span>
+        <span><i class="fa-solid fa-calendar"></i>採完全預約制</span>
+        <span><i class="fa-solid fa-star"></i>2018 開張</span>
+      </div>
+    </div>
+    <div class="hero-portrait">
+      <span class="strip">ATELIER MIA · ᴹᴵᴬ ·</span>
+      <span class="corner-tag tl">— PORTRAIT —</span>
+      <span class="corner-tag br">CHIAYI / 2025</span>
+      <div class="frame">
+        <img src="/assets/img/guild/c_mia_c/mia_selfie.webp" alt="MIA 本人 — 唯朵美學主理人" loading="eager">
+        <canvas class="fog-canvas" aria-label="霧鏡 — 滑過或拭過解鎖照片"></canvas>
+        <div class="fog-hint"><i class="fa-solid fa-hand-pointer"></i> 拭去霧 · WIPE</div>
+      </div>
+      <div class="stamp">唯朵美學<span class="small">SINCE 2018</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 流浪四年 timeline ============ -->
+<section class="journey" id="journey">
+  <div class="journey-wrap">
+    <span class="sec-num reveal">01 — JOURNEY</span>
+    <h2 class="sec-title reveal">嘉義 <em>↔</em> 台中<br>離家四年．又回到水上</h2>
+    <p class="sec-lede reveal">2018 年於嘉義起點、台中歷練四年、再回到嘉義水上落地經營至今 — 一條「離開又回家」的工作路徑。最終選擇的是離家最近、節奏最慢的那個地方。</p>
+
+    <div class="journey-line reveal">
+      <div class="j-rail"></div>
+      <div class="j-stops">
+        <div class="j-stop">
+          <div class="pin"></div>
+          <div class="yr">2018</div>
+          <div class="place">嘉義．起點</div>
+          <div class="note">投入美甲產業的起點</div>
+        </div>
+        <div class="j-stop">
+          <div class="pin"></div>
+          <div class="yr">2019 — 2022</div>
+          <div class="place">台中．流浪</div>
+          <div class="note">高密度客流環境下的技法擴展期</div>
+        </div>
+        <div class="j-stop">
+          <div class="pin"></div>
+          <div class="yr">2023</div>
+          <div class="place">回嘉義</div>
+          <div class="note">回到家鄉重啟工作室</div>
+        </div>
+        <div class="j-stop now">
+          <div class="pin"></div>
+          <div class="yr">NOW</div>
+          <div class="place">水上．唯朵</div>
+          <div class="note">獨立經營．完全預約制</div>
+        </div>
+      </div>
+    </div>
+    <p class="journey-quote reveal">繞了一圈，最後選了把店開在離家最近的地方 — 工作節奏，是這條路自己決定的</p>
+  </div>
+</section>
+
+<!-- ============ 一指多藝（八項服務） ============ -->
+<section class="services" id="services">
+  <span class="sec-num reveal">02 — POLYMATH</span>
+  <h2 class="sec-title reveal">一指多藝</h2>
+  <p class="sec-lede reveal">指尖、睫毛、眉、唇、頭皮、腳趾 — 八個區塊組成的服務輪廓。從美甲為起點，七年下來逐步擴張到頭與足，是這間店最完整的全身養護光譜。</p>
+  <div class="svc-grid">
+    <div class="svc-card reveal"><div class="num">01</div><div class="ic"><i class="fa-solid fa-hand-sparkles"></i></div><h4>美甲</h4><p>霧色珠光、大理石、玫瑰金箔系列為主，從基本款到藝術款。重視貼合與耐久，是這裡時間最長的服務。</p></div>
+    <div class="svc-card reveal"><div class="num">02</div><div class="ic"><i class="fa-solid fa-eye"></i></div><h4>美睫</h4><p>單根植睫，依個人下睫方向與密度。一場約三小時，目標是落下時自然成形的弧度。</p></div>
+    <div class="svc-card reveal"><div class="num">03</div><div class="ic"><i class="fa-solid fa-pen-nib"></i></div><h4>霧眉</h4><p>自然霧感取向，依臉部骨架與膚色調整色料。線條融進皮膚，重點在長期看順眼的耐看度。</p></div>
+    <div class="svc-card reveal"><div class="num">04</div><div class="ic"><i class="fa-solid fa-eraser"></i></div><h4>洗眉</h4><p>處理過往不滿意的紋繡、舊色殘留。屬修復類項目，多次循序進行，目的是讓皮膚回到可重新規劃的乾淨底。</p></div>
+    <div class="svc-card reveal"><div class="num">05</div><div class="ic"><i class="fa-solid fa-mug-hot"></i></div><h4>霧唇</h4><p>自然玫瑰系霧感唇色。目標是清透有氣色的效果，而非彩妝感的滿色。</p></div>
+    <div class="svc-card reveal"><div class="num">06</div><div class="ic"><i class="fa-solid fa-leaf"></i></div><h4>無創粉嫩唇</h4><p>非侵入式：不打針、不破皮，藉由專業換氧逐次淡化唇色暗沉。適合不接受紋繡的需求者。</p></div>
+    <div class="svc-card reveal"><div class="num">07</div><div class="ic"><i class="fa-solid fa-flask"></i></div><h4>科技育髮</h4><p>頭皮為主的養護療程，結合儀器與配方協助毛囊與髮根狀態，多用於日常保養或產後密度維護。</p></div>
+    <div class="svc-card reveal"><div class="num">08</div><div class="ic"><i class="fa-solid fa-shoe-prints"></i></div><h4>足部護理</h4><p>角質、甘皮、硬繭與指甲修整，搭配足部色彩或保養。完成「全身一站式」的服務輪廓。</p></div>
+  </div>
+</section>
+
+<!-- ============ 真品畫廊 ============ -->
+<section class="gallery" id="gallery">
+  <span class="sec-num reveal">03 — REAL WORK</span>
+  <h2 class="sec-title reveal">真品畫廊 <em>·</em> Real Work</h2>
+  <p class="sec-lede reveal">所有作品皆為實際完成的客製成品，非示意圖、非範本素材。風格上以「霧感」為主軸 — 珠光、大理石、煙感漸層 — 整體偏向耐看而非搶眼。</p>
+  <div class="gal-track reveal">
+    <a class="gal-item gal-1" href="https://www.instagram.com/weiduo1997/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/guild/c_mia_c/nail_pearl_bow.webp" alt="奶霧珠光帶蝴蝶結美甲" loading="lazy">
+      <span class="cap">PEARL · 奶霧珠光蝶</span>
+    </a>
+    <a class="gal-item gal-2" href="https://www.instagram.com/weiduo1997/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/guild/c_mia_c/nail_marble_gold.webp" alt="大理石玫瑰煙與金箔美甲" loading="lazy">
+      <span class="cap">MARBLE · 玫瑰煙金箔</span>
+    </a>
+    <a class="gal-item gal-3" href="https://www.instagram.com/weiduo1997/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/guild/c_mia_c/nail_silver_glitter.webp" alt="銀霧亮粉長甲" loading="lazy">
+      <span class="cap">GLITTER · 銀霧亮粉</span>
+    </a>
+    <a class="gal-item gal-4" href="https://www.instagram.com/weiduo1997/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/guild/c_mia_c/nail_french_mirror.webp" alt="奶咖法式長甲鏡中倒影" loading="lazy">
+      <span class="cap">FRENCH · 鏡中倒影</span>
+    </a>
+    <a class="gal-item gal-5" href="https://www.instagram.com/weiduo1997/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/guild/c_mia_c/lash_mirror.webp" alt="美睫工序鏡面近景" loading="lazy">
+      <span class="cap">LASH · 一根一根上</span>
+    </a>
+    <a class="gal-item gal-6" href="https://www.instagram.com/weiduo1997/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/guild/c_mia_c/nail_mermaid_tools.webp" alt="人魚色珠光美甲與工具盤" loading="lazy">
+      <span class="cap">PROCESS · 人魚色與工具盤</span>
+    </a>
+  </div>
+</section>
+
+<!-- ============ 試一下你的指尖 — nail try-on ============ -->
+<section class="tryon" id="tryon">
+  <div class="tryon-wrap">
+    <span class="sec-num reveal">04 — TRY ON</span>
+    <h2 class="sec-title reveal">試一下你的<em>指尖</em></h2>
+    <p class="sec-lede reveal">這裡的色卡是這間店日常會出現的色系。<strong style="color:var(--rose-deep)"><i class="fa-solid fa-hand-pointer"></i> 選一個顏色 → 點任一根指甲</strong>。每根可以不同搭配，也能加金箔或珠光。完成後看右下方那串「配方」 — 就是你今天想跟我預約的樣子。</p>
+
+    <div class="tryon-stage reveal">
+      <div class="tryon-hand">
+        <div class="brush-display" id="brushDisplay">
+          <span class="brush-dot" id="brushDot"></span>
+          <span class="brush-name" id="brushName">玫瑰煙</span>
+          <span class="brush-add empty" id="brushAdd"></span>
+        </div>
+        <svg class="tryon-svg" viewBox="0 0 600 360" xmlns="http://www.w3.org/2000/svg" aria-label="美甲試色 — 點擊指甲上色">
+          <defs>
+            <linearGradient id="fingerSkin" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#F5DDD0"/>
+              <stop offset="100%" stop-color="#D9B8A6"/>
+            </linearGradient>
+            <linearGradient id="shimmerGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.85)"/>
+              <stop offset="50%" stop-color="rgba(255,255,255,0.15)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </linearGradient>
+            <radialGradient id="pearlGlow" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.85)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+            <pattern id="goldFoil" patternUnits="userSpaceOnUse" width="22" height="22">
+              <rect width="22" height="22" fill="transparent"/>
+              <polygon points="3,4 7,2 8,7 4,8" fill="#D4B896" opacity=".88"/>
+              <polygon points="13,12 18,11 17,16 12,17" fill="#A88B5F" opacity=".82"/>
+              <polygon points="2,15 6,14 7,19 3,20" fill="#EDD9B6" opacity=".75"/>
+              <polygon points="14,3 19,4 18,8 13,7" fill="#D4B896" opacity=".7"/>
+            </pattern>
+          </defs>
+
+          <!-- finger 01 (thumb) -->
+          <g class="finger" data-id="0">
+            <path d="M70 360 L70 220 Q70 175 100 168 Q130 175 130 220 L130 360 Z" fill="url(#fingerSkin)" stroke="rgba(168,123,115,.25)" stroke-width="1"/>
+            <g class="nail" data-nail="0">
+              <ellipse class="nail-base" cx="100" cy="190" rx="22" ry="30" fill="#F2E5D7"/>
+              <ellipse class="nail-shimmer" cx="100" cy="190" rx="22" ry="30" fill="url(#pearlGlow)"/>
+              <ellipse class="nail-foil" cx="100" cy="190" rx="22" ry="30" fill="url(#goldFoil)"/>
+              <ellipse cx="92" cy="178" rx="6" ry="3" fill="rgba(255,255,255,.55)"/>
+              <text class="nail-num" x="100" y="245" text-anchor="middle">01</text>
+            </g>
+          </g>
+          <!-- finger 02 -->
+          <g class="finger" data-id="1">
+            <path d="M170 360 L170 200 Q170 145 200 138 Q230 145 230 200 L230 360 Z" fill="url(#fingerSkin)" stroke="rgba(168,123,115,.25)" stroke-width="1"/>
+            <g class="nail" data-nail="1">
+              <ellipse class="nail-base" cx="200" cy="160" rx="22" ry="32" fill="#F2E5D7"/>
+              <ellipse class="nail-shimmer" cx="200" cy="160" rx="22" ry="32" fill="url(#pearlGlow)"/>
+              <ellipse class="nail-foil" cx="200" cy="160" rx="22" ry="32" fill="url(#goldFoil)"/>
+              <ellipse cx="192" cy="148" rx="6" ry="3" fill="rgba(255,255,255,.55)"/>
+              <text class="nail-num" x="200" y="218" text-anchor="middle">02</text>
+            </g>
+          </g>
+          <!-- finger 03 (middle, longest) -->
+          <g class="finger" data-id="2">
+            <path d="M270 360 L270 188 Q270 125 300 118 Q330 125 330 188 L330 360 Z" fill="url(#fingerSkin)" stroke="rgba(168,123,115,.25)" stroke-width="1"/>
+            <g class="nail" data-nail="2">
+              <ellipse class="nail-base" cx="300" cy="142" rx="23" ry="34" fill="#F2E5D7"/>
+              <ellipse class="nail-shimmer" cx="300" cy="142" rx="23" ry="34" fill="url(#pearlGlow)"/>
+              <ellipse class="nail-foil" cx="300" cy="142" rx="23" ry="34" fill="url(#goldFoil)"/>
+              <ellipse cx="292" cy="129" rx="6" ry="3" fill="rgba(255,255,255,.55)"/>
+              <text class="nail-num" x="300" y="202" text-anchor="middle">03</text>
+            </g>
+          </g>
+          <!-- finger 04 -->
+          <g class="finger" data-id="3">
+            <path d="M370 360 L370 200 Q370 145 400 138 Q430 145 430 200 L430 360 Z" fill="url(#fingerSkin)" stroke="rgba(168,123,115,.25)" stroke-width="1"/>
+            <g class="nail" data-nail="3">
+              <ellipse class="nail-base" cx="400" cy="160" rx="22" ry="32" fill="#F2E5D7"/>
+              <ellipse class="nail-shimmer" cx="400" cy="160" rx="22" ry="32" fill="url(#pearlGlow)"/>
+              <ellipse class="nail-foil" cx="400" cy="160" rx="22" ry="32" fill="url(#goldFoil)"/>
+              <ellipse cx="392" cy="148" rx="6" ry="3" fill="rgba(255,255,255,.55)"/>
+              <text class="nail-num" x="400" y="218" text-anchor="middle">04</text>
+            </g>
+          </g>
+          <!-- finger 05 (pinky) -->
+          <g class="finger" data-id="4">
+            <path d="M470 360 L470 220 Q470 175 500 168 Q530 175 530 220 L530 360 Z" fill="url(#fingerSkin)" stroke="rgba(168,123,115,.25)" stroke-width="1"/>
+            <g class="nail" data-nail="4">
+              <ellipse class="nail-base" cx="500" cy="190" rx="22" ry="30" fill="#F2E5D7"/>
+              <ellipse class="nail-shimmer" cx="500" cy="190" rx="22" ry="30" fill="url(#pearlGlow)"/>
+              <ellipse class="nail-foil" cx="500" cy="190" rx="22" ry="30" fill="url(#goldFoil)"/>
+              <ellipse cx="492" cy="178" rx="6" ry="3" fill="rgba(255,255,255,.55)"/>
+              <text class="nail-num" x="500" y="245" text-anchor="middle">05</text>
+            </g>
+          </g>
+        </svg>
+        <div class="tryon-hint"><i class="fa-solid fa-arrow-up"></i> 點任一根指甲上色</div>
+      </div>
+
+      <div class="tryon-controls">
+        <div class="ctrl-group">
+          <h5>SELECT COLOR · 選色</h5>
+          <div class="swatch-grid" id="swatchGrid">
+            <div class="swatch-cell"><div class="swatch active" data-color="#C9A099" data-name="玫瑰煙" style="background:#C9A099"></div><div class="swatch-label">玫瑰煙</div></div>
+            <div class="swatch-cell"><div class="swatch" data-color="#F2E5D7" data-name="奶霧" style="background:linear-gradient(135deg,#FAF4EC,#F2E5D7)"></div><div class="swatch-label">奶霧</div></div>
+            <div class="swatch-cell"><div class="swatch" data-color="#D9D1C8" data-name="銀霧" style="background:linear-gradient(135deg,#FAF4EC,#D9D1C8 60%,#A8A095)"></div><div class="swatch-label">銀霧</div></div>
+            <div class="swatch-cell"><div class="swatch" data-color="marble" data-name="大理石" data-effect="marble"></div><div class="swatch-label">大理石</div></div>
+            <div class="swatch-cell"><div class="swatch" data-color="#E8A48A" data-name="蜜桃珊瑚" style="background:#E8A48A"></div><div class="swatch-label">蜜桃珊瑚</div></div>
+            <div class="swatch-cell"><div class="swatch" data-color="#D4B896" data-name="軟金" style="background:linear-gradient(135deg,#EDD9B6,#A88B5F)"></div><div class="swatch-label">軟金</div></div>
+            <div class="swatch-cell"><div class="swatch" data-color="#B8A4C9" data-name="霧紫" style="background:#B8A4C9"></div><div class="swatch-label">霧紫</div></div>
+            <div class="swatch-cell"><div class="swatch" data-color="#A87B73" data-name="深玫瑰" style="background:#A87B73"></div><div class="swatch-label">深玫瑰</div></div>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <h5>FINISH · 質感加值</h5>
+          <div class="toggle-row">
+            <div class="toggle" id="toggleShimmer"><i class="fa-solid fa-droplet"></i> 珠光 PEARL</div>
+            <div class="toggle" id="toggleFoil"><i class="fa-solid fa-star"></i> 金箔 FOIL</div>
+          </div>
+        </div>
+
+        <div class="tryon-recipe empty" id="tryonRecipe">尚未上色 — 選一個顏色，再點一根指甲</div>
+
+        <button class="tryon-reset" id="tryonReset" type="button"><i class="fa-solid fa-rotate-left"></i>重新試色 · RESET</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 唯朵花房 — bloom garden ============ -->
+<section class="garden" id="garden">
+  <div class="garden-wrap">
+    <div class="garden-head">
+      <span class="sec-num reveal">05 — BLOOM GARDEN</span>
+      <h2 class="sec-title reveal">唯朵花房 <em>·</em> 一朵一朵地顧</h2>
+      <p class="sec-lede reveal" style="margin-left:auto;margin-right:auto">把八項服務想像成八朵花，每一朵都是七年累積出來的、可以單獨被照顧好的一個項目。<strong style="color:var(--rose-deep)"><i class="fa-solid fa-hand-pointer"></i> 將游標移到任一朵 · 它會為你綻放</strong>。</p>
+    </div>
+
+    <div class="garden-stage reveal">
+      <svg class="garden-svg" viewBox="0 0 1100 380" xmlns="http://www.w3.org/2000/svg" aria-label="唯朵花圃">
+        <defs>
+          <radialGradient id="petalRose" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#F2C4AE"/>
+            <stop offset="60%" stop-color="#C9A099"/>
+            <stop offset="100%" stop-color="#A87B73"/>
+          </radialGradient>
+          <radialGradient id="petalCream" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#FAF4EC"/>
+            <stop offset="100%" stop-color="#E8D5C2"/>
+          </radialGradient>
+          <radialGradient id="petalMauve" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#D4C2DD"/>
+            <stop offset="100%" stop-color="#8E76A3"/>
+          </radialGradient>
+          <radialGradient id="petalCoral" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#F2C4AE"/>
+            <stop offset="100%" stop-color="#E8A48A"/>
+          </radialGradient>
+          <radialGradient id="petalGold" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#EDD9B6"/>
+            <stop offset="100%" stop-color="#A88B5F"/>
+          </radialGradient>
+          <radialGradient id="petalDeepRose" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#D9B3A8"/>
+            <stop offset="100%" stop-color="#8E5F54"/>
+          </radialGradient>
+          <radialGradient id="petalSilver" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#FAF4EC"/>
+            <stop offset="60%" stop-color="#D9D1C8"/>
+            <stop offset="100%" stop-color="#8B7D75"/>
+          </radialGradient>
+          <radialGradient id="petalCoralDeep" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#E8A48A"/>
+            <stop offset="100%" stop-color="#A87B73"/>
+          </radialGradient>
+          <symbol id="flower" viewBox="-50 -50 100 100">
+            <g class="petal-grp">
+              <ellipse cx="0" cy="-22" rx="13" ry="22" fill="currentColor" opacity=".88"/>
+              <ellipse cx="21" cy="-7" rx="13" ry="22" fill="currentColor" opacity=".88" transform="rotate(72 21 -7)"/>
+              <ellipse cx="13" cy="18" rx="13" ry="22" fill="currentColor" opacity=".88" transform="rotate(144 13 18)"/>
+              <ellipse cx="-13" cy="18" rx="13" ry="22" fill="currentColor" opacity=".88" transform="rotate(216 -13 18)"/>
+              <ellipse cx="-21" cy="-7" rx="13" ry="22" fill="currentColor" opacity=".88" transform="rotate(288 -21 -7)"/>
+            </g>
+            <circle class="pistil" cx="0" cy="0" r="7" fill="#A88B5F"/>
+            <circle class="pistil" cx="0" cy="0" r="3.5" fill="#3F2A24" opacity=".7"/>
+          </symbol>
+        </defs>
+        <!-- soil ground -->
+        <ellipse cx="550" cy="365" rx="520" ry="14" fill="rgba(63,42,36,.18)"/>
+        <!-- 8 blooms -->
+        <!-- 01 美甲 -->
+        <g class="bloom" data-id="nail" data-title="美甲" data-text="霧色珠光、大理石、玫瑰煙金箔。從基本款到藝術款，注重貼合度與耐久 — 是這間店最早、也是時間最長的服務項目。">
+          <line class="stem" x1="100" y1="320" x2="100" y2="240" stroke="#8E9F7A" stroke-width="3" stroke-linecap="round"/>
+          <path class="stem" d="M100 280 Q88 270 86 260" stroke="#8E9F7A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="86" cy="262" rx="6" ry="3" fill="#A8B58A" transform="rotate(-30 86 262)"/>
+          <use href="#flower" x="60" y="200" width="80" height="80" color="url(#petalRose)"/>
+          <text class="label" x="100" y="350" text-anchor="middle">01 美甲</text>
+        </g>
+        <!-- 02 美睫 -->
+        <g class="bloom" data-id="lash" data-title="美睫" data-text="單根植睫，順著個人下睫的方向與密度做。一場約三小時，重點是自然落下的弧度，而非戲劇化的長度。">
+          <line class="stem" x1="225" y1="330" x2="225" y2="220" stroke="#8E9F7A" stroke-width="3" stroke-linecap="round"/>
+          <path class="stem" d="M225 270 Q238 260 240 248" stroke="#8E9F7A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="240" cy="248" rx="6" ry="3" fill="#A8B58A" transform="rotate(35 240 248)"/>
+          <use href="#flower" x="185" y="180" width="80" height="80" color="url(#petalCream)"/>
+          <text class="label" x="225" y="350" text-anchor="middle">02 美睫</text>
+        </g>
+        <!-- 03 霧眉 -->
+        <g class="bloom" data-id="brow" data-title="霧眉" data-text="走自然霧感路線，依臉部骨架、膚色與五官比例調整。色料偏淡、線條融進皮膚 — 不追潮、追長期看順眼。">
+          <line class="stem" x1="350" y1="320" x2="350" y2="240" stroke="#8E9F7A" stroke-width="3" stroke-linecap="round"/>
+          <use href="#flower" x="310" y="200" width="80" height="80" color="url(#petalMauve)"/>
+          <text class="label" x="350" y="350" text-anchor="middle">03 霧眉</text>
+        </g>
+        <!-- 04 洗眉 -->
+        <g class="bloom" data-id="erase" data-title="洗眉" data-text="處理過往不滿意的紋繡或舊色殘留。屬於修復類項目，需多次循序進行，目的是讓皮膚回到可以重新規劃的乾淨底。">
+          <line class="stem" x1="475" y1="335" x2="475" y2="225" stroke="#8E9F7A" stroke-width="3" stroke-linecap="round"/>
+          <path class="stem" d="M475 280 Q462 270 460 258" stroke="#8E9F7A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="460" cy="258" rx="6" ry="3" fill="#A8B58A" transform="rotate(-30 460 258)"/>
+          <use href="#flower" x="435" y="185" width="80" height="80" color="url(#petalSilver)"/>
+          <text class="label" x="475" y="350" text-anchor="middle">04 洗眉</text>
+        </g>
+        <!-- 05 霧唇 -->
+        <g class="bloom" data-id="lip" data-title="霧唇" data-text="自然玫瑰系霧感唇色，目標是「醒來就有氣色」的清透效果，而非彩妝感的滿色。著重舒適度與術後恢復。">
+          <line class="stem" x1="600" y1="320" x2="600" y2="240" stroke="#8E9F7A" stroke-width="3" stroke-linecap="round"/>
+          <use href="#flower" x="560" y="200" width="80" height="80" color="url(#petalCoral)"/>
+          <text class="label" x="600" y="350" text-anchor="middle">05 霧唇</text>
+        </g>
+        <!-- 06 無創粉嫩唇 -->
+        <g class="bloom" data-id="liplight" data-title="無創粉嫩唇" data-text="非侵入式技術：不打針、不破皮，藉由專業換氧逐次淡化唇色暗沉。適合不接受紋繡、但希望唇色穩定明亮的需求。">
+          <line class="stem" x1="725" y1="330" x2="725" y2="225" stroke="#8E9F7A" stroke-width="3" stroke-linecap="round"/>
+          <path class="stem" d="M725 280 Q740 270 742 256" stroke="#8E9F7A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="742" cy="256" rx="6" ry="3" fill="#A8B58A" transform="rotate(40 742 256)"/>
+          <use href="#flower" x="685" y="185" width="80" height="80" color="url(#petalDeepRose)"/>
+          <text class="label" x="725" y="350" text-anchor="middle">06 無創粉嫩唇</text>
+        </g>
+        <!-- 07 科技育髮 -->
+        <g class="bloom" data-id="hair" data-title="科技育髮" data-text="頭皮為主的養護療程，結合儀器與專業配方，協助毛囊環境與髮根狀態。多用於日常保養或產後、壓力期的密度維護。">
+          <line class="stem" x1="850" y1="320" x2="850" y2="240" stroke="#8E9F7A" stroke-width="3" stroke-linecap="round"/>
+          <use href="#flower" x="810" y="200" width="80" height="80" color="url(#petalGold)"/>
+          <text class="label" x="850" y="350" text-anchor="middle">07 科技育髮</text>
+        </g>
+        <!-- 08 足部護理 -->
+        <g class="bloom" data-id="foot" data-title="足部護理" data-text="角質、甘皮、硬繭與指甲修整，搭配足部色彩或保養。從手指尖延伸到腳趾尖 — 構成這間店「全身一站式」的服務輪廓。">
+          <line class="stem" x1="975" y1="325" x2="975" y2="235" stroke="#8E9F7A" stroke-width="3" stroke-linecap="round"/>
+          <path class="stem" d="M975 285 Q963 275 961 263" stroke="#8E9F7A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="961" cy="263" rx="6" ry="3" fill="#A8B58A" transform="rotate(-30 961 263)"/>
+          <use href="#flower" x="935" y="195" width="80" height="80" color="url(#petalCoralDeep)"/>
+          <text class="label" x="975" y="350" text-anchor="middle">08 足部護理</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="garden-info empty reveal" id="garden-info">把游標移到任何一朵 — 它會為妳綻放</div>
+
+    <p class="garden-quote reveal">
+      一次一朵 · 是這間店選擇的節奏
+      <span class="small">— ᴹᴵᴬ · WEIDUO ATELIER</span>
+    </p>
+  </div>
+</section>
+
+<!-- ============ 跨界四身分 ============ -->
+<section class="identity" id="identity">
+  <span class="sec-num reveal">06 — FOUR ROLES</span>
+  <h2 class="sec-title reveal">同一雙手 · 四種<em>身分</em></h2>
+  <p class="sec-lede reveal">把八項服務歸納為四個專業身分 — 翻面看每個身分背後的具體內容。<span style="color:var(--rose-deep)"><i class="fa-solid fa-hand-pointer"></i> 點任一張卡翻面</span></p>
+  <div class="id-grid">
+    <div class="id-card reveal" data-flip>
+      <div class="id-face id-front" style="background-image:url('/assets/img/guild/c_mia_c/nail_pearl_bow.webp')">
+        <span class="hint">FLIP <i class="fa-solid fa-arrow-rotate-right"></i></span>
+        <div class="role">ROLE 01</div>
+        <div class="role-zh">美甲師</div>
+      </div>
+      <div class="id-face id-back">
+        <div class="ic"><i class="fa-solid fa-hand-sparkles"></i></div>
+        <h5>七年指尖工藝</h5>
+        <p>2018 年起以美甲為主軸經營這間店。風格以霧感珠光、大理石、玫瑰金箔系列為主，強調貼合度與耐久 — 這是時間最長、也最累積的服務項目。</p>
+        <div class="stamp">— ᴹᴵᴬ</div>
+      </div>
+    </div>
+    <div class="id-card reveal" data-flip>
+      <div class="id-face id-front" style="background-image:url('/assets/img/guild/c_mia_c/lash_mirror.webp')">
+        <span class="hint">FLIP <i class="fa-solid fa-arrow-rotate-right"></i></span>
+        <div class="role">ROLE 02</div>
+        <div class="role-zh">美睫師</div>
+      </div>
+      <div class="id-face id-back">
+        <div class="ic"><i class="fa-solid fa-eye"></i></div>
+        <h5>單根植睫</h5>
+        <p>採單根植入而非接片，順著個人下睫的方向與密度操作。一場約三小時，目標是落下時自然成形的弧度，而不是戲劇化的誇張長度。</p>
+        <div class="stamp">— ᴹᴵᴬ</div>
+      </div>
+    </div>
+    <div class="id-card reveal" data-flip>
+      <div class="id-face id-front" style="background:linear-gradient(135deg, var(--rose) 0%, var(--rose-deep) 100%)">
+        <span class="hint">FLIP <i class="fa-solid fa-arrow-rotate-right"></i></span>
+        <div class="role">ROLE 03</div>
+        <div class="role-zh">紋繡師</div>
+      </div>
+      <div class="id-face id-back">
+        <div class="ic"><i class="fa-solid fa-pen-nib"></i></div>
+        <h5>霧眉．霧唇．洗眉</h5>
+        <p>紋繡與紋繡修護的整套工作 — 包含霧眉、霧唇的色料設計，以及不滿意舊紋色的洗眉處理。整體走自然霧感，重點放在長期看順眼的耐看度。</p>
+        <div class="stamp">— ᴹᴵᴬ</div>
+      </div>
+    </div>
+    <div class="id-card reveal" data-flip>
+      <div class="id-face id-front" style="background:linear-gradient(135deg, var(--mauve) 0%, var(--gold-deep) 100%)">
+        <span class="hint">FLIP <i class="fa-solid fa-arrow-rotate-right"></i></span>
+        <div class="role">ROLE 04</div>
+        <div class="role-zh">頭皮 ×足部護理師</div>
+      </div>
+      <div class="id-face id-back">
+        <div class="ic"><i class="fa-solid fa-flask"></i></div>
+        <h5>頭皮與足部養護</h5>
+        <p>科技育髮以儀器加配方協助毛囊與髮根狀態；足部護理涵蓋角質、甘皮、硬繭與指甲修整。這兩塊讓「唯朵」延伸成一個一站式養護的小空間。</p>
+        <div class="stamp">— ᴹᴵᴬ</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- (rant section removed — was reproducing post content) -->
+<!-- (testimonial section removed — was reproducing private chat) -->
+
+<!-- ============ 在地脈絡 ============ -->
+<section class="family" id="family">
+  <div class="family-wrap">
+    <span class="sec-num reveal" style="text-align:center">07 — ROOTS</span>
+    <h2 class="sec-title reveal" style="text-align:center">嘉義．新港 <em>·</em> 在地小孩</h2>
+    <p class="sec-lede reveal" style="text-align:center;margin-left:auto;margin-right:auto">店在嘉義水上、根在新港。從小在地方廟宇香火、阿姨們的妝容、媽媽的指甲油氣味裡長大 — 美業對我而言一直是一件「家常事」，不是某種遙遠的時尚。</p>
+
+    <div class="family-stage reveal">
+      <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- temple silhouette -->
+        <path d="M120 130 L120 90 L150 60 L180 60 L210 90 L210 130 Z" fill="#A82828" opacity=".85"/>
+        <path d="M115 130 L215 130 L215 138 L115 138 Z" fill="#6B1818"/>
+        <rect x="158" y="98" width="14" height="24" fill="#3F2A24"/>
+        <!-- 香 lines -->
+        <line x1="240" y1="140" x2="240" y2="80" stroke="#D4B896" stroke-width="1.2"/>
+        <line x1="248" y1="140" x2="248" y2="76" stroke="#D4B896" stroke-width="1.2"/>
+        <line x1="256" y1="140" x2="256" y2="84" stroke="#D4B896" stroke-width="1.2"/>
+        <ellipse cx="248" cy="74" rx="14" ry="10" fill="#F5EAE0" opacity=".5"/>
+        <!-- family figures (silhouette) -->
+        <g transform="translate(310 80)">
+          <circle cx="20" cy="20" r="14" fill="#3F2A24"/>
+          <rect x="8" y="34" width="24" height="60" rx="3" fill="#3F2A24"/>
+          <text x="20" y="116" text-anchor="middle" font-family="Caveat,cursive" font-size="11" fill="#A87B73">爸</text>
+        </g>
+        <g transform="translate(360 80)">
+          <circle cx="20" cy="20" r="14" fill="#A87B73"/>
+          <rect x="8" y="34" width="24" height="60" rx="3" fill="#A87B73"/>
+          <text x="20" y="116" text-anchor="middle" font-family="Caveat,cursive" font-size="11" fill="#A87B73">媽</text>
+        </g>
+        <g transform="translate(410 84)">
+          <circle cx="20" cy="20" r="13" fill="#C9A099"/>
+          <rect x="8" y="33" width="24" height="56" rx="3" fill="#C9A099"/>
+          <circle cx="14" cy="18" r="1.6" fill="#FAF4EC"/>
+          <circle cx="26" cy="18" r="1.6" fill="#FAF4EC"/>
+          <circle cx="14" cy="17.5" r=".8" fill="#3F2A24"/>
+          <circle cx="26" cy="17.5" r=".8" fill="#3F2A24"/>
+          <path d="M16 24 Q20 26 24 24" stroke="#3F2A24" stroke-width="1" fill="none"/>
+          <text x="20" y="111" text-anchor="middle" font-family="Caveat,cursive" font-size="11" fill="#A82828" font-weight="700">MIA</text>
+        </g>
+        <g transform="translate(460 80)">
+          <circle cx="20" cy="20" r="14" fill="#8E5F54"/>
+          <rect x="8" y="34" width="24" height="60" rx="3" fill="#8E5F54"/>
+          <text x="20" y="116" text-anchor="middle" font-family="Caveat,cursive" font-size="11" fill="#A87B73">弟 / 妹</text>
+        </g>
+        <!-- ground -->
+        <line x1="80" y1="178" x2="640" y2="178" stroke="#A87B73" stroke-width="1" stroke-dasharray="4 4"/>
+      </svg>
+    </div>
+    <p class="family-cap reveal">— 香火、市場與在地節奏 —</p>
+    <p class="family-text reveal">嘉義新港的小孩。日常看著的是阿姨們的妝容、市場裡的指甲油氣味、廟口長輩們的眉與唇 — 那讓我相信「漂亮」是<strong>一件家常事</strong>，不是高高在上的事。<br><br>所以我做美業是這樣的方向 — 不是把妳變成另一個人，是把妳本來的樣子，再好好看一點。</p>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta" id="cta">
+  <div class="cta-wrap">
+    <div class="cta-eye reveal">如果你願意慢下來</div>
+    <h2 class="reveal">在<em>嘉義水上</em>，<br>留一段被認真照顧的時間。</h2>
+    <p class="reveal">完全預約制，一次只開一位。建議先透過 Threads 或 Instagram 私訊聯絡，描述需求、預期項目與時段彈性，後續會再進一步確認時間與細節。</p>
+    <div class="cta-btns reveal">
+      <a class="cta-btn primary" href="https://www.threads.com/@c.mia.c" target="_blank" rel="noopener noreferrer">
+        <i class="fa-brands fa-threads"></i> 在 Threads 找我
+      </a>
+      <a class="cta-btn ghost" href="https://www.instagram.com/weiduo1997/" target="_blank" rel="noopener noreferrer">
+        <i class="fa-brands fa-instagram"></i> 看更多作品
+      </a>
+    </div>
+    <div class="cta-loc reveal"><i class="fa-solid fa-location-dot"></i>CHIAYI · SHUI-SHANG · ATELIER ᴹᴵᴬ</div>
+  </div>
+</section>
+
+<footer>
+  <div class="links">
+    <a href="https://www.threads.com/@c.mia.c" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+    <a href="https://www.instagram.com/weiduo1997/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+  </div>
+  <div class="made">Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon</div>
+</footer>
+
+</div><!-- /.page -->
+
+<script>
+(function(){
+  // ===== Custom cursor (only when supported) =====
+  var ringSupported = window.matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)').matches;
+  if (ringSupported) {
+    var dot = document.querySelector('.cursor-dot');
+    var ring = document.querySelector('.cursor-ring');
+    var rx = window.innerWidth/2, ry = window.innerHeight/2, dx=rx, dy=ry;
+    document.addEventListener('mousemove', function(e){ dx=e.clientX; dy=e.clientY; dot.style.transform='translate('+dx+'px,'+dy+'px) translate(-50%,-50%)'; });
+    function tick(){ rx += (dx-rx)*0.18; ry += (dy-ry)*0.18; ring.style.transform='translate('+rx+'px,'+ry+'px) translate(-50%,-50%)'; requestAnimationFrame(tick); }
+    tick();
+    document.querySelectorAll('a, .id-card, .gal-item, .svc-card, button').forEach(function(el){
+      el.addEventListener('mouseenter', function(){ ring.classList.add('hover'); });
+      el.addEventListener('mouseleave', function(){ ring.classList.remove('hover'); });
+    });
+  }
+
+  // ===== p5.js mist particles (capped, mobile-off) =====
+  var p5OK = window.matchMedia('(min-width: 720px) and (prefers-reduced-motion: no-preference)').matches;
+  if (p5OK && window.p5) {
+    new p5(function(p){
+      var pts = [];
+      var COUNT = 18;
+      p.setup = function(){
+        var c = p.createCanvas(window.innerWidth, window.innerHeight);
+        c.parent('mist-p5');
+        p.noStroke();
+        for(var i=0;i<COUNT;i++) pts.push({x:p.random(p.width),y:p.random(p.height),r:p.random(60,140),s:p.random(.15,.35),h:p.random([5,15,25,340])});
+      };
+      p.windowResized = function(){ p.resizeCanvas(window.innerWidth, window.innerHeight); };
+      p.draw = function(){
+        p.clear();
+        var t = p.frameCount * 0.003;
+        for(var i=0;i<pts.length;i++){
+          var pt = pts[i];
+          var nx = pt.x + Math.sin(t + i)*0.4;
+          var ny = pt.y + Math.cos(t*0.7 + i*1.3)*0.3 - pt.s;
+          if (ny < -pt.r) ny = p.height + pt.r;
+          pt.x = nx; pt.y = ny;
+          p.fill(pt.h===340?245:255, pt.h===340?224:235, 220, 16);
+          p.ellipse(pt.x, pt.y, pt.r, pt.r*0.8);
+        }
+      };
+    });
+  } else {
+    // Hide mist container if disabled
+    var m = document.getElementById('mist-p5'); if(m) m.style.display='none';
+  }
+
+  // ===== Hero entrance =====
+  if (window.gsap) {
+    gsap.set('.hero-name .ch', {opacity:0, y:60});
+    var tl = gsap.timeline({delay:.2});
+    tl.to('.hero-greet', {opacity:1, y:0, duration:.8, ease:'power2.out'}, 0)
+      .to('.hero-name .ch', {opacity:1, y:0, duration:1, ease:'power3.out', stagger:.12}, .15)
+      .to('.hero-tag span', {opacity:1, duration:.5, stagger:.06, ease:'power2.out'}, .9)
+      .to('.hero-sub', {opacity:1, duration:.7, ease:'power2.out'}, 1.1)
+      .to('.hero-meta', {opacity:1, duration:.6, ease:'power2.out'}, 1.3);
+
+    // floating portrait
+    gsap.to('.hero-portrait', {y:-12, duration:3.4, repeat:-1, yoyo:true, ease:'sine.inOut'});
+    gsap.to('.hero-portrait .stamp', {rotate:14, duration:6, repeat:-1, yoyo:true, ease:'sine.inOut'});
+  }
+
+  // ===== ScrollTrigger reveal =====
+  if (window.gsap && window.ScrollTrigger) {
+    gsap.registerPlugin(ScrollTrigger);
+    document.querySelectorAll('.reveal').forEach(function(el){
+      gsap.to(el, {
+        opacity:1, y:0, duration:1, ease:'power2.out',
+        scrollTrigger:{ trigger:el, start:'top 88%', once:true }
+      });
+    });
+  }
+
+  // ===== Identity flip =====
+  document.querySelectorAll('[data-flip]').forEach(function(card){
+    card.addEventListener('click', function(){ card.classList.toggle('flipped'); });
+  });
+
+  // ===== 霧鏡 fogged-mirror canvas (cursor/touch wipes fog) =====
+  (function(){
+    var frame = document.querySelector('.hero-portrait .frame');
+    var canvas = document.querySelector('.fog-canvas');
+    if (!frame || !canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = 0, H = 0, ratio = window.devicePixelRatio || 1;
+    var totalCleared = 0, totalArea = 0;
+
+    function paintFog(){
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      // base fog
+      var g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, 'rgba(245,234,224,0.96)');
+      g.addColorStop(0.5, 'rgba(232,213,194,0.92)');
+      g.addColorStop(1, 'rgba(201,160,153,0.94)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      // soft mottle
+      for (var i = 0; i < 14; i++) {
+        var x = Math.random()*W, y = Math.random()*H, r = 60 + Math.random()*120;
+        var rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+        rg.addColorStop(0, 'rgba(250,244,236,0.55)');
+        rg.addColorStop(1, 'rgba(250,244,236,0)');
+        ctx.fillStyle = rg;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function fit(){
+      var rect = canvas.getBoundingClientRect();
+      W = Math.max(1, Math.floor(rect.width));
+      H = Math.max(1, Math.floor(rect.height));
+      canvas.width = W * ratio;
+      canvas.height = H * ratio;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      totalArea = W * H;
+      totalCleared = 0;
+      paintFog();
+    }
+
+    function wipe(x, y, r){
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      var rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, 'rgba(0,0,0,1)');
+      rg.addColorStop(0.7, 'rgba(0,0,0,0.7)');
+      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      totalCleared += Math.PI * r * r * 0.6;
+      if (totalCleared / totalArea > 0.42) frame.classList.add('fog-cleared');
+    }
+
+    var lastX, lastY;
+    function pos(e){
+      var rect = canvas.getBoundingClientRect();
+      var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+    }
+    function trail(p){
+      if (lastX != null) {
+        var dx = p.x - lastX, dy = p.y - lastY, dist = Math.hypot(dx, dy);
+        var steps = Math.max(1, Math.ceil(dist / 14));
+        for (var i = 1; i <= steps; i++) {
+          wipe(lastX + dx*i/steps, lastY + dy*i/steps, 36);
+        }
+      } else {
+        wipe(p.x, p.y, 36);
+      }
+      lastX = p.x; lastY = p.y;
+    }
+    canvas.addEventListener('mousemove', function(e){ trail(pos(e)); });
+    canvas.addEventListener('mouseleave', function(){ lastX = lastY = null; });
+    canvas.addEventListener('touchstart', function(e){ trail(pos(e)); e.preventDefault(); }, {passive:false});
+    canvas.addEventListener('touchmove', function(e){ trail(pos(e)); e.preventDefault(); }, {passive:false});
+    canvas.addEventListener('touchend', function(){ lastX = lastY = null; });
+
+    fit();
+    window.addEventListener('resize', function(){ if (!frame.classList.contains('fog-cleared')) fit(); });
+  })();
+
+  // ===== 唯朵花房 — bloom hover/click info =====
+  (function(){
+    var info = document.getElementById('garden-info');
+    if (!info) return;
+    var blooms = document.querySelectorAll('.bloom');
+    var hideTimer;
+    function show(b){
+      var t = b.getAttribute('data-title') || '';
+      var x = b.getAttribute('data-text') || '';
+      info.innerHTML = '<span class="ginfo-title">'+t+'</span>'+x;
+      info.classList.remove('empty');
+      clearTimeout(hideTimer);
+    }
+    function reset(){
+      hideTimer = setTimeout(function(){
+        info.innerHTML = '把游標移到任何一朵 — 它會為妳綻放';
+        info.classList.add('empty');
+      }, 800);
+    }
+    blooms.forEach(function(b){
+      b.addEventListener('mouseenter', function(){ show(b); });
+      b.addEventListener('mouseleave', reset);
+      b.addEventListener('click', function(){
+        blooms.forEach(function(x){ x.classList.remove('bloomed'); });
+        b.classList.add('bloomed');
+        show(b);
+      });
+    });
+  })();
+
+  // ===== 美甲試色 nail try-on =====
+  (function(){
+    var grid = document.getElementById('swatchGrid');
+    if (!grid) return;
+    var swatches = grid.querySelectorAll('.swatch');
+    var nails = document.querySelectorAll('.nail');
+    var tShim = document.getElementById('toggleShimmer');
+    var tFoil = document.getElementById('toggleFoil');
+    var recipe = document.getElementById('tryonRecipe');
+    var resetBtn = document.getElementById('tryonReset');
+
+    var current = { color: '#C9A099', name: '玫瑰煙' };
+    var painted = {}; // {0:{name, shimmer, foil}}
+
+    var brushDisplay = document.getElementById('brushDisplay');
+    var brushDot = document.getElementById('brushDot');
+    var brushName = document.getElementById('brushName');
+    var brushAdd = document.getElementById('brushAdd');
+
+    function setColor(sw){
+      swatches.forEach(function(s){ s.classList.remove('active'); });
+      sw.classList.add('active');
+      var c = sw.getAttribute('data-color');
+      current.name = sw.getAttribute('data-name');
+      if (c === 'marble') {
+        current.color = 'url(#marblePaint)';
+        ensureMarbleDef();
+      } else {
+        current.color = c;
+      }
+      // brush preview
+      if (brushDot) {
+        if (c === 'marble') {
+          brushDot.style.background = 'radial-gradient(circle at 30% 40%, #F2C4AE 0%, #C9A099 40%, #B8A4C9 75%, #8E5F54 100%)';
+        } else {
+          // honor the swatch own background style for cream/silver/gold gradients
+          var inline = sw.style.background;
+          brushDot.style.background = inline || c;
+        }
+      }
+      if (brushName) brushName.textContent = current.name;
+      if (brushDisplay) {
+        brushDisplay.classList.add('flash');
+        setTimeout(function(){ brushDisplay.classList.remove('flash'); }, 280);
+      }
+    }
+    function refreshBrushAddOns(){
+      if (!brushAdd) return;
+      var addons = [];
+      if (tShim.classList.contains('on')) addons.push('珠光');
+      if (tFoil.classList.contains('on')) addons.push('金箔');
+      if (addons.length === 0) {
+        brushAdd.classList.add('empty');
+        brushAdd.textContent = '';
+      } else {
+        brushAdd.classList.remove('empty');
+        brushAdd.textContent = '+ ' + addons.join('・');
+      }
+    }
+
+    function ensureMarbleDef(){
+      var svg = document.querySelector('.tryon-svg');
+      if (!svg || svg.querySelector('#marblePaint')) return;
+      var defs = svg.querySelector('defs');
+      var ns = 'http://www.w3.org/2000/svg';
+      var rg = document.createElementNS(ns, 'radialGradient');
+      rg.setAttribute('id', 'marblePaint');
+      rg.setAttribute('cx', '35%'); rg.setAttribute('cy', '35%'); rg.setAttribute('r', '70%');
+      var stops = [
+        ['0%', '#F2C4AE'], ['30%', '#C9A099'], ['65%', '#B8A4C9'], ['100%', '#8E5F54']
+      ];
+      stops.forEach(function(s){
+        var st = document.createElementNS(ns, 'stop');
+        st.setAttribute('offset', s[0]); st.setAttribute('stop-color', s[1]); rg.appendChild(st);
+      });
+      defs.appendChild(rg);
+    }
+
+    swatches.forEach(function(sw){ sw.addEventListener('click', function(){ setColor(sw); }); });
+
+    nails.forEach(function(n){
+      n.addEventListener('click', function(){
+        var id = n.getAttribute('data-nail');
+        var base = n.querySelector('.nail-base');
+        // brush stroke effect
+        n.classList.add('painting');
+        setTimeout(function(){ n.classList.remove('painting'); }, 360);
+        base.setAttribute('fill', current.color);
+        // record
+        painted[id] = {
+          name: current.name,
+          shimmer: tShim.classList.contains('on'),
+          foil: tFoil.classList.contains('on')
+        };
+        n.classList.toggle('has-shimmer', painted[id].shimmer);
+        n.classList.toggle('has-foil', painted[id].foil);
+        updateRecipe();
+      });
+    });
+
+    function bindToggle(btn){
+      btn.addEventListener('click', function(){
+        btn.classList.toggle('on');
+        refreshBrushAddOns();
+      });
+    }
+    bindToggle(tShim);
+    bindToggle(tFoil);
+
+    function updateRecipe(){
+      var keys = Object.keys(painted).sort();
+      if (keys.length === 0) {
+        recipe.classList.add('empty');
+        recipe.textContent = '尚未上色 — 選一個顏色，再點一根指甲';
+        return;
+      }
+      recipe.classList.remove('empty');
+      var html = '今日配方 · ';
+      var items = keys.map(function(k){
+        var p = painted[k];
+        var n = '0' + (parseInt(k) + 1);
+        var addons = [];
+        if (p.shimmer) addons.push('珠光');
+        if (p.foil) addons.push('金箔');
+        var ad = addons.length ? ' + ' + addons.join('・') : '';
+        return '<strong>' + n + '</strong> ' + p.name + ad;
+      });
+      recipe.innerHTML = html + items.join(' · ');
+    }
+
+    resetBtn.addEventListener('click', function(){
+      painted = {};
+      nails.forEach(function(n){
+        n.classList.remove('has-shimmer', 'has-foil', 'selected');
+        var b = n.querySelector('.nail-base');
+        b.setAttribute('fill', '#F2E5D7');
+      });
+      tShim.classList.remove('on');
+      tFoil.classList.remove('on');
+      refreshBrushAddOns();
+      updateRecipe();
+    });
+  })();
+
+  // ===== Click bloom trail =====
+  (function(){
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var palette = ['#C9A099', '#E8A48A', '#D9B3A8', '#B8A4C9', '#D4B896'];
+    function svgFlower(color){
+      return '<svg viewBox="-50 -50 100 100" xmlns="http://www.w3.org/2000/svg">'+
+        '<g>'+
+          '<ellipse cx="0" cy="-22" rx="13" ry="22" fill="'+color+'" opacity=".88"/>'+
+          '<ellipse cx="21" cy="-7" rx="13" ry="22" fill="'+color+'" opacity=".88" transform="rotate(72 21 -7)"/>'+
+          '<ellipse cx="13" cy="18" rx="13" ry="22" fill="'+color+'" opacity=".88" transform="rotate(144 13 18)"/>'+
+          '<ellipse cx="-13" cy="18" rx="13" ry="22" fill="'+color+'" opacity=".88" transform="rotate(216 -13 18)"/>'+
+          '<ellipse cx="-21" cy="-7" rx="13" ry="22" fill="'+color+'" opacity=".88" transform="rotate(288 -21 -7)"/>'+
+          '<circle cx="0" cy="0" r="7" fill="#A88B5F"/>'+
+        '</g>'+
+      '</svg>';
+    }
+    document.addEventListener('click', function(e){
+      // skip if clicking interactive controls in fog/garden where bloom would clutter
+      if (e.target.closest('.fog-canvas')) return;
+      var el = document.createElement('div');
+      el.className = 'click-bloom';
+      el.style.left = e.clientX + 'px';
+      el.style.top = e.clientY + 'px';
+      var color = palette[Math.floor(Math.random()*palette.length)];
+      el.innerHTML = svgFlower(color);
+      document.body.appendChild(el);
+      if (window.gsap) {
+        gsap.to(el, { scale: 1.2, opacity: 1, rotation: (Math.random()-.5)*40, duration: .35, ease: 'back.out(2)' });
+        gsap.to(el, { scale: 1.6, opacity: 0, y: -22, duration: .8, delay: .35, ease: 'power2.in', onComplete: function(){ el.remove(); } });
+      } else {
+        setTimeout(function(){ el.remove(); }, 600);
+      }
+    });
+  })();
+})();
+</script>
+</body>
+</html>

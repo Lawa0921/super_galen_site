@@ -8,6 +8,20 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "c_mia_c"
+    name: "MIA · ᴹᴵᴬ｜唯朵美學嘉義"
+    avatar: "/assets/img/guild/c_mia_c/avatar.webp"
+    page: "/guild/c_mia_c.html"
+    title: "唯朵美學主理人 · 七年美業職人"
+    description: "嘉義水上獨立工作室，採完全預約制。八項服務涵蓋美甲、美睫、霧眉、洗眉、霧唇、無創粉嫩唇、科技育髮與足部護理 — 從指尖一路顧到腳尖，一次只開一位。"
+    tags:
+      - id: "misted_brow_lip"
+        label: "霧眉 · 霧唇"
+      - id: "polymath_atelier"
+        label: "一指多藝"
+      - id: "chiayi_slow_pace"
+        label: "嘉義慢步調"
+
   - id: "acre_of_oasis"
     name: "大腦小姐｜Acre of Oasis"
     avatar: "/assets/img/guild/acre_of_oasis/avatar.webp"
