@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="繫晶 xijing｜社工視角的療癒選品。我是 Dolly — 兒少社工、媽媽、水晶創作者。把無力感折射成微光，每一份收益的 10% 回捐弱勢兒少。不只是撐住，而是修復。">
+<title>Dolly · 繫晶 xijing｜Sanctuary of Tied Light</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Noto+Serif+TC:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<style>
+:root{
+  /* === Sanctuary of Tied Light · Palette === */
+  --paper:#FBF9F4;          /* canvas white, hint of cream */
+  --paper-2:#F4EFE6;        /* sun-warmed paper */
+  --line:#D9D1BE;           /* deckle line */
+  --ink:#1F2520;            /* deep moss-ink */
+  --ink-soft:#3E463E;
+  --moss:#6B8E6F;           /* 草木綠 — primary accent */
+  --moss-deep:#3F5A45;
+  --moss-pale:#B8C9B5;
+  --moss-mist:#E1E9DC;
+  --quartz-rose:#E2BFB9;    /* powder pink quartz */
+  --quartz-honey:#D4B483;   /* citrine honey */
+
+  --font-display:'Italiana',serif;
+  --font-latin:'Cormorant Garamond',serif;
+  --font-tc:'Noto Serif TC',serif;
+  --font-sans:'Noto Sans TC',sans-serif;
+  --font-mono:'DM Mono',monospace;
+
+  --easing:cubic-bezier(.22,.61,.36,1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;background:var(--paper)}
+body{
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(184,201,181,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 100% 100%, rgba(226,191,185,.10) 0%, transparent 55%),
+    var(--paper);
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-weight:300;
+  line-height:1.85;
+  letter-spacing:.02em;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+::selection{background:var(--moss);color:var(--paper)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--paper-2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--moss),var(--quartz-rose));border-radius:3px}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* === Layered backgrounds === */
+/* Scroll-driven sky: dawn → noon → golden → night — smoothly interpolated by JS */
+#sky-stage{position:fixed;inset:0;z-index:0;pointer-events:none;
+  --bg-top:#FBF6F0;--bg-bot:#F4EDE3;
+  --glow-a:rgba(226,191,185,.30);--glow-b:rgba(185,165,201,.18);
+  --txt:#1F2520;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, var(--glow-a) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 100% 100%, var(--glow-b) 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bot) 100%)}
+body{transition:color 1.4s ease}
+body.is-sky-night{color:#F2EEE6}
+body.is-sky-night .topbar{background:linear-gradient(180deg, rgba(21,25,26,.85) 0%, rgba(21,25,26,0) 100%)}
+body.is-sky-night .brand-mark, body.is-sky-night .archive-link, body.is-sky-night .side-stamp{color:#F2EEE6}
+body.is-sky-night .grain{opacity:.18}
+body.is-sky-night ::-webkit-scrollbar-track{background:#15191A}
+body.is-sky-twilight .topbar{background:linear-gradient(180deg, rgba(60,50,40,.55) 0%, transparent 100%)}
+
+/* === Twilight / Night readability overrides ===
+   When the sky goes warm / dark, lift text contrast on every section so
+   nothing becomes hard to read against the new ground. */
+body.is-sky-twilight, body.is-sky-night{
+  --ink:#F4EFE3; --ink-soft:#D9D1BE;
+  --moss-deep:#C8DCC1; --moss:#9FBC95; --moss-pale:#7E9A82;
+  --line:rgba(244,239,227,.20); --paper:rgba(244,239,227,.06); --paper-2:rgba(244,239,227,.10);
+}
+body.is-sky-twilight{
+  --ink:#3A2E22; --ink-soft:#5C4A36; --line:rgba(58,46,34,.22); --paper:rgba(244,239,227,.55);
+}
+/* Card / surface adjustments — keep them readable but blend with the sky */
+body.is-sky-night .tri-card,
+body.is-sky-night .offer-card,
+body.is-sky-night .bracelet-stage,
+body.is-sky-night .mood-chip{background:rgba(244,239,227,.06);border-color:rgba(244,239,227,.22)}
+body.is-sky-night .mood-chip.active{background:#C8DCC1;color:#1F2520;border-color:#C8DCC1}
+body.is-sky-night .mood-chip.active .mood-en{color:rgba(31,37,32,.65)}
+body.is-sky-night .mood-chip .em{color:#C8DCC1}
+body.is-sky-night .builder-name-row input{background:rgba(244,239,227,.08);color:#F4EFE3;border-color:rgba(244,239,227,.22)}
+body.is-sky-night .cta{background:rgba(244,239,227,.06);border-color:#F4EFE3;color:#F4EFE3}
+body.is-sky-night .cta::before{background:#F4EFE3}
+body.is-sky-night .cta:hover{color:#1F2520;border-color:#F4EFE3}
+body.is-sky-night .cta.alt{border-color:#C8DCC1;color:#C8DCC1}
+body.is-sky-night .cta.alt::before{background:#C8DCC1}
+body.is-sky-night .cta.alt:hover{color:#1F2520;border-color:#C8DCC1}
+body.is-sky-night .footer{background:linear-gradient(180deg, transparent, rgba(0,0,0,.30));border-top-color:rgba(244,239,227,.18)}
+body.is-sky-night .footer p,body.is-sky-night .footer .links a{color:#E8E1CE}
+body.is-sky-night .footer-bottom{color:#B8B098;border-top-color:rgba(244,239,227,.16)}
+body.is-sky-night .topbar,body.is-sky-twilight .topbar{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+body.is-sky-night .archive-link{color:#E8E1CE}
+body.is-sky-night .closing h2,body.is-sky-night .song .verse,body.is-sky-night .song h2{text-shadow:0 1px 18px rgba(0,0,0,.4)}
+body.is-sky-night .hero h1{text-shadow:0 2px 24px rgba(0,0,0,.5)}
+body.is-sky-twilight .hero h1{text-shadow:0 2px 24px rgba(58,46,34,.4)}
+/* Hero is always at dawn — keep its shadow hint regardless */
+.hero h1{transition:text-shadow 1.4s ease}
+/* Bridge images: soften when sky is dark */
+body.is-sky-twilight .bridge img,body.is-sky-night .bridge img{opacity:.55;filter:saturate(.7) brightness(1.08)}
+body.is-sky-night .bridge img{filter:invert(.85) hue-rotate(160deg) saturate(.5) brightness(1.05);opacity:.4}
+/* Daughter / origin section pull-quotes need lighter borders on dark */
+body.is-sky-night .daughter-text .pull,body.is-sky-night .origin-pull{border-left-color:#E2BFB9;color:#F4EFE3}
+body.is-sky-night .daughter-text h2,body.is-sky-night .origin-text h2,body.is-sky-night .featured-info h3,body.is-sky-night .triptych-head h2,body.is-sky-night .catalogue-head h2,body.is-sky-night .builder-head h2,body.is-sky-night .cycle h2,body.is-sky-night .offer-head h2,body.is-sky-night .closing h2{color:#F4EFE3}
+body.is-sky-night .cycle-step .ic{background:rgba(244,239,227,.10);color:#C8DCC1}
+body.is-sky-night .cycle-step{border-bottom-color:rgba(244,239,227,.12)}
+body.is-sky-night .featured-info .stones{border-top-color:rgba(244,239,227,.18)}
+body.is-sky-night .featured-info .stone b{color:#F4EFE3}
+body.is-sky-night .bead .name{color:#F4EFE3}
+body.is-sky-night .bead .price{color:#D9D1BE}
+body.is-sky-night .bead .price b{color:#C8DCC1}
+body.is-sky-night .wall-card .wname{color:#F4EFE3}
+body.is-sky-night .builder-tie-btn{background:#C8DCC1;color:#1F2520}
+body.is-sky-night .builder-tie-btn:hover{background:#F4EFE3}
+
+/* === Twilight & Night extra readability — explicit body-text overrides for paragraphs === */
+body.is-sky-twilight .song .verse, body.is-sky-night .song .verse,
+body.is-sky-twilight .cycle p, body.is-sky-night .cycle p,
+body.is-sky-twilight .origin-text p, body.is-sky-night .origin-text p,
+body.is-sky-twilight .featured-info p, body.is-sky-night .featured-info p,
+body.is-sky-twilight .tri-card p, body.is-sky-night .tri-card p,
+body.is-sky-twilight .daughter-text p, body.is-sky-night .daughter-text p,
+body.is-sky-twilight .offer-card p, body.is-sky-night .offer-card p,
+body.is-sky-twilight .builder-head p, body.is-sky-night .builder-head p{
+  color:inherit;text-shadow:0 1px 12px rgba(0,0,0,.35)
+}
+body.is-sky-twilight .song .verse, body.is-sky-twilight .cycle p, body.is-sky-twilight .origin-text p,
+body.is-sky-twilight .tri-card p, body.is-sky-twilight .daughter-text p, body.is-sky-twilight .offer-card p,
+body.is-sky-twilight .builder-head p, body.is-sky-twilight .featured-info p{
+  text-shadow:0 1px 10px rgba(248,237,216,.7)
+}
+
+/* Twilight-zone backdrop scrim for big-type sections — keeps headers crisp on shifting gold */
+.song::before, .closing::before, .offer-head::before, .cycle::before{
+  content:'';position:absolute;inset:-20px 8% -20px 8%;background:radial-gradient(ellipse 60% 70% at 50% 50%, rgba(0,0,0,0) 0%, transparent 100%);
+  z-index:0;pointer-events:none;transition:background 1.4s ease}
+body.is-sky-twilight .song::before, body.is-sky-twilight .closing::before, body.is-sky-twilight .offer-head::before{
+  background:radial-gradient(ellipse 80% 70% at 50% 50%, rgba(58,46,34,.10) 0%, transparent 70%)}
+body.is-sky-night .song::before, body.is-sky-night .closing::before, body.is-sky-night .offer-head::before{
+  background:radial-gradient(ellipse 80% 70% at 50% 50%, rgba(0,0,0,.30) 0%, transparent 75%)}
+.song > .shell, .closing > .shell, .offer-head{position:relative;z-index:1}
+
+/* Force song heading and verse to high contrast in dark phases */
+body.is-sky-twilight .song h2, body.is-sky-night .song h2{color:#F4EFE3}
+body.is-sky-twilight .song h2 .it, body.is-sky-night .song h2 .it{color:#E2C796}
+body.is-sky-twilight .song .label, body.is-sky-night .song .label{color:#E2C796}
+body.is-sky-twilight .closing .sig, body.is-sky-night .closing .sig{color:#E2C796}
+body.is-sky-twilight .closing .role, body.is-sky-night .closing .role{color:#D9D1BE}
+body.is-sky-twilight .offer-card h3 .lat, body.is-sky-night .offer-card h3 .lat{color:#C8DCC1}
+body.is-sky-twilight .offer-card .who, body.is-sky-night .offer-card .who{color:#C8DCC1;border-top-color:rgba(244,239,227,.18)}
+body.is-sky-twilight .offer-card h3, body.is-sky-night .offer-card h3{color:#F4EFE3}
+body.is-sky-twilight .offer-card .ic, body.is-sky-night .offer-card .ic{color:#C8DCC1}
+body.is-sky-twilight .offer-card .num, body.is-sky-night .offer-card .num{color:#E2C796}
+body.is-sky-twilight .closing .star, body.is-sky-night .closing .star{color:#E2C796}
+/* Cycle-step dashed border */
+body.is-sky-twilight .cycle-step{border-bottom-color:rgba(58,46,34,.20)}
+body.is-sky-twilight .cycle-step .ic{background:rgba(58,46,34,.10);color:#3A2E22}
+
+#three-stage{position:fixed;inset:0;z-index:1;pointer-events:none}
+#p5-stage{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.65;mix-blend-mode:multiply}
+
+/* === Prismatic cursor (page-wide) === */
+.prism-cursor{position:fixed;top:0;left:0;z-index:9990;pointer-events:none;width:60px;height:60px;transform:translate(-50%,-50%);mix-blend-mode:screen}
+.prism-cursor .core{position:absolute;inset:50% 50% auto auto;width:6px;height:6px;border-radius:50%;background:#FFFFFF;transform:translate(50%,-50%);box-shadow:0 0 14px rgba(255,255,255,.85), 0 0 28px rgba(255,236,200,.4)}
+.prism-cursor .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,255,255,.55);transform:scale(.6);transition:transform .35s var(--easing), border-color .35s, opacity .35s}
+.prism-cursor .spectrum{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg, #E2BFB9, #D4B483, #B8C9B5, #B9A5C9, #E2BFB9);filter:blur(14px);opacity:.55;mix-blend-mode:screen;animation:spec-rot 8s linear infinite}
+@keyframes spec-rot{to{transform:rotate(360deg)}}
+body.is-hover-cta .prism-cursor .ring{transform:scale(1.3);border-color:rgba(255,255,255,.9)}
+@media(max-width:900px),(hover:none){.prism-cursor{display:none}}
+
+/* Page-wide light trail canvas — paints prismatic dust where cursor moves */
+#trail-stage{position:fixed;inset:0;z-index:9989;pointer-events:none;mix-blend-mode:screen}
+.grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.35;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='2' seed='9'/><feColorMatrix values='0 0 0 0 .26 0 0 0 0 .29 0 0 0 0 .25 0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.vignette{position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 55%, rgba(31,37,32,.10) 100%)}
+
+main{position:relative;z-index:5}
+
+/* === Scaffolding === */
+.shell{max-width:1280px;margin:0 auto;padding:0 6vw}
+section{position:relative;padding:14vh 0}
+
+/* === Top bar === */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;justify-content:space-between;align-items:center;padding:18px 6vw;
+  background:linear-gradient(180deg, rgba(251,249,244,.85) 0%, rgba(251,249,244,0) 100%);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.brand-mark{display:flex;align-items:center;gap:14px;font-family:var(--font-display);font-size:18px;letter-spacing:.5em;color:var(--ink)}
+.brand-mark .star{color:var(--moss);font-size:14px;animation:starpulse 5s var(--easing) infinite}
+@keyframes starpulse{0%,100%{transform:rotate(0) scale(1);opacity:1}50%{transform:rotate(72deg) scale(1.15);opacity:.65}}
+.archive-link{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink-soft);transition:color .4s}
+.archive-link:hover{color:var(--moss)}
+.archive-link .line{width:30px;height:1px;background:currentColor;transition:width .4s var(--easing)}
+.archive-link:hover .line{width:50px}
+
+/* === Side stamp === */
+.side-stamp{position:fixed;left:24px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:left center;z-index:40;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.5em;color:var(--ink-soft);opacity:.55;display:flex;gap:30px;align-items:center}
+.side-stamp .pill{width:6px;height:6px;border-radius:50%;background:var(--moss);box-shadow:0 0 12px var(--moss-pale)}
+@media(max-width:900px){.side-stamp{display:none}}
+
+/* === HERO — cinematic full-screen prism === */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:14vh 0 8vh;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.78;filter:contrast(1.05) saturate(1.05);transform:scale(1.04);transition:transform 30s ease-out}
+.hero:hover .hero-bg img{transform:scale(1.08)}
+.hero-bg::before{content:'';position:absolute;inset:0;background:
+  radial-gradient(ellipse 60% 50% at 50% 35%, transparent 0%, rgba(251,249,244,.5) 65%, rgba(251,249,244,.92) 100%);
+  z-index:1}
+.hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(251,249,244,.35) 0%, transparent 30%, transparent 70%, rgba(251,249,244,.95) 100%);z-index:2}
+
+/* Beams of refracted light — CSS only */
+.hero-beams{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.beam{position:absolute;top:30%;left:50%;width:2px;height:140vh;transform-origin:top center;opacity:0;mix-blend-mode:screen;filter:blur(.5px)}
+.beam.b1{background:linear-gradient(180deg, rgba(226,191,185,.85), rgba(226,191,185,0));transform:translateX(-50%) rotate(-32deg)}
+.beam.b2{background:linear-gradient(180deg, rgba(212,180,131,.85), rgba(212,180,131,0));transform:translateX(-50%) rotate(-12deg)}
+.beam.b3{background:linear-gradient(180deg, rgba(184,201,181,.85), rgba(184,201,181,0));transform:translateX(-50%) rotate(8deg)}
+.beam.b4{background:linear-gradient(180deg, rgba(185,165,201,.85), rgba(185,165,201,0));transform:translateX(-50%) rotate(28deg)}
+.beam.b5{background:linear-gradient(180deg, rgba(168,196,214,.85), rgba(168,196,214,0));transform:translateX(-50%) rotate(-50deg)}
+
+.hero-content{position:relative;z-index:5;max-width:1280px;margin:0 auto;padding:0 6vw;width:100%}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:6vw;align-items:end}
+@media(max-width:980px){.hero-grid{grid-template-columns:1fr;gap:6vh;align-items:start}}
+
+.hero-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:34px;font-family:var(--font-mono);font-size:11px;letter-spacing:.45em;text-transform:uppercase;color:var(--moss-deep)}
+.hero-eyebrow .em{flex:0 0 50px;height:1px;background:var(--moss)}
+.hero-eyebrow b{font-weight:400;color:var(--ink)}
+
+.hero h1{font-family:var(--font-display);font-weight:400;line-height:.92;letter-spacing:-.01em;
+  font-size:clamp(72px,12vw,200px);color:var(--ink);margin-bottom:28px;text-shadow:0 2px 24px rgba(251,249,244,.6)}
+.hero h1 .ital{font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep);font-size:.62em;letter-spacing:0;display:block;margin-top:6px}
+.hero h1 .ampr{color:var(--quartz-honey);font-family:var(--font-latin);font-weight:300;font-style:italic}
+.hero h1 .ch{font-family:var(--font-tc);font-weight:300;letter-spacing:.06em}
+
+.hero-tag{font-family:var(--font-tc);font-size:18px;line-height:2.1;color:var(--ink-soft);max-width:36ch;margin-bottom:38px}
+.hero-tag .star{color:var(--moss);font-family:var(--font-display)}
+
+.hero-meta{display:grid;grid-template-columns:repeat(3,auto);gap:36px;font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft)}
+.hero-meta .k{display:block;color:var(--moss);font-size:9px;margin-bottom:6px}
+@media(max-width:540px){.hero-meta{grid-template-columns:repeat(2,auto);gap:22px}}
+
+.hero-canvas{position:relative;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;min-height:400px}
+.hero-canvas .frame{position:absolute;inset:0;border:1px solid var(--line);transform:rotate(-2deg)}
+.hero-canvas .frame::before{content:'✦';position:absolute;top:-12px;left:-12px;background:var(--paper);padding:0 8px;font-family:var(--font-display);color:var(--moss);font-size:22px}
+.hero-canvas .frame::after{content:'';position:absolute;-12px;right:-12px;width:14px;height:14px;border:1px solid var(--moss);border-radius:50%;background:var(--paper);bottom:-7px;right:-7px}
+.crystal-stage{position:absolute;inset:8%;z-index:2}
+.hero-caption{position:absolute;bottom:-44px;left:0;right:0;text-align:center;font-family:var(--font-latin);font-style:italic;font-size:14px;color:var(--ink-soft);letter-spacing:.04em}
+
+.hero-scroll{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;letter-spacing:.5em;text-transform:uppercase;color:var(--ink-soft);display:flex;flex-direction:column;align-items:center;gap:14px;opacity:.7}
+.hero-scroll .l{width:1px;height:42px;background:linear-gradient(to bottom,var(--moss),transparent);animation:dripline 2.4s ease-in-out infinite}
+@keyframes dripline{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* === Manifesto pinned === */
+.manifesto{min-height:140vh;padding:0}
+.manifesto-pin{height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.manifesto-line{font-family:var(--font-tc);font-weight:300;line-height:1.35;font-size:clamp(36px,6.4vw,98px);text-align:center;letter-spacing:.04em;max-width:90vw}
+.manifesto-line .word{display:inline-block;opacity:.18;transition:opacity .9s var(--easing),color .9s,transform .9s var(--easing)}
+.manifesto-line .word.lit{opacity:1;color:var(--moss-deep)}
+.manifesto-line .em{font-family:var(--font-latin);font-style:italic;color:var(--quartz-honey)}
+.manifesto-mark{position:absolute;top:8vh;left:50%;transform:translateX(-50%);font-family:var(--font-display);color:var(--moss);font-size:34px;letter-spacing:1em;padding-left:1em}
+.manifesto-attr{position:absolute;bottom:8vh;left:0;right:0;text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.45em;text-transform:uppercase;color:var(--ink-soft)}
+.manifesto-attr i{color:var(--moss)}
+
+/* === Triptych: three identities === */
+.triptych-head{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:54px;border-bottom:1px solid var(--line);margin-bottom:64px;flex-wrap:wrap;gap:22px}
+.triptych-head h2{font-family:var(--font-display);font-size:clamp(40px,5.6vw,84px);line-height:1;font-weight:400}
+.triptych-head h2 .it{font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep)}
+.triptych-head .num{font-family:var(--font-mono);font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--ink-soft)}
+
+.triptych{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;align-items:stretch}
+@media(max-width:900px){.triptych{grid-template-columns:1fr}}
+.tri-card{position:relative;padding:50px 36px;background:linear-gradient(180deg,var(--paper),var(--paper-2));border:1px solid var(--line);transition:transform .6s var(--easing),box-shadow .6s}
+.tri-card:hover{transform:translateY(-8px);box-shadow:0 20px 60px -28px rgba(63,90,69,.25)}
+.tri-card::before{content:'';position:absolute;top:-1px;left:14%;right:14%;height:3px;background:var(--moss)}
+.tri-card .ic{font-size:24px;color:var(--moss);margin-bottom:24px}
+.tri-card .role-tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:12px}
+.tri-card h3{font-family:var(--font-tc);font-weight:500;font-size:30px;line-height:1.3;color:var(--ink);margin-bottom:18px;letter-spacing:.04em}
+.tri-card h3 .lat{display:block;font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep);font-size:18px;margin-top:6px;letter-spacing:.02em}
+.tri-card p{font-family:var(--font-tc);font-weight:300;font-size:15px;line-height:2.1;color:var(--ink-soft)}
+.tri-card .star{position:absolute;bottom:18px;right:22px;font-family:var(--font-display);color:var(--moss-pale);font-size:16px}
+
+/* === Origin story === */
+.origin{display:grid;grid-template-columns:1fr 1.2fr;gap:8vw;align-items:center}
+@media(max-width:980px){.origin{grid-template-columns:1fr}}
+.origin-img{position:relative;aspect-ratio:3/4}
+.origin-img img{width:100%;height:100%;object-fit:cover;filter:saturate(.92) brightness(1.02)}
+.origin-img .tag{position:absolute;left:-14px;bottom:24px;background:var(--paper);padding:10px 18px;border:1px solid var(--moss);font-family:var(--font-mono);font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:var(--moss-deep)}
+.origin-img .corner{position:absolute;top:-8px;right:-8px;width:48px;height:48px;border-top:1px solid var(--moss);border-right:1px solid var(--moss)}
+
+.origin-text .label{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--moss);margin-bottom:22px;display:flex;align-items:center;gap:14px}
+.origin-text .label::before{content:'';width:30px;height:1px;background:var(--moss)}
+.origin-text h2{font-family:var(--font-display);font-size:clamp(38px,5.4vw,76px);line-height:1.05;font-weight:400;margin-bottom:34px}
+.origin-text h2 .it{font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep)}
+.origin-text .lede{font-family:var(--font-tc);font-size:19px;line-height:2;color:var(--ink);margin-bottom:32px;letter-spacing:.03em}
+.origin-text .lede em{font-family:var(--font-latin);font-style:italic;color:var(--moss-deep);font-size:1.05em}
+.origin-text p{font-family:var(--font-tc);font-size:15px;line-height:2.1;color:var(--ink-soft);margin-bottom:18px}
+.origin-pull{margin:38px 0;padding:28px 32px;border-left:2px solid var(--moss);background:linear-gradient(90deg, var(--moss-mist), transparent);font-family:var(--font-tc);font-size:18px;line-height:1.9;color:var(--moss-deep);letter-spacing:.05em}
+.origin-pull .star{font-family:var(--font-display);color:var(--moss);margin-right:10px}
+
+/* === Catalogue: 22 bracelets === */
+.catalogue-head{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:end;padding-bottom:48px;border-bottom:1px solid var(--line);margin-bottom:60px}
+.catalogue-head h2{font-family:var(--font-display);font-size:clamp(40px,6vw,92px);line-height:1;font-weight:400}
+.catalogue-head h2 .it{font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep)}
+.catalogue-head .meta{font-family:var(--font-mono);font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--ink-soft);text-align:right}
+.catalogue-head .meta b{display:block;color:var(--moss);font-size:42px;font-family:var(--font-display);font-weight:400;letter-spacing:0;margin-bottom:4px}
+
+.featured{display:grid;grid-template-columns:1fr 1.1fr;gap:6vw;align-items:center;margin-bottom:80px}
+@media(max-width:900px){.featured{grid-template-columns:1fr}}
+.featured-img{position:relative}
+.featured-img img{width:100%;aspect-ratio:1/1;object-fit:cover}
+.featured-img .badge{position:absolute;top:18px;left:18px;background:var(--moss-deep);color:var(--paper);padding:8px 16px;font-family:var(--font-mono);font-size:10px;letter-spacing:.4em}
+.featured-info .star-row{font-family:var(--font-display);color:var(--moss);letter-spacing:1em;font-size:18px;margin-bottom:18px}
+.featured-info h3{font-family:var(--font-tc);font-weight:400;font-size:42px;line-height:1.2;color:var(--ink);margin-bottom:16px;letter-spacing:.05em}
+.featured-info h3 .lat{display:block;font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep);font-size:24px;margin-top:8px;letter-spacing:.02em}
+.featured-info p.lede{font-family:var(--font-tc);font-size:17px;line-height:2;color:var(--ink-soft);margin-bottom:28px}
+.featured-info .stones{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 28px;margin-top:24px;padding-top:24px;border-top:1px solid var(--line)}
+.featured-info .stone{display:flex;align-items:flex-start;gap:14px;font-family:var(--font-tc);font-size:14px;color:var(--ink-soft);line-height:1.6}
+.featured-info .stone .dot{flex:0 0 14px;height:14px;border-radius:50%;margin-top:6px;box-shadow:0 0 16px currentColor;opacity:.85}
+.featured-info .stone b{display:block;color:var(--ink);font-weight:500;margin-bottom:2px}
+
+.collection{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}
+@media(max-width:900px){.collection{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.collection{grid-template-columns:1fr}}
+
+/* === 善的循環 === */
+.cycle{position:relative;overflow:hidden}
+.cycle-grid{display:grid;grid-template-columns:1fr 1fr;gap:8vw;align-items:center}
+@media(max-width:900px){.cycle-grid{grid-template-columns:1fr}}
+.cycle .label{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--moss);margin-bottom:24px;display:flex;align-items:center;gap:14px}
+.cycle .label::before{content:'';width:30px;height:1px;background:var(--moss)}
+.cycle h2{font-family:var(--font-display);font-size:clamp(40px,6vw,90px);line-height:1.05;margin-bottom:30px;font-weight:400}
+.cycle h2 .it{font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep)}
+.cycle p{font-family:var(--font-tc);font-size:16px;line-height:2.1;color:var(--ink-soft);margin-bottom:18px}
+
+.cycle-orb{position:relative;aspect-ratio:1/1}
+.cycle-svg{width:100%;height:100%;overflow:visible}
+.cycle-pct{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.cycle-pct .num{font-family:var(--font-display);font-size:clamp(110px,18vw,200px);line-height:1;color:var(--moss-deep)}
+.cycle-pct .pct{font-family:var(--font-latin);font-style:italic;font-size:38px;color:var(--quartz-honey);margin-left:6px}
+.cycle-pct .cap{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--ink-soft);margin-top:14px}
+
+.cycle-flow{margin-top:40px;display:flex;flex-direction:column;gap:18px}
+.cycle-step{display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center;padding:18px 0;border-bottom:1px dashed var(--line)}
+.cycle-step .ic{width:38px;height:38px;border-radius:50%;background:var(--moss-mist);color:var(--moss-deep);display:grid;place-items:center;font-size:14px}
+.cycle-step .txt{font-family:var(--font-tc);font-size:15px;color:var(--ink);line-height:1.6}
+.cycle-step .txt small{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:.3em;color:var(--ink-soft);text-transform:uppercase;margin-bottom:2px}
+.cycle-step .arr{font-family:var(--font-display);color:var(--moss);font-size:16px}
+
+/* === Theme song === */
+.song{padding:18vh 0;text-align:center;position:relative}
+.song .label{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--moss);margin-bottom:30px;display:inline-flex;align-items:center;gap:14px}
+.song .label::before,.song .label::after{content:'';width:30px;height:1px;background:var(--moss)}
+.song h2{font-family:var(--font-display);font-size:clamp(50px,8vw,128px);line-height:1.05;margin-bottom:18px;font-weight:400}
+.song h2 .it{font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep);display:block;font-size:.55em;letter-spacing:.06em}
+.song .verse{font-family:var(--font-tc);font-size:19px;line-height:2.2;color:var(--ink-soft);max-width:32ch;margin:24px auto 0;letter-spacing:.06em}
+.song-wave{margin:48px auto 0;display:flex;justify-content:center;align-items:flex-end;gap:5px;height:80px;max-width:520px}
+.song-wave span{flex:1;background:linear-gradient(180deg,var(--moss),var(--quartz-rose));border-radius:2px;animation:wave 1.6s ease-in-out infinite;opacity:.85}
+@keyframes wave{0%,100%{height:18%}50%{height:100%}}
+
+/* === Offer / What I do for you === */
+.offer-head{padding-bottom:54px;border-bottom:1px solid var(--line);margin-bottom:60px}
+.offer-head .label{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--moss);margin-bottom:22px;display:flex;align-items:center;gap:14px}
+.offer-head .label::before{content:'';width:30px;height:1px;background:var(--moss)}
+.offer-head h2{font-family:var(--font-display);font-size:clamp(44px,6.4vw,108px);line-height:1.02;font-weight:400}
+.offer-head h2 .it{font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep)}
+
+.offer-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line)}
+@media(max-width:780px){.offer-grid{grid-template-columns:1fr}}
+.offer-card{background:var(--paper);padding:46px 38px;display:flex;flex-direction:column;gap:18px;position:relative;transition:background .5s}
+.offer-card:hover{background:var(--paper-2)}
+.offer-card .num{font-family:var(--font-mono);font-size:11px;letter-spacing:.4em;color:var(--moss);text-transform:uppercase}
+.offer-card .ic{font-size:26px;color:var(--moss-deep);margin-top:6px}
+.offer-card h3{font-family:var(--font-tc);font-weight:500;font-size:24px;line-height:1.4;color:var(--ink);letter-spacing:.04em}
+.offer-card h3 .lat{display:block;font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep);font-size:15px;margin-top:4px;letter-spacing:.02em}
+.offer-card p{font-family:var(--font-tc);font-size:14px;line-height:1.95;color:var(--ink-soft)}
+.offer-card .who{margin-top:auto;padding-top:18px;border-top:1px dashed var(--line);font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--moss-deep)}
+
+/* === Closing === */
+.closing{text-align:center;padding:18vh 0 14vh}
+.closing .star{font-family:var(--font-display);color:var(--moss);font-size:24px;letter-spacing:.6em;padding-left:.6em;margin-bottom:34px;display:block}
+.closing h2{font-family:var(--font-tc);font-weight:300;font-size:clamp(28px,4.4vw,58px);line-height:1.7;letter-spacing:.08em;color:var(--ink);max-width:18ch;margin:0 auto 36px}
+.closing h2 .it{font-family:var(--font-latin);font-style:italic;color:var(--moss-deep)}
+.closing .sig{font-family:var(--font-latin);font-style:italic;font-size:32px;color:var(--moss-deep);margin-bottom:6px}
+.closing .role{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--ink-soft)}
+
+.cta-row{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-top:44px}
+.cta{display:inline-flex;align-items:center;gap:14px;padding:18px 32px;border:1px solid var(--ink);font-family:var(--font-mono);font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--ink);background:var(--paper);transition:color .5s var(--easing), border-color .5s var(--easing);position:relative;overflow:hidden;isolation:isolate}
+.cta::before{content:'';position:absolute;inset:0;background:var(--moss-deep);transform:translateY(101%);transition:transform .55s var(--easing);z-index:0}
+.cta > *{position:relative;z-index:1}
+.cta:hover{color:var(--paper);border-color:var(--moss-deep)}
+.cta:hover::before{transform:translateY(0)}
+.cta i{font-size:13px}
+.cta.alt{border-color:var(--moss);color:var(--moss-deep)}
+.cta.alt::before{background:var(--moss)}
+.cta.alt:hover{color:var(--paper);border-color:var(--moss)}
+
+/* === Footer === */
+.footer{position:relative;padding:8vh 6vw 5vh;border-top:1px solid var(--line);background:linear-gradient(180deg,var(--paper),var(--paper-2));z-index:5}
+.footer-grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;align-items:start}
+@media(max-width:780px){.footer-grid{grid-template-columns:1fr;gap:28px}}
+.footer h4{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--moss);margin-bottom:18px}
+.footer p{font-family:var(--font-tc);font-size:14px;line-height:1.95;color:var(--ink-soft)}
+.footer p .it{font-family:var(--font-latin);font-style:italic;color:var(--moss-deep)}
+.footer .links{display:flex;flex-direction:column;gap:12px}
+.footer .links a{display:inline-flex;align-items:center;gap:14px;font-family:var(--font-tc);font-size:14px;color:var(--ink);transition:color .4s,gap .4s}
+.footer .links a i{color:var(--moss);font-size:14px;width:18px}
+.footer .links a:hover{color:var(--moss-deep);gap:18px}
+.footer-bottom{max-width:1280px;margin:80px auto 0;padding-top:30px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:18px;font-family:var(--font-mono);font-size:10px;letter-spacing:.36em;text-transform:uppercase;color:var(--ink-soft)}
+.footer-bottom .heart{color:var(--quartz-rose);font-size:11px;animation:beat 2.4s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+
+/* === Reveal helpers === */
+.reveal{opacity:0;transform:translateY(28px);will-change:opacity,transform}
+.reveal.in{opacity:1;transform:translateY(0);transition:opacity 1.1s var(--easing),transform 1.1s var(--easing)}
+/* Fallback: if JS fails or IO never fires (e.g. user with reduced motion), show after delay */
+@media (prefers-reduced-motion: reduce){.reveal{opacity:1;transform:none}}
+html.no-js .reveal{opacity:1;transform:none}
+
+/* === Tying-line: thread that runs through the entire page === */
+.tying-line{position:fixed;top:0;left:50%;transform:translateX(-50%);width:1px;height:100vh;z-index:4;pointer-events:none;mix-blend-mode:multiply}
+.tying-line::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg, transparent 0%, rgba(107,142,111,.32) 12%, rgba(212,180,131,.4) 50%, rgba(185,165,201,.32) 88%, transparent 100%);width:1px;left:0}
+.tying-thread{position:absolute;top:0;left:0;width:100%;height:100vh;overflow:visible}
+.knot{position:fixed;left:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;font-family:var(--font-display);color:var(--moss-deep);font-size:18px;background:var(--paper);padding:0 8px;text-shadow:0 0 14px var(--paper)}
+
+/* === Bridge images between sections === */
+.bridge{position:relative;height:120px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin:0 auto;max-width:1400px;padding:0 6vw}
+.bridge img{max-width:100%;height:auto;opacity:.78;mix-blend-mode:multiply}
+.bridge.thread img{width:80%;max-width:560px}
+.bridge.botanical{height:200px}
+.bridge.botanical img{height:100%;width:auto;opacity:.55;filter:saturate(.88)}
+.bridge.starfield{height:280px;background:radial-gradient(ellipse at center, rgba(245,239,225,.45), transparent 70%)}
+.bridge.starfield img{height:100%;width:auto;opacity:.6}
+
+/* === Mood Bracelet Builder · Signature Moment 2.0 === */
+.builder{position:relative;padding:18vh 0 14vh;overflow:hidden}
+.builder-head{text-align:center;max-width:780px;margin:0 auto 60px;padding:0 6vw}
+.builder-head .label{display:inline-flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--moss);margin-bottom:24px}
+.builder-head .label::before,.builder-head .label::after{content:'';width:30px;height:1px;background:var(--moss)}
+.builder-head h2{font-family:var(--font-display);font-size:clamp(44px,6.4vw,108px);line-height:1.02;font-weight:400;margin-bottom:18px}
+.builder-head h2 .it{font-family:var(--font-latin);font-style:italic;font-weight:300;color:var(--moss-deep);display:block;font-size:.5em;letter-spacing:.06em;margin-top:8px}
+.builder-head p{font-family:var(--font-tc);font-size:17px;line-height:2.05;color:var(--ink-soft);max-width:42ch;margin:0 auto}
+.builder-head p em{font-family:var(--font-latin);font-style:italic;color:var(--moss-deep);font-size:1.05em}
+
+.builder-stage{max-width:1200px;margin:0 auto;padding:0 6vw;display:grid;grid-template-columns:.85fr 1.15fr;gap:6vw;align-items:center}
+@media(max-width:900px){.builder-stage{grid-template-columns:1fr;gap:6vh}}
+
+/* Mood selector — tactile chips */
+.mood-list{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.mood-chip{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:18px 20px;background:rgba(251,249,244,.7);border:1px solid var(--line);cursor:pointer;text-align:left;font-family:var(--font-tc);transition:all .45s var(--easing);overflow:hidden}
+.mood-chip::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg, var(--moss-mist) 0%, transparent 100%);opacity:0;transition:opacity .5s}
+.mood-chip:hover{transform:translateY(-3px);border-color:var(--moss);box-shadow:0 14px 40px -22px rgba(63,90,69,.3)}
+.mood-chip.active{background:var(--moss-deep);color:var(--paper);border-color:var(--moss-deep)}
+.mood-chip.active::before{opacity:1}
+.mood-chip .em{font-family:var(--font-display);font-size:18px;color:var(--moss);letter-spacing:.4em;position:relative}
+.mood-chip.active .em{color:var(--quartz-honey)}
+.mood-chip .mood-cn{font-size:18px;font-weight:400;letter-spacing:.06em;position:relative}
+.mood-chip .mood-en{font-family:var(--font-latin);font-style:italic;font-size:13px;color:var(--ink-soft);position:relative}
+.mood-chip.active .mood-en{color:rgba(242,238,230,.7)}
+
+.builder-name-row{margin-top:24px;display:grid;grid-template-columns:1fr auto;gap:12px}
+.builder-name-row input{padding:14px 16px;background:rgba(251,249,244,.85);border:1px solid var(--line);font-family:var(--font-tc);font-size:15px;color:var(--ink);outline:none;transition:border-color .4s}
+.builder-name-row input:focus{border-color:var(--moss)}
+.builder-name-row input::placeholder{color:var(--ink-soft);opacity:.6;font-family:var(--font-latin);font-style:italic}
+.builder-tie-btn{padding:14px 22px;min-width:140px;background:var(--moss-deep);color:var(--paper);font-family:var(--font-mono);font-size:11px;letter-spacing:.36em;text-transform:uppercase;border:0;cursor:pointer;transition:background .4s, color .4s;white-space:nowrap;text-align:center}
+.builder-tie-btn:hover{background:var(--moss)}
+.builder-tie-btn:disabled{opacity:.5;cursor:not-allowed}
+.builder-tie-btn.is-tied{background:var(--quartz-honey);color:var(--ink)}
+
+/* Bracelet preview SVG stage */
+.bracelet-stage{position:relative;aspect-ratio:1.1/1;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 70% 50% at 50% 45%, rgba(245,239,225,.55), transparent 70%);
+  border:1px solid var(--line);overflow:hidden}
+.bracelet-stage::before{content:'⸻';position:absolute;top:14px;left:50%;transform:translateX(-50%);font-family:var(--font-display);color:var(--moss);font-size:28px;letter-spacing:.5em}
+.bracelet-stage::after{content:'今天 · 為自己繫的一條';position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--ink-soft)}
+.bracelet-svg{width:90%;height:90%;overflow:visible;transform-origin:50% 50%;transition:opacity .5s ease}
+.bracelet-svg.tie-pulse{animation:tie-pulse 1.1s ease-out}
+@keyframes tie-pulse{
+  0%{transform:scale(1);opacity:1}
+  35%{transform:scale(1.03);opacity:.7}
+  100%{transform:scale(1);opacity:1}
+}
+.bracelet-feedback{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);text-align:center;font-family:var(--font-tc);font-size:14px;color:var(--moss-deep);max-width:240px;line-height:1.7;opacity:0;transition:opacity .6s;pointer-events:none}
+.bracelet-feedback.show{opacity:1}
+.bracelet-feedback .stones{font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;color:var(--ink-soft);margin-top:8px;text-transform:uppercase;display:block}
+
+/* === 繫上 burst — restrained gold halo INSIDE bracelet-stage === */
+.tie-burst{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;z-index:5;
+  background:radial-gradient(ellipse 60% 45% at 50% 45%, rgba(212,180,131,.32), rgba(199,163,90,.05) 60%, transparent 80%);
+  transition:opacity .4s;will-change:opacity}
+.tie-burst.show{opacity:1;pointer-events:auto}
+.tie-burst .star-big{font-family:var(--font-display);color:#3F5A45;font-size:42px;line-height:1;letter-spacing:.3em;padding-left:.3em;text-shadow:0 0 24px rgba(212,180,131,.7);transform:scale(.6) rotate(-15deg);transition:transform .8s var(--easing);opacity:.9}
+.tie-burst.show .star-big{transform:scale(1) rotate(0deg)}
+.tie-burst .msg{margin-top:14px;font-family:var(--font-tc);font-size:14px;color:#1F2520;letter-spacing:.06em;background:rgba(251,249,244,.95);padding:10px 16px;border:1px solid var(--moss-deep);max-width:80%;text-align:center;line-height:1.55;transform:translateY(14px);opacity:0;transition:transform .6s .2s var(--easing), opacity .6s .2s;box-shadow:0 10px 30px -16px rgba(63,90,69,.3)}
+.tie-burst.show .msg{transform:translateY(0);opacity:1}
+.tie-burst .msg b{color:var(--moss-deep);font-weight:500}
+.tie-burst .see-wall{margin-top:10px;display:inline-flex;align-items:center;gap:8px;background:var(--moss-deep);color:var(--paper);padding:8px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;border:0;cursor:pointer;transition:background .4s, gap .4s;pointer-events:auto;text-decoration:none}
+.tie-burst .see-wall:hover{background:var(--moss);gap:12px}
+.tie-burst .see-wall .arrow{font-family:var(--font-display);font-size:14px;animation:bounce-down 1.2s ease-in-out infinite}
+@keyframes bounce-down{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+
+/* New wall card highlight after tying */
+@keyframes new-pulse{
+  0%{box-shadow:0 0 0 0 rgba(212,180,131,.55), 0 0 0 0 rgba(63,90,69,.35)}
+  60%{box-shadow:0 0 0 18px rgba(212,180,131,0), 0 0 36px 4px rgba(63,90,69,.2)}
+  100%{box-shadow:0 0 0 0 rgba(212,180,131,0), 0 0 0 0 rgba(63,90,69,0)}
+}
+.wall-card.is-new{position:relative}
+.wall-card.is-new::before{content:'✦ 剛剛繫上的';position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:var(--moss-deep);color:#FBF9F4;padding:5px 12px;font-family:var(--font-mono);font-size:9px;letter-spacing:.32em;text-transform:uppercase;white-space:nowrap;animation:fadeOut 5s 1.5s forwards}
+.wall-card.is-new .mini-svg{animation:new-pulse 2.4s ease-out 2, sway 7s ease-in-out infinite 2.4s !important;border-radius:50%}
+@keyframes fadeOut{to{opacity:0;visibility:hidden}}
+
+/* Wall of saved bracelets */
+.builder-wall{margin:80px auto 0;max-width:1200px;padding:0 6vw}
+.builder-wall .wlabel{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--moss);margin-bottom:18px;display:flex;align-items:center;gap:14px;justify-content:center}
+.builder-wall .wlabel::before,.builder-wall .wlabel::after{content:'';width:40px;height:1px;background:var(--moss)}
+.builder-wall .wsubtitle{text-align:center;font-family:var(--font-latin);font-style:italic;color:var(--ink-soft);margin-bottom:30px;font-size:14px}
+.wall-rope{position:relative;height:6px;background:linear-gradient(90deg, transparent, #B8A988, #B8A988, transparent);margin-bottom:0;border-radius:3px;opacity:.7}
+.wall-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px 14px;padding-top:0;justify-items:center;align-items:start}
+.wall-card{position:relative;display:flex;flex-direction:column;align-items:center;padding-top:0}
+.wall-card .hanger{width:1px;height:36px;background:#B8A988;opacity:.7}
+.wall-card .mini-svg{width:120px;height:130px}
+.wall-card .wname{margin-top:6px;font-family:var(--font-tc);font-size:12px;color:var(--ink);letter-spacing:.06em;max-width:130px;text-align:center;line-height:1.4}
+.wall-card .wmood{font-family:var(--font-mono);font-size:9px;letter-spacing:.32em;color:var(--moss);margin-top:2px;text-transform:uppercase}
+.wall-card .mini-svg{transform-origin:50% 0;animation:sway 7s ease-in-out infinite}
+.wall-card:nth-child(odd) .mini-svg{animation-duration:6s;animation-delay:-2s}
+.wall-card:nth-child(3n) .mini-svg{animation-duration:8s;animation-delay:-4s}
+@keyframes sway{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.8deg)}}
+.wall-empty{grid-column:1/-1;text-align:center;font-family:var(--font-tc);color:var(--ink-soft);font-size:14px;padding:28px 0;font-style:italic;font-family:var(--font-latin)}
+
+/* === Daughter intimate beat === */
+.daughter{padding:14vh 0;background:linear-gradient(180deg, transparent, rgba(226,191,185,.07), transparent)}
+.daughter-inner{display:grid;grid-template-columns:.8fr 1.2fr;gap:6vw;align-items:center;max-width:1100px;margin:0 auto;padding:0 6vw}
+@media(max-width:840px){.daughter-inner{grid-template-columns:1fr;gap:5vh}}
+.daughter-img{position:relative}
+.daughter-img img{width:100%;max-width:380px;margin:0 auto;display:block}
+.daughter-img .sub{position:absolute;bottom:8px;right:0;font-family:var(--font-latin);font-style:italic;font-size:13px;color:var(--ink-soft)}
+.daughter-text .label{font-family:var(--font-mono);font-size:10px;letter-spacing:.45em;text-transform:uppercase;color:var(--quartz-honey);margin-bottom:22px;display:flex;align-items:center;gap:14px}
+.daughter-text .label::before{content:'';width:30px;height:1px;background:var(--quartz-honey)}
+.daughter-text h2{font-family:var(--font-tc);font-weight:400;font-size:clamp(28px,4.2vw,52px);line-height:1.5;color:var(--ink);margin-bottom:24px;letter-spacing:.06em}
+.daughter-text h2 .it{font-family:var(--font-latin);font-style:italic;color:var(--moss-deep);display:block;font-size:.55em;letter-spacing:.04em;margin-top:8px}
+.daughter-text p{font-family:var(--font-tc);font-size:15px;line-height:2.1;color:var(--ink-soft);margin-bottom:14px}
+.daughter-text .pull{margin-top:24px;padding-left:22px;border-left:2px solid var(--quartz-rose);font-family:var(--font-tc);font-size:16px;line-height:1.95;color:var(--moss-deep);font-style:italic}
+
+/* === Catalogue hanging wall — 22 bracelets dangling from a cord === */
+.collection-wall{position:relative;padding:60px 0 0}
+.collection-rope{position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg, transparent 0%, #B8A988 4%, #B8A988 96%, transparent 100%);border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.collection-rope::before,.collection-rope::after{content:'';position:absolute;top:-4px;width:14px;height:14px;border:1px solid #B8A988;border-radius:50%;background:var(--paper)}
+.collection-rope::before{left:-4px}
+.collection-rope::after{right:-4px}
+
+/* === Prescription-card collection grid (replaces plain bead grid look) === */
+.collection{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 6px;background:transparent;align-items:start;justify-items:center;padding-top:0}
+@media(max-width:900px){.collection{grid-template-columns:repeat(3,1fr);gap:6px}}
+@media(max-width:520px){.collection{grid-template-columns:repeat(2,1fr)}}
+.bead{position:relative;display:flex;flex-direction:column;align-items:center;width:100%;max-width:200px;padding:0 4px;cursor:pointer;background:transparent;border:0;transform-origin:50% 0}
+.bead .hanger{width:1px;height:48px;background:linear-gradient(180deg, #B8A988, #B8A98855);opacity:.85}
+.bead .hanger-knot{width:8px;height:8px;border-radius:50%;background:#9A8B6E;margin-top:-4px;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.bead-svg{width:100%;height:140px;transform-origin:50% 0;animation:sway 7s ease-in-out infinite;filter:drop-shadow(0 8px 14px rgba(63,90,69,.18))}
+.bead:nth-child(odd) .bead-svg{animation-duration:6s;animation-delay:-1.5s}
+.bead:nth-child(3n) .bead-svg{animation-duration:8.5s;animation-delay:-3s}
+.bead:nth-child(4n) .bead-svg{animation-duration:7.5s;animation-delay:-2.2s}
+.bead:hover .bead-svg{animation-duration:1.6s !important}
+.bead-info{margin-top:8px;text-align:center;padding-bottom:12px;transition:transform .4s var(--easing)}
+.bead:hover .bead-info{transform:translateY(-4px)}
+.bead .num{font-family:var(--font-mono);font-size:8px;color:var(--moss);letter-spacing:.32em;text-transform:uppercase;display:block;margin-bottom:2px}
+.bead .name{font-family:var(--font-tc);font-weight:400;font-size:14px;line-height:1.3;color:var(--ink);letter-spacing:.06em;margin-bottom:4px}
+.bead .price{font-family:var(--font-latin);font-style:italic;font-size:13px;color:var(--moss-deep);letter-spacing:.02em}
+.bead .price b{font-weight:500}
+.bead .stamp,.bead .symbol,.bead .swatch{display:none}
+
+/* === Crystal hover tooltip === */
+.crystal-tip{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:var(--paper);border:1px solid var(--moss);padding:12px 18px;font-family:var(--font-tc);font-size:13px;color:var(--ink);max-width:240px;text-align:center;line-height:1.6;letter-spacing:.04em;opacity:0;transition:opacity .35s;z-index:10;pointer-events:none;white-space:normal}
+.crystal-tip.show{opacity:1}
+.crystal-tip .stone-name{display:block;font-family:var(--font-display);color:var(--moss-deep);font-size:18px;margin-bottom:6px;letter-spacing:.08em}
+.crystal-tip .stone-meaning{font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--moss);display:block;margin-top:6px}
+.crystal-stage{cursor:crosshair}
+
+/* === Easter egg: night mode === */
+body.night-mode{
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(199,163,90,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 100% 100%, rgba(185,165,201,.20) 0%, transparent 55%),
+    linear-gradient(180deg, #1A1F1A, #232825);
+  color:var(--paper);transition:background 1.4s ease, color 1.4s ease}
+body.night-mode .topbar{background:linear-gradient(180deg, rgba(26,31,26,.85) 0%, rgba(26,31,26,0) 100%)}
+body.night-mode .brand-mark,body.night-mode .archive-link{color:var(--paper-2)}
+body.night-mode .grain{opacity:.18}
+body.night-mode .vignette{background:radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.45) 100%)}
+.night-whisper{position:fixed;left:50%;bottom:60px;transform:translate(-50%,40px);max-width:520px;padding:24px 32px;background:rgba(31,37,32,.92);color:#F2EEE6;border:1px solid var(--moss);font-family:var(--font-tc);font-size:14px;line-height:2;letter-spacing:.06em;text-align:center;z-index:80;opacity:0;transition:opacity .8s, transform .8s;pointer-events:none}
+.night-whisper.show{opacity:1;transform:translate(-50%,0)}
+.night-whisper .star{display:block;font-family:var(--font-display);color:var(--quartz-rose);font-size:18px;letter-spacing:.5em;margin-bottom:10px}
+.night-whisper .sig{margin-top:14px;font-family:var(--font-latin);font-style:italic;color:var(--quartz-honey);font-size:13px}
+
+/* === Responsive minor === */
+@media(max-width:640px){
+  section{padding:11vh 0}
+  .shell{padding:0 7vw}
+  .topbar{padding:14px 6vw}
+  .triptych{gap:24px}
+  .tri-card{padding:38px 28px}
+}
+</style>
+</head>
+<body>
+
+<div id="sky-stage" class="sky-dawn"></div>
+<div id="three-stage"></div>
+<div id="p5-stage"></div>
+<canvas id="trail-stage"></canvas>
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="prism-cursor" id="prism-cursor"><div class="spectrum"></div><div class="ring"></div><div class="core"></div></div>
+
+<header class="topbar">
+  <div class="brand-mark"><span class="star">✦</span><span>XIJING · 繫晶</span></div>
+  <a href="/guild/" class="archive-link"><span class="line"></span><span>Return to Archive</span></a>
+</header>
+
+<aside class="side-stamp">
+  <span class="pill"></span>
+  <span>SANCTUARY · OF · TIED · LIGHT</span>
+  <span>EST · 2025</span>
+</aside>
+
+<main>
+
+<!-- ============ HERO — cinematic prism ============ -->
+<section class="hero">
+  <div class="hero-bg">
+    <img src="/assets/img/guild/xijing/prism_burst.webp" alt="">
+  </div>
+  <div class="hero-beams">
+    <span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span><span class="beam b4"></span><span class="beam b5"></span>
+  </div>
+  <div class="hero-content">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-eyebrow"><span class="em"></span><b>Guild · Member File №.083</b></div>
+        <h1>
+          <span>Dolly</span>
+          <span class="ital">— social worker, mother,<br>and crystal weaver</span>
+          <span class="ch">　繫晶 <span class="ampr">&amp;</span> 微光</span>
+        </h1>
+        <p class="hero-tag">
+          <span class="star">✦</span> 不只是撐住，而是修復<br>
+          <span class="star">✦</span> 不談恐懼，不渲染命運<br>
+          <span class="star">✦</span> 陪你慢下來，回到當下
+        </p>
+        <div class="hero-meta">
+          <div><span class="k">Vocation</span>兒少社工 · 七年</div>
+          <div><span class="k">Atelier</span>繫晶 xijing</div>
+          <div><span class="k">Located</span>Taiwan</div>
+        </div>
+      </div>
+      <div class="hero-canvas">
+        <div id="crystal-stage" class="crystal-stage" title="hover · 認識每一顆礦石"></div>
+        <div class="crystal-tip" id="crystal-tip">
+          <span class="stone-name">—</span>
+          <span class="stone-meaning">hover · stone</span>
+        </div>
+        <div class="hero-caption">— hover the crystal · 認識繫進去的每一顆礦石</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-scroll"><span>SCROLL</span><span class="l"></span></div>
+</section>
+
+<!-- ============ MANIFESTO ============ -->
+<section class="manifesto">
+  <div class="manifesto-pin">
+    <div class="manifesto-mark">⸻</div>
+    <div class="manifesto-line" id="manifesto">
+      <span class="word">不</span><span class="word">只</span><span class="word">是</span><span class="word">撐</span><span class="word">住</span><span class="word">，</span>
+      <span class="word">而</span><span class="word">是</span><span class="word em">修</span><span class="word em">復</span><span class="word">。</span>
+      <br>
+      <span class="word">願</span><span class="word">每</span><span class="word">一</span><span class="word">份</span><span class="word">努</span><span class="word">力</span><span class="word">，</span>
+      <span class="word">都</span><span class="word">能</span><span class="word">被</span><span class="word">溫</span><span class="word">柔</span><span class="word">以</span><span class="word">待</span><span class="word">。</span>
+    </div>
+    <div class="manifesto-attr">— a vow, written for myself <i>and for you</i></div>
+  </div>
+</section>
+
+<!-- bridge: woven thread strand — the first knot tying us in -->
+<div class="bridge thread reveal">
+  <img src="/assets/img/guild/xijing/woven_thread_strand.webp" alt="" loading="lazy" decoding="async">
+</div>
+
+<!-- ============ TRIPTYCH ============ -->
+<section>
+  <div class="shell">
+    <div class="triptych-head reveal">
+      <h2>Three lives, <span class="it">one breath</span><br>三個身分，一道呼吸</h2>
+      <div class="num">繫・第一道光<br><span style="opacity:.55">Tied · the first thread</span></div>
+    </div>
+    <div class="triptych">
+      <article class="tri-card reveal">
+        <div class="ic"><i class="fa-solid fa-hands-holding-child"></i></div>
+        <div class="role-tag">Vocation · 本業</div>
+        <h3>兒少社工<span class="lat">on the front line of family work</span></h3>
+        <p>七年了，我陪伴的是台灣最容易被遺落的家庭。每一份案件背後，都有一個沒被聽見的孩子。我把白天接住的沉重，留在工作日誌裡——也藏在自己心底，等夜裡慢慢消化。</p>
+        <span class="star">✦</span>
+      </article>
+      <article class="tri-card reveal">
+        <div class="ic"><i class="fa-solid fa-baby-carriage"></i></div>
+        <div class="role-tag">Mother · 媽媽</div>
+        <h3>三歲女兒的媽<span class="lat">learning softness, the slow way</span></h3>
+        <p>女兒讓我重新學會「慢」。她不問我累不累，只是把小手疊在我的手心。當我還在為別的孩子奔走，是她提醒我——我自己，也是一個正在成長的人。</p>
+        <span class="star">✦</span>
+      </article>
+      <article class="tri-card reveal">
+        <div class="ic"><i class="fa-solid fa-gem"></i></div>
+        <div class="role-tag">Maker · 創作者</div>
+        <h3>水晶藝術創作者<span class="lat">tying light into wearable rituals</span></h3>
+        <p>下班後，我把無力感折射進礦石裡。每一條手鍊都是一次配置——色彩、能量、節奏，像在為朋友寫一首小詩。後來，這件事變成了「繫晶 xijing」。</p>
+        <span class="star">✦</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DAUGHTER · 給女兒的一條手鍊 ============ -->
+<section class="daughter">
+  <div class="daughter-inner">
+    <div class="daughter-img reveal">
+      <img src="/assets/img/guild/xijing/hands_holding.webp" alt="a small palm cradled in an adult palm" loading="lazy" decoding="async">
+      <span class="sub">— for her, study №.001</span>
+    </div>
+    <div class="daughter-text reveal">
+      <div class="label">Interlude · 為女兒寫的一條</div>
+      <h2>她讓我重新學會「慢」<span class="it">A bracelet I made first for her.</span></h2>
+      <p>女兒三歲。她不問我累不累，只是把小手疊在我的手心。當我還在為別的孩子奔走，是她提醒我——我自己，也是一個正在成長的人。</p>
+      <p>繫晶的第一條原型，是在她睡著之後串的。粉晶、白水晶、一顆很小的金髮晶。我跟自己說：「等她長大，我要告訴她，這條手鍊是媽媽在學會溫柔對待自己之後才做出來的。」</p>
+      <div class="pull">「妳不需要永遠堅強。<br>妳只需要，被好好繫住。」</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ORIGIN ============ -->
+<section>
+  <div class="shell">
+    <div class="origin">
+      <div class="origin-img reveal">
+        <div class="corner"></div>
+        <img src="/assets/img/guild/xijing/hero_crystal.webp" alt="floating crystal cluster" loading="lazy" decoding="async">
+        <div class="tag">Origin · 緣起</div>
+      </div>
+      <div class="origin-text reveal">
+        <div class="label">繫・緣起｜Tied · the beginning</div>
+        <h2>從助人到自癒，<br><span class="it">From holding others, to holding myself.</span></h2>
+        <p class="lede">本業需要承接很多沉重的事——弱勢家庭的故事、沒有被回應的傷。下班之後，我常常被無力感淹沒，<em>不斷自問</em>：「那些情緒，該往哪裡放？」</p>
+        <p>直到我遇見了水晶。它不會替我解答，也不會替我承擔；它只是安靜地存在，把光折射成另一種形狀。我開始把祝福寫進排列裡，把名字寫進每一條手鍊的故事。</p>
+        <div class="origin-pull"><span class="star">✦</span>「繫晶」誕生於一個簡單的念頭：不渲染命運，只專注修復。</div>
+        <p>它是我祝福的載體，也是我送給自己的小小錨點。如果你也在多重身分之間找平衡——歡迎你來認識它，讓我們一起在日常裡，慢下來。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- bridge: botanical drift — pressed eucalyptus carrying us through -->
+<div class="bridge botanical reveal">
+  <img src="/assets/img/guild/xijing/botanical_drift.webp" alt="" loading="lazy" decoding="async">
+</div>
+
+<!-- ============ SIGNATURE · Mood Bracelet Builder ============ -->
+<section class="builder" id="tied-section">
+  <div class="builder-head reveal">
+    <div class="label">繫・為今天的妳｜Tie · for who you are today</div>
+    <h2>選一個今天的狀態，<br>我為你繫一條<span class="it">Pick a feeling · I'll braid the stones for you, live.</span></h2>
+    <p>這裡沒有「正向」或「該怎樣」。妳今天是什麼狀態，我就配什麼礦石。<br><em>每一顆都會被一條線繫起來，</em>然後掛上下面那面牆——讓妳看見自己今天為自己做了什麼。</p>
+  </div>
+  <div class="builder-stage">
+    <div class="reveal">
+      <div class="mood-list" id="mood-list">
+        <button class="mood-chip" data-mood="tired"   data-cn="今天好累" data-en="exhausted">
+          <span class="em">⸻</span><span class="mood-cn">今天好累</span><span class="mood-en">exhausted &amp; soft</span>
+        </button>
+        <button class="mood-chip" data-mood="anxious" data-cn="心很慌" data-en="anxious">
+          <span class="em">✦</span><span class="mood-cn">心很慌</span><span class="mood-en">restless mind</span>
+        </button>
+        <button class="mood-chip" data-mood="brave"   data-cn="想要勇氣" data-en="brave">
+          <span class="em">↑</span><span class="mood-cn">想要勇氣</span><span class="mood-en">need bravery</span>
+        </button>
+        <button class="mood-chip" data-mood="loved"   data-cn="渴望被愛" data-en="loved">
+          <span class="em">♡</span><span class="mood-cn">渴望被愛</span><span class="mood-en">crave warmth</span>
+        </button>
+        <button class="mood-chip" data-mood="lucky"   data-cn="想要好運" data-en="lucky">
+          <span class="em">☼</span><span class="mood-cn">想要好運</span><span class="mood-en">invite luck</span>
+        </button>
+        <button class="mood-chip" data-mood="steady"  data-cn="想要安穩" data-en="steady">
+          <span class="em">⌒</span><span class="mood-cn">想要安穩</span><span class="mood-en">find ground</span>
+        </button>
+      </div>
+      <div class="builder-name-row">
+        <input type="text" id="builder-name" maxlength="14" placeholder="幫這條手鍊取個名字…" aria-label="bracelet name">
+        <button class="builder-tie-btn" id="builder-tie">繫上 · TIE</button>
+      </div>
+    </div>
+    <div class="bracelet-stage reveal">
+      <svg class="bracelet-svg" id="bracelet-svg" viewBox="0 0 400 360" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="bracelet-feedback" id="bracelet-feedback">
+        <span id="feedback-text">先選一個今天的狀態 ✦</span>
+        <span class="stones" id="feedback-stones"></span>
+      </div>
+      <div class="tie-burst" id="tie-burst">
+        <div class="star-big">✦</div>
+        <div class="msg">已替你繫上「<b id="burst-name">未命名</b>」</div>
+        <button class="see-wall" id="see-wall-btn" type="button">看牆上的這條 <span class="arrow">↓</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wall of saved bracelets -->
+  <div class="builder-wall reveal">
+    <div class="wlabel">繫上的牆｜The Wall of What You Tied</div>
+    <div class="wsubtitle">— each one is what someone (or you) tied for themselves today.</div>
+    <div class="wall-rope"></div>
+    <div class="wall-row" id="wall-row">
+      <div class="wall-empty">— 牆上還沒有繫上任何一條。試著為自己繫第一條。 —</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CATALOGUE ============ -->
+<section>
+  <div class="shell">
+    <div class="catalogue-head reveal">
+      <h2>The Atelier Index<br><span class="it">繫晶手作目錄</span></h2>
+      <div class="meta"><b>22</b>ACTIVE PIECES<br>EACH ONE-OF-A-KIND</div>
+    </div>
+
+    <!-- Featured: 花開見祿 -->
+    <div class="featured">
+      <div class="featured-img reveal">
+        <span class="badge">FEATURED №.01</span>
+        <img src="/assets/img/guild/xijing/bracelet_floral.webp" alt="featured bracelet flat-lay" loading="lazy" decoding="async">
+      </div>
+      <div class="featured-info reveal">
+        <div class="star-row">✦ ✦ ✦</div>
+        <h3>花開見祿<span class="lat">Bloom &amp; Bestow</span></h3>
+        <p class="lede">「在溫潤的喜氣中，迎來屬於妳的豐盛與回應。」<br>不是一夜暴富的幻想，而是一種——越走越順、越活越穩的狀態。</p>
+        <p style="font-family:var(--font-tc);font-size:14px;color:var(--ink-soft);line-height:2;">以軸心對稱排列，讓每一份祝福都有它的位置。不是要妳變得完美，而是讓妳在努力累積的日常裡，慢慢走向屬於妳的豐盛與底氣。</p>
+        <div class="stones">
+          <div class="stone"><span class="dot" style="background:#B05A4A;color:#B05A4A"></span><span><b>南紅瑪瑙</b>穩定能量・喜氣根基</span></div>
+          <div class="stone"><span class="dot" style="background:#D4B483;color:#D4B483"></span><span><b>黃水晶</b>財富流動・自信</span></div>
+          <div class="stone"><span class="dot" style="background:#C7A35A;color:#C7A35A"></span><span><b>金髮晶</b>放大行動・吸引貴人</span></div>
+          <div class="stone"><span class="dot" style="background:#E2BFB9;color:#E2BFB9"></span><span><b>粉晶</b>柔化關係・互動順流</span></div>
+          <div class="stone"><span class="dot" style="background:#F2EEE6;color:#F2EEE6;border:1px solid var(--line)"></span><span><b>白水晶</b>平衡整體・回到適合</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collection — 22 bracelets hanging from a single cord -->
+    <div class="collection-wall">
+      <div class="collection-rope" aria-hidden="true"></div>
+      <div class="collection" id="bead-grid">
+        <!-- 22 hanging bracelets rendered by JS -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 善的循環 ============ -->
+<section class="cycle">
+  <div class="shell">
+    <div class="cycle-grid">
+      <div class="reveal">
+        <div class="label">繫・善的迴音｜Tied · the echo of kindness</div>
+        <h2>善的循環<br><span class="it">Each healing tied back to a child.</span></h2>
+        <p>本業讓我看見太多孩子在縫隙裡長大。所以從繫晶誕生的第一天，我就決定——<strong style="color:var(--moss-deep);font-weight:500">每一筆收入都會捐出 10% 給兒少福利單位。</strong></p>
+        <p>讓每一份療癒妳自己的能量，也能轉化為守護弱勢孩子的實質力量。妳不只是買了一條手鍊；妳替一個孩子，多點亮了一盞燈。</p>
+        <div class="cycle-flow">
+          <div class="cycle-step"><div class="ic"><i class="fa-solid fa-hand-holding-heart"></i></div><div class="txt"><small>Step 01</small>妳挑選一條手鍊</div><div class="arr">⟶</div></div>
+          <div class="cycle-step"><div class="ic"><i class="fa-solid fa-gem"></i></div><div class="txt"><small>Step 02</small>我為它寫一張小卡、配置能量</div><div class="arr">⟶</div></div>
+          <div class="cycle-step"><div class="ic"><i class="fa-solid fa-truck-fast"></i></div><div class="txt"><small>Step 03</small>它陪伴妳的日常</div><div class="arr">⟶</div></div>
+          <div class="cycle-step"><div class="ic"><i class="fa-solid fa-child-reaching"></i></div><div class="txt"><small>Step 04</small>10% 收益捐給兒少福利單位</div><div class="arr"><i class="fa-solid fa-infinity" style="color:var(--moss-deep)"></i></div></div>
+        </div>
+      </div>
+      <div class="cycle-orb reveal">
+        <svg class="cycle-svg" viewBox="0 0 400 400">
+          <defs>
+            <linearGradient id="cycgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6B8E6F"/><stop offset="100%" stop-color="#E2BFB9"/>
+            </linearGradient>
+          </defs>
+          <circle cx="200" cy="200" r="180" fill="none" stroke="#D9D1BE" stroke-width="1" stroke-dasharray="3 6"/>
+          <circle cx="200" cy="200" r="150" fill="none" stroke="#B8C9B5" stroke-width="1"/>
+          <circle id="cycprog" cx="200" cy="200" r="150" fill="none" stroke="url(#cycgrad)" stroke-width="3" stroke-linecap="round" transform="rotate(-90 200 200)" stroke-dasharray="942" stroke-dashoffset="942"/>
+          <text x="200" y="50" text-anchor="middle" font-family="DM Mono" font-size="9" letter-spacing="3" fill="#6B8E6F">EVERY · PURCHASE</text>
+          <text x="200" y="362" text-anchor="middle" font-family="DM Mono" font-size="9" letter-spacing="3" fill="#6B8E6F">A · LIGHT · LIT</text>
+          <g font-family="Italiana" font-size="14" fill="#6B8E6F">
+            <text x="38" y="205" text-anchor="middle">✦</text>
+            <text x="362" y="205" text-anchor="middle">✦</text>
+          </g>
+        </svg>
+        <div class="cycle-pct">
+          <div><span class="num" id="pctnum">10</span><span class="pct">%</span></div>
+          <div class="cap">Of every sale · 回捐弱勢兒少</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THEME SONG ============ -->
+<section class="song reveal">
+  <div class="shell">
+    <div class="label">繫・微光的旋律｜Tied · the melody of light</div>
+    <h2>繫住微光<span class="it">Tie the Light · 繫晶首支主題曲</span></h2>
+    <p class="verse">每一道微光，<br>都是妳值得被溫柔對待的證明。<br>⸻<br>有時候，生活走得太快，<br>快到忘了停下來呼吸。<br>這首歌，是繫晶寫給妳的一點溫柔。</p>
+    <div class="song-wave" id="wave"></div>
+  </div>
+</section>
+
+<!-- ============ OFFER / I CAN HELP YOU WITH ============ -->
+<section>
+  <div class="shell">
+    <div class="offer-head reveal">
+      <div class="label">繫・能為你做的｜Tied · what I can offer</div>
+      <h2>我可以陪你做的事<br><span class="it">Offerings, in plain words.</span></h2>
+    </div>
+    <div class="offer-grid">
+      <div class="offer-card reveal">
+        <span class="num">№.01</span>
+        <span class="ic"><i class="fa-solid fa-fingerprint"></i></span>
+        <h3>客製化能量配置<span class="lat">A bracelet woven for your season</span></h3>
+        <p>告訴我妳最近的一個課題、一句想對自己說的話。我會用社工的傾聽，配上水晶的色彩語言，為妳設計屬於這個階段的礦石排列、手圍、與一張手寫小卡。</p>
+        <div class="who">For · 處在轉折期、需要儀式感的妳</div>
+      </div>
+      <div class="offer-card reveal">
+        <span class="num">№.02</span>
+        <span class="ic"><i class="fa-solid fa-gift"></i></span>
+        <h3>送禮提案<span class="lat">A gift that listens</span></h3>
+        <p>給朋友、媽媽、合作夥伴的療癒禮物。妳跟我說對方是怎樣的人、最近過得如何，我幫妳挑選現有作品或客製，附上禮盒包裝與祝福小卡——讓送禮這件事，也是一種被理解的開始。</p>
+        <div class="who">For · 想送的不只是物，而是心意</div>
+      </div>
+      <div class="offer-card reveal">
+        <span class="num">№.03</span>
+        <span class="ic"><i class="fa-solid fa-feather"></i></span>
+        <h3>自我照顧對話<span class="lat">A soft conversation, with stones</span></h3>
+        <p>不是諮商，也不是命理。我以社工的同理 × 創作者的直覺，陪妳聊聊現在被什麼卡住、把它寫進一條手鍊裡。妳離開時帶走的不只是一份作品，而是一段被聽見的時光。</p>
+        <div class="who">For · 撐很久、想被輕輕接住的妳</div>
+      </div>
+      <div class="offer-card reveal">
+        <span class="num">№.04</span>
+        <span class="ic"><i class="fa-solid fa-seedling"></i></span>
+        <h3>善循環協作<span class="lat">Brand &amp; charity collab</span></h3>
+        <p>如果你/妳也是品牌經營者、或服務兒少的單位——歡迎和繫晶聊聊聯名 / 公益合作。10% 回捐已是固定起點，我們可以一起讓它變更大。</p>
+        <div class="who">For · 想讓商業跟善並行的夥伴</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLOSING ============ -->
+<section class="closing reveal">
+  <div class="shell">
+    <span class="star">✦ ⸻ ✦</span>
+    <h2>如果你也在多重身分中<br>尋找<span class="it">平衡</span>，<br>歡迎來認識繫晶。</h2>
+    <div class="sig">— Dolly</div>
+    <div class="role">兒少社工 · 媽媽 · 水晶創作者</div>
+    <div class="cta-row">
+      <a class="cta" href="https://myship.7-11.com.tw/general/detail/GM2512291072142" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-store"></i><span>Visit · 7-11 賣場</span></a>
+      <a class="cta alt" href="https://www.instagram.com/xijing.official/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i><span>DM on Instagram</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <h4>Atelier · 繫晶 xijing</h4>
+      <p>社工視角的療癒選品。<br>不渲染命運，只專注修復。<br><span class="it">— Made slow, made for you.</span></p>
+    </div>
+    <div>
+      <h4>Find me · 連繫</h4>
+      <div class="links">
+        <a href="https://www.threads.com/@xijing.official" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i><span>@xijing.official · Threads</span></a>
+        <a href="https://www.instagram.com/xijing.official/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i><span>@xijing.official · Instagram</span></a>
+        <a href="https://myship.7-11.com.tw/general/detail/GM2512291072142" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-bag-shopping"></i><span>7-11 賣場 · 22 款手鍊</span></a>
+      </div>
+    </div>
+    <div>
+      <h4>Vow · 心意</h4>
+      <p><span class="it">«</span>每一筆收入<br>10%&nbsp;捐出給兒少福利單位<span class="it">»</span><br><br>讓妳療癒自己的能量，也成為守護弱勢孩子的力量。</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>SUPERGALEN · GUILD ARCHIVE</span>
+    <span>MADE WITH <i class="fa-solid fa-heart heart"></i> BY SUPERGALEN'S DUNGEON</span>
+    <span>FILE №.083 · DOLLY</span>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   1) Render the 22 bracelet collection grid
+   ============================================================ */
+const beads = [
+  { name:'古都・花見', sym:'🍵→', price:1380, swatch:['#B05A4A','#D4B483','#E2BFB9','#F2EEE6'] },
+  { name:'金羽・晨曦', sym:'☀→',  price:1680, swatch:['#C7A35A','#D4B483','#F2EEE6','#E2C796'] },
+  { name:'星隱・破曉', sym:'⨳',   price:1580, swatch:['#1F2E4A','#5C6B82','#B9A5C9','#F2EEE6'] },
+  { name:'暖光心語', sym:'✦✦',   price:1180, swatch:['#E2BFB9','#D4B483','#F2EEE6'] },
+  { name:'織願・虹序', sym:'⌒',   price:1680, swatch:['#B05A4A','#D4B483','#6B8E6F','#B9A5C9','#E2BFB9'] },
+  { name:'維納斯之吻', sym:'❥',   price:1280, swatch:['#E2BFB9','#C7A35A','#F2EEE6'] },
+  { name:'星冥之盾', sym:'◈',    price:1280, swatch:['#1F2520','#5C6B82','#F2EEE6'] },
+  { name:'森海之息', sym:'⌬',    price:1280, swatch:['#3F5A45','#6B8E6F','#B8C9B5'] },
+  { name:'柔焰花期', sym:'❀',    price:1280, swatch:['#B05A4A','#E2BFB9','#D4B483'] },
+  { name:'蔚藍視界', sym:'≈',    price:1580, swatch:['#5C6B82','#A4B8C7','#F2EEE6'] },
+  { name:'暖心耀光', sym:'☼',    price:1080, swatch:['#D4B483','#E2BFB9','#F2EEE6'] },
+  { name:'林澗微光', sym:'⌇',    price:1280, swatch:['#3F5A45','#B8C9B5','#F2EEE6'] },
+  { name:'御曜鎮心', sym:'◇',    price:1380, swatch:['#1F2520','#5C5440','#B05A4A'] },
+  { name:'星語心願', sym:'✧',    price:1280, swatch:['#B9A5C9','#F2EEE6','#D4B483'] },
+  { name:'晨露花園', sym:'❁',    price:980,  swatch:['#B8C9B5','#E2BFB9','#F2EEE6'] },
+  { name:'海風之語', sym:'∽',    price:1180, swatch:['#A4B8C7','#F2EEE6','#5C6B82'] },
+  { name:'紫霧心語', sym:'❦',    price:980,  swatch:['#B9A5C9','#E2BFB9','#F2EEE6'] },
+  { name:'雲海旅人', sym:'☁',    price:1280, swatch:['#A4B8C7','#F2EEE6','#B9A5C9'] },
+  { name:'晨曦暗影', sym:'◐',    price:1280, swatch:['#1F2520','#D4B483','#E2BFB9'] },
+  { name:'星霧旅者', sym:'⊛',    price:1380, swatch:['#5C6B82','#B9A5C9','#F2EEE6'] },
+  { name:'紫月心海', sym:'☾',    price:1280, swatch:['#B9A5C9','#5C6B82','#F2EEE6'] },
+];
+const grid = document.getElementById('bead-grid');
+function bracelet_svg(colors, w=160, h=130){
+  // Draw bracelet hanging in a U / catenary curve with bead circles.
+  const cx = w/2, top = 12;
+  const radiusX = w*0.40, radiusY = h*0.55;
+  const startA = Math.PI*1.18, endA = Math.PI*-0.18; // sweep
+  const N = 9;
+  let path = `M ${cx - radiusX} ${top} A ${radiusX} ${radiusY} 0 0 0 ${cx + radiusX} ${top}`;
+  let beadsHtml = '';
+  for(let i=0;i<N;i++){
+    const t = i/(N-1);
+    const a = startA + (endA - startA)*t;
+    const x = cx + Math.cos(a)*radiusX;
+    const y = top + Math.sin(a)*radiusY * 0.85 + radiusY*0.05;
+    const c = colors[i % colors.length];
+    const r = 6 + (i%3===1?1.5:0);
+    beadsHtml += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${c}" stroke="rgba(31,37,32,.18)" stroke-width=".6"/>`;
+    beadsHtml += `<circle cx="${(x-r*0.4).toFixed(1)}" cy="${(y-r*0.4).toFixed(1)}" r="${(r*0.32).toFixed(1)}" fill="rgba(255,255,255,.55)"/>`;
+  }
+  return `<svg class="bead-svg" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <path d="${path}" fill="none" stroke="#9A8B6E" stroke-width="1.2" opacity=".75"/>
+    ${beadsHtml}
+  </svg>`;
+}
+
+beads.forEach((b,i)=>{
+  const n = String(i+2).padStart(2,'0');
+  const el = document.createElement('div');
+  el.className = 'bead';
+  el.innerHTML = `
+    <div class="hanger"></div><div class="hanger-knot"></div>
+    ${bracelet_svg(b.swatch)}
+    <div class="bead-info">
+      <span class="num">№.${n}</span>
+      <div class="name">${b.name}</div>
+      <div class="price">NT$ <b>${b.price.toLocaleString()}</b></div>
+    </div>`;
+  grid.appendChild(el);
+});
+
+/* ============================================================
+   2) Three.js — floating refractive crystal (gentle, breathing)
+   ============================================================ */
+(function(){
+  const stage = document.getElementById('crystal-stage');
+  if(!stage || !window.THREE) return;
+  const w = ()=>stage.clientWidth, h = ()=>stage.clientHeight;
+  const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(w(),h());
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(45,1,0.1,100);
+  cam.position.set(0,0,5);
+
+  // Soft hemi + 2 colored point lights for prismatic spectra
+  scene.add(new THREE.HemisphereLight(0xfdfbf3, 0xc8d5c5, 0.85));
+  const p1 = new THREE.PointLight(0xE2BFB9, 1.4, 12); p1.position.set(-3,2,3); scene.add(p1);
+  const p2 = new THREE.PointLight(0xB9A5C9, 1.2, 12); p2.position.set(3,-2,2); scene.add(p2);
+  const p3 = new THREE.PointLight(0x6B8E6F, 0.9, 12); p3.position.set(0,3,-2); scene.add(p3);
+
+  // Crystal cluster: each crystal IS a real stone Dolly uses, with hover info
+  const cluster = new THREE.Group();
+  const stones = [
+    { name:'南紅瑪瑙', meaning:'穩定能量・喜氣根基', color:0xB05A4A },
+    { name:'黃水晶',   meaning:'財富流動・自信',   color:0xD4B483 },
+    { name:'金髮晶',   meaning:'放大行動・吸引貴人', color:0xC7A35A },
+    { name:'粉晶',     meaning:'柔化關係・互動順流', color:0xE2BFB9 },
+    { name:'白水晶',   meaning:'平衡整體・回到適合', color:0xF2EEE6 },
+    { name:'紫水晶',   meaning:'安穩心緒・夜的庇護', color:0xB9A5C9 },
+    { name:'森林玉髓', meaning:'草木氣息・繫住安穩', color:0xB8C9B5 },
+  ];
+  const meshes = [];
+  for(let i=0;i<stones.length;i++){
+    const stone = stones[i];
+    const geo = new THREE.OctahedronGeometry(0.55 + Math.random()*.35, 0);
+    geo.scale(0.5, 1.3 + Math.random()*0.7, 0.5);
+    const mat = new THREE.MeshPhongMaterial({
+      color: stone.color,
+      emissive: stone.color,
+      emissiveIntensity: 0.18,
+      shininess: 110,
+      specular: 0xFFFFFF,
+      transparent: true,
+      opacity: 0.62,
+      flatShading: true
+    });
+    const m = new THREE.Mesh(geo, mat);
+    const a = (i/stones.length)*Math.PI*2;
+    m.position.set(Math.cos(a)*0.65, (Math.random()-.5)*0.95, Math.sin(a)*0.65);
+    m.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+    m.userData = { spin:(Math.random()-0.5)*0.0035, float:Math.random()*Math.PI*2, stone:stone };
+    cluster.add(m);
+    meshes.push(m);
+    const edges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(geo),
+      new THREE.LineBasicMaterial({color: 0x3F5A45, transparent:true, opacity:0.55})
+    );
+    edges.position.copy(m.position);
+    edges.rotation.copy(m.rotation);
+    edges.userData = m.userData;
+    cluster.add(edges);
+  }
+  // central beacon — luminous core
+  const center = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.5, 1),
+    new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFE9C9, emissiveIntensity:0.4, shininess:160, specular:0xFFFFFF, transparent:true, opacity:0.78})
+  );
+  cluster.add(center);
+  const centerEdges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(center.geometry),
+    new THREE.LineBasicMaterial({color:0x6B8E6F, transparent:true, opacity:0.7})
+  );
+  cluster.add(centerEdges);
+  scene.add(cluster);
+
+  // wireframe halo
+  const halo = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.6,1)),
+    new THREE.LineBasicMaterial({color:0x6B8E6F, transparent:true, opacity:0.18})
+  );
+  scene.add(halo);
+
+  // Pointer-driven parallax + raycaster for stone hover
+  let mx=0, my=0;
+  window.addEventListener('mousemove', e=>{
+    mx = (e.clientX/window.innerWidth - .5);
+    my = (e.clientY/window.innerHeight - .5);
+  });
+
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2(999,999);
+  const tipEl = document.getElementById('crystal-tip');
+  const tipName = tipEl && tipEl.querySelector('.stone-name');
+  const tipMean = tipEl && tipEl.querySelector('.stone-meaning');
+  let lastHover = null;
+  stage.addEventListener('mousemove', (e)=>{
+    const r = stage.getBoundingClientRect();
+    pointer.x = ((e.clientX - r.left)/r.width)*2 - 1;
+    pointer.y = -((e.clientY - r.top)/r.height)*2 + 1;
+  });
+  stage.addEventListener('mouseleave', ()=>{ pointer.set(999,999); if(tipEl) tipEl.classList.remove('show'); lastHover=null; });
+
+  let t=0;
+  function frame(){
+    t += 0.008;
+    cluster.rotation.y += 0.0025 + mx*0.005;
+    cluster.rotation.x += my*0.003;
+    halo.rotation.y -= 0.0012;
+    halo.rotation.x += 0.0008;
+    cluster.children.forEach((c)=>{
+      const spin = c.userData && c.userData.spin;
+      if(spin){
+        c.rotation.x += spin;
+        c.rotation.z += spin*0.6;
+      }
+      if(c.userData && c.userData.float !== undefined){
+        c.position.y += Math.sin(t + c.userData.float)*0.0024;
+      }
+    });
+    cluster.scale.setScalar(1 + Math.sin(t*0.8)*0.012); // breathing
+    // hover detection
+    if(tipEl){
+      raycaster.setFromCamera(pointer, cam);
+      const hits = raycaster.intersectObjects(meshes, false);
+      if(hits.length){
+        const stone = hits[0].object.userData.stone;
+        if(stone && lastHover !== stone){
+          tipName.textContent = stone.name;
+          tipMean.textContent = stone.meaning;
+          tipEl.classList.add('show');
+          lastHover = stone;
+        }
+      } else if(lastHover){
+        tipEl.classList.remove('show');
+        lastHover = null;
+      }
+    }
+    renderer.render(scene, cam);
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+  function resize(){
+    const W=w(),H=h();
+    renderer.setSize(W,H);
+    cam.aspect = W/H;
+    cam.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+})();
+
+/* ============================================================
+   3) p5.js — gentle dust + drifting petals across the page
+   ============================================================ */
+(function(){
+  const sketch = (p)=>{
+    let dust=[], petals=[];
+    p.setup = ()=>{
+      const c = p.createCanvas(window.innerWidth, window.innerHeight);
+      c.parent('p5-stage');
+      for(let i=0;i<48;i++){
+        dust.push({x:Math.random()*p.width, y:Math.random()*p.height, r:0.6+Math.random()*1.6, vy:0.18+Math.random()*0.22, vx:(Math.random()-.5)*0.18, a:60+Math.random()*120});
+      }
+      for(let i=0;i<10;i++){
+        petals.push({x:Math.random()*p.width, y:Math.random()*p.height, vy:0.22+Math.random()*0.18, vx:Math.sin(i)*0.3, rot:Math.random()*p.TWO_PI, vr:(Math.random()-.5)*0.012, sz:8+Math.random()*8, c:[Math.random()<.5?[226,191,185]:[184,201,181], 200]});
+      }
+      p.noStroke();
+    };
+    p.draw = ()=>{
+      p.clear();
+      // dust
+      dust.forEach(d=>{
+        d.y += d.vy; d.x += d.vx + Math.sin((d.y+d.x)*0.005)*0.25;
+        if(d.y>p.height) d.y=-4;
+        if(d.x<-8) d.x=p.width+8; if(d.x>p.width+8) d.x=-8;
+        p.fill(107,142,111, d.a*0.45);
+        p.circle(d.x, d.y, d.r*1.2);
+      });
+      // petals (eucalyptus / soft pink)
+      petals.forEach(pt=>{
+        pt.y += pt.vy; pt.x += pt.vx + Math.sin(pt.y*0.01)*0.4; pt.rot += pt.vr;
+        if(pt.y > p.height+20){ pt.y = -20; pt.x = Math.random()*p.width; }
+        p.push();
+        p.translate(pt.x, pt.y); p.rotate(pt.rot);
+        p.fill(pt.c[0][0], pt.c[0][1], pt.c[0][2], pt.c[1]);
+        p.ellipse(0,0,pt.sz*0.4, pt.sz);
+        p.pop();
+      });
+    };
+    p.windowResized = ()=> p.resizeCanvas(window.innerWidth, window.innerHeight);
+  };
+  if(window.p5) new p5(sketch);
+})();
+
+/* ============================================================
+   4) Reveal-on-scroll
+   ============================================================ */
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+},{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ============================================================
+   5) GSAP timelines — manifesto, song wave, cycle progress
+   ============================================================ */
+gsap.registerPlugin(ScrollTrigger);
+
+// Hero entrance
+gsap.from('.hero-eyebrow',{y:18,opacity:0,duration:1.1,ease:'power3.out',delay:0.2});
+gsap.from('.hero h1 span',{y:60,opacity:0,duration:1.4,ease:'power4.out',stagger:0.16,delay:0.35});
+gsap.from('.hero-tag',{y:24,opacity:0,duration:1.2,ease:'power3.out',delay:0.95});
+gsap.from('.hero-meta > div',{y:14,opacity:0,duration:1,ease:'power3.out',stagger:0.08,delay:1.15});
+gsap.from('.hero-canvas .frame',{scale:.9,opacity:0,duration:1.6,ease:'power3.out',delay:0.25});
+
+// Manifesto: light up word by word
+const words = document.querySelectorAll('#manifesto .word');
+ScrollTrigger.create({
+  trigger:'.manifesto-pin',
+  start:'top top',
+  end:'+=140%',
+  pin:true,
+  scrub:0.8,
+  onUpdate:(self)=>{
+    const lit = Math.floor(self.progress * words.length);
+    words.forEach((w,i)=> w.classList.toggle('lit', i<lit));
+  }
+});
+
+// Cycle ring progress
+ScrollTrigger.create({
+  trigger:'.cycle',
+  start:'top 70%',
+  onEnter:()=>{
+    gsap.to('#cycprog',{strokeDashoffset:942-(942*0.10),duration:2,ease:'power3.out'});
+    const num = {v:0};
+    gsap.to(num,{v:10,duration:1.6,ease:'power3.out',onUpdate:()=>document.getElementById('pctnum').textContent=Math.round(num.v)});
+  }
+});
+
+// Song wave bars
+const wave = document.getElementById('wave');
+if(wave){
+  for(let i=0;i<48;i++){
+    const s=document.createElement('span');
+    s.style.animationDelay = (i*0.06)+'s';
+    s.style.animationDuration = (1.2 + (i%5)*0.18)+'s';
+    wave.appendChild(s);
+  }
+}
+
+// Subtle parallax on origin image
+gsap.to('.origin-img img',{
+  yPercent:-6,
+  ease:'none',
+  scrollTrigger:{trigger:'.origin',start:'top bottom',end:'bottom top',scrub:1}
+});
+
+// Bead grid stagger reveal on scroll — use fromTo so they stay visible if trigger missed
+gsap.set('.bead', {opacity:0, y:24});
+ScrollTrigger.batch('.bead', {
+  start:'top 92%',
+  onEnter: batch => gsap.to(batch, {opacity:1, y:0, duration:0.7, ease:'power3.out', stagger:0.05, overwrite:true})
+});
+// safety: after 4s, force any still-hidden beads visible
+setTimeout(()=>{ document.querySelectorAll('.bead').forEach(b=>{ if(parseFloat(getComputedStyle(b).opacity) < 0.5) b.style.opacity=1, b.style.transform='none'; }); }, 4500);
+
+// Footer slow fade
+gsap.from('.footer-grid > div',{y:30,opacity:0,duration:1.1,ease:'power3.out',stagger:0.12,
+  scrollTrigger:{trigger:'.footer',start:'top 85%'}});
+
+/* ============================================================
+   6) Signature moment 2.0 — Mood Bracelet Builder
+   ============================================================ */
+(function(){
+  const KEY = 'xijing_wall_v2';
+  const moodList = document.getElementById('mood-list');
+  const tieBtn = document.getElementById('builder-tie');
+  const nameInput = document.getElementById('builder-name');
+  const svgEl = document.getElementById('bracelet-svg');
+  const fb = document.getElementById('bracelet-feedback');
+  const fbText = document.getElementById('feedback-text');
+  const fbStones = document.getElementById('feedback-stones');
+  const wallRow = document.getElementById('wall-row');
+  if(!moodList || !svgEl) return;
+
+  // Each mood maps to a Dolly-style stone configuration with meaning
+  const moods = {
+    tired:   { word:'今天好累', stones:[
+      {n:'粉晶', c:'#E2BFB9'},{n:'白水晶', c:'#F2EEE6'},{n:'紫水晶', c:'#B9A5C9'},{n:'粉晶', c:'#E2BFB9'},{n:'白水晶', c:'#F2EEE6'}
+    ], why:'柔軟妳，包覆妳，讓妳安心睡一覺。' },
+    anxious: { word:'心很慌', stones:[
+      {n:'紫水晶', c:'#B9A5C9'},{n:'白水晶', c:'#F2EEE6'},{n:'森林玉髓', c:'#B8C9B5'},{n:'紫水晶', c:'#B9A5C9'},{n:'白水晶', c:'#F2EEE6'}
+    ], why:'把亂掉的訊號接住，幫妳緩下來。' },
+    brave:   { word:'想要勇氣', stones:[
+      {n:'金髮晶', c:'#C7A35A'},{n:'南紅瑪瑙', c:'#B05A4A'},{n:'黃水晶', c:'#D4B483'},{n:'金髮晶', c:'#C7A35A'},{n:'南紅瑪瑙', c:'#B05A4A'}
+    ], why:'點一把火在心口，讓妳敢踏出那一步。' },
+    loved:   { word:'渴望被愛', stones:[
+      {n:'粉晶', c:'#E2BFB9'},{n:'草莓晶', c:'#D89090'},{n:'粉晶', c:'#E2BFB9'},{n:'白水晶', c:'#F2EEE6'},{n:'粉晶', c:'#E2BFB9'}
+    ], why:'先讓妳被自己愛，再讓世界靠近妳。' },
+    lucky:   { word:'想要好運', stones:[
+      {n:'黃水晶', c:'#D4B483'},{n:'金髮晶', c:'#C7A35A'},{n:'粉晶', c:'#E2BFB9'},{n:'南紅瑪瑙', c:'#B05A4A'},{n:'白水晶', c:'#F2EEE6'}
+    ], why:'《花開見祿》的核心配置，把祝福繫在妳的脈搏上。' },
+    steady:  { word:'想要安穩', stones:[
+      {n:'森林玉髓', c:'#B8C9B5'},{n:'白水晶', c:'#F2EEE6'},{n:'森林玉髓', c:'#B8C9B5'},{n:'木化石', c:'#8C7E64'},{n:'白水晶', c:'#F2EEE6'}
+    ], why:'草木的氣息，幫妳把根重新踩進土裡。' }
+  };
+
+  let activeMood = null;
+
+  function drawBracelet(stones, animateNew){
+    const w=400,h=360, cx=200, top=70;
+    const rx = 130, ry = 150;
+    // catenary path
+    const path = `M ${cx-rx} ${top} A ${rx} ${ry} 0 0 0 ${cx+rx} ${top}`;
+    let beadsSVG = '';
+    const N = stones.length;
+    const startA = Math.PI*1.18, endA = Math.PI*-0.18;
+    stones.forEach((s,i)=>{
+      const t = i/(N-1);
+      const a = startA + (endA - startA)*t;
+      const x = cx + Math.cos(a)*rx;
+      const y = top + Math.sin(a)*ry*0.85 + ry*0.05;
+      const r = 18 + (i%2?2:0);
+      const delay = animateNew ? i*0.12 : 0;
+      beadsSVG += `<g class="b-bead" style="animation-delay:${delay}s">
+        <circle cx="${x}" cy="${y}" r="${r+8}" fill="${s.c}" opacity=".18"/>
+        <circle cx="${x}" cy="${y}" r="${r}" fill="${s.c}" stroke="rgba(31,37,32,.22)" stroke-width="1"/>
+        <circle cx="${x-r*0.4}" cy="${y-r*0.4}" r="${r*0.32}" fill="rgba(255,255,255,.6)"/>
+        <text x="${x}" y="${y+r+18}" text-anchor="middle" font-family="Noto Serif TC" font-size="10" fill="#3F5A45" letter-spacing="1">${s.n}</text>
+      </g>`;
+    });
+    // anchor knots
+    const ax = cx-rx, bx = cx+rx;
+    svgEl.innerHTML = `
+      <defs>
+        <radialGradient id="bg-glow" cx="50%" cy="35%" r="60%">
+          <stop offset="0%" stop-color="rgba(212,180,131,.25)"/><stop offset="100%" stop-color="rgba(212,180,131,0)"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="200" cy="160" rx="180" ry="120" fill="url(#bg-glow)"/>
+      <line x1="${ax}" y1="20" x2="${ax}" y2="${top}" stroke="#9A8B6E" stroke-width="1" opacity=".7"/>
+      <line x1="${bx}" y1="20" x2="${bx}" y2="${top}" stroke="#9A8B6E" stroke-width="1" opacity=".7"/>
+      <circle cx="${ax}" cy="${top}" r="3" fill="#9A8B6E"/>
+      <circle cx="${bx}" cy="${top}" r="3" fill="#9A8B6E"/>
+      <path d="${path}" fill="none" stroke="#9A8B6E" stroke-width="1.4" opacity=".85" stroke-dasharray="500" stroke-dashoffset="${animateNew?500:0}">
+        ${animateNew ? '<animate attributeName="stroke-dashoffset" from="500" to="0" dur="1.2s" fill="freeze"/>' : ''}
+      </path>
+      ${beadsSVG}`;
+  }
+
+  // Empty state — preview shape
+  drawBracelet([
+    {n:'?', c:'#EAE3D4'},{n:'?', c:'#EAE3D4'},{n:'?', c:'#EAE3D4'},{n:'?', c:'#EAE3D4'},{n:'?', c:'#EAE3D4'}
+  ], false);
+  fb.classList.add('show');
+
+  moodList.querySelectorAll('.mood-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      moodList.querySelectorAll('.mood-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      const m = chip.dataset.mood;
+      activeMood = m;
+      const config = moods[m];
+      drawBracelet(config.stones, true);
+      fbText.textContent = config.why;
+      fbStones.textContent = config.stones.map(s=>s.n).filter((v,i,a)=>a.indexOf(v)===i).join('  ·  ');
+      fb.classList.add('show');
+    });
+  });
+
+  // Wall persistence
+  let wall = [];
+  try { wall = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){}
+  // Seed wall with 3 examples to never feel empty
+  if(wall.length === 0){
+    wall = [
+      { name:'第一條', mood:'steady',  cn:moods.steady.word,  stones:moods.steady.stones,  ts:Date.now()-86400000*3 },
+      { name:'今天的我', mood:'tired',   cn:moods.tired.word,   stones:moods.tired.stones,   ts:Date.now()-86400000 },
+      { name:'勇氣的繩', mood:'brave',   cn:moods.brave.word,   stones:moods.brave.stones,   ts:Date.now()-3600000*5 },
+    ];
+  }
+
+  function miniBracelet(stones){
+    const w=120, h=130, cx=60, top=18, rx=46, ry=58;
+    const startA = Math.PI*1.18, endA = Math.PI*-0.18;
+    let html = `<svg class="mini-svg" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <path d="M ${cx-rx} ${top} A ${rx} ${ry} 0 0 0 ${cx+rx} ${top}" fill="none" stroke="#9A8B6E" stroke-width="1" opacity=".75"/>`;
+    stones.forEach((s,i)=>{
+      const t = i/(stones.length-1);
+      const a = startA + (endA - startA)*t;
+      const x = cx + Math.cos(a)*rx;
+      const y = top + Math.sin(a)*ry*0.85 + ry*0.05;
+      const r = 6;
+      html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${s.c}" stroke="rgba(31,37,32,.2)" stroke-width=".5"/>`;
+      html += `<circle cx="${(x-r*0.4).toFixed(1)}" cy="${(y-r*0.4).toFixed(1)}" r="${(r*0.32).toFixed(1)}" fill="rgba(255,255,255,.6)"/>`;
+    });
+    html += '</svg>'; return html;
+  }
+
+  function renderWall(highlightId){
+    if(!wall.length){ wallRow.innerHTML = '<div class="wall-empty">— 牆上還沒有繫上任何一條。試著為自己繫第一條。 —</div>'; return; }
+    wallRow.innerHTML = wall.slice(-12).reverse().map((w,idx) => `
+      <div class="wall-card${w._id===highlightId?' is-new':''}" data-id="${w._id||''}">
+        <div class="hanger" style="height:36px;width:1px;background:#B8A988;opacity:.7"></div>
+        ${miniBracelet(w.stones)}
+        <div class="wname">${(w.name||'未命名').replace(/[<>]/g,'')}</div>
+        <div class="wmood">${w.cn || ''}</div>
+      </div>`).join('');
+  }
+  renderWall();
+
+  const burst = document.getElementById('tie-burst');
+  const burstName = document.getElementById('burst-name');
+
+  tieBtn.addEventListener('click', ()=>{
+    if(!activeMood){
+      fbText.textContent = '先選一個今天的狀態 ✦ ↑';
+      moodList.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    const config = moods[activeMood];
+    const name = (nameInput.value || '').trim() || '今天的我';
+    const id = 'w' + Date.now() + Math.floor(Math.random()*999);
+    wall.push({ _id:id, name: name.slice(0,14), mood:activeMood, cn:config.word, stones:config.stones, ts:Date.now() });
+    try { localStorage.setItem(KEY, JSON.stringify(wall.slice(-30))); } catch(e){}
+
+    // === Visible feedback — CSS-only animation, no GSAP layout interference ===
+    fb.classList.remove('show');
+    burstName.textContent = name;
+    burst.classList.add('show');
+    // Pure CSS pulse on bracelet preview — does NOT affect parent layout
+    svgEl.classList.remove('tie-pulse');
+    void svgEl.offsetWidth; // restart animation
+    svgEl.classList.add('tie-pulse');
+
+    // Render wall immediately
+    renderWall(id);
+
+    // Auto-dismiss burst after 4s
+    clearTimeout(window.__xj_burstT);
+    window.__xj_burstT = setTimeout(()=>{
+      burst.classList.remove('show');
+      svgEl.classList.remove('tie-pulse');
+    }, 4500);
+    setTimeout(()=>{ const c = document.querySelector('.wall-card.is-new'); if(c) c.classList.remove('is-new'); }, 8000);
+
+    // Button micro-feedback — width stays constant via min-width
+    nameInput.value = '';
+    tieBtn.classList.add('is-tied');
+    tieBtn.textContent = '✦ 已繫上';
+    setTimeout(()=>{ tieBtn.classList.remove('is-tied'); tieBtn.textContent = '繫上 · TIE'; }, 2400);
+  });
+
+  // CTA inside burst — user-driven scroll to wall
+  document.getElementById('see-wall-btn').addEventListener('click', ()=>{
+    burst.classList.remove('show');
+    svgEl.classList.remove('tie-pulse');
+    document.querySelector('.builder-wall').scrollIntoView({behavior:'smooth', block:'start'});
+  });
+})();
+
+/* ============================================================
+   8) Prismatic cursor + page-wide light trail
+   ============================================================ */
+(function(){
+  if(window.matchMedia && window.matchMedia('(hover:none)').matches) return;
+  const cursor = document.getElementById('prism-cursor');
+  const trail = document.getElementById('trail-stage');
+  if(!cursor || !trail) return;
+  const ctx = trail.getContext('2d');
+  let w, h;
+  function resize(){ w = trail.width = window.innerWidth; h = trail.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  let mx=-100, my=-100, lx=mx, ly=my, lastSpawn = 0;
+  const sparks = [];
+  const spectrumColors = ['#E2BFB9','#D4B483','#B8C9B5','#A8C4D6','#B9A5C9'];
+
+  window.addEventListener('mousemove', e=>{
+    mx = e.clientX; my = e.clientY;
+    const now = performance.now();
+    if(now - lastSpawn > 28){
+      lastSpawn = now;
+      const dx = mx - lx, dy = my - ly;
+      const speed = Math.min(Math.hypot(dx,dy), 60);
+      for(let i=0;i<2;i++){
+        sparks.push({
+          x: mx + (Math.random()-.5)*8,
+          y: my + (Math.random()-.5)*8,
+          vx: (Math.random()-.5)*.6 - dx*0.015,
+          vy: (Math.random()-.5)*.6 - dy*0.015 - 0.3,
+          life: 1,
+          decay: 0.012 + Math.random()*0.012,
+          r: 1.5 + Math.random()*2.6,
+          c: spectrumColors[Math.floor(Math.random()*spectrumColors.length)]
+        });
+      }
+      lx = mx; ly = my;
+    }
+  });
+
+  // hover affordance
+  document.addEventListener('mouseover', e=>{
+    if(e.target.closest('a, button, .mood-chip, .bead, .cta')){ document.body.classList.add('is-hover-cta'); }
+  });
+  document.addEventListener('mouseout', ()=> document.body.classList.remove('is-hover-cta'));
+
+  function step(){
+    // smooth follow
+    cursor.style.transform = `translate(${mx}px, ${my}px) translate(-50%,-50%)`;
+    ctx.clearRect(0,0,w,h);
+    for(let i=sparks.length-1;i>=0;i--){
+      const s = sparks[i];
+      s.x += s.vx; s.y += s.vy; s.life -= s.decay;
+      if(s.life <= 0){ sparks.splice(i,1); continue; }
+      const a = Math.max(0, s.life);
+      ctx.globalAlpha = a*.85;
+      const grd = ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*8);
+      grd.addColorStop(0, s.c+'cc'); grd.addColorStop(.4, s.c+'33'); grd.addColorStop(1, s.c+'00');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r*8,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = a;
+      ctx.fillStyle = s.c;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r*0.55,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+})();
+
+/* ============================================================
+   9) Scroll-driven sky: continuous RGB interpolation
+      dawn → noon → golden → twilight → night (5 keyframes)
+   ============================================================ */
+(function(){
+  const sky = document.getElementById('sky-stage');
+  if(!sky) return;
+
+  // Each keyframe is a position (0..1) along the page, with full palette
+  // [bg-top, bg-bot, glow-a, glow-b, txt] — alpha-aware
+  const keys = [
+    { p:0.00, bgTop:[251,246,240], bgBot:[244,237,227], gA:[226,191,185,.30], gB:[185,165,201,.18], txt:[31,37,32]   }, // dawn
+    { p:0.30, bgTop:[251,249,244], bgBot:[242,238,230], gA:[184,201,181,.22], gB:[212,180,131,.14], txt:[31,37,32]   }, // noon
+    { p:0.62, bgTop:[248,237,216], bgBot:[236,220,185], gA:[212,180,131,.40], gB:[199,163,90,.22],  txt:[58,46,33]   }, // golden
+    { p:0.82, bgTop:[80,68,84],   bgBot:[42,42,56],    gA:[199,163,90,.32],  gB:[185,165,201,.30], txt:[218,205,182]}, // twilight
+    { p:1.00, bgTop:[31,37,32],   bgBot:[18,22,21],    gA:[185,165,201,.22], gB:[212,180,131,.16], txt:[242,238,230]}  // night
+  ];
+  const lerp = (a,b,t)=> a + (b-a)*t;
+  const lerpRGB = (a,b,t,alpha=false) => alpha
+    ? `rgba(${Math.round(lerp(a[0],b[0],t))},${Math.round(lerp(a[1],b[1],t))},${Math.round(lerp(a[2],b[2],t))},${lerp(a[3],b[3],t).toFixed(3)})`
+    : `rgb(${Math.round(lerp(a[0],b[0],t))},${Math.round(lerp(a[1],b[1],t))},${Math.round(lerp(a[2],b[2],t))})`;
+  // smooth easing for transitions between segments (cosine ease)
+  const ease = t => 0.5 - Math.cos(Math.PI*t)/2;
+
+  let targetP = 0, currentP = 0;
+  function onScroll(){
+    const max = (document.documentElement.scrollHeight - window.innerHeight) || 1;
+    targetP = Math.max(0, Math.min(1, window.scrollY / max));
+  }
+  window.addEventListener('scroll', onScroll, { passive:true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  function tick(){
+    // ease toward target — never instant; ~12% per frame = ~6-frame catchup
+    currentP += (targetP - currentP) * 0.08;
+    // find segment
+    let i = 0;
+    while(i < keys.length-1 && currentP > keys[i+1].p) i++;
+    const a = keys[i], b = keys[Math.min(i+1, keys.length-1)];
+    const span = (b.p - a.p) || 1;
+    const t = ease(Math.max(0, Math.min(1, (currentP - a.p)/span)));
+    sky.style.setProperty('--bg-top', lerpRGB(a.bgTop, b.bgTop, t));
+    sky.style.setProperty('--bg-bot', lerpRGB(a.bgBot, b.bgBot, t));
+    sky.style.setProperty('--glow-a', lerpRGB(a.gA, b.gA, t, true));
+    sky.style.setProperty('--glow-b', lerpRGB(a.gB, b.gB, t, true));
+    document.body.style.color = lerpRGB(a.txt, b.txt, t);
+    // toggle helper classes for elements that need full re-styling (topbar etc)
+    document.body.classList.toggle('is-sky-night', currentP >= 0.88);
+    document.body.classList.toggle('is-sky-twilight', currentP >= 0.68 && currentP < 0.88);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* ============================================================
+   10) Hero beams entrance
+   ============================================================ */
+(function(){
+  if(typeof gsap === 'undefined') return;
+  gsap.fromTo('.beam', {opacity:0, scaleY:.4}, {opacity:.85, scaleY:1, duration:2.4, stagger:0.18, ease:'power2.out', delay:0.5});
+  gsap.to('.beam', {opacity:.55, duration:6, repeat:-1, yoyo:true, stagger:0.4, ease:'sine.inOut', delay:3});
+})();
+
+/* ============================================================
+   7) Easter egg — click ✦ in topbar 5 times → night-mode
+   ============================================================ */
+(function(){
+  const star = document.querySelector('.brand-mark .star');
+  if(!star) return;
+  star.style.cursor='pointer'; star.style.pointerEvents='auto';
+  let clicks = 0, timer;
+  const whisper = document.createElement('div');
+  whisper.className='night-whisper';
+  whisper.innerHTML = '<span class="star">✦ ⸻ ✦</span>白天我接住別人，<br>夜裡，我也需要被輕輕接住。<br>你願意陪我，安靜一下嗎？<span class="sig">— Dolly · 03:14 a.m.</span>';
+  document.body.appendChild(whisper);
+
+  star.addEventListener('click', ()=>{
+    clicks++;
+    star.style.transform = `rotate(${clicks*72}deg) scale(${1 + clicks*0.08})`;
+    clearTimeout(timer);
+    timer = setTimeout(()=>{ clicks=0; star.style.transform=''; }, 1800);
+    if(clicks >= 5){
+      document.body.classList.toggle('night-mode');
+      const isNight = document.body.classList.contains('night-mode');
+      if(isNight){
+        whisper.classList.add('show');
+        setTimeout(()=>whisper.classList.remove('show'), 7000);
+      } else {
+        whisper.classList.remove('show');
+      }
+      clicks = 0;
+      star.style.transform='';
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

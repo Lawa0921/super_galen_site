@@ -1828,3 +1828,17 @@ members:
         label: "顧問諮詢"
       - id: "ai_ops"
         label: "AI 工具實戰"
+
+  - id: "xijing"
+    name: "Dolly｜繫晶 xijing"
+    avatar: "/assets/img/guild/xijing/avatar.webp"
+    page: "/guild/xijing.html"
+    title: "Crystal Weaver · 兒少社工 × 媽媽 × 水晶創作者"
+    description: "三重身分中的修復者。本業是七年兒少社工，下班後把無力感折射進礦石裡，創立療癒選品「繫晶 xijing」——22 款手作手鍊、軸心對稱排列、社工視角的傾聽。每筆收入 10% 回捐弱勢兒少。「不只是撐住，而是修復。」"
+    tags:
+      - id: "crystal_atelier"
+        label: "水晶手作"
+      - id: "social_worker_lens"
+        label: "社工視角"
+      - id: "good_loop_10"
+        label: "10% 善循環"
