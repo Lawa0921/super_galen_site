@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Joseph 陳韋帆 ｜ 產品經理、二寶爸、臼井靈氣二階、LV1 龍蝦飼育員。">
+<title>Joseph 陳韋帆 ｜ 5:00 AM 的產品經理</title>
+
+<!-- Fonts: Ensuring high readability and strong weights -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,900;1,8..60,400;1,8..60,600&family=Noto+Serif+TC:wght@400;600;700;900&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
+
+<style>
+:root {
+  --bg-dark: #0A0A0C;
+  --bg-panel: #121318;
+  --text-main: #F4F4F5;    /* Brighter, thicker text color */
+  --text-mute: #A1A5B5;    /* More legible mute color */
+  --text-dim: #65697A;
+  
+  --vermillion: #E04D2D;
+  --vermillion-dim: rgba(224, 77, 45, 0.15);
+  --lobster: #FF6B4A;
+  --gold: #F0C869;
+  --dawn: #FFD285;
+  
+  --font-serif: 'Noto Serif TC', 'Source Serif 4', serif;
+  --font-sans: 'Noto Sans TC', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 18px; /* Larger base font size for readability */
+  line-height: 2;
+  font-weight: 400; /* Thicker base weight */
+  overflow-x: hidden;
+  letter-spacing: 0.04em;
+  transition: background-color 1.5s ease;
+}
+
+::selection { background: var(--vermillion-dim); color: var(--vermillion); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 3px; }
+
+/* =========================================
+   ATMOSPHERE & PROGRESS
+   ========================================= */
+.noise-overlay {
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.05; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.reading-progress {
+  position: fixed; top: 0; left: 0; height: 3px; background: var(--vermillion);
+  z-index: 10000; width: 0%; transition: width 0.1s;
+}
+
+/* =========================================
+   NAVIGATION
+   ========================================= */
+.nav-bar {
+  position: fixed; top: 0; left: 0; width: 100%;
+  padding: 2rem 3vw; display: flex; justify-content: space-between; align-items: center;
+  z-index: 100; mix-blend-mode: difference;
+}
+.back-link {
+  font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-mute); font-weight: 700;
+  text-decoration: none; letter-spacing: 0.15em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px; transition: color 0.3s;
+}
+.back-link:hover { color: var(--text-main); }
+.issue-tag {
+  font-family: var(--font-mono); font-size: 0.8rem; color: var(--vermillion); font-weight: 700; letter-spacing: 0.2em;
+}
+
+/* =========================================
+   EDITORIAL TYPOGRAPHY
+   ========================================= */
+.editorial-container {
+  max-width: 760px; /* Optimal reading width */
+  margin: 0 auto;
+  padding: 0 6vw;
+}
+
+h1.hero-title {
+  font-family: var(--font-serif);
+  font-weight: 900;
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  line-height: 1.15;
+  color: var(--text-main);
+  margin-bottom: 2rem;
+  letter-spacing: -0.02em;
+}
+h1.hero-title em {
+  font-style: normal; color: var(--text-dim); text-decoration: line-through; text-decoration-thickness: 4px; text-decoration-color: var(--vermillion); margin-right: 0.5rem;
+}
+
+h2.section-title {
+  font-family: var(--font-serif);
+  font-weight: 900;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.3;
+  margin-top: 4rem;
+  margin-bottom: 2rem;
+  color: var(--text-main);
+  position: relative;
+}
+h2.section-title::before {
+  content: ''; display: block; width: 40px; height: 4px; background: var(--vermillion); margin-bottom: 1rem;
+}
+
+p.lead-text {
+  font-family: var(--font-serif);
+  font-size: clamp(1.3rem, 2vw, 1.6rem);
+  line-height: 1.8;
+  color: var(--text-main);
+  font-weight: 600;
+  margin-bottom: 3rem;
+}
+
+p.body-text {
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  color: var(--text-mute);
+  margin-bottom: 2rem;
+  font-weight: 400;
+}
+p.body-text strong {
+  color: var(--text-main);
+  font-weight: 700;
+  background: linear-gradient(120deg, transparent 60%, var(--vermillion-dim) 60%);
+}
+
+.blockquote-custom {
+  position: relative;
+  margin: 4rem 0; padding: 3rem 0 3rem 3rem;
+  border-left: 3px solid var(--vermillion);
+}
+.blockquote-custom::before {
+  content: '"'; position: absolute; top: -1rem; left: -1.5rem;
+  font-family: var(--font-serif); font-size: 6rem; color: var(--vermillion-dim); line-height: 1;
+}
+.blockquote-custom p {
+  font-family: var(--font-serif); font-size: 1.5rem; color: var(--text-main); font-weight: 700;
+  line-height: 1.6; font-style: italic; margin-bottom: 1rem;
+}
+.blockquote-custom cite {
+  font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-dim); font-weight: 700; font-style: normal; letter-spacing: 0.1em;
+}
+
+/* =========================================
+   SCENE 1: HERO
+   ========================================= */
+.hero-section {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center;
+  padding-top: 15vh;
+}
+.hero-meta {
+  display: flex; align-items: center; gap: 24px; margin-top: 3rem;
+  padding-top: 3rem; border-top: 1px dashed var(--text-dim);
+}
+.hero-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--text-dim); }
+.hero-bio-name { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 900; color: var(--text-main); margin-bottom: 4px; }
+.hero-bio-tags { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-mute); font-weight: 700; }
+
+/* =========================================
+   SCENE 2: INTERACTIVE ZETTELKASTEN (CHAOS TO ORDER)
+   ========================================= */
+/* This is a signature interaction. As user scrolls, scattered absolute positioned cards snap into a neat grid. */
+.zettelkasten-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 200vh; /* Extremely tall to allow scroll scrubbing */
+  margin-top: 6rem;
+  margin-left: calc(-50vw + 50%); /* break out of editorial container */
+  background: #0D0E12;
+  border-top: 1px solid #1A1C23;
+  border-bottom: 1px solid #1A1C23;
+  overflow: hidden;
+}
+
+.sticky-container {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zk-title-overlay {
+  position: absolute;
+  top: 15%; left: 10%;
+  z-index: 50;
+  pointer-events: none;
+}
+.zk-title-overlay h2 {
+  font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; color: #fff;
+  text-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+.zk-title-overlay p {
+  font-family: var(--font-mono); color: var(--vermillion); font-weight: 700; letter-spacing: 0.2em; font-size: 0.9rem;
+}
+
+.card {
+  position: absolute;
+  width: 280px; padding: 2rem;
+  background: #181A20;
+  border: 1px solid #2A2D39;
+  border-top: 4px solid var(--vermillion);
+  border-radius: 4px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  font-family: var(--font-sans);
+  color: var(--text-mute);
+  will-change: transform;
+}
+.card-id { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); margin-bottom: 1rem; }
+.card-title { font-family: var(--font-serif); font-weight: 700; font-size: 1.2rem; color: #fff; margin-bottom: 0.5rem; line-height: 1.4; }
+.card-body { font-size: 0.95rem; line-height: 1.6; }
+
+/* =========================================
+   SCENE 3: THE TERMINAL BOSS
+   ========================================= */
+.terminal-section {
+  padding: 10rem 0;
+}
+.terminal-window {
+  background: var(--bg-panel); border: 1px solid var(--text-dim);
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+  margin: 4rem 0;
+}
+.t-head {
+  background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--text-dim);
+  padding: 12px 20px; display: flex; align-items: center; gap: 8px;
+}
+.t-dot { width: 12px; height: 12px; border-radius: 50%; }
+.t-title { margin-left: auto; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim); font-weight: 700; }
+.t-body { padding: 3rem 2rem; font-family: var(--font-mono); font-size: 1rem; color: var(--text-mute); line-height: 1.8; min-height: 300px; }
+.t-cmd-line { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.prompt { color: var(--lobster); font-weight: 700; }
+.t-input { color: #fff; font-weight: 700; }
+.t-output { color: #8F94A8; margin-bottom: 2rem; padding-left: 2rem; border-left: 2px solid var(--text-dim); }
+
+.action-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  background: var(--text-main); color: var(--bg-dark);
+  padding: 16px 32px; border-radius: 4px; text-decoration: none;
+  font-family: var(--font-mono); font-size: 1rem; font-weight: 700;
+  transition: transform 0.3s, background 0.3s; cursor: pointer; border: none;
+  margin-top: 2rem;
+}
+.action-btn:hover { background: var(--dawn); transform: translateY(-3px); }
+.action-btn i { font-size: 1.2rem; }
+
+/* =========================================
+   SCENE 4: REIKI HEALING (WARM TRANSITION)
+   ========================================= */
+.reiki-section {
+  padding: 12rem 0 10rem;
+  position: relative;
+}
+/* The background color of the whole body will transition to #161208 when hitting this section via JS */
+.reiki-glow {
+  position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 600px; background: radial-gradient(circle, rgba(240, 200, 105, 0.15) 0%, transparent 70%);
+  z-index: -1; pointer-events: none;
+}
+.donation-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 3rem;
+}
+.org-card {
+  border: 1px solid var(--gold); padding: 2rem; text-align: center; border-radius: 4px;
+  background: rgba(240, 200, 105, 0.05); transition: background 0.3s;
+}
+.org-card:hover { background: rgba(240, 200, 105, 0.15); }
+.org-card h4 { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 700; color: var(--gold); }
+
+/* =========================================
+   FOOTER
+   ========================================= */
+footer {
+  padding: 4rem 6vw; border-top: 1px solid var(--text-dim);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim); font-weight: 700;
+}
+.social-links a { color: var(--text-dim); text-decoration: none; font-size: 1.4rem; margin-left: 2rem; transition: color 0.3s; }
+.social-links a:hover { color: var(--text-main); }
+
+@media (max-width: 768px) {
+  .editorial-container { padding: 0 8vw; }
+  .card { width: 80vw; padding: 1.5rem; }
+  footer { flex-direction: column; gap: 2rem; text-align: center; }
+  .social-links a { margin: 0 1rem; }
+}
+
+.fade-up { opacity: 0; transform: translateY(40px); }
+</style>
+</head>
+<body>
+
+<div class="noise-overlay"></div>
+<div class="reading-progress" id="progressBar"></div>
+
+<nav class="nav-bar">
+  <a href="/guild/" class="back-link"><i class="fas fa-arrow-left"></i> Archive</a>
+  <div class="issue-tag">ISSUE 0153</div>
+</nav>
+
+<main>
+
+  <!-- SCENE 1: THE STORY BEGINS -->
+  <section class="editorial-container hero-section">
+    <h1 class="hero-title fade-up">
+      <em>不夠努力</em><br>
+      是太多東西被<br><span style="color: var(--dawn);">壓在一起了。</span>
+    </h1>
+    
+    <p class="lead-text fade-up" style="transition-delay: 0.1s;">
+      凌晨五點的台北，非常安靜。這是我一天之中，唯一完全屬於自己的兩個小時。<br>不屬於跨部門會議，不屬於滿地的幼兒玩具，只屬於我、一杯咖啡，和眼前閃爍的終端機游標。
+    </p>
+
+    <div class="hero-meta fade-up" style="transition-delay: 0.2s;">
+      <img src="/assets/img/guild/chenweirennotes/avatar.webp" alt="Joseph" class="hero-avatar">
+      <div>
+        <div class="hero-bio-name">Joseph 陳韋帆</div>
+        <div class="hero-bio-tags">產品經理 10+ yr / 二寶爸 / LV1 龍蝦飼育員</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENE 2: THE PM MANIFESTO -->
+  <section class="editorial-container" style="padding: 6rem 0;">
+    <p class="body-text fade-up">工作上，你同時在處理客戶需求、主管期待、跨部門協調、自己根本學不完的新工具。你聽過 AI，知道它很重要，但沒有人告訴你：「你現在手上這個問題，第一步可以怎麼動。」</p>
+
+    <p class="body-text fade-up">生活上也一樣。育兒補助分散在十幾個網站、留停收入沒人幫你算過、公托要提早多久登記沒有標準答案。你不是沒能力查，而是在每天上班、接送、哄睡、失眠的狀態下，<strong>連「我來查查看」這件事本身，都變成了一種負擔。</strong></p>
+
+    <div class="blockquote-custom fade-up">
+      <p>「這種『只能硬撐』的狀態，本質上是一個 PM 非常熟悉的問題——資訊不對稱。」</p>
+      <cite>— Joseph</cite>
+    </div>
+
+    <p class="body-text fade-up">這幾年我跟老婆走過懷孕、生產、托育安排。我決定把這套 PM 框架先用在自己家裡。用 PM 的話來說，算是把「生小孩」這個超大專案成功交付上線了。我不當技術的消費者，而是主動建立工具、策展知識、設計生活系統的實踐者。</p>
+  </section>
+
+  <!-- SCENE 3: SIGNATURE INTERACTION - UNTANGLING CHAOS -->
+  <div class="zettelkasten-wrapper" id="zk-wrapper">
+    <div class="sticky-container" id="zk-sticky">
+      
+      <div class="zk-title-overlay">
+        <p>SCROLL TO UNTANGLE</p>
+        <h2>重構混亂</h2>
+      </div>
+
+      <!-- The Cards that will animate from scattered chaos to a neat grid -->
+      <div class="card zk-card" data-idx="0">
+        <div class="card-id">NOTE-001 // DIGITAL HOARDING</div>
+        <div class="card-title">資源回收場</div>
+        <div class="card-body">用龍蝦兩個多月來，我的筆記庫簡直像資源回收場，每天狂存一堆消息、Prompt，結果要用時根本找不到。</div>
+      </div>
+      <div class="card zk-card" data-idx="1">
+        <div class="card-id">NOTE-002 // SOLUTION</div>
+        <div class="card-title">卡片盒筆記法</div>
+        <div class="card-body">上週末我下定決心跟他聯手大重整！把資料收集流程，直接結合強大的「卡片盒筆記法」，做成全自動生產線。</div>
+      </div>
+      <div class="card zk-card" data-idx="2">
+        <div class="card-id">NOTE-003 // AUTOMATION</div>
+        <div class="card-title">雙向連結生成</div>
+        <div class="card-body">現在只要丟連結他就自動摘要。聊出好點子，一鍵就幫我生成永久卡片與雙向連結。</div>
+      </div>
+      <div class="card zk-card" data-idx="3">
+        <div class="card-id">NOTE-004 // OPEN SOURCE</div>
+        <div class="card-title">開源工作流</div>
+        <div class="card-body">我把這套 Obsidian 工作流開源，有「數位囤積困擾」的朋友歡迎直接拿去用。</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCENE 4: THE LOBSTER TERMINAL -->
+  <section class="editorial-container terminal-section">
+    <h2 class="section-title fade-up">LV1 龍蝦飼育員</h2>
+    <p class="body-text fade-up">「龍蝦」是 Claude 的吉祥物。我沒把 AI 當神供著，也不把它當魔法宣傳——<strong>我把它當召喚物來養</strong>：餵它對的脈絡、設計對的指令、修正它的錯。</p>
+    <p class="body-text fade-up">每天凌晨我跟龍蝦一起拆昨天的混亂；每個午休跟牠合力做一支 Chrome ext；每週把拆解過程寫成電子報。對我來說 Claude 不是技術，是買回來的時間。</p>
+
+    <div class="terminal-window fade-up">
+      <div class="t-head">
+        <div class="t-dot" style="background:#FF5F56;"></div>
+        <div class="t-dot" style="background:#FFBD2E;"></div>
+        <div class="t-dot" style="background:#27C93F;"></div>
+        <div class="t-title">joseph@5am-desk ~ zsh</div>
+      </div>
+      <div class="t-body" id="term-body">
+        <div class="t-cmd-line">
+          <span class="prompt">➜</span> <span class="t-input">./train_lobster.sh --issue="分類用得不順手"</span>
+        </div>
+        <!-- Output will be typed here by GSAP on click -->
+        <div id="term-output-container"></div>
+      </div>
+    </div>
+
+    <div style="text-align: center;">
+      <button class="action-btn" id="btn-run-lobster">
+        <i class="fas fa-terminal"></i> 執行指令：當慣老闆
+      </button>
+      <div style="margin-top: 1.5rem;">
+        <a href="https://github.com/KREUZc/openclaw-second-brain-pipeline" target="_blank" rel="noopener noreferrer" style="color: var(--lobster); font-family: var(--font-mono); font-size: 0.9rem; text-decoration: none; font-weight: 700;">
+          <i class="fab fa-github"></i> 查看開源：openclaw-second-brain-pipeline ↗
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENE 5: REIKI HEALING (THE WARM SHIFT) -->
+  <section class="editorial-container reiki-section" id="reiki-trigger">
+    <div class="reiki-glow"></div>
+    <h2 class="section-title fade-up" style="color: var(--gold);">臼井靈氣 · 遠端體驗</h2>
+    
+    <p class="body-text fade-up">除了極度講求邏輯與效率的 PM 工作與寫 Code，我也是<strong>臼井靈氣二階的實踐者</strong>。</p>
+    
+    <div class="blockquote-custom fade-up" style="border-color: var(--gold);">
+      <p style="color: var(--gold);">「這個加速度的世界，是留給在路上的實踐者的。<br>但我相信在追求效率之餘，靈魂也需要被溫柔接住。」</p>
+    </div>
+
+    <p class="body-text fade-up">我提供遠端靈氣體驗，費用不進我的口袋，而是轉化為對社會的善意。如果你需要，歡迎預約，並請捐款 NT$500 以上給以下指定單位：</p>
+
+    <div class="donation-grid fade-up">
+      <div class="org-card"><h4>罕見疾病基金會</h4></div>
+      <div class="org-card"><h4>門諾醫院</h4></div>
+      <div class="org-card"><h4>家扶基金會</h4></div>
+    </div>
+
+    <div style="text-align: center; margin-top: 4rem;" class="fade-up">
+      <a href="mailto:wosbi.chris20@gmail.com" class="action-btn" style="background: var(--gold); color: #111;">
+        <i class="fas fa-hands-holding-circle"></i> 預約遠端靈氣
+      </a>
+    </div>
+  </section>
+
+  <section class="editorial-container" style="padding: 8rem 0; text-align: center; border-top: 1px dashed var(--text-dim);">
+    <h2 style="font-family: var(--font-serif); font-size: 2.5rem; font-weight: 900; margin-bottom: 2rem; color: var(--text-main);">少撐一點，多睡一點。</h2>
+    <p class="body-text" style="max-width: 500px; margin: 0 auto 3rem;">這份電子報是我每週五凌晨 5 點寄出的——你拿到的是我跟龍蝦今天才挖出來的東西。這裡不生產焦慮，只講你明天就能試的方法。</p>
+    <a href="https://josephnext.substack.com" target="_blank" rel="noopener noreferrer" class="action-btn" style="background: var(--vermillion); color: #fff;">
+      <i class="fas fa-envelope"></i> 訂閱電子報
+    </a>
+  </section>
+
+</main>
+
+<footer>
+  <div>&copy; 2026 Joseph 陳韋帆. Made with ♥ by SuperGalen's Dungeon.</div>
+  <div class="social-links">
+    <a href="https://www.threads.net/@chenweirennotes" target="_blank" rel="noopener noreferrer"><i class="fab fa-threads"></i></a>
+    <a href="https://josephnext.substack.com" target="_blank" rel="noopener noreferrer"><i class="fas fa-bookmark"></i></a>
+    <a href="https://github.com/KREUZc" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i></a>
+    <a href="https://portaly.cc/joseph" target="_blank" rel="noopener noreferrer"><i class="fas fa-link"></i></a>
+  </div>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+// 1. Reading Progress Bar
+window.addEventListener('scroll', () => {
+  const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+  const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+  const scrolled = (winScroll / height) * 100;
+  document.getElementById("progressBar").style.width = scrolled + "%";
+});
+
+// 2. Elegant Fade Ups
+gsap.utils.toArray('.fade-up').forEach(elem => {
+  gsap.fromTo(elem, 
+    { y: 50, opacity: 0 },
+    {
+      scrollTrigger: { trigger: elem, start: "top 85%" },
+      y: 0, opacity: 1, duration: 1.2, ease: "power3.out"
+    }
+  );
+});
+
+// 3. Signature Interaction: The Zettelkasten Untangling
+// Calculate target grid positions based on screen size
+function getGridPositions() {
+  const isMobile = window.innerWidth < 768;
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+  
+  if (isMobile) {
+    return [
+      { x: centerX, y: centerY - 150 },
+      { x: centerX, y: centerY - 50 },
+      { x: centerX, y: centerY + 50 },
+      { x: centerX, y: centerY + 150 }
+    ];
+  } else {
+    return [
+      { x: centerX - 300, y: centerY - 100 },
+      { x: centerX + 300, y: centerY - 100 },
+      { x: centerX - 300, y: centerY + 160 },
+      { x: centerX + 300, y: centerY + 160 }
+    ];
+  }
+}
+
+const cards = gsap.utils.toArray('.zk-card');
+// Initial chaotic scatter
+cards.forEach(card => {
+  gsap.set(card, {
+    x: window.innerWidth/2 + (Math.random() - 0.5) * window.innerWidth * 0.8,
+    y: window.innerHeight/2 + (Math.random() - 0.5) * window.innerHeight * 0.8,
+    rotation: (Math.random() - 0.5) * 60,
+    xPercent: -50, yPercent: -50,
+    opacity: 0.3
+  });
+});
+
+// Create scrub animation to pull them into order
+let gridPos = getGridPositions();
+const tl = gsap.timeline({
+  scrollTrigger: {
+    trigger: "#zk-wrapper",
+    start: "top top",
+    end: "bottom bottom",
+    scrub: 1 // smooth scrubbing
+  }
+});
+
+cards.forEach((card, i) => {
+  tl.to(card, {
+    x: gridPos[i].x,
+    y: gridPos[i].y,
+    rotation: 0,
+    opacity: 1,
+    ease: "power2.inOut"
+  }, 0); // all start at same time on scroll
+});
+
+// Handle resize for grid
+window.addEventListener('resize', () => {
+  gridPos = getGridPositions();
+  // We'd need to invalidate scrolltrigger in a real app, keeping simple for demo
+});
+
+// 4. Signature Interaction: The Lobster Terminal
+const btnLobster = document.getElementById('btn-run-lobster');
+const termOutput = document.getElementById('term-output-container');
+let isTyping = false;
+
+btnLobster.addEventListener('click', () => {
+  if(isTyping) return;
+  isTyping = true;
+  termOutput.innerHTML = ""; // clear
+  btnLobster.style.opacity = 0.5;
+  btnLobster.innerText = "執行中...";
+
+  const responseText = `[System] 接收到使用者的傲嬌指令...
+[Process] 正在提取昨天的混亂筆記...
+[Zettelkasten] 執行雙向連結重構...
+[Claude] "分類用得不順手？沒問題老闆，已經幫您直接修改寫入規則。當慣老闆有夠爽😎"
+[Success] 卡片盒筆記法全自動生產線已更新完畢。`;
+
+  const outputDiv = document.createElement('div');
+  outputDiv.className = 't-output';
+  termOutput.appendChild(outputDiv);
+
+  gsap.to(outputDiv, {
+    text: {
+      value: responseText.replace(/\n/g, "<br>"),
+      speed: 1.5
+    },
+    ease: "none",
+    onComplete: () => {
+      isTyping = false;
+      btnLobster.style.opacity = 1;
+      btnLobster.innerHTML = '<i class="fas fa-check"></i> 執行完畢';
+    }
+  });
+});
+
+// 5. Signature Atmosphere: The Reiki Transition
+// When entering the Reiki section, the whole page background shifts from Dark Tech to Warm Healing
+ScrollTrigger.create({
+  trigger: "#reiki-trigger",
+  start: "top 60%",
+  end: "bottom top",
+  onEnter: () => gsap.to("body", { backgroundColor: "#110D08", duration: 1.5 }),
+  onLeaveBack: () => gsap.to("body", { backgroundColor: "var(--bg-dark)", duration: 1.5 }),
+});
+
+</script>
+</body>
+</html>
