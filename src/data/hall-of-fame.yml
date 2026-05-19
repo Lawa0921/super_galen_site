@@ -1842,3 +1842,33 @@ members:
         label: "社工視角"
       - id: "good_loop_10"
         label: "10% 善循環"
+
+
+  - id: "chenweirennotes"
+    name: "Joseph 陳韋帆｜少撐一點"
+    avatar: "/assets/img/guild/chenweirennotes/avatar.webp"
+    page: "/guild/chenweirennotes.html"
+    title: "Product Manager · LV1 龍蝦飼育員 · Reiki II"
+    description: "十多年產品經理、二寶爸、Everquest 退役 Enchanter、現役 LV1 龍蝦飼育員（Claude）。當兵把義務役當職業做、寫程式跳去民宿、台東一頓飯就留下當外場。把混亂需求拆乾淨、把卡住的專案推上線——同一套方法給你的工作和育兒。「少撐一點，多睡一點。」凌晨五點寫第一本書、午休 30 分做 Chrome ext、Obsidian 卡片盒筆記法已開源。"
+    tags:
+      - id: "pm_unstuck"
+        label: "PM × 卡點拆解"
+      - id: "lobster_trainer"
+        label: "龍蝦飼育員 × Claude 工作流"
+      - id: "shao_cheng_yi_dian"
+        label: "少撐一點 · 育兒 PM"
+
+
+  - id: "zhixu_li"
+    name: "Louis 力智栩｜FOH @ 嘟嘟數位"
+    avatar: "/assets/img/guild/zhixu_li/avatar.webp"
+    page: "/guild/zhixu_li.html"
+    title: "Founder · 全端 × DevOps × AI Agent · 七年老兵"
+    description: "嘟嘟數位科技創辦人 Louis。本科出身、軟體業七年——DevOps、MIS、前後端、APP 技能樹亂七八招的那種。半夜睡不著就搓 claudeBot / CursorBot 開源丟 GitHub，正在打 AI 專案管理 SaaS。大學熱音社把樂團攝影玩成追焦進化史，週末看團、平日露營（其實就是換個地方寫 code）。多益 150、研究 AGI 都靠 AI 翻譯——一個逼自己變 E 人的標準 I 人。"
+    tags:
+      - id: "foh_full_stack"
+        label: "FOH × 全端老兵"
+      - id: "ai_agent_arch"
+        label: "AI Agent 系統設計"
+      - id: "camp_coding"
+        label: "露營 = 換個地方寫 code"

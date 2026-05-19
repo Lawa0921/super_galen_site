@@ -3,530 +3,1272 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Joseph 陳韋帆 ｜ 產品經理、二寶爸、臼井靈氣二階、LV1 龍蝦飼育員。">
-<title>Joseph 陳韋帆 ｜ 5:00 AM 的產品經理</title>
-
+<meta name="description" content="Joseph 陳韋帆｜一份不太線性的履歷。從 2001 Norrath 的 Enchanter，到義務役 Excel 小老師、民宿管家、台東餐廳外場、十多年產品經理，到現在的二寶爸與 LV1 龍蝦飼育員。少撐一點，多睡一點。">
+<title>Joseph · 陳韋帆 ｜ 一份不太線性的履歷</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- 極致加粗的字體載入：徹底排除 300 這種細體，只使用 500, 700, 900 確保文字厚重感 -->
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,700;8..60,900&family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@500;700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Noto+Serif+TC:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-
 <style>
-:root {
-  --bg: #09090B;
-  --text-main: #FFFFFF;
-  --text-dim: #A1A1AA;
-  --vermillion: #E03131;
-  --lobster: #FF6B4A;
-  --gold: #F59E0B;
-  
-  --font-serif: 'Noto Serif TC', serif;
-  --font-sans: 'Noto Sans TC', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+:root{
+  /* === A Reluctant CV · Palette === */
+  --paper:#F4ECD9;
+  --paper-2:#EBE0C4;
+  --line:#C9B98A;
+  --ink:#231a14;
+  --ink-soft:#4a3826;
+  --ink-mute:#7a6b4c;
+
+  --lobster:#d34a30;
+  --lobster-deep:#9d2b18;
+  --lobster-soft:#e88869;
+
+  --amber:#cf932a;
+  --amber-soft:#e5b556;
+
+  --navy:#1e2a3c;
+
+  --sea:#5a8b80;            /* taitung sea green */
+  --sea-deep:#3a5f57;
+
+  --norrath:#3b6b3f;        /* faint CRT phosphor */
+
+  --font-display:'Italiana',serif;
+  --font-latin:'Cormorant Garamond',serif;
+  --font-tc:'Noto Serif TC',serif;
+  --font-sans:'Noto Sans TC',sans-serif;
+  --font-mono:'DM Mono',monospace;
+
+  --easing:cubic-bezier(.22,.61,.36,1);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--bg); }
-body {
-  background-color: var(--bg);
-  color: var(--text-main);
-  font-family: var(--font-sans);
-  /* 基礎設定：極致放大與加粗 */
-  font-size: 22px; 
-  font-weight: 500;
-  line-height: 2.2;
-  overflow-x: hidden;
-  letter-spacing: 0.05em;
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;background:var(--paper)}
+body{
+  background:
+    radial-gradient(ellipse 60% 40% at 90% 6%, rgba(207,147,42,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 8% 92%, rgba(211,74,48,.10) 0%, transparent 60%),
+    var(--paper);
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-weight:400;
+  line-height:1.85;
+  letter-spacing:.02em;
+  overflow-x:hidden;
+  min-height:100vh;
+  font-size:17px;
+}
+::selection{background:var(--lobster);color:var(--paper)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--paper-2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--lobster),var(--amber));border-radius:3px}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+.grain{position:fixed;inset:0;pointer-events:none;z-index:80;opacity:.06;mix-blend-mode:multiply;
+  background-image:
+    radial-gradient(rgba(35,26,20,.5) 1px, transparent 1.2px),
+    radial-gradient(rgba(211,74,48,.4) .8px, transparent 1px);
+  background-size:3px 3px, 7px 7px;
+  background-position:0 0, 1px 2px;
 }
 
-::selection { background: var(--text-main); color: var(--bg); }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--vermillion); }
-
-/* =========================================
-   UI & NAVIGATION
-   ========================================= */
-.nav-bar {
-  position: fixed; top: 0; left: 0; width: 100%;
-  padding: 2rem 4vw; display: flex; justify-content: space-between; align-items: center;
-  z-index: 1000; pointer-events: none;
+/* ============== TOP BAR ============== */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:24px 5vw;
+  font-family:var(--font-mono);font-size:11px;
+  letter-spacing:.28em;text-transform:uppercase;
+  color:var(--ink-soft);font-weight:500;
+  background:linear-gradient(180deg, rgba(244,236,217,.92) 0%, rgba(244,236,217,0) 100%);
+  pointer-events:none;
 }
-.nav-bar a, .nav-bar div { pointer-events: auto; }
-.back-link {
-  font-family: var(--font-mono); font-size: 1rem; color: var(--text-main); font-weight: 800;
-  text-decoration: none; letter-spacing: 0.15em; text-transform: uppercase;
-  background: var(--bg); padding: 8px 16px; border: 2px solid var(--text-main);
-  transition: all 0.3s;
+.topbar > *{pointer-events:auto}
+.archive-link{
+  display:inline-flex;align-items:center;gap:9px;
+  color:var(--ink-soft);
+  transition:color .25s var(--easing);
 }
-.back-link:hover { background: var(--text-main); color: var(--bg); }
+.archive-link:hover{color:var(--lobster)}
+.archive-link i{font-size:10px}
 
-/* =========================================
-   INTERACTION 01: THE CHAOS SOLVER
-   ========================================= */
-#chaos-scene {
-  width: 100vw; height: 100vh;
-  position: relative; overflow: hidden;
-  background: #000;
-  display: flex; flex-direction: column; justify-content: center; align-items: center;
-  z-index: 50;
+/* ===================================================== */
+/* ============== HERO · PORTRAIT ====================== */
+/* ===================================================== */
+.hero.hero-portrait{
+  position:relative;
+  min-height:100vh;
+  padding:0;
+  margin:0;max-width:none;
+  display:block;overflow:hidden;
+  background:#0c0e15;
+  z-index:5;
 }
-
-.chaos-word {
-  position: absolute;
-  font-family: var(--font-serif);
-  font-weight: 900;
-  font-size: clamp(2rem, 5vw, 4rem);
-  color: var(--text-main);
-  white-space: nowrap;
-  pointer-events: none;
-  text-shadow: 2px 2px 20px rgba(224, 49, 49, 0.5);
-  will-change: transform, opacity;
+.hero-portrait-bg{
+  position:absolute;inset:0;z-index:1;
 }
-
-#solve-btn {
-  position: relative; z-index: 60;
-  font-family: var(--font-mono); font-size: 1.2rem; font-weight: 800; letter-spacing: 0.2em;
-  padding: 1.5rem 3rem; background: transparent; color: var(--vermillion);
-  border: 4px solid var(--vermillion); cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 0 40px rgba(224, 49, 49, 0.2);
+.hero-portrait-bg img{
+  width:100%;height:100%;object-fit:cover;
+  object-position:center 38%;
+  filter:saturate(1.04) contrast(1.02);
 }
-#solve-btn:hover { background: rgba(224, 49, 49, 0.1); }
-#solve-btn:active { background: var(--vermillion); color: #fff; transform: scale(0.95); }
-
-.instruction-text {
-  position: absolute; bottom: 10vh; z-index: 60;
-  font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-dim); font-weight: 700;
+.hero-portrait-fade{
+  position:absolute;inset:0;z-index:2;
+  background:
+    linear-gradient(180deg, rgba(12,14,21,.30) 0%, rgba(12,14,21,0) 18%, rgba(12,14,21,0) 55%, rgba(12,14,21,.85) 92%, rgba(12,14,21,.98) 100%),
+    linear-gradient(90deg, rgba(12,14,21,.60) 0%, rgba(12,14,21,.20) 40%, rgba(12,14,21,0) 65%);
 }
+.hero-portrait-content{
+  position:absolute;left:5vw;right:5vw;bottom:14vh;
+  z-index:5;max-width:680px;
+  color:#f4ecd9;
+}
+.hero-portrait .hero-tag{
+  color:rgba(244,236,217,.65);
+  margin-bottom:32px;
+}
+.hero-portrait .hero-tag::before{color:var(--lobster-soft)}
+.hero-portrait .hero-tag::after{background:linear-gradient(90deg, rgba(244,236,217,.45), transparent)}
 
-/* =========================================
-   BRUTALIST EDITORIAL LAYOUT
-   ========================================= */
-.container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 5vw;
+.hero-portrait .hero-name{
+  color:#f4ecd9;
+  font-size:clamp(60px, 10vw, 168px);
+  margin-bottom:14px;
+  text-shadow:0 2px 18px rgba(0,0,0,.5);
+}
+.hero-portrait .hero-name .name-cn{
+  color:rgba(244,236,217,.7);
 }
 
-.section {
-  padding: 15vh 0;
-  border-bottom: 2px solid #27272A;
+.hero-portrait .hero-sub{
+  color:rgba(244,236,217,.88);
+  font-size:clamp(20px, 2.4vw, 28px);
+  margin-bottom:24px;
+  max-width:36ch;
+}
+.hero-portrait .hero-sub em{color:var(--lobster-soft)}
+
+.hero-portrait .hero-cjk-tagline{
+  color:#f4ecd9;
+  font-size:clamp(32px, 5vw, 64px);
+  text-shadow:0 2px 20px rgba(0,0,0,.55);
+  margin-bottom:28px;
+}
+.hero-portrait .hero-cjk-tagline .em{color:var(--lobster-soft)}
+
+.hero-meta-strip{
+  display:flex;flex-wrap:wrap;align-items:center;gap:14px;
+  font-family:var(--font-mono);font-size:11px;
+  letter-spacing:.22em;text-transform:uppercase;font-weight:500;
+  color:rgba(244,236,217,.7);
+  margin-bottom:32px;
+}
+.hero-meta-strip b{
+  font-family:var(--font-latin);font-style:italic;font-weight:600;
+  color:var(--lobster-soft);letter-spacing:.02em;text-transform:none;
+  font-size:16px;
+}
+.hero-meta-strip .dot{color:var(--lobster-soft);opacity:.55}
+
+.hero-portrait .hero-tl{
+  border-top:1px solid rgba(244,236,217,.18);
+  padding-top:18px;max-width:720px;
+}
+.hero-portrait .hero-tl .tl-tick{color:rgba(244,236,217,.55)}
+.hero-portrait .hero-tl .tl-tick::before{
+  background:#0c0e15;border-color:var(--lobster-soft);
+}
+.hero-portrait .hero-tl .tl-tick.now::before{background:var(--lobster)}
+.hero-portrait .hero-tl .tl-tick .yr{color:#f4ecd9}
+
+.hero-credit{
+  position:absolute;left:5vw;right:5vw;top:24px;z-index:6;
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--font-mono);font-size:10px;
+  letter-spacing:.32em;text-transform:uppercase;font-weight:500;
+  color:rgba(244,236,217,.55);
+}
+.hero-credit .plate{
+  font-family:var(--font-latin);font-style:italic;font-weight:500;
+  font-size:13px;letter-spacing:.04em;text-transform:none;
+  color:rgba(244,236,217,.7);
+}
+.hero-credit .scrolly{
+  display:flex;align-items:center;gap:8px;
 }
 
-/* Typography */
-.eyebrow {
-  font-family: var(--font-mono); font-size: 1rem; color: var(--vermillion); font-weight: 800;
-  letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 2rem;
-  display: inline-block; background: rgba(224, 49, 49, 0.1); padding: 4px 12px;
+/* topbar on dark hero */
+body.hero-dark .topbar{
+  background:linear-gradient(180deg, rgba(12,14,21,.78), transparent);
+  color:rgba(244,236,217,.65);
+}
+body.hero-dark .archive-link{color:rgba(244,236,217,.85)}
+
+/* legacy hero rules kept but neutralised */
+.hero:not(.hero-portrait){
+  position:relative;
+  min-height:100vh;
+  padding:140px 5vw 80px;
+  display:flex;flex-direction:column;justify-content:center;
+  max-width:1280px;margin:0 auto;
+  z-index:5;
 }
 
-h1.massive-title {
-  font-family: var(--font-serif); font-weight: 900;
-  font-size: clamp(4rem, 10vw, 8rem); line-height: 1;
-  letter-spacing: -0.05em; margin-bottom: 3rem;
-  word-break: keep-all;
+.hero-tag{
+  font-family:var(--font-latin);font-style:italic;
+  font-weight:400;font-size:14px;
+  color:var(--lobster);letter-spacing:.32em;text-transform:uppercase;
+  margin-bottom:42px;
+  display:flex;align-items:baseline;gap:18px;
 }
-h1.massive-title em { color: var(--text-dim); font-style: normal; text-decoration: line-through; text-decoration-color: var(--vermillion); text-decoration-thickness: 8px; }
+.hero-tag::before{content:"§";color:var(--lobster);font-style:italic;font-size:18px;line-height:1}
+.hero-tag::after{content:"";flex:1;height:1px;background:linear-gradient(90deg, var(--line), transparent);align-self:center;max-width:240px}
 
-h2.heavy-heading {
-  font-family: var(--font-serif); font-weight: 900;
-  font-size: clamp(2.5rem, 5vw, 4rem); line-height: 1.2;
-  margin-bottom: 2.5rem; letter-spacing: -0.02em;
+h1.hero-name{
+  font-family:var(--font-display);
+  font-weight:400;
+  font-size:clamp(72px, 12vw, 200px);
+  line-height:.94;
+  letter-spacing:.005em;
+  color:var(--ink);
+  margin-bottom:18px;
 }
-
-.lead-paragraph {
-  font-family: var(--font-serif);
-  font-size: clamp(1.5rem, 3vw, 2.2rem);
-  font-weight: 700;
-  line-height: 1.6;
-  color: var(--lobster);
-  margin-bottom: 4rem;
-  border-left: 8px solid var(--lobster);
-  padding-left: 2rem;
-}
-
-.body-paragraph {
-  font-size: 1.3rem; /* Huge base size */
-  font-weight: 500;
-  color: var(--text-dim);
-  margin-bottom: 2.5rem;
-}
-.body-paragraph strong {
-  color: var(--text-main); font-weight: 900;
-  background: rgba(255, 255, 255, 0.1); padding: 2px 6px;
+h1.hero-name .name-cn{
+  display:block;font-family:var(--font-tc);font-weight:600;
+  font-size:.36em;color:var(--ink-soft);letter-spacing:.18em;
+  margin-top:14px;
 }
 
-/* --- THE 5AM REALITY --- */
-.meta-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;
-  margin-top: 4rem; padding: 3rem; background: #18181B; border: 2px solid #3F3F46;
+.hero-sub{
+  font-family:var(--font-latin);font-style:italic;font-weight:300;
+  font-size:clamp(22px, 2.6vw, 32px);line-height:1.4;letter-spacing:.02em;
+  color:var(--ink-soft);
+  margin-bottom:28px;
+  max-width:32ch;
 }
-.meta-item .label { font-family: var(--font-mono); font-size: 0.9rem; color: var(--vermillion); font-weight: 800; margin-bottom: 0.5rem; }
-.meta-item .value { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; color: #fff; }
+.hero-sub em{color:var(--lobster);font-style:italic;font-weight:500;}
 
-/* --- THE LOBSTER PIPELINE --- */
-.pipeline-box {
-  border: 4px solid var(--text-dim);
-  padding: 4rem; margin: 4rem 0;
-  position: relative;
+.hero-cjk-tagline{
+  font-family:var(--font-tc);font-weight:500;
+  font-size:clamp(28px, 4.2vw, 56px);
+  line-height:1.18;letter-spacing:.04em;
+  color:var(--ink);max-width:18ch;
+  margin-bottom:36px;
 }
-.pipeline-box::before {
-  content: 'SYSTEM ARCHITECTURE'; position: absolute; top: -1rem; left: 2rem;
-  background: var(--bg); padding: 0 1rem; font-family: var(--font-mono); font-weight: 800; color: var(--text-dim);
-}
-.step {
-  display: flex; gap: 2rem; margin-bottom: 3rem; align-items: flex-start;
-}
-.step:last-child { margin-bottom: 0; }
-.step-num {
-  font-family: var(--font-mono); font-size: 3rem; font-weight: 900; color: var(--vermillion); line-height: 1;
-}
-.step-content h3 { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; margin-bottom: 1rem; }
-.step-content p { font-size: 1.2rem; color: var(--text-dim); font-weight: 500; }
+.hero-cjk-tagline .em{color:var(--lobster)}
 
-/* --- REIKI CONTRAST --- */
-.reiki-zone {
-  background: var(--gold);
-  color: #000;
-  padding: 15vh 5vw;
+/* mini timeline strip */
+.hero-tl{
+  display:grid;grid-template-columns:repeat(7, 1fr);gap:0;
+  padding:24px 0 0;
+  border-top:1px solid var(--line);
+  max-width:720px;
 }
-.reiki-zone .eyebrow { background: #000; color: var(--gold); }
-.reiki-zone h2.heavy-heading { color: #000; }
-.reiki-zone .body-paragraph { color: #333; font-weight: 700; }
-.reiki-zone .body-paragraph strong { background: rgba(0,0,0,0.1); color: #000; }
+.tl-tick{
+  position:relative;padding-top:18px;
+  font-family:var(--font-mono);font-size:9px;
+  color:var(--ink-mute);letter-spacing:.18em;text-transform:uppercase;
+  font-weight:500;
+}
+.tl-tick::before{
+  content:"";position:absolute;top:0;left:0;width:8px;height:8px;border-radius:50%;
+  background:var(--paper);border:1.5px solid var(--lobster);
+}
+.tl-tick.now::before{background:var(--lobster)}
+.tl-tick .yr{display:block;font-family:var(--font-latin);font-style:italic;
+  font-size:13px;color:var(--ink);letter-spacing:.01em;text-transform:none;font-weight:500}
+.tl-tick .lb{display:block;font-size:9px;margin-top:2px}
 
-.donation-tags { display: flex; gap: 1rem; flex-wrap: wrap; margin: 3rem 0; }
-.donation-tags span {
-  font-family: var(--font-serif); font-size: 1.4rem; font-weight: 900;
-  border: 3px solid #000; padding: 12px 24px;
+/* ===================================================== */
+/* ============== INTRO ================================ */
+/* ===================================================== */
+.intro{
+  padding:14vh 5vw 8vh;
+  max-width:760px;margin:0 auto;
+  position:relative;z-index:5;
+}
+.intro p{
+  font-family:var(--font-tc);font-weight:400;
+  font-size:21px;line-height:1.85;
+  color:var(--ink-soft);
+  margin-bottom:18px;
+}
+.intro p:first-child::first-letter{
+  font-family:var(--font-display);
+  font-weight:400;float:left;
+  font-size:5.4em;line-height:.82;
+  margin:.04em .12em -.06em 0;
+  color:var(--lobster);
+}
+.intro p em{color:var(--lobster);font-style:italic;font-weight:500}
+.intro p b{color:var(--ink);font-weight:600}
+
+/* ===================================================== */
+/* ============== ACT SECTIONS ========================= */
+/* ===================================================== */
+.act{
+  padding:12vh 5vw;
+  position:relative;z-index:5;
+  overflow:hidden;
+}
+.act::before{
+  content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:min(720px, 80vw);height:1px;
+  background:linear-gradient(90deg, transparent, var(--lobster) 22%, var(--amber) 50%, var(--lobster) 78%, transparent);
+  opacity:.5;
+}
+.act-inner{
+  max-width:1180px;margin:0 auto;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:6vw;align-items:center;
+}
+.act.act-flip .act-inner{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.act.act-flip .act-media{order:2}
+.act.act-flip .act-text{order:1}
+
+.act-tag{
+  font-family:var(--font-mono);font-size:11px;
+  letter-spacing:.32em;text-transform:uppercase;font-weight:500;
+  color:var(--lobster);
+  margin-bottom:22px;
+  display:flex;align-items:baseline;gap:14px;
+}
+.act-tag::before{content:"◇";color:var(--lobster);font-size:11px}
+.act-tag .small{color:var(--ink-mute);font-size:10px;letter-spacing:.18em}
+
+.act-title{
+  font-family:var(--font-tc);font-weight:600;
+  font-size:clamp(34px, 4.6vw, 60px);
+  line-height:1.1;letter-spacing:.02em;
+  color:var(--ink);margin-bottom:14px;
+  max-width:18ch;
+}
+.act-title .em{color:var(--lobster)}
+.act-title-latin{
+  font-family:var(--font-latin);font-style:italic;font-weight:400;
+  font-size:clamp(18px, 2vw, 22px);
+  color:var(--ink-soft);letter-spacing:.04em;
+  margin-bottom:28px;display:block;
 }
 
-.giant-btn {
-  display: block; width: 100%; text-align: center;
-  background: #000; color: var(--gold);
-  font-family: var(--font-serif); font-size: 2rem; font-weight: 900;
-  padding: 2rem; text-decoration: none; border: 4px solid #000;
-  transition: all 0.3s; margin-top: 4rem;
+.act-body{
+  font-family:var(--font-tc);font-weight:400;
+  font-size:17px;line-height:1.85;color:var(--ink-soft);
+  max-width:60ch;
 }
-.giant-btn:hover { background: var(--gold); color: #000; }
+.act-body p{margin-bottom:16px}
+.act-body p em{color:var(--lobster);font-style:italic;font-weight:500}
+.act-body p b{color:var(--ink);font-weight:600}
 
-/* Footer */
-footer {
-  padding: 6rem 5vw; display: flex; justify-content: space-between; align-items: center;
-  font-family: var(--font-mono); font-weight: 800; font-size: 1rem;
+.act-pullquote{
+  font-family:var(--font-tc);font-weight:500;
+  font-size:clamp(20px, 2.4vw, 28px);line-height:1.5;letter-spacing:.02em;
+  color:var(--ink);
+  padding:22px 0 22px 26px;
+  border-left:3px solid var(--lobster);
+  margin:24px 0;
+  background:linear-gradient(90deg, rgba(232,136,105,.08) 0%, transparent 60%);
 }
-.socials a { color: var(--text-main); text-decoration: none; margin-left: 2rem; font-size: 1.8rem; transition: color 0.2s; }
-.socials a:hover { color: var(--vermillion); }
+.act-pullquote::before{
+  content:"\201C";display:block;
+  font-family:var(--font-display);color:var(--lobster);
+  font-size:42px;line-height:.4;margin-bottom:10px;
+}
 
-@media (max-width: 768px) {
-  .pipeline-box { padding: 2rem 1.5rem; }
-  .step { flex-direction: column; gap: 1rem; }
-  footer { flex-direction: column; gap: 3rem; text-align: center; }
-  .socials a { margin: 0 1rem; }
+.act-meta{
+  margin-top:32px;padding-top:24px;
+  border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(3, auto);gap:32px;
+}
+.act-meta .col .label{
+  font-family:var(--font-mono);font-size:9px;
+  letter-spacing:.32em;text-transform:uppercase;
+  color:var(--ink-mute);font-weight:500;margin-bottom:4px;
+}
+.act-meta .col .val{
+  font-family:var(--font-latin);font-style:italic;font-weight:500;
+  font-size:16px;color:var(--ink);letter-spacing:.005em;
+}
+
+/* media */
+.act-media{position:relative}
+.act-figure{
+  position:relative;
+  background:#0c0a0a;
+  overflow:hidden;
+  aspect-ratio:3/2;
+  box-shadow:
+    inset 0 0 0 1px rgba(35,26,20,.05),
+    0 30px 60px -25px rgba(35,26,20,.45),
+    0 8px 24px -8px rgba(35,26,20,.25);
+}
+.act-figure img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform 1.4s var(--easing);
+}
+.act-figure:hover img{transform:scale(1.04)}
+.act-figure .corners span{
+  position:absolute;width:16px;height:16px;border:1px solid var(--lobster-soft);
+}
+.act-figure .corners .tl{top:12px;left:12px;border-right:none;border-bottom:none}
+.act-figure .corners .tr{top:12px;right:12px;border-left:none;border-bottom:none}
+.act-figure .corners .bl{bottom:12px;left:12px;border-right:none;border-top:none}
+.act-figure .corners .br{bottom:12px;right:12px;border-left:none;border-top:none}
+
+.act-caption{
+  margin-top:14px;display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--ink-mute);font-weight:500;
+}
+.act-caption .plate{
+  font-family:var(--font-latin);font-style:italic;
+  font-size:13px;color:var(--ink-soft);text-transform:none;letter-spacing:.04em;
+}
+.act-caption .year{color:var(--lobster);font-weight:600}
+
+/* === Act-specific colour tints === */
+.act-norrath{
+  background:linear-gradient(180deg, transparent 0%, rgba(59,107,63,.04) 50%, transparent 100%);
+}
+.act-norrath .act-tag,
+.act-norrath .act-title .em,
+.act-norrath .act-caption .year,
+.act-norrath .act-figure .corners span{color:var(--norrath); border-color:var(--norrath)}
+.act-norrath .act-tag::before{color:var(--norrath)}
+.act-norrath .act-pullquote{border-left-color:var(--norrath); background:linear-gradient(90deg, rgba(59,107,63,.08) 0%, transparent 60%)}
+.act-norrath .act-pullquote::before{color:var(--norrath)}
+
+.act-detour{
+  background:linear-gradient(180deg, transparent 0%, rgba(90,139,128,.06) 50%, transparent 100%);
+}
+.act-detour .act-tag,
+.act-detour .act-title .em,
+.act-detour .act-caption .year{color:var(--sea-deep)}
+.act-detour .act-tag::before{color:var(--sea-deep)}
+.act-detour .act-pullquote{border-left-color:var(--sea); background:linear-gradient(90deg, rgba(90,139,128,.08) 0%, transparent 60%)}
+.act-detour .act-pullquote::before{color:var(--sea-deep)}
+.act-detour .act-figure .corners span{border-color:var(--sea)}
+
+/* act 3 keeps the warm lobster tone (default) */
+
+/* ===================================================== */
+/* ============== STUCK BAY (preserved) ================ */
+/* ===================================================== */
+.bay-stuck{
+  padding:12vh 5vw;position:relative;z-index:5;
+}
+.bay-stuck::before{
+  content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:min(720px, 80vw);height:1px;
+  background:linear-gradient(90deg, transparent, var(--lobster) 22%, var(--amber) 50%, var(--lobster) 78%, transparent);
+  opacity:.5;
+}
+.bay-stuck .inner{max-width:1080px;margin:0 auto}
+
+.bay-stuck .bay-tag{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.32em;
+  text-transform:uppercase;font-weight:500;color:var(--lobster);
+  margin-bottom:22px;display:flex;align-items:baseline;gap:14px;
+}
+.bay-stuck .bay-tag::before{content:"◇";color:var(--lobster);font-size:11px}
+.bay-stuck .bay-tag .small{color:var(--ink-mute);font-size:10px;letter-spacing:.18em}
+
+.bay-stuck h2{
+  font-family:var(--font-tc);font-weight:600;font-size:clamp(34px, 4.6vw, 60px);
+  line-height:1.1;letter-spacing:.02em;color:var(--ink);margin-bottom:14px;max-width:22ch;
+}
+.bay-stuck h2 .em{color:var(--lobster)}
+.bay-stuck h2 .latin{
+  display:block;margin-top:8px;
+  font-family:var(--font-latin);font-style:italic;font-weight:400;
+  font-size:.6em;color:var(--ink-soft);letter-spacing:.02em;
+}
+.bay-stuck .lead{
+  font-family:var(--font-tc);font-weight:400;font-size:19px;line-height:1.8;
+  color:var(--ink-soft);max-width:60ch;margin-bottom:36px;
+}
+.bay-stuck .lead em{color:var(--lobster);font-style:italic;font-weight:500}
+.bay-stuck .lead b{color:var(--ink);font-weight:600}
+
+.stuck-stage{
+  background:linear-gradient(180deg, var(--navy) 0%, #0e1722 100%);
+  color:#f4ecd9;padding:60px 6vw 70px;overflow:hidden;min-height:50vh;
+  box-shadow:0 24px 60px -32px rgba(30,42,60,.45);
+  position:relative;
+}
+.stuck-stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(211,74,48,.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(207,147,42,.12) 0%, transparent 50%);
+}
+.stuck-head{
+  position:relative;z-index:2;display:flex;justify-content:space-between;
+  flex-wrap:wrap;gap:18px;margin-bottom:38px;
+}
+.stuck-head .left{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.32em;
+  color:rgba(244,236,217,.65);text-transform:uppercase;font-weight:500;
+}
+.stuck-head .left .pulse{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--lobster);margin-right:8px;
+  box-shadow:0 0 10px var(--lobster);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.stuck-head .right{
+  font-family:var(--font-latin);font-style:italic;font-weight:400;
+  font-size:14px;color:rgba(244,236,217,.65);letter-spacing:.02em;
+  max-width:36ch;text-align:right;
+}
+
+.stuck-words{
+  position:relative;z-index:1;min-height:38vh;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:14px 22px;
+}
+.stuck-word{
+  font-family:var(--font-tc);font-weight:500;
+  font-size:clamp(18px, 2.4vw, 28px);
+  color:#f4ecd9;letter-spacing:.02em;
+  white-space:nowrap;cursor:help;padding:6px 0;
+  transition:color .25s var(--easing), text-shadow .25s var(--easing), transform .25s var(--easing);
+  text-shadow:0 1px 0 rgba(0,0,0,.25);
+  position:relative;
+}
+.stuck-word:nth-child(2n){color:rgba(244,236,217,.85)}
+.stuck-word:nth-child(3n){color:rgba(244,236,217,.7)}
+.stuck-word:hover{
+  color:var(--lobster-soft);
+  text-shadow:0 0 18px rgba(232,136,105,.4);
+  transform:translateY(-2px);
+}
+/* stuck word states */
+.stuck-word{cursor:pointer}
+.stuck-word::after{
+  content:"＋";margin-left:7px;font-size:.6em;color:var(--lobster-soft);
+  opacity:0;transition:opacity .2s var(--easing);vertical-align:super;
+}
+.stuck-word:hover::after{opacity:1}
+.stuck-word.cracked{
+  color:rgba(244,236,217,.28);
+  text-decoration:line-through;
+  text-decoration-color:var(--lobster);
+  text-decoration-thickness:2px;
+  cursor:default;
+}
+.stuck-word.cracked::after{content:"✓";color:var(--sea);opacity:1}
+.stuck-word.active{
+  color:var(--lobster-soft);
+  text-shadow:0 0 22px rgba(232,136,105,.55);
+  transform:translateY(-3px) scale(1.04);
+}
+
+/* decomposition panel */
+.decomp{
+  position:relative;z-index:2;
+  margin-top:42px;
+  max-height:0;overflow:hidden;opacity:0;
+  transition:max-height .55s var(--easing), opacity .45s var(--easing), margin-top .45s var(--easing);
+}
+.decomp.open{max-height:640px;opacity:1;margin-top:48px}
+.decomp-head{
+  display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  border-top:1px solid rgba(244,236,217,.22);
+  padding-top:24px;margin-bottom:24px;
+}
+.decomp-label{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.32em;
+  text-transform:uppercase;color:var(--lobster-soft);font-weight:500;
+}
+.decomp-target{
+  font-family:var(--font-tc);font-weight:600;font-size:24px;
+  color:#f4ecd9;letter-spacing:.02em;flex:1;min-width:160px;
+}
+.decomp-close{
+  background:transparent;border:1px solid rgba(244,236,217,.3);
+  color:rgba(244,236,217,.7);font-family:var(--font-mono);font-size:10px;
+  letter-spacing:.18em;padding:7px 13px;cursor:pointer;
+  transition:all .2s var(--easing);text-transform:uppercase;
+}
+.decomp-close:hover{background:rgba(244,236,217,.1);color:#f4ecd9}
+.decomp-cards{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;
+}
+.dc{
+  background:rgba(244,236,217,.05);
+  border:1px solid rgba(244,236,217,.16);
+  padding:24px 22px;
+  opacity:0;transform:translateY(16px);
+}
+.decomp.open .dc{animation:dc-in .6s var(--easing) forwards}
+.decomp.open .dc-fact{animation-delay:.05s}
+.decomp.open .dc-feel{animation-delay:.22s}
+.decomp.open .dc-step{animation-delay:.40s}
+@keyframes dc-in{to{opacity:1;transform:translateY(0)}}
+.dc-tag{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.24em;
+  text-transform:uppercase;margin-bottom:14px;font-weight:500;
+  display:flex;align-items:center;gap:8px;
+}
+.dc-tag::before{content:"";width:8px;height:8px;border-radius:50%}
+.dc-fact .dc-tag{color:rgba(244,236,217,.6)}
+.dc-fact .dc-tag::before{background:rgba(244,236,217,.5)}
+.dc-feel .dc-tag{color:var(--amber-soft)}
+.dc-feel .dc-tag::before{background:var(--amber)}
+.dc-step .dc-tag{color:var(--lobster-soft)}
+.dc-step .dc-tag::before{background:var(--lobster)}
+.dc-step{border-color:rgba(232,136,105,.4);background:linear-gradient(180deg, rgba(211,74,48,.10), rgba(244,236,217,.04))}
+.dc p{
+  font-family:var(--font-tc);font-weight:400;font-size:16px;
+  line-height:1.75;color:rgba(244,236,217,.9);letter-spacing:.01em;
+}
+.decomp-foot{
+  margin-top:22px;font-family:var(--font-latin);font-style:italic;
+  font-size:15px;color:rgba(244,236,217,.55);letter-spacing:.02em;
+}
+.decomp-foot em{color:var(--lobster-soft);font-style:italic;font-weight:500}
+
+/* ============== ATELIER CLOCK (scroll = time) ============== */
+.atelier-clock{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--font-mono);
+  pointer-events:auto;
+}
+.atelier-clock .ac-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--lobster);
+  box-shadow:0 0 10px var(--lobster);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+.atelier-clock .ac-time{
+  font-family:var(--font-latin);font-style:italic;font-weight:600;
+  font-size:18px;letter-spacing:.06em;color:var(--lobster-soft);
+}
+.atelier-clock .ac-label{
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink-mute);font-weight:500;
+}
+body.hero-dark .atelier-clock .ac-label{color:rgba(244,236,217,.6)}
+
+/* scroll-driven dawn warmth — gets warmer as you scroll (5:00 navy → 7:00 morning) */
+.dawn-veil{
+  position:fixed;inset:0;z-index:2;pointer-events:none;
+  opacity:var(--dawn-amt, 0);
+  background:
+    radial-gradient(ellipse 80% 60% at 85% 8%, rgba(244,196,110,.16) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 12% 95%, rgba(211,74,48,.07) 0%, transparent 60%);
+  transition:opacity .6s linear;
+  mix-blend-mode:soft-light;
+}
+
+/* ============== CLOSING · kids wake ============== */
+.closing{
+  position:relative;z-index:5;
+  padding:20vh 5vw;
+  text-align:center;
+  background:linear-gradient(180deg, var(--paper) 0%, #f7ddae 45%, #f4cf80 100%);
+  overflow:hidden;
+}
+.closing::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255,255,255,.5) 0%, transparent 60%);
+}
+.closing-inner{position:relative;z-index:2;max-width:640px;margin:0 auto}
+.closing-time{
+  font-family:var(--font-latin);font-style:italic;font-weight:600;
+  font-size:clamp(20px, 2.4vw, 28px);
+  color:var(--lobster-deep);letter-spacing:.08em;margin-bottom:24px;
+}
+.closing-title{
+  font-family:var(--font-tc);font-weight:600;
+  font-size:clamp(38px, 6vw, 80px);line-height:1.12;letter-spacing:.02em;
+  color:var(--ink);margin-bottom:28px;
+}
+.closing-title .em{color:var(--lobster-deep)}
+.closing-text{
+  font-family:var(--font-tc);font-weight:400;font-size:19px;
+  line-height:1.85;color:var(--ink-soft);margin-bottom:28px;
+}
+.closing-text em{color:var(--lobster-deep);font-style:italic;font-weight:500}
+.closing-sign{
+  font-family:var(--font-latin);font-style:italic;font-weight:500;
+  font-size:18px;color:var(--ink);letter-spacing:.04em;
+}
+
+/* ===================================================== */
+/* ============== LETTER (subscribe) =================== */
+/* ===================================================== */
+.bay-letter{
+  background:var(--ink);color:var(--paper);
+  padding:14vh 5vw;
+  position:relative;overflow:hidden;
+  z-index:5;
+}
+.bay-letter::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 100% 0%, rgba(211,74,48,.22) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 0% 100%, rgba(207,147,42,.15) 0%, transparent 60%);
+}
+.bay-letter .inner{max-width:880px;margin:0 auto;position:relative;z-index:2}
+.bay-letter .bay-tag{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.32em;
+  text-transform:uppercase;font-weight:500;color:var(--lobster-soft);
+  margin-bottom:22px;display:flex;align-items:baseline;gap:14px;
+}
+.bay-letter .bay-tag::before{content:"◇";color:var(--lobster-soft)}
+.bay-letter h2{
+  font-family:var(--font-tc);font-weight:600;
+  font-size:clamp(36px, 5vw, 64px);line-height:1.08;letter-spacing:.02em;
+  color:var(--paper);margin-bottom:20px;max-width:18ch;
+}
+.bay-letter h2 .em{color:var(--lobster-soft);font-style:italic}
+.bay-letter h2 .latin{
+  display:block;margin-top:8px;font-family:var(--font-latin);font-style:italic;
+  font-weight:400;font-size:.5em;color:rgba(244,236,217,.55);letter-spacing:.04em;
+}
+.letter-pitch{
+  font-family:var(--font-tc);font-weight:400;font-size:19px;
+  line-height:1.8;color:rgba(244,236,217,.8);max-width:54ch;margin-bottom:36px;
+}
+.letter-pitch em{color:var(--lobster-soft);font-style:italic;font-weight:500}
+
+.letter-form{
+  display:flex;gap:0;max-width:520px;
+  border:1px solid rgba(244,236,217,.3);margin-bottom:16px;
+}
+.letter-form input{
+  flex:1;background:transparent;color:var(--paper);
+  border:none;outline:none;
+  font-family:var(--font-tc);font-weight:400;font-size:17px;
+  padding:16px 20px;letter-spacing:.02em;
+}
+.letter-form input::placeholder{color:rgba(244,236,217,.4);font-style:italic;font-family:var(--font-latin)}
+.letter-form button{
+  background:var(--lobster);color:var(--paper);border:none;
+  font-family:var(--font-mono);font-weight:500;font-size:13px;
+  letter-spacing:.24em;text-transform:uppercase;padding:0 28px;cursor:pointer;
+  transition:background .25s var(--easing);
+}
+.letter-form button:hover{background:var(--lobster-deep)}
+.letter-fp{
+  font-family:var(--font-mono);font-size:11px;color:rgba(244,236,217,.45);
+  letter-spacing:.06em;
+}
+.letter-fp a{color:var(--lobster-soft);border-bottom:1px solid currentColor}
+.letter-also{display:flex;gap:14px;flex-wrap:wrap;margin-top:42px}
+.letter-also a{
+  font-family:var(--font-mono);font-size:11px;
+  letter-spacing:.22em;text-transform:uppercase;font-weight:500;
+  padding:11px 18px;
+  border:1px solid rgba(244,236,217,.28);
+  color:rgba(244,236,217,.85);
+  display:inline-flex;align-items:center;gap:9px;
+  transition:all .25s var(--easing);
+}
+.letter-also a i{font-size:12px;color:var(--lobster-soft)}
+.letter-also a:hover{background:rgba(244,236,217,.08);border-color:var(--paper)}
+
+/* ============== COLOPHON ============== */
+footer.colophon{
+  background:var(--ink);color:rgba(244,236,217,.7);
+  padding:60px 5vw 50px;
+  border-top:1px solid rgba(244,236,217,.1);
+  font-family:var(--font-mono);font-size:11px;
+}
+.colophon-inner{max-width:1080px;margin:0 auto}
+.colophon-grid{
+  display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:20px;
+  margin-bottom:48px;
+}
+.colophon-link{
+  display:block;padding:16px 0;
+  border-top:1px solid rgba(244,236,217,.12);
+  text-decoration:none;color:rgba(244,236,217,.78);
+  transition:all .25s var(--easing);position:relative;
+}
+.colophon-link::after{
+  content:"\f061";font-family:"Font Awesome 6 Free";font-weight:900;
+  position:absolute;right:0;top:16px;color:var(--lobster-soft);
+  font-size:11px;opacity:0;transition:opacity .25s, right .25s;
+}
+.colophon-link:hover{padding-left:8px;color:var(--paper)}
+.colophon-link:hover::after{opacity:1;right:-6px}
+.colophon-link .platform{
+  display:block;font-size:9px;color:rgba(244,236,217,.45);
+  letter-spacing:.32em;text-transform:uppercase;font-weight:500;margin-bottom:5px;
+}
+.colophon-link .handle{
+  font-family:var(--font-latin);font-style:italic;font-weight:500;
+  font-size:15px;color:var(--paper);letter-spacing:.005em;
+}
+.colophon-foot{
+  padding-top:28px;border-top:1px solid rgba(244,236,217,.1);
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:14px;
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;
+  color:rgba(244,236,217,.45);
+}
+.colophon-foot .sig{
+  font-family:var(--font-latin);font-style:italic;font-weight:500;
+  font-size:14px;color:var(--paper);letter-spacing:.04em;text-transform:none;
+}
+.colophon-foot .sig em{color:var(--lobster-soft);font-style:italic;font-weight:600}
+.colophon-foot .heart{color:var(--lobster-soft);display:inline-block;animation:beat 1.6s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+
+/* ============== RESPONSIVE ============== */
+@media (max-width: 980px){
+  .hero{padding-top:110px;min-height:auto}
+  .act-inner{grid-template-columns:1fr;gap:32px}
+  .act.act-flip .act-media{order:initial}
+  .act.act-flip .act-text{order:initial}
+  .hero-tl{grid-template-columns:repeat(4, 1fr);gap:14px 4px}
+  .hero-tl .tl-tick:nth-child(n+5){display:none}
+  .act-meta{grid-template-columns:1fr;gap:14px}
+}
+@media (max-width: 560px){
+  body{font-size:16px}
+  .topbar{padding:18px 5vw;font-size:10px}
+  .hero{padding-left:6vw;padding-right:6vw}
+  .intro,.act,.bay-stuck,.bay-letter{padding-left:6vw;padding-right:6vw}
+  .stuck-stage{padding:48px 6vw}
+  .letter-form{flex-direction:column;border:none}
+  .letter-form input{border:1px solid rgba(244,236,217,.3);margin-bottom:10px}
+  .letter-form button{padding:14px 18px;width:100%}
 }
 </style>
 </head>
 <body>
 
-<nav class="nav-bar">
-  <a href="/guild/" class="back-link">← Archive</a>
-  <div style="font-family: var(--font-mono); font-size: 1rem; font-weight: 800;">MS_0153</div>
-</nav>
+<div class="grain"></div>
 
-<!-- INTERACTION 01: THE CHAOS (PM RESOLUTION) -->
-<section id="chaos-scene">
-  <button id="solve-btn">APPLY PM FRAMEWORK (長按重構)</button>
-  <div class="instruction-text">按住按鈕，體驗資訊對稱的過程</div>
-  
-  <!-- Words that will be scattered -->
-  <div class="chaos-words-container" id="cw-container">
-    <div class="chaos-word">育兒補助在哪查</div>
-    <div class="chaos-word">客戶需求又變了</div>
-    <div class="chaos-word">主管期待</div>
-    <div class="chaos-word">跨部門會議衝突</div>
-    <div class="chaos-word">到底怎麼用 Claude</div>
-    <div class="chaos-word">留停收入怎麼算</div>
-    <div class="chaos-word">公托何時登記</div>
-    <div class="chaos-word">每天都在硬撐</div>
-    <div class="chaos-word">我沒有時間</div>
-    <div class="chaos-word">筆記像資源回收場</div>
-    <div class="chaos-word">找不到資料</div>
-    <div class="chaos-word">奶粉錢</div>
-    <div class="chaos-word">失眠</div>
-    <div class="chaos-word">資訊不對稱</div>
+<!-- scroll-driven dawn warmth overlay (5:00 → 7:02) -->
+<div class="dawn-veil" id="dawnVeil" aria-hidden="true"></div>
+
+<header class="topbar">
+  <a class="archive-link" href="/guild/"><i class="fa-solid fa-arrow-left"></i> Return to Archive</a>
+  <div class="atelier-clock" id="atelierClock" title="工坊開門 90 分鐘 · 捲動 = 時間流逝">
+    <span class="ac-dot"></span>
+    <span class="ac-time" id="acTime">05:00</span>
+    <span class="ac-label" id="acLabel">工坊剛開門</span>
+  </div>
+</header>
+
+<!-- ============== HERO · Joseph in his 5am atelier ============== -->
+<section class="hero hero-portrait">
+  <div class="hero-portrait-bg" aria-hidden="true">
+    <img src="/assets/img/guild/chenweirennotes/joseph-portrait.webp" alt="">
+    <div class="hero-portrait-fade"></div>
+  </div>
+
+  <div class="hero-portrait-content">
+    <div class="hero-tag">Guild · Member File No. 0153 · A Reluctant CV</div>
+
+    <h1 class="hero-name">
+      Joseph
+      <span class="name-cn">陳韋帆</span>
+    </h1>
+
+    <p class="hero-sub">
+      The man who steals <em>ninety minutes</em><br>
+      every morning <em>before his kids wake up</em>.
+    </p>
+
+    <h2 class="hero-cjk-tagline">
+      凌晨 5 點，<br>
+      工坊<span class="em">開門</span>。
+    </h2>
+
+    <div class="hero-meta-strip">
+      <span><b>05:14 AM</b> ·  Taipei</span>
+      <span class="dot">／</span>
+      <span>PM 10+ 年</span>
+      <span class="dot">／</span>
+      <span>兩個小孩在隔壁房間還沒醒</span>
+    </div>
+
+    <div class="hero-tl">
+      <div class="tl-tick"><span class="yr">2001</span><span class="lb">Norrath</span></div>
+      <div class="tl-tick"><span class="yr">2005</span><span class="lb">Excel</span></div>
+      <div class="tl-tick"><span class="yr">2010</span><span class="lb">民宿</span></div>
+      <div class="tl-tick"><span class="yr">2011</span><span class="lb">台東</span></div>
+      <div class="tl-tick"><span class="yr">2012</span><span class="lb">PM</span></div>
+      <div class="tl-tick"><span class="yr">2022</span><span class="lb">二寶</span></div>
+      <div class="tl-tick now"><span class="yr">2026</span><span class="lb">Atelier · now</span></div>
+    </div>
+  </div>
+
+  <div class="hero-credit">
+    <span class="plate">Plate 00 · The Atelier</span>
+    <span class="scrolly">scroll  ↓</span>
   </div>
 </section>
 
-<div id="main-content" style="opacity: 0; display: none;">
+<!-- ============== INTRO ============== -->
+<section class="intro">
+  <p>大多數人的履歷往同一個方向走。我的不是。我在 <b>Norrath</b> 養過一個 Lv. 65 的<b>魅惑師</b>；當兵時把 Excel 做成沒人能說不的程度；寫程式覺得無聊，跑去當<b>民宿管家</b>；旅行台東一頓飯，<b>留下來當餐廳外場</b>一個月。</p>
+  <p>後來成為產品經理十多年。然後變成兩個小孩的爸。然後每天<em>凌晨 5 點起床寫第一本書</em>。然後養了一隻叫 Claude 的龍蝦。然後考了臼井靈氣二階。</p>
+  <p>看起來都不相干，其實是同一件事——<em>讓自己能看見更多人的處境</em>。下面這三幕，是這份履歷怎麼被一路寫出來的。</p>
+</section>
 
-  <!-- SECTION 1: THE REALITY -->
-  <section class="section">
-    <div class="container gs-reveal">
-      <div class="eyebrow">THE ARCHITECT</div>
-      <h1 class="massive-title">
-        <em>不夠努力</em><br>
-        太多東西被壓在一起。
-      </h1>
-      
-      <p class="lead-paragraph">
-        大多數人卡住的時候，不是因為不夠努力。工作上處理跨部門需求，生活上查公托與補助。這種「只能硬撐」的狀態，本質上是一個 PM 非常熟悉的問題——資訊不對稱。
-      </p>
+<!-- ============== ACT I · NORRATH ============== -->
+<section class="act act-norrath">
+  <div class="act-inner">
+    <div class="act-text">
+      <div class="act-tag">Act I · 2001–2008 <span class="small">— before PM</span></div>
+      <h2 class="act-title">在 <span class="em">Norrath</span>，<br>我是魅惑師。</h2>
+      <span class="act-title-latin">— Where I learned to control the room.</span>
+      <div class="act-body">
+        <p>2001 年我在 Everquest 養了一隻 Lv. 65 的 Enchanter，種族 Dark Elf。Enchanter 是<b>魅惑師</b>——不是輸出最高的職業，但是<em>讓會干擾的東西先暫停</em>，讓真正該動的事被照亮的職業。Mez、Charm、Slow、Haste、Tash——這套思路後來沒離開過我的桌上。</p>
+        <p>當兵把義務役當職業來做。司令部裡長官交代的表格，我硬是把它做成「沒人能說不」的程度，自學了 VBA、變成裡面的 Excel 小老師。第一次發現：<em>把混亂變秩序，是會上癮的事</em>。</p>
+        <p>退伍後寫了幾年程式。但純技術讓我焦慮——我做的東西沒對到人。直到有天我關了電腦，決定走出辦公室看看。</p>
+      </div>
+      <div class="act-meta">
+        <div class="col"><div class="label">Class</div><div class="val">Enchanter Lv.65</div></div>
+        <div class="col"><div class="label">Realm</div><div class="val">Norrath</div></div>
+        <div class="col"><div class="label">Lesson</div><div class="val">Crowd Control</div></div>
+      </div>
+    </div>
+    <div class="act-media">
+      <figure class="act-figure">
+        <img src="/assets/img/guild/chenweirennotes/act1-norrath.webp" alt="Everquest Enchanter character sheet, vintage MMORPG nostalgia" loading="lazy">
+        <div class="corners"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
+      </figure>
+      <div class="act-caption">
+        <span class="plate">Plate I · The Enchanter</span>
+        <span class="year">2001 · Norrath</span>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <p class="body-paragraph">
-        你不是沒能力查，而是在每天上班、接送、哄睡、失眠的狀態下，<strong>連「我來查查看」這件事本身，都變成了一種負擔。</strong>
-      </p>
-      
-      <p class="body-paragraph">
-        我決定把這套 PM 框架，先用在自己家裡。把「生小孩」這個超大專案成功交付。我不當技術的消費者，而是主動建立工具、策展知識、設計生活系統的實踐者。
-      </p>
+<!-- ============== ACT II · DETOUR ============== -->
+<section class="act act-detour act-flip">
+  <div class="act-inner">
+    <div class="act-text">
+      <div class="act-tag">Act II · 2010–2011 <span class="small">— the year I left the keyboard</span></div>
+      <h2 class="act-title">寫程式有點無聊，<br>那不如去<span class="em">當民宿管家</span>？</h2>
+      <span class="act-title-latin">— A year of unexpected turns.</span>
+      <div class="act-body">
+        <p>2010 年我去花蓮的一家民宿當管家。清晨 6:00 備早餐、上午整房、傍晚換床單、夜裡陪客人聊一杯——<em>第一次看清楚一件事的全貌</em>：流程、人、需求、時間，全部串在一起，沒辦法切開。</p>
+        <p>2011 年去台東玩，在海邊一家小館吃了一頓飯。老闆說「你的氣質很適合這裡，要不要留下來？」我說好。<em>就留下來當餐廳外場一個月</em>。</p>
+        <p>那段時光讓我學到一件事，被我後來反覆驗證：<b>機會不長得像機會。它長得像「今天本來計畫之外的一個轉角」</b>。</p>
+        <p class="act-pullquote">
+          我在 Norrath 學會看「房間」，<br>
+          我在民宿和台東學會看「人」。
+        </p>
+        <p>2012 年回到網路產業——這次帶著兩個東西回來：一隻退役的魅惑師＋一年的服務業耳朵。從此再也沒離開過產品經理這個職稱。</p>
+      </div>
+      <div class="act-meta">
+        <div class="col"><div class="label">Stop 01</div><div class="val">花蓮 · 民宿</div></div>
+        <div class="col"><div class="label">Stop 02</div><div class="val">台東 · 海邊小館</div></div>
+        <div class="col"><div class="label">Lesson</div><div class="val">看人之術</div></div>
+      </div>
+    </div>
+    <div class="act-media">
+      <figure class="act-figure">
+        <img src="/assets/img/guild/chenweirennotes/act2-detour.webp" alt="Wooden B&B key fob carved with '民宿' Chinese characters, handwritten Taitung restaurant menu card, on weathered driftwood" loading="lazy">
+        <div class="corners"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
+      </figure>
+      <div class="act-caption">
+        <span class="plate">Plate II · The Detour</span>
+        <span class="year">2010–11 · 花蓮 → 台東</span>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <div class="meta-grid">
-        <div class="meta-item">
-          <div class="label">IDENTITY</div>
-          <div class="value">Joseph 陳韋帆</div>
+<!-- ============== ACT III · ATELIER ============== -->
+<section class="act act-atelier">
+  <div class="act-inner">
+    <div class="act-text">
+      <div class="act-tag">Act III · 2012–2026 <span class="small">— current ritual</span></div>
+      <h2 class="act-title">凌晨 5 點，<br>工坊<span class="em">開門 90 分鐘</span>。</h2>
+      <span class="act-title-latin">— The atelier between the children's sleep.</span>
+      <div class="act-body">
+        <p>產品經理十多年。從 Sales 到 Tech，每一個沒人想接的火都是練功的副本。把<b>混亂的需求拆乾淨</b>、把<b>卡住的專案推上線</b>——同一套方法後來進了我家。</p>
+        <p>2020、2022 我有了兩個小孩。陪老婆走過懷孕、生產、托育——補助怎麼查、留停收入怎麼算、公托提早多久登記。<em>這套 PM 框架我先用在自己家裡</em>。算是把「生小孩」這個超大專案成功交付上線了。</p>
+        <p>2024 年我開始養龍蝦——「龍蝦」是 Anthropic Claude 的吉祥物。<em>我把它當召喚物來養</em>：餵它對的脈絡、設計對的指令、修正它的錯。每天凌晨我跟龍蝦一起拆昨天的混亂。對我來說 Claude <b>不是技術，是時間</b>。</p>
+        <p>同一年也考了臼井靈氣二階。<em>效率之外，靈魂也需要被接住</em>——這條線我留給願意把善傳出去的人，提供遠端體驗、費用都進指定慈善基金。</p>
+        <p>2026 年，三件事並行：每天凌晨 5 點寫第一本書、每個午休做一支 Chrome extension、每週把這些拆解過程寫成電子報寄給訂閱我的人。書叫《<b>少撐一點</b>》。</p>
+      </div>
+      <div class="act-meta">
+        <div class="col"><div class="label">Window</div><div class="val">05:00 — 07:00</div></div>
+        <div class="col"><div class="label">Familiar</div><div class="val">Claude · Lobster v2</div></div>
+        <div class="col"><div class="label">Bosses</div><div class="val">兩名幼兒</div></div>
+      </div>
+    </div>
+    <div class="act-media">
+      <figure class="act-figure">
+        <img src="/assets/img/guild/chenweirennotes/atelier-flatlay.webp" alt="The 5am decompression atelier — flat-lay of Joseph's morning workspace with red lobster figurine, open notebook, brass clock, coffee, zettelkasten cards" loading="lazy">
+        <div class="corners"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
+      </figure>
+      <div class="act-caption">
+        <span class="plate">Plate III · The Atelier</span>
+        <span class="year">2026 · Taipei 05:14</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== STUCK BAY ============== -->
+<section class="bay-stuck">
+  <div class="inner">
+    <div class="bay-tag">Bay · 你身上壓著的事 <span class="small">— What you're carrying</span></div>
+    <h2>
+      把它們倒在<span class="em">桌上</span>，<br>
+      讓我替你<span class="em">看一眼</span>。
+      <span class="latin">— Hover any one. I'll tell you how I'd respond.</span>
+    </h2>
+    <p class="lead">
+      底下是上週這份履歷的客人留下的 14 件事——<em>把游標停在任一個上面</em>，我會告訴你我對它的反應。把整本書要寫的就是這些事的拆解。
+    </p>
+
+    <div class="stuck-stage" id="stuckStage">
+      <div class="stuck-head">
+        <div class="left"><span class="pulse"></span><span id="stuckCount">14</span> stuck things on the table</div>
+        <div class="right">點任一個 → 看 Joseph 把它拆成三塊</div>
+      </div>
+      <div class="stuck-words" id="stuckWords">
+        <span class="stuck-word" data-fact="補助確實存在，分散在十幾個政府網站。" data-feel="你怕的不是查不到，是『漏掉某一個會後悔』。" data-step="訂電子報拿我做好的 0–6 歲時程表，照表打勾就好。">育兒補助在哪查</span>
+        <span class="stuck-word" data-fact="他每次講的需求都不一樣。" data-feel="他改的不是需求，是『怕花錯錢』的焦慮。" data-step="下次先問他『最不能犧牲的是哪一個』，別跟他談規格。">客戶需求又變了</span>
+        <span class="stuck-word" data-fact="你不知道他到底要什麼。" data-feel="其實是怕『做了還被打槍』。" data-step="90% 的期待是替他主管交代——先找出那個人是誰。">主管期待</span>
+        <span class="stuck-word" data-fact="兩邊都說自己的事最急。" data-feel="你怕得罪人，所以不敢排序。" data-step="這是優先序問題不是時間問題。我教你怎麼說 no。">跨部門會議衝突</span>
+        <span class="stuck-word" data-fact="工具很多，你不知道從哪開始。" data-feel="怕自己學了還是用不起來。" data-step="別問該用什麼。先列出你重複做 3 次以上的那件事。">到底怎麼用 Claude</span>
+        <span class="stuck-word" data-fact="留停的錢有公式，但沒人幫你算過。" data-feel="怕算錯影響全家。" data-step="我老婆走過。我有 Excel 模板，留 email 寄你。">留停收入怎麼算</span>
+        <span class="stuck-word" data-fact="公托名額要提早 18 個月排。" data-feel="怕錯過就只能一直等。" data-step="訂電子報，我自動 email 提醒你每個節點。">公托何時登記</span>
+        <span class="stuck-word" data-fact="你正在用最耗損自己的方式維持。" data-feel="覺得一停下來就會垮。" data-step="撐不是錯，但你可以少撐一點——這就是書名。">每天都在硬撐</span>
+        <span class="stuck-word" data-fact="你真的沒有完整的一塊時間。" data-feel="其實是『啟動成本』太高，不是時間不夠。" data-step="明天午休給自己 25 分鐘，只做一件事。">我沒有時間</span>
+        <span class="stuck-word" data-fact="你存了一堆，要用時找不到。" data-feel="怕重整很麻煩、做不完。" data-step="我跟龍蝦做的 pipeline 開源了，直接拿去用。">筆記像資源回收場</span>
+        <span class="stuck-word" data-fact="資料都在，只是沒被整理。" data-feel="怕自己整理方法是錯的。" data-step="先別整理全部。只整理你『這週真的要用』的那 3 份。">找不到資料</span>
+        <span class="stuck-word" data-fact="固定支出每月都在。" data-feel="怕的是未來的不確定。" data-step="二寶爸如我。把它變成一張可預測的成本表，焦慮會降一半。">奶粉錢</span>
+        <span class="stuck-word" data-fact="你的腦在該關機的時候還開著。" data-feel="怕睡不夠明天垮掉。" data-step="我每天輪流跟它對打——靈氣那一階我也用上了。先從關螢幕的時間開始。">失眠</span>
+        <span class="stuck-word" data-fact="資訊不是不存在，是你不知道去哪找。" data-feel="怕自己是唯一不知道的人。" data-step="這就是整本書要打的怪。你不孤單，我先幫你整理。">資訊不對稱</span>
+      </div>
+
+      <!-- decomposition output -->
+      <div class="decomp" id="decomp" aria-live="polite">
+        <div class="decomp-head">
+          <span class="decomp-label">PM 拆解 ·</span>
+          <span class="decomp-target" id="decompTarget">—</span>
+          <button class="decomp-close" id="decompClose" aria-label="收起">收起 ×</button>
         </div>
-        <div class="meta-item">
-          <div class="label">EXPERIENCE</div>
-          <div class="value">PM 10+ Yr</div>
+        <div class="decomp-cards">
+          <div class="dc dc-fact">
+            <div class="dc-tag">事實 · what's true</div>
+            <p id="dcFact">—</p>
+          </div>
+          <div class="dc dc-feel">
+            <div class="dc-tag">感受 · what you fear</div>
+            <p id="dcFeel">—</p>
+          </div>
+          <div class="dc dc-step">
+            <div class="dc-tag">下一步 · tomorrow</div>
+            <p id="dcStep">—</p>
+          </div>
         </div>
-        <div class="meta-item">
-          <div class="label">STATUS</div>
-          <div class="value">雙寶爸</div>
-        </div>
-        <div class="meta-item">
-          <div class="label">CLASS</div>
-          <div class="value">LV1 龍蝦飼育員</div>
+        <div class="decomp-foot">
+          <span>— 這就是我做諮詢時的開場。出來的不是答案，是<em>明天早上能踩的那一腳</em>。</span>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- SECTION 2: TIMELINES -->
-  <section class="section">
-    <div class="container gs-reveal">
-      <div class="eyebrow">PARALLEL PROCESSING</div>
-      <h2 class="heavy-heading">三條 Timeline，同時跑。</h2>
-      
-      <p class="body-paragraph">凌晨五點的台北，非常安靜。這是我一天之中，唯一完全屬於自己的兩個小時。不屬於跨部門會議，不屬於滿地的幼兒玩具，只屬於我、一杯咖啡，和眼前閃爍的終端機游標。</p>
-
-      <div class="pipeline-box">
-        <div class="step">
-          <div class="step-num">05:00</div>
-          <div class="step-content">
-            <h3>Dawn Stack：燒腦細胞寫第一本書</h3>
-            <p>趁兩個小孩還沒醒，把這幾年的 PM 框架、AI 工作流、育兒實戰整理成書《少撐一點》。第一杯咖啡 5:00，第二杯 5:45。</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">12:30</div>
-          <div class="step-content">
-            <h3>Lunch Sprint：午休 30 分做工具</h3>
-            <p>把自己日常用 AI 時最想要的東西，趁沒人吵的半小時做出來。今天午休做的，明天就推到書裡當案例。</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">19:00</div>
-          <div class="step-content">
-            <h3>Family Build：兩個小孩的專屬 PM</h3>
-            <p>從備餐到哄睡，每一個流程都被我重構過至少三次。希望他們長大時，卡住不是難解的問題——只是還沒被拆完。</p>
-          </div>
-        </div>
-      </div>
+<!-- ============== LETTER ============== -->
+<section class="bay-letter">
+  <div class="inner">
+    <div class="bay-tag">Subscribe · 每週寄一封信</div>
+    <h2>
+      工坊不對外開，<br>但<span class="em">每週寄一封信</span>給你。
+      <span class="latin">— A weekly dispatch from the atelier.</span>
+    </h2>
+    <p class="letter-pitch">
+      真實職場卡關案例怎麼拆 ・ AI 第一步怎麼動 ・ 育兒制度怎麼查。
+      這封信是我每週五凌晨 5 點寄出的——<em>你拿到的是我跟龍蝦今天才挖出來的東西</em>。
+    </p>
+    <form class="letter-form" onsubmit="event.preventDefault();window.open('https://josephnext.substack.com?email='+encodeURIComponent(document.getElementById('subEmail').value),'_blank');return false;">
+      <input id="subEmail" type="email" placeholder="your@email.com" required>
+      <button type="submit">Subscribe →</button>
+    </form>
+    <p class="letter-fp">寄出後跳轉到 Substack 完成訂閱 · 或直接前往 <a href="https://josephnext.substack.com" target="_blank" rel="noopener noreferrer">josephnext.substack.com</a></p>
+    <div class="letter-also">
+      <a href="https://forms.gle/3Xjzc" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-mug-hot"></i> 20 分鐘諮詢</a>
+      <a href="https://www.threads.com/@chenweirennotes" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i> Daily notes</a>
+      <a href="https://github.com/KREUZc/openclaw-second-brain-pipeline" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github"></i> The pipeline</a>
+      <a href="https://www.threads.com/@chenweirennotes" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-hand-holding-heart"></i> 遠端靈氣 · 捐款換</a>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- SECTION 3: THE LOBSTER -->
-  <section class="section">
-    <div class="container gs-reveal">
-      <div class="eyebrow">THE SECOND BRAIN</div>
-      <h2 class="heavy-heading">把資源回收場，<br>重構成卡片盒。</h2>
-      
-      <p class="lead-paragraph" style="border-color: var(--vermillion); color: var(--text-main);">
-        「分類用得不順手？直接『用嘴巴』叫龍蝦改寫入規則就好，當慣老闆有夠爽😎」
-      </p>
+<!-- ============== CLOSING · the kids wake ============== -->
+<section class="closing" id="closing">
+  <div class="closing-inner">
+    <div class="closing-time" id="closingTime">07:02 AM</div>
+    <h2 class="closing-title">孩子醒了。<br><span class="em">工坊關門。</span></h2>
+    <p class="closing-text">
+      九十分鐘到了。隔壁房間傳來翻身的聲音——
+      我闔上筆記本，把咖啡喝完，去當回那個爸爸。
+      <em>明天 5:00，工坊再開一次。</em>
+    </p>
+    <p class="closing-sign">少撐一點，多睡一點。 — Joseph</p>
+  </div>
+</section>
 
-      <p class="body-paragraph">
-        用龍蝦兩個多月來，我的筆記庫原本簡直像資源回收場，每天狂存一堆消息、Prompt，結果要用時根本找不到。上週末我下定決心跟他聯手大重整，結合強大的「卡片盒筆記法」，做成全自動生產線。
-      </p>
-
-      <p class="body-paragraph">
-        「龍蝦」是 Claude 的吉祥物。我沒把 AI 當神供著，而是當召喚物來養：<strong>餵它脈絡、設計指令、修正錯誤。</strong>現在只要丟連結，他就自動摘要。聊出好點子，一鍵生成雙向連結。
-      </p>
-
-      <a href="https://github.com/KREUZc/openclaw-second-brain-pipeline" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 20px 40px; background: var(--text-main); color: var(--bg); font-family: var(--font-mono); font-weight: 800; font-size: 1.2rem; text-decoration: none; margin-top: 2rem; border-radius: 4px;">
-        <i class="fab fa-github"></i> 取得開源的自動化筆記流
+<!-- ============== COLOPHON ============== -->
+<footer class="colophon">
+  <div class="colophon-inner">
+    <div class="colophon-grid">
+      <a class="colophon-link" href="https://www.threads.com/@chenweirennotes" target="_blank" rel="noopener noreferrer">
+        <span class="platform">Threads</span><span class="handle">@chenweirennotes</span>
+      </a>
+      <a class="colophon-link" href="https://josephnext.substack.com" target="_blank" rel="noopener noreferrer">
+        <span class="platform">Substack</span><span class="handle">少撐一點 dispatch</span>
+      </a>
+      <a class="colophon-link" href="https://vocus.cc/" target="_blank" rel="noopener noreferrer">
+        <span class="platform">Vocus · 方格子</span><span class="handle">vocus.cc/salon</span>
+      </a>
+      <a class="colophon-link" href="https://portaly.cc/joseph" target="_blank" rel="noopener noreferrer">
+        <span class="platform">All links</span><span class="handle">portaly.cc/joseph</span>
+      </a>
+      <a class="colophon-link" href="https://github.com/KREUZc/openclaw-second-brain-pipeline" target="_blank" rel="noopener noreferrer">
+        <span class="platform">GitHub</span><span class="handle">openclaw pipeline</span>
+      </a>
+      <a class="colophon-link" href="https://forms.gle/3Xjzc" target="_blank" rel="noopener noreferrer">
+        <span class="platform">Consult · 20 min</span><span class="handle">forms.gle/3Xjzc</span>
       </a>
     </div>
-  </section>
-
-  <!-- SECTION 4: REIKI (THE BRUTALIST WARMTH) -->
-  <section class="reiki-zone">
-    <div class="container gs-reveal">
-      <div class="eyebrow">USUI REIKI LEVEL II</div>
-      <h2 class="heavy-heading">效率之外，靈魂也需要被溫柔接住。</h2>
-      
-      <p class="body-paragraph" style="font-size: 1.8rem; line-height: 1.6;">
-        這個加速度的世界，是留給在路上的實踐者的。但我同時也是<strong>臼井靈氣二階</strong>的實踐者。
-      </p>
-
-      <p class="body-paragraph">
-        我提供遠端靈氣體驗，這份力量的費用不進我的口袋，而是轉化為對社會的善意。預約體驗前，請自行捐款 NT$500 以上至以下單位：
-      </p>
-
-      <div class="donation-tags">
-        <span>罕見疾病基金會</span>
-        <span>門諾醫院</span>
-        <span>家扶基金會</span>
-      </div>
-
-      <a href="mailto:wosbi.chris20@gmail.com" class="giant-btn">
-        <i class="fas fa-hands-holding-circle"></i> 預約遠端靈氣體驗
-      </a>
+    <div class="colophon-foot">
+      <div class="sig">少撐一點 · <em>多睡一點</em></div>
+      <div>Set in Italiana, Cormorant &amp; Noto Serif TC · Made with <span class="heart">♥</span> by SuperGalen's Dungeon</div>
+      <div>// MS. 0153 · forged 2026</div>
     </div>
-  </section>
-
-  <section class="section" style="text-align: center;">
-    <div class="container gs-reveal">
-      <h2 class="massive-title" style="font-size: clamp(3rem, 6vw, 5rem);">少撐一點，<br>多睡一點。</h2>
-      <p class="body-paragraph" style="max-width: 600px; margin: 0 auto 3rem;">
-        這份電子報是我每週五凌晨 5 點寄出的——你拿到的是我跟龍蝦今天才挖出來的真實案例。這裡不生產焦慮，只講你明天就能試的方法。
-      </p>
-      <a href="https://josephnext.substack.com" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 24px 48px; background: var(--vermillion); color: #fff; font-family: var(--font-serif); font-weight: 900; font-size: 1.5rem; text-decoration: none; border-radius: 4px;">
-        <i class="fas fa-envelope"></i> 訂閱《少撐一點》
-      </a>
-    </div>
-  </section>
-
-  <footer>
-    <div>&copy; 2026 JOSEPH. ARCHITECTURE OF SURVIVAL.</div>
-    <div class="socials">
-      <a href="https://www.threads.net/@chenweirennotes" target="_blank"><i class="fab fa-threads"></i></a>
-      <a href="https://josephnext.substack.com" target="_blank"><i class="fas fa-bookmark"></i></a>
-      <a href="https://github.com/KREUZc" target="_blank"><i class="fab fa-github"></i></a>
-      <a href="https://portaly.cc/joseph" target="_blank"><i class="fas fa-link"></i></a>
-    </div>
-  </footer>
-
-</div>
+  </div>
+</footer>
 
 <script>
-/* =========================================
-   INTERACTION 01: SOLVE THE CHAOS
-   ========================================= */
-const words = document.querySelectorAll('.chaos-word');
-const solveBtn = document.getElementById('solve-btn');
-const chaosScene = document.getElementById('chaos-scene');
-const mainContent = document.getElementById('main-content');
-
-// Scatter words randomly initially
-words.forEach(word => {
-  const x = (Math.random() - 0.5) * window.innerWidth * 0.8;
-  const y = (Math.random() - 0.5) * window.innerHeight * 0.8;
-  const rot = (Math.random() - 0.5) * 90;
-  const scale = 0.5 + Math.random();
-  gsap.set(word, { x: x, y: y, rotation: rot, scale: scale });
-  
-  // Ambient float
-  gsap.to(word, {
-    x: x + (Math.random() - 0.5) * 100,
-    y: y + (Math.random() - 0.5) * 100,
-    rotation: rot + (Math.random() - 0.5) * 20,
-    duration: 3 + Math.random() * 4,
-    repeat: -1, yoyo: true, ease: "sine.inOut"
-  });
-});
-
-let pressTimer;
-let isSolving = false;
-
-solveBtn.addEventListener('mousedown', startSolving);
-solveBtn.addEventListener('touchstart', startSolving);
-solveBtn.addEventListener('mouseup', stopSolving);
-solveBtn.addEventListener('mouseleave', stopSolving);
-solveBtn.addEventListener('touchend', stopSolving);
-
-function startSolving(e) {
-  e.preventDefault();
-  if(isSolving) return;
-  isSolving = true;
-  
-  // Kill ambient animations
-  gsap.killTweensOf(words);
-  
-  // Pull everything to center heavily
-  gsap.to(words, {
-    x: 0, y: 0, rotation: 0, scale: 0.1, opacity: 0,
-    duration: 1.5, ease: "power4.in", stagger: 0.02
-  });
-  
-  solveBtn.innerText = "RESTRUCTURING...";
-  
-  pressTimer = setTimeout(() => {
-    completeSolving();
-  }, 1500);
-}
-
-function stopSolving() {
-  if(!isSolving) return;
-  clearTimeout(pressTimer);
-  isSolving = false;
-  solveBtn.innerText = "APPLY PM FRAMEWORK (長按重構)";
-  
-  // Explode back to chaos
-  words.forEach(word => {
-    const x = (Math.random() - 0.5) * window.innerWidth * 0.8;
-    const y = (Math.random() - 0.5) * window.innerHeight * 0.8;
-    const rot = (Math.random() - 0.5) * 90;
-    const scale = 0.5 + Math.random();
-    
-    gsap.to(word, {
-      x: x, y: y, rotation: rot, scale: scale, opacity: 1,
-      duration: 1, ease: "back.out(1.5)"
-    });
-    
-    // Restart ambient
-    gsap.to(word, {
-      x: x + (Math.random() - 0.5) * 100, y: y + (Math.random() - 0.5) * 100,
-      rotation: rot + (Math.random() - 0.5) * 20, duration: 3 + Math.random() * 4,
-      repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1
-    });
-  });
-}
-
-function completeSolving() {
-  // Flash effect
-  gsap.to(chaosScene, { backgroundColor: "#FFF", duration: 0.1, onComplete: () => {
-    chaosScene.style.display = "none";
-    mainContent.style.display = "block";
-    gsap.to(mainContent, { opacity: 1, duration: 0.5 });
-    
-    // Initialize ScrollTriggers AFTER content is visible
-    initScrollTriggers();
-    window.scrollTo(0,0);
-  }});
-}
-
-/* =========================================
-   SCROLL ANIMATIONS (GSAP)
-   ========================================= */
 gsap.registerPlugin(ScrollTrigger);
 
-function initScrollTriggers() {
-  gsap.utils.toArray('.gs-reveal').forEach(elem => {
-    gsap.fromTo(elem, 
-      { y: 60, opacity: 0 },
-      {
-        scrollTrigger: { trigger: elem, start: "top 85%" },
-        y: 0, opacity: 1, duration: 1, ease: "power3.out"
-      }
-    );
+/* hero reveals */
+gsap.from('.hero-tag', {opacity:0, y:8, duration:.8, delay:.1, ease:'power2.out'});
+gsap.from('.hero-name', {opacity:0, y:14, duration:.95, delay:.22, ease:'power3.out'});
+gsap.from('.hero-sub', {opacity:0, y:10, duration:.8, delay:.5});
+gsap.from('.hero-cjk-tagline', {opacity:0, y:14, duration:.85, delay:.65, ease:'power3.out'});
+gsap.from('.hero-card', {opacity:0, y:14, duration:.85, delay:.85});
+gsap.from('.hero-tl .tl-tick', {opacity:0, y:10, duration:.7, stagger:.06, delay:1.05});
+
+/* intro & acts */
+gsap.utils.toArray('.intro p, .act, .bay-stuck, .bay-letter').forEach(el=>{
+  gsap.from(el, {opacity:0, y:24, duration:.9, ease:'power2.out',
+    scrollTrigger:{trigger:el, start:'top 85%'}});
+});
+gsap.utils.toArray('.act-figure').forEach(el=>{
+  gsap.from(el, {opacity:0, scale:.96, duration:1.1, ease:'power3.out',
+    scrollTrigger:{trigger:el, start:'top 80%'}});
+});
+
+/* ============== STUCK WORDS · click to decompose ============== */
+(function(){
+  const words = document.querySelectorAll('.stuck-word');
+  const decomp = document.getElementById('decomp');
+  const dTarget = document.getElementById('decompTarget');
+  const dFact = document.getElementById('dcFact');
+  const dFeel = document.getElementById('dcFeel');
+  const dStep = document.getElementById('dcStep');
+  const dClose = document.getElementById('decompClose');
+  const counter = document.getElementById('stuckCount');
+  const stage = document.getElementById('stuckStage');
+  let crackedCount = 0;
+  const total = words.length;
+
+  function openDecomp(w){
+    words.forEach(o=>o.classList.remove('active'));
+    w.classList.add('active');
+    dTarget.textContent = '「' + w.textContent.replace(/[＋✓]/g,'').trim() + '」';
+    dFact.textContent = w.dataset.fact;
+    dFeel.textContent = w.dataset.feel;
+    dStep.textContent = w.dataset.step;
+    // re-trigger card animation
+    decomp.classList.remove('open');
+    void decomp.offsetWidth;
+    decomp.classList.add('open');
+    if(!w.dataset.done){
+      w.dataset.done = '1';
+      crackedCount++;
+      counter.textContent = (total - crackedCount);
+    }
+    // mark cracked after the panel reveals
+    setTimeout(()=>w.classList.add('cracked'), 700);
+    // bring decomp into view within the stage
+    setTimeout(()=>{
+      const r = decomp.getBoundingClientRect();
+      if(r.bottom > window.innerHeight) decomp.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 620);
+  }
+
+  words.forEach(w=>{
+    w.addEventListener('click', ()=>openDecomp(w));
   });
-}
+  dClose.addEventListener('click', ()=>{
+    decomp.classList.remove('open');
+    words.forEach(o=>o.classList.remove('active'));
+  });
+})();
+
+/* ============== UNIFIED SCROLL · atelier clock + hero-dark ============== */
+(function(){
+  const acTime = document.getElementById('acTime');
+  const acLabel = document.getElementById('acLabel');
+  const veil = document.getElementById('dawnVeil');
+  const heroEl = document.querySelector('.hero-portrait');
+  const body = document.body;
+  if(!acTime) return;
+
+  // 90-minute window: 05:00 → 06:30, then last stretch → 07:02 at very bottom
+  const START = 5*60;          // 05:00 in minutes
+  const END   = 7*60 + 2;      // 07:02
+  const LABELS = [
+    [0.00, '工坊剛開門'],
+    [0.16, '第一杯咖啡'],
+    [0.34, '拆解時間'],
+    [0.55, '第二杯咖啡'],
+    [0.74, '寫書中'],
+    [0.90, '孩子快醒了'],
+    [0.99, '工坊關門'],
+  ];
+  let raf = 0;
+  function fmt(mins){
+    const h = Math.floor(mins/60), m = Math.round(mins%60);
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  }
+  function update(){
+    raf = 0;
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - window.innerHeight;
+    const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+    const mins = START + (END - START) * p;
+    acTime.textContent = fmt(mins);
+    let lab = LABELS[0][1];
+    for(const [thr, txt] of LABELS){ if(p >= thr) lab = txt; }
+    if(acLabel.textContent !== lab) acLabel.textContent = lab;
+    // dawn warmth grows with scroll (curve so it stays dim early, warm late)
+    veil.style.setProperty('--dawn-amt', (Math.pow(p, 1.4)).toFixed(3));
+    // hero-dark topbar toggle (folded into the same rAF pass)
+    if(heroEl){
+      const r = heroEl.getBoundingClientRect();
+      body.classList.toggle('hero-dark', r.bottom > 100);
+    }
+  }
+  addEventListener('scroll', ()=>{ if(!raf) raf = requestAnimationFrame(update); }, {passive:true});
+  addEventListener('resize', update);
+  update();
+})();
 </script>
 </body>
 </html>
