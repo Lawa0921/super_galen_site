@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="力智栩 Louis · 嘟嘟數位科技 創辦人。DevOps、MIS、前後端、APP、AI Agent 七年全端老兵。半夜寫 code、白天接案、週末看團、永遠在追焦。需要客製 SaaS / AI Agent / DevOps 自動化請來信。">
+<title>Louis 力智栩 · FOH @ Dudu Digital · 全端 × AI Agent 主控台</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700;800&family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+:root{
+  --stage:#06060B;
+  --stage-2:#0C0D14;
+  --console:#13141C;
+  --console-2:#1B1D27;
+  --steel:#2A2D3A;
+  --steel-light:#3D4150;
+  --laser:#00F0FF;
+  --magenta:#FF2E6A;
+  --tungsten:#FFB347;
+  --signal:#38FFA1;
+  --warning:#FFC93C;
+  --bone:#E8E6DA;
+  --ink:#0A0B12;
+
+  --f-stencil:'Big Shoulders Stencil Display', 'Noto Serif TC', sans-serif;
+  --f-mono:'JetBrains Mono', monospace;
+  --f-serif:'Noto Serif TC', serif;
+  --f-sans:'Noto Sans TC', sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden;background:var(--stage)}
+body{
+  background:var(--stage);
+  color:var(--bone);
+  font-family:var(--f-sans);
+  font-weight:400;
+  line-height:1.75;
+  overflow-x:hidden;
+  min-height:100vh;
+  letter-spacing:.01em;
+  cursor:none;
+}
+::selection{background:var(--laser);color:var(--ink)}
+::-webkit-scrollbar{width:9px}
+::-webkit-scrollbar-track{background:var(--stage-2)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--laser),var(--magenta))}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* ============== Minimal AF-bracket cursor (clean, not gimmicky) ============== */
+.cursor-vf{position:fixed;top:0;left:0;width:34px;height:34px;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);will-change:transform;transition:width .2s cubic-bezier(.2,.7,.2,1), height .2s cubic-bezier(.2,.7,.2,1)}
+.cursor-vf .corner{position:absolute;width:9px;height:9px;border:2px solid var(--laser);transition:border-color .18s ease}
+.cursor-vf .corner.tl{top:0;left:0;border-right:0;border-bottom:0}
+.cursor-vf .corner.tr{top:0;right:0;border-left:0;border-bottom:0}
+.cursor-vf .corner.bl{bottom:0;left:0;border-right:0;border-top:0}
+.cursor-vf .corner.br{bottom:0;right:0;border-left:0;border-top:0}
+.cursor-vf::after{content:"";position:absolute;top:50%;left:50%;width:4px;height:4px;border-radius:50%;background:var(--laser);transform:translate(-50%,-50%);box-shadow:0 0 6px var(--laser),0 0 0 1px rgba(0,0,0,.4);transition:background .18s ease, box-shadow .18s ease}
+.cursor-vf.locked{width:46px;height:46px}
+.cursor-vf.locked .corner{border-color:var(--magenta)}
+.cursor-vf.locked::after{background:var(--magenta);box-shadow:0 0 8px var(--magenta),0 0 0 1px rgba(0,0,0,.4)}
+@media (max-width:780px){body{cursor:auto}.cursor-vf{display:none}}
+
+/* ============== Background layers ============== */
+.crowd-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url('/assets/img/guild/zhixu_li/hero-crowd.webp');background-size:cover;background-position:center bottom;opacity:.42;filter:saturate(.95) brightness(.78);transform:scale(1.04);transform-origin:center bottom}
+.crowd-fade{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 65%, transparent 0%, rgba(6,6,11,.4) 35%, rgba(6,6,11,.96) 78%)}
+.foh-spot{position:fixed;top:0;left:0;width:520px;height:520px;z-index:2;pointer-events:none;border-radius:50%;background:radial-gradient(circle, rgba(0,240,255,.18) 0%, rgba(0,240,255,.07) 30%, transparent 65%);transform:translate(-50%,-50%);mix-blend-mode:screen;will-change:transform;transition:opacity .3s ease}
+#stage-three{position:fixed;inset:0;z-index:1;pointer-events:none}
+#stackTokens{position:fixed;inset:0;z-index:2;pointer-events:none}
+#stackTokens canvas{display:block;width:100%;height:100%}
+#panTrail{position:fixed;inset:0;z-index:9997;pointer-events:none;mix-blend-mode:screen}
+#panTrail canvas{display:block;width:100%;height:100%}
+.scanline{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.06;background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,.6) 2px 3px)}
+.grain{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:.11;mix-blend-mode:overlay;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='2'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+@media (max-width:780px){.grain{display:none}}
+.vignette{position:fixed;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center, transparent 35%, rgba(6,6,11,.85) 92%)}
+
+/* === Stage lighting cue states (driven by visible LIGHTING DESK buttons) ===
+   Filters live on a backdrop-filter overlay (#fxFilter) so the cursor — which
+   sits ABOVE that overlay — never gets dimmed with the page. */
+#fxFilter{position:fixed;inset:0;z-index:9990;pointer-events:none;transition:backdrop-filter .55s ease, -webkit-backdrop-filter .55s ease}
+body.cue-spotlight .vignette{opacity:1!important;background:radial-gradient(ellipse at center, transparent 10%, rgba(6,6,11,.97) 38%)!important}
+body.cue-laser .crowd-bg{opacity:.8!important;filter:saturate(1.4) brightness(.98) blur(0px)!important}
+
+/* Drag affordance hint above mixer */
+.drag-hint{position:relative;z-index:2;font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;color:var(--tungsten);text-transform:uppercase;text-align:center;margin:0 0 18px;display:flex;align-items:center;justify-content:center;gap:10px;opacity:.9}
+.drag-hint i{animation:dragBob 1.4s ease-in-out infinite;color:var(--tungsten)}
+@keyframes dragBob{0%,100%{transform:translateY(-3px)}50%{transform:translateY(3px)}}
+/* grips look obviously grabbable + pulse until first interaction */
+.fader .grip{box-shadow:0 2px 6px rgba(0,0,0,.6),0 0 10px rgba(255,179,71,.35)}
+.mixer:not(.touched) .fader .grip{animation:gripPulse 1.8s ease-in-out infinite}
+@keyframes gripPulse{0%,100%{box-shadow:0 2px 6px rgba(0,0,0,.6),0 0 8px rgba(255,179,71,.3)}50%{box-shadow:0 2px 10px rgba(0,0,0,.7),0 0 20px rgba(255,179,71,.7)}}
+.fader .grip::before{content:"";position:absolute;left:5px;right:5px;top:4px;height:1px;background:rgba(255,255,255,.35);box-shadow:0 3px 0 rgba(255,255,255,.25),0 6px 0 rgba(255,255,255,.18)}
+
+/* === Visible LIGHTING DESK (inside mixer) === */
+.light-desk{margin-top:18px;padding:14px 16px;background:rgba(0,0,0,.4);border:1px solid rgba(255,179,71,.18);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.light-desk .ld-label{font-family:var(--f-mono);font-size:10px;letter-spacing:.24em;color:var(--tungsten);text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:8px}
+.light-desk .ld-label i{color:var(--tungsten)}
+.light-desk .ld-btns{display:flex;gap:8px;flex-wrap:wrap}
+.ld-cue{font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:7px 13px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.03);color:#9CA0AE;cursor:none;transition:all .2s ease;font-weight:600}
+.ld-cue:hover{border-color:var(--tungsten);color:var(--tungsten)}
+.ld-cue.active{background:var(--tungsten);color:var(--ink);border-color:var(--tungsten);box-shadow:0 0 18px rgba(255,179,71,.45)}
+@media (max-width:780px){.light-desk{flex-direction:column;align-items:flex-start}}
+
+/* === Fader effect overlays === */
+.fx-prod{position:fixed;top:0;left:0;right:0;height:30px;z-index:48;background:repeating-linear-gradient(90deg, rgba(255,46,106,.18) 0 24px, rgba(255,46,106,.05) 24px 48px);border-bottom:2px solid var(--magenta);font-family:var(--f-mono);font-size:10px;letter-spacing:.32em;color:var(--magenta);text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:14px;opacity:0;transform:translateY(-30px);transition:opacity .35s ease, transform .35s ease;pointer-events:none}
+.fx-prod.on{opacity:1;transform:translateY(0)}
+.fx-prod b{color:var(--bone);font-weight:700}
+.fx-prod::before{content:"";display:inline-block;width:8px;height:8px;background:var(--magenta);box-shadow:0 0 8px var(--magenta);animation:blink 1s infinite}
+
+.fx-api{position:fixed;right:18px;bottom:78px;z-index:54;font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--signal);background:rgba(11,12,18,.92);border:1px solid var(--signal);padding:8px 12px;line-height:1.5;text-transform:uppercase;opacity:0;transform:translateY(20px);transition:opacity .3s ease, transform .3s ease;pointer-events:none}
+.fx-api.on{opacity:1;transform:translateY(0)}
+.fx-api b{color:var(--bone);font-weight:700}
+.fx-api .ok{color:var(--signal)}
+@media (max-width:780px){.fx-api{display:none}}
+
+/* CH 03 Frontend hue handled via #fxFilter backdrop-filter (keeps cursor crisp) */
+
+.fx-think{position:fixed;z-index:53;font-family:var(--f-mono);font-size:11px;color:var(--magenta);background:rgba(255,46,106,.12);border:1px solid var(--magenta);padding:5px 10px;border-radius:14px;pointer-events:none;opacity:0;transform:translateY(8px);transition:opacity .3s ease, transform .3s ease;white-space:nowrap}
+.fx-think.on{opacity:1;transform:translateY(0)}
+.fx-think::before{content:"●●●";letter-spacing:1px;margin-right:6px;animation:dots .9s steps(3) infinite}
+@keyframes dots{0%{content:"●"}33%{content:"●●"}66%{content:"●●●"}}
+
+.fx-mis{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;background-image:
+  linear-gradient(rgba(56,255,161,.06) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(56,255,161,.06) 1px, transparent 1px);
+background-size:32px 32px;transition:opacity .4s ease}
+.fx-mis.on{opacity:1}
+.fx-mis::after{content:"COMPLIANCE GRID · MIS · SOX · ISO 27001";position:fixed;bottom:14px;right:18px;font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:var(--signal);text-transform:uppercase}
+
+.fx-saas{position:fixed;right:18px;top:78px;z-index:54;font-family:var(--f-stencil);font-size:16px;font-weight:900;color:var(--tungsten);background:rgba(255,179,71,.1);border:1px solid var(--tungsten);padding:5px 12px;letter-spacing:.04em;text-transform:uppercase;opacity:0;transform:translateY(-10px);transition:opacity .3s ease, transform .3s ease;pointer-events:none}
+.fx-saas.on{opacity:1;transform:translateY(0)}
+.fx-saas::before{content:"TIER";display:block;font-family:var(--f-mono);font-size:9px;font-weight:700;letter-spacing:.32em;color:var(--magenta);margin-bottom:-2px}
+@media (max-width:780px){.fx-saas{display:none}}
+
+.fx-camp{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;background-image:url('/assets/img/guild/zhixu_li/camp-night.webp');background-size:cover;background-position:center;transition:opacity .6s ease}
+.fx-camp.on{opacity:.55}
+
+/* Pan-blur overlay (subtle, throttled) */
+.pan-blur{position:fixed;inset:0;z-index:6;pointer-events:none;backdrop-filter:blur(0px);transition:backdrop-filter .2s ease}
+.pan-blur.active{backdrop-filter:blur(1.6px)}
+
+/* Section LED bridge */
+.led-bridge{position:relative;height:62px;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none}
+.led-bridge::before{content:"";position:absolute;left:8vw;right:8vw;top:50%;height:1px;background:linear-gradient(90deg, transparent 0%, rgba(255,255,255,.06) 8%, rgba(255,255,255,.06) 92%, transparent 100%)}
+.led-bridge .led{position:absolute;left:8vw;top:50%;width:6px;height:6px;border-radius:50%;background:var(--laser);box-shadow:0 0 12px var(--laser),0 0 22px rgba(0,240,255,.6);transform:translate(-50%,-50%);opacity:0}
+.led-bridge .lab{font-family:var(--f-mono);font-size:9px;letter-spacing:.32em;color:#5A5E6C;text-transform:uppercase;background:var(--stage);padding:0 16px;position:relative;z-index:2}
+.led-bridge .lab b{color:var(--magenta);font-weight:700}
+
+.hero-card{cursor:none}
+@media (max-width:780px){.hero-card{cursor:pointer}}
+
+/* Live card open / detail drawer */
+.live-card{cursor:none}
+@media (max-width:780px){.live-card{cursor:pointer}}
+.live-card .more{display:none;position:relative;z-index:2;margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.1);font-family:var(--f-mono);font-size:12px;line-height:1.85;color:#9CA0AE}
+.live-card .more b{color:var(--bone);font-weight:700;font-family:var(--f-mono)}
+.live-card .more .row{display:flex;justify-content:space-between;padding:4px 0}
+.live-card .more .row span:first-child{color:#7A7E8C;letter-spacing:.16em;text-transform:uppercase;font-size:10px}
+.live-card.open .more{display:block;animation:drawer-in .35s ease}
+@keyframes drawer-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.live-card .openhint{position:absolute;top:14px;right:14px;z-index:3;font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:#5A5E6C;text-transform:uppercase;display:flex;align-items:center;gap:6px;transition:color .25s ease}
+.live-card:hover .openhint{color:var(--laser)}
+.live-card.open .openhint{color:var(--magenta)}
+.live-card.open .openhint i{transform:rotate(45deg)}
+.live-card .openhint i{transition:transform .25s ease}
+
+/* Setlist track → Channel fader pulse link */
+.fader.pulsing{border-color:var(--magenta)!important;box-shadow:0 0 38px rgba(255,46,106,.45)!important;animation:faderPulse 1.4s ease-in-out infinite}
+.fader.pulsing .led{animation:faderLedPulse .6s ease-in-out infinite!important}
+@keyframes faderPulse{50%{box-shadow:0 0 28px rgba(255,46,106,.25)!important}}
+@keyframes faderLedPulse{50%{opacity:1;box-shadow:0 0 16px var(--magenta)}}
+
+/* Visitor stamp pill */
+.visitor-stamp{position:fixed;left:18px;bottom:46px;z-index:50;font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;color:#9CA0AE;text-transform:uppercase;background:rgba(8,9,14,.86);border:1px solid rgba(255,179,71,.28);padding:7px 11px;backdrop-filter:blur(6px);transform:translateY(40px);opacity:0;transition:transform .55s cubic-bezier(.2,.7,.2,1), opacity .45s ease;pointer-events:none}
+.visitor-stamp.show{transform:translateY(0);opacity:1}
+.visitor-stamp b{color:var(--tungsten);font-weight:700;margin:0 4px}
+.visitor-stamp i{color:var(--magenta);margin-right:7px}
+@media (max-width:780px){.visitor-stamp{font-size:8px;letter-spacing:.16em;padding:5px 8px}}
+
+
+/* Live git-log corner terminal */
+.gitlog{position:fixed;right:18px;bottom:46px;z-index:55;width:340px;max-width:calc(100vw - 36px);font-family:var(--f-mono);font-size:11px;line-height:1.55;background:rgba(8,9,14,.88);border:1px solid rgba(0,240,255,.16);border-radius:6px;backdrop-filter:blur(6px);box-shadow:0 18px 40px rgba(0,0,0,.5), 0 0 24px rgba(0,240,255,.06);overflow:hidden;transition:transform .35s ease, opacity .3s ease}
+.gitlog.collapsed{transform:translateY(calc(100% - 32px))}
+.gitlog .gh{display:flex;align-items:center;gap:8px;padding:7px 12px;background:rgba(255,255,255,.025);border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#9CA0AE;user-select:none}
+.gitlog .gh i{color:var(--laser)}
+.gitlog .gh .pip{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--signal);margin-left:auto;animation:blink 1.4s infinite;box-shadow:0 0 6px var(--signal)}
+.gitlog .gh:hover{color:var(--bone)}
+.gitlog .gb{padding:10px 12px;height:170px;overflow:hidden;position:relative}
+.gitlog .gb::after{content:"";position:absolute;left:0;right:0;top:0;height:24px;background:linear-gradient(180deg, rgba(8,9,14,1), transparent);pointer-events:none}
+.gitlog .gl{display:block;color:#C0C3CD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transform:translateY(6px);animation:gl-in .4s ease forwards}
+.gitlog .gl .h{color:var(--magenta);font-weight:700}
+.gitlog .gl .b{color:var(--laser)}
+.gitlog .gl .o{color:var(--signal)}
+.gitlog .gl .w{color:var(--tungsten)}
+.gitlog .gl .d{color:#5A5E6C}
+@keyframes gl-in{to{opacity:1;transform:translateY(0)}}
+@media (max-width:780px){.gitlog{display:none}}
+
+/* ============== Live Terminal Pre-Hero ============== */
+.term-prehero{position:relative;z-index:5;padding:80px 8vw 0;display:flex;justify-content:center}
+.term-window{width:100%;max-width:880px;background:linear-gradient(180deg, rgba(11,12,18,.96), rgba(8,9,14,.94));border:1px solid rgba(0,240,255,.18);border-radius:6px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 60px rgba(0,240,255,.08)}
+.term-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;color:#7A7E8C;text-transform:uppercase}
+.term-head .dots{display:inline-flex;gap:6px;margin-right:14px}
+.term-head .dots span{width:11px;height:11px;border-radius:50%;background:#3A3D49}
+.term-head .dots span.r{background:#FF5F56}
+.term-head .dots span.y{background:#FFBD2E}
+.term-head .dots span.g{background:#27C93F}
+.term-head .path{color:var(--laser);font-weight:700}
+.term-head .path b{color:var(--magenta);font-weight:700}
+.term-head .right{margin-left:auto;color:#5A5E6C}
+.term-body{padding:24px 26px 26px;font-family:var(--f-mono);font-size:13.5px;line-height:1.85;color:#D8DBE5;min-height:280px;max-height:380px;overflow:hidden}
+.term-body .ln{display:block;white-space:pre-wrap;word-break:break-word}
+.term-body .pr{color:var(--laser);font-weight:700;margin-right:8px;user-select:none}
+.term-body .pr::before{content:"$ "}
+.term-body .cmt{color:#5A5E6C}
+.term-body .ok{color:var(--signal)}
+.term-body .err{color:var(--warning)}
+.term-body .hot{color:var(--magenta);font-weight:700}
+.term-body .laz{color:var(--laser);font-weight:700}
+.term-body .warm{color:var(--tungsten);font-weight:700}
+.term-body .key{color:#FFD86B}
+.term-body .cur::after{content:"▌";color:var(--laser);animation:blink 1s steps(2) infinite;margin-left:1px}
+
+/* Interactive terminal input */
+.term-input-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(0,240,255,.18);font-family:var(--f-mono);font-size:13.5px;color:#D8DBE5}
+.term-input-row .pr{color:var(--magenta);font-weight:700;user-select:none}
+.term-input-row .pr::before{content:"$ "}
+.term-input{flex:1;background:transparent;border:0;outline:0;color:var(--laser);font-family:var(--f-mono);font-size:13.5px;letter-spacing:.02em;padding:2px 0;caret-color:var(--laser)}
+.term-input::placeholder{color:#5A5E6C;font-style:italic}
+.term-hint{font-family:var(--f-mono);font-size:10px;color:#5A5E6C;letter-spacing:.2em;text-transform:uppercase;margin-top:6px}
+.term-hint b{color:var(--tungsten);font-weight:700}
+@media (max-width:780px){.term-input-row,.term-input{font-size:11px}}
+
+/* claudeBot launch button (visible CTA inside L2 card) */
+.bot-launch{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;padding:11px;background:rgba(255,46,106,.12);border:1px solid var(--magenta);color:var(--magenta);font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;cursor:none;transition:all .25s ease}
+.bot-launch:hover{background:var(--magenta);color:var(--ink);box-shadow:0 0 22px rgba(255,46,106,.45)}
+.bot-launch i{font-size:12px}
+
+/* claudeBot chat simulator overlay */
+.bot-chat{position:fixed;right:18px;bottom:78px;z-index:60;width:380px;max-width:calc(100vw - 36px);background:linear-gradient(180deg, rgba(11,12,18,.96), rgba(8,9,14,.94));border:1px solid var(--magenta);border-radius:10px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.65), 0 0 30px rgba(255,46,106,.18);transform:translateY(40px) scale(.96);opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.2,.7,.2,1), opacity .25s ease}
+.bot-chat.open{transform:translateY(0) scale(1);opacity:1;pointer-events:auto}
+.bot-chat-head{display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(255,46,106,.08);border-bottom:1px solid rgba(255,46,106,.18);font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--bone)}
+.bot-chat-head .avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg, var(--magenta), var(--laser));display:flex;align-items:center;justify-content:center;color:var(--ink);font-weight:800;font-size:11px}
+.bot-chat-head b{color:var(--magenta);font-weight:700}
+.bot-chat-head .close{margin-left:auto;cursor:none;color:#7A7E8C;font-size:14px;background:transparent;border:0;padding:4px}
+.bot-chat-head .close:hover{color:var(--bone)}
+.bot-chat-body{height:240px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;font-family:var(--f-mono);font-size:12.5px;line-height:1.55}
+.bot-chat-body::-webkit-scrollbar{width:4px}
+.bot-chat-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15)}
+.bot-msg{padding:8px 11px;border-radius:8px;max-width:88%;word-break:break-word;animation:msg-in .25s ease}
+.bot-msg.u{align-self:flex-end;background:rgba(0,240,255,.12);border:1px solid rgba(0,240,255,.25);color:var(--bone);border-bottom-right-radius:2px}
+.bot-msg.b{align-self:flex-start;background:rgba(255,46,106,.10);border:1px solid rgba(255,46,106,.25);color:#E8E6DA;border-bottom-left-radius:2px}
+.bot-msg.b b{color:var(--magenta);font-weight:700}
+.bot-msg.b code{font-family:var(--f-mono);background:rgba(0,0,0,.35);color:var(--laser);padding:1px 5px;border-radius:3px;font-size:.92em}
+.bot-msg.sys{align-self:center;color:#7A7E8C;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+@keyframes msg-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.bot-chat-foot{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
+.bot-chat-foot .pr{color:var(--magenta);font-family:var(--f-mono);font-weight:700;font-size:13px;user-select:none}
+.bot-chat-foot input{flex:1;background:transparent;border:0;outline:0;color:var(--bone);font-family:var(--f-mono);font-size:12.5px;caret-color:var(--magenta);padding:4px 0}
+.bot-chat-foot input::placeholder{color:#5A5E6C}
+.bot-chat-foot .send{cursor:none;background:rgba(255,46,106,.15);border:1px solid var(--magenta);color:var(--magenta);font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;padding:5px 10px;font-weight:700}
+.bot-chat-foot .send:hover{background:var(--magenta);color:var(--ink)}
+@media (max-width:780px){.bot-chat{display:none}}
+
+/* Scene EXIF metadata chip */
+.scene .exif-chip{position:absolute;top:10px;right:10px;z-index:4;font-family:var(--f-mono);font-size:8.5px;letter-spacing:.14em;color:var(--c, var(--laser));text-transform:uppercase;background:rgba(6,6,11,.7);border:1px solid var(--c, var(--laser));padding:4px 7px;line-height:1.4;text-align:right;opacity:0;transform:translateY(-4px);transition:opacity .3s ease, transform .3s ease;pointer-events:none}
+.scene:hover .exif-chip{opacity:1;transform:translateY(0)}
+.scene .exif-chip b{color:var(--bone);font-weight:700}
+@media (max-width:780px){.term-prehero{padding:60px 4vw 0}.term-body{font-size:11px;padding:16px 14px;min-height:240px}}
+
+/* Real-time status pill */
+.now-pill{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid var(--c, var(--laser));color:var(--c, var(--laser));font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;background:rgba(0,240,255,.04)}
+.now-pill .pip{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c, var(--laser));animation:blink 1.4s infinite;box-shadow:0 0 8px var(--c, var(--laser))}
+.now-pill.warm{--c:var(--tungsten);background:rgba(255,179,71,.05)}
+.now-pill.hot{--c:var(--magenta);background:rgba(255,46,106,.05)}
+.now-pill.cool{--c:var(--laser);background:rgba(0,240,255,.05)}
+.now-pill.green{--c:var(--signal);background:rgba(56,255,161,.04)}
+@media (max-width:780px){.now-pill{font-size:8px;padding:3px 7px}}
+
+/* Top bar */
+.console-bar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:linear-gradient(180deg, rgba(6,6,11,.92), rgba(6,6,11,.55) 70%, transparent);font-family:var(--f-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.04)}
+.console-bar a{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border:1px solid rgba(0,240,255,.4);color:var(--laser);background:rgba(0,240,255,.04);transition:all .25s ease;font-weight:600}
+.console-bar a:hover{background:var(--laser);color:var(--ink);box-shadow:0 0 22px rgba(0,240,255,.55)}
+.console-bar .right{display:flex;gap:14px;align-items:center;color:var(--bone)}
+@keyframes blink{50%{opacity:.3}}
+.console-bar .right .ts{color:var(--steel-light)}
+@media (max-width:780px){.console-bar{padding:10px 14px;font-size:9px;letter-spacing:.16em}.console-bar .right .ts{display:none}}
+
+/* ============== Hero ============== */
+.hero{position:relative;min-height:100vh;padding:140px 8vw 80px;display:grid;grid-template-columns:1.4fr 1fr;gap:70px;align-items:center;z-index:5}
+.hero::before{content:"";position:absolute;left:6vw;top:120px;bottom:60px;width:1px;background:linear-gradient(180deg, transparent, var(--laser) 20%, var(--magenta) 80%, transparent);opacity:.4}
+.hero-pre{font-family:var(--f-mono);font-size:11px;letter-spacing:.36em;color:var(--laser);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:14px}
+.hero-pre i{color:var(--magenta)}
+.hero-pre .dot{width:6px;height:6px;border-radius:50%;background:var(--magenta);animation:blink 1.2s infinite;box-shadow:0 0 10px var(--magenta)}
+
+.hero h1{font-family:var(--f-stencil);font-weight:900;font-size:clamp(60px,11vw,168px);line-height:.84;letter-spacing:-.02em;color:var(--bone);text-transform:uppercase;margin-bottom:6px;position:relative}
+.hero h1 .stack{display:block;color:var(--bone)}
+.hero h1 .stack:nth-child(2){color:var(--laser);text-shadow:0 0 28px rgba(0,240,255,.45);transform:translateX(20px)}
+.hero h1 .stack:nth-child(3){color:var(--magenta);text-shadow:0 0 28px rgba(255,46,106,.45);transform:translateX(-12px)}
+
+.hero h2{font-family:var(--f-serif);font-weight:500;font-size:clamp(18px,2vw,24px);line-height:1.65;color:var(--bone);margin:28px 0 12px;letter-spacing:.02em}
+.hero h2 b{color:var(--laser);font-weight:700}
+.hero h2 em{font-style:normal;color:var(--magenta);font-weight:700}
+
+.hero-sub{font-family:var(--f-mono);font-size:13px;color:#9CA0AE;line-height:1.85;max-width:560px;margin-top:14px;letter-spacing:.04em}
+.hero-sub i.fa-solid{color:var(--tungsten);margin-right:6px}
+
+.hero-status{margin-top:42px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:620px}
+.stat-cell{padding:14px 16px;background:linear-gradient(180deg, var(--console), var(--console-2));border:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden}
+.stat-cell::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--c,var(--laser))}
+.stat-cell .lab{font-family:var(--f-mono);font-size:9px;letter-spacing:.22em;color:#7A7E8C;text-transform:uppercase}
+.stat-cell .val{font-family:var(--f-stencil);font-weight:900;font-size:32px;color:var(--c,var(--laser));line-height:1;margin-top:8px;letter-spacing:-.01em}
+.stat-cell.s2{--c:var(--magenta)}
+.stat-cell.s3{--c:var(--signal)}
+.stat-cell.s4{--c:var(--tungsten)}
+
+/* Hero right portrait card */
+.hero-card{position:relative;justify-self:end;width:100%;max-width:380px;aspect-ratio:3/4;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg, var(--console-2), var(--stage));overflow:hidden}
+.hero-card::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 18%, rgba(0,240,255,.22) 0%, transparent 55%);pointer-events:none}
+.hero-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg, transparent 35%, rgba(6,6,11,.95));pointer-events:none}
+.hero-card .photo{position:absolute;inset:0;background-image:url('/assets/img/guild/zhixu_li/avatar.webp');background-size:cover;background-position:center 18%;filter:contrast(1.06) saturate(1.05) brightness(.94)}
+.hero-card .frame-corner{position:absolute;width:22px;height:22px;border:2px solid var(--laser);z-index:3}
+.hero-card .frame-corner.tl{top:14px;left:14px;border-right:0;border-bottom:0}
+.hero-card .frame-corner.tr{top:14px;right:14px;border-left:0;border-bottom:0}
+.hero-card .frame-corner.bl{bottom:14px;left:14px;border-right:0;border-top:0}
+.hero-card .frame-corner.br{bottom:14px;right:14px;border-left:0;border-top:0}
+.hero-card .frame-corner.magenta{border-color:var(--magenta)}
+
+.hero-card .meta{position:absolute;left:18px;right:18px;bottom:18px;z-index:4;font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#A6A9B6}
+.hero-card .meta .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
+.hero-card .meta .row:last-child{border:0}
+.hero-card .meta b{color:var(--bone);font-weight:700}
+.hero-card .badge{position:absolute;top:18px;left:18px;font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:var(--magenta);background:rgba(255,46,106,.12);border:1px solid var(--magenta);padding:5px 9px;text-transform:uppercase;z-index:4}
+.hero-card .badge .pip{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--magenta);margin-right:7px;animation:blink 1.4s infinite;box-shadow:0 0 8px var(--magenta)}
+.hero-card .ch{position:absolute;top:18px;right:18px;z-index:4;font-family:var(--f-stencil);font-size:18px;font-weight:900;color:var(--laser);letter-spacing:.04em}
+
+.scope-mini{position:absolute;left:18px;right:18px;top:54%;z-index:3;height:48px;border:1px solid rgba(0,240,255,.18);background:rgba(0,240,255,.04);overflow:hidden}
+.scope-mini canvas{width:100%;height:100%;display:block}
+.scope-label{position:absolute;left:18px;top:calc(54% - 18px);font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:var(--laser);z-index:4;text-transform:uppercase}
+
+@media (max-width:980px){
+  .hero{grid-template-columns:1fr;gap:40px;padding:120px 6vw 60px}
+  .hero-card{justify-self:center;max-width:300px}
+  .hero h1 .stack:nth-child(2){transform:none}
+  .hero h1 .stack:nth-child(3){transform:none}
+}
+@media (max-width:540px){
+  .hero-status{grid-template-columns:repeat(2,1fr)}
+  .stat-cell .val{font-size:26px}
+}
+
+/* ============== Section base ============== */
+.section{position:relative;padding:140px 8vw;z-index:5}
+.section-header{display:flex;align-items:flex-end;justify-content:space-between;gap:30px;margin-bottom:60px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:24px}
+.section-header h3{font-family:var(--f-stencil);font-weight:900;font-size:clamp(40px,6vw,86px);line-height:.9;text-transform:uppercase;letter-spacing:-.01em;color:var(--bone)}
+.section-header h3 b{color:var(--laser)}
+.section-header .ix{font-family:var(--f-mono);font-size:11px;letter-spacing:.3em;color:#7A7E8C;text-transform:uppercase}
+.section-header .ix .num{font-family:var(--f-stencil);font-size:34px;color:var(--magenta);font-weight:900;display:block;line-height:1;letter-spacing:.04em}
+
+.section-lead{font-family:var(--f-serif);font-size:clamp(17px,1.5vw,21px);line-height:1.85;color:var(--bone);max-width:780px;margin-bottom:54px}
+.section-lead b{color:var(--laser);font-weight:700;letter-spacing:.02em}
+.section-lead em{font-style:normal;color:var(--magenta);font-weight:700;letter-spacing:.02em}
+.section-lead i{font-style:normal;color:var(--tungsten);font-weight:700}
+
+@media (max-width:780px){.section{padding:90px 6vw}.section-header{flex-direction:column;align-items:flex-start;gap:14px}}
+
+/* ============== SOUNDCHECK ============== */
+.soundcheck{display:grid;grid-template-columns:1.1fr 1fr;gap:60px;align-items:center}
+.soundcheck-text p{margin-bottom:22px;font-family:var(--f-serif);font-size:17px;line-height:2;color:#D8D6CB}
+.soundcheck-text p b{color:var(--laser)}
+.soundcheck-text p em{font-style:normal;color:var(--magenta)}
+.soundcheck-text .sig{margin-top:34px;font-family:var(--f-mono);font-size:11px;letter-spacing:.22em;color:#7A7E8C;text-transform:uppercase;display:flex;align-items:center;gap:18px}
+.soundcheck-text .sig::before{content:"";flex:1;height:1px;background:linear-gradient(90deg, var(--steel-light), transparent)}
+.soundcheck-text .sig b{color:var(--bone);font-weight:700}
+
+.persona-card{background:linear-gradient(160deg, var(--console), var(--console-2));border:1px solid rgba(255,255,255,.06);padding:34px;position:relative;overflow:hidden}
+.persona-card::before{content:"PERSONA / I→E (FORCED)";position:absolute;top:14px;right:18px;font-family:var(--f-mono);font-size:9px;letter-spacing:.26em;color:var(--magenta);text-transform:uppercase}
+.persona-card .label{font-family:var(--f-mono);font-size:10px;letter-spacing:.28em;color:var(--laser);text-transform:uppercase;margin-bottom:22px}
+.persona-row{display:grid;grid-template-columns:90px 1fr 60px;gap:14px;padding:11px 0;border-bottom:1px dashed rgba(255,255,255,.07);font-family:var(--f-mono);font-size:12px;align-items:center}
+.persona-row:last-child{border:0}
+.persona-row .k{color:#8A8E9C;letter-spacing:.18em;text-transform:uppercase;font-size:10px}
+.persona-row .meter{height:6px;background:var(--steel);position:relative;overflow:hidden}
+.persona-row .meter span{display:block;height:100%;background:linear-gradient(90deg, var(--laser), var(--magenta));width:0;transition:width 1.2s cubic-bezier(.2,.7,.2,1)}
+.persona-row .v{font-family:var(--f-stencil);font-weight:900;font-size:20px;color:var(--bone);text-align:right;letter-spacing:.02em}
+.persona-row.warn .v{color:var(--warning)}
+.persona-row.warn .meter span{background:linear-gradient(90deg, var(--warning), var(--magenta))}
+@media (max-width:780px){.soundcheck{grid-template-columns:1fr}}
+
+/* ============== CHANNELS / MIXER ============== */
+.mixer{position:relative;background:linear-gradient(180deg, var(--console-2), var(--console));border:1px solid rgba(255,255,255,.06);padding:38px 26px 30px;overflow:hidden}
+.mixer::before{content:"";position:absolute;top:0;left:0;right:0;height:34px;background:linear-gradient(180deg, var(--console), var(--console-2));border-bottom:1px solid rgba(255,255,255,.05)}
+.mixer-rail{position:relative;display:grid;grid-template-columns:repeat(8,1fr);gap:12px;z-index:2;margin-top:14px}
+.fader{position:relative;background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.25));border:1px solid rgba(255,255,255,.06);padding:14px 10px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .3s ease;cursor:none}
+.fader:hover{border-color:var(--laser);box-shadow:0 0 24px rgba(0,240,255,.18)}
+.fader .ch-num{font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;color:#6A6E7C;text-transform:uppercase}
+.fader .knob{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 30% 25%, var(--steel-light), var(--steel) 60%, var(--ink));border:1px solid rgba(255,255,255,.08);position:relative;transition:transform .3s ease}
+.fader .knob::after{content:"";position:absolute;top:3px;left:50%;width:2px;height:10px;background:var(--laser);transform:translateX(-50%) rotate(-45deg);transform-origin:center 11px;box-shadow:0 0 6px var(--laser)}
+.fader:hover .knob{transform:rotate(60deg)}
+.fader .led{width:7px;height:7px;border-radius:50%;background:var(--c,var(--laser));box-shadow:0 0 10px var(--c,var(--laser));animation:fader-led 2s ease-in-out infinite}
+@keyframes fader-led{50%{opacity:.4}}
+.fader .track{width:6px;flex:1;background:linear-gradient(180deg, var(--ink), var(--steel) 50%, var(--ink));position:relative;height:140px;border-radius:3px}
+.fader .grip{position:absolute;left:-9px;width:24px;height:14px;background:linear-gradient(180deg, var(--steel-light), var(--steel) 60%, var(--ink));border:1px solid rgba(255,255,255,.18);border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,.6),0 0 8px rgba(0,240,255,.25);transition:box-shadow .3s ease;cursor:grab;touch-action:none;user-select:none}
+.fader .grip.dragging{cursor:grabbing;box-shadow:0 4px 12px rgba(0,0,0,.85),0 0 22px var(--c, var(--laser))!important;border-color:var(--c, var(--laser))}
+.fader.tweaked .ch-tag{color:var(--magenta);text-shadow:0 0 10px rgba(255,46,106,.6)}
+.fader .grip::after{content:"";position:absolute;left:3px;right:3px;top:50%;height:1px;background:var(--laser);box-shadow:0 0 4px var(--laser)}
+.fader:hover .grip{box-shadow:0 2px 10px rgba(0,0,0,.7),0 0 18px var(--c,var(--laser))}
+.fader .ch-name{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--bone);text-align:center;text-transform:uppercase;font-weight:700;line-height:1.3;min-height:30px}
+.fader .ch-tag{font-family:var(--f-mono);font-size:8px;letter-spacing:.16em;color:var(--c,var(--laser));text-transform:uppercase;font-weight:600}
+.fader.c1{--c:var(--laser)}
+.fader.c2{--c:var(--magenta)}
+.fader.c3{--c:var(--signal)}
+.fader.c4{--c:var(--tungsten)}
+.fader.c5{--c:var(--laser)}
+.fader.c6{--c:var(--magenta)}
+.fader.c7{--c:var(--tungsten)}
+.fader.c8{--c:var(--signal)}
+
+.mixer-readout{margin-top:30px;padding:16px 18px;background:rgba(0,0,0,.4);border:1px solid rgba(0,240,255,.12);font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;color:#9CA0AE;display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.mixer-readout span b{color:var(--laser);font-weight:700;margin-left:6px}
+.mixer-readout .live{color:var(--magenta)}
+.mixer-readout .live::before{content:"●";margin-right:6px;animation:blink 1s infinite}
+
+#eq-canvas{position:absolute;left:0;right:0;bottom:0;height:60%;z-index:1;opacity:.32;pointer-events:none}
+#eq-canvas canvas{width:100%!important;height:100%!important;display:block}
+
+@media (max-width:980px){.mixer-rail{grid-template-columns:repeat(4,1fr);gap:10px}}
+@media (max-width:540px){.mixer-rail{grid-template-columns:repeat(2,1fr)}}
+
+/* ============== SETLIST ============== */
+.setlist{counter-reset:track}
+.track{display:grid;grid-template-columns:90px 1fr auto;gap:30px;padding:28px 0;border-bottom:1px solid rgba(255,255,255,.08);align-items:center;position:relative;transition:all .35s ease;cursor:none}
+.track::before{content:"";position:absolute;left:-8px;top:50%;width:0;height:1px;background:var(--laser);box-shadow:0 0 8px var(--laser);transition:width .4s ease}
+.track:hover{padding-left:18px;background:linear-gradient(90deg, rgba(0,240,255,.06), transparent 60%)}
+.track:hover::before{width:32px}
+.track-num{font-family:var(--f-stencil);font-weight:900;font-size:50px;color:var(--steel-light);letter-spacing:.02em;line-height:1;transition:color .3s ease}
+.track-num::before{counter-increment:track;content:"TRK " counter(track,decimal-leading-zero)}
+.track:hover .track-num{color:var(--laser)}
+.track-body h4{font-family:var(--f-stencil);font-weight:700;font-size:clamp(22px,2.4vw,30px);color:var(--bone);text-transform:uppercase;letter-spacing:-.01em;line-height:1.15;margin-bottom:10px}
+.track:hover .track-body h4{color:var(--laser)}
+.track-body p{font-family:var(--f-serif);font-size:15px;line-height:1.8;color:#B6B9C5;max-width:680px}
+.track-body .chips{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+.track-body .chips span{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;border:1px solid rgba(255,255,255,.12);color:#8A8E9C;background:rgba(255,255,255,.02)}
+.track-body .chips span.hot{color:var(--magenta);border-color:var(--magenta)}
+.track-body .chips span.cool{color:var(--laser);border-color:rgba(0,240,255,.5)}
+.track-body .chips span.warm{color:var(--tungsten);border-color:rgba(255,179,71,.5)}
+.track-time{font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;color:#7A7E8C;text-transform:uppercase;text-align:right;line-height:1.6}
+.track-time b{color:var(--bone);font-weight:700;display:block;margin-bottom:3px}
+.track.encore{border-top:2px solid var(--magenta);margin-top:30px;padding-top:30px}
+.track.encore .track-num{color:var(--magenta)}
+.track.encore::after{content:"ENCORE";position:absolute;top:-12px;left:0;font-family:var(--f-mono);font-size:10px;letter-spacing:.32em;color:var(--magenta);background:var(--stage);padding:2px 12px;font-weight:700}
+
+@media (max-width:780px){.track{grid-template-columns:1fr;gap:8px}.track-num{font-size:36px}.track-time{text-align:left}}
+
+/* Setlist banner */
+.setlist-banner{position:relative;height:280px;margin-bottom:60px;border:1px solid rgba(255,255,255,.06);overflow:hidden;background:#06060B}
+.setlist-banner .img{position:absolute;inset:0;background-image:url('/assets/img/guild/zhixu_li/setlist-banner.webp');background-size:cover;background-position:center;filter:saturate(1.05) brightness(.92)}
+.setlist-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, rgba(6,6,11,.85) 0%, rgba(6,6,11,.55) 35%, transparent 60%, rgba(6,6,11,.55) 100%)}
+.setlist-banner .stamp{position:absolute;top:24px;right:24px;z-index:2;font-family:var(--f-mono);font-size:10px;letter-spacing:.32em;color:var(--laser);text-transform:uppercase;border:1px solid var(--laser);padding:5px 10px;background:rgba(0,240,255,.05);font-weight:700}
+.setlist-banner .stamp .pip{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--magenta);margin-right:8px;animation:blink 1.4s infinite;box-shadow:0 0 8px var(--magenta)}
+.setlist-banner .marquee{position:absolute;left:30px;bottom:24px;z-index:2;font-family:var(--f-stencil);font-weight:900;font-size:clamp(38px,5vw,72px);letter-spacing:-.005em;color:var(--bone);text-transform:uppercase;line-height:.9;text-shadow:0 4px 22px rgba(0,0,0,.85)}
+.setlist-banner .marquee b{color:var(--magenta)}
+.setlist-banner .marquee em{font-style:normal;color:var(--laser)}
+.setlist-banner .meta-row{position:absolute;left:30px;top:24px;z-index:2;font-family:var(--f-mono);font-size:10px;letter-spacing:.28em;color:#A6A9B6;text-transform:uppercase;display:flex;gap:18px;align-items:center}
+.setlist-banner .meta-row b{color:var(--bone);font-weight:700}
+@media (max-width:780px){.setlist-banner{height:200px}}
+
+/* ============== ON STAGE NOW ============== */
+.ticker{overflow:hidden;border-top:1px solid rgba(0,240,255,.2);border-bottom:1px solid rgba(0,240,255,.2);background:rgba(0,240,255,.02);margin-bottom:50px;font-family:var(--f-mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;padding:14px 0;position:relative}
+.ticker::before,.ticker::after{content:"";position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none}
+.ticker::before{left:0;background:linear-gradient(90deg, var(--stage), transparent)}
+.ticker::after{right:0;background:linear-gradient(90deg, transparent, var(--stage))}
+.ticker-track{display:inline-flex;gap:48px;animation:scroll-x 38s linear infinite;white-space:nowrap;padding-left:20px}
+.ticker-track span{color:#A6A9B6}
+.ticker-track span b{color:var(--magenta);font-weight:700;margin-right:8px}
+.ticker-track i.fa-solid{color:var(--laser);margin-right:8px}
+@keyframes scroll-x{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.live-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.live-card{background:linear-gradient(170deg, var(--console), var(--console-2));border:1px solid rgba(255,255,255,.06);padding:28px 26px;position:relative;overflow:hidden;transition:transform .35s ease, border-color .35s ease}
+.live-card:hover{transform:translateY(-4px);border-color:var(--laser)}
+.live-card::before{content:"";position:absolute;top:0;left:0;width:60%;height:2px;background:var(--c,var(--laser));z-index:3}
+.live-card .thumb{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:.62;filter:saturate(1.08) contrast(1.06);transition:opacity .4s ease, transform .8s ease;transform:scale(1.04)}
+.live-card:hover .thumb{opacity:.85;transform:scale(1.08)}
+.live-card::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(170deg, rgba(19,20,28,.35) 0%, rgba(19,20,28,.78) 50%, rgba(19,20,28,.96) 100%);pointer-events:none}
+.live-card.l1 .thumb{background-image:url('/assets/img/guild/zhixu_li/proj-saas.webp')}
+.live-card.l2 .thumb{background-image:url('/assets/img/guild/zhixu_li/proj-bot.webp')}
+.live-card.l3 .thumb{background-image:url('/assets/img/guild/zhixu_li/proj-3d.webp')}
+.live-card > .head, .live-card > h4, .live-card > .live-card-tag, .live-card > p, .live-card > .footer, .live-card > .more{position:relative;z-index:2}
+.live-card .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.live-card .head .pill{font-family:var(--f-mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--c,var(--laser));border:1px solid var(--c,var(--laser));padding:3px 8px;font-weight:700}
+.live-card .head .pill .pip{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--c,var(--laser));margin-right:6px;animation:blink 1.4s infinite}
+.live-card .head .lvl{font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:#7A7E8C;text-transform:uppercase}
+.live-card h4{font-family:var(--f-stencil);font-weight:900;font-size:26px;color:var(--bone);text-transform:uppercase;letter-spacing:-.005em;line-height:1.15;margin-bottom:10px}
+.live-card .live-card-tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:var(--c,var(--laser));text-transform:uppercase;margin-bottom:14px}
+.live-card p{font-family:var(--f-serif);font-size:14px;line-height:1.85;color:#C4C7D2}
+.live-card p code{font-family:var(--f-mono);background:rgba(0,240,255,.08);color:var(--laser);padding:1px 6px;font-size:.92em;letter-spacing:.02em}
+.live-card .footer{margin-top:18px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.08);font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:#7A7E8C;text-transform:uppercase;display:flex;justify-content:space-between}
+.live-card .footer b{color:var(--bone);font-weight:700}
+.live-card.l1{--c:var(--magenta)}
+.live-card.l2{--c:var(--laser)}
+.live-card.l3{--c:var(--signal)}
+
+@media (max-width:980px){.live-grid{grid-template-columns:1fr}}
+
+/* ============== BACKSTAGE ============== */
+.backstage-intro{display:grid;grid-template-columns:1fr 1.2fr;gap:60px;align-items:center;margin-bottom:70px}
+.backstage-intro .quote{font-family:var(--f-serif);font-size:clamp(22px,3vw,32px);line-height:1.6;color:var(--bone);font-weight:500;letter-spacing:.005em;position:relative;padding-left:34px}
+.backstage-intro .quote::before{content:"\f10d";font-family:"Font Awesome 6 Free";font-weight:900;position:absolute;left:0;top:-6px;font-size:42px;color:var(--magenta);opacity:.5}
+.backstage-intro .quote b{color:var(--laser);font-weight:700}
+.backstage-intro .quote em{font-style:normal;color:var(--magenta);font-weight:700}
+.backstage-intro .quote-side{font-family:var(--f-mono);font-size:11px;letter-spacing:.24em;color:#7A7E8C;text-transform:uppercase;line-height:1.85}
+.backstage-intro .quote-side b{color:var(--bone);font-weight:700;display:block;font-size:14px;letter-spacing:.16em;margin-bottom:6px}
+
+.scene-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.scene{position:relative;aspect-ratio:3/4;background:linear-gradient(170deg, var(--console-2), var(--stage));border:1px solid rgba(255,255,255,.05);overflow:hidden;cursor:none;transition:all .4s ease;background-size:cover;background-position:center}
+.scene:hover{border-color:var(--c, var(--laser))}
+.scene::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 35%, transparent 0%, rgba(6,6,11,.45) 55%, rgba(6,6,11,.92) 100%);transition:opacity .4s ease}
+.scene .scene-meta{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg, transparent 0%, rgba(6,6,11,.7) 35%, rgba(6,6,11,.95) 100%);padding:60px 14px 14px;font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:#9CA0AE;text-transform:uppercase;z-index:3}
+.scene .scene-meta .num{color:var(--c, var(--laser));font-weight:700}
+.scene h5{font-family:var(--f-stencil);font-weight:900;font-size:22px;color:var(--bone);text-transform:uppercase;line-height:1;margin:5px 0 4px;letter-spacing:.005em}
+.scene p{font-family:var(--f-serif);font-size:12px;color:#8A8E9C;line-height:1.5}
+.scene.s1{--c:var(--magenta);background-image:linear-gradient(180deg, rgba(6,6,11,.25), rgba(6,6,11,.55)), url('/assets/img/guild/zhixu_li/sc-pan.webp')}
+.scene.s2{--c:var(--laser);background-image:linear-gradient(180deg, rgba(6,6,11,.25), rgba(6,6,11,.55)), url('/assets/img/guild/zhixu_li/sc-band.webp')}
+.scene.s3{--c:var(--tungsten);background-image:linear-gradient(180deg, rgba(6,6,11,.25), rgba(6,6,11,.55)), url('/assets/img/guild/zhixu_li/camp-night.webp')}
+.scene.s4{--c:var(--signal);background-image:linear-gradient(180deg, rgba(6,6,11,.25), rgba(6,6,11,.55)), url('/assets/img/guild/zhixu_li/sc-home.webp')}
+.scene.s5{--c:var(--magenta);background-image:linear-gradient(180deg, rgba(6,6,11,.25), rgba(6,6,11,.55)), url('/assets/img/guild/zhixu_li/sc-road.webp')}
+.scene.s6{--c:var(--laser);background-image:linear-gradient(180deg, rgba(6,6,11,.25), rgba(6,6,11,.55)), url('/assets/img/guild/zhixu_li/sc-cinema.webp')}
+.scene.s7{--c:var(--tungsten);background-image:linear-gradient(180deg, rgba(6,6,11,.25), rgba(6,6,11,.55)), url('/assets/img/guild/zhixu_li/sc-landscape.webp')}
+.scene.s8{--c:var(--signal);background-image:linear-gradient(180deg, rgba(6,6,11,.25), rgba(6,6,11,.55)), url('/assets/img/guild/zhixu_li/sc-gig.webp')}
+.scene.s3 .firefly{position:absolute;left:32%;bottom:32%;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle, rgba(255,179,71,.95) 0%, rgba(255,140,40,.55) 35%, transparent 70%);filter:blur(2px);transform-origin:center bottom;animation:flicker 1.4s ease-in-out infinite alternate;mix-blend-mode:screen;pointer-events:none;z-index:2}
+.scene.s3 .firefly::before{content:"";position:absolute;inset:-12px;background:radial-gradient(circle, rgba(255,179,71,.45) 0%, transparent 65%);border-radius:50%;filter:blur(4px)}
+@keyframes flicker{
+  0%{transform:scale(.92) translateY(0);opacity:.85}
+  20%{transform:scale(1.08) translateY(-2px);opacity:1}
+  40%{transform:scale(.96) translateY(1px);opacity:.7}
+  60%{transform:scale(1.12) translateY(-1px);opacity:.95}
+  80%{transform:scale(.98) translateY(0);opacity:.8}
+  100%{transform:scale(1.04) translateY(-2px);opacity:1}
+}
+
+@media (max-width:980px){.backstage-intro{grid-template-columns:1fr}.scene-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ============== TECH RIDER ============== */
+.rider{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:20px}
+.rider-card{background:linear-gradient(180deg, var(--console), var(--console-2));border:1px solid rgba(255,255,255,.06);padding:28px 26px;position:relative;overflow:hidden}
+.rider-card::before{content:attr(data-num);position:absolute;top:14px;right:18px;font-family:var(--f-stencil);font-weight:900;font-size:48px;color:var(--steel-light);opacity:.35;letter-spacing:.04em}
+.rider-card .lab{font-family:var(--f-mono);font-size:10px;letter-spacing:.26em;color:var(--c, var(--laser));text-transform:uppercase;margin-bottom:14px;font-weight:700}
+.rider-card h4{font-family:var(--f-stencil);font-weight:900;font-size:30px;color:var(--bone);text-transform:uppercase;line-height:1;margin-bottom:18px;letter-spacing:-.005em}
+.rider-card ul{list-style:none}
+.rider-card li{font-family:var(--f-mono);font-size:13px;color:#C0C3CD;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;letter-spacing:.04em}
+.rider-card li:last-child{border:0}
+.rider-card li i{color:var(--c,var(--laser));font-size:11px}
+.rider-card li b{font-weight:500;color:#E8E6DA;font-family:var(--f-mono)}
+.rider-card.r1{--c:var(--laser)}
+.rider-card.r2{--c:var(--magenta)}
+.rider-card.r3{--c:var(--signal)}
+.rider-card.r4{--c:var(--tungsten)}
+.rider-card.r5{--c:var(--laser)}
+.rider-card.r6{--c:var(--magenta)}
+
+@media (max-width:980px){.rider{grid-template-columns:1fr}}
+
+/* ============== ENCORE ============== */
+.encore{padding:130px 8vw 110px;text-align:center;position:relative;z-index:5}
+.encore .pre{font-family:var(--f-mono);font-size:12px;letter-spacing:.36em;color:var(--magenta);text-transform:uppercase;margin-bottom:16px}
+.encore h3{font-family:var(--f-stencil);font-weight:900;font-size:clamp(60px,10vw,160px);color:var(--bone);text-transform:uppercase;line-height:.86;letter-spacing:-.02em;margin-bottom:24px}
+.encore h3 b{background:linear-gradient(120deg, var(--laser), var(--magenta));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.encore p{font-family:var(--f-serif);font-size:18px;line-height:1.85;color:#C4C7D2;max-width:640px;margin:0 auto 44px}
+.encore p b{color:var(--laser);font-weight:700}
+.encore p em{font-style:normal;color:var(--magenta);font-weight:700}
+
+.contact-row{display:flex;justify-content:center;flex-wrap:wrap;gap:14px}
+.contact-row a{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border:1px solid rgba(255,255,255,.18);font-family:var(--f-mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--bone);background:var(--console);transition:all .3s ease}
+.contact-row a i{color:var(--c,var(--laser));font-size:14px}
+.contact-row a:hover{border-color:var(--c,var(--laser));background:rgba(0,240,255,.06);box-shadow:0 0 22px rgba(0,240,255,.18);transform:translateY(-3px)}
+.contact-row a.ig{--c:var(--magenta)}
+.contact-row a.gh{--c:var(--bone)}
+.contact-row a.tr{--c:var(--laser)}
+.contact-row a.cmp{--c:var(--tungsten)}
+
+footer{padding:36px 8vw;border-top:1px solid rgba(255,255,255,.06);text-align:center;font-family:var(--f-mono);font-size:11px;letter-spacing:.22em;color:#6A6E7C;text-transform:uppercase;background:var(--stage-2);position:relative;z-index:5}
+footer b{color:var(--magenta);font-weight:700}
+
+.reveal{opacity:0;transform:translateY(30px)}
+.scope-pop{position:fixed;left:0;right:0;bottom:0;z-index:6;height:32px;background:var(--stage);border-top:1px solid rgba(255,255,255,.05);font-family:var(--f-mono);font-size:10px;letter-spacing:.24em;color:var(--laser);display:flex;align-items:center;justify-content:space-between;padding:0 22px;text-transform:uppercase;pointer-events:none}
+.scope-pop b{color:var(--magenta);font-weight:700}
+.scope-pop .left,.scope-pop .right{display:flex;gap:18px;align-items:center}
+.scope-pop .pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--signal);animation:blink 1s infinite;box-shadow:0 0 8px var(--signal)}
+@media (max-width:780px){.scope-pop{font-size:8px;letter-spacing:.16em;padding:0 12px}.scope-pop .right .ts{display:none}}
+</style>
+</head>
+<body>
+
+<div class="cursor-vf" id="cur">
+  <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+</div>
+
+<!-- claudeBot chat simulator -->
+<aside class="bot-chat" id="botChat">
+  <div class="bot-chat-head">
+    <span class="avatar">cB</span>
+    <span><b>claudeBot</b> · openSource demo</span>
+    <button class="close" id="botClose" aria-label="close">×</button>
+  </div>
+  <div class="bot-chat-body" id="botBody"></div>
+  <div class="bot-chat-foot">
+    <span class="pr">/</span>
+    <input id="botInput" placeholder="試試 /help · /deploy · /translate · /hire" autocomplete="off">
+    <button class="send" id="botSend">SEND</button>
+  </div>
+</aside>
+
+<div class="crowd-bg" id="crowdBg"></div>
+<div class="crowd-fade"></div>
+<div class="foh-spot" id="fohSpot"></div>
+<div id="stage-three"></div>
+<div id="stackTokens"><canvas></canvas></div>
+<div class="vignette"></div>
+<div class="scanline"></div>
+<div class="grain"></div>
+<div class="pan-blur" id="panBlur"></div>
+<div id="panTrail"><canvas></canvas></div>
+
+<!-- Stage/hue backdrop-filter overlay (below cursor, above content) -->
+<div id="fxFilter"></div>
+
+<!-- Fader effect overlays -->
+<div class="fx-prod" id="fxProd"><span><b>PROD</b> · DEPLOY LIVE · v0.6.4</span><span>BUILD #4821 · OK</span></div>
+<div class="fx-api" id="fxApi"><b>200 OK</b> · <span class="ok">142ms</span> · /api/agent.invoke</div>
+<div class="fx-think" id="fxThink" style="left:50%;top:55%">agent thinking</div>
+<div class="fx-mis" id="fxMis"></div>
+<div class="fx-saas" id="fxSaas">FREE</div>
+<div class="fx-camp" id="fxCamp"></div>
+
+<div class="visitor-stamp" id="visitorStamp"></div>
+
+<aside class="gitlog" id="gitLog">
+  <div class="gh" id="gitLogHead"><i class="fa-brands fa-git-alt"></i><span>git log --oneline · live</span><span class="pip"></span></div>
+  <div class="gb" id="gitLogBody"></div>
+</aside>
+
+<nav class="console-bar">
+  <a href="/guild/"><i class="fa-solid fa-arrow-left"></i> Archive</a>
+  <div class="right">
+    <span class="now-pill" id="nowPill"><span class="pip"></span><span id="nowText">CONNECTING…</span></span>
+    <span class="ts">FOH · CH 154 / 591</span>
+    <span><i class="fa-solid fa-wave-square" style="color:var(--laser);margin-right:6px"></i>96kHz / 24-bit</span>
+  </div>
+</nav>
+
+<section class="term-prehero">
+  <div class="term-window" id="termWin">
+    <div class="term-head">
+      <span class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></span>
+      <span class="path">louis@<b>dudu-digital</b>:~ — zsh</span>
+      <span class="right" id="termClock">00:00:00</span>
+    </div>
+    <div class="term-body" id="termBody"></div>
+  </div>
+</section>
+
+<section class="hero">
+  <div>
+    <div class="hero-pre">
+      <span class="dot"></span>
+      <span>FOH · DUDU DIGITAL · 嘟嘟數位科技</span>
+      <span style="color:var(--steel-light)">/ EST. 2018</span>
+    </div>
+
+    <h1>
+      <span class="stack">LIVE</span>
+      <span class="stack">FROM</span>
+      <span class="stack">FOH.</span>
+    </h1>
+
+    <h2>我是 <b>力智栩 Louis</b>。<em>嘟嘟數位科技</em> 創辦人 · 在軟體業混了七年的全端老兵。</h2>
+
+    <div class="hero-sub">
+      <i class="fa-solid fa-headphones"></i> 半夜寫 code、白天接案、週末看團、永遠在追焦快門裡。<br>
+      <i class="fa-solid fa-satellite-dish"></i> DevOps · MIS · 前後端 · APP · AI Agent — 技能樹亂七八招的那種。<br>
+      <i class="fa-solid fa-house-chimney"></i> 後勤有美麗的老婆和天使女兒；前線目前在打 AI 專案管理 SaaS。
+    </div>
+
+    <div class="hero-status">
+      <div class="stat-cell s1"><div class="lab">YEARS IN STACK</div><div class="val">07</div></div>
+      <div class="stat-cell s2"><div class="lab">TOEIC SCORE</div><div class="val">150</div></div>
+      <div class="stat-cell s3"><div class="lab">SIGNAL</div><div class="val">ON</div></div>
+      <div class="stat-cell s4"><div class="lab">PERSONA</div><div class="val">I→E</div></div>
+    </div>
+  </div>
+
+  <div class="hero-card">
+    <div class="photo"></div>
+    <span class="frame-corner tl"></span>
+    <span class="frame-corner tr magenta"></span>
+    <span class="frame-corner bl magenta"></span>
+    <span class="frame-corner br"></span>
+    <div class="badge"><span class="pip"></span> ON AIR</div>
+    <div class="ch">CH·154</div>
+    <div class="scope-label">Live Scope · zhixu_li</div>
+    <div class="scope-mini"><canvas id="miniscope"></canvas></div>
+    <div class="meta">
+      <div class="row"><span>Operator</span><b>力智栩 / Louis</b></div>
+      <div class="row"><span>Role</span><b>Founder / Full-Stack</b></div>
+      <div class="row"><span>Stage</span><b>Taiwan · Indie SaaS</b></div>
+      <div class="row"><span>Repo</span><b>github.com/zhixuli0406</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="led-bridge" data-bridge="01"><span class="lab">SOUNDCHECK · <b>HOUSE LIGHTS DOWN</b></span><span class="led"></span></div>
+
+<section class="section" id="soundcheck">
+  <div class="section-header">
+    <h3>SOUND<b>CHECK</b>.</h3>
+    <div class="ix"><span class="num">/01</span>WHO IS THIS GUY?</div>
+  </div>
+
+  <div class="soundcheck">
+    <div class="soundcheck-text reveal">
+      <p>我大學在熱音社混的時候，順便迷上了<b>樂團攝影</b>跟追焦——一直到現在 IG 上還掛著「追焦進化史」的精選。後來繞了一圈，把那種<em>盯著舞台、把每一格畫面都調到準</em>的眼睛，搬到了螢幕前。</p>
+      <p>本科出身，畢業後一頭鑽進軟體業，一晃眼就七年了。<b>DevOps、MIS、前後端、APP</b>——技能樹被我亂七八招地點了一圈，後來索性自己出來開公司。</p>
+      <p>白天我是嘟嘟數位科技的創辦人 Louis，做客戶想要的東西；半夜睡不著就在搓<em>遊戲化視覺 agent 管理器</em>，順手丟到 GitHub 開放發 PR。最近在練的副本是 <b>AI 專案管理 SaaS</b>，副副本是「學會經營社群」——一個逼自己變 E 人的標準 I 人。</p>
+      <p>英文超爛——多益 150，研究 AGI 論文都是叫 AI 看完整理給我。但我把這個梗寫進自介裡，因為我相信<em>誠實 ship 比優雅死掉重要</em>。</p>
+      <div class="sig"><span>SIGNED — <b>Louis @ FOH</b></span><span>01/22/26</span></div>
+    </div>
+
+    <div class="persona-card reveal">
+      <div class="label"><i class="fa-solid fa-sliders" style="margin-right:6px"></i> SIGNAL CHAIN · v7.0</div>
+      <div class="persona-row"><span class="k">DevOps</span><div class="meter"><span data-w="92"></span></div><span class="v">92</span></div>
+      <div class="persona-row"><span class="k">Backend</span><div class="meter"><span data-w="88"></span></div><span class="v">88</span></div>
+      <div class="persona-row"><span class="k">Frontend</span><div class="meter"><span data-w="84"></span></div><span class="v">84</span></div>
+      <div class="persona-row"><span class="k">Mobile / APP</span><div class="meter"><span data-w="76"></span></div><span class="v">76</span></div>
+      <div class="persona-row"><span class="k">AI Agent</span><div class="meter"><span data-w="86"></span></div><span class="v">86</span></div>
+      <div class="persona-row"><span class="k">MIS / Infra</span><div class="meter"><span data-w="82"></span></div><span class="v">82</span></div>
+      <div class="persona-row"><span class="k">SaaS Build</span><div class="meter"><span data-w="80"></span></div><span class="v">80</span></div>
+      <div class="persona-row warn"><span class="k">English</span><div class="meter"><span data-w="15"></span></div><span class="v">15</span></div>
+      <div class="persona-row"><span class="k">Self-Pitch</span><div class="meter"><span data-w="42"></span></div><span class="v">42</span></div>
+      <div class="persona-row"><span class="k">Camp Coding</span><div class="meter"><span data-w="100"></span></div><span class="v">∞</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="led-bridge" data-bridge="02"><span class="lab">SHOWTIME · <b>FADERS UP</b></span><span class="led"></span></div>
+
+<section class="section" id="channels">
+  <div class="section-header">
+    <h3>CHAN<b>NELS</b>.</h3>
+    <div class="ix"><span class="num">/02</span>EIGHT FADERS, ONE OPERATOR</div>
+  </div>
+
+  <p class="section-lead reveal">這是我七年來慢慢推上去的八支推桿——每一支都是真的有把產品送上線的軌道，不是 LinkedIn 上湊的形容詞。<b>用滑鼠把推桿往上拖</b>，每一軌都會讓整個頁面跑出對應的效果；下面那排 <i>LIGHTING DESK</i> 按鈕可以切舞台燈光。這就是我的 FOH 控台，你來當操作員。</p>
+
+  <div class="mixer reveal">
+    <div id="eq-canvas"></div>
+    <div class="drag-hint"><i class="fa-solid fa-up-down"></i> 抓住把手上下拖 — 每軌觸發不同效果</div>
+    <div class="mixer-rail">
+      <div class="fader c1"><span class="ch-num">CH 01</span><span class="knob"></span><span class="led"></span><div class="track"><span class="grip" style="bottom:78%"></span></div><span class="ch-tag">+9dB</span><span class="ch-name">DevOps<br>CI/CD</span></div>
+      <div class="fader c2"><span class="ch-num">CH 02</span><span class="knob"></span><span class="led"></span><div class="track"><span class="grip" style="bottom:68%"></span></div><span class="ch-tag">+6dB</span><span class="ch-name">Backend<br>API</span></div>
+      <div class="fader c3"><span class="ch-num">CH 03</span><span class="knob"></span><span class="led"></span><div class="track"><span class="grip" style="bottom:62%"></span></div><span class="ch-tag">+4dB</span><span class="ch-name">Frontend<br>Web</span></div>
+      <div class="fader c4"><span class="ch-num">CH 04</span><span class="knob"></span><span class="led"></span><div class="track"><span class="grip" style="bottom:50%"></span></div><span class="ch-tag">+0dB</span><span class="ch-name">APP<br>Cross</span></div>
+      <div class="fader c5"><span class="ch-num">CH 05</span><span class="knob"></span><span class="led"></span><div class="track"><span class="grip" style="bottom:74%"></span></div><span class="ch-tag">+8dB</span><span class="ch-name">AI Agent<br>System</span></div>
+      <div class="fader c6"><span class="ch-num">CH 06</span><span class="knob"></span><span class="led"></span><div class="track"><span class="grip" style="bottom:58%"></span></div><span class="ch-tag">+3dB</span><span class="ch-name">MIS<br>Infra</span></div>
+      <div class="fader c7"><span class="ch-num">CH 07</span><span class="knob"></span><span class="led"></span><div class="track"><span class="grip" style="bottom:55%"></span></div><span class="ch-tag">+2dB</span><span class="ch-name">SaaS<br>Build</span></div>
+      <div class="fader c8"><span class="ch-num">CH 08</span><span class="knob"></span><span class="led"></span><div class="track"><span class="grip" style="bottom:90%"></span></div><span class="ch-tag">+12dB</span><span class="ch-name">Camp<br>Coding</span></div>
+    </div>
+    <div class="mixer-readout">
+      <span>MASTER OUT<b>+5dB</b></span>
+      <span>SAMPLE RATE<b>96kHz</b></span>
+      <span>BUS<b>STEREO</b></span>
+      <span class="live">SIGNAL — STAGE READY</span>
+    </div>
+    <div class="light-desk">
+      <span class="ld-label"><i class="fa-solid fa-lightbulb"></i> LIGHTING DESK</span>
+      <div class="ld-btns">
+        <button class="ld-cue active" data-cue="cue-house" type="button">HOUSE</button>
+        <button class="ld-cue" data-cue="cue-spotlight" type="button">SPOTLIGHT</button>
+        <button class="ld-cue" data-cue="cue-warm" type="button">TUNGSTEN</button>
+        <button class="ld-cue" data-cue="cue-laser" type="button">LASER</button>
+        <button class="ld-cue" data-cue="cue-blackout" type="button">BLACKOUT</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="led-bridge" data-bridge="03"><span class="lab">SET · <b>QUEUE TRACK ONE</b></span><span class="led"></span></div>
+
+<section class="section" id="setlist">
+  <div class="section-header">
+    <h3>SET<b>LIST</b>.</h3>
+    <div class="ix"><span class="num">/03</span>WHAT I CAN BUILD FOR YOU</div>
+  </div>
+
+  <p class="section-lead reveal">把它想成一場演唱會的曲目單——你掏錢買票，我負責把每一首準時送上舞台。下面的每一條都是<b>真的接過案子</b>、有 deliverable、有上線過的東西，不是想像出來的服務清單。</p>
+
+  <div class="setlist-banner reveal">
+    <div class="img"></div>
+    <div class="meta-row"><span><b>STAGE LEFT</b></span><span>SHOW · 2026 RUN</span><span>SETLIST RUNNER · LOUIS</span></div>
+    <div class="stamp"><span class="pip"></span>TONIGHT</div>
+    <div class="marquee">SIX TRACKS.<br>ONE <b>OPERATOR</b>.<br>EVERY <em>SHIP</em> ON CUE.</div>
+  </div>
+
+  <div class="setlist">
+    <div class="track reveal" data-faders="6,2,3">
+      <div class="track-num"></div>
+      <div class="track-body">
+        <h4>客製化 SaaS / MVP — 從 0 到 1，含上線</h4>
+        <p>給創業者、新事業部、想驗證點子的團隊。我會跟你坐下來把痛點拆乾淨、畫出最小可上線的範圍，然後把 Docker / DB / 前後端整套架出來，再 push 上 Vercel 或自架機房。一條龍，不丟給你一份「等你內部接手」的半成品。</p>
+        <div class="chips"><span class="cool">React / Astro</span><span class="cool">Node / NestJS</span><span class="hot">Postgres</span><span class="warm">Docker</span><span>Vercel / GCP</span></div>
+      </div>
+      <div class="track-time"><b>4–12 wks</b>產品 MVP 完整時程</div>
+    </div>
+
+    <div class="track reveal" data-faders="4">
+      <div class="track-num"></div>
+      <div class="track-body">
+        <h4>AI Agent 系統設計 — 不只是包 OpenAI API</h4>
+        <p>我自己開源過 <code>claude-code-3D-agent-UI</code> 和 <code>claudeBot / CursorBot</code>——用 Telegram / Discord 遠端遙控你的 AI 程式設計師。會做 agent loop、子代理拆分、技能擴充、記憶系統。最近在啃 Friston 自由能、CoALA 認知記憶這類論文，把它寫進 SaaS 的進化機制裡。</p>
+        <div class="chips"><span class="hot">Multi-Agent</span><span class="hot">Sub-Agents</span><span class="cool">Memory System</span><span class="cool">Skill Lifecycle</span><span class="warm">TextGrad</span></div>
+      </div>
+      <div class="track-time"><b>2–8 wks</b>單模組 / 完整系統</div>
+    </div>
+
+    <div class="track reveal" data-faders="0,5">
+      <div class="track-num"></div>
+      <div class="track-body">
+        <h4>DevOps 自動化 — 一鍵部署不是口號</h4>
+        <p>七年混軟體業，最深的功夫其實在這裡。CI/CD pipeline、Docker compose、k8s 入門配置、log 監控、自動備份、灰度發布。沒有人想半夜被 PagerDuty 叫醒——我幫你把那些半夜會炸的東西，先在白天搞定。</p>
+        <div class="chips"><span class="cool">GitHub Actions</span><span class="cool">Docker</span><span class="hot">k8s</span><span>Nginx / Caddy</span><span class="warm">Prometheus / Grafana</span></div>
+      </div>
+      <div class="track-time"><b>1–4 wks</b>基礎到進階配置</div>
+    </div>
+
+    <div class="track reveal" data-faders="5">
+      <div class="track-num"></div>
+      <div class="track-body">
+        <h4>MIS / 公司內部系統建置</h4>
+        <p>新創早期最常缺的：員工管理、權限分組、報表、簽核流程、ERP 整合的小工具。我做過完整 MIS 環境——從帳號 SSO 到設備清單，從入職流程到離職資料封存。讓你的人資和會計不用再用 Excel 接龍。</p>
+        <div class="chips"><span>SSO / OIDC</span><span class="cool">Internal Tools</span><span class="cool">Approval Flow</span><span class="warm">Audit Log</span></div>
+      </div>
+      <div class="track-time"><b>2–6 wks</b>視規模而定</div>
+    </div>
+
+    <div class="track reveal" data-faders="3">
+      <div class="track-num"></div>
+      <div class="track-body">
+        <h4>跨平台 APP 開發</h4>
+        <p>一份 codebase 出 iOS / Android / Web，含後端 API、推播、應用內購、第三方登入。從你給我的 Figma 到 App Store / Google Play 上架完成。家裡有個女兒，所以我特別懂「介面要直覺到三歲都會用」這件事。</p>
+        <div class="chips"><span class="cool">React Native</span><span class="cool">Flutter</span><span class="hot">Push Notif.</span><span>IAP</span><span class="warm">App Store Ops</span></div>
+      </div>
+      <div class="track-time"><b>6–16 wks</b>含上架</div>
+    </div>
+
+    <div class="track encore reveal" data-faders="0,1,2,3,4,5,6">
+      <div class="track-num"></div>
+      <div class="track-body">
+        <h4>七年踩坑經驗諮詢 — 你的私人 FOH</h4>
+        <p>有時候你不需要工程師，你只需要一個能聽你講三十分鐘、然後告訴你「這個架構會在三個月後撞牆」的人。我把這些年踩過的雷、繞過的彎、燒過的錢，整理成可以丟給創辦人和小團隊的一場「technical sound check」。線上、單次、誠實到底。</p>
+        <div class="chips"><span class="hot">Architecture Review</span><span class="hot">Tech Strategy</span><span class="warm">Founder Coaching</span></div>
+      </div>
+      <div class="track-time"><b>60–90 min</b>單次諮詢</div>
+    </div>
+  </div>
+</section>
+
+<div class="led-bridge" data-bridge="04"><span class="lab">ON AIR · <b>LIVE FROM THE BOOTH</b></span><span class="led"></span></div>
+
+<section class="section" id="onstage">
+  <div class="section-header">
+    <h3>ON STAGE <b>NOW</b>.</h3>
+    <div class="ix"><span class="num">/04</span>WHAT I'M BUILDING THIS WEEK</div>
+  </div>
+
+  <div class="ticker reveal">
+    <div class="ticker-track">
+      <span><b>NOW PLAYING</b><i class="fa-solid fa-rocket"></i> AI Project Management SaaS — 內測階段</span>
+      <span><b>OPEN SOURCE</b><i class="fa-brands fa-github"></i> claudeBot · CursorBot — Telegram / Discord remote IDE</span>
+      <span><b>RESEARCH</b><i class="fa-solid fa-brain"></i> AGI · Friston 自由能 · CoALA 認知記憶</span>
+      <span><b>SIDE</b><i class="fa-solid fa-cubes"></i> claude-code-3D-agent-UI — 遊戲化視覺 agent 管理器</span>
+      <span><b>LEARNING</b><i class="fa-solid fa-podcast"></i> 經營社群（I 人逼自己變 E 人中）</span>
+      <span><b>NOW PLAYING</b><i class="fa-solid fa-rocket"></i> AI Project Management SaaS — 內測階段</span>
+      <span><b>OPEN SOURCE</b><i class="fa-brands fa-github"></i> claudeBot · CursorBot — Telegram / Discord remote IDE</span>
+      <span><b>RESEARCH</b><i class="fa-solid fa-brain"></i> AGI · Friston 自由能 · CoALA 認知記憶</span>
+      <span><b>SIDE</b><i class="fa-solid fa-cubes"></i> claude-code-3D-agent-UI — 遊戲化視覺 agent 管理器</span>
+      <span><b>LEARNING</b><i class="fa-solid fa-podcast"></i> 經營社群（I 人逼自己變 E 人中）</span>
+    </div>
+  </div>
+
+  <div class="live-grid">
+    <div class="live-card l1 reveal">
+      <div class="thumb"></div>
+      <span class="openhint"><i class="fa-solid fa-plus"></i> EXPAND</span>
+      <div class="head"><span class="pill"><span class="pip"></span>BUILDING</span><span class="lvl">PROD · v0.6</span></div>
+      <h4>AI Project Management SaaS</h4>
+      <div class="live-card-tag">主舞台 · 嘟嘟數位科技</div>
+      <p>把<code>專案管理</code>裡每天會耗掉你兩三個小時的雜事——進度追蹤、風險預警、會議紀要、子任務派發——丟給一隊有記憶、有自我進化機制的 AI agent 處理。Generator → Verifier → Updater 三層審查，失敗回傳具體修改建議而不是分數。</p>
+      <div class="footer"><span>STAGE</span><b>INTERNAL · CLOSED BETA</b></div>
+      <div class="more">
+        <div class="row"><span>STACK</span><b>NestJS · Postgres · Redis · Claude</b></div>
+        <div class="row"><span>AGENTS</span><b>Generator / Verifier / Updater</b></div>
+        <div class="row"><span>DRIVER</span><b>Friston 自由能 + CoALA 認知記憶</b></div>
+        <div class="row"><span>USERS</span><b>嘟嘟內部 + 3 家種子客戶</b></div>
+        <div class="row"><span>OPENING</span><b>2026 Q3 公開 beta</b></div>
+      </div>
+    </div>
+
+    <div class="live-card l2 reveal">
+      <div class="thumb"></div>
+      <span class="openhint"><i class="fa-solid fa-plus"></i> EXPAND</span>
+      <div class="head"><span class="pill"><span class="pip"></span>OPEN SOURCE</span><span class="lvl">REPO · ACTIVE</span></div>
+      <h4>claudeBot / CursorBot</h4>
+      <div class="live-card-tag">github.com/zhixuli0406</div>
+      <p>用 Telegram、Discord、WhatsApp、Slack、MS Teams 遠端遙控 Cursor AI 幫你寫程式。<code>語音輸入</code>、<code>圖片辨識</code>、<code>即時通知</code>、子代理拆任務、記憶系統、技能擴充。Docker 一鍵部署，五分鐘上手。歡迎 PR。</p>
+      <div class="footer"><span>LICENSE</span><b>OPEN · PR FRIENDLY</b></div>
+      <div class="more">
+        <div class="row"><span>PLATFORMS</span><b>TG · Discord · WhatsApp · Slack · Teams</b></div>
+        <div class="row"><span>DEPLOY</span><b>docker compose up · 5 min</b></div>
+        <div class="row"><span>SKILLS</span><b>翻譯 · 計算 · 網頁爬蟲（可擴充）</b></div>
+        <div class="row"><span>BORN</span><b>2026-01-27 半夜睡不著</b></div>
+        <div class="row"><span>USE CASE</span><b>通勤路上指揮 IDE 寫 code</b></div>
+        <button class="bot-launch" id="botLaunch" type="button"><i class="fa-solid fa-terminal"></i> 直接試玩 claudeBot · 打指令給它</button>
+      </div>
+    </div>
+
+    <div class="live-card l3 reveal">
+      <div class="thumb"></div>
+      <span class="openhint"><i class="fa-solid fa-plus"></i> EXPAND</span>
+      <div class="head"><span class="pill"><span class="pip"></span>EXPERIMENT</span><span class="lvl">3D · WEBGL</span></div>
+      <h4>claude-code-3D-agent-UI</h4>
+      <div class="live-card-tag">半夜睡不著的副產品</div>
+      <p>把 Claude Code 的多 agent 編排做成<code>3D 視覺化遊戲介面</code>——一邊玩遊戲一邊寫程式的概念。三軸操作、agent 即時狀態節點圖、技能蒸餾進 SOUL.md 的進化展示。喝勝。</p>
+      <div class="footer"><span>STATUS</span><b>WIP · PR WELCOME</b></div>
+      <div class="more">
+        <div class="row"><span>RENDER</span><b>Three.js · WebGL2</b></div>
+        <div class="row"><span>NODES</span><b>每個 agent 一個多面體 + LED</b></div>
+        <div class="row"><span>SKILL</span><b>蒸餾後寫進 SOUL.md</b></div>
+        <div class="row"><span>BORN</span><b>2026-02-10 半夜睡不著</b></div>
+        <div class="row"><span>VIBE</span><b>玩遊戲寫程式 · 喝勝</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="led-bridge" data-bridge="05"><span class="lab">SET BREAK · <b>PASS BACKSTAGE</b></span><span class="led"></span></div>
+
+<section class="section" id="backstage">
+  <div class="section-header">
+    <h3>BACK<b>STAGE</b>.</h3>
+    <div class="ix"><span class="num">/05</span>OFF THE CONSOLE</div>
+  </div>
+
+  <div class="backstage-intro reveal">
+    <div class="quote">下了控台，<em>我也是個會被一張追焦照騙到失眠的 I 人</em>。樂團、攝影、車、家——這些東西比 deploy log 還能讓我活著。</div>
+    <div class="quote-side">
+      <b>BACKSTAGE PASS / 06</b>
+      鏡頭 · 舞台 · 公路 · 帳棚<br>
+      影像 · 旋律 · 引擎 · 家<br>
+      —— 控台之外的 Louis
+    </div>
+  </div>
+
+  <div class="scene-grid">
+    <a class="scene s1 reveal"><span class="exif-chip"><b>1/30s</b><br>f/2.8 · ISO 800<br>50mm · PAN</span><div class="scene-meta"><span class="num">SC.01</span><h5>追焦進化史</h5><p>從手忙腳亂到 1/30 鎖死、車流變絲</p></div></a>
+    <a class="scene s2 reveal"><span class="exif-chip"><b>1/200s</b><br>f/1.8 · ISO 3200<br>35mm · LIVE</span><div class="scene-meta"><span class="num">SC.02</span><h5>樂團攝影</h5><p>大學熱音社那段火苗，到現在還沒熄</p></div></a>
+    <a class="scene s3 reveal"><span class="firefly"></span><span class="exif-chip"><b>15s</b><br>f/4 · ISO 1600<br>24mm · NIGHT</span><div class="scene-meta"><span class="num">SC.03</span><h5>露營 = 換個地方寫 code</h5><p>帳棚拉開、營火升起、IDE 一樣亮著</p></div></a>
+    <a class="scene s4 reveal"><span class="exif-chip"><b>1/125s</b><br>f/2.0 · ISO 400<br>50mm · WARM</span><div class="scene-meta"><span class="num">SC.04</span><h5>美麗老婆 + 天使女兒</h5><p>後勤永遠在線，是唯一不會 panic 的服務</p></div></a>
+    <a class="scene s5 reveal"><span class="exif-chip"><b>1/8s</b><br>f/8 · ISO 200<br>24mm · ROAD</span><div class="scene-meta"><span class="num">SC.05</span><h5>車車與公路</h5><p>移動就是換 server room 的儀式感</p></div></a>
+    <a class="scene s6 reveal"><span class="exif-chip"><b>1/60s</b><br>f/1.4 · ISO 6400<br>35mm · DIM</span><div class="scene-meta"><span class="num">SC.06</span><h5>無雷影評系列</h5><p>我寫評我擔保——不爆雷、只爆心得</p></div></a>
+    <a class="scene s7 reveal"><span class="exif-chip"><b>1/500s</b><br>f/5.6 · ISO 100<br>70mm · DAWN</span><div class="scene-meta"><span class="num">SC.07</span><h5>風景美如畫</h5><p>抬頭看天的次數，跟 commit 一樣多</p></div></a>
+    <a class="scene s8 reveal"><span class="exif-chip"><b>1/100s</b><br>f/2.8 · ISO 6400<br>85mm · FOH</span><div class="scene-meta"><span class="num">SC.08</span><h5>看團人生</h5><p>站在 PA 旁邊聽出 EQ 沒拉好的那種人</p></div></a>
+  </div>
+</section>
+
+<div class="led-bridge" data-bridge="06"><span class="lab">RIDER · <b>WHAT I BRING ON STAGE</b></span><span class="led"></span></div>
+
+<section class="section" id="rider">
+  <div class="section-header">
+    <h3>TECH <b>RIDER</b>.</h3>
+    <div class="ix"><span class="num">/06</span>STACK SHEET · 2026</div>
+  </div>
+
+  <p class="section-lead reveal">這是我隨身帶上場的工具箱。所有列在這上面的東西，<i>我都實際送上線過、撐過 production 過</i>——不是 awesome-list 抄來的。</p>
+
+  <div class="rider">
+    <div class="rider-card r1 reveal" data-num="01">
+      <div class="lab">FRONTEND · UI / UX</div>
+      <h4>FRONT<br>END</h4>
+      <ul>
+        <li><b>React / Next.js</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Astro</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Vue / Nuxt</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>TailwindCSS</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>GSAP / Three.js</b><i class="fa-solid fa-circle-check"></i></li>
+      </ul>
+    </div>
+    <div class="rider-card r2 reveal" data-num="02">
+      <div class="lab">BACKEND · API</div>
+      <h4>BACK<br>END</h4>
+      <ul>
+        <li><b>Node.js / NestJS</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Express / Fastify</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Python / FastAPI</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>PostgreSQL / Redis</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>WebSocket / gRPC</b><i class="fa-solid fa-circle-check"></i></li>
+      </ul>
+    </div>
+    <div class="rider-card r3 reveal" data-num="03">
+      <div class="lab">DEVOPS · INFRA</div>
+      <h4>DEV<br>OPS</h4>
+      <ul>
+        <li><b>Docker / Compose</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Kubernetes</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>GitHub Actions</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Nginx / Caddy</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Prometheus / Grafana</b><i class="fa-solid fa-circle-check"></i></li>
+      </ul>
+    </div>
+    <div class="rider-card r4 reveal" data-num="04">
+      <div class="lab">MOBILE · APP</div>
+      <h4>MOB<br>ILE</h4>
+      <ul>
+        <li><b>React Native</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Flutter</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>iOS / Android Native</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>App Store / Play 上架</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Push / IAP</b><i class="fa-solid fa-circle-check"></i></li>
+      </ul>
+    </div>
+    <div class="rider-card r5 reveal" data-num="05">
+      <div class="lab">AI · AGENTS</div>
+      <h4>A.I.<br>OPS</h4>
+      <ul>
+        <li><b>Claude / OpenAI / Gemini</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Multi-Agent Loop</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>Memory / Skill Distill</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>RAG / Vector DB</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>MCP / Tool Use</b><i class="fa-solid fa-circle-check"></i></li>
+      </ul>
+    </div>
+    <div class="rider-card r6 reveal" data-num="06">
+      <div class="lab">MIS · OPS</div>
+      <h4>M.I.<br>S.</h4>
+      <ul>
+        <li><b>SSO / OIDC / SAML</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>內部工具 / Admin</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>簽核流程 / 報表</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>稽核日誌</b><i class="fa-solid fa-circle-check"></i></li>
+        <li><b>備份 / 還原</b><i class="fa-solid fa-circle-check"></i></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="led-bridge" data-bridge="07"><span class="lab">ENCORE · <b>HOUSE LIGHTS UP</b></span><span class="led"></span></div>
+
+<section class="encore" id="encore">
+  <div class="pre">/// ENCORE · CONTACT THE FOH</div>
+  <h3 class="reveal">SAY <b>HELLO</b>.</h3>
+  <p class="reveal">如果你正在想<b>「要不要找個工程師把這件事做掉」</b>——歡迎丟訊息給我。我不會用花俏術語包裝、不會推不需要的服務、不會在報價之後人間蒸發。<em>誠實 ship 比優雅死掉重要</em>，這是我這七年最重要的一課。</p>
+  <div class="contact-row reveal">
+    <a class="tr" href="https://www.threads.com/@zhixu_li" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i> Threads · @zhixu_li</a>
+    <a class="ig" href="https://www.instagram.com/zhixu_li/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i> Instagram · @zhixu_li</a>
+    <a class="gh" href="https://github.com/zhixuli0406" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github"></i> GitHub · zhixuli0406</a>
+    <a class="cmp" href="https://www.threads.com/@zhixu_li" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-building"></i> 嘟嘟數位科技</a>
+  </div>
+</section>
+
+<footer>
+  Made with <b>♥</b> by SuperGalen's Dungeon · CH·154 · FOH MIX BY LOUIS
+</footer>
+
+<div class="scope-pop">
+  <div class="left"><span class="pulse"></span><span>FOH MASTER</span><span>BUS·STEREO</span><span><b>LIVE</b></span></div>
+  <div class="right"><span>96kHz / 24-bit</span><span class="ts">SIGNAL → ONLINE</span></div>
+</div>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* Minimal AF-bracket cursor + FOH spotlight follow */
+(function(){
+  const c = document.getElementById('cur'), spot = document.getElementById('fohSpot');
+  if(!c) return;
+  let x=window.innerWidth/2,y=window.innerHeight/2,sx=x,sy=y;
+  document.addEventListener('mousemove',e=>{
+    x=e.clientX;y=e.clientY;
+    c.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;
+  });
+  function loop(){
+    sx+=(x-sx)*.08;sy+=(y-sy)*.08;
+    if(spot) spot.style.transform=`translate(${sx}px,${sy}px) translate(-50%,-50%)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+  // Subtle lock-on: bracket grows + turns magenta over interactive things
+  const HOVER_SEL = 'a, button, .fader, .track, .live-card, .scene, .stat-cell, .rider-card, .ld-cue';
+  document.querySelectorAll(HOVER_SEL).forEach(el=>{
+    el.addEventListener('mouseenter',()=>c.classList.add('locked'));
+    el.addEventListener('mouseleave',()=>c.classList.remove('locked'));
+  });
+})();
+
+/* Real-time NOW pill */
+(function(){
+  const pill = document.getElementById('nowPill'), text = document.getElementById('nowText'), clk = document.getElementById('termClock');
+  function pad(n){return String(n).padStart(2,'0')}
+  function update(){
+    const d = new Date();
+    const h = d.getHours(), m = d.getMinutes(), s = d.getSeconds(), w = d.getDay();
+    if(clk) clk.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+    let label, cls;
+    if(h>=23 || h<3){ label='半夜搓 CODE'; cls='hot'; }
+    else if(h>=3 && h<7){ label='睡眠中（理論上）'; cls='cool'; }
+    else if(h>=7 && h<10){ label='早安咖啡 + STANDUP'; cls='warm'; }
+    else if((w===0 || w===6) && h>=10 && h<22){ label='可能在看團 / 露營'; cls='hot'; }
+    else if(h>=10 && h<13){ label='接案 / 寫 PROD CODE'; cls='cool'; }
+    else if(h>=13 && h<14){ label='午餐後犯睏'; cls='warm'; }
+    else if(h>=14 && h<19){ label='會議 + DEPLOY 打怪'; cls='green'; }
+    else if(h>=19 && h<21){ label='哄女兒睡覺中'; cls='warm'; }
+    else { label='重新登入 FOH'; cls='cool'; }
+    if(pill) pill.className = 'now-pill ' + cls;
+    if(text) text.textContent = label;
+  }
+  update(); setInterval(update, 1000);
+})();
+
+/* Live Terminal auto-typer */
+(function(){
+  const body = document.getElementById('termBody');
+  if(!body) return;
+  const lines = [
+    {t:'whoami', cls:'pr', delay:240},
+    {t:'力智栩 / Louis · founder@dudu-digital', cls:'laz', delay:520},
+    {t:'cat /etc/identity', cls:'pr', delay:520},
+    {t:'> 嘟嘟數位科技 · 創辦人', cls:'', delay:160},
+    {t:'> 軟體業七年 · 全端老兵', cls:'', delay:160},
+    {t:'> stack: <span class="laz">DevOps</span> · <span class="laz">MIS</span> · <span class="hot">Frontend</span> · <span class="hot">Backend</span> · <span class="warm">APP</span> · <span class="laz">AI Agent</span>', cls:'', delay:160},
+    {t:'> family: <span class="warm">老婆</span> + <span class="warm">天使女兒</span>', cls:'', delay:160},
+    {t:'> english: <span class="err">TOEIC 150</span> <span class="cmt"># 誠實標示</span>', cls:'', delay:160},
+    {t:'tail -f /var/log/now.log', cls:'pr', delay:520},
+    {t:'<span class="cmt">[BUILDING]</span> <span class="hot">AI 專案管理 SaaS</span> — closed beta', cls:'', delay:240},
+    {t:'<span class="cmt">[OSS]</span>      <span class="laz">claudeBot / CursorBot</span> — Telegram + Discord remote IDE', cls:'', delay:240},
+    {t:'<span class="cmt">[RESEARCH]</span> <span class="warm">AGI · Friston · CoALA</span> (英文太爛叫 AI 翻)', cls:'', delay:240},
+    {t:'<span class="cmt">[SIDE]</span>     <span class="laz">claude-code-3D-agent-UI</span> — 半夜睡不著的副產品', cls:'', delay:240},
+    {t:'echo $MISSION', cls:'pr', delay:520},
+    {t:'<span class="ok">"誠實 ship 比優雅死掉重要。"</span>', cls:'', delay:0}
+  ];
+  let i=0, j=0;
+  function append(html){ body.innerHTML += html; }
+  function enableREPL(){
+    const row = document.createElement('div');
+    row.className = 'term-input-row';
+    row.innerHTML = `<span class="pr"></span><input class="term-input" id="termInput" placeholder="輸入 help 看可用命令…" autocomplete="off">`;
+    body.appendChild(row);
+    const hint = document.createElement('div');
+    hint.className = 'term-hint';
+    hint.innerHTML = `<b>→</b> 可試： help · whoami · skills · projects · cat soul.md · hire louis · clear`;
+    body.appendChild(hint);
+    const input = document.getElementById('termInput');
+    const CMDS = {
+      'help': '<span class="ok">available:</span> help · whoami · skills · projects · cat soul.md · hire louis · joke · clear · exit',
+      'whoami': '力智栩 / Louis · 嘟嘟數位科技 founder · 7yrs in stack · I→E (forced) · TOEIC 150',
+      'skills': '<span class="laz">[92]</span> DevOps · <span class="laz">[88]</span> Backend · <span class="laz">[84]</span> Frontend · <span class="hot">[86]</span> AI Agent · <span class="warm">[82]</span> MIS · <span class="warm">[80]</span> SaaS · <span class="warm">[76]</span> APP · <span class="err">[15]</span> English',
+      'projects': '<span class="laz">⚡</span> AI 專案管理 SaaS (BETA) · <span class="laz">⚡</span> claudeBot/CursorBot (OSS) · <span class="laz">⚡</span> claude-code-3D-agent-UI (OSS)',
+      'catsoul.md': '<span class="cmt"># SOUL.md</span><br><span class="ok">- ship 比 perfect 重要</span><br><span class="ok">- 半夜想得到，白天 deploy 才算</span><br><span class="ok">- 你的問題我可能踩過，你的雷我可能炸過</span><br><span class="ok">- 七年沒寫過比 commit message 更長的英文</span>',
+      'hirelouis': '<span class="hot">CONNECTING…</span> 滑到 Encore 區、丟 Threads 或 Email 都行。我會回。',
+      'joke': '為什麼 Louis 從來不寫 unit test？<br><span class="cmt">// 因為 production 就是最大的 test environment。</span>',
+      'clear': '__CLEAR__',
+      'exit': '<span class="err">access denied:</span> 在這個 FOH 沒有 exit。試試 :wq。',
+      'ls': '<span class="laz">dudu-saas/</span>  <span class="laz">claudeBot/</span>  <span class="laz">cursor-bot/</span>  <span class="laz">agent-3d-ui/</span>  <span class="warm">SOUL.md</span>  <span class="cmt">.zshrc</span>',
+      'ps': 'PID  CMD<br>'+
+            '<span class="cmt">001</span>  louis@dudu-digital · founder<br>'+
+            '<span class="cmt">042</span>  ai-saas-beta · BUILDING<br>'+
+            '<span class="cmt">154</span>  daughter.sleep_routine · 19:00–21:00<br>'+
+            '<span class="cmt">200</span>  weekend.gig_or_camp · waiting',
+      'pwd': '/home/louis · dudu-digital · taipei · earth'
+    };
+    let history = [];
+    let histIdx = -1;
+    function out(html){
+      const ln = document.createElement('span');
+      ln.className = 'ln';
+      ln.innerHTML = html;
+      body.insertBefore(ln, row);
+      body.scrollTop = body.scrollHeight;
+    }
+    function echo(cmd){
+      const ln = document.createElement('span');
+      ln.className = 'ln';
+      ln.innerHTML = '<span class="pr"></span>' + cmd.replace(/</g,'&lt;');
+      body.insertBefore(ln, row);
+    }
+    function exec(raw){
+      const cmd = raw.trim();
+      if(!cmd) return;
+      echo(cmd);
+      history.push(cmd); histIdx = history.length;
+      const key = cmd.toLowerCase().replace(/\s+/g,'');
+      if(CMDS[key] === '__CLEAR__'){
+        while(body.firstChild !== row) body.removeChild(body.firstChild);
+        return;
+      }
+      const r = CMDS[key];
+      if(r){ out(r); }
+      else { out(`<span class="err">command not found:</span> ${cmd.replace(/</g,'&lt;')} · <span class="cmt">try 'help'</span>`); }
+      body.scrollTop = body.scrollHeight;
+    }
+    input.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){ exec(input.value); input.value=''; e.preventDefault(); }
+      else if(e.key === 'ArrowUp'){ if(histIdx>0){ histIdx--; input.value = history[histIdx] || ''; } e.preventDefault(); }
+      else if(e.key === 'ArrowDown'){ if(histIdx<history.length-1){ histIdx++; input.value = history[histIdx] || ''; } else { histIdx=history.length; input.value=''; } e.preventDefault(); }
+      e.stopPropagation();
+    });
+    input.addEventListener('keyup', (e)=>e.stopPropagation());
+    input.addEventListener('keypress', (e)=>e.stopPropagation());
+  }
+  function typeLine(){
+    if(i>=lines.length){ body.innerHTML += '<span class="ln cur"></span>'; setTimeout(enableREPL, 400); return; }
+    const ln = lines[i];
+    const tagOpen = ln.cls==='pr' ? '<span class="ln"><span class="pr"></span>' : '<span class="ln '+ln.cls+'">';
+    const tagClose = '</span>';
+    if(j===0){ append(tagOpen); }
+    if(j < ln.t.length){
+      const next = ln.t.slice(j, j+2);
+      if(next.startsWith('<')){
+        const close = ln.t.indexOf('>', j);
+        append(ln.t.slice(j, close+1));
+        j = close+1;
+      } else {
+        append(next);
+        j += next.length;
+      }
+      const speed = ln.cls==='pr' ? 18 : 6;
+      body.scrollTop = body.scrollHeight;
+      setTimeout(typeLine, speed);
+    } else {
+      append(tagClose);
+      i++; j=0;
+      setTimeout(typeLine, ln.delay || 200);
+    }
+  }
+  const io = new IntersectionObserver((ents)=>{
+    ents.forEach(e=>{
+      if(e.isIntersecting){ io.disconnect(); setTimeout(typeLine, 320); }
+    });
+  }, {threshold:.25});
+  io.observe(body);
+})();
+
+/* three.js dust only (cones removed) */
+(function(){
+  if(window.innerWidth < 780) return;
+  const container = document.getElementById('stage-three');
+  const W = window.innerWidth, H = window.innerHeight;
+  const renderer = new THREE.WebGLRenderer({alpha:true, antialias:false, powerPreference:'low-power'});
+  renderer.setSize(W,H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 1.25));
+  container.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, W/H, 0.1, 1000);
+  camera.position.z = 18;
+
+  const dustCount = 140;
+  const positions = new Float32Array(dustCount*3);
+  for(let i=0;i<dustCount;i++){
+    positions[i*3] = (Math.random()-.5)*60;
+    positions[i*3+1] = (Math.random()-.5)*40;
+    positions[i*3+2] = (Math.random()-.5)*40;
+  }
+  const dustGeo = new THREE.BufferGeometry();
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  const dustMat = new THREE.PointsMaterial({color:0x8FE3FF, size:0.06, transparent:true, opacity:.55, depthWrite:false, blending:THREE.AdditiveBlending});
+  const dust = new THREE.Points(dustGeo, dustMat);
+  scene.add(dust);
+
+  window.addEventListener('resize', ()=>{
+    const nw = window.innerWidth, nh = window.innerHeight;
+    renderer.setSize(nw, nh);
+    camera.aspect = nw/nh;
+    camera.updateProjectionMatrix();
+  });
+
+  let mx=0, my=0;
+  window.addEventListener('mousemove', e=>{
+    mx = (e.clientX / window.innerWidth - .5) * 1.5;
+    my = (e.clientY / window.innerHeight - .5) * 1.5;
+  });
+
+  let lastTh = 0;
+  function animate(t){
+    requestAnimationFrame(animate);
+    if(document.hidden) return;
+    if(t - lastTh < 33) return;
+    lastTh = t;
+    t *= 0.0007;
+    dust.rotation.y = t*0.18 + mx*0.4;
+    dust.rotation.x = my*0.3;
+    camera.position.x = mx*1.2;
+    camera.position.y = -my*0.8;
+    camera.lookAt(0,0,0);
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(animate);
+})();
+
+/* p5.js EQ */
+new p5((p)=>{
+  let canvas, bars = 64, vals = [];
+  p.setup = ()=>{
+    const parent = document.getElementById('eq-canvas');
+    if(!parent) return;
+    canvas = p.createCanvas(parent.offsetWidth, parent.offsetHeight);
+    canvas.parent('eq-canvas');
+    for(let i=0;i<bars;i++) vals.push(p.random(0.2, 0.8));
+    p.frameRate(22);
+  };
+  p.windowResized = ()=>{
+    const parent = document.getElementById('eq-canvas');
+    if(!parent || !canvas) return;
+    p.resizeCanvas(parent.offsetWidth, parent.offsetHeight);
+  };
+  p.draw = ()=>{
+    p.clear();
+    const w = p.width / bars;
+    const lv = window.__faderLevels || [];
+    for(let i=0;i<bars;i++){
+      const fi = Math.floor(i / (bars/8));
+      const userLv = (lv[fi] !== undefined) ? lv[fi] : null;
+      const target = userLv !== null ? p.random(userLv*0.55, userLv*1.0) : p.random(0.3, 0.95);
+      vals[i] += (target - vals[i]) * 0.18;
+      const h = vals[i] * p.height * 0.92;
+      const hue = i < bars*0.33 ? 0 : (i < bars*0.66 ? 1 : 2);
+      const c = hue===0 ? p.color(0,240,255,180) : (hue===1 ? p.color(255,46,106,150) : p.color(255,179,71,140));
+      p.noStroke();
+      p.fill(c);
+      p.rect(i*w + 1, p.height - h, w-2, h);
+      p.fill(p.red(c), p.green(c), p.blue(c), 50);
+      p.rect(i*w + 1, p.height - h - 4, w-2, 3);
+    }
+  };
+});
+
+/* Mini scope */
+(function(){
+  const cv = document.getElementById('miniscope');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  function resize(){ cv.width = cv.offsetWidth*2; cv.height = cv.offsetHeight*2; }
+  resize();
+  window.addEventListener('resize', resize);
+  let phase = 0;
+  let lastS = 0;
+  function loop(now){
+    requestAnimationFrame(loop);
+    if(document.hidden) return;
+    if(now && now - lastS < 50) return;
+    lastS = now || 0;
+    phase += 0.06;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.strokeStyle = 'rgba(0,240,255,.92)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for(let x=0;x<cv.width;x++){
+      const t = x/cv.width;
+      const y = cv.height/2 + Math.sin(t*Math.PI*8 + phase)*Math.sin(t*Math.PI*2)*cv.height*0.34
+              + Math.sin(t*Math.PI*22 + phase*2.1)*cv.height*0.07;
+      if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,46,106,.55)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for(let x=0;x<cv.width;x++){
+      const t = x/cv.width;
+      const y = cv.height/2 + Math.cos(t*Math.PI*12 - phase*1.3)*cv.height*0.22;
+      if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  requestAnimationFrame(loop);
+})();
+
+/* GSAP reveals + entrance */
+gsap.utils.toArray('.reveal').forEach((el)=>{
+  gsap.fromTo(el, {opacity:0, y:36}, {
+    opacity:1, y:0, duration:1.05, ease:'power2.out',
+    scrollTrigger:{trigger:el, start:'top 86%', toggleActions:'play none none none'}
+  });
+});
+gsap.from('.hero h1 .stack', {y:80, opacity:0, duration:1.1, stagger:0.13, ease:'power3.out', delay:0.2});
+gsap.from('.hero h2', {y:24, opacity:0, duration:0.9, ease:'power2.out', delay:0.7});
+gsap.from('.hero-sub', {y:16, opacity:0, duration:0.9, ease:'power2.out', delay:0.85});
+gsap.from('.hero-pre', {y:-16, opacity:0, duration:0.7, ease:'power2.out', delay:0.05});
+gsap.from('.stat-cell', {y:30, opacity:0, duration:0.75, stagger:0.08, ease:'power2.out', delay:1.0});
+gsap.from('.hero-card', {x:60, opacity:0, duration:1.1, ease:'power3.out', delay:0.5});
+
+ScrollTrigger.create({
+  trigger:'.persona-card',
+  start:'top 75%',
+  onEnter:()=>{
+    document.querySelectorAll('.persona-row .meter span').forEach(el=>{
+      const w = el.dataset.w || '0';
+      el.style.width = w + '%';
+    });
+  }
+});
+
+gsap.utils.toArray('.section-header h3').forEach(el=>{
+  gsap.from(el, {x:-50, opacity:0, duration:1.1, ease:'power3.out',
+    scrollTrigger:{trigger:el, start:'top 85%'}
+  });
+});
+
+ScrollTrigger.create({
+  trigger:'.mixer',
+  start:'top 70%',
+  onEnter:()=>{
+    document.querySelectorAll('.fader .grip').forEach((el, i)=>{
+      const orig = el.style.bottom;
+      gsap.fromTo(el, {bottom:'8%'}, {bottom:orig, duration:1.2 + Math.random()*0.5, delay:i*0.07, ease:'elastic.out(1, 0.55)'});
+    });
+  }
+});
+
+gsap.utils.toArray('.track').forEach((el, i)=>{
+  gsap.from(el.querySelector('.track-num'), {scale:0.7, opacity:0, duration:0.7, ease:'back.out(1.7)',
+    scrollTrigger:{trigger:el, start:'top 85%'}
+  });
+});
+
+/* LED bridge sweep */
+gsap.utils.toArray('.led-bridge').forEach((br)=>{
+  const led = br.querySelector('.led');
+  gsap.set(led, {opacity:0, left:'8vw'});
+  ScrollTrigger.create({
+    trigger: br,
+    start: 'top 92%',
+    onEnter: ()=>{
+      gsap.timeline()
+        .to(led, {opacity:1, duration:.18, ease:'power1.out'})
+        .to(led, {left:'92vw', duration:1.6, ease:'power2.inOut'}, 0)
+        .to(led, {opacity:0, duration:.4, ease:'power1.in'}, '-=.4');
+    }
+  });
+});
+
+/* Live card click expand */
+document.querySelectorAll('.live-card').forEach(card=>{
+  card.addEventListener('click', (e)=>{
+    if(e.target.closest('a')) return;
+    card.classList.toggle('open');
+  });
+});
+
+/* claudeBot chat simulator — opens when L2 card is opened */
+(function(){
+  const wrap = document.getElementById('botChat');
+  const body = document.getElementById('botBody');
+  const input = document.getElementById('botInput');
+  const send = document.getElementById('botSend');
+  const close = document.getElementById('botClose');
+  const l2 = document.querySelector('.live-card.l2');
+  if(!wrap || !body || !input || !l2) return;
+
+  function add(cls, html){
+    const m = document.createElement('div');
+    m.className = 'bot-msg ' + cls;
+    m.innerHTML = html;
+    body.appendChild(m);
+    body.scrollTop = body.scrollHeight;
+    return m;
+  }
+  function botSay(html, delay){
+    setTimeout(()=>add('b', html), delay || 600);
+  }
+  function intro(){
+    if(body.dataset.inited) return;
+    body.dataset.inited = '1';
+    add('sys', '— claudeBot v0.4.2 · running via docker compose —');
+    botSay('哈囉，我是 <b>claudeBot</b>。我可以幫你 deploy、翻譯、爬網頁、跑子代理。打 <code>/help</code> 看完整指令。', 600);
+  }
+
+  const REPLY = {
+    '/help': '<b>commands</b><br><code>/deploy production</code> · <code>/translate &lt;text&gt;</code> · <code>/scrape &lt;url&gt;</code> · <code>/agents</code> · <code>/skills</code> · <code>/who</code> · <code>/hire</code> · <code>/clear</code>',
+    '/who': '我是 Louis 半夜睡不著做的開源工具，用 Telegram / Discord 遠端遙控 Cursor AI 寫程式。<br>repo: <code>github.com/zhixuli0406/claudeBot</code>',
+    '/agents': '<b>active agents:</b><br>· <code>main</code> · primary task agent<br>· <code>scout</code> · search & summarize<br>· <code>scribe</code> · doc writer<br>· <code>guardian</code> · verifier',
+    '/skills': '<b>loaded skills:</b> translate · calc · web-scrape · ocr · pdf-read · code-review · git-ops',
+    '/deployproduction': '🚀 <b>ssh louis@dudu-digital · git pull · docker compose up -d --build · health check OK · deployed</b>',
+    '/deploystaging': '✓ staging up at <code>staging.dudu-digital.com</code> · build #4821',
+    '/translate': '請給我要翻的字 · 例如 <code>/translate hello world</code>',
+    '/scrape': '請給 URL · 例如 <code>/scrape https://example.com</code>',
+    '/hire': '🔥 訊號已送出 · 滑到頁面最下方的 ENCORE 區、或直接打 Threads <code>@zhixu_li</code>',
+    '/clear': '__CLEAR__',
+    '/joke': '為什麼 deploy 都在週五？<br>因為週末是 production 環境的 free debugging time。',
+    '/ship': '<b>SHIP IT.</b> 誠實 ship 比優雅死掉重要。',
+    '/sudo': 'sudo 不行 · 我也只是個 bot 而已',
+    '/status': '<b>uptime:</b> 247d 14h · <b>requests today:</b> 1,832 · <b>louis last seen:</b> 23 min ago (commit)'
+  };
+  function reply(cmd){
+    const raw = cmd.trim();
+    if(!raw) return;
+    const lower = raw.toLowerCase().replace(/\s+/g,'').split(/[^a-z0-9/]/)[0];
+    if(REPLY[lower] === '__CLEAR__'){
+      body.innerHTML = '';
+      body.dataset.inited = '';
+      intro();
+      return;
+    }
+    if(lower.startsWith('/translate')){
+      const arg = raw.slice(10).trim();
+      if(!arg) { botSay(REPLY['/translate']); return; }
+      const dict = {hello:'你好', goodbye:'再見', louis:'力智栩', ship:'出貨', deploy:'部署', code:'程式碼', coffee:'咖啡', camping:'露營'};
+      const lc = arg.toLowerCase();
+      const out = dict[lc] || (arg + ' → <b>[翻譯模型載入中 · 多益 150 的人不要太期待]</b>');
+      botSay(`<code>"${arg}"</code> → <b>${out}</b>`, 700);
+      return;
+    }
+    if(lower.startsWith('/scrape')){
+      const arg = raw.slice(7).trim();
+      if(!arg) { botSay(REPLY['/scrape']); return; }
+      botSay(`<b>scraping</b> ${arg} …`, 400);
+      botSay(`✓ 200 OK · <b>${Math.floor(Math.random()*340)+40} links</b> · ${Math.floor(Math.random()*22)+3} images · text saved to <code>/tmp/scrape.txt</code>`, 1800);
+      return;
+    }
+    const r = REPLY[lower];
+    if(r){ botSay(r, 500); }
+    else { botSay(`<b>?</b> 我不懂 <code>${raw.replace(/</g,'&lt;')}</code> · 打 <code>/help</code> 看可用指令`, 500); }
+  }
+  function open(){ wrap.classList.add('open'); intro(); setTimeout(()=>input.focus(), 350); }
+  function shut(){ wrap.classList.remove('open'); }
+
+  const launchBtn = document.getElementById('botLaunch');
+  if(launchBtn) launchBtn.addEventListener('click', (e)=>{ e.stopPropagation(); open(); });
+  if(close) close.addEventListener('click', shut);
+  if(send) send.addEventListener('click', ()=>{ if(!input.value.trim()) return; add('u', input.value.replace(/</g,'&lt;')); reply(input.value); input.value = ''; });
+  input.addEventListener('keydown', (e)=>{
+    e.stopPropagation();
+    if(e.key === 'Enter'){
+      if(!input.value.trim()) return;
+      add('u', input.value.replace(/</g,'&lt;'));
+      reply(input.value);
+      input.value = '';
+    }
+  });
+  input.addEventListener('keyup', (e)=>e.stopPropagation());
+  input.addEventListener('keypress', (e)=>e.stopPropagation());
+})();
+
+
+/* Floating Stack Tokens */
+(function(){
+  const wrap = document.getElementById('stackTokens');
+  if(!wrap) return;
+  const cv = wrap.querySelector('canvas');
+  const ctx = cv.getContext('2d');
+  const isMobile = window.innerWidth < 780;
+  const DPR = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 1.5);
+  function resize(){ cv.width = window.innerWidth*DPR; cv.height = window.innerHeight*DPR; cv.style.width = window.innerWidth+'px'; cv.style.height = window.innerHeight+'px'; }
+  resize(); window.addEventListener('resize', resize);
+
+  const VOCAB = [
+    {t:'$ git push origin main', c:'#00F0FF', w:.18},
+    {t:'$ docker compose up -d', c:'#00F0FF', w:.16},
+    {t:'$ kubectl apply -f .', c:'#00F0FF', w:.14},
+    {t:'agent.loop()', c:'#FF2E6A', w:.18},
+    {t:'Generator → Verifier → Updater', c:'#FF2E6A', w:.13},
+    {t:'claudeBot', c:'#FF2E6A', w:.18},
+    {t:'CursorBot', c:'#FF2E6A', w:.16},
+    {t:'claude-code-3D-agent-UI', c:'#FF2E6A', w:.10},
+    {t:'SOUL.md', c:'#FFB347', w:.16},
+    {t:'Friston', c:'#FFB347', w:.14},
+    {t:'CoALA', c:'#FFB347', w:.14},
+    {t:'TextGrad', c:'#FFB347', w:.14},
+    {t:'free-energy', c:'#FFB347', w:.10},
+    {t:'whoami', c:'#38FFA1', w:.18},
+    {t:'tail -f /var/log/now.log', c:'#38FFA1', w:.10},
+    {t:'echo $MISSION', c:'#38FFA1', w:.13},
+    {t:'TOEIC 150', c:'#FFC93C', w:.14},
+    {t:'NestJS', c:'#00F0FF', w:.14},
+    {t:'Astro', c:'#00F0FF', w:.14},
+    {t:'React Native', c:'#00F0FF', w:.13},
+    {t:'GitHub Actions', c:'#00F0FF', w:.13},
+    {t:'MCP', c:'#00F0FF', w:.16},
+    {t:'PostgreSQL', c:'#00F0FF', w:.12},
+    {t:'Redis', c:'#00F0FF', w:.13},
+    {t:'WebSocket', c:'#00F0FF', w:.12},
+    {t:'I→E (forced)', c:'#FF2E6A', w:.14},
+    {t:'半夜搓 code', c:'#FFB347', w:.16},
+    {t:'露營也要 push', c:'#FFB347', w:.14},
+    {t:'哄女兒前的最後一個 commit', c:'#FFB347', w:.10},
+    {t:'ship 比 perfect 重要', c:'#38FFA1', w:.14},
+    {t:'7 yrs in stack', c:'#9CA0AE', w:.14},
+    {t:'嘟嘟數位科技', c:'#FFB347', w:.14}
+  ];
+  function pickToken(){
+    const total = VOCAB.reduce((s,v)=>s+v.w,0);
+    let r = Math.random()*total;
+    for(const v of VOCAB){ r -= v.w; if(r<=0) return v; }
+    return VOCAB[0];
+  }
+  const N = isMobile ? 10 : 22;
+  const tokens = [];
+  for(let i=0;i<N;i++){
+    const v = pickToken();
+    tokens.push({
+      v, x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight,
+      vy: -(0.04 + Math.random()*0.10), vx: (Math.random()-.5)*0.05,
+      depth: 0.4 + Math.random()*0.85,
+      life: Math.random()*1500 + 800,
+      age: Math.random()*1500
+    });
+  }
+  let mx = window.innerWidth/2, my = window.innerHeight/2;
+  window.addEventListener('mousemove', e=>{ mx = e.clientX; my = e.clientY; });
+
+  let lastFrame = 0;
+  function frame(now){
+    requestAnimationFrame(frame);
+    if(document.hidden) return;
+    if(now - lastFrame < 33) return;
+    lastFrame = now;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    const speedScale = (window.__faderLevels && window.__faderLevels[6]) ? (0.4 + window.__faderLevels[6]*1.4) : 1;
+    for(const tk of tokens){
+      tk.x += tk.vx * DPR * speedScale;
+      tk.y += tk.vy * DPR * speedScale;
+      tk.age += 1;
+      const px = (mx - window.innerWidth/2) * 0.02 * tk.depth;
+      const py = (my - window.innerHeight/2) * 0.02 * tk.depth;
+      const drawX = tk.x*DPR + px*DPR;
+      const drawY = tk.y*DPR + py*DPR;
+      const t = tk.age / tk.life;
+      const fade = Math.max(0, Math.min(1, Math.sin(t*Math.PI)));
+      const alpha = 0.18 + tk.depth*0.42 * fade;
+      const size = (10 + tk.depth*9) * DPR;
+      ctx.font = `${tk.depth>0.7?'700':'500'} ${size}px JetBrains Mono, monospace`;
+      ctx.fillStyle = tk.v.c;
+      ctx.globalAlpha = alpha * 0.75;
+      ctx.shadowColor = tk.v.c;
+      ctx.shadowBlur = 10 * tk.depth;
+      ctx.fillText(tk.v.t, drawX, drawY);
+      ctx.shadowBlur = 0;
+      if(tk.y < -40 || tk.age > tk.life){
+        tk.v = pickToken();
+        tk.x = Math.random()*window.innerWidth;
+        tk.y = window.innerHeight + 30 + Math.random()*120;
+        tk.vy = -(0.04 + Math.random()*0.10);
+        tk.depth = 0.4 + Math.random()*0.85;
+        tk.life = Math.random()*1500 + 800;
+        tk.age = 0;
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* Pan-shot cursor trail */
+(function(){
+  if(window.innerWidth < 780) return;
+  const wrap = document.getElementById('panTrail');
+  if(!wrap) return;
+  const cv = wrap.querySelector('canvas');
+  const ctx = cv.getContext('2d');
+  const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+  function resize(){ cv.width = window.innerWidth*DPR; cv.height = window.innerHeight*DPR; cv.style.width = window.innerWidth+'px'; cv.style.height = window.innerHeight+'px'; }
+  resize(); window.addEventListener('resize', resize);
+
+  const trail = [];
+  const MAX = 14;
+  let lx = -1, ly = -1;
+  window.addEventListener('mousemove', e=>{
+    const dx = lx<0 ? 0 : e.clientX - lx;
+    const dy = ly<0 ? 0 : e.clientY - ly;
+    const speed = Math.hypot(dx, dy);
+    if(speed > 4){
+      trail.push({x:e.clientX, y:e.clientY, dx, dy, life:1.0, speed});
+      if(trail.length > MAX) trail.shift();
+    }
+    lx = e.clientX; ly = e.clientY;
+  });
+
+  let lastF = 0;
+  function frame(now){
+    requestAnimationFrame(frame);
+    if(document.hidden) return;
+    if(now - lastF < 33) return;
+    lastF = now;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    if(trail.length === 0) return;
+    for(let i=trail.length-1;i>=0;i--){
+      const p = trail[i];
+      p.life -= 0.06;
+      if(p.life <= 0){ trail.splice(i,1); continue; }
+      const len = Math.min(p.speed * 0.85, 80);
+      const ux = p.dx === 0 ? 0 : p.dx / Math.hypot(p.dx, p.dy || 1);
+      const uy = p.dx === 0 ? 0 : p.dy / Math.hypot(p.dx, p.dy || 1);
+      const x1 = (p.x - ux*len) * DPR;
+      const y1 = (p.y - uy*len) * DPR;
+      const x2 = p.x * DPR;
+      const y2 = p.y * DPR;
+      const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+      grad.addColorStop(0, 'rgba(0,240,255,0)');
+      grad.addColorStop(0.6, `rgba(0,240,255,${0.16*p.life})`);
+      grad.addColorStop(1, `rgba(255,46,106,${0.5*p.life})`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = (2 + 4*p.life) * DPR;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* 追焦 panning-shot directional blur — only crowd background gets blurred, foreground stays sharp */
+(function(){
+  const crowd = document.getElementById('crowdBg');
+  if(!crowd) return;
+  let lastY = window.scrollY, lastT = performance.now(), raf = null;
+  let curBlur = 0, targetBlur = 0;
+  function decay(){
+    targetBlur *= 0.85;
+    curBlur += (targetBlur - curBlur) * 0.25;
+    if(curBlur < 0.1) curBlur = 0;
+    const off = window.scrollY * 0.18;
+    crowd.style.transform = `translate3d(0, ${-off}px, 0) scale(1.04)`;
+    crowd.style.filter = `saturate(.95) brightness(.78) blur(${curBlur.toFixed(2)}px)`;
+    if(curBlur > 0.05 || targetBlur > 0.05) requestAnimationFrame(decay);
+    else raf = null;
+  }
+  window.addEventListener('scroll', ()=>{
+    const now = performance.now();
+    const dy = window.scrollY - lastY;
+    const dt = Math.max(1, now - lastT);
+    const v = Math.abs((dy / dt) * 16);
+    lastY = window.scrollY; lastT = now;
+    targetBlur = Math.min(v * 0.18, 6);
+    if(!raf) raf = requestAnimationFrame(decay);
+  }, {passive:true});
+})();
+
+/* Visitor counter */
+(function(){
+  const el = document.getElementById('visitorStamp');
+  if(!el) return;
+  const KEY = 'zhixu_li_visits';
+  let n = parseInt(localStorage.getItem(KEY) || '0', 10);
+  n += 1;
+  localStorage.setItem(KEY, String(n));
+  const lastKey = 'zhixu_li_last';
+  const last = localStorage.getItem(lastKey);
+  const now = Date.now();
+  localStorage.setItem(lastKey, String(now));
+  function fmtAgo(ms){
+    const s = Math.floor(ms/1000);
+    if(s < 60) return s + 's ago';
+    if(s < 3600) return Math.floor(s/60) + 'm ago';
+    if(s < 86400) return Math.floor(s/3600) + 'h ago';
+    const d = Math.floor(s/86400);
+    if(d < 7) return d + 'd ago';
+    return Math.floor(d/7) + 'w ago';
+  }
+  let msg;
+  if(n === 1){
+    msg = `<i class="fa-solid fa-door-open"></i>FOH LOG · 你是<b>第 ${n} 次</b>踏進這個控台 · WELCOME`;
+  } else if(last){
+    msg = `<i class="fa-solid fa-rotate-right"></i>FOH LOG · 第 <b>${n}</b> 次回訪 · 上次 <b>${fmtAgo(now - parseInt(last,10))}</b>`;
+  } else {
+    msg = `<i class="fa-solid fa-circle-check"></i>FOH LOG · 第 <b>${n}</b> 次踏進控台`;
+  }
+  el.innerHTML = msg;
+  setTimeout(()=>el.classList.add('show'), 1800);
+  setTimeout(()=>el.classList.remove('show'), 12000);
+})();
+
+/* Setlist track → fader pulse */
+(function(){
+  const faders = document.querySelectorAll('.fader');
+  document.querySelectorAll('.track[data-faders]').forEach(track=>{
+    const idxs = track.dataset.faders.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
+    track.addEventListener('mouseenter', ()=>{
+      idxs.forEach(i=>{ if(faders[i]) faders[i].classList.add('pulsing'); });
+    });
+    track.addEventListener('mouseleave', ()=>{
+      idxs.forEach(i=>{ if(faders[i]) faders[i].classList.remove('pulsing'); });
+    });
+  });
+})();
+
+/* Live git-log corner terminal */
+(function(){
+  const body = document.getElementById('gitLogBody');
+  const head = document.getElementById('gitLogHead');
+  const wrap = document.getElementById('gitLog');
+  if(!body) return;
+  const REPOS = ['claudeBot','cursor-bot','agent-3d-ui','dudu-saas','foh-mixer','soul-md'];
+  const COMMITS = [
+    {t:'feat: ship 比 perfect 重要', tag:'feat'},
+    {t:'fix: 哄女兒前的最後一個 commit', tag:'fix'},
+    {t:'chore: 露營也要 push', tag:'chore'},
+    {t:'refactor: agent.loop() 改成 generator/verifier/updater', tag:'refactor'},
+    {t:'feat: 接上 Friston 自由能 driver', tag:'feat'},
+    {t:'fix: kubectl rollback 後生產環境恢復', tag:'fix'},
+    {t:'docs: 把 SOUL.md 蒸餾出來的技能加上去', tag:'docs'},
+    {t:'feat: claudeBot 多語音輸入完成', tag:'feat'},
+    {t:'fix: webhook 在凌晨 3 點掛掉的那條', tag:'fix'},
+    {t:'chore: docker image 又胖了 → 加 multi-stage', tag:'chore'},
+    {t:'feat: 客戶要的 Gantt 拖曳今晚搞定', tag:'feat'},
+    {t:'fix: TextGrad 反饋訊息丟失', tag:'fix'},
+    {t:'feat: 把 MCP tool use 接進來', tag:'feat'},
+    {t:'docs: 把 7 年踩過的 DevOps 雷整理成 wiki', tag:'docs'},
+    {t:'chore: bump @anthropic-ai/sdk', tag:'chore'},
+    {t:'feat: 加上 Discord 觸發部署的 hook', tag:'feat'},
+    {t:'refactor: 子代理拆分邏輯', tag:'refactor'},
+    {t:'fix: 多益 150 也能寫 commit', tag:'fix'},
+    {t:'feat: 新增 SaaS 計費分層', tag:'feat'},
+    {t:'chore: lint pass，連空格都改', tag:'chore'},
+    {t:'feat: tail -f 直接接到 Telegram', tag:'feat'},
+    {t:'docs: agent skill lifecycle 寫成 ADR', tag:'docs'},
+    {t:'fix: race condition in verifier', tag:'fix'},
+    {t:'feat: 把推桿值 persist 到 localStorage', tag:'feat'},
+    {t:'chore: 早安咖啡前的小整理', tag:'chore'},
+    {t:'refactor: PR review by Claude，改了 14 處', tag:'refactor'},
+    {t:'feat: 嘟嘟數位 onboarding 流程上線', tag:'feat'},
+    {t:'fix: TOEIC 150 仍然能 deploy', tag:'fix'},
+    {t:'feat: AGI 自主進化 hook into update loop', tag:'feat'},
+    {t:'chore: weekly retro · 寫給自己看', tag:'chore'}
+  ];
+  function rndHash(){ const cs = 'abcdef0123456789'; let s=''; for(let i=0;i<7;i++) s+=cs[Math.floor(Math.random()*cs.length)]; return s; }
+  function rndAgo(){ const opts=['just now','12s','38s','1m','2m','4m','7m','15m','1h','3h','today']; return opts[Math.floor(Math.random()*opts.length)]; }
+  function tagClass(t){ return t==='feat'?'b':t==='fix'?'h':t==='docs'?'o':t==='chore'?'w':''; }
+  function append(){
+    const c = COMMITS[Math.floor(Math.random()*COMMITS.length)];
+    const repo = REPOS[Math.floor(Math.random()*REPOS.length)];
+    const line = document.createElement('span');
+    line.className = 'gl';
+    line.innerHTML = `<span class="d">${rndHash()}</span> <span class="${tagClass(c.tag)}">${c.tag}</span> <span class="d">·</span> ${c.t} <span class="d">·</span> <span class="d">${repo} · ${rndAgo()}</span>`;
+    body.appendChild(line);
+    while(body.children.length > 9) body.removeChild(body.firstChild);
+    body.scrollTop = body.scrollHeight;
+  }
+  for(let i=0;i<4;i++) append();
+  setInterval(append, 4500 + Math.random()*2500);
+  if(head) head.addEventListener('click', ()=> wrap.classList.toggle('collapsed'));
+})();
+
+/* ============== Shared FX backdrop-filter (keeps cursor crisp) ============== */
+window.__cueFilter = '';
+window.__hueDeg = 0;
+window.updateFxFilter = function(){
+  const el = document.getElementById('fxFilter');
+  if(!el) return;
+  const parts = [];
+  if(window.__cueFilter) parts.push(window.__cueFilter);
+  if(Math.abs(window.__hueDeg) > 4) parts.push(`hue-rotate(${window.__hueDeg}deg) saturate(1.2)`);
+  const f = parts.length ? parts.join(' ') : 'none';
+  el.style.backdropFilter = f;
+  el.style.webkitBackdropFilter = f;
+};
+
+/* ============== Visible LIGHTING DESK buttons ============== */
+(function(){
+  const btns = document.querySelectorAll('.ld-cue');
+  if(!btns.length) return;
+  const SUB = ['cue-spotlight','cue-laser']; // sub-effects that target .vignette/.crowd-bg
+  const FILTERS = {
+    'cue-house': '',
+    'cue-spotlight': '',
+    'cue-warm': 'sepia(.16) saturate(1.4) brightness(1.05)',
+    'cue-laser': '',
+    'cue-blackout': 'brightness(.22) saturate(.6)'
+  };
+  btns.forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const cue = b.dataset.cue;
+      SUB.forEach(c=>document.body.classList.remove(c));
+      if(SUB.indexOf(cue) !== -1) document.body.classList.add(cue);
+      window.__cueFilter = FILTERS[cue] || '';
+      window.updateFxFilter();
+      btns.forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+})();
+
+/* ============== Per-fader unique page effects ============== */
+(function(){
+  const fx = {
+    prod: document.getElementById('fxProd'),
+    api:  document.getElementById('fxApi'),
+    think:document.getElementById('fxThink'),
+    mis:  document.getElementById('fxMis'),
+    saas: document.getElementById('fxSaas'),
+    camp: document.getElementById('fxCamp'),
+  };
+  const SAAS_TIERS = ['FREE','HOBBY','PRO','TEAM','SCALE'];
+  let lastApiSpawn = 0;
+  function apply(){
+    const lv = window.__faderLevels || [];
+    // CH 01 DevOps → PROD banner on top (threshold .65)
+    if(fx.prod) fx.prod.classList.toggle('on', (lv[0] || .78) > .65);
+    // CH 02 Backend → API readout
+    if(fx.api){
+      const on = (lv[1] || .68) > .55;
+      fx.api.classList.toggle('on', on);
+      if(on && Date.now() - lastApiSpawn > 800){
+        const ms = Math.floor(60 + Math.random()*200);
+        const code = Math.random() < .1 ? '500 ERR' : '200 OK';
+        fx.api.innerHTML = `<b>${code}</b> · <span class="ok">${ms}ms</span> · /api/agent.invoke`;
+        lastApiSpawn = Date.now();
+      }
+    }
+    // CH 03 Frontend → page hue rotate (via #fxFilter, not body — cursor stays crisp)
+    const ch3 = lv[2] !== undefined ? lv[2] : .62;
+    const hueDeg = Math.round((ch3 - 0.62) * 360);
+    if(hueDeg !== window.__hueDeg){
+      window.__hueDeg = hueDeg;
+      if(window.updateFxFilter) window.updateFxFilter();
+    }
+    // CH 04 APP → controls vignette intensity (handled in its own block below)
+    // CH 05 AI Agent → thinking bubble follows mouse
+    if(fx.think) fx.think.classList.toggle('on', (lv[4] || .74) > .80);
+    // CH 06 MIS → compliance grid
+    if(fx.mis) fx.mis.classList.toggle('on', (lv[5] || .58) > .70);
+    // CH 07 SaaS → tier badge
+    if(fx.saas){
+      const ch7 = lv[6] !== undefined ? lv[6] : .55;
+      fx.saas.classList.toggle('on', ch7 > .25);
+      const tier = SAAS_TIERS[Math.min(4, Math.floor(ch7 * 5))];
+      fx.saas.textContent = tier;
+    }
+    // CH 08 Camp Coding → fade camp bg in
+    if(fx.camp){
+      const ch8 = lv[7] !== undefined ? lv[7] : .90;
+      fx.camp.classList.toggle('on', ch8 > .75);
+    }
+  }
+  // Seed initial state based on default fader positions
+  function seedDefaults(){
+    window.__faderLevels = window.__faderLevels || [];
+    const defaults = [.78,.68,.62,.50,.74,.58,.55,.90];
+    defaults.forEach((v,i)=>{ if(window.__faderLevels[i] === undefined) window.__faderLevels[i] = v; });
+    apply();
+  }
+  seedDefaults();
+  // Track mouse to follow thinking bubble + reapply on drag
+  document.addEventListener('mousemove', (e)=>{
+    if(fx.think && fx.think.classList.contains('on')){
+      fx.think.style.left = (e.clientX + 18) + 'px';
+      fx.think.style.top = (e.clientY - 10) + 'px';
+    }
+  }, {passive:true});
+  let raf = null;
+  function schedule(){ if(!raf) raf = requestAnimationFrame(()=>{ raf = null; apply(); }); }
+  document.addEventListener('mousemove', schedule, {passive:true});
+  document.addEventListener('touchmove', schedule, {passive:true});
+})();
+
+/* Vignette responds to CH 04 (kept) */
+(function(){
+  const vig = document.querySelector('.vignette');
+  let raf = null;
+  function apply(){
+    raf = null;
+    const lv = window.__faderLevels || [];
+    if(lv[3] !== undefined && vig){
+      vig.style.opacity = (0.5 + (1 - lv[3]) * 0.5).toFixed(3);
+    }
+  }
+  document.addEventListener('mousemove', ()=>{ if(!raf) raf = requestAnimationFrame(apply); }, {passive:true});
+  document.addEventListener('touchmove', ()=>{ if(!raf) raf = requestAnimationFrame(apply); }, {passive:true});
+})();
+
+/* Draggable faders */
+(function(){
+  const faders = document.querySelectorAll('.fader');
+  faders.forEach((fader, idx)=>{
+    const grip = fader.querySelector('.grip');
+    const track = fader.querySelector('.track');
+    const tag = fader.querySelector('.ch-tag');
+    if(!grip || !track) return;
+    let dragging = false;
+    function pct(clientY){
+      const r = track.getBoundingClientRect();
+      let p = 1 - (clientY - r.top) / r.height;
+      return Math.max(0.04, Math.min(0.98, p));
+    }
+    const mixerEl = document.querySelector('.mixer');
+    function setGrip(p){
+      grip.style.bottom = (p*100) + '%';
+      const db = Math.round((p - 0.5) * 24);
+      tag.textContent = (db>=0?'+':'') + db + 'dB';
+      fader.classList.add('tweaked');
+      if(mixerEl) mixerEl.classList.add('touched');
+      window.__faderLevels = window.__faderLevels || [];
+      window.__faderLevels[idx] = p;
+    }
+    function start(e){
+      e.preventDefault();
+      dragging = true;
+      grip.classList.add('dragging');
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      setGrip(pct(cy));
+    }
+    function move(e){
+      if(!dragging) return;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      setGrip(pct(cy));
+    }
+    function end(){ dragging=false; grip.classList.remove('dragging'); }
+    grip.addEventListener('mousedown', start);
+    grip.addEventListener('touchstart', start, {passive:false});
+    window.addEventListener('mousemove', move);
+    window.addEventListener('touchmove', move, {passive:false});
+    window.addEventListener('mouseup', end);
+    window.addEventListener('touchend', end);
+    track.addEventListener('click', (e)=>{ setGrip(pct(e.clientY)); });
+  });
+})();
+</script>
+
+</body>
+</html>

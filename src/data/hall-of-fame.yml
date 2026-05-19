@@ -1829,6 +1829,21 @@ members:
       - id: "ai_ops"
         label: "AI 工具實戰"
 
+  - id: "merle__188"
+    name: "梅爾 Merle｜塔羅 × 自我成長之路"
+    avatar: "/assets/img/guild/merle__188/avatar.webp"
+    page: "/guild/merle__188.html"
+    title: "Tarot Reader · Self-Optimizer · 不斷優化中"
+    description: "31 歲，從房仲店內 Top 1 → 澳洲打工度假 → 靈性瑜伽村 → 黃金海岸 → 菲律賓語言學校。曾陷入重度憂鬱與中度焦慮，靠每日塔羅、薩提爾、GPT 與運動兩個月走出低谷。下一站：澳洲 IT 進修。終極願景：露營區與農場 × 智能生活科技。「我習慣把崩潰轉化為系統，把焦慮轉化為資料。」"
+    tags:
+      - id: "tarot_self_growth"
+        label: "塔羅 · 自我成長"
+      - id: "ai_life_ops"
+        label: "AI × 生活自動化"
+      - id: "aus_working_holiday"
+        label: "澳打 × 留學移民"
+
+
   - id: "xijing"
     name: "Dolly｜繫晶 xijing"
     avatar: "/assets/img/guild/xijing/avatar.webp"
