@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="帕帕（Priscilla z）— 嘉義閒人出租。陪你看醫生、辦事、讀書、採買；想不想說話都可以。一本翻不完的書、一杯溫的茶、一個願意靜靜待在你旁邊的人。">
+<title>帕帕 — Pages I Keep Turning · 陪伴出租 / 嘉義</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Cormorant+Garamond:ital,wght@1,300;1,400;1,500&family=Noto+Serif+TC:wght@300;500;700&family=Caveat&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<style>
+:root{
+  --paper:#FAF6EE;
+  --paper-edge:#E6DBC4;
+  --ink:#3B3530;
+  --ink-soft:#5C544C;
+  --ink-faint:#8B8278;
+  --lavender:#B5A0DC;
+  --lavender-deep:#7B62B4;
+  --lavender-mist:#D8CCEB;
+  --sage:#A7C49A;
+  --peach:#F2C283;
+  --peach-deep:#D9994E;
+  --bluepurple:#BAC7E6;
+  --rose:#D3A5B0;
+  --gold-line:rgba(217,153,78,.35);
+  --f-disp:'DM Serif Display',serif;
+  --f-en:'Cormorant Garamond',serif;
+  --f-tc:'Noto Serif TC',serif;
+  --f-hand:'Caveat',cursive;
+  --f-mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html,body{overflow-x:hidden;background:var(--paper)}
+body{
+  font-family:var(--f-tc);font-weight:300;color:var(--ink);
+  line-height:1.95;letter-spacing:.02em;
+  background:
+    radial-gradient(circle at 16% 12%, rgba(181,160,220,.18) 0%, transparent 36%),
+    radial-gradient(circle at 88% 28%, rgba(242,194,131,.16) 0%, transparent 32%),
+    radial-gradient(circle at 12% 78%, rgba(167,196,154,.16) 0%, transparent 38%),
+    radial-gradient(circle at 86% 92%, rgba(186,199,230,.16) 0%, transparent 36%),
+    linear-gradient(180deg, #FAF6EE 0%, #F4ECDC 50%, #F8F1E2 100%);
+}
+::selection{background:var(--lavender);color:var(--paper)}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* ===== ATMOSPHERE ===== */
+/* 紙張纖維紋 */
+.paper-grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.45;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.30  0 0 0 0 0.25  0 0 0 .25 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>")}
+/* 水彩斑漬層 — 大色塊柔暈 */
+.wash{position:fixed;inset:0;z-index:0;pointer-events:none;mix-blend-mode:multiply;opacity:.55}
+.wash::before, .wash::after{content:'';position:absolute;border-radius:50%;filter:blur(60px)}
+.wash::before{width:60vmax;height:60vmax;left:-18vmax;top:-22vmax;
+  background:radial-gradient(circle,rgba(181,160,220,.32) 0%,transparent 65%);
+  animation:bloomA 28s ease-in-out infinite alternate}
+.wash::after{width:55vmax;height:55vmax;right:-16vmax;top:32%;
+  background:radial-gradient(circle,rgba(242,194,131,.28) 0%,transparent 65%);
+  animation:bloomB 34s ease-in-out infinite alternate}
+@keyframes bloomA{from{transform:translate(0,0) scale(1)}to{transform:translate(6vmax,4vmax) scale(1.12)}}
+@keyframes bloomB{from{transform:translate(0,0) scale(1)}to{transform:translate(-5vmax,-3vmax) scale(1.1)}}
+/* p5 + three canvases */
+#petals-canvas{position:fixed;inset:0;z-index:2;pointer-events:none}
+#crystal-canvas{position:fixed;width:200px;height:200px;pointer-events:none;z-index:5;transition:opacity .6s ease}
+@media(max-width:880px){#crystal-canvas{display:none}}
+@media(prefers-reduced-motion:reduce){.wash::before,.wash::after{animation:none}}
+
+.wrap{position:relative;z-index:3}
+section{position:relative;padding:clamp(80px,12vh,150px) clamp(22px,7vw,110px)}
+
+/* ===== ARCHIVE NAV ===== */
+.archive{position:fixed;top:20px;left:22px;z-index:90;font-family:var(--f-mono);font-size:11px;letter-spacing:.28em;
+  color:var(--ink-soft);padding:9px 16px;border:1px solid var(--ink-faint);border-radius:1px;
+  background:rgba(250,246,238,.85);backdrop-filter:blur(8px);text-transform:uppercase;transition:.35s}
+.archive:hover{color:var(--lavender-deep);border-color:var(--lavender-deep);transform:translateX(-2px)}
+.archive i{margin-right:7px}
+
+/* progress rail — chapter index */
+.rail{position:fixed;right:28px;top:50%;transform:translateY(-50%);z-index:80;display:flex;flex-direction:column;gap:18px}
+.rail a{display:block;width:24px;height:24px;position:relative;cursor:pointer}
+.rail a::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:6px;height:6px;border-radius:50%;background:transparent;border:1px solid var(--ink-faint);transition:.35s}
+.rail a::after{content:attr(data-label);position:absolute;right:30px;top:50%;transform:translateY(-50%);
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--ink-soft);opacity:0;white-space:nowrap;transition:.35s;text-transform:uppercase}
+.rail a:hover::after{opacity:1}
+.rail a.on::before{background:var(--lavender-deep);border-color:var(--lavender-deep);box-shadow:0 0 0 4px rgba(123,98,180,.12)}
+.rail a.on::after{opacity:.7}
+@media(max-width:900px){.rail{display:none}}
+
+/* ===== HERO / FRONTISPIECE ===== */
+.hero{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:clamp(28px,5vw,90px);
+  padding-top:clamp(90px,14vh,160px);overflow:hidden;position:relative}
+.hero-left{position:relative;z-index:3}
+.hero-tag{font-family:var(--f-mono);font-size:11px;letter-spacing:.42em;color:var(--lavender-deep);text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:14px}
+.hero-tag span{width:32px;height:1px;background:var(--lavender-deep);display:inline-block}
+.hero-h1{font-family:var(--f-tc);font-weight:700;font-size:clamp(40px,5.6vw,82px);line-height:1.18;letter-spacing:.02em;color:var(--ink);margin-bottom:22px;position:relative}
+.hero-h1 .accent{display:inline-block;font-family:var(--f-disp);font-style:italic;color:var(--lavender-deep);font-weight:400}
+.hero-h1 .small{font-size:.55em;display:block;font-weight:300;color:var(--ink-soft);letter-spacing:.05em;margin-top:8px}
+.hero-h1 .pen{display:inline-block;width:.7em;height:.06em;background:var(--ink);vertical-align:middle;margin-right:.18em;animation:caret 1.4s steps(2,end) infinite}
+@keyframes caret{50%{opacity:0}}
+.hero-sub{font-family:var(--f-en);font-style:italic;font-size:clamp(17px,1.4vw,21px);color:var(--ink-soft);margin-bottom:38px;letter-spacing:.02em;line-height:1.7;max-width:520px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:32px}
+.hero-meta .pill{font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;color:var(--ink-soft);padding:8px 14px;border:1px solid var(--ink-faint);border-radius:30px;background:rgba(250,246,238,.6);text-transform:uppercase}
+.hero-meta .pill i{margin-right:6px;color:var(--lavender-deep)}
+.hero-scroll{display:flex;align-items:center;gap:14px;font-family:var(--f-mono);font-size:11px;letter-spacing:.32em;color:var(--ink-soft);text-transform:uppercase;margin-top:48px}
+.hero-scroll::before{content:'';width:46px;height:1px;background:var(--ink-faint);display:inline-block;animation:scroll-bar 2.2s ease-in-out infinite}
+@keyframes scroll-bar{0%,100%{transform:scaleX(.4);transform-origin:left}50%{transform:scaleX(1)}}
+
+.hero-right{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;min-height:60vh}
+.cover-frame{position:relative;width:min(440px,100%);
+  background:linear-gradient(180deg,rgba(250,246,238,.95) 0%,rgba(241,234,220,.85) 100%);
+  box-shadow:0 30px 60px -28px rgba(123,98,180,.25),0 8px 24px -8px rgba(0,0,0,.08),inset 0 0 0 1px rgba(0,0,0,.04);
+  border-radius:3px;padding:24px 22px 56px;transform:rotate(-2deg)}
+.cover-frame::before{content:'';position:absolute;left:-12px;top:18px;width:60px;height:24px;background:rgba(217,153,78,.35);transform:rotate(-8deg);border-radius:1px;
+  background-image:linear-gradient(45deg,rgba(217,153,78,.4),rgba(217,153,78,.25))}
+.cover-frame::after{content:'';position:absolute;right:-14px;bottom:30px;width:50px;height:22px;background:rgba(181,160,220,.35);transform:rotate(7deg);border-radius:1px}
+.cover-frame img{width:100%;height:auto;object-fit:contain;border-radius:2px;filter:saturate(1.02);display:block}
+.cover-cap{position:absolute;left:-26px;bottom:-32px;font-family:var(--f-hand);font-size:24px;color:var(--ink-soft);transform:rotate(-3deg);background:rgba(250,246,238,.92);padding:6px 14px;border-radius:2px;box-shadow:0 4px 10px rgba(0,0,0,.05)}
+.cover-cap i{margin-right:6px;color:var(--peach-deep)}
+
+@media(max-width:880px){
+  .hero{grid-template-columns:1fr;text-align:left;padding-top:110px}
+  .hero-right{min-height:auto;margin-top:8px}
+  .cover-frame{width:min(340px,90%);transform:rotate(-1deg)}
+}
+
+/* ===== SECTION HEADING ===== */
+.ch{position:relative;margin-bottom:60px}
+.ch-num{font-family:var(--f-mono);font-size:11px;letter-spacing:.4em;color:var(--lavender-deep);text-transform:uppercase;margin-bottom:14px;display:block}
+.ch-title{font-family:var(--f-tc);font-weight:500;font-size:clamp(28px,3.4vw,46px);color:var(--ink);line-height:1.3;letter-spacing:.02em;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+.ch-title .en{font-family:var(--f-disp);font-style:italic;font-size:.6em;color:var(--ink-faint);font-weight:400;letter-spacing:.01em}
+.ch-rule{margin-top:24px;height:1px;background:linear-gradient(90deg,var(--ink-faint) 0%,transparent 60%);width:120px}
+
+/* ===== SECTION 02 — PROLOGUE ===== */
+.prologue{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(40px,6vw,90px);align-items:start}
+.pro-text{font-family:var(--f-tc);font-size:clamp(17px,1.3vw,19px);line-height:2.0;color:var(--ink);max-width:620px}
+.pro-text p{margin-bottom:22px}
+.pro-text p::first-letter{font-family:var(--f-disp);font-size:2.6em;float:left;line-height:.9;padding:6px 10px 0 0;color:var(--lavender-deep)}
+.pro-text p.no-drop::first-letter{font-family:inherit;font-size:inherit;float:none;padding:0;color:inherit}
+.pro-text .italic{font-family:var(--f-en);font-style:italic;color:var(--ink-soft);letter-spacing:.01em}
+.pro-marg{position:relative;padding:34px 28px;background:rgba(250,246,238,.7);border:1px dashed var(--ink-faint);border-radius:2px}
+.pro-marg::before{content:'';position:absolute;left:24px;top:-12px;font-family:var(--f-hand);font-size:18px;color:var(--peach-deep);background:var(--paper);padding:0 10px;content:'margin notes'}
+.pro-marg ul{list-style:none}
+.pro-marg li{font-family:var(--f-hand);font-size:22px;color:var(--ink-soft);line-height:1.6;margin:14px 0;padding-left:22px;position:relative}
+.pro-marg li::before{content:'·';position:absolute;left:0;top:-4px;color:var(--lavender-deep);font-size:30px;font-weight:700}
+.pro-marg li b{font-family:var(--f-tc);font-weight:500;color:var(--ink);font-size:.85em;display:inline-block;margin-right:6px;border-bottom:1px solid var(--gold-line)}
+.pro-doodle{margin-top:30px;text-align:center;font-family:var(--f-hand);color:var(--ink-faint);font-size:18px;line-height:1.4}
+.pro-doodle i{font-size:34px;display:block;margin-bottom:8px;color:var(--lavender)}
+@media(max-width:880px){.prologue{grid-template-columns:1fr}}
+
+/* ===== SECTION 03 — CHAPTER ONE ===== */
+.ch1{position:relative}
+.frame-box{position:relative;max-width:760px;margin:30px auto 80px;padding:80px 60px;
+  background:rgba(250,246,238,.78);
+  border-top:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}
+.frame-box::before,.frame-box::after{content:'';position:absolute;width:32px;height:32px;border:1px solid var(--ink-faint)}
+.frame-box::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.frame-box::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.bigquote{font-family:var(--f-tc);font-weight:500;font-size:clamp(24px,2.6vw,38px);line-height:1.75;color:var(--ink);text-align:center;letter-spacing:.04em}
+.bigquote .slash{display:inline-block;width:1em;height:.06em;background:var(--lavender-deep);vertical-align:middle;margin:0 .6em}
+.bigquote .em{color:var(--lavender-deep);font-weight:700}
+.bigquote-en{font-family:var(--f-en);font-style:italic;font-size:.4em;color:var(--ink-faint);display:block;margin-top:18px;letter-spacing:.04em}
+.grid-break{position:relative;max-width:760px;margin:0 auto;height:120px;display:flex;justify-content:space-between;align-items:stretch}
+.grid-break i{display:block;width:14%;background:rgba(91,76,116,.12);border:1px solid rgba(91,76,116,.2);position:relative}
+.grid-break i::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 100%,rgba(181,160,220,.5),transparent 70%);opacity:0;transition:.8s}
+.grid-break i.bleed::after{opacity:1}
+.grid-break i.bleed{border-color:transparent;background:transparent}
+.ch1-body{max-width:680px;margin:60px auto 0;font-family:var(--f-tc);font-size:clamp(16px,1.2vw,18px);line-height:2.0;color:var(--ink-soft);text-align:center}
+.ch1-body p{margin-bottom:18px}
+.ch1-body .signoff{font-family:var(--f-en);font-style:italic;font-size:1.1em;color:var(--lavender-deep);margin-top:30px}
+
+/* ===== SECTION 04 — CHAPTER TWO (THE COMPANY) ===== */
+.ch2{position:relative}
+.book-pillow{display:grid;grid-template-columns:.95fr 1.05fr;gap:clamp(40px,6vw,90px);align-items:center;max-width:1180px;margin:0 auto}
+.book-side{position:relative}
+.book-photo{position:relative;background:rgba(250,246,238,.95);padding:30px 22px 70px;
+  box-shadow:0 24px 56px -22px rgba(123,98,180,.28),0 6px 18px -8px rgba(0,0,0,.08);
+  transform:rotate(-1.5deg);border-radius:2px}
+.book-photo img{width:100%;border-radius:1px;filter:saturate(.96) contrast(1.02)}
+.book-photo .cap{position:absolute;left:30px;bottom:18px;font-family:var(--f-hand);font-size:19px;color:var(--ink-soft);line-height:1.3}
+.book-photo .cap small{font-family:var(--f-mono);font-size:9px;letter-spacing:.2em;display:block;color:var(--ink-faint);text-transform:uppercase;margin-top:4px}
+.book-quote{position:relative}
+.book-quote .open{font-family:var(--f-disp);font-size:90px;color:var(--lavender);line-height:.6;display:block;height:36px;margin-bottom:8px}
+.book-quote .zh{font-family:var(--f-tc);font-weight:500;font-size:clamp(32px,3.8vw,52px);line-height:1.45;color:var(--ink);letter-spacing:.06em;margin-bottom:18px}
+.book-quote .zh em{font-style:normal;color:var(--lavender-deep);position:relative;display:inline-block}
+.book-quote .zh em::after{content:'';position:absolute;left:-2px;right:-2px;bottom:-2px;height:10px;background:rgba(181,160,220,.35);z-index:-1;border-radius:1px}
+.book-quote .en{font-family:var(--f-en);font-style:italic;font-size:clamp(18px,1.5vw,24px);color:var(--ink-soft);line-height:1.6;margin-bottom:18px}
+.book-quote .en em{color:var(--lavender-deep);font-style:italic}
+.book-quote .src{font-family:var(--f-mono);font-size:10px;letter-spacing:.32em;color:var(--ink-faint);text-transform:uppercase}
+.book-bridge{max-width:780px;margin:90px auto 0;text-align:center}
+.book-bridge p{font-family:var(--f-tc);font-size:clamp(20px,1.9vw,28px);font-weight:300;line-height:1.85;color:var(--ink);letter-spacing:.04em}
+.book-bridge .accent{font-family:var(--f-en);font-style:italic;color:var(--lavender-deep)}
+.book-tags{margin-top:34px;display:flex;justify-content:center;flex-wrap:wrap;gap:18px;font-family:var(--f-hand);color:var(--ink-soft);font-size:20px}
+.book-tags span{position:relative;padding:0 12px}
+.book-tags span+span::before{content:'·';position:absolute;left:-4px;color:var(--lavender-deep);font-size:1.2em}
+@media(max-width:880px){.book-pillow{grid-template-columns:1fr}}
+
+/* ===== SECTION 05 — CHAPTER THREE (SERVICES) ===== */
+.services{position:relative}
+.svc-intro{max-width:720px;margin:0 auto 70px;text-align:center;font-family:var(--f-tc);font-size:clamp(17px,1.3vw,19px);line-height:1.9;color:var(--ink-soft)}
+.svc-intro .em{color:var(--lavender-deep);font-weight:500}
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;max-width:1180px;margin:0 auto}
+.svc-card{position:relative;padding:32px 26px 30px;background:rgba(250,246,238,.86);
+  border:1px solid var(--paper-edge);border-radius:3px;transition:.45s;overflow:hidden}
+.svc-card::before{content:'';position:absolute;left:0;top:0;height:3px;width:100%;background:linear-gradient(90deg,var(--lavender),var(--peach),var(--sage),var(--bluepurple));opacity:0;transition:.45s}
+.svc-card:hover{transform:translateY(-4px);box-shadow:0 16px 42px -22px rgba(123,98,180,.35);border-color:var(--lavender)}
+.svc-card:hover::before{opacity:1}
+.svc-card .ico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(181,160,220,.18);color:var(--lavender-deep);font-size:18px;margin-bottom:18px;transition:.4s}
+.svc-card:hover .ico{background:rgba(181,160,220,.4);transform:rotate(-6deg)}
+.svc-card h3{font-family:var(--f-tc);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:6px;letter-spacing:.04em}
+.svc-card h3 .en{font-family:var(--f-en);font-style:italic;color:var(--ink-faint);font-size:.78em;font-weight:400;margin-left:8px}
+.svc-card p{font-family:var(--f-tc);font-size:14.5px;line-height:1.85;color:var(--ink-soft)}
+
+/* rate card */
+.rate{margin:80px auto 0;max-width:880px;padding:42px clamp(28px,4vw,60px);
+  background:linear-gradient(180deg,rgba(250,246,238,.95) 0%,rgba(241,234,220,.7) 100%);
+  border:1px solid var(--ink-faint);border-radius:2px;position:relative}
+.rate::before,.rate::after{content:'';position:absolute;width:18px;height:18px;border:1px solid var(--ink-faint)}
+.rate::before{top:8px;left:8px;border-right:0;border-bottom:0}
+.rate::after{bottom:8px;right:8px;border-left:0;border-top:0}
+.rate-head{font-family:var(--f-mono);font-size:11px;letter-spacing:.32em;color:var(--lavender-deep);text-transform:uppercase;text-align:center;margin-bottom:28px}
+.rate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:30px;align-items:start}
+.rate-cell{position:relative}
+.rate-cell .lbl{font-family:var(--f-mono);font-size:10px;letter-spacing:.28em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:8px;display:block}
+.rate-cell .val{font-family:var(--f-tc);font-weight:500;font-size:22px;color:var(--ink);line-height:1.4}
+.rate-cell .val em{font-style:normal;color:var(--lavender-deep)}
+.rate-cell .note{font-family:var(--f-hand);font-size:17px;color:var(--ink-soft);margin-top:6px;line-height:1.4}
+.rate-foot{margin-top:30px;padding-top:24px;border-top:1px dashed var(--ink-faint);font-family:var(--f-tc);font-size:14.5px;color:var(--ink-soft);text-align:center;line-height:1.85}
+.rate-foot .em{color:var(--peach-deep);font-weight:500}
+
+/* ===== SECTION 06 — CHAPTER FOUR (DIARY) ===== */
+.diary{position:relative}
+.diary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:34px;max-width:1180px;margin:0 auto}
+.diary-card{position:relative;background:rgba(250,246,238,.92);padding:36px 32px 30px;border-radius:2px;
+  box-shadow:0 14px 32px -18px rgba(91,76,116,.28),0 4px 10px -4px rgba(0,0,0,.06);
+  border:1px solid var(--paper-edge)}
+.diary-card:nth-child(1){transform:rotate(-.9deg)}
+.diary-card:nth-child(2){transform:rotate(.7deg)}
+.diary-card::before{content:'';position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:60px;height:18px;
+  background:rgba(217,153,78,.4);opacity:.85;border-radius:1px}
+.diary-meta{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:18px;padding-bottom:12px;border-bottom:1px dashed var(--ink-faint)}
+.diary-meta .tag{color:var(--lavender-deep)}
+.diary-card h3{font-family:var(--f-tc);font-weight:500;font-size:20px;color:var(--ink);margin-bottom:18px;letter-spacing:.04em;line-height:1.5}
+.diary-card .body{font-family:var(--f-tc);font-size:15.5px;line-height:2.0;color:var(--ink-soft)}
+.diary-card .body p{margin-bottom:14px}
+.diary-card .body .pull{font-family:var(--f-en);font-style:italic;color:var(--lavender-deep);font-size:1.06em;padding:8px 0;display:block;border-left:2px solid var(--lavender);padding-left:14px;margin:14px 0}
+.diary-card .body .quote{font-family:var(--f-hand);font-size:21px;color:var(--ink);line-height:1.55;margin:18px 0;padding:0 6px}
+.diary-card .sig{margin-top:18px;font-family:var(--f-hand);font-size:18px;color:var(--ink-faint);text-align:right}
+
+/* ===== SECTION 07 — CHAPTER FIVE (MUSIC) ===== */
+.music{position:relative}
+.music-wrap{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:.8fr 1.2fr;gap:clamp(34px,5vw,80px);align-items:center}
+.music-left{position:relative}
+.music-quote{font-family:var(--f-tc);font-size:clamp(22px,2vw,28px);line-height:1.75;color:var(--ink);font-weight:300;letter-spacing:.04em}
+.music-quote em{font-style:normal;color:var(--lavender-deep)}
+.music-quote .humble{display:block;margin-top:20px;font-family:var(--f-en);font-style:italic;font-size:.7em;color:var(--ink-faint)}
+.music-list{list-style:none;display:flex;flex-direction:column;gap:14px}
+.music-list li{display:flex;align-items:center;gap:18px;padding:18px 24px;background:rgba(250,246,238,.85);border:1px solid var(--paper-edge);border-radius:3px;transition:.4s;cursor:pointer;position:relative;overflow:hidden}
+.music-list li:hover{transform:translateX(6px);border-color:var(--peach);background:rgba(242,237,225,.95)}
+.music-list .play{flex-shrink:0;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--lavender),var(--lavender-deep));color:var(--paper);font-size:13px;padding-left:3px;box-shadow:0 4px 10px rgba(123,98,180,.25);transition:.4s}
+.music-list li:hover .play{transform:scale(1.08);box-shadow:0 6px 14px rgba(123,98,180,.35)}
+.music-list .info{flex:1;min-width:0}
+.music-list .info .t{font-family:var(--f-tc);font-weight:500;font-size:16px;color:var(--ink);letter-spacing:.03em;margin-bottom:4px;line-height:1.4}
+.music-list .info .m{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase}
+.music-list .ext{flex-shrink:0;font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;opacity:.6}
+.music-list li.orig{border-color:var(--peach);background:rgba(242,194,131,.12)}
+.music-list li.orig .play{background:linear-gradient(135deg,var(--peach),var(--peach-deep));box-shadow:0 4px 10px rgba(217,153,78,.3)}
+@media(max-width:880px){.music-wrap{grid-template-columns:1fr}}
+
+/* ===== SECTION 08 — EPILOGUE ===== */
+.epilogue{position:relative;padding-bottom:80px}
+.verse{max-width:780px;margin:0 auto;text-align:center;padding:60px 30px;position:relative}
+.verse::before,.verse::after{content:'';position:absolute;left:50%;width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--lavender-deep),transparent);transform:translateX(-50%)}
+.verse::before{top:0}.verse::after{bottom:0}
+.verse-body{font-family:var(--f-tc);font-weight:300;font-size:clamp(20px,2vw,28px);line-height:2.0;color:var(--ink);letter-spacing:.06em;margin-bottom:24px}
+.verse-body em{font-style:normal;color:var(--lavender-deep);font-weight:500}
+.verse-cite{font-family:var(--f-en);font-style:italic;font-size:15px;color:var(--ink-faint);letter-spacing:.04em}
+.signoff-block{max-width:520px;margin:80px auto 0;text-align:center}
+.signoff-block .lots{font-family:var(--f-hand);font-size:46px;color:var(--ink);line-height:1.3;margin-bottom:14px;letter-spacing:.02em}
+.signoff-block .pa{font-family:var(--f-disp);font-style:italic;font-size:32px;color:var(--lavender-deep)}
+.signoff-block .stamp{margin-top:30px;font-family:var(--f-mono);font-size:10px;letter-spacing:.32em;color:var(--ink-faint);text-transform:uppercase}
+
+/* ===== FOOTER ===== */
+footer{padding:60px clamp(22px,7vw,110px) 50px;position:relative;border-top:1px solid var(--paper-edge);background:rgba(241,234,220,.5);margin-top:60px}
+.foot-grid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:30px;align-items:center;flex-wrap:wrap}
+.foot-socials{display:flex;gap:14px;flex-wrap:wrap}
+.foot-socials a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border:1px solid var(--ink-faint);border-radius:30px;font-family:var(--f-mono);font-size:11px;letter-spacing:.22em;color:var(--ink-soft);text-transform:uppercase;transition:.35s;background:rgba(250,246,238,.7)}
+.foot-socials a:hover{color:var(--paper);background:var(--lavender-deep);border-color:var(--lavender-deep);transform:translateY(-2px)}
+.foot-socials a i{font-size:13px}
+.foot-made{font-family:var(--f-en);font-style:italic;font-size:14px;color:var(--ink-faint);text-align:right}
+.foot-made .heart{color:var(--rose);font-style:normal}
+@media(max-width:680px){.foot-grid{grid-template-columns:1fr;text-align:center}.foot-made{text-align:center}.foot-socials{justify-content:center}}
+
+/* ===== reveal animation hooks ===== */
+.r-fade{opacity:0;transform:translateY(28px)}
+.r-wash{position:relative}
+.r-wash::before{content:'';position:absolute;inset:-20px -30px;background:radial-gradient(ellipse,rgba(181,160,220,.25) 0%,transparent 60%);opacity:0;transition:opacity 1.4s ease;z-index:-1;border-radius:50%}
+.r-wash.show::before{opacity:1}
+
+/* mobile tweaks */
+@media(max-width:640px){
+  section{padding:80px 22px}
+  .frame-box{padding:60px 30px}
+  .ch-title{font-size:28px}
+  .verse{padding:50px 16px}
+}
+
+/* ===== UNIQUE / SIGNATURE INTERACTIONS ===== */
+
+/* 時光帳本 — Time Ledger */
+.ledger{position:fixed;top:22px;right:78px;z-index:85;display:flex;flex-direction:column;align-items:flex-end;gap:4px;
+  padding:10px 16px;background:rgba(250,246,238,.85);backdrop-filter:blur(8px);
+  border:1px solid var(--ink-faint);border-radius:1px;font-family:var(--f-mono);
+  pointer-events:none;transition:opacity .5s ease}
+.ledger-label{font-size:9px;letter-spacing:.28em;color:var(--ink-faint);text-transform:uppercase}
+.ledger-val{font-size:13px;letter-spacing:.04em;color:var(--ink);font-weight:400}
+.ledger-val small{font-size:9px;color:var(--ink-faint);margin:0 2px;letter-spacing:.15em}
+.ledger-val em{font-style:normal;color:var(--lavender-deep);font-weight:600;font-size:14px;margin-left:2px}
+.ledger-val .sep{color:var(--ink-faint);margin:0 6px;font-style:normal}
+@media(max-width:900px){.ledger{top:auto;bottom:18px;right:18px;padding:8px 12px}.ledger-val{font-size:11px}.ledger-label{font-size:8px}}
+
+/* 靜默低語 — Silence Whisper */
+.whisper{position:fixed;left:50%;bottom:50px;transform:translateX(-50%) translateY(8px);z-index:88;
+  padding:14px 26px;background:rgba(250,246,238,.92);backdrop-filter:blur(10px);
+  border-radius:30px;border:1px solid var(--lavender-mist);
+  font-family:var(--f-tc);font-weight:300;font-size:14px;color:var(--ink-soft);letter-spacing:.06em;
+  opacity:0;pointer-events:none;transition:opacity 1.6s ease,transform 1.6s ease;
+  box-shadow:0 20px 40px -20px rgba(123,98,180,.25);white-space:nowrap}
+.whisper.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.whisper i{margin-right:9px;color:var(--lavender-deep);font-size:12px}
+.whisper::before{content:'';position:absolute;inset:-20px;background:radial-gradient(ellipse,rgba(181,160,220,.18),transparent 65%);z-index:-1;border-radius:50%}
+@media(max-width:640px){.whisper{font-size:13px;padding:12px 20px;bottom:32px;max-width:88vw;white-space:normal;text-align:center}}
+
+/* ===== SECTION — Where I sit / 我坐過的位置 ===== */
+.places{position:relative}
+.places-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:24px;max-width:1180px;margin:0 auto;
+  grid-auto-rows:minmax(180px,auto)}
+.place-card{position:relative;background:rgba(250,246,238,.95);padding:14px 14px 56px;border-radius:2px;
+  box-shadow:0 18px 36px -22px rgba(91,76,116,.32),0 4px 10px -4px rgba(0,0,0,.05);
+  transition:transform .5s cubic-bezier(.2,.7,.3,1),box-shadow .5s ease;overflow:hidden}
+.place-card:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 28px 50px -22px rgba(123,98,180,.4)}
+.place-card img{width:100%;height:100%;object-fit:cover;border-radius:1px;display:block;
+  filter:saturate(.92) contrast(1.02)}
+.place-card .where{position:absolute;left:18px;bottom:14px;right:18px;
+  font-family:var(--f-hand);font-size:18px;color:var(--ink);line-height:1.3;letter-spacing:.02em}
+.place-card .where small{display:block;font-family:var(--f-mono);font-size:8.5px;letter-spacing:.24em;color:var(--ink-faint);text-transform:uppercase;margin-top:4px}
+.place-card .stamp{position:absolute;top:18px;right:18px;width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:10px;
+  background:rgba(181,160,220,.85);color:var(--paper);font-weight:600;letter-spacing:.04em;
+  transform:rotate(8deg);box-shadow:0 4px 8px rgba(123,98,180,.3)}
+/* asymmetric layout */
+.place-a{grid-column:span 5;grid-row:span 2;transform:rotate(-1.5deg)}
+.place-b{grid-column:span 4;grid-row:span 1;transform:rotate(1deg)}
+.place-c{grid-column:span 3;grid-row:span 1;transform:rotate(-0.5deg)}
+.place-d{grid-column:span 4;grid-row:span 2;transform:rotate(1.2deg)}
+.place-e{grid-column:span 3;grid-row:span 1;transform:rotate(-1deg)}
+.places-quote{max-width:680px;margin:80px auto 0;text-align:center}
+.places-quote p{font-family:var(--f-tc);font-weight:300;font-size:clamp(18px,1.6vw,22px);line-height:1.95;color:var(--ink-soft);letter-spacing:.04em}
+.places-quote .accent{font-family:var(--f-en);font-style:italic;color:var(--lavender-deep)}
+@media(max-width:880px){
+  .places-grid{grid-template-columns:repeat(6,1fr);grid-auto-rows:200px}
+  .place-a,.place-b,.place-c,.place-d,.place-e{grid-column:span 3;grid-row:span 1;transform:rotate(0)}
+  .place-a{grid-column:span 6;grid-row:span 2}
+  .place-d{grid-column:span 6;grid-row:span 2}
+}
+@media(max-width:520px){
+  .places-grid{grid-template-columns:1fr;grid-auto-rows:240px}
+  .place-a,.place-b,.place-c,.place-d,.place-e{grid-column:span 1;grid-row:span 1}
+  .place-a,.place-d{grid-row:span 1}
+}
+
+/* ===== NEXT SLOTS WIDGET ===== */
+.next-slots{margin-top:32px;padding-top:26px;border-top:1px dashed var(--ink-faint)}
+.next-slots-head{font-family:var(--f-mono);font-size:10px;letter-spacing:.3em;color:var(--ink-faint);text-transform:uppercase;text-align:center;margin-bottom:18px}
+.next-slots-head em{font-style:normal;color:var(--peach-deep);margin:0 4px;font-weight:500}
+.slot-chips{display:flex;justify-content:center;flex-wrap:wrap;gap:14px}
+.slot-chip{display:inline-flex;flex-direction:column;align-items:center;padding:12px 22px;
+  background:rgba(250,246,238,.95);border:1px solid var(--lavender-mist);border-radius:3px;
+  font-family:var(--f-mono);transition:.35s;min-width:140px;position:relative}
+.slot-chip:hover{border-color:var(--lavender-deep);transform:translateY(-2px);box-shadow:0 8px 18px -8px rgba(123,98,180,.25)}
+.slot-chip .d{font-size:13px;letter-spacing:.16em;color:var(--ink);font-weight:500;line-height:1.4}
+.slot-chip .d em{font-style:normal;color:var(--lavender-deep);font-size:18px;margin:0 2px;font-weight:600}
+.slot-chip .span{font-size:9.5px;letter-spacing:.2em;color:var(--ink-faint);text-transform:uppercase;margin-top:6px}
+.slot-chip .dow{position:absolute;top:-9px;right:10px;background:var(--paper);padding:0 6px;font-size:8px;letter-spacing:.24em;color:var(--peach-deep);text-transform:uppercase}
+
+/* ===== VISITOR BOOKSHELF ===== */
+.shelf-block{max-width:880px;margin:80px auto 0;padding:0 8px}
+.shelf-tip{text-align:center;font-family:var(--f-tc);font-weight:300;font-size:16px;color:var(--ink-soft);line-height:1.85;letter-spacing:.04em;margin-bottom:24px}
+.shelf-tip em{font-style:normal;color:var(--lavender-deep)}
+.shelf-input{display:flex;justify-content:center;gap:10px;margin-bottom:30px;flex-wrap:wrap}
+.shelf-input input{padding:11px 16px;width:240px;max-width:60vw;background:rgba(250,246,238,.95);
+  border:1px solid var(--ink-faint);border-radius:2px;font-family:var(--f-tc);font-size:14.5px;
+  color:var(--ink);outline:none;transition:.3s;letter-spacing:.04em}
+.shelf-input input:focus{border-color:var(--lavender-deep);background:#fff}
+.shelf-input input::placeholder{color:var(--ink-faint);font-family:var(--f-en);font-style:italic;font-size:13.5px}
+.shelf-input button{padding:11px 22px;background:var(--lavender-deep);color:var(--paper);border:none;border-radius:2px;
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:.3s}
+.shelf-input button:hover{background:var(--ink);transform:translateY(-1px)}
+.bookshelf{position:relative;padding:24px 8px 16px;border-bottom:3px solid var(--peach-deep);
+  background:linear-gradient(180deg,transparent 0%,transparent 92%,rgba(217,153,78,.15) 100%);
+  display:flex;flex-wrap:wrap;justify-content:center;gap:6px;min-height:120px;align-items:flex-end}
+.book-spine{display:inline-flex;align-items:center;justify-content:center;
+  padding:14px 5px;min-width:24px;max-width:32px;height:auto;min-height:80px;
+  writing-mode:vertical-rl;text-orientation:upright;
+  font-family:var(--f-tc);font-weight:500;font-size:12px;letter-spacing:.14em;color:var(--paper);
+  border-radius:1px 1px 2px 2px;
+  box-shadow:1px 0 0 rgba(0,0,0,.08),inset 0 0 0 1px rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.08);
+  transition:transform .3s ease,filter .3s ease;cursor:default;line-height:1.4}
+.book-spine:hover{transform:translateY(-6px);filter:brightness(1.05)}
+.book-spine.new{animation:slidein .8s cubic-bezier(.2,.7,.3,1)}
+@keyframes slidein{from{transform:translateY(80px) rotate(8deg);opacity:0}to{transform:translateY(0) rotate(0);opacity:1}}
+.shelf-meta{text-align:center;margin-top:14px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.24em;color:var(--ink-faint);text-transform:uppercase}
+.shelf-meta em{font-style:normal;color:var(--lavender-deep);font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- atmosphere -->
+<div class="wash" aria-hidden="true"></div>
+<div class="paper-grain" aria-hidden="true"></div>
+<canvas id="petals-canvas" aria-hidden="true"></canvas>
+
+<!-- archive nav -->
+<a href="/guild/" class="archive"><i class="fa-solid fa-arrow-left"></i>ARCHIVE</a>
+
+<!-- 時光帳本 — Time Ledger -->
+<div class="ledger" aria-hidden="true">
+  <span class="ledger-label">如果這是你租我的時間</span>
+  <span class="ledger-val" id="ledger-val">0<small>分</small>0<small>秒</small> <i class="sep">·</i> NT$ <em>0</em></span>
+</div>
+
+<!-- 靜默低語 — Silence Whisper -->
+<div class="whisper" id="whisper" aria-hidden="true">
+  <i class="fa-solid fa-feather"></i>靜靜的也很好。我沒有要離開。
+</div>
+
+<!-- chapter rail -->
+<nav class="rail" aria-label="chapters">
+  <a href="#frontispiece" data-label="frontispiece" class="on"></a>
+  <a href="#prologue" data-label="prologue"></a>
+  <a href="#chapter-one" data-label="ch.1 / box"></a>
+  <a href="#chapter-two" data-label="ch.2 / company"></a>
+  <a href="#chapter-three" data-label="ch.3 / services"></a>
+  <a href="#places" data-label="interlude / places"></a>
+  <a href="#chapter-four" data-label="ch.4 / diary"></a>
+  <a href="#chapter-five" data-label="ch.5 / songs"></a>
+  <a href="#epilogue" data-label="epilogue"></a>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ 01 FRONTISPIECE ============ -->
+  <section class="hero" id="frontispiece">
+    <div class="hero-left">
+      <div class="hero-tag r-fade"><span></span>A Companion's Notebook · 嘉義</div>
+      <h1 class="hero-h1 r-fade">
+        我陪你<br>
+        <span class="accent">不一定要</span>說話<span class="pen"></span>
+        <span class="small">— Pages I keep turning, with whoever sits beside me.</span>
+      </h1>
+      <p class="hero-sub r-fade">
+        I rent out my time. Quiet hours, errands, hospital chairs, café afternoons —<br>
+        or simply the shape of one person sitting next to yours.
+      </p>
+      <div class="hero-meta">
+        <span class="pill r-fade"><i class="fa-solid fa-feather-pointed"></i>帕帕 · Priscilla</span>
+        <span class="pill r-fade"><i class="fa-solid fa-location-dot"></i>嘉義</span>
+        <span class="pill r-fade"><i class="fa-solid fa-music"></i>ISFJ · 26</span>
+        <span class="pill r-fade"><i class="fa-solid fa-leaf"></i>Capybara 帕白</span>
+      </div>
+      <div class="hero-scroll">scroll · 翻開第一頁</div>
+    </div>
+    <div class="hero-right">
+      <div class="cover-frame" id="cover-frame">
+        <img src="/assets/img/guild/sourday_zzz/cover.webp" alt="Capybara 帕白 watercolor self-portrait" loading="eager">
+        <div class="cover-cap"><i class="fa-solid fa-thumbtack"></i>cover · 帕白</div>
+      </div>
+      <div id="crystal-canvas" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- ============ 02 PROLOGUE ============ -->
+  <section id="prologue">
+    <div class="ch r-fade">
+      <span class="ch-num">02 · Prologue</span>
+      <h2 class="ch-title">致路過的你 <span class="en">a letter to whoever is reading this</span></h2>
+      <div class="ch-rule"></div>
+    </div>
+    <div class="prologue">
+      <div class="pro-text r-fade">
+        <p>我叫帕帕。Priscilla 是我的英文名。</p>
+        <p class="no-drop">大學讀的是英文，可是後來做的工作和它都不太相關 — 我在辦公室、在店裡當過螺絲，每一次都把自己塞進框框，但自己始終不適合任何形狀。</p>
+        <p class="no-drop">我比較喜歡陪伴人類、解析語言，用一點溫度去理解這個世界。是個高敏感人，<em class="italic">ISFJ</em>。需要獨處時間充電，但也喜歡以小時為單位的談話時間。</p>
+        <p class="no-drop">於是我在嘉義開了一個店，店裡只賣一樣東西 — 我的時間。如果你需要一個人陪你做點什麼、或不做什麼，那麼這頁就是寫給你的。</p>
+      </div>
+      <aside>
+        <div class="pro-marg r-fade">
+          <ul>
+            <li><b>位置</b>嘉義 · 機車可達</li>
+            <li><b>身分</b>26 歲女生 · ISFJ</li>
+            <li><b>學歷</b>臺北基督學院英文系畢</li>
+            <li><b>會的事</b>寫作、翻譯、彈琴、唱歌</li>
+            <li><b>愛的事</b>研究心理學、觀察人類</li>
+            <li><b>動物相似度</b>水豚 · 樹懶</li>
+            <li><b>顏色偏好</b>薰衣草 · 柔黃橘 · 淡藍紫</li>
+          </ul>
+        </div>
+        <div class="pro-doodle r-fade">
+          <i class="fa-solid fa-feather"></i>
+          我寫我所想<br>所感、所觀察的。
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 03 CHAPTER ONE — BOX ============ -->
+  <section id="chapter-one" class="ch1">
+    <div class="ch r-fade" style="text-align:center">
+      <span class="ch-num">03 · Chapter One</span>
+      <h2 class="ch-title" style="justify-content:center">為什麼我開始當「閒人」 <span class="en">why I started renting myself out</span></h2>
+      <div class="ch-rule" style="margin:24px auto 0"></div>
+    </div>
+
+    <div class="frame-box r-fade">
+      <p class="bigquote">
+        我在職場上 <span class="slash"></span> 總是把自己塞進框框裡<br>
+        卻 <span class="em">不適合</span> 任何形狀。
+        <span class="bigquote-en">— I kept squeezing myself into boxes that fit no shape of me.</span>
+      </p>
+    </div>
+
+    <!-- the grid that breaks -->
+    <div class="grid-break r-grid">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+
+    <div class="ch1-body r-fade">
+      <p>於是我離開了，那些不合身的形狀。</p>
+      <p>比較喜歡自由來去，還有認識人。</p>
+      <p>剛開始做這件事的時候，常常懷疑自己做得好不好、有沒有符合對方的期待。</p>
+      <p>但我相信陪伴的力量。</p>
+      <p class="signoff">— so I started turning my time inside out.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 CHAPTER TWO — THE COMPANY ============ -->
+  <section id="chapter-two" class="ch2">
+    <div class="ch r-fade" style="text-align:center">
+      <span class="ch-num">04 · Chapter Two</span>
+      <h2 class="ch-title" style="justify-content:center">從一本書裡 <span class="en">a page from my favourite book</span></h2>
+      <div class="ch-rule" style="margin:24px auto 0"></div>
+    </div>
+
+    <div class="book-pillow">
+      <div class="book-side r-fade">
+        <figure class="book-photo">
+          <img src="/assets/img/guild/sourday_zzz/photo_7.webp" alt="頁面攝自《Big Panda and Tiny Dragon》水墨繪本" loading="lazy">
+          <figcaption class="cap">
+            from《Big Panda and Tiny Dragon》<br>
+            <small>James Norbury · 中譯本</small>
+          </figcaption>
+        </figure>
+      </div>
+      <div class="book-quote r-fade">
+        <span class="open">&ldquo;</span>
+        <p class="zh">
+          「哪一樣比較重要，」大熊貓問，「旅程或目的地？」<br>
+          <em>「旅伴比較重要，」</em>小小龍說。
+        </p>
+        <p class="en">
+          &lsquo;Which is more important,&rsquo; asked Big Panda, &lsquo;the journey or the destination?&rsquo;<br>
+          &lsquo;<em>The company</em>,&rsquo; said Tiny Dragon.
+        </p>
+        <p class="src">— Big Panda &amp; Tiny Dragon · James Norbury</p>
+      </div>
+    </div>
+
+    <div class="book-bridge r-fade">
+      <p>對我來說，<span class="accent">每個人都像一本書一樣</span>。<br>
+      我提供的，不是建議，也不是諮商 —<br>
+      就只是把椅子搬到你旁邊，安安靜靜地坐著。</p>
+      <div class="book-tags">
+        <span>在嘉義</span>
+        <span>在火車上</span>
+        <span>在咖啡廳</span>
+        <span>在郵局排隊</span>
+        <span>在你需要的時候</span>
+      </div>
+    </div>
+
+    <!-- VISITOR BOOKSHELF — 每個人都像一本書 -->
+    <div class="shelf-block r-fade">
+      <p class="shelf-tip">如果你也願意，留下<em>一個能代表你的詞</em> —<br>我會幫你把它放上這座書架。</p>
+      <div class="shelf-input">
+        <input type="text" id="shelf-input" placeholder="a word that is you... (max 12)" maxlength="12" autocomplete="off">
+        <button type="button" id="shelf-add">放上去</button>
+      </div>
+      <div class="bookshelf" id="bookshelf" aria-label="visitors bookshelf"></div>
+      <div class="shelf-meta">a quiet shelf of <em id="shelf-count">·</em> souls</div>
+    </div>
+  </section>
+
+  <!-- ============ 05 CHAPTER THREE — SERVICES ============ -->
+  <section id="chapter-three" class="services">
+    <div class="ch r-fade" style="text-align:center">
+      <span class="ch-num">05 · Chapter Three</span>
+      <h2 class="ch-title" style="justify-content:center">租用我的時間 <span class="en">what you can rent me for</span></h2>
+      <div class="ch-rule" style="margin:24px auto 0"></div>
+    </div>
+
+    <p class="svc-intro r-fade">
+      我不是心理諮商專業，但<span class="em">可以給你傾聽的耳朵</span>。<br>
+      你需要建議或看法的時候我會說，<br>
+      你只是想要一個人在旁邊也完全可以。
+    </p>
+
+    <div class="svc-grid">
+      <article class="svc-card r-fade">
+        <div class="ico"><i class="fa-solid fa-stethoscope"></i></div>
+        <h3>陪看診<span class="en">hospital chair</span></h3>
+        <p>診間外的椅子是空的也是滿的。我陪你坐著，叫到號就一起進去；門關上前我會在原地等你。</p>
+      </article>
+      <article class="svc-card r-fade">
+        <div class="ico"><i class="fa-solid fa-envelope-open-text"></i></div>
+        <h3>辦事陪伴<span class="en">errand walk</span></h3>
+        <p>郵局、銀行、戶政、瑣事 — 凡是那種「一個人去好像有點重」的小事，我陪你輕輕走過去。</p>
+      </article>
+      <article class="svc-card r-fade">
+        <div class="ico"><i class="fa-solid fa-mug-saucer"></i></div>
+        <h3>咖啡廳陪讀<span class="en">quiet café</span></h3>
+        <p>我帶我的書，你帶你的。各看各的，偶爾抬頭笑一下。比一個人讀書，多了一個影子。</p>
+      </article>
+      <article class="svc-card r-fade">
+        <div class="ico"><i class="fa-solid fa-basket-shopping"></i></div>
+        <h3>出門採買<span class="en">grocery run</span></h3>
+        <p>不知道要買什麼也沒關係，我們可以一起繞、一起拿不定主意。挑東西本身也是一種陪伴。</p>
+      </article>
+      <article class="svc-card r-fade">
+        <div class="ico"><i class="fa-solid fa-camera-retro"></i></div>
+        <h3>幫你拍照<span class="en">be your photo</span></h3>
+        <p>那些你不想自己拍、卻又想紀念的瞬間。櫻花樹下、新買的洋裝、第一次去的店。我幫你按下快門。</p>
+      </article>
+      <article class="svc-card r-fade">
+        <div class="ico"><i class="fa-regular fa-circle"></i></div>
+        <h3>純粹的存在<span class="en">just sit here</span></h3>
+        <p>不想說話就不說話。坐在同一張長椅上，看夕陽爛掉。那種「有人」的感覺，有時候就是全部了。</p>
+      </article>
+      <article class="svc-card r-fade">
+        <div class="ico"><i class="fa-solid fa-headphones"></i></div>
+        <h3>線上傾聽<span class="en">voice line</span></h3>
+        <p>LINE 或 Discord 語音。看不見對方反而比較自由。如果你需要一個耳朵，我可以是。</p>
+      </article>
+      <article class="svc-card r-fade">
+        <div class="ico"><i class="fa-solid fa-comment-dots"></i></div>
+        <h3>還沒列出的<span class="en">tell me</span></h3>
+        <p>有其他想做的事都可以敲我討論。公共場合都可以考慮。外縣市接女性委託。</p>
+      </article>
+    </div>
+
+    <div class="rate r-fade">
+      <div class="rate-head">RATE CARD · 你買的不是服務，是時間裡的一個位置</div>
+      <div class="rate-grid">
+        <div class="rate-cell">
+          <span class="lbl">出勤費</span>
+          <div class="val">NT$ <em>100</em></div>
+          <div class="note">我騎機車 · 距離遠斟酌</div>
+        </div>
+        <div class="rate-cell">
+          <span class="lbl">陪伴時段</span>
+          <div class="val">NT$ <em>200</em> <span style="font-size:.6em;color:var(--ink-faint)">/ hour</span></div>
+          <div class="note">語音與實體同價</div>
+        </div>
+        <div class="rate-cell">
+          <span class="lbl">可預約</span>
+          <div class="val">週三 · 六 · 日</div>
+          <div class="note">三/六 10:00–22:00<br>日 14:00–21:00</div>
+        </div>
+        <div class="rate-cell">
+          <span class="lbl">地區</span>
+          <div class="val">嘉義為主</div>
+          <div class="note">外縣市需負擔交通<br>並接女性委託</div>
+        </div>
+      </div>
+      <div class="rate-foot">
+        委託過程產生的其他費用（門票、餐費等）由委託人負擔。<br>
+        想預約或想多聊一點 — 直接私訊 <span class="em">@sourday_zzz</span> 就可以。
+      </div>
+
+      <!-- 下一個有空的時段 — auto-computed from her real schedule -->
+      <div class="next-slots">
+        <div class="next-slots-head">下一個有空的時段 <em>·</em> next open chairs</div>
+        <div class="slot-chips" id="slot-chips">
+          <!-- populated by JS based on today's date -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INTERLUDE — WHERE I SIT ============ -->
+  <section id="places" class="places">
+    <div class="ch r-fade" style="text-align:center">
+      <span class="ch-num">interlude · 沒有編號的章節</span>
+      <h2 class="ch-title" style="justify-content:center">我坐過的位置 <span class="en">places I've sat with someone</span></h2>
+      <div class="ch-rule" style="margin:24px auto 0"></div>
+    </div>
+
+    <div class="places-grid">
+      <figure class="place-card place-a r-fade">
+        <img src="/assets/img/guild/sourday_zzz/photo_5.webp" alt="散步時的影子 — 帶著一隻土狗" loading="lazy">
+        <div class="stamp">01</div>
+        <figcaption class="where">
+          影子也是一種陪伴。
+          <small>walk · 嘉義小路 · 黃昏</small>
+        </figcaption>
+      </figure>
+
+      <figure class="place-card place-b r-fade">
+        <img src="/assets/img/guild/sourday_zzz/photo_9.webp" alt="兩人乾杯" loading="lazy">
+        <div class="stamp">02</div>
+        <figcaption class="where">
+          說「乾杯」的時候。
+          <small>toast · 餐廳 · 一個朋友</small>
+        </figcaption>
+      </figure>
+
+      <figure class="place-card place-c r-fade">
+        <img src="/assets/img/guild/sourday_zzz/photo_4.webp" alt="手裡的水晶 — 一個人的瞬間" loading="lazy">
+        <div class="stamp">03</div>
+        <figcaption class="where">
+          一個人的時候。
+          <small>solitude · 房間裡 · 一盞小光</small>
+        </figcaption>
+      </figure>
+
+      <figure class="place-card place-d r-fade">
+        <img src="/assets/img/guild/sourday_zzz/photo_8.webp" alt="夜市與粉色的波斯菊" loading="lazy">
+        <div class="stamp">04</div>
+        <figcaption class="where">
+          走過波斯菊的那個傍晚。
+          <small>cosmos · 夜市 · 嘉義</small>
+        </figcaption>
+      </figure>
+
+      <figure class="place-card place-e r-fade">
+        <img src="/assets/img/guild/sourday_zzz/photo_10.webp" alt="串燈與旗幟 — 暮色" loading="lazy">
+        <div class="stamp">05</div>
+        <figcaption class="where">
+          燈串亮起的時候。
+          <small>dusk · 露天廣場 · 等誰</small>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="places-quote r-fade">
+      <p>有時候陪伴是<span class="accent">一個人也算數</span>的事。<br>
+      我把這幾張照片留在這裡，<br>
+      像是把我的椅子先擺出來了 — 等你。</p>
+    </div>
+  </section>
+
+  <!-- ============ 06 CHAPTER FOUR — DIARY ============ -->
+  <section id="chapter-four" class="diary">
+    <div class="ch r-fade" style="text-align:center">
+      <span class="ch-num">06 · Chapter Four</span>
+      <h2 class="ch-title" style="justify-content:center">委託日記 <span class="en">excerpts from my companion notebook</span></h2>
+      <div class="ch-rule" style="margin:24px auto 0"></div>
+    </div>
+
+    <div class="diary-grid">
+      <article class="diary-card r-fade">
+        <div class="diary-meta"><span class="tag">FIELD NOTE · 跨縣市</span><span>嘉義 → 台中</span></div>
+        <h3>第一次跨縣市的委託 — 陪看診</h3>
+        <div class="body">
+          <p>跟委託人一起從嘉義搭火車到台中。她車禍受傷，需要四角拐杖輔助行動，要去台中的醫院諮詢手術。</p>
+          <p>從訊息就感覺她應該是個安靜的人，所以見面時我也不太說話。看診結束後她比較放鬆了，才多聊了一點。</p>
+          <p class="pull">She said I was a good fit — because she's a little socially anxious too.</p>
+          <p>一路上沒做什麼、也沒說什麼的我，聽到這些話覺得很欣慰。</p>
+          <p>計程車司機很健談，醫院的警衛也人很好。</p>
+          <p class="quote">「還有四分鐘到，你們坐著，我幫你看。」</p>
+          <p>這樣就好了，<em style="color:var(--lavender-deep);font-style:normal">靜靜的，什麼都不做</em>。</p>
+        </div>
+        <div class="sig">— 帕帕，記於回程的火車上</div>
+      </article>
+
+      <article class="diary-card r-fade">
+        <div class="diary-meta"><span class="tag">FIELD NOTE · 補習班</span><span>放學後</span></div>
+        <h3>小可愛皺著眉頭來找我</h3>
+        <div class="body">
+          <p>補習班的小可愛皺著眉頭，小小的膝蓋上有傷口。</p>
+          <p>他可憐巴巴地跟我說在學校受傷了。</p>
+          <p>我關心了幾句有沒有擦藥，回家後要給媽媽看。</p>
+          <p class="pull">How many more times will I get to see him — this child who comes to me to be spoiled.</p>
+          <p class="quote">真討厭，離別這件事。</p>
+          <p>陪伴有期限。我能做的就是在他靠近我膝蓋的這幾分鐘裡，認真當他的大人。</p>
+        </div>
+        <div class="sig">— 帕帕，於補習班的後排</div>
+      </article>
+    </div>
+
+    <p style="text-align:center;margin-top:60px;font-family:var(--f-en);font-style:italic;color:var(--ink-faint);font-size:15px;letter-spacing:.04em" class="r-fade">
+      更多日記持續更新中 · follow <span style="color:var(--lavender-deep)">@sourday_zzz</span> on Threads
+    </p>
+  </section>
+
+  <!-- ============ 07 CHAPTER FIVE — MUSIC ============ -->
+  <section id="chapter-five" class="music">
+    <div class="ch r-fade" style="text-align:center">
+      <span class="ch-num">07 · Chapter Five</span>
+      <h2 class="ch-title" style="justify-content:center">我也唱歌、也寫一點東西 <span class="en">the other things I do, quietly</span></h2>
+      <div class="ch-rule" style="margin:24px auto 0"></div>
+    </div>
+
+    <div class="music-wrap">
+      <div class="music-left r-fade">
+        <p class="music-quote">
+          做 cover 給沒有人在聽的房間。<br>
+          有一首是自己寫的，<em>叫做給自己一個喘息的機會</em>。
+          <span class="humble">— dreaming of being a writer one day, even as I keep noticing how plain my words are.</span>
+        </p>
+      </div>
+      <div class="music-right r-fade">
+        <ul class="music-list">
+          <li onclick="window.open('https://www.youtube.com/channel/UCQcenQOCR_4q5nwoLtFK9ww','_blank','noopener,noreferrer')">
+            <span class="play"><i class="fa-solid fa-play"></i></span>
+            <span class="info">
+              <span class="t">好樂團《我把我的青春給你》</span>
+              <span class="m">cover · 1:16 · 9 months ago</span>
+            </span>
+            <span class="ext"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+          </li>
+          <li onclick="window.open('https://www.youtube.com/channel/UCQcenQOCR_4q5nwoLtFK9ww','_blank','noopener,noreferrer')">
+            <span class="play"><i class="fa-solid fa-play"></i></span>
+            <span class="info">
+              <span class="t">KPOP Demon Hunters — What it Sounds Like</span>
+              <span class="m">cover · 1:21</span>
+            </span>
+            <span class="ext"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+          </li>
+          <li onclick="window.open('https://www.youtube.com/channel/UCQcenQOCR_4q5nwoLtFK9ww','_blank','noopener,noreferrer')">
+            <span class="play"><i class="fa-solid fa-play"></i></span>
+            <span class="info">
+              <span class="t">J.M Jeremy《請妳先說愛我》</span>
+              <span class="m">cover · 3:02 · R&amp;B</span>
+            </span>
+            <span class="ext"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+          </li>
+          <li onclick="window.open('https://www.youtube.com/channel/UCQcenQOCR_4q5nwoLtFK9ww','_blank','noopener,noreferrer')">
+            <span class="play"><i class="fa-solid fa-play"></i></span>
+            <span class="info">
+              <span class="t">V — Love Me Again</span>
+              <span class="m">cover · 2:17</span>
+            </span>
+            <span class="ext"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+          </li>
+          <li onclick="window.open('https://www.youtube.com/channel/UCQcenQOCR_4q5nwoLtFK9ww','_blank','noopener,noreferrer')">
+            <span class="play"><i class="fa-solid fa-play"></i></span>
+            <span class="info">
+              <span class="t">Tai Verdes — how deep?</span>
+              <span class="m">cover · 1:35</span>
+            </span>
+            <span class="ext"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+          </li>
+          <li class="orig" onclick="window.open('https://www.youtube.com/channel/UCQcenQOCR_4q5nwoLtFK9ww','_blank','noopener,noreferrer')">
+            <span class="play"><i class="fa-solid fa-music"></i></span>
+            <span class="info">
+              <span class="t">Give yourself a break.</span>
+              <span class="m">original · 0:44 · 唯一一首自創</span>
+            </span>
+            <span class="ext"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 08 EPILOGUE ============ -->
+  <section id="epilogue" class="epilogue">
+    <div class="ch r-fade" style="text-align:center">
+      <span class="ch-num">08 · Epilogue</span>
+      <h2 class="ch-title" style="justify-content:center">終章 <span class="en">a closing verse, since I am a believer</span></h2>
+      <div class="ch-rule" style="margin:24px auto 0"></div>
+    </div>
+
+    <div class="verse r-fade r-wash">
+      <p class="verse-body">
+        我若能說萬人的方言，<br>
+        並天使的話語，<br>
+        卻沒有<em>愛</em>，<br>
+        我就成了鳴的鑼、響的鈸一般。
+      </p>
+      <p class="verse-cite">— 《聖經》哥林多前書 13:1 · 1 Corinthians 13:1</p>
+    </div>
+
+    <div class="signoff-block r-fade">
+      <p class="lots">Lots of love.</p>
+      <p class="pa">— 帕</p>
+      <p class="stamp">page 157 · the companion notebook · made with care</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="foot-grid">
+    <div class="foot-socials">
+      <a href="https://www.threads.com/@sourday_zzz" target="_blank" rel="noopener"><i class="fa-brands fa-threads"></i>threads</a>
+      <a href="https://www.instagram.com/sourday_zzz/" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i>instagram</a>
+      <a href="https://www.youtube.com/channel/UCQcenQOCR_4q5nwoLtFK9ww" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i>youtube</a>
+      <a href="/guild/" class="back-archive"><i class="fa-solid fa-book-open"></i>back to archive</a>
+    </div>
+    <div class="foot-made">Made with <span class="heart">♥</span> by <em>SuperGalen's Dungeon</em> · page 157</div>
+  </div>
+</footer>
+
+<script>
+/* ========== p5 — petals + blooms + cursor butterfly ========== */
+let petals = [];
+let blooms = [];
+let butterfly;
+let mouseLast = {x: 0, y: 0, t: 0};
+
+function setup(){
+  const c = createCanvas(window.innerWidth, window.innerHeight);
+  c.parent(document.body);
+  c.canvas.id = 'petals-canvas';
+  c.canvas.style.position='fixed';c.canvas.style.inset='0';c.canvas.style.zIndex='2';c.canvas.style.pointerEvents='none';
+  pixelDensity(1);
+  noStroke();
+  for(let i=0;i<14;i++) petals.push(new Petal(random(width), random(-height, height)));
+  for(let i=0;i<6;i++) blooms.push(new Bloom(random(width), random(height)));
+  butterfly = new Butterfly();
+}
+function windowResized(){ resizeCanvas(window.innerWidth, window.innerHeight); }
+function draw(){
+  clear();
+  blooms.forEach(b => b.update().draw());
+  petals.forEach(p => p.update().draw());
+  butterfly?.update().draw();
+}
+function mouseMoved(){
+  if(butterfly){ butterfly.follow(mouseX, mouseY); }
+  mouseLast = {x: mouseX, y: mouseY, t: Date.now()};
+}
+
+/* watercolor butterfly that follows cursor with delay — matches her IG avatar */
+class Butterfly {
+  constructor(){
+    this.x = window.innerWidth*.7;
+    this.y = window.innerHeight*.5;
+    this.tx = this.x; this.ty = this.y;
+    this.flap = 0;
+    this.idleT = 0;
+    this.target = null;
+    this.alpha = 0;
+  }
+  follow(mx, my){
+    /* aim slightly above and to the side of cursor */
+    this.tx = mx + 32;
+    this.ty = my - 28;
+    this.idleT = 0;
+  }
+  update(){
+    this.x += (this.tx - this.x) * .045;
+    this.y += (this.ty - this.y) * .045;
+    this.flap += .35;
+    this.idleT++;
+    /* fade out if idle for too long, gentle wandering */
+    if(this.idleT > 240){
+      this.tx += sin(frameCount*.012)*1.2;
+      this.ty += cos(frameCount*.008)*.7;
+    }
+    /* always slightly transparent */
+    this.alpha = min(this.alpha + 4, 170);
+    return this;
+  }
+  draw(){
+    /* skip on touch devices or off small screens */
+    if(window.innerWidth < 640) return;
+    push();
+    translate(this.x, this.y);
+    /* slight tilt as it moves */
+    const vx = this.tx - this.x;
+    rotate(constrain(vx*.012, -.35, .35));
+    const flapScale = .85 + sin(this.flap)*.25;
+    /* shadow */
+    drawingContext.filter = 'blur(1.5px)';
+    /* wings — watercolor lavender + peach */
+    fill(181, 160, 220, this.alpha*.85);
+    /* left wing top */
+    ellipse(-7, -3, 16*flapScale, 14*flapScale);
+    /* left wing bottom */
+    fill(216, 200, 235, this.alpha*.7);
+    ellipse(-6, 5, 12*flapScale, 11*flapScale);
+    /* right wing top */
+    fill(242, 194, 131, this.alpha*.75);
+    ellipse(7, -3, 16*flapScale, 14*flapScale);
+    /* right wing bottom */
+    fill(244, 215, 190, this.alpha*.65);
+    ellipse(6, 5, 12*flapScale, 11*flapScale);
+    drawingContext.filter = 'none';
+    /* body */
+    fill(60, 53, 48, this.alpha);
+    ellipse(0, 0, 2.4, 10);
+    /* antennae */
+    stroke(60, 53, 48, this.alpha*.6);
+    strokeWeight(.7);
+    noFill();
+    arc(-.8, -5, 4, 4, PI, PI + HALF_PI);
+    arc(.8, -5, 4, 4, -HALF_PI, 0);
+    noStroke();
+    pop();
+  }
+}
+class Petal{
+  constructor(x,y){
+    this.x=x;this.y=y;
+    this.r=random(7,14);
+    this.vy=random(.25,.6);
+    this.vx=random(-.3,.3);
+    this.a=random(TWO_PI);
+    this.va=random(-.012,.012);
+    this.color=random()<.5?[181,160,220, random(80,140)]:[216,200,235, random(70,120)];
+  }
+  update(){
+    this.y+=this.vy;
+    this.x+=this.vx + sin(frameCount*.012 + this.a)*.4;
+    this.a+=this.va;
+    if(this.y>height+20){ this.y=-20; this.x=random(width); }
+    return this;
+  }
+  draw(){
+    push();
+    translate(this.x,this.y);
+    rotate(this.a);
+    fill(this.color[0],this.color[1],this.color[2],this.color[3]);
+    /* petal shape — narrow ellipse with a curl */
+    ellipse(0,0,this.r*.55,this.r*1.3);
+    ellipse(this.r*.18,0,this.r*.45,this.r);
+    pop();
+  }
+}
+class Bloom{
+  constructor(x,y){
+    this.x=x;this.y=y;
+    this.r=random(120,220);
+    this.life=random(800,1600);
+    this.t=random(this.life);
+    this.col=random()<.34?[181,160,220]: random()<.5?[167,196,154]:[242,194,131];
+  }
+  update(){
+    this.t++;
+    if(this.t>this.life){
+      this.t=0;
+      this.x=random(width);
+      this.y=random(height);
+      this.r=random(120,220);
+      this.col=random()<.34?[181,160,220]: random()<.5?[167,196,154]:[242,194,131];
+    }
+    return this;
+  }
+  draw(){
+    const phase = this.t/this.life;
+    const alpha = sin(phase*PI)*22;
+    if(alpha<=1) return;
+    push();
+    drawingContext.filter = `blur(28px)`;
+    fill(this.col[0],this.col[1],this.col[2],alpha);
+    circle(this.x, this.y, this.r);
+    drawingContext.filter = 'none';
+    pop();
+  }
+}
+
+/* ========== three.js — floating refractive crystal (hero corner) ========== */
+window.addEventListener('load', () => {
+  if(typeof THREE === 'undefined') return;
+  const host = document.getElementById('crystal-canvas');
+  if(!host) return;
+  const W = 300, H = 300;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, W/H, .1, 100);
+  camera.position.z = 4.2;
+  const renderer = new THREE.WebGLRenderer({alpha:true, antialias:true});
+  renderer.setSize(W,H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  host.appendChild(renderer.domElement);
+
+  /* lights */
+  const ambient = new THREE.AmbientLight(0xffffff, .55);
+  scene.add(ambient);
+  const lavender = new THREE.PointLight(0xb5a0dc, 1.4, 20);
+  lavender.position.set(2,2,3);
+  scene.add(lavender);
+  const peach = new THREE.PointLight(0xf2c283, 1.0, 20);
+  peach.position.set(-2,-1,2);
+  scene.add(peach);
+
+  /* crystal — octahedron with frosted look */
+  const geo = new THREE.OctahedronGeometry(1.0, 0);
+  const mat = new THREE.MeshPhongMaterial({
+    color: 0xf6efe2,
+    emissive: 0x8b72b8,
+    emissiveIntensity: .14,
+    shininess: 120,
+    specular: 0xffffff,
+    transparent: true,
+    opacity: .82,
+    flatShading: true,
+  });
+  const crystal = new THREE.Mesh(geo, mat);
+  /* wireframe halo */
+  const wire = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({color:0x7b62b4, transparent:true, opacity:.55})
+  );
+  crystal.add(wire);
+  /* extra outer halo */
+  const halo = new THREE.Mesh(
+    new THREE.OctahedronGeometry(1.35, 0),
+    new THREE.MeshBasicMaterial({color:0xb5a0dc, transparent:true, opacity:.06, wireframe:true})
+  );
+  crystal.add(halo);
+
+  scene.add(crystal);
+
+  /* position the canvas near hero cover — fixed, viewport-relative */
+  /* move host out to body to escape any positioning contexts */
+  document.body.appendChild(host);
+  function placeCanvas(){
+    const cover = document.getElementById('cover-frame');
+    if(!cover){ host.style.display='none'; return; }
+    const r = cover.getBoundingClientRect();
+    /* on small screens hide */
+    if(window.innerWidth < 880){ host.style.display='none'; return; }
+    host.style.display = 'block';
+    const size = 180;
+    /* hover near the upper-left corner of the cover, floating over it */
+    host.style.left = (r.left - size*.45) + 'px';
+    host.style.top  = (r.top - size*.32) + 'px';
+    host.style.width = size + 'px';
+    host.style.height = size + 'px';
+    renderer.setSize(size, size);
+  }
+  placeCanvas();
+  window.addEventListener('resize', placeCanvas);
+  window.addEventListener('scroll', () => {
+    /* hide once scrolled past hero */
+    if(window.scrollY > window.innerHeight*.7) host.style.opacity = '0';
+    else host.style.opacity = '.95';
+    /* keep tracking the cover */
+    if(window.scrollY < window.innerHeight*.9) placeCanvas();
+  });
+
+  let t = 0;
+  function animate(){
+    t += .0085;
+    crystal.rotation.x = t*.7;
+    crystal.rotation.y = t;
+    crystal.rotation.z = Math.sin(t*.5)*.2;
+    crystal.position.y = Math.sin(t*1.4)*.18;
+    halo.rotation.x = -t*.3;
+    halo.rotation.y = -t*.5;
+    lavender.position.x = Math.cos(t*.8)*3;
+    lavender.position.z = Math.sin(t*.8)*3 + 1;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+});
+
+/* ========== GSAP reveal + scroll-trigger ========== */
+window.addEventListener('load', () => {
+  if(typeof gsap === 'undefined') return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* fade items */
+  gsap.utils.toArray('.r-fade').forEach((el, i) => {
+    gsap.fromTo(el,
+      {opacity:0, y:28},
+      {opacity:1, y:0, duration:.95, ease:'power2.out',
+        scrollTrigger:{trigger:el, start:'top 88%', once:true}}
+    );
+  });
+
+  /* hero stagger boost */
+  gsap.fromTo('.hero-h1', {opacity:0, y:36}, {opacity:1, y:0, duration:1.2, ease:'power2.out', delay:.1});
+
+  /* parallax cover */
+  gsap.to('#cover-frame', {y:-40, scrollTrigger:{trigger:'.hero', start:'top top', end:'bottom top', scrub:true}});
+
+  /* grid break — when scrolling into ch1 the cells "bleed" outward */
+  ScrollTrigger.create({
+    trigger:'.grid-break',
+    start:'top 70%',
+    onEnter:()=>{
+      const cells = document.querySelectorAll('.grid-break i');
+      cells.forEach((c, i) => {
+        setTimeout(()=>{
+          c.classList.add('bleed');
+          gsap.to(c, {y: (Math.random()-.5)*60, x:(Math.random()-.5)*40, rotation:(Math.random()-.5)*20, opacity:0, duration:1.4, ease:'power2.out'});
+        }, i*120);
+      });
+    }
+  });
+
+  /* watercolor reveal for verse */
+  ScrollTrigger.create({
+    trigger:'.verse',
+    start:'top 75%',
+    onEnter:()=>document.querySelector('.verse').classList.add('show')
+  });
+
+  /* chapter rail active */
+  const railLinks = document.querySelectorAll('.rail a');
+  const sections = ['frontispiece','prologue','chapter-one','chapter-two','chapter-three','places','chapter-four','chapter-five','epilogue'];
+  sections.forEach((id, i) => {
+    ScrollTrigger.create({
+      trigger:'#'+id,
+      start:'top 40%',
+      end:'bottom 40%',
+      onToggle:self => {
+        if(self.isActive){
+          railLinks.forEach(l => l.classList.remove('on'));
+          railLinks[i]?.classList.add('on');
+        }
+      }
+    });
+  });
+});
+
+/* ========== 時光帳本 — Time Ledger ========== */
+(function ledger(){
+  const start = Date.now();
+  const el = document.getElementById('ledger-val');
+  if(!el) return;
+  function tick(){
+    const sec = Math.floor((Date.now() - start) / 1000);
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    /* her rate: NT$ 200 per hour = NT$ 200/3600 per second */
+    const cost = Math.round((sec / 3600) * 200);
+    el.innerHTML = `${m}<small>分</small>${s.toString().padStart(2,'0')}<small>秒</small> <i class="sep">·</i> NT$ <em>${cost}</em>`;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+/* ========== 靜默低語 — Silence Whisper ========== */
+(function whisper(){
+  const el = document.getElementById('whisper');
+  if(!el) return;
+  let lastMove = Date.now();
+  let shown = false;
+  ['mousemove','scroll','keydown','touchstart','click'].forEach(ev => {
+    window.addEventListener(ev, () => {
+      lastMove = Date.now();
+      if(shown){ el.classList.remove('show'); shown = false; }
+    }, {passive: true});
+  });
+  const messages = [
+    '靜靜的也很好。我沒有要離開。',
+    '不用急著捲下去。這頁等你。',
+    '想坐多久都可以。',
+    '我把椅子留在這裡了 — 隨時都行。',
+  ];
+  let mi = 0;
+  setInterval(() => {
+    if(Date.now() - lastMove > 8000 && !shown){
+      el.innerHTML = `<i class="fa-solid fa-feather"></i>${messages[mi % messages.length]}`;
+      mi++;
+      el.classList.add('show');
+      shown = true;
+    }
+  }, 1200);
+})();
+
+/* ========== 下一個有空的時段 — Next Open Slots ========== */
+(function nextSlots(){
+  const container = document.getElementById('slot-chips');
+  if(!container) return;
+  /* her schedule: Wed=3, Sat=6 -> 10:00–22:00; Sun=0 -> 14:00–21:00 */
+  const today = new Date();
+  const dowZh = ['日','一','二','三','四','五','六'];
+  const slots = [];
+  for(let i = 0; i < 14 && slots.length < 3; i++){
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dow = d.getDay();
+    let span = null;
+    if(dow === 3 || dow === 6) span = '10:00–22:00';
+    else if(dow === 0) span = '14:00–21:00';
+    if(!span) continue;
+    /* skip today if it's late afternoon already on that type of day */
+    if(i === 0){
+      const hr = d.getHours();
+      if(hr >= 21) continue;
+    }
+    slots.push({
+      date: d,
+      dow: '週' + dowZh[dow],
+      span: span,
+      label: i === 0 ? '今天' : (i === 1 ? '明天' : '')
+    });
+  }
+  container.innerHTML = slots.map(s => {
+    const m = (s.date.getMonth() + 1).toString().padStart(2,'0');
+    const day = s.date.getDate().toString().padStart(2,'0');
+    return `
+      <div class="slot-chip">
+        <span class="dow">${s.dow}${s.label ? ' · ' + s.label : ''}</span>
+        <span class="d">${m}<em>.</em>${day}</span>
+        <span class="span">${s.span}</span>
+      </div>
+    `;
+  }).join('');
+})();
+
+/* ========== 訪客書架 — Visitor Bookshelf ========== */
+(function bookshelf(){
+  const KEY = 'papa_bookshelf_v1';
+  const shelf = document.getElementById('bookshelf');
+  const input = document.getElementById('shelf-input');
+  const btn = document.getElementById('shelf-add');
+  const count = document.getElementById('shelf-count');
+  if(!shelf || !input || !btn) return;
+
+  /* spine color palette */
+  const palette = [
+    'linear-gradient(180deg,#8b72b4 0%,#7b62b4 100%)',     /* lavender deep */
+    'linear-gradient(180deg,#d9994e 0%,#c08840 100%)',     /* peach deep */
+    'linear-gradient(180deg,#6f9a7e 0%,#5e8a6e 100%)',     /* sage deep */
+    'linear-gradient(180deg,#7b8fb8 0%,#6a7ea4 100%)',     /* bluepurple deep */
+    'linear-gradient(180deg,#a87a8e 0%,#8e6776 100%)',     /* rose mute */
+    'linear-gradient(180deg,#3b3530 0%,#5c544c 100%)',     /* ink */
+    'linear-gradient(180deg,#b5a0dc 0%,#9b85c2 100%)',     /* lavender mid */
+    'linear-gradient(180deg,#e0a668 0%,#c89055 100%)',     /* peach mid */
+  ];
+
+  /* pre-seed if first visit — words that are deeply 帕帕 */
+  const seed = [
+    {w:'帕帕', c:0},
+    {w:'水豚', c:1},
+    {w:'樹懶', c:2},
+    {w:'薰衣草', c:6},
+    {w:'靜靜的', c:0},
+    {w:'ISFJ', c:5},
+    {w:'Tiny Dragon', c:3},
+    {w:'The Company', c:6},
+    {w:'嘉義', c:4},
+    {w:'好樂團', c:1},
+  ];
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return seed.slice();
+      const parsed = JSON.parse(raw);
+      if(!Array.isArray(parsed) || parsed.length === 0) return seed.slice();
+      return parsed;
+    }catch(e){ return seed.slice(); }
+  }
+  function save(list){
+    try{ localStorage.setItem(KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function render(highlight){
+    const list = load();
+    shelf.innerHTML = list.map((b, i) => {
+      const colorIdx = b.c ?? (i % palette.length);
+      const isNew = highlight && i === list.length - 1 ? ' new' : '';
+      return `<span class="book-spine${isNew}" style="background:${palette[colorIdx % palette.length]}" title="${b.w}">${b.w}</span>`;
+    }).join('');
+    if(count) count.textContent = list.length;
+  }
+  function add(){
+    const v = input.value.trim();
+    if(!v) return;
+    const list = load();
+    /* dedupe (case-sensitive) */
+    if(list.some(b => b.w === v)){
+      input.value = '';
+      input.placeholder = '這個字已經在書架上了';
+      setTimeout(() => { input.placeholder = 'a word that is you... (max 12)'; }, 2400);
+      return;
+    }
+    list.push({w: v, c: Math.floor(Math.random() * palette.length)});
+    save(list);
+    input.value = '';
+    render(true);
+  }
+  btn.addEventListener('click', add);
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
+
+  render(false);
+})();
+</script>
+
+</body>
+</html>
