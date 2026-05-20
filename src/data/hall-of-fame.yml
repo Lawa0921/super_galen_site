@@ -1916,3 +1916,17 @@ members:
         label: "品牌貼文 × 活動企劃"
       - id: "marketing_as_company"
         label: "把行銷變成陪伴"
+
+  - id: "sourday_zzz"
+    name: "帕帕 Priscilla z｜閒人出租"
+    avatar: "/assets/img/guild/sourday_zzz/avatar.webp"
+    page: "/guild/sourday_zzz.html"
+    title: "嘉義陪伴出租 · ISFJ · Capybara 帕白"
+    description: "26 歲的帕帕，臺北基督學院英文系畢，ISFJ 高敏感人。曾在辦公室與店裡把自己塞進框框，後來離開那些不合身的形狀，在嘉義開了一家只賣自己時間的店。陪你看診、陪你辦事、陪你在咖啡廳各看各的書、幫你按下你不想自己按的快門——「不想聊天的話我們可以不聊天，我陪你。」也唱歌（好樂團、BTS V、R&B cover），寫一點東西，相信旅伴比目的地重要。引用《大熊貓與小小龍》：「The company,」said Tiny Dragon。"
+    tags:
+      - id: "rent_a_companion"
+        label: "閒人出租 · 嘉義"
+      - id: "quiet_listener"
+        label: "傾聽 · 不諮商"
+      - id: "writer_singer"
+        label: "寫字 · 唱歌"

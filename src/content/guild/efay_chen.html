@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>陳依慧 EFay ・ 漩渦・編織・光</title>
+<meta name="description" content="陳依慧 EFay — 大地藝術家。以竹編、植物纖維與自然元素，在水面與土地之間編織會呼吸的螺旋。藝術不只是觀看，而是一條回到本質、釋放情緒、與土地對話的療癒之路。現地大地藝術創作・藝術療癒體驗・工作坊與合作邀約。">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preload" as="image" href="/assets/img/guild/efay_chen/art-navel-aerial.webp">
+<link rel="preload" as="image" href="/assets/img/guild/efay_chen/art-light-dome.webp">
+
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Noto+Serif+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+<style>
+/* =====================================================================
+   陳依慧 EFay ・ 漩渦・編織・光  (Vortex · Weave · Light)
+   一座在瀏覽器裡呼吸的竹編光之裝置
+   ===================================================================== */
+:root{
+  --soil:#120d09;            /* 大地深土 */
+  --bamboo:#caa05a;          /* 竹金 */
+  --bamboo-bright:#e8c98a;
+  --light:#fbeecb;           /* 陽光白金 */
+  --jade:#5b9b80;            /* 玉潭水綠 */
+  --thread:#e2724d;          /* 回收織線・珊瑚 */
+  --paper:#f3e8d0;
+  --mist:rgba(231,217,189,.78);
+  --line:rgba(202,160,90,.28);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--soil);
+  color:var(--paper);
+  font-family:"Noto Serif TC",serif;
+  font-weight:300;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  cursor:none;
+}
+::selection{background:var(--thread);color:var(--soil)}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+
+/* ---- 自訂游標：一點光 ---- */
+.cursor,.cursor-ring{position:fixed;top:0;left:0;border-radius:50%;pointer-events:none;z-index:9999;mix-blend-mode:screen}
+.cursor{width:7px;height:7px;background:var(--light);transform:translate(-50%,-50%);box-shadow:0 0 14px 3px var(--bamboo-bright)}
+.cursor-ring{width:38px;height:38px;border:1px solid rgba(202,160,90,.5);transform:translate(-50%,-50%);transition:width .25s,height .25s,border-color .25s}
+.cursor-ring.hot{width:62px;height:62px;border-color:var(--thread)}
+@media(hover:none){body{cursor:auto}.cursor,.cursor-ring{display:none}}
+
+/* ---- 活背景：固定的 three.js 漩渦光場 ---- */
+#vortex-stage{position:fixed;inset:0;z-index:0}
+#vortex-stage canvas{display:block}
+.grain{position:fixed;inset:-50%;z-index:1;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  animation:grain 7s steps(6) infinite}
+@keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-2%,1%)}100%{transform:translate(1%,-1%)}}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 42%,transparent 38%,rgba(8,5,3,.62) 100%)}
+/* 卷動時加深的內容布幕：Hero 純粹奇觀，內文沉入暗土讓字浮起 */
+.scrim{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at 50% 45%,rgba(12,9,6,.55) 0%,rgba(10,7,4,.82) 70%,rgba(8,5,3,.92) 100%)}
+
+main{position:relative;z-index:2}
+
+/* ---- 返回導航 ---- */
+.archive-nav{position:fixed;top:26px;left:30px;z-index:60;font-family:"Fraunces",serif;
+  font-size:.74rem;letter-spacing:.34em;text-transform:uppercase;color:var(--mist);
+  display:flex;align-items:center;gap:.7em;padding:.5em .2em;transition:color .4s,letter-spacing .4s}
+.archive-nav i{transition:transform .4s}
+.archive-nav:hover{color:var(--bamboo-bright);letter-spacing:.42em}
+.archive-nav:hover i{transform:translateX(-6px)}
+
+/* ---- 進度・側軸 ---- */
+.spool{position:fixed;right:30px;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:16px;align-items:center}
+.spool-dot{width:7px;height:7px;border-radius:50%;border:1px solid var(--line);
+  background:transparent;transition:.45s;cursor:none}
+.spool-dot.on{background:var(--bamboo-bright);border-color:var(--bamboo-bright);
+  box-shadow:0 0 12px 2px rgba(232,201,138,.6);transform:scale(1.35)}
+@media(max-width:760px){.spool{display:none}}
+
+/* ===================== HERO ===================== */
+.hero{height:100vh;min-height:680px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;position:relative;padding:0 22px}
+.hero .eyebrow{font-family:"Fraunces",serif;font-size:.78rem;letter-spacing:.55em;
+  text-transform:uppercase;color:var(--bamboo);margin-bottom:30px;opacity:0}
+.hero h1{font-family:"Fraunces",serif;font-weight:300;line-height:.94;
+  font-size:clamp(3.4rem,12vw,9.5rem);color:var(--light);
+  text-shadow:0 0 60px rgba(232,201,138,.32);letter-spacing:.01em}
+.hero h1 .cn{display:block;font-family:"Noto Serif TC",serif;font-weight:300;
+  font-size:clamp(2.6rem,9vw,7rem);letter-spacing:.16em;margin-bottom:.06em}
+.hero h1 .en{display:block;font-style:italic;font-size:clamp(1.5rem,5vw,3.4rem);
+  color:var(--bamboo-bright);letter-spacing:.18em;margin-top:.18em;opacity:.92}
+.hero .roles{margin-top:42px;font-family:"Fraunces",serif;font-size:clamp(.74rem,1.7vw,.96rem);
+  letter-spacing:.32em;text-transform:uppercase;color:var(--mist);
+  display:flex;flex-wrap:wrap;gap:.4em 1.4em;justify-content:center;opacity:0}
+.hero .roles span{position:relative}
+.hero .roles span:not(:last-child)::after{content:"·";position:absolute;right:-1em;color:var(--bamboo)}
+.hero .word{display:inline-block;opacity:0;transform:translateY(40px) rotate(4deg)}
+.scroll-cue{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);
+  font-family:"Fraunces",serif;font-size:.66rem;letter-spacing:.4em;text-transform:uppercase;
+  color:var(--mist);display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0}
+.scroll-cue .ln{width:1px;height:46px;background:linear-gradient(var(--bamboo),transparent);
+  animation:flow 2.2s ease-in-out infinite}
+@keyframes flow{0%,100%{transform:scaleY(.4);transform-origin:top;opacity:.4}50%{transform:scaleY(1);opacity:1}}
+
+/* ===================== 共用區塊 ===================== */
+section.chapter{position:relative;padding:clamp(90px,15vh,170px) 0;z-index:2}
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(22px,5vw,64px)}
+.mark{font-family:"Fraunces",serif;font-size:.72rem;letter-spacing:.42em;
+  text-transform:uppercase;color:var(--bamboo);display:flex;align-items:center;gap:1em;margin-bottom:38px}
+.mark::before{content:"";width:34px;height:1px;background:var(--bamboo);opacity:.6}
+.mark .idx{color:var(--mist);font-style:italic;letter-spacing:.1em;text-transform:none}
+
+/* 宣言 / 我是誰 */
+.manifesto p{font-family:"Fraunces",serif;font-weight:300;
+  font-size:clamp(1.7rem,4.4vw,3.5rem);line-height:1.42;color:var(--paper);
+  max-width:18ch;letter-spacing:.005em}
+.manifesto p .glow{color:var(--bamboo-bright);font-style:italic;
+  text-shadow:0 0 34px rgba(232,201,138,.45)}
+.manifesto .sig{margin-top:46px;display:flex;align-items:center;gap:20px}
+.manifesto .sig img{width:74px;height:74px;border-radius:50%;object-fit:cover;
+  filter:sepia(.25) saturate(1.1);border:1px solid var(--line)}
+.manifesto .sig .who{font-family:"Fraunces",serif;font-size:1rem;letter-spacing:.06em}
+.manifesto .sig .who small{display:block;color:var(--mist);font-size:.78rem;
+  letter-spacing:.2em;text-transform:uppercase;margin-top:6px}
+.split{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(40px,7vw,96px);align-items:center}
+@media(max-width:880px){.split{grid-template-columns:1fr;gap:48px}}
+.lede{font-size:clamp(1.02rem,1.5vw,1.18rem);line-height:2.05;color:var(--mist);font-weight:300}
+.lede strong{color:var(--bamboo-bright);font-weight:400}
+.lede + .lede{margin-top:1.5em}
+
+/* 信物碎片（小卡） */
+.tokens{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:8px}
+@media(max-width:680px){.tokens{grid-template-columns:1fr}}
+.token{border:1px solid var(--line);padding:26px 22px;background:rgba(29,22,16,.4);
+  backdrop-filter:blur(2px);position:relative;overflow:hidden}
+.token i{font-size:1.3rem;color:var(--bamboo);margin-bottom:16px;display:block}
+.token h4{font-family:"Fraunces",serif;font-weight:400;font-size:1.05rem;
+  color:var(--light);margin-bottom:8px;letter-spacing:.05em}
+.token p{font-size:.86rem;line-height:1.75;color:var(--mist)}
+.token::after{content:"";position:absolute;left:-60%;top:0;width:40%;height:100%;
+  background:linear-gradient(105deg,transparent,rgba(232,201,138,.14),transparent);
+  transform:skewX(-18deg);transition:left .7s}
+.token:hover::after{left:130%}
+
+/* ===================== 作品 ===================== */
+.works{display:flex;flex-direction:column;gap:clamp(80px,14vh,160px)}
+.work{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,5vw,72px);align-items:center}
+.work:nth-child(even){direction:rtl}
+.work:nth-child(even) .work-body{direction:ltr}
+.work:nth-child(even) .work-fig{direction:ltr}
+@media(max-width:880px){.work,.work:nth-child(even){grid-template-columns:1fr;direction:ltr;gap:30px}}
+.work-fig{position:relative;overflow:hidden;border:1px solid var(--line)}
+.work-fig img{width:100%;height:clamp(320px,52vh,580px);object-fit:cover;
+  transform:scale(1.12);filter:saturate(.9) brightness(.9);transition:filter .6s}
+.work-fig:hover img{filter:saturate(1.05) brightness(1)}
+.work-fig figcaption{position:absolute;left:0;bottom:0;right:0;
+  padding:60px 26px 22px;font-family:"Fraunces",serif;font-style:italic;
+  font-size:.82rem;letter-spacing:.14em;color:var(--light);
+  background:linear-gradient(transparent,rgba(8,5,3,.78))}
+.work-no{font-family:"Fraunces",serif;font-size:.74rem;letter-spacing:.4em;
+  text-transform:uppercase;color:var(--bamboo);margin-bottom:18px}
+.work-body h3{font-family:"Noto Serif TC",serif;font-weight:400;
+  font-size:clamp(2.1rem,5vw,3.6rem);color:var(--light);line-height:1.1;margin-bottom:6px}
+.work-body h3 .en{display:block;font-family:"Fraunces",serif;font-style:italic;
+  font-weight:300;font-size:clamp(.95rem,2vw,1.3rem);color:var(--bamboo-bright);
+  letter-spacing:.16em;margin-top:12px}
+.work-body .meta{display:flex;flex-wrap:wrap;gap:8px 10px;margin:24px 0 22px}
+.work-body .meta span{font-family:"Fraunces",serif;font-size:.68rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--mist);border:1px solid var(--line);
+  padding:6px 12px;border-radius:30px}
+.work-body p{font-size:.98rem;line-height:2;color:var(--mist);max-width:46ch}
+.work-body p .em{color:var(--bamboo-bright)}
+
+/* ===================== 能量編織網 (p5) ===================== */
+.energy{text-align:center;position:relative}
+.energy .lead{font-family:"Fraunces",serif;font-weight:300;font-style:italic;
+  font-size:clamp(1.5rem,4vw,2.8rem);color:var(--light);line-height:1.5;
+  max-width:20ch;margin:0 auto 14px}
+.energy .sub{color:var(--mist);font-size:.92rem;letter-spacing:.22em;
+  text-transform:uppercase;font-family:"Fraunces",serif;margin-bottom:40px}
+#weave-net{width:100%;max-width:1000px;height:clamp(360px,56vh,560px);margin:0 auto;
+  border:1px solid var(--line);position:relative;cursor:none;
+  background:radial-gradient(ellipse at 50% 50%,rgba(20,15,10,.55),rgba(9,6,4,.82));
+  box-shadow:inset 0 0 80px rgba(0,0,0,.5),0 24px 60px -30px rgba(0,0,0,.7)}
+#weave-net canvas{display:block;border-radius:1px}
+.energy .hint{margin-top:22px;font-size:.78rem;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--bamboo);font-family:"Fraunces",serif;opacity:.8}
+
+/* ===================== 我能為你做什麼 ===================== */
+.offer .head{font-family:"Noto Serif TC",serif;font-weight:300;
+  font-size:clamp(2rem,5.5vw,4rem);color:var(--light);line-height:1.22;
+  margin-bottom:60px;max-width:16ch}
+.offer .head .glow{color:var(--bamboo-bright);font-style:italic;font-family:"Fraunces",serif}
+.services{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+@media(max-width:880px){.services{grid-template-columns:1fr}}
+.service{border:1px solid var(--line);padding:42px 32px;position:relative;
+  background:linear-gradient(165deg,rgba(29,22,16,.55),rgba(18,13,9,.2));
+  transition:transform .55s,border-color .55s,background .55s;overflow:hidden}
+.service:hover{transform:translateY(-10px);border-color:rgba(202,160,90,.55)}
+.service .n{font-family:"Fraunces",serif;font-style:italic;font-size:1rem;
+  color:var(--bamboo);opacity:.7}
+.service i{font-size:1.7rem;color:var(--bamboo-bright);margin:26px 0 22px;display:block}
+.service h4{font-family:"Noto Serif TC",serif;font-weight:500;font-size:1.4rem;
+  color:var(--light);margin-bottom:16px;letter-spacing:.04em}
+.service p{font-size:.92rem;line-height:1.95;color:var(--mist)}
+.service .for{margin-top:24px;font-family:"Fraunces",serif;font-size:.72rem;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--jade);
+  display:flex;align-items:center;gap:.7em}
+.service .glowline{position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--bamboo-bright),transparent);
+  transform:scaleX(0);transform-origin:left;transition:transform .6s}
+.service:hover .glowline{transform:scaleX(1)}
+
+/* ===================== 邀請 / 聯絡 ===================== */
+.invite{text-align:center}
+.invite blockquote{font-family:"Fraunces",serif;font-weight:300;font-style:italic;
+  font-size:clamp(1.6rem,4.6vw,3.2rem);line-height:1.5;color:var(--light);
+  max-width:22ch;margin:0 auto 18px;text-shadow:0 0 40px rgba(232,201,138,.28)}
+.invite .by{color:var(--bamboo);font-family:"Fraunces",serif;letter-spacing:.3em;
+  text-transform:uppercase;font-size:.78rem;margin-bottom:62px}
+.contacts{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-bottom:58px}
+.contacts a{display:flex;align-items:center;gap:.85em;border:1px solid var(--line);
+  padding:16px 30px;font-family:"Fraunces",serif;font-size:.86rem;letter-spacing:.16em;
+  color:var(--paper);transition:.45s;background:rgba(29,22,16,.4)}
+.contacts a i{color:var(--bamboo);font-size:1.05rem;transition:.45s}
+.contacts a:hover{border-color:var(--bamboo-bright);color:var(--light);
+  transform:translateY(-5px);box-shadow:0 14px 40px -16px rgba(232,201,138,.5)}
+.contacts a:hover i{color:var(--bamboo-bright);transform:scale(1.15)}
+footer{text-align:center;padding:60px 22px 70px;border-top:1px solid var(--line);position:relative;z-index:2}
+footer .made{font-family:"Fraunces",serif;font-style:italic;color:var(--mist);
+  font-size:.86rem;letter-spacing:.1em}
+footer .made i{color:var(--thread);margin:0 .25em}
+footer .studio{margin-top:14px;font-family:"Fraunces",serif;font-size:.72rem;
+  letter-spacing:.36em;text-transform:uppercase;color:var(--bamboo)}
+
+/* =====================================================================
+   生成圖當「材質」用：把畫面變成排版的纖維與光，而不是貼上去的插圖
+   ===================================================================== */
+/* 1 ・ 主標題：「陳依慧」字本身就是一段竹編 ——
+   把水上漩渦那一圈最亮的編織體，當成 3 個字的肌理 */
+.hero h1 .cn{
+  background:
+    linear-gradient(180deg,rgba(255,243,210,.25),rgba(255,228,170,.1) 60%,transparent),
+    url('/assets/img/guild/efay_chen/scene-water-spiral.webp') 50% 78%/180% auto no-repeat;
+  background-blend-mode:screen,normal;
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;
+  filter:brightness(1.55) saturate(1.3) contrast(1.1)
+         drop-shadow(0 0 22px rgba(232,201,138,.55))
+         drop-shadow(0 0 2px rgba(255,228,170,.85));
+  letter-spacing:.16em;
+}
+.hero h1 .cn .word{background:inherit;-webkit-background-clip:text;background-clip:text;
+  color:transparent;background-attachment:initial}
+@supports not ((-webkit-background-clip:text) or (background-clip:text)){
+  .hero h1 .cn,.hero h1 .cn .word{color:var(--light);background:none;filter:none}
+}
+
+/* 2 ・ 章節標記的水平線：用水上漩渦切一條 1px 細纖維，不是純色色塊 */
+.mark::before{
+  width:46px;height:18px;background:none;opacity:.9;
+  background-image:url('/assets/img/guild/efay_chen/scene-water-spiral.webp');
+  background-size:300% 1200%;background-position:50% 70%;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);
+          mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);
+  clip-path:inset(7px 0)
+}
+/* 章節序號背後的圓形浮水印：水上漩渦的螺旋本體 */
+.mark .idx{position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:46px;height:46px;font-size:.78rem;margin-right:.1em}
+.mark .idx::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:url('/assets/img/guild/efay_chen/scene-water-spiral.webp') center 62%/250% no-repeat;
+  opacity:.55;mix-blend-mode:screen;
+  -webkit-mask:radial-gradient(circle at 50% 50%,#000 30%,transparent 70%);
+          mask:radial-gradient(circle at 50% 50%,#000 30%,transparent 70%)}
+.mark .idx::after{content:"";position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(202,160,90,.28)}
+
+/* 3 ・ 作品序號徽記：竹編大教堂的光纖維鋪在 "作品 0X" 那一行底下 */
+.work-no{position:relative;padding-left:54px}
+.work-no::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:40px;height:14px;
+  background:url('/assets/img/guild/efay_chen/scene-light-cathedral.webp') 50% 50%/180% no-repeat;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent);
+          mask:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent);
+  filter:saturate(1.1) brightness(1.1)}
+
+/* 4 ・ 邀請段落：把月光燈籠的金色漣漪做成題詞底下的光源（不是圖片，是光） */
+.invite{position:relative;overflow:hidden}
+.invite::before{content:"";position:absolute;left:50%;top:38%;
+  width:min(900px,92vw);aspect-ratio:1/1;transform:translate(-50%,-30%);
+  background:url('/assets/img/guild/efay_chen/scene-night-lantern.webp') 50% 78%/170% no-repeat;
+  mix-blend-mode:screen;opacity:.7;pointer-events:none;z-index:1;
+  -webkit-mask:radial-gradient(ellipse 60% 45% at 50% 55%,#000 0%,transparent 78%);
+          mask:radial-gradient(ellipse 60% 45% at 50% 55%,#000 0%,transparent 78%);
+  filter:saturate(1.15)}
+.invite .wrap{position:relative;z-index:2}
+
+/* 5 ・ 服務卡頂端細纖維：竹編大教堂的橫向裁切，當作每張卡的「金線壓條」 */
+.service{padding-top:60px}
+.service::before{content:"";position:absolute;left:32px;right:32px;top:0;height:3px;
+  background:url('/assets/img/guild/efay_chen/scene-light-cathedral.webp') 50% 50%/600% no-repeat;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
+          mask:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
+  opacity:.85;filter:saturate(1.15) brightness(1.15)}
+
+/* 6 ・ Footer 上的水平編織紋：水上漩渦邊緣裁出一條波紋 */
+footer{position:relative}
+footer::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+  background:url('/assets/img/guild/efay_chen/scene-water-spiral.webp') 50% 92%/400% no-repeat;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+          mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  opacity:.7;border-top:0}
+footer{border-top:0}
+
+.reveal{opacity:0;transform:translateY(46px)}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}
+ .grain,.scroll-cue .ln{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="cursor"></div>
+<div class="cursor-ring"></div>
+
+<div id="vortex-stage"></div>
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="scrim"></div>
+
+<a href="/guild/" class="archive-nav"><i class="fa-solid fa-arrow-left-long"></i> 公會名冊</a>
+
+<nav class="spool" aria-hidden="true">
+  <span class="spool-dot" data-go="0"></span>
+  <span class="spool-dot" data-go="1"></span>
+  <span class="spool-dot" data-go="2"></span>
+  <span class="spool-dot" data-go="3"></span>
+  <span class="spool-dot" data-go="4"></span>
+  <span class="spool-dot" data-go="5"></span>
+  <span class="spool-dot" data-go="6"></span>
+</nav>
+
+<main>
+
+  <!-- ===== HERO ===== -->
+  <header class="hero" id="sec-0">
+    <div class="eyebrow">大地藝術 ・ 編織 ・ 能量療癒</div>
+    <h1>
+      <span class="cn"><span class="word">陳</span><span class="word">依</span><span class="word">慧</span></span>
+      <span class="en"><span class="word">EFay</span> <span class="word">Chen</span></span>
+    </h1>
+    <div class="roles">
+      <span>Land Artist</span><span>Woven Installation</span><span>Energy Healing</span>
+    </div>
+    <div class="scroll-cue">向下・走進漩渦<span class="ln"></span></div>
+  </header>
+
+  <!-- ===== 01 我是誰 ===== -->
+  <section class="chapter manifesto" id="sec-1">
+    <div class="wrap">
+      <div class="mark"><span class="idx">i.</span> 我是誰</div>
+      <p class="reveal">我用<span class="glow">竹子、植物纖維與整片土地</span>創作。<br>
+      我相信藝術不只是觀看 ——<br>而是一條<span class="glow">回到本質</span>、<br>與土地對話的<span class="glow">療癒之路</span>。</p>
+      <div class="sig reveal">
+        <img src="/assets/img/guild/efay_chen/avatar.webp" alt="陳依慧 EFay" loading="lazy" decoding="async">
+        <div class="who">陳依慧 ・ EFay Chen
+          <small>Catnip Art Studio ・ 大地藝術家</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 02 我的脈絡 ===== -->
+  <section class="chapter" id="sec-2">
+    <div class="wrap">
+      <div class="mark"><span class="idx">ii.</span> 我的脈絡</div>
+      <div class="split">
+        <div>
+          <p class="lede reveal">我是一位以<strong>土地為基礎</strong>創作的藝術家。我的媒材是竹子、白鐵絲、回收織線，以及一片場域本身的風、光、水與記憶。我把巨大的編織結構放上湖面與河面，讓它隨水波輕輕呼吸 —— 候鳥會停在上面，路過的人會放慢腳步。</p>
+          <p class="lede reveal">創作之外，我也是一位<strong>能量療癒的實踐者</strong>。我把覺察練習與能量感知帶進手作，讓藝術成為一種工具：陪伴人們釋放情緒、重新對齊內在的節奏。對我而言，<strong>編織一件作品，和編織一個人重新安定下來的過程，是同一件事</strong>。</p>
+          <p class="lede reveal">我曾進駐日本「信濃國原始感覺藝術節」，也在台灣的北海岸與河岸藝術節留下作品。我關心宇宙、能量頻率，也關心這片土地上正在發生的事 —— 對我來說，那從來不是兩個世界。</p>
+        </div>
+        <div class="tokens">
+          <div class="token reveal"><i class="fa-solid fa-water"></i><h4>水上的結構</h4><p>作品漂浮於湖面、河面，隨波流動，與候鳥、人群共存。</p></div>
+          <div class="token reveal"><i class="fa-solid fa-feather"></i><h4>植物纖維編織</h4><p>竹子、白鐵絲、回收織線 —— 用最自然的語彙說土地的話。</p></div>
+          <div class="token reveal"><i class="fa-regular fa-sun"></i><h4>光的符號</h4><p>陽光穿過竹編縫隙的那一刻，是我作品裡最重要的語言。</p></div>
+          <div class="token reveal"><i class="fa-solid fa-hand-holding-heart"></i><h4>能量療癒</h4><p>覺察 × 能量感知，把藝術變成釋放情緒的途徑。</p></div>
+          <div class="token reveal"><i class="fa-solid fa-circle-notch"></i><h4>合一的視角</h4><p>不再用「區別」看待生活與環境，讓人與萬物更親密。</p></div>
+          <div class="token reveal"><i class="fa-solid fa-earth-asia"></i><h4>土地的記憶</h4><p>每一個場域都有它的故事，我依著它的特質設計。</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 03 作品 ===== -->
+  <section class="chapter" id="sec-3">
+    <div class="wrap">
+      <div class="mark"><span class="idx">iii.</span> 我編織過的場域</div>
+      <div class="works">
+
+        <article class="work">
+          <figure class="work-fig reveal">
+            <img src="/assets/img/guild/efay_chen/art-navel-aerial.webp" alt="《肚臍》空拍 — 漂浮在水面上的竹編螺旋">
+            <figcaption>《肚臍》・ 從天空俯瞰，一個漂在水上的螺旋</figcaption>
+          </figure>
+          <div class="work-body reveal">
+            <div class="work-no">作品 01 ・ 2021</div>
+            <h3>肚臍<span class="en">The Navel — 社仔咱的家生活藝術節</span></h3>
+            <div class="meta"><span>竹子</span><span>白鐵絲</span><span>PVC 管</span><span>安全繩</span><span>8 × 8 × 2.6 m</span></div>
+            <p>嬰兒透過臍帶在母親體內成長，出生後臍帶脫落，留下我們與母親親密連結的印記。我想說的是：<span class="em">人與土地的關係，也是親密且能共存的</span>。大地供給我們資源，如同母親無私的愛。肚臍的閩南語「斗仔」諧音「財」，也是豐盛的象徵。作品放在河面上，等候鳥佇足、覓食、看岸上的人。</p>
+          </div>
+        </article>
+
+        <article class="work">
+          <figure class="work-fig reveal">
+            <img src="/assets/img/guild/efay_chen/art-light-dome.webp" alt="《酒窩》內部 — 陽光穿透竹編穹頂">
+            <figcaption>《酒窩》・ 站在裡面，陽光從竹縫間炸開</figcaption>
+          </figure>
+          <div class="work-body reveal">
+            <div class="work-no">作品 02 ・ 2023</div>
+            <h3>酒窩<span class="en">The Dimple — 福爾摩沙北海岸藝術節・情人湖</span></h3>
+            <div class="meta"><span>竹子</span><span>白鐵絲</span><span>浮筒</span><span>LED PAR 燈</span><span>8 × 8 × 2.3 m</span></div>
+            <p>第一次來到情人湖，是一個掛著和煦陽光的中午。湖面映出閃爍的光，藍綠色的水裡有幾個小漩渦特別吸引我。漩渦讓我想起一句話 ——「她那嘴角有一個笑的漩渦出現了」。於是我把作品命名為《酒窩》，<span class="em">放在湖面上，讓人停下腳步，用「合一」的方式重新看待眼前的一切</span>。</p>
+          </div>
+        </article>
+
+        <article class="work">
+          <figure class="work-fig reveal">
+            <img src="/assets/img/guild/efay_chen/art-spiral-pond.webp" alt="《織夢》 — 竹編螺旋雕塑在荷花池畔" loading="lazy" decoding="async">
+            <figcaption>《織夢》・ 螺旋在荷塘邊，緩緩展開</figcaption>
+          </figure>
+          <div class="work-body reveal">
+            <div class="work-no">作品 03</div>
+            <h3>織夢<span class="en">Weaving Dreams</span></h3>
+            <div class="meta"><span>竹編</span><span>場域裝置</span><span>戶外</span></div>
+            <p>一條向上旋轉的竹徑，立在荷塘與遠山之間。竹條被彎折、交疊、拉出張力，最後成為一個可以走進去的夢。<span class="em">編織對我來說是時間的痕跡</span> —— 每一個交點，都是一次選擇對齊自己的瞬間。</p>
+          </div>
+        </article>
+
+        <article class="work">
+          <figure class="work-fig reveal">
+            <img src="/assets/img/guild/efay_chen/art-tunnel.webp" alt="竹編甬道 — 走進子宮般的螺旋內部" loading="lazy" decoding="async">
+            <figcaption>走進螺旋內部 ・ 像回到一個安全的子宮</figcaption>
+          </figure>
+          <div class="work-body reveal">
+            <div class="work-no">作品 04</div>
+            <h3>癒室<span class="en">The Healing Room</span></h3>
+            <div class="meta"><span>竹子</span><span>沉浸式空間</span><span>身心覺察</span></div>
+            <p>一條被竹條包覆的甬道，光從縫隙裡漏進來，腳下是草。走進去的人會不自覺地放慢呼吸。<span class="em">這是一個用作品圍出來的療癒空間</span> —— 我想證明，藝術可以不只是被看，而是被走進去、被身體記住。</p>
+          </div>
+        </article>
+
+        <article class="work">
+          <figure class="work-fig reveal">
+            <img src="/assets/img/guild/efay_chen/art-mandala.webp" alt="回收織品編成的圓形曼陀羅" loading="lazy" decoding="async">
+            <figcaption>回收織品 ・ 一圈一圈編回中心</figcaption>
+          </figure>
+          <div class="work-body reveal">
+            <div class="work-no">作品 05</div>
+            <h3>朔望月・蛻變<span class="en">New &amp; Full Moon — Transformation</span></h3>
+            <div class="meta"><span>回收織線</span><span>纖維編織</span><span>共創</span></div>
+            <p>用被丟棄的織品，一圈一圈往內收，編成一個曼陀羅。外圈是混亂、是焦躁；中心那點白，不是完美，是<span class="em">「允許」</span> —— 允許自己還在路上。把散掉的自己，一點一點收回來，這就是我說的能量回收。</p>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 04 能量編織網 (p5) ===== -->
+  <section class="chapter energy" id="sec-4">
+    <div class="wrap">
+      <div class="mark" style="justify-content:center"><span class="idx">iv.</span> 一起編一張能量的網</div>
+      <p class="lead reveal">把混亂變成秩序，<br>把情緒變成節奏。</p>
+      <div class="sub reveal">點一下網，送出一道光的漣漪</div>
+      <div id="weave-net" class="reveal"></div>
+      <div class="hint">這張網會記得你碰過它 ・ Tap the weave</div>
+    </div>
+  </section>
+
+  <!-- ===== 05 我能為你做什麼 ===== -->
+  <section class="chapter offer" id="sec-5">
+    <div class="wrap">
+      <div class="mark"><span class="idx">v.</span> 我能為你做什麼</div>
+      <h2 class="head reveal">如果你有一片<span class="glow">場域</span>、<br>一場<span class="glow">展覽</span>、<br>或一群想被陪伴的人 ——</h2>
+      <div class="services">
+        <div class="service reveal">
+          <div class="n">i.</div>
+          <i class="fa-solid fa-mountain-sun"></i>
+          <h4>現地大地藝術創作</h4>
+          <p>我會走進你的場域 —— 讀它的風、光、水與歷史，依它的特質設計一件屬於那裡的空間藝術作品。從竹編結構到水上裝置，量身打造。</p>
+          <div class="for"><i class="fa-solid fa-arrow-right-long"></i> 藝術節 ・ 公共空間 ・ 品牌場域</div>
+          <span class="glowline"></span>
+        </div>
+        <div class="service reveal">
+          <div class="n">ii.</div>
+          <i class="fa-solid fa-spa"></i>
+          <h4>藝術療癒體驗</h4>
+          <p>透過手作編織與身心覺察，引導你釋放情緒、重新對齊內在節奏。不需要任何藝術基礎 —— 你只需要願意慢下來，回到自己的中心。</p>
+          <div class="for"><i class="fa-solid fa-arrow-right-long"></i> 個人 ・ 小團體 ・ 企業身心</div>
+          <span class="glowline"></span>
+        </div>
+        <div class="service reveal">
+          <div class="n">iii.</div>
+          <i class="fa-solid fa-people-group"></i>
+          <h4>工作坊與合作邀約</h4>
+          <p>展覽、藝術創作合作、團體引導與駐村。我擅長把一群陌生人，透過共同編織，連結成一個有共識的整體。</p>
+          <div class="for"><i class="fa-solid fa-arrow-right-long"></i> 展覽 ・ 駐村 ・ 共創計畫</div>
+          <span class="glowline"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 邀請 / 聯絡 ===== -->
+  <section class="chapter invite" id="sec-6">
+    <div class="wrap">
+      <blockquote class="reveal">「每一件作品，<br>都是土地與心靈的<span style="color:var(--bamboo-bright)">一場對話</span>。」</blockquote>
+      <div class="by reveal">— 陳依慧 EFay</div>
+      <div class="contacts">
+        <a class="reveal" href="mailto:catnipartstudio@gmail.com"><i class="fa-solid fa-envelope"></i> catnipartstudio@gmail.com</a>
+        <a class="reveal" href="https://www.instagram.com/efay_chen/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i> Instagram</a>
+        <a class="reveal" href="https://www.threads.com/@efay_chen" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i> Threads</a>
+        <a class="reveal" href="https://melodic-notify-538.notion.site/842f62803482437fb76a4a4c741dcd1a?v=916a8ebef71443b596dc20471771fca3" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-book-open"></i> 作品全集</a>
+      </div>
+    </div>
+    <footer>
+      <div class="made">Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon</div>
+      <div class="studio">Catnip Art Studio ・ Land Art × Energy Healing</div>
+    </footer>
+  </section>
+
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ============================================================
+   1 ・ 自訂游標：一點漂浮的光
+   ============================================================ */
+(()=>{
+  const dot=document.querySelector('.cursor'),ring=document.querySelector('.cursor-ring');
+  if(!dot)return;
+  let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;
+    dot.style.left=mx+'px';dot.style.top=my+'px';});
+  (function loop(){rx+=(mx-rx)*.16;ry+=(my-ry)*.16;
+    ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop);})();
+  document.querySelectorAll('a,.spool-dot,#weave-net,.service,.token').forEach(el=>{
+    el.addEventListener('mouseenter',()=>ring.classList.add('hot'));
+    el.addEventListener('mouseleave',()=>ring.classList.remove('hot'));
+  });
+})();
+
+/* ============================================================
+   2 ・ 活背景：three.js 竹編光之漩渦
+   一束束竹條沿螺旋曲線編成的旋轉漩渦，
+   一道從中心射出的光，隨卷動深入。
+   ============================================================ */
+(()=>{
+  const stage=document.getElementById('vortex-stage');
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x120d09,0.055);
+  const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,0.1,120);
+  camera.position.set(0,0,17);
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+  stage.appendChild(renderer.domElement);
+
+  const group=new THREE.Group();scene.add(group);
+
+  // —— 竹條：沿螺旋曲線的 TubeGeometry ——
+  const STRANDS = reduce?34:90;
+  const palette=[0xcaa05a,0xe8c98a,0xb9883f,0xd8b878];
+  for(let i=0;i<STRANDS;i++){
+    const turns=2.4+Math.random()*2.6;
+    const phase=Math.random()*Math.PI*2;
+    const rBase=2.2+Math.random()*5.6;
+    const zSpan=11+Math.random()*9;
+    const pts=[];
+    const seg=46;
+    for(let s=0;s<=seg;s++){
+      const t=s/seg;
+      const ang=phase+t*Math.PI*2*turns;
+      const r=rBase*(0.32+t*0.95);
+      pts.push(new THREE.Vector3(
+        Math.cos(ang)*r,
+        Math.sin(ang)*r*0.92,
+        -zSpan*0.5 + t*zSpan
+      ));
+    }
+    const curve=new THREE.CatmullRomCurve3(pts);
+    const geo=new THREE.TubeGeometry(curve,70,0.018+Math.random()*0.05,6,false);
+    const col=new THREE.Color(palette[i%palette.length]);
+    const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,
+      opacity:0.28+Math.random()*0.34});
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.userData.spin=(Math.random()*0.5+0.5)*(Math.random()<0.5?-1:1);
+    group.add(mesh);
+  }
+
+  // —— 中心的光：一束發光圓 + 光暈 ——
+  const coreMat=new THREE.SpriteMaterial({
+    map:(()=>{const c=document.createElement('canvas');c.width=c.height=128;
+      const g=c.getContext('2d');const grd=g.createRadialGradient(64,64,0,64,64,64);
+      grd.addColorStop(0,'rgba(251,238,203,1)');
+      grd.addColorStop(.35,'rgba(232,201,138,.55)');
+      grd.addColorStop(1,'rgba(232,201,138,0)');
+      g.fillStyle=grd;g.fillRect(0,0,128,128);
+      return new THREE.CanvasTexture(c);})(),
+    transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});
+  const core=new THREE.Sprite(coreMat);core.scale.set(10,10,1);
+  core.position.z=-3;scene.add(core);
+
+  // —— 光的塵埃：漂浮的孢子 ——
+  const dustN=reduce?120:520;
+  const dGeo=new THREE.BufferGeometry();
+  const dPos=new Float32Array(dustN*3);
+  for(let i=0;i<dustN;i++){
+    dPos[i*3]=(Math.random()-0.5)*34;
+    dPos[i*3+1]=(Math.random()-0.5)*24;
+    dPos[i*3+2]=(Math.random()-0.5)*40;
+  }
+  dGeo.setAttribute('position',new THREE.BufferAttribute(dPos,3));
+  const dust=new THREE.Points(dGeo,new THREE.PointsMaterial({
+    color:0xf4e3bd,size:0.05,transparent:true,opacity:0.55,
+    blending:THREE.AdditiveBlending,depthWrite:false}));
+  scene.add(dust);
+
+  // —— 隨卷動改變的狀態 ——
+  const state={depth:0,hue:0,mx:0,my:0};
+  addEventListener('mousemove',e=>{
+    state.mx=(e.clientX/innerWidth-0.5);
+    state.my=(e.clientY/innerHeight-0.5);
+  });
+
+  const clock=new THREE.Clock();
+  function tick(){
+    const t=clock.getElapsedTime();
+    group.rotation.z = t*0.06 + state.depth*1.2;
+    group.children.forEach((m,i)=>{ m.rotation.z = t*0.015*m.userData.spin; });
+    // 卷動把鏡頭推進漩渦
+    camera.position.z = 17 - state.depth*16;
+    camera.position.x += (state.mx*2.2 - camera.position.x)*0.04;
+    camera.position.y += (-state.my*1.6 - camera.position.y)*0.04;
+    camera.lookAt(0,0,-state.depth*8);
+    core.position.z = -3 - state.depth*9;
+    core.scale.setScalar(9 + Math.sin(t*1.4)*1.2 + state.depth*5);
+    coreMat.opacity = 0.65 + Math.sin(t*2)*0.12;
+    dust.rotation.y = t*0.02;
+    dust.rotation.z = t*0.012;
+    // 色相：土 → 金 → 玉綠 → 光
+    const c=new THREE.Color();
+    c.setHSL(0.09 - state.hue*0.06, 0.42 + state.hue*0.12, 0.05 + state.hue*0.04);
+    scene.fog.color=c; renderer.setClearColor(c,0);
+    renderer.render(scene,camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  },{passive:true});
+
+  window.__vortex=state;
+})();
+
+/* ============================================================
+   3 ・ GSAP：卷動敘事 + 漩渦深度同步
+   ============================================================ */
+window.addEventListener('load',()=>{
+  if(!window.gsap)return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  // 漩渦深度 / 色相跟著整頁卷動
+  const v=window.__vortex||{};
+  const scrim=document.querySelector('.scrim');
+  ScrollTrigger.create({
+    trigger:'main',start:'top top',end:'bottom bottom',scrub:1,
+    onUpdate:self=>{
+      if(v){ v.depth=self.progress; v.hue=self.progress; }
+      // Hero(0) 純漩渦；越往下布幕越濃，內文浮起
+      if(scrim) scrim.style.opacity = Math.min(1, self.progress*5.5);
+    }
+  });
+
+  // HERO 入場
+  const tl=gsap.timeline({defaults:{ease:'power3.out'}});
+  tl.to('.hero .eyebrow',{opacity:1,duration:1,y:0},0.2)
+    .to('.hero .word',{opacity:1,y:0,rotate:0,duration:1.1,stagger:0.08},0.4)
+    .to('.hero .roles',{opacity:1,duration:1},'-=0.5')
+    .to('.scroll-cue',{opacity:1,duration:1},'-=0.4');
+
+  // 通用 reveal
+  gsap.utils.toArray('.reveal').forEach(el=>{
+    gsap.to(el,{opacity:1,y:0,duration:1.15,ease:'power3.out',
+      scrollTrigger:{trigger:el,start:'top 86%'}});
+  });
+
+  // 作品圖：視差 + 進場縮放
+  gsap.utils.toArray('.work-fig img').forEach(img=>{
+    gsap.fromTo(img,{scale:1.18,yPercent:-6},{scale:1.02,yPercent:6,ease:'none',
+      scrollTrigger:{trigger:img,start:'top bottom',end:'bottom top',scrub:true}});
+  });
+
+  // 主標題裡的竹編光：滑鼠視差，讓「字」會呼吸
+  const heroCN=document.querySelector('.hero h1 .cn');
+  if(heroCN){
+    addEventListener('mousemove',e=>{
+      const x=(e.clientX/innerWidth-0.5)*8;
+      const y=(e.clientY/innerHeight-0.5)*5;
+      heroCN.style.backgroundPosition=`${50+x}% ${38+y}%, ${50+x}% ${38+y}%`;
+    },{passive:true});
+  }
+
+  // 標題字距呼吸
+  gsap.utils.toArray('.work-body h3').forEach(h=>{
+    gsap.fromTo(h,{letterSpacing:'0.18em',opacity:0.4},
+      {letterSpacing:'0.02em',opacity:1,duration:1.4,ease:'power2.out',
+       scrollTrigger:{trigger:h,start:'top 82%'}});
+  });
+
+  // 側軸線圈 + 點擊跳轉
+  const secs=gsap.utils.toArray('main section, header.hero');
+  const dots=gsap.utils.toArray('.spool-dot');
+  const map=['sec-0','sec-1','sec-2','sec-3','sec-4','sec-5','sec-6'];
+  map.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    ScrollTrigger.create({trigger:el,start:'top 55%',end:'bottom 55%',
+      onToggle:self=>{ if(self.isActive){ dots.forEach(d=>d.classList.remove('on'));
+        const d=document.querySelector('.spool-dot[data-go="'+i+'"]'); d&&d.classList.add('on'); } }});
+  });
+  dots.forEach(d=>d.addEventListener('click',()=>{
+    const el=document.getElementById(map[d.dataset.go]);
+    el&&el.scrollIntoView({behavior:'smooth'});
+  }));
+});
+
+/* ============================================================
+   4 ・ p5.js：能量編織網 —— 點一下，光的漣漪穿過這張網
+   ============================================================ */
+new p5((p)=>{
+  let host,W,H,nodes=[],links=[],pulses=[],reduce=false;
+  const COLS=14,ROWS=9;
+  p.setup=()=>{
+    host=document.getElementById('weave-net');
+    reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    W=host.clientWidth;H=host.clientHeight;
+    const c=p.createCanvas(W,H);c.parent(host);
+    build();
+  };
+  function build(){
+    nodes=[];links=[];
+    const mx=W*0.08,my=H*0.12;
+    for(let r=0;r<ROWS;r++)for(let cI=0;cI<COLS;cI++){
+      const jx=(p.noise(cI*0.4,r*0.4)-0.5)*W*0.05;
+      const jy=(p.noise(cI*0.4+9,r*0.4+9)-0.5)*H*0.06;
+      nodes.push({
+        hx:mx+cI*((W-2*mx)/(COLS-1))+jx,
+        hy:my+r*((H-2*my)/(ROWS-1))+jy,
+        x:0,y:0,vx:0,vy:0,e:0, c:cI,r:r
+      });
+    }
+    nodes.forEach(n=>{n.x=n.hx;n.y=n.hy;});
+    const idx=(c,r)=>r*COLS+c;
+    for(let r=0;r<ROWS;r++)for(let cI=0;cI<COLS;cI++){
+      if(cI<COLS-1)links.push([idx(cI,r),idx(cI+1,r)]);
+      if(r<ROWS-1)links.push([idx(cI,r),idx(cI,r+1)]);
+      if(cI<COLS-1&&r<ROWS-1&&(cI+r)%2===0)links.push([idx(cI,r),idx(cI+1,r+1)]);
+    }
+  }
+  function ripple(px,py){
+    pulses.push({x:px,y:py,r:0,life:1});
+    nodes.forEach(n=>{
+      const d=p.dist(px,py,n.hx,n.hy);
+      if(d<150){const f=(1-d/150);n.vx+=(n.hx-px)*0.0008*f*60;
+        n.vy+=(n.hy-py)*0.0008*f*60;n.e=Math.min(1,n.e+f);}
+    });
+  }
+  p.mousePressed=()=>{ if(p.mouseX>=0&&p.mouseX<=W&&p.mouseY>=0&&p.mouseY<=H) ripple(p.mouseX,p.mouseY); };
+  p.touchStarted=()=>{ if(p.mouseX>=0&&p.mouseX<=W&&p.mouseY>=0&&p.mouseY<=H){ripple(p.mouseX,p.mouseY);return false;} };
+  p.draw=()=>{
+    p.clear();
+    // 自動漣漪，讓網永遠在呼吸
+    if(!reduce && p.frameCount%150===0)
+      ripple(p.random(W*0.2,W*0.8),p.random(H*0.2,H*0.8));
+    // 節點回彈 + 阻尼
+    nodes.forEach(n=>{
+      n.vx+=(n.hx-n.x)*0.018; n.vy+=(n.hy-n.y)*0.018;
+      n.vx*=0.9; n.vy*=0.9; n.x+=n.vx; n.y+=n.vy; n.e*=0.96;
+      if(!reduce){ n.x+=Math.sin(p.frameCount*0.02+n.c)*0.12;
+        n.y+=Math.cos(p.frameCount*0.02+n.r)*0.12; }
+    });
+    // 織線
+    links.forEach(([a,b])=>{
+      const A=nodes[a],B=nodes[b];const e=(A.e+B.e)/2;
+      p.stroke(202+e*30,160+e*70,90+e*110, 78+e*170);
+      p.strokeWeight(0.9+e*1.9);
+      p.line(A.x,A.y,B.x,B.y);
+    });
+    // 節點
+    p.noStroke();
+    nodes.forEach(n=>{
+      if(n.e>0.04){p.fill(251,238,203,n.e*210);
+        p.circle(n.x,n.y,2+n.e*7);}
+      else{p.fill(212,176,108,105);p.circle(n.x,n.y,2);}
+    });
+    // 光的漣漪環
+    for(let i=pulses.length-1;i>=0;i--){
+      const pu=pulses[i];pu.r+=7;pu.life-=0.018;
+      if(pu.life<=0){pulses.splice(i,1);continue;}
+      p.noFill();
+      p.stroke(232,201,138,pu.life*150);
+      p.strokeWeight(1.6);
+      p.circle(pu.x,pu.y,pu.r*2);
+      p.stroke(95,182,207,pu.life*70);
+      p.circle(pu.x,pu.y,pu.r*2*0.7);
+    }
+  };
+  p.windowResized=()=>{
+    if(!host)return;
+    W=host.clientWidth;H=host.clientHeight;
+    p.resizeCanvas(W,H);build();
+  };
+});
+</script>
+</body>
+</html>
