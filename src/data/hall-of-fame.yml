@@ -1887,3 +1887,32 @@ members:
         label: "AI Agent 系統設計"
       - id: "camp_coding"
         label: "露營 = 換個地方寫 code"
+
+  - id: "efay_chen"
+    name: "陳依慧 EFay｜Catnip Art Studio"
+    avatar: "/assets/img/guild/efay_chen/avatar.webp"
+    page: "/guild/efay_chen.html"
+    title: "大地藝術家 · 植物纖維編織 · 能量療癒實踐者"
+    description: "用竹子、白鐵絲與回收織線，在湖面與河面編織會呼吸的巨型螺旋——《肚臍》《酒窩》漂在水上，候鳥停駐、路人放慢腳步。曾進駐日本信濃國原始感覺藝術節。創作之外是能量療癒實踐者，把覺察與能量感知帶進手作：「編織一件作品，和編織一個人重新安定下來，是同一件事。」提供現地大地藝術創作、藝術療癒體驗、工作坊與駐村合作。"
+    tags:
+      - id: "land_art_weaving"
+        label: "竹編大地藝術"
+      - id: "art_healing"
+        label: "藝術 × 能量療癒"
+      - id: "site_specific"
+        label: "現地場域裝置"
+
+
+  - id: "rooji_shuanglian"
+    name: "儒編｜儒記中山雙連店"
+    avatar: "/assets/img/guild/rooji_shuanglian/avatar.webp"
+    page: "/guild/rooji_shuanglian.html"
+    title: "茶品牌社群編輯 · 選茶風味設計 · 活動企劃 · 把行銷變成陪伴"
+    description: "儒記中山雙連店的儒編，大家叫他儒儒。工作是把一片高山茶葉走過的路——雲霧、製茶師的手溫、沖泡的火候——重新講成一個你願意停下來聽完的故事。從選茶、風味設計，到品牌敘事、貼文與活動企劃，在意的都是同一件事：讓你喝到的不只是好喝，而是被用心對待的感覺。喜歡把專業變得有溫度，把行銷變成陪伴。需要選茶、辦公室下午茶桶、茶葉訂購、活動合作或社群經營，都能交給他。讓台灣高山茶，變成每天喝得起的講究日常。"
+    tags:
+      - id: "tea_storytelling"
+        label: "選茶 × 風味敘事"
+      - id: "brand_event"
+        label: "品牌貼文 × 活動企劃"
+      - id: "marketing_as_company"
+        label: "把行銷變成陪伴"
