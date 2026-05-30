@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="儒記中山雙連店 · 巷子裡的台式靜謐茶屋 · 中山雙連街 9-3 號。台灣高山茶、每日限定祕密飲單、外送、辦公室下午茶桶、茶葉訂購。讓台灣高山茶，變成每天喝得起的日常。">
+<title>煎茶帖 · 儒記中山雙連店 · 儒編</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..600&family=Noto+Serif+TC:wght@400;500;700;900&family=LXGW+WenKai+TC:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<style>
+:root{
+  --paper:#EDE3CE;
+  --paper-2:#E5D8BC;
+  --ink:#231A0F;
+  --ink-2:#4B3A24;
+  --ink-soft:#6E5A40;
+  --seal:#9E3026;
+  --seal-lt:#BD4533;
+  --gold:#B0832F;
+  --gold-lt:#C9A24B;
+  --night:#15100A;
+  --night-2:#1E160D;
+
+  --tea:#8AA06A;                /* steeping accent — JS interpolates this */
+
+  --f-disp:'Fraunces',serif;    /* characterful latin display */
+  --f-song:'Noto Serif TC',serif;  /* authoritative chinese */
+  --f-kai:'LXGW WenKai TC','Noto Serif TC',cursive; /* warm brush */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-song);
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;cursor:none;position:relative}
+@media (hover:none){body{cursor:auto}}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+section{position:relative}
+::selection{background:var(--seal);color:var(--paper)}
+
+/* paper grain + generated rice-paper overlay */
+body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:url('/assets/img/guild/rooji_shuanglian/cha/paper.webp') center/cover;
+  mix-blend-mode:multiply;opacity:.32}
+body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.04;
+  background-image:repeating-radial-gradient(circle at 0 0,#000 0,transparent 1px);
+  background-size:3px 3px}
+
+/* ---------- ink-brush cursor trail ---------- */
+#inktrail{position:fixed;inset:0;z-index:9998;pointer-events:none}
+@media (hover:none){#inktrail{display:none}}
+
+/* ---------- cursor ---------- */
+#cursor{position:fixed;width:12px;height:12px;border-radius:50%;
+  border:1.4px solid var(--seal);pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);transition:width .25s,height .25s,background .25s,border-color .25s}
+#cursor.big{width:54px;height:54px;background:rgba(158,48,38,.05);border-color:var(--tea)}
+#cursor.lite{border-color:var(--paper)}
+#cursor-dot{position:fixed;width:4px;height:4px;border-radius:50%;background:var(--seal);
+  pointer-events:none;z-index:9999;transform:translate(-50%,-50%)}
+@media (hover:none){#cursor,#cursor-dot{display:none}}
+
+/* ---------- loader ---------- */
+#loader{position:fixed;inset:0;z-index:10000;background:var(--paper);
+  display:flex;align-items:center;justify-content:center;flex-direction:column}
+#loader .seal-wrap{width:min(34vw,180px);aspect-ratio:1;position:relative}
+#loader .seal-wrap img{width:100%;border-radius:50%;
+  filter:drop-shadow(0 8px 30px rgba(158,48,38,.25))}
+#loader .ring{position:absolute;inset:-18px;border:1px solid rgba(176,131,47,.3);
+  border-radius:50%;border-top-color:var(--seal);animation:spin 1.3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader .lbl{margin-top:30px;font-family:var(--f-disp);font-style:italic;
+  letter-spacing:.12em;color:var(--ink-soft);font-size:.92rem}
+#loader .pct{margin-top:6px;font-family:var(--f-disp);color:var(--ink);
+  font-size:2.4rem;font-weight:300;font-variation-settings:'opsz' 100}
+
+/* ---------- topbar ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:120;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:24px clamp(20px,4vw,54px);mix-blend-mode:multiply;transition:mix-blend-mode .4s}
+.topbar.on-dark{mix-blend-mode:difference}
+.topbar a.back{font-family:var(--f-disp);letter-spacing:.18em;font-size:.78rem;
+  color:var(--ink);display:flex;align-items:center;gap:10px;font-style:italic;
+  text-shadow:0 1px 8px rgba(237,227,206,.7)}
+.topbar.on-dark a.back,.topbar.on-dark .mark{color:#fff;text-shadow:none}
+.topbar a.back i{transition:transform .4s}
+.topbar a.back:hover i{transform:translateX(-7px)}
+.topbar .mark{font-family:var(--f-song);font-weight:700;color:var(--ink);
+  letter-spacing:.38em;font-size:.8rem;text-shadow:0 1px 8px rgba(237,227,206,.7)}
+
+/* reusable brush underline under section headings (GSAP wipes it open) */
+.brushline{height:24px;width:min(330px,56%);margin-top:16px;pointer-events:none;
+  background:url('/assets/img/guild/rooji_shuanglian/cha/brush.webp') left center/contain no-repeat;
+  mix-blend-mode:multiply;opacity:.88;clip-path:inset(0 100% 0 0)}
+.brushline.dk{mix-blend-mode:screen;opacity:.95;
+  filter:invert(1) sepia(.55) saturate(2.4) hue-rotate(2deg) brightness(1.05)}
+
+/* ---------- steep gauge (left, signature) ---------- */
+#steep{position:fixed;left:30px;top:50%;transform:translateY(-50%);z-index:115;
+  display:flex;flex-direction:column;align-items:center;gap:14px;mix-blend-mode:multiply}
+#steep.on-dark{mix-blend-mode:normal}
+#steep .tube{width:13px;height:190px;border:1.4px solid var(--ink-soft);
+  border-radius:7px;position:relative;overflow:hidden;background:rgba(255,255,255,.18)}
+#steep.on-dark .tube{border-color:rgba(237,227,206,.55);background:rgba(255,255,255,.05)}
+#steep .liquid{position:absolute;left:0;right:0;bottom:0;height:4%;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--tea) 55%,transparent),var(--tea));
+  transition:height .25s ease-out;border-radius:0 0 6px 6px}
+#steep .liquid::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;
+  background:rgba(255,255,255,.35)}
+#steep .lbl{writing-mode:vertical-rl;text-align:center;display:flex;align-items:center;gap:9px}
+#steep .cn{font-family:var(--f-song);font-weight:700;font-size:.86rem;letter-spacing:.28em;
+  color:var(--ink-2)}
+#steep.on-dark .cn{color:var(--paper)}
+#steep .en{font-family:var(--f-disp);font-style:italic;font-size:.62rem;letter-spacing:.18em;
+  color:var(--ink-soft)}
+#steep.on-dark .en{color:var(--gold-lt)}
+@media (max-width:900px){#steep{display:none}}
+
+/* ---------- rail ---------- */
+#rail{position:fixed;right:26px;top:50%;transform:translateY(-50%);z-index:115;
+  display:flex;flex-direction:column;gap:15px;mix-blend-mode:multiply}
+#rail.on-dark{mix-blend-mode:normal}
+#rail button{width:7px;height:7px;border-radius:50%;border:1px solid var(--ink-soft);
+  background:transparent;cursor:none;position:relative;transition:.35s;padding:0}
+#rail.on-dark button{border-color:rgba(237,227,206,.5)}
+#rail button.on{background:var(--seal);border-color:var(--seal);transform:scale(1.6)}
+#rail button span{position:absolute;right:18px;top:50%;transform:translateY(-50%);
+  font-family:var(--f-song);font-size:.66rem;letter-spacing:.18em;color:var(--ink-2);
+  white-space:nowrap;opacity:0;transition:.3s;pointer-events:none}
+#rail.on-dark button span{color:var(--paper)}
+#rail button:hover span{opacity:1}
+@media (max-width:900px){#rail{display:none}}
+
+/* ---------- shared editorial bits ---------- */
+.bay{padding:clamp(96px,13vw,180px) clamp(26px,8vw,150px);position:relative}
+.eyebrow{font-family:var(--f-disp);font-style:italic;letter-spacing:.04em;
+  font-size:.92rem;color:var(--seal);display:flex;align-items:baseline;gap:16px;margin-bottom:22px}
+.eyebrow .num{font-family:var(--f-song);font-weight:900;font-style:normal;
+  font-size:.82rem;letter-spacing:.1em;color:var(--gold);
+  border:1.4px solid var(--gold);border-radius:3px;padding:2px 7px}
+.bigq{font-family:var(--f-song);font-weight:900;line-height:1.26;
+  font-size:clamp(2rem,5vw,3.9rem);letter-spacing:.01em}
+.bigq em{font-style:normal;color:var(--seal)}
+.rv{opacity:0;transform:translateY(44px)}
+
+/* ============ HERO ============ */
+#hero{height:100svh;min-height:660px;overflow:hidden;background:var(--paper)}
+#hero .bg{position:absolute;left:0;right:0;bottom:0;height:78%;z-index:1;will-change:transform;
+  transform-origin:50% 100%}
+#hero .bg img{width:100%;height:100%;object-fit:cover;object-position:bottom;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 32%);
+  mask-image:linear-gradient(180deg,transparent,#000 32%)}
+/* living mist — generated wisps on black, screen-blended & drifting */
+#hero .mist{position:absolute;left:-15%;right:-15%;z-index:2;height:46%;pointer-events:none;
+  background-image:url('/assets/img/guild/rooji_shuanglian/cha/mist.webp');
+  background-size:cover;background-position:center;mix-blend-mode:screen;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+#hero .mist.m1{bottom:30%;opacity:.5;animation:drift1 46s linear infinite}
+#hero .mist.m2{bottom:14%;opacity:.32;transform:scaleX(-1);animation:drift2 64s linear infinite}
+@keyframes drift1{from{transform:translateX(-6%)}to{transform:translateX(6%)}}
+@keyframes drift2{from{transform:scaleX(-1) translateX(-7%)}to{transform:scaleX(-1) translateX(7%)}}
+@media (prefers-reduced-motion:reduce){#hero .mist{animation:none}}
+/* legibility scrim — lifts the brand text off the painting */
+#hero .hscrim{position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(102deg,rgba(237,227,206,.94) 0%,rgba(237,227,206,.74) 30%,rgba(237,227,206,.18) 56%,rgba(237,227,206,0) 72%)}
+#hero .spine{position:absolute;top:clamp(86px,12vh,140px);left:clamp(26px,7vw,90px);z-index:4;
+  writing-mode:vertical-rl;font-family:var(--f-song);font-weight:700;
+  letter-spacing:.5em;font-size:.92rem;color:var(--ink-2);opacity:0;
+  text-shadow:0 1px 10px rgba(237,227,206,.8)}
+#hero .hud{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;
+  justify-content:center;padding:0 clamp(26px,9vw,150px);max-width:1100px}
+#hero .kick{font-family:var(--f-disp);font-style:italic;font-size:clamp(.86rem,1.8vw,1.08rem);
+  letter-spacing:.06em;color:var(--seal);margin-bottom:20px;opacity:0;
+  display:flex;align-items:center;gap:13px}
+#hero .kick::before{content:"";width:34px;height:1.5px;background:var(--seal)}
+#hero .brandmark{position:relative;width:clamp(72px,8.5vw,104px);margin-bottom:26px}
+#hero .seal{width:100%;display:block;border-radius:50%;opacity:0;
+  filter:drop-shadow(0 8px 24px rgba(158,48,38,.22))}
+#hero .stamp-ring{position:absolute;inset:-22%;width:144%;opacity:0;pointer-events:none;
+  mix-blend-mode:multiply}
+#hero h1{font-family:var(--f-song);font-weight:900;color:var(--ink);
+  font-size:clamp(4.4rem,15vw,11rem);line-height:.9;letter-spacing:.04em;
+  text-shadow:0 4px 30px rgba(237,227,206,.7)}
+#hero h1 .ch{display:inline-block;opacity:0;transform:translateY(50px)}
+#hero .latin{font-family:var(--f-disp);font-style:italic;font-weight:500;
+  font-size:clamp(1rem,2.6vw,1.6rem);color:var(--gold);margin-top:14px;
+  letter-spacing:.22em;opacity:0}
+#hero .sub{margin-top:24px;font-family:var(--f-kai);color:var(--ink);
+  font-size:clamp(1.06rem,2.3vw,1.4rem);letter-spacing:.05em;line-height:2;
+  max-width:540px;opacity:0;text-shadow:0 1px 10px rgba(237,227,206,.7)}
+#hero .sub b{color:var(--seal);font-weight:700}
+#hero .scrollcue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:4;
+  display:flex;flex-direction:column;align-items:center;gap:11px;opacity:0}
+#hero .scrollcue span{font-family:var(--f-disp);font-style:italic;letter-spacing:.1em;
+  font-size:.74rem;color:var(--ink-soft)}
+#hero .scrollcue i{color:var(--seal);animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(9px)}}
+
+/* ============ PROLOGUE 序 (alley / who) ============ */
+#prologue{background:var(--paper-2);overflow:hidden}
+#prologue .grid{display:grid;grid-template-columns:0.92fr 1.08fr;align-items:center;
+  gap:clamp(36px,6vw,90px)}
+#prologue .figure{position:relative;overflow:hidden;aspect-ratio:3/4;
+  border:1px solid rgba(110,90,64,.25);box-shadow:0 30px 60px -34px rgba(35,26,15,.6)}
+#prologue .figure img{position:absolute;inset:0;width:100%;height:115%;object-fit:cover}
+#prologue .figure .tag{position:absolute;right:-14px;bottom:30px;background:var(--seal);
+  color:var(--paper);font-family:var(--f-song);font-weight:700;writing-mode:vertical-rl;
+  letter-spacing:.3em;padding:18px 9px;font-size:.92rem;box-shadow:0 14px 30px -12px rgba(158,48,38,.5)}
+#prologue .body p{margin-top:22px;font-size:1.04rem;line-height:2.12;color:var(--ink-2);letter-spacing:.03em}
+#prologue .body .lead{font-family:var(--f-kai);font-size:clamp(1.4rem,3vw,2rem);
+  line-height:1.7;color:var(--ink);letter-spacing:.04em;margin-top:6px}
+#prologue .body .lead b{color:var(--seal);font-weight:700}
+#prologue .sign{margin-top:36px;display:flex;align-items:flex-end;gap:20px}
+#prologue .sign .nm{font-family:var(--f-kai);font-size:2.6rem;color:var(--seal);line-height:1}
+#prologue .sign .ttl{font-family:var(--f-disp);font-style:italic;letter-spacing:.04em;
+  font-size:.8rem;color:var(--ink-soft);padding-bottom:8px}
+
+/* ============ JOURNEY (pinned cinematic spine) ============ */
+#journey{background:var(--night)}
+#journey .pin{height:100svh;display:flex;align-items:center;overflow:hidden;position:relative}
+#journey .stage{position:absolute;inset:0}
+#journey .stage figure{position:absolute;inset:0;opacity:0}
+#journey .stage figure img{width:100%;height:100%;object-fit:cover;filter:brightness(.66) sepia(.12)}
+#journey .stage figure::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(21,16,10,.82) 0%,rgba(21,16,10,.35) 48%,rgba(21,16,10,.7) 100%)}
+#journey .track{position:relative;z-index:4;width:100%;padding:0 clamp(26px,9vw,150px);color:var(--paper)}
+#journey .step{position:absolute;max-width:620px;opacity:0;display:flex;gap:30px;align-items:flex-start}
+#journey .step .vlabel{writing-mode:vertical-rl;font-family:var(--f-song);font-weight:700;
+  letter-spacing:.34em;font-size:1.02rem;color:var(--gold-lt);
+  border-right:1px solid rgba(201,162,75,.4);padding-right:16px;flex:none;margin-top:6px}
+#journey .step .txt h2{font-family:var(--f-song);font-weight:900;
+  font-size:clamp(2.1rem,5.6vw,4.1rem);line-height:1.14;margin-bottom:20px}
+#journey .step .txt .en{font-family:var(--f-disp);font-style:italic;font-size:.92rem;
+  letter-spacing:.04em;color:var(--gold-lt);margin-bottom:18px;display:block}
+#journey .step .txt p{font-size:1.02rem;line-height:2;color:var(--paper-2);letter-spacing:.04em;max-width:480px;
+  font-family:var(--f-kai)}
+#journey .barwrap{position:absolute;left:clamp(26px,9vw,150px);bottom:54px;z-index:5;
+  display:flex;align-items:center;gap:18px}
+#journey .barwrap .bar{width:210px;height:1px;background:rgba(201,162,75,.3);position:relative}
+#journey .barwrap .bar i{position:absolute;left:0;top:-1px;height:3px;width:0%;background:var(--gold-lt)}
+#journey .barwrap .lbl{font-family:var(--f-disp);font-style:italic;font-size:.74rem;
+  letter-spacing:.04em;color:var(--gold-lt)}
+
+/* ============ PROCESS band 製 ============ */
+#process{background:var(--paper);overflow:hidden}
+#process .head{max-width:760px;margin-bottom:50px}
+#process .band{position:relative;border-top:1px solid rgba(110,90,64,.3);
+  border-bottom:1px solid rgba(110,90,64,.3);padding:22px 0;margin-bottom:2px;overflow:hidden}
+#process .band img{width:100%;display:block;will-change:clip-path;
+  clip-path:inset(0 100% 0 0)}            /* JS scrub wipes this open L→R */
+#process .stages{display:grid;grid-template-columns:repeat(4,1fr);margin-top:26px}
+#process .stages .s{text-align:center;padding:0 10px;position:relative;opacity:0;
+  transition:transform .45s cubic-bezier(.2,.9,.2,1)}
+#process .stages .s::before{content:"";position:absolute;top:-28px;left:50%;width:1px;height:18px;
+  background:var(--gold);transform:translateX(-50%);transition:height .45s,background .45s}
+#process .stages .s .n{font-family:var(--f-disp);font-style:italic;color:var(--gold);font-size:.82rem}
+#process .stages .s .t{font-family:var(--f-song);font-weight:900;font-size:1.5rem;margin:6px 0 8px;
+  letter-spacing:.08em;transition:color .45s}
+#process .stages .s .d{font-size:.86rem;line-height:1.85;color:var(--ink-soft);letter-spacing:.02em}
+#process .stages .s.active{transform:translateY(-5px)}
+#process .stages .s.active::before{height:28px;background:var(--seal)}
+#process .stages .s.active .t{color:var(--seal)}
+
+/* ============ SERVICES (refined hover cards) 帖 ============ */
+#serve{background:var(--night);color:var(--paper);overflow:hidden}
+#serve .head{max-width:760px;margin-bottom:56px}
+#serve .head .eyebrow{color:var(--gold-lt)}
+#serve .head .eyebrow .num{color:var(--gold-lt);border-color:var(--gold-lt)}
+#serve .head .bigq{color:var(--paper)}
+#serve .head .bigq em{color:var(--gold-lt)}
+#serve .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:rgba(201,162,75,.16);border:1px solid rgba(201,162,75,.16)}
+#serve .cell{background:var(--night);padding:42px 34px 38px;position:relative;overflow:hidden;
+  min-height:228px;display:flex;flex-direction:column;transition:.55s cubic-bezier(.2,.9,.2,1)}
+#serve .cell .no{font-family:var(--f-disp);font-style:italic;font-size:.84rem;color:var(--gold);
+  margin-bottom:24px}
+#serve .cell i.ic{font-size:1.7rem;color:var(--gold-lt);margin-bottom:18px;display:block;transition:.55s}
+#serve .cell h3{font-family:var(--f-song);font-weight:700;font-size:1.3rem;letter-spacing:.05em}
+#serve .cell p{font-size:.92rem;line-height:1.95;color:rgba(237,227,206,.62);letter-spacing:.02em;
+  margin-top:14px;max-height:0;opacity:0;overflow:hidden;
+  transition:max-height .55s cubic-bezier(.2,.9,.2,1),opacity .45s,margin-top .45s}
+#serve .cell .glow{position:absolute;inset:0;opacity:0;transition:.55s;
+  background:radial-gradient(circle at 50% 0%,rgba(201,162,75,.14),transparent 66%)}
+#serve .cell:hover{background:var(--night-2)}
+#serve .cell:hover .glow{opacity:1}
+#serve .cell:hover i.ic{transform:translateY(-3px) scale(1.08)}
+#serve .cell:hover p{max-height:220px;opacity:1;margin-top:14px}
+#serve .grid.dim .cell:not(:hover){opacity:.42;transition:opacity .45s}
+
+/* ============ REGIONS · horizontal pinned scroll gallery 山 ============ */
+#regions{background:var(--paper-2);color:var(--ink);overflow:hidden}
+#regions .head{max-width:760px;margin-bottom:14px;padding:clamp(96px,13vw,180px) clamp(26px,8vw,150px) 0}
+#regions .rhint{padding:0 clamp(26px,8vw,150px);margin-bottom:34px;
+  font-family:var(--f-disp);font-style:italic;font-size:.82rem;color:var(--ink-soft);
+  display:flex;align-items:center;gap:10px}
+#regions .rhint i{color:var(--seal)}
+#regions .rpin{height:100svh;display:flex;align-items:center;overflow:hidden}
+#regions .rtrack{display:flex;align-items:center;gap:26px;
+  padding:0 clamp(26px,8vw,150px);will-change:transform}
+.rpanel{position:relative;flex:0 0 auto;width:min(540px,46vw);height:72svh;overflow:hidden;
+  border:1px solid rgba(176,131,47,.3);background:var(--paper);
+  box-shadow:0 30px 60px -36px rgba(35,26,15,.6)}
+.rpanel .rimg{position:absolute;top:0;bottom:0;left:-13%;width:126%;will-change:transform}
+.rpanel .rimg img{width:100%;height:100%;object-fit:cover}
+.rpanel .scrim{position:absolute;inset:0;z-index:1;
+  background:linear-gradient(0deg,rgba(21,16,10,.86) 4%,rgba(21,16,10,.18) 42%,transparent 66%)}
+.rpanel .idx{position:absolute;top:20px;left:22px;z-index:3;font-family:var(--f-disp);
+  font-style:italic;font-size:.92rem;color:rgba(237,227,206,.85)}
+.rpanel .seal{position:absolute;top:18px;right:18px;z-index:3;width:30px;height:30px;
+  border:1.4px solid var(--gold-lt);color:var(--gold-lt);border-radius:3px;
+  font-family:var(--f-song);font-weight:700;font-size:.92rem;display:flex;align-items:center;justify-content:center}
+.rpanel .cap{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:30px 26px 28px;color:var(--paper)}
+.rpanel .cap .alt{font-family:var(--f-disp);font-style:italic;font-size:.72rem;letter-spacing:.04em;
+  color:var(--gold-lt);margin-bottom:8px;opacity:0;transform:translateY(12px);transition:.55s}
+.rpanel .cap .nm{font-family:var(--f-song);font-weight:900;font-size:clamp(1.8rem,3vw,2.5rem);
+  letter-spacing:.05em;line-height:1.05}
+.rpanel .cap .en{font-family:var(--f-disp);font-style:italic;font-size:.78rem;letter-spacing:.06em;
+  color:var(--gold-lt);margin-top:4px}
+.rpanel .cap .ch{font-family:var(--f-song);font-weight:500;font-size:1.05rem;color:var(--paper-2);
+  letter-spacing:.08em;margin-top:14px;opacity:0;transform:translateY(12px);transition:.55s .05s}
+.rpanel .cap .why{font-family:var(--f-kai);font-size:.96rem;line-height:1.75;color:var(--paper-2);
+  letter-spacing:.02em;max-width:400px;margin-top:8px;opacity:0;transform:translateY(12px);transition:.55s .1s}
+.rpanel.on .cap .alt,.rpanel.on .cap .ch,.rpanel.on .cap .why{opacity:1;transform:translateY(0)}
+.rpanel .barline{position:absolute;left:26px;bottom:18px;z-index:3;height:2px;width:46px;
+  background:var(--gold-lt);transform:scaleX(0);transform-origin:left;transition:transform .55s}
+.rpanel.on .barline{transform:scaleX(1)}
+
+/* ============ MENU (hover liquid cards) 飲 ============ */
+#menu{background:var(--paper);color:var(--ink);overflow:hidden}
+#menu .head{text-align:center;margin-bottom:56px}
+#menu .head .eyebrow{justify-content:center}
+#menu .deck{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1060px;margin:0 auto}
+.tea-card{position:relative;border:1px solid rgba(176,131,47,.4);
+  background:linear-gradient(180deg,#fbf3e2,var(--paper-2));
+  padding:34px 26px 32px;overflow:hidden;cursor:none;transform-style:preserve-3d;
+  transition:box-shadow .55s,border-color .55s}  /* transform left to GSAP/JS, no conflict */
+.tea-card .liquid{position:absolute;left:0;right:0;bottom:0;height:0%;z-index:0;
+  background:linear-gradient(180deg,transparent,var(--g,#b07e3a));
+  transition:height 1s cubic-bezier(.6,0,.2,1)}
+/* 茶煙 — steam rising from the cup on hover */
+.tea-card .steam{position:absolute;top:-6px;left:0;right:0;height:120px;z-index:2;
+  pointer-events:none;opacity:0;transition:opacity .5s}
+.tea-card .steam i{position:absolute;bottom:0;width:8px;height:90px;border-radius:50%;
+  background:linear-gradient(0deg,rgba(255,250,235,.5),rgba(255,250,235,0));
+  filter:blur(4px);transform-origin:bottom center}
+.tea-card .steam i:nth-child(1){left:30%;animation:steam 3.2s ease-in infinite}
+.tea-card .steam i:nth-child(2){left:50%;animation:steam 3.8s ease-in .5s infinite}
+.tea-card .steam i:nth-child(3){left:68%;animation:steam 3.4s ease-in 1s infinite}
+.tea-card:hover .steam{opacity:1}
+@keyframes steam{0%{opacity:0;transform:translateY(20px) scaleX(.7)}
+  30%{opacity:.9}
+  100%{opacity:0;transform:translateY(-70px) scaleX(1.5) skewX(8deg)}}
+@media (prefers-reduced-motion:reduce){.tea-card .steam i{animation:none}}
+.tea-card>*{position:relative;z-index:1}
+.tea-card .no{font-family:var(--f-disp);font-style:italic;font-size:.82rem;color:var(--gold)}
+.tea-card .nm{font-family:var(--f-song);font-weight:900;font-size:1.5rem;margin:18px 0 5px;letter-spacing:.04em}
+.tea-card .en{font-family:var(--f-disp);font-style:italic;font-size:.74rem;letter-spacing:.03em;color:var(--ink-soft)}
+.tea-card .ds{margin-top:18px;font-size:.86rem;line-height:1.9;color:var(--ink-soft);min-height:82px}
+.tea-card .brew{margin-top:14px;font-family:var(--f-disp);font-style:italic;font-size:.74rem;
+  color:var(--gold);border-top:1px dashed rgba(176,131,47,.4);padding-top:12px;letter-spacing:.02em}
+.tea-card .brew b{font-family:var(--f-song);font-style:normal;font-weight:700;color:var(--ink);font-size:.82rem}
+.tea-card .seal-mini{position:absolute;top:18px;right:18px;width:34px;height:34px;
+  border:1px solid var(--seal);color:var(--seal);border-radius:4px;display:flex;align-items:center;
+  justify-content:center;font-family:var(--f-song);font-weight:700;font-size:.8rem;opacity:.55;transition:.5s;z-index:1}
+.tea-card:hover{transform:translateY(-10px);box-shadow:0 30px 50px -28px rgba(35,26,15,.45);border-color:var(--gold)}
+.tea-card:hover .nm{color:#fff}
+.tea-card:hover .no,.tea-card:hover .en,.tea-card:hover .ds{color:rgba(255,255,255,.86)}
+.tea-card:hover .brew{border-color:rgba(255,233,176,.4)}
+.tea-card:hover .brew,.tea-card:hover .brew b{color:#ffe9b0}
+.tea-card:hover .seal-mini{opacity:1;color:#ffd9a0;border-color:#ffd9a0}
+
+/* ============ FIELD NOTES 夾頁 (pasted snapshots) ============ */
+#field{background:var(--paper-2);overflow:hidden}
+#field .head{text-align:center;margin-bottom:60px}
+#field .head .bigq span{color:var(--seal)}
+#field .pins{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(24px,4vw,56px)}
+.snap{background:#fff;padding:12px 12px 0;border:1px solid rgba(110,90,64,.18);
+  box-shadow:0 22px 40px -22px rgba(35,26,15,.5);width:min(86vw,310px);position:relative;
+  transition:transform .5s cubic-bezier(.2,.9,.2,1)}
+/* 茶漬 — a faint tea ring blooms under the photo, like a cup was set down */
+.snap::after{content:"";position:absolute;z-index:-1;width:128px;height:128px;border-radius:50%;
+  right:-32px;bottom:-30px;
+  background:radial-gradient(circle,transparent 54%,rgba(140,90,38,.22) 60%,rgba(140,90,38,.12) 70%,transparent 78%);
+  opacity:0;transform:scale(.7) rotate(-8deg);transition:opacity .6s,transform .6s cubic-bezier(.2,.9,.2,1)}
+.snap:hover::after{opacity:1;transform:scale(1) rotate(-8deg)}
+.snap::before{content:"";position:absolute;top:-13px;left:50%;transform:translateX(-50%) rotate(-3deg);
+  width:84px;height:26px;background:rgba(176,131,47,.32);
+  box-shadow:0 2px 4px rgba(0,0,0,.08);border:1px solid rgba(176,131,47,.2)}
+.snap img{width:100%;aspect-ratio:4/3;object-fit:cover;filter:saturate(.96)}
+.snap .cap{font-family:var(--f-kai);color:var(--ink-2);font-size:.96rem;
+  letter-spacing:.03em;padding:14px 6px 18px;text-align:center;line-height:1.6}
+.snap:nth-child(odd){transform:rotate(-2.2deg)}
+.snap:nth-child(even){transform:rotate(1.8deg)}
+.snap:hover{transform:rotate(0) translateY(-8px) scale(1.02)}
+
+/* ============ FOOTER 來喝茶 ============ */
+#foot{background:var(--night);color:var(--paper);overflow:hidden;position:relative}
+#foot .seal-bg{position:absolute;right:-9%;top:50%;transform:translateY(-50%);
+  width:min(48vw,540px);opacity:.14;pointer-events:none;border-radius:50%;mix-blend-mode:screen;
+  filter:sepia(1) saturate(2.4) hue-rotate(-8deg) brightness(.62) contrast(1.1);
+  -webkit-mask-image:radial-gradient(circle at 50% 50%,#000 38%,transparent 70%);
+  mask-image:radial-gradient(circle at 50% 50%,#000 38%,transparent 70%)}
+#foot .inner{position:relative;z-index:2}
+#foot .closing{font-family:var(--f-song);font-weight:900;font-size:clamp(2rem,6vw,4.4rem);
+  line-height:1.25;max-width:980px}
+#foot .closing .g{color:var(--gold-lt)}
+#foot .closing .b{color:var(--seal-lt)}
+#foot .sub{margin-top:28px;font-family:var(--f-kai);font-size:1.06rem;line-height:2;
+  color:rgba(237,227,206,.7);max-width:620px;letter-spacing:.04em}
+#foot .links{margin-top:54px;display:flex;flex-wrap:wrap;gap:16px}
+#foot .links a{display:flex;align-items:center;gap:13px;border:1px solid rgba(201,162,75,.32);
+  padding:17px 26px;font-family:var(--f-disp);font-style:italic;letter-spacing:.04em;font-size:.86rem;
+  color:var(--paper);transition:.45s;position:relative;overflow:hidden}
+#foot .links a i{color:var(--gold-lt);font-size:1.05rem;transition:.45s;z-index:2}
+#foot .links a span{z-index:2}
+#foot .links a::before{content:"";position:absolute;inset:0;background:var(--gold-lt);
+  transform:translateY(101%);transition:.45s cubic-bezier(.6,0,.2,1)}
+#foot .links a:hover{border-color:var(--gold-lt);color:var(--night)}
+#foot .links a:hover i{color:var(--night)}
+#foot .links a:hover::before{transform:translateY(0)}
+#foot .meta{margin-top:62px;padding-top:34px;border-top:1px solid rgba(201,162,75,.18);
+  display:flex;flex-wrap:wrap;gap:24px 50px;align-items:flex-end;justify-content:space-between}
+#foot .meta .col{display:grid;gap:9px}
+#foot .meta .k{font-family:var(--f-disp);font-style:italic;font-size:.72rem;letter-spacing:.04em;color:var(--gold)}
+#foot .meta .v{font-family:var(--f-song);font-size:.98rem;letter-spacing:.05em}
+#foot .meta .v.lit{color:var(--gold-lt)}
+#foot .sig{margin-top:52px;text-align:center;font-family:var(--f-disp);font-style:italic;
+  letter-spacing:.05em;font-size:.78rem;color:var(--ink-soft)}
+#foot .sig .heart{color:var(--seal-lt);font-style:normal}
+#foot .backwide{margin-top:28px;text-align:center}
+#foot .backwide a{font-family:var(--f-disp);font-style:italic;letter-spacing:.06em;font-size:.8rem;
+  color:var(--gold-lt);display:inline-flex;align-items:center;gap:12px}
+#foot .backwide a i{transition:.4s}
+#foot .backwide a:hover i{transform:translateX(-7px)}
+
+/* ============ responsive ============ */
+@media (max-width:960px){
+  #prologue .grid{grid-template-columns:1fr;gap:40px}
+  #prologue .figure{max-width:460px}
+  #serve .grid{grid-template-columns:1fr}
+  #serve .cell{min-height:0}
+  #serve .cell p{max-height:220px;opacity:1;margin-top:14px}
+  #menu .deck{grid-template-columns:1fr;max-width:440px}
+  #process .stages{grid-template-columns:repeat(2,1fr);gap:30px 0}
+  #journey .step{flex-direction:row}
+  /* regions → vertical stack on smaller screens (no horizontal pin) */
+  #regions .rpin{height:auto;display:block;padding:0 0 clamp(60px,12vw,120px)}
+  #regions .rtrack{flex-direction:column;gap:18px;padding:0 clamp(26px,8vw,150px);
+    transform:none!important}
+  .rpanel{width:100%;height:auto;aspect-ratio:4/5}
+  .rpanel .rimg{left:0;width:100%}
+}
+@media (max-width:560px){
+  body{cursor:auto}
+  .rpanel{aspect-ratio:3/4}
+  #journey .step h2{font-size:2.1rem}
+  #journey .step .vlabel{font-size:.86rem}
+  .topbar .mark{display:none}
+  #hero .spine{display:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="inktrail"></canvas>
+<div id="cursor"></div><div id="cursor-dot"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="inkSettle"><feTurbulence type="fractalNoise" baseFrequency="0.013 0.022" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>
+</svg>
+
+<div id="loader">
+  <div class="seal-wrap"><div class="ring"></div>
+    <img src="/assets/img/guild/rooji_shuanglian/seal.webp" alt="儒記"></div>
+  <div class="lbl">a tea almanac</div>
+  <div class="pct">0</div>
+</div>
+
+<div class="topbar" id="topbar">
+  <a class="back" href="/guild/"><i class="fa-solid fa-arrow-left-long"></i>Archive</a>
+  <div class="mark">儒 記 · 雙 連</div>
+</div>
+
+<!-- steep gauge -->
+<div id="steep">
+  <div class="tube"><div class="liquid" id="steepLiquid"></div></div>
+  <div class="lbl"><span class="cn" id="steepStage">注水</span><span class="en">STEEP</span></div>
+</div>
+
+<div id="rail"></div>
+
+<!-- ============ HERO ============ -->
+<section id="hero" data-rail="序" data-dark="0">
+  <div class="bg" id="heroBg"><img src="/assets/img/guild/rooji_shuanglian/cha/hero.webp" alt="台灣高山茶園水墨"></div>
+  <div class="mist m1"></div>
+  <div class="mist m2"></div>
+  <div class="hscrim"></div>
+  <div class="spine" id="heroSpine">煎 茶 帖 　·　 ROOJI 雙 連</div>
+  <div class="hud">
+    <div class="kick">中山雙連店 · 台灣高山茶</div>
+    <div class="brandmark">
+      <img class="stamp-ring" src="/assets/img/guild/rooji_shuanglian/cha/stampring.webp" alt="" aria-hidden="true">
+      <img class="seal" src="/assets/img/guild/rooji_shuanglian/seal.webp" alt="儒記印">
+    </div>
+    <h1><span class="ch">儒</span><span class="ch">記</span></h1>
+    <div class="latin">ROOJI TEA</div>
+    <div class="sub">巷子裡的台式靜謐茶屋，<b>儒編</b>在這經營。<br>讓<b>台灣高山茶</b>，變成每天喝得起的日常。</div>
+  </div>
+  <div class="scrollcue"><span>翻開這帖</span><i class="fa-solid fa-chevron-down"></i></div>
+</section>
+
+<!-- ============ PROLOGUE 序 ============ -->
+<section id="prologue" class="bay" data-rail="儒編" data-dark="0">
+  <div class="grid">
+    <div class="figure rv">
+      <img src="/assets/img/guild/rooji_shuanglian/cha/alley.webp" alt="巷弄裡的儒記" loading="lazy">
+      <div class="tag">巷 子 裡 · 雙 連</div>
+    </div>
+    <div class="body">
+      <div class="eyebrow rv"><span class="num">序</span>Prologue</div>
+      <p class="lead rv">我是<b>儒編</b>，大家叫我儒儒。<br>在中山雙連街 9-3 號的巷子裡，<br>守著一家小小的<b>台式茶屋</b>。</p>
+      <p class="rv">這家店做的是台灣高山茶。店裡每天有限定的祕密飲單；店外可以從 LINE 訂購茶葉、外送，或整桶辦公室下午茶。</p>
+      <p class="rv">想做的事情其實很簡單——把台灣的高山茶，變成每天都喝得起的選項。從中山雙連這條巷子出發，慢慢把儒記帶到更多人的日常裡。</p>
+      <div class="sign rv"><div class="nm">儒儒</div><div class="ttl">Rooji · 雙連店 編</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ JOURNEY (pinned cinematic spine) ============ -->
+<section id="journey" data-rail="一片葉子" data-dark="1">
+  <div class="pin">
+    <div class="stage">
+      <figure data-st="0"><img src="/assets/img/guild/rooji_shuanglian/cha/ch1-mountain.webp" alt="高山" loading="lazy"></figure>
+      <figure data-st="1"><img src="/assets/img/guild/rooji_shuanglian/cha/ch2-leaves.webp" alt="茶菁" loading="lazy"></figure>
+      <figure data-st="2"><img src="/assets/img/guild/rooji_shuanglian/cha/ch3-pour.webp" alt="沖泡" loading="lazy"></figure>
+      <figure data-st="3"><img src="/assets/img/guild/rooji_shuanglian/cha/ch4-cup.webp" alt="一杯茶" loading="lazy"></figure>
+    </div>
+    <div class="track">
+      <div class="step" data-st="0">
+        <div class="vlabel">壹 · 高山</div>
+        <div class="txt"><span class="en">From the altitude</span>
+          <h2>葉子，<br>長在雲的高度</h2>
+          <p>故事從海拔開始。日夜溫差把甜度養進葉脈，雲霧替它擋掉烈日——這是台灣高山茶清甜的起點。</p></div>
+      </div>
+      <div class="step" data-st="1">
+        <div class="vlabel">貳 · 製茶</div>
+        <div class="txt"><span class="en">By the maker's hand</span>
+          <h2>手溫，<br>決定了風味</h2>
+          <p>採摘、萎凋、揉捻、烘焙，每一道工序都是一次選擇。火候輕重不同，同一片葉子可以是清香，也可以是醇厚。</p></div>
+      </div>
+      <div class="step" data-st="2">
+        <div class="vlabel">參 · 沖泡</div>
+        <div class="txt"><span class="en">Where water meets leaf</span>
+          <h2>水，<br>把故事泡開</h2>
+          <p>水溫幾度、第幾泡、停留多久。沖泡是茶的最後一哩路，也是最講究的地方——因為這一口，決定你會不會記得它。</p></div>
+      </div>
+      <div class="step" data-st="3">
+        <div class="vlabel">肆 · 日常</div>
+        <div class="txt"><span class="en">Into your everyday</span>
+          <h2>於是，<br>成了你的日常</h2>
+          <p>當一杯台灣高山茶變得每天都喝得起，它就不再是奢侈品，而是被你收進生活裡的，一點點講究。</p></div>
+      </div>
+    </div>
+    <div class="barwrap"><div class="bar"><i></i></div><div class="lbl">altitude → everyday</div></div>
+  </div>
+</section>
+
+<!-- ============ PROCESS band 製 ============ -->
+<section id="process" class="bay" data-rail="一葉四變" data-dark="0">
+  <div class="head">
+    <div class="eyebrow rv"><span class="num">附</span>One leaf, four turns</div>
+    <h2 class="bigq rv">同一片葉子，<br>走過<em>四道手續</em>。</h2>
+  </div>
+  <div class="band rv"><img src="/assets/img/guild/rooji_shuanglian/cha/process.webp" alt="茶葉四階段：採青、萎凋、揉捻、烘焙" loading="lazy"></div>
+  <div class="stages">
+    <div class="s"><div class="n">i</div><div class="t">採青</div><div class="d">趁清晨摘下飽滿的嫩芽與葉。</div></div>
+    <div class="s"><div class="n">ii</div><div class="t">萎凋</div><div class="d">讓水分慢慢散去，香氣開始走動。</div></div>
+    <div class="s"><div class="n">iii</div><div class="t">揉捻</div><div class="d">揉成球狀，把滋味鎖進葉裡。</div></div>
+    <div class="s"><div class="n">iv</div><div class="t">烘焙</div><div class="d">火候決定清香或醇厚的最後性格。</div></div>
+  </div>
+</section>
+
+<!-- ============ SERVICES 帖 ============ -->
+<section id="serve" class="bay" data-rail="我能做的" data-dark="1">
+  <div class="head">
+    <div class="eyebrow rv"><span class="num">帖</span>What I can do</div>
+    <h2 class="bigq rv">需要茶的時候，<br>可以把<em>這些事</em>交給儒儒。</h2>
+  </div>
+  <div class="grid">
+    <div class="cell"><div class="glow"></div><div class="no">i</div>
+      <i class="ic fa-solid fa-leaf"></i><h3>選茶 · 風味設計</h3>
+      <p>從台灣各個茶區挑出對的那一款，依場合、口味與預算，把好茶變成你喝得懂、也喝得起的日常。</p></div>
+    <div class="cell"><div class="glow"></div><div class="no">ii</div>
+      <i class="ic fa-solid fa-feather-pointed"></i><h3>品牌 · 內容經營</h3>
+      <p>每天的 IG 與 Threads 都是儒儒在寫。從茶單視覺、貼文語氣到限定活動的文案，整家店的敘事都從這裡出發。</p></div>
+    <div class="cell"><div class="glow"></div><div class="no">iii</div>
+      <i class="ic fa-solid fa-calendar-check"></i><h3>活動 · 市集擺攤</h3>
+      <p>週末市集出攤、店內限定優惠、節慶活動——從發想、文案到現場節奏，儒儒會把這些活動的步調顧好。</p></div>
+    <div class="cell"><div class="glow"></div><div class="no">iv</div>
+      <i class="ic fa-solid fa-mug-saucer"></i><h3>辦公室下午茶桶</h3>
+      <p>整桶台灣高山茶送進你的辦公室與會議室。讓團隊在最忙的時候，也有一杯被好好對待的茶。</p></div>
+    <div class="cell"><div class="glow"></div><div class="no">v</div>
+      <i class="ic fa-solid fa-truck-fast"></i><h3>外送 · 茶葉訂購</h3>
+      <p>巷子裡來不及繞進來沒關係。外送到府、茶葉宅配，把雙連店的味道準時送到你手上。</p></div>
+    <div class="cell"><div class="glow"></div><div class="no">vi</div>
+      <i class="ic fa-solid fa-globe"></i><h3>拓展儒記品牌</h3>
+      <p>從中山雙連這條巷子出發，把儒記台灣茶的味道，慢慢帶到更多人的日常裡。</p></div>
+  </div>
+</section>
+
+<!-- ============ REGIONS · horizontal pinned gallery 山 ============ -->
+<section id="regions" data-rail="這些山" data-dark="0">
+  <div class="head">
+    <div class="eyebrow rv"><span class="num">山</span>From these mountains</div>
+    <h2 class="bigq rv">茶，從<em>這些山</em>，<br>來到你的桌上。</h2>
+  </div>
+  <div class="rhint rv"><i class="fa-solid fa-arrow-right-long"></i>向下捲動，橫向穿過這些山</div>
+  <div class="rpin">
+    <div class="rtrack">
+      <div class="rpanel">
+        <div class="rimg"><img src="/assets/img/guild/rooji_shuanglian/regions/alishan.webp" alt="阿里山" loading="lazy"></div>
+        <div class="scrim"></div><div class="idx">壹 / i</div><div class="seal">山</div>
+        <div class="cap"><div class="alt">ALT. 1100–1700 m</div>
+          <div class="nm">阿里山<div class="en">ALISHAN</div></div>
+          <div class="ch">阿里山高山烏龍</div>
+          <div class="why">最會招呼第一次喝高山茶的人。清甜、不拘人。</div></div>
+        <div class="barline"></div>
+      </div>
+      <div class="rpanel">
+        <div class="rimg"><img src="/assets/img/guild/rooji_shuanglian/regions/lishan.webp" alt="梨山" loading="lazy"></div>
+        <div class="scrim"></div><div class="idx">貳 / ii</div><div class="seal">高</div>
+        <div class="cap"><div class="alt">ALT. 2000–2600 m</div>
+          <div class="nm">梨山<div class="en">LISHAN</div></div>
+          <div class="ch">梨山高冷烏龍</div>
+          <div class="why">海拔最高的茶區之一。雲在腳邊，茶湯像冰過一樣清亮。</div></div>
+        <div class="barline"></div>
+      </div>
+      <div class="rpanel">
+        <div class="rimg"><img src="/assets/img/guild/rooji_shuanglian/regions/shanlin.webp" alt="杉林溪" loading="lazy"></div>
+        <div class="scrim"></div><div class="idx">參 / iii</div><div class="seal">霧</div>
+        <div class="cap"><div class="alt">ALT. 1600–1900 m</div>
+          <div class="nm">杉林溪<div class="en">SHANLINXI</div></div>
+          <div class="ch">杉林溪金萱</div>
+          <div class="why">霧最厚的山頭之一。葉肉養出來的奶香，是品種與海拔的禮物。</div></div>
+        <div class="barline"></div>
+      </div>
+      <div class="rpanel">
+        <div class="rimg"><img src="/assets/img/guild/rooji_shuanglian/regions/dongding.webp" alt="凍頂・鹿谷" loading="lazy"></div>
+        <div class="scrim"></div><div class="idx">肆 / iv</div><div class="seal">焙</div>
+        <div class="cap"><div class="alt">ALT. 600–800 m</div>
+          <div class="nm">凍頂・鹿谷<div class="en">DONG DING</div></div>
+          <div class="ch">凍頂烏龍</div>
+          <div class="why">中焙的功夫茶代表。耐泡、有重量，會把整個下午穩住。</div></div>
+        <div class="barline"></div>
+      </div>
+      <div class="rpanel">
+        <div class="rimg"><img src="/assets/img/guild/rooji_shuanglian/regions/yuchih.webp" alt="魚池・日月潭" loading="lazy"></div>
+        <div class="scrim"></div><div class="idx">伍 / v</div><div class="seal">玉</div>
+        <div class="cap"><div class="alt">ALT. 700–1000 m</div>
+          <div class="nm">魚池・日月潭<div class="en">YUCHIH</div></div>
+          <div class="ch">紅玉紅茶</div>
+          <div class="why">台茶 18 號 — 台灣自己育出來的紅茶，天生帶著薄荷與肉桂香。</div></div>
+        <div class="barline"></div>
+      </div>
+      <div class="rpanel">
+        <div class="rimg"><img src="/assets/img/guild/rooji_shuanglian/regions/wenshan.webp" alt="文山" loading="lazy"></div>
+        <div class="scrim"></div><div class="idx">陸 / vi</div><div class="seal">包</div>
+        <div class="cap"><div class="alt">ALT. 400–700 m</div>
+          <div class="nm">文山<div class="en">WENSHAN</div></div>
+          <div class="ch">文山包種</div>
+          <div class="why">最北邊的清香系。輕焙、花香乾淨，配一個慢一點的早上剛好。</div></div>
+        <div class="barline"></div>
+      </div>
+      <div class="rpanel">
+        <div class="rimg"><img src="/assets/img/guild/rooji_shuanglian/regions/miaoli.webp" alt="苗栗" loading="lazy"></div>
+        <div class="scrim"></div><div class="idx">柒 / vii</div><div class="seal">蟬</div>
+        <div class="cap"><div class="alt">ALT. 200–600 m</div>
+          <div class="nm">苗栗<div class="en">MIAOLI</div></div>
+          <div class="ch">東方美人</div>
+          <div class="why">被小綠葉蟬咬過的茶菁所製。蜜香與果韻天然生成，是台灣茶的浪漫。</div></div>
+        <div class="barline"></div>
+      </div>
+      <div class="rpanel">
+        <div class="rimg"><img src="/assets/img/guild/rooji_shuanglian/cha/ch4-cup.webp" alt="回到雙連" loading="lazy"></div>
+        <div class="scrim"></div><div class="idx">捌 / viii</div><div class="seal">記</div>
+        <div class="cap"><div class="alt">中山雙連街 9-3 號</div>
+          <div class="nm">回到雙連<div class="en">ROOJI</div></div>
+          <div class="ch">儒記中山雙連店</div>
+          <div class="why">這些山的茶，最後都收進中山雙連這家小店，等你來喝。</div></div>
+        <div class="barline"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MENU 飲 ============ -->
+<section id="menu" class="bay" data-rail="祕密飲單" data-dark="0">
+  <div class="head">
+    <div class="eyebrow rv"><span class="num">飲</span>The secret menu</div>
+    <h2 class="bigq rv">每日限定的<em>祕密飲單</em>，<br>滑過去，幫你倒一杯。</h2>
+  </div>
+  <div class="deck">
+    <div class="tea-card rv" style="--g:#5d6b3a">
+      <div class="liquid"></div><div class="steam"><i></i><i></i><i></i></div><div class="seal-mini">山</div>
+      <div class="no">No. i</div><div class="nm">高山青</div><div class="en">High Mountain Green</div>
+      <div class="ds">海拔養出來的清甜，喉韻乾淨。第一次喝高山茶的人，從這杯開始最安心。</div>
+      <div class="brew">brew　<b>90°C</b>　/　<b>第一泡 40 秒</b></div>
+    </div>
+    <div class="tea-card rv" style="--g:#9a6b2f">
+      <div class="liquid"></div><div class="steam"><i></i><i></i><i></i></div><div class="seal-mini">焙</div>
+      <div class="no">No. ii</div><div class="nm">炭焙烏龍</div><div class="en">Roasted Oolong</div>
+      <div class="ds">火候把香氣收得更深，尾韻帶著溫厚的焙香。耐泡，適合慢慢聊天的那種時間。</div>
+      <div class="brew">brew　<b>95°C</b>　/　<b>第一泡 50 秒</b></div>
+    </div>
+    <div class="tea-card rv" style="--g:#8e2f24">
+      <div class="liquid"></div><div class="steam"><i></i><i></i><i></i></div><div class="seal-mini">玉</div>
+      <div class="no">No. iii</div><div class="nm">紅玉紅茶</div><div class="en">Ruby Black · T-18</div>
+      <div class="ds">台灣自己育出來的紅茶，天生帶著薄荷與肉桂香。冰熱皆宜，是最容易愛上的一款。</div>
+      <div class="brew">brew　<b>90°C</b>　/　<b>第一泡 30 秒</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FIELD NOTES 夾頁 ============ -->
+<section id="field" class="bay" data-rail="夾頁現場" data-dark="0">
+  <div class="head">
+    <div class="eyebrow rv" style="justify-content:center"><span class="num">頁</span>Tucked-in snapshots</div>
+    <h2 class="bigq rv">夾在帖裡的<span>現場切片</span></h2>
+  </div>
+  <div class="pins">
+    <div class="snap"><img src="/assets/img/guild/rooji_shuanglian/teahouse.webp" alt="茶屋裡的午後" loading="lazy"><div class="cap">一張桌、一壺茶、幾個朋友</div></div>
+    <div class="snap"><img src="/assets/img/guild/rooji_shuanglian/pour.webp" alt="手沖一壺高山茶" loading="lazy"><div class="cap">手溫與火候，藏在每一次注水裡</div></div>
+    <div class="snap"><img src="/assets/img/guild/rooji_shuanglian/promo.webp" alt="門市限定活動" loading="lazy"><div class="cap">門市限定 · 每天一點小驚喜</div></div>
+    <div class="snap"><img src="/assets/img/guild/rooji_shuanglian/merch.webp" alt="儒編開箱周邊" loading="lazy"><div class="cap">連周邊都想做得有溫度</div></div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<section id="foot" class="bay" data-rail="來喝茶" data-dark="1">
+  <img class="seal-bg" src="/assets/img/guild/rooji_shuanglian/seal.webp" alt="" loading="lazy">
+  <div class="inner">
+    <h2 class="closing rv">路過的你，<br>要不要繞進<span class="g">雙連街 9-3 號</span>，<br>喝一壺<span class="b">台灣高山</span>？</h2>
+    <p class="sub rv">想訂辦公室下午茶桶、訂購茶葉、合作活動，或只是想找一家巷子裡的小茶屋坐下來——可以從下面的 LINE 找我們，或直接繞進儒記中山雙連店。</p>
+    <div class="links">
+      <a class="rv" href="https://lin.ee/4k3Ezs0" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-line"></i><span>LINE · 訂購 / 外送</span></a>
+      <a class="rv" href="https://www.instagram.com/rooji.shuanglian/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i><span>Instagram</span></a>
+      <a class="rv" href="https://www.threads.com/@rooji.shuanglian" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i><span>Threads · 找儒儒聊天</span></a>
+    </div>
+    <div class="meta">
+      <div class="col"><span class="k">Store</span><span class="v">儒記 中山雙連店</span></div>
+      <div class="col"><span class="k">Address</span><span class="v">台北市大同區雙連街 9-3 號</span></div>
+      <div class="col"><span class="k">Phone</span><span class="v">0909 666 451</span></div>
+      <div class="col"><span class="k">Tags</span><span class="v lit">#巷口的儒記 · #茶癮日常</span></div>
+    </div>
+    <div class="sig">made with <span class="heart">&#9829;</span> by superGalen&rsquo;s dungeon</div>
+    <div class="backwide"><a href="/guild/"><i class="fa-solid fa-arrow-left-long"></i>return to the guild archive</a></div>
+  </div>
+</section>
+
+<script>
+/* ---------- cursor ---------- */
+(function(){
+  if(window.matchMedia('(hover:none)').matches) return;
+  const c=document.getElementById('cursor'),d=document.getElementById('cursor-dot');
+  let x=innerWidth/2,y=innerHeight/2,cx=x,cy=y;
+  addEventListener('mousemove',e=>{x=e.clientX;y=e.clientY;d.style.left=x+'px';d.style.top=y+'px';});
+  (function loop(){cx+=(x-cx)*.16;cy+=(y-cy)*.16;c.style.left=cx+'px';c.style.top=cy+'px';requestAnimationFrame(loop);})();
+  document.querySelectorAll('a,.tea-card,.cell,.rpanel,.snap,#rail button').forEach(el=>{
+    el.addEventListener('mouseenter',()=>c.classList.add('big'));
+    el.addEventListener('mouseleave',()=>c.classList.remove('big'));
+  });
+})();
+
+/* ---------- 墨痕 · ink-brush cursor trail ---------- */
+(function(){
+  if(window.matchMedia('(hover:none)').matches) return;
+  const cv=document.getElementById('inktrail');if(!cv)return;
+  const ctx=cv.getContext('2d');
+  let dpr=Math.min(devicePixelRatio||1,2);
+  function size(){dpr=Math.min(devicePixelRatio||1,2);cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;
+    cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
+  size();addEventListener('resize',size);
+  const dabs=[];let lx=null,ly=null;
+  addEventListener('mousemove',e=>{
+    const x=e.clientX,y=e.clientY;
+    if(lx!==null){
+      const d=Math.hypot(x-lx,y-ly);
+      const step=6;
+      for(let s=0;s<d;s+=step){
+        const t=s/(d||1);
+        dabs.push({x:lx+(x-lx)*t+(Math.random()*4-2),y:ly+(y-ly)*t+(Math.random()*4-2),
+          r:5+Math.random()*8,life:1});
+        if(dabs.length>140)dabs.shift();
+      }
+    }
+    lx=x;ly=y;
+  });
+  (function frame(){
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    const dark=!!window.__dark;
+    ctx.globalCompositeOperation=dark?'lighter':'source-over';
+    for(let i=dabs.length-1;i>=0;i--){
+      const p=dabs[i];p.life-=0.045;
+      if(p.life<=0){dabs.splice(i,1);continue;}
+      const a=p.life*(dark?0.30:0.20);
+      const rad=p.r*(1+(1-p.life)*1.2);
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rad);
+      const col=dark?'201,162,75':'58,40,20';
+      g.addColorStop(0,'rgba('+col+','+a+')');
+      g.addColorStop(1,'rgba('+col+',0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,rad,0,Math.PI*2);ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  })();
+})();
+
+/* ---------- loader ---------- */
+(function(){
+  const pct=document.querySelector('#loader .pct'),ld=document.getElementById('loader');
+  let n=0;const t=setInterval(()=>{n+=Math.random()*15;
+    if(n>=100){n=100;clearInterval(t);finish();}pct.textContent=Math.floor(n);},92);
+  function finish(){
+    gsap.to(ld,{opacity:0,duration:.9,delay:.25,onComplete:()=>{ld.style.display='none';},ease:'power2.inOut'});
+    intro();
+  }
+})();
+
+/* ---------- hero intro — brand-forward reveal w/ seal stamp ---------- */
+function intro(){
+  const tl=gsap.timeline({defaults:{ease:'power3.out'}});
+  tl.to('#hero .kick',{opacity:1,y:0,duration:.9,from:{y:14}},0)
+    .fromTo('#hero .seal',{opacity:0,scale:1.5,rotate:-14},
+      {opacity:1,scale:1,rotate:0,duration:.7,ease:'back.out(1.7)'},.2)
+    .fromTo('#hero .stamp-ring',{opacity:.85,scale:.55},
+      {opacity:0,scale:1.5,duration:1,ease:'power2.out'},'>-0.05')
+    .fromTo('#hero h1 .ch',{opacity:0,y:60,clipPath:'inset(100% 0 0 0)'},
+      {opacity:1,y:0,clipPath:'inset(0% 0 0 0)',duration:1,stagger:.16},'-=.55')
+    .to('#hero .latin',{opacity:1,y:0,duration:.9,from:{y:14}},'-=.5')
+    .to('#hero .sub',{opacity:1,y:0,duration:1,from:{y:18}},'-=.6')
+    .to('#hero .spine',{opacity:1,duration:1.2},'-=.8')
+    .to('#hero .scrollcue',{opacity:1,duration:1},'-=.6');
+  const disp=document.querySelector('#inkSettle feDisplacementMap');
+  if(disp && !window.matchMedia('(prefers-reduced-motion:reduce)').matches){
+    const h1=document.querySelector('#hero h1');
+    tl.add(()=>{h1.style.filter='url(#inkSettle)';const t0=performance.now();
+      (function r(){const k=Math.min(1,(performance.now()-t0)/900);
+        disp.setAttribute('scale',(20*(1-(1-Math.pow(1-k,3)))).toFixed(2));
+        if(k<1)requestAnimationFrame(r);else h1.style.filter='none';})();
+    },'-=.9');
+  }
+}
+
+gsap.registerPlugin(ScrollTrigger);
+
+/* reveals */
+document.querySelectorAll('.rv').forEach(el=>{
+  gsap.to(el,{opacity:1,y:0,duration:1.05,ease:'power3.out',
+    scrollTrigger:{trigger:el,start:'top 88%'}});
+});
+
+/* hero cinematic scroll-out — zoom into the mountains, title parallax + fade, mist thickens */
+gsap.timeline({scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:.6}})
+  .to('#heroBg',{scale:1.2,yPercent:6,ease:'none'},0)
+  .to('#hero .hud',{yPercent:-30,opacity:0,ease:'none'},0)
+  .to('#hero .spine',{xPercent:-40,opacity:0,ease:'none'},0)
+  .to('#hero .scrollcue',{opacity:0,ease:'none',duration:.2},0)
+  .to('#hero .mist',{opacity:.7,ease:'none'},0);
+
+/* 墨暈 · ink-settle on section headings (wet ink that settles crisp) */
+(function(){
+  const disp=document.querySelector('#inkSettle feDisplacementMap');
+  if(!disp) return;
+  const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function inkSettle(el){
+    if(reduce) return;
+    el.style.filter='url(#inkSettle)';el.style.willChange='filter';
+    const t0=performance.now(),dur=1000;
+    function r(){
+      const k=Math.min(1,(performance.now()-t0)/dur);
+      const e=1-Math.pow(1-k,3);
+      disp.setAttribute('scale',(22*(1-e)).toFixed(2));
+      if(k<1)requestAnimationFrame(r);
+      else{el.style.filter='none';el.style.willChange='auto';}
+    }
+    requestAnimationFrame(r);
+  }
+  document.querySelectorAll('.bigq, #prologue .lead').forEach(el=>{
+    ScrollTrigger.create({trigger:el,start:'top 84%',once:true,onEnter:()=>inkSettle(el)});
+  });
+})();
+
+/* process stages stagger */
+gsap.to('#process .stages .s',{opacity:1,y:0,duration:.8,stagger:.12,ease:'power3.out',from:{y:24},
+  scrollTrigger:{trigger:'#process .stages',start:'top 86%'}});
+
+/* brush underline under every section heading — wipes open on enter */
+(function(){
+  document.querySelectorAll('.bigq').forEach(h=>{
+    const bl=document.createElement('div');
+    bl.className='brushline';
+    if(h.closest('[data-dark="1"]')) bl.classList.add('dk');
+    if(getComputedStyle(h).textAlign==='center'){bl.style.marginLeft='auto';bl.style.marginRight='auto';}
+    h.insertAdjacentElement('afterend',bl);
+    gsap.to(bl,{clipPath:'inset(0 0% 0 0)',duration:1.1,ease:'power2.inOut',
+      scrollTrigger:{trigger:h,start:'top 82%'}});
+  });
+})();
+
+/* 帖 · services — staggered rise entrance + hover-dim siblings */
+(function(){
+  const grid=document.querySelector('#serve .grid');
+  if(!grid) return;
+  const cells=gsap.utils.toArray('#serve .cell');
+  gsap.set(cells,{opacity:0,y:42});
+  cells.forEach((cell,i)=>{
+    // .to + scrollTrigger reliably reveals even already-in-view cells; clearProps lets
+    // the CSS hover-dim rule win afterwards (inline opacity would otherwise override it)
+    gsap.to(cell,{opacity:1,y:0,duration:.8,ease:'power3.out',delay:i*0.08,
+      clearProps:'opacity,transform',
+      scrollTrigger:{trigger:grid,start:'top 84%',once:true}});
+  });
+  grid.addEventListener('mouseover',e=>{if(e.target.closest('.cell'))grid.classList.add('dim');});
+  grid.addEventListener('mouseleave',()=>grid.classList.remove('dim'));
+})();
+
+/* 頁 · field notes — snapshots scatter into place */
+(function(){
+  const snaps=gsap.utils.toArray('#field .snap');
+  if(!snaps.length) return;
+  gsap.from(snaps,{opacity:0,y:90,scale:.88,
+    rotation:i=>(i%2?1:-1)*(10+i*4),
+    duration:1,ease:'back.out(1.5)',stagger:.13,clearProps:'transform',
+    scrollTrigger:{trigger:'#field .pins',start:'top 82%'}});
+})();
+
+/* 序 · prologue — alley photo parallax + seal tag slide-in */
+(function(){
+  const img=document.querySelector('#prologue .figure img');
+  if(img) gsap.fromTo(img,{yPercent:-7},{yPercent:7,ease:'none',
+    scrollTrigger:{trigger:'#prologue',start:'top bottom',end:'bottom top',scrub:true}});
+  const tag=document.querySelector('#prologue .tag');
+  if(tag) gsap.from(tag,{xPercent:55,opacity:0,duration:.9,ease:'power3.out',
+    scrollTrigger:{trigger:'#prologue .figure',start:'top 72%'}});
+})();
+
+/* journey pinned spine */
+(function(){
+  const figs=gsap.utils.toArray('#journey .stage figure');
+  const steps=gsap.utils.toArray('#journey .step');
+  gsap.set(figs[0],{opacity:1});gsap.set(steps[0],{opacity:1,y:0});
+  steps.forEach((s,i)=>{if(i)gsap.set(s,{y:40});});
+  const tl=gsap.timeline({scrollTrigger:{trigger:'#journey',start:'top top',
+    end:'+=380%',scrub:.7,pin:'#journey .pin'}});
+  for(let i=1;i<figs.length;i++){
+    tl.to([figs[i-1],steps[i-1]],{opacity:0,duration:.32},'+=0.5')
+      .to(steps[i-1],{y:-30,duration:.32},'<')
+      .to(figs[i],{opacity:1,duration:.36},'>-0.04')
+      .fromTo(steps[i],{opacity:0,y:40},{opacity:1,y:0,duration:.42},'<')
+      .to('#journey .bar i',{width:(i/(figs.length-1))*100+'%',duration:.5},'<');
+  }
+  tl.to({},{duration:.5});
+})();
+
+/* 製 · process band — scroll-scrubbed brush wipe + sequential stage highlight */
+(function(){
+  const img=document.querySelector('#process .band img');
+  const stages=gsap.utils.toArray('#process .stages .s');
+  if(!img) return;
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){img.style.clipPath='none';return;}
+  ScrollTrigger.create({trigger:'#process',start:'top 72%',end:'center 42%',scrub:.5,
+    onUpdate:self=>{
+      const p=self.progress;
+      img.style.clipPath='inset(0 '+((1-p)*100).toFixed(1)+'% 0 0)';
+      stages.forEach((s,i)=>s.classList.toggle('active', p > (i+0.55)/stages.length));
+    },
+    onLeaveBack:()=>{img.style.clipPath='inset(0 100% 0 0)';stages.forEach(s=>s.classList.remove('active'));}
+  });
+})();
+
+/* 山 · regions — horizontal pinned scroll gallery (desktop) with per-panel parallax + reveal */
+(function(){
+  const mm=gsap.matchMedia();
+  mm.add('(min-width:961px)',()=>{
+    const track=document.querySelector('#regions .rtrack');
+    const panels=gsap.utils.toArray('#regions .rpanel');
+    if(!track) return;
+    const dist=()=>Math.max(0, track.scrollWidth - window.innerWidth);
+    const tween=gsap.to(track,{x:()=>-dist(),ease:'none',
+      scrollTrigger:{trigger:'#regions .rpin',start:'top top',
+        end:()=>'+='+dist(),pin:true,scrub:.6,invalidateOnRefresh:true,anticipatePin:1}});
+    panels.forEach(pl=>{
+      const img=pl.querySelector('.rimg');
+      gsap.fromTo(img,{xPercent:-10},{xPercent:10,ease:'none',
+        scrollTrigger:{trigger:pl,containerAnimation:tween,start:'left right',end:'right left',scrub:true}});
+      ScrollTrigger.create({trigger:pl,containerAnimation:tween,start:'left 72%',end:'right 28%',
+        onToggle:s=>pl.classList.toggle('on',s.isActive)});
+    });
+    return ()=>{gsap.set(track,{clearProps:'transform'});panels.forEach(p=>p.classList.remove('on'));};
+  });
+  mm.add('(max-width:960px)',()=>{
+    const panels=gsap.utils.toArray('#regions .rpanel');
+    panels.forEach(p=>p.classList.add('on'));
+    return ()=>panels.forEach(p=>p.classList.remove('on'));
+  });
+})();
+
+/* rail + dark-mode toggling for fixed chrome */
+(function(){
+  const secs=gsap.utils.toArray('section[data-rail]');
+  const rail=document.getElementById('rail');
+  const steep=document.getElementById('steep');
+  const topbar=document.getElementById('topbar');
+  secs.forEach(s=>{
+    const b=document.createElement('button');
+    b.innerHTML='<span>'+s.dataset.rail+'</span>';
+    b.onclick=()=>s.scrollIntoView({behavior:'smooth'});
+    rail.appendChild(b);
+    ScrollTrigger.create({trigger:s,start:'top 55%',end:'bottom 55%',
+      onToggle:self=>{if(self.isActive){
+        rail.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+        b.classList.add('on');
+        const dark=s.dataset.dark==='1';
+        window.__dark=dark;
+        rail.classList.toggle('on-dark',dark);
+        steep.classList.toggle('on-dark',dark);
+        topbar.classList.toggle('on-dark',dark);
+        const cur=document.getElementById('cursor');if(cur)cur.classList.toggle('lite',dark);
+      }}});
+  });
+})();
+
+/* ---------- steep gauge: page steeps as you read ---------- */
+(function(){
+  const liquid=document.getElementById('steepLiquid');
+  const stageEl=document.getElementById('steepStage');
+  const root=document.documentElement;
+  const stops=[
+    {p:0.00,c:[138,160,106],n:'注水'},
+    {p:0.34,c:[201,162,75],n:'金湯'},
+    {p:0.67,c:[169,114,46],n:'琥珀'},
+    {p:1.00,c:[94,51,24],n:'深焙'}
+  ];
+  const lerp=(a,b,t)=>Math.round(a+(b-a)*t);
+  function colorAt(p){
+    for(let i=1;i<stops.length;i++){
+      if(p<=stops[i].p){
+        const a=stops[i-1],b=stops[i];
+        const t=(p-a.p)/(b.p-a.p);
+        return {rgb:[lerp(a.c[0],b.c[0],t),lerp(a.c[1],b.c[1],t),lerp(a.c[2],b.c[2],t)],n:t<.5?a.n:b.n};
+      }
+    }
+    return {rgb:stops[stops.length-1].c,n:stops[stops.length-1].n};
+  }
+  let raf=null,lastN='';
+  function update(){
+    raf=null;
+    const max=document.documentElement.scrollHeight-innerHeight;
+    const p=max>0?Math.min(1,Math.max(0,scrollY/max)):0;
+    const {rgb,n}=colorAt(p);
+    const css='rgb('+rgb[0]+','+rgb[1]+','+rgb[2]+')';
+    root.style.setProperty('--tea',css);
+    liquid.style.height=(4+p*96).toFixed(1)+'%';
+    if(n!==lastN){stageEl.textContent=n;lastN=n;}
+  }
+  addEventListener('scroll',()=>{if(!raf)raf=requestAnimationFrame(update);},{passive:true});
+  addEventListener('resize',()=>{if(!raf)raf=requestAnimationFrame(update);});
+  update();
+})();
+
+/* menu tea-card pour + tilt */
+document.querySelectorAll('.tea-card').forEach(card=>{
+  const liq=card.querySelector('.liquid');
+  card.addEventListener('mouseenter',()=>{if(liq)liq.style.height='100%';});
+  card.addEventListener('mouseleave',()=>{if(liq)liq.style.height='0%';card.style.transform='';});
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    const rx=((e.clientY-r.top)/r.height-.5)*-7;
+    const ry=((e.clientX-r.left)/r.width-.5)*7;
+    card.style.transform=`translateY(-10px) perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+  });
+});
+</script>
+</body>
+</html>
