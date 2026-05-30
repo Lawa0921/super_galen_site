@@ -904,6 +904,7 @@
     "personal_desc": "Life skills potpourri, proving life is more than just coding",
     "descriptions": {
       "root": "A full-stack engineer who excels from frontend effects to database optimization, from smart contracts to plumbing - basically a Swiss Army knife of the tech world!",
+      "ai": "AI applications war room! My job isn't hand-crafting AI algorithms (that's the AI team's gig) - it's using AI tools to the bone, pinning down requirements, steering the project, and turning fuzzy ideas into solutions that actually ship. Integration wiring, DB performance, observability, and cleaning up the landmines - all in one combo!",
       "frontend": "Frontend tech headquarters, specializing in making web pages beautiful and user-friendly. From hand-crafted HTML to mastering various frameworks, everything that makes users' eyes light up is here!",
       "backend": "Backend command center, controlling all data life and death. Ruby on Rails is the main output, occasionally using Elixir for ultimate moves, making servers not just stable but lightning fast!",
       "devops": "DevOps arsenal, specializing in flying code from local to cloud. Git is basic skill, AWS is the main battlefield, automated deployment is the specialty, making deployment as natural as breathing!",
@@ -931,10 +932,8 @@
       "git": "Git version control god, saved countless developers' lives. commit, push, pull are basic skills, rebase and cherry-pick are advanced techniques, but never force push to main!",
       "github": "GitHub code social platform, center of the open source world. Pull Request is daily routine, Issue is communication channel, green squares are source of achievement!",
       "aws": "AWS cloud empire, services too many to count. EC2 is basic, S3 is storage, Lambda is new toy, but watch the bill carefully!",
-      "docker": "Docker container master, making applications run everywhere. Package once, deploy everywhere, environment inconsistency problems say goodbye!",
       "ansible": "Ansible automation configuration master, making server management simple. YAML syntax intuitive and easy, batch deployment no longer a nightmare!",
       "terraform": "Terraform Infrastructure as Code expert, making cloud resources version controllable. Infrastructure as Code is belief, one-click cloud empire creation!",
-      "automation": "Automated deployment expert, making deployment no longer a nightmare. One-click deployment is basic, zero-downtime updates are pursuit, no need to wake up at midnight to fix bugs!",
       "cicd": "CI/CD continuous integration continuous deployment, making code flow from development to production seamlessly. Automated testing, automated deployment, the liberation path for developers!",
       "github_actions": "GitHub Actions workflow automation artifact, running CI/CD directly on GitHub. YAML configuration simple, functionality incredibly powerful!",
       "solidity": "Solidity smart contract language, making code become law. Write carefully, because bugs might be worth millions, but satisfaction is overwhelming!",
@@ -971,7 +970,19 @@
       "blockchain_dapp": "DApp development headquarters, various blockchain applications here. Token, DAO, DEX lined up, all the decentralized future!",
       "personal_hobbies": "Hobby specialty collection, from board games to camping, from fixing plumbing to writing novels. Life isn't just code, there's more fun!",
       "personal_skills": "Professional skill big three, customer service, teamwork, problem solving. Soft skills are also skills, sometimes more important than hard skills!",
-      "personal_creative": "Creative soul burning, game reviewer stands alone. Recording gaming world with words, letting more people know good games!"
+      "personal_creative": "Creative soul burning, game reviewer stands alone. Recording gaming world with words, letting more people know good games!",
+      "claude_code": "My main AI pair-programming partner. From digging through code and writing tests to refactoring, I toss it the draft and I do the gatekeeping - productivity doubles, but the blame is still mine.",
+      "codex": "Another AI coding sidekick I tag-team with Claude Code. Different models, different temperaments - whichever feels handier on the day, that's the one I use.",
+      "vector_search": "Turn text into vectors and pull the most relevant data by similarity. pgvector is a good friend, making the AI flip to the right page before it answers.",
+      "reranker": "Run one more sort after retrieval, pushing the truly relevant stuff to the front. The first pass is like casting a net, the reranker is like picking the fish.",
+      "mcp": "Model Context Protocol - the standard interface that lets AI tools plug into all kinds of data sources and tools, so the AI is finally more than just talk.",
+      "multi_agent": "Get a bunch of AI agents to divide the work and cooperate, like leading a team that never complains about being tired (it just occasionally hallucinates in unison).",
+      "rag": "Give the AI an external memory - BM25 + vector retrieval + reranker, so it digs up the right docs before answering instead of making things up on the spot.",
+      "gemini": "Google's Gemini - I sort of get it. I use it for generating images, handling multimodal stuff, and as a second AI brain to price-check against. The deeper bits I'm still catching up on.",
+      "image_gen": "Generating images with AI (Nano Banana, Imagen, ComfyUI and that crowd) - roughly works for me. One prompt turns into one image, but dialing it in usually takes a lot of tries.",
+      "video_gen": "I kind of get AI video generation - enough to make a still image move and stitch a shot or two together. The quality is still leveling up alongside the models.",
+      "music_gen": "Generating background music / scoring with AI (the Suno sort of thing) - I roughly get the flow. Keeps the demo from sitting in silence, but don't expect me to write a symphony.",
+      "local_model": "Running a local LLM / model on my own machine (the Ollama route) - I roughly get it. Data stays in-house, no cloud needed; the downside is the power bill and my graphics card's tears."
     },
     "names": {
       "frontend": "Frontend Tech",
@@ -1001,10 +1012,8 @@
       "git": "Git",
       "github": "GitHub",
       "aws": "AWS",
-      "docker": "Docker",
       "terraform": "Terraform",
       "ansible": "Ansible",
-      "automation": "Auto Deployment",
       "cicd": "CI/CD",
       "github_actions": "GitHub Actions",
       "solidity": "Solidity",
@@ -1035,33 +1044,29 @@
       "devops_vcs": "Version Control",
       "devops_cloud": "Cloud Services",
       "devops_infrastructure": "Infrastructure",
-      "devops_cicd": "CI/CD",
       "blockchain_core": "Smart Contracts",
       "blockchain_tools": "Web3 Tools",
       "blockchain_dapp": "DApp Development",
       "personal_hobbies": "Hobbies",
       "personal_skills": "Professional Skills",
       "personal_creative": "Creative Abilities",
-      "framework_tools": "Framework Tools",
-      "backend_tech": "Backend Tech",
-      "database": "Database",
-      "cloud_services": "Cloud Services",
-      "version_control": "Version Control",
-      "testing": "Testing",
-      "security": "Security",
-      "performance": "Performance",
-      "api_design": "API Design",
-      "architecture": "Architecture",
-      "mobile": "Mobile Development",
-      "data_science": "Data Science",
-      "machine_learning": "Machine Learning",
-      "ui_ux": "UI/UX Design",
-      "project_management": "Project Management",
-      "communication": "Communication",
-      "leadership": "Leadership",
-      "teaching": "Teaching",
-      "mentoring": "Mentoring",
-      "open_source": "Open Source"
+      "ai": "AI Applications",
+      "ai_tools": "AI Tools",
+      "ai_rag": "Retrieval / RAG",
+      "ai_agent": "Agent / Protocol",
+      "claude_code": "Claude Code",
+      "codex": "Codex",
+      "vector_search": "Vector Retrieval",
+      "reranker": "Reranker",
+      "mcp": "MCP",
+      "multi_agent": "Multi-agent",
+      "rag": "RAG",
+      "ai_gen": "Generative AI",
+      "gemini": "Gemini",
+      "image_gen": "Image Generation",
+      "video_gen": "Video Generation",
+      "music_gen": "Music Generation",
+      "local_model": "Local Models"
     }
   },
   "status_info": {
@@ -1083,9 +1088,9 @@
   },
   "story": {
     "title": "Adventurer's Profile",
-    "intro1": "The evolution from waste to engineer, an adventure story full of challenges and growth...",
-    "intro2": "Once a muggle who knew nothing about programming, through continuous learning and practice, now a full-stack developer who can stand alone.",
-    "intro3": "Good at transforming complex technical concepts into easy-to-understand teaching content, while loving to explore new technologies and apply them to real projects.",
+    "intro1": "From a waste of space to an engineer, and then to the kind of person who \"uses AI well, can steer the direction, and actually ships a workable plan\" - an adventure story that's still getting updates...",
+    "intro2": "Once a muggle who knew nothing about programming, now not only can I hold my own writing full-stack, I'm also good at riding the AI wave and talking a fuzzy idea into a plan that can actually be built.",
+    "intro3": "My strength isn't hand-rolling AI algorithms myself - it's using AI tools deeply, translating between business and tech, steering project direction, and getting it all to actually ship.",
     "timeline_start": "Started the programming adventure",
     "timeline_first_project": "Completed first commercial project",
     "timeline_blockchain": "Joined blockchain development"
@@ -1162,8 +1167,13 @@
           },
           "event_1": {
             "date": "2024.12-Present",
-            "title": "JTCG: Rails' Phoenix Rebirth",
-            "description": "Joined an AI tech company, returning to Ruby on Rails' embrace. Using Stimulus + Hotwire for frontend. Integrating Line API for AI chatbot, testing by talking to bots every day (sometimes more than talking to people). Maintaining core AI products, keeping server uptime <0.1% downtime - meaning my rest time is less than the server's. Current me - writing Tailwind until eye pressure spikes, Git has merged into my DNA."
+            "title": "JTCG: The Translation Jelly and Trailblazer on the AI Wave",
+            "description": "Joined an AI tech company building an AI customer-service product. Here my superpower isn't \"hand-rolling AI algorithms myself\" - that's the AI team's job - it's being the person who can translate back and forth across business, support, and R&D - turning \"the boss wants the AI to be smarter\" into \"which retrieval condition do we tweak, which log do we patch, which platform do we wire up,\" then handing back a plan that's actually buildable and shippable. I use AI tools deeply to assist development, run POCs to prove feasibility (like getting LINE OA events to forward cross-platform into LINE WORKS in one clean run), and give direction on architecture decisions - while the stuff I actually build with my own hands is wiring up channels like LINE/Messenger and e-commerce platforms like SHOPLINE/91APP, rewriting the product-search DB indexes and SQL so cold start dropped from 35 seconds to 0.3 seconds, bolting Langfuse observability and token-usage tracking onto every LLM call, writing E2E tests, and reviewing teammates' PRs. When production blows up with a P0, I'm the one who triages, chases the root cause, and decides whether to roll back or hotfix. In one line - I make AI go from \"sounds trendy\" to \"actually ships, and stays maintainable.\""
+          },
+          "event_2": {
+            "date": "2024-Present",
+            "title": "RoomCloud: My Own Product, Where I Serve Up the Whole AI Bowl Myself",
+            "description": "Took all the blood, sweat, and tears I racked up running the \"Misshe Travel\" campground and turned them into a hospitality SaaS that actually went live - RoomCloud (roomcloud.cc). From hotels, room types, bookings, and rate-and-inventory management, all the way to the AI customer service, knowledge base, flow editor, and LINE/FB/IG webhooks I wired up myself - one person, from gathering requirements to the Phoenix LiveView interface to pgvector vector retrieval, all the way to shipping it live with Kamal + Docker. Here the AI isn't somebody else's algorithm - it's me serving up the whole bowl myself, applying, wiring, and integrating AI straight into my own product. And while I was at it, I also built this very SuperGalen Dungeon you're looking at (a gamified portfolio in Astro + Three.js + Web3), plus a whole pile of self-hosted local AI toolchains (an LLM service layer, multi-agent, RAG) that I secretly grind on at home."
           }
         }
       },
@@ -1172,13 +1182,13 @@
         "events": {
           "event_0": {
             "date": "Current Skill Tree",
-            "title": "The Full-Stack Engineer's Arsenal",
-            "description": "Frontend - HTML/CSS/JS fundamentals, jQuery, Bootstrap + Tailwind (CSS framework dual-wielding). Backend - Ruby on Rails (first love), Elixir Phoenix (functional baptism), Node.js (automation script buddy). Blockchain - Solidity (every line of code is money), Hardhat (testing saved my wallet), ethers.js (bridge between on-chain and off-chain). DevOps - Terraform/Ansible (making servers version controllable too), Git (already muscle memory)."
+            "title": "The Full-Stack x AI-Application Arsenal",
+            "description": "Frontend - HTML/CSS/JS fundamentals, Tailwind + Bootstrap, Stimulus/Hotwire, Phoenix LiveView. Backend - Ruby on Rails (first love), Elixir Phoenix (functional baptism), Node.js (automation buddy), PostgreSQL (indexes saved my performance). Blockchain - Solidity, Hardhat, ethers.js. DevOps - Terraform/Ansible, Git (muscle memory). AI applications - using Claude Code and other AI tools deeply to assist development, self-hosting a local LLM service layer to play with multi-agent and RAG, wiring up LLM APIs and vector retrieval, watching how much money tokens are burning with Langfuse. But the strongest weapon isn't knowing some framework - it's being able to take a fuzzy AI idea, talk it into clarity, and turn it into a plan that actually ships."
           },
           "event_1": {
             "date": "Next Chapter",
             "title": "npm install future",
-            "description": "Future plans? Keep debugging life! Currently learning AI development and BMAD processes. Life motto - \"Bugs are just features in disguise.\" Besides coding, also love sharing knowledge (teaching others to debug confirms I really know it), board games (strategy games train logical thinking), and my new hobby is chatting with AI. Welcome to my GitHub, let's adventure together in the world of code!"
+            "description": "Future plans? Keep making AI go from \"the demo looks trendy\" to \"this actually ships.\" Currently digging deep into agentic development workflows and self-hosted AI toolchains (local LLM service layer, multi-agent, RAG, multimodal). Life motto upgraded from \"Bugs are just features in disguise\" to \"being able to talk it into clarity and ship it is worth more than memorizing APIs.\" Besides writing code, I also love sharing knowledge, board games, and my newest hobby is pair programming with AI (and being the one who cleans up when it screws up). Welcome to my GitHub, let's adventure together in the world of code and AI!"
           }
         }
       }

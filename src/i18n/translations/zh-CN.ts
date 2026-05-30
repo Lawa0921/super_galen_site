@@ -843,6 +843,7 @@ export const zh_CN = {
     personal_desc: '生活技能大杂燴，证明人生不只有写程式',
     descriptions: {
       root: '全端工程师一枚，上至前端特效、下至資料库优化，左能写智能合約、右能修水电，基本上就是個科技界的瑞士刀！',
+      ai: 'AI 应用作战中心！我的角色不是自己刻 AI 算法（那是 AI 团队的活），而是深度使用 AI 工具、理清需求、引领项目方向，再把模糊的点子变成真的能上线的落地方案——对接整合、DB 性能、可观测性、踩坑收尾一条龙。',
       frontend: '前端技术大本营，专门負責让网页变得漂亮又好用。从手刻 HTML 到玩转各种框架，只要是能让用户眼睛一亮的東西，這裡都有！',
       backend: '后端技术指挥中心，掌管著所有數据的生死大权。Ruby on Rails 是主力输出，偶爾使用 Elixir 放大絕，让伺服器不只稳定，还要飞快！',
       devops: 'DevOps 武器库，专门負責让程式码从本地飞到云端。Git 是基本功，AWS 是主战场，自動化部署更是拿手絕活，让上線如呼吸般自然！',
@@ -870,10 +871,8 @@ export const zh_CN = {
       git: 'Git 版本控制大神，救了无數开发者的命。commit、push、pull 是基本功，rebase 和 cherry-pick 是进阶技，但永远不要 force push 到 main！',
       github: 'GitHub 程式码社交平台，开源世界的中心。Pull Request 是日常，Issue 是溝通管道，綠色方格是成就感的來源！',
       aws: 'AWS 云端帝國，服務多到數不清。EC2 是基本款，S3 是储存库，Lambda 是新玩具，但帐單要小心看！',
-      docker: 'Docker 容器大师，让应用程式到处都能跑。一次打包，到处部署，环境不一致问题从此说掰掰！',
       ansible: 'Ansible 自動化配置大师，让伺服器管理变得簡單。YAML 写法直观易懂，批量部署不再是梦魘！',
       terraform: 'Terraform 基礎设施即程式码专家，让云端資源也能版本控制。Infrastructure as Code 是信念，一键建立云端帝國！',
-      automation: '自動化部署专家，让上線不再是惡梦。一键部署是基本，零停機更新是追求，半夜不用起來改 bug 真好！',
       cicd: 'CI/CD 持续整合持续部署，让程式码从开发到上線一气呵成。自動測试、自動部署，开发者的解放之道！',
       github_actions: 'GitHub Actions 工作流程自動化神器，在 GitHub 上直接跑 CI/CD。YAML 配置簡單，功能强大无比！',
       solidity: 'Solidity 智能合約語言，让程式码变成法律。写起來要小心翼翼，因为 bug 可能值几百萬，但成就感也是滿滿！',
@@ -910,7 +909,19 @@ export const zh_CN = {
       blockchain_dapp: 'DApp 开发大本营，各种區塊链应用都在這。Token、DAO、DEX 一字排开，都是去中心化的未來！',
       personal_hobbies: '興趣专长大集合，从桌游到露营，从修水电到写小说。人生不只有程式码，还有更多乐趣！',
       personal_skills: '专业技能三巨头，客服、团队、解決问题。軟实力也是实力，有時候比硬技能更重要！',
-      personal_creative: '創作魂燃燒中，游戏评論家獨挑大樑。用文字记录游戏世界，让更多人知道好游戏！'
+      personal_creative: '創作魂燃燒中，游戏评論家獨挑大樑。用文字记录游戏世界，让更多人知道好游戏！',
+      multi_agent: '让一群 AI agent 分工合作，像在带一個永远不喊累的团队（只是偶爾会集体幻觉）。',
+      rag: '帮 AI 配一個外接記忆体：BM25＋向量检索＋reranker，让它回答前先去翻对的資料，而不是当场創作。',
+      claude_code: '我的主力 AI 结对伙伴。从查代码、写测试到重构，丢给它打草稿、我負責把关——生产力翻倍，鍋还是我背。',
+      codex: '另一隻 AI 编码帮手，跟 Claude Code 换手用。不同模型不同脾气，誰顺手就用誰。',
+      vector_search: '把文字变成向量、用相似度找出最相关的資料。pgvector 是好朋友，让 AI 回答前先翻对的书。',
+      reranker: '检索完再排一次序，把真正相关的往前丢。第一次检索像撒網，reranker 像挑魚。',
+      mcp: 'Model Context Protocol——让 AI 工具接上各种數据源与工具的标准接口，AI 从此不只是嘴砲。',
+      gemini: 'Google 的 Gemini，我略懂——拿來生图、处理多模态、当另一颗比价的 AI 大脑。更深的还在补课中。',
+      image_gen: '用 AI 生图（Nano Banana、Imagen、ComfyUI 那一掛）大概会。一句 prompt 变一张图，调到满意通常要试很多次。',
+      video_gen: 'AI 视频生成略懂，知道怎麼让图动起來、串個镜头。质量还在跟模型一起进化。',
+      music_gen: '用 AI 生背景音乐／配乐（Suno 那类）大概理解流程。让 demo 不再安靜，但別期待我写交响乐。',
+      local_model: '在自己机器上跑 local LLM／模型（Ollama 那套）大概理解。資料不外流、不用上云，缺点是电费和显卡的眼淚。'
     },
     names: {
       frontend: '前端技术',
@@ -940,10 +951,8 @@ export const zh_CN = {
       git: 'Git',
       github: 'GitHub',
       aws: 'AWS',
-      docker: 'Docker',
       terraform: 'Terraform',
       ansible: 'Ansible',
-      automation: '自動化部署',
       cicd: 'CI/CD',
       github_actions: 'GitHub Actions',
       solidity: 'Solidity',
@@ -974,28 +983,29 @@ export const zh_CN = {
       devops_vcs: '版本控制',
       devops_cloud: '云端服務',
       devops_infrastructure: '基礎设施',
-      devops_cicd: 'CI/CD',
       blockchain_core: '智能合約',
       blockchain_tools: 'Web3 工具',
       blockchain_dapp: 'DApp 开发',
       personal_hobbies: '興趣专长',
       personal_skills: '专业技能',
       personal_creative: '創作能力',
-      framework_tools: '框架工具',
-      backend_tech: '后端技术',
-      database: '資料库',
-      architecture_design: '架构设計',
-      version_control: '版本控制',
-      cloud_services: '云端服務',
-      infrastructure_as_code: '基礎设施即代码',
-      blockchain_tech: '區塊链',
-      smart_contracts: '智能合約',
-      life_skills: '生活技能',
-      hobbies: '興趣专长',
-      boardgame_master: '桌游大师',
-      novel_writer: '小说創作者',
-      professional_skills: '专业技能',
-      creative: '創作'
+      ai: 'AI 应用',
+      multi_agent: 'Multi-agent',
+      rag: 'RAG',
+      ai_tools: 'AI 工具',
+      ai_rag: '检索 / RAG',
+      ai_agent: 'Agent / 协议',
+      claude_code: 'Claude Code',
+      codex: 'Codex',
+      vector_search: '向量检索',
+      reranker: 'Reranker',
+      mcp: 'MCP',
+      ai_gen: '生成式 AI',
+      gemini: 'Gemini',
+      image_gen: '图片生成',
+      video_gen: '视频生成',
+      music_gen: '音乐生成',
+      local_model: '本地模型'
     }
   },
   status_info: {
@@ -1016,13 +1026,13 @@ export const zh_CN = {
     debuff_fatigue_desc: '疲勞：整体效率 -25%'
   },
   story: {
-    title: '冒险者檔案',
-    intro1: '从废物到工程师的进化之路，這是一個充滿挑战与成长的冒险故事...',
-    intro2: '曾经是個对程式一竅不通的麻瓜，经过不斷的学习与实战，如今已成为能够獨当一面的全端开发者。',
-    intro3: '擅长将复杂的技术概念转化为易懂的教学內容，同時熱愛探索新技术，将其应用於实際专案中。',
+    title: '冒险者档案',
+    intro1: '从废物到工程师，再到「会用 AI、能带方向、给得出落地方案」的人——这是一个还在持续更新的冒险故事...',
+    intro2: '曾经是个对代码一窍不通的麻瓜，如今不只能独当一面写全栈，更擅长站在 AI 浪头上，把一个模糊的点子讨论成做得出来的计划。',
+    intro3: '我的强项不是自己写 AI 算法，而是深度使用 AI 工具、在商业与技术之间翻译、引领项目方向，并让它真正落地上线。',
     timeline_start: '踏上程式冒险之路',
-    timeline_first_project: '完成第一個商业专案',
-    timeline_blockchain: '加入區塊链开发行列'
+    timeline_first_project: '完成第一个商业专案',
+    timeline_blockchain: '加入区块链开发行列'
   },
   story_book: {
     chapters: {
@@ -1032,12 +1042,12 @@ export const zh_CN = {
           event_0: {
             date: '2011-2015',
             title: '海洋休闲管理系的奇妙冒险',
-            description: '就读國立高雄科大海洋休闲管理系，我与同学一起研究海洋生態、在衝浪板、风帆上玩耍。我带领系啦啦队拿下第二名，还在龙舟比赛夺冠！誰说管理海洋的人不能管理程式码？我這時候还真不行。'
+            description: '就读国立高雄科大海洋休闲管理系，我与同学一起研究海洋生态、在冲浪板、风帆上玩耍。我带领系啦啦队拿下第二名，还在龙舟比赛夺冠！谁说管理海洋的人不能管理程式码？我这时候还真不行。'
           },
           event_1: {
             date: '2015-至今',
-            title: '密式旅行：从海洋运動员再到 CEO 之后成为 Bug 生产者',
-            description: '創立露营區「密式旅行」，学会了最重要的創业技能：如何在沒有网路的山上 Debug 人生。处理过无數客户的「需求变更」（臨時要加帐篷、加人、延期、取消），這段经歷让我深刻理解什麼叫「敏捷开发」。'
+            title: '密式旅行：从海洋运动员再到 CEO 之后成为 Bug 生产者',
+            description: '创立露营区「密式旅行」，学会了最重要的创业技能：如何在沒有网路的山上 Debug 人生。处理过无数客户的「需求变更」（临时要加帐篷、加人、延期、取消），这段经历让我深刻理解什么叫「敏捷开发」。'
           }
         }
       },
@@ -1046,28 +1056,28 @@ export const zh_CN = {
         events: {
           event_0: {
             date: '2019',
-            title: '自学日語突破 N1：自学的起点',
-            description: '一年內自学日檢突破 N1 关卡，发现学日語跟写程式很像——都是在处理一堆看不懂的符号。汉字像变數名，助詞像运算符。這段经歷证明了我的自学能力，Google 是最好的老师！'
+            title: '自学日语突破 N1：自学的起点',
+            description: '一年内自学日检突破 N1 关卡，发现学日语跟写程式很像——都是在处理一堆看不懂的符号。汉字像变数名，助词像运算符。这段经历证明了我的自学能力，Google 是最好的老师！'
           },
           event_1: {
             date: '2020.03-08',
             title: 'AstroCamp：从麻瓜到魔法师',
-            description: '參加程式转职训练营，第一次見到 Ruby 还以为是宝石。从 "puts \'Hello World\'" 开始，到能用 Rails 搭建 GitHub Clone（是的，我們真的做了一個山寨版 GitHub）。学会了 MVC 不是便利商店，CRUD 不是一种髒話。每天 debug 到凌晨，終於理解为什麼程式设計师都有黑眼圈。'
+            description: '參加程式转职训练营，第一次见到 Ruby 还以为是宝石。从 "puts \'Hello World\'" 开始，到能用 Rails 搭建 GitHub Clone（是的，我们真的做了一个山寨版 GitHub）。学会了 MVC 不是便利商店，CRUD 不是一种脏话。每天 debug 到凌晨，终于理解为什么程式设计师都有黑眼圈。'
           }
         }
       },
       chapter_2: {
-        title: '第二章：菜鸟工程师的逆襲',
+        title: '第二章：菜鸟工程师的逆袭',
         events: {
           event_0: {
             date: '2020.08-2022.02',
-            title: 'Snapask：我的第一個 Production 产品',
-            description: '加入線上教育平台当后端工程师，用 Ruby on Rails 写 API。学会了 cache、backgroundjob、websocket 各种从沒听过的名詞，PostgreSQL 的 JOIN 可以写到让資深工程师落淚。最自豪的是把原本要跑 30 秒的 API 优化到 3 秒——原來是忘了加索引，什麼是 index？我這時才知道。'
+            title: 'Snapask：我的第一个 Production 产品',
+            description: '加入线上教育平台当后端工程师，用 Ruby on Rails 写 API。学会了 cache、backgroundjob、websocket 各种从沒听过的名词，PostgreSQL 的 JOIN 可以写到让资深工程师落泪。最自豪的是把原本要跑 30 秒的 API 优化到 3 秒——原来是忘了加索引，什么是 index？我这时才知道。'
           },
           event_1: {
             date: 2021.06,
-            title: '獨立专案：終於可以说「這 Bug 不是我写的」',
-            description: '第一次像個工程师一樣負責专案！从需求訪談（听 PM 说故事）、系统设計（画了一堆看起來很专业的架构圖）、到实作上線（半夜修 Bug）。学会了 Git Flow、CI/CD、还有最重要的技能——如何礼貌地告訴 PM「這個需求做不到」。'
+            title: '独立专案：终于可以说「这 Bug 不是我写的」',
+            description: '第一次像个工程师一样负责专案！从需求访谈（听 PM 说故事）、系统设计（画了一堆看起来很专业的架构图）、到实作上线（半夜修 Bug）。学会了 Git Flow、CI/CD、还有最重要的技能——如何礼貌地告诉 PM「这个需求做不到」。'
           }
         }
       },
@@ -1076,43 +1086,48 @@ export const zh_CN = {
         events: {
           event_0: {
             date: '2022.02-2022.04',
-            title: 'KryptoCamp：从「什麼是區塊」到「區塊链」',
-            description: '參加區塊链实战营，終於搞懂 Gas 不是瓦斯、智能合約也不会自己談判。用 Solidity 写出第一個智能合約。学会用 Hardhat 測试（免費赞）、IPFS 存储（去中心化到找不到檔案在哪）、ethers.js 串接（終於不用手動输入私鑰）。'
+            title: 'KryptoCamp：从「什么是区块」到「区块链」',
+            description: '參加区块链实战营，终于搞懂 Gas 不是瓦斯、智能合约也不会自己谈判。用 Solidity 写出第一个智能合约。学会用 Hardhat 测试（免费赞）、IPFS 存储（去中心化到找不到档案在哪）、ethers.js 串接（终于不用手动输入私钥）。'
           },
           event_1: {
             date: '2022.05-2023.02',
             title: 'DFKRunner：让 NFT 自己去上班',
-            description: '成为區塊链自由开发者，开发 DFKRunner 自動化腳本——让 DeFi Kingdoms 的 NFT 英雄自動挖礦、釣鱼、园艺。使用 Node.js + harmony-js + ethers.js，跨 DFK 和 Klaytn 链。最得意的成就：睡觉時 NFT 还在帮我赚钱！也学到了重要经验——智能合約的 Bug 比一般 Bug 貴很多（真的是用钱在 Debug）。'
+            description: '成为区块链自由开发者，开发 DFKRunner 自动化脚本——让 DeFi Kingdoms 的 NFT 英雄自动挖矿、钓鱼、园艺。使用 Node.js + harmony-js + ethers.js，跨 DFK 和 Klaytn 链。最得意的成就：睡觉时 NFT 还在帮我赚钱！也学到了重要经验——智能合约的 Bug 比一般 Bug 贵很多（真的是用钱在 Debug）。'
           }
         }
       },
       chapter_4: {
-        title: '第四章：全端工程师的修煉',
+        title: '第四章：全端工程师的修炼',
         events: {
           event_0: {
             date: '2023.03-2024.09',
-            title: '伊格公寓：Elixir 的函數式冒险',
-            description: '加入包租代管系统公司，用 Elixir Phoenix 开发。第一次接觸函數式編程，发现「不可变」不是在说我的薪水。Actor Model 让我理解了什麼叫「让它 Crash」——原來程式挂掉也可以是一种设計模式！使用 LiveView 做即時互動，不用写 JavaScript 就能做出 SPA 效果（雖然最后还是写了很多 JS）。Terraform + Ansible 管理 AWS，学会了 IaC（Infrastructure as Code，不是 IC 设計）。'
+            title: '伊格公寓：Elixir 的函数式冒险',
+            description: '加入包租代管系统公司，用 Elixir Phoenix 开发。第一次接触函数式编程，发现「不可变」不是在说我的薪水。Actor Model 让我理解了什么叫「让它 Crash」——原来程式挂掉也可以是一种设计模式！使用 LiveView 做即时互动，不用写 JavaScript 就能做出 SPA 效果（虽然最后还是写了很多 JS）。Terraform + Ansible 管理 AWS，学会了 IaC（Infrastructure as Code，不是 IC 设计）。'
           },
           event_1: {
             date: '2024.12-至今',
-            title: 'JTCG：Rails 的浴火重生',
-            description: '加入 AI 科技公司，回歸 Ruby on Rails 的怀抱。使用 Stimulus + Hotwire 做前端。串接 Line API 做 AI 聊天機器人，每天跟 Bot 对話測试（有時比跟人说話还多）。維护核心 AI 产品，保持 <0.1% 的伺服器待機時间——意思是我的休息時间比伺服器还少。现在的我：Tailwind 写到眼压飆升，Git 已经融入 DNA。'
+            title: 'JTCG：AI 浪头上的翻译蒟蒻与领路人',
+            description: '加入 AI 科技公司做 AI 客服产品。在这里我的超能力不是「自己写 AI 算法」——那是 AI 团队的活——而是当那个能在商业、客服、RD 三边来回翻译的人：把「老板想要 AI 变更聪明」拆解成「到底要改哪个检索条件、补哪段 log、接哪个平台」，再给出做得出来、上得了线的落地方案。我深度使用 AI 工具辅助开发、跑 POC 验证可行性（像把 LINE OA 的事件跨平台转发到 LINE WORKS 一次跑通）、在架构决策上提供方向；真正亲手做的是对接整合 LINE／Messenger 等渠道与 SHOPLINE／91APP 等电商平台、把商品检索的 DB 索引和 SQL 重写到冷启动从 35 秒掉到 0.3 秒、替所有 LLM 调用补上 Langfuse 可观测性与 token 用量、写 E2E、review 队友的 PR。生产环境爆 P0 的时候，我是先分级、追根因、决定回滚还是热修的那个人。一句话：我负责让 AI 从「听起来很潮」变成「真的能上线、还能维护」。'
+          },
+          event_2: {
+            date: '2024-至今',
+            title: '房云端 RoomCloud：自己的产品，AI 整碗自己端',
+            description: '把经营露营区「密式旅行」攒下来的血泪，变成一个真的上线的旅宿 SaaS——房云端 RoomCloud（roomcloud.cc）。从旅馆、房型、订房、房价库存，到我自己接的 AI 客服、知识库、流程编辑器、LINE／FB／IG webhook，一个人从需求、Phoenix LiveView 界面、pgvector 向量检索，一路写到用 Kamal + Docker 部署上线。在这里 AI 不是别人的算法——是我自己把它整碗端上桌的。顺手还做了你正在看的这个 SuperGalen Dungeon（Astro + Three.js + Web3 的游戏化作品集），外加一堆自建的本机 AI 工具链（LLM 服务层、multi-agent、RAG）在家偷练。'
           }
         }
       },
       chapter_final: {
-        title: '終章：To Be Continued...',
+        title: '终章：To Be Continued...',
         events: {
           event_0: {
-            date: '技能樹现況',
-            title: '全端工程师的武器库',
-            description: '前端：HTML/CSS/JS 基本功、jQuery、Bootstrap + Tailwind（CSS 框架二刀流）。后端：Ruby on Rails（初恋）、Elixir Phoenix（函數式的洗礼）、Node.js（写自動化腳本的好伙伴）。區塊链：Solidity（每行 Code 都是钱）、Hardhat（測试救了我的钱包）、ethers.js（链上链下的橋樑）。DevOps：Terraform/Ansible（让伺服器也能 version control）、Git（已经是肌肉记忆）。'
+            date: '技能树现况',
+            title: '全栈 × AI 应用的武器库',
+            description: '前端：HTML/CSS/JS 基本功、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。后端：Ruby on Rails（初恋）、Elixir Phoenix（函数式洗礼）、Node.js（自动化好伙伴）、PostgreSQL（索引救了我的性能）。区块链：Solidity、Hardhat、ethers.js。DevOps：Terraform/Ansible、Git（肌肉记忆）。AI 应用：深度使用 Claude Code 等 AI 工具辅助开发、自建本地 LLM 服務层玩 multi-agent 与 RAG、对接 LLM API 与向量检索、用 Langfuse 盯著 token 烧多少钱。但最强的武器不是会某个框架，而是能把一个模糊的 AI 点子讨论清楚、变成可落地的计划。'
           },
           event_1: {
             date: '下一章',
             title: 'npm install future',
-            description: '未來的計劃？继续 Debug 人生！正在学习 AI 开发、BMAD 流程。人生座右銘：「Bugs are just features in disguise」。除了写 Code，也熱愛分享知识（教別人 Debug 才能确认自己真的会）、桌游（策略游戏训练邏辑思維）、新的興趣是与 AI 打嘴砲。欢迎來到我的 GitHub，一起在 Code 的世界裡冒险！'
+            description: '未来的计划？继续把 AI 从「demo 很潮」变成「真的能上线」。正在深挖 agentic 开发流程、自建 AI 工具链（本地 LLM 服務层、multi-agent、RAG、多模态）。人生座右铭从「Bugs are just features in disguise」升级成「能讨论清楚、能落地，比会背 API 更值钱」。除了写代码，也热愛分享知识、桌游，最新兴趣是跟 AI 一起 pair programming（并负责在它出包时收尾）。欢迎来到我的 GitHub，一起在 Code 与 AI 的世界里冒险！'
           }
         }
       }

@@ -729,6 +729,7 @@
     "personal_desc": "생활 스킬 대잡탕, 인생은 코딩만이 아니다!",
     "descriptions": {
       "root": "풀스택 엔지니어 한 명. 위로는 프론트엔드 이펙트, 아래로는 데이터베이스 최적화, 왼쪽으로는 스마트 컨트랙트, 오른쪽으로는 배관 수리까지. 기본적으로 테크계의 스위스 아미 나이프!",
+      "ai": "AI 응용 작전 본부! 내 역할은 직접 AI 알고리즘을 깎는 게 아니라(그건 AI 팀 일이고), AI 도구를 깊이 파먹고, 요구사항을 정리하고, 프로젝트 방향을 끌고 가는 것. 그러고는 흐릿한 아이디어를 진짜로 출시 가능한 착지 방안으로 바꾼다——API 연동 통합, DB 성능, 옵저버빌리티, 지뢰 밟고 뒤처리까지 원스톱!",
       "frontend": "프론트엔드 기술 본거지, 웹페이지를 아름답고 사용하기 쉽게 만드는 전문 부대. HTML 손코딩부터 각종 프레임워크까지, 사용자의 눈을 빛나게 하는 것은 모두 여기에!",
       "backend": "백엔드 기술 사령부, 모든 데이터의 생사여탈권을 장악. Ruby on Rails가 주력, 가끔 Elixir로 필살기, 서버를 안정적이면서도 빠르게!",
       "devops": "DevOps 무기고, 코드를 로컬에서 클라우드로 날리는 전문가. Git은 기본, AWS가 주 전장, 자동화 배포는 특기로, 배포가 호흡처럼 자연스럽게!",
@@ -756,10 +757,8 @@
       "git": "Git 버전 관리의 신, 수많은 개발자의 목숨을 구했다. commit, push, pull은 기본, rebase와 cherry-pick은 고급 기술, 하지만 절대 main에 force push 금지!",
       "github": "GitHub 코드 SNS, 오픈소스 세계의 중심. Pull Request는 일상, Issue는 소통 창구, 초록 사각형은 성취감의 원천!",
       "aws": "AWS 클라우드 제국, 서비스가 셀 수 없이 많다. EC2는 기본, S3는 저장소, Lambda는 새 장난감, 하지만 청구서는 조심히 봐야!",
-      "docker": "Docker 컨테이너 마스터, 애플리케이션을 어디서든 실행. 한 번 패키징하면 어디서든 배포, 환경 불일치 문제는 안녕!",
       "ansible": "Ansible 자동화 구성 마스터, 서버 관리를 간단하게. YAML 작성법 직관적, 일괄 배포는 더 이상 악몽이 아님!",
       "terraform": "Terraform Infrastructure as Code 전문가, 클라우드 리소스도 버전 관리. IaC가 신념, 원클릭으로 클라우드 제국 구축!",
-      "automation": "자동화 배포 전문가, 배포가 더 이상 악몽이 아님. 원클릭 배포는 기본, 무중단 업데이트가 목표!",
       "cicd": "CI/CD 지속적 통합 지속적 배포, 코드를 개발부터 배포까지 일사천리. 자동 테스트, 자동 배포, 개발자 해방의 길!",
       "github_actions": "GitHub Actions 워크플로우 자동화 신기, GitHub에서 직접 CI/CD 실행. YAML 설정 간단, 기능 초강력!",
       "solidity": "Solidity 스마트 컨트랙트 언어, 코드를 법률로 만든다. 조심스럽게 써야 하는데, 버그가 몇백만 가치일 수 있지만 성취감도 가득!",
@@ -796,7 +795,19 @@
       "blockchain_dapp": "DApp 개발 본거지, 각종 블록체인 애플리케이션. Token, DAO, DEX 일렬로, 모두 탈중앙화의 미래!",
       "personal_hobbies": "취미 특기 대집합, 보드게임부터 캠핑, 배관 수리부터 소설 집필까지. 인생은 코드만이 아니다, 더 많은 즐거움이 있다!",
       "personal_skills": "전문 스킬 삼거두, 고객 서비스, 팀워크, 문제 해결. 소프트 스킬도 스킬, 때로는 하드 스킬보다 중요!",
-      "personal_creative": "창작혼 불타오름, 게임 평론가 독주. 글로 게임 세계를 기록, 더 많은 사람에게 좋은 게임 알림!"
+      "personal_creative": "창작혼 불타오름, 게임 평론가 독주. 글로 게임 세계를 기록, 더 많은 사람에게 좋은 게임 알림!",
+      "multi_agent": "AI agent 한 무리에게 분업과 협업을 시킨다. 절대 지쳤다고 안 우는 팀을 이끄는 기분(가끔 집단 환각을 일으킬 뿐).",
+      "rag": "AI에게 외장 메모리를 달아 준다：BM25＋벡터 검색＋reranker로, 답하기 전에 먼저 제대로 된 자료를 뒤지게 만든다. 현장에서 창작하지 말고.",
+      "claude_code": "내 주력 AI 페어 파트너. code 뒤지기, 테스트 작성부터 리팩터링까지, 던져 주면 초안은 걔가 쓰고 검수는 내가 한다 - 생산성은 두 배, 근데 뒤집어쓰는 건 여전히 나.",
+      "codex": "또 다른 AI 코딩 조수, Claude Code와 번갈아 쓴다. 모델이 다르면 성깔도 다른 법, 손에 익는 쪽으로 골라 쓴다.",
+      "vector_search": "텍스트를 벡터로 바꿔 유사도로 가장 관련 있는 자료를 찾는다. pgvector는 좋은 친구, AI가 답하기 전에 맞는 책을 먼저 펴게 한다.",
+      "reranker": "검색이 끝난 뒤 한 번 더 순위를 매겨 진짜 관련 있는 걸 앞으로 올린다. 첫 검색이 그물 던지기라면 reranker는 물고기 고르기.",
+      "mcp": "Model Context Protocol - AI 도구를 온갖 데이터 소스와 도구에 연결하는 표준 인터페이스. 이제 AI는 입만 터는 존재가 아니다.",
+      "gemini": "Google의 Gemini, 대충 좀 만진다——그림 생성, 멀티모달 처리, 가격 비교용 또 하나의 AI 두뇌로 굴리는 정도. 더 깊은 건 아직 공부 중.",
+      "image_gen": "AI로 그림 뽑기(Nano Banana, Imagen, ComfyUI 그 동네)는 대충 할 줄 안다. prompt 한 줄이 그림 한 장이 되긴 하는데, 마음에 들 때까지 보통 수십 번은 돌려야 한다.",
+      "video_gen": "AI 영상 생성도 대충 안다. 그림을 움직이게 하고 컷을 이어 붙이는 정도는. 품질은 아직 모델이랑 같이 성장하는 중.",
+      "music_gen": "AI로 배경음악／사운드트랙 뽑는 거(Suno 그런 부류) 흐름은 대충 이해한다. demo가 더 이상 조용하진 않게, 다만 교향곡을 기대하진 마시길.",
+      "local_model": "내 컴퓨터에서 local LLM／모델 돌리기(Ollama 그 동네) 대충 이해한다. 데이터 안 새고 클라우드도 안 타지만, 대가는 전기요금과 그래픽카드의 눈물."
     },
     "names": {
       "frontend": "프론트엔드 기술",
@@ -826,10 +837,8 @@
       "git": "Git",
       "github": "GitHub",
       "aws": "AWS",
-      "docker": "Docker",
       "terraform": "Terraform",
       "ansible": "Ansible",
-      "automation": "자동화 배포",
       "cicd": "CI/CD",
       "github_actions": "GitHub Actions",
       "solidity": "Solidity",
@@ -860,13 +869,29 @@
       "devops_vcs": "버전 관리",
       "devops_cloud": "클라우드 서비스",
       "devops_infrastructure": "인프라",
-      "devops_cicd": "CI/CD",
       "blockchain_core": "스마트 컨트랙트",
       "blockchain_tools": "개발 도구",
       "blockchain_dapp": "DApp 개발",
       "personal_hobbies": "취미 특기",
       "personal_skills": "전문 스킬",
-      "personal_creative": "창작 활동"
+      "personal_creative": "창작 활동",
+      "ai": "AI 응용",
+      "ai_tools": "AI 도구",
+      "ai_rag": "검색 / RAG",
+      "ai_agent": "Agent / 프로토콜",
+      "claude_code": "Claude Code",
+      "codex": "Codex",
+      "vector_search": "벡터 검색",
+      "reranker": "Reranker",
+      "mcp": "MCP",
+      "multi_agent": "Multi-agent",
+      "rag": "RAG",
+      "ai_gen": "생성형 AI",
+      "gemini": "Gemini",
+      "image_gen": "이미지 생성",
+      "video_gen": "영상 생성",
+      "music_gen": "음악 생성",
+      "local_model": "로컬 모델"
     }
   },
   "status_info": {
@@ -888,9 +913,9 @@
   },
   "story": {
     "title": "모험가 프로필",
-    "intro1": "쓰레기에서 엔지니어로의 진화, 도전과 성장으로 가득한 모험 이야기...",
-    "intro2": "한때 프로그래밍에 대해 아무것도 몰랐던 머글이었지만, 끊임없는 학습과 실전을 통해 이제는 홀로 설 수 있는 풀스택 개발자가 되었다.",
-    "intro3": "복잡한 기술 개념을 이해하기 쉬운 교육 콘텐츠로 변환하는 데 능숙하며, 새로운 기술을 탐구하고 실제 프로젝트에 적용하는 것을 좋아한다.",
+    "intro1": "쓰레기에서 엔지니어로, 그리고 「AI를 다루고, 방향을 이끌고, 실제로 돌아가는 해법을 내놓는」 사람으로 - 아직도 계속 업데이트 중인 모험 이야기...",
+    "intro2": "한때 프로그래밍에 대해 아무것도 몰랐던 머글이었지만, 이제는 홀로 설 수 있는 풀스택 개발자일 뿐 아니라, AI 물결의 맨 앞에 서서 모호한 아이디어를 「실제로 만들 수 있는 계획」으로 바꾸는 데 능숙하다.",
+    "intro3": "나의 강점은 AI 알고리즘을 직접 짜는 게 아니라, AI 도구를 깊이 활용하고, 비즈니스와 기술 사이를 번역하며, 프로젝트의 방향을 이끌고, 그것을 진짜로 출시까지 끌고 가는 것이다.",
     "timeline_start": "프로그래밍 모험 시작",
     "timeline_first_project": "첫 상업 프로젝트 완료",
     "timeline_blockchain": "블록체인 개발 참여"
@@ -967,8 +992,13 @@
           },
           "event_1": {
             "date": "2024.12-현재",
-            "title": "JTCG：Rails의 불사조 재탄생",
-            "description": "AI 기술 회사에 입사해서, Ruby on Rails의 품으로 돌아왔다. Stimulus + Hotwire로 프론트엔드를 개발한다. Line API와 연동해서 AI 챗봇을 만들고, 매일 봇과 대화하며 테스트한다(사람보다 더 많이 대화할 때도 있다). 핵심 AI 제품을 유지하며, 서버 다운타임을 <0.1%로 유지한다 - 즉, 내 휴식 시간이 서버보다 적다. 지금의 나：Tailwind를 쓰다가 안압 상승, Git은 이미 DNA에 융합됨."
+            "title": "JTCG：AI 물결 위의 통역 곤약과 길잡이",
+            "description": "AI 테크 회사에 입사해 AI 고객 응대 제품을 만든다. 여기서 내 초능력은 「AI 알고리즘을 직접 짜는 것」이 아니다 - 그건 AI 팀의 일이다 - 내 역할은 비즈니스, CS, RD 세 진영 사이를 오가며 통역하는 사람이 되는 것이다：「사장님이 AI를 더 똑똑하게 만들고 싶다」를 「도대체 어떤 검색 조건을 바꾸고, 어느 log를 보강하고, 어떤 플랫폼을 연동해야 하는지」로 분해하고, 만들 수 있고 출시까지 가능한 실전 해법을 내놓는다. AI 도구를 깊이 활용해 개발을 보조하고, POC로 실현 가능성을 검증하며(예를 들어 LINE OA의 이벤트를 LINE WORKS로 크로스 플랫폼 전달하는 걸 한 번에 통과시켰다), 아키텍처 결정에서 방향을 제시한다; 직접 손으로 한 일은 LINE／Messenger 등 채널과 SHOPLINE／91APP 등 이커머스 플랫폼 연동 통합, 상품 검색의 DB 인덱스와 SQL을 다시 짜서 콜드 스타트를 35초에서 0.3초로 줄인 것, 모든 LLM 호출에 Langfuse 관측성과 token 사용량을 붙인 것, E2E 작성, 팀원 PR review다. 운영 환경에 P0가 터지면, 먼저 등급을 나누고 근본 원인을 추적하고 롤백이냐 핫픽스냐를 결정하는 사람이 바로 나다. 한마디로：나는 AI를 「듣기엔 멋진 것」에서 「진짜로 출시되고, 유지보수까지 되는 것」으로 만드는 일을 맡는다."
+          },
+          "event_2": {
+            "date": "2024-현재",
+            "title": "房雲端 RoomCloud：내 제품, AI는 한 그릇 통째로 내가 직접 차린다",
+            "description": "캠핑장 「밀식여행(密式旅行)」을 운영하며 쌓인 피와 눈물을, 진짜로 출시된 숙박 SaaS로 바꿔냈다 - 房雲端 RoomCloud(roomcloud.cc)다. 호텔, 객실 타입, 예약, 요금·재고 관리부터, 내가 직접 붙인 AI 고객 응대, 지식 베이스, 워크플로 에디터, LINE／FB／IG webhook까지 - 혼자서 요구사항 정의부터 Phoenix LiveView 인터페이스, pgvector 벡터 검색을 거쳐 Kamal + Docker로 배포·출시까지 한 줄 한 줄 다 짰다. 여기서 AI는 남의 알고리즘이 아니다 - 내가 직접 한 그릇 통째로 식탁에 올린 것이다. 내친김에 지금 당신이 보고 있는 이 SuperGalen Dungeon(Astro + Three.js + Web3 게임화 포트폴리오)도 만들었고, 거기에 더해 집에서 몰래 단련 중인 셀프 호스팅 로컬 AI 도구 체인(LLM 서비스 레이어, multi-agent, RAG) 한 무더기도 곁들였다."
           }
         }
       },
@@ -977,13 +1007,13 @@
         "events": {
           "event_0": {
             "date": "현재 스킬 트리",
-            "title": "풀스택 엔지니어의 무기고",
-            "description": "프론트엔드：HTML/CSS/JS 기본기, jQuery, Bootstrap + Tailwind(CSS 프레임워크 쌍검술). 백엔드：Ruby on Rails(첫사랑), Elixir Phoenix(함수형의 세례), Node.js(자동화 스크립트의 좋은 친구). 블록체인：Solidity(모든 라인의 코드가 돈), Hardhat(테스트가 내 지갑을 구했다), ethers.js(온체인과 오프체인의 다리). DevOps：Terraform/Ansible(서버도 버전 관리 가능하게), Git(이미 근육 기억)."
+            "title": "풀스택 × AI 응용의 무기고",
+            "description": "프론트엔드：HTML/CSS/JS 기본기, Tailwind + Bootstrap, Stimulus/Hotwire, Phoenix LiveView. 백엔드：Ruby on Rails(첫사랑), Elixir Phoenix(함수형의 세례), Node.js(자동화의 좋은 친구), PostgreSQL(인덱스가 내 성능을 구했다). 블록체인：Solidity, Hardhat, ethers.js. DevOps：Terraform/Ansible, Git(근육 기억). AI 응용：Claude Code 같은 AI 도구를 깊이 활용해 개발을 보조하고, 로컬 LLM 서비스 레이어를 직접 띄워 multi-agent와 RAG를 가지고 놀고, LLM API와 벡터 검색을 연동하고, Langfuse로 token이 돈을 얼마나 태우는지 지켜본다. 하지만 가장 강한 무기는 어떤 프레임워크를 다룰 줄 아는 게 아니라, 모호한 AI 아이디어를 명확하게 논의해 실제로 돌아가는 계획으로 바꾸는 능력이다."
           },
           "event_1": {
             "date": "다음 장",
             "title": "npm install future",
-            "description": "미래 계획? 인생 디버깅 계속하기! 현재 AI 개발과 BMAD 프로세스를 학습 중이다. 인생 좌우명：「Bugs are just features in disguise」. 코딩 외에도 지식 공유(다른 사람에게 디버깅을 가르쳐야 내가 정말 아는지 확인할 수 있다), 보드게임(전략 게임은 논리적 사고를 훈련), 새로운 취미는 AI와 수다떨기를 좋아한다. 내 GitHub에 오신 것을 환영한다, 함께 코드의 세계에서 모험하자!"
+            "description": "미래 계획? AI를 「demo는 멋진 것」에서 「진짜로 출시되는 것」으로 계속 바꿔 나가기. 지금은 agentic 개발 흐름과 직접 띄운 AI 도구 체인(로컬 LLM 서비스 레이어, multi-agent, RAG, 멀티모달)을 깊이 파고드는 중이다. 인생 좌우명도 「Bugs are just features in disguise」에서 「명확하게 논의하고 실제로 돌아가게 만드는 게, API를 외우는 것보다 값지다」로 업그레이드됐다. 코딩 외에도 지식 공유와 보드게임을 사랑하고, 최신 취미는 AI와 함께 pair programming 하기(그리고 그것이 사고 치면 뒷수습하는 담당)다. 내 GitHub에 오신 것을 환영한다, Code와 AI의 세계에서 함께 모험하자!"
           }
         }
       }

@@ -158,6 +158,7 @@ class HierarchicalSkillTree {
             'backend': '#10B981',       // 鮮豔綠色
             'devops': '#F59E0B',        // 鮮豔橘色
             'blockchain': '#8B5CF6',    // 鮮豔紫色
+            'ai': '#06B6D4',            // 鮮豔青色
             'personal': '#EF4444'       // 鮮豔紅色
         };
 
@@ -230,7 +231,7 @@ class HierarchicalSkillTree {
                     id: 'frontend',
                     name: skillNames.frontend || '前端技術',
                     angle: -90,
-                    distance: 250,
+                    distance: 300,
                     color: '#3B82F6',
                     children: [
                         {
@@ -287,8 +288,8 @@ class HierarchicalSkillTree {
                 {
                     id: 'backend',
                     name: skillNames.backend || '後端技術',
-                    angle: -18,
-                    distance: 250,
+                    angle: -30,
+                    distance: 300,
                     color: '#10B981',
                     children: [
                         {
@@ -350,8 +351,8 @@ class HierarchicalSkillTree {
                 {
                     id: 'devops',
                     name: skillNames.devops || 'DevOps',
-                    angle: 54,
-                    distance: 250,
+                    angle: 30,
+                    distance: 300,
                     color: '#F59E0B',
                     children: [
                         {
@@ -397,8 +398,8 @@ class HierarchicalSkillTree {
                 {
                     id: 'blockchain',
                     name: skillNames.blockchain || '區塊鏈',
-                    angle: 126,  // 左下方
-                    distance: 250,
+                    angle: 150,  // 左下方
+                    distance: 300,
                     color: '#8B5CF6',
                     children: [
                         {
@@ -436,10 +437,63 @@ class HierarchicalSkillTree {
                     ]
                 },
                 {
+                    id: 'ai',
+                    name: skillNames.ai || 'AI 應用',
+                    angle: 90,  // 正下方
+                    distance: 300,
+                    color: '#06B6D4',
+                    children: [
+                        {
+                            id: 'ai-tools',
+                            name: skillNames.ai_tools || 'AI 工具',
+                            angle: -30,
+                            distance: 380,
+                            children: [
+                                { id: 'claude-code', name: skillNames.claude_code || 'Claude Code', level: 9, angle: -32, distance: 125 },
+                                { id: 'codex', name: skillNames.codex || 'Codex', level: 8, angle: 0, distance: 120 },
+                                { id: 'gemini', name: skillNames.gemini || 'Gemini', level: 5, angle: 32, distance: 125 }
+                            ]
+                        },
+                        {
+                            id: 'ai-gen',
+                            name: skillNames.ai_gen || '生成式 AI',
+                            angle: -13,
+                            distance: 200,
+                            children: [
+                                { id: 'image-gen', name: skillNames.image_gen || '圖片生成', level: 6, angle: -32, distance: 125 },
+                                { id: 'video-gen', name: skillNames.video_gen || '影片生成', level: 5, angle: 0, distance: 120 },
+                                { id: 'music-gen', name: skillNames.music_gen || '音樂生成', level: 5, angle: 32, distance: 125 }
+                            ]
+                        },
+                        {
+                            id: 'ai-rag',
+                            name: skillNames.ai_rag || '檢索 / RAG',
+                            angle: 13,
+                            distance: 320,
+                            children: [
+                                { id: 'rag', name: skillNames.rag || 'RAG', level: 8, angle: -32, distance: 125 },
+                                { id: 'vector-search', name: skillNames.vector_search || '向量檢索', level: 7, angle: 0, distance: 120 },
+                                { id: 'reranker', name: skillNames.reranker || 'Reranker', level: 7, angle: 32, distance: 125 }
+                            ]
+                        },
+                        {
+                            id: 'ai-agent',
+                            name: skillNames.ai_agent || 'Agent / 模型',
+                            angle: 39,
+                            distance: 200,
+                            children: [
+                                { id: 'multi-agent', name: skillNames.multi_agent || 'Multi-agent', level: 7, angle: -32, distance: 125 },
+                                { id: 'mcp', name: skillNames.mcp || 'MCP', level: 7, angle: 0, distance: 120 },
+                                { id: 'local-model', name: skillNames.local_model || '本地模型', level: 5, angle: 32, distance: 125 }
+                            ]
+                        }
+                    ]
+                },
+                {
                     id: 'personal',
                     name: skillNames.personal || '生活技能',
-                    angle: -162,  // 左上方 (-162 = 198 - 360)
-                    distance: 250,
+                    angle: -150,  // 左上方 (-150 = 210 - 360)
+                    distance: 300,
                     color: '#EF4444',
                     children: [
                         {

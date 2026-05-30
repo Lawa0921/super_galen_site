@@ -155,11 +155,19 @@ class InteractiveBook {
                 content: null
             });
             
-            // 內容頁
+            // 內容頁（長內容自動拆成多頁，避免一頁塞太多）
             chapter.content.forEach(item => {
-                this.pages.push({
-                    type: 'content',
-                    item: item
+                const parts = this.splitDescription(item.description, 180);
+                parts.forEach((part, i) => {
+                    this.pages.push({
+                        type: 'content',
+                        item: {
+                            date: item.date,
+                            title: item.title,
+                            description: part,
+                            showHeader: i === 0
+                        }
+                    });
                 });
             });
         });
@@ -478,6 +486,37 @@ class InteractiveBook {
         }
     }
     
+    // 把長描述依句末標點平衡切成多段，避免一頁塞太多、也避免出現過短的孤兒頁
+    splitDescription(text, maxLen) {
+        if (!text || text.length <= maxLen) return [text || ''];
+        // 句末標點優先，超長句再用逗號／冒號當次要切點，讓每頁字數更平均
+        const sentences = text.split(/(?<=[。！？!?，、：；])/).filter(Boolean);
+        // 先算要切幾頁，再用平均長度當目標，讓每頁字數接近
+        const pages = Math.max(2, Math.ceil(text.length / maxLen));
+        const target = Math.ceil(text.length / pages);
+        const chunks = [];
+        let buf = '';
+        for (const s of sentences) {
+            if (buf && (buf + s).length > target && chunks.length < pages - 1) {
+                chunks.push(buf);
+                buf = s;
+            } else {
+                buf += s;
+            }
+        }
+        if (buf) chunks.push(buf);
+        // 單句本身仍超長時硬切
+        const out = [];
+        for (const c of chunks) {
+            if (c.length <= maxLen * 1.4) {
+                out.push(c);
+            } else {
+                for (let i = 0; i < c.length; i += maxLen) out.push(c.slice(i, i + maxLen));
+            }
+        }
+        return out.length ? out : [text];
+    }
+
     renderPageContent(page) {
         if (!page) return '';
         
@@ -489,11 +528,14 @@ class InteractiveBook {
             `;
         } else if (page.type === 'content') {
             const item = page.item;
+            const header = item.showHeader === false
+                ? `<h3 class="timeline-title timeline-title-cont">${item.title}（續）</h3>`
+                : `<span class="timeline-date">${item.date}</span>
+                        <h3 class="timeline-title">${item.title}</h3>`;
             return `
                 <div class="chapter-content">
                     <div class="timeline-entry">
-                        <span class="timeline-date">${item.date}</span>
-                        <h3 class="timeline-title">${item.title}</h3>
+                        ${header}
                         <p class="timeline-description">${item.description}</p>
                     </div>
                 </div>

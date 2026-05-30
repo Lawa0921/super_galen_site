@@ -735,6 +735,7 @@ export const ja = {
     personal_desc: 'ライフスキル大集合、人生はコードを書くだけじゃない！',
     descriptions: {
       root: 'フルスタックエンジニア。フロントエンドのエフェクトからデータベースの最適化、スマートコントラクトから水道工事まで、基本的にはテック界のスイスアーミーナイフ！',
+      ai: 'AI応用作戦センター！僕の役割は自分でAIアルゴリズムをゴリゴリ書くことじゃなく（それはAIチームのお仕事）、AIツールを使い倒し、要件を整理し、プロジェクトの方向を牽引すること。そして曖昧なアイデアを本当にリリースできる落とし込み案へ——連携統合、DBパフォーマンス、可観測性、地雷の尻拭いまで全部まとめて一気通貫！',
       frontend: 'フロントエンド技術本拠地、Webページを美しく使いやすくする専門部隊。HTMLを手書きから各種フレームワークまで、ユーザーの目を輝かせるものはここにすべて揃っている！',
       backend: 'バックエンド技術司令部、すべてのデータの生殺与奪を掌握。Ruby on Railsがメインアタッカー、時々Elixirで必殺技、サーバーを安定かつ高速に！',
       devops: 'DevOps武器庫、コードをローカルからクラウドへ飛ばす専門家。Gitは基本、AWSがメイン戦場、自動デプロイは得意技で、リリースが呼吸のように自然に！',
@@ -762,10 +763,8 @@ export const ja = {
       git: 'Gitバージョン管理の神、数え切れない開発者を救った。commit、push、pullは基本、rebaseとcherry-pickは上級技、でも絶対mainにforce pushしない！',
       github: 'GitHubコードSNS、オープンソース世界の中心。Pull Requestは日常、Issueはコミュニケーション手段、緑の四角は達成感の源！',
       aws: 'AWS雲帝国、サービスが数え切れない。EC2は基本、S3はストレージ、Lambdaは新玩具、でも請求書は注意深く見る！',
-      docker: 'Dockerコンテナマスター、アプリケーションをどこでも実行。一度パッケージ化すればどこでもデプロイ、環境不一致問題とはさようなら！',
       ansible: 'Ansible自動化構成マスター、サーバー管理を簡単に。YAML記法は直感的、バッチデプロイはもう悪夢じゃない！',
       terraform: 'Terraform Infrastructure as Codeエキスパート、クラウドリソースもバージョン管理。IaCが信念、ワンクリックでクラウド帝国を構築！',
-      automation: '自動デプロイ専門家、リリースはもう悪夢じゃない。ワンクリックデプロイは基本、ゼロダウンタイム更新が目標！',
       cicd: 'CI/CD継続的インテグレーション・デプロイ、コードを開発からリリースまで一気通貫。自動テスト、自動デプロイ、開発者解放の道！',
       github_actions: 'GitHub Actionsワークフロー自動化の神器、GitHub上で直接CI/CD実行。YAML設定はシンプル、機能は超強力！',
       solidity: 'Solidityスマートコントラクト言語、コードを法律に変える。慎重に書かないと、バグが数百万の価値、でも達成感も満点！',
@@ -802,7 +801,19 @@ export const ja = {
       blockchain_dapp: 'DApp開発本拠地、各種ブロックチェーンアプリケーション。Token、DAO、DEXが並んで、すべて分散型の未来！',
       personal_hobbies: '趣味特技大集合、ボードゲームからキャンプ、水道工事から小説執筆まで。人生はコードだけじゃない、もっと楽しみがある！',
       personal_skills: 'プロフェッショナルスキル三巨頭、カスタマーサービス、チームワーク、問題解決。ソフトスキルもスキル、時にはハードスキルより重要！',
-      personal_creative: '創作魂燃焼中、ゲーム評論家が独り占め。文字でゲーム世界を記録、もっと多くの人に良いゲームを知らせる！'
+      personal_creative: '創作魂燃焼中、ゲーム評論家が独り占め。文字でゲーム世界を記録、もっと多くの人に良いゲームを知らせる！',
+      multi_agent: '大勢のAI agentに分業させて協働させる、決して疲れたと言わないチームを率いている感覚（たまに集団で幻覚を見るけど）。',
+      rag: 'AIに外付けメモリを付ける係：BM25＋ベクトル検索＋reranker。答える前に正しい資料を見に行かせて、その場の創作をさせない。',
+      claude_code: '主力のAIペア相棒。コード調査からテスト書き、リファクタまで丸投げして下書きさせ、私はチェック係——生産性は倍増、でも鍋は結局私が背負う。',
+      codex: 'もう一匹のAIコーディング助手、Claude Codeと交代で使う。モデルが違えば気性も違う、手に馴染んだほうを使うだけ。',
+      vector_search: 'テキストをベクトルに変えて、類似度で一番関連するデータを探し出す。pgvectorは良き友、AIに答える前に正しい本を引かせる。',
+      reranker: '検索したあともう一度並べ替えて、本当に関連するものを前に出す。一回目の検索は網を撒く感じ、rerankerは魚を選ぶ感じ。',
+      mcp: 'Model Context Protocol——AIツールを各種データソースやツールに繋ぐ標準インターフェース、AIはこれでもう口だけじゃなくなる。',
+      gemini: 'GoogleのGemini、なんとなく分かる程度——画像生成やマルチモーダル処理に使ったり、もう一つの比較用AIの頭脳として。深いところはまだ勉強中。',
+      image_gen: 'AIで画像生成（Nano Banana・Imagen・ComfyUIあのあたり）はだいたい触れる。一行のpromptが一枚の絵に、満足いくまで調整するのにたいてい何度も試す。',
+      video_gen: 'AI動画生成はなんとなく分かる程度、画像を動かしたりカットを繋いだりの感覚。品質はまだモデルと一緒に進化中。',
+      music_gen: 'AIでBGMや劇伴を作る（Sunoあのへん）のはだいたい流れを理解。demoが静かじゃなくなる、でも交響曲は期待しないで。',
+      local_model: '自分のマシンでlocal LLM／モデルを動かす（Ollamaあのへん）のはだいたい理解。データは外に出ないしクラウドも要らない、欠点は電気代とグラボの涙。'
     },
     names: {
       frontend: 'フロントエンド技術',
@@ -832,10 +843,8 @@ export const ja = {
       git: 'Git',
       github: 'GitHub',
       aws: 'AWS',
-      docker: 'Docker',
       terraform: 'Terraform',
       ansible: 'Ansible',
-      automation: '自動デプロイ',
       cicd: 'CI/CD',
       github_actions: 'GitHub Actions',
       solidity: 'Solidity',
@@ -866,13 +875,29 @@ export const ja = {
       devops_vcs: 'バージョン管理',
       devops_cloud: 'クラウドサービス',
       devops_infrastructure: '基礎設施',
-      devops_cicd: 'CI/CD',
       blockchain_core: 'スマートコントラクト',
       blockchain_tools: '開発ツール',
       blockchain_dapp: 'DApp開発',
       personal_hobbies: '趣味特技',
       personal_skills: 'プロフェッショナルスキル',
-      personal_creative: '創作活動'
+      personal_creative: '創作活動',
+      ai: 'AI応用',
+      multi_agent: 'Multi-agent',
+      rag: 'RAG',
+      ai_tools: 'AIツール',
+      ai_rag: '検索 / RAG',
+      ai_agent: 'Agent / プロトコル',
+      claude_code: 'Claude Code',
+      codex: 'Codex',
+      vector_search: 'ベクトル検索',
+      reranker: 'Reranker',
+      mcp: 'MCP',
+      ai_gen: '生成AI',
+      gemini: 'Gemini',
+      image_gen: '画像生成',
+      video_gen: '動画生成',
+      music_gen: '音楽生成',
+      local_model: 'ローカルモデル'
     }
   },
   status_info: {
@@ -894,9 +919,9 @@ export const ja = {
   },
   story: {
     title: '冒険者プロファイル',
-    intro1: '無能からエンジニアへの進化の道、これは挑戦と成長に満ちた冒険物語...',
-    intro2: 'かつてプログラミングについて何も知らないマグルだったが、絶え間ない学習と実践を通じて、今では一人で立てるフルスタック開発者になった。',
-    intro3: '複雑な技術概念をわかりやすい教育コンテンツに変換することが得意で、新しい技術を探求し、実際のプロジェクトに適用することを愛している。',
+    intro1: 'ポンコツからエンジニアへ、そして「AIを使いこなし、方向性を示し、現実に落とし込める」人間へ——これは今もアップデートが続く冒険譚...',
+    intro2: 'かつてはプログラミングが一切わからないマグルだったが、今では一人でフルスタックを書けるだけでなく、AIの波の先頭に立って、ぼんやりしたアイデアを「実際に作れる計画」へと議論で練り上げるのが得意になった。',
+    intro3: '私の強みは自分でAIアルゴリズムを書くことではなく、AIツールを深く使い倒し、ビジネスと技術の間を翻訳し、プロジェクトの方向性を導き、それを本当にリリースまで落とし込むことだ。',
     timeline_start: 'プログラミング冒険の旅を始める',
     timeline_first_project: '最初の商業プロジェクトを完了',
     timeline_blockchain: 'ブロックチェーン開発に参加'
@@ -973,8 +998,13 @@ export const ja = {
           },
           event_1: {
             date: '2024.12-現在',
-            title: 'JTCG：Railsの不死鳥の再生',
-            description: 'AI技術会社に入社し、Ruby on Railsの懐に戻った。Stimulus + Hotwireでフロントエンドを開発。Line APIと統合してAIチャットボットを作成し、毎日ボットと会話してテスト（人と話すより多いことも）。コアAI製品を維持し、サーバーのダウンタイムを<0.1%に保つ - つまり、私の休憩時間はサーバーより少ない。今の私：Tailwindを書きすぎて眼圧上昇、GitはDNAに組み込まれた。'
+            title: 'JTCG：AIの波の上の翻訳こんにゃくと道案内人',
+            description: 'AIテック企業に入社し、AIカスタマーサポート製品を担当。ここでの私の超能力は「自分でAIアルゴリズムを書くこと」——それはAIチームの仕事——ではなく、ビジネス・カスタマーサポート・RDの三者の間を行き来して翻訳する人になることだ。「社長がAIをもっと賢くしたい」を「結局どの検索条件をいじって、どのログを足して、どのプラットフォームをつなぐのか」へと噛み砕き、実際に作れてリリースできる落とし込み案を出す。AIツールを深く使って開発を補助し、POCで実現可能性を検証し（LINE OAのイベントをLINE WORKSへクロスプラットフォーム転送するのを一発で通したり）、アーキテクチャの意思決定で方向性を示す。実際に自分の手を動かしたのは、LINE／MessengerなどのチャネルとSHOPLINE／91APPなどのECプラットフォームの連携統合、商品検索のDBインデックスとSQLを書き直してコールドスタートを35秒から0.3秒へ落とすこと、すべてのLLM呼び出しにLangfuseの可観測性とtoken使用量を仕込むこと、E2Eを書くこと、チームメイトのPRをreviewすること。本番環境でP0が爆発したときは、まず重大度を切り分け、根本原因を追い、ロールバックかホットフィックスかを決めるのが私だ。一言でいえば、AIを「響きはイケてる」から「本当にリリースできて、しかも保守できる」へと変えるのが私の役目。'
+          },
+          event_2: {
+            date: '2024-現在',
+            title: '房雲端 RoomCloud：自分のプロダクト、AIは丼ごと自分で出す',
+            description: 'キャンプ場「密式旅行」を運営して溜め込んだ血と涙を、本当にリリースされた宿泊業SaaS——房雲端 RoomCloud（roomcloud.cc）に変えた。ホテル、部屋タイプ、予約、料金と在庫から、自分でつないだAIカスタマーサポート、ナレッジベース、フロー編集ツール、LINE／FB／IGのwebhookまで、ひとりで要件定義、Phoenix LiveViewのUI、pgvectorのベクトル検索、そしてKamal + Dockerでのデプロイ・リリースまで一気通貫で書き上げた。ここではAIは他人のアルゴリズムじゃない——自分で丼ごとテーブルに運んできたものだ（とはいえアルゴリズムを発明したわけでも、モデルを訓練したわけでもなく、AIを自分のプロダクトに応用・連携・統合しただけ）。ついでに、いまあなたが見ているこのSuperGalen Dungeon（Astro + Three.js + Web3のゲーミフィケーション・ポートフォリオ）も作り、おまけに自前のローカルAIツールチェーン（LLMサービス層、multi-agent、RAG）を家でこっそり鍛えている。'
           }
         }
       },
@@ -983,13 +1013,13 @@ export const ja = {
         events: {
           event_0: {
             date: '現在のスキルツリー',
-            title: 'フルスタックエンジニアの武器庫',
-            description: 'フロントエンド：HTML/CSS/JS基礎、jQuery、Bootstrap + Tailwind（CSSフレームワーク二刀流）。バックエンド：Ruby on Rails（初恋）、Elixir Phoenix（関数型の洗礼）、Node.js（自動化スクリプトの良き相棒）。ブロックチェーン：Solidity（1行のコードがお金）、Hardhat（テストが財布を救った）、ethers.js（オンチェーンとオフチェーンの橋）。DevOps：Terraform/Ansible（サーバーもバージョン管理可能に）、Git（既に筋肉記憶）。'
+            title: 'フルスタック × AI応用の武器庫',
+            description: 'フロントエンド：HTML/CSS/JSの基礎、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。バックエンド：Ruby on Rails（初恋）、Elixir Phoenix（関数型の洗礼）、Node.js（自動化の良き相棒）、PostgreSQL（インデックスがパフォーマンスを救った）。ブロックチェーン：Solidity、Hardhat、ethers.js。DevOps：Terraform/Ansible、Git（既に筋肉記憶）。AI応用：Claude Codeなどのツールを深く使って開発を補助、ローカルLLMのサービス層を自前で立ててmulti-agentやRAGを試す、LLM APIとベクトル検索の連携、Langfuseでtokenがいくら燃えているか見張る。だが最強の武器はどれかのフレームワークが使えることではなく、ぼんやりしたAIのアイデアを議論で明確にして、現実に落とせる計画へ変えられること。'
           },
           event_1: {
             date: '次の章',
             title: 'npm install future',
-            description: '将来の計画？人生のデバッグを続ける！現在AI開発とBMADプロセスを学習中。人生のモットー：「Bugs are just features in disguise」。コーディング以外にも、知識の共有（他人にデバッグを教えることで自分が本当に理解しているか確認できる）、ボードゲーム（戦略ゲームで論理的思考を鍛える）、新しい趣味はAIとのおしゃべり。私のGitHubへようこそ、一緒にコードの世界で冒険しよう！'
+            description: '将来の計画？AIを「demoはイケてる」から「本当にリリースできる」へ変え続けること。今はagentic開発フローと、自前のAIツールチェーン（ローカルLLMのサービス層、multi-agent、RAG、マルチモーダル）を深掘り中。人生のモットーも「Bugs are just features in disguise」から「議論で明確にできて、現実に落とせることは、APIを暗記できることより価値がある」へとアップグレード。コーディング以外にも、知識の共有やボードゲームが大好きで、最新の趣味はAIとのペアプログラミング（そして、AIがやらかしたときに尻拭いする係）。私のGitHubへようこそ、CodeとAIの世界で一緒に冒険しよう！'
           }
         }
       }

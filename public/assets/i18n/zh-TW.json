@@ -838,6 +838,7 @@
     "personal_desc": "生活技能大雜燴，證明人生不只有寫程式",
     "descriptions": {
       "root": "全端工程師一枚，上至前端特效、下至資料庫優化，左能寫智能合約、右能修水電，基本上就是個科技界的瑞士刀！",
+      "ai": "AI 應用作戰中心！我的角色不是自己刻 AI 演算法（那是 AI 團隊的活），而是深度使用 AI 工具、釐清需求、引領專案方向，再把模糊的點子變成真的上得了線的落地方案——串接整合、DB 效能、觀測性、踩雷收尾一條龍。",
       "frontend": "前端技術大本營，專門負責讓網頁變得漂亮又好用。從手刻 HTML 到玩轉各種框架，只要是能讓用戶眼睛一亮的東西，這裡都有！",
       "backend": "後端技術指揮中心，掌管著所有數據的生死大權。Ruby on Rails 是主力輸出，偶爾使用 Elixir 放大絕，讓伺服器不只穩定，還要飛快！",
       "devops": "DevOps 武器庫，專門負責讓程式碼從本地飛到雲端。Git 是基本功，AWS 是主戰場，自動化部署更是拿手絕活，讓上線如呼吸般自然！",
@@ -865,10 +866,8 @@
       "git": "Git 版本控制大神，救了無數開發者的命。commit、push、pull 是基本功，rebase 和 cherry-pick 是進階技，但永遠不要 force push 到 main！",
       "github": "GitHub 程式碼社交平台，開源世界的中心。Pull Request 是日常，Issue 是溝通管道，綠色方格是成就感的來源！",
       "aws": "AWS 雲端帝國，服務多到數不清。EC2 是基本款，S3 是儲存庫，Lambda 是新玩具，但帳單要小心看！",
-      "docker": "Docker 容器大師，讓應用程式到處都能跑。一次打包，到處部署，環境不一致問題從此說掰掰！",
       "ansible": "Ansible 自動化配置大師，讓伺服器管理變得簡單。YAML 寫法直觀易懂，批量部署不再是夢魘！",
       "terraform": "Terraform 基礎設施即程式碼專家，讓雲端資源也能版本控制。Infrastructure as Code 是信念，一鍵建立雲端帝國！",
-      "automation": "自動化部署專家，讓上線不再是惡夢。一鍵部署是基本，零停機更新是追求，半夜不用起來改 bug 真好！",
       "cicd": "CI/CD 持續整合持續部署，讓程式碼從開發到上線一氣呵成。自動測試、自動部署，開發者的解放之道！",
       "github_actions": "GitHub Actions 工作流程自動化神器，在 GitHub 上直接跑 CI/CD。YAML 配置簡單，功能強大無比！",
       "solidity": "Solidity 智能合約語言，讓程式碼變成法律。寫起來要小心翼翼，因為 bug 可能值幾百萬，但成就感也是滿滿！",
@@ -905,7 +904,19 @@
       "blockchain_dapp": "DApp 開發大本營，各種區塊鏈應用都在這。Token、DAO、DEX 一字排開，都是去中心化的未來！",
       "personal_hobbies": "興趣專長大集合，從桌遊到露營，從修水電到寫小說。人生不只有程式碼，還有更多樂趣！",
       "personal_skills": "專業技能三巨頭，客服、團隊、解決問題。軟實力也是實力，有時候比硬技能更重要！",
-      "personal_creative": "創作魂燃燒中，遊戲評論家獨挑大樑。用文字記錄遊戲世界，讓更多人知道好遊戲！"
+      "personal_creative": "創作魂燃燒中，遊戲評論家獨挑大樑。用文字記錄遊戲世界，讓更多人知道好遊戲！",
+      "multi_agent": "讓一群 AI agent 分工合作，像在帶一個永遠不喊累的團隊（只是偶爾會集體幻覺）。",
+      "rag": "幫 AI 配一個外接記憶體：BM25＋向量檢索＋reranker，讓它回答前先去翻對的資料，而不是當場創作。",
+      "claude_code": "我的主力 AI 結對夥伴。從查 code、寫測試到重構，丟給它打草稿、我負責把關——生產力翻倍，鍋還是我背。",
+      "codex": "另一隻 AI 編碼幫手，跟 Claude Code 換手用。不同模型不同脾氣，誰順手就用誰。",
+      "vector_search": "把文字變成向量、用相似度找出最相關的資料。pgvector 是好朋友，讓 AI 回答前先翻對的書。",
+      "reranker": "檢索完再排一次序，把真正相關的往前丟。第一次檢索像撒網，reranker 像挑魚。",
+      "mcp": "Model Context Protocol——讓 AI 工具接上各種資料源與工具的標準接口，AI 從此不只是嘴砲。",
+      "gemini": "Google 的 Gemini，我略懂——拿來生圖、處理多模態、當另一顆比價的 AI 大腦。更深的還在補課中。",
+      "image_gen": "用 AI 生圖（Nano Banana、Imagen、ComfyUI 那一掛）大概會。一句 prompt 變一張圖，調到滿意通常要試很多次。",
+      "video_gen": "AI 影片生成略懂，知道怎麼讓圖動起來、串個鏡頭。品質還在跟模型一起進化。",
+      "music_gen": "用 AI 生背景音樂／配樂（Suno 那類）大概理解流程。讓 demo 不再安靜，但別期待我寫交響樂。",
+      "local_model": "在自己機器上跑 local LLM／模型（Ollama 那套）大概理解。資料不外流、不用上雲，缺點是電費和顯卡的眼淚。"
     },
     "names": {
       "frontend": "前端技術",
@@ -935,10 +946,8 @@
       "git": "Git",
       "github": "GitHub",
       "aws": "AWS",
-      "docker": "Docker",
       "terraform": "Terraform",
       "ansible": "Ansible",
-      "automation": "自動化部署",
       "cicd": "CI/CD",
       "github_actions": "GitHub Actions",
       "solidity": "Solidity",
@@ -969,28 +978,29 @@
       "devops_vcs": "版本控制",
       "devops_cloud": "雲端服務",
       "devops_infrastructure": "基礎設施",
-      "devops_cicd": "CI/CD",
       "blockchain_core": "智能合約",
       "blockchain_tools": "Web3 工具",
       "blockchain_dapp": "DApp 開發",
       "personal_hobbies": "興趣專長",
       "personal_skills": "專業技能",
       "personal_creative": "創作能力",
-      "framework_tools": "框架工具",
-      "backend_tech": "後端技術",
-      "database": "資料庫",
-      "architecture_design": "架構設計",
-      "version_control": "版本控制",
-      "cloud_services": "雲端服務",
-      "infrastructure_as_code": "基礎設施即代碼",
-      "blockchain_tech": "區塊鏈",
-      "smart_contracts": "智能合約",
-      "life_skills": "生活技能",
-      "hobbies": "興趣專長",
-      "boardgame_master": "桌遊大師",
-      "novel_writer": "小說創作者",
-      "professional_skills": "專業技能",
-      "creative": "創作"
+      "ai": "AI 應用",
+      "multi_agent": "Multi-agent",
+      "rag": "RAG",
+      "ai_tools": "AI 工具",
+      "ai_rag": "檢索 / RAG",
+      "ai_agent": "Agent / 協定",
+      "claude_code": "Claude Code",
+      "codex": "Codex",
+      "vector_search": "向量檢索",
+      "reranker": "Reranker",
+      "mcp": "MCP",
+      "ai_gen": "生成式 AI",
+      "gemini": "Gemini",
+      "image_gen": "圖片生成",
+      "video_gen": "影片生成",
+      "music_gen": "音樂生成",
+      "local_model": "本地模型"
     }
   },
   "status_info": {
@@ -1012,9 +1022,9 @@
   },
   "story": {
     "title": "冒險者檔案",
-    "intro1": "從廢物到工程師的進化之路，這是一個充滿挑戰與成長的冒險故事...",
-    "intro2": "曾經是個對程式一竅不通的麻瓜，經過不斷的學習與實戰，如今已成為能夠獨當一面的全端開發者。",
-    "intro3": "擅長將複雜的技術概念轉化為易懂的教學內容，同時熱愛探索新技術，將其應用於實際專案中。",
+    "intro1": "從廢物到工程師，再到「會用 AI、能帶方向、給得出落地方案」的人——這是一個還在持續更新的冒險故事...",
+    "intro2": "曾經是個對程式一竅不通的麻瓜，如今不只能獨當一面寫全端，更擅長站在 AI 浪頭上，把一個模糊的點子討論成做得出來的計畫。",
+    "intro3": "我的強項不是自己刻 AI 演算法，而是深度使用 AI 工具、在商業與技術之間翻譯、引領專案方向，並讓它真正落地上線。",
     "timeline_start": "踏上程式冒險之路",
     "timeline_first_project": "完成第一個商業專案",
     "timeline_blockchain": "加入區塊鏈開發行列"
@@ -1091,8 +1101,13 @@
           },
           "event_1": {
             "date": "2024.12-至今",
-            "title": "JTCG：Rails 的浴火重生",
-            "description": "加入 AI 科技公司，回歸 Ruby on Rails 的懷抱。使用 Stimulus + Hotwire 做前端。串接 Line API 做 AI 聊天機器人，每天跟 Bot 對話測試（有時比跟人說話還多）。維護核心 AI 產品，保持 <0.1% 的伺服器待機時間——意思是我的休息時間比伺服器還少。現在的我：Tailwind 寫到眼壓飆升，Git 已經融入 DNA。"
+            "title": "JTCG：AI 浪頭上的翻譯蒟蒻與領路人",
+            "description": "加入 AI 科技公司做 AI 客服產品。在這裡我的超能力不是「自己刻 AI 演算法」——那是 AI 團隊的活——而是當那個能在商業、客服、RD 三邊來回翻譯的人：把「老闆想要 AI 變更聰明」拆解成「到底要改哪個檢索條件、補哪段 log、串哪個平台」，再給出做得出來、上得了線的落地方案。我深度使用 AI 工具輔助開發、跑 POC 驗證可行性（像把 LINE OA 的事件跨平台轉發到 LINE WORKS 一次跑通）、在架構決策上提供方向；真正親手做的是串接整合 LINE／Messenger 等渠道與 SHOPLINE／91APP 等電商平台、把商品檢索的 DB 索引和 SQL 重寫到冷啟動從 35 秒掉到 0.3 秒、替所有 LLM 呼叫補上 Langfuse 觀測性與 token 用量、寫 E2E、review 隊友的 PR。正式環境爆 P0 的時候，我是先分級、追根因、決定退版還是熱修的那個人。一句話：我負責讓 AI 從「聽起來很潮」變成「真的能上線、還能維護」。"
+          },
+          "event_2": {
+            "date": "2024-至今",
+            "title": "房雲端 RoomCloud：自己的產品，AI 整碗自己端",
+            "description": "把經營露營區「密式旅行」累積的血淚，變成一個真的上線的旅宿 SaaS——房雲端 RoomCloud（roomcloud.cc）。從旅館、房型、訂房、房價庫存，到我自己接的 AI 客服、知識庫、流程編輯器、LINE／FB／IG webhook，一個人從需求、Phoenix LiveView 介面、pgvector 向量檢索，一路寫到用 Kamal + Docker 部署上線。在這裡 AI 不是別人的演算法——是我自己把它整碗端上桌的。順手還做了你正在看的這個 SuperGalen Dungeon（Astro + Three.js + Web3 的遊戲化作品集），外加一堆自架的本機 AI 工具鏈（LLM 服務層、multi-agent、RAG）在家偷練。"
           }
         }
       },
@@ -1101,13 +1116,13 @@
         "events": {
           "event_0": {
             "date": "技能樹現況",
-            "title": "全端工程師的武器庫",
-            "description": "前端：HTML/CSS/JS 基本功、jQuery、Bootstrap + Tailwind（CSS 框架二刀流）。後端：Ruby on Rails（初戀）、Elixir Phoenix（函數式的洗禮）、Node.js（寫自動化腳本的好夥伴）。區塊鏈：Solidity（每行 Code 都是錢）、Hardhat（測試救了我的錢包）、ethers.js（鏈上鏈下的橋樑）。DevOps：Terraform/Ansible（讓伺服器也能 version control）、Git（已經是肌肉記憶）。"
+            "title": "全端 × AI 應用的武器庫",
+            "description": "前端：HTML/CSS/JS 基本功、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。後端：Ruby on Rails（初戀）、Elixir Phoenix（函數式洗禮）、Node.js（自動化好夥伴）、PostgreSQL（索引救了我的效能）。區塊鏈：Solidity、Hardhat、ethers.js。DevOps：Terraform/Ansible、Git（肌肉記憶）。AI 應用：深度使用 Claude Code 等 AI 工具輔助開發、自架本機 LLM 服務層玩 multi-agent 與 RAG、串接 LLM API 與向量檢索、用 Langfuse 盯著 token 燒多少錢。但最強的武器不是會某個框架，而是能把一個模糊的 AI 點子討論清楚、變成可落地的計畫。"
           },
           "event_1": {
             "date": "下一章",
             "title": "npm install future",
-            "description": "未來的計劃？繼續 Debug 人生！正在學習 AI 開發、BMAD 流程。人生座右銘：「Bugs are just features in disguise」。除了寫 Code，也熱愛分享知識（教別人 Debug 才能確認自己真的會）、桌遊（策略遊戲訓練邏輯思維）、新的興趣是與 AI 打嘴砲。歡迎來到我的 GitHub，一起在 Code 的世界裡冒險！"
+            "description": "未來的計劃？繼續把 AI 從「demo 很潮」變成「真的能上線」。正在深挖 agentic 開發流程、自架 AI 工具鏈（本機 LLM 服務層、multi-agent、RAG、多模態）。人生座右銘從「Bugs are just features in disguise」升級成「能討論清楚、能落地，比會背 API 更值錢」。除了寫 code，也熱愛分享知識、桌遊，最新興趣是跟 AI 一起 pair programming（並負責在它出包時收尾）。歡迎來到我的 GitHub，一起在 Code 與 AI 的世界裡冒險！"
           }
         }
       }
