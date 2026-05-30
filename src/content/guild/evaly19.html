@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="紅光禪室 — Eva Chang 主理的 HAIRŌ 青溪館，桃園鎮撫街 166 號的智能洗髮店。360° 水柱、全程紅光、不搓不拉。讓忙碌的你，閉上眼睛，被好好地洗一次頭，重新充電 30 分鐘。">
+<title>紅光禪室 — Eva Chang · HAIRŌ 青溪館 · 桃園智能洗髮</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Shippori+Mincho:wght@500;600;700;800&family=Noto+Serif+TC:wght@300;500&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<style>
+:root{
+  /* ── warm cinematic darkness ── */
+  --void:#0C0706;
+  --char:#170E0A;
+  --char-2:#211511;
+  --ember:#E0492F;
+  --ember-glow:#FF6A4D;
+  --coral:#FF8E6E;
+  --cream:#F3E7D3;
+  --cream-2:#E8D6BC;
+  --cream-dim:rgba(243,231,211,.62);
+  --cream-faint:rgba(243,231,211,.34);
+  --gold:#C89254;
+  /* fonts */
+  --f-disp:'Fraunces',serif;
+  --f-jp:'Shippori Mincho',serif;
+  --f-tc:'Noto Serif TC',serif;
+  --f-mono:'JetBrains Mono',monospace;
+  --session:0; /* 0 = arrival, 1 = recharged — driven by page scroll */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html,body{overflow-x:clip;background:var(--void)}
+body{
+  font-family:var(--f-tc);font-weight:300;color:var(--cream);
+  line-height:1.95;letter-spacing:.015em;background:var(--void);
+}
+::selection{background:var(--ember);color:#fff}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* ── atmosphere layers ── */
+.ambient-dust{position:fixed;inset:0;z-index:2;pointer-events:none}
+.grain{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.40;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/></svg>")}
+.vignette{position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:radial-gradient(ellipse 120% 100% at 50% 42%, transparent 38%, rgba(8,4,3,calc(.5 - var(--session,0)*.12)) 100%)}
+/* warm room wash, lifts gently as the session deepens */
+.warmth{position:fixed;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(ellipse at 50% 30%, rgba(255,150,90,calc(var(--session,0)*.13)) 0%, transparent 60%)}
+
+.wrap{position:relative;z-index:5}
+section{position:relative}
+
+/* ============================================================
+   TOP FURNITURE
+============================================================ */
+.brandmark{position:fixed;top:22px;left:30px;z-index:92;display:flex;align-items:center;gap:11px;
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.34em;color:var(--cream);text-transform:uppercase;
+  mix-blend-mode:difference}
+.brandmark .o{color:var(--ember-glow)}
+.archive{position:fixed;top:20px;right:30px;z-index:92;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.26em;
+  color:var(--cream);padding:9px 15px;border:1px solid var(--cream-faint);text-transform:uppercase;transition:.35s;
+  background:rgba(12,7,6,.4);backdrop-filter:blur(8px)}
+.archive:hover{color:var(--void);background:var(--cream);border-color:var(--cream)}
+.archive i{margin-right:8px}
+
+
+/* chapter rail */
+.rail{position:fixed;right:26px;top:50%;transform:translateY(-50%);z-index:80;display:flex;flex-direction:column;gap:16px}
+.rail a{display:block;width:22px;height:22px;position:relative;cursor:pointer}
+.rail a::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:6px;height:6px;
+  border-radius:50%;border:1px solid var(--cream-faint);transition:.35s}
+.rail a::after{content:attr(data-label);position:absolute;right:28px;top:50%;transform:translateY(-50%);
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.2em;color:var(--ember-glow);opacity:0;white-space:nowrap;transition:.35s}
+.rail a:hover::after{opacity:.9}
+.rail a.on::before{background:var(--ember-glow);border-color:var(--ember-glow);box-shadow:0 0 0 4px rgba(224,73,47,.22),0 0 12px var(--ember-glow)}
+@media(max-width:980px){.rail{display:none}}
+
+/* ============================================================
+   §0  HERO — full-bleed cinematic sanctuary
+============================================================ */
+.hero{min-height:100svh;position:relative;display:flex;align-items:flex-end;overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-bg img{width:100%;height:100%;object-fit:cover;object-position:center 38%;
+  transform:scale(1.12);animation:kenburns 24s ease-in-out infinite alternate;will-change:transform}
+@keyframes kenburns{from{transform:scale(1.12) translate(0,0)}to{transform:scale(1.22) translate(-1.5%,-2%)}}
+.hero-bg::after{content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(180deg, rgba(12,7,6,.55) 0%, transparent 28%, transparent 46%, rgba(12,7,6,.72) 82%, var(--void) 100%),
+    linear-gradient(90deg, rgba(12,7,6,.66) 0%, transparent 52%)}
+.hero-leak{position:absolute;inset:0;z-index:1;pointer-events:none;object-fit:cover;width:100%;height:100%;
+  mix-blend-mode:screen;opacity:.5}
+
+.hero-inner{position:relative;z-index:3;padding:0 clamp(24px,7vw,110px) clamp(70px,12vh,130px);max-width:1500px;width:100%;margin:0 auto}
+.hero-kicker{font-family:var(--f-mono);font-size:11px;letter-spacing:.36em;color:var(--cream-2);text-transform:uppercase;
+  display:flex;align-items:center;gap:14px;margin-bottom:26px}
+.hero-kicker .blip{width:7px;height:7px;border-radius:50%;background:var(--ember-glow);box-shadow:0 0 10px var(--ember-glow);animation:blip 1.8s ease-in-out infinite}
+@keyframes blip{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+.hero-title{font-family:var(--f-jp);font-weight:700;font-size:clamp(38px,6.6vw,104px);line-height:1.04;letter-spacing:.01em;
+  color:var(--cream);text-shadow:0 4px 40px rgba(0,0,0,.6);margin-bottom:24px}
+.hero-title .rain{color:var(--ember-glow);position:relative;display:inline-block;text-shadow:0 0 30px rgba(255,106,77,.55)}
+.hero-title .rain::after{content:'';position:absolute;left:50%;top:100%;width:2px;height:0;background:linear-gradient(var(--ember-glow),transparent);
+  box-shadow:0 0 8px var(--ember-glow);animation:drip 3.4s ease-in 1.4s infinite}
+@keyframes drip{0%{height:0;opacity:0}12%{height:28px;opacity:1}40%,100%{height:28px;opacity:0;transform:translateY(34px)}}
+.hero-lead{font-family:var(--f-tc);font-weight:300;font-size:clamp(15px,1.4vw,19px);line-height:2.1;color:var(--cream-dim);
+  max-width:560px;margin-bottom:34px}
+.hero-lead strong{color:var(--cream);font-weight:500}
+.hero-lead .en{display:block;font-family:var(--f-disp);font-style:italic;font-weight:300;font-size:.92em;color:var(--coral);margin-top:10px;letter-spacing:.01em}
+.hero-cta-row{display:flex;flex-wrap:wrap;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:11px;padding:14px 26px;font-family:var(--f-mono);font-size:11px;
+  letter-spacing:.24em;text-transform:uppercase;transition:background .4s,border-color .4s,color .4s,box-shadow .4s;border:1px solid transparent}
+.btn-fill{background:var(--ember);color:#fff;box-shadow:0 14px 40px -16px rgba(224,73,47,.8)}
+.btn-fill:hover{background:var(--ember-glow);transform:translateY(-2px)}
+.btn-ghost{border-color:var(--cream-faint);color:var(--cream)}
+.btn-ghost:hover{border-color:var(--cream);background:rgba(243,231,211,.08);transform:translateY(-2px)}
+
+.scroll-cue{position:absolute;bottom:26px;right:clamp(24px,7vw,110px);z-index:3;
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.32em;color:var(--cream-dim);text-transform:uppercase;
+  writing-mode:vertical-rl;display:flex;align-items:center;gap:14px}
+.scroll-cue::after{content:'';width:1px;height:46px;background:linear-gradient(var(--cream-faint),transparent);animation:cueLine 2.4s ease-in-out infinite}
+@keyframes cueLine{0%,100%{opacity:.3;transform:scaleY(.6)}50%{opacity:1;transform:scaleY(1)}}
+@media(max-width:680px){.scroll-cue{display:none}}
+
+/* ============================================================
+   §1  MANIFESTO — water band + statement
+============================================================ */
+.manifesto{position:relative;padding:clamp(110px,16vh,200px) clamp(24px,7vw,110px);text-align:center;overflow:hidden}
+.manifesto-band{position:absolute;inset:0;z-index:0;overflow:hidden}
+.manifesto-band img{width:100%;height:130%;object-fit:cover;object-position:center;opacity:.5;will-change:transform}
+.manifesto-band::after{content:'';position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 70% at 50% 50%, transparent 30%, var(--void) 86%),
+  linear-gradient(180deg, var(--void), transparent 24%, transparent 76%, var(--void))}
+.manifesto-inner{position:relative;z-index:2;max-width:900px;margin:0 auto}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.36em;color:var(--ember-glow);text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:14px;margin-bottom:30px}
+.eyebrow::before,.eyebrow::after{content:'';width:40px;height:1px;background:rgba(255,106,77,.5)}
+.manifesto h2{font-family:var(--f-jp);font-weight:600;font-size:clamp(30px,4.6vw,62px);line-height:1.4;color:var(--cream);letter-spacing:.02em}
+.manifesto h2 em{font-style:normal;color:var(--ember-glow);text-shadow:0 0 24px rgba(255,106,77,.4)}
+.manifesto .sub{font-family:var(--f-disp);font-style:italic;font-weight:300;font-size:clamp(15px,1.4vw,20px);color:var(--cream-dim);margin-top:26px;letter-spacing:.01em}
+
+/* ============================================================
+   §2  RITUAL — the 30-min dial in the dark
+============================================================ */
+.ritual{position:relative}
+.ritual-track{height:480vh;position:relative}
+@media(max-width:880px){.ritual-track{height:440vh}}
+.ritual-sticky{position:sticky;top:0;height:100vh;display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:clamp(20px,4vw,64px);padding:0 clamp(24px,7vw,90px);overflow:hidden}
+@media(max-width:880px){.ritual-sticky{grid-template-columns:1fr;grid-auto-rows:min-content;gap:16px;padding:78px clamp(20px,6vw,38px) 36px;align-content:center}}
+.ritual-head{position:absolute;top:clamp(24px,6vh,60px);left:0;right:0;text-align:center;z-index:6;padding:0 24px}
+.ritual-head .sec-jp{font-size:clamp(20px,2.8vw,34px)}
+@media(max-width:880px){.ritual-head{position:static;margin-bottom:4px}}
+.sec-jp{font-family:var(--f-jp);font-weight:600;font-size:clamp(26px,3.6vw,46px);color:var(--cream);letter-spacing:.04em;line-height:1.2}
+.sec-en{font-family:var(--f-mono);font-size:11px;letter-spacing:.28em;color:var(--cream-faint);text-transform:uppercase;margin-top:12px}
+
+.rotary{position:relative;width:min(48vh,440px);aspect-ratio:1;margin:0 auto;justify-self:center}
+@media(max-width:880px){.rotary{width:min(38vh,260px)}}
+.rotary-disc{position:absolute;inset:0;border-radius:50%;mix-blend-mode:screen;will-change:transform}
+.rotary-disc img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.rotary-glow{position:absolute;inset:-14%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,106,77,.42) 0%,transparent 60%);
+  opacity:calc(.3 + var(--ritual,0)*.55);filter:blur(8px);transition:opacity .25s}
+.rotary-dots{position:absolute;inset:0;pointer-events:none;z-index:4}
+.rotary-dots .rd{position:absolute;left:50%;top:0;width:2px;height:50%;transform-origin:bottom center;transform:translateX(-50%) rotate(var(--a))}
+.rotary-dots .rd::before{content:'';position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:11px;height:11px;border-radius:50%;
+  background:rgba(243,231,211,.22);transition:.4s}
+.rotary-dots .rd.lit::before{background:var(--ember-glow);box-shadow:0 0 12px var(--ember-glow),0 0 0 4px rgba(224,73,47,.22)}
+.rotary-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;z-index:5;width:84%}
+.rotary-core::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:150%;height:120%;border-radius:50%;background:radial-gradient(ellipse,rgba(8,4,3,.6) 0%,transparent 68%);z-index:-1}
+.r-time{font-family:var(--f-disp);font-style:italic;font-weight:300;font-size:clamp(34px,5vw,58px);color:var(--cream);line-height:1;display:block;
+  text-shadow:0 0 26px rgba(120,32,28,.85),0 2px 4px rgba(0,0,0,.6);font-feature-settings:"tnum"}
+.r-label{font-family:var(--f-mono);font-size:9px;letter-spacing:.32em;color:var(--cream-dim);text-transform:uppercase;margin-top:8px;display:block;text-shadow:0 0 10px rgba(0,0,0,.7)}
+.ritual-cue{position:absolute;bottom:clamp(18px,4.5vh,42px);left:0;right:0;text-align:center;z-index:6;
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.3em;color:var(--cream-dim);text-transform:uppercase}
+.ritual-cue i{color:var(--ember-glow);margin:0 8px}
+@media(max-width:880px){.ritual-cue{display:none}}
+
+.reveal-stage{position:relative;min-height:min(56vh,440px);justify-self:stretch}
+@media(max-width:880px){.reveal-stage{min-height:auto;width:100%}}
+.rstep{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:16px;
+  opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease;pointer-events:none}
+@media(max-width:880px){.rstep{position:relative;transform:translateY(14px)}.rstep:not(.on){display:none}}
+.rstep.on{opacity:1;transform:translateY(0);pointer-events:auto}
+.rstep-img{position:relative;border:1px solid rgba(243,231,211,.16);overflow:hidden;aspect-ratio:16/9;max-height:38vh}
+@media(max-width:880px){.rstep-img{max-height:30vh}}
+.rstep-img img{width:100%;height:100%;object-fit:cover}
+.rstep-img::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(12,7,6,.7))}
+.rstep-img .clk{position:absolute;left:14px;bottom:11px;font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--coral);text-transform:uppercase;z-index:2}
+.rstep h3{font-family:var(--f-jp);font-weight:600;font-size:clamp(21px,2.3vw,30px);color:var(--cream);letter-spacing:.02em}
+.rstep h3 .idx{font-family:var(--f-disp);font-style:italic;color:var(--ember-glow);margin-right:12px}
+.rstep p{font-size:14.5px;line-height:2;color:var(--cream-dim);font-weight:300;max-width:480px}
+
+/* ============================================================
+   §3  CARE — hands-towel split + three services
+============================================================ */
+.care{position:relative}
+.care-hero{position:relative;min-height:78vh;display:flex;align-items:center;overflow:hidden}
+.care-hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.care-hero-bg img{width:100%;height:100%;object-fit:cover;object-position:center;will-change:transform}
+.care-hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--void) 8%,rgba(12,7,6,.4) 48%,transparent 78%)}
+.care-hero-inner{position:relative;z-index:2;padding:clamp(60px,9vh,120px) clamp(24px,7vw,110px);max-width:680px}
+.care-hero-inner .eyebrow{margin-bottom:24px}
+.care-hero-inner h2{font-family:var(--f-jp);font-weight:600;font-size:clamp(28px,3.8vw,52px);line-height:1.3;color:var(--cream);letter-spacing:.02em;margin-bottom:18px}
+.care-hero-inner h2 em{font-style:normal;color:var(--ember-glow)}
+.care-hero-inner p{font-size:15px;line-height:2.05;color:var(--cream-dim);max-width:480px}
+
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(243,231,211,.1);
+  max-width:1280px;margin:0 auto;border:1px solid rgba(243,231,211,.1);perspective:1100px}
+@media(max-width:860px){.svc-grid{grid-template-columns:1fr}}
+.svc{background:var(--char);padding:46px 38px 52px;position:relative;transition:background .45s;overflow:hidden;transform-style:preserve-3d}
+.svc::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(224,73,47,.14),transparent 60%);opacity:0;transition:.5s}
+.svc:hover{background:var(--char-2)}
+.svc:hover::before{opacity:1}
+.svc .no{font-family:var(--f-mono);font-size:10px;letter-spacing:.36em;color:var(--gold);text-transform:uppercase;margin-bottom:26px}
+.svc .ic{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:22px;
+  border:1px solid rgba(255,106,77,.35);background:radial-gradient(circle,rgba(224,73,47,.18),transparent 70%)}
+.svc .ic i{font-size:23px;color:var(--ember-glow)}
+.svc h3{font-family:var(--f-jp);font-weight:600;font-size:clamp(20px,2vw,27px);color:var(--cream);margin-bottom:4px;letter-spacing:.02em}
+.svc h3 .en{display:block;font-family:var(--f-disp);font-style:italic;font-weight:300;font-size:.56em;color:var(--gold);margin-top:4px;letter-spacing:.02em}
+.svc p{font-size:14.5px;line-height:2.05;color:var(--cream-dim);font-weight:300;margin-top:20px}
+.svc .tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:22px}
+.svc .tag{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.16em;color:var(--cream-faint);padding:4px 10px;border:1px solid rgba(243,231,211,.16);text-transform:uppercase}
+
+/* maintenance / principles strip */
+.principles{padding:clamp(80px,11vh,140px) clamp(24px,7vw,110px)}
+.principles-inner{max-width:1280px;margin:0 auto}
+.prin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(18px,2vw,40px);margin-top:50px}
+@media(max-width:860px){.prin-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.prin-grid{grid-template-columns:1fr}}
+.prin{padding-top:20px;border-top:1px solid rgba(255,106,77,.3)}
+.prin .pn{font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-bottom:14px}
+.prin i{font-size:20px;color:var(--ember-glow);margin-bottom:14px;display:block}
+.prin h4{font-family:var(--f-jp);font-weight:600;font-size:18px;color:var(--cream);margin-bottom:8px;letter-spacing:.02em}
+.prin p{font-size:13.5px;line-height:1.85;color:var(--cream-dim);font-weight:300}
+
+/* ============================================================
+   §4  SUPERVISORS — cats
+============================================================ */
+.cats{position:relative;padding:clamp(90px,13vh,160px) clamp(24px,7vw,110px);overflow:hidden}
+.cats-kanji{position:absolute;right:-2vw;top:-2vh;font-family:var(--f-jp);font-weight:800;font-size:clamp(180px,28vw,420px);
+  color:rgba(255,106,77,.05);pointer-events:none;user-select:none;line-height:.8;z-index:0}
+.cats-paws{position:absolute;inset:0;pointer-events:none;z-index:1}
+.paw{position:absolute;color:rgba(243,231,211,.12);opacity:0;font-size:22px;transform:rotate(var(--rot,-12deg))}
+.cats-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,72px);max-width:1200px;margin:0 auto;align-items:center;position:relative;z-index:2}
+@media(max-width:880px){.cats-grid{grid-template-columns:1fr;gap:30px}}
+.cats-photo{position:relative;border:1px solid rgba(243,231,211,.18);padding:12px;background:rgba(23,14,10,.6)}
+.cats-photo::before{content:'店内 · 副店長 ×2';position:absolute;top:-11px;left:16px;background:var(--void);padding:0 8px;
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;color:var(--coral);text-transform:uppercase}
+.cats-photo img{width:100%;height:auto;filter:saturate(.94) brightness(.94) contrast(1.04)}
+.cats-hits{position:absolute;inset:12px;display:flex;z-index:5}
+.cats-hits .hit{flex:1;cursor:pointer;position:relative}
+.cats-hits .hit::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(255,106,77,.26),transparent 60%);opacity:0;transition:.5s;pointer-events:none;mix-blend-mode:screen}
+.cats-hits .hit:hover::after{opacity:1}
+.cats-hits .hit-label{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-family:var(--f-mono);font-size:9.5px;letter-spacing:.22em;
+  color:var(--cream);text-transform:uppercase;background:rgba(12,7,6,.82);padding:5px 11px;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
+.cats-hits .hit:hover .hit-label{opacity:1;bottom:22px}
+.cats-hits .ringwave{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:0;height:0;border-radius:50%;border:2px solid var(--ember-glow);opacity:0;pointer-events:none}
+.cats-hits .ringwave.active{animation:ringWave .85s ease-out forwards}
+@keyframes ringWave{0%{width:18px;height:18px;opacity:.9;border-width:3px}100%{width:240px;height:240px;opacity:0;border-width:1px}}
+.cats-text .eyebrow{margin-bottom:24px}
+.cats-text h2{font-family:var(--f-jp);font-weight:600;font-size:clamp(26px,3.4vw,42px);line-height:1.3;color:var(--cream);margin-bottom:20px;letter-spacing:.02em}
+.cats-text h2 em{font-style:normal;color:var(--ember-glow)}
+.cats-text .body{font-size:15px;line-height:2.05;color:var(--cream-dim);font-weight:300;margin-bottom:16px}
+.cats-text .body strong{color:var(--cream);font-weight:500}
+.cats-text .slogan{font-family:var(--f-jp);font-style:italic;font-size:17px;color:var(--cream);border-left:3px solid var(--ember);padding:14px 0 14px 18px;margin:18px 0;line-height:1.8}
+.cats-text .slogan cite{display:block;font-style:normal;font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-top:8px}
+.cats-text .ping{font-family:var(--f-disp);font-style:italic;color:var(--coral);font-size:14px}
+
+/* ============================================================
+   §5  OPERATOR — streetfront + love letter
+============================================================ */
+.op-establish{position:relative;min-height:86vh;display:flex;align-items:flex-end;overflow:hidden}
+.op-establish-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.op-establish-bg img{width:100%;height:100%;object-fit:cover;object-position:center 60%;will-change:transform}
+.op-establish-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,7,6,.5) 0%,transparent 30%,transparent 50%,rgba(12,7,6,.85) 88%,var(--void) 100%)}
+.op-establish-cap{position:relative;z-index:2;padding:0 clamp(24px,7vw,110px) clamp(54px,8vh,90px);max-width:1400px;margin:0 auto;width:100%}
+.op-establish-cap .eyebrow{margin-bottom:18px}
+.op-establish-cap .pull{font-family:var(--f-jp);font-weight:700;font-size:clamp(30px,4.6vw,66px);color:var(--cream);line-height:1.2;letter-spacing:.02em;text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.op-establish-cap .pull em{font-style:normal;color:var(--ember-glow)}
+.op-establish-cap .cap-note{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.2em;color:var(--cream-dim);text-transform:uppercase;margin-top:16px}
+
+.operator{padding:clamp(90px,13vh,160px) clamp(24px,7vw,110px)}
+.op-grid{display:grid;grid-template-columns:.82fr 1.18fr;gap:clamp(30px,4vw,72px);max-width:1200px;margin:0 auto;align-items:start}
+@media(max-width:920px){.op-grid{grid-template-columns:1fr;gap:36px}}
+.op-photos{display:flex;flex-direction:column;gap:24px}
+.op-photos figure{margin:0;border:1px solid rgba(243,231,211,.18);padding:10px;background:rgba(23,14,10,.6);position:relative}
+.op-photos figure .tag{position:absolute;top:-11px;left:14px;background:var(--void);padding:0 7px;font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:var(--coral);text-transform:uppercase}
+.op-photos img{width:100%;height:auto;filter:saturate(.96) brightness(.96)}
+.op-photos figcaption{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;color:var(--cream-faint);margin-top:8px;text-transform:uppercase;text-align:center}
+.op-text .big-quote{font-family:var(--f-jp);font-weight:800;font-size:clamp(42px,6vw,88px);color:var(--ember-glow);line-height:1;letter-spacing:.04em;margin-bottom:8px;text-shadow:0 0 30px rgba(255,106,77,.35)}
+.op-text .big-sub{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.22em;color:var(--cream-faint);text-transform:uppercase;margin-bottom:30px}
+.op-text blockquote{font-family:var(--f-jp);font-weight:600;font-size:clamp(18px,2vw,24px);color:var(--cream);line-height:1.6;padding-left:22px;border-left:3px solid var(--ember);margin-bottom:28px;letter-spacing:.02em}
+.op-text blockquote cite{display:block;font-style:normal;font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;color:var(--cream-faint);text-transform:uppercase;margin-top:12px}
+.op-text .body{font-size:16px;line-height:2.15;color:var(--cream-dim);font-weight:300;margin-bottom:18px}
+.op-text .body strong{color:var(--cream);font-weight:500}
+.op-text .letter{font-family:var(--f-disp);font-style:italic;font-weight:300;font-size:clamp(17px,1.8vw,21px);color:var(--coral);line-height:1.95;margin-top:24px}
+.op-text .sign{font-family:var(--f-disp);font-style:italic;font-size:25px;color:var(--cream);margin-top:18px;display:inline-block}
+.op-text .sign::before{content:'— '}
+
+/* ============================================================
+   §6  VISIT — booking
+============================================================ */
+.visit{position:relative;padding:clamp(100px,14vh,180px) clamp(24px,7vw,110px);overflow:hidden}
+.visit-leak{position:absolute;inset:0;z-index:0;object-fit:cover;width:100%;height:100%;mix-blend-mode:screen;opacity:.4;pointer-events:none}
+.visit-inner{position:relative;z-index:2;max-width:1100px;margin:0 auto;text-align:center}
+.visit-inner h2{font-family:var(--f-jp);font-weight:700;font-size:clamp(30px,4.4vw,60px);color:var(--cream);line-height:1.25;margin:18px 0;letter-spacing:.02em}
+.visit-inner h2 em{font-style:normal;color:var(--ember-glow)}
+.visit-card{display:grid;grid-template-columns:1.3fr 1px 1fr;gap:clamp(24px,3vw,60px);align-items:center;
+  padding:clamp(36px,5vw,64px);border:1px solid rgba(243,231,211,.18);background:rgba(23,14,10,.5);backdrop-filter:blur(6px);
+  max-width:960px;margin:50px auto 0;text-align:left;position:relative}
+.visit-card::before,.visit-card::after{content:'';position:absolute;width:22px;height:22px}
+.visit-card::before{top:-1px;left:-1px;border-top:2px solid var(--ember);border-left:2px solid var(--ember)}
+.visit-card::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--ember);border-right:2px solid var(--ember)}
+@media(max-width:780px){.visit-card{grid-template-columns:1fr;gap:28px}.visit-divider{display:none}}
+.visit-divider{width:1px;height:80%;background:rgba(243,231,211,.18)}
+.visit-block .no{font-family:var(--f-mono);font-size:10px;letter-spacing:.34em;color:var(--gold);text-transform:uppercase;margin-bottom:16px}
+.visit-block h3{font-family:var(--f-jp);font-weight:600;font-size:23px;color:var(--cream);margin-bottom:14px;letter-spacing:.02em}
+.visit-block .addr{display:flex;align-items:center;gap:11px;font-size:15px;color:var(--cream);margin-bottom:9px;font-weight:300}
+.visit-block .addr i{color:var(--ember-glow);width:18px;text-align:center}
+.visit-block p{font-size:14px;line-height:1.95;color:var(--cream-dim);margin-top:14px}
+.visit-block .lineid{font-family:var(--f-mono);font-size:12px;color:var(--cream);letter-spacing:.08em;background:rgba(243,231,211,.08);padding:3px 10px;display:inline-block;margin-bottom:18px}
+.line-cta{display:inline-flex;align-items:center;gap:12px;padding:15px 28px;background:#06C755;color:#fff;font-family:var(--f-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;transition:.4s}
+.line-cta:hover{transform:translateY(-2px);box-shadow:0 16px 32px -12px rgba(6,199,85,.6)}
+.line-cta i{font-size:17px}
+.visit-vow{max-width:700px;margin:54px auto 0;font-family:var(--f-disp);font-style:italic;font-weight:300;font-size:clamp(17px,1.8vw,23px);line-height:1.8;color:var(--cream);letter-spacing:.01em}
+.visit-vow::before,.visit-vow::after{content:'';display:block;width:54px;height:1px;background:var(--ember);margin:22px auto}
+
+/* ============================================================
+   COLOPHON
+============================================================ */
+footer{position:relative;z-index:5;padding:clamp(70px,11vh,120px) clamp(24px,7vw,90px) clamp(36px,5vh,56px);
+  border-top:1px solid rgba(255,106,77,.22);background:linear-gradient(180deg,#160B08 0%,#0B0605 100%);overflow:hidden}
+footer::before{content:'';position:absolute;left:50%;top:-1px;transform:translateX(-50%);width:min(680px,80%);height:1px;
+  background:linear-gradient(90deg,transparent,var(--ember-glow),transparent);opacity:.65}
+footer::after{content:'';position:absolute;left:50%;bottom:-42%;transform:translateX(-50%);width:130%;height:84%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%,rgba(224,73,47,.2),transparent 60%)}
+.foot-inner{position:relative;z-index:2;max-width:1180px;margin:0 auto}
+.foot-top{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;margin-bottom:clamp(36px,5vh,56px)}
+@media(max-width:760px){.foot-top{grid-template-columns:1fr;gap:24px;text-align:center}}
+.foot-wordmark{font-family:var(--f-jp);font-weight:800;font-size:clamp(42px,6vw,78px);color:var(--cream);letter-spacing:.04em;line-height:1}
+.foot-wordmark .o{color:var(--ember-glow);text-shadow:0 0 28px rgba(255,106,77,.55)}
+.foot-sub{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.34em;color:var(--cream-faint);text-transform:uppercase;margin-top:14px}
+.foot-signoff{font-family:var(--f-disp);font-style:italic;font-weight:300;font-size:clamp(17px,1.7vw,22px);color:var(--cream-dim);line-height:1.85;justify-self:end;max-width:400px}
+@media(max-width:760px){.foot-signoff{justify-self:center}}
+.foot-signoff .sig{display:block;font-style:normal;font-family:var(--f-jp);color:var(--coral);font-size:.92em;margin-top:12px;letter-spacing:.04em}
+.foot-links{display:flex;flex-wrap:wrap;gap:14px;padding:clamp(26px,4vh,38px) 0;border-top:1px solid rgba(243,231,211,.1);border-bottom:1px solid rgba(243,231,211,.1)}
+@media(max-width:760px){.foot-links{justify-content:center}}
+.foot-links a{display:inline-flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;
+  color:var(--cream-dim);text-transform:uppercase;padding:11px 18px;border:1px solid rgba(243,231,211,.16);transition:.35s}
+.foot-links a:hover{color:var(--cream);border-color:var(--ember-glow);background:rgba(224,73,47,.1);transform:translateY(-2px)}
+.foot-links i{font-size:15px;color:var(--ember-glow)}
+.foot-links .back{margin-left:auto;border-style:dashed}
+@media(max-width:760px){.foot-links .back{margin-left:0}}
+.foot-bar{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:clamp(26px,4vh,38px);flex-wrap:wrap}
+@media(max-width:760px){.foot-bar{justify-content:center;text-align:center}}
+.foot-bar .addr,.foot-bar .made{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:var(--cream-faint);text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
+.foot-bar .addr i{color:var(--ember-glow)}
+.foot-bar .made em{font-style:italic;color:var(--cream-dim)}
+.foot-bar .made .heart{color:var(--ember-glow);animation:hb 1.6s ease-in-out infinite;display:inline-block}
+@keyframes hb{0%,100%{transform:scale(1)}25%{transform:scale(1.18)}}
+
+/* reveal helpers */
+.reveal{opacity:0;transform:translateY(32px)}
+.reveal-l{opacity:0;transform:translateX(-32px)}
+.reveal-r{opacity:0;transform:translateX(32px)}
+
+/* quote toast */
+.quote-toast{position:fixed;left:50%;bottom:42px;transform:translate(-50%,28px);z-index:120;display:flex;align-items:flex-start;gap:14px;
+  background:rgba(23,14,10,.94);border:1px solid rgba(255,106,77,.4);backdrop-filter:blur(10px);padding:16px 20px;max-width:520px;width:calc(100vw - 40px);
+  box-shadow:0 24px 50px -18px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .4s,transform .4s}
+.quote-toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.quote-toast .bell{width:42px;height:42px;border:1px solid var(--ember);display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%}
+.quote-toast .bell i{font-size:16px;color:var(--ember-glow)}
+.quote-toast.bell-purple .bell{border-color:#B58FE0}.quote-toast.bell-purple .bell i{color:#C9A9F0}
+.quote-toast.bell-pink .bell{border-color:#E07AA8}.quote-toast.bell-pink .bell i{color:#F09ABF}
+.quote-toast .tb{flex:1}
+.quote-toast .tk{font-family:var(--f-mono);font-size:9px;letter-spacing:.2em;color:var(--cream-faint);text-transform:uppercase;margin-bottom:5px}
+.quote-toast .tq{font-family:var(--f-jp);font-weight:500;font-size:16px;color:var(--cream);line-height:1.65;margin-bottom:5px}
+.quote-toast .tc{font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;color:var(--coral);text-transform:uppercase}
+.quote-toast .tx{background:transparent;border:none;cursor:pointer;color:var(--cream-faint);font-family:var(--f-mono);font-size:12px;padding:4px 6px;align-self:flex-start;transition:.3s}
+.quote-toast .tx:hover{color:var(--ember-glow)}
+
+/* custom cursor — soft red light orb */
+.cur{position:fixed;left:0;top:0;width:26px;height:26px;border-radius:50%;pointer-events:none;z-index:200;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,106,77,.85) 0%,rgba(255,106,77,.18) 55%,transparent 78%);opacity:0;transition:opacity .35s,width .3s,height .3s;mix-blend-mode:screen}
+.cur.ready{opacity:.9}
+.cur.big{width:46px;height:46px}
+@media(hover:none){.cur{display:none}}
+body.cursor-ready{cursor:none}
+body.cursor-ready a,body.cursor-ready button,body.cursor-ready [role=button]{cursor:none}
+
+/* ════════════════════════════════════════════════════
+   IMMERSION LAYER — one continuous room, one session
+════════════════════════════════════════════════════ */
+/* continuous warming room behind every section (kills the "block" feel) */
+.room{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(180deg,#0B0605 0%,#120907 26%,#1B0C08 50%,#230E08 70%,#170B07 100%)}
+.room-heat{position:fixed;inset:0;z-index:0;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 92% 58% at 50% 74%, rgba(224,73,47,.55) 0%, transparent 62%);
+  opacity:calc(.08 + var(--session,0)*.44);transition:opacity .2s linear}
+
+/* session HUD — the 30-min thread that spans the whole page */
+.session-hud{position:fixed;bottom:26px;right:30px;z-index:92;display:flex;align-items:center;gap:10px;
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;color:var(--cream-dim);text-transform:uppercase;
+  padding:9px 14px;border:1px solid var(--cream-faint);background:rgba(12,7,6,.5);backdrop-filter:blur(8px);transition:opacity .5s ease,transform .5s ease}
+.session-hud.done{opacity:0;transform:translateY(12px);pointer-events:none}
+.session-hud .st{color:var(--coral);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.session-hud .sbar{width:64px;height:3px;background:rgba(243,231,211,.14);position:relative;overflow:hidden}
+.session-hud .sbar i{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--ember),var(--ember-glow));box-shadow:0 0 8px var(--ember-glow)}
+@media(max-width:600px){.session-hud{bottom:auto;top:46px;right:14px;padding:6px 9px;gap:7px}.session-hud .sbar{width:40px}}
+
+/* one-time steam bloom when the wash peaks */
+.steam-burst{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse 70% 55% at 50% 64%, rgba(255,228,205,.22) 0%, transparent 62%)}
+.steam-burst.show{animation:steamBurst 3.4s ease forwards}
+@keyframes steamBurst{0%{opacity:0}28%{opacity:1}100%{opacity:0}}
+
+/* hero "rain" easter egg */
+.raindrop{position:absolute;top:6%;width:2px;border-radius:2px;pointer-events:none;z-index:4;
+  background:linear-gradient(var(--ember-glow),transparent);box-shadow:0 0 9px var(--ember-glow);
+  animation:rainFall 2.3s cubic-bezier(.5,0,.7,1) forwards}
+@keyframes rainFall{0%{transform:translateY(0) scaleY(.5);opacity:0}12%{opacity:1}82%{opacity:.85}100%{transform:translateY(80vh) scaleY(1.5);opacity:0}}
+
+/* thematic service hover — the lamp warms, light blooms up from below */
+.svc::after{content:'';position:absolute;left:50%;bottom:0;width:150%;height:78%;transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%,rgba(255,138,110,.20),transparent 70%);opacity:0;transition:.6s}
+.svc:hover::after{opacity:1}
+.svc .ic{transition:transform .5s,box-shadow .5s,border-color .5s}
+.svc:hover .ic{transform:translateY(-5px);box-shadow:0 0 28px rgba(255,106,77,.55);border-color:rgba(255,106,77,.75)}
+.svc:hover .ic i{filter:drop-shadow(0 0 8px rgba(255,106,77,.8))}
+
+/* section-to-section steam seam — a thematic bridge, not a divider */
+.seam{position:relative;height:0;z-index:6;pointer-events:none}
+.seam::before{content:'';position:absolute;left:50%;top:-90px;transform:translateX(-50%);width:1px;height:90px;
+  background:linear-gradient(transparent,var(--ember-glow));opacity:.5}
+.seam::after{content:'';position:absolute;left:50%;top:-10px;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;
+  background:var(--ember-glow);box-shadow:0 0 12px var(--ember-glow);animation:seamDrip 3.2s ease-in-out infinite}
+@keyframes seamDrip{0%,100%{transform:translate(-50%,-50%);opacity:.4}50%{transform:translate(-50%,40px);opacity:1}}
+
+/* ── hero title line-mask reveal ── */
+.hero-title .line{display:block;overflow:hidden;padding-bottom:.06em}
+.hero-title .ln-in{display:block;will-change:transform}
+
+/* ── stat ribbon — value prop at a glance ── */
+.stat-ribbon{position:relative;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);max-width:1180px;margin:0 auto;padding:clamp(34px,7vh,72px) clamp(24px,7vw,90px)}
+@media(max-width:680px){.stat-ribbon{grid-template-columns:repeat(2,1fr);row-gap:34px}}
+.stat{position:relative;text-align:center;padding:6px 14px}
+.stat + .stat::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:1px;height:52px;background:rgba(243,231,211,.16)}
+@media(max-width:680px){.stat:nth-child(3)::before{display:none}}
+.stat .num{font-family:var(--f-disp);font-style:italic;font-weight:300;font-size:clamp(34px,4.4vw,56px);color:var(--cream);line-height:1;display:inline-block;letter-spacing:.01em;text-shadow:0 0 24px rgba(224,73,47,.28)}
+.stat .num .u{font-size:.4em;color:var(--coral);font-style:normal;margin:0 2px;letter-spacing:.04em}
+.stat .lab{display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.22em;color:var(--cream-faint);text-transform:uppercase;margin-top:13px}
+
+/* ── manifesto cursor-ripple ── */
+#ripple-canvas{position:absolute;inset:0;z-index:1;pointer-events:none}
+
+@media(prefers-reduced-motion:reduce){
+  .hero-bg img{animation:none}
+  .hero-title .rain::after{animation:none}
+  .seam::after{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div class="room"></div>
+<div class="room-heat"></div>
+<canvas class="ambient-dust" id="dust-canvas"></canvas>
+<div class="warmth"></div>
+<div class="vignette"></div>
+<div class="grain"></div>
+<div class="steam-burst" id="steam-burst"></div>
+
+<div class="cur" id="cursor"></div>
+
+<div class="brandmark">HAIR<span class="o">Ō</span> · 青溪館</div>
+<a href="/guild/" class="archive"><i class="fa-solid fa-arrow-left-long"></i> ARCHIVE</a>
+
+<div class="session-hud" id="session-hud" aria-hidden="true">
+  <span>SESSION</span><span class="st" id="st">T+00:00</span>
+  <div class="sbar"><i id="sbar-fill"></i></div>
+</div>
+
+<!-- quote toast -->
+<div class="quote-toast" id="quote-toast" role="status" aria-live="polite">
+  <div class="bell"><i class="fa-solid fa-bell"></i></div>
+  <div class="tb">
+    <p class="tk">INSPECTOR'S REMARK / 副店長所見</p>
+    <p class="tq" id="tq">—</p>
+    <p class="tc" id="tc">—</p>
+  </div>
+  <button class="tx" id="tx" aria-label="close">✕</button>
+</div>
+
+<nav class="rail" aria-label="chapters">
+  <a href="#hero" data-label="入口"></a>
+  <a href="#manifesto" data-label="不只是洗頭"></a>
+  <a href="#ritual" data-label="紅光禪室"></a>
+  <a href="#care" data-label="我能替你做"></a>
+  <a href="#cats" data-label="副店長"></a>
+  <a href="#operator" data-label="店主"></a>
+  <a href="#visit" data-label="預約"></a>
+</nav>
+
+<main class="wrap">
+
+<!-- ============ §0 HERO ============ -->
+<section id="hero" class="hero">
+  <div class="hero-bg"><img src="/assets/img/guild/evaly19/scenes/hero-sanctuary.webp" alt="紅光禪室：一個人閉著眼睛，頭被紅光罩溫柔包覆，水霧懸在空中"></div>
+  <img class="hero-leak" src="/assets/img/guild/evaly19/scenes/lightleak.webp" alt="" aria-hidden="true">
+  <div class="hero-inner">
+    <div class="hero-kicker"><span class="blip"></span> HAIRŌ 青溪館 · 桃園鎮撫街 166 號 · 智能洗髮</div>
+    <h1 class="hero-title">
+      <span class="line"><span class="ln-in">讓我在你頭上</span></span>
+      <span class="line"><span class="ln-in">下一場 360° 的<span class="rain" id="rain-char" role="button" tabindex="0" aria-label="點一下，下一場雨">雨</span>。</span></span>
+    </h1>
+    <p class="hero-lead">
+      我是 <strong>Eva</strong>。我開的不是一般的洗髮店——<br>
+      機器負責精準，溫度由我親手補上。閉上眼睛，<br>
+      把這顆累了一整天的頭，<strong>交給我 30 分鐘</strong>。
+      <span class="en">Close your eyes. Let the warm red-lit rain fall. Walk out recharged.</span>
+    </p>
+    <div class="hero-cta-row">
+      <a class="btn btn-fill" href="#ritual"><i class="fa-solid fa-droplet"></i> 進入紅光禪室</a>
+      <a class="btn btn-ghost" href="#visit"><i class="fa-solid fa-location-dot"></i> 來找我</a>
+    </div>
+  </div>
+  <div class="scroll-cue">SCROLL · 翻頁</div>
+</section>
+
+<!-- ============ STAT RIBBON ============ -->
+<div class="stat-ribbon" id="stat-ribbon" aria-label="HAIRŌ 規格一覽">
+  <div class="stat"><span class="num"><span class="v" data-to="360">0</span><span class="u">°</span></span><span class="lab">水柱角度 / Jet</span></div>
+  <div class="stat"><span class="num"><span class="u">λ</span><span class="v" data-to="660">0</span><span class="u">nm</span></span><span class="lab">紅光波長 / Light</span></div>
+  <div class="stat"><span class="num"><span class="v" data-to="30">0</span><span class="u">min</span></span><span class="lab">一輪儀式 / Cycle</span></div>
+  <div class="stat"><span class="num"><span class="v" data-to="166">0</span></span><span class="lab">鎮撫街門牌 / 桃園</span></div>
+</div>
+
+<!-- ============ §1 MANIFESTO ============ -->
+<section id="manifesto" class="manifesto">
+  <div class="manifesto-band"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/water-redlight.webp" alt="" aria-hidden="true"></div>
+  <div class="manifesto-inner">
+    <div class="eyebrow reveal">CH.01 — 一個信念</div>
+    <h2 class="reveal">機器能把每一滴水<br>控制到剛剛好——<br>但讓你想<em>再回來</em>的，<br>是被好好接住的安心。</h2>
+    <p class="sub reveal">所以這裡刻意慢。把門帶上、把燈調暗，剩下的三十分鐘，只屬於你和你的頭皮。</p>
+  </div>
+</section>
+
+<!-- ============ §2 RITUAL ============ -->
+<section id="ritual" class="ritual">
+  <div class="seam"></div>
+  <div class="ritual-track">
+    <div class="ritual-sticky">
+      <div class="ritual-head">
+        <div class="eyebrow">CH.02 — 紅光禪室 / THE RITUAL</div>
+        <div class="sec-jp">往下捲，跟著紅光轉一圈</div>
+        <div class="sec-en">Scroll to turn the light — thirty minutes, five moments</div>
+      </div>
+
+      <div class="rotary">
+        <div class="rotary-glow"></div>
+        <div class="rotary-disc"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/dome-core.webp" alt="HAIRŌ 紅光照護罩，紅金色光點呈放射狀環繞"></div>
+        <div class="rotary-dots">
+          <span class="rd" style="--a:0deg"></span>
+          <span class="rd" style="--a:72deg"></span>
+          <span class="rd" style="--a:144deg"></span>
+          <span class="rd" style="--a:216deg"></span>
+          <span class="rd" style="--a:288deg"></span>
+        </div>
+        <div class="rotary-core">
+          <span class="r-time" id="r-time">00:00</span>
+          <span class="r-label">MIN OF YOUR DAY</span>
+        </div>
+      </div>
+
+      <div class="reveal-stage" id="reveal-stage">
+        <article class="rstep on" data-i="0">
+          <div class="rstep-img"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/hero-sanctuary.webp" alt="閉著眼睛，被紅光罩溫柔包覆"><span class="clk">T+00:00</span></div>
+          <h3><span class="idx">01</span>就座・閉眼</h3>
+          <p>燈光先調到我每天試出來最舒服的色溫。你什麼都不用說——外面那一整天，我替你關在門外。</p>
+        </article>
+        <article class="rstep" data-i="1">
+          <div class="rstep-img"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/redlight-eyes.webp" alt="閉眼的臉被暖紅光照著，皮膚上有細小水珠"><span class="clk">T+03:00</span></div>
+          <h3><span class="idx">02</span>紅光・點燈</h3>
+          <p>紅光亮起，慢慢熨開被吹整、被熬夜操過的頭皮。我看頭皮的方式，像在讀一張需要重新理解的地圖。</p>
+        </article>
+        <article class="rstep" data-i="2">
+          <div class="rstep-img"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/water-redlight.webp" alt="紅光下的水面漣漪與懸空水珠"><span class="clk">T+10:00</span></div>
+          <h3><span class="idx">03</span>360° 水柱・運轉</h3>
+          <p>智能設備接手，用精準水壓與均勻溫流，一圈一圈替你打圓。不抓、不拉，沒有半點被勉強的力道。</p>
+        </article>
+        <article class="rstep" data-i="3">
+          <div class="rstep-img"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/steam-column.webp" alt="暗紅光裡升起的蒸氣"><span class="clk">T+22:00</span></div>
+          <h3><span class="idx">04</span>蒸氣・浮上</h3>
+          <p>蒸氣把毛孔一個個打開，紅光在底下修護毛囊。到這裡你才會發現，自己已經很久沒有真正「安靜」過了。</p>
+        </article>
+        <article class="rstep" data-i="4">
+          <div class="rstep-img"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/hands-towel.webp" alt="一雙手捧著冒著蒸氣的溫熱毛巾"><span class="clk">T+30:00</span></div>
+          <h3><span class="idx">05</span>睜眼・充電完成</h3>
+          <p>世界沒有變，但你比剛剛多了一格電。這就是我說的，那個「讓人重新充電的地方」。</p>
+        </article>
+      </div>
+
+      <div class="ritual-cue"><i class="fa-solid fa-angles-down"></i> 往下捲動，讓紅光轉一圈 <i class="fa-solid fa-angles-down"></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ §3 CARE ============ -->
+<section id="care" class="care">
+  <div class="care-hero">
+    <div class="care-hero-bg"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/hands-towel.webp" alt="一雙手捧著溫熱的毛巾，蒸氣升起，被暖紅光照著"></div>
+    <div class="care-hero-inner">
+      <div class="eyebrow">CH.03 — 我能替你做的</div>
+      <h2>科技負責<em>精準</em>，<br>剩下那份用心，我親手填上。</h2>
+      <p>每一項服務都圍著一件事打轉：讓你離開的時候，比走進來的時候，多一點力氣。</p>
+    </div>
+  </div>
+
+  <div class="svc-grid">
+    <article class="svc">
+      <div class="no">SERVICE / 01</div>
+      <div class="ic"><i class="fa-solid fa-tower-broadcast"></i></div>
+      <h3>智能洗頭 <span class="en">Smart Shampoo</span></h3>
+      <p>引進科技智能洗髮設備：精準水壓、均勻溫流、舒適節奏。360° 水柱一格一格洗，整套是機器幫忙，但每一格水溫、每一段時間，都是我看著的。</p>
+      <div class="tags"><span class="tag">360° JET</span><span class="tag">NO RUB</span><span class="tag">WARM FLOW</span></div>
+    </article>
+    <article class="svc">
+      <div class="no">SERVICE / 02</div>
+      <div class="ic"><i class="fa-solid fa-circle-radiation"></i></div>
+      <h3>紅光養護 <span class="en">Red-Light Therapy</span></h3>
+      <p>全程紅光照護毛囊。讓被吹乾、被熨燙、被熬夜操過的頭皮重新呼吸——也讓你身上那層白天累積的疲憊，被光慢慢拆掉。貓咪也愛這一區，她們會在旁邊曬。</p>
+      <div class="tags"><span class="tag">SCALP CARE</span><span class="tag">λ660nm</span><span class="tag">RESTORE</span></div>
+    </article>
+    <article class="svc">
+      <div class="no">SERVICE / 03</div>
+      <div class="ic"><i class="fa-solid fa-mask"></i></div>
+      <h3>iRESTORE 美容面罩 <span class="en">Beauty Mask</span></h3>
+      <p>洗髮的延伸加值。從頭皮一路顧到下巴——深層保濕修護、煥亮膚色。母親節寵愛專案我把它列進來，就是想讓「被洗頭的人」也順便被好好對待一次。</p>
+      <div class="tags"><span class="tag">FACE</span><span class="tag">MOISTURE</span><span class="tag">GLOW</span></div>
+    </article>
+  </div>
+
+  <div class="principles">
+    <div class="principles-inner">
+      <div style="text-align:center">
+        <div class="eyebrow reveal">我堅持的四件小事</div>
+        <div class="sec-jp reveal">科技讓我更精準，用心才是我的服務</div>
+      </div>
+      <div class="prin-grid">
+        <div class="prin reveal"><div class="pn">CHECK 01</div><i class="fa-solid fa-stethoscope"></i><h4>頭皮健康管理</h4><p>從第一次洗，就替你看頭皮狀況，慢慢養回它的呼吸節奏。</p></div>
+        <div class="prin reveal"><div class="pn">CHECK 02</div><i class="fa-solid fa-broom"></i><h4>乾淨衛生流程</h4><p>器具、毛巾、洗檯，每個環節都按 SOP 走。看不見的地方，做得比看得見的還細。</p></div>
+        <div class="prin reveal"><div class="pn">CHECK 03</div><i class="fa-solid fa-scale-balanced"></i><h4>穩定品質</h4><p>第一次來還是第十次來，水溫、節奏、時間，盡量讓你拿到一樣的安心。</p></div>
+        <div class="prin reveal"><div class="pn">CHECK 04</div><i class="fa-solid fa-heart"></i><h4>讓你感受到被重視</h4><p>我不喜歡流水線。你今天願意停下來，這件事很重要。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ §4 SUPERVISORS ============ -->
+<section id="cats" class="cats">
+  <div class="seam"></div>
+  <div class="cats-kanji">猫</div>
+  <div class="cats-paws">
+    <span class="paw" style="left:7%;top:22%;--rot:-12deg"><i class="fa-solid fa-paw"></i></span>
+    <span class="paw" style="left:13%;top:48%;--rot:9deg;font-size:17px"><i class="fa-solid fa-paw"></i></span>
+    <span class="paw" style="left:5%;top:74%;--rot:-20deg;font-size:19px"><i class="fa-solid fa-paw"></i></span>
+    <span class="paw" style="right:10%;top:30%;--rot:14deg;font-size:21px"><i class="fa-solid fa-paw"></i></span>
+    <span class="paw" style="right:17%;top:62%;--rot:-6deg;font-size:17px"><i class="fa-solid fa-paw"></i></span>
+  </div>
+  <div class="cats-grid">
+    <div class="cats-photo reveal-l">
+      <img loading="lazy" src="/assets/img/guild/evaly19/shop-cats.webp" alt="HAIRŌ 青溪館的兩隻虎斑店貓">
+      <div class="cats-hits" id="cats-hits">
+        <div class="hit" data-cat="purple" tabindex="0" role="button" aria-label="點紫鈴副店長聽一句所見"><span class="ringwave"></span><span class="hit-label"><i class="fa-solid fa-bell"></i> 紫鈴・按鈴</span></div>
+        <div class="hit" data-cat="pink" tabindex="0" role="button" aria-label="點粉鈴副店長聽一句所見"><span class="ringwave"></span><span class="hit-label"><i class="fa-solid fa-bell"></i> 粉鈴・按鈴</span></div>
+      </div>
+    </div>
+    <div class="cats-text reveal-r">
+      <div class="eyebrow">CH.04 — 兩位副店長</div>
+      <h2>對了，店裡有<em>兩位主管</em>。</h2>
+      <p class="body">她們不洗頭，她們督察。一隻別著紫色鈴鐺，一隻別著粉色——項圈一響，就知道誰要繞過來看你了。</p>
+      <div class="slogan">累了就上來照一下紅光，連頭皮一起被好好照顧。<cite>副店長的日常巡邏心得</cite></div>
+      <p class="body">怕貓的話提前說一聲，我安排你坐另一邊；想合照<strong>沒問題</strong>，她們最近正在練習鏡頭感。<br><span class="ping">＊ 按一下任一隻貓，聽她今天想說什麼。</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ §5 OPERATOR ============ -->
+<section id="operator">
+  <div class="op-establish">
+    <div class="op-establish-bg"><img loading="lazy" src="/assets/img/guild/evaly19/scenes/streetfront.webp" alt="雨夜裡的 HAIRŌ 青溪館店面，綠色招牌、店內透出暖紅光與蒸氣，一個人在洗檯前忙著"></div>
+    <div class="op-establish-cap">
+      <div class="eyebrow">CH.05 — 還在學的店主</div>
+      <div class="pull">桃園的雨季裡，<br>沒有客人的午後<em>最難熬</em>。</div>
+      <div class="cap-note">桃園・鎮撫街 166 號 · 一個人顧的店</div>
+    </div>
+  </div>
+
+  <div class="operator">
+    <div class="op-grid">
+      <div class="op-photos">
+        <figure class="reveal-l"><span class="tag">PLATE A — 寵愛專案</span>
+          <img loading="lazy" src="/assets/img/guild/evaly19/poster-mothersday.webp" alt="母親節寵愛專案海報">
+          <figcaption>母親節寵愛專案 · 限量 50 名 · 2026/05</figcaption></figure>
+        <figure class="reveal-l" style="transition-delay:.12s"><span class="tag">PLATE B — 開機儀式</span>
+          <img loading="lazy" src="/assets/img/guild/evaly19/eva-breakfast.webp" alt="Eva 的開店日早餐：超能蛋白＋茶葉蛋＋雞蛋">
+          <figcaption>20g 蛋白 · 我每天的開機</figcaption></figure>
+      </div>
+      <div class="op-text">
+        <div class="big-quote reveal-r">從零開始的店</div>
+        <div class="big-sub reveal-r">HAIRŌ 青溪館 · 主理人 EVA</div>
+        <blockquote class="reveal-r">智能洗髮在台灣還太新——新到要先解釋半天，別人才聽得懂我在做什麼。<cite>但只要你坐下來體驗一次，就會懂</cite></blockquote>
+        <p class="body reveal-r">這間店是我<strong>一個人</strong>從零撐起來的。沒有富麗堂皇的招牌，只有一台 360° 的智能洗髮機、一盞紅光，和兩位毛茸茸的副店長。</p>
+        <p class="letter reveal-r">下雨的日子我會盯著門口發慌，但隔天我還是會把燈打開。因為我知道——只要有一個人願意推門進來，我就能把這 30 分鐘，做成你今天最被善待的一段時間。</p>
+        <span class="sign reveal-r">Eva, still learning.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ §6 VISIT ============ -->
+<section id="visit" class="visit">
+  <div class="seam"></div>
+  <img loading="lazy" class="visit-leak" src="/assets/img/guild/evaly19/scenes/lightleak.webp" alt="" aria-hidden="true">
+  <div class="visit-inner">
+    <div class="eyebrow reveal">CH.06 — 來找我 / VISIT</div>
+    <h2 class="reveal">把這顆<em>累的頭</em>，<br>放心交給我 30 分鐘。</h2>
+    <div class="visit-card reveal">
+      <div class="visit-block">
+        <div class="no">LOCATION / 01</div>
+        <h3>HAIRŌ 青溪館</h3>
+        <div class="addr"><i class="fa-solid fa-location-dot"></i> 桃園市桃園區鎮撫街 166 號</div>
+        <div class="addr"><i class="fa-regular fa-clock"></i> 完全預約制・安靜的店</div>
+        <p>用 LINE 預約最快。把你想被照顧的部位寫一下，我幫你排對的時段。</p>
+      </div>
+      <div class="visit-divider"></div>
+      <div class="visit-block" style="text-align:center">
+        <div class="no">BOOK / 02</div>
+        <h3 style="margin-bottom:16px">加 LINE 預約</h3>
+        <span class="lineid">@523fkfnx</span><br>
+        <a class="line-cta" href="https://lin.ee/8qSokEhu" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-line"></i> 加入並預約</a>
+      </div>
+    </div>
+    <p class="visit-vow reveal">你願意停下來這 30 分鐘，<br>我就會把這 30 分鐘，當成你今天最重要的一件事去對待。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <div class="foot-wordmark">HAIR<span class="o">Ō</span></div>
+        <div class="foot-sub">青溪館 · 紅光禪室 · 桃園</div>
+      </div>
+      <p class="foot-signoff">
+        門一直開著。哪天被生活淋濕了，<br>記得回來，讓我替你下一場暖的雨。
+        <span class="sig">— Eva，店還在學，人也是</span>
+      </p>
+    </div>
+
+    <nav class="foot-links" aria-label="社群與連結">
+      <a href="https://www.threads.com/@evaly19" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i> Threads</a>
+      <a href="https://www.instagram.com/evaly19/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i> Instagram</a>
+      <a href="https://lin.ee/8qSokEhu" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-line"></i> LINE 預約</a>
+      <a href="/guild/" class="back"><i class="fa-solid fa-book-open"></i> 回到名冊</a>
+    </nav>
+
+    <div class="foot-bar">
+      <span class="addr"><i class="fa-solid fa-location-dot"></i> 桃園市桃園區鎮撫街 166 號 · 完全預約制</span>
+      <span class="made">Made with <span class="heart">♥</span> by <em>SuperGalen's Dungeon</em></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   p5 — warm suspended motes (the droplets in the air)
+============================================================ */
+let motes=[]; const MOTE_N=22;
+let pmx=-999,pmy=-999;
+addEventListener('pointermove',e=>{pmx=e.clientX;pmy=e.clientY;},{passive:true});
+function setup(){
+  const c=createCanvas(window.innerWidth,window.innerHeight);
+  c.parent(document.body); c.canvas.id='__p5_dust__';
+  const host=document.getElementById('dust-canvas');
+  if(host){host.replaceWith(c.canvas);}
+  c.canvas.className='ambient-dust';
+  c.canvas.style.position='fixed';c.canvas.style.inset='0';c.canvas.style.zIndex='2';c.canvas.style.pointerEvents='none';
+  pixelDensity(1); frameRate(30); noStroke();
+  for(let i=0;i<MOTE_N;i++) motes.push(new Mote(random(width),random(height)));
+  if(typeof p5!=='undefined') new p5(rippleSketch);
+}
+function windowResized(){ resizeCanvas(window.innerWidth,window.innerHeight); }
+function draw(){ clear(); motes.forEach(m=>m.update().show()); }
+class Mote{
+  constructor(x,y){this.x=x;this.y=y;this.r=random(1,3.2);this.vy=random(-.5,-.12);this.vx=random(-.25,.25);
+    this.a=random(40,140);this.warm=random()<.4;this.ph=random(TWO_PI);}
+  update(){const s=(window.__hairoState&&window.__hairoState.session)||0;
+    if(pmx>-900){const dx=pmx-this.x,dy=pmy-this.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<170&&d>1){this.x+=dx/d*0.32;this.y+=dy/d*0.32;}}
+    this.y+=this.vy*(1+s*0.9);this.x+=this.vx+sin(frameCount*.01+this.ph)*.3;
+    if(this.y<-6){this.y=height+6;this.x=random(width);}
+    if(this.x<-12)this.x=width+12; if(this.x>width+12)this.x=-12;
+    return this;}
+  show(){const s=(window.__hairoState&&window.__hairoState.session)||0;
+    const tw=this.a*(0.6+0.4*sin(frameCount*.04+this.ph))*(1+s*0.5);
+    if(this.warm){fill(255,140,90,tw);} else {fill(243,231,211,tw*.6);}
+    push();drawingContext.shadowBlur=8+s*6;drawingContext.shadowColor=this.warm?'rgba(255,120,80,.7)':'rgba(243,231,211,.4)';
+    circle(this.x,this.y,this.r*2);pop();}
+}
+
+/* ── p5 instance — cursor-reactive water ripples over the manifesto ── */
+const rippleSketch=(p)=>{
+  let ripples=[],active=false,secEl,cnv;
+  p.setup=()=>{
+    secEl=document.getElementById('manifesto'); if(!secEl){p.noLoop();return;}
+    cnv=p.createCanvas(secEl.clientWidth,secEl.clientHeight); cnv.parent(secEl);
+    cnv.canvas.id='ripple-canvas'; p.pixelDensity(1); p.frameRate(30); p.noFill();
+    secEl.addEventListener('pointermove',(e)=>{
+      if(!active)return; const b=cnv.canvas.getBoundingClientRect();
+      if(p.frameCount%2===0) ripples.push({x:e.clientX-b.left,y:e.clientY-b.top,r:4,a:130});
+    },{passive:true});
+    if(typeof ScrollTrigger!=='undefined') ScrollTrigger.create({trigger:secEl,start:'top bottom',end:'bottom top',onToggle:s=>active=s.isActive});
+  };
+  p.windowResized=()=>{ if(secEl)p.resizeCanvas(secEl.clientWidth,secEl.clientHeight); };
+  p.draw=()=>{ p.clear();
+    for(let i=ripples.length-1;i>=0;i--){const r=ripples[i]; r.r+=2.5; r.a-=2.4;
+      if(r.a<=0){ripples.splice(i,1);continue;}
+      p.push(); p.strokeWeight(1.5); p.stroke(255,120,90,r.a); p.ellipse(r.x,r.y,r.r*2,r.r*1.0);
+      p.stroke(255,180,135,r.a*.5); p.ellipse(r.x,r.y,r.r*1.3,r.r*0.65); p.pop(); } };
+};
+
+/* ============================================================
+   GSAP — reveals, rail, parallax, paws
+============================================================ */
+window.addEventListener('load',()=>{
+  if(typeof gsap==='undefined')return;
+  gsap.registerPlugin(ScrollTrigger);
+  const ease='power3.out';
+  gsap.utils.toArray('.reveal').forEach((el,i)=>gsap.to(el,{opacity:1,y:0,duration:1,ease,delay:i<4?i*.07:0,scrollTrigger:{trigger:el,start:'top 88%',once:true}}));
+  gsap.utils.toArray('.reveal-l').forEach(el=>gsap.to(el,{opacity:1,x:0,duration:1.1,ease,scrollTrigger:{trigger:el,start:'top 88%',once:true}}));
+  gsap.utils.toArray('.reveal-r').forEach(el=>gsap.to(el,{opacity:1,x:0,duration:1.1,ease,scrollTrigger:{trigger:el,start:'top 88%',once:true}}));
+
+  /* hero — cinematic line-mask entrance */
+  const heroTl=gsap.timeline({delay:.2});
+  heroTl.fromTo('.hero-kicker',{opacity:0,y:18},{opacity:1,y:0,duration:.9,ease},0)
+    .fromTo('.hero-title .ln-in',{yPercent:115},{yPercent:0,duration:1.15,ease:'power4.out',stagger:.14},.1)
+    .fromTo('.hero-lead',{opacity:0,y:18},{opacity:1,y:0,duration:.9,ease},'-=.6')
+    .fromTo('.hero-cta-row',{opacity:0,y:18},{opacity:1,y:0,duration:.85,ease},'-=.55');
+
+  /* hero exit — sink into the room as you scroll away */
+  gsap.to('.hero-inner',{opacity:0,y:-50,ease:'none',scrollTrigger:{trigger:'#hero',start:'35% top',end:'bottom top',scrub:true}});
+
+  /* magnetic hero buttons */
+  gsap.utils.toArray('.hero-cta-row .btn').forEach(btn=>{
+    const qx=gsap.quickTo(btn,'x',{duration:.4,ease:'power3'}),qy=gsap.quickTo(btn,'y',{duration:.4,ease:'power3'});
+    btn.addEventListener('pointermove',e=>{const b=btn.getBoundingClientRect();qx((e.clientX-b.left-b.width/2)*.35);qy((e.clientY-b.top-b.height/2)*.35);});
+    btn.addEventListener('pointerleave',()=>{qx(0);qy(0);});
+  });
+
+  /* parallax bands */
+  gsap.utils.toArray('.manifesto-band img, .care-hero-bg img, .op-establish-bg img').forEach(img=>{
+    gsap.fromTo(img,{yPercent:-8},{yPercent:8,ease:'none',scrollTrigger:{trigger:img.closest('section'),start:'top bottom',end:'bottom top',scrub:true}});
+  });
+
+  /* rail */
+  const rail=document.querySelectorAll('.rail a');
+  rail.forEach(a=>{const id=a.getAttribute('href').slice(1),t=document.getElementById(id);if(!t)return;
+    ScrollTrigger.create({trigger:t,start:'top 50%',end:'bottom 50%',onToggle:s=>{if(s.isActive){rail.forEach(x=>x.classList.remove('on'));a.classList.add('on');}}});});
+
+  /* cat paws */
+  ScrollTrigger.create({trigger:'#cats',start:'top 60%',once:true,onEnter:()=>{
+    const paws=document.querySelectorAll('.paw');
+    gsap.to(paws,{opacity:.5,duration:1.4,stagger:{each:.16,from:'random'},ease:'power2.out'});
+    paws.forEach(p=>gsap.to(p,{y:'+='+(7+Math.random()*12),repeat:-1,yoyo:true,duration:3+Math.random()*2,ease:'sine.inOut'}));
+  }});
+
+  /* stat ribbon — numbers count up on reveal */
+  gsap.utils.toArray('.stat .v').forEach(el=>{const to=+el.getAttribute('data-to'),o={n:0};
+    gsap.to(o,{n:to,duration:1.6,ease:'power2.out',scrollTrigger:{trigger:'#stat-ribbon',start:'top 84%',once:true},onUpdate:()=>el.textContent=Math.round(o.n)});});
+
+  /* service cards — stagger in + cursor-follow 3D tilt */
+  gsap.from('.svc',{opacity:0,y:40,duration:.9,ease,stagger:.12,scrollTrigger:{trigger:'.svc-grid',start:'top 84%',once:true}});
+  gsap.utils.toArray('.svc').forEach(card=>{
+    const rx=gsap.quickTo(card,'rotationX',{duration:.5,ease:'power3'}),ry=gsap.quickTo(card,'rotationY',{duration:.5,ease:'power3'});
+    card.addEventListener('pointermove',e=>{const b=card.getBoundingClientRect();ry(((e.clientX-b.left)/b.width-.5)*9);rx(-((e.clientY-b.top)/b.height-.5)*9);});
+    card.addEventListener('pointerleave',()=>{rx(0);ry(0);});
+  });
+
+  /* 猫 watermark drifts with scroll */
+  gsap.to('.cats-kanji',{yPercent:16,ease:'none',scrollTrigger:{trigger:'#cats',start:'top bottom',end:'bottom top',scrub:true}});
+
+  /* session HUD retires once you reach the footer — the 30 minutes are up */
+  ScrollTrigger.create({trigger:'footer',start:'top 88%',onToggle:s=>document.getElementById('session-hud')?.classList.toggle('done',s.isActive)});
+
+  setTimeout(()=>ScrollTrigger.refresh(),600);
+});
+
+/* ============================================================
+   ★ INTERACTION SUITE ★
+============================================================ */
+window.addEventListener('load',()=>{
+  window.__hairoState=window.__hairoState||{session:0};
+
+  /* ── unified scroll handler: session thread + ritual rotary share one rAF ── */
+  const stEl=document.getElementById('st'),sbar=document.getElementById('sbar-fill'),docEl=document.documentElement;
+  const rTrack=document.querySelector('.ritual-track'),rDisc=document.querySelector('.rotary-disc'),
+    rTimeEl=document.getElementById('r-time'),rDots=[...document.querySelectorAll('.rotary-dots .rd')],
+    rSteps=[...document.querySelectorAll('#reveal-stage .rstep')],rBurst=document.getElementById('steam-burst');
+  const hasRitual=!!(rTrack&&rDisc&&rSteps.length);
+  let lastA=-1,burstDone=false,ticking=false;
+  function onScrollFrame(){
+    /* SESSION THREAD — page scroll IS the 30-minute visit */
+    const max=docEl.scrollHeight-innerHeight,s=max>0?Math.min(1,Math.max(0,scrollY/max)):0;
+    docEl.style.setProperty('--session',s.toFixed(3));
+    window.__hairoState.session=s;
+    if(stEl){const sec=Math.round(s*30*60);stEl.textContent=`T+${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;}
+    if(sbar)sbar.style.width=(s*100).toFixed(1)+'%';
+    /* RITUAL ROTARY — scroll turns the light, each moment emerges */
+    if(hasRitual){
+      const r=rTrack.getBoundingClientRect(),total=r.height-innerHeight;
+      const p=total>0?Math.min(1,Math.max(0,(-r.top)/total)):0;
+      docEl.style.setProperty('--ritual',p.toFixed(3));
+      rDisc.style.transform=`rotate(${(p*330).toFixed(1)}deg)`;
+      const rsec=Math.round(p*30*60);
+      if(rTimeEl)rTimeEl.textContent=`${String(Math.floor(rsec/60)).padStart(2,'0')}:${String(rsec%60).padStart(2,'0')}`;
+      const ai=Math.min(rSteps.length-1,Math.floor(p*rSteps.length));
+      if(ai!==lastA){lastA=ai;
+        rSteps.forEach((st,i)=>st.classList.toggle('on',i===ai));
+        rDots.forEach((d,i)=>d.classList.toggle('lit',i<=ai));
+        if(ai>=3&&!burstDone&&rBurst){burstDone=true;rBurst.classList.add('show');setTimeout(()=>rBurst.classList.remove('show'),3600);}
+      }
+    }
+  }
+  function onScrollAll(){ if(ticking)return; ticking=true; requestAnimationFrame(()=>{ticking=false;onScrollFrame();}); }
+  addEventListener('scroll',onScrollAll,{passive:true}); onScrollFrame();
+
+  /* ── B. CAT 副店長 ── */
+  const Q={purple:[
+    {q:'累了就上來照一下紅光，連頭皮一起喘口氣。',c:'紫鈴・副店長'},
+    {q:'人類最大的問題，是太忙著不能閉眼。',c:'紫鈴・副店長'},
+    {q:'今天怎麼樣，跟我說一聲。我不會打字，但我會聽。',c:'紫鈴・副店長'},
+    {q:'老闆說 30 分鐘，我說 30 分鐘真的夠。',c:'紫鈴・副店長'},
+    {q:'你頭上的雨，我會替你陪著淋完。',c:'紫鈴・副店長'},
+    {q:'進門先脫掉今天，等下我替你顧。',c:'紫鈴・副店長'}],
+   pink:[
+    {q:'老闆下雨會擔心生意，我不會。我只擔心罐罐。',c:'粉鈴・副店長'},
+    {q:'你不來，紅光不會自己亮給空氣看。',c:'粉鈴・副店長'},
+    {q:'人生加油，但記得也加蛋白。',c:'粉鈴・副店長'},
+    {q:'我覺得你可以躺更平一點。再平一點。',c:'粉鈴・副店長'},
+    {q:'頭皮也需要被人喊一聲「辛苦了」。',c:'粉鈴・副店長'},
+    {q:'預約制＝留給你一段不會被打擾的時間。',c:'粉鈴・副店長'}]};
+  const toast=document.getElementById('quote-toast'),tq=document.getElementById('tq'),tc=document.getElementById('tc'),tx=document.getElementById('tx');
+  let tt=null,qi={purple:0,pink:0};
+  function showToast(cat){const pool=Q[cat],it=pool[qi[cat]%pool.length];qi[cat]++;
+    tq.textContent=`「${it.q}」`;tc.textContent='— '+it.c;
+    toast.classList.remove('bell-purple','bell-pink');toast.classList.add(cat==='purple'?'bell-purple':'bell-pink');
+    toast.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove('show'),6500);}
+  if(tx)tx.addEventListener('click',()=>toast.classList.remove('show'));
+  document.querySelectorAll('#cats-hits .hit').forEach(hit=>{const cat=hit.dataset.cat,wave=hit.querySelector('.ringwave');
+    const fire=()=>{wave.classList.remove('active');void wave.offsetWidth;wave.classList.add('active');showToast(cat);};
+    hit.addEventListener('click',fire);hit.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fire();}});});
+
+  /* ── C. CURSOR ── */
+  const cur=document.getElementById('cursor');
+  if(cur&&matchMedia('(hover:hover) and (pointer:fine)').matches){
+    document.body.classList.add('cursor-ready');
+    let cx=innerWidth/2,cy=innerHeight/2,tx2=cx,ty2=cy;
+    addEventListener('pointermove',e=>{tx2=e.clientX;ty2=e.clientY;cur.classList.add('ready');
+      const t=e.target;cur.classList.toggle('big',!!(t.closest&&t.closest('a,button,.hit,[role=button]')));});
+    addEventListener('pointerleave',()=>cur.classList.remove('ready'));
+    (function f(){cx+=(tx2-cx)*.32;cy+=(ty2-cy)*.32;cur.style.transform=`translate(${cx}px,${cy}px) translate(-50%,-50%)`;requestAnimationFrame(f);})();
+  }
+
+  /* ── E. RAIN easter egg — click the 雨 to make it rain ── */
+  const rainChar=document.getElementById('rain-char'),heroEl=document.getElementById('hero');
+  function spawnRain(){if(!heroEl)return;for(let i=0;i<9;i++){const d=document.createElement('span');d.className='raindrop';
+    d.style.left=(14+Math.random()*72)+'%';d.style.animationDelay=(Math.random()*.5)+'s';d.style.height=(20+Math.random()*26)+'px';
+    heroEl.appendChild(d);setTimeout(()=>d.remove(),2800);}}
+  if(rainChar){rainChar.addEventListener('click',spawnRain);
+    rainChar.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();spawnRain();}});}
+
+});
+</script>
+</body>
+</html>

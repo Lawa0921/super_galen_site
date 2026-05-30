@@ -1930,3 +1930,17 @@ members:
         label: "傾聽 · 不諮商"
       - id: "writer_singer"
         label: "寫字 · 唱歌"
+
+  - id: "evaly19"
+    name: "Eva Chang｜HAIRŌ 青溪館"
+    avatar: "/assets/img/guild/evaly19/avatar.webp"
+    page: "/guild/evaly19.html"
+    title: "桃園鎮撫街 166 號 · 智能洗髮 · 紅光禪室"
+    description: "桃園鎮撫街上一間還很新的智能洗髮店，Eva 一個人從零撐起來。360° 水柱、全程紅光、不搓不拉，把一場洗頭做成 30 分鐘的「重新充電」。機器負責精準，溫度由她親手補上；店裡還有兩隻虎斑副店長負責督察。母親節加碼 iRESTORE 美容面罩，從頭皮一路顧到臉。"
+    tags:
+      - id: "smart_shampoo"
+        label: "智能洗髮 · 360°"
+      - id: "red_light_therapy"
+        label: "紅光養護"
+      - id: "taoyuan_sanctuary"
+        label: "桃園 · 紅光禪室"
