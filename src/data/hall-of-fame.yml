@@ -1931,6 +1931,20 @@ members:
       - id: "writer_singer"
         label: "寫字 · 唱歌"
 
+  - id: "momenteats"
+    name: "時刻消夜館｜Moment Eats"
+    avatar: "/assets/img/guild/momenteats/avatar.webp"
+    page: "/guild/momenteats.html"
+    title: "台東中正路 291 號 · 晚餐宵夜 · 19:00–02:00"
+    description: "「有些店，是計畫好的；有些味道，卻是在人生的半路才出現。」半路出師、卻用全心經營的一間台東宵夜店。從 19:00 顧到凌晨 02:00，鍋燒、滷肉飯、香腸／燒肉蔥明飯、各式炸物與吐司——「宵夜不一定要很貴、很浮誇，但一定要吃得剛剛好、吃得有溫度。」夜再深，他們都在。"
+    tags:
+      - id: "taitung_late_night"
+        label: "台東宵夜 · 19:00–02:00"
+      - id: "half_road_master"
+        label: "半路出師 · 全心經營"
+      - id: "warm_bowl"
+        label: "一碗熱騰騰"
+
   - id: "evaly19"
     name: "Eva Chang｜HAIRŌ 青溪館"
     avatar: "/assets/img/guild/evaly19/avatar.webp"

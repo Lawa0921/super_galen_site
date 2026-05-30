@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>時刻消夜館 ・ 夜再深，我們都在 · Moment Eats</title>
+<meta name="description" content="時刻消夜館 Moment Eats — 台東中正路 291 號的晚餐與宵夜店。半路出師、全心經營。從 19:00 守到凌晨 02:00，鍋燒、滷肉飯、蔥明飯到炸湯圓、炸物與吐司。夜再深，我們都在——那盞還亮著的燈，就是我們。">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preload" as="image" href="/assets/img/guild/momenteats/scenes/street.webp">
+
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,300;1,6..72,400&family=Noto+Serif+TC:wght@500;700;900&family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<style>
+/* =====================================================================
+   時刻消夜館 ・ Moment Eats
+   「深夜畫家的台東」— A Painter's Taitung at Midnight
+   一頁式夜曲：以油畫為舞台，你帶著一盞燈走進夜裡，走向那唯一亮著的店。
+   ===================================================================== */
+:root{
+  --abyss:#070f14;          /* 最深的夜 */
+  --night:#0c1c25;          /* 主夜・petrol teal（取自畫面） */
+  --teal:#1c4350;
+  --amber:#f0a64e;          /* 鎢絲燈暖光 */
+  --amber-glow:#ffd49b;     /* 燈暈 */
+  --ember:#d97a3c;          /* 深琥珀 */
+  --lantern:#d8472e;        /* 燈籠紅（極少量點綴） */
+  --cream:#f3e7d2;          /* 紙・主文字 */
+  --cream-dim:rgba(243,231,210,.62);
+  --cream-faint:rgba(243,231,210,.34);
+  --ink:#0a1318;
+  --hair:rgba(243,231,210,.16);
+  --hair-amber:rgba(240,166,78,.34);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--abyss);
+  color:var(--cream);
+  font-family:"LXGW WenKai TC","Noto Serif TC",serif;
+  font-weight:400;line-height:1.85;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  cursor:none;
+}
+::selection{background:var(--amber);color:var(--ink)}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;border:none;background:none;color:inherit;cursor:none}
+
+/* ---------- 固定畫布舞台：四幅油畫 cross-fade + Ken Burns ---------- */
+#stage{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--abyss)}
+.plate{position:absolute;inset:0;background-size:cover;background-position:center;
+  opacity:0;transition:opacity 1.4s cubic-bezier(.4,0,.2,1);will-change:opacity,transform}
+.plate.on{opacity:1}
+.plate.kb{animation:kenburns 26s ease-out forwards}
+@keyframes kenburns{from{transform:scale(1.02)}to{transform:scale(1.13)}}
+/* 舞台調色與氛圍 */
+.stage-grade{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 78% 56%,transparent 0%,rgba(7,15,20,.18) 55%,rgba(7,15,20,.6) 100%),
+    linear-gradient(180deg,rgba(7,15,20,.5) 0%,transparent 22%,transparent 64%,rgba(7,15,20,.78) 100%)}
+.stage-warm{position:fixed;inset:0;z-index:1;pointer-events:none;mix-blend-mode:soft-light;opacity:.5;
+  background:radial-gradient(60% 50% at 76% 54%,rgba(240,166,78,.5),transparent 70%)}
+.grain{position:fixed;inset:-50%;z-index:2;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+  animation:grain 8s steps(7) infinite}
+@keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-2%,1%)}100%{transform:translate(1%,-1%)}}
+/* 蛾與燈的 canvas */
+#moths{position:fixed;inset:0;z-index:2;pointer-events:none}
+
+/* ---------- 自訂游標：你手裡的一盞燈 ---------- */
+.cursor,.cursor-ring{position:fixed;top:0;left:0;border-radius:50%;pointer-events:none;z-index:9999;mix-blend-mode:screen}
+.cursor{width:7px;height:7px;background:var(--amber-glow);transform:translate(-50%,-50%);
+  box-shadow:0 0 16px 5px var(--amber),0 0 44px 14px rgba(240,166,78,.35)}
+.cursor-ring{width:34px;height:34px;border:1px solid rgba(255,212,155,.4);transform:translate(-50%,-50%);
+  transition:width .3s,height .3s,border-color .3s,opacity .3s}
+.cursor-ring.hot{width:64px;height:64px;border-color:rgba(255,212,155,.8)}
+@media(hover:none){body{cursor:auto}.cursor,.cursor-ring{display:none}}
+
+/* ---------- 內容層 ---------- */
+main{position:relative;z-index:5}
+.chapter{position:relative;min-height:100vh;display:flex;align-items:center;
+  padding:clamp(80px,12vh,160px) clamp(22px,7vw,120px)}
+.chapter.center{justify-content:center;text-align:center}
+.chapter.right{justify-content:flex-end}
+
+/* 字幕卡（畫廊標籤 / 電影字卡）：克制、半透、暖髮絲線 */
+.placard{position:relative;max-width:540px;
+  background:linear-gradient(160deg,rgba(8,18,24,.82),rgba(8,18,24,.62));
+  backdrop-filter:blur(7px) saturate(1.1);-webkit-backdrop-filter:blur(7px) saturate(1.1);
+  border:1px solid var(--hair);border-radius:3px;
+  padding:clamp(34px,4vw,54px) clamp(30px,3.6vw,52px);
+  box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05)}
+.placard::before{content:"";position:absolute;top:0;left:0;width:46px;height:1px;background:var(--amber);
+  box-shadow:0 0 14px var(--amber)}
+.placard.wide{max-width:680px}
+
+/* 章節標號 */
+.kicker{font-family:"Newsreader",serif;font-style:italic;font-size:.96rem;letter-spacing:.04em;
+  color:var(--amber-glow);margin-bottom:20px;display:flex;align-items:baseline;gap:14px}
+.kicker .idx{font-style:normal;font-family:"Noto Serif TC",serif;font-weight:500;font-size:.8rem;
+  letter-spacing:.4em;color:var(--cream-faint);text-transform:uppercase}
+.kicker .ln{flex:1;height:1px;background:var(--hair);align-self:center}
+
+h2{font-family:"Noto Serif TC",serif;font-weight:700;font-size:clamp(1.9rem,4.2vw,3.1rem);
+  line-height:1.34;letter-spacing:.02em;color:var(--cream);margin-bottom:26px;
+  text-shadow:0 2px 30px rgba(0,0,0,.5)}
+h2 em{font-style:normal;color:var(--amber-glow);font-weight:700}
+.lede{font-size:clamp(1.02rem,1.5vw,1.16rem);line-height:2;color:var(--cream-dim);font-weight:400}
+.lede strong{color:var(--amber-glow);font-weight:400;
+  border-bottom:1px solid var(--hair-amber);padding-bottom:1px}
+
+/* ---------- 角落 UI ---------- */
+.archive{position:fixed;top:26px;left:30px;z-index:80;font-family:"Newsreader",serif;font-style:italic;
+  font-size:.96rem;letter-spacing:.02em;color:var(--cream-dim);display:flex;align-items:center;gap:.6em;
+  transition:color .4s,gap .4s;padding:.4em}
+.archive i{font-style:normal;transition:transform .4s}
+.archive:hover{color:var(--amber-glow);gap:1em}
+.archive:hover i{transform:translateX(-5px)}
+
+/* 營業狀態：一盞小燈 */
+.lantern-badge{position:fixed;top:24px;right:30px;z-index:80;display:flex;align-items:center;gap:11px;
+  padding:9px 17px 9px 14px;border:1px solid var(--hair);border-radius:999px;
+  background:rgba(8,18,24,.6);backdrop-filter:blur(8px);
+  font-family:"Newsreader",serif;font-size:.82rem;letter-spacing:.02em;color:var(--cream-dim)}
+.lantern-badge .bulb{position:relative;width:9px;height:9px;border-radius:50%;background:#5a6b6f;transition:.6s}
+.lantern-badge.lit .bulb{background:var(--amber-glow);box-shadow:0 0 12px 2px var(--amber)}
+.lantern-badge.lit .bulb::after{content:"";position:absolute;inset:-5px;border-radius:50%;
+  background:var(--amber);opacity:.4;animation:breathe 3s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(.7);opacity:.18}50%{transform:scale(1.5);opacity:.42}}
+.lantern-badge em{font-style:italic;color:var(--amber-glow)}
+@media(max-width:680px){.lantern-badge{top:auto;bottom:16px;right:50%;transform:translateX(50%);font-size:.74rem}}
+
+/* 章節進度・燈串 */
+.string{position:fixed;right:34px;top:50%;transform:translateY(-50%);z-index:80;
+  display:flex;flex-direction:column;gap:20px;align-items:center}
+.string .b{width:7px;height:7px;border-radius:50%;background:transparent;border:1px solid var(--hair);
+  transition:.5s;position:relative}
+.string .b.on{background:var(--amber-glow);border-color:var(--amber-glow);
+  box-shadow:0 0 12px 2px var(--amber);transform:scale(1.5)}
+@media(max-width:1100px){.string{display:none}}
+/* 燈串軌道：捲動進度填充 */
+.string-rail{position:fixed;right:37px;top:50%;transform:translateY(-50%);z-index:79;
+  width:2px;height:170px;background:var(--hair);border-radius:2px;overflow:hidden}
+.string-rail .fill{position:absolute;top:0;left:0;width:100%;height:0%;
+  background:linear-gradient(var(--amber-glow),var(--amber));box-shadow:0 0 10px var(--amber)}
+@media(max-width:1100px){.string-rail{display:none}}
+
+/* ===================== HERO（字卡） ===================== */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding-left:clamp(24px,8vw,150px);padding-right:24px}
+.hero .eyebrow{font-family:"Newsreader",serif;font-style:italic;font-size:clamp(.92rem,1.5vw,1.12rem);
+  letter-spacing:.05em;color:var(--amber-glow);margin-bottom:26px;opacity:0;
+  display:flex;align-items:center;gap:14px}
+.hero .eyebrow .sep{width:34px;height:1px;background:var(--hair-amber)}
+.hero h1{font-family:"Noto Serif TC",serif;font-weight:900;
+  font-size:clamp(3.4rem,12vw,9rem);line-height:.98;letter-spacing:.04em;color:var(--cream);
+  text-shadow:0 4px 50px rgba(0,0,0,.6),0 0 60px rgba(240,166,78,.14)}
+.hero h1 .ch{display:inline-block;opacity:0;transform:translateY(40px);
+  filter:blur(8px)}
+.hero .latin{font-family:"Newsreader",serif;font-style:italic;font-weight:300;
+  font-size:clamp(1.1rem,2.3vw,1.7rem);color:var(--cream-dim);letter-spacing:.02em;
+  margin-top:24px;opacity:0}
+.hero .tagline{font-family:"LXGW WenKai TC",serif;font-size:clamp(1.5rem,3.2vw,2.3rem);
+  color:var(--cream);margin-top:30px;letter-spacing:.06em;opacity:0}
+.hero .tagline em{font-style:normal;color:var(--amber-glow);position:relative;
+  text-shadow:0 0 24px rgba(240,166,78,.5)}
+
+.scroll-cue{position:absolute;bottom:38px;left:50%;transform:translateX(-50%);
+  font-family:"Newsreader",serif;font-style:italic;font-size:.84rem;letter-spacing:.06em;
+  color:var(--cream-faint);display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0}
+.scroll-cue .ln{width:1px;height:50px;background:linear-gradient(var(--amber),transparent);
+  animation:drip 2.4s ease-in-out infinite}
+@keyframes drip{0%,100%{transform:scaleY(.3);transform-origin:top;opacity:.4}50%{transform:scaleY(1);opacity:1}}
+@media(max-width:680px){.scroll-cue{display:none}}
+
+/* ===================== 推門・營業 ===================== */
+.hours{margin-top:30px;display:flex;flex-direction:column;gap:2px;
+  border-left:1px solid var(--hair-amber);padding-left:22px}
+.hours .row{display:flex;align-items:baseline;gap:16px;padding:7px 0;
+  font-family:"Newsreader",serif;font-size:1rem;color:var(--cream-dim);transition:.4s}
+.hours .row .t{font-style:italic;color:var(--amber-glow);min-width:62px}
+.hours .row .d{font-family:"LXGW WenKai TC",serif}
+.hours .row.now{color:var(--cream)}
+.hours .row.now .mark{margin-left:auto;font-family:"Newsreader",serif;font-style:italic;font-size:.78rem;
+  color:var(--ink);background:var(--amber-glow);padding:2px 11px;border-radius:999px}
+.hours .row:not(.now) .mark{display:none}
+.realtime-line{margin-top:22px;font-family:"LXGW WenKai TC",serif;font-size:1.05rem;color:var(--amber-glow);
+  display:flex;align-items:center;gap:10px}
+.realtime-line i{font-size:.8em;opacity:.8}
+
+/* ===================== 一碗・店家真實菜單（直接用 Threads 置頂菜單圖） ===================== */
+.menu-sec{justify-content:center;flex-direction:column;align-items:center;text-align:center}
+.menu-head{max-width:560px;margin-bottom:30px}
+.menu-head .kicker{justify-content:center}
+.menu-photo{position:relative;width:min(94vw,940px);border-radius:6px;overflow:hidden;cursor:none;
+  background:#f3e7d2;box-shadow:0 40px 100px rgba(0,0,0,.6),0 0 0 1px var(--hair),0 0 0 10px rgba(8,18,24,.4);
+  transition:transform .5s cubic-bezier(.3,1,.4,1),box-shadow .5s;display:block}
+.menu-photo img{display:block;width:100%;height:auto}
+.menu-photo .frame{position:absolute;inset:0;pointer-events:none;
+  box-shadow:inset 0 0 60px rgba(8,18,24,.18)}
+.menu-photo .zoom{position:absolute;right:14px;bottom:14px;display:flex;align-items:center;gap:8px;
+  font-family:"Newsreader",serif;font-style:italic;font-size:.8rem;color:var(--cream);
+  background:rgba(8,18,24,.72);backdrop-filter:blur(6px);padding:8px 14px;border-radius:999px;
+  border:1px solid var(--hair-amber);opacity:0;transition:opacity .4s}
+.menu-photo:hover{transform:translateY(-6px) scale(1.012);
+  box-shadow:0 52px 120px rgba(0,0,0,.66),0 0 0 1px var(--hair-amber),0 0 0 10px rgba(8,18,24,.5)}
+.menu-photo:hover .zoom{opacity:1}
+.menu-cap{margin-top:22px;max-width:620px;font-family:"LXGW WenKai TC",serif;font-size:.96rem;
+  color:var(--cream-dim);line-height:1.7}
+.menu-cap a{color:var(--amber-glow);border-bottom:1px solid var(--hair-amber)}
+.menu-cap a:hover{color:var(--amber)}
+@media(max-width:680px){.menu-photo{box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 0 6px rgba(8,18,24,.45)}}
+
+/* ===================== 我們陪你 ===================== */
+.company-list{margin-top:30px;display:flex;flex-direction:column;gap:16px}
+.company-list .who{display:flex;gap:16px;align-items:baseline;
+  font-size:1.02rem;color:var(--cream-dim);line-height:1.7}
+.company-list .who i{color:var(--amber);font-size:.9rem;width:20px;text-align:center;flex-shrink:0;
+  position:relative;top:1px}
+.company-list .who b{font-family:"LXGW WenKai TC",serif;font-weight:700;color:var(--cream);font-size:1.08rem}
+
+/* ===================== 來坐・聯絡 ===================== */
+.contact{display:flex;flex-direction:column;gap:0;margin-top:28px}
+.crow{display:flex;align-items:center;gap:18px;padding:15px 0;border-bottom:1px solid var(--hair)}
+.crow:last-child{border-bottom:none}
+.crow .ic{width:40px;height:40px;border-radius:50%;border:1px solid var(--hair-amber);
+  display:flex;align-items:center;justify-content:center;color:var(--amber-glow);flex-shrink:0;font-size:.95rem}
+.crow .lab{font-family:"Newsreader",serif;font-style:italic;font-size:.82rem;color:var(--cream-faint);
+  display:block;margin-bottom:2px}
+.crow .val{font-family:"LXGW WenKai TC",serif;font-size:1.12rem;color:var(--cream)}
+.crow a.val:hover{color:var(--amber-glow)}
+
+/* 按鈕：細框暖燈 */
+.cta-row{margin-top:30px;display:flex;flex-wrap:wrap;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 24px;
+  font-family:"LXGW WenKai TC",serif;font-size:1rem;letter-spacing:.04em;
+  border:1px solid var(--hair-amber);border-radius:2px;color:var(--cream);
+  background:transparent;transition:.45s;position:relative;overflow:hidden}
+.btn::before{content:"";position:absolute;inset:0;background:var(--amber);z-index:-1;
+  transform:translateY(101%);transition:transform .5s cubic-bezier(.65,0,.3,1)}
+.btn:hover{color:var(--ink);border-color:var(--amber)}
+.btn:hover::before{transform:translateY(0)}
+.btn.solid{background:var(--lantern);border-color:var(--lantern);color:#fff}
+.btn.solid::before{background:var(--ember)}
+.btn.solid:hover{color:#fff}
+.btn i{font-size:.9em}
+
+/* ===================== closing ===================== */
+.closing{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:120px 24px 70px}
+.closing .big{font-family:"Noto Serif TC",serif;font-weight:700;
+  font-size:clamp(2rem,5.6vw,4rem);line-height:1.4;letter-spacing:.04em;color:var(--cream);
+  max-width:900px;text-shadow:0 4px 40px rgba(0,0,0,.6)}
+.closing .big em{font-style:normal;color:var(--amber-glow);text-shadow:0 0 30px rgba(240,166,78,.5)}
+.closing .sign{margin-top:36px;font-family:"LXGW WenKai TC",serif;font-size:clamp(1.4rem,2.6vw,1.9rem);
+  color:var(--amber-glow)}
+.closing .sign .by{display:block;font-family:"Newsreader",serif;font-style:italic;font-size:.7em;
+  color:var(--cream-dim);margin-top:10px}
+.socials{margin-top:46px;display:flex;justify-content:center;gap:18px}
+.socials a{width:50px;height:50px;border-radius:50%;border:1px solid var(--hair-amber);
+  display:flex;align-items:center;justify-content:center;color:var(--cream-dim);font-size:1.15rem;
+  transition:.4s;background:rgba(8,18,24,.4)}
+.socials a:hover{color:var(--ink);background:var(--amber);border-color:var(--amber);
+  transform:translateY(-4px);box-shadow:0 12px 28px rgba(240,166,78,.4)}
+footer.foot{margin-top:54px;text-align:center;font-family:"Newsreader",serif;font-style:italic;
+  font-size:.86rem;color:var(--cream-faint)}
+footer.foot .made{margin-top:8px}
+footer.foot .made i{color:var(--lantern);margin:0 .2em}
+
+/* ===================== 響應式 ===================== */
+@media(max-width:680px){
+  .chapter{padding:96px 22px;min-height:auto}
+  .chapter.right{justify-content:flex-start}
+  .placard{max-width:none;width:100%}
+  .archive{top:18px;left:18px;font-size:.86rem}
+  .hero{padding-left:24px}
+  .stage-grade{background:
+    linear-gradient(180deg,rgba(7,15,20,.55) 0%,rgba(7,15,20,.2) 30%,rgba(7,15,20,.55) 62%,rgba(7,15,20,.9) 100%)}
+}
+</style>
+</head>
+<body>
+
+<!-- 油畫舞台 -->
+<div id="stage" aria-hidden="true">
+  <div class="plate" data-p="0" style="background-image:url('/assets/img/guild/momenteats/scenes/street.webp')"></div>
+  <div class="plate" data-p="1" style="background-image:url('/assets/img/guild/momenteats/scenes/door.webp')"></div>
+  <div class="plate" data-p="2" style="background-image:url('/assets/img/guild/momenteats/scenes/bowl.webp')"></div>
+  <div class="plate" data-p="3" style="background-image:url('/assets/img/guild/momenteats/scenes/counter.webp')"></div>
+</div>
+<div class="stage-grade" aria-hidden="true"></div>
+<div class="stage-warm" aria-hidden="true"></div>
+<canvas id="moths" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<!-- 游標：你手裡的一盞燈 -->
+<div class="cursor"></div>
+<div class="cursor-ring"></div>
+
+<!-- 角落 UI -->
+<a href="/guild/" class="archive"><i class="fa-solid fa-arrow-left-long"></i> 回公會名冊</a>
+<div class="lantern-badge" id="lantern"><span class="bulb"></span><span id="lanternText">點燈中…</span></div>
+<div class="string-rail" aria-hidden="true"><div class="fill" id="railFill"></div></div>
+<nav class="string" aria-hidden="true">
+  <span class="b" data-go="0"></span><span class="b" data-go="1"></span><span class="b" data-go="2"></span>
+  <span class="b" data-go="3"></span><span class="b" data-go="4"></span><span class="b" data-go="5"></span>
+  <span class="b" data-go="6"></span>
+</nav>
+
+<main>
+
+  <!-- ===== 0 · HERO ===== -->
+  <header class="hero" id="sec-0" data-plate="0">
+    <div class="eyebrow"><span class="sep"></span> Taitung · 中正路 291 號 · 19:00—02:00</div>
+    <h1 id="heroTitle">時刻消夜館</h1>
+    <div class="latin">Moment Eats — the one light still on.</div>
+    <div class="tagline">夜再深，<em>我們都在。</em></div>
+    <div class="scroll-cue">向夜的深處走 <span class="ln"></span></div>
+  </header>
+
+  <!-- ===== 1 · 半路的味道 ===== -->
+  <section class="chapter" id="sec-1" data-plate="0">
+    <div class="placard">
+      <div class="kicker"><span class="idx">壹 / Ⅰ</span> Midway flavor <span class="ln"></span></div>
+      <h2>有些味道，<br>是在人生的<em>半路</em>才出現的</h2>
+      <p class="lede">
+        我們是「時刻消夜館」。沒有華麗的開場，只有一個很單純的念頭——
+        希望你肚子餓的時候，腦中會<strong>自然想到我們</strong>。
+        半路出師，卻把每一鍋湯、每一碗飯，
+        都當成要親手端給朋友的那一份。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 2 · 推門（門口畫） ===== -->
+  <section class="chapter right" id="sec-2" data-plate="1">
+    <div class="placard">
+      <div class="kicker"><span class="idx">貳 / Ⅱ</span> The door <span class="ln"></span></div>
+      <h2>從天黑，<br>一路<em>亮到天快亮</em></h2>
+      <p class="lede">
+        19:00 開門，守到凌晨 02:00。下班的疲憊、讀書到深夜的空腹、
+        或是突然只想吃點熱的那一刻——門推開，<strong>就有位子</strong>。
+      </p>
+      <div class="hours" id="hours">
+        <div class="row" data-h="1900"><span class="t">19:00</span><span class="d">開門・第一鍋下湯</span><span class="mark">此刻</span></div>
+        <div class="row" data-h="2030"><span class="t">20:30</span><span class="d">晚餐時段</span><span class="mark">此刻</span></div>
+        <div class="row" data-h="2200"><span class="t">22:00</span><span class="d">下班潮，最熱鬧</span><span class="mark">此刻</span></div>
+        <div class="row" data-h="0000"><span class="t">00:00</span><span class="d">深夜場，最溫柔</span><span class="mark">此刻</span></div>
+        <div class="row" data-h="0200"><span class="t">02:00</span><span class="d">收班，燈才肯熄</span><span class="mark">此刻</span></div>
+      </div>
+      <div class="realtime-line" id="realtimeLine"><i class="fa-solid fa-circle"></i> <span>確認台東此刻…</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 3 · 菜單（直接使用店家 Threads 置頂的菜單原圖） ===== -->
+  <section class="chapter menu-sec" id="sec-3" data-plate="2">
+    <div class="menu-head">
+      <div class="kicker"><span class="idx">參 / Ⅲ</span> The menu <span class="ln"></span></div>
+      <h2>把鍋燒煮好，<em>把飯盛滿</em></h2>
+    </div>
+
+    <a class="menu-photo" href="/assets/img/guild/momenteats/menu-board.webp" target="_blank" rel="noopener noreferrer" aria-label="放大檢視時刻宵夜菜單">
+      <img src="/assets/img/guild/momenteats/menu-board.webp" alt="時刻宵夜菜單：套餐、鍋燒、飽餐時刻、小食、吐司、果醬厚片、單點、飲料，營業 19:00–凌晨 02:00" loading="lazy" width="1800" height="1273">
+      <span class="frame"></span>
+      <span class="zoom"><i class="fa-solid fa-magnifying-glass-plus"></i> 點圖放大</span>
+    </a>
+
+    <p class="menu-cap">
+      這是時刻宵夜的完整菜單，直接取自他們的
+      <a href="https://www.threads.com/@momenteats/post/DV_qZJBgVP7" target="_blank" rel="noopener noreferrer">Threads 置頂貼文</a>。
+      鍋燒、飽餐時刻的飯麵、炸物、吐司到飲料都在上面——以店內公告為準。
+    </p>
+  </section>
+
+  <!-- ===== 4 · 我們陪你（櫃檯畫） ===== -->
+  <section class="chapter right" id="sec-4" data-plate="3">
+    <div class="placard wide">
+      <div class="kicker"><span class="idx">肆 / Ⅳ</span> We keep you company <span class="ln"></span></div>
+      <h2>不只是賣宵夜，<br>是陪你度過<em>那些時刻</em></h2>
+      <p class="lede">
+        餓了、累了、想被照顧的時刻。世界都關了燈，我們還沒。
+        讓你不必為了一頓熱飯，硬撐著趕回家。
+      </p>
+      <div class="company-list">
+        <div class="who"><i class="fa-solid fa-briefcase"></i><span><b>剛下班的你</b>　不想自己煮、不想再對著螢幕。鍋裡有湯，等你坐下。</span></div>
+        <div class="who"><i class="fa-solid fa-book-open-reader"></i><span><b>唸到深夜的你</b>　追稿、加班、念到三點。我們的燈，會一直亮著。</span></div>
+        <div class="who"><i class="fa-solid fa-people-group"></i><span><b>一群人的你們</b>　續攤、生日、乾杯。炸物、鍋燒、笑聲通通到位。</span></div>
+        <div class="who"><i class="fa-solid fa-mug-hot"></i><span><b>一個人的你</b>　有人陪，也不擁擠。安靜吃完一碗熱的，再安心回家。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 5 · 來坐（夜街畫） ===== -->
+  <section class="chapter" id="sec-5" data-plate="0">
+    <div class="placard">
+      <div class="kicker"><span class="idx">伍 / Ⅴ</span> Find us <span class="ln"></span></div>
+      <h2>中正路 291 號，<br>找<em>那盞還亮著的燈</em></h2>
+      <div class="contact">
+        <div class="crow"><div class="ic"><i class="fa-solid fa-location-dot"></i></div>
+          <div><span class="lab">Where</span><span class="val">台東市中正路 291 號</span></div></div>
+        <div class="crow"><div class="ic"><i class="fa-solid fa-phone"></i></div>
+          <div><span class="lab">Call</span><a class="val" href="tel:089-350266">089-350266</a></div></div>
+        <div class="crow"><div class="ic"><i class="fa-solid fa-clock"></i></div>
+          <div><span class="lab">Hours</span><span class="val">每天 19:00 — 02:00</span></div></div>
+        <div class="crow"><div class="ic"><i class="fa-solid fa-utensils"></i></div>
+          <div><span class="lab">Style</span><span class="val">內用 ・ 外帶 ・ 一人到一桌都好</span></div></div>
+      </div>
+      <div class="cta-row">
+        <a class="btn solid" href="https://www.google.com/maps/search/?api=1&query=%E5%8F%B0%E6%9D%B1%E5%B8%82%E4%B8%AD%E6%AD%A3%E8%B7%AF291%E8%99%9F" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-map-location-dot"></i> 開導航</a>
+        <a class="btn" href="https://www.instagram.com/momenteats/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i> 每日上菜</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 6 · closing（櫃檯畫） ===== -->
+  <section class="closing" id="sec-6" data-plate="3">
+    <div class="big">因為<em>有些時刻</em>，<br>就是該<em>好好吃一頓</em>。</div>
+    <div class="sign">夜再深，我們都在。<span class="by">— 時刻消夜館 · Moment Eats</span></div>
+    <div class="cta-row" style="justify-content:center">
+      <a class="btn solid" href="tel:089-350266"><i class="fa-solid fa-phone-volume"></i> 撥給我們 089-350266</a>
+      <a class="btn" href="https://www.threads.com/@momenteats" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i> 讀更多日常</a>
+    </div>
+    <div class="socials">
+      <a href="https://www.threads.com/@momenteats" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+      <a href="https://www.instagram.com/momenteats/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      <a href="tel:089-350266" aria-label="電話"><i class="fa-solid fa-phone"></i></a>
+      <a href="https://www.google.com/maps/search/?api=1&query=%E5%8F%B0%E6%9D%B1%E5%B8%82%E4%B8%AD%E6%AD%A3%E8%B7%AF291%E8%99%9F" target="_blank" rel="noopener noreferrer" aria-label="地圖"><i class="fa-solid fa-location-dot"></i></a>
+    </div>
+    <footer class="foot">
+      <div>Moment Eats · Taitung · #台東美食</div>
+      <div class="made">Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon</div>
+    </footer>
+  </section>
+
+</main>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FINE = matchMedia('(hover:hover) and (pointer:fine)').matches;
+
+/* ===== 原生捲動 + 速度追蹤（給蛾用，不加慣性延遲） ===== */
+let scrollVel=0, _lastY=scrollY, _lastT=performance.now();
+addEventListener('scroll',()=>{
+  const now=performance.now(), dt=Math.max(now-_lastT,8);
+  scrollVel = (scrollY-_lastY)/dt*16;
+  _lastY=scrollY; _lastT=now;
+},{passive:true});
+
+/* ===== 游標：手裡的一盞燈 ===== */
+const cur=document.querySelector('.cursor'), ring=document.querySelector('.cursor-ring');
+let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY;cur.style.transform=`translate(${mx}px,${my}px) translate(-50%,-50%)`;},{passive:true});
+(function ease(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;ring.style.transform=`translate(${rx}px,${ry}px) translate(-50%,-50%)`;requestAnimationFrame(ease);})();
+document.querySelectorAll('a,.btn,.crow,.string .b,.menu-photo').forEach(el=>{
+  el.addEventListener('pointerenter',()=>ring.classList.add('hot'));
+  el.addEventListener('pointerleave',()=>ring.classList.remove('hot'));
+});
+
+/* ===== 磁吸按鈕：靠近時被吸引（桌機限定） ===== */
+if(FINE){
+  document.querySelectorAll('.btn, .socials a').forEach(el=>{
+    const strength = el.classList.contains('btn') ? 0.32 : 0.5;
+    el.addEventListener('pointermove',e=>{
+      const r=el.getBoundingClientRect();
+      const dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+      gsap.to(el,{x:dx*strength,y:dy*strength,duration:.5,ease:'power3.out'});
+    });
+    el.addEventListener('pointerleave',()=>gsap.to(el,{x:0,y:0,duration:.6,ease:'elastic.out(1,.4)'}));
+  });
+}
+
+/* ===== 蛾與燈：canvas（你帶著光，蛾循光而來） ===== */
+(function moths(){
+  const cv=document.getElementById('moths'), ctx=cv.getContext('2d');
+  let W,H,dpr;
+  function size(){dpr=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*dpr;H=cv.height=innerHeight*dpr;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px';}
+  size(); addEventListener('resize',size);
+  // 畫面裡店的暖光錨點（畫面右側偏中），蛾平時往那裡聚
+  let anchor={x:0.77,y:0.55};
+  const N=16, ms=[];
+  for(let i=0;i<N;i++) ms.push({x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,
+    ph:Math.random()*6.28, sp:0.4+Math.random()*0.7, sz:1+Math.random()*1.8});
+  let cursorActive=false,lastMove=0;
+  addEventListener('pointermove',e=>{cursorActive=true;lastMove=performance.now();},{passive:true});
+  let t=0;
+  function draw(){
+    requestAnimationFrame(draw);
+    t+=0.016; ctx.clearRect(0,0,W,H);
+    const idle = performance.now()-lastMove>1400;
+    // 目標：游標亮、且最近有動 → 跟游標；否則回到店的暖光
+    const tx = (cursorActive&&!idle)? mx*dpr : anchor.x*W;
+    const ty = (cursorActive&&!idle)? my*dpr : anchor.y*H;
+    // 捲動越快，蛾越躁動（被氣流吹散）；速度逐幀衰減，停下即靜
+    const gust = Math.min(Math.abs(scrollVel)*0.02, 1.4);
+    scrollVel *= 0.85;
+    for(const m of ms){
+      const dx=tx-m.x, dy=ty-m.y, d=Math.hypot(dx,dy)||1;
+      // 接近目標時環繞，遠時被吸引
+      const pull = d>90*dpr ? 0.012 : -0.006;
+      m.vx += dx/d*pull*d*0.04 + Math.cos(t*1.7+m.ph)*(0.06+gust*0.5)*dpr;
+      m.vy += dy/d*pull*d*0.04 + Math.sin(t*2.1+m.ph)*(0.06+gust*0.5)*dpr - gust*0.4*dpr;
+      m.vx*=0.92; m.vy*=0.92;
+      m.x+=m.vx*m.sp; m.y+=m.vy*m.sp;
+      const flick=0.55+0.45*Math.sin(t*9+m.ph);
+      const r=m.sz*dpr*(1+0.2*Math.sin(t*9+m.ph));
+      ctx.beginPath();
+      const g=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,r*5);
+      g.addColorStop(0,`rgba(255,224,170,${0.85*flick})`);
+      g.addColorStop(1,'rgba(255,200,120,0)');
+      ctx.fillStyle=g; ctx.arc(m.x,m.y,r*5,0,6.28); ctx.fill();
+    }
+  }
+  draw();
+})();
+
+/* ===== 油畫舞台：cross-fade + Ken Burns（依章節切換） ===== */
+const plates=[...document.querySelectorAll('.plate')];
+let curPlate=-1;
+function setPlate(i){
+  if(i===curPlate) return; curPlate=i;
+  plates.forEach((pl,j)=>{
+    const on=(+pl.dataset.p===i);
+    pl.classList.toggle('on',on);
+    if(on){ pl.classList.remove('kb'); void pl.offsetWidth; pl.classList.add('kb'); }
+  });
+}
+setPlate(0);
+
+/* ===== 章節 → 舞台、燈串、進場 ===== */
+const secs=[...document.querySelectorAll('[data-plate]')];
+const beads=[...document.querySelectorAll('.string .b')];
+secs.forEach((sec,i)=>{
+  ScrollTrigger.create({trigger:sec,start:'top 55%',end:'bottom 45%',
+    onEnter:()=>{setPlate(+sec.dataset.plate);lightBead(i);},
+    onEnterBack:()=>{setPlate(+sec.dataset.plate);lightBead(i);}});
+});
+function lightBead(i){beads.forEach((b,j)=>b.classList.toggle('on',j===i));}
+beads.forEach((b,i)=>b.addEventListener('click',()=>secs[i]?.scrollIntoView({behavior:'smooth'})));
+
+/* ===== 字卡進場：標題遮罩揭露 + 內容 stagger ===== */
+document.querySelectorAll('.placard,.menu-head').forEach(card=>{
+  const ST={trigger:card,start:'top 78%',once:true};
+  // 字卡本身
+  gsap.from(card,{y:54,opacity:0,duration:1.1,ease:'power3.out',scrollTrigger:ST});
+  // 標題：由下往上、模糊轉清晰（自我清除 inline 樣式，避免卡在隱藏狀態）
+  const h=card.querySelector('h2');
+  if(h){
+    gsap.from(h,{autoAlpha:0,y:30,filter:'blur(10px)',duration:1,ease:'power3.out',clearProps:'all',
+      scrollTrigger:{trigger:card,start:'top 82%',once:true}});
+  }
+  // kicker 細線拉開
+  gsap.fromTo(card.querySelectorAll('.kicker .ln'),{scaleX:0,transformOrigin:'left'},
+    {scaleX:1,duration:1,ease:'power2.out',scrollTrigger:{trigger:card,start:'top 76%',once:true}});
+  // 其餘內容（autoAlpha + clearProps：完成後回到自然狀態，不卡隱藏）
+  gsap.from(card.querySelectorAll('.kicker .idx,.kicker > *:not(.ln),.lede,.hours .row,.realtime-line,.company-list .who,.crow,.cta-row'),
+    {autoAlpha:0,y:22,duration:.7,stagger:.05,ease:'power2.out',clearProps:'all',
+     scrollTrigger:{trigger:card,start:'top 84%',once:true}});
+});
+
+/* ===== 菜單原圖進場 ===== */
+const menuPhoto=document.querySelector('.menu-photo');
+if(menuPhoto){
+  gsap.from(menuPhoto,{autoAlpha:0,y:40,duration:1,ease:'power3.out',clearProps:'all',
+    scrollTrigger:{trigger:menuPhoto,start:'top 82%',once:true}});
+  gsap.from('.menu-cap',{autoAlpha:0,y:20,duration:.7,ease:'power2.out',clearProps:'all',
+    scrollTrigger:{trigger:'.menu-cap',start:'top 90%',once:true}});
+}
+
+/* ===== 字體載入後重算 ScrollTrigger（修正內容因 webfont 位移而卡隱藏） ===== */
+function refreshST(){ ScrollTrigger.refresh(); }
+addEventListener('load',refreshST);
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(refreshST); }
+setTimeout(refreshST,1200); setTimeout(refreshST,2600);
+
+/* ===== 捲動連動：暖光強度（越靠近店越暖）+ 舞台呼吸視差 ===== */
+const warmLayer=document.querySelector('.stage-warm');
+['#sec-2','#sec-3','#sec-4'].forEach(sel=>{
+  const el=document.querySelector(sel); if(!el) return;
+  gsap.fromTo(warmLayer,{opacity:.42},{opacity:.74,ease:'none',
+    scrollTrigger:{trigger:el,start:'top bottom',end:'center center',scrub:true}});
+  gsap.to(warmLayer,{opacity:.42,ease:'none',
+    scrollTrigger:{trigger:el,start:'center center',end:'bottom top',scrub:true}});
+});
+// 舞台隨捲動極輕微位移，製造景深呼吸
+if(!RM){
+  gsap.to('#stage',{yPercent:-4,ease:'none',
+    scrollTrigger:{trigger:'main',start:'top top',end:'bottom bottom',scrub:1.2}});
+}
+
+/* ===== 燈串軌道：捲動進度填充 ===== */
+const railFill=document.getElementById('railFill');
+if(railFill){
+  ScrollTrigger.create({start:0,end:'max',onUpdate:s=>{railFill.style.height=(s.progress*100).toFixed(1)+'%';}});
+}
+
+/* ===== Hero 進場：逐字浮起 ===== */
+const title=document.getElementById('heroTitle');
+const chars=[...title.textContent];
+title.innerHTML=chars.map(c=>`<span class="ch">${c}</span>`).join('');
+const tl=gsap.timeline({delay:.25});
+tl.to('.hero .eyebrow',{opacity:1,duration:.9,ease:'power2.out'})
+  .to('.hero h1 .ch',{opacity:1,y:0,filter:'blur(0px)',duration:.9,stagger:.08,ease:'power3.out'},'-=.4')
+  .to('.hero .latin',{opacity:1,duration:.8,ease:'power2.out'},'-=.5')
+  .to('.hero .tagline',{opacity:1,duration:.9,ease:'power2.out'},'-=.5')
+  .to('.scroll-cue',{opacity:1,duration:.8},'-=.3');
+
+/* hero 視差：僅大標題輕微上移製造景深；副標、標語不淡出，隨章節自然捲離 */
+if(!RM){
+  gsap.to('.hero h1',{yPercent:-14,ease:'none',
+    scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+}
+
+/* ===== 即時時間：燈・營業狀態・此刻時段 ===== */
+function taipeiNow(){
+  const s=new Date().toLocaleString('en-US',{timeZone:'Asia/Taipei',hour12:false});
+  const m=s.match(/(\d+)\/(\d+)\/(\d+),\s+(\d+):(\d+):(\d+)/);
+  if(!m) return new Date();
+  return new Date(+m[3],+m[1]-1,+m[2],+m[4],+m[5],+m[6]);
+}
+function pad(n){return String(n).padStart(2,'0');}
+function refresh(){
+  const d=taipeiNow(), h=d.getHours(), mi=d.getMinutes(), tot=h*60+mi;
+  const open=(tot>=19*60)||(tot<=2*60);   // 19:00 — 凌晨 02:00
+  const lan=document.getElementById('lantern'), lt=document.getElementById('lanternText');
+  lan.classList.toggle('lit',open);
+  lt.innerHTML = open ? `Open · <em>燈亮著</em>` : `Closed · ${pad(h)}:${pad(mi)}`;
+  // 此刻時段高亮
+  let key=null;
+  if(h===19||(h===20&&mi<30)) key='1900';
+  else if((h===20&&mi>=30)||h===21) key='2030';
+  else if(h>=22&&h<=23) key='2200';
+  else if(h>=0&&h<2) key='0000';
+  else if(h===2&&mi===0) key='0200';
+  document.querySelectorAll('.hours .row').forEach(r=>r.classList.toggle('now',r.dataset.h===key));
+  // 此刻一句話
+  const line=document.getElementById('realtimeLine');
+  const txt=line.querySelector('span');
+  if(open){
+    let say='我們醒著，鍋也熱著。';
+    if(key==='1900') say='剛開門，第一鍋湯下了，香氣正起。';
+    else if(key==='2030') say='晚餐時段，正好坐下來吃一碗。';
+    else if(key==='2200') say='下班潮來了，店裡正熱鬧。';
+    else if(key==='0000') say='深夜場，最安靜也最溫柔。';
+    else if(key==='0200') say='快收班了，最後一鍋油還在。';
+    txt.textContent = `台東此刻 ${pad(h)}:${pad(mi)}——${say}`;
+    line.style.color='var(--amber-glow)';
+  }else{
+    txt.textContent = `台東此刻 ${pad(h)}:${pad(mi)}——燈先歇著，今晚 19:00 再為你點亮。`;
+    line.style.color='var(--cream-dim)';
+  }
+}
+refresh(); setInterval(refresh,15000);
+</script>
+</body>
+</html>
