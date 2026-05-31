@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>木光所製 ・ 光，從木屑裡長出來 · 然冉 × 福哥</title>
+<meta name="description" content="木光所製 — 高雄的鄰家木作父女檔。47 年資歷的爸爸福哥負責讓木頭聽話，女兒然冉負責讓更多人看見。木作定製櫃（不是系統櫃）、全室規劃、局部裝修、設計製圖、到府丈量、木作場地租借與教學。沒有華麗包裝，但更貼近你的生活。">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preload" as="image" href="/assets/img/guild/muguang/tex/wood.webp">
+
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,400&family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=LXGW+WenKai+TC:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+<style>
+/* =====================================================================
+   木光所製 ・ MÙGUĀNG — Made of Wood & Light
+   「光，從木屑裡長出來」
+   高雄鄰家木作父女檔：47 年的手（福哥）× 剛開始發亮的眼睛（然冉）
+   敘事弧：毛胚的暗 → 一束光照進工坊 → 完工的明亮家屋
+   ===================================================================== */
+:root{
+  --wood-abyss:#1a120b;     /* 最深的木・毛胚的暗 */
+  --wood-deep:#2c1d11;      /* 胡桃深木 */
+  --wood:#4a3019;           /* 主木色 */
+  --oak:#9a6633;            /* 橡木 */
+  --oak-lit:#c08a4c;        /* 受光橡木 */
+  --cream:#f6ecd9;          /* 紙・米白（logo 底） */
+  --paper:#fbf5e9;          /* 完工的明亮 */
+  --light:#ffc169;          /* 鎢絲暖光 */
+  --light-glow:#ffe3b0;     /* 光暈 */
+  --ink:#231708;            /* 木上的字 */
+  --ink-soft:#5a4429;
+  --cream-dim:rgba(248,240,224,.86);
+  --cream-faint:rgba(248,240,224,.56);
+  --hair:rgba(246,236,217,.18);
+  --hair-wood:rgba(154,102,51,.30);
+  /* 然冉的「五彩繽紛」— 像一排油漆色票，少量點綴 */
+  --pop-teal:#2f9e8f;
+  --pop-coral:#ef6f5b;
+  --pop-sun:#f4b740;
+  --pop-sky:#4f93c4;
+  --pop-violet:#8a6fc7;
+  --pop-leaf:#7aa84e;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--wood-abyss);
+  color:var(--cream);
+  font-family:"Noto Sans TC","Noto Serif TC",sans-serif;
+  font-weight:400;line-height:1.9;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+::selection{background:var(--light);color:var(--ink)}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;border:none;background:none;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--light);outline-offset:3px;border-radius:3px}
+.skip{position:fixed;top:-60px;left:14px;z-index:300;background:var(--ink);color:var(--light);
+  padding:.7em 1.2em;border-radius:8px;font-size:.8rem;transition:top .25s;border:1px solid var(--light)}
+.skip:focus{top:14px}
+
+/* ---------- 全域木紋／紙質紋理疊層 ---------- */
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ---------- p5 木屑光塵層（全頁固定） ---------- */
+#sawdust{position:fixed;inset:0;z-index:5;pointer-events:none;mix-blend-mode:screen}
+/* ---------- 跟隨游標的「手電筒光」 ---------- */
+#torch{position:fixed;width:340px;height:340px;border-radius:50%;z-index:3;pointer-events:none;
+  transform:translate(-50%,-50%);mix-blend-mode:screen;opacity:0;transition:opacity .6s;
+  background:radial-gradient(circle,rgba(255,193,105,.09) 0%,rgba(255,193,105,.03) 40%,transparent 70%)}
+
+/* ---------- 內容層 ---------- */
+.page{position:relative;z-index:4}
+
+/* ---------- 返回導航 ---------- */
+.archive{position:fixed;top:22px;left:24px;z-index:60;font-family:"Space Mono",monospace;
+  font-size:.72rem;letter-spacing:.18em;color:var(--cream-dim);
+  display:inline-flex;align-items:center;gap:.5em;padding:.5em .9em;border-radius:30px;
+  background:rgba(26,18,11,.5);backdrop-filter:blur(8px);border:1px solid var(--hair);
+  transition:.4s}
+.archive:hover{color:var(--light);border-color:var(--hair-wood);transform:translateX(-3px)}
+.archive i{transition:.4s}
+.archive:hover i{transform:translateX(-3px)}
+
+/* ===================== LOADER ===================== */
+#loader{position:fixed;inset:0;z-index:200;background:var(--cream);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+  transition:opacity .9s ease,visibility .9s}
+#loader.gone{opacity:0;visibility:hidden}
+#loader .mark{width:120px;height:120px}
+/* 純 CSS 描線：第一個 paint 就從零開始畫（pathLength=100 統一長度），不依賴 JS/load 時機 */
+#loader .mark path,#loader .mark line{stroke:var(--oak);stroke-width:3.2;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:100;stroke-dashoffset:100;animation:ld-draw 1.1s ease-in-out forwards}
+#loader .mark line:nth-of-type(1){animation-delay:.7s;animation-duration:.5s}
+#loader .mark line:nth-of-type(2){animation-delay:.85s;animation-duration:.5s}
+#loader .mark line:nth-of-type(3){animation-delay:1s;animation-duration:.5s}
+@keyframes ld-draw{to{stroke-dashoffset:0}}
+#loader .ld-name{font-family:"Noto Serif TC",serif;font-weight:900;font-size:1.7rem;
+  letter-spacing:1em;color:var(--ink);padding-left:1em;opacity:0;animation:ld-name .8s ease-out 1.35s forwards}
+@keyframes ld-name{from{opacity:0;letter-spacing:1em}to{opacity:1;letter-spacing:.5em}}
+#loader .ld-sub{font-family:"Space Mono",monospace;font-size:.62rem;letter-spacing:.42em;
+  color:var(--oak);opacity:0;animation:ld-fade .7s ease-out 1.75s forwards}
+@keyframes ld-fade{to{opacity:1}}
+.ld-beam{position:absolute;top:-10%;left:50%;width:2px;height:60%;transform-origin:top center;
+  background:linear-gradient(var(--light),transparent);filter:blur(2px);opacity:0;transform:scaleY(.4);
+  animation:ld-beam 1s ease-out .9s forwards}
+@keyframes ld-beam{to{opacity:.9;transform:scaleY(1.4)}}
+
+/* ===================== HERO ===================== */
+#hero{position:relative;min-height:100svh;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  background:radial-gradient(125% 95% at 50% -5%,#3d2815 0%,var(--wood-deep) 40%,var(--wood-abyss) 80%)}
+#hero-3d{position:absolute;inset:0;z-index:1}
+/* 製圖藍圖網格（淡，向邊緣淡出） */
+.hero-grid{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(201,154,90,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,154,90,.055) 1px,transparent 1px);
+  background-size:64px 64px;background-position:center;
+  -webkit-mask-image:radial-gradient(circle at 50% 44%,#000 26%,transparent 72%);
+  mask-image:radial-gradient(circle at 50% 44%,#000 26%,transparent 72%)}
+/* 角落製圖定位框 */
+.hero-corners span{position:absolute;width:24px;height:24px;z-index:4;opacity:0;border:1px solid var(--hair-wood)}
+.hero-corners .tl{top:26px;left:26px;border-right:0;border-bottom:0}
+.hero-corners .tr{top:26px;right:26px;border-left:0;border-bottom:0}
+.hero-corners .bl{bottom:26px;left:26px;border-right:0;border-top:0}
+.hero-corners .br{bottom:26px;right:26px;border-left:0;border-top:0}
+/* 漂浮木板（純 CSS，省效能） */
+.hero-planks{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.hero-planks .plk{position:absolute;border-radius:3px;
+  background:linear-gradient(118deg,var(--oak-lit) 0%,var(--oak) 55%,var(--wood) 100%);
+  box-shadow:0 14px 34px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,225,170,.35);
+  opacity:.78;will-change:transform;animation:plkfloat var(--d,9s) ease-in-out infinite var(--dl,0s)}
+@keyframes plkfloat{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}
+  50%{transform:translateY(-26px) rotate(calc(var(--r,0deg) + 7deg))}}
+@media(prefers-reduced-motion:reduce){.hero-planks .plk{animation:none}}
+/* 暖光暈 + 體積光束 */
+.hero-glow{position:absolute;top:-12%;left:50%;transform:translateX(-50%);width:92vw;max-width:1020px;height:82%;
+  z-index:1;pointer-events:none;filter:blur(22px);opacity:0;
+  background:radial-gradient(48% 44% at 50% 32%,rgba(255,193,105,.18),transparent 70%)}
+.lightshaft{position:absolute;top:-22%;left:50%;width:78vw;max-width:760px;height:150%;
+  transform:translateX(-50%) rotate(8deg);z-index:2;pointer-events:none;mix-blend-mode:screen;
+  background:conic-gradient(from 175deg at 50% 0%,transparent 0deg,rgba(255,193,105,.16) 6deg,rgba(255,227,176,.28) 9deg,rgba(255,193,105,.14) 12deg,transparent 18deg);
+  filter:blur(6px);opacity:0;animation:shaftpulse 7s ease-in-out infinite}
+@keyframes shaftpulse{0%,100%{opacity:.5}50%{opacity:.85}}
+.hero-inner{position:relative;z-index:5;text-align:center;padding:0 24px;max-width:1000px}
+.hero-eyebrow{font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.42em;
+  color:var(--oak-lit);text-transform:uppercase;margin-bottom:34px;opacity:0;
+  display:inline-flex;align-items:center;gap:.9em}
+.hero-eyebrow::before,.hero-eyebrow::after{content:"";width:26px;height:1px;background:var(--hair-wood)}
+.hero-title{font-family:"Noto Serif TC",serif;font-weight:900;line-height:.96;
+  font-size:clamp(3.8rem,16vw,11rem);letter-spacing:.04em;display:flex;justify-content:center}
+.hero-title span{display:inline-block;opacity:0;transform:translateY(48px) rotateX(34deg);
+  background-image:
+    linear-gradient(102deg,transparent 36%,rgba(255,248,228,.92) 50%,transparent 64%),
+    linear-gradient(162deg,rgba(255,235,197,.92) 0%,rgba(214,160,96,.78) 48%,rgba(126,84,44,.9) 100%),
+    url(/assets/img/guild/muguang/tex/wood.webp);
+  background-size:300% 100%, cover, 320px auto;
+  background-position:-70% 0, center, center;background-repeat:no-repeat,no-repeat,repeat;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  filter:drop-shadow(0 8px 28px rgba(0,0,0,.55)) drop-shadow(0 0 34px rgba(255,193,105,.22));
+  animation:woodglint 7.5s ease-in-out infinite}
+@keyframes woodglint{0%{background-position:-70% 0,center,center}55%,100%{background-position:170% 0,center,center}}
+/* 尺寸標註線（製圖母題） */
+.hero-dim{display:flex;align-items:center;justify-content:center;gap:13px;margin-top:30px;opacity:0}
+.hero-dim i.t{width:1px;height:11px;background:var(--oak-lit);flex:0 0 auto}
+.hero-dim i.ln{height:1px;width:clamp(24px,8vw,84px);flex:0 0 auto;
+  background:linear-gradient(90deg,transparent,var(--oak-lit))}
+.hero-dim i.ln.r{background:linear-gradient(90deg,var(--oak-lit),transparent)}
+.hero-dim .lab{font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.26em;
+  color:var(--cream-dim);text-transform:uppercase;white-space:nowrap}
+.hero-tag{font-family:"LXGW WenKai TC",cursive;font-size:clamp(1.2rem,3.7vw,2rem);
+  color:var(--light-glow);margin-top:26px;opacity:0;letter-spacing:.08em}
+.hero-en{font-family:"Fraunces",serif;font-style:italic;font-size:clamp(.82rem,1.9vw,1rem);
+  color:var(--cream-faint);margin-top:12px;opacity:0;letter-spacing:.1em}
+.hero-spec{font-family:"Space Mono",monospace;font-size:.64rem;letter-spacing:.2em;
+  color:var(--cream-faint);margin-top:34px;opacity:0;text-transform:uppercase}
+.hero-spec b{color:var(--oak-lit);font-weight:400;margin:0 .55em}
+.scrollcue{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:6;
+  font-family:"Space Mono",monospace;font-size:.6rem;letter-spacing:.34em;color:var(--cream-faint);
+  display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0;animation:cuefade 3s ease 2.6s forwards}
+@keyframes cuefade{to{opacity:1}}
+.scrollcue .ln{width:1px;height:42px;background:linear-gradient(var(--oak-lit),transparent);
+  animation:cueln 2s ease-in-out infinite}
+@keyframes cueln{0%,100%{transform:scaleY(.4);opacity:.4}50%{transform:scaleY(1);opacity:1}}
+
+/* ===================== 共用區塊 ===================== */
+section{position:relative}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+.sec-pad{padding:clamp(90px,14vw,170px) 0}
+.kicker{font-family:"Space Mono",monospace;font-size:.7rem;letter-spacing:.34em;
+  text-transform:uppercase;display:inline-flex;align-items:center;gap:.7em;margin-bottom:22px}
+.kicker::before{content:"";width:30px;height:1px;background:currentColor;opacity:.6}
+.kicker .roof{width:14px;height:14px}
+.h-lg{font-family:"Noto Serif TC",serif;font-weight:900;line-height:1.18;
+  font-size:clamp(2rem,5.4vw,3.7rem);letter-spacing:.02em}
+.lead{font-size:clamp(1.04rem,1.7vw,1.22rem);line-height:2.0;color:rgba(249,242,228,.92);max-width:40em;
+  text-shadow:0 1px 12px rgba(0,0,0,.45)}
+.brush{font-family:"LXGW WenKai TC",cursive}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(38px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.12s}.rv.d2{transition-delay:.24s}.rv.d3{transition-delay:.36s}.rv.d4{transition-delay:.48s}
+
+
+/* 材質疊層（Gemini 生成）：木紋鋪暗區、紙質鋪亮區，皆置於內容之下、極低干擾 */
+.tex-wood,.tex-paper{position:relative;isolation:isolate}
+.tex-wood::before,.tex-paper::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none}
+.tex-wood::before{background:url(/assets/img/guild/muguang/tex/wood.webp) center/cover;opacity:.12;mix-blend-mode:soft-light}
+.tex-paper::before{background:url(/assets/img/guild/muguang/tex/paper.webp) center/cover;opacity:.5;mix-blend-mode:multiply}
+.tex-wood>*,.tex-paper>*{position:relative;z-index:1}
+
+/* ===================== 然冉自介 ===================== */
+#intro{background:linear-gradient(180deg,var(--wood-abyss) 0%,var(--wood-deep) 100%)}
+.intro-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(34px,5vw,80px);align-items:center}
+.intro-photo{position:relative}
+.intro-photo .frame{position:relative;border-radius:6px;overflow:hidden;
+  box-shadow:0 40px 90px rgba(0,0,0,.55);border:1px solid var(--hair-wood)}
+.intro-photo img{width:100%;height:100%;object-fit:cover;aspect-ratio:3/4;
+  filter:saturate(1.02) contrast(1.02)}
+.intro-photo .tape{position:absolute;top:-14px;left:30px;width:120px;height:30px;
+  background:rgba(244,183,64,.5);transform:rotate(-4deg);backdrop-filter:blur(1px);
+  box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.intro-photo .cap{position:absolute;bottom:14px;right:14px;font-family:"Space Mono",monospace;
+  font-size:.6rem;letter-spacing:.18em;color:var(--cream);background:rgba(26,18,11,.6);
+  padding:.4em .8em;border-radius:20px;backdrop-filter:blur(4px)}
+.intro-photo .swan{position:absolute;left:-18px;bottom:40px;color:var(--light);
+  font-size:1.5rem;opacity:.85;transform:rotate(-8deg)}
+.intro-copy h2{color:var(--cream)}
+.intro-copy .lead{margin-top:24px}
+.sign{margin-top:30px;font-family:"LXGW WenKai TC",cursive;font-size:1.5rem;color:var(--light-glow)}
+.sign small{display:block;font-family:"Space Mono",monospace;font-size:.6rem;letter-spacing:.22em;
+  color:var(--oak-lit);margin-top:6px}
+
+/* ===================== 父女分工 ===================== */
+#duo{background:var(--wood-deep);overflow:hidden}
+.duo-head{text-align:center;margin-bottom:clamp(48px,7vw,86px)}
+.duo-head .h-lg{color:var(--cream)}
+.duo-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;
+  border:1px solid var(--hair-wood);border-radius:8px;overflow:hidden;
+  background:var(--hair-wood)}
+.duo-card{position:relative;padding:clamp(30px,4vw,52px);overflow:hidden;min-height:520px;
+  display:flex;flex-direction:column;justify-content:flex-end}
+.duo-card .ph{position:absolute;inset:0;z-index:0}
+.duo-card .ph img{width:100%;height:100%;object-fit:cover}
+.duo-card .ph::after{content:"";position:absolute;inset:0}
+.duo-dad{background:var(--wood-abyss)}
+.duo-dad .ph::after{background:linear-gradient(180deg,rgba(26,18,11,.35) 0%,rgba(26,18,11,.92) 78%)}
+.duo-daughter{background:var(--wood)}
+.duo-daughter .ph::after{background:linear-gradient(180deg,rgba(44,29,17,.25) 0%,rgba(44,29,17,.9) 78%)}
+.duo-card .body{position:relative;z-index:2}
+.duo-role{font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.28em;
+  text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:.7em}
+.duo-dad .duo-role{color:var(--oak-lit)}
+.duo-daughter .duo-role{color:var(--pop-sun)}
+.duo-name{font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(1.8rem,4vw,2.8rem);
+  color:var(--cream);line-height:1.1}
+.duo-name em{font-family:"Fraunces",serif;font-style:italic;font-weight:400;font-size:.5em;
+  display:block;color:var(--cream-faint);letter-spacing:.1em;margin-top:6px}
+.duo-line{font-family:"LXGW WenKai TC",cursive;font-size:1.15rem;color:var(--light-glow);margin:18px 0}
+.duo-tasks{list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.duo-tasks li{font-size:.78rem;letter-spacing:.05em;padding:.4em .85em;border-radius:30px;
+  border:1px solid var(--hair);background:rgba(26,18,11,.4);color:var(--cream-dim)}
+.duo-exp{position:absolute;top:clamp(22px,3vw,40px);right:clamp(22px,3vw,40px);z-index:3;text-align:right}
+.duo-exp .num{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(3rem,7vw,5rem);
+  line-height:.9;color:var(--light);text-shadow:0 0 40px rgba(255,193,105,.4)}
+.duo-exp .lab{font-family:"Space Mono",monospace;font-size:.58rem;letter-spacing:.22em;color:var(--cream-dim)}
+/* 色票條：然冉的五彩繽紛 */
+.swatches{display:flex;gap:6px;margin-top:18px}
+.swatches i{width:26px;height:26px;border-radius:5px;transform:translateY(8px);opacity:0;
+  box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.duo-join{text-align:center;margin-top:clamp(40px,6vw,70px)}
+.duo-join .brush{font-size:clamp(1.3rem,3.4vw,2rem);color:var(--cream)}
+.duo-join .roof{width:18px;height:18px;vertical-align:middle;margin:0 .3em}
+
+/* ===================== 木 × 光 哲學（工坊光束實景） ===================== */
+#philo{background:var(--wood-abyss);text-align:center;overflow:hidden}
+.philo-bg{position:absolute;inset:-14% 0;z-index:0;
+  background:url(/assets/img/guild/muguang/tex/atmos.webp) center/cover;will-change:transform}
+.philo-scrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(58% 64% at 50% 50%,rgba(8,5,2,.66) 0%,rgba(8,5,2,.42) 48%,rgba(8,5,2,.9) 100%)}
+.philo-inner{position:relative;z-index:3;max-width:840px;margin:0 auto}
+.philo-eq{display:flex;align-items:center;justify-content:center;gap:clamp(18px,4vw,46px);flex-wrap:wrap;margin:40px 0}
+.philo-eq .term{display:flex;flex-direction:column;align-items:center;gap:10px}
+.philo-eq .gly{font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(3rem,9vw,6rem);
+  width:1.7em;height:1.7em;display:flex;align-items:center;justify-content:center;border-radius:50%;
+  border:1px solid var(--hair-wood)}
+.philo-eq .gly.mu{color:var(--oak-lit);background:radial-gradient(circle,rgba(154,102,51,.2),transparent)}
+.philo-eq .gly.guang{color:var(--light);background:radial-gradient(circle,rgba(255,193,105,.22),transparent);
+  text-shadow:0 0 40px rgba(255,193,105,.6)}
+.philo-eq .op{font-family:"Fraunces",serif;font-size:clamp(1.6rem,5vw,2.6rem);color:var(--cream-dim);text-shadow:0 2px 18px rgba(0,0,0,.7)}
+.philo-eq .gly{text-shadow:0 4px 30px rgba(0,0,0,.8)}
+.philo-eq .term small{font-family:"Space Mono",monospace;font-size:.64rem;letter-spacing:.2em;color:var(--cream);text-shadow:0 1px 10px rgba(0,0,0,.85)}
+.philo-quote{font-family:"Noto Serif TC",serif;font-weight:700;font-size:clamp(1.4rem,3.6vw,2.3rem);
+  line-height:1.7;color:var(--cream);margin-top:20px;text-shadow:0 2px 22px rgba(0,0,0,.8)}
+.philo-quote b{color:var(--light)}
+
+/* ===================== 刨花橋段（工法實景，段落間的呼吸） ===================== */
+#shaving-bridge{position:relative;height:62vh;min-height:380px;overflow:hidden;background:var(--wood-abyss);
+  display:flex;align-items:center;justify-content:center}
+#shaving-bridge .sb-img{position:absolute;inset:-12% 0;z-index:0;
+  background:url(/assets/img/guild/muguang/tex/shaving.webp) center/cover;will-change:transform}
+#shaving-bridge .sb-scrim{position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,rgba(8,5,2,.9) 0%,rgba(8,5,2,.35) 45%,rgba(8,5,2,.82) 100%)}
+#shaving-bridge .sb-text{position:relative;z-index:2;text-align:center;padding:0 24px;max-width:760px}
+#shaving-bridge .sb-text .brush{font-size:clamp(1.5rem,4.4vw,2.6rem);color:var(--cream);
+  text-shadow:0 2px 24px rgba(0,0,0,.85);line-height:1.5}
+#shaving-bridge .sb-text .sub{font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.32em;
+  color:var(--light);margin-top:16px;text-transform:uppercase;opacity:.9}
+
+/* ===================== 木作櫃自組裝（three.js + sticky scrub） ===================== */
+#assemble{position:relative;height:200vh;background:var(--wood-deep)}
+.asm-stage{position:sticky;top:0;height:100vh;overflow:hidden;
+  background:radial-gradient(120% 90% at 70% 30%,#3a2614 0%,var(--wood-deep) 55%,var(--wood-abyss) 100%)}
+.asm-bg{position:absolute;inset:0;z-index:0;background:url(/assets/img/guild/muguang/tex/blueprint.webp) center/cover;
+  opacity:.16;mix-blend-mode:screen;will-change:transform}
+#asm-3d{position:absolute;inset:0;z-index:1}
+.asm-overlay{position:absolute;z-index:3;left:0;right:0;bottom:0;top:0;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:center;padding:0 clamp(28px,7vw,110px);max-width:680px}
+.asm-overlay .kicker{color:var(--oak-lit)}
+.asm-overlay h2{font-family:"Noto Serif TC",serif;font-weight:900;color:var(--cream);
+  font-size:clamp(1.9rem,4.8vw,3.3rem);line-height:1.2;text-shadow:0 3px 26px rgba(0,0,0,.7)}
+.asm-steps{margin-top:30px;display:flex;flex-direction:column;gap:12px}
+.asm-steps span{font-family:"Space Mono",monospace;font-size:.78rem;letter-spacing:.14em;color:var(--cream-faint);
+  display:flex;align-items:center;gap:.8em;transition:color .4s,transform .4s;transform:translateX(0)}
+.asm-steps span::before{content:"";width:18px;height:2px;background:var(--hair-wood);transition:.4s}
+.asm-steps span.on{color:var(--light);transform:translateX(8px)}
+.asm-steps span.on::before{width:34px;background:var(--light);box-shadow:0 0 12px var(--light)}
+.asm-steps span .n{font-size:.62rem;opacity:.6}
+.asm-progress{position:absolute;left:clamp(28px,7vw,110px);right:clamp(28px,7vw,110px);bottom:42px;z-index:3;height:3px;
+  background:rgba(246,236,217,.12);border-radius:3px;overflow:hidden}
+.asm-progress .pf{position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--oak-lit),var(--light));
+  box-shadow:0 0 14px rgba(255,193,105,.5)}
+.asm-hint{position:absolute;right:clamp(28px,7vw,110px);bottom:58px;z-index:3;
+  font-family:"Space Mono",monospace;font-size:.6rem;letter-spacing:.24em;color:var(--cream-faint)}
+
+/* ===================== 毛胚 → 完工（捲動驅動 before/after） ===================== */
+#transform{position:relative;height:175vh;background:#000}
+.tf-stage{position:sticky;top:0;height:100vh;overflow:hidden}
+.tf-raw,.tf-done{position:absolute;inset:0;background-size:cover;background-position:center}
+.tf-raw{background-image:url(/assets/img/guild/muguang/tex/room-raw.webp);filter:saturate(.55) brightness(.8)}
+.tf-done{background-image:url(/assets/img/guild/muguang/tex/room-done.webp);
+  clip-path:inset(0 100% 0 0);will-change:clip-path}
+.tf-seam{position:absolute;top:0;bottom:0;left:0;width:3px;z-index:4;pointer-events:none;
+  background:linear-gradient(180deg,transparent,var(--light),transparent);
+  box-shadow:0 0 24px 6px rgba(255,193,105,.7),0 0 60px 14px rgba(255,193,105,.35)}
+/* 不是拖曳把手——是沿著接縫移動的光點 */
+.tf-seam .knob{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:12px;height:12px;border-radius:50%;background:var(--light-glow);
+  box-shadow:0 0 14px 4px rgba(255,193,105,.85),0 0 34px 10px rgba(255,193,105,.4);
+  animation:knobpulse 2.4s ease-in-out infinite}
+@keyframes knobpulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.85}50%{transform:translate(-50%,-50%) scale(1.35);opacity:1}}
+.tf-vignette{position:absolute;inset:0;z-index:5;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% 60%,transparent 40%,rgba(0,0,0,.6) 100%),
+             linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 26%,transparent 60%,rgba(0,0,0,.78) 100%)}
+.tf-overlay{position:absolute;inset:0;z-index:6;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:center;text-align:center;
+  padding:clamp(54px,9vh,100px) 24px 0}
+.tf-overlay .kicker{color:var(--light);justify-content:center}
+.tf-overlay h2{font-family:"Noto Serif TC",serif;font-weight:900;color:#fff;
+  font-size:clamp(1.6rem,4.2vw,2.9rem);line-height:1.3;text-shadow:0 2px 26px rgba(0,0,0,.9)}
+.tf-tags{position:absolute;bottom:46px;left:0;right:0;z-index:6;display:flex;justify-content:space-between;
+  padding:0 clamp(24px,6vw,80px);pointer-events:none}
+.tf-tags span{font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.24em;
+  padding:.5em 1em;border-radius:30px;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
+  border:1px solid rgba(255,255,255,.18);color:#fff;transition:.4s}
+.tf-tags .b{color:#cfd6da}
+.tf-tags .a{color:var(--light);border-color:var(--hair-wood)}
+.tf-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:6;
+  font-family:"Space Mono",monospace;font-size:.58rem;letter-spacing:.26em;color:rgba(255,255,255,.55)}
+
+/* ===================== 玄關鞋櫃自組裝 + 點燈 ===================== */
+#entry{position:relative;height:200vh;background:var(--wood-abyss)}
+.entry-stage{position:sticky;top:0;height:100vh;overflow:hidden;
+  background:radial-gradient(120% 90% at 30% 40%,#33220f 0%,var(--wood-deep) 55%,var(--wood-abyss) 100%)}
+.entry-bg{position:absolute;inset:0;z-index:0;background:url(/assets/img/guild/muguang/tex/blueprint.webp) center/cover;
+  opacity:.12;mix-blend-mode:screen;will-change:transform}
+#entry-3d{position:absolute;inset:0;z-index:1}
+.entry-overlay{position:absolute;z-index:3;inset:0;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-end;text-align:right;
+  padding:0 clamp(28px,7vw,110px)}
+.entry-overlay .inner{max-width:520px}
+.entry-overlay .kicker{color:var(--oak-lit);justify-content:flex-end}
+.entry-overlay h2{font-family:"Noto Serif TC",serif;font-weight:900;color:var(--cream);
+  font-size:clamp(1.8rem,4.6vw,3rem);line-height:1.25;text-shadow:0 3px 26px rgba(0,0,0,.7)}
+.entry-overlay p{margin-top:18px;color:var(--cream-dim);font-size:1rem;line-height:1.9;text-shadow:0 1px 12px rgba(0,0,0,.6)}
+.entry-overlay .lit{color:var(--light);font-family:"LXGW WenKai TC",cursive;font-size:1.3rem;
+  margin-top:18px;opacity:0;transition:opacity .6s}
+.entry-overlay .lit.on{opacity:1}
+.entry-progress{position:absolute;left:clamp(28px,7vw,110px);right:clamp(28px,7vw,110px);bottom:42px;z-index:3;height:3px;
+  background:rgba(246,236,217,.12);border-radius:3px;overflow:hidden}
+.entry-progress .pf{position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--oak-lit),var(--light));
+  box-shadow:0 0 14px rgba(255,193,105,.5)}
+
+@media(max-width:860px){
+  .tf-overlay h2{font-size:clamp(1.4rem,5.6vw,2rem)}
+  .entry-overlay{align-items:center;text-align:center}
+  .entry-overlay .kicker{justify-content:center}
+}
+
+/* ===================== 能幫你做什麼（完工的明亮：紙白） ===================== */
+#value{background:var(--paper);color:var(--ink)}
+#value .kicker{color:var(--oak)}
+#value .h-lg{color:var(--ink)}
+#value .blurb{color:var(--ink-soft);max-width:38em;font-size:1.05rem;margin-top:18px}
+.val-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:clamp(48px,6vw,72px)}
+.val-card{position:relative;padding:32px 28px 30px;border-radius:10px;background:var(--cream);
+  border:1px solid rgba(154,102,51,.18);overflow:hidden;transition:.5s}
+.val-card::before{content:"";position:absolute;left:0;top:0;height:100%;width:3px;background:var(--oak);transform:scaleY(0);transform-origin:top;transition:transform .5s}
+.val-card:hover{transform:translateY(-6px);box-shadow:0 26px 50px rgba(74,48,25,.16);border-color:var(--oak)}
+.val-card:hover::before{transform:scaleY(1)}
+.val-ico{font-size:1.5rem;color:var(--oak);width:54px;height:54px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;background:rgba(154,102,51,.1);margin-bottom:18px}
+.val-card h3{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.22rem;color:var(--ink);margin-bottom:10px}
+.val-card p{font-size:.92rem;line-height:1.85;color:var(--ink-soft)}
+.val-card .tag{margin-top:14px;font-family:"Space Mono",monospace;font-size:.58rem;letter-spacing:.16em;
+  color:var(--oak);text-transform:uppercase}
+.val-card.feature{grid-column:span 1;background:linear-gradient(150deg,var(--wood) 0%,var(--wood-deep) 100%);color:var(--cream)}
+.val-card.feature h3{color:var(--cream)}.val-card.feature p{color:var(--cream-dim)}
+.val-card.feature .val-ico{background:rgba(255,193,105,.16);color:var(--light)}
+.val-card.feature .tag{color:var(--light)}
+.coop-note{margin-top:26px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.coop-note .lbl{font-family:"Space Mono",monospace;font-size:.62rem;letter-spacing:.18em;color:var(--oak)}
+.coop-note .pill{font-size:.82rem;padding:.42em .95em;border-radius:30px;background:rgba(154,102,51,.1);
+  color:var(--ink-soft);border:1px solid rgba(154,102,51,.2);display:inline-flex;gap:.5em;align-items:center}
+.coop-note .pill i{color:var(--oak)}
+
+/* ===================== 完全感（女性顧客） ===================== */
+#safe{background:linear-gradient(180deg,var(--paper) 0%,#f0e3cb 100%);color:var(--ink)}
+.safe-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(30px,5vw,70px);align-items:center}
+#safe .kicker{color:var(--oak)}
+#safe .h-lg{color:var(--ink)}
+.safe-points{margin-top:30px;display:flex;flex-direction:column;gap:16px}
+.safe-point{display:flex;gap:16px;align-items:flex-start}
+.safe-point .ic{flex:0 0 auto;width:44px;height:44px;border-radius:12px;background:var(--ink);color:var(--light);
+  display:flex;align-items:center;justify-content:center;font-size:1.05rem}
+.safe-point h4{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.05rem;color:var(--ink)}
+.safe-point p{font-size:.9rem;color:var(--ink-soft);line-height:1.8}
+.safe-card{position:relative;background:var(--ink);color:var(--cream);border-radius:14px;padding:40px 34px;
+  overflow:hidden}
+.safe-card .roof{position:absolute;right:-30px;bottom:-30px;width:170px;height:170px;opacity:.1}
+.safe-card .big{font-family:"LXGW WenKai TC",cursive;font-size:clamp(1.4rem,3.4vw,2rem);line-height:1.7;position:relative;z-index:2}
+.safe-card .big b{color:var(--light)}
+.safe-card .sm{margin-top:18px;font-size:.85rem;color:var(--cream-dim);position:relative;z-index:2}
+
+/* ===================== 合作流程 ===================== */
+#flow{background:#f0e3cb;color:var(--ink)}
+#flow .kicker{color:var(--oak)}
+#flow .h-lg{color:var(--ink)}
+.flow-rail{position:relative;margin-top:clamp(50px,7vw,80px)}
+.flow-line{position:absolute;left:30px;top:10px;bottom:10px;width:2px;background:rgba(154,102,51,.25)}
+.flow-line .fill{position:absolute;inset:0;background:var(--oak);transform:scaleY(0);transform-origin:top}
+.flow-steps{display:flex;flex-direction:column;gap:clamp(24px,3vw,40px)}
+.flow-step{position:relative;padding-left:84px;min-height:60px}
+.flow-step .node{position:absolute;left:9px;top:2px;width:44px;height:44px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--oak);color:var(--oak);display:flex;align-items:center;justify-content:center;
+  font-size:1.05rem;z-index:2}
+.flow-step .no{font-family:"Space Mono",monospace;font-size:.6rem;letter-spacing:.2em;color:var(--oak)}
+.flow-step h4{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.2rem;color:var(--ink);margin:4px 0 6px}
+.flow-step p{font-size:.92rem;color:var(--ink-soft);line-height:1.8;max-width:42em}
+
+/* ===================== 木作體驗 / 場地租借 ===================== */
+#rent{background:linear-gradient(180deg,#f0e3cb 0%,var(--wood) 130%);color:var(--ink);overflow:hidden}
+.rent-box{position:relative;background:linear-gradient(150deg,var(--wood-deep),var(--wood-abyss));
+  border-radius:18px;padding:clamp(40px,6vw,72px);color:var(--cream);overflow:hidden;
+  border:1px solid var(--hair-wood)}
+.rent-box .glow{position:absolute;top:-40%;right:-10%;width:60%;height:160%;
+  background:radial-gradient(circle,rgba(255,193,105,.18),transparent 70%);mix-blend-mode:screen}
+.rent-box .kicker{color:var(--light)}
+.rent-box h2{font-family:"Noto Serif TC",serif;font-weight:900;color:var(--cream);position:relative;z-index:2}
+.rent-box p{position:relative;z-index:2;color:var(--cream-dim);max-width:40em;margin-top:18px;font-size:1.02rem;line-height:2}
+.rent-feats{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:14px;margin-top:28px}
+.rent-feats .f{display:flex;align-items:center;gap:.6em;font-size:.85rem;color:var(--light-glow)}
+.rent-feats .f i{color:var(--light)}
+
+/* ===================== 作品 gallery ===================== */
+#works{background:var(--wood-deep)}
+#works .kicker{color:var(--oak-lit)}
+#works .h-lg{color:var(--cream)}
+.gal{columns:3;column-gap:14px;margin-top:clamp(46px,6vw,72px)}
+.gal figure{position:relative;break-inside:avoid;margin-bottom:14px;border-radius:8px;overflow:hidden;
+  border:1px solid var(--hair-wood);background:var(--wood-abyss)}
+.gal img{width:100%;height:auto;display:block;transition:transform .9s cubic-bezier(.2,.7,.2,1);filter:brightness(.92)}
+.gal figure:hover img{transform:scale(1.07);filter:brightness(1.05)}
+.gal figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 16px 12px;
+  font-family:"Space Mono",monospace;font-size:.6rem;letter-spacing:.14em;color:var(--cream);
+  background:linear-gradient(transparent,rgba(26,18,11,.88));opacity:0;transform:translateY(8px);transition:.4s}
+.gal figure:hover figcaption{opacity:1;transform:none}
+@media(hover:none){.gal figcaption{opacity:1;transform:none}}
+/* 然冉的鏡頭：取景框四角 */
+.gal figure::after{content:"";position:absolute;inset:9px;pointer-events:none;z-index:2;opacity:.3;transition:opacity .4s;
+  background:
+    linear-gradient(var(--light),var(--light)) left top/13px 2px no-repeat,
+    linear-gradient(var(--light),var(--light)) left top/2px 13px no-repeat,
+    linear-gradient(var(--light),var(--light)) right top/13px 2px no-repeat,
+    linear-gradient(var(--light),var(--light)) right top/2px 13px no-repeat,
+    linear-gradient(var(--light),var(--light)) left bottom/13px 2px no-repeat,
+    linear-gradient(var(--light),var(--light)) left bottom/2px 13px no-repeat,
+    linear-gradient(var(--light),var(--light)) right bottom/13px 2px no-repeat,
+    linear-gradient(var(--light),var(--light)) right bottom/2px 13px no-repeat}
+.gal figure:hover::after{opacity:.72}
+/* REC 徽章（然冉愛拍片的日常） */
+.works-rec{display:inline-flex;align-items:center;gap:.5em;margin-left:1em;vertical-align:middle;
+  font-family:"Space Mono",monospace;font-size:.62rem;letter-spacing:.22em;color:var(--pop-coral)}
+.works-rec .dot{width:8px;height:8px;border-radius:50%;background:var(--pop-coral);box-shadow:0 0 8px var(--pop-coral);
+  animation:recblink 1.4s steps(1) infinite}
+@keyframes recblink{0%,50%{opacity:1}51%,100%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){.works-rec .dot{animation:none}}
+
+/* ===================== 精神金句 ===================== */
+#creed{background:radial-gradient(120% 100% at 50% 50%,var(--wood-deep),var(--wood-abyss));text-align:center;overflow:hidden}
+.creed-q{font-family:"Noto Serif TC",serif;font-weight:700;line-height:1.7;
+  font-size:clamp(1.5rem,4.2vw,2.7rem);max-width:18em;margin:0 auto;color:var(--cream)}
+.creed-q .hl{position:relative;color:var(--light);white-space:nowrap}
+.creed-sub{font-family:"LXGW WenKai TC",cursive;font-size:1.1rem;color:var(--cream-dim);margin-top:30px}
+
+/* ===================== 聯絡 CTA ===================== */
+#contact{background:linear-gradient(180deg,var(--wood-abyss),#0f0a06);text-align:center}
+.contact-mark{width:72px;height:72px;margin:0 auto 26px;color:var(--oak-lit)}
+.contact-mark path,.contact-mark line{stroke:var(--oak-lit);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#contact .h-lg{color:var(--cream)}
+.contact-lead{color:var(--cream-dim);max-width:32em;margin:20px auto 44px;font-size:1.05rem}
+.links{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+.link-btn{display:inline-flex;align-items:center;gap:.7em;padding:.95em 1.6em;border-radius:40px;
+  font-size:.92rem;letter-spacing:.04em;border:1px solid var(--hair-wood);color:var(--cream);
+  background:rgba(74,48,25,.25);transition:.4s;position:relative;overflow:hidden}
+.link-btn i{font-size:1.1rem;transition:.4s}
+.link-btn .lab small{display:block;font-family:"Space Mono",monospace;font-size:.56rem;letter-spacing:.18em;color:var(--cream-faint);text-align:left}
+.link-btn:hover{transform:translateY(-4px);border-color:var(--light);color:var(--light-glow);box-shadow:0 18px 40px rgba(0,0,0,.4)}
+.link-btn.line:hover{border-color:#06c755;color:#3ee37e}
+.link-btn.line:hover i{color:#06c755}
+
+/* ===================== Footer ===================== */
+footer{background:#0f0a06;padding:46px 24px 56px;text-align:center;border-top:1px solid var(--hair)}
+footer .roof{width:30px;height:30px;margin:0 auto 18px;opacity:.6;color:var(--oak-lit)}
+footer .made{font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.14em;color:var(--cream-faint)}
+footer .made i{color:var(--pop-coral)}
+footer .made a{color:var(--oak-lit);transition:.3s}
+footer .made a:hover{color:var(--light)}
+footer .loc{margin-top:12px;font-size:.72rem;color:var(--cream-faint);letter-spacing:.12em}
+
+/* ===================== RWD ===================== */
+@media(max-width:860px){
+  .intro-grid,.duo-grid,.safe-grid{grid-template-columns:1fr}
+  .duo-card{min-height:440px}
+  .val-grid{grid-template-columns:1fr 1fr}
+  .gal{columns:2}
+}
+@media(max-width:560px){
+  .val-grid{grid-template-columns:1fr}
+  .gal{columns:1}
+  .archive{top:14px;left:14px}
+  .flow-step{padding-left:70px}
+  .hero-dim .lab{font-size:.58rem;letter-spacing:.16em;white-space:normal}
+  .hero-dim i.ln{width:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<a href="#main" class="skip">跳到主要內容</a>
+
+<!-- 木紋／紙質紋理 -->
+<div class="grain"></div>
+<!-- p5 木屑光塵 -->
+<div id="sawdust"></div>
+<!-- 游標手電筒光 -->
+<div id="torch"></div>
+
+<!-- 屋頂標誌 SVG（重複使用的母題） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="roofmark" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M50 6 L88 38 L76 92 L24 92 L12 38 Z"/>
+    <line x1="40" y1="46" x2="40" y2="86"/>
+    <line x1="52" y1="42" x2="52" y2="86"/>
+    <line x1="62" y1="48" x2="62" y2="84"/>
+  </symbol>
+</svg>
+
+<!-- ============ LOADER ============ -->
+<div id="loader">
+  <div class="ld-beam"></div>
+  <svg class="mark" viewBox="0 0 100 100">
+    <path pathLength="100" d="M50 6 L88 38 L76 92 L24 92 L12 38 Z"/>
+    <line pathLength="100" x1="40" y1="46" x2="40" y2="86"/>
+    <line pathLength="100" x1="52" y1="42" x2="52" y2="86"/>
+    <line pathLength="100" x1="62" y1="48" x2="62" y2="84"/>
+  </svg>
+  <div class="ld-name">木光所製</div>
+  <div class="ld-sub">MÙGUĀNG · WOOD &amp; LIGHT</div>
+</div>
+
+<a href="/guild/" class="archive"><i class="fa-solid fa-arrow-left-long"></i> 公會檔案</a>
+
+<main class="page" id="main">
+
+  <!-- ============ HERO ============ -->
+  <section id="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-planks" aria-hidden="true">
+      <span class="plk" style="left:7%;top:24%;width:120px;height:20px;--r:-18deg;--d:8.5s"></span>
+      <span class="plk" style="left:13%;top:62%;width:84px;height:15px;--r:24deg;--d:10.5s;--dl:-2s"></span>
+      <span class="plk" style="left:3%;top:46%;width:58px;height:12px;--r:8deg;--d:7.5s;--dl:-1s"></span>
+      <span class="plk" style="right:8%;top:30%;width:104px;height:18px;--r:16deg;--d:9.5s;--dl:-3s"></span>
+      <span class="plk" style="right:5%;top:66%;width:72px;height:14px;--r:-12deg;--d:11s;--dl:-1.5s"></span>
+      <span class="plk" style="right:16%;top:78%;width:50px;height:11px;--r:-26deg;--d:8s;--dl:-4s"></span>
+      <span class="plk" style="left:22%;top:84%;width:66px;height:13px;--r:6deg;--d:12s;--dl:-2.5s"></span>
+    </div>
+    <div class="lightshaft"></div>
+    <div class="hero-corners" aria-hidden="true"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
+    <div class="hero-inner">
+      <div class="hero-eyebrow">Mùguāng Works · 木作裝潢</div>
+      <h1 class="hero-title" aria-label="木光所製"><span aria-hidden="true">木</span><span aria-hidden="true">光</span><span aria-hidden="true">所</span><span aria-hidden="true">製</span></h1>
+      <div class="hero-dim"><i class="t"></i><i class="ln"></i><span class="lab">高雄 Kaohsiung · 鄰家木作父女檔</span><i class="ln r"></i><i class="t"></i></div>
+      <p class="hero-tag">光，從木屑裡長出來。</p>
+      <p class="hero-en">Where sawdust catches the light</p>
+      <p class="hero-spec">木作定製櫃<b>/</b>住宅專門<b>/</b>設計 · 丈量 · 施工</p>
+    </div>
+    <div class="scrollcue"><span>SCROLL</span><span class="ln"></span></div>
+  </section>
+
+  <!-- ============ 然冉自介 ============ -->
+  <section id="intro" class="sec-pad tex-wood">
+    <div class="wrap intro-grid">
+      <div class="intro-photo rv">
+        <div class="tape"></div>
+        <div class="frame"><img src="/assets/img/guild/muguang/ranran.webp" alt="然冉，木光所製的女兒，在工地比手勢" loading="lazy"></div>
+        <i class="fa-solid fa-feather swan"></i>
+        <span class="cap">RAN-RAN · 女鵝</span>
+      </div>
+      <div class="intro-copy">
+        <span class="kicker rv" style="color:var(--oak-lit)"><svg class="roof"><use href="#roofmark"/></svg>WHO AM I</span>
+        <h2 class="h-lg rv d1">我是然冉，<br>那隻在工地裡<br>亂晃的女鵝。</h2>
+        <p class="lead rv d2">大家叫我女鵝。我跟爸爸一起做住宅木作——他做了 47 年，讓木頭乖乖聽話；我做的事比較新：把工地裡的木屑、刨花和那些「其實很厲害卻沒人看見」的手藝，拍成影片、寫成文字，送到你眼前。</p>
+        <p class="lead rv d3">木作裝潢從來不是什麼光鮮亮麗的行業，現場總是灰、總是吵、總是一身木屑。但我相信，只要有人願意把光打進來，連木屑都會發亮。<span class="brush" style="color:var(--light-glow)">那道光，就是我想做的事。</span></p>
+        <div class="sign rv d4">然冉 · 木光所製
+          <small>@WEIRDSPRING28 · 行銷 / 社群 / 你的聯繫窗口</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 父女分工 ============ -->
+  <section id="duo" class="sec-pad tex-wood">
+    <div class="wrap">
+      <div class="duo-head">
+        <span class="kicker rv" style="color:var(--oak-lit)"><svg class="roof"><use href="#roofmark"/></svg>THE DUO · 父女檔</span>
+        <h2 class="h-lg rv d1">一雙做了 47 年的手，<br>一雙剛開始發亮的眼睛。</h2>
+      </div>
+      <div class="duo-grid">
+        <div class="duo-card duo-dad rv">
+          <div class="ph"><img src="/assets/img/guild/muguang/fuge.webp" alt="爸爸福哥在自家木作工坊裡" loading="lazy"></div>
+          <div class="duo-exp"><div class="num" data-count="47">0</div><div class="lab">YEARS · 資歷</div></div>
+          <div class="body">
+            <div class="duo-role"><i class="fa-solid fa-hammer"></i> 爸爸 · 主要技術輸出</div>
+            <div class="duo-name">福哥<em>The Master Hands</em></div>
+            <p class="duo-line">設計、估價、木作工法 — 都交給這雙手。</p>
+            <ul class="duo-tasks">
+              <li>設計繪圖</li><li>現場估價</li><li>木作工法</li><li>不菸 · 不酒 · 不檳榔</li>
+            </ul>
+          </div>
+        </div>
+        <div class="duo-card duo-daughter rv d1">
+          <div class="ph"><img src="/assets/img/guild/muguang/ranran.webp" alt="女兒然冉，負責社群與行銷" loading="lazy"></div>
+          <div class="body">
+            <div class="duo-role"><i class="fa-solid fa-feather-pointed"></i> 女兒 · 讓更多人看見</div>
+            <div class="duo-name">然冉<em>The New Light</em></div>
+            <p class="duo-line">故事、社群、聯繫窗口 — 都交給我。</p>
+            <ul class="duo-tasks">
+              <li>行銷廣告</li><li>社群經營</li><li>聯繫窗口</li><li>技術輔助</li>
+            </ul>
+            <div class="swatches" aria-hidden="true">
+              <i style="background:var(--pop-teal)"></i><i style="background:var(--pop-coral)"></i>
+              <i style="background:var(--pop-sun)"></i><i style="background:var(--pop-sky)"></i>
+              <i style="background:var(--pop-violet)"></i><i style="background:var(--pop-leaf)"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="duo-join rv d2">
+        <span class="brush">兩雙手，<svg class="roof"><use href="#roofmark"/></svg>一個家。</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 刨花橋段 ============ -->
+  <section id="shaving-bridge">
+    <div class="sb-img"></div>
+    <div class="sb-scrim"></div>
+    <div class="sb-text">
+      <p class="brush">一刀刨下去，木頭才開始說話。</p>
+      <p class="sub">The wood begins to speak under the blade</p>
+    </div>
+  </section>
+
+  <!-- ============ 木 × 光 哲學 ============ -->
+  <section id="philo" class="sec-pad">
+    <div class="philo-bg"></div>
+    <div class="philo-scrim"></div>
+    <div class="wrap philo-inner">
+      <span class="kicker rv" style="color:var(--oak-lit);justify-content:center"><svg class="roof"><use href="#roofmark"/></svg>WHY "MÙGUĀNG"</span>
+      <div class="philo-eq rv d1">
+        <div class="term"><div class="gly mu">木</div><small>爸爸的技術與材料</small></div>
+        <div class="op">+</div>
+        <div class="term"><div class="gly guang">光</div><small>然冉帶進來的視角與溫度</small></div>
+        <div class="op">=</div>
+        <div class="term"><div class="gly" style="color:var(--cream);font-size:clamp(1.4rem,4vw,2.4rem);width:auto;height:auto;border:none;font-weight:700">所製</div><small>由我們親手做成</small></div>
+      </div>
+      <p class="philo-quote rv d2">我們是<b>木作定製櫃</b>，不是系統櫃——<br>每一道榫、每一塊夾板，都照你家的樣子量身畫、現場做。</p>
+    </div>
+  </section>
+
+  <!-- ============ 木作櫃自組裝（捲動驅動 three.js） ============ -->
+  <section id="assemble">
+    <div class="asm-stage">
+      <div class="asm-bg"></div>
+      <div id="asm-3d"></div>
+      <div class="asm-overlay">
+        <span class="kicker"><svg class="roof"><use href="#roofmark"/></svg>WATCH IT BUILT · 為你而生</span>
+        <h2>從一塊夾板，<br>到一座為你<br>而生的櫃。</h2>
+        <div class="asm-steps">
+          <span data-step="0" class="on"><span class="n">01</span> 夾板進場 · 選材</span>
+          <span data-step="1"><span class="n">02</span> 依圖裁切 · 放樣</span>
+          <span data-step="2"><span class="n">03</span> 櫃體組裝 · 立框</span>
+          <span data-step="3"><span class="n">04</span> 層板 · 抽屜就位</span>
+          <span data-step="4"><span class="n">05</span> 完工 · 交到你家</span>
+        </div>
+      </div>
+      <div class="asm-hint">SCROLL 滑動組裝 ↓</div>
+      <div class="asm-progress"><div class="pf"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ 能幫你做什麼 ============ -->
+  <section id="value" class="sec-pad tex-paper">
+    <div class="wrap">
+      <span class="kicker rv"><svg class="roof"><use href="#roofmark"/></svg>WHAT WE BUILD FOR YOU</span>
+      <h2 class="h-lg rv d1">我們能幫你做的事</h2>
+      <p class="blurb rv d2">從一面牆到一整個家，從丈量到完工點交——只要和「木作」有關，福哥都接得起來，我幫你把流程顧到好。</p>
+      <div class="val-grid">
+        <div class="val-card feature rv"><div class="val-ico"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+          <h3>木作定製櫃</h3><p>不是系統櫃。照你家的尺寸與動線，從櫃體到層板、抽屜，一刀一鋸現場做，連那一吋畸零空間都收得乾淨。</p>
+          <div class="tag">Custom Carpentry</div></div>
+        <div class="val-card rv d1"><div class="val-ico"><i class="fa-solid fa-house-chimney"></i></div>
+          <h3>全室規劃 · 局部裝修</h3><p>不論是整間住家從零規劃，還是只想換一道牆、加一座櫃，全室或單點小案都接，也能統包整合。</p>
+          <div class="tag">Whole-home / Spot</div></div>
+        <div class="val-card rv d2"><div class="val-ico"><i class="fa-solid fa-pen-ruler"></i></div>
+          <h3>設計製圖 · 估價</h3><p>福哥親自畫圖、現場估價，把腦中的想像變成看得懂的圖與透明的價，動工前你就知道會長成什麼樣子。</p>
+          <div class="tag">Design &amp; Quote</div></div>
+        <div class="val-card rv"><div class="val-ico"><i class="fa-solid fa-ruler-combined"></i></div>
+          <h3>到府丈量 · 一條龍</h3><p>從丈量、放樣到施工現場，每一步都有我們的身影，一路顧到完工點交。</p>
+          <div class="tag">Measure to Finish</div></div>
+        <div class="val-card rv d1"><div class="val-ico"><i class="fa-solid fa-people-roof"></i></div>
+          <h3>相關工程配合</h3><p>木作以外，油漆、冷氣、水電、窗簾都有配合的師傅，幫你把整個家一起安排好，少一點到處找人的麻煩。</p>
+          <div class="tag">Trusted Partners</div></div>
+        <div class="val-card rv d2"><div class="val-ico"><i class="fa-solid fa-mug-hot"></i></div>
+          <h3>像鄰居一樣好商量</h3><p>沒有華麗的包裝話術，有問題就直接說。我們服務對象多是家庭，要的就是那種「剛好認識的鄰居在幫你做」的踏實。</p>
+          <div class="tag">Like a Neighbor</div></div>
+      </div>
+      <div class="coop-note rv">
+        <span class="lbl">CAN COORDINATE //</span>
+        <span class="pill"><i class="fa-solid fa-paint-roller"></i> 油漆</span>
+        <span class="pill"><i class="fa-solid fa-wind"></i> 冷氣</span>
+        <span class="pill"><i class="fa-solid fa-plug"></i> 水電</span>
+        <span class="pill"><i class="fa-solid fa-align-justify"></i> 窗簾</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 毛胚 → 完工（捲動 before/after） ============ -->
+  <section id="transform">
+    <div class="tf-stage">
+      <div class="tf-raw"></div>
+      <div class="tf-done"></div>
+      <div class="tf-seam"><span class="knob"></span></div>
+      <div class="tf-vignette"></div>
+      <div class="tf-overlay">
+        <span class="kicker"><svg class="roof"><use href="#roofmark"/></svg>BEFORE → AFTER · 全室規劃</span>
+        <h2>我們把冷冰冰的毛胚，<br>變成你想住一輩子的樣子。</h2>
+      </div>
+      <div class="tf-tags"><span class="b">毛胚 · BEFORE</span><span class="a">完工 · AFTER</span></div>
+      <div class="tf-hint">SCROLL 讓光掃過去 ↓</div>
+    </div>
+  </section>
+
+  <!-- ============ 完全感 ============ -->
+  <section id="safe" class="sec-pad tex-paper">
+    <div class="wrap safe-grid">
+      <div>
+        <span class="kicker rv"><svg class="roof"><use href="#roofmark"/></svg>A SAFE SPACE</span>
+        <h2 class="h-lg rv d1">給一個人來談裝潢的你，<br>一份「完全感」。</h2>
+        <div class="safe-points">
+          <div class="safe-point rv d2"><div class="ic"><i class="fa-solid fa-shield-heart"></i></div>
+            <div><h4>單獨接洽也安心</h4><p>很多女生第一次裝潢、又是自己一個人出面，會緊張很正常。身為品牌的聯繫窗口，溝通協調的事我（然冉）來幫你顧。</p></div></div>
+          <div class="safe-point rv d2"><div class="ic"><i class="fa-solid fa-ban-smoking"></i></div>
+            <div><h4>不菸 · 不酒 · 不檳榔</h4><p>進你家的人，乾乾淨淨、講話清楚。這是福哥幾十年的習慣，也是我們對你空間最基本的尊重。</p></div></div>
+          <div class="safe-point rv d2"><div class="ic"><i class="fa-solid fa-comments"></i></div>
+            <div><h4>聽得懂人話</h4><p>不用懂工法術語，你只要說「想要的感覺」，剩下的翻譯成圖、估成價、做成櫃，是我們的事。</p></div></div>
+        </div>
+      </div>
+      <div class="safe-card rv d1">
+        <svg class="roof"><use href="#roofmark"/></svg>
+        <p class="big">「像是剛好認識的<b>鄰居</b>在幫你做裝潢，有木作需要的時候，會想到我們的那種<b>樸實存在</b>。」</p>
+        <p class="sm">— 這是我們最想被記得的樣子。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 合作流程 ============ -->
+  <section id="flow" class="sec-pad tex-paper">
+    <div class="wrap">
+      <span class="kicker rv"><svg class="roof"><use href="#roofmark"/></svg>HOW WE WORK · 合作流程</span>
+      <h2 class="h-lg rv d1">從一句 LINE，<br>到一個做好的家。</h2>
+      <div class="flow-rail">
+        <div class="flow-line"><div class="fill"></div></div>
+        <div class="flow-steps">
+          <div class="flow-step rv"><div class="node"><i class="fa-brands fa-line"></i></div>
+            <span class="no">STEP 01</span><h4>加 LINE 聊聊</h4><p>先把你的需求、空間照片、預算大概丟給我。不用想得很完整，連「我也不知道該怎麼說」都可以是起點。</p></div>
+          <div class="flow-step rv"><div class="node"><i class="fa-solid fa-ruler-combined"></i></div>
+            <span class="no">STEP 02</span><h4>到府丈量</h4><p>我們親自到現場量尺寸、看現況、聽你對空間的想像，把「感覺」變成可以動工的依據。</p></div>
+          <div class="flow-step rv"><div class="node"><i class="fa-solid fa-pen-ruler"></i></div>
+            <span class="no">STEP 03</span><h4>設計製圖 · 報價</h4><p>福哥畫圖、估價，價格先攤開講清楚；確認了我們才動工。</p></div>
+          <div class="flow-step rv"><div class="node"><i class="fa-solid fa-hammer"></i></div>
+            <span class="no">STEP 04</span><h4>木作施工</h4><p>進場施作，需要的話油漆、水電、冷氣、窗簾一起協調。過程我會幫你同步進度，不讓你蒙在鼓裡。</p></div>
+          <div class="flow-step rv"><div class="node"><i class="fa-solid fa-key"></i></div>
+            <span class="no">STEP 05</span><h4>完工點交</h4><p>一起驗收每一個櫃、每一道邊，有不滿意的地方當場提，我們會盡力調整好。實際流程與報價以 LINE 洽談為準。</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 木作體驗 / 場地租借 ============ -->
+  <section id="rent" class="sec-pad">
+    <div class="wrap">
+      <div class="rent-box rv">
+        <div class="glow"></div>
+        <span class="kicker"><svg class="roof"><use href="#roofmark"/></svg>MAKE SOMETHING · 木作體驗</span>
+        <h2 class="h-lg">想自己動手做點什麼？<br>工坊也租給你。</h2>
+        <p>我們提供<b style="color:var(--light)">木作場地租借</b>。沒有經驗也完全歡迎——只要你有想做的東西，報名來自由創作，我們提供場地、工具、材料資源，還有福哥 47 年的技術在旁邊罩你。把一塊木頭變成屬於你的東西，那種成就感，值得親手試一次。</p>
+        <div class="rent-feats">
+          <span class="f"><i class="fa-solid fa-circle-check"></i> 無經驗可</span>
+          <span class="f"><i class="fa-solid fa-circle-check"></i> 場地 · 工具 · 材料</span>
+          <span class="f"><i class="fa-solid fa-circle-check"></i> 職人技術協助</span>
+          <span class="f"><i class="fa-solid fa-circle-check"></i> 自由創作</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 作品 gallery ============ -->
+  <section id="works" class="sec-pad tex-wood">
+    <div class="wrap">
+      <span class="kicker rv"><svg class="roof"><use href="#roofmark"/></svg>RAN-RAN'S LENS · 然冉的鏡頭<span class="works-rec"><span class="dot"></span>REC</span></span>
+      <h2 class="h-lg rv d1">不光鮮亮麗的工地，<br>我用鏡頭，拍成有趣的日常。</h2>
+      <div class="gal">
+        <figure class="rv"><img src="/assets/img/guild/muguang/work-03.webp" width="1600" height="899" alt="工坊裡製作中的木作櫃體" loading="lazy"><figcaption>夾板裁切 · 櫃體放樣</figcaption></figure>
+        <figure class="rv d1"><img src="/assets/img/guild/muguang/done-02.webp" width="959" height="1280" alt="完工的木作收納櫃，附玻璃門" loading="lazy"><figcaption>完工 · 玻璃門收納櫃</figcaption></figure>
+        <figure class="rv"><img src="/assets/img/guild/muguang/work-01.webp" width="1500" height="1125" alt="住宅木作施工現場" loading="lazy"><figcaption>住家現場 · 木作進場</figcaption></figure>
+        <figure class="rv d2"><img src="/assets/img/guild/muguang/samples.webp" width="1024" height="654" alt="木料樣板牆與五金展示" loading="lazy"><figcaption>選材 · 樣板與五金</figcaption></figure>
+        <figure class="rv d1"><img src="/assets/img/guild/muguang/work-04.webp" width="1600" height="899" alt="工作檯上組裝中的中島櫃體" loading="lazy"><figcaption>中島櫃 · 工作檯組裝</figcaption></figure>
+        <figure class="rv"><img src="/assets/img/guild/muguang/done-01.webp" width="960" height="1280" alt="完工後明亮的住家空間與木地板" loading="lazy"><figcaption>完工 · 光照進來的家</figcaption></figure>
+        <figure class="rv d1"><img src="/assets/img/guild/muguang/work-05.webp" width="726" height="1280" alt="室內木作天花與壁面施工" loading="lazy"><figcaption>天花 · 壁面木作</figcaption></figure>
+        <figure class="rv d2"><img src="/assets/img/guild/muguang/done-03.webp" width="1400" height="1050" alt="完工的明亮室內空間" loading="lazy"><figcaption>完工 · 點交前的乾淨</figcaption></figure>
+        <figure class="rv"><img src="/assets/img/guild/muguang/work-02.webp" width="1500" height="1125" alt="木作櫃體與夾板施工現場" loading="lazy"><figcaption>櫃體 · 現場施作</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 玄關鞋櫃自組裝 + 點燈 ============ -->
+  <section id="entry">
+    <div class="entry-stage">
+      <div class="entry-bg"></div>
+      <div id="entry-3d"></div>
+      <div class="entry-overlay">
+        <div class="inner">
+          <span class="kicker"><svg class="roof"><use href="#roofmark"/></svg>WELCOME HOME · 玄關</span>
+          <h2>把木頭做好，<br>光就有地方住了。</h2>
+          <p>一座為你家門口而生的玄關鞋櫃——進門放下鑰匙、脫下一天的疲憊。</p>
+          <p class="lit">「歡迎回家。」燈，亮了。</p>
+        </div>
+      </div>
+      <div class="entry-progress"><div class="pf"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ 精神金句 ============ -->
+  <section id="creed" class="sec-pad">
+    <div class="wrap">
+      <p class="creed-q rv">我們<span class="hl">沒有華麗的包裝</span>，<br>但我們會<span class="hl">更貼近你的生活</span>。</p>
+      <p class="creed-sub rv d1">木做好了，光自然會進來。</p>
+    </div>
+  </section>
+
+  <!-- ============ 聯絡 ============ -->
+  <section id="contact" class="sec-pad">
+    <div class="wrap">
+      <svg class="contact-mark rv"><use href="#roofmark"/></svg>
+      <span class="kicker rv" style="color:var(--oak-lit);justify-content:center"><svg class="roof"><use href="#roofmark"/></svg>LET'S TALK · 高雄</span>
+      <h2 class="h-lg rv d1">有木作需要的時候，<br>想到我們就好。</h2>
+      <p class="contact-lead rv d2">木作工程請優先加官方 LINE 詢問，或來 Instagram、Threads 找我們聊聊。</p>
+      <div class="links rv d2">
+        <a class="link-btn line" href="https://line.me/R/ti/p/@533sjylf" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-line"></i><span class="lab">官方 LINE<small>@533SJYLF · 木作詢問</small></span></a>
+        <a class="link-btn" href="https://www.instagram.com/mgsozzi2816/" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-instagram"></i><span class="lab">木光所製<small>@MGSOZZI2816 · 品牌</small></span></a>
+        <a class="link-btn" href="https://www.instagram.com/weirdspring28/" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-instagram"></i><span class="lab">然冉的日常<small>@WEIRDSPRING28</small></span></a>
+        <a class="link-btn" href="https://www.threads.com/@weirdspring28" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-threads"></i><span class="lab">Threads<small>@WEIRDSPRING28</small></span></a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <svg class="roof"><use href="#roofmark"/></svg>
+    <p class="made">Made with <i class="fa-solid fa-heart"></i> by <a href="/guild/">SuperGalen's Dungeon</a></p>
+    <p class="loc">木光所製 · 木作裝潢｜住宅專門 · KAOHSIUNG, TAIWAN</p>
+  </footer>
+
+</main>
+
+<script>
+/* ===================================================================
+   木光所製 — interactions
+   =================================================================== */
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var isTouch = window.matchMedia && window.matchMedia("(hover: none)").matches;
+  var isMobile = window.innerWidth < 720;
+
+  /* ---------- LOADER ---------- */
+  // 描線／文字／光束全部由 CSS 在第一個 paint 就開始播（見 #loader CSS），
+  // JS 不再負責繪製，只負責在過場播完後收掉，避免依賴 window.load 而先閃一個完整圖。
+  var heroIntroDone=false;
+  function runLoader(){
+    // 過場 CSS 動畫約 2.25s，播完再收（reduce 時快速收）
+    setTimeout(hideLoader, reduce ? 500 : 2500);
+  }
+  function hideLoader(){
+    var l = document.getElementById("loader");
+    if(l && !l.classList.contains("gone")){
+      l.classList.add("gone");
+      setTimeout(function(){ if(l && l.parentNode) l.parentNode.removeChild(l); }, 1000);
+    }
+    if(!heroIntroDone){ heroIntroDone=true; heroIntro(); }
+  }
+
+  /* ---------- HERO 入場 ---------- */
+  function heroIntro(){
+    var all=".hero-glow,.lightshaft,.hero-corners span,.hero-eyebrow,.hero-title span,.hero-dim,.hero-tag,.hero-en,.hero-spec";
+    if(!window.gsap || reduce){
+      document.querySelectorAll(all).forEach(function(e){e.style.opacity=1;e.style.transform="none";});
+      return;
+    }
+    gsap.timeline()
+      .to(".hero-glow",{opacity:1,duration:1.6,ease:"power2.out"})
+      .to(".hero-corners span",{opacity:1,duration:.6,stagger:.08},"-=1.15")
+      .to(".hero-eyebrow",{opacity:1,duration:.7},"-=.85")
+      .to(".hero-title span",{opacity:1,y:0,rotateX:0,duration:1,stagger:.11,ease:"back.out(1.5)"},"-=.45")
+      .to(".hero-dim",{opacity:1,duration:.7},"-=.35")
+      .to(".hero-tag",{opacity:1,duration:.8},"-=.4")
+      .to(".hero-en",{opacity:1,duration:.6},"-=.5")
+      .to(".hero-spec",{opacity:1,duration:.7},"-=.4");
+  }
+
+  /* ---------- 捲動揭露 + GSAP ScrollTrigger ---------- */
+  function initScroll(){
+    // IntersectionObserver for .rv
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); } });
+    },{threshold:.16});
+    document.querySelectorAll(".rv").forEach(function(e){ io.observe(e); });
+
+    if(!window.gsap || !window.ScrollTrigger) return;
+    gsap.registerPlugin(ScrollTrigger);
+
+    // resize 後 scrub 區段的像素位置會變舊，需重算
+    var rzTimer;
+    window.addEventListener("resize",function(){ clearTimeout(rzTimer); rzTimer=setTimeout(function(){ ScrollTrigger.refresh(); },200); });
+
+    // 數字計數（47 年）
+    document.querySelectorAll("[data-count]").forEach(function(el){
+      var target = +el.getAttribute("data-count");
+      ScrollTrigger.create({trigger:el, start:"top 88%", once:true, onEnter:function(){
+        if(reduce){ el.textContent=target; return; }
+        var obj={v:0};
+        gsap.to(obj,{v:target,duration:1.6,ease:"power2.out",onUpdate:function(){ el.textContent=Math.round(obj.v); }});
+      }});
+    });
+
+    // 色票彈入
+    ScrollTrigger.create({trigger:".swatches", start:"top 85%", once:true, onEnter:function(){
+      gsap.to(".swatches i",{opacity:1,y:0,duration:.5,stagger:.08,ease:"back.out(2)"});
+    }});
+
+    // 流程線填充
+    ScrollTrigger.create({trigger:".flow-rail", start:"top 70%", end:"bottom 70%", scrub:true,
+      onUpdate:function(self){ var f=document.querySelector(".flow-line .fill"); if(f) f.style.transform="scaleY("+self.progress+")"; }});
+
+    // gallery 視差
+    if(!isMobile){
+      gsap.utils.toArray(".gal figure").forEach(function(fig,i){
+        gsap.fromTo(fig,{y:(i%3)*26},{y:-(i%3)*26,ease:"none",
+          scrollTrigger:{trigger:fig,start:"top bottom",end:"bottom top",scrub:true}});
+      });
+    }
+
+    // hero 視差淡出
+    gsap.to(".hero-inner",{yPercent:-18,opacity:.2,ease:"none",
+      scrollTrigger:{trigger:"#hero",start:"top top",end:"bottom top",scrub:true}});
+
+    // 木×光 工坊實景：背景視差 + 緩慢推近（Ken Burns）
+    var pbg=document.querySelector(".philo-bg");
+    if(pbg){
+      gsap.fromTo(pbg,{yPercent:-8,scale:1.04},{yPercent:8,scale:1.12,ease:"none",
+        scrollTrigger:{trigger:"#philo",start:"top bottom",end:"bottom top",scrub:true}});
+    }
+
+    // 刨花橋段：實景視差
+    gsap.fromTo("#shaving-bridge .sb-img",{yPercent:-10},{yPercent:10,ease:"none",
+      scrollTrigger:{trigger:"#shaving-bridge",start:"top bottom",end:"bottom top",scrub:true}});
+    gsap.fromTo("#shaving-bridge .sb-text",{opacity:0,y:30},{opacity:1,y:0,duration:1,
+      scrollTrigger:{trigger:"#shaving-bridge",start:"top 70%"}});
+
+    // 藍圖背景視差（組裝段）
+    gsap.fromTo(".asm-bg",{yPercent:-6,scale:1.05},{yPercent:6,scale:1.1,ease:"none",
+      scrollTrigger:{trigger:"#assemble",start:"top bottom",end:"bottom top",scrub:true}});
+
+    // 父女檔：兩張照片由兩側 wipe 進場，象徵「兩雙手交會」
+    var dad=document.querySelector(".duo-dad"), dau=document.querySelector(".duo-daughter");
+    if(dad && dau && !reduce){
+      gsap.set(dad,{clipPath:"inset(0 100% 0 0)"});
+      gsap.set(dau,{clipPath:"inset(0 0 0 100%)"});
+      gsap.to(dad,{clipPath:"inset(0 0% 0 0)",duration:1.1,ease:"power3.out",
+        scrollTrigger:{trigger:".duo-grid",start:"top 78%"}});
+      gsap.to(dau,{clipPath:"inset(0 0 0 0%)",duration:1.1,ease:"power3.out",delay:.18,
+        scrollTrigger:{trigger:".duo-grid",start:"top 78%"}});
+    }
+
+    // 流程節點：依序彈入
+    gsap.from(".flow-step .node",{scale:0,duration:.5,stagger:.12,ease:"back.out(2.2)",
+      scrollTrigger:{trigger:".flow-rail",start:"top 72%"}});
+  }
+
+  /* ---------- 游標手電筒 ---------- */
+  function initTorch(){
+    if(isTouch) return;
+    var t = document.getElementById("torch");
+    var tx=window.innerWidth/2, ty=window.innerHeight/2, cx=tx, cy=ty;
+    window.addEventListener("mousemove",function(e){ tx=e.clientX; ty=e.clientY; t.style.opacity=.55; });
+    (function loop(){ cx+=(tx-cx)*.16; cy+=(ty-cy)*.16; t.style.left=cx+"px"; t.style.top=cy+"px"; requestAnimationFrame(loop); })();
+    window.MUGUANG_TORCH=function(){ return {x:cx,y:cy}; };
+  }
+
+  /* ---------- p5 木屑光塵 ---------- */
+  function initSawdust(){
+    if(reduce || typeof p5==="undefined") return;
+    var holder=document.getElementById("sawdust");
+    var sketch=function(p){
+      var motes=[], N = isMobile?16:38;
+      var sparks=[], MAXSP = isMobile?90:180;
+      var W,H;
+      // 然冉的「五彩繽紛」— 少量木屑帶她的色票
+      var POPS=[[47,158,143],[239,111,91],[244,183,64],[79,147,196],[138,111,199],[122,168,78]];
+      function pop(){ return POPS[(Math.random()*POPS.length)|0]; }
+      function spawn(){ return {x:p.random(W),y:p.random(H),z:p.random(.3,1),
+        vx:p.random(-.1,.1),vy:p.random(-.14,-.02),a:p.random(10,40),tw:p.random(p.TWO_PI)}; }
+      // 木屑顆粒：小小的木片/鋸末（圓點＋少量短木片），不再是怪弧線
+      function sparkAt(x,y,vx,vy,sz,chip,col){
+        if(sparks.length>MAXSP) sparks.shift();
+        sparks.push({x:x,y:y,vx:vx,vy:vy,life:1,sz:sz||p.random(1.4,3.2),
+          chip:!!chip,rot:p.random(p.TWO_PI),vr:p.random(-.2,.2),col:col||null});
+      }
+      // 組合技 API：3D 木板卡定位 → 在投影座標噴出一小撮鋸末木屑（約 1/4 帶然冉的色）
+      window.MUGUANG_BURST=function(x,y,n,power){
+        n=n||8; power=power||1;
+        for(var i=0;i<n;i++){ var a=p.random(p.TWO_PI), sp=p.random(.8,3.4)*power;
+          sparkAt(x,y,Math.cos(a)*sp,Math.sin(a)*sp - p.random(.2,1), p.random(1.4,3), p.random()<.4, p.random()<.25?pop():null); }
+      };
+      // 完工：一圈鋸末光塵爆（混入較多彩色，呼應然冉）
+      window.MUGUANG_RING=function(x,y){
+        var ringN=isMobile?34:60;
+        for(var i=0;i<ringN;i++){ var a=(i/ringN)*p.TWO_PI, sp=p.random(2.2,4.4);
+          sparkAt(x,y,Math.cos(a)*sp,Math.sin(a)*sp,p.random(1.8,3.6),p.random()<.35, p.random()<.4?pop():null); }
+      };
+      p.setup=function(){ W=p.windowWidth;H=p.windowHeight;
+        var c=p.createCanvas(W,H); c.parent(holder); p.pixelDensity(1); p.frameRate(30);
+        for(var i=0;i<N;i++) motes.push(spawn());
+        // 分頁切到背景時暫停，省電省幀
+        document.addEventListener("visibilitychange",function(){ document.hidden ? p.noLoop() : p.loop(); });
+      };
+      p.draw=function(){ p.clear();
+        var torch = window.MUGUANG_TORCH?window.MUGUANG_TORCH():null;
+        // 環境光塵
+        for(var i=0;i<motes.length;i++){ var m=motes[i];
+          m.x+=m.vx*m.z; m.y+=m.vy*m.z; m.tw+=.02;
+          if(m.y<-10){ m.y=H+10; m.x=p.random(W); }
+          if(m.x<-10)m.x=W+10; if(m.x>W+10)m.x=-10;
+          var glow=1, sz=1.3*m.z;
+          if(torch){ var d=p.dist(m.x,m.y,torch.x,torch.y);
+            if(d<220){ glow=1+(1-d/220)*1.4; sz*=(1+(1-d/220)*.7); } }
+          var a=(m.a*(.7+.3*Math.sin(m.tw)))*glow;
+          p.noStroke(); p.fill(255,205,120,Math.min(a,110));
+          p.circle(m.x,m.y,sz*2.2);
+          p.fill(255,235,190,Math.min(a*.55,75));
+          p.circle(m.x,m.y,sz); }
+        // 木屑火花
+        for(var k=sparks.length-1;k>=0;k--){ var s=sparks[k];
+          s.vy+=.05; s.vx*=.97; s.x+=s.vx; s.y+=s.vy; s.rot+=s.vr; s.life-=.024;
+          if(s.life<=0){ sparks.splice(k,1); continue; }
+          var sa=210*s.life; p.noStroke();
+          if(s.col){ var c=s.col;
+            p.fill(c[0],c[1],c[2],Math.min(sa,190)); p.circle(s.x,s.y,s.sz*s.life*1.7);
+            p.fill(Math.min(c[0]+50,255),Math.min(c[1]+50,255),Math.min(c[2]+50,255),Math.min(sa*.7,150)); p.circle(s.x,s.y,s.sz*s.life); }
+          else if(s.chip){ p.push(); p.translate(s.x,s.y); p.rotate(s.rot);
+            p.fill(208,150,86,Math.min(sa,180)); p.rect(0,0,s.sz*2.4,s.sz*0.8,1); p.pop(); }
+          else { p.fill(255,210,135,Math.min(sa,190)); p.circle(s.x,s.y,s.sz*s.life*1.7);
+            p.fill(255,240,200,Math.min(sa*.7,150)); p.circle(s.x,s.y,s.sz*s.life); } }
+      };
+      p.windowResized=function(){ W=p.windowWidth;H=p.windowHeight; p.resizeCanvas(W,H); };
+    };
+    new p5(sketch);
+  }
+
+  /* ---------- three.js 木作櫃：捲動驅動自組裝 ---------- */
+  function initAssemble(){
+    if(typeof THREE==="undefined") return;
+    var holder=document.getElementById("asm-3d");
+    if(!holder) return;
+    var W=holder.clientWidth, H=holder.clientHeight;
+    var scene=new THREE.Scene();
+    var cam=new THREE.PerspectiveCamera(42,W/H,0.1,100);
+    cam.position.set(0,0,isMobile?10.6:8.8);
+    var renderer=new THREE.WebGLRenderer({alpha:true,antialias:!isMobile});
+    renderer.setSize(W,H); renderer.setPixelRatio(Math.min(window.devicePixelRatio,isMobile?1:1.5));
+    holder.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0x6a4a28,0.75));
+    var key=new THREE.SpotLight(0xffd9a0,2.7,60,0.7,0.5,1); key.position.set(4,9,7); scene.add(key);
+    var fill=new THREE.DirectionalLight(0xffb968,0.7); fill.position.set(-5,1,-4); scene.add(fill);
+
+    var oak=0x9a6633, birch=0xe6c489, oaklit=0xc08a4c;
+    var specs=[
+      {w:2.9,h:3.6,d:0.08,x:0,y:0,z:-0.55,c:birch},
+      {w:0.1,h:3.6,d:1.1,x:-1.45,y:0,z:0,c:oak},
+      {w:0.1,h:3.6,d:1.1,x:1.45,y:0,z:0,c:oak},
+      {w:2.9,h:0.12,d:1.1,x:0,y:-1.74,z:0,c:oak},
+      {w:2.9,h:0.12,d:1.1,x:0,y:1.74,z:0,c:oak},
+      {w:2.78,h:0.1,d:1.0,x:0,y:0.2,z:0.02,c:oaklit},
+      {w:2.78,h:0.08,d:0.95,x:0,y:1.0,z:0.04,c:birch},
+      {w:0.1,h:1.74,d:1.0,x:0,y:-0.92,z:0,c:oak},
+      {w:1.3,h:0.66,d:0.08,x:-0.72,y:-0.5,z:0.56,c:oaklit},
+      {w:1.3,h:0.66,d:0.08,x:0.72,y:-0.5,z:0.56,c:oaklit},
+      {w:1.3,h:0.66,d:0.08,x:-0.72,y:-1.32,z:0.56,c:oaklit},
+      {w:1.3,h:0.66,d:0.08,x:0.72,y:-1.32,z:0.56,c:oaklit}
+    ];
+    var group=new THREE.Group(); scene.add(group);
+    if(isMobile) group.scale.setScalar(0.78);
+    var planks=[];
+    for(var i=0;i<specs.length;i++){ var s=specs[i];
+      var g=new THREE.BoxGeometry(s.w,s.h,s.d);
+      var m=new THREE.MeshStandardMaterial({color:s.c,roughness:0.72,metalness:0.02,emissive:0x2a1a0c,emissiveIntensity:0.22});
+      var mesh=new THREE.Mesh(g,m);
+      var ang=Math.random()*Math.PI*2, spread=5+Math.random()*4;
+      var scatter={x:s.x+Math.cos(ang)*spread, y:s.y+(Math.random()-0.5)*9, z:s.z+Math.sin(ang)*spread-2};
+      var rot={x:Math.random()*4-2,y:Math.random()*4-2,z:Math.random()*4-2};
+      mesh.position.set(scatter.x,scatter.y,scatter.z);
+      mesh.rotation.set(rot.x,rot.y,rot.z);
+      group.add(mesh);
+      planks.push({mesh:mesh,home:{x:s.x,y:s.y,z:s.z},scatter:scatter,rot:rot,lp:0});
+    }
+    var N=planks.length;
+    function easeOut(t){ return 1-Math.pow(1-t,3); }
+    var _v=new THREE.Vector3();
+    function burstAt(mesh,n,power){
+      if(reduce || !window.MUGUANG_BURST) return;
+      mesh.getWorldPosition(_v); _v.project(cam);
+      if(_v.z>1) return;
+      var r=holder.getBoundingClientRect();
+      window.MUGUANG_BURST(r.left+(_v.x*0.5+0.5)*r.width, r.top+(-_v.y*0.5+0.5)*r.height, n, power);
+    }
+    var doneFired=false;
+    function apply(p){
+      for(var i=0;i<N;i++){ var pk=planks[i];
+        var startP=(i/N)*0.5, lp=Math.max(0,Math.min(1,(p-startP)/0.42)); lp=easeOut(lp);
+        pk.mesh.position.x=pk.scatter.x+(pk.home.x-pk.scatter.x)*lp;
+        pk.mesh.position.y=pk.scatter.y+(pk.home.y-pk.scatter.y)*lp;
+        pk.mesh.position.z=pk.scatter.z+(pk.home.z-pk.scatter.z)*lp;
+        pk.mesh.rotation.x=pk.rot.x*(1-lp);
+        pk.mesh.rotation.y=pk.rot.y*(1-lp);
+        pk.mesh.rotation.z=pk.rot.z*(1-lp);
+        // 組合技：木板剛卡進定位 → 在投影座標噴木屑
+        if(pk.lp<0.9 && lp>=0.9) burstAt(pk.mesh,7,1);
+        pk.lp=lp;
+      }
+      group.rotation.y=-0.62+p*0.6;
+      // 完工：一圈光塵爆
+      if(p>=0.985 && !doneFired){ doneFired=true;
+        group.getWorldPosition(_v); _v.project(cam);
+        var r=holder.getBoundingClientRect();
+        if(window.MUGUANG_RING && !reduce) window.MUGUANG_RING(r.left+(_v.x*0.5+0.5)*r.width, r.top+(-_v.y*0.5+0.5)*r.height);
+      }
+      if(p<0.95) doneFired=false;
+    }
+    apply(0);
+
+    var prog=0;
+    if(window.gsap && window.ScrollTrigger){
+      var steps=document.querySelectorAll(".asm-steps span");
+      var pf=document.querySelector(".asm-progress .pf");
+      ScrollTrigger.create({trigger:"#assemble",start:"top top",end:"bottom bottom",scrub:true,
+        onUpdate:function(self){ prog=self.progress;
+          if(pf) pf.style.width=(prog*100).toFixed(1)+"%";
+          var idx=Math.min(steps.length-1,Math.floor(prog*steps.length+0.0001));
+          for(var si=0;si<steps.length;si++) steps[si].classList.toggle("on",si===idx);
+        }});
+    }
+
+    var mx=0,my=0;
+    if(!isTouch){ window.addEventListener("mousemove",function(e){ mx=(e.clientX/window.innerWidth-0.5); my=(e.clientY/window.innerHeight-0.5); }); }
+    var running=true, rafId=null;
+    function loop(){
+      if(!running){ rafId=null; return; }
+      apply(prog);
+      cam.position.x += (mx*1.1 - cam.position.x)*0.05;
+      cam.position.y += (-my*0.7 - cam.position.y)*0.05;
+      cam.lookAt(0,0,0);
+      renderer.render(scene,cam);
+      rafId=requestAnimationFrame(loop);
+    }
+    function start(){ if(reduce) return; if(rafId===null) rafId=requestAnimationFrame(loop); }
+    new IntersectionObserver(function(en){ running=en[0].isIntersecting; if(running) start(); },{threshold:0.01}).observe(document.getElementById("assemble"));
+    if(reduce){ apply(1); cam.lookAt(0,0,0); renderer.render(scene,cam); } else { start(); }
+    window.addEventListener("resize",function(){ W=holder.clientWidth;H=holder.clientHeight;
+      cam.aspect=W/H; cam.updateProjectionMatrix(); renderer.setSize(W,H); if(reduce){ renderer.render(scene,cam); } });
+  }
+
+  /* ---------- 毛胚 → 完工：捲動驅動 before/after ---------- */
+  function initTransform(){
+    var sec=document.getElementById("transform"); if(!sec) return;
+    var done=sec.querySelector(".tf-done"), seam=sec.querySelector(".tf-seam");
+    function set(p){
+      var pct=p*100;
+      done.style.clipPath="inset(0 "+(100-pct).toFixed(2)+"% 0 0)";
+      seam.style.left=pct.toFixed(2)+"%";
+      seam.style.opacity=(p>0.01 && p<0.99)?"1":"0";
+    }
+    set(0.001);
+    if(window.gsap && window.ScrollTrigger){
+      ScrollTrigger.create({trigger:sec,start:"top top",end:"bottom bottom",scrub:true,
+        onUpdate:function(self){ set(self.progress); }});
+    } else { set(1); }
+  }
+
+  /* ---------- three.js 玄關鞋櫃：捲動組裝 + 完工點燈 ---------- */
+  function initEntry(){
+    if(typeof THREE==="undefined") return;
+    var holder=document.getElementById("entry-3d"); if(!holder) return;
+    var W=holder.clientWidth,H=holder.clientHeight;
+    var scene=new THREE.Scene();
+    var cam=new THREE.PerspectiveCamera(42,W/H,0.1,100); cam.position.set(0,0.3,isMobile?11.8:10.6);
+    var renderer=new THREE.WebGLRenderer({alpha:true,antialias:!isMobile});
+    renderer.setSize(W,H); renderer.setPixelRatio(Math.min(window.devicePixelRatio,isMobile?1:1.5));
+    holder.appendChild(renderer.domElement);
+    scene.add(new THREE.AmbientLight(0x5a3c20,0.5));
+    var key=new THREE.SpotLight(0xffd9a0,2.0,60,0.7,0.5,1); key.position.set(-4,9,7); scene.add(key);
+    var fill=new THREE.DirectionalLight(0xffb968,0.55); fill.position.set(5,1,-4); scene.add(fill);
+    var lamp=new THREE.PointLight(0xffca72,0,5,2.4); lamp.position.set(0,0.78,0.5); scene.add(lamp);
+
+    var oak=0x9a6633, oaklit=0xc08a4c, deep=0x5e3d20, dark=0x3a2a18;
+    function box(w,h,d,c){ return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+      new THREE.MeshStandardMaterial({color:c,roughness:0.72,metalness:0.03,emissive:0x2a1a0c,emissiveIntensity:0.2})); }
+    var group=new THREE.Group(); scene.add(group);
+    if(isMobile) group.scale.setScalar(0.82);
+    lamp.position.set(-0.55,0.35,0.18);
+
+    // 已完工的玄關鞋櫃（靜態櫃體）— 捲動時「開門 + 抽屜滑出 + 點燈」
+    var carcass=[
+      [2.9,2.0,0.08, 0,0,-0.5, deep],
+      [0.1,2.0,1.1, -1.5,0,0, oak],
+      [0.1,2.0,1.1, 1.5,0,0, oak],
+      [2.9,0.12,1.1, 0,-0.97,0, oak],
+      [3.2,0.16,1.2, 0,1.05,0, oaklit],
+      [0.1,2.0,1.0, 0,0,0, oak],
+      [1.36,0.08,0.96, -0.72,0.34,-0.02, oaklit],
+      [1.36,0.08,0.96, -0.72,-0.36,-0.02, oaklit]
+    ];
+    carcass.forEach(function(s){ var m=box(s[0],s[1],s[2],s[6]); m.position.set(s[3],s[4],s[5]); group.add(m); });
+
+    // 燈條（會亮）
+    var lampMat=new THREE.MeshStandardMaterial({color:dark,emissive:0xffca72,emissiveIntensity:0});
+    var lampBar=new THREE.Mesh(new THREE.BoxGeometry(2.7,0.05,0.08),lampMat); lampBar.position.set(0,0.92,0.42); group.add(lampBar);
+
+    // 左格門（沿左緣鉸鏈開啟）
+    var doorPivot=new THREE.Group(); doorPivot.position.set(-1.42,0,0.5); group.add(doorPivot);
+    var doorMesh=box(1.3,1.9,0.05,oaklit); doorMesh.position.set(0.66,0,0); doorPivot.add(doorMesh);
+    var doorHandle=box(0.05,0.34,0.06,dark); doorHandle.position.set(1.2,0,0.05); doorPivot.add(doorHandle);
+
+    // 右格兩抽屜（往外滑出）
+    function makeDrawer(y){ var g=new THREE.Group();
+      var front=box(1.32,0.58,0.06,oaklit); g.add(front);
+      var hd=box(0.36,0.06,0.06,dark); hd.position.set(0,0,0.06); g.add(hd);
+      g.position.set(0.74,y,0.5); group.add(g); return g; }
+    var dr1=makeDrawer(0.46), dr2=makeDrawer(-0.3);
+
+    var litText=document.querySelector(".entry-overlay .lit");
+    var _v=new THREE.Vector3();
+    function easeIO(t){ t=Math.max(0,Math.min(1,t)); return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; }
+    function seg(p,a,b){ return Math.max(0,Math.min(1,(p-a)/(b-a))); }
+    var litFired=false;
+    function apply(p){
+      doorPivot.rotation.y = -easeIO(seg(p,0.08,0.5))*2.0;   // 開門 ~115°
+      dr1.position.z = 0.5 + easeIO(seg(p,0.3,0.64))*0.6;     // 上抽屜滑出
+      dr2.position.z = 0.5 + easeIO(seg(p,0.46,0.82))*0.66;   // 下抽屜滑出（更多）
+      var lit = seg(p,0.5,0.9);
+      lampMat.emissiveIntensity = lit*1.9; lamp.intensity = lit*1.1;
+      if(litText) litText.classList.toggle("on", lit>0.5);
+      group.rotation.y = -0.34 + p*0.24;
+      if(lit>=0.6 && !litFired){ litFired=true;
+        group.getWorldPosition(_v); _v.project(cam); var r=holder.getBoundingClientRect();
+        if(window.MUGUANG_RING && !reduce) window.MUGUANG_RING(r.left+(_v.x*0.5+0.5)*r.width, r.top+(-_v.y*0.5+0.5)*r.height);
+      }
+      if(lit<0.4) litFired=false;
+    }
+    apply(0);
+
+    var prog=0;
+    if(window.gsap && window.ScrollTrigger){
+      var pf=document.querySelector(".entry-progress .pf");
+      ScrollTrigger.create({trigger:"#entry",start:"top top",end:"bottom bottom",scrub:true,
+        onUpdate:function(self){ prog=self.progress; if(pf) pf.style.width=(prog*100).toFixed(1)+"%"; }});
+    }
+    var mx=0,my=0;
+    if(!isTouch){ window.addEventListener("mousemove",function(e){ mx=(e.clientX/window.innerWidth-0.5); my=(e.clientY/window.innerHeight-0.5); }); }
+    var running=true, rafId=null;
+    function loop(){
+      if(!running){ rafId=null; return; }
+      apply(prog);
+      cam.position.x += (mx*1.1 - cam.position.x)*0.05;
+      cam.position.y += (0.3-my*0.6 - cam.position.y)*0.05;
+      cam.lookAt(0,0.1,0);
+      renderer.render(scene,cam);
+      rafId=requestAnimationFrame(loop);
+    }
+    function start(){ if(reduce) return; if(rafId===null) rafId=requestAnimationFrame(loop); }
+    new IntersectionObserver(function(en){ running=en[0].isIntersecting; if(running) start(); },{threshold:0.01}).observe(document.getElementById("entry"));
+    if(reduce){ apply(1); cam.lookAt(0,0.1,0); renderer.render(scene,cam); } else { start(); }
+    window.addEventListener("resize",function(){ W=holder.clientWidth;H=holder.clientHeight;
+      cam.aspect=W/H; cam.updateProjectionMatrix(); renderer.setSize(W,H); if(reduce){ renderer.render(scene,cam); } });
+  }
+
+  // 裝飾性圖示／標誌對螢幕閱讀器隱藏
+  document.querySelectorAll("svg.roof,svg.contact-mark,svg.mark,i.fa-solid,i.fa-brands").forEach(function(el){ el.setAttribute("aria-hidden","true"); });
+
+  /* ---------- boot ---------- */
+  // loader 過場與第一個 paint 同步開始收（不等 window.load，避免慢載入時完整圖久留）
+  runLoader();
+
+  window.addEventListener("load",function(){
+    initScroll();
+    initTorch();
+    initSawdust();
+    initAssemble();
+    initTransform();
+    initEntry();
+
+    // 關鍵：lazy 圖片載入會改變版面高度，讓下方 scrub 區段（尤其玄關櫃）位置算錯，
+    // 必須在圖片載入後重算 ScrollTrigger 位置。
+    if(window.ScrollTrigger){
+      var rfTimer;
+      var refreshST=function(){ clearTimeout(rfTimer); rfTimer=setTimeout(function(){ ScrollTrigger.refresh(); },180); };
+      document.querySelectorAll("img").forEach(function(im){ if(!im.complete) im.addEventListener("load",refreshST,{once:true}); });
+      // 字體載入完成後也重算一次
+      if(document.fonts && document.fonts.ready) document.fonts.ready.then(refreshST);
+      setTimeout(refreshST, 1200);
+    }
+  });
+  // 後援：若 load 太慢，3.5s 後強制收 loader
+  setTimeout(function(){ var l=document.getElementById("loader"); if(l && !l.classList.contains("gone")) hideLoader(); },3500);
+})();
+</script>
+</body>
+</html>
