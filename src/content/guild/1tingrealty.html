@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1庭的房產人森｜不販售 FOMO，只陪你想清楚 · Renee Chen</title>
+<meta name="description" content="我是 1庭，不是房仲，不是投資顧問 —— 是陪你走完買房與職涯的陪跑顧問。商用不動產 5 年 PM × 自由獵頭，把複雜的房產知識變簡單，陪你把焦慮換成對的問題。提供一對一諮詢、講座講師邀約、求職媒合與免費買房懶人包。">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,400;1,9..144,500&family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+:root{
+  /* 專業簡約調色盤：暖灰白畫布 + 墨黑字 + 單一玫瑰點綴 */
+  --cream:#F4F0E8;        /* 主背景：暖灰白 */
+  --cream-2:#EAE5DA;      /* 深一階（分隔／淡帶） */
+  --paper:#FBF9F4;        /* 近白卡片 */
+  --blush:#EDE5DE;        /* 極淡中性玫瑰（hover 底） */
+  --rose:#BC6258;         /* 玫瑰點綴（收斂、不甜膩） */
+  --rose-deep:#A04A41;    /* 深玫瑰 */
+  --rose-soft:#E4D5CE;    /* 極淡玫瑰 */
+  --taupe:#B4A893;        /* 低彩度暖米 */
+  --taupe-deep:#857A66;   /* 深米 */
+  --ink:#211F1B;          /* 近黑暖墨：主文字 */
+  --ink-soft:#574E42;     /* 次要文字（加深以達 AA 對比，年長 TA 友善）*/
+  --line:rgba(33,31,27,.12);
+  --shadow:0 18px 44px -30px rgba(40,34,26,.32);
+  --font-disp:"Fraunces",serif;
+  --font-serif:"Noto Serif TC",serif;
+  --font-sans:"Noto Sans TC",sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{
+  font-family:var(--font-sans);
+  background:var(--cream);
+  color:var(--ink);
+  line-height:1.85;
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased;
+}
+body.custom-cursor{cursor:none}
+@media (hover:none){body.custom-cursor{cursor:auto}}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--rose-soft);color:var(--ink)}
+
+/* ===== 全域微粒紋理（極簡，僅保留極淡顆粒） ===== */
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.04;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ===== 自訂游標 ===== */
+.cur-dot,.cur-ring{position:fixed;top:0;left:0;border-radius:50%;pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%)}
+.cur-dot{width:6px;height:6px;background:var(--rose-deep)}
+.cur-ring{width:34px;height:34px;border:1.4px solid var(--rose);display:grid;place-items:center;
+  transition:width .35s cubic-bezier(.2,.8,.2,1),height .35s cubic-bezier(.2,.8,.2,1),background .35s,border-color .35s}
+.cur-ring.big{width:62px;height:62px;background:rgba(188,98,88,.12);border-color:var(--rose-deep)}
+.cur-ring.label{width:84px;height:84px;background:var(--rose);border-color:var(--rose)}
+/* 經過深色區塊（CTA／footer／跑馬燈／講師特色卡）→ 游標轉淺色，確保看得清楚 */
+body.cursor-dark .cur-dot{background:var(--cream)}
+body.cursor-dark .cur-ring{border-color:var(--cream)}
+body.cursor-dark .cur-ring.big{background:rgba(244,240,232,.14);border-color:var(--cream)}
+.cur-label{font-family:var(--font-sans);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;
+  color:#fff;opacity:0;transform:scale(.6);transition:opacity .3s,transform .3s;text-align:center;line-height:1.3}
+.cur-ring.label .cur-label{opacity:1;transform:scale(1)}
+@media (hover:none){.cur-dot,.cur-ring{display:none}}
+
+/* ===== 入場載入 ===== */
+#loader{position:fixed;inset:0;z-index:9000;background:var(--cream);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:24px}
+#loader .lhouse{width:96px;height:96px;opacity:0;transform:translateY(12px) scale(.9)}
+#loader .lname{font-family:var(--font-disp);font-size:.92rem;letter-spacing:.5em;color:var(--rose-deep);
+  text-transform:uppercase;opacity:0;padding-left:.5em}
+#loader .lbar{width:0;height:2px;background:linear-gradient(90deg,var(--rose-soft),var(--rose-deep))}
+
+/* ===== 共用 ===== */
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px;position:relative;z-index:2}
+section{position:relative;z-index:2}
+.kicker{font-family:var(--font-sans);font-weight:500;font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--ink-soft);display:inline-flex;align-items:center;gap:.8em;margin-bottom:1.4rem}
+.kicker::before{content:"";width:26px;height:1px;background:var(--rose);display:inline-block}
+.kicker.k-mid::after{content:"";width:26px;height:1px;background:var(--rose);display:inline-block}
+.kicker.k-mid{justify-content:center}
+h2.title{font-family:var(--font-serif);font-weight:500;line-height:1.22;letter-spacing:-.01em;
+  font-size:clamp(2.1rem,5.2vw,3.6rem);color:var(--ink)}
+.lead{font-size:clamp(1.02rem,1.4vw,1.16rem);color:var(--ink-soft);max-width:48ch;font-weight:400;line-height:1.95}
+.em{color:var(--rose-deep);font-weight:500}
+.serif-em{font-family:var(--font-disp);font-style:italic;font-weight:500}
+
+/* ===== 返回名冊 ===== */
+.archive{position:fixed;top:24px;left:28px;z-index:120;font-family:var(--font-disp);font-style:italic;
+  font-size:.96rem;color:var(--ink);display:inline-flex;align-items:center;gap:.6em;
+  background:rgba(255,252,246,.7);backdrop-filter:blur(8px);padding:.5em 1em;border-radius:30px;
+  border:1px solid var(--line);transition:gap .35s,color .35s,box-shadow .35s}
+.archive i{font-style:normal;transition:transform .4s}
+.archive:hover{color:var(--rose-deep);gap:1em;box-shadow:var(--shadow)}
+.archive:hover i{transform:translateX(-5px)}
+
+/* ===== HERO：動態雜誌封面 ===== */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;padding:96px 0 70px;overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;display:grid;place-items:center;pointer-events:none}
+.hero-bg img{width:min(1100px,92%);opacity:.16;mix-blend-mode:multiply}
+.hero-draw{position:absolute;right:4%;top:18%;width:min(620px,52vw);height:auto;z-index:1;opacity:.5;pointer-events:none}
+.hero-draw path{stroke:var(--rose);stroke-width:.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.hero-draw .hd-house{stroke:var(--ink);stroke-width:.7;opacity:.5}
+.hero-cover{position:relative;z-index:2;display:flex;flex-direction:column;min-height:calc(100vh - 166px);justify-content:space-between}
+/* masthead */
+.masthead{display:flex;align-items:center;justify-content:space-between;padding-bottom:18px;
+  border-bottom:1px solid var(--line);gap:16px}
+.masthead .mh-left{display:flex;align-items:center;gap:.6em}
+.masthead .mh-left img{width:30px;height:30px}
+.masthead .mh-left span{font-family:var(--font-serif);font-weight:500;font-size:.96rem;letter-spacing:.04em;color:var(--ink)}
+.masthead .mh-right{display:flex;align-items:center;gap:1.4em;font-family:var(--font-sans);font-size:.72rem;
+  letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
+.masthead .mh-issue{color:var(--rose-deep)}
+/* cover main */
+.cover-main{flex:1;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:clamp(24px,4vw,52px) 0}
+.cover-kicker{display:inline-block;font-family:var(--font-sans);font-size:.72rem;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:1.6rem}
+.hero h1{font-family:var(--font-serif);font-weight:600;font-size:clamp(2.3rem,5.2vw,4rem);line-height:1.14;
+  letter-spacing:-.015em;margin-bottom:1.8rem}
+.hero h1 .fomo{position:relative;display:inline-block;color:var(--ink)}
+.hero h1 .fomo::after{content:"";position:absolute;left:-1%;right:-1%;top:54%;height:.07em;
+  background:var(--rose);transform:scaleX(0);transform-origin:left}
+.hero h1 .clear{color:var(--rose-deep)}
+.hero .lead{margin-bottom:0;line-height:1.95;max-width:40ch}
+/* cover photo */
+.cover-photo{position:relative;justify-self:end}
+.cp-frame{width:min(380px,80vw);aspect-ratio:4/5;overflow:hidden;border:1px solid var(--line);position:relative;
+  clip-path:inset(0 0 0 0)}
+.cp-frame img{width:100%;height:100%;object-fit:cover;object-position:50% 24%;filter:grayscale(.28) contrast(.98)}
+.cover-photo .cp-cap{position:absolute;left:14px;bottom:14px;z-index:2;font-family:var(--font-sans);
+  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:#fff;
+  background:rgba(33,31,27,.55);backdrop-filter:blur(4px);padding:.4em .8em}
+/* cover foot */
+.cover-foot{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-top:18px;
+  border-top:1px solid var(--line)}
+.hero-tags{display:flex;gap:.5em;flex-wrap:wrap}
+.tag{font-size:.74rem;letter-spacing:.06em;color:var(--ink-soft);border:1px solid var(--line);
+  padding:.42em 1em;border-radius:2px}
+.cover-issue-line{font-family:var(--font-serif);font-style:italic;font-size:.96rem;color:var(--ink-soft);white-space:nowrap}
+
+.scrollcue{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);text-align:center;z-index:3;
+  font-family:var(--font-sans);font-size:.66rem;letter-spacing:.3em;color:var(--ink-soft)}
+.scrollcue .ln{width:1px;height:40px;background:linear-gradient(var(--rose),transparent);margin:.7em auto 0;
+  animation:cue 2.2s ease-in-out infinite}
+@keyframes cue{0%,100%{transform:scaleY(.5);opacity:.4;transform-origin:top}50%{transform:scaleY(1);opacity:1;transform-origin:top}}
+
+/* ===== 定位 / Manifesto intro ===== */
+.define{padding:140px 0}
+.define-card{background:transparent;border-radius:0;padding:0;position:relative;
+  border-top:1px solid var(--line);padding-top:clamp(40px,5vw,72px);max-width:1000px}
+.notlist{font-family:var(--font-serif);font-weight:500;font-size:clamp(1.9rem,4.6vw,3.1rem);line-height:1.32;margin:.4em 0 1.4rem;
+  letter-spacing:-.01em}
+.notlist .strike{color:var(--mut,#9a9388);position:relative;white-space:nowrap;color:var(--ink-soft)}
+.notlist .strike::after{content:"";position:absolute;left:0;right:0;top:54%;height:2px;background:var(--rose);
+  transform:scaleX(0);transform-origin:left;display:block}
+.notlist .is{color:var(--rose-deep)}
+.define-card p{max-width:62ch;color:var(--ink-soft);margin-top:.6rem;font-size:1.08rem;font-weight:400;line-height:1.95}
+.bigquote{margin-top:2.8rem;padding-left:1.5em;border-left:2px solid var(--rose);font-family:var(--font-serif);
+  font-weight:500;font-size:clamp(1.3rem,3vw,1.9rem);color:var(--ink);line-height:1.65}
+
+/* ===== 招牌：噪音→清楚 捲動電影 ===== */
+.cinema-wrap{position:relative;background:var(--cream)}
+.cinema{position:relative;min-height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  padding:90px 0}
+.cin-bg{position:absolute;inset:0;z-index:0;pointer-events:none}
+.cin-bg-cold{background:linear-gradient(165deg,#d8d4cf 0%,#cec9c2 55%,#d5d0c8 100%)}   /* 冷中性灰：市場噪音 */
+.cin-bg-warm{background:var(--cream);opacity:0}                                          /* 清楚：乾淨暖白 */
+.cin-bg-gold{background:radial-gradient(circle at 50% 48%,#FFFFFF 0%,var(--cream) 62%);opacity:0} /* 澄清柔光 */
+.cinema:not(.cine-on) .cin-bg-cold,.cinema:not(.cine-on) .cin-bg-gold{opacity:0}
+.cinema:not(.cine-on) .cin-bg-warm{opacity:1}
+.cin-noise{position:absolute;inset:0;z-index:2;pointer-events:none;display:none}
+.cine-on .cin-noise{display:block}
+.nz{position:absolute;font-family:var(--font-serif);font-weight:500;white-space:nowrap;
+  color:rgba(58,54,48,.42);font-size:clamp(.85rem,1.8vw,1.45rem);will-change:transform,opacity,filter}
+.cin-runner{position:absolute;left:6%;top:6%;z-index:4;display:none;flex-direction:column;align-items:center;gap:7px}
+.cine-on .cin-runner{display:flex}
+.cin-runner .r-dot{width:13px;height:13px;border-radius:50%;background:var(--rose);
+  box-shadow:0 0 0 5px rgba(188,98,88,.14)}
+.cin-runner .r-label{font-family:var(--font-sans);font-size:.66rem;letter-spacing:.2em;color:var(--rose);text-transform:uppercase}
+.cin-beats{position:relative;z-index:4;width:min(700px,86vw);text-align:center}
+.beat{padding:34px 0}
+.cine-on .beat{position:absolute;left:50%;top:50%;width:min(700px,86vw);transform:translate(-50%,-50%);
+  padding:0;opacity:0;pointer-events:none}
+.beat .b-no{font-family:var(--font-disp);font-weight:300;font-size:clamp(2rem,5vw,3.2rem);color:var(--rose);
+  display:block;line-height:1;margin-bottom:.35em;letter-spacing:.05em}
+.beat h3{font-family:var(--font-serif);font-weight:500;font-size:clamp(2rem,5.4vw,3.4rem);color:var(--ink);
+  line-height:1.22;margin-bottom:.9rem;letter-spacing:-.01em}
+.beat p{color:var(--ink-soft);font-weight:400;font-size:clamp(1rem,1.5vw,1.16rem);max-width:32ch;margin:0 auto;line-height:1.95}
+.beat-final .seal{display:flex;align-items:center;justify-content:center;gap:.9em;margin-top:1.6rem;
+  color:var(--rose);font-size:1.05rem}
+.beat-final .seal::before,.beat-final .seal::after{content:"";width:42px;height:1px;background:var(--rose);opacity:.6}
+.cin-progress{position:absolute;bottom:5%;left:50%;transform:translateX(-50%);width:min(220px,50vw);height:3px;
+  background:rgba(108,80,72,.18);z-index:5;border-radius:3px;overflow:hidden;display:none}
+.cine-on .cin-progress{display:block}
+.cin-progress-fill{display:block;height:100%;width:100%;background:var(--rose-deep);transform-origin:left;transform:scaleX(0)}
+.cin-stage{position:absolute;top:28px;left:50%;transform:translateX(-50%);z-index:5;font-family:var(--font-disp);
+  font-style:italic;letter-spacing:.32em;color:var(--rose-deep);font-size:.8rem;text-transform:uppercase;display:none}
+.cine-on .cin-stage{display:block}
+.cin-hint{position:absolute;bottom:10%;left:50%;transform:translateX(-50%);z-index:5;color:var(--ink-soft);
+  font-family:var(--font-disp);font-style:italic;font-size:.82rem;display:none;align-items:center;gap:.5em}
+.cine-on .cin-hint{display:flex}
+
+/* ===== 服務：橫向 pinned 電影卷軸（fallback = 垂直堆疊）===== */
+.reel-wrap{position:relative;background:var(--cream)}
+.reel{padding:130px 0}
+.reel-track{display:flex;flex-direction:column;gap:26px;max-width:1080px;margin:0 auto;padding:0 32px}
+.panel{display:flex;flex-direction:column;text-decoration:none;border:1px solid var(--line);background:var(--paper);
+  overflow:hidden;position:relative}
+.panel-intro{border:none;background:transparent;justify-content:center;padding:10px 0 30px}
+.panel-intro .r-title{font-family:var(--font-serif);font-weight:500;font-size:clamp(2.1rem,5vw,3.4rem);
+  line-height:1.22;letter-spacing:-.01em;color:var(--ink);margin:1.2rem 0}
+.panel-intro .lead{max-width:34ch}
+.reel-cue{display:inline-flex;align-items:center;gap:.7em;margin-top:1.6rem;font-family:var(--font-sans);
+  font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--rose-deep)}
+.p-media{overflow:hidden;aspect-ratio:16/10}
+.p-media img{width:100%;height:100%;object-fit:cover;filter:grayscale(.5) contrast(.97);transition:transform .8s ease}
+.panel:hover .p-media img{transform:scale(1.04)}
+.p-body{padding:30px 32px 34px;display:flex;flex-direction:column;gap:13px}
+.p-idx{font-family:var(--font-disp);font-weight:300;font-size:1.5rem;color:var(--rose);letter-spacing:.04em;
+  display:flex;align-items:baseline;gap:.8em}
+.p-idx em{font-style:italic;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft)}
+.panel h3{font-family:var(--font-serif);font-weight:500;font-size:1.32rem;color:var(--ink);letter-spacing:.01em}
+.panel p{color:var(--ink-soft);font-size:.95rem;font-weight:400;line-height:1.85;flex:1}
+.panel .go{font-family:var(--font-sans);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--rose-deep);display:inline-flex;align-items:center;gap:.6em;transition:gap .35s}
+.panel:hover .go{gap:1em}
+.panel.feature{background:var(--ink)}
+.panel.feature h3{color:var(--cream)}
+.panel.feature p{color:rgba(244,240,232,.66)}
+.panel.feature .go{color:var(--rose-soft)}
+.panel.feature .p-idx{color:var(--rose-soft)}
+.panel.feature .p-idx em{color:rgba(244,240,232,.55)}
+/* 桌機橫向 reel 啟用 */
+.reel-on{height:100vh;padding:0;overflow:hidden;display:flex;align-items:center}
+.reel-on .reel-track{flex-direction:row;flex-wrap:nowrap;max-width:none;margin:0;padding:0 7vw;gap:30px;
+  height:76vh;align-items:stretch;will-change:transform}
+.reel-on .panel{flex:0 0 auto;width:min(380px,72vw);height:100%}
+.reel-on .panel-intro{width:min(460px,82vw);padding-right:20px}
+.reel-on .p-media{aspect-ratio:auto;flex:1;min-height:0}
+.reel-on .p-body{flex:0 0 auto}
+
+/* ===== 跑馬燈分隔帶 ===== */
+.marquee{overflow:hidden;background:var(--ink);padding:26px 0;position:relative}
+.mq-track{display:flex;align-items:center;gap:0;white-space:nowrap;width:max-content;will-change:transform}
+.mq-track span{font-family:var(--font-serif);font-style:italic;font-weight:500;font-size:clamp(1.4rem,3vw,2.1rem);
+  color:var(--cream);padding:0 .8em}
+.mq-track i{color:var(--rose);font-style:normal;font-size:.9rem;opacity:.8}
+
+/* ===== 講師邀約 SPEAKER ===== */
+.speaker{padding:118px 0}
+.speaker-card{position:relative;border-radius:10px;overflow:hidden;box-shadow:var(--shadow);
+  background:linear-gradient(135deg,#fff7ee 0%,#fbe3db 100%);border:1px solid var(--rose-soft)}
+.speaker-card .inner{display:grid;grid-template-columns:1fr 1fr;gap:48px;padding:clamp(40px,5vw,72px)}
+.speaker h2.title{font-size:clamp(1.9rem,4.4vw,3rem)}
+.speaker .lead{margin-top:1.1rem}
+.topics{display:flex;flex-direction:column;gap:14px;position:relative;z-index:2}
+.topic{display:flex;gap:14px;align-items:flex-start;background:rgba(255,252,246,.7);border:1px solid var(--line);
+  border-radius:4px;padding:16px 20px}
+.topic i{color:var(--rose-deep);font-size:1.1rem;margin-top:.25em;width:1.3em;text-align:center}
+.topic b{font-family:var(--font-serif);font-weight:700;display:block;color:var(--ink);font-size:1.02rem}
+.topic span{font-size:.88rem;color:var(--ink-soft)}
+.audience{display:flex;gap:.5em;flex-wrap:wrap;margin-top:18px}
+.audience span{font-size:.82rem;color:var(--ink);background:var(--paper);border:1px solid var(--line);
+  border-radius:2px;padding:.45em 1em}
+.audience span i{color:var(--rose);margin-right:.4em}
+.past-talk{margin-top:24px;padding:16px 20px;border-left:2px solid var(--rose);background:rgba(255,252,246,.55)}
+.past-talk .pt-tag{font-family:var(--font-sans);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--rose-deep);display:inline-flex;align-items:center;gap:.5em;margin-bottom:.5em}
+.past-talk p{font-size:.9rem;color:var(--ink-soft);font-weight:400;line-height:1.8}
+.past-talk b{font-family:var(--font-serif);font-weight:600;color:var(--ink)}
+
+/* ===== 指南針 / 學經歷 COMPASS ===== */
+.compass{padding:118px 0}
+.compass-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:60px;align-items:center}
+.dualcompass{position:relative;aspect-ratio:1;width:100%;max-width:340px;margin:0 auto;border-radius:50%;
+  display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 42%,#fff,var(--blush) 70%,#f6d3ca);
+  border:2px solid var(--rose);box-shadow:0 30px 60px -26px rgba(199,108,99,.55),inset 0 0 60px rgba(229,154,145,.25)}
+.dualcompass .ticks{position:absolute;inset:6%;border-radius:50%;
+  background:repeating-conic-gradient(var(--rose-deep) 0deg 1.2deg,transparent 1.2deg 15deg);
+  -webkit-mask:radial-gradient(circle,transparent 80%,#000 81%,#000 100%);
+          mask:radial-gradient(circle,transparent 80%,#000 81%,#000 100%);opacity:.7;will-change:transform}
+.dualcompass .ring{position:absolute;border-radius:50%;border:1.5px dashed var(--rose)}
+.dualcompass .ring.r1{inset:11%;opacity:.6}.dualcompass .ring.r2{inset:24%;opacity:.8}.dualcompass .ring.r3{inset:38%;border-style:solid;border-color:var(--rose);opacity:.5}
+.dualcompass .needle{position:absolute;width:4px;height:40%;top:10%;left:calc(50% - 2px);transform-origin:bottom center;
+  border-radius:4px;filter:drop-shadow(0 2px 4px rgba(120,80,60,.25))}
+.dualcompass .needle.a{background:linear-gradient(var(--rose-deep),var(--rose) 60%,transparent)}
+.dualcompass .needle.b{background:linear-gradient(var(--taupe-deep),var(--taupe) 60%,transparent)}
+.dualcompass .core{width:64px;height:64px;border-radius:50%;background:var(--paper);box-shadow:var(--shadow);
+  display:grid;place-items:center;z-index:2}
+.dualcompass .core img{width:42px;height:42px}
+.dualcompass .lbl{position:absolute;font-family:var(--font-disp);font-style:italic;font-size:.82rem;color:var(--ink-soft)}
+.dualcompass .lbl.n{top:6%;left:50%;transform:translateX(-50%)}
+.dualcompass .lbl.s{bottom:6%;left:50%;transform:translateX(-50%)}
+.dualcompass .lbl.e{right:6%;top:50%;transform:translateY(-50%)}
+.dualcompass .lbl.w{left:6%;top:50%;transform:translateY(-50%)}
+.timeline{display:flex;flex-direction:column}
+.tl{display:grid;grid-template-columns:auto 1fr;gap:20px;padding:18px 0;border-bottom:1px solid var(--line)}
+.tl:last-child{border-bottom:none}
+.tl .yr{font-family:var(--font-disp);color:var(--rose-deep);white-space:nowrap;padding-top:.15em;
+  min-width:92px;font-size:1.02rem}
+.tl .yr i{font-style:normal;color:var(--ink-soft);font-size:.82em}
+.tl b{font-family:var(--font-serif);font-weight:500;color:var(--ink);font-size:1.08rem}
+.tl span{color:var(--ink-soft);font-size:.94rem;font-weight:400;display:block}
+
+/* 專業證照 */
+.licenses{margin-top:60px;padding-top:40px;border-top:1px solid var(--line);
+  display:grid;grid-template-columns:120px 1fr;gap:36px;align-items:start}
+.lic-label{font-family:var(--font-sans);font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--ink-soft);padding-top:.5em}
+.lic-list{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--line);border:1px solid var(--line)}
+.lic-list li{background:var(--paper);padding:18px 20px;font-family:var(--font-serif);font-weight:500;
+  font-size:.98rem;color:var(--ink);display:flex;align-items:center;gap:.7em;transition:background .4s}
+.lic-list li:hover{background:var(--blush)}
+.lic-list li i{color:var(--rose);font-size:.82rem}
+
+/* ===== 問對問題 KNOWLEDGE ===== */
+.know{padding:118px 0}
+.know-head{text-align:center;max-width:40ch;margin:0 auto 56px}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:920px;margin:0 auto}
+.qa{background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:28px 30px;cursor:pointer;
+  position:relative;transition:box-shadow .4s;min-height:148px}
+.qa:hover{box-shadow:var(--shadow)}
+.qa .face{position:relative;z-index:2}
+.qa .role{font-size:.74rem;letter-spacing:.12em;display:inline-flex;align-items:center;gap:.5em;margin-bottom:.7em}
+.qa .anx .role,.qa .anx{color:var(--ink-soft)}
+.qa .q{font-family:var(--font-serif);font-weight:700;font-size:1.18rem;line-height:1.5;color:var(--ink)}
+.qa .ans{margin-top:0;max-height:0;overflow:hidden;opacity:0;transition:max-height .55s ease,opacity .45s,margin-top .4s}
+.qa.open .ans{max-height:220px;opacity:1;margin-top:18px}
+.qa .ans .role{color:var(--rose-deep)}
+.qa .ans .q{color:var(--rose-deep);font-family:var(--font-serif);font-weight:600}
+.qa .hint{position:absolute;right:22px;bottom:18px;font-size:.74rem;color:var(--rose);font-family:var(--font-disp);
+  font-style:italic;display:flex;align-items:center;gap:.4em;transition:opacity .3s}
+.qa.open .hint{opacity:0}
+.qa .divider{height:1px;background:var(--line);margin-top:18px}
+.articles{max-width:920px;margin:46px auto 0;background:var(--cream-2);border-radius:6px;padding:30px 34px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.articles .albl{font-family:var(--font-serif);font-weight:700;color:var(--ink);margin-right:6px}
+.articles a{font-size:.9rem;color:var(--ink);background:var(--paper);border:1px solid var(--line);
+  border-radius:2px;padding:.5em 1.1em;transition:background .3s,color .3s,border-color .3s}
+.articles a:hover{background:var(--rose);color:#fff;border-color:var(--rose)}
+.articles a i{color:var(--rose-deep);margin-right:.4em}
+.articles a:hover i{color:#fff}
+
+/* ===== 金句 MANIFESTO ===== */
+.manifesto{padding:clamp(120px,16vw,200px) 0;text-align:center;position:relative;overflow:hidden;
+  background:linear-gradient(rgba(244,240,232,.82),rgba(244,240,232,.9)),
+  url('/assets/img/guild/1tingrealty/texture-contour.webp') center/cover no-repeat}
+.manifesto::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(circle at 50% 42%,rgba(228,213,206,.4),transparent 60%)}
+.manifesto blockquote{font-family:var(--font-serif);font-weight:500;font-size:clamp(2rem,5.6vw,3.9rem);line-height:1.42;
+  color:var(--ink);position:relative;z-index:2;letter-spacing:-.01em}
+.manifesto blockquote .hl{color:var(--rose-deep)}
+.manifesto cite{display:block;margin-top:1.8rem;font-family:var(--font-sans);font-weight:400;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-soft);font-size:.78rem;position:relative;z-index:2}
+
+/* ===== CTA ===== */
+.cta{padding:clamp(90px,13vw,168px) 0 76px;background:var(--ink);border-radius:40px 40px 0 0;margin-top:30px}
+.cta-card{position:relative;text-align:center;max-width:760px;margin:0 auto}
+.cta .kicker{color:var(--rose-soft);justify-content:center}
+.cta .kicker::before,.cta .kicker::after{background:var(--rose)}
+.cta h2{font-family:var(--font-serif);font-weight:500;font-size:clamp(2.1rem,5.4vw,3.6rem);line-height:1.22;
+  color:var(--cream);letter-spacing:-.01em}
+.cta .sub{color:rgba(244,240,232,.62);margin:1.4rem auto 0;max-width:46ch;font-weight:400;line-height:1.95}
+.cta-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:2.6rem}
+.btn{display:inline-flex;align-items:center;gap:.6em;padding:.92em 1.7em;border-radius:3px;font-weight:400;
+  font-size:.95rem;letter-spacing:.02em;transition:background .4s,color .4s,border-color .4s;will-change:transform}
+.btn i{font-size:1em;opacity:.85}
+.btn-primary{background:var(--rose);color:#fff}
+.btn-primary:hover{background:#fff;color:var(--ink)}
+.btn-ghost{background:transparent;color:var(--cream);border:1px solid rgba(244,240,232,.26)}
+.btn-ghost:hover{border-color:var(--cream);background:rgba(244,240,232,.06)}
+
+/* 場景圖：低彩度、編輯式處理（專業簡約） */
+.proband .pb-img img,.speaker-card .scenebg img,.compass .bp img,.know .deskstrip img{
+  filter:grayscale(.52) contrast(.97) brightness(1.02)}
+
+/* ===== FOOTER ===== */
+.foot{background:var(--ink);color:var(--cream);padding:64px 0 40px}
+.foot .wrap{display:flex;flex-direction:column;align-items:center;gap:24px;text-align:center}
+.foot .fname{font-family:var(--font-serif);font-weight:700;font-size:1.3rem;display:flex;align-items:center;gap:.6em}
+.foot .fname img{width:34px;height:34px}
+.socials{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.socials a{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:1.05rem;
+  background:rgba(251,243,226,.08);color:var(--cream);border:1px solid rgba(251,243,226,.18);
+  transition:background .35s,color .35s,transform .35s}
+.socials a:hover{background:var(--rose);color:#fff;transform:translateY(-4px) scale(1.06)}
+.foot .mail{font-family:var(--font-disp);font-style:italic;color:var(--rose-soft);font-size:.98rem}
+.foot .made{font-size:.84rem;color:rgba(251,243,226,.5);letter-spacing:.04em}
+.foot .made i{color:var(--rose)}
+
+/* ===== 強化：捲動進度條 / 專業場景視差 / 計數 ===== */
+.scrollprog{position:fixed;top:0;left:0;height:3px;width:0;z-index:200;
+  background:linear-gradient(90deg,var(--rose),var(--rose-deep));box-shadow:0 0 12px rgba(199,108,99,.55)}
+
+/* 全幅專業場景帶（視差） */
+.proband{position:relative;min-height:clamp(440px,62vh,640px);overflow:hidden;display:flex;align-items:center;
+  padding:80px 0}
+.proband .pb-img{position:absolute;inset:0;z-index:0;overflow:hidden}
+.proband .pb-img img{width:100%;height:100%;object-fit:cover;object-position:50% 46%;will-change:transform}
+.proband::after{content:"";position:absolute;inset:0;z-index:1;background:
+  linear-gradient(90deg,rgba(60,44,38,.72),rgba(60,44,38,.34) 58%,rgba(60,44,38,.14))}
+.proband .pb-inner{position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:0 32px;width:100%;color:var(--paper)}
+.proband .pb-kicker{font-family:var(--font-disp);font-style:italic;letter-spacing:.12em;color:var(--rose-soft);
+  display:inline-flex;align-items:center;gap:.6em;margin-bottom:1rem}
+.proband .pb-kicker::before{content:"";width:34px;height:1px;background:var(--rose-soft)}
+.proband h2{font-family:var(--font-serif);font-weight:600;font-size:clamp(1.9rem,4.8vw,3.3rem);line-height:1.28;color:#fff;
+  max-width:17ch}
+.proband p{color:rgba(255,252,246,.88);margin-top:1.1rem;max-width:42ch;line-height:1.9}
+.proband .pb-stats{display:flex;gap:40px;margin-top:2.2rem;flex-wrap:wrap}
+.proband .pb-stats .st b{font-family:var(--font-disp);font-size:clamp(2.4rem,5.4vw,3.5rem);color:#fff;
+  display:flex;align-items:baseline;line-height:1}
+.proband .pb-stats .st b i{font-style:normal;font-family:var(--font-serif);font-weight:700;font-size:.4em;
+  margin-left:.18em;color:var(--rose-soft)}
+.proband .pb-stats .st span{font-size:.84rem;color:var(--rose-soft);letter-spacing:.08em}
+
+/* hero 標題行遮罩 */
+.hero h1 .line-mask{display:block;overflow:hidden;padding-bottom:.08em}
+.hero h1 .line-inner{display:block;white-space:nowrap}
+
+/* 講座場景背景 */
+.speaker-card .scenebg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.speaker-card .scenebg img{width:100%;height:100%;object-fit:cover;object-position:50% 42%;will-change:transform}
+.speaker-card .scenebg::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(118deg,rgba(255,247,238,.95),rgba(251,227,219,.88) 62%,rgba(251,227,219,.62))}
+.speaker-card .inner{position:relative;z-index:2}
+
+/* 羅盤段 藍圖背景 */
+.compass{position:relative;overflow:hidden}
+.compass .bp{position:absolute;inset:0;z-index:0;opacity:.45;will-change:transform;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 28%,#000 72%,transparent);
+          mask:linear-gradient(90deg,transparent,#000 28%,#000 72%,transparent)}
+.compass .bp img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;will-change:transform}
+.compass .wrap{position:relative;z-index:2}
+
+/* 知識段 桌面小帶 */
+.know .deskstrip{max-width:920px;margin:0 auto 50px;border-radius:6px;overflow:hidden;position:relative;
+  box-shadow:var(--shadow);height:210px}
+.know .deskstrip img{width:100%;height:100%;object-fit:cover;object-position:50% 38%;will-change:transform}
+.know .deskstrip .cap{position:absolute;inset:0;display:flex;align-items:flex-end;padding:24px 30px;z-index:2;
+  background:linear-gradient(0deg,rgba(60,44,38,.55),transparent 66%)}
+.know .deskstrip .cap span{color:var(--paper);font-family:var(--font-serif);font-weight:700;font-size:1.06rem}
+
+/* 計數 */
+.num{font-style:normal;font-family:var(--font-disp)}
+
+/* 標題 clip 揭示 */
+.clipreveal{clip-path:inset(0 100% 0 0)}
+
+/* ===== Reveal 動畫初始狀態 ===== */
+.reveal{opacity:0;transform:translateY(34px)}
+.no-anim .reveal{opacity:1;transform:none}
+.no-anim .clipreveal{clip-path:none}
+
+/* ===== RWD ===== */
+@media (max-width:980px){
+  .cover-main{grid-template-columns:1fr;gap:36px}
+  .cover-photo{order:-1;justify-self:start}
+  .cp-frame{width:min(320px,72vw)}
+  .hero-draw{opacity:.3}
+  .compass-grid{grid-template-columns:1fr;gap:42px}
+  .speaker-card .inner{grid-template-columns:1fr;gap:34px}
+  .lic-list{grid-template-columns:1fr 1fr}
+}
+@media (max-width:680px){
+  .licenses{grid-template-columns:1fr;gap:18px}
+  .lic-list{grid-template-columns:1fr}
+  body{line-height:1.8}
+  .wrap{padding:0 22px}
+  .archive{top:16px;left:16px;font-size:.86rem;padding:.45em .9em}
+  .hero{padding:88px 0 64px}
+  .hero-cover{min-height:auto}
+  .masthead .mh-right{gap:.9em;font-size:.64rem}
+  .cover-foot{flex-direction:column;align-items:flex-start;gap:14px}
+  .cover-issue-line{white-space:normal}
+  .reel-cue{display:none}
+  .panel-intro{padding-bottom:8px}
+  .qa-grid{grid-template-columns:1fr}
+  .articles{flex-direction:column;align-items:flex-start}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+</head>
+<body class="no-anim">
+
+<!-- 背景層 -->
+<div class="grain"></div>
+<div class="scrollprog"></div>
+
+<!-- 入場 -->
+<div id="loader">
+  <img class="lhouse" src="/assets/img/guild/1tingrealty/logo.webp" alt="1庭的房產人森">
+  <div class="lbar"></div>
+  <div class="lname">1tingrealty</div>
+</div>
+
+<!-- 自訂游標 -->
+<div class="cur-ring"><span class="cur-label"></span></div>
+<div class="cur-dot"></div>
+
+<!-- 返回 -->
+<a href="/guild/" class="archive"><i class="fa-solid fa-arrow-left-long"></i> 回公會名冊</a>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <!-- 封面背景：建築線稿 + 描線 -->
+  <div class="hero-bg"><img src="/assets/img/guild/1tingrealty/hero-lines.webp" alt=""></div>
+  <svg class="hero-draw" viewBox="0 0 120 90" fill="none" aria-hidden="true">
+    <path class="hd-path" d="M4 80 C 30 78 26 50 50 50 C 74 50 70 24 96 24" />
+    <path class="hd-house" d="M74 56 L74 36 L92 22 L110 36 L110 56 Z" />
+    <path class="hd-door" d="M88 56 L88 44 L96 44 L96 56" />
+  </svg>
+
+  <div class="wrap hero-cover">
+    <!-- 刊頭 masthead -->
+    <div class="masthead reveal">
+      <div class="mh-left">
+        <img src="/assets/img/guild/1tingrealty/logo.webp" alt="logo">
+        <span>1庭的房產人森</span>
+      </div>
+      <div class="mh-right"><span>房地產 × 自由獵頭</span><span class="mh-issue">NO.160</span></div>
+    </div>
+
+    <!-- 封面主視覺 -->
+    <div class="cover-main">
+      <div class="cover-type">
+        <span class="cover-kicker reveal">陪跑顧問 · 不催不推</span>
+        <h1>
+          <span class="line-mask"><span class="line-inner"><span class="fomo">不販售&nbsp;FOMO</span>，</span></span>
+          <span class="line-mask"><span class="line-inner">只<span class="clear">陪你想清楚</span>。</span></span>
+        </h1>
+        <p class="lead reveal">
+          我是 1庭。不是房仲，不是投資顧問 —— 陪你走完<b class="em">買房</b>與<b class="em">職涯</b>的<span class="serif-em">陪跑顧問</span>，把複雜的房產知識變簡單。
+        </p>
+      </div>
+      <div class="cover-photo">
+        <div class="cp-frame"><img src="/assets/img/guild/1tingrealty/hero.webp" alt="1庭 Renee Chen"></div>
+        <span class="cp-cap">1庭｜Renee&nbsp;Chen</span>
+      </div>
+    </div>
+
+    <!-- 底部 meta -->
+    <div class="cover-foot reveal">
+      <div class="hero-tags">
+        <span class="tag">商用不動產 5 年 PM</span>
+        <span class="tag">自由獵頭</span>
+        <span class="tag">臺大農經所</span>
+      </div>
+      <span class="cover-issue-line">把複雜的房產知識，變簡單</span>
+    </div>
+  </div>
+  <div class="scrollcue reveal">SCROLL<div class="ln"></div></div>
+</section>
+
+<!-- ============ 定位 ============ -->
+<section class="define">
+  <div class="wrap">
+    <div class="define-card reveal">
+      <span class="kicker">我是誰</span>
+      <div class="notlist">
+        <span class="strike">不是房仲。</span> <span class="strike">不是投資顧問。</span><br>
+        我是<span class="is">陪跑顧問</span>。
+      </div>
+      <p>
+        在商用不動產當了五年 PM，和建築師、法規、老闆來回溝通；又當了一年自由獵頭，
+        見過太多人說不出自己真正要什麼。於是我開始寫「1庭的房產人森」——
+        因為房子代表一個人很大的生活，值得花時間，好好想清楚。
+      </p>
+      <blockquote class="bigquote">
+        「資訊不對稱，往往不是資訊不夠多，<br>而是沒人幫你<b class="em">問對問題</b>。」
+      </blockquote>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 專業場景帶：商用不動產現場 ============ -->
+<section class="proband" id="pbSkyline">
+  <div class="pb-img"><img loading="lazy" src="/assets/img/guild/1tingrealty/scene-skyline.webp" alt="商用不動產現場"></div>
+  <div class="pb-inner">
+    <span class="pb-kicker reveal">商用不動產 · 現場</span>
+    <h2 class="reveal">商用不動產的第一線，<br>我站了五年。</h2>
+    <p class="reveal">和建築師、法規與老闆來回斡旋的日子，讓我學會把最複雜的條件，談成最清楚的決定 —— 我把這套專業，原封不動帶來，陪你買房。</p>
+    <div class="pb-stats">
+      <div class="st reveal"><b><span class="num" data-count="5">0</span><i>年</i></b><span>商用不動產 PM</span></div>
+      <div class="st reveal"><b><span class="num" data-count="3">0</span><i>國</i></b><span>台 · 英 · 新 學經歷</span></div>
+      <div class="st reveal"><b><span class="num" data-count="2">0</span><i>大</i></b><span>房地產 × 獵頭 專業</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 招牌：噪音→清楚 捲動電影 ============ -->
+<section class="cinema-wrap" id="cinema">
+  <div class="cinema">
+    <!-- 背景：冷 → 暖 → 金 -->
+    <div class="cin-bg cin-bg-cold"></div>
+    <div class="cin-bg cin-bg-warm"></div>
+    <div class="cin-bg cin-bg-gold"></div>
+
+    <!-- 結尾的門 + 金光 -->
+    <!-- FOMO 噪音層（由 JS 生成字） -->
+    <div class="cin-noise" aria-hidden="true"></div>
+
+    <!-- 陪跑者 -->
+    <div class="cin-runner"><span class="r-dot"></span><span class="r-label">陪你走</span></div>
+
+    <!-- 內容拍子（無 JS 時垂直堆疊可讀） -->
+    <div class="cin-beats">
+      <div class="beat" data-c="0.07">
+        <span class="b-no">01</span>
+        <h3>迷惘</h3>
+        <p>你站在原地，市場很吵。新聞喊漲、身邊都在搶，你只覺得焦慮，卻說不清自己到底要什麼。</p>
+      </div>
+      <div class="beat" data-c="0.29">
+        <span class="b-no">02</span>
+        <h3>先停下來，問對問題</h3>
+        <p>第一步不是出手，是先停下來。我陪你把「會不會更貴」，換成「五年後這裡還適合你嗎」。</p>
+      </div>
+      <div class="beat" data-c="0.50">
+        <span class="b-no">03</span>
+        <h3>看懂市場</h3>
+        <p>房地合一、囤房稅、信用管制⋯⋯我把生硬的規則翻成白話。看懂了，你才不會買錯時機。</p>
+      </div>
+      <div class="beat" data-c="0.69">
+        <span class="b-no">04</span>
+        <h3>想清楚</h3>
+        <p>自住優先，不追價。我陪你把決策框架建起來 —— 之後不管市場怎麼吵，你自己就能判斷。</p>
+      </div>
+      <div class="beat beat-final" data-c="0.92">
+        <span class="b-no">05</span>
+        <h3>走進你的家</h3>
+        <p>拿到鑰匙的那一刻。人生兩個最大的決定 —— 住哪裡、做什麼 —— 我都陪你走到最後。</p>
+        <div class="seal"><i class="fa-solid fa-key"></i></div>
+      </div>
+    </div>
+
+    <!-- 進度 + 提示 -->
+    <div class="cin-progress"><span class="cin-progress-fill"></span></div>
+    <div class="cin-stage">陪跑路徑</div>
+    <div class="cin-hint">往下捲動，走完想清楚的過程 <i class="fa-solid fa-arrow-down"></i></div>
+  </div>
+</section>
+
+<!-- ============ 服務：橫向 pinned 電影卷軸 ============ -->
+<section class="services reel-wrap" id="reel">
+  <div class="reel">
+    <div class="reel-track">
+      <article class="panel panel-intro">
+        <span class="kicker">我能陪你做什麼</span>
+        <h2 class="r-title">把專業，<br>變成你用得上的陪伴。</h2>
+        <p class="lead">六種陪伴的方式。<br>往下捲動，一項一項慢慢看。</p>
+        <span class="reel-cue">SCROLL <i class="fa-solid fa-arrow-right-long"></i></span>
+      </article>
+
+      <a class="panel" href="https://www.surveycake.com/s/PgeAy" target="_blank" rel="noopener noreferrer">
+        <div class="p-media"><img loading="lazy" src="/assets/img/guild/1tingrealty/svc-keys.webp" alt=""></div>
+        <div class="p-body">
+          <span class="p-idx">01</span>
+          <h3>一對一買房／租屋諮詢</h3>
+          <p>線上一對一，把你的狀況攤開來看。免費與付費都有，先把問題問對，再談下一步。</p>
+          <span class="go">預約諮詢 <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+
+      <a class="panel feature" href="https://portaly.cc/yitingchen1121/contact" target="_blank" rel="noopener noreferrer">
+        <div class="p-media"><img loading="lazy" src="/assets/img/guild/1tingrealty/scene-lecture.webp" alt=""></div>
+        <div class="p-body">
+          <span class="p-idx">02 <em>For Business</em></span>
+          <h3>房地產講座・講師邀約</h3>
+          <p>新手買房、人才招募，線上線下都講過。把生硬的房產知識，講成聽得懂、帶得走的內容。</p>
+          <span class="go">邀我當講師 <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+
+      <a class="panel" href="https://www.linkedin.com/in/1tingrealty/" target="_blank" rel="noopener noreferrer">
+        <div class="p-media"><img loading="lazy" src="/assets/img/guild/1tingrealty/scene-skyline.webp" alt=""></div>
+        <div class="p-body">
+          <span class="p-idx">03</span>
+          <h3>求職／獵頭諮詢</h3>
+          <p>自由獵頭的另一面：陪你想清楚下一份工作。換房和換工作，都是把人生想清楚。</p>
+          <span class="go">聊聊職涯 <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+
+      <a class="panel" href="https://1tingrealty.kit.com/492b8571a9" target="_blank" rel="noopener noreferrer">
+        <div class="p-media"><img loading="lazy" src="/assets/img/guild/1tingrealty/scene-desk.webp" alt=""></div>
+        <div class="p-body">
+          <span class="p-idx">04</span>
+          <h3>免費買房懶人包・電子報</h3>
+          <p>新手最常踩的雷，我整理好寄給你。每週一封，慢慢把房市看懂，不必焦慮。</p>
+          <span class="go">免費索取 <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+
+      <a class="panel" href="https://line.me/ti/g2/JgGz3p_6VHIa__CX6eF9Dq6OWqeydNw74T84JQ?utm_source=invitation&utm_medium=link_copy&utm_campaign=default" target="_blank" rel="noopener noreferrer">
+        <div class="p-media"><img loading="lazy" src="/assets/img/guild/1tingrealty/texture-contour.webp" alt=""></div>
+        <div class="p-body">
+          <span class="p-idx">05</span>
+          <h3>LINE 房產討論社群</h3>
+          <p>每個平日，我都在這裡分享最新房市消息。不確定要不要買？先進來潛水也很好。</p>
+          <span class="go">加入社群 <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+
+      <a class="panel" href="https://1tingrealty.com/blog/" target="_blank" rel="noopener noreferrer">
+        <div class="p-media"><img loading="lazy" src="/assets/img/guild/1tingrealty/scene-blueprint.webp" alt=""></div>
+        <div class="p-body">
+          <span class="p-idx">06</span>
+          <h3>房產知識長文</h3>
+          <p>從看房、議價到簽約，從稅制到漏水修繕。把複雜的房產知識，一篇一篇變簡單。</p>
+          <span class="go">看文章 <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 跑馬燈分隔帶 ============ -->
+<section class="marquee" aria-hidden="true">
+  <div class="mq-track">
+    <span>不販售&nbsp;FOMO</span><i>✦</i><span>只陪你想清楚</span><i>✦</i><span>房地產&nbsp;×&nbsp;自由獵頭</span><i>✦</i><span>把複雜的房產知識變簡單</span><i>✦</i><span>問對問題，比答案更值錢</span><i>✦</i>
+    <span>不販售&nbsp;FOMO</span><i>✦</i><span>只陪你想清楚</span><i>✦</i><span>房地產&nbsp;×&nbsp;自由獵頭</span><i>✦</i><span>把複雜的房產知識變簡單</span><i>✦</i><span>問對問題，比答案更值錢</span><i>✦</i>
+  </div>
+</section>
+
+<!-- ============ 講師邀約 ============ -->
+<section class="speaker">
+  <div class="wrap">
+    <div class="speaker-card reveal">
+      <div class="scenebg"><img loading="lazy" src="/assets/img/guild/1tingrealty/scene-lecture.webp" alt="講座現場"></div>
+      <div class="inner">
+        <div>
+          <span class="kicker">For Business ・ 講師邀約</span>
+          <h2 class="title">把 1庭，請上你的講台。</h2>
+          <p class="lead">我有多次線上線下的房地產講座經驗，擅長把房產與稅制這些生硬的題目，講成有畫面、聽得懂、帶得走的內容。歡迎企業、社團與品牌合作邀約。</p>
+          <div class="audience">
+            <span><i class="fa-solid fa-briefcase"></i>企業內訓</span>
+            <span><i class="fa-solid fa-users"></i>社團活動</span>
+            <span><i class="fa-solid fa-video"></i>線上講座</span>
+            <span><i class="fa-solid fa-handshake-angle"></i>品牌合作</span>
+          </div>
+          <div class="past-talk">
+            <span class="pt-tag"><i class="fa-solid fa-microphone-lines"></i> 講過</span>
+            <p><b>三三菁英會</b>實體講座 —— 結合獵頭實務與商用不動產，解析台灣各產業薪資與辦公市場動態，以及就業趨勢如何牽動房市買盤與商辦需求。</p>
+          </div>
+        </div>
+        <div class="topics">
+          <div class="topic"><i class="fa-solid fa-house-chimney"></i><div><b>新手買房思考框架</b><span>從看房到簽約，建立一套自己能用的決策邏輯</span></div></div>
+          <div class="topic"><i class="fa-solid fa-landmark"></i><div><b>房地產政策與稅制白話解析</b><span>房地合一、囤房稅、信用管制，一次講懂</span></div></div>
+          <div class="topic"><i class="fa-solid fa-user-group"></i><div><b>人才招募與獵頭實務</b><span>從獵頭視角，談企業怎麼找對的人</span></div></div>
+          <div class="topic"><i class="fa-solid fa-pen-nib"></i><div><b>自媒體與 SEO 內容經營</b><span>用長文把專業變成被看見的個人品牌</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 指南針 / 學經歷 ============ -->
+<section class="compass">
+  <div class="bp"><img loading="lazy" src="/assets/img/guild/1tingrealty/scene-blueprint.webp" alt=""></div>
+  <div class="wrap">
+    <div class="compass-grid">
+      <div class="dualcompass reveal">
+        <div class="ticks"></div>
+        <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+        <div class="needle a" id="needleA"></div>
+        <div class="needle b" id="needleB"></div>
+        <div class="core"><img loading="lazy" src="/assets/img/guild/1tingrealty/logo.webp" alt=""></div>
+        <span class="lbl n">房地產</span>
+        <span class="lbl s">職涯</span>
+        <span class="lbl e">想清楚</span>
+        <span class="lbl w">不焦慮</span>
+      </div>
+      <div>
+        <span class="kicker reveal">我的座標</span>
+        <h2 class="title reveal" style="margin-bottom:1.4rem">兩個專業，<br>同一個指南針。</h2>
+        <div class="timeline">
+          <div class="tl reveal"><span class="yr">2020<i>–26</i></span><div><b>商用不動產 PM</b><span>在商辦租賃裡，和建築師、法規、老闆來回溝通（現轉兼任顧問）</span></div></div>
+          <div class="tl reveal"><span class="yr">2025<i>–</i></span><div><b>自由接案獵頭</b><span>陪人想清楚下一步，見過太多人說不出自己要什麼</span></div></div>
+          <div class="tl reveal"><span class="yr">2026<i>–</i></span><div><b>國立臺灣大學・農業經濟所</b><span>用研究與經濟學的角度，把市場與政策看得更深</span></div></div>
+          <div class="tl reveal"><span class="yr">2018<i>–20</i></span><div><b>英國斯特林大學・零售行銷系</b><span>蘇格蘭求學，理解消費者怎麼做決定</span></div></div>
+          <div class="tl reveal"><span class="yr">2016<i>–18</i></span><div><b>新加坡管理學院・企業管理</b><span>跨國視野，從商業邏輯看房地產</span></div></div>
+          <div class="tl reveal"><span class="yr">社群</span><div><b>臺大不動產研究社・活躍成員</b><span>持續泡在估價、都更、政策的第一線討論</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="licenses reveal">
+      <span class="lic-label">專業證照</span>
+      <ul class="lic-list">
+        <li><i class="fa-solid fa-certificate"></i>不動產經紀營業員</li>
+        <li><i class="fa-solid fa-certificate"></i>租賃住宅管理人員</li>
+        <li><i class="fa-solid fa-certificate"></i>事務管理人（大樓總幹事）</li>
+        <li><i class="fa-solid fa-certificate"></i>臺北市危老重建推動師</li>
+        <li><i class="fa-solid fa-certificate"></i>新北市都市更新推動師</li>
+        <li><i class="fa-solid fa-certificate"></i>金融市場常識與職業道德</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 問對問題 ============ -->
+<section class="know">
+  <div class="wrap">
+    <div class="know-head reveal">
+      <span class="kicker k-mid">問對問題</span>
+      <h2 class="title">我不給你焦慮，<br>我給你<span class="em">對的問題</span>。</h2>
+      <p class="lead" style="margin:1.2rem auto 0">點一下卡片 —— 把市場餵給你的焦慮，換成真正該問自己的問題。</p>
+    </div>
+    <div class="deskstrip reveal">
+      <img loading="lazy" src="/assets/img/guild/1tingrealty/scene-desk.webp" alt="把複雜的房產，攤開來慢慢想清楚">
+      <div class="cap"><span>把複雜的房產，攤開在桌上，一項一項陪你想清楚。</span></div>
+    </div>
+    <div class="qa-grid">
+      <div class="qa reveal">
+        <div class="face anx">
+          <span class="role"><i class="fa-solid fa-bolt"></i>市場餵你的焦慮</span>
+          <div class="q">「現在不買，會不會更貴？」</div>
+        </div>
+        <div class="ans">
+          <div class="divider"></div>
+          <span class="role" style="margin-top:14px"><i class="fa-solid fa-circle-check"></i>1庭陪你問</span>
+          <div class="q">這間房，五年後還適合你嗎？</div>
+        </div>
+        <span class="hint">點開對的問題 <i class="fa-solid fa-arrow-down"></i></span>
+      </div>
+
+      <div class="qa reveal">
+        <div class="face anx">
+          <span class="role"><i class="fa-solid fa-bolt"></i>市場餵你的焦慮</span>
+          <div class="q">「大家都在搶，我是不是要快？」</div>
+        </div>
+        <div class="ans">
+          <div class="divider"></div>
+          <span class="role" style="margin-top:14px"><i class="fa-solid fa-circle-check"></i>1庭陪你問</span>
+          <div class="q">你買的是自住，還是別人的 FOMO？</div>
+        </div>
+        <span class="hint">點開對的問題 <i class="fa-solid fa-arrow-down"></i></span>
+      </div>
+
+      <div class="qa reveal">
+        <div class="face anx">
+          <span class="role"><i class="fa-solid fa-bolt"></i>市場餵你的焦慮</span>
+          <div class="q">「房仲說這個價，很可以。」</div>
+        </div>
+        <div class="ans">
+          <div class="divider"></div>
+          <span class="role" style="margin-top:14px"><i class="fa-solid fa-circle-check"></i>1庭陪你問</span>
+          <div class="q">同社區實際成交，登錄是多少？</div>
+        </div>
+        <span class="hint">點開對的問題 <i class="fa-solid fa-arrow-down"></i></span>
+      </div>
+
+      <div class="qa reveal">
+        <div class="face anx">
+          <span class="role"><i class="fa-solid fa-bolt"></i>市場餵你的焦慮</span>
+          <div class="q">「我預算到底夠不夠？」</div>
+        </div>
+        <div class="ans">
+          <div class="divider"></div>
+          <span class="role" style="margin-top:14px"><i class="fa-solid fa-circle-check"></i>1庭陪你問</span>
+          <div class="q">扛得起的，是房價還是未來的生活？</div>
+        </div>
+        <span class="hint">點開對的問題 <i class="fa-solid fa-arrow-down"></i></span>
+      </div>
+    </div>
+
+    <div class="articles reveal">
+      <span class="albl"><i class="fa-solid fa-feather-pointed"></i> 我寫的長文</span>
+      <a href="https://1tingrealty.com/real-estate-agent-fee-guide/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-receipt"></i>房仲費用怎麼算</a>
+      <a href="https://1tingrealty.com/rent-tax-deduction-guide-taiwan/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-coins"></i>租金扣除額指南</a>
+      <a href="https://1tingrealty.com/real-estate-tips-avoid-agent-disturbance/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-phone-slash"></i>如何避免房仲騷擾</a>
+      <a href="https://1tingrealty.com/water-leak-repair/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-droplet"></i>漏水修繕怎麼處理</a>
+      <a href="https://1tingrealty.com/newbie-guide-unfinished-abandoned-building-definition-causes-risks/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-helmet-safety"></i>爛尾樓是什麼</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 金句 ============ -->
+<section class="manifesto">
+  <div class="wrap">
+    <blockquote>不販售&nbsp;FOMO，<br>只<span class="hl">陪你想清楚</span>。</blockquote>
+    <cite>— 1庭的房產人森</cite>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta">
+  <div class="wrap">
+    <div class="cta-card reveal">
+        <span class="kicker k-mid">一起想清楚</span>
+        <h2>準備好，<br>我們就一起想清楚。</h2>
+        <p class="sub">不管是買房、租屋，還是換一份工作 —— 先別急著決定。來找我聊聊，把焦慮換成對的問題。</p>
+        <div class="cta-btns">
+          <a class="btn btn-primary" href="https://www.surveycake.com/s/PgeAy" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-comments"></i>預約諮詢</a>
+          <a class="btn btn-ghost" href="https://line.me/ti/g2/JgGz3p_6VHIa__CX6eF9Dq6OWqeydNw74T84JQ?utm_source=invitation&utm_medium=link_copy&utm_campaign=default" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-line"></i>加入 LINE 社群</a>
+          <a class="btn btn-ghost" href="https://1tingrealty.kit.com/492b8571a9" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-gift"></i>免費懶人包</a>
+          <a class="btn btn-ghost" href="https://portaly.cc/yitingchen1121/contact" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-chalkboard-user"></i>講師邀約</a>
+        </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="fname"><img loading="lazy" src="/assets/img/guild/1tingrealty/logo.webp" alt="">1庭的房產人森</div>
+    <div class="socials">
+      <a href="https://1tingrealty.com/" target="_blank" rel="noopener noreferrer" aria-label="官方網站"><i class="fa-solid fa-globe"></i></a>
+      <a href="https://www.threads.com/@1tingrealty" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+      <a href="https://www.instagram.com/1tingrealty/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      <a href="https://www.facebook.com/profile.php?id=61550517686683" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+      <a href="https://www.linkedin.com/in/1tingrealty/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+      <a href="https://portaly.cc/yitingchen1121" target="_blank" rel="noopener noreferrer" aria-label="Portaly"><i class="fa-solid fa-link"></i></a>
+    </div>
+    <a class="mail" href="mailto:1tingrealty@gmail.com">1tingrealty@gmail.com</a>
+    <div class="made">Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon</div>
+  </div>
+</footer>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TOUCH = window.matchMedia('(hover: none)').matches;
+
+/* ===================== 入場載入 ===================== */
+let introStarted = false;
+function startIntro(){
+  if (introStarted) return; introStarted = true;
+  if (!window.gsap){ hideLoader(); initReveals(); return; }
+  // 趁 loader 還蓋著畫面時，先把所有進場元素設為隱藏狀態，避免 loader 升起後內容「閃一下再重建」
+  if (!REDUCED){
+    document.body.classList.remove('no-anim');
+    gsap.set('.reveal', {opacity:0, y:34});
+    gsap.set('.hero h1 .line-inner', {yPercent:118});
+    gsap.set('.cp-frame', {clipPath:'inset(0 0 100% 0)'});
+    gsap.set('.cp-cap', {opacity:0});
+  }
+  const tl = gsap.timeline({onComplete: initReveals});
+  tl.to('#loader .lhouse', {opacity:1, y:0, scale:1, duration:.5, ease:'power2.out'})
+    .to('#loader .lbar', {width:140, duration:.5, ease:'power1.inOut'}, '-=.25')
+    .to('#loader .lname', {opacity:1, duration:.35}, '-=.4')
+    .to('#loader', {duration:.12})
+    .to('#loader', {yPercent:-100, duration:.7, ease:'power3.inOut'})
+    .set('#loader', {display:'none'});
+}
+function hideLoader(){ const l=document.getElementById('loader'); if(l) l.style.display='none'; }
+window.addEventListener('load', startIntro);
+// 保險：若 4.5s 內仍卡住（gsap/圖片/字體載入失敗），強制移除 loader 並顯示內容
+setTimeout(()=>{ startIntro(); const l=document.getElementById('loader');
+  if (l && l.style.display!=='none'){ hideLoader(); initReveals(); } }, 4500);
+
+/* ===================== Reveal 動畫 ===================== */
+let revealed = false;
+function initReveals(){
+  if (revealed) return; revealed = true;
+  // gsap 缺失或減少動態 → 保留 no-anim（CSS 讓 .reveal 全部可見），不跑動畫
+  if (REDUCED || !window.gsap){ return; }
+  document.body.classList.remove('no-anim');
+  gsap.registerPlugin(ScrollTrigger);
+
+  // --- HERO：封面進場（人像 clip 揭示 + 標題行遮罩 + 群組）---
+  gsap.set('.hero h1 .line-inner', {yPercent:118});
+  gsap.set('.cp-frame', {clipPath:'inset(0 0 100% 0)'});
+  gsap.set('.cp-cap', {opacity:0});
+  const heroTl = gsap.timeline({delay:.05});
+  heroTl.to('.cp-frame', {clipPath:'inset(0 0 0% 0)', duration:1, ease:'power3.inOut'})
+        .to('.cp-cap', {opacity:1, duration:.4}, '-=.35')
+        .to('.hero h1 .line-inner', {yPercent:0, duration:.8, stagger:.1, ease:'power4.out'}, '-=.85')
+        .to('.hero .reveal', {opacity:1, y:0, duration:.7, stagger:.08, ease:'power3.out'}, '-=.55');
+
+  // --- HERO：建築線稿描線進場 ---
+  document.querySelectorAll('.hero-draw path').forEach((path,i)=>{
+    const len = path.getTotalLength();
+    gsap.set(path, {strokeDasharray:len, strokeDashoffset:len});
+    gsap.to(path, {strokeDashoffset:0, duration:1.6, delay:.5+i*.35, ease:'power2.inOut'});
+  });
+  // 線稿隨捲動緩慢上移（視差）
+  gsap.to('.hero-draw', {yPercent:-12, ease:'none', scrollTrigger:{trigger:'.hero', start:'top top', end:'bottom top', scrub:true}});
+  gsap.to('.hero-bg img', {yPercent:8, ease:'none', scrollTrigger:{trigger:'.hero', start:'top top', end:'bottom top', scrub:true}});
+
+  // --- 一般 reveal（scroll 進場）---
+  gsap.utils.toArray('.reveal').forEach(el => {
+    if (el.closest('.hero')) return;
+    gsap.to(el, { opacity:1, y:0, duration:.9, ease:'power3.out',
+      scrollTrigger:{ trigger:el, start:'top 88%' } });
+  });
+
+  // --- 標題 clip 揭示（由左往右擦出）---
+  gsap.utils.toArray('h2.title').forEach(t=>{
+    t.classList.add('clipreveal');
+    gsap.to(t, {clipPath:'inset(0 0% 0 0)', duration:1.15, ease:'power3.out',
+      scrollTrigger:{trigger:t, start:'top 86%'}});
+  });
+
+  // --- FOMO 劃線 ---
+  setTimeout(()=>{ document.querySelector('.hero h1 .fomo')?.classList.add('lined'); }, 1100);
+
+  // --- 定位 notlist 刪除線 ---
+  ScrollTrigger.create({ trigger:'.notlist', start:'top 78%', once:true,
+    onEnter:()=> document.querySelectorAll('.notlist .strike').forEach((s,i)=> setTimeout(()=> s.classList.add('on'), i*280)) });
+
+  // --- 指南針指針定位 + 刻度連續旋轉 + 隨捲動微轉 ---
+  ScrollTrigger.create({ trigger:'.dualcompass', start:'top 82%', once:true,
+    onEnter:()=>{
+      gsap.fromTo('#needleA',{rotation:-120},{rotation:0,duration:1.6,ease:'elastic.out(1,.5)'});
+      gsap.fromTo('#needleB',{rotation:140},{rotation:180,duration:1.6,ease:'elastic.out(1,.5)',delay:.15});
+    }});
+  gsap.to('.dualcompass .ticks', {rotation:360, duration:80, repeat:-1, ease:'none'});
+  gsap.to('.dualcompass', {rotation:10, ease:'none',
+    scrollTrigger:{trigger:'.compass', start:'top bottom', end:'bottom top', scrub:1}});
+
+  // --- 數字 counter（用純物件代理，避免 GSAP 對 DOM 設未知屬性）---
+  gsap.utils.toArray('.num').forEach(el=>{
+    const end = +el.dataset.count || 0;
+    const obj = {val:0};
+    ScrollTrigger.create({trigger:el, start:'top 92%', once:true,
+      onEnter:()=> gsap.to(obj,{val:end, duration:1.5, ease:'power2.out',
+        onUpdate:()=> el.textContent = Math.round(obj.val)})});
+  });
+
+  // --- 場景圖視差（scale headroom 內位移，不露邊）---
+  const para = (sel, trig, amt) => {
+    const el = document.querySelector(sel); if(!el) return;
+    gsap.set(el, {scale:1.18});
+    gsap.fromTo(el, {yPercent:-amt}, {yPercent:amt, ease:'none',
+      scrollTrigger:{trigger:trig, start:'top bottom', end:'bottom top', scrub:true}});
+  };
+  para('#pbSkyline .pb-img img', '#pbSkyline', 7);
+  para('.speaker-card .scenebg img', '.speaker', 6);
+  para('.compass .bp img', '.compass', 7);
+  para('.know .deskstrip img', '.know .deskstrip', 6);
+
+  // --- 場景圖 clip-path 擦除揭示（素材 × 效果整合）---
+  gsap.utils.toArray('.know .deskstrip, #pbSkyline .pb-img, .speaker-card .scenebg').forEach(el=>{
+    gsap.fromTo(el, {clipPath:'inset(0 0 100% 0)'}, {clipPath:'inset(0 0 0% 0)', duration:1.3, ease:'power3.inOut',
+      scrollTrigger:{trigger:el, start:'top 84%'}});
+  });
+
+  // --- Hero 建築線稿 / SVG 滑鼠視差（深度）---
+  if (!TOUCH){
+    const bgImg = document.querySelector('.hero-bg img');
+    const draw = document.querySelector('.hero-draw');
+    const qbx = bgImg && gsap.quickTo(bgImg,'x',{duration:.9,ease:'power3'});
+    const qby = bgImg && gsap.quickTo(bgImg,'y',{duration:.9,ease:'power3'});
+    const qdx = draw && gsap.quickTo(draw,'x',{duration:.7,ease:'power3'});
+    const qdy = draw && gsap.quickTo(draw,'y',{duration:.7,ease:'power3'});
+    document.querySelector('.hero')?.addEventListener('mousemove', e=>{
+      const cx=(e.clientX/innerWidth-.5), cy=(e.clientY/innerHeight-.5);
+      if(qbx){qbx(cx*-22); qby(cy*-14);} if(qdx){qdx(cx*30); qdy(cy*18);}
+    });
+  }
+
+
+  // --- 編輯式跑馬燈：無限捲 + 隨捲動速度變速/反向 ---
+  initMarquee();
+
+  // --- 招牌：噪音→清楚 捲動電影（DOM 較上，先建立 pin）---
+  initCinema();
+  // --- 服務：橫向 pinned 電影卷軸（DOM 較下，後建立 pin）---
+  initReel();
+
+  // --- 金句逐字進場 ---
+  splitManifesto();
+
+  ScrollTrigger.refresh();
+}
+
+/* 金句：拆字逐一淡入 */
+function splitManifesto(){
+  const bq = document.querySelector('.manifesto blockquote');
+  if (!bq || bq.dataset.split) return; bq.dataset.split = '1';
+  const walk = node => {
+    [...node.childNodes].forEach(n=>{
+      if (n.nodeType === 3){
+        const frag = document.createDocumentFragment();
+        [...n.textContent].forEach(ch=>{
+          if (ch === ' '){ frag.appendChild(document.createTextNode(' ')); return; }
+          const s = document.createElement('span');
+          s.textContent = ch; s.style.display='inline-block'; s.className='mch';
+          frag.appendChild(s);
+        });
+        n.replaceWith(frag);
+      } else if (n.nodeType === 1 && n.tagName !== 'BR'){ walk(n); }
+    });
+  };
+  walk(bq);
+  gsap.from('.manifesto blockquote .mch', {
+    yPercent:60, opacity:0, duration:.7, stagger:.045, ease:'power3.out',
+    scrollTrigger:{trigger:'.manifesto', start:'top 70%'}
+  });
+}
+
+/* notlist 刪除線 CSS 補強（用 class 控制 pseudo） */
+const style = document.createElement('style');
+style.textContent = `
+.notlist .strike.on::after{transform:scaleX(1);transition:transform .5s ease}
+.hero h1 .fomo.lined::after{transform:scaleX(1);transition:transform .7s cubic-bezier(.7,0,.3,1)}
+`;
+document.head.appendChild(style);
+
+/* ===================== 問對問題：點擊／鍵盤展開（無障礙）===================== */
+document.querySelectorAll('.qa').forEach(card=>{
+  card.setAttribute('tabindex','0');
+  card.setAttribute('role','button');
+  card.setAttribute('aria-expanded','false');
+  const toggle = ()=>{ const open = card.classList.toggle('open'); card.setAttribute('aria-expanded', open ? 'true':'false'); };
+  card.addEventListener('click', toggle);
+  card.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+});
+
+/* ===================== 情境感知自訂游標 ===================== */
+if (!TOUCH){
+  const dot = document.querySelector('.cur-dot');
+  const ring = document.querySelector('.cur-ring');
+  const label = document.querySelector('.cur-label');
+  if (dot && ring) document.body.classList.add('custom-cursor'); // 確認元素存在才隱藏系統游標
+  let mx=innerWidth/2, my=innerHeight/2, rx=mx, ry=my, wasDark=false;
+  const DARK_SEL = '.cta,.foot,.marquee,.panel.feature';
+  window.addEventListener('mousemove', e=>{ mx=e.clientX; my=e.clientY;
+    dot.style.left=mx+'px'; dot.style.top=my+'px';
+    // 深色區塊上→游標轉淺色（只在狀態改變時切 class）
+    const el = document.elementFromPoint(mx,my);
+    const dark = !!(el && el.closest && el.closest(DARK_SEL));
+    if (dark !== wasDark){ wasDark = dark; document.body.classList.toggle('cursor-dark', dark); }
+  });
+  (function loop(){ rx+=(mx-rx)*.2; ry+=(my-ry)*.2;
+    ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(loop); })();
+  // 帶文字標籤的目標（data-cur="文字"）：游標放大並顯示標籤
+  document.querySelectorAll('.panel:not(.panel-intro)').forEach(el=> el.dataset.cur='查看');
+  document.querySelectorAll('.qa').forEach(el=> el.dataset.cur='點開');
+  document.querySelectorAll('[data-cur]').forEach(el=>{
+    el.addEventListener('mouseenter', ()=>{ ring.classList.add('label'); label.textContent = el.dataset.cur; });
+    el.addEventListener('mouseleave', ()=>{ ring.classList.remove('label'); label.textContent=''; });
+  });
+  // 一般可點元素：環放大
+  document.querySelectorAll('a:not([data-cur]),.btn,.go,.archive,.socials a').forEach(el=>{
+    el.addEventListener('mouseenter', ()=> ring.classList.add('big'));
+    el.addEventListener('mouseleave', ()=> ring.classList.remove('big'));
+  });
+}
+
+/* ===================== 編輯式跑馬燈（等速無限捲，安靜不炫技）===================== */
+function initMarquee(){
+  const track = document.querySelector('.mq-track');
+  if (!track || REDUCED || !window.gsap) return;
+  gsap.to(track, { xPercent:-50, duration:34, ease:'none', repeat:-1 }); // 內容複製一份 → -50% 無縫
+}
+
+/* ===================== 服務：橫向 pinned 電影卷軸 ===================== */
+function initReel(){
+  const wrap = document.getElementById('reel');
+  const reel = wrap && wrap.querySelector('.reel');
+  const track = wrap && wrap.querySelector('.reel-track');
+  if (!wrap || !reel || !track || REDUCED || !window.gsap || innerWidth < 768) return; // 手機/無JS → 垂直堆疊
+  reel.classList.add('reel-on');
+  const dist = ()=> Math.max(0, track.scrollWidth - reel.clientWidth);
+  gsap.to(track, {
+    x: ()=> -dist(), ease:'none',
+    scrollTrigger:{ trigger: wrap, start:'top top', end:()=> '+=' + dist(),
+      pin: reel, scrub: 1, anticipatePin: 1, invalidateOnRefresh: true }
+  });
+}
+
+/* ===================== 招牌：噪音→清楚 捲動電影 ===================== */
+function initCinema(){
+  const cinema = document.querySelector('.cinema');
+  const wrap = document.getElementById('cinema');
+  // 手機 / 無 JS / 減少動態 → 不 pin，保留可讀的垂直堆疊（避免年長手機使用者覺得畫面卡住）
+  if (!cinema || !wrap || REDUCED || !window.gsap || innerWidth < 820) return;
+  cinema.classList.add('cine-on');
+
+  // FOMO 噪音字
+  const WORDS = ['快買！','再不買就來不及','大家都在搶','現在不上車就晚了','晚一年又貴一坪',
+    '別人都買了','利率要漲了','最後一戶','機會難得','錯過再等十年','不買會後悔',
+    '同事都買了','頭期款湊一湊就好','買了再說','房價只會漲','再等就買不起了'];
+  const noise = cinema.querySelector('.cin-noise');
+  const nzEls = WORDS.map((w,i)=>{
+    const s = document.createElement('span'); s.className='nz'; s.textContent=w;
+    // 散佈於畫面（避開正中文字區）
+    const left = 6 + ((i*53)%88);
+    const topRows = [10,16,22,72,78,84,13,80,18,75,26,70,9,86,30,68];
+    const top = topRows[i%topRows.length];
+    s.style.left = left+'%'; s.style.top = top+'%';
+    s.style.transform = `rotate(${(((i*37)%24)-12)}deg)`;
+    s.style.fontSize = (0.9 + ((i*17)%10)/10*0.8)+'rem';
+    noise.appendChild(s);
+    // 飛散參數：閾值、方向
+    s._th = 0.04 + (i/WORDS.length)*0.42;          // 依序消散
+    s._fx = (((i*53)%2)?1:-1) * (60 + (i*23)%120);   // 橫向飛
+    s._fy = -(40 + (i*29)%120);                       // 往上飄
+    return s;
+  });
+
+  const beats = [...cinema.querySelectorAll('.beat')];
+  const centers = beats.map(b=> parseFloat(b.dataset.c));
+  const fill = cinema.querySelector('.cin-progress-fill');
+  const runner = cinema.querySelector('.cin-runner');
+  const hint = cinema.querySelector('.cin-hint');
+  const bgCold = cinema.querySelector('.cin-bg-cold');
+  const bgWarm = cinema.querySelector('.cin-bg-warm');
+  const bgGold = cinema.querySelector('.cin-bg-gold');
+
+  const clamp = (v,a=0,b=1)=> Math.max(a,Math.min(b,v));
+  const seg = (p,a,b)=> clamp((p-a)/(b-a));   // 0→1 in [a,b]
+
+  function render(p){
+    // 背景 冷→暖→金
+    bgCold.style.opacity = (1 - seg(p,0.05,0.45)).toFixed(3);
+    bgWarm.style.opacity = seg(p,0.10,0.52).toFixed(3);
+    bgGold.style.opacity = seg(p,0.72,1).toFixed(3);
+    // 噪音字飛散
+    nzEls.forEach(s=>{
+      const l = seg(p, s._th, s._th+0.16);
+      s.style.opacity = (1-l).toFixed(3);
+      s.style.filter = `blur(${(l*14).toFixed(1)}px)`;
+      s.style.transform = `translate(${(l*s._fx).toFixed(1)}px,${(l*s._fy).toFixed(1)}px) rotate(${(((nzEls.indexOf(s)*37)%24)-12)}deg)`;
+    });
+    // 拍子交叉淡入（依距離中心）；最後一拍升起後維持到結尾
+    const last = beats.length - 1;
+    beats.forEach((b,i)=>{
+      let o;
+      if (i === last) o = seg(p, centers[i]-0.12, centers[i]);   // 升起後 clamp 維持 1
+      else o = clamp(1 - Math.abs(p - centers[i])/0.12);
+      b.style.opacity = o.toFixed(3);
+      const dy = (i === last) ? (1-o)*40 : (p-centers[i])*-70;
+      b.style.transform = `translate(-50%,calc(-50% + ${dy.toFixed(1)}px))`;
+    });
+    // 陪跑者沿左側往下走
+    runner.style.top = (6 + p*82)+'%';
+    // 進度
+    fill.style.transform = `scaleX(${p.toFixed(3)})`;
+    // 提示：開頭可見，捲動後淡出
+    hint.style.opacity = (1 - seg(p,0,0.06)).toFixed(3);
+    // 最終句的鑰匙封緘隨澄清浮現
+    const sealEl = beats[last].querySelector('.seal');
+    if (sealEl) sealEl.style.opacity = seg(p, centers[last], 1).toFixed(3);
+  }
+
+  ScrollTrigger.create({
+    trigger: wrap, start:'top top', end:'+=330%',
+    pin: cinema, scrub: 1, anticipatePin: 1,
+    onUpdate: self => render(self.progress),
+    onRefresh: ()=> render(0)
+  });
+  render(0);
+}
+
+/* ===================== 捲動進度條 ===================== */
+(function(){
+  const bar = document.querySelector('.scrollprog');
+  if (!bar) return;
+  const upd = ()=>{
+    const h = document.documentElement.scrollHeight - innerHeight;
+    bar.style.width = (h>0 ? (window.scrollY/h*100) : 0) + '%';
+  };
+  window.addEventListener('scroll', upd, {passive:true});
+  window.addEventListener('resize', upd); upd();
+})();
+
+/* ===================== 磁吸按鈕（GSAP quickTo）===================== */
+if (!TOUCH && !REDUCED && window.gsap && gsap.quickTo){
+  document.querySelectorAll('.btn, .archive').forEach(el=>{
+    const qx = gsap.quickTo(el,'x',{duration:.5,ease:'power3'});
+    const qy = gsap.quickTo(el,'y',{duration:.5,ease:'power3'});
+    el.addEventListener('mousemove', e=>{
+      const r=el.getBoundingClientRect();
+      qx((e.clientX-(r.left+r.width/2))*0.14);
+      qy((e.clientY-(r.top+r.height/2))*0.14);
+    });
+    el.addEventListener('mouseleave', ()=>{ qx(0); qy(0); });
+  });
+}
+</script>
+</body>
+</html>
