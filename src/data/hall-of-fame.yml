@@ -8,6 +8,20 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "1tingrealty"
+    name: "1庭｜Renee Chen"
+    avatar: "/assets/img/guild/1tingrealty/avatar.webp"
+    page: "/guild/1tingrealty.html"
+    title: "房地產陪跑顧問 · 不販售 FOMO，只陪你想清楚"
+    description: "我是 1庭，不是房仲、不是投資顧問 —— 是陪你走完買房與職涯的陪跑顧問。商用不動產 5 年 PM × 自由獵頭，臺大農經所在學。把複雜的房產知識變簡單，陪你把焦慮換成對的問題。"
+    tags:
+      - id: "pace_advisor"
+        label: "陪跑顧問"
+      - id: "realestate_x_headhunt"
+        label: "房地產 × 獵頭"
+      - id: "no_fomo"
+        label: "不販售 FOMO"
+
   - id: "francischien88"
     name: "Francis 簡小姐｜獨家心房"
     avatar: "/assets/img/guild/francischien88/avatar.webp"
@@ -1958,3 +1972,31 @@ members:
         label: "紅光養護"
       - id: "taoyuan_sanctuary"
         label: "桃園 · 紅光禪室"
+
+  - id: "muguang"
+    name: "然冉 × 福哥｜木光所製"
+    avatar: "/assets/img/guild/muguang/avatar.webp"
+    page: "/guild/muguang.html"
+    title: "高雄 · 鄰家木作父女檔 · 木作定製櫃（不是系統櫃）"
+    description: "「光，從木屑裡長出來。」高雄的木作父女檔——爸爸福哥 47 年資歷的老師傅，負責設計繪圖、估價與主要技術輸出；女兒然冉（大家叫她女鵝）負責行銷、社群與聯繫窗口。做的是木作定製櫃，不是系統櫃，從丈量到完工一條龍，全室規劃或局部裝修皆可，油漆、冷氣、水電、窗簾也能配合。不菸不酒不檳榔，給單獨接洽的女性顧客一份「完全感」。沒有華麗包裝，但更貼近你的生活——像剛好認識的鄰居在幫你做裝潢。另提供木作場地租借與教學，無經驗也歡迎。"
+    tags:
+      - id: "custom_carpentry"
+        label: "木作定製櫃 · 非系統櫃"
+      - id: "father_daughter"
+        label: "父女檔 · 47 年資歷"
+      - id: "kaohsiung_home"
+        label: "高雄 · 住宅專門"
+
+  - id: "hsiner"
+    name: "林欣兒 Liz Lin"
+    avatar: "/assets/img/guild/hsiner/avatar.webp"
+    page: "/guild/hsiner.html"
+    title: "品牌陪跑顧問 / 行銷活動企劃 · Rebirth 行銷工作室"
+    description: "「在時速 60 公里的雪道上，判斷錯誤只有 0.5 秒的修正機會；在瞬息萬變的市場，亦然。」旅居北海道的滑雪教練 × 行銷人。輔大織品行銷出身，把萬人音樂祭的控場、時裝週的審美與 AI 協作的高效率，化為從流量到變現的精準導航。曾服務 ELLE、C JEAN、BIRKENSTOCK、美圖秀秀、台東縣政府等品牌——我不只幫妳做行銷，我是陪妳品牌破浪前行的增長夥伴。"
+    tags:
+      - id: "brand_pacing_consultant"
+        label: "品牌陪跑顧問"
+      - id: "short_video_growth"
+        label: "短影音增長"
+      - id: "ski_coach_marketer"
+        label: "滑雪教練 × 行銷人"

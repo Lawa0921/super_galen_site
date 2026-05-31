@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>林欣兒 Liz Lin ・ 破浪前行 · The Carving Line</title>
+<meta name="description" content="林欣兒 Liz Lin — 品牌陪跑顧問／行銷活動企劃，Rebirth 行銷工作室負責人。旅居北海道的滑雪教練 × 行銷人。把萬人活動的控場、高端媒體的審美與 AI 協作的高效率，化為從流量到變現的精準導航。短影音最高 58.7 萬觀看、半年增粉 5,000+、諮詢轉換率 +40%。">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preload" as="image" href="/assets/img/guild/hsiner/hero-portrait.webp">
+
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,400;1,9..144,500&family=Chivo+Mono:wght@300;400;600&family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<!-- GSAP gate：CDN 成功載入才隱藏內容做進場；載入失敗則維持全顯，避免整頁空白 -->
+<script>if(window.gsap&&window.ScrollTrigger){document.documentElement.classList.add('gsap-ready');}</script>
+
+<style>
+/* =====================================================================
+   林欣兒 Liz Lin ・「破浪前行 · The Carving Line」
+   一頁式雪道下降：從深夜雪頂出發，隨捲動過彎（流量→互動→信任→變現），
+   破曉時衝過終點。冷冽冰川藍 × 獅子座暖金 = 教練的精準 × 天生的火。
+   真實工作照（時裝週／音樂祭／自由潛水／雪線）為敘事素材，與動畫一體。
+   ===================================================================== */
+:root{
+  --void:#060b12;          /* 最深的夜雪 */
+  --night:#0a1421;         /* 主夜・glacial navy */
+  --glacier:#11283b;       /* 冰川藍 */
+  --ice:#7fc8ee;           /* 冰晶青 */
+  --ice-bright:#cdebff;    /* 雪光 */
+  --snow:#eef4fa;          /* 雪・主文字 */
+  --snow-dim:rgba(238,244,250,.62);
+  --snow-faint:rgba(238,244,250,.34);
+  --gold:#f6b341;          /* 獅子座暖金・破曉・終點 */
+  --gold-glow:#ffd98a;     /* 金暈 */
+  --ember:#ff7d40;         /* 動能橙 */
+  --ink:#070d15;
+  --hair:rgba(238,244,250,.12);
+  --hair-ice:rgba(127,200,238,.30);
+  --hair-gold:rgba(246,179,65,.34);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+body{
+  background:var(--void);
+  color:var(--snow);
+  font-family:"Noto Sans TC","Chivo Mono",sans-serif;
+  font-weight:400;line-height:1.85;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--ink)}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;border:none;background:none;color:inherit}
+/* 自訂游標只在「真的有精準指標的滑鼠裝置」隱藏系統游標，鍵盤/觸控/觸控筆不受影響 */
+@media (hover:hover) and (pointer:fine){
+  body{cursor:none}
+  a,button,summary,.pm{cursor:none}
+}
+/* 鍵盤焦點：金色描邊，確保 cursor 隱藏時仍看得見焦點 */
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:2px}
+
+/* ---------- three.js 雪原背景 ---------- */
+#bg-three{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg-grade{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(130% 80% at 50% -10%, rgba(127,200,238,.10), transparent 55%),
+    linear-gradient(180deg, rgba(6,11,18,.42) 0%, transparent 26%, transparent 60%, rgba(6,11,18,.72) 100%)}
+.bg-vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+  box-shadow:inset 0 0 200px 40px rgba(6,11,18,.7)}
+/* 北海道夜空・極光暖光（慢速飄移） */
+.bg-aurora{position:fixed;inset:-20%;z-index:1;pointer-events:none;opacity:.24;mix-blend-mode:screen;
+  background:
+    radial-gradient(42% 30% at 24% 16%, rgba(127,200,238,.40), transparent 70%),
+    radial-gradient(46% 26% at 70% 10%, rgba(110,207,142,.26), transparent 72%),
+    radial-gradient(54% 36% at 52% 2%, rgba(246,179,65,.12), transparent 72%);
+  filter:blur(34px);animation:aurora 17s ease-in-out infinite alternate}
+@keyframes aurora{0%{transform:translate(-3%,-2%) scale(1)}100%{transform:translate(4%,3%) scale(1.08)}}
+.grain{position:fixed;inset:-50%;z-index:2;pointer-events:none;opacity:.045;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+  animation:grain 8s steps(6) infinite}
+@keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-2%,1%)}100%{transform:translate(1%,-1%)}}
+
+/* ---------- 游標雪痕 carve trail（招牌） ---------- */
+#carve{position:fixed;inset:0;z-index:3;pointer-events:none;mix-blend-mode:screen}
+
+/* ---------- 滑雪場路線圖導覽（左側・難度標記） ---------- */
+.pistemap{position:fixed;left:26px;top:50%;transform:translateY(-50%);z-index:80;display:flex;flex-direction:column;gap:13px}
+.pm{display:flex;align-items:center;gap:11px;cursor:none}
+.pm .mk{width:11px;height:11px;flex-shrink:0;opacity:.45;transition:.35s;border:1.5px solid currentColor}
+.pm .mk.green{color:#6fcf8e;border-radius:50%}
+.pm .mk.blue{color:#7fc8ee}
+.pm .mk.black{color:#eef4fa;transform:rotate(45deg)}
+.pm .pl{font-family:"Chivo Mono",monospace;font-size:.66rem;letter-spacing:.06em;color:var(--snow-faint);
+  opacity:0;transform:translateX(-6px);transition:.35s;white-space:nowrap}
+.pm:hover .mk{opacity:1;box-shadow:0 0 10px currentColor}
+.pm:hover .pl,.pm.on .pl{opacity:1;transform:translateX(0);color:var(--snow-dim)}
+.pm.on .mk{opacity:1;background:currentColor;box-shadow:0 0 12px currentColor}
+.pm.on .pl{color:var(--ice-bright)}
+@media(max-width:1100px){.pistemap{display:none}}
+
+/* ---------- 自訂游標：導航定位點 ---------- */
+.cursor,.cursor-ring{position:fixed;top:0;left:0;border-radius:50%;pointer-events:none;z-index:9999;mix-blend-mode:screen}
+.cursor{width:6px;height:6px;background:var(--gold-glow);transform:translate(-50%,-50%);
+  box-shadow:0 0 14px 4px var(--gold),0 0 40px 12px rgba(246,179,65,.3)}
+.cursor-ring{width:30px;height:30px;border:1px solid rgba(205,235,255,.5);transform:translate(-50%,-50%);
+  transition:width .3s,height .3s,border-color .3s,opacity .3s}
+.cursor-ring.hot{width:58px;height:58px;border-color:var(--gold-glow)}
+@media(hover:none){body{cursor:auto}.cursor,.cursor-ring{display:none}}
+
+/* ---------- 角落 UI ---------- */
+.archive{position:fixed;top:24px;left:28px;z-index:80;font-family:"Chivo Mono",monospace;
+  font-size:.82rem;letter-spacing:.06em;color:var(--snow-dim);display:flex;align-items:center;gap:.6em;
+  transition:color .4s,gap .4s;padding:.4em}
+.archive i{transition:transform .4s}
+.archive:hover{color:var(--gold-glow);gap:1em}
+.archive:hover i{transform:translateX(-5px)}
+
+.compass{position:fixed;top:20px;right:26px;z-index:80;display:flex;align-items:center;gap:11px;
+  padding:8px 16px 8px 13px;border:1px solid var(--hair);border-radius:999px;
+  background:rgba(10,20,33,.6);backdrop-filter:blur(8px);
+  font-family:"Chivo Mono",monospace;font-size:.74rem;letter-spacing:.06em;color:var(--snow-dim)}
+.compass .needle{width:9px;height:9px;border-radius:50%;background:var(--ice);
+  box-shadow:0 0 10px 2px rgba(127,200,238,.6);animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(.85)}50%{opacity:1;transform:scale(1.2)}}
+.compass em{font-style:normal;color:var(--ice-bright)}
+@media(max-width:680px){.compass{top:auto;bottom:16px;right:50%;transform:translateX(50%);font-size:.66rem}}
+
+/* 海拔進度軌（右側）：你正在下降 */
+.alt-rail{position:fixed;right:30px;top:50%;transform:translateY(-50%);z-index:79;
+  width:2px;height:190px;background:var(--hair);border-radius:2px;overflow:hidden}
+.alt-rail .fill{position:absolute;top:0;left:0;width:100%;height:0%;
+  background:linear-gradient(var(--ice),var(--gold));box-shadow:0 0 10px var(--ice)}
+.alt-tag{position:fixed;right:24px;top:calc(50% + 110px);z-index:79;font-family:"Chivo Mono",monospace;
+  font-size:.64rem;letter-spacing:.1em;color:var(--snow-faint);text-align:right}
+@media(max-width:1100px){.alt-rail,.alt-tag{display:none}}
+
+/* ---------- 區段通用 ---------- */
+main{position:relative;z-index:5}
+.chapter{position:relative;padding:clamp(86px,13vh,170px) clamp(22px,7vw,120px);max-width:1240px;margin:0 auto}
+.kicker{font-family:"Chivo Mono",monospace;font-size:.74rem;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--ice);margin-bottom:22px;display:flex;align-items:center;gap:14px}
+.kicker .ln{width:46px;height:1px;background:var(--hair-ice)}
+.kicker .idx{color:var(--gold)}
+h2{font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(1.9rem,4.6vw,3.3rem);
+  line-height:1.28;letter-spacing:.01em;color:var(--snow);margin-bottom:26px}
+h2 em{font-style:normal;color:var(--gold-glow)}
+h2 .ice{color:var(--ice-bright)}
+.lede{font-size:clamp(1.02rem,1.5vw,1.16rem);line-height:2;color:var(--snow-dim);max-width:760px}
+.lede strong{color:var(--gold-glow);font-weight:500}
+.lede .ice{color:var(--ice-bright)}
+
+/* ===================== HERO ===================== */
+.hero{position:relative;min-height:100vh;display:grid;grid-template-columns:1.15fr .85fr;align-items:center;
+  gap:clamp(20px,4vw,70px);padding:clamp(96px,12vh,150px) clamp(24px,7vw,110px) 90px;max-width:1320px;margin:0 auto}
+.hero .eyebrow{font-family:"Chivo Mono",monospace;font-size:clamp(.7rem,1.3vw,.84rem);letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ice);margin-bottom:26px;display:flex;align-items:center;gap:13px;flex-wrap:wrap;opacity:0}
+.hero .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.hero h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(3.1rem,9vw,6.6rem);
+  line-height:.96;letter-spacing:.02em;color:var(--snow);text-shadow:0 6px 50px rgba(0,0,0,.55)}
+.hero h1 .ch{display:inline-block;opacity:0;transform:translateY(46px);filter:blur(10px)}
+.hero .latin{font-family:"Fraunces",serif;font-style:italic;font-weight:400;
+  font-size:clamp(1.02rem,2.2vw,1.6rem);color:var(--ice-bright);letter-spacing:.01em;margin-top:20px;opacity:0}
+.hero .tagline{font-family:"Noto Serif TC",serif;font-weight:700;font-size:clamp(1.25rem,2.7vw,1.95rem);
+  color:var(--snow);margin-top:30px;line-height:1.5;opacity:0}
+.hero .tagline em{font-style:normal;color:var(--gold-glow);position:relative;white-space:nowrap}
+.hero .tagline em::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:2px;
+  background:linear-gradient(90deg,var(--gold),transparent);transform:scaleX(0);transform-origin:left;
+  animation:underline 1s ease 1.8s forwards}
+@keyframes underline{to{transform:scaleX(1)}}
+.hero .subline{margin-top:22px;max-width:540px;font-size:clamp(.96rem,1.45vw,1.12rem);line-height:1.95;
+  color:var(--snow-dim);opacity:0}
+.hero .subline strong{color:var(--ice-bright);font-weight:500}
+.hero .subline em{font-style:normal;color:var(--gold-glow);font-weight:500}
+
+.chips{margin-top:34px;display:flex;flex-wrap:wrap;gap:10px;opacity:0}
+.chip{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border:1px solid var(--hair-ice);
+  border-radius:999px;background:rgba(17,40,59,.4);backdrop-filter:blur(6px);
+  font-family:"Chivo Mono",monospace;font-size:.78rem;letter-spacing:.02em;color:var(--snow-dim);transition:.35s}
+.chip i{color:var(--gold);font-size:.85em}
+.chip b{color:var(--ice-bright);font-weight:600}
+.chip:hover{border-color:var(--hair-gold);color:var(--snow);transform:translateY(-2px)}
+
+.hero-cta{margin-top:38px;display:flex;flex-wrap:wrap;gap:14px;opacity:0}
+
+/* 按鈕 */
+.btn{display:inline-flex;align-items:center;gap:11px;padding:14px 26px;font-family:"Noto Sans TC",sans-serif;
+  font-weight:500;font-size:1rem;letter-spacing:.03em;border:1px solid var(--hair-gold);border-radius:3px;
+  color:var(--snow);background:transparent;position:relative;overflow:hidden;transition:border-color .4s,color .4s;will-change:transform}
+.btn::before{content:"";position:absolute;inset:0;background:var(--gold);z-index:-1;
+  transform:translateY(101%);transition:transform .5s cubic-bezier(.65,0,.3,1)}
+.btn:hover{color:var(--ink);border-color:var(--gold)}
+.btn:hover::before{transform:translateY(0)}
+.btn.solid{background:var(--gold);border-color:var(--gold);color:var(--ink);font-weight:700}
+.btn.solid::before{background:var(--gold-glow)}
+.btn.ghost{border-color:var(--hair-ice)}
+.btn.ghost::before{background:var(--ice)}
+.btn span,.btn i{position:relative;z-index:1}
+.btn i{font-size:.92em}
+
+/* HERO 人像 + 漂浮素材框 */
+.hero-portrait{position:relative;justify-self:center;opacity:0}
+.hero-portrait .frame{position:relative;width:min(78vw,400px);aspect-ratio:3/4;border-radius:5px;overflow:hidden;
+  box-shadow:0 40px 100px rgba(0,0,0,.6),0 0 0 1px var(--hair-ice),0 0 0 9px rgba(10,20,33,.5);
+  transform-style:preserve-3d}
+.hero-portrait img{width:100%;height:100%;object-fit:cover;object-position:center 30%;
+  filter:saturate(1.02) contrast(1.03)}
+.hero-portrait .frame::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 40%,rgba(6,11,18,.5) 100%),
+  radial-gradient(80% 60% at 50% 20%,rgba(127,200,238,.14),transparent 60%)}
+.hero-portrait .ptag{position:absolute;left:-14px;bottom:26px;z-index:3;
+  font-family:"Chivo Mono",monospace;font-size:.66rem;letter-spacing:.14em;color:var(--ink);
+  background:var(--gold);padding:6px 13px;border-radius:2px;box-shadow:0 10px 30px rgba(246,179,65,.4)}
+.hero-portrait .alt{position:absolute;right:-10px;top:24px;z-index:3;font-family:"Chivo Mono",monospace;
+  font-size:.58rem;letter-spacing:.12em;color:var(--ice);writing-mode:vertical-rl;
+  background:rgba(10,20,33,.7);padding:10px 5px;border-radius:2px;border:1px solid var(--hair-ice)}
+/* 漂浮的第二張素材：戶外／現場的另一面 */
+.hero-portrait .accent{position:absolute;left:-46px;bottom:-34px;z-index:4;width:42%;max-width:158px;aspect-ratio:4/5;
+  border-radius:4px;overflow:hidden;border:1px solid var(--hair-ice);
+  box-shadow:0 26px 60px rgba(0,0,0,.6);background:var(--glacier)}
+.hero-portrait .accent img{width:100%;height:100%;object-fit:cover;object-position:center}
+.hero-portrait .accent .ac-lab{position:absolute;left:0;right:0;bottom:0;padding:14px 8px 6px;
+  font-family:"Chivo Mono",monospace;font-size:.52rem;letter-spacing:.1em;color:var(--ice-bright);
+  background:linear-gradient(transparent,rgba(6,11,18,.85))}
+@media(max-width:860px){
+  .hero{grid-template-columns:1fr;text-align:left;padding-top:118px}
+  .hero-portrait{order:-1;margin-bottom:10px}
+  .hero-portrait .frame{width:min(70vw,300px)}
+  .hero-portrait .accent{left:-18px;width:36%;max-width:118px}
+  .scroll-cue{display:none}
+}
+
+.scroll-cue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:6;
+  font-family:"Chivo Mono",monospace;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--snow-faint);display:flex;flex-direction:column;align-items:center;gap:11px;opacity:0}
+.scroll-cue .ln{width:1px;height:46px;background:linear-gradient(var(--ice),transparent);animation:drip 2.2s ease-in-out infinite}
+@keyframes drip{0%,100%{transform:scaleY(.3);transform-origin:top;opacity:.4}50%{transform:scaleY(1);opacity:1}}
+
+/* ===================== 教練心法・引言（含真實極限照背景） ===================== */
+.creed{position:relative;overflow:clip}
+.creed-bg{position:absolute;inset:0;z-index:0;overflow:hidden;clip-path:inset(0 0 100% 0)}
+.creed-bg img{width:100%;height:120%;object-fit:cover;object-position:center 35%;
+  filter:grayscale(.2) brightness(.42) contrast(1.05) saturate(.9)}
+.creed-bg::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(6,11,18,.92),rgba(6,11,18,.6) 55%,rgba(10,20,33,.4)),
+  linear-gradient(180deg,rgba(6,11,18,.7),transparent 30%,rgba(6,11,18,.7))}
+.creed-inner{position:relative;z-index:2}
+.bigquote{position:relative;max-width:980px;margin:0 auto;padding:clamp(20px,4vw,40px) 0}
+.bigquote .mark{font-family:"Fraunces",serif;font-size:clamp(5rem,12vw,9rem);line-height:.6;color:var(--hair-gold);
+  display:block;height:.5em}
+.bigquote q{quotes:none;font-family:"Fraunces",serif;font-style:italic;font-weight:500;
+  font-size:clamp(1.5rem,4vw,2.9rem);line-height:1.45;color:var(--snow);display:block;
+  text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.bigquote q em{font-style:italic;color:var(--gold-glow)}
+.bigquote q .ice{color:var(--ice-bright)}
+.bigquote .by{margin-top:26px;font-family:"Chivo Mono",monospace;font-size:.78rem;letter-spacing:.1em;
+  color:var(--ice);display:flex;align-items:center;gap:12px}
+.bigquote .by .ln{width:40px;height:1px;background:var(--hair-ice)}
+
+.pillars{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,40px)}
+.pillar{position:relative;padding:32px 30px;border:1px solid var(--hair);border-radius:5px;
+  background:linear-gradient(160deg,rgba(17,40,59,.55),rgba(10,20,33,.45));overflow:hidden;
+  backdrop-filter:blur(4px)}
+.pillar::before{content:"";position:absolute;top:0;left:0;width:44px;height:2px;background:var(--gold);
+  box-shadow:0 0 12px var(--gold)}
+.pillar .pi{font-size:1.5rem;color:var(--ice);margin-bottom:16px}
+.pillar h3{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.32rem;color:var(--snow);margin-bottom:12px}
+.pillar h3 small{display:block;font-family:"Fraunces",serif;font-style:italic;font-weight:400;
+  font-size:.84rem;color:var(--gold-glow);margin-top:4px;letter-spacing:.02em}
+.pillar p{font-size:.98rem;line-height:1.85;color:var(--snow-dim)}
+@media(max-width:680px){.pillars{grid-template-columns:1fr}}
+
+/* ===================== 招牌互動：雪道下降（含真實破曉目的地） ===================== */
+.descent{position:relative}
+.descent-pin{position:relative;height:100vh;overflow:clip;display:flex;align-items:center;justify-content:center}
+.descent-dest{position:absolute;inset:0;z-index:0;overflow:hidden;opacity:0}
+.descent-dest img{width:100%;height:100%;object-fit:cover;object-position:center 40%;
+  filter:saturate(1.05) contrast(1.02);transform:scale(1.1)}
+.descent-dest::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(70% 60% at 50% 60%,transparent,rgba(6,11,18,.55)),
+  linear-gradient(180deg,rgba(6,11,18,.4),transparent 40%,rgba(6,11,18,.6))}
+#p5host{position:absolute;inset:0;z-index:1}
+#p5host canvas{display:block;width:100%!important;height:100%!important}
+.descent-overlay{position:relative;z-index:2;width:100%;max-width:1180px;margin:0 auto;padding:0 clamp(22px,6vw,90px);
+  display:grid;grid-template-columns:1fr auto;align-items:flex-end;gap:30px;pointer-events:none}
+.descent-copy{max-width:560px}
+.descent-copy .kicker{margin-bottom:16px}
+.descent-copy h2{font-size:clamp(1.7rem,4vw,2.8rem);margin-bottom:14px}
+.descent-stage{min-height:96px}
+.stage{display:none;font-size:clamp(1rem,1.6vw,1.18rem);line-height:1.8;color:var(--snow-dim);
+  text-shadow:0 2px 16px rgba(0,0,0,.7)}
+.stage.on{display:block;animation:stageIn .5s ease}
+.stage b{color:var(--gold-glow);font-weight:600}
+.stage .ice{color:var(--ice-bright)}
+@keyframes stageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* HUD 儀表 */
+.hud{display:flex;flex-direction:column;gap:14px;min-width:210px}
+.hud .hud-note{font-family:"Chivo Mono",monospace;font-size:.54rem;letter-spacing:.1em;
+  color:var(--snow-faint);opacity:.7;display:flex;align-items:center;gap:6px}
+.hud .hud-note::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--ice);opacity:.6}
+.hud .gauge{border:1px solid var(--hair-ice);border-radius:4px;background:rgba(7,13,21,.66);
+  backdrop-filter:blur(8px);padding:13px 16px}
+.hud .glabel{font-family:"Chivo Mono",monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--snow-faint);display:flex;justify-content:space-between;align-items:center}
+.hud .glabel i{color:var(--ice)}
+.hud .gval{font-family:"Chivo Mono",monospace;font-weight:600;font-size:1.5rem;color:var(--snow);margin-top:4px;
+  display:flex;align-items:baseline;gap:5px}
+.hud .gval .u{font-size:.7rem;color:var(--snow-faint);font-weight:400}
+.hud .gval.gold{color:var(--gold-glow)}
+/* 漏斗 */
+.funnel{margin-top:4px;display:flex;flex-direction:column;gap:5px}
+.funnel .f{display:flex;align-items:center;gap:9px;font-family:"Chivo Mono",monospace;font-size:.66rem;
+  letter-spacing:.08em;color:var(--snow-faint);opacity:.4;transition:.4s}
+.funnel .f .bar{flex:1;height:5px;border-radius:3px;background:var(--hair);overflow:hidden;position:relative}
+.funnel .f .bar i{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,var(--ice),var(--gold));
+  transition:width .5s ease}
+.funnel .f.lit{opacity:1;color:var(--ice-bright)}
+.funnel .f .lab{min-width:42px}
+@media(max-width:860px){
+  .descent-overlay{grid-template-columns:1fr;align-items:flex-start}
+  .hud{flex-direction:row;flex-wrap:wrap;min-width:0;width:100%}
+  .hud .gauge{flex:1;min-width:120px}
+  .funnel{width:100%}
+}
+@media(max-width:680px){.descent-copy h2{font-size:1.5rem}}
+
+/* ===================== 痛點 ===================== */
+.pains{margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.pain{position:relative;padding:30px 26px;border:1px solid var(--hair);border-radius:5px;
+  background:rgba(10,20,33,.4);transition:.4s}
+.pain .n{font-family:"Chivo Mono",monospace;font-size:.7rem;letter-spacing:.1em;color:var(--ember);margin-bottom:14px}
+.pain .pi{font-size:1.3rem;color:var(--ember);margin-bottom:12px}
+.pain h3{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.18rem;color:var(--snow);margin-bottom:10px}
+.pain p{font-size:.92rem;line-height:1.78;color:var(--snow-dim)}
+.pain:hover{border-color:rgba(255,125,64,.4);transform:translateY(-4px);background:rgba(20,14,12,.5)}
+@media(max-width:760px){.pains{grid-template-columns:1fr}}
+
+/* ===================== 服務 ===================== */
+.services{display:flex;flex-direction:column;gap:18px;margin-top:46px}
+.svc{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:clamp(18px,3vw,40px);align-items:center;
+  padding:clamp(26px,3vw,40px);border:1px solid var(--hair);border-radius:6px;
+  background:linear-gradient(150deg,rgba(17,40,59,.4),rgba(10,20,33,.25));overflow:hidden;transition:.45s}
+.svc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ice);transform:scaleY(0);
+  transform-origin:top;transition:transform .5s}
+.svc:hover{border-color:var(--hair-ice);transform:translateX(6px)}
+.svc:hover::before{transform:scaleY(1)}
+.svc .mk{font-family:"Fraunces",serif;font-style:italic;font-size:2.6rem;color:var(--gold-glow);line-height:1;
+  width:54px;text-align:center;flex-shrink:0}
+.svc .body h3{font-family:"Noto Serif TC",serif;font-weight:700;font-size:clamp(1.2rem,2vw,1.5rem);color:var(--snow);
+  margin-bottom:8px;display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.svc .body h3 i{color:var(--ice);font-size:.9em}
+.svc .body .core{font-family:"Chivo Mono",monospace;font-size:.72rem;letter-spacing:.06em;color:var(--gold);
+  margin-bottom:12px}
+.svc .body p{font-size:.96rem;line-height:1.82;color:var(--snow-dim)}
+.svc .body p .ice{color:var(--ice-bright)}
+.svc .deliver{flex-shrink:0;max-width:200px;font-size:.84rem;line-height:1.7;color:var(--snow-dim);
+  border-left:1px solid var(--hair-ice);padding-left:18px}
+.svc .deliver .dl{font-family:"Chivo Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--snow-faint);display:block;margin-bottom:6px}
+@media(max-width:900px){
+  .svc{grid-template-columns:auto 1fr;gap:18px}
+  .svc .mk{font-size:2rem;width:40px}
+  .svc .deliver{grid-column:1/-1;max-width:none;border-left:none;border-top:1px solid var(--hair);padding-left:0;padding-top:14px}
+}
+
+/* ===================== 戰績 ===================== */
+.results{position:relative}
+.result-grid{margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.stat{position:relative;padding:34px 24px;border:1px solid var(--hair);border-radius:6px;
+  background:linear-gradient(165deg,rgba(17,40,59,.45),rgba(10,20,33,.25));text-align:center;overflow:hidden}
+.stat::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%) scaleX(0);width:60%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.85;
+  transition:transform .9s cubic-bezier(.2,.8,.2,1)}
+.stat.lit::after{transform:translateX(-50%) scaleX(1)}
+.stat .num{font-family:"Chivo Mono",monospace;font-weight:600;font-size:clamp(2rem,4vw,2.9rem);
+  color:var(--gold-glow);line-height:1;letter-spacing:-.02em}
+.stat .num .u{font-size:.5em;color:var(--ice);margin-left:2px}
+.stat .cap{margin-top:13px;font-size:.86rem;color:var(--snow-dim);line-height:1.6}
+.stat .sub{font-family:"Chivo Mono",monospace;font-size:.62rem;letter-spacing:.08em;color:var(--snow-faint);margin-top:6px}
+@media(max-width:860px){.result-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.result-grid{grid-template-columns:1fr}}
+/* 中段轉換出口 */
+.midcta{margin-top:30px;display:flex;align-items:center;justify-content:space-between;gap:clamp(20px,4vw,50px);
+  flex-wrap:wrap;padding:clamp(24px,3vw,38px) clamp(26px,4vw,46px);border:1px solid var(--hair-gold);border-radius:8px;
+  background:linear-gradient(120deg,rgba(246,179,65,.10),rgba(17,40,59,.4) 60%);position:relative;overflow:hidden}
+.midcta::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(var(--ice),var(--gold))}
+.midcta .mc-kick{font-family:"Chivo Mono",monospace;font-size:.64rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--ice);display:block;margin-bottom:10px}
+.midcta-text p{font-family:"Noto Serif TC",serif;font-weight:700;font-size:clamp(1.15rem,2.2vw,1.6rem);
+  color:var(--snow);line-height:1.45;max-width:560px}
+.midcta-text p em{font-style:normal;color:var(--gold-glow)}
+.midcta .btn{flex-shrink:0}
+@media(max-width:680px){.midcta{flex-direction:column;align-items:flex-start}.midcta .btn{width:100%;justify-content:center}}
+
+/* ===================== 經歷：捲動釘版照片配對 ===================== */
+.exp-layout{margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(26px,4vw,56px);align-items:start}
+.timeline{position:relative;padding-left:30px}
+.timeline::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;
+  background:linear-gradient(var(--ice),var(--gold))}
+.tl{position:relative;padding:0 0 clamp(40px,7vh,72px) 6px;transition:opacity .4s}
+.tl:last-child{padding-bottom:0}
+.tl::before{content:"";position:absolute;left:-30px;top:5px;width:14px;height:14px;border-radius:50%;
+  background:var(--night);border:2px solid var(--hair-ice);transition:.4s;z-index:1}
+.tl.active::before{border-color:var(--gold);box-shadow:0 0 14px var(--gold);transform:scale(1.25)}
+.tl.gold.active::before{border-color:var(--gold)}
+.tl .role{font-family:"Chivo Mono",monospace;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ice);margin-bottom:6px;transition:.4s}
+.tl h3{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.2rem;color:var(--snow);margin-bottom:7px}
+.tl p{font-size:.92rem;line-height:1.78;color:var(--snow-dim)}
+.tl:not(.active){opacity:.5}
+
+.exp-stage{position:sticky;top:13vh;height:74vh;border-radius:6px;overflow:hidden;
+  border:1px solid var(--hair-ice);box-shadow:0 30px 80px rgba(0,0,0,.55);background:var(--glacier);
+  transform-style:preserve-3d}
+.exp-stage .ph{position:absolute;inset:0;opacity:0;transform:scale(1.06);
+  transition:opacity .9s ease,transform 1.2s ease}
+.exp-stage .ph.on{opacity:1;transform:scale(1)}
+.exp-stage .ph img{width:100%;height:100%;object-fit:cover}
+.exp-stage .ph::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 50%,rgba(6,11,18,.7))}
+.exp-stage .ph .ph-tag{position:absolute;left:18px;bottom:16px;z-index:2;
+  font-family:"Chivo Mono",monospace;font-size:.72rem;letter-spacing:.06em;color:var(--ice-bright)}
+.exp-stage .ph .ph-tag b{display:block;font-family:"Noto Serif TC",serif;font-size:1.05rem;color:var(--gold-glow);
+  margin-top:3px;letter-spacing:.02em}
+.exp-stage .frameno{position:absolute;top:14px;right:16px;z-index:2;font-family:"Chivo Mono",monospace;
+  font-size:.62rem;letter-spacing:.14em;color:var(--snow-faint)}
+@media(max-width:900px){
+  .exp-layout{grid-template-columns:1fr}
+  .exp-stage{position:static;height:auto;display:flex;flex-direction:column;gap:10px;border:none;
+    box-shadow:none;background:none;overflow:visible}
+  .exp-stage .ph{position:relative;opacity:1;transform:none;aspect-ratio:4/3;border-radius:5px;overflow:hidden;
+    border:1px solid var(--hair);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+  .exp-stage .frameno{display:none}
+  .tl:not(.active){opacity:1}
+}
+
+/* ===================== 沿途風景：橫向膠卷（pin + scrub） ===================== */
+.run{position:relative}
+.run-pin{position:relative;height:100vh;overflow:clip;display:flex;align-items:center}
+.run-track{display:flex;align-items:center;gap:clamp(16px,2vw,30px);
+  padding:0 clamp(22px,8vw,110px);will-change:transform}
+/* 橫向膠卷進度條（pin 期間提示「往右」與進度） */
+.run-progwrap{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:5;
+  display:flex;align-items:center;gap:12px;font-family:"Chivo Mono",monospace;font-size:.62rem;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--snow-faint);pointer-events:none}
+.run-progwrap .rt{width:160px;height:2px;background:var(--hair);border-radius:2px;overflow:hidden}
+.run-progwrap .rt i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--ice),var(--gold));
+  box-shadow:0 0 8px var(--ice)}
+.run-progwrap .ar{color:var(--ice)}
+@media(hover:none){.run-progwrap{display:none}}
+/* 路線圖小標 */
+.pistemap .pm-head{font-family:"Chivo Mono",monospace;font-size:.54rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--snow-faint);margin-bottom:4px;padding-left:1px}
+.run-intro{flex:0 0 auto;width:min(78vw,340px);padding-right:clamp(10px,2vw,30px)}
+.run-intro h2{font-size:clamp(1.7rem,3.6vw,2.6rem);margin-bottom:16px}
+.run-intro p{font-size:.98rem;line-height:1.9;color:var(--snow-dim);max-width:340px}
+.run-frame{flex:0 0 auto;width:min(62vw,330px);aspect-ratio:3/4;position:relative;border-radius:5px;overflow:hidden;
+  border:1px solid var(--hair-ice);box-shadow:0 26px 70px rgba(0,0,0,.5);background:var(--glacier);
+  transform-style:preserve-3d}
+.run-frame img{width:100%;height:100%;object-fit:cover;filter:saturate(.98) brightness(.96);transition:filter .5s}
+.run-frame::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(6,11,18,.55))}
+.run-frame:hover img{filter:saturate(1.1) brightness(1.04)}
+.run-frame .no{position:absolute;top:12px;right:14px;z-index:2;font-family:"Chivo Mono",monospace;
+  font-size:.62rem;letter-spacing:.14em;color:var(--gold)}
+.run-frame .cap{position:absolute;left:14px;bottom:14px;z-index:2;font-family:"Chivo Mono",monospace;
+  font-size:.62rem;letter-spacing:.08em;color:var(--ice-bright)}
+.run-frame .cap b{display:block;font-family:"Noto Serif TC",serif;font-size:1rem;color:var(--snow);margin-top:3px}
+.run-frame.wide{aspect-ratio:4/3;width:min(78vw,440px)}
+/* 手機橫滑提示：常駐 sticky 黏在左緣 */
+.run-swipe{display:none}
+@media(hover:none){
+  .run-pin{height:auto;overflow-x:auto;overflow-y:hidden;padding:40px 0;-webkit-overflow-scrolling:touch}
+  .run-track{padding:0 22px}
+  .run-intro{width:74vw}
+  .run-frame{width:74vw}
+  .run-frame.wide{width:88vw}
+  .run-swipe{display:inline-flex;align-items:center;gap:7px;position:sticky;left:14px;flex:0 0 auto;
+    align-self:flex-end;margin-bottom:8px;padding:7px 13px;border:1px solid var(--hair-ice);border-radius:999px;
+    background:rgba(10,20,33,.78);backdrop-filter:blur(6px);font-family:"Chivo Mono",monospace;
+    font-size:.6rem;letter-spacing:.12em;color:var(--ice-bright);white-space:nowrap;z-index:6}
+  .run-swipe i{animation:swipeNudge 1.6s ease-in-out infinite}
+}
+@keyframes swipeNudge{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+@media(hover:none) and (prefers-reduced-motion:reduce){.run-swipe i{animation:none}}
+
+/* ===================== 服務品牌 marquee ===================== */
+.brands{position:relative;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);
+  padding:40px 0;overflow:clip;margin-top:0}
+.brands .lab{text-align:center;font-family:"Chivo Mono",monospace;font-size:.68rem;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--snow-faint);margin-bottom:26px}
+.track{display:flex;gap:0;width:max-content;animation:scrollx 26s linear infinite}
+.brands:hover .track{animation-play-state:paused}
+.track .b{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(1.3rem,2.6vw,2.1rem);color:var(--snow-dim);
+  padding:0 clamp(26px,4vw,54px);white-space:nowrap;transition:color .3s;display:flex;align-items:center;gap:clamp(26px,4vw,54px)}
+.track .b::after{content:"·";color:var(--gold)}
+.track .b:hover{color:var(--gold-glow)}
+@keyframes scrollx{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ===================== FAQ ===================== */
+.faq{margin-top:46px;display:flex;flex-direction:column;gap:0}
+.qa{border-bottom:1px solid var(--hair);padding:6px 0}
+.qa summary{list-style:none;cursor:none;padding:22px 4px;display:flex;align-items:flex-start;gap:16px;
+  font-family:"Noto Serif TC",serif;font-weight:700;font-size:clamp(1.04rem,1.8vw,1.24rem);color:var(--snow);
+  transition:color .3s}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .q{font-family:"Chivo Mono",monospace;color:var(--ice);font-size:.9em;flex-shrink:0}
+.qa summary .ar{margin-left:auto;color:var(--snow-faint);transition:transform .4s;flex-shrink:0}
+.qa[open] summary{color:var(--gold-glow)}
+.qa[open] summary .ar{transform:rotate(45deg);color:var(--gold)}
+.qa:hover summary{color:var(--ice-bright)}
+.qa .ans{padding:0 4px 24px 42px;font-size:.98rem;line-height:1.9;color:var(--snow-dim);
+  max-width:840px;animation:ansIn .4s ease}
+.qa .ans strong{color:var(--gold-glow);font-weight:500}
+@keyframes ansIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===================== 終點 closing ===================== */
+.finish{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:120px 24px 70px;overflow:clip}
+.finish .flag{font-family:"Chivo Mono",monospace;font-size:.74rem;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:30px;display:flex;align-items:center;gap:12px}
+.finish .flag i{font-size:1.1em}
+.finish .big{font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(1.9rem,5.4vw,3.7rem);
+  line-height:1.4;letter-spacing:.01em;color:var(--snow);max-width:920px}
+.finish .big em{font-style:normal;color:var(--ice-bright)}
+.finish .big .gold{color:var(--gold-glow)}
+.finish .sign{margin-top:34px;font-family:"Fraunces",serif;font-style:italic;font-size:clamp(1.3rem,2.6vw,1.9rem);
+  color:var(--gold-glow)}
+.finish .sub{margin-top:14px;font-size:1.02rem;color:var(--snow-dim);max-width:620px;line-height:1.85}
+.finish .finish-cta{margin-top:40px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.socials{margin-top:48px;display:flex;justify-content:center;gap:16px}
+.socials a{width:50px;height:50px;border-radius:50%;border:1px solid var(--hair-ice);display:flex;
+  align-items:center;justify-content:center;color:var(--snow-dim);font-size:1.15rem;transition:.4s;background:rgba(10,20,33,.4)}
+.socials a:hover{color:var(--ink);background:var(--gold);border-color:var(--gold);transform:translateY(-4px);
+  box-shadow:0 12px 28px rgba(246,179,65,.4)}
+footer.foot{margin-top:50px;text-align:center;font-family:"Chivo Mono",monospace;font-size:.72rem;
+  letter-spacing:.06em;color:var(--snow-faint);line-height:2}
+footer.foot .made i{color:var(--ember);margin:0 .25em}
+footer.foot a{color:var(--ice);border-bottom:1px solid var(--hair-ice)}
+
+/* reveal 初始狀態 */
+.reveal{opacity:0;transform:translateY(34px)}
+/* GSAP 未就緒（CDN 失敗 / 無 JS）時，所有原本靠 GSAP 顯現的元素一律全顯，避免整頁空白 */
+html:not(.gsap-ready) .reveal,
+html:not(.gsap-ready) .hero .eyebrow,
+html:not(.gsap-ready) .hero h1 .ch,
+html:not(.gsap-ready) .hero .latin,
+html:not(.gsap-ready) .hero .tagline,
+html:not(.gsap-ready) .hero .subline,
+html:not(.gsap-ready) .chips,
+html:not(.gsap-ready) .hero-cta,
+html:not(.gsap-ready) .hero-portrait,
+html:not(.gsap-ready) .scroll-cue{opacity:1;transform:none;filter:none}
+
+@media(max-width:680px){
+  .chapter{padding:80px 22px}
+  .archive{top:16px;left:16px;font-size:.74rem}
+}
+
+/* ===== prefers-reduced-motion 總開關（置於樣式最末，確保 source-order 勝出） ===== */
+@media(prefers-reduced-motion:reduce){
+  .bg-aurora,.grain,.compass .needle,.scroll-cue .ln,.track,.run-swipe i{animation:none!important}
+  .track{transform:none}
+  html{scroll-behavior:auto}
+  /* 內容一律全顯，不靠 JS 進場 */
+  .reveal,.hero .eyebrow,.hero h1 .ch,.hero .latin,.hero .tagline,.hero .subline,
+  .chips,.hero-cta,.hero-portrait,.scroll-cue{opacity:1!important;transform:none!important;filter:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- three.js 雪原背景 -->
+<canvas id="bg-three" aria-hidden="true"></canvas>
+<div class="bg-grade" aria-hidden="true"></div>
+<div class="bg-aurora" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<canvas id="carve" aria-hidden="true"></canvas>
+
+<!-- 游標 -->
+<div class="cursor"></div>
+<div class="cursor-ring"></div>
+
+<!-- 角落 UI -->
+<a href="/guild/" class="archive"><i class="fa-solid fa-arrow-left-long"></i> 回公會名冊</a>
+<div class="compass" id="compass" aria-hidden="true"><span class="needle"></span><span>方位 <em id="bearing">N</em> · 下降中</span></div>
+<div class="alt-rail" aria-hidden="true"><div class="fill" id="altFill"></div></div>
+<div class="alt-tag" aria-hidden="true">ALT <span id="altNum">2,480</span> m</div>
+
+<!-- 滑雪場路線圖導覽 -->
+<nav class="pistemap" id="pistemap" aria-label="章節導覽">
+  <span class="pm-head" aria-hidden="true">Piste · 章節</span>
+  <a class="pm on" href="#hero" data-go="hero"><span class="mk green"></span><span class="pl">起點 · Liz</span></a>
+  <a class="pm" href="#creed" data-go="creed"><span class="mk blue"></span><span class="pl">教練心法</span></a>
+  <a class="pm" href="#descent" data-go="descent"><span class="mk black"></span><span class="pl">雪道下降</span></a>
+  <a class="pm" href="#services" data-go="services"><span class="mk blue"></span><span class="pl">我能幫妳</span></a>
+  <a class="pm" href="#results" data-go="results"><span class="mk blue"></span><span class="pl">戰績數字</span></a>
+  <a class="pm" href="#experience" data-go="experience"><span class="mk black"></span><span class="pl">經歷現場</span></a>
+  <a class="pm" href="#run" data-go="run"><span class="mk black"></span><span class="pl">沿途風景</span></a>
+  <a class="pm" href="#finish" data-go="finish"><span class="mk green"></span><span class="pl">終點線</span></a>
+</nav>
+
+<main>
+
+  <!-- ===== HERO ===== -->
+  <header class="hero" id="hero">
+    <div class="hero-text">
+      <div class="eyebrow"><span class="dot"></span> REBIRTH 行銷工作室 · 品牌陪跑顧問 <span class="dot"></span> 旅居北海道 · 滑雪教練 × 行銷人</div>
+      <h1 id="heroTitle">林欣兒</h1>
+      <div class="latin">Liz Lin — I don't just market your brand. I coach it down the mountain.</div>
+      <div class="tagline">我不只幫妳做行銷，<br>我是陪妳品牌 <em>破浪前行</em> 的增長夥伴。</div>
+      <p class="subline">我把<strong>萬人活動的控場</strong>、<strong>高端媒體的審美</strong>，結合 <strong>AI 協作</strong>的高效率，在變動的市場中，為妳精準導航從<em>流量到變現</em>的每一步。</p>
+      <div class="chips">
+        <span class="chip"><i class="fa-solid fa-fire"></i> 短影音最高 <b>58.7 萬</b> 觀看</span>
+        <span class="chip"><i class="fa-solid fa-people-group"></i> 萬人音樂祭後台總策劃</span>
+        <span class="chip"><i class="fa-solid fa-seedling"></i> 半年增粉 <b>5,000+</b></span>
+        <span class="chip"><i class="fa-solid fa-arrow-trend-up"></i> 諮詢轉換率 <b>+40%</b></span>
+      </div>
+      <div class="hero-cta">
+        <a href="https://msha.ke/hsiner" target="_blank" rel="noopener" class="btn solid"><i class="fa-solid fa-compass-drafting"></i> <span>預約 30 分鐘免費品牌診斷</span></a>
+        <a href="https://www.threads.com/@hsin.er" target="_blank" rel="noopener" class="btn ghost"><i class="fa-brands fa-threads"></i> <span>看我在想什麼</span></a>
+      </div>
+    </div>
+    <div class="hero-portrait">
+      <div class="frame" data-tilt>
+        <img src="/assets/img/guild/hsiner/hero-portrait.webp" alt="林欣兒 Liz Lin">
+        <span class="ptag">LIZ LIN · 林欣兒</span>
+        <span class="alt">ENFJ · LEO</span>
+      </div>
+      <div class="accent" id="heroAccent">
+        <img src="/assets/img/guild/hsiner/gallery/p9.webp" alt="Liz 在戶外現場">
+        <span class="ac-lab">同一個我 · 另一個現場</span>
+      </div>
+    </div>
+    <div class="scroll-cue">向雪道深處出發 <span class="ln"></span></div>
+  </header>
+
+  <!-- ===== 教練心法（真實極限照背景） ===== -->
+  <section class="chapter creed" id="creed">
+    <div class="creed-bg" id="creedBg" aria-hidden="true">
+      <img src="/assets/img/guild/hsiner/gallery/p4.webp" alt="" loading="lazy">
+    </div>
+    <div class="creed-inner">
+      <div class="kicker"><span class="ln"></span> <span class="idx">01</span> The Coach Mindset · 為什麼是我</div>
+      <div class="bigquote reveal">
+        <span class="mark">&ldquo;</span>
+        <q>在時速 <em>60 公里</em> 的雪道上，判斷錯誤只有 <em>0.5 秒</em> 的修正機會；在<span class="ice">瞬息萬變</span>的市場，亦然。</q>
+        <div class="by"><span class="ln"></span> Liz Lin · 滑雪教練 × 行銷工作室負責人</div>
+      </div>
+      <p class="lede reveal" style="margin-top:34px">
+        我畢業於<span class="ice">輔大織品行銷</span>，<strong>五年行銷實戰、三年全職接案</strong>。
+        很多人問我，滑雪教練、戶外嚮導、主持人，跟行銷工作室負責人，這幾個身分怎麼湊在一起？
+        對我來說，核心永遠只有一個——<strong>在變動中抓準方向，然後執行到底。</strong>
+        我不是坐在冷氣房裡發想創意的行銷人，我是帶著<span class="ice">極限運動基因</span>的執行者。
+      </p>
+      <div class="pillars">
+        <div class="pillar reveal">
+          <div class="pi"><i class="fa-solid fa-bolt"></i></div>
+          <h3>獅子座的執行力<small>Say it. Land it.</small></h3>
+          <p>我習慣在萬人音樂祭的高壓後台解決問題，也習慣在時裝週的秒級節奏下維持專業。行銷對我不是一份漂亮的結案 PPT，而是陪妳把每個案子<strong style="color:var(--gold-glow)">精準落地</strong>。說到做到，絕不模糊。</p>
+        </div>
+        <div class="pillar reveal">
+          <div class="pi"><i class="fa-solid fa-heart-pulse"></i></div>
+          <h3>ENFJ 的洞察力<small>I read your people.</small></h3>
+          <p>天生的共感者讓我懂得如何「服務」人。我把教練與學員之間的<strong style="color:var(--gold-glow)">信任模型</strong>，導入品牌與受眾的溝通；抓出妳品牌最動人的那一面，用有溫度的內容，把流量變成死忠的追隨者。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 招牌互動：雪道下降 ===== -->
+  <section class="descent" id="descent">
+    <div class="descent-pin">
+      <div class="descent-dest" id="descentDest" aria-hidden="true">
+        <img src="/assets/img/guild/hsiner/gallery/p11.webp" alt="" loading="lazy">
+      </div>
+      <div id="p5host" aria-hidden="true"></div>
+      <div class="descent-overlay">
+        <div class="descent-copy">
+          <div class="kicker"><span class="ln"></span> <span class="idx">02</span> The Descent · 雪道下降</div>
+          <h2>一趟下坡，<br>就是一場 <em>流量到變現</em> 的旅程</h2>
+          <div class="descent-stage">
+            <div class="stage" data-stage="0"><b>出發 · 流量。</b> 從雪頂蹬出第一步——先讓對的人看見妳。我用<span class="ice">短影音的流量密碼</span>，把陌生人帶到妳的雪道入口。</div>
+            <div class="stage" data-stage="1"><b>過彎 · 內容與互動。</b> 重心壓低、視線放遠。每一支內容都是一次過彎，把觀看轉成<span class="ice">真實的停留與互動</span>。</div>
+            <div class="stage" data-stage="2"><b>重心轉移 · 信任。</b> 佈局論壇聲量與口碑，讓品牌在每一個轉彎處都站得穩——這是<span class="ice">值得被選擇</span>的理由。</div>
+            <div class="stage" data-stage="3"><b>衝線 · 變現。</b> 速度全開，衝過終點。流量收斂成詢問、諮詢、訂單——一個能<b>穩定變現的商業閉環</b>。</div>
+          </div>
+        </div>
+        <div class="hud">
+          <div class="hud-note">儀表為雪道氛圍示意 · 非實際數據</div>
+          <div class="gauge">
+            <div class="glabel"><span>SPEED · 時速</span><i class="fa-solid fa-gauge-high"></i></div>
+            <div class="gval gold"><span id="hudSpeed">0</span><span class="u">km/h</span></div>
+          </div>
+          <div class="gauge">
+            <div class="glabel"><span>WINDOW · 修正視窗</span><i class="fa-solid fa-stopwatch"></i></div>
+            <div class="gval"><span id="hudWin">0.50</span><span class="u">s</span></div>
+          </div>
+          <div class="gauge">
+            <div class="glabel"><span>FUNNEL · 流量漏斗</span><i class="fa-solid fa-filter"></i></div>
+            <div class="funnel">
+              <div class="f" data-f="0"><span class="lab">流量</span><span class="bar"><i></i></span></div>
+              <div class="f" data-f="1"><span class="lab">互動</span><span class="bar"><i></i></span></div>
+              <div class="f" data-f="2"><span class="lab">信任</span><span class="bar"><i></i></span></div>
+              <div class="f" data-f="3"><span class="lab">變現</span><span class="bar"><i></i></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 痛點 ===== -->
+  <section class="chapter" id="pains">
+    <div class="kicker reveal"><span class="ln"></span> <span class="idx">03</span> Where it hurts · 直擊痛點</div>
+    <h2 class="reveal">妳的品牌，是否正卡在這些<br><em>「隱形內耗」</em>？</h2>
+    <p class="lede reveal">在數位紅利消失的時代，盲目投廣告只是在燒錢。如果妳正遇到以下狀況，代表妳需要的不是小編，而是一個<span class="ice">有策略的教練</span>。</p>
+    <div class="pains">
+      <div class="pain reveal">
+        <div class="n">RISK 01</div>
+        <div class="pi"><i class="fa-solid fa-cloud-bolt"></i></div>
+        <h3>策略迷航</h3>
+        <p>產品很好，定位卻模糊。像在暴風雪裡滑雪，看得到雪，卻看不清終點在哪。</p>
+      </div>
+      <div class="pain reveal">
+        <div class="n">RISK 02</div>
+        <div class="pi"><i class="fa-solid fa-link-slash"></i></div>
+        <h3>溝通斷層</h3>
+        <p>內容冰冷、話術感太重。受眾感受不到「真人」，自然也建立不了信任。</p>
+      </div>
+      <div class="pain reveal">
+        <div class="n">RISK 03</div>
+        <div class="pi"><i class="fa-solid fa-person-falling"></i></div>
+        <h3>執行癱瘓</h3>
+        <p>滿腦子創意卻無法落地，缺一個能統籌全局、帶團隊衝過終點線的執行者。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 服務 ===== -->
+  <section class="chapter" id="services">
+    <div class="kicker reveal"><span class="ln"></span> <span class="idx">04</span> What I do for you · 我能幫妳的事</div>
+    <h2 class="reveal">拒絕貴而不實的顧問報告，<br>我交付的是 <em>看得見的成果</em>。</h2>
+    <p class="lede reveal">在 Rebirth，我經手過從<span class="ice">時尚媒體、服飾、餐飲、健身到地方公部門</span>的多元專案，深知不同品牌的痛點。我善用 AI 工具協作，把產能提升到傳統模式的 <span class="ice">3 倍</span>，把最寶貴的時間，留給最重要的策略思考。以下是我陪妳走的三段雪道：</p>
+    <div class="services">
+      <div class="svc reveal">
+        <div class="mk">A</div>
+        <div class="body">
+          <h3><i class="fa-solid fa-gem"></i> 品牌心法與高端定位</h3>
+          <div class="core">CORE · 結合 C JEAN 臺北時裝週等級的細節控管</div>
+          <p>0 到 1 品牌孵化、市場深度調研、<span class="ice">VI 視覺調性</span>定義、受眾畫像 (Persona) 勾勒。把妳的品牌，放到市場上那個「不可取代」的位置。</p>
+        </div>
+        <div class="deliver"><span class="dl">Deliver</span>一份定義品牌不可取代位置的實戰手冊</div>
+      </div>
+      <div class="svc reveal">
+        <div class="mk">B</div>
+        <div class="body">
+          <h3><i class="fa-solid fa-clapperboard"></i> 高轉化內容 · 短影音一條龍</h3>
+          <div class="core">CORE · 掌握 58.7 萬觀看的流量密碼</div>
+          <p>社群趨勢觀測、腳本發想、專業拍攝、後期剪輯——一條龍。打造一台讓妳的品牌<span class="ice">24 小時都在獲客</span>的內容增長引擎。</p>
+        </div>
+        <div class="deliver"><span class="dl">Deliver</span>短影音 × 社群行事曆的內容增長引擎</div>
+      </div>
+      <div class="svc reveal">
+        <div class="mk">C</div>
+        <div class="body">
+          <h3><i class="fa-solid fa-people-arrows"></i> 全域增長陪跑 · 妳的外部行銷長</h3>
+          <div class="core">CORE · 120+ 人團隊管理 · 統籌 50+ 口碑寫手群</div>
+          <p>跨部門資源整合、精準 KPI 監控、Threads / Dcard / Google 論壇<span class="ice">聲量佈局</span>。我曾為<span class="ice">美業、餐飲與診所</span>品牌建立值得信賴的數位口碑——我負責控場，妳負責發光。</p>
+        </div>
+        <div class="deliver"><span class="dl">Deliver</span>數據月報 × 策略迭代的陪跑節奏</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 戰績 ===== -->
+  <section class="chapter results" id="results">
+    <div class="kicker reveal"><span class="ln"></span> <span class="idx">05</span> Let the numbers speak · 讓數字說話</div>
+    <h2 class="reveal">Rebirth 行銷工作室：<br>從 <span class="ice">0</span> 到 <em>1</em> 的增長實證</h2>
+    <div class="result-grid">
+      <div class="stat reveal">
+        <div class="num" data-to="58.7" data-dec="1">0<span class="u">萬</span></div>
+        <div class="cap">單支短影音觀看</div>
+        <div class="sub">平均月流量 20 萬次</div>
+      </div>
+      <div class="stat reveal">
+        <div class="num" data-to="5000" data-suffix="+">0</div>
+        <div class="cap">半年自然增粉</div>
+        <div class="sub">真實粉絲・非買量</div>
+      </div>
+      <div class="stat reveal">
+        <div class="num" data-to="75" data-prefix="+" data-suffix="%">0</div>
+        <div class="cap">品牌觸及率提升</div>
+        <div class="sub">內容 × 口碑佈局</div>
+      </div>
+      <div class="stat reveal">
+        <div class="num" data-to="40" data-prefix="+" data-suffix="%">0</div>
+        <div class="cap">諮詢詢問量成長</div>
+        <div class="sub">流量真正變成訂單</div>
+      </div>
+    </div>
+    <!-- 中段轉換出口：讀者在被數字說服的當下，立刻給一個行動點 -->
+    <div class="midcta reveal">
+      <div class="midcta-text">
+        <span class="mc-kick">READY TO DROP IN · 準備好下坡了嗎</span>
+        <p>這些數字，都是從「<em>願意開始</em>」的那一步滑出來的。</p>
+      </div>
+      <a href="https://msha.ke/hsiner" target="_blank" rel="noopener" class="btn solid"><i class="fa-solid fa-compass-drafting"></i> <span>預約 30 分鐘免費品牌診斷</span></a>
+    </div>
+  </section>
+
+  <!-- ===== 經歷：捲動釘版照片配對 ===== -->
+  <section class="chapter" id="experience">
+    <div class="kicker reveal"><span class="ln"></span> <span class="idx">06</span> Field-tested · 質感與實力的總和</div>
+    <h2 class="reveal">時尚的審美、戶外的意志、<br>活動的<em>控場力</em>——我全都在現場。</h2>
+    <p class="lede reveal" style="margin-bottom:8px">往下捲，右邊的畫面會跟著我的每一段現場一起切換——這些都不是示意圖，是我真的站過的位置。</p>
+    <div class="exp-layout">
+      <div class="timeline">
+        <div class="tl active" data-i="0">
+          <div class="role">Editorial · 質感與審美</div>
+          <h3>ELLE 外稿編輯</h3>
+          <p>在頂級時尚媒體的歷練，讓我學會用最細膩的文字拉近品牌與讀者的距離，建立難以取代的數位信任感。</p>
+        </div>
+        <div class="tl" data-i="1">
+          <div class="role">Runway · 高端策展力</div>
+          <h3>C JEAN 臺北時裝週 總場控</h3>
+          <p>在秒級計時的國際舞台對接頂級媒體與公關。我把這份嚴謹帶進妳的專案，守住品牌的高端格局。</p>
+        </div>
+        <div class="tl" data-i="2">
+          <div class="role">Mass event · 萬人執行力</div>
+          <h3>赤聲躁動音樂祭 後台經理</h3>
+          <p>領導 120 人團隊，確保 1.2 萬人的現場完美運作。我習慣在混亂中迅速決策，把危機化為轉機。</p>
+        </div>
+        <div class="tl gold" data-i="3">
+          <div class="role">Extreme · 極限意志力</div>
+          <h3>滑雪 / 風浪板教練</h3>
+          <p>極致的自律與壓力耐受，是我最核心的專業底氣。我習慣挑戰極限，並帶著學員（與品牌夥伴）一起衝過終點。</p>
+        </div>
+      </div>
+      <div class="exp-stage" data-tilt>
+        <div class="ph on" data-i="0"><img src="/assets/img/guild/hsiner/gallery/p2.webp" alt="籌備現場" loading="lazy"><span class="frameno">FRAME 01 / 04</span><span class="ph-tag">Behind the scenes<b>幕後・籌備現場</b></span></div>
+        <div class="ph" data-i="1"><img src="/assets/img/guild/hsiner/gallery/p7.webp" alt="C JEAN 臺北時裝週" loading="lazy"><span class="frameno">FRAME 02 / 04</span><span class="ph-tag">Taipei Fashion Week<b>C JEAN 臺北時裝週</b></span></div>
+        <div class="ph" data-i="2"><img src="/assets/img/guild/hsiner/gallery/p8.webp" alt="活動現場" loading="lazy"><span class="frameno">FRAME 03 / 04</span><span class="ph-tag">On site<b>活動現場・並肩</b></span></div>
+        <div class="ph" data-i="3"><img src="/assets/img/guild/hsiner/gallery/p10.webp" alt="山與湖" loading="lazy"><span class="frameno">FRAME 04 / 04</span><span class="ph-tag">Mountain &amp; lake<b>山與湖之間</b></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 沿途風景：橫向膠卷 ===== -->
+  <section class="run" id="run">
+    <div class="run-pin">
+      <div class="run-track" id="runTrack">
+        <div class="run-intro">
+          <div class="kicker"><span class="ln"></span> <span class="idx">07</span> Along the run · 沿途風景</div>
+          <h2>下坡的路上，<br>我<em>看過的風景</em>。</h2>
+          <p>同一個人，能在時裝週的秒級節奏、萬人音樂祭的後台、海面之下與破曉的稜線之間切換——這份從容，就是我帶進妳品牌的東西。<span style="color:var(--ice)">往右滑 →</span></p>
+        </div>
+        <div class="run-swipe" aria-hidden="true"><span>滑動瀏覽</span><i class="fa-solid fa-arrow-right-long"></i></div>
+        <div class="run-frame" data-tilt><img src="/assets/img/guild/hsiner/gallery/p9.webp" alt="拿起麥克風" loading="eager"><span class="no">01</span><span class="cap">Mic in hand<b>拿起麥克風</b></span></div>
+        <div class="run-frame" data-tilt><img src="/assets/img/guild/hsiner/gallery/p4.webp" alt="海面之下" loading="eager"><span class="no">02</span><span class="cap">Underwater<b>海面之下・閉氣</b></span></div>
+        <div class="run-frame wide" data-tilt><img src="/assets/img/guild/hsiner/gallery/p3.webp" alt="SurfAce 現場" loading="eager"><span class="no">03</span><span class="cap">SurfAce<b>親手佈置現場</b></span></div>
+        <div class="run-frame" data-tilt><img src="/assets/img/guild/hsiner/gallery/p6.webp" alt="選物現場" loading="eager"><span class="no">04</span><span class="cap">On site<b>選物・現場</b></span></div>
+        <div class="run-frame" data-tilt><img src="/assets/img/guild/hsiner/gallery/p11.webp" alt="破曉剪影" loading="eager"><span class="no">05</span><span class="cap">First light<b>破曉時分</b></span></div>
+        <div class="run-frame wide" data-tilt><img src="/assets/img/guild/hsiner/gallery/p10.webp" alt="山與湖" loading="eager"><span class="no">06</span><span class="cap">Mountain &amp; lake<b>山與湖之間</b></span></div>
+      </div>
+      <div class="run-progwrap" aria-hidden="true"><span>繼續捲動</span><span class="rt"><i id="runProg"></i></span><span class="ar">往右 →</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 服務品牌 marquee ===== -->
+  <section class="brands" id="brands">
+    <div class="lab">Trusted by · 我曾並肩作戰的品牌</div>
+    <div class="track" id="brandTrack">
+      <span class="b">ELLE</span><span class="b">C JEAN</span><span class="b">BIRKENSTOCK</span><span class="b">美圖秀秀</span><span class="b">台東縣政府</span><span class="b">赤聲躁動</span><span class="b">SurfAce</span>
+      <span class="b">ELLE</span><span class="b">C JEAN</span><span class="b">BIRKENSTOCK</span><span class="b">美圖秀秀</span><span class="b">台東縣政府</span><span class="b">赤聲躁動</span><span class="b">SurfAce</span>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="chapter" id="faq">
+    <div class="kicker reveal"><span class="ln"></span> <span class="idx">08</span> For the boss · 給老闆的定心丸</div>
+    <h2 class="reveal">在妳出發前，<br>先把這幾個彎 <em>看清楚</em>。</h2>
+    <div class="faq">
+      <details class="qa reveal" open>
+        <summary><span class="q">Q.</span> 妳同時有這麼多身分，會不會不夠專注？<span class="ar"><i class="fa-solid fa-plus"></i></span></summary>
+        <div class="ans">正因為我是教練，我比任何人都明白<strong>「目標導向」</strong>的重要。多棲身分讓我擁有比單一行銷人更廣的視角；而我善用 AI 協作，產能是傳統模式的 3 倍以上——專注的是「結果」，不是「忙碌」。</div>
+      </details>
+      <details class="qa reveal">
+        <summary><span class="q">Q.</span> 我們品牌規模不大，也適合找妳嗎？<span class="ar"><i class="fa-solid fa-plus"></i></span></summary>
+        <div class="ans">我最擅長的，就是在<strong>預算有限</strong>的情況下，用「教練式策略」精準切入，幫妳省下走冤枉路的成本。我協助過多個品牌從 0 到 1 快速起量——重點從來不是預算多大，而是方向對不對。</div>
+      </details>
+      <details class="qa reveal">
+        <summary><span class="q">Q.</span> 妳的服務跟一般社群小編有什麼不同？<span class="ar"><i class="fa-solid fa-plus"></i></span></summary>
+        <div class="ans">小編負責發文，我負責<strong>「增長」</strong>。我從市場端切入，整合短影音、活動與口碑，目標是幫妳建立一個能穩定變現的商業閉環——讓每一分投入，都朝終點線前進。</div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===== 終點 ===== -->
+  <section class="finish" id="finish">
+    <div class="flag reveal"><i class="fa-solid fa-flag-checkered"></i> THE FINISH LINE · 終點線</div>
+    <p class="big reveal">妳需要的，是一個會寫報告的顧問，<br>還是一個能陪妳 <em>衝過終點線</em> 的 <span class="gold">教練</span>？</p>
+    <div class="sign reveal">我是 Liz，讓我用獅子座的執行力，帶妳的品牌破浪前行。</div>
+    <p class="sub reveal">我在終點等妳。現在，就讓我們開始第一步。</p>
+    <div class="finish-cta reveal">
+      <a href="https://msha.ke/hsiner" target="_blank" rel="noopener" class="btn solid"><i class="fa-solid fa-flag-checkered"></i> <span>開始我們的第一步</span></a>
+      <a href="https://www.threads.com/@hsin.er" target="_blank" rel="noopener" class="btn ghost"><i class="fa-brands fa-threads"></i> <span>先來聊聊</span></a>
+    </div>
+    <div class="socials reveal">
+      <a href="https://www.threads.com/@hsin.er" target="_blank" rel="noopener" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+      <a href="https://msha.ke/hsiner" target="_blank" rel="noopener" aria-label="連結匯總"><i class="fa-solid fa-link"></i></a>
+    </div>
+    <footer class="foot">
+      <div>林欣兒 Liz Lin · 品牌陪跑顧問 / 行銷活動企劃 · Rebirth 行銷工作室</div>
+      <div class="made">Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon</div>
+    </footer>
+  </section>
+
+</main>
+
+<script>
+/* =====================================================================
+   林欣兒 Liz Lin · 互動腳本
+   ===================================================================== */
+const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isTouch = window.matchMedia('(hover:none)').matches;
+const GSAP_OK = typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined';
+if(!GSAP_OK){
+  // GSAP CDN 載入失敗：內容已由 CSS gate 全顯，跳過所有動畫初始化避免拋錯
+  document.querySelectorAll('.reveal').forEach(e=>{e.style.opacity='1';e.style.transform='none';});
+}
+if(GSAP_OK){
+gsap.registerPlugin(ScrollTrigger);
+
+/* ===== 自訂游標 ===== */
+(function(){
+  if(isTouch) return;
+  const dot=document.querySelector('.cursor'), ring=document.querySelector('.cursor-ring');
+  let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
+  (function loop(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop);})();
+  document.querySelectorAll('a,button,summary,.chip,.svc,.pain,.stat,.ph,.run-frame,.hero-portrait .frame').forEach(el=>{
+    el.addEventListener('mouseenter',()=>ring.classList.add('hot'));
+    el.addEventListener('mouseleave',()=>ring.classList.remove('hot'));
+  });
+})();
+
+/* ===== 磁吸按鈕 ===== */
+(function(){
+  if(isTouch) return;
+  document.querySelectorAll('.btn').forEach(btn=>{
+    btn.addEventListener('mousemove',e=>{
+      const r=btn.getBoundingClientRect();
+      gsap.to(btn,{x:(e.clientX-r.left-r.width/2)*0.3,y:(e.clientY-r.top-r.height/2)*0.5,duration:.4});
+    });
+    btn.addEventListener('mouseleave',()=>gsap.to(btn,{x:0,y:0,duration:.6,ease:'elastic.out(1,.45)'}));
+  });
+})();
+
+/* ===== 照片框 3D tilt ===== */
+(function(){
+  if(isTouch) return;
+  document.querySelectorAll('[data-tilt]').forEach(el=>{
+    el.addEventListener('mousemove',e=>{
+      const r=el.getBoundingClientRect();
+      const px=(e.clientX-r.left)/r.width-.5, py=(e.clientY-r.top)/r.height-.5;
+      gsap.to(el,{rotateY:px*9,rotateX:-py*9,duration:.4,transformPerspective:900,transformOrigin:'center'});
+    });
+    el.addEventListener('mouseleave',()=>gsap.to(el,{rotateY:0,rotateX:0,duration:.7,ease:'power2.out'}));
+  });
+})();
+
+/* ===== three.js 雪原背景 ===== */
+(function(){
+  if(typeof THREE==='undefined') return;
+  const canvas=document.getElementById('bg-three');
+  let renderer;
+  try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); }catch(e){ return; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+  const scene=new THREE.Scene();
+  const COLD=new THREE.Color(0x0a1421), DAWN=new THREE.Color(0x241a16);
+  scene.fog=new THREE.FogExp2(0x0a1421,0.05);
+  const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,100);
+  camera.position.set(0,0,14);
+
+  const ridges=[];
+  function makeRidge(width,height,segs,y,z,color,op){
+    const geo=new THREE.BufferGeometry();
+    const pts=[]; let prev=height*0.4;
+    for(let i=0;i<=segs;i++){
+      const x=-width/2+width*(i/segs);
+      prev+= (Math.random()-0.45)*height*0.5;
+      prev=Math.max(height*0.12,Math.min(height,prev));
+      pts.push(x, -height/2+prev, 0,  x, -height/2-2, 0);
+    }
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+    const idx=[];
+    for(let i=0;i<segs;i++){const a=i*2;idx.push(a,a+1,a+2, a+1,a+3,a+2);}
+    geo.setIndex(idx);
+    const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:op});
+    const m=new THREE.Mesh(geo,mat); m.position.set(0,y,z); scene.add(m);
+    return m;
+  }
+  ridges.push(makeRidge(60,16,22,-7,-18,0x16344a,0.7));
+  ridges.push(makeRidge(70,20,18,-9,-26,0x0f2435,0.8));
+  ridges.push(makeRidge(90,26,14,-12,-36,0x0a1a28,0.9));
+
+  const SNOW=RM?260:900;
+  const sgeo=new THREE.BufferGeometry();
+  const spos=new Float32Array(SNOW*3), sspd=new Float32Array(SNOW);
+  for(let i=0;i<SNOW;i++){
+    spos[i*3]=(Math.random()-0.5)*60;
+    spos[i*3+1]=(Math.random()-0.5)*50;
+    spos[i*3+2]=(Math.random()-0.5)*30-2;
+    sspd[i]=0.02+Math.random()*0.06;
+  }
+  sgeo.setAttribute('position',new THREE.BufferAttribute(spos,3));
+  // 圓形柔邊雪花貼圖（取代預設方塊點）
+  const flakeTex=(function(){
+    const c=document.createElement('canvas'); c.width=c.height=64;
+    const g=c.getContext('2d');
+    const grd=g.createRadialGradient(32,32,0,32,32,32);
+    grd.addColorStop(0,'rgba(255,255,255,1)');
+    grd.addColorStop(0.35,'rgba(205,235,255,0.85)');
+    grd.addColorStop(1,'rgba(205,235,255,0)');
+    g.fillStyle=grd; g.beginPath(); g.arc(32,32,32,0,Math.PI*2); g.fill();
+    return new THREE.CanvasTexture(c);
+  })();
+  const smat=new THREE.PointsMaterial({color:0xcdebff,size:0.17,map:flakeTex,transparent:true,opacity:0.9,
+    blending:THREE.AdditiveBlending,depthWrite:false});
+  const snow=new THREE.Points(sgeo,smat); scene.add(snow);
+
+  let prog=0, mxr=0, myr=0, gust=0;
+  addEventListener('mousemove',e=>{mxr=(e.clientX/innerWidth-0.5);myr=(e.clientY/innerHeight-0.5);});
+  // 捲動速度 → 雪暴：捲越快雪下越急、被風吹斜
+  ScrollTrigger.create({start:0,end:'max',onUpdate:s=>{prog=s.progress;gust=Math.min(1,Math.abs(s.getVelocity())/2600);}});
+
+  function tick(){
+    const p=snow.geometry.attributes.position.array;
+    const fall=(1+prog*1.6+gust*4.5)*(RM?0:1);
+    for(let i=0;i<SNOW;i++){
+      p[i*3+1]-=sspd[i]*fall;
+      p[i*3]+=Math.sin((p[i*3+1]+i)*0.1)*0.006 - gust*0.06;
+      if(p[i*3+1]<-25){p[i*3+1]=25;p[i*3]=(Math.random()-0.5)*60;}
+    }
+    snow.geometry.attributes.position.needsUpdate=true;
+    smat.size=0.17+gust*0.10;
+    gust*=0.93;
+    const c=COLD.clone().lerp(DAWN,prog*0.9);
+    scene.fog.color.copy(c);
+    ridges.forEach((r,i)=>{ r.position.x = mxr*(2+i*1.6)*-1; r.position.y = (-7-i*2) + prog*(2+i*2); });
+    camera.position.x += (mxr*2 - camera.position.x)*0.05;
+    camera.position.y += (-myr*1.4 - camera.position.y)*0.05;
+    camera.lookAt(0,prog*-2,0);
+    renderer.render(scene,camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+  addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+})();
+
+/* ===== HERO 進場 ===== */
+(function(){
+  const title=document.getElementById('heroTitle');
+  const chars=[...title.textContent];
+  title.innerHTML=chars.map(c=>`<span class="ch">${c}</span>`).join('');
+  const tl=gsap.timeline({delay:.2});
+  tl.to('.hero .eyebrow',{opacity:1,duration:.8,ease:'power2.out'})
+    .to('.hero h1 .ch',{opacity:1,y:0,filter:'blur(0px)',duration:.9,stagger:.09,ease:'power3.out'},'-=.3')
+    .to('.hero .latin',{opacity:1,duration:.7},'-=.4')
+    .to('.hero .tagline',{opacity:1,duration:.8},'-=.4')
+    .to('.hero .subline',{opacity:1,duration:.7},'-=.45')
+    .to('.chips',{opacity:1,duration:.7},'-=.4')
+    .to('.hero-cta',{opacity:1,duration:.7},'-=.4')
+    .to('.hero-portrait',{opacity:1,duration:1,ease:'power2.out'},'-=1')
+    .to('.scroll-cue',{opacity:1,duration:.7},'-=.3');
+  if(!RM){
+    gsap.to('.hero-portrait .frame',{yPercent:-8,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+    gsap.to('#heroAccent',{yPercent:18,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+    gsap.to('#heroAccent',{y:-10,duration:3,ease:'sine.inOut',yoyo:true,repeat:-1});
+  }
+})();
+
+/* ===== 通用 reveal ===== */
+gsap.utils.toArray('.reveal').forEach(el=>{
+  gsap.to(el,{opacity:1,y:0,duration:.9,ease:'power3.out',
+    scrollTrigger:{trigger:el,start:'top 86%',once:true}});
+});
+
+/* ===== 信條：真實照背景 clip 揭幕 + 視差 ===== */
+(function(){
+  const bg=document.getElementById('creedBg'); if(!bg) return;
+  gsap.to(bg,{clipPath:'inset(0 0 0% 0)',ease:'none',
+    scrollTrigger:{trigger:'#creed',start:'top 85%',end:'top 30%',scrub:true}});
+  if(!RM){
+    gsap.fromTo(bg.querySelector('img'),{yPercent:-8},{yPercent:8,ease:'none',
+      scrollTrigger:{trigger:'#creed',start:'top bottom',end:'bottom top',scrub:true}});
+  }
+})();
+
+/* ===== 海拔軌 + 方位 ===== */
+(function(){
+  const fill=document.getElementById('altFill'),altNum=document.getElementById('altNum'),bearing=document.getElementById('bearing');
+  const dirs=['N','NE','E','SE','S','SW','W','NW'];
+  ScrollTrigger.create({start:0,end:'max',onUpdate:s=>{
+    const p=s.progress;
+    fill.style.height=(p*100).toFixed(1)+'%';
+    altNum.textContent=Math.round(2480-(2480-180)*p).toLocaleString();
+    bearing.textContent=dirs[Math.min(7,Math.floor(p*8))];
+  }});
+})();
+
+/* ===== 數字計數 ===== */
+gsap.utils.toArray('.num').forEach(el=>{
+  const to=parseFloat(el.dataset.to), dec=parseInt(el.dataset.dec||'0'),
+        suf=el.dataset.suffix||'', pre=el.dataset.prefix||'';
+  const unit=el.querySelector('.u')?el.querySelector('.u').outerHTML:'';
+  const o={v:0};
+  ScrollTrigger.create({trigger:el,start:'top 88%',once:true,onEnter:()=>{
+    const card=el.closest('.stat'); if(card) card.classList.add('lit');
+    gsap.to(o,{v:to,duration:1.8,ease:'power2.out',onUpdate:()=>{
+      let n = dec>0 ? o.v.toFixed(dec) : Math.round(o.v).toLocaleString();
+      el.innerHTML = pre + n + suf + unit;
+    }});
+  }});
+});
+
+/* ===== 招牌互動：p5 雪道下降（含真實破曉目的地淡入） ===== */
+window.__descent=0;
+(function(){
+  const host=document.getElementById('p5host');
+  if(!host || typeof p5==='undefined') return;
+  const stages=document.querySelectorAll('.stage');
+  const funnel=document.querySelectorAll('.funnel .f');
+  const hudSpeed=document.getElementById('hudSpeed'), hudWin=document.getElementById('hudWin');
+  const dest=document.getElementById('descentDest');
+  const destImg=dest?dest.querySelector('img'):null;
+
+  if(!RM){
+    ScrollTrigger.create({
+      trigger:'#descent', start:'top top', end:'+=300%', pin:'.descent-pin', scrub:1,
+      onUpdate:self=>{
+        const p=self.progress; window.__descent=p;
+        const si=Math.min(3,Math.floor(p*4));
+        stages.forEach((s,i)=>s.classList.toggle('on',i===si));
+        hudSpeed.textContent=Math.round(p*60);
+        hudWin.textContent=(0.5).toFixed(2);
+        funnel.forEach((f,i)=>{
+          const seg=(p-i*0.25)/0.25;
+          const w=Math.max(0,Math.min(1,seg));
+          f.querySelector('i').style.width=(w*100)+'%';
+          f.classList.toggle('lit',w>0.05);
+        });
+        // 接近終點（破曉）→ 真實山景目的地淡入
+        if(dest){
+          const d=Math.max(0,Math.min(1,(p-0.55)/0.4));
+          dest.style.opacity=(d*0.85).toFixed(3);
+          if(destImg) destImg.style.transform='scale('+(1.1-d*0.08).toFixed(3)+')';
+        }
+      }
+    });
+    stages[0].classList.add('on');
+    // 離開視窗時暫停 p5，回到視窗恢復（省電/避免掉幀）
+    ScrollTrigger.create({trigger:'#descent',start:'top bottom',end:'bottom top',
+      onToggle:self=>{ if(window.__p5d){ self.isActive?window.__p5d.loop():window.__p5d.noLoop(); } }});
+  } else {
+    // reduced-motion：不 pin，四段文字與漏斗靜態全顯、終點圖淡入
+    const pin=document.querySelector('.descent-pin');
+    if(pin){ pin.style.height='auto'; pin.style.minHeight='auto'; pin.style.padding='90px 0'; }
+    stages.forEach(s=>{ s.style.display='block'; s.style.marginBottom='14px'; });
+    funnel.forEach(f=>{ f.classList.add('lit'); f.querySelector('i').style.width='100%'; });
+    if(dest) dest.style.opacity='0.45';
+    if(hudSpeed) hudSpeed.textContent='60';
+  }
+
+  const sketch=(p)=>{
+    let W,H,route=[],flakes=[];
+    function build(){
+      W=host.clientWidth; H=host.clientHeight; route=[];
+      const N=240, cx=W*0.5, amp=Math.min(W*0.30,260);
+      for(let i=0;i<=N;i++){
+        const t=i/N;
+        const y=H*(0.08+0.86*t);
+        const x=cx+Math.sin(t*Math.PI*3.0)*amp*(1-0.18*t);
+        route.push({x,y});
+      }
+      flakes=[];
+      const F = W<700?40:90;
+      for(let i=0;i<F;i++) flakes.push({x:p.random(W),y:p.random(H),s:p.random(0.4,1.6),v:p.random(0.3,1.1)});
+    }
+    p.setup=()=>{ const c=p.createCanvas(host.clientWidth,host.clientHeight); c.parent(host); build(); p.frameRate(RM?30:60); };
+    p.windowResized=()=>{ p.resizeCanvas(host.clientWidth,host.clientHeight); build(); };
+    p.draw=()=>{
+      p.clear();
+      const prog=window.__descent;
+      p.noStroke();
+      for(let i=0;i<3;i++){
+        p.fill(127,200,238, 6-i*1.5);
+        p.quad(0,H*(0.2+i*0.08), W,H*(0.0+i*0.05), W,H*(0.5+i*0.06), 0,H*(0.72+i*0.05));
+      }
+      for(const f of flakes){
+        f.y+=f.v*(1+prog); f.x+=Math.sin(f.y*0.02)*0.3;
+        if(f.y>H){f.y=-5;f.x=p.random(W);}
+        p.fill(205,235,255, 90*f.s); p.circle(f.x,f.y,f.s*2.2);
+      }
+      const head=Math.floor(route.length*prog);
+      p.noFill();
+      for(let pass=0;pass<2;pass++){
+        p.beginShape();
+        const col = pass===0 ? [127,200,238] : [255,217,138];
+        p.stroke(col[0],col[1],col[2], pass===0?60:200);
+        p.strokeWeight(pass===0?14:3);
+        for(let i=0;i<=head;i++){ const r=route[i]; if(r) p.vertex(r.x,r.y); }
+        p.endShape();
+      }
+      if(route[head]){
+        const r=route[head];
+        for(let i=0;i<6;i++){
+          const a=p.random(Math.PI*0.6,Math.PI*1.4);
+          p.fill(238,244,250, p.random(40,120));
+          p.circle(r.x+Math.cos(a)*p.random(4,22), r.y+Math.sin(a)*p.random(2,10), p.random(1.5,4));
+        }
+        p.noStroke(); p.fill(255,217,138);
+        p.circle(r.x,r.y,11);
+        p.fill(255,125,64,180); p.circle(r.x,r.y,5);
+      }
+      const fin=route[route.length-1];
+      if(fin){
+        p.stroke(246,179,65,prog>0.9?255:120); p.strokeWeight(2);
+        p.line(fin.x,fin.y,fin.x,fin.y-26);
+        p.noStroke(); p.fill(246,179,65,prog>0.9?255:90);
+        p.triangle(fin.x,fin.y-26,fin.x,fin.y-14,fin.x+16,fin.y-20);
+      }
+    };
+  };
+  if(!RM){ window.__p5d=new p5(sketch); }
+})();
+
+/* ===== 經歷：捲動釘版照片配對 ===== */
+(function(){
+  const tls=document.querySelectorAll('#experience .tl');
+  const phs=document.querySelectorAll('#experience .exp-stage .ph');
+  if(!tls.length || !phs.length) return;
+  function setActive(i){
+    phs.forEach((p,k)=>p.classList.toggle('on',k===i));
+    tls.forEach((t,k)=>t.classList.toggle('active',k===i));
+  }
+  tls.forEach((tl,i)=>{
+    ScrollTrigger.create({trigger:tl,start:'top center',end:'bottom center',
+      onEnter:()=>setActive(i),onEnterBack:()=>setActive(i)});
+  });
+})();
+
+/* ===== 沿途風景：橫向膠卷 pin + scrub ===== */
+(function(){
+  const track=document.getElementById('runTrack');
+  if(!track) return;
+  if(isTouch){ return; } // 手機改用原生橫向捲動（CSS overflow-x:auto）
+  if(RM){ // reduced-motion：不 pin，改為自然換行直向閱讀
+    const pin=document.querySelector('.run-pin');
+    if(pin){ pin.style.height='auto'; pin.style.overflow='visible'; }
+    track.style.flexWrap='wrap'; track.style.justifyContent='center'; track.style.rowGap='14px';
+    return;
+  }
+  const move=()=> Math.max(0, track.scrollWidth - innerWidth + 60);
+  gsap.to(track,{ x:()=> -move(), ease:'none',
+    scrollTrigger:{ trigger:'#run', start:'top top', end:()=> '+=' + move(),
+      pin:'.run-pin', scrub:1, invalidateOnRefresh:true,
+      onUpdate:self=>{ const pr=document.getElementById('runProg'); if(pr) pr.style.width=(self.progress*100).toFixed(1)+'%'; } }});
+})();
+
+/* ===== 招牌：游標雪痕 carve trail ===== */
+(function(){
+  if(isTouch||RM) return;
+  const cv=document.getElementById('carve'); if(!cv) return;
+  const cx=cv.getContext('2d'); let W,H;
+  function size(){ W=cv.width=innerWidth; H=cv.height=innerHeight; }
+  size(); addEventListener('resize',size);
+  const pts=[], spray=[]; let lx=null,ly=null;
+  addEventListener('mousemove',e=>{
+    const x=e.clientX,y=e.clientY;
+    pts.push({x,y});
+    if(pts.length>42) pts.shift();
+    if(lx!=null){
+      const d=Math.hypot(x-lx,y-ly), n=Math.min(5,Math.floor(d/7));
+      for(let i=0;i<n;i++) spray.push({x:x+(Math.random()-.5)*10,y:y+(Math.random()-.5)*10,
+        vx:(Math.random()-.5)*1.5,vy:(Math.random()-.5)*1.4-0.4,life:1,r:Math.random()*2+0.6});
+    }
+    lx=x;ly=y;
+  });
+  (function draw(){
+    cx.clearRect(0,0,W,H);
+    cx.lineCap='round'; cx.lineJoin='round';
+    for(let i=1;i<pts.length;i++){
+      const a=i/pts.length, p0=pts[i-1], p1=pts[i];
+      cx.beginPath(); cx.moveTo(p0.x,p0.y); cx.lineTo(p1.x,p1.y);
+      cx.strokeStyle='rgba(127,200,238,'+(0.20*a)+')'; cx.lineWidth=15*a; cx.stroke();
+      cx.strokeStyle='rgba(255,217,138,'+(0.6*a)+')'; cx.lineWidth=2.4*a; cx.stroke();
+    }
+    for(let i=spray.length-1;i>=0;i--){
+      const s=spray[i]; s.x+=s.vx; s.y+=s.vy; s.vy+=0.05; s.life-=0.03;
+      if(s.life<=0){ spray.splice(i,1); continue; }
+      cx.beginPath(); cx.fillStyle='rgba(205,235,255,'+(s.life*0.7)+')';
+      cx.arc(s.x,s.y,s.r,0,7); cx.fill();
+    }
+    requestAnimationFrame(draw);
+  })();
+  // 靜止時讓雪痕慢慢縮短消失
+  setInterval(()=>{ if(pts.length) pts.shift(); }, 45);
+})();
+
+/* ===== 滑雪場路線圖導覽 ===== */
+(function(){
+  const items=[...document.querySelectorAll('.pm')]; if(!items.length) return;
+  function setOn(k){ items.forEach((x,i)=>x.classList.toggle('on',i===k)); }
+  items.forEach((it)=>it.addEventListener('click',(e)=>{
+    const t=document.getElementById(it.dataset.go);
+    if(t){ e.preventDefault(); t.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'}); }
+  }));
+  items.forEach((it,k)=>{
+    const el=document.getElementById(it.dataset.go); if(!el) return;
+    ScrollTrigger.create({trigger:el,start:'top 55%',end:'bottom 45%',
+      onEnter:()=>setOn(k),onEnterBack:()=>setOn(k)});
+  });
+})();
+
+/* ===== Hero 名字 edge-carve（游標靠近刻起＋泛金） ===== */
+(function(){
+  if(isTouch||RM) return;
+  const h1=document.getElementById('heroTitle'); if(!h1) return;
+  h1.addEventListener('mousemove',e=>{
+    h1.querySelectorAll('.ch').forEach(ch=>{
+      const r=ch.getBoundingClientRect();
+      const d=Math.hypot(e.clientX-(r.left+r.width/2), e.clientY-(r.top+r.height/2));
+      const f=Math.max(0,1-d/150);
+      gsap.to(ch,{y:-16*f,color:f>0.4?'#ffd98a':'#eef4fa',duration:.35,overwrite:'auto'});
+    });
+  });
+  h1.addEventListener('mouseleave',()=>gsap.to(h1.querySelectorAll('.ch'),{y:0,color:'#eef4fa',duration:.55}));
+})();
+
+/* ===== 字體載入後重算 ===== */
+function refreshST(){ ScrollTrigger.refresh(); }
+addEventListener('load',refreshST);
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(refreshST);}
+setTimeout(refreshST,1200); setTimeout(refreshST,2800); setTimeout(refreshST,4200);
+
+} /* end if(GSAP_OK) */
+</script>
+</body>
+</html>
