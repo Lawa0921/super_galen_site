@@ -41,6 +41,10 @@ playwright-report/
 test-results/
 playwright/.cache/
 
+# 工具暫存（MCP 瀏覽器快照/截圖、開發臨時檔）—— 不入庫，避免垃圾堆積
+.playwright-mcp/
+tmp/
+
 # 效能測試報告和本地部署記錄
 localhost_*.json
 localhost-*.json
