@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yew · 聲音的初芽 | 混音 · Loop BGM · Vtuber 音效設計</title>
+<meta name="description" content="嗨，我是 Yew。一名爆肝藝術大學生，也是自由接案的聲音設計師。我做 Cover 曲混音、Loop BGM、Vtuber 專用音效 SE 套組、人聲後製與動畫配樂。比起把聲音處理得完美，我更在意——讓聲音活出個性。中英雙語。">
+
+<!-- Fonts: Fredoka(rounded display) · Zen Maru Gothic(rounded CJK) · Noto Sans TC(body) · Caveat(hand) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@400;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- three.js (module) -->
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<style>
+:root{
+  /* ── Palette: 暖色極繁主義 · 杏色／米杏為主，萌芽綠為唯一「活著」的點綴 ── */
+  --cream:#FBF3E7;      /* 米杏 page base */
+  --cream-2:#F6E8D3;    /* deeper cream */
+  --peach:#F3D9B8;      /* soft peach */
+  --apricot:#E8B98A;    /* 杏色 main */
+  --apricot-d:#D99B63;  /* deeper apricot */
+  --blush:#E7B7A0;      /* warm blush */
+  --sprout:#8FB552;     /* 萌芽 green — the single living accent */
+  --sprout-d:#6E9A3E;
+  --sprout-l:#B7D585;
+  --gold:#C98A3C;       /* warm gold highlight */
+  --ink:#4A3826;        /* warm dark brown text (not black) */
+  --ink-soft:#8A715A;   /* secondary */
+  --ink-faint:#B49B82;
+  --paper:#FFFBF4;      /* warm card */
+  --line:rgba(74,56,38,.13);
+  --line-2:rgba(74,56,38,.07);
+  --shadow:0 30px 70px -42px rgba(120,82,40,.55);
+  --shadow-sm:0 16px 36px -26px rgba(120,82,40,.5);
+  --shadow-card:0 22px 50px -34px rgba(150,100,50,.5);
+
+  --f-disp:"Fredoka","Zen Maru Gothic","Noto Sans TC",sans-serif;
+  --f-round:"Zen Maru Gothic","Noto Sans TC",sans-serif;
+  --f-body:"Noto Sans TC","Zen Maru Gothic",system-ui,sans-serif;
+  --f-hand:"Caveat",cursive;
+
+  --gut:clamp(22px,5.2vw,90px);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{
+  font-family:var(--f-body);
+  background:var(--cream);
+  color:var(--ink);
+  line-height:1.85;
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--sprout);color:#fff}
+
+/* warm paper-grain over everything */
+body::before{
+  content:"";position:fixed;inset:0;z-index:1;pointer-events:none;mix-blend-mode:multiply;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ───────── Language toggle (中/EN) ───────── */
+.lang-toggle{
+  position:fixed;top:18px;right:18px;z-index:90;display:flex;gap:2px;
+  background:rgba(255,251,244,.82);backdrop-filter:blur(10px);
+  border:1px solid var(--line);border-radius:999px;padding:4px;box-shadow:var(--shadow-sm);
+}
+.lang-toggle button{
+  font-family:var(--f-disp);font-size:12.5px;font-weight:600;letter-spacing:.04em;
+  border:0;background:transparent;color:var(--ink-soft);cursor:pointer;
+  padding:6px 13px;border-radius:999px;transition:.35s;
+}
+.lang-toggle button.on{background:var(--ink);color:var(--cream)}
+
+/* ───────── Preloader ───────── */
+#pre{position:fixed;inset:0;z-index:200;background:var(--cream);display:grid;place-items:center;transition:opacity .8s ease,visibility .8s}
+#pre.gone{opacity:0;visibility:hidden}
+.pre-wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
+.pre-seed{width:64px;height:64px;position:relative}
+.pre-seed svg{width:100%;height:100%;overflow:visible}
+.pre-txt{font-family:var(--f-hand);font-size:23px;color:var(--apricot-d);letter-spacing:.02em}
+
+/* ───────── Layout helpers ───────── */
+.wrap{max-width:1200px;margin:0 auto;padding-inline:var(--gut)}
+section{position:relative;z-index:2}
+.eyebrow{
+  font-family:var(--f-disp);font-weight:600;font-size:12px;letter-spacing:.42em;
+  text-transform:uppercase;color:var(--apricot-d);display:inline-flex;align-items:center;gap:11px;
+}
+.eyebrow::before{content:"";width:30px;height:2px;background:var(--apricot-d);border-radius:2px}
+
+/* ───────── HERO ───────── */
+.hero{min-height:100svh;display:flex;align-items:center;position:relative;overflow:hidden;padding:96px 0 70px}
+#hero-canvas{position:absolute;inset:0;z-index:0;opacity:.92}
+.hero-bg-img{
+  position:absolute;inset:0;z-index:0;
+  background:url(/assets/img/guild/yewsound/sprout_bg.webp) center/cover no-repeat;
+  opacity:.42;mask-image:linear-gradient(180deg,transparent,#000 38%,#000 78%,transparent);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 38%,#000 78%,transparent);
+}
+.hero::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 90% at 18% 30%,transparent 35%,var(--cream) 88%)}
+.hero .wrap{position:relative;z-index:2;display:grid;grid-template-columns:1.35fr .9fr;gap:clamp(30px,5vw,70px);align-items:center;width:100%}
+
+.hero-eye{margin-bottom:26px}
+.hero h1{
+  font-family:var(--f-disp);font-weight:700;line-height:.92;letter-spacing:-.01em;
+  font-size:clamp(74px,15vw,188px);color:var(--ink);position:relative;
+}
+.hero h1 .stack{display:inline-flex;flex-direction:column;gap:5px;vertical-align:middle;margin-left:14px;transform:translateY(-6px)}
+.hero h1 .stack i{display:block;width:clamp(34px,7vw,74px);height:clamp(8px,1.5vw,15px);border-radius:999px}
+.hero h1 .stack i:nth-child(1){background:var(--apricot)}
+.hero h1 .stack i:nth-child(2){background:var(--apricot-d);width:clamp(28px,6vw,62px)}
+.hero h1 .stack i:nth-child(3){background:var(--sprout);width:clamp(22px,5vw,50px)}
+.hero-tag{
+  font-family:var(--f-round);font-weight:700;font-size:clamp(22px,3.4vw,38px);
+  color:var(--ink);margin-top:22px;line-height:1.5;letter-spacing:.01em;
+}
+.hero-tag b{color:var(--sprout-d);position:relative;white-space:nowrap}
+.hero-tag b::after{content:"";position:absolute;left:0;right:0;bottom:.06em;height:.34em;background:var(--sprout-l);opacity:.5;border-radius:4px;z-index:-1}
+.hero-sub{margin-top:24px;font-size:15.5px;color:var(--ink-soft);max-width:46ch;line-height:1.9}
+.hero-roles{display:flex;flex-wrap:wrap;gap:9px;margin-top:26px}
+.chip{
+  font-family:var(--f-disp);font-weight:500;font-size:12.5px;letter-spacing:.03em;
+  padding:7px 15px;border-radius:999px;background:var(--paper);border:1px solid var(--line);color:var(--ink-soft);
+  display:inline-flex;align-items:center;gap:7px;box-shadow:var(--shadow-sm);
+}
+.chip i{color:var(--apricot-d);font-size:11px}
+
+.hero-portrait{position:relative;justify-self:center}
+.portrait-ring{position:relative;width:clamp(220px,30vw,330px);aspect-ratio:1;border-radius:50%}
+.portrait-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%;border:6px solid var(--paper);box-shadow:var(--shadow);position:relative;z-index:2}
+.portrait-ring .halo{position:absolute;inset:-10%;border-radius:50%;background:conic-gradient(from 0deg,var(--apricot),var(--peach),var(--sprout-l),var(--blush),var(--apricot));filter:blur(14px);opacity:.55;z-index:0;animation:spin 18s linear infinite}
+.portrait-ring .orbit{position:absolute;inset:-7%;border-radius:50%;border:1.5px dashed var(--apricot);opacity:.45;z-index:1;animation:spin 26s linear infinite reverse}
+.portrait-name{margin-top:18px;text-align:center;font-family:var(--f-hand);font-size:25px;color:var(--apricot-d)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.scrollcue{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--ink-faint);font-family:var(--f-disp);font-size:10.5px;letter-spacing:.3em}
+.scrollcue i{animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+/* ───────── SIGNATURE: 聲波萌芽 (pinned scrub) ───────── */
+.sig{position:relative;background:linear-gradient(180deg,var(--cream),var(--cream-2) 50%,var(--cream))}
+.sig-pin{height:100svh;position:relative;overflow:hidden;display:grid;place-items:center}
+#sig-canvas{position:absolute;inset:0;z-index:0}
+.sig-overlay{position:relative;z-index:2;text-align:center;pointer-events:none;padding:0 24px}
+.sig-step-eye{font-family:var(--f-disp);font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--apricot-d)}
+.sig-step{font-family:var(--f-round);font-weight:900;font-size:clamp(32px,6.5vw,76px);color:var(--ink);line-height:1.12;margin-top:12px;min-height:1.2em}
+.sig-step small{display:block;font-family:var(--f-hand);font-weight:600;font-size:clamp(18px,2.4vw,26px);color:var(--sprout-d);margin-top:8px}
+.sig-listen{
+  pointer-events:auto;margin-top:30px;display:inline-flex;align-items:center;gap:11px;
+  font-family:var(--f-disp);font-weight:600;font-size:14px;letter-spacing:.02em;
+  padding:13px 26px;border-radius:999px;border:1.5px solid var(--ink);background:var(--ink);color:var(--cream);
+  cursor:pointer;transition:.3s;box-shadow:var(--shadow-sm);
+}
+.sig-listen:hover{background:var(--sprout-d);border-color:var(--sprout-d);transform:translateY(-2px)}
+.sig-listen.live{background:var(--sprout-d);border-color:var(--sprout-d)}
+.sig-listen i{font-size:13px}
+.sig-prog{position:absolute;left:var(--gut);bottom:30px;z-index:2;font-family:var(--f-disp);font-size:11px;letter-spacing:.25em;color:var(--ink-faint)}
+
+/* ───────── generic section heading ───────── */
+.head{max-width:760px;margin-bottom:clamp(34px,5vw,60px)}
+.head h2{font-family:var(--f-round);font-weight:900;font-size:clamp(32px,5.6vw,60px);line-height:1.12;letter-spacing:.005em;margin-top:18px;color:var(--ink)}
+.head p{margin-top:18px;color:var(--ink-soft);font-size:16px;line-height:1.95}
+
+/* ───────── PHILOSOPHY ───────── */
+.philo{padding:clamp(80px,12vw,150px) 0;position:relative}
+.philo-card{
+  background:var(--paper);border:1px solid var(--line);border-radius:32px;
+  padding:clamp(38px,6vw,76px);box-shadow:var(--shadow-card);position:relative;overflow:hidden;
+}
+.philo-card::before{content:"";position:absolute;top:-40px;right:-40px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle,var(--peach),transparent 70%);opacity:.5;pointer-events:none}
+.quote-mark{font-family:var(--f-disp);font-size:120px;line-height:.6;color:var(--apricot);opacity:.55;height:60px}
+.philo-q{font-family:var(--f-round);font-weight:700;font-size:clamp(25px,4.1vw,46px);line-height:1.5;color:var(--ink);position:relative;z-index:2;letter-spacing:.01em}
+.philo-q b{color:var(--sprout-d)}
+.philo-body{margin-top:34px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,4vw,54px);position:relative;z-index:2}
+.philo-body p{color:var(--ink-soft);font-size:15.5px;line-height:2.05}
+.philo-body p+p{margin-top:0}
+.philo-sign{margin-top:30px;font-family:var(--f-hand);font-size:30px;color:var(--apricot-d)}
+
+/* ───────── SERVICES ───────── */
+.svc{padding:clamp(70px,10vw,130px) 0;background:linear-gradient(180deg,var(--cream),var(--cream-2))}
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:20px}
+.svc-card{
+  position:relative;background:var(--paper);border:1px solid var(--line);border-radius:26px;
+  padding:32px 30px 34px;overflow:hidden;box-shadow:var(--shadow-card);
+  transition:box-shadow .45s;will-change:transform;transform-style:preserve-3d;
+}
+.svc-card:hover{box-shadow:var(--shadow)}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){.svc-card{transition:box-shadow .45s}}
+@media(prefers-reduced-motion:reduce){.svc-card:hover{transform:translateY(-6px)}}
+.svc-card .wave{position:absolute;left:0;right:0;bottom:0;height:74px;opacity:.16;pointer-events:none;transition:opacity .4s}
+.svc-card:hover .wave{opacity:.34}
+.svc-num{font-family:var(--f-disp);font-weight:600;font-size:12px;letter-spacing:.2em;color:var(--ink-faint)}
+.svc-ic{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;margin:16px 0 18px;font-size:24px;color:#fff;box-shadow:var(--shadow-sm)}
+.svc-card:nth-child(1) .svc-ic{background:linear-gradient(135deg,var(--apricot),var(--apricot-d))}
+.svc-card:nth-child(2) .svc-ic{background:linear-gradient(135deg,var(--blush),var(--apricot-d))}
+.svc-card:nth-child(3) .svc-ic{background:linear-gradient(135deg,var(--sprout),var(--sprout-d))}
+.svc-card:nth-child(4) .svc-ic{background:linear-gradient(135deg,var(--peach),var(--apricot))}
+.svc-card:nth-child(5) .svc-ic{background:linear-gradient(135deg,var(--gold),var(--apricot-d))}
+.svc-card h3{font-family:var(--f-round);font-weight:700;font-size:22px;color:var(--ink);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.svc-card h3 .en{font-family:var(--f-disp);font-weight:500;font-size:12.5px;letter-spacing:.04em;color:var(--apricot-d)}
+.svc-card p{margin-top:13px;color:var(--ink-soft);font-size:14.5px;line-height:1.95;position:relative;z-index:2}
+.svc-tags{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;position:relative;z-index:2}
+.svc-tags span{font-family:var(--f-disp);font-size:11px;letter-spacing:.02em;padding:4px 10px;border-radius:999px;background:var(--cream-2);color:var(--ink-soft);border:1px solid var(--line-2)}
+
+/* ───────── CHU-YA project (three.js) ───────── */
+.chuya{position:relative;min-height:100svh;display:flex;align-items:center;padding:clamp(80px,12vw,140px) 0;overflow:hidden;background:#23170d;color:var(--cream)}
+.chuya-bg{position:absolute;inset:0;z-index:0;background:url(/assets/img/guild/yewsound/chuya_bg.webp) center/cover no-repeat;opacity:.5;filter:blur(2px) saturate(1.05)}
+#chuya-canvas{position:absolute;inset:0;z-index:1}
+.chuya::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 100% at 70% 50%,transparent 30%,rgba(35,23,13,.7) 90%)}
+.chuya .wrap{position:relative;z-index:3;width:100%}
+.chuya-inner{max-width:560px}
+.chuya .eyebrow{color:var(--peach)}
+.chuya .eyebrow::before{background:var(--peach)}
+.chuya-title{font-family:var(--f-round);font-weight:900;font-size:clamp(46px,9vw,108px);line-height:.96;margin-top:20px;color:var(--cream);letter-spacing:.02em}
+.chuya-title em{display:block;font-family:var(--f-disp);font-weight:500;font-style:normal;font-size:clamp(15px,2vw,21px);letter-spacing:.4em;color:var(--peach);margin-top:14px}
+.chuya-desc{margin-top:26px;font-size:16px;line-height:2.05;color:#E9D9C2}
+.chuya-feats{margin-top:28px;display:flex;flex-direction:column;gap:14px}
+.chuya-feat{display:flex;gap:14px;align-items:flex-start}
+.chuya-feat i{color:var(--sprout-l);font-size:16px;margin-top:5px;width:20px;text-align:center}
+.chuya-feat b{font-family:var(--f-round);font-weight:700;font-size:16px;color:var(--cream)}
+.chuya-feat span{display:block;font-size:13.5px;color:#CBB89E;margin-top:2px}
+.chuya-status{margin-top:32px;display:inline-flex;align-items:center;gap:12px;padding:12px 22px;border-radius:999px;border:1px solid rgba(255,240,220,.28);background:rgba(255,240,220,.06)}
+.chuya-status .dot{width:9px;height:9px;border-radius:50%;background:var(--sprout-l);box-shadow:0 0 0 0 var(--sprout-l);animation:pulse 2s infinite}
+.chuya-status span{font-family:var(--f-disp);font-size:13px;letter-spacing:.08em;color:var(--peach)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(183,213,133,.6)}70%{box-shadow:0 0 0 14px rgba(183,213,133,0)}100%{box-shadow:0 0 0 0 rgba(183,213,133,0)}}
+.chuya-hint{position:absolute;right:var(--gut);bottom:26px;z-index:3;font-family:var(--f-disp);font-size:11px;letter-spacing:.22em;color:rgba(255,240,220,.55);display:flex;align-items:center;gap:8px}
+
+/* ───────── PROCESS ───────── */
+.proc{padding:clamp(80px,12vw,140px) 0}
+.proc-rail{margin-top:50px;display:grid;grid-template-columns:repeat(5,1fr);gap:0;position:relative}
+.proc-rail::before{content:"";position:absolute;top:30px;left:8%;right:8%;height:2px;background:repeating-linear-gradient(90deg,var(--apricot) 0 8px,transparent 8px 16px);opacity:.6}
+.proc-step{text-align:center;padding:0 12px;position:relative}
+.proc-dot{width:60px;height:60px;margin:0 auto;border-radius:50%;background:var(--paper);border:2px solid var(--apricot);display:grid;place-items:center;font-family:var(--f-disp);font-weight:700;font-size:20px;color:var(--apricot-d);box-shadow:var(--shadow-sm);position:relative;z-index:2}
+.proc-step:last-child .proc-dot{border-color:var(--sprout-d);color:var(--sprout-d);background:var(--paper)}
+.proc-step h4{font-family:var(--f-round);font-weight:700;font-size:16px;margin-top:16px;color:var(--ink)}
+.proc-step p{font-size:13px;color:var(--ink-soft);margin-top:7px;line-height:1.8}
+
+/* ───────── TRAITS ───────── */
+.traits{padding:0 0 clamp(70px,10vw,120px)}
+.traits-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.trait{background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:34px 30px;box-shadow:var(--shadow-card);position:relative;overflow:hidden}
+.trait .big{position:absolute;right:-6px;top:-22px;font-family:var(--f-disp);font-weight:700;font-size:120px;color:var(--cream-2);z-index:0;line-height:1}
+.trait i{font-size:26px;color:var(--apricot-d);position:relative;z-index:2}
+.trait h4{font-family:var(--f-round);font-weight:700;font-size:21px;margin-top:16px;color:var(--ink);position:relative;z-index:2}
+.trait p{margin-top:11px;color:var(--ink-soft);font-size:14.5px;line-height:1.95;position:relative;z-index:2}
+
+/* ───────── CTA / contact ───────── */
+.cta{padding:clamp(80px,12vw,150px) 0;background:linear-gradient(180deg,var(--cream),var(--peach));position:relative;overflow:hidden}
+.cta-inner{text-align:center;position:relative;z-index:2}
+.cta h2{font-family:var(--f-round);font-weight:900;font-size:clamp(34px,6.5vw,76px);line-height:1.18;color:var(--ink)}
+.cta h2 b{color:var(--sprout-d);position:relative}
+.cta p{margin-top:20px;color:var(--ink-soft);font-size:16px;max-width:48ch;margin-inline:auto;line-height:1.95}
+.cta-links{margin-top:40px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.cta-link{
+  display:inline-flex;align-items:center;gap:12px;padding:16px 28px;border-radius:18px;
+  background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow-card);
+  font-family:var(--f-disp);font-weight:600;font-size:15px;color:var(--ink);transition:.35s;
+}
+.cta-link:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.cta-link i{font-size:20px;width:24px;text-align:center}
+.cta-link.x i{color:#111}
+.cta-link.th i{color:#111}
+.cta-link.ig i{color:#C8398E}
+.cta-link small{display:block;font-family:var(--f-body);font-weight:400;font-size:11.5px;color:var(--ink-faint);letter-spacing:.02em}
+
+/* ───────── FOOTER ───────── */
+footer{background:#2B1D10;color:var(--peach);padding:60px 0 40px;position:relative;z-index:2}
+.foot-row{display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
+.foot-back{display:inline-flex;align-items:center;gap:10px;font-family:var(--f-disp);font-weight:600;font-size:14px;letter-spacing:.03em;color:var(--peach);transition:.3s}
+.foot-back:hover{gap:15px;color:var(--cream)}
+.foot-sign{font-family:var(--f-hand);font-size:21px;color:var(--apricot)}
+.foot-meta{margin-top:30px;padding-top:24px;border-top:1px solid rgba(255,240,220,.16);font-size:12px;color:rgba(255,240,220,.5);letter-spacing:.04em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(34px)}
+
+/* ───────── Responsive ───────── */
+@media(max-width:880px){
+  .hero .wrap{grid-template-columns:1fr;gap:40px}
+  .hero-portrait{order:-1;justify-self:start}
+  .portrait-ring{width:clamp(150px,42vw,210px)}
+  .philo-body{grid-template-columns:1fr;gap:18px}
+  .proc-rail{grid-template-columns:1fr 1fr;gap:34px 16px}
+  .proc-rail::before{display:none}
+  .traits-grid{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  :root{--gut:20px}
+  .hero h1{font-size:clamp(62px,22vw,90px)}
+  .hero h1 .stack{margin-left:8px}
+  .proc-rail{grid-template-columns:1fr}
+  .foot-row{flex-direction:column;align-items:flex-start}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .rv{opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- Language toggle -->
+<div class="lang-toggle" role="group" aria-label="language">
+  <button id="lang-zh" class="on" type="button">中</button>
+  <button id="lang-en" type="button">EN</button>
+</div>
+
+<!-- Preloader -->
+<div id="pre">
+  <div class="pre-wrap">
+    <div class="pre-seed">
+      <svg viewBox="0 0 64 64" fill="none">
+        <path id="pre-stem" d="M32 60 L32 34" stroke="#8FB552" stroke-width="3" stroke-linecap="round"/>
+        <path id="pre-leafL" d="M32 40 C20 38 16 28 18 24 C26 24 33 30 32 40Z" fill="#8FB552"/>
+        <path id="pre-leafR" d="M32 36 C44 34 48 24 46 20 C38 20 31 26 32 36Z" fill="#B7D585"/>
+        <ellipse cx="32" cy="60" rx="13" ry="4" fill="#E8B98A" opacity=".6"/>
+      </svg>
+    </div>
+    <div class="pre-txt" data-i18n data-zh="正在讓聲音發芽…" data-en="letting the sound sprout…">正在讓聲音發芽…</div>
+  </div>
+</div>
+
+<!-- ░░░░░ HERO ░░░░░ -->
+<header class="hero">
+  <div class="hero-bg-img" aria-hidden="true"></div>
+  <div id="hero-canvas" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="hero-text">
+      <div class="hero-eye eyebrow rv" data-i18n data-zh="公會檔案 · 聲音設計師" data-en="Guild Archive · Sound Designer">公會檔案 · 聲音設計師</div>
+      <h1 class="rv">Yew<span class="stack" aria-hidden="true"><i></i><i></i><i></i></span></h1>
+      <p class="hero-tag rv" data-i18n data-zh="我讓每一個聲音，<b>活出自己的個性。</b>" data-en="I make every sound <b>come alive with its own character.</b>">我讓每一個聲音，<b>活出自己的個性。</b></p>
+      <p class="hero-sub rv" data-i18n data-zh="一名爆肝的藝術大學生，也是自由接案的聲音設計師。我把聲音當成第二母語——混音、Loop BGM、Vtuber 音效，還有那些酷酷的實驗性聲響。" data-en="A sleepless art-school student and freelance sound designer. Sound is my second mother tongue — mixing, loop BGM, Vtuber SFX, and all those weird, exciting experimental noises.">一名爆肝的藝術大學生，也是自由接案的聲音設計師。我把聲音當成第二母語——混音、Loop BGM、Vtuber 音效，還有那些酷酷的實驗性聲響。</p>
+      <div class="hero-roles rv">
+        <span class="chip"><i class="fa-solid fa-sliders"></i>Cover 混音</span>
+        <span class="chip"><i class="fa-solid fa-repeat"></i>Loop BGM</span>
+        <span class="chip"><i class="fa-solid fa-bolt"></i>Vtuber SFX</span>
+        <span class="chip"><i class="fa-solid fa-wave-square"></i>人聲後製</span>
+        <span class="chip"><i class="fa-solid fa-film"></i>動畫配樂</span>
+      </div>
+    </div>
+    <div class="hero-portrait rv">
+      <div class="portrait-ring">
+        <div class="halo" aria-hidden="true"></div>
+        <div class="orbit" aria-hidden="true"></div>
+        <img src="/assets/img/guild/yewsound/avatar.webp" alt="Yew 的頭像">
+      </div>
+      <div class="portrait-name">Yew · 藝術牲一名</div>
+    </div>
+  </div>
+  <div class="scrollcue" aria-hidden="true"><span data-i18n data-zh="向下捲動" data-en="SCROLL">向下捲動</span><i class="fa-solid fa-angle-down"></i></div>
+</header>
+
+<!-- ░░░░░ SIGNATURE · 聲波萌芽 ░░░░░ -->
+<section class="sig" id="sig">
+  <div class="sig-pin">
+    <div id="sig-canvas" aria-hidden="true"></div>
+    <div class="sig-overlay">
+      <div class="sig-step-eye" data-i18n data-zh="招牌互動 · 聲波萌芽" data-en="Signature · Sound Germination">招牌互動 · 聲波萌芽</div>
+      <div class="sig-step" id="sig-step">
+        <span id="sig-step-main" data-i18n data-zh="種下一段聲音" data-en="Plant a sound">種下一段聲音</span>
+        <small id="sig-step-sub" data-i18n data-zh="每段聲音，都是一顆會發芽的種子" data-en="every sound is a seed waiting to sprout">每段聲音，都是一顆會發芽的種子</small>
+      </div>
+      <button class="sig-listen" id="sig-listen" type="button">
+        <i class="fa-solid fa-play"></i>
+        <span data-i18n data-zh="聽聽看它呼吸" data-en="Hear it breathe">聽聽看它呼吸</span>
+      </button>
+    </div>
+    <div class="sig-prog"><span id="sig-prog-num">00</span> / 100 · GROWTH</div>
+  </div>
+</section>
+
+<!-- ░░░░░ PHILOSOPHY ░░░░░ -->
+<section class="philo">
+  <div class="wrap">
+    <div class="philo-card rv">
+      <div class="quote-mark" aria-hidden="true">&ldquo;</div>
+      <p class="philo-q" data-i18n data-zh="比起把聲音處理得完美，我更在意——<b>能不能讓聲音，活出個性。</b>" data-en="More than chasing a flawless mix, what I really care about is — <b>whether the sound gets to live with its own character.</b>">比起把聲音處理得完美，我更在意——<b>能不能讓聲音，活出個性。</b></p>
+      <div class="philo-body">
+        <p data-i18n data-zh="嗨，我是 Yew。一名還在爆肝趕作業、自稱「藝術牲」的藝術大學生，同時也是接案中的自由聲音設計師。從 Cover 曲的混音、到直播待機的 Loop BGM、再到 Vtuber 的整套音效，只要和「聲音」有關的工作，我幾乎都想試試看。" data-en="Hi, I'm Yew — a sleepless art-school student (an honest 'art-life survivor') and a freelance sound designer taking commissions. From mixing cover songs, to loop BGM for livestream standbys, to full Vtuber sound kits — if it has anything to do with sound, I want to try it.">嗨，我是 Yew。一名還在爆肝趕作業、自稱「藝術牲」的藝術大學生，同時也是接案中的自由聲音設計師。從 Cover 曲的混音、到直播待機的 Loop BGM、再到 Vtuber 的整套音效，只要和「聲音」有關的工作，我幾乎都想試試看。</p>
+        <p data-i18n data-zh="我不追求那種乾淨到沒有表情的「完美」。對我來說，一段好的聲音應該要有體溫、有呼吸、有它自己的脾氣。所以我特別喜歡玩一些酷酷的、實驗性的聲響——把它當成種子種下去，慢慢養，等它長出只屬於你的個性。" data-en="I'm not after the kind of 'perfect' that's so clean it has no expression. To me, a good sound should have warmth, breath, and a temper of its own. That's why I love playing with weird, experimental textures — planting them like seeds and growing them until they bloom into something that's unmistakably yours.">我不追求那種乾淨到沒有表情的「完美」。對我來說，一段好的聲音應該要有體溫、有呼吸、有它自己的脾氣。所以我特別喜歡玩一些酷酷的、實驗性的聲響——把它當成種子種下去，慢慢養，等它長出只屬於你的個性。</p>
+      </div>
+      <div class="philo-sign">— Yew</div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░░░░ SERVICES ░░░░░ -->
+<section class="svc" id="svc">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow" data-i18n data-zh="聲音工坊 · 我能幫你做什麼" data-en="Sound Workshop · What I can do for you">聲音工坊 · 我能幫你做什麼</span>
+      <h2 data-i18n data-zh="把聲音交給我，<br>我幫你養成它的樣子。" data-en="Hand me your sound,<br>I'll help it grow into shape.">把聲音交給我，<br>我幫你養成它的樣子。</h2>
+      <p data-i18n data-zh="不論你是翻唱歌手、實況主、Vtuber、動畫或短片創作者——下面這些，都是我可以替你扛起來的聲音工作。" data-en="Whether you're a cover singer, streamer, Vtuber, animator or short-film maker — here's the sound work I can carry for you.">不論你是翻唱歌手、實況主、Vtuber、動畫或短片創作者——下面這些，都是我可以替你扛起來的聲音工作。</p>
+    </div>
+    <div class="svc-grid">
+
+      <article class="svc-card rv">
+        <div class="svc-num">01</div>
+        <div class="svc-ic"><i class="fa-solid fa-sliders"></i></div>
+        <h3>Cover 曲混音 <span class="en">Mixing</span></h3>
+        <p data-i18n data-zh="把你翻唱的人聲，調成有空間、有溫度、會呼吸的成品。讓人聲和伴奏不再各唱各的，而是真正融在一起。" data-en="I turn your cover vocals into something spatial, warm and breathing — so the voice and the backing track finally sit together instead of fighting.">把你翻唱的人聲，調成有空間、有溫度、會呼吸的成品。讓人聲和伴奏不再各唱各的，而是真正融在一起。</p>
+        <div class="svc-tags"><span>Vocal Tuning</span><span>EQ / 空間感</span><span>Mixdown</span></div>
+        <svg class="wave" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 Q 25 10 50 40 T 100 40 T 150 40 T 200 40 T 250 40 T 300 40 T 350 40 T 400 40" stroke="#D99B63" stroke-width="3" fill="none"/></svg>
+      </article>
+
+      <article class="svc-card rv">
+        <div class="svc-num">02</div>
+        <div class="svc-ic"><i class="fa-solid fa-repeat"></i></div>
+        <h3>Loop BGM <span class="en">Seamless Loop</span></h3>
+        <p data-i18n data-zh="為你的待機畫面、直播開場、等待室，做一段聽不膩、可以無縫循環的背景音樂。掛整場也不會煩。" data-en="Seamless, never-tiring background loops for your standby screen, stream intro or waiting room — music that can run all session without wearing thin.">為你的待機畫面、直播開場、等待室，做一段聽不膩、可以無縫循環的背景音樂。掛整場也不會煩。</p>
+        <div class="svc-tags"><span>待機 / 直播</span><span>Seamless</span><span>氛圍</span></div>
+        <svg class="wave" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 Q 25 60 50 40 T 100 40 T 150 40 T 200 40 T 250 40 T 300 40 T 350 40 T 400 40" stroke="#E7B7A0" stroke-width="3" fill="none"/></svg>
+      </article>
+
+      <article class="svc-card rv">
+        <div class="svc-num">03</div>
+        <div class="svc-ic"><i class="fa-solid fa-bolt"></i></div>
+        <h3>Vtuber 音效 SE 套組 <span class="en">SFX Kit</span></h3>
+        <p data-i18n data-zh="登場、下播、嚇到、害羞、互動反應——一整組為你的角色量身打造的聲音表情，讓觀眾一聽就知道「是你」。" data-en="Entrance, sign-off, surprise, shy, reaction hits — a full set of sound expressions tailored to your character, so viewers know it's you the moment they hear it.">登場、下播、嚇到、害羞、互動反應——一整組為你的角色量身打造的聲音表情，讓觀眾一聽就知道「是你」。</p>
+        <div class="svc-tags"><span>SE / SFX</span><span>角色音效</span><span>互動反應</span></div>
+        <svg class="wave" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 L20 40 L28 12 L36 68 L44 40 L120 40 L128 20 L136 60 L144 40 L240 40 L248 8 L256 72 L264 40 L400 40" stroke="#8FB552" stroke-width="3" fill="none"/></svg>
+      </article>
+
+      <article class="svc-card rv">
+        <div class="svc-num">04</div>
+        <div class="svc-ic"><i class="fa-solid fa-wave-square"></i></div>
+        <h3>人聲後製 <span class="en">Vocal Post</span></h3>
+        <p data-i18n data-zh="降噪、修音、補上空間感，把你錄好的聲音整理乾淨——清楚、好聽，但仍然是有個性的你。" data-en="Noise removal, pitch repair, spatial polish — I clean up what you recorded so it's crisp and pleasant, while still sounding like the real, characterful you.">降噪、修音、補上空間感，把你錄好的聲音整理乾淨——清楚、好聽，但仍然是有個性的你。</p>
+        <div class="svc-tags"><span>降噪</span><span>修音</span><span>母帶</span></div>
+        <svg class="wave" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 Q 20 25 40 40 T 80 40 Q 100 15 120 40 T 160 40 Q 180 28 200 40 T 240 40 Q 260 18 280 40 T 320 40 T 360 40 T 400 40" stroke="#E8B98A" stroke-width="3" fill="none"/></svg>
+      </article>
+
+      <article class="svc-card rv">
+        <div class="svc-num">05</div>
+        <div class="svc-ic"><i class="fa-solid fa-film"></i></div>
+        <h3>動畫配樂音效 <span class="en">Score &amp; Foley</span></h3>
+        <p data-i18n data-zh="為你的動畫、短片、企劃配上對的聲音與情緒——從一聲腳步、一陣風，到整段配樂，讓畫面真的「動」起來。" data-en="The right sound and mood for your animation, short film or project — from a single footstep or gust of wind to a full score, making the picture truly move.">為你的動畫、短片、企劃配上對的聲音與情緒——從一聲腳步、一陣風，到整段配樂，讓畫面真的「動」起來。</p>
+        <div class="svc-tags"><span>配樂</span><span>Foley 音效</span><span>情緒設計</span></div>
+        <svg class="wave" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 Q 30 5 60 40 T 120 40 Q 150 70 180 40 T 240 40 Q 270 10 300 40 T 360 40 T 400 40" stroke="#C98A3C" stroke-width="3" fill="none"/></svg>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ░░░░░ CHU-YA 初芽 (three.js) ░░░░░ -->
+<section class="chuya" id="chuya">
+  <div class="chuya-bg" aria-hidden="true"></div>
+  <div id="chuya-canvas" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="chuya-inner">
+      <span class="eyebrow" data-i18n data-zh="招牌作品 · 畢業製作企劃" data-en="Signature Work · Graduation Project">招牌作品 · 畢業製作企劃</span>
+      <h1 class="chuya-title">初芽<em>CHU&middot;YA — FIRST SPROUT</em></h1>
+      <p class="chuya-desc" data-i18n data-zh="這是我的畢業製作。一場用耳朵體驗的實驗——觀眾走進空間，憑著聲音的方向去尋找、去辨認、去和它互動。我想做的，不是讓你「聽見」聲音，而是讓你「走進」聲音裡。" data-en="My graduation project — an experiment you experience with your ears. The audience walks into a space and uses the direction of sound to search, recognise and interact. I don't want you to merely hear the sound; I want you to step inside it.">這是我的畢業製作。一場用耳朵體驗的實驗——觀眾走進空間，憑著聲音的方向去尋找、去辨認、去和它互動。我想做的，不是讓你「聽見」聲音，而是讓你「走進」聲音裡。</p>
+      <div class="chuya-feats">
+        <div class="chuya-feat"><i class="fa-solid fa-masks-theater"></i><div><b data-i18n data-zh="互動式實驗劇場" data-en="Interactive Experimental Theatre">互動式實驗劇場</b><span data-i18n data-zh="觀眾不只是看，而是用身體和聲音一起參與" data-en="The audience doesn't just watch — they take part with body and sound">觀眾不只是看，而是用身體和聲音一起參與</span></div></div>
+        <div class="chuya-feat"><i class="fa-solid fa-ear-listen"></i><div><b data-i18n data-zh="聽聲辨位遊玩" data-en="Sound-Localisation Play">聽聲辨位遊玩</b><span data-i18n data-zh="閉上眼，用耳朵在空間裡找到聲音的位置" data-en="Close your eyes and find where the sound lives in space">閉上眼，用耳朵在空間裡找到聲音的位置</span></div></div>
+        <div class="chuya-feat"><i class="fa-solid fa-compact-disc"></i><div><b data-i18n data-zh="多聲道聲音設計體驗" data-en="Multi-Channel Sound Design">多聲道聲音設計體驗</b><span data-i18n data-zh="聲音從四面八方包圍你，像真的活在空間裡" data-en="Sound surrounds you from every side, as if it lives in the room">聲音從四面八方包圍你，像真的活在空間裡</span></div></div>
+      </div>
+      <div class="chuya-status">
+        <span class="dot" aria-hidden="true"></span>
+        <span data-i18n data-zh="2026 / Oct &ndash; Nov · 即將萌芽" data-en="2026 / Oct &ndash; Nov · Becoming soon">2026 / Oct &ndash; Nov · 即將萌芽</span>
+      </div>
+    </div>
+  </div>
+  <div class="chuya-hint" aria-hidden="true"><i class="fa-solid fa-arrows-up-down-left-right"></i><span data-i18n data-zh="拖曳，繞著聲音轉一圈" data-en="Drag to orbit the sound">拖曳，繞著聲音轉一圈</span></div>
+</section>
+
+<!-- ░░░░░ PROCESS ░░░░░ -->
+<section class="proc">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow" data-i18n data-zh="一起工作的方式" data-en="How we work together">一起工作的方式</span>
+      <h2 data-i18n data-zh="從一句需求，<br>到一段會呼吸的聲音。" data-en="From a single brief,<br>to a sound that breathes.">從一句需求，<br>到一段會呼吸的聲音。</h2>
+    </div>
+    <div class="proc-rail">
+      <div class="proc-step rv"><div class="proc-dot">01</div><h4 data-i18n data-zh="聊聊你的需求" data-en="Tell me the vibe">聊聊你的需求</h4><p data-i18n data-zh="你想要的感覺、用途、參考曲，先聊清楚。" data-en="The feeling, the use, the references — we talk it through.">你想要的感覺、用途、參考曲，先聊清楚。</p></div>
+      <div class="proc-step rv"><div class="proc-dot">02</div><h4 data-i18n data-zh="方向與報價" data-en="Direction & quote">方向與報價</h4><p data-i18n data-zh="我給你聲音方向、製作範圍與透明報價。" data-en="I give you the direction, scope and a clear quote.">我給你聲音方向、製作範圍與透明報價。</p></div>
+      <div class="proc-step rv"><div class="proc-dot">03</div><h4 data-i18n data-zh="初版 Demo" data-en="First demo">初版 Demo</h4><p data-i18n data-zh="先做一版讓你聽，確認感覺對不對。" data-en="A first pass for you to hear and feel out.">先做一版讓你聽，確認感覺對不對。</p></div>
+      <div class="proc-step rv"><div class="proc-dot">04</div><h4 data-i18n data-zh="一起修訂" data-en="Refine together">一起修訂</h4><p data-i18n data-zh="依你的回饋來回調整，修到我們都滿意。" data-en="We tweak back and forth until we both love it.">依你的回饋來回調整，修到我們都滿意。</p></div>
+      <div class="proc-step rv"><div class="proc-dot">05</div><h4 data-i18n data-zh="交付成品" data-en="Delivery">交付成品</h4><p data-i18n data-zh="交付完整音檔，需要分軌或母帶也沒問題。" data-en="Final audio delivered — stems or masters on request.">交付完整音檔，需要分軌或母帶也沒問題。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░░░░ TRAITS ░░░░░ -->
+<section class="traits">
+  <div class="wrap">
+    <div class="traits-grid">
+      <div class="trait rv"><span class="big" aria-hidden="true">01</span><i class="fa-solid fa-seedling"></i><h4 data-i18n data-zh="個性優先" data-en="Character first">個性優先</h4><p data-i18n data-zh="我不會把你的聲音磨成罐頭。乾淨是基本，但「像你」才是重點。" data-en="I won't polish your sound into a canned template. Clean is the baseline — sounding like you is the point.">我不會把你的聲音磨成罐頭。乾淨是基本，但「像你」才是重點。</p></div>
+      <div class="trait rv"><span class="big" aria-hidden="true">02</span><i class="fa-solid fa-flask-vial"></i><h4 data-i18n data-zh="實驗精神" data-en="Experimental">實驗精神</h4><p data-i18n data-zh="喜歡玩酷酷的、沒人做過的聲響。願意陪你一起把怪點子試出聲音。" data-en="I love cool, never-tried textures and I'm happy to chase your weird ideas until they make a sound.">喜歡玩酷酷的、沒人做過的聲響。願意陪你一起把怪點子試出聲音。</p></div>
+      <div class="trait rv"><span class="big" aria-hidden="true">03</span><i class="fa-solid fa-mug-hot"></i><h4 data-i18n data-zh="親和好溝通" data-en="Easy to work with">親和好溝通</h4><p data-i18n data-zh="專業，但不擺架子。有想法就直接說，我們一起把它調到對。" data-en="Professional, but never stiff. Just say what you feel — we'll dial it in together.">專業，但不擺架子。有想法就直接說，我們一起把它調到對。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░░░░ CTA ░░░░░ -->
+<section class="cta" id="contact">
+  <div class="wrap">
+    <div class="cta-inner">
+      <h2 data-i18n data-zh="把你的聲音交給我，<br><b>一起讓它發芽。</b>" data-en="Hand me your sound,<br><b>let's make it sprout.</b>">把你的聲音交給我，<br><b>一起讓它發芽。</b></h2>
+      <p data-i18n data-zh="不管是一首翻唱、一段待機 BGM、一整套 Vtuber 音效，還是你腦中那個還說不清楚的怪點子——都歡迎私訊聊聊。" data-en="A cover, a standby loop, a full Vtuber SFX kit, or that strange idea you can't quite put into words yet — come DM me, let's talk.">不管是一首翻唱、一段待機 BGM、一整套 Vtuber 音效，還是你腦中那個還說不清楚的怪點子——都歡迎私訊聊聊。</p>
+      <div class="cta-links">
+        <a class="cta-link x" href="https://x.com/yewsound" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-x-twitter"></i><span>X / Twitter<small>@yewsound</small></span></a>
+        <a class="cta-link th" href="https://www.threads.com/@pohahahahahahaha___" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i><span>Threads<small>@pohahahahahahaha___</small></span></a>
+        <a class="cta-link ig" href="https://www.instagram.com/pohahahahahahaha___" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i><span>Instagram<small>@pohahahahahahaha___</small></span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░░░░ FOOTER ░░░░░ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <a class="foot-back" href="/guild/"><i class="fa-solid fa-arrow-left-long"></i><span data-i18n data-zh="返回公會檔案" data-en="Back to Archive">返回公會檔案</span></a>
+      <div class="foot-sign">Made with &hearts; by SuperGalen&rsquo;s Dungeon</div>
+    </div>
+    <div class="foot-meta">
+      <span>Yew &middot; Sound Designer &middot; Mixing / Loop BGM / Vtuber SFX</span>
+      <span data-i18n data-zh="讓聲音活出個性" data-en="where sound comes alive">讓聲音活出個性</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ───────── scripts ───────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+
+<script>
+/* ══════════ i18n toggle (中/EN) — keep technical names in EN ══════════ */
+(function(){
+  const KEY='yew-lang';
+  const btnZh=document.getElementById('lang-zh'), btnEn=document.getElementById('lang-en');
+  function apply(lang){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const v=el.getAttribute(lang==='en'?'data-en':'data-zh');
+      if(v!=null) el.innerHTML=v;
+    });
+    document.documentElement.lang = lang==='en'?'en':'zh-Hant';
+    btnZh.classList.toggle('on',lang!=='en');
+    btnEn.classList.toggle('on',lang==='en');
+    try{localStorage.setItem(KEY,lang)}catch(e){}
+  }
+  btnZh.addEventListener('click',()=>apply('zh'));
+  btnEn.addEventListener('click',()=>apply('en'));
+  let init='zh'; try{init=localStorage.getItem(KEY)||'zh'}catch(e){}
+  apply(init);
+})();
+
+/* ══════════ Preloader (robust: never block, multiple removers) ══════════ */
+function __hidePre(){var p=document.getElementById('pre'); if(p) p.classList.add('gone');}
+if(document.readyState==='complete'){ setTimeout(__hidePre,500); }
+else { window.addEventListener('load',function(){ setTimeout(__hidePre,500); }); }
+document.addEventListener('DOMContentLoaded',function(){ setTimeout(__hidePre,1400); });
+setTimeout(__hidePre, 2200);  /* hard fallback regardless of load/CDN stalls */
+
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ══════════ One Instrument — global agitation envelope + shared audio engine ══════════
+   一條 scroll-velocity 包絡 (__agit 0..1) 餵給 p5 / three.js / CSS，讓整頁像同一件樂器共振 */
+window.__agit = 0;
+window.__bumpAgit = function(a){ window.__agit = Math.min(1, window.__agit + a); };
+(function decayAgit(){
+  window.__agit = REDUCED ? 0 : window.__agit * 0.90;
+  requestAnimationFrame(decayAgit);
+})();
+
+/* shared WebAudio: one context for the listen button, service blips & 初芽 orb tones */
+window.__audio = (function(){
+  var ctx=null;
+  function ensure(){
+    if(!ctx){ try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } }
+    if(ctx && ctx.state==='suspended'){ ctx.resume(); }
+    return ctx;
+  }
+  function tone(freq,dur,type,vol){
+    var c=ensure(); if(!c) return;
+    var o=c.createOscillator(), g=c.createGain();
+    o.type=type||'sine'; o.frequency.value=freq;
+    o.connect(g); g.connect(c.destination);
+    var now=c.currentTime;
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(vol||0.05, now+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, now+(dur||0.4));
+    o.start(now); o.stop(now+(dur||0.4)+0.06);
+  }
+  return { ensure:ensure, tone:tone };
+})();
+</script>
+
+<script>
+/* ══════════ HERO p5 — agit-reactive waveforms + sound-rings radiating from the avatar ══════════ */
+(function(){
+  if(REDUCED) return;
+  const host=document.getElementById('hero-canvas');
+  const ring=document.querySelector('.hero-portrait .portrait-ring');
+  let inst=new p5((p)=>{
+    let W,H,t=0,seeds=[],rings=[],ringTimer=0,pcx=0,pcy=0;
+    function updatePortrait(){
+      if(!ring){pcx=W*0.74;pcy=H*0.46;return;}
+      const hr=host.getBoundingClientRect(), pr=ring.getBoundingClientRect();
+      pcx=pr.left-hr.left+pr.width/2; pcy=pr.top-hr.top+pr.height/2;
+    }
+    p.setup=()=>{
+      W=host.clientWidth; H=host.clientHeight;
+      const c=p.createCanvas(W,H); c.parent(host); p.noFill();
+      for(let i=0;i<26;i++) seeds.push({x:p.random(W),y:p.random(H),r:p.random(1.5,4),s:p.random(.2,.7),o:p.random(.2,.6)});
+      updatePortrait();
+    };
+    p.windowResized=()=>{W=host.clientWidth;H=host.clientHeight;p.resizeCanvas(W,H);updatePortrait();};
+    p.draw=()=>{
+      p.clear(); const A=window.__agit||0; t+=0.006+A*0.02;
+      updatePortrait();
+      // concentric sound-rings emanating from the avatar (sound coming out of Yew)
+      if(--ringTimer<=0){ rings.push({r:14,a:.9}); ringTimer=Math.max(26,90-A*70); }
+      for(let i=rings.length-1;i>=0;i--){
+        const rg=rings[i]; rg.r+=1.1+A*2.6; rg.a*=0.984;
+        if(rg.a<0.03){rings.splice(i,1);continue;}
+        p.noFill();p.stroke(217,155,99,150*rg.a);p.strokeWeight(1.3);p.circle(pcx,pcy,rg.r*2);
+      }
+      // 3 layered waveforms (amplitude + opacity react to agitation)
+      const cols=[[232,185,138],[217,155,99],[143,181,82]];
+      for(let l=0;l<3;l++){
+        const amp=(20+l*14)*(1+A*1.5), yb=H*(0.55+l*0.1), sp=0.008+l*0.0025;
+        p.stroke(cols[l][0],cols[l][1],cols[l][2], 58-l*10+A*46); p.strokeWeight(2.4-l*0.4);
+        p.beginShape();
+        for(let x=-20;x<=W+20;x+=10){
+          const y=yb+Math.sin(x*sp + t*(1.2+l*0.5))*amp*Math.sin(t*0.6+l)
+                  +Math.sin(x*0.02 - t*0.8)*amp*0.4;
+          p.vertex(x,y);
+        }
+        p.endShape();
+      }
+      // floating light seeds (rise faster when agitated)
+      p.noStroke();
+      for(const s of seeds){
+        s.y-=s.s*(1+A*1.6); if(s.y<-6){s.y=H+6;s.x=p.random(W);}
+        const fl=0.5+0.5*Math.sin(t*4+s.x);
+        p.fill(232,185,138,255*s.o*fl); p.circle(s.x,s.y,s.r*2);
+        p.fill(255,245,225,150*s.o*fl); p.circle(s.x,s.y,s.r);
+      }
+    };
+  });
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{ if(inst){ e.isIntersecting?inst.loop():inst.noLoop(); } });},{threshold:0.01});
+  io.observe(host);
+})();
+</script>
+
+<script>
+/* ══════════ SIGNATURE p5 — 聲波萌芽: a waveform that germinates & branches ══════════ */
+(function(){
+  const host=document.getElementById('sig-canvas');
+  let growth=0;            // 0..1 from ScrollTrigger
+  let live=false, analyser=null, dataArr=null, audioCtx=null, osc=null, gain=null;
+
+  // expose setter for ScrollTrigger
+  window.__setGrowth=(v)=>{growth=v;};
+
+  /* listen button → WebAudio: real analyser-driven amplitude */
+  const btn=document.getElementById('sig-listen');
+  btn.addEventListener('click',()=>{
+    window.__bumpAgit && window.__bumpAgit(0.35);
+    if(!audioCtx){
+      audioCtx = window.__audio && window.__audio.ensure();
+      if(!audioCtx) return;
+      try{
+        osc=audioCtx.createOscillator(); gain=audioCtx.createGain(); analyser=audioCtx.createAnalyser();
+        analyser.fftSize=256; dataArr=new Uint8Array(analyser.frequencyBinCount);
+        osc.type='sine'; osc.frequency.value=174;
+        const lfo=audioCtx.createOscillator(), lfoG=audioCtx.createGain();
+        lfo.frequency.value=0.6; lfoG.gain.value=46; lfo.connect(lfoG); lfoG.connect(osc.frequency); lfo.start();
+        gain.gain.value=0.0; osc.connect(gain); gain.connect(analyser); analyser.connect(audioCtx.destination);
+        osc.start();
+      }catch(e){return;}
+    }
+    if(!live){
+      audioCtx.resume&&audioCtx.resume();
+      gain.gain.cancelScheduledValues(audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime+0.4);
+      live=true; btn.classList.add('live');
+      btn.querySelector('i').className='fa-solid fa-pause';
+    }else{
+      gain.gain.linearRampToValueAtTime(0.0, audioCtx.currentTime+0.3);
+      live=false; btn.classList.remove('live');
+      btn.querySelector('i').className='fa-solid fa-play';
+    }
+  });
+
+  if(REDUCED){
+    // static fallback sprout
+    host.innerHTML='<svg viewBox="0 0 200 200" width="200" height="200" style="position:absolute;left:50%;top:55%;transform:translate(-50%,-50%)"><path d="M100 180 L100 90" stroke="#8FB552" stroke-width="4"/><path d="M100 120 C70 116 60 92 64 84 C86 86 102 104 100 120Z" fill="#8FB552"/><path d="M100 104 C130 100 140 76 136 68 C114 70 98 88 100 104Z" fill="#B7D585"/></svg>';
+    return;
+  }
+
+  const sigInst = new p5((p)=>{
+    let W,H,t=0;
+    p.setup=()=>{W=host.clientWidth;H=host.clientHeight;const c=p.createCanvas(W,H);c.parent(host);};
+    p.windowResized=()=>{W=host.clientWidth;H=host.clientHeight;p.resizeCanvas(W,H);};
+
+    function leaf(x,y,ang,size,col){
+      p.push();p.translate(x,y);p.rotate(ang);p.noStroke();p.fill(col[0],col[1],col[2]);
+      p.beginShape();
+      p.vertex(0,0);
+      p.bezierVertex(size*0.5,-size*0.5, size*1.1,-size*0.25, size*1.3,0);
+      p.bezierVertex(size*1.1,size*0.25, size*0.5,size*0.5, 0,0);
+      p.endShape(p.CLOSE);
+      // mid vein
+      p.stroke(255,255,255,90);p.strokeWeight(1);p.noFill();
+      p.line(0,0,size*1.2,0);
+      p.pop();
+    }
+
+    p.draw=()=>{
+      p.clear(); t+=0.02;
+      const baseX=W/2, baseY=H*0.92;
+      const g=p.constrain(growth,0,1);
+      const stemH=(H*0.66)*g;
+
+      // live amplitude from analyser, else procedural breathing
+      let amp=10+24*Math.sin(t*0.9);
+      if(live&&analyser){analyser.getByteTimeDomainData(dataArr);
+        let sum=0;for(let i=0;i<dataArr.length;i++){const v=(dataArr[i]-128)/128;sum+=v*v;}
+        amp=8+Math.sqrt(sum/dataArr.length)*420;
+      }
+      amp*= (0.35+0.65*g);
+      amp*= (1+(window.__agit||0)*0.8);   // scroll-velocity agitation ripples through the sprout
+
+      // soil mound
+      p.noStroke();p.fill(232,185,138,90);p.ellipse(baseX,baseY,180,30);
+      p.fill(217,155,99,70);p.ellipse(baseX,baseY,120,20);
+
+      // main waveform-stem: a vertical sine line that grows upward
+      const segs=70;
+      p.noFill();
+      for(let pass=0; pass<2; pass++){
+        p.stroke(pass? [143,181,82,230] : [217,155,99,210]);
+        p.stroke(pass?143:217, pass?181:155, pass?82:99, pass?235:200);
+        p.strokeWeight(pass?3:5);
+        p.beginShape();
+        for(let i=0;i<=segs;i++){
+          const f=i/segs;
+          const y=baseY - stemH*f;
+          const wob=Math.sin(f*10 - t*3)*amp*f*(pass?0.5:1)*(1-f*0.3);
+          const sway=Math.sin(t*0.7+f*2)*14*f;
+          p.vertex(baseX+wob+sway, y);
+        }
+        p.endShape();
+      }
+
+      // branches sprout as growth passes thresholds
+      const branchAt=[0.35,0.55,0.72,0.86];
+      branchAt.forEach((bt,idx)=>{
+        if(g<bt) return;
+        const lp=(g-bt)/(1-bt);                 // local progress 0..1
+        const f=bt/0.92;
+        const by=baseY - stemH*f;
+        const sway=Math.sin(t*0.7+f*2)*14*f;
+        const bx=baseX+sway+Math.sin(f*10 - t*3)*amp*f*0.6;
+        const dir=idx%2?1:-1;
+        const blen=(40+idx*8)*p.constrain(lp*1.4,0,1);
+        // little branch waveform
+        p.stroke(143,181,82,200);p.strokeWeight(2.4);p.noFill();
+        p.beginShape();
+        for(let i=0;i<=24;i++){
+          const ff=i/24;
+          const xx=bx+dir*blen*ff*1.6;
+          const yy=by-blen*ff*0.5 + Math.sin(ff*8 - t*3)*amp*0.3*ff;
+          p.vertex(xx,yy);
+        }
+        p.endShape();
+        // leaf at branch tip
+        const tipX=bx+dir*blen*1.6, tipY=by-blen*0.5;
+        const ls=p.constrain(lp,0,1)*(16+idx*3);
+        leaf(tipX,tipY, dir>0?-0.5:Math.PI+0.5, ls, idx%2?[143,181,82]:[183,213,133]);
+      });
+
+      // crown leaves at the very top once nearly grown
+      if(g>0.9){
+        const cl=(g-0.9)/0.1;
+        const topY=baseY-stemH, topX=baseX+Math.sin(t*0.7+2)*14;
+        leaf(topX,topY,-1.1,20*cl,[143,181,82]);
+        leaf(topX,topY,Math.PI+1.1,18*cl,[183,213,133]);
+        // glow
+        p.noStroke();p.fill(183,213,133,40*cl);p.circle(topX,topY,60*cl);
+      }
+    };
+  });
+  const sigIO=new IntersectionObserver((es)=>{es.forEach(e=>{ if(sigInst){ e.isIntersecting?sigInst.loop():sigInst.noLoop(); } });},{threshold:0.01});
+  if(host) sigIO.observe(host);
+})();
+</script>
+
+<script>
+/* ══════════ GSAP — reveals + signature pin/scrub + step text (not gated on window.load) ══════════ */
+(function initGSAP(){
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initGSAP);return;}
+  if(typeof gsap==='undefined'){window.addEventListener('load',initGSAP);return;}
+  gsap.registerPlugin(ScrollTrigger);
+
+  if(!REDUCED){
+    gsap.utils.toArray('.rv').forEach((el)=>{
+      gsap.to(el,{opacity:1,y:0,duration:1,ease:'power3.out',
+        scrollTrigger:{trigger:el,start:'top 90%'}});
+    });
+    // hero intro: stagger the above-the-fold .rv items in on load (no opacity conflict)
+    gsap.to('.hero-text .rv',{opacity:1,y:0,duration:1,stagger:.12,ease:'power3.out',delay:.55,overwrite:'auto'});
+    // safety net: force-reveal any .rv still hidden after 3s (CDN/scroll edge cases)
+    setTimeout(()=>{document.querySelectorAll('.rv').forEach(el=>{
+      if(parseFloat(getComputedStyle(el).opacity)===0){gsap.set(el,{opacity:1,y:0});}
+    });},3000);
+
+    /* COMBO 1 — scroll velocity feeds the global agitation envelope (the whole page reacts as one) */
+    ScrollTrigger.create({ onUpdate:(self)=>{
+      const v=Math.min(1, Math.abs(self.getVelocity())/2600);
+      if(window.__bumpAgit) window.__bumpAgit(v*0.16);
+    }});
+
+    /* COMBO 2 — hero asset parallax: sprout bg drifts down, portrait floats up */
+    gsap.to('.hero-bg-img',{yPercent:20,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+    gsap.to('.hero-portrait',{yPercent:-14,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+
+    /* COMBO 3 — 初芽 enter progress drives three.js camera dolly + node assemble */
+    ScrollTrigger.create({ trigger:'#chuya', start:'top bottom', end:'top top', scrub:true,
+      onUpdate:(self)=>{ if(window.__chuya) window.__chuya.enter=self.progress; } });
+  } else {
+    gsap.utils.toArray('.rv').forEach(el=>el.style.opacity=1);
+  }
+
+  /* Signature: pin + scrub growth, update step text */
+  const steps=[
+    {zh:'種下一段聲音', en:'Plant a sound', szh:'每段聲音，都是一顆會發芽的種子', sen:'every sound is a seed waiting to sprout'},
+    {zh:'讓它呼吸', en:'Let it breathe', szh:'我給聲音留下體溫與空氣', sen:'I leave warmth and air inside the sound'},
+    {zh:'長出個性', en:'Grow its character', szh:'乾淨之外，更要像「你」', sen:'beyond clean — it has to sound like you'},
+    {zh:'開枝散葉', en:'Branch out', szh:'從一段聲音，長成完整的世界', sen:'from one sound into a whole world'}
+  ];
+  const main=document.getElementById('sig-step-main'),
+        sub=document.getElementById('sig-step-sub'),
+        progNum=document.getElementById('sig-prog-num');
+  let curStep=-1;
+  function curLang(){return document.getElementById('lang-en').classList.contains('on')?'en':'zh';}
+  function setStep(i){
+    if(i===curStep) return; curStep=i; const s=steps[i]; const L=curLang();
+    main.setAttribute('data-zh',s.zh); main.setAttribute('data-en',s.en);
+    sub.setAttribute('data-zh',s.szh); sub.setAttribute('data-en',s.sen);
+    main.innerHTML=L==='en'?s.en:s.zh; sub.innerHTML=L==='en'?s.sen:s.szh;
+    gsap.fromTo('.sig-step',{opacity:.2,y:14},{opacity:1,y:0,duration:.5,ease:'power2.out'});
+  }
+  setStep(0);
+
+  ScrollTrigger.create({
+    trigger:'#sig', start:'top top', end:'+=220%', pin:'.sig-pin', scrub:0.6,
+    onUpdate:(self)=>{
+      const v=self.progress;
+      if(window.__setGrowth) window.__setGrowth(v);
+      if(progNum) progNum.textContent=String(Math.round(v*100)).padStart(2,'0');
+      setStep(Math.min(steps.length-1, Math.floor(v*steps.length*0.999)));
+    }
+  });
+})();
+</script>
+
+<script type="module">
+/* ══════════ CHU-YA three.js — multi-channel spatial sound field ══════════ */
+import * as THREE from 'three';
+(function(){
+  const host=document.getElementById('chuya-canvas');
+  if(!host) return;
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(55, host.clientWidth/host.clientHeight, 0.1, 100);
+  cam.position.set(0,0,16);
+  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(host.clientWidth,host.clientHeight);
+  host.appendChild(renderer.domElement);
+
+  // soft radial sprite texture
+  function glowTex(r,g,b){
+    const s=64,cv=document.createElement('canvas');cv.width=cv.height=s;
+    const ctx=cv.getContext('2d');const gr=ctx.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+    gr.addColorStop(0,`rgba(${r},${g},${b},1)`);gr.addColorStop(.4,`rgba(${r},${g},${b},.6)`);
+    gr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    ctx.fillStyle=gr;ctx.fillRect(0,0,s,s);
+    const tx=new THREE.CanvasTexture(cv);return tx;
+  }
+  const texA=glowTex(243,217,184), texB=glowTex(217,155,99), texC=glowTex(183,213,133);
+
+  window.__chuya = { enter: 0 };   // scroll-enter progress, written by GSAP
+  const group=new THREE.Group(); scene.add(group);
+  const N=48, nodes=[];
+  for(let i=0;i<N;i++){
+    // fibonacci sphere = the multi-channel sound positions
+    const y=1-(i/(N-1))*2; const rad=Math.sqrt(1-y*y);
+    const th=Math.PI*(3-Math.sqrt(5))*i;
+    const R=6.2+Math.random()*1.6;
+    const x=Math.cos(th)*rad*R, z=Math.sin(th)*rad*R, yy=y*R;
+    const tex=[texA,texB,texC][i%3];
+    const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.9});
+    const sp=new THREE.Sprite(m);
+    const target=new THREE.Vector3(x,yy,z);
+    const scatter=new THREE.Vector3(x*2.4+(Math.random()-.5)*10, yy*2.4+(Math.random()-.5)*10, z*2.4-14);
+    sp.position.copy(scatter);
+    const sc=0.7+Math.random()*1.1; sp.scale.set(sc,sc,1);
+    group.add(sp);
+    nodes.push({sp,base:sc,ph:Math.random()*Math.PI*2,target,scatter,jx:Math.random()*9,jy:Math.random()*9});
+  }
+  // central sprout node (green, larger)
+  const coreMat=new THREE.SpriteMaterial({map:texC,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+  const core=new THREE.Sprite(coreMat); core.scale.set(2.4,2.4,1); group.add(core);
+
+  // constellation lines between near nodes (sound travelling between channels)
+  const pairs=[];
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){ if(nodes[i].target.distanceTo(nodes[j].target)<4.2) pairs.push([i,j]); }
+  const lpos=new Float32Array(pairs.length*6);
+  const lgeo=new THREE.BufferGeometry(); lgeo.setAttribute('position',new THREE.BufferAttribute(lpos,3));
+  const lmat=new THREE.LineBasicMaterial({color:0xD9B58A,transparent:true,opacity:.12,blending:THREE.AdditiveBlending});
+  const constell=new THREE.LineSegments(lgeo,lmat); group.add(constell);
+
+  // faint base ring lines (sound ripples)
+  for(let k=0;k<3;k++){
+    const seg=80,pts=[];const rr=3.2+k*1.7;
+    for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*rr,Math.sin(a)*rr*0.34,Math.sin(a)*rr));}
+    const geo=new THREE.BufferGeometry().setFromPoints(pts);
+    const mat=new THREE.LineBasicMaterial({color:0xE8B98A,transparent:true,opacity:.16-k*0.04});
+    const line=new THREE.Line(geo,mat); line.rotation.x=k*0.5; group.add(line);
+  }
+
+  // click ripples (聽聲辨位 — tap a sound source, it rings out + plays a tone)
+  const ripples=[];
+  function spawnRipple(pos,color){
+    const seg=64,pts=[];
+    for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a),0,Math.sin(a)));}
+    const geo=new THREE.BufferGeometry().setFromPoints(pts);
+    const mat=new THREE.LineBasicMaterial({color:color||0xB7D585,transparent:true,opacity:.95,blending:THREE.AdditiveBlending});
+    const r=new THREE.LineLoop(geo,mat); r.position.copy(pos); r.lookAt(cam.position);
+    group.add(r); ripples.push({r,s:0.25});
+  }
+
+  // drag to orbit + click to sound
+  let tx=0.3,ty=-0.2, cx=0.3,cy=-0.2, drag=false,px,py,moved=0,auto=true;
+  host.style.cursor='grab';
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+  function down(e){drag=true;auto=false;moved=0;host.style.cursor='grabbing';const t=e.touches?e.touches[0]:e;px=t.clientX;py=t.clientY;}
+  function move(e){if(!drag)return;const t=e.touches?e.touches[0]:e;const dx=t.clientX-px,dy=t.clientY-py;moved+=Math.abs(dx)+Math.abs(dy);tx+=dx*0.005;ty+=dy*0.005;ty=Math.max(-1.2,Math.min(1.2,ty));px=t.clientX;py=t.clientY;}
+  function up(){drag=false;host.style.cursor='grab';}
+  function tap(e){
+    if(moved>6) return;                       // it was a drag, not a tap
+    const r=host.getBoundingClientRect(), cl=(e.changedTouches?e.changedTouches[0]:e);
+    ndc.x=((cl.clientX-r.left)/r.width)*2-1; ndc.y=-((cl.clientY-r.top)/r.height)*2+1;
+    ray.setFromCamera(ndc,cam);
+    const hit=ray.intersectObjects(nodes.map(n=>n.sp),false);
+    let pos, freq;
+    if(hit.length){ const o=hit[0].object; pos=o.position.clone(); const idx=nodes.findIndex(n=>n.sp===o); freq=190+(idx%12)*42; o.scale.multiplyScalar(1.9); }
+    else { pos=new THREE.Vector3(0,0,0); freq=140; core.scale.multiplyScalar(1.5); }
+    spawnRipple(pos);
+    window.__audio && window.__audio.tone(freq,0.6,'sine',0.06);
+    window.__bumpAgit && window.__bumpAgit(0.45);
+  }
+  host.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+  host.addEventListener('click',tap);
+  host.addEventListener('touchstart',down,{passive:true});window.addEventListener('touchmove',move,{passive:true});window.addEventListener('touchend',(e)=>{up();tap(e);});
+
+  let t=0,raf,assemble=0;
+  const TMP=new THREE.Vector3();
+  function loop(){
+    raf=requestAnimationFrame(loop); t+=0.01;
+    const enter=window.__chuya.enter||0, A=window.__agit||0;
+    assemble += ((enter>0.04?1:0)-assemble)*0.05;            // ease nodes from scattered → sphere on entry
+    if(auto&&!reduced) tx+=0.0016+A*0.012;
+    cx+=(tx-cx)*0.06; cy+=(ty-cy)*0.06;
+    group.rotation.y=cx; group.rotation.x=cy;
+    cam.position.z = 16 - enter*5.5;                          // dolly through the field as you scroll in
+    if(!reduced){
+      for(const n of nodes){
+        TMP.lerpVectors(n.scatter,n.target,assemble);
+        if(A>0.001){ TMP.x+=Math.sin(t*6+n.jx)*A*0.6; TMP.y+=Math.cos(t*6+n.jy)*A*0.6; }
+        n.sp.position.copy(TMP);
+        const pulse=1+Math.sin(t*2+n.ph)*0.28 + A*0.45;
+        n.sp.scale.set(n.base*pulse,n.base*pulse,1);
+        n.sp.material.opacity=(0.5+0.4*Math.sin(t*2+n.ph))*(0.3+0.7*assemble);
+      }
+      core.scale.setScalar(2.2+Math.sin(t*1.6)*0.5 + A*1.3);
+      for(let i=0;i<pairs.length;i++){
+        const a=nodes[pairs[i][0]].sp.position, b=nodes[pairs[i][1]].sp.position;
+        lpos[i*6]=a.x;lpos[i*6+1]=a.y;lpos[i*6+2]=a.z;lpos[i*6+3]=b.x;lpos[i*6+4]=b.y;lpos[i*6+5]=b.z;
+      }
+      lgeo.attributes.position.needsUpdate=true;
+      lmat.opacity=(0.05+0.10*Math.abs(Math.sin(t*0.8)))*assemble + A*0.12;
+      for(let i=ripples.length-1;i>=0;i--){
+        const rp=ripples[i]; rp.s+=0.2+A*0.25; rp.r.scale.setScalar(rp.s); rp.r.material.opacity*=0.95;
+        if(rp.r.material.opacity<0.03){ group.remove(rp.r); rp.r.geometry.dispose(); rp.r.material.dispose(); ripples.splice(i,1); }
+      }
+    }
+    renderer.render(scene,cam);
+  }
+  loop();
+
+  function onResize(){
+    if(!host.clientWidth) return;
+    cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix();
+    renderer.setSize(host.clientWidth,host.clientHeight);
+  }
+  window.addEventListener('resize',onResize);
+
+  // pause when offscreen
+  const io=new IntersectionObserver((ents)=>{
+    ents.forEach(en=>{ if(en.isIntersecting){ if(!raf) loop(); } else { cancelAnimationFrame(raf); raf=null; } });
+  },{threshold:0.01});
+  io.observe(host);
+})();
+</script>
+
+<script>
+/* ══════════ SERVICES — live p5 waveforms + GSAP 3D tilt + per-service tone ══════════ */
+(function(){
+  if(REDUCED) return;
+  const cards=[...document.querySelectorAll('.svc-card')];
+  const FREQ=[261.6,293.7,329.6,392.0,440.0];          // C D E G A — gentle pentatonic
+  const COL=[[217,155,99],[231,183,160],[143,181,82],[232,185,138],[201,138,60]];
+  cards.forEach((card,idx)=>{
+    const svg=card.querySelector('.wave'); if(svg) svg.remove();   // swap static SVG → live p5
+    const holder=document.createElement('div');
+    holder.style.cssText='position:absolute;left:0;right:0;bottom:0;height:80px;z-index:1;pointer-events:none';
+    card.appendChild(holder);
+    let hovered=false, energy=0;
+    const inst=new p5((p)=>{
+      let W,H,t=0;
+      p.setup=()=>{W=holder.clientWidth;H=holder.clientHeight;const c=p.createCanvas(W,H);c.parent(holder);p.frameRate(40);};
+      p.windowResized=()=>{W=holder.clientWidth;H=holder.clientHeight;p.resizeCanvas(W,H);};
+      p.draw=()=>{
+        p.clear(); t+=0.05;
+        energy += ((hovered?1:0)-energy)*0.08;
+        const A=window.__agit||0, amp=(5+energy*22)*(1+A*0.6);
+        p.noFill();p.stroke(COL[idx][0],COL[idx][1],COL[idx][2], 55+energy*130);p.strokeWeight(2+energy*1.6);
+        p.beginShape();
+        for(let x=0;x<=W;x+=6){
+          let y=H*0.62 + Math.sin(x*0.05 - t*2)*amp*Math.sin(x*0.013+t);
+          if(idx===2) y += Math.sin(x*0.22 - t*3)*amp*0.5*energy;   // Vtuber SFX card = spikier
+          p.vertex(x,y);
+        }
+        p.endShape();
+      };
+    });
+    const io=new IntersectionObserver((es)=>{es.forEach(e=>{ e.isIntersecting?inst.loop():inst.noLoop(); });},{threshold:0.01});
+    io.observe(card);
+    // hover → tone + agit bump; mousemove → 3D tilt
+    card.addEventListener('mouseenter',()=>{ hovered=true;
+      window.__bumpAgit && window.__bumpAgit(0.22);
+      window.__audio && window.__audio.tone(FREQ[idx], 0.5, idx===2?'triangle':'sine', 0.045);
+    });
+    card.addEventListener('mouseleave',()=>{ hovered=false; gsap.to(card,{rotateX:0,rotateY:0,y:0,duration:.5,ease:'power2.out'}); });
+    card.addEventListener('mousemove',(e)=>{
+      const r=card.getBoundingClientRect();
+      const rx=((e.clientY-r.top)/r.height-0.5)*-8, ry=((e.clientX-r.left)/r.width-0.5)*9;
+      gsap.to(card,{rotateX:rx,rotateY:ry,y:-9,duration:.4,ease:'power2.out',transformPerspective:850,transformOrigin:'center'});
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

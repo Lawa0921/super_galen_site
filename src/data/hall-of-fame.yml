@@ -2000,3 +2000,17 @@ members:
         label: "短影音增長"
       - id: "ski_coach_marketer"
         label: "滑雪教練 × 行銷人"
+
+  - id: "yewsound"
+    name: "Yew｜聲音設計師"
+    avatar: "/assets/img/guild/yewsound/avatar.webp"
+    page: "/guild/yewsound.html"
+    title: "自由接案聲音設計師 · 混音 / Loop BGM / Vtuber 音效"
+    description: "一名爆肝的藝術大學生，也是自由接案的聲音設計師。把聲音當成第二母語——做 Cover 曲混音、直播待機用的無縫 Loop BGM、Vtuber 專用音效 SE 套組（SFX）、人聲後製，以及動畫配樂與 Foley 音效。比起把聲音磨得完美無瑕，他更在意能不能讓聲音「活出個性」，也熱愛玩各種酷酷的實驗性聲響。畢業製作《初芽》是一場互動式實驗劇場 × 聽聲辨位 × 多聲道聲音設計的體驗，2026 年 10–11 月登場。他能幫你：把翻唱人聲混得有溫度、為頻道做專屬的聲音表情、替動畫短片配上對的情緒，並陪你把腦中那個還說不清楚的怪點子試出聲音。"
+    tags:
+      - id: "sound_designer_mixing"
+        label: "混音 · 聲音設計"
+      - id: "vtuber_sfx"
+        label: "Vtuber 音效 SE"
+      - id: "loop_bgm_cover"
+        label: "Loop BGM · Cover 混音"
