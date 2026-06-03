@@ -26,6 +26,15 @@
 
 這 4 張即實作的視覺驗收基準。
 
+### 介面組合對標（已生成，存於 `docs/superpowers/specs/dungeon-arcade-mockups/ui/`）
+
+| 檔案 | 畫面 |
+|---|---|
+| `A-hall.jpg` | `/games` Dungeon Arcade 遊戲廳：中央 highlight 的 BATTLE TETRIS 卡 + 周圍 COMING SOON 鎖定卡 + 底部功能列（⚠️ 實作移除參考圖殘留的頂部 PLAYER 標籤） |
+| `B-mode-select.jpg` | 模式選擇：左 VS A.I.（EASY/NORMAL/HARD）、右 LOCAL 2P |
+| `C-battle-symmetric.jpg` | 對戰主版型（採用）：左右對稱等大雙盤，各 HOLD/NEXT/分數/名牌能量條，中央紅色垃圾計量條 |
+| `D-battle-asymmetric.jpg` | 對戰聚焦版型（手機降級用）：自己大盤 + 對手右上小監視窗（含 INCOMING ATTACK） |
+
 ---
 
 ## 2. 範圍
@@ -97,6 +106,13 @@
 - 粒子用 Pixi v8 `ParticleContainer`（或 `@pixi/particle-emitter`，實作時定）。
 - combo 數字、分數等動態文字用 Pixi `Text` + glow filter，不烤進素材。
 - Pixi 僅在 `/games/tetris` 頁 **code-split 載入**，不進首頁 bundle。
+
+### 3.3a 介面組合（已敲定）
+
+- **對戰主版型＝C 對稱雙盤**（對標 `ui/C-battle-symmetric.jpg`）：vs AI 與本機雙人**共用同一版型**，雙方等大、對等公平。每盤元件：HOLD（左上）、NEXT 佇列（外側，3 塊）、SCORE/LEVEL、底部名牌＋能量條、ghost piece；中央為共用的紅色垃圾攻擊計量條。
+- **手機 / 窄螢幕降級＝D 聚焦版型**（對標 `ui/D-battle-asymmetric.jpg`）：自己盤面放大為主、對手縮為右上小監視窗（含 HP 與 INCOMING ATTACK 警示）。
+- **一套渲染邏輯、兩種排版**：`BoardView`/`HudView` 元件不變，由 `layout` 設定（`symmetric` / `focus`）依視窗寬度切換定位與縮放（CSS/Pixi resize 觀察斷點）。
+- **遊戲廳 `/games`**＝A 版型；**模式選擇**＝B 版型。
 
 ### 3.4 Astro 頁面整合
 
