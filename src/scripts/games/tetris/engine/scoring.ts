@@ -16,7 +16,7 @@ export function scoreClear({ count, tSpin, level, b2b }: ClearScoreInput): numbe
   else base = LINE_SCORES[count] ?? 0;
 
   let total = base * level;
-  if (b2b && (count === 4 || tSpin !== 'none')) total = Math.floor(total * B2B_MULTIPLIER);
+  if (b2b && count > 0 && (count === 4 || tSpin !== 'none')) total = Math.floor(total * B2B_MULTIPLIER);
   return total;
 }
 

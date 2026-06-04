@@ -25,6 +25,11 @@ describe('scoreClear', () => {
   it('0 行（落地未消）得 0 分', () => {
     expect(scoreClear({ count: 0, tSpin: 'none', level: 5, b2b: false })).toBe(0);
   });
+
+  it('0 行的 T-spin 不套用 back-to-back 倍率', () => {
+    // full T-spin 0 行基礎分 400；B2B 不應作用於 0 行
+    expect(scoreClear({ count: 0, tSpin: 'full', level: 1, b2b: true })).toBe(400);
+  });
 });
 
 describe('detectTSpin', () => {
