@@ -42,13 +42,13 @@
 ### 包含（In scope）
 - `/games`：Dungeon Arcade 遊戲廳入口頁（霓虹卡片牆，俄羅斯方塊為第一款，預留擴充）。
 - `/games/tetris`：全螢幕遊戲頁，掛載 PixiJS app。
-- 模式選擇：`vs AI`（難度 簡單 / 普通 / 困難）、`本機雙人同鍵盤`。
+- 模式選擇：`vs AI`（難度 簡單 / 普通 / 困難）、`本機雙人同鍵盤`、`線上對戰`（房間配對）。
 - 現代 Guideline Tetris 規則 + 對戰（垃圾行攻擊）機制。
 - VS 開場、對戰、KO/結算 三畫面流程。
+- **線上即時對戰**：WebRTC P2P 直連 + Vercel serverless 牽線（房間碼配對）；最後階段（Phase 6）建置。
 - 桌機優先；MVP 為預設語言頁。
 
 ### 不包含（YAGNI，已砍 / 延後）
-- 線上即時連線對戰（需 WebSocket/後端）。
 - 多回合 BO3 賽制。
 - 手機雙人觸控對戰（兩盤面手機太擠）。
 - BGM / 音效 → 列為 Phase 5 選配。
@@ -119,6 +119,20 @@
 - `src/pages/games/index.astro`：遊戲廳卡片牆。
 - `src/pages/games/tetris.astro`：全螢幕容器 + `<canvas>`，以 Astro `<script>` import `render/main.ts`，交由 Vite 打包 Pixi。
 - 沿用 `BaseLayout`、現有 i18n；遊戲內文字標籤用既有 client i18n manager（有則用，無則英文/通用符號）。
+
+### 3.5 線上對戰架構（Phase 6）
+
+**連線方式＝WebRTC P2P + Vercel Serverless 牽線**（靜態站無常駐後端，故用點對點直連 + 極小牽線層）。
+
+- **牽線（signaling）**：一個 Vercel serverless function（`/api/signal`）只負責房間配對與交換 WebRTC offer/answer/ICE candidate；連線建立後即不再經過它。搭配免費公共 STUN 取得對外位址。少數嚴格 NAT 需 TURN 中繼，列為後續強化。
+  - 房間以短碼（room code）建立/加入；牽線可用「短輪詢 serverless KV / Upstash」或 serverless 內的暫存配對通道實作（Phase 6 細部計畫再定）。
+- **傳輸**：建立 `RTCDataChannel`（unreliable/ordered 視需求）傳遊戲訊息。
+- **同步模型＝確定性鎖步（deterministic lockstep）**：雙方共用同一 `seed` 建立 `match`，**只交換離散輸入事件 + frame/tick 編號**，各自在本地用 Phase 1 的確定性引擎重演 → 頻寬極小、天然防作弊、不需傳整個盤面。
+  - 需處理：開局 seed 協商、輸入延遲緩衝（input delay）、斷線/重連、對方頂出判定一致性。
+- **角色**：建立房間者為 host（決定 seed 與開局時序），加入者為 guest；邏輯對等（非權威伺服器，因為是 P2P）。
+- **重用**：直接重用 Phase 3 的 `match` 對戰核心與攻擊/垃圾邏輯；網路層只是「另一個輸入來源」，把遠端輸入餵進本地 `match`。
+
+> 安全/隱私：牽線 function 不儲存對戰內容；房間碼短期有效。P2P 會暴露雙方 IP 給對方（WebRTC 特性），於說明中告知。
 
 ---
 
@@ -199,16 +213,19 @@
 3. **對戰層**：`attack`/`match`、雙場、垃圾、中央計量條、攻擊光束 VFX、KO、VS/結算畫面 →（先接本機雙人，第二玩家最單純）。
 4. **AI 對手**：`ai/bot` 啟發式 + 難度，接成 P2 → vs AI 模式。
 5. **遊戲廳 + 收尾**：`/games` 卡片牆、模式選單、響應式 / 手機降級處理、音效（選配）、e2e、最終素材一輪。
+6. **線上對戰**：`/api/signal` 牽線 serverless、WebRTC `RTCDataChannel` 連線層、房間碼建立/加入 UI、確定性鎖步同步（重用 Phase 3 `match`）、斷線處理。建立在 Phase 2–3 之上，故排最後。
 
 ---
 
 ## 9. 依賴與風險
 
 - **新增依賴**：`pixi.js`（v8）、`pixi-filters`（bloom/glow）、可能 `@pixi/particle-emitter`。僅 `/games/tetris` 頁載入，code-split 不影響首頁。
+- **新增後端面（Phase 6）**：Vercel serverless function `/api/signal`（牽線）；可能 Upstash/Vercel KV 暫存房間配對。WebRTC 用瀏覽器原生 API（免額外函式庫，或評估 PeerJS 簡化）。
 - **風險**：
   - 視覺達不到 mockup 質感 → 緩解：重的光感烤進素材 + AdvancedBloom，程式只合成。
   - 手機雙板太擠 → MVP 桌機優先，手機 vs AI 單盤聚焦 / 提示最佳體驗在桌機。
   - SRS / 攻擊表正確性 → 用 TDD 鎖死，對照公開 guideline 數值。
+  - 線上連線：嚴格 NAT 可能 P2P 失敗（需 TURN）；延遲/抖動 → 用 input delay 緩衝 + 確定性鎖步；斷線重連需明確 UX。P2P 會把 IP 暴露給對方，需告知。
 
 ---
 
