@@ -188,5 +188,50 @@ export class TetrisGame {
     this.hardDrop();
   }
 
-  private hold(): void { /* Task 12 */ }
+  private hold(): void {
+    if (!this.active || !this.canHoldNow) return;
+    const current = this.active.type;
+    this.events.push({ kind: 'hold' });
+    if (this.holdType === null) {
+      this.holdType = current;
+      this.active = null;
+      this.spawn();              // spawn() 會把 canHoldNow 設回 true…
+    } else {
+      const swap = this.holdType;
+      this.holdType = current;
+      this.active = spawnPiece(swap);
+      this.lastMoveWasRotation = false;
+      this.locking = false;
+      this.lockTimer = 0;
+      this.lockResets = 0;
+    }
+    this.canHoldNow = false;     // …因此務必在 spawn 之後再鎖定 hold
+  }
+
+  /** 前進 dtMs 毫秒：處理重力下落與 lock delay。 */
+  step(dtMs: number): void {
+    if (this.status !== 'playing' || !this.active) return;
+    const interval = GRAVITY_MS[Math.min(this.level - 1, GRAVITY_MS.length - 1)];
+
+    this.gravityAcc += dtMs;
+    while (this.gravityAcc >= interval) {
+      this.gravityAcc -= interval;
+      if (canPlace(this.board, { ...this.active, y: this.active.y + 1 })) {
+        this.active = { ...this.active, y: this.active.y + 1 };
+        this.lastMoveWasRotation = false;
+        this.locking = false;
+        this.lockTimer = 0;
+      } else {
+        this.locking = true;
+        break;
+      }
+    }
+
+    if (this.locking) {
+      this.lockTimer += dtMs;
+      if (this.lockTimer >= LOCK_DELAY_MS) {
+        this.lockAndResolve();
+      }
+    }
+  }
 }
