@@ -123,3 +123,42 @@ describe('TetrisGame 垃圾與頂出', () => {
     expect(g.getState().status).toBe('topout');
   });
 });
+
+describe('TetrisGame combo 與事件整合', () => {
+  it('連續消行讓 combo 遞增、未消行的落地把 combo 歸 -1', () => {
+    const g = new TetrisGame({ seed: 1 });
+    expect(g.getState().combo).toBe(-1);
+    g.debugFillRowExceptOneAndDrop();
+    expect(g.getState().combo).toBe(0);
+    g.debugFillRowExceptOneAndDrop();
+    expect(g.getState().combo).toBe(1);
+    g.debugFillRowExceptOneAndDrop();
+    expect(g.getState().combo).toBe(2);
+    // 目前 active 是一般方塊，直接硬降不會消行 → combo 歸 -1
+    g.input('hardDrop');
+    expect(g.getState().combo).toBe(-1);
+  });
+
+  it('消行會發出 lineClear 事件（含 combo 欄位）', () => {
+    const g = new TetrisGame({ seed: 1 });
+    g.drainEvents();
+    g.debugFillRowExceptOneAndDrop();
+    const events = g.drainEvents();
+    const lc = events.find((e) => e.kind === 'lineClear');
+    expect(lc).toBeDefined();
+    if (lc && lc.kind === 'lineClear') {
+      expect(lc.count).toBe(1);
+      expect(lc.combo).toBe(0);
+    }
+  });
+
+  it('頂出時發出 topout 事件且 status 為 topout', () => {
+    const g = new TetrisGame({ seed: 1 });
+    for (let i = 0; i < 25; i++) g.receiveGarbage(1, 0);
+    g.drainEvents();
+    g.input('hardDrop'); // 觸發下一次 spawn → 失敗 → topout
+    const events = g.drainEvents();
+    expect(events.some((e) => e.kind === 'topout')).toBe(true);
+    expect(g.getState().status).toBe('topout');
+  });
+});
