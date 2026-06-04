@@ -104,3 +104,22 @@ describe('TetrisGame step 重力', () => {
     expect(g.drainEvents().some((e) => e.kind === 'lock')).toBe(true);
   });
 });
+
+describe('TetrisGame 垃圾與頂出', () => {
+  it('receiveGarbage 從底部加入垃圾列', () => {
+    const g = new TetrisGame({ seed: 1 });
+    g.receiveGarbage(3, 4);
+    const board = g.getState().board;
+    const lastY = board.length - 1;
+    expect(board[lastY].filter((c) => c === 'G').length).toBe(9);
+    expect(board[lastY][4]).toBe(null); // 洞
+  });
+
+  it('堆到頂時 spawn 失敗 → status=topout、發出 topout 事件', () => {
+    const g = new TetrisGame({ seed: 1 });
+    // 注入大量垃圾把盤面塞滿到頂
+    for (let i = 0; i < 25; i++) g.receiveGarbage(1, 0);
+    g.input('hardDrop'); // 觸發下一次 spawn
+    expect(g.getState().status).toBe('topout');
+  });
+});

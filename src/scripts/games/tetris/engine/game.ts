@@ -234,4 +234,16 @@ export class TetrisGame {
       }
     }
   }
+
+  /** 外部（對戰）注入垃圾行：底部加 count 列、holeCol 留洞。 */
+  receiveGarbage(count: number, holeCol: number): void {
+    this.board = insertGarbage(this.board, count, holeCol);
+    // 若活動方塊因上推而與既有格重疊，嘗試上移修正
+    if (this.active && !canPlace(this.board, this.active)) {
+      for (let dy = 1; dy <= count; dy++) {
+        const lifted = { ...this.active, y: this.active.y - dy };
+        if (canPlace(this.board, lifted)) { this.active = lifted; break; }
+      }
+    }
+  }
 }
