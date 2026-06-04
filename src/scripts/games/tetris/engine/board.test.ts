@@ -91,3 +91,30 @@ describe('clearLines', () => {
     expect(rows.sort((a, c) => a - c)).toEqual([last - 1, last]);
   });
 });
+
+import { insertGarbage } from './board';
+
+describe('insertGarbage', () => {
+  it('從底部插入 n 列垃圾、原內容上移、垃圾列含一個洞', () => {
+    const b = createBoard();
+    const last = TOTAL_HEIGHT - 1;
+    b[last][3] = 'T'; // 底部放一格做位移標記
+
+    const next = insertGarbage(b, 2, 4); // 插 2 列、洞在第 4 欄
+    // 原底列內容被往上推 2 列
+    expect(next[last - 2][3]).toBe('T');
+    // 新底 2 列為垃圾，洞欄為 null、其餘為 'G'
+    for (const y of [last, last - 1]) {
+      expect(next[y][4]).toBe(null);
+      expect(next[y][0]).toBe('G');
+      expect(next[y].filter((c) => c === 'G')).toHaveLength(BOARD_WIDTH - 1);
+    }
+  });
+
+  it('插入 0 列時盤面不變', () => {
+    const b = createBoard();
+    b[TOTAL_HEIGHT - 1][0] = 'I';
+    const next = insertGarbage(b, 0, 2);
+    expect(next[TOTAL_HEIGHT - 1][0]).toBe('I');
+  });
+});

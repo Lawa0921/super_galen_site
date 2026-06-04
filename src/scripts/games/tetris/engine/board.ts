@@ -44,3 +44,14 @@ export function clearLines(board: Matrix): { board: Matrix; rows: number[] } {
   );
   return { board: [...empty, ...kept], rows };
 }
+
+/** 從盤面底部插入 count 列垃圾行（每列在 holeCol 處留一個洞），原內容上移。 */
+export function insertGarbage(board: Matrix, count: number, holeCol: number): Matrix {
+  if (count <= 0) return board;
+  const garbageRows: Matrix = Array.from({ length: count }, () =>
+    Array.from({ length: BOARD_WIDTH }, (_, x) => (x === holeCol ? null : 'G')),
+  );
+  // 去掉最上面 count 列（被擠出），其餘保留，再接上底部垃圾
+  const kept = board.slice(count);
+  return [...kept, ...garbageRows];
+}
