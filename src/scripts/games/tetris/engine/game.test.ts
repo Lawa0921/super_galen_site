@@ -39,3 +39,30 @@ describe('TetrisGame 移動與旋轉', () => {
     expect(g.getState().active!.rotation).toBe((r0 + 1) % 4);
   });
 });
+
+describe('TetrisGame 硬降與消行', () => {
+  it('hardDrop 後鎖定並 spawn 新方塊（active 換人、發出 lock 事件）', () => {
+    const g = new TetrisGame({ seed: 1 });
+    g.drainEvents();
+    g.input('hardDrop');
+    const kinds = g.drainEvents().map((e) => e.kind);
+    expect(kinds).toContain('lock');
+    expect(kinds).toContain('spawn');
+    expect(g.getState().active).not.toBeNull();
+  });
+
+  it('填滿一整列後 hardDrop 觸發 lineClear、lines 增加、分數上升', () => {
+    const g = new TetrisGame({ seed: 1 });
+    // 直接灌入「只差一格就填滿的最底列」來驗證消行管線
+    g.debugFillRowExceptOneAndDrop();
+    const s = g.getState();
+    expect(s.lines).toBeGreaterThanOrEqual(1);
+    expect(s.score).toBeGreaterThan(0);
+  });
+
+  it('hardDrop 得分 = 下落格數 × HARD_DROP_POINTS（至少 >0）', () => {
+    const g = new TetrisGame({ seed: 1 });
+    g.input('hardDrop');
+    expect(g.getState().score).toBeGreaterThan(0);
+  });
+});

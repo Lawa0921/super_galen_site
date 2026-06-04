@@ -130,7 +130,63 @@ export class TetrisGame {
     return out;
   }
 
-  // hardDrop / hold / step / lock 於後續 Task 實作
-  private hardDrop(): void { /* Task 11 */ }
+  private ghostDropDistance(): number {
+    if (!this.active) return 0;
+    let dist = 0;
+    while (canPlace(this.board, { ...this.active, y: this.active.y + dist + 1 })) dist++;
+    return dist;
+  }
+
+  private hardDrop(): void {
+    if (!this.active) return;
+    const dist = this.ghostDropDistance();
+    this.active = { ...this.active, y: this.active.y + dist };
+    this.score += dist * HARD_DROP_POINTS;
+    this.lockAndResolve();
+  }
+
+  private lockAndResolve(): void {
+    if (!this.active) return;
+    const piece = this.active;
+    const tSpin = detectTSpin(this.board, piece, this.lastMoveWasRotation);
+    this.board = lockPiece(this.board, piece);
+    this.events.push({ kind: 'lock' });
+
+    const { board: cleared, rows } = clearLines(this.board);
+    this.board = cleared;
+    const count = rows.length;
+
+    if (count > 0) {
+      this.combo += 1;
+      const difficult = isDifficultClear(count, tSpin);
+      const applyB2B = difficult && this.backToBack;
+      this.score += scoreClear({ count, tSpin, level: this.level, b2b: applyB2B });
+      this.score += scoreCombo(this.combo, this.level);
+      this.lines += count;
+      this.level = Math.floor(this.lines / LINES_PER_LEVEL) + 1;
+      this.backToBack = difficult;
+      this.events.push({ kind: 'lineClear', rows, count, tSpin, b2b: applyB2B, combo: this.combo });
+    } else {
+      this.combo = -1;
+    }
+
+    this.active = null;
+    this.spawn();
+  }
+
+  /** 測試輔助：填滿最底列只留 1 欄，放一個能填那欄的方塊並硬降。 */
+  debugFillRowExceptOneAndDrop(): void {
+    const lastY = this.board.length - 1;
+    for (let x = 0; x < BOARD_WIDTH; x++) this.board[lastY][x] = 'G';
+    this.board[lastY][0] = null; // 留第 0 欄
+    this.board[lastY - 1][0] = null;
+    this.board[lastY - 2][0] = null;
+    this.board[lastY - 3][0] = null;
+    // 用 I 方塊直立填第 0 欄
+    this.active = { type: 'I', rotation: 1, x: -2, y: lastY - 3 };
+    // I R1 的 cell 在 box x=2 那一直行；x=-2 → 絕對 x=0
+    this.hardDrop();
+  }
+
   private hold(): void { /* Task 12 */ }
 }
