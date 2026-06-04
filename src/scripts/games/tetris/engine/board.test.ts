@@ -44,3 +44,50 @@ describe('canPlace', () => {
     expect(canPlace(b, p)).toBe(false);
   });
 });
+
+import { lockPiece, clearLines } from './board';
+
+describe('lockPiece', () => {
+  it('回傳新盤面並把方塊格子寫成其顏色（不改原盤）', () => {
+    const b = createBoard();
+    const p: ActivePiece = { type: 'O', rotation: 0, x: 4, y: 0 };
+    const next = lockPiece(b, p);
+    expect(next[0][4]).toBe('O');
+    expect(next[0][5]).toBe('O');
+    expect(next[1][4]).toBe('O');
+    expect(next[1][5]).toBe('O');
+    expect(b[0][4]).toBe(null); // 原盤不變（immutable）
+  });
+});
+
+describe('clearLines', () => {
+  it('清掉填滿的列、上方下移、回傳被清列索引', () => {
+    const b = createBoard();
+    const last = TOTAL_HEIGHT - 1;
+    for (let x = 0; x < BOARD_WIDTH; x++) b[last][x] = 'I'; // 填滿最底列
+    b[last - 1][0] = 'T'; // 上方留一格
+
+    const { board: cleared, rows } = clearLines(b);
+    expect(rows).toEqual([last]);
+    expect(cleared[last][0]).toBe('T'); // 原本上方那格掉到最底
+    expect(cleared[last].slice(1).every((c) => c === null)).toBe(true);
+  });
+
+  it('沒有滿列時回傳空陣列且盤面不變', () => {
+    const b = createBoard();
+    b[TOTAL_HEIGHT - 1][0] = 'I';
+    const { rows } = clearLines(b);
+    expect(rows).toEqual([]);
+  });
+
+  it('一次清除多列', () => {
+    const b = createBoard();
+    const last = TOTAL_HEIGHT - 1;
+    for (let x = 0; x < BOARD_WIDTH; x++) {
+      b[last][x] = 'I';
+      b[last - 1][x] = 'I';
+    }
+    const { rows } = clearLines(b);
+    expect(rows.sort((a, c) => a - c)).toEqual([last - 1, last]);
+  });
+});
