@@ -76,10 +76,21 @@ export class TetrisMatch {
           this.incoming[opp] += res.sent;
           this.events.push({ kind: 'attack', from: side, amount: res.sent });
         }
+      } else if (ev.kind === 'topout') {
+        this.phase = 'result';
+        this.winner = opp;
+        this.events.push({ kind: 'ko', winner: opp });
       }
-      // topout 於 Task 3 處理
     }
-    void cleared; // Task 3 使用
+
+    // 非消行落地：傾倒待入垃圾（單一洞口）
+    const locked = evs.some((e) => e.kind === 'lock');
+    if (locked && !cleared && this.incoming[side] > 0) {
+      const amount = this.incoming[side];
+      this.incoming[side] = 0;
+      game.receiveGarbage(amount, this.holeCol());
+      this.events.push({ kind: 'garbageIn', side, amount });
+    }
   }
 
   step(dtMs: number): void {
