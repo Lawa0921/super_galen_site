@@ -39,7 +39,7 @@ export interface GameState {
 
 export type GameEvent =
   | { kind: 'spawn'; type: PieceType }
-  | { kind: 'lock' }
+  | { kind: 'lock'; piece: ActivePiece }
   | { kind: 'hold' }
   | { kind: 'lineClear'; rows: number[]; count: number; tSpin: TSpinType; b2b: boolean; combo: number }
   | { kind: 'topout' };

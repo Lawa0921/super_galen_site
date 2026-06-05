@@ -1,12 +1,16 @@
 import { TetrisGame } from '../engine/game';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
+import { getCells } from '../engine/piece';
 import { KEYMAP_1P } from '../input/keymap';
 import { InputController } from '../input/InputController';
 import { PixiStage } from './PixiStage';
 import { BoardView } from './BoardView';
 import { HudView } from './HudView';
+import { Effects } from './Effects';
 import { loadGameTextures } from './assets';
 import { pieceTint, type Point } from './layout';
+
+const CLEAR_NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
 
 interface Layout {
   cellSize: number;
@@ -62,12 +66,14 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
     /* 字型載入失敗則退回 monospace */
   }
   const hud = new HudView(stage.hudLayer, tex.block, 3);
+  const fx = new Effects(stage.fxLayer, { spark: tex.spark, ring: tex.ring, glow: tex.glow });
 
   function relayout(): void {
     const lay = computeLayout(stage.width, stage.height);
     stage.layoutBackground();
     board.setLayout(lay.cellSize, lay.origin);
     hud.setLayout(lay.hudAnchor, lay.cellSize);
+    fx.setLayout(lay.cellSize, lay.origin);
   }
   relayout();
   const onResize = () => relayout();
@@ -81,6 +87,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
     e.preventDefault();
     if (e.repeat) return; // 用自家 DAS/ARR，忽略 OS 連發
     input.press(action);
+    if (action === 'hardDrop') stage.shake(5); // 硬降衝擊
   };
   const onKeyUp = (e: KeyboardEvent) => {
     const action = KEYMAP_1P[e.code];
@@ -90,15 +97,44 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
 
+  let lastLevel = game.getState().level;
   const tick = (ticker: { deltaMS: number }) => {
     const dt = ticker.deltaMS;
     input.update(dt);
     game.step(dt);
+
+    // 互動特效：消費引擎事件
+    for (const ev of game.drainEvents()) {
+      if (ev.kind === 'lock') {
+        fx.lockBurst(getCells(ev.piece), pieceTint(ev.piece.type));
+      } else if (ev.kind === 'lineClear') {
+        stage.shake(4 + ev.count * 3);
+        fx.lineClear(ev.rows, 0x9fefff);
+        let shift = 0;
+        if (ev.tSpin !== 'none') {
+          fx.popup('T-SPIN!', 0xc15cff, true, shift); shift += 30;
+        }
+        fx.popup(`${CLEAR_NAMES[ev.count] ?? ''}!`, ev.count >= 4 ? 0xffd23f : 0x36e6ff, ev.count >= 4, shift);
+        shift += 30;
+        if (ev.b2b) { fx.popup('BACK-TO-BACK', 0xff9a3c, false, shift); shift += 26; }
+        if (ev.combo >= 1) fx.popup(`${ev.combo} COMBO`, 0x4dff88, false, shift);
+      } else if (ev.kind === 'topout') {
+        stage.shake(14);
+        fx.topoutFlash();
+      }
+    }
+
     const state = game.getState();
+    if (state.level > lastLevel) {
+      lastLevel = state.level;
+      fx.popup(`LEVEL ${state.level}`, 0x36e6ff, true);
+      stage.shake(6);
+    }
+
     board.render(state);
     hud.render(state);
-    stage.update(dt); // 推進 CRT 掃描線動畫
-    game.drainEvents(); // Phase 3 會接特效；此階段先清空
+    fx.update(dt);
+    stage.update(dt); // CRT 動畫 + 震屏衰減
   };
   stage.app.ticker.add(tick);
 
@@ -114,6 +150,6 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   };
 
   // e2e / 除錯掛鉤
-  (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = { game, handle };
+  (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = { game, handle, stage, fx };
   return handle;
 }

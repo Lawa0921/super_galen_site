@@ -150,7 +150,7 @@ export class TetrisGame {
     const piece = this.active;
     const tSpin = detectTSpin(this.board, piece, this.lastMoveWasRotation);
     this.board = lockPiece(this.board, piece);
-    this.events.push({ kind: 'lock' });
+    this.events.push({ kind: 'lock', piece: { ...piece } });
 
     const { board: cleared, rows } = clearLines(this.board);
     this.board = cleared;
