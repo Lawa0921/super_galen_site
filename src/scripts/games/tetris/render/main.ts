@@ -77,8 +77,10 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
     fx.setLayout(lay.cellSize, lay.origin);
   }
   relayout();
+  // 綁 Pixi renderer 的 resize（畫布真的 resize 後才觸發，app.screen 已正確）；
+  // 不要用 window 'resize'，那會在 Pixi 的 ResizeObserver 更新前就讀到舊尺寸 → 跑版。
   const onResize = () => relayout();
-  window.addEventListener('resize', onResize);
+  stage.app.renderer.on('resize', onResize);
 
   const input = new InputController((action) => game.input(action), { das: 150, arr: 35 });
   const sound = new SoundManager();
@@ -161,7 +163,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   const handle: TetrisHandle = {
     game,
     destroy() {
-      window.removeEventListener('resize', onResize);
+      stage.app.renderer.off('resize', onResize);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       stage.app.ticker.remove(tick);
