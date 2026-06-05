@@ -42,7 +42,8 @@
 ### 包含（In scope）
 - `/games`：Dungeon Arcade 遊戲廳入口頁（霓虹卡片牆，俄羅斯方塊為第一款，預留擴充）。
 - `/games/tetris`：全螢幕遊戲頁，掛載 PixiJS app。
-- 模式選擇：`vs AI`（難度 簡單 / 普通 / 困難）、`本機雙人同鍵盤`、`線上對戰`（房間配對）。
+- 模式選擇：`vs AI`（難度 簡單 / 普通 / 困難）、`線上對戰`（房間配對）。
+  - ~~本機雙人同鍵盤~~：**已移除**（2026-06-05）。共用鍵盤的 hotseat 操作體驗太尷尬；對戰核心（attack/match）保留，改由 vs AI 與線上承載對戰。
 - 現代 Guideline Tetris 規則 + 對戰（垃圾行攻擊）機制。
 - VS 開場、對戰、KO/結算 三畫面流程。
 - **線上即時對戰**：WebRTC P2P 直連 + Vercel serverless 牽線（房間碼配對）；最後階段（Phase 6）建置。
@@ -210,8 +211,8 @@
 
 1. **核心引擎（TDD，headless）**：constants/board/piece/SRS/bag/game/scoring。可純靠測試驗證。
 2. **單人 Pixi 渲染**：掛 Pixi、方塊（tint）/盤面框/HUD/ghost/bloom/消行粒子；產核心素材 → `/games/tetris` 能單人玩。
-3. **對戰層**：`attack`/`match`、雙場、垃圾、中央計量條、攻擊光束 VFX、KO、VS/結算畫面 →（先接本機雙人，第二玩家最單純）。
-4. **AI 對手**：`ai/bot` 啟發式 + 難度，接成 P2 → vs AI 模式。
+3. **對戰層**（已完成）：`attack`/`match`、雙場、垃圾、中央計量條、攻擊光束 VFX、KO、結算 banner。（本機雙人 hotseat 在此階段做出後移除；引擎/渲染核心保留。）
+4. **AI 對手**：`ai/bot` 啟發式 + 難度，接成對手側 → vs AI 對戰（重用對戰層雙盤渲染/攻擊/垃圾；人類用 1P 鍵位、對手側由 bot 驅動）。
 5. **遊戲廳 + 收尾**：`/games` 卡片牆、模式選單、響應式 / 手機降級處理、音效（選配）、e2e、最終素材一輪。
 6. **線上對戰**：`/api/signal` 牽線 serverless、WebRTC `RTCDataChannel` 連線層、房間碼建立/加入 UI、確定性鎖步同步（重用 Phase 3 `match`）、斷線處理。建立在 Phase 2–3 之上，故排最後。
 
