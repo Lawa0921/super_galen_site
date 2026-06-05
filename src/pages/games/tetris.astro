@@ -83,11 +83,22 @@ const lang: Language = defaultLang;
 
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
+  import { startAi } from '@scripts/games/tetris/render/aiMain';
 
+  const params = new URLSearchParams(location.search);
   const canvas = document.getElementById('tetris-canvas') as HTMLCanvasElement | null;
+  const hint = document.getElementById('tetris-hint');
+
   if (canvas) {
-    startTetris(canvas).catch((err: unknown) => {
-      console.error('[tetris] failed to start', err);
-    });
+    if (params.get('mode') === 'ai') {
+      const raw = params.get('diff') ?? 'normal';
+      const diff = (['easy', 'normal', 'hard'].includes(raw) ? raw : 'normal') as 'easy' | 'normal' | 'hard';
+      if (hint) {
+        hint.textContent = `vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · R RESTART · M MUTE`;
+      }
+      startAi(canvas, diff).catch((err: unknown) => console.error('[tetris] failed to start', err));
+    } else {
+      startTetris(canvas).catch((err: unknown) => console.error('[tetris] failed to start', err));
+    }
   }
 </script>
