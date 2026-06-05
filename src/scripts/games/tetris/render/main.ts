@@ -7,6 +7,7 @@ import { PixiStage } from './PixiStage';
 import { BoardView } from './BoardView';
 import { HudView } from './HudView';
 import { Effects } from './Effects';
+import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from './assets';
 import { pieceTint, type Point } from './layout';
 
@@ -80,14 +81,28 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   window.addEventListener('resize', onResize);
 
   const input = new InputController((action) => game.input(action), { das: 150, arr: 35 });
+  const sound = new SoundManager();
 
   const onKeyDown = (e: KeyboardEvent) => {
+    if (e.code === 'KeyM') {
+      e.preventDefault();
+      sound.ensure();
+      sound.toggle();
+      return;
+    }
     const action = KEYMAP_1P[e.code];
     if (!action) return;
     e.preventDefault();
+    sound.ensure(); // 首次手勢解鎖 AudioContext
     if (e.repeat) return; // 用自家 DAS/ARR，忽略 OS 連發
     input.press(action);
-    if (action === 'hardDrop') stage.shake(5); // 硬降衝擊
+    if (action === 'left' || action === 'right') sound.move();
+    else if (action === 'rotateCW' || action === 'rotateCCW') sound.rotate();
+    else if (action === 'hold') sound.hold();
+    else if (action === 'hardDrop') {
+      stage.shake(5); // 硬降衝擊
+      sound.hardDrop();
+    }
   };
   const onKeyUp = (e: KeyboardEvent) => {
     const action = KEYMAP_1P[e.code];
@@ -107,9 +122,12 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
     for (const ev of game.drainEvents()) {
       if (ev.kind === 'lock') {
         fx.lockBurst(getCells(ev.piece), pieceTint(ev.piece.type));
+        sound.lock();
       } else if (ev.kind === 'lineClear') {
         stage.shake(4 + ev.count * 3);
         fx.lineClear(ev.rows, 0x9fefff);
+        sound.lineClear(ev.count, ev.tSpin !== 'none' || ev.count >= 4);
+        if (ev.combo >= 1) sound.combo(ev.combo);
         let shift = 0;
         if (ev.tSpin !== 'none') {
           fx.popup('T-SPIN!', 0xc15cff, true, shift); shift += 30;
@@ -121,6 +139,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
       } else if (ev.kind === 'topout') {
         stage.shake(14);
         fx.topoutFlash();
+        sound.topout();
       }
     }
 
@@ -129,6 +148,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
       lastLevel = state.level;
       fx.popup(`LEVEL ${state.level}`, 0x36e6ff, true);
       stage.shake(6);
+      sound.levelUp();
     }
 
     board.render(state);
