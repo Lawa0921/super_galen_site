@@ -8,7 +8,7 @@ test.describe('Dungeon Arcade — Tetris', () => {
   test('single-player page loads, inits engine, and responds to input', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
 
-    await page.goto('/games/tetris');
+    await page.goto('/games/tetris?mode=solo'); // 跳過模式選單直接開單人
     await expect(page.locator('#tetris-canvas')).toBeVisible();
 
     // 等待 Pixi 初始化 + 素材載入後掛上的 debug hook
