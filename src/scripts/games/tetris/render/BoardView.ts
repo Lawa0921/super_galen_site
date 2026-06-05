@@ -18,6 +18,7 @@ export class BoardView {
   private wellFill = new Graphics();
   private grid = new Graphics();
   private cellLayer = new Container();
+  private border = new Graphics();
   private pool: Sprite[] = [];
   private cellSize = 24;
   private origin: Point = { x: 0, y: 0 };
@@ -32,8 +33,9 @@ export class BoardView {
   ) {
     this.tintColor = opts.frameTint ?? 0x36e6ff;
     bgLayer.addChild(this.wellFill);
-    playLayer.addChild(this.grid);
-    playLayer.addChild(this.cellLayer);
+    playLayer.addChild(this.grid);       // 格線：在方塊之下（只在空格可見）
+    playLayer.addChild(this.cellLayer);  // 方塊
+    playLayer.addChild(this.border);     // 邊框：在方塊之上（邊界永遠清楚）
   }
 
   setLayout(cellSize: number, origin: Point): void {
@@ -53,18 +55,16 @@ export class BoardView {
 
     this.wellFill.clear().rect(ox, oy, w, h).fill({ color: 0x04060e, alpha: 0.82 });
 
+    // 內部格線（淡）— 畫在方塊下方，僅空格可見
     const g = this.grid.clear();
-    // 內部格線（淡）
     for (let x = 1; x < BOARD_WIDTH; x++) g.moveTo(ox + x * cs, oy).lineTo(ox + x * cs, oy + h);
     for (let y = 1; y < VISIBLE_HEIGHT; y++) g.moveTo(ox, oy + y * cs).lineTo(ox + w, oy + y * cs);
     g.stroke({ width: 1, color: c, alpha: 0.1 });
 
-    // 外框
-    g.rect(ox, oy, w, h).stroke({ width: 2, color: c, alpha: 0.85 });
-
-    // 四角科技括號
+    // 邊框 + 四角括號 — 畫在方塊上方，精準框住 10×20 真實遊玩區
+    const bd = this.border.clear();
+    bd.rect(ox, oy, w, h).stroke({ width: 2, color: c, alpha: 0.9 });
     const b = Math.max(10, cs * 0.9);
-    const t = 4;
     const corners: Array<[number, number, number, number]> = [
       [ox, oy, 1, 1],
       [ox + w, oy, -1, 1],
@@ -72,9 +72,9 @@ export class BoardView {
       [ox + w, oy + h, -1, -1],
     ];
     for (const [cx, cy, sx, sy] of corners) {
-      g.moveTo(cx, cy + sy * b).lineTo(cx, cy).lineTo(cx + sx * b, cy);
+      bd.moveTo(cx, cy + sy * b).lineTo(cx, cy).lineTo(cx + sx * b, cy);
     }
-    g.stroke({ width: t, color: c, alpha: 1 });
+    bd.stroke({ width: 4, color: c, alpha: 1 });
   }
 
   private getSprite(i: number): Sprite {
@@ -82,7 +82,7 @@ export class BoardView {
     if (!s) {
       s = new Sprite(this.blockTex);
       s.anchor.set(0.5);
-      s.blendMode = 'add';
+      s.blendMode = 'normal'; // 實心塊：填滿格子、邊界精準（不發散）
       s.roundPixels = true;
       this.cellLayer.addChild(s);
       this.pool[i] = s;
