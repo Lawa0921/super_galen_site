@@ -1,5 +1,6 @@
-import type { Matrix } from '../engine/types';
+import type { ActivePiece, Matrix, PieceType, Rotation } from '../engine/types';
 import { BOARD_WIDTH, TOTAL_HEIGHT } from '../engine/constants';
+import { canPlace, lockPiece, clearLines } from '../engine/board';
 
 export interface BoardFeatures {
   aggregateHeight: number;
@@ -55,4 +56,39 @@ export function evaluateBoard(board: Matrix): BoardFeatures {
 export function scoreBoard(board: Matrix, lines: number): number {
   const f = evaluateBoard(board);
   return W_LINES * lines + W_HEIGHT * f.aggregateHeight + W_HOLES * f.holes + W_BUMP * f.bumpiness;
+}
+
+export interface Placement { rotation: Rotation; x: number; }
+
+/** 把 (type,rotation,x) 從頂端直落到底、鎖定、消行。無法放置回傳 null。 */
+export function dropPlacement(
+  board: Matrix,
+  type: PieceType,
+  rotation: Rotation,
+  x: number,
+): { board: Matrix; lines: number } | null {
+  let piece: ActivePiece = { type, rotation, x, y: 0 };
+  if (!canPlace(board, piece)) return null;
+  while (canPlace(board, { ...piece, y: piece.y + 1 })) piece = { ...piece, y: piece.y + 1 };
+  const locked = lockPiece(board, piece);
+  const { board: cleared, rows } = clearLines(locked);
+  return { board: cleared, lines: rows.length };
+}
+
+/** 枚舉所有旋轉 × 欄位的直落落點，選評分最高者。確定性 tie-break（先 rotation、後 x）。 */
+export function bestPlacement(board: Matrix, type: PieceType): Placement | null {
+  let best: Placement | null = null;
+  let bestScore = -Infinity;
+  for (let rotation = 0 as Rotation; rotation < 4; rotation = (rotation + 1) as Rotation) {
+    for (let x = -2; x <= BOARD_WIDTH; x++) {
+      const res = dropPlacement(board, type, rotation, x);
+      if (!res) continue;
+      const score = scoreBoard(res.board, res.lines);
+      if (score > bestScore) {
+        bestScore = score;
+        best = { rotation, x };
+      }
+    }
+  }
+  return best;
 }

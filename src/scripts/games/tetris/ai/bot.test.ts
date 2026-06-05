@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateBoard, scoreBoard } from './bot';
+import { evaluateBoard, scoreBoard, dropPlacement, bestPlacement } from './bot';
 import { createBoard } from '../engine/board';
+import { canPlace } from '../engine/board';
+import { getCells, spawnPiece } from '../engine/piece';
 import { BOARD_WIDTH, TOTAL_HEIGHT } from '../engine/constants';
+import type { PieceType } from '../engine/types';
 
 describe('evaluateBoard', () => {
   it('空盤：高度/洞/崎嶇/消行皆 0', () => {
@@ -48,5 +51,48 @@ describe('scoreBoard', () => {
     const last = TOTAL_HEIGHT - 1;
     holed[last - 1][3] = 'I'; // 製造一個洞 + 高度
     expect(scoreBoard(holed, 0)).toBeLessThan(scoreBoard(flat, 0));
+  });
+});
+
+describe('dropPlacement', () => {
+  it('在空盤直落 O 到底，回傳鎖定後盤面與 0 消行', () => {
+    const res = dropPlacement(createBoard(), 'O', 0, 4);
+    expect(res).not.toBeNull();
+    expect(res!.lines).toBe(0);
+    // O 落到最底兩列
+    expect(res!.board[TOTAL_HEIGHT - 1][4]).toBe('O');
+    expect(res!.board[TOTAL_HEIGHT - 1][5]).toBe('O');
+  });
+  it('越界的 x 回傳 null', () => {
+    expect(dropPlacement(createBoard(), 'O', 0, -5)).toBeNull();
+    expect(dropPlacement(createBoard(), 'O', 0, BOARD_WIDTH)).toBeNull();
+  });
+});
+
+describe('bestPlacement', () => {
+  it('對每種方塊在空盤都回傳一個合法落點', () => {
+    const types: PieceType[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+    for (const t of types) {
+      const p = bestPlacement(createBoard(), t);
+      expect(p).not.toBeNull();
+      // 該落點以 spawn 旋轉/欄位放在頂端應可放
+      expect(canPlace(createBoard(), { type: t, rotation: p!.rotation, x: p!.x, y: 0 })).toBe(true);
+    }
+  });
+
+  it('能消行時會選擇消行的落點', () => {
+    // 底列只缺第 0 欄；直立 I 落在第 0 欄可消 1 行
+    const b = createBoard();
+    const last = TOTAL_HEIGHT - 1;
+    for (let x = 1; x < BOARD_WIDTH; x++) b[last][x] = 'G';
+    const p = bestPlacement(b, 'I');
+    expect(p).not.toBeNull();
+    const res = dropPlacement(b, 'I', p!.rotation, p!.x);
+    expect(res!.lines).toBeGreaterThanOrEqual(1);
+  });
+
+  it('同盤面同方塊回傳相同落點（確定性）', () => {
+    const b = createBoard();
+    expect(bestPlacement(b, 'T')).toEqual(bestPlacement(b, 'T'));
   });
 });
