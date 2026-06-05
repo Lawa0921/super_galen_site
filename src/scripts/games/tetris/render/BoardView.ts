@@ -6,37 +6,34 @@ import { getCells } from '../engine/piece';
 import { cellToPixel, pieceTint, GARBAGE_TINT, type Point } from './layout';
 
 export interface BoardViewOptions {
-  /** 盤面框 tint（P1 青 / P2 洋紅） */
+  /** 邊框 / 格線顏色（P1 青 / P2 洋紅） */
   frameTint?: number;
 }
 
 /**
- * 依 GameState 繪製單一盤面：暗色底 + 鎖定格 + 幽靈落點 + 活動方塊 + 霓虹外框。
- * 方塊素材生在純黑底，故以 additive 混色（黑→透明、霓虹疊加）。
+ * 依 GameState 繪製單一盤面：暗底 + 科技格線/邊框（Graphics 銳利線）
+ * + 鎖定格 + 幽靈落點 + 活動方塊（像素方塊素材，additive 混色 + 最近鄰）。
  */
 export class BoardView {
   private wellFill = new Graphics();
+  private grid = new Graphics();
   private cellLayer = new Container();
-  private frame: Sprite;
   private pool: Sprite[] = [];
   private cellSize = 24;
   private origin: Point = { x: 0, y: 0 };
+  private tintColor: number;
 
   constructor(
     private bgLayer: Container,
     private playLayer: Container,
     private blockTex: Texture,
-    frameTex: Texture,
-    private opts: BoardViewOptions = {},
+    _frameTex: Texture,
+    opts: BoardViewOptions = {},
   ) {
-    this.frame = new Sprite(frameTex);
-    this.frame.blendMode = 'add';
-    this.frame.alpha = 0.6;
-    if (opts.frameTint !== undefined) this.frame.tint = opts.frameTint;
-
+    this.tintColor = opts.frameTint ?? 0x36e6ff;
     bgLayer.addChild(this.wellFill);
+    playLayer.addChild(this.grid);
     playLayer.addChild(this.cellLayer);
-    playLayer.addChild(this.frame);
   }
 
   setLayout(cellSize: number, origin: Point): void {
@@ -45,24 +42,39 @@ export class BoardView {
     this.redrawStatic();
   }
 
-  /** 重畫不隨遊戲狀態改變的元素（暗底 + 外框定位）。 */
+  /** 暗底 + 格線 + 邊框 + 角括號（科技 HUD 風，銳利線）。 */
   private redrawStatic(): void {
-    const w = this.cellSize * BOARD_WIDTH;
-    const h = this.cellSize * VISIBLE_HEIGHT;
-    this.wellFill
-      .clear()
-      .roundRect(this.origin.x, this.origin.y, w, h, this.cellSize * 0.25)
-      .fill({ color: 0x05070f, alpha: 0.72 });
+    const cs = this.cellSize;
+    const ox = this.origin.x;
+    const oy = this.origin.y;
+    const w = cs * BOARD_WIDTH;
+    const h = cs * VISIBLE_HEIGHT;
+    const c = this.tintColor;
 
-    // 外框略大於盤面，置中對齊；數值經視覺微調。
-    const padX = this.cellSize * 1.15;
-    const padY = this.cellSize * 0.7;
-    const fw = w + padX * 2;
-    const fh = h + padY * 2;
-    this.frame.width = fw;
-    this.frame.height = fh;
-    this.frame.x = this.origin.x - padX;
-    this.frame.y = this.origin.y - padY;
+    this.wellFill.clear().rect(ox, oy, w, h).fill({ color: 0x04060e, alpha: 0.82 });
+
+    const g = this.grid.clear();
+    // 內部格線（淡）
+    for (let x = 1; x < BOARD_WIDTH; x++) g.moveTo(ox + x * cs, oy).lineTo(ox + x * cs, oy + h);
+    for (let y = 1; y < VISIBLE_HEIGHT; y++) g.moveTo(ox, oy + y * cs).lineTo(ox + w, oy + y * cs);
+    g.stroke({ width: 1, color: c, alpha: 0.1 });
+
+    // 外框
+    g.rect(ox, oy, w, h).stroke({ width: 2, color: c, alpha: 0.85 });
+
+    // 四角科技括號
+    const b = Math.max(10, cs * 0.9);
+    const t = 4;
+    const corners: Array<[number, number, number, number]> = [
+      [ox, oy, 1, 1],
+      [ox + w, oy, -1, 1],
+      [ox, oy + h, 1, -1],
+      [ox + w, oy + h, -1, -1],
+    ];
+    for (const [cx, cy, sx, sy] of corners) {
+      g.moveTo(cx, cy + sy * b).lineTo(cx, cy).lineTo(cx + sx * b, cy);
+    }
+    g.stroke({ width: t, color: c, alpha: 1 });
   }
 
   private getSprite(i: number): Sprite {
@@ -71,6 +83,7 @@ export class BoardView {
       s = new Sprite(this.blockTex);
       s.anchor.set(0.5);
       s.blendMode = 'add';
+      s.roundPixels = true;
       this.cellLayer.addChild(s);
       this.pool[i] = s;
     }
@@ -81,9 +94,8 @@ export class BoardView {
     if (cellY < BUFFER_ROWS) return i; // 緩衝列不畫
     const s = this.getSprite(i);
     const p = cellToPixel(cellX, cellY, this.cellSize, this.origin);
-    const size = this.cellSize * 0.96;
-    s.width = size;
-    s.height = size;
+    s.width = this.cellSize;
+    s.height = this.cellSize;
     s.x = p.x + this.cellSize / 2;
     s.y = p.y + this.cellSize / 2;
     s.tint = tint;
@@ -102,7 +114,6 @@ export class BoardView {
     let i = 0;
     const { board, active } = state;
 
-    // 鎖定格
     for (let y = 0; y < board.length; y++) {
       for (let x = 0; x < BOARD_WIDTH; x++) {
         const cell = board[y][x];
@@ -112,20 +123,17 @@ export class BoardView {
       }
     }
 
-    // 幽靈落點
     if (active) {
       const ghost = this.ghostCells(active, board);
       const tint = pieceTint(active.type);
-      for (const c of getCells(ghost)) i = this.drawCell(i, c.x, c.y, tint, 0.22);
+      for (const cl of getCells(ghost)) i = this.drawCell(i, cl.x, cl.y, tint, 0.2);
     }
 
-    // 活動方塊
     if (active) {
       const tint = pieceTint(active.type);
-      for (const c of getCells(active)) i = this.drawCell(i, c.x, c.y, tint, 1);
+      for (const cl of getCells(active)) i = this.drawCell(i, cl.x, cl.y, tint, 1);
     }
 
-    // 收起多餘的池物件
     for (let k = i; k < this.pool.length; k++) this.pool[k].visible = false;
   }
 }

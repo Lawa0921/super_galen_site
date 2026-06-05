@@ -14,6 +14,13 @@ const lang: Language = defaultLang;
   description="霓虹地城風格的對戰俄羅斯方塊"
   lang={lang}
 >
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+  />
+
   <main class="tetris-page">
     <a class="tetris-back" href="/games">← ARCADE</a>
     <div class="tetris-stage">
@@ -45,12 +52,12 @@ const lang: Language = defaultLang;
     top: 18px;
     left: 20px;
     z-index: 10;
-    font-family: Consolas, 'Courier New', monospace;
-    font-size: 14px;
-    letter-spacing: 2px;
-    color: #9fb4d8;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
     text-decoration: none;
-    opacity: 0.7;
+    opacity: 0.8;
   }
   .tetris-back:hover {
     opacity: 1;

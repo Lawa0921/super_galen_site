@@ -4,18 +4,17 @@ import type { GameState, PieceType } from '../engine/types';
 import { SHAPES } from '../engine/constants';
 import { pieceTint, type Point } from './layout';
 
+const PIXEL_FONT = '"Press Start 2P", Consolas, monospace';
 const LABEL_STYLE: TextStyleOptions = {
-  fontFamily: 'Consolas, "Courier New", monospace',
-  fontSize: 13,
-  fill: 0x9fb4d8,
-  fontWeight: 'bold',
-  letterSpacing: 3,
+  fontFamily: PIXEL_FONT,
+  fontSize: 9,
+  fill: 0x6fa8d8,
+  letterSpacing: 1,
 };
 const VALUE_STYLE: TextStyleOptions = {
-  fontFamily: 'Consolas, "Courier New", monospace',
-  fontSize: 22,
+  fontFamily: PIXEL_FONT,
+  fontSize: 14,
   fill: 0xffffff,
-  fontWeight: 'bold',
 };
 
 /** 繪製 HOLD / NEXT / SCORE / LEVEL / LINES / COMBO。 */

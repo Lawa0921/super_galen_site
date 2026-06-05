@@ -53,6 +53,14 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   const board = new BoardView(stage.bgLayer, stage.playLayer, tex.block, tex.frameWell, {
     frameTint: pieceTint('I'),
   });
+
+  // 確保街機點陣字載入後再建立 HUD（否則 Pixi 會以 fallback 字測量、之後不更新）
+  try {
+    await document.fonts.load('14px "Press Start 2P"');
+    await document.fonts.ready;
+  } catch {
+    /* 字型載入失敗則退回 monospace */
+  }
   const hud = new HudView(stage.hudLayer, tex.block, 3);
 
   function relayout(): void {
@@ -89,6 +97,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
     const state = game.getState();
     board.render(state);
     hud.render(state);
+    stage.update(dt); // 推進 CRT 掃描線動畫
     game.drainEvents(); // Phase 3 會接特效；此階段先清空
   };
   stage.app.ticker.add(tick);

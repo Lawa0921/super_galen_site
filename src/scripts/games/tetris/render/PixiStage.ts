@@ -1,5 +1,5 @@
 import { Application, Container, Sprite, type Texture } from 'pixi.js';
-import { AdvancedBloomFilter } from 'pixi-filters';
+import { AdvancedBloomFilter, CRTFilter } from 'pixi-filters';
 
 /**
  * 包裝 Pixi Application 與圖層。
@@ -14,20 +14,42 @@ export class PixiStage {
   readonly hudLayer = new Container();
 
   private bgSprite: Sprite | null = null;
+  private crt: CRTFilter;
 
   private constructor(app: Application) {
     this.app = app;
     app.stage.addChild(this.bgLayer, this.playLayer, this.fxLayer, this.hudLayer);
 
+    // bloom 收斂：保留霓虹光暈但讓像素硬邊清楚
     this.playLayer.filters = [
-      new AdvancedBloomFilter({ threshold: 0.6, bloomScale: 0.45, brightness: 1.0, blur: 4, quality: 4 }),
+      new AdvancedBloomFilter({ threshold: 0.55, bloomScale: 0.4, brightness: 1.0, blur: 3, quality: 4 }),
     ];
     this.fxLayer.filters = [
       new AdvancedBloomFilter({ threshold: 0.4, bloomScale: 0.9, brightness: 1.0, blur: 6, quality: 4 }),
     ];
     this.hudLayer.filters = [
-      new AdvancedBloomFilter({ threshold: 0.55, bloomScale: 0.35, brightness: 1.0, blur: 3, quality: 4 }),
+      new AdvancedBloomFilter({ threshold: 0.55, bloomScale: 0.3, brightness: 1.0, blur: 2, quality: 4 }),
     ];
+
+    // 全畫面 CRT：掃描線 + 微曲率 + 暗角 + 雜訊（街機科技感，保持克制以利閱讀）
+    this.crt = new CRTFilter({
+      curvature: 1.2,
+      lineWidth: 2.2,
+      lineContrast: 0.18,
+      noise: 0.06,
+      noiseSize: 1.1,
+      vignetting: 0.32,
+      vignettingAlpha: 0.5,
+      vignettingBlur: 0.3,
+      time: 0,
+    });
+    app.stage.filters = [this.crt];
+  }
+
+  /** 每幀推進 CRT 動畫（掃描線/雜訊微閃）。 */
+  update(dtMs: number): void {
+    this.crt.time += dtMs * 0.0006;
+    this.crt.seed = (this.crt.seed + dtMs * 0.0003) % 1;
   }
 
   static async create(canvas: HTMLCanvasElement): Promise<PixiStage> {

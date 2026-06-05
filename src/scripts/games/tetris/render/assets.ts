@@ -21,5 +21,7 @@ export async function loadGameTextures(): Promise<GameTextures> {
     Assets.load(ASSET_URLS.frameWell) as Promise<Texture>,
     Assets.load(ASSET_URLS.bg) as Promise<Texture>,
   ]);
+  // 方塊走最近鄰取樣以保留像素硬邊；背景維持平滑。
+  block.source.scaleMode = 'nearest';
   return { block, frameWell, bg };
 }
