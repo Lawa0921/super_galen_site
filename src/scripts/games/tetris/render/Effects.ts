@@ -184,6 +184,38 @@ export class Effects {
     this.flashes.push({ sp, life: 0.7, max: 0.7 });
   }
 
+  /** 跨場攻擊光束：自攻擊方飛向對手盤面，短暫亮起淡出。 */
+  attackBeam(fromX: number, fromY: number, toX: number, toY: number, color: number): void {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const len = Math.max(1, Math.hypot(dx, dy));
+    const sp = new Sprite(this.tex.glow);
+    sp.anchor.set(0.5);
+    sp.blendMode = 'add';
+    sp.tint = color;
+    sp.x = (fromX + toX) / 2;
+    sp.y = (fromY + toY) / 2;
+    sp.rotation = Math.atan2(dy, dx);
+    sp.width = len;
+    sp.height = this.cellSize * 0.9;
+    this.layer.addChild(sp);
+    this.flashes.push({ sp, life: 0.34, max: 0.34 });
+  }
+
+  /** 被注入垃圾：盤面紅閃。 */
+  garbageInFlash(rect: { x: number; y: number; w: number; h: number }, color = 0xff3355): void {
+    const sp = new Sprite(this.tex.glow);
+    sp.anchor.set(0.5);
+    sp.blendMode = 'add';
+    sp.tint = color;
+    sp.x = rect.x + rect.w / 2;
+    sp.y = rect.y + rect.h / 2;
+    sp.width = rect.w * 1.3;
+    sp.height = rect.h * 1.05;
+    this.layer.addChild(sp);
+    this.flashes.push({ sp, life: 0.4, max: 0.4 });
+  }
+
   update(dtMs: number): void {
     const dt = dtMs / 1000;
 

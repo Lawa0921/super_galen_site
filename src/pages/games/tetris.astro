@@ -23,7 +23,7 @@ const lang: Language = defaultLang;
 
   <main class="tetris-page">
     <a class="tetris-back" href="/games">← ARCADE</a>
-    <p class="tetris-hint">MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M</p>
+    <p class="tetris-hint" id="tetris-hint">MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M</p>
     <div class="tetris-stage">
       <canvas id="tetris-canvas"></canvas>
     </div>
@@ -83,10 +83,19 @@ const lang: Language = defaultLang;
 
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
+  import { startMatch } from '@scripts/games/tetris/render/matchMain';
 
   const canvas = document.getElementById('tetris-canvas') as HTMLCanvasElement | null;
+  const is2P = new URLSearchParams(location.search).get('mode') === '2p';
+  const hint = document.getElementById('tetris-hint');
+  if (hint) {
+    hint.textContent = is2P
+      ? 'P1  WASD · Q/E ROTATE · LSHIFT HOLD     P2  ←↑→↓ · ,/. ROTATE · RSHIFT HOLD     R RESTART · M MUTE'
+      : 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M';
+  }
   if (canvas) {
-    startTetris(canvas).catch((err) => {
+    const start = is2P ? startMatch : startTetris;
+    start(canvas).catch((err: unknown) => {
       console.error('[tetris] failed to start', err);
     });
   }

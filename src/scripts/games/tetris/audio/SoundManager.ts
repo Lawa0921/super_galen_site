@@ -102,4 +102,15 @@ export class SoundManager {
     this.blip(300, 0.6, 'sawtooth', 0.38, 60);
     this.noise(0.5, 0.28, 800, 180);
   }
+  /** 送出攻擊：上升嘯聲（量越大越高）。 */
+  attack(amount: number): void {
+    const f = 300 + Math.min(amount, 10) * 90;
+    this.blip(f, 0.16, 'sawtooth', 0.3, f * 2.2);
+  }
+  /** 被注入垃圾：低沉撞擊。 */
+  garbageIn(amount: number): void {
+    this.noise(0.16, 0.34, 700, 140);
+    this.blip(110, 0.14, 'square', 0.3, 70);
+    void amount;
+  }
 }
