@@ -77,3 +77,29 @@ describe('TetrisMatch 垃圾傾倒與抵銷', () => {
     expect(holes(7)).toEqual(holes(7));
   });
 });
+
+describe('TetrisMatch 真實攻擊與抵銷（整合）', () => {
+  it('連段送出真實垃圾給對手並發 attack 事件', () => {
+    const m = new TetrisMatch({ seed: 5 });
+    m.drainEvents();
+    // 連續三次消行 → combo 0,1,2 → comboAttack 0+1+1 = 2 送給 B
+    m.a.debugFillRowExceptOneAndDrop();
+    m.a.debugFillRowExceptOneAndDrop();
+    m.a.debugFillRowExceptOneAndDrop();
+    m.step(0);
+    expect(m.pendingGarbage('B')).toBe(2);
+    const evs = m.drainEvents();
+    expect(evs.some((e) => e.kind === 'attack' && e.from === 'A' && e.amount > 0)).toBe(true);
+  });
+
+  it('消行先抵銷自身待入垃圾、餘量才送對手', () => {
+    const m = new TetrisMatch({ seed: 5 });
+    (m as unknown as { incoming: Record<string, number> }).incoming.A = 1;
+    m.drainEvents();
+    // 四次消行 combo 0,1,2,3 → 送出 0+1+1+2=4；先抵銷 A 的 1 → A=0、B=3
+    for (let i = 0; i < 4; i++) m.a.debugFillRowExceptOneAndDrop();
+    m.step(0);
+    expect(m.pendingGarbage('A')).toBe(0);
+    expect(m.pendingGarbage('B')).toBe(3);
+  });
+});

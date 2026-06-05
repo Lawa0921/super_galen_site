@@ -58,16 +58,32 @@ export class TetrisMatch {
 
   /** 處理某側本幀事件：攻擊路由（Task 2）+ 垃圾傾倒/KO（Task 3）。 */
   private process(side: Side): void {
+    if (this.phase !== 'playing') return;
     const opp: Side = side === 'A' ? 'B' : 'A';
     const game = this.game(side);
     const evs = game.drainEvents();
-    let cleared = false;
+    let lockOpen = false; // 有一個尚未結算傾倒的 lock
+    let lockCleared = false; // 該 lock 是否消行
+
+    const resolveLock = (): void => {
+      if (lockOpen && !lockCleared && this.phase === 'playing' && this.incoming[side] > 0) {
+        const amount = this.incoming[side];
+        this.incoming[side] = 0;
+        game.receiveGarbage(amount, this.holeCol());
+        this.events.push({ kind: 'garbageIn', side, amount });
+      }
+      lockOpen = false;
+      lockCleared = false;
+    };
 
     for (const ev of evs) {
       if (ev.kind === 'lock') {
+        resolveLock(); // 結算前一個 lock（僅在單 step 多次鎖定時才會發生）
         this.events.push({ kind: 'lock', side, piece: ev.piece });
+        lockOpen = true;
+        lockCleared = false;
       } else if (ev.kind === 'lineClear') {
-        cleared = true;
+        lockCleared = true;
         this.events.push({ kind: 'lineClear', side, rows: ev.rows, count: ev.count, tSpin: ev.tSpin, combo: ev.combo, b2b: ev.b2b });
         const out = computeAttack({ count: ev.count, tSpin: ev.tSpin, combo: ev.combo, b2b: ev.b2b });
         const res = cancelGarbage(this.incoming[side], out);
@@ -77,20 +93,13 @@ export class TetrisMatch {
           this.events.push({ kind: 'attack', from: side, amount: res.sent });
         }
       } else if (ev.kind === 'topout') {
+        lockOpen = false; // 頂出不傾倒
         this.phase = 'result';
         this.winner = opp;
         this.events.push({ kind: 'ko', winner: opp });
       }
     }
-
-    // 非消行落地：傾倒待入垃圾（單一洞口）
-    const locked = evs.some((e) => e.kind === 'lock');
-    if (locked && !cleared && this.incoming[side] > 0) {
-      const amount = this.incoming[side];
-      this.incoming[side] = 0;
-      game.receiveGarbage(amount, this.holeCol());
-      this.events.push({ kind: 'garbageIn', side, amount });
-    }
+    resolveLock(); // 結算最後一個 lock
   }
 
   step(dtMs: number): void {
