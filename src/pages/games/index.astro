@@ -21,6 +21,7 @@ const games = [
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
 
   <main class="arcade">
+    <div class="arcade-boot" aria-hidden="true"></div>
     <a class="arcade-home" href="/">← HOME</a>
     <h1 class="arcade-title">DUNGEON ARCADE</h1>
 
@@ -138,5 +139,46 @@ const games = [
 
   @media (max-width: 560px) {
     .card { width: 70vw; height: 200px; }
+  }
+
+  /* ---- 進場動畫（開機式） ---- */
+  .arcade-boot {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg, rgba(54, 230, 255, 0.14) 0 2px, transparent 2px 4px),
+      radial-gradient(ellipse at center, rgba(54, 230, 255, 0.28), rgba(4, 6, 13, 0.98));
+    transform-origin: center;
+    animation: arcadeBootOut 0.95s ease forwards;
+  }
+  @keyframes arcadeBootOut {
+    0% { opacity: 1; transform: scaleY(1); }
+    40% { opacity: 1; transform: scaleY(1); }
+    100% { opacity: 0; transform: scaleY(0); }
+  }
+
+  .arcade-title {
+    animation: arcadeTitleIn 0.7s 0.28s both cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes arcadeTitleIn {
+    0% { opacity: 0; transform: translateY(-22px) scale(0.9); filter: brightness(2.2) blur(5px); letter-spacing: 16px; }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: none; letter-spacing: 4px; }
+  }
+
+  .card { animation: arcadeCardIn 0.5s both ease; }
+  .card-wall .card:nth-child(1) { animation-delay: 0.5s; }
+  .card-wall .card:nth-child(2) { animation-delay: 0.64s; }
+  .card-wall .card:nth-child(3) { animation-delay: 0.78s; }
+  @keyframes arcadeCardIn {
+    0% { opacity: 0; transform: translateY(32px) scale(0.92); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .arcade-boot { display: none; }
+    .arcade-title,
+    .card { animation: none; }
   }
 </style>
