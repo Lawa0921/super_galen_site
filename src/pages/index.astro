@@ -40,6 +40,11 @@ const pageDescription = trans.site?.description || 'RPG 風格技術部落格';
           </button>
 
           <div class="nav-container desktop-nav">
+              <!-- 遊戲室入口 -->
+              <a href="/games" class="arcade-nav-link" title="Dungeon Arcade 遊戲室">
+                  <i class="fas fa-gamepad"></i> <span>ARCADE</span>
+              </a>
+
               <!-- 連接錢包按鈕 (未連接時顯示) -->
               <button class="connect-wallet-btn-header" id="connect-wallet-header" style="display: none;">
                   <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
@@ -83,6 +88,11 @@ const pageDescription = trans.site?.description || 'RPG 風格技術部落格';
               </button>
           </div>
           <div class="mobile-menu-content">
+              <!-- 遊戲室入口 -->
+              <a href="/games" class="arcade-nav-link arcade-nav-link--mobile" title="Dungeon Arcade 遊戲室">
+                  <i class="fas fa-gamepad"></i> <span>ARCADE 遊戲室</span>
+              </a>
+
               <button class="connect-wallet-btn-mobile" id="connect-wallet-mobile" style="display: none;">
                   <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
                   <span class="wallet-text" data-i18n="header.connect_wallet">連接錢包</span>
