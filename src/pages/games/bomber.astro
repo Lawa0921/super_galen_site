@@ -1,0 +1,193 @@
+---
+/**
+ * /games/bomber — Dungeon Arcade: Dungeon Bomber
+ * 模式：SOLO；全螢幕 PixiJS 遊戲頁，由頁底腳本載入並 code-split。
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+
+const lang: Language = defaultLang;
+---
+
+<BaseLayout
+  title="Dungeon Arcade — Dungeon Bomber"
+  description="像素地城炸彈生存"
+  lang={lang}
+>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+  />
+
+  <main class="bomber-page">
+    <a class="bomber-back" href="/games">← ARCADE</a>
+    <p class="bomber-hint">MOVE WASD/←→↑↓ · BOMB SPACE · MUTE M</p>
+    <div class="bomber-stage">
+      <canvas id="bomber-canvas"></canvas>
+    </div>
+
+    <div class="mode-select" id="mode-select">
+      <h2 class="ms-title">DUNGEON BOMBER</h2>
+      <div class="ms-buttons">
+        <button class="ms-btn ms-solo" data-mode="solo">▶ START</button>
+      </div>
+    </div>
+
+    <div class="bomber-over" id="bomber-over" hidden>
+      <h2 class="ms-title">GAME OVER</h2>
+      <p id="bomber-over-stats" class="over-stats"></p>
+      <button class="ms-btn ms-solo" id="bomber-restart">RETRY</button>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .bomber-page {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #06070f;
+    overflow: hidden;
+  }
+  .bomber-stage {
+    position: absolute;
+    inset: 0;
+  }
+  #bomber-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .bomber-back {
+    position: absolute;
+    top: 18px;
+    left: 20px;
+    z-index: 10;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
+    text-decoration: none;
+    opacity: 0.8;
+  }
+  .bomber-back:hover {
+    opacity: 1;
+    color: #36e6ff;
+  }
+  .bomber-hint {
+    position: absolute;
+    bottom: 14px;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin: 0;
+    text-align: center;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #5a7299;
+    opacity: 0.75;
+    pointer-events: none;
+  }
+  .mode-select {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    background: rgba(4, 6, 13, 0.78);
+    font-family: 'Press Start 2P', Consolas, monospace;
+  }
+  .mode-select[hidden] {
+    display: none;
+  }
+  .ms-title {
+    margin: 0;
+    font-size: clamp(18px, 3.5vw, 30px);
+    letter-spacing: 4px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 28px rgba(54, 230, 255, 0.5);
+  }
+  .ms-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: min(360px, 80vw);
+  }
+  .ms-btn {
+    padding: 18px 20px;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: #cfe8ff;
+    background: rgba(8, 12, 22, 0.8);
+    border: 2px solid rgba(54, 230, 255, 0.7);
+    border-radius: 10px;
+    box-shadow: 0 0 12px rgba(54, 230, 255, 0.3);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  }
+  .ms-btn:hover {
+    transform: translateY(-3px);
+    color: #eafdff;
+    box-shadow: 0 0 22px rgba(54, 230, 255, 0.75);
+  }
+  .ms-solo {
+    border-color: rgba(77, 255, 136, 0.7);
+    box-shadow: 0 0 12px rgba(77, 255, 136, 0.3);
+  }
+  .ms-solo:hover {
+    box-shadow: 0 0 22px rgba(77, 255, 136, 0.75);
+  }
+
+  /* 遊戲結束 overlay：同 mode-select 樣式 */
+  .bomber-over {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    background: rgba(4, 6, 13, 0.84);
+    font-family: 'Press Start 2P', Consolas, monospace;
+  }
+  .bomber-over[hidden] {
+    display: none;
+  }
+  .over-stats {
+    margin: 0;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: #ffd23f;
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+
+<script>
+  import { startBomber } from '@scripts/games/bomber/render/main';
+
+  const params = new URLSearchParams(location.search);
+  const canvas = document.getElementById('bomber-canvas') as HTMLCanvasElement | null;
+  const modeSelect = document.getElementById('mode-select');
+  let started = false;
+
+  function startSolo(): void {
+    if (started || !canvas) return;
+    started = true;
+    modeSelect?.remove();
+    startBomber(canvas).catch((err: unknown) => console.error('[bomber] start failed', err));
+  }
+
+  modeSelect?.querySelector('[data-mode="solo"]')?.addEventListener('click', startSolo);
+
+  if (params.get('mode') === 'solo') startSolo();
+</script>
