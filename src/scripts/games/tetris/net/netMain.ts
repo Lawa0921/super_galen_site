@@ -1,4 +1,5 @@
 import { Text } from 'pixi.js';
+import { BrowserProvider } from 'ethers';
 import { type Side } from '../engine/match';
 import { getCells } from '../engine/piece';
 import { KEYMAP_1P } from '../input/keymap';
@@ -16,6 +17,7 @@ import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 import { Lockstep } from './lockstep';
 import { WebRtcTransport } from './webrtcTransport';
 import { createRoom, putSlot, pollSlot } from './signalClient';
+import { buildResultMessage } from './auth';
 
 const SIM_DT = 1000 / 60;
 const CLEAR_NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
@@ -27,12 +29,31 @@ export interface NetStatus {
 }
 export type StatusCb = (s: NetStatus) => void;
 
-function randomSeed(): number {
-  return Math.floor(Math.random() * 1_000_000_000);
+/** 玩家身分：暱稱（casual）或錢包（ranked，需可簽章）。 */
+export interface Identity {
+  id: string; // 錢包地址（ranked）或暱稱（casual）
+  ranked: boolean;
+  signMessage?: (msg: string) => Promise<string>;
 }
 
-/** Host：建房 → 等對手 → 連上後開局（為 A 方）。 */
-export async function hostGame(canvas: HTMLCanvasElement, onStatus: StatusCb): Promise<void> {
+const randInt = () => Math.floor(Math.random() * 1_000_000_000);
+
+/** 連接瀏覽器錢包，回傳地址與簽章函式（排名賽用）。無錢包回 null。 */
+export async function connectWallet(): Promise<{ address: string; signMessage: (m: string) => Promise<string> } | null> {
+  const eth = (window as unknown as { ethereum?: unknown }).ethereum;
+  if (!eth) return null;
+  const provider = new BrowserProvider(eth as never);
+  await provider.send('eth_requestAccounts', []);
+  const signer = await provider.getSigner();
+  const address = await signer.getAddress();
+  return { address, signMessage: (m: string) => signer.signMessage(m) };
+}
+
+interface HelloMsg { t: 'hello'; seed: number; matchId: string; id: string; ranked: boolean }
+interface AckMsg { t: 'ack'; id: string; ranked: boolean }
+
+/** Host：建房 → 等對手 → 交握身分/seed → 開局（A 方）。 */
+export async function hostGame(canvas: HTMLCanvasElement, identity: Identity, onStatus: StatusCb): Promise<void> {
   const transport = new WebRtcTransport();
   try {
     onStatus({ phase: 'creating' });
@@ -43,53 +64,79 @@ export async function hostGame(canvas: HTMLCanvasElement, onStatus: StatusCb): P
     const answer = await pollSlot(room, 'answer');
     await transport.acceptAnswer(answer);
     await transport.waitOpen();
-    const seed = randomSeed();
-    transport.send(JSON.stringify({ t: 'seed', seed }));
+
+    const seed = randInt();
+    const matchId = `${room}-${seed.toString(36)}`;
+    // 等對手 ack（拿對手身分）
+    const ackP = new Promise<AckMsg>((res) => {
+      transport.onMessage((raw) => {
+        try { const m = JSON.parse(raw) as AckMsg; if (m.t === 'ack') res(m); } catch { /* ignore */ }
+      });
+    });
+    transport.send(JSON.stringify({ t: 'hello', seed, matchId, id: identity.id, ranked: identity.ranked } as HelloMsg));
+    const ack = await ackP;
+
     onStatus({ phase: 'connected', room });
-    runGame(canvas, transport, seed, 'A');
+    runGame(canvas, transport, {
+      seed, matchId, localSide: 'A', identity,
+      oppId: ack.id, oppRanked: ack.ranked,
+    });
   } catch (e) {
     onStatus({ phase: 'error', message: e instanceof Error ? e.message : String(e) });
     transport.close();
   }
 }
 
-/** Guest：以房號加入 → 連上後開局（為 B 方）。 */
-export async function joinGame(canvas: HTMLCanvasElement, room: string, onStatus: StatusCb): Promise<void> {
+/** Guest：加入房號 → 交握 → 開局（B 方）。 */
+export async function joinGame(canvas: HTMLCanvasElement, room: string, identity: Identity, onStatus: StatusCb): Promise<void> {
   const transport = new WebRtcTransport();
   try {
     onStatus({ phase: 'connecting', room });
-    // 先掛上 seed 接收（Lockstep 之後會接管 onMessage）
-    let resolveSeed: (n: number) => void = () => {};
-    const seedPromise = new Promise<number>((res) => (resolveSeed = res));
-    transport.onMessage((raw) => {
-      try {
-        const m = JSON.parse(raw) as { t?: string; seed?: number };
-        if (m.t === 'seed' && typeof m.seed === 'number') resolveSeed(m.seed);
-      } catch { /* ignore */ }
+    const helloP = new Promise<HelloMsg>((res) => {
+      transport.onMessage((raw) => {
+        try { const m = JSON.parse(raw) as HelloMsg; if (m.t === 'hello') res(m); } catch { /* ignore */ }
+      });
     });
 
     const offer = await pollSlot(room, 'offer');
     const answer = await transport.createAnswer(offer);
     await putSlot(room, 'answer', answer);
     await transport.waitOpen();
-    const seed = await seedPromise;
+
+    const hello = await helloP;
+    transport.send(JSON.stringify({ t: 'ack', id: identity.id, ranked: identity.ranked } as AckMsg));
+
     onStatus({ phase: 'connected', room });
-    runGame(canvas, transport, seed, 'B');
+    runGame(canvas, transport, {
+      seed: hello.seed, matchId: hello.matchId, localSide: 'B', identity,
+      oppId: hello.id, oppRanked: hello.ranked,
+    });
   } catch (e) {
     onStatus({ phase: 'error', message: e instanceof Error ? e.message : String(e) });
     transport.close();
   }
 }
 
-/** 連上後的對戰主迴圈：固定步長驅動 lockstep，渲染重用雙盤。 */
-function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, seed: number, localSide: Side): void {
+interface RunOpts {
+  seed: number;
+  matchId: string;
+  localSide: Side;
+  identity: Identity;
+  oppId: string;
+  oppRanked: boolean;
+}
+
+function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: RunOpts): void {
+  const { seed, matchId, localSide, identity, oppId, oppRanked } = opts;
+  // 立刻建立 Lockstep：其 onMessage 馬上接管 transport，渲染初始化期間對手送來的幀會
+  // 先排進 inbox（不會在 async 載入空檔被丟棄）。
+  const lockstep = new Lockstep({ seed, localSide, transport });
+  const input = new InputController((a) => lockstep.pressLocal(a), { das: 150, arr: 35 });
+
   void PixiStage.create(canvas).then(async (stage) => {
     const tex = await loadGameTextures();
     stage.setBackground(tex.bg);
-    try {
-      await document.fonts.load('14px "Press Start 2P"');
-      await document.fonts.ready;
-    } catch { /* fallback */ }
+    try { await document.fonts.load('14px "Press Start 2P"'); await document.fonts.ready; } catch { /* fallback */ }
 
     const boardA = new BoardView(stage.bgLayer, stage.playLayer, tex.block, tex.frameWell, { frameTint: P1_TINT });
     const boardB = new BoardView(stage.bgLayer, stage.playLayer, tex.block, tex.frameWell, { frameTint: P2_TINT });
@@ -100,17 +147,10 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, seed: nu
     const meter = new GarbageMeter(stage.playLayer);
     const sound = new SoundManager();
 
-    const banner = new Text({
-      text: '',
-      style: { fontFamily: '"Press Start 2P", monospace', fontSize: 24, fill: 0xffffff, align: 'center' },
-    });
+    const banner = new Text({ text: '', style: { fontFamily: '"Press Start 2P", monospace', fontSize: 24, fill: 0xffffff, align: 'center' } });
     banner.anchor.set(0.5);
     stage.hudLayer.addChild(banner);
-
-    const youTag = new Text({
-      text: 'YOU',
-      style: { fontFamily: '"Press Start 2P", monospace', fontSize: 11, fill: localSide === 'A' ? P1_TINT : P2_TINT },
-    });
+    const youTag = new Text({ text: 'YOU', style: { fontFamily: '"Press Start 2P", monospace', fontSize: 11, fill: localSide === 'A' ? P1_TINT : P2_TINT } });
     youTag.anchor.set(0.5);
     stage.hudLayer.addChild(youTag);
 
@@ -132,9 +172,6 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, seed: nu
     relayout();
     stage.app.renderer.on('resize', relayout);
 
-    const lockstep = new Lockstep({ seed, localSide, transport });
-    const input = new InputController((a) => lockstep.pressLocal(a), { das: 150, arr: 35 });
-
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'KeyM') { e.preventDefault(); sound.ensure(); sound.toggle(); return; }
       const a = KEYMAP_1P[e.code];
@@ -148,22 +185,13 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, seed: nu
       else if (a === 'hold') sound.hold();
       else if (a === 'hardDrop') { stage.shake(4); sound.hardDrop(); }
     };
-    const onKeyUp = (e: KeyboardEvent) => {
-      const a = KEYMAP_1P[e.code];
-      if (a) input.release(a);
-    };
+    const onKeyUp = (e: KeyboardEvent) => { const a = KEYMAP_1P[e.code]; if (a) input.release(a); };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
 
     const fxFor = (side: Side) => (side === 'A' ? fxA : fxB);
-    const boardCenter = (side: Side) => {
-      const o = side === 'A' ? lay.a.origin : lay.b.origin;
-      return { x: o.x + (lay.cellSize * BOARD_WIDTH) / 2, y: o.y + (lay.cellSize * VISIBLE_HEIGHT) / 2 };
-    };
-    const boardRect = (side: Side) => {
-      const o = side === 'A' ? lay.a.origin : lay.b.origin;
-      return { x: o.x, y: o.y, w: lay.cellSize * BOARD_WIDTH, h: lay.cellSize * VISIBLE_HEIGHT };
-    };
+    const boardCenter = (side: Side) => { const o = side === 'A' ? lay.a.origin : lay.b.origin; return { x: o.x + (lay.cellSize * BOARD_WIDTH) / 2, y: o.y + (lay.cellSize * VISIBLE_HEIGHT) / 2 }; };
+    const boardRect = (side: Side) => { const o = side === 'A' ? lay.a.origin : lay.b.origin; return { x: o.x, y: o.y, w: lay.cellSize * BOARD_WIDTH, h: lay.cellSize * VISIBLE_HEIGHT }; };
 
     function handleEvents(): void {
       for (const ev of lockstep.match.drainEvents()) {
@@ -181,9 +209,8 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, seed: nu
           shift += 28;
           if (ev.combo >= 1) fxFor(ev.side).popup(`${ev.combo} COMBO`, 0x4dff88, false, shift);
         } else if (ev.kind === 'attack') {
-          const opp: Side = ev.from === 'A' ? 'B' : 'A';
-          const f = boardCenter(ev.from);
-          const t = boardCenter(opp);
+          const op: Side = ev.from === 'A' ? 'B' : 'A';
+          const f = boardCenter(ev.from); const t = boardCenter(op);
           fxFor(ev.from).attackBeam(f.x, f.y, t.x, t.y, ev.from === 'A' ? P1_TINT : P2_TINT);
           sound.attack(ev.amount);
         } else if (ev.kind === 'garbageIn') {
@@ -192,6 +219,22 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, seed: nu
           sound.garbageIn(ev.amount);
         }
       }
+    }
+
+    // KO → 排名賽則簽章回報結果
+    async function reportRanked(winnerSide: Side): Promise<void> {
+      if (!(identity.ranked && oppRanked && identity.signMessage)) return;
+      const winnerId = winnerSide === localSide ? identity.id : oppId;
+      try {
+        const sig = await identity.signMessage(buildResultMessage(matchId, identity.id, oppId, winnerId));
+        const res = await fetch('/api/match', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ matchId, reporter: identity.id, opponent: oppId, winner: winnerId, signature: sig }),
+        });
+        const { status } = (await res.json()) as { status: string };
+        banner.text += status === 'settled' ? '\nRANKED ✓' : status === 'pending' ? '\n等對手確認…' : '';
+      } catch { /* 回報失敗不影響對局 */ }
     }
 
     let acc = 0;
@@ -206,12 +249,7 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, seed: nu
       if (match.phase === 'playing' && !disconnected) {
         acc += dt;
         let guard = 0;
-        while (acc >= SIM_DT && guard < 8) { // guard 防卡頓時暴衝
-          input.update(SIM_DT);
-          lockstep.tick();
-          guard++;
-          acc -= SIM_DT;
-        }
+        while (acc >= SIM_DT && guard < 8) { input.update(SIM_DT); lockstep.tick(); guard++; acc -= SIM_DT; }
         handleEvents();
       }
 
@@ -223,11 +261,12 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, seed: nu
       } else if (match.phase === 'result' && !resultShown) {
         resultShown = true;
         const youWin = match.winner === localSide;
-        banner.text = `${youWin ? 'YOU WIN' : 'YOU LOSE'}`;
+        banner.text = youWin ? 'YOU WIN' : 'YOU LOSE';
         banner.style.fontSize = 28;
         banner.visible = true;
         stage.shake(12);
         sound.topout();
+        if (match.winner) void reportRanked(match.winner);
       }
 
       boardA.render(match.a.getState());
