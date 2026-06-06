@@ -286,6 +286,7 @@ const lang: Language = defaultLang;
   const params = new URLSearchParams(location.search);
   const canvas = document.getElementById('tetris-canvas') as HTMLCanvasElement | null;
   const hint = document.getElementById('tetris-hint');
+  const mainMenu = document.getElementById('main-menu');
   const modeSelect = document.getElementById('mode-select');
   const onlinePanel = document.getElementById('online-panel');
   const statusEl = document.getElementById('online-status');
@@ -296,8 +297,7 @@ const lang: Language = defaultLang;
   function startSolo(): void {
     if (started || !canvas) return;
     started = true;
-    modeSelect?.remove();
-    onlinePanel?.remove();
+    mainMenu?.remove();
     setHint(SOLO_HINT);
     startTetris(canvas).catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
@@ -305,8 +305,7 @@ const lang: Language = defaultLang;
   function startAiMode(diffRaw?: string | null): void {
     if (started || !canvas) return;
     started = true;
-    modeSelect?.remove();
-    onlinePanel?.remove();
+    mainMenu?.remove();
     const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
     setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · R RESTART · M MUTE`);
     startAi(canvas, diff).catch((err: unknown) => console.error('[tetris] failed to start', err));
@@ -326,8 +325,7 @@ const lang: Language = defaultLang;
       else if (s.phase === 'error') statusEl.textContent = `連線失敗：${s.message ?? ''}`;
     }
     if (s.phase === 'connected') {
-      modeSelect?.remove();
-      onlinePanel?.remove();
+      mainMenu?.remove();
       setHint(ONLINE_HINT);
     } else if (s.phase === 'error') {
       started = false; // 允許重試
@@ -344,12 +342,15 @@ const lang: Language = defaultLang;
   }
 
   async function onConnectWallet(): Promise<void> {
-    const btn = document.getElementById('online-wallet');
     try {
       wallet = await connectWallet();
-      if (wallet && btn) {
-        btn.textContent = `🦊 ${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)}（排名賽）`;
-        btn.classList.add('connected');
+      if (wallet) {
+        const label = `🦊 ${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)}`;
+        const onlineBtn = document.getElementById('online-wallet');
+        if (onlineBtn) { onlineBtn.textContent = `${label}（排名賽）`; onlineBtn.classList.add('connected'); }
+        const pfBtn = document.getElementById('profile-wallet');
+        if (pfBtn) { pfBtn.textContent = label; pfBtn.classList.add('connected'); }
+        void loadProfile(wallet.address);
       } else if (statusEl) {
         statusEl.textContent = '找不到錢包，將以暱稱進行（不計排名）';
       }
@@ -381,8 +382,92 @@ const lang: Language = defaultLang;
     });
   });
   document.getElementById('online-wallet')?.addEventListener('click', () => void onConnectWallet());
+  document.getElementById('profile-wallet')?.addEventListener('click', () => void onConnectWallet());
   document.getElementById('online-create')?.addEventListener('click', beginHost);
   document.getElementById('online-join-btn')?.addEventListener('click', beginJoin);
+
+  // ---- 分頁切換 ----
+  const tabs = Array.from(document.querySelectorAll<HTMLElement>('.mm-tab'));
+  const panels: Record<string, HTMLElement | null> = {
+    play: document.getElementById('panel-play'),
+    leaderboard: document.getElementById('panel-leaderboard'),
+    profile: document.getElementById('panel-profile'),
+  };
+  let lbLoaded = false;
+  function switchTab(name: string): void {
+    tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === name));
+    for (const [key, el] of Object.entries(panels)) {
+      if (!el) continue;
+      const active = key === name;
+      el.classList.toggle('is-active', active);
+      el.hidden = !active;
+    }
+    if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }
+    if (name === 'profile' && wallet) void loadProfile(wallet.address);
+  }
+  tabs.forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab ?? 'play')));
+
+  // ---- 工具 ----
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+  }
+  function shortAddr(a: string): string {
+    return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
+  }
+
+  // ---- 排行榜 ----
+  interface LbRow { id: string; name?: string; level: number; rating: number; tier: string; wins: number; losses: number }
+  async function loadLeaderboard(): Promise<void> {
+    const list = document.getElementById('lb-list');
+    if (!list) return;
+    list.innerHTML = '<li class="lb-empty">載入中…</li>';
+    try {
+      const res = await fetch('/api/leaderboard?n=20');
+      const data = (await res.json()) as { rows: LbRow[] };
+      if (!data.rows.length) { list.innerHTML = '<li class="lb-empty">尚無紀錄，快來搶頭香！</li>'; return; }
+      list.innerHTML = data.rows
+        .map((r, i) => {
+          const who = r.name ? escapeHtml(r.name) : shortAddr(r.id);
+          return `<li class="lb-row"><span class="lb-rank">#${i + 1}</span><span class="lb-name">${who}</span><span class="lb-lv">Lv.${r.level}</span><span class="lb-tier">${r.tier}</span><span class="lb-rating">${r.rating}</span><span class="lb-wl">${r.wins}-${r.losses}</span></li>`;
+        })
+        .join('');
+    } catch {
+      list.innerHTML = '<li class="lb-empty">排行榜載入失敗</li>';
+    }
+  }
+
+  // ---- 個人檔案 ----
+  interface Profile { name: string | null; level: number; xp: number; progress: number; rating: number; tier: string; games: number; wins: number; losses: number; top3: number }
+  async function loadProfile(addr: string): Promise<void> {
+    const guest = document.getElementById('profile-guest');
+    const stats = document.getElementById('profile-stats');
+    if (!stats) return;
+    if (guest) guest.hidden = true;
+    stats.hidden = false;
+    stats.innerHTML = '<p class="profile-guest">載入中…</p>';
+    try {
+      const res = await fetch(`/api/profile?addr=${encodeURIComponent(addr)}`);
+      const data = (await res.json()) as { profile: Profile | null };
+      const p = data.profile;
+      if (!p) {
+        stats.innerHTML = '<p class="profile-guest">新玩家！打一場排名賽即可建立檔案。</p>';
+        return;
+      }
+      const name = p.name ? escapeHtml(p.name) : shortAddr(addr);
+      stats.innerHTML = [
+        `<div class="pf-row"><span class="pf-k">玩家</span><span>${name}</span></div>`,
+        `<div class="pf-row"><span class="pf-k">等級</span><span>Lv.${p.level}（XP ${p.xp}）</span></div>`,
+        `<div class="pf-bar"><i></i></div>`,
+        `<div class="pf-row"><span class="pf-k">積分</span><span>${p.rating} · ${p.tier}</span></div>`,
+        `<div class="pf-row"><span class="pf-k">戰績</span><span>${p.games} 場 · ${p.wins} 勝 ${p.losses} 敗</span></div>`,
+        `<div class="pf-row"><span class="pf-k">前三名次</span><span>${p.top3} 次</span></div>`,
+      ].join('');
+      const bar = stats.querySelector<HTMLElement>('.pf-bar > i');
+      if (bar) bar.style.setProperty('width', `${Math.round(p.progress * 100)}%`);
+    } catch {
+      stats.innerHTML = '<p class="profile-guest">檔案載入失敗</p>';
+    }
+  }
 
   const mode = params.get('mode');
   if (mode === 'solo') startSolo();
