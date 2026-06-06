@@ -1,75 +1,54 @@
-import { Assets, type Texture } from 'pixi.js';
+import { Assets, Texture, Rectangle, type TextureSource } from 'pixi.js';
 
-const BASE = '/assets/games/bomber';
+const SHEET_URL = '/assets/games/bomber/sheet.png';
 
-export const ASSET_URLS = {
-  floor:       `${BASE}/floor.png`,
-  wall:        `${BASE}/wall.png`,
-  crate:       `${BASE}/crate.png`,
-  player:      `${BASE}/player.png`,
-  enemyWander: `${BASE}/enemy-wander.png`,
-  enemyChaser: `${BASE}/enemy-chaser.png`,
-  bomb:        `${BASE}/bomb.png`,
-  puFire:      `${BASE}/pu-fire.png`,
-  puBomb:      `${BASE}/pu-bomb.png`,
-  puSpeed:     `${BASE}/pu-speed.png`,
-  puShield:    `${BASE}/pu-shield.png`,
-  exit:        `${BASE}/exit.png`,
-  blast:       `${BASE}/blast.png`,
-} as const;
+/** 每格 64×64 px。Sheet 佈局 5 col × 3 row，0-indexed (col, row)。*/
+const F = 64;
+
+function frameAt(source: TextureSource, col: number, row: number): Texture {
+  return new Texture({ source, frame: new Rectangle(col * F, row * F, F, F) });
+}
 
 export interface BomberTextures {
   floor:       Texture;
   wall:        Texture;
   crate:       Texture;
   player:      Texture;
+  bomb:        Texture;
   enemyWander: Texture;
   enemyChaser: Texture;
-  bomb:        Texture;
+  blast:       Texture;
+  exit:        Texture;
   puFire:      Texture;
   puBomb:      Texture;
   puSpeed:     Texture;
   puShield:    Texture;
-  exit:        Texture;
-  blast:       Texture;
 }
 
-/** 預載入並回傳所有 Dungeon Bomber 貼圖。所有貼圖設定 nearest 取樣以保留像素硬邊。 */
+/** 預載一張 sprite sheet (320×192)，切成 13 個 64×64 frame Textures 回傳。
+ *  設定 source.scaleMode = 'nearest' 以保留像素硬邊（crisp pixel art）。
+ */
 export async function loadBomberTextures(): Promise<BomberTextures> {
-  const [
-    floor, wall, crate,
-    player, enemyWander, enemyChaser,
-    bomb,
-    puFire, puBomb, puSpeed, puShield,
-    exit_, blast,
-  ] = await Promise.all([
-    Assets.load(ASSET_URLS.floor)       as Promise<Texture>,
-    Assets.load(ASSET_URLS.wall)        as Promise<Texture>,
-    Assets.load(ASSET_URLS.crate)       as Promise<Texture>,
-    Assets.load(ASSET_URLS.player)      as Promise<Texture>,
-    Assets.load(ASSET_URLS.enemyWander) as Promise<Texture>,
-    Assets.load(ASSET_URLS.enemyChaser) as Promise<Texture>,
-    Assets.load(ASSET_URLS.bomb)        as Promise<Texture>,
-    Assets.load(ASSET_URLS.puFire)      as Promise<Texture>,
-    Assets.load(ASSET_URLS.puBomb)      as Promise<Texture>,
-    Assets.load(ASSET_URLS.puSpeed)     as Promise<Texture>,
-    Assets.load(ASSET_URLS.puShield)    as Promise<Texture>,
-    Assets.load(ASSET_URLS.exit)        as Promise<Texture>,
-    Assets.load(ASSET_URLS.blast)       as Promise<Texture>,
-  ]);
+  const sheet = await Assets.load(SHEET_URL) as Texture;
+  sheet.source.scaleMode = 'nearest'; // 套用到所有共享 source 的 frames
 
-  // 全部使用 nearest（crisp 像素風）
-  for (const tex of [floor, wall, crate, player, enemyWander, enemyChaser, bomb,
-    puFire, puBomb, puSpeed, puShield, exit_, blast]) {
-    tex.source.scaleMode = 'nearest';
-  }
-
+  const src = sheet.source;
   return {
-    floor, wall, crate,
-    player, enemyWander, enemyChaser,
-    bomb,
-    puFire, puBomb, puSpeed, puShield,
-    exit: exit_,
-    blast,
+    // row 0
+    floor:       frameAt(src, 0, 0),
+    wall:        frameAt(src, 1, 0),
+    crate:       frameAt(src, 2, 0),
+    player:      frameAt(src, 3, 0),
+    bomb:        frameAt(src, 4, 0),
+    // row 1
+    enemyWander: frameAt(src, 0, 1),
+    enemyChaser: frameAt(src, 1, 1),
+    blast:       frameAt(src, 2, 1),
+    exit:        frameAt(src, 3, 1),
+    puFire:      frameAt(src, 4, 1),
+    // row 2
+    puBomb:      frameAt(src, 0, 2),
+    puSpeed:     frameAt(src, 1, 2),
+    puShield:    frameAt(src, 2, 2),
   };
 }
