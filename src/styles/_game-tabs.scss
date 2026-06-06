@@ -129,22 +129,82 @@
 /* Tab Panel */
 .tab-panel {
     display: none;
-    animation: fadeIn 0.5s ease;
     overflow: visible;
 }
 
 .tab-panel.active {
     display: block;
+    animation: tabReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes fadeIn {
-    0% { 
+/* 切換進場：滑入 + 縮放 + 由模糊轉清晰 + 亮度閃（更酷炫但不夾擠溢出內容） */
+@keyframes tabReveal {
+    0% {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(28px) scale(0.97);
+        filter: brightness(1.8) blur(3px);
     }
-    100% { 
+    50% {
         opacity: 1;
-        transform: translateY(0);
+        filter: brightness(1.25) blur(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: none;
+    }
+}
+
+/* 啟用頁籤的點擊回饋：彈跳 + 光暈閃 */
+.tab-btn.active {
+    animation: tabPop 0.4s ease;
+}
+
+@keyframes tabPop {
+    0% { transform: scale(0.9); }
+    50% { transform: scale(1.08); box-shadow: 0 0 28px rgba(255, 215, 0, 0.65); }
+    100% { transform: scale(1); }
+}
+
+/* 遊戲室入口：橫跨整列的醒目霓虹條 */
+.arcade-nav-btn {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(54, 230, 255, 0.18) 0%, rgba(147, 51, 234, 0.18) 100%);
+    border-color: rgba(54, 230, 255, 0.7);
+    color: #9fefff;
+    letter-spacing: 2px;
+    text-decoration: none;
+    box-shadow: 0 0 14px rgba(54, 230, 255, 0.3), inset 0 0 18px rgba(54, 230, 255, 0.08);
+    animation: arcadePulse 2.6s ease-in-out infinite;
+
+    .tab-name {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    i {
+        color: #36e6ff;
+    }
+
+    &:hover {
+        color: #eafdff;
+        border-color: rgba(54, 230, 255, 0.95);
+        box-shadow: 0 0 26px rgba(54, 230, 255, 0.7), inset 0 0 22px rgba(54, 230, 255, 0.16);
+    }
+}
+
+@keyframes arcadePulse {
+    0%, 100% { box-shadow: 0 0 14px rgba(54, 230, 255, 0.3), inset 0 0 18px rgba(54, 230, 255, 0.08); }
+    50% { box-shadow: 0 0 24px rgba(54, 230, 255, 0.6), inset 0 0 22px rgba(54, 230, 255, 0.16); }
+}
+
+/* 尊重減少動態偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .tab-panel.active,
+    .tab-btn.active,
+    .arcade-nav-btn {
+        animation: none;
     }
 }
 

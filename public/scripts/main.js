@@ -606,9 +606,10 @@ function initTabSystem() {
     // 綁定點擊事件
     tabButtons.forEach(button => {
         button.addEventListener('click', (e) => {
-            // 特殊處理導航按鈕（日誌、公會）- 允許正常導航
+            // 特殊處理導航按鈕（日誌、公會、遊戲室）- 允許正常導航
             if (button.classList.contains('journal-nav-btn') ||
-                button.classList.contains('guild-nav-btn')) {
+                button.classList.contains('guild-nav-btn') ||
+                button.classList.contains('arcade-nav-btn')) {
                 return; // 不阻止預設行為，讓 <a> 標籤正常導航
             }
 
