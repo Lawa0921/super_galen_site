@@ -1,7 +1,7 @@
-// game.test.ts (Task 10 + Task 11 portion)
+// game.test.ts (Task 10 + Task 11 + Task 12 portion)
 import { describe, it, expect } from 'vitest';
 import { BomberGame } from './game';
-import { SPAWN, SPEED_MS, BASE_BOMBS, BOMB_FUSE_MS, BLAST_TTL_MS } from './constants';
+import { SPAWN, SPEED_MS, BASE_BOMBS, BOMB_FUSE_MS, BLAST_TTL_MS, START_LIVES, INVULN_MS } from './constants';
 import { SCORE } from './scoring';
 
 describe('BomberGame: construction', () => {
@@ -93,5 +93,59 @@ describe('BomberGame: explosions', () => {
     expect(s.status).toBe('playing');
     expect(s.score).toBe(SCORE.crate); // exactly one crate at (3,1) was broken
     expect(events.some((e) => e.kind === 'crateBreak')).toBe(true);
+  });
+});
+
+describe('BomberGame: enemies & death', () => {
+  it('爆風炸到敵人 -> 敵人死亡並加分', () => {
+    const g = new BomberGame({ seed: 1 });
+    const s0 = g.getState();
+    const target = s0.enemies[0];
+    // 直接把敵人挪到玩家旁，放彈炸它（測試用：透過 debug setter）
+    g.debugMoveEnemy(target.id, g.getState().player.x + 1, g.getState().player.y);
+    g.debugSetFire(3);
+    g.input('bomb');
+    g.step(2000); // 引爆
+    expect(g.getState().enemies.find((e) => e.id === target.id)!.alive).toBe(false);
+    expect(g.getState().score).toBeGreaterThan(0);
+  });
+
+  it('清空敵人後 exit 啟用', () => {
+    const g = new BomberGame({ seed: 1 });
+    for (const e of g.getState().enemies) g.debugKillEnemy(e.id);
+    expect(g.getState().exitActive).toBe(true);
+  });
+
+  it('踩上啟用的 exit -> 下一層、保留道具、層數 +1', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.debugSetFire(4); // 道具狀態
+    for (const e of g.getState().enemies) g.debugKillEnemy(e.id);
+    const exit = g.getState().exit;
+    g.debugTeleportPlayer(exit.x, exit.y);
+    g.step(1); // 觸發下樓檢查
+    const s = g.getState();
+    expect(s.floor).toBe(2);
+    expect(s.player.fireRange).toBe(4); // 道具帶到下一層
+    expect(s.score).toBeGreaterThanOrEqual(200);
+  });
+
+  it('無敵時被爆風波及不扣命', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.debugSetInvuln(INVULN_MS);
+    g.input('bomb');
+    g.step(2000);
+    expect(g.getState().player.lives).toBe(START_LIVES);
+  });
+
+  it('被炸且無護盾無敵 -> 扣一命並重生於出生點且短暫無敵', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.debugTeleportPlayer(3, 1);
+    g.debugSetInvuln(0);
+    g.input('bomb');          // 在 (3,1) 放彈
+    g.debugFreezePlayer();    // 測試用：放彈後不移動，確保被自己炸到
+    g.step(2000);
+    const s = g.getState();
+    expect(s.player.lives).toBe(START_LIVES - 1);
+    expect(s.player.invulnMs).toBeGreaterThan(0);
   });
 });

@@ -5,9 +5,11 @@ import type {
 import { generateFloor } from './generate';
 import { makePlayer, dirDelta, speedMs } from './player';
 import { isWalkable, breakCrate } from './board';
-import { BOMB_FUSE_MS, BLAST_TTL_MS } from './constants';
+import { BOMB_FUSE_MS, BLAST_TTL_MS, ENEMY_MOVE_MS, INVULN_MS, SPAWN } from './constants';
 import { resolveChain } from './bomb';
-import { SCORE } from './scoring';
+import { SCORE, descendBonus } from './scoring';
+import { chooseEnemyDir } from './enemy';
+import { createRng } from './rng';
 
 export interface BomberOptions { seed?: number; floor?: number; }
 
@@ -29,9 +31,14 @@ export class BomberGame {
   private lastHeld: Dir | null = null;
   private events: BomberEvent[] = [];
 
+  private rng = createRng((this.seed ^ 0xabcdef) >>> 0);
+  private frozen = false; // debug only
+  private clearedEmitted = false;
+
   constructor(opts: BomberOptions = {}) {
     this.seed = opts.seed ?? 1;
     this.floor = opts.floor ?? 1;
+    this.rng = createRng((this.seed ^ 0xabcdef) >>> 0);
     const layout = generateFloor(this.seed, this.floor);
     this.grid = layout.grid;
     this.enemies = layout.enemies;
@@ -83,10 +90,18 @@ export class BomberGame {
   // ---- main loop ----
   step(dtMs: number): void {
     if (this.status !== 'playing') return;
+    // Snapshot invuln before movement so the player is protected for the full remaining duration this tick,
+    // and invuln granted by hurtPlayer() this tick is not immediately consumed.
+    const invulnAtStart = this.player.invulnMs;
     this.stepBlasts(dtMs);
     this.stepBombs(dtMs);
-    this.stepPlayerMove(dtMs);
+    if (!this.frozen) this.stepPlayerMove(dtMs);
+    this.stepEnemies(dtMs);
     this.pickup();
+    this.resolveBlastDamage(invulnAtStart);
+    // Decrement invuln AFTER damage check (only if invuln was active at tick start)
+    if (invulnAtStart > 0) this.player.invulnMs = Math.max(0, this.player.invulnMs - dtMs);
+    this.checkDescend();
   }
 
   private stepBombs(dtMs: number): void {
@@ -115,6 +130,83 @@ export class BomberGame {
     this.blasts = this.blasts.filter((bl) => bl.ttlMs > 0);
   }
 
+  private stepEnemies(dtMs: number): void {
+    const moveMsBase = (e: Enemy): number => Math.max(80, ENEMY_MOVE_MS[e.kind] - (this.floor - 1) * 15);
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      e.moveAccMs += dtMs;
+      if (e.moveAccMs < moveMsBase(e)) { e.prevX = e.x; e.prevY = e.y; continue; }
+      e.moveAccMs = 0;
+      const dir = chooseEnemyDir(this.grid, e, this.player, this.bombs, this.rng);
+      if (!dir) { e.prevX = e.x; e.prevY = e.y; continue; }
+      const v = dirDelta(dir);
+      e.dir = dir;
+      e.prevX = e.x; e.prevY = e.y;
+      e.x += v.x; e.y += v.y;
+    }
+  }
+
+  private resolveBlastDamage(invulnAtStart: number): void {
+    const onBlast = (x: number, y: number): boolean => this.blasts.some((b) => b.x === x && b.y === y);
+    // 敵人被爆風炸死
+    for (const e of this.enemies) {
+      if (e.alive && onBlast(e.x, e.y)) {
+        e.alive = false;
+        this.score += SCORE.enemy;
+        this.events.push({ kind: 'enemyKill', x: e.x, y: e.y });
+      }
+    }
+    // 發出 floorClear 事件（只發一次）
+    if (!this.clearedEmitted && this.enemies.every((e) => !e.alive) && this.enemies.length > 0) {
+      this.clearedEmitted = true;
+      this.events.push({ kind: 'floorClear' });
+    }
+    // 玩家：爆風 or 敵人接觸（用 tick 開始時的無敵值判斷）
+    const p = this.player;
+    const touched = onBlast(p.x, p.y) || this.enemies.some((e) => e.alive && e.x === p.x && e.y === p.y);
+    if (touched && invulnAtStart <= 0) this.hurtPlayer();
+  }
+
+  private hurtPlayer(): void {
+    const p = this.player;
+    if (p.shield) {
+      p.shield = false;
+      p.invulnMs = INVULN_MS;
+      this.events.push({ kind: 'playerHit', shielded: true });
+      return;
+    }
+    p.lives -= 1;
+    this.events.push({ kind: 'playerHit', shielded: false });
+    if (p.lives <= 0) {
+      this.status = 'gameover';
+      this.events.push({ kind: 'gameover' });
+      return;
+    }
+    // 重生於出生點 + 無敵
+    p.x = SPAWN.x; p.y = SPAWN.y; p.prevX = SPAWN.x; p.prevY = SPAWN.y;
+    p.moveCooldownMs = 0; p.invulnMs = INVULN_MS;
+  }
+
+  private checkDescend(): void {
+    const cleared = this.enemies.every((e) => !e.alive);
+    if (!cleared) return;
+    const p = this.player;
+    if (p.x !== this.exit.x || p.y !== this.exit.y) return;
+    this.floor += 1;
+    this.score += descendBonus(this.floor);
+    this.events.push({ kind: 'descend', floor: this.floor });
+    const layout = generateFloor(this.seed, this.floor);
+    this.grid = layout.grid;
+    this.enemies = layout.enemies;
+    this.hidden = layout.hiddenPowerUps;
+    this.exit = layout.exit;
+    this.bombs = []; this.blasts = []; this.powerUps = [];
+    // 保留道具能力，只重置位置
+    p.x = SPAWN.x; p.y = SPAWN.y; p.prevX = SPAWN.x; p.prevY = SPAWN.y;
+    p.moveCooldownMs = 0;
+    this.clearedEmitted = false;
+  }
+
   private pickup(): void {
     const p = this.player;
     const hit = this.powerUps.find((u) => u.x === p.x && u.y === p.y);
@@ -135,7 +227,6 @@ export class BomberGame {
 
   private stepPlayerMove(dtMs: number): void {
     const p = this.player;
-    if (p.invulnMs > 0) p.invulnMs = Math.max(0, p.invulnMs - dtMs);
     if (p.moveCooldownMs > 0) { p.moveCooldownMs = Math.max(0, p.moveCooldownMs - dtMs); return; }
     const dir = this.chosenDir();
     if (!dir) { p.prevX = p.x; p.prevY = p.y; return; }
@@ -165,4 +256,21 @@ export class BomberGame {
   }
 
   drainEvents(): BomberEvent[] { const e = this.events; this.events = []; return e; }
+
+  // ---- debug / test seams ----
+  debugMoveEnemy(id: number, x: number, y: number): void {
+    const e = this.enemies.find((q) => q.id === id);
+    if (e) { e.x = x; e.y = y; e.prevX = x; e.prevY = y; }
+  }
+  debugKillEnemy(id: number): void {
+    const e = this.enemies.find((q) => q.id === id);
+    if (e) e.alive = false;
+  }
+  debugSetFire(n: number): void { this.player.fireRange = n; }
+  debugSetInvuln(ms: number): void { this.player.invulnMs = ms; }
+  debugTeleportPlayer(x: number, y: number): void {
+    const p = this.player;
+    p.x = x; p.y = y; p.prevX = x; p.prevY = y;
+  }
+  debugFreezePlayer(): void { this.frozen = true; }
 }
