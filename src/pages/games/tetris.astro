@@ -1,0 +1,178 @@
+---
+/**
+ * /games/tetris — Dungeon Arcade 對戰俄羅斯方塊（Phase 2：單人可玩）
+ * 全螢幕 PixiJS 遊戲頁；Pixi 透過下方 <script> import，由 Vite code-split 至本頁。
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+
+const lang: Language = defaultLang;
+---
+
+<BaseLayout
+  title="Dungeon Arcade — Battle Tetris"
+  description="霓虹地城風格的對戰俄羅斯方塊"
+  lang={lang}
+>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+  />
+
+  <main class="tetris-page">
+    <a class="tetris-back" href="/games">← ARCADE</a>
+    <p class="tetris-hint" id="tetris-hint">MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M</p>
+    <div class="tetris-stage">
+      <canvas id="tetris-canvas"></canvas>
+    </div>
+
+    <div class="mode-select" id="mode-select">
+      <h2 class="ms-title">SELECT MODE</h2>
+      <div class="ms-buttons">
+        <button class="ms-btn ms-solo" data-mode="solo">SOLO</button>
+        <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
+        <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
+        <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .tetris-page {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #04060d;
+    overflow: hidden;
+  }
+  .tetris-stage {
+    position: absolute;
+    inset: 0;
+  }
+  #tetris-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .tetris-back {
+    position: absolute;
+    top: 18px;
+    left: 20px;
+    z-index: 10;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
+    text-decoration: none;
+    opacity: 0.8;
+  }
+  .tetris-back:hover {
+    opacity: 1;
+    color: #36e6ff;
+  }
+  .tetris-hint {
+    position: absolute;
+    bottom: 14px;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin: 0;
+    text-align: center;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #5a7299;
+    opacity: 0.75;
+    pointer-events: none;
+  }
+  .mode-select {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    background: rgba(4, 6, 13, 0.78);
+    font-family: 'Press Start 2P', Consolas, monospace;
+  }
+  .ms-title {
+    margin: 0;
+    font-size: clamp(18px, 3.5vw, 30px);
+    letter-spacing: 4px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 28px rgba(54, 230, 255, 0.5);
+  }
+  .ms-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: min(360px, 80vw);
+  }
+  .ms-btn {
+    padding: 18px 20px;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: #cfe8ff;
+    background: rgba(8, 12, 22, 0.8);
+    border: 2px solid rgba(54, 230, 255, 0.7);
+    border-radius: 10px;
+    box-shadow: 0 0 12px rgba(54, 230, 255, 0.3);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  }
+  .ms-btn:hover {
+    transform: translateY(-3px);
+    color: #eafdff;
+    box-shadow: 0 0 22px rgba(54, 230, 255, 0.75);
+  }
+  .ms-solo { border-color: rgba(77, 255, 136, 0.7); box-shadow: 0 0 12px rgba(77, 255, 136, 0.3); }
+  .ms-solo:hover { box-shadow: 0 0 22px rgba(77, 255, 136, 0.75); }
+  .ms-hard { border-color: rgba(255, 77, 109, 0.7); box-shadow: 0 0 12px rgba(255, 77, 109, 0.3); }
+  .ms-hard:hover { box-shadow: 0 0 22px rgba(255, 77, 109, 0.8); }
+</style>
+
+<script>
+  import { startTetris } from '@scripts/games/tetris/render/main';
+  import { startAi } from '@scripts/games/tetris/render/aiMain';
+
+  type Diff = 'easy' | 'normal' | 'hard';
+  const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M';
+
+  const params = new URLSearchParams(location.search);
+  const canvas = document.getElementById('tetris-canvas') as HTMLCanvasElement | null;
+  const hint = document.getElementById('tetris-hint');
+  const overlay = document.getElementById('mode-select');
+  let started = false;
+
+  function startMode(mode: string | null, diffRaw?: string | null): void {
+    if (started || !canvas) return;
+    started = true;
+    overlay?.remove();
+    if (mode === 'ai') {
+      const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
+      if (hint) {
+        hint.textContent = `vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · R RESTART · M MUTE`;
+      }
+      startAi(canvas, diff).catch((err: unknown) => console.error('[tetris] failed to start', err));
+    } else {
+      if (hint) hint.textContent = SOLO_HINT;
+      startTetris(canvas).catch((err: unknown) => console.error('[tetris] failed to start', err));
+    }
+  }
+
+  const mode = params.get('mode');
+  if (mode === 'ai' || mode === 'solo') {
+    startMode(mode, params.get('diff')); // deep-link：跳過選單直接開
+  } else {
+    overlay?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
+      btn.addEventListener('click', () => startMode(btn.dataset.mode ?? null, btn.dataset.diff));
+    });
+  }
+</script>

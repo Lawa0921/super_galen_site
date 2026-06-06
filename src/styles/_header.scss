@@ -709,3 +709,38 @@ $mobile-menu-item-height: 52px;
         overflow: hidden;
     }
 }
+
+// 遊戲室入口（首頁 header / 行動選單共用）
+.arcade-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    margin-right: 12px;
+    border: 1px solid rgba(54, 230, 255, 0.7);
+    border-radius: 8px;
+    color: #9fefff;
+    text-decoration: none;
+    font-weight: 700;
+    letter-spacing: 1px;
+    box-shadow: 0 0 10px rgba(54, 230, 255, 0.3);
+    transition: color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+
+    i {
+        color: #36e6ff;
+    }
+
+    &:hover {
+        color: #eafdff;
+        box-shadow: 0 0 18px rgba(54, 230, 255, 0.7);
+        transform: translateY(-1px);
+    }
+
+    &--mobile {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        margin: 0 0 12px 0;
+        padding: 14px;
+    }
+}

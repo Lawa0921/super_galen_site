@@ -1,0 +1,184 @@
+---
+/**
+ * /games — Dungeon Arcade 遊戲廳卡片牆
+ * 對標 docs/.../mockups/ui/A-hall.jpg
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+
+const lang: Language = defaultLang;
+
+const games = [
+  { id: 'tetris', title: 'BATTLE TETRIS', href: '/games/tetris', active: true },
+  { id: 'soon-1', title: 'COMING SOON', href: null, active: false },
+  { id: 'soon-2', title: 'COMING SOON', href: null, active: false },
+];
+---
+
+<BaseLayout title="Dungeon Arcade" description="SuperGalen's Dungeon 遊戲廳" lang={lang}>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+
+  <main class="arcade">
+    <div class="arcade-boot" aria-hidden="true"></div>
+    <a class="arcade-home" href="/">← HOME</a>
+    <h1 class="arcade-title">DUNGEON ARCADE</h1>
+
+    <div class="card-wall">
+      {games.map((g) =>
+        g.active && g.href ? (
+          <a class="card card--active" href={g.href}>
+            <div class="card-art" aria-hidden="true">
+              <span class="blk c1"></span><span class="blk c2"></span>
+              <span class="blk c3"></span><span class="blk c4"></span>
+              <span class="blk c5"></span><span class="blk c6"></span>
+            </div>
+            <span class="card-title">{g.title}</span>
+            <span class="card-play">▶ PLAY</span>
+          </a>
+        ) : (
+          <div class="card card--locked" aria-disabled="true">
+            <span class="card-lock">🔒</span>
+            <span class="card-title">{g.title}</span>
+          </div>
+        )
+      )}
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .arcade {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding: 40px 20px;
+    overflow: auto;
+    background:
+      radial-gradient(ellipse at 50% 35%, rgba(54, 230, 255, 0.08), transparent 60%),
+      linear-gradient(180deg, rgba(4, 6, 13, 0.82), rgba(4, 6, 13, 0.92)),
+      url('/assets/games/tetris/bg-dungeon.webp') center / cover no-repeat;
+    font-family: 'Press Start 2P', Consolas, monospace;
+  }
+  .arcade-home {
+    position: absolute;
+    top: 18px;
+    left: 20px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
+    text-decoration: none;
+    opacity: 0.8;
+  }
+  .arcade-home:hover { color: #36e6ff; opacity: 1; }
+  .arcade-title {
+    margin: 0;
+    font-size: clamp(20px, 4vw, 40px);
+    letter-spacing: 4px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 32px rgba(54, 230, 255, 0.5);
+  }
+  .card-wall {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    justify-content: center;
+    max-width: 980px;
+  }
+  .card {
+    width: 220px;
+    height: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    border-radius: 14px;
+    text-decoration: none;
+    background: rgba(8, 12, 22, 0.72);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  .card-title { font-size: 13px; letter-spacing: 2px; }
+  .card--active {
+    border: 2px solid rgba(54, 230, 255, 0.85);
+    box-shadow: 0 0 16px rgba(54, 230, 255, 0.45), inset 0 0 18px rgba(54, 230, 255, 0.12);
+    color: #eafdff;
+    cursor: pointer;
+  }
+  .card--active:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 0 28px rgba(54, 230, 255, 0.8), inset 0 0 24px rgba(54, 230, 255, 0.2);
+  }
+  .card-play { font-size: 10px; letter-spacing: 2px; color: #36e6ff; }
+  .card--locked {
+    border: 2px solid rgba(90, 114, 153, 0.4);
+    color: #5a7299;
+    cursor: not-allowed;
+  }
+  .card-lock { font-size: 26px; opacity: 0.6; }
+
+  /* CSS 拼的小俄羅斯方塊圖示 */
+  .card-art {
+    display: grid;
+    grid-template-columns: repeat(3, 22px);
+    grid-template-rows: repeat(2, 22px);
+    gap: 3px;
+  }
+  .blk { border-radius: 3px; box-shadow: 0 0 8px currentColor; }
+  .c1 { background: #36e6ff; color: #36e6ff; }
+  .c2 { background: #ffd23f; color: #ffd23f; }
+  .c3 { background: #c15cff; color: #c15cff; }
+  .c4 { background: #4dff88; color: #4dff88; }
+  .c5 { background: #ff4d6d; color: #ff4d6d; }
+  .c6 { background: #ff9a3c; color: #ff9a3c; }
+
+  @media (max-width: 560px) {
+    .card { width: 70vw; height: 200px; }
+  }
+
+  /* ---- 進場動畫（開機式） ---- */
+  .arcade-boot {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg, rgba(54, 230, 255, 0.14) 0 2px, transparent 2px 4px),
+      radial-gradient(ellipse at center, rgba(54, 230, 255, 0.28), rgba(4, 6, 13, 0.98));
+    transform-origin: center;
+    animation: arcadeBootOut 0.95s ease forwards;
+  }
+  @keyframes arcadeBootOut {
+    0% { opacity: 1; transform: scaleY(1); }
+    40% { opacity: 1; transform: scaleY(1); }
+    100% { opacity: 0; transform: scaleY(0); }
+  }
+
+  .arcade-title {
+    animation: arcadeTitleIn 0.7s 0.28s both cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes arcadeTitleIn {
+    0% { opacity: 0; transform: translateY(-22px) scale(0.9); filter: brightness(2.2) blur(5px); letter-spacing: 16px; }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: none; letter-spacing: 4px; }
+  }
+
+  .card { animation: arcadeCardIn 0.5s both ease; }
+  .card-wall .card:nth-child(1) { animation-delay: 0.5s; }
+  .card-wall .card:nth-child(2) { animation-delay: 0.64s; }
+  .card-wall .card:nth-child(3) { animation-delay: 0.78s; }
+  @keyframes arcadeCardIn {
+    0% { opacity: 0; transform: translateY(32px) scale(0.92); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .arcade-boot { display: none; }
+    .arcade-title,
+    .card { animation: none; }
+  }
+</style>

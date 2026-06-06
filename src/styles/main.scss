@@ -21,6 +21,9 @@
 // 引入 header 樣式
 @use "header";
 
+// 引入進入遊戲室過渡效果
+@use "arcade-transition";
+
 // 引入語言切換器樣式
 @use "language-switcher";
 
