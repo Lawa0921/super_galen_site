@@ -1,4 +1,5 @@
 import { updateRatings, tierFor, DEFAULT_RATING } from './elo';
+import { xpForMatch, levelForXp } from './progression';
 import type { RankStore, PlayerRecord } from './rankStore';
 
 const REPORT_TTL = 600; // 結果回報暫存 10 分鐘
@@ -14,7 +15,17 @@ export interface ResultClaim {
 export type ReportStatus = 'pending' | 'settled' | 'conflict' | 'already' | 'invalid';
 
 function fresh(): PlayerRecord {
-  return { rating: DEFAULT_RATING, wins: 0, losses: 0 };
+  return { rating: DEFAULT_RATING, wins: 0, losses: 0, xp: 0, level: 1, games: 0, top3: 0 };
+}
+
+/** 依本場名次累加 XP/等級/場數/勝負/前三。placement 1 = 冠軍。 */
+function applyMatchProgress(rec: PlayerRecord, placement: number, players: number): void {
+  const isWinner = placement === 1;
+  rec.xp += xpForMatch(players, placement, isWinner);
+  rec.level = levelForXp(rec.xp);
+  rec.games += 1;
+  if (isWinner) rec.wins += 1; else rec.losses += 1;
+  if (placement <= 3) rec.top3 += 1;
 }
 
 async function applyResult(store: RankStore, a: string, b: string, winner: string): Promise<void> {
@@ -24,7 +35,9 @@ async function applyResult(store: RankStore, a: string, b: string, winner: strin
   const upd = updateRatings(pa.rating, pb.rating, w);
   pa.rating = upd.a;
   pb.rating = upd.b;
-  if (w === 'a') { pa.wins++; pb.losses++; } else { pb.wins++; pa.losses++; }
+  // 1v1：勝方名次 1、敗方名次 2，人數 2
+  applyMatchProgress(pa, w === 'a' ? 1 : 2, 2);
+  applyMatchProgress(pb, w === 'b' ? 1 : 2, 2);
   await store.setPlayer(a, pa);
   await store.setPlayer(b, pb);
 }
@@ -55,12 +68,16 @@ export interface LeaderRow {
   id: string;
   rating: number;
   tier: string;
+  level: number;
+  xp: number;
   wins: number;
   losses: number;
+  games: number;
+  top3: number;
   name?: string;
 }
 
-/** 取排行榜前 n 名（附段位/戰績）。 */
+/** 取排行榜前 n 名（附段位/等級/戰績）。 */
 export async function leaderboard(store: RankStore, n: number): Promise<LeaderRow[]> {
   const top = await store.topPlayers(n);
   const rows: LeaderRow[] = [];
@@ -70,8 +87,12 @@ export async function leaderboard(store: RankStore, n: number): Promise<LeaderRo
       id: t.id,
       rating: t.rating,
       tier: tierFor(t.rating),
+      level: p?.level ?? 1,
+      xp: p?.xp ?? 0,
       wins: p?.wins ?? 0,
       losses: p?.losses ?? 0,
+      games: p?.games ?? 0,
+      top3: p?.top3 ?? 0,
       name: p?.name,
     });
   }
