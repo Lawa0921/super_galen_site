@@ -35,6 +35,19 @@ const lang: Language = defaultLang;
         <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
         <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
         <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
+        <button class="ms-btn ms-online" data-mode="online">vs 線上對戰</button>
+      </div>
+    </div>
+
+    <div class="mode-select" id="online-panel" hidden>
+      <h2 class="ms-title">線上對戰</h2>
+      <div class="ms-buttons">
+        <button class="ms-btn ms-online" id="online-create">建立房間</button>
+        <div class="online-join">
+          <input id="online-room" class="online-input" maxlength="5" placeholder="房號" autocomplete="off" />
+          <button class="ms-btn" id="online-join-btn">加入房間</button>
+        </div>
+        <p class="online-status" id="online-status"></p>
       </div>
     </div>
   </main>
@@ -136,43 +149,123 @@ const lang: Language = defaultLang;
   .ms-solo:hover { box-shadow: 0 0 22px rgba(77, 255, 136, 0.75); }
   .ms-hard { border-color: rgba(255, 77, 109, 0.7); box-shadow: 0 0 12px rgba(255, 77, 109, 0.3); }
   .ms-hard:hover { box-shadow: 0 0 22px rgba(255, 77, 109, 0.8); }
+  .ms-online { border-color: rgba(193, 92, 255, 0.7); box-shadow: 0 0 12px rgba(193, 92, 255, 0.3); }
+  .ms-online:hover { box-shadow: 0 0 22px rgba(193, 92, 255, 0.8); }
+
+  .mode-select[hidden] { display: none; }
+  .online-join { display: flex; gap: 10px; }
+  .online-input {
+    flex: 1;
+    padding: 14px;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-align: center;
+    text-transform: uppercase;
+    color: #eafdff;
+    background: rgba(8, 12, 22, 0.85);
+    border: 2px solid rgba(54, 230, 255, 0.6);
+    border-radius: 10px;
+  }
+  .online-status {
+    margin: 6px 0 0;
+    min-height: 1.4em;
+    text-align: center;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 10px;
+    line-height: 1.6;
+    letter-spacing: 1px;
+    color: #9fb4d8;
+  }
 </style>
 
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
   import { startAi } from '@scripts/games/tetris/render/aiMain';
+  import { hostGame, joinGame, type NetStatus } from '@scripts/games/tetris/net/netMain';
 
   type Diff = 'easy' | 'normal' | 'hard';
   const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M';
+  const ONLINE_HINT = 'ONLINE · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M';
 
   const params = new URLSearchParams(location.search);
   const canvas = document.getElementById('tetris-canvas') as HTMLCanvasElement | null;
   const hint = document.getElementById('tetris-hint');
-  const overlay = document.getElementById('mode-select');
+  const modeSelect = document.getElementById('mode-select');
+  const onlinePanel = document.getElementById('online-panel');
+  const statusEl = document.getElementById('online-status');
   let started = false;
 
-  function startMode(mode: string | null, diffRaw?: string | null): void {
+  const setHint = (t: string) => { if (hint) hint.textContent = t; };
+
+  function startSolo(): void {
     if (started || !canvas) return;
     started = true;
-    overlay?.remove();
-    if (mode === 'ai') {
-      const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
-      if (hint) {
-        hint.textContent = `vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · R RESTART · M MUTE`;
-      }
-      startAi(canvas, diff).catch((err: unknown) => console.error('[tetris] failed to start', err));
-    } else {
-      if (hint) hint.textContent = SOLO_HINT;
-      startTetris(canvas).catch((err: unknown) => console.error('[tetris] failed to start', err));
+    modeSelect?.remove();
+    onlinePanel?.remove();
+    setHint(SOLO_HINT);
+    startTetris(canvas).catch((err: unknown) => console.error('[tetris] failed to start', err));
+  }
+
+  function startAiMode(diffRaw?: string | null): void {
+    if (started || !canvas) return;
+    started = true;
+    modeSelect?.remove();
+    onlinePanel?.remove();
+    const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
+    setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · R RESTART · M MUTE`);
+    startAi(canvas, diff).catch((err: unknown) => console.error('[tetris] failed to start', err));
+  }
+
+  function showOnlinePanel(): void {
+    if (modeSelect) modeSelect.hidden = true;
+    if (onlinePanel) onlinePanel.hidden = false;
+  }
+
+  function onStatus(s: NetStatus): void {
+    if (statusEl) {
+      if (s.phase === 'creating') statusEl.textContent = '建立房間中…';
+      else if (s.phase === 'waiting') statusEl.textContent = `房號：${s.room}\n把房號給對手，等待加入…`;
+      else if (s.phase === 'connecting') statusEl.textContent = '連線中…';
+      else if (s.phase === 'connected') statusEl.textContent = '已連線！';
+      else if (s.phase === 'error') statusEl.textContent = `連線失敗：${s.message ?? ''}`;
+    }
+    if (s.phase === 'connected') {
+      modeSelect?.remove();
+      onlinePanel?.remove();
+      setHint(ONLINE_HINT);
+    } else if (s.phase === 'error') {
+      started = false; // 允許重試
     }
   }
 
-  const mode = params.get('mode');
-  if (mode === 'ai' || mode === 'solo') {
-    startMode(mode, params.get('diff')); // deep-link：跳過選單直接開
-  } else {
-    overlay?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
-      btn.addEventListener('click', () => startMode(btn.dataset.mode ?? null, btn.dataset.diff));
-    });
+  function beginHost(): void {
+    if (started || !canvas) return;
+    started = true;
+    hostGame(canvas, onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
   }
+  function beginJoin(): void {
+    const input = document.getElementById('online-room') as HTMLInputElement | null;
+    const room = (input?.value ?? '').trim().toUpperCase();
+    if (!room) { if (statusEl) statusEl.textContent = '請輸入房號'; return; }
+    if (started || !canvas) return;
+    started = true;
+    joinGame(canvas, room, onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+  }
+
+  modeSelect?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const m = btn.dataset.mode;
+      if (m === 'solo') startSolo();
+      else if (m === 'ai') startAiMode(btn.dataset.diff);
+      else if (m === 'online') showOnlinePanel();
+    });
+  });
+  document.getElementById('online-create')?.addEventListener('click', beginHost);
+  document.getElementById('online-join-btn')?.addEventListener('click', beginJoin);
+
+  const mode = params.get('mode');
+  if (mode === 'solo') startSolo();
+  else if (mode === 'ai') startAiMode(params.get('diff'));
+  else if (mode === 'online') showOnlinePanel();
 </script>
