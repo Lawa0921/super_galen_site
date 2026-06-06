@@ -33,7 +33,7 @@ export class EntityView {
   private puPool:    Sprite[] = [];
   private exitSp:    Sprite;
 
-  constructor(private layer: Container, textures: BomberTextures) {
+  constructor(private layer: Container, private fxLayer: Container, textures: BomberTextures) {
     this.textures = textures;
 
     // 玩家（1 個）
@@ -53,6 +53,15 @@ export class EntityView {
     return sp;
   }
 
+  /** 在 fxLayer 上建立新的爆風 Sprite，blendMode 僅設一次。 */
+  private _newBlastSprite(texture: Texture): Sprite {
+    const sp = new Sprite(texture);
+    sp.anchor.set(0.5);
+    sp.blendMode = 'add';
+    this.fxLayer.addChild(sp);
+    return sp;
+  }
+
   /** 取得 pool 中第 idx 個 Sprite（不足時自動擴充）。多餘的在 render 末尾隱藏。 */
   private _poolGet(pool: Sprite[], idx: number, texture: Texture): Sprite {
     if (idx < pool.length) {
@@ -62,6 +71,18 @@ export class EntityView {
     }
     const sp = this._newSprite(texture);
     pool.push(sp);
+    return sp;
+  }
+
+  /** 取得爆風 pool 中第 idx 個 Sprite（不足時自動擴充到 fxLayer）。 */
+  private _blastPoolGet(idx: number, texture: Texture): Sprite {
+    if (idx < this.blastPool.length) {
+      this.blastPool[idx].texture = texture;
+      this.blastPool[idx].visible = true;
+      return this.blastPool[idx];
+    }
+    const sp = this._newBlastSprite(texture);
+    this.blastPool.push(sp);
     return sp;
   }
 
@@ -81,11 +102,10 @@ export class EntityView {
     // 1. 出口
     this._renderExit(state, cell, ox, oy);
 
-    // 2. 爆風（additive，black drops out）
+    // 2. 爆風（additive，black drops out）— 路由到 fxLayer（強烈 bloom）
     let bi = 0;
     for (const blast of state.blasts) {
-      const sp = this._poolGet(this.blastPool, bi++, this.textures.blast);
-      sp.blendMode = 'add';
+      const sp = this._blastPoolGet(bi++, this.textures.blast);
       sp.width  = cell;
       sp.height = cell;
       sp.x = ox + blast.x * cell + cell / 2;
@@ -194,7 +214,9 @@ export class EntityView {
       case 'bomb':   return this.textures.puBomb;
       case 'speed':  return this.textures.puSpeed;
       case 'shield': return this.textures.puShield;
-      default:       return this.textures.puFire;
+      default:
+        console.warn('[EntityView] unknown powerup kind:', kind);
+        return this.textures.puFire;
     }
   }
 }

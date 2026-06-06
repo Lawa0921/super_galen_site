@@ -22,7 +22,7 @@ export async function startBomber(canvas: HTMLCanvasElement): Promise<BomberHand
 
   const textures = await loadBomberTextures();
   const grid = new GridView(stage.gridLayer, textures);
-  const entity = new EntityView(stage.entityLayer, textures);
+  const entity = new EntityView(stage.entityLayer, stage.fxLayer, textures);
 
   // 確保街機點陣字載入後再建立 HUD（否則 Pixi 會以 fallback 字測量、之後不更新）
   try {
