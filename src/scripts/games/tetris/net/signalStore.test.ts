@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryStore } from './signalStore';
+import { MemoryStore, getSignalStore } from './signalStore';
 
 describe('MemoryStore', () => {
   it('set / get 往返', async () => {
@@ -43,5 +43,35 @@ describe('MemoryStore', () => {
     await store.set(`sig:${room}:answer`, 'ANSWER_SDP', 300);
     // host 輪詢到 answer
     expect(await store.get(`sig:${room}:answer`)).toBe('ANSWER_SDP');
+  });
+});
+
+describe('getSignalStore 環境選擇', () => {
+  beforeEach(() => {
+    vi.resetModules(); // 清掉模組單例，讓每個 case 重新判斷
+  });
+
+  it('有 UPSTASH_REDIS_REST_* → 用 Upstash（非 MemoryStore）', async () => {
+    const mod = await import('./signalStore');
+    const store = mod.getSignalStore({
+      UPSTASH_REDIS_REST_URL: 'https://x.upstash.io',
+      UPSTASH_REDIS_REST_TOKEN: 'tok',
+    });
+    expect(store).not.toBeInstanceOf(mod.MemoryStore);
+  });
+
+  it('有 Vercel 注入的 KV_REST_API_* → 用 Upstash（非 MemoryStore）', async () => {
+    const mod = await import('./signalStore');
+    const store = mod.getSignalStore({
+      KV_REST_API_URL: 'https://x.upstash.io',
+      KV_REST_API_TOKEN: 'tok',
+    });
+    expect(store).not.toBeInstanceOf(mod.MemoryStore);
+  });
+
+  it('完全無金鑰 → 退回 MemoryStore', async () => {
+    const mod = await import('./signalStore');
+    const store = mod.getSignalStore({});
+    expect(store).toBeInstanceOf(mod.MemoryStore);
   });
 });

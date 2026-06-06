@@ -62,8 +62,9 @@ let singleton: SignalStore | null = null;
 /** 依環境變數選 store；無金鑰退回記憶體 mock。單例。 */
 export function getSignalStore(env: Record<string, string | undefined> = process.env): SignalStore {
   if (singleton) return singleton;
-  const url = env.UPSTASH_REDIS_REST_URL;
-  const token = env.UPSTASH_REDIS_REST_TOKEN;
+  // Upstash 原生命名，或 Vercel Marketplace（Upstash for Redis）注入的 KV_REST_API_* 命名
+  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
   singleton = url && token ? new UpstashStore(url, token) : new MemoryStore();
   return singleton;
 }

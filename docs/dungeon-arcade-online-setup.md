@@ -4,16 +4,19 @@
 Redis 做「牽線配對 + 排行榜/積分」。Production 多實例必須共享 store；本機開發無金鑰時
 程式自動退回記憶體 mock（`getSignalStore` / `getRankStore`）。
 
-## 你只需要做兩步（約 2 分鐘）
+## 現況（已完成）
 
-### 1. 建立免費 Upstash Redis
-- 進 **Vercel → 你的專案 → Storage → Create Database → Upstash (Redis)**，選 **Free** 方案。
-  Vercel 會自動把 `UPSTASH_REDIS_REST_URL`、`UPSTASH_REDIS_REST_TOKEN` 注入到專案環境變數。
-- （或）到 Upstash console 建免費 DB → 複製 **REST URL / REST TOKEN** → 貼到
-  Vercel → Settings → Environment Variables（Production 環境）。
+- ✅ **已建立免費 Upstash for Redis**（Vercel Marketplace，方案 Free、無付款方式）並**連到 `super-galen-site` 專案**。
+- ✅ Vercel 已注入 5 個變數到 production/preview/development：`KV_REST_API_URL`、`KV_REST_API_TOKEN`、`KV_REST_API_READ_ONLY_TOKEN`、`KV_URL`、`REDIS_URL`。
+- ✅ 直連 Upstash REST 驗證通過（`PING`→`PONG`、`SET/GET/DEL` 正常）。
+- ✅ 程式相容：`getSignalStore` / `getRankStore` 同時吃 `UPSTASH_REDIS_REST_*`（原生）與 `KV_REST_API_*`（Vercel 注入）兩種命名。
 
-### 2. 重新部署
-- 推一次 master 或在 Vercel 點 Redeploy，函式即會讀到金鑰、啟用真連線與排行榜。
+> 注意：Vercel 的 Upstash 整合注入的是 **`KV_REST_API_*`** 命名（不是 `UPSTASH_REDIS_REST_*`）。若改用 Upstash console 自建 DB 手動貼變數，則用 `UPSTASH_REDIS_REST_*`，程式皆相容。
+
+## 上線（剩這步）
+
+- 把 `feature/dungeon-arcade-tetris`（線上對戰）合併進 master 並部署；函式即讀到上述金鑰，啟用真連線與排行榜。
+- 或先做 **Preview 部署**（不合 master）取得預覽網址實測線上對戰。
 
 ## 帳單為什麼不會爆（已從設計鎖死）
 - **不綁信用卡**：Upstash Free / Vercel Hobby 沒有付款方式時是**硬上限**——超量只會被擋（throttle），**不會自動扣款**。
@@ -30,5 +33,5 @@ curl -s https://<你的網域>/api/leaderboard | head
 
 ## 我（AI）能/不能做
 - ✅ 全部程式、mock、turnkey 設定、本機與兩瀏覽器 e2e 驗證都已完成。
-- ❌ 無法替你**註冊 Upstash 帳號 / 進你的 Vercel dashboard 設定環境變數**（需要你的雲端登入）。
-  把上面兩步做完（或把 REST URL/TOKEN 給我，我可在你已登入的 Vercel CLI 上用 `vercel env add` 代填）即可上線。
+- ✅ 透過 Vercel token 已完成：把使用者建立的 Upstash store **連到專案**、確認 5 個變數注入、直連 Upstash REST 驗證可用。
+- ❌ 無法替你**註冊 Upstash／Vercel 帳號**（需你的雲端登入）；DB 由你在 Vercel Storage 點選建立後，其餘接線與驗證由 AI 用 token 完成。

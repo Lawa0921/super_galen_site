@@ -108,8 +108,9 @@ export class UpstashRankStore implements RankStore {
 let singleton: RankStore | null = null;
 export function getRankStore(env: Record<string, string | undefined> = process.env): RankStore {
   if (singleton) return singleton;
-  const url = env.UPSTASH_REDIS_REST_URL;
-  const token = env.UPSTASH_REDIS_REST_TOKEN;
+  // Upstash 原生命名，或 Vercel Marketplace（Upstash for Redis）注入的 KV_REST_API_* 命名
+  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
   singleton = url && token ? new UpstashRankStore(url, token) : new MemoryRankStore();
   return singleton;
 }
