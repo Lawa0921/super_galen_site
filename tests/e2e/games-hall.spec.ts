@@ -34,4 +34,14 @@ test.describe('Dungeon Arcade — hall & mode select', () => {
       { timeout: 20000 },
     );
   });
+
+  test('hall links to leaderboard; leaderboard page loads and fetches the API', async ({ page }) => {
+    await page.goto('/games');
+    await expect(page.locator('a[href="/games/leaderboard"]')).toBeVisible();
+
+    await page.goto('/games/leaderboard');
+    await expect(page.getByText('LEADERBOARD')).toBeVisible();
+    // fetch 完成後不應停在「載入中」（證明 /api/leaderboard 有回應）
+    await expect(page.locator('#lb-board')).not.toContainText('載入中', { timeout: 10000 });
+  });
 });
