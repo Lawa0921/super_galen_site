@@ -14,7 +14,7 @@ export class HudView {
   private stageW = 800;
 
   constructor(private layer: Container) {
-    const style = (size: number, color = 0xeafdff) =>
+    const style = (size: number, color = 0xfff2e6) =>
       new TextStyle({
         fontFamily: FONT_FAMILY,
         fontSize: size,
@@ -22,7 +22,7 @@ export class HudView {
         letterSpacing: 1,
       });
 
-    this.floorText = new Text({ text: 'FLOOR 1', style: style(11, 0x36e6ff) });
+    this.floorText = new Text({ text: 'FLOOR 1', style: style(11, 0xff9d3c) });
     this.livesText = new Text({ text: '♥ ♥ ♥', style: style(11, 0xff4d6d) });
     this.scoreText = new Text({ text: 'SCORE 0', style: style(10, 0xffd23f) });
     this.powerText = new Text({ text: '', style: style(9, 0xc15cff) });
@@ -59,7 +59,7 @@ export class HudView {
 
     this.bg.clear();
     this.bg.rect(0, 0, w, h).fill({ color: 0x04060d, alpha: 0.85 });
-    this.bg.rect(0, h - 1, w, 1).fill({ color: 0x36e6ff, alpha: 0.2 });
+    this.bg.rect(0, h - 1, w, 1).fill({ color: 0xff9d3c, alpha: 0.2 });
 
     const vMid = h / 2;
 
