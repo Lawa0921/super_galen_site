@@ -6,6 +6,7 @@ import { GridView } from './GridView';
 import { EntityView } from './EntityView';
 import { HudView } from './HudView';
 import { computeLayout } from './layout';
+import { loadBomberTextures } from './assets';
 import type { Dir } from '../engine/types';
 
 export interface BomberHandle {
@@ -19,8 +20,9 @@ export async function startBomber(canvas: HTMLCanvasElement): Promise<BomberHand
   const seed = Math.floor(Math.random() * 1_000_000_000);
   const game = new BomberGame({ seed });
 
-  const grid = new GridView(stage.gridLayer);
-  const entity = new EntityView(stage.entityLayer);
+  const textures = await loadBomberTextures();
+  const grid = new GridView(stage.gridLayer, textures);
+  const entity = new EntityView(stage.entityLayer, textures);
 
   // 確保街機點陣字載入後再建立 HUD（否則 Pixi 會以 fallback 字測量、之後不更新）
   try {

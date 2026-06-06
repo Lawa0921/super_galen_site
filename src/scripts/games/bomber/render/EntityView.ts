@@ -1,110 +1,148 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Sprite, type Texture } from 'pixi.js';
 import type { BomberState } from '../engine/types';
 import { speedMs } from '../engine/player';
-import { ENEMY_MOVE_MS } from '../engine/constants';
+import { ENEMY_MOVE_MS, BLAST_TTL_MS } from '../engine/constants';
 import { lerp, type Layout } from './layout';
-
-/** 顏色常數 */
-const COLOR_PLAYER = 0x4dff88;          // 玩家：亮綠
-const COLOR_PLAYER_SHIELD = 0xffd23f;   // 護盾狀態：金色
-const COLOR_ENEMY_WANDER = 0xff4d6d;    // 流浪敵：紅
-const COLOR_ENEMY_CHASER = 0xc15cff;    // 追逐敵：紫
-const COLOR_BOMB = 0x36e6ff;            // 炸彈：青
-const COLOR_BLAST = 0xff9a3c;           // 爆風：橙
-const COLOR_EXIT_ACTIVE = 0x00ffcc;     // 活躍出口：teal（distinct from player green）
-const COLOR_EXIT_INACTIVE = 0x2a3248;   // 非活躍出口：暗
-const POWERUP_COLORS: Record<string, number> = {
-  fire: 0xff4d6d,
-  bomb: 0x36e6ff,
-  speed: 0xffd23f,
-  shield: 0xc15cff,
-};
+import type { BomberTextures } from './assets';
 
 /**
- * 每幀繪製所有動態實體：
- * - 玩家（blink invulnMs、護盾金色）
- * - 敵人（顏色按 kind）
- * - 炸彈（脈動圓）
- * - 爆風（亮橙色格子）
- * - 道具（彩色菱形）
- * - 出口（活躍才畫 + 閃光）
+ * 每幀以 Sprite 繪製所有動態實體：
+ * - 玩家（blink invulnMs、護盾 alpha）
+ * - 敵人（依 kind 選貼圖，僅 alive）
+ * - 炸彈（脈動 scale）
+ * - 爆風（additive blend，black drops out，alpha from ttlMs）
+ * - 道具（依 kind 選貼圖，小 bob）
+ * - 出口（exitActive 才顯示，閃爍 alpha）
  * 所有移動實體插值：lerp(prev, cur, progress)
+ *
+ * 策略：簡易「recreate-per-frame」pool——每類實體維護一個陣列，
+ * 每幀重新配置必要數量（多的隱藏，不足時新增），避免 GC。
  */
 export class EntityView {
-  private gfx = new Graphics();
-  private blinkPhase = 0;
-  private pulsePhase = 0;
+  private blinkPhase    = 0;
+  private pulsePhase    = 0;
   private exitGlowPhase = 0;
 
-  constructor(private layer: Container) {
-    layer.addChild(this.gfx);
+  private textures: BomberTextures;
+
+  // --- sprite pools ---
+  private playerSp:  Sprite;
+  private enemyPool: Sprite[] = [];
+  private bombPool:  Sprite[] = [];
+  private blastPool: Sprite[] = [];
+  private puPool:    Sprite[] = [];
+  private exitSp:    Sprite;
+
+  constructor(private layer: Container, textures: BomberTextures) {
+    this.textures = textures;
+
+    // 玩家（1 個）
+    this.playerSp = this._newSprite(textures.player);
+
+    // 出口（1 個）
+    this.exitSp = this._newSprite(textures.exit);
+    this.exitSp.visible = false;
   }
 
+  // ─── pool helpers ────────────────────────────────────────────────────────────
+
+  private _newSprite(texture: Texture): Sprite {
+    const sp = new Sprite(texture);
+    sp.anchor.set(0.5);
+    this.layer.addChild(sp);
+    return sp;
+  }
+
+  /** 取得 pool 中第 idx 個 Sprite（不足時自動擴充）。多餘的在 render 末尾隱藏。 */
+  private _poolGet(pool: Sprite[], idx: number, texture: Texture): Sprite {
+    if (idx < pool.length) {
+      pool[idx].texture = texture;
+      pool[idx].visible = true;
+      return pool[idx];
+    }
+    const sp = this._newSprite(texture);
+    pool.push(sp);
+    return sp;
+  }
+
+  private _poolHideFrom(pool: Sprite[], from: number): void {
+    for (let i = from; i < pool.length; i++) pool[i].visible = false;
+  }
+
+  // ─── render ──────────────────────────────────────────────────────────────────
+
   render(state: BomberState, layout: Layout, dtMs: number): void {
-    this.blinkPhase = (this.blinkPhase + dtMs * 0.008) % (Math.PI * 2);
-    this.pulsePhase = (this.pulsePhase + dtMs * 0.005) % (Math.PI * 2);
+    this.blinkPhase    = (this.blinkPhase    + dtMs * 0.008) % (Math.PI * 2);
+    this.pulsePhase    = (this.pulsePhase    + dtMs * 0.005) % (Math.PI * 2);
     this.exitGlowPhase = (this.exitGlowPhase + dtMs * 0.003) % (Math.PI * 2);
 
-    const g = this.gfx.clear();
     const { cell, ox, oy } = layout;
 
-    // 出口
-    this.drawExit(g, state, cell, ox, oy);
+    // 1. 出口
+    this._renderExit(state, cell, ox, oy);
 
-    // 爆風
+    // 2. 爆風（additive，black drops out）
+    let bi = 0;
     for (const blast of state.blasts) {
-      const bx = ox + blast.x * cell;
-      const by = oy + blast.y * cell;
-      const alpha = Math.max(0.3, blast.ttlMs / 480);
-      g.rect(bx + 2, by + 2, cell - 4, cell - 4).fill({ color: COLOR_BLAST, alpha });
+      const sp = this._poolGet(this.blastPool, bi++, this.textures.blast);
+      sp.blendMode = 'add';
+      sp.width  = cell;
+      sp.height = cell;
+      sp.x = ox + blast.x * cell + cell / 2;
+      sp.y = oy + blast.y * cell + cell / 2;
+      sp.alpha = Math.max(0.3, blast.ttlMs / BLAST_TTL_MS);
     }
+    this._poolHideFrom(this.blastPool, bi);
 
-    // 道具（菱形）
+    // 3. 道具
+    let pi = 0;
     for (const pu of state.powerUps) {
-      const px = ox + pu.x * cell + cell / 2;
-      const py = oy + pu.y * cell + cell / 2;
-      const r = cell * 0.32;
-      const col = POWERUP_COLORS[pu.kind] ?? 0xffffff;
-      g.moveTo(px, py - r).lineTo(px + r, py).lineTo(px, py + r).lineTo(px - r, py).closePath();
-      g.fill({ color: col, alpha: 0.9 });
-      g.moveTo(px, py - r).lineTo(px + r, py).lineTo(px, py + r).lineTo(px - r, py).closePath();
-      g.stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 });
+      const puTex = this._puTexture(pu.kind);
+      const sp = this._poolGet(this.puPool, pi++, puTex);
+      const bob = 1 + Math.sin(this.pulsePhase + pi * 0.7) * 0.06;
+      const size = cell * 0.7 * bob;
+      sp.width  = size;
+      sp.height = size;
+      sp.x = ox + pu.x * cell + cell / 2;
+      sp.y = oy + pu.y * cell + cell / 2;
+      sp.alpha = 1;
     }
+    this._poolHideFrom(this.puPool, pi);
 
-    // 炸彈（脈動圓 + 引信）
+    // 4. 炸彈（脈動 scale）
+    let bmi = 0;
     for (const bomb of state.bombs) {
-      const bx = ox + bomb.x * cell + cell / 2;
-      const by = oy + bomb.y * cell + cell / 2;
+      const sp = this._poolGet(this.bombPool, bmi++, this.textures.bomb);
       const pulseScale = 1 + Math.sin(this.pulsePhase) * 0.12;
-      const r = cell * 0.35 * pulseScale;
-      g.circle(bx, by, r).fill({ color: COLOR_BOMB, alpha: 0.9 });
-      g.circle(bx, by, r).stroke({ width: 2, color: 0xffffff, alpha: 0.4 });
-      // 引信（小線段）
-      const fuseProgress = Math.max(0, bomb.fuseMs / 2000);
-      const fuseLen = cell * 0.25 * fuseProgress;
-      g.moveTo(bx, by - r).lineTo(bx + fuseLen, by - r - fuseLen);
-      g.stroke({ width: 2, color: 0xffd23f, alpha: 0.9 });
+      const size = cell * 0.8 * pulseScale;
+      sp.width  = size;
+      sp.height = size;
+      sp.x = ox + bomb.x * cell + cell / 2;
+      sp.y = oy + bomb.y * cell + cell / 2;
+      sp.alpha = 1;
     }
+    this._poolHideFrom(this.bombPool, bmi);
 
-    // 敵人
+    // 5. 敵人
+    let ei = 0;
     for (const enemy of state.enemies) {
       if (!enemy.alive) continue;
-      // 計算插值進度：moveAccMs 累積到 ENEMY_MOVE_MS 代表移動完成
-      const moveMs = ENEMY_MOVE_MS[enemy.kind];
+      const moveMs   = ENEMY_MOVE_MS[enemy.kind];
       const progress = Math.min(1, Math.max(0, enemy.moveAccMs / moveMs));
       const rx = lerp(enemy.prevX, enemy.x, progress);
       const ry = lerp(enemy.prevY, enemy.y, progress);
-      const ex = ox + rx * cell + cell / 2;
-      const ey = oy + ry * cell + cell / 2;
-      const r = cell * 0.38;
-      const col = enemy.kind === 'wander' ? COLOR_ENEMY_WANDER : COLOR_ENEMY_CHASER;
-      g.circle(ex, ey, r).fill({ color: col, alpha: 0.9 });
-      g.circle(ex, ey, r).stroke({ width: 2, color: 0xffffff, alpha: 0.3 });
-      // 小眼睛方向指示
-      this.drawEyes(g, enemy.dir, ex, ey, r);
+      const tex = enemy.kind === 'wander' ? this.textures.enemyWander : this.textures.enemyChaser;
+      const sp  = this._poolGet(this.enemyPool, ei++, tex);
+      const size = cell * 0.85;
+      sp.width  = size;
+      sp.height = size;
+      sp.x = ox + rx * cell + cell / 2;
+      sp.y = oy + ry * cell + cell / 2;
+      sp.alpha = 1;
     }
+    this._poolHideFrom(this.enemyPool, ei);
 
-    // 玩家
+    // 6. 玩家
     const p = state.player;
     const playerProgress = Math.min(1, Math.max(0,
       1 - p.moveCooldownMs / speedMs(p.speedLevel),
@@ -114,60 +152,49 @@ export class EntityView {
     const ppx = ox + prx * cell + cell / 2;
     const ppy = oy + pry * cell + cell / 2;
 
-    // blink 無敵時
-    const isInvuln = p.invulnMs > 0;
+    const isInvuln    = p.invulnMs > 0;
     const blinkVisible = !isInvuln || Math.sin(this.blinkPhase) > 0;
 
-    if (blinkVisible) {
-      const half = cell * 0.4;
-      const playerColor = p.shield ? COLOR_PLAYER_SHIELD : COLOR_PLAYER;
-      g.rect(ppx - half, ppy - half, half * 2, half * 2).fill({ color: playerColor, alpha: 0.95 });
-      if (p.shield) {
-        // 護盾光環
-        g.circle(ppx, ppy, cell * 0.52).stroke({ width: 2, color: 0xffd23f, alpha: 0.7 });
-      }
-    }
+    const ps = this.playerSp;
+    ps.texture = this.textures.player;
+    const pSize = cell * 0.9;
+    ps.width  = pSize;
+    ps.height = pSize;
+    ps.x = ppx;
+    ps.y = ppy;
+    // 面朝左時水平翻轉
+    const absScaleX = Math.abs(ps.scale.x);
+    ps.scale.x = p.dir === 'left' ? -absScaleX : absScaleX;
+    ps.alpha   = blinkVisible ? (p.shield ? 0.95 : 1) : 0.3;
+    ps.visible = true;
   }
 
-  private drawExit(g: Graphics, state: BomberState, cell: number, ox: number, oy: number): void {
+  // ─── helpers ─────────────────────────────────────────────────────────────────
+
+  private _renderExit(state: BomberState, cell: number, ox: number, oy: number): void {
     const { exit, exitActive } = state;
-    const ex = ox + exit.x * cell;
-    const ey = oy + exit.y * cell;
+    const sp = this.exitSp;
     if (!exitActive) {
-      // 非活躍：暗色小點
-      g.rect(ex + cell * 0.3, ey + cell * 0.3, cell * 0.4, cell * 0.4)
-        .fill({ color: COLOR_EXIT_INACTIVE, alpha: 0.5 });
+      sp.visible = false;
       return;
     }
-    // 活躍：閃爍綠色方格 + 邊框
     const glowAlpha = 0.6 + Math.sin(this.exitGlowPhase) * 0.35;
-    g.rect(ex + 2, ey + 2, cell - 4, cell - 4).fill({ color: COLOR_EXIT_ACTIVE, alpha: glowAlpha });
-    g.rect(ex + 2, ey + 2, cell - 4, cell - 4).stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
-    // 「E」圖示（簡化：三條橫線）
-    const cx = ex + cell / 2;
-    const cy = ey + cell / 2;
-    const hw = cell * 0.2;
-    for (const dy of [-cell * 0.14, 0, cell * 0.14]) {
-      g.moveTo(cx - hw, cy + dy).lineTo(cx + hw, cy + dy);
-      g.stroke({ width: 1.5, color: 0x06070f, alpha: 0.8 });
-    }
+    sp.texture = this.textures.exit;
+    sp.width  = cell;
+    sp.height = cell;
+    sp.x = ox + exit.x * cell + cell / 2;
+    sp.y = oy + exit.y * cell + cell / 2;
+    sp.alpha   = glowAlpha;
+    sp.visible = true;
   }
 
-  private drawEyes(g: Graphics, dir: string, cx: number, cy: number, r: number): void {
-    const offset = r * 0.35;
-    let dx = 0, dy = 0;
-    if (dir === 'up') dy = -1;
-    else if (dir === 'down') dy = 1;
-    else if (dir === 'left') dx = -1;
-    else if (dir === 'right') dx = 1;
-    const er = r * 0.18;
-    const perp = r * 0.25;
-    // 兩個眼睛
-    const ex1 = cx + dx * offset + (dy !== 0 ? -perp : 0);
-    const ey1 = cy + dy * offset + (dx !== 0 ? -perp : 0);
-    const ex2 = cx + dx * offset + (dy !== 0 ? perp : 0);
-    const ey2 = cy + dy * offset + (dx !== 0 ? perp : 0);
-    g.circle(ex1, ey1, er).fill({ color: 0xffffff, alpha: 0.9 });
-    g.circle(ex2, ey2, er).fill({ color: 0xffffff, alpha: 0.9 });
+  private _puTexture(kind: string): Texture {
+    switch (kind) {
+      case 'fire':   return this.textures.puFire;
+      case 'bomb':   return this.textures.puBomb;
+      case 'speed':  return this.textures.puSpeed;
+      case 'shield': return this.textures.puShield;
+      default:       return this.textures.puFire;
+    }
   }
 }
