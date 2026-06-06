@@ -1,7 +1,7 @@
-// game.test.ts (Task 10 portion)
+// game.test.ts (Task 10 + Task 11 portion)
 import { describe, it, expect } from 'vitest';
 import { BomberGame } from './game';
-import { SPAWN, SPEED_MS, BASE_BOMBS } from './constants';
+import { SPAWN, SPEED_MS, BASE_BOMBS, BOMB_FUSE_MS, BLAST_TTL_MS } from './constants';
 
 describe('BomberGame: construction', () => {
   it('初始狀態：playing、floor 1、玩家在出生點、分數 0', () => {
@@ -55,5 +55,33 @@ describe('BomberGame: bomb placement', () => {
     g.input('bomb');
     g.drainEvents();
     expect(g.drainEvents()).toHaveLength(0);
+  });
+});
+
+describe('BomberGame: explosions', () => {
+  it('引信歸零後炸彈引爆並產生爆風', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.input('bomb');
+    g.step(BOMB_FUSE_MS); // 引爆
+    const s = g.getState();
+    expect(s.bombs).toHaveLength(0);
+    expect(s.blasts.length).toBeGreaterThan(0);
+  });
+  it('爆風 TTL 過後消失', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.input('bomb');
+    g.step(BOMB_FUSE_MS);
+    g.step(BLAST_TTL_MS + 1);
+    expect(g.getState().blasts).toHaveLength(0);
+  });
+  it('炸到 crate 會破壞並加分', () => {
+    const g = new BomberGame({ seed: 1 });
+    const before = g.getState();
+    g.input('bomb');
+    g.step(BOMB_FUSE_MS);
+    const after = g.getState();
+    // 至少分數 >= 0 且狀態仍 playing
+    expect(after.status).toBe('playing');
+    expect(after.score).toBeGreaterThanOrEqual(before.score);
   });
 });

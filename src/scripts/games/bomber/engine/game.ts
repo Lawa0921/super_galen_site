@@ -4,8 +4,10 @@ import type {
 } from './types';
 import { generateFloor } from './generate';
 import { makePlayer, dirDelta, speedMs } from './player';
-import { isWalkable } from './board';
-import { BOMB_FUSE_MS } from './constants';
+import { isWalkable, breakCrate } from './board';
+import { BOMB_FUSE_MS, BLAST_TTL_MS } from './constants';
+import { resolveChain } from './bomb';
+import { SCORE } from './scoring';
 
 export interface BomberOptions { seed?: number; floor?: number; }
 
@@ -21,6 +23,7 @@ export class BomberGame {
   private hidden: Record<string, PowerUpKind> = {};
   private exit: Vec;
   private status: 'playing' | 'gameover' = 'playing';
+  private score = 0;
 
   private held = new Set<Dir>();
   private lastHeld: Dir | null = null;
@@ -80,8 +83,54 @@ export class BomberGame {
   // ---- main loop ----
   step(dtMs: number): void {
     if (this.status !== 'playing') return;
+    this.stepBlasts(dtMs);
+    this.stepBombs(dtMs);
     this.stepPlayerMove(dtMs);
-    // 炸彈/敵人/爆風/碰撞在 Task 11、12 補上
+    this.pickup();
+  }
+
+  private stepBombs(dtMs: number): void {
+    const detonating: Bomb[] = [];
+    for (const b of this.bombs) { b.fuseMs -= dtMs; if (b.fuseMs <= 0) detonating.push(b); }
+    if (detonating.length === 0) return;
+    const { cells, brokenCrates, consumed } = resolveChain(this.grid, this.bombs, detonating);
+    // 移除已爆炸彈
+    this.bombs = this.bombs.filter((b) => !consumed.includes(b));
+    // 破壞箱子 + 揭露道具 + 加分
+    for (const c of brokenCrates) {
+      this.grid = breakCrate(this.grid, c.x, c.y);
+      this.score += SCORE.crate;
+      this.events.push({ kind: 'crateBreak', x: c.x, y: c.y });
+      const key = `${c.x},${c.y}`;
+      const drop = this.hidden[key];
+      if (drop) { this.powerUps.push({ x: c.x, y: c.y, kind: drop }); delete this.hidden[key]; }
+    }
+    // 產生爆風格
+    for (const c of cells) this.blasts.push({ x: c.x, y: c.y, ttlMs: BLAST_TTL_MS });
+    this.events.push({ kind: 'explode', cells });
+  }
+
+  private stepBlasts(dtMs: number): void {
+    for (const bl of this.blasts) bl.ttlMs -= dtMs;
+    this.blasts = this.blasts.filter((bl) => bl.ttlMs > 0);
+  }
+
+  private pickup(): void {
+    const p = this.player;
+    const hit = this.powerUps.find((u) => u.x === p.x && u.y === p.y);
+    if (!hit) return;
+    this.powerUps = this.powerUps.filter((u) => u !== hit);
+    this.applyPowerUp(hit.kind);
+    this.score += SCORE.powerup;
+    this.events.push({ kind: 'pickup', powerUp: hit.kind });
+  }
+
+  private applyPowerUp(kind: PowerUpKind): void {
+    const p = this.player;
+    if (kind === 'fire') p.fireRange = Math.min(p.fireRange + 1, 8);
+    else if (kind === 'bomb') p.maxBombs = Math.min(p.maxBombs + 1, 8);
+    else if (kind === 'speed') p.speedLevel = Math.min(p.speedLevel + 1, 4);
+    else if (kind === 'shield') p.shield = true;
   }
 
   private stepPlayerMove(dtMs: number): void {
@@ -110,7 +159,7 @@ export class BomberGame {
       exit: { ...this.exit },
       exitActive: this.enemies.every((e) => !e.alive),
       floor: this.floor,
-      score: 0,
+      score: this.score,
       status: this.status,
     };
   }
