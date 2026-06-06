@@ -148,4 +148,31 @@ describe('BomberGame: enemies & death', () => {
     expect(s.player.lives).toBe(START_LIVES - 1);
     expect(s.player.invulnMs).toBeGreaterThan(0);
   });
+
+  it('護盾吸收一次傷害 -> 命數不變、護盾消失、短暫無敵，且發出 shielded 事件', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.debugTeleportPlayer(3, 1);
+    g.debugSetInvuln(0);
+    g.debugSetShield(true);
+    g.input('bomb');
+    g.debugFreezePlayer();
+    g.step(BOMB_FUSE_MS);
+    const s = g.getState();
+    expect(s.player.lives).toBe(START_LIVES);
+    expect(s.player.shield).toBe(false);
+    expect(s.player.invulnMs).toBeGreaterThan(0);
+    expect(g.drainEvents().some((e) => e.kind === 'playerHit' && e.shielded === true)).toBe(true);
+  });
+
+  it('命數歸零 -> status=gameover 並發出 gameover 事件', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.debugTeleportPlayer(3, 1);
+    g.debugSetInvuln(0);
+    g.debugSetLives(1);
+    g.input('bomb');
+    g.debugFreezePlayer();
+    g.step(BOMB_FUSE_MS);
+    expect(g.getState().status).toBe('gameover');
+    expect(g.drainEvents().some((e) => e.kind === 'gameover')).toBe(true);
+  });
 });

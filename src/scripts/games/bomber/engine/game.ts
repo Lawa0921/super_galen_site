@@ -31,7 +31,7 @@ export class BomberGame {
   private lastHeld: Dir | null = null;
   private events: BomberEvent[] = [];
 
-  private rng = createRng((this.seed ^ 0xabcdef) >>> 0);
+  private rng!: () => number;
   private frozen = false; // debug only
   private clearedEmitted = false;
 
@@ -188,6 +188,7 @@ export class BomberGame {
   }
 
   private checkDescend(): void {
+    if (this.status !== 'playing') return;
     const cleared = this.enemies.every((e) => !e.alive);
     if (!cleared) return;
     const p = this.player;
@@ -273,4 +274,6 @@ export class BomberGame {
     p.x = x; p.y = y; p.prevX = x; p.prevY = y;
   }
   debugFreezePlayer(): void { this.frozen = true; }
+  debugSetShield(on: boolean): void { this.player.shield = on; }
+  debugSetLives(n: number): void { this.player.lives = n; }
 }
