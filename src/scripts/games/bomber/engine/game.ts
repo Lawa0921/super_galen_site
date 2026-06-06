@@ -1,6 +1,6 @@
 // game.ts
 import type {
-  Grid, Bomb, BlastCell, Enemy, PowerUp, Vec, Dir, BomberState, BomberEvent, InputAction, Player,
+  Grid, Bomb, BlastCell, Enemy, PowerUp, PowerUpKind, Vec, Dir, BomberState, BomberEvent, InputAction, Player,
 } from './types';
 import { generateFloor } from './generate';
 import { makePlayer, dirDelta, speedMs } from './player';
@@ -18,7 +18,7 @@ export class BomberGame {
   private blasts: BlastCell[] = [];
   private enemies: Enemy[] = [];
   private powerUps: PowerUp[] = [];
-  private hidden: Record<string, import('./types').PowerUpKind> = {};
+  private hidden: Record<string, PowerUpKind> = {};
   private exit: Vec;
   private status: 'playing' | 'gameover' = 'playing';
 
@@ -40,8 +40,18 @@ export class BomberGame {
   // ---- input ----
   setHeld(dir: Dir, down: boolean): void {
     if (down) { this.held.add(dir); this.lastHeld = dir; }
-    else { this.held.delete(dir); if (this.lastHeld === dir) this.lastHeld = null; }
+    else {
+      this.held.delete(dir);
+      if (this.lastHeld === dir) {
+        this.lastHeld = this.held.size > 0 ? [...this.held][this.held.size - 1] : null;
+      }
+    }
   }
+  /**
+   * 處理一次動作輸入。'bomb' 為單次放彈；方向會「設為按住」(setHeld true)——
+   * 呼叫端（鍵盤層）必須在 keyup 時配對呼叫 setHeld(dir, false)，否則玩家會一直往該方向走。
+   * 注意：render 的方向鍵直接用 setHeld，不走這條路；此分支主要供完整 InputAction 介面使用。
+   */
   input(action: InputAction): void {
     if (this.status !== 'playing') return;
     if (action === 'bomb') { this.placeBomb(); return; }
@@ -91,10 +101,17 @@ export class BomberGame {
 
   getState(): BomberState {
     return {
-      grid: this.grid, player: this.player, bombs: this.bombs, blasts: this.blasts,
-      enemies: this.enemies, powerUps: this.powerUps, exit: this.exit,
+      grid: this.grid, // grid is treated read-only by the render layer; sharing avoids per-frame deep copies
+      player: { ...this.player },
+      bombs: this.bombs.map((b) => ({ ...b })),
+      blasts: this.blasts.map((b) => ({ ...b })),
+      enemies: this.enemies.map((e) => ({ ...e })),
+      powerUps: this.powerUps.map((u) => ({ ...u })),
+      exit: { ...this.exit },
       exitActive: this.enemies.every((e) => !e.alive),
-      floor: this.floor, score: 0, status: this.status,
+      floor: this.floor,
+      score: 0,
+      status: this.status,
     };
   }
 

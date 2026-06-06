@@ -28,6 +28,12 @@ describe('BomberGame: movement', () => {
     g.step(SPEED_MS[0]);
     expect(g.getState().player.y).toBe(SPAWN.y);
   });
+  it('單一 step 即使 dt 很大也只前進一格（冷卻擋住連走）', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.setHeld('right', true);
+    g.step(SPEED_MS[0] * 3);
+    expect(g.getState().player.x).toBe(SPAWN.x + 1);
+  });
 });
 
 describe('BomberGame: bomb placement', () => {
@@ -43,5 +49,11 @@ describe('BomberGame: bomb placement', () => {
     g.input('bomb'); // 同一格只能放一顆
     g.input('bomb');
     expect(g.getState().bombs.length).toBe(BASE_BOMBS);
+  });
+  it('drainEvents 第二次呼叫為空', () => {
+    const g = new BomberGame({ seed: 1 });
+    g.input('bomb');
+    g.drainEvents();
+    expect(g.drainEvents()).toHaveLength(0);
   });
 });
