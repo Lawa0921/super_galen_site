@@ -7,6 +7,24 @@ export interface PlayerRecord {
   rating: number;
   wins: number;
   losses: number;
+  xp: number;
+  level: number;
+  games: number;
+  top3: number;
+}
+
+/** 補齊舊資料缺少的進度欄位（向後相容）。 */
+export function normalizePlayer(p: Record<string, unknown>): PlayerRecord {
+  return {
+    name: typeof p.name === 'string' ? p.name : undefined,
+    rating: Number(p.rating ?? 1000),
+    wins: Number(p.wins ?? 0),
+    losses: Number(p.losses ?? 0),
+    xp: Number(p.xp ?? 0),
+    level: Number(p.level ?? 1),
+    games: Number(p.games ?? 0),
+    top3: Number(p.top3 ?? 0),
+  };
 }
 
 export interface RankStore {
@@ -32,7 +50,8 @@ export class MemoryRankStore implements RankStore {
   private settled = new Map<string, number>();
 
   async getPlayer(id: string): Promise<PlayerRecord | null> {
-    return this.players.get(id) ?? null;
+    const p = this.players.get(id);
+    return p ? normalizePlayer(p as unknown as Record<string, unknown>) : null;
   }
   async setPlayer(id: string, rec: PlayerRecord): Promise<void> {
     this.players.set(id, { ...rec });
@@ -74,7 +93,7 @@ export class UpstashRankStore implements RankStore {
 
   async getPlayer(id: string): Promise<PlayerRecord | null> {
     const r = await this.cmd('get', `player:${id}`);
-    return r ? (JSON.parse(String(r)) as PlayerRecord) : null;
+    return r ? normalizePlayer(JSON.parse(String(r)) as Record<string, unknown>) : null;
   }
   async setPlayer(id: string, rec: PlayerRecord): Promise<void> {
     await this.cmd('set', `player:${id}`, JSON.stringify(rec));
