@@ -1,7 +1,13 @@
 // enemy.ts
-import type { Grid, Enemy, Dir, Vec, Bomb } from './types';
+import type { Grid, Enemy, Dir, Vec, Bomb, EnemyKind } from './types';
 import { isWalkable } from './board';
 import { dirDelta } from './player';
+import { ENEMY_MOVE_MS } from './constants';
+
+/** 敵人每格移動耗時（隨層數遞減，下限 80ms）。 */
+export function enemyMoveMs(kind: EnemyKind, floor: number): number {
+  return Math.max(80, ENEMY_MOVE_MS[kind] - (floor - 1) * 15);
+}
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 

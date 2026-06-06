@@ -5,10 +5,10 @@ import type {
 import { generateFloor } from './generate';
 import { makePlayer, dirDelta, speedMs } from './player';
 import { isWalkable, breakCrate } from './board';
-import { BOMB_FUSE_MS, BLAST_TTL_MS, ENEMY_MOVE_MS, INVULN_MS, SPAWN } from './constants';
+import { BOMB_FUSE_MS, BLAST_TTL_MS, INVULN_MS, SPAWN } from './constants';
 import { resolveChain } from './bomb';
 import { SCORE, descendBonus } from './scoring';
-import { chooseEnemyDir } from './enemy';
+import { chooseEnemyDir, enemyMoveMs } from './enemy';
 import { createRng } from './rng';
 
 export interface BomberOptions { seed?: number; floor?: number; }
@@ -131,14 +131,13 @@ export class BomberGame {
   }
 
   private stepEnemies(dtMs: number): void {
-    const moveMsBase = (e: Enemy): number => Math.max(80, ENEMY_MOVE_MS[e.kind] - (this.floor - 1) * 15);
     for (const e of this.enemies) {
       if (!e.alive) continue;
       e.moveAccMs += dtMs;
-      if (e.moveAccMs < moveMsBase(e)) { e.prevX = e.x; e.prevY = e.y; continue; }
+      if (e.moveAccMs < enemyMoveMs(e.kind, this.floor)) continue;
       e.moveAccMs = 0;
       const dir = chooseEnemyDir(this.grid, e, this.player, this.bombs, this.rng);
-      if (!dir) { e.prevX = e.x; e.prevY = e.y; continue; }
+      if (!dir) continue;
       const v = dirDelta(dir);
       e.dir = dir;
       e.prevX = e.x; e.prevY = e.y;

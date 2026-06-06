@@ -113,6 +113,9 @@ export async function startBomber(canvas: HTMLCanvasElement): Promise<BomberHand
       } else if (ev.kind === 'playerHit') {
         stage.shake(10);
         sound.hit();
+      } else if (ev.kind === 'floorClear') {
+        sound.descend();
+        stage.shake(4);
       } else if (ev.kind === 'descend') {
         sound.descend();
         grid.invalidate(); // 新樓層：強制格子重繪

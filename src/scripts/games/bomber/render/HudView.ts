@@ -55,7 +55,7 @@ export class HudView {
 
   private relayout(): void {
     const w = this.stageW;
-    const h = 48;
+    const h = 56;
 
     this.bg.clear();
     this.bg.rect(0, 0, w, h).fill({ color: 0x04060d, alpha: 0.85 });

@@ -1,7 +1,8 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
 import type { BomberState } from '../engine/types';
 import { speedMs } from '../engine/player';
-import { ENEMY_MOVE_MS, BLAST_TTL_MS } from '../engine/constants';
+import { BLAST_TTL_MS } from '../engine/constants';
+import { enemyMoveMs } from '../engine/enemy';
 import { lerp, type Layout } from './layout';
 import type { BomberTextures } from './assets';
 
@@ -147,7 +148,7 @@ export class EntityView {
     let ei = 0;
     for (const enemy of state.enemies) {
       if (!enemy.alive) continue;
-      const moveMs   = ENEMY_MOVE_MS[enemy.kind];
+      const moveMs   = enemyMoveMs(enemy.kind, state.floor);
       const progress = Math.min(1, Math.max(0, enemy.moveAccMs / moveMs));
       const rx = lerp(enemy.prevX, enemy.x, progress);
       const ry = lerp(enemy.prevY, enemy.y, progress);
