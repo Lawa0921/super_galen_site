@@ -5,13 +5,26 @@ import {
 } from './constants';
 import { createRng } from './rng';
 
-const SAFE = new Set([`${SPAWN.x},${SPAWN.y}`, `${SPAWN.x + 1},${SPAWN.y}`, `${SPAWN.x},${SPAWN.y + 1}`]);
+function shuffle<T>(arr: T[], rand: () => number): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 const POWERUPS: PowerUpKind[] = ['fire', 'bomb', 'speed', 'shield'];
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 
 /** 依 seed 與層數產生一層：grid + 敵人 + 藏在軟箱下的道具 + 出口。 */
 export function generateFloor(seed: number, floor: number): FloorLayout {
   const rng = createRng((seed ^ (floor * 0x9e3779b1)) >>> 0);
+  const safe = new Set([
+    `${SPAWN.x},${SPAWN.y}`,
+    `${SPAWN.x + 1},${SPAWN.y}`,
+    `${SPAWN.x},${SPAWN.y + 1}`,
+  ]);
   const grid: Grid = [];
   for (let y = 0; y < GRID_ROWS; y++) {
     const row: Grid[number] = [];
@@ -19,7 +32,7 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
       const border = x === 0 || y === 0 || x === GRID_COLS - 1 || y === GRID_ROWS - 1;
       const pillar = x % 2 === 0 && y % 2 === 0;
       if (border || pillar) row.push('wall');
-      else if (!SAFE.has(`${x},${y}`) && rng() < CRATE_DENSITY) row.push('crate');
+      else if (!safe.has(`${x},${y}`) && rng() < CRATE_DENSITY) row.push('crate');
       else row.push('floor');
     }
     grid.push(row);
@@ -36,7 +49,7 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
   const floors: { x: number; y: number }[] = [];
   for (let y = 1; y < GRID_ROWS - 1; y++)
     for (let x = 1; x < GRID_COLS - 1; x++)
-      if (grid[y][x] === 'floor' && !SAFE.has(`${x},${y}`)) floors.push({ x, y });
+      if (grid[y][x] === 'floor' && !safe.has(`${x},${y}`)) floors.push({ x, y });
 
   // 出口：離出生點最遠的 floor 格（穩定、可重現）
   const exit = floors.reduce((best, c) =>
@@ -46,9 +59,10 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
 
   // 敵人：第 floor 層 = BASE + (floor-1)，從遠離出生點的 floor 格隨機挑
   const count = BASE_ENEMY_COUNT + (floor - 1);
-  const candidates = floors
-    .filter((c) => Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y) >= 4)
-    .sort(() => rng() - 0.5);
+  const candidates = shuffle(
+    floors.filter((c) => Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y) >= 4),
+    rng,
+  );
   const enemies: Enemy[] = [];
   for (let i = 0; i < count && i < candidates.length; i++) {
     const c = candidates[i];

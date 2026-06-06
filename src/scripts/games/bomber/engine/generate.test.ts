@@ -38,4 +38,9 @@ describe('generateFloor', () => {
     const { grid, exit } = generateFloor(1, 1);
     expect(grid[exit.y][exit.x]).toBe('floor');
   });
+  it('高層敵人數受可用格上限約束，且永不 throw', () => {
+    const { enemies } = generateFloor(999, 50);
+    expect(enemies.length).toBeGreaterThan(0);
+    expect(enemies.length).toBeLessThanOrEqual(BASE_ENEMY_COUNT + 49);
+  });
 });
