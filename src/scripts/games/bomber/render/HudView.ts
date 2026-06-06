@@ -63,7 +63,7 @@ export class HudView {
 
     const vMid = h / 2;
 
-    this.floorText.x = 16;
+    this.floorText.x = Math.round(w * 0.30);
     this.floorText.y = vMid - this.floorText.height / 2;
 
     this.scoreText.x = Math.round(w * 0.4);

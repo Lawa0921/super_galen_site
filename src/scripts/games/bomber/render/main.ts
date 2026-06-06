@@ -46,7 +46,8 @@ export async function startBomber(canvas: HTMLCanvasElement): Promise<BomberHand
   const overEl = document.getElementById('bomber-over') as HTMLElement | null;
   const overStatsEl = document.getElementById('bomber-over-stats') as HTMLElement | null;
   const retryBtn = document.getElementById('bomber-restart') as HTMLElement | null;
-  retryBtn?.addEventListener('click', () => location.reload());
+  const onRetry = () => location.reload();
+  retryBtn?.addEventListener('click', onRetry);
 
   let gameoverShown = false;
 
@@ -134,6 +135,7 @@ export async function startBomber(canvas: HTMLCanvasElement): Promise<BomberHand
       stage.app.renderer.off('resize', relayout);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      retryBtn?.removeEventListener('click', onRetry);
       stage.app.ticker.remove(tick);
       stage.app.destroy();
     },

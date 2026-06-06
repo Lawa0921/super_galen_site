@@ -11,7 +11,7 @@ const COLOR_ENEMY_WANDER = 0xff4d6d;    // 流浪敵：紅
 const COLOR_ENEMY_CHASER = 0xc15cff;    // 追逐敵：紫
 const COLOR_BOMB = 0x36e6ff;            // 炸彈：青
 const COLOR_BLAST = 0xff9a3c;           // 爆風：橙
-const COLOR_EXIT_ACTIVE = 0x4dff88;     // 活躍出口：亮綠
+const COLOR_EXIT_ACTIVE = 0x00ffcc;     // 活躍出口：teal（distinct from player green）
 const COLOR_EXIT_INACTIVE = 0x2a3248;   // 非活躍出口：暗
 const POWERUP_COLORS: Record<string, number> = {
   fire: 0xff4d6d,
