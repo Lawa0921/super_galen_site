@@ -6,8 +6,9 @@ export class SoundManager {
 
   ensure(): void {
     if (!this.ctx) {
-      const Ctor = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
-      this.ctx = new Ctor();
+      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
@@ -22,12 +23,11 @@ export class SoundManager {
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + durMs / 1000);
     osc.connect(g).connect(this.ctx.destination);
-    osc.start(t); osc.stop(t + durMs / 1000);
+    osc.start(t); osc.stop(t + durMs / 1000 + 0.03);
   }
 
   place(): void { this.blip(220, 80, 'square'); }
   explode(): void {
-    if (this.muted || !this.ctx) return;
     // 噪音爆裂：短促下滑 + 低頻
     this.blip(90, 320, 'sawtooth', 0.25);
     this.blip(50, 380, 'triangle', 0.2);
