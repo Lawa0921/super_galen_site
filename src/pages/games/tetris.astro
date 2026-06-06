@@ -28,29 +28,48 @@ const lang: Language = defaultLang;
       <canvas id="tetris-canvas"></canvas>
     </div>
 
-    <div class="mode-select" id="mode-select">
-      <h2 class="ms-title">SELECT MODE</h2>
-      <div class="ms-buttons">
-        <button class="ms-btn ms-solo" data-mode="solo">SOLO</button>
-        <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
-        <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
-        <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
-        <button class="ms-btn ms-online" data-mode="online">vs 線上對戰</button>
-      </div>
-    </div>
+    <div class="main-menu" id="main-menu">
+      <nav class="mm-tabs" role="tablist">
+        <button class="mm-tab is-active" data-tab="play" type="button">▶ PLAY</button>
+        <button class="mm-tab" data-tab="leaderboard" type="button">🏆 LEADERBOARD</button>
+        <button class="mm-tab" data-tab="profile" type="button">👤 PROFILE</button>
+      </nav>
 
-    <div class="mode-select" id="online-panel" hidden>
-      <h2 class="ms-title">線上對戰</h2>
-      <div class="ms-buttons">
-        <input id="online-name" class="online-input" maxlength="12" placeholder="暱稱（選填）" autocomplete="off" />
-        <button class="ms-btn ms-wallet" id="online-wallet">🦊 連錢包打排名賽</button>
-        <button class="ms-btn ms-online" id="online-create">建立房間</button>
-        <div class="online-join">
-          <input id="online-room" class="online-input" maxlength="5" placeholder="房號" autocomplete="off" />
-          <button class="ms-btn" id="online-join-btn">加入房間</button>
+      <section class="mm-panel is-active" id="panel-play">
+        <div class="mode-select" id="mode-select">
+          <div class="ms-buttons">
+            <button class="ms-btn ms-solo" data-mode="solo">SOLO</button>
+            <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
+            <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
+            <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
+            <button class="ms-btn ms-online" data-mode="online">vs 線上對戰</button>
+          </div>
         </div>
-        <p class="online-status" id="online-status"></p>
-      </div>
+        <div class="mode-select" id="online-panel" hidden>
+          <div class="ms-buttons">
+            <input id="online-name" class="online-input" maxlength="12" placeholder="暱稱（選填）" autocomplete="off" />
+            <button class="ms-btn ms-wallet" id="online-wallet">🦊 連錢包打排名賽</button>
+            <button class="ms-btn ms-online" id="online-create">建立房間</button>
+            <div class="online-join">
+              <input id="online-room" class="online-input" maxlength="5" placeholder="房號" autocomplete="off" />
+              <button class="ms-btn" id="online-join-btn">加入房間</button>
+            </div>
+            <p class="online-status" id="online-status"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mm-panel" id="panel-leaderboard" hidden>
+        <h2 class="ms-title">🏆 LEADERBOARD</h2>
+        <ol class="lb-list" id="lb-list"><li class="lb-empty">載入中…</li></ol>
+      </section>
+
+      <section class="mm-panel" id="panel-profile" hidden>
+        <h2 class="ms-title">👤 PROFILE</h2>
+        <p class="profile-guest" id="profile-guest">訪客無等級／積分。<br />連錢包以建立你的玩家檔案。</p>
+        <button class="ms-btn ms-wallet" id="profile-wallet">🦊 連錢包</button>
+        <div class="profile-stats" id="profile-stats" hidden></div>
+      </section>
     </div>
   </main>
 </BaseLayout>
@@ -182,6 +201,77 @@ const lang: Language = defaultLang;
     letter-spacing: 1px;
     color: #9fb4d8;
   }
+
+  .main-menu {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 24px;
+    z-index: 20;
+  }
+  .mm-tabs { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .mm-tab {
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
+    background: rgba(8, 12, 22, 0.72);
+    border: 1px solid rgba(54, 230, 255, 0.35);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .mm-tab:hover { color: #36e6ff; }
+  .mm-tab.is-active {
+    color: #eafdff;
+    border-color: rgba(54, 230, 255, 0.85);
+    box-shadow: 0 0 14px rgba(54, 230, 255, 0.45);
+  }
+  .mm-panel { display: none; flex-direction: column; align-items: center; gap: 16px; min-width: min(420px, 86vw); }
+  .mm-panel.is-active { display: flex; }
+  .mm-panel[hidden] { display: none; }
+
+  .lb-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-height: 52vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .lb-row, .lb-empty {
+    display: grid;
+    grid-template-columns: 42px 1fr auto auto auto auto;
+    gap: 8px;
+    align-items: center;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #cfe9ff;
+    background: rgba(8, 12, 22, 0.82);
+    border: 1px solid rgba(54, 230, 255, 0.18);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .lb-empty { display: block; text-align: center; color: #6fa8d8; }
+  .lb-rank { color: #ffd23f; }
+  .lb-tier { color: #c15cff; }
+  .lb-rating { color: #4dff88; }
+
+  .profile-guest { font-size: 11px; line-height: 1.8; color: #6fa8d8; text-align: center; }
+  .profile-stats { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .profile-stats[hidden] { display: none; }
+  .pf-row { display: flex; justify-content: space-between; font-size: 11px; color: #cfe9ff; }
+  .pf-row .pf-k { color: #6fa8d8; }
+  .pf-bar { height: 10px; border: 1px solid rgba(54, 230, 255, 0.4); border-radius: 5px; overflow: hidden; background: rgba(8,12,22,0.7); }
+  .pf-bar > i { display: block; height: 100%; background: #36e6ff; }
 </style>
 
 <script>
