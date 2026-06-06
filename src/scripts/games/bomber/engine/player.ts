@@ -3,7 +3,7 @@ import type { Player, Dir, Vec } from './types';
 import { SPEED_MS, SPAWN, BASE_FIRE, BASE_BOMBS, START_LIVES } from './constants';
 
 export function speedMs(speedLevel: number): number {
-  return SPEED_MS[Math.min(speedLevel, SPEED_MS.length - 1)];
+  return SPEED_MS[Math.min(Math.max(speedLevel, 0), SPEED_MS.length - 1)];
 }
 
 export function dirDelta(dir: Dir): Vec {

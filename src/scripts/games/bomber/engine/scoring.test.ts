@@ -11,5 +11,6 @@ describe('scoring', () => {
   it('下樓獎勵隨層數遞增', () => {
     expect(descendBonus(2)).toBeGreaterThan(descendBonus(1));
     expect(descendBonus(1)).toBe(200);
+    expect(descendBonus(2)).toBe(400);
   });
 });

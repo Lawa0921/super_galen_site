@@ -30,7 +30,9 @@ export function chooseEnemyDir(grid: Grid, e: Enemy, player: Vec, bombs: Bomb[],
     return best;
   }
 
-  // wander：能直走就直走，否則隨機挑一個開放方向
-  if (opts.includes(e.dir) && rng() < 0.8) return e.dir;
-  return opts[Math.floor(rng() * opts.length)];
+  // wander：固定抽兩個獨立亂數——一個決定是否直走、一個獨立選方向（消除呼叫次數不固定）
+  const keepStraight = rng() < 0.8;
+  const pick = opts[Math.floor(rng() * opts.length)];
+  if (opts.includes(e.dir) && keepStraight) return e.dir;
+  return pick;
 }

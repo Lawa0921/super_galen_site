@@ -14,6 +14,8 @@ describe('dirDelta', () => {
   it('四方向位移正確', () => {
     expect(dirDelta('up')).toEqual({ x: 0, y: -1 });
     expect(dirDelta('right')).toEqual({ x: 1, y: 0 });
+    expect(dirDelta('down')).toEqual({ x: 0, y: 1 });
+    expect(dirDelta('left')).toEqual({ x: -1, y: 0 });
   });
 });
 

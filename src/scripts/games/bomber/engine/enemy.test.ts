@@ -29,4 +29,15 @@ describe('chooseEnemyDir', () => {
     const dir = chooseEnemyDir(corridor(), e, { x: 3, y: 1 }, [{ x: 2, y: 1, fuseMs: 1000, range: 1 }], createRng(1));
     expect(dir).toBeNull(); // 右邊被炸彈擋、其他方向是 wall
   });
+  it('wander：能直走且亂數<0.8 時保持原方向', () => {
+    // 走廊中列：左右皆 floor。enemy 朝右、右邊開放
+    const e: Enemy = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'right', kind: 'wander', moveAccMs: 0, alive: true };
+    expect(chooseEnemyDir(corridor(), e, { x: 3, y: 1 }, [], () => 0)).toBe('right');
+  });
+  it('wander：無法直走時改選一個開放方向', () => {
+    // enemy 朝上（上方是 wall，不能直走），必須回傳一個開放方向（走廊裡是 left 或 right）
+    const e: Enemy = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'up', kind: 'wander', moveAccMs: 0, alive: true };
+    const d = chooseEnemyDir(corridor(), e, { x: 3, y: 1 }, [], () => 0.99);
+    expect(['left', 'right']).toContain(d);
+  });
 });
