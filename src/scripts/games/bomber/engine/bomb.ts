@@ -9,6 +9,7 @@ export function resolveChain(grid: Grid, bombs: Bomb[], initial: Bomb[]): ChainR
   const consumed = new Set<Bomb>(initial);
   const queue: Bomb[] = [...initial];
   const cellKeys = new Set<string>();
+  const brokenCrateKeys = new Set<string>();
   const cells: Vec[] = [];
   const brokenCrates: Vec[] = [];
 
@@ -19,7 +20,10 @@ export function resolveChain(grid: Grid, bombs: Bomb[], initial: Bomb[]): ChainR
       const k = `${c.x},${c.y}`;
       if (!cellKeys.has(k)) { cellKeys.add(k); cells.push(c); }
     }
-    for (const c of bk) brokenCrates.push(c);
+    for (const c of bk) {
+      const k = `${c.x},${c.y}`;
+      if (!brokenCrateKeys.has(k)) { brokenCrateKeys.add(k); brokenCrates.push(c); }
+    }
     // 連鎖：任何尚未消耗、位置落在爆風格內的炸彈，立即引爆
     for (const other of bombs) {
       if (consumed.has(other)) continue;

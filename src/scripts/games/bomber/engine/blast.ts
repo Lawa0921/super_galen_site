@@ -1,8 +1,8 @@
 // blast.ts
-import type { Grid, Vec } from './types';
+import type { Dir, Grid, Vec } from './types';
 import { tileAt } from './board';
 
-const STEP: Record<string, Vec> = {
+const STEP: Record<Dir, Vec> = {
   up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 },
 };
 
@@ -15,8 +15,7 @@ const STEP: Record<string, Vec> = {
 export function computeBlast(grid: Grid, x: number, y: number, range: number): { cells: Vec[]; brokenCrates: Vec[] } {
   const cells: Vec[] = [{ x, y }];
   const brokenCrates: Vec[] = [];
-  for (const dir of Object.keys(STEP)) {
-    const d = STEP[dir];
+  for (const d of Object.values(STEP)) {
     for (let i = 1; i <= range; i++) {
       const cx = x + d.x * i, cy = y + d.y * i;
       const t = tileAt(grid, cx, cy);

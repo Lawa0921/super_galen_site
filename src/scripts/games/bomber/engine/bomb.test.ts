@@ -37,4 +37,15 @@ describe('resolveChain', () => {
     const r = resolveChain(openGrid(9, 3), bombs, [bombs[0]]);
     expect(r.consumed).toHaveLength(1);
   });
+  it('兩顆炸彈爆同一箱：brokenCrates 不重複', () => {
+    const g = openGrid(9, 3);
+    g[1][4] = 'crate';
+    const bombs: Bomb[] = [
+      { x: 1, y: 1, fuseMs: 0, range: 4 },
+      { x: 7, y: 1, fuseMs: 0, range: 4 },
+    ];
+    const r = resolveChain(g, bombs, [...bombs]);
+    const seen = new Set(r.brokenCrates.map((c) => `${c.x},${c.y}`));
+    expect(r.brokenCrates).toHaveLength(seen.size);
+  });
 });

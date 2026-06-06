@@ -3,12 +3,12 @@ import { describe, it, expect } from 'vitest';
 import { computeBlast } from './blast';
 import type { Grid } from './types';
 
-// 5x5 全 floor 內側、外圈 wall
-function openGrid(): Grid {
+// 全 floor 內側、外圈 wall（預設 5×5）
+function openGrid(w = 5, h = 5): Grid {
   const g: Grid = [];
-  for (let y = 0; y < 5; y++) {
+  for (let y = 0; y < h; y++) {
     const row = [];
-    for (let x = 0; x < 5; x++) row.push(x === 0 || y === 0 || x === 4 || y === 4 ? 'wall' : 'floor');
+    for (let x = 0; x < w; x++) row.push(x === 0 || y === 0 || x === w - 1 || y === h - 1 ? 'wall' : 'floor');
     g.push(row as Grid[number]);
   }
   return g;
@@ -28,13 +28,13 @@ describe('computeBlast', () => {
     expect(keys.has('2,1')).toBe(true);  // 往右可達
   });
   it('遇 crate 炸掉第一個後停住、不穿過', () => {
-    const g = openGrid();
-    g[2][3] = 'crate'; // 中央右邊一格是箱
+    // 使用 7×5 網格，(4,2) 為 floor，確保測試能偵測「穿過 crate」的 bug
+    const g = openGrid(7, 5);
+    g[2][3] = 'crate'; // 中心 (2,2) 右邊一格放箱
     const { cells, brokenCrates } = computeBlast(g, 2, 2, 3);
     const keys = new Set(cells.map((c) => `${c.x},${c.y}`));
-    expect(keys.has('3,2')).toBe(true);  // 箱本身被涵蓋（會碎）
+    expect(keys.has('3,2')).toBe(true);           // 箱本身被涵蓋（會碎）
     expect(brokenCrates).toContainEqual({ x: 3, y: 2 });
-    // crate 之外（再往右）不該被涵蓋（但本網格 4 已是 wall，改測上下無箱仍延伸）
-    expect(keys.has('2,3')).toBe(true);
+    expect(keys.has('4,2')).toBe(false);          // 爆風不穿過 crate，不應到達 (4,2)
   });
 });
