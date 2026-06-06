@@ -42,6 +42,8 @@ const lang: Language = defaultLang;
     <div class="mode-select" id="online-panel" hidden>
       <h2 class="ms-title">線上對戰</h2>
       <div class="ms-buttons">
+        <input id="online-name" class="online-input" maxlength="12" placeholder="暱稱（選填）" autocomplete="off" />
+        <button class="ms-btn ms-wallet" id="online-wallet">🦊 連錢包打排名賽</button>
         <button class="ms-btn ms-online" id="online-create">建立房間</button>
         <div class="online-join">
           <input id="online-room" class="online-input" maxlength="5" placeholder="房號" autocomplete="off" />
@@ -151,6 +153,9 @@ const lang: Language = defaultLang;
   .ms-hard:hover { box-shadow: 0 0 22px rgba(255, 77, 109, 0.8); }
   .ms-online { border-color: rgba(193, 92, 255, 0.7); box-shadow: 0 0 12px rgba(193, 92, 255, 0.3); }
   .ms-online:hover { box-shadow: 0 0 22px rgba(193, 92, 255, 0.8); }
+  .ms-wallet { border-color: rgba(255, 210, 63, 0.7); box-shadow: 0 0 12px rgba(255, 210, 63, 0.3); font-size: 11px; }
+  .ms-wallet:hover { box-shadow: 0 0 22px rgba(255, 210, 63, 0.8); }
+  .ms-wallet.connected { border-color: rgba(77, 255, 136, 0.8); color: #4dff88; }
 
   .mode-select[hidden] { display: none; }
   .online-join { display: flex; gap: 10px; }
@@ -182,7 +187,7 @@ const lang: Language = defaultLang;
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
   import { startAi } from '@scripts/games/tetris/render/aiMain';
-  import { hostGame, joinGame, type NetStatus } from '@scripts/games/tetris/net/netMain';
+  import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
 
   type Diff = 'easy' | 'normal' | 'hard';
   const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M';
@@ -239,10 +244,34 @@ const lang: Language = defaultLang;
     }
   }
 
+  let wallet: { address: string; signMessage: (m: string) => Promise<string> } | null = null;
+
+  function buildIdentity(): Identity {
+    if (wallet) return { id: wallet.address, ranked: true, signMessage: wallet.signMessage };
+    const nameEl = document.getElementById('online-name') as HTMLInputElement | null;
+    const name = (nameEl?.value ?? '').trim();
+    return { id: name || `Guest-${Math.floor(Math.random() * 9000 + 1000)}`, ranked: false };
+  }
+
+  async function onConnectWallet(): Promise<void> {
+    const btn = document.getElementById('online-wallet');
+    try {
+      wallet = await connectWallet();
+      if (wallet && btn) {
+        btn.textContent = `🦊 ${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)}（排名賽）`;
+        btn.classList.add('connected');
+      } else if (statusEl) {
+        statusEl.textContent = '找不到錢包，將以暱稱進行（不計排名）';
+      }
+    } catch {
+      if (statusEl) statusEl.textContent = '錢包連接取消';
+    }
+  }
+
   function beginHost(): void {
     if (started || !canvas) return;
     started = true;
-    hostGame(canvas, onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+    hostGame(canvas, buildIdentity(), onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
   }
   function beginJoin(): void {
     const input = document.getElementById('online-room') as HTMLInputElement | null;
@@ -250,7 +279,7 @@ const lang: Language = defaultLang;
     if (!room) { if (statusEl) statusEl.textContent = '請輸入房號'; return; }
     if (started || !canvas) return;
     started = true;
-    joinGame(canvas, room, onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+    joinGame(canvas, room, buildIdentity(), onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
   }
 
   modeSelect?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
@@ -261,6 +290,7 @@ const lang: Language = defaultLang;
       else if (m === 'online') showOnlinePanel();
     });
   });
+  document.getElementById('online-wallet')?.addEventListener('click', () => void onConnectWallet());
   document.getElementById('online-create')?.addEventListener('click', beginHost);
   document.getElementById('online-join-btn')?.addEventListener('click', beginJoin);
 
