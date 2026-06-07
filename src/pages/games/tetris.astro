@@ -23,12 +23,13 @@ const lang: Language = defaultLang;
 
   <main class="tetris-page">
     <a class="tetris-back" href="/games">← ARCADE</a>
-    <p class="tetris-hint" id="tetris-hint">MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M</p>
+    <p class="tetris-hint" id="tetris-hint" hidden>MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M</p>
     <div class="tetris-stage">
       <canvas id="tetris-canvas"></canvas>
     </div>
 
     <div class="main-menu" id="main-menu">
+      <h1 class="mm-logo">BATTLE <span>TETRIS</span></h1>
       <nav class="mm-tabs" role="tablist" aria-label="遊戲選單">
         <button class="mm-tab is-active" data-tab="play" type="button" role="tab" aria-selected="true">▶ PLAY</button>
         <button class="mm-tab" data-tab="leaderboard" type="button" role="tab" aria-selected="false">🏆 LEADERBOARD</button>
@@ -42,7 +43,7 @@ const lang: Language = defaultLang;
             <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
             <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
             <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
-            <button class="ms-btn ms-online" data-mode="online">vs 線上對戰</button>
+            <button class="ms-btn ms-online" data-mode="online">vs ONLINE</button>
           </div>
         </div>
         <div class="mode-select" id="online-panel" hidden>
@@ -80,7 +81,10 @@ const lang: Language = defaultLang;
     inset: 0;
     width: 100vw;
     height: 100vh;
-    background: #04060d;
+    background:
+      radial-gradient(ellipse at 50% 32%, rgba(54, 230, 255, 0.08), transparent 60%),
+      linear-gradient(180deg, rgba(4, 6, 13, 0.84), rgba(4, 6, 13, 0.93)),
+      url('/assets/games/tetris/bg-dungeon.webp') center / cover no-repeat;
     overflow: hidden;
   }
   .tetris-stage {
@@ -100,12 +104,12 @@ const lang: Language = defaultLang;
     font-family: 'Press Start 2P', Consolas, monospace;
     font-size: 11px;
     letter-spacing: 1px;
-    color: #6fa8d8;
+    color: #9fcdf2;
+    text-shadow: 0 0 8px rgba(54, 230, 255, 0.45);
     text-decoration: none;
-    opacity: 0.8;
+    opacity: 1;
   }
   .tetris-back:hover {
-    opacity: 1;
     color: #36e6ff;
   }
   .tetris-hint {
@@ -140,8 +144,8 @@ const lang: Language = defaultLang;
   .ms-buttons {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    width: min(360px, 80vw);
+    gap: 14px;
+    width: 100%;
   }
   .ms-btn {
     padding: 18px 20px;
@@ -172,7 +176,8 @@ const lang: Language = defaultLang;
   .ms-wallet.connected { border-color: rgba(77, 255, 136, 0.8); color: #4dff88; }
 
   .mode-select[hidden] { display: none; }
-  .online-join { display: flex; gap: 10px; }
+  .online-join { display: flex; gap: 10px; align-items: stretch; }
+  #online-join-btn { white-space: nowrap; flex: 0 0 auto; padding-left: 16px; padding-right: 16px; }
   .online-input {
     flex: 1;
     padding: 14px;
@@ -204,11 +209,20 @@ const lang: Language = defaultLang;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 22px;
+    gap: 18px;
     padding: 24px;
     z-index: 20;
-    background: rgba(4, 6, 13, 0.82);
+    /* 無實底：露出 .tetris-page 的地城氛圍，閱讀對比由面板卡提供 */
   }
+  .mm-logo {
+    margin: 0;
+    font-size: clamp(20px, 3.6vw, 34px);
+    letter-spacing: 6px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 30px rgba(54, 230, 255, 0.5);
+    text-align: center;
+  }
+  .mm-logo span { color: #36e6ff; }
   .mm-tabs { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   .mm-tab {
     font-family: inherit;
@@ -228,7 +242,18 @@ const lang: Language = defaultLang;
     border-color: rgba(54, 230, 255, 0.85);
     box-shadow: 0 0 14px rgba(54, 230, 255, 0.45);
   }
-  .mm-panel { display: none; flex-direction: column; align-items: center; gap: 16px; min-width: min(420px, 86vw); }
+  .mm-panel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: min(440px, 88vw);
+    padding: 26px 28px;
+    background: rgba(8, 12, 22, 0.66);
+    border: 1px solid rgba(54, 230, 255, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.5), inset 0 0 26px rgba(54, 230, 255, 0.05);
+  }
   .mm-panel.is-active { display: flex; }
   .mm-panel[hidden] { display: none; }
 
@@ -256,7 +281,10 @@ const lang: Language = defaultLang;
     border-radius: 6px;
     padding: 8px 10px;
   }
-  .lb-empty { display: block; text-align: center; color: #6fa8d8; }
+  .lb-empty { display: block; text-align: center; color: #cfe9ff; background: transparent; border: none; line-height: 2; font-size: 18px; }
+  .lb-empty-sub { font-size: 10px; color: #6fa8d8; letter-spacing: 1px; }
+  .lb-head { background: transparent; border-color: transparent; color: #6f86ad; font-size: 9px; padding-bottom: 2px; }
+  .lb-top { border-color: rgba(255, 210, 63, 0.6); box-shadow: 0 0 14px rgba(255, 210, 63, 0.22); }
   .lb-rank { color: #ffd23f; }
   .lb-tier { color: #c15cff; }
   .lb-rating { color: #4dff88; }
@@ -293,7 +321,7 @@ const lang: Language = defaultLang;
   const statusEl = document.getElementById('online-status');
   let started = false;
 
-  const setHint = (t: string) => { if (hint) hint.textContent = t; };
+  const setHint = (t: string) => { if (hint) { hint.textContent = t; hint.hidden = false; } };
 
   function startSolo(): void {
     if (started || !canvas) return;
@@ -445,13 +473,19 @@ const lang: Language = defaultLang;
     try {
       const res = await fetch('/api/leaderboard?n=20');
       const data = (await res.json()) as { rows: LbRow[] };
-      if (!data.rows.length) { list.innerHTML = '<li class="lb-empty">尚無紀錄，快來搶頭香！</li>'; return; }
-      list.innerHTML = data.rows
+      if (!data.rows.length) {
+        list.innerHTML = '<li class="lb-empty">🏆<br />尚無紀錄<br /><span class="lb-empty-sub">打一場排名賽，搶下頭香！</span></li>';
+        return;
+      }
+      const head = '<li class="lb-row lb-head"><span>#</span><span>PLAYER</span><span>LV</span><span>TIER</span><span>ELO</span><span>W-L</span></li>';
+      const body = data.rows
         .map((r, i) => {
           const who = r.name ? escapeHtml(r.name) : shortAddr(r.id);
-          return `<li class="lb-row"><span class="lb-rank">#${i + 1}</span><span class="lb-name">${who}</span><span class="lb-lv">Lv.${r.level}</span><span class="lb-tier">${r.tier}</span><span class="lb-rating">${r.rating}</span><span class="lb-wl">${r.wins}-${r.losses}</span></li>`;
+          const cls = i === 0 ? 'lb-row lb-top' : 'lb-row';
+          return `<li class="${cls}"><span class="lb-rank">${i + 1}</span><span class="lb-name">${who}</span><span class="lb-lv">Lv.${r.level}</span><span class="lb-tier">${escapeHtml(r.tier)}</span><span class="lb-rating">${r.rating}</span><span class="lb-wl">${r.wins}-${r.losses}</span></li>`;
         })
         .join('');
+      list.innerHTML = head + body;
     } catch {
       list.innerHTML = '<li class="lb-empty">排行榜載入失敗</li>';
     }

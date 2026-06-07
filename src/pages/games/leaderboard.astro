@@ -95,6 +95,7 @@ const lang: Language = defaultLang;
 
   const board = document.getElementById('lb-board');
   const short = (id: string) => (id.startsWith('0x') && id.length > 12 ? `${id.slice(0, 6)}…${id.slice(-4)}` : id);
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
   async function load(): Promise<void> {
     if (!board) return;
@@ -109,8 +110,8 @@ const lang: Language = defaultLang;
       const body = rows
         .map((r, i) => {
           const cls = i === 0 ? 'lb-row lb-top' : 'lb-row';
-          const name = r.name ? r.name : short(r.id);
-          return `<div class="${cls}"><span class="lb-rank">${i + 1}</span><span class="lb-name">${name}</span><span class="lb-tier">${r.tier}</span><span class="lb-rating">${r.rating}</span><span class="lb-wl">${r.wins}/${r.losses}</span></div>`;
+          const name = r.name ? esc(r.name) : short(r.id);
+          return `<div class="${cls}"><span class="lb-rank">${i + 1}</span><span class="lb-name">${name}</span><span class="lb-tier">${esc(r.tier)}</span><span class="lb-rating">${r.rating}</span><span class="lb-wl">${r.wins}/${r.losses}</span></div>`;
         })
         .join('');
       board.innerHTML = head + body;
