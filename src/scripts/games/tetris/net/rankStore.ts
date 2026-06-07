@@ -130,6 +130,10 @@ export function getRankStore(env: Record<string, string | undefined> = process.e
   // Upstash 原生命名，或 Vercel Marketplace（Upstash for Redis）注入的 KV_REST_API_* 命名
   const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
   const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
+  // 只設了一半 → 主動報錯，避免生產環境靜默退回記憶體（重啟即失資料）
+  if ((url && !token) || (token && !url)) {
+    throw new Error('Upstash 設定不完整：REST URL 與 TOKEN 必須同時提供（KV_REST_API_URL/TOKEN 或 UPSTASH_REDIS_REST_URL/TOKEN）');
+  }
   singleton = url && token ? new UpstashRankStore(url, token) : new MemoryRankStore();
   return singleton;
 }

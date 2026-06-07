@@ -74,4 +74,14 @@ describe('getSignalStore 環境選擇', () => {
     const store = mod.getSignalStore({});
     expect(store).toBeInstanceOf(mod.MemoryStore);
   });
+
+  it('只有 URL 沒有 TOKEN → 拋錯（避免靜默退回記憶體）', async () => {
+    const mod = await import('./signalStore');
+    expect(() => mod.getSignalStore({ KV_REST_API_URL: 'https://x.upstash.io' })).toThrow();
+  });
+
+  it('只有 TOKEN 沒有 URL → 拋錯', async () => {
+    const mod = await import('./signalStore');
+    expect(() => mod.getSignalStore({ UPSTASH_REDIS_REST_TOKEN: 'tok' })).toThrow();
+  });
 });

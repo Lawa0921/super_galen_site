@@ -10,6 +10,7 @@ async function postJson(body: unknown): Promise<Record<string, unknown>> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
+  if (!res.ok) throw new Error(`signal api ${res.status}`);
   return (await res.json()) as Record<string, unknown>;
 }
 
@@ -25,6 +26,7 @@ export async function putSlot(room: string, slot: Slot, data: string): Promise<v
 
 export async function getSlot(room: string, slot: Slot): Promise<string | null> {
   const res = await fetch(`${API}?room=${encodeURIComponent(room)}&slot=${slot}`);
+  if (!res.ok) throw new Error(`signal GET ${res.status}`);
   const json = (await res.json()) as { data?: string | null };
   return json.data ?? null;
 }

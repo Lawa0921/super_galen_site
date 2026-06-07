@@ -29,6 +29,18 @@ export interface NetStatus {
 }
 export type StatusCb = (s: NetStatus) => void;
 
+const HANDSHAKE_TIMEOUT_MS = 30_000;
+/** 為握手等待加上超時，避免對手在連線後、送出身分前崩潰導致永久卡在「已連線」。 */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timeout`)), ms);
+    p.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
 /** 玩家身分：暱稱（casual）或錢包（ranked，需可簽章）。 */
 export interface Identity {
   id: string; // 錢包地址（ranked）或暱稱（casual）
@@ -74,7 +86,7 @@ export async function hostGame(canvas: HTMLCanvasElement, identity: Identity, on
       });
     });
     transport.send(JSON.stringify({ t: 'hello', seed, matchId, id: identity.id, ranked: identity.ranked } as HelloMsg));
-    const ack = await ackP;
+    const ack = await withTimeout(ackP, HANDSHAKE_TIMEOUT_MS, 'ack');
 
     onStatus({ phase: 'connected', room });
     runGame(canvas, transport, {
@@ -103,7 +115,7 @@ export async function joinGame(canvas: HTMLCanvasElement, room: string, identity
     await putSlot(room, 'answer', answer);
     await transport.waitOpen();
 
-    const hello = await helloP;
+    const hello = await withTimeout(helloP, HANDSHAKE_TIMEOUT_MS, 'hello');
     transport.send(JSON.stringify({ t: 'ack', id: identity.id, ranked: identity.ranked } as AckMsg));
 
     onStatus({ phase: 'connected', room });

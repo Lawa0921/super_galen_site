@@ -32,8 +32,16 @@ export class Lockstep {
       this.inbox.B.set(f, []);
     }
     this.transport.onMessage((raw) => {
-      const m = JSON.parse(raw) as FrameMsg;
-      this.inbox[m.s].set(m.f, m.a);
+      // 網路訊息不可信：畸形 JSON 或非預期結構一律忽略，避免中斷訊息迴圈造成卡幀。
+      let m: FrameMsg;
+      try {
+        m = JSON.parse(raw) as FrameMsg;
+      } catch {
+        return;
+      }
+      if (m && typeof m.f === 'number' && (m.s === 'A' || m.s === 'B') && Array.isArray(m.a)) {
+        this.inbox[m.s].set(m.f, m.a);
+      }
     });
   }
 
