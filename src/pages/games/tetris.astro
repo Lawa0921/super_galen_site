@@ -29,10 +29,10 @@ const lang: Language = defaultLang;
     </div>
 
     <div class="main-menu" id="main-menu">
-      <nav class="mm-tabs" role="tablist">
-        <button class="mm-tab is-active" data-tab="play" type="button">▶ PLAY</button>
-        <button class="mm-tab" data-tab="leaderboard" type="button">🏆 LEADERBOARD</button>
-        <button class="mm-tab" data-tab="profile" type="button">👤 PROFILE</button>
+      <nav class="mm-tabs" role="tablist" aria-label="遊戲選單">
+        <button class="mm-tab is-active" data-tab="play" type="button" role="tab" aria-selected="true">▶ PLAY</button>
+        <button class="mm-tab" data-tab="leaderboard" type="button" role="tab" aria-selected="false">🏆 LEADERBOARD</button>
+        <button class="mm-tab" data-tab="profile" type="button" role="tab" aria-selected="false">👤 PROFILE</button>
       </nav>
 
       <section class="mm-panel is-active" id="panel-play">
@@ -268,6 +268,11 @@ const lang: Language = defaultLang;
   .pf-row .pf-k { color: #6fa8d8; }
   .pf-bar { height: 10px; border: 1px solid rgba(54, 230, 255, 0.4); border-radius: 5px; overflow: hidden; background: rgba(8,12,22,0.7); }
   .pf-bar > i { display: block; height: 100%; background: #36e6ff; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mm-tab, .ms-btn, .tetris-back { transition: none; }
+    .ms-btn:hover { transform: none; }
+  }
 </style>
 
 <script>
@@ -391,17 +396,37 @@ const lang: Language = defaultLang;
   };
   let lbLoaded = false;
   function switchTab(name: string): void {
-    tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === name));
+    tabs.forEach((t) => {
+      const on = t.dataset.tab === name;
+      t.classList.toggle('is-active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
     for (const [key, el] of Object.entries(panels)) {
       if (!el) continue;
       const active = key === name;
       el.classList.toggle('is-active', active);
       el.hidden = !active;
     }
+    if (name === 'play') {
+      // 還原模式選單：使用者可能先前點過「線上對戰」而隱藏了 SOLO/AI
+      if (modeSelect) modeSelect.hidden = false;
+      if (onlinePanel) onlinePanel.hidden = true;
+    }
     if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }
     if (name === 'profile' && wallet) void loadProfile(wallet.address);
   }
-  tabs.forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab ?? 'play')));
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => switchTab(t.dataset.tab ?? 'play'));
+    // 方向鍵在分頁間移動焦點並切換（WAI-ARIA tablist 鍵盤模式）
+    t.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      const next = tabs[(i + dir + tabs.length) % tabs.length];
+      next.focus();
+      switchTab(next.dataset.tab ?? 'play');
+    });
+  });
 
   // ---- 工具 ----
   function escapeHtml(s: string): string {
