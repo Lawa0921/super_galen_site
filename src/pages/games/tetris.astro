@@ -29,7 +29,7 @@ const lang: Language = defaultLang;
     </div>
 
     <div class="main-menu" id="main-menu">
-      <h1 class="mm-logo">BATTLE <span>TETRIS</span></h1>
+      <img class="mm-logo" src="/assets/games/tetris/logo-battle-tetris.webp" alt="BATTLE TETRIS" />
       <nav class="mm-tabs" role="tablist" aria-label="遊戲選單">
         <button class="mm-tab is-active" data-tab="play" type="button" role="tab" aria-selected="true">▶ PLAY</button>
         <button class="mm-tab" data-tab="leaderboard" type="button" role="tab" aria-selected="false">🏆 LEADERBOARD</button>
@@ -215,14 +215,12 @@ const lang: Language = defaultLang;
     /* 無實底：露出 .tetris-page 的地城氛圍，閱讀對比由面板卡提供 */
   }
   .mm-logo {
-    margin: 0;
-    font-size: clamp(20px, 3.6vw, 34px);
-    letter-spacing: 6px;
-    color: #eafdff;
-    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 30px rgba(54, 230, 255, 0.5);
-    text-align: center;
+    width: min(380px, 78vw);
+    height: auto;
+    /* logo 已做亮度→alpha 透明去背，直接疊在氛圍上 */
+    filter: drop-shadow(0 0 16px rgba(54, 230, 255, 0.35));
+    user-select: none;
   }
-  .mm-logo span { color: #36e6ff; }
   .mm-tabs { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   .mm-tab {
     font-family: inherit;

@@ -29,16 +29,13 @@ const games = [
       {games.map((g) =>
         g.active && g.href ? (
           <a class="card card--active" href={g.href}>
-            <div class="card-art" aria-hidden="true">
-              <span class="blk c1"></span><span class="blk c2"></span>
-              <span class="blk c3"></span><span class="blk c4"></span>
-              <span class="blk c5"></span><span class="blk c6"></span>
-            </div>
+            <img class="card-art-img" src="/assets/games/tetris/card-tetris.webp" alt="" aria-hidden="true" loading="eager" />
             <span class="card-title">{g.title}</span>
             <span class="card-play">▶ PLAY</span>
           </a>
         ) : (
           <div class="card card--locked" aria-disabled="true">
+            <img class="card-art-img" src="/assets/games/tetris/coming-soon.webp" alt="" aria-hidden="true" loading="lazy" />
             <span class="card-lock">🔒</span>
             <span class="card-title">{g.title}</span>
           </div>
@@ -93,19 +90,22 @@ const games = [
     max-width: 980px;
   }
   .card {
+    position: relative;
     width: 220px;
     height: 280px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 18px;
+    justify-content: flex-end;
+    gap: 6px;
+    padding-bottom: 18px;
     border-radius: 14px;
+    overflow: hidden;
     text-decoration: none;
     background: rgba(8, 12, 22, 0.72);
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
-  .card-title { font-size: 13px; letter-spacing: 2px; }
+  .card-title { font-size: 13px; letter-spacing: 2px; position: relative; }
   .card--active {
     border: 2px solid rgba(54, 230, 255, 0.85);
     box-shadow: 0 0 16px rgba(54, 230, 255, 0.45), inset 0 0 18px rgba(54, 230, 255, 0.12);
@@ -116,28 +116,39 @@ const games = [
     transform: translateY(-6px) scale(1.03);
     box-shadow: 0 0 28px rgba(54, 230, 255, 0.8), inset 0 0 24px rgba(54, 230, 255, 0.2);
   }
-  .card-play { font-size: 10px; letter-spacing: 2px; color: #36e6ff; }
+  /* 卡片主視覺：滿版鋪底，底部加暗色漸層讓標題/PLAY 清楚 */
+  .card-art-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.18s ease;
+  }
+  .card--active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 45%, rgba(4, 6, 13, 0.55) 70%, rgba(4, 6, 13, 0.92) 100%);
+  }
+  .card--active:hover .card-art-img { transform: scale(1.06); }
+  .card-play { font-size: 10px; letter-spacing: 2px; color: #36e6ff; position: relative; }
   .card--locked {
+    justify-content: center;
+    gap: 18px;
+    padding-bottom: 0;
     border: 2px solid rgba(90, 114, 153, 0.4);
-    color: #5a7299;
+    color: #8aa0c4;
     cursor: not-allowed;
   }
-  .card-lock { font-size: 26px; opacity: 0.6; }
-
-  /* CSS 拼的小俄羅斯方塊圖示 */
-  .card-art {
-    display: grid;
-    grid-template-columns: repeat(3, 22px);
-    grid-template-rows: repeat(2, 22px);
-    gap: 3px;
+  .card--locked .card-art-img { opacity: 0.45; filter: grayscale(0.35); }
+  .card--locked::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(4, 6, 13, 0.45);
   }
-  .blk { border-radius: 3px; box-shadow: 0 0 8px currentColor; }
-  .c1 { background: #36e6ff; color: #36e6ff; }
-  .c2 { background: #ffd23f; color: #ffd23f; }
-  .c3 { background: #c15cff; color: #c15cff; }
-  .c4 { background: #4dff88; color: #4dff88; }
-  .c5 { background: #ff4d6d; color: #ff4d6d; }
-  .c6 { background: #ff9a3c; color: #ff9a3c; }
+  .card-lock { font-size: 26px; opacity: 0.7; position: relative; }
 
   .lb-link {
     font-family: 'Press Start 2P', Consolas, monospace;
