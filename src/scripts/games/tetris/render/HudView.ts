@@ -70,29 +70,72 @@ export class HudView {
     this.root.addChild(label);
   }
 
-  /** anchor = HUD 欄左上角；cellSize 決定縮放。 */
+  /** 字級隨格大小縮放（HUD 在大盤面時也清楚可讀）。 */
+  private applyScale(cellSize: number): void {
+    const label = Math.max(9, Math.round(cellSize * 0.3));
+    const value = Math.max(14, Math.round(cellSize * 0.62));
+    for (const t of [this.holdSlotLabel, this.nextLabel, this.scoreLabel, this.levelLabel, this.linesLabel]) {
+      t.style.fontSize = label;
+    }
+    for (const t of [this.score, this.level, this.lines]) t.style.fontSize = value;
+    this.combo.style.fontSize = Math.max(11, Math.round(cellSize * 0.4));
+  }
+
+  /** 單欄堆疊（對戰雙盤用）：anchor = HUD 欄左上角。 */
   setLayout(anchor: Point, cellSize: number): void {
     this.cellSize = cellSize;
+    this.applyScale(cellSize);
     const x = anchor.x;
     let y = anchor.y;
     const gap = cellSize * 0.5;
     const slotH = cellSize * 2.4;
+    const lh = cellSize * 0.5;
+    const vh = cellSize * 0.85;
 
     this.holdSlotLabel.position.set(x, y);
-    this.holdSlot.position.set(x, y + 18);
-    y += 18 + slotH + gap;
+    this.holdSlot.position.set(x, y + lh);
+    y += lh + slotH + gap;
 
     this.nextLabel.position.set(x, y);
-    y += 18;
+    y += lh;
     for (const c of this.nextSlots) {
       c.position.set(x, y);
       y += slotH * 0.78;
     }
     y += gap;
 
-    this.scoreLabel.position.set(x, y); this.score.position.set(x, y + 16); y += 16 + 28 + gap;
-    this.levelLabel.position.set(x, y); this.level.position.set(x, y + 16); y += 16 + 28 + gap;
-    this.linesLabel.position.set(x, y); this.lines.position.set(x, y + 16); y += 16 + 28 + gap;
+    this.scoreLabel.position.set(x, y); this.score.position.set(x, y + lh); y += lh + vh + gap;
+    this.levelLabel.position.set(x, y); this.level.position.set(x, y + lh); y += lh + vh + gap;
+    this.linesLabel.position.set(x, y); this.lines.position.set(x, y + lh); y += lh + vh + gap;
+    this.combo.position.set(x, y);
+  }
+
+  /** SOLO 版：HOLD 置於盤左、NEXT＋分數置於盤右（盤面置中、左右平衡的構圖）。 */
+  setLayoutSolo(holdAnchor: Point, infoAnchor: Point, cellSize: number): void {
+    this.cellSize = cellSize;
+    this.applyScale(cellSize);
+    const gap = cellSize * 0.5;
+    const slotH = cellSize * 2.4;
+    const lh = cellSize * 0.5;
+    const vh = cellSize * 0.85;
+
+    // HOLD（盤左）
+    this.holdSlotLabel.position.set(holdAnchor.x, holdAnchor.y);
+    this.holdSlot.position.set(holdAnchor.x, holdAnchor.y + lh);
+
+    // NEXT ＋ 分數（盤右）
+    const x = infoAnchor.x;
+    let y = infoAnchor.y;
+    this.nextLabel.position.set(x, y);
+    y += lh;
+    for (const c of this.nextSlots) {
+      c.position.set(x, y);
+      y += slotH * 0.78;
+    }
+    y += gap;
+    this.scoreLabel.position.set(x, y); this.score.position.set(x, y + lh); y += lh + vh + gap;
+    this.levelLabel.position.set(x, y); this.level.position.set(x, y + lh); y += lh + vh + gap;
+    this.linesLabel.position.set(x, y); this.lines.position.set(x, y + lh); y += lh + vh + gap;
     this.combo.position.set(x, y);
   }
 

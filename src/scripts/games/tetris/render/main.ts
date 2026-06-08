@@ -1,3 +1,4 @@
+import { Graphics } from 'pixi.js';
 import { TetrisGame } from '../engine/game';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 import { getCells } from '../engine/piece';
@@ -16,28 +17,28 @@ const CLEAR_NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
 interface Layout {
   cellSize: number;
   origin: Point;
-  hudAnchor: Point;
+  holdAnchor: Point;
+  infoAnchor: Point;
 }
 
-/** 依畫面尺寸算出單盤 + 右側 HUD 的版面。 */
+/** 盤面置中 + HOLD 在盤左、NEXT/分數在盤右（左右平衡的單人版面）。 */
 function computeLayout(stageW: number, stageH: number): Layout {
-  const hudCols = 5;
-  const byHeight = (stageH * 0.86) / VISIBLE_HEIGHT;
-  const byWidth = (stageW * 0.92) / (BOARD_WIDTH + hudCols);
+  const sideCols = 4.2; // 每側預留給 HUD 的欄數
+  const byHeight = (stageH * 0.88) / VISIBLE_HEIGHT;
+  const byWidth = (stageW * 0.94) / (BOARD_WIDTH + sideCols * 2);
   const cellSize = Math.max(12, Math.floor(Math.min(byHeight, byWidth)));
 
   const wellW = cellSize * BOARD_WIDTH;
   const wellH = cellSize * VISIBLE_HEIGHT;
-  const hudW = cellSize * hudCols;
-  const gap = cellSize * 1.4;
-  const groupW = wellW + gap + hudW;
-
-  const originX = Math.round((stageW - groupW) / 2);
+  const originX = Math.round((stageW - wellW) / 2); // 盤面水平置中
   const originY = Math.round((stageH - wellH) / 2);
+  const sideGap = cellSize * 0.9;
+  const holdW = cellSize * 3.2;
   return {
     cellSize,
     origin: { x: originX, y: originY },
-    hudAnchor: { x: originX + wellW + gap, y: originY },
+    holdAnchor: { x: Math.round(originX - sideGap - holdW), y: originY },
+    infoAnchor: { x: Math.round(originX + wellW + sideGap), y: originY },
   };
 }
 
@@ -51,6 +52,10 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   const stage = await PixiStage.create(canvas);
   const tex = await loadGameTextures();
   stage.setBackground(tex.bg);
+
+  // 盤面後方暗角 scrim：壓暗背景、讓方塊更聚焦（置於背景圖之上、盤框之下）
+  const scrim = new Graphics();
+  stage.bgLayer.addChild(scrim);
 
   const seed = Math.floor(Math.random() * 1_000_000_000);
   const game = new TetrisGame({ seed });
@@ -73,8 +78,15 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
     const lay = computeLayout(stage.width, stage.height);
     stage.layoutBackground();
     board.setLayout(lay.cellSize, lay.origin);
-    hud.setLayout(lay.hudAnchor, lay.cellSize);
+    hud.setLayoutSolo(lay.holdAnchor, lay.infoAnchor, lay.cellSize);
     fx.setLayout(lay.cellSize, lay.origin);
+    // 重繪盤後暗角
+    const w = lay.cellSize * BOARD_WIDTH;
+    const h = lay.cellSize * VISIBLE_HEIGHT;
+    const pad = lay.cellSize * 0.5;
+    scrim.clear();
+    scrim.roundRect(lay.origin.x - pad, lay.origin.y - pad, w + pad * 2, h + pad * 2, lay.cellSize * 0.6);
+    scrim.fill({ color: 0x04060d, alpha: 0.58 });
   }
   relayout();
   // 綁 Pixi renderer 的 resize（畫布真的 resize 後才觸發，app.screen 已正確）；
