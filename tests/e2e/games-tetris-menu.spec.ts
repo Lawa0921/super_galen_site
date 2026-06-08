@@ -29,6 +29,12 @@ test.describe('Tetris 主選單三分頁', () => {
     await expect(page.locator('#tetris-canvas')).toBeVisible();
   });
 
+  test('左上「← ARCADE」連結回到遊戲廳（不被選單層擋住）', async ({ page }) => {
+    await page.goto('/games/tetris');
+    await page.locator('.tetris-back').click();
+    await expect(page).toHaveURL(/\/games\/?$/);
+  });
+
   test('aria-selected 隨分頁切換更新', async ({ page }) => {
     await page.goto('/games/tetris');
     await expect(page.locator('.mm-tab[data-tab="play"]')).toHaveAttribute('aria-selected', 'true');

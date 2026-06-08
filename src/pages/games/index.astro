@@ -31,12 +31,12 @@ const games = [
           <a class="card card--active" href={g.href}>
             <img class="card-art-img" src="/assets/games/tetris/card-tetris.webp" alt="" aria-hidden="true" loading="eager" />
             <span class="card-title">{g.title}</span>
-            <span class="card-play">▶ PLAY</span>
+            <span class="card-play">PLAY</span>
           </a>
         ) : (
           <div class="card card--locked" aria-disabled="true">
             <img class="card-art-img" src="/assets/games/tetris/coming-soon.webp" alt="" aria-hidden="true" loading="lazy" />
-            <span class="card-lock">🔒</span>
+            <span class="card-lock" aria-hidden="true"></span>
             <span class="card-title">{g.title}</span>
           </div>
         )
@@ -131,6 +131,15 @@ const games = [
   }
   .card--active:hover .card-art-img { transform: scale(1.06); }
   .card-play { font-size: 10px; letter-spacing: 2px; color: #36e6ff; position: relative; }
+  .card-play::before {
+    content: '';
+    display: inline-block;
+    width: 1.4em;
+    height: 1.4em;
+    margin-right: 5px;
+    vertical-align: -0.3em;
+    background: center / contain no-repeat url('/assets/games/tetris/icons/play.webp');
+  }
   .card--locked {
     justify-content: center;
     gap: 18px;
@@ -146,7 +155,13 @@ const games = [
     inset: 0;
     background: rgba(4, 6, 13, 0.45);
   }
-  .card-lock { font-size: 26px; opacity: 0.7; position: relative; }
+  .card-lock {
+    width: 34px;
+    height: 34px;
+    opacity: 0.85;
+    position: relative;
+    background: center / contain no-repeat url('/assets/games/tetris/icons/lock.webp');
+  }
 
   @media (max-width: 560px) {
     .card { width: 70vw; height: 200px; }

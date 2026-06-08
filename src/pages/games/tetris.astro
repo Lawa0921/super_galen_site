@@ -31,9 +31,9 @@ const lang: Language = defaultLang;
     <div class="main-menu" id="main-menu">
       <img class="mm-logo" src="/assets/games/tetris/logo-battle-tetris.webp" alt="BATTLE TETRIS" />
       <nav class="mm-tabs" role="tablist" aria-label="遊戲選單">
-        <button class="mm-tab is-active" data-tab="play" type="button" role="tab" aria-selected="true">▶ PLAY</button>
-        <button class="mm-tab" data-tab="leaderboard" type="button" role="tab" aria-selected="false">🏆 LEADERBOARD</button>
-        <button class="mm-tab" data-tab="profile" type="button" role="tab" aria-selected="false">👤 PROFILE</button>
+        <button class="mm-tab is-active" data-tab="play" type="button" role="tab" aria-selected="true">PLAY</button>
+        <button class="mm-tab" data-tab="leaderboard" type="button" role="tab" aria-selected="false">LEADERBOARD</button>
+        <button class="mm-tab" data-tab="profile" type="button" role="tab" aria-selected="false">PROFILE</button>
         <span class="mm-tab-ind" id="mm-tab-ind" aria-hidden="true"></span>
       </nav>
 
@@ -50,7 +50,7 @@ const lang: Language = defaultLang;
         <div class="mode-select" id="online-panel" hidden>
           <div class="ms-buttons">
             <input id="online-name" class="online-input" maxlength="12" placeholder="暱稱（選填）" autocomplete="off" />
-            <button class="ms-btn ms-wallet" id="online-wallet">🦊 連錢包打排名賽</button>
+            <button class="ms-btn ms-wallet" id="online-wallet">連錢包打排名賽</button>
             <button class="ms-btn ms-online" id="online-create">建立房間</button>
             <div class="online-join">
               <input id="online-room" class="online-input" maxlength="5" placeholder="房號" autocomplete="off" />
@@ -62,14 +62,14 @@ const lang: Language = defaultLang;
       </section>
 
       <section class="mm-panel" id="panel-leaderboard" hidden>
-        <h2 class="ms-title">🏆 LEADERBOARD</h2>
+        <h2 class="ms-title">LEADERBOARD</h2>
         <ol class="lb-list" id="lb-list"><li class="lb-empty">載入中…</li></ol>
       </section>
 
       <section class="mm-panel" id="panel-profile" hidden>
-        <h2 class="ms-title">👤 PROFILE</h2>
+        <h2 class="ms-title">PROFILE</h2>
         <p class="profile-guest" id="profile-guest">訪客無等級／積分。<br />連錢包以建立你的玩家檔案。</p>
-        <button class="ms-btn ms-wallet" id="profile-wallet">🦊 連錢包</button>
+        <button class="ms-btn ms-wallet" id="profile-wallet">連錢包</button>
         <div class="profile-stats" id="profile-stats" hidden></div>
       </section>
     </div>
@@ -77,8 +77,8 @@ const lang: Language = defaultLang;
     <div class="pause-menu" id="pause-menu" hidden>
       <div class="pause-card">
         <h2 class="pause-title" id="pause-title">PAUSED</h2>
-        <button class="ms-btn ms-solo" id="pause-resume" type="button">▶ 繼續</button>
-        <button class="ms-btn ms-hard" id="pause-quit" type="button">✕ 離開</button>
+        <button class="ms-btn ms-solo" id="pause-resume" type="button">繼續</button>
+        <button class="ms-btn ms-hard" id="pause-quit" type="button">離開</button>
       </div>
     </div>
   </main>
@@ -109,7 +109,7 @@ const lang: Language = defaultLang;
     position: absolute;
     top: 18px;
     left: 20px;
-    z-index: 10;
+    z-index: 40; /* 高於主選單(20)/暫停(30) 全螢幕層，確保可點 */
     font-family: 'Press Start 2P', Consolas, monospace;
     font-size: 11px;
     letter-spacing: 1px;
@@ -352,6 +352,31 @@ const lang: Language = defaultLang;
   }
   .pause-card .ms-btn { width: 100%; }
 
+  /* emoji → 生成的霓虹圖示（::before 背景圖，取代廉價 emoji） */
+  .mm-tab::before,
+  #panel-leaderboard .ms-title::before,
+  #panel-profile .ms-title::before,
+  .ms-wallet::before,
+  #pause-resume::before,
+  #pause-quit::before {
+    content: '';
+    display: inline-block;
+    width: 1.3em;
+    height: 1.3em;
+    margin-right: 8px;
+    vertical-align: -0.28em;
+    background: center / contain no-repeat;
+  }
+  .mm-tab[data-tab='play']::before,
+  #pause-resume::before { background-image: url('/assets/games/tetris/icons/play.webp'); }
+  .mm-tab[data-tab='leaderboard']::before,
+  #panel-leaderboard .ms-title::before { background-image: url('/assets/games/tetris/icons/trophy.webp'); }
+  .mm-tab[data-tab='profile']::before,
+  #panel-profile .ms-title::before { background-image: url('/assets/games/tetris/icons/user.webp'); }
+  .ms-wallet::before { background-image: url('/assets/games/tetris/icons/wallet.webp'); }
+  #pause-quit::before { background-image: url('/assets/games/tetris/icons/exit.webp'); }
+  .lb-empty-ico { width: 44px; height: 44px; display: inline-block; }
+
   @media (prefers-reduced-motion: reduce) {
     .mm-tab, .ms-btn, .tetris-back { transition: none; }
     .ms-btn:hover { transform: none; }
@@ -487,7 +512,7 @@ const lang: Language = defaultLang;
     try {
       wallet = await connectWallet();
       if (wallet) {
-        const label = `🦊 ${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)}`;
+        const label = `${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)}`;
         const onlineBtn = document.getElementById('online-wallet');
         if (onlineBtn) { onlineBtn.textContent = `${label}（排名賽）`; onlineBtn.classList.add('connected'); }
         const pfBtn = document.getElementById('profile-wallet');
@@ -663,7 +688,7 @@ const lang: Language = defaultLang;
       const res = await fetch('/api/leaderboard?n=20');
       const data = (await res.json()) as { rows: LbRow[] };
       if (!data.rows.length) {
-        list.innerHTML = '<li class="lb-empty">🏆<br />尚無紀錄<br /><span class="lb-empty-sub">打一場排名賽，搶下頭香！</span></li>';
+        list.innerHTML = '<li class="lb-empty"><img class="lb-empty-ico" src="/assets/games/tetris/icons/trophy.webp" alt="" /><br />尚無紀錄<br /><span class="lb-empty-sub">打一場排名賽，搶下頭香！</span></li>';
         return;
       }
       const head = '<li class="lb-row lb-head"><span>#</span><span>PLAYER</span><span>LV</span><span>TIER</span><span>ELO</span><span>W-L</span></li>';
