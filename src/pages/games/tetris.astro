@@ -34,6 +34,7 @@ const lang: Language = defaultLang;
         <button class="mm-tab is-active" data-tab="play" type="button" role="tab" aria-selected="true">▶ PLAY</button>
         <button class="mm-tab" data-tab="leaderboard" type="button" role="tab" aria-selected="false">🏆 LEADERBOARD</button>
         <button class="mm-tab" data-tab="profile" type="button" role="tab" aria-selected="false">👤 PROFILE</button>
+        <span class="mm-tab-ind" id="mm-tab-ind" aria-hidden="true"></span>
       </nav>
 
       <section class="mm-panel is-active" id="panel-play">
@@ -229,8 +230,23 @@ const lang: Language = defaultLang;
     filter: drop-shadow(0 0 16px rgba(54, 230, 255, 0.35));
     user-select: none;
   }
-  .mm-tabs { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .mm-tabs { position: relative; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  /* 滑動到 active 分頁下方的霓虹指示條 */
+  .mm-tab-ind {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #36e6ff, #c15cff);
+    box-shadow: 0 0 12px rgba(54, 230, 255, 0.95), 0 0 5px rgba(193, 92, 255, 0.85);
+    pointer-events: none;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, width;
+  }
   .mm-tab {
+    position: relative;
     font-family: inherit;
     font-size: 11px;
     letter-spacing: 1px;
@@ -522,17 +538,58 @@ const lang: Language = defaultLang;
   let lbLoaded = false;
   let activeTab = 'play';
 
-  /** 分頁切換的炫炮進場：亮度爆閃 + 微 glitch 位移 + 縮放（WAAPI，可重觸發）。 */
+  /** 分頁切換的故障掃頻音效：saw 由高到低「vwip」+ square 由低到高「ting」。 */
+  function tabSound(): void {
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      actx = actx ?? new Ctx();
+      if (actx.state === 'suspended') void actx.resume();
+      const t = actx.currentTime;
+      const o1 = actx.createOscillator();
+      const g1 = actx.createGain();
+      o1.type = 'sawtooth';
+      o1.frequency.setValueAtTime(880, t);
+      o1.frequency.exponentialRampToValueAtTime(220, t + 0.08);
+      g1.gain.setValueAtTime(0.045, t);
+      g1.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+      o1.connect(g1).connect(actx.destination);
+      o1.start(t); o1.stop(t + 0.11);
+      const o2 = actx.createOscillator();
+      const g2 = actx.createGain();
+      o2.type = 'square';
+      o2.frequency.setValueAtTime(520, t + 0.05);
+      o2.frequency.exponentialRampToValueAtTime(900, t + 0.14);
+      g2.gain.setValueAtTime(0.0001, t + 0.05);
+      g2.gain.linearRampToValueAtTime(0.05, t + 0.07);
+      g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o2.connect(g2).connect(actx.destination);
+      o2.start(t + 0.05); o2.stop(t + 0.17);
+    } catch { /* 音效非必要 */ }
+  }
+
+  /** 分頁切換的故障揭示：由上往下 clip 撕開 + skew 抖動 + 亮度/色偏爆閃（WAAPI，可重觸發）。 */
   function flashPanel(el: HTMLElement | null): void {
     if (!el || reduceMotion || typeof el.animate !== 'function') return;
     el.animate(
       [
-        { opacity: 0, transform: 'translateX(-8px) scale(0.97)', filter: 'brightness(2.4) saturate(1.5)' },
-        { opacity: 1, transform: 'translateX(4px) scale(1.008)', filter: 'brightness(1.5)', offset: 0.5 },
-        { opacity: 1, transform: 'translateX(0) scale(1)', filter: 'brightness(1)' },
+        { clipPath: 'inset(0 0 100% 0)', opacity: 0.15, transform: 'translateY(-10px) skewX(-8deg) scale(0.98)', filter: 'brightness(3) saturate(1.8) hue-rotate(18deg)', offset: 0 },
+        { clipPath: 'inset(0 0 45% 0)', opacity: 1, transform: 'translateX(7px) skewX(5deg)', filter: 'brightness(2)', offset: 0.3 },
+        { clipPath: 'inset(0 0 12% 0)', opacity: 1, transform: 'translateX(-5px) skewX(-3deg)', filter: 'brightness(1.5)', offset: 0.55 },
+        { clipPath: 'inset(0 0 0 0)', opacity: 1, transform: 'translateX(2px) skewX(1deg)', filter: 'brightness(1.2)', offset: 0.8 },
+        { clipPath: 'inset(0 0 0 0)', opacity: 1, transform: 'none', filter: 'none', offset: 1 },
       ],
-      { duration: 280, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+      { duration: 420, easing: 'cubic-bezier(0.2, 0.9, 0.2, 1)' },
     );
+  }
+
+  /** 把指示條移到 active 分頁底部（animate=false 用於初始/resize，不滑動）。 */
+  function moveIndicator(animate: boolean): void {
+    const ind = document.getElementById('mm-tab-ind');
+    const tab = tabs.find((t) => t.dataset.tab === activeTab) ?? tabs[0];
+    if (!ind || !tab) return;
+    ind.style.transition = animate && !reduceMotion ? '' : 'none';
+    ind.style.width = `${tab.offsetWidth}px`;
+    ind.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop + tab.offsetHeight + 4}px)`;
   }
 
   function switchTab(name: string): void {
@@ -542,7 +599,14 @@ const lang: Language = defaultLang;
       t.classList.toggle('is-active', on);
       t.setAttribute('aria-selected', on ? 'true' : 'false');
       if (on && changed && !reduceMotion && typeof t.animate === 'function') {
-        t.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+        t.animate(
+          [
+            { transform: 'scale(1)', filter: 'brightness(1)' },
+            { transform: 'scale(1.16)', filter: 'brightness(1.9)', offset: 0.4 },
+            { transform: 'scale(1)', filter: 'brightness(1)' },
+          ],
+          { duration: 260, easing: 'cubic-bezier(0.2, 0.9, 0.2, 1)' },
+        );
       }
     });
     for (const [key, el] of Object.entries(panels)) {
@@ -558,13 +622,16 @@ const lang: Language = defaultLang;
     }
     if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }
     if (name === 'profile' && wallet) void loadProfile(wallet.address);
+    activeTab = name;
+    moveIndicator(changed);
     if (changed) {
       flashPanel(panels[name]);
-      blip(440, 0.05);            // 上升雙音「ti-ti」
-      setTimeout(() => blip(680, 0.06), 45);
+      tabSound();
     }
-    activeTab = name;
   }
+  moveIndicator(false);
+  if (document.fonts?.ready) void document.fonts.ready.then(() => moveIndicator(false));
+  window.addEventListener('resize', () => moveIndicator(false));
   tabs.forEach((t, i) => {
     t.addEventListener('click', () => switchTab(t.dataset.tab ?? 'play'));
     // 方向鍵在分頁間移動焦點並切換（WAI-ARIA tablist 鍵盤模式）
