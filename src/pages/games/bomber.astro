@@ -82,13 +82,14 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
                         src={`/assets/games/bomber/ui/${icon}.png`}
                         alt={label}
                         title={label}
-                        width="20"
-                        height="20"
+                        width="24"
+                        height="24"
                       />
                       <div class="stat-bar-bg">
                         <div class="stat-bar-solid"   style={`width:${startPct}%`}></div>
                         <div class="stat-bar-faded"   style={`width:${fadedPct}%`}></div>
                       </div>
+                      <span class="stat-val">{startVal}<span class="arrow">→</span>{capVal}</span>
                     </div>
                   );
                 })}
@@ -167,7 +168,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     justify-content: center;
     gap: 32px;
     background:
-      linear-gradient(rgba(4, 6, 13, 0.78), rgba(4, 6, 13, 0.93)),
+      radial-gradient(ellipse at 50% 42%, rgba(6, 8, 16, 0.28), rgba(6, 8, 16, 0.72) 75%),
       url('/assets/games/bomber/ui/select-bg.png') center / cover no-repeat;
     image-rendering: pixelated;
     font-family: 'Press Start 2P', Consolas, monospace;
@@ -248,28 +249,48 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     gap: 8px;
   }
   .stat-icon {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
     image-rendering: pixelated;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
   }
   .stat-bar-bg {
     flex: 1;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.08);
+    height: 11px;
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 4px;
     overflow: hidden;
     display: flex;
+    box-shadow: inset 0 0 0 1px rgba(255, 157, 60, 0.18);
   }
   .stat-bar-solid {
     height: 100%;
-    background: #ff9d3c;
+    background: linear-gradient(180deg, #ffbe5a, #ff8a2c);
     border-radius: 4px 0 0 4px;
+    box-shadow: 0 0 8px rgba(255, 157, 60, 0.55);
   }
   .stat-bar-faded {
     height: 100%;
-    background: rgba(255, 157, 60, 0.25);
+    background: repeating-linear-gradient(
+      45deg,
+      rgba(255, 157, 60, 0.28),
+      rgba(255, 157, 60, 0.28) 3px,
+      rgba(255, 157, 60, 0.12) 3px,
+      rgba(255, 157, 60, 0.12) 6px
+    );
+  }
+  .stat-val {
+    flex-shrink: 0;
+    width: 40px;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    color: #ffd7a8;
+    text-align: right;
+  }
+  .stat-val .arrow {
+    color: #c98f6a;
+    margin: 0 1px;
   }
 
   /* Start button */
