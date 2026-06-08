@@ -2,7 +2,11 @@ export type Tile = 'floor' | 'wall' | 'crate';      // wall = indestructible, cr
 export type Grid = Tile[][];                          // grid[y][x], y down, x right
 export interface Vec { x: number; y: number; }
 export type Dir = 'up' | 'down' | 'left' | 'right';
-export type PowerUpKind = 'fire' | 'bomb' | 'speed' | 'shield';
+export type PowerUpKind = 'fire' | 'bomb' | 'speed' | 'shield' | 'heart';
+export type CharacterId = 'lena' | 'mira';
+
+export interface CharacterStats { lives: number; fireRange: number; maxBombs: number; speedLevel: number; }
+export interface CharacterProfile { id: CharacterId; name: string; start: CharacterStats; caps: CharacterStats; }
 export type EnemyKind = 'wander' | 'chaser';
 
 export interface Bomb { x: number; y: number; fuseMs: number; range: number; }
@@ -38,6 +42,7 @@ export interface BomberState {
   floor: number;
   score: number;
   status: GameStatus;
+  character: CharacterId;
 }
 
 export type BomberEvent =

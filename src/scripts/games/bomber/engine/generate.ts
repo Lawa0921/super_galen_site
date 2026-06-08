@@ -15,6 +15,7 @@ function shuffle<T>(arr: T[], rand: () => number): T[] {
 }
 
 const POWERUPS: PowerUpKind[] = ['fire', 'bomb', 'speed', 'shield'];
+
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 
 /** 依 seed 與層數產生一層：grid + 敵人 + 藏在軟箱下的道具 + 出口。 */
@@ -42,8 +43,10 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
   const hiddenPowerUps: Record<string, PowerUpKind> = {};
   for (let y = 1; y < GRID_ROWS - 1; y++)
     for (let x = 1; x < GRID_COLS - 1; x++)
-      if (grid[y][x] === 'crate' && rng() < POWERUP_DROP_RATE)
-        hiddenPowerUps[`${x},${y}`] = POWERUPS[Math.floor(rng() * POWERUPS.length)];
+      if (grid[y][x] === 'crate' && rng() < POWERUP_DROP_RATE) {
+        const r = rng();
+        hiddenPowerUps[`${x},${y}`] = r < 0.1 ? 'heart' : POWERUPS[Math.floor((r - 0.1) / 0.9 * POWERUPS.length)];
+      }
 
   // 收集所有 floor 格（排除出生安全區）供敵人 / 出口佈點
   const floors: { x: number; y: number }[] = [];

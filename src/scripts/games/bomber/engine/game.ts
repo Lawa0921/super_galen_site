@@ -1,17 +1,19 @@
 // game.ts
 import type {
   Grid, Bomb, BlastCell, Enemy, PowerUp, PowerUpKind, Vec, Dir, BomberState, BomberEvent, InputAction, Player,
+  CharacterId, CharacterStats,
 } from './types';
 import { generateFloor } from './generate';
 import { makePlayer, dirDelta, speedMs } from './player';
 import { isWalkable, breakCrate } from './board';
-import { BOMB_FUSE_MS, BLAST_TTL_MS, INVULN_MS, SPAWN } from './constants';
+import { BOMB_FUSE_MS, BLAST_TTL_MS, INVULN_MS, SPAWN, MAX_FIRE, MAX_BOMBS, START_LIVES } from './constants';
 import { resolveChain } from './bomb';
 import { SCORE, descendBonus } from './scoring';
 import { chooseEnemyDir, enemyMoveMs } from './enemy';
 import { createRng } from './rng';
+import { getCharacter } from './characters';
 
-export interface BomberOptions { seed?: number; floor?: number; }
+export interface BomberOptions { seed?: number; floor?: number; character?: CharacterId; }
 
 export class BomberGame {
   private seed: number;
@@ -26,6 +28,8 @@ export class BomberGame {
   private exit: Vec;
   private status: 'playing' | 'gameover' = 'playing';
   private score = 0;
+  private characterId: CharacterId;
+  private caps: CharacterStats;
 
   private held = new Set<Dir>();
   private lastHeld: Dir | null = null;
@@ -44,7 +48,17 @@ export class BomberGame {
     this.enemies = layout.enemies;
     this.hidden = layout.hiddenPowerUps;
     this.exit = layout.exit;
-    this.player = makePlayer();
+
+    if (opts.character) {
+      const profile = getCharacter(opts.character);
+      this.characterId = opts.character;
+      this.caps = profile.caps;
+      this.player = makePlayer(profile.start);
+    } else {
+      this.characterId = 'lena'; // placeholder for getState(); behavior uses default caps
+      this.caps = { lives: START_LIVES, fireRange: MAX_FIRE, maxBombs: MAX_BOMBS, speedLevel: 4 };
+      this.player = makePlayer();
+    }
   }
 
   // ---- input ----
@@ -219,10 +233,12 @@ export class BomberGame {
 
   private applyPowerUp(kind: PowerUpKind): void {
     const p = this.player;
-    if (kind === 'fire') p.fireRange = Math.min(p.fireRange + 1, 8);
-    else if (kind === 'bomb') p.maxBombs = Math.min(p.maxBombs + 1, 8);
-    else if (kind === 'speed') p.speedLevel = Math.min(p.speedLevel + 1, 4);
+    const c = this.caps;
+    if (kind === 'fire') p.fireRange = Math.min(p.fireRange + 1, c.fireRange);
+    else if (kind === 'bomb') p.maxBombs = Math.min(p.maxBombs + 1, c.maxBombs);
+    else if (kind === 'speed') p.speedLevel = Math.min(p.speedLevel + 1, c.speedLevel);
     else if (kind === 'shield') p.shield = true;
+    else if (kind === 'heart') p.lives = Math.min(p.lives + 1, c.lives);
   }
 
   private stepPlayerMove(dtMs: number): void {
@@ -252,6 +268,7 @@ export class BomberGame {
       floor: this.floor,
       score: this.score,
       status: this.status,
+      character: this.characterId,
     };
   }
 
@@ -275,4 +292,5 @@ export class BomberGame {
   debugFreezePlayer(): void { this.frozen = true; }
   debugSetShield(on: boolean): void { this.player.shield = on; }
   debugSetLives(n: number): void { this.player.lives = n; }
+  debugApplyPowerUp(kind: PowerUpKind): void { this.applyPowerUp(kind); }
 }

@@ -1,5 +1,5 @@
 // player.ts
-import type { Player, Dir, Vec } from './types';
+import type { Player, Dir, Vec, CharacterStats } from './types';
 import { SPEED_MS, SPAWN, BASE_FIRE, BASE_BOMBS, START_LIVES } from './constants';
 
 export function speedMs(speedLevel: number): number {
@@ -15,11 +15,14 @@ export function dirDelta(dir: Dir): Vec {
   }
 }
 
-/** 以基礎能力在出生點建立玩家。 */
-export function makePlayer(): Player {
+/** 以基礎能力（或指定 start stats）在出生點建立玩家。 */
+export function makePlayer(start?: CharacterStats): Player {
   return {
     x: SPAWN.x, y: SPAWN.y, prevX: SPAWN.x, prevY: SPAWN.y, dir: 'down',
-    lives: START_LIVES, fireRange: BASE_FIRE, maxBombs: BASE_BOMBS, speedLevel: 0,
+    lives: start?.lives ?? START_LIVES,
+    fireRange: start?.fireRange ?? BASE_FIRE,
+    maxBombs: start?.maxBombs ?? BASE_BOMBS,
+    speedLevel: start?.speedLevel ?? 0,
     shield: false, invulnMs: 0, moveCooldownMs: 0, alive: true,
   };
 }
