@@ -45,6 +45,9 @@ function computeLayout(stageW: number, stageH: number): Layout {
 export interface TetrisHandle {
   game: TetrisGame;
   destroy(): void;
+  /** 暫停模擬（單人可暫停）。 */
+  pause(): void;
+  resume(): void;
 }
 
 /** 掛載並啟動單人俄羅斯方塊到指定 canvas。 */
@@ -96,6 +99,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
 
   const input = new InputController((action) => game.input(action), { das: 150, arr: 35 });
   const sound = new SoundManager();
+  let paused = false;
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.code === 'KeyM') {
@@ -104,6 +108,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
       sound.toggle();
       return;
     }
+    if (paused) return; // 暫停時不吃操作鍵
     const action = KEYMAP_1P[e.code];
     if (!action) return;
     e.preventDefault();
@@ -129,6 +134,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   let lastLevel = game.getState().level;
   const tick = (ticker: { deltaMS: number }) => {
     const dt = ticker.deltaMS;
+    if (paused) { stage.update(dt); return; } // 凍結模擬，但保留 CRT 動畫
     input.update(dt);
     game.step(dt);
 
@@ -174,6 +180,8 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
 
   const handle: TetrisHandle = {
     game,
+    pause() { paused = true; },
+    resume() { paused = false; },
     destroy() {
       stage.app.renderer.off('resize', onResize);
       window.removeEventListener('keydown', onKeyDown);

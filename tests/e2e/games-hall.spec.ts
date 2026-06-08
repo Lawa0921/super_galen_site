@@ -35,10 +35,8 @@ test.describe('Dungeon Arcade — hall & mode select', () => {
     );
   });
 
-  test('hall links to leaderboard; leaderboard page loads and fetches the API', async ({ page }) => {
-    await page.goto('/games');
-    await expect(page.locator('a[href="/games/leaderboard"]')).toBeVisible();
-
+  test('leaderboard page loads and fetches the API', async ({ page }) => {
+    // 排行榜入口已移到 Tetris 主選單分頁；獨立頁仍可直接到達（深連結）。
     await page.goto('/games/leaderboard');
     await expect(page.getByText('LEADERBOARD')).toBeVisible();
     // fetch 完成後不應停在「載入中」（證明 /api/leaderboard 有回應）

@@ -72,6 +72,14 @@ const lang: Language = defaultLang;
         <div class="profile-stats" id="profile-stats" hidden></div>
       </section>
     </div>
+
+    <div class="pause-menu" id="pause-menu" hidden>
+      <div class="pause-card">
+        <h2 class="pause-title" id="pause-title">PAUSED</h2>
+        <button class="ms-btn ms-solo" id="pause-resume" type="button">▶ 繼續</button>
+        <button class="ms-btn ms-hard" id="pause-quit" type="button">✕ 離開</button>
+      </div>
+    </div>
   </main>
 </BaseLayout>
 
@@ -295,6 +303,39 @@ const lang: Language = defaultLang;
   .pf-bar { height: 10px; border: 1px solid rgba(54, 230, 255, 0.4); border-radius: 5px; overflow: hidden; background: rgba(8,12,22,0.7); }
   .pf-bar > i { display: block; height: 100%; background: #36e6ff; }
 
+  /* 遊戲中 ESC 暫停選單 */
+  .pause-menu {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 6, 13, 0.72);
+    backdrop-filter: blur(3px);
+  }
+  .pause-menu[hidden] { display: none; }
+  .pause-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    min-width: min(300px, 78vw);
+    padding: 30px 34px;
+    background: rgba(8, 12, 22, 0.92);
+    border: 1px solid rgba(54, 230, 255, 0.4);
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6), inset 0 0 28px rgba(54, 230, 255, 0.08);
+  }
+  .pause-title {
+    margin: 0 0 6px;
+    font-size: 22px;
+    letter-spacing: 5px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 30px rgba(54, 230, 255, 0.5);
+  }
+  .pause-card .ms-btn { width: 100%; }
+
   @media (prefers-reduced-motion: reduce) {
     .mm-tab, .ms-btn, .tetris-back { transition: none; }
     .ms-btn:hover { transform: none; }
@@ -318,15 +359,69 @@ const lang: Language = defaultLang;
   const onlinePanel = document.getElementById('online-panel');
   const statusEl = document.getElementById('online-status');
   let started = false;
+  let gameHandle: { pause?(): void; resume?(): void } | null = null;
+  let gameRunning = false;
+  let pausable = false;
+  let menuOpen = false;
+  const pauseMenu = document.getElementById('pause-menu');
+  const pauseTitle = document.getElementById('pause-title');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const setHint = (t: string) => { if (hint) { hint.textContent = t; hint.hidden = false; } };
+
+  // ---- 合成音效（Web Audio，首次手勢時建立）----
+  let actx: AudioContext | null = null;
+  function blip(freq: number, dur = 0.08, type: OscillatorType = 'square'): void {
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      actx = actx ?? new Ctx();
+      if (actx.state === 'suspended') void actx.resume();
+      const o = actx.createOscillator();
+      const g = actx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      o.connect(g).connect(actx.destination);
+      const t = actx.currentTime;
+      g.gain.setValueAtTime(0.05, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.start(t);
+      o.stop(t + dur);
+    } catch { /* 音效非必要 */ }
+  }
+
+  // ---- ESC 暫停選單（solo/AI 暫停模擬；online 鎖步不可暫停，只顯示選單）----
+  function openPauseMenu(): void {
+    if (!gameRunning || menuOpen) return;
+    menuOpen = true;
+    if (pausable) gameHandle?.pause?.();
+    if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : 'MENU';
+    if (pauseMenu) pauseMenu.hidden = false;
+    blip(300, 0.1);
+  }
+  function closePauseMenu(): void {
+    if (!menuOpen) return;
+    menuOpen = false;
+    if (pausable) gameHandle?.resume?.();
+    if (pauseMenu) pauseMenu.hidden = true;
+    blip(560, 0.07);
+  }
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !gameRunning) return;
+    e.preventDefault();
+    if (menuOpen) closePauseMenu();
+    else openPauseMenu();
+  });
+  document.getElementById('pause-resume')?.addEventListener('click', closePauseMenu);
+  document.getElementById('pause-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
 
   function startSolo(): void {
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
     setHint(SOLO_HINT);
-    startTetris(canvas).catch((err: unknown) => console.error('[tetris] failed to start', err));
+    startTetris(canvas)
+      .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
+      .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
 
   function startAiMode(diffRaw?: string | null): void {
@@ -335,7 +430,9 @@ const lang: Language = defaultLang;
     mainMenu?.remove();
     const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
     setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · R RESTART · M MUTE`);
-    startAi(canvas, diff).catch((err: unknown) => console.error('[tetris] failed to start', err));
+    startAi(canvas, diff)
+      .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
+      .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
 
   function showOnlinePanel(): void {
@@ -354,6 +451,8 @@ const lang: Language = defaultLang;
     if (s.phase === 'connected') {
       mainMenu?.remove();
       setHint(ONLINE_HINT);
+      gameRunning = true;
+      pausable = false; // 線上對戰為 P2P 鎖步，不可暫停
     } else if (s.phase === 'error') {
       started = false; // 允許重試
     }
@@ -421,11 +520,30 @@ const lang: Language = defaultLang;
     profile: document.getElementById('panel-profile'),
   };
   let lbLoaded = false;
+  let activeTab = 'play';
+
+  /** 分頁切換的炫炮進場：亮度爆閃 + 微 glitch 位移 + 縮放（WAAPI，可重觸發）。 */
+  function flashPanel(el: HTMLElement | null): void {
+    if (!el || reduceMotion || typeof el.animate !== 'function') return;
+    el.animate(
+      [
+        { opacity: 0, transform: 'translateX(-8px) scale(0.97)', filter: 'brightness(2.4) saturate(1.5)' },
+        { opacity: 1, transform: 'translateX(4px) scale(1.008)', filter: 'brightness(1.5)', offset: 0.5 },
+        { opacity: 1, transform: 'translateX(0) scale(1)', filter: 'brightness(1)' },
+      ],
+      { duration: 280, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+    );
+  }
+
   function switchTab(name: string): void {
+    const changed = name !== activeTab;
     tabs.forEach((t) => {
       const on = t.dataset.tab === name;
       t.classList.toggle('is-active', on);
       t.setAttribute('aria-selected', on ? 'true' : 'false');
+      if (on && changed && !reduceMotion && typeof t.animate === 'function') {
+        t.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+      }
     });
     for (const [key, el] of Object.entries(panels)) {
       if (!el) continue;
@@ -440,6 +558,12 @@ const lang: Language = defaultLang;
     }
     if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }
     if (name === 'profile' && wallet) void loadProfile(wallet.address);
+    if (changed) {
+      flashPanel(panels[name]);
+      blip(440, 0.05);            // 上升雙音「ti-ti」
+      setTimeout(() => blip(680, 0.06), 45);
+    }
+    activeTab = name;
   }
   tabs.forEach((t, i) => {
     t.addEventListener('click', () => switchTab(t.dataset.tab ?? 'play'));

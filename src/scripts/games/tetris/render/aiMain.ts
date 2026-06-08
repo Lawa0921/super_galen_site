@@ -19,6 +19,9 @@ const CLEAR_NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
 
 export interface AiHandle {
   destroy(): void;
+  /** 暫停模擬（vs-AI 為本機對戰、可暫停）。 */
+  pause(): void;
+  resume(): void;
 }
 
 /** vs AI 對戰：A = 人類（1P 鍵位）、B = bot。重用 Phase 3 雙盤渲染/攻擊/垃圾/結算。 */
@@ -80,6 +83,7 @@ export async function startAi(canvas: HTMLCanvasElement, difficulty: Difficulty 
   let introMs = 2400;
   let started = false;
   let resultShown = false;
+  let paused = false;
 
   function reset(): void {
     match = new TetrisMatch({ seed: Math.floor(Math.random() * 1_000_000_000) });
@@ -94,6 +98,7 @@ export async function startAi(canvas: HTMLCanvasElement, difficulty: Difficulty 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.code === 'KeyM') { e.preventDefault(); sound.ensure(); sound.toggle(); return; }
     if (e.code === 'KeyR' && match.phase === 'result') { e.preventDefault(); reset(); return; }
+    if (paused) return; // 暫停時不吃操作鍵
     const a = KEYMAP_1P[e.code];
     if (!a) return;
     e.preventDefault();
@@ -145,6 +150,7 @@ export async function startAi(canvas: HTMLCanvasElement, difficulty: Difficulty 
 
   const tick = (ticker: { deltaMS: number }) => {
     const dt = ticker.deltaMS;
+    if (paused) { stage.update(dt); return; } // 凍結模擬，但保留 CRT 動畫
 
     if (!started) {
       introMs -= dt;
@@ -184,6 +190,8 @@ export async function startAi(canvas: HTMLCanvasElement, difficulty: Difficulty 
   };
 
   return {
+    pause() { paused = true; },
+    resume() { paused = false; },
     destroy() {
       stage.app.renderer.off('resize', relayout);
       window.removeEventListener('keydown', onKeyDown);

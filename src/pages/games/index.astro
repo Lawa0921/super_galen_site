@@ -42,8 +42,6 @@ const games = [
         )
       )}
     </div>
-
-    <a class="lb-link" href="/games/leaderboard"><i class="fas fa-trophy"></i> 排行榜 LEADERBOARD</a>
   </main>
 </BaseLayout>
 
@@ -149,20 +147,6 @@ const games = [
     background: rgba(4, 6, 13, 0.45);
   }
   .card-lock { font-size: 26px; opacity: 0.7; position: relative; }
-
-  .lb-link {
-    font-family: 'Press Start 2P', Consolas, monospace;
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: #ffd23f;
-    text-decoration: none;
-    padding: 12px 22px;
-    border: 1px solid rgba(255, 210, 63, 0.55);
-    border-radius: 8px;
-    box-shadow: 0 0 12px rgba(255, 210, 63, 0.25);
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
-  }
-  .lb-link:hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(255, 210, 63, 0.6); }
 
   @media (max-width: 560px) {
     .card { width: 70vw; height: 200px; }
