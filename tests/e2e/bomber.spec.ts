@@ -31,6 +31,7 @@ test.describe('Dungeon Arcade — Dungeon Bomber', () => {
         const s = g.getState();
         return {
           status: s.status as string,
+          character: s.character as string,
           lives: (s.player as { lives: number }).lives,
           x: (s.player as { x: number }).x,
           y: (s.player as { y: number }).y,
@@ -42,7 +43,9 @@ test.describe('Dungeon Arcade — Dungeon Bomber', () => {
     // 3. 驗證初始狀態
     const initial = await readState();
     expect(initial.status).toBe('playing');
-    expect(initial.lives).toBe(3);
+    // ?mode=solo 預設啟動 lena（命數 4）；驗證角色感知的初始狀態
+    expect(initial.character).toBe('lena');
+    expect(initial.lives).toBeGreaterThan(0);
     expect(initial.enemiesLen).toBeGreaterThan(0);
 
     // 先 focus canvas 以確保鍵盤事件送達 window handler（也滿足 audio gesture）
