@@ -5,8 +5,29 @@
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import { defaultLang, type Language } from '@i18n/index';
+import { CHARACTERS } from '@scripts/games/bomber/engine/characters';
 
 const lang: Language = defaultLang;
+
+const chars = [CHARACTERS.lena, CHARACTERS.mira];
+
+// Role labels for each character (hardcoded, two-only)
+const roleLabels: Record<string, string> = {
+  lena: '工兵 / 坦',
+  mira: '魔女 / 爆發',
+};
+
+// Per-stat caps for bar scaling
+const barMax = { lives: 5, maxBombs: 8, fireRange: 8, speedLevel: 4 };
+
+type StatKey = keyof typeof barMax;
+
+const statRows: { key: StatKey; label: string }[] = [
+  { key: 'lives',      label: '命' },
+  { key: 'maxBombs',   label: '炸彈' },
+  { key: 'fireRange',  label: '火力' },
+  { key: 'speedLevel', label: '速度' },
+];
 ---
 
 <BaseLayout
@@ -29,9 +50,46 @@ const lang: Language = defaultLang;
     </div>
 
     <div class="mode-select" id="mode-select">
-      <h2 class="ms-title">DUNGEON BOMBER</h2>
-      <div class="ms-buttons">
-        <button class="ms-btn ms-solo" data-mode="solo">▶ START</button>
+      <h2 class="ms-title">SELECT YOUR BOMBER</h2>
+      <div class="char-cards">
+        {chars.map((profile) => {
+          const id = profile.id;
+          const role = roleLabels[id] ?? '';
+          return (
+            <div class="char-card">
+              <img
+                src={`/assets/games/bomber/portraits/${id}.png`}
+                alt={profile.name}
+                width="160"
+                height="160"
+                class="char-portrait"
+                style="image-rendering:pixelated"
+              />
+              <div class="char-name">{profile.name}</div>
+              <div class="char-role">{role}</div>
+              <div class="char-stats">
+                {statRows.map(({ key, label }) => {
+                  const startVal = profile.start[key];
+                  const capVal   = profile.caps[key];
+                  const max      = barMax[key];
+                  const startPct = Math.round((startVal / max) * 100);
+                  const capPct   = Math.round((capVal   / max) * 100);
+                  const fadedPct = capPct - startPct;
+                  return (
+                    <div class="stat-row">
+                      <span class="stat-label">{label}</span>
+                      <div class="stat-bar-bg">
+                        <div class="stat-bar-solid"   style={`width:${startPct}%`}></div>
+                        <div class="stat-bar-faded"   style={`width:${fadedPct}%`}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button class="ms-btn ms-solo char-start" data-char={id}>▶ START</button>
+            </div>
+          );
+        })}
       </div>
     </div>
 
@@ -100,30 +158,109 @@ const lang: Language = defaultLang;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 36px;
-    background: rgba(4, 6, 13, 0.78);
+    gap: 32px;
+    background: rgba(4, 6, 13, 0.88);
     font-family: 'Press Start 2P', Consolas, monospace;
+    padding: 20px;
+    box-sizing: border-box;
   }
   .mode-select[hidden] {
     display: none;
   }
   .ms-title {
     margin: 0;
-    font-size: clamp(18px, 3.5vw, 30px);
+    font-size: clamp(14px, 2.8vw, 26px);
     letter-spacing: 4px;
     color: #fff2e6;
     text-shadow: 0 0 12px rgba(255, 157, 60, 0.9), 0 0 28px rgba(255, 157, 60, 0.5);
   }
-  .ms-buttons {
+
+  /* Character cards row */
+  .char-cards {
+    display: flex;
+    flex-direction: row;
+    gap: clamp(16px, 3vw, 40px);
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .char-card {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    width: min(360px, 80vw);
+    align-items: center;
+    gap: 10px;
+    background: rgba(8, 12, 22, 0.75);
+    border: 2px solid rgba(255, 157, 60, 0.45);
+    border-radius: 12px;
+    padding: 20px 24px 24px;
+    width: min(220px, 42vw);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
+  .char-card:hover {
+    border-color: rgba(255, 157, 60, 0.85);
+    box-shadow: 0 0 20px rgba(255, 157, 60, 0.35);
+  }
+  .char-portrait {
+    display: block;
+    width: clamp(100px, 18vw, 160px);
+    height: auto;
+    /* image-rendering set inline (pixelated) */
+  }
+  .char-name {
+    font-size: clamp(13px, 2vw, 18px);
+    letter-spacing: 3px;
+    color: #fff2e6;
+  }
+  .char-role {
+    font-size: clamp(8px, 1.2vw, 10px);
+    letter-spacing: 1px;
+    color: #c98f6a;
+  }
+
+  /* Stat bars */
+  .char-stats {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .stat-label {
+    font-size: 7px;
+    letter-spacing: 1px;
+    color: #c98f6a;
+    width: 28px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .stat-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+  }
+  .stat-bar-solid {
+    height: 100%;
+    background: #ff9d3c;
+    border-radius: 4px 0 0 4px;
+  }
+  .stat-bar-faded {
+    height: 100%;
+    background: rgba(255, 157, 60, 0.25);
+  }
+
+  /* Start button */
   .ms-btn {
-    padding: 18px 20px;
+    padding: 14px 20px;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 11px;
     letter-spacing: 2px;
     color: #ffe9d6;
     background: rgba(8, 12, 22, 0.8);
@@ -144,6 +281,10 @@ const lang: Language = defaultLang;
   }
   .ms-solo:hover {
     box-shadow: 0 0 22px rgba(255, 90, 77, 0.85);
+  }
+  .char-start {
+    margin-top: 6px;
+    width: 100%;
   }
 
   /* 遊戲結束 overlay：同 mode-select 樣式 */
@@ -174,20 +315,36 @@ const lang: Language = defaultLang;
 
 <script>
   import { startBomber } from '@scripts/games/bomber/render/main';
+  import type { CharacterId } from '@scripts/games/bomber/engine/types';
 
   const params = new URLSearchParams(location.search);
   const canvas = document.getElementById('bomber-canvas') as HTMLCanvasElement | null;
   const modeSelect = document.getElementById('mode-select');
   let started = false;
 
-  function startSolo(): void {
+  function startWithChar(char: CharacterId): void {
     if (started || !canvas) return;
     started = true;
     modeSelect?.remove();
-    startBomber(canvas).catch((err: unknown) => console.error('[bomber] start failed', err));
+    startBomber(canvas, char).catch((err: unknown) => console.error('[bomber] start failed', err));
   }
 
-  modeSelect?.querySelector('[data-mode="solo"]')?.addEventListener('click', startSolo);
+  // Card START buttons
+  modeSelect?.querySelectorAll<HTMLButtonElement>('.char-start').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const char = btn.dataset.char as CharacterId | undefined;
+      startWithChar(char ?? 'lena');
+    });
+  });
 
-  if (params.get('mode') === 'solo') startSolo();
+  // ?char=lena|mira — explicit character autostart
+  const charParam = params.get('char') as CharacterId | null;
+  if (charParam === 'lena' || charParam === 'mira') {
+    startWithChar(charParam);
+  }
+
+  // ?mode=solo — backward compat for e2e tests (autostarts lena)
+  if (!started && params.get('mode') === 'solo') {
+    startWithChar('lena');
+  }
 </script>

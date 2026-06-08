@@ -7,7 +7,7 @@ import { EntityView } from './EntityView';
 import { HudView } from './HudView';
 import { computeLayout } from './layout';
 import { loadBomberTextures } from './assets';
-import type { Dir } from '../engine/types';
+import type { Dir, CharacterId } from '../engine/types';
 
 export interface BomberHandle {
   game: BomberGame;
@@ -15,10 +15,13 @@ export interface BomberHandle {
 }
 
 /** 掛載並啟動 Dungeon Bomber 到指定 canvas（SOLO 模式）。 */
-export async function startBomber(canvas: HTMLCanvasElement): Promise<BomberHandle> {
+export async function startBomber(
+  canvas: HTMLCanvasElement,
+  character: CharacterId = 'lena',
+): Promise<BomberHandle> {
   const stage = await PixiStage.create(canvas);
   const seed = Math.floor(Math.random() * 1_000_000_000);
-  const game = new BomberGame({ seed });
+  const game = new BomberGame({ seed, character });
 
   const textures = await loadBomberTextures();
   const grid = new GridView(stage.gridLayer, textures);

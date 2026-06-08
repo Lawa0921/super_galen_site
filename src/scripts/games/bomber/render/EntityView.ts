@@ -37,8 +37,8 @@ export class EntityView {
   constructor(private layer: Container, private fxLayer: Container, textures: BomberTextures) {
     this.textures = textures;
 
-    // 玩家（1 個）
-    this.playerSp = this._newSprite(textures.player);
+    // 玩家（1 個）— 初始貼圖用 lena；render 時每幀依 character 切換
+    this.playerSp = this._newSprite(textures.playerLena);
 
     // 出口（1 個）
     this.exitSp = this._newSprite(textures.exit);
@@ -177,7 +177,8 @@ export class EntityView {
     const blinkVisible = !isInvuln || Math.sin(this.blinkPhase) > 0;
 
     const ps = this.playerSp;
-    ps.texture = this.textures.player;
+    const playerTex = state.character === 'mira' ? this.textures.playerMira : this.textures.playerLena;
+    ps.texture = playerTex;
     const pSize = cell * 0.9;
     ps.width  = pSize;
     ps.height = pSize;
@@ -215,6 +216,7 @@ export class EntityView {
       case 'bomb':   return this.textures.puBomb;
       case 'speed':  return this.textures.puSpeed;
       case 'shield': return this.textures.puShield;
+      case 'heart':  return this.textures.heart;
       default:
         console.warn('[EntityView] unknown powerup kind:', kind);
         return this.textures.puFire;
