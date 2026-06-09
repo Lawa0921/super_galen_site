@@ -19,6 +19,13 @@ const roleLabels: Record<string, string> = {
   rosa: '隊長 / 重裝',
 };
 
+const abilityMeta: Record<string, { name: string; desc: string; icon: string }> = {
+  lena: { name: '地毯轟炸', desc: '身邊十字範圍瞬間放下多顆炸彈', icon: 'ab-carpet' },
+  mira: { name: '爆炎術',   desc: '以自身為中心瞬發大範圍爆炎',   icon: 'ab-inferno' },
+  aya:  { name: '瞬步',     desc: '朝面向瞬移到最遠空格',         icon: 'ab-blink' },
+  rosa: { name: '鐵壁',     desc: '數秒無敵護盾',                 icon: 'ab-bulwark' },
+};
+
 // Per-stat caps for bar scaling
 const barMax = { lives: 5, maxBombs: 8, fireRange: 8, speedLevel: 4 };
 
@@ -64,6 +71,9 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
       <!-- CRT scanline + vignette overlay -->
       <div class="crt-overlay" aria-hidden="true"></div>
 
+      <!-- Character switch flash-sweep overlay -->
+      <div class="switch-flash" id="switch-flash" aria-hidden="true"></div>
+
       <!-- Decorative hanging chains (top corners) -->
       <div class="chain chain--left" aria-hidden="true"></div>
       <div class="chain chain--right" aria-hidden="true"></div>
@@ -100,31 +110,62 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
                   <div class="hero-epithet">{meta.epithet}</div>
                 </div>
 
-                <!-- Compact stats chip (bottom-left) -->
-                <div class="hero-stats-chip">
-                  {statRows.map(({ key, label, icon }) => {
-                    const startVal = profile.start[key];
-                    const capVal   = profile.caps[key];
-                    return (
-                      <div class="chip-row">
+                <!-- Bottom-left character info cluster: skill panel + stats row -->
+                <div class="char-info-cluster">
+
+                  <!-- ── SKILL PANEL ── -->
+                  <div class="skill-panel">
+                    <div class="skill-panel-header">
+                      <span class="skill-label-tag">SKILL</span>
+                      <span class="skill-key-hint">▸ E / SHIFT</span>
+                    </div>
+                    <div class="skill-body">
+                      <!-- Icon badge with radial aura glow -->
+                      <div class="skill-icon-badge">
                         <img
-                          class="chip-icon"
-                          src={`/assets/games/bomber/ui/${icon}.png`}
-                          alt={label}
-                          title={label}
-                          width="12"
-                          height="12"
+                          src={`/assets/games/bomber/ui/${abilityMeta[id].icon}.png`}
+                          alt={abilityMeta[id].name}
+                          class="skill-icon-img"
+                          width="44"
+                          height="44"
                           style="image-rendering:pixelated"
                         />
-                        <span class="chip-val">
-                          <span class="chip-num">{startVal}</span>
-                          <span class="chip-arrow">→</span>
-                          <span class="chip-num chip-num--cap">{capVal}</span>
-                        </span>
                       </div>
-                    );
-                  })}
-                </div>
+                      <!-- Ability text -->
+                      <div class="skill-text">
+                        <span class="skill-name">{abilityMeta[id].name}</span>
+                        <span class="skill-desc">{abilityMeta[id].desc}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ── Compact stats row (under skill panel) ── -->
+                  <div class="hero-stats-chip">
+                    {statRows.map(({ key, label, icon }) => {
+                      const startVal = profile.start[key];
+                      const capVal   = profile.caps[key];
+                      return (
+                        <div class="chip-row">
+                          <img
+                            class="chip-icon"
+                            src={`/assets/games/bomber/ui/${icon}.png`}
+                            alt={label}
+                            title={label}
+                            width="12"
+                            height="12"
+                            style="image-rendering:pixelated"
+                          />
+                          <span class="chip-val">
+                            <span class="chip-num">{startVal}</span>
+                            <span class="chip-arrow">→</span>
+                            <span class="chip-num chip-num--cap">{capVal}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div><!-- /char-info-cluster -->
               </div>
             );
           })}
@@ -405,6 +446,54 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   }
   .hero-panel.is-active {
     display: block;
+    animation: hero-enter 0.38s ease-out both;
+  }
+  .hero-panel.is-active .hero-name-block {
+    animation: name-swoosh 0.34s ease-out 0.06s both;
+  }
+  .hero-panel.is-active .char-info-cluster {
+    animation: skill-rise 0.34s ease-out 0.14s both;
+  }
+
+  @keyframes hero-enter {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes name-swoosh {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes skill-rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── Switch flash-sweep overlay ────────────────────────── */
+  .switch-flash {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 45;
+    opacity: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 30%,
+      rgba(255, 157, 60, 0.18) 45%,
+      rgba(255, 206, 107, 0.28) 50%,
+      rgba(255, 157, 60, 0.18) 55%,
+      transparent 70%,
+      transparent 100%
+    );
+  }
+  .switch-flash.playing {
+    animation: flash-sweep 0.35s ease-out both;
+  }
+  @keyframes flash-sweep {
+    0%   { opacity: 0; background-position: -100% 0; }
+    20%  { opacity: 1; }
+    60%  { opacity: 0.6; }
+    100% { opacity: 0; background-position: 200% 0; }
   }
 
   /* ─── HUGE glowing name block (upper-left of hero area) ─ */
@@ -472,19 +561,152 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
       0 0 6px rgba(255, 157, 60, 0.55);
   }
 
-  /* ─── Compact stats chip (bottom-left corner) ────────── */
-  .hero-stats-chip {
+  /* ─── Bottom-left character info cluster ───────────────── */
+  .char-info-cluster {
     position: absolute;
     bottom: clamp(10px, 2vh, 24px);
     left: clamp(12px, 2vw, 28px);
     z-index: 5;
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    background: rgba(6, 4, 16, 0.78);
-    border: 1px solid rgba(255, 157, 60, 0.4);
-    padding: clamp(4px, 0.6vh, 8px) clamp(6px, 0.8vw, 10px);
-    box-shadow: 0 0 8px rgba(255, 90, 77, 0.1);
+    gap: 6px;
+    pointer-events: none;
+  }
+
+  /* ─── SKILL PANEL ────────────────────────────────────── */
+  .skill-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: rgba(6, 4, 16, 0.86);
+    border: 2px solid rgba(255, 157, 60, 0.65);
+    padding: clamp(6px, 0.9vh, 12px) clamp(8px, 1vw, 14px);
+    box-sizing: border-box;
+    clip-path: polygon(
+      0 8px, 8px 0,
+      calc(100% - 8px) 0, 100% 8px,
+      100% calc(100% - 8px), calc(100% - 8px) 100%,
+      8px 100%, 0 calc(100% - 8px)
+    );
+    box-shadow:
+      0 0 14px rgba(255, 157, 60, 0.25),
+      0 0 28px rgba(255, 90, 77, 0.12),
+      inset 0 0 12px rgba(6, 4, 16, 0.6);
+    filter: drop-shadow(0 0 6px var(--aura, #ff9d3c));
+    min-width: clamp(180px, 24vw, 300px);
+  }
+  .skill-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: clamp(5px, 0.7vh, 8px);
+  }
+  .skill-label-tag {
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(6px, 0.75vw, 8px);
+    letter-spacing: 3px;
+    color: #ff9d3c;
+    text-shadow: 0 0 6px rgba(255, 157, 60, 0.7);
+  }
+  .skill-key-hint {
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(5px, 0.6vw, 7px);
+    letter-spacing: 1px;
+    color: rgba(255, 207, 107, 0.6);
+    background: rgba(255, 157, 60, 0.1);
+    border: 1px solid rgba(255, 157, 60, 0.3);
+    padding: 1px 5px;
+    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  }
+  .skill-body {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: clamp(8px, 1.1vw, 14px);
+  }
+
+  /* Icon badge — radial aura glow + pulse */
+  .skill-icon-badge {
+    flex-shrink: 0;
+    width: clamp(46px, 5.5vw, 58px);
+    height: clamp(46px, 5.5vw, 58px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(
+      circle,
+      rgba(255, 157, 60, 0.2) 0%,
+      rgba(255, 90, 77, 0.1) 55%,
+      transparent 75%
+    );
+    border: 1px solid rgba(255, 157, 60, 0.5);
+    box-shadow:
+      0 0 10px rgba(255, 157, 60, 0.3),
+      inset 0 0 8px rgba(255, 90, 77, 0.15);
+    animation: skill-badge-pulse 2.4s ease-in-out infinite;
+    clip-path: polygon(
+      0 5px, 5px 0,
+      calc(100% - 5px) 0, 100% 5px,
+      100% calc(100% - 5px), calc(100% - 5px) 100%,
+      5px 100%, 0 calc(100% - 5px)
+    );
+  }
+  @keyframes skill-badge-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(255, 157, 60, 0.3), inset 0 0 8px rgba(255, 90, 77, 0.15);
+      filter: drop-shadow(0 0 4px var(--aura, #ff9d3c));
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(255, 157, 60, 0.55), inset 0 0 12px rgba(255, 90, 77, 0.25);
+      filter: drop-shadow(0 0 10px var(--aura, #ff9d3c));
+    }
+  }
+  .skill-icon-img {
+    width: 44px;
+    height: 44px;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+  }
+
+  /* Ability name + description */
+  .skill-text {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3px, 0.4vh, 5px);
+    min-width: 0;
+  }
+  .skill-name {
+    display: block;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(9px, 1.1vw, 13px);
+    letter-spacing: 2px;
+    color: #ffce6b;
+    text-shadow:
+      1px 1px 0 #0a0c14,
+      0 0 8px rgba(255, 206, 107, 0.7),
+      0 0 18px rgba(255, 157, 60, 0.4);
+    white-space: nowrap;
+  }
+  .skill-desc {
+    display: block;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(5px, 0.62vw, 7px);
+    letter-spacing: 0.5px;
+    color: rgba(255, 215, 168, 0.7);
+    line-height: 1.6;
+    text-shadow: 1px 1px 0 rgba(10, 12, 20, 0.9);
+  }
+
+  /* ─── Compact stats chip (bottom of cluster) ────────── */
+  .hero-stats-chip {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 3px 10px;
+    background: rgba(6, 4, 16, 0.72);
+    border: 1px solid rgba(255, 157, 60, 0.3);
+    padding: clamp(3px, 0.4vh, 6px) clamp(5px, 0.7vw, 9px);
+    box-shadow: 0 0 6px rgba(255, 90, 77, 0.08);
   }
   .chip-row {
     display: flex;
@@ -818,6 +1040,14 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
         item.classList.toggle('is-selected', item.dataset.char === id);
       }
     });
+
+    // Re-trigger flash-sweep diagonal amber overlay
+    const flashEl = document.getElementById('switch-flash');
+    if (flashEl) {
+      flashEl.classList.remove('playing');
+      void flashEl.offsetWidth; // force reflow so animation replays
+      flashEl.classList.add('playing');
+    }
   }
 
   // ── Start game ───────────────────────────────────────────
