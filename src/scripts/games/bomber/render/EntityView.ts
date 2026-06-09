@@ -199,12 +199,12 @@ export class EntityView {
     const isInvuln     = p.invulnMs > 0;
     const blinkVisible = !isInvuln || Math.sin(this.blinkPhase) > 0;
 
-    // Walk-cycle: advance accumulator while moving, reset when idle
+    // Walk-cycle: advance the phase continuously while moving (do NOT reset on
+    // the brief idle moment between tiles, or the cycle never reaches the 2nd
+    // step). Kept bounded by the cycle length. Idle shows the standing frame.
     const moving = p.moveCooldownMs > 0;
     if (moving) {
-      this.playerWalkMs += dtMs;
-    } else {
-      this.playerWalkMs = 0;
+      this.playerWalkMs = (this.playerWalkMs + dtMs) % (130 * 4);
     }
     // Ping-pong: step-A → stand → step-B → stand (each 130 ms)
     const step = moving
