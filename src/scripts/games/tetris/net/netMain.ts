@@ -237,12 +237,17 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
     async function reportRanked(winnerSide: Side): Promise<void> {
       if (!(identity.ranked && oppRanked && identity.signMessage)) return;
       const winnerId = winnerSide === localSide ? identity.id : oppId;
+      const aId = localSide === 'A' ? identity.id : oppId;
+      const bId = localSide === 'A' ? oppId : identity.id;
       try {
         const sig = await identity.signMessage(buildResultMessage(matchId, identity.id, oppId, winnerId));
         const res = await fetch('/api/match', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ matchId, reporter: identity.id, opponent: oppId, winner: winnerId, signature: sig }),
+          body: JSON.stringify({
+            matchId, reporter: identity.id, opponent: oppId, winner: winnerId, signature: sig,
+            aId, bId, replay: lockstep.getReplay(),
+          }),
         });
         const { status } = (await res.json()) as { status: string };
         banner.text += status === 'settled' ? '\nRANKED ✓' : status === 'pending' ? '\n等對手確認…' : '';
