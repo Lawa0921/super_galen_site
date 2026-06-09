@@ -30,6 +30,14 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   { key: 'fireRange',  label: '火力', icon: 'ic-fire' },
   { key: 'speedLevel', label: '速度', icon: 'ic-speed' },
 ];
+
+// Per-character cinematic metadata
+const heroMeta: Record<string, { rom: string; epithet: string; aura: string; elem: string }> = {
+  lena: { rom: 'LENA', epithet: 'THE DEMOLITION ACE', aura: '#ff9d3c', elem: 'ic-bomb' },
+  mira: { rom: 'MIRA', epithet: 'THE BOMB-WITCH',     aura: '#ff5a4d', elem: 'ic-fire' },
+  aya:  { rom: 'AYA',  epithet: 'THE SWIFT SHADOW',   aura: '#36e0c0', elem: 'ic-speed' },
+  rosa: { rom: 'ROSA', epithet: 'THE IRON CAPTAIN',   aura: '#6b9fd0', elem: 'ic-life' },
+};
 ---
 
 <BaseLayout
@@ -56,6 +64,10 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
       <!-- CRT scanline + vignette overlay -->
       <div class="crt-overlay" aria-hidden="true"></div>
 
+      <!-- Decorative hanging chains (top corners) -->
+      <div class="chain chain--left" aria-hidden="true"></div>
+      <div class="chain chain--right" aria-hidden="true"></div>
+
       <!-- Outer arcade bezel frame corners -->
       <div class="bezel-corner bezel-corner--tl" aria-hidden="true"></div>
       <div class="bezel-corner bezel-corner--tr" aria-hidden="true"></div>
@@ -65,7 +77,6 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
       <!-- Title bar (full width, top) -->
       <div class="ms-header">
         <h2 class="ms-title">SELECT YOUR BOMBER</h2>
-        <p class="ms-subtitle">▶ PRESS START</p>
       </div>
 
       <!-- ── Main Stage Area ── -->
@@ -76,13 +87,18 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
           {chars.map((profile, idx) => {
             const id = profile.id;
             const role = roleLabels[id] ?? '';
+            const meta = heroMeta[id];
             return (
               <div
                 class={`hero-panel${idx === 0 ? ' is-active' : ''}`}
                 data-char-panel={id}
+                style={`--aura:${meta.aura}`}
               >
-                <!-- Warm radial spotlight behind standee -->
-                <div class="hero-spotlight" aria-hidden="true"></div>
+                <!-- Strong spotlight cone from top -->
+                <div class="hero-spotlight-cone" aria-hidden="true"></div>
+
+                <!-- Radial aura glow behind character -->
+                <div class="hero-aura" aria-hidden="true"></div>
 
                 <!-- Full-body standee on the flame pedestal -->
                 <img
@@ -95,43 +111,52 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
                 <!-- Pulsing flame glow ellipse at feet (pedestal glow) -->
                 <div class="hero-flame-glow" aria-hidden="true"></div>
 
-                <!-- Name + role label -->
-                <div class="hero-nameplate">
-                  <div class="hero-name">{profile.name}</div>
-                  <div class="hero-role">{role}</div>
+                <!-- P1 badge on pedestal -->
+                <div class="hero-p1-plate" aria-hidden="true">P1</div>
+
+                <!-- Rising ember particles (12 total) -->
+                <div class="embers" aria-hidden="true">
+                  <span class="ember ember-1"></span>
+                  <span class="ember ember-2"></span>
+                  <span class="ember ember-3"></span>
+                  <span class="ember ember-4"></span>
+                  <span class="ember ember-5"></span>
+                  <span class="ember ember-6"></span>
+                  <span class="ember ember-7"></span>
+                  <span class="ember ember-8"></span>
+                  <span class="ember ember-9"></span>
+                  <span class="ember ember-10"></span>
+                  <span class="ember ember-11"></span>
+                  <span class="ember ember-12"></span>
                 </div>
 
-                <!-- Stat gauges panel -->
-                <div class="hero-stats">
+                <!-- Huge glowing name block (upper area) -->
+                <div class="hero-name-block">
+                  <div class="hero-rom">{meta.rom}</div>
+                  <div class="hero-name-cn">{profile.name}</div>
+                  <div class="hero-epithet">{meta.epithet}</div>
+                </div>
+
+                <!-- Compact stats chip (bottom-left) -->
+                <div class="hero-stats-chip">
                   {statRows.map(({ key, label, icon }) => {
                     const startVal = profile.start[key];
                     const capVal   = profile.caps[key];
-                    const max      = barMax[key];
-                    const pips = Array.from({ length: max }, (_, i) => {
-                      if (i < startVal) return 'solid';
-                      if (i < capVal)   return 'growth';
-                      return 'empty';
-                    });
                     return (
-                      <div class="stat-row">
+                      <div class="chip-row">
                         <img
-                          class="stat-icon"
+                          class="chip-icon"
                           src={`/assets/games/bomber/ui/${icon}.png`}
                           alt={label}
                           title={label}
-                          width="18"
-                          height="18"
+                          width="12"
+                          height="12"
                           style="image-rendering:pixelated"
                         />
-                        <div class="stat-pips">
-                          {pips.map((kind) => (
-                            <span class={`pip pip--${kind}`}></span>
-                          ))}
-                        </div>
-                        <span class="stat-val">
-                          <span class="stat-num">{startVal}</span>
-                          <span class="arrow">→</span>
-                          <span class="stat-num stat-num--cap">{capVal}</span>
+                        <span class="chip-val">
+                          <span class="chip-num">{startVal}</span>
+                          <span class="chip-arrow">→</span>
+                          <span class="chip-num chip-num--cap">{capVal}</span>
                         </span>
                       </div>
                     );
@@ -142,29 +167,43 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
           })}
         </div>
 
-        <!-- Roster panel (right column) -->
+        <!-- Roster panel (right column) — tall framed face-portrait boxes -->
         <div class="roster">
           <div class="roster-label" aria-hidden="true">ROSTER</div>
           {chars.map((profile, idx) => {
             const id = profile.id;
-            const role = roleLabels[id] ?? '';
+            const meta = heroMeta[id];
             return (
               <button
                 class={`roster-item${idx === 0 ? ' is-selected' : ''}`}
                 data-char={id}
                 type="button"
               >
-                <img
-                  src={`/assets/games/bomber/portraits/${id}-full.png`}
-                  alt={profile.name}
-                  class="roster-thumb"
-                  style="image-rendering:pixelated"
-                />
+                <!-- ► cursor arrow for selected state -->
+                <span class="roster-cursor" aria-hidden="true">▶</span>
+                <!-- Face portrait box -->
+                <div class="roster-face-frame">
+                  <img
+                    src={`/assets/games/bomber/portraits/${id}-face.png`}
+                    alt={profile.name}
+                    class="roster-face"
+                    width="52"
+                    height="52"
+                    style="image-rendering:pixelated"
+                  />
+                </div>
                 <div class="roster-info">
                   <span class="roster-name">{profile.name}</span>
-                  <span class="roster-role">{role}</span>
+                  <span class="roster-meta">{meta.rom}</span>
                 </div>
-                <div class="roster-sel-bar" aria-hidden="true"></div>
+                <img
+                  src={`/assets/games/bomber/ui/${meta.elem}.png`}
+                  alt=""
+                  class="roster-elem-icon"
+                  width="20"
+                  height="20"
+                  style="image-rendering:pixelated"
+                />
               </button>
             );
           })}
@@ -176,6 +215,12 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
         </div>
 
       </div><!-- /stage-area -->
+
+      <!-- Bottom PRESS START prompt (also clickable) -->
+      <button class="press-start-prompt" data-action="start" type="button">
+        ▶ PRESS 'START' TO SELECT
+      </button>
+
     </div><!-- /mode-select -->
 
     <div class="bomber-over" id="bomber-over" hidden>
@@ -209,7 +254,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     position: absolute;
     top: 18px;
     left: 20px;
-    z-index: 30;
+    z-index: 55;
     font-family: 'Press Start 2P', Consolas, monospace;
     font-size: 11px;
     letter-spacing: 1px;
@@ -246,7 +291,6 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     flex-direction: column;
     align-items: stretch;
     font-family: 'Press Start 2P', Consolas, monospace;
-    /* Hero-bg: dungeon stage with flame pedestal spotlight */
     background:
       url('/assets/games/bomber/ui/hero-bg.png') center / cover no-repeat;
     image-rendering: pixelated;
@@ -267,14 +311,14 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
         to bottom,
         rgba(0, 0, 0, 0) 0px,
         rgba(0, 0, 0, 0) 2px,
-        rgba(0, 0, 0, 0.15) 2px,
-        rgba(0, 0, 0, 0.15) 3px
+        rgba(0, 0, 0, 0.13) 2px,
+        rgba(0, 0, 0, 0.13) 3px
       ),
       radial-gradient(
         ellipse 92% 82% at 50% 50%,
         rgba(0, 0, 0, 0) 25%,
-        rgba(4, 5, 14, 0.42) 65%,
-        rgba(4, 5, 14, 0.72) 100%
+        rgba(4, 5, 14, 0.38) 65%,
+        rgba(4, 5, 14, 0.68) 100%
       );
     animation: crt-flicker 5s steps(1) infinite;
   }
@@ -282,6 +326,46 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     0%,  94%, 96%, 100% { opacity: 1; }
     95% { opacity: 0.91; }
   }
+
+  /* ─── Hanging chains (top corners) ──────────────────── */
+  .chain {
+    position: absolute;
+    top: 0;
+    width: 14px;
+    height: clamp(60px, 12vh, 110px);
+    pointer-events: none;
+    z-index: 48;
+    background: repeating-linear-gradient(
+      to bottom,
+      #2a1f0e 0px,
+      #2a1f0e 5px,
+      transparent 5px,
+      transparent 7px,
+      #3a2a10 7px,
+      #3a2a10 12px,
+      transparent 12px,
+      transparent 14px
+    );
+    opacity: 0.85;
+  }
+  .chain::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 100%;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 157, 60, 0.12) 0px,
+      rgba(255, 157, 60, 0.12) 1px,
+      transparent 1px,
+      transparent 14px
+    );
+  }
+  .chain--left  { left: clamp(18px, 3vw, 40px); }
+  .chain--right { right: clamp(18px, 3vw, 40px); }
 
   /* ─── Bezel corner accents ───────────────────────────── */
   .bezel-corner {
@@ -304,40 +388,29 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     position: relative;
     z-index: 10;
     text-align: center;
-    padding-top: clamp(10px, 1.8vh, 22px);
-    padding-bottom: clamp(4px, 0.8vh, 12px);
-    border-bottom: 3px solid rgba(255, 157, 60, 0.55);
+    padding-top: clamp(8px, 1.4vh, 16px);
+    padding-bottom: clamp(4px, 0.6vh, 10px);
+    border-bottom: 2px solid rgba(255, 157, 60, 0.45);
     width: 100%;
     background: linear-gradient(
       to bottom,
-      rgba(4, 5, 14, 0.92) 0%,
-      rgba(4, 5, 14, 0.3) 100%
+      rgba(4, 5, 14, 0.88) 0%,
+      rgba(4, 5, 14, 0.2) 100%
     );
-    box-shadow: 0 3px 18px rgba(255, 157, 60, 0.22);
+    box-shadow: 0 3px 18px rgba(255, 157, 60, 0.18);
     flex-shrink: 0;
   }
   .ms-title {
     margin: 0;
-    font-size: clamp(14px, 2.6vw, 30px);
+    font-size: clamp(12px, 2.2vw, 24px);
     letter-spacing: clamp(3px, 0.7vw, 7px);
     color: #fff2e6;
     text-shadow:
-      4px 4px 0 #0a0c14,
-      -2px -2px 0 #0a0c14,
-      0 0 10px rgba(255, 157, 60, 1),
-      0 0 28px rgba(255, 157, 60, 0.7),
-      0 0 60px rgba(255, 90, 77, 0.4);
-  }
-  .ms-subtitle {
-    margin: clamp(4px, 0.6vh, 8px) 0 0;
-    font-size: clamp(7px, 1vw, 9px);
-    letter-spacing: 2px;
-    color: #ff9d3c;
-    animation: blink-press 1s steps(1) infinite;
-  }
-  @keyframes blink-press {
-    0%, 49% { opacity: 1; }
-    50%, 100% { opacity: 0; }
+      3px 3px 0 #0a0c14,
+      -1px -1px 0 #0a0c14,
+      0 0 10px rgba(255, 157, 60, 0.9),
+      0 0 28px rgba(255, 157, 60, 0.6),
+      0 0 55px rgba(255, 90, 77, 0.35);
   }
 
   /* ─── Stage area: hero stage (left) + roster (right) ─── */
@@ -348,11 +421,10 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     min-height: 0;
     position: relative;
     z-index: 5;
-    /* Semi-transparent dark layer over hero-bg for the whole stage area */
-    background: rgba(4, 5, 14, 0.25);
+    background: rgba(4, 5, 14, 0.18);
   }
 
-  /* ─── Hero stage panel (left/center, ~72% width) ─────── */
+  /* ─── Hero stage panel (left/center, ~73% width) ─────── */
   .hero-stage {
     flex: 1 1 auto;
     min-width: 0;
@@ -365,54 +437,78 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     display: none;
     position: absolute;
     inset: 0;
-    flex-direction: column;
     align-items: flex-start;
     justify-content: flex-end;
-    padding: clamp(12px, 2vh, 28px) clamp(12px, 2vw, 32px);
     box-sizing: border-box;
   }
   .hero-panel.is-active {
-    display: flex;
+    display: block;
   }
 
-  /* Radial spotlight behind standee upper body */
-  .hero-spotlight {
+  /* ─── Spotlight cone from top ────────────────────────── */
+  .hero-spotlight-cone {
     position: absolute;
-    /* Spotlight originates from the left-of-center column (pedestal area) */
-    left: 12%;
-    top: -5%;
-    width: 58%;
-    height: 90%;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+    width: 60%;
+    height: 100%;
+    background: conic-gradient(
+      from 270deg at 50% -20%,
+      transparent 0deg,
+      rgba(255, 220, 150, 0.22) 14deg,
+      rgba(255, 200, 100, 0.32) 30deg,
+      rgba(255, 200, 100, 0.32) 32deg,
+      rgba(255, 220, 150, 0.22) 48deg,
+      transparent 62deg
+    );
+    pointer-events: none;
+    z-index: 1;
+    animation: spotlight-breathe 3.4s ease-in-out infinite;
+  }
+  @keyframes spotlight-breathe {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+
+  /* ─── Per-character aura radial glow ────────────────── */
+  .hero-aura {
+    position: absolute;
+    left: 38%;
+    transform: translateX(-50%);
+    top: 8%;
+    width: 52%;
+    height: 75%;
     background: radial-gradient(
-      ellipse 55% 65% at 46% 42%,
-      rgba(255, 210, 130, 0.18) 0%,
-      rgba(255, 157, 60, 0.10) 40%,
+      ellipse 60% 70% at 50% 48%,
+      color-mix(in srgb, var(--aura) 28%, transparent) 0%,
+      color-mix(in srgb, var(--aura) 14%, transparent) 35%,
+      color-mix(in srgb, var(--aura) 5%, transparent) 60%,
       transparent 100%
     );
     pointer-events: none;
     z-index: 1;
-    animation: spotlight-breathe 3.2s ease-in-out infinite;
+    animation: aura-pulse 2.6s ease-in-out infinite;
   }
-  @keyframes spotlight-breathe {
-    0%, 100% { opacity: 0.75; }
-    50% { opacity: 1; }
+  @keyframes aura-pulse {
+    0%, 100% { opacity: 0.65; transform: translateX(-50%) scale(1); }
+    50%       { opacity: 1;    transform: translateX(-50%) scale(1.07); }
   }
 
   /* Full-body standee — stands on the pedestal */
   .hero-standee {
-    /* Left-of-center, anchored to bottom */
     position: absolute;
     left: 38%;
     transform: translateX(-50%);
-    bottom: clamp(60px, 14vh, 140px);
-    height: clamp(260px, 56vh, 560px);
+    bottom: clamp(70px, 15vh, 150px);
+    height: clamp(240px, 52vh, 520px);
     width: auto;
     object-fit: contain;
     z-index: 3;
     filter:
-      drop-shadow(0 6px 24px rgba(0, 0, 0, 0.9))
-      drop-shadow(0 0 10px rgba(255, 157, 60, 0.45))
-      drop-shadow(0 0 28px rgba(255, 90, 77, 0.25));
+      drop-shadow(0 8px 28px rgba(0, 0, 0, 0.95))
+      drop-shadow(0 0 12px color-mix(in srgb, var(--aura) 50%, transparent))
+      drop-shadow(0 0 32px color-mix(in srgb, var(--aura) 25%, transparent));
     animation: idle-bob 2.2s ease-in-out infinite;
   }
   @keyframes idle-bob {
@@ -420,184 +516,262 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     50%       { transform: translateX(-50%) translateY(-6px); }
   }
 
-  /* Pulsing flame-glow ellipse at feet (enhances pedestal flames in bg) */
+  /* Pulsing flame-glow ellipse at feet (pedestal flames) */
   .hero-flame-glow {
     position: absolute;
     left: 38%;
     transform: translateX(-50%);
-    bottom: clamp(55px, 12vh, 120px);
-    width: clamp(100px, 18vw, 220px);
-    height: clamp(20px, 4vh, 48px);
+    bottom: clamp(62px, 13vh, 128px);
+    width: clamp(120px, 22vw, 260px);
+    height: clamp(24px, 5vh, 58px);
     background: radial-gradient(
       ellipse at 50% 100%,
-      rgba(255, 100, 30, 0.75) 0%,
-      rgba(255, 157, 60, 0.45) 40%,
-      rgba(255, 90, 77, 0.15) 70%,
+      color-mix(in srgb, var(--aura) 90%, #ff6400) 0%,
+      rgba(255, 157, 60, 0.55) 35%,
+      rgba(255, 90, 77, 0.2) 65%,
       transparent 100%
     );
     border-radius: 50%;
     pointer-events: none;
     z-index: 2;
-    animation: flame-pulse 1.6s ease-in-out infinite;
+    animation: flame-pulse 1.5s ease-in-out infinite;
   }
   @keyframes flame-pulse {
-    0%, 100% { opacity: 0.7; transform: translateX(-50%) scaleX(1); }
-    50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.18); }
+    0%, 100% { opacity: 0.75; transform: translateX(-50%) scaleX(1); }
+    50%       { opacity: 1;    transform: translateX(-50%) scaleX(1.22); }
   }
 
-  /* Name + role below standee — bottom-left area of hero stage */
-  .hero-nameplate {
-    position: relative;
-    z-index: 4;
-    padding: clamp(6px, 1vh, 12px) clamp(10px, 1.5vw, 20px);
-    background: rgba(6, 4, 16, 0.88);
-    border: 2px solid rgba(255, 157, 60, 0.8);
-    clip-path: polygon(
-      0 8px, 8px 0,
-      calc(100% - 8px) 0, 100% 8px,
-      100% calc(100% - 6px), calc(100% - 6px) 100%,
-      6px 100%, 0 calc(100% - 8px)
-    );
-    box-shadow: 0 0 18px rgba(255, 157, 60, 0.32);
-    margin-bottom: clamp(6px, 1vh, 14px);
-  }
-  .hero-name {
-    font-size: clamp(16px, 2.4vw, 28px);
+  /* P1 plate at pedestal front */
+  .hero-p1-plate {
+    position: absolute;
+    left: 38%;
+    transform: translateX(-50%);
+    bottom: clamp(46px, 9vh, 96px);
+    padding: 3px 10px 2px;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(8px, 1.1vw, 11px);
     letter-spacing: 3px;
-    color: #fff2e6;
-    text-shadow:
-      2px 2px 0 #0a0c14,
-      0 0 8px rgba(255, 157, 60, 0.9),
-      0 0 22px rgba(255, 157, 60, 0.5);
-  }
-  .hero-role {
-    margin-top: 4px;
-    font-size: clamp(7px, 0.95vw, 9px);
-    letter-spacing: 1.5px;
-    color: #c98f6a;
+    color: #ffd23f;
+    background: rgba(6, 4, 16, 0.82);
+    border: 2px solid #ff9d3c;
+    box-shadow:
+      0 0 8px rgba(255, 157, 60, 0.6),
+      0 0 20px rgba(255, 157, 60, 0.25),
+      inset 0 0 6px rgba(255, 100, 20, 0.12);
+    pointer-events: none;
+    z-index: 4;
+    text-shadow: 1px 1px 0 #0a0c14, 0 0 6px rgba(255, 210, 63, 0.7);
   }
 
-  /* Stat gauges — below nameplate, in opaque dark panel */
-  .hero-stats {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(4px, 0.7vh, 8px);
-    position: relative;
+  /* ─── Rising ember particles ─────────────────────────── */
+  .embers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
     z-index: 4;
-    background: rgba(6, 4, 16, 0.82);
-    border: 2px solid rgba(255, 157, 60, 0.45);
-    border-radius: 0;
-    padding: clamp(6px, 1vh, 12px) clamp(8px, 1.2vw, 16px);
-    box-shadow: 0 0 12px rgba(255, 90, 77, 0.12);
-  }
-  .stat-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .stat-icon {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
-  }
-  .stat-pips {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    flex-wrap: nowrap;
     overflow: hidden;
   }
-  .pip {
-    display: inline-block;
-    width: clamp(7px, 1.2vw, 14px);
-    height: clamp(7px, 1.2vh, 12px);
-    border-radius: 2px;
+  .ember {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--aura);
+    box-shadow: 0 0 4px var(--aura), 0 0 8px rgba(255, 157, 60, 0.6);
+    animation: ember-rise linear infinite;
+    opacity: 0;
+  }
+  @keyframes ember-rise {
+    0%   { opacity: 0;    transform: translateY(0)     scale(1);    }
+    15%  { opacity: 0.85; transform: translateY(-8px)  scale(1.1);  }
+    80%  { opacity: 0.4;  transform: translateY(-55px) scale(0.7);  }
+    100% { opacity: 0;    transform: translateY(-80px) scale(0.3);  }
+  }
+  /* ember 1-12: staggered positions + delays around pedestal base */
+  .ember-1  { width:4px; height:4px; left:28%; bottom:17%; animation-duration:2.8s; animation-delay:0s;    }
+  .ember-2  { width:3px; height:3px; left:33%; bottom:19%; animation-duration:3.2s; animation-delay:0.4s;  }
+  .ember-3  { width:5px; height:5px; left:37%; bottom:16%; animation-duration:2.5s; animation-delay:0.9s;  }
+  .ember-4  { width:3px; height:3px; left:42%; bottom:18%; animation-duration:3.0s; animation-delay:1.3s;  }
+  .ember-5  { width:4px; height:4px; left:46%; bottom:17%; animation-duration:2.7s; animation-delay:0.2s;  }
+  .ember-6  { width:3px; height:3px; left:50%; bottom:19%; animation-duration:3.4s; animation-delay:1.7s;  }
+  .ember-7  { width:5px; height:5px; left:30%; bottom:22%; animation-duration:2.9s; animation-delay:0.6s;  }
+  .ember-8  { width:3px; height:3px; left:35%; bottom:21%; animation-duration:3.1s; animation-delay:1.1s;  }
+  .ember-9  { width:4px; height:4px; left:44%; bottom:23%; animation-duration:2.6s; animation-delay:1.9s;  }
+  .ember-10 { width:3px; height:3px; left:48%; bottom:20%; animation-duration:3.3s; animation-delay:0.7s;  }
+  .ember-11 { width:4px; height:4px; left:25%; bottom:18%; animation-duration:2.8s; animation-delay:2.1s;  }
+  .ember-12 { width:3px; height:3px; left:53%; bottom:17%; animation-duration:3.0s; animation-delay:1.5s;  }
+
+  /* ─── HUGE glowing name block (upper-left of hero area) ─ */
+  .hero-name-block {
+    position: absolute;
+    top: clamp(14px, 3vh, 38px);
+    left: clamp(16px, 2.5vw, 36px);
+    z-index: 5;
+    pointer-events: none;
+  }
+  /* Big romanized name — THE HERO */
+  .hero-rom {
+    display: block;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(48px, 8vw, 112px);
+    line-height: 1;
+    letter-spacing: -1px;
+    color: #fff2e6;
+    text-shadow:
+      4px 4px 0 #0a0c14,
+      -2px -2px 0 #0a0c14,
+      2px -2px 0 #0a0c14,
+      -2px 2px 0 #0a0c14,
+      0 0 14px var(--aura),
+      0 0 32px var(--aura),
+      0 0 64px color-mix(in srgb, var(--aura) 60%, transparent),
+      0 0 100px color-mix(in srgb, var(--aura) 30%, transparent);
+    animation: name-glow-pulse 2.8s ease-in-out infinite;
+  }
+  @keyframes name-glow-pulse {
+    0%, 100% {
+      text-shadow:
+        4px 4px 0 #0a0c14,
+        -2px -2px 0 #0a0c14,
+        2px -2px 0 #0a0c14,
+        -2px 2px 0 #0a0c14,
+        0 0 14px var(--aura),
+        0 0 32px var(--aura),
+        0 0 64px color-mix(in srgb, var(--aura) 60%, transparent),
+        0 0 100px color-mix(in srgb, var(--aura) 30%, transparent);
+    }
+    50% {
+      text-shadow:
+        4px 4px 0 #0a0c14,
+        -2px -2px 0 #0a0c14,
+        2px -2px 0 #0a0c14,
+        -2px 2px 0 #0a0c14,
+        0 0 18px var(--aura),
+        0 0 42px var(--aura),
+        0 0 80px color-mix(in srgb, var(--aura) 75%, transparent),
+        0 0 130px color-mix(in srgb, var(--aura) 45%, transparent);
+    }
+  }
+  /* Chinese name — smaller, beside/under */
+  .hero-name-cn {
+    display: block;
+    margin-top: clamp(2px, 0.5vh, 6px);
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(11px, 1.6vw, 20px);
+    letter-spacing: 4px;
+    color: #ffd7a8;
+    text-shadow:
+      2px 2px 0 #0a0c14,
+      0 0 8px rgba(255, 157, 60, 0.7),
+      0 0 20px rgba(255, 157, 60, 0.35);
+  }
+  /* Epithet subtitle */
+  .hero-epithet {
+    display: block;
+    margin-top: clamp(4px, 0.8vh, 10px);
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(7px, 0.95vw, 10px);
+    letter-spacing: clamp(2px, 0.4vw, 5px);
+    color: #ff9d3c;
+    text-shadow:
+      1px 1px 0 #0a0c14,
+      0 0 6px rgba(255, 157, 60, 0.55);
+  }
+
+  /* ─── Compact stats chip (bottom-left corner) ────────── */
+  .hero-stats-chip {
+    position: absolute;
+    bottom: clamp(10px, 2vh, 24px);
+    left: clamp(12px, 2vw, 28px);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: rgba(6, 4, 16, 0.78);
+    border: 1px solid rgba(255, 157, 60, 0.4);
+    padding: clamp(4px, 0.6vh, 8px) clamp(6px, 0.8vw, 10px);
+    box-shadow: 0 0 8px rgba(255, 90, 77, 0.1);
+  }
+  .chip-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .chip-icon {
+    width: 12px;
+    height: 12px;
     flex-shrink: 0;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
   }
-  .pip--solid {
-    background: linear-gradient(180deg, #ffda6b 0%, #ff8c1a 100%);
-    box-shadow:
-      0 0 4px rgba(255, 157, 60, 0.9),
-      0 0 8px rgba(255, 157, 60, 0.5),
-      inset 0 1px 0 rgba(255, 255, 180, 0.4);
-    border: 1px solid rgba(255, 200, 60, 0.6);
-  }
-  .pip--growth {
-    background: rgba(255, 130, 40, 0.18);
-    border: 1px solid rgba(255, 157, 60, 0.45);
-    box-shadow: 0 0 3px rgba(255, 157, 60, 0.2);
-  }
-  .pip--empty {
-    background: rgba(10, 12, 20, 0.6);
-    border: 1px solid rgba(80, 60, 40, 0.4);
-  }
-  .stat-val {
-    flex-shrink: 0;
-    font-size: clamp(7px, 0.85vw, 9px);
+  .chip-val {
+    font-size: clamp(6px, 0.7vw, 8px);
     letter-spacing: 0;
     color: #ffd7a8;
-    text-align: right;
-    min-width: 34px;
   }
-  .stat-num { color: #ffd23f; }
-  .stat-num--cap { color: #ff9d3c; }
-  .arrow { color: #c98f6a; margin: 0 1px; }
+  .chip-num      { color: #ffd23f; }
+  .chip-num--cap { color: #ff9d3c; }
+  .chip-arrow    { color: #c98f6a; margin: 0 1px; }
 
-  /* ─── Roster panel (right column, ~28% width) ────────── */
+  /* ─── Roster panel (right column, ~27% width) ────────── */
   .roster {
-    flex: 0 0 clamp(160px, 26vw, 300px);
+    flex: 0 0 clamp(150px, 24vw, 280px);
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: clamp(4px, 0.6vh, 8px);
-    padding: clamp(8px, 1.4vh, 18px) clamp(8px, 1.2vw, 16px);
+    gap: clamp(4px, 0.7vh, 9px);
+    padding: clamp(10px, 1.6vh, 20px) clamp(10px, 1.4vw, 18px);
     box-sizing: border-box;
-    background: rgba(4, 5, 14, 0.76);
-    border-left: 3px solid rgba(255, 157, 60, 0.45);
-    box-shadow: inset 2px 0 24px rgba(0, 0, 0, 0.38);
+    /* Metallic/stone panel with amber border */
+    background: linear-gradient(
+      180deg,
+      rgba(6, 4, 18, 0.92) 0%,
+      rgba(8, 6, 22, 0.88) 100%
+    );
+    border-left: 3px solid #ff9d3c;
+    box-shadow:
+      inset 3px 0 24px rgba(0, 0, 0, 0.45),
+      -2px 0 16px rgba(255, 157, 60, 0.12);
     overflow-y: auto;
   }
 
   .roster-label {
-    font-size: clamp(7px, 0.9vw, 8px);
-    letter-spacing: 3px;
-    color: rgba(255, 157, 60, 0.5);
+    font-size: clamp(7px, 0.85vw, 8px);
+    letter-spacing: 4px;
+    color: rgba(255, 157, 60, 0.7);
     text-align: center;
-    padding-bottom: clamp(4px, 0.6vh, 8px);
-    border-bottom: 1px solid rgba(255, 157, 60, 0.25);
+    padding-bottom: clamp(5px, 0.8vh, 9px);
+    border-bottom: 2px solid rgba(255, 157, 60, 0.35);
     margin-bottom: clamp(2px, 0.4vh, 6px);
     flex-shrink: 0;
+    text-shadow: 0 0 6px rgba(255, 157, 60, 0.4);
   }
 
-  /* Individual roster item */
+  /* ─── Individual roster item (face box) ──────────────── */
   .roster-item {
     position: relative;
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: clamp(6px, 1vw, 10px);
-    padding: clamp(6px, 1vh, 10px) clamp(8px, 1vw, 12px);
-    background: rgba(8, 6, 18, 0.7);
-    border: 2px solid rgba(255, 157, 60, 0.3);
+    gap: clamp(6px, 0.9vw, 10px);
+    padding: clamp(5px, 0.8vh, 9px) clamp(6px, 0.9vw, 10px);
+    padding-left: clamp(16px, 2.2vw, 22px); /* room for cursor */
+    background: rgba(8, 6, 20, 0.72);
+    border: 2px solid rgba(255, 157, 60, 0.28);
     box-sizing: border-box;
     cursor: pointer;
     text-align: left;
     font-family: 'Press Start 2P', Consolas, monospace;
     transition:
-      border-color 0.14s ease,
-      background 0.14s ease,
-      transform 0.14s ease,
-      box-shadow 0.14s ease;
+      border-color 0.13s ease,
+      background 0.13s ease,
+      transform 0.13s ease,
+      box-shadow 0.13s ease;
     overflow: hidden;
     flex-shrink: 0;
   }
   .roster-item:hover {
-    border-color: rgba(255, 157, 60, 0.7);
-    background: rgba(255, 100, 30, 0.08);
-    transform: translateX(-3px);
-    box-shadow: 2px 0 14px rgba(255, 157, 60, 0.28);
+    border-color: rgba(255, 157, 60, 0.65);
+    background: rgba(255, 100, 30, 0.07);
+    transform: translateX(-2px);
+    box-shadow: 2px 0 12px rgba(255, 157, 60, 0.22);
   }
   .roster-item:focus-visible {
     outline: none;
@@ -606,53 +780,73 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   }
   .roster-item.is-selected {
     border-color: #ff9d3c;
-    background: rgba(255, 100, 20, 0.14);
-    transform: translateX(-4px) scale(1.02);
+    background: rgba(255, 100, 20, 0.16);
+    transform: translateX(-3px) scale(1.02);
     box-shadow:
-      3px 0 20px rgba(255, 157, 60, 0.55),
+      3px 0 22px rgba(255, 157, 60, 0.6),
       inset 0 0 16px rgba(255, 90, 30, 0.1);
   }
 
-  /* Left amber edge bar for selected state */
-  .roster-sel-bar {
+  /* ► cursor arrow — only visible when selected */
+  .roster-cursor {
     position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, #ffd23f, #ff5a4d);
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: clamp(7px, 0.9vw, 9px);
+    color: #ffd23f;
     opacity: 0;
-    transition: opacity 0.14s ease;
+    text-shadow: 0 0 6px rgba(255, 210, 63, 0.9);
+    animation: cursor-blink 0.7s steps(1) infinite;
+    pointer-events: none;
   }
-  .roster-item.is-selected .roster-sel-bar {
+  .roster-item.is-selected .roster-cursor {
     opacity: 1;
-    box-shadow: 0 0 8px rgba(255, 157, 60, 0.9);
+  }
+  @keyframes cursor-blink {
+    0%, 59% { opacity: 1; }
+    60%, 100% { opacity: 0; }
   }
 
-  /* Roster thumbnail (~64px tall) */
-  .roster-thumb {
-    height: clamp(44px, 8vh, 72px);
-    width: auto;
-    object-fit: contain;
+  /* Face portrait framed box */
+  .roster-face-frame {
+    width: clamp(40px, 6vw, 56px);
+    height: clamp(40px, 6vw, 56px);
     flex-shrink: 0;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.75));
-    transition: filter 0.14s ease;
+    border: 2px solid rgba(255, 157, 60, 0.45);
+    overflow: hidden;
+    background: rgba(4, 3, 12, 0.7);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+    transition: border-color 0.13s ease, box-shadow 0.13s ease;
   }
-  .roster-item.is-selected .roster-thumb {
-    filter:
-      drop-shadow(0 2px 8px rgba(0, 0, 0, 0.85))
-      drop-shadow(0 0 8px rgba(255, 157, 60, 0.6));
+  .roster-item.is-selected .roster-face-frame {
+    border-color: #ffd23f;
+    box-shadow:
+      0 0 10px rgba(255, 210, 63, 0.55),
+      inset 0 0 6px rgba(0, 0, 0, 0.5);
+  }
+  .roster-face {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: filter 0.13s ease;
+    filter: brightness(0.85);
+  }
+  .roster-item.is-selected .roster-face {
+    filter: brightness(1.05) drop-shadow(0 0 4px rgba(255, 157, 60, 0.5));
   }
 
-  /* Roster name + role text */
+  /* Roster name + rom text */
   .roster-info {
     display: flex;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+    flex: 1;
   }
   .roster-name {
-    font-size: clamp(9px, 1.1vw, 12px);
+    font-size: clamp(8px, 1vw, 11px);
     letter-spacing: 1px;
     color: #fff2e6;
     text-shadow: 1px 1px 0 #0a0c14;
@@ -662,22 +856,38 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   }
   .roster-item.is-selected .roster-name {
     color: #ffd23f;
-    text-shadow: 1px 1px 0 #0a0c14, 0 0 6px rgba(255, 210, 63, 0.7);
+    text-shadow: 1px 1px 0 #0a0c14, 0 0 6px rgba(255, 210, 63, 0.65);
   }
-  .roster-role {
-    font-size: clamp(6px, 0.7vw, 7px);
-    letter-spacing: 0.5px;
+  .roster-meta {
+    font-size: clamp(5px, 0.6vw, 7px);
+    letter-spacing: 1.5px;
     color: #c98f6a;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
+  /* Element icon (right side of roster item) */
+  .roster-elem-icon {
+    width: clamp(16px, 2.2vw, 22px);
+    height: clamp(16px, 2.2vw, 22px);
+    flex-shrink: 0;
+    opacity: 0.75;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7));
+    transition: opacity 0.13s ease;
+  }
+  .roster-item.is-selected .roster-elem-icon {
+    opacity: 1;
+    filter:
+      drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8))
+      drop-shadow(0 0 5px rgba(255, 157, 60, 0.55));
+  }
+
   /* START button (in roster panel) */
   .ms-btn {
-    padding: clamp(10px, 1.5vh, 16px) clamp(12px, 1.5vw, 22px);
+    padding: clamp(9px, 1.4vh, 14px) clamp(10px, 1.3vw, 18px);
     font-family: inherit;
-    font-size: clamp(9px, 1.1vw, 12px);
+    font-size: clamp(8px, 1vw, 11px);
     letter-spacing: 2px;
     color: #ffe9d6;
     background: rgba(8, 12, 22, 0.88);
@@ -690,8 +900,8 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
       6px 100%, 0 calc(100% - 6px)
     );
     box-shadow:
-      0 0 14px rgba(255, 157, 60, 0.45),
-      inset 0 0 12px rgba(255, 90, 77, 0.08);
+      0 0 14px rgba(255, 157, 60, 0.42),
+      inset 0 0 10px rgba(255, 90, 77, 0.07);
     cursor: pointer;
     transition:
       transform 0.15s ease,
@@ -702,16 +912,16 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     position: relative;
     z-index: 5;
     width: 100%;
-    text-shadow: 1px 1px 0 #0a0c14, 0 0 6px rgba(255, 157, 60, 0.6);
+    text-shadow: 1px 1px 0 #0a0c14, 0 0 6px rgba(255, 157, 60, 0.55);
   }
   .ms-btn:hover {
     transform: translateY(-3px) scale(1.04);
     color: #fff2e6;
     background: rgba(255, 90, 40, 0.18);
     box-shadow:
-      0 0 30px rgba(255, 157, 60, 0.85),
-      0 0 60px rgba(255, 90, 77, 0.5),
-      inset 0 0 14px rgba(255, 157, 60, 0.15);
+      0 0 28px rgba(255, 157, 60, 0.82),
+      0 0 56px rgba(255, 90, 77, 0.45),
+      inset 0 0 12px rgba(255, 157, 60, 0.13);
     text-shadow: 1px 1px 0 #0a0c14, 0 0 10px rgba(255, 200, 60, 1);
     border-color: #ff9d3c;
   }
@@ -721,6 +931,41 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   .roster-start {
     margin-top: auto;
     flex-shrink: 0;
+  }
+
+  /* ─── Bottom PRESS START prompt ─────────────────────── */
+  .press-start-prompt {
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+    display: block;
+    width: 100%;
+    padding: clamp(7px, 1.2vh, 12px) 0;
+    background: rgba(4, 5, 14, 0.82);
+    border: none;
+    border-top: 2px solid rgba(255, 157, 60, 0.35);
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(8px, 1.1vw, 11px);
+    letter-spacing: clamp(2px, 0.4vw, 5px);
+    color: #ffd23f;
+    text-align: center;
+    cursor: pointer;
+    text-shadow:
+      1px 1px 0 #0a0c14,
+      0 0 8px rgba(255, 210, 63, 0.7),
+      0 0 20px rgba(255, 157, 60, 0.45);
+    animation: blink-press 1s steps(1) infinite;
+    box-shadow: 0 -4px 18px rgba(255, 157, 60, 0.14);
+    transition: background 0.15s ease;
+  }
+  .press-start-prompt:hover {
+    background: rgba(255, 90, 40, 0.1);
+    animation-play-state: paused;
+    opacity: 1;
+  }
+  @keyframes blink-press {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.2; }
   }
 
   /* ─── Game Over overlay ──────────────────────────────── */
@@ -795,9 +1040,11 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     });
   });
 
-  // ── START button click ───────────────────────────────────
-  modeSelect?.querySelector<HTMLButtonElement>('[data-action="start"]')?.addEventListener('click', () => {
-    start(selected);
+  // ── START button click (roster panel + bottom prompt) ────
+  modeSelect?.querySelectorAll<HTMLButtonElement>('[data-action="start"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      start(selected);
+    });
   });
 
   // ── Keyboard navigation ──────────────────────────────────
