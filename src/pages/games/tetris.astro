@@ -59,6 +59,10 @@ const lang: Language = defaultLang;
             <p class="online-status" id="online-status"></p>
           </div>
         </div>
+        <p class="touch-notice" id="touch-notice" hidden>
+          本遊戲需用<strong>電腦鍵盤</strong>遊玩。<br />
+          手機／觸控裝置請改用桌機開啟；<br />你仍可切換上方分頁查看排行榜與個人檔案。
+        </p>
       </section>
 
       <section class="mm-panel" id="panel-leaderboard" hidden>
@@ -377,6 +381,20 @@ const lang: Language = defaultLang;
   #pause-quit::before { background-image: url('/assets/games/tetris/icons/exit.webp'); }
   .lb-empty-ico { width: 44px; height: 44px; display: inline-block; }
 
+  .touch-notice {
+    margin: 0;
+    padding: 16px 18px;
+    font-size: 11px;
+    line-height: 2;
+    text-align: center;
+    color: #cfe9ff;
+    background: rgba(255, 210, 63, 0.08);
+    border: 1px solid rgba(255, 210, 63, 0.5);
+    border-radius: 10px;
+  }
+  .touch-notice[hidden] { display: none; }
+  .touch-notice strong { color: #ffd23f; }
+
   @media (prefers-reduced-motion: reduce) {
     .mm-tab, .ms-btn, .tetris-back { transition: none; }
     .ms-btn:hover { transform: none; }
@@ -399,6 +417,14 @@ const lang: Language = defaultLang;
   const modeSelect = document.getElementById('mode-select');
   const onlinePanel = document.getElementById('online-panel');
   const statusEl = document.getElementById('online-status');
+  const touchNotice = document.getElementById('touch-notice');
+  // 觸控裝置（多半無實體鍵盤）→ 收掉遊玩入口、明講請用電腦；排行榜/檔案分頁仍可用
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  function showTouchNotice(): void {
+    if (modeSelect) modeSelect.hidden = true;
+    if (onlinePanel) onlinePanel.hidden = true;
+    if (touchNotice) touchNotice.hidden = false;
+  }
   let started = false;
   let gameHandle: { pause?(): void; resume?(): void } | null = null;
   let gameRunning = false;
@@ -456,6 +482,7 @@ const lang: Language = defaultLang;
   document.getElementById('pause-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
 
   function startSolo(): void {
+    if (isTouch) { showTouchNotice(); return; }
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
@@ -466,6 +493,7 @@ const lang: Language = defaultLang;
   }
 
   function startAiMode(diffRaw?: string | null): void {
+    if (isTouch) { showTouchNotice(); return; }
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
@@ -477,6 +505,7 @@ const lang: Language = defaultLang;
   }
 
   function showOnlinePanel(): void {
+    if (isTouch) { showTouchNotice(); return; }
     if (modeSelect) modeSelect.hidden = true;
     if (onlinePanel) onlinePanel.hidden = false;
   }
@@ -641,9 +670,13 @@ const lang: Language = defaultLang;
       el.hidden = !active;
     }
     if (name === 'play') {
-      // 還原模式選單：使用者可能先前點過「線上對戰」而隱藏了 SOLO/AI
-      if (modeSelect) modeSelect.hidden = false;
-      if (onlinePanel) onlinePanel.hidden = true;
+      if (isTouch) {
+        showTouchNotice();
+      } else {
+        // 還原模式選單：使用者可能先前點過「線上對戰」而隱藏了 SOLO/AI
+        if (modeSelect) modeSelect.hidden = false;
+        if (onlinePanel) onlinePanel.hidden = true;
+      }
     }
     if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }
     if (name === 'profile' && wallet) void loadProfile(wallet.address);
@@ -737,6 +770,8 @@ const lang: Language = defaultLang;
       stats.innerHTML = '<p class="profile-guest">檔案載入失敗</p>';
     }
   }
+
+  if (isTouch) showTouchNotice(); // 觸控裝置：PLAY 分頁直接顯示「請用電腦」提示
 
   const mode = params.get('mode');
   if (mode === 'solo') startSolo();
