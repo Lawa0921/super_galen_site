@@ -9,13 +9,19 @@ const TTL_SEC = 300; // 房間槽位 5 分鐘過期
 /**
  * 驗證槽位字串是否合法（與 signalClient.ts 的 isValidSlot 保持同一套規則）。
  * 1v1：offer / answer
- * N 人星狀：host-offer / guest-{0..6}-answer / host-ack-{0..6}
+ * N 人星狀（host-initiated，T9）：host-offer / guest-{0..6}-answer / host-ack-{0..6}
+ * N 人星狀（guest-initiated，T11）：guest-{0..6}-offer / host-ack-{0..6}
  */
 function isValidSlot(slot: string): boolean {
   if (slot === 'offer' || slot === 'answer' || slot === 'host-offer') return true;
-  const guestMatch = slot.match(/^guest-(\d+)-answer$/);
-  if (guestMatch) {
-    const idx = Number(guestMatch[1]);
+  const guestAnsMatch = slot.match(/^guest-(\d+)-answer$/);
+  if (guestAnsMatch) {
+    const idx = Number(guestAnsMatch[1]);
+    return idx >= 0 && idx <= 6;
+  }
+  const guestOfferMatch = slot.match(/^guest-(\d+)-offer$/);
+  if (guestOfferMatch) {
+    const idx = Number(guestOfferMatch[1]);
     return idx >= 0 && idx <= 6;
   }
   const ackMatch = slot.match(/^host-ack-(\d+)$/);

@@ -10,6 +10,7 @@ import type { FfaReplay } from './ffaReplay';
 import { FfaHubTransport, FfaSpokeTransport, type RelayChannel } from './ffaTransport';
 import { createRoom as realCreateRoom, putSlot as realPutSlot, getSlot as realGetSlot, pollSlot as realPollSlot } from './signalClient';
 import { buildFfaResultMessage } from './auth';
+import { WebRtcTransport } from './webrtcTransport';
 
 const SIM_DT = 1000 / 60;
 
@@ -276,6 +277,230 @@ export async function negotiateJoinFfa(opts: {
   };
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// guest-initiated 星狀握手（T11：真實 WebRTC 用此流程）
+//
+// 拓樸：guest 主動建 offer，host 各自回 answer。每對 host↔guest 各一條 PC。
+//   guest：createOffer → claim 最低空 guest-{idx}-offer → 等 host-ack-{idx}(=answer)
+//          → acceptAnswer → waitOpen → 透過 channel 收 ffa-init。
+//   host ：輪詢 guest-{0..maxGuests-1}-offer → createAnswer → 寫 host-ack-{idx}
+//          → waitOpen → 收齊後組裝 playerIds，透過各 channel 廣播 ffa-init。
+//
+// 與 T9 的 host-initiated 流程（negotiateHostFfa/negotiateJoinFfa）並存、互不干擾。
+// host-ack-{i} 在此流程承載「SDP answer」（而非 ffa-init）；ffa-init 改走 data channel。
+// ═════════════════════════════════════════════════════════════════════════
+
+/** Host 端對某 guest 的 RTC peer（guest-initiated：host 收 offer 回 answer）。 */
+export interface FfaHostAnswerPeer {
+  createAnswer(offer: string): Promise<string>;
+  waitOpen(): Promise<void>;
+  channel: RelayChannel & { onmessage?: ((raw: string) => void) | null };
+}
+
+/** Guest 端對 host 的 RTC peer（guest-initiated：guest 建 offer 收 answer）。 */
+export interface FfaGuestOfferPeer {
+  createOffer(): Promise<string>;
+  acceptAnswer(answer: string): Promise<void>;
+  waitOpen(): Promise<void>;
+  channel: RelayChannel & { onmessage?: ((raw: string) => void) | null };
+}
+
+/** guest 寫進 guest-{idx}-offer 的內容：自己的 id + RTC offer。 */
+interface GuestOfferMsg { id: string; offer: string }
+
+function parseGuestOffer(raw: string): GuestOfferMsg | null {
+  try {
+    const m = JSON.parse(raw) as Record<string, unknown>;
+    if (typeof m.id === 'string' && typeof m.offer === 'string') {
+      return { id: m.id, offer: m.offer };
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+/**
+ * Guest 認領最低未占用的 guest-{idx}-offer 槽位（寫入自己的 id+offer）。
+ *
+ * 已知限制（誠實揭露）：claim 為「讀-改-寫」非原子操作，兩名 guest 幾乎同時
+ * claim 同一空槽時可能 race（後者覆蓋前者）。e2e 以「依序加入」規避；生產環境
+ * 可接受小機率重連。回傳認領到的 slot index。
+ */
+export async function claimGuestSlot(
+  signal: FfaSignalClient,
+  room: string,
+  guestId: string,
+  offer: string,
+  maxGuests: number,
+): Promise<number> {
+  const slots = Math.min(Math.max(maxGuests, 1), 7);
+  for (let idx = 0; idx < slots; idx++) {
+    const existing = await signal.getSlot(room, `guest-${idx}-offer`);
+    if (existing) continue; // 已被占用，試下一個
+    await signal.putSlot(room, `guest-${idx}-offer`, JSON.stringify({ id: guestId, offer } as GuestOfferMsg));
+    return idx;
+  }
+  throw new Error('lobby full: no free guest slot');
+}
+
+export interface NegotiateHostGuestInitResult {
+  matchId: string;
+  seed: number;
+  /** host 在前、連上的 guest 依 slot index 升序。 */
+  playerIds: string[];
+  /** 每個連上 guest 的 host 端 peer（依 playerIds 中該 guest 的順序）。 */
+  guestPeers: FfaHostAnswerPeer[];
+  room: string;
+}
+
+/**
+ * Host 牽線（guest-initiated）：建房 → 輪詢 guest-{i}-offer → 對每個 offer
+ * createAnswer 並寫 host-ack-{i} → waitOpen → 收齊 expectedGuests → 組裝 playerIds。
+ *
+ * isCancelled 可選：每輪檢查，外部按「取消」時提早結束（回已連上的）。
+ * onGuest 可選：每連上一名 guest 回呼一次（UI 更新 lobby 人數）。
+ */
+export async function negotiateHostFfaGuestInit(opts: {
+  hostId: string;
+  maxGuests: number;
+  expectedGuests: number;
+  signal: FfaSignalClient;
+  peerFactory: () => FfaHostAnswerPeer;
+  pollOpts?: { timeoutMs?: number; intervalMs?: number };
+  isCancelled?: () => boolean;
+  onGuest?: (connectedCount: number) => void;
+}): Promise<NegotiateHostGuestInitResult> {
+  const { hostId, maxGuests, expectedGuests, signal, peerFactory } = opts;
+  if (expectedGuests < 1) {
+    throw new Error('FFA requires at least 2 players (host needs >= 1 guest)');
+  }
+  const slots = Math.min(Math.max(maxGuests, expectedGuests), 7);
+
+  const room = await signal.createRoom();
+  const seed = randInt();
+  const matchId = `${room}-${seed.toString(36)}`;
+
+  const connected = new Array<{ id: string; peer: FfaHostAnswerPeer } | undefined>(slots);
+  let count = 0;
+  const timeoutMs = opts.pollOpts?.timeoutMs ?? HANDSHAKE_TIMEOUT_MS;
+  const intervalMs = opts.pollOpts?.intervalMs ?? 600;
+  const deadline = Date.now() + timeoutMs;
+
+  // 反覆掃所有 slot，發現未處理的 offer 就回 answer 並連線，直到收齊或逾時。
+  while (count < expectedGuests && Date.now() < deadline) {
+    if (opts.isCancelled?.()) break;
+    let progressed = false;
+    for (let idx = 0; idx < slots; idx++) {
+      if (connected[idx]) continue;
+      const raw = await signal.getSlot(room, `guest-${idx}-offer`);
+      if (!raw) continue;
+      const parsed = parseGuestOffer(raw);
+      if (!parsed) continue;
+
+      const peer = peerFactory();
+      const answer = await peer.createAnswer(parsed.offer);
+      await signal.putSlot(room, `host-ack-${idx}`, answer);
+      await peer.waitOpen();
+      connected[idx] = { id: parsed.id, peer };
+      count++;
+      progressed = true;
+      opts.onGuest?.(count);
+      if (count >= expectedGuests) break;
+    }
+    if (count >= expectedGuests) break;
+    if (!progressed) {
+      if (intervalMs === 0) break; // 測試模式：不忙等
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+  }
+
+  if (count < 1) {
+    throw new Error('no guests connected');
+  }
+
+  const playerIds: string[] = [hostId];
+  const guestPeers: FfaHostAnswerPeer[] = [];
+  for (let idx = 0; idx < slots; idx++) {
+    const c = connected[idx];
+    if (!c) continue;
+    playerIds.push(c.id);
+    guestPeers.push(c.peer);
+  }
+
+  return { matchId, seed, playerIds, guestPeers, room };
+}
+
+export interface NegotiateJoinGuestInitResult {
+  localId: string;
+  slotIndex: number;
+  peer: FfaGuestOfferPeer;
+  room: string;
+}
+
+/**
+ * Guest 牽線（guest-initiated）：createOffer → claim 最低空 guest-{idx}-offer →
+ * 等 host-ack-{idx}(=answer) → acceptAnswer → waitOpen。
+ * seed/playerIds 不在此取得 —— 由 host 開局後透過 data channel 廣播 ffa-init。
+ */
+export async function negotiateJoinFfaGuestInit(opts: {
+  room: string;
+  guestId: string;
+  signal: FfaSignalClient;
+  peerFactory: () => FfaGuestOfferPeer;
+  maxGuests?: number;
+  pollOpts?: { timeoutMs?: number; intervalMs?: number };
+}): Promise<NegotiateJoinGuestInitResult> {
+  const { room, guestId, signal, peerFactory } = opts;
+  const peer = peerFactory();
+  const offer = await peer.createOffer();
+  const slotIndex = await claimGuestSlot(signal, room, guestId, offer, opts.maxGuests ?? 7);
+
+  const answer = await signal.pollSlot(room, `host-ack-${slotIndex}`, opts.pollOpts);
+  await peer.acceptAnswer(answer);
+  await peer.waitOpen();
+
+  return { localId: guestId, slotIndex, peer, room };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// RelayChannel 卡接：把 WebRtcTransport（send/onMessage/isOpen）包成 RelayChannel
+// ─────────────────────────────────────────────────────────────────────────
+
+/** WebRtcTransport 對外需要的最小形狀（供 wrapChannel；真實環境傳 WebRtcTransport 實例）。 */
+export interface ChannelBacking {
+  send(data: string): void;
+  onMessage(cb: (data: string) => void): void;
+  readonly isOpen: boolean;
+}
+
+/**
+ * 把一個 ChannelBacking（如 WebRtcTransport）包成 RelayChannel：
+ *  - send(raw) → backing.send(raw)
+ *  - open → backing.isOpen
+ *  - onmessage setter → 掛到 backing.onMessage（FfaHub/Spoke 會設定此 setter）
+ *
+ * 鐵則：onmessage 設定前到達的訊息進暫存佇列，設定當下立刻回放（保序）。
+ * 避免 channel 開啟與設定 onmessage 之間的空檔丟失早到的 ffa-init / 對手幀。
+ */
+export function wrapChannel(
+  backing: ChannelBacking,
+): RelayChannel & { onmessage: ((raw: string) => void) | null } {
+  let cb: ((raw: string) => void) | null = null;
+  const queue: string[] = [];
+  backing.onMessage((d) => {
+    if (cb) cb(d);
+    else queue.push(d);
+  });
+  return {
+    send: (raw: string) => backing.send(raw),
+    get open() { return backing.isOpen; },
+    get onmessage() { return cb; },
+    set onmessage(fn: ((raw: string) => void) | null) {
+      cb = fn;
+      if (fn) while (queue.length) fn(queue.shift()!);
+    },
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // onMessage 立即接管（避免開局丟幀）：包裝 transport，建 lockstep 前先暫存
 // ─────────────────────────────────────────────────────────────────────────
@@ -490,9 +715,10 @@ export function runFfaGame(opts: RunFfaOpts): void {
 // ─────────────────────────────────────────────────────────────────────────
 
 export interface FfaNetStatus {
-  phase: 'creating' | 'waiting' | 'connecting' | 'connected' | 'error';
+  phase: 'creating' | 'waiting' | 'lobby' | 'connecting' | 'connected' | 'error';
   room?: string;
   message?: string;
+  /** 目前已連上的 guest 數（host lobby 顯示「已加入 / 目標」）。 */
   connected?: number;
 }
 export type FfaStatusCb = (s: FfaNetStatus) => void;
@@ -503,38 +729,114 @@ export interface FfaIdentity {
   signMessage?: (msg: string) => Promise<string>;
 }
 
+/** 真實環境的 host 端 peer 工廠：每 guest 一條 WebRtcTransport，包成 FfaHostAnswerPeer。 */
+export function realHostAnswerPeerFactory(): FfaHostAnswerPeer {
+  const transport = new WebRtcTransport();
+  const channel = wrapChannel(transport);
+  return {
+    createAnswer: (offer: string) => transport.createAnswer(offer),
+    waitOpen: () => transport.waitOpen(),
+    channel,
+  };
+}
+
+/** 真實環境的 guest 端 peer 工廠：一條對 host 的 WebRtcTransport，包成 FfaGuestOfferPeer。 */
+export function realGuestOfferPeerFactory(): FfaGuestOfferPeer {
+  const transport = new WebRtcTransport();
+  const channel = wrapChannel(transport);
+  return {
+    createOffer: () => transport.createOffer(),
+    acceptAnswer: (answer: string) => transport.acceptAnswer(answer),
+    waitOpen: () => transport.waitOpen(),
+    channel,
+  };
+}
+
 /**
- * Host：建房 → 牽線多 guest → 廣播 ffa-init → 建 FfaHubTransport → runFfaGame。
- * peerFactory 預設未提供（真實 RTC peer 由呼叫端在接線時注入），保持本檔可在無 DOM 下被 import。
+ * Host（guest-initiated 真實 WebRTC）：
+ *  1. 建房，回報 room（lobby 顯示房號）。
+ *  2. 背景接受 guest（claim guest-{i}-offer → answer → waitOpen），每連上一名回報人數。
+ *  3. 等 waitStart()（lobby「開始」按鈕）resolve。
+ *  4. 組裝 playerIds，透過各 channel 廣播 ffa-init，建 FfaHubTransport → runFfaGame。
+ *
+ * peerFactory 預設真實 WebRtcTransport；測試可注入 stub。
  */
 export async function hostFfaGame(opts: {
   canvas: HTMLCanvasElement;
   identity: FfaIdentity;
   maxGuests: number;
-  expectedGuests: number;
-  peerFactory: () => FfaHostPeer;
+  /** lobby「開始」訊號：resolve 後 host 停止收人並開局。 */
+  waitStart: () => Promise<void>;
   onStatus: FfaStatusCb;
+  peerFactory?: () => FfaHostAnswerPeer;
   signal?: FfaSignalClient;
 }): Promise<void> {
   const signal = opts.signal ?? realSignalClient;
+  const peerFactory = opts.peerFactory ?? realHostAnswerPeerFactory;
+  const slots = Math.min(Math.max(opts.maxGuests, 1), 7);
   try {
     opts.onStatus({ phase: 'creating' });
-    const result = await negotiateHostFfa({
-      hostId: opts.identity.id,
-      maxGuests: opts.maxGuests,
-      expectedGuests: opts.expectedGuests,
-      signal,
-      peerFactory: opts.peerFactory,
-    });
-    opts.onStatus({ phase: 'connected', room: result.room, connected: result.guestPeers.length });
+    const room = await signal.createRoom();
+    const seed = randInt();
+    const matchId = `${room}-${seed.toString(36)}`;
+    opts.onStatus({ phase: 'lobby', room, connected: 0 });
 
-    const transport = new FfaHubTransport(result.guestPeers.map((p) => p.channel));
+    // 背景持續接受 guest，直到 start 訊號（即使收滿仍等房主按開始）。
+    const connected = new Array<{ id: string; peer: FfaHostAnswerPeer } | undefined>(slots);
+    let count = 0;
+    let started = false;
+    void opts.waitStart().then(() => { started = true; });
+
+    const deadline = Date.now() + HANDSHAKE_TIMEOUT_MS * 4; // lobby 可等久一點
+    while (!started && Date.now() < deadline) {
+      let progressed = false;
+      for (let idx = 0; idx < slots; idx++) {
+        if (connected[idx]) continue;
+        const raw = await signal.getSlot(room, `guest-${idx}-offer`);
+        if (!raw) continue;
+        const parsed = parseGuestOffer(raw);
+        if (!parsed) continue;
+        const peer = peerFactory();
+        const answer = await peer.createAnswer(parsed.offer);
+        await signal.putSlot(room, `host-ack-${idx}`, answer);
+        await peer.waitOpen();
+        connected[idx] = { id: parsed.id, peer };
+        count++;
+        progressed = true;
+        opts.onStatus({ phase: 'lobby', room, connected: count });
+        if (started || count >= slots) break;
+      }
+      if (started) break;
+      if (!progressed) await new Promise((r) => setTimeout(r, 500));
+    }
+
+    if (count < 1) throw new Error('no guests connected');
+
+    // 組裝 playerIds（host 在前、guest 依 slot index 升序）。
+    const playerIds: string[] = [opts.identity.id];
+    const channels: Array<RelayChannel & { onmessage?: ((raw: string) => void) | null }> = [];
+    for (let idx = 0; idx < slots; idx++) {
+      const c = connected[idx];
+      if (!c) continue;
+      playerIds.push(c.id);
+      channels.push(c.peer.channel);
+    }
+
+    // 透過各 channel 廣播 ffa-init（seed + 最終 playerIds + 該 guest 的 index）。
+    // channels[i] 對應 playerIds[i+1]（host 在 index 0），故 yourIndex = i+1。
+    for (let i = 0; i < channels.length; i++) {
+      channels[i].send(buildFfaInit({ seed, playerIds, yourIndex: i + 1 }));
+    }
+
+    opts.onStatus({ phase: 'connected', room, connected: count });
+
+    const transport = new FfaHubTransport(channels);
     runFfaGame({
       canvas: opts.canvas,
-      playerIds: result.playerIds,
+      playerIds,
       localId: opts.identity.id,
-      seed: result.seed,
-      matchId: result.matchId,
+      seed,
+      matchId,
       transport,
       signMessage: opts.identity.ranked ? opts.identity.signMessage : undefined,
     });
@@ -544,36 +846,70 @@ export async function hostFfaGame(opts: {
 }
 
 /**
- * Guest：用 roomCode 牽線 → 拿 ffa-init → 建 FfaSpokeTransport → runFfaGame。
+ * Guest（guest-initiated 真實 WebRTC）：
+ *  1. createOffer → claim guest-{idx}-offer → 等 host-ack-{idx}(=answer) → acceptAnswer → waitOpen。
+ *  2. 透過 data channel 等 host 廣播的 ffa-init（取 seed/playerIds/yourIndex）。
+ *  3. 建 FfaSpokeTransport → runFfaGame。
  */
 export async function joinFfaGame(opts: {
   canvas: HTMLCanvasElement;
   room: string;
   identity: FfaIdentity;
-  slotIndex: number;
-  peerFactory: () => FfaGuestPeer;
   onStatus: FfaStatusCb;
+  maxGuests?: number;
+  peerFactory?: () => FfaGuestOfferPeer;
   signal?: FfaSignalClient;
+  /** ffa-init 等待逾時（預設沿用握手逾時）。 */
+  initTimeoutMs?: number;
 }): Promise<void> {
   const signal = opts.signal ?? realSignalClient;
+  const peerFactory = opts.peerFactory ?? realGuestOfferPeerFactory;
   try {
     opts.onStatus({ phase: 'connecting', room: opts.room });
-    const result = await negotiateJoinFfa({
+    const result = await negotiateJoinFfaGuestInit({
       room: opts.room,
       guestId: opts.identity.id,
-      slotIndex: opts.slotIndex,
       signal,
-      peerFactory: opts.peerFactory,
+      peerFactory,
+      maxGuests: opts.maxGuests ?? 7,
     });
+    opts.onStatus({ phase: 'lobby', room: opts.room });
+
+    // channel 開後，先攔截 ffa-init（host 開局時第一筆廣播）。
+    // ffa-init 之後到達的對手幀先暫存，交給 FfaSpokeTransport 前回放，避免開局丟幀。
+    const ch = result.peer.channel;
+    const earlyFrames: string[] = [];
+    const initRaw = await withTimeout(
+      new Promise<string>((resolve) => {
+        let gotInit = false;
+        ch.onmessage = (raw: string) => {
+          if (!gotInit) {
+            const init = parseFfaInit(raw);
+            if (init) { gotInit = true; resolve(raw); return; }
+            return; // ffa-init 前的雜訊忽略（理論上不會有）
+          }
+          earlyFrames.push(raw); // ffa-init 後、接管前的對手幀先暫存
+        };
+      }),
+      opts.initTimeoutMs ?? HANDSHAKE_TIMEOUT_MS,
+      'ffa-init',
+    );
+    const init = parseFfaInit(initRaw)!;
+    const seed = init.seed;
+    const matchId = `${opts.room}-${seed.toString(36)}`;
+
     opts.onStatus({ phase: 'connected', room: opts.room });
 
-    const transport = new FfaSpokeTransport(result.peer.channel);
+    // FfaSpokeTransport 建構時會覆寫 ch.onmessage（接管收幀）；此後幀進 lockstep。
+    const transport = new FfaSpokeTransport(ch);
+    // 回放 ffa-init 之後、接管之前暫存的對手幀（保序）。
+    for (const raw of earlyFrames) ch.onmessage?.(raw);
     runFfaGame({
       canvas: opts.canvas,
-      playerIds: result.playerIds,
+      playerIds: init.playerIds,
       localId: opts.identity.id,
-      seed: result.seed,
-      matchId: result.matchId,
+      seed,
+      matchId,
       transport,
       signMessage: opts.identity.ranked ? opts.identity.signMessage : undefined,
     });

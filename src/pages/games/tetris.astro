@@ -51,6 +51,18 @@ const lang: Language = defaultLang;
           <div class="ms-buttons">
             <input id="online-name" class="online-input" maxlength="12" placeholder="暱稱（選填）" autocomplete="off" />
             <button class="ms-btn ms-wallet" id="online-wallet">連錢包打排名賽</button>
+            <div class="player-count" id="player-count" role="group" aria-label="玩家人數">
+              <span class="pc-label">人數</span>
+              <div class="pc-options" id="pc-options">
+                <button class="pc-btn is-active" type="button" data-count="2" aria-pressed="true">2</button>
+                <button class="pc-btn" type="button" data-count="3">3</button>
+                <button class="pc-btn" type="button" data-count="4">4</button>
+                <button class="pc-btn" type="button" data-count="5">5</button>
+                <button class="pc-btn" type="button" data-count="6">6</button>
+                <button class="pc-btn" type="button" data-count="7">7</button>
+                <button class="pc-btn" type="button" data-count="8">8</button>
+              </div>
+            </div>
             <button class="ms-btn ms-online" id="online-create">建立房間</button>
             <div class="online-join">
               <input id="online-room" class="online-input" maxlength="5" placeholder="房號" autocomplete="off" />
@@ -69,7 +81,9 @@ const lang: Language = defaultLang;
             <span class="lobby-code" id="lobby-code">·····</span>
             <button class="ms-btn lobby-copy" id="lobby-copy" type="button">複製</button>
           </div>
+          <p class="lobby-count" id="lobby-count" hidden>已加入 <strong id="lobby-joined">1</strong> / <span id="lobby-target">4</span> 人</p>
           <p class="lobby-wait" id="lobby-wait">等待對手加入…</p>
+          <button class="ms-btn ms-solo lobby-start" id="lobby-start" type="button" hidden>開始</button>
           <button class="ms-btn ms-hard" id="lobby-cancel" type="button">取消</button>
         </div>
       </section>
@@ -230,6 +244,48 @@ const lang: Language = defaultLang;
     line-height: 1.6;
     letter-spacing: 1px;
     color: #9fb4d8;
+  }
+
+  /* 玩家人數選擇（2–8，預設 4）*/
+  .player-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .pc-label {
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #6fa8d8;
+  }
+  .pc-options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .pc-btn {
+    width: 40px;
+    height: 40px;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 13px;
+    color: #9fcdf2;
+    background: rgba(8, 12, 22, 0.8);
+    border: 2px solid rgba(54, 230, 255, 0.45);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  }
+  .pc-btn:hover {
+    transform: translateY(-2px);
+    color: #eafdff;
+  }
+  .pc-btn.is-active {
+    color: #04060d;
+    background: #36e6ff;
+    border-color: #36e6ff;
+    box-shadow: 0 0 16px rgba(54, 230, 255, 0.7);
   }
 
   .main-menu {
@@ -418,6 +474,12 @@ const lang: Language = defaultLang;
   .lobby-wait { margin: 0; font-size: 11px; letter-spacing: 1px; color: #cfe9ff; }
   .lobby-wait.pending { animation: lobbyPulse 1.4s ease-in-out infinite; }
   @keyframes lobbyPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+  .lobby-count { margin: 0; font-size: 11px; letter-spacing: 1px; color: #9fcdf2; }
+  .lobby-count[hidden] { display: none; }
+  .lobby-count strong { color: #4dff88; font-size: 14px; }
+  .lobby-start { min-width: 180px; }
+  .lobby-start[hidden] { display: none; }
+  .lobby-start[disabled] { opacity: 0.4; cursor: not-allowed; }
 
   /* 線上 ESC：較淡背景（仍看得到盤面），非全暗暫停 */
   .pause-menu.is-online { background: rgba(4, 6, 13, 0.5); backdrop-filter: none; }
@@ -446,6 +508,7 @@ const lang: Language = defaultLang;
   import { startTetris } from '@scripts/games/tetris/render/main';
   import { startAi } from '@scripts/games/tetris/render/aiMain';
   import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
+  import { hostFfaGame, joinFfaGame, type FfaNetStatus, type FfaIdentity } from '@scripts/games/tetris/net/ffaNetMain';
 
   type Diff = 'easy' | 'normal' | 'hard';
   const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · MUTE M';
@@ -458,6 +521,22 @@ const lang: Language = defaultLang;
   const modeSelect = document.getElementById('mode-select');
   const onlinePanel = document.getElementById('online-panel');
   const statusEl = document.getElementById('online-status');
+
+  // 玩家人數選擇（2–8，預設 2）：N=2 走既有 1v1 路徑（零回歸），N≥3 走 FFA 星狀。
+  let playerCount = 2;
+  const pcButtons = Array.from(document.querySelectorAll<HTMLElement>('.pc-btn'));
+  pcButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const n = Number(btn.dataset.count);
+      if (!Number.isFinite(n) || n < 2 || n > 8) return;
+      playerCount = n;
+      pcButtons.forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    });
+  });
   const touchNotice = document.getElementById('touch-notice');
   // 觸控裝置（多半無實體鍵盤）→ 收掉遊玩入口、明講請用電腦；排行榜/檔案分頁仍可用
   const isTouch = matchMedia('(pointer: coarse)').matches;
@@ -544,6 +623,10 @@ const lang: Language = defaultLang;
   const lobby = document.getElementById('online-lobby');
   const lobbyCode = document.getElementById('lobby-code');
   const lobbyWait = document.getElementById('lobby-wait');
+  const lobbyCount = document.getElementById('lobby-count');
+  const lobbyJoined = document.getElementById('lobby-joined');
+  const lobbyTarget = document.getElementById('lobby-target');
+  const lobbyStart = document.getElementById('lobby-start') as HTMLButtonElement | null;
   function showLobby(phase: string, room?: string): void {
     if (modeSelect) modeSelect.hidden = true;
     if (onlinePanel) onlinePanel.hidden = true;
@@ -637,10 +720,69 @@ const lang: Language = defaultLang;
     }
   }
 
+  // FFA 身分（與 1v1 Identity 形狀相容）。
+  function buildFfaIdentity(): FfaIdentity {
+    const id = buildIdentity();
+    return { id: id.id, ranked: id.ranked, signMessage: id.signMessage };
+  }
+
+  // host 端「開始」訊號：lobby START 按鈕 resolve 這個 promise。
+  let resolveStart: (() => void) | null = null;
+  function makeStartSignal(): Promise<void> {
+    return new Promise<void>((res) => { resolveStart = res; });
+  }
+
+  // FFA 狀態 → lobby（host 顯示人數＋START，guest 顯示等待房主）。
+  function onFfaStatus(s: FfaNetStatus, isHost: boolean): void {
+    if (s.phase === 'creating' || s.phase === 'waiting') {
+      showLobby('creating', s.room);
+    } else if (s.phase === 'lobby') {
+      showLobby('waiting', s.room);
+      if (isHost) {
+        const joined = (s.connected ?? 0) + 1; // host 自己 +1
+        if (lobbyCount) lobbyCount.hidden = false;
+        if (lobbyJoined) lobbyJoined.textContent = String(joined);
+        if (lobbyTarget) lobbyTarget.textContent = String(playerCount);
+        if (lobbyWait) lobbyWait.textContent = joined >= playerCount ? '人數已滿，可開始' : '等待玩家加入…';
+        if (lobbyStart) {
+          lobbyStart.hidden = false;
+          lobbyStart.disabled = joined < 2; // 至少 2 人可開
+        }
+      } else if (lobbyWait) {
+        lobbyWait.textContent = '已連線 · 等待房主開始…';
+      }
+    } else if (s.phase === 'connecting') {
+      showLobby('connecting', s.room);
+    } else if (s.phase === 'connected') {
+      mainMenu?.remove();
+      setHint(ONLINE_HINT);
+      gameRunning = true;
+      pausable = false;
+    } else if (s.phase === 'error') {
+      started = false;
+      if (lobbyWait) {
+        lobbyWait.textContent = `連線失敗：${s.message ?? ''}（按取消重試）`;
+        lobbyWait.classList.remove('pending');
+      }
+    }
+  }
+
   function beginHost(): void {
     if (started || !canvas) return;
     started = true;
-    hostGame(canvas, buildIdentity(), onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+    if (playerCount === 2) {
+      hostGame(canvas, buildIdentity(), onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+      return;
+    }
+    // N≥3：FFA。maxGuests = playerCount - 1；START 按鈕觸發開局。
+    const startSignal = makeStartSignal();
+    hostFfaGame({
+      canvas,
+      identity: buildFfaIdentity(),
+      maxGuests: playerCount - 1,
+      waitStart: () => startSignal,
+      onStatus: (s) => onFfaStatus(s, true),
+    }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, true));
   }
   function beginJoin(): void {
     const input = document.getElementById('online-room') as HTMLInputElement | null;
@@ -648,8 +790,27 @@ const lang: Language = defaultLang;
     if (!room) { if (statusEl) statusEl.textContent = '請輸入房號'; return; }
     if (started || !canvas) return;
     started = true;
-    joinGame(canvas, room, buildIdentity(), onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+    if (playerCount === 2) {
+      joinGame(canvas, room, buildIdentity(), onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+      return;
+    }
+    // N≥3：FFA guest。
+    joinFfaGame({
+      canvas,
+      room,
+      identity: buildFfaIdentity(),
+      maxGuests: playerCount - 1,
+      onStatus: (s) => onFfaStatus(s, false),
+    }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, false));
   }
+  // lobby START（FFA host）：resolve 開始訊號，按鈕隱藏避免重複觸發。
+  lobbyStart?.addEventListener('click', () => {
+    if (lobbyStart) { lobbyStart.disabled = true; lobbyStart.hidden = true; }
+    if (lobbyWait) lobbyWait.textContent = '開局中…';
+    resolveStart?.();
+    resolveStart = null;
+    blip(680, 0.08);
+  });
 
   modeSelect?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
     btn.addEventListener('click', () => {

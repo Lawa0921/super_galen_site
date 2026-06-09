@@ -36,12 +36,20 @@ describe('isValidSlot：槽位白名單驗證', () => {
   it('host-ack-6 合法（最大 ack index）', () => expect(isValidSlot('host-ack-6')).toBe(true));
   it('host-ack-3 合法（中間值）', () => expect(isValidSlot('host-ack-3')).toBe(true));
 
+  // --- guest-initiated 星狀槽位（T11：每 guest 各自的 offer）---
+  it('guest-0-offer 合法', () => expect(isValidSlot('guest-0-offer')).toBe(true));
+  it('guest-6-offer 合法（最大 guest index）', () => expect(isValidSlot('guest-6-offer')).toBe(true));
+  it('guest-4-offer 合法（中間值）', () => expect(isValidSlot('guest-4-offer')).toBe(true));
+
   // --- 未知/超範圍槽位必須被拒 ---
   it('bogus → 非法', () => expect(isValidSlot('bogus')).toBe(false));
   it('guest-7-answer 超範圍（> 6）→ 非法', () => expect(isValidSlot('guest-7-answer')).toBe(false));
   it('guest-9-answer 超範圍 → 非法', () => expect(isValidSlot('guest-9-answer')).toBe(false));
   it('host-ack-7 超範圍（> 6）→ 非法', () => expect(isValidSlot('host-ack-7')).toBe(false));
   it('host-ack-99 超範圍 → 非法', () => expect(isValidSlot('host-ack-99')).toBe(false));
+  it('guest-7-offer 超範圍（> 6）→ 非法', () => expect(isValidSlot('guest-7-offer')).toBe(false));
+  it('guest-9-offer 超範圍 → 非法', () => expect(isValidSlot('guest-9-offer')).toBe(false));
+  it('guest-offer（缺 index）→ 非法', () => expect(isValidSlot('guest-offer')).toBe(false));
   it('空字串 → 非法', () => expect(isValidSlot('')).toBe(false));
   it('guest-answer（缺 index）→ 非法', () => expect(isValidSlot('guest-answer')).toBe(false));
   it('host-ack（缺 index）→ 非法', () => expect(isValidSlot('host-ack')).toBe(false));

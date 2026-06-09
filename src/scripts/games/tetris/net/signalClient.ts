@@ -3,17 +3,24 @@
  *
  * 槽位白名單（與 /api/signal.ts 的 SLOTS 規則保持一致）：
  *   1v1：offer / answer
- *   N 人星狀：host-offer / guest-{0..6}-answer / host-ack-{0..6}
+ *   N 人星狀（host-initiated，T9 保留）：host-offer / guest-{0..6}-answer / host-ack-{0..6}
+ *   N 人星狀（guest-initiated，T11 真實 WebRTC）：guest-{0..6}-offer / host-ack-{0..6}
  */
 const API = '/api/signal';
 
 /** 驗證槽位字串是否合法（與 api/signal.ts 的 SLOTS 同一套規則）。 */
 export function isValidSlot(slot: string): boolean {
   if (slot === 'offer' || slot === 'answer' || slot === 'host-offer') return true;
-  // guest-{0..6}-answer
-  const guestMatch = slot.match(/^guest-(\d+)-answer$/);
-  if (guestMatch) {
-    const idx = Number(guestMatch[1]);
+  // guest-{0..6}-answer（host-initiated 流程）
+  const guestAnsMatch = slot.match(/^guest-(\d+)-answer$/);
+  if (guestAnsMatch) {
+    const idx = Number(guestAnsMatch[1]);
+    return idx >= 0 && idx <= 6;
+  }
+  // guest-{0..6}-offer（guest-initiated 流程：每 guest 各自的 SDP offer）
+  const guestOfferMatch = slot.match(/^guest-(\d+)-offer$/);
+  if (guestOfferMatch) {
+    const idx = Number(guestOfferMatch[1]);
     return idx >= 0 && idx <= 6;
   }
   // host-ack-{0..6}

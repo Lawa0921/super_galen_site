@@ -89,6 +89,11 @@ export class WebRtcTransport implements Transport {
     this.closeCb = cb;
   }
 
+  /** datachannel 是否已開（供 FFA RelayChannel 卡接判斷 open）。 */
+  get isOpen(): boolean {
+    return this.dc?.readyState === 'open';
+  }
+
   // ---- Transport 介面 ----
   send(data: string): void {
     if (this.dc?.readyState === 'open') this.dc.send(data);

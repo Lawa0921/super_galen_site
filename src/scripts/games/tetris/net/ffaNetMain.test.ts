@@ -2,12 +2,18 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   negotiateHostFfa,
   negotiateJoinFfa,
+  negotiateHostFfaGuestInit,
+  negotiateJoinFfaGuestInit,
+  claimGuestSlot,
   buildFfaInit,
   parseFfaInit,
   reportFfaRanked,
   takeoverTransport,
+  wrapChannel,
   type FfaSignalClient,
   type FfaInitMsg,
+  type FfaHostAnswerPeer,
+  type FfaGuestOfferPeer,
 } from './ffaNetMain';
 import { FfaLockstep, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
 import { buildFfaResultMessage, verifySignature } from './auth';
@@ -367,5 +373,140 @@ describe('邊界處理', () => {
         peerFactory,
       }),
     ).rejects.toThrow(/offer|timeout|host/i);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 6. guest-initiated 真實 WebRTC 握手（T11）：每 guest 各自 offer，host 各自 answer
+// ─────────────────────────────────────────────────────────────────────────
+describe('guest-initiated 握手（negotiateHostFfaGuestInit / negotiateJoinFfaGuestInit）', () => {
+  function makeHostPeer(): FfaHostAnswerPeer {
+    let onmsg: ((r: string) => void) | null = null;
+    return {
+      createAnswer: async (_offer: string) => 'ANSWER-SDP',
+      waitOpen: async () => {},
+      get channel() {
+        return {
+          send: () => {},
+          get open() { return true; },
+          set onmessage(fn: ((r: string) => void) | null) { onmsg = fn; },
+          get onmessage() { return onmsg; },
+        };
+      },
+    } as unknown as FfaHostAnswerPeer;
+  }
+
+  it('host 輪詢 guest-{i}-offer → createAnswer → 寫 host-ack-{i}；組裝 playerIds host 在前、依 index 升序', async () => {
+    const signal = makeMockSignal();
+    const room = 'ROOM0';
+    // 兩個 guest 依序 claim slot 0、1 並寫 offer
+    await signal.putSlot(room, 'guest-0-offer', JSON.stringify({ id: 'alice', offer: 'OFF0' }));
+    await signal.putSlot(room, 'guest-1-offer', JSON.stringify({ id: 'bob', offer: 'OFF1' }));
+
+    const result = await negotiateHostFfaGuestInit({
+      hostId: 'HOST',
+      maxGuests: 7,
+      expectedGuests: 2,
+      signal,
+      peerFactory: makeHostPeer,
+      pollOpts: { timeoutMs: 50, intervalMs: 0 },
+    });
+
+    expect(result.playerIds).toEqual(['HOST', 'alice', 'bob']);
+    expect(result.guestPeers.length).toBe(2);
+    // host 對每個 guest 都寫了 answer 到 host-ack-{i}
+    expect(signal.store.get(`${room}:host-ack-0`)).toBe('ANSWER-SDP');
+    expect(signal.store.get(`${room}:host-ack-1`)).toBe('ANSWER-SDP');
+    // matchId 內嵌 seed（base36）
+    expect(parseInt(result.matchId.split('-')[1], 36)).toBe(result.seed);
+  });
+
+  it('guest：claim 最低空 slot → 寫 guest-{idx}-offer → 等 host-ack-{idx} answer → acceptAnswer', async () => {
+    const signal = makeMockSignal();
+    const room = 'ROOMX';
+    // host 預先放好 host-ack-0 = answer（模擬 host 已回應 slot 0）
+    await signal.putSlot(room, 'host-ack-0', 'ANSWER-FROM-HOST');
+
+    let acceptedAnswer: string | null = null;
+    const peerFactory = (): FfaGuestOfferPeer => {
+      let onmsg: ((r: string) => void) | null = null;
+      return {
+        createOffer: async () => 'OFFER-FROM-GUEST',
+        acceptAnswer: async (a: string) => { acceptedAnswer = a; },
+        waitOpen: async () => {},
+        channel: {
+          send: () => {},
+          get open() { return true; },
+          set onmessage(fn: ((r: string) => void) | null) { onmsg = fn; },
+          get onmessage() { return onmsg; },
+        },
+      } as unknown as FfaGuestOfferPeer;
+    };
+
+    const result = await negotiateJoinFfaGuestInit({
+      room,
+      guestId: 'alice',
+      signal,
+      peerFactory,
+      pollOpts: { timeoutMs: 50, intervalMs: 0 },
+    });
+
+    expect(result.slotIndex).toBe(0);
+    expect(result.localId).toBe('alice');
+    // guest 寫了 guest-0-offer（含 id + offer）
+    const off = JSON.parse(signal.store.get(`${room}:guest-0-offer`)!) as { id: string; offer: string };
+    expect(off.id).toBe('alice');
+    expect(off.offer).toBe('OFFER-FROM-GUEST');
+    // guest acceptAnswer 收到 host 的 answer
+    expect(acceptedAnswer).toBe('ANSWER-FROM-HOST');
+  });
+
+  it('claimGuestSlot：選最低未被占用的 slot（已占用者跳過）', async () => {
+    const signal = makeMockSignal();
+    const room = 'R';
+    // slot 0 已被占用
+    await signal.putSlot(room, 'guest-0-offer', JSON.stringify({ id: 'x', offer: 'o' }));
+    const idx = await claimGuestSlot(signal, room, 'alice', 'OFFER-A', 7);
+    expect(idx).toBe(1);
+    const off = JSON.parse(signal.store.get(`${room}:guest-1-offer`)!) as { id: string };
+    expect(off.id).toBe('alice');
+  });
+
+  it('claimGuestSlot：全部 slot 占滿 → 拋出明確錯誤', async () => {
+    const signal = makeMockSignal();
+    const room = 'R';
+    for (let i = 0; i < 7; i++) {
+      await signal.putSlot(room, `guest-${i}-offer`, JSON.stringify({ id: `x${i}`, offer: 'o' }));
+    }
+    await expect(claimGuestSlot(signal, room, 'alice', 'OFFER-A', 7)).rejects.toThrow(/full|滿|slot/i);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 7. wrapChannel：把 WebRtcTransport 風格物件包成 RelayChannel（send/open/onmessage）
+// ─────────────────────────────────────────────────────────────────────────
+describe('wrapChannel（RelayChannel 卡接）', () => {
+  it('send 透傳、open 反映底層、onMessage 回呼掛在 onmessage setter 上', () => {
+    const sent: string[] = [];
+    let opened = false;
+    let msgCb: ((d: string) => void) | null = null;
+    const fakeTransport = {
+      send: (d: string) => sent.push(d),
+      onMessage: (cb: (d: string) => void) => { msgCb = cb; },
+      get isOpen() { return opened; },
+    };
+    const ch = wrapChannel(fakeTransport);
+    // open 反映底層
+    expect(ch.open).toBe(false);
+    opened = true;
+    expect(ch.open).toBe(true);
+    // send 透傳
+    ch.send('hello');
+    expect(sent).toEqual(['hello']);
+    // 設定 onmessage → 底層收到訊息時轉發
+    const got: string[] = [];
+    ch.onmessage = (r) => got.push(r);
+    msgCb!('frame-data');
+    expect(got).toEqual(['frame-data']);
   });
 });
