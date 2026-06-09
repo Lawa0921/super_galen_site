@@ -51,6 +51,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ error: 'bad signature' }, 401);
   }
 
-  const status = await reportResult(getRankStore(), { matchId: m, reporter: rep, opponent: opp, winner: win });
+  const status = await reportResult(getRankStore(), {
+    matchId: m,
+    reporter: rep.toLowerCase(),
+    opponent: opp.toLowerCase(),
+    winner: win.toLowerCase(),
+  });
   return json({ status });
 };
