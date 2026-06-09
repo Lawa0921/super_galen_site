@@ -1,4 +1,4 @@
-import { Container, Sprite, type Texture } from 'pixi.js';
+import { Container, Sprite, Texture, Rectangle } from 'pixi.js';
 import type { BomberState } from '../engine/types';
 import { speedMs } from '../engine/player';
 import { BLAST_TTL_MS } from '../engine/constants';
@@ -19,12 +19,35 @@ import type { BomberTextures } from './assets';
  * 策略：簡易「recreate-per-frame」pool——每類實體維護一個陣列，
  * 每幀重新配置必要數量（多的隱藏，不足時新增），避免 GC。
  */
+
+/** Walk-cycle step sequence for ping-pong: A → stand → B → stand */
+const WALK_STEPS = [0, 1, 2, 1] as const;
+
+/** Map direction string to walk-sheet row index (row 0=down, 1=left, 2=right, 3=up). */
+function dirToRow(dir: string): number {
+  switch (dir) {
+    case 'left':  return 1;
+    case 'right': return 2;
+    case 'up':    return 3;
+    default:      return 0; // 'down' and any unknown default to down
+  }
+}
+
 export class EntityView {
   private blinkPhase    = 0;
   private pulsePhase    = 0;
   private exitGlowPhase = 0;
+  /** Accumulates ms while the player is moving; resets to 0 when idle. */
+  private playerWalkMs  = 0;
 
   private textures: BomberTextures;
+
+  /**
+   * Frame cache for walk animations.
+   * Key: `${character}-${dirRow}-${step}` → sliced Texture.
+   * Built lazily on first access.
+   */
+  private walkFrameCache = new Map<string, Texture>();
 
   // --- sprite pools ---
   private playerSp:  Sprite;
@@ -163,7 +186,7 @@ export class EntityView {
     }
     this._poolHideFrom(this.enemyPool, ei);
 
-    // 6. 玩家
+    // 6. 玩家（walk-cycle animation）
     const p = state.player;
     const playerProgress = Math.min(1, Math.max(0,
       1 - p.moveCooldownMs / speedMs(p.speedLevel),
@@ -173,22 +196,56 @@ export class EntityView {
     const ppx = ox + prx * cell + cell / 2;
     const ppy = oy + pry * cell + cell / 2;
 
-    const isInvuln    = p.invulnMs > 0;
+    const isInvuln     = p.invulnMs > 0;
     const blinkVisible = !isInvuln || Math.sin(this.blinkPhase) > 0;
 
+    // Walk-cycle: advance accumulator while moving, reset when idle
+    const moving = p.moveCooldownMs > 0;
+    if (moving) {
+      this.playerWalkMs += dtMs;
+    } else {
+      this.playerWalkMs = 0;
+    }
+    // Ping-pong: step-A → stand → step-B → stand (each 130 ms)
+    const step = moving
+      ? WALK_STEPS[Math.floor(this.playerWalkMs / 130) % 4]
+      : 1; // idle = standing frame (col 1)
+
+    const dirRow = dirToRow(p.dir);
+    const character = state.character === 'mira' ? 'mira' : 'lena';
+
     const ps = this.playerSp;
-    const playerTex = state.character === 'mira' ? this.textures.playerMira : this.textures.playerLena;
-    ps.texture = playerTex;
-    const pSize = cell * 0.9;
+    ps.texture = this._walkFrame(character, dirRow, step);
+    const pSize = cell * 0.95;
     ps.width  = pSize;
     ps.height = pSize;
     ps.x = ppx;
     ps.y = ppy;
-    // 面朝左時水平翻轉
-    const absScaleX = Math.abs(ps.scale.x);
-    ps.scale.x = p.dir === 'left' ? -absScaleX : absScaleX;
+    // Walk sheet has separate left/right rows — no horizontal flip needed
+    ps.scale.x = Math.abs(ps.scale.x);
     ps.alpha   = blinkVisible ? (p.shield ? 0.95 : 1) : 0.3;
     ps.visible = true;
+  }
+
+  // ─── walk-cycle helpers ───────────────────────────────────────────────────────
+
+  /**
+   * Returns the walk-cycle Texture for (character, dirRow, step).
+   * Slices from the walk sheet and caches the result.
+   * Frame rect: Rectangle(step * 64, dirRow * 64, 64, 64).
+   */
+  private _walkFrame(character: 'lena' | 'mira', dirRow: number, step: number): Texture {
+    const key = `${character}-${dirRow}-${step}`;
+    const cached = this.walkFrameCache.get(key);
+    if (cached) return cached;
+
+    const base = character === 'mira' ? this.textures.walkMira : this.textures.walkLena;
+    const tex = new Texture({
+      source: base.source,
+      frame: new Rectangle(step * 64, dirRow * 64, 64, 64),
+    });
+    this.walkFrameCache.set(key, tex);
+    return tex;
   }
 
   // ─── helpers ─────────────────────────────────────────────────────────────────
