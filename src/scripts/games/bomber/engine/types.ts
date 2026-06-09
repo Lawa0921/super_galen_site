@@ -3,7 +3,7 @@ export type Grid = Tile[][];                          // grid[y][x], y down, x r
 export interface Vec { x: number; y: number; }
 export type Dir = 'up' | 'down' | 'left' | 'right';
 export type PowerUpKind = 'fire' | 'bomb' | 'speed' | 'shield' | 'heart';
-export type CharacterId = 'lena' | 'mira';
+export type CharacterId = 'lena' | 'mira' | 'aya' | 'rosa';
 
 export interface CharacterStats { lives: number; fireRange: number; maxBombs: number; speedLevel: number; }
 export interface CharacterProfile { id: CharacterId; name: string; start: CharacterStats; caps: CharacterStats; }

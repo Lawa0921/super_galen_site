@@ -9,6 +9,11 @@ describe('CHARACTERS / getCharacter', () => {
     expect(() => getCharacter('mira')).not.toThrow();
   });
 
+  it('aya と rosa の両方が解決できる', () => {
+    expect(() => getCharacter('aya')).not.toThrow();
+    expect(() => getCharacter('rosa')).not.toThrow();
+  });
+
   it('lena と mira は start と caps の両方で異なる', () => {
     const lena = getCharacter('lena');
     const mira = getCharacter('mira');
@@ -81,5 +86,44 @@ describe('CHARACTERS / getCharacter', () => {
   it('CHARACTERS レコードに lena と mira が含まれる', () => {
     expect('lena' in CHARACTERS).toBe(true);
     expect('mira' in CHARACTERS).toBe(true);
+  });
+
+  it('aya: 斥候 — start lives 2, fireRange 1, maxBombs 1, speedLevel 2', () => {
+    const aya = getCharacter('aya');
+    expect(aya.id).toBe('aya');
+    expect(aya.start.lives).toBe(2);
+    expect(aya.start.fireRange).toBe(1);
+    expect(aya.start.maxBombs).toBe(1);
+    expect(aya.start.speedLevel).toBe(2);
+  });
+
+  it('aya: caps lives 3, fireRange 6, maxBombs 5, speedLevel 4', () => {
+    const aya = getCharacter('aya');
+    expect(aya.caps.lives).toBe(3);
+    expect(aya.caps.fireRange).toBe(6);
+    expect(aya.caps.maxBombs).toBe(5);
+    expect(aya.caps.speedLevel).toBe(4);
+  });
+
+  it('rosa: 隊長 — start lives 4, fireRange 2, maxBombs 2, speedLevel 0', () => {
+    const rosa = getCharacter('rosa');
+    expect(rosa.id).toBe('rosa');
+    expect(rosa.start.lives).toBe(4);
+    expect(rosa.start.fireRange).toBe(2);
+    expect(rosa.start.maxBombs).toBe(2);
+    expect(rosa.start.speedLevel).toBe(0);
+  });
+
+  it('rosa: caps lives 6, fireRange 5, maxBombs 5, speedLevel 2', () => {
+    const rosa = getCharacter('rosa');
+    expect(rosa.caps.lives).toBe(6);
+    expect(rosa.caps.fireRange).toBe(5);
+    expect(rosa.caps.maxBombs).toBe(5);
+    expect(rosa.caps.speedLevel).toBe(2);
+  });
+
+  it('CHARACTERS レコードに aya と rosa が含まれる', () => {
+    expect('aya' in CHARACTERS).toBe(true);
+    expect('rosa' in CHARACTERS).toBe(true);
   });
 });

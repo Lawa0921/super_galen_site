@@ -97,6 +97,38 @@ describe('BomberGame: character=mira', () => {
   });
 });
 
+describe('BomberGame: character=aya', () => {
+  it('player starts with aya stats: lives 2, fireRange 1, maxBombs 1, speedLevel 2', () => {
+    const g = new BomberGame({ seed: 1, character: 'aya' });
+    const p = g.getState().player;
+    expect(p.lives).toBe(2);
+    expect(p.fireRange).toBe(1);
+    expect(p.maxBombs).toBe(1);
+    expect(p.speedLevel).toBe(2);
+  });
+
+  it('getState().character === "aya"', () => {
+    const g = new BomberGame({ seed: 1, character: 'aya' });
+    expect(g.getState().character).toBe('aya');
+  });
+});
+
+describe('BomberGame: character=rosa', () => {
+  it('player starts with rosa stats: lives 4, fireRange 2, maxBombs 2, speedLevel 0', () => {
+    const g = new BomberGame({ seed: 1, character: 'rosa' });
+    const p = g.getState().player;
+    expect(p.lives).toBe(4);
+    expect(p.fireRange).toBe(2);
+    expect(p.maxBombs).toBe(2);
+    expect(p.speedLevel).toBe(0);
+  });
+
+  it('getState().character === "rosa"', () => {
+    const g = new BomberGame({ seed: 1, character: 'rosa' });
+    expect(g.getState().character).toBe('rosa');
+  });
+});
+
 describe('BomberGame: heart pickup — default (no character)', () => {
   it('heart pickup raises lives up to START_LIVES cap (3) from damaged state', () => {
     const g = new BomberGame({ seed: 1 });
