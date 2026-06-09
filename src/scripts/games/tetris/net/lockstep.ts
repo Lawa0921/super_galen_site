@@ -1,6 +1,7 @@
 import { TetrisMatch, type Side } from '../engine/match';
 import type { InputAction } from '../engine/game';
 import type { Transport } from './transport';
+import type { MatchReplay } from './replay';
 
 const SIM_DT = 1000 / 60;
 const INPUT_DELAY = 3; // 幀
@@ -21,9 +22,12 @@ export class Lockstep {
   private sendFrame = 0;      // 下一個要送出的本地輸入幀
   private pending: InputAction[] = []; // 本地累積、尚未送出的輸入
   private inbox: Record<Side, Map<number, InputAction[]>> = { A: new Map(), B: new Map() };
+  private readonly seed: number;
+  private replayEvents: MatchReplay['events'] = [];
 
   constructor(opts: LockstepOptions) {
     this.match = new TetrisMatch({ seed: opts.seed });
+    this.seed = opts.seed;
     this.localSide = opts.localSide;
     this.transport = opts.transport;
     // 預填 frame 0..INPUT_DELAY-1 為空陣列（兩側），否則開局永遠卡在 simFrame 0
@@ -59,6 +63,7 @@ export class Lockstep {
     while (this.inbox.A.has(this.simFrame) && this.inbox.B.has(this.simFrame)) {
       const aIn = this.inbox.A.get(this.simFrame)!;
       const bIn = this.inbox.B.get(this.simFrame)!;
+      if (aIn.length || bIn.length) this.replayEvents.push({ f: this.simFrame, a: aIn, b: bIn });
       for (const act of aIn) this.match.input('A', act);
       for (const act of bIn) this.match.input('B', act);
       this.match.step(SIM_DT);
@@ -74,5 +79,10 @@ export class Lockstep {
     this.inbox[this.localSide].set(targetFrame, actions); // 本地也存
     this.transport.send(JSON.stringify({ f: targetFrame, s: this.localSide, a: actions } as FrameMsg));
     this.sendFrame++;
+  }
+
+  /** 取得本局可重播紀錄（用於後端 replay 抽驗）。 */
+  getReplay(): MatchReplay {
+    return { seed: this.seed, frameCount: this.simFrame, events: this.replayEvents };
   }
 }

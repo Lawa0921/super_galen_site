@@ -57,9 +57,9 @@ export async function reportResult(store: RankStore, claim: ResultClaim): Promis
   if (!oppClaim) return 'pending';
   if (oppClaim !== winner) return 'conflict';
 
-  // 雙方一致 → 計分（再次防重）
-  if (await store.isSettled(matchId)) return 'already';
-  await store.markSettled(matchId, SETTLED_TTL);
+  // 原子閘：只有第一個成功 markSettled 的請求能入帳（防並發重複計分）
+  const first = await store.markSettled(matchId, SETTLED_TTL);
+  if (!first) return 'already';
   await applyResult(store, reporter, opponent, winner);
   return 'settled';
 }

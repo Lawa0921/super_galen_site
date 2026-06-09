@@ -13,7 +13,7 @@ const json = (obj: unknown, status = 200): Response =>
 
 /** GET /api/profile?addr=0x... — 取單一玩家檔案；找不到回 { profile: null }。 */
 export const GET: APIRoute = async ({ url }) => {
-  const addr = (url.searchParams.get('addr') ?? '').trim();
+  const addr = (url.searchParams.get('addr') ?? '').trim().toLowerCase();
   if (!addr) return json({ error: 'missing addr' }, 400);
   const p = await getRankStore().getPlayer(addr);
   const profile = p

@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getRankStore } from '@scripts/games/tetris/net/rankStore';
 import { reportResult } from '@scripts/games/tetris/net/ranking';
 import { verifySignature, buildResultMessage } from '@scripts/games/tetris/net/auth';
+import { verifyReplay, type MatchReplay } from '@scripts/games/tetris/net/replay';
 
 export const prerender = false;
 
@@ -51,6 +52,30 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ error: 'bad signature' }, 401);
   }
 
-  const status = await reportResult(getRankStore(), { matchId: m, reporter: rep, opponent: opp, winner: win });
+  // ── replay 抽驗：宣稱勝方必須由 seed + 雙方輸入重現 ──
+  const replay = body.replay as MatchReplay | undefined;
+  const aId = body.aId;
+  const bId = body.bId;
+  if (!replay || typeof aId !== 'string' || typeof bId !== 'string') {
+    return json({ error: 'missing replay' }, 400);
+  }
+  // seed 必須與 matchId 內嵌的 seed 相符（matchId 已被簽章 → 綁定 replay）
+  const seedFromMatch = parseInt(m.split('-')[1] ?? '', 36);
+  if (!Number.isFinite(seedFromMatch) || replay.seed !== seedFromMatch) {
+    return json({ error: 'replay seed mismatch' }, 400);
+  }
+  // 宣稱的 winner ID 必須對應 replay 重模擬出的勝方 side（host=A、guest=B）
+  const okA = verifyReplay(replay, 'A') && aId.toLowerCase() === win.toLowerCase();
+  const okB = verifyReplay(replay, 'B') && bId.toLowerCase() === win.toLowerCase();
+  if (!okA && !okB) {
+    return json({ error: 'replay does not support result' }, 400);
+  }
+
+  const status = await reportResult(getRankStore(), {
+    matchId: m,
+    reporter: rep.toLowerCase(),
+    opponent: opp.toLowerCase(),
+    winner: win.toLowerCase(),
+  });
   return json({ status });
 };

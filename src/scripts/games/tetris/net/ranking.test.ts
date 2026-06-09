@@ -77,3 +77,19 @@ describe('結算後累加 XP / 等級 / 場數', () => {
     expect(pa?.level).toBe(1);
   });
 });
+
+describe('並發重複結算只計一次', () => {
+  it('雙方一致後，兩個 settled 請求同時進來 → 只 apply 一次', async () => {
+    const s = new MemoryRankStore();
+    const A = '0xaaaa', B = '0xbbbb', mid = 'm-race';
+    await reportResult(s, { matchId: mid, reporter: A, opponent: B, winner: A }); // pending
+    const [r1, r2] = await Promise.all([
+      reportResult(s, { matchId: mid, reporter: B, opponent: A, winner: A }),
+      reportResult(s, { matchId: mid, reporter: B, opponent: A, winner: A }),
+    ]);
+    expect([r1, r2].filter((x) => x === 'settled').length).toBe(1);
+    expect([r1, r2].filter((x) => x === 'already').length).toBe(1);
+    const pa = await s.getPlayer(A);
+    expect(pa?.games).toBe(1); // 只計一場
+  });
+});
