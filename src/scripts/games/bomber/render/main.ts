@@ -34,15 +34,15 @@ export async function startBomber(
   } catch {
     /* 字型載入失敗則退回 monospace */
   }
-  const hud = new HudView(stage.hudLayer);
+  const hud = new HudView(stage.hudLayer, textures);
   const sound = new SoundManager();
 
   let lay = computeLayout(stage.width, stage.height);
-  hud.setLayout(stage.width);
+  hud.setLayout(stage.width, stage.height);
 
   function relayout(): void {
     lay = computeLayout(stage.width, stage.height);
-    hud.onResize(stage.width);
+    hud.onResize(stage.width, stage.height);
     grid.invalidate(); // force grid redraw at new cell size
   }
   stage.app.renderer.on('resize', relayout);
@@ -81,6 +81,10 @@ export async function startBomber(
       if (!e.repeat) {
         game.input('bomb');
         sound.place();
+      }
+    } else if (action === 'ability') {
+      if (!e.repeat) {
+        game.input('ability');
       }
     } else if (DIRS.has(action)) {
       game.setHeld(action as Dir, true);
@@ -122,6 +126,9 @@ export async function startBomber(
       } else if (ev.kind === 'descend') {
         sound.descend();
         grid.invalidate(); // 新樓層：強制格子重繪
+      } else if (ev.kind === 'ability') {
+        stage.shake(6);
+        sound.explode();
       } else if (ev.kind === 'gameover') {
         sound.gameover();
         const s = game.getState();
