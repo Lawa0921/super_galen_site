@@ -57,14 +57,14 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
           const role = roleLabels[id] ?? '';
           return (
             <div class="char-card">
-              <img
-                src={`/assets/games/bomber/portraits/${id}.png`}
-                alt={profile.name}
-                width="160"
-                height="160"
-                class="char-portrait"
-                style="image-rendering:pixelated"
-              />
+              <div class="char-figure">
+                <img
+                  src={`/assets/games/bomber/portraits/${id}-full.png`}
+                  alt={profile.name}
+                  class="char-fig-img"
+                  style="image-rendering:pixelated"
+                />
+              </div>
               <div class="char-name">{profile.name}</div>
               <div class="char-role">{role}</div>
               <div class="char-stats">
@@ -167,12 +167,14 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     align-items: center;
     justify-content: center;
     gap: 32px;
+    gap: clamp(12px, 2vh, 24px);
     background:
-      radial-gradient(ellipse at 50% 42%, rgba(6, 8, 16, 0.28), rgba(6, 8, 16, 0.72) 75%),
+      repeating-linear-gradient(rgba(0, 0, 0, 0) 0 2px, rgba(0, 0, 0, 0.12) 2px 3px),
+      radial-gradient(ellipse at 50% 46%, rgba(6, 8, 16, 0.26), rgba(6, 8, 16, 0.82) 82%),
       url('/assets/games/bomber/ui/select-bg.png') center / cover no-repeat;
     image-rendering: pixelated;
     font-family: 'Press Start 2P', Consolas, monospace;
-    padding: 20px;
+    padding: clamp(12px, 2vh, 24px);
     box-sizing: border-box;
   }
   .mode-select[hidden] {
@@ -180,33 +182,43 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   }
   .ms-title {
     margin: 0;
-    font-size: clamp(14px, 2.8vw, 26px);
-    letter-spacing: 4px;
+    font-size: clamp(18px, 3.6vw, 36px);
+    letter-spacing: 5px;
     color: #fff2e6;
-    text-shadow: 0 0 12px rgba(255, 157, 60, 0.9), 0 0 28px rgba(255, 157, 60, 0.5);
+    text-shadow: 0 0 12px rgba(255, 157, 60, 0.9), 0 0 28px rgba(255, 157, 60, 0.5),
+      0 3px 0 rgba(0, 0, 0, 0.6);
   }
 
   /* Character cards row */
   .char-cards {
     display: flex;
     flex-direction: row;
-    gap: clamp(16px, 3vw, 40px);
-    align-items: flex-start;
+    gap: clamp(14px, 2.5vw, 44px);
+    align-items: stretch;
     justify-content: center;
     flex-wrap: wrap;
+    width: min(1280px, 96vw);
+    flex: 1 1 auto;
+    min-height: 0;
   }
   .char-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: clamp(6px, 1.2vh, 14px);
     background:
-      linear-gradient(rgba(14, 10, 8, 0.92), rgba(8, 6, 12, 0.94));
-    border: 2px solid rgba(255, 157, 60, 0.5);
+      linear-gradient(rgba(16, 11, 9, 0.86), rgba(8, 6, 12, 0.9));
+    border: 3px solid rgba(255, 157, 60, 0.65);
     border-radius: 12px;
-    padding: 20px 24px 24px;
-    width: min(230px, 44vw);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 157, 60, 0.12);
+    padding: clamp(14px, 2vh, 26px) clamp(16px, 1.8vw, 32px);
+    flex: 1 1 0;
+    max-width: 600px;
+    min-width: 0;
+    justify-content: space-between;
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.6),
+      inset 0 0 0 2px rgba(0, 0, 0, 0.6),
+      inset 0 0 0 4px rgba(255, 157, 60, 0.18);
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   }
   .char-card:hover {
@@ -214,18 +226,27 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     box-shadow: 0 0 24px rgba(255, 157, 60, 0.4);
     transform: translateY(-4px);
   }
-  .char-portrait {
+  .char-figure {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    position: relative;
+    background:
+      radial-gradient(ellipse at 50% 100%, rgba(255, 157, 60, 0.18), rgba(0, 0, 0, 0) 62%);
+  }
+  .char-fig-img {
     display: block;
-    width: clamp(100px, 18vw, 160px);
-    height: auto;
-    border: 3px solid rgba(255, 157, 60, 0.55);
-    border-radius: 6px;
-    background: rgba(6, 8, 14, 0.6);
-    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.5);
-    /* image-rendering set inline (pixelated) */
+    height: 100%;
+    max-height: clamp(190px, 46vh, 460px);
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.65));
   }
   .char-name {
-    font-size: clamp(13px, 2vw, 18px);
+    font-size: clamp(16px, 2.2vw, 26px);
     letter-spacing: 3px;
     color: #fff2e6;
   }
