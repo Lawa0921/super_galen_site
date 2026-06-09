@@ -4,9 +4,11 @@ export interface Vec { x: number; y: number; }
 export type Dir = 'up' | 'down' | 'left' | 'right';
 export type PowerUpKind = 'fire' | 'bomb' | 'speed' | 'shield' | 'heart';
 export type CharacterId = 'lena' | 'mira' | 'aya' | 'rosa';
+export type AbilityId = 'carpet' | 'inferno' | 'blink' | 'bulwark';
 
 export interface CharacterStats { lives: number; fireRange: number; maxBombs: number; speedLevel: number; }
-export interface CharacterProfile { id: CharacterId; name: string; start: CharacterStats; caps: CharacterStats; }
+export interface AbilityDef { id: AbilityId; name: string; desc: string; cooldownMs: number; }
+export interface CharacterProfile { id: CharacterId; name: string; start: CharacterStats; caps: CharacterStats; ability: AbilityDef; }
 export type EnemyKind = 'wander' | 'chaser';
 
 export interface Bomb { x: number; y: number; fuseMs: number; range: number; }
@@ -43,6 +45,10 @@ export interface BomberState {
   score: number;
   status: GameStatus;
   character: CharacterId;
+  abilityCooldownMs: number;
+  abilityMaxMs: number;
+  abilityId: AbilityId | null;
+  abilityName: string;
 }
 
 export type BomberEvent =
@@ -54,6 +60,7 @@ export type BomberEvent =
   | { kind: 'playerHit'; shielded: boolean }
   | { kind: 'floorClear' }
   | { kind: 'descend'; floor: number }
-  | { kind: 'gameover' };
+  | { kind: 'gameover' }
+  | { kind: 'ability'; id: AbilityId };
 
-export type InputAction = Dir | 'bomb';
+export type InputAction = Dir | 'bomb' | 'ability';

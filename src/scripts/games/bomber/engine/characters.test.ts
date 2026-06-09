@@ -126,4 +126,41 @@ describe('CHARACTERS / getCharacter', () => {
     expect('aya' in CHARACTERS).toBe(true);
     expect('rosa' in CHARACTERS).toBe(true);
   });
+
+  it('全キャラクターに ability があり、cooldownMs > 0 かつ name が空でない', () => {
+    for (const profile of Object.values(CHARACTERS)) {
+      expect(profile.ability).toBeDefined();
+      expect(profile.ability.cooldownMs).toBeGreaterThan(0);
+      expect(profile.ability.name.length).toBeGreaterThan(0);
+      expect(profile.ability.id.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('lena の ability は carpet / 地毯轟炸 / cooldown 12000ms', () => {
+    const lena = getCharacter('lena');
+    expect(lena.ability.id).toBe('carpet');
+    expect(lena.ability.name).toBe('地毯轟炸');
+    expect(lena.ability.cooldownMs).toBe(12000);
+  });
+
+  it('mira の ability は inferno / 爆炎術 / cooldown 14000ms', () => {
+    const mira = getCharacter('mira');
+    expect(mira.ability.id).toBe('inferno');
+    expect(mira.ability.name).toBe('爆炎術');
+    expect(mira.ability.cooldownMs).toBe(14000);
+  });
+
+  it('aya の ability は blink / 瞬步 / cooldown 8000ms', () => {
+    const aya = getCharacter('aya');
+    expect(aya.ability.id).toBe('blink');
+    expect(aya.ability.name).toBe('瞬步');
+    expect(aya.ability.cooldownMs).toBe(8000);
+  });
+
+  it('rosa の ability は bulwark / 鐵壁 / cooldown 14000ms', () => {
+    const rosa = getCharacter('rosa');
+    expect(rosa.ability.id).toBe('bulwark');
+    expect(rosa.ability.name).toBe('鐵壁');
+    expect(rosa.ability.cooldownMs).toBe(14000);
+  });
 });

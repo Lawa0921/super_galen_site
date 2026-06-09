@@ -8,4 +8,5 @@ export const KEYMAP: Record<string, InputAction> = {
   ArrowLeft: 'left', KeyA: 'left',
   ArrowRight: 'right', KeyD: 'right',
   Space: 'bomb', KeyJ: 'bomb', KeyK: 'bomb',
+  ShiftLeft: 'ability', ShiftRight: 'ability', KeyE: 'ability',
 };

@@ -18,4 +18,9 @@ describe('KEYMAP', () => {
     expect(KEYMAP.KeyJ).toBe('bomb');
     expect(KEYMAP.KeyK).toBe('bomb');
   });
+  it('ShiftLeft / ShiftRight / E で能力発動', () => {
+    expect(KEYMAP.ShiftLeft).toBe('ability');
+    expect(KEYMAP.ShiftRight).toBe('ability');
+    expect(KEYMAP.KeyE).toBe('ability');
+  });
 });

@@ -1,13 +1,14 @@
 // game.ts
 import type {
   Grid, Bomb, BlastCell, Enemy, PowerUp, PowerUpKind, Vec, Dir, BomberState, BomberEvent, InputAction, Player,
-  CharacterId, CharacterStats,
+  CharacterId, CharacterStats, AbilityDef, AbilityId,
 } from './types';
 import { generateFloor } from './generate';
 import { makePlayer, dirDelta, speedMs } from './player';
 import { isWalkable, breakCrate } from './board';
 import { BOMB_FUSE_MS, BLAST_TTL_MS, INVULN_MS, SPAWN, MAX_FIRE, MAX_BOMBS, START_LIVES } from './constants';
 import { resolveChain } from './bomb';
+import { computeBlast } from './blast';
 import { SCORE, descendBonus } from './scoring';
 import { chooseEnemyDir, enemyMoveMs } from './enemy';
 import { createRng } from './rng';
@@ -35,6 +36,9 @@ export class BomberGame {
   private lastHeld: Dir | null = null;
   private events: BomberEvent[] = [];
 
+  private ability: AbilityDef | null = null;
+  private abilityCooldownMs = 0;
+
   private rng!: () => number;
   private frozen = false; // debug only
   private clearedEmitted = false;
@@ -54,10 +58,12 @@ export class BomberGame {
       this.characterId = opts.character;
       this.caps = profile.caps;
       this.player = makePlayer(profile.start);
+      this.ability = profile.ability;
     } else {
       this.characterId = 'lena'; // placeholder for getState(); behavior uses default caps
       this.caps = { lives: START_LIVES, fireRange: MAX_FIRE, maxBombs: MAX_BOMBS, speedLevel: 4 };
       this.player = makePlayer();
+      this.ability = null;
     }
   }
 
@@ -79,6 +85,7 @@ export class BomberGame {
   input(action: InputAction): void {
     if (this.status !== 'playing') return;
     if (action === 'bomb') { this.placeBomb(); return; }
+    if (action === 'ability') { this.activateAbility(); return; }
     // 方向鍵的瞬按也記為 held，讓不放開也能走（render 會配 keyup 取消）
     this.setHeld(action, true);
   }
@@ -96,6 +103,84 @@ export class BomberGame {
     this.events.push({ kind: 'bombPlaced', x: this.player.x, y: this.player.y });
   }
 
+  private activateAbility(): void {
+    if (this.ability === null) return;
+    if (this.status !== 'playing') return;
+    if (this.abilityCooldownMs > 0) return;
+
+    const id = this.ability.id;
+    this.abilityCooldownMs = this.ability.cooldownMs;
+    this.events.push({ kind: 'ability', id });
+
+    switch (id) {
+      case 'carpet': this.effectCarpet(); break;
+      case 'inferno': this.effectInferno(); break;
+      case 'blink': this.effectBlink(); break;
+      case 'bulwark': this.effectBulwark(); break;
+    }
+  }
+
+  private effectCarpet(): void {
+    const p = this.player;
+    const candidates: Vec[] = [
+      { x: p.x, y: p.y },
+      { x: p.x, y: p.y - 1 },
+      { x: p.x, y: p.y + 1 },
+      { x: p.x - 1, y: p.y },
+      { x: p.x + 1, y: p.y },
+    ];
+    for (const cell of candidates) {
+      if (!isWalkable(this.grid, cell.x, cell.y)) continue;
+      if (this.bombs.some((b) => b.x === cell.x && b.y === cell.y)) continue;
+      // BYPASS maxBombs cap for carpet
+      this.bombs.push({ x: cell.x, y: cell.y, fuseMs: BOMB_FUSE_MS, range: p.fireRange });
+      this.events.push({ kind: 'bombPlaced', x: cell.x, y: cell.y });
+    }
+  }
+
+  private effectInferno(): void {
+    const p = this.player;
+    // Grant caster brief invuln so they survive the blast
+    p.invulnMs = Math.max(p.invulnMs, 700);
+    const { cells, brokenCrates } = computeBlast(this.grid, p.x, p.y, 4);
+    // Break crates, reveal powerups, add score
+    for (const c of brokenCrates) {
+      this.grid = breakCrate(this.grid, c.x, c.y);
+      this.score += SCORE.crate;
+      this.events.push({ kind: 'crateBreak', x: c.x, y: c.y });
+      const key = `${c.x},${c.y}`;
+      const drop = this.hidden[key];
+      if (drop) { this.powerUps.push({ x: c.x, y: c.y, kind: drop }); delete this.hidden[key]; }
+    }
+    // Spawn blast cells
+    for (const c of cells) this.blasts.push({ x: c.x, y: c.y, ttlMs: BLAST_TTL_MS });
+    this.events.push({ kind: 'explode', cells });
+  }
+
+  private effectBlink(): void {
+    const p = this.player;
+    const v = dirDelta(p.dir);
+    let steps = 0;
+    let nx = p.x, ny = p.y;
+    for (let i = 1; i <= 3; i++) {
+      const cx = p.x + v.x * i, cy = p.y + v.y * i;
+      if (!isWalkable(this.grid, cx, cy)) break;
+      if (this.bombs.some((b) => b.x === cx && b.y === cy)) break;
+      nx = cx; ny = cy;
+      steps++;
+    }
+    // Always spends cooldown (even if 0 tiles moved)
+    if (steps > 0) {
+      p.x = nx; p.y = ny;
+      p.prevX = nx; p.prevY = ny;
+      p.moveCooldownMs = 0;
+    }
+  }
+
+  private effectBulwark(): void {
+    this.player.invulnMs = Math.max(this.player.invulnMs, 3000);
+  }
+
   private blocked(x: number, y: number): boolean {
     if (!isWalkable(this.grid, x, y)) return true;
     return this.bombs.some((b) => b.x === x && b.y === y);
@@ -104,6 +189,8 @@ export class BomberGame {
   // ---- main loop ----
   step(dtMs: number): void {
     if (this.status !== 'playing') return;
+    // Decrement ability cooldown
+    if (this.abilityCooldownMs > 0) this.abilityCooldownMs = Math.max(0, this.abilityCooldownMs - dtMs);
     // Snapshot invuln before movement so the player is protected for the full remaining duration this tick,
     // and invuln granted by hurtPlayer() this tick is not immediately consumed.
     const invulnAtStart = this.player.invulnMs;
@@ -269,6 +356,10 @@ export class BomberGame {
       score: this.score,
       status: this.status,
       character: this.characterId,
+      abilityCooldownMs: this.abilityCooldownMs,
+      abilityMaxMs: this.ability?.cooldownMs ?? 0,
+      abilityId: this.ability?.id ?? null,
+      abilityName: this.ability?.name ?? '',
     };
   }
 
@@ -293,4 +384,5 @@ export class BomberGame {
   debugSetShield(on: boolean): void { this.player.shield = on; }
   debugSetLives(n: number): void { this.player.lives = n; }
   debugApplyPowerUp(kind: PowerUpKind): void { this.applyPowerUp(kind); }
+  debugSetAbilityCooldown(ms: number): void { this.abilityCooldownMs = ms; }
 }
