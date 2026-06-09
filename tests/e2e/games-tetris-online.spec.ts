@@ -63,9 +63,10 @@ test.describe('Dungeon Arcade — online battle', () => {
 });
 
 async function readRoom(page: Page): Promise<string> {
-  const status = page.locator('#online-status');
-  await expect(status).toContainText(/[A-Z0-9]{5}/, { timeout: 20000 });
-  const text = (await status.textContent()) ?? '';
+  // 建房後房號顯示在 lobby 的大字房號（先前的 UX 改版把它從 #online-status 搬到這）
+  const code = page.locator('#lobby-code');
+  await expect(code).toContainText(/[A-Z0-9]{5}/, { timeout: 20000 });
+  const text = (await code.textContent()) ?? '';
   return text.match(/[A-Z0-9]{5}/)?.[0] ?? '';
 }
 
