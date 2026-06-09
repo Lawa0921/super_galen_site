@@ -5,7 +5,26 @@ import { getSignalStore } from '@scripts/games/tetris/net/signalStore';
 export const prerender = false;
 
 const TTL_SEC = 300; // 房間槽位 5 分鐘過期
-const SLOTS = new Set(['offer', 'answer']);
+
+/**
+ * 驗證槽位字串是否合法（與 signalClient.ts 的 isValidSlot 保持同一套規則）。
+ * 1v1：offer / answer
+ * N 人星狀：host-offer / guest-{0..6}-answer / host-ack-{0..6}
+ */
+function isValidSlot(slot: string): boolean {
+  if (slot === 'offer' || slot === 'answer' || slot === 'host-offer') return true;
+  const guestMatch = slot.match(/^guest-(\d+)-answer$/);
+  if (guestMatch) {
+    const idx = Number(guestMatch[1]);
+    return idx >= 0 && idx <= 6;
+  }
+  const ackMatch = slot.match(/^host-ack-(\d+)$/);
+  if (ackMatch) {
+    const idx = Number(ackMatch[1]);
+    return idx >= 0 && idx <= 6;
+  }
+  return false;
+}
 
 const json = (obj: unknown, status = 200): Response =>
   new Response(JSON.stringify(obj), {
@@ -21,11 +40,11 @@ function makeRoomCode(): string {
   return s;
 }
 
-/** 讀取房間某槽位的 SDP：GET /api/signal?room=AB12C&slot=offer|answer */
+/** 讀取房間某槽位的 SDP：GET /api/signal?room=AB12C&slot=<valid-slot> */
 export const GET: APIRoute = async ({ url }) => {
   const room = url.searchParams.get('room');
   const slot = url.searchParams.get('slot');
-  if (!room || !slot || !SLOTS.has(slot)) return json({ error: 'bad params' }, 400);
+  if (!room || !slot || !isValidSlot(slot)) return json({ error: 'bad params' }, 400);
   const store = getSignalStore();
   const data = await store.get(`sig:${room}:${slot}`);
   return json({ data });
@@ -49,7 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const { room, slot, data } = body;
-  if (!room || !slot || !SLOTS.has(slot) || typeof data !== 'string') {
+  if (!room || !slot || !isValidSlot(slot) || typeof data !== 'string') {
     return json({ error: 'bad params' }, 400);
   }
   if (data.length > 60_000) return json({ error: 'too large' }, 413); // SDP 上限保護
