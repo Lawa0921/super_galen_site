@@ -17,20 +17,18 @@ test.describe('Dungeon Arcade — vs AI', () => {
       { timeout: 20000 },
     );
 
-    // 開場倒數 + AI 下棋時間
-    await page.waitForTimeout(5500);
-
-    const ai = await page.evaluate(() => {
-      const m = (window as unknown as { __tetrisDebug: { match: any } }).__tetrisDebug.match;
-      const b = m.b.getState();
-      return {
-        phase: m.phase as string,
-        bFilled: (b.board as Array<Array<unknown>>).flat().filter(Boolean).length,
-        bLines: b.lines as number,
-      };
-    });
-
-    // AI 應已自行落子（盤面有格或已消行）
-    expect(ai.bFilled + ai.bLines).toBeGreaterThan(0);
+    // 輪詢到 AI（B 側）真的自行落子（盤面有格或已消行）——比固定等待穩定，
+    // 避免開場倒數 + 多支 e2e 同跑資源吃緊時誤判。
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const m = (window as unknown as { __tetrisDebug: { match: any } }).__tetrisDebug.match;
+            const b = m.b.getState();
+            return (b.board as Array<Array<unknown>>).flat().filter(Boolean).length + (b.lines as number);
+          }),
+        { timeout: 20000, intervals: [300, 500, 800] },
+      )
+      .toBeGreaterThan(0);
   });
 });
