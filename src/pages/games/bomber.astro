@@ -280,6 +280,7 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     color: #c98f6a;
     opacity: 0.75;
     pointer-events: none;
+    display: none; /* 僅遊戲中顯示；選角畫面隱藏（避免和 PRESS START 重疊），start() 時揭露 */
   }
 
   /* ─── Mode-select full-screen (Layout B) ─────────────── */
@@ -1029,6 +1030,8 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     if (started || !canvas) return;
     started = true;
     modeSelect?.remove();
+    const hint = document.querySelector('.bomber-hint') as HTMLElement | null;
+    if (hint) hint.style.display = 'block';
     startBomber(canvas, id).catch((err: unknown) => console.error('[bomber] start failed', err));
   }
 
