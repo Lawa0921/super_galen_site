@@ -1,8 +1,38 @@
 /**
  * 與 /api/signal 互動的小客戶端：建房、寫/讀/輪詢 offer/answer 槽位。
+ *
+ * 槽位白名單（與 /api/signal.ts 的 SLOTS 規則保持一致）：
+ *   1v1：offer / answer
+ *   N 人星狀（host-initiated，T9 保留）：host-offer / guest-{0..6}-answer / host-ack-{0..6}
+ *   N 人星狀（guest-initiated，T11 真實 WebRTC）：guest-{0..6}-offer / host-ack-{0..6}
  */
 const API = '/api/signal';
-export type Slot = 'offer' | 'answer';
+
+/** 驗證槽位字串是否合法（與 api/signal.ts 的 SLOTS 同一套規則）。 */
+export function isValidSlot(slot: string): boolean {
+  if (slot === 'offer' || slot === 'answer' || slot === 'host-offer') return true;
+  // guest-{0..6}-answer（host-initiated 流程）
+  const guestAnsMatch = slot.match(/^guest-(\d+)-answer$/);
+  if (guestAnsMatch) {
+    const idx = Number(guestAnsMatch[1]);
+    return idx >= 0 && idx <= 6;
+  }
+  // guest-{0..6}-offer（guest-initiated 流程：每 guest 各自的 SDP offer）
+  const guestOfferMatch = slot.match(/^guest-(\d+)-offer$/);
+  if (guestOfferMatch) {
+    const idx = Number(guestOfferMatch[1]);
+    return idx >= 0 && idx <= 6;
+  }
+  // host-ack-{0..6}
+  const ackMatch = slot.match(/^host-ack-(\d+)$/);
+  if (ackMatch) {
+    const idx = Number(ackMatch[1]);
+    return idx >= 0 && idx <= 6;
+  }
+  return false;
+}
+
+export type Slot = string;
 
 async function postJson(body: unknown): Promise<Record<string, unknown>> {
   const res = await fetch(API, {
@@ -21,10 +51,12 @@ export async function createRoom(): Promise<string> {
 }
 
 export async function putSlot(room: string, slot: Slot, data: string): Promise<void> {
+  if (!isValidSlot(slot)) throw new Error(`invalid slot: ${slot}`);
   await postJson({ room, slot, data });
 }
 
 export async function getSlot(room: string, slot: Slot): Promise<string | null> {
+  if (!isValidSlot(slot)) throw new Error(`invalid slot: ${slot}`);
   const res = await fetch(`${API}?room=${encodeURIComponent(room)}&slot=${slot}`);
   if (!res.ok) throw new Error(`signal GET ${res.status}`);
   const json = (await res.json()) as { data?: string | null };

@@ -1,9 +1,14 @@
 import { updateRatings, tierFor, DEFAULT_RATING } from './elo';
+import { updateRatingsNWay } from './ffaElo';
 import { xpForMatch, levelForXp } from './progression';
-import type { RankStore, PlayerRecord } from './rankStore';
+import { getRankStore, type RankStore, type PlayerRecord } from './rankStore';
 
 const REPORT_TTL = 600; // 結果回報暫存 10 分鐘
 const SETTLED_TTL = 86_400; // 已結算標記 1 天（防重複計分）
+
+// 大亂鬥（FFA/N 人）共識用 TTL
+const FFA_REPORT_TTL = 600; // 名次回報暫存 10 分鐘
+const FFA_SETTLED_TTL = 86_400; // 已結算標記 1 天（防重複計分）
 
 export interface ResultClaim {
   matchId: string;
@@ -62,6 +67,82 @@ export async function reportResult(store: RankStore, claim: ResultClaim): Promis
   if (!first) return 'already';
   await applyResult(store, reporter, opponent, winner);
   return 'settled';
+}
+
+export type FfaReportOutcome = 'applied' | 'pending' | 'conflict' | 'already';
+
+/**
+ * 套用一場 N 人大亂鬥結算：依共識 standings（index0=冠軍）算新 ELO 並更新各玩家戰績。
+ * ratings 為呼叫端先讀的各玩家當前分數（缺者退回 DEFAULT_RATING）。
+ */
+async function applyFfaResult(
+  store: RankStore,
+  standings: string[],
+  ratings: Record<string, number>,
+): Promise<void> {
+  const players = standings.length;
+  // 名次 1..N（standings index0=冠軍）
+  const ratingInput = standings.map((id, i) => ({
+    id,
+    rating: Number(ratings[id] ?? DEFAULT_RATING),
+    placement: i + 1,
+  }));
+  const newRatings = updateRatingsNWay(ratingInput);
+
+  for (let i = 0; i < standings.length; i++) {
+    const id = standings[i];
+    const placement = i + 1;
+    const rec = (await store.getPlayer(id)) ?? fresh();
+    rec.rating = newRatings[id];
+    applyMatchProgress(rec, placement, players);
+    await store.setPlayer(id, rec);
+  }
+}
+
+/**
+ * 回報一場 N 人大亂鬥結果。每位玩家各回報一份 standings（index0=冠軍）；
+ * 當「完全相同的 standings」票數達共識門檻 ceil(N/2) 且為唯一多數時，
+ * 以 markSettledBR 原子閘確保只結算一次後計分。
+ */
+export async function reportFfaResult(input: {
+  matchId: string;
+  reporterId: string;
+  standings: string[];
+  ratings: Record<string, number>;
+}): Promise<FfaReportOutcome> {
+  const { matchId, reporterId, standings, ratings } = input;
+  const store = getRankStore();
+  const n = standings.length;
+  const threshold = Math.ceil(n / 2);
+
+  // 1. 記下本次回報
+  await store.setBRReport(matchId, reporterId, standings, FFA_REPORT_TTL);
+
+  // 2. 統計「完全相同」的 standings 票數（JSON 字串當 key）
+  const reports = await store.getBRReportsForMatch(matchId);
+  const tally = new Map<string, number>();
+  for (const s of Object.values(reports)) {
+    const key = JSON.stringify(s);
+    tally.set(key, (tally.get(key) ?? 0) + 1);
+  }
+
+  // 3. 找最高票
+  let maxVotes = 0;
+  for (const v of tally.values()) if (v > maxVotes) maxVotes = v;
+
+  // 4. 最高票未達門檻 → pending
+  if (maxVotes < threshold) return 'pending';
+
+  // 5. 並列最高（>=2 種 standings 同為最高票）→ 無單一多數 → conflict
+  const leaders = [...tally.entries()].filter(([, v]) => v === maxVotes);
+  if (leaders.length > 1) return 'conflict';
+
+  // 6. 唯一多數達門檻 → 原子閘 → 計分
+  const consensus = JSON.parse(leaders[0][0]) as string[];
+  const first = await store.markSettledBR(matchId, FFA_SETTLED_TTL);
+  if (!first) return 'already';
+  await applyFfaResult(store, consensus, ratings);
+  return 'applied';
 }
 
 export interface LeaderRow {

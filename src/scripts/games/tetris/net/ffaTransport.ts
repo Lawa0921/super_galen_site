@@ -1,0 +1,126 @@
+import type { FfaLockstepTransport, FfaFrameMsg } from './ffaLockstep';
+
+/**
+ * 一個 channel 的最小抽象（mock 或真 RTCDataChannel 包裝）。
+ * 對應一條「Host ↔ 某 Guest」的單向送出能力 + 開啟狀態。
+ */
+export interface RelayChannel {
+  send(raw: string): void;
+  readonly open: boolean;
+}
+
+/**
+ * Host 收到「來自 channel fromIdx」的一筆原始訊息 raw 後，轉發給「其餘所有 channel」。
+ * fromIdx === null 代表訊息源自 Host 自己（host 的 FfaLockstep send）→ 轉發給全部 channel。
+ * channel 未開（open=false）跳過、不丟例外。
+ * 純函式：只對傳入 channels 做 send，回傳實際轉發到的 index 陣列。
+ */
+export function routeFrame(
+  fromIdx: number | null,
+  raw: string,
+  channels: RelayChannel[],
+): number[] {
+  const routed: number[] = [];
+  for (let i = 0; i < channels.length; i++) {
+    if (i === fromIdx) continue; // 不回灌來源
+    const ch = channels[i];
+    if (!ch.open) continue; // 未開跳過、不丟例外
+    ch.send(raw);
+    routed.push(i);
+  }
+  return routed;
+}
+
+/**
+ * 把任意原始訊息解析為 FfaFrameMsg（JSON 字串或已是物件皆容錯）。
+ * 解析失敗回傳 null（呼叫端忽略，與 T4 handleMessage 的字串容錯相容）。
+ */
+function parseFrame(raw: unknown): FfaFrameMsg | null {
+  let m: unknown = raw;
+  if (typeof raw === 'string') {
+    try {
+      m = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (!m || typeof m !== 'object') return null;
+  return m as FfaFrameMsg;
+}
+
+/**
+ * Host 端 relay transport（星狀中心）。
+ *
+ * 拓樸：Host 對每個 Guest 各持一條 channel（channels[i] 對應 guest i）。
+ *  - 收到某 guest channel 的訊息：轉發給「其餘所有 guest」（routeFrame），
+ *    並把 parse 後的 msg 丟給本端上層 onMessage cb（host 的 FfaLockstep 也要看到全員的幀）。
+ *  - send（host 自己的幀）：routeFrame(null, ...) 廣播給全部 guest，
+ *    並回灌自己上層 cb（讓 host lockstep 收到自己的幀；T4 inbox 寫入冪等故安全）。
+ *
+ * Host 只是純 relay，不是遊戲權威；路由邏輯抽在 routeFrame 純函式中。
+ */
+export class FfaHubTransport implements FfaLockstepTransport {
+  private readonly channels: RelayChannel[];
+  private cb: ((msg: FfaFrameMsg) => void) | null = null;
+
+  /**
+   * @param channels N-1 條 channel（對應各 guest）。
+   *   每條若帶 `onmessage` setter（mock 或 RTCDataChannel 包裝），會被掛上收訊轉發邏輯。
+   */
+  constructor(channels: Array<RelayChannel & { onmessage?: ((raw: string) => void) | null }>) {
+    this.channels = channels;
+    channels.forEach((ch, idx) => {
+      // 為每條 guest channel 安裝收訊處理：轉發其餘 guest + 回灌本端上層
+      ch.onmessage = (raw: string) => this.handleGuestMessage(idx, raw);
+    });
+  }
+
+  /** 收到 guest idx 的一筆原始訊息：relay 給其餘 guest，再丟給本端上層。 */
+  private handleGuestMessage(fromIdx: number, raw: string): void {
+    routeFrame(fromIdx, raw, this.channels);
+    const msg = parseFrame(raw);
+    if (msg) this.cb?.(msg);
+  }
+
+  /** host 自己的幀：廣播給全部 guest，並回灌自己上層（自身可見）。 */
+  send(msg: FfaFrameMsg): void {
+    routeFrame(null, JSON.stringify(msg), this.channels);
+    this.cb?.(msg);
+  }
+
+  onMessage(cb: (msg: FfaFrameMsg) => void): void {
+    this.cb = cb;
+  }
+}
+
+/**
+ * Guest 端 transport（星狀輻條）。
+ *
+ * 只連 Host 一條 channel：
+ *  - send：JSON 編碼後送給 host（host 會 relay 給其餘）；channel 未開不丟例外（比照 1v1 transport）。
+ *  - 收訊（channel.onmessage）：parse 後丟給上層 onMessage cb。
+ */
+export class FfaSpokeTransport implements FfaLockstepTransport {
+  private readonly channel: RelayChannel;
+  private cb: ((msg: FfaFrameMsg) => void) | null = null;
+
+  /**
+   * @param channel 對 Host 的單一 channel；若帶 `onmessage` setter 會被掛上收訊處理。
+   */
+  constructor(channel: RelayChannel & { onmessage?: ((raw: string) => void) | null }) {
+    this.channel = channel;
+    channel.onmessage = (raw: string) => {
+      const msg = parseFrame(raw);
+      if (msg) this.cb?.(msg);
+    };
+  }
+
+  send(msg: FfaFrameMsg): void {
+    if (!this.channel.open) return; // 未開不送、不丟例外
+    this.channel.send(JSON.stringify(msg));
+  }
+
+  onMessage(cb: (msg: FfaFrameMsg) => void): void {
+    this.cb = cb;
+  }
+}

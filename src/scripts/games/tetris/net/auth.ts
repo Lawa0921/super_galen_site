@@ -13,6 +13,20 @@ export function buildResultMessage(matchId: string, reporter: string, opponent: 
   return `Dungeon Arcade 對戰結果\nmatch: ${matchId}\nme: ${reporter}\nvs: ${opponent}\nwinner: ${winner}`;
 }
 
+/**
+ * 大亂鬥（FFA/N 人）結果的標準簽章訊息：把 matchId 與「玩家→名次」對綁進去，
+ * 避免簽章被挪用到別場或別的名次。格式穩定、雙方可由相同輸入重建。
+ * sortedPlayerIds 與 sortedPlacements 為等長平行陣列（index 對齊）。
+ */
+export function buildFfaResultMessage(
+  matchId: string,
+  sortedPlayerIds: string[],
+  sortedPlacements: number[],
+): string {
+  const pairs = sortedPlayerIds.map((id, i) => `${id}=${sortedPlacements[i]}`).join(',');
+  return `Dungeon Arcade 大亂鬥結果\nmatch: ${matchId}\nstandings: ${pairs}`;
+}
+
 /** 驗證簽章是否由 expectedAddress 對 message 簽出。壞輸入回 false（不丟例外）。 */
 export function verifySignature(message: string, signature: string, expectedAddress: string): boolean {
   try {
