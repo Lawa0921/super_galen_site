@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Lockstep } from './lockstep';
 import { LoopbackPair } from './transport';
+import { simulateReplay } from './replay';
 
 describe('Lockstep 同步', () => {
   it('兩端各自控制一側、互傳輸入後 → 兩端 match 狀態一致', () => {
@@ -38,5 +39,20 @@ describe('Lockstep 同步', () => {
     expect(() => cap!(JSON.stringify({ f: 0, s: 'Z', a: [] }))).not.toThrow(); // 非法 side
     // 仍可正常推進（不因畸形訊息中斷）
     expect(() => ls.tick()).not.toThrow();
+  });
+
+  it('getReplay() 重模擬出的勝方 == 實際對局勝方', () => {
+    const { a, b } = LoopbackPair.create();
+    const peerA = new Lockstep({ seed: 999, localSide: 'A', transport: a });
+    const peerB = new Lockstep({ seed: 999, localSide: 'B', transport: b });
+    for (let f = 0; f < 4000 && peerA.match.phase === 'playing'; f++) {
+      if (f % 2 === 0) peerA.pressLocal('hardDrop');
+      peerA.tick();
+      peerB.tick();
+    }
+    expect(peerA.match.phase).toBe('result');
+    const replay = peerA.getReplay();
+    expect(replay.seed).toBe(999);
+    expect(simulateReplay(replay)).toBe(peerA.match.winner);
   });
 });
