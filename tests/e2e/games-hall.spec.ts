@@ -34,4 +34,12 @@ test.describe('Dungeon Arcade — hall & mode select', () => {
       { timeout: 20000 },
     );
   });
+
+  test('leaderboard page loads and fetches the API', async ({ page }) => {
+    // 排行榜入口已移到 Tetris 主選單分頁；獨立頁仍可直接到達（深連結）。
+    await page.goto('/games/leaderboard');
+    await expect(page.getByText('LEADERBOARD')).toBeVisible();
+    // fetch 完成後不應停在「載入中」（證明 /api/leaderboard 有回應）
+    await expect(page.locator('#lb-board')).not.toContainText('載入中', { timeout: 10000 });
+  });
 });

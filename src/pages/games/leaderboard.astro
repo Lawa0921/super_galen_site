@@ -1,0 +1,124 @@
+---
+/**
+ * /games/leaderboard — Dungeon Arcade 線上對戰排行榜
+ * 從 /api/leaderboard 取資料、霓虹地城風渲染。
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+
+const lang: Language = defaultLang;
+---
+
+<BaseLayout title="Dungeon Arcade — 排行榜" description="線上對戰 ELO 排行榜" lang={lang}>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+
+  <main class="lb">
+    <a class="lb-home" href="/games">← ARCADE</a>
+    <h1 class="lb-title">LEADERBOARD</h1>
+    <div class="lb-board" id="lb-board">
+      <p class="lb-empty" id="lb-status">載入中…</p>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .lb {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 56px 16px 32px;
+    overflow: auto;
+    background:
+      linear-gradient(180deg, rgba(4, 6, 13, 0.86), rgba(4, 6, 13, 0.94)),
+      url('/assets/games/tetris/bg-dungeon.webp') center / cover no-repeat fixed;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    color: #cfe8ff;
+  }
+  .lb-home {
+    position: absolute;
+    top: 18px;
+    left: 20px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
+    text-decoration: none;
+    opacity: 0.8;
+  }
+  .lb-home:hover { color: #36e6ff; opacity: 1; }
+  .lb-title {
+    margin: 0;
+    font-size: clamp(18px, 3.5vw, 34px);
+    letter-spacing: 4px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 30px rgba(54, 230, 255, 0.5);
+  }
+  .lb-board {
+    width: min(760px, 94vw);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lb-empty { text-align: center; font-size: 11px; line-height: 1.8; color: #7f93b8; }
+  .lb-row {
+    display: grid;
+    grid-template-columns: 44px 1fr 96px 70px 70px;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    font-size: 11px;
+    background: rgba(8, 12, 22, 0.72);
+    border: 1px solid rgba(54, 230, 255, 0.22);
+    border-radius: 8px;
+  }
+  .lb-row.lb-head {
+    background: transparent;
+    border-color: transparent;
+    color: #7f93b8;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .lb-row.lb-top { border-color: rgba(255, 210, 63, 0.6); box-shadow: 0 0 14px rgba(255, 210, 63, 0.2); }
+  .lb-rank { color: #ffd23f; }
+  .lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-tier { font-size: 9px; }
+  .lb-rating { color: #36e6ff; text-align: right; }
+  .lb-wl { color: #9fb4d8; text-align: right; font-size: 9px; }
+</style>
+
+<script>
+  type Row = { id: string; rating: number; tier: string; wins: number; losses: number; name?: string };
+
+  const board = document.getElementById('lb-board');
+  const short = (id: string) => (id.startsWith('0x') && id.length > 12 ? `${id.slice(0, 6)}…${id.slice(-4)}` : id);
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+  async function load(): Promise<void> {
+    if (!board) return;
+    try {
+      const res = await fetch('/api/leaderboard?n=50');
+      const { rows } = (await res.json()) as { rows: Row[] };
+      if (!rows || rows.length === 0) {
+        board.innerHTML = '<p class="lb-empty">尚無對戰紀錄<br/>到遊戲室開一場線上對戰來上榜！</p>';
+        return;
+      }
+      const head = '<div class="lb-row lb-head"><span>#</span><span>PLAYER</span><span>TIER</span><span>ELO</span><span>W/L</span></div>';
+      const body = rows
+        .map((r, i) => {
+          const cls = i === 0 ? 'lb-row lb-top' : 'lb-row';
+          const name = r.name ? esc(r.name) : short(r.id);
+          return `<div class="${cls}"><span class="lb-rank">${i + 1}</span><span class="lb-name">${name}</span><span class="lb-tier">${esc(r.tier)}</span><span class="lb-rating">${r.rating}</span><span class="lb-wl">${r.wins}/${r.losses}</span></div>`;
+        })
+        .join('');
+      board.innerHTML = head + body;
+    } catch {
+      board.innerHTML = '<p class="lb-empty">排行榜載入失敗</p>';
+    }
+  }
+
+  void load();
+</script>

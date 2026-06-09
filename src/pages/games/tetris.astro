@@ -1,7 +1,7 @@
 ---
 /**
- * /games/tetris — Dungeon Arcade 對戰俄羅斯方塊（Phase 2：單人可玩）
- * 全螢幕 PixiJS 遊戲頁；Pixi 透過下方 <script> import，由 Vite code-split 至本頁。
+ * /games/tetris — Dungeon Arcade 對戰俄羅斯方塊
+ * 模式：SOLO / vs AI / 線上對戰；全螢幕 PixiJS 遊戲頁，由頁底腳本載入並 code-split。
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import { defaultLang, type Language } from '@i18n/index';
@@ -23,18 +23,83 @@ const lang: Language = defaultLang;
 
   <main class="tetris-page">
     <a class="tetris-back" href="/games">← ARCADE</a>
-    <p class="tetris-hint" id="tetris-hint">MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M</p>
+    <p class="tetris-hint" id="tetris-hint" hidden>MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M</p>
     <div class="tetris-stage">
       <canvas id="tetris-canvas"></canvas>
     </div>
 
-    <div class="mode-select" id="mode-select">
-      <h2 class="ms-title">SELECT MODE</h2>
-      <div class="ms-buttons">
-        <button class="ms-btn ms-solo" data-mode="solo">SOLO</button>
-        <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
-        <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
-        <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
+    <div class="main-menu" id="main-menu">
+      <img class="mm-logo" src="/assets/games/tetris/logo-battle-tetris.webp" alt="BATTLE TETRIS" />
+      <nav class="mm-tabs" role="tablist" aria-label="遊戲選單">
+        <button class="mm-tab is-active" data-tab="play" type="button" role="tab" aria-selected="true">PLAY</button>
+        <button class="mm-tab" data-tab="leaderboard" type="button" role="tab" aria-selected="false">LEADERBOARD</button>
+        <button class="mm-tab" data-tab="profile" type="button" role="tab" aria-selected="false">PROFILE</button>
+        <span class="mm-tab-ind" id="mm-tab-ind" aria-hidden="true"></span>
+      </nav>
+
+      <section class="mm-panel is-active" id="panel-play">
+        <div class="mode-select" id="mode-select">
+          <div class="ms-buttons">
+            <button class="ms-btn ms-solo" data-mode="solo">SOLO</button>
+            <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
+            <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
+            <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
+            <button class="ms-btn ms-online" data-mode="online">vs ONLINE</button>
+          </div>
+        </div>
+        <div class="mode-select" id="online-panel" hidden>
+          <div class="ms-buttons">
+            <input id="online-name" class="online-input" maxlength="12" placeholder="暱稱（選填）" autocomplete="off" />
+            <button class="ms-btn ms-wallet" id="online-wallet">連錢包打排名賽</button>
+            <button class="ms-btn ms-online" id="online-create">建立房間</button>
+            <div class="online-join">
+              <input id="online-room" class="online-input" maxlength="5" placeholder="房號" autocomplete="off" />
+              <button class="ms-btn" id="online-join-btn">加入房間</button>
+            </div>
+            <p class="online-status" id="online-status"></p>
+          </div>
+        </div>
+        <p class="touch-notice" id="touch-notice" hidden>
+          本遊戲需用<strong>電腦鍵盤</strong>遊玩。<br />
+          手機／觸控裝置請改用桌機開啟；<br />你仍可切換上方分頁查看排行榜與個人檔案。
+        </p>
+        <div class="online-lobby" id="online-lobby" hidden>
+          <p class="lobby-label">房號 ROOM</p>
+          <div class="lobby-code-row">
+            <span class="lobby-code" id="lobby-code">·····</span>
+            <button class="ms-btn lobby-copy" id="lobby-copy" type="button">複製</button>
+          </div>
+          <p class="lobby-wait" id="lobby-wait">等待對手加入…</p>
+          <button class="ms-btn ms-hard" id="lobby-cancel" type="button">取消</button>
+        </div>
+      </section>
+
+      <section class="mm-panel" id="panel-leaderboard" hidden>
+        <h2 class="ms-title">LEADERBOARD</h2>
+        <ol class="lb-list" id="lb-list"><li class="lb-empty">載入中…</li></ol>
+      </section>
+
+      <section class="mm-panel" id="panel-profile" hidden>
+        <h2 class="ms-title">PROFILE</h2>
+        <p class="profile-guest" id="profile-guest">訪客無等級／積分。<br />連錢包以建立你的玩家檔案。</p>
+        <button class="ms-btn ms-wallet" id="profile-wallet">連錢包</button>
+        <div class="profile-stats" id="profile-stats" hidden></div>
+      </section>
+    </div>
+
+    <div class="pause-menu" id="pause-menu" hidden>
+      <div class="pause-card">
+        <h2 class="pause-title" id="pause-title">PAUSED</h2>
+        <button class="ms-btn ms-solo" id="pause-resume" type="button">繼續</button>
+        <button class="ms-btn ms-hard" id="pause-quit" type="button">離開</button>
+      </div>
+    </div>
+
+    <div class="pause-menu" id="result-menu" hidden>
+      <div class="pause-card">
+        <h2 class="pause-title" id="result-title">GAME OVER</h2>
+        <button class="ms-btn ms-solo" id="result-again" type="button">再玩一次</button>
+        <button class="ms-btn ms-hard" id="result-quit" type="button">離開</button>
       </div>
     </div>
   </main>
@@ -46,7 +111,10 @@ const lang: Language = defaultLang;
     inset: 0;
     width: 100vw;
     height: 100vh;
-    background: #04060d;
+    background:
+      radial-gradient(ellipse at 50% 32%, rgba(54, 230, 255, 0.08), transparent 60%),
+      linear-gradient(180deg, rgba(4, 6, 13, 0.84), rgba(4, 6, 13, 0.93)),
+      url('/assets/games/tetris/bg-dungeon.webp') center / cover no-repeat;
     overflow: hidden;
   }
   .tetris-stage {
@@ -62,16 +130,16 @@ const lang: Language = defaultLang;
     position: absolute;
     top: 18px;
     left: 20px;
-    z-index: 10;
+    z-index: 40; /* 高於主選單(20)/暫停(30) 全螢幕層，確保可點 */
     font-family: 'Press Start 2P', Consolas, monospace;
     font-size: 11px;
     letter-spacing: 1px;
-    color: #6fa8d8;
+    color: #9fcdf2;
+    text-shadow: 0 0 8px rgba(54, 230, 255, 0.45);
     text-decoration: none;
-    opacity: 0.8;
+    opacity: 1;
   }
   .tetris-back:hover {
-    opacity: 1;
     color: #36e6ff;
   }
   .tetris-hint {
@@ -90,15 +158,10 @@ const lang: Language = defaultLang;
     pointer-events: none;
   }
   .mode-select {
-    position: absolute;
-    inset: 0;
-    z-index: 20;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 36px;
-    background: rgba(4, 6, 13, 0.78);
+    gap: 18px;
     font-family: 'Press Start 2P', Consolas, monospace;
   }
   .ms-title {
@@ -111,8 +174,8 @@ const lang: Language = defaultLang;
   .ms-buttons {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    width: min(360px, 80vw);
+    gap: 14px;
+    width: 100%;
   }
   .ms-btn {
     padding: 18px 20px;
@@ -136,43 +199,664 @@ const lang: Language = defaultLang;
   .ms-solo:hover { box-shadow: 0 0 22px rgba(77, 255, 136, 0.75); }
   .ms-hard { border-color: rgba(255, 77, 109, 0.7); box-shadow: 0 0 12px rgba(255, 77, 109, 0.3); }
   .ms-hard:hover { box-shadow: 0 0 22px rgba(255, 77, 109, 0.8); }
+  .ms-online { border-color: rgba(193, 92, 255, 0.7); box-shadow: 0 0 12px rgba(193, 92, 255, 0.3); }
+  .ms-online:hover { box-shadow: 0 0 22px rgba(193, 92, 255, 0.8); }
+  .ms-wallet { border-color: rgba(255, 210, 63, 0.7); box-shadow: 0 0 12px rgba(255, 210, 63, 0.3); font-size: 11px; }
+  .ms-wallet:hover { box-shadow: 0 0 22px rgba(255, 210, 63, 0.8); }
+  .ms-wallet.connected { border-color: rgba(77, 255, 136, 0.8); color: #4dff88; }
+
+  .mode-select[hidden] { display: none; }
+  .online-join { display: flex; gap: 10px; align-items: stretch; }
+  #online-join-btn { white-space: nowrap; flex: 0 0 auto; padding-left: 16px; padding-right: 16px; }
+  .online-input {
+    flex: 1;
+    padding: 14px;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-align: center;
+    text-transform: uppercase;
+    color: #eafdff;
+    background: rgba(8, 12, 22, 0.85);
+    border: 2px solid rgba(54, 230, 255, 0.6);
+    border-radius: 10px;
+  }
+  .online-status {
+    margin: 6px 0 0;
+    min-height: 1.4em;
+    text-align: center;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 10px;
+    line-height: 1.6;
+    letter-spacing: 1px;
+    color: #9fb4d8;
+  }
+
+  .main-menu {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 24px;
+    z-index: 20;
+    /* 無實底：露出 .tetris-page 的地城氛圍，閱讀對比由面板卡提供 */
+  }
+  .mm-logo {
+    width: min(380px, 78vw);
+    height: auto;
+    /* logo 已做亮度→alpha 透明去背，直接疊在氛圍上 */
+    filter: drop-shadow(0 0 16px rgba(54, 230, 255, 0.35));
+    user-select: none;
+  }
+  .mm-tabs { position: relative; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  /* 滑動到 active 分頁下方的霓虹指示條 */
+  .mm-tab-ind {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #36e6ff, #c15cff);
+    box-shadow: 0 0 12px rgba(54, 230, 255, 0.95), 0 0 5px rgba(193, 92, 255, 0.85);
+    pointer-events: none;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, width;
+  }
+  .mm-tab {
+    position: relative;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
+    background: rgba(8, 12, 22, 0.72);
+    border: 1px solid rgba(54, 230, 255, 0.35);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .mm-tab:hover { color: #36e6ff; }
+  .mm-tab.is-active {
+    color: #eafdff;
+    border-color: rgba(54, 230, 255, 0.85);
+    box-shadow: 0 0 14px rgba(54, 230, 255, 0.45);
+  }
+  .mm-panel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: min(440px, 88vw);
+    padding: 26px 28px;
+    background: rgba(8, 12, 22, 0.66);
+    border: 1px solid rgba(54, 230, 255, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.5), inset 0 0 26px rgba(54, 230, 255, 0.05);
+  }
+  .mm-panel.is-active { display: flex; }
+  .mm-panel[hidden] { display: none; }
+
+  .lb-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-height: 52vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .lb-row, .lb-empty {
+    display: grid;
+    grid-template-columns: 42px 1fr auto auto auto auto;
+    gap: 8px;
+    align-items: center;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #cfe9ff;
+    background: rgba(8, 12, 22, 0.82);
+    border: 1px solid rgba(54, 230, 255, 0.18);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .lb-empty { display: block; text-align: center; color: #cfe9ff; background: transparent; border: none; line-height: 2; font-size: 18px; }
+  .lb-empty-sub { font-size: 10px; color: #6fa8d8; letter-spacing: 1px; }
+  .lb-head { background: transparent; border-color: transparent; color: #6f86ad; font-size: 9px; padding-bottom: 2px; }
+  .lb-top { border-color: rgba(255, 210, 63, 0.6); box-shadow: 0 0 14px rgba(255, 210, 63, 0.22); }
+  .lb-rank { color: #ffd23f; }
+  .lb-tier { color: #c15cff; }
+  .lb-rating { color: #4dff88; }
+
+  .profile-guest { font-size: 11px; line-height: 1.8; color: #6fa8d8; text-align: center; }
+  .profile-stats { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .profile-stats[hidden] { display: none; }
+  .pf-row { display: flex; justify-content: space-between; font-size: 11px; color: #cfe9ff; }
+  .pf-row .pf-k { color: #6fa8d8; }
+  .pf-bar { height: 10px; border: 1px solid rgba(54, 230, 255, 0.4); border-radius: 5px; overflow: hidden; background: rgba(8,12,22,0.7); }
+  .pf-bar > i { display: block; height: 100%; background: #36e6ff; }
+
+  /* 遊戲中 ESC 暫停選單 */
+  .pause-menu {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 6, 13, 0.72);
+    backdrop-filter: blur(3px);
+  }
+  .pause-menu[hidden] { display: none; }
+  .pause-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    min-width: min(300px, 78vw);
+    padding: 30px 34px;
+    background: rgba(8, 12, 22, 0.92);
+    border: 1px solid rgba(54, 230, 255, 0.4);
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6), inset 0 0 28px rgba(54, 230, 255, 0.08);
+  }
+  .pause-title {
+    margin: 0 0 6px;
+    font-size: 22px;
+    letter-spacing: 5px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 30px rgba(54, 230, 255, 0.5);
+  }
+  .pause-card .ms-btn { width: 100%; }
+
+  /* emoji → 生成的霓虹圖示（::before 背景圖，取代廉價 emoji） */
+  .mm-tab::before,
+  #panel-leaderboard .ms-title::before,
+  #panel-profile .ms-title::before,
+  .ms-wallet::before,
+  #pause-resume::before,
+  #pause-quit::before,
+  #result-again::before,
+  #result-quit::before {
+    content: '';
+    display: inline-block;
+    width: 1.3em;
+    height: 1.3em;
+    margin-right: 8px;
+    vertical-align: -0.28em;
+    background: center / contain no-repeat;
+  }
+  .mm-tab[data-tab='play']::before,
+  #pause-resume::before,
+  #result-again::before { background-image: url('/assets/games/tetris/icons/play.webp'); }
+  .mm-tab[data-tab='leaderboard']::before,
+  #panel-leaderboard .ms-title::before { background-image: url('/assets/games/tetris/icons/trophy.webp'); }
+  .mm-tab[data-tab='profile']::before,
+  #panel-profile .ms-title::before { background-image: url('/assets/games/tetris/icons/user.webp'); }
+  .ms-wallet::before { background-image: url('/assets/games/tetris/icons/wallet.webp'); }
+  #pause-quit::before,
+  #result-quit::before { background-image: url('/assets/games/tetris/icons/exit.webp'); }
+  .lb-empty-ico { width: 44px; height: 44px; display: inline-block; }
+
+  /* 線上 lobby（建房等待） */
+  .online-lobby { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .online-lobby[hidden] { display: none; }
+  .lobby-label { margin: 0; font-size: 10px; letter-spacing: 3px; color: #6fa8d8; }
+  .lobby-code-row { display: flex; align-items: center; gap: 12px; }
+  .lobby-code {
+    font-size: clamp(26px, 6vw, 42px);
+    letter-spacing: 8px;
+    color: #36e6ff;
+    text-shadow: 0 0 14px rgba(54, 230, 255, 0.8);
+    padding-left: 8px;
+  }
+  .lobby-copy { font-size: 11px; padding: 10px 14px; }
+  .lobby-wait { margin: 0; font-size: 11px; letter-spacing: 1px; color: #cfe9ff; }
+  .lobby-wait.pending { animation: lobbyPulse 1.4s ease-in-out infinite; }
+  @keyframes lobbyPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  /* 線上 ESC：較淡背景（仍看得到盤面），非全暗暫停 */
+  .pause-menu.is-online { background: rgba(4, 6, 13, 0.5); backdrop-filter: none; }
+
+  .touch-notice {
+    margin: 0;
+    padding: 16px 18px;
+    font-size: 11px;
+    line-height: 2;
+    text-align: center;
+    color: #cfe9ff;
+    background: rgba(255, 210, 63, 0.08);
+    border: 1px solid rgba(255, 210, 63, 0.5);
+    border-radius: 10px;
+  }
+  .touch-notice[hidden] { display: none; }
+  .touch-notice strong { color: #ffd23f; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mm-tab, .ms-btn, .tetris-back { transition: none; }
+    .ms-btn:hover { transform: none; }
+  }
 </style>
 
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
   import { startAi } from '@scripts/games/tetris/render/aiMain';
+  import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
 
   type Diff = 'easy' | 'normal' | 'hard';
-  const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M';
+  const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · MUTE M';
+  const ONLINE_HINT = 'ONLINE · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC MENU · MUTE M';
 
   const params = new URLSearchParams(location.search);
   const canvas = document.getElementById('tetris-canvas') as HTMLCanvasElement | null;
   const hint = document.getElementById('tetris-hint');
-  const overlay = document.getElementById('mode-select');
+  const mainMenu = document.getElementById('main-menu');
+  const modeSelect = document.getElementById('mode-select');
+  const onlinePanel = document.getElementById('online-panel');
+  const statusEl = document.getElementById('online-status');
+  const touchNotice = document.getElementById('touch-notice');
+  // 觸控裝置（多半無實體鍵盤）→ 收掉遊玩入口、明講請用電腦；排行榜/檔案分頁仍可用
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  function showTouchNotice(): void {
+    if (modeSelect) modeSelect.hidden = true;
+    if (onlinePanel) onlinePanel.hidden = true;
+    if (touchNotice) touchNotice.hidden = false;
+  }
   let started = false;
+  let gameHandle: { pause?(): void; resume?(): void; restart?(): void } | null = null;
+  let gameRunning = false;
+  let pausable = false;
+  let menuOpen = false;
+  let resultOpen = false;
+  const pauseMenu = document.getElementById('pause-menu');
+  const pauseTitle = document.getElementById('pause-title');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function startMode(mode: string | null, diffRaw?: string | null): void {
+  const setHint = (t: string) => { if (hint) { hint.textContent = t; hint.hidden = false; } };
+
+  // ---- 合成音效（Web Audio，首次手勢時建立）----
+  let actx: AudioContext | null = null;
+  function blip(freq: number, dur = 0.08, type: OscillatorType = 'square'): void {
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      actx = actx ?? new Ctx();
+      if (actx.state === 'suspended') void actx.resume();
+      const o = actx.createOscillator();
+      const g = actx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      o.connect(g).connect(actx.destination);
+      const t = actx.currentTime;
+      g.gain.setValueAtTime(0.05, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.start(t);
+      o.stop(t + dur);
+    } catch { /* 音效非必要 */ }
+  }
+
+  // ---- ESC 暫停選單（solo/AI 暫停模擬；online 鎖步不可暫停 → 改「離開對戰？」確認、淡背景）----
+  function openPauseMenu(): void {
+    if (!gameRunning || menuOpen || resultOpen) return;
+    menuOpen = true;
+    if (pausable) gameHandle?.pause?.();
+    if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : '離開對戰？';
+    if (pauseMenu) { pauseMenu.classList.toggle('is-online', !pausable); pauseMenu.hidden = false; }
+    blip(300, 0.1);
+  }
+  function closePauseMenu(): void {
+    if (!menuOpen) return;
+    menuOpen = false;
+    if (pausable) gameHandle?.resume?.();
+    if (pauseMenu) pauseMenu.hidden = true;
+    blip(560, 0.07);
+  }
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !gameRunning || resultOpen) return;
+    e.preventDefault();
+    if (menuOpen) closePauseMenu();
+    else openPauseMenu();
+  });
+  document.getElementById('pause-resume')?.addEventListener('click', closePauseMenu);
+  document.getElementById('pause-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
+
+  // ---- 結算覆蓋層（SOLO game over / vs-AI 勝負）----
+  const resultMenu = document.getElementById('result-menu');
+  const resultTitle = document.getElementById('result-title');
+  function showResult(title: string): void {
+    resultOpen = true;
+    if (resultTitle) resultTitle.textContent = title;
+    if (resultMenu) resultMenu.hidden = false;
+    blip(440, 0.12, 'sawtooth');
+  }
+  document.getElementById('result-again')?.addEventListener('click', () => {
+    resultOpen = false;
+    if (resultMenu) resultMenu.hidden = true;
+    gameHandle?.restart?.();
+    blip(680, 0.07);
+  });
+  document.getElementById('result-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
+
+  // ---- 線上 lobby（建房等待對手）----
+  const lobby = document.getElementById('online-lobby');
+  const lobbyCode = document.getElementById('lobby-code');
+  const lobbyWait = document.getElementById('lobby-wait');
+  function showLobby(phase: string, room?: string): void {
+    if (modeSelect) modeSelect.hidden = true;
+    if (onlinePanel) onlinePanel.hidden = true;
+    if (lobby) lobby.hidden = false;
+    if (room && lobbyCode) lobbyCode.textContent = room;
+    if (lobbyWait) {
+      lobbyWait.textContent = phase === 'connecting' ? '連線中…' : phase === 'creating' ? '建立房間中…' : '等待對手加入…';
+      lobbyWait.classList.add('pending');
+    }
+  }
+  document.getElementById('lobby-copy')?.addEventListener('click', () => {
+    const code = lobbyCode?.textContent ?? '';
+    void navigator.clipboard?.writeText(code).then(() => {
+      const btn = document.getElementById('lobby-copy');
+      if (btn) { btn.textContent = '已複製'; setTimeout(() => { btn.textContent = '複製'; }, 1500); }
+    }).catch(() => {});
+    blip(700, 0.05);
+  });
+  document.getElementById('lobby-cancel')?.addEventListener('click', () => { location.href = '/games/tetris'; });
+
+  function startSolo(): void {
+    if (isTouch) { showTouchNotice(); return; }
     if (started || !canvas) return;
     started = true;
-    overlay?.remove();
-    if (mode === 'ai') {
-      const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
-      if (hint) {
-        hint.textContent = `vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · R RESTART · M MUTE`;
+    mainMenu?.remove();
+    setHint(SOLO_HINT);
+    startTetris(canvas, { onEnd: () => showResult('GAME OVER') })
+      .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
+      .catch((err: unknown) => console.error('[tetris] failed to start', err));
+  }
+
+  function startAiMode(diffRaw?: string | null): void {
+    if (isTouch) { showTouchNotice(); return; }
+    if (started || !canvas) return;
+    started = true;
+    mainMenu?.remove();
+    const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
+    setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · M MUTE`);
+    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS') })
+      .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
+      .catch((err: unknown) => console.error('[tetris] failed to start', err));
+  }
+
+  function showOnlinePanel(): void {
+    if (isTouch) { showTouchNotice(); return; }
+    if (modeSelect) modeSelect.hidden = true;
+    if (onlinePanel) onlinePanel.hidden = false;
+  }
+
+  function onStatus(s: NetStatus): void {
+    if (s.phase === 'creating' || s.phase === 'waiting' || s.phase === 'connecting') {
+      showLobby(s.phase, s.room);
+    } else if (s.phase === 'connected') {
+      mainMenu?.remove();
+      setHint(ONLINE_HINT);
+      gameRunning = true;
+      pausable = false; // 線上對戰為 P2P 鎖步，不可暫停
+    } else if (s.phase === 'error') {
+      started = false; // 允許重試
+      if (lobbyWait) {
+        lobbyWait.textContent = `連線失敗：${s.message ?? ''}（按取消重試）`;
+        lobbyWait.classList.remove('pending');
       }
-      startAi(canvas, diff).catch((err: unknown) => console.error('[tetris] failed to start', err));
-    } else {
-      if (hint) hint.textContent = SOLO_HINT;
-      startTetris(canvas).catch((err: unknown) => console.error('[tetris] failed to start', err));
     }
   }
 
-  const mode = params.get('mode');
-  if (mode === 'ai' || mode === 'solo') {
-    startMode(mode, params.get('diff')); // deep-link：跳過選單直接開
-  } else {
-    overlay?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
-      btn.addEventListener('click', () => startMode(btn.dataset.mode ?? null, btn.dataset.diff));
-    });
+  let wallet: { address: string; signMessage: (m: string) => Promise<string> } | null = null;
+
+  function buildIdentity(): Identity {
+    if (wallet) return { id: wallet.address, ranked: true, signMessage: wallet.signMessage };
+    const nameEl = document.getElementById('online-name') as HTMLInputElement | null;
+    const name = (nameEl?.value ?? '').trim();
+    return { id: name || `Guest-${Math.floor(Math.random() * 9000 + 1000)}`, ranked: false };
   }
+
+  async function onConnectWallet(): Promise<void> {
+    try {
+      wallet = await connectWallet();
+      if (wallet) {
+        const label = `${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)}`;
+        const onlineBtn = document.getElementById('online-wallet');
+        if (onlineBtn) { onlineBtn.textContent = `${label}（排名賽）`; onlineBtn.classList.add('connected'); }
+        const pfBtn = document.getElementById('profile-wallet');
+        if (pfBtn) { pfBtn.textContent = label; pfBtn.classList.add('connected'); }
+        void loadProfile(wallet.address);
+      } else if (statusEl) {
+        statusEl.textContent = '找不到錢包，將以暱稱進行（不計排名）';
+      }
+    } catch {
+      if (statusEl) statusEl.textContent = '錢包連接取消';
+    }
+  }
+
+  function beginHost(): void {
+    if (started || !canvas) return;
+    started = true;
+    hostGame(canvas, buildIdentity(), onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+  }
+  function beginJoin(): void {
+    const input = document.getElementById('online-room') as HTMLInputElement | null;
+    const room = (input?.value ?? '').trim().toUpperCase();
+    if (!room) { if (statusEl) statusEl.textContent = '請輸入房號'; return; }
+    if (started || !canvas) return;
+    started = true;
+    joinGame(canvas, room, buildIdentity(), onStatus).catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+  }
+
+  modeSelect?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const m = btn.dataset.mode;
+      if (m === 'solo') startSolo();
+      else if (m === 'ai') startAiMode(btn.dataset.diff);
+      else if (m === 'online') showOnlinePanel();
+    });
+  });
+  document.getElementById('online-wallet')?.addEventListener('click', () => void onConnectWallet());
+  document.getElementById('profile-wallet')?.addEventListener('click', () => void onConnectWallet());
+  document.getElementById('online-create')?.addEventListener('click', beginHost);
+  document.getElementById('online-join-btn')?.addEventListener('click', beginJoin);
+
+  // ---- 分頁切換 ----
+  const tabs = Array.from(document.querySelectorAll<HTMLElement>('.mm-tab'));
+  const panels: Record<string, HTMLElement | null> = {
+    play: document.getElementById('panel-play'),
+    leaderboard: document.getElementById('panel-leaderboard'),
+    profile: document.getElementById('panel-profile'),
+  };
+  let lbLoaded = false;
+  let activeTab = 'play';
+
+  /** 分頁切換的故障掃頻音效：saw 由高到低「vwip」+ square 由低到高「ting」。 */
+  function tabSound(): void {
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      actx = actx ?? new Ctx();
+      if (actx.state === 'suspended') void actx.resume();
+      const t = actx.currentTime;
+      const o1 = actx.createOscillator();
+      const g1 = actx.createGain();
+      o1.type = 'sawtooth';
+      o1.frequency.setValueAtTime(880, t);
+      o1.frequency.exponentialRampToValueAtTime(220, t + 0.08);
+      g1.gain.setValueAtTime(0.045, t);
+      g1.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+      o1.connect(g1).connect(actx.destination);
+      o1.start(t); o1.stop(t + 0.11);
+      const o2 = actx.createOscillator();
+      const g2 = actx.createGain();
+      o2.type = 'square';
+      o2.frequency.setValueAtTime(520, t + 0.05);
+      o2.frequency.exponentialRampToValueAtTime(900, t + 0.14);
+      g2.gain.setValueAtTime(0.0001, t + 0.05);
+      g2.gain.linearRampToValueAtTime(0.05, t + 0.07);
+      g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o2.connect(g2).connect(actx.destination);
+      o2.start(t + 0.05); o2.stop(t + 0.17);
+    } catch { /* 音效非必要 */ }
+  }
+
+  /** 分頁切換的故障揭示：由上往下 clip 撕開 + skew 抖動 + 亮度/色偏爆閃（WAAPI，可重觸發）。 */
+  function flashPanel(el: HTMLElement | null): void {
+    if (!el || reduceMotion || typeof el.animate !== 'function') return;
+    el.animate(
+      [
+        { clipPath: 'inset(0 0 100% 0)', opacity: 0.15, transform: 'translateY(-10px) skewX(-8deg) scale(0.98)', filter: 'brightness(3) saturate(1.8) hue-rotate(18deg)', offset: 0 },
+        { clipPath: 'inset(0 0 45% 0)', opacity: 1, transform: 'translateX(7px) skewX(5deg)', filter: 'brightness(2)', offset: 0.3 },
+        { clipPath: 'inset(0 0 12% 0)', opacity: 1, transform: 'translateX(-5px) skewX(-3deg)', filter: 'brightness(1.5)', offset: 0.55 },
+        { clipPath: 'inset(0 0 0 0)', opacity: 1, transform: 'translateX(2px) skewX(1deg)', filter: 'brightness(1.2)', offset: 0.8 },
+        { clipPath: 'inset(0 0 0 0)', opacity: 1, transform: 'none', filter: 'none', offset: 1 },
+      ],
+      { duration: 420, easing: 'cubic-bezier(0.2, 0.9, 0.2, 1)' },
+    );
+  }
+
+  /** 把指示條移到 active 分頁底部（animate=false 用於初始/resize，不滑動）。 */
+  function moveIndicator(animate: boolean): void {
+    const ind = document.getElementById('mm-tab-ind');
+    const tab = tabs.find((t) => t.dataset.tab === activeTab) ?? tabs[0];
+    if (!ind || !tab) return;
+    ind.style.transition = animate && !reduceMotion ? '' : 'none';
+    ind.style.width = `${tab.offsetWidth}px`;
+    ind.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop + tab.offsetHeight + 4}px)`;
+  }
+
+  function switchTab(name: string): void {
+    const changed = name !== activeTab;
+    tabs.forEach((t) => {
+      const on = t.dataset.tab === name;
+      t.classList.toggle('is-active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      if (on && changed && !reduceMotion && typeof t.animate === 'function') {
+        t.animate(
+          [
+            { transform: 'scale(1)', filter: 'brightness(1)' },
+            { transform: 'scale(1.16)', filter: 'brightness(1.9)', offset: 0.4 },
+            { transform: 'scale(1)', filter: 'brightness(1)' },
+          ],
+          { duration: 260, easing: 'cubic-bezier(0.2, 0.9, 0.2, 1)' },
+        );
+      }
+    });
+    for (const [key, el] of Object.entries(panels)) {
+      if (!el) continue;
+      const active = key === name;
+      el.classList.toggle('is-active', active);
+      el.hidden = !active;
+    }
+    if (name === 'play') {
+      if (isTouch) {
+        showTouchNotice();
+      } else {
+        // 還原模式選單：使用者可能先前點過「線上對戰」而隱藏了 SOLO/AI
+        if (modeSelect) modeSelect.hidden = false;
+        if (onlinePanel) onlinePanel.hidden = true;
+      }
+    }
+    if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }
+    if (name === 'profile' && wallet) void loadProfile(wallet.address);
+    activeTab = name;
+    moveIndicator(changed);
+    if (changed) {
+      flashPanel(panels[name]);
+      tabSound();
+    }
+  }
+  moveIndicator(false);
+  if (document.fonts?.ready) void document.fonts.ready.then(() => moveIndicator(false));
+  window.addEventListener('resize', () => moveIndicator(false));
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => switchTab(t.dataset.tab ?? 'play'));
+    // 方向鍵在分頁間移動焦點並切換（WAI-ARIA tablist 鍵盤模式）
+    t.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      const next = tabs[(i + dir + tabs.length) % tabs.length];
+      next.focus();
+      switchTab(next.dataset.tab ?? 'play');
+    });
+  });
+
+  // ---- 工具 ----
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+  }
+  function shortAddr(a: string): string {
+    return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
+  }
+
+  // ---- 排行榜 ----
+  interface LbRow { id: string; name?: string; level: number; rating: number; tier: string; wins: number; losses: number }
+  async function loadLeaderboard(): Promise<void> {
+    const list = document.getElementById('lb-list');
+    if (!list) return;
+    list.innerHTML = '<li class="lb-empty">載入中…</li>';
+    try {
+      const res = await fetch('/api/leaderboard?n=20');
+      const data = (await res.json()) as { rows: LbRow[] };
+      if (!data.rows.length) {
+        list.innerHTML = '<li class="lb-empty"><img class="lb-empty-ico" src="/assets/games/tetris/icons/trophy.webp" alt="" /><br />尚無紀錄<br /><span class="lb-empty-sub">打一場排名賽，搶下頭香！</span></li>';
+        return;
+      }
+      const head = '<li class="lb-row lb-head"><span>#</span><span>PLAYER</span><span>LV</span><span>TIER</span><span>ELO</span><span>W-L</span></li>';
+      const body = data.rows
+        .map((r, i) => {
+          const who = r.name ? escapeHtml(r.name) : shortAddr(r.id);
+          const cls = i === 0 ? 'lb-row lb-top' : 'lb-row';
+          return `<li class="${cls}"><span class="lb-rank">${i + 1}</span><span class="lb-name">${who}</span><span class="lb-lv">Lv.${r.level}</span><span class="lb-tier">${escapeHtml(r.tier)}</span><span class="lb-rating">${r.rating}</span><span class="lb-wl">${r.wins}-${r.losses}</span></li>`;
+        })
+        .join('');
+      list.innerHTML = head + body;
+    } catch {
+      list.innerHTML = '<li class="lb-empty">排行榜載入失敗</li>';
+    }
+  }
+
+  // ---- 個人檔案 ----
+  interface Profile { name: string | null; level: number; xp: number; progress: number; rating: number; tier: string; games: number; wins: number; losses: number; top3: number }
+  async function loadProfile(addr: string): Promise<void> {
+    const guest = document.getElementById('profile-guest');
+    const stats = document.getElementById('profile-stats');
+    if (!stats) return;
+    if (guest) guest.hidden = true;
+    stats.hidden = false;
+    stats.innerHTML = '<p class="profile-guest">載入中…</p>';
+    try {
+      const res = await fetch(`/api/profile?addr=${encodeURIComponent(addr)}`);
+      const data = (await res.json()) as { profile: Profile | null };
+      const p = data.profile;
+      if (!p) {
+        stats.innerHTML = '<p class="profile-guest">新玩家！打一場排名賽即可建立檔案。</p>';
+        return;
+      }
+      const name = p.name ? escapeHtml(p.name) : shortAddr(addr);
+      stats.innerHTML = [
+        `<div class="pf-row"><span class="pf-k">玩家</span><span>${name}</span></div>`,
+        `<div class="pf-row"><span class="pf-k">等級</span><span>Lv.${p.level}（XP ${p.xp}）</span></div>`,
+        `<div class="pf-bar"><i></i></div>`,
+        `<div class="pf-row"><span class="pf-k">積分</span><span>${p.rating} · ${p.tier}</span></div>`,
+        `<div class="pf-row"><span class="pf-k">戰績</span><span>${p.games} 場 · ${p.wins} 勝 ${p.losses} 敗</span></div>`,
+        `<div class="pf-row"><span class="pf-k">前三名次</span><span>${p.top3} 次</span></div>`,
+      ].join('');
+      const bar = stats.querySelector<HTMLElement>('.pf-bar > i');
+      if (bar) bar.style.setProperty('width', `${Math.round(p.progress * 100)}%`);
+    } catch {
+      stats.innerHTML = '<p class="profile-guest">檔案載入失敗</p>';
+    }
+  }
+
+  if (isTouch) showTouchNotice(); // 觸控裝置：PLAY 分頁直接顯示「請用電腦」提示
+
+  const mode = params.get('mode');
+  if (mode === 'solo') startSolo();
+  else if (mode === 'ai') startAiMode(params.get('diff'));
+  else if (mode === 'online') showOnlinePanel();
 </script>
