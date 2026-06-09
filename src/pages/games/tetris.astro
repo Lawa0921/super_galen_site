@@ -63,6 +63,15 @@ const lang: Language = defaultLang;
           本遊戲需用<strong>電腦鍵盤</strong>遊玩。<br />
           手機／觸控裝置請改用桌機開啟；<br />你仍可切換上方分頁查看排行榜與個人檔案。
         </p>
+        <div class="online-lobby" id="online-lobby" hidden>
+          <p class="lobby-label">房號 ROOM</p>
+          <div class="lobby-code-row">
+            <span class="lobby-code" id="lobby-code">·····</span>
+            <button class="ms-btn lobby-copy" id="lobby-copy" type="button">複製</button>
+          </div>
+          <p class="lobby-wait" id="lobby-wait">等待對手加入…</p>
+          <button class="ms-btn ms-hard" id="lobby-cancel" type="button">取消</button>
+        </div>
       </section>
 
       <section class="mm-panel" id="panel-leaderboard" hidden>
@@ -83,6 +92,14 @@ const lang: Language = defaultLang;
         <h2 class="pause-title" id="pause-title">PAUSED</h2>
         <button class="ms-btn ms-solo" id="pause-resume" type="button">繼續</button>
         <button class="ms-btn ms-hard" id="pause-quit" type="button">離開</button>
+      </div>
+    </div>
+
+    <div class="pause-menu" id="result-menu" hidden>
+      <div class="pause-card">
+        <h2 class="pause-title" id="result-title">GAME OVER</h2>
+        <button class="ms-btn ms-solo" id="result-again" type="button">再玩一次</button>
+        <button class="ms-btn ms-hard" id="result-quit" type="button">離開</button>
       </div>
     </div>
   </main>
@@ -362,7 +379,9 @@ const lang: Language = defaultLang;
   #panel-profile .ms-title::before,
   .ms-wallet::before,
   #pause-resume::before,
-  #pause-quit::before {
+  #pause-quit::before,
+  #result-again::before,
+  #result-quit::before {
     content: '';
     display: inline-block;
     width: 1.3em;
@@ -372,14 +391,36 @@ const lang: Language = defaultLang;
     background: center / contain no-repeat;
   }
   .mm-tab[data-tab='play']::before,
-  #pause-resume::before { background-image: url('/assets/games/tetris/icons/play.webp'); }
+  #pause-resume::before,
+  #result-again::before { background-image: url('/assets/games/tetris/icons/play.webp'); }
   .mm-tab[data-tab='leaderboard']::before,
   #panel-leaderboard .ms-title::before { background-image: url('/assets/games/tetris/icons/trophy.webp'); }
   .mm-tab[data-tab='profile']::before,
   #panel-profile .ms-title::before { background-image: url('/assets/games/tetris/icons/user.webp'); }
   .ms-wallet::before { background-image: url('/assets/games/tetris/icons/wallet.webp'); }
-  #pause-quit::before { background-image: url('/assets/games/tetris/icons/exit.webp'); }
+  #pause-quit::before,
+  #result-quit::before { background-image: url('/assets/games/tetris/icons/exit.webp'); }
   .lb-empty-ico { width: 44px; height: 44px; display: inline-block; }
+
+  /* 線上 lobby（建房等待） */
+  .online-lobby { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .online-lobby[hidden] { display: none; }
+  .lobby-label { margin: 0; font-size: 10px; letter-spacing: 3px; color: #6fa8d8; }
+  .lobby-code-row { display: flex; align-items: center; gap: 12px; }
+  .lobby-code {
+    font-size: clamp(26px, 6vw, 42px);
+    letter-spacing: 8px;
+    color: #36e6ff;
+    text-shadow: 0 0 14px rgba(54, 230, 255, 0.8);
+    padding-left: 8px;
+  }
+  .lobby-copy { font-size: 11px; padding: 10px 14px; }
+  .lobby-wait { margin: 0; font-size: 11px; letter-spacing: 1px; color: #cfe9ff; }
+  .lobby-wait.pending { animation: lobbyPulse 1.4s ease-in-out infinite; }
+  @keyframes lobbyPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  /* 線上 ESC：較淡背景（仍看得到盤面），非全暗暫停 */
+  .pause-menu.is-online { background: rgba(4, 6, 13, 0.5); backdrop-filter: none; }
 
   .touch-notice {
     margin: 0;
@@ -407,8 +448,8 @@ const lang: Language = defaultLang;
   import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
 
   type Diff = 'easy' | 'normal' | 'hard';
-  const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M';
-  const ONLINE_HINT = 'ONLINE · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · MUTE M';
+  const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · MUTE M';
+  const ONLINE_HINT = 'ONLINE · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC MENU · MUTE M';
 
   const params = new URLSearchParams(location.search);
   const canvas = document.getElementById('tetris-canvas') as HTMLCanvasElement | null;
@@ -426,10 +467,11 @@ const lang: Language = defaultLang;
     if (touchNotice) touchNotice.hidden = false;
   }
   let started = false;
-  let gameHandle: { pause?(): void; resume?(): void } | null = null;
+  let gameHandle: { pause?(): void; resume?(): void; restart?(): void } | null = null;
   let gameRunning = false;
   let pausable = false;
   let menuOpen = false;
+  let resultOpen = false;
   const pauseMenu = document.getElementById('pause-menu');
   const pauseTitle = document.getElementById('pause-title');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -456,13 +498,13 @@ const lang: Language = defaultLang;
     } catch { /* 音效非必要 */ }
   }
 
-  // ---- ESC 暫停選單（solo/AI 暫停模擬；online 鎖步不可暫停，只顯示選單）----
+  // ---- ESC 暫停選單（solo/AI 暫停模擬；online 鎖步不可暫停 → 改「離開對戰？」確認、淡背景）----
   function openPauseMenu(): void {
-    if (!gameRunning || menuOpen) return;
+    if (!gameRunning || menuOpen || resultOpen) return;
     menuOpen = true;
     if (pausable) gameHandle?.pause?.();
-    if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : 'MENU';
-    if (pauseMenu) pauseMenu.hidden = false;
+    if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : '離開對戰？';
+    if (pauseMenu) { pauseMenu.classList.toggle('is-online', !pausable); pauseMenu.hidden = false; }
     blip(300, 0.1);
   }
   function closePauseMenu(): void {
@@ -473,7 +515,7 @@ const lang: Language = defaultLang;
     blip(560, 0.07);
   }
   window.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || !gameRunning) return;
+    if (e.key !== 'Escape' || !gameRunning || resultOpen) return;
     e.preventDefault();
     if (menuOpen) closePauseMenu();
     else openPauseMenu();
@@ -481,13 +523,54 @@ const lang: Language = defaultLang;
   document.getElementById('pause-resume')?.addEventListener('click', closePauseMenu);
   document.getElementById('pause-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
 
+  // ---- 結算覆蓋層（SOLO game over / vs-AI 勝負）----
+  const resultMenu = document.getElementById('result-menu');
+  const resultTitle = document.getElementById('result-title');
+  function showResult(title: string): void {
+    resultOpen = true;
+    if (resultTitle) resultTitle.textContent = title;
+    if (resultMenu) resultMenu.hidden = false;
+    blip(440, 0.12, 'sawtooth');
+  }
+  document.getElementById('result-again')?.addEventListener('click', () => {
+    resultOpen = false;
+    if (resultMenu) resultMenu.hidden = true;
+    gameHandle?.restart?.();
+    blip(680, 0.07);
+  });
+  document.getElementById('result-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
+
+  // ---- 線上 lobby（建房等待對手）----
+  const lobby = document.getElementById('online-lobby');
+  const lobbyCode = document.getElementById('lobby-code');
+  const lobbyWait = document.getElementById('lobby-wait');
+  function showLobby(phase: string, room?: string): void {
+    if (modeSelect) modeSelect.hidden = true;
+    if (onlinePanel) onlinePanel.hidden = true;
+    if (lobby) lobby.hidden = false;
+    if (room && lobbyCode) lobbyCode.textContent = room;
+    if (lobbyWait) {
+      lobbyWait.textContent = phase === 'connecting' ? '連線中…' : phase === 'creating' ? '建立房間中…' : '等待對手加入…';
+      lobbyWait.classList.add('pending');
+    }
+  }
+  document.getElementById('lobby-copy')?.addEventListener('click', () => {
+    const code = lobbyCode?.textContent ?? '';
+    void navigator.clipboard?.writeText(code).then(() => {
+      const btn = document.getElementById('lobby-copy');
+      if (btn) { btn.textContent = '已複製'; setTimeout(() => { btn.textContent = '複製'; }, 1500); }
+    }).catch(() => {});
+    blip(700, 0.05);
+  });
+  document.getElementById('lobby-cancel')?.addEventListener('click', () => { location.href = '/games/tetris'; });
+
   function startSolo(): void {
     if (isTouch) { showTouchNotice(); return; }
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
     setHint(SOLO_HINT);
-    startTetris(canvas)
+    startTetris(canvas, { onEnd: () => showResult('GAME OVER') })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
@@ -498,8 +581,8 @@ const lang: Language = defaultLang;
     started = true;
     mainMenu?.remove();
     const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
-    setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · R RESTART · M MUTE`);
-    startAi(canvas, diff)
+    setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · M MUTE`);
+    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS') })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
@@ -511,20 +594,19 @@ const lang: Language = defaultLang;
   }
 
   function onStatus(s: NetStatus): void {
-    if (statusEl) {
-      if (s.phase === 'creating') statusEl.textContent = '建立房間中…';
-      else if (s.phase === 'waiting') statusEl.textContent = `房號：${s.room}\n把房號給對手，等待加入…`;
-      else if (s.phase === 'connecting') statusEl.textContent = '連線中…';
-      else if (s.phase === 'connected') statusEl.textContent = '已連線！';
-      else if (s.phase === 'error') statusEl.textContent = `連線失敗：${s.message ?? ''}`;
-    }
-    if (s.phase === 'connected') {
+    if (s.phase === 'creating' || s.phase === 'waiting' || s.phase === 'connecting') {
+      showLobby(s.phase, s.room);
+    } else if (s.phase === 'connected') {
       mainMenu?.remove();
       setHint(ONLINE_HINT);
       gameRunning = true;
       pausable = false; // 線上對戰為 P2P 鎖步，不可暫停
     } else if (s.phase === 'error') {
       started = false; // 允許重試
+      if (lobbyWait) {
+        lobbyWait.textContent = `連線失敗：${s.message ?? ''}（按取消重試）`;
+        lobbyWait.classList.remove('pending');
+      }
     }
   }
 

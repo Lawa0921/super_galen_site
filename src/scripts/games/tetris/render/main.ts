@@ -43,15 +43,20 @@ function computeLayout(stageW: number, stageH: number): Layout {
 }
 
 export interface TetrisHandle {
-  game: TetrisGame;
+  readonly game: TetrisGame;
   destroy(): void;
   /** 暫停模擬（單人可暫停）。 */
   pause(): void;
   resume(): void;
+  /** 重新開始一局（game over 後）。 */
+  restart(): void;
 }
 
-/** 掛載並啟動單人俄羅斯方塊到指定 canvas。 */
-export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHandle> {
+/** 掛載並啟動單人俄羅斯方塊到指定 canvas。onEnd 在 top-out（game over）時呼叫一次。 */
+export async function startTetris(
+  canvas: HTMLCanvasElement,
+  opts: { onEnd?: () => void } = {},
+): Promise<TetrisHandle> {
   const stage = await PixiStage.create(canvas);
   const tex = await loadGameTextures();
   stage.setBackground(tex.bg);
@@ -60,8 +65,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   const scrim = new Graphics();
   stage.bgLayer.addChild(scrim);
 
-  const seed = Math.floor(Math.random() * 1_000_000_000);
-  const game = new TetrisGame({ seed });
+  let game = new TetrisGame({ seed: Math.floor(Math.random() * 1_000_000_000) });
 
   const board = new BoardView(stage.bgLayer, stage.playLayer, tex.block, tex.frameWell, {
     frameTint: pieceTint('I'),
@@ -100,6 +104,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   const input = new InputController((action) => game.input(action), { das: 150, arr: 35 });
   const sound = new SoundManager();
   let paused = false;
+  let gameOverShown = false;
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.code === 'KeyM') {
@@ -170,6 +175,10 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
       stage.shake(6);
       sound.levelUp();
     }
+    if (state.status === 'topout' && !gameOverShown) {
+      gameOverShown = true;
+      opts.onEnd?.();
+    }
 
     board.render(state);
     hud.render(state);
@@ -179,9 +188,15 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
   stage.app.ticker.add(tick);
 
   const handle: TetrisHandle = {
-    game,
+    get game() { return game; },
     pause() { paused = true; },
     resume() { paused = false; },
+    restart() {
+      game = new TetrisGame({ seed: Math.floor(Math.random() * 1_000_000_000) });
+      lastLevel = game.getState().level;
+      gameOverShown = false;
+      paused = false;
+    },
     destroy() {
       stage.app.renderer.off('resize', onResize);
       window.removeEventListener('keydown', onKeyDown);
@@ -191,7 +206,7 @@ export async function startTetris(canvas: HTMLCanvasElement): Promise<TetrisHand
     },
   };
 
-  // e2e / 除錯掛鉤
-  (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = { game, handle, stage, fx };
+  // e2e / 除錯掛鉤（game 用 getter，restart 後仍指向當前局）
+  (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = { get game() { return game; }, handle, stage, fx };
   return handle;
 }

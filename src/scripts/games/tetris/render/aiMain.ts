@@ -22,10 +22,16 @@ export interface AiHandle {
   /** 暫停模擬（vs-AI 為本機對戰、可暫停）。 */
   pause(): void;
   resume(): void;
+  /** 重新開始一局（結算後）。 */
+  restart(): void;
 }
 
 /** vs AI 對戰：A = 人類（1P 鍵位）、B = bot。重用 Phase 3 雙盤渲染/攻擊/垃圾/結算。 */
-export async function startAi(canvas: HTMLCanvasElement, difficulty: Difficulty = 'normal'): Promise<AiHandle> {
+export async function startAi(
+  canvas: HTMLCanvasElement,
+  difficulty: Difficulty = 'normal',
+  opts: { onEnd?: (winner: Side) => void } = {},
+): Promise<AiHandle> {
   const stage = await PixiStage.create(canvas);
   const tex = await loadGameTextures();
   stage.setBackground(tex.bg);
@@ -97,7 +103,6 @@ export async function startAi(canvas: HTMLCanvasElement, difficulty: Difficulty 
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.code === 'KeyM') { e.preventDefault(); sound.ensure(); sound.toggle(); return; }
-    if (e.code === 'KeyR' && match.phase === 'result') { e.preventDefault(); reset(); return; }
     if (paused) return; // 暫停時不吃操作鍵
     const a = KEYMAP_1P[e.code];
     if (!a) return;
@@ -165,11 +170,12 @@ export async function startAi(canvas: HTMLCanvasElement, difficulty: Difficulty 
       handleEvents();
     } else if (match.phase === 'result' && !resultShown) {
       resultShown = true;
-      banner.text = `${match.winner === 'A' ? 'YOU WIN' : 'AI WINS'}\n\nPRESS R`;
-      banner.style.fontSize = 26;
+      banner.text = match.winner === 'A' ? 'YOU WIN' : 'AI WINS';
+      banner.style.fontSize = 30;
       banner.visible = true;
       stage.shake(12);
       sound.topout();
+      opts.onEnd?.(match.winner ?? 'B');
     }
 
     boardA.render(match.a.getState());
@@ -192,6 +198,7 @@ export async function startAi(canvas: HTMLCanvasElement, difficulty: Difficulty 
   return {
     pause() { paused = true; },
     resume() { paused = false; },
+    restart() { reset(); },
     destroy() {
       stage.app.renderer.off('resize', relayout);
       window.removeEventListener('keydown', onKeyDown);
