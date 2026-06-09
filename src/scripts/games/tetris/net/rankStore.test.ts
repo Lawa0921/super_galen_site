@@ -63,3 +63,11 @@ describe('PlayerRecord 擴充欄位', () => {
     expect(top.map((t) => t.id)).toEqual(['high', 'low']);
   });
 });
+
+describe('markSettled 原子性（首次 true、重複 false）', () => {
+  it('同一 matchId 第一次回 true、第二次回 false', async () => {
+    const s = new MemoryRankStore();
+    expect(await s.markSettled('m-atomic', 60)).toBe(true);
+    expect(await s.markSettled('m-atomic', 60)).toBe(false);
+  });
+});

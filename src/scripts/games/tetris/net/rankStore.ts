@@ -38,7 +38,8 @@ export interface RankStore {
   getReport(matchId: string, reporter: string): Promise<string | null>;
   setReport(matchId: string, reporter: string, winner: string, ttlSec: number): Promise<void>;
   isSettled(matchId: string): Promise<boolean>;
-  markSettled(matchId: string, ttlSec: number): Promise<void>;
+  /** 標記已結算；回傳 true 代表本次為首次（原子閘）。 */
+  markSettled(matchId: string, ttlSec: number): Promise<boolean>;
 }
 
 const LB_KEY = 'lb';
@@ -75,8 +76,11 @@ export class MemoryRankStore implements RankStore {
     const e = this.settled.get(matchId);
     return e !== undefined && e > Date.now();
   }
-  async markSettled(matchId: string, ttlSec: number): Promise<void> {
+  async markSettled(matchId: string, ttlSec: number): Promise<boolean> {
+    const e = this.settled.get(matchId);
+    if (e !== undefined && e > Date.now()) return false; // 已結算（未過期）
     this.settled.set(matchId, Date.now() + ttlSec * 1000);
+    return true;
   }
 }
 
@@ -119,8 +123,9 @@ export class UpstashRankStore implements RankStore {
   async isSettled(matchId: string): Promise<boolean> {
     return (await this.cmd('get', `done:${matchId}`)) !== null;
   }
-  async markSettled(matchId: string, ttlSec: number): Promise<void> {
-    await this.cmd('set', `done:${matchId}`, '1', 'EX', String(ttlSec));
+  async markSettled(matchId: string, ttlSec: number): Promise<boolean> {
+    const r = await this.cmd('set', `done:${matchId}`, '1', 'NX', 'EX', String(ttlSec));
+    return r === 'OK'; // NX 成功回 "OK"，已存在回 null
   }
 }
 
