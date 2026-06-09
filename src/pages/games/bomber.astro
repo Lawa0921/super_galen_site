@@ -53,13 +53,19 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
       <!-- CRT scanline + vignette overlay -->
       <div class="crt-overlay" aria-hidden="true"></div>
 
-      <!-- Title block -->
+      <!-- Outer arcade bezel frame corners -->
+      <div class="bezel-corner bezel-corner--tl" aria-hidden="true"></div>
+      <div class="bezel-corner bezel-corner--tr" aria-hidden="true"></div>
+      <div class="bezel-corner bezel-corner--bl" aria-hidden="true"></div>
+      <div class="bezel-corner bezel-corner--br" aria-hidden="true"></div>
+
+      <!-- Title bar (full width, top) -->
       <div class="ms-header">
         <h2 class="ms-title">SELECT YOUR BOMBER</h2>
         <p class="ms-subtitle">▶ PRESS START</p>
       </div>
 
-      <!-- Two character stations filling the screen -->
+      <!-- Two character STAGES -->
       <div class="char-cards">
         {chars.map((profile, idx) => {
           const id = profile.id;
@@ -67,10 +73,20 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
           return (
             <div class={`char-card char-card--${id}`} data-idx={idx}>
 
-              <!-- Spotlight beam behind character (CSS-only per-card) -->
-              <div class="spotlight-cone" aria-hidden="true"></div>
+              <!-- Big themed art block — full panel fill -->
+              <div
+                class="char-block"
+                style={`background-image:url('/assets/games/bomber/ui/block-${id}.png');image-rendering:pixelated`}
+                aria-hidden="true"
+              >
+                <!-- Gradient overlay darkening the bottom third for legibility -->
+                <div class="char-block-grad" aria-hidden="true"></div>
+              </div>
 
-              <!-- Full-body standee zone -->
+              <!-- Radial spotlight behind upper body -->
+              <div class="spotlight-radial" aria-hidden="true"></div>
+
+              <!-- Full-body standee — breaks out of frame at top -->
               <div class="char-figure">
                 <img
                   src={`/assets/games/bomber/portraits/${id}-full.png`}
@@ -82,7 +98,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
                 <div class="ground-glow" aria-hidden="true"></div>
               </div>
 
-              <!-- Name banner with notched corners -->
+              <!-- Angled name banner overlaid on the dark gradient zone -->
               <div class="char-banner">
                 <div class="char-name">{profile.name}</div>
                 <div class="char-role">{role}</div>
@@ -130,6 +146,25 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
             </div>
           );
         })}
+
+        <!-- ── Central divider / emblem ── -->
+        <div class="divider-seam" aria-hidden="true">
+          <!-- Decorative rivets -->
+          <div class="rivet rivet--top"></div>
+          <div class="rivet rivet--upper"></div>
+          <!-- Central bomb emblem -->
+          <div class="vs-emblem">
+            <div class="vs-glow-ring" aria-hidden="true"></div>
+            <img
+              src="/assets/games/bomber/ui/ic-bomb.png"
+              alt=""
+              class="vs-bomb-icon"
+              style="image-rendering:pixelated"
+            />
+          </div>
+          <div class="rivet rivet--lower"></div>
+          <div class="rivet rivet--bottom"></div>
+        </div>
       </div>
     </div>
 
@@ -148,7 +183,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     inset: 0;
     width: 100vw;
     height: 100vh;
-    background: #06070f;
+    background: #0a0c14;
     overflow: hidden;
   }
   .bomber-stage {
@@ -202,10 +237,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     align-items: center;
     justify-content: flex-start;
     font-family: 'Press Start 2P', Consolas, monospace;
-    /* Dramatic pixel arena background */
-    background:
-      url('/assets/games/bomber/ui/select-bg2.png') center / cover no-repeat;
-    image-rendering: pixelated;
+    background: #0a0c14;
     overflow: hidden;
   }
   .mode-select[hidden] {
@@ -217,52 +249,82 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 2;
-    /* Scanlines: 2px line every 3px */
+    z-index: 50;
     background:
       repeating-linear-gradient(
         to bottom,
         rgba(0, 0, 0, 0) 0px,
         rgba(0, 0, 0, 0) 2px,
-        rgba(0, 0, 0, 0.22) 2px,
-        rgba(0, 0, 0, 0.22) 3px
+        rgba(0, 0, 0, 0.18) 2px,
+        rgba(0, 0, 0, 0.18) 3px
       ),
-      /* Vignette: dark at edges, open at center so spotlights shine */
       radial-gradient(
-        ellipse 90% 80% at 50% 50%,
-        rgba(0, 0, 0, 0) 30%,
-        rgba(4, 5, 14, 0.55) 70%,
-        rgba(4, 5, 14, 0.82) 100%
+        ellipse 92% 82% at 50% 50%,
+        rgba(0, 0, 0, 0) 25%,
+        rgba(4, 5, 14, 0.45) 65%,
+        rgba(4, 5, 14, 0.78) 100%
       );
     animation: crt-flicker 5s steps(1) infinite;
   }
   @keyframes crt-flicker {
     0%,  94%, 96%, 100% { opacity: 1; }
-    95% { opacity: 0.92; }
+    95% { opacity: 0.91; }
   }
 
-  /* ─── Header / Title ─────────────────────────────────── */
+  /* ─── Bezel corner accents ───────────────────────────── */
+  .bezel-corner {
+    position: absolute;
+    z-index: 48;
+    width: 28px;
+    height: 28px;
+    pointer-events: none;
+    border-color: #ff9d3c;
+    border-style: solid;
+    opacity: 0.75;
+  }
+  .bezel-corner--tl {
+    top: 6px;
+    left: 6px;
+    border-width: 3px 0 0 3px;
+  }
+  .bezel-corner--tr {
+    top: 6px;
+    right: 6px;
+    border-width: 3px 3px 0 0;
+  }
+  .bezel-corner--bl {
+    bottom: 6px;
+    left: 6px;
+    border-width: 0 0 3px 3px;
+  }
+  .bezel-corner--br {
+    bottom: 6px;
+    right: 6px;
+    border-width: 0 3px 3px 0;
+  }
+
+  /* ─── Header / Title bar ─────────────────────────────── */
   .ms-header {
     position: relative;
     z-index: 10;
     text-align: center;
     padding-top: clamp(10px, 1.8vh, 22px);
     padding-bottom: clamp(4px, 0.8vh, 12px);
-    /* Thin amber top bar accent */
-    border-bottom: 2px solid rgba(255, 157, 60, 0.4);
+    border-bottom: 3px solid rgba(255, 157, 60, 0.55);
     width: 100%;
     background: linear-gradient(
       to bottom,
-      rgba(4, 5, 14, 0.72) 0%,
-      rgba(4, 5, 14, 0.28) 100%
+      rgba(4, 5, 14, 0.88) 0%,
+      rgba(4, 5, 14, 0.32) 100%
     );
+    /* Top amber line for the outer arcade frame feel */
+    box-shadow: 0 3px 18px rgba(255, 157, 60, 0.22);
   }
   .ms-title {
     margin: 0;
     font-size: clamp(16px, 3.2vw, 34px);
     letter-spacing: clamp(3px, 0.8vw, 8px);
     color: #fff2e6;
-    /* Chunky arcade: amber glow + black offset drop-shadow */
     text-shadow:
       4px 4px 0 #0a0c14,
       -2px -2px 0 #0a0c14,
@@ -282,12 +344,11 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     50%, 100% { opacity: 0; }
   }
 
-  /* ─── Character cards row ───────────────────────────── */
+  /* ─── Character stages row ───────────────────────────── */
   .char-cards {
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    justify-content: stretch;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -295,6 +356,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     z-index: 5;
   }
 
+  /* ─── Individual character stage / card ─────────────── */
   .char-card {
     position: relative;
     display: flex;
@@ -302,148 +364,175 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     align-items: center;
     flex: 1 1 0;
     min-width: 0;
-    overflow: hidden;
+    /* Allow standee to break OUT above the frame */
+    overflow: visible;
+    /* Clip only horizontal sides for cleanliness */
+    clip-path: none;
     padding: clamp(8px, 1.5vh, 18px) clamp(10px, 1.5vw, 28px) clamp(10px, 1.8vh, 20px);
     box-sizing: border-box;
-    /* Dark semi-transparent station panel with amber double border */
-    background: linear-gradient(
-      to bottom,
-      rgba(10, 8, 18, 0.55) 0%,
-      rgba(8, 6, 14, 0.75) 100%
-    );
     border: 3px solid rgba(255, 157, 60, 0.55);
-    /* Pulsing neon amber frame at idle */
     box-shadow:
-      inset 0 0 0 2px rgba(255, 90, 77, 0.15),
-      0 0 18px rgba(255, 157, 60, 0.2),
-      0 0 40px rgba(255, 90, 77, 0.1);
+      inset 0 0 0 2px rgba(255, 90, 77, 0.12),
+      0 0 24px rgba(255, 157, 60, 0.18),
+      0 0 50px rgba(255, 90, 77, 0.08);
     transition:
       border-color 0.18s ease,
       box-shadow 0.18s ease,
       transform 0.18s ease;
     animation: frame-pulse 2.4s ease-in-out infinite;
   }
-  /* Slight stagger for right card */
-  .char-card:last-child {
+  .char-card:nth-child(2) {
     animation-delay: 1.2s;
   }
   @keyframes frame-pulse {
     0%, 100% {
       box-shadow:
-        inset 0 0 0 2px rgba(255, 90, 77, 0.15),
-        0 0 18px rgba(255, 157, 60, 0.2),
-        0 0 40px rgba(255, 90, 77, 0.1);
+        inset 0 0 0 2px rgba(255, 90, 77, 0.12),
+        0 0 24px rgba(255, 157, 60, 0.18),
+        0 0 50px rgba(255, 90, 77, 0.08);
     }
     50% {
       box-shadow:
-        inset 0 0 0 2px rgba(255, 90, 77, 0.30),
-        0 0 32px rgba(255, 157, 60, 0.42),
-        0 0 70px rgba(255, 90, 77, 0.22);
+        inset 0 0 0 2px rgba(255, 90, 77, 0.28),
+        0 0 40px rgba(255, 157, 60, 0.38),
+        0 0 80px rgba(255, 90, 77, 0.18);
     }
   }
-  /* A vertical divider line between cards */
-  .char-card + .char-card {
-    border-left: none;
-  }
-  .char-card + .char-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 8%;
-    bottom: 8%;
-    width: 2px;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      rgba(255, 157, 60, 0.5) 30%,
-      rgba(255, 157, 60, 0.5) 70%,
-      transparent
-    );
-  }
 
-  /* Hover / focus: brighter border, scale, fast neon pulse */
+  /* Hover / focus: full neon activation */
   .char-card:hover,
   .char-card:focus-within {
-    border-color: rgba(255, 157, 60, 1);
-    transform: scale(1.03);
+    border-color: #ff9d3c;
+    transform: scale(1.02);
     animation: frame-pulse-hot 0.6s ease-in-out infinite;
-    z-index: 6;
+    z-index: 8;
   }
   @keyframes frame-pulse-hot {
     0%, 100% {
       box-shadow:
         inset 0 0 0 3px rgba(255, 90, 77, 0.5),
-        0 0 28px rgba(255, 157, 60, 0.7),
-        0 0 70px rgba(255, 90, 77, 0.45),
-        0 0 120px rgba(255, 210, 63, 0.2);
+        0 0 32px rgba(255, 157, 60, 0.75),
+        0 0 80px rgba(255, 90, 77, 0.5),
+        0 0 140px rgba(255, 210, 63, 0.22);
     }
     50% {
       box-shadow:
-        inset 0 0 0 3px rgba(255, 90, 77, 0.8),
-        0 0 50px rgba(255, 157, 60, 1),
-        0 0 100px rgba(255, 90, 77, 0.65),
-        0 0 160px rgba(255, 210, 63, 0.35);
+        inset 0 0 0 3px rgba(255, 90, 77, 0.85),
+        0 0 56px rgba(255, 157, 60, 1),
+        0 0 110px rgba(255, 90, 77, 0.68),
+        0 0 180px rgba(255, 210, 63, 0.38);
     }
   }
-  /* Brighten spotlight on hover */
-  .char-card:hover .spotlight-cone,
-  .char-card:focus-within .spotlight-cone {
+
+  /* Hover: brighten block + radial */
+  .char-card:hover .char-block,
+  .char-card:focus-within .char-block {
+    filter: brightness(1.18) saturate(1.15);
+  }
+  .char-card:hover .spotlight-radial,
+  .char-card:focus-within .spotlight-radial {
     opacity: 1;
   }
-  /* Intensify ground glow on hover */
   .char-card:hover .ground-glow,
   .char-card:focus-within .ground-glow {
     opacity: 1;
     animation: ground-glow-pulse-hot 0.5s ease-in-out infinite;
   }
-
-  /* ─── Spotlight cone (per-card CSS beam) ─────────────── */
-  .spotlight-cone {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 70%;
-    height: 65%;
-    /* Warm conic beam from top center, fading to transparent */
-    background: conic-gradient(
-      from -12deg at 50% 0%,
-      transparent 0deg,
-      rgba(255, 200, 120, 0.07) 8deg,
-      rgba(255, 175, 80, 0.14) 16deg,
-      rgba(255, 155, 60, 0.12) 24deg,
-      transparent 36deg
-    );
-    pointer-events: none;
-    opacity: 0.7;
-    transition: opacity 0.25s ease;
+  /* START button lift on card hover */
+  .char-card:hover .char-start,
+  .char-card:focus-within .char-start {
+    transform: translateY(-3px) scale(1.04);
+    color: #fff2e6;
+    background: rgba(255, 90, 40, 0.2);
+    box-shadow:
+      0 0 30px rgba(255, 157, 60, 0.85),
+      0 0 60px rgba(255, 90, 77, 0.5),
+      inset 0 0 14px rgba(255, 157, 60, 0.15);
+    text-shadow: 1px 1px 0 #0a0c14, 0 0 10px rgba(255, 200, 60, 1);
+    border-color: #ff9d3c;
   }
 
-  /* ─── Character figure zone ──────────────────────────── */
+  /* ─── Big themed art block ───────────────────────────── */
+  .char-block {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    /* Pixel-art texture intact */
+    image-rendering: pixelated;
+    /* Amber arcade frame inset double-line */
+    box-shadow:
+      inset 0 0 0 3px rgba(255, 157, 60, 0.85),
+      inset 0 0 0 6px rgba(255, 157, 60, 0.22);
+    /* Dark border sealing the art inside */
+    border: 3px solid rgba(255, 157, 60, 0.7);
+    overflow: hidden;
+    transition: filter 0.2s ease;
+    z-index: 0;
+  }
+  /* Dark gradient overlay on the bottom third for legibility */
+  .char-block-grad {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(8, 6, 12, 0.0) 0%,
+      rgba(8, 6, 12, 0.05) 45%,
+      rgba(8, 6, 12, 0.62) 72%,
+      rgba(8, 6, 12, 0.92) 100%
+    );
+  }
+
+  /* ─── Radial spotlight behind upper body ─────────────── */
+  .spotlight-radial {
+    position: absolute;
+    /* Center in upper 55% of card */
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 75%;
+    height: 58%;
+    background: radial-gradient(
+      ellipse 60% 70% at 50% 38%,
+      rgba(255, 200, 120, 0.13) 0%,
+      rgba(255, 160, 70, 0.07) 45%,
+      transparent 100%
+    );
+    pointer-events: none;
+    opacity: 0.75;
+    transition: opacity 0.25s ease;
+    z-index: 1;
+  }
+
+  /* ─── Character figure — breakout standee ───────────── */
   .char-figure {
     position: relative;
+    /* Sit in the flow: push toward top so standee top can overflow */
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    z-index: 3;
+    /* We need the image to peek above the card top,
+       so use a negative top margin to "pull" the figure up */
+    margin-top: -48px;
   }
   .char-fig-img {
     display: block;
-    height: clamp(180px, 40vh, 440px);
+    height: clamp(220px, 50vh, 520px);
     width: auto;
     object-fit: contain;
-    /* Subtle warmth drop-shadow */
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.75))
-            drop-shadow(0 0 6px rgba(255, 157, 60, 0.25));
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.88))
+            drop-shadow(0 0 8px rgba(255, 157, 60, 0.35))
+            drop-shadow(0 0 20px rgba(255, 90, 77, 0.2));
     position: relative;
     z-index: 2;
-    /* Idle bob animation */
     animation: idle-bob 2.2s ease-in-out infinite;
   }
-  /* Second card (mira) offset so they're not in sync */
-  .char-card:last-child .char-fig-img {
+  /* Offset second character */
+  .char-card:nth-child(2) .char-fig-img {
     animation-delay: -0.9s;
   }
   @keyframes idle-bob {
@@ -451,26 +540,27 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     50%       { transform: translateY(-6px); }
   }
 
-  /* Ground glow ellipse at character's feet */
+  /* Ground glow at feet */
   .ground-glow {
     position: absolute;
-    bottom: 0;
+    bottom: 2px;
     left: 50%;
     transform: translateX(-50%);
-    width: 60%;
-    height: 28px;
+    width: 64%;
+    height: 30px;
     background: radial-gradient(
       ellipse at 50% 100%,
-      rgba(255, 157, 60, 0.5) 0%,
-      rgba(255, 90, 77, 0.2) 50%,
+      rgba(255, 157, 60, 0.55) 0%,
+      rgba(255, 90, 77, 0.22) 50%,
       transparent 100%
     );
     border-radius: 50%;
     pointer-events: none;
     opacity: 0.65;
     animation: ground-glow-pulse 2.2s ease-in-out infinite;
+    z-index: 2;
   }
-  .char-card:last-child .ground-glow {
+  .char-card:nth-child(2) .ground-glow {
     animation-delay: -0.9s;
   }
   @keyframes ground-glow-pulse {
@@ -479,40 +569,40 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   }
   @keyframes ground-glow-pulse-hot {
     0%, 100% { opacity: 0.9; transform: translateX(-50%) scaleX(1.1); }
-    50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.25); }
+    50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.28); }
   }
 
-  /* ─── Name banner (notched arcade plate) ─────────────── */
+  /* ─── Angled name banner (arcade nameplate) ─────────── */
   .char-banner {
-    width: 100%;
+    width: 92%;
     text-align: center;
     padding: clamp(5px, 0.9vh, 10px) clamp(8px, 1vw, 14px);
     margin: clamp(4px, 0.6vh, 8px) 0;
-    background: rgba(8, 6, 18, 0.78);
-    border-top: 2px solid rgba(255, 157, 60, 0.7);
-    border-bottom: 2px solid rgba(255, 157, 60, 0.7);
-    /* Notched corners via clip-path */
+    background: rgba(8, 5, 16, 0.84);
+    border: 2px solid rgba(255, 157, 60, 0.78);
+    /* Notched + slightly angled corners — arcade nameplate */
     clip-path: polygon(
-      0 8px, 8px 0,
-      calc(100% - 8px) 0, 100% 8px,
-      100% calc(100% - 8px), calc(100% - 8px) 100%,
-      8px 100%, 0 calc(100% - 8px)
+      0 10px, 10px 0,
+      calc(100% - 10px) 0, 100% 10px,
+      100% calc(100% - 6px), calc(100% - 6px) 100%,
+      6px 100%, 0 calc(100% - 10px)
     );
     position: relative;
-    z-index: 3;
+    z-index: 4;
+    box-shadow: 0 0 16px rgba(255, 157, 60, 0.35);
   }
   .char-name {
-    font-size: clamp(15px, 2vw, 24px);
+    font-size: clamp(14px, 2vw, 24px);
     letter-spacing: 3px;
     color: #fff2e6;
     text-shadow:
       2px 2px 0 #0a0c14,
-      0 0 8px rgba(255, 157, 60, 0.8),
-      0 0 20px rgba(255, 157, 60, 0.4);
+      0 0 8px rgba(255, 157, 60, 0.85),
+      0 0 22px rgba(255, 157, 60, 0.45);
   }
   .char-role {
     margin-top: 3px;
-    font-size: clamp(7px, 1vw, 9px);
+    font-size: clamp(7px, 0.95vw, 9px);
     letter-spacing: 1.5px;
     color: #c98f6a;
   }
@@ -524,7 +614,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     flex-direction: column;
     gap: clamp(4px, 0.7vh, 8px);
     position: relative;
-    z-index: 3;
+    z-index: 4;
   }
   .stat-row {
     display: flex;
@@ -552,7 +642,6 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     border-radius: 2px;
     flex-shrink: 0;
   }
-  /* Solid filled pip: bright glowing amber */
   .pip--solid {
     background: linear-gradient(180deg, #ffda6b 0%, #ff8c1a 100%);
     box-shadow:
@@ -561,13 +650,11 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
       inset 0 1px 0 rgba(255, 255, 180, 0.4);
     border: 1px solid rgba(255, 200, 60, 0.6);
   }
-  /* Growth pip: dimmer outlined amber (cap potential) */
   .pip--growth {
     background: rgba(255, 130, 40, 0.18);
     border: 1px solid rgba(255, 157, 60, 0.45);
     box-shadow: 0 0 3px rgba(255, 157, 60, 0.2);
   }
-  /* Empty pip: dark outline */
   .pip--empty {
     background: rgba(10, 12, 20, 0.6);
     border: 1px solid rgba(80, 60, 40, 0.4);
@@ -598,10 +685,9 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     font-size: clamp(9px, 1.1vw, 12px);
     letter-spacing: 2px;
     color: #ffe9d6;
-    background: rgba(8, 12, 22, 0.85);
+    background: rgba(8, 12, 22, 0.88);
     border: 3px solid rgba(255, 157, 60, 0.8);
     border-radius: 0;
-    /* Notched plate look */
     clip-path: polygon(
       0 6px, 6px 0,
       calc(100% - 6px) 0, 100% 6px,
@@ -616,9 +702,10 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
       transform 0.15s ease,
       box-shadow 0.15s ease,
       color 0.15s ease,
-      background 0.15s ease;
+      background 0.15s ease,
+      border-color 0.15s ease;
     position: relative;
-    z-index: 3;
+    z-index: 5;
     width: 100%;
     margin-top: clamp(5px, 0.8vh, 10px);
     text-shadow: 1px 1px 0 #0a0c14, 0 0 6px rgba(255, 157, 60, 0.6);
@@ -632,6 +719,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
       0 0 60px rgba(255, 90, 77, 0.5),
       inset 0 0 14px rgba(255, 157, 60, 0.15);
     text-shadow: 1px 1px 0 #0a0c14, 0 0 10px rgba(255, 200, 60, 1);
+    border-color: #ff9d3c;
   }
   .ms-solo {
     border-color: rgba(255, 157, 60, 0.8);
@@ -639,8 +727,103 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   .ms-solo:hover {
     border-color: rgba(255, 157, 60, 1);
   }
-  .char-start {
-    /* inherits ms-btn, width:100% already set above */
+
+  /* ─── Central divider / emblem ───────────────────────── */
+  .divider-seam {
+    position: absolute;
+    /* Sits at the join of the two cards, centered horizontally */
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-50%);
+    /* Bold metallic seam strip */
+    width: 14px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+    /* Metallic amber strip gradient */
+    background: linear-gradient(
+      to right,
+      rgba(255, 90, 20, 0.12) 0%,
+      rgba(255, 157, 60, 0.55) 40%,
+      rgba(255, 220, 100, 0.75) 50%,
+      rgba(255, 157, 60, 0.55) 60%,
+      rgba(255, 90, 20, 0.12) 100%
+    );
+    box-shadow:
+      0 0 18px rgba(255, 157, 60, 0.6),
+      0 0 40px rgba(255, 90, 77, 0.3);
+    pointer-events: none;
+  }
+
+  /* Decorative rivets */
+  .rivet {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      #fff2e6 0%,
+      #ffb84d 40%,
+      #cc6600 100%
+    );
+    box-shadow:
+      0 0 6px rgba(255, 157, 60, 0.9),
+      0 0 12px rgba(255, 90, 0, 0.5);
+    flex-shrink: 0;
+  }
+
+  /* Central bomb emblem */
+  .vs-emblem {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .vs-glow-ring {
+    position: absolute;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 157, 60, 0.35) 0%,
+      rgba(255, 90, 77, 0.2) 55%,
+      transparent 100%
+    );
+    border: 2px solid rgba(255, 157, 60, 0.7);
+    box-shadow:
+      0 0 16px rgba(255, 157, 60, 0.8),
+      0 0 32px rgba(255, 90, 77, 0.5),
+      inset 0 0 10px rgba(255, 157, 60, 0.25);
+    animation: emblem-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes emblem-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 16px rgba(255, 157, 60, 0.8),
+        0 0 32px rgba(255, 90, 77, 0.5),
+        inset 0 0 10px rgba(255, 157, 60, 0.25);
+    }
+    50% {
+      box-shadow:
+        0 0 28px rgba(255, 157, 60, 1),
+        0 0 56px rgba(255, 90, 77, 0.75),
+        inset 0 0 16px rgba(255, 157, 60, 0.45);
+    }
+  }
+  .vs-bomb-icon {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    z-index: 1;
+    filter:
+      drop-shadow(0 0 6px rgba(255, 157, 60, 1))
+      drop-shadow(0 0 14px rgba(255, 90, 77, 0.8))
+      brightness(1.25);
   }
 
   /* ─── Game Over overlay ──────────────────────────────── */
