@@ -3,6 +3,8 @@ import { Assets, Texture, Rectangle, type TextureSource } from 'pixi.js';
 const SHEET_URL    = '/assets/games/bomber/sheet.png';
 const WALK_LENA_URL = '/assets/games/bomber/walk-lena.png';
 const WALK_MIRA_URL = '/assets/games/bomber/walk-mira.png';
+const WALK_AYA_URL  = '/assets/games/bomber/walk-aya.png';
+const WALK_ROSA_URL = '/assets/games/bomber/walk-rosa.png';
 
 /** 每格 64×64 px。Sheet 佈局 5 col × 3 row，0-indexed (col, row)。*/
 const F = 64;
@@ -31,6 +33,10 @@ export interface BomberTextures {
   walkLena:    Texture;
   /** Full 192×256 walk sheet for Mira (3 cols × 4 rows of 64×64 frames). */
   walkMira:    Texture;
+  /** Full 192×256 walk sheet for Aya (3 cols × 4 rows of 64×64 frames). */
+  walkAya:     Texture;
+  /** Full 192×256 walk sheet for Rosa (3 cols × 4 rows of 64×64 frames). */
+  walkRosa:    Texture;
 }
 
 /** 預載一張 sprite sheet (320×192)，切成 15 個 64×64 frame Textures 回傳。
@@ -41,15 +47,19 @@ export interface BomberTextures {
  *    row 2: puBomb(0,2) puSpeed(1,2) puShield(2,2) playerMira(3,2) heart(4,2)
  */
 export async function loadBomberTextures(): Promise<BomberTextures> {
-  const [sheet, walkLenaTex, walkMiraTex] = await Promise.all([
+  const [sheet, walkLenaTex, walkMiraTex, walkAyaTex, walkRosaTex] = await Promise.all([
     Assets.load(SHEET_URL)    as Promise<Texture>,
     Assets.load(WALK_LENA_URL) as Promise<Texture>,
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
+    Assets.load(WALK_AYA_URL)  as Promise<Texture>,
+    Assets.load(WALK_ROSA_URL) as Promise<Texture>,
   ]);
 
   sheet.source.scaleMode     = 'nearest';
   walkLenaTex.source.scaleMode = 'nearest';
   walkMiraTex.source.scaleMode = 'nearest';
+  walkAyaTex.source.scaleMode  = 'nearest';
+  walkRosaTex.source.scaleMode = 'nearest';
 
   const src = sheet.source;
   return {
@@ -74,5 +84,7 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     // walk sheets (separate textures, pixel-crisp)
     walkLena:    walkLenaTex,
     walkMira:    walkMiraTex,
+    walkAya:     walkAyaTex,
+    walkRosa:    walkRosaTex,
   };
 }

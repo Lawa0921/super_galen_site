@@ -1,6 +1,7 @@
 ---
 /**
  * /games/bomber — Dungeon Arcade: Dungeon Bomber
+ * Layout B: Cinematic hero-stage select (4 characters, roster panel)
  * 模式：SOLO；全螢幕 PixiJS 遊戲頁，由頁底腳本載入並 code-split。
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
@@ -9,12 +10,13 @@ import { CHARACTERS } from '@scripts/games/bomber/engine/characters';
 
 const lang: Language = defaultLang;
 
-const chars = [CHARACTERS.lena, CHARACTERS.mira];
+const chars = [CHARACTERS.lena, CHARACTERS.mira, CHARACTERS.aya, CHARACTERS.rosa];
 
-// Role labels for each character (hardcoded, two-only)
 const roleLabels: Record<string, string> = {
   lena: '工兵 / 坦',
   mira: '魔女 / 爆發',
+  aya:  '斥候 / 高速',
+  rosa: '隊長 / 重裝',
 };
 
 // Per-stat caps for bar scaling
@@ -49,6 +51,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
       <canvas id="bomber-canvas"></canvas>
     </div>
 
+    <!-- ── Mode Select — Layout B: Cinematic Hero Stage ── -->
     <div class="mode-select" id="mode-select">
       <!-- CRT scanline + vignette overlay -->
       <div class="crt-overlay" aria-hidden="true"></div>
@@ -65,108 +68,115 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
         <p class="ms-subtitle">▶ PRESS START</p>
       </div>
 
-      <!-- Two character STAGES -->
-      <div class="char-cards">
-        {chars.map((profile, idx) => {
-          const id = profile.id;
-          const role = roleLabels[id] ?? '';
-          return (
-            <div class={`char-card char-card--${id}`} data-idx={idx}>
+      <!-- ── Main Stage Area ── -->
+      <div class="stage-area">
 
-              <!-- Big themed art block — full panel fill -->
+        <!-- Hero panels (one per character, only active one is visible) -->
+        <div class="hero-stage">
+          {chars.map((profile, idx) => {
+            const id = profile.id;
+            const role = roleLabels[id] ?? '';
+            return (
               <div
-                class="char-block"
-                style={`background-image:url('/assets/games/bomber/ui/block-${id}.png');image-rendering:pixelated`}
-                aria-hidden="true"
+                class={`hero-panel${idx === 0 ? ' is-active' : ''}`}
+                data-char-panel={id}
               >
-                <!-- Gradient overlay darkening the bottom third for legibility -->
-                <div class="char-block-grad" aria-hidden="true"></div>
-              </div>
+                <!-- Warm radial spotlight behind standee -->
+                <div class="hero-spotlight" aria-hidden="true"></div>
 
-              <!-- Radial spotlight behind upper body -->
-              <div class="spotlight-radial" aria-hidden="true"></div>
-
-              <!-- Full-body standee — breaks out of frame at top -->
-              <div class="char-figure">
+                <!-- Full-body standee on the flame pedestal -->
                 <img
                   src={`/assets/games/bomber/portraits/${id}-full.png`}
                   alt={profile.name}
-                  class="char-fig-img"
+                  class="hero-standee"
                   style="image-rendering:pixelated"
                 />
-                <!-- Glow pool at feet -->
-                <div class="ground-glow" aria-hidden="true"></div>
-              </div>
 
-              <!-- Angled name banner overlaid on the dark gradient zone -->
-              <div class="char-banner">
-                <div class="char-name">{profile.name}</div>
-                <div class="char-role">{role}</div>
-              </div>
+                <!-- Pulsing flame glow ellipse at feet (pedestal glow) -->
+                <div class="hero-flame-glow" aria-hidden="true"></div>
 
-              <!-- Segmented arcade stat gauges -->
-              <div class="char-stats">
-                {statRows.map(({ key, label, icon }) => {
-                  const startVal = profile.start[key];
-                  const capVal   = profile.caps[key];
-                  const max      = barMax[key];
-                  const pips = Array.from({ length: max }, (_, i) => {
-                    if (i < startVal) return 'solid';
-                    if (i < capVal)   return 'growth';
-                    return 'empty';
-                  });
-                  return (
-                    <div class="stat-row">
-                      <img
-                        class="stat-icon"
-                        src={`/assets/games/bomber/ui/${icon}.png`}
-                        alt={label}
-                        title={label}
-                        width="20"
-                        height="20"
-                        style="image-rendering:pixelated"
-                      />
-                      <div class="stat-pips">
-                        {pips.map((kind) => (
-                          <span class={`pip pip--${kind}`}></span>
-                        ))}
+                <!-- Name + role label -->
+                <div class="hero-nameplate">
+                  <div class="hero-name">{profile.name}</div>
+                  <div class="hero-role">{role}</div>
+                </div>
+
+                <!-- Stat gauges panel -->
+                <div class="hero-stats">
+                  {statRows.map(({ key, label, icon }) => {
+                    const startVal = profile.start[key];
+                    const capVal   = profile.caps[key];
+                    const max      = barMax[key];
+                    const pips = Array.from({ length: max }, (_, i) => {
+                      if (i < startVal) return 'solid';
+                      if (i < capVal)   return 'growth';
+                      return 'empty';
+                    });
+                    return (
+                      <div class="stat-row">
+                        <img
+                          class="stat-icon"
+                          src={`/assets/games/bomber/ui/${icon}.png`}
+                          alt={label}
+                          title={label}
+                          width="18"
+                          height="18"
+                          style="image-rendering:pixelated"
+                        />
+                        <div class="stat-pips">
+                          {pips.map((kind) => (
+                            <span class={`pip pip--${kind}`}></span>
+                          ))}
+                        </div>
+                        <span class="stat-val">
+                          <span class="stat-num">{startVal}</span>
+                          <span class="arrow">→</span>
+                          <span class="stat-num stat-num--cap">{capVal}</span>
+                        </span>
                       </div>
-                      <span class="stat-val">
-                        <span class="stat-num">{startVal}</span>
-                        <span class="arrow">→</span>
-                        <span class="stat-num stat-num--cap">{capVal}</span>
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-
-              <!-- START button -->
-              <button class="ms-btn ms-solo char-start" data-char={id}>▶ START</button>
-            </div>
-          );
-        })}
-
-        <!-- ── Central divider / emblem ── -->
-        <div class="divider-seam" aria-hidden="true">
-          <!-- Decorative rivets -->
-          <div class="rivet rivet--top"></div>
-          <div class="rivet rivet--upper"></div>
-          <!-- Central bomb emblem -->
-          <div class="vs-emblem">
-            <div class="vs-glow-ring" aria-hidden="true"></div>
-            <img
-              src="/assets/games/bomber/ui/ic-bomb.png"
-              alt=""
-              class="vs-bomb-icon"
-              style="image-rendering:pixelated"
-            />
-          </div>
-          <div class="rivet rivet--lower"></div>
-          <div class="rivet rivet--bottom"></div>
+            );
+          })}
         </div>
-      </div>
-    </div>
+
+        <!-- Roster panel (right column) -->
+        <div class="roster">
+          <div class="roster-label" aria-hidden="true">ROSTER</div>
+          {chars.map((profile, idx) => {
+            const id = profile.id;
+            const role = roleLabels[id] ?? '';
+            return (
+              <button
+                class={`roster-item${idx === 0 ? ' is-selected' : ''}`}
+                data-char={id}
+                type="button"
+              >
+                <img
+                  src={`/assets/games/bomber/portraits/${id}-full.png`}
+                  alt={profile.name}
+                  class="roster-thumb"
+                  style="image-rendering:pixelated"
+                />
+                <div class="roster-info">
+                  <span class="roster-name">{profile.name}</span>
+                  <span class="roster-role">{role}</span>
+                </div>
+                <div class="roster-sel-bar" aria-hidden="true"></div>
+              </button>
+            );
+          })}
+
+          <!-- START button in roster panel -->
+          <button class="ms-btn ms-solo roster-start" data-action="start" type="button">
+            ▶ START
+          </button>
+        </div>
+
+      </div><!-- /stage-area -->
+    </div><!-- /mode-select -->
 
     <div class="bomber-over" id="bomber-over" hidden>
       <h2 class="ms-title">GAME OVER</h2>
@@ -227,17 +237,19 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     pointer-events: none;
   }
 
-  /* ─── Mode-select full-screen ────────────────────────── */
+  /* ─── Mode-select full-screen (Layout B) ─────────────── */
   .mode-select {
     position: absolute;
     inset: 0;
     z-index: 20;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
+    align-items: stretch;
     font-family: 'Press Start 2P', Consolas, monospace;
-    background: #0a0c14;
+    /* Hero-bg: dungeon stage with flame pedestal spotlight */
+    background:
+      url('/assets/games/bomber/ui/hero-bg.png') center / cover no-repeat;
+    image-rendering: pixelated;
     overflow: hidden;
   }
   .mode-select[hidden] {
@@ -255,14 +267,14 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
         to bottom,
         rgba(0, 0, 0, 0) 0px,
         rgba(0, 0, 0, 0) 2px,
-        rgba(0, 0, 0, 0.18) 2px,
-        rgba(0, 0, 0, 0.18) 3px
+        rgba(0, 0, 0, 0.15) 2px,
+        rgba(0, 0, 0, 0.15) 3px
       ),
       radial-gradient(
         ellipse 92% 82% at 50% 50%,
         rgba(0, 0, 0, 0) 25%,
-        rgba(4, 5, 14, 0.45) 65%,
-        rgba(4, 5, 14, 0.78) 100%
+        rgba(4, 5, 14, 0.42) 65%,
+        rgba(4, 5, 14, 0.72) 100%
       );
     animation: crt-flicker 5s steps(1) infinite;
   }
@@ -282,26 +294,10 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     border-style: solid;
     opacity: 0.75;
   }
-  .bezel-corner--tl {
-    top: 6px;
-    left: 6px;
-    border-width: 3px 0 0 3px;
-  }
-  .bezel-corner--tr {
-    top: 6px;
-    right: 6px;
-    border-width: 3px 3px 0 0;
-  }
-  .bezel-corner--bl {
-    bottom: 6px;
-    left: 6px;
-    border-width: 0 0 3px 3px;
-  }
-  .bezel-corner--br {
-    bottom: 6px;
-    right: 6px;
-    border-width: 0 3px 3px 0;
-  }
+  .bezel-corner--tl { top: 6px; left: 6px;   border-width: 3px 0 0 3px; }
+  .bezel-corner--tr { top: 6px; right: 6px;  border-width: 3px 3px 0 0; }
+  .bezel-corner--bl { bottom: 6px; left: 6px;  border-width: 0 0 3px 3px; }
+  .bezel-corner--br { bottom: 6px; right: 6px; border-width: 0 3px 3px 0; }
 
   /* ─── Header / Title bar ─────────────────────────────── */
   .ms-header {
@@ -314,16 +310,16 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     width: 100%;
     background: linear-gradient(
       to bottom,
-      rgba(4, 5, 14, 0.88) 0%,
-      rgba(4, 5, 14, 0.32) 100%
+      rgba(4, 5, 14, 0.92) 0%,
+      rgba(4, 5, 14, 0.3) 100%
     );
-    /* Top amber line for the outer arcade frame feel */
     box-shadow: 0 3px 18px rgba(255, 157, 60, 0.22);
+    flex-shrink: 0;
   }
   .ms-title {
     margin: 0;
-    font-size: clamp(16px, 3.2vw, 34px);
-    letter-spacing: clamp(3px, 0.8vw, 8px);
+    font-size: clamp(14px, 2.6vw, 30px);
+    letter-spacing: clamp(3px, 0.7vw, 7px);
     color: #fff2e6;
     text-shadow:
       4px 4px 0 #0a0c14,
@@ -334,7 +330,7 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   }
   .ms-subtitle {
     margin: clamp(4px, 0.6vh, 8px) 0 0;
-    font-size: clamp(7px, 1.1vw, 9px);
+    font-size: clamp(7px, 1vw, 9px);
     letter-spacing: 2px;
     color: #ff9d3c;
     animation: blink-press 1s steps(1) infinite;
@@ -344,277 +340,155 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     50%, 100% { opacity: 0; }
   }
 
-  /* ─── Character stages row ───────────────────────────── */
-  .char-cards {
+  /* ─── Stage area: hero stage (left) + roster (right) ─── */
+  .stage-area {
     display: flex;
     flex-direction: row;
-    align-items: stretch;
     flex: 1 1 auto;
     min-height: 0;
-    width: 100%;
     position: relative;
     z-index: 5;
+    /* Semi-transparent dark layer over hero-bg for the whole stage area */
+    background: rgba(4, 5, 14, 0.25);
   }
 
-  /* ─── Individual character stage / card ─────────────── */
-  .char-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1 1 0;
+  /* ─── Hero stage panel (left/center, ~72% width) ─────── */
+  .hero-stage {
+    flex: 1 1 auto;
     min-width: 0;
-    /* Allow standee to break OUT above the frame */
-    overflow: visible;
-    /* Clip only horizontal sides for cleanliness */
-    clip-path: none;
-    padding: clamp(8px, 1.5vh, 18px) clamp(10px, 1.5vw, 28px) clamp(10px, 1.8vh, 20px);
-    box-sizing: border-box;
-    border: 3px solid rgba(255, 157, 60, 0.55);
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 90, 77, 0.12),
-      0 0 24px rgba(255, 157, 60, 0.18),
-      0 0 50px rgba(255, 90, 77, 0.08);
-    transition:
-      border-color 0.18s ease,
-      box-shadow 0.18s ease,
-      transform 0.18s ease;
-    animation: frame-pulse 2.4s ease-in-out infinite;
-  }
-  .char-card:nth-child(2) {
-    animation-delay: 1.2s;
-  }
-  @keyframes frame-pulse {
-    0%, 100% {
-      box-shadow:
-        inset 0 0 0 2px rgba(255, 90, 77, 0.12),
-        0 0 24px rgba(255, 157, 60, 0.18),
-        0 0 50px rgba(255, 90, 77, 0.08);
-    }
-    50% {
-      box-shadow:
-        inset 0 0 0 2px rgba(255, 90, 77, 0.28),
-        0 0 40px rgba(255, 157, 60, 0.38),
-        0 0 80px rgba(255, 90, 77, 0.18);
-    }
-  }
-
-  /* Hover / focus: full neon activation */
-  .char-card:hover,
-  .char-card:focus-within {
-    border-color: #ff9d3c;
-    transform: scale(1.02);
-    animation: frame-pulse-hot 0.6s ease-in-out infinite;
-    z-index: 8;
-  }
-  @keyframes frame-pulse-hot {
-    0%, 100% {
-      box-shadow:
-        inset 0 0 0 3px rgba(255, 90, 77, 0.5),
-        0 0 32px rgba(255, 157, 60, 0.75),
-        0 0 80px rgba(255, 90, 77, 0.5),
-        0 0 140px rgba(255, 210, 63, 0.22);
-    }
-    50% {
-      box-shadow:
-        inset 0 0 0 3px rgba(255, 90, 77, 0.85),
-        0 0 56px rgba(255, 157, 60, 1),
-        0 0 110px rgba(255, 90, 77, 0.68),
-        0 0 180px rgba(255, 210, 63, 0.38);
-    }
-  }
-
-  /* Hover: brighten block + radial */
-  .char-card:hover .char-block,
-  .char-card:focus-within .char-block {
-    filter: brightness(1.18) saturate(1.15);
-  }
-  .char-card:hover .spotlight-radial,
-  .char-card:focus-within .spotlight-radial {
-    opacity: 1;
-  }
-  .char-card:hover .ground-glow,
-  .char-card:focus-within .ground-glow {
-    opacity: 1;
-    animation: ground-glow-pulse-hot 0.5s ease-in-out infinite;
-  }
-  /* START button lift on card hover */
-  .char-card:hover .char-start,
-  .char-card:focus-within .char-start {
-    transform: translateY(-3px) scale(1.04);
-    color: #fff2e6;
-    background: rgba(255, 90, 40, 0.2);
-    box-shadow:
-      0 0 30px rgba(255, 157, 60, 0.85),
-      0 0 60px rgba(255, 90, 77, 0.5),
-      inset 0 0 14px rgba(255, 157, 60, 0.15);
-    text-shadow: 1px 1px 0 #0a0c14, 0 0 10px rgba(255, 200, 60, 1);
-    border-color: #ff9d3c;
-  }
-
-  /* ─── Big themed art block ───────────────────────────── */
-  .char-block {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    /* Pixel-art texture intact */
-    image-rendering: pixelated;
-    /* Amber arcade frame inset double-line */
-    box-shadow:
-      inset 0 0 0 3px rgba(255, 157, 60, 0.85),
-      inset 0 0 0 6px rgba(255, 157, 60, 0.22);
-    /* Dark border sealing the art inside */
-    border: 3px solid rgba(255, 157, 60, 0.7);
+    position: relative;
     overflow: hidden;
-    transition: filter 0.2s ease;
-    z-index: 0;
-  }
-  /* Dark gradient overlay on the bottom third for legibility */
-  .char-block-grad {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(8, 6, 12, 0.0) 0%,
-      rgba(8, 6, 12, 0.05) 45%,
-      rgba(8, 6, 12, 0.62) 72%,
-      rgba(8, 6, 12, 0.92) 100%
-    );
   }
 
-  /* ─── Radial spotlight behind upper body ─────────────── */
-  .spotlight-radial {
+  /* Hero panels: only .is-active is visible */
+  .hero-panel {
+    display: none;
     position: absolute;
-    /* Center in upper 55% of card */
-    top: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 75%;
-    height: 58%;
+    inset: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: clamp(12px, 2vh, 28px) clamp(12px, 2vw, 32px);
+    box-sizing: border-box;
+  }
+  .hero-panel.is-active {
+    display: flex;
+  }
+
+  /* Radial spotlight behind standee upper body */
+  .hero-spotlight {
+    position: absolute;
+    /* Spotlight originates from the left-of-center column (pedestal area) */
+    left: 12%;
+    top: -5%;
+    width: 58%;
+    height: 90%;
     background: radial-gradient(
-      ellipse 60% 70% at 50% 38%,
-      rgba(255, 200, 120, 0.13) 0%,
-      rgba(255, 160, 70, 0.07) 45%,
+      ellipse 55% 65% at 46% 42%,
+      rgba(255, 210, 130, 0.18) 0%,
+      rgba(255, 157, 60, 0.10) 40%,
       transparent 100%
     );
     pointer-events: none;
-    opacity: 0.75;
-    transition: opacity 0.25s ease;
     z-index: 1;
+    animation: spotlight-breathe 3.2s ease-in-out infinite;
+  }
+  @keyframes spotlight-breathe {
+    0%, 100% { opacity: 0.75; }
+    50% { opacity: 1; }
   }
 
-  /* ─── Character figure — breakout standee ───────────── */
-  .char-figure {
-    position: relative;
-    /* Sit in the flow: push toward top so standee top can overflow */
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    z-index: 3;
-    /* We need the image to peek above the card top,
-       so use a negative top margin to "pull" the figure up */
-    margin-top: -48px;
-  }
-  .char-fig-img {
-    display: block;
-    height: clamp(220px, 50vh, 520px);
+  /* Full-body standee — stands on the pedestal */
+  .hero-standee {
+    /* Left-of-center, anchored to bottom */
+    position: absolute;
+    left: 38%;
+    transform: translateX(-50%);
+    bottom: clamp(60px, 14vh, 140px);
+    height: clamp(260px, 56vh, 560px);
     width: auto;
     object-fit: contain;
-    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.88))
-            drop-shadow(0 0 8px rgba(255, 157, 60, 0.35))
-            drop-shadow(0 0 20px rgba(255, 90, 77, 0.2));
-    position: relative;
-    z-index: 2;
+    z-index: 3;
+    filter:
+      drop-shadow(0 6px 24px rgba(0, 0, 0, 0.9))
+      drop-shadow(0 0 10px rgba(255, 157, 60, 0.45))
+      drop-shadow(0 0 28px rgba(255, 90, 77, 0.25));
     animation: idle-bob 2.2s ease-in-out infinite;
   }
-  /* Offset second character */
-  .char-card:nth-child(2) .char-fig-img {
-    animation-delay: -0.9s;
-  }
   @keyframes idle-bob {
-    0%, 100% { transform: translateY(0px); }
-    50%       { transform: translateY(-6px); }
+    0%, 100% { transform: translateX(-50%) translateY(0px); }
+    50%       { transform: translateX(-50%) translateY(-6px); }
   }
 
-  /* Ground glow at feet */
-  .ground-glow {
+  /* Pulsing flame-glow ellipse at feet (enhances pedestal flames in bg) */
+  .hero-flame-glow {
     position: absolute;
-    bottom: 2px;
-    left: 50%;
+    left: 38%;
     transform: translateX(-50%);
-    width: 64%;
-    height: 30px;
+    bottom: clamp(55px, 12vh, 120px);
+    width: clamp(100px, 18vw, 220px);
+    height: clamp(20px, 4vh, 48px);
     background: radial-gradient(
       ellipse at 50% 100%,
-      rgba(255, 157, 60, 0.55) 0%,
-      rgba(255, 90, 77, 0.22) 50%,
+      rgba(255, 100, 30, 0.75) 0%,
+      rgba(255, 157, 60, 0.45) 40%,
+      rgba(255, 90, 77, 0.15) 70%,
       transparent 100%
     );
     border-radius: 50%;
     pointer-events: none;
-    opacity: 0.65;
-    animation: ground-glow-pulse 2.2s ease-in-out infinite;
     z-index: 2;
+    animation: flame-pulse 1.6s ease-in-out infinite;
   }
-  .char-card:nth-child(2) .ground-glow {
-    animation-delay: -0.9s;
-  }
-  @keyframes ground-glow-pulse {
-    0%, 100% { opacity: 0.55; transform: translateX(-50%) scaleX(1); }
-    50%       { opacity: 0.85; transform: translateX(-50%) scaleX(1.12); }
-  }
-  @keyframes ground-glow-pulse-hot {
-    0%, 100% { opacity: 0.9; transform: translateX(-50%) scaleX(1.1); }
-    50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.28); }
+  @keyframes flame-pulse {
+    0%, 100% { opacity: 0.7; transform: translateX(-50%) scaleX(1); }
+    50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.18); }
   }
 
-  /* ─── Angled name banner (arcade nameplate) ─────────── */
-  .char-banner {
-    width: 92%;
-    text-align: center;
-    padding: clamp(5px, 0.9vh, 10px) clamp(8px, 1vw, 14px);
-    margin: clamp(4px, 0.6vh, 8px) 0;
-    background: rgba(8, 5, 16, 0.84);
-    border: 2px solid rgba(255, 157, 60, 0.78);
-    /* Notched + slightly angled corners — arcade nameplate */
-    clip-path: polygon(
-      0 10px, 10px 0,
-      calc(100% - 10px) 0, 100% 10px,
-      100% calc(100% - 6px), calc(100% - 6px) 100%,
-      6px 100%, 0 calc(100% - 10px)
-    );
+  /* Name + role below standee — bottom-left area of hero stage */
+  .hero-nameplate {
     position: relative;
     z-index: 4;
-    box-shadow: 0 0 16px rgba(255, 157, 60, 0.35);
+    padding: clamp(6px, 1vh, 12px) clamp(10px, 1.5vw, 20px);
+    background: rgba(6, 4, 16, 0.88);
+    border: 2px solid rgba(255, 157, 60, 0.8);
+    clip-path: polygon(
+      0 8px, 8px 0,
+      calc(100% - 8px) 0, 100% 8px,
+      100% calc(100% - 6px), calc(100% - 6px) 100%,
+      6px 100%, 0 calc(100% - 8px)
+    );
+    box-shadow: 0 0 18px rgba(255, 157, 60, 0.32);
+    margin-bottom: clamp(6px, 1vh, 14px);
   }
-  .char-name {
-    font-size: clamp(14px, 2vw, 24px);
+  .hero-name {
+    font-size: clamp(16px, 2.4vw, 28px);
     letter-spacing: 3px;
     color: #fff2e6;
     text-shadow:
       2px 2px 0 #0a0c14,
-      0 0 8px rgba(255, 157, 60, 0.85),
-      0 0 22px rgba(255, 157, 60, 0.45);
+      0 0 8px rgba(255, 157, 60, 0.9),
+      0 0 22px rgba(255, 157, 60, 0.5);
   }
-  .char-role {
-    margin-top: 3px;
+  .hero-role {
+    margin-top: 4px;
     font-size: clamp(7px, 0.95vw, 9px);
     letter-spacing: 1.5px;
     color: #c98f6a;
   }
 
-  /* ─── Segmented arcade stat gauges ───────────────────── */
-  .char-stats {
-    width: 100%;
+  /* Stat gauges — below nameplate, in opaque dark panel */
+  .hero-stats {
     display: flex;
     flex-direction: column;
     gap: clamp(4px, 0.7vh, 8px);
     position: relative;
     z-index: 4;
+    background: rgba(6, 4, 16, 0.82);
+    border: 2px solid rgba(255, 157, 60, 0.45);
+    border-radius: 0;
+    padding: clamp(6px, 1vh, 12px) clamp(8px, 1.2vw, 16px);
+    box-shadow: 0 0 12px rgba(255, 90, 77, 0.12);
   }
   .stat-row {
     display: flex;
@@ -622,8 +496,8 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     gap: 6px;
   }
   .stat-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
   }
@@ -637,8 +511,8 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   }
   .pip {
     display: inline-block;
-    width: clamp(8px, 1.4vw, 16px);
-    height: clamp(8px, 1.3vh, 14px);
+    width: clamp(7px, 1.2vw, 14px);
+    height: clamp(7px, 1.2vh, 12px);
     border-radius: 2px;
     flex-shrink: 0;
   }
@@ -661,24 +535,145 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   }
   .stat-val {
     flex-shrink: 0;
-    font-size: clamp(7px, 0.9vw, 9px);
+    font-size: clamp(7px, 0.85vw, 9px);
     letter-spacing: 0;
     color: #ffd7a8;
     text-align: right;
-    min-width: 36px;
+    min-width: 34px;
   }
-  .stat-num {
-    color: #ffd23f;
-  }
-  .stat-num--cap {
-    color: #ff9d3c;
-  }
-  .arrow {
-    color: #c98f6a;
-    margin: 0 1px;
+  .stat-num { color: #ffd23f; }
+  .stat-num--cap { color: #ff9d3c; }
+  .arrow { color: #c98f6a; margin: 0 1px; }
+
+  /* ─── Roster panel (right column, ~28% width) ────────── */
+  .roster {
+    flex: 0 0 clamp(160px, 26vw, 300px);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: clamp(4px, 0.6vh, 8px);
+    padding: clamp(8px, 1.4vh, 18px) clamp(8px, 1.2vw, 16px);
+    box-sizing: border-box;
+    background: rgba(4, 5, 14, 0.76);
+    border-left: 3px solid rgba(255, 157, 60, 0.45);
+    box-shadow: inset 2px 0 24px rgba(0, 0, 0, 0.38);
+    overflow-y: auto;
   }
 
-  /* ─── START button ───────────────────────────────────── */
+  .roster-label {
+    font-size: clamp(7px, 0.9vw, 8px);
+    letter-spacing: 3px;
+    color: rgba(255, 157, 60, 0.5);
+    text-align: center;
+    padding-bottom: clamp(4px, 0.6vh, 8px);
+    border-bottom: 1px solid rgba(255, 157, 60, 0.25);
+    margin-bottom: clamp(2px, 0.4vh, 6px);
+    flex-shrink: 0;
+  }
+
+  /* Individual roster item */
+  .roster-item {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: clamp(6px, 1vw, 10px);
+    padding: clamp(6px, 1vh, 10px) clamp(8px, 1vw, 12px);
+    background: rgba(8, 6, 18, 0.7);
+    border: 2px solid rgba(255, 157, 60, 0.3);
+    box-sizing: border-box;
+    cursor: pointer;
+    text-align: left;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    transition:
+      border-color 0.14s ease,
+      background 0.14s ease,
+      transform 0.14s ease,
+      box-shadow 0.14s ease;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .roster-item:hover {
+    border-color: rgba(255, 157, 60, 0.7);
+    background: rgba(255, 100, 30, 0.08);
+    transform: translateX(-3px);
+    box-shadow: 2px 0 14px rgba(255, 157, 60, 0.28);
+  }
+  .roster-item:focus-visible {
+    outline: none;
+    border-color: #ffd23f;
+    box-shadow: 0 0 0 2px rgba(255, 210, 63, 0.4);
+  }
+  .roster-item.is-selected {
+    border-color: #ff9d3c;
+    background: rgba(255, 100, 20, 0.14);
+    transform: translateX(-4px) scale(1.02);
+    box-shadow:
+      3px 0 20px rgba(255, 157, 60, 0.55),
+      inset 0 0 16px rgba(255, 90, 30, 0.1);
+  }
+
+  /* Left amber edge bar for selected state */
+  .roster-sel-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, #ffd23f, #ff5a4d);
+    opacity: 0;
+    transition: opacity 0.14s ease;
+  }
+  .roster-item.is-selected .roster-sel-bar {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(255, 157, 60, 0.9);
+  }
+
+  /* Roster thumbnail (~64px tall) */
+  .roster-thumb {
+    height: clamp(44px, 8vh, 72px);
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.75));
+    transition: filter 0.14s ease;
+  }
+  .roster-item.is-selected .roster-thumb {
+    filter:
+      drop-shadow(0 2px 8px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 8px rgba(255, 157, 60, 0.6));
+  }
+
+  /* Roster name + role text */
+  .roster-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .roster-name {
+    font-size: clamp(9px, 1.1vw, 12px);
+    letter-spacing: 1px;
+    color: #fff2e6;
+    text-shadow: 1px 1px 0 #0a0c14;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .roster-item.is-selected .roster-name {
+    color: #ffd23f;
+    text-shadow: 1px 1px 0 #0a0c14, 0 0 6px rgba(255, 210, 63, 0.7);
+  }
+  .roster-role {
+    font-size: clamp(6px, 0.7vw, 7px);
+    letter-spacing: 0.5px;
+    color: #c98f6a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* START button (in roster panel) */
   .ms-btn {
     padding: clamp(10px, 1.5vh, 16px) clamp(12px, 1.5vw, 22px);
     font-family: inherit;
@@ -707,7 +702,6 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     position: relative;
     z-index: 5;
     width: 100%;
-    margin-top: clamp(5px, 0.8vh, 10px);
     text-shadow: 1px 1px 0 #0a0c14, 0 0 6px rgba(255, 157, 60, 0.6);
   }
   .ms-btn:hover {
@@ -721,109 +715,12 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
     text-shadow: 1px 1px 0 #0a0c14, 0 0 10px rgba(255, 200, 60, 1);
     border-color: #ff9d3c;
   }
-  .ms-solo {
-    border-color: rgba(255, 157, 60, 0.8);
-  }
-  .ms-solo:hover {
-    border-color: rgba(255, 157, 60, 1);
-  }
+  .ms-solo { border-color: rgba(255, 157, 60, 0.8); }
+  .ms-solo:hover { border-color: rgba(255, 157, 60, 1); }
 
-  /* ─── Central divider / emblem ───────────────────────── */
-  .divider-seam {
-    position: absolute;
-    /* Sits at the join of the two cards, centered horizontally */
-    left: 50%;
-    top: 0;
-    bottom: 0;
-    transform: translateX(-50%);
-    /* Bold metallic seam strip */
-    width: 14px;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-evenly;
-    /* Metallic amber strip gradient */
-    background: linear-gradient(
-      to right,
-      rgba(255, 90, 20, 0.12) 0%,
-      rgba(255, 157, 60, 0.55) 40%,
-      rgba(255, 220, 100, 0.75) 50%,
-      rgba(255, 157, 60, 0.55) 60%,
-      rgba(255, 90, 20, 0.12) 100%
-    );
-    box-shadow:
-      0 0 18px rgba(255, 157, 60, 0.6),
-      0 0 40px rgba(255, 90, 77, 0.3);
-    pointer-events: none;
-  }
-
-  /* Decorative rivets */
-  .rivet {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      #fff2e6 0%,
-      #ffb84d 40%,
-      #cc6600 100%
-    );
-    box-shadow:
-      0 0 6px rgba(255, 157, 60, 0.9),
-      0 0 12px rgba(255, 90, 0, 0.5);
+  .roster-start {
+    margin-top: auto;
     flex-shrink: 0;
-  }
-
-  /* Central bomb emblem */
-  .vs-emblem {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .vs-glow-ring {
-    position: absolute;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgba(255, 157, 60, 0.35) 0%,
-      rgba(255, 90, 77, 0.2) 55%,
-      transparent 100%
-    );
-    border: 2px solid rgba(255, 157, 60, 0.7);
-    box-shadow:
-      0 0 16px rgba(255, 157, 60, 0.8),
-      0 0 32px rgba(255, 90, 77, 0.5),
-      inset 0 0 10px rgba(255, 157, 60, 0.25);
-    animation: emblem-pulse 1.8s ease-in-out infinite;
-  }
-  @keyframes emblem-pulse {
-    0%, 100% {
-      box-shadow:
-        0 0 16px rgba(255, 157, 60, 0.8),
-        0 0 32px rgba(255, 90, 77, 0.5),
-        inset 0 0 10px rgba(255, 157, 60, 0.25);
-    }
-    50% {
-      box-shadow:
-        0 0 28px rgba(255, 157, 60, 1),
-        0 0 56px rgba(255, 90, 77, 0.75),
-        inset 0 0 16px rgba(255, 157, 60, 0.45);
-    }
-  }
-  .vs-bomb-icon {
-    position: relative;
-    width: 56px;
-    height: 56px;
-    z-index: 1;
-    filter:
-      drop-shadow(0 0 6px rgba(255, 157, 60, 1))
-      drop-shadow(0 0 14px rgba(255, 90, 77, 0.8))
-      brightness(1.25);
   }
 
   /* ─── Game Over overlay ──────────────────────────────── */
@@ -856,34 +753,80 @@ const statRows: { key: StatKey; label: string; icon: string }[] = [
   import { startBomber } from '@scripts/games/bomber/render/main';
   import type { CharacterId } from '@scripts/games/bomber/engine/types';
 
+  const VALID_CHARS: CharacterId[] = ['lena', 'mira', 'aya', 'rosa'];
+
   const params = new URLSearchParams(location.search);
   const canvas = document.getElementById('bomber-canvas') as HTMLCanvasElement | null;
   const modeSelect = document.getElementById('mode-select');
   let started = false;
 
-  function startWithChar(char: CharacterId): void {
+  // ── Selection state ──────────────────────────────────────
+  let selected: CharacterId = 'lena';
+
+  function setSelected(id: CharacterId): void {
+    selected = id;
+
+    // Toggle hero panels
+    document.querySelectorAll<HTMLElement>('[data-char-panel]').forEach((panel) => {
+      panel.classList.toggle('is-active', panel.dataset.charPanel === id);
+    });
+
+    // Toggle roster items
+    document.querySelectorAll<HTMLElement>('[data-char]').forEach((item) => {
+      if (item.tagName === 'BUTTON') {
+        item.classList.toggle('is-selected', item.dataset.char === id);
+      }
+    });
+  }
+
+  // ── Start game ───────────────────────────────────────────
+  function start(id: CharacterId): void {
     if (started || !canvas) return;
     started = true;
     modeSelect?.remove();
-    startBomber(canvas, char).catch((err: unknown) => console.error('[bomber] start failed', err));
+    startBomber(canvas, id).catch((err: unknown) => console.error('[bomber] start failed', err));
   }
 
-  // Card START buttons
-  modeSelect?.querySelectorAll<HTMLButtonElement>('.char-start').forEach((btn) => {
+  // ── Roster item clicks ───────────────────────────────────
+  modeSelect?.querySelectorAll<HTMLButtonElement>('.roster-item').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const char = btn.dataset.char as CharacterId | undefined;
-      startWithChar(char ?? 'lena');
+      const id = btn.dataset.char as CharacterId | undefined;
+      if (id && (VALID_CHARS as string[]).includes(id)) setSelected(id);
     });
   });
 
-  // ?char=lena|mira — explicit character autostart
+  // ── START button click ───────────────────────────────────
+  modeSelect?.querySelector<HTMLButtonElement>('[data-action="start"]')?.addEventListener('click', () => {
+    start(selected);
+  });
+
+  // ── Keyboard navigation ──────────────────────────────────
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (started) return;
+    const idx = VALID_CHARS.indexOf(selected);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      setSelected(VALID_CHARS[(idx + 1) % VALID_CHARS.length]);
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setSelected(VALID_CHARS[(idx + VALID_CHARS.length - 1) % VALID_CHARS.length]);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      start(selected);
+    }
+  });
+
+  // ── Initialize selection UI ──────────────────────────────
+  setSelected(selected);
+
+  // ── Autostart: ?char= one of the 4 ──────────────────────
   const charParam = params.get('char') as CharacterId | null;
-  if (charParam === 'lena' || charParam === 'mira') {
-    startWithChar(charParam);
+  if (charParam && (VALID_CHARS as string[]).includes(charParam)) {
+    start(charParam);
   }
 
-  // ?mode=solo — backward compat for e2e tests (autostarts lena)
+  // ── Autostart: ?mode=solo → lena (backward compat for e2e) ──
   if (!started && params.get('mode') === 'solo') {
-    startWithChar('lena');
+    start('lena');
   }
 </script>

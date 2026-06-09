@@ -212,7 +212,10 @@ export class EntityView {
       : 1; // idle = standing frame (col 1)
 
     const dirRow = dirToRow(p.dir);
-    const character = state.character === 'mira' ? 'mira' : 'lena';
+    const characterMap: Record<string, 'lena' | 'mira' | 'aya' | 'rosa'> = {
+      lena: 'lena', mira: 'mira', aya: 'aya', rosa: 'rosa',
+    };
+    const character = characterMap[state.character] ?? 'lena';
 
     const ps = this.playerSp;
     ps.texture = this._walkFrame(character, dirRow, step);
@@ -234,12 +237,18 @@ export class EntityView {
    * Slices from the walk sheet and caches the result.
    * Frame rect: Rectangle(step * 64, dirRow * 64, 64, 64).
    */
-  private _walkFrame(character: 'lena' | 'mira', dirRow: number, step: number): Texture {
+  private _walkFrame(character: 'lena' | 'mira' | 'aya' | 'rosa', dirRow: number, step: number): Texture {
     const key = `${character}-${dirRow}-${step}`;
     const cached = this.walkFrameCache.get(key);
     if (cached) return cached;
 
-    const base = character === 'mira' ? this.textures.walkMira : this.textures.walkLena;
+    const walkTexMap = {
+      lena: this.textures.walkLena,
+      mira: this.textures.walkMira,
+      aya:  this.textures.walkAya,
+      rosa: this.textures.walkRosa,
+    };
+    const base = walkTexMap[character] ?? this.textures.walkLena;
     const tex = new Texture({
       source: base.source,
       frame: new Rectangle(step * 64, dirRow * 64, 64, 64),
