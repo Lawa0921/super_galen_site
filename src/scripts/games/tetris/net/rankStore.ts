@@ -40,6 +40,14 @@ export interface RankStore {
   isSettled(matchId: string): Promise<boolean>;
   /** 標記已結算；回傳 true 代表本次為首次（原子閘）。 */
   markSettled(matchId: string, ttlSec: number): Promise<boolean>;
+
+  // N 人大亂鬥（BR/FFA）結果共識：多名玩家各回報一份 standings，達門檻一致才計分
+  /** 記某玩家對某 matchId 回報的名次序列（index0=冠軍）。 */
+  setBRReport(matchId: string, reporterId: string, standings: string[], ttlSec: number): Promise<void>;
+  /** 回 reporterId → standings 的所有回報（解析失敗的條目略過）。 */
+  getBRReportsForMatch(matchId: string): Promise<Record<string, string[]>>;
+  /** 標記大亂鬥已結算；回傳 true 代表本次為首次（原子閘）。 */
+  markSettledBR(matchId: string, ttlSec: number): Promise<boolean>;
 }
 
 const LB_KEY = 'lb';
@@ -49,6 +57,9 @@ export class MemoryRankStore implements RankStore {
   private players = new Map<string, PlayerRecord>();
   private reports = new Map<string, { winner: string; exp: number }>();
   private settled = new Map<string, number>();
+  // 大亂鬥：matchId → (reporterId → { standings, exp })
+  private brReports = new Map<string, Map<string, { standings: string[]; exp: number }>>();
+  private settledBR = new Map<string, number>();
 
   async getPlayer(id: string): Promise<PlayerRecord | null> {
     const p = this.players.get(id);
@@ -80,6 +91,31 @@ export class MemoryRankStore implements RankStore {
     const e = this.settled.get(matchId);
     if (e !== undefined && e > Date.now()) return false; // 已結算（未過期）
     this.settled.set(matchId, Date.now() + ttlSec * 1000);
+    return true;
+  }
+  async setBRReport(matchId: string, reporterId: string, standings: string[], ttlSec: number): Promise<void> {
+    let m = this.brReports.get(matchId);
+    if (!m) {
+      m = new Map();
+      this.brReports.set(matchId, m);
+    }
+    m.set(reporterId, { standings: [...standings], exp: Date.now() + ttlSec * 1000 });
+  }
+  async getBRReportsForMatch(matchId: string): Promise<Record<string, string[]>> {
+    const m = this.brReports.get(matchId);
+    const out: Record<string, string[]> = {};
+    if (!m) return out;
+    const now = Date.now();
+    for (const [reporter, e] of m.entries()) {
+      if (e.exp < now) continue; // 過期略過
+      out[reporter] = [...e.standings];
+    }
+    return out;
+  }
+  async markSettledBR(matchId: string, ttlSec: number): Promise<boolean> {
+    const e = this.settledBR.get(matchId);
+    if (e !== undefined && e > Date.now()) return false; // 已結算（未過期）
+    this.settledBR.set(matchId, Date.now() + ttlSec * 1000);
     return true;
   }
 }
@@ -125,6 +161,32 @@ export class UpstashRankStore implements RankStore {
   }
   async markSettled(matchId: string, ttlSec: number): Promise<boolean> {
     const r = await this.cmd('set', `done:${matchId}`, '1', 'NX', 'EX', String(ttlSec));
+    return r === 'OK'; // NX 成功回 "OK"，已存在回 null
+  }
+  async setBRReport(matchId: string, reporterId: string, standings: string[], ttlSec: number): Promise<void> {
+    const key = `brreport:${matchId}`;
+    await this.cmd('hset', key, reporterId, JSON.stringify(standings));
+    await this.cmd('expire', key, String(ttlSec));
+  }
+  async getBRReportsForMatch(matchId: string): Promise<Record<string, string[]>> {
+    // HGETALL 回扁平陣列 [field1, value1, field2, value2, ...]
+    const r = (await this.cmd('hgetall', `brreport:${matchId}`)) as string[] | null;
+    const out: Record<string, string[]> = {};
+    if (Array.isArray(r)) {
+      for (let i = 0; i < r.length; i += 2) {
+        const field = r[i];
+        try {
+          const parsed = JSON.parse(String(r[i + 1]));
+          if (Array.isArray(parsed)) out[field] = parsed.map(String);
+        } catch {
+          // 解析失敗略過該條目
+        }
+      }
+    }
+    return out;
+  }
+  async markSettledBR(matchId: string, ttlSec: number): Promise<boolean> {
+    const r = await this.cmd('set', `settledbr:${matchId}`, '1', 'NX', 'EX', String(ttlSec));
     return r === 'OK'; // NX 成功回 "OK"，已存在回 null
   }
 }

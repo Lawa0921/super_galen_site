@@ -71,3 +71,42 @@ describe('markSettled 原子性（首次 true、重複 false）', () => {
     expect(await s.markSettled('m-atomic', 60)).toBe(false);
   });
 });
+
+describe('大亂鬥（BR/FFA）回報蒐集與共識結算閘', () => {
+  it('setBRReport → getBRReportsForMatch 往返正確（reporterId→standings）', async () => {
+    const s = new MemoryRankStore();
+    await s.setBRReport('mbr', '0xA', ['0xA', '0xB', '0xC'], 60);
+    await s.setBRReport('mbr', '0xB', ['0xA', '0xC', '0xB'], 60);
+    const reports = await s.getBRReportsForMatch('mbr');
+    expect(reports['0xA']).toEqual(['0xA', '0xB', '0xC']);
+    expect(reports['0xB']).toEqual(['0xA', '0xC', '0xB']);
+    expect(Object.keys(reports).sort()).toEqual(['0xA', '0xB']);
+  });
+
+  it('同一 reporter 後寫覆蓋前寫', async () => {
+    const s = new MemoryRankStore();
+    await s.setBRReport('mbr', '0xA', ['0xA', '0xB'], 60);
+    await s.setBRReport('mbr', '0xA', ['0xB', '0xA'], 60);
+    const reports = await s.getBRReportsForMatch('mbr');
+    expect(reports['0xA']).toEqual(['0xB', '0xA']);
+  });
+
+  it('不同 matchId 互不干擾', async () => {
+    const s = new MemoryRankStore();
+    await s.setBRReport('m1', '0xA', ['0xA', '0xB'], 60);
+    await s.setBRReport('m2', '0xA', ['0xB', '0xA'], 60);
+    expect((await s.getBRReportsForMatch('m1'))['0xA']).toEqual(['0xA', '0xB']);
+    expect((await s.getBRReportsForMatch('m2'))['0xA']).toEqual(['0xB', '0xA']);
+  });
+
+  it('無回報的 matchId → 空物件', async () => {
+    const s = new MemoryRankStore();
+    expect(await s.getBRReportsForMatch('none')).toEqual({});
+  });
+
+  it('markSettledBR 第一次 true、第二次 false（原子閘）', async () => {
+    const s = new MemoryRankStore();
+    expect(await s.markSettledBR('mbr', 60)).toBe(true);
+    expect(await s.markSettledBR('mbr', 60)).toBe(false);
+  });
+});
