@@ -237,7 +237,7 @@ export class BomberGame {
       e.moveAccMs += dtMs;
       if (e.moveAccMs < enemyMoveMs(e.kind, this.floor)) continue;
       e.moveAccMs = 0;
-      const dir = chooseEnemyDir(this.grid, e, this.player, this.bombs, this.rng);
+      const dir = chooseEnemyDir(this.grid, e, this.player, this.bombs, this.blasts, this.rng);
       if (!dir) continue;
       const v = dirDelta(dir);
       e.dir = dir;
@@ -248,12 +248,20 @@ export class BomberGame {
 
   private resolveBlastDamage(invulnAtStart: number): void {
     const onBlast = (x: number, y: number): boolean => this.blasts.some((b) => b.x === x && b.y === y);
-    // 敵人被爆風炸死
+    // 敵人被爆風炸死 —— 用「視覺佔據格」判定：
+    // stepEnemies 在移動開始就把 x/y 跳到目的格（之後只是渲染插值），
+    // 若直接用 x/y，剛起步、畫面上還在隔壁格的敵人會被「隔空炸死」（不符玩家感知）。
+    // 進度 <50% 視為仍佔據出發格，≥50% 才算進入目的格（與渲染插值一致）。
     for (const e of this.enemies) {
-      if (e.alive && onBlast(e.x, e.y)) {
+      if (!e.alive) continue;
+      const moveMs = enemyMoveMs(e.kind, this.floor);
+      const progress = Math.min(1, e.moveAccMs / moveMs);
+      const vx = progress < 0.5 ? e.prevX : e.x;
+      const vy = progress < 0.5 ? e.prevY : e.y;
+      if (onBlast(vx, vy)) {
         e.alive = false;
         this.score += SCORE.enemy;
-        this.events.push({ kind: 'enemyKill', x: e.x, y: e.y });
+        this.events.push({ kind: 'enemyKill', x: vx, y: vy });
       }
     }
     // 發出 floorClear 事件（只發一次）
@@ -369,6 +377,11 @@ export class BomberGame {
   debugMoveEnemy(id: number, x: number, y: number): void {
     const e = this.enemies.find((q) => q.id === id);
     if (e) { e.x = x; e.y = y; e.prevX = x; e.prevY = y; }
+  }
+  /** 測試用：把敵人設成「移動中」狀態（from→to，已累積 accMs）。 */
+  debugSetEnemyMotion(id: number, fromX: number, fromY: number, toX: number, toY: number, accMs: number): void {
+    const e = this.enemies.find((q) => q.id === id);
+    if (e) { e.prevX = fromX; e.prevY = fromY; e.x = toX; e.y = toY; e.moveAccMs = accMs; }
   }
   debugKillEnemy(id: number): void {
     const e = this.enemies.find((q) => q.id === id);

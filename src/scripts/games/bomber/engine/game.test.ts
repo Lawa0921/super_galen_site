@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { BomberGame } from './game';
 import { SPAWN, SPEED_MS, BASE_BOMBS, BOMB_FUSE_MS, BLAST_TTL_MS, START_LIVES, INVULN_MS } from './constants';
 import { SCORE } from './scoring';
+import { enemyMoveMs } from './enemy';
 
 describe('BomberGame: construction', () => {
   it('初始狀態：playing、floor 1、玩家在出生點、分數 0', () => {
@@ -174,5 +175,29 @@ describe('BomberGame: enemies & death', () => {
     g.step(BOMB_FUSE_MS);
     expect(g.getState().status).toBe('gameover');
     expect(g.drainEvents().some((e) => e.kind === 'gameover')).toBe(true);
+  });
+});
+
+describe('BomberGame: 爆風判定使用敵人「視覺佔據格」', () => {
+  it('剛起步（視覺仍在格外）的敵人不會被炸死；走過半（視覺進入爆風格）才死', () => {
+    const g = new BomberGame({ seed: 1 });
+    const target = g.getState().enemies[0];
+    g.debugSetInvuln(999999); // 玩家不死，專注敵人判定
+
+    // 炸彈在出生點 (1,1)，fire 1 → 爆風覆蓋 (2,1)
+    g.input('bomb');
+    g.step(BOMB_FUSE_MS - 1);
+
+    // 引爆前一刻：敵人「剛從 (3,1) 起步走向 (2,1)」（進度≈0，視覺仍在 (3,1)）
+    g.debugSetEnemyMotion(target.id, 3, 1, 2, 1, 0);
+    g.step(1); // 引爆
+    expect(g.getState().blasts.length).toBeGreaterThan(0); // sanity: 爆風存在
+    expect(g.getState().enemies.find((e) => e.id === target.id)!.alive).toBe(true);
+
+    // 走過半（視覺已進入爆風格 (2,1)）→ 應被炸死
+    const moveMs = enemyMoveMs(target.kind, 1);
+    g.debugSetEnemyMotion(target.id, 3, 1, 2, 1, Math.ceil(moveMs * 0.6));
+    g.step(1); // 爆風仍在（BLAST_TTL_MS=480 內）
+    expect(g.getState().enemies.find((e) => e.id === target.id)!.alive).toBe(false);
   });
 });
