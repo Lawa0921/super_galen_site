@@ -54,6 +54,8 @@ export class GridView {
         if (gridChanged || layoutChanged) {
           const tile = grid[row]?.[col] ?? 'floor';
           sp.texture = this._tileTexture(tile);
+          // 地板棋盤格交錯微暗（增加深度，不影響牆/箱）
+          sp.tint = tile === 'floor' && (row + col) % 2 === 1 ? 0xc8cadd : 0xffffff;
         }
         // 更新位置與尺寸（版面改變時必做；格子改變但 cell 不變也要確保位置正確）
         sp.width  = cell;
