@@ -14,6 +14,8 @@ const BOMB_MIRA_URL  = '/assets/games/bomber/bomb-mira.png';
 const BOMB_AYA_URL   = '/assets/games/bomber/bomb-aya.png';
 const BOMB_ROSA_URL  = '/assets/games/bomber/bomb-rosa.png';
 const EXPLOSION_URL  = '/assets/games/bomber/explosion.png';
+const ENEMY_WANDER_URL = '/assets/games/bomber/enemy-wander.png';
+const ENEMY_CHASER_URL = '/assets/games/bomber/enemy-chaser.png';
 const ENEMY_GHOST_URL  = '/assets/games/bomber/enemy-ghost.png';
 const ENEMY_DASHER_URL = '/assets/games/bomber/enemy-dasher.png';
 
@@ -31,8 +33,6 @@ export interface BomberTextures {
   playerLena:  Texture;
   playerMira:  Texture;
   bomb:        Texture;
-  enemyWander: Texture;
-  enemyChaser: Texture;
   blast:       Texture;
   exit:        Texture;
   puFire:      Texture;
@@ -60,9 +60,8 @@ export interface BomberTextures {
   bombRosa:    Texture;
   /** 4-frame explosion animation (sliced from a 256×64 strip, true alpha). */
   blastFrames: Texture[];
-  /** New enemy kinds (64×64, true alpha). */
-  enemyGhost:  Texture;
-  enemyDasher: Texture;
+  /** Per-kind 3-frame enemy idle/bounce animations (sliced from 192×64 strips). */
+  enemyFrames: Record<'wander' | 'chaser' | 'ghost' | 'dasher', Texture[]>;
 }
 
 /** 預載一張 sprite sheet (320×192)，切成 15 個 64×64 frame Textures 回傳。
@@ -76,7 +75,7 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   const [sheet, walkLenaTex, walkMiraTex, walkAyaTex, walkRosaTex,
          abCarpetTex, abInfernoTex, abBlinkTex, abBulwarkTex,
          bombLenaTex, bombMiraTex, bombAyaTex, bombRosaTex, explosionTex,
-         enemyGhostTex, enemyDasherTex] = await Promise.all([
+         enemyWanderTex, enemyChaserTex, enemyGhostTex, enemyDasherTex] = await Promise.all([
     Assets.load(SHEET_URL)    as Promise<Texture>,
     Assets.load(WALK_LENA_URL) as Promise<Texture>,
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
@@ -91,6 +90,8 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     Assets.load(BOMB_AYA_URL)  as Promise<Texture>,
     Assets.load(BOMB_ROSA_URL) as Promise<Texture>,
     Assets.load(EXPLOSION_URL) as Promise<Texture>,
+    Assets.load(ENEMY_WANDER_URL) as Promise<Texture>,
+    Assets.load(ENEMY_CHASER_URL) as Promise<Texture>,
     Assets.load(ENEMY_GHOST_URL)  as Promise<Texture>,
     Assets.load(ENEMY_DASHER_URL) as Promise<Texture>,
   ]);
@@ -109,11 +110,22 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   bombAyaTex.source.scaleMode   = 'nearest';
   bombRosaTex.source.scaleMode  = 'nearest';
   explosionTex.source.scaleMode = 'nearest';
+  enemyWanderTex.source.scaleMode = 'nearest';
+  enemyChaserTex.source.scaleMode = 'nearest';
   enemyGhostTex.source.scaleMode  = 'nearest';
   enemyDasherTex.source.scaleMode = 'nearest';
 
   // 爆炸動畫：從 256×64 條切 4 幀
   const blastFrames = [0, 1, 2, 3].map((i) => frameAt(explosionTex.source, i, 0));
+
+  // 怪物動畫：每條 192×64 切 3 幀
+  const strip3 = (t: Texture): Texture[] => [0, 1, 2].map((i) => frameAt(t.source, i, 0));
+  const enemyFrames = {
+    wander: strip3(enemyWanderTex),
+    chaser: strip3(enemyChaserTex),
+    ghost:  strip3(enemyGhostTex),
+    dasher: strip3(enemyDasherTex),
+  };
 
   const src = sheet.source;
   return {
@@ -124,8 +136,6 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     playerLena:  frameAt(src, 3, 0),
     bomb:        frameAt(src, 4, 0),
     // row 1
-    enemyWander: frameAt(src, 0, 1),
-    enemyChaser: frameAt(src, 1, 1),
     blast:       frameAt(src, 2, 1),
     exit:        frameAt(src, 3, 1),
     puFire:      frameAt(src, 4, 1),
@@ -151,7 +161,6 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     bombAya:     bombAyaTex,
     bombRosa:    bombRosaTex,
     blastFrames,
-    enemyGhost:  enemyGhostTex,
-    enemyDasher: enemyDasherTex,
+    enemyFrames,
   };
 }

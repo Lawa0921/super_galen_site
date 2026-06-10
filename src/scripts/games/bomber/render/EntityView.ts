@@ -23,6 +23,14 @@ import type { BomberTextures } from './assets';
 /** Walk-cycle step sequence for ping-pong: A → stand → B → stand */
 const WALK_STEPS = [0, 1, 2, 1] as const;
 
+/** Enemy 3-frame ping-pong: A → neutral → C → neutral */
+const ANIM_STEPS = [0, 1, 2, 1] as const;
+
+/** Per-kind animation cadence (ms per step) — dasher 急促、ghost 悠長。 */
+const ENEMY_ANIM_STEP_MS: Record<'wander' | 'chaser' | 'ghost' | 'dasher', number> = {
+  wander: 240, chaser: 190, ghost: 330, dasher: 120,
+};
+
 /** Map direction string to walk-sheet row index (row 0=down, 1=left, 2=right, 3=up). */
 function dirToRow(dir: string): number {
   switch (dir) {
@@ -61,6 +69,8 @@ export class EntityView {
   private blinkPhase    = 0;
   private pulsePhase    = 0;
   private exitGlowPhase = 0;
+  /** 怪物動畫全域時基（各怪以 id 偏移相位）。 */
+  private enemyAnimMs   = 0;
   /** Accumulates ms while the player is moving; resets to 0 when idle. */
   private playerWalkMs  = 0;
 
@@ -260,7 +270,9 @@ export class EntityView {
     }
     this._poolHideFrom(this.bombPool, bmi);
 
-    // 5. 敵人（依 kind 選貼圖；ghost 半透明、穿箱時更透）
+    // 5. 敵人（3 幀 ping-pong 動畫；各 kind 節奏不同、各怪相位錯開；
+    //    ghost 半透明、穿箱時更透；dasher 依移動方向翻面）
+    this.enemyAnimMs = (this.enemyAnimMs + dtMs) % 1_000_000;
     let ei = 0;
     for (const enemy of state.enemies) {
       if (!enemy.alive) continue;
@@ -268,16 +280,24 @@ export class EntityView {
       const progress = Math.min(1, Math.max(0, enemy.moveAccMs / moveMs));
       const rx = lerp(enemy.prevX, enemy.x, progress);
       const ry = lerp(enemy.prevY, enemy.y, progress);
-      const tex = enemy.kind === 'wander' ? this.textures.enemyWander
-                : enemy.kind === 'chaser' ? this.textures.enemyChaser
-                : enemy.kind === 'ghost'  ? this.textures.enemyGhost
-                :                           this.textures.enemyDasher;
+
+      const frames = this.textures.enemyFrames[enemy.kind];
+      const stepMs = ENEMY_ANIM_STEP_MS[enemy.kind];
+      const phase  = (this.enemyAnimMs + enemy.id * 137) % (stepMs * 4);
+      const tex    = frames[ANIM_STEPS[Math.floor(phase / stepMs) % 4]];
+
       const sp  = this._poolGet(this.enemyPool, ei++, tex);
       const size = cell * 0.85;
       sp.width  = size;
       sp.height = size;
       sp.x = ox + rx * cell + cell / 2;
       sp.y = oy + ry * cell + cell / 2;
+      // dasher 素材面向左：往右衝時水平翻面（width 賦值會重設 scale 正負，須在其後）
+      if (enemy.kind === 'dasher' && enemy.dir === 'right') {
+        sp.scale.x = -Math.abs(sp.scale.x);
+      } else {
+        sp.scale.x = Math.abs(sp.scale.x);
+      }
       if (enemy.kind === 'ghost') {
         const overCrate = state.grid[Math.round(ry)]?.[Math.round(rx)] === 'crate';
         sp.alpha = overCrate ? 0.45 : 0.85;
