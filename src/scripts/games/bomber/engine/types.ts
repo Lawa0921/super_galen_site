@@ -9,7 +9,7 @@ export type AbilityId = 'carpet' | 'inferno' | 'blink' | 'bulwark';
 export interface CharacterStats { lives: number; fireRange: number; maxBombs: number; speedLevel: number; }
 export interface AbilityDef { id: AbilityId; name: string; desc: string; cooldownMs: number; }
 export interface CharacterProfile { id: CharacterId; name: string; start: CharacterStats; caps: CharacterStats; ability: AbilityDef; }
-export type EnemyKind = 'wander' | 'chaser';
+export type EnemyKind = 'wander' | 'chaser' | 'ghost' | 'dasher';
 
 export interface Bomb { x: number; y: number; fuseMs: number; range: number; }
 export interface BlastCell { x: number; y: number; ttlMs: number; }

@@ -260,7 +260,7 @@ export class EntityView {
     }
     this._poolHideFrom(this.bombPool, bmi);
 
-    // 5. 敵人
+    // 5. 敵人（依 kind 選貼圖；ghost 半透明、穿箱時更透）
     let ei = 0;
     for (const enemy of state.enemies) {
       if (!enemy.alive) continue;
@@ -268,14 +268,22 @@ export class EntityView {
       const progress = Math.min(1, Math.max(0, enemy.moveAccMs / moveMs));
       const rx = lerp(enemy.prevX, enemy.x, progress);
       const ry = lerp(enemy.prevY, enemy.y, progress);
-      const tex = enemy.kind === 'wander' ? this.textures.enemyWander : this.textures.enemyChaser;
+      const tex = enemy.kind === 'wander' ? this.textures.enemyWander
+                : enemy.kind === 'chaser' ? this.textures.enemyChaser
+                : enemy.kind === 'ghost'  ? this.textures.enemyGhost
+                :                           this.textures.enemyDasher;
       const sp  = this._poolGet(this.enemyPool, ei++, tex);
       const size = cell * 0.85;
       sp.width  = size;
       sp.height = size;
       sp.x = ox + rx * cell + cell / 2;
       sp.y = oy + ry * cell + cell / 2;
-      sp.alpha = 1;
+      if (enemy.kind === 'ghost') {
+        const overCrate = state.grid[Math.round(ry)]?.[Math.round(rx)] === 'crate';
+        sp.alpha = overCrate ? 0.45 : 0.85;
+      } else {
+        sp.alpha = 1;
+      }
     }
     this._poolHideFrom(this.enemyPool, ei);
 

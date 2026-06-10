@@ -22,8 +22,10 @@ export const SPEED_MS = [200, 168, 140, 116, 96] as const;
 export const START_LIVES = 3;
 export const INVULN_MS = 1500;
 
-/** 敵人每格移動基礎耗時（深層遞減）。 */
-export const ENEMY_MOVE_MS: Record<'wander' | 'chaser', number> = { wander: 340, chaser: 280 };
+/** 敵人每格移動基礎耗時（深層遞減）。
+ *  ghost 緩慢但穿木箱（無視地形壓迫）；dasher 直線高速衝鋒、撞牆換向。 */
+export const ENEMY_MOVE_MS: Record<'wander' | 'chaser' | 'ghost' | 'dasher', number> =
+  { wander: 340, chaser: 280, ghost: 470, dasher: 165 };
 
 /** 樓層生成參數。 */
 export const CRATE_DENSITY = 0.72;        // 可放軟箱的空格被填的機率

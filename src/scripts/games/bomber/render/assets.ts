@@ -14,6 +14,8 @@ const BOMB_MIRA_URL  = '/assets/games/bomber/bomb-mira.png';
 const BOMB_AYA_URL   = '/assets/games/bomber/bomb-aya.png';
 const BOMB_ROSA_URL  = '/assets/games/bomber/bomb-rosa.png';
 const EXPLOSION_URL  = '/assets/games/bomber/explosion.png';
+const ENEMY_GHOST_URL  = '/assets/games/bomber/enemy-ghost.png';
+const ENEMY_DASHER_URL = '/assets/games/bomber/enemy-dasher.png';
 
 /** 每格 64×64 px。Sheet 佈局 5 col × 3 row，0-indexed (col, row)。*/
 const F = 64;
@@ -58,6 +60,9 @@ export interface BomberTextures {
   bombRosa:    Texture;
   /** 4-frame explosion animation (sliced from a 256×64 strip, true alpha). */
   blastFrames: Texture[];
+  /** New enemy kinds (64×64, true alpha). */
+  enemyGhost:  Texture;
+  enemyDasher: Texture;
 }
 
 /** 預載一張 sprite sheet (320×192)，切成 15 個 64×64 frame Textures 回傳。
@@ -70,7 +75,8 @@ export interface BomberTextures {
 export async function loadBomberTextures(): Promise<BomberTextures> {
   const [sheet, walkLenaTex, walkMiraTex, walkAyaTex, walkRosaTex,
          abCarpetTex, abInfernoTex, abBlinkTex, abBulwarkTex,
-         bombLenaTex, bombMiraTex, bombAyaTex, bombRosaTex, explosionTex] = await Promise.all([
+         bombLenaTex, bombMiraTex, bombAyaTex, bombRosaTex, explosionTex,
+         enemyGhostTex, enemyDasherTex] = await Promise.all([
     Assets.load(SHEET_URL)    as Promise<Texture>,
     Assets.load(WALK_LENA_URL) as Promise<Texture>,
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
@@ -85,6 +91,8 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     Assets.load(BOMB_AYA_URL)  as Promise<Texture>,
     Assets.load(BOMB_ROSA_URL) as Promise<Texture>,
     Assets.load(EXPLOSION_URL) as Promise<Texture>,
+    Assets.load(ENEMY_GHOST_URL)  as Promise<Texture>,
+    Assets.load(ENEMY_DASHER_URL) as Promise<Texture>,
   ]);
 
   sheet.source.scaleMode       = 'nearest';
@@ -101,6 +109,8 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   bombAyaTex.source.scaleMode   = 'nearest';
   bombRosaTex.source.scaleMode  = 'nearest';
   explosionTex.source.scaleMode = 'nearest';
+  enemyGhostTex.source.scaleMode  = 'nearest';
+  enemyDasherTex.source.scaleMode = 'nearest';
 
   // 爆炸動畫：從 256×64 條切 4 幀
   const blastFrames = [0, 1, 2, 3].map((i) => frameAt(explosionTex.source, i, 0));
@@ -141,5 +151,7 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     bombAya:     bombAyaTex,
     bombRosa:    bombRosaTex,
     blastFrames,
+    enemyGhost:  enemyGhostTex,
+    enemyDasher: enemyDasherTex,
   };
 }

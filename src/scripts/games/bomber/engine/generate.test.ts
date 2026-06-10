@@ -43,4 +43,22 @@ describe('generateFloor', () => {
     expect(enemies.length).toBeGreaterThan(0);
     expect(enemies.length).toBeLessThanOrEqual(BASE_ENEMY_COUNT + 49);
   });
+
+  it('怪物種類隨樓層漸進：1 層只有基本款；2 層起有 ghost；3 層起有 dasher', () => {
+    const kindsAt = (floor: number): Set<string> => {
+      const s = new Set<string>();
+      for (let seed = 1; seed <= 40; seed++) {
+        for (const e of generateFloor(seed, floor).enemies) s.add(e.kind);
+      }
+      return s;
+    };
+    const f1 = kindsAt(1);
+    expect([...f1].sort()).toEqual(['chaser', 'wander']); // 1 層絕無新怪
+    const f2 = kindsAt(2);
+    expect(f2.has('ghost')).toBe(true);
+    expect(f2.has('dasher')).toBe(false); // dasher 3 層才出現
+    const f3 = kindsAt(3);
+    expect(f3.has('ghost')).toBe(true);
+    expect(f3.has('dasher')).toBe(true);
+  });
 });

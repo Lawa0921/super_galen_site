@@ -1,4 +1,4 @@
-import type { Grid, Enemy, FloorLayout, PowerUpKind, Dir } from './types';
+import type { Grid, Enemy, FloorLayout, PowerUpKind, Dir, EnemyKind } from './types';
 import {
   GRID_COLS, GRID_ROWS, SPAWN, CRATE_DENSITY, POWERUP_DROP_RATE,
   BASE_ENEMY_COUNT,
@@ -66,13 +66,18 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
     floors.filter((c) => Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y) >= 4),
     rng,
   );
+  // 怪物池隨樓層擴張：1 層基本款；2 層起加入穿箱幽靈；3 層起加入直線衝刺獸
+  const kindPool: EnemyKind[] = ['wander', 'chaser'];
+  if (floor >= 2) kindPool.push('ghost');
+  if (floor >= 3) kindPool.push('dasher');
+
   const enemies: Enemy[] = [];
   for (let i = 0; i < count && i < candidates.length; i++) {
     const c = candidates[i];
     enemies.push({
       id: i, x: c.x, y: c.y, prevX: c.x, prevY: c.y,
       dir: DIRS[Math.floor(rng() * 4)],
-      kind: rng() < 0.5 ? 'chaser' : 'wander',
+      kind: kindPool[Math.floor(rng() * kindPool.length)],
       moveAccMs: 0, alive: true,
     });
   }

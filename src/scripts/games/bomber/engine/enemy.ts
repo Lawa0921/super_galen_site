@@ -15,13 +15,19 @@ export const ENEMY_DODGE_FUSE_MS = 700;
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 
-function open(grid: Grid, x: number, y: number, bombs: Bomb[]): boolean {
-  if (!isWalkable(grid, x, y)) return false;
+function open(grid: Grid, x: number, y: number, bombs: Bomb[], kind: EnemyKind): boolean {
+  if (kind === 'ghost') {
+    // 幽靈穿木箱（不穿牆、不穿炸彈本體）
+    const tile = grid[y]?.[x];
+    if (tile === undefined || tile === 'wall') return false;
+  } else if (!isWalkable(grid, x, y)) {
+    return false;
+  }
   return !bombs.some((b) => b.x === x && b.y === y);
 }
 
 function openDirs(grid: Grid, e: Enemy, bombs: Bomb[]): Dir[] {
-  return DIRS.filter((d) => { const v = dirDelta(d); return open(grid, e.x + v.x, e.y + v.y, bombs); });
+  return DIRS.filter((d) => { const v = dirDelta(d); return open(grid, e.x + v.x, e.y + v.y, bombs, e.kind); });
 }
 
 /** 危險格集合：現存爆風 + 即將引爆（fuse ≤ ENEMY_DODGE_FUSE_MS）炸彈的未來爆風範圍。 */
@@ -75,7 +81,13 @@ export function chooseEnemyDir(
     return best;
   }
 
-  // wander：固定抽兩個獨立亂數——一個決定是否直走、一個獨立選方向（消除呼叫次數不固定）
+  if (e.kind === 'dasher') {
+    // 衝刺獸：方向開放（且安全）就永遠直走；被擋才換向（固定抽 1 個亂數）
+    const pick = pool[Math.floor(rng() * pool.length)];
+    return pool.includes(e.dir) ? e.dir : pick;
+  }
+
+  // wander / ghost：固定抽兩個獨立亂數——一個決定是否直走、一個獨立選方向（消除呼叫次數不固定）
   const keepStraight = rng() < 0.8;
   const pick = pool[Math.floor(rng() * pool.length)];
   if (pool.includes(e.dir) && keepStraight) return e.dir;

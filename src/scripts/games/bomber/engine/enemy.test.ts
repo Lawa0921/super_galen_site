@@ -1,6 +1,6 @@
 // enemy.test.ts
 import { describe, it, expect } from 'vitest';
-import { chooseEnemyDir } from './enemy';
+import { chooseEnemyDir, enemyMoveMs } from './enemy';
 import { createRng } from './rng';
 import type { Grid, Enemy, Vec } from './types';
 
@@ -70,5 +70,51 @@ describe('chooseEnemyDir: 危險感知（不腦殘走進爆風）', () => {
     // 自己腳下 (1,1) 是爆風，右邊 (2,1) 也是爆風 → 沒有安全方向，但站著必死 → 選開放方向逃
     const d = chooseEnemyDir(corridor(), e, { x: 3, y: 1 }, [], [{ x: 1, y: 1, ttlMs: 300 }, { x: 2, y: 1, ttlMs: 300 }], () => 0);
     expect(d).toBe('right');
+  });
+});
+
+describe('chooseEnemyDir: ghost（穿箱幽靈）', () => {
+  it('ghost 可走進 crate 格（一般怪不行）', () => {
+    const g: Grid = [
+      ['wall', 'wall', 'wall', 'wall', 'wall'],
+      ['wall', 'floor', 'crate', 'floor', 'wall'],
+      ['wall', 'wall', 'wall', 'wall', 'wall'],
+    ];
+    const ghost: Enemy  = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'right', kind: 'ghost',  moveAccMs: 0, alive: true };
+    const wander: Enemy = { id: 1, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'right', kind: 'wander', moveAccMs: 0, alive: true };
+    expect(chooseEnemyDir(g, ghost, { x: 3, y: 1 }, [], [], () => 0)).toBe('right');   // 穿箱
+    expect(chooseEnemyDir(g, wander, { x: 3, y: 1 }, [], [], () => 0)).toBeNull();      // 一般怪被箱擋死
+  });
+  it('ghost 不能穿 wall 也不能穿 bomb', () => {
+    const boxed: Grid = [['wall','wall','wall'],['wall','floor','wall'],['wall','wall','wall']];
+    const ghost: Enemy = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'up', kind: 'ghost', moveAccMs: 0, alive: true };
+    expect(chooseEnemyDir(boxed, ghost, { x: 1, y: 1 }, [], [], createRng(1))).toBeNull();
+    const ghost2: Enemy = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'right', kind: 'ghost', moveAccMs: 0, alive: true };
+    const d = chooseEnemyDir(corridor(), ghost2, { x: 3, y: 1 }, [{ x: 2, y: 1, fuseMs: 1800, range: 1 }], [], () => 0);
+    expect(d).toBeNull(); // 右邊被炸彈本體擋、其餘是牆
+  });
+  it('ghost 比 wander 慢', () => {
+    expect(enemyMoveMs('ghost', 1)).toBeGreaterThan(enemyMoveMs('wander', 1));
+  });
+});
+
+describe('chooseEnemyDir: dasher（直線衝刺獸）', () => {
+  it('方向開放時永遠直走（不像 wander 有 20% 轉向）', () => {
+    const e: Enemy = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'right', kind: 'dasher', moveAccMs: 0, alive: true };
+    // rng 故意回 0.99（wander 會轉向的值）→ dasher 仍直走
+    expect(chooseEnemyDir(corridor(), e, { x: 3, y: 1 }, [], [], () => 0.99)).toBe('right');
+  });
+  it('被擋時換一個開放方向', () => {
+    const e: Enemy = { id: 0, x: 3, y: 1, prevX: 3, prevY: 1, dir: 'right', kind: 'dasher', moveAccMs: 0, alive: true };
+    // (4,1) 是 wall → 換向（走廊裡只剩 left）
+    expect(chooseEnemyDir(corridor(), e, { x: 1, y: 1 }, [], [], () => 0)).toBe('left');
+  });
+  it('dasher 也不會衝進爆風', () => {
+    const e: Enemy = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'right', kind: 'dasher', moveAccMs: 0, alive: true };
+    const d = chooseEnemyDir(corridor(), e, { x: 3, y: 1 }, [], [{ x: 2, y: 1, ttlMs: 300 }], () => 0);
+    expect(d).toBeNull(); // 唯一開放方向是爆風 → 停住
+  });
+  it('dasher 比 chaser 快', () => {
+    expect(enemyMoveMs('dasher', 1)).toBeLessThan(enemyMoveMs('chaser', 1));
   });
 });
