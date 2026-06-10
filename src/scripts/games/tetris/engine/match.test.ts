@@ -103,3 +103,78 @@ describe('TetrisMatch 真實攻擊與抵銷（整合）', () => {
     expect(m.pendingGarbage('B')).toBe(3);
   });
 });
+
+describe('TetrisMatch 護盾（default-inactive）', () => {
+  it('零回歸：addShield(side, 0) 後同 seed 同輸入 N 幀狀態與事件流逐位相等', () => {
+    const run = (withShieldZero: boolean): string => {
+      const m = new TetrisMatch({ seed: 11 });
+      if (withShieldZero) m.addShield('A', 0);
+      (m as unknown as { incoming: Record<string, number> }).incoming.A = 3;
+      const evLog: string[] = [];
+      for (let i = 0; i < 300; i++) {
+        m.input('A', i % 7 === 0 ? 'hardDrop' : 'softDrop');
+        m.input('B', i % 3 === 0 ? 'left' : 'rotateCW');
+        m.step(16);
+        evLog.push(JSON.stringify(m.drainEvents()));
+      }
+      return JSON.stringify([
+        m.a.getState(), m.b.getState(),
+        m.pendingGarbage('A'), m.pendingGarbage('B'),
+        m.phase, m.winner,
+      ]) + evLog.join('|');
+    };
+    expect(run(true)).toBe(run(false));
+  });
+
+  it('8 盾擋 5 行：全擋（發 shieldBlock 5、不傾倒）；再 5 行 → 擋 3 傾 2', () => {
+    const m = new TetrisMatch({ seed: 3 });
+    m.addShield('B', 8);
+    const inc = (m as unknown as { incoming: Record<string, number> }).incoming;
+    inc.B = 5;
+    m.drainEvents();
+    m.b.input('hardDrop'); // 落地未消行 → 結算傾倒
+    m.step(0);
+    let evs = m.drainEvents();
+    expect(evs.some((e) => e.kind === 'shieldBlock' && e.side === 'B' && e.amount === 5)).toBe(true);
+    expect(evs.some((e) => e.kind === 'garbageIn' && e.side === 'B')).toBe(false);
+    expect(m.b.getState().board.flat().filter((c) => c === 'G').length).toBe(0);
+    // 剩盾 3：再送 5 → 擋 3、傾倒 2
+    inc.B = 5;
+    m.b.input('hardDrop');
+    m.step(0);
+    evs = m.drainEvents();
+    expect(evs.some((e) => e.kind === 'shieldBlock' && e.side === 'B' && e.amount === 3)).toBe(true);
+    expect(evs.some((e) => e.kind === 'garbageIn' && e.side === 'B' && e.amount === 2)).toBe(true);
+    expect(m.b.getState().board.flat().filter((c) => c === 'G').length).toBe(2 * 9);
+    // 盾已耗盡：第三波全傾倒
+    inc.B = 1;
+    m.b.input('hardDrop');
+    m.step(0);
+    evs = m.drainEvents();
+    expect(evs.some((e) => e.kind === 'shieldBlock')).toBe(false);
+    expect(evs.some((e) => e.kind === 'garbageIn' && e.side === 'B' && e.amount === 1)).toBe(true);
+  });
+
+  it('addShield 可累加、各側獨立、非正數忽略', () => {
+    const m = new TetrisMatch({ seed: 3 });
+    m.addShield('A', 2);
+    m.addShield('A', 3);
+    m.addShield('A', 0);
+    m.addShield('A', -4);
+    const inc = (m as unknown as { incoming: Record<string, number> }).incoming;
+    inc.A = 9;
+    m.drainEvents();
+    m.a.input('hardDrop');
+    m.step(0);
+    const evs = m.drainEvents();
+    // A 有 5 盾；B 完全沒有
+    expect(evs.some((e) => e.kind === 'shieldBlock' && e.side === 'A' && e.amount === 5)).toBe(true);
+    expect(evs.some((e) => e.kind === 'garbageIn' && e.side === 'A' && e.amount === 4)).toBe(true);
+    inc.B = 2;
+    m.b.input('hardDrop');
+    m.step(0);
+    const evsB = m.drainEvents();
+    expect(evsB.some((e) => e.kind === 'shieldBlock' && e.side === 'B')).toBe(false);
+    expect(evsB.some((e) => e.kind === 'garbageIn' && e.side === 'B' && e.amount === 2)).toBe(true);
+  });
+});

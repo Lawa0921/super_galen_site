@@ -1,4 +1,4 @@
-import type { ActivePiece, GameEvent, GameState, PieceType } from './types';
+import type { ActivePiece, Cell, GameEvent, GameState, PieceType } from './types';
 import { createBag, type Bag } from './bag';
 import { spawnPiece, tryRotate, type PlaceTest } from './piece';
 import { canPlace, createBoard, lockPiece, clearLines, insertGarbage } from './board';
@@ -27,6 +27,9 @@ export class TetrisGame {
   private backToBack = false;
   private status: 'playing' | 'topout' = 'playing';
   private lastMoveWasRotation = false;
+
+  // 道具（default-inactive：1 = 原行為）
+  private gravityScale = 1;
 
   // 計時
   private gravityAcc = 0;
@@ -211,7 +214,8 @@ export class TetrisGame {
   /** 前進 dtMs 毫秒：處理重力下落與 lock delay。 */
   step(dtMs: number): void {
     if (this.status !== 'playing' || !this.active) return;
-    const interval = GRAVITY_MS[Math.min(this.level - 1, GRAVITY_MS.length - 1)];
+    // gravityScale=1 時 x/1 === x，與原式逐位相同；lock delay 不受 scale 影響
+    const interval = GRAVITY_MS[Math.min(this.level - 1, GRAVITY_MS.length - 1)] / this.gravityScale;
 
     this.gravityAcc += dtMs;
     while (this.gravityAcc >= interval) {
@@ -233,6 +237,32 @@ export class TetrisGame {
         this.lockAndResolve();
       }
     }
+  }
+
+  // ─── 道具操作（全部 default-inactive：不呼叫時行為與原版逐位相同）───
+
+  /** 道具：調整重力倍率（>1 加速、<1 減速）。只影響 gravity interval，lock delay 不變。clamp 到 (0, 10]，非法值忽略。 */
+  setGravityScale(s: number): void {
+    if (!Number.isFinite(s) || s <= 0) return;
+    this.gravityScale = Math.min(s, 10);
+  }
+
+  /** 道具：移除盤面最底 n 行、上方整體下移、頂部補空行。不計分、不影響 combo/b2b、不發 lineClear；發 itemClear。active 方塊不動。 */
+  clearBottomRows(n: number): void {
+    if (!Number.isFinite(n)) return;
+    const rows = Math.min(Math.floor(n), this.board.length);
+    if (rows <= 0) return;
+    const empty: Matrix = Array.from({ length: rows }, () => Array<Cell>(BOARD_WIDTH).fill(null));
+    this.board = [...empty, ...this.board.slice(0, this.board.length - rows)];
+    this.events.push({ kind: 'itemClear', rows });
+  }
+
+  /** 道具：active 方塊＋next 佇列全部重抽。由內部 bag/rng 續抽（不重置 seed）→ 同 seed 同時機呼叫結果確定相同。 */
+  rerollQueue(): void {
+    if (this.status !== 'playing') return;
+    this.bag.discard();
+    this.active = null;
+    this.spawn(); // 沿用 spawn 邏輯：spawn 位置重出、碰撞照既有 topout 規則
   }
 
   /** 外部（對戰）注入垃圾行：底部加 count 列、holeCol 留洞。 */

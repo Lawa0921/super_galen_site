@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TetrisGame } from './game';
+import { TetrisGame, type InputAction } from './game';
 
 describe('TetrisGame 初始化', () => {
   it('開局有 active 方塊、next 佇列、status=playing', () => {
@@ -159,6 +159,153 @@ describe('TetrisGame combo 與事件整合', () => {
     g.input('hardDrop'); // 觸發下一次 spawn → 失敗 → topout
     const events = g.drainEvents();
     expect(events.some((e) => e.kind === 'topout')).toBe(true);
+    expect(g.getState().status).toBe('topout');
+  });
+});
+
+describe('TetrisGame setGravityScale（default-inactive）', () => {
+  const INPUTS: InputAction[] = [
+    'left', 'rotateCW', 'right', 'softDrop', 'right', 'rotateCCW',
+    'left', 'softDrop', 'right', 'rotateCW', 'left', 'hardDrop',
+  ];
+  /** 確定性輸入腳本：每幀一個輸入 + step(16)，回傳逐幀事件流 JSON */
+  function runFrames(g: TetrisGame, frames: number): string {
+    const evLog: string[] = [];
+    for (let i = 0; i < frames; i++) {
+      g.input(INPUTS[i % INPUTS.length]);
+      g.step(16);
+      evLog.push(JSON.stringify(g.drainEvents()));
+    }
+    return evLog.join('|');
+  }
+
+  it('零回歸：setGravityScale(1) 後同 seed 同輸入 600 幀 getState 與事件流逐位相等', () => {
+    const a = new TetrisGame({ seed: 42 });
+    const b = new TetrisGame({ seed: 42 });
+    b.setGravityScale(1); // 顯式設回預設值 → 必須與從未呼叫者逐位相同
+    const evA = runFrames(a, 600);
+    const evB = runFrames(b, 600);
+    expect(JSON.stringify(b.getState())).toBe(JSON.stringify(a.getState()));
+    expect(evB).toBe(evA);
+  });
+
+  it('scale=0.3 下落變慢；還原 1 恢復下落', () => {
+    const normal = new TetrisGame({ seed: 1 });
+    const slow = new TetrisGame({ seed: 1 });
+    slow.setGravityScale(0.3); // level 1 間隔 1000ms → 3333ms
+    normal.step(1000);
+    slow.step(1000);
+    expect(normal.getState().active!.y).toBeGreaterThan(slow.getState().active!.y);
+    slow.setGravityScale(1);
+    const y0 = slow.getState().active!.y;
+    slow.step(1000); // 累積 2000ms ÷ 1000ms → 下落
+    expect(slow.getState().active!.y).toBeGreaterThan(y0);
+  });
+
+  it('gravity scale 不影響 lock delay（仍為 500ms）', () => {
+    const g = new TetrisGame({ seed: 1 });
+    g.setGravityScale(2); // 間隔 1000 → 500ms
+    for (let i = 0; i < 25; i++) g.input('softDrop'); // 推到底（落地不觸發 locking）
+    g.drainEvents();
+    // step(100)×5：第 5 步重力 tick 觸發 locking、lockTimer=100
+    // 再 3 步 lockTimer=400 < 500 → 第 8 步仍未鎖；第 9 步 lockTimer=500 → 鎖定
+    for (let i = 0; i < 8; i++) g.step(100);
+    expect(g.drainEvents().some((e) => e.kind === 'lock')).toBe(false);
+    g.step(100);
+    expect(g.drainEvents().some((e) => e.kind === 'lock')).toBe(true);
+  });
+
+  it('clamp：非正數/NaN 忽略、上限 10', () => {
+    const g = new TetrisGame({ seed: 1 });
+    g.setGravityScale(0);
+    g.setGravityScale(-3);
+    g.setGravityScale(NaN);
+    const ref = new TetrisGame({ seed: 1 });
+    g.step(999);
+    ref.step(999); // 仍為原速 → 999 < 1000 不下落
+    expect(g.getState().active!.y).toBe(ref.getState().active!.y);
+    g.setGravityScale(100); // clamp → 10，間隔 100ms
+    g.step(100); // 累積 1099ms ÷ 100ms → 下落 10 格（若未 clamp 會直衝到底）
+    expect(g.getState().active!.y).toBe(10);
+  });
+});
+
+describe('TetrisGame clearBottomRows（道具）', () => {
+  it('堆 3 行清 2 行：剩 1 行且內容=原最上行；分數/combo/lines 不變；active 不動', () => {
+    const g = new TetrisGame({ seed: 1 });
+    g.receiveGarbage(1, 2); // 先進 → 最後在最上（hole@2）
+    g.receiveGarbage(1, 5);
+    g.receiveGarbage(1, 7); // 最底（hole@7）
+    const before = g.getState();
+    g.drainEvents();
+    g.clearBottomRows(2);
+    const s = g.getState();
+    const lastRow = s.board[s.board.length - 1];
+    expect(lastRow.filter((c) => c === 'G').length).toBe(9);
+    expect(lastRow[2]).toBe(null); // 剩下的是原最上行（hole@2）
+    expect(s.board.flat().filter((c) => c === 'G').length).toBe(9); // 只剩 1 行垃圾
+    expect(s.score).toBe(before.score);
+    expect(s.combo).toBe(before.combo);
+    expect(s.lines).toBe(before.lines);
+    expect(s.active).toEqual(before.active);
+  });
+
+  it('不發 lineClear、發 itemClear（rows=n）', () => {
+    const g = new TetrisGame({ seed: 1 });
+    g.receiveGarbage(3, 4);
+    g.drainEvents();
+    g.clearBottomRows(2);
+    const evs = g.drainEvents();
+    expect(evs.some((e) => e.kind === 'lineClear')).toBe(false);
+    expect(evs.some((e) => e.kind === 'itemClear' && e.rows === 2)).toBe(true);
+  });
+
+  it('空盤/n=0 安全 no-op', () => {
+    const g = new TetrisGame({ seed: 1 });
+    const before = JSON.stringify(g.getState());
+    g.drainEvents();
+    g.clearBottomRows(0);
+    expect(g.drainEvents().length).toBe(0);
+    g.clearBottomRows(2); // 空盤照常運作（移除空行=無變化）
+    expect(JSON.stringify(g.getState())).toBe(before);
+  });
+});
+
+describe('TetrisGame rerollQueue（道具）', () => {
+  it('確定性：同 seed 同時機 reroll → 兩實例狀態逐位相同', () => {
+    const a = new TetrisGame({ seed: 9 });
+    const b = new TetrisGame({ seed: 9 });
+    a.rerollQueue();
+    b.rerollQueue();
+    expect(JSON.stringify(a.getState())).toBe(JSON.stringify(b.getState()));
+  });
+
+  it('真的有重抽：與未 reroll 實例的 active+next 序列不同；next 長度不變', () => {
+    const a = new TetrisGame({ seed: 9 });
+    const c = new TetrisGame({ seed: 9 });
+    a.rerollQueue();
+    const sa = a.getState();
+    const sc = c.getState();
+    expect(sa.next.length).toBe(sc.next.length);
+    expect([sa.active!.type, ...sa.next].join('')).not.toBe([sc.active!.type, ...sc.next].join(''));
+  });
+
+  it('reroll 後 active 從 spawn 位置重出（發 spawn 事件）', () => {
+    const g = new TetrisGame({ seed: 9 });
+    g.input('softDrop');
+    g.input('softDrop');
+    g.drainEvents();
+    g.rerollQueue();
+    expect(g.getState().active!.y).toBe(0); // 回到 spawn 高度
+    expect(g.drainEvents().some((e) => e.kind === 'spawn')).toBe(true);
+  });
+
+  it('盤面已滿時 reroll → 照既有 topout 規則；topout 後再 reroll 安全 no-op', () => {
+    const g = new TetrisGame({ seed: 9 });
+    for (let i = 0; i < 25; i++) g.receiveGarbage(1, 0);
+    g.rerollQueue(); // spawn 失敗 → topout
+    expect(g.getState().status).toBe('topout');
+    g.rerollQueue(); // 不應 throw
     expect(g.getState().status).toBe('topout');
   });
 });
