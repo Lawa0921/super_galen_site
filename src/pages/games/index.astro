@@ -10,7 +10,7 @@ const lang: Language = defaultLang;
 
 const games = [
   { id: 'tetris', title: 'BATTLE TETRIS', href: '/games/tetris', active: true },
-  { id: 'soon-1', title: 'COMING SOON', href: null, active: false },
+  { id: 'bomber', title: 'DUNGEON BOMBER', href: '/games/bomber', active: true },
   { id: 'soon-2', title: 'COMING SOON', href: null, active: false },
 ];
 ---
@@ -42,6 +42,8 @@ const games = [
         )
       )}
     </div>
+
+    <a class="lb-link" href="/games/leaderboard"><i class="fas fa-trophy"></i> 排行榜 LEADERBOARD</a>
   </main>
 </BaseLayout>
 
@@ -162,6 +164,20 @@ const games = [
     position: relative;
     background: center / contain no-repeat url('/assets/games/tetris/icons/lock.webp');
   }
+
+  .lb-link {
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #ffd23f;
+    text-decoration: none;
+    padding: 12px 22px;
+    border: 1px solid rgba(255, 210, 63, 0.55);
+    border-radius: 8px;
+    box-shadow: 0 0 12px rgba(255, 210, 63, 0.25);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .lb-link:hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(255, 210, 63, 0.6); }
 
   @media (max-width: 560px) {
     .card { width: 70vw; height: 200px; }

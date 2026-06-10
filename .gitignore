@@ -50,3 +50,6 @@ localhost_*.json
 localhost-*.json
 **/deployments/localhost-*.json
 .vercel
+
+# superpowers brainstorm visual companion
+.superpowers/
