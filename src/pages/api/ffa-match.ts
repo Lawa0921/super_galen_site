@@ -49,14 +49,25 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     typeof reporterId !== 'string' ||
     typeof signature !== 'string' ||
     !Array.isArray(standings) ||
-    standings.length < 2 ||
     !standings.every((x) => typeof x === 'string')
   ) {
     return json({ error: 'bad params' }, 400);
   }
+  // FFA 僅限 3..8 人：2 人必須走 /api/match 的 1v1 雙方確認路徑
+  // （否則 ceil(2/2)=1 會讓單一簽章即可結算，繞過雙方共識）。
+  if (standings.length < 3 || standings.length > 8) {
+    return json({ error: 'player count out of range (3..8)' }, 400);
+  }
   const m = matchId;
   const reporter = (reporterId as string).toLowerCase();
   const order = standings as string[];
+  const lowerStandings = order.map((id) => id.toLowerCase());
+
+  // 回報者必須是對局參與者：非參與者的簽章不得計入共識
+  // （否則任意外部錢包可對捏造對局投票，影響他人積分）。
+  if (!lowerStandings.includes(reporter)) {
+    return json({ error: 'reporter not a participant' }, 403);
+  }
 
   // ── replay 抽驗：名次必須由 seed + 各玩家輸入重現 ──
   const replay = body.replay as FfaReplay | undefined;
@@ -80,16 +91,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ error: 'bad signature' }, 401);
   }
 
-  // ── ratings：缺則由後端讀各玩家現有分數（小寫化 id 比照 reportFfaResult 計分用 id）──
+  // ── ratings：一律由後端讀各玩家現有分數。client 傳入的 ratings 不可信
+  //   （否則回報者可偽造基底分數直接灌分），故無條件忽略。──
   const store = getRankStore();
-  const lowerStandings = order.map((id) => id.toLowerCase());
-  let ratings = body.ratings as Record<string, number> | undefined;
-  if (!ratings || typeof ratings !== 'object') {
-    ratings = {};
-    for (const id of lowerStandings) {
-      const rec = await store.getPlayer(id);
-      ratings[id] = rec?.rating ?? DEFAULT_RATING;
-    }
+  const ratings: Record<string, number> = {};
+  for (const id of lowerStandings) {
+    const rec = await store.getPlayer(id);
+    ratings[id] = rec?.rating ?? DEFAULT_RATING;
   }
 
   const outcome = await reportFfaResult({
