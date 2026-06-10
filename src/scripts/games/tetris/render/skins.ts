@@ -23,6 +23,8 @@ export const SKIN_CATALOG: SkinDef[] = [
     name: '復古 8-BIT',
     unlockLevel: 2,
     blockUrl: '/assets/games/tetris/skins/bit8.webp',
+    // NES 原色盤：飽和平塗原色，配粗像素粗描邊
+    tints: { I: 0x00a8f0, O: 0xf8d800, T: 0xc048e0, S: 0x00d000, Z: 0xf03800, J: 0x0058f8, L: 0xf88000 },
   },
   {
     id: 'rune',
@@ -41,6 +43,8 @@ export const SKIN_CATALOG: SkinDef[] = [
     name: '水晶寶石',
     unlockLevel: 9,
     blockUrl: '/assets/games/tetris/skins/crystal.webp',
+    // 寶石色盤：水晶/琥珀/紫水晶/祖母綠/紅寶石/藍寶石/黃玉
+    tints: { I: 0x2ee6ff, O: 0xffc23f, T: 0xb44dff, S: 0x3fe26b, Z: 0xff4d6b, J: 0x4d7bff, L: 0xff8a3c },
   },
 ];
 
