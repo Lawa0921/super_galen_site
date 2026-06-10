@@ -129,6 +129,7 @@ export async function startBomber(
       } else if (ev.kind === 'ability') {
         stage.shake(6);
         sound.explode();
+        entity.triggerAbility(ev.id, game.getState());
       } else if (ev.kind === 'gameover') {
         sound.gameover();
         const s = game.getState();

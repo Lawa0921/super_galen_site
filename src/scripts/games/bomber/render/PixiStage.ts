@@ -29,9 +29,10 @@ export class PixiStage {
     this.entityLayer.filters = [
       new AdvancedBloomFilter({ threshold: 0.6, bloomScale: 0.3, brightness: 1.0, blur: 2, quality: 4 }),
     ];
-    // fxLayer：強爆發感，爆風效果強烈
+    // fxLayer：收斂 bloom——爆風的光暈必須貼齊實際傷害格，
+    // 不能外溢到鄰格造成「濺射範圍」的錯覺（視覺=判定）。
     this.fxLayer.filters = [
-      new AdvancedBloomFilter({ threshold: 0.3, bloomScale: 1.0, brightness: 1.0, blur: 6, quality: 4 }),
+      new AdvancedBloomFilter({ threshold: 0.45, bloomScale: 0.45, brightness: 1.0, blur: 3, quality: 4 }),
     ];
 
     // 全畫面 CRT：掃描線 + 微曲率 + 暗角（街機科技感，保持克制以利閱讀）

@@ -9,6 +9,11 @@ const AB_CARPET_URL  = '/assets/games/bomber/ui/ab-carpet.png';
 const AB_INFERNO_URL = '/assets/games/bomber/ui/ab-inferno.png';
 const AB_BLINK_URL   = '/assets/games/bomber/ui/ab-blink.png';
 const AB_BULWARK_URL = '/assets/games/bomber/ui/ab-bulwark.png';
+const BOMB_LENA_URL  = '/assets/games/bomber/bomb-lena.png';
+const BOMB_MIRA_URL  = '/assets/games/bomber/bomb-mira.png';
+const BOMB_AYA_URL   = '/assets/games/bomber/bomb-aya.png';
+const BOMB_ROSA_URL  = '/assets/games/bomber/bomb-rosa.png';
+const EXPLOSION_URL  = '/assets/games/bomber/explosion.png';
 
 /** 每格 64×64 px。Sheet 佈局 5 col × 3 row，0-indexed (col, row)。*/
 const F = 64;
@@ -46,6 +51,13 @@ export interface BomberTextures {
   abInferno:   Texture;
   abBlink:     Texture;
   abBulwark:   Texture;
+  /** Per-character bomb sprites (64×64, true alpha). */
+  bombLena:    Texture;
+  bombMira:    Texture;
+  bombAya:     Texture;
+  bombRosa:    Texture;
+  /** 4-frame explosion animation (sliced from a 256×64 strip, true alpha). */
+  blastFrames: Texture[];
 }
 
 /** 預載一張 sprite sheet (320×192)，切成 15 個 64×64 frame Textures 回傳。
@@ -57,7 +69,8 @@ export interface BomberTextures {
  */
 export async function loadBomberTextures(): Promise<BomberTextures> {
   const [sheet, walkLenaTex, walkMiraTex, walkAyaTex, walkRosaTex,
-         abCarpetTex, abInfernoTex, abBlinkTex, abBulwarkTex] = await Promise.all([
+         abCarpetTex, abInfernoTex, abBlinkTex, abBulwarkTex,
+         bombLenaTex, bombMiraTex, bombAyaTex, bombRosaTex, explosionTex] = await Promise.all([
     Assets.load(SHEET_URL)    as Promise<Texture>,
     Assets.load(WALK_LENA_URL) as Promise<Texture>,
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
@@ -67,6 +80,11 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     Assets.load(AB_INFERNO_URL) as Promise<Texture>,
     Assets.load(AB_BLINK_URL)   as Promise<Texture>,
     Assets.load(AB_BULWARK_URL) as Promise<Texture>,
+    Assets.load(BOMB_LENA_URL) as Promise<Texture>,
+    Assets.load(BOMB_MIRA_URL) as Promise<Texture>,
+    Assets.load(BOMB_AYA_URL)  as Promise<Texture>,
+    Assets.load(BOMB_ROSA_URL) as Promise<Texture>,
+    Assets.load(EXPLOSION_URL) as Promise<Texture>,
   ]);
 
   sheet.source.scaleMode       = 'nearest';
@@ -78,6 +96,14 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   abInfernoTex.source.scaleMode = 'nearest';
   abBlinkTex.source.scaleMode   = 'nearest';
   abBulwarkTex.source.scaleMode = 'nearest';
+  bombLenaTex.source.scaleMode  = 'nearest';
+  bombMiraTex.source.scaleMode  = 'nearest';
+  bombAyaTex.source.scaleMode   = 'nearest';
+  bombRosaTex.source.scaleMode  = 'nearest';
+  explosionTex.source.scaleMode = 'nearest';
+
+  // 爆炸動畫：從 256×64 條切 4 幀
+  const blastFrames = [0, 1, 2, 3].map((i) => frameAt(explosionTex.source, i, 0));
 
   const src = sheet.source;
   return {
@@ -109,5 +135,11 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     abInferno:   abInfernoTex,
     abBlink:     abBlinkTex,
     abBulwark:   abBulwarkTex,
+    // per-character bombs + explosion frames
+    bombLena:    bombLenaTex,
+    bombMira:    bombMiraTex,
+    bombAya:     bombAyaTex,
+    bombRosa:    bombRosaTex,
+    blastFrames,
   };
 }
