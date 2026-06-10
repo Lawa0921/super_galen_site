@@ -11,7 +11,8 @@ import { Effects } from './Effects';
 import { GarbageMeter } from './GarbageMeter';
 import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from './assets';
-import { pieceTint } from './layout';
+import { resolveSkin } from './skins';
+import { pieceTint, setSkinTints } from './layout';
 import { computeMatchLayout, P1_TINT, P2_TINT, type MatchLayout } from './matchLayout';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 
@@ -30,10 +31,13 @@ export interface AiHandle {
 export async function startAi(
   canvas: HTMLCanvasElement,
   difficulty: Difficulty = 'normal',
-  opts: { onEnd?: (winner: Side) => void } = {},
+  opts: { onEnd?: (winner: Side) => void; skinId?: string } = {},
 ): Promise<AiHandle> {
   const stage = await PixiStage.create(canvas);
-  const tex = await loadGameTextures();
+  // 等級守門在 UI 層（T4）做；渲染層信任呼叫端、只負責套用皮膚。
+  const skin = resolveSkin(opts.skinId ?? 'neon', Number.POSITIVE_INFINITY);
+  const tex = await loadGameTextures(skin.id);
+  setSkinTints(skin.tints ?? null);
   stage.setBackground(tex.bg);
   try {
     await document.fonts.load('14px "Press Start 2P"');

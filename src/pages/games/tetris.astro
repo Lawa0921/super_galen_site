@@ -507,6 +507,7 @@ const lang: Language = defaultLang;
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
   import { startAi } from '@scripts/games/tetris/render/aiMain';
+  import { getSelectedSkin } from '@scripts/games/tetris/render/skins';
   import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
   import { hostFfaGame, joinFfaGame, type FfaNetStatus, type FfaIdentity } from '@scripts/games/tetris/net/ffaNetMain';
 
@@ -653,7 +654,7 @@ const lang: Language = defaultLang;
     started = true;
     mainMenu?.remove();
     setHint(SOLO_HINT);
-    startTetris(canvas, { onEnd: () => showResult('GAME OVER') })
+    startTetris(canvas, { onEnd: () => showResult('GAME OVER'), skinId: getSelectedSkin() })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
@@ -665,7 +666,7 @@ const lang: Language = defaultLang;
     mainMenu?.remove();
     const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
     setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · M MUTE`);
-    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS') })
+    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS'), skinId: getSelectedSkin() })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }

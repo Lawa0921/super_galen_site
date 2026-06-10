@@ -10,7 +10,8 @@ import { HudView } from './HudView';
 import { Effects } from './Effects';
 import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from './assets';
-import { pieceTint, type Point } from './layout';
+import { resolveSkin } from './skins';
+import { pieceTint, setSkinTints, type Point } from './layout';
 
 const CLEAR_NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
 
@@ -55,10 +56,13 @@ export interface TetrisHandle {
 /** 掛載並啟動單人俄羅斯方塊到指定 canvas。onEnd 在 top-out（game over）時呼叫一次。 */
 export async function startTetris(
   canvas: HTMLCanvasElement,
-  opts: { onEnd?: () => void } = {},
+  opts: { onEnd?: () => void; skinId?: string } = {},
 ): Promise<TetrisHandle> {
   const stage = await PixiStage.create(canvas);
-  const tex = await loadGameTextures();
+  // 等級守門在 UI 層（T4）做；渲染層信任呼叫端、只負責套用皮膚。
+  const skin = resolveSkin(opts.skinId ?? 'neon', Number.POSITIVE_INFINITY);
+  const tex = await loadGameTextures(skin.id);
+  setSkinTints(skin.tints ?? null);
   stage.setBackground(tex.bg);
 
   // 盤面後方暗角 scrim：壓暗背景、讓方塊更聚焦（置於背景圖之上、盤框之下）

@@ -11,7 +11,8 @@ import { Effects } from '../render/Effects';
 import { GarbageMeter } from '../render/GarbageMeter';
 import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from '../render/assets';
-import { pieceTint } from '../render/layout';
+import { getSelectedSkin, resolveSkin } from '../render/skins';
+import { pieceTint, setSkinTints } from '../render/layout';
 import { computeMatchLayout, P1_TINT, P2_TINT, type MatchLayout } from '../render/matchLayout';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 import { Lockstep } from './lockstep';
@@ -146,7 +147,10 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
   const input = new InputController((a) => lockstep.pressLocal(a), { das: 150, arr: 35 });
 
   void PixiStage.create(canvas).then(async (stage) => {
-    const tex = await loadGameTextures();
+    // 皮膚只影響本地渲染（貼圖/調色），不進鎖步協定。
+    const skin = resolveSkin(getSelectedSkin(identity.id), Number.POSITIVE_INFINITY);
+    const tex = await loadGameTextures(skin.id);
+    setSkinTints(skin.tints ?? null);
     stage.setBackground(tex.bg);
     try { await document.fonts.load('14px "Press Start 2P"'); await document.fonts.ready; } catch { /* fallback */ }
 

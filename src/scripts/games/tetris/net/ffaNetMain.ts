@@ -4,6 +4,8 @@ import { InputController } from '../input/InputController';
 import { PixiStage } from '../render/PixiStage';
 import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from '../render/assets';
+import { getSelectedSkin, resolveSkin } from '../render/skins';
+import { setSkinTints } from '../render/layout';
 import { FfaBoards } from '../render/FfaBoards';
 import { FfaLockstep, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
 import type { FfaReplay } from './ffaReplay';
@@ -626,7 +628,10 @@ export function runFfaGame(opts: RunFfaOpts): void {
   const input = new InputController((a) => pendingActions.push(a), { das: 150, arr: 35 });
 
   void PixiStage.create(canvas).then(async (stage) => {
-    const tex = await loadGameTextures();
+    // 皮膚只影響本地渲染（貼圖/調色），不進鎖步協定。
+    const skin = resolveSkin(getSelectedSkin(localId), Number.POSITIVE_INFINITY);
+    const tex = await loadGameTextures(skin.id);
+    setSkinTints(skin.tints ?? null);
     stage.setBackground(tex.bg);
     try { await document.fonts.load('14px "Press Start 2P"'); await document.fonts.ready; } catch { /* fallback */ }
 
