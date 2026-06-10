@@ -9,9 +9,9 @@ import { defaultLang, type Language } from '@i18n/index';
 const lang: Language = defaultLang;
 
 const games = [
-  { id: 'tetris', title: 'BATTLE TETRIS', href: '/games/tetris', active: true },
-  { id: 'bomber', title: 'DUNGEON BOMBER', href: '/games/bomber', active: true },
-  { id: 'soon-2', title: 'COMING SOON', href: null, active: false },
+  { id: 'tetris', title: 'BATTLE TETRIS', href: '/games/tetris', active: true, art: '/assets/games/tetris/card-tetris.webp' },
+  { id: 'bomber', title: 'DUNGEON BOMBER', href: '/games/bomber', active: true, art: '/assets/games/bomber/card-bomber.webp' },
+  { id: 'soon-2', title: 'COMING SOON', href: null, active: false, art: '/assets/games/tetris/coming-soon.webp' },
 ];
 ---
 
@@ -29,13 +29,13 @@ const games = [
       {games.map((g) =>
         g.active && g.href ? (
           <a class="card card--active" href={g.href}>
-            <img class="card-art-img" src="/assets/games/tetris/card-tetris.webp" alt="" aria-hidden="true" loading="eager" />
+            <img class="card-art-img" src={g.art} alt="" aria-hidden="true" loading="eager" />
             <span class="card-title">{g.title}</span>
             <span class="card-play">PLAY</span>
           </a>
         ) : (
           <div class="card card--locked" aria-disabled="true">
-            <img class="card-art-img" src="/assets/games/tetris/coming-soon.webp" alt="" aria-hidden="true" loading="lazy" />
+            <img class="card-art-img" src={g.art} alt="" aria-hidden="true" loading="lazy" />
             <span class="card-lock" aria-hidden="true"></span>
             <span class="card-title">{g.title}</span>
           </div>
