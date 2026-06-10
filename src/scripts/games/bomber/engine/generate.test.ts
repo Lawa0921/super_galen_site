@@ -44,6 +44,24 @@ describe('generateFloor', () => {
     expect(enemies.length).toBeLessThanOrEqual(BASE_ENEMY_COUNT + 49);
   });
 
+  it('敵人不會生在被牆/箱完全封死的格（至少一個 floor 鄰格）', () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      for (const floor of [1, 4, 8]) {
+        const { grid, enemies } = generateFloor(seed, floor);
+        for (const e of enemies) {
+          const neighbors = [
+            grid[e.y - 1]?.[e.x], grid[e.y + 1]?.[e.x],
+            grid[e.y]?.[e.x - 1], grid[e.y]?.[e.x + 1],
+          ];
+          expect(
+            neighbors.some((t) => t === 'floor'),
+            `seed ${seed} floor ${floor} enemy@(${e.x},${e.y}) 被完全封死`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
   it('怪物種類隨樓層漸進：1 層只有基本款；2 層起有 ghost；3 層起有 dasher', () => {
     const kindsAt = (floor: number): Set<string> => {
       const s = new Set<string>();

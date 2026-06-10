@@ -60,10 +60,15 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
     (Math.abs(best.x - SPAWN.x) + Math.abs(best.y - SPAWN.y)) ? c : best,
     floors[0] ?? { x: GRID_COLS - 2, y: GRID_ROWS - 2 });
 
-  // 敵人：第 floor 層 = BASE + (floor-1)，從遠離出生點的 floor 格隨機挑
+  // 敵人：第 floor 層 = BASE + (floor-1)，從遠離出生點的 floor 格隨機挑。
+  // 排除被牆/箱完全封死的格（至少要有一個 floor 鄰格），否則怪物會原地卡死。
+  const hasOpenNeighbor = (c: { x: number; y: number }): boolean =>
+    [grid[c.y - 1]?.[c.x], grid[c.y + 1]?.[c.x], grid[c.y]?.[c.x - 1], grid[c.y]?.[c.x + 1]]
+      .some((t) => t === 'floor');
   const count = BASE_ENEMY_COUNT + (floor - 1);
   const candidates = shuffle(
-    floors.filter((c) => Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y) >= 4),
+    floors.filter((c) =>
+      Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y) >= 4 && hasOpenNeighbor(c)),
     rng,
   );
   // 怪物池隨樓層擴張：1 層基本款；2 層起加入穿箱幽靈；3 層起加入直線衝刺獸
