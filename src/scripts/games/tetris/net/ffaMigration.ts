@@ -308,6 +308,11 @@ function parseMigState(
  * 遷移協調器（host 死亡後由每個倖存 guest 各自呼叫）。
  * 全依賴注入：signaling / RTC / lockstep / transport / 時鐘與節奏皆可 mock。
  * 成功 → 回傳新角色與新拓樸；任一步逾時或無候選 → throw（呼叫端降級中止）。
+ *
+ * 呼叫端規約：**已知自己已定名次（淘汰/棄權）者不得呼叫**——其低 index offer
+ * 會讓真候選在讓位檢查中誤讓位 → 全員 join → 選舉死鎖（netMain 已把關）。
+ * 視野落後、尚不知自己已定名次者照常參與：即使其誤判自任 host，
+ * 仲裁會收斂到它當 host —— host 只是純 relay，已淘汰者亦可勝任。
  */
 export async function runMigration(deps: RunMigrationDeps): Promise<RunMigrationResult> {
   const now = deps.now ?? Date.now;

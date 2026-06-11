@@ -962,6 +962,13 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
     if (disconnected || migrating || isHostNow) return;
     if (lockstep.getMatch().phase !== 'playing') return; // 已分出勝負：結果已定，不需遷移
     const mig = opts.migration;
+    // 協定規約：已知自己已定名次者「不參與」遷移（不寫 offer）。
+    // 否則其低 index offer 會讓真候選誤讓位 → 全員 join → 選舉死鎖。
+    // 代價：被淘汰者在 host 死後無法續看（自身名次已定，誠實降級）。
+    if (lockstep.getMatch().getPlacement().has(localId)) {
+      abortMatch();
+      return;
+    }
     if (!mig || migrationGen >= MAX_MIGRATIONS) {
       abortMatch();
       return;
