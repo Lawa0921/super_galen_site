@@ -254,6 +254,7 @@ body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opac
 #process .band{position:relative;border-top:1px solid rgba(110,90,64,.3);
   border-bottom:1px solid rgba(110,90,64,.3);padding:22px 0;margin-bottom:2px;overflow:hidden}
 #process .band img{width:100%;display:block;will-change:clip-path;
+  aspect-ratio:1600/894;object-fit:cover; /* 預留高度 — lazy 載入後不位移，pin 位置才不會失準 */
   clip-path:inset(0 100% 0 0)}            /* JS scrub wipes this open L→R */
 #process .stages{display:grid;grid-template-columns:repeat(4,1fr);margin-top:26px}
 #process .stages .s{text-align:center;padding:0 10px;position:relative;opacity:0;
@@ -1087,6 +1088,17 @@ document.querySelectorAll('.tea-card').forEach(card=>{
     card.style.transform=`translateY(-10px) perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg)`;
   });
 });
+
+/* lazy 圖載入會推移版面 — 重算 ScrollTrigger 位置，否則 regions pin 會提早釘住、蓋住標題 */
+(function(){
+  let t;
+  document.querySelectorAll('img[loading="lazy"]').forEach(img=>{
+    if(img.complete) return;
+    img.addEventListener('load',()=>{
+      clearTimeout(t);t=setTimeout(()=>ScrollTrigger.refresh(),200);
+    },{once:true});
+  });
+})();
 </script>
 </body>
 </html>
