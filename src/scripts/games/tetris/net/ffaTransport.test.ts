@@ -8,16 +8,18 @@ import {
 import { FfaLockstep, type FfaFrameMsg } from './ffaLockstep';
 import type { InputAction } from '../engine/game';
 
-/** 測試用 mock channel：記錄送出的原始字串、可切 open。 */
+/** 測試用 mock channel：記錄送出的原始字串、可切 open、含 onclose 掛點。 */
 function mockChannel(open = true): RelayChannel & {
   sent: string[];
   open: boolean;
   onmessage: ((raw: string) => void) | null;
+  onclose: (() => void) | null;
 } {
   return {
     sent: [] as string[],
     open,
     onmessage: null as ((raw: string) => void) | null,
+    onclose: null as (() => void) | null,
     send(raw: string): void {
       this.sent.push(raw);
     },
@@ -117,6 +119,138 @@ describe('FfaSpokeTransport（Guest 端）', () => {
     const msg: FfaFrameMsg = { f: 4, p: 'host', a: ['rotateCW'] };
     ch.onmessage!(JSON.stringify(msg));
     expect(got).toEqual([msg]);
+  });
+});
+
+describe('F4：Hub 控制訊息通道 + channel-close 掛點', () => {
+  it('guest 送 ffa-leave → onChannelClose(該 idx)、不 relay、不上拋（onMessage/onControl 都沒收到）', () => {
+    const channels = [mockChannel(), mockChannel(), mockChannel()];
+    const hub = new FfaHubTransport(channels);
+    const closed: number[] = [];
+    const frames: FfaFrameMsg[] = [];
+    const controls: Array<Record<string, unknown>> = [];
+    hub.onChannelClose((idx) => closed.push(idx));
+    hub.onMessage((m) => frames.push(m));
+    hub.onControl((m) => controls.push(m));
+
+    channels[1].onmessage!(JSON.stringify({ t: 'ffa-leave' }));
+
+    expect(closed).toEqual([1]);
+    expect(channels[0].sent).toEqual([]); // 不 relay
+    expect(channels[2].sent).toEqual([]);
+    expect(frames).toEqual([]); // 不上拋幀
+    expect(controls).toEqual([]); // 也不當一般控制訊息
+  });
+
+  it('guest 送 ffa-forfeit → relay 給其餘 channel、hub onControl 收到 parse 後物件、onMessage 沒收到', () => {
+    const channels = [mockChannel(), mockChannel(), mockChannel()];
+    const hub = new FfaHubTransport(channels);
+    const frames: FfaFrameMsg[] = [];
+    const controls: Array<Record<string, unknown>> = [];
+    hub.onMessage((m) => frames.push(m));
+    hub.onControl((m) => controls.push(m));
+
+    const msg = { t: 'ffa-forfeit', p: 'x', f: 5 };
+    const raw = JSON.stringify(msg);
+    channels[0].onmessage!(raw);
+
+    expect(channels[1].sent).toEqual([raw]); // 其餘 channel 收到
+    expect(channels[2].sent).toEqual([raw]);
+    expect(channels[0].sent).toEqual([]); // 來源不回灌
+    expect(controls).toEqual([msg]); // hub 自身 onControl 收到
+    expect(frames).toEqual([]); // 幀路徑沒收到
+  });
+
+  it('hub sendControl → 全部 channel 收到、自身 onControl 回灌', () => {
+    const channels = [mockChannel(), mockChannel()];
+    const hub = new FfaHubTransport(channels);
+    const controls: Array<Record<string, unknown>> = [];
+    hub.onControl((m) => controls.push(m));
+
+    const msg = { t: 'ffa-forfeit', p: 'x', f: 9 };
+    hub.sendControl(msg);
+
+    const raw = JSON.stringify(msg);
+    expect(channels[0].sent).toEqual([raw]);
+    expect(channels[1].sent).toEqual([raw]);
+    expect(controls).toEqual([msg]); // 回灌自身
+  });
+
+  it('mock channel 觸發 onclose → hub onChannelClose(該 idx)', () => {
+    const channels = [mockChannel(), mockChannel(), mockChannel()];
+    const hub = new FfaHubTransport(channels);
+    const closed: number[] = [];
+    hub.onChannelClose((idx) => closed.push(idx));
+
+    channels[2].onclose?.();
+    channels[0].onclose?.();
+
+    expect(closed).toEqual([2, 0]);
+  });
+
+  it('畸形 JSON / t 非字串 → 走幀訊息既有容錯路徑、不丟例外、不觸發控制回呼', () => {
+    const channels = [mockChannel(), mockChannel()];
+    const hub = new FfaHubTransport(channels);
+    const controls: Array<Record<string, unknown>> = [];
+    const closed: number[] = [];
+    hub.onControl((m) => controls.push(m));
+    hub.onChannelClose((idx) => closed.push(idx));
+
+    // 畸形 JSON：不丟例外、照幀路徑 relay（既有行為）
+    expect(() => channels[0].onmessage!('not-json{{')).not.toThrow();
+    expect(channels[1].sent).toEqual(['not-json{{']);
+
+    // t 非字串：不是控制訊息 → 照幀路徑 relay
+    const raw = JSON.stringify({ t: 5, f: 1, p: 'g0', a: [] });
+    expect(() => channels[0].onmessage!(raw)).not.toThrow();
+    expect(channels[1].sent).toEqual(['not-json{{', raw]);
+
+    expect(controls).toEqual([]);
+    expect(closed).toEqual([]);
+  });
+});
+
+describe('F4：Spoke 控制訊息通道 + onClose 掛點', () => {
+  it('收 ffa-forfeit → onControl 收到、onMessage 沒收到；收幀 → onMessage 收到、onControl 沒收到', () => {
+    const ch = mockChannel();
+    const spoke = new FfaSpokeTransport(ch);
+    const frames: FfaFrameMsg[] = [];
+    const controls: Array<Record<string, unknown>> = [];
+    spoke.onMessage((m) => frames.push(m));
+    spoke.onControl((m) => controls.push(m));
+
+    const ctrl = { t: 'ffa-forfeit', p: 'x', f: 5 };
+    ch.onmessage!(JSON.stringify(ctrl));
+    expect(controls).toEqual([ctrl]);
+    expect(frames).toEqual([]);
+
+    const frame: FfaFrameMsg = { f: 7, p: 'host', a: ['left'] };
+    ch.onmessage!(JSON.stringify(frame));
+    expect(frames).toEqual([frame]);
+    expect(controls).toEqual([ctrl]); // 控制回呼沒再被觸發
+  });
+
+  it('sendControl：open=true 送出 JSON；open=false 不丟例外、不送出', () => {
+    const chOpen = mockChannel();
+    const spokeOpen = new FfaSpokeTransport(chOpen);
+    const msg = { t: 'ffa-leave' };
+    spokeOpen.sendControl(msg);
+    expect(chOpen.sent).toEqual([JSON.stringify(msg)]);
+
+    const chClosed = mockChannel(false);
+    const spokeClosed = new FfaSpokeTransport(chClosed);
+    expect(() => spokeClosed.sendControl(msg)).not.toThrow();
+    expect(chClosed.sent).toEqual([]);
+  });
+
+  it('channel 觸發 onclose → spoke onClose 回呼', () => {
+    const ch = mockChannel();
+    const spoke = new FfaSpokeTransport(ch);
+    let closed = 0;
+    spoke.onClose(() => closed++);
+
+    ch.onclose?.();
+    expect(closed).toBe(1);
   });
 });
 
