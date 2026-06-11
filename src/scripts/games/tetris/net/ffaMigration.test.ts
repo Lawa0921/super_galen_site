@@ -4,10 +4,17 @@ import {
   mergeSync,
   hostForfeitFrame,
   MigratingTransport,
+  runMigration,
   type SyncState,
   type MigratableInner,
+  type MigGuestPeer,
+  type MigHostPeer,
+  type MigChannel,
+  type RunMigrationDeps,
 } from './ffaMigration';
-import type { FfaFrameMsg } from './ffaLockstep';
+import { FfaLockstep, type FfaFrameMsg, type FfaSyncState } from './ffaLockstep';
+import { FfaHubTransport, FfaSpokeTransport } from './ffaTransport';
+import { isValidSlot } from './signalClient';
 import type { InputAction } from '../engine/game';
 
 /** 測試用 mock inner transport：記錄送出、可手動觸發收訊。 */
@@ -227,5 +234,342 @@ describe('MigratingTransport（傳輸層熱插拔 facade）', () => {
     const got: FfaFrameMsg[] = [];
     mt.onMessage((m) => got.push(m));
     expect(got).toEqual([frame(0, 'h'), frame(1, 'newhost')]); // 不漏不重、保序
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════
+// M4：runMigration 遷移協調器（mock-net：記憶體 signal store + 直連 mock RTC）
+// ═════════════════════════════════════════════════════════════════════════
+
+/** 記憶體 mock signal store；putSlot/getSlot 都以 isValidSlot 驗證（抓錯誤的槽位命名）。 */
+function makeMigSignal() {
+  const store = new Map<string, string>();
+  return {
+    store,
+    async putSlot(room: string, slot: string, data: string): Promise<void> {
+      if (!isValidSlot(slot)) throw new Error(`invalid slot: ${slot}`);
+      store.set(`${room}:${slot}`, data);
+    },
+    async getSlot(room: string, slot: string): Promise<string | null> {
+      if (!isValidSlot(slot)) throw new Error(`invalid slot: ${slot}`);
+      return store.get(`${room}:${slot}`) ?? null;
+    },
+  };
+}
+
+/** 雙向 buffered loopback channel pair（onmessage 設定前緩衝、設定當下 flush；可切斷）。 */
+function bufferedPair() {
+  let blocked = false;
+  interface Inbox { deliver(raw: string): void }
+  function makeEnd(getPeer: () => Inbox): MigChannel & Inbox {
+    let cb: ((raw: string) => void) | null = null;
+    const queue: string[] = [];
+    return {
+      open: true,
+      onclose: null,
+      get onmessage() { return cb; },
+      set onmessage(fn: ((raw: string) => void) | null) {
+        cb = fn;
+        if (fn) while (queue.length) fn(queue.shift()!);
+      },
+      send(raw: string) {
+        if (blocked) return;
+        getPeer().deliver(raw);
+      },
+      deliver(raw: string) {
+        if (cb) cb(raw);
+        else queue.push(raw);
+      },
+    };
+  }
+  const a: MigChannel & Inbox = makeEnd(() => b);
+  const b: MigChannel & Inbox = makeEnd(() => a);
+  return { a, b, block: () => { blocked = true; } };
+}
+
+/** mock RTC：guest createOffer 回 token、host createAnswer 以 token 從 registry 取直連 pair。 */
+function makeMockRtc() {
+  const registry = new Map<string, MigChannel>();
+  let seq = 0;
+  const guestPeer = (): MigGuestPeer => {
+    const { a, b } = bufferedPair();
+    const token = `OFFER-${seq++}`;
+    registry.set(token, b);
+    return {
+      createOffer: async () => token,
+      acceptAnswer: async (_ans: string) => {},
+      waitOpen: async () => {},
+      channel: a,
+    };
+  };
+  const hostPeer = (): MigHostPeer => {
+    let ch: MigChannel | null = null;
+    return {
+      createAnswer: async (offer: string) => {
+        ch = registry.get(offer) ?? null;
+        if (!ch) throw new Error(`unknown offer: ${offer}`);
+        return `ANS-${offer}`;
+      },
+      waitOpen: async () => {},
+      get channel() { return ch!; },
+    };
+  };
+  return { guestPeer, hostPeer, registry };
+}
+
+/** mock MigLockstep：固定 exportSyncState、記錄 import/scheduleForfeit。 */
+function mockMigLockstep(state: FfaSyncState) {
+  const scheduled: Array<{ p: string; f: number }> = [];
+  const imported: SyncState['inputs'][] = [];
+  return {
+    scheduled,
+    imported,
+    exportSyncState: () => state,
+    importMergedInputs: (inputs: SyncState['inputs']) => { imported.push(inputs); },
+    scheduleForfeit: (p: string, f: number) => { scheduled.push({ p, f }); },
+  };
+}
+
+/** 共用 deps 工廠（測試各自覆寫差異欄位）。 */
+function migDeps(over: Partial<RunMigrationDeps> & Pick<RunMigrationDeps, 'selfId' | 'lockstep' | 'transport'>): RunMigrationDeps {
+  return {
+    signal: makeMigSignal(),
+    room: 'R',
+    gen: 1,
+    playerIds: ['h', 'g1', 'g2'],
+    hostId: 'h',
+    placedIds: [],
+    hostPeerFactory: makeMockRtc().hostPeer,
+    guestPeerFactory: makeMockRtc().guestPeer,
+    electionGraceMs: 0,
+    pollIntervalMs: 1,
+    timeoutMs: 4_000,
+    ...over,
+  };
+}
+
+describe('runMigration（遷移協調器，mock-net）', () => {
+  it('完整遷移：3 端真鎖步、視野不等 → G1 成 host、G2 join → 兩端補課一致、續行到 victory、H placement=3、replay 一致', async () => {
+    const playerIds = ['h', 'g1', 'g2'];
+    const seed = 4242;
+
+    // 原始星狀拓樸：H 為 hub，G1/G2 各持 spoke；G1/G2 的 lockstep 透過 MigratingTransport facade。
+    const p1 = bufferedPair();
+    const p2 = bufferedPair();
+    const hub0 = new FfaHubTransport([p1.a, p2.a]);
+    const facade1 = new MigratingTransport(new FfaSpokeTransport(p1.b) as unknown as MigratableInner);
+    const facade2 = new MigratingTransport(new FfaSpokeTransport(p2.b) as unknown as MigratableInner);
+
+    const hLs = new FfaLockstep({ playerIds, localId: 'h', seed, transport: hub0 });
+    const g1Ls = new FfaLockstep({ playerIds, localId: 'g1', seed, transport: facade1 });
+    const g2Ls = new FfaLockstep({ playerIds, localId: 'g2', seed, transport: facade2 });
+
+    // 正常跑 40 幀
+    for (let f = 0; f < 40; f++) { hLs.tick([]); g1Ls.tick([]); g2Ls.tick([]); }
+
+    // 模擬 H 死前最後幾幀只送達 G1：切斷 H↔G2，H/G1 再各 tick 3 次 → G2 視野落後
+    p2.block();
+    for (let f = 0; f < 3; f++) { hLs.tick([]); g1Ls.tick([]); }
+    expect(g1Ls.exportSyncState().horizon.h).toBeGreaterThan(g2Ls.exportSyncState().horizon.h);
+
+    // H 死亡 → G1/G2 各自跑 runMigration（共用 mock signal/RTC）
+    const signal = makeMigSignal();
+    const rtc = makeMockRtc();
+    const common = {
+      signal, room: 'R', gen: 1, playerIds, hostId: 'h',
+      hostPeerFactory: rtc.hostPeer, guestPeerFactory: rtc.guestPeer,
+      electionGraceMs: 0, pollIntervalMs: 1, timeoutMs: 4_000,
+    };
+    const [r1, r2] = await Promise.all([
+      runMigration({ ...common, selfId: 'g1', placedIds: [...g1Ls.getMatch().getPlacement().keys()], lockstep: g1Ls, transport: facade1 }),
+      runMigration({ ...common, selfId: 'g2', placedIds: [...g2Ls.getMatch().getPlacement().keys()], lockstep: g2Ls, transport: facade2 }),
+    ]);
+    expect(r1.role).toBe('host');
+    expect(r2.role).toBe('join');
+    // 世代化槽位被使用（g2 原始 index=2 → 槽位 index 1；g1 beacon → 槽位 index 0）
+    expect(signal.store.get('R:mig1-guest-1-offer')).toBeTruthy();
+    expect(signal.store.get('R:mig1-host-ack-1')).toBeTruthy();
+    expect(signal.store.get('R:mig1-guest-0-offer')).toBeTruthy();
+
+    // 續行：G2 狂 hardDrop 先死 → 分出勝負
+    let f = 0;
+    for (; f < 20_000 && g1Ls.getMatch().phase === 'playing'; f++) {
+      g1Ls.tick([]);
+      g2Ls.tick(f % 2 === 0 ? ['hardDrop'] : []);
+    }
+    expect(g1Ls.getMatch().phase).toBe('result');
+    expect(g2Ls.getMatch().phase).toBe('result');
+
+    // 舊 host 判敗：placement = 3（最後一名）
+    expect(g1Ls.getMatch().getPlacement().get('h')).toBe(3);
+    expect(g2Ls.getMatch().getPlacement().get('h')).toBe(3);
+    // 兩端狀態一致：standings + 完整 replay（events/forfeits/frameCount）JSON 相等
+    expect(g1Ls.getStandings()).toEqual(g2Ls.getStandings());
+    expect(g1Ls.getStandings()[0]).toBe('g1');
+    expect(JSON.stringify(g1Ls.getReplay())).toBe(JSON.stringify(g2Ls.getReplay()));
+    expect(g1Ls.getReplay().forfeits.map((x) => x.p)).toEqual(['h']);
+  });
+
+  it('雙候選讓位：G1/G2 都自判候選（不同 placedIds 視野）→ G2 在 answer 前發現 G1 offer → 讓位 join、收斂單一 host', async () => {
+    const signal = makeMigSignal();
+    const rtc = makeMockRtc();
+    const ls1 = mockMigLockstep({ cf: 10, horizon: { h: 12, g1: 12, g2: 12 }, inputs: [] });
+    const ls2 = mockMigLockstep({ cf: 10, horizon: { h: 12, g1: 12, g2: 12 }, inputs: [] });
+    const f1 = new MigratingTransport(mockInner());
+    const f2 = new MigratingTransport(mockInner());
+    const common = {
+      signal, hostPeerFactory: rtc.hostPeer, guestPeerFactory: rtc.guestPeer,
+      electionGraceMs: 40, pollIntervalMs: 1, timeoutMs: 4_000,
+    };
+    const [r1, r2] = await Promise.all([
+      // G1 視野：無人淘汰 → 候選 g1（自己）
+      runMigration(migDeps({ ...common, selfId: 'g1', placedIds: [], lockstep: ls1, transport: f1 })),
+      // G2 視野：g1 剛淘汰（分歧）→ 候選 g2（自己）→ 讓位
+      runMigration(migDeps({ ...common, selfId: 'g2', placedIds: ['g1'], lockstep: ls2, transport: f2 })),
+    ]);
+    expect(r1.role).toBe('host');
+    expect(r2.role).toBe('join');
+    if (r2.role === 'join') expect(r2.hostId).toBe('g1');
+    // 兩端對舊 host 排程同一棄權幀
+    expect(ls1.scheduled).toEqual(ls2.scheduled);
+    expect(ls1.scheduled[0].p).toBe('h');
+  });
+
+  it('逾時：join 等不到 ack / host 等不到 offer → MIGRATION_TIMEOUT 後 throw（netMain 據此降級）', async () => {
+    // join：候選 g1 永不出現 → 等 ack 逾時
+    await expect(runMigration(migDeps({
+      selfId: 'g2',
+      lockstep: mockMigLockstep({ cf: 0, horizon: {}, inputs: [] }),
+      transport: new MigratingTransport(mockInner()),
+      timeoutMs: 80, pollIntervalMs: 5,
+    }))).rejects.toThrow(/timeout/i);
+
+    // host：倖存者 g2 永不寫 offer → 收 offer 逾時
+    await expect(runMigration(migDeps({
+      selfId: 'g1',
+      lockstep: mockMigLockstep({ cf: 0, horizon: {}, inputs: [] }),
+      transport: new MigratingTransport(mockInner()),
+      timeoutMs: 80, pollIntervalMs: 5,
+    }))).rejects.toThrow(/timeout/i);
+  });
+
+  it('hostForfeitF 用 merge 後 horizon（兩端視野取 max，非任一端單獨視野）；合併輸入兩端都灌入', async () => {
+    const signal = makeMigSignal();
+    const rtc = makeMockRtc();
+    // g1 視野：h 到 40；g2 視野：h 到 45 → merged horizon.h = 45 → F = 46
+    const ls1 = mockMigLockstep({
+      cf: 38, horizon: { h: 40, g1: 43, g2: 39 },
+      inputs: [{ f: 41, p: 'g1', a: ['left'] }],
+    });
+    const ls2 = mockMigLockstep({
+      cf: 36, horizon: { h: 45, g1: 41, g2: 42 },
+      inputs: [{ f: 44, p: 'h', a: ['right'] }],
+    });
+    const f1 = new MigratingTransport(mockInner());
+    const f2 = new MigratingTransport(mockInner());
+    const common = {
+      signal, hostPeerFactory: rtc.hostPeer, guestPeerFactory: rtc.guestPeer,
+      electionGraceMs: 0, pollIntervalMs: 1, timeoutMs: 4_000,
+    };
+    const [r1, r2] = await Promise.all([
+      runMigration(migDeps({ ...common, selfId: 'g1', lockstep: ls1, transport: f1 })),
+      runMigration(migDeps({ ...common, selfId: 'g2', lockstep: ls2, transport: f2 })),
+    ]);
+    expect(r1.role).toBe('host');
+    expect(r2.role).toBe('join');
+    expect(ls1.scheduled).toEqual([{ p: 'h', f: 46 }]);
+    expect(ls2.scheduled).toEqual([{ p: 'h', f: 46 }]);
+    // 合併輸入＝兩端 inputs 並集，兩端都收到
+    for (const ls of [ls1, ls2]) {
+      expect(ls.imported).toHaveLength(1);
+      expect(ls.imported[0]).toContainEqual({ f: 41, p: 'g1', a: ['left'] });
+      expect(ls.imported[0]).toContainEqual({ f: 44, p: 'h', a: ['right'] });
+    }
+  });
+
+  it('gen2：遷移成功後新 host 再死 → 以 gen=2 槽位再遷移成功', async () => {
+    const playerIds = ['h', 'g1', 'g2', 'g3'];
+    const signal = makeMigSignal();
+    const rtc = makeMockRtc();
+    const state = (): FfaSyncState => ({ cf: 5, horizon: { h: 7, g1: 7, g2: 7, g3: 7 }, inputs: [] });
+    const ls = [mockMigLockstep(state()), mockMigLockstep(state()), mockMigLockstep(state())];
+    const fa = [
+      new MigratingTransport(mockInner()),
+      new MigratingTransport(mockInner()),
+      new MigratingTransport(mockInner()),
+    ];
+    const common = {
+      signal, playerIds, hostPeerFactory: rtc.hostPeer, guestPeerFactory: rtc.guestPeer,
+      electionGraceMs: 0, pollIntervalMs: 1, timeoutMs: 4_000,
+    };
+    // gen1：h 死 → g1 host、g2/g3 join
+    const gen1 = await Promise.all([
+      runMigration(migDeps({ ...common, gen: 1, hostId: 'h', selfId: 'g1', lockstep: ls[0], transport: fa[0] })),
+      runMigration(migDeps({ ...common, gen: 1, hostId: 'h', selfId: 'g2', lockstep: ls[1], transport: fa[1] })),
+      runMigration(migDeps({ ...common, gen: 1, hostId: 'h', selfId: 'g3', lockstep: ls[2], transport: fa[2] })),
+    ]);
+    expect(gen1.map((r) => r.role)).toEqual(['host', 'join', 'join']);
+
+    // gen2：新 host g1 再死（h 已判敗 → placedIds 含 h）→ g2 host、g3 join，槽位走 mig2-
+    const gen2 = await Promise.all([
+      runMigration(migDeps({ ...common, gen: 2, hostId: 'g1', placedIds: ['h'], selfId: 'g2', lockstep: ls[1], transport: fa[1] })),
+      runMigration(migDeps({ ...common, gen: 2, hostId: 'g1', placedIds: ['h'], selfId: 'g3', lockstep: ls[2], transport: fa[2] })),
+    ]);
+    expect(gen2.map((r) => r.role)).toEqual(['host', 'join']);
+    // gen2 槽位確實使用 mig2- 前綴（g3 原始 index=3 → 槽位 index 2）
+    expect(signal.store.get('R:mig2-guest-2-offer')).toBeTruthy();
+    expect(signal.store.get('R:mig2-host-ack-2')).toBeTruthy();
+    // gen2 兩端對 g1 排程同一棄權幀（gen1 對 h 的排程仍在前）
+    expect(ls[1].scheduled[1]).toEqual({ p: 'g1', f: 8 });
+    expect(ls[2].scheduled[1]).toEqual({ p: 'g1', f: 8 });
+  });
+
+  it('壞 sync 訊息忽略不炸：host 收到非 JSON / 錯 gen / 壞 shape 的 sync 後，仍以合法 sync 完成遷移', async () => {
+    const playerIds = ['h', 'g1', 'g2'];
+    const signal = makeMigSignal();
+    const rtc = makeMockRtc();
+    const ls1 = mockMigLockstep({ cf: 10, horizon: { h: 12, g1: 12, g2: 9 }, inputs: [] });
+    const f1 = new MigratingTransport(mockInner());
+
+    // 手動扮演 g2（join 端）：寫 offer → 等 ack → 先送垃圾再送合法 sync
+    const gp = rtc.guestPeer();
+    const offer = await gp.createOffer();
+    await signal.putSlot('R', 'mig1-guest-1-offer', JSON.stringify({ id: 'g2', offer }));
+
+    const hostPromise = runMigration(migDeps({
+      signal, playerIds, selfId: 'g1', lockstep: ls1, transport: f1,
+      hostPeerFactory: rtc.hostPeer, guestPeerFactory: rtc.guestPeer,
+      timeoutMs: 4_000, pollIntervalMs: 1, electionGraceMs: 0,
+    }));
+
+    // 等 host 寫 ack
+    let ack: string | null = null;
+    for (let i = 0; i < 1000 && !ack; i++) {
+      ack = await signal.getSlot('R', 'mig1-host-ack-1');
+      if (!ack) await new Promise((r) => setTimeout(r, 2));
+    }
+    expect(ack).toBeTruthy();
+    await gp.acceptAnswer(ack!);
+    const received: string[] = [];
+    gp.channel.onmessage = (raw: string) => received.push(raw);
+
+    // 垃圾訊息：非 JSON、錯 gen、壞 shape → host 一律忽略
+    gp.channel.send('not-json');
+    gp.channel.send(JSON.stringify({ t: 'ffa-mig-sync', gen: 99, cf: 0, horizon: {}, inputs: [] }));
+    gp.channel.send(JSON.stringify({ t: 'ffa-mig-sync', gen: 1, cf: 'x', horizon: {}, inputs: [] }));
+    gp.channel.send(JSON.stringify({ t: 'ffa-mig-sync', gen: 1, cf: 0, horizon: { h: NaN }, inputs: [] }));
+    // 合法 sync（g2 視野 h 到 14 > g1 的 12 → F 應為 15）
+    gp.channel.send(JSON.stringify({ t: 'ffa-mig-sync', gen: 1, cf: 9, horizon: { h: 14, g1: 11, g2: 12 }, inputs: [] }));
+
+    const r1 = await hostPromise;
+    expect(r1.role).toBe('host');
+    expect(ls1.scheduled).toEqual([{ p: 'h', f: 15 }]);
+    // g2 端收到 ffa-mig-state 廣播（含 merged inputs + hostForfeitF）
+    const state = received
+      .map((raw) => { try { return JSON.parse(raw) as Record<string, unknown>; } catch { return null; } })
+      .find((m) => m && m.t === 'ffa-mig-state');
+    expect(state).toBeTruthy();
+    expect(state!.hostForfeitF).toBe(15);
+    expect(state!.gen).toBe(1);
   });
 });

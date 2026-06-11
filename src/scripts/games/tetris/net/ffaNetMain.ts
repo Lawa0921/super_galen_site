@@ -11,6 +11,13 @@ import { FfaBoards } from '../render/FfaBoards';
 import { FfaLockstep, INPUT_DELAY, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
 import type { FfaReplay } from './ffaReplay';
 import { FfaHubTransport, FfaSpokeTransport, type RelayChannel } from './ffaTransport';
+import {
+  MigratingTransport,
+  runMigration,
+  MAX_MIGRATIONS,
+  type MigratableInner,
+  type MigSignal,
+} from './ffaMigration';
 import { createRoom as realCreateRoom, putSlot as realPutSlot, getSlot as realGetSlot, pollSlot as realPollSlot } from './signalClient';
 import { buildFfaResultMessage } from './auth';
 import { WebRtcTransport } from './webrtcTransport';
@@ -728,6 +735,42 @@ export function wireFfaForfeit(opts: {
   return ctl;
 }
 
+/**
+ * Guest 端 host 頻道靜默兜底偵測（Stage B：host-down 不只靠 spoke.onClose，
+ * 也對 host 頻道做同款 lastMsgAt 檢查——host 對局中每 tick 都會中繼幀，
+ * 靜默超過 timeoutMs ＝ host 死，觸發遷移）。
+ *
+ * - noteActivity()：收到任何中繼幀時呼叫（所有幀都經 host 中繼 → 任何來訊＝host 活著）。
+ * - check()：定時呼叫；isActive() 為 false（遷移中/已中止/對局已結束/自己已是 host）時
+ *   不計靜默並把基準重置到 now（恢復後重新起算，避免凍結期被誤判）。
+ * - 觸發後基準亦重置（onHostDown 由呼叫端做重入防護，這裡避免每秒重複轟炸）。
+ */
+export function createGuestHostWatch(opts: {
+  onHostDown: () => void;
+  isActive: () => boolean;
+  now?: () => number;
+  timeoutMs?: number;
+}): { noteActivity(): void; check(): void } {
+  const now = opts.now ?? Date.now;
+  const timeoutMs = opts.timeoutMs ?? SILENCE_TIMEOUT_MS;
+  let last = now();
+  return {
+    noteActivity(): void {
+      last = now();
+    },
+    check(): void {
+      if (!opts.isActive()) {
+        last = now();
+        return;
+      }
+      if (now() - last > timeoutMs) {
+        last = now();
+        opts.onHostDown();
+      }
+    },
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // KO 簽章回報（可測：不依賴 DOM；fetch / signMessage 可注入）
 // ─────────────────────────────────────────────────────────────────────────
@@ -789,6 +832,17 @@ export async function reportFfaRanked(opts: {
 // 對局 UI 主迴圈（組裝；Pixi/DOM 由 e2e/手動驗證，此處保持可被建構）
 // ─────────────────────────────────────────────────────────────────────────
 
+/** Host migration（Stage B）所需的外部依賴；不傳＝維持 Stage A 行為（host 離線即中止）。 */
+export interface FfaMigrationOpts {
+  /** signaling client（putSlot/getSlot 子集即可）。 */
+  signal: MigSignal;
+  /** 原房號（mig{g}- 槽位沿用同一 room）。 */
+  room: string;
+  /** 測試注入；預設真實 WebRTC 工廠。 */
+  hostPeerFactory?: () => FfaHostAnswerPeer;
+  guestPeerFactory?: () => FfaGuestOfferPeer;
+}
+
 export interface RunFfaOpts {
   canvas: HTMLCanvasElement;
   playerIds: string[];
@@ -801,6 +855,8 @@ export interface RunFfaOpts {
   guestIds?: string[];
   /** 對手斷線回呼（可選；UI 可掛 DISCONNECTED 橫幅）。 */
   onDisconnect?: () => void;
+  /** guest 端傳入 → host 離線時啟動遷移續行（Stage B）；省略＝Stage A 中止。 */
+  migration?: FfaMigrationOpts;
   fetchFn?: typeof fetch;
 }
 
@@ -825,25 +881,143 @@ export interface FfaGameHandle {
  */
 export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
   const { canvas, playerIds, localId, seed, matchId, signMessage } = opts;
+  const realTransport = opts.transport as FfaLockstepTransport & FfaControlHooks;
+
+  // Stage B：lockstep 永遠透過 MigratingTransport facade 收發 ——
+  // host migration 成功時 swap 內層（spoke→新 spoke / spoke→hub），lockstep 不動。
+  const facade = new MigratingTransport(realTransport as unknown as MigratableInner);
 
   // 立即接管 transport：建 lockstep 前進來的幀先進暫存佇列。
-  // host 端在收訊路徑 tap 中繼幀 → FfaForfeitController.noteFrame（中離 F 計算）。
+  // tap：host 端餵 FfaForfeitController.noteFrame（中離 F 計算）；
+  //      guest 端餵 hostWatch.noteActivity（任何中繼幀＝host 活著）。
   let forfeitCtl: FfaForfeitController | null = null;
+  let hostWatch: { noteActivity(): void; check(): void } | null = null;
   const wrapped = takeoverTransport(
-    tapFrames(opts.transport, (m) => forfeitCtl?.noteFrame(m)),
+    tapFrames(facade, (m) => { forfeitCtl?.noteFrame(m); hostWatch?.noteActivity(); }),
   );
   const lockstep = new FfaLockstep({ playerIds, localId, seed, transport: wrapped });
 
-  // 中離續行接線：所有端收 ffa-forfeit → scheduleForfeit；
-  // host（有 guestIds）另啟偵測（channel close / ffa-leave / 靜默逾時）。
-  let disconnected = false; // guest 端：host 頻道關閉 → Stage A 對局中止
-  forfeitCtl = wireFfaForfeit({
+  // ── 中離 / 遷移狀態 ────────────────────────────────────────────────────
+  let disconnected = false; // 對局中止（Stage A 降級路徑）
+  let migrating = false;    // 遷移中（凍結 tick、顯示橫幅）
+  let migrationGen = 0;
+  let migrationState: 'idle' | 'migrating' | 'done' | 'failed' = 'idle';
+  let currentHostId = playerIds[0];
+  let isHostNow = !!opts.guestIds;
+  /** host-down 來源世代戳：遷移成功後舊 spoke 的殘留 close 事件一律忽略。 */
+  let closeEpoch = 0;
+
+  // 橫幅文字（Pixi stage 可能尚未就緒 → 先記住、就緒時套用）。
+  let bannerText: string | null = null;
+  let applyBanner: (text: string | null) => void = () => {};
+  const setBanner = (text: string | null): void => {
+    bannerText = text;
+    applyBanner(text);
+  };
+
+  function abortMatch(): void {
+    if (disconnected) return;
+    disconnected = true;
+    setBanner('HOST 離線\n對局中止');
+    opts.onDisconnect?.();
+  }
+
+  /** 綁定當前 epoch 的 host-down 回呼（舊拓樸殘留事件不觸發新一輪遷移）。 */
+  const makeHostDownCb = (): (() => void) => {
+    const epoch = closeEpoch;
+    return () => {
+      if (epoch !== closeEpoch) return;
+      void handleHostDown();
+    };
+  };
+
+  /**
+   * forfeit 接線（初次 + 升格 host 後重掛）：
+   * 控制訊息走 facade（swap 後仍生效）；close 偵測掛在「當前真實拓樸」上。
+   */
+  const wireForfeit = (
+    closeSource: FfaControlHooks,
+    guestIds?: string[],
+    onHostClose?: () => void,
+  ): FfaForfeitController | null => wireFfaForfeit({
     lockstep,
     playerIds,
-    transport: opts.transport as FfaLockstepTransport & FfaControlHooks,
-    guestIds: opts.guestIds,
-    onHostClose: () => { disconnected = true; opts.onDisconnect?.(); },
+    transport: {
+      send: (m) => facade.send(m),
+      onMessage: () => {}, // 幀收訊已由 lockstep 持有（wireFfaForfeit 不用 onMessage）
+      sendControl: (m) => facade.sendControl(m),
+      onControl: (cb) => facade.onControl(cb),
+      onChannelClose: closeSource.onChannelClose?.bind(closeSource),
+      onClose: closeSource.onClose?.bind(closeSource),
+    } as FfaLockstepTransport & FfaControlHooks,
+    guestIds,
+    onHostClose,
   });
+
+  /**
+   * Host 離線（spoke close 或靜默兜底）→ Stage B：啟動遷移續行；
+   * 無遷移依賴 / 超過 MAX_MIGRATIONS / 遷移失敗 → 降級為 Stage A 中止。
+   */
+  async function handleHostDown(): Promise<void> {
+    if (disconnected || migrating || isHostNow) return;
+    if (lockstep.getMatch().phase !== 'playing') return; // 已分出勝負：結果已定，不需遷移
+    const mig = opts.migration;
+    if (!mig || migrationGen >= MAX_MIGRATIONS) {
+      abortMatch();
+      return;
+    }
+    migrating = true;
+    migrationGen++;
+    migrationState = 'migrating';
+    setBanner('HOST 離線\n重新連線中…');
+    try {
+      const placedIds = [...lockstep.getMatch().getPlacement().keys()];
+      const res = await runMigration({
+        signal: mig.signal,
+        room: mig.room,
+        gen: migrationGen,
+        playerIds,
+        hostId: currentHostId,
+        selfId: localId,
+        placedIds,
+        lockstep,
+        transport: facade,
+        hostPeerFactory: mig.hostPeerFactory ?? realHostAnswerPeerFactory,
+        guestPeerFactory: mig.guestPeerFactory ?? realGuestOfferPeerFactory,
+      });
+      currentHostId = res.hostId;
+      closeEpoch++; // 舊 spoke 殘留 close 從此失效
+      if (res.role === 'host') {
+        // 升格新 host：對新拓樸啟動 Stage A 偵測（channel close / ffa-leave / 靜默）。
+        isHostNow = true;
+        forfeitCtl = wireForfeit(res.hub, res.guestIds);
+      } else {
+        // 仍是 guest：對新 spoke 重掛 host-down 偵測（gen+1 備用）。
+        res.spoke.onClose(makeHostDownCb());
+        hostWatch?.noteActivity();
+      }
+      migrationState = 'done';
+      migrating = false;
+      setBanner(null);
+    } catch {
+      migrationState = 'failed';
+      migrating = false;
+      abortMatch();
+    }
+  }
+
+  // 中離續行接線：所有端收 ffa-forfeit → scheduleForfeit；
+  // host（有 guestIds）另啟偵測（channel close / ffa-leave / 靜默逾時）；
+  // guest 掛 host-down（close 快速路徑 + 靜默兜底定時器）。
+  forfeitCtl = wireForfeit(realTransport, opts.guestIds, makeHostDownCb());
+  if (!opts.guestIds) {
+    hostWatch = createGuestHostWatch({
+      onHostDown: () => { void handleHostDown(); },
+      isActive: () =>
+        !disconnected && !migrating && !isHostNow && lockstep.getMatch().phase === 'playing',
+    });
+    setInterval(() => hostWatch?.check(), SILENCE_CHECK_INTERVAL_MS);
+  }
 
   // 暫存本幀本地輸入（InputController 透過 emit 累加）。
   let pendingActions: InputAction[] = [];
@@ -860,7 +1034,7 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
     const boards = new FfaBoards(stage, playerIds, localId, tex);
     const sound = new SoundManager();
 
-    // 中央橫幅（Stage A：host 離線 → 對局中止文案）。
+    // 中央橫幅（host 離線：遷移中「重新連線中…」/ 降級「對局中止」）。
     const banner = new Text({
       text: '',
       style: { fontFamily: '"Press Start 2P", monospace', fontSize: 22, fill: 0xffffff, align: 'center' },
@@ -868,6 +1042,11 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
     banner.anchor.set(0.5);
     banner.visible = false;
     stage.hudLayer.addChild(banner);
+    applyBanner = (text: string | null): void => {
+      banner.text = text ?? '';
+      banner.visible = text !== null;
+    };
+    applyBanner(bannerText); // stage 就緒前已設定的文字（中止/遷移中）補套用
 
     function relayout(): void {
       stage.layoutBackground();
@@ -899,7 +1078,7 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
       const dt = ticker.deltaMS;
       const match = lockstep.getMatch();
 
-      if (match.phase === 'playing' && !disconnected) {
+      if (match.phase === 'playing' && !disconnected && !migrating) {
         acc += dt;
         let guard = 0;
         while (acc >= SIM_DT && guard < 8) {
@@ -921,10 +1100,9 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
       standings.push(...lockstep.getStandings());
 
       if (disconnected && !resultReported) {
-        // Stage A：host 中離＝全局中止（Stage B 再做 host migration）。
+        // 降級中止（遷移失敗 / 無遷移依賴 / 超過 MAX_MIGRATIONS）：不計分。
+        // 橫幅文字由 abortMatch() 經 setBanner 設定。
         resultReported = true;
-        banner.text = 'HOST 離線\n對局中止';
-        banner.visible = true;
       } else if (match.phase === 'result' && !resultReported) {
         resultReported = true;
         sound.topout();
@@ -947,17 +1125,20 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
       stage,
       boards,
       standings,
+      migration: {
+        get gen() { return migrationGen; },
+        get state() { return migrationState; },
+      },
     };
   });
 
-  const isHost = !!opts.guestIds;
   return {
     leaveMatch(): void {
       // guest：先送 ffa-leave（host 快速路徑立即判敗、其餘端續行）；
-      // host：Stage A host 離開＝全局中止，不送訊息（guest 由頻道 close 偵測）。
-      if (!isHost) {
-        (opts.transport as FfaLockstepTransport & FfaControlHooks)
-          .sendControl?.({ t: 'ffa-leave' });
+      // host（含遷移升格的新 host）：離開＝交給其餘端的偵測/遷移處理，不送訊息。
+      // 走 facade → 遷移後仍送往「當前」host。
+      if (!isHostNow) {
+        facade.sendControl({ t: 'ffa-leave' });
       }
     },
   };
@@ -1172,6 +1353,8 @@ export async function joinFfaGame(opts: {
       matchId,
       transport,
       signMessage: opts.identity.ranked ? opts.identity.signMessage : undefined,
+      // Stage B：host 離線 → 用同一 room 的 mig{g}- 槽位遷移續行（真實 RTC 工廠為預設）。
+      migration: { signal, room: opts.room },
     });
     opts.onHandle?.(handle);
   } catch (e) {
