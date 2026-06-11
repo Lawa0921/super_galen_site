@@ -1,4 +1,5 @@
 import { Assets, type Texture } from 'pixi.js';
+import { SKIN_CATALOG } from './skins';
 
 const BASE = '/assets/games/tetris';
 
@@ -20,10 +21,19 @@ export interface GameTextures {
   glow: Texture;
 }
 
-/** 預載入並回傳所有遊戲貼圖。 */
-export async function loadGameTextures(): Promise<GameTextures> {
+/** skinId → block 貼圖 URL；未知 id 回退 neon（= 現狀 block.webp）。 */
+function blockUrlFor(skinId: string): string {
+  return SKIN_CATALOG.find((s) => s.id === skinId)?.blockUrl ?? ASSET_URLS.block;
+}
+
+/**
+ * 預載入並回傳所有遊戲貼圖。
+ * skinId 只影響 block 貼圖（frameWell/bg/fx 不變）；無參數＝neon＝現狀。
+ * Pixi Assets.load 以 URL 為快取鍵，不同皮膚各自快取，無需手動失效。
+ */
+export async function loadGameTextures(skinId = 'neon'): Promise<GameTextures> {
   const [block, frameWell, bg, spark, ring, glow] = await Promise.all([
-    Assets.load(ASSET_URLS.block) as Promise<Texture>,
+    Assets.load(blockUrlFor(skinId)) as Promise<Texture>,
     Assets.load(ASSET_URLS.frameWell) as Promise<Texture>,
     Assets.load(ASSET_URLS.bg) as Promise<Texture>,
     Assets.load(ASSET_URLS.spark) as Promise<Texture>,

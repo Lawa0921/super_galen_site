@@ -5,6 +5,7 @@
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import { defaultLang, type Language } from '@i18n/index';
+import { SKIN_CATALOG } from '@scripts/games/tetris/render/skins';
 
 const lang: Language = defaultLang;
 ---
@@ -98,12 +99,31 @@ const lang: Language = defaultLang;
         <p class="profile-guest" id="profile-guest">訪客無等級／積分。<br />連錢包以建立你的玩家檔案。</p>
         <button class="ms-btn ms-wallet" id="profile-wallet">連錢包</button>
         <div class="profile-stats" id="profile-stats" hidden></div>
+        <div class="skin-rack" id="skin-rack">
+          <h3 class="skin-rack-title">SKINS</h3>
+          <div class="skin-cards" id="skin-cards">
+            {SKIN_CATALOG.map((s) => (
+              <button
+                type="button"
+                class:list={['skin-card', { 'is-active': s.unlockLevel === 0, 'is-locked': s.unlockLevel > 0 }]}
+                data-skin={s.id}
+                aria-disabled={s.unlockLevel > 0 ? 'true' : 'false'}
+              >
+                <span class={`skin-thumb skin-thumb--${s.id}`}></span>
+                <span class="skin-name">{s.name}</span>
+                <span class="skin-state">{s.unlockLevel === 0 ? '使用中' : `Lv ${s.unlockLevel} 解鎖`}</span>
+              </button>
+            ))}
+          </div>
+          <p class="skin-guest-cta" id="skin-guest-cta">連接錢包並升級以解鎖更多皮膚</p>
+        </div>
       </section>
     </div>
 
     <div class="pause-menu" id="pause-menu" hidden>
       <div class="pause-card">
         <h2 class="pause-title" id="pause-title">PAUSED</h2>
+        <p class="pause-hint" id="pause-hint" hidden>離開將判敗（排名局計入名次）</p>
         <button class="ms-btn ms-solo" id="pause-resume" type="button">繼續</button>
         <button class="ms-btn ms-hard" id="pause-quit" type="button">離開</button>
       </div>
@@ -396,6 +416,96 @@ const lang: Language = defaultLang;
   .pf-bar { height: 10px; border: 1px solid rgba(54, 230, 255, 0.4); border-radius: 5px; overflow: hidden; background: rgba(8,12,22,0.7); }
   .pf-bar > i { display: block; height: 100%; background: #36e6ff; }
 
+  /* 皮膚櫃（PROFILE 分頁）*/
+  .skin-rack {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .skin-rack-title {
+    margin: 8px 0 0;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: #eafdff;
+    text-shadow: 0 0 10px rgba(54, 230, 255, 0.7);
+  }
+  .skin-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .skin-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 0;
+    min-width: 64px;
+    padding: 10px 4px 8px;
+    font-family: inherit;
+    color: #9fcdf2;
+    background: rgba(8, 12, 22, 0.8);
+    border: 2px solid rgba(54, 230, 255, 0.25);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .skin-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(54, 230, 255, 0.6);
+    box-shadow: 0 0 14px rgba(54, 230, 255, 0.35);
+  }
+  .skin-card.is-active {
+    color: #4dff88;
+    border-color: rgba(77, 255, 136, 0.85);
+    box-shadow: 0 0 16px rgba(77, 255, 136, 0.45);
+  }
+  .skin-card.is-locked { cursor: not-allowed; color: #5a7299; }
+  .skin-card.is-locked:hover {
+    transform: none;
+    border-color: rgba(54, 230, 255, 0.25);
+    box-shadow: none;
+  }
+  /* 縮圖：以皮膚貼圖 3x3 平鋪出格感 */
+  .skin-thumb {
+    position: relative;
+    display: block;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(54, 230, 255, 0.3);
+    border-radius: 6px;
+    background-repeat: repeat;
+    background-size: 33.4% 33.4%;
+  }
+  .skin-card.is-locked .skin-thumb { filter: grayscale(1) brightness(0.55); }
+  .skin-card.is-locked .skin-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('/assets/games/tetris/icons/lock.webp') center / 60% no-repeat;
+  }
+  .skin-thumb--neon { background-image: url('/assets/games/tetris/block.webp'); }
+  .skin-thumb--bit8 { background-image: url('/assets/games/tetris/skins/bit8.webp'); }
+  .skin-thumb--rune { background-image: url('/assets/games/tetris/skins/rune.webp'); }
+  .skin-thumb--holo { background-image: url('/assets/games/tetris/skins/holo.webp'); }
+  .skin-thumb--crystal { background-image: url('/assets/games/tetris/skins/crystal.webp'); }
+  .skin-name { font-size: 8px; letter-spacing: 1px; }
+  .skin-state { font-size: 8px; color: #6fa8d8; }
+  .skin-card.is-active .skin-state { color: #4dff88; }
+  .skin-guest-cta {
+    margin: 0;
+    font-size: 9px;
+    letter-spacing: 1px;
+    line-height: 1.7;
+    text-align: center;
+    color: #6fa8d8;
+  }
+  .skin-guest-cta[hidden] { display: none; }
+
   /* 遊戲中 ESC 暫停選單 */
   .pause-menu {
     position: absolute;
@@ -428,6 +538,13 @@ const lang: Language = defaultLang;
     text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 30px rgba(54, 230, 255, 0.5);
   }
   .pause-card .ms-btn { width: 100%; }
+  .pause-hint {
+    margin: 0 0 10px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #ff9a8a;
+    text-shadow: 0 0 8px rgba(255, 90, 70, 0.45);
+  }
 
   /* emoji → 生成的霓虹圖示（::before 背景圖，取代廉價 emoji） */
   .mm-tab::before,
@@ -499,14 +616,15 @@ const lang: Language = defaultLang;
   .touch-notice strong { color: #ffd23f; }
 
   @media (prefers-reduced-motion: reduce) {
-    .mm-tab, .ms-btn, .tetris-back { transition: none; }
-    .ms-btn:hover { transform: none; }
+    .mm-tab, .ms-btn, .tetris-back, .skin-card { transition: none; }
+    .ms-btn:hover, .skin-card:hover { transform: none; }
   }
 </style>
 
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
   import { startAi } from '@scripts/games/tetris/render/aiMain';
+  import { SKIN_CATALOG, getSelectedSkin, setSelectedSkin, isUnlocked, resolveSkin } from '@scripts/games/tetris/render/skins';
   import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
   import { hostFfaGame, joinFfaGame, type FfaNetStatus, type FfaIdentity } from '@scripts/games/tetris/net/ffaNetMain';
 
@@ -546,13 +664,14 @@ const lang: Language = defaultLang;
     if (touchNotice) touchNotice.hidden = false;
   }
   let started = false;
-  let gameHandle: { pause?(): void; resume?(): void; restart?(): void } | null = null;
+  let gameHandle: { pause?(): void; resume?(): void; restart?(): void; leaveMatch?(): void } | null = null;
   let gameRunning = false;
   let pausable = false;
   let menuOpen = false;
   let resultOpen = false;
   const pauseMenu = document.getElementById('pause-menu');
   const pauseTitle = document.getElementById('pause-title');
+  const pauseHint = document.getElementById('pause-hint');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const setHint = (t: string) => { if (hint) { hint.textContent = t; hint.hidden = false; } };
@@ -583,6 +702,7 @@ const lang: Language = defaultLang;
     menuOpen = true;
     if (pausable) gameHandle?.pause?.();
     if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : '離開對戰？';
+    if (pauseHint) pauseHint.hidden = pausable; // 線上才顯示判敗提示
     if (pauseMenu) { pauseMenu.classList.toggle('is-online', !pausable); pauseMenu.hidden = false; }
     blip(300, 0.1);
   }
@@ -600,7 +720,11 @@ const lang: Language = defaultLang;
     else openPauseMenu();
   });
   document.getElementById('pause-resume')?.addEventListener('click', closePauseMenu);
-  document.getElementById('pause-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
+  document.getElementById('pause-quit')?.addEventListener('click', () => {
+    // 線上 FFA：離開前先送 ffa-leave（host 立即判敗、其餘玩家續行）；其他模式為 no-op。
+    gameHandle?.leaveMatch?.();
+    location.href = '/games/tetris';
+  });
 
   // ---- 結算覆蓋層（SOLO game over / vs-AI 勝負）----
   const resultMenu = document.getElementById('result-menu');
@@ -653,7 +777,8 @@ const lang: Language = defaultLang;
     started = true;
     mainMenu?.remove();
     setHint(SOLO_HINT);
-    startTetris(canvas, { onEnd: () => showResult('GAME OVER') })
+    // 皮膚 key 與 PROFILE 皮膚櫃一致：已連錢包用 addr key，否則 guest key
+    startTetris(canvas, { onEnd: () => showResult('GAME OVER'), skinId: getSelectedSkin(wallet?.address) })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
@@ -665,7 +790,7 @@ const lang: Language = defaultLang;
     mainMenu?.remove();
     const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
     setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · M MUTE`);
-    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS') })
+    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS'), skinId: getSelectedSkin(wallet?.address) })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
@@ -782,6 +907,7 @@ const lang: Language = defaultLang;
       maxGuests: playerCount - 1,
       waitStart: () => startSignal,
       onStatus: (s) => onFfaStatus(s, true),
+      onHandle: (h) => { gameHandle = h; },
     }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, true));
   }
   function beginJoin(): void {
@@ -801,6 +927,7 @@ const lang: Language = defaultLang;
       identity: buildFfaIdentity(),
       maxGuests: playerCount - 1,
       onStatus: (s) => onFfaStatus(s, false),
+      onHandle: (h) => { gameHandle = h; },
     }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, false));
   }
   // lobby START（FFA host）：resolve 開始訊號，按鈕隱藏避免重複觸發。
@@ -994,6 +1121,7 @@ const lang: Language = defaultLang;
       const res = await fetch(`/api/profile?addr=${encodeURIComponent(addr)}`);
       const data = (await res.json()) as { profile: Profile | null };
       const p = data.profile;
+      renderSkinRack(p?.level ?? 0, addr); // 錢包玩家以 profile level 解鎖皮膚
       if (!p) {
         stats.innerHTML = '<p class="profile-guest">新玩家！打一場排名賽即可建立檔案。</p>';
         return;
@@ -1013,6 +1141,42 @@ const lang: Language = defaultLang;
       stats.innerHTML = '<p class="profile-guest">檔案載入失敗</p>';
     }
   }
+
+  // ---- 皮膚櫃（PROFILE 分頁）----
+  // key 一致性：皮膚櫃與開局（startSolo/startAiMode）同用 wallet?.address；
+  // 未連錢包 → guest key（tetris-skin:guest）。
+  let rackLevel = 0; // 訪客 0；錢包玩家由 loadProfile 更新
+  const skinCards = Array.from(document.querySelectorAll<HTMLElement>('.skin-card'));
+  function renderSkinRack(level: number, addr: string | null): void {
+    rackLevel = level;
+    // 防呆：選了未解鎖／未知皮膚 → 高亮顯示回退後的 neon
+    const activeId = resolveSkin(getSelectedSkin(addr), level).id;
+    skinCards.forEach((card) => {
+      const skin = SKIN_CATALOG.find((s) => s.id === card.dataset.skin);
+      if (!skin) return;
+      const locked = !isUnlocked(skin, level);
+      const active = skin.id === activeId;
+      card.classList.toggle('is-active', active);
+      card.classList.toggle('is-locked', locked);
+      card.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      const state = card.querySelector<HTMLElement>('.skin-state');
+      if (state) state.textContent = active ? '使用中' : locked ? `Lv ${skin.unlockLevel} 解鎖` : '已解鎖';
+    });
+    const cta = document.getElementById('skin-guest-cta');
+    if (cta) cta.hidden = addr !== null; // 連錢包後收掉訪客提示
+  }
+  skinCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      if (card.classList.contains('is-locked') || card.classList.contains('is-active')) return;
+      const id = card.dataset.skin;
+      if (!id) return;
+      const addr = wallet?.address ?? null;
+      setSelectedSkin(id, addr);
+      renderSkinRack(rackLevel, addr); // 即時更新高亮，下一局生效
+      blip(640, 0.06);
+    });
+  });
+  renderSkinRack(0, null); // 訪客預設：level 0、guest key
 
   if (isTouch) showTouchNotice(); // 觸控裝置：PLAY 分頁直接顯示「請用電腦」提示
 

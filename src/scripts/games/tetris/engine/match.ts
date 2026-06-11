@@ -12,6 +12,7 @@ export type MatchEvent =
   | { kind: 'lineClear'; side: Side; rows: number[]; count: number; tSpin: TSpinType; combo: number; b2b: boolean }
   | { kind: 'attack'; from: Side; amount: number }
   | { kind: 'garbageIn'; side: Side; amount: number }
+  | { kind: 'shieldBlock'; side: Side; amount: number } // 道具護盾抵擋（僅 amount>0 時發出）
   | { kind: 'ko'; winner: Side };
 
 export interface MatchOptions { seed?: number; }
@@ -23,6 +24,8 @@ export class TetrisMatch {
   winner: Side | null = null;
 
   private incoming: Record<Side, number> = { A: 0, B: 0 };
+  /** 道具護盾（default-inactive：0 = 原路徑） */
+  private shield: Record<Side, number> = { A: 0, B: 0 };
   private holeRng: () => number;
   private events: MatchEvent[] = [];
 
@@ -40,6 +43,12 @@ export class TetrisMatch {
 
   pendingGarbage(side: Side): number {
     return this.incoming[side];
+  }
+
+  /** 道具：加護盾（先進先抵，傾倒垃圾前消減）。非正數忽略。 */
+  addShield(side: Side, n: number): void {
+    if (!Number.isFinite(n) || n <= 0) return;
+    this.shield[side] += Math.floor(n);
   }
 
   drainEvents(): MatchEvent[] {
@@ -67,10 +76,19 @@ export class TetrisMatch {
 
     const resolveLock = (): void => {
       if (lockOpen && !lockCleared && this.phase === 'playing' && this.incoming[side] > 0) {
-        const amount = this.incoming[side];
+        let amount = this.incoming[side];
         this.incoming[side] = 0;
-        game.receiveGarbage(amount, this.holeCol());
-        this.events.push({ kind: 'garbageIn', side, amount });
+        // 護盾先抵（shield=0 時 blocked=0，走原路徑，holeRng 消耗不變）
+        const blocked = Math.min(this.shield[side], amount);
+        if (blocked > 0) {
+          this.shield[side] -= blocked;
+          amount -= blocked;
+          this.events.push({ kind: 'shieldBlock', side, amount: blocked });
+        }
+        if (amount > 0) {
+          game.receiveGarbage(amount, this.holeCol());
+          this.events.push({ kind: 'garbageIn', side, amount });
+        }
       }
       lockOpen = false;
       lockCleared = false;

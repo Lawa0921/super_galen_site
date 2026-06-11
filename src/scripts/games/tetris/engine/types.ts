@@ -42,4 +42,5 @@ export type GameEvent =
   | { kind: 'lock'; piece: ActivePiece }
   | { kind: 'hold' }
   | { kind: 'lineClear'; rows: number[]; count: number; tSpin: TSpinType; b2b: boolean; combo: number }
+  | { kind: 'itemClear'; rows: number } // 道具清行（不計分、不算消行）；既有消費端為 if/else-if 鏈，未知 kind 安全忽略
   | { kind: 'topout' };

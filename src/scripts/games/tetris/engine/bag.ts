@@ -5,6 +5,8 @@ import { createRng } from './rng';
 export interface Bag {
   next(): PieceType;
   peek(count: number): PieceType[];
+  /** 丟棄目前佇列（道具 reroll 用）；之後的 next/peek 由同一 rng 續抽新袋，確定性不變。 */
+  discard(): void;
 }
 
 /** 7-bag：每袋含 7 種各一，洗牌後依序發出，袋空再補新袋。 */
@@ -34,6 +36,9 @@ export function createBag(seed: number): Bag {
     peek(count: number): PieceType[] {
       ensure(count);
       return queue.slice(0, count);
+    },
+    discard(): void {
+      queue = [];
     },
   };
 }

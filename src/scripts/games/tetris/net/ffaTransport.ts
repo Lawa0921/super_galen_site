@@ -7,6 +7,11 @@ import type { FfaLockstepTransport, FfaFrameMsg } from './ffaLockstep';
 export interface RelayChannel {
   send(raw: string): void;
   readonly open: boolean;
+  /**
+   * 可選 close 掛點（模仿 RTCDataChannel.onclose 的可賦值屬性）。
+   * Hub/Spoke 建構時若 channel 支援此屬性會掛上處理器；mock 物件可直接設。
+   */
+  onclose?: (() => void) | null;
 }
 
 /**
@@ -49,6 +54,26 @@ function parseFrame(raw: unknown): FfaFrameMsg | null {
 }
 
 /**
+ * 控制訊息判別：JSON parse 後物件有字串欄位 `t` 且以 'ffa-' 開頭 → 控制訊息
+ * （FfaFrameMsg 是 {f,p,a} 無 t，不會誤判）。
+ * parse 失敗 / 無 t / t 非字串 → 回傳 null（呼叫端走幀訊息既有容錯路徑）。
+ */
+function parseControl(raw: unknown): Record<string, unknown> | null {
+  let m: unknown = raw;
+  if (typeof raw === 'string') {
+    try {
+      m = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (!m || typeof m !== 'object') return null;
+  const t = (m as Record<string, unknown>).t;
+  if (typeof t !== 'string' || !t.startsWith('ffa-')) return null;
+  return m as Record<string, unknown>;
+}
+
+/**
  * Host 端 relay transport（星狀中心）。
  *
  * 拓樸：Host 對每個 Guest 各持一條 channel（channels[i] 對應 guest i）。
@@ -62,21 +87,41 @@ function parseFrame(raw: unknown): FfaFrameMsg | null {
 export class FfaHubTransport implements FfaLockstepTransport {
   private readonly channels: RelayChannel[];
   private cb: ((msg: FfaFrameMsg) => void) | null = null;
+  private controlCb: ((msg: Record<string, unknown>) => void) | null = null;
+  private channelCloseCb: ((idx: number) => void) | null = null;
 
   /**
    * @param channels N-1 條 channel（對應各 guest）。
-   *   每條若帶 `onmessage` setter（mock 或 RTCDataChannel 包裝），會被掛上收訊轉發邏輯。
+   *   每條若帶 `onmessage` setter（mock 或 RTCDataChannel 包裝），會被掛上收訊轉發邏輯；
+   *   若支援 `onclose` 也會掛上 close 處理（觸發 onChannelClose 回呼帶 idx）。
    */
   constructor(channels: Array<RelayChannel & { onmessage?: ((raw: string) => void) | null }>) {
     this.channels = channels;
     channels.forEach((ch, idx) => {
       // 為每條 guest channel 安裝收訊處理：轉發其餘 guest + 回灌本端上層
       ch.onmessage = (raw: string) => this.handleGuestMessage(idx, raw);
+      // channel 關閉 → 觸發 channelClose 回呼（帶該 idx）
+      if ('onclose' in ch) ch.onclose = () => this.channelCloseCb?.(idx);
     });
   }
 
-  /** 收到 guest idx 的一筆原始訊息：relay 給其餘 guest，再丟給本端上層。 */
+  /**
+   * 收到 guest idx 的一筆原始訊息：
+   *  - 控制訊息 'ffa-leave' → 觸發 channelClose 回呼（快速路徑），不 relay 不上拋。
+   *  - 其他 'ffa-*' 控制訊息 → relay 給其餘 guest + 觸發自身 onControl。
+   *  - 幀訊息 → relay 給其餘 guest，再丟給本端上層（既有行為）。
+   */
   private handleGuestMessage(fromIdx: number, raw: string): void {
+    const ctrl = parseControl(raw);
+    if (ctrl) {
+      if (ctrl.t === 'ffa-leave') {
+        this.channelCloseCb?.(fromIdx);
+        return; // 不 relay、不上拋
+      }
+      routeFrame(fromIdx, raw, this.channels);
+      this.controlCb?.(ctrl);
+      return;
+    }
     routeFrame(fromIdx, raw, this.channels);
     const msg = parseFrame(raw);
     if (msg) this.cb?.(msg);
@@ -88,8 +133,23 @@ export class FfaHubTransport implements FfaLockstepTransport {
     this.cb?.(msg);
   }
 
+  /** host 自己的控制訊息：廣播給全部 guest，並回灌自身 onControl（自身可見）。 */
+  sendControl(msg: Record<string, unknown>): void {
+    routeFrame(null, JSON.stringify(msg), this.channels);
+    this.controlCb?.(msg);
+  }
+
   onMessage(cb: (msg: FfaFrameMsg) => void): void {
     this.cb = cb;
+  }
+
+  onControl(cb: (msg: Record<string, unknown>) => void): void {
+    this.controlCb = cb;
+  }
+
+  /** 登記 channel 關閉回呼（來源：channel onclose 或 guest 的 ffa-leave 快速路徑）。 */
+  onChannelClose(cb: (idx: number) => void): void {
+    this.channelCloseCb = cb;
   }
 }
 
@@ -103,16 +163,25 @@ export class FfaHubTransport implements FfaLockstepTransport {
 export class FfaSpokeTransport implements FfaLockstepTransport {
   private readonly channel: RelayChannel;
   private cb: ((msg: FfaFrameMsg) => void) | null = null;
+  private controlCb: ((msg: Record<string, unknown>) => void) | null = null;
+  private closeCb: (() => void) | null = null;
 
   /**
-   * @param channel 對 Host 的單一 channel；若帶 `onmessage` setter 會被掛上收訊處理。
+   * @param channel 對 Host 的單一 channel；若帶 `onmessage` setter 會被掛上收訊處理
+   *   （控制訊息 → onControl、幀 → onMessage）；若支援 `onclose` 也會掛上 close 處理。
    */
   constructor(channel: RelayChannel & { onmessage?: ((raw: string) => void) | null }) {
     this.channel = channel;
     channel.onmessage = (raw: string) => {
+      const ctrl = parseControl(raw);
+      if (ctrl) {
+        this.controlCb?.(ctrl);
+        return;
+      }
       const msg = parseFrame(raw);
       if (msg) this.cb?.(msg);
     };
+    if ('onclose' in channel) channel.onclose = () => this.closeCb?.();
   }
 
   send(msg: FfaFrameMsg): void {
@@ -120,7 +189,22 @@ export class FfaSpokeTransport implements FfaLockstepTransport {
     this.channel.send(JSON.stringify(msg));
   }
 
+  /** 控制訊息送給 host（host 會分流處理/relay）；channel 未開不送、不丟例外。 */
+  sendControl(msg: Record<string, unknown>): void {
+    if (!this.channel.open) return;
+    this.channel.send(JSON.stringify(msg));
+  }
+
   onMessage(cb: (msg: FfaFrameMsg) => void): void {
     this.cb = cb;
+  }
+
+  onControl(cb: (msg: Record<string, unknown>) => void): void {
+    this.controlCb = cb;
+  }
+
+  /** 登記 host 頻道關閉回呼。 */
+  onClose(cb: () => void): void {
+    this.closeCb = cb;
   }
 }

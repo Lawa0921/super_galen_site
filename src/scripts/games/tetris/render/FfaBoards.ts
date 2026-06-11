@@ -1,3 +1,4 @@
+import { Text, type Container } from 'pixi.js';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 import { getCells } from '../engine/piece';
 import type { FfaMatch, FfaMatchEvent } from '../engine/ffa';
@@ -34,6 +35,9 @@ export class FfaBoards {
   private byId = new Map<string, Slot>();
   private standings: StandingsPanel;
   private playerIds: string[];
+  private hudLayer: Container;
+  /** 被判中離的盤面常駐標籤（ko reason='forfeit' 時掛上）。 */
+  private forfeitTags = new Map<string, Text>();
 
   constructor(
     stage: PixiStage,
@@ -43,6 +47,7 @@ export class FfaBoards {
     private nextCount = 3,
   ) {
     this.playerIds = [...playerIds];
+    this.hudLayer = stage.hudLayer;
     const local = this.playerIds.includes(localId) ? localId : this.playerIds[0];
 
     this.playerIds.forEach((id, i) => {
@@ -78,6 +83,14 @@ export class FfaBoards {
       s.fx.setLayout(slot.cellSize, slot.origin);
     }
     this.standings.setLayout(lay.standings.anchor, lay.standings.scale);
+    // FORFEIT 標籤跟著盤面中心重排
+    for (const [id, tag] of this.forfeitTags) {
+      const s = this.byId.get(id);
+      if (!s) continue;
+      const c = this.boardCenter(s);
+      tag.position.set(c.x, c.y);
+      tag.style.fontSize = Math.max(10, Math.round(s.layout.cellSize * 0.55));
+    }
   }
 
   /** 繪製所有盤面狀態 + HUD + 名次面板。 */
@@ -138,10 +151,32 @@ export class FfaBoards {
         if (s) s.fx.garbageInFlash(this.boardRect(s));
       } else if (ev.kind === 'ko') {
         const s = this.byId.get(ev.id);
-        if (s) s.fx.topoutFlash();
+        if (s) {
+          s.fx.topoutFlash(); // 沿用既有淘汰視覺
+          if (ev.reason === 'forfeit') this.showForfeitTag(s); // 中離 → 加常駐文字標籤
+        }
       }
       // 'victory' 由上層 runFfaGame 顯示橫幅，這裡不放盤面特效。
     }
+  }
+
+  /** 在該盤面中心疊上常駐「FORFEIT」標籤（同盤只掛一次）。 */
+  private showForfeitTag(s: Slot): void {
+    if (this.forfeitTags.has(s.id)) return;
+    const tag = new Text({
+      text: 'FORFEIT',
+      style: {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: Math.max(10, Math.round(s.layout.cellSize * 0.55)),
+        fill: 0xff5566,
+        align: 'center',
+      },
+    });
+    tag.anchor.set(0.5);
+    const c = this.boardCenter(s);
+    tag.position.set(c.x, c.y);
+    this.hudLayer.addChild(tag);
+    this.forfeitTags.set(s.id, tag);
   }
 
   /** 每幀推進所有盤的特效動畫。 */
@@ -153,6 +188,8 @@ export class FfaBoards {
     // StandingsPanel 由本類別建立、自行銷毀；BoardView/HudView/Effects 的圖元掛在 stage
     // 各 layer，隨 stage.app.destroy() 一併釋放（runFfaGame 的拆除路徑）。
     this.standings.destroy();
+    for (const tag of this.forfeitTags.values()) tag.destroy();
+    this.forfeitTags.clear();
     this.slots = [];
     this.byId.clear();
   }

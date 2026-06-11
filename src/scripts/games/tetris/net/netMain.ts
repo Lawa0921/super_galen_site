@@ -11,11 +11,13 @@ import { Effects } from '../render/Effects';
 import { GarbageMeter } from '../render/GarbageMeter';
 import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from '../render/assets';
-import { pieceTint } from '../render/layout';
+import { getSelectedSkin, resolveSkin } from '../render/skins';
+import { pieceTint, setSkinTints } from '../render/layout';
 import { computeMatchLayout, P1_TINT, P2_TINT, type MatchLayout } from '../render/matchLayout';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 import { Lockstep } from './lockstep';
 import { WebRtcTransport } from './webrtcTransport';
+import type { Transport } from './transport';
 import { createRoom, putSlot, pollSlot } from './signalClient';
 import { buildResultMessage } from './auth';
 
@@ -30,6 +32,8 @@ export interface NetStatus {
 export type StatusCb = (s: NetStatus) => void;
 
 const HANDSHAKE_TIMEOUT_MS = 30_000;
+/** 對手靜默逾時（中離兜底）：與 FFA 的 SILENCE_TIMEOUT_MS 同值。 */
+const SILENCE_TIMEOUT_MS = 10_000;
 /** 為握手等待加上超時，避免對手在連線後、送出身分前崩潰導致永久卡在「已連線」。 */
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -140,13 +144,25 @@ interface RunOpts {
 
 function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: RunOpts): void {
   const { seed, matchId, localSide, identity, oppId, oppRanked } = opts;
+  // 對手中離偵測：close 事件之外加 10 秒靜默兜底——突然關閉/斷網時 close 可能
+  // 永不觸發，而鎖步下對手不送幀＝全局凍結，靜默即視同離席判敗。
+  // （對手切走分頁 >10 秒 rAF 暫停不送幀也會觸發：鎖步本就因他凍結，視為離席屬設計。）
+  let lastOppMsgAt = Date.now();
+  const tappedTransport: Transport = {
+    send: (d) => transport.send(d),
+    onMessage: (cb) => transport.onMessage((d) => { lastOppMsgAt = Date.now(); cb(d); }),
+    close: () => transport.close(),
+  };
   // 立刻建立 Lockstep：其 onMessage 馬上接管 transport，渲染初始化期間對手送來的幀會
   // 先排進 inbox（不會在 async 載入空檔被丟棄）。
-  const lockstep = new Lockstep({ seed, localSide, transport });
+  const lockstep = new Lockstep({ seed, localSide, transport: tappedTransport });
   const input = new InputController((a) => lockstep.pressLocal(a), { das: 150, arr: 35 });
 
   void PixiStage.create(canvas).then(async (stage) => {
-    const tex = await loadGameTextures();
+    // 皮膚只影響本地渲染（貼圖/調色），不進鎖步協定。
+    const skin = resolveSkin(getSelectedSkin(identity.id), Number.POSITIVE_INFINITY);
+    const tex = await loadGameTextures(skin.id);
+    setSkinTints(skin.tints ?? null);
     stage.setBackground(tex.bg);
     try { await document.fonts.load('14px "Press Start 2P"'); await document.fonts.ready; } catch { /* fallback */ }
 
@@ -263,6 +279,9 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
       const dt = ticker.deltaMS;
       const match = lockstep.match;
 
+      if (match.phase === 'playing' && !disconnected && Date.now() - lastOppMsgAt > SILENCE_TIMEOUT_MS) {
+        disconnected = true; // 靜默兜底：對手長時間無訊息＝離席
+      }
       if (match.phase === 'playing' && !disconnected) {
         acc += dt;
         let guard = 0;
@@ -271,8 +290,9 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
       }
 
       if (disconnected && !resultShown) {
+        // 對手中離＝判敗（forfeit-win）。1v1 不回報結算（單方簽章可偽造，誠實限制：不計分）。
         resultShown = true;
-        banner.text = 'OPPONENT\nDISCONNECTED';
+        banner.text = 'OPPONENT FORFEIT\nYOU WIN';
         banner.style.fontSize = 22;
         banner.visible = true;
       } else if (match.phase === 'result' && !resultShown) {
@@ -297,6 +317,6 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
     };
     stage.app.ticker.add(tick);
 
-    (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = { lockstep, get match() { return lockstep.match; }, stage };
+    (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = { lockstep, get match() { return lockstep.match; }, get disconnected() { return disconnected; }, stage };
   });
 }

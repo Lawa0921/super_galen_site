@@ -23,8 +23,16 @@ const TINTS: Record<PieceType, number> = {
 };
 export const GARBAGE_TINT = 0x6b7280; // 灰
 
+// 皮膚調色覆蓋表（null = 用預設）。開局由 setSkinTints 設定。
+let skinTints: Partial<Record<PieceType, number>> | null = null;
+
+/** 設定／清除皮膚 per-piece 調色覆蓋（傳 null 還原預設）。 */
+export function setSkinTints(t: Partial<Record<PieceType, number>> | null): void {
+  skinTints = t;
+}
+
 export function pieceTint(type: PieceType): number {
-  return TINTS[type];
+  return skinTints?.[type] ?? TINTS[type];
 }
 
 /** 視窗寬 < 920 用聚焦版（手機/窄），否則對稱雙盤。 */

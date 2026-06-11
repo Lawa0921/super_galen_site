@@ -9,13 +9,18 @@ import {
   parseFfaInit,
   reportFfaRanked,
   takeoverTransport,
+  tapFrames,
   wrapChannel,
+  checkSilence,
+  FfaForfeitController,
+  wireFfaForfeit,
   type FfaSignalClient,
   type FfaInitMsg,
   type FfaHostAnswerPeer,
   type FfaGuestOfferPeer,
 } from './ffaNetMain';
-import { FfaLockstep, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
+import { FfaHubTransport, FfaSpokeTransport } from './ffaTransport';
+import { FfaLockstep, INPUT_DELAY, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
 import { buildFfaResultMessage, verifySignature } from './auth';
 import { Wallet } from 'ethers';
 
@@ -508,5 +513,293 @@ describe('wrapChannel（RelayChannel 卡接）', () => {
     ch.onmessage = (r) => got.push(r);
     msgCb!('frame-data');
     expect(got).toEqual(['frame-data']);
+  });
+
+  it('底層 onClose → 觸發包裝後的 onclose（真 WebRTC close 偵測路徑）', () => {
+    let closeCb: (() => void) | null = null;
+    const fakeTransport = {
+      send: (_d: string) => {},
+      onMessage: (_cb: (d: string) => void) => {},
+      get isOpen() { return true; },
+      onClose: (cb: () => void) => { closeCb = cb; },
+    };
+    const ch = wrapChannel(fakeTransport);
+    // 包裝後必須帶有 onclose 可賦值屬性（FfaHub/Spoke 用 `'onclose' in ch` 判斷掛載）
+    expect('onclose' in ch).toBe(true);
+    let closed = 0;
+    ch.onclose = () => { closed++; };
+    closeCb!();
+    expect(closed).toBe(1);
+  });
+
+  it('底層無 onClose（舊 backing）→ 仍可包裝，onclose 屬性存在但不觸發', () => {
+    const fakeTransport = {
+      send: (_d: string) => {},
+      onMessage: (_cb: (d: string) => void) => {},
+      get isOpen() { return true; },
+    };
+    const ch = wrapChannel(fakeTransport);
+    expect('onclose' in ch).toBe(true); // 介面一致；無底層 close 來源時就是永不觸發
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 8. F5 中離續行：靜默偵測 / host 宣告廣播 / onControl 排程 / channel close / 整合
+// ─────────────────────────────────────────────────────────────────────────
+
+/** 控制訊息能力 mock transport（測 wireFfaForfeit 的接線，不碰真 WebRTC）。 */
+function makeMockControlTransport() {
+  let controlCb: ((m: Record<string, unknown>) => void) | null = null;
+  let channelCloseCb: ((idx: number) => void) | null = null;
+  let closeCb: (() => void) | null = null;
+  const sent: Array<Record<string, unknown>> = [];
+  return {
+    sent,
+    send: (_m: FfaFrameMsg) => {},
+    onMessage: (_cb: (m: FfaFrameMsg) => void) => {},
+    sendControl: (m: Record<string, unknown>) => { sent.push(m); },
+    onControl: (cb: (m: Record<string, unknown>) => void) => { controlCb = cb; },
+    onChannelClose: (cb: (idx: number) => void) => { channelCloseCb = cb; },
+    onClose: (cb: () => void) => { closeCb = cb; },
+    emitControl: (m: Record<string, unknown>) => controlCb?.(m),
+    emitChannelClose: (idx: number) => channelCloseCb?.(idx),
+    emitClose: () => closeCb?.(),
+  };
+}
+
+describe('checkSilence（純函式靜默逾時判定）', () => {
+  it('某 guest 超過 timeout 無訊息 → 回其 id；未超時 → []；剛好等於邊界不算超時', () => {
+    const lastMsgAt = new Map<string, number>([['g1', 0], ['g2', 5_000]]);
+    // g1 距今 10_001 > 10_000 → 超時；g2 距今 5_001 → 未超時
+    expect(checkSilence(lastMsgAt, 10_001, 10_000)).toEqual(['g1']);
+    // 都未超時
+    expect(checkSilence(lastMsgAt, 9_000, 10_000)).toEqual([]);
+    // 剛好邊界（now - at === timeout）不算超時（嚴格大於）
+    expect(checkSilence(lastMsgAt, 10_000, 10_000)).toEqual([]);
+  });
+});
+
+describe('FfaForfeitController（host 宣告 + 廣播）', () => {
+  it('F = lastFrame+1；廣播形狀 {t:"ffa-forfeit",p,f}；同 p 重複宣告只廣播一次；未知 p 忽略', () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const ctl = new FfaForfeitController({
+      guestIds: ['g1', 'g2'],
+      sendControl: (m) => sent.push(m),
+    });
+    ctl.noteFrame({ f: 10, p: 'g1', a: [] });
+    ctl.noteFrame({ f: 7, p: 'g1', a: [] }); // 取 max，不回退
+    ctl.declareForfeit('g1');
+    expect(sent).toEqual([{ t: 'ffa-forfeit', p: 'g1', f: 11 }]);
+    ctl.declareForfeit('g1'); // 重複宣告 → 不再廣播
+    expect(sent.length).toBe(1);
+    ctl.declareForfeit('nobody'); // 不在 guestIds → 忽略
+    expect(sent.length).toBe(1);
+  });
+
+  it('F 與 confirmedFrame 無關＝lastFrame+1（停滯後宣告不得產生不可達幀）', () => {
+    // 回歸：silence 偵測在「鎖步已停滯（confirmedFrame == lastFrame+1）」後才宣告，
+    // 若 F 取 max(lastFrame+1, confirmedFrame+1) 會得到 lastFrame+2 —— 沒有任何端
+    // 能在缺 g1 輸入下推進到該幀 → 全員死鎖。F 必須恆為 lastFrame+1。
+    const sent: Array<Record<string, unknown>> = [];
+    const ctl = new FfaForfeitController({
+      guestIds: ['g1'],
+      sendControl: (m) => sent.push(m),
+    });
+    ctl.noteFrame({ f: 60, p: 'g1', a: [] }); // g1 最後幀 60 → 全員必停滯在 61
+    ctl.declareForfeit('g1');
+    expect(sent).toEqual([{ t: 'ffa-forfeit', p: 'g1', f: 61 }]);
+  });
+
+  it('guest 從未送過幀 → F = INPUT_DELAY（預填 0..delay-1 後的全員停滯點）', () => {
+    // 各端因預填可推進到 simFrame = INPUT_DELAY 才停 → F 取 1 會造成各端
+    // 套用幀不一致（max(F, 收到當下 simFrame) 不同）；F = INPUT_DELAY 唯一確定。
+    const sent: Array<Record<string, unknown>> = [];
+    const ctl = new FfaForfeitController({
+      guestIds: ['g1'],
+      sendControl: (m) => sent.push(m),
+    });
+    ctl.declareForfeit('g1');
+    expect(sent).toEqual([{ t: 'ffa-forfeit', p: 'g1', f: INPUT_DELAY }]);
+  });
+
+  it('checkSilenceNow：靜默逾時的 guest 被宣告（注入 now）；已宣告者不重複', () => {
+    const sent: Array<Record<string, unknown>> = [];
+    let nowMs = 0;
+    const ctl = new FfaForfeitController({
+      guestIds: ['g1', 'g2'],
+      sendControl: (m) => sent.push(m),
+      now: () => nowMs,
+      timeoutMs: 10_000,
+    });
+    nowMs = 5_000;
+    ctl.noteFrame({ f: 3, p: 'g1', a: [] }); // g1 在 5s 有活動
+    nowMs = 10_000;
+    expect(ctl.checkSilenceNow()).toEqual([]); // g2 剛好邊界 → 未超時
+    nowMs = 10_001;
+    expect(ctl.checkSilenceNow()).toEqual(['g2']); // g2 超時 → 宣告（從未送幀 → F=INPUT_DELAY）
+    expect(sent).toEqual([{ t: 'ffa-forfeit', p: 'g2', f: INPUT_DELAY }]);
+    nowMs = 20_000;
+    expect(ctl.checkSilenceNow()).toEqual(['g1']); // g1 也超時；g2 已宣告不重複
+    expect(sent.length).toBe(2);
+  });
+});
+
+describe('wireFfaForfeit（接線）', () => {
+  const playerIds = ['host', 'g1', 'g2'];
+
+  it('onControl 收合法 ffa-forfeit → scheduleForfeit(p,f)；壞 shape（p 不在名單 / f=NaN / f<0 / 非 forfeit）忽略', () => {
+    const t = makeMockControlTransport();
+    const scheduled: Array<[string, number]> = [];
+    const lockstep = { scheduleForfeit: (p: string, f: number) => { scheduled.push([p, f]); }, confirmedFrame: 0 };
+    wireFfaForfeit({ lockstep, playerIds, transport: t, setIntervalFn: () => 0 });
+
+    t.emitControl({ t: 'ffa-forfeit', p: 'g1', f: 12 });
+    expect(scheduled).toEqual([['g1', 12]]);
+
+    t.emitControl({ t: 'ffa-forfeit', p: 'zz', f: 5 });       // p 不在名單
+    t.emitControl({ t: 'ffa-forfeit', p: 'g2', f: NaN });      // f 非有限數
+    t.emitControl({ t: 'ffa-forfeit', p: 'g2', f: -1 });       // f 負數
+    t.emitControl({ t: 'ffa-forfeit', p: 'g2', f: '5' });      // f 非數字
+    t.emitControl({ t: 'ffa-leave' });                          // 非 forfeit 控制訊息
+    expect(scheduled).toEqual([['g1', 12]]);
+  });
+
+  it('host 端：onChannelClose(idx) → 宣告該 idx 對應 guest 的 forfeit 並廣播', () => {
+    const t = makeMockControlTransport();
+    const lockstep = { scheduleForfeit: () => {}, confirmedFrame: 0 };
+    const ctl = wireFfaForfeit({
+      lockstep, playerIds, transport: t,
+      guestIds: ['g1', 'g2'],
+      setIntervalFn: () => 0,
+    });
+    expect(ctl).not.toBeNull();
+    t.emitChannelClose(1); // channels[1] ↔ g2（從未送幀 → F=INPUT_DELAY）
+    expect(t.sent).toEqual([{ t: 'ffa-forfeit', p: 'g2', f: INPUT_DELAY }]);
+  });
+
+  it('guest 端：host 頻道 close → onHostClose 被觸發（disconnected 路徑）', () => {
+    const t = makeMockControlTransport();
+    const lockstep = { scheduleForfeit: () => {}, confirmedFrame: 0 };
+    const onHostClose = vi.fn();
+    const ctl = wireFfaForfeit({ lockstep, playerIds, transport: t, onHostClose, setIntervalFn: () => 0 });
+    expect(ctl).toBeNull(); // 無 guestIds → 非 host，不建偵測控制器
+    t.emitClose();
+    expect(onHostClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('F5 整合：真 FfaLockstep + Hub/Spoke mock channels — guest 離開後續行並判敗', () => {
+  it('一 guest 送 ffa-leave → host 廣播 forfeit → host 與另一 guest 的 lockstep 都判敗該玩家並續行', () => {
+    // 同步 loopback channel pair：兩端互送
+    function pair() {
+      const a = {
+        open: true,
+        onmessage: null as ((r: string) => void) | null,
+        onclose: null as (() => void) | null,
+        send: (raw: string) => { b.onmessage?.(raw); },
+      };
+      const b = {
+        open: true,
+        onmessage: null as ((r: string) => void) | null,
+        onclose: null as (() => void) | null,
+        send: (raw: string) => { a.onmessage?.(raw); },
+      };
+      return { hostEnd: a, guestEnd: b };
+    }
+    const p1 = pair();
+    const p2 = pair();
+    const hub = new FfaHubTransport([p1.hostEnd, p2.hostEnd]);
+    const spoke1 = new FfaSpokeTransport(p1.guestEnd);
+    const spoke2 = new FfaSpokeTransport(p2.guestEnd);
+
+    const playerIds = ['host', 'g1', 'g2'];
+    let hostCtl: FfaForfeitController | null = null;
+    const hostLs = new FfaLockstep({
+      playerIds, localId: 'host', seed: 7,
+      transport: takeoverTransport(tapFrames(hub, (m) => hostCtl?.noteFrame(m))),
+    });
+    const g1Ls = new FfaLockstep({ playerIds, localId: 'g1', seed: 7, transport: takeoverTransport(spoke1) });
+    const g2Ls = new FfaLockstep({ playerIds, localId: 'g2', seed: 7, transport: takeoverTransport(spoke2) });
+
+    hostCtl = wireFfaForfeit({ lockstep: hostLs, playerIds, transport: hub, guestIds: ['g1', 'g2'], setIntervalFn: () => 0 });
+    wireFfaForfeit({ lockstep: g1Ls, playerIds, transport: spoke1 });
+    wireFfaForfeit({ lockstep: g2Ls, playerIds, transport: spoke2 });
+
+    // 三端各 tick 5 幀（g2 的 lastFrame = 4+3 = 7 → F = 8）
+    for (let i = 0; i < 5; i++) { hostLs.tick([]); g1Ls.tick([]); g2Ls.tick([]); }
+
+    // g2 主動離開：ffa-leave 快速路徑 → hub onChannelClose → host 宣告並廣播
+    spoke2.sendControl({ t: 'ffa-leave' });
+
+    // host 與 g1 續行（g2 不再 tick）→ 推進過 F 後 g2 被判敗
+    for (let i = 0; i < 30; i++) { hostLs.tick([]); g1Ls.tick([]); }
+
+    expect(hostLs.getMatch().getPlacement().get('g2')).toBe(3);
+    expect(g1Ls.getMatch().getPlacement().get('g2')).toBe(3);
+    // 對局未凍結：confirmedFrame 推進超過棄權幀
+    expect(hostLs.confirmedFrame).toBeGreaterThan(8);
+    expect(g1Ls.confirmedFrame).toBeGreaterThan(8);
+    // replay 含 forfeits 紀錄（兩端一致）
+    expect(hostLs.getReplay().forfeits.map((x) => x.p)).toEqual(['g2']);
+    expect(g1Ls.getReplay().forfeits).toEqual(hostLs.getReplay().forfeits);
+  });
+
+  it('回歸：鎖步已停滯（confirmedFrame 追平 lastFrame+1）後才宣告 → 仍能套用棄權續行（不死鎖）', () => {
+    // 對應真實時序：guest 關閉分頁 → 其餘端把該 guest 既有輸入消化完、停滯 10 秒 →
+    // silence 逾時才宣告。宣告當下 confirmedFrame == lastFrame+1，F 若被「防禦性」
+    // 抬到 confirmedFrame+1 = lastFrame+2 → 永不可達 → 全員凍結（e2e 抓到的死鎖）。
+    function pair() {
+      const a = {
+        open: true,
+        onmessage: null as ((r: string) => void) | null,
+        onclose: null as (() => void) | null,
+        send: (raw: string) => { b.onmessage?.(raw); },
+      };
+      const b = {
+        open: true,
+        onmessage: null as ((r: string) => void) | null,
+        onclose: null as (() => void) | null,
+        send: (raw: string) => { a.onmessage?.(raw); },
+      };
+      return { hostEnd: a, guestEnd: b };
+    }
+    const p1 = pair();
+    const p2 = pair();
+    const hub = new FfaHubTransport([p1.hostEnd, p2.hostEnd]);
+    const spoke1 = new FfaSpokeTransport(p1.guestEnd);
+    const spoke2 = new FfaSpokeTransport(p2.guestEnd);
+
+    const playerIds = ['host', 'g1', 'g2'];
+    let hostCtl: FfaForfeitController | null = null;
+    const hostLs = new FfaLockstep({
+      playerIds, localId: 'host', seed: 11,
+      transport: takeoverTransport(tapFrames(hub, (m) => hostCtl?.noteFrame(m))),
+    });
+    const g1Ls = new FfaLockstep({ playerIds, localId: 'g1', seed: 11, transport: takeoverTransport(spoke1) });
+    const g2Ls = new FfaLockstep({ playerIds, localId: 'g2', seed: 11, transport: takeoverTransport(spoke2) });
+
+    hostCtl = wireFfaForfeit({ lockstep: hostLs, playerIds, transport: hub, guestIds: ['g1', 'g2'], setIntervalFn: () => 0 });
+    wireFfaForfeit({ lockstep: g1Ls, playerIds, transport: spoke1 });
+    wireFfaForfeit({ lockstep: g2Ls, playerIds, transport: spoke2 });
+
+    // 三端各 tick 5 幀後 g2 靜默（模擬關閉分頁：不送 leave、不再 tick）
+    for (let i = 0; i < 5; i++) { hostLs.tick([]); g1Ls.tick([]); g2Ls.tick([]); }
+
+    // host 與 g1 繼續 tick 把 g2 的既有輸入消化完 → 停滯（confirmedFrame == lastFrame+1）
+    for (let i = 0; i < 20; i++) { hostLs.tick([]); g1Ls.tick([]); }
+    const stalled = hostLs.confirmedFrame;
+    expect(g1Ls.confirmedFrame).toBe(stalled); // 兩端同點停滯
+
+    // 停滯「之後」host 才宣告（= silence 逾時的時序）
+    hostCtl!.declareForfeit('g2');
+
+    // 必須能套用棄權並續行（修正前：F = stalled+1 永不可達 → 凍結）
+    for (let i = 0; i < 30; i++) { hostLs.tick([]); g1Ls.tick([]); }
+    expect(hostLs.getMatch().getPlacement().get('g2')).toBe(3);
+    expect(g1Ls.getMatch().getPlacement().get('g2')).toBe(3);
+    // 兩端都脫離停滯點續行（同步 loopback 的 tick 順序使兩端有 ±1 幀的良性偏移）
+    expect(hostLs.confirmedFrame).toBeGreaterThan(stalled);
+    expect(g1Ls.confirmedFrame).toBeGreaterThan(stalled);
+    expect(g1Ls.getReplay().forfeits).toEqual(hostLs.getReplay().forfeits);
   });
 });
