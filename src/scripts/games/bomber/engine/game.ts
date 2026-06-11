@@ -114,33 +114,28 @@ export class BomberGame {
     if (this.abilityCooldownMs > 0) return;
 
     const id = this.ability.id;
+
+    // detonate 需要場上有自己的彈才能發動（否則不消耗冷卻）
+    if (id === 'detonate' && !this.bombs.some((b) => !b.owner)) return;
+
     this.abilityCooldownMs = this.ability.cooldownMs;
     this.events.push({ kind: 'ability', id });
 
     switch (id) {
-      case 'carpet': this.effectCarpet(); break;
+      case 'detonate': this.effectDetonate(); break;
       case 'inferno': this.effectInferno(); break;
       case 'blink': this.effectBlink(); break;
       case 'bulwark': this.effectBulwark(); break;
     }
   }
 
-  private effectCarpet(): void {
-    const p = this.player;
-    const candidates: Vec[] = [
-      { x: p.x, y: p.y },
-      { x: p.x, y: p.y - 1 },
-      { x: p.x, y: p.y + 1 },
-      { x: p.x - 1, y: p.y },
-      { x: p.x + 1, y: p.y },
-    ];
-    for (const cell of candidates) {
-      if (!isWalkable(this.grid, cell.x, cell.y)) continue;
-      if (this.bombs.some((b) => b.x === cell.x && b.y === cell.y)) continue;
-      // BYPASS maxBombs cap for carpet
-      this.bombs.push({ x: cell.x, y: cell.y, fuseMs: BOMB_FUSE_MS, range: p.fireRange });
-      this.events.push({ kind: 'bombPlaced', x: cell.x, y: cell.y });
+  /** 遙控起爆：立即引爆所有自己放置的炸彈（下個 tick 連鎖結算），
+   *  附短暫防護窗——專家級的起爆時機不會炸傷自己。 */
+  private effectDetonate(): void {
+    for (const b of this.bombs) {
+      if (!b.owner) b.fuseMs = 0;
     }
+    this.player.invulnMs = Math.max(this.player.invulnMs, 600);
   }
 
   private effectInferno(): void {

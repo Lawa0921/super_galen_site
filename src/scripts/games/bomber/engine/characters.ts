@@ -7,7 +7,7 @@ export const CHARACTERS: Record<CharacterId, CharacterProfile> = {
     name: '蕾娜',
     start: { lives: 4, fireRange: 1, maxBombs: 2, speedLevel: 0 },
     caps:  { lives: 5, fireRange: 5, maxBombs: 8, speedLevel: 2 },
-    ability: { id: 'carpet', name: '地毯轟炸', desc: '身邊十字範圍瞬間放下多顆炸彈', cooldownMs: 12000 },
+    ability: { id: 'detonate', name: '遙控起爆', desc: '立即引爆自己放置的所有炸彈', cooldownMs: 9000 },
   },
   mira: {
     id: 'mira',

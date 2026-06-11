@@ -39,8 +39,8 @@ export class HudView {
     this.scoreText = new Text({ text: 'SCORE 0', style: style(10, 0xffd23f) });
     this.powerText = new Text({ text: '', style: style(9, 0xc15cff) });
 
-    // Ability icon sprite — starts with carpet texture as placeholder
-    this.abilityIcon = new Sprite(textures.abCarpet);
+    // Ability icon sprite — placeholder texture; render() swaps per character
+    this.abilityIcon = new Sprite(textures.abDetonate);
     this.abilityIcon.width = 40;
     this.abilityIcon.height = 40;
 
@@ -107,7 +107,7 @@ export class HudView {
     this.abilityContainer.visible = true;
 
     // Swap icon texture to match current character's ability
-    const iconTex = abilityId === 'carpet'  ? this.textures.abCarpet
+    const iconTex = abilityId === 'detonate' ? this.textures.abDetonate
                   : abilityId === 'inferno' ? this.textures.abInferno
                   : abilityId === 'blink'   ? this.textures.abBlink
                   :                           this.textures.abBulwark;

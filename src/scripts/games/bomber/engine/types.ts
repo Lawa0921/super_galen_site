@@ -4,7 +4,7 @@ export interface Vec { x: number; y: number; }
 export type Dir = 'up' | 'down' | 'left' | 'right';
 export type PowerUpKind = 'fire' | 'bomb' | 'speed' | 'shield' | 'heart';
 export type CharacterId = 'lena' | 'mira' | 'aya' | 'rosa';
-export type AbilityId = 'carpet' | 'inferno' | 'blink' | 'bulwark';
+export type AbilityId = 'detonate' | 'inferno' | 'blink' | 'bulwark';
 
 export interface CharacterStats { lives: number; fireRange: number; maxBombs: number; speedLevel: number; }
 export interface AbilityDef { id: AbilityId; name: string; desc: string; cooldownMs: number; }

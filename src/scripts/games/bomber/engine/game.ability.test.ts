@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { BomberGame } from './game';
 import { getCharacter } from './characters';
+import { SPEED_MS } from './constants';
 
 // ---------------------------------------------------------------------------
 // default (no character) — ability is a no-op
@@ -105,44 +106,43 @@ describe('BomberGame: rosa — bulwark', () => {
 });
 
 // ---------------------------------------------------------------------------
-// lena — carpet (bomb grid around player)
+// lena — detonate（遙控起爆：立即引爆所有自己放置的炸彈）
 // ---------------------------------------------------------------------------
-describe('BomberGame: lena — carpet', () => {
-  it('input("ability") increases bombs.length', () => {
+describe('BomberGame: lena — detonate', () => {
+  it('引爆所有自己放的炸彈（立即出現爆風），且玩家有短暫防護不受傷', () => {
     const g = new BomberGame({ seed: 1, character: 'lena' });
-    const before = g.getState().bombs.length;
+    const lives0 = g.getState().player.lives;
+    // 放一顆彈在腳下，走開一格，再放第二顆
+    g.input('bomb');
+    g.setHeld('right', true);
+    g.step(SPEED_MS[0]);
+    g.setHeld('right', false);
+    g.input('bomb');
+    expect(g.getState().bombs.length).toBe(2);
+    // 遙控起爆：當下 tick 引爆（不等引信）
     g.input('ability');
-    expect(g.getState().bombs.length).toBeGreaterThan(before);
+    g.step(1);
+    const s = g.getState();
+    expect(s.bombs.length).toBe(0);            // 全部引爆
+    expect(s.blasts.length).toBeGreaterThan(0); // 爆風出現
+    expect(s.player.lives).toBe(lives0);        // 防護窗：站在彈旁不受傷
   });
 
-  it('bombs appear at walkable cells near player', () => {
+  it('場上沒有自己的彈：不發動、不消耗冷卻', () => {
     const g = new BomberGame({ seed: 1, character: 'lena' });
     g.input('ability');
-    const state = g.getState();
-    const { player, bombs, grid } = state;
-    // all placed bombs must be walkable (floor) cells
-    for (const bomb of bombs) {
-      expect(grid[bomb.y][bomb.x]).toBe('floor');
-    }
-    // player's cell should have a bomb
-    expect(bombs.some((b) => b.x === player.x && b.y === player.y)).toBe(true);
+    expect(g.getState().abilityCooldownMs).toBe(0); // 冷卻未消耗
+    expect(g.drainEvents().some((e) => e.kind === 'ability')).toBe(false);
   });
 
-  it('emits bombPlaced events for each carpet bomb', () => {
+  it('emits ability event with id "detonate"', () => {
     const g = new BomberGame({ seed: 1, character: 'lena' });
-    g.input('ability');
-    const events = g.drainEvents();
-    const bombEvents = events.filter((e) => e.kind === 'bombPlaced');
-    expect(bombEvents.length).toBeGreaterThan(0);
-  });
-
-  it('emits ability event with id "carpet"', () => {
-    const g = new BomberGame({ seed: 1, character: 'lena' });
+    g.input('bomb');
     g.input('ability');
     const events = g.drainEvents();
     const abilityEvt = events.find((e) => e.kind === 'ability');
     expect(abilityEvt).toBeDefined();
-    expect((abilityEvt as { kind: 'ability'; id: string }).id).toBe('carpet');
+    expect((abilityEvt as { kind: 'ability'; id: string }).id).toBe('detonate');
   });
 });
 

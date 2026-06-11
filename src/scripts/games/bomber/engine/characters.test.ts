@@ -136,11 +136,11 @@ describe('CHARACTERS / getCharacter', () => {
     }
   });
 
-  it('lena の ability は carpet / 地毯轟炸 / cooldown 12000ms', () => {
+  it('lena の ability は detonate / 遙控起爆 / cooldown 9000ms', () => {
     const lena = getCharacter('lena');
-    expect(lena.ability.id).toBe('carpet');
-    expect(lena.ability.name).toBe('地毯轟炸');
-    expect(lena.ability.cooldownMs).toBe(12000);
+    expect(lena.ability.id).toBe('detonate');
+    expect(lena.ability.name).toBe('遙控起爆');
+    expect(lena.ability.cooldownMs).toBe(9000);
   });
 
   it('mira の ability は inferno / 爆炎術 / cooldown 14000ms', () => {

@@ -5,7 +5,7 @@ const WALK_LENA_URL  = '/assets/games/bomber/walk-lena.png';
 const WALK_MIRA_URL  = '/assets/games/bomber/walk-mira.png';
 const WALK_AYA_URL   = '/assets/games/bomber/walk-aya.png';
 const WALK_ROSA_URL  = '/assets/games/bomber/walk-rosa.png';
-const AB_CARPET_URL  = '/assets/games/bomber/ui/ab-carpet.png';
+const AB_DETONATE_URL = '/assets/games/bomber/ui/ab-detonate.png';
 const AB_INFERNO_URL = '/assets/games/bomber/ui/ab-inferno.png';
 const AB_BLINK_URL   = '/assets/games/bomber/ui/ab-blink.png';
 const AB_BULWARK_URL = '/assets/games/bomber/ui/ab-bulwark.png';
@@ -63,7 +63,7 @@ export interface BomberTextures {
   /** Full 192×256 walk sheet for Rosa (3 cols × 4 rows of 64×64 frames). */
   walkRosa:    Texture;
   /** Ability icon textures (48×48 transparent PNGs, nearest-scale). */
-  abCarpet:    Texture;
+  abDetonate:  Texture;
   abInferno:   Texture;
   abBlink:     Texture;
   abBulwark:   Texture;
@@ -93,7 +93,7 @@ export interface BomberTextures {
  */
 export async function loadBomberTextures(): Promise<BomberTextures> {
   const [sheet, walkLenaTex, walkMiraTex, walkAyaTex, walkRosaTex,
-         abCarpetTex, abInfernoTex, abBlinkTex, abBulwarkTex,
+         abDetonateTex, abInfernoTex, abBlinkTex, abBulwarkTex,
          bombLenaTex, bombMiraTex, bombAyaTex, bombRosaTex, explosionTex,
          enemyWanderTex, enemyChaserTex, enemyGhostTex, enemyDasherTex,
          tilesCatTex, tilesForgeTex, enemyMimicTex, enemyTankTex,
@@ -104,7 +104,7 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
     Assets.load(WALK_AYA_URL)  as Promise<Texture>,
     Assets.load(WALK_ROSA_URL) as Promise<Texture>,
-    Assets.load(AB_CARPET_URL)  as Promise<Texture>,
+    Assets.load(AB_DETONATE_URL) as Promise<Texture>,
     Assets.load(AB_INFERNO_URL) as Promise<Texture>,
     Assets.load(AB_BLINK_URL)   as Promise<Texture>,
     Assets.load(AB_BULWARK_URL) as Promise<Texture>,
@@ -138,7 +138,7 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   walkMiraTex.source.scaleMode = 'nearest';
   walkAyaTex.source.scaleMode  = 'nearest';
   walkRosaTex.source.scaleMode = 'nearest';
-  abCarpetTex.source.scaleMode  = 'nearest';
+  abDetonateTex.source.scaleMode = 'nearest';
   abInfernoTex.source.scaleMode = 'nearest';
   abBlinkTex.source.scaleMode   = 'nearest';
   abBulwarkTex.source.scaleMode = 'nearest';
@@ -217,7 +217,7 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     walkAya:     walkAyaTex,
     walkRosa:    walkRosaTex,
     // ability icons
-    abCarpet:    abCarpetTex,
+    abDetonate:  abDetonateTex,
     abInferno:   abInfernoTex,
     abBlink:     abBlinkTex,
     abBulwark:   abBulwarkTex,

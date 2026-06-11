@@ -66,7 +66,7 @@ interface GhostFx {
 
 /** Per-ability accent colours (match the select-screen auras). */
 const ABILITY_COLOR: Record<AbilityId, number> = {
-  carpet:  0xffb347,
+  detonate: 0xffb347,
   inferno: 0xff5a3c,
   blink:   0x36e0c0,
   bulwark: 0x6b9fd0,
@@ -136,14 +136,14 @@ export class EntityView {
     };
     const character = characterMap[state.character] ?? 'lena';
 
-    if (id === 'carpet') {
-      // 中心＋十字落彈點各一圈小震波
-      const spots = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
-      for (const [dx, dy] of spots) {
+    if (id === 'detonate') {
+      // 每顆被引爆的彈位各一圈警示震波
+      for (const b of state.bombs) {
+        if (b.owner) continue;
         this.rings.push({
-          gx: p.x + dx, gy: p.y + dy,
-          ageMs: 0, ttlMs: 380,
-          fromR: 0.1, toR: 0.62, color,
+          gx: b.x, gy: b.y,
+          ageMs: 0, ttlMs: 360,
+          fromR: 0.15, toR: 0.8, color,
         });
       }
     } else if (id === 'inferno') {
