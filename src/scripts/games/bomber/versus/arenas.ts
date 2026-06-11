@@ -51,11 +51,11 @@ export const ARENAS: ArenaDef[] = [
   },
   {
     // 2 MOLTEN WORKS 熔火工坊：中央十字熱通道
-    // 出生點鄰側一格保留 '.'，確保 seed 任意值下均有地板可起步
+    // 出生點右/左鄰格為字面 '.'，任意 seed 下均有地板可起步；左右鏡像對稱
     id: 2, name: 'MOLTEN WORKS', nameZh: '熔火工坊', theme: 2,
     rows: [
       'WWWWWWWWWWWWW',
-      'W1?C..W..C.2W',
+      'W1.C..W..C.2W',
       'W?W?W.W.W?W?W',
       'WC?.......?CW',
       'W.W?W...W?W.W',
@@ -63,7 +63,7 @@ export const ARENAS: ArenaDef[] = [
       'W.W?W...W?W.W',
       'WC?.......?CW',
       'W?W?W.W.W?W?W',
-      'W3?C..W..C.4W',
+      'W3.C..W..C.4W',
       'WWWWWWWWWWWWW',
     ],
   },
@@ -103,11 +103,11 @@ export const ARENAS: ArenaDef[] = [
   },
   {
     // 5 TOXIC FEN 毒霧沼澤：蜿蜒泥路、密箱
-    // 出生點旁 x=2 / x=10 改為 '.' 保證起步淨空
+    // 出生點左右鄰格均為字面 '.'，任意 seed 下均有地板可起步；左右鏡像對稱
     id: 5, name: 'TOXIC FEN', nameZh: '毒霧沼澤', theme: 5,
     rows: [
       'WWWWWWWWWWWWW',
-      'W1.CC?.?CC?2W',
+      'W1.CC?.?CC.2W',
       'W?W.WCWCW.W?W',
       'WCC?..?..?CCW',
       'W.WCW?W?WCW.W',
@@ -115,7 +115,7 @@ export const ARENAS: ArenaDef[] = [
       'W.WCW?W?WCW.W',
       'WCC?..?..?CCW',
       'W?W.WCWCW.W?W',
-      'W3.CC?.?CC?4W',
+      'W3.CC?.?CC.4W',
       'WWWWWWWWWWWWW',
     ],
   },

@@ -39,13 +39,31 @@ describe('arenas', () => {
     }
   });
 
-  it('出生點四周 1 格淨空（floor，可起步）', () => {
+  it('出生點淨空：所有 seed 下每個出生點都至少一個 floor 鄰格', () => {
     for (const a of ARENAS) {
-      const { grid, spawns } = parseArena(a, 4, 7);
-      for (const s of spawns) {
-        expect(grid[s.y][s.x]).toBe('floor');
-        const neighbors = [grid[s.y][s.x-1], grid[s.y][s.x+1], grid[s.y-1]?.[s.x], grid[s.y+1]?.[s.x]];
-        expect(neighbors.filter((t) => t === 'floor').length).toBeGreaterThanOrEqual(1);
+      // 模板層不變量：每個出生點至少一個字面 '.' 鄰格 → 任何 seed 都成立
+      for (let seed = 1; seed <= 50; seed++) {
+        const { grid, spawns } = parseArena(a, 4, seed);
+        for (const s of spawns) {
+          expect(grid[s.y][s.x]).toBe('floor');
+          const neighbors = [grid[s.y][s.x-1], grid[s.y][s.x+1], grid[s.y-1]?.[s.x], grid[s.y+1]?.[s.x]];
+          expect(
+            neighbors.filter((t) => t === 'floor').length,
+            `${a.name} spawn (${s.x},${s.y}) seed ${seed}`,
+          ).toBeGreaterThanOrEqual(1);
+        }
+      }
+    }
+  });
+
+  it('模板左右鏡像對稱（出生位公平）', () => {
+    const mirrorCh = (ch: string): string =>
+      ch === '1' ? '2' : ch === '2' ? '1' : ch === '3' ? '4' : ch === '4' ? '3' : ch;
+    for (const a of ARENAS) {
+      for (let y = 0; y < a.rows.length; y++) {
+        const row = a.rows[y];
+        const mirrored = [...row].reverse().map(mirrorCh).join('');
+        expect(mirrored, `${a.name} row ${y}`).toBe(row);
       }
     }
   });
