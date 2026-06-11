@@ -1,17 +1,21 @@
-import { Text } from 'pixi.js';
+import { Assets, Text, type Texture } from 'pixi.js';
 import { TetrisMatch, type Side } from '../engine/match';
 import { getCells } from '../engine/piece';
+import { applySkill, resetSlow } from '../engine/items';
+import { SoloRun, type SkillId } from '../engine/run';
 import { KEYMAP_1P } from '../input/keymap';
 import { InputController } from '../input/InputController';
 import { AiController, type Difficulty } from '../ai/AiController';
 import { PixiStage } from './PixiStage';
 import { BoardView } from './BoardView';
 import { HudView } from './HudView';
+import { ItemHud } from './ItemHud';
 import { Effects } from './Effects';
 import { GarbageMeter } from './GarbageMeter';
 import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from './assets';
-import { pieceTint } from './layout';
+import { resolveSkin } from './skins';
+import { pieceTint, setSkinTints } from './layout';
 import { computeMatchLayout, P1_TINT, P2_TINT, type MatchLayout } from './matchLayout';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 
@@ -30,10 +34,13 @@ export interface AiHandle {
 export async function startAi(
   canvas: HTMLCanvasElement,
   difficulty: Difficulty = 'normal',
-  opts: { onEnd?: (winner: Side) => void } = {},
+  opts: { onEnd?: (winner: Side) => void; skinId?: string; skill?: SkillId | null } = {},
 ): Promise<AiHandle> {
   const stage = await PixiStage.create(canvas);
-  const tex = await loadGameTextures();
+  // 等級守門在 UI 層（T4）做；渲染層信任呼叫端、只負責套用皮膚。
+  const skin = resolveSkin(opts.skinId ?? 'neon', Number.POSITIVE_INFINITY);
+  const tex = await loadGameTextures(skin.id);
+  setSkinTints(skin.tints ?? null);
   stage.setBackground(tex.bg);
   try {
     await document.fonts.load('14px "Press Start 2P"');
@@ -44,6 +51,13 @@ export async function startAi(
   const boardB = new BoardView(stage.bgLayer, stage.playLayer, tex.block, tex.frameWell, { frameTint: P2_TINT });
   const hudA = new HudView(stage.hudLayer, tex.block, 3);
   const hudB = new HudView(stage.hudLayer, tex.block, 3);
+  // 玩家（A）帶技能才建能量 HUD；vs-AI HUD 欄較擠 → 條高 3.2 格
+  const skill = opts.skill ?? null;
+  const itemHud = skill ? await ItemHud.create(stage.hudLayer, skill, 3.2) : null;
+  // 技能發動 VFX 貼圖（只載帶入的那顆；無技能不載）
+  const skillFxTex = skill
+    ? ((await Assets.load(`/assets/games/tetris/fx/skill-${skill}.webp`)) as Texture)
+    : null;
   const fxA = new Effects(stage.fxLayer, { spark: tex.spark, ring: tex.ring, glow: tex.glow });
   const fxB = new Effects(stage.fxLayer, { spark: tex.spark, ring: tex.ring, glow: tex.glow });
   const meter = new GarbageMeter(stage.playLayer);
@@ -64,6 +78,8 @@ export async function startAi(
     boardB.setLayout(lay.cellSize, lay.b.origin);
     hudA.setLayout(lay.a.hudAnchor, lay.cellSize);
     hudB.setLayout(lay.b.hudAnchor, lay.cellSize);
+    // 能量條放 A 側 HUD 欄右半（HOLD/NEXT 內容寬約 2.2 格，2.8 起不重疊）
+    itemHud?.setLayout({ x: lay.a.hudAnchor.x + lay.cellSize * 2.8, y: lay.a.hudAnchor.y }, lay.cellSize);
     fxA.setLayout(lay.cellSize, lay.a.origin);
     fxB.setLayout(lay.cellSize, lay.b.origin);
     meter.setLayout(lay.meter);
@@ -81,7 +97,10 @@ export async function startAi(
     return { x: o.x, y: o.y, w: lay.cellSize * BOARD_WIDTH, h: lay.cellSize * VISIBLE_HEIGHT };
   };
 
-  let match = new TetrisMatch({ seed: Math.floor(Math.random() * 1_000_000_000) });
+  let seed = Math.floor(Math.random() * 1_000_000_000);
+  let match = new TetrisMatch({ seed });
+  let run = new SoloRun({ skill, seed, mode: 'ai' }); // 玩家（A）側能量/技能；AI 不用技能（v1）
+  let slowLeftMs = 0; // 時之沙剩餘（tick dt 倒數 → 暫停相容）
   // A = 人類；B = AI（透過相同的 match.input API）
   const inA = new InputController((a) => match.input('A', a), { das: 150, arr: 35 });
   let ai = new AiController((act) => match.input('B', act), () => match.b.getState(), difficulty);
@@ -92,7 +111,10 @@ export async function startAi(
   let paused = false;
 
   function reset(): void {
-    match = new TetrisMatch({ seed: Math.floor(Math.random() * 1_000_000_000) });
+    seed = Math.floor(Math.random() * 1_000_000_000);
+    match = new TetrisMatch({ seed }); // 新 match 的 gravityScale/shield 全新 → slow/盾自然重置
+    run = new SoloRun({ skill, seed, mode: 'ai' });
+    slowLeftMs = 0;
     ai = new AiController((act) => match.input('B', act), () => match.b.getState(), difficulty);
     introMs = 2400;
     started = false;
@@ -101,9 +123,46 @@ export async function startAi(
     banner.visible = true;
   }
 
+  /** KeyV：玩家側發動技能（shield 需 match context；slow 倒數走 tick dt）。 */
+  function activateSkill(): void {
+    if (!run.canActivate()) return;
+    const act = run.activate();
+    if (!act) return;
+    if (skillFxTex) {
+      const c = boardCenter('A'); // 玩家側盤面中心（shield 也在玩家側）
+      fxA.skillBurst(skillFxTex, c.x, c.y);
+    }
+    if (act.skill === 'shield') {
+      applySkill({ game: match.a, match, side: 'A' }, 'shield', { shieldRows: act.shieldRows });
+      fxA.popup('SHIELD!', 0x4dff88, true);
+      sound.attack(8);
+      return;
+    }
+    applySkill({ game: match.a }, act.skill, { bombRows: act.bombRows });
+    if (act.skill === 'bomb') {
+      stage.shake(10);
+      fxA.popup('BOMB!', 0xff9a3c, true);
+      sound.lineClear(4, true);
+    } else if (act.skill === 'slow') {
+      slowLeftMs = act.slowMs;
+      fxA.popup('SLOW!', 0x36e6ff, true);
+      sound.levelUp();
+    } else if (act.skill === 'reroll') {
+      fxA.popup('REROLL!', 0xc15cff, true);
+      sound.hold();
+    }
+  }
+
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.code === 'KeyM') { e.preventDefault(); sound.ensure(); sound.toggle(); return; }
     if (paused) return; // 暫停時不吃操作鍵
+    if (e.code === 'KeyV') { // 技能發動（KeyC 已被 hold 佔用）
+      e.preventDefault();
+      sound.ensure();
+      if (e.repeat || !started || match.phase !== 'playing') return;
+      activateSkill();
+      return;
+    }
     const a = KEYMAP_1P[e.code];
     if (!a) return;
     e.preventDefault();
@@ -130,6 +189,7 @@ export async function startAi(
         fxFor(ev.side).lockBurst(getCells(ev.piece), pieceTint(ev.piece.type));
         sound.lock();
       } else if (ev.kind === 'lineClear') {
+        if (ev.side === 'A') run.onLineClear(ev.count, ev.combo, ev.tSpin !== 'none'); // 只有玩家側充能
         stage.shake(3 + ev.count * 2);
         fxFor(ev.side).lineClear(ev.rows, 0x9fefff);
         sound.lineClear(ev.count, ev.tSpin !== 'none' || ev.count >= 4);
@@ -168,6 +228,14 @@ export async function startAi(
       ai.update(dt);
       match.step(dt);
       handleEvents();
+      // 時之沙倒數（dt 累計 → 暫停時不倒數）
+      if (slowLeftMs > 0) {
+        slowLeftMs -= dt;
+        if (slowLeftMs <= 0) {
+          slowLeftMs = 0;
+          resetSlow(match.a);
+        }
+      }
     } else if (match.phase === 'result' && !resultShown) {
       resultShown = true;
       banner.text = match.winner === 'A' ? 'YOU WIN' : 'AI WINS';
@@ -182,6 +250,7 @@ export async function startAi(
     boardB.render(match.b.getState());
     hudA.render(match.a.getState());
     hudB.render(match.b.getState());
+    itemHud?.render(run.energy, run.energyRequired, run.canActivate(), dt);
     meter.render(match.pendingGarbage('A'), match.pendingGarbage('B'), dt);
     fxA.update(dt);
     fxB.update(dt);
@@ -192,7 +261,10 @@ export async function startAi(
   (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = {
     get match() { return match; },
     get ai() { return ai; },
+    get run() { return run; },
     stage, fxA, fxB,
+    /** e2e 鉤子：vs-AI 不出 perk（mode:'ai' 的 onLevelUp 回 null）→ 安全 no-op。 */
+    triggerLevelUp() { run.onLevelUp(); },
   };
 
   return {

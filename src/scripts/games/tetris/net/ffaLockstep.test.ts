@@ -191,3 +191,188 @@ describe('FfaLockstep N 人鎖步', () => {
     expect(JSON.stringify(ls.getMatch().getPlayerState('P1'))).toBe(before);
   });
 });
+
+describe('FfaLockstep.scheduleForfeit 幀排程確定性棄權', () => {
+  /**
+   * 標準中離場景：4 端同 hub 同 seed。
+   * P3 只 tick 28 次（送出幀 3..30；加上預填 0..2 → 幀 0..30 有 P3 輸入），
+   * 其餘三端 tick 30 次（送到幀 32）→ 全端 confirmedFrame 卡在 31（缺 P3 幀 31）。
+   * host 廣播的 F = 中離者最後輸入幀(30) + 1 = 31。
+   */
+  function buildStuckAt31(
+    seed: number,
+    p3LeftAtTick = -1,
+  ): { playerIds: string[]; nodes: FfaLockstep[] } {
+    const playerIds = ['P0', 'P1', 'P2', 'P3'];
+    const { nodes } = buildNodes(playerIds, seed);
+    for (let i = 0; i < 28; i++) {
+      for (const node of nodes) {
+        const a: InputAction[] = node.localId === 'P3' && i === p3LeftAtTick ? ['left'] : [];
+        node.tick(a);
+      }
+    }
+    // P3 中離：不再 tick；其餘三端再跑 2 輪
+    for (let i = 28; i < 30; i++) {
+      for (const node of nodes) {
+        if (node.localId === 'P3') continue;
+        node.tick([]);
+      }
+    }
+    return { playerIds, nodes };
+  }
+
+  /** 中離後續行的三個存活端（不含 P3 端）。 */
+  function survivors(nodes: FfaLockstep[]): FfaLockstep[] {
+    return nodes.filter((n) => n.localId !== 'P3');
+  }
+
+  it('核心續行：P3 停 tick → 三端 scheduleForfeit(P3,31) → 幀 31 判敗（placement=4）、續行到 victory、三端狀態與名次一致', () => {
+    const { nodes } = buildStuckAt31(20260611);
+    const alive = survivors(nodes);
+
+    // 卡幀前提：全端 confirmedFrame 卡在 31（缺 P3 幀 31 輸入）
+    for (const node of alive) expect(node.confirmedFrame).toBe(31);
+
+    // host 廣播後各存活端排程（P3 端已離線不再 tick，不需排程）
+    for (const node of alive) node.scheduleForfeit('P3', 31);
+
+    // 續行幾輪：P3 應在幀 31 被判敗、confirmedFrame 恢復推進
+    for (let i = 0; i < 10; i++) for (const node of alive) node.tick([]);
+    for (const node of alive) {
+      expect(node.getMatch().getPlacement().get('P3')).toBe(4);
+      expect(node.confirmedFrame).toBeGreaterThan(31);
+    }
+    const cfAfter = alive[0].confirmedFrame;
+
+    // 驅動到 victory：P0 狂 hardDrop 先死、其餘隨重力堆死
+    let f = 0;
+    for (; f < 20000 && alive[0].getMatch().phase === 'playing'; f++) {
+      for (const node of alive) {
+        node.tick(node.localId === 'P0' && f % 2 === 0 ? ['hardDrop'] : []);
+      }
+    }
+    expect(alive[0].getMatch().phase).toBe('result');
+    expect(alive[0].confirmedFrame).toBeGreaterThan(cfAfter); // 持續推進過
+
+    // 三端 standings 一致且 P3 墊底
+    const standings = alive[0].getStandings();
+    expect(standings.length).toBe(4);
+    expect(standings[3]).toBe('P3');
+    const ref = stateFingerprint(alive[0]);
+    for (const node of alive) {
+      expect(node.getStandings()).toEqual(standings);
+      expect(stateFingerprint(node)).toBe(ref);
+    }
+  });
+
+  it('f 之前的輸入照常生效：P3 在中離前的 left 反映在其盤面、且 replay events 仍記錄', () => {
+    // 對照組：完全相同的 tick 安排但 P3 沒按 left
+    const withLeft = buildStuckAt31(777, 5);
+    const noLeft = buildStuckAt31(777);
+
+    // 兩局都卡在 31（幀 0..30 已模擬）→ P3 的 left（tick5 → 幀 8）已套用，盤面應不同
+    const p3With = JSON.stringify(withLeft.nodes[0].getMatch().getPlayerState('P3'));
+    const p3Without = JSON.stringify(noLeft.nodes[0].getMatch().getPlayerState('P3'));
+    expect(p3With).not.toBe(p3Without);
+
+    // 排程棄權後，replay events 仍含 P3 中離前的輸入（幀 8 = tick5 + inputDelay3）
+    const alive = survivors(withLeft.nodes);
+    for (const node of alive) node.scheduleForfeit('P3', 31);
+    for (let i = 0; i < 5; i++) for (const node of alive) node.tick([]);
+    const replay = alive[0].getReplay();
+    expect(replay.events).toContainEqual({ f: 8, p: 'P3', a: ['left'] });
+  });
+
+  it('scheduleForfeit 對未知 p / NaN / 負數 / Infinity → 忽略不丟例外、無人被判敗、forfeits 為空陣列', () => {
+    const playerIds = ['P0', 'P1', 'P2', 'P3'];
+    const { nodes } = buildNodes(playerIds, 42);
+    const node = nodes[0];
+
+    expect(() => node.scheduleForfeit('ZZ', 10)).not.toThrow();
+    expect(() => node.scheduleForfeit('P1', NaN)).not.toThrow();
+    expect(() => node.scheduleForfeit('P1', -5)).not.toThrow();
+    expect(() => node.scheduleForfeit('P1', Infinity)).not.toThrow();
+
+    for (let i = 0; i < 30; i++) for (const n of nodes) n.tick([]);
+    expect(node.getMatch().getPlacement().size).toBe(0);
+    expect(node.getReplay().forfeits).toEqual([]);
+  });
+
+  it('重複 schedule 取最早 f（先 50 後 31 → 在 31 套用；先 31 後 50 亦同）', () => {
+    // 先 50 後 31：若沒取 min（保留 50），P3 缺幀 31 輸入會永遠卡住、forfeit 永不套用
+    const a = buildStuckAt31(8);
+    const aliveA = survivors(a.nodes);
+    for (const node of aliveA) {
+      node.scheduleForfeit('P3', 50);
+      node.scheduleForfeit('P3', 31);
+    }
+    for (let i = 0; i < 10; i++) for (const node of aliveA) node.tick([]);
+    expect(aliveA[0].getMatch().getPlacement().get('P3')).toBe(4);
+    expect(aliveA[0].getReplay().forfeits).toEqual([{ f: 31, p: 'P3' }]);
+
+    // 先 31 後 50：後到的較晚 f 不得覆蓋較早的
+    const b = buildStuckAt31(8);
+    const aliveB = survivors(b.nodes);
+    for (const node of aliveB) {
+      node.scheduleForfeit('P3', 31);
+      node.scheduleForfeit('P3', 50);
+    }
+    for (let i = 0; i < 10; i++) for (const node of aliveB) node.tick([]);
+    expect(aliveB[0].getMatch().getPlacement().get('P3')).toBe(4);
+    expect(aliveB[0].getReplay().forfeits).toEqual([{ f: 31, p: 'P3' }]);
+  });
+
+  it('已 topout 者 schedule → no-op（名次不變、forfeits 不記錄、對局續行）', () => {
+    const playerIds = ['P0', 'P1', 'P2', 'P3'];
+    const { nodes } = buildNodes(playerIds, 7);
+
+    // P0 狂 hardDrop 到 topout
+    let f = 0;
+    for (; f < 20000 && !nodes[0].getMatch().getPlacement().has('P0'); f++) {
+      for (const node of nodes) {
+        node.tick(node.localId === 'P0' && f % 2 === 0 ? ['hardDrop'] : []);
+      }
+    }
+    const placementBefore = nodes[0].getMatch().getPlacement().get('P0');
+    expect(placementBefore).toBe(4);
+
+    for (const node of nodes) node.scheduleForfeit('P0', node.confirmedFrame + 5);
+    for (let i = 0; i < 30; i++) for (const node of nodes) node.tick([]);
+
+    for (const node of nodes) {
+      expect(node.getMatch().getPlacement().get('P0')).toBe(placementBefore);
+      expect(node.getReplay().forfeits).toEqual([]);
+    }
+    // 對局仍正常（沒因排程壞掉）
+    const ref = stateFingerprint(nodes[0]);
+    for (const node of nodes) expect(stateFingerprint(node)).toBe(ref);
+  });
+
+  it('getReplay().forfeits 含實際套用幀 {f:31, p:P3}（各存活端一致）', () => {
+    const { nodes } = buildStuckAt31(13);
+    const alive = survivors(nodes);
+    for (const node of alive) node.scheduleForfeit('P3', 31);
+    for (let i = 0; i < 10; i++) for (const node of alive) node.tick([]);
+    for (const node of alive) {
+      expect(node.getReplay().forfeits).toEqual([{ f: 31, p: 'P3' }]);
+    }
+  });
+
+  it('遲到的 forfeit（f 小於目前 simFrame）→ 下一次 advance 立即套用、記實際套用幀', () => {
+    const { nodes } = buildStuckAt31(99);
+    const alive = survivors(nodes);
+    // 全端卡在 simFrame=31，排程一個早已過去的幀 f=5
+    for (const node of alive) expect(node.confirmedFrame).toBe(31);
+    for (const node of alive) node.scheduleForfeit('P3', 5);
+    for (let i = 0; i < 10; i++) for (const node of alive) node.tick([]);
+    for (const node of alive) {
+      expect(node.getMatch().getPlacement().get('P3')).toBe(4);
+      // 記實際套用幀（31），不是排程的 5
+      expect(node.getReplay().forfeits).toEqual([{ f: 31, p: 'P3' }]);
+      expect(node.confirmedFrame).toBeGreaterThan(31);
+    }
+    // 存活端狀態一致
+    const ref = stateFingerprint(alive[0]);
+    for (const node of alive) expect(stateFingerprint(node)).toBe(ref);
+  });
+});

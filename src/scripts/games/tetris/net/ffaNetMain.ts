@@ -1,11 +1,14 @@
+import { Text } from 'pixi.js';
 import { type InputAction } from '../engine/game';
 import { KEYMAP_1P } from '../input/keymap';
 import { InputController } from '../input/InputController';
 import { PixiStage } from '../render/PixiStage';
 import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from '../render/assets';
+import { getSelectedSkin, resolveSkin } from '../render/skins';
+import { setSkinTints } from '../render/layout';
 import { FfaBoards } from '../render/FfaBoards';
-import { FfaLockstep, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
+import { FfaLockstep, INPUT_DELAY, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
 import type { FfaReplay } from './ffaReplay';
 import { FfaHubTransport, FfaSpokeTransport, type RelayChannel } from './ffaTransport';
 import { createRoom as realCreateRoom, putSlot as realPutSlot, getSlot as realGetSlot, pollSlot as realPollSlot } from './signalClient';
@@ -470,6 +473,8 @@ export interface ChannelBacking {
   send(data: string): void;
   onMessage(cb: (data: string) => void): void;
   readonly isOpen: boolean;
+  /** 可選：底層 channel 關閉通知（WebRtcTransport.onClose）→ 中離 close 快速路徑。 */
+  onClose?(cb: () => void): void;
 }
 
 /**
@@ -477,20 +482,22 @@ export interface ChannelBacking {
  *  - send(raw) → backing.send(raw)
  *  - open → backing.isOpen
  *  - onmessage setter → 掛到 backing.onMessage（FfaHub/Spoke 會設定此 setter）
+ *  - onclose 可賦值屬性 → 由 backing.onClose 觸發（FfaHub/Spoke 以 `'onclose' in ch`
+ *    判斷支援與否並掛上 close 處理 → 真 WebRTC 中離的秒級偵測路徑）
  *
  * 鐵則：onmessage 設定前到達的訊息進暫存佇列，設定當下立刻回放（保序）。
  * 避免 channel 開啟與設定 onmessage 之間的空檔丟失早到的 ffa-init / 對手幀。
  */
 export function wrapChannel(
   backing: ChannelBacking,
-): RelayChannel & { onmessage: ((raw: string) => void) | null } {
+): RelayChannel & { onmessage: ((raw: string) => void) | null; onclose: (() => void) | null } {
   let cb: ((raw: string) => void) | null = null;
   const queue: string[] = [];
   backing.onMessage((d) => {
     if (cb) cb(d);
     else queue.push(d);
   });
-  return {
+  const wrapped = {
     send: (raw: string) => backing.send(raw),
     get open() { return backing.isOpen; },
     get onmessage() { return cb; },
@@ -498,7 +505,10 @@ export function wrapChannel(
       cb = fn;
       if (fn) while (queue.length) fn(queue.shift()!);
     },
+    onclose: null as (() => void) | null,
   };
+  backing.onClose?.(() => wrapped.onclose?.());
+  return wrapped;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -528,6 +538,194 @@ export function takeoverTransport(underlying: FfaLockstepTransport): FfaLockstep
       while (queue.length) cb(queue.shift()!);
     },
   };
+}
+
+/**
+ * 在 underlying transport 的收訊路徑插入一個 tap（觀測不消費）。
+ * host 端用來記錄每 guest 的最後中繼幀（FfaForfeitController.noteFrame），
+ * 不影響訊息往 lockstep 的轉發。
+ */
+export function tapFrames(
+  underlying: FfaLockstepTransport,
+  tap: (m: FfaFrameMsg) => void,
+): FfaLockstepTransport {
+  return {
+    send: (m) => underlying.send(m),
+    onMessage: (cb) => underlying.onMessage((m) => { tap(m); cb(m); }),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 中離續行（Stage A）：host 偵測 → 廣播 ffa-forfeit → 各端 scheduleForfeit
+// ─────────────────────────────────────────────────────────────────────────
+
+/** host 判定 guest 靜默逾時的窗口（無任何訊息即視同中離）。 */
+export const SILENCE_TIMEOUT_MS = 10_000;
+/** host 端靜默檢查週期。 */
+const SILENCE_CHECK_INTERVAL_MS = 1_000;
+
+/**
+ * 純函式：回傳「now - lastMsgAt 嚴格大於 timeoutMs」的玩家 id（靜默逾時）。
+ *
+ * 簡化規則（刻意，不附加「其他頻道同期活躍」前提）：guest 靜默逾時即宣告。
+ * 理由：若是全域網路問題，host 自己也會被各 guest 透過 host 頻道 close 判離，
+ * 對局同樣中止——誤宣告的代價可接受；逾時值集中常數（SILENCE_TIMEOUT_MS）可調。
+ * N=2（僅一名 guest）情境因此不需要「另一頻道活躍」的特例。
+ */
+export function checkSilence(
+  lastMsgAt: Map<string, number>,
+  now: number,
+  timeoutMs: number,
+): string[] {
+  const out: string[] = [];
+  for (const [id, at] of lastMsgAt) {
+    if (now - at > timeoutMs) out.push(id);
+  }
+  return out;
+}
+
+/** 驗證控制訊息為合法 ffa-forfeit：p ∈ playerIds、f 有限非負數。畸形回 null。 */
+export function parseFfaForfeit(
+  msg: Record<string, unknown>,
+  playerIds: string[],
+): { p: string; f: number } | null {
+  if (msg.t !== 'ffa-forfeit') return null;
+  if (typeof msg.p !== 'string' || !playerIds.includes(msg.p)) return null;
+  if (typeof msg.f !== 'number' || !Number.isFinite(msg.f) || msg.f < 0) return null;
+  return { p: msg.p, f: msg.f };
+}
+
+/**
+ * Host 端中離宣告控制器（純邏輯，可注入 now 單測）。
+ *
+ * 職責：
+ *  - noteFrame：記錄每 guest 最後中繼幀（max f）與最後活動時間。
+ *  - declareForfeit：對未處理過的 guest 廣播 {t:'ffa-forfeit', p, f}；
+ *    F = max(lastFrame+1, INPUT_DELAY) ＝「所有端必然停滯的那一幀」：
+ *    缺 p 輸入時任何端都無法推進超過該幀，故 F 必可達（不死鎖）且
+ *    各端套用幀一致（確定性）。注意 F 不得取 confirmedFrame+1 ——
+ *    停滯後（confirmedFrame 已追平 lastFrame+1）宣告會得到不可達幀 → 全員凍結。
+ *    廣播走 hub.sendControl（會回灌自身 onControl）→ 排程統一由 onControl 路徑做，
+ *    host 不在此重複 scheduleForfeit。
+ *  - checkSilenceNow：靜默逾時偵測（規則見 checkSilence 註解）。
+ */
+export class FfaForfeitController {
+  private lastFrame = new Map<string, number>();
+  private lastMsgAt = new Map<string, number>();
+  private declared = new Set<string>();
+  private readonly guestIds: string[];
+  private readonly now: () => number;
+  private readonly timeoutMs: number;
+
+  constructor(private opts: {
+    /** channels[i] ↔ guestIds[i]（playerIds 去掉 host、依 slot 升序）。 */
+    guestIds: string[];
+    sendControl: (msg: Record<string, unknown>) => void;
+    now?: () => number;
+    timeoutMs?: number;
+  }) {
+    this.guestIds = [...opts.guestIds];
+    this.now = opts.now ?? Date.now;
+    this.timeoutMs = opts.timeoutMs ?? SILENCE_TIMEOUT_MS;
+    // 從建構當下起算：從未送過訊息的 guest 也會在 timeout 後被判離。
+    const t0 = this.now();
+    for (const id of this.guestIds) this.lastMsgAt.set(id, t0);
+  }
+
+  /** host 上層收到中繼幀時呼叫：更新該 guest 的最後幀號與活動時間。 */
+  noteFrame(msg: FfaFrameMsg): void {
+    if (!this.guestIds.includes(msg.p)) return; // 只追蹤 guest（host 自己的回灌幀略過）
+    if (this.declared.has(msg.p)) return;
+    this.lastFrame.set(msg.p, Math.max(this.lastFrame.get(msg.p) ?? 0, msg.f));
+    this.lastMsgAt.set(msg.p, this.now());
+  }
+
+  /** 宣告 guest p 中離：計算 F 並廣播；同 p 只宣告一次；未知 p 忽略。 */
+  declareForfeit(p: string): void {
+    if (this.declared.has(p)) return;
+    if (!this.guestIds.includes(p)) return;
+    this.declared.add(p);
+    this.lastMsgAt.delete(p); // 已宣告者不再做靜默檢查
+    // F = 全員停滯點：p 的最後輸入幀 +1；從未送幀則為 INPUT_DELAY（預填 0..delay-1 之後）。
+    const f = Math.max((this.lastFrame.get(p) ?? 0) + 1, INPUT_DELAY);
+    this.opts.sendControl({ t: 'ffa-forfeit', p, f });
+  }
+
+  /** channel idx 關閉（close 事件或 ffa-leave 快速路徑）→ 宣告對應 guest。 */
+  onChannelClose(idx: number): void {
+    const p = this.guestIds[idx];
+    if (p) this.declareForfeit(p);
+  }
+
+  /** 靜默逾時檢查：超時的 guest 全部宣告；回傳本次被宣告的 id（供測試觀測）。 */
+  checkSilenceNow(): string[] {
+    const ids = checkSilence(this.lastMsgAt, this.now(), this.timeoutMs);
+    for (const id of ids) this.declareForfeit(id);
+    return ids;
+  }
+}
+
+/** 排程棄權所需的 lockstep 最小形狀（FfaLockstep 子集；mock 友善）。 */
+export interface ForfeitLockstep {
+  scheduleForfeit(p: string, f: number): void;
+}
+
+/** 控制通道能力（FfaHubTransport / FfaSpokeTransport 的可選方法集合）。 */
+export interface FfaControlHooks {
+  sendControl?(msg: Record<string, unknown>): void;
+  onControl?(cb: (msg: Record<string, unknown>) => void): void;
+  /** hub（host）限定：某 guest channel 關閉。 */
+  onChannelClose?(cb: (idx: number) => void): void;
+  /** spoke（guest）限定：host channel 關閉。 */
+  onClose?(cb: () => void): void;
+}
+
+/**
+ * 中離續行接線（host + guest 共用入口）：
+ *  - 所有端：transport.onControl 收 ffa-forfeit（shape 驗證）→ lockstep.scheduleForfeit。
+ *  - guest 端：傳 onHostClose 時掛 transport.onClose（Stage A：host 離線＝對局中止）。
+ *  - host 端：傳 guestIds 時建 FfaForfeitController——掛 onChannelClose 偵測
+ *    （含 ffa-leave 快速路徑）＋啟動靜默逾時定時器。回傳 controller
+ *    （供呼叫端把中繼幀 tap 進 noteFrame）；非 host 回 null。
+ */
+export function wireFfaForfeit(opts: {
+  lockstep: ForfeitLockstep;
+  playerIds: string[];
+  transport: FfaLockstepTransport & FfaControlHooks;
+  /** host 端傳入（channels[i] ↔ guestIds[i]）；guest 端省略。 */
+  guestIds?: string[];
+  /** guest 端：host 頻道關閉回呼。 */
+  onHostClose?: () => void;
+  now?: () => number;
+  timeoutMs?: number;
+  /** 測試注入（避免真定時器）；預設 setInterval。 */
+  setIntervalFn?: (fn: () => void, ms: number) => unknown;
+}): FfaForfeitController | null {
+  const t = opts.transport;
+
+  // 所有端：收 host 廣播的 ffa-forfeit → 確定性排程（畸形忽略）。
+  t.onControl?.((msg) => {
+    const ff = parseFfaForfeit(msg, opts.playerIds);
+    if (ff) opts.lockstep.scheduleForfeit(ff.p, ff.f);
+  });
+
+  // guest 端：host 頻道 close → Stage A 中止路徑。
+  if (opts.onHostClose) t.onClose?.(opts.onHostClose);
+
+  // host 端：偵測 + 廣播。
+  if (!opts.guestIds || !t.sendControl) return null;
+  const sendControl = t.sendControl.bind(t);
+  const ctl = new FfaForfeitController({
+    guestIds: opts.guestIds,
+    sendControl,
+    now: opts.now,
+    timeoutMs: opts.timeoutMs,
+  });
+  t.onChannelClose?.((idx) => ctl.onChannelClose(idx));
+  const setIntervalFn = opts.setIntervalFn
+    ?? ((fn: () => void, ms: number) => setInterval(fn, ms));
+  setIntervalFn(() => ctl.checkSilenceNow(), SILENCE_CHECK_INTERVAL_MS);
+  return ctl;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -599,9 +797,20 @@ export interface RunFfaOpts {
   matchId: string;
   transport: FfaLockstepTransport;
   signMessage?: (msg: string) => Promise<string>;
+  /** host 端傳入（channels[i] ↔ guestIds[i]）→ 啟動中離偵測＋廣播。 */
+  guestIds?: string[];
   /** 對手斷線回呼（可選；UI 可掛 DISCONNECTED 橫幅）。 */
   onDisconnect?: () => void;
   fetchFn?: typeof fetch;
+}
+
+/** runFfaGame 對外控制握把（ESC 離開對戰用）。 */
+export interface FfaGameHandle {
+  /**
+   * 主動離開對戰：guest 先送 ffa-leave（host 快速判敗、其餘續行）再由呼叫端關閉/導頁；
+   * host 離開＝Stage A 全局中止（不送訊息，guest 由 host 頻道 close 偵測）。
+   */
+  leaveMatch(): void;
 }
 
 /**
@@ -614,28 +823,56 @@ export interface RunFfaOpts {
  * boards.renderMatch + drainAndFx + standings 更新。
  * KO（match.phase==='result'）時，本機若有 signer 則簽章回報。
  */
-export function runFfaGame(opts: RunFfaOpts): void {
+export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
   const { canvas, playerIds, localId, seed, matchId, signMessage } = opts;
 
   // 立即接管 transport：建 lockstep 前進來的幀先進暫存佇列。
-  const wrapped = takeoverTransport(opts.transport);
+  // host 端在收訊路徑 tap 中繼幀 → FfaForfeitController.noteFrame（中離 F 計算）。
+  let forfeitCtl: FfaForfeitController | null = null;
+  const wrapped = takeoverTransport(
+    tapFrames(opts.transport, (m) => forfeitCtl?.noteFrame(m)),
+  );
   const lockstep = new FfaLockstep({ playerIds, localId, seed, transport: wrapped });
+
+  // 中離續行接線：所有端收 ffa-forfeit → scheduleForfeit；
+  // host（有 guestIds）另啟偵測（channel close / ffa-leave / 靜默逾時）。
+  let disconnected = false; // guest 端：host 頻道關閉 → Stage A 對局中止
+  forfeitCtl = wireFfaForfeit({
+    lockstep,
+    playerIds,
+    transport: opts.transport as FfaLockstepTransport & FfaControlHooks,
+    guestIds: opts.guestIds,
+    onHostClose: () => { disconnected = true; opts.onDisconnect?.(); },
+  });
 
   // 暫存本幀本地輸入（InputController 透過 emit 累加）。
   let pendingActions: InputAction[] = [];
   const input = new InputController((a) => pendingActions.push(a), { das: 150, arr: 35 });
 
   void PixiStage.create(canvas).then(async (stage) => {
-    const tex = await loadGameTextures();
+    // 皮膚只影響本地渲染（貼圖/調色），不進鎖步協定。
+    const skin = resolveSkin(getSelectedSkin(localId), Number.POSITIVE_INFINITY);
+    const tex = await loadGameTextures(skin.id);
+    setSkinTints(skin.tints ?? null);
     stage.setBackground(tex.bg);
     try { await document.fonts.load('14px "Press Start 2P"'); await document.fonts.ready; } catch { /* fallback */ }
 
     const boards = new FfaBoards(stage, playerIds, localId, tex);
     const sound = new SoundManager();
 
+    // 中央橫幅（Stage A：host 離線 → 對局中止文案）。
+    const banner = new Text({
+      text: '',
+      style: { fontFamily: '"Press Start 2P", monospace', fontSize: 22, fill: 0xffffff, align: 'center' },
+    });
+    banner.anchor.set(0.5);
+    banner.visible = false;
+    stage.hudLayer.addChild(banner);
+
     function relayout(): void {
       stage.layoutBackground();
       boards.relayout(stage.width, stage.height);
+      banner.position.set(stage.width / 2, stage.height / 2);
     }
     relayout();
     stage.app.renderer.on('resize', relayout);
@@ -655,7 +892,6 @@ export function runFfaGame(opts: RunFfaOpts): void {
 
     let acc = 0;
     let resultReported = false;
-    let disconnected = false;
 
     const standings: string[] = [];
 
@@ -684,7 +920,12 @@ export function runFfaGame(opts: RunFfaOpts): void {
       standings.length = 0;
       standings.push(...lockstep.getStandings());
 
-      if (match.phase === 'result' && !resultReported) {
+      if (disconnected && !resultReported) {
+        // Stage A：host 中離＝全局中止（Stage B 再做 host migration）。
+        resultReported = true;
+        banner.text = 'HOST 離線\n對局中止';
+        banner.visible = true;
+      } else if (match.phase === 'result' && !resultReported) {
         resultReported = true;
         sound.topout();
         stage.shake(12);
@@ -708,6 +949,18 @@ export function runFfaGame(opts: RunFfaOpts): void {
       standings,
     };
   });
+
+  const isHost = !!opts.guestIds;
+  return {
+    leaveMatch(): void {
+      // guest：先送 ffa-leave（host 快速路徑立即判敗、其餘端續行）；
+      // host：Stage A host 離開＝全局中止，不送訊息（guest 由頻道 close 偵測）。
+      if (!isHost) {
+        (opts.transport as FfaLockstepTransport & FfaControlHooks)
+          .sendControl?.({ t: 'ffa-leave' });
+      }
+    },
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -768,6 +1021,8 @@ export async function hostFfaGame(opts: {
   /** lobby「開始」訊號：resolve 後 host 停止收人並開局。 */
   waitStart: () => Promise<void>;
   onStatus: FfaStatusCb;
+  /** 對局握把回呼（ESC「離開對戰」用 leaveMatch）。 */
+  onHandle?: (h: FfaGameHandle) => void;
   peerFactory?: () => FfaHostAnswerPeer;
   signal?: FfaSignalClient;
 }): Promise<void> {
@@ -831,15 +1086,18 @@ export async function hostFfaGame(opts: {
     opts.onStatus({ phase: 'connected', room, connected: count });
 
     const transport = new FfaHubTransport(channels);
-    runFfaGame({
+    const handle = runFfaGame({
       canvas: opts.canvas,
       playerIds,
       localId: opts.identity.id,
       seed,
       matchId,
       transport,
+      // channels[i] ↔ playerIds[i+1]（host 在 0）→ guestIds 啟動中離偵測。
+      guestIds: playerIds.slice(1),
       signMessage: opts.identity.ranked ? opts.identity.signMessage : undefined,
     });
+    opts.onHandle?.(handle);
   } catch (e) {
     opts.onStatus({ phase: 'error', message: e instanceof Error ? e.message : String(e) });
   }
@@ -856,6 +1114,8 @@ export async function joinFfaGame(opts: {
   room: string;
   identity: FfaIdentity;
   onStatus: FfaStatusCb;
+  /** 對局握把回呼（ESC「離開對戰」用 leaveMatch）。 */
+  onHandle?: (h: FfaGameHandle) => void;
   maxGuests?: number;
   peerFactory?: () => FfaGuestOfferPeer;
   signal?: FfaSignalClient;
@@ -904,7 +1164,7 @@ export async function joinFfaGame(opts: {
     const transport = new FfaSpokeTransport(ch);
     // 回放 ffa-init 之後、接管之前暫存的對手幀（保序）。
     for (const raw of earlyFrames) ch.onmessage?.(raw);
-    runFfaGame({
+    const handle = runFfaGame({
       canvas: opts.canvas,
       playerIds: init.playerIds,
       localId: opts.identity.id,
@@ -913,6 +1173,7 @@ export async function joinFfaGame(opts: {
       transport,
       signMessage: opts.identity.ranked ? opts.identity.signMessage : undefined,
     });
+    opts.onHandle?.(handle);
   } catch (e) {
     opts.onStatus({ phase: 'error', message: e instanceof Error ? e.message : String(e) });
   }

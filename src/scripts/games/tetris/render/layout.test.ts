@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { cellToPixel, pieceTint, chooseLayout, GARBAGE_TINT } from './layout';
+import { describe, it, expect, afterEach } from 'vitest';
+import { cellToPixel, pieceTint, setSkinTints, chooseLayout, GARBAGE_TINT } from './layout';
 import { BUFFER_ROWS } from '../engine/constants';
 
 describe('cellToPixel', () => {
@@ -19,6 +19,25 @@ describe('pieceTint', () => {
     }
     expect(pieceTint('I')).not.toBe(pieceTint('O'));
     expect(GARBAGE_TINT).toBeTypeOf('number');
+  });
+});
+
+describe('setSkinTints（皮膚調色覆蓋）', () => {
+  afterEach(() => setSkinTints(null)); // 隔離：每例後還原預設
+
+  it('覆蓋指定 piece、其餘維持預設', () => {
+    const defaultO = pieceTint('O');
+    setSkinTints({ I: 0x123456 });
+    expect(pieceTint('I')).toBe(0x123456);
+    expect(pieceTint('O')).toBe(defaultO);
+  });
+
+  it('setSkinTints(null) 還原所有預設', () => {
+    const defaultI = pieceTint('I');
+    setSkinTints({ I: 0x123456, T: 0xabcdef });
+    expect(pieceTint('T')).toBe(0xabcdef);
+    setSkinTints(null);
+    expect(pieceTint('I')).toBe(defaultI);
   });
 });
 

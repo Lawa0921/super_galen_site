@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Wallet } from 'ethers';
+import { Wallet, type HDNodeWallet } from 'ethers';
 import { FfaMatch } from '@scripts/games/tetris/engine/ffa';
 import type { InputAction } from '@scripts/games/tetris/engine/game';
 import { buildFfaResultMessage } from '@scripts/games/tetris/net/auth';
@@ -48,7 +48,7 @@ function buildScenario(seed: number, n: number) {
 }
 
 /** 為某 wallet 對 (matchId, standings) 產生合法簽章。 */
-async function sign(wallet: Wallet, matchId: string, standings: string[]) {
+async function sign(wallet: Wallet | HDNodeWallet, matchId: string, standings: string[]) {
   const placements = standings.map((_, i) => i + 1);
   const msg = buildFfaResultMessage(matchId, standings, placements);
   return wallet.signMessage(msg);
@@ -175,6 +175,60 @@ describe('POST /api/ffa-match — 共識結算', () => {
     );
     expect(r3.status).toBe(200);
     expect((await r3.json()).outcome).toBe('already');
+  });
+
+  it('含 forfeits 的合法局（一人中離）→ 達門檻一致回報 applied', async () => {
+    const POST = await loadPost();
+    const seed = 314;
+    const wallets = Array.from({ length: 3 }, () => Wallet.createRandom());
+    const playerIds = wallets.map((w) => w.address);
+
+    // 手工跑局：幀 10 由 playerIds[2] 中離、playerIds[0] 狂 hardDrop 堆死分勝負。
+    // 錄製順序與 simulateFfaReplay 一致：同一幀先 forfeits、再輸入、再 step。
+    const match = new FfaMatch(playerIds, { seed });
+    const events: FfaReplay['events'] = [];
+    const forfeits: Array<{ f: number; p: string }> = [];
+    let f = 0;
+    for (; f < 10000 && match.phase === 'playing'; f++) {
+      if (f === 10) {
+        forfeits.push({ f, p: playerIds[2] });
+        match.forfeit(playerIds[2]);
+      }
+      const actions: InputAction[] = f % 2 === 0 ? ['hardDrop'] : [];
+      if (actions.length) {
+        events.push({ f, p: playerIds[0], a: actions });
+        for (const act of actions) match.input(playerIds[0], act);
+      }
+      match.step(1000 / 60);
+    }
+    const standings = match.getStandings();
+    expect(standings).toHaveLength(3); // 局確實分出勝負
+    const replay: FfaReplay = { seed, playerIds, frameCount: f, events, forfeits };
+    const matchId = `ffa-${seed.toString(36)}-room1`;
+
+    const r1 = await POST(
+      ctx({
+        matchId,
+        reporterId: wallets[0].address,
+        standings,
+        signature: await sign(wallets[0], matchId, standings),
+        replay,
+      }),
+    );
+    expect(r1.status).toBe(200);
+    expect((await r1.json()).outcome).toBe('pending');
+
+    const r2 = await POST(
+      ctx({
+        matchId,
+        reporterId: wallets[1].address,
+        standings,
+        signature: await sign(wallets[1], matchId, standings),
+        replay,
+      }),
+    );
+    expect(r2.status).toBe(200);
+    expect((await r2.json()).outcome).toBe('applied');
   });
 
   it('client 提供的 ratings 被忽略（防偽造基底分數）：結算後分數由後端基底算出', async () => {
