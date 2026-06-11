@@ -21,6 +21,7 @@ import {
 import { createRoom as realCreateRoom, putSlot as realPutSlot, getSlot as realGetSlot, pollSlot as realPollSlot } from './signalClient';
 import { buildFfaResultMessage } from './auth';
 import { WebRtcTransport } from './webrtcTransport';
+import { SILENCE_TIMEOUT_MS, silenceWarningText } from './silence';
 
 const SIM_DT = 1000 / 60;
 
@@ -566,8 +567,8 @@ export function tapFrames(
 // 中離續行（Stage A）：host 偵測 → 廣播 ffa-forfeit → 各端 scheduleForfeit
 // ─────────────────────────────────────────────────────────────────────────
 
-/** host 判定 guest 靜默逾時的窗口（無任何訊息即視同中離）。 */
-export const SILENCE_TIMEOUT_MS = 10_000;
+/** host 判定 guest 靜默逾時的窗口（無任何訊息即視同中離）。常數集中於 silence.ts。 */
+export { SILENCE_TIMEOUT_MS, SILENCE_WARN_MS } from './silence';
 /** host 端靜默檢查週期。 */
 const SILENCE_CHECK_INTERVAL_MS = 1_000;
 
@@ -664,6 +665,13 @@ export class FfaForfeitController {
     if (p) this.declareForfeit(p);
   }
 
+  /** 未宣告 guest 中最長的靜默毫秒數（無追蹤對象回 0）；供畫面倒數警示。 */
+  maxSilenceMs(now: number = this.now()): number {
+    let max = 0;
+    for (const at of this.lastMsgAt.values()) max = Math.max(max, now - at);
+    return max;
+  }
+
   /** 靜默逾時檢查：超時的 guest 全部宣告；回傳本次被宣告的 id（供測試觀測）。 */
   checkSilenceNow(): string[] {
     const ids = checkSilence(this.lastMsgAt, this.now(), this.timeoutMs);
@@ -744,13 +752,15 @@ export function wireFfaForfeit(opts: {
  * - check()：定時呼叫；isActive() 為 false（遷移中/已中止/對局已結束/自己已是 host）時
  *   不計靜默並把基準重置到 now（恢復後重新起算，避免凍結期被誤判）。
  * - 觸發後基準亦重置（onHostDown 由呼叫端做重入防護，這裡避免每秒重複轟炸）。
+ * - silentMs()：目前靜默毫秒數（非 active 回 0）——供畫面倒數警示（與 host 端
+ *   FfaForfeitController.maxSilenceMs 同款，文案共用 silenceWarningText）。
  */
 export function createGuestHostWatch(opts: {
   onHostDown: () => void;
   isActive: () => boolean;
   now?: () => number;
   timeoutMs?: number;
-}): { noteActivity(): void; check(): void } {
+}): { noteActivity(): void; check(): void; silentMs(): number } {
   const now = opts.now ?? Date.now;
   const timeoutMs = opts.timeoutMs ?? SILENCE_TIMEOUT_MS;
   let last = now();
@@ -767,6 +777,10 @@ export function createGuestHostWatch(opts: {
         last = now();
         opts.onHostDown();
       }
+    },
+    silentMs(): number {
+      if (!opts.isActive()) return 0;
+      return now() - last;
     },
   };
 }
@@ -891,7 +905,7 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
   // tap：host 端餵 FfaForfeitController.noteFrame（中離 F 計算）；
   //      guest 端餵 hostWatch.noteActivity（任何中繼幀＝host 活著）。
   let forfeitCtl: FfaForfeitController | null = null;
-  let hostWatch: { noteActivity(): void; check(): void } | null = null;
+  let hostWatch: { noteActivity(): void; check(): void; silentMs(): number } | null = null;
   const wrapped = takeoverTransport(
     tapFrames(facade, (m) => { forfeitCtl?.noteFrame(m); hostWatch?.noteActivity(); }),
   );
@@ -1055,10 +1069,20 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
     };
     applyBanner(bannerText); // stage 就緒前已設定的文字（中止/遷移中）補套用
 
+    // 靜默倒數警示（host 看 guests / guest 看 host：靜默超過 SILENCE_WARN_MS 即顯示，恢復送訊即消失）。
+    const silenceWarn = new Text({
+      text: '',
+      style: { fontFamily: '"Press Start 2P", monospace', fontSize: 13, fill: 0xffd23f, align: 'center' },
+    });
+    silenceWarn.anchor.set(0.5);
+    silenceWarn.visible = false;
+    stage.hudLayer.addChild(silenceWarn);
+
     function relayout(): void {
       stage.layoutBackground();
       boards.relayout(stage.width, stage.height);
       banner.position.set(stage.width / 2, stage.height / 2);
+      silenceWarn.position.set(stage.width / 2, Math.max(28, stage.height * 0.12));
     }
     relayout();
     stage.app.renderer.on('resize', relayout);
@@ -1106,6 +1130,16 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
       standings.length = 0;
       standings.push(...lockstep.getStandings());
 
+      // 靜默倒數警示：host 看 guests（forfeitCtl.maxSilenceMs），guest 看 host
+      // （hostWatch.silentMs——Stage B 靜默兜底同一份計時），文案共用 silenceWarningText。
+      // 遷移中不顯示（橫幅「重新連線中…」接手）；升格 host 後 forfeitCtl 優先。
+      const silentMs = forfeitCtl ? forfeitCtl.maxSilenceMs() : (hostWatch?.silentMs() ?? 0);
+      const warnMsg = (match.phase === 'playing' && !disconnected && !migrating)
+        ? silenceWarningText(silentMs)
+        : null;
+      silenceWarn.visible = warnMsg !== null;
+      if (warnMsg !== null) silenceWarn.text = warnMsg;
+
       if (disconnected && !resultReported) {
         // 降級中止（遷移失敗 / 無遷移依賴 / 超過 MAX_MIGRATIONS）：不計分。
         // 橫幅文字由 abortMatch() 經 setBanner 設定。
@@ -1132,6 +1166,7 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
       stage,
       boards,
       standings,
+      get silenceWarning() { return silenceWarn.visible ? silenceWarn.text : ''; },
       migration: {
         get gen() { return migrationGen; },
         get state() { return migrationState; },

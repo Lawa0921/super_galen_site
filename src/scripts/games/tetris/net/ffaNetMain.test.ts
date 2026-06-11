@@ -635,6 +635,25 @@ describe('createGuestHostWatch（guest 端 host 頻道靜默兜底偵測，Stage
     w.check();
     expect(downs).toBe(1); // 自恢復基準起超過 10s → 觸發
   });
+
+  it('silentMs：回傳 host 頻道目前靜默毫秒數（供倒數警示）；非 active 回 0；noteActivity 歸零', () => {
+    let nowMs = 0;
+    let active = true;
+    const w = createGuestHostWatch({
+      onHostDown: () => {},
+      isActive: () => active,
+      now: () => nowMs,
+      timeoutMs: 30_000,
+    });
+    expect(w.silentMs()).toBe(0); // 建構當下無靜默
+    nowMs = 12_000;
+    expect(w.silentMs()).toBe(12_000); // 靜默 12s（已過警示門檻，UI 該顯示倒數）
+    w.noteActivity();
+    expect(w.silentMs()).toBe(0); // host 恢復送幀 → 歸零（警示消失）
+    nowMs = 20_000;
+    active = false; // 遷移中/中止/結果畫面：不顯示警示
+    expect(w.silentMs()).toBe(0);
+  });
 });
 
 describe('FfaForfeitController（host 宣告 + 廣播）', () => {
@@ -699,6 +718,22 @@ describe('FfaForfeitController（host 宣告 + 廣播）', () => {
     nowMs = 20_000;
     expect(ctl.checkSilenceNow()).toEqual(['g1']); // g1 也超時；g2 已宣告不重複
     expect(sent.length).toBe(2);
+  });
+
+  it('maxSilenceMs：回傳未宣告 guest 的最長靜默毫秒數（供畫面倒數警示）；已宣告者剔除', () => {
+    let nowMs = 0;
+    const ctl = new FfaForfeitController({
+      guestIds: ['g1', 'g2'],
+      sendControl: () => {},
+      now: () => nowMs,
+    });
+    expect(ctl.maxSilenceMs()).toBe(0); // 建構當下無靜默
+    nowMs = 4_000;
+    ctl.noteFrame({ f: 1, p: 'g1', a: [] }); // g1 在 4s 有活動
+    nowMs = 12_000;
+    expect(ctl.maxSilenceMs()).toBe(12_000); // g2 從建構起靜默 12s > g1 的 8s
+    ctl.declareForfeit('g2');
+    expect(ctl.maxSilenceMs()).toBe(8_000); // g2 已宣告 → 只剩 g1
   });
 });
 
