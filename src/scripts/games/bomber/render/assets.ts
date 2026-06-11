@@ -23,6 +23,11 @@ const TILES_VOID_URL     = '/assets/games/bomber/tiles-void.png';
 const DECOR_URL          = '/assets/games/bomber/decor.png';
 const ENEMY_SAPPER_URL   = '/assets/games/bomber/enemy-sapper.png';
 const ENEMY_SPLITTER_URL = '/assets/games/bomber/enemy-splitter.png';
+const ENEMY_MINI_URL     = '/assets/games/bomber/enemy-mini.png';
+const ENEMY4_CHASER_URL  = '/assets/games/bomber/enemy4-chaser.png';
+const ENEMY4_DASHER_URL  = '/assets/games/bomber/enemy4-dasher.png';
+const ENEMY4_SAPPER_URL  = '/assets/games/bomber/enemy4-sapper.png';
+const ENEMY4_TANK_URL    = '/assets/games/bomber/enemy4-tank.png';
 const ENEMY_WANDER_URL = '/assets/games/bomber/enemy-wander.png';
 const ENEMY_CHASER_URL = '/assets/games/bomber/enemy-chaser.png';
 const ENEMY_GHOST_URL  = '/assets/games/bomber/enemy-ghost.png';
@@ -73,6 +78,8 @@ export interface BomberTextures {
   enemyFrames: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank' | 'sapper' | 'splitter' | 'mini', Texture[]>;
   /** 地面裝飾（10 幀：每生態區 2 個，index = biome*2 + variant）。 */
   decorFrames: Texture[];
+  /** 有方向性怪物的 4 方向 sheet（192×256，同玩家 walk sheet 規格）。 */
+  enemySheets: Record<'chaser' | 'dasher' | 'sapper' | 'tank', Texture>;
   /** 生態區磚塊組（index 0=石牢 1=墓窖 2=鍛造廠），每組 {floor, wall, crate}。 */
   tileSets: { floor: Texture; wall: Texture; crate: Texture }[];
 }
@@ -90,7 +97,8 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
          bombLenaTex, bombMiraTex, bombAyaTex, bombRosaTex, explosionTex,
          enemyWanderTex, enemyChaserTex, enemyGhostTex, enemyDasherTex,
          tilesCatTex, tilesForgeTex, enemyMimicTex, enemyTankTex,
-         tilesFrostTex, tilesVoidTex, decorTex, enemySapperTex, enemySplitterTex] = await Promise.all([
+         tilesFrostTex, tilesVoidTex, decorTex, enemySapperTex, enemySplitterTex,
+         enemyMiniTex, e4ChaserTex, e4DasherTex, e4SapperTex, e4TankTex] = await Promise.all([
     Assets.load(SHEET_URL)    as Promise<Texture>,
     Assets.load(WALK_LENA_URL) as Promise<Texture>,
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
@@ -118,6 +126,11 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     Assets.load(DECOR_URL)         as Promise<Texture>,
     Assets.load(ENEMY_SAPPER_URL)   as Promise<Texture>,
     Assets.load(ENEMY_SPLITTER_URL) as Promise<Texture>,
+    Assets.load(ENEMY_MINI_URL)    as Promise<Texture>,
+    Assets.load(ENEMY4_CHASER_URL) as Promise<Texture>,
+    Assets.load(ENEMY4_DASHER_URL) as Promise<Texture>,
+    Assets.load(ENEMY4_SAPPER_URL) as Promise<Texture>,
+    Assets.load(ENEMY4_TANK_URL)   as Promise<Texture>,
   ]);
 
   sheet.source.scaleMode       = 'nearest';
@@ -147,6 +160,11 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   decorTex.source.scaleMode       = 'nearest';
   enemySapperTex.source.scaleMode   = 'nearest';
   enemySplitterTex.source.scaleMode = 'nearest';
+  enemyMiniTex.source.scaleMode  = 'nearest';
+  e4ChaserTex.source.scaleMode   = 'nearest';
+  e4DasherTex.source.scaleMode   = 'nearest';
+  e4SapperTex.source.scaleMode   = 'nearest';
+  e4TankTex.source.scaleMode     = 'nearest';
 
   // 爆炸動畫：從 256×64 條切 4 幀
   const blastFrames = [0, 1, 2, 3].map((i) => frameAt(explosionTex.source, i, 0));
@@ -162,7 +180,7 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     tank:   strip3(enemyTankTex),
     sapper:   strip3(enemySapperTex),
     splitter: strip3(enemySplitterTex),
-    mini:     strip3(enemyWanderTex), // mini 沿用史萊姆幀（render 端縮小）
+    mini:     strip3(enemyMiniTex),
   };
 
   // 地面裝飾：640×64 條切 10 幀
@@ -211,6 +229,12 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     blastFrames,
     enemyFrames,
     decorFrames,
+    enemySheets: {
+      chaser: e4ChaserTex,
+      dasher: e4DasherTex,
+      sapper: e4SapperTex,
+      tank:   e4TankTex,
+    },
     tileSets: [
       { floor: frameAt(src, 0, 0), wall: frameAt(src, 1, 0), crate: frameAt(src, 2, 0) },
       tileSetOf(tilesCatTex),

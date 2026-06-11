@@ -34,6 +34,10 @@ const ENEMY_ANIM_STEP_MS: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mim
 /** Per-kind 顯示尺寸（cell 倍率）：splitter 大隻、mini 小隻。 */
 const ENEMY_SIZE: Partial<Record<'splitter' | 'mini', number>> = { splitter: 0.98, mini: 0.55 };
 
+/** 有 4 方向 sheet 的怪物（其餘圓球系用 3 幀條即可）。 */
+const DIRECTIONAL_KINDS = new Set(['chaser', 'dasher', 'sapper', 'tank']);
+type DirectionalKind = 'chaser' | 'dasher' | 'sapper' | 'tank';
+
 /** Map direction string to walk-sheet row index (row 0=down, 1=left, 2=right, 3=up). */
 function dirToRow(dir: string): number {
   switch (dir) {
@@ -296,9 +300,15 @@ export class EntityView {
       if (dormantMimic) {
         // 偽裝休眠：直接用「當前生態區的 crate 貼圖」＝完美偽裝；
         // 唯一破綻是極微弱的呼吸縮放（觀察力好的玩家能識破）。
-        const biome = Math.min(2, Math.floor((state.floor - 1) / 3));
+        const biome = Math.min(4, Math.floor((state.floor - 1) / 3));
         const set = this.textures.tileSets[biome] ?? this.textures.tileSets[0];
         tex = set.crate;
+      } else if (DIRECTIONAL_KINDS.has(enemy.kind)) {
+        // 4 方向 sheet：列依移動方向、幀依 ping-pong 節奏
+        const stepMs = ENEMY_ANIM_STEP_MS[enemy.kind];
+        const phase  = (this.enemyAnimMs + enemy.id * 137) % (stepMs * 4);
+        const step   = ANIM_STEPS[Math.floor(phase / stepMs) % 4];
+        tex = this._enemySheetFrame(enemy.kind as DirectionalKind, dirToRow(enemy.dir), step);
       } else {
         const frames = this.textures.enemyFrames[enemy.kind];
         const stepMs = ENEMY_ANIM_STEP_MS[enemy.kind];
@@ -314,12 +324,8 @@ export class EntityView {
       sp.height = size;
       sp.x = ox + rx * cell + cell / 2;
       sp.y = oy + ry * cell + cell / 2;
-      // dasher 素材面向左：往右衝時水平翻面（width 賦值會重設 scale 正負，須在其後）
-      if (enemy.kind === 'dasher' && enemy.dir === 'right') {
-        sp.scale.x = -Math.abs(sp.scale.x);
-      } else {
-        sp.scale.x = Math.abs(sp.scale.x);
-      }
+      // 方向由 4 方向 sheet 的列處理，無需翻面
+      sp.scale.x = Math.abs(sp.scale.x);
       if (enemy.kind === 'ghost') {
         const overCrate = state.grid[Math.round(ry)]?.[Math.round(rx)] === 'crate';
         sp.alpha = overCrate ? 0.45 : 0.85;
@@ -452,6 +458,21 @@ export class EntityView {
         this.bulwarkMs = 0; // invuln 提前結束（如受擊重置）即收掉泡泡
       }
     }
+  }
+
+  /** 有方向性怪物的 sheet 幀（懶切片＋快取，同 _walkFrame 模式）。 */
+  private enemySheetCache = new Map<string, Texture>();
+  private _enemySheetFrame(kind: DirectionalKind, dirRow: number, step: number): Texture {
+    const key = `${kind}-${dirRow}-${step}`;
+    const cached = this.enemySheetCache.get(key);
+    if (cached) return cached;
+    const base = this.textures.enemySheets[kind];
+    const tex = new Texture({
+      source: base.source,
+      frame: new Rectangle(step * 64, dirRow * 64, 64, 64),
+    });
+    this.enemySheetCache.set(key, tex);
+    return tex;
   }
 
   // ─── walk-cycle helpers ───────────────────────────────────────────────────────
