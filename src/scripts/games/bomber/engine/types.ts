@@ -11,7 +11,7 @@ export interface AbilityDef { id: AbilityId; name: string; desc: string; cooldow
 export interface CharacterProfile { id: CharacterId; name: string; start: CharacterStats; caps: CharacterStats; ability: AbilityDef; }
 export type EnemyKind = 'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank' | 'sapper' | 'splitter' | 'mini';
 
-export interface Bomb { x: number; y: number; fuseMs: number; range: number; owner?: 'enemy'; }
+export interface Bomb { x: number; y: number; fuseMs: number; range: number; owner?: string; }
 export interface BlastCell { x: number; y: number; ttlMs: number; }
 export interface PowerUp { x: number; y: number; kind: PowerUpKind; }
 export interface Enemy {
