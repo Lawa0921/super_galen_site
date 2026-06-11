@@ -6,8 +6,11 @@
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import { defaultLang, type Language } from '@i18n/index';
 import { SKIN_CATALOG } from '@scripts/games/tetris/render/skins';
+import { SKILLS } from '@scripts/games/tetris/engine/run';
 
 const lang: Language = defaultLang;
+// 技能卡靜態渲染（Astro scoped style 才會套上）；shield 由 JS 依模式顯隱。
+const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, desc: s.desc, aiOnly: Boolean(s.aiOnly) }));
 ---
 
 <BaseLayout
@@ -47,6 +50,30 @@ const lang: Language = defaultLang;
             <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
             <button class="ms-btn ms-online" data-mode="online">vs ONLINE</button>
           </div>
+        </div>
+        <div class="mode-select" id="skill-select" hidden>
+          <h2 class="ss-title">SELECT SKILL</h2>
+          <div class="ss-cards">
+            {skillCards.map((s) => (
+              <button type="button" class="ss-card" data-skill={s.id} data-aionly={s.aiOnly ? 'true' : null}>
+                <span class="ss-key" aria-hidden="true"></span>
+                <span class={`ss-ico ss-ico--${s.id}`}></span>
+                <span class="ss-meta">
+                  <span class="ss-name">{s.name}</span>
+                  <span class="ss-desc">{s.desc}</span>
+                </span>
+              </button>
+            ))}
+            <button type="button" class="ss-card" data-skill="">
+              <span class="ss-key" aria-hidden="true"></span>
+              <span class="ss-ico ss-ico--none"></span>
+              <span class="ss-meta">
+                <span class="ss-name">不帶技能</span>
+                <span class="ss-desc">純粹手速，不靠技能輔助</span>
+              </span>
+            </button>
+          </div>
+          <p class="ss-hint">按 1-5 快選 · 或點選卡片 · 遊戲中按 V 發動</p>
         </div>
         <div class="mode-select" id="online-panel" hidden>
           <div class="ms-buttons">
@@ -264,6 +291,69 @@ const lang: Language = defaultLang;
     line-height: 1.6;
     letter-spacing: 1px;
     color: #9fb4d8;
+  }
+
+  /* 開局技能選擇步（SOLO / vs-AI）*/
+  .ss-title {
+    margin: 0;
+    font-size: clamp(14px, 2.4vw, 20px);
+    letter-spacing: 3px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 28px rgba(54, 230, 255, 0.5);
+  }
+  .ss-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .ss-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    font-family: inherit;
+    text-align: left;
+    color: #cfe8ff;
+    background: rgba(8, 12, 22, 0.8);
+    border: 2px solid rgba(54, 230, 255, 0.55);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  }
+  .ss-card:hover {
+    transform: translateY(-2px);
+    color: #eafdff;
+    box-shadow: 0 0 18px rgba(54, 230, 255, 0.6);
+  }
+  .ss-card[hidden] { display: none; }
+  .ss-key {
+    flex: 0 0 auto;
+    min-width: 1.6em;
+    font-size: 10px;
+    letter-spacing: 0;
+    color: #ffd23f;
+  }
+  .ss-ico {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    background: center / contain no-repeat;
+  }
+  .ss-ico--bomb { background-image: url('/assets/games/tetris/icons/skill-bomb.webp'); }
+  .ss-ico--slow { background-image: url('/assets/games/tetris/icons/skill-slow.webp'); }
+  .ss-ico--reroll { background-image: url('/assets/games/tetris/icons/skill-reroll.webp'); }
+  .ss-ico--shield { background-image: url('/assets/games/tetris/icons/skill-shield.webp'); }
+  .ss-ico--none { border: 1px dashed rgba(111, 168, 216, 0.6); border-radius: 8px; }
+  .ss-meta { display: flex; flex-direction: column; gap: 5px; }
+  .ss-name { font-size: 11px; letter-spacing: 1px; color: #eafdff; }
+  .ss-desc { font-size: 8px; line-height: 1.7; letter-spacing: 1px; color: #6fa8d8; }
+  .ss-hint {
+    margin: 0;
+    font-size: 8px;
+    letter-spacing: 1px;
+    text-align: center;
+    color: #5a7299;
   }
 
   /* 玩家人數選擇（2–8，預設 4）*/
@@ -624,6 +714,7 @@ const lang: Language = defaultLang;
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
   import { startAi } from '@scripts/games/tetris/render/aiMain';
+  import { SKILLS, type SkillId } from '@scripts/games/tetris/engine/run';
   import { SKIN_CATALOG, getSelectedSkin, setSelectedSkin, isUnlocked, resolveSkin } from '@scripts/games/tetris/render/skins';
   import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
   import { hostFfaGame, joinFfaGame, type FfaNetStatus, type FfaIdentity } from '@scripts/games/tetris/net/ffaNetMain';
@@ -771,29 +862,79 @@ const lang: Language = defaultLang;
   });
   document.getElementById('lobby-cancel')?.addEventListener('click', () => { location.href = '/games/tetris'; });
 
-  function startSolo(): void {
+  function startSolo(skill: SkillId | null = null): void {
     if (isTouch) { showTouchNotice(); return; }
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
-    setHint(SOLO_HINT);
+    setHint(skill ? `${SOLO_HINT} · SKILL V` : SOLO_HINT);
     // 皮膚 key 與 PROFILE 皮膚櫃一致：已連錢包用 addr key，否則 guest key
-    startTetris(canvas, { onEnd: () => showResult('GAME OVER'), skinId: getSelectedSkin(wallet?.address) })
+    startTetris(canvas, { onEnd: () => showResult('GAME OVER'), skinId: getSelectedSkin(wallet?.address), skill })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
 
-  function startAiMode(diffRaw?: string | null): void {
+  function startAiMode(diffRaw?: string | null, skill: SkillId | null = null): void {
     if (isTouch) { showTouchNotice(); return; }
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
     const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
-    setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · M MUTE`);
-    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS'), skinId: getSelectedSkin(wallet?.address) })
+    setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT${skill ? ' · SKILL V' : ''} · ESC PAUSE · M MUTE`);
+    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS'), skinId: getSelectedSkin(wallet?.address), skill })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
+
+  // ---- 開局技能選擇步（UI 流程限定；深連結 ?mode= 直接開局以維持既有合約）----
+  const skillSelect = document.getElementById('skill-select');
+  const skillCards = Array.from(document.querySelectorAll<HTMLButtonElement>('.ss-card'));
+  let pendingMode: 'solo' | 'ai' = 'solo';
+  let pendingDiff: string | null = null;
+  let skillSelectOpen = false;
+
+  function showSkillSelect(mode: 'solo' | 'ai', diff?: string | null): void {
+    if (isTouch) { showTouchNotice(); return; }
+    if (started) return;
+    pendingMode = mode;
+    pendingDiff = diff ?? null;
+    if (modeSelect) modeSelect.hidden = true;
+    let n = 0; // shield 僅 vs-AI；數字快選鍵依可見順序重排
+    skillCards.forEach((card) => {
+      const show = mode === 'ai' || card.dataset.aionly !== 'true';
+      card.hidden = !show;
+      if (show) {
+        n += 1;
+        const key = card.querySelector('.ss-key');
+        if (key) key.textContent = String(n);
+      }
+    });
+    if (skillSelect) skillSelect.hidden = false;
+    skillSelectOpen = true;
+    blip(560, 0.06);
+  }
+
+  function pickSkill(raw: string): void {
+    if (!skillSelectOpen || started) return;
+    skillSelectOpen = false;
+    const skill = raw && raw in SKILLS ? (raw as SkillId) : null;
+    if (pendingMode === 'solo') startSolo(skill);
+    else startAiMode(pendingDiff, skill);
+    blip(680, 0.07);
+  }
+
+  skillCards.forEach((card) => {
+    card.addEventListener('click', () => pickSkill(card.dataset.skill ?? ''));
+  });
+  window.addEventListener('keydown', (e) => {
+    if (!skillSelectOpen) return;
+    const n = Number(e.key);
+    if (!Number.isInteger(n) || n < 1 || n > 5) return;
+    const card = skillCards.filter((c) => !c.hidden)[n - 1];
+    if (!card) return;
+    e.preventDefault();
+    pickSkill(card.dataset.skill ?? '');
+  });
 
   function showOnlinePanel(): void {
     if (isTouch) { showTouchNotice(); return; }
@@ -942,8 +1083,8 @@ const lang: Language = defaultLang;
   modeSelect?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const m = btn.dataset.mode;
-      if (m === 'solo') startSolo();
-      else if (m === 'ai') startAiMode(btn.dataset.diff);
+      if (m === 'solo') showSkillSelect('solo');
+      else if (m === 'ai') showSkillSelect('ai', btn.dataset.diff);
       else if (m === 'online') showOnlinePanel();
     });
   });
@@ -1043,9 +1184,11 @@ const lang: Language = defaultLang;
       if (isTouch) {
         showTouchNotice();
       } else {
-        // 還原模式選單：使用者可能先前點過「線上對戰」而隱藏了 SOLO/AI
+        // 還原模式選單：使用者可能先前點過「線上對戰」或技能選擇步而隱藏了 SOLO/AI
         if (modeSelect) modeSelect.hidden = false;
         if (onlinePanel) onlinePanel.hidden = true;
+        if (skillSelect) skillSelect.hidden = true;
+        skillSelectOpen = false;
       }
     }
     if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }
@@ -1180,8 +1323,11 @@ const lang: Language = defaultLang;
 
   if (isTouch) showTouchNotice(); // 觸控裝置：PLAY 分頁直接顯示「請用電腦」提示
 
+  // 深連結：?mode= 不出技能選擇步、直接開局（既有 e2e 合約）；?skill= 可帶技能。
   const mode = params.get('mode');
-  if (mode === 'solo') startSolo();
-  else if (mode === 'ai') startAiMode(params.get('diff'));
+  const rawSkill = params.get('skill');
+  const deepSkill: SkillId | null = rawSkill && rawSkill in SKILLS ? (rawSkill as SkillId) : null;
+  if (mode === 'solo') startSolo(deepSkill === 'shield' ? null : deepSkill); // shield 僅 vs-AI
+  else if (mode === 'ai') startAiMode(params.get('diff'), deepSkill);
   else if (mode === 'online') showOnlinePanel();
 </script>
