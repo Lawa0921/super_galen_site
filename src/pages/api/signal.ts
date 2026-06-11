@@ -11,6 +11,7 @@ const TTL_SEC = 300; // 房間槽位 5 分鐘過期
  * 1v1：offer / answer
  * N 人星狀（host-initiated，T9）：host-offer / guest-{0..6}-answer / host-ack-{0..6}
  * N 人星狀（guest-initiated，T11）：guest-{0..6}-offer / host-ack-{0..6}
+ * Host migration 世代化槽位：mig{1..6}-guest-{0..6}-offer / mig{1..6}-host-ack-{0..6}
  */
 function isValidSlot(slot: string): boolean {
   if (slot === 'offer' || slot === 'answer' || slot === 'host-offer') return true;
@@ -28,6 +29,13 @@ function isValidSlot(slot: string): boolean {
   if (ackMatch) {
     const idx = Number(ackMatch[1]);
     return idx >= 0 && idx <= 6;
+  }
+  // 世代化遷移槽位（host migration）：mig{1..6}-guest-{0..6}-offer / mig{1..6}-host-ack-{0..6}
+  const migMatch = slot.match(/^mig(\d+)-(?:guest-(\d+)-offer|host-ack-(\d+))$/);
+  if (migMatch) {
+    const gen = Number(migMatch[1]);
+    const idx = Number(migMatch[2] ?? migMatch[3]);
+    return gen >= 1 && gen <= 6 && idx >= 0 && idx <= 6;
   }
   return false;
 }
