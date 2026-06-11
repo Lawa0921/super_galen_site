@@ -230,19 +230,32 @@ export class EntityView {
     // 1. 出口
     this._renderExit(state, cell, ox, oy);
 
-    // 2. 爆風 — 4 幀爆炸動畫（依 ttl 進度選幀），true-alpha additive
+    // 2. 爆風 — 方向性爆炸件（依鄰格判定件型）× 3 階段漸弱
+    //    中心=十字核心；同軸雙鄰=延伸段；單鄰=指向外側的火焰尾端；交叉/孤立=核心
+    const bKey = (x: number, y: number): number => y * 64 + x;
+    const blastSet = new Set(state.blasts.map((b) => bKey(b.x, b.y)));
     let bi = 0;
     for (const blast of state.blasts) {
+      const L = blastSet.has(bKey(blast.x - 1, blast.y));
+      const R = blastSet.has(bKey(blast.x + 1, blast.y));
+      const U = blastSet.has(bKey(blast.x, blast.y - 1));
+      const D = blastSet.has(bKey(blast.x, blast.y + 1));
+      const horiz = L || R, vert = U || D;
+      let piece: keyof BomberTextures['blastPieces'];
+      if ((horiz && vert) || (!horiz && !vert)) piece = 'center';
+      else if (horiz) piece = L && R ? 'armH' : L ? 'tipR' : 'tipL';
+      else            piece = U && D ? 'armV' : U ? 'tipD' : 'tipU';
+
       const t = Math.min(1, Math.max(0, 1 - blast.ttlMs / BLAST_TTL_MS)); // 0→1
-      const frameIdx = Math.min(3, Math.floor(t * 4));
-      const sp = this._blastPoolGet(bi++, this.textures.blastFrames[frameIdx]);
+      const stage = Math.min(2, Math.floor(t * 3));                        // 漸弱 3 階段
+      const sp = this._blastPoolGet(bi++, this.textures.blastPieces[piece][stage]);
       // 略小於一格：爆風視覺嚴格留在傷害格內，不得外溢鄰格（視覺=判定）
       const bSize = cell * 0.94;
       sp.width  = bSize;
       sp.height = bSize;
       sp.x = ox + blast.x * cell + cell / 2;
       sp.y = oy + blast.y * cell + cell / 2;
-      sp.alpha = t < 0.85 ? 1 : 1 - (t - 0.85) / 0.15; // 尾段才淡出
+      sp.alpha = t < 0.85 ? 1 : 1 - (t - 0.85) / 0.15; // 尾段再淡出
     }
     this._poolHideFrom(this.blastPool, bi);
 
