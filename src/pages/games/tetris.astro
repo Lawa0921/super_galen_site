@@ -123,6 +123,7 @@ const lang: Language = defaultLang;
     <div class="pause-menu" id="pause-menu" hidden>
       <div class="pause-card">
         <h2 class="pause-title" id="pause-title">PAUSED</h2>
+        <p class="pause-hint" id="pause-hint" hidden>離開將判敗（排名局計入名次）</p>
         <button class="ms-btn ms-solo" id="pause-resume" type="button">繼續</button>
         <button class="ms-btn ms-hard" id="pause-quit" type="button">離開</button>
       </div>
@@ -537,6 +538,13 @@ const lang: Language = defaultLang;
     text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 30px rgba(54, 230, 255, 0.5);
   }
   .pause-card .ms-btn { width: 100%; }
+  .pause-hint {
+    margin: 0 0 10px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #ff9a8a;
+    text-shadow: 0 0 8px rgba(255, 90, 70, 0.45);
+  }
 
   /* emoji → 生成的霓虹圖示（::before 背景圖，取代廉價 emoji） */
   .mm-tab::before,
@@ -663,6 +671,7 @@ const lang: Language = defaultLang;
   let resultOpen = false;
   const pauseMenu = document.getElementById('pause-menu');
   const pauseTitle = document.getElementById('pause-title');
+  const pauseHint = document.getElementById('pause-hint');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const setHint = (t: string) => { if (hint) { hint.textContent = t; hint.hidden = false; } };
@@ -692,7 +701,8 @@ const lang: Language = defaultLang;
     if (!gameRunning || menuOpen || resultOpen) return;
     menuOpen = true;
     if (pausable) gameHandle?.pause?.();
-    if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : '離開對戰？離開將判敗';
+    if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : '離開對戰？';
+    if (pauseHint) pauseHint.hidden = pausable; // 線上才顯示判敗提示
     if (pauseMenu) { pauseMenu.classList.toggle('is-online', !pausable); pauseMenu.hidden = false; }
     blip(300, 0.1);
   }
