@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>泊宇 BoYu｜水平之上 — 三代板材世家的建材圖鑑</title>
+<meta name="description" content="樹林柑園板材世家第三代。石膏磚隔間、雲豹自流平、超耐磨地板、GaN 快充面板 — 桃園以北建案與住家，連工帶料。">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@800;900&family=Noto+Sans+TC:wght@400;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   SPEC SHEET NO. SG-2026-091 — 吳泊宇 BoYu Wu
+   主題：建材規格書 × 工地圖鑑
+   ═══════════════════════════════════════════════ */
+:root {
+    --gypsum: #f1ede4;        /* 石膏白 */
+    --gypsum-2: #e7e2d6;
+    --concrete: #c9c3b4;      /* 混凝土灰 */
+    --ink: #191711;           /* 墨黑 */
+    --ink-soft: #4c463a;
+    --safety: #f25c05;        /* 安全橘 */
+    --blueprint: #2a64a8;     /* 藍圖青 */
+    --night: #12100c;         /* 通電段深色 */
+    --amber-light: #ffc46b;
+    --line: rgba(25, 23, 17, 0.16);
+    --line-strong: rgba(25, 23, 17, 0.32);
+
+    --f-display: 'Saira Condensed', 'Noto Sans TC', sans-serif;
+    --f-body: 'Noto Sans TC', sans-serif;
+    --f-mono: 'IBM Plex Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--gypsum);
+    color: var(--ink);
+    font-family: var(--f-body);
+    line-height: 1.85;
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 紙感顆粒 */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection { background: var(--safety); color: var(--gypsum); }
+
+a { color: inherit; }
+
+/* ═══════ 共用版式 ═══════ */
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+.sec-mark {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+}
+.sec-mark::before {
+    content: '';
+    width: 34px; height: 2px;
+    background: var(--safety);
+    flex: none;
+}
+.sec-mark .no { color: var(--safety); font-weight: 600; }
+
+.sec-title {
+    font-family: var(--f-body);
+    font-weight: 900;
+    font-size: clamp(1.9rem, 4.6vw, 3.1rem);
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    margin-bottom: 14px;
+}
+.sec-title .en {
+    display: block;
+    font-family: var(--f-display);
+    font-weight: 900;
+    font-size: 0.42em;
+    letter-spacing: 0.34em;
+    color: var(--safety);
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* ═══════ 返回導航 ═══════ */
+.top-nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 60;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 22px;
+    pointer-events: none;
+}
+.back-link {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--f-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-decoration: none;
+    color: var(--ink);
+    background: var(--gypsum);
+    border: 1.5px solid var(--ink);
+    padding: 8px 16px;
+    transition: background 0.25s, color 0.25s, transform 0.25s;
+    box-shadow: 3px 3px 0 var(--ink);
+}
+.back-link:hover {
+    background: var(--safety);
+    color: var(--gypsum);
+    transform: translate(-1px, -1px);
+}
+.sheet-no {
+    pointer-events: auto;
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+    background: rgba(241, 237, 228, 0.86);
+    border: 1px solid var(--line-strong);
+    padding: 7px 12px;
+}
+.sheet-no b { color: var(--safety); font-weight: 600; }
+@media (max-width: 640px) { .sheet-no { display: none; } }
+
+/* ═══════ HERO ═══════ */
+.hero {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    overflow: clip;
+    border-bottom: 2px solid var(--ink);
+}
+#wall3d {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+.hero-grid-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 45%, #000 30%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 45%, #000 30%, transparent 78%);
+}
+.hero-inner {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding: 120px 0 90px;
+}
+.hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--f-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.2em;
+    color: var(--gypsum);
+    background: var(--ink);
+    padding: 7px 14px;
+    margin-bottom: 26px;
+}
+.hero-kicker i { color: var(--safety); }
+.hero-title {
+    font-weight: 900;
+    font-size: clamp(3rem, 10.5vw, 7.6rem);
+    line-height: 1.04;
+    letter-spacing: 0.01em;
+}
+.hero-title .row { display: block; overflow: hidden; }
+.hero-title .row > span { display: inline-block; }
+.hero-title .lv {
+    color: transparent;
+    -webkit-text-stroke: 2.5px var(--ink);
+}
+.hero-title .lv-fill { color: var(--safety); -webkit-text-stroke: 0; }
+.hero-en {
+    font-family: var(--f-display);
+    font-weight: 900;
+    font-size: clamp(1rem, 2.6vw, 1.7rem);
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 18px;
+}
+.hero-en b { color: var(--safety); }
+.hero-sub {
+    max-width: 540px;
+    margin-top: 26px;
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+}
+.hero-sub strong { color: var(--ink); font-weight: 700; }
+.hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 34px;
+}
+.hero-chip {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    border: 1.5px solid var(--ink);
+    background: var(--gypsum);
+    padding: 6px 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.hero-chip i { color: var(--safety); font-size: 0.8rem; }
+
+/* 尺寸標註線（hero 右側裝飾） */
+.dim-v {
+    position: absolute;
+    right: 38px; top: 16%;
+    height: 64%;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--f-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+}
+.dim-v .bar { flex: 1; width: 1.5px; background: var(--line-strong); position: relative; }
+.dim-v .bar::before, .dim-v .bar::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 14px; height: 1.5px;
+    background: var(--line-strong);
+    transform: translateX(-50%);
+}
+.dim-v .bar::before { top: 0; }
+.dim-v .bar::after { bottom: 0; }
+.dim-v .lab { writing-mode: vertical-rl; }
+@media (max-width: 900px) { .dim-v { display: none; } }
+
+.hero-scroll {
+    position: absolute;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.3em;
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.hero-scroll .tick {
+    width: 1.5px; height: 34px;
+    background: var(--safety);
+    animation: drop 1.6s ease-in-out infinite;
+    transform-origin: top;
+}
+@keyframes drop { 0% { transform: scaleY(0); } 55% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+/* ═══════ 跑馬規格帶 ═══════ */
+.spec-strip {
+    background: var(--ink);
+    color: var(--gypsum);
+    border-bottom: 2px solid var(--ink);
+    overflow: clip;
+    padding: 13px 0;
+}
+.spec-track {
+    display: flex;
+    gap: 0;
+    white-space: nowrap;
+    width: max-content;
+}
+.spec-track span {
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: 1.04rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0 26px;
+    display: inline-flex;
+    align-items: center;
+    gap: 26px;
+}
+.spec-track span::after {
+    content: '';
+    width: 8px; height: 8px;
+    background: var(--safety);
+    transform: rotate(45deg);
+}
+
+/* ═══════ STORY 三代 ═══════ */
+.story { padding: 110px 0 90px; position: relative; }
+.story-grid {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 56px;
+    align-items: start;
+}
+.story-portrait {
+    position: relative;
+    border: 2px solid var(--ink);
+    background: var(--night);
+    box-shadow: 10px 10px 0 var(--concrete);
+}
+.story-portrait img {
+    display: block;
+    width: 100%;
+    filter: grayscale(0.2) contrast(1.04);
+}
+.story-portrait .tag {
+    position: absolute;
+    left: -2px; bottom: -2px;
+    background: var(--safety);
+    color: var(--gypsum);
+    font-family: var(--f-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    padding: 8px 14px;
+}
+.story-portrait .gen-stamp {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 84px; height: 84px;
+    border: 2.5px solid var(--safety);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--safety);
+    font-family: var(--f-display);
+    font-weight: 900;
+    transform: rotate(10deg);
+    background: rgba(18, 16, 12, 0.55);
+}
+.gen-stamp .big { font-size: 1.9rem; line-height: 1; }
+.gen-stamp .sm { font-size: 0.56rem; letter-spacing: 0.22em; font-family: var(--f-mono); }
+
+.story-body p { margin-bottom: 1.1em; color: var(--ink-soft); }
+.story-body p strong { color: var(--ink); font-weight: 700; }
+.story-body .lead {
+    font-size: 1.22rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.7;
+}
+.lead .hl { box-shadow: inset 0 -0.45em 0 rgba(242, 92, 5, 0.28); }
+
+/* 三代年表 — 板材堆疊 */
+.gen-ledger { margin-top: 40px; border-top: 2px solid var(--ink); }
+.gen-row {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 18px;
+    padding: 20px 4px;
+    border-bottom: 1.5px solid var(--line);
+    position: relative;
+}
+.gen-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0;
+    width: 0;
+    height: 2px;
+    background: var(--safety);
+    transition: width 0.5s ease;
+}
+.gen-row:hover::before { width: 100%; }
+.gen-row .who {
+    font-family: var(--f-display);
+    font-weight: 900;
+    font-size: 1.05rem;
+    letter-spacing: 0.1em;
+    color: var(--safety);
+    text-transform: uppercase;
+}
+.gen-row .who small {
+    display: block;
+    font-family: var(--f-mono);
+    font-size: 0.62rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.14em;
+}
+.gen-row .what { font-size: 0.94rem; color: var(--ink-soft); }
+.gen-row .what b { color: var(--ink); }
+
+/* ═══════ BUILD 招牌段：五道工序 ═══════ */
+.build {
+    position: relative;
+    background: var(--gypsum-2);
+    border-top: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+}
+.build-pin {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 86px 0 40px;
+    position: relative;
+    transition: background 0.7s ease;
+}
+.build-pin.powered { background: var(--night); }
+
+.build-head { margin-bottom: 26px; }
+.build-head .sec-title { margin-bottom: 4px; transition: color 0.6s; }
+.build-pin.powered .sec-title { color: var(--gypsum); }
+.build-pin.powered .sec-mark { color: var(--concrete); }
+
+.build-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: 44px;
+    align-items: stretch;
+}
+
+/* 舞台：房間剖面（建築剖面圖 → 逐層成真） */
+.stage {
+    position: relative;
+    border: 2.5px solid var(--ink);
+    background: linear-gradient(178deg, #c5beae 0%, #b4ac9a 46%, #a59d8a 100%);
+    min-height: 500px;
+    overflow: clip;
+    box-shadow: 12px 12px 0 rgba(25, 23, 17, 0.14);
+    transition: border-color 0.6s, box-shadow 0.6s;
+}
+.build-pin.powered .stage {
+    border-color: #060504;
+    box-shadow: 0 0 70px rgba(255, 196, 107, 0.12), 12px 12px 0 rgba(0, 0, 0, 0.4);
+}
+/* RC 毛胚紋理 + 模板螺孔 */
+.stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(circle 3.5px, rgba(25, 23, 17, 0.13) 0 2.6px, transparent 3px),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23c)'/%3E%3C/svg%3E");
+    background-size: 23% 31%, auto;
+    background-position: 11% 8%, 0 0;
+}
+/* 內陰影景深 */
+.stage::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    pointer-events: none;
+    box-shadow: inset 0 0 64px rgba(25, 23, 17, 0.22), inset 0 -18px 40px rgba(25, 23, 17, 0.16);
+}
+/* ── 樓板剖切層（由下而上：RC → 自流平 → 隔音墊 → 面材） ── */
+.cut-rc {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 9%;
+    z-index: 2;
+    background:
+        repeating-linear-gradient(45deg, transparent 0 6px, rgba(25, 23, 17, 0.26) 6px 7.5px),
+        linear-gradient(180deg, #97907e, #87806e);
+    border-top: 2.5px solid rgba(25, 23, 17, 0.55);
+}
+#pourCanvas {
+    position: absolute;
+    left: 0; right: 0; bottom: 9%;
+    height: 46%;
+    z-index: 3;
+    pointer-events: none;
+}
+#pourCanvas canvas { display: block; }
+.cut-underlay {
+    position: absolute;
+    left: 0; right: 0; bottom: 16.5%;
+    height: 1.6%;
+    z-index: 5;
+    background: repeating-linear-gradient(90deg, #3c372e 0 18px, #4a443a 18px 36px);
+    transform: scaleX(0);
+    transform-origin: left;
+}
+.planks {
+    position: absolute;
+    left: 0; right: 0; bottom: 18.1%;
+    height: 6.5%;
+    z-index: 5;
+    display: flex;
+    overflow: clip;
+}
+.plank {
+    flex: 1;
+    background:
+        repeating-linear-gradient(92deg, transparent 0 11px, rgba(60, 36, 12, 0.18) 11px 12.5px, transparent 12.5px 19px, rgba(96, 62, 26, 0.12) 19px 21px),
+        linear-gradient(180deg, #c29258 0%, #ab7c46 55%, #8f6536 100%);
+    border-right: 2px solid rgba(40, 24, 8, 0.55);
+    border-top: 3px solid #d9b075;
+    transform: translateX(-1300%);
+    position: relative;
+}
+.plank:nth-child(2n) { filter: brightness(0.94) saturate(1.06); }
+.plank:nth-child(3n) { filter: brightness(1.05); }
+.plank-sheen {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 22%;
+    left: -30%;
+    z-index: 6;
+    background: linear-gradient(100deg, transparent, rgba(255, 244, 214, 0.65), transparent);
+    pointer-events: none;
+    opacity: 0;
+}
+/* 樓層完成線（踢腳暗示） */
+.floor-line {
+    position: absolute;
+    left: 0; right: 0; bottom: 24.6%;
+    height: 2px;
+    background: rgba(25, 23, 17, 0.32);
+    z-index: 2;
+}
+/* ── 石膏磚牆（榫接砌築） ── */
+.gwall {
+    position: absolute;
+    left: 5.5%; top: 9%;
+    width: 33%; bottom: 24.6%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 1fr;
+    gap: 2.5px;
+    z-index: 4;
+}
+.gbrick {
+    background:
+        linear-gradient(102deg, rgba(255, 255, 252, 0.55) 0%, transparent 38%),
+        linear-gradient(180deg, #f6f3ea 0%, #e6e0d1 70%, #d4cdba 100%);
+    border: 1.5px solid rgba(25, 23, 17, 0.42);
+    box-shadow: inset 0 -3px 5px rgba(25, 23, 17, 0.12), inset 2px 2px 3px rgba(255, 255, 252, 0.6);
+    position: relative;
+    opacity: 0;
+}
+/* 榫槽孔 */
+.gbrick::after {
+    content: '';
+    position: absolute;
+    right: 14%; top: 50%;
+    transform: translateY(-50%);
+    width: 15%;
+    aspect-ratio: 0.62;
+    border-radius: 40%;
+    background: rgba(25, 23, 17, 0.2);
+    box-shadow: inset 0 2px 3px rgba(25, 23, 17, 0.25);
+}
+.gbrick:nth-child(3n)::after { right: 30%; }
+/* 砌磚揚塵 */
+.dust {
+    position: absolute;
+    width: 30%; height: 9%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(238, 232, 218, 0.9), rgba(238, 232, 218, 0) 70%);
+    opacity: 0;
+    z-index: 5;
+    pointer-events: none;
+}
+/* ── 窗（天色隨工序推移） ── */
+.stage-window {
+    position: absolute;
+    right: 8%; top: 11%;
+    width: 22%; height: 32%;
+    border: 4px solid #4a443a;
+    box-shadow: 0 4px 0 rgba(25, 23, 17, 0.3), inset 0 0 0 2px rgba(25, 23, 17, 0.35);
+    z-index: 9;
+    overflow: clip;
+}
+.stage-window .sky {
+    position: absolute;
+    inset: 0;
+    transition: none;
+}
+.sky-day { background: linear-gradient(168deg, #cfe7f6 0%, #a8cce3 60%, #e9f2e2 100%); }
+.sky-dusk { background: linear-gradient(170deg, #f2b96b 0%, #e08a52 55%, #9c5d63 100%); opacity: 0; }
+.sky-night {
+    background: linear-gradient(172deg, #0d1726 0%, #16263e 70%, #1d3046 100%);
+    opacity: 0;
+}
+/* 夜窗城市燈點 */
+.sky-night::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(circle 1.6px, rgba(255, 214, 140, 0.95) 0 1px, transparent 1.6px),
+        radial-gradient(circle 1.3px, rgba(168, 208, 255, 0.8) 0 0.8px, transparent 1.3px),
+        radial-gradient(circle 1.2px, rgba(255, 188, 120, 0.7) 0 0.8px, transparent 1.2px);
+    background-size: 34% 21%, 27% 17%, 21% 26%;
+    background-position: 6% 78%, 55% 64%, 80% 86%;
+}
+.stage-window .mullion {
+    position: absolute;
+    left: 50%; top: 0;
+    width: 4px; height: 100%;
+    transform: translateX(-50%);
+    background: #4a443a;
+    z-index: 2;
+}
+/* 窗外光井（白天斜射光） */
+.light-shaft {
+    position: absolute;
+    right: 9%; top: 14%;
+    width: 34%; height: 62%;
+    z-index: 3;
+    background: linear-gradient(202deg, rgba(255, 248, 222, 0.5), rgba(255, 248, 222, 0.06) 62%, transparent 78%);
+    clip-path: polygon(58% 0, 100% 0, 78% 100%, 6% 100%);
+    opacity: 0;
+    pointer-events: none;
+}
+/* ── 自流平：料桶與水平尺 ── */
+.bucket {
+    position: absolute;
+    left: 37%; bottom: 56.5%;
+    width: 7.5%;
+    aspect-ratio: 1.12;
+    z-index: 6;
+    transform: rotate(-32deg);
+    transform-origin: 70% 80%;
+    opacity: 0;
+}
+/* 提把 */
+.bucket::before {
+    content: '';
+    position: absolute;
+    left: 12%; right: 12%; top: -24%;
+    height: 50%;
+    border: 2.5px solid rgba(25, 23, 17, 0.75);
+    border-bottom: none;
+    border-radius: 50% 50% 0 0;
+}
+/* 桶身（上寬下窄） */
+.bucket::after {
+    content: 'SL';
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 0, 100% 0, 82% 100%, 18% 100%);
+    background: linear-gradient(180deg, #5a5244 0%, #3c372e 45%, #2c2922 100%);
+    box-shadow: inset 0 4px 0 rgba(242, 92, 5, 0.85), inset 0 0 0 2px rgba(25, 23, 17, 0.7);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--f-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: rgba(241, 237, 228, 0.85);
+}
+.gauge {
+    position: absolute;
+    right: 3%; bottom: 9%;
+    width: 20px; height: 12%;
+    z-index: 9;
+    border-right: 2px solid var(--blueprint);
+    background: repeating-linear-gradient(180deg, var(--blueprint) 0 1.5px, transparent 1.5px 22%);
+    opacity: 0;
+}
+.gauge .glabel {
+    position: absolute;
+    right: 130%; top: -8px;
+    font-family: var(--f-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--blueprint);
+    white-space: nowrap;
+}
+/* ── 樓層構造標註（step 4） ── */
+.layer-legend {
+    position: absolute;
+    right: 3%; bottom: 27.5%;
+    z-index: 11;
+    font-family: var(--f-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+    text-align: left;
+}
+.layer-legend .ll {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 2.5px 0;
+    opacity: 0;
+}
+.layer-legend .ll i {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--ink);
+    background: var(--gypsum);
+    font-style: normal;
+    font-size: 0.56rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+.build-pin.powered .layer-legend { color: var(--concrete); }
+.build-pin.powered .layer-legend .ll i { border-color: var(--concrete); background: transparent; color: var(--concrete); }
+/* 樓層上的對應編號釘 */
+.layer-pin {
+    position: absolute;
+    z-index: 11;
+    width: 15px; height: 15px;
+    border: 1.5px solid var(--ink);
+    background: var(--gypsum);
+    font-family: var(--f-mono);
+    font-style: normal;
+    font-size: 0.56rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+}
+/* ── 通電：吊燈、光錐、插座、夜幕 ── */
+.night-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    background: rgba(10, 8, 5, 0.82);
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    pointer-events: none;
+}
+.build-pin.powered .night-veil { opacity: 1; }
+.lamp {
+    position: absolute;
+    left: 50%; top: 0;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: 4px; height: 11%;
+    background: #211e18;
+    opacity: 0;
+}
+.lamp::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 100%;
+    transform: translateX(-50%);
+    width: 34px; height: 22px;
+    background: linear-gradient(180deg, #2e2a22, #181511);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.lamp .bulb {
+    position: absolute;
+    left: 50%; top: calc(100% + 16px);
+    transform: translateX(-50%);
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #ffe2a8;
+    box-shadow: 0 0 18px 6px rgba(255, 214, 140, 0.85);
+}
+.lamp-cone {
+    position: absolute;
+    left: 50%; top: 12%;
+    transform: translateX(-50%);
+    width: 46%; height: 64%;
+    z-index: 9;
+    background: linear-gradient(180deg, rgba(255, 211, 132, 0.5), rgba(255, 211, 132, 0.12) 64%, transparent 92%);
+    clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    pointer-events: none;
+}
+.lamp-glow {
+    position: absolute;
+    left: 50%; top: 8%;
+    transform: translateX(-50%);
+    width: 70%;
+    aspect-ratio: 1.25;
+    z-index: 9;
+    background: radial-gradient(ellipse 50% 40% at 50% 14%, rgba(255, 196, 107, 0.55), rgba(255, 196, 107, 0.08) 55%, transparent 75%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    pointer-events: none;
+}
+.outlet {
+    position: absolute;
+    right: 13%; bottom: 30%;
+    width: 62px; height: 86px;
+    background: linear-gradient(165deg, #ffffff, #ecebe5);
+    border: 2px solid rgba(25, 23, 17, 0.55);
+    border-radius: 7px;
+    z-index: 10;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 3px 8px rgba(25, 23, 17, 0.25);
+}
+.outlet::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(25, 23, 17, 0.18);
+    border-radius: 4px;
+}
+.outlet .hole {
+    width: 26px; height: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.outlet .hole i {
+    width: 4.5px; height: 100%;
+    background: #2b2a26;
+    border-radius: 1px;
+}
+.outlet .usbc {
+    width: 18px; height: 6px;
+    border-radius: 3px;
+    background: #2b2a26;
+}
+.outlet .led {
+    font-family: var(--f-mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: #9aa39b;
+    letter-spacing: 0.06em;
+    transition: color 0.5s, text-shadow 0.5s;
+}
+.build-pin.powered .outlet .led {
+    color: #37e58c;
+    text-shadow: 0 0 9px rgba(55, 229, 140, 0.9);
+}
+.build-pin.powered .outlet {
+    box-shadow: 0 0 30px rgba(255, 196, 107, 0.4);
+}
+/* ── 藍圖線稿（step 1 畫出 → step 2 退場） ── */
+.blueprint {
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    pointer-events: none;
+}
+.blueprint line, .blueprint rect {
+    stroke: var(--blueprint);
+    stroke-width: 1.7;
+    fill: none;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+}
+.blueprint .dash { stroke-dasharray: 3 3; stroke-dashoffset: 0; opacity: 0; }
+.bp-label {
+    position: absolute;
+    font-family: var(--f-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    color: var(--blueprint);
+    z-index: 7;
+    opacity: 0;
+    white-space: nowrap;
+}
+/* 雷射水平儀 + 十字雷射 */
+.laser-dev {
+    position: absolute;
+    left: 47%; bottom: 24.6%;
+    width: 26px; height: 34px;
+    z-index: 6;
+    opacity: 0;
+}
+.laser-dev::before {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: 14px;
+    transform: translateX(-50%);
+    width: 18px; height: 16px;
+    background: #3a352c;
+    border-radius: 3px;
+    box-shadow: 0 0 6px rgba(30, 224, 79, 0.5);
+}
+.laser-dev::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: 0;
+    transform: translateX(-50%);
+    width: 2px; height: 15px;
+    background: #3a352c;
+    box-shadow: 6px 2px 0 -0.5px #3a352c, -6px 2px 0 -0.5px #3a352c;
+}
+.laser {
+    position: absolute;
+    left: 0; right: 0;
+    top: 47%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #1ee04f 10%, #1ee04f 90%, transparent);
+    box-shadow: 0 0 12px rgba(30, 224, 79, 0.8);
+    z-index: 7;
+    opacity: 0;
+}
+.laser-v {
+    position: absolute;
+    top: 0; bottom: 24.6%;
+    left: 48.5%;
+    width: 2px;
+    background: linear-gradient(180deg, transparent, #1ee04f 12%, #1ee04f 92%, transparent);
+    box-shadow: 0 0 12px rgba(30, 224, 79, 0.8);
+    z-index: 7;
+    opacity: 0;
+}
+
+/* 右側：步驟解說 */
+.steps-col {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.step-meter {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 22px;
+}
+.step-meter .seg {
+    flex: 1;
+    height: 6px;
+    background: var(--line);
+    position: relative;
+    overflow: clip;
+}
+.step-meter .seg i {
+    position: absolute;
+    inset: 0;
+    background: var(--safety);
+    transform: scaleX(0);
+    transform-origin: left;
+    display: block;
+}
+.step-panels { position: relative; flex: 1; min-height: 320px; }
+.step-panel {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+.step-panel.active { pointer-events: auto; }
+.step-panel .num {
+    font-family: var(--f-display);
+    font-weight: 900;
+    font-size: 4.4rem;
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--safety);
+}
+.step-panel h3 {
+    font-weight: 900;
+    font-size: 1.55rem;
+    margin: 8px 0 4px;
+    transition: color 0.6s;
+}
+.step-panel .en {
+    font-family: var(--f-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.26em;
+    color: var(--safety);
+    text-transform: uppercase;
+}
+.step-panel p {
+    margin-top: 14px;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    transition: color 0.6s;
+}
+.step-panel .spec {
+    margin-top: 16px;
+    font-family: var(--f-mono);
+    font-size: 0.74rem;
+    border: 1.5px dashed var(--line-strong);
+    padding: 12px 14px;
+    color: var(--ink-soft);
+    transition: color 0.6s, border-color 0.6s;
+}
+.step-panel .spec b { color: var(--safety); font-weight: 600; }
+.build-pin.powered .step-panel h3 { color: var(--gypsum); }
+.build-pin.powered .step-panel p { color: var(--concrete); }
+.build-pin.powered .step-panel .spec { color: var(--concrete); border-color: rgba(241, 237, 228, 0.35); }
+
+/* ═══════ 圖鑑 MATERIALS ═══════ */
+.materials { padding: 110px 0 80px; }
+.mat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-top: 44px;
+}
+.mat-card {
+    border: 2px solid var(--ink);
+    background: #faf8f2;
+    position: relative;
+    padding: 26px 24px 22px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: clip;
+}
+.mat-card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 7px 7px 0 var(--safety);
+}
+.mat-card .idx {
+    position: absolute;
+    top: 12px; right: 14px;
+    font-family: var(--f-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--ink-soft);
+}
+.mat-card .icon {
+    width: 52px; height: 52px;
+    border: 2px solid var(--ink);
+    background: var(--gypsum);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: var(--safety);
+    margin-bottom: 16px;
+}
+.mat-card h3 { font-weight: 900; font-size: 1.18rem; }
+.mat-card .sub {
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    color: var(--safety);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+.mat-card p { font-size: 0.9rem; color: var(--ink-soft); }
+.mat-card ul {
+    margin-top: 12px;
+    list-style: none;
+}
+.mat-card ul li {
+    font-family: var(--f-mono);
+    font-size: 0.74rem;
+    color: var(--ink-soft);
+    padding: 5px 0;
+    border-top: 1px dashed var(--line);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+.mat-card ul li b { color: var(--ink); font-weight: 600; text-align: right; }
+.mat-card.feature { grid-column: span 1; background: var(--ink); color: var(--gypsum); }
+.mat-card.feature h3 { color: var(--gypsum); }
+.mat-card.feature p { color: var(--concrete); }
+.mat-card.feature ul li { color: var(--concrete); border-color: rgba(241, 237, 228, 0.2); }
+.mat-card.feature ul li b { color: var(--amber-light); }
+.mat-card.feature .icon { background: rgba(241, 237, 228, 0.08); border-color: var(--safety); }
+
+/* 實拍照帶 */
+.site-photos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-top: 56px;
+}
+.photo-frame {
+    border: 2px solid var(--ink);
+    background: #faf8f2;
+    padding: 10px 10px 14px;
+    box-shadow: 8px 8px 0 var(--concrete);
+}
+.photo-frame .ph {
+    overflow: clip;
+    aspect-ratio: 4 / 4.6;
+    position: relative;
+}
+.photo-frame img {
+    display: block;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+}
+.photo-frame:hover img { transform: scale(1.045); }
+.photo-frame figcaption {
+    margin-top: 11px;
+    font-family: var(--f-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+}
+.photo-frame figcaption i { color: var(--safety); flex: none; }
+
+/* ═══════ SERVICES 我能幫你什麼 ═══════ */
+.services {
+    background: var(--ink);
+    color: var(--gypsum);
+    padding: 110px 0;
+    border-top: 2px solid var(--ink);
+    position: relative;
+    overflow: clip;
+}
+.services .sec-mark { color: var(--concrete); }
+.services .sec-title { color: var(--gypsum); }
+.services-intro { max-width: 640px; color: var(--concrete); margin-bottom: 50px; }
+.services-intro strong { color: var(--gypsum); }
+.srv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+.srv-card {
+    border: 1.5px solid rgba(241, 237, 228, 0.25);
+    padding: 26px 26px 24px;
+    position: relative;
+    background: rgba(241, 237, 228, 0.03);
+    transition: border-color 0.3s, background 0.3s;
+}
+.srv-card:hover { border-color: var(--safety); background: rgba(242, 92, 5, 0.06); }
+.srv-card .for {
+    font-family: var(--f-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.22em;
+    color: var(--safety);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.srv-card h3 { font-weight: 900; font-size: 1.3rem; margin-bottom: 8px; }
+.srv-card p { font-size: 0.92rem; color: var(--concrete); }
+.srv-card p b { color: var(--amber-light); font-weight: 700; }
+
+/* 土地開發 banner */
+.land-strip {
+    margin-top: 56px;
+    border: 1.5px dashed rgba(241, 237, 228, 0.4);
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    overflow: clip;
+}
+.land-strip .txt { padding: 30px 32px; }
+.land-strip h3 {
+    font-weight: 900;
+    font-size: 1.35rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.land-strip h3 i { color: var(--safety); }
+.land-strip p { font-size: 0.92rem; color: var(--concrete); margin-top: 8px; }
+.land-strip p b { color: var(--amber-light); }
+.land-strip .pic { position: relative; }
+.land-strip .pic img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: saturate(0.85);
+}
+.land-strip .pic::after {
+    content: 'SITE / 安坑';
+    position: absolute;
+    left: 10px; bottom: 8px;
+    font-family: var(--f-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--gypsum);
+    background: rgba(18, 16, 12, 0.72);
+    padding: 3px 8px;
+}
+
+/* ═══════ CONTACT 估價單 ═══════ */
+.contact { padding: 110px 0 80px; position: relative; }
+.quote-sheet {
+    max-width: 760px;
+    margin: 40px auto 0;
+    border: 2.5px solid var(--ink);
+    background: #fbf9f3;
+    box-shadow: 14px 14px 0 var(--concrete);
+    position: relative;
+}
+.quote-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 26px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
+    color: var(--gypsum);
+}
+.quote-head .t {
+    font-family: var(--f-display);
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-size: 1.05rem;
+}
+.quote-head .n { font-family: var(--f-mono); font-size: 0.66rem; letter-spacing: 0.16em; color: var(--concrete); }
+.quote-rows { padding: 10px 0; }
+.quote-row {
+    display: grid;
+    grid-template-columns: 54px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 26px;
+    border-bottom: 1px dashed var(--line);
+    text-decoration: none;
+    transition: background 0.25s;
+}
+.quote-row:hover { background: rgba(242, 92, 5, 0.07); }
+.quote-row:last-child { border-bottom: none; }
+.quote-row .qi {
+    width: 44px; height: 44px;
+    border: 2px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: var(--safety);
+    background: var(--gypsum);
+}
+.quote-row .ql b { display: block; font-weight: 900; font-size: 1.02rem; }
+.quote-row .ql small {
+    font-family: var(--f-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+}
+.quote-row .qa {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    color: var(--safety);
+    white-space: nowrap;
+}
+.quote-stamp {
+    position: absolute;
+    right: -26px; top: 46%;
+    width: 116px; height: 116px;
+    border: 3px solid rgba(242, 92, 5, 0.75);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(242, 92, 5, 0.85);
+    transform: rotate(-12deg);
+    font-weight: 900;
+    pointer-events: none;
+    background: rgba(251, 249, 243, 0.4);
+}
+.quote-stamp .a { font-size: 1.06rem; letter-spacing: 0.2em; }
+.quote-stamp .b { font-family: var(--f-mono); font-size: 0.56rem; letter-spacing: 0.18em; margin-top: 3px; }
+@media (max-width: 860px) { .quote-stamp { right: -10px; top: -34px; width: 96px; height: 96px; } }
+
+.catalog-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+    max-width: 760px;
+    margin: 34px auto 0;
+}
+.cat-link {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 16px;
+    align-items: center;
+    border: 2px solid var(--ink);
+    background: #faf8f2;
+    padding: 14px;
+    text-decoration: none;
+    transition: transform 0.25s, box-shadow 0.25s;
+}
+.cat-link:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--safety); }
+.cat-link img { display: block; width: 100%; border: 1.5px solid var(--line-strong); }
+.cat-link .cl b { display: block; font-weight: 900; font-size: 0.98rem; line-height: 1.45; }
+.cat-link .cl small {
+    font-family: var(--f-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 6px;
+}
+.cat-link .cl small i { color: var(--safety); }
+
+/* ═══════ FOOTER ═══════ */
+footer {
+    border-top: 2px solid var(--ink);
+    background: var(--ink);
+    color: var(--concrete);
+    padding: 44px 0 56px;
+}
+.foot-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 22px;
+}
+.foot-social { display: flex; gap: 12px; }
+.foot-social a {
+    width: 44px; height: 44px;
+    border: 1.5px solid rgba(241, 237, 228, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gypsum);
+    font-size: 1.05rem;
+    text-decoration: none;
+    transition: background 0.25s, border-color 0.25s, transform 0.25s;
+}
+.foot-social a:hover { background: var(--safety); border-color: var(--safety); transform: translateY(-3px); }
+.foot-note { font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.12em; }
+.foot-note a { color: var(--amber-light); text-decoration: none; }
+.foot-credit { font-size: 0.8rem; }
+.foot-credit i { color: var(--safety); }
+
+/* ═══════ RWD ═══════ */
+@media (max-width: 980px) {
+    .build-grid { grid-template-columns: 1fr; gap: 26px; }
+    .stage { min-height: 380px; }
+    .step-panels { min-height: 300px; }
+    .mat-grid, .site-photos { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+    .story-grid { grid-template-columns: 1fr; gap: 40px; }
+    .srv-grid { grid-template-columns: 1fr; }
+    .land-strip { grid-template-columns: 1fr; }
+    .land-strip .pic { height: 170px; }
+    .catalog-links { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+    .wrap { padding: 0 18px; }
+    .mat-grid, .site-photos { grid-template-columns: 1fr; }
+    .stage { min-height: 320px; }
+    .quote-row { grid-template-columns: 44px 1fr; }
+    .quote-row .qa { display: none; }
+    .hero-inner { padding: 110px 0 80px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .hero-scroll .tick { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+    <a href="/guild/" class="back-link"><i class="fa-solid fa-arrow-left"></i> 回公會 ARCHIVE</a>
+    <div class="sheet-no">SPEC SHEET <b>NO. SG-2026-091</b> / 吳泊宇 BOYU WU</div>
+</nav>
+
+<!-- ═══════ HERO ═══════ -->
+<header class="hero">
+    <div class="hero-grid-bg"></div>
+    <div id="wall3d"></div>
+    <div class="dim-v">
+        <span class="lab">CEILING H. 3,200</span>
+        <div class="bar"></div>
+        <span class="lab">F.L. ±0</span>
+    </div>
+    <div class="wrap hero-inner">
+        <div class="hero-kicker"><i class="fa-solid fa-trowel-bricks"></i> 樹林柑園 · 板材世家 · 第三代</div>
+        <h1 class="hero-title">
+            <span class="row"><span>把空間蓋到</span></span>
+            <span class="row"><span class="lv">水<span class="lv-fill">平</span></span></span>
+        </h1>
+        <div class="hero-en">TRUE <b>LEVEL</b> / BUILT IN 3 GENERATIONS</div>
+        <p class="hero-sub">我是<strong>吳泊宇</strong>。阿公那輩就在樹林柑園做板材，到我是第三代。
+        我跑過室內設計、建材、建設公司，現在自己對接建材資源 ——
+        <strong>石膏磚隔間、自流平地坪、超耐磨地板、快充面板</strong>，桃園以北，連工帶料。</p>
+        <div class="hero-meta">
+            <span class="hero-chip"><i class="fa-solid fa-cubes"></i> BR 防潮石膏磚</span>
+            <span class="hero-chip"><i class="fa-solid fa-droplet"></i> 雲豹高強度自流平</span>
+            <span class="hero-chip"><i class="fa-solid fa-bolt"></i> GaN 快充插座面板</span>
+            <span class="hero-chip"><i class="fa-solid fa-location-dot"></i> 大台北 / 桃園以北</span>
+        </div>
+    </div>
+    <div class="hero-scroll"><span>SCROLL</span><span class="tick"></span></div>
+</header>
+
+<!-- ═══════ 跑馬規格帶 ═══════ -->
+<div class="spec-strip" aria-hidden="true">
+    <div class="spec-track" id="specTrack">
+        <span>石膏磚隔間</span><span>雲豹自流平</span><span>AC5 超耐磨木地板</span><span>帝晶石板</span><span>美耐板</span><span>特殊板材</span><span>MK 隔音墊</span><span>GaN 快充面板</span><span>連工帶料</span>
+    </div>
+</div>
+
+<!-- ═══════ STORY 三代 ═══════ -->
+<section class="story">
+    <div class="wrap">
+        <div class="sec-mark"><span class="no">SEC. 01</span> HERITAGE / 出身</div>
+        <div class="story-grid">
+            <figure class="story-portrait rv">
+                <img src="/assets/img/guild/91_boyu/avatar.webp" alt="吳泊宇 — 夜晚街頭黑白肖像" loading="lazy">
+                <div class="gen-stamp"><span class="big">3rd</span><span class="sm">GENERATION</span></div>
+                <figcaption class="tag">WU BO-YU / 泊宇</figcaption>
+            </figure>
+            <div class="story-body">
+                <h2 class="sec-title rv">板材是我家的母語<span class="en">Born into the Trade</span></h2>
+                <p class="lead rv">別人學建材是看型錄，<span class="hl">我是在板材堆裡長大的</span>。</p>
+                <p class="rv">祖父那一輩，就在樹林柑園經營板材生意，一做就是幾十年。到了父輩退出生意之後，這條線斷了一陣子 —— 而我決定把它接回來。</p>
+                <p class="rv">我的職涯繞了產業鏈一整圈：<strong>室內設計公司、建材商、建設公司</strong>，做過特助、帶過業務團隊。所以我很清楚 —— 建設公司在意成本與工期、設計師在意完成面、統包在意施工順序、經銷在意供貨穩定。<strong>每一個環節在想什麼，我都待過、都懂。</strong></p>
+                <p class="rv">現在我自己對接建材資源，已經接上大台北地區的多個建案。我也幫公司建置過網站、投過廣告 —— 我知道沒有自己的平台不行，所以這一頁，就是我的工地名片。</p>
+                <div class="gen-ledger rv">
+                    <div class="gen-row">
+                        <div class="who">GEN 1<small>祖父輩</small></div>
+                        <div class="what">在<b>樹林柑園</b>落地，經營板材生意數十年 —— 這個家族與「板」的緣分從這裡開始。</div>
+                    </div>
+                    <div class="gen-row">
+                        <div class="who">GEN 2<small>父輩</small></div>
+                        <div class="what">承接生意後逐步退出，<b>家業斷了線</b> —— 但對材料的理解留在了家裡。</div>
+                    </div>
+                    <div class="gen-row">
+                        <div class="who">GEN 3<small>我 / 泊宇</small></div>
+                        <div class="what">從室內設計、建材到建設公司的<b>特助與業務主管</b>，繞完產業鏈一圈後，自己出來把家族的線重新接上。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════ BUILD 招牌段 ═══════ -->
+<section class="build" id="build">
+    <div class="build-pin" id="buildPin">
+        <div class="wrap" style="width:100%">
+            <div class="build-head">
+                <div class="sec-mark"><span class="no">SEC. 02</span> PROCESS / 五道工序</div>
+                <h2 class="sec-title">蓋好一個房間<span class="en">Scroll to Build — 滾動施工</span></h2>
+            </div>
+            <div class="build-grid">
+                <div class="stage" id="stage">
+                    <!-- 樓板剖切層 -->
+                    <div class="cut-rc"></div>
+                    <div class="floor-line"></div>
+                    <div id="pourCanvas"></div>
+                    <div class="cut-underlay" id="cutUnderlay"></div>
+                    <div class="planks" id="planks"><div class="plank-sheen" id="plankSheen"></div></div>
+                    <!-- 窗與天色 -->
+                    <div class="stage-window">
+                        <div class="sky sky-day" id="skyDay"></div>
+                        <div class="sky sky-dusk" id="skyDusk"></div>
+                        <div class="sky sky-night" id="skyNight"></div>
+                        <div class="mullion"></div>
+                    </div>
+                    <div class="light-shaft" id="lightShaft"></div>
+                    <!-- 石膏磚牆 -->
+                    <div class="gwall" id="gwall"></div>
+                    <!-- 自流平道具 -->
+                    <div class="bucket" id="bucket"></div>
+                    <div class="gauge" id="gauge"><span class="glabel">FLATNESS 1–3mm</span></div>
+                    <!-- 樓層構造標註 -->
+                    <div class="layer-legend" id="layerLegend">
+                        <div class="ll"><i>1</i>AC5 面材</div>
+                        <div class="ll"><i>2</i>MK 隔音墊</div>
+                        <div class="ll"><i>3</i>雲豹自流平</div>
+                        <div class="ll"><i>4</i>RC 樓板</div>
+                    </div>
+                    <i class="layer-pin" style="left:48%;bottom:19.2%">1</i>
+                    <i class="layer-pin" style="left:55%;bottom:16.1%">2</i>
+                    <i class="layer-pin" style="left:62%;bottom:11.5%">3</i>
+                    <i class="layer-pin" style="left:69%;bottom:3.4%">4</i>
+                    <!-- 通電 -->
+                    <div class="night-veil"></div>
+                    <div class="lamp" id="lamp"><span class="bulb"></span></div>
+                    <div class="lamp-cone" id="lampCone"></div>
+                    <div class="lamp-glow" id="lampGlow"></div>
+                    <div class="outlet" id="outlet">
+                        <div class="hole"><i></i><i></i></div>
+                        <div class="hole"><i></i><i></i></div>
+                        <div class="usbc"></div>
+                        <div class="led" id="wattLed">0.0W</div>
+                    </div>
+                    <!-- 藍圖線稿 -->
+                    <svg class="blueprint" id="blueprint" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <rect x="5.5" y="9" width="33" height="66.4" pathLength="100" />
+                        <rect x="70" y="11" width="22" height="32" pathLength="100" />
+                        <rect x="83" y="62" width="5" height="9" pathLength="100" />
+                        <line x1="0" y1="75.4" x2="100" y2="75.4" pathLength="100" />
+                        <line x1="0" y1="91" x2="100" y2="91" pathLength="100" />
+                        <line x1="50" y1="0" x2="50" y2="11" pathLength="100" />
+                        <line class="dash" x1="0" y1="81.9" x2="100" y2="81.9" pathLength="100" />
+                    </svg>
+                    <span class="bp-label" id="bpL1" style="left:8%;top:5%">GYPSUM BLOCK WALL</span>
+                    <span class="bp-label" id="bpL2" style="right:9%;top:46%">OPENING W-1</span>
+                    <span class="bp-label" id="bpL3" style="left:52%;bottom:26.5%">F.L. ±0</span>
+                    <!-- 雷射放樣 -->
+                    <div class="laser-dev" id="laserDev"></div>
+                    <div class="laser" id="laser"></div>
+                    <div class="laser-v" id="laserV"></div>
+                </div>
+                <div class="steps-col">
+                    <div class="step-meter" id="stepMeter">
+                        <div class="seg"><i></i></div><div class="seg"><i></i></div><div class="seg"><i></i></div><div class="seg"><i></i></div><div class="seg"><i></i></div>
+                    </div>
+                    <div class="step-panels">
+                        <div class="step-panel" data-step="0">
+                            <div class="num">01</div>
+                            <h3>場勘放樣</h3>
+                            <div class="en">Site Survey</div>
+                            <p>每個案子我都先到場。看牆線、看水電配置、量地坪高低差 —— 雷射一打，多少公分的落差騙不了人。報價之前，先把現場搞清楚。</p>
+                            <div class="spec">LASER LEVEL <b>ON</b> ／ 丈量 → 放樣 → 報價</div>
+                        </div>
+                        <div class="step-panel" data-step="1">
+                            <div class="num">02</div>
+                            <h3>砌石膏磚牆</h3>
+                            <div class="en">Gypsum Block Wall</div>
+                            <p>BR 防潮石膏磚，泰國進口天然石膏製成。輕質不壓樓板、防火防潮、隔音好，還可回收 —— 取代紅磚與輕隔間的室內牆首選。</p>
+                            <div class="spec">防火 ／ 防潮 ／ 隔音 ／ 可回收 ／ <b>E1 健康綠建材標章</b></div>
+                        </div>
+                        <div class="step-panel" data-step="2">
+                            <div class="num">03</div>
+                            <h3>倒自流平</h3>
+                            <div class="en">Self-Leveling</div>
+                            <p>雲豹高強度自流平 —— 倒下去，它自己找水平。百坪幾小時完工，8 小時後可踩踏，之後貼磚、鋪木地板、SPC 都是平的。</p>
+                            <div class="spec">抗壓 <b>2000–2500 PSI</b> ／ 平整度 <b>1–3mm</b> ／ 8HR 可踩踏</div>
+                        </div>
+                        <div class="step-panel" data-step="3">
+                            <div class="num">04</div>
+                            <h3>鋪設面材</h3>
+                            <div class="en">Flooring</div>
+                            <p>AC5 超耐磨木地板、帝晶石板、SPC —— 底下墊 MK 隔音墊，樓下鄰居也謝謝你。面材是你每天踩的東西，我只給耐用的。</p>
+                            <div class="spec">AC5 耐磨等級 ／ 帝晶石板 ／ MK 隔音墊</div>
+                        </div>
+                        <div class="step-panel" data-step="4">
+                            <div class="num">05</div>
+                            <h3>通電點燈</h3>
+                            <div class="en">Power On</div>
+                            <p>最後一道工序，是讓空間亮起來。易智 GaN 快充插座面板 —— 手機筆電直接插牆充，不用再找豆腐頭。房間完工，驗收。</p>
+                            <div class="spec">GaN 氮化鎵 ／ 最高 <b>65W</b> 快充 ／ 磁吸 &amp; 卡扣式面板</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════ MATERIALS 圖鑑 ═══════ -->
+<section class="materials">
+    <div class="wrap">
+        <div class="sec-mark"><span class="no">SEC. 03</span> MATERIAL ATLAS / 建材圖鑑</div>
+        <h2 class="sec-title rv">我手上的材料<span class="en">What I Supply</span></h2>
+        <p class="rv" style="max-width:620px;color:var(--ink-soft)">每一項都是我自己跑產業鏈對接回來的資源 —— 規格寫在這裡，現場看貨也歡迎。</p>
+        <div class="mat-grid">
+            <div class="mat-card feature rv">
+                <span class="idx">MAT-01</span>
+                <div class="icon"><i class="fa-solid fa-cubes"></i></div>
+                <div class="sub">Gypsum Block</div>
+                <h3>BR 防潮石膏磚</h3>
+                <p>泰國進口天然石膏，取得泰國與台灣健康綠建材認證。輕質、易加工，榫接施工快，是現代室內隔間牆的理想建材。</p>
+                <ul>
+                    <li>防火等級 <b>不燃材料</b></li>
+                    <li>特性 <b>防潮 / 隔音 / 不龜裂</b></li>
+                    <li>認證 <b>E1 健康綠建材標章</b></li>
+                    <li>永續 <b>可回收 / 符合 ESG</b></li>
+                </ul>
+            </div>
+            <div class="mat-card rv">
+                <span class="idx">MAT-02</span>
+                <div class="icon"><i class="fa-solid fa-droplet"></i></div>
+                <div class="sub">Self-Leveling</div>
+                <h3>雲豹高強度自流平</h3>
+                <p>取代傳統水泥砂漿的地坪打底工法 —— 自動流平、減少對師傅手感的依賴，品質可預期、可複製。</p>
+                <ul>
+                    <li>抗壓強度 <b>2000–2500 磅</b></li>
+                    <li>平整度 <b>1–3mm</b></li>
+                    <li>可踩踏 <b>8 小時</b></li>
+                    <li>參考價 <b>厚 2–3cm 約 3000/坪</b></li>
+                </ul>
+            </div>
+            <div class="mat-card rv">
+                <span class="idx">MAT-03</span>
+                <div class="icon"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="sub">Flooring</div>
+                <h3>AC5 超耐磨地板 / 帝晶石板</h3>
+                <p>AC5 是住宅最高耐磨等級。搭配帝晶石板、SPC 與 MK 隔音墊，從打底到完成面一條龍。</p>
+                <ul>
+                    <li>耐磨等級 <b>AC5</b></li>
+                    <li>靜音 <b>MK 隔音墊</b></li>
+                    <li>選擇 <b>木地板 / 石板 / SPC</b></li>
+                </ul>
+            </div>
+            <div class="mat-card rv">
+                <span class="idx">MAT-04</span>
+                <div class="icon"><i class="fa-solid fa-bolt"></i></div>
+                <div class="sub">GaN Outlet</div>
+                <h3>易智 GaN 快充插座面板</h3>
+                <p>氮化鎵技術做進牆壁插座 —— USB 快充直接出牆，附 LED 充電功率顯示，安規認證齊全。</p>
+                <ul>
+                    <li>功率 <b>65W / 50W / 38W</b></li>
+                    <li>面板 <b>磁吸式 / 卡扣式</b></li>
+                    <li>系列 <b>易智 / 高端 / 磐石 / 省空間</b></li>
+                </ul>
+            </div>
+            <div class="mat-card rv">
+                <span class="idx">MAT-05</span>
+                <div class="icon"><i class="fa-solid fa-table-cells-large"></i></div>
+                <div class="sub">Panels</div>
+                <h3>特殊板材 / 美耐板</h3>
+                <p>家族在柑園做了三代的本行。需要各式特殊板材、美耐板，跟我說規格，我幫你找到對的料。</p>
+                <ul>
+                    <li>淵源 <b>柑園板材 · 三代</b></li>
+                    <li>範圍 <b>特殊板材 / 美耐板</b></li>
+                </ul>
+            </div>
+            <div class="mat-card rv">
+                <span class="idx">MAT-06</span>
+                <div class="icon"><i class="fa-solid fa-ruler-combined"></i></div>
+                <div class="sub">Turnkey</div>
+                <h3>連工帶料</h3>
+                <p>不是只賣料 —— 桃園以北的建案場與住家場，報價皆連工帶料，工班我帶、品質我驗。</p>
+                <ul>
+                    <li>範圍 <b>桃園以北</b></li>
+                    <li>對象 <b>建案 / 住家</b></li>
+                    <li>模式 <b>連工帶料</b></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="site-photos">
+            <figure class="photo-frame rv">
+                <div class="ph"><img src="/assets/img/guild/91_boyu/site_floor.webp" alt="自流平施工完成的地坪" loading="lazy"></div>
+                <figcaption><i class="fa-solid fa-camera"></i>自流平完工的地坪 — 取自我的工地紀錄</figcaption>
+            </figure>
+            <figure class="photo-frame rv">
+                <div class="ph"><img src="/assets/img/guild/91_boyu/site_delivery.webp" alt="石膏自流平材料進場，整板堆放於工地" loading="lazy"></div>
+                <figcaption><i class="fa-solid fa-camera"></i>材料進場 — 一板一板點收</figcaption>
+            </figure>
+            <figure class="photo-frame rv">
+                <div class="ph"><img src="/assets/img/guild/91_boyu/site_mixing.webp" alt="工班在現場將石膏自流平材料倒入攪拌機" loading="lazy"></div>
+                <figcaption><i class="fa-solid fa-camera"></i>現場備料攪拌 — 自流平上料中</figcaption>
+            </figure>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════ SERVICES ═══════ -->
+<section class="services">
+    <div class="wrap">
+        <div class="sec-mark"><span class="no">SEC. 04</span> SERVICE / 我能幫你什麼</div>
+        <h2 class="sec-title rv">你是誰，我就怎麼幫<span class="en">Pick Your Side</span></h2>
+        <p class="services-intro rv">產業鏈每個位置我都待過，所以我說的不是話術 —— 是<strong>每個角色真正在意的事</strong>。</p>
+        <div class="srv-grid">
+            <div class="srv-card rv">
+                <div class="for"><i class="fa-solid fa-building"></i> For 建設公司 / 總包</div>
+                <h3>工期與成本，一次到位</h3>
+                <p>石膏磚比傳統紅磚輕、施工快；自流平大面積泵送幾小時完工。<b>大台北多個建案</b>已在跑，量大歡迎談長期供應。</p>
+            </div>
+            <div class="srv-card rv">
+                <div class="for"><i class="fa-solid fa-compass-drafting"></i> For 室內設計師</div>
+                <h3>完成面漂亮，底子要先平</h3>
+                <p>平整度 1–3mm 的地坪，後面貼什麼都好看。我做過室內設計公司，<b>你圖上要的效果，我知道底層該怎麼配</b>。</p>
+            </div>
+            <div class="srv-card rv">
+                <div class="for"><i class="fa-solid fa-house-chimney"></i> For 自宅裝修</div>
+                <h3>連工帶料，免去發包惡夢</h3>
+                <p>住家場一樣接。隔間、地坪、地板、插座面板一條龍，<b>桃園以北</b>報價連工帶料 —— 你只要驗收。</p>
+            </div>
+            <div class="srv-card rv">
+                <div class="for"><i class="fa-solid fa-warehouse"></i> For 建材同業 / 經銷</div>
+                <h3>資源對接，互補有無</h3>
+                <p>我自己就是跑資源出身的 —— 你缺的料我這裡有，我缺的你那裡有，<b>同業交流隨時歡迎</b>。</p>
+            </div>
+        </div>
+        <div class="land-strip rv">
+            <div class="txt">
+                <h3><i class="fa-solid fa-mountain-city"></i> 順帶一提：我也收土地</h3>
+                <p>手上有<b>大台北建地</b>或<b>帶建照的案件</b>想盤的，報來看看 —— 商業區、住宅區皆可，開發中也談，<b>預算 2 億</b>，小面積沒問題。</p>
+            </div>
+            <div class="pic"><img src="/assets/img/guild/91_boyu/site_land.webp" alt="安坑基地周邊道路" loading="lazy"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════ CONTACT ═══════ -->
+<section class="contact" id="contact">
+    <div class="wrap">
+        <div class="sec-mark"><span class="no">SEC. 05</span> CONTACT / 索取報價</div>
+        <h2 class="sec-title rv" style="text-align:center">跟我要一份估價單<span class="en">Request a Quote</span></h2>
+        <div class="quote-sheet rv">
+            <div class="quote-head">
+                <span class="t">Quotation</span>
+                <span class="n">FORM NO. 091-BOYU</span>
+            </div>
+            <div class="quote-rows">
+                <a class="quote-row" href="https://line.me/ti/p/NBUkxtX5Lw" target="_blank" rel="noopener noreferrer">
+                    <div class="qi"><i class="fa-brands fa-line"></i></div>
+                    <div class="ql"><b>LINE 加好友</b><small>傳平面圖或現場照，回你最快</small></div>
+                    <div class="qa">OPEN LINE <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                </a>
+                <a class="quote-row" href="tel:0981632192">
+                    <div class="qi"><i class="fa-solid fa-phone"></i></div>
+                    <div class="ql"><b>0981-632-192</b><small>急件直接打，工地時段也接</small></div>
+                    <div class="qa">CALL NOW <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                </a>
+                <a class="quote-row" href="https://www.threads.com/@91_boyu" target="_blank" rel="noopener noreferrer">
+                    <div class="qi"><i class="fa-brands fa-threads"></i></div>
+                    <div class="ql"><b>@91_boyu</b><small>工地日常與材料知識都在這</small></div>
+                    <div class="qa">THREADS <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                </a>
+                <a class="quote-row" href="https://linktr.ee/hank.w" target="_blank" rel="noopener noreferrer">
+                    <div class="qi"><i class="fa-solid fa-link"></i></div>
+                    <div class="ql"><b>linktr.ee/hank.w</b><small>所有聯絡方式與型錄入口</small></div>
+                    <div class="qa">LINKTREE <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                </a>
+            </div>
+            <div class="quote-stamp"><span class="a">驗收合格</span><span class="b">TRUE LEVEL</span></div>
+        </div>
+        <div class="catalog-links">
+            <a class="cat-link rv" href="https://online.fliphtml5.com/splza/qmah/" target="_blank" rel="noopener noreferrer">
+                <img src="/assets/img/guild/91_boyu/catalog_gypsum_cover.webp" alt="BR 防潮石膏磚型錄封面" loading="lazy">
+                <div class="cl"><b>BR 防潮石膏磚 / 自流平 / 隔音墊 型錄</b><small><i class="fa-solid fa-book-open"></i> FLIP CATALOG — 線上翻閱</small></div>
+            </a>
+            <a class="cat-link rv" href="https://online.fliphtml5.com/splza/itlb" target="_blank" rel="noopener noreferrer">
+                <img src="/assets/img/guild/91_boyu/catalog_outlet_cover.webp" alt="易智 GaN 快充插座面板型錄封面" loading="lazy">
+                <div class="cl"><b>高功率充電 / 安全開關插座 型錄</b><small><i class="fa-solid fa-book-open"></i> FLIP CATALOG — 線上翻閱</small></div>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer>
+    <div class="wrap foot-grid">
+        <div class="foot-social">
+            <a href="https://www.threads.com/@91_boyu" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://linktr.ee/hank.w" target="_blank" rel="noopener noreferrer" aria-label="Linktree"><i class="fa-solid fa-link"></i></a>
+            <a href="https://line.me/ti/p/NBUkxtX5Lw" target="_blank" rel="noopener noreferrer" aria-label="LINE"><i class="fa-brands fa-line"></i></a>
+            <a href="tel:0981632192" aria-label="Phone"><i class="fa-solid fa-phone"></i></a>
+        </div>
+        <div class="foot-note">SPEC SHEET NO. SG-2026-091 — <a href="/guild/">← BACK TO ARCHIVE</a></div>
+        <div class="foot-credit">Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon</div>
+    </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script>
+(function () {
+    'use strict';
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var isMobile = window.matchMedia('(max-width: 768px)').matches;
+    var hasGSAP = typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined';
+    if (hasGSAP) gsap.registerPlugin(ScrollTrigger);
+
+    /* ═══════ 石膏磚牆 DOM 生成 ═══════ */
+    var gwall = document.getElementById('gwall');
+    var BRICK_ROWS = 7, BRICK_COLS = 4;
+    var bricks = [];
+    for (var r = 0; r < BRICK_ROWS; r++) {
+        for (var c = 0; c < BRICK_COLS; c++) {
+            var b = document.createElement('div');
+            b.className = 'gbrick';
+            gwall.appendChild(b);
+            bricks.push(b);
+        }
+    }
+    /* 由下往上砌磚的順序 */
+    var brickOrder = [];
+    for (var rr = BRICK_ROWS - 1; rr >= 0; rr--) {
+        for (var cc = 0; cc < BRICK_COLS; cc++) {
+            brickOrder.push(bricks[rr * BRICK_COLS + cc]);
+        }
+    }
+
+    /* 地板木條 */
+    var planksEl = document.getElementById('planks');
+    var planks = [];
+    for (var p = 0; p < 9; p++) {
+        var pl = document.createElement('div');
+        pl.className = 'plank';
+        planksEl.appendChild(pl);
+        planks.push(pl);
+    }
+
+    /* 砌磚揚塵（每排一朵） */
+    var stage = document.getElementById('stage');
+    var dusts = [];
+    for (var d = 0; d < BRICK_ROWS; d++) {
+        var du = document.createElement('div');
+        du.className = 'dust';
+        /* d=0 是最先落下的最底排 */
+        du.style.bottom = (24.6 + d * (66.4 / BRICK_ROWS) * 0.93) + '%';
+        du.style.left = (7 + (d % 3) * 8) + '%';
+        stage.appendChild(du);
+        dusts.push(du);
+    }
+
+    /* ═══════ p5：自流平液體（instance mode，掛在 div 容器） ═══════ */
+    var pour = { fill: 0, settle: 0 };
+    var pourHost = document.getElementById('pourCanvas');
+    var p5Inst = null;
+    if (typeof p5 !== 'undefined' && !reduceMotion) {
+        p5Inst = new p5(function (sk) {
+            var t = 0;
+            sk.setup = function () {
+                var w = pourHost.offsetWidth || 600;
+                var h = pourHost.offsetHeight || 220;
+                sk.createCanvas(w, h);
+                sk.pixelDensity(Math.min(window.devicePixelRatio || 1, 1.5));
+                sk.noStroke();
+                sk.frameRate(45);
+            };
+            sk.windowResized = function () {
+                sk.resizeCanvas(pourHost.offsetWidth || 600, pourHost.offsetHeight || 220);
+            };
+            sk.draw = function () {
+                sk.clear();
+                if (pour.fill <= 0.001) return;
+                t += 0.035;
+                var W = sk.width, H = sk.height;
+                var level = H - pour.fill * H * 0.165;
+                var amp = (1 - pour.settle) * 7;
+                /* 傾倒中的落料流（對準料桶嘴） */
+                if (pour.fill > 0.02 && pour.fill < 0.97 && pour.settle < 0.5) {
+                    sk.fill(242, 92, 5, 215);
+                    var sx = W * 0.44 + Math.sin(t * 2.2) * 5;
+                    sk.rect(sx, 0, 6.5 + Math.sin(t * 5) * 2, level + 4, 3);
+                    /* 噴濺顆粒 */
+                    for (var i = 0; i < 6; i++) {
+                        var px = sx + Math.sin(t * 3 + i * 2.1) * (16 + i * 8);
+                        var py = level - Math.abs(Math.sin(t * 4 + i)) * 15;
+                        sk.circle(px, py, 4 - i * 0.45);
+                    }
+                }
+                /* 液面（波動 → 收斂水平） */
+                sk.fill(242, 92, 5, 235);
+                sk.beginShape();
+                sk.vertex(0, H);
+                for (var x = 0; x <= W; x += 10) {
+                    var y = level
+                        + Math.sin(x * 0.025 + t * 1.8) * amp
+                        + Math.sin(x * 0.012 - t * 1.1) * amp * 0.6;
+                    sk.vertex(x, y);
+                }
+                sk.vertex(W, H);
+                sk.endShape(sk.CLOSE);
+                /* 液面高光 */
+                sk.fill(255, 196, 107, 130);
+                sk.beginShape();
+                for (var x2 = 0; x2 <= W; x2 += 10) {
+                    var y2 = level
+                        + Math.sin(x2 * 0.025 + t * 1.8) * amp
+                        + Math.sin(x2 * 0.012 - t * 1.1) * amp * 0.6;
+                    sk.vertex(x2, y2);
+                }
+                for (var x3 = W; x3 >= 0; x3 -= 10) {
+                    var y3 = level + 5
+                        + Math.sin(x3 * 0.025 + t * 1.8) * amp
+                        + Math.sin(x3 * 0.012 - t * 1.1) * amp * 0.6;
+                    sk.vertex(x3, y3);
+                }
+                sk.endShape(sk.CLOSE);
+                /* 表層收邊（深色 meniscus） */
+                sk.stroke(160, 55, 0, 150);
+                sk.strokeWeight(2);
+                sk.noFill();
+                sk.beginShape();
+                for (var x4 = 0; x4 <= W; x4 += 10) {
+                    var y4 = level
+                        + Math.sin(x4 * 0.025 + t * 1.8) * amp
+                        + Math.sin(x4 * 0.012 - t * 1.1) * amp * 0.6;
+                    sk.vertex(x4, y4);
+                }
+                sk.endShape();
+                sk.noStroke();
+                /* 完全找平後的水平基準線 */
+                if (pour.settle > 0.85) {
+                    sk.stroke(241, 237, 228, (pour.settle - 0.85) / 0.15 * 220);
+                    sk.strokeWeight(1);
+                    sk.line(0, level, W, level);
+                    sk.noStroke();
+                }
+            };
+        }, pourHost);
+    } else if (pourHost) {
+        /* reduced-motion / 無 p5：靜態橘色地坪 */
+        pourHost.style.background = 'linear-gradient(180deg, transparent 83.5%, var(--safety) 83.5%)';
+    }
+
+    /* ═══════ three.js：HERO 砌牆 ═══════ */
+    (function initHero3D() {
+        var host = document.getElementById('wall3d');
+        if (!host || typeof THREE === 'undefined' || reduceMotion) return;
+        var W = host.offsetWidth, H = host.offsetHeight;
+        var scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0xf1ede4, 16, 46);
+        var cam = new THREE.PerspectiveCamera(34, W / H, 0.1, 100);
+        cam.position.set(7.5, 2.2, 16);
+        cam.lookAt(4.5, 2.4, 0);
+        var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+        renderer.setSize(W, H);
+        host.appendChild(renderer.domElement);
+
+        var amb = new THREE.AmbientLight(0xfff6e8, 0.75);
+        scene.add(amb);
+        var key = new THREE.DirectionalLight(0xffffff, 0.8);
+        key.position.set(6, 10, 8);
+        scene.add(key);
+        var accent = new THREE.PointLight(0xf25c05, 0.9, 26);
+        accent.position.set(2, 1.5, 6);
+        scene.add(accent);
+
+        var brickGeo = new THREE.BoxGeometry(1.45, 0.72, 0.6);
+        var brickMat = new THREE.MeshStandardMaterial({ color: 0xeeeadf, roughness: 0.85, metalness: 0.02 });
+        var brickMatAlt = new THREE.MeshStandardMaterial({ color: 0xe2dccb, roughness: 0.9, metalness: 0.02 });
+        var edgeMat = new THREE.LineBasicMaterial({ color: 0x86806f, transparent: true, opacity: 0.5 });
+        var edges = new THREE.EdgesGeometry(brickGeo);
+
+        var group = new THREE.Group();
+        scene.add(group);
+        var ROWS = isMobile ? 6 : 8, COLS = isMobile ? 6 : 9;
+        var animBricks = [];
+        for (var r = 0; r < ROWS; r++) {
+            for (var c = 0; c < COLS; c++) {
+                var m = new THREE.Mesh(brickGeo, (r + c) % 2 ? brickMat : brickMatAlt);
+                var line = new THREE.LineSegments(edges, edgeMat);
+                m.add(line);
+                var offset = (r % 2) * 0.74;
+                var tx = c * 1.5 + offset - 1.5;
+                var ty = r * 0.74 + 0.36;
+                m.position.set(tx, ty, 0);
+                m.userData = { tx: tx, ty: ty, delay: (r * COLS + c) };
+                group.add(m);
+                animBricks.push(m);
+            }
+        }
+        group.position.set(1.4, -0.4, -2.2);
+        group.rotation.y = -0.34;
+
+        /* 磚塊進場：由下排往上飛入 */
+        var clock = 0;
+        animBricks.forEach(function (m) {
+            m.position.y += 9 + Math.random() * 5;
+            m.position.x += (Math.random() - 0.5) * 3;
+            m.rotation.z = (Math.random() - 0.5) * 0.9;
+            m.rotation.x = (Math.random() - 0.5) * 0.5;
+        });
+        if (hasGSAP) {
+            animBricks.forEach(function (m, i) {
+                var row = Math.floor(m.userData.delay / COLS);
+                var d = 0.35 + row * 0.34 + (m.userData.delay % COLS) * 0.07;
+                gsap.to(m.position, { y: m.userData.ty, x: m.userData.tx, duration: 1.15, delay: d, ease: 'power3.out' });
+                gsap.to(m.rotation, { z: 0, x: 0, duration: 1.15, delay: d, ease: 'power3.out' });
+            });
+        } else {
+            animBricks.forEach(function (m) { m.position.set(m.userData.tx, m.userData.ty, 0); m.rotation.set(0, 0, 0); });
+        }
+
+        var mouseX = 0, mouseY = 0;
+        if (!isMobile) {
+            window.addEventListener('mousemove', function (e) {
+                mouseX = (e.clientX / window.innerWidth - 0.5);
+                mouseY = (e.clientY / window.innerHeight - 0.5);
+            }, { passive: true });
+        }
+
+        var running = true, rafId = 0;
+        function tick() {
+            if (!running) return;
+            clock += 0.008;
+            group.rotation.y = -0.34 + mouseX * 0.07;
+            group.position.y = -0.4 + Math.sin(clock) * 0.06 + mouseY * -0.25;
+            accent.intensity = 0.8 + Math.sin(clock * 2.4) * 0.18;
+            renderer.render(scene, cam);
+            rafId = requestAnimationFrame(tick);
+        }
+        tick();
+
+        /* 滾出視口就暫停 rAF */
+        if (hasGSAP) {
+            ScrollTrigger.create({
+                trigger: '.hero',
+                start: 'top bottom',
+                end: 'bottom top',
+                onToggle: function (self) {
+                    running = self.isActive;
+                    if (running) tick(); else cancelAnimationFrame(rafId);
+                }
+            });
+        }
+        window.addEventListener('resize', function () {
+            var w2 = host.offsetWidth, h2 = host.offsetHeight;
+            cam.aspect = w2 / h2;
+            cam.updateProjectionMatrix();
+            renderer.setSize(w2, h2);
+        });
+    })();
+
+    if (!hasGSAP) {
+        /* 無 GSAP fallback：全部直接可見 */
+        document.querySelectorAll('.rv, .gbrick, .step-panel, .outlet, .lamp, .layer-pin, #layerLegend .ll').forEach(function (el) {
+            el.style.opacity = '1';
+        });
+        document.querySelectorAll('.plank, .cut-underlay').forEach(function (el) { el.style.transform = 'none'; });
+        return;
+    }
+
+    /* ═══════ HERO 標題進場 ═══════ */
+    gsap.fromTo('.hero-kicker', { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8, delay: 0.15, ease: 'power3.out' });
+    gsap.fromTo('.hero-title .row > span', { yPercent: 110 }, { yPercent: 0, duration: 1.05, stagger: 0.14, delay: 0.3, ease: 'power4.out' });
+    gsap.fromTo('.hero-en, .hero-sub', { y: 26, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.9, stagger: 0.12, delay: 0.75, ease: 'power3.out' });
+    gsap.fromTo('.hero-chip', { y: 18, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.6, stagger: 0.07, delay: 1.0, ease: 'power2.out' });
+
+    /* ═══════ 跑馬帶（無縫循環） ═══════ */
+    (function marquee() {
+        var track = document.getElementById('specTrack');
+        if (!track) return;
+        track.innerHTML += track.innerHTML;
+        var half = track.scrollWidth / 2;
+        gsap.to(track, { x: -half, duration: reduceMotion ? 0 : 26, ease: 'none', repeat: -1, modifiers: { x: function (x) { return (parseFloat(x) % half) + 'px'; } } });
+    })();
+
+    /* ═══════ 通用 reveal ═══════ */
+    gsap.utils.toArray('.rv').forEach(function (el) {
+        gsap.fromTo(el, { y: 30, autoAlpha: 0 }, {
+            y: 0, autoAlpha: 1, duration: 0.85, ease: 'power3.out',
+            scrollTrigger: { trigger: el, start: 'top 87%', once: true }
+        });
+    });
+
+    /* ═══════ 招牌段：五道工序 pin + scrub ═══════ */
+    (function buildSection() {
+        var pin = document.getElementById('buildPin');
+        var panels = gsap.utils.toArray('.step-panel');
+        var segs = gsap.utils.toArray('#stepMeter .seg i');
+        var wattLed = document.getElementById('wattLed');
+        var bpLines = document.querySelectorAll('#blueprint line:not(.dash), #blueprint rect');
+        var bpDash = document.querySelectorAll('#blueprint .dash');
+        var bpSvg = document.getElementById('blueprint');
+        var bpLabels = document.querySelectorAll('.bp-label');
+        var laser = document.getElementById('laser');
+        var laserV = document.getElementById('laserV');
+        var laserDev = document.getElementById('laserDev');
+        var outlet = document.getElementById('outlet');
+        var lamp = document.getElementById('lamp');
+        var lampCone = document.getElementById('lampCone');
+        var lampGlow = document.getElementById('lampGlow');
+        var bucket = document.getElementById('bucket');
+        var gauge = document.getElementById('gauge');
+        var shaft = document.getElementById('lightShaft');
+        var skyDusk = document.getElementById('skyDusk');
+        var skyNight = document.getElementById('skyNight');
+        var underlay = document.getElementById('cutUnderlay');
+        var sheen = document.getElementById('plankSheen');
+        var legendRows = gsap.utils.toArray('#layerLegend .ll');
+        var layerPins = gsap.utils.toArray('.layer-pin');
+        var watt = { v: 0 };
+        var STEPS = 5;
+        var current = -1;
+
+        function setStep(idx) {
+            if (idx === current) return;
+            current = idx;
+            panels.forEach(function (pn, i) {
+                pn.classList.toggle('active', i === idx);
+                gsap.to(pn, { autoAlpha: i === idx ? 1 : 0, y: i === idx ? 0 : (i < idx ? -16 : 16), duration: 0.4, ease: 'power2.out', overwrite: 'auto' });
+            });
+            pin.classList.toggle('powered', idx === 4);
+        }
+        panels.forEach(function (pn) { gsap.set(pn, { autoAlpha: 0, y: 16 }); });
+
+        var tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: '#build',
+                start: 'top top',
+                end: '+=' + (isMobile ? 3200 : 4200),
+                pin: '#buildPin',
+                scrub: 0.6,
+                anticipatePin: 1,
+                onUpdate: function (self) {
+                    var idx = Math.min(STEPS - 1, Math.floor(self.progress * STEPS));
+                    setStep(idx);
+                    segs.forEach(function (s, i) {
+                        var segP = Math.max(0, Math.min(1, self.progress * STEPS - i));
+                        s.style.transform = 'scaleX(' + segP + ')';
+                    });
+                }
+            }
+        });
+
+        /* ── STEP 1 (0–1): 藍圖線稿畫出 + 雷射放樣 ── */
+        tl.to(bpLines, { strokeDashoffset: 0, duration: 0.42, stagger: 0.07, ease: 'none' }, 0)
+          .to(bpDash, { opacity: 0.9, duration: 0.18 }, 0.4)
+          .to(bpLabels, { opacity: 1, duration: 0.2, stagger: 0.08 }, 0.42)
+          .to(laserDev, { opacity: 1, duration: 0.15 }, 0.5)
+          .to(laser, { opacity: 1, duration: 0.12 }, 0.62)
+          .fromTo(laser, { top: '38%' }, { top: '52%', duration: 0.3, ease: 'power1.inOut' }, 0.62)
+          .to(laserV, { opacity: 1, duration: 0.12 }, 0.72)
+          .to([laser, laserV, laserDev], { opacity: 0, duration: 0.2 }, 1.05);
+
+        /* ── STEP 2 (1–2): 藍圖退場、光井亮起、砌磚＋揚塵 ── */
+        tl.to(bpSvg, { opacity: 0.13, duration: 0.3 }, 1.05)
+          .to(bpLabels, { opacity: 0, duration: 0.2 }, 1.05)
+          .to(shaft, { opacity: 1, duration: 0.4 }, 1.1);
+        brickOrder.forEach(function (b, i) {
+            tl.fromTo(b,
+                { opacity: 0, y: -34, rotation: -5 },
+                { opacity: 1, y: 0, rotation: 0, duration: 0.06, ease: 'back.out(2.4)' },
+                1.12 + (i / brickOrder.length) * 0.82);
+        });
+        /* 每排落定時的揚塵 */
+        dusts.forEach(function (du, r) {
+            var rowDone = 1.12 + ((r + 1) * BRICK_COLS - 1) / brickOrder.length * 0.82 + 0.05;
+            tl.fromTo(du, { opacity: 0, scale: 0.4 }, { opacity: 0.75, scale: 1.4, duration: 0.05, ease: 'power1.out' }, rowDone)
+              .to(du, { opacity: 0, scale: 2, duration: 0.1, ease: 'power1.in' }, rowDone + 0.05);
+        });
+
+        /* ── STEP 3 (2–3): 料桶傾倒 → 自流平找平 → 水平尺驗收 ── */
+        tl.fromTo(bucket, { opacity: 0, y: -30, rotation: -6 }, { opacity: 1, y: 0, rotation: -32, duration: 0.15, ease: 'power2.out' }, 2.02)
+          .to(pour, { fill: 1, duration: 0.55, ease: 'power1.inOut' }, 2.12)
+          .to(bucket, { rotation: -45, duration: 0.3, ease: 'power1.inOut' }, 2.2)
+          .to(bucket, { opacity: 0, y: -24, rotation: -10, duration: 0.16, ease: 'power2.in' }, 2.62)
+          .to(pour, { settle: 1, duration: 0.36, ease: 'power2.out' }, 2.6)
+          .to(gauge, { opacity: 1, duration: 0.18 }, 2.78)
+          .to(gauge, { opacity: 0, duration: 0.15 }, 3.08);
+
+        /* ── STEP 4 (3–4): 隔音墊 → 木地板滑入 → 亮光掃過 → 構造標註 ── */
+        tl.to(underlay, { scaleX: 1, duration: 0.22, ease: 'power2.out' }, 3.05);
+        planks.forEach(function (pl, i) {
+            tl.to(pl, { x: 0, duration: 0.11, ease: 'power3.out' }, 3.2 + i * 0.055);
+        });
+        tl.fromTo(sheen, { left: '-30%', opacity: 0 }, { opacity: 1, duration: 0.06 }, 3.72)
+          .to(sheen, { left: '108%', duration: 0.28, ease: 'power1.inOut' }, 3.74)
+          .to(sheen, { opacity: 0, duration: 0.05 }, 4.0)
+          .to(layerPins, { opacity: 1, duration: 0.12, stagger: 0.05 }, 3.74)
+          .to(legendRows, { opacity: 1, duration: 0.12, stagger: 0.05 }, 3.78);
+
+        /* ── STEP 5 (4–5): 天色入夜 → 吊燈閃爍點亮 → 插座通電 ── */
+        tl.to(skyDusk, { opacity: 1, duration: 0.18 }, 4.02)
+          .to(shaft, { opacity: 0, duration: 0.2 }, 4.05)
+          .to(skyNight, { opacity: 1, duration: 0.25 }, 4.18)
+          .to(bpSvg, { opacity: 0, duration: 0.2 }, 4.05)
+          .to(lamp, { autoAlpha: 1, duration: 0.1 }, 4.1)
+          /* 燈泡閃爍兩下再亮起 */
+          .to([lampCone, lampGlow], { autoAlpha: 0.8, duration: 0.04 }, 4.3)
+          .to([lampCone, lampGlow], { autoAlpha: 0.1, duration: 0.04 }, 4.36)
+          .to([lampCone, lampGlow], { autoAlpha: 1, duration: 0.12 }, 4.44)
+          .to(outlet, { autoAlpha: 1, duration: 0.15 }, 4.35)
+          .to(watt, {
+              v: 65, duration: 0.4, ease: 'power2.out',
+              onUpdate: function () { wattLed.textContent = watt.v.toFixed(1) + 'W'; }
+          }, 4.5)
+          .to({}, { duration: 0.1 }, 4.9); /* 收尾停留 */
+        tl.totalDuration(5);
+    })();
+
+    /* ═══════ 服務卡 hover 微傾（桌機） ═══════ */
+    if (!isMobile && !reduceMotion) {
+        document.querySelectorAll('.mat-card').forEach(function (card) {
+            card.addEventListener('mousemove', function (e) {
+                var rc = card.getBoundingClientRect();
+                var rx = ((e.clientY - rc.top) / rc.height - 0.5) * -3;
+                var ry = ((e.clientX - rc.left) / rc.width - 0.5) * 3;
+                card.style.transform = 'perspective(700px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translate(-3px,-3px)';
+            });
+            card.addEventListener('mouseleave', function () { card.style.transform = ''; });
+        });
+    }
+})();
+</script>
+</body>
+</html>
