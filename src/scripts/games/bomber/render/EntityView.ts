@@ -1,0 +1,550 @@
+import { Container, Sprite, Texture, Rectangle, Graphics } from 'pixi.js';
+import type { BomberState, AbilityId } from '../engine/types';
+import { speedMs } from '../engine/player';
+import { BLAST_TTL_MS } from '../engine/constants';
+import { enemyMoveMs } from '../engine/enemy';
+import { lerp, type Layout } from './layout';
+import type { BomberTextures } from './assets';
+
+/**
+ * 每幀以 Sprite 繪製所有動態實體：
+ * - 玩家（blink invulnMs、護盾 alpha）
+ * - 敵人（依 kind 選貼圖，僅 alive）
+ * - 炸彈（脈動 scale）
+ * - 爆風（additive blend，black drops out，alpha from ttlMs）
+ * - 道具（依 kind 選貼圖，小 bob）
+ * - 出口（exitActive 才顯示，閃爍 alpha）
+ * 所有移動實體插值：lerp(prev, cur, progress)
+ *
+ * 策略：簡易「recreate-per-frame」pool——每類實體維護一個陣列，
+ * 每幀重新配置必要數量（多的隱藏，不足時新增），避免 GC。
+ */
+
+/** Walk-cycle step sequence for ping-pong: A → stand → B → stand */
+const WALK_STEPS = [0, 1, 2, 1] as const;
+
+/** Enemy 3-frame ping-pong: A → neutral → C → neutral */
+const ANIM_STEPS = [0, 1, 2, 1] as const;
+
+/** Per-kind animation cadence (ms per step) — dasher 急促、ghost 悠長、tank 沉重。 */
+const ENEMY_ANIM_STEP_MS: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank' | 'sapper' | 'splitter' | 'mini', number> = {
+  wander: 240, chaser: 190, ghost: 330, dasher: 120, mimic: 200, tank: 420, sapper: 210, splitter: 270, mini: 170,
+};
+
+/** Per-kind 顯示尺寸（cell 倍率）：splitter 大隻、mini 小隻。 */
+const ENEMY_SIZE: Partial<Record<'splitter' | 'mini', number>> = { splitter: 0.98, mini: 0.55 };
+
+/** 有 4 方向 sheet 的怪物（其餘圓球系用 3 幀條即可）。 */
+const DIRECTIONAL_KINDS = new Set(['chaser', 'dasher', 'sapper', 'tank']);
+type DirectionalKind = 'chaser' | 'dasher' | 'sapper' | 'tank';
+
+/** Map direction string to walk-sheet row index (row 0=down, 1=left, 2=right, 3=up). */
+function dirToRow(dir: string): number {
+  switch (dir) {
+    case 'left':  return 1;
+    case 'right': return 2;
+    case 'up':    return 3;
+    default:      return 0; // 'down' and any unknown default to down
+  }
+}
+
+/** Expanding ring shockwave effect (grid coords; radii in cell units). */
+interface RingFx {
+  gx: number; gy: number;
+  ageMs: number; ttlMs: number;
+  fromR: number; toR: number;
+  color: number;
+}
+
+/** Fading afterimage ghost (blink trail). */
+interface GhostFx {
+  gx: number; gy: number;
+  ageMs: number; ttlMs: number;
+  character: 'lena' | 'mira' | 'aya' | 'rosa';
+  dirRow: number;
+}
+
+/** Per-ability accent colours (match the select-screen auras). */
+const ABILITY_COLOR: Record<AbilityId, number> = {
+  detonate: 0xffb347,
+  inferno: 0xff5a3c,
+  blink:   0x36e0c0,
+  bulwark: 0x6b9fd0,
+};
+
+export class EntityView {
+  private blinkPhase    = 0;
+  private pulsePhase    = 0;
+  private exitGlowPhase = 0;
+  /** 怪物動畫全域時基（各怪以 id 偏移相位）。 */
+  private enemyAnimMs   = 0;
+  /** Accumulates ms while the player is moving; resets to 0 when idle. */
+  private playerWalkMs  = 0;
+
+  private textures: BomberTextures;
+
+  /**
+   * Frame cache for walk animations.
+   * Key: `${character}-${dirRow}-${step}` → sliced Texture.
+   * Built lazily on first access.
+   */
+  private walkFrameCache = new Map<string, Texture>();
+
+  // --- sprite pools ---
+  private playerSp:  Sprite;
+  private enemyPool: Sprite[] = [];
+  private bombPool:  Sprite[] = [];
+  private blastPool: Sprite[] = [];
+  private puPool:    Sprite[] = [];
+  private exitSp:    Sprite;
+
+  // --- ability fx state ---
+  private rings:  RingFx[]  = [];
+  private ghosts: GhostFx[] = [];
+  private ghostPool: Sprite[] = [];
+  /** Remaining bulwark-shield display time (counts down with dt). */
+  private bulwarkMs = 0;
+  /** Graphics layer for rings + bulwark bubble (drawn fresh each frame on fxLayer). */
+  private fxG: Graphics;
+
+  constructor(private layer: Container, private fxLayer: Container, textures: BomberTextures) {
+    this.textures = textures;
+
+    // 玩家（1 個）— 初始貼圖用 lena；render 時每幀依 character 切換
+    this.playerSp = this._newSprite(textures.playerLena);
+
+    // 出口（1 個）
+    this.exitSp = this._newSprite(textures.exit);
+    this.exitSp.visible = false;
+
+    // 技能特效 Graphics（fxLayer 上享 bloom）
+    this.fxG = new Graphics();
+    this.fxLayer.addChild(this.fxG);
+  }
+
+  /** 在格 (gx,gy) 觸發一圈擴散震波（mimic 甦醒等事件提示）。 */
+  flashAt(gx: number, gy: number, color: number): void {
+    this.rings.push({ gx, gy, ageMs: 0, ttlMs: 420, fromR: 0.15, toR: 0.9, color });
+  }
+
+  /** 觸發技能視覺特效（main.ts 在 drainEvents 收到 ability 事件時呼叫）。 */
+  triggerAbility(id: AbilityId, state: BomberState): void {
+    const p = state.player;
+    const color = ABILITY_COLOR[id];
+    const characterMap: Record<string, 'lena' | 'mira' | 'aya' | 'rosa'> = {
+      lena: 'lena', mira: 'mira', aya: 'aya', rosa: 'rosa',
+    };
+    const character = characterMap[state.character] ?? 'lena';
+
+    if (id === 'detonate') {
+      // 每顆被引爆的彈位各一圈警示震波
+      for (const b of state.bombs) {
+        if (b.owner) continue;
+        this.rings.push({
+          gx: b.x, gy: b.y,
+          ageMs: 0, ttlMs: 360,
+          fromR: 0.15, toR: 0.8, color,
+        });
+      }
+    } else if (id === 'inferno') {
+      // 大型擴散火環（雙層）
+      this.rings.push({ gx: p.x, gy: p.y, ageMs: 0, ttlMs: 520, fromR: 0.3, toR: 4.4, color });
+      this.rings.push({ gx: p.x, gy: p.y, ageMs: 0, ttlMs: 640, fromR: 0.1, toR: 3.2, color: 0xffb347 });
+    } else if (id === 'blink') {
+      // 殘影軌跡：從落點往反方向拖 3 個 ghost ＋ 落點小環
+      const delta: Record<string, [number, number]> = {
+        up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0],
+      };
+      const [dx, dy] = delta[p.dir] ?? [0, 1];
+      const row = dirToRow(p.dir);
+      for (let k = 1; k <= 3; k++) {
+        this.ghosts.push({
+          gx: p.x - dx * k, gy: p.y - dy * k,
+          ageMs: 0, ttlMs: 300 + k * 110,
+          character, dirRow: row,
+        });
+      }
+      this.rings.push({ gx: p.x, gy: p.y, ageMs: 0, ttlMs: 360, fromR: 0.15, toR: 0.85, color });
+    } else if (id === 'bulwark') {
+      // 護盾泡：invuln 期間持續顯示（3s 與引擎 invulnMs 同步）
+      this.bulwarkMs = 3000;
+      this.rings.push({ gx: p.x, gy: p.y, ageMs: 0, ttlMs: 420, fromR: 0.2, toR: 1.1, color });
+    }
+  }
+
+  // ─── pool helpers ────────────────────────────────────────────────────────────
+
+  private _newSprite(texture: Texture): Sprite {
+    const sp = new Sprite(texture);
+    sp.anchor.set(0.5);
+    this.layer.addChild(sp);
+    return sp;
+  }
+
+  /** 在 fxLayer 上建立新的爆風 Sprite，blendMode 僅設一次。 */
+  private _newBlastSprite(texture: Texture): Sprite {
+    const sp = new Sprite(texture);
+    sp.anchor.set(0.5);
+    sp.blendMode = 'add';
+    this.fxLayer.addChild(sp);
+    return sp;
+  }
+
+  /** 取得 pool 中第 idx 個 Sprite（不足時自動擴充）。多餘的在 render 末尾隱藏。 */
+  private _poolGet(pool: Sprite[], idx: number, texture: Texture): Sprite {
+    if (idx < pool.length) {
+      pool[idx].texture = texture;
+      pool[idx].visible = true;
+      return pool[idx];
+    }
+    const sp = this._newSprite(texture);
+    pool.push(sp);
+    return sp;
+  }
+
+  /** 取得爆風 pool 中第 idx 個 Sprite（不足時自動擴充到 fxLayer）。 */
+  private _blastPoolGet(idx: number, texture: Texture): Sprite {
+    if (idx < this.blastPool.length) {
+      this.blastPool[idx].texture = texture;
+      this.blastPool[idx].visible = true;
+      return this.blastPool[idx];
+    }
+    const sp = this._newBlastSprite(texture);
+    this.blastPool.push(sp);
+    return sp;
+  }
+
+  private _poolHideFrom(pool: Sprite[], from: number): void {
+    for (let i = from; i < pool.length; i++) pool[i].visible = false;
+  }
+
+  // ─── render ──────────────────────────────────────────────────────────────────
+
+  render(state: BomberState, layout: Layout, dtMs: number): void {
+    this.blinkPhase    = (this.blinkPhase    + dtMs * 0.008) % (Math.PI * 2);
+    this.pulsePhase    = (this.pulsePhase    + dtMs * 0.005) % (Math.PI * 2);
+    this.exitGlowPhase = (this.exitGlowPhase + dtMs * 0.003) % (Math.PI * 2);
+
+    const { cell, ox, oy } = layout;
+
+    // 1. 出口
+    this._renderExit(state, cell, ox, oy);
+
+    // 2. 爆風 — 方向性爆炸件（依鄰格判定件型）× 3 階段漸弱
+    //    中心=十字核心；同軸雙鄰=延伸段；單鄰=指向外側的火焰尾端；交叉/孤立=核心
+    const bKey = (x: number, y: number): number => y * 64 + x;
+    const blastSet = new Set(state.blasts.map((b) => bKey(b.x, b.y)));
+    let bi = 0;
+    for (const blast of state.blasts) {
+      const L = blastSet.has(bKey(blast.x - 1, blast.y));
+      const R = blastSet.has(bKey(blast.x + 1, blast.y));
+      const U = blastSet.has(bKey(blast.x, blast.y - 1));
+      const D = blastSet.has(bKey(blast.x, blast.y + 1));
+      const horiz = L || R, vert = U || D;
+      let piece: keyof BomberTextures['blastPieces'];
+      if ((horiz && vert) || (!horiz && !vert)) piece = 'center';
+      else if (horiz) piece = L && R ? 'armH' : L ? 'tipR' : 'tipL';
+      else            piece = U && D ? 'armV' : U ? 'tipD' : 'tipU';
+
+      const t = Math.min(1, Math.max(0, 1 - blast.ttlMs / BLAST_TTL_MS)); // 0→1
+      const stage = Math.min(2, Math.floor(t * 3));                        // 漸弱 3 階段
+      const sp = this._blastPoolGet(bi++, this.textures.blastPieces[piece][stage]);
+      // 滿格＋1px 防縫：沿火焰軸向相鄰格皆為傷害格，必須接成連續火牆；
+      // 垂直軸向的「不外溢」由素材本身的細身寬（42/64）保證（視覺=判定）。
+      const bSize = cell + 1;
+      sp.width  = bSize;
+      sp.height = bSize;
+      sp.x = ox + blast.x * cell + cell / 2;
+      sp.y = oy + blast.y * cell + cell / 2;
+      sp.alpha = t < 0.85 ? 1 : 1 - (t - 0.85) / 0.15; // 尾段再淡出
+    }
+    this._poolHideFrom(this.blastPool, bi);
+
+    // 3. 道具
+    let pi = 0;
+    for (const pu of state.powerUps) {
+      const puTex = this._puTexture(pu.kind);
+      const sp = this._poolGet(this.puPool, pi++, puTex);
+      const bob = 1 + Math.sin(this.pulsePhase + pi * 0.7) * 0.06;
+      const size = cell * 0.7 * bob;
+      sp.width  = size;
+      sp.height = size;
+      sp.x = ox + pu.x * cell + cell / 2;
+      sp.y = oy + pu.y * cell + cell / 2;
+      sp.alpha = 1;
+    }
+    this._poolHideFrom(this.puPool, pi);
+
+    // 4. 炸彈（脈動 scale）— 造型依角色
+    const bombTexMap: Record<string, Texture> = {
+      lena: this.textures.bombLena,
+      mira: this.textures.bombMira,
+      aya:  this.textures.bombAya,
+      rosa: this.textures.bombRosa,
+    };
+    const bombTex = bombTexMap[state.character] ?? this.textures.bomb;
+    let bmi = 0;
+    for (const bomb of state.bombs) {
+      const sp = this._poolGet(this.bombPool, bmi++, bombTex);
+      const pulseScale = 1 + Math.sin(this.pulsePhase) * 0.12;
+      const size = cell * 0.8 * pulseScale;
+      sp.width  = size;
+      sp.height = size;
+      sp.x = ox + bomb.x * cell + cell / 2;
+      sp.y = oy + bomb.y * cell + cell / 2;
+      // 敵方（工兵）的彈染綠灰，跟玩家的彈一眼可分
+      sp.tint = bomb.owner === 'enemy' ? 0x9adf8a : 0xffffff;
+      sp.alpha = 1;
+    }
+    this._poolHideFrom(this.bombPool, bmi);
+
+    // 5. 敵人（3 幀 ping-pong 動畫；各 kind 節奏不同、各怪相位錯開；
+    //    ghost 半透明、穿箱時更透；dasher 依移動方向翻面）
+    this.enemyAnimMs = (this.enemyAnimMs + dtMs) % 1_000_000;
+    let ei = 0;
+    for (const enemy of state.enemies) {
+      if (!enemy.alive) continue;
+      const moveMs   = enemyMoveMs(enemy.kind, state.floor);
+      const progress = Math.min(1, Math.max(0, enemy.moveAccMs / moveMs));
+      const rx = lerp(enemy.prevX, enemy.x, progress);
+      const ry = lerp(enemy.prevY, enemy.y, progress);
+
+      const dormantMimic = enemy.kind === 'mimic' && !enemy.awake;
+      let tex: Texture;
+      if (dormantMimic) {
+        // 偽裝休眠：直接用「當前生態區的 crate 貼圖」＝完美偽裝；
+        // 唯一破綻是極微弱的呼吸縮放（觀察力好的玩家能識破）。
+        const biome = Math.min(4, Math.floor((state.floor - 1) / 3));
+        const set = this.textures.tileSets[biome] ?? this.textures.tileSets[0];
+        tex = set.crate;
+      } else if (DIRECTIONAL_KINDS.has(enemy.kind)) {
+        // 4 方向 sheet：列依移動方向、幀依 ping-pong 節奏
+        const stepMs = ENEMY_ANIM_STEP_MS[enemy.kind];
+        const phase  = (this.enemyAnimMs + enemy.id * 137) % (stepMs * 4);
+        const step   = ANIM_STEPS[Math.floor(phase / stepMs) % 4];
+        tex = this._enemySheetFrame(enemy.kind as DirectionalKind, dirToRow(enemy.dir), step);
+      } else {
+        const frames = this.textures.enemyFrames[enemy.kind];
+        const stepMs = ENEMY_ANIM_STEP_MS[enemy.kind];
+        const phase  = (this.enemyAnimMs + enemy.id * 137) % (stepMs * 4);
+        tex = frames[ANIM_STEPS[Math.floor(phase / stepMs) % 4]];
+      }
+
+      const sp  = this._poolGet(this.enemyPool, ei++, tex);
+      const breathe = dormantMimic ? 1 + Math.sin(this.enemyAnimMs * 0.004 + enemy.id) * 0.02 : 1;
+      const sizeMul = dormantMimic ? 1.0 : (ENEMY_SIZE[enemy.kind as 'splitter' | 'mini'] ?? 0.85);
+      const size = cell * sizeMul * breathe;
+      sp.width  = size;
+      sp.height = size;
+      sp.x = ox + rx * cell + cell / 2;
+      sp.y = oy + ry * cell + cell / 2;
+      // 方向由 4 方向 sheet 的列處理，無需翻面
+      sp.scale.x = Math.abs(sp.scale.x);
+      if (enemy.kind === 'ghost') {
+        const overCrate = state.grid[Math.round(ry)]?.[Math.round(rx)] === 'crate';
+        sp.alpha = overCrate ? 0.45 : 0.85;
+      } else {
+        sp.alpha = 1;
+      }
+      // tank 受傷（hp 1）：紅白急促脈動提示「再一發就死」
+      if (enemy.kind === 'tank' && (enemy.hp ?? 2) <= 1) {
+        sp.tint = Math.sin(this.enemyAnimMs * 0.02) > 0 ? 0xff8866 : 0xffffff;
+      } else {
+        sp.tint = 0xffffff;
+      }
+    }
+    this._poolHideFrom(this.enemyPool, ei);
+
+    // 6. 玩家（walk-cycle animation）
+    const p = state.player;
+    const playerProgress = Math.min(1, Math.max(0,
+      1 - p.moveCooldownMs / speedMs(p.speedLevel),
+    ));
+    const prx = lerp(p.prevX, p.x, playerProgress);
+    const pry = lerp(p.prevY, p.y, playerProgress);
+    const ppx = ox + prx * cell + cell / 2;
+    const ppy = oy + pry * cell + cell / 2;
+
+    const isInvuln     = p.invulnMs > 0;
+    const blinkVisible = !isInvuln || Math.sin(this.blinkPhase) > 0;
+
+    // Walk-cycle: advance the phase continuously while moving (do NOT reset on
+    // the brief idle moment between tiles, or the cycle never reaches the 2nd
+    // step). Kept bounded by the cycle length. Idle shows the standing frame.
+    const moving = p.moveCooldownMs > 0;
+    if (moving) {
+      this.playerWalkMs = (this.playerWalkMs + dtMs) % (130 * 4);
+    }
+    // Ping-pong: step-A → stand → step-B → stand (each 130 ms)
+    const step = moving
+      ? WALK_STEPS[Math.floor(this.playerWalkMs / 130) % 4]
+      : 1; // idle = standing frame (col 1)
+
+    const dirRow = dirToRow(p.dir);
+    const characterMap: Record<string, 'lena' | 'mira' | 'aya' | 'rosa'> = {
+      lena: 'lena', mira: 'mira', aya: 'aya', rosa: 'rosa',
+    };
+    const character = characterMap[state.character] ?? 'lena';
+
+    const ps = this.playerSp;
+    ps.texture = this._walkFrame(character, dirRow, step);
+    const pSize = cell * 0.95;
+    ps.width  = pSize;
+    ps.height = pSize;
+    ps.x = ppx;
+    ps.y = ppy;
+    // Walk sheet has separate left/right rows — no horizontal flip needed
+    ps.scale.x = Math.abs(ps.scale.x);
+    ps.alpha   = blinkVisible ? (p.shield ? 0.95 : 1) : 0.3;
+    ps.visible = true;
+
+    // 7. 技能特效（環形震波／殘影／護盾泡）
+    this._renderAbilityFx(state, layout, dtMs, ppx, ppy);
+  }
+
+  // ─── ability fx rendering ────────────────────────────────────────────────────
+
+  private _renderAbilityFx(
+    state: BomberState,
+    layout: Layout,
+    dtMs: number,
+    playerPx: number,
+    playerPy: number,
+  ): void {
+    const { cell, ox, oy } = layout;
+    const g = this.fxG;
+    g.clear();
+
+    // -- 環形震波 --
+    for (const r of this.rings) r.ageMs += dtMs;
+    this.rings = this.rings.filter((r) => r.ageMs < r.ttlMs);
+    for (const r of this.rings) {
+      const t = r.ageMs / r.ttlMs;               // 0→1
+      const ease = 1 - (1 - t) * (1 - t);        // ease-out
+      const radius = (r.fromR + (r.toR - r.fromR) * ease) * cell;
+      const alpha = (1 - t) * 0.9;
+      const cx = ox + r.gx * cell + cell / 2;
+      const cy = oy + r.gy * cell + cell / 2;
+      g.circle(cx, cy, radius).stroke({ color: r.color, width: Math.max(2, cell * 0.07 * (1 - t)), alpha });
+      // 內圈微光
+      g.circle(cx, cy, radius * 0.7).stroke({ color: 0xffffff, width: 1, alpha: alpha * 0.35 });
+    }
+
+    // -- blink 殘影 --
+    for (const gh of this.ghosts) gh.ageMs += dtMs;
+    this.ghosts = this.ghosts.filter((gh) => gh.ageMs < gh.ttlMs);
+    let gi = 0;
+    for (const gh of this.ghosts) {
+      const t = gh.ageMs / gh.ttlMs;
+      let sp: Sprite;
+      if (gi < this.ghostPool.length) {
+        sp = this.ghostPool[gi];
+        sp.visible = true;
+      } else {
+        sp = new Sprite();
+        sp.anchor.set(0.5);
+        sp.blendMode = 'add';
+        this.fxLayer.addChild(sp);
+        this.ghostPool.push(sp);
+      }
+      gi++;
+      sp.texture = this._walkFrame(gh.character, gh.dirRow, 1);
+      const size = cell * 0.95;
+      sp.width  = size;
+      sp.height = size;
+      sp.x = ox + gh.gx * cell + cell / 2;
+      sp.y = oy + gh.gy * cell + cell / 2;
+      sp.tint = 0x36e0c0;
+      sp.alpha = (1 - t) * 0.5;
+    }
+    for (let i = gi; i < this.ghostPool.length; i++) this.ghostPool[i].visible = false;
+
+    // -- bulwark 護盾泡（invuln 期間圍繞玩家） --
+    if (this.bulwarkMs > 0) {
+      this.bulwarkMs -= dtMs;
+      if (state.player.invulnMs > 0) {
+        const pulse = 0.78 + Math.sin(this.pulsePhase * 2.2) * 0.12;
+        const radius = cell * 0.66 * pulse;
+        g.circle(playerPx, playerPy, radius).fill({ color: 0x6b9fd0, alpha: 0.13 });
+        g.circle(playerPx, playerPy, radius).stroke({ color: 0x9fd0ff, width: 2, alpha: 0.75 });
+        g.circle(playerPx, playerPy, radius * 0.86).stroke({ color: 0x6b9fd0, width: 1, alpha: 0.4 });
+      } else {
+        this.bulwarkMs = 0; // invuln 提前結束（如受擊重置）即收掉泡泡
+      }
+    }
+  }
+
+  /** 有方向性怪物的 sheet 幀（懶切片＋快取，同 _walkFrame 模式）。 */
+  private enemySheetCache = new Map<string, Texture>();
+  private _enemySheetFrame(kind: DirectionalKind, dirRow: number, step: number): Texture {
+    const key = `${kind}-${dirRow}-${step}`;
+    const cached = this.enemySheetCache.get(key);
+    if (cached) return cached;
+    const base = this.textures.enemySheets[kind];
+    const tex = new Texture({
+      source: base.source,
+      frame: new Rectangle(step * 64, dirRow * 64, 64, 64),
+    });
+    this.enemySheetCache.set(key, tex);
+    return tex;
+  }
+
+  // ─── walk-cycle helpers ───────────────────────────────────────────────────────
+
+  /**
+   * Returns the walk-cycle Texture for (character, dirRow, step).
+   * Slices from the walk sheet and caches the result.
+   * Frame rect: Rectangle(step * 64, dirRow * 64, 64, 64).
+   */
+  private _walkFrame(character: 'lena' | 'mira' | 'aya' | 'rosa', dirRow: number, step: number): Texture {
+    const key = `${character}-${dirRow}-${step}`;
+    const cached = this.walkFrameCache.get(key);
+    if (cached) return cached;
+
+    const walkTexMap = {
+      lena: this.textures.walkLena,
+      mira: this.textures.walkMira,
+      aya:  this.textures.walkAya,
+      rosa: this.textures.walkRosa,
+    };
+    const base = walkTexMap[character] ?? this.textures.walkLena;
+    const tex = new Texture({
+      source: base.source,
+      frame: new Rectangle(step * 64, dirRow * 64, 64, 64),
+    });
+    this.walkFrameCache.set(key, tex);
+    return tex;
+  }
+
+  // ─── helpers ─────────────────────────────────────────────────────────────────
+
+  private _renderExit(state: BomberState, cell: number, ox: number, oy: number): void {
+    const { exit, exitActive } = state;
+    const sp = this.exitSp;
+    if (!exitActive) {
+      sp.visible = false;
+      return;
+    }
+    const glowAlpha = 0.6 + Math.sin(this.exitGlowPhase) * 0.35;
+    sp.texture = this.textures.exit;
+    sp.width  = cell;
+    sp.height = cell;
+    sp.x = ox + exit.x * cell + cell / 2;
+    sp.y = oy + exit.y * cell + cell / 2;
+    sp.alpha   = glowAlpha;
+    sp.visible = true;
+  }
+
+  private _puTexture(kind: string): Texture {
+    switch (kind) {
+      case 'fire':   return this.textures.puFire;
+      case 'bomb':   return this.textures.puBomb;
+      case 'speed':  return this.textures.puSpeed;
+      case 'shield': return this.textures.puShield;
+      case 'heart':  return this.textures.heart;
+      default:
+        console.warn('[EntityView] unknown powerup kind:', kind);
+        return this.textures.puFire;
+    }
+  }
+}

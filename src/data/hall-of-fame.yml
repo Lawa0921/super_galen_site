@@ -2001,6 +2001,20 @@ members:
       - id: "ski_coach_marketer"
         label: "滑雪教練 × 行銷人"
 
+  - id: "jlin_c8"
+    name: "Jing-Chun Lin｜阿純"
+    avatar: "/assets/img/guild/jlin_c8/avatar.webp"
+    page: "/guild/jlin_c8.html"
+    title: "癌症研究科學家 · Research Associate II, Moffitt Cancer Center"
+    description: "從台南的實驗台到美國 Tampa 的癌症中心——Moffitt Cancer Center 研究員，七年濕實驗資歷的分子生物學家。Western blot 是她的招牌（實驗室約七成的 WB 由她執行），同時推進三個以上研究、手過十餘個動物腫瘤模型。2024 年在 AACR 研討會展示碩士成果，意外接到 offer 就此跨洋挑戰自己。專長 Western blot、qPCR、細胞與動物實驗、腫瘤代謝；正往生物資訊與臨床研究延伸。她能幫你：當可靠的實驗夥伴、一起拆解卡關的 protocol、聊學界轉產業的抉擇，以及赴美做研究的真實經驗。"
+    tags:
+      - id: "western_blot_specialist"
+        label: "Western Blot 專家"
+      - id: "cancer_researcher"
+        label: "癌症研究 · 分子生物"
+      - id: "moffitt_usa"
+        label: "台灣 → 美國 Moffitt"
+
   - id: "yewsound"
     name: "Yew｜聲音設計師"
     avatar: "/assets/img/guild/yewsound/avatar.webp"
