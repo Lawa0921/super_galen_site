@@ -3,7 +3,7 @@ import type { Grid, Tile, Vec } from '../engine/types';
 import { GRID_COLS, GRID_ROWS } from '../engine/constants';
 import { createRng } from '../engine/rng';
 
-/** 模板字元：W 牆、C 必箱、? 50% 箱（seed 決定，沿水平中軸鏡像對稱）、. 地板、1-4 出生點。 */
+/** 模板字元：W 牆、C 必箱、? 50% 箱（seed 決定，雙軸象限鏡像對稱）、. 地板、1-4 出生點。 */
 export interface ArenaDef {
   id: number;
   name: string;        // 英文（arcade UI 慣例）
@@ -155,22 +155,39 @@ export const ARENAS: ArenaDef[] = [
   },
 ];
 
-/** 解析模板：playerCount 決定啟用幾個出生點（1..N）；? 箱由 seed 決定且沿水平中軸鏡像。 */
+/** 解析模板：playerCount 決定啟用幾個出生點（1..N）；? 箱由 seed 決定，雙軸象限鏡像確保四方等價。 */
 export function parseArena(def: ArenaDef, playerCount: 2 | 3 | 4, seed: number): ParsedArena {
   const rng = createRng((seed ^ (def.id * 0x9e3779b1)) >>> 0);
-  const maybe: boolean[][] = [];
-  for (let y = 0; y < GRID_ROWS; y++) {
-    maybe.push([]);
-    for (let x = 0; x < GRID_COLS; x++) {
-      if (def.rows[y][x] !== '?') { maybe[y].push(false); continue; }
-      if (y <= Math.floor((GRID_ROWS - 1) / 2)) maybe[y].push(rng() < 0.5);
-      else maybe[y].push(false);
+  const midX = Math.floor((GRID_COLS - 1) / 2); // 6
+  const midY = Math.floor((GRID_ROWS - 1) / 2); // 5
+
+  // 第一步：只對左上象限（x <= midX, y <= midY）的 '?' 格擲骰
+  const maybe: boolean[][] = Array.from({ length: GRID_ROWS }, () => new Array(GRID_COLS).fill(false));
+  for (let y = 0; y <= midY; y++) {
+    for (let x = 0; x <= midX; x++) {
+      if (def.rows[y][x] === '?') maybe[y][x] = rng() < 0.5;
     }
   }
-  for (let y = Math.floor((GRID_ROWS - 1) / 2) + 1; y < GRID_ROWS; y++) {
+
+  // 第二步：右上象限（x > midX, y <= midY）← 鏡像左上
+  for (let y = 0; y <= midY; y++) {
+    for (let x = midX + 1; x < GRID_COLS; x++) {
+      if (def.rows[y][x] === '?') {
+        const mx = GRID_COLS - 1 - x;
+        if (def.rows[y][mx] !== '?') throw new Error(`arena ${def.id} template not LR-symmetric at (${x},${y})`);
+        maybe[y][x] = maybe[y][mx];
+      }
+    }
+  }
+
+  // 第三步：下半（y > midY）← 鏡像上半（已確保左右各自完整）
+  for (let y = midY + 1; y < GRID_ROWS; y++) {
     const my = GRID_ROWS - 1 - y;
     for (let x = 0; x < GRID_COLS; x++) {
-      if (def.rows[y][x] === '?') maybe[y][x] = def.rows[my][x] === '?' ? maybe[my][x] : rng() < 0.5;
+      if (def.rows[y][x] === '?') {
+        if (def.rows[my][x] !== '?') throw new Error(`arena ${def.id} template not TB-symmetric at (${x},${y})`);
+        maybe[y][x] = maybe[my][x];
+      }
     }
   }
 

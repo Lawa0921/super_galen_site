@@ -92,4 +92,44 @@ describe('arenas', () => {
     const g2 = parseArena(a, 2, 42).grid.flat().join('');
     expect(g1).toBe(g2);
   });
+
+  it('解析後 grid 左右對稱（seeds 1-30 × 8 arenas）', () => {
+    for (const a of ARENAS) {
+      for (let seed = 1; seed <= 30; seed++) {
+        const { grid } = parseArena(a, 4, seed);
+        for (let y = 0; y < GRID_ROWS; y++) {
+          for (let x = 0; x < GRID_COLS; x++) {
+            expect(
+              grid[y][x],
+              `${a.name} seed=${seed} grid[${y}][${x}] vs grid[${y}][${GRID_COLS - 1 - x}]`,
+            ).toBe(grid[y][GRID_COLS - 1 - x]);
+          }
+        }
+      }
+    }
+  });
+
+  it('解析後 grid 上下對稱（seeds 1-30 × 8 arenas）', () => {
+    for (const a of ARENAS) {
+      for (let seed = 1; seed <= 30; seed++) {
+        const { grid } = parseArena(a, 4, seed);
+        for (let y = 0; y < GRID_ROWS; y++) {
+          for (let x = 0; x < GRID_COLS; x++) {
+            expect(
+              grid[y][x],
+              `${a.name} seed=${seed} grid[${y}][${x}] vs grid[${GRID_ROWS - 1 - y}][${x}]`,
+            ).toBe(grid[GRID_ROWS - 1 - y][x]);
+          }
+        }
+      }
+    }
+  });
+
+  it('name 唯一性（8 個不重複）', () => {
+    expect(new Set(ARENAS.map((a) => a.name)).size).toBe(8);
+  });
+
+  it('nameZh 唯一性（8 個不重複）', () => {
+    expect(new Set(ARENAS.map((a) => a.nameZh)).size).toBe(8);
+  });
 });
