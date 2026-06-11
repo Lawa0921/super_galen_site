@@ -249,8 +249,9 @@ export class EntityView {
       const t = Math.min(1, Math.max(0, 1 - blast.ttlMs / BLAST_TTL_MS)); // 0→1
       const stage = Math.min(2, Math.floor(t * 3));                        // 漸弱 3 階段
       const sp = this._blastPoolGet(bi++, this.textures.blastPieces[piece][stage]);
-      // 略小於一格：爆風視覺嚴格留在傷害格內，不得外溢鄰格（視覺=判定）
-      const bSize = cell * 0.94;
+      // 滿格＋1px 防縫：沿火焰軸向相鄰格皆為傷害格，必須接成連續火牆；
+      // 垂直軸向的「不外溢」由素材本身的細身寬（42/64）保證（視覺=判定）。
+      const bSize = cell + 1;
       sp.width  = bSize;
       sp.height = bSize;
       sp.x = ox + blast.x * cell + cell / 2;
