@@ -518,6 +518,110 @@ describe('FfaLockstep 同步狀態 export/import（host migration M3）', () => 
     expect(stateFingerprint(A.node)).toBe(stateFingerprint(B.node));
   });
 
+  it('exportSyncState 含 replay tail：已套用（已從 inbox 刪除）的非空幀一併匯出', () => {
+    const { node, inject } = makeManualNode(['A', 'B'], 'A', 1);
+    node.tick(['left']); // 預填 0..2 消化 → cf=3；送出 A@3=['left']
+    inject({ f: 3, p: 'B', a: [] });
+    node.tick([]); // 消化 f=3（A@3 套用後從 inbox 刪除）→ cf=4
+    expect(node.confirmedFrame).toBe(4);
+    // 沒有 tail 的話 A@3 已從 inbox 消失 → 落後端永遠補不到這幀
+    const s = node.exportSyncState();
+    expect(s.inputs).toContainEqual({ f: 3, p: 'A', a: ['left'] });
+  });
+
+  it('fillEmptyInputsUpTo：為缺幀者補空輸入（不覆蓋既有、跳過自己、壞值忽略）', () => {
+    const { node } = makeManualNode(['A', 'B'], 'A', 2);
+    node.tick([]);
+    node.tick([]); // cf=3 卡住（缺 B@3）；自己已記錄 A@3、A@4
+    expect(node.confirmedFrame).toBe(3);
+
+    // 既有輸入不覆蓋：先補 B@4 真輸入，再 fill 到 6 → B@3/B@5 補空、B@4 保留
+    node.importMergedInputs([{ f: 4, p: 'B', a: ['right'] }]);
+    node.fillEmptyInputsUpTo(6);
+    // 自己（A）的幀不由 fill 合成：A@5 尚未送出 → 不得被搶填空輸入
+    expect(node.exportSyncState().inputs).not.toContainEqual({ f: 5, p: 'A', a: [] });
+    node.tick([]); // 記錄 A@5 → f=3..5 齊備 → cf 推進到 6
+    expect(node.confirmedFrame).toBe(6);
+    // B@4=['right'] 已被套用 → 出現在 replay tail（驗證 fill 沒覆蓋它）
+    expect(node.exportSyncState().inputs).toContainEqual({ f: 4, p: 'B', a: ['right'] });
+
+    // 壞值一律忽略、不丟例外、不污染
+    const cfBefore = node.confirmedFrame;
+    expect(() => node.fillEmptyInputsUpTo(Number.NaN)).not.toThrow();
+    expect(() => node.fillEmptyInputsUpTo(-5)).not.toThrow();
+    expect(() => node.fillEmptyInputsUpTo(Number.POSITIVE_INFINITY)).not.toThrow();
+    expect(node.confirmedFrame).toBe(cfBefore);
+  });
+
+  it('cf 偏移的斷點補課：ahead 端已消化 laggard 缺幀 → replay tail + fillEmpty 收斂一致（e2e 實測根因）', () => {
+    // 真實 host 死亡時各端停滯點不同：A 多收到 host 死前 relay 的幀 → cf 超前 B，
+    // 且 A 已把 B 缺的幀「消化並從 inbox 刪除」——光靠 inbox 視野合併補不回來。
+    const playerIds = ['A', 'B', 'H'];
+    const A = makeManualNode(playerIds, 'A', 77);
+    const B = makeManualNode(playerIds, 'B', 77);
+    let aPtr = 0;
+    let bPtr = 0;
+    const deliverAtoB = (): void => {
+      for (; aPtr < A.sent.length; aPtr++) B.inject(A.sent[aPtr]);
+    };
+    const deliverBtoA = (): void => {
+      for (; bPtr < B.sent.length; bPtr++) A.inject(B.sent[bPtr]);
+    };
+
+    // 正常 10 輪：雙向投遞 + H 每輪送空輸入幀 r+3
+    for (let r = 0; r < 10; r++) {
+      A.node.tick(r % 4 === 0 ? ['left'] : []);
+      B.node.tick(r % 5 === 0 ? ['rotateCW'] : []);
+      deliverAtoB();
+      deliverBtoA();
+      const h: FfaFrameMsg = { f: r + 3, p: 'H', a: [] };
+      A.inject(h);
+      B.inject(h);
+    }
+
+    // 死亡窗 3 輪：B→A 與 H→A 仍通（A 收好收滿）、任何幀都到不了 B → A 超前消化
+    // （B 先 tick、投遞給 A、再 A tick → A 每輪都湊齊整幀，cf 一路推進）
+    for (let r = 10; r < 13; r++) {
+      B.node.tick(r === 10 ? ['rotateCW'] : []);
+      deliverBtoA();
+      A.inject({ f: r + 3, p: 'H', a: [] });
+      A.node.tick(r === 10 ? ['left'] : []);
+    }
+    aPtr = A.sent.length; // A 死亡窗的幀在舊 host 上遺失，永不重送
+
+    // A 超前（已消化 13..15）、B 卡 13；A 的 inbox 已沒有 B 缺的 13..15
+    expect(A.node.confirmedFrame).toBeGreaterThan(B.node.confirmedFrame);
+    expect(B.node.confirmedFrame).toBe(13);
+
+    // 遷移補課：交換視野 + 以 baseCf=max(cf) 回填空幀 + 同一棄權幀
+    const sA = A.node.exportSyncState();
+    const sB = B.node.exportSyncState();
+    const baseCf = Math.max(sA.cf, sB.cf);
+    const forfeitF = Math.max(sA.horizon.H, sB.horizon.H) + 1;
+    B.node.importMergedInputs(sA.inputs);
+    B.node.fillEmptyInputsUpTo(baseCf);
+    A.node.importMergedInputs(sB.inputs);
+    A.node.fillEmptyInputsUpTo(baseCf);
+    A.node.scheduleForfeit('H', forfeitF);
+    B.node.scheduleForfeit('H', forfeitF);
+
+    // 續行：雙向投遞恢復（新 host relay 新幀）
+    for (let r = 0; r < 12; r++) {
+      A.node.tick([]);
+      B.node.tick([]);
+      deliverAtoB();
+      deliverBtoA();
+    }
+
+    // 兩端越過缺口、cf 相等、H 判敗墊底、全盤指紋與 replay 完全一致
+    expect(B.node.confirmedFrame).toBeGreaterThan(baseCf);
+    expect(A.node.confirmedFrame).toBe(B.node.confirmedFrame);
+    expect(A.node.getMatch().getPlacement().get('H')).toBe(3);
+    expect(B.node.getMatch().getPlacement().get('H')).toBe(3);
+    expect(stateFingerprint(A.node)).toBe(stateFingerprint(B.node));
+    expect(JSON.stringify(A.node.getReplay())).toBe(JSON.stringify(B.node.getReplay()));
+  });
+
   it('重複 import 自己的 export 無害：cf 與全盤狀態不變、後續鎖步與對照組一致', () => {
     const playerIds = ['P0', 'P1', 'P2', 'P3'];
     const run = (withReimport: boolean): { fp: string; cf: number } => {

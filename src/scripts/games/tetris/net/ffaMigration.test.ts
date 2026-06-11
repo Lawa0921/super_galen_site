@@ -317,16 +317,21 @@ function makeMockRtc() {
   return { guestPeer, hostPeer, registry };
 }
 
-/** mock MigLockstep：固定 exportSyncState、記錄 import/scheduleForfeit。 */
+/** mock MigLockstep：固定 exportSyncState、記錄 import/fill/scheduleForfeit（calls 記呼叫順序）。 */
 function mockMigLockstep(state: FfaSyncState) {
   const scheduled: Array<{ p: string; f: number }> = [];
   const imported: SyncState['inputs'][] = [];
+  const filled: number[] = [];
+  const calls: string[] = [];
   return {
     scheduled,
     imported,
+    filled,
+    calls,
     exportSyncState: () => state,
-    importMergedInputs: (inputs: SyncState['inputs']) => { imported.push(inputs); },
-    scheduleForfeit: (p: string, f: number) => { scheduled.push({ p, f }); },
+    importMergedInputs: (inputs: SyncState['inputs']) => { imported.push(inputs); calls.push('import'); },
+    fillEmptyInputsUpTo: (f: number) => { filled.push(f); calls.push('fill'); },
+    scheduleForfeit: (p: string, f: number) => { scheduled.push({ p, f }); calls.push('forfeit'); },
   };
 }
 
@@ -484,6 +489,10 @@ describe('runMigration（遷移協調器，mock-net）', () => {
       expect(ls.imported).toHaveLength(1);
       expect(ls.imported[0]).toContainEqual({ f: 41, p: 'g1', a: ['left'] });
       expect(ls.imported[0]).toContainEqual({ f: 44, p: 'h', a: ['right'] });
+      // 空幀回填：baseCf = max(cf) = 38，且必在 import 之後、forfeit 之前
+      //（fill 先跑會把空幀搶寫進 inbox、擋掉 merge 的真輸入 → 鎖步發散）
+      expect(ls.filled).toEqual([38]);
+      expect(ls.calls).toEqual(['import', 'fill', 'forfeit']);
     }
   });
 
@@ -571,5 +580,7 @@ describe('runMigration（遷移協調器，mock-net）', () => {
     expect(state).toBeTruthy();
     expect(state!.hostForfeitF).toBe(15);
     expect(state!.gen).toBe(1);
+    // baseCf = max(host cf=10, g2 sync cf=9) → 落後端據此回填空幀
+    expect(state!.baseCf).toBe(10);
   });
 });

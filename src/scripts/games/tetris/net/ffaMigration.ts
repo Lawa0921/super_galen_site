@@ -218,6 +218,8 @@ export interface MigGuestPeer {
 export interface MigLockstep {
   exportSyncState(): FfaSyncState;
   importMergedInputs(inputs: SyncState['inputs']): void;
+  /** 以 baseCf 回填空輸入（須在 importMergedInputs 之後呼叫——首寫保留，反序會擋掉真輸入）。 */
+  fillEmptyInputsUpTo(f: number): void;
   scheduleForfeit(p: string, f: number): void;
 }
 
@@ -293,15 +295,16 @@ function parseMigSync(raw: unknown, gen: number): SyncState | null {
   return { cf: o.cf, horizon, inputs };
 }
 
-/** 驗證 ffa-mig-state（控制訊息物件）：gen 相符、inputs 陣列、hostForfeitF 有限非負。 */
+/** 驗證 ffa-mig-state（控制訊息物件）：gen 相符、inputs 陣列、hostForfeitF/baseCf 有限非負。 */
 function parseMigState(
   msg: Record<string, unknown>,
   gen: number,
-): { inputs: SyncState['inputs']; hostForfeitF: number } | null {
+): { inputs: SyncState['inputs']; hostForfeitF: number; baseCf: number } | null {
   if (msg.t !== 'ffa-mig-state' || msg.gen !== gen) return null;
   if (!Array.isArray(msg.inputs)) return null;
   if (typeof msg.hostForfeitF !== 'number' || !Number.isFinite(msg.hostForfeitF) || msg.hostForfeitF < 0) return null;
-  return { inputs: msg.inputs as SyncState['inputs'], hostForfeitF: msg.hostForfeitF };
+  if (typeof msg.baseCf !== 'number' || !Number.isFinite(msg.baseCf) || msg.baseCf < 0) return null;
+  return { inputs: msg.inputs as SyncState['inputs'], hostForfeitF: msg.hostForfeitF, baseCf: msg.baseCf };
 }
 
 /**
@@ -370,8 +373,8 @@ export async function runMigration(deps: RunMigrationDeps): Promise<RunMigration
     const spoke = new FfaSpokeTransport(peer.channel);
 
     // 先掛 state 等待、再送 sync（state 必在 host 收齊全員 sync 後才廣播，此順序是保險）。
-    let resolveState: (s: { inputs: SyncState['inputs']; hostForfeitF: number }) => void = () => {};
-    const statePromise = new Promise<{ inputs: SyncState['inputs']; hostForfeitF: number }>((res) => {
+    let resolveState: (s: { inputs: SyncState['inputs']; hostForfeitF: number; baseCf: number }) => void = () => {};
+    const statePromise = new Promise<{ inputs: SyncState['inputs']; hostForfeitF: number; baseCf: number }>((res) => {
       resolveState = res;
     });
     spoke.onControl((msg) => {
@@ -383,6 +386,8 @@ export async function runMigration(deps: RunMigrationDeps): Promise<RunMigration
 
     const state = await withDeadline(statePromise, 'ffa-mig-state');
     deps.lockstep.importMergedInputs(state.inputs);
+    // cf 偏移補課：merge 後仍缺的 (f<baseCf, p) 即空幀 → 回填（必在 import 之後）。
+    deps.lockstep.fillEmptyInputsUpTo(state.baseCf);
     deps.lockstep.scheduleForfeit(deps.hostId, state.hostForfeitF);
     deps.transport.swap(spoke);
     return { role: 'join', hostId: candidateId, spoke };
@@ -435,14 +440,19 @@ export async function runMigration(deps: RunMigrationDeps): Promise<RunMigration
       await sleep(interval);
     }
 
-    // 合併（含自己的視野）→ 舊 host 判敗幀 = merge 後 horizon（禁 confirmedFrame+1）。
-    const merged = mergeSync([deps.lockstep.exportSyncState(), ...collected]);
+    // 合併（含自己的視野）→ 舊 host 判敗幀 = merge 後 horizon（禁 confirmedFrame+1）；
+    // baseCf = 各端 cf 的 max：超前端已套用的幀中非空輸入必在其 replay tail（已進 merge），
+    // 落後端 merge 後仍缺的 (f<baseCf, p) 即空幀 → fillEmptyInputsUpTo 確定性回填。
+    const allStates = [deps.lockstep.exportSyncState(), ...collected];
+    const merged = mergeSync(allStates);
+    const baseCf = allStates.reduce((m, s) => Math.max(m, s.cf), 0);
     const hostForfeitF = hostForfeitFrame(merged.horizon, deps.hostId, inputDelay);
 
     // 建 hub（接管各 channel 收訊）→ 廣播 ffa-mig-state → 自己補課 + swap。
     const hub = new FfaHubTransport(channels);
-    hub.sendControl({ t: 'ffa-mig-state', gen: g, inputs: merged.inputs, hostForfeitF });
+    hub.sendControl({ t: 'ffa-mig-state', gen: g, inputs: merged.inputs, hostForfeitF, baseCf });
     deps.lockstep.importMergedInputs(merged.inputs);
+    deps.lockstep.fillEmptyInputsUpTo(baseCf); // 必在 import 之後（首寫保留）
     deps.lockstep.scheduleForfeit(deps.hostId, hostForfeitF);
     deps.transport.swap(hub);
     return { role: 'host', hostId: deps.selfId, hub, guestIds };
