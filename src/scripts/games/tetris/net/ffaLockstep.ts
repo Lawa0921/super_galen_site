@@ -3,7 +3,9 @@ import type { InputAction } from '../engine/game';
 import type { FfaReplay } from './ffaReplay';
 
 const SIM_DT = 1000 / 60;
-const INPUT_DELAY = 3; // 幀（沿用 1v1 鎖步）
+/** 輸入延遲幀數（沿用 1v1 鎖步）。預填 0..INPUT_DELAY-1 為空輸入，
+ * 故「從未送幀的玩家」的全員停滯點 = INPUT_DELAY（FfaForfeitController 計算 F 用）。 */
+export const INPUT_DELAY = 3;
 
 /** 合法的輸入動作字串集合，用於 onMessage shape 驗證（網路訊息不可信）。 */
 const VALID_ACTIONS: ReadonlySet<string> = new Set<InputAction>([

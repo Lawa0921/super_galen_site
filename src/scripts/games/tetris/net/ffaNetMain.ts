@@ -8,7 +8,7 @@ import { loadGameTextures } from '../render/assets';
 import { getSelectedSkin, resolveSkin } from '../render/skins';
 import { setSkinTints } from '../render/layout';
 import { FfaBoards } from '../render/FfaBoards';
-import { FfaLockstep, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
+import { FfaLockstep, INPUT_DELAY, type FfaFrameMsg, type FfaLockstepTransport } from './ffaLockstep';
 import type { FfaReplay } from './ffaReplay';
 import { FfaHubTransport, FfaSpokeTransport, type RelayChannel } from './ffaTransport';
 import { createRoom as realCreateRoom, putSlot as realPutSlot, getSlot as realGetSlot, pollSlot as realPollSlot } from './signalClient';
@@ -473,6 +473,8 @@ export interface ChannelBacking {
   send(data: string): void;
   onMessage(cb: (data: string) => void): void;
   readonly isOpen: boolean;
+  /** 可選：底層 channel 關閉通知（WebRtcTransport.onClose）→ 中離 close 快速路徑。 */
+  onClose?(cb: () => void): void;
 }
 
 /**
@@ -480,20 +482,22 @@ export interface ChannelBacking {
  *  - send(raw) → backing.send(raw)
  *  - open → backing.isOpen
  *  - onmessage setter → 掛到 backing.onMessage（FfaHub/Spoke 會設定此 setter）
+ *  - onclose 可賦值屬性 → 由 backing.onClose 觸發（FfaHub/Spoke 以 `'onclose' in ch`
+ *    判斷支援與否並掛上 close 處理 → 真 WebRTC 中離的秒級偵測路徑）
  *
  * 鐵則：onmessage 設定前到達的訊息進暫存佇列，設定當下立刻回放（保序）。
  * 避免 channel 開啟與設定 onmessage 之間的空檔丟失早到的 ffa-init / 對手幀。
  */
 export function wrapChannel(
   backing: ChannelBacking,
-): RelayChannel & { onmessage: ((raw: string) => void) | null } {
+): RelayChannel & { onmessage: ((raw: string) => void) | null; onclose: (() => void) | null } {
   let cb: ((raw: string) => void) | null = null;
   const queue: string[] = [];
   backing.onMessage((d) => {
     if (cb) cb(d);
     else queue.push(d);
   });
-  return {
+  const wrapped = {
     send: (raw: string) => backing.send(raw),
     get open() { return backing.isOpen; },
     get onmessage() { return cb; },
@@ -501,7 +505,10 @@ export function wrapChannel(
       cb = fn;
       if (fn) while (queue.length) fn(queue.shift()!);
     },
+    onclose: null as (() => void) | null,
   };
+  backing.onClose?.(() => wrapped.onclose?.());
+  return wrapped;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -594,7 +601,10 @@ export function parseFfaForfeit(
  * 職責：
  *  - noteFrame：記錄每 guest 最後中繼幀（max f）與最後活動時間。
  *  - declareForfeit：對未處理過的 guest 廣播 {t:'ffa-forfeit', p, f}；
- *    F = lastFrame+1 且必須 > 目前 confirmedFrame（防禦性下限，理論上恆成立）。
+ *    F = max(lastFrame+1, INPUT_DELAY) ＝「所有端必然停滯的那一幀」：
+ *    缺 p 輸入時任何端都無法推進超過該幀，故 F 必可達（不死鎖）且
+ *    各端套用幀一致（確定性）。注意 F 不得取 confirmedFrame+1 ——
+ *    停滯後（confirmedFrame 已追平 lastFrame+1）宣告會得到不可達幀 → 全員凍結。
  *    廣播走 hub.sendControl（會回灌自身 onControl）→ 排程統一由 onControl 路徑做，
  *    host 不在此重複 scheduleForfeit。
  *  - checkSilenceNow：靜默逾時偵測（規則見 checkSilence 註解）。
@@ -611,7 +621,6 @@ export class FfaForfeitController {
     /** channels[i] ↔ guestIds[i]（playerIds 去掉 host、依 slot 升序）。 */
     guestIds: string[];
     sendControl: (msg: Record<string, unknown>) => void;
-    getConfirmedFrame: () => number;
     now?: () => number;
     timeoutMs?: number;
   }) {
@@ -637,10 +646,8 @@ export class FfaForfeitController {
     if (!this.guestIds.includes(p)) return;
     this.declared.add(p);
     this.lastMsgAt.delete(p); // 已宣告者不再做靜默檢查
-    const f = Math.max(
-      (this.lastFrame.get(p) ?? 0) + 1,
-      this.opts.getConfirmedFrame() + 1,
-    );
+    // F = 全員停滯點：p 的最後輸入幀 +1；從未送幀則為 INPUT_DELAY（預填 0..delay-1 之後）。
+    const f = Math.max((this.lastFrame.get(p) ?? 0) + 1, INPUT_DELAY);
     this.opts.sendControl({ t: 'ffa-forfeit', p, f });
   }
 
@@ -661,7 +668,6 @@ export class FfaForfeitController {
 /** 排程棄權所需的 lockstep 最小形狀（FfaLockstep 子集；mock 友善）。 */
 export interface ForfeitLockstep {
   scheduleForfeit(p: string, f: number): void;
-  readonly confirmedFrame: number;
 }
 
 /** 控制通道能力（FfaHubTransport / FfaSpokeTransport 的可選方法集合）。 */
@@ -712,7 +718,6 @@ export function wireFfaForfeit(opts: {
   const ctl = new FfaForfeitController({
     guestIds: opts.guestIds,
     sendControl,
-    getConfirmedFrame: () => opts.lockstep.confirmedFrame,
     now: opts.now,
     timeoutMs: opts.timeoutMs,
   });
