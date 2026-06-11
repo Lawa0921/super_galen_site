@@ -30,10 +30,16 @@ export class GridView {
     }
   }
 
-  private _tileTexture(tile: Tile) {
-    if (tile === 'wall')  return this.textures.wall;
-    if (tile === 'crate') return this.textures.crate;
-    return this.textures.floor;
+  /** 生態區：1-3 層石牢、4-6 層墓窖、7 層起鍛造廠。 */
+  private _biomeIndex(floor: number): number {
+    return Math.min(2, Math.floor((floor - 1) / 3));
+  }
+
+  private _tileTexture(tile: Tile, biome: number) {
+    const set = this.textures.tileSets[biome] ?? this.textures.tileSets[0];
+    if (tile === 'wall')  return set.wall;
+    if (tile === 'crate') return set.crate;
+    return set.floor;
   }
 
   render(state: BomberState, layout: Layout): void {
@@ -46,6 +52,7 @@ export class GridView {
     this.lastGrid = state.grid;
     this.lastCell = cell;
 
+    const biome = this._biomeIndex(state.floor);
     const grid = state.grid;
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
@@ -53,7 +60,7 @@ export class GridView {
         // 更新貼圖（格子種類 or 版面變動時）
         if (gridChanged || layoutChanged) {
           const tile = grid[row]?.[col] ?? 'floor';
-          sp.texture = this._tileTexture(tile);
+          sp.texture = this._tileTexture(tile, biome);
           // 地板棋盤格交錯微暗（增加深度，不影響牆/箱）
           sp.tint = tile === 'floor' && (row + col) % 2 === 1 ? 0xc8cadd : 0xffffff;
         }
