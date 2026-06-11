@@ -30,7 +30,7 @@ export type FfaMatchEvent =
   | { kind: 'lineClear'; id: string; rows: number[]; count: number; tSpin: TSpinType; combo: number; b2b: boolean }
   | { kind: 'attack'; from: string; to: string; amount: number }
   | { kind: 'garbageIn'; id: string; amount: number }
-  | { kind: 'ko'; id: string; placement: number }
+  | { kind: 'ko'; id: string; placement: number; reason?: 'forfeit' }
   | { kind: 'victory'; id: string };
 
 export interface FfaMatchOptions {
@@ -174,12 +174,23 @@ export class FfaMatch {
     resolveLock(); // 結算最後一個 lock
   }
 
+  /**
+   * 中離判敗淘汰（確定性）：走與 topout 相同的淘汰路徑，
+   * 但 ko 事件帶 reason='forfeit'。非 playing、未知 id、已定名次者 → no-op。
+   */
+  forfeit(id: string): void {
+    if (this.phase !== 'playing') return;
+    if (!this.games.has(id)) return; // 未知 id
+    if (this.placements.has(id)) return; // 已淘汰／已定名次
+    this.eliminate(id, 'forfeit');
+  }
+
   /** 淘汰一名玩家：placement = 目前存活人數（含自己）；若僅剩 1 人則對方奪冠。 */
-  private eliminate(id: string): void {
+  private eliminate(id: string, reason?: 'forfeit'): void {
     const aliveCount = this.aliveIds().length; // 含 id 自己
     const placement = aliveCount; // 剩 k 人時第一個倒的得 placement=k
     this.placements.set(id, placement);
-    this.events.push({ kind: 'ko', id, placement });
+    this.events.push(reason ? { kind: 'ko', id, placement, reason } : { kind: 'ko', id, placement });
 
     const remaining = this.aliveIds();
     if (remaining.length === 1) {

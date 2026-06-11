@@ -280,6 +280,125 @@ describe('FfaMatch determinism（命脈）', () => {
   });
 });
 
+describe('FfaMatch.forfeit（中離確定性判敗淘汰）', () => {
+  function topout(m: FfaMatch, id: string): void {
+    const g = (m as unknown as { games: Map<string, { receiveGarbage(n: number, h: number): void; input(a: string): void }> }).games.get(id)!;
+    for (let i = 0; i < 25; i++) g.receiveGarbage(1, 0);
+    g.input('hardDrop');
+  }
+
+  it('4 人開局即 forfeit → placement=4、ko 事件帶 reason=forfeit、其餘續玩', () => {
+    const m = new FfaMatch(IDS4, { seed: 42 });
+    m.drainEvents();
+    m.forfeit('p3');
+    expect(m.getPlacement().get('p3')).toBe(4);
+    expect(m.aliveIds()).toEqual(['p1', 'p2', 'p4']);
+    expect(m.phase).toBe('playing');
+    const evs = m.drainEvents();
+    const ko = evs.find((e): e is Extract<FfaMatchEvent, { kind: 'ko' }> => e.kind === 'ko');
+    expect(ko).toBeDefined();
+    expect(ko!.id).toBe('p3');
+    expect(ko!.placement).toBe(4);
+    expect(ko!.reason).toBe('forfeit');
+    // 其餘 3 人可續玩：step/input 不丟例外、phase 仍 playing
+    m.input('p1', 'left');
+    m.step(16);
+    expect(m.phase).toBe('playing');
+  });
+
+  it('連續 forfeit 到剩 1 人 → 名次 4、3、2，最後存活 victory + result', () => {
+    const m = new FfaMatch(IDS4, { seed: 42 });
+    m.drainEvents();
+    m.forfeit('p1');
+    expect(m.getPlacement().get('p1')).toBe(4);
+    m.forfeit('p2');
+    expect(m.getPlacement().get('p2')).toBe(3);
+    expect(m.phase).toBe('playing');
+    m.forfeit('p4');
+    expect(m.getPlacement().get('p4')).toBe(2);
+    expect(m.getPlacement().get('p3')).toBe(1);
+    expect(m.phase).toBe('result');
+    const evs = m.drainEvents();
+    expect(evs.some((e) => e.kind === 'victory' && e.id === 'p3')).toBe(true);
+    expect(m.getStandings()).toEqual(['p3', 'p4', 'p2', 'p1']);
+  });
+
+  it('已 topout 淘汰者再 forfeit → no-op（placement 不變、無新事件）', () => {
+    const m = new FfaMatch(IDS4, { seed: 3 });
+    topout(m, 'p2');
+    m.step(0);
+    expect(m.getPlacement().get('p2')).toBe(4);
+    m.drainEvents();
+    m.forfeit('p2');
+    expect(m.getPlacement().get('p2')).toBe(4);
+    expect(m.drainEvents()).toEqual([]);
+    expect(m.phase).toBe('playing');
+  });
+
+  it("phase='result' 後 forfeit → no-op", () => {
+    const m = new FfaMatch(['A', 'B'], { seed: 7 });
+    topout(m, 'A');
+    m.step(0);
+    expect(m.phase).toBe('result');
+    m.drainEvents();
+    m.forfeit('B');
+    expect(m.getPlacement().get('B')).toBe(1);
+    expect(m.drainEvents()).toEqual([]);
+    expect(m.phase).toBe('result');
+  });
+
+  it('未知 id → no-op 不丟例外', () => {
+    const m = new FfaMatch(IDS4, { seed: 42 });
+    m.drainEvents();
+    expect(() => m.forfeit('ghost')).not.toThrow();
+    expect(m.aliveIds()).toEqual(IDS4);
+    expect(m.drainEvents()).toEqual([]);
+    expect(m.phase).toBe('playing');
+  });
+
+  it('同 step 內先後 forfeit 兩人 → 名次依呼叫序（先呼叫者名次較差）', () => {
+    const m = new FfaMatch(IDS4, { seed: 42 });
+    m.forfeit('p4');
+    m.forfeit('p1');
+    expect(m.getPlacement().get('p4')).toBe(4);
+    expect(m.getPlacement().get('p1')).toBe(3);
+    expect(m.aliveIds()).toEqual(['p2', 'p3']);
+    expect(m.phase).toBe('playing');
+  });
+
+  it('forfeit 後典型鎖步流程仍可推進（input/step/drainEvents 正常）', () => {
+    const m = new FfaMatch(IDS4, { seed: 5 });
+    m.drainEvents();
+    m.forfeit('p2');
+    // forfeit 者不再接收輸入
+    const x0 = m.getPlayerState('p2').active!.x;
+    m.input('p2', 'left');
+    expect(m.getPlayerState('p2').active!.x).toBe(x0);
+    // 存活者照常推進並可製造攻擊
+    const g = (m as unknown as { games: Map<string, { debugFillRowExceptOneAndDrop(): void }> }).games.get('p1')!;
+    g.debugFillRowExceptOneAndDrop();
+    g.debugFillRowExceptOneAndDrop();
+    g.debugFillRowExceptOneAndDrop();
+    m.step(16);
+    const evs = m.drainEvents();
+    const attacks = evs.filter((e): e is Extract<FfaMatchEvent, { kind: 'attack' }> => e.kind === 'attack' && e.from === 'p1');
+    // 攻擊目標不得是已 forfeit 的 p2
+    for (const a of attacks) expect(a.to === 'p3' || a.to === 'p4').toBe(true);
+    expect(m.phase).toBe('playing');
+  });
+
+  it('既有 topout ko 事件無 reason 欄位（undefined）', () => {
+    const m = new FfaMatch(IDS4, { seed: 3 });
+    m.drainEvents();
+    topout(m, 'p3');
+    m.step(0);
+    const evs = m.drainEvents();
+    const ko = evs.find((e): e is Extract<FfaMatchEvent, { kind: 'ko' }> => e.kind === 'ko' && e.id === 'p3');
+    expect(ko).toBeDefined();
+    expect(ko!.reason).toBeUndefined();
+  });
+});
+
 describe('FfaMatch N=2 行為與 1v1 直覺一致', () => {
   it('一方倒 → 另一方冠軍、result', () => {
     const m = new FfaMatch(['A', 'B'], { seed: 7 });
