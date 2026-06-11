@@ -30,6 +30,19 @@ export interface FfaLockstepTransport {
   onMessage(cb: (msg: FfaFrameMsg) => void): void;
 }
 
+/**
+ * 鎖步同步狀態快照（host migration 補課用，spec B.4）。
+ * cf      = confirmedFrame（已全員確認並推進的幀界線）。
+ * horizon = 每玩家「本端已知」的最大幀：max(inbox 未消化最大鍵, 已消化至 cf-1)；
+ *           自己另取 sendFrame+inputDelay-1（已送出但未確認的本地幀上界）。
+ * inputs  = inbox 所有未消化幀攤平（inbox 本來就含自己已送未消化的本地幀）。
+ */
+export interface FfaSyncState {
+  cf: number;
+  horizon: Record<string, number>;
+  inputs: Array<{ f: number; p: string; a: InputAction[] }>;
+}
+
 export interface FfaLockstepOptions {
   playerIds: string[];
   localId: string;
@@ -139,6 +152,49 @@ export class FfaLockstep {
       events: [...this.replayEvents],
       forfeits: [...this.replayForfeits],
     };
+  }
+
+  /**
+   * 匯出同步狀態快照（host migration 補課用）。
+   * 純讀取、不改任何內部狀態；inputs 的 a 為複本，呼叫端改動不影響 inbox。
+   */
+  exportSyncState(): FfaSyncState {
+    const horizon: Record<string, number> = {};
+    const inputs: FfaSyncState['inputs'] = [];
+    for (const id of this.playerIds) {
+      // 已消化至 cf-1（inbox 空時的下界）
+      let max = this.simFrame - 1;
+      for (const [f, a] of this.inbox.get(id)!) {
+        if (f > max) max = f;
+        inputs.push({ f, p: id, a: [...a] });
+      }
+      // 自己＝已送出但未確認的本地幀上界（正常情況即 inbox 最大鍵；
+      // 自己已淘汰被 autofill 消化時取 max 保單調）
+      if (id === this.localId) {
+        max = Math.max(max, this.sendFrame + this.inputDelay - 1);
+      }
+      horizon[id] = max;
+    }
+    return { cf: this.simFrame, horizon, inputs };
+  }
+
+  /**
+   * 灌入合併後的輸入集（host migration 補課用）。
+   * 逐筆走 recordInput（冪等：首寫保留）；p 不在名單或壞形狀（f 非有限非負數、
+   * a 非合法 action 陣列）一律忽略——合併集可能來自網路，不可信。
+   * 不主動推進；下一次 tick 的 advance 自然越過補上的缺口。
+   */
+  importMergedInputs(inputs: Array<{ f: number; p: string; a: InputAction[] }>): void {
+    if (!Array.isArray(inputs)) return;
+    for (const raw of inputs) {
+      if (!raw || typeof raw !== 'object') continue;
+      const e = raw as Record<string, unknown>;
+      if (typeof e.f !== 'number' || !Number.isFinite(e.f) || e.f < 0) continue;
+      if (typeof e.p !== 'string' || !this.inbox.has(e.p)) continue;
+      if (!Array.isArray(e.a)) continue;
+      if (!e.a.every((x) => typeof x === 'string' && VALID_ACTIONS.has(x))) continue;
+      this.recordInput(e.p, e.f, [...(e.a as InputAction[])]);
+    }
   }
 
   // ── 內部 ──────────────────────────────────────────────────────────────

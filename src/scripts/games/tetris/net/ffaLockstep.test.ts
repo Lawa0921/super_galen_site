@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { FfaLockstep, LoopbackHub } from './ffaLockstep';
+import type { FfaFrameMsg } from './ffaLockstep';
 import { simulateFfaReplay } from './ffaReplay';
 import type { InputAction } from '../engine/game';
 
@@ -374,5 +375,211 @@ describe('FfaLockstep.scheduleForfeit 幀排程確定性棄權', () => {
     // 存活端狀態一致
     const ref = stateFingerprint(alive[0]);
     for (const node of alive) expect(stateFingerprint(node)).toBe(ref);
+  });
+});
+
+describe('FfaLockstep 同步狀態 export/import（host migration M3）', () => {
+  /** 手動傳遞節點：send 進 sent 陣列、inject 直灌 onMessage（自己的輸入 tick 內已寫 inbox）。 */
+  function makeManualNode(
+    playerIds: string[],
+    localId: string,
+    seed: number,
+  ): { node: FfaLockstep; sent: FfaFrameMsg[]; inject: (m: unknown) => void } {
+    let cb: ((m: unknown) => void) | null = null;
+    const sent: FfaFrameMsg[] = [];
+    const node = new FfaLockstep({
+      playerIds,
+      localId,
+      seed,
+      transport: {
+        send: (m: FfaFrameMsg): void => {
+          sent.push(m);
+        },
+        onMessage: (c: (m: FfaFrameMsg) => void): void => {
+          cb = c as (m: unknown) => void;
+        },
+      },
+    });
+    return { node, sent, inject: (m: unknown) => cb!(m) };
+  }
+
+  /** 把 inputs 排序成確定性順序方便比對。 */
+  function sortInputs<T extends { f: number; p: string }>(inputs: T[]): T[] {
+    return [...inputs].sort((x, y) => x.f - y.f || x.p.localeCompare(y.p));
+  }
+
+  it('初始 exportSyncState 形狀正確：cf=0、horizon=預填上界（inputDelay-1）、inputs=預填空幀攤平', () => {
+    const { node } = makeManualNode(['A', 'B'], 'A', 1);
+    const s = node.exportSyncState();
+    expect(s.cf).toBe(0);
+    // 自己 = sendFrame(0)+inputDelay(3)-1 = 2；B = inbox 預填最大鍵 2
+    expect(s.horizon).toEqual({ A: 2, B: 2 });
+    expect(sortInputs(s.inputs)).toEqual([
+      { f: 0, p: 'A', a: [] },
+      { f: 0, p: 'B', a: [] },
+      { f: 1, p: 'A', a: [] },
+      { f: 1, p: 'B', a: [] },
+      { f: 2, p: 'A', a: [] },
+      { f: 2, p: 'B', a: [] },
+    ]);
+  });
+
+  it('tick 後 export：cf=confirmedFrame、自己 horizon=sendFrame+delay-1、inputs 含自己已送未消化幀；收到遠端幀後 horizon 更新', () => {
+    const { node, inject } = makeManualNode(['A', 'B'], 'A', 1);
+    node.tick(['left']); // 預填 0..2 消化 → cf=3；送出 A@3=['left']
+    node.tick([]); // 送出 A@4=[]；缺 B@3 → cf 仍 3
+    expect(node.confirmedFrame).toBe(3);
+
+    let s = node.exportSyncState();
+    expect(s.cf).toBe(3);
+    // A：sendFrame(2)+3-1=4；B：inbox 已空 → 已消化至 cf-1=2
+    expect(s.horizon).toEqual({ A: 4, B: 2 });
+    expect(sortInputs(s.inputs)).toEqual([
+      { f: 3, p: 'A', a: ['left'] },
+      { f: 4, p: 'A', a: [] },
+    ]);
+
+    // 收到 B@3（未消化前 export）→ horizon.B=3、inputs 含該幀
+    // 注意 export 必須在消化前觀察：B@3 進來後 advance 只在 tick 內跑 → 仍未消化
+    inject({ f: 3, p: 'B', a: ['right'] });
+    s = node.exportSyncState();
+    expect(s.horizon).toEqual({ A: 4, B: 3 });
+    expect(sortInputs(s.inputs)).toEqual([
+      { f: 3, p: 'A', a: ['left'] },
+      { f: 3, p: 'B', a: ['right'] },
+      { f: 4, p: 'A', a: [] },
+    ]);
+  });
+
+  it('視野不等的斷點補課：host 死後 A export → B import + scheduleForfeit → 兩端越過缺口續行且狀態一致', () => {
+    // 3 人局：A、B 為真節點，H（host）由測試腳本扮演。
+    const playerIds = ['A', 'B', 'H'];
+    const A = makeManualNode(playerIds, 'A', 77);
+    const B = makeManualNode(playerIds, 'B', 77);
+    let aPtr = 0; // A.sent 已投遞給 B 的指標
+    let bPtr = 0; // B.sent 已投遞給 A 的指標
+    const deliverAtoB = (): void => {
+      for (; aPtr < A.sent.length; aPtr++) B.inject(A.sent[aPtr]);
+    };
+    const deliverBtoA = (): void => {
+      for (; bPtr < B.sent.length; bPtr++) A.inject(B.sent[bPtr]);
+    };
+
+    // 正常 10 輪：雙向投遞 + H 每輪送空輸入幀 r+3（H 最後已知幀=12）
+    for (let r = 0; r < 10; r++) {
+      A.node.tick(r % 4 === 0 ? ['left'] : []);
+      B.node.tick(r % 5 === 0 ? ['rotateCW'] : []);
+      deliverAtoB();
+      deliverBtoA();
+      const h: FfaFrameMsg = { f: r + 3, p: 'H', a: [] };
+      A.inject(h);
+      B.inject(h);
+    }
+
+    // host 死亡窗 3 輪：H 無新幀；A→B 投遞中斷（視野不等），B→A 仍通（死前 host 已轉發）
+    for (let r = 10; r < 13; r++) {
+      A.node.tick([]);
+      B.node.tick([]);
+      deliverBtoA();
+    }
+    // 死亡窗內 A 的幀（13..15）在舊 host 上遺失，永不重送
+    aPtr = A.sent.length;
+
+    // 兩端皆卡在 13（缺 H@13）；B 另缺 A@13..15（原缺口）
+    expect(A.node.confirmedFrame).toBe(13);
+    expect(B.node.confirmedFrame).toBe(13);
+    const sA = A.node.exportSyncState();
+    const sB = B.node.exportSyncState();
+    expect(sA.horizon).toEqual({ A: 15, B: 15, H: 12 });
+    expect(sB.horizon).toEqual({ A: 12, B: 15, H: 12 });
+
+    // 合併補課：B 灌入 A 的視野（重複 import 一次驗證無害）；hostForfeitF = max(horizon.H)+1 = 13
+    B.node.importMergedInputs(sA.inputs);
+    B.node.importMergedInputs(sA.inputs);
+    A.node.importMergedInputs(sB.inputs);
+    A.node.scheduleForfeit('H', 13);
+    B.node.scheduleForfeit('H', 13);
+
+    // 續行（新 host 接手 → 雙向投遞恢復，只轉發新幀）
+    for (let r = 13; r < 25; r++) {
+      A.node.tick([]);
+      B.node.tick([]);
+      deliverAtoB();
+      deliverBtoA();
+    }
+
+    // 兩端皆越過原缺口（>15），H 判敗（3 人局墊底=3），狀態指紋一致
+    expect(A.node.confirmedFrame).toBeGreaterThan(15);
+    expect(B.node.confirmedFrame).toBeGreaterThan(15);
+    expect(A.node.confirmedFrame).toBe(B.node.confirmedFrame);
+    expect(A.node.getMatch().getPlacement().get('H')).toBe(3);
+    expect(B.node.getMatch().getPlacement().get('H')).toBe(3);
+    expect(A.node.getReplay().forfeits).toEqual([{ f: 13, p: 'H' }]);
+    expect(stateFingerprint(A.node)).toBe(stateFingerprint(B.node));
+  });
+
+  it('重複 import 自己的 export 無害：cf 與全盤狀態不變、後續鎖步與對照組一致', () => {
+    const playerIds = ['P0', 'P1', 'P2', 'P3'];
+    const run = (withReimport: boolean): { fp: string; cf: number } => {
+      const { nodes } = buildNodes(playerIds, 4242);
+      for (let f = 0; f < 10; f++) {
+        for (const node of nodes) node.tick(f % 3 === 0 ? ['softDrop'] : []);
+      }
+      if (withReimport) {
+        const cfBefore = nodes[0].confirmedFrame;
+        const fpBefore = stateFingerprint(nodes[0]);
+        nodes[0].importMergedInputs(nodes[0].exportSyncState().inputs);
+        nodes[0].importMergedInputs(nodes[0].exportSyncState().inputs);
+        expect(nodes[0].confirmedFrame).toBe(cfBefore);
+        expect(stateFingerprint(nodes[0])).toBe(fpBefore);
+      }
+      for (let f = 10; f < 30; f++) {
+        for (const node of nodes) node.tick([]);
+      }
+      const fp = stateFingerprint(nodes[0]);
+      for (const node of nodes) expect(stateFingerprint(node)).toBe(fp);
+      return { fp, cf: nodes[0].confirmedFrame };
+    };
+    const a = run(true);
+    const b = run(false);
+    expect(a.fp).toBe(b.fp);
+    expect(a.cf).toBe(b.cf);
+  });
+
+  it('importMergedInputs 壞輸入忽略：非陣列 / p 不在名單 / f 壞值 / a 壞形狀 → 不丟例外不污染；混入合法幀仍生效', () => {
+    const { node } = makeManualNode(['A', 'B'], 'A', 9);
+    node.tick(['hold']); // cf=3，缺 B@3 卡住
+    expect(node.confirmedFrame).toBe(3);
+    const fpBefore = stateFingerprint(node);
+
+    expect(() => node.importMergedInputs(null as never)).not.toThrow();
+    expect(() => node.importMergedInputs('junk' as never)).not.toThrow();
+    expect(() =>
+      node.importMergedInputs([
+        null,
+        42,
+        { f: NaN, p: 'B', a: [] },
+        { f: -1, p: 'B', a: [] },
+        { f: Infinity, p: 'B', a: [] },
+        { f: '3', p: 'B', a: [] },
+        { f: 3, p: 'ZZ', a: [] }, // p 不在名單
+        { f: 3, p: 'B', a: 'x' }, // a 非陣列
+        { f: 3, p: 'B', a: ['fly'] }, // 非法 action
+      ] as never),
+    ).not.toThrow();
+
+    node.tick([]);
+    expect(node.confirmedFrame).toBe(3); // 壞幀全被忽略 → 仍缺 B@3
+    expect(stateFingerprint(node)).toBe(fpBefore);
+    expect(node.exportSyncState().horizon.B).toBe(2); // 垃圾沒寫進 inbox
+
+    // 混入合法幀仍生效：B@3/B@4 補上後可推進
+    node.importMergedInputs([
+      { f: 3, p: 'B', a: ['right'] },
+      null as never,
+      { f: 4, p: 'B', a: [] },
+    ]);
+    node.tick([]);
+    expect(node.confirmedFrame).toBeGreaterThan(3);
   });
 });
