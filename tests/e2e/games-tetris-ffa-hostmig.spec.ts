@@ -10,13 +10,14 @@ import { test, expect, type Page } from '@playwright/test';
  *     舊 host 墊底（standings[2] === host 的 playerId）
  *
  * 時間預算：context.close() → DataChannel close 快速路徑（秒級）；headless 下若
- * close 事件不發則退靜默逾時兜底（SILENCE_TIMEOUT_MS=10s）。遷移本身含
- * ELECTION_GRACE_MS=3s 選舉先手窗 + 真實 WebRTC 重交握，上限 MIGRATION_TIMEOUT_MS=20s。
- * 故 migration state poll 預算 90s（10s 靜默 + 20s 遷移上限 + 緩衝）。WebRTC 需 chromium。
+ * close 事件不發則退靜默逾時兜底（SILENCE_TIMEOUT_MS=30s，放寬防誤殺切分頁者）。
+ * 遷移本身含 ELECTION_GRACE_MS=3s 選舉先手窗 + 真實 WebRTC 重交握，上限
+ * MIGRATION_TIMEOUT_MS=20s。故 migration state poll 預算 120s
+ * （30s 靜默 + 20s 遷移上限 + 緩衝）。WebRTC 需 chromium。
  */
 test.describe('Dungeon Arcade — FFA host-leave migration continuation', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
 
   test('closing the HOST context migrates to a new host and the match continues to a result', async ({ browser }) => {
     const ctxHost = await browser.newContext();
@@ -83,11 +84,11 @@ test.describe('Dungeon Arcade — FFA host-leave migration continuation', () => 
       await ctxHost.close();
 
       // === 2. g1 / g2 都完成遷移：migration.state === 'done'（gen=1）===
-      // 預算 90s：偵測（close 快速路徑秒級 / 靜默兜底 10s）+ 遷移上限 20s + 緩衝。
+      // 預算 120s：偵測（close 快速路徑秒級 / 靜默兜底 30s）+ 遷移上限 20s + 緩衝。
       try {
-        await expect.poll(() => readMigration(g1), { timeout: 90_000 })
+        await expect.poll(() => readMigration(g1), { timeout: 120_000 })
           .toEqual({ gen: 1, state: 'done' });
-        await expect.poll(() => readMigration(g2), { timeout: 90_000 })
+        await expect.poll(() => readMigration(g2), { timeout: 120_000 })
           .toEqual({ gen: 1, state: 'done' });
       } catch (e) {
         // 遷移未達 done：吐出兩端 migration 狀態與 console log 供根因分析後再丟出。

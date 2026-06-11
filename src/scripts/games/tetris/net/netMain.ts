@@ -20,6 +20,7 @@ import { WebRtcTransport } from './webrtcTransport';
 import type { Transport } from './transport';
 import { createRoom, putSlot, pollSlot } from './signalClient';
 import { buildResultMessage } from './auth';
+import { SILENCE_TIMEOUT_MS, silenceWarningText } from './silence';
 
 const SIM_DT = 1000 / 60;
 const CLEAR_NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
@@ -32,8 +33,7 @@ export interface NetStatus {
 export type StatusCb = (s: NetStatus) => void;
 
 const HANDSHAKE_TIMEOUT_MS = 30_000;
-/** 對手靜默逾時（中離兜底）：與 FFA 的 SILENCE_TIMEOUT_MS 同值。 */
-const SILENCE_TIMEOUT_MS = 10_000;
+// 對手靜默逾時（中離兜底）與倒數警示：常數集中於 silence.ts（與 FFA 共用）。
 /** 為握手等待加上超時，避免對手在連線後、送出身分前崩潰導致永久卡在「已連線」。 */
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -182,6 +182,12 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
     youTag.anchor.set(0.5);
     stage.hudLayer.addChild(youTag);
 
+    // 靜默倒數警示：對手靜默超過 SILENCE_WARN_MS 即顯示，恢復送訊即消失（風格同 banner）。
+    const silenceWarn = new Text({ text: '', style: { fontFamily: '"Press Start 2P", monospace', fontSize: 13, fill: 0xffd23f, align: 'center' } });
+    silenceWarn.anchor.set(0.5);
+    silenceWarn.visible = false;
+    stage.hudLayer.addChild(silenceWarn);
+
     let lay: MatchLayout = computeMatchLayout(stage.width, stage.height);
     function relayout(): void {
       lay = computeMatchLayout(stage.width, stage.height);
@@ -194,6 +200,7 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
       fxB.setLayout(lay.cellSize, lay.b.origin);
       meter.setLayout(lay.meter);
       banner.position.set(stage.width / 2, stage.height / 2);
+      silenceWarn.position.set(stage.width / 2, Math.max(28, stage.height * 0.12));
       const me = localSide === 'A' ? lay.a.origin : lay.b.origin;
       youTag.position.set(me.x + (lay.cellSize * BOARD_WIDTH) / 2, me.y - lay.cellSize * 0.7);
     }
@@ -282,6 +289,12 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
       if (match.phase === 'playing' && !disconnected && Date.now() - lastOppMsgAt > SILENCE_TIMEOUT_MS) {
         disconnected = true; // 靜默兜底：對手長時間無訊息＝離席
       }
+      // 靜默倒數警示：超過警示門檻顯示「N 秒後判離」；對手恢復送訊（lastOppMsgAt 更新）即消失。
+      const warnMsg = (match.phase === 'playing' && !disconnected)
+        ? silenceWarningText(Date.now() - lastOppMsgAt)
+        : null;
+      silenceWarn.visible = warnMsg !== null;
+      if (warnMsg !== null) silenceWarn.text = warnMsg;
       if (match.phase === 'playing' && !disconnected) {
         acc += dt;
         let guard = 0;
@@ -317,6 +330,6 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
     };
     stage.app.ticker.add(tick);
 
-    (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = { lockstep, get match() { return lockstep.match; }, get disconnected() { return disconnected; }, stage };
+    (window as unknown as { __tetrisDebug?: unknown }).__tetrisDebug = { lockstep, get match() { return lockstep.match; }, get disconnected() { return disconnected; }, get silenceWarning() { return silenceWarn.visible ? silenceWarn.text : ''; }, stage };
   });
 }
