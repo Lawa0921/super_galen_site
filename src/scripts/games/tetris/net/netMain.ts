@@ -275,8 +275,9 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
       }
 
       if (disconnected && !resultShown) {
+        // 對手中離＝判敗（forfeit-win）。1v1 不回報結算（單方簽章可偽造，誠實限制：不計分）。
         resultShown = true;
-        banner.text = 'OPPONENT\nDISCONNECTED';
+        banner.text = 'OPPONENT FORFEIT\nYOU WIN';
         banner.style.fontSize = 22;
         banner.visible = true;
       } else if (match.phase === 'result' && !resultShown) {

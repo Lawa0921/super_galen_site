@@ -656,7 +656,7 @@ const lang: Language = defaultLang;
     if (touchNotice) touchNotice.hidden = false;
   }
   let started = false;
-  let gameHandle: { pause?(): void; resume?(): void; restart?(): void } | null = null;
+  let gameHandle: { pause?(): void; resume?(): void; restart?(): void; leaveMatch?(): void } | null = null;
   let gameRunning = false;
   let pausable = false;
   let menuOpen = false;
@@ -692,7 +692,7 @@ const lang: Language = defaultLang;
     if (!gameRunning || menuOpen || resultOpen) return;
     menuOpen = true;
     if (pausable) gameHandle?.pause?.();
-    if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : '離開對戰？';
+    if (pauseTitle) pauseTitle.textContent = pausable ? 'PAUSED' : '離開對戰？離開將判敗';
     if (pauseMenu) { pauseMenu.classList.toggle('is-online', !pausable); pauseMenu.hidden = false; }
     blip(300, 0.1);
   }
@@ -710,7 +710,11 @@ const lang: Language = defaultLang;
     else openPauseMenu();
   });
   document.getElementById('pause-resume')?.addEventListener('click', closePauseMenu);
-  document.getElementById('pause-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
+  document.getElementById('pause-quit')?.addEventListener('click', () => {
+    // 線上 FFA：離開前先送 ffa-leave（host 立即判敗、其餘玩家續行）；其他模式為 no-op。
+    gameHandle?.leaveMatch?.();
+    location.href = '/games/tetris';
+  });
 
   // ---- 結算覆蓋層（SOLO game over / vs-AI 勝負）----
   const resultMenu = document.getElementById('result-menu');
@@ -893,6 +897,7 @@ const lang: Language = defaultLang;
       maxGuests: playerCount - 1,
       waitStart: () => startSignal,
       onStatus: (s) => onFfaStatus(s, true),
+      onHandle: (h) => { gameHandle = h; },
     }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, true));
   }
   function beginJoin(): void {
@@ -912,6 +917,7 @@ const lang: Language = defaultLang;
       identity: buildFfaIdentity(),
       maxGuests: playerCount - 1,
       onStatus: (s) => onFfaStatus(s, false),
+      onHandle: (h) => { gameHandle = h; },
     }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, false));
   }
   // lobby START（FFA host）：resolve 開始訊號，按鈕隱藏避免重複觸發。
