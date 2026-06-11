@@ -14,6 +14,7 @@ import { FfaHubTransport, FfaSpokeTransport, type RelayChannel } from './ffaTran
 import { createRoom as realCreateRoom, putSlot as realPutSlot, getSlot as realGetSlot, pollSlot as realPollSlot } from './signalClient';
 import { buildFfaResultMessage } from './auth';
 import { WebRtcTransport } from './webrtcTransport';
+import { SILENCE_TIMEOUT_MS, silenceWarningText } from './silence';
 
 const SIM_DT = 1000 / 60;
 
@@ -559,8 +560,8 @@ export function tapFrames(
 // 中離續行（Stage A）：host 偵測 → 廣播 ffa-forfeit → 各端 scheduleForfeit
 // ─────────────────────────────────────────────────────────────────────────
 
-/** host 判定 guest 靜默逾時的窗口（無任何訊息即視同中離）。 */
-export const SILENCE_TIMEOUT_MS = 10_000;
+/** host 判定 guest 靜默逾時的窗口（無任何訊息即視同中離）。常數集中於 silence.ts。 */
+export { SILENCE_TIMEOUT_MS, SILENCE_WARN_MS } from './silence';
 /** host 端靜默檢查週期。 */
 const SILENCE_CHECK_INTERVAL_MS = 1_000;
 
@@ -655,6 +656,13 @@ export class FfaForfeitController {
   onChannelClose(idx: number): void {
     const p = this.guestIds[idx];
     if (p) this.declareForfeit(p);
+  }
+
+  /** 未宣告 guest 中最長的靜默毫秒數（無追蹤對象回 0）；供畫面倒數警示。 */
+  maxSilenceMs(now: number = this.now()): number {
+    let max = 0;
+    for (const at of this.lastMsgAt.values()) max = Math.max(max, now - at);
+    return max;
   }
 
   /** 靜默逾時檢查：超時的 guest 全部宣告；回傳本次被宣告的 id（供測試觀測）。 */
@@ -869,10 +877,20 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
     banner.visible = false;
     stage.hudLayer.addChild(banner);
 
+    // 靜默倒數警示（host 端：guest 靜默超過 SILENCE_WARN_MS 即顯示，恢復送幀即消失）。
+    const silenceWarn = new Text({
+      text: '',
+      style: { fontFamily: '"Press Start 2P", monospace', fontSize: 13, fill: 0xffd23f, align: 'center' },
+    });
+    silenceWarn.anchor.set(0.5);
+    silenceWarn.visible = false;
+    stage.hudLayer.addChild(silenceWarn);
+
     function relayout(): void {
       stage.layoutBackground();
       boards.relayout(stage.width, stage.height);
       banner.position.set(stage.width / 2, stage.height / 2);
+      silenceWarn.position.set(stage.width / 2, Math.max(28, stage.height * 0.12));
     }
     relayout();
     stage.app.renderer.on('resize', relayout);
@@ -920,6 +938,14 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
       standings.length = 0;
       standings.push(...lockstep.getStandings());
 
+      // 靜默倒數警示：只有「有 watch 的那端」顯示——host 看 guests（forfeitCtl 追蹤
+      // lastMsgAt）；guest 對 host 只有 channel close 偵測（瞬時），無倒數可言。
+      const warnMsg = (match.phase === 'playing' && !disconnected && forfeitCtl)
+        ? silenceWarningText(forfeitCtl.maxSilenceMs())
+        : null;
+      silenceWarn.visible = warnMsg !== null;
+      if (warnMsg !== null) silenceWarn.text = warnMsg;
+
       if (disconnected && !resultReported) {
         // Stage A：host 中離＝全局中止（Stage B 再做 host migration）。
         resultReported = true;
@@ -947,6 +973,7 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
       stage,
       boards,
       standings,
+      get silenceWarning() { return silenceWarn.visible ? silenceWarn.text : ''; },
     };
   });
 

@@ -9,12 +9,12 @@ import { test, expect, type Page } from '@playwright/test';
  *     中離者（g2）墊底（standings[2] === g2 的 playerId）
  *
  * 偵測路徑：context.close() 會關閉 DataChannel → host 走 channel close 快速路徑（秒級）；
- * 若 headless 下 close 事件不發，則退靜默逾時（SILENCE_TIMEOUT_MS=10s）兜底，
- * 故判敗 poll timeout 給 30s。WebRTC 需 chromium。
+ * 若 headless 下 close 事件不發，則退靜默逾時（SILENCE_TIMEOUT_MS=30s）兜底，
+ * 故判敗 poll timeout 給 55s。WebRTC 需 chromium。
  */
 test.describe('Dungeon Arcade — FFA guest-leave forfeit continuation', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
 
   test('closing a guest context forfeits them and the match continues to a result', async ({ browser }) => {
     const ctxHost = await browser.newContext();
@@ -70,10 +70,10 @@ test.describe('Dungeon Arcade — FFA guest-leave forfeit continuation', () => {
       await ctxG2.close();
 
       // === 2. host 與 g1 都觀測到 g2 被判敗：placement = 3（3 人局第一個淘汰）===
-      // close 快速路徑應為秒級；若退靜默逾時（10s）也要能過 → timeout 30s。
-      await expect.poll(() => readPlacementOf(host, g2Id), { timeout: 30_000 }).toBe(3);
+      // close 快速路徑應為秒級；若退靜默逾時（30s）也要能過 → timeout 55s。
+      await expect.poll(() => readPlacementOf(host, g2Id), { timeout: 55_000 }).toBe(3);
       const detectMs = Date.now() - closedAt;
-      await expect.poll(() => readPlacementOf(g1, g2Id), { timeout: 30_000 }).toBe(3);
+      await expect.poll(() => readPlacementOf(g1, g2Id), { timeout: 55_000 }).toBe(3);
       // 觀測用：close 路徑（秒級）vs 靜默逾時路徑（>10s）。不斷言路徑，只記錄耗時。
       console.log(`[forfeit-e2e] host observed forfeit after ${detectMs}ms (${detectMs < 8000 ? 'channel-close path' : 'silence-timeout path'})`);
 

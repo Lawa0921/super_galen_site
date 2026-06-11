@@ -642,6 +642,22 @@ describe('FfaForfeitController（host 宣告 + 廣播）', () => {
     expect(ctl.checkSilenceNow()).toEqual(['g1']); // g1 也超時；g2 已宣告不重複
     expect(sent.length).toBe(2);
   });
+
+  it('maxSilenceMs：回傳未宣告 guest 的最長靜默毫秒數（供畫面倒數警示）；已宣告者剔除', () => {
+    let nowMs = 0;
+    const ctl = new FfaForfeitController({
+      guestIds: ['g1', 'g2'],
+      sendControl: () => {},
+      now: () => nowMs,
+    });
+    expect(ctl.maxSilenceMs()).toBe(0); // 建構當下無靜默
+    nowMs = 4_000;
+    ctl.noteFrame({ f: 1, p: 'g1', a: [] }); // g1 在 4s 有活動
+    nowMs = 12_000;
+    expect(ctl.maxSilenceMs()).toBe(12_000); // g2 從建構起靜默 12s > g1 的 8s
+    ctl.declareForfeit('g2');
+    expect(ctl.maxSilenceMs()).toBe(8_000); // g2 已宣告 → 只剩 g1
+  });
 });
 
 describe('wireFfaForfeit（接線）', () => {
