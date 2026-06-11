@@ -62,6 +62,53 @@ describe('generateFloor', () => {
     }
   });
 
+  it('出口與所有敵人永遠在「非牆連通區」內（spawn 出發 flood-fill 可達）', () => {
+    const reachable = (grid: ReturnType<typeof generateFloor>['grid']): Set<string> => {
+      const seen = new Set<string>([`${SPAWN.x},${SPAWN.y}`]);
+      const q = [[SPAWN.x, SPAWN.y]];
+      while (q.length) {
+        const [x, y] = q.pop()!;
+        for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+          const nx = x+dx, ny = y+dy, k = `${nx},${ny}`;
+          if (!seen.has(k) && grid[ny]?.[nx] && grid[ny][nx] !== 'wall') { seen.add(k); q.push([nx, ny]); }
+        }
+      }
+      return seen;
+    };
+    for (let seed = 1; seed <= 50; seed++) {
+      for (const floor of [1, 2, 5, 9]) {
+        const { grid, exit, enemies } = generateFloor(seed, floor);
+        const R = reachable(grid);
+        expect(R.has(`${exit.x},${exit.y}`), `seed ${seed} floor ${floor} 出口被牆封死`).toBe(true);
+        for (const e of enemies) {
+          expect(R.has(`${e.x},${e.y}`), `seed ${seed} floor ${floor} 敵人@(${e.x},${e.y}) 不可達`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('佈局原型有多樣性（2 層起跨 seeds 至少出現 3 種），且 1 層固定 classic', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      expect(generateFloor(seed, 1).archetype).toBe('classic');
+    }
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 40; seed++) {
+      for (const floor of [2, 3, 5, 8]) seen.add(generateFloor(seed, floor).archetype);
+    }
+    expect(seen.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it('crate 密度有層間變化（跨 seeds/樓層的 crate 數量不全相同）', () => {
+    const counts = new Set<number>();
+    for (let seed = 1; seed <= 10; seed++) {
+      for (const floor of [2, 3, 4]) {
+        const { grid } = generateFloor(seed, floor);
+        counts.add(grid.flat().filter((t) => t === 'crate').length);
+      }
+    }
+    expect(counts.size).toBeGreaterThan(5);
+  });
+
   it('怪物種類隨樓層漸進：1 層只有基本款；2 層起有 ghost；3 層起有 dasher', () => {
     const kindsAt = (floor: number): Set<string> => {
       const s = new Set<string>();
@@ -78,5 +125,11 @@ describe('generateFloor', () => {
     const f3 = kindsAt(3);
     expect(f3.has('ghost')).toBe(true);
     expect(f3.has('dasher')).toBe(true);
+    expect(f3.has('mimic')).toBe(false); // mimic 4 層才出現
+    const f4 = kindsAt(4);
+    expect(f4.has('mimic')).toBe(true);
+    expect(f4.has('tank')).toBe(false);  // tank 5 層才出現
+    const f5 = kindsAt(5);
+    expect(f5.has('tank')).toBe(true);
   });
 });
