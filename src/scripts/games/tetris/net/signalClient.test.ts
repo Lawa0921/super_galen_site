@@ -54,6 +54,32 @@ describe('isValidSlot：槽位白名單驗證', () => {
   it('guest-answer（缺 index）→ 非法', () => expect(isValidSlot('guest-answer')).toBe(false));
   it('host-ack（缺 index）→ 非法', () => expect(isValidSlot('host-ack')).toBe(false));
   it('OFFER（大寫）→ 非法（大小寫敏感）', () => expect(isValidSlot('OFFER')).toBe(false));
+
+  // --- 世代化遷移槽位（host migration：mig{1..6}-guest-{0..6}-offer / mig{1..6}-host-ack-{0..6}）---
+  it('mig1-guest-0-offer 合法（最小世代/最小 index）', () =>
+    expect(isValidSlot('mig1-guest-0-offer')).toBe(true));
+  it('mig6-guest-6-offer 合法（最大世代/最大 index）', () =>
+    expect(isValidSlot('mig6-guest-6-offer')).toBe(true));
+  it('mig1-host-ack-0 合法（最小世代/最小 index）', () =>
+    expect(isValidSlot('mig1-host-ack-0')).toBe(true));
+  it('mig6-host-ack-6 合法（最大世代/最大 index）', () =>
+    expect(isValidSlot('mig6-host-ack-6')).toBe(true));
+  it('mig3-guest-2-offer 合法（中間值）', () =>
+    expect(isValidSlot('mig3-guest-2-offer')).toBe(true));
+  it('mig0-guest-0-offer（g=0）→ 非法', () =>
+    expect(isValidSlot('mig0-guest-0-offer')).toBe(false));
+  it('mig7-guest-0-offer（g=7 超範圍）→ 非法', () =>
+    expect(isValidSlot('mig7-guest-0-offer')).toBe(false));
+  it('mig1-guest-7-offer（i=7 超範圍）→ 非法', () =>
+    expect(isValidSlot('mig1-guest-7-offer')).toBe(false));
+  it('mig7-host-ack-0（g=7 超範圍）→ 非法', () =>
+    expect(isValidSlot('mig7-host-ack-0')).toBe(false));
+  it('mig1-host-ack-7（i=7 超範圍）→ 非法', () =>
+    expect(isValidSlot('mig1-host-ack-7')).toBe(false));
+  it('mig-guest-0-offer（缺世代數字）→ 非法', () =>
+    expect(isValidSlot('mig-guest-0-offer')).toBe(false));
+  it('mig1-guest-0-answer（遷移流程無 answer 形式）→ 非法', () =>
+    expect(isValidSlot('mig1-guest-0-answer')).toBe(false));
 });
 
 describe('isValidSlot 用在 getSlot：非法槽位直接拋錯（不發 fetch）', () => {

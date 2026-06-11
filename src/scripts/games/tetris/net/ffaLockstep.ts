@@ -7,6 +7,15 @@ const SIM_DT = 1000 / 60;
  * 故「從未送幀的玩家」的全員停滯點 = INPUT_DELAY（FfaForfeitController 計算 F 用）。 */
 export const INPUT_DELAY = 3;
 
+/**
+ * exportSyncState 附帶的 replay tail 視窗（幀數，60fps 下 10 秒）。
+ * Host 死亡時各端停滯點不同（cf 偏移）：超前端可能已把落後端缺的幀「消化並從
+ * inbox 刪除」——這些幀的非空輸入只存在於 replayEvents。匯出 tail 讓合併補課
+ * 能覆蓋 [laggard.cf, ahead.cf) 的缺口（實測偏移 ≈ INPUT_DELAY＋relay 在途量，
+ * 600 幀為十倍以上裕度；空幀不需匯出——由 fillEmptyInputsUpTo 確定性回填）。
+ */
+export const SYNC_REPLAY_TAIL_FRAMES = 600;
+
 /** 合法的輸入動作字串集合，用於 onMessage shape 驗證（網路訊息不可信）。 */
 const VALID_ACTIONS: ReadonlySet<string> = new Set<InputAction>([
   'left', 'right', 'rotateCW', 'rotateCCW', 'softDrop', 'hardDrop', 'hold',
@@ -28,6 +37,19 @@ export interface FfaFrameMsg {
 export interface FfaLockstepTransport {
   send(msg: FfaFrameMsg): void;
   onMessage(cb: (msg: FfaFrameMsg) => void): void;
+}
+
+/**
+ * 鎖步同步狀態快照（host migration 補課用，spec B.4）。
+ * cf      = confirmedFrame（已全員確認並推進的幀界線）。
+ * horizon = 每玩家「本端已知」的最大幀：max(inbox 未消化最大鍵, 已消化至 cf-1)；
+ *           自己另取 sendFrame+inputDelay-1（已送出但未確認的本地幀上界）。
+ * inputs  = inbox 所有未消化幀攤平（inbox 本來就含自己已送未消化的本地幀）。
+ */
+export interface FfaSyncState {
+  cf: number;
+  horizon: Record<string, number>;
+  inputs: Array<{ f: number; p: string; a: InputAction[] }>;
 }
 
 export interface FfaLockstepOptions {
@@ -141,6 +163,75 @@ export class FfaLockstep {
     };
   }
 
+  /**
+   * 匯出同步狀態快照（host migration 補課用）。
+   * 純讀取、不改任何內部狀態；inputs 的 a 為複本，呼叫端改動不影響 inbox。
+   * inputs ＝ inbox 未消化幀 ＋ replay tail（近 SYNC_REPLAY_TAIL_FRAMES 幀內
+   * 已套用的非空幀）——cf 偏移時超前端已消化、落後端仍缺的幀只能從 tail 補。
+   * 兩來源幀域不重疊（inbox ≥ cf > replay）→ 無重複鍵。
+   */
+  exportSyncState(): FfaSyncState {
+    const horizon: Record<string, number> = {};
+    const inputs: FfaSyncState['inputs'] = [];
+    for (const id of this.playerIds) {
+      // 已消化至 cf-1（inbox 空時的下界）
+      let max = this.simFrame - 1;
+      for (const [f, a] of this.inbox.get(id)!) {
+        if (f > max) max = f;
+        inputs.push({ f, p: id, a: [...a] });
+      }
+      // 自己＝已送出但未確認的本地幀上界（正常情況即 inbox 最大鍵；
+      // 自己已淘汰被 autofill 消化時取 max 保單調）
+      if (id === this.localId) {
+        max = Math.max(max, this.sendFrame + this.inputDelay - 1);
+      }
+      horizon[id] = max;
+    }
+    const tailFrom = this.simFrame - SYNC_REPLAY_TAIL_FRAMES;
+    for (const e of this.replayEvents) {
+      if (e.f >= tailFrom) inputs.push({ f: e.f, p: e.p, a: [...e.a] });
+    }
+    return { cf: this.simFrame, horizon, inputs };
+  }
+
+  /**
+   * 以 baseCf（合併視野的 max cf）回填空輸入（host migration 補課用）。
+   * 須在 importMergedInputs「之後」呼叫：超前端已套用的幀中，非空輸入必在其
+   * replay tail（已隨 merge 灌入）；merge 後仍缺的 (f, p) 即為空幀 → 確定性補 []。
+   * 跳過自己：本地輸入只在送出當下記錄，絕不合成（避免搶填未來要送的幀）；
+   * 協定保證 baseCf ≤ 任一玩家已送幀上界＋1，故自己的幀必已齊。
+   * frame 非有限數或 ≤ cf → no-op（網路來值不可信）。
+   */
+  fillEmptyInputsUpTo(frame: number): void {
+    if (typeof frame !== 'number' || !Number.isFinite(frame)) return;
+    for (let f = this.simFrame; f < frame; f++) {
+      for (const id of this.playerIds) {
+        if (id === this.localId) continue;
+        const map = this.inbox.get(id)!;
+        if (!map.has(f)) map.set(f, []);
+      }
+    }
+  }
+
+  /**
+   * 灌入合併後的輸入集（host migration 補課用）。
+   * 逐筆走 recordInput（冪等：首寫保留）；p 不在名單或壞形狀（f 非有限非負數、
+   * a 非合法 action 陣列）一律忽略——合併集可能來自網路，不可信。
+   * 不主動推進；下一次 tick 的 advance 自然越過補上的缺口。
+   */
+  importMergedInputs(inputs: Array<{ f: number; p: string; a: InputAction[] }>): void {
+    if (!Array.isArray(inputs)) return;
+    for (const raw of inputs) {
+      if (!raw || typeof raw !== 'object') continue;
+      const e = raw as Record<string, unknown>;
+      if (typeof e.f !== 'number' || !Number.isFinite(e.f) || e.f < 0) continue;
+      if (typeof e.p !== 'string' || !this.inbox.has(e.p)) continue;
+      if (!Array.isArray(e.a)) continue;
+      if (!e.a.every((x) => typeof x === 'string' && VALID_ACTIONS.has(x))) continue;
+      this.recordInput(e.p, e.f, [...(e.a as InputAction[])]);
+    }
+  }
+
   // ── 內部 ──────────────────────────────────────────────────────────────
 
   /** 收遠端 FfaFrameMsg：JSON 容錯 + shape 驗證 → 寫入 inbox。畸形一律忽略。 */
@@ -164,6 +255,7 @@ export class FfaLockstep {
 
   /** 寫入某玩家某幀輸入（冪等：已存在則不覆蓋，避免重複廣播造成不一致）。 */
   private recordInput(id: string, frame: number, actions: InputAction[]): void {
+    if (frame < this.simFrame) return; // 已模擬過的幀＝死歷史（遲到重播/補課 tail）→ 不寫，免汙染 inbox
     const map = this.inbox.get(id);
     if (!map) return;
     if (map.has(frame)) return; // 冪等：保留首次確認的輸入

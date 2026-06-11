@@ -14,6 +14,7 @@ import {
   checkSilence,
   FfaForfeitController,
   wireFfaForfeit,
+  createGuestHostWatch,
   type FfaSignalClient,
   type FfaInitMsg,
   type FfaHostAnswerPeer,
@@ -576,6 +577,82 @@ describe('checkSilence（純函式靜默逾時判定）', () => {
     expect(checkSilence(lastMsgAt, 9_000, 10_000)).toEqual([]);
     // 剛好邊界（now - at === timeout）不算超時（嚴格大於）
     expect(checkSilence(lastMsgAt, 10_000, 10_000)).toEqual([]);
+  });
+});
+
+describe('createGuestHostWatch（guest 端 host 頻道靜默兜底偵測，Stage B）', () => {
+  it('host 頻道靜默超過 timeout → onHostDown 觸發一次；noteActivity 重置計時', () => {
+    let nowMs = 0;
+    let downs = 0;
+    const w = createGuestHostWatch({
+      onHostDown: () => { downs++; },
+      isActive: () => true,
+      now: () => nowMs,
+      timeoutMs: 10_000,
+    });
+    nowMs = 9_000;
+    w.check();
+    expect(downs).toBe(0); // 未超時
+    nowMs = 10_000;
+    w.check();
+    expect(downs).toBe(0); // 剛好邊界（嚴格大於才算）
+    nowMs = 10_001;
+    w.check();
+    expect(downs).toBe(1); // 超時 → 觸發
+    nowMs = 10_002;
+    w.check();
+    expect(downs).toBe(1); // 觸發後計時已重置 → 不重複轟炸
+
+    // 有活動（host 中繼幀）→ 重置；之後再靜默才會再觸發
+    nowMs = 15_000;
+    w.noteActivity();
+    nowMs = 25_000;
+    w.check();
+    expect(downs).toBe(1); // 15000→25000 恰好 10000，未嚴格超時
+    nowMs = 25_001;
+    w.check();
+    expect(downs).toBe(2);
+  });
+
+  it('isActive=false（遷移中/已中止/對局結束）→ 不計靜默且重置基準（恢復後重新起算）', () => {
+    let nowMs = 0;
+    let active = false;
+    let downs = 0;
+    const w = createGuestHostWatch({
+      onHostDown: () => { downs++; },
+      isActive: () => active,
+      now: () => nowMs,
+      timeoutMs: 10_000,
+    });
+    nowMs = 60_000;
+    w.check(); // 非 active：不觸發、基準同步到 now
+    expect(downs).toBe(0);
+    active = true;
+    nowMs = 65_000;
+    w.check();
+    expect(downs).toBe(0); // 恢復後僅累積 5s，不觸發
+    nowMs = 70_001;
+    w.check();
+    expect(downs).toBe(1); // 自恢復基準起超過 10s → 觸發
+  });
+
+  it('silentMs：回傳 host 頻道目前靜默毫秒數（供倒數警示）；非 active 回 0；noteActivity 歸零', () => {
+    let nowMs = 0;
+    let active = true;
+    const w = createGuestHostWatch({
+      onHostDown: () => {},
+      isActive: () => active,
+      now: () => nowMs,
+      timeoutMs: 30_000,
+    });
+    expect(w.silentMs()).toBe(0); // 建構當下無靜默
+    nowMs = 12_000;
+    expect(w.silentMs()).toBe(12_000); // 靜默 12s（已過警示門檻，UI 該顯示倒數）
+    w.noteActivity();
+    expect(w.silentMs()).toBe(0); // host 恢復送幀 → 歸零（警示消失）
+    nowMs = 20_000;
+    active = false; // 遷移中/中止/結果畫面：不顯示警示
+    expect(w.silentMs()).toBe(0);
   });
 });
 
