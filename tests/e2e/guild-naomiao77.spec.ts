@@ -163,6 +163,67 @@ test.describe('Guild - naomiao77 Enhanced Page', () => {
     });
   });
 
+  test.describe('Paint cinema (scroll-scrub painting)', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+      await dismissEntrance(page);
+    });
+
+    test('should have a #paint-cinema section with 8 painting frames', async ({ page }) => {
+      const section = page.locator('#paint-cinema');
+      await expect(section).toBeAttached();
+      const frames = page.locator('#paint-cinema .paint-frame');
+      await expect(frames).toHaveCount(8);
+    });
+
+    test('should have a final reveal with the real artwork and a caption element', async ({ page }) => {
+      await expect(page.locator('#paint-final')).toBeAttached();
+      await expect(page.locator('#paint-final img[src*="cat-on-whale"]')).toBeAttached();
+      await expect(page.locator('#paint-caption')).toBeAttached();
+    });
+
+    test('should advance frames when scrolling through the pinned section', async ({ page }) => {
+      const lastFrame = page.locator('#paint-cinema .paint-frame').last();
+      // Before scrolling, the last frame is hidden
+      const opacityBefore = await lastFrame.evaluate((el) => parseFloat(getComputedStyle(el).opacity));
+      expect(opacityBefore).toBeLessThan(0.5);
+
+      // Scroll deep into the pinned section (instant — the page sets scroll-behavior: smooth)
+      await page.evaluate(() => {
+        const section = document.getElementById('paint-cinema');
+        if (section) {
+          const top = section.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: top + 3600, behavior: 'instant' });
+        }
+      });
+      await page.waitForTimeout(2000);
+
+      const opacityAfter = await lastFrame.evaluate((el) => parseFloat(getComputedStyle(el).opacity));
+      expect(opacityAfter).toBeGreaterThan(0.5);
+    });
+  });
+
+  test.describe('Hero cat shopkeeper', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+      await dismissEntrance(page);
+    });
+
+    test('should have the SVG cat and the stall sign', async ({ page }) => {
+      await expect(page.locator('#hero-cat')).toBeAttached();
+      await expect(page.locator('#stall-sign')).toBeAttached();
+    });
+
+    test('should show a speech bubble when the cat is poked', async ({ page }) => {
+      await page.evaluate(() => {
+        document.getElementById('hero-cat-wrap')?.click();
+      });
+      await page.waitForTimeout(500);
+      const bubble = page.locator('#hero-cat-bubble');
+      await expect(bubble).toHaveClass(/show/);
+    });
+  });
+
   test.describe('No console errors for MotionPathPlugin', () => {
     test('should not have MotionPathPlugin errors after page load', async ({ page }) => {
       const consoleErrors: string[] = [];
