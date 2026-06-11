@@ -1,12 +1,12 @@
 // game.ts
 import type {
-  Grid, Bomb, BlastCell, Enemy, PowerUp, PowerUpKind, Vec, Dir, BomberState, BomberEvent, InputAction, Player,
+  Grid, Bomb, BlastCell, Enemy, EnemyKind, PowerUp, PowerUpKind, Vec, Dir, BomberState, BomberEvent, InputAction, Player,
   CharacterId, CharacterStats, AbilityDef, AbilityId,
 } from './types';
 import { generateFloor } from './generate';
 import { makePlayer, dirDelta, speedMs } from './player';
 import { isWalkable, breakCrate } from './board';
-import { BOMB_FUSE_MS, BLAST_TTL_MS, INVULN_MS, SPAWN, MAX_FIRE, MAX_BOMBS, START_LIVES } from './constants';
+import { BOMB_FUSE_MS, BLAST_TTL_MS, INVULN_MS, SPAWN, MAX_FIRE, MAX_BOMBS, START_LIVES, ENEMY_HIT_COOLDOWN_MS } from './constants';
 import { resolveChain } from './bomb';
 import { computeBlast } from './blast';
 import { SCORE, descendBonus } from './scoring';
@@ -234,6 +234,16 @@ export class BomberGame {
   private stepEnemies(dtMs: number): void {
     for (const e of this.enemies) {
       if (!e.alive) continue;
+      // 受擊冷卻遞減（tank 多滴血用）
+      if (e.hitCooldownMs && e.hitCooldownMs > 0) e.hitCooldownMs -= dtMs;
+      // mimic 甦醒：玩家踏入 2 格內就現形
+      if (e.kind === 'mimic' && !e.awake) {
+        const dist = Math.abs(e.x - this.player.x) + Math.abs(e.y - this.player.y);
+        if (dist <= 2) {
+          e.awake = true;
+          this.events.push({ kind: 'mimicWake', x: e.x, y: e.y });
+        }
+      }
       e.moveAccMs += dtMs;
       if (e.moveAccMs < enemyMoveMs(e.kind, this.floor)) continue;
       e.moveAccMs = 0;
@@ -259,6 +269,15 @@ export class BomberGame {
       const vx = progress < 0.5 ? e.prevX : e.x;
       const vy = progress < 0.5 ? e.prevY : e.y;
       if (onBlast(vx, vy)) {
+        // 受擊冷卻中：同一團殘留爆風不重複扣血
+        if (e.hitCooldownMs && e.hitCooldownMs > 0) continue;
+        const hp = (e.hp ?? 1) - 1;
+        if (hp > 0) {
+          e.hp = hp;
+          e.hitCooldownMs = ENEMY_HIT_COOLDOWN_MS;
+          if (e.kind === 'mimic') e.awake = true; // 被炸醒
+          continue;
+        }
         e.alive = false;
         this.score += SCORE.enemy;
         this.events.push({ kind: 'enemyKill', x: vx, y: vy });
@@ -386,6 +405,14 @@ export class BomberGame {
   debugKillEnemy(id: number): void {
     const e = this.enemies.find((q) => q.id === id);
     if (e) e.alive = false;
+  }
+  /** 測試用：改敵人種類（mimic 設為休眠、tank 設 2 滴血）。 */
+  debugSetEnemyKind(id: number, kind: EnemyKind): void {
+    const e = this.enemies.find((q) => q.id === id);
+    if (!e) return;
+    e.kind = kind;
+    if (kind === 'mimic') e.awake = false;
+    if (kind === 'tank') e.hp = 2;
   }
   debugSetFire(n: number): void { this.player.fireRange = n; }
   debugSetInvuln(ms: number): void { this.player.invulnMs = ms; }

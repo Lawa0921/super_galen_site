@@ -14,6 +14,10 @@ const BOMB_MIRA_URL  = '/assets/games/bomber/bomb-mira.png';
 const BOMB_AYA_URL   = '/assets/games/bomber/bomb-aya.png';
 const BOMB_ROSA_URL  = '/assets/games/bomber/bomb-rosa.png';
 const EXPLOSION_URL  = '/assets/games/bomber/explosion.png';
+const TILES_CATACOMB_URL = '/assets/games/bomber/tiles-catacomb.png';
+const ENEMY_MIMIC_URL    = '/assets/games/bomber/enemy-mimic.png';
+const ENEMY_TANK_URL     = '/assets/games/bomber/enemy-tank.png';
+const TILES_FORGE_URL    = '/assets/games/bomber/tiles-forge.png';
 const ENEMY_WANDER_URL = '/assets/games/bomber/enemy-wander.png';
 const ENEMY_CHASER_URL = '/assets/games/bomber/enemy-chaser.png';
 const ENEMY_GHOST_URL  = '/assets/games/bomber/enemy-ghost.png';
@@ -61,7 +65,9 @@ export interface BomberTextures {
   /** 4-frame explosion animation (sliced from a 256×64 strip, true alpha). */
   blastFrames: Texture[];
   /** Per-kind 3-frame enemy idle/bounce animations (sliced from 192×64 strips). */
-  enemyFrames: Record<'wander' | 'chaser' | 'ghost' | 'dasher', Texture[]>;
+  enemyFrames: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank', Texture[]>;
+  /** 生態區磚塊組（index 0=石牢 1=墓窖 2=鍛造廠），每組 {floor, wall, crate}。 */
+  tileSets: { floor: Texture; wall: Texture; crate: Texture }[];
 }
 
 /** 預載一張 sprite sheet (320×192)，切成 15 個 64×64 frame Textures 回傳。
@@ -75,7 +81,8 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   const [sheet, walkLenaTex, walkMiraTex, walkAyaTex, walkRosaTex,
          abCarpetTex, abInfernoTex, abBlinkTex, abBulwarkTex,
          bombLenaTex, bombMiraTex, bombAyaTex, bombRosaTex, explosionTex,
-         enemyWanderTex, enemyChaserTex, enemyGhostTex, enemyDasherTex] = await Promise.all([
+         enemyWanderTex, enemyChaserTex, enemyGhostTex, enemyDasherTex,
+         tilesCatTex, tilesForgeTex, enemyMimicTex, enemyTankTex] = await Promise.all([
     Assets.load(SHEET_URL)    as Promise<Texture>,
     Assets.load(WALK_LENA_URL) as Promise<Texture>,
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
@@ -94,6 +101,10 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     Assets.load(ENEMY_CHASER_URL) as Promise<Texture>,
     Assets.load(ENEMY_GHOST_URL)  as Promise<Texture>,
     Assets.load(ENEMY_DASHER_URL) as Promise<Texture>,
+    Assets.load(TILES_CATACOMB_URL) as Promise<Texture>,
+    Assets.load(TILES_FORGE_URL)    as Promise<Texture>,
+    Assets.load(ENEMY_MIMIC_URL)   as Promise<Texture>,
+    Assets.load(ENEMY_TANK_URL)    as Promise<Texture>,
   ]);
 
   sheet.source.scaleMode       = 'nearest';
@@ -114,6 +125,10 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   enemyChaserTex.source.scaleMode = 'nearest';
   enemyGhostTex.source.scaleMode  = 'nearest';
   enemyDasherTex.source.scaleMode = 'nearest';
+  tilesCatTex.source.scaleMode    = 'nearest';
+  tilesForgeTex.source.scaleMode  = 'nearest';
+  enemyMimicTex.source.scaleMode  = 'nearest';
+  enemyTankTex.source.scaleMode   = 'nearest';
 
   // 爆炸動畫：從 256×64 條切 4 幀
   const blastFrames = [0, 1, 2, 3].map((i) => frameAt(explosionTex.source, i, 0));
@@ -125,7 +140,16 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     chaser: strip3(enemyChaserTex),
     ghost:  strip3(enemyGhostTex),
     dasher: strip3(enemyDasherTex),
+    mimic:  strip3(enemyMimicTex),
+    tank:   strip3(enemyTankTex),
   };
+
+  // 生態區磚塊組：0=石牢（主 sheet）、1=墓窖、2=鍛造廠（各 192×64 條：floor|wall|crate）
+  const tileSetOf = (t: Texture) => ({
+    floor: frameAt(t.source, 0, 0),
+    wall:  frameAt(t.source, 1, 0),
+    crate: frameAt(t.source, 2, 0),
+  });
 
   const src = sheet.source;
   return {
@@ -162,5 +186,10 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     bombRosa:    bombRosaTex,
     blastFrames,
     enemyFrames,
+    tileSets: [
+      { floor: frameAt(src, 0, 0), wall: frameAt(src, 1, 0), crate: frameAt(src, 2, 0) },
+      tileSetOf(tilesCatTex),
+      tileSetOf(tilesForgeTex),
+    ],
   };
 }

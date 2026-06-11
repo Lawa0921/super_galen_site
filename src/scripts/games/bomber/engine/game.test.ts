@@ -178,6 +178,67 @@ describe('BomberGame: enemies & death', () => {
   });
 });
 
+describe('BomberGame: mimic 寶箱怪', () => {
+  it('玩家距離 >2 不甦醒；≤2 甦醒並發 mimicWake 事件', () => {
+    const g = new BomberGame({ seed: 1 });
+    const target = g.getState().enemies[0];
+    g.debugSetEnemyKind(target.id, 'mimic');
+    g.debugMoveEnemy(target.id, 7, 7);
+    g.debugSetInvuln(999999);
+    g.step(1000); // 玩家在 (1,1)，距離 12 → 不甦醒
+    expect(g.getState().enemies.find((e) => e.id === target.id)!.awake).toBe(false);
+    g.drainEvents();
+    g.debugTeleportPlayer(7, 5); // 距離 2 → 甦醒
+    g.step(50);
+    const e = g.getState().enemies.find((q) => q.id === target.id)!;
+    expect(e.awake).toBe(true);
+    expect(g.drainEvents().some((ev) => ev.kind === 'mimicWake')).toBe(true);
+  });
+});
+
+describe('BomberGame: tank 裝甲魔像', () => {
+  it('兩滴血：第一發爆風不死（hp 2→1），冷卻後第二發才死', () => {
+    const g = new BomberGame({ seed: 1 });
+    const target = g.getState().enemies[0];
+    g.debugSetEnemyKind(target.id, 'tank');
+    g.debugSetInvuln(999999);
+    // 放到玩家右側 2 格、fire 3 蓋得到
+    g.debugMoveEnemy(target.id, 3, 1);
+    g.debugSetFire(3);
+    g.input('bomb');
+    g.step(BOMB_FUSE_MS); // 第一發引爆
+    let e = g.getState().enemies.find((q) => q.id === target.id)!;
+    expect(e.alive).toBe(true);
+    expect(e.hp).toBe(1);
+    // 等爆風與受擊冷卻過去，再炸第二發
+    g.step(2000);
+    g.debugMoveEnemy(target.id, 3, 1); // 拉回原位（期間可能遊走）
+    g.input('bomb');
+    g.step(BOMB_FUSE_MS);
+    e = g.getState().enemies.find((q) => q.id === target.id)!;
+    expect(e.alive).toBe(false);
+  });
+
+  it('爆風殘留期間不會連續扣血（受擊冷卻）', () => {
+    const g = new BomberGame({ seed: 1 });
+    const target = g.getState().enemies[0];
+    g.debugSetEnemyKind(target.id, 'tank');
+    g.debugSetInvuln(999999);
+    g.debugMoveEnemy(target.id, 3, 1);
+    g.debugSetFire(3);
+    g.input('bomb');
+    g.step(BOMB_FUSE_MS); // 引爆（tank hp 2→1）
+    // 爆風 480ms 殘留期間逐 tick 推進：不得再扣血
+    for (let i = 0; i < 5; i++) {
+      g.debugMoveEnemy(target.id, 3, 1);
+      g.step(80);
+    }
+    const e = g.getState().enemies.find((q) => q.id === target.id)!;
+    expect(e.alive).toBe(true);
+    expect(e.hp).toBe(1);
+  });
+});
+
 describe('BomberGame: 爆風判定使用敵人「視覺佔據格」', () => {
   it('剛起步（視覺仍在格外）的敵人不會被炸死；走過半（視覺進入爆風格）才死', () => {
     const g = new BomberGame({ seed: 1 });

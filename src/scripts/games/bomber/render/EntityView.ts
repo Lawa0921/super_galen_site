@@ -26,9 +26,9 @@ const WALK_STEPS = [0, 1, 2, 1] as const;
 /** Enemy 3-frame ping-pong: A → neutral → C → neutral */
 const ANIM_STEPS = [0, 1, 2, 1] as const;
 
-/** Per-kind animation cadence (ms per step) — dasher 急促、ghost 悠長。 */
-const ENEMY_ANIM_STEP_MS: Record<'wander' | 'chaser' | 'ghost' | 'dasher', number> = {
-  wander: 240, chaser: 190, ghost: 330, dasher: 120,
+/** Per-kind animation cadence (ms per step) — dasher 急促、ghost 悠長、tank 沉重。 */
+const ENEMY_ANIM_STEP_MS: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank', number> = {
+  wander: 240, chaser: 190, ghost: 330, dasher: 120, mimic: 200, tank: 420,
 };
 
 /** Map direction string to walk-sheet row index (row 0=down, 1=left, 2=right, 3=up). */
@@ -113,6 +113,11 @@ export class EntityView {
     // 技能特效 Graphics（fxLayer 上享 bloom）
     this.fxG = new Graphics();
     this.fxLayer.addChild(this.fxG);
+  }
+
+  /** 在格 (gx,gy) 觸發一圈擴散震波（mimic 甦醒等事件提示）。 */
+  flashAt(gx: number, gy: number, color: number): void {
+    this.rings.push({ gx, gy, ageMs: 0, ttlMs: 420, fromR: 0.15, toR: 0.9, color });
   }
 
   /** 觸發技能視覺特效（main.ts 在 drainEvents 收到 ability 事件時呼叫）。 */
@@ -281,13 +286,24 @@ export class EntityView {
       const rx = lerp(enemy.prevX, enemy.x, progress);
       const ry = lerp(enemy.prevY, enemy.y, progress);
 
-      const frames = this.textures.enemyFrames[enemy.kind];
-      const stepMs = ENEMY_ANIM_STEP_MS[enemy.kind];
-      const phase  = (this.enemyAnimMs + enemy.id * 137) % (stepMs * 4);
-      const tex    = frames[ANIM_STEPS[Math.floor(phase / stepMs) % 4]];
+      const dormantMimic = enemy.kind === 'mimic' && !enemy.awake;
+      let tex: Texture;
+      if (dormantMimic) {
+        // 偽裝休眠：直接用「當前生態區的 crate 貼圖」＝完美偽裝；
+        // 唯一破綻是極微弱的呼吸縮放（觀察力好的玩家能識破）。
+        const biome = Math.min(2, Math.floor((state.floor - 1) / 3));
+        const set = this.textures.tileSets[biome] ?? this.textures.tileSets[0];
+        tex = set.crate;
+      } else {
+        const frames = this.textures.enemyFrames[enemy.kind];
+        const stepMs = ENEMY_ANIM_STEP_MS[enemy.kind];
+        const phase  = (this.enemyAnimMs + enemy.id * 137) % (stepMs * 4);
+        tex = frames[ANIM_STEPS[Math.floor(phase / stepMs) % 4]];
+      }
 
       const sp  = this._poolGet(this.enemyPool, ei++, tex);
-      const size = cell * 0.85;
+      const breathe = dormantMimic ? 1 + Math.sin(this.enemyAnimMs * 0.004 + enemy.id) * 0.02 : 1;
+      const size = cell * (dormantMimic ? 1.0 : 0.85) * breathe;
       sp.width  = size;
       sp.height = size;
       sp.x = ox + rx * cell + cell / 2;
@@ -303,6 +319,12 @@ export class EntityView {
         sp.alpha = overCrate ? 0.45 : 0.85;
       } else {
         sp.alpha = 1;
+      }
+      // tank 受傷（hp 1）：紅白急促脈動提示「再一發就死」
+      if (enemy.kind === 'tank' && (enemy.hp ?? 2) <= 1) {
+        sp.tint = Math.sin(this.enemyAnimMs * 0.02) > 0 ? 0xff8866 : 0xffffff;
+      } else {
+        sp.tint = 0xffffff;
       }
     }
     this._poolHideFrom(this.enemyPool, ei);

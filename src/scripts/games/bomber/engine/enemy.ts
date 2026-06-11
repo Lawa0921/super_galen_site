@@ -54,6 +54,9 @@ export function chooseEnemyDir(
   grid: Grid, e: Enemy, player: Vec,
   bombs: Bomb[], blasts: BlastCell[], rng: () => number,
 ): Dir | null {
+  // mimic 偽裝休眠：原地不動（甦醒由 game.stepEnemies 依玩家距離觸發）
+  if (e.kind === 'mimic' && !e.awake) return null;
+
   const opts = openDirs(grid, e, bombs);
   if (opts.length === 0) return null;
 
@@ -70,7 +73,7 @@ export function chooseEnemyDir(
     pool = opts; // 已在危險中：任一開放方向逃命
   }
 
-  if (e.kind === 'chaser') {
+  if (e.kind === 'chaser' || e.kind === 'mimic') { // 甦醒的 mimic 像 chaser 追擊
     let best: Dir = pool[0];
     let bestDist = Infinity;
     for (const d of pool) {
@@ -87,7 +90,7 @@ export function chooseEnemyDir(
     return pool.includes(e.dir) ? e.dir : pick;
   }
 
-  // wander / ghost：固定抽兩個獨立亂數——一個決定是否直走、一個獨立選方向（消除呼叫次數不固定）
+  // wander / ghost / tank：固定抽兩個獨立亂數——一個決定是否直走、一個獨立選方向（消除呼叫次數不固定）
   const keepStraight = rng() < 0.8;
   const pick = pool[Math.floor(rng() * pool.length)];
   if (pool.includes(e.dir) && keepStraight) return e.dir;

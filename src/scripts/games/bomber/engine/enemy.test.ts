@@ -98,6 +98,15 @@ describe('chooseEnemyDir: ghost（穿箱幽靈）', () => {
   });
 });
 
+describe('chooseEnemyDir: mimic（寶箱怪）', () => {
+  it('休眠時不動（回傳 null），甦醒後像 chaser 追玩家', () => {
+    const dormant: Enemy = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'right', kind: 'mimic', moveAccMs: 0, alive: true, awake: false };
+    expect(chooseEnemyDir(corridor(), dormant, { x: 3, y: 1 }, [], [], createRng(1))).toBeNull();
+    const awake: Enemy = { ...dormant, awake: true };
+    expect(chooseEnemyDir(corridor(), awake, { x: 3, y: 1 }, [], [], createRng(1))).toBe('right');
+  });
+});
+
 describe('chooseEnemyDir: dasher（直線衝刺獸）', () => {
   it('方向開放時永遠直走（不像 wander 有 20% 轉向）', () => {
     const e: Enemy = { id: 0, x: 1, y: 1, prevX: 1, prevY: 1, dir: 'right', kind: 'dasher', moveAccMs: 0, alive: true };

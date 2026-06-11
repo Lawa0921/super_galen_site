@@ -130,6 +130,10 @@ export async function startBomber(
         stage.shake(6);
         sound.explode();
         entity.triggerAbility(ev.id, game.getState());
+      } else if (ev.kind === 'mimicWake') {
+        stage.shake(5);
+        sound.hit();
+        entity.flashAt(ev.x, ev.y, 0xffd23f); // 黃色震波：寶箱怪現形！
       } else if (ev.kind === 'gameover') {
         sound.gameover();
         const s = game.getState();
