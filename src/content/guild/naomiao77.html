@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>貓青 naomiao77 | 插畫家的天空畫布</title>
+    <title>貓青 naomiao77 | 賣字畫的貓青・天空下的字畫攤</title>
 
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -59,12 +59,16 @@
             font-family: 'ZCOOL XiaoWei', 'ZCOOL KuaiLe', serif;
         }
 
+        html {
+            overflow-x: clip;
+        }
+
         body {
             font-family: 'ZCOOL KuaiLe', 'Noto Serif TC', sans-serif;
             background: linear-gradient(180deg, #E2E8F0 0%, #ECFDF5 50%, #FDFBF7 100%) fixed;
             background-color: #e0f2fe;
             color: #4A5568;
-            overflow-x: hidden;
+            overflow-x: clip;
         }
 
         /* Background Illustration Layers */
@@ -408,6 +412,48 @@
             opacity: 1;
         }
 
+        /* --- HERO 貓掌櫃 --- */
+        #hero-cat-bubble {
+            position: absolute;
+            bottom: 92%;
+            left: 58%;
+            background: white;
+            border: 2px solid #BAE6FD;
+            border-radius: 14px 14px 14px 0;
+            padding: 8px 14px;
+            font-family: 'ZCOOL KuaiLe', 'Noto Serif TC', sans-serif;
+            font-size: 14px;
+            color: #4A5568;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(6px) scale(0.9);
+            transform-origin: bottom left;
+            pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+            box-shadow: 2px 4px 10px rgba(186,230,253,0.4);
+            z-index: 10;
+        }
+
+        #hero-cat-bubble.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        #hero-cat-wrap:focus-visible {
+            outline: 2px dashed #7dd3fc;
+            outline-offset: 6px;
+            border-radius: 12px;
+        }
+
+        @media (max-width: 640px) {
+            #hero-cat-bubble {
+                white-space: normal;
+                width: max-content;
+                max-width: 60vw;
+                left: 40%;
+            }
+        }
+
         /* --- SECTION DIVIDER ILLUSTRATION --- */
         .section-divider {
             width: 100%;
@@ -664,7 +710,7 @@
         </div>
         <h2 class="font-serif text-4xl font-bold text-sky-700 tracking-[0.2em] mb-2" id="entrance-title" style="text-shadow: 0 2px 20px rgba(125,211,252,0.3);">貓青</h2>
         <p class="font-serif text-sky-500/70 text-sm tracking-[0.3em] mb-6" style="letter-spacing:0.3em;">naomiao77</p>
-        <p class="font-rounded text-sky-400 text-lg mt-4" id="entrance-prompt" style="animation: float 3s ease-in-out infinite;">點擊翻開天空畫布</p>
+        <p class="font-rounded text-sky-400 text-lg mt-4" id="entrance-prompt" style="animation: float 3s ease-in-out infinite;">點擊進入貓青的字畫攤</p>
         <!-- Brush stroke decoration -->
         <div class="brush-stroke" style="bottom:30%; width:60%; left:20%;"></div>
     </div>
@@ -737,6 +783,70 @@
                         <p class="mb-4">畫貓、畫花、畫天馬行空的瞬間。</p>
                         <p class="mb-4">不是一路順著走來的創作者，<br>而是慢慢把喜歡的事撿起來，</p>
                         <p class="font-bold text-slate-700 text-2xl mt-6"><span class="highlight-text">一筆一筆，畫成現在的樣子。</span></p>
+                    </div>
+
+                    <!-- 貓掌櫃 GSAP 舞台：SVG 手繪貓 + 懸掛木牌 -->
+                    <div class="relative mt-10 flex items-end justify-center lg:justify-start gap-1 select-none" id="hero-cat-stage">
+                        <div class="relative" id="hero-cat-wrap" style="cursor:pointer;" role="button" tabindex="0" aria-label="戳戳貓掌櫃">
+                            <div id="hero-cat-bubble">膩賀！我是賣字畫的貓青 ฅ(`ꈊ´ฅ)</div>
+                            <svg id="hero-cat" width="180" height="160" viewBox="0 0 210 170" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
+                                <!-- 尾巴 -->
+                                <g id="hcat-tail">
+                                    <path d="M 68 132 C 38 128 26 106 38 88" stroke="#8B6248" stroke-width="12" stroke-linecap="round"/>
+                                    <path d="M 68 132 C 38 128 26 106 38 88" stroke="#FDF3DF" stroke-width="6" stroke-linecap="round"/>
+                                </g>
+                                <!-- 身體 -->
+                                <g id="hcat-body">
+                                    <ellipse cx="105" cy="118" rx="44" ry="38" fill="#FDF3DF" stroke="#8B6248" stroke-width="3.5"/>
+                                    <ellipse cx="105" cy="130" rx="24" ry="19" fill="#FFF9EC"/>
+                                    <ellipse cx="84" cy="150" rx="10" ry="7" fill="#FDF3DF" stroke="#8B6248" stroke-width="3"/>
+                                    <ellipse cx="116" cy="152" rx="10" ry="7" fill="#FDF3DF" stroke="#8B6248" stroke-width="3"/>
+                                </g>
+                                <!-- 右手＋毛筆（揮手用） -->
+                                <g id="hcat-arm">
+                                    <path d="M138 112 C 152 104 160 90 162 76" stroke="#8B6248" stroke-width="12" stroke-linecap="round"/>
+                                    <path d="M138 112 C 152 104 160 90 162 76" stroke="#FDF3DF" stroke-width="6" stroke-linecap="round"/>
+                                    <line x1="150" y1="88" x2="178" y2="46" stroke="#C19A6B" stroke-width="5" stroke-linecap="round"/>
+                                    <path d="M147 91 L154 95 L143 104 Z" fill="#4A3B2F"/>
+                                    <circle cx="162" cy="74" r="8" fill="#FDF3DF" stroke="#8B6248" stroke-width="3"/>
+                                </g>
+                                <!-- 頭 -->
+                                <g id="hcat-head">
+                                    <path d="M 76 40 L 68 10 L 95 24 Z" fill="#FDF3DF" stroke="#8B6248" stroke-width="3.5" stroke-linejoin="round"/>
+                                    <path d="M 134 40 L 142 10 L 115 24 Z" fill="#FDF3DF" stroke="#8B6248" stroke-width="3.5" stroke-linejoin="round"/>
+                                    <path d="M 78 33 L 74 19 L 88 26 Z" fill="#F8C8C8"/>
+                                    <path d="M 132 33 L 136 19 L 122 26 Z" fill="#F8C8C8"/>
+                                    <circle cx="105" cy="58" r="36" fill="#FDF3DF" stroke="#8B6248" stroke-width="3.5"/>
+                                    <g id="hcat-eyes">
+                                        <ellipse cx="91" cy="56" rx="4" ry="5.5" fill="#4A3B2F"/>
+                                        <ellipse cx="119" cy="56" rx="4" ry="5.5" fill="#4A3B2F"/>
+                                    </g>
+                                    <circle cx="79" cy="68" r="6" fill="#F8C8C8" opacity="0.85"/>
+                                    <circle cx="131" cy="68" r="6" fill="#F8C8C8" opacity="0.85"/>
+                                    <path d="M102 63 L108 63 L105 67 Z" fill="#E89A9A"/>
+                                    <path d="M105 67 Q101 73 96 69 M105 67 Q109 73 114 69" stroke="#8B6248" stroke-width="2" stroke-linecap="round"/>
+                                    <line x1="60" y1="56" x2="76" y2="59" stroke="#C4A984" stroke-width="2" stroke-linecap="round"/>
+                                    <line x1="60" y1="68" x2="76" y2="65" stroke="#C4A984" stroke-width="2" stroke-linecap="round"/>
+                                    <line x1="150" y1="56" x2="134" y2="59" stroke="#C4A984" stroke-width="2" stroke-linecap="round"/>
+                                    <line x1="150" y1="68" x2="134" y2="65" stroke="#C4A984" stroke-width="2" stroke-linecap="round"/>
+                                </g>
+                            </svg>
+                        </div>
+                        <svg id="stall-sign" width="84" height="150" viewBox="0 0 90 150" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
+                            <rect x="40" y="8" width="7" height="136" rx="3" fill="#A87C52" stroke="#8B6248" stroke-width="2"/>
+                            <rect x="8" y="12" width="71" height="9" rx="4" fill="#A87C52" stroke="#8B6248" stroke-width="2"/>
+                            <g id="sign-board">
+                                <line x1="22" y1="20" x2="26" y2="44" stroke="#8B6248" stroke-width="2"/>
+                                <line x1="66" y1="20" x2="62" y2="44" stroke="#8B6248" stroke-width="2"/>
+                                <rect x="16" y="44" width="56" height="84" rx="6" fill="#FFF7E6" stroke="#8B6248" stroke-width="3"/>
+                                <text x="44" y="68" text-anchor="middle" font-size="17" fill="#6B4F3A" style="font-family:'ZCOOL XiaoWei',serif;">字</text>
+                                <text x="44" y="90" text-anchor="middle" font-size="17" fill="#6B4F3A" style="font-family:'ZCOOL XiaoWei',serif;">畫</text>
+                                <text x="44" y="112" text-anchor="middle" font-size="17" fill="#6B4F3A" style="font-family:'ZCOOL XiaoWei',serif;">攤</text>
+                                <rect x="55" y="113" width="12" height="12" rx="2" fill="#E0635C" opacity="0.9"/>
+                                <text x="61" y="122" text-anchor="middle" font-size="8" fill="#FFF7E6" style="font-family:'ZCOOL XiaoWei',serif;">開</text>
+                            </g>
+                        </svg>
+                        <p class="absolute -bottom-6 left-1/2 -translate-x-1/2 lg:left-16 text-xs text-slate-400 font-serif tracking-widest whitespace-nowrap opacity-70">（戳戳掌櫃打聲招呼）</p>
                     </div>
                 </div>
 
@@ -841,65 +951,58 @@
             </div>
         </section>
 
-        <!-- Chapter 2: Daily Magic & Scrapbook (Horizontal Scroll Section) -->
-        <section class="h-screen relative bg-white/30 backdrop-blur-sm border-y border-slate-200 pointer-events-auto overflow-hidden flex flex-col justify-center" id="chapter2-horizontal">
-            <div class="absolute top-10 left-10 md:left-20 z-10">
-                <p class="font-serif text-sky-600 text-sm mb-2 tracking-widest uppercase"><i class="fa-solid fa-wand-magic-sparkles text-yellow-400 mr-2"></i>Chapter 2</p>
-                <h2 class="font-serif text-4xl md:text-5xl font-bold text-slate-700">日常裡的小小魔法</h2>
-            </div>
-
-            <div class="absolute bottom-10 left-10 text-slate-400 font-serif text-sm flex items-center gap-2 animate-pulse">
-                <i class="fa-solid fa-arrow-right-long"></i> 向旁邊滑動翻頁
-            </div>
-
-            <!-- The wide canvas for horizontal scrolling -->
-            <div class="flex items-center pl-[20vw] pr-[20vw] h-full gap-16 md:gap-32 w-fit" id="horizontal-container">
-
-                <!-- Item 1: Text Intro -->
-                <div class="w-[300px] shrink-0">
-                    <p class="font-serif text-2xl leading-loose text-slate-600">
-                        <span class="highlight-text">養貓，畫畫，偶爾旅行，</span><br>
-                        喜歡動漫，也相信日常裡的小小魔法。<br>
-                    </p>
-                    <div class="mt-8 opacity-40 text-slate-400 text-3xl"><i class="fa-solid fa-cat"></i></div>
+        <!-- Chapter 2: 看貓作畫 (Pinned scroll-scrub painting cinema) -->
+        <section class="relative bg-white/30 backdrop-blur-sm border-y border-slate-200 pointer-events-auto" id="paint-cinema">
+            <div class="h-screen w-full flex flex-col items-center justify-center relative px-4" id="paint-stage">
+                <div class="text-center z-20 mb-5 md:mb-7">
+                    <p class="font-serif text-sky-600 text-sm mb-2 tracking-widest uppercase"><i class="fa-solid fa-paintbrush text-sky-400 mr-2"></i>第二章 / 看貓作畫</p>
+                    <h2 class="font-serif text-2xl md:text-4xl font-bold text-slate-700">慢慢滾動，看掌櫃現場畫一幅</h2>
                 </div>
 
-                <!-- Item 2: Cat Art -->
-                <div class="w-[350px] shrink-0 relative">
-                    <div class="polaroid shadow-lg transform -rotate-3 hover:rotate-0 transition-transform">
-                        <div class="tape yellow"></div>
-                        <img src="/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp" alt="彩色立體派貓咪" class="aspect-square object-cover">
-                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">彩色貓咪</p>
-                    </div>
-                    <!-- Cute paw prints trailing from it -->
-                    <div class="absolute -bottom-10 -right-10 flex gap-2 rotate-[20deg] opacity-40 text-slate-400 text-xl">
-                        <i class="fa-solid fa-paw translate-y-2"></i>
-                        <i class="fa-solid fa-paw translate-y-4"></i>
-                        <i class="fa-solid fa-paw translate-y-1"></i>
-                    </div>
-                </div>
+                <!-- 影格畫框：滾動 scrub 推進 AI 影格，像看一段作畫影片 -->
+                <div class="relative w-full max-w-[880px]">
+                    <div class="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-white shadow-2xl" style="border:8px solid #fffaf0; outline:2px solid #e5e7eb;" id="paint-frames">
+                        <img class="paint-frame absolute inset-0 w-full h-full object-cover" src="/assets/img/guild/naomiao77/stall/paint-01.webp" alt="貓掌櫃在攤位前準備作畫" decoding="async">
+                        <img class="paint-frame absolute inset-0 w-full h-full object-cover" src="/assets/img/guild/naomiao77/stall/paint-02.webp" loading="lazy" alt="畫布上鋪出天空的水彩" decoding="async" style="opacity:0;">
+                        <img class="paint-frame absolute inset-0 w-full h-full object-cover" src="/assets/img/guild/naomiao77/stall/paint-03.webp" loading="lazy" alt="勾出鯨魚的線稿" decoding="async" style="opacity:0;">
+                        <img class="paint-frame absolute inset-0 w-full h-full object-cover" src="/assets/img/guild/naomiao77/stall/paint-04.webp" loading="lazy" alt="替鯨魚填上藍色" decoding="async" style="opacity:0;">
+                        <img class="paint-frame absolute inset-0 w-full h-full object-cover" src="/assets/img/guild/naomiao77/stall/paint-05.webp" loading="lazy" alt="鯨魚背上畫出小貓" decoding="async" style="opacity:0;">
+                        <img class="paint-frame absolute inset-0 w-full h-full object-cover" src="/assets/img/guild/naomiao77/stall/paint-06.webp" loading="lazy" alt="點上愛心、小魚與海" decoding="async" style="opacity:0;">
+                        <img class="paint-frame absolute inset-0 w-full h-full object-cover" src="/assets/img/guild/naomiao77/stall/paint-07.webp" loading="lazy" alt="退一步欣賞完成的畫" decoding="async" style="opacity:0;">
+                        <img class="paint-frame absolute inset-0 w-full h-full object-cover" src="/assets/img/guild/naomiao77/stall/paint-08.webp" loading="lazy" alt="貓掌櫃開心展示完成的作品" decoding="async" style="opacity:0;">
 
-                <!-- Item 3: Seahorse Painting -->
-                <div class="w-[400px] shrink-0">
-                    <div class="polaroid shadow-xl transform rotate-2 hover:-translate-y-4 transition-transform">
-                        <img src="/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp" alt="鬱金香花瓶" class="aspect-square object-cover">
-                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">鬱金香</p>
+                        <!-- 結尾揭示：這幅畫是真的 -->
+                        <div class="absolute inset-0 z-10 flex flex-col md:flex-row items-center justify-center gap-5 md:gap-10 px-6" id="paint-final" style="opacity:0; visibility:hidden; background:rgba(253,251,247,0.96);">
+                            <div class="polaroid w-36 md:w-56 shadow-2xl" style="transform:rotate(-2deg);">
+                                <div class="tape blue"></div>
+                                <img src="/assets/img/guild/naomiao77/cat-on-whale.jpg" alt="貓騎鯨魚 - 貓青原創插畫" class="w-full object-cover rounded-sm">
+                                <p class="text-center font-serif mt-2 text-slate-500 text-xs tracking-widest">《鯨魚上的貓》</p>
+                            </div>
+                            <div class="text-center md:text-left max-w-xs">
+                                <p class="font-serif text-lg md:text-2xl leading-loose text-slate-600 mb-3">
+                                    這幅畫是<span class="highlight-text font-bold">真的</span>喔——<br>
+                                    就掛在下面的字畫攤。
+                                </p>
+                                <p class="font-serif text-sm text-slate-400 leading-relaxed">
+                                    養貓，畫畫，偶爾旅行，<br>
+                                    喜歡動漫，也相信日常裡的小小魔法。
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Item 4: Shop Banner -->
-                <div class="w-[350px] shrink-0 relative">
-                    <div class="polaroid shadow-md transform -rotate-1">
-                        <div class="tape"></div>
-                        <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="花卉明信片展示" class="aspect-[4/3] object-cover">
-                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">花卉明信片</p>
-                    </div>
-                    <!-- decorative stamp -->
-                    <div class="absolute -top-6 -right-6 w-16 h-16 border-4 border-red-300 rounded-full flex items-center justify-center rotate-12 opacity-50">
-                        <span class="font-serif text-red-300 font-bold text-xl">MAGIC</span>
+                    <!-- 畫筆進度條 + 字幕 -->
+                    <div class="flex items-center gap-4 mt-5 px-2">
+                        <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:rgba(186,230,253,0.4);">
+                            <div id="paint-progress-fill" class="h-full rounded-full" style="background:linear-gradient(90deg,#7DD3FC,#38BDF8); transform:scaleX(0); transform-origin:left center;"></div>
+                        </div>
+                        <p id="paint-caption" class="font-serif text-slate-500 text-sm md:text-base whitespace-nowrap" aria-live="polite">提筆，沾一點顏色</p>
                     </div>
                 </div>
 
+                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 text-slate-400 font-serif text-sm flex items-center gap-2 animate-pulse" id="paint-hint">
+                    <i class="fa-solid fa-angle-down"></i> 繼續滾動，畫就會繼續
+                </div>
             </div>
         </section>
 
@@ -1069,6 +1172,41 @@
                                 <p class="font-serif text-slate-700 font-bold text-sm">《神鳥鳳凰圖》</p>
                                 <p class="font-serif text-slate-400 text-xs mt-1">書法 × 插畫</p>
                                 <p class="font-serif text-slate-500 text-xs mt-2 leading-relaxed">有人敲碗就畫一下好了</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Colorful Cat -->
+                    <div class="gs-reveal">
+                        <div class="polaroid shadow-xl transform -rotate-2 hover:-translate-y-4 hover:rotate-0 transition-all duration-500 cursor-pointer">
+                            <div class="tape yellow"></div>
+                            <img src="/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp" alt="彩色立體派貓咪" class="w-full aspect-square object-cover rounded-sm">
+                            <div class="p-3 text-center">
+                                <p class="font-serif text-slate-700 font-bold text-sm">彩色貓咪</p>
+                                <p class="font-serif text-slate-500 text-xs mt-2 leading-relaxed">畫貓、畫花、畫天馬行空的瞬間</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tulip -->
+                    <div class="gs-reveal" style="animation-delay: 0.15s;">
+                        <div class="polaroid shadow-xl transform rotate-1 hover:-translate-y-4 hover:rotate-0 transition-all duration-500 cursor-pointer">
+                            <img src="/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp" alt="鬱金香花瓶" class="w-full aspect-square object-cover rounded-sm">
+                            <div class="p-3 text-center">
+                                <p class="font-serif text-slate-700 font-bold text-sm">鬱金香</p>
+                                <p class="font-serif text-slate-500 text-xs mt-2 leading-relaxed">溫和的顏色，柔軟的線條</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flower Postcards Display -->
+                    <div class="gs-reveal" style="animation-delay: 0.3s;">
+                        <div class="polaroid shadow-xl transform -rotate-1 hover:-translate-y-4 hover:rotate-0 transition-all duration-500 cursor-pointer">
+                            <div class="tape"></div>
+                            <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="花卉明信片展示" class="w-full aspect-square object-cover rounded-sm">
+                            <div class="p-3 text-center">
+                                <p class="font-serif text-slate-700 font-bold text-sm">花卉明信片</p>
+                                <p class="font-serif text-slate-500 text-xs mt-2 leading-relaxed">可以拿在手心裡的溫暖</p>
                             </div>
                         </div>
                     </div>
@@ -1431,42 +1569,155 @@
             });
         }
 
-        // Horizontal Scroll for Chapter 2 Gallery
-        const horizontalContainer = document.getElementById('horizontal-container');
-        if (horizontalContainer) {
-            // Get total scrollable width
-            const scrollWidth = horizontalContainer.scrollWidth - window.innerWidth;
+        // ==========================================
+        // PAINT CINEMA — 滾動 scrub AI 影格序列（像看一段作畫影片）
+        // ==========================================
+        const paintFrames = gsap.utils.toArray('.paint-frame');
+        const paintFinal = document.getElementById('paint-final');
+        const paintCaption = document.getElementById('paint-caption');
+        const paintCaptions = [
+            '提筆，沾一點顏色',
+            '先鋪一片天空',
+            '勾出鯨魚的輪廓',
+            '把海的藍，填進鯨魚身體',
+            '讓小貓躺上鯨魚背',
+            '點上愛心、小魚和海',
+            '退一步，看看完成的樣子',
+            '蓋上印章——完成！',
+            '這幅畫，是真的喔',
+        ];
 
-            gsap.to(horizontalContainer, {
-                x: -scrollWidth,
-                ease: "none",
-                scrollTrigger: {
-                    trigger: "#chapter2-horizontal",
-                    start: "top top",
-                    end: `+=${scrollWidth + window.innerWidth}`, // Scroll distance equivalent to content width
-                    pin: true,
-                    scrub: 0.5,
-                    invalidateOnRefresh: true,
-                    // When scrolling horizontally, add a slight tilt to the polaroids simulating wind/movement
-                    onUpdate: (self) => {
-                        const velocity = self.getVelocity();
-                        const tilt = Math.max(Math.min(velocity / 100, 10), -10); // Cap tilt
-                        gsap.to("#horizontal-container .polaroid", {
-                            rotationZ: (i, el) => {
-                                // Keep base rotation and add tilt
-                                const baseRotation = el._gsap ? el._gsap.rotation || 0 : 0;
-                                return baseRotation + (tilt * 0.2);
-                            },
-                            duration: 0.5,
-                            ease: "power1.out",
-                            overwrite: "auto"
-                        });
+        if (paintFrames.length && paintFinal) {
+            const mmPaint = gsap.matchMedia();
 
-                        // Send velocity info to global window for p5.js to access
-                        window.scrollVelocity = velocity;
+            mmPaint.add('(prefers-reduced-motion: no-preference)', () => {
+                const paintTL = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: '#paint-cinema',
+                        start: 'top top',
+                        end: '+=3800',
+                        pin: true,
+                        scrub: 0.4,
+                        invalidateOnRefresh: true,
+                        onUpdate: (self) => {
+                            const idx = Math.min(paintCaptions.length - 1, Math.floor(self.progress * paintCaptions.length));
+                            if (paintCaption && paintCaption.textContent !== paintCaptions[idx]) {
+                                paintCaption.textContent = paintCaptions[idx];
+                            }
+                        }
                     }
-                }
+                });
+
+                paintFrames.forEach((frame, i) => {
+                    if (i === 0) return;
+                    paintTL.to(frame, { opacity: 1, duration: 1, ease: 'none' }, '+=0.35');
+                });
+                paintTL.to('#paint-hint', { opacity: 0, duration: 0.3 }, '-=0.5');
+                paintTL.to(paintFinal, { autoAlpha: 1, duration: 1.5, ease: 'power1.inOut' }, '+=0.6');
+                // 畫筆進度條跟著整段播放走
+                paintTL.to('#paint-progress-fill', { scaleX: 1, ease: 'none', duration: paintTL.duration() }, 0);
             });
+
+            mmPaint.add('(prefers-reduced-motion: reduce)', () => {
+                // 減少動態：不固定捲動，直接呈現完成畫面
+                paintFrames.forEach((f, i) => { f.style.opacity = i === paintFrames.length - 1 ? '1' : '0'; });
+                gsap.set(paintFinal, { autoAlpha: 1 });
+                gsap.set('#paint-progress-fill', { scaleX: 1 });
+                gsap.set('#paint-hint', { opacity: 0 });
+                if (paintCaption) paintCaption.textContent = paintCaptions[paintCaptions.length - 1];
+            });
+        }
+
+        // ==========================================
+        // HERO 貓掌櫃 — GSAP 待機動畫 + 互動
+        // ==========================================
+        const heroCatWrap = document.getElementById('hero-cat-wrap');
+        if (heroCatWrap) {
+            const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            if (!prefersReduce) {
+                // 尾巴搖
+                gsap.set('#hcat-tail', { transformOrigin: '68px 132px' });
+                gsap.to('#hcat-tail', { rotation: 14, duration: 1.6, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+                // 身體呼吸
+                gsap.set('#hcat-body', { transformOrigin: '105px 156px' });
+                gsap.to('#hcat-body', { scaleY: 1.03, duration: 2.2, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+                // 頭輕輕歪
+                gsap.set('#hcat-head', { transformOrigin: '105px 94px' });
+                gsap.to('#hcat-head', { rotation: 3, duration: 3, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 0.5 });
+                // 眨眼
+                gsap.set('#hcat-eyes', { transformOrigin: '105px 56px' });
+                gsap.timeline({ repeat: -1, repeatDelay: 2.6 })
+                    .to('#hcat-eyes', { scaleY: 0.08, duration: 0.08, ease: 'power1.in' })
+                    .to('#hcat-eyes', { scaleY: 1, duration: 0.12, ease: 'power1.out' });
+                // 舉筆揮手
+                gsap.set('#hcat-arm', { transformOrigin: '138px 112px' });
+                gsap.timeline({ repeat: -1, repeatDelay: 3.5, delay: 1.2 })
+                    .to('#hcat-arm', { rotation: -18, duration: 0.35, ease: 'sine.inOut' })
+                    .to('#hcat-arm', { rotation: 8, duration: 0.3, ease: 'sine.inOut' })
+                    .to('#hcat-arm', { rotation: -12, duration: 0.3, ease: 'sine.inOut' })
+                    .to('#hcat-arm', { rotation: 0, duration: 0.35, ease: 'sine.inOut' });
+                // 木牌輕輕搖
+                gsap.set('#sign-board', { transformOrigin: '44px 20px' });
+                gsap.to('#sign-board', { rotation: 3.5, duration: 2.4, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+            }
+
+            const heroBubble = document.getElementById('hero-cat-bubble');
+            const heroGreetings = [
+                '膩賀！我是賣字畫的貓青 ฅ(`ꈊ´ฅ)',
+                '畫貓、畫花、畫天馬行空的瞬間',
+                '往下滾，看我現場畫一幅！',
+                '喜歡的話，帶一份溫柔回家～',
+                '呼嚕呼嚕……再戳會害羞啦',
+            ];
+            let heroGreetIdx = 0;
+            let heroBubbleTimer;
+
+            const pokeCat = () => {
+                gsap.timeline()
+                    .to(heroCatWrap, { y: -12, scaleX: 1.05, scaleY: 0.95, duration: 0.12, ease: 'power2.out', transformOrigin: 'bottom center' })
+                    .to(heroCatWrap, { y: 0, scaleX: 1, scaleY: 1, duration: 0.5, ease: 'elastic.out(1, 0.35)' });
+
+                if (heroBubble) {
+                    heroBubble.textContent = heroGreetings[heroGreetIdx++ % heroGreetings.length];
+                    heroBubble.classList.add('show');
+                    clearTimeout(heroBubbleTimer);
+                    heroBubbleTimer = setTimeout(() => heroBubble.classList.remove('show'), 2800);
+                }
+
+                // 小愛心飄起
+                const rect = heroCatWrap.getBoundingClientRect();
+                for (let i = 0; i < 3; i++) {
+                    const heart = document.createElement('div');
+                    heart.textContent = '♡';
+                    heart.style.cssText = `position:fixed; left:${rect.left + rect.width * (0.3 + Math.random() * 0.4)}px; top:${rect.top + 20}px; font-size:16px; color:#F9A8D4; pointer-events:none; z-index:60;`;
+                    document.body.appendChild(heart);
+                    gsap.to(heart, {
+                        y: -50 - Math.random() * 40,
+                        x: (Math.random() - 0.5) * 50,
+                        opacity: 0,
+                        duration: 1.1,
+                        ease: 'power2.out',
+                        onComplete: () => heart.remove()
+                    });
+                }
+            };
+
+            heroCatWrap.addEventListener('click', pokeCat);
+            heroCatWrap.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pokeCat(); }
+            });
+
+            // 進場後第一次自動打招呼
+            const entranceForCat = document.getElementById('entrance-overlay');
+            if (entranceForCat && heroBubble) {
+                entranceForCat.addEventListener('click', () => {
+                    setTimeout(() => {
+                        heroBubble.classList.add('show');
+                        heroBubbleTimer = setTimeout(() => heroBubble.classList.remove('show'), 3200);
+                    }, 1800);
+                }, { once: true });
+            }
         }
 
         // SVG Scroll Path Drawing
@@ -1513,6 +1764,8 @@
         // Add a "page turn" or floating effect to chapter titles
         const sectionTitles = document.querySelectorAll('h2:not(#entrance-title)');
         sectionTitles.forEach((title) => {
+            // pinned 區段內的標題不能套滾動 reveal（pin 位移會讓它卡在 opacity:0）
+            if (title.closest('#paint-cinema')) return;
             gsap.from(title, {
                 y: 50,
                 opacity: 0,
@@ -1771,6 +2024,7 @@
                 fast: ['等等我啦！', '好快！頭好暈～', '喵嗚～慢一點！'],
                 top: ['回到最上面了！', '要再看一次嗎？'],
                 magic: ['每張卡都有魔法喔', '選一張，收下今天的溫柔！'],
+                paint: ['看我現場畫一幅！', '慢慢滾動，不要快轉啦～', '這招叫做：滾動作畫！'],
             };
 
             let scrollIdleTimer;
@@ -1786,6 +2040,9 @@
                     const direction = self.direction;
                     const progress = self.progress;
                     const now = Date.now();
+
+                    // p5 背景的風力來源（原本由橫向卷軸提供）
+                    window.scrollVelocity = self.getVelocity();
 
 
                     isScrolling = true;
@@ -1824,6 +2081,18 @@
                     if (progress < 0.05 && direction === -1 && now - lastSpeechTime > 5000) {
                         showSpeech(speeches.top[Math.floor(Math.random() * speeches.top.length)], 2500);
                         lastSpeechTime = now;
+                    }
+                }
+            });
+
+            // Paint cinema section trigger
+            ScrollTrigger.create({
+                trigger: '#paint-cinema',
+                start: 'top 70%',
+                onEnter: () => {
+                    if (Date.now() - lastSpeechTime > 3000) {
+                        showSpeech(speeches.paint[Math.floor(Math.random() * speeches.paint.length)], 3000);
+                        lastSpeechTime = Date.now();
                     }
                 }
             });
@@ -1996,7 +2265,7 @@
         const catPositions = [
             { section: '#hero', x: '85%', y: '20%', size: 28, hint: '天空的角落' },
             { section: '#chapter1', x: '10%', y: '80%', size: 24, hint: '書頁的邊緣' },
-            { section: '#chapter2-horizontal', x: '90%', y: '15%', size: 22, hint: '魔法的入口' },
+            { section: '#paint-cinema', x: '90%', y: '15%', size: 22, hint: '畫架的旁邊' },
             { section: '#chapter3', x: '50%', y: '10%', size: 26, hint: '奇特事物堆裡' },
             { section: '#magic-cards', x: '5%', y: '70%', size: 20, hint: '卡片的旁邊' },
         ];
@@ -2400,7 +2669,8 @@
         // ==========================================
         // WATERCOLOR REVEAL ON SCROLL
         // ==========================================
-        const revealSections = document.querySelectorAll('section:not(#hero)');
+        // #paint-cinema 被 ScrollTrigger pin 住，不能再套 transform/opacity reveal（會跟 pin 打架）
+        const revealSections = document.querySelectorAll('section:not(#hero):not(#paint-cinema)');
         revealSections.forEach(section => {
             // Add watercolor-reveal class
             section.classList.add('watercolor-reveal');
@@ -2644,7 +2914,7 @@
             '這張花了好多時間呢',
         ];
         let lastArtHoverTime = 0;
-        document.querySelectorAll('#art-gallery .polaroid, #chapter3 .polaroid, #chapter2-horizontal .polaroid').forEach(pol => {
+        document.querySelectorAll('#art-gallery .polaroid, #chapter3 .polaroid, #paint-cinema .polaroid').forEach(pol => {
             pol.addEventListener('mouseenter', () => {
                 const now = Date.now();
                 if (companionCat && now - lastArtHoverTime > 5000 && now - lastSpeechTime > 3000) {
