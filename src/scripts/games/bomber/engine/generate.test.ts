@@ -131,5 +131,12 @@ describe('generateFloor', () => {
     expect(f4.has('tank')).toBe(false);  // tank 5 層才出現
     const f5 = kindsAt(5);
     expect(f5.has('tank')).toBe(true);
+    expect(f5.has('sapper')).toBe(false);   // sapper 6 層才出現
+    const f6 = kindsAt(6);
+    expect(f6.has('sapper')).toBe(true);
+    expect(f6.has('splitter')).toBe(false); // splitter 7 層才出現
+    const f7 = kindsAt(7);
+    expect(f7.has('splitter')).toBe(true);
+    expect(f7.has('mini')).toBe(false);     // mini 只由 splitter 分裂產生
   });
 });

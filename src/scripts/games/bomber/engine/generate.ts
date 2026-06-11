@@ -139,12 +139,15 @@ export function generateFloor(seed: number, floor: number): FloorLayout {
       Math.abs(c.x - SPAWN.x) + Math.abs(c.y - SPAWN.y) >= 4 && hasOpenNeighbor(c)),
     rng,
   );
-  // 怪物池隨樓層擴張：1 層基本款；2 層+穿箱幽靈；3 層+衝刺獸；4 層+寶箱怪；5 層+裝甲魔像
+  // 怪物池隨樓層擴張：1 基本；2+幽靈；3+衝刺獸；4+寶箱怪；5+魔像；6+工兵；7+史萊姆王
+  // （mini 不自然生成，只由 splitter 分裂產生）
   const kindPool: EnemyKind[] = ['wander', 'chaser'];
   if (floor >= 2) kindPool.push('ghost');
   if (floor >= 3) kindPool.push('dasher');
   if (floor >= 4) kindPool.push('mimic');
   if (floor >= 5) kindPool.push('tank');
+  if (floor >= 6) kindPool.push('sapper');
+  if (floor >= 7) kindPool.push('splitter');
 
   const enemies: Enemy[] = [];
   for (let i = 0; i < count && i < candidates.length; i++) {

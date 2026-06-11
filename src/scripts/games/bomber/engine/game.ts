@@ -6,7 +6,11 @@ import type {
 import { generateFloor } from './generate';
 import { makePlayer, dirDelta, speedMs } from './player';
 import { isWalkable, breakCrate } from './board';
-import { BOMB_FUSE_MS, BLAST_TTL_MS, INVULN_MS, SPAWN, MAX_FIRE, MAX_BOMBS, START_LIVES, ENEMY_HIT_COOLDOWN_MS } from './constants';
+import {
+  BOMB_FUSE_MS, BLAST_TTL_MS, INVULN_MS, SPAWN, MAX_FIRE, MAX_BOMBS, START_LIVES,
+  ENEMY_HIT_COOLDOWN_MS, SAPPER_BOMB_CD_MS, SAPPER_FIRST_CD_MS, SAPPER_TRIGGER_DIST,
+  ENEMY_BOMB_FUSE_MS, ENEMY_BOMB_RANGE, MAX_ENEMY_BOMBS,
+} from './constants';
 import { resolveChain } from './bomb';
 import { computeBlast } from './blast';
 import { SCORE, descendBonus } from './scoring';
@@ -97,7 +101,8 @@ export class BomberGame {
   }
 
   private placeBomb(): void {
-    if (this.bombs.length >= this.player.maxBombs) return;
+    // 只計玩家自己的彈（敵方工兵的彈不佔額度）
+    if (this.bombs.filter((b) => !b.owner).length >= this.player.maxBombs) return;
     if (this.bombs.some((b) => b.x === this.player.x && b.y === this.player.y)) return;
     this.bombs.push({ x: this.player.x, y: this.player.y, fuseMs: BOMB_FUSE_MS, range: this.player.fireRange });
     this.events.push({ kind: 'bombPlaced', x: this.player.x, y: this.player.y });
@@ -244,6 +249,21 @@ export class BomberGame {
           this.events.push({ kind: 'mimicWake', x: e.x, y: e.y });
         }
       }
+      // sapper 放彈：冷卻到了＋玩家在觸發距離內＋腳下無彈＋敵彈未達上限
+      if (e.kind === 'sapper') {
+        e.sapperCdMs = (e.sapperCdMs ?? SAPPER_FIRST_CD_MS) - dtMs;
+        const dist = Math.abs(e.x - this.player.x) + Math.abs(e.y - this.player.y);
+        if (
+          e.sapperCdMs <= 0 &&
+          dist <= SAPPER_TRIGGER_DIST &&
+          !this.bombs.some((b) => b.x === e.x && b.y === e.y) &&
+          this.bombs.filter((b) => b.owner === 'enemy').length < MAX_ENEMY_BOMBS
+        ) {
+          this.bombs.push({ x: e.x, y: e.y, fuseMs: ENEMY_BOMB_FUSE_MS, range: ENEMY_BOMB_RANGE, owner: 'enemy' });
+          this.events.push({ kind: 'bombPlaced', x: e.x, y: e.y });
+          e.sapperCdMs = SAPPER_BOMB_CD_MS;
+        }
+      }
       e.moveAccMs += dtMs;
       if (e.moveAccMs < enemyMoveMs(e.kind, this.floor)) continue;
       e.moveAccMs = 0;
@@ -281,6 +301,8 @@ export class BomberGame {
         e.alive = false;
         this.score += SCORE.enemy;
         this.events.push({ kind: 'enemyKill', x: vx, y: vy });
+        // splitter 死亡分裂：在相鄰可走格生出 2 隻 mini
+        if (e.kind === 'splitter') this.spawnMinis(e.x, e.y);
       }
     }
     // 發出 floorClear 事件（只發一次）
@@ -292,6 +314,29 @@ export class BomberGame {
     const p = this.player;
     const touched = onBlast(p.x, p.y) || this.enemies.some((e) => e.alive && e.x === p.x && e.y === p.y);
     if (touched && invulnAtStart <= 0) this.hurtPlayer();
+  }
+
+  /** splitter 死亡分裂：優先放到相鄰 floor 格，不足則疊在原地。 */
+  private spawnMinis(x: number, y: number): void {
+    const nextId = this.enemies.reduce((m, q) => Math.max(m, q.id), -1) + 1;
+    const spots: { x: number; y: number }[] = [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (this.grid[ny]?.[nx] === 'floor' && !this.bombs.some((b) => b.x === nx && b.y === ny)) {
+        spots.push({ x: nx, y: ny });
+      }
+      if (spots.length === 2) break;
+    }
+    while (spots.length < 2) spots.push({ x, y });
+    const dirs: Dir[] = ['left', 'right'];
+    for (let i = 0; i < 2; i++) {
+      this.enemies.push({
+        id: nextId + i, x: spots[i].x, y: spots[i].y, prevX: spots[i].x, prevY: spots[i].y,
+        dir: dirs[i], kind: 'mini', moveAccMs: 0, alive: true,
+        // 剛分裂短暫受擊冷卻：別被殺死母體的同一團爆風瞬殺（不公平）
+        hitCooldownMs: ENEMY_HIT_COOLDOWN_MS,
+      });
+    }
   }
 
   private hurtPlayer(): void {

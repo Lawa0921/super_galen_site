@@ -239,6 +239,63 @@ describe('BomberGame: tank 裝甲魔像', () => {
   });
 });
 
+describe('BomberGame: sapper 工兵哥布林', () => {
+  it('玩家在附近時會放敵方炸彈（owner=enemy），且不佔玩家額度', () => {
+    const g = new BomberGame({ seed: 1 });
+    const target = g.getState().enemies[0];
+    g.debugSetEnemyKind(target.id, 'sapper');
+    g.debugMoveEnemy(target.id, 3, 1); // 距玩家 (1,1) 2 格
+    g.debugSetInvuln(999999);
+    // 推進讓工兵放彈（內建冷卻 ≤3000ms）
+    for (let i = 0; i < 40 && !g.getState().bombs.some((b) => b.owner === 'enemy'); i++) {
+      g.debugMoveEnemy(target.id, 3, 1); // 固定位置（會想逃）
+      g.step(100);
+    }
+    const enemyBombs = g.getState().bombs.filter((b) => b.owner === 'enemy');
+    expect(enemyBombs.length).toBeGreaterThan(0);
+    // 玩家額度不受敵彈影響（maxBombs=1 仍可放）
+    g.input('bomb');
+    expect(g.getState().bombs.some((b) => !b.owner)).toBe(true);
+  });
+
+  it('敵方炸彈會正常爆炸破壞木箱', () => {
+    const g = new BomberGame({ seed: 1 });
+    const target = g.getState().enemies[0];
+    g.debugSetEnemyKind(target.id, 'sapper');
+    g.debugMoveEnemy(target.id, 3, 1);
+    g.debugSetInvuln(999999);
+    for (let i = 0; i < 40 && !g.getState().bombs.some((b) => b.owner === 'enemy'); i++) {
+      g.debugMoveEnemy(target.id, 3, 1);
+      g.step(100);
+    }
+    expect(g.getState().bombs.some((b) => b.owner === 'enemy')).toBe(true);
+    g.drainEvents();
+    g.step(2100); // 引爆
+    expect(g.drainEvents().some((ev) => ev.kind === 'explode')).toBe(true);
+  });
+});
+
+describe('BomberGame: splitter 史萊姆王', () => {
+  it('被炸死時分裂出 2 隻 mini（id 唯一、存活）', () => {
+    const g = new BomberGame({ seed: 1 });
+    const target = g.getState().enemies[0];
+    const baseCount = g.getState().enemies.length;
+    g.debugSetEnemyKind(target.id, 'splitter');
+    g.debugSetInvuln(999999);
+    g.debugMoveEnemy(target.id, 3, 1);
+    g.debugSetFire(3);
+    g.input('bomb');
+    g.step(BOMB_FUSE_MS);
+    const s = g.getState();
+    expect(s.enemies.find((e) => e.id === target.id)!.alive).toBe(false);
+    const minis = s.enemies.filter((e) => e.kind === 'mini' && e.alive);
+    expect(minis.length).toBe(2);
+    expect(s.enemies.length).toBe(baseCount + 2);
+    const ids = new Set(s.enemies.map((e) => e.id));
+    expect(ids.size).toBe(s.enemies.length); // id 唯一
+  });
+});
+
 describe('BomberGame: 爆風判定使用敵人「視覺佔據格」', () => {
   it('剛起步（視覺仍在格外）的敵人不會被炸死；走過半（視覺進入爆風格）才死', () => {
     const g = new BomberGame({ seed: 1 });

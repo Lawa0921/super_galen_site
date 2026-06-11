@@ -27,9 +27,12 @@ const WALK_STEPS = [0, 1, 2, 1] as const;
 const ANIM_STEPS = [0, 1, 2, 1] as const;
 
 /** Per-kind animation cadence (ms per step) — dasher 急促、ghost 悠長、tank 沉重。 */
-const ENEMY_ANIM_STEP_MS: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank', number> = {
-  wander: 240, chaser: 190, ghost: 330, dasher: 120, mimic: 200, tank: 420,
+const ENEMY_ANIM_STEP_MS: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank' | 'sapper' | 'splitter' | 'mini', number> = {
+  wander: 240, chaser: 190, ghost: 330, dasher: 120, mimic: 200, tank: 420, sapper: 210, splitter: 270, mini: 170,
 };
+
+/** Per-kind 顯示尺寸（cell 倍率）：splitter 大隻、mini 小隻。 */
+const ENEMY_SIZE: Partial<Record<'splitter' | 'mini', number>> = { splitter: 0.98, mini: 0.55 };
 
 /** Map direction string to walk-sheet row index (row 0=down, 1=left, 2=right, 3=up). */
 function dirToRow(dir: string): number {
@@ -271,6 +274,8 @@ export class EntityView {
       sp.height = size;
       sp.x = ox + bomb.x * cell + cell / 2;
       sp.y = oy + bomb.y * cell + cell / 2;
+      // 敵方（工兵）的彈染綠灰，跟玩家的彈一眼可分
+      sp.tint = bomb.owner === 'enemy' ? 0x9adf8a : 0xffffff;
       sp.alpha = 1;
     }
     this._poolHideFrom(this.bombPool, bmi);
@@ -303,7 +308,8 @@ export class EntityView {
 
       const sp  = this._poolGet(this.enemyPool, ei++, tex);
       const breathe = dormantMimic ? 1 + Math.sin(this.enemyAnimMs * 0.004 + enemy.id) * 0.02 : 1;
-      const size = cell * (dormantMimic ? 1.0 : 0.85) * breathe;
+      const sizeMul = dormantMimic ? 1.0 : (ENEMY_SIZE[enemy.kind as 'splitter' | 'mini'] ?? 0.85);
+      const size = cell * sizeMul * breathe;
       sp.width  = size;
       sp.height = size;
       sp.x = ox + rx * cell + cell / 2;

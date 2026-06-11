@@ -18,6 +18,11 @@ const TILES_CATACOMB_URL = '/assets/games/bomber/tiles-catacomb.png';
 const ENEMY_MIMIC_URL    = '/assets/games/bomber/enemy-mimic.png';
 const ENEMY_TANK_URL     = '/assets/games/bomber/enemy-tank.png';
 const TILES_FORGE_URL    = '/assets/games/bomber/tiles-forge.png';
+const TILES_FROST_URL    = '/assets/games/bomber/tiles-frost.png';
+const TILES_VOID_URL     = '/assets/games/bomber/tiles-void.png';
+const DECOR_URL          = '/assets/games/bomber/decor.png';
+const ENEMY_SAPPER_URL   = '/assets/games/bomber/enemy-sapper.png';
+const ENEMY_SPLITTER_URL = '/assets/games/bomber/enemy-splitter.png';
 const ENEMY_WANDER_URL = '/assets/games/bomber/enemy-wander.png';
 const ENEMY_CHASER_URL = '/assets/games/bomber/enemy-chaser.png';
 const ENEMY_GHOST_URL  = '/assets/games/bomber/enemy-ghost.png';
@@ -65,7 +70,9 @@ export interface BomberTextures {
   /** 4-frame explosion animation (sliced from a 256×64 strip, true alpha). */
   blastFrames: Texture[];
   /** Per-kind 3-frame enemy idle/bounce animations (sliced from 192×64 strips). */
-  enemyFrames: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank', Texture[]>;
+  enemyFrames: Record<'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank' | 'sapper' | 'splitter' | 'mini', Texture[]>;
+  /** 地面裝飾（10 幀：每生態區 2 個，index = biome*2 + variant）。 */
+  decorFrames: Texture[];
   /** 生態區磚塊組（index 0=石牢 1=墓窖 2=鍛造廠），每組 {floor, wall, crate}。 */
   tileSets: { floor: Texture; wall: Texture; crate: Texture }[];
 }
@@ -82,7 +89,8 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
          abCarpetTex, abInfernoTex, abBlinkTex, abBulwarkTex,
          bombLenaTex, bombMiraTex, bombAyaTex, bombRosaTex, explosionTex,
          enemyWanderTex, enemyChaserTex, enemyGhostTex, enemyDasherTex,
-         tilesCatTex, tilesForgeTex, enemyMimicTex, enemyTankTex] = await Promise.all([
+         tilesCatTex, tilesForgeTex, enemyMimicTex, enemyTankTex,
+         tilesFrostTex, tilesVoidTex, decorTex, enemySapperTex, enemySplitterTex] = await Promise.all([
     Assets.load(SHEET_URL)    as Promise<Texture>,
     Assets.load(WALK_LENA_URL) as Promise<Texture>,
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
@@ -105,6 +113,11 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     Assets.load(TILES_FORGE_URL)    as Promise<Texture>,
     Assets.load(ENEMY_MIMIC_URL)   as Promise<Texture>,
     Assets.load(ENEMY_TANK_URL)    as Promise<Texture>,
+    Assets.load(TILES_FROST_URL)   as Promise<Texture>,
+    Assets.load(TILES_VOID_URL)    as Promise<Texture>,
+    Assets.load(DECOR_URL)         as Promise<Texture>,
+    Assets.load(ENEMY_SAPPER_URL)   as Promise<Texture>,
+    Assets.load(ENEMY_SPLITTER_URL) as Promise<Texture>,
   ]);
 
   sheet.source.scaleMode       = 'nearest';
@@ -129,6 +142,11 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   tilesForgeTex.source.scaleMode  = 'nearest';
   enemyMimicTex.source.scaleMode  = 'nearest';
   enemyTankTex.source.scaleMode   = 'nearest';
+  tilesFrostTex.source.scaleMode  = 'nearest';
+  tilesVoidTex.source.scaleMode   = 'nearest';
+  decorTex.source.scaleMode       = 'nearest';
+  enemySapperTex.source.scaleMode   = 'nearest';
+  enemySplitterTex.source.scaleMode = 'nearest';
 
   // 爆炸動畫：從 256×64 條切 4 幀
   const blastFrames = [0, 1, 2, 3].map((i) => frameAt(explosionTex.source, i, 0));
@@ -142,7 +160,13 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     dasher: strip3(enemyDasherTex),
     mimic:  strip3(enemyMimicTex),
     tank:   strip3(enemyTankTex),
+    sapper:   strip3(enemySapperTex),
+    splitter: strip3(enemySplitterTex),
+    mini:     strip3(enemyWanderTex), // mini 沿用史萊姆幀（render 端縮小）
   };
+
+  // 地面裝飾：640×64 條切 10 幀
+  const decorFrames = Array.from({ length: 10 }, (_, i) => frameAt(decorTex.source, i, 0));
 
   // 生態區磚塊組：0=石牢（主 sheet）、1=墓窖、2=鍛造廠（各 192×64 條：floor|wall|crate）
   const tileSetOf = (t: Texture) => ({
@@ -186,10 +210,13 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     bombRosa:    bombRosaTex,
     blastFrames,
     enemyFrames,
+    decorFrames,
     tileSets: [
       { floor: frameAt(src, 0, 0), wall: frameAt(src, 1, 0), crate: frameAt(src, 2, 0) },
       tileSetOf(tilesCatTex),
       tileSetOf(tilesForgeTex),
+      tileSetOf(tilesFrostTex),
+      tileSetOf(tilesVoidTex),
     ],
   };
 }

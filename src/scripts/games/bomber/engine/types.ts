@@ -9,9 +9,9 @@ export type AbilityId = 'carpet' | 'inferno' | 'blink' | 'bulwark';
 export interface CharacterStats { lives: number; fireRange: number; maxBombs: number; speedLevel: number; }
 export interface AbilityDef { id: AbilityId; name: string; desc: string; cooldownMs: number; }
 export interface CharacterProfile { id: CharacterId; name: string; start: CharacterStats; caps: CharacterStats; ability: AbilityDef; }
-export type EnemyKind = 'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank';
+export type EnemyKind = 'wander' | 'chaser' | 'ghost' | 'dasher' | 'mimic' | 'tank' | 'sapper' | 'splitter' | 'mini';
 
-export interface Bomb { x: number; y: number; fuseMs: number; range: number; }
+export interface Bomb { x: number; y: number; fuseMs: number; range: number; owner?: 'enemy'; }
 export interface BlastCell { x: number; y: number; ttlMs: number; }
 export interface PowerUp { x: number; y: number; kind: PowerUpKind; }
 export interface Enemy {
@@ -23,6 +23,8 @@ export interface Enemy {
   hp?: number;
   /** 受擊冷卻（ms）：殘留爆風不會連續扣血。 */
   hitCooldownMs?: number;
+  /** sapper 專用：放彈冷卻（ms）。 */
+  sapperCdMs?: number;
 }
 export interface Player {
   x: number; y: number; prevX: number; prevY: number; dir: Dir;
