@@ -1,4 +1,4 @@
-import { Graphics } from 'pixi.js';
+import { Assets, Graphics, type Texture } from 'pixi.js';
 import { TetrisGame } from '../engine/game';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 import { getCells } from '../engine/piece';
@@ -101,10 +101,15 @@ export async function startTetris(
   }
   const hud = new HudView(stage.hudLayer, tex.block, 3);
   const itemHud = skill ? await ItemHud.create(stage.hudLayer, skill) : null;
+  // 技能發動 VFX 貼圖（只載帶入的那顆；無技能不載）
+  const skillFxTex = skill
+    ? ((await Assets.load(`/assets/games/tetris/fx/skill-${skill}.webp`)) as Texture)
+    : null;
   const fx = new Effects(stage.fxLayer, { spark: tex.spark, ring: tex.ring, glow: tex.glow });
 
+  let lay = computeLayout(stage.width, stage.height);
   function relayout(): void {
-    const lay = computeLayout(stage.width, stage.height);
+    lay = computeLayout(stage.width, stage.height);
     stage.layoutBackground();
     board.setLayout(lay.cellSize, lay.origin);
     hud.setLayoutSolo(lay.holdAnchor, lay.infoAnchor, lay.cellSize);
@@ -163,6 +168,13 @@ export async function startTetris(
     const act = run.activate();
     if (!act) return;
     applySkill({ game }, act.skill, { bombRows: act.bombRows });
+    if (skillFxTex) {
+      fx.skillBurst(
+        skillFxTex,
+        lay.origin.x + (lay.cellSize * BOARD_WIDTH) / 2,
+        lay.origin.y + (lay.cellSize * VISIBLE_HEIGHT) / 2,
+      );
+    }
     if (act.skill === 'bomb') {
       stage.shake(10);
       fx.popup('BOMB!', 0xff9a3c, true);

@@ -1,4 +1,4 @@
-import { Text } from 'pixi.js';
+import { Assets, Text, type Texture } from 'pixi.js';
 import { TetrisMatch, type Side } from '../engine/match';
 import { getCells } from '../engine/piece';
 import { applySkill, resetSlow } from '../engine/items';
@@ -54,6 +54,10 @@ export async function startAi(
   // 玩家（A）帶技能才建能量 HUD；vs-AI HUD 欄較擠 → 條高 3.2 格
   const skill = opts.skill ?? null;
   const itemHud = skill ? await ItemHud.create(stage.hudLayer, skill, 3.2) : null;
+  // 技能發動 VFX 貼圖（只載帶入的那顆；無技能不載）
+  const skillFxTex = skill
+    ? ((await Assets.load(`/assets/games/tetris/fx/skill-${skill}.webp`)) as Texture)
+    : null;
   const fxA = new Effects(stage.fxLayer, { spark: tex.spark, ring: tex.ring, glow: tex.glow });
   const fxB = new Effects(stage.fxLayer, { spark: tex.spark, ring: tex.ring, glow: tex.glow });
   const meter = new GarbageMeter(stage.playLayer);
@@ -124,6 +128,10 @@ export async function startAi(
     if (!run.canActivate()) return;
     const act = run.activate();
     if (!act) return;
+    if (skillFxTex) {
+      const c = boardCenter('A'); // 玩家側盤面中心（shield 也在玩家側）
+      fxA.skillBurst(skillFxTex, c.x, c.y);
+    }
     if (act.skill === 'shield') {
       applySkill({ game: match.a, match, side: 'A' }, 'shield', { shieldRows: act.shieldRows });
       fxA.popup('SHIELD!', 0x4dff88, true);

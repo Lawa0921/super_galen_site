@@ -24,6 +24,12 @@ interface Flash {
   life: number;
   max: number;
 }
+interface Burst {
+  sp: Sprite;
+  life: number;
+  max: number;
+  base: number;
+}
 interface Popup {
   t: Text;
   life: number;
@@ -47,6 +53,7 @@ export class Effects {
   private particles: Particle[] = [];
   private rings: Ring[] = [];
   private flashes: Flash[] = [];
+  private bursts: Burst[] = [];
   private popups: Popup[] = [];
   private popupLayer = new Container();
   private cellSize = 24;
@@ -216,6 +223,20 @@ export class Effects {
     this.flashes.push({ sp, life: 0.4, max: 0.4 });
   }
 
+  /** 技能發動爆發：盤面中心一張 additive 貼圖，0.6→1.15 倍放大＋淡出後自動移除。 */
+  skillBurst(tex: Texture, cx: number, cy: number, opts?: { scale?: number; lifeMs?: number }): void {
+    const sp = new Sprite(tex);
+    sp.anchor.set(0.5);
+    sp.blendMode = 'add';
+    sp.x = cx;
+    sp.y = cy;
+    const base = this.cellSize * BOARD_WIDTH * 0.9 * (opts?.scale ?? 1);
+    sp.width = sp.height = base * 0.6;
+    this.layer.addChild(sp);
+    const life = (opts?.lifeMs ?? 500) / 1000;
+    this.bursts.push({ sp, life, max: life, base });
+  }
+
   update(dtMs: number): void {
     const dt = dtMs / 1000;
 
@@ -262,6 +283,20 @@ export class Effects {
         continue;
       }
       f.sp.alpha = f.life / f.max;
+    }
+
+    for (let i = this.bursts.length - 1; i >= 0; i--) {
+      const b = this.bursts[i];
+      b.life -= dt;
+      if (b.life <= 0) {
+        b.sp.destroy();
+        this.bursts.splice(i, 1);
+        continue;
+      }
+      const k = 1 - b.life / b.max; // 0→1
+      const s = b.base * (0.6 + 0.55 * k);
+      b.sp.width = b.sp.height = s;
+      b.sp.alpha = 1 - k;
     }
 
     for (let i = this.popups.length - 1; i >= 0; i--) {
