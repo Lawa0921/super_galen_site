@@ -11,6 +11,7 @@ import type { Layout } from './layout';
  */
 export class GridView {
   private sprites: Sprite[] = [];
+  private decorPool: Sprite[] = [];
   private lastGrid: Grid | null = null;
   private lastCell = -1;
   private textures: BomberTextures;
@@ -18,6 +19,13 @@ export class GridView {
   constructor(private layer: Container, textures: BomberTextures) {
     this.textures = textures;
     this._buildSprites();
+  }
+
+  /** 決定性 hash（樓層+座標）→ [0,1)：裝飾佈點不依賴引擎 rng、重繪穩定。 */
+  private _hash(floor: number, x: number, y: number): number {
+    let h = (x * 73856093) ^ (y * 19349663) ^ (floor * 83492791);
+    h = (h ^ (h >>> 13)) * 1274126177;
+    return ((h ^ (h >>> 16)) >>> 0) % 1000 / 1000;
   }
 
   /** 建立固定 GRID_COLS×GRID_ROWS 個 Sprite（一次性建構）。 */
@@ -30,9 +38,9 @@ export class GridView {
     }
   }
 
-  /** 生態區：1-3 層石牢、4-6 層墓窖、7 層起鍛造廠。 */
+  /** 生態區：1-3 石牢、4-6 墓窖、7-9 鍛造廠、10-12 冰窖、13+ 虛空。 */
   private _biomeIndex(floor: number): number {
-    return Math.min(2, Math.floor((floor - 1) / 3));
+    return Math.min(4, Math.floor((floor - 1) / 3));
   }
 
   private _tileTexture(tile: Tile, biome: number) {
@@ -71,6 +79,35 @@ export class GridView {
         sp.y = oy + row * cell + cell / 2;
       }
     }
+
+    // 地面裝飾：~12% 的 floor 格放生態區專屬小物件（決定性 hash，重繪穩定）
+    let di = 0;
+    for (let row = 1; row < GRID_ROWS - 1; row++) {
+      for (let col = 1; col < GRID_COLS - 1; col++) {
+        if ((grid[row]?.[col] ?? 'floor') !== 'floor') continue;
+        const h = this._hash(state.floor, col, row);
+        if (h >= 0.12) continue;
+        const variant = h < 0.06 ? 0 : 1;
+        const tex = this.textures.decorFrames[biome * 2 + variant];
+        let sp = this.decorPool[di];
+        if (!sp) {
+          sp = new Sprite(tex);
+          sp.anchor.set(0.5);
+          this.layer.addChild(sp);
+          this.decorPool.push(sp);
+        }
+        sp.texture = tex;
+        sp.visible = true;
+        const size = cell * 0.5;
+        sp.width = size;
+        sp.height = size;
+        sp.x = ox + col * cell + cell / 2;
+        sp.y = oy + row * cell + cell / 2;
+        sp.alpha = 0.88;
+        di++;
+      }
+    }
+    for (let i = di; i < this.decorPool.length; i++) this.decorPool[i].visible = false;
   }
 
   /** 強制下一幀重繪（搬入新樓層或版面改變時呼叫）。 */
