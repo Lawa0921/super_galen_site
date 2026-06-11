@@ -61,6 +61,11 @@ export class FfaLockstep {
   private sendFrame = 0; // 下一個要送出的本地輸入幀
   private replayEvents: FfaReplay['events'] = [];
 
+  /** 排程中的棄權：playerId → 預定生效幀（host 廣播的 F；重複排程取最早）。 */
+  private forfeitAt = new Map<string, number>();
+  /** 已套用的棄權紀錄（f = 實際套用幀，供 replay 確定性重現）。 */
+  private replayForfeits: Array<{ f: number; p: string }> = [];
+
   constructor(opts: FfaLockstepOptions) {
     this.playerIds = [...opts.playerIds];
     this.localId = opts.localId;
@@ -111,13 +116,26 @@ export class FfaLockstep {
     this.advance();
   }
 
-  /** 取得本局可重播紀錄（用於後端 replay 抽驗）。 */
-  getReplay(): FfaReplay {
+  /**
+   * 排程確定性棄權：玩家 p 在幀 f「套用該幀輸入之前」被判敗淘汰。
+   * f 一律由 host 決定後廣播（任何端不得自行判定）；各端以相同 (p,f) 排程保證鎖步一致。
+   * p 不在 playerIds 或 f 非有限非負數 → 忽略；重複排程取最早的 f。
+   */
+  scheduleForfeit(p: string, f: number): void {
+    if (!this.inbox.has(p)) return;
+    if (typeof f !== 'number' || !Number.isFinite(f) || f < 0) return;
+    const prev = this.forfeitAt.get(p);
+    this.forfeitAt.set(p, prev === undefined ? f : Math.min(prev, f));
+  }
+
+  /** 取得本局可重播紀錄（用於後端 replay 抽驗）。forfeits 一律給欄位（無中離＝空陣列）。 */
+  getReplay(): FfaReplay & { forfeits: Array<{ f: number; p: string }> } {
     return {
       seed: this.seed,
       playerIds: [...this.playerIds],
       frameCount: this.simFrame,
       events: [...this.replayEvents],
+      forfeits: [...this.replayForfeits],
     };
   }
 
@@ -159,6 +177,23 @@ export class FfaLockstep {
       // 對局已分出勝負就停止推進。否則勝者也已進 getPlacement()，
       // 下方「為已定名次者補空輸入」會把全員每幀都補滿 → ready 恆真 → 無窮遞增 simFrame。
       if (this.match.phase !== 'playing') break;
+
+      // 套用已到期的排程棄權（f <= simFrame；在套用該幀輸入「之前」執行，
+      // 依 playerIds 固定順序迭代保確定性）。記錄用「實際套用幀 simFrame」，
+      // 正常情況 f > 排程當下的 confirmedFrame → simFrame === f；遲到的 forfeit
+      // 則記實際幀，保證 replay 重現一致。
+      if (this.forfeitAt.size > 0) {
+        const placed = this.match.getPlacement();
+        for (const id of this.playerIds) {
+          const f = this.forfeitAt.get(id);
+          if (f === undefined || f > this.simFrame) continue;
+          if (!placed.has(id)) {
+            this.match.forfeit(id);
+            this.replayForfeits.push({ f: this.simFrame, p: id });
+          }
+          this.forfeitAt.delete(id); // 已定名次者直接清理（no-op）
+        }
+      }
 
       // 為已淘汰玩家補上 simFrame 的空輸入（其端不再送 → 否則永遠缺幀死鎖）
       const placement = this.match.getPlacement();
