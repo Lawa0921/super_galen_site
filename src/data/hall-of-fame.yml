@@ -2014,3 +2014,17 @@ members:
         label: "Vtuber 音效 SE"
       - id: "loop_bgm_cover"
         label: "Loop BGM · Cover 混音"
+
+  - id: "91_boyu"
+    name: "泊宇 BoYu Wu"
+    avatar: "/assets/img/guild/91_boyu/avatar.webp"
+    page: "/guild/91_boyu.html"
+    title: "樹林柑園板材世家第三代 · 石膏磚 / 自流平 / 建材整合"
+    description: "我是吳泊宇，阿公那輩就在樹林柑園做板材，到我是第三代。職涯繞了產業鏈一整圈——室內設計、建材商、建設公司的特助與業務主管，現在自己對接建材資源，已接上大台北多個建案。主力是 BR 防潮石膏磚隔間（E1 健康綠建材）、雲豹高強度自流平（抗壓 2000–2500 磅、平整度 1–3mm、8 小時可踩）、AC5 超耐磨木地板、帝晶石板與易智 GaN 快充插座面板；家族本行的特殊板材、美耐板也找得到。桃園以北建案場、住家場，報價連工帶料。順帶一提：大台北建地或帶建照的案件想盤的，也歡迎報來看看。"
+    tags:
+      - id: "gypsum_block_wall"
+        label: "石膏磚隔間"
+      - id: "self_leveling_floor"
+        label: "雲豹自流平"
+      - id: "material_family_gen3"
+        label: "板材世家第三代"
