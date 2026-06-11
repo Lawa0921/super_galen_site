@@ -17,6 +17,9 @@ test.describe('Dungeon Arcade — hall & mode select', () => {
     await expect(page.locator('#mode-select')).toBeVisible();
 
     await page.locator('[data-mode="ai"][data-diff="hard"]').click();
+    // Phase 4：UI 流程多一步技能選擇（深連結 ?mode= 仍直接開局）
+    await expect(page.locator('#skill-select')).toBeVisible();
+    await page.locator('.ss-card[data-skill=""]').click(); // 不帶技能直接開局
     await expect(page.locator('#mode-select')).toHaveCount(0); // overlay removed
     await page.waitForFunction(
       () => Boolean((window as unknown as { __tetrisDebug?: { match?: unknown } }).__tetrisDebug?.match),

@@ -4,10 +4,22 @@
  * 渲染層只讀：onLineClear 餵事件、activate 拿操作描述、onLevelUp 拿三選一。
  */
 import { createRng } from './rng';
+import type { Matrix } from './types';
 import type { SkillId } from './items';
 import { DEFAULT_BOMB_ROWS, DEFAULT_SHIELD_ROWS, SLOW_DURATION_MS } from './items';
 
 export type { SkillId } from './items';
+
+/**
+ * 盤面堆疊高度（行數，從盤底量到最高非空 row；含頂部緩衝列）。
+ * 堆疊貼底故與隱藏列無關，供 survivorTriggered 判定用。
+ */
+export function stackHeight(board: Matrix): number {
+  for (let r = 0; r < board.length; r++) {
+    if (board[r].some((c) => c !== null)) return board.length - r;
+  }
+  return 0;
+}
 
 /** 技能目錄（shield 僅 vs-AI：SOLO 無垃圾不出現此卡）。 */
 export const SKILLS: Record<SkillId, { name: string; desc: string; aiOnly?: boolean }> = {

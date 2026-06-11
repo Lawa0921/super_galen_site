@@ -6,8 +6,11 @@
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import { defaultLang, type Language } from '@i18n/index';
 import { SKIN_CATALOG } from '@scripts/games/tetris/render/skins';
+import { SKILLS } from '@scripts/games/tetris/engine/run';
 
 const lang: Language = defaultLang;
+// 技能卡靜態渲染（Astro scoped style 才會套上）；shield 由 JS 依模式顯隱。
+const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, desc: s.desc, aiOnly: Boolean(s.aiOnly) }));
 ---
 
 <BaseLayout
@@ -47,6 +50,30 @@ const lang: Language = defaultLang;
             <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
             <button class="ms-btn ms-online" data-mode="online">vs ONLINE</button>
           </div>
+        </div>
+        <div class="mode-select" id="skill-select" hidden>
+          <h2 class="ss-title">SELECT SKILL</h2>
+          <div class="ss-cards">
+            {skillCards.map((s) => (
+              <button type="button" class="ss-card" data-skill={s.id} data-aionly={s.aiOnly ? 'true' : null}>
+                <span class="ss-key" aria-hidden="true"></span>
+                <span class={`ss-ico ss-ico--${s.id}`}></span>
+                <span class="ss-meta">
+                  <span class="ss-name">{s.name}</span>
+                  <span class="ss-desc">{s.desc}</span>
+                </span>
+              </button>
+            ))}
+            <button type="button" class="ss-card" data-skill="">
+              <span class="ss-key" aria-hidden="true"></span>
+              <span class="ss-ico ss-ico--none"></span>
+              <span class="ss-meta">
+                <span class="ss-name">不帶技能</span>
+                <span class="ss-desc">純粹手速，不靠技能輔助</span>
+              </span>
+            </button>
+          </div>
+          <p class="ss-hint">按 1-5 快選 · 或點選卡片 · 遊戲中按 V 發動</p>
         </div>
         <div class="mode-select" id="online-panel" hidden>
           <div class="ms-buttons">
@@ -134,6 +161,31 @@ const lang: Language = defaultLang;
         <h2 class="pause-title" id="result-title">GAME OVER</h2>
         <button class="ms-btn ms-solo" id="result-again" type="button">再玩一次</button>
         <button class="ms-btn ms-hard" id="result-quit" type="button">離開</button>
+      </div>
+    </div>
+
+    <!-- SOLO 升級三選一（perk 覆蓋層；文字由 JS 填，開啟時與 ESC 暫停互斥） -->
+    <div class="pause-menu" id="perk-menu" hidden>
+      <div class="pause-card perk-box">
+        <h2 class="pause-title">LEVEL UP</h2>
+        <p class="perk-sub">選擇一項強化 · 鍵盤 1 / 2 / 3</p>
+        <div class="perk-cards">
+          <button class="perk-card" type="button" data-slot="0">
+            <span class="perk-key">1</span>
+            <span class="perk-name"></span>
+            <span class="perk-desc"></span>
+          </button>
+          <button class="perk-card" type="button" data-slot="1">
+            <span class="perk-key">2</span>
+            <span class="perk-name"></span>
+            <span class="perk-desc"></span>
+          </button>
+          <button class="perk-card" type="button" data-slot="2">
+            <span class="perk-key">3</span>
+            <span class="perk-name"></span>
+            <span class="perk-desc"></span>
+          </button>
+        </div>
       </div>
     </div>
   </main>
@@ -264,6 +316,69 @@ const lang: Language = defaultLang;
     line-height: 1.6;
     letter-spacing: 1px;
     color: #9fb4d8;
+  }
+
+  /* 開局技能選擇步（SOLO / vs-AI）*/
+  .ss-title {
+    margin: 0;
+    font-size: clamp(14px, 2.4vw, 20px);
+    letter-spacing: 3px;
+    color: #eafdff;
+    text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 28px rgba(54, 230, 255, 0.5);
+  }
+  .ss-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .ss-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    font-family: inherit;
+    text-align: left;
+    color: #cfe8ff;
+    background: rgba(8, 12, 22, 0.8);
+    border: 2px solid rgba(54, 230, 255, 0.55);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  }
+  .ss-card:hover {
+    transform: translateY(-2px);
+    color: #eafdff;
+    box-shadow: 0 0 18px rgba(54, 230, 255, 0.6);
+  }
+  .ss-card[hidden] { display: none; }
+  .ss-key {
+    flex: 0 0 auto;
+    min-width: 1.6em;
+    font-size: 10px;
+    letter-spacing: 0;
+    color: #ffd23f;
+  }
+  .ss-ico {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    background: center / contain no-repeat;
+  }
+  .ss-ico--bomb { background-image: url('/assets/games/tetris/icons/skill-bomb.webp'); }
+  .ss-ico--slow { background-image: url('/assets/games/tetris/icons/skill-slow.webp'); }
+  .ss-ico--reroll { background-image: url('/assets/games/tetris/icons/skill-reroll.webp'); }
+  .ss-ico--shield { background-image: url('/assets/games/tetris/icons/skill-shield.webp'); }
+  .ss-ico--none { border: 1px dashed rgba(111, 168, 216, 0.6); border-radius: 8px; }
+  .ss-meta { display: flex; flex-direction: column; gap: 5px; }
+  .ss-name { font-size: 11px; letter-spacing: 1px; color: #eafdff; }
+  .ss-desc { font-size: 8px; line-height: 1.7; letter-spacing: 1px; color: #6fa8d8; }
+  .ss-hint {
+    margin: 0;
+    font-size: 8px;
+    letter-spacing: 1px;
+    text-align: center;
+    color: #5a7299;
   }
 
   /* 玩家人數選擇（2–8，預設 4）*/
@@ -546,6 +661,82 @@ const lang: Language = defaultLang;
     text-shadow: 0 0 8px rgba(255, 90, 70, 0.45);
   }
 
+  /* SOLO 升級三選一（perk 覆蓋層） */
+  .perk-box {
+    min-width: 0;
+    width: min(720px, 92vw);
+    font-family: 'Press Start 2P', Consolas, monospace;
+    border-color: rgba(193, 92, 255, 0.45);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6), inset 0 0 28px rgba(193, 92, 255, 0.1);
+  }
+  .perk-box .pause-title {
+    color: #f3e6ff;
+    text-shadow: 0 0 12px rgba(193, 92, 255, 0.9), 0 0 30px rgba(193, 92, 255, 0.5);
+  }
+  .perk-sub {
+    margin: 0 0 8px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #b08cd8;
+  }
+  .perk-cards {
+    display: flex;
+    gap: 14px;
+    width: 100%;
+  }
+  .perk-card {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 14px 20px;
+    font-family: inherit;
+    text-align: center;
+    background: rgba(12, 8, 22, 0.88);
+    border: 2px solid rgba(193, 92, 255, 0.5);
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(193, 92, 255, 0.25);
+    cursor: pointer;
+    animation: perkIn 0.22s ease both;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .perk-card:nth-child(2) { animation-delay: 0.06s; }
+  .perk-card:nth-child(3) { animation-delay: 0.12s; }
+  .perk-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 22px rgba(193, 92, 255, 0.7);
+  }
+  .perk-card[hidden] { display: none; }
+  .perk-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    color: #f3e6ff;
+    background: rgba(193, 92, 255, 0.25);
+    border: 1px solid rgba(193, 92, 255, 0.6);
+    border-radius: 6px;
+  }
+  .perk-name {
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: #eafdff;
+    text-shadow: 0 0 10px rgba(193, 92, 255, 0.6);
+  }
+  .perk-desc {
+    font-size: 10px;
+    line-height: 1.8;
+    letter-spacing: 1px;
+    color: #b8a8d8;
+  }
+  @keyframes perkIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   /* emoji → 生成的霓虹圖示（::before 背景圖，取代廉價 emoji） */
   .mm-tab::before,
   #panel-leaderboard .ms-title::before,
@@ -616,14 +807,16 @@ const lang: Language = defaultLang;
   .touch-notice strong { color: #ffd23f; }
 
   @media (prefers-reduced-motion: reduce) {
-    .mm-tab, .ms-btn, .tetris-back, .skin-card { transition: none; }
-    .ms-btn:hover, .skin-card:hover { transform: none; }
+    .mm-tab, .ms-btn, .tetris-back, .skin-card, .perk-card { transition: none; }
+    .ms-btn:hover, .skin-card:hover, .perk-card:hover { transform: none; }
+    .perk-card { animation: none; } /* 三選一覆蓋層不加進場動畫 */
   }
 </style>
 
 <script>
   import { startTetris } from '@scripts/games/tetris/render/main';
   import { startAi } from '@scripts/games/tetris/render/aiMain';
+  import { SKILLS, type SkillId, type PerkChoice, type PerkId } from '@scripts/games/tetris/engine/run';
   import { SKIN_CATALOG, getSelectedSkin, setSelectedSkin, isUnlocked, resolveSkin } from '@scripts/games/tetris/render/skins';
   import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
   import { hostFfaGame, joinFfaGame, type FfaNetStatus, type FfaIdentity } from '@scripts/games/tetris/net/ffaNetMain';
@@ -669,6 +862,7 @@ const lang: Language = defaultLang;
   let pausable = false;
   let menuOpen = false;
   let resultOpen = false;
+  let perkOpen = false; // 三選一開啟中（ESC 互斥：perk 開啟時不開暫停選單）
   const pauseMenu = document.getElementById('pause-menu');
   const pauseTitle = document.getElementById('pause-title');
   const pauseHint = document.getElementById('pause-hint');
@@ -714,7 +908,7 @@ const lang: Language = defaultLang;
     blip(560, 0.07);
   }
   window.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || !gameRunning || resultOpen) return;
+    if (e.key !== 'Escape' || !gameRunning || resultOpen || perkOpen) return;
     e.preventDefault();
     if (menuOpen) closePauseMenu();
     else openPauseMenu();
@@ -742,6 +936,51 @@ const lang: Language = defaultLang;
     blip(680, 0.07);
   });
   document.getElementById('result-quit')?.addEventListener('click', () => { location.href = '/games/tetris'; });
+
+  // ---- SOLO 升級三選一（main.ts 經 onPerkChoices 回呼丟卡片，DOM 全在這層）----
+  const perkMenu = document.getElementById('perk-menu');
+  const perkCards = Array.from(document.querySelectorAll<HTMLButtonElement>('.perk-card'));
+  let perkChoices: PerkChoice[] = [];
+  let perkPick: ((id: PerkId) => void) | null = null;
+
+  function showPerkMenu(choices: PerkChoice[], pick: (id: PerkId) => void): void {
+    perkChoices = choices;
+    perkPick = pick;
+    perkCards.forEach((card, i) => {
+      const c = choices[i];
+      card.hidden = !c; // 池不足 3 張時隱藏空槽
+      if (!c) return;
+      card.dataset.perk = c.id;
+      const name = card.querySelector('.perk-name');
+      const desc = card.querySelector('.perk-desc');
+      if (name) name.textContent = c.name;
+      if (desc) desc.textContent = c.desc;
+    });
+    perkOpen = true;
+    if (perkMenu) perkMenu.hidden = false;
+    blip(620, 0.09);
+  }
+
+  function pickPerkSlot(i: number): void {
+    if (!perkOpen) return;
+    const c = perkChoices[i];
+    if (!c) return;
+    perkOpen = false;
+    if (perkMenu) perkMenu.hidden = true;
+    const pick = perkPick;
+    perkPick = null;
+    pick?.(c.id); // main.ts：pickPerk → survivor 檢查 → resume
+    blip(760, 0.07);
+  }
+
+  perkCards.forEach((card, i) => card.addEventListener('click', () => pickPerkSlot(i)));
+  window.addEventListener('keydown', (e) => {
+    if (!perkOpen) return;
+    const n = Number(e.key);
+    if (!Number.isInteger(n) || n < 1 || n > 3) return;
+    e.preventDefault();
+    pickPerkSlot(n - 1);
+  });
 
   // ---- 線上 lobby（建房等待對手）----
   const lobby = document.getElementById('online-lobby');
@@ -771,29 +1010,84 @@ const lang: Language = defaultLang;
   });
   document.getElementById('lobby-cancel')?.addEventListener('click', () => { location.href = '/games/tetris'; });
 
-  function startSolo(): void {
+  function startSolo(skill: SkillId | null = null): void {
     if (isTouch) { showTouchNotice(); return; }
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
-    setHint(SOLO_HINT);
+    setHint(skill ? `${SOLO_HINT} · SKILL V` : SOLO_HINT);
     // 皮膚 key 與 PROFILE 皮膚櫃一致：已連錢包用 addr key，否則 guest key
-    startTetris(canvas, { onEnd: () => showResult('GAME OVER'), skinId: getSelectedSkin(wallet?.address) })
+    startTetris(canvas, {
+      onEnd: () => showResult('GAME OVER'),
+      skinId: getSelectedSkin(wallet?.address),
+      skill,
+      onPerkChoices: showPerkMenu, // SOLO roguelite 升級三選一
+    })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
 
-  function startAiMode(diffRaw?: string | null): void {
+  function startAiMode(diffRaw?: string | null, skill: SkillId | null = null): void {
     if (isTouch) { showTouchNotice(); return; }
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
     const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
-    setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · M MUTE`);
-    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS'), skinId: getSelectedSkin(wallet?.address) })
+    setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT${skill ? ' · SKILL V' : ''} · ESC PAUSE · M MUTE`);
+    startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS'), skinId: getSelectedSkin(wallet?.address), skill })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
       .catch((err: unknown) => console.error('[tetris] failed to start', err));
   }
+
+  // ---- 開局技能選擇步（UI 流程限定；深連結 ?mode= 直接開局以維持既有合約）----
+  const skillSelect = document.getElementById('skill-select');
+  const skillCards = Array.from(document.querySelectorAll<HTMLButtonElement>('.ss-card'));
+  let pendingMode: 'solo' | 'ai' = 'solo';
+  let pendingDiff: string | null = null;
+  let skillSelectOpen = false;
+
+  function showSkillSelect(mode: 'solo' | 'ai', diff?: string | null): void {
+    if (isTouch) { showTouchNotice(); return; }
+    if (started) return;
+    pendingMode = mode;
+    pendingDiff = diff ?? null;
+    if (modeSelect) modeSelect.hidden = true;
+    let n = 0; // shield 僅 vs-AI；數字快選鍵依可見順序重排
+    skillCards.forEach((card) => {
+      const show = mode === 'ai' || card.dataset.aionly !== 'true';
+      card.hidden = !show;
+      if (show) {
+        n += 1;
+        const key = card.querySelector('.ss-key');
+        if (key) key.textContent = String(n);
+      }
+    });
+    if (skillSelect) skillSelect.hidden = false;
+    skillSelectOpen = true;
+    blip(560, 0.06);
+  }
+
+  function pickSkill(raw: string): void {
+    if (!skillSelectOpen || started) return;
+    skillSelectOpen = false;
+    const skill = raw && raw in SKILLS ? (raw as SkillId) : null;
+    if (pendingMode === 'solo') startSolo(skill);
+    else startAiMode(pendingDiff, skill);
+    blip(680, 0.07);
+  }
+
+  skillCards.forEach((card) => {
+    card.addEventListener('click', () => pickSkill(card.dataset.skill ?? ''));
+  });
+  window.addEventListener('keydown', (e) => {
+    if (!skillSelectOpen) return;
+    const n = Number(e.key);
+    if (!Number.isInteger(n) || n < 1 || n > 5) return;
+    const card = skillCards.filter((c) => !c.hidden)[n - 1];
+    if (!card) return;
+    e.preventDefault();
+    pickSkill(card.dataset.skill ?? '');
+  });
 
   function showOnlinePanel(): void {
     if (isTouch) { showTouchNotice(); return; }
@@ -942,8 +1236,8 @@ const lang: Language = defaultLang;
   modeSelect?.querySelectorAll<HTMLElement>('[data-mode]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const m = btn.dataset.mode;
-      if (m === 'solo') startSolo();
-      else if (m === 'ai') startAiMode(btn.dataset.diff);
+      if (m === 'solo') showSkillSelect('solo');
+      else if (m === 'ai') showSkillSelect('ai', btn.dataset.diff);
       else if (m === 'online') showOnlinePanel();
     });
   });
@@ -1043,9 +1337,11 @@ const lang: Language = defaultLang;
       if (isTouch) {
         showTouchNotice();
       } else {
-        // 還原模式選單：使用者可能先前點過「線上對戰」而隱藏了 SOLO/AI
+        // 還原模式選單：使用者可能先前點過「線上對戰」或技能選擇步而隱藏了 SOLO/AI
         if (modeSelect) modeSelect.hidden = false;
         if (onlinePanel) onlinePanel.hidden = true;
+        if (skillSelect) skillSelect.hidden = true;
+        skillSelectOpen = false;
       }
     }
     if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }
@@ -1180,8 +1476,11 @@ const lang: Language = defaultLang;
 
   if (isTouch) showTouchNotice(); // 觸控裝置：PLAY 分頁直接顯示「請用電腦」提示
 
+  // 深連結：?mode= 不出技能選擇步、直接開局（既有 e2e 合約）；?skill= 可帶技能。
   const mode = params.get('mode');
-  if (mode === 'solo') startSolo();
-  else if (mode === 'ai') startAiMode(params.get('diff'));
+  const rawSkill = params.get('skill');
+  const deepSkill: SkillId | null = rawSkill && rawSkill in SKILLS ? (rawSkill as SkillId) : null;
+  if (mode === 'solo') startSolo(deepSkill === 'shield' ? null : deepSkill); // shield 僅 vs-AI
+  else if (mode === 'ai') startAiMode(params.get('diff'), deepSkill);
   else if (mode === 'online') showOnlinePanel();
 </script>
