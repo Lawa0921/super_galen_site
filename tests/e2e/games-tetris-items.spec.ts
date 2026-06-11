@@ -11,11 +11,13 @@ interface RunDebug {
   energyRequired: number;
   canActivate(): boolean;
   onLineClear(count: number, combo: number, tSpin: boolean): void;
+  perkLevel(id: string): number;
 }
 interface ItemsDebug {
   run?: RunDebug;
   game?: { getState(): { board: unknown[][] } };
   match?: { shield: { A: number; B: number } }; // TS private、runtime 可讀（e2e 斷言用）
+  triggerLevelUp?(): void; // T8 測試鉤子：走與升級相同的 perk 流程
 }
 declare global {
   interface Window {
@@ -105,5 +107,60 @@ test.describe('Dungeon Arcade — items (skill pick + energy + V key)', () => {
     await waitRun(page);
     await fillEnergy(page); // skill=null → 即使灌滿也不可發動
     expect(await readCanActivate(page)).toBe(false);
+  });
+});
+
+test.describe('Dungeon Arcade — perks（T8 SOLO 三選一）', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
+
+  test('SOLO 升級→三選一出現→按 1 選卡→perkLevel 反映、遊戲恢復', async ({ page }) => {
+    await page.goto('/games/tetris?mode=solo&skill=bomb');
+    await waitRun(page);
+
+    await page.evaluate(() => window.__tetrisDebug!.triggerLevelUp!());
+    await expect(page.locator('#perk-menu')).toBeVisible();
+    const cards = page.locator('.perk-card:visible');
+    await expect(cards).toHaveCount(3);
+    for (let i = 0; i < 3; i++) {
+      await expect(cards.nth(i).locator('.perk-name')).not.toHaveText('');
+      await expect(cards.nth(i).locator('.perk-desc')).not.toHaveText('');
+    }
+
+    const pickedId = await cards.first().getAttribute('data-perk');
+    expect(pickedId).toBeTruthy();
+    await page.keyboard.press('1');
+    await expect(page.locator('#perk-menu')).toBeHidden();
+    expect(
+      await page.evaluate((id) => window.__tetrisDebug!.run!.perkLevel(id), pickedId!),
+    ).toBeGreaterThanOrEqual(1);
+
+    // 遊戲恢復：硬降後盤面格數增加（模擬有在跑）
+    const before = await filledCount(page);
+    await page.keyboard.press('Space');
+    await expect.poll(() => filledCount(page), { timeout: 5000 }).toBeGreaterThan(before);
+  });
+
+  test('perk 開啟時按 ESC → pause-menu 不出現（互斥）', async ({ page }) => {
+    await page.goto('/games/tetris?mode=solo&skill=bomb');
+    await waitRun(page);
+
+    await page.evaluate(() => window.__tetrisDebug!.triggerLevelUp!());
+    await expect(page.locator('#perk-menu')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#pause-menu')).toBeHidden();
+    await expect(page.locator('#perk-menu')).toBeVisible(); // perk 覆蓋層不受 ESC 影響
+
+    // 收尾：選卡後 ESC 恢復可開暫停選單
+    await page.keyboard.press('1');
+    await expect(page.locator('#perk-menu')).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#pause-menu')).toBeVisible();
+  });
+
+  test('vs-AI：triggerLevelUp 為安全 no-op（onLevelUp 回 null、不出 perk）', async ({ page }) => {
+    await page.goto('/games/tetris?mode=ai&diff=easy&skill=bomb');
+    await waitRun(page);
+    await page.evaluate(() => window.__tetrisDebug!.triggerLevelUp!());
+    await expect(page.locator('#perk-menu')).toBeHidden();
   });
 });

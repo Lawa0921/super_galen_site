@@ -2,7 +2,8 @@
  * T6：SoloRun 能量/技能/perk 狀態機（純 TS、種子化、無 Pixi/DOM）。
  */
 import { describe, it, expect } from 'vitest';
-import { SoloRun, SKILLS, PERK_CATALOG, type PerkId } from './run';
+import { SoloRun, SKILLS, PERK_CATALOG, stackHeight, type PerkId } from './run';
+import type { Cell, Matrix } from './types';
 
 function makeRun(opts?: Partial<{ skill: 'bomb' | 'slow' | 'reroll' | 'shield' | null; seed: number; mode: 'solo' | 'ai' }>) {
   return new SoloRun({
@@ -262,5 +263,23 @@ describe('被動效果', () => {
     run.pickPerk('survivor');
     expect(run.survivorTriggered(15)).toBe(false);
     expect(run.survivorTriggered(16)).toBe(true);
+  });
+});
+
+describe('stackHeight（T8：盤面堆疊高度，供 survivor 判定）', () => {
+  const emptyBoard = (): Matrix => Array.from({ length: 22 }, () => Array<Cell>(10).fill(null));
+
+  it('空盤 → 0；只有最底行有格 → 1', () => {
+    expect(stackHeight(emptyBoard())).toBe(0);
+    const b = emptyBoard();
+    b[21][3] = 'T';
+    expect(stackHeight(b)).toBe(1);
+  });
+
+  it('高度 = 盤底到最高非空 row（含頂部緩衝列）', () => {
+    const b = emptyBoard();
+    b[6][0] = 'G'; // 22 - 6 = 16
+    b[20][5] = 'I'; // 下方有格不影響最高點
+    expect(stackHeight(b)).toBe(16);
   });
 });

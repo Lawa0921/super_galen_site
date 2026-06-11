@@ -255,6 +255,8 @@ export async function startAi(
     get ai() { return ai; },
     get run() { return run; },
     stage, fxA, fxB,
+    /** e2e 鉤子：vs-AI 不出 perk（mode:'ai' 的 onLevelUp 回 null）→ 安全 no-op。 */
+    triggerLevelUp() { run.onLevelUp(); },
   };
 
   return {

@@ -3,7 +3,7 @@ import { TetrisGame } from '../engine/game';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 import { getCells } from '../engine/piece';
 import { applySkill, resetSlow } from '../engine/items';
-import { SoloRun, type SkillId } from '../engine/run';
+import { SoloRun, stackHeight, type SkillId, type PerkChoice, type PerkId } from '../engine/run';
 import { KEYMAP_1P } from '../input/keymap';
 import { InputController } from '../input/InputController';
 import { PixiStage } from './PixiStage';
@@ -56,10 +56,19 @@ export interface TetrisHandle {
   restart(): void;
 }
 
-/** 掛載並啟動單人俄羅斯方塊到指定 canvas。onEnd 在 top-out（game over）時呼叫一次。 */
+/**
+ * 掛載並啟動單人俄羅斯方塊到指定 canvas。onEnd 在 top-out（game over）時呼叫一次。
+ * onPerkChoices：升級三選一（main.ts 不碰 DOM，沿用 onEnd 的回呼模式）——
+ * 呼叫端顯示卡片、選定後呼叫 pick(id) 恢復模擬。
+ */
 export async function startTetris(
   canvas: HTMLCanvasElement,
-  opts: { onEnd?: () => void; skinId?: string; skill?: SkillId | null } = {},
+  opts: {
+    onEnd?: () => void;
+    skinId?: string;
+    skill?: SkillId | null;
+    onPerkChoices?: (choices: PerkChoice[], pick: (id: PerkId) => void) => void;
+  } = {},
 ): Promise<TetrisHandle> {
   const stage = await PixiStage.create(canvas);
   // 等級守門在 UI 層（T4）做；渲染層信任呼叫端、只負責套用皮膚。
@@ -120,6 +129,33 @@ export async function startTetris(
   const sound = new SoundManager();
   let paused = false;
   let gameOverShown = false;
+  let perkPending = false; // 三選一覆蓋層開啟中（凍結模擬；ESC 互斥由 UI 層守）
+
+  /**
+   * 升級（或 e2e 鉤子）→ SOLO 三選一：凍結模擬、把卡片與 pick 回呼交給 UI 層。
+   * ai 模式 run.onLevelUp() 回 null → 安全 no-op；topout/result 後不出卡。
+   */
+  function offerPerks(): void {
+    if (perkPending || gameOverShown || game.getState().status !== 'playing') return;
+    const onPerkChoices = opts.onPerkChoices;
+    if (!onPerkChoices) return;
+    const choices = run.onLevelUp();
+    if (!choices || choices.length === 0) return;
+    perkPending = true;
+    paused = true; // 與 handle.pause() 同效：tick 凍結模擬
+    onPerkChoices(choices, (id) => {
+      if (!perkPending) return; // restart 後的殘留回呼不得復跑舊局
+      perkPending = false;
+      run.pickPerk(id);
+      // 倖存者被動：升級抽卡時盤面高度 >15 → 清最底 1 行
+      if (run.survivorTriggered(stackHeight(game.getState().board))) {
+        game.clearBottomRows(1);
+        fx.popup('SURVIVOR!', 0x4dff88, true);
+        sound.lineClear(1, true);
+      }
+      paused = false;
+    });
+  }
 
   /** KeyV：能量滿時發動帶入的技能（slow 的倒數計時走 tick dt，暫停相容）。 */
   function activateSkill(): void {
@@ -230,6 +266,7 @@ export async function startTetris(
       fx.popup(`LEVEL ${state.level}`, 0x36e6ff, true);
       stage.shake(6);
       sound.levelUp();
+      offerPerks(); // SOLO roguelite 三選一（暫停時 tick 不跑 → 與 ESC 選單天然互斥）
     }
     if (state.status === 'topout' && !gameOverShown) {
       gameOverShown = true;
@@ -256,6 +293,7 @@ export async function startTetris(
       lastLevel = game.getState().level;
       gameOverShown = false;
       paused = false;
+      perkPending = false;
     },
     destroy() {
       stage.app.renderer.off('resize', onResize);
@@ -271,6 +309,8 @@ export async function startTetris(
     get game() { return game; },
     get run() { return run; },
     handle, stage, fx,
+    /** e2e 鉤子：直接走與升級相同的 perk 流程（消 10 行太慢）。 */
+    triggerLevelUp() { offerPerks(); },
   };
   return handle;
 }
