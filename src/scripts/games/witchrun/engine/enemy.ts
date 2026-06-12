@@ -55,6 +55,7 @@ export function stepEnemy(e: Enemy, dtMs: number, target: { px: number; py: numb
     e.x += d.speed * dt; e.y += SWOOP_VED * dt;
   }
 
+  // 刻意不做 lag 補發：game.ts 的 STEP_CAP_MS(100) < 最短 fireIntervalMs，單 tick 至多一輪
   e.fireCdMs -= dtMs;
   if (e.fireCdMs > 0) return [];
   e.fireCdMs = d.fireIntervalMs;

@@ -40,10 +40,12 @@ export function spiral(o: { x: number; y: number; tMs: number; armN: number; spe
 
 /** 亡鐘鐘波：完整圓環挖出一個缺口（玩家從缺口穿越）。 */
 export function bellWave(o: { x: number; y: number; n: number; speed: number; gapAt: number; gapWidth: number }): SpawnSpec[] {
+  // gapAt 可能來自 aim±隨機偏移而超出 [-π, π)；不正規化會讓環狀距離算出負值
+  const gapAt = ((o.gapAt % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
   const out: SpawnSpec[] = [];
   for (let i = 0; i < o.n; i++) {
     const ang = (i / o.n) * 2 * Math.PI - Math.PI; // [-π, π)
-    let d = Math.abs(ang - o.gapAt);
+    let d = Math.abs(ang - gapAt);
     d = Math.min(d, 2 * Math.PI - d);
     if (d < o.gapWidth / 2) continue;
     out.push(at(o.x, o.y, ang, o.speed, 'bell'));

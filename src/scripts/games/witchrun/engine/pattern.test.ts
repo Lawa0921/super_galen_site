@@ -65,4 +65,11 @@ describe('pattern', () => {
     expect(nearGapCenter).toBe(false);
     expect(justOutside).toBe(true);
   });
+
+  it('bellWave：gapAt 超出 [-π,π) 也能正確開缺口（迴歸：未正規化的負距離 bug）', () => {
+    const n = 36, gapWidth = Math.PI / 6;
+    const wrapped = bellWave({ x: 0, y: 0, n, speed: SPEED, gapAt: Math.PI + Math.PI / 6, gapWidth });
+    const canonical = bellWave({ x: 0, y: 0, n, speed: SPEED, gapAt: -Math.PI + Math.PI / 6, gapWidth });
+    expect(wrapped.length).toBe(canonical.length); // 等價角度應產生相同結果
+  });
 });

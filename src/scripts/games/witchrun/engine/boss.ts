@@ -120,6 +120,9 @@ export class BossRunner {
         const gapAt = aim + (this.rng() - 0.5) * (Math.PI / 3);
         return bellWave({ x, y, n: 40, speed: 120, gapAt, gapWidth: Math.PI / 5 });
       }
+      default:
+        id satisfies never;
+        return [];
     }
   }
 }

@@ -44,6 +44,14 @@ describe('boss', () => {
     expect(r.state.hp).toBe(0);
   });
 
+  it('切 phase 後攻擊計時器依新 phase everyMs 重置', () => {
+    const r = new BossRunner('gargoyle', createRng(1));
+    r.step(1599, TARGET); // phase0 首攻 everyMs=1600，尚未發射
+    const def = BOSS_DEFS.gargoyle;
+    r.damage(def.hp - Math.floor(def.hp * def.phases[1].hpPct) + 1); // 切到 phase1
+    expect(r.step(1, TARGET)).toHaveLength(0); // 新計時器重新起算，不應立即發射
+  });
+
   it('deadbell 發射 bellWave 時 tolls 遞增', () => {
     const r = new BossRunner('deadbell', createRng(1));
     for (let i = 0; i < 400; i++) r.step(50, TARGET); // 20 秒

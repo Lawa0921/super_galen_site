@@ -4,7 +4,7 @@ import { ENEMY_DEFS, makeEnemy, stepEnemy } from './enemy';
 import { FIELD_H } from './constants';
 
 describe('enemy', () => {
-  it('9 種敵兵都有定義（hp/score/速度/開火參數）', () => {
+  it('9 種敵兵都有定義（hp/速度/開火參數）', () => {
     const kinds = ['bat', 'wisp', 'fairy', 'tome', 'blade', 'gear', 'angel', 'moth', 'chime'] as const;
     for (const k of kinds) {
       const d = ENEMY_DEFS[k];
