@@ -207,7 +207,7 @@ describe('WitchGame', () => {
     const g = new WitchGame({ seed: 1 });
     const allEvents: WitchEvent[] = [];
     // 持續 runCollect 直到 badEnd（12 響後就不再 continueRun）
-    outer: for (let t = 0; t < BELL_TOLL_INTERVAL_MS * BELL_TOLL_MAX + 2000; t += 100) {
+    outer: for (let t = 0; t < BELL_TOLL_INTERVAL_MS * (BELL_TOLL_MAX + 2); t += 100) {
       g.step(100);
       const evts = g.drainEvents();
       allEvents.push(...evts);
@@ -218,6 +218,22 @@ describe('WitchGame', () => {
     }
     expect(allEvents.some((e) => e.kind === 'badEnd')).toBe(true);
     expect(allEvents.some((e) => e.kind === 'gameover')).toBe(true);
+  });
+
+  it('surge 期間敵彈位移放大 BELL_SURGE_MULT 倍（接線驗證）', () => {
+    const g = new WitchGame({ seed: 1 });
+    // 推到剛好鐘響（draft/gameover 會暫停計時，所以用 runCollect 維持 playing）
+    runCollect(g, BELL_TOLL_INTERVAL_MS + 200);
+    expect(g.getState().bellTolls).toBe(1);
+    if (g.getState().status === 'gameover') g.continueRun(); // 確保 step 不會早退
+    // 清空場上彈，注入一顆已知速度的彈，量測一步位移
+    const s = g.getState();
+    for (const b of s.enemyBullets) b.active = false;
+    const pool = g.getState().enemyBullets;
+    const b = pool[0];
+    Object.assign(b, { x: 100, y: 100, vx: 0, vy: 100, ax: 0, ay: 0, turnRate: 0, bounces: 0, grazed: false, active: true });
+    g.step(100); // surge 仍在 5 秒窗口內
+    expect(b.y).toBeCloseTo(100 + 100 * 0.1 * BELL_SURGE_MULT, 1);
   });
 
   it('continueRun 不重置鐘響計數', () => {

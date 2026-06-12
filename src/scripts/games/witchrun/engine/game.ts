@@ -191,7 +191,7 @@ export class WitchGame {
     }
     if (sweep.hit) this.onPlayerHit();
 
-    // 5.5) Boss phase 切換後召喚小兵 + 清彈轉星屑（在 resolvePlayerHits 後，damage() 設 pendingSummon）
+    // 6.5) Boss phase 切換後召喚小兵 + 清彈轉星屑（damage() 設 pendingSummon；本幀殘彈已判定完才轉幣）
     if (this.boss?.state.alive && this.boss.pendingSummon) {
       this.boss.consumeSummon();
       this.cancelBulletsToCoins();
@@ -341,10 +341,9 @@ export class WitchGame {
 
   private onBossDefeated(): void {
     const id = this.boss!.state.id;
-    this.cancelBulletsToCoins();  // 清彈轉星屑後 clearAll
+    this.cancelBulletsToCoins();  // 已將全部敵彈設 inactive（前 40 顆轉金幣）
     this.boss = null;
     this.bossSpawned = false;
-    this.enemyBullets.clearAll();
     this.score += SCORE.bossBonus;
     this.events.push({ kind: 'bossDefeat', id });
     if (this.stage === 4) {

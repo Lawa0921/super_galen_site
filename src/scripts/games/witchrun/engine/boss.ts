@@ -104,11 +104,11 @@ export class BossRunner {
 
     // 衝刺邏輯
     if (this.dashMs > 0) {
-      // easeOut lerp：進度 t from 0→1
-      const t = 1 - this.dashMs / BOSS_DASH_DUR_MS;
+      // easeOut lerp：先扣時間再算進度，首幀即有位移（不卡 50ms）
+      this.dashMs -= dtMs;
+      const t = 1 - Math.max(0, this.dashMs) / BOSS_DASH_DUR_MS;
       const ease = 1 - Math.pow(1 - t, 3); // easeOut cubic
       this.state.x = this.dashFromX + (this.dashToX - this.dashFromX) * ease;
-      this.dashMs -= dtMs;
       if (this.dashMs <= 0) {
         this.dashMs = 0;
         this.state.x = this.dashToX;
