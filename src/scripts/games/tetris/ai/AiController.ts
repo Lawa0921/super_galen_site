@@ -3,12 +3,16 @@ import type { InputAction } from '../engine/game';
 import { BOARD_WIDTH } from '../engine/constants';
 import { decide, dropPlacement, type Placement } from './bot';
 
-export type Difficulty = 'easy' | 'normal' | 'hard';
+export type Difficulty = 'easy' | 'normal' | 'hard' | 'insane';
 
-/** 每塊的思考延遲（毫秒）——難度主要分層 */
-const THINK_MS: Record<Difficulty, number> = { easy: 420, normal: 200, hard: 80 };
-/** 失誤率：以此機率把目標落點偏移一欄（hard = 0，真的強） */
-const MISTAKE_RATE: Record<Difficulty, number> = { easy: 0.18, normal: 0.07, hard: 0 };
+/**
+ * 每塊的思考延遲（毫秒）——難度主要分層。
+ * 重平衡（玩家回饋：舊 hard 80ms+零失誤 ≈ 3 行/秒，人類不可能贏）：
+ * easy/normal/hard 全面放慢到人類節奏，原 hard 參數整組保留為 insane 神級超級模式。
+ */
+const THINK_MS: Record<Difficulty, number> = { easy: 900, normal: 650, hard: 480, insane: 80 };
+/** 失誤率：以此機率把目標落點偏移一欄（insane = 0，真的神） */
+const MISTAKE_RATE: Record<Difficulty, number> = { easy: 0.20, normal: 0.10, hard: 0.04, insane: 0 };
 
 /**
  * AI 控制器：每塊先「思考」THINK_MS，再一口氣執行決策序列

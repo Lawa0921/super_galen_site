@@ -6,6 +6,9 @@ test.describe('Tetris 主選單三分頁', () => {
     await page.goto('/games/tetris');
     await expect(page.locator('.mm-tab', { hasText: 'PLAY' })).toHaveClass(/is-active/);
     await expect(page.locator('[data-mode="solo"]')).toBeVisible();
+    // AI 難度四級：INSANE 超級模式按鈕（紫紅警示）也要在選單上
+    await expect(page.locator('[data-mode="ai"][data-diff="insane"]')).toBeVisible();
+    await expect(page.locator('[data-mode="ai"][data-diff="insane"]')).toContainText('INSANE');
   });
 
   test('切到 LEADERBOARD 顯示清單容器（空狀態或資料）', async ({ page }) => {

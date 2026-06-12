@@ -31,4 +31,22 @@ test.describe('Dungeon Arcade — vs AI', () => {
       )
       .toBeGreaterThan(0);
   });
+
+  test('deep link ?diff=insane starts the god-mode AI (80ms think delay)', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
+
+    await page.goto('/games/tetris?mode=ai&diff=insane');
+    await expect(page.locator('#main-menu')).toHaveCount(0);
+    await expect(page.locator('#tetris-hint')).toContainText('INSANE');
+    await page.waitForFunction(
+      () => Boolean((window as unknown as { __tetrisDebug?: { match?: unknown } }).__tetrisDebug?.match),
+      undefined,
+      { timeout: 20000 },
+    );
+    // insane = 原 hard 神級參數（80ms 思考延遲、零失誤）
+    const interval = await page.evaluate(
+      () => ((window as unknown as { __tetrisDebug: { ai: unknown } }).__tetrisDebug.ai as { intervalMs: number }).intervalMs,
+    );
+    expect(interval).toBe(80);
+  });
 });
