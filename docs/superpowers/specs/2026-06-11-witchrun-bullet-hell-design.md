@@ -155,3 +155,74 @@ src/scripts/games/witchrun/
 - 多角色選擇（v1 只有 Mira；其他 bomber 角色留作未來擴充）
 - 雙人協力、難度選擇（v1 單一難度，曲線靠關卡設計）
 - 重播系統
+
+---
+
+# v2 玩法擴充（2026-06-12 核可：四方向全做）
+
+v1 驗收回饋：玩法單調——道中敵只有 3 種開火型態、缺乏節奏變化與中期目標。
+v2 以四個方向擴充，全部建立在既有引擎介面上。
+
+## 10. 彈幕語言大改版（每種敵人獨特彈幕）
+
+`enemy.ts` 的 `fire` 型態從 3 種擴充為 9 種，一敵一語言：
+
+| 敵人 | fire | 行為 |
+|---|---|---|
+| bat | `burst3` | 同方向三發不同速（160/200/240）形成彈鏈 |
+| wisp | `drift` | 慢速瞄準彈，帶隨機橫向加速度（漂浮感） |
+| fairy | `fan5` | 五向星彈（窄扇 ×5、慢速） |
+| tome | `spinRing` | 旋轉圓陣：ring8 的 offset 隨 `e.t` 遞增，連射成螺旋網 |
+| blade | `boomerang` | 紙刃迴旋鏢：vy>0 出發、ay<0 減速折返（出場即回收） |
+| gear | `bounce` | 反彈彈：碰左右牆反射一次（子彈新增 `bounces` 欄位） |
+| angel | `beam` | 兩段式：先發 telegraph 事件（畫預警線 700ms），下次開火沿該線發高速彈柱 |
+| moth | `dustCloud` | 鱗粉彈雲：自身周圍 10 顆極慢速亂向彈（佔位封鎖） |
+| chime | `waveRing` | 音波環 + **死亡音爆**：被擊破時從屍體位置放 ring8（`deathBurst` 旗標） |
+
+- `bullet.ts`：`EnemyBullet` 增加 `bounces`（左右牆反射）欄位；step 處理反射。
+- `WitchEvent` 增加 `{ kind: 'telegraph'; x1; y1; x2; y2; durMs }`，渲染層在 fxLayer 畫漸隱預警線。
+
+## 11. 十二響時限 + Boss 強化
+
+**亡鐘十二響（全局時間壓力）**：
+- 開局起每 75 秒全局鐘響一次（`bellToll` 事件改為全局，count 全局累計）。
+- 鐘響後 5 秒內全場敵彈速度 ×1.15（`BulletPool.step` 接受 speedMult 參數）。
+- 敲滿 12 響仍未通關 → 強制 Bad End（`badEnd` 事件 + gameover，頁面顯示「THE BELL TOLLS TWELVE」）。
+- HUD 顯示 `🔔 n/12`。deadbell Boss 自身的鐘波改用獨立計數（不佔全局 12 響）。
+
+**Boss 強化**：
+- **衝刺**：Boss 每 6 秒朝玩家 x 座標水平衝刺（lerp 0.6s）。
+- **召喚**：phase 切換時召喚 2 隻本關道中敵。
+- **清彈轉星屑**：phase 切換與擊破時，場上敵彈全部轉換為金幣（上限 40 顆，cancel 轉分爽點）。
+
+## 12. 道具 + 中型機
+
+**道具**（新實體 `Drop { x, y, vy, kind: 'power' | 'bomb' }`）：
+- 每擊破 7 隻敵人掉 1 個 P 點（火力 +1，取代 v1 金幣升火力）；金幣回歸純計分。
+- 中型機與 Boss 擊破必掉 B（爆炎 +1）。
+- 拾取半徑與金幣同（受磁石加成）。
+
+**中型機（elite）**：
+- `WaveEntry` 增加 `elite?: true`；每關道中約 50 秒處插入一隻。
+- elite = 該關代表敵兵的強化版：hp ×10、體型 ×1.6（渲染 scale）、開火間隔 ×0.6。
+- 擊破：5 金幣 + 1 P + 1 B、強震屏、`eliteKill` 事件。
+
+## 13. 遺物深化（15 種 + 稀有度）
+
+新增 6 種，全池 15 種，分 `common`（9 種既有）/ `rare`（6 種新增）：
+
+| 遺物（rare） | 效果 |
+|---|---|
+| 貫通魔彈 | 自機彈可穿透 1 個敵人（`pierce` 欄位） |
+| 追蹤使魔 | 影子使魔的彈自動瞄準最近敵人（需先有影子使魔則升級之，否則直接給追蹤版） |
+| 時停懷錶 | OVERDRIVE 引爆瞬間全場敵彈凍結 1.5 秒 |
+| 鐘擺護符 | 爆炎術無敵時間 +1.2 秒 |
+| 星之碎片 | 每 5 次擦彈額外噴 1 金幣 |
+| 血月之眼 | 10% 機率暴擊（傷害 ×2） |
+
+- 抽選：每個 slot 25% 機率出 rare；UI 上 rare 卡框金色。
+- `Modifiers` 擴充：`pierce: boolean`、`homingFamiliar: boolean`、`freezeOnOverdrive: boolean`、`infernoInvulnBonus: number`、`grazeCoinEvery: number`（0=無）、`critChance: number`。
+
+## 14. v2 範圍外（仍延後）
+
+- 線上排行榜、多角色、雙人、難度選擇、重播（同 v1 清單）
