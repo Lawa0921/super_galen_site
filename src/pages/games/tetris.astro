@@ -49,6 +49,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
             <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
             <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
             <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
+            <button class="ms-btn ms-insane" data-mode="ai" data-diff="insane" title="神級 AI：人類無法戰勝">vs AI · INSANE<span class="ms-sub">人類無法戰勝</span></button>
             <button class="ms-btn ms-online" data-mode="online">vs ONLINE</button>
           </div>
           <button class="handling-open" id="handling-open" type="button" aria-expanded="false" aria-controls="handling-panel">HANDLING 手感設定</button>
@@ -318,6 +319,24 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
   .ms-solo:hover { box-shadow: 0 0 22px rgba(77, 255, 136, 0.75); }
   .ms-hard { border-color: rgba(255, 77, 109, 0.7); box-shadow: 0 0 12px rgba(255, 77, 109, 0.3); }
   .ms-hard:hover { box-shadow: 0 0 22px rgba(255, 77, 109, 0.8); }
+  /* INSANE：神級超級模式（原 hard 參數）——紫紅警示霓虹 + 副標警語 */
+  .ms-insane {
+    color: #ffd2f2;
+    border-color: rgba(255, 45, 168, 0.8);
+    box-shadow: 0 0 12px rgba(255, 45, 168, 0.35), inset 0 0 18px rgba(168, 32, 255, 0.18);
+  }
+  .ms-insane:hover {
+    color: #ffeafa;
+    box-shadow: 0 0 26px rgba(255, 45, 168, 0.85), inset 0 0 22px rgba(168, 32, 255, 0.3);
+  }
+  .ms-sub {
+    display: block;
+    margin-top: 6px;
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: #ff5ec4;
+    text-shadow: 0 0 8px rgba(255, 45, 168, 0.6);
+  }
   .ms-online { border-color: rgba(193, 92, 255, 0.7); box-shadow: 0 0 12px rgba(193, 92, 255, 0.3); }
   .ms-online:hover { box-shadow: 0 0 22px rgba(193, 92, 255, 0.8); }
   .ms-wallet { border-color: rgba(255, 210, 63, 0.7); box-shadow: 0 0 12px rgba(255, 210, 63, 0.3); font-size: 11px; }
@@ -966,7 +985,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
   import { startQueue, type MatchedInfo, type QueueHandle } from '@scripts/games/tetris/net/queueClient';
   import { DEFAULT_RATING } from '@scripts/games/tetris/net/elo';
 
-  type Diff = 'easy' | 'normal' | 'hard';
+  type Diff = 'easy' | 'normal' | 'hard' | 'insane';
   const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · MUTE M';
   const ONLINE_HINT = 'ONLINE · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC MENU · MUTE M';
 
@@ -1231,7 +1250,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
     if (started || !canvas) return;
     started = true;
     mainMenu?.remove();
-    const diff = (['easy', 'normal', 'hard'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
+    const diff = (['easy', 'normal', 'hard', 'insane'].includes(diffRaw ?? '') ? diffRaw : 'normal') as Diff;
     setHint(`vs AI [${diff.toUpperCase()}] · MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT${skill ? ' · SKILL V' : ''} · ESC PAUSE · M MUTE`);
     startAi(canvas, diff, { onEnd: (w) => showResult(w === 'A' ? 'YOU WIN' : 'AI WINS'), skinId: getSelectedSkin(wallet?.address), skill })
       .then((h) => { gameHandle = h; gameRunning = true; pausable = true; })
