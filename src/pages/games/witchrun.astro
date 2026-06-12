@@ -1,0 +1,156 @@
+---
+/**
+ * /games/witchrun — Dungeon Arcade: WITCH RUN
+ * Mira 主演縱向彈幕。全螢幕 PixiJS，頁底腳本 code-split 載入。
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+
+const lang: Language = defaultLang;
+---
+
+<BaseLayout title="Dungeon Arcade — Witch Run" description="像素縱向彈幕：詛咒鐘塔" lang={lang}>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+
+  <main class="witch">
+    <canvas id="witch-canvas"></canvas>
+
+    <!-- 標題畫面 -->
+    <div class="witch-title" id="witch-title">
+      <a class="witch-home" href="/games">← ARCADE</a>
+      <h1 class="witch-logo">WITCH RUN</h1>
+      <p class="witch-tagline">THE CURSED BELLTOWER</p>
+      <p class="witch-story">月蝕之夜，亡鐘自鳴。爆彈魔女 Mira 騎上掃帚——在鐘聲敲滿十二響前，飛抵塔頂封印它。</p>
+      <button class="witch-start" id="witch-start" type="button">START</button>
+      <p class="witch-keys">MOVE 方向鍵/WASD · FOCUS Shift · BOMB X · OVERDRIVE Z</p>
+    </div>
+
+    <!-- 遺物三選一 -->
+    <div class="witch-overlay" id="witch-draft" hidden>
+      <h2 class="overlay-heading">CHOOSE A RELIC</h2>
+      <div class="draft-row">
+        <button class="relic-card" type="button" data-relic-slot="0">
+          <span class="relic-name"></span><span class="relic-desc"></span>
+        </button>
+        <button class="relic-card" type="button" data-relic-slot="1">
+          <span class="relic-name"></span><span class="relic-desc"></span>
+        </button>
+        <button class="relic-card" type="button" data-relic-slot="2">
+          <span class="relic-name"></span><span class="relic-desc"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Over -->
+    <div class="witch-overlay" id="witch-over" hidden>
+      <h2 class="overlay-heading">GAME OVER</h2>
+      <p class="overlay-stats" id="witch-over-stats"></p>
+      <button class="witch-start" id="witch-continue" type="button">CONTINUE</button>
+      <a class="overlay-link" href="/games">BACK TO ARCADE</a>
+    </div>
+
+    <!-- 通關 -->
+    <div class="witch-overlay" id="witch-clear" hidden>
+      <h2 class="overlay-heading">THE BELL IS SEALED</h2>
+      <p class="overlay-stats" id="witch-clear-stats"></p>
+      <a class="overlay-link" href="/games">BACK TO ARCADE</a>
+    </div>
+
+    <!-- 觸控按鈕 -->
+    <div class="witch-touch" aria-hidden="true">
+      <button class="touch-btn" id="witch-btn-bomb" type="button">BOMB</button>
+      <button class="touch-btn touch-btn--od" id="witch-btn-od" type="button">OD</button>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .witch {
+    position: fixed;
+    inset: 0;
+    background: #0a0716;
+    font-family: 'Press Start 2P', Consolas, monospace;
+  }
+  #witch-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .witch-title {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(255, 90, 77, 0.12), transparent 55%),
+      linear-gradient(180deg, rgba(10, 7, 22, 0.9), rgba(10, 7, 22, 0.97));
+    padding: 24px; text-align: center;
+  }
+  .witch-home { position: absolute; top: 18px; left: 20px; font-size: 11px; color: #6fa8d8; text-decoration: none; }
+  .witch-logo {
+    margin: 0; font-size: clamp(24px, 6vw, 52px); letter-spacing: 6px; color: #ff5a4d;
+    text-shadow: 0 0 14px rgba(255, 90, 77, 0.8), 0 0 40px rgba(255, 90, 77, 0.4);
+  }
+  .witch-tagline { margin: 0; font-size: 11px; letter-spacing: 4px; color: #9a8ac0; }
+  .witch-story { max-width: 480px; font-size: 10px; line-height: 2; color: #c8bce0; }
+  .witch-start {
+    font-family: inherit; font-size: 14px; letter-spacing: 3px; color: #0a0716;
+    background: #ff5a4d; border: none; border-radius: 8px; padding: 14px 38px; cursor: pointer;
+    box-shadow: 0 0 18px rgba(255, 90, 77, 0.6);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .witch-start:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255, 90, 77, 0.9); }
+  .witch-keys { font-size: 8px; letter-spacing: 1px; color: #6a5a9a; }
+
+  .witch-overlay {
+    position: absolute; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    background: rgba(10, 7, 22, 0.88); padding: 24px; text-align: center;
+  }
+  .witch-overlay[hidden] { display: none; }
+  .overlay-heading { margin: 0; font-size: clamp(16px, 4vw, 28px); letter-spacing: 4px; color: #ffd23f; text-shadow: 0 0 12px rgba(255, 210, 63, 0.7); }
+  .overlay-stats { font-size: 11px; color: #eafdff; letter-spacing: 2px; }
+  .overlay-link { font-size: 10px; color: #6fa8d8; text-decoration: none; letter-spacing: 2px; }
+
+  .draft-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .relic-card {
+    width: 168px; min-height: 150px; display: flex; flex-direction: column; gap: 12px;
+    align-items: center; justify-content: center; padding: 14px;
+    font-family: inherit; cursor: pointer;
+    background: rgba(26, 16, 48, 0.92); border: 2px solid rgba(154, 107, 255, 0.65); border-radius: 10px;
+    box-shadow: 0 0 14px rgba(154, 107, 255, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .relic-card:hover { transform: translateY(-4px); box-shadow: 0 0 26px rgba(154, 107, 255, 0.7); }
+  .relic-name { font-size: 12px; color: #d0baff; letter-spacing: 1px; }
+  .relic-desc { font-size: 9px; line-height: 1.8; color: #9a8ac0; }
+
+  .witch-touch { position: absolute; right: 14px; bottom: 18px; z-index: 5; display: none; gap: 12px; }
+  .touch-btn {
+    width: 72px; height: 72px; border-radius: 50%; font-family: inherit; font-size: 10px;
+    color: #ffd0c8; background: rgba(255, 90, 77, 0.25); border: 2px solid rgba(255, 90, 77, 0.7);
+  }
+  .touch-btn--od { color: #d0f4ff; background: rgba(54, 230, 255, 0.2); border-color: rgba(54, 230, 255, 0.7); }
+  @media (pointer: coarse) { .witch-touch { display: flex; } }
+</style>
+
+<script>
+  const canvas = document.getElementById('witch-canvas') as HTMLCanvasElement | null;
+  const titleEl = document.getElementById('witch-title');
+  const startBtn = document.getElementById('witch-start');
+  let started = false;
+
+  async function start(): Promise<void> {
+    if (started || !canvas) return;
+    started = true;
+    titleEl?.remove();
+    const { startWitchrun } = await import('@scripts/games/witchrun/render/main');
+    await startWitchrun(canvas).catch((err: unknown) => console.error('[witchrun] start failed', err));
+  }
+
+  startBtn?.addEventListener('click', () => void start());
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (started) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void start(); }
+  });
+
+  // e2e 自動開局
+  if (new URLSearchParams(location.search).get('autostart') === '1') void start();
+</script>
