@@ -466,15 +466,28 @@ describe('WitchGame', () => {
     const bullets = g.getState().playerBullets;
     const b = bullets.find((b) => !b.active)!;
     Object.assign(b, { x: 240, y: 100, vx: 0, vy: 0, dmg: 1, active: true, split: false, pierceLeft: 1 });
-    g.step(16); // resolvePlayerHits 被執行
-    // 彈命中第一敵後 pierceLeft 應被扣到 0，仍 active
-    // 再命中第二敵後回收
-    // 因為兩敵同位置，一幀內可連續命中
-    // 最終：彈 inactive，兩敵至少一個被打到
+    g.step(16); // resolvePlayerHits：同 tick 穿第一敵、命中第二敵後回收
     const fst = enemies.find((e) => e.id === 9001)!;
     const snd = enemies.find((e) => e.id === 9002)!;
-    // 至少一個敵受到傷害
-    expect(fst.hp < 999 || snd.hp < 999).toBe(true);
+    expect(fst.hp).toBeLessThan(999); // 穿一
+    expect(snd.hp).toBeLessThan(999); // 過二
+    expect(b.active).toBe(false);     // 第二敵後回收
+  });
+
+  it('F4 pierce：穿透後不會下一 tick 重複命中同一隻高血敵（迴歸：double-tap）', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugPickRelic('pierce');
+    const enemies = g.getState().enemies;
+    enemies.push({
+      id: 9003, kind: 'bat', x: 240, y: 100, hp: 999, alive: true,
+      path: 'descend', t: 0, baseX: 240, fireCdMs: 9999,
+    } as import('./types').Enemy);
+    const b = g.getState().playerBullets.find((b) => !b.active)!;
+    Object.assign(b, { x: 240, y: 110, vx: 0, vy: -720, dmg: 1, active: true, split: false, pierceLeft: 1 });
+    g.step(16); // 命中並穿透（被推出判定圈）
+    g.step(16); // 不應再命中同一隻
+    const e = enemies.find((e) => e.id === 9003)!;
+    expect(999 - e.hp).toBeLessThanOrEqual(1); // 只吃一次傷害
   });
 
   it('F4 pierce：命中 Boss 不穿透（立即回收）', () => {

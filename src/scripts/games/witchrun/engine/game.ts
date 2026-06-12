@@ -311,6 +311,10 @@ export class WitchGame {
             b.pierceLeft--;
             this.damageEnemy(e, dmg);
             this.maybeSplit(b);
+            // 推出該敵判定圈，避免下一 tick 對同一隻（高 hp/elite）重複命中
+            const spd = Math.hypot(b.vx, b.vy) || 1;
+            b.x += (b.vx / spd) * (ENEMY_R + 4);
+            b.y += (b.vy / spd) * (ENEMY_R + 4);
             // 繼續外層 for 尋找下一個敵（不 break）
           } else {
             // 不穿透：命中後回收
