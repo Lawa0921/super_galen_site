@@ -6,6 +6,7 @@ import type { WitchEvent } from './types';
 import {
   START_LIVES, START_BOMBS, OVERDRIVE_MAX,
   BELL_TOLL_INTERVAL_MS, BELL_SURGE_MULT, BELL_TOLL_MAX, CANCEL_COIN_CAP,
+  POWER_DROP_EVERY, BOMB_CAP,
 } from './constants';
 
 /** 以固定小步長推進，模擬遊戲時間。 */
@@ -331,5 +332,120 @@ describe('WitchGame', () => {
     if (bulletsBefore > 0) {
       expect(g.getState().coins.length).toBeGreaterThan(coinsBefore);
     }
+  });
+
+  // ---- F3.4 道具掉落 + 中型機 elite ----
+
+  /** 直接操控遊戲內部：讓 N 隻敵人被自機彈擊破（利用 debugSkipToBoss 前的道中敵）。
+   *  做法：快速生成 N 隻 wisp（hp=1）在玩家正上方，每隻都被玩家彈一擊。
+   *  為確保擊殺，直接 damageEnemy（via 內建測試掛鉤）——但 game.ts 沒有公開此方法。
+   *  改用替代方案：在靠近玩家的位置生成 wisp，自機火力足以擊破。
+   *  最簡方案：pushDebugEnemy + 推進足夠 tick 等子彈打到。
+   *
+   *  實際上最簡方案是：暴露一個 debugKillEnemy(n) 方法。
+   *  但不改 API 的話，用 debugSkipToBoss 後的方式不行——道中敵已清空。
+   *
+   *  最終選擇：用 debugSpawnEnemy 注入低血量敵人在玩家彈道上，推進幾 tick 等擊殺。
+   *  此掛鉤不存在——因此改用較小侵入性的方案：直接讀取 enemies 並手動扣血到 0，
+   *  然後呼叫一個 tick（game.ts 內部 damageEnemy 才會觸發殺敵邏輯）。
+   *  但 enemies 是直接引用……
+   *
+   *  最簡實用：對 getState().enemies 裡的敵人 hp 設 0，step(16) 後 damageEnemy 不會再跑——
+   *  hp<=0 要在 resolvePlayerHits 才觸發。
+   *
+   *  結論：增加 debugKillEnemies(n) 到 WitchGame，讓測試可靠地驅動 killCount。
+   */
+
+  it('初始狀態 drops 為空陣列', () => {
+    const g = new WitchGame({ seed: 1 });
+    expect(g.getState().drops).toHaveLength(0);
+  });
+
+  it(`每 ${POWER_DROP_EVERY} 次擊殺產生 P 道具掉落`, () => {
+    const g = new WitchGame({ seed: 1 });
+    // 擊殺 POWER_DROP_EVERY 隻後應有 1 個 P drop
+    g.debugKillEnemies(POWER_DROP_EVERY);
+    expect(g.getState().drops.filter((d) => d.kind === 'power' && d.active)).toHaveLength(1);
+  });
+
+  it('P 道具拾取後 power 升一級', () => {
+    const g = new WitchGame({ seed: 1 });
+    const powerBefore = g.getState().player.power;
+    g.debugKillEnemies(POWER_DROP_EVERY);
+    // 強制把 drop 移到玩家位置再 step
+    const drop = g.getState().drops.find((d) => d.active)!;
+    const px = g.getState().player.x;
+    const py = g.getState().player.y;
+    drop.x = px;
+    drop.y = py;
+    g.step(16);
+    expect(g.getState().player.power).toBe(Math.min(4, powerBefore + 1));
+  });
+
+  it('elite 擊破掉 P + B drop 各一、額外 +5 金幣計分、發 eliteKill 事件', () => {
+    const g = new WitchGame({ seed: 1 });
+    const scoreBefore = g.getState().score;
+    g.drainEvents();
+    // 生成一隻 elite 並擊殺
+    g.debugSpawnElite('fairy', 240, 100);
+    g.debugKillElites();
+    const events = g.drainEvents();
+    const state = g.getState();
+    // 有 eliteKill 事件
+    expect(events.some((e) => e.kind === 'eliteKill')).toBe(true);
+    // drops：elite 掉 P + B（killCount 可能同時觸發另一個 P，但至少有一 P 一 B）
+    expect(state.drops.filter((d) => d.kind === 'power' && d.active).length).toBeGreaterThanOrEqual(1);
+    expect(state.drops.filter((d) => d.kind === 'bomb' && d.active).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('B 道具拾取後 bombs +1（上限 BOMB_CAP）', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugSpawnElite('fairy', 240, 100);
+    g.debugKillElites();
+    const bombBefore = g.getState().player.bombs;
+    // 找到 B drop 移到玩家位置
+    const bDrop = g.getState().drops.find((d) => d.kind === 'bomb' && d.active)!;
+    const px = g.getState().player.x;
+    const py = g.getState().player.y;
+    bDrop.x = px;
+    bDrop.y = py;
+    g.step(16);
+    expect(g.getState().player.bombs).toBe(Math.min(BOMB_CAP, bombBefore + 1));
+    // drop event
+    expect(g.drainEvents().some((e) => e.kind === 'drop')).toBe(true);
+  });
+
+  it('Boss 擊破後產生 B drop（位置在 Boss 位置）', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugSkipToBoss();
+    g.step(16);
+    const bossX = g.getState().boss!.x;
+    const bossY = g.getState().boss!.y;
+    g.boss!.damage(999999);
+    g.step(16);
+    const bDrops = g.getState().drops.filter((d) => d.kind === 'bomb' && d.active);
+    expect(bDrops).toHaveLength(1);
+    expect(bDrops[0].x).toBeCloseTo(bossX, 0);
+    expect(bDrops[0].y).toBeCloseTo(bossY, 0);
+  });
+
+  it('continueRun 清空 drops', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugKillEnemies(POWER_DROP_EVERY);
+    expect(g.getState().drops.filter((d) => d.active)).toHaveLength(1);
+    g.debugSetLives(0);
+    g.step(16);
+    g.continueRun();
+    expect(g.getState().drops.filter((d) => d.active)).toHaveLength(0);
+  });
+
+  it('drop 下落後出界（y > FIELD_H + margin）自動回收', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugKillEnemies(POWER_DROP_EVERY);
+    // 把 drop 移到底部附近
+    const drop = g.getState().drops.find((d) => d.active)!;
+    drop.y = 700; // 超過 FIELD_H=640
+    g.step(16);
+    expect(drop.active).toBe(false);
   });
 });

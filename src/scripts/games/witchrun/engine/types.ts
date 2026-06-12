@@ -138,6 +138,7 @@ export type WitchEvent =
   | { kind: 'cleared' }
   | { kind: 'telegraph'; x1: number; y1: number; x2: number; y2: number; durMs: number }
   | { kind: 'eliteKill'; x: number; y: number }
-  | { kind: 'badEnd' };
+  | { kind: 'badEnd' }
+  | { kind: 'drop'; drop: 'power' | 'bomb' };
 
 export type InputAction = 'up' | 'down' | 'left' | 'right' | 'focus' | 'bomb' | 'overdrive';

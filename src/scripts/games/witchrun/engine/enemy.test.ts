@@ -1,7 +1,7 @@
 // enemy.test.ts
 import { describe, it, expect } from 'vitest';
 import { ENEMY_DEFS, makeEnemy, stepEnemy } from './enemy';
-import { FIELD_H } from './constants';
+import { FIELD_H, ELITE_HP_MULT, ELITE_FIRE_CD_MULT } from './constants';
 
 /** 固定種子 RNG（線性同餘，可重現） */
 function makeRng(seed = 42): () => number {
@@ -171,5 +171,27 @@ describe('enemy', () => {
 
   it('chime：deathBurst 旗標存在於 ENEMY_DEFS', () => {
     expect(ENEMY_DEFS.chime.deathBurst).toBe(true);
+  });
+
+  // ---- F3.3 elite 中型機 ----
+
+  it('普通敵兵 hp 等於 ENEMY_DEFS 預設', () => {
+    const e = makeEnemy(1, 'fairy', 240, 0, 'hover');
+    expect(e.hp).toBe(ENEMY_DEFS.fairy.hp);
+  });
+
+  it('elite=true 時 hp × ELITE_HP_MULT', () => {
+    const e = makeEnemy(1, 'fairy', 240, 0, 'hover', true);
+    expect(e.hp).toBe(ENEMY_DEFS.fairy.hp * ELITE_HP_MULT);
+    expect(e.elite).toBe(true);
+  });
+
+  it('elite 開火冷卻用 fireIntervalMs × ELITE_FIRE_CD_MULT', () => {
+    const e = makeEnemy(1, 'fairy', 240, 100, 'hover', true);
+    // 觸發開火：先設冷卻到 0
+    e.fireCdMs = 0;
+    stepEnemy(e, 16, { px: 240, py: 560 }, makeRng());
+    // 重置後的冷卻應是 fireIntervalMs × ELITE_FIRE_CD_MULT
+    expect(e.fireCdMs).toBeCloseTo(ENEMY_DEFS.fairy.fireIntervalMs * ELITE_FIRE_CD_MULT, 0);
   });
 });

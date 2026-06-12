@@ -2,7 +2,7 @@
 import type { Enemy, EnemyKind, PathKind, BulletKind } from './types';
 import type { SpawnSpec } from './bullet';
 import { aimed, fan, ring, burst, boomerang, cloud, beamLine } from './pattern';
-import { FIELD_W } from './constants';
+import { FIELD_W, ELITE_HP_MULT, ELITE_FIRE_CD_MULT } from './constants';
 
 export interface EnemyDef {
   hp: number;
@@ -28,8 +28,12 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
   chime: { hp: 5,  speed: 60,  fireIntervalMs: 2000, firstFireMs: 600,  bulletKind: 'wave', bulletSpeed: 130, fire: 'waveRing', deathBurst: true },
 };
 
-export function makeEnemy(id: number, kind: EnemyKind, x: number, y: number, path: PathKind): Enemy {
-  return { id, kind, x, y, hp: ENEMY_DEFS[kind].hp, alive: true, path, t: 0, baseX: x, fireCdMs: ENEMY_DEFS[kind].firstFireMs };
+export function makeEnemy(id: number, kind: EnemyKind, x: number, y: number, path: PathKind, elite = false): Enemy {
+  const def = ENEMY_DEFS[kind];
+  const hp = elite ? def.hp * ELITE_HP_MULT : def.hp;
+  const e: Enemy = { id, kind, x, y, hp, alive: true, path, t: 0, baseX: x, fireCdMs: def.firstFireMs };
+  if (elite) e.elite = true;
+  return e;
 }
 
 const HOVER_Y = 140;       // hover 停駐高度
@@ -70,7 +74,8 @@ export function stepEnemy(
   // 刻意不做 lag 補發：game.ts 的 STEP_CAP_MS(100) < 最短 fireIntervalMs，單 tick 至多一輪
   e.fireCdMs -= dtMs;
   if (e.fireCdMs > 0) return { spawns: [] };
-  e.fireCdMs = d.fireIntervalMs;
+  // elite 開火間隔縮短（angel beam telegraph 的 700ms 固定值不受影響，在 beam 分支單獨設）
+  e.fireCdMs = e.elite ? d.fireIntervalMs * ELITE_FIRE_CD_MULT : d.fireIntervalMs;
 
   const aim = Math.atan2(target.py - e.y, target.px - e.x);
 

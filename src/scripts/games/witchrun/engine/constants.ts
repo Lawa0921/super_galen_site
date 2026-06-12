@@ -47,7 +47,6 @@ export const COIN_R = 8;
 export const COIN_PICKUP_R = 28;
 export const COIN_MAGNET_R = 120;       // 貪婪磁石拾取半徑
 export const COIN_FALL_SPEED = 90;      // px/s
-export const POWER_COINS = 15;          // 每 15 金幣火力 +1
 export const MAX_ENEMIES = 32;
 export const FIRE_FIELD_MS = 3000;      // 爆炎觸媒火場持續
 export const FIRE_FIELD_DPS = 4;        // 火場每秒傷害
@@ -65,3 +64,11 @@ export const BOSS_DASH_DUR_MS = 600;
 
 /** 清彈轉星屑上限。 */
 export const CANCEL_COIN_CAP = 40;
+
+/** 道具掉落（F3）。 */
+export const POWER_DROP_EVERY = 7;    // 每擊破 7 隻掉 P
+export const DROP_FALL_SPEED = 70;    // px/s
+
+/** 中型機（F3）。 */
+export const ELITE_HP_MULT = 10;
+export const ELITE_FIRE_CD_MULT = 0.6;

@@ -1,15 +1,16 @@
 // game.ts
 import type {
   WitchState, WitchEvent, GameStatus, StageId, RelicId, Modifiers,
-  Enemy, PlayerBullet, Coin, InputAction,
+  Enemy, PlayerBullet, Coin, Drop, InputAction,
 } from './types';
 import {
   FIELD_W, FIELD_H, START_LIVES, START_BOMBS, BOMB_CAP, LIFE_CAP,
   FIRE_INTERVAL_MS, PLAYER_BULLET_SPEED, PLAYER_BULLET_DMG, MAX_PLAYER_BULLETS,
   INFERNO_INVULN_MS, INFERNO_DMG, HIT_CLEAR_R,
-  ENEMY_R, BOSS_R, COIN_PICKUP_R, COIN_MAGNET_R, COIN_FALL_SPEED, POWER_COINS,
+  ENEMY_R, BOSS_R, COIN_PICKUP_R, COIN_MAGNET_R, COIN_FALL_SPEED,
   MAX_ENEMIES, FIRE_FIELD_MS, FIRE_FIELD_DPS, STEP_CAP_MS,
   BELL_TOLL_INTERVAL_MS, BELL_TOLL_MAX, BELL_SURGE_MS, BELL_SURGE_MULT, CANCEL_COIN_CAP,
+  POWER_DROP_EVERY, DROP_FALL_SPEED,
 } from './constants';
 import { createRng } from './rng';
 import { makePlayer, movePlayer, hitPlayer, tickPlayer, gainPower } from './player';
@@ -40,13 +41,14 @@ export class WitchGame {
   }));
   private enemies: Enemy[] = [];
   private coins: Coin[] = [];
+  private drops: Drop[] = [];
   private od = new Overdrive();
   private relics: RelicId[] = [];
   private mod: Modifiers = { ...BASE_MODIFIERS };
   private draftChoices: RelicId[] = [];
   private score = 0;
   private grazeChain = 0;
-  private coinCount = 0;          // 火力升級計數
+  private killCount = 0;          // 擊殺計數（用於 P 道具掉落）
   private fireFieldMs = 0;
   private nextEnemyId = 1;
   private bossSpawned = false;
@@ -100,6 +102,8 @@ export class WitchGame {
     this.player = makePlayer();
     this.enemies = [];
     this.coins = [];
+    this.drops = [];
+    this.killCount = 0;
     for (const b of this.playerBullets) b.active = false;
     this.enemyBullets.clearAll();
     this.bossSpawned = false;   // 死於 Boss 戰 → 下個 tick 重新召喚滿血 Boss
@@ -145,7 +149,7 @@ export class WitchGame {
     if (!this.bossSpawned) {
       for (const s of this.stageRunner.step(dtMs)) {
         if (this.enemies.length >= MAX_ENEMIES) break;
-        this.enemies.push(makeEnemy(this.nextEnemyId++, s.kind, s.x, -20, s.path));
+        this.enemies.push(makeEnemy(this.nextEnemyId++, s.kind, s.x, -20, s.path, s.elite === true));
       }
       if (this.stageRunner.wavesDone && this.enemies.length === 0) {
         this.boss = new BossRunner(STAGES[this.stage].boss, this.rng);
@@ -201,6 +205,9 @@ export class WitchGame {
 
     // 7) 金幣
     this.stepCoins(dtMs);
+
+    // 7.5) 道具掉落
+    this.stepDrops(dtMs);
 
     // 8) Boss 擊破收尾
     if (this.bossSpawned && this.boss && !this.boss.state.alive) this.onBossDefeated();
@@ -276,6 +283,21 @@ export class WitchGame {
     this.score += Math.round(SCORE.enemy * chainMultiplier(this.grazeChain) * (this.od.isActive ? 2 : 1));
     this.coins.push({ x: e.x, y: e.y, vy: COIN_FALL_SPEED, active: true });
     this.events.push({ kind: 'enemyKill', x: e.x, y: e.y });
+
+    // 擊殺計數與 P 道具掉落
+    this.killCount++;
+    if (this.killCount % POWER_DROP_EVERY === 0) {
+      this.drops.push({ x: e.x, y: e.y, vy: DROP_FALL_SPEED, kind: 'power', active: true });
+    }
+
+    // elite 擊破：額外 5 金幣 + P + B drop + eliteKill 事件
+    if (e.elite) {
+      this.score += Math.round(SCORE.coin * 5);  // 額外 5 金幣計分
+      this.drops.push({ x: e.x, y: e.y - 8, vy: DROP_FALL_SPEED, kind: 'power', active: true });
+      this.drops.push({ x: e.x, y: e.y + 8, vy: DROP_FALL_SPEED, kind: 'bomb', active: true });
+      this.events.push({ kind: 'eliteKill', x: e.x, y: e.y });
+    }
+
     // 死亡音爆：彈種/速度跟著該敵兵定義走
     const def = ENEMY_DEFS[e.kind];
     if (def.deathBurst) {
@@ -295,12 +317,30 @@ export class WitchGame {
       if (circleHit(c.x, c.y, 8, this.player.x, this.player.y, pickupR)) {
         c.active = false;
         this.score += Math.round(SCORE.coin * chainMultiplier(this.grazeChain));
-        this.coinCount++;
-        if (this.coinCount % POWER_COINS === 0) gainPower(this.player);
         this.events.push({ kind: 'coin' });
       }
     }
     this.coins = this.coins.filter((c) => c.active);
+  }
+
+  private stepDrops(dtMs: number): void {
+    const dt = dtMs / 1000;
+    const pickupR = this.mod.magnet ? COIN_MAGNET_R : COIN_PICKUP_R;
+    for (const d of this.drops) {
+      if (!d.active) continue;
+      d.y += d.vy * dt;
+      if (d.y > FIELD_H + 20) { d.active = false; continue; }
+      if (circleHit(d.x, d.y, 8, this.player.x, this.player.y, pickupR)) {
+        d.active = false;
+        if (d.kind === 'power') {
+          gainPower(this.player);
+        } else {
+          this.player.bombs = Math.min(BOMB_CAP, this.player.bombs + 1);
+        }
+        this.events.push({ kind: 'drop', drop: d.kind });
+      }
+    }
+    this.drops = this.drops.filter((d) => d.active);
   }
 
   private useInferno(): void {
@@ -341,10 +381,14 @@ export class WitchGame {
 
   private onBossDefeated(): void {
     const id = this.boss!.state.id;
+    const bossX = this.boss!.state.x;
+    const bossY = this.boss!.state.y;
     this.cancelBulletsToCoins();  // 已將全部敵彈設 inactive（前 40 顆轉金幣）
     this.boss = null;
     this.bossSpawned = false;
     this.score += SCORE.bossBonus;
+    // Boss 擊破後掉 B drop（出現在 Boss 最後位置）
+    this.drops.push({ x: bossX, y: bossY, vy: DROP_FALL_SPEED, kind: 'bomb', active: true });
     this.events.push({ kind: 'bossDefeat', id });
     if (this.stage === 4) {
       this.status = 'cleared';
@@ -411,7 +455,7 @@ export class WitchGame {
       relics: [...this.relics],
       draftChoices: [...this.draftChoices],
       bellTolls: this.tollCount,
-      drops: [],  // F3 才實作邏輯；欄位先佔位讓型別完整
+      drops: this.drops,
     };
   }
 
@@ -433,5 +477,25 @@ export class WitchGame {
     this.stageRunner.step(30 * 60 * 1000);  // 跑完波次表
     this.enemies = [];
     this.enemyBullets.clearAll();
+  }
+  /** 直接擊殺 n 隻假想敵（觸發 damageEnemy 完整邏輯，含 killCount / drop）。 */
+  debugKillEnemies(n: number): void {
+    for (let i = 0; i < n; i++) {
+      const fake: Enemy = {
+        id: -(i + 1), kind: 'bat', x: 240, y: 100,
+        hp: 1, alive: true, path: 'descend', t: 0, baseX: 240, fireCdMs: 9999,
+      };
+      this.damageEnemy(fake, 999);
+    }
+  }
+  /** 注入一隻 elite 敵兵（用於測試 elite 擊殺邏輯）。 */
+  debugSpawnElite(kind: import('./types').EnemyKind, x: number, y: number): void {
+    this.enemies.push(makeEnemy(this.nextEnemyId++, kind, x, y, 'hover', true));
+  }
+  /** 擊殺所有 elite 敵兵（直接扣血到 0 觸發 damageEnemy）。 */
+  debugKillElites(): void {
+    for (const e of this.enemies) {
+      if (e.elite && e.alive) this.damageEnemy(e, 999999);
+    }
   }
 }
