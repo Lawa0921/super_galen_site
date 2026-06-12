@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { WitchGame } from './game';
 import { STAGES } from './stage';
+import { makeEnemy } from './enemy';
 import type { WitchEvent } from './types';
 import {
   START_LIVES, START_BOMBS, OVERDRIVE_MAX,
@@ -336,25 +337,7 @@ describe('WitchGame', () => {
 
   // ---- F3.4 道具掉落 + 中型機 elite ----
 
-  /** 直接操控遊戲內部：讓 N 隻敵人被自機彈擊破（利用 debugSkipToBoss 前的道中敵）。
-   *  做法：快速生成 N 隻 wisp（hp=1）在玩家正上方，每隻都被玩家彈一擊。
-   *  為確保擊殺，直接 damageEnemy（via 內建測試掛鉤）——但 game.ts 沒有公開此方法。
-   *  改用替代方案：在靠近玩家的位置生成 wisp，自機火力足以擊破。
-   *  最簡方案：pushDebugEnemy + 推進足夠 tick 等子彈打到。
-   *
-   *  實際上最簡方案是：暴露一個 debugKillEnemy(n) 方法。
-   *  但不改 API 的話，用 debugSkipToBoss 後的方式不行——道中敵已清空。
-   *
-   *  最終選擇：用 debugSpawnEnemy 注入低血量敵人在玩家彈道上，推進幾 tick 等擊殺。
-   *  此掛鉤不存在——因此改用較小侵入性的方案：直接讀取 enemies 並手動扣血到 0，
-   *  然後呼叫一個 tick（game.ts 內部 damageEnemy 才會觸發殺敵邏輯）。
-   *  但 enemies 是直接引用……
-   *
-   *  最簡實用：對 getState().enemies 裡的敵人 hp 設 0，step(16) 後 damageEnemy 不會再跑——
-   *  hp<=0 要在 resolvePlayerHits 才觸發。
-   *
-   *  結論：增加 debugKillEnemies(n) 到 WitchGame，讓測試可靠地驅動 killCount。
-   */
+  // killCount/elite 流程靠 debugKillEnemies / debugSpawnElite 掛鉤驅動（走正規 damageEnemy 路徑）
 
   it('初始狀態 drops 為空陣列', () => {
     const g = new WitchGame({ seed: 1 });
@@ -396,6 +379,23 @@ describe('WitchGame', () => {
     // drops：elite 掉 P + B（killCount 可能同時觸發另一個 P，但至少有一 P 一 B）
     expect(state.drops.filter((d) => d.kind === 'power' && d.active).length).toBeGreaterThanOrEqual(1);
     expect(state.drops.filter((d) => d.kind === 'bomb' && d.active).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('敵滿 MAX_ENEMIES 時 elite 仍保證生成（迴歸：滿員丟棄）', () => {
+    const g = new WitchGame({ seed: 1 });
+    // 用 32 隻安靜假敵塞滿場（遠離自機彈道、不開火、不出界）
+    const enemies = g.getState().enemies;
+    for (let i = 0; i < 32; i++) {
+      const fake = makeEnemy(9000 + i, 'wisp', 10 + (i % 8) * 12, 40 + Math.floor(i / 8) * 14, 'hover');
+      fake.hp = 99999;
+      fake.fireCdMs = 1e9;
+      enemies.push(fake);
+    }
+    // 推進跨過 stage 1 的 elite 出場時間（一般敵會被滿員略過，elite 必生成）
+    const eliteAt = STAGES[1].waves.find((w) => w.elite)!.atMs;
+    run(g, eliteAt + 300, 100);
+    expect(g.getState().status).toBe('playing'); // 無敵彈，不該死亡
+    expect(g.getState().enemies.some((e) => e.elite)).toBe(true);
   });
 
   it('B 道具拾取後 bombs +1（上限 BOMB_CAP）', () => {

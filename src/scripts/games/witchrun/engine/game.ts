@@ -148,7 +148,8 @@ export class WitchGame {
     // 2) 關卡生成 / Boss
     if (!this.bossSpawned) {
       for (const s of this.stageRunner.step(dtMs)) {
-        if (this.enemies.length >= MAX_ENEMIES) break;
+        // 滿員時略過一般敵（波次已消耗不補發）；elite 帶保證掉落，必定生成
+        if (this.enemies.length >= MAX_ENEMIES && !s.elite) continue;
         this.enemies.push(makeEnemy(this.nextEnemyId++, s.kind, s.x, -20, s.path, s.elite === true));
       }
       if (this.stageRunner.wavesDone && this.enemies.length === 0) {
