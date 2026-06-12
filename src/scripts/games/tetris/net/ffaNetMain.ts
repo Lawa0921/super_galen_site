@@ -2,6 +2,7 @@ import { Text } from 'pixi.js';
 import { type InputAction } from '../engine/game';
 import { KEYMAP_1P } from '../input/keymap';
 import { InputController } from '../input/InputController';
+import { loadHandling } from '../input/handling';
 import { PixiStage } from '../render/PixiStage';
 import { SoundManager } from '../audio/SoundManager';
 import { loadGameTextures } from '../render/assets';
@@ -1050,7 +1051,7 @@ export function runFfaGame(opts: RunFfaOpts): FfaGameHandle {
 
   // 暫存本幀本地輸入（InputController 透過 emit 累加）。
   let pendingActions: InputAction[] = [];
-  const input = new InputController((a) => pendingActions.push(a), { das: 150, arr: 35 });
+  const input = new InputController((a) => pendingActions.push(a), loadHandling());
 
   void PixiStage.create(canvas).then(async (stage) => {
     // 皮膚只影響本地渲染（貼圖/調色），不進鎖步協定。

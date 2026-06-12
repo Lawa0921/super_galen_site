@@ -4,6 +4,7 @@ import { type Side } from '../engine/match';
 import { getCells } from '../engine/piece';
 import { KEYMAP_1P } from '../input/keymap';
 import { InputController } from '../input/InputController';
+import { loadHandling } from '../input/handling';
 import { PixiStage } from '../render/PixiStage';
 import { BoardView } from '../render/BoardView';
 import { HudView } from '../render/HudView';
@@ -156,7 +157,7 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
   // 立刻建立 Lockstep：其 onMessage 馬上接管 transport，渲染初始化期間對手送來的幀會
   // 先排進 inbox（不會在 async 載入空檔被丟棄）。
   const lockstep = new Lockstep({ seed, localSide, transport: tappedTransport });
-  const input = new InputController((a) => lockstep.pressLocal(a), { das: 150, arr: 35 });
+  const input = new InputController((a) => lockstep.pressLocal(a), loadHandling());
 
   void PixiStage.create(canvas).then(async (stage) => {
     // 皮膚只影響本地渲染（貼圖/調色），不進鎖步協定。
@@ -188,14 +189,19 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
     silenceWarn.visible = false;
     stage.hudLayer.addChild(silenceWarn);
 
-    let lay: MatchLayout = computeMatchLayout(stage.width, stage.height);
+    let lay: MatchLayout = computeMatchLayout(stage.width, stage.height, localSide);
+    // G2：本機側 HOLD 拆到盤左、NEXT 留盤右（對齊 SOLO 慣例）；對手側維持單欄堆疊。
+    const layoutHud = (hud: HudView, side: MatchLayout['a']): void => {
+      if (side.holdAnchor) hud.setLayoutSolo(side.holdAnchor, side.hudAnchor, lay.cellSize);
+      else hud.setLayout(side.hudAnchor, lay.cellSize);
+    };
     function relayout(): void {
-      lay = computeMatchLayout(stage.width, stage.height);
+      lay = computeMatchLayout(stage.width, stage.height, localSide);
       stage.layoutBackground();
       boardA.setLayout(lay.cellSize, lay.a.origin);
       boardB.setLayout(lay.cellSize, lay.b.origin);
-      hudA.setLayout(lay.a.hudAnchor, lay.cellSize);
-      hudB.setLayout(lay.b.hudAnchor, lay.cellSize);
+      layoutHud(hudA, lay.a);
+      layoutHud(hudB, lay.b);
       fxA.setLayout(lay.cellSize, lay.a.origin);
       fxB.setLayout(lay.cellSize, lay.b.origin);
       meter.setLayout(lay.meter);

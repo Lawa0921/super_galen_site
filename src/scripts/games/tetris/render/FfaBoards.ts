@@ -79,7 +79,12 @@ export class FfaBoards {
       if (!s) continue;
       s.layout = slot;
       s.board.setLayout(slot.cellSize, slot.origin);
-      s.hud.setLayout({ x: slot.origin.x + slot.cellSize * (BOARD_WIDTH + 0.4), y: slot.origin.y }, slot.cellSize);
+      // G2：本機盤 HOLD 拆到盤左、NEXT 留盤右（對齊 SOLO 慣例）；對手小盤維持單欄堆疊。
+      if (slot.isLocal && slot.holdAnchor && slot.infoAnchor) {
+        s.hud.setLayoutSolo(slot.holdAnchor, slot.infoAnchor, slot.cellSize);
+      } else {
+        s.hud.setLayout({ x: slot.origin.x + slot.cellSize * (BOARD_WIDTH + 0.4), y: slot.origin.y }, slot.cellSize);
+      }
       s.fx.setLayout(slot.cellSize, slot.origin);
     }
     this.standings.setLayout(lay.standings.anchor, lay.standings.scale);
