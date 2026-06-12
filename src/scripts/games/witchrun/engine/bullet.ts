@@ -6,6 +6,7 @@ export interface SpawnSpec {
   x: number; y: number; vx: number; vy: number;
   ax?: number; ay?: number; turnRate?: number;
   kind: BulletKind;
+  bounces?: number;
 }
 
 /** 固定大小物件池：超量時丟棄新彈（彈幕上限即效能上限）。 */
@@ -17,7 +18,7 @@ export class BulletPool {
     this.capacity = capacity;
     this.items = Array.from({ length: capacity }, () => ({
       x: 0, y: 0, vx: 0, vy: 0, ax: 0, ay: 0, turnRate: 0,
-      kind: 'rune' as BulletKind, r: 0, grazed: false, active: false,
+      kind: 'rune' as BulletKind, r: 0, grazed: false, active: false, bounces: 0,
     }));
   }
 
@@ -27,12 +28,13 @@ export class BulletPool {
     b.x = s.x; b.y = s.y; b.vx = s.vx; b.vy = s.vy;
     b.ax = s.ax ?? 0; b.ay = s.ay ?? 0; b.turnRate = s.turnRate ?? 0;
     b.kind = s.kind; b.r = BULLET_R[s.kind];
-    b.grazed = false; b.active = true;
+    b.grazed = false; b.active = true; b.bounces = s.bounces ?? 0;
     return b;
   }
 
-  step(dtMs: number): void {
-    const dt = dtMs / 1000;
+  step(dtMs: number, speedMult = 1): void {
+    if (speedMult === 0) return; // 完全凍結
+    const dt = (dtMs / 1000) * speedMult;
     for (const b of this.items) {
       if (!b.active) continue;
       if (b.turnRate !== 0) {
@@ -44,6 +46,15 @@ export class BulletPool {
       }
       b.vx += b.ax * dt; b.vy += b.ay * dt;
       b.x += b.vx * dt; b.y += b.vy * dt;
+      // 左右牆反射
+      if (b.x < 0 || b.x > FIELD_W) {
+        if (b.bounces > 0) {
+          b.vx = -b.vx;
+          b.bounces--;
+          b.x = b.x < 0 ? 0 : FIELD_W; // 鉗回界內
+          continue;
+        }
+      }
       const m = BULLET_CULL_MARGIN;
       if (b.x < -m || b.x > FIELD_W + m || b.y < -m || b.y > FIELD_H + m) b.active = false;
     }

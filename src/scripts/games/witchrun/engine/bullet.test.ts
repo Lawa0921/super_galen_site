@@ -62,4 +62,56 @@ describe('BulletPool', () => {
     const pool = new BulletPool();
     expect(pool.capacity).toBe(MAX_ENEMY_BULLETS);
   });
+
+  // ---- F1.2：反射與 speedMult ----
+  it('bounces=0 出左界即回收', () => {
+    const pool = new BulletPool(4);
+    const b = pool.spawn({ x: 5, y: 300, vx: -200, vy: 0, kind: 'rune', bounces: 0 })!;
+    pool.step(1000); // 5 - 200 = -195，超出左界無 bounces → 回收
+    expect(b.active).toBe(false);
+  });
+
+  it('bounces=1 第一次出左界反射；vx 反向，bounces 減 1', () => {
+    const pool = new BulletPool(4);
+    const b = pool.spawn({ x: 5, y: 300, vx: -200, vy: 0, kind: 'rune', bounces: 1 })!;
+    pool.step(100); // 5 - 20 = -15 → 出左界，反射
+    expect(b.active).toBe(true);
+    expect(b.vx).toBeGreaterThan(0);  // 反向
+    expect(b.bounces).toBe(0);
+  });
+
+  it('bounces=1 第二次出界（第一次已反射）→ 回收', () => {
+    const pool = new BulletPool(4);
+    // 先讓它反射一次
+    const b = pool.spawn({ x: 5, y: 300, vx: -200, vy: 0, kind: 'rune', bounces: 1 })!;
+    pool.step(100); // 反射 → bounces=0, vx>0
+    expect(b.bounces).toBe(0);
+    // 現在向右走超出右界
+    b.x = 475; b.vx = 200;
+    pool.step(1000);
+    expect(b.active).toBe(false);
+  });
+
+  it('speedMult=0 完全凍結（位置/速度/turnRate 全不動）', () => {
+    const pool = new BulletPool(4);
+    const b = pool.spawn({ x: 100, y: 200, vx: 100, vy: 50, ax: 20, turnRate: 1, kind: 'rune' })!;
+    const x0 = b.x, y0 = b.y, vx0 = b.vx, vy0 = b.vy;
+    pool.step(200, 0);
+    expect(b.x).toBeCloseTo(x0);
+    expect(b.y).toBeCloseTo(y0);
+    expect(b.vx).toBeCloseTo(vx0);
+    expect(b.vy).toBeCloseTo(vy0);
+  });
+
+  it('speedMult=1.15 位移等比放大（vs speedMult=1）', () => {
+    // speedMult=1
+    const p1 = new BulletPool(4);
+    const b1 = p1.spawn({ x: 200, y: 200, vx: 100, vy: 0, kind: 'rune' })!;
+    p1.step(1000, 1);
+    // speedMult=1.15
+    const p2 = new BulletPool(4);
+    const b2 = p2.spawn({ x: 200, y: 200, vx: 100, vy: 0, kind: 'rune' })!;
+    p2.step(1000, 1.15);
+    expect(b2.x - 200).toBeCloseTo((b1.x - 200) * 1.15, 1);
+  });
 });

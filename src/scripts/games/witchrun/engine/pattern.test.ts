@@ -1,6 +1,6 @@
 // pattern.test.ts
 import { describe, it, expect } from 'vitest';
-import { ring, fan, aimed, spiral, bellWave } from './pattern';
+import { ring, fan, aimed, spiral, bellWave, burst, boomerang, cloud, beamLine } from './pattern';
 
 const SPEED = 120;
 
@@ -71,5 +71,66 @@ describe('pattern', () => {
     const wrapped = bellWave({ x: 0, y: 0, n, speed: SPEED, gapAt: Math.PI + Math.PI / 6, gapWidth });
     const canonical = bellWave({ x: 0, y: 0, n, speed: SPEED, gapAt: -Math.PI + Math.PI / 6, gapWidth });
     expect(wrapped.length).toBe(canonical.length); // 等價角度應產生相同結果
+  });
+
+  // ---- F1.3：新原語 ----
+  it('burst：同方向多發不同速，顆數=speeds.length，方向一致', () => {
+    const aim = Math.PI / 4;
+    const speeds = [100, 150, 200];
+    const out = burst({ x: 0, y: 0, aim, speeds, kind: 'rune' });
+    expect(out).toHaveLength(3);
+    for (const b of out) {
+      expect(Math.atan2(b.vy, b.vx)).toBeCloseTo(aim, 5);
+    }
+    // 速率各不同
+    const magnitudes = out.map((b) => Math.hypot(b.vx, b.vy));
+    expect(magnitudes[0]).toBeCloseTo(100);
+    expect(magnitudes[1]).toBeCloseTo(150);
+    expect(magnitudes[2]).toBeCloseTo(200);
+  });
+
+  it('boomerang：返回的加速度方向與 aim 相反', () => {
+    const aim = 0; // 向右
+    const decel = 100;
+    const [b] = boomerang({ x: 0, y: 0, aim, speed: 200, decel, kind: 'page' });
+    // ax = -cos(aim)*decel = -100, ay = -sin(aim)*decel = 0
+    expect(b.ax ?? 0).toBeCloseTo(-decel, 2);
+    expect(b.ay ?? 0).toBeCloseTo(0, 2);
+    // 速度遞減後方向會反轉（積分：t = speed/decel = 2s 後 vx=0；更長後負值）
+    const vx0 = b.vx;
+    const ax = b.ax ?? 0;
+    const tFlip = -vx0 / ax; // 速度反轉時刻（秒）
+    expect(tFlip).toBeGreaterThan(0); // 必會折返
+  });
+
+  it('beamLine：n 顆同方向不同速（vFrom 到 vTo 線性）', () => {
+    const aim = Math.PI / 2;
+    const out = beamLine({ x: 10, y: 20, aim, n: 4, vFrom: 100, vTo: 400, kind: 'wisp' });
+    expect(out).toHaveLength(4);
+    for (const b of out) {
+      expect(Math.atan2(b.vy, b.vx)).toBeCloseTo(aim, 5);
+    }
+    const speeds = out.map((b) => Math.hypot(b.vx, b.vy));
+    // 第一顆最慢，最後顆最快（嚴格遞增）
+    for (let i = 1; i < speeds.length; i++) {
+      expect(speeds[i]).toBeGreaterThan(speeds[i - 1]);
+    }
+    expect(speeds[0]).toBeCloseTo(100, 0);
+    expect(speeds[speeds.length - 1]).toBeCloseTo(400, 0);
+  });
+
+  it('cloud：各顆角度即傳入 angles，速率一致', () => {
+    // 使用 [-π, π) 範圍內的角度，避免 atan2 wrap 問題
+    const angles = [0, Math.PI / 2, Math.PI * 0.9, -Math.PI / 2];
+    const out = cloud({ x: 5, y: 5, angles, speed: 40, kind: 'wisp' });
+    expect(out).toHaveLength(4);
+    for (let i = 0; i < angles.length; i++) {
+      // 計算方向差（考慮 wrap）
+      const actual = Math.atan2(out[i].vy, out[i].vx);
+      let diff = Math.abs(actual - angles[i]);
+      diff = Math.min(diff, 2 * Math.PI - diff);
+      expect(diff).toBeLessThan(1e-5);
+      expect(Math.hypot(out[i].vx, out[i].vy)).toBeCloseTo(40, 3);
+    }
   });
 });

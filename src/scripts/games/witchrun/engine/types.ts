@@ -13,6 +13,7 @@ export interface EnemyBullet {
   r: number;                       // 被彈判定半徑
   grazed: boolean;                 // 每顆只計一次擦彈
   active: boolean;
+  bounces: number;                 // 剩餘左右牆反射次數
 }
 
 export interface PlayerBullet {
@@ -39,6 +40,8 @@ export interface Enemy {
   path: PathKind; t: number;        // t = 出生後累計 ms
   baseX: number;                    // sine/hover 的錨點
   fireCdMs: number;                 // 下次開火倒數
+  beamAim?: number;                 // angel 預警鎖定角（beam 兩段式）
+  elite?: boolean;                  // 中型機（F3 用）
 }
 
 export type BossId = 'gargoyle' | 'grimoire' | 'bellwright' | 'deadbell';
@@ -106,6 +109,14 @@ export interface WitchState {
   relics: RelicId[];
   draftChoices: RelicId[];          // status==='draft' 時的三選一
   bellTolls: number;                // 亡鐘已敲響數（敘事 HUD 用）
+  drops: Drop[];                    // 道具掉落（F3 用，先加欄位）
+}
+
+/** 道具掉落（F3 用，先定型別）。 */
+export interface Drop {
+  x: number; y: number; vy: number;
+  kind: 'power' | 'bomb';
+  active: boolean;
 }
 
 export type WitchEvent =
@@ -124,6 +135,9 @@ export type WitchEvent =
   | { kind: 'relicPicked'; id: RelicId }
   | { kind: 'stageStart'; stage: StageId }
   | { kind: 'gameover' }
-  | { kind: 'cleared' };
+  | { kind: 'cleared' }
+  | { kind: 'telegraph'; x1: number; y1: number; x2: number; y2: number; durMs: number }
+  | { kind: 'eliteKill'; x: number; y: number }
+  | { kind: 'badEnd' };
 
 export type InputAction = 'up' | 'down' | 'left' | 'right' | 'focus' | 'bomb' | 'overdrive';

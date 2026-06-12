@@ -17,7 +17,8 @@ import { circleHit, sweepPlayerVsBullets } from './collision';
 import { Overdrive } from './graze';
 import { computeModifiers, draftRelics, BASE_MODIFIERS } from './relics';
 import { SCORE, chainMultiplier } from './scoring';
-import { makeEnemy, stepEnemy } from './enemy';
+import { makeEnemy, stepEnemy, ENEMY_DEFS } from './enemy';
+import { ring } from './pattern';
 import { BossRunner } from './boss';
 import { StageRunner, STAGES } from './stage';
 
@@ -139,8 +140,12 @@ export class WitchGame {
     // 3) 道中敵
     for (const e of this.enemies) {
       if (!e.alive) continue;
-      for (const spec of stepEnemy(e, dtMs, { px: this.player.x, py: this.player.y })) {
+      const result = stepEnemy(e, dtMs, { px: this.player.x, py: this.player.y }, this.rng);
+      for (const spec of result.spawns) {
         this.enemyBullets.spawn(spec);
+      }
+      if (result.telegraph) {
+        this.events.push({ kind: 'telegraph', ...result.telegraph });
       }
       if (e.y > FIELD_H + 40 || e.x < -60 || e.x > FIELD_W + 60) e.alive = false; // 出場回收
       if (this.fireFieldMs > 0) this.damageEnemy(e, FIRE_FIELD_DPS * (dtMs / 1000));
@@ -241,6 +246,12 @@ export class WitchGame {
     this.score += Math.round(SCORE.enemy * chainMultiplier(this.grazeChain) * (this.od.isActive ? 2 : 1));
     this.coins.push({ x: e.x, y: e.y, vy: COIN_FALL_SPEED, active: true });
     this.events.push({ kind: 'enemyKill', x: e.x, y: e.y });
+    // 死亡音爆（chime）
+    if (ENEMY_DEFS[e.kind].deathBurst) {
+      for (const spec of ring({ x: e.x, y: e.y, n: 8, speed: 130, kind: 'wave' })) {
+        this.enemyBullets.spawn(spec);
+      }
+    }
   }
 
   private stepCoins(dtMs: number): void {
@@ -344,6 +355,7 @@ export class WitchGame {
       relics: [...this.relics],
       draftChoices: [...this.draftChoices],
       bellTolls: this.boss?.state.id === 'deadbell' ? this.boss.tolls : 0,
+      drops: [],  // F3 才實作邏輯；欄位先佔位讓型別完整
     };
   }
 
