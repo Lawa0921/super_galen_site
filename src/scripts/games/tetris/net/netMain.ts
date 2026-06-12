@@ -188,14 +188,19 @@ function runGame(canvas: HTMLCanvasElement, transport: WebRtcTransport, opts: Ru
     silenceWarn.visible = false;
     stage.hudLayer.addChild(silenceWarn);
 
-    let lay: MatchLayout = computeMatchLayout(stage.width, stage.height);
+    let lay: MatchLayout = computeMatchLayout(stage.width, stage.height, localSide);
+    // G2：本機側 HOLD 拆到盤左、NEXT 留盤右（對齊 SOLO 慣例）；對手側維持單欄堆疊。
+    const layoutHud = (hud: HudView, side: MatchLayout['a']): void => {
+      if (side.holdAnchor) hud.setLayoutSolo(side.holdAnchor, side.hudAnchor, lay.cellSize);
+      else hud.setLayout(side.hudAnchor, lay.cellSize);
+    };
     function relayout(): void {
-      lay = computeMatchLayout(stage.width, stage.height);
+      lay = computeMatchLayout(stage.width, stage.height, localSide);
       stage.layoutBackground();
       boardA.setLayout(lay.cellSize, lay.a.origin);
       boardB.setLayout(lay.cellSize, lay.b.origin);
-      hudA.setLayout(lay.a.hudAnchor, lay.cellSize);
-      hudB.setLayout(lay.b.hudAnchor, lay.cellSize);
+      layoutHud(hudA, lay.a);
+      layoutHud(hudB, lay.b);
       fxA.setLayout(lay.cellSize, lay.a.origin);
       fxB.setLayout(lay.cellSize, lay.b.origin);
       meter.setLayout(lay.meter);

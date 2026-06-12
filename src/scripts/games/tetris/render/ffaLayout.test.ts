@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeFfaLayout, PLAYER_TINTS, type FfaSlotLayout } from './ffaLayout';
+import { HOLD_W_CELLS } from './matchLayout';
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
 
 /** slot 的可見遊玩矩形（AABB）：origin 左上 + cellSize×(10×20)。 */
@@ -103,6 +104,32 @@ describe('computeFfaLayout', () => {
   it('空 playerIds → throw', () => {
     expect(() => computeFfaLayout([], 'p0', 1280, 720)).toThrow();
   });
+});
+
+describe('FFA 本機盤 HOLD 拆到盤左（G2）', () => {
+  /** 本機盤 holdAnchor 存在、HOLD 框在盤左、與所有盤不相交、不出畫面；NEXT 留盤右；對手盤無 holdAnchor。 */
+  function assertLocalHoldSplit(n: number, stageW: number, stageH: number): void {
+    const lay = computeFfaLayout(ids(n), 'p0', stageW, stageH);
+    const local = lay.slots.find((s) => s.isLocal)!;
+    expect(local.holdAnchor, `N=${n}: 本機盤應有 holdAnchor`).toBeDefined();
+    expect(local.infoAnchor, `N=${n}: 本機盤應有 infoAnchor`).toBeDefined();
+    const cs = local.cellSize;
+    // HOLD 框 AABB：寬 = HOLD_W_CELLS 格、高保守取滿盤高
+    const hr = { x: local.holdAnchor!.x, y: local.holdAnchor!.y, w: cs * HOLD_W_CELLS, h: cs * VISIBLE_HEIGHT };
+    expect(hr.x, `N=${n}: HOLD 不可出畫面`).toBeGreaterThanOrEqual(0);
+    expect(hr.x + hr.w, `N=${n}: HOLD 整塊應在本機盤左`).toBeLessThanOrEqual(local.origin.x);
+    for (const s of lay.slots) {
+      expect(overlaps(hr, rectOf(s)), `N=${n}: HOLD 框與 ${s.id} 盤重疊`).toBe(false);
+    }
+    expect(local.infoAnchor!.x, `N=${n}: NEXT 留盤右`).toBeGreaterThanOrEqual(local.origin.x + cs * BOARD_WIDTH);
+    for (const s of lay.slots.filter((x) => !x.isLocal)) {
+      expect(s.holdAnchor, `N=${n}: 對手盤 ${s.id} 應維持現狀（無 holdAnchor）`).toBeUndefined();
+    }
+  }
+
+  it('N=2（1v1 退化路徑）：本機盤 HOLD 在盤左且與兩盤不相交', () => assertLocalHoldSplit(2, 1280, 720));
+  it('N=3：本機盤 HOLD 在盤左、與本機/對手盤皆不相交', () => assertLocalHoldSplit(3, 1280, 720));
+  it('N=8：本機盤 HOLD 在盤左、與全部 8 盤不相交', () => assertLocalHoldSplit(8, 1600, 900));
 });
 
 describe('Pixi 渲染類別 import smoke（型別/匯出存在；像素渲染留 T11 e2e）', () => {

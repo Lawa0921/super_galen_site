@@ -76,10 +76,12 @@ export async function startAi(
     stage.layoutBackground();
     boardA.setLayout(lay.cellSize, lay.a.origin);
     boardB.setLayout(lay.cellSize, lay.b.origin);
-    hudA.setLayout(lay.a.hudAnchor, lay.cellSize);
+    // G2：本機（A）HOLD 拆到盤左、NEXT 留盤右（對齊 SOLO 慣例）；對手（B）維持單欄堆疊。
+    const aHold = lay.a.holdAnchor ?? lay.a.hudAnchor;
+    hudA.setLayoutSolo(aHold, lay.a.hudAnchor, lay.cellSize);
     hudB.setLayout(lay.b.hudAnchor, lay.cellSize);
-    // 能量條放 A 側 HUD 欄右半（HOLD/NEXT 內容寬約 2.2 格，2.8 起不重疊）
-    itemHud?.setLayout({ x: lay.a.hudAnchor.x + lay.cellSize * 2.8, y: lay.a.hudAnchor.y }, lay.cellSize);
+    // 能量條掛 HOLD 下方（同 SOLO：標籤 0.5 + 槽 2.4 + 間距 0.5 格）
+    itemHud?.setLayout({ x: aHold.x, y: aHold.y + lay.cellSize * 3.4 }, lay.cellSize);
     fxA.setLayout(lay.cellSize, lay.a.origin);
     fxB.setLayout(lay.cellSize, lay.b.origin);
     meter.setLayout(lay.meter);

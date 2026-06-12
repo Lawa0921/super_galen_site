@@ -1,9 +1,12 @@
 import { BOARD_WIDTH, VISIBLE_HEIGHT } from '../engine/constants';
-import { computeMatchLayout } from './matchLayout';
+import { computeMatchLayout, HOLD_W_CELLS, HOLD_GAP_CELLS } from './matchLayout';
 import type { Point } from './layout';
 
 /** 盤面長寬比（10:20 = 0.5）。 */
 const BOARD_ASPECT = BOARD_WIDTH / VISIBLE_HEIGHT;
+
+/** 本機盤左右側欄（格數）：HOLD 與 NEXT/分數欄對稱（G2，對齊 SOLO 慣例）。 */
+const SIDE_COLS = HOLD_W_CELLS + HOLD_GAP_CELLS; // 4.1
 
 /** 每位玩家一塊版面。isLocal 決定大盤/環繞小盤與 HUD 詳略。 */
 export interface FfaSlotLayout {
@@ -11,6 +14,10 @@ export interface FfaSlotLayout {
   cellSize: number;
   origin: Point; // 該盤左上（可見遊玩區，扣掉緩衝列後的第一列）
   isLocal: boolean;
+  /** 僅本機盤有值：HOLD 槽錨點（盤左）。對手盤維持單欄堆疊現狀。 */
+  holdAnchor?: Point;
+  /** 僅本機盤有值：NEXT/分數欄錨點（盤右）。 */
+  infoAnchor?: Point;
 }
 
 export interface FfaLayout {
@@ -73,11 +80,19 @@ export function computeFfaLayout(
   // ── N<=2：退化到既有 1v1 雙盤版面（鐵則 #3）──
   // 本機固定取 A 側（左）、對手取 B 側（右）；cellSize 與 1v1 對稱雙盤一致。
   if (playerIds.length <= 2) {
-    const m = computeMatchLayout(stageW, stageH);
+    const m = computeMatchLayout(stageW, stageH); // 本機固定 A 側 → m.a 帶 holdAnchor
     const slots: FfaSlotLayout[] = playerIds.map((id) => {
       const isLocal = id === local;
       const src = isLocal ? m.a : m.b;
-      return { id, cellSize: m.cellSize, origin: { x: src.origin.x, y: src.origin.y }, isLocal };
+      return {
+        id,
+        cellSize: m.cellSize,
+        origin: { x: src.origin.x, y: src.origin.y },
+        isLocal,
+        ...(isLocal
+          ? { holdAnchor: src.holdAnchor, infoAnchor: { x: src.hudAnchor.x, y: src.hudAnchor.y } }
+          : {}),
+      };
     });
     const standingsAnchor: Point = { x: Math.round(stageW * 0.5 - m.cellSize * 1.2), y: Math.round(stageH * 0.04) };
     return { slots, standings: { anchor: standingsAnchor, scale: 1 } };
@@ -98,8 +113,19 @@ export function computeFfaLayout(
   const localFrac = oppCount <= 3 ? 0.5 : 0.46;
   const localBoxW = innerW * localFrac - gap / 2;
   const localBoxH = innerH;
-  const localCell = fitCellSize(localBoxW, localBoxH);
+  // 本機盤左右各留一側欄（HOLD 在盤左、NEXT/分數在盤右）→ 寬度按整組（盤+兩側欄）算，
+  // 空間不足時 cellSize 自然縮一檔、保不重疊（G2 鐵則）。
+  const localCell = Math.max(
+    1,
+    Math.floor(Math.min(localBoxW / (BOARD_WIDTH + SIDE_COLS * 2), localBoxH / VISIBLE_HEIGHT)),
+  );
+  // 左右側欄等寬 → 盤本體仍在左區水平置中；垂直照舊置中。
   const localOrigin = centerInBox(margin, margin, localBoxW, localBoxH, localCell);
+  const localHoldAnchor: Point = { x: Math.round(localOrigin.x - SIDE_COLS * localCell), y: localOrigin.y };
+  const localInfoAnchor: Point = {
+    x: Math.round(localOrigin.x + (BOARD_WIDTH + HOLD_GAP_CELLS) * localCell),
+    y: localOrigin.y,
+  };
 
   // 右區網格容納 oppCount 個對手盤。
   const gridX = margin + localBoxW + gap;
@@ -138,7 +164,14 @@ export function computeFfaLayout(
   let oppIndex = 0;
   for (const id of playerIds) {
     if (id === local) {
-      slots.push({ id, cellSize: localCell, origin: { ...localOrigin }, isLocal: true });
+      slots.push({
+        id,
+        cellSize: localCell,
+        origin: { ...localOrigin },
+        isLocal: true,
+        holdAnchor: { ...localHoldAnchor },
+        infoAnchor: { ...localInfoAnchor },
+      });
       continue;
     }
     const r = Math.floor(oppIndex / cols);

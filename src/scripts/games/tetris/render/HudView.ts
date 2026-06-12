@@ -1,14 +1,15 @@
-import { Container, Sprite, Text, type Texture, type TextStyleOptions } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, type Texture, type TextStyleOptions } from 'pixi.js';
 import { GlowFilter } from 'pixi-filters';
 import type { GameState, PieceType } from '../engine/types';
 import { SHAPES } from '../engine/constants';
 import { pieceTint, type Point } from './layout';
 
 const PIXEL_FONT = '"Press Start 2P", Consolas, monospace';
+/** G2 顯眼化：標籤由暗灰藍改霓虹青、字級加大，HOLD/NEXT 一眼可辨。 */
 const LABEL_STYLE: TextStyleOptions = {
   fontFamily: PIXEL_FONT,
-  fontSize: 9,
-  fill: 0x6fa8d8,
+  fontSize: 11,
+  fill: 0x36e6ff,
   letterSpacing: 1,
 };
 const VALUE_STYLE: TextStyleOptions = {
@@ -20,6 +21,9 @@ const VALUE_STYLE: TextStyleOptions = {
 /** 繪製 HOLD / NEXT / SCORE / LEVEL / LINES / COMBO。 */
 export class HudView {
   private root = new Container();
+  /** HOLD / NEXT 細框背板（G2 顯眼化；風格同盤後 scrim：墨底＋霓虹細框）。 */
+  private holdPlate = new Graphics();
+  private nextPlate = new Graphics();
   private holdSlot = new Container();
   private nextSlots: Container[] = [];
   private score = new Text({ text: '0', style: VALUE_STYLE });
@@ -36,6 +40,7 @@ export class HudView {
     hudLayer.addChild(this.root);
     this.root.filters = [new GlowFilter({ color: 0x36e6ff, outerStrength: 1.1, innerStrength: 0, distance: 8 })];
 
+    this.root.addChild(this.holdPlate, this.nextPlate); // 背板先加 → 在槽位/文字後面
     this.root.addChild(this.holdSlot);
     for (let i = 0; i < this.nextCount; i++) {
       const c = new Container();
@@ -72,7 +77,7 @@ export class HudView {
 
   /** 字級隨格大小縮放（HUD 在大盤面時也清楚可讀）。 */
   private applyScale(cellSize: number): void {
-    const label = Math.max(9, Math.round(cellSize * 0.3));
+    const label = Math.max(11, Math.round(cellSize * 0.38)); // G2：標題字級 +2 檔
     const value = Math.max(14, Math.round(cellSize * 0.62));
     for (const t of [this.holdSlotLabel, this.nextLabel, this.scoreLabel, this.levelLabel, this.linesLabel]) {
       t.style.fontSize = label;
@@ -81,10 +86,37 @@ export class HudView {
     this.combo.style.fontSize = Math.max(11, Math.round(cellSize * 0.4));
   }
 
-  /** 單欄堆疊（對戰雙盤用）：anchor = HUD 欄左上角。 */
+  /**
+   * 畫 HOLD / NEXT 背板（圓角墨底＋霓虹細框，風格同盤後 scrim）。
+   * holdTop / nextTop 為各區標題左上角；nextH 為 NEXT 區內容高（標題之下）。
+   */
+  private drawPlates(holdTop: Point, nextTop: Point, cellSize: number): void {
+    const pad = cellSize * 0.3;
+    const w = cellSize * 3.1;
+    const lh = cellSize * 0.5;
+    const slotH = cellSize * 2.4;
+    const r = cellSize * 0.35;
+    const holdH = lh + slotH;
+    const nextH = lh + this.nextSlots.length * slotH * 0.78;
+    const stroke = { color: 0x36e6ff, alpha: 0.45, width: Math.max(1, cellSize * 0.05) };
+    this.holdPlate.clear();
+    this.holdPlate
+      .roundRect(holdTop.x - pad, holdTop.y - pad, w, holdH + pad * 2, r)
+      .fill({ color: 0x04060d, alpha: 0.55 })
+      .stroke(stroke);
+    this.nextPlate.clear();
+    this.nextPlate
+      .roundRect(nextTop.x - pad, nextTop.y - pad, w, nextH + pad * 2, r)
+      .fill({ color: 0x04060d, alpha: 0.55 })
+      .stroke(stroke);
+  }
+
+  /** 單欄堆疊（對戰雙盤的「對手側」用）：anchor = HUD 欄左上角。維持現狀、不畫背板。 */
   setLayout(anchor: Point, cellSize: number): void {
     this.cellSize = cellSize;
     this.applyScale(cellSize);
+    this.holdPlate.clear();
+    this.nextPlate.clear();
     const x = anchor.x;
     let y = anchor.y;
     const gap = cellSize * 0.5;
@@ -110,10 +142,14 @@ export class HudView {
     this.combo.position.set(x, y);
   }
 
-  /** SOLO 版：HOLD 置於盤左、NEXT＋分數置於盤右（盤面置中、左右平衡的構圖）。 */
+  /**
+   * 拆欄版：HOLD 置於盤左、NEXT＋分數置於盤右（盤面置中、左右平衡的構圖）。
+   * SOLO 與對戰版面的「本機盤」共用（G2：對齊 SOLO 慣例、防 hold/next 誤認）。
+   */
   setLayoutSolo(holdAnchor: Point, infoAnchor: Point, cellSize: number): void {
     this.cellSize = cellSize;
     this.applyScale(cellSize);
+    this.drawPlates(holdAnchor, infoAnchor, cellSize);
     const gap = cellSize * 0.5;
     const slotH = cellSize * 2.4;
     const lh = cellSize * 0.5;
