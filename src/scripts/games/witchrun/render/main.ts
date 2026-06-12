@@ -33,14 +33,16 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
   const entities = new EntityView(stage.entityLayer, stage.fxLayer, tex);
   const hud = new HudView(stage.hudLayer);
 
-  // 場域等比縮放置中（bgLayer 與 content 同步變換）
+  // 場域等比縮放置中。content 的偏移走 stage.baseX/baseY（震屏每幀會重設 content 位置）。
   function relayout(): void {
     const scale = Math.min(stage.width / FIELD_W, stage.height / FIELD_H);
-    for (const c of [stage.bgLayer, stage.content] as Container[]) {
-      c.scale.set(scale);
-      c.x = (stage.width - FIELD_W * scale) / 2;
-      c.y = (stage.height - FIELD_H * scale) / 2;
-    }
+    const ox = (stage.width - FIELD_W * scale) / 2;
+    const oy = (stage.height - FIELD_H * scale) / 2;
+    for (const c of [stage.bgLayer, stage.content] as Container[]) c.scale.set(scale);
+    stage.bgLayer.x = ox;
+    stage.bgLayer.y = oy;
+    stage.baseX = ox;
+    stage.baseY = oy;
   }
   relayout();
   stage.app.renderer.on('resize', relayout);

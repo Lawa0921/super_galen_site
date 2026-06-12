@@ -16,6 +16,10 @@ export class PixiStage {
   readonly fxLayer = new Container();     // 特效/爆風 — 強 bloom
   readonly hudLayer = new Container();    // HUD — 無 bloom
 
+  /** content 的場域置中基準偏移（relayout 設定）；震屏以此為中心晃動。 */
+  baseX = 0;
+  baseY = 0;
+
   private crt: CRTFilter;
   private shakeMag = 0;
 
@@ -81,13 +85,13 @@ export class PixiStage {
     this.crt.seed = (this.crt.seed + dt * 0.0003) % 1;
 
     if (this.shakeMag > 0.1) {
-      this.content.x = (Math.random() - 0.5) * this.shakeMag;
-      this.content.y = (Math.random() - 0.5) * this.shakeMag;
+      this.content.x = this.baseX + (Math.random() - 0.5) * this.shakeMag;
+      this.content.y = this.baseY + (Math.random() - 0.5) * this.shakeMag;
       this.shakeMag *= Math.pow(0.001, dt / 1000);
     } else {
       this.shakeMag = 0;
-      this.content.x = 0;
-      this.content.y = 0;
+      this.content.x = this.baseX;
+      this.content.y = this.baseY;
     }
   }
 }

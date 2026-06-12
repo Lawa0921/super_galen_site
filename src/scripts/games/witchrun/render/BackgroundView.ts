@@ -25,6 +25,7 @@ export class BackgroundView {
   async load(): Promise<void> {
     for (const s of [1, 2, 3, 4] as StageId[]) {
       const tex = await Assets.load<Texture>(`/assets/games/witchrun/bg-stage${s}.webp`);
+      tex.source.addressMode = 'mirror-repeat'; // 上下鏡像平鋪：素材不需嚴格無縫也不會出現硬接縫
       this.textures.set(s, tex);
     }
   }
