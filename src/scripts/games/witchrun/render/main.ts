@@ -74,10 +74,12 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
   };
   draftBtns.forEach((b) => b.addEventListener('click', onDraftClick));
 
-  document.getElementById('witch-continue')?.addEventListener('click', () => {
+  const continueBtn = document.getElementById('witch-continue');
+  const onContinue = (): void => {
     overEl?.setAttribute('hidden', '');
     game.continueRun();
-  });
+  };
+  continueBtn?.addEventListener('click', onContinue);
 
   // ---- 鍵盤 ----
   const DIRS = new Set(['up', 'down', 'left', 'right']);
@@ -145,9 +147,11 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
       stage.app.renderer.off('resize', relayout);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      draftBtns.forEach((b) => b.removeEventListener('click', onDraftClick));
+      continueBtn?.removeEventListener('click', onContinue);
       detachTouch();
       stage.app.ticker.remove(tick);
-      stage.app.destroy();
+      stage.app.destroy(undefined, { texture: true, textureSource: true }); // 連同產生的佔位紋理回收
     },
   };
   (window as unknown as { __witchDebug?: unknown }).__witchDebug = { game, handle, stage };

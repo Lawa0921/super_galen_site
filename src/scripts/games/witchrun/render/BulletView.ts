@@ -11,6 +11,7 @@ export class BulletView {
 
   render(enemyBullets: EnemyBullet[], playerBullets: PlayerBullet[]): void {
     this.sync(this.playerSprites, playerBullets.length, () => new Sprite(this.tex.playerBullet));
+    // 新 sprite 先掛任意紋理（rune）即可：啟用時下方迴圈會依 kind 換貼圖
     this.sync(this.enemySprites, enemyBullets.length, () => new Sprite(this.tex.bullets.rune));
     for (let i = 0; i < playerBullets.length; i++) {
       const b = playerBullets[i], s = this.playerSprites[i];
