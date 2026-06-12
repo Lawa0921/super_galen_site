@@ -50,6 +50,29 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
             <button class="ms-btn ms-hard" data-mode="ai" data-diff="hard">vs AI · HARD</button>
             <button class="ms-btn ms-online" data-mode="online">vs ONLINE</button>
           </div>
+          <button class="handling-open" id="handling-open" type="button" aria-expanded="false" aria-controls="handling-panel">HANDLING 手感設定</button>
+          <div class="handling-panel" id="handling-panel" hidden>
+            <div class="hp-row">
+              <label class="hp-label" for="handling-das">DAS</label>
+              <input class="hp-slider" id="handling-das" type="range" min="50" max="300" step="5" data-handling="das" />
+              <span class="hp-val" id="handling-das-val">150ms</span>
+            </div>
+            <div class="hp-row">
+              <label class="hp-label" for="handling-arr">ARR</label>
+              <input class="hp-slider" id="handling-arr" type="range" min="0" max="80" step="5" data-handling="arr" />
+              <span class="hp-val" id="handling-arr-val">35ms</span>
+            </div>
+            <div class="hp-row">
+              <label class="hp-label" for="handling-sdf">SDF</label>
+              <input class="hp-slider" id="handling-sdf" type="range" min="0" max="60" step="5" data-handling="sdf" />
+              <span class="hp-val" id="handling-sdf-val">30ms</span>
+            </div>
+            <p class="hp-hint">ARR 0 = 瞬移 · SDF 0 = 瞬降 · 調整於下一局生效</p>
+            <div class="hp-actions">
+              <button class="ms-btn hp-btn" id="handling-reset" type="button">恢復預設</button>
+              <button class="ms-btn ms-solo hp-btn" id="handling-done" type="button">完成</button>
+            </div>
+          </div>
         </div>
         <div class="mode-select" id="skill-select" hidden>
           <h2 class="ss-title">SELECT SKILL</h2>
@@ -292,6 +315,75 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
   .ms-wallet.connected { border-color: rgba(77, 255, 136, 0.8); color: #4dff88; }
 
   .mode-select[hidden] { display: none; }
+
+  /* HANDLING 手感設定（PLAY 分頁，mode-select 下方小連結 → 滑桿面板） */
+  .handling-open {
+    font-family: inherit;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: color 0.15s ease, text-shadow 0.15s ease;
+  }
+  .handling-open:hover {
+    color: #36e6ff;
+    text-shadow: 0 0 8px rgba(54, 230, 255, 0.6);
+  }
+  .handling-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(8, 12, 22, 0.8);
+    border: 1px solid rgba(54, 230, 255, 0.35);
+    border-radius: 10px;
+  }
+  .handling-panel[hidden] { display: none; }
+  .hp-row {
+    display: grid;
+    grid-template-columns: 3.2em 1fr 4.4em;
+    align-items: center;
+    gap: 10px;
+  }
+  .hp-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #9fcdf2;
+  }
+  .hp-slider {
+    width: 100%;
+    height: 18px;
+    accent-color: #36e6ff;
+    background: transparent;
+    cursor: pointer;
+  }
+  .hp-val {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-align: right;
+    color: #4dff88;
+  }
+  .hp-hint {
+    margin: 0;
+    font-size: 8px;
+    letter-spacing: 1px;
+    line-height: 1.7;
+    text-align: center;
+    color: #5a7299;
+  }
+  .hp-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .hp-btn {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 10px;
+  }
   .online-join { display: flex; gap: 10px; align-items: stretch; }
   #online-join-btn { white-space: nowrap; flex: 0 0 auto; padding-left: 16px; padding-right: 16px; }
   .online-input {
@@ -818,6 +910,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
   import { startAi } from '@scripts/games/tetris/render/aiMain';
   import { SKILLS, type SkillId, type PerkChoice, type PerkId } from '@scripts/games/tetris/engine/run';
   import { SKIN_CATALOG, getSelectedSkin, setSelectedSkin, isUnlocked, resolveSkin } from '@scripts/games/tetris/render/skins';
+  import { HANDLING_DEFAULT, loadHandling, saveHandling, type Handling } from '@scripts/games/tetris/input/handling';
   import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
   import { hostFfaGame, joinFfaGame, type FfaNetStatus, type FfaIdentity } from '@scripts/games/tetris/net/ffaNetMain';
 
@@ -848,6 +941,56 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
       });
     });
   });
+  // ---- HANDLING 手感設定（DAS/ARR/SDF 滑桿；改動即存，下一局開局讀取）----
+  const handlingOpen = document.getElementById('handling-open');
+  const handlingPanel = document.getElementById('handling-panel');
+  const handlingSliders = Array.from(document.querySelectorAll<HTMLInputElement>('.hp-slider'));
+
+  function renderHandling(h: Handling): void {
+    handlingSliders.forEach((s) => {
+      const key = s.dataset.handling as keyof Handling | undefined;
+      if (!key) return;
+      s.value = String(h[key]);
+      const val = document.getElementById(`handling-${key}-val`);
+      if (val) val.textContent = `${h[key]}ms`;
+    });
+  }
+
+  function readHandlingFromSliders(): Handling {
+    const h: Handling = { ...HANDLING_DEFAULT };
+    handlingSliders.forEach((s) => {
+      const key = s.dataset.handling as keyof Handling | undefined;
+      if (key) h[key] = Number(s.value);
+    });
+    return h;
+  }
+
+  handlingOpen?.addEventListener('click', () => {
+    if (!handlingPanel) return;
+    const open = handlingPanel.hidden;
+    if (open) renderHandling(loadHandling()); // 開啟時同步現值
+    handlingPanel.hidden = !open;
+    handlingOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+    blip(open ? 560 : 300, 0.06);
+  });
+  handlingSliders.forEach((s) => {
+    s.addEventListener('input', () => {
+      const h = readHandlingFromSliders();
+      renderHandling(h);
+      saveHandling(h); // 改動即存，下一局生效
+    });
+  });
+  document.getElementById('handling-reset')?.addEventListener('click', () => {
+    renderHandling(HANDLING_DEFAULT);
+    saveHandling({ ...HANDLING_DEFAULT });
+    blip(640, 0.06);
+  });
+  document.getElementById('handling-done')?.addEventListener('click', () => {
+    if (handlingPanel) handlingPanel.hidden = true;
+    handlingOpen?.setAttribute('aria-expanded', 'false');
+    blip(680, 0.06);
+  });
+
   const touchNotice = document.getElementById('touch-notice');
   // 觸控裝置（多半無實體鍵盤）→ 收掉遊玩入口、明講請用電腦；排行榜/檔案分頁仍可用
   const isTouch = matchMedia('(pointer: coarse)').matches;

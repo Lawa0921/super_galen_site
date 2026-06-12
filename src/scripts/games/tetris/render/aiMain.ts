@@ -5,6 +5,7 @@ import { applySkill, resetSlow } from '../engine/items';
 import { SoloRun, type SkillId } from '../engine/run';
 import { KEYMAP_1P } from '../input/keymap';
 import { InputController } from '../input/InputController';
+import { loadHandling } from '../input/handling';
 import { AiController, type Difficulty } from '../ai/AiController';
 import { PixiStage } from './PixiStage';
 import { BoardView } from './BoardView';
@@ -104,7 +105,7 @@ export async function startAi(
   let run = new SoloRun({ skill, seed, mode: 'ai' }); // 玩家（A）側能量/技能；AI 不用技能（v1）
   let slowLeftMs = 0; // 時之沙剩餘（tick dt 倒數 → 暫停相容）
   // A = 人類；B = AI（透過相同的 match.input API）
-  const inA = new InputController((a) => match.input('A', a), { das: 150, arr: 35 });
+  const inA = new InputController((a) => match.input('A', a), loadHandling());
   let ai = new AiController((act) => match.input('B', act), () => match.b.getState(), difficulty);
 
   let introMs = 2400;

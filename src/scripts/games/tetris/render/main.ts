@@ -6,6 +6,7 @@ import { applySkill, resetSlow } from '../engine/items';
 import { SoloRun, stackHeight, type SkillId, type PerkChoice, type PerkId } from '../engine/run';
 import { KEYMAP_1P } from '../input/keymap';
 import { InputController } from '../input/InputController';
+import { loadHandling } from '../input/handling';
 import { PixiStage } from './PixiStage';
 import { BoardView } from './BoardView';
 import { HudView } from './HudView';
@@ -130,7 +131,7 @@ export async function startTetris(
   const onResize = () => relayout();
   stage.app.renderer.on('resize', onResize);
 
-  const input = new InputController((action) => game.input(action), { das: 150, arr: 35 });
+  const input = new InputController((action) => game.input(action), loadHandling());
   const sound = new SoundManager();
   let paused = false;
   let gameOverShown = false;

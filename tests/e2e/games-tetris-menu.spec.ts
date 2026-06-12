@@ -53,3 +53,43 @@ test.describe('Tetris 主選單三分頁', () => {
     await expect(page.locator('#online-panel')).toBeHidden();
   });
 });
+
+// G4：HANDLING 手感設定（DAS/ARR/SDF 滑桿，localStorage `tetris-handling`，下一局生效）
+// 開關鈕在面板底部，dev server 的 astro-dev-toolbar 會攔截 pointer events（僅 dev 存在）→ 先移除。
+async function removeDevToolbar(page: import('@playwright/test').Page): Promise<void> {
+  await page
+    .locator('astro-dev-toolbar')
+    .evaluate((el) => el.remove(), undefined, { timeout: 3000 })
+    .catch(() => {}); // production build 無 toolbar
+}
+
+test.describe('Tetris HANDLING 手感設定', () => {
+  test('開面板 → 調 DAS → localStorage 反映且重載後保留', async ({ page }) => {
+    await page.goto('/games/tetris');
+    await removeDevToolbar(page);
+    await page.locator('#handling-open').click();
+    await expect(page.locator('#handling-panel')).toBeVisible();
+    await page.locator('#handling-das').fill('250');
+    await expect(page.locator('#handling-das-val')).toHaveText('250ms');
+    const stored = await page.evaluate(() => localStorage.getItem('tetris-handling'));
+    expect(JSON.parse(stored ?? '{}')).toEqual({ das: 250, arr: 35, sdf: 30 });
+    await page.reload();
+    await removeDevToolbar(page);
+    await page.locator('#handling-open').click();
+    await expect(page.locator('#handling-das')).toHaveValue('250');
+  });
+
+  test('恢復預設回 150/35/30，「完成」收合面板', async ({ page }) => {
+    await page.goto('/games/tetris');
+    await page.evaluate(() => localStorage.setItem('tetris-handling', JSON.stringify({ das: 80, arr: 0, sdf: 0 })));
+    await removeDevToolbar(page);
+    await page.locator('#handling-open').click();
+    await expect(page.locator('#handling-das')).toHaveValue('80'); // 開啟時同步現值
+    await page.locator('#handling-reset').click();
+    await expect(page.locator('#handling-das')).toHaveValue('150');
+    const stored = await page.evaluate(() => localStorage.getItem('tetris-handling'));
+    expect(JSON.parse(stored ?? '{}')).toEqual({ das: 150, arr: 35, sdf: 30 });
+    await page.locator('#handling-done').click();
+    await expect(page.locator('#handling-panel')).toBeHidden();
+  });
+});
