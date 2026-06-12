@@ -246,9 +246,10 @@ export class WitchGame {
     this.score += Math.round(SCORE.enemy * chainMultiplier(this.grazeChain) * (this.od.isActive ? 2 : 1));
     this.coins.push({ x: e.x, y: e.y, vy: COIN_FALL_SPEED, active: true });
     this.events.push({ kind: 'enemyKill', x: e.x, y: e.y });
-    // 死亡音爆（chime）
-    if (ENEMY_DEFS[e.kind].deathBurst) {
-      for (const spec of ring({ x: e.x, y: e.y, n: 8, speed: 130, kind: 'wave' })) {
+    // 死亡音爆：彈種/速度跟著該敵兵定義走
+    const def = ENEMY_DEFS[e.kind];
+    if (def.deathBurst) {
+      for (const spec of ring({ x: e.x, y: e.y, n: 8, speed: def.bulletSpeed, kind: def.bulletKind })) {
         this.enemyBullets.spawn(spec);
       }
     }

@@ -76,7 +76,8 @@ export function stepEnemy(
 
   switch (d.fire) {
     case 'burst3':
-      return { spawns: burst({ x: e.x, y: e.y, aim, speeds: [160, 200, 240], kind: d.bulletKind }) };
+      // 以 def.bulletSpeed 為基準的三段彈鏈（130 → 160/200/240），平衡調整只動 def
+      return { spawns: burst({ x: e.x, y: e.y, aim, speeds: [d.bulletSpeed + 30, d.bulletSpeed + 70, d.bulletSpeed + 110], kind: d.bulletKind }) };
 
     case 'drift': {
       const spec = aimed({ x: e.x, y: e.y, tx: target.px, ty: target.py, speed: d.bulletSpeed, kind: d.bulletKind });

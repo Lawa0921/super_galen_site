@@ -46,14 +46,11 @@ export class BulletPool {
       }
       b.vx += b.ax * dt; b.vy += b.ay * dt;
       b.x += b.vx * dt; b.y += b.vy * dt;
-      // 左右牆反射
-      if (b.x < 0 || b.x > FIELD_W) {
-        if (b.bounces > 0) {
-          b.vx = -b.vx;
-          b.bounces--;
-          b.x = b.x < 0 ? 0 : FIELD_W; // 鉗回界內
-          continue;
-        }
+      // 左右牆反射（反射後仍要過下方 cull 檢查——上下出界照常回收）
+      if ((b.x < 0 || b.x > FIELD_W) && b.bounces > 0) {
+        b.vx = -b.vx;
+        b.bounces--;
+        b.x = b.x < 0 ? 0 : FIELD_W; // 鉗回界內
       }
       const m = BULLET_CULL_MARGIN;
       if (b.x < -m || b.x > FIELD_W + m || b.y < -m || b.y > FIELD_H + m) b.active = false;
