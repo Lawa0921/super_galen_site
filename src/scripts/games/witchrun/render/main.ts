@@ -5,7 +5,7 @@ import { KEYMAP } from '../input/keymap';
 import { attachTouch } from '../input/touch';
 import { SoundManager } from '../audio/SoundManager';
 import { PixiStage } from './PixiStage';
-import { makePlaceholderTextures } from './assets';
+import { loadWitchTextures } from './assets';
 import { BackgroundView } from './BackgroundView';
 import { BulletView } from './BulletView';
 import { EntityView } from './EntityView';
@@ -26,8 +26,9 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
     await document.fonts.ready;
   } catch { /* fallback monospace */ }
 
-  const tex = makePlaceholderTextures(stage.app.renderer);
+  const tex = await loadWitchTextures(stage.app.renderer);
   const bg = new BackgroundView(stage.bgLayer, FIELD_W, FIELD_H);
+  await bg.load();
   const bullets = new BulletView(stage.bulletLayer, tex);
   const entities = new EntityView(stage.entityLayer, stage.fxLayer, tex);
   const hud = new HudView(stage.hudLayer);
@@ -133,7 +134,7 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
       }
     }
     const s = game.getState();
-    bg.update(dt);
+    bg.update(dt, s.stage);
     bullets.render(s.enemyBullets, s.playerBullets);
     entities.render(s, dt);
     hud.render(s);
