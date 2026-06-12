@@ -18,6 +18,7 @@ export interface EnemyBullet {
 export interface PlayerBullet {
   x: number; y: number; vx: number; vy: number;
   dmg: number; active: boolean;
+  split: boolean;     // 裂變魔彈產生的子彈不再分裂
 }
 
 export type StageId = 1 | 2 | 3 | 4;

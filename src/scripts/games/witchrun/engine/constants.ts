@@ -39,3 +39,16 @@ export const INFERNO_DMG = 30;          // 對全場敵人傷害
 /** 敵彈判定半徑（依外觀種類）。 */
 export const BULLET_R: Record<'rune' | 'wave' | 'page' | 'gear' | 'wisp' | 'bell', number> =
   { rune: 4, wave: 6, page: 5, gear: 7, wisp: 4, bell: 6 };
+
+/** 實體判定半徑與金幣。 */
+export const ENEMY_R = 14;
+export const BOSS_R = 36;
+export const COIN_R = 8;
+export const COIN_PICKUP_R = 28;
+export const COIN_MAGNET_R = 120;       // 貪婪磁石拾取半徑
+export const COIN_FALL_SPEED = 90;      // px/s
+export const POWER_COINS = 15;          // 每 15 金幣火力 +1
+export const MAX_ENEMIES = 32;
+export const FIRE_FIELD_MS = 3000;      // 爆炎觸媒火場持續
+export const FIRE_FIELD_DPS = 4;        // 火場每秒傷害
+export const STEP_CAP_MS = 100;         // 單次 step 上限（分頁切回防爆衝）
