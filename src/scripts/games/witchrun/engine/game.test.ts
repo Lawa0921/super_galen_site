@@ -29,7 +29,7 @@ describe('WitchGame', () => {
   it('自動射擊產生自機彈，事件含 shoot', () => {
     const g = new WitchGame({ seed: 1 });
     run(g, 300);
-    expect(g.getState().playerBullets.length).toBeGreaterThan(0);
+    expect(g.getState().playerBullets.filter((b) => b.active).length).toBeGreaterThan(0);
     expect(g.drainEvents().some((e) => e.kind === 'shoot')).toBe(true);
   });
 
@@ -127,6 +127,29 @@ describe('WitchGame', () => {
     expect(s.status).toBe('playing');
     expect(s.score).toBe(0);
     expect(s.player.lives).toBe(START_LIVES);
+  });
+
+  it('continueRun 清場：敵人/金幣/子彈/Boss 召喚旗標全部重置（迴歸）', () => {
+    const g = new WitchGame({ seed: 1 });
+    // 推到 Boss 戰中死亡：殘留敵彈、Boss、bossSpawned
+    g.debugSkipToBoss();
+    g.step(16);
+    expect(g.getState().boss).not.toBeNull();
+    g.debugSetLives(0);
+    g.step(16);
+    expect(g.getState().status).toBe('gameover');
+    g.continueRun();
+    const s = g.getState();
+    expect(s.enemies).toHaveLength(0);
+    expect(s.coins).toHaveLength(0);
+    expect(s.playerBullets.every((b) => !b.active)).toBe(true);
+    expect(s.enemyBullets.every((b) => !b.active)).toBe(true);
+    expect(s.boss).toBeNull();
+    // 下一個 tick 應重新召喚滿血 Boss（bossSpawned 已重置且波次早已跑完）
+    g.step(16);
+    const s2 = g.getState();
+    expect(s2.boss).not.toBeNull();
+    expect(s2.boss!.hp).toBe(s2.boss!.maxHp);
   });
 
   it('nudge 相對移動並鉗制', () => {

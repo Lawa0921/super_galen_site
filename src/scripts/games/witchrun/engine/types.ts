@@ -93,7 +93,8 @@ export interface WitchState {
   status: GameStatus;
   stage: StageId;
   player: PlayerState;
-  /** 兩個子彈陣列是 game.ts 內部池的直接引用（含 inactive 項，渲染層以 active 過濾）。 */
+  /** 子彈/敵人/金幣皆為 game.ts 內部陣列的直接引用（避免每 tick 複製）：
+   *  子彈池含 inactive 項需以 active 過濾；外部只可讀，不可變更。 */
   playerBullets: PlayerBullet[];
   enemyBullets: EnemyBullet[];
   enemies: Enemy[];

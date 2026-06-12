@@ -18,7 +18,7 @@ import { Overdrive } from './graze';
 import { computeModifiers, draftRelics, BASE_MODIFIERS } from './relics';
 import { SCORE, chainMultiplier } from './scoring';
 import { makeEnemy, stepEnemy } from './enemy';
-import { BossRunner, BOSS_DEFS } from './boss';
+import { BossRunner } from './boss';
 import { StageRunner, STAGES } from './stage';
 
 export interface WitchOptions { seed?: number; stage?: StageId; }
@@ -78,19 +78,26 @@ export class WitchGame {
     this.mod = computeModifiers(this.relics);
     const lifeCap = LIFE_CAP + this.mod.lifeCapDelta;
     if (id === 'moonlight') this.player.lives = Math.min(lifeCap, this.player.lives + 1);
-    if (id === 'pact') this.player.lives = Math.min(lifeCap, this.player.lives);
+    if (id === 'pact') this.player.lives = Math.min(lifeCap, this.player.lives); // 上限降低時收斂現有殘機
     if (id === 'catalyst') this.player.bombs = Math.min(BOMB_CAP, this.player.bombs + 1);
     this.events.push({ kind: 'relicPicked', id });
     this.draftChoices = [];
     this.advanceStage();
   }
 
+  /** 續關：分數歸零、清場重生；保留 stage/stageRunner/relics（從當前關卡繼續）。 */
   continueRun(): void {
     if (this.status !== 'gameover') return;
     this.score = 0;
     this.grazeChain = 0;
     this.player = makePlayer();
+    this.enemies = [];
+    this.coins = [];
+    for (const b of this.playerBullets) b.active = false;
     this.enemyBullets.clearAll();
+    this.bossSpawned = false;   // 死於 Boss 戰 → 下個 tick 重新召喚滿血 Boss
+    this.boss = null;
+    this.fireFieldMs = 0;
     this.od = new Overdrive();
     this.status = 'playing';
   }
