@@ -30,6 +30,10 @@ describe('relics', () => {
     expect(computeModifiers([])).toEqual(BASE_MODIFIERS);
   });
 
+  it('computeModifiers：moonlight 為純即時效果，不改任何持續修正', () => {
+    expect(computeModifiers(['moonlight'])).toEqual(BASE_MODIFIERS);
+  });
+
   it('computeModifiers：效果聚合', () => {
     const m = computeModifiers(['feather', 'pact', 'echo', 'stardust']);
     expect(m.speedMult).toBeCloseTo(1.2);

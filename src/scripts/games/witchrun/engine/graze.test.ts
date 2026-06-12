@@ -44,6 +44,16 @@ describe('Overdrive', () => {
     expect(od.activeMs).toBe(OVERDRIVE_DURATION_MS - 1000);
   });
 
+  it('active 結束後恢復累積並可再次引爆', () => {
+    const od = new Overdrive();
+    od.addGraze(1000, 0);
+    od.activate(1);
+    od.tick(OVERDRIVE_DURATION_MS);
+    expect(od.isActive).toBe(false);
+    od.addGraze(2, 0);
+    expect(od.gauge).toBeCloseTo(GRAZE_GAIN * 2);
+  });
+
   it('被彈清空槽並中斷 active', () => {
     const od = new Overdrive();
     od.addGraze(10, 0);

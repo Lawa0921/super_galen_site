@@ -12,7 +12,8 @@ describe('pattern', () => {
     // 等角：相鄰兩顆夾角 = 2π/8
     const a0 = Math.atan2(out[0].vy, out[0].vx);
     const a1 = Math.atan2(out[1].vy, out[1].vx);
-    expect(Math.abs(a1 - a0)).toBeCloseTo(Math.PI / 4, 5);
+    const diff = (a1 - a0 + 2 * Math.PI) % (2 * Math.PI); // wrap-safe
+    expect(diff).toBeCloseTo(Math.PI / 4, 5);
   });
 
   it('ring：offset 旋轉整圈起始角', () => {
@@ -57,5 +58,11 @@ describe('pattern', () => {
       expect(d).toBeGreaterThanOrEqual(gapWidth / 2 - 1e-9); // 缺口內沒有彈
     }
     for (const b of out) expect(b.kind).toBe('bell');
+    // 行為驗證（不重複實作公式）：缺口中心方向無彈、缺口外緊鄰方向有彈
+    const dirOf = (vx: number, vy: number): number => Math.atan2(vy, vx);
+    const nearGapCenter = out.some((b) => Math.abs(dirOf(b.vx, b.vy) - gapAt) < gapWidth / 4);
+    const justOutside = out.some((b) => Math.abs(dirOf(b.vx, b.vy) - (gapAt + gapWidth)) < Math.PI / 18);
+    expect(nearGapCenter).toBe(false);
+    expect(justOutside).toBe(true);
   });
 });
