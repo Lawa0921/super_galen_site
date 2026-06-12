@@ -44,6 +44,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
       <section class="mm-panel is-active" id="panel-play">
         <div class="mode-select" id="mode-select">
           <div class="ms-buttons">
+            <button class="ms-btn ms-quick" id="quick-match">QUICK MATCH</button>
             <button class="ms-btn ms-solo" data-mode="solo">SOLO</button>
             <button class="ms-btn" data-mode="ai" data-diff="easy">vs AI · EASY</button>
             <button class="ms-btn" data-mode="ai" data-diff="normal">vs AI · NORMAL</button>
@@ -97,6 +98,15 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
               <button class="ms-btn" id="online-join-btn">加入房間</button>
             </div>
             <p class="online-status" id="online-status"></p>
+          </div>
+        </div>
+        <div class="mode-select" id="queue-panel" hidden>
+          <h2 class="ss-title">QUICK MATCH</h2>
+          <p class="queue-status" id="queue-status">正在尋找玩家…</p>
+          <p class="queue-timer">已等待 <span id="queue-seconds">0</span> 秒</p>
+          <div class="ms-buttons">
+            <button class="ms-btn ms-solo" id="queue-ai-offer" type="button" hidden>目前沒有玩家排隊，先跟 AI 打一場？</button>
+            <button class="ms-btn ms-hard" id="queue-cancel" type="button">取消排隊</button>
           </div>
         </div>
         <p class="touch-notice" id="touch-notice" hidden>
@@ -260,11 +270,11 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
   .ms-buttons {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 11px;
     width: 100%;
   }
   .ms-btn {
-    padding: 18px 20px;
+    padding: 15px 20px;
     font-family: inherit;
     font-size: 13px;
     letter-spacing: 2px;
@@ -317,6 +327,46 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
     letter-spacing: 1px;
     color: #9fb4d8;
   }
+
+  /* 快速配對（QUICK MATCH）：入口按鈕金色霓虹 + 排隊面板 */
+  .ms-quick {
+    border-color: rgba(255, 210, 63, 0.7);
+    box-shadow: 0 0 12px rgba(255, 210, 63, 0.3);
+    color: #ffe9a8;
+  }
+  .ms-quick:hover { box-shadow: 0 0 22px rgba(255, 210, 63, 0.8); }
+  .ms-quick::before {
+    content: '';
+    display: inline-block;
+    width: 1.3em;
+    height: 1.3em;
+    margin-right: 8px;
+    vertical-align: -0.28em;
+    background: url('/assets/games/tetris/icons/play.webp') center / contain no-repeat;
+  }
+  .queue-status {
+    margin: 0;
+    min-height: 1.4em;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.8;
+    letter-spacing: 1px;
+    color: #cfe9ff;
+    animation: lobbyPulse 1.4s ease-in-out infinite;
+  }
+  .queue-timer {
+    margin: 0;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #6fa8d8;
+  }
+  .queue-timer span {
+    color: #ffd23f;
+    font-size: 13px;
+  }
+  #queue-ai-offer { font-size: 10px; line-height: 1.8; letter-spacing: 1px; }
+  #queue-ai-offer[hidden] { display: none; }
 
   /* 開局技能選擇步（SOLO / vs-AI）*/
   .ss-title {
@@ -436,7 +486,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
     /* 無實底：露出 .tetris-page 的地城氛圍，閱讀對比由面板卡提供 */
   }
   .mm-logo {
-    width: min(380px, 78vw);
+    width: min(330px, 72vw);
     height: auto;
     /* logo 已做亮度→alpha 透明去背，直接疊在氛圍上 */
     filter: drop-shadow(0 0 16px rgba(54, 230, 255, 0.35));
@@ -820,6 +870,8 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
   import { SKIN_CATALOG, getSelectedSkin, setSelectedSkin, isUnlocked, resolveSkin } from '@scripts/games/tetris/render/skins';
   import { hostGame, joinGame, connectWallet, type NetStatus, type Identity } from '@scripts/games/tetris/net/netMain';
   import { hostFfaGame, joinFfaGame, type FfaNetStatus, type FfaIdentity } from '@scripts/games/tetris/net/ffaNetMain';
+  import { startQueue, type MatchedInfo, type QueueHandle } from '@scripts/games/tetris/net/queueClient';
+  import { DEFAULT_RATING } from '@scripts/games/tetris/net/elo';
 
   type Diff = 'easy' | 'normal' | 'hard';
   const SOLO_HINT = 'MOVE ←→ · ROTATE ↑/Z · DROP SPACE · HOLD SHIFT · ESC PAUSE · MUTE M';
@@ -863,6 +915,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
   let menuOpen = false;
   let resultOpen = false;
   let perkOpen = false; // 三選一開啟中（ESC 互斥：perk 開啟時不開暫停選單）
+  let isQueueMatch = false; // 快速配對局：lobby 不顯示 START（autoStart）、文案改「配對成功」
   const pauseMenu = document.getElementById('pause-menu');
   const pauseTitle = document.getElementById('pause-title');
   const pauseHint = document.getElementById('pause-hint');
@@ -996,7 +1049,10 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
     if (lobby) lobby.hidden = false;
     if (room && lobbyCode) lobbyCode.textContent = room;
     if (lobbyWait) {
-      lobbyWait.textContent = phase === 'connecting' ? '連線中…' : phase === 'creating' ? '建立房間中…' : '等待對手加入…';
+      // 隊列局：玩家沒交換過房號，統一顯示配對成功（房號僅供 debug 觀察）
+      lobbyWait.textContent = isQueueMatch
+        ? '配對成功，連線中…'
+        : phase === 'connecting' ? '連線中…' : phase === 'creating' ? '建立房間中…' : '等待對手加入…';
       lobbyWait.classList.add('pending');
     }
   }
@@ -1162,13 +1218,19 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
         if (lobbyCount) lobbyCount.hidden = false;
         if (lobbyJoined) lobbyJoined.textContent = String(joined);
         if (lobbyTarget) lobbyTarget.textContent = String(playerCount);
-        if (lobbyWait) lobbyWait.textContent = joined >= playerCount ? '人數已滿，可開始' : '等待玩家加入…';
-        if (lobbyStart) {
-          lobbyStart.hidden = false;
-          lobbyStart.disabled = joined < 2; // 至少 2 人可開
+        if (isQueueMatch) {
+          // 隊列局：人到齊自動開始（hostFfaGame autoStart），不顯示 START 按鈕
+          if (lobbyWait) lobbyWait.textContent = '配對成功，連線中…';
+          if (lobbyStart) lobbyStart.hidden = true;
+        } else {
+          if (lobbyWait) lobbyWait.textContent = joined >= playerCount ? '人數已滿，可開始' : '等待玩家加入…';
+          if (lobbyStart) {
+            lobbyStart.hidden = false;
+            lobbyStart.disabled = joined < 2; // 至少 2 人可開
+          }
         }
       } else if (lobbyWait) {
-        lobbyWait.textContent = '已連線 · 等待房主開始…';
+        lobbyWait.textContent = isQueueMatch ? '配對成功，連線中…' : '已連線 · 等待房主開始…';
       }
     } else if (s.phase === 'connecting') {
       showLobby('connecting', s.room);
@@ -1224,6 +1286,119 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
       onHandle: (h) => { gameHandle = h; },
     }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, false));
   }
+  // ---- 快速配對（QUICK MATCH）：進隊列 → 撮合 → 自動接 host/join ----
+  const queuePanel = document.getElementById('queue-panel');
+  const queueStatus = document.getElementById('queue-status');
+  const queueSeconds = document.getElementById('queue-seconds');
+  const queueAiOffer = document.getElementById('queue-ai-offer');
+  // 60 秒空池 AI 提示閾值：e2e 可用 ?queueAiMs= 或 window.__tetrisQueueAiMs 注入縮短
+  const queueAiOfferMs =
+    Number(params.get('queueAiMs')) ||
+    (window as unknown as { __tetrisQueueAiMs?: number }).__tetrisQueueAiMs ||
+    60_000;
+  let queueHandle: QueueHandle | null = null;
+  let queueTicker: ReturnType<typeof setInterval> | null = null;
+
+  /** 隊列識別：暱稱欄位有值用之，否則 Player-xxxx（同時作為對局身分 id）。 */
+  function queueIdentityId(): string {
+    const nameEl = document.getElementById('online-name') as HTMLInputElement | null;
+    const name = (nameEl?.value ?? '').trim();
+    return name || `Player-${Math.floor(Math.random() * 9000 + 1000)}`;
+  }
+
+  function stopQueueUi(): void {
+    if (queueTicker !== null) { clearInterval(queueTicker); queueTicker = null; }
+    if (queuePanel) queuePanel.hidden = true;
+  }
+
+  function beginQuickMatch(): void {
+    if (isTouch) { showTouchNotice(); return; }
+    if (started || queueHandle) return;
+    const qid = queueIdentityId();
+    if (modeSelect) modeSelect.hidden = true;
+    if (onlinePanel) onlinePanel.hidden = true;
+    if (queuePanel) queuePanel.hidden = false;
+    if (queueAiOffer) queueAiOffer.hidden = true;
+    if (queueStatus) queueStatus.textContent = '正在尋找玩家…';
+    if (queueSeconds) queueSeconds.textContent = '0';
+    const t0 = Date.now();
+    queueTicker = setInterval(() => {
+      const elapsed = Date.now() - t0;
+      if (queueSeconds) queueSeconds.textContent = String(Math.floor(elapsed / 1000));
+      if (elapsed >= queueAiOfferMs && queueAiOffer) queueAiOffer.hidden = false;
+    }, 250);
+    queueHandle = startQueue({
+      id: qid,
+      name: qid,
+      rating: DEFAULT_RATING,
+      onUpdate: () => { /* 等待秒數以本地 ticker 顯示（較平滑） */ },
+      onMatched: (info) => { queueHandle = null; onQueueMatched(qid, info); },
+      onError: () => {
+        queueHandle = null;
+        if (queueStatus) queueStatus.textContent = '配對服務連線失敗，請按取消返回再試';
+      },
+    });
+    blip(620, 0.07);
+  }
+
+  function onQueueMatched(qid: string, info: MatchedInfo): void {
+    stopQueueUi();
+    if (started || !canvas) return;
+    started = true;
+    isQueueMatch = true;
+    playerCount = info.count; // lobby「已加入 x / y 人」以實際成局人數為準
+    const identity: Identity = { id: qid, ranked: false }; // 隊列局不計排名
+    if (info.mode === '1v1') {
+      if (info.role === 'host') {
+        hostGame(canvas, identity, onStatus, { room: info.room })
+          .catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+      } else {
+        joinGame(canvas, info.room, identity, onStatus)
+          .catch((err: unknown) => onStatus({ phase: 'error', message: String(err) }));
+      }
+      return;
+    }
+    // FFA：host autoStart（人到齊自動開局）；guest 依 roster 序位固定槽位（免並發 claim race）
+    const maxGuests = info.count - 1;
+    if (info.role === 'host') {
+      hostFfaGame({
+        canvas,
+        identity,
+        maxGuests,
+        autoStart: true,
+        room: info.room,
+        onStatus: (s) => onFfaStatus(s, true),
+        onHandle: (h) => { gameHandle = h; },
+      }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, true));
+    } else {
+      const rosterIdx = info.players.findIndex((p) => p.id === qid); // host=0 → guest 槽位 = idx-1
+      joinFfaGame({
+        canvas,
+        room: info.room,
+        identity,
+        maxGuests,
+        fixedSlot: rosterIdx > 0 ? rosterIdx - 1 : undefined,
+        onStatus: (s) => onFfaStatus(s, false),
+        onHandle: (h) => { gameHandle = h; },
+      }).catch((err: unknown) => onFfaStatus({ phase: 'error', message: String(err) }, false));
+    }
+  }
+
+  document.getElementById('quick-match')?.addEventListener('click', beginQuickMatch);
+  document.getElementById('queue-cancel')?.addEventListener('click', () => {
+    queueHandle?.cancel();
+    queueHandle = null;
+    stopQueueUi();
+    if (modeSelect) modeSelect.hidden = false; // 回模式選單（可再進線上面板）
+    blip(300, 0.08);
+  });
+  queueAiOffer?.addEventListener('click', () => {
+    queueHandle?.cancel();
+    queueHandle = null;
+    stopQueueUi();
+    startAiMode('normal');
+  });
+
   // lobby START（FFA host）：resolve 開始訊號，按鈕隱藏避免重複觸發。
   lobbyStart?.addEventListener('click', () => {
     if (lobbyStart) { lobbyStart.disabled = true; lobbyStart.hidden = true; }
@@ -1337,11 +1512,13 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
       if (isTouch) {
         showTouchNotice();
       } else {
-        // 還原模式選單：使用者可能先前點過「線上對戰」或技能選擇步而隱藏了 SOLO/AI
+        // 還原模式選單：使用者可能先前點過「線上對戰」/快速配對/技能選擇步而隱藏了 SOLO/AI
         if (modeSelect) modeSelect.hidden = false;
         if (onlinePanel) onlinePanel.hidden = true;
         if (skillSelect) skillSelect.hidden = true;
         skillSelectOpen = false;
+        if (queueHandle) { queueHandle.cancel(); queueHandle = null; } // 切走分頁＝棄排
+        stopQueueUi();
       }
     }
     if (name === 'leaderboard' && !lbLoaded) { lbLoaded = true; void loadLeaderboard(); }

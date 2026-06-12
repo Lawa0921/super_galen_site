@@ -458,12 +458,20 @@ export async function negotiateJoinFfaGuestInit(opts: {
   signal: FfaSignalClient;
   peerFactory: () => FfaGuestOfferPeer;
   maxGuests?: number;
+  /** 指定槽位（快速配對：依 roster 序位分槽）→ 直接寫該槽，免並發 claim race。 */
+  fixedSlot?: number;
   pollOpts?: { timeoutMs?: number; intervalMs?: number };
 }): Promise<NegotiateJoinGuestInitResult> {
   const { room, guestId, signal, peerFactory } = opts;
   const peer = peerFactory();
   const offer = await peer.createOffer();
-  const slotIndex = await claimGuestSlot(signal, room, guestId, offer, opts.maxGuests ?? 7);
+  let slotIndex: number;
+  if (opts.fixedSlot !== undefined) {
+    slotIndex = opts.fixedSlot;
+    await signal.putSlot(room, `guest-${slotIndex}-offer`, JSON.stringify({ id: guestId, offer } as GuestOfferMsg));
+  } else {
+    slotIndex = await claimGuestSlot(signal, room, guestId, offer, opts.maxGuests ?? 7);
+  }
 
   const answer = await signal.pollSlot(room, `host-ack-${slotIndex}`, opts.pollOpts);
   await peer.acceptAnswer(answer);
@@ -1241,8 +1249,12 @@ export async function hostFfaGame(opts: {
   canvas: HTMLCanvasElement;
   identity: FfaIdentity;
   maxGuests: number;
-  /** lobby「開始」訊號：resolve 後 host 停止收人並開局。 */
-  waitStart: () => Promise<void>;
+  /** lobby「開始」訊號：resolve 後 host 停止收人並開局（autoStart 隊列局可不傳）。 */
+  waitStart?: () => Promise<void>;
+  /** 人到齊（maxGuests 全連上）即自動開局，不等 waitStart（快速配對用；lobby 不顯示開始鈕）。 */
+  autoStart?: boolean;
+  /** 指定房號（快速配對：隊列已先發房號給全員）；未給則 signal.createRoom()。 */
+  room?: string;
   onStatus: FfaStatusCb;
   /** 對局握把回呼（ESC「離開對戰」用 leaveMatch）。 */
   onHandle?: (h: FfaGameHandle) => void;
@@ -1254,16 +1266,16 @@ export async function hostFfaGame(opts: {
   const slots = Math.min(Math.max(opts.maxGuests, 1), 7);
   try {
     opts.onStatus({ phase: 'creating' });
-    const room = await signal.createRoom();
+    const room = opts.room ?? (await signal.createRoom());
     const seed = randInt();
     const matchId = `${room}-${seed.toString(36)}`;
     opts.onStatus({ phase: 'lobby', room, connected: 0 });
 
-    // 背景持續接受 guest，直到 start 訊號（即使收滿仍等房主按開始）。
+    // 背景持續接受 guest，直到 start 訊號（即使收滿仍等房主按開始；autoStart 則滿員即開）。
     const connected = new Array<{ id: string; peer: FfaHostAnswerPeer } | undefined>(slots);
     let count = 0;
     let started = false;
-    void opts.waitStart().then(() => { started = true; });
+    if (opts.waitStart) void opts.waitStart().then(() => { started = true; });
 
     const deadline = Date.now() + HANDSHAKE_TIMEOUT_MS * 4; // lobby 可等久一點
     while (!started && Date.now() < deadline) {
@@ -1282,6 +1294,7 @@ export async function hostFfaGame(opts: {
         count++;
         progressed = true;
         opts.onStatus({ phase: 'lobby', room, connected: count });
+        if (opts.autoStart && count >= slots) started = true; // 隊列局：人到齊自動開始
         if (started || count >= slots) break;
       }
       if (started) break;
@@ -1340,6 +1353,8 @@ export async function joinFfaGame(opts: {
   /** 對局握把回呼（ESC「離開對戰」用 leaveMatch）。 */
   onHandle?: (h: FfaGameHandle) => void;
   maxGuests?: number;
+  /** 指定槽位（快速配對：依 roster 序位分槽，免並發 claim race）。 */
+  fixedSlot?: number;
   peerFactory?: () => FfaGuestOfferPeer;
   signal?: FfaSignalClient;
   /** ffa-init 等待逾時（預設沿用握手逾時）。 */
@@ -1355,6 +1370,7 @@ export async function joinFfaGame(opts: {
       signal,
       peerFactory,
       maxGuests: opts.maxGuests ?? 7,
+      fixedSlot: opts.fixedSlot,
     });
     opts.onStatus({ phase: 'lobby', room: opts.room });
 

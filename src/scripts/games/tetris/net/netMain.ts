@@ -68,12 +68,12 @@ export async function connectWallet(): Promise<{ address: string; signMessage: (
 interface HelloMsg { t: 'hello'; seed: number; matchId: string; id: string; ranked: boolean }
 interface AckMsg { t: 'ack'; id: string; ranked: boolean }
 
-/** Host：建房 → 等對手 → 交握身分/seed → 開局（A 方）。 */
-export async function hostGame(canvas: HTMLCanvasElement, identity: Identity, onStatus: StatusCb): Promise<void> {
+/** Host：建房 → 等對手 → 交握身分/seed → 開局（A 方）。opts.room：快速配對已先發房號時沿用。 */
+export async function hostGame(canvas: HTMLCanvasElement, identity: Identity, onStatus: StatusCb, opts?: { room?: string }): Promise<void> {
   const transport = new WebRtcTransport();
   try {
     onStatus({ phase: 'creating' });
-    const room = await createRoom();
+    const room = opts?.room ?? (await createRoom());
     onStatus({ phase: 'waiting', room });
     const offer = await transport.createOffer();
     await putSlot(room, 'offer', offer);

@@ -467,6 +467,46 @@ describe('guest-initiated 握手（negotiateHostFfaGuestInit / negotiateJoinFfaG
     expect(acceptedAnswer).toBe('ANSWER-FROM-HOST');
   });
 
+  it('negotiateJoinFfaGuestInit：fixedSlot 指定槽位 → 直接寫該槽不掃描（快速配對免並發 claim race）', async () => {
+    const signal = makeMockSignal();
+    const room = 'ROOMF';
+    // host 已回應 slot 1（slot 0 仍空 → 若有掃描會錯搶 slot 0）
+    await signal.putSlot(room, 'host-ack-1', 'ANSWER-1');
+
+    let acceptedAnswer: string | null = null;
+    const peerFactory = (): FfaGuestOfferPeer => {
+      let onmsg: ((r: string) => void) | null = null;
+      return {
+        createOffer: async () => 'OFFER-B',
+        acceptAnswer: async (a: string) => { acceptedAnswer = a; },
+        waitOpen: async () => {},
+        channel: {
+          send: () => {},
+          get open() { return true; },
+          set onmessage(fn: ((r: string) => void) | null) { onmsg = fn; },
+          get onmessage() { return onmsg; },
+        },
+      } as unknown as FfaGuestOfferPeer;
+    };
+
+    const result = await negotiateJoinFfaGuestInit({
+      room,
+      guestId: 'bob',
+      signal,
+      peerFactory,
+      fixedSlot: 1,
+      pollOpts: { timeoutMs: 50, intervalMs: 0 },
+    });
+
+    expect(result.slotIndex).toBe(1);
+    // slot 0 完全未被碰；offer 直接落在 slot 1
+    expect(signal.store.get(`${room}:guest-0-offer`)).toBeUndefined();
+    const off = JSON.parse(signal.store.get(`${room}:guest-1-offer`)!) as { id: string; offer: string };
+    expect(off.id).toBe('bob');
+    expect(off.offer).toBe('OFFER-B');
+    expect(acceptedAnswer).toBe('ANSWER-1');
+  });
+
   it('claimGuestSlot：選最低未被占用的 slot（已占用者跳過）', async () => {
     const signal = makeMockSignal();
     const room = 'R';
