@@ -42,6 +42,10 @@ export class SoundManager {
   coin(): void { this.blip(990, 60, 'square', 0.08); this.blip(1320, 70, 'square', 0.08); }
   alarm(): void { this.blip(660, 180, 'square', 0.15); this.blip(660, 180, 'square', 0.15); }
   bell(): void { this.blip(523, 900, 'sine', 0.2, 392); this.blip(1046, 600, 'sine', 0.08); }
+  /** 亡鐘鐘響：低沉 196Hz 正弦 1.2s + 392Hz 衰減泛音 */
+  toll(): void { this.blip(196, 1200, 'sine', 0.25, 98); this.blip(392, 900, 'sine', 0.12, 196); }
+  /** 道具拾取：上行三音 */
+  drop(): void { this.blip(660, 80, 'sine', 0.12); this.blip(880, 80, 'sine', 0.12); this.blip(1100, 120, 'sine', 0.10); }
   pickup(): void { this.blip(660, 120, 'sine', 0.15); this.blip(880, 180, 'sine', 0.15); this.blip(1100, 240, 'sine', 0.12); }
   gameover(): void { this.blip(160, 600, 'sawtooth', 0.22, 50); }
   clear(): void { this.blip(523, 150, 'square', 0.15); this.blip(659, 150, 'square', 0.15); this.blip(784, 300, 'square', 0.15); }

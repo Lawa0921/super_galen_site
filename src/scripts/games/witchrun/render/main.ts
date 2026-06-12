@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { WitchGame } from '../engine/game';
 import { FIELD_W, FIELD_H } from '../engine/constants';
 import { KEYMAP } from '../input/keymap';
@@ -12,6 +12,8 @@ import { EntityView } from './EntityView';
 import { HudView } from './HudView';
 import { RELICS } from '../engine/relics';
 import type { RelicId } from '../engine/types';
+
+interface TelegraphLine { g: Graphics; ttlMs: number; durMs: number; }
 
 export interface WitchHandle { game: WitchGame; destroy(): void; }
 
@@ -47,13 +49,20 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
   relayout();
   stage.app.renderer.on('resize', relayout);
 
+  // ---- Telegraph 預警線陣列 ----
+  const telegraphLines: TelegraphLine[] = [];
+
   // ---- DOM overlays（遺物三選一 / game over / 過關）----
   const draftEl = document.getElementById('witch-draft');
   const draftBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-relic-slot]'));
   const overEl = document.getElementById('witch-over');
+  const overHeading = document.getElementById('witch-over-heading');
   const overStats = document.getElementById('witch-over-stats');
   const clearEl = document.getElementById('witch-clear');
   const clearStats = document.getElementById('witch-clear-stats');
+  const continueBtn = document.getElementById('witch-continue');
+
+  let badEndFlag = false;
 
   function showDraft(choices: RelicId[]): void {
     draftBtns.forEach((btn, i) => {
@@ -61,10 +70,12 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
       btn.hidden = !id;
       if (!id) return;
       btn.dataset.relicId = id;
+      const relic = RELICS[id];
       const name = btn.querySelector('.relic-name');
       const desc = btn.querySelector('.relic-desc');
-      if (name) name.textContent = RELICS[id].name;
-      if (desc) desc.textContent = RELICS[id].desc;
+      if (name) name.textContent = relic.name;
+      if (desc) desc.textContent = relic.desc;
+      btn.classList.toggle('relic-card--rare', relic.rarity === 'rare');
     });
     draftEl?.removeAttribute('hidden');
   }
@@ -77,9 +88,9 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
   };
   draftBtns.forEach((b) => b.addEventListener('click', onDraftClick));
 
-  const continueBtn = document.getElementById('witch-continue');
   const onContinue = (): void => {
     overEl?.setAttribute('hidden', '');
+    badEndFlag = false;
     game.continueRun();
   };
   continueBtn?.addEventListener('click', onContinue);
@@ -119,13 +130,25 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
       else if (ev.kind === 'coin') sound.coin();
       else if (ev.kind === 'bossSpawn') { stage.shake(8); sound.alarm(); }
       else if (ev.kind === 'bossPhase') { stage.shake(8); sound.alarm(); }
-      else if (ev.kind === 'bellToll') { stage.shake(6); sound.bell(); }
+      else if (ev.kind === 'bellToll') { stage.shake(6); sound.toll(); }
       else if (ev.kind === 'bossDefeat') { stage.shake(16); sound.inferno(); }
-      else if (ev.kind === 'draftOpen') showDraft(ev.choices);
+      else if (ev.kind === 'eliteKill') { stage.shake(12); sound.kill(); }
+      else if (ev.kind === 'drop') sound.drop();
+      else if (ev.kind === 'badEnd') { badEndFlag = true; sound.gameover(); sound.toll(); }
+      else if (ev.kind === 'telegraph') {
+        const g = new Graphics()
+          .moveTo(ev.x1, ev.y1)
+          .lineTo(ev.x2, ev.y2)
+          .stroke({ width: 3, color: 0xfff0c0 });
+        stage.fxLayer.addChild(g);
+        telegraphLines.push({ g, ttlMs: ev.durMs, durMs: ev.durMs });
+      } else if (ev.kind === 'draftOpen') showDraft(ev.choices);
       else if (ev.kind === 'gameover') {
-        sound.gameover();
+        if (overHeading) overHeading.textContent = badEndFlag ? 'THE BELL TOLLS TWELVE' : 'GAME OVER';
+        if (continueBtn) continueBtn.hidden = badEndFlag;
         if (overStats) overStats.textContent = `STAGE ${game.getState().stage} · SCORE ${game.getState().score}`;
         overEl?.removeAttribute('hidden');
+        if (!badEndFlag) sound.gameover();
       } else if (ev.kind === 'cleared') {
         sound.clear();
         const s = game.getState();
@@ -135,6 +158,19 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
         clearEl?.removeAttribute('hidden');
       }
     }
+
+    // telegraph 漸隱
+    for (let i = telegraphLines.length - 1; i >= 0; i--) {
+      const line = telegraphLines[i];
+      line.ttlMs -= dt;
+      if (line.ttlMs <= 0) {
+        line.g.destroy();
+        telegraphLines.splice(i, 1);
+      } else {
+        line.g.alpha = line.ttlMs / line.durMs;
+      }
+    }
+
     const s = game.getState();
     bg.update(dt, s.stage);
     bullets.render(s.enemyBullets, s.playerBullets);

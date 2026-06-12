@@ -45,7 +45,7 @@ const lang: Language = defaultLang;
 
     <!-- Game Over -->
     <div class="witch-overlay" id="witch-over" hidden>
-      <h2 class="overlay-heading">GAME OVER</h2>
+      <h2 class="overlay-heading" id="witch-over-heading">GAME OVER</h2>
       <p class="overlay-stats" id="witch-over-stats"></p>
       <button class="witch-start" id="witch-continue" type="button">CONTINUE</button>
       <a class="overlay-link" href="/games">BACK TO ARCADE</a>
@@ -119,6 +119,11 @@ const lang: Language = defaultLang;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
   .relic-card:hover { transform: translateY(-4px); box-shadow: 0 0 26px rgba(154, 107, 255, 0.7); }
+  .relic-card--rare {
+    border-color: rgba(255, 210, 63, 0.85);
+    box-shadow: 0 0 18px rgba(255, 210, 63, 0.45), 0 0 6px rgba(255, 210, 63, 0.25) inset;
+  }
+  .relic-card--rare:hover { box-shadow: 0 0 32px rgba(255, 210, 63, 0.8), 0 0 10px rgba(255, 210, 63, 0.35) inset; }
   .relic-name { font-size: 12px; color: #d0baff; letter-spacing: 1px; }
   .relic-desc { font-size: 9px; line-height: 1.8; color: #9a8ac0; }
 

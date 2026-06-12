@@ -9,6 +9,7 @@ export class EntityView {
   private boss: Sprite | null = null;
   private enemySprites = new Map<number, Sprite>();
   private coinSprites: Sprite[] = [];
+  private dropSprites: Sprite[] = [];
 
   constructor(private layer: Container, private fx: Container, private tex: WitchTextures) {
     this.player = new Sprite(tex.player);
@@ -40,6 +41,8 @@ export class EntityView {
         this.enemySprites.set(e.id, sp);
       }
       sp.x = e.x; sp.y = e.y;
+      sp.scale.set(e.elite ? 1.6 : 1);
+      sp.tint = e.elite ? 0xffd0d0 : 0xffffff;
     }
     for (const [id, sp] of this.enemySprites) {
       if (!seen.has(id)) { sp.destroy(); this.enemySprites.delete(id); }
@@ -66,6 +69,22 @@ export class EntityView {
       const sp = this.coinSprites[i], c = s.coins[i];
       sp.visible = !!c?.active;
       if (c?.active) { sp.x = c.x; sp.y = c.y; }
+    }
+
+    // 道具 drops（簡單池，仿金幣）
+    while (this.dropSprites.length < s.drops.length) {
+      const d = new Sprite(this.tex.dropPower); // 初始佔位紋理，render 時再換
+      d.anchor.set(0.5);
+      this.layer.addChild(d);
+      this.dropSprites.push(d);
+    }
+    for (let i = 0; i < this.dropSprites.length; i++) {
+      const sp = this.dropSprites[i], d = s.drops[i];
+      sp.visible = !!d?.active;
+      if (d?.active) {
+        sp.texture = d.kind === 'bomb' ? this.tex.dropBomb : this.tex.dropPower;
+        sp.x = d.x; sp.y = d.y;
+      }
     }
   }
 }

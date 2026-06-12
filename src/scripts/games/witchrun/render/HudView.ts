@@ -11,6 +11,7 @@ export class HudView {
   private lives = new Text({ text: '', style: style(10, 0xff5a4d) });
   private bombs = new Text({ text: '', style: style(10, 0xffa040) });
   private stageName = new Text({ text: '', style: style(8, 0x9a8ac0) });
+  private bellCount = new Text({ text: 'BELL 0/12', style: style(8, 0xffd23f) });
   private odBar = new Graphics();
   private odLabel = new Text({ text: 'OVERDRIVE', style: style(7, 0x36e6ff) });
   private bossBar = new Graphics();
@@ -20,8 +21,9 @@ export class HudView {
     this.lives.x = 8; this.lives.y = 30;
     this.bombs.x = 8; this.bombs.y = 48;
     this.stageName.x = 8; this.stageName.y = 66;
+    this.bellCount.x = 8; this.bellCount.y = 84;
     this.odLabel.x = 8; this.odLabel.y = 600;
-    layer.addChild(this.score, this.lives, this.bombs, this.stageName, this.odBar, this.odLabel, this.bossBar);
+    layer.addChild(this.score, this.lives, this.bombs, this.stageName, this.bellCount, this.odBar, this.odLabel, this.bossBar);
   }
 
   render(s: WitchState): void {
@@ -29,6 +31,7 @@ export class HudView {
     this.lives.text = '♥'.repeat(Math.max(0, s.player.lives));
     this.bombs.text = '✦'.repeat(Math.max(0, s.player.bombs));
     this.stageName.text = `STAGE ${s.stage} ${STAGES[s.stage].name}`;
+    this.bellCount.text = `BELL ${s.bellTolls}/12`;
 
     // OVERDRIVE 槽（底部）
     const pct = s.overdrive.activeMs > 0 ? 1 : s.overdrive.gauge / OVERDRIVE_MAX;
