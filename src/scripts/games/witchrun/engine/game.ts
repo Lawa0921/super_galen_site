@@ -37,7 +37,7 @@ export class WitchGame {
   private player = makePlayer();
   private enemyBullets = new BulletPool();
   private playerBullets: PlayerBullet[] = Array.from({ length: MAX_PLAYER_BULLETS }, () => ({
-    x: 0, y: 0, vx: 0, vy: 0, dmg: 0, active: false, split: false,
+    x: 0, y: 0, vx: 0, vy: 0, dmg: 0, active: false, split: false, pierceLeft: 0,
   }));
   private enemies: Enemy[] = [];
   private coins: Coin[] = [];
@@ -60,6 +60,7 @@ export class WitchGame {
   private tollCount = 0;
   private surgeMs = 0;
   private freezeMs = 0;   // F4 時停用（chronos 遺物）
+  private grazeCount = 0; // F4 starshard：累積擦彈計數
 
   constructor(opts: WitchOptions = {}) {
     this.rng = createRng(opts.seed ?? 1);
@@ -193,6 +194,17 @@ export class WitchGame {
       this.grazeChain += sweep.grazes;
       this.score += Math.round(SCORE.graze * sweep.grazes * chainMultiplier(this.grazeChain));
       this.events.push({ kind: 'graze', x: this.player.x, y: this.player.y });
+      // starshard：每 grazeCoinEvery 次擦彈噴 1 金幣
+      if (this.mod.grazeCoinEvery > 0) {
+        const prevCount = this.grazeCount;
+        this.grazeCount += sweep.grazes;
+        const prevDiv = Math.floor(prevCount / this.mod.grazeCoinEvery);
+        const newDiv = Math.floor(this.grazeCount / this.mod.grazeCoinEvery);
+        const coinsToSpawn = newDiv - prevDiv;
+        for (let i = 0; i < coinsToSpawn; i++) {
+          this.coins.push({ x: this.player.x, y: this.player.y, vy: COIN_FALL_SPEED, active: true });
+        }
+      }
     }
     if (sweep.hit) this.onPlayerHit();
 
@@ -226,16 +238,47 @@ export class WitchGame {
       this.spawnPlayerBullet(this.player.x + off, this.player.y - 14, 0, -PLAYER_BULLET_SPEED, dmg, false);
     }
     if (this.mod.familiar) {
-      this.spawnPlayerBullet(this.player.x - 26, this.player.y, 0, -PLAYER_BULLET_SPEED, dmg * 0.5, false);
-      this.spawnPlayerBullet(this.player.x + 26, this.player.y, 0, -PLAYER_BULLET_SPEED, dmg * 0.5, false);
+      if (this.mod.homingFamiliar) {
+        // 追蹤使魔：瞄準最近 alive 敵人
+        const target = this.nearestAliveEnemy();
+        for (const fx of [this.player.x - 26, this.player.x + 26]) {
+          let hvx = 0; let hvy = -PLAYER_BULLET_SPEED;
+          if (target !== null) {
+            const dx = target.x - fx;
+            const dy = target.y - this.player.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            hvx = (dx / dist) * PLAYER_BULLET_SPEED;
+            hvy = (dy / dist) * PLAYER_BULLET_SPEED;
+          }
+          this.spawnPlayerBullet(fx, this.player.y, hvx, hvy, dmg * 0.5, false);
+        }
+      } else {
+        this.spawnPlayerBullet(this.player.x - 26, this.player.y, 0, -PLAYER_BULLET_SPEED, dmg * 0.5, false);
+        this.spawnPlayerBullet(this.player.x + 26, this.player.y, 0, -PLAYER_BULLET_SPEED, dmg * 0.5, false);
+      }
     }
     this.events.push({ kind: 'shoot' });
+  }
+
+  /** 找最近的 alive 敵人（homing 用）；無敵時回傳 null。 */
+  private nearestAliveEnemy(): Enemy | null {
+    let best: Enemy | null = null;
+    let bestDist = Infinity;
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const dx = e.x - this.player.x;
+      const dy = e.y - this.player.y;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist) { bestDist = d; best = e; }
+    }
+    return best;
   }
 
   private spawnPlayerBullet(x: number, y: number, vx: number, vy: number, dmg: number, split: boolean): void {
     const b = this.playerBullets.find((it) => !it.active);
     if (!b) return;
     b.x = x; b.y = y; b.vx = vx; b.vy = vy; b.dmg = dmg; b.split = split; b.active = true;
+    b.pierceLeft = this.mod.pierce ? 1 : 0;
   }
 
   private stepPlayerBullets(dtMs: number): void {
@@ -250,10 +293,11 @@ export class WitchGame {
   private resolvePlayerHits(): void {
     for (const b of this.playerBullets) {
       if (!b.active) continue;
-      // Boss 優先
+      // Boss 優先（命中 Boss 一律回收，不穿透）
       if (this.boss?.state.alive && circleHit(b.x, b.y, 2, this.boss.state.x, this.boss.state.y, BOSS_R)) {
+        const dmg = this.applyCrit(b.dmg);
         b.active = false;
-        this.boss.damage(b.dmg);
+        this.boss.damage(dmg);
         // pendingSummon 在 step 的 boss loop 中處理（避免重複事件）
         this.maybeSplit(b);
         continue;
@@ -261,13 +305,29 @@ export class WitchGame {
       for (const e of this.enemies) {
         if (!e.alive) continue;
         if (circleHit(b.x, b.y, 2, e.x, e.y, ENEMY_R)) {
-          b.active = false;
-          this.damageEnemy(e, b.dmg);
-          this.maybeSplit(b);
-          break;
+          const dmg = this.applyCrit(b.dmg);
+          if (b.pierceLeft > 0) {
+            // 穿透：扣次數、不回收，繼續看下一敵
+            b.pierceLeft--;
+            this.damageEnemy(e, dmg);
+            this.maybeSplit(b);
+            // 繼續外層 for 尋找下一個敵（不 break）
+          } else {
+            // 不穿透：命中後回收
+            b.active = false;
+            this.damageEnemy(e, dmg);
+            this.maybeSplit(b);
+            break;
+          }
         }
       }
     }
+  }
+
+  /** 暴擊判定（bloodmoon）。 */
+  private applyCrit(dmg: number): number {
+    if (this.mod.critChance > 0 && this.rng() < this.mod.critChance) return dmg * 2;
+    return dmg;
   }
 
   private maybeSplit(b: PlayerBullet): void {
@@ -348,7 +408,7 @@ export class WitchGame {
     if (this.player.bombs <= 0 || !this.player.alive) return;
     this.player.bombs--;
     this.enemyBullets.clearAll();
-    this.player.invulnMs = Math.max(this.player.invulnMs, INFERNO_INVULN_MS);
+    this.player.invulnMs = Math.max(this.player.invulnMs, INFERNO_INVULN_MS + this.mod.infernoInvulnBonus);
     for (const e of this.enemies) if (e.alive) this.damageEnemy(e, INFERNO_DMG);
     if (this.boss?.state.alive) {
       this.boss.damage(INFERNO_DMG);
@@ -362,6 +422,8 @@ export class WitchGame {
     if (!this.od.activate(this.mod.overdriveDurMult)) return;
     this.enemyBullets.clearAll();
     for (const e of this.enemies) if (e.alive) this.damageEnemy(e, INFERNO_DMG / 2);
+    // chronos：引爆時凍結全場敵彈 1.5 秒
+    if (this.mod.freezeOnOverdrive) this.freezeMs = 1500;
     this.events.push({ kind: 'overdrive' });
   }
 
@@ -497,6 +559,27 @@ export class WitchGame {
   debugKillElites(): void {
     for (const e of this.enemies) {
       if (e.elite && e.alive) this.damageEnemy(e, 999999);
+    }
+  }
+  /** F4 測試掛鉤：直接把遺物加入持有（繞過 draft 流程）。 */
+  debugPickRelic(id: RelicId): void {
+    if (!this.relics.includes(id)) {
+      this.relics.push(id);
+      this.mod = computeModifiers(this.relics);
+    }
+  }
+  /** F4 測試掛鉤：直接模擬 N 次擦彈（含 starshard 噴幣邏輯）。 */
+  debugAddGrazeCoins(n: number): void {
+    if (this.mod.grazeCoinEvery > 0) {
+      const prevDiv = Math.floor(this.grazeCount / this.mod.grazeCoinEvery);
+      this.grazeCount += n;
+      const newDiv = Math.floor(this.grazeCount / this.mod.grazeCoinEvery);
+      const coinsToSpawn = newDiv - prevDiv;
+      for (let i = 0; i < coinsToSpawn; i++) {
+        this.coins.push({ x: this.player.x, y: this.player.y, vy: COIN_FALL_SPEED, active: true });
+      }
+    } else {
+      this.grazeCount += n;
     }
   }
 }

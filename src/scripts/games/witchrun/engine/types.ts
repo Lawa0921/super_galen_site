@@ -20,6 +20,7 @@ export interface PlayerBullet {
   x: number; y: number; vx: number; vy: number;
   dmg: number; active: boolean;
   split: boolean;     // 裂變魔彈產生的子彈不再分裂
+  pierceLeft: number; // 可穿透敵人次數（0 = 不穿透；命中 Boss 一律回收）
 }
 
 export type StageId = 1 | 2 | 3 | 4;
@@ -55,9 +56,16 @@ export type RelicId =
   | 'catalyst'   // 爆炎觸媒
   | 'echo'       // 回音鈴
   | 'pact'       // 血色契約
-  | 'stardust';  // 星屑掃帚
+  | 'stardust'   // 星屑掃帚
+  // F4 rare 遺物
+  | 'pierce'     // 貫通魔彈
+  | 'homing'     // 追蹤使魔
+  | 'chronos'    // 時停懷錶
+  | 'pendulum'   // 鐘擺護符
+  | 'starshard'  // 星之碎片
+  | 'bloodmoon'; // 血月之眼
 
-export interface RelicDef { id: RelicId; name: string; desc: string; }
+export interface RelicDef { id: RelicId; name: string; desc: string; rarity: 'common' | 'rare'; }
 
 /** 遺物效果聚合後的修正值（engine 各處讀這個，不各自查遺物） */
 export interface Modifiers {
@@ -71,6 +79,13 @@ export interface Modifiers {
   atkMult: number;           // 攻擊倍率
   lifeCapDelta: number;      // 殘機上限增減
   focusGrazeBonus: number;   // 低速模式擦彈累積加成（0.3 = +30%）
+  // F4 新增欄位
+  pierce: boolean;           // 自機彈穿透 1 個敵人
+  homingFamiliar: boolean;   // 使魔彈自動瞄準最近敵人
+  freezeOnOverdrive: boolean;// OVERDRIVE 引爆時凍結敵彈 1.5 秒
+  infernoInvulnBonus: number;// 爆炎無敵時間加成（ms）
+  grazeCoinEvery: number;    // 每 N 次擦彈噴 1 金幣（0 = 無效）
+  critChance: number;        // 暴擊機率（0..1）
 }
 
 export interface Coin { x: number; y: number; vy: number; active: boolean; }

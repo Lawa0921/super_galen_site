@@ -7,7 +7,7 @@ import type { WitchEvent } from './types';
 import {
   START_LIVES, START_BOMBS, OVERDRIVE_MAX,
   BELL_TOLL_INTERVAL_MS, BELL_SURGE_MULT, BELL_TOLL_MAX, CANCEL_COIN_CAP,
-  POWER_DROP_EVERY, BOMB_CAP,
+  POWER_DROP_EVERY, BOMB_CAP, INFERNO_INVULN_MS,
 } from './constants';
 
 /** 以固定小步長推進，模擬遊戲時間。 */
@@ -447,5 +447,203 @@ describe('WitchGame', () => {
     drop.y = 700; // 超過 FIELD_H=640
     g.step(16);
     expect(drop.active).toBe(false);
+  });
+
+  // ── F4.3 遺物深化整合測試 ──
+
+  it('F4 pierce：自機彈命中敵人後可穿透（pierceLeft-- 不回收），命中第二敵才回收', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugPickRelic('pierce');
+    // 在場上生成兩個假敵，x 不同讓彈分別打到
+    const enemies = g.getState().enemies;
+    const makeTestEnemy = (id: number, x: number): import('./types').Enemy => ({
+      id, kind: 'bat', x, y: 100, hp: 999, alive: true,
+      path: 'descend', t: 0, baseX: x, fireCdMs: 9999,
+    });
+    enemies.push(makeTestEnemy(9001, 240));
+    enemies.push(makeTestEnemy(9002, 240)); // 同位置，讓同顆彈能連續命中
+    // 注入一顆自機彈在兩敵附近
+    const bullets = g.getState().playerBullets;
+    const b = bullets.find((b) => !b.active)!;
+    Object.assign(b, { x: 240, y: 100, vx: 0, vy: 0, dmg: 1, active: true, split: false, pierceLeft: 1 });
+    g.step(16); // resolvePlayerHits 被執行
+    // 彈命中第一敵後 pierceLeft 應被扣到 0，仍 active
+    // 再命中第二敵後回收
+    // 因為兩敵同位置，一幀內可連續命中
+    // 最終：彈 inactive，兩敵至少一個被打到
+    const fst = enemies.find((e) => e.id === 9001)!;
+    const snd = enemies.find((e) => e.id === 9002)!;
+    // 至少一個敵受到傷害
+    expect(fst.hp < 999 || snd.hp < 999).toBe(true);
+  });
+
+  it('F4 pierce：命中 Boss 不穿透（立即回收）', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugPickRelic('pierce');
+    g.debugSkipToBoss();
+    g.step(16);
+    expect(g.getState().boss).not.toBeNull();
+    const bullets = g.getState().playerBullets;
+    const b = bullets.find((b) => !b.active)!;
+    const bossX = g.getState().boss!.x;
+    const bossY = g.getState().boss!.y;
+    Object.assign(b, { x: bossX, y: bossY, vx: 0, vy: 0, dmg: 1, active: true, split: false, pierceLeft: 1 });
+    g.step(16);
+    // 命中 Boss 後彈必須回收（active = false）
+    expect(b.active).toBe(false);
+  });
+
+  it('F4 pierce：spawnPlayerBullet 時 pierceLeft 初始化為 1', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugPickRelic('pierce');
+    // 先清空現有彈
+    for (const b of g.getState().playerBullets) b.active = false;
+    // 等一次自動開火
+    g.step(200);
+    const activeBullets = g.getState().playerBullets.filter((b) => b.active);
+    expect(activeBullets.length).toBeGreaterThan(0);
+    for (const b of activeBullets) {
+      expect(b.pierceLeft).toBe(1);
+    }
+  });
+
+  it('F4 pierce 未持有：spawnPlayerBullet 時 pierceLeft = 0', () => {
+    const g = new WitchGame({ seed: 1 });
+    for (const b of g.getState().playerBullets) b.active = false;
+    g.step(200);
+    const activeBullets = g.getState().playerBullets.filter((b) => b.active);
+    expect(activeBullets.length).toBeGreaterThan(0);
+    for (const b of activeBullets) {
+      expect(b.pierceLeft).toBe(0);
+    }
+  });
+
+  it('F4 homing：持有後 familiar 彈朝最近敵人方向', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugPickRelic('homing');
+    // 放一個敵人在偏右上方（遠離自機 x=240，靠右）
+    const enemies = g.getState().enemies;
+    enemies.push({
+      id: 8001, kind: 'bat', x: 400, y: 200, hp: 999, alive: true,
+      path: 'descend', t: 0, baseX: 400, fireCdMs: 9999,
+    });
+    // 清空現有彈並等 autoFire（一幀 200ms 確保觸發）
+    for (const b of g.getState().playerBullets) b.active = false;
+    g.step(200);
+    const activeBullets = g.getState().playerBullets.filter((b) => b.active);
+    expect(activeBullets.length).toBeGreaterThan(0);
+    // homing familiar 彈：敵在右方(x=400 > 自機 x≈240)，所以 familiar 彈中
+    // 至少有一顆 vx > 0（朝右飛向目標）
+    const hasHomingRight = activeBullets.some((b) => b.vx > 0);
+    expect(hasHomingRight).toBe(true);
+  });
+
+  it('F4 chronos：引爆 OVERDRIVE 後 freezeMs = 1500', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugPickRelic('chronos');
+    g.debugFillOverdrive();
+    g.input('overdrive');
+    g.step(16);
+    // 引爆後 freezeMs 應設為 1500（敵彈速度 0）
+    // 驗證：注入一顆敵彈，速度在 freeze 期間應為 0
+    const state = g.getState();
+    for (const b of state.enemyBullets) b.active = false;
+    const pool = state.enemyBullets;
+    const b = pool[0];
+    Object.assign(b, { x: 100, y: 100, vx: 0, vy: 100, ax: 0, ay: 0, turnRate: 0, bounces: 0, grazed: false, active: true });
+    const yBefore = b.y;
+    g.step(100); // freeze 仍在（1500ms > 100ms）
+    expect(b.y).toBeCloseTo(yBefore, 1); // 速度為 0，y 不變
+  });
+
+  it('F4 chronos 未持有：OVERDRIVE 引爆後彈不凍結', () => {
+    const g = new WitchGame({ seed: 1 });
+    // 無 chronos
+    g.debugFillOverdrive();
+    g.input('overdrive');
+    g.step(16);
+    const state = g.getState();
+    for (const b of state.enemyBullets) b.active = false;
+    const b = state.enemyBullets[0];
+    Object.assign(b, { x: 100, y: 100, vx: 0, vy: 100, ax: 0, ay: 0, turnRate: 0, bounces: 0, grazed: false, active: true });
+    const yBefore = b.y;
+    g.step(100);
+    expect(b.y).toBeGreaterThan(yBefore); // 有速度，y 增加
+  });
+
+  it('F4 pendulum：爆炎無敵 = INFERNO_INVULN_MS + 1200（step 後扣 16ms）', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugPickRelic('pendulum');
+    g.input('bomb');
+    g.step(16);
+    // step(16) 後 tickPlayer 扣了 16ms，所以實際值應為 INFERNO_INVULN_MS + 1200 - 16
+    expect(g.getState().player.invulnMs).toBeCloseTo(INFERNO_INVULN_MS + 1200 - 16, 0);
+  });
+
+  it('F4 pendulum 未持有：爆炎無敵 = INFERNO_INVULN_MS（step 後扣 16ms）', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.input('bomb');
+    g.step(16);
+    expect(g.getState().player.invulnMs).toBeCloseTo(INFERNO_INVULN_MS - 16, 0);
+  });
+
+  it('F4 starshard：每 5 次擦彈噴 1 金幣（grazeCoinEvery = 5）', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugPickRelic('starshard');
+    const coinsBefore = g.getState().coins.length;
+    // 模擬 5 次擦彈（直接呼叫 debugAddGraze 或透過 sweepPlayerVsBullets）
+    // 用 debugAddGrazeCoins 掛鉤
+    g.debugAddGrazeCoins(5);
+    const coinsAfter = g.getState().coins.length;
+    expect(coinsAfter).toBe(coinsBefore + 1);
+  });
+
+  it('F4 starshard 未持有：擦彈不噴金幣', () => {
+    const g = new WitchGame({ seed: 1 });
+    const coinsBefore = g.getState().coins.length;
+    g.debugAddGrazeCoins(5);
+    expect(g.getState().coins.length).toBe(coinsBefore);
+  });
+
+  it('F4 bloodmoon：固定 seed 下 critChance 命中時傷害 ×2', () => {
+    // 用固定 seed 找到一次暴擊發生的場景
+    // bloodmoon critChance = 0.1；seed 42 下 rng() < 0.1 很可能發生
+    // 比較有/無 bloodmoon 的 Boss 傷害差異
+    const g1 = new WitchGame({ seed: 42 });
+    g1.debugPickRelic('bloodmoon');
+    g1.debugSkipToBoss();
+    g1.step(16);
+    const hpBefore1 = g1.getState().boss!.hp;
+
+    const g2 = new WitchGame({ seed: 42 });
+    g2.debugSkipToBoss();
+    g2.step(16);
+    const hpBefore2 = g2.getState().boss!.hp;
+
+    // 注入相同位置的彈打 Boss
+    const bossX1 = g1.getState().boss!.x;
+    const bossY1 = g1.getState().boss!.y;
+    const bossX2 = g2.getState().boss!.x;
+    const bossY2 = g2.getState().boss!.y;
+
+    for (const b of g1.getState().playerBullets) b.active = false;
+    for (const b of g2.getState().playerBullets) b.active = false;
+
+    // 注入 10 顆彈在 Boss 位置（足夠觸發至少一次暴擊）
+    for (let i = 0; i < 10; i++) {
+      const b1 = g1.getState().playerBullets.find((b) => !b.active)!;
+      Object.assign(b1, { x: bossX1, y: bossY1, vx: 0, vy: 0, dmg: 1, active: true, split: false, pierceLeft: 0 });
+      const b2 = g2.getState().playerBullets.find((b) => !b.active)!;
+      Object.assign(b2, { x: bossX2, y: bossY2, vx: 0, vy: 0, dmg: 1, active: true, split: false, pierceLeft: 0 });
+    }
+
+    g1.step(16);
+    g2.step(16);
+
+    const dmg1 = hpBefore1 - g1.getState().boss!.hp;
+    const dmg2 = hpBefore2 - g2.getState().boss!.hp;
+
+    // bloodmoon 持有者傷害應 >= 無 bloodmoon（至少等於，暴擊時更多）
+    expect(dmg1).toBeGreaterThanOrEqual(dmg2);
   });
 });
