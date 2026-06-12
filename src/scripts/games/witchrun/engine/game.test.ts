@@ -2,7 +2,11 @@
 import { describe, it, expect } from 'vitest';
 import { WitchGame } from './game';
 import { STAGES } from './stage';
-import { START_LIVES, START_BOMBS, OVERDRIVE_MAX } from './constants';
+import type { WitchEvent } from './types';
+import {
+  START_LIVES, START_BOMBS, OVERDRIVE_MAX,
+  BELL_TOLL_INTERVAL_MS, BELL_SURGE_MULT, BELL_TOLL_MAX, CANCEL_COIN_CAP,
+} from './constants';
 
 /** 以固定小步長推進，模擬遊戲時間。 */
 function run(g: WitchGame, ms: number, step = 16): void {
@@ -159,5 +163,157 @@ describe('WitchGame', () => {
     expect(g.getState().player.x).toBe(x0 - 30);
     g.nudge(-99999, 0);
     expect(g.getState().player.x).toBe(0);
+  });
+
+  // ---- F2.2 全局十二響 ----
+
+  /** 推進遊戲但自動 continueRun 讓玩家存活；收集所有事件。 */
+  function runCollect(g: WitchGame, ms: number): WitchEvent[] {
+    const all: WitchEvent[] = [];
+    for (let t = 0; t < ms; t += 100) {
+      g.step(100);
+      all.push(...g.drainEvents());
+      if (g.getState().status === 'gameover') g.continueRun();
+      if (g.getState().status === 'draft') {
+        const s = g.getState();
+        g.pickRelic(s.draftChoices[0]);
+      }
+    }
+    return all;
+  }
+
+  it('75 秒到期觸發 bellToll 事件，count 為全局計數', () => {
+    const g = new WitchGame({ seed: 1 });
+    const events = runCollect(g, BELL_TOLL_INTERVAL_MS + 200);
+    const toll = events.find((e) => e.kind === 'bellToll');
+    expect(toll).toBeDefined();
+    expect((toll as { kind: 'bellToll'; count: number }).count).toBe(1);
+  });
+
+  it('鐘響後 bellTolls 狀態反映全局計數', () => {
+    const g = new WitchGame({ seed: 1 });
+    runCollect(g, BELL_TOLL_INTERVAL_MS + 200);
+    expect(g.getState().bellTolls).toBe(1);
+  });
+
+  it('surge 期間 bellTolls 為 1，bellToll 事件存在', () => {
+    const g = new WitchGame({ seed: 1 });
+    const events = runCollect(g, BELL_TOLL_INTERVAL_MS + 200);
+    expect(events.some((e) => e.kind === 'bellToll')).toBe(true);
+    expect(g.getState().bellTolls).toBe(1);
+  });
+
+  it('12 響後觸發 badEnd + gameover', () => {
+    const g = new WitchGame({ seed: 1 });
+    const allEvents: WitchEvent[] = [];
+    // 持續 runCollect 直到 badEnd（12 響後就不再 continueRun）
+    outer: for (let t = 0; t < BELL_TOLL_INTERVAL_MS * BELL_TOLL_MAX + 2000; t += 100) {
+      g.step(100);
+      const evts = g.drainEvents();
+      allEvents.push(...evts);
+      if (evts.some((e) => e.kind === 'badEnd')) break outer;
+      // 若玩家死亡（非 badEnd）就繼續
+      if (g.getState().status === 'gameover') g.continueRun();
+      if (g.getState().status === 'draft') g.pickRelic(g.getState().draftChoices[0]);
+    }
+    expect(allEvents.some((e) => e.kind === 'badEnd')).toBe(true);
+    expect(allEvents.some((e) => e.kind === 'gameover')).toBe(true);
+  });
+
+  it('continueRun 不重置鐘響計數', () => {
+    const g = new WitchGame({ seed: 1 });
+    // 用 100ms 大步長推進過 1 次鐘響（75 秒），不停復活玩家保持存活
+    let tolls = 0;
+    for (let t = 0; t < BELL_TOLL_INTERVAL_MS + 1000; t += 100) {
+      g.step(100);
+      const evts = g.drainEvents();
+      tolls += evts.filter((e) => e.kind === 'bellToll').length;
+      // 若玩家死亡就立刻 continue（保持在 playing）
+      if (g.getState().status === 'gameover') { g.continueRun(); }
+    }
+    expect(g.getState().bellTolls).toBeGreaterThanOrEqual(1);
+    const tollsSnapshot = g.getState().bellTolls;
+    // 手動 gameover
+    g.debugSetLives(0);
+    g.step(16);
+    expect(g.getState().status).toBe('gameover');
+    g.continueRun();
+    // 續關後 tollCount 應保留
+    expect(g.getState().bellTolls).toBe(tollsSnapshot);
+  });
+
+  it('draft 狀態下鐘響計時暫停（step 早退）', () => {
+    const g = new WitchGame({ seed: 1 });
+    // 進入 draft 狀態
+    g.debugSkipToBoss();
+    g.step(16);
+    g.boss!.damage(999999);
+    g.step(16);
+    expect(g.getState().status).toBe('draft');
+    const tollsBefore = g.getState().bellTolls;
+    // draft 中推進接近整個鐘響間隔
+    run(g, BELL_TOLL_INTERVAL_MS);
+    // draft 期間 step 早退，鐘不應響
+    expect(g.getState().bellTolls).toBe(tollsBefore);
+  });
+
+  // ---- F2.3 Boss 召喚 + 清彈轉星屑 ----
+
+  it('Boss phase 切換後，敵兵增加 2 隻', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugSkipToBoss();
+    g.step(16);
+    const boss = g.boss!;
+    // gargoyle 在 50% 血量切換 phase
+    const halfHp = Math.floor(boss.state.maxHp / 2) + 1;
+    // 先清空敵人陣列（避免原有道中敵）
+    const enemiesBefore = g.getState().enemies.length;
+    boss.damage(halfHp);
+    g.step(16);
+    const enemiesAfter = g.getState().enemies.length;
+    expect(enemiesAfter).toBe(enemiesBefore + 2);
+  });
+
+  it('Boss phase 切換後，場上 active 敵彈轉為金幣（上限 CANCEL_COIN_CAP）', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugSkipToBoss();
+    g.step(16);
+    // 讓 boss 射出一些彈
+    run(g, 3000);
+    const bulletsBefore = g.getState().enemyBullets.filter((b) => b.active).length;
+    if (bulletsBefore === 0) {
+      // 跳過（沒子彈時無法測清彈）
+      return;
+    }
+    const coinsBefore = g.getState().coins.length;
+    const boss = g.boss!;
+    const halfHp = Math.floor(boss.state.maxHp / 2) + 1;
+    boss.damage(halfHp);
+    g.step(16);
+    const coinsAfter = g.getState().coins.length;
+    const bulletsAfter = g.getState().enemyBullets.filter((b) => b.active).length;
+    // 清彈後 active 敵彈應清零
+    expect(bulletsAfter).toBe(0);
+    // 金幣應增加 min(bulletsBefore, CANCEL_COIN_CAP)
+    const expectedCoins = coinsBefore + Math.min(bulletsBefore, CANCEL_COIN_CAP);
+    expect(coinsAfter).toBe(expectedCoins);
+  });
+
+  it('Boss 擊破時，active 敵彈轉金幣後清零', () => {
+    const g = new WitchGame({ seed: 1 });
+    g.debugSkipToBoss();
+    g.step(16);
+    run(g, 3000); // 讓 boss 射彈
+    const boss = g.boss!;
+    const coinsBefore = g.getState().coins.length;
+    const bulletsBefore = g.getState().enemyBullets.filter((b) => b.active).length;
+    boss.damage(999999);
+    g.step(16);
+    const bulletsAfter = g.getState().enemyBullets.filter((b) => b.active).length;
+    expect(bulletsAfter).toBe(0);
+    // 如有子彈，金幣應增加
+    if (bulletsBefore > 0) {
+      expect(g.getState().coins.length).toBeGreaterThan(coinsBefore);
+    }
   });
 });

@@ -52,3 +52,16 @@ export const MAX_ENEMIES = 32;
 export const FIRE_FIELD_MS = 3000;      // 爆炎觸媒火場持續
 export const FIRE_FIELD_DPS = 4;        // 火場每秒傷害
 export const STEP_CAP_MS = 100;         // 單次 step 上限（分頁切回防爆衝）
+
+/** 全局十二響時限。 */
+export const BELL_TOLL_INTERVAL_MS = 75_000;  // 全局亡鐘每響間隔
+export const BELL_TOLL_MAX = 12;              // 敲滿即 Bad End
+export const BELL_SURGE_MS = 5_000;           // 鐘響後彈速增幅持續
+export const BELL_SURGE_MULT = 1.15;
+
+/** Boss 衝刺。 */
+export const BOSS_DASH_CD_MS = 6_000;
+export const BOSS_DASH_DUR_MS = 600;
+
+/** 清彈轉星屑上限。 */
+export const CANCEL_COIN_CAP = 40;

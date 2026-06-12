@@ -2,7 +2,7 @@
 import type { BossId, BossState } from './types';
 import type { SpawnSpec } from './bullet';
 import { ring, fan, aimed, spiral, bellWave } from './pattern';
-import { FIELD_W } from './constants';
+import { FIELD_W, BOSS_DASH_CD_MS, BOSS_DASH_DUR_MS } from './constants';
 
 /** 每 phase：hpPct = 進入此 phase 的血量比例上限；attacks = 週期性攻擊列表。 */
 export interface PhaseDef {
@@ -51,18 +51,32 @@ export const BOSS_DEFS: Record<BossId, BossDef> = {
 
 export class BossRunner {
   readonly state: BossState;
-  tolls = 0;                       // 亡鐘已敲響數
+  tolls = 0;                       // 亡鐘已敲響數（deadbell 鐘波計數）
   private def: BossDef;
   private timers: number[];        // 對應目前 phase 各攻擊的倒數
   private tMs = 0;
   private rng: () => number;
+  private homeX: number;           // 漂移基準 x（dash 後更新）
+  private dashCdMs: number;        // 衝刺冷卻
+  private dashMs = 0;              // 當前衝刺剩餘時間（0 = 未衝刺）
+  private dashFromX = 0;
+  private dashToX = 0;
+  private _pendingSummon = false;  // phase 切換時設 true，game.ts 讀後呼叫 consumeSummon 清掉
 
   constructor(id: BossId, rng: () => number) {
     this.def = BOSS_DEFS[id];
     this.rng = rng;
     this.state = { id, x: this.def.x, y: this.def.y, hp: this.def.hp, maxHp: this.def.hp, phase: 0, alive: true };
     this.timers = this.def.phases[0].attacks.map((a) => a.everyMs);
+    this.homeX = this.def.x;
+    this.dashCdMs = BOSS_DASH_CD_MS;
   }
+
+  /** phase 切換時是否有待召喚的小兵。 */
+  get pendingSummon(): boolean { return this._pendingSummon; }
+
+  /** game.ts 處理召喚後呼叫，清除旗標。 */
+  consumeSummon(): void { this._pendingSummon = false; }
 
   /** 扣血；跨過閾值時切 phase 並回傳 true。 */
   damage(amount: number): boolean {
@@ -77,16 +91,44 @@ export class BossRunner {
     if (next !== this.state.phase) {
       this.state.phase = next;
       this.timers = this.def.phases[next].attacks.map((a) => a.everyMs);
+      this._pendingSummon = true;
       return true;
     }
     return false;
   }
 
-  /** 推進攻擊計時；回傳本 tick 產生的彈幕。Boss 緩慢左右漂移。 */
+  /** 推進攻擊計時；回傳本 tick 產生的彈幕。Boss 緩慢左右漂移 + 衝刺。 */
   step(dtMs: number, target: { px: number; py: number }): SpawnSpec[] {
     if (!this.state.alive) return [];
     this.tMs += dtMs;
-    this.state.x = this.def.x + Math.sin(this.tMs / 2400) * 70;
+
+    // 衝刺邏輯
+    if (this.dashMs > 0) {
+      // easeOut lerp：進度 t from 0→1
+      const t = 1 - this.dashMs / BOSS_DASH_DUR_MS;
+      const ease = 1 - Math.pow(1 - t, 3); // easeOut cubic
+      this.state.x = this.dashFromX + (this.dashToX - this.dashFromX) * ease;
+      this.dashMs -= dtMs;
+      if (this.dashMs <= 0) {
+        this.dashMs = 0;
+        this.state.x = this.dashToX;
+        this.homeX = this.dashToX;  // 更新漂移基準
+        this.dashCdMs = BOSS_DASH_CD_MS;
+      }
+    } else {
+      // 正常漂移（以 homeX 為基準）
+      this.dashCdMs -= dtMs;
+      if (this.dashCdMs <= 0) {
+        // 觸發衝刺
+        const clampedTarget = Math.max(80, Math.min(FIELD_W - 80, target.px));
+        this.dashFromX = this.state.x;
+        this.dashToX = clampedTarget;
+        this.dashMs = BOSS_DASH_DUR_MS;
+      } else {
+        this.state.x = Math.max(80, Math.min(FIELD_W - 80,
+          this.homeX + Math.sin(this.tMs / 2400) * 70));
+      }
+    }
 
     const out: SpawnSpec[] = [];
     const phase = this.def.phases[this.state.phase];

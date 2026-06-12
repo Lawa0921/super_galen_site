@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { BOSS_DEFS, BossRunner } from './boss';
 import { createRng } from './rng';
+import { BOSS_DASH_CD_MS, BOSS_DASH_DUR_MS, FIELD_W } from './constants';
 
 const TARGET = { px: 240, py: 560 };
 
@@ -56,5 +57,53 @@ describe('boss', () => {
     const r = new BossRunner('deadbell', createRng(1));
     for (let i = 0; i < 400; i++) r.step(50, TARGET); // 20 秒
     expect(r.tolls).toBeGreaterThan(0);
+  });
+
+  // ---- F2.3 Boss 衝刺 ----
+
+  it('衝刺 CD 到期後，boss.x 移向目標 x（鉗制在 [80, FIELD_W-80]）', () => {
+    const r = new BossRunner('gargoyle', createRng(1));
+    // target 在右側
+    const target = { px: 420, py: 560 };
+    const x0 = r.state.x;
+    // 推進超過 BOSS_DASH_CD_MS
+    for (let t = 0; t < BOSS_DASH_CD_MS + BOSS_DASH_DUR_MS + 100; t += 50) {
+      r.step(50, target);
+    }
+    // 衝刺完成後 x 應更接近目標（或到達鉗制邊界）
+    const xAfter = r.state.x;
+    const clampedTarget = Math.max(80, Math.min(FIELD_W - 80, target.px));
+    // 完成 dash 後 x 應非常接近鉗制目標
+    expect(Math.abs(xAfter - clampedTarget)).toBeLessThan(20);
+  });
+
+  it('衝刺後 homeX 更新，漂移基準隨之改變', () => {
+    const r = new BossRunner('gargoyle', createRng(1));
+    const target = { px: 400, py: 560 };
+    // 推進足夠時間完成一次衝刺
+    for (let t = 0; t < BOSS_DASH_CD_MS + BOSS_DASH_DUR_MS + 500; t += 50) {
+      r.step(50, target);
+    }
+    // 衝刺後繼續漂移，x 應在 dashToX 附近（而非原始 def.x 附近）
+    const xAfterDash = r.state.x;
+    const clampedTarget = Math.max(80, Math.min(FIELD_W - 80, target.px));
+    expect(Math.abs(xAfterDash - clampedTarget)).toBeLessThan(80); // 70px 漂移幅度
+  });
+
+  it('pendingSummon 在 phase 切換時為 true，consumeSummon 後為 false', () => {
+    const r = new BossRunner('gargoyle', createRng(1));
+    expect(r.pendingSummon).toBe(false);
+    const def = BOSS_DEFS.gargoyle;
+    r.damage(def.hp - Math.floor(def.hp * def.phases[1].hpPct) + 1);
+    expect(r.pendingSummon).toBe(true);
+    r.consumeSummon();
+    expect(r.pendingSummon).toBe(false);
+  });
+
+  it('damage 致死不觸發 pendingSummon', () => {
+    const r = new BossRunner('gargoyle', createRng(1));
+    r.damage(999999);
+    expect(r.state.alive).toBe(false);
+    expect(r.pendingSummon).toBe(false);
   });
 });

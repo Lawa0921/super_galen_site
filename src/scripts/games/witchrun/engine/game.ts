@@ -9,6 +9,7 @@ import {
   INFERNO_INVULN_MS, INFERNO_DMG, HIT_CLEAR_R,
   ENEMY_R, BOSS_R, COIN_PICKUP_R, COIN_MAGNET_R, COIN_FALL_SPEED, POWER_COINS,
   MAX_ENEMIES, FIRE_FIELD_MS, FIRE_FIELD_DPS, STEP_CAP_MS,
+  BELL_TOLL_INTERVAL_MS, BELL_TOLL_MAX, BELL_SURGE_MS, BELL_SURGE_MULT, CANCEL_COIN_CAP,
 } from './constants';
 import { createRng } from './rng';
 import { makePlayer, movePlayer, hitPlayer, tickPlayer, gainPower } from './player';
@@ -52,6 +53,11 @@ export class WitchGame {
   private held = new Set<'up' | 'down' | 'left' | 'right'>();
   private focusHeld = false;
   private events: WitchEvent[] = [];
+  // 全局十二響時限（F2）
+  private tollTimerMs = BELL_TOLL_INTERVAL_MS;
+  private tollCount = 0;
+  private surgeMs = 0;
+  private freezeMs = 0;   // F4 時停用（chronos 遺物）
 
   constructor(opts: WitchOptions = {}) {
     this.rng = createRng(opts.seed ?? 1);
@@ -108,6 +114,23 @@ export class WitchGame {
     if (this.status !== 'playing') return;
     const dtMs = Math.min(STEP_CAP_MS, rawDtMs);
 
+    // 0) 全局十二響計時
+    this.surgeMs = Math.max(0, this.surgeMs - dtMs);
+    this.freezeMs = Math.max(0, this.freezeMs - dtMs);
+    this.tollTimerMs -= dtMs;
+    if (this.tollTimerMs <= 0) {
+      this.tollCount++;
+      this.surgeMs = BELL_SURGE_MS;
+      this.events.push({ kind: 'bellToll', count: this.tollCount });
+      this.tollTimerMs = BELL_TOLL_INTERVAL_MS;
+      if (this.tollCount >= BELL_TOLL_MAX) {
+        this.status = 'gameover';
+        this.events.push({ kind: 'badEnd' });
+        this.events.push({ kind: 'gameover' });
+        return;
+      }
+    }
+
     // 1) 自機
     const dx = (this.held.has('right') ? 1 : 0) - (this.held.has('left') ? 1 : 0);
     const dy = (this.held.has('down') ? 1 : 0) - (this.held.has('up') ? 1 : 0);
@@ -130,11 +153,9 @@ export class WitchGame {
         this.events.push({ kind: 'bossSpawn', id: this.boss.state.id });
       }
     } else if (this.boss?.state.alive) {
-      const prevTolls = this.boss.tolls;
       for (const spec of this.boss.step(dtMs, { px: this.player.x, py: this.player.y })) {
         this.enemyBullets.spawn(spec);
       }
-      if (this.boss.tolls > prevTolls) this.events.push({ kind: 'bellToll', count: this.boss.tolls });
     }
 
     // 3) 道中敵
@@ -152,8 +173,9 @@ export class WitchGame {
     }
     this.enemies = this.enemies.filter((e) => e.alive);
 
-    // 4) 子彈運動
-    this.enemyBullets.step(dtMs);
+    // 4) 子彈運動（surge/freeze 調整速度倍率）
+    const speedMult = this.freezeMs > 0 ? 0 : this.surgeMs > 0 ? BELL_SURGE_MULT : 1;
+    this.enemyBullets.step(dtMs, speedMult);
     this.stepPlayerBullets(dtMs);
 
     // 5) 自機彈 vs 敵 / Boss
@@ -168,6 +190,14 @@ export class WitchGame {
       this.events.push({ kind: 'graze', x: this.player.x, y: this.player.y });
     }
     if (sweep.hit) this.onPlayerHit();
+
+    // 5.5) Boss phase 切換後召喚小兵 + 清彈轉星屑（在 resolvePlayerHits 後，damage() 設 pendingSummon）
+    if (this.boss?.state.alive && this.boss.pendingSummon) {
+      this.boss.consumeSummon();
+      this.cancelBulletsToCoins();
+      this.spawnBossMinions();
+      this.events.push({ kind: 'bossPhase', id: this.boss.state.id, phase: this.boss.state.phase });
+    }
 
     // 7) 金幣
     this.stepCoins(dtMs);
@@ -215,8 +245,8 @@ export class WitchGame {
       // Boss 優先
       if (this.boss?.state.alive && circleHit(b.x, b.y, 2, this.boss.state.x, this.boss.state.y, BOSS_R)) {
         b.active = false;
-        const changed = this.boss.damage(b.dmg);
-        if (changed) this.events.push({ kind: 'bossPhase', id: this.boss.state.id, phase: this.boss.state.phase });
+        this.boss.damage(b.dmg);
+        // pendingSummon 在 step 的 boss loop 中處理（避免重複事件）
         this.maybeSplit(b);
         continue;
       }
@@ -280,8 +310,8 @@ export class WitchGame {
     this.player.invulnMs = Math.max(this.player.invulnMs, INFERNO_INVULN_MS);
     for (const e of this.enemies) if (e.alive) this.damageEnemy(e, INFERNO_DMG);
     if (this.boss?.state.alive) {
-      const changed = this.boss.damage(INFERNO_DMG);
-      if (changed) this.events.push({ kind: 'bossPhase', id: this.boss.state.id, phase: this.boss.state.phase });
+      this.boss.damage(INFERNO_DMG);
+      // pendingSummon 由 step 中 5.5 處統一處理
     }
     if (this.mod.fireField) this.fireFieldMs = FIRE_FIELD_MS;
     this.events.push({ kind: 'inferno' });
@@ -311,6 +341,7 @@ export class WitchGame {
 
   private onBossDefeated(): void {
     const id = this.boss!.state.id;
+    this.cancelBulletsToCoins();  // 清彈轉星屑後 clearAll
     this.boss = null;
     this.bossSpawned = false;
     this.enemyBullets.clearAll();
@@ -324,6 +355,31 @@ export class WitchGame {
     this.draftChoices = draftRelics(this.rng, this.relics);
     this.status = 'draft';
     this.events.push({ kind: 'draftOpen', choices: this.draftChoices });
+  }
+
+  /** 清彈轉星屑：前 CANCEL_COIN_CAP 顆 active 敵彈位置變金幣，其餘清掉。 */
+  private cancelBulletsToCoins(): void {
+    let count = 0;
+    for (const b of this.enemyBullets.items) {
+      if (!b.active) continue;
+      if (count < CANCEL_COIN_CAP) {
+        this.coins.push({ x: b.x, y: b.y, vy: COIN_FALL_SPEED, active: true });
+        count++;
+      }
+      b.active = false;
+    }
+  }
+
+  /** Boss phase 切換時召喚 2 隻本關代表敵兵。 */
+  private spawnBossMinions(): void {
+    const waves = STAGES[this.stage].waves;
+    // 挑第一個出現的敵種
+    const kind = waves.length > 0 ? waves[0].kind : 'bat';
+    const positions = [0.3 * FIELD_W, 0.7 * FIELD_W];
+    for (const x of positions) {
+      if (this.enemies.length >= MAX_ENEMIES) break;
+      this.enemies.push(makeEnemy(this.nextEnemyId++, kind, x, -20, 'sine'));
+    }
   }
 
   private advanceStage(): void {
@@ -355,7 +411,7 @@ export class WitchGame {
       overdrive: { gauge: this.od.gauge, activeMs: this.od.activeMs },
       relics: [...this.relics],
       draftChoices: [...this.draftChoices],
-      bellTolls: this.boss?.state.id === 'deadbell' ? this.boss.tolls : 0,
+      bellTolls: this.tollCount,
       drops: [],  // F3 才實作邏輯；欄位先佔位讓型別完整
     };
   }
