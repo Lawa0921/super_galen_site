@@ -1,0 +1,198 @@
+import { Container, Graphics } from 'pixi.js';
+import { WitchGame } from '../engine/game';
+import { FIELD_W, FIELD_H } from '../engine/constants';
+import { KEYMAP } from '../input/keymap';
+import { attachTouch } from '../input/touch';
+import { SoundManager } from '../audio/SoundManager';
+import { PixiStage } from './PixiStage';
+import { loadWitchTextures } from './assets';
+import { BackgroundView } from './BackgroundView';
+import { BulletView } from './BulletView';
+import { EntityView } from './EntityView';
+import { HudView } from './HudView';
+import { RELICS } from '../engine/relics';
+import type { RelicId } from '../engine/types';
+
+interface TelegraphLine { g: Graphics; ttlMs: number; durMs: number; }
+
+export interface WitchHandle { game: WitchGame; destroy(): void; }
+
+export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHandle> {
+  const stage = await PixiStage.create(canvas);
+  const seed = Math.floor(Math.random() * 1_000_000_000);
+  const game = new WitchGame({ seed });
+  const sound = new SoundManager();
+
+  try {
+    await document.fonts.load('14px "Press Start 2P"');
+    await document.fonts.ready;
+  } catch { /* fallback monospace */ }
+
+  const tex = await loadWitchTextures(stage.app.renderer);
+  const bg = new BackgroundView(stage.bgLayer, FIELD_W, FIELD_H);
+  await bg.load();
+  const bullets = new BulletView(stage.bulletLayer, tex);
+  const entities = new EntityView(stage.entityLayer, stage.fxLayer, tex);
+  const hud = new HudView(stage.hudLayer);
+
+  // 場域等比縮放置中。content 的偏移走 stage.baseX/baseY（震屏每幀會重設 content 位置）。
+  function relayout(): void {
+    const scale = Math.min(stage.width / FIELD_W, stage.height / FIELD_H);
+    const ox = (stage.width - FIELD_W * scale) / 2;
+    const oy = (stage.height - FIELD_H * scale) / 2;
+    for (const c of [stage.bgLayer, stage.content] as Container[]) c.scale.set(scale);
+    stage.bgLayer.x = ox;
+    stage.bgLayer.y = oy;
+    stage.baseX = ox;
+    stage.baseY = oy;
+  }
+  relayout();
+  stage.app.renderer.on('resize', relayout);
+
+  // ---- Telegraph 預警線陣列 ----
+  const telegraphLines: TelegraphLine[] = [];
+
+  // ---- DOM overlays（遺物三選一 / game over / 過關）----
+  const draftEl = document.getElementById('witch-draft');
+  const draftBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-relic-slot]'));
+  const overEl = document.getElementById('witch-over');
+  const overHeading = document.getElementById('witch-over-heading');
+  const overStats = document.getElementById('witch-over-stats');
+  const clearEl = document.getElementById('witch-clear');
+  const clearStats = document.getElementById('witch-clear-stats');
+  const continueBtn = document.getElementById('witch-continue');
+
+  let badEndFlag = false;
+
+  function showDraft(choices: RelicId[]): void {
+    draftBtns.forEach((btn, i) => {
+      const id = choices[i];
+      btn.hidden = !id;
+      if (!id) return;
+      btn.dataset.relicId = id;
+      const relic = RELICS[id];
+      const name = btn.querySelector('.relic-name');
+      const desc = btn.querySelector('.relic-desc');
+      if (name) name.textContent = relic.name;
+      if (desc) desc.textContent = relic.desc;
+      btn.classList.toggle('relic-card--rare', relic.rarity === 'rare');
+    });
+    draftEl?.removeAttribute('hidden');
+  }
+  const onDraftClick = (e: Event): void => {
+    const id = (e.currentTarget as HTMLElement).dataset.relicId as RelicId | undefined;
+    if (!id) return;
+    draftEl?.setAttribute('hidden', '');
+    game.pickRelic(id);
+    sound.pickup();
+  };
+  draftBtns.forEach((b) => b.addEventListener('click', onDraftClick));
+
+  const onContinue = (): void => {
+    overEl?.setAttribute('hidden', '');
+    badEndFlag = false;
+    game.continueRun();
+  };
+  continueBtn?.addEventListener('click', onContinue);
+
+  // ---- 鍵盤 ----
+  const DIRS = new Set(['up', 'down', 'left', 'right']);
+  const onKeyDown = (e: KeyboardEvent): void => {
+    if (e.code === 'KeyM') { e.preventDefault(); sound.ensure(); sound.toggle(); return; }
+    const action = KEYMAP[e.code];
+    if (!action) return;
+    e.preventDefault();
+    sound.ensure();
+    if (action === 'focus') game.setFocus(true);
+    else if (action === 'bomb' || action === 'overdrive') { if (!e.repeat) game.input(action); }
+    else if (DIRS.has(action)) game.setHeld(action as 'up' | 'down' | 'left' | 'right', true);
+  };
+  const onKeyUp = (e: KeyboardEvent): void => {
+    const action = KEYMAP[e.code];
+    if (action === 'focus') game.setFocus(false);
+    else if (action && DIRS.has(action)) game.setHeld(action as 'up' | 'down' | 'left' | 'right', false);
+  };
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+  const detachTouch = attachTouch(canvas, game, () => sound.ensure());
+
+  // ---- Ticker ----
+  const tick = (ticker: { deltaMS: number }): void => {
+    const dt = ticker.deltaMS;
+    game.step(dt);
+    for (const ev of game.drainEvents()) {
+      if (ev.kind === 'shoot') { /* 每發都響太吵：射擊聲由 SoundManager 內部節流 */ sound.shoot(); }
+      else if (ev.kind === 'graze') sound.graze();
+      else if (ev.kind === 'overdrive') { stage.shake(10); sound.overdrive(); }
+      else if (ev.kind === 'inferno') { stage.shake(12); sound.inferno(); }
+      else if (ev.kind === 'enemyKill') { stage.shake(2); sound.kill(); }
+      else if (ev.kind === 'playerHit') { stage.shake(14); sound.hit(); }
+      else if (ev.kind === 'coin') sound.coin();
+      else if (ev.kind === 'bossSpawn') { stage.shake(8); sound.alarm(); }
+      else if (ev.kind === 'bossPhase') { stage.shake(8); sound.alarm(); }
+      else if (ev.kind === 'bellToll') { stage.shake(6); sound.toll(); }
+      else if (ev.kind === 'bossDefeat') { stage.shake(16); sound.inferno(); }
+      else if (ev.kind === 'eliteKill') { stage.shake(12); sound.kill(); }
+      else if (ev.kind === 'drop') sound.drop();
+      else if (ev.kind === 'badEnd') { badEndFlag = true; sound.gameover(); sound.toll(); }
+      else if (ev.kind === 'telegraph') {
+        const g = new Graphics()
+          .moveTo(ev.x1, ev.y1)
+          .lineTo(ev.x2, ev.y2)
+          .stroke({ width: 3, color: 0xfff0c0 });
+        stage.fxLayer.addChild(g);
+        telegraphLines.push({ g, ttlMs: ev.durMs, durMs: ev.durMs });
+      } else if (ev.kind === 'draftOpen') showDraft(ev.choices);
+      else if (ev.kind === 'gameover') {
+        if (overHeading) overHeading.textContent = badEndFlag ? 'THE BELL TOLLS TWELVE' : 'GAME OVER';
+        if (continueBtn) continueBtn.hidden = badEndFlag;
+        if (overStats) overStats.textContent = `STAGE ${game.getState().stage} · SCORE ${game.getState().score}`;
+        overEl?.removeAttribute('hidden');
+        if (!badEndFlag) sound.gameover();
+      } else if (ev.kind === 'cleared') {
+        sound.clear();
+        const s = game.getState();
+        const best = Math.max(s.score, Number(localStorage.getItem('witchrun-best') ?? 0));
+        localStorage.setItem('witchrun-best', String(best));
+        if (clearStats) clearStats.textContent = `SCORE ${s.score} · BEST ${best}`;
+        clearEl?.removeAttribute('hidden');
+      }
+    }
+
+    // telegraph 漸隱
+    for (let i = telegraphLines.length - 1; i >= 0; i--) {
+      const line = telegraphLines[i];
+      line.ttlMs -= dt;
+      if (line.ttlMs <= 0) {
+        line.g.destroy();
+        telegraphLines.splice(i, 1);
+      } else {
+        line.g.alpha = line.ttlMs / line.durMs;
+      }
+    }
+
+    const s = game.getState();
+    bg.update(dt, s.stage);
+    bullets.render(s.enemyBullets, s.playerBullets);
+    entities.render(s, dt);
+    hud.render(s);
+    stage.update(dt);
+  };
+  stage.app.ticker.add(tick);
+
+  const handle: WitchHandle = {
+    game,
+    destroy(): void {
+      stage.app.renderer.off('resize', relayout);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      draftBtns.forEach((b) => b.removeEventListener('click', onDraftClick));
+      continueBtn?.removeEventListener('click', onContinue);
+      detachTouch();
+      stage.app.ticker.remove(tick);
+      stage.app.destroy(undefined, { texture: true, textureSource: true }); // 連同產生的佔位紋理回收
+    },
+  };
+  (window as unknown as { __witchDebug?: unknown }).__witchDebug = { game, handle, stage };
+  return handle;
+}
