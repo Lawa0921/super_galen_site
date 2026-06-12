@@ -92,6 +92,7 @@ export interface WitchState {
   status: GameStatus;
   stage: StageId;
   player: PlayerState;
+  /** 兩個子彈陣列是 game.ts 內部池的直接引用（含 inactive 項，渲染層以 active 過濾）。 */
   playerBullets: PlayerBullet[];
   enemyBullets: EnemyBullet[];
   enemies: Enemy[];

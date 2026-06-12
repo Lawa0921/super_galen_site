@@ -37,7 +37,7 @@ describe('sweepPlayerVsBullets', () => {
   it('hitboxMult 縮小被彈圈（咒速羽毛）', () => {
     const pool = new BulletPool(4);
     const p = makePlayer();
-    // 距離放在 0.85 倍判定圈外、1 倍判定圈內
+    // 距離放在縮小後（mult=0.5）判定圈外、全尺寸判定圈內
     pool.spawn({ x: p.x + (PLAYER_HIT_R + 4) * 0.9, y: p.y, vx: 0, vy: 0, kind: 'rune' });
     const shrunk = sweepPlayerVsBullets(p, pool, 0.5);
     expect(shrunk.hit).toBe(false);
@@ -50,5 +50,6 @@ describe('sweepPlayerVsBullets', () => {
     pool.spawn({ x: p.x, y: p.y, vx: 0, vy: 0, kind: 'rune' });
     const r = sweepPlayerVsBullets(p, pool, 1);
     expect(r.hit).toBe(false);
+    expect(r.grazes).toBeGreaterThan(0); // 無敵仍可累積超載
   });
 });
