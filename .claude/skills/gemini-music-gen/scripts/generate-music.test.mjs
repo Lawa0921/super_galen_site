@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { parseArgs, resolveOutputPath, buildBody, extractAudioPart, MODELS } from './generate-music.mjs';
+import { parseArgs, resolveOutputPath, buildBody, extractAudioPart, loadKey, MODELS } from './generate-music.mjs';
 
 test('parseArgs 解析旗標與位置參數', () => {
   const a = parseArgs(['my prompt', 'arcade.mp3', '--model', 'pro', '--seed', '7', '--webloop', '--normalize']);
@@ -47,4 +49,22 @@ test('extractAudioPart：無音訊則丟錯', () => {
 test('MODELS 別名', () => {
   assert.equal(MODELS.clip, 'lyria-3-clip-preview');
   assert.equal(MODELS.pro, 'lyria-3-pro-preview');
+});
+
+test('loadKey：explicit/--key 優先', () => {
+  assert.equal(loadKey('abc'), 'abc');
+});
+
+test('loadKey：從 homedir 的 .gemini/.env 讀並去除外層引號', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gmgen-'));
+  fs.mkdirSync(path.join(dir, '.gemini'));
+  fs.writeFileSync(path.join(dir, '.gemini', '.env'), 'GEMINI_API_KEY="quoted-key-123"\n');
+  const saved = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY; // 避免被環境變數搶先
+  try {
+    assert.equal(loadKey(undefined, dir), 'quoted-key-123');
+  } finally {
+    if (saved !== undefined) process.env.GEMINI_API_KEY = saved;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -7,7 +7,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 /** node:https-based POST that bypasses undici/fetch WSL2 IPv6 timeout issues */
-function httpsPost(url, body) {
+function httpsPost(url, body, timeoutMs = 120000) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify(body);
     const u = new URL(url);
@@ -19,12 +19,15 @@ function httpsPost(url, body) {
     }, (res) => {
       const chunks = [];
       res.on('data', c => chunks.push(c));
+      res.on('error', reject);
       res.on('end', () => {
-          const sc = res.statusCode;
-          resolve({ status: sc, ok: sc >= 200 && sc < 300, json: () => JSON.parse(Buffer.concat(chunks).toString()) });
-        });
+        const sc = res.statusCode;
+        resolve({ status: sc, ok: sc >= 200 && sc < 300, text: Buffer.concat(chunks).toString() });
+      });
     });
     req.on('error', reject);
+    // 防無限掛住（當初改用 node:https 就是為了避開 undici 在 WSL2 的逾時卡死）
+    req.setTimeout(timeoutMs, () => req.destroy(new Error(`request timeout after ${timeoutMs}ms`)));
     req.write(payload);
     req.end();
   });
@@ -105,7 +108,9 @@ export async function generate(prompt, outPath, opts) {
   const model = MODELS[opts.model] || opts.model;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const res = await httpsPost(url, buildBody(prompt, opts));
-  const json = await res.json();
+  let json;
+  try { json = JSON.parse(res.text); }
+  catch { throw new Error(`HTTP ${res.status}: non-JSON response: ${res.text.slice(0, 200)}`); }
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${JSON.stringify(json.error || json).slice(0, 300)}`);
   const { buffer, mime } = extractAudioPart(json);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });

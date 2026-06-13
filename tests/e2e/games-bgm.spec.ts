@@ -38,6 +38,9 @@ test.describe('Dungeon Arcade BGM', () => {
     const res = await request.get(src as string);
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toMatch(/audio|mpeg|octet-stream/);
+    // 真實 BGM 約 700KB，檢查 byte 數以擋空檔 / pointer / 截斷檔
+    const body = await res.body();
+    expect(body.length).toBeGreaterThan(100000);
   });
 });
 
