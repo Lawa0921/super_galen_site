@@ -509,6 +509,50 @@ export class VersusMatch {
     return e;
   }
 
+  /** 決定性狀態指紋（FNV-1a/32）。
+   *  涵蓋所有「會影響未來模擬」的狀態：時間、塌縮圈數、地形、玩家全屬性、
+   *  場上炸彈/爆風/道具、以及尚未揭露的箱底道具——兩個一旦分歧的狀態
+   *  不應 hash 相同（lockstep desync 偵測賴此精準）。
+   *  所有集合均以「穩定順序」串接：陣列照插入序（filter 保序、絕無重排），
+   *  hiddenPowerUps 這個 Record 以 key 排序後串接（不依賴物件鍵插入序）。
+   *  純整數運算，無 Math.random / Date.now / Map/Set 迭代依賴。 */
+  stateHash(): string {
+    let h = 0x811c9dc5;
+    const mix = (s: string): void => {
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+    };
+    // 全域：狀態、時間、塌縮圈、勝者。
+    mix(this.status);
+    mix(String(this.elapsedMs | 0));
+    mix(String(this.collapsedRings));
+    mix(this.winnerId ?? '');
+    // 地形（壁/箱/地的破壞會改變未來走位與爆炸）。
+    mix(this.grid.map((row) => row.join('')).join('|'));
+    // 玩家：全屬性皆入 hash（位置/存活/名次/火力/彈數/速度/盾/無敵/移動冷卻/技能冷卻/朝向）。
+    for (const p of this.players) {
+      mix(
+        `${p.id},${p.x},${p.y},${p.prevX},${p.prevY},${p.dir},` +
+        `${p.alive ? 1 : 0},${p.placement},${p.fireRange},${p.maxBombs},${p.speedLevel},` +
+        `${p.shield ? 1 : 0},${p.invulnMs | 0},${p.moveCooldownMs | 0},` +
+        `${p.abilityId},${p.abilityCooldownMs | 0},${p.abilityMaxMs | 0}`
+      );
+    }
+    // 炸彈（插入序）。
+    for (const b of this.bombs) mix(`${b.x},${b.y},${b.fuseMs | 0},${b.range},${b.owner ?? ''}`);
+    // 爆風（插入序）。
+    for (const bl of this.blasts) mix(`${bl.x},${bl.y},${bl.ttlMs | 0}`);
+    // 場上可拾取道具（插入序）。
+    for (const u of this.powerUps) mix(`${u.x},${u.y},${u.kind}`);
+    // 箱底隱藏道具：key 排序後串接（影響未來掉落，必須入 hash 且順序穩定）。
+    for (const key of Object.keys(this.hiddenPowerUps).sort()) {
+      mix(`${key}=${this.hiddenPowerUps[key]}`);
+    }
+    return (h >>> 0).toString(16);
+  }
+
   // ---- debug seams（測試用） ----
 
   /** 直接對玩家套用道具效果。 */
