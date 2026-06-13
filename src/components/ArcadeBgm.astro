@@ -1,0 +1,75 @@
+---
+interface Props { track: string; }
+const { track } = Astro.props;
+---
+<div class="arcade-bgm">
+  <button class="arcade-bgm-toggle" type="button" aria-pressed="false" aria-label="切換背景音樂 Toggle background music">
+    <span class="arcade-bgm-icon" aria-hidden="true">🔇</span>
+  </button>
+  <audio class="arcade-bgm-audio" loop preload="none" src={track}></audio>
+</div>
+
+<style>
+  .arcade-bgm { position: fixed; right: 18px; bottom: 18px; z-index: 9000; }
+  .arcade-bgm-toggle {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 1px solid #36e6ff; background: rgba(8, 14, 22, 0.72);
+    color: #36e6ff; cursor: pointer; display: grid; place-items: center;
+    font-size: 18px; line-height: 1; opacity: 0.55;
+    transition: opacity 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .arcade-bgm-toggle:hover { opacity: 1; }
+  .arcade-bgm-toggle[aria-pressed="true"] {
+    opacity: 1; background: rgba(54, 230, 255, 0.16);
+    box-shadow: 0 0 14px rgba(54, 230, 255, 0.55);
+  }
+  .arcade-bgm-toggle:focus-visible { outline: 2px solid #36e6ff; outline-offset: 3px; }
+</style>
+
+<script>
+  const KEY = 'arcade-bgm';
+  function initArcadeBgm() {
+    const root = document.querySelector('.arcade-bgm');
+    if (!root) return;
+    const btn = root.querySelector('.arcade-bgm-toggle') as HTMLButtonElement;
+    const audio = root.querySelector('.arcade-bgm-audio') as HTMLAudioElement;
+    const icon = root.querySelector('.arcade-bgm-icon') as HTMLElement;
+    const VOL = 0.5;
+    let on = false;
+    audio.volume = 0;
+
+    function readPref() { try { return localStorage.getItem(KEY) === 'on'; } catch { return false; } }
+    function writePref(v: boolean) { try { localStorage.setItem(KEY, v ? 'on' : 'off'); } catch {} }
+
+    let raf = 0;
+    function fade(target: number) {
+      cancelAnimationFrame(raf);
+      const start = audio.volume; const t0 = performance.now(); const dur = 600;
+      const step = (now: number) => {
+        const k = Math.min(1, (now - t0) / dur);
+        audio.volume = start + (target - start) * k;
+        if (k < 1) raf = requestAnimationFrame(step);
+        else if (target === 0) audio.pause();
+      };
+      raf = requestAnimationFrame(step);
+    }
+    function paint() {
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      icon.textContent = on ? '🔊' : '🔇';
+    }
+    function setOn(v: boolean) {
+      on = v; paint();
+      if (v) {
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => { on = false; paint(); });
+        fade(VOL);
+      } else {
+        fade(0);
+      }
+    }
+    btn.addEventListener('click', () => { const next = !on; writePref(next); setOn(next); });
+    if (readPref()) setOn(true); // 跨頁延續；被擋住時 catch 還原視覺
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initArcadeBgm);
+  else initArcadeBgm();
+</script>
