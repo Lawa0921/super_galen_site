@@ -12,15 +12,20 @@ import { EntityView } from './EntityView';
 import { HudView } from './HudView';
 import { RELICS } from '../engine/relics';
 import type { RelicId } from '../engine/types';
+import { DEFAULT_CHARACTER, type CharacterId } from '../engine/characters';
 
 interface TelegraphLine { g: Graphics; ttlMs: number; durMs: number; }
 
 export interface WitchHandle { game: WitchGame; destroy(): void; }
 
-export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHandle> {
+export async function startWitchrun(
+  canvas: HTMLCanvasElement,
+  opts: { character?: CharacterId } = {},
+): Promise<WitchHandle> {
+  const characterId = opts.character ?? DEFAULT_CHARACTER;
   const stage = await PixiStage.create(canvas);
   const seed = Math.floor(Math.random() * 1_000_000_000);
-  const game = new WitchGame({ seed });
+  const game = new WitchGame({ seed, character: characterId });
   const sound = new SoundManager();
 
   try {
@@ -28,7 +33,7 @@ export async function startWitchrun(canvas: HTMLCanvasElement): Promise<WitchHan
     await document.fonts.ready;
   } catch { /* fallback monospace */ }
 
-  const tex = await loadWitchTextures(stage.app.renderer);
+  const tex = await loadWitchTextures(stage.app.renderer, characterId);
   const bg = new BackgroundView(stage.bgLayer, FIELD_W, FIELD_H);
   await bg.load();
   const bullets = new BulletView(stage.bulletLayer, tex);

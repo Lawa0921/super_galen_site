@@ -34,6 +34,28 @@ const lang: Language = defaultLang;
       </div>
     </div>
 
+    <!-- 選角畫面（電影聚光輪播） -->
+    <div class="witch-select" id="witch-select" hidden>
+      <div class="select-aura" aria-hidden="true"></div>
+      <button class="witch-home select-back" id="select-back" type="button">← BACK</button>
+      <h2 class="select-heading">CHOOSE YOUR WITCH</h2>
+      <div class="select-stage">
+        <button class="select-arrow" id="select-prev" type="button" aria-label="上一位">◄</button>
+        <div class="select-portrait-wrap">
+          <img class="select-portrait" id="select-portrait" alt="" decoding="async" />
+        </div>
+        <button class="select-arrow" id="select-next" type="button" aria-label="下一位">►</button>
+      </div>
+      <div class="select-info">
+        <p class="select-name" id="select-name">MIRA</p>
+        <p class="select-school" id="select-school">爆炎 · INFERNO</p>
+        <p class="select-blurb" id="select-blurb"></p>
+        <div class="select-stats" id="select-stats"></div>
+      </div>
+      <div class="select-dots" id="select-dots" aria-hidden="true"></div>
+      <button class="witch-start" id="select-confirm" type="button">START</button>
+    </div>
+
     <!-- 遺物三選一 -->
     <div class="witch-overlay" id="witch-draft" hidden>
       <h2 class="overlay-heading">CHOOSE A RELIC</h2>
@@ -214,18 +236,166 @@ const lang: Language = defaultLang;
   }
   .touch-btn--od { color: #d0f4ff; background: rgba(54, 230, 255, 0.2); border-color: rgba(54, 230, 255, 0.7); }
   @media (pointer: coarse) { .witch[data-phase="playing"]:not([data-overlay]) .witch-touch { display: flex; } }
+
+  /* ---- 選角畫面（電影聚光輪播）---- */
+  .witch-select {
+    --aura: #ff5a4d;
+    position: absolute; inset: 0; z-index: 12;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    padding: 20px; text-align: center; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 38%, rgba(10, 7, 22, 0.55), rgba(10, 7, 22, 0.92) 70%),
+      url('/assets/games/witchrun/card-witchrun.webp') center / cover no-repeat, #0a0716;
+    animation: witch-select-in 0.35s ease;
+  }
+  .witch-select[hidden] { display: none; }
+  @keyframes witch-select-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* 流派色光暈（隨選中角色換色） */
+  .select-aura {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--aura) 38%, transparent), transparent 60%);
+    transition: background 0.3s ease;
+    animation: select-aura-pulse 4s ease-in-out infinite alternate;
+  }
+  @keyframes select-aura-pulse { from { opacity: 0.75; } to { opacity: 1; } }
+
+  .select-back { position: absolute; top: 16px; left: 18px; z-index: 3; background: none; border: none; font-family: inherit; cursor: pointer; }
+  .select-heading {
+    position: relative; z-index: 2; margin: 0; font-size: clamp(13px, 3.4vw, 20px); letter-spacing: 4px;
+    color: #eafdff; text-shadow: 0 0 12px var(--aura);
+  }
+
+  .select-stage {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+  }
+  .select-arrow {
+    flex: none; width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
+    font-family: inherit; font-size: 16px; color: #fff;
+    background: color-mix(in srgb, var(--aura) 22%, rgba(10, 7, 22, 0.6));
+    border: 2px solid color-mix(in srgb, var(--aura) 70%, transparent);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .select-arrow:hover { transform: scale(1.08); box-shadow: 0 0 16px var(--aura); }
+  .select-portrait-wrap {
+    width: min(56vw, 232px); aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden;
+    border: 2px solid color-mix(in srgb, var(--aura) 80%, transparent);
+    box-shadow: 0 0 28px color-mix(in srgb, var(--aura) 55%, transparent), 0 0 6px rgba(0, 0, 0, 0.5) inset;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .select-portrait { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: pixelated; animation: select-portrait-in 0.3s ease; }
+  @keyframes select-portrait-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
+
+  .select-info { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 460px; }
+  .select-name { margin: 0; font-size: clamp(18px, 5vw, 30px); letter-spacing: 4px; color: var(--aura); text-shadow: 0 0 14px color-mix(in srgb, var(--aura) 70%, transparent); }
+  .select-school { margin: 0; font-size: 10px; letter-spacing: 3px; color: #c8bce0; }
+  .select-blurb { margin: 0; font-size: 9px; line-height: 1.8; color: #9a8ac0; }
+
+  .select-stats { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; }
+  .stat-row { display: flex; align-items: center; gap: 10px; font-size: 9px; letter-spacing: 1px; color: #d6cdf0; }
+  .stat-label { width: 40px; text-align: right; }
+  .stat-pips { display: flex; gap: 4px; }
+  .stat-pip { width: 16px; height: 9px; border-radius: 2px; background: rgba(214, 205, 240, 0.22); border: 1px solid rgba(214, 205, 240, 0.3); }
+  .stat-pip.on { background: var(--aura); border-color: var(--aura); box-shadow: 0 0 8px color-mix(in srgb, var(--aura) 80%, transparent); }
+
+  .select-dots { position: relative; z-index: 2; display: flex; gap: 8px; }
+  .select-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.25); cursor: pointer; }
+  .select-dots .dot.on { background: var(--aura); box-shadow: 0 0 8px var(--aura); }
+
+  #select-confirm { position: relative; z-index: 2; background: var(--aura); box-shadow: 0 0 18px color-mix(in srgb, var(--aura) 60%, transparent); }
+
+  @media (max-height: 720px) {
+    .witch-select { gap: 10px; }
+    .select-blurb { display: none; }
+    .select-portrait-wrap { width: min(42vw, 170px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .witch-select, .select-portrait { animation: none; }
+    .select-aura { animation: none; }
+  }
 </style>
 
 <script>
-  const canvas = document.getElementById('witch-canvas') as HTMLCanvasElement | null;
+  import { CHARACTERS, type CharacterId } from '@scripts/games/witchrun/engine/characters';
+
+  const byId = (id: string) => document.getElementById(id);
+  const canvas = byId('witch-canvas') as HTMLCanvasElement | null;
   const witchEl = document.querySelector('.witch') as HTMLElement | null;
-  const titleEl = document.getElementById('witch-title');
-  const startBtn = document.getElementById('witch-start');
+  const titleEl = byId('witch-title');
+  const titleStartBtn = byId('witch-start');
+  const selectEl = byId('witch-select');
+  const portraitEl = byId('select-portrait') as HTMLImageElement | null;
+  const nameEl = byId('select-name');
+  const schoolEl = byId('select-school');
+  const blurbEl = byId('select-blurb');
+  const statsEl = byId('select-stats');
+  const dotsEl = byId('select-dots');
+
+  const ORDER: CharacterId[] = ['mira', 'gale', 'frost', 'volt'];
+  const STORE_KEY = 'witchrun-character';
+  let idx = 0;
   let started = false;
 
-  async function start(): Promise<void> {
+  function storedId(): CharacterId {
+    const s = localStorage.getItem(STORE_KEY);
+    return s && (ORDER as string[]).includes(s) ? (s as CharacterId) : 'mira';
+  }
+
+  function pips(label: string, on: number): string {
+    const cells = Array.from({ length: 5 }, (_, i) => `<span class="stat-pip${i < on ? ' on' : ''}"></span>`).join('');
+    return `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-pips">${cells}</span></div>`;
+  }
+  const spdPips = (m: number): number => (m >= 1.15 ? 4 : m <= 0.9 ? 2 : 3);
+
+  function renderSelect(): void {
+    const id = ORDER[idx];
+    const c = CHARACTERS[id];
+    if (portraitEl) {
+      portraitEl.src = `/assets/games/witchrun/portrait-${id}.webp`;
+      portraitEl.alt = `${c.name} — ${c.school}`;
+      portraitEl.style.animation = 'none';
+      void portraitEl.offsetWidth;
+      portraitEl.style.animation = '';
+    }
+    if (nameEl) nameEl.textContent = c.name;
+    if (schoolEl) schoolEl.textContent = `${c.schoolZh} · ${c.school}`;
+    if (blurbEl) blurbEl.textContent = c.blurb;
+    selectEl?.style.setProperty('--aura', c.colorCss);
+    if (statsEl) {
+      statsEl.innerHTML =
+        pips('SPD', spdPips(c.speedMult)) +
+        pips('LIFE', Math.min(5, c.startLives)) +
+        pips('PWR', c.startPower >= 2 ? 4 : 2);
+    }
+    if (dotsEl) {
+      dotsEl.innerHTML = ORDER.map((_, i) => `<span class="dot${i === idx ? ' on' : ''}" data-i="${i}"></span>`).join('');
+    }
+  }
+
+  function showSelect(): void {
+    if (started) return;
+    idx = Math.max(0, ORDER.indexOf(storedId()));
+    renderSelect();
+    titleEl?.setAttribute('data-exit', '');
+    selectEl?.removeAttribute('hidden');
+    witchEl?.setAttribute('data-phase', 'select');
+  }
+  function hideSelect(): void {
+    selectEl?.setAttribute('hidden', '');
+    titleEl?.removeAttribute('data-exit');
+    witchEl?.setAttribute('data-phase', 'title');
+  }
+  function cycle(d: number): void {
+    idx = (idx + d + ORDER.length) % ORDER.length;
+    renderSelect();
+  }
+
+  async function begin(id: CharacterId): Promise<void> {
     if (started || !canvas) return;
     started = true;
+    localStorage.setItem(STORE_KEY, id);
+    selectEl?.setAttribute('hidden', '');
     witchEl?.setAttribute('data-phase', 'playing');
     // 標題淡出後移除：與初始化解耦（固定時序，避免 headless 下因載入慢而延後移除）
     if (titleEl) {
@@ -233,15 +403,41 @@ const lang: Language = defaultLang;
       setTimeout(() => titleEl.remove(), 480);
     }
     const { startWitchrun } = await import('@scripts/games/witchrun/render/main');
-    await startWitchrun(canvas).catch((err: unknown) => console.error('[witchrun] start failed', err));
+    await startWitchrun(canvas, { character: id }).catch((err: unknown) => console.error('[witchrun] start failed', err));
   }
 
-  startBtn?.addEventListener('click', () => void start());
-  document.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (started) return;
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void start(); }
+  titleStartBtn?.addEventListener('click', showSelect);
+  byId('select-prev')?.addEventListener('click', () => cycle(-1));
+  byId('select-next')?.addEventListener('click', () => cycle(1));
+  byId('select-confirm')?.addEventListener('click', () => void begin(ORDER[idx]));
+  byId('select-back')?.addEventListener('click', hideSelect);
+  dotsEl?.addEventListener('click', (e) => {
+    const i = (e.target as HTMLElement)?.dataset?.i;
+    if (i != null) { idx = Number(i); renderSelect(); }
   });
 
-  // e2e 自動開局
-  if (new URLSearchParams(location.search).get('autostart') === '1') void start();
+  // 觸控左右滑切換角色
+  let touchX = 0;
+  selectEl?.addEventListener('touchstart', (e) => { touchX = (e as TouchEvent).changedTouches[0].clientX; }, { passive: true });
+  selectEl?.addEventListener('touchend', (e) => {
+    const dx = (e as TouchEvent).changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 40) cycle(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (started) return;
+    const selecting = selectEl != null && !selectEl.hasAttribute('hidden');
+    if (selecting) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); cycle(-1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); cycle(1); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void begin(ORDER[idx]); }
+      else if (e.key === 'Escape') { e.preventDefault(); hideSelect(); }
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      showSelect();
+    }
+  });
+
+  // e2e / 深連結：跳過選角，用儲存或預設角色直接開局
+  if (new URLSearchParams(location.search).get('autostart') === '1') void begin(storedId());
 </script>

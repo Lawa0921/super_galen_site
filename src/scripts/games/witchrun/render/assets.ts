@@ -1,5 +1,6 @@
 import { Assets, Graphics, Text, TextStyle, Texture, type Renderer } from 'pixi.js';
 import type { BulletKind, EnemyKind, BossId } from '../engine/types';
+import { CHARACTERS, DEFAULT_CHARACTER, type CharacterId } from '../engine/characters';
 
 export interface WitchTextures {
   player: Texture;
@@ -49,8 +50,12 @@ function dropTex(renderer: Renderer, label: string, circleColor: number): Textur
 }
 
 /** 載入正式像素素材（自機彈仍為程式產生的光點——刻意保持高辨識度）。 */
-export async function loadWitchTextures(renderer: Renderer): Promise<WitchTextures> {
-  const urls: Record<string, string> = { player: `${BASE}/player.png`, coin: `${BASE}/coin.png` };
+export async function loadWitchTextures(
+  renderer: Renderer,
+  characterId: CharacterId = DEFAULT_CHARACTER,
+): Promise<WitchTextures> {
+  const playerUrl = characterId === 'mira' ? `${BASE}/player.png` : `${BASE}/player-${characterId}.png`;
+  const urls: Record<string, string> = { player: playerUrl, coin: `${BASE}/coin.png` };
   for (const k of BULLET_KINDS) urls[`bullet-${k}`] = `${BASE}/bullet-${k}.png`;
   for (const k of ENEMY_KINDS) urls[`enemy-${k}`] = `${BASE}/enemy-${k}.png`;
   for (const b of BOSS_IDS) urls[`boss-${b}`] = `${BASE}/boss-${b}.png`;
@@ -60,7 +65,7 @@ export async function loadWitchTextures(renderer: Renderer): Promise<WitchTextur
 
   return {
     player: tex('player'),
-    playerBullet: circleTex(renderer, 3, 0xffb0a0, 0xffe0d0),
+    playerBullet: circleTex(renderer, 3, CHARACTERS[characterId].color, 0xffffff),
     bullets: Object.fromEntries(BULLET_KINDS.map((k) => [k, tex(`bullet-${k}`)])) as Record<BulletKind, Texture>,
     enemies: Object.fromEntries(ENEMY_KINDS.map((k) => [k, tex(`enemy-${k}`)])) as Record<EnemyKind, Texture>,
     bosses: Object.fromEntries(BOSS_IDS.map((b) => [b, tex(`boss-${b}`)])) as Record<BossId, Texture>,

@@ -14,6 +14,7 @@ import {
 } from './constants';
 import { createRng } from './rng';
 import { makePlayer, movePlayer, hitPlayer, tickPlayer, gainPower } from './player';
+import { CHARACTERS, DEFAULT_CHARACTER, type CharacterId, type CharacterDef } from './characters';
 import { BulletPool } from './bullet';
 import { circleHit, sweepPlayerVsBullets } from './collision';
 import { Overdrive } from './graze';
@@ -24,7 +25,7 @@ import { ring } from './pattern';
 import { BossRunner } from './boss';
 import { StageRunner, STAGES } from './stage';
 
-export interface WitchOptions { seed?: number; stage?: StageId; }
+export interface WitchOptions { seed?: number; stage?: StageId; character?: CharacterId; }
 
 export class WitchGame {
   /** 公開給測試與渲染層讀取（damage 由自機彈命中觸發）。 */
@@ -61,10 +62,13 @@ export class WitchGame {
   private surgeMs = 0;
   private freezeMs = 0;   // F4 時停用（chronos 遺物）
   private grazeCount = 0; // F4 starshard：累積擦彈計數
+  private charDef: CharacterDef = CHARACTERS[DEFAULT_CHARACTER];
 
   constructor(opts: WitchOptions = {}) {
     this.rng = createRng(opts.seed ?? 1);
     this.stage = opts.stage ?? 1;
+    this.charDef = CHARACTERS[opts.character ?? DEFAULT_CHARACTER];
+    this.player = makePlayer(this.charDef);
     this.stageRunner = new StageRunner(this.stage);
     this.events.push({ kind: 'stageStart', stage: this.stage });
   }
@@ -100,7 +104,7 @@ export class WitchGame {
     if (this.status !== 'gameover') return;
     this.score = 0;
     this.grazeChain = 0;
-    this.player = makePlayer();
+    this.player = makePlayer(this.charDef);
     this.enemies = [];
     this.coins = [];
     this.drops = [];
@@ -140,7 +144,7 @@ export class WitchGame {
     const dx = (this.held.has('right') ? 1 : 0) - (this.held.has('left') ? 1 : 0);
     const dy = (this.held.has('down') ? 1 : 0) - (this.held.has('up') ? 1 : 0);
     this.player.focus = this.focusHeld;
-    movePlayer(this.player, { dx, dy }, dtMs, this.mod.speedMult);
+    movePlayer(this.player, { dx, dy }, dtMs, this.mod.speedMult * this.charDef.speedMult);
     tickPlayer(this.player, dtMs);
     this.od.tick(dtMs);
     this.fireFieldMs = Math.max(0, this.fireFieldMs - dtMs);
