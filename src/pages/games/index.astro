@@ -4,6 +4,7 @@
  * 對標 docs/.../mockups/ui/A-hall.jpg
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import ArcadeBgm from '@components/ArcadeBgm.astro';
 import { defaultLang, type Language } from '@i18n/index';
 
 const lang: Language = defaultLang;
@@ -45,6 +46,8 @@ const games = [
 
     <a class="lb-link" href="/games/leaderboard"><i class="fas fa-trophy"></i> 排行榜 LEADERBOARD</a>
   </main>
+
+  <ArcadeBgm track="/assets/games/bgm/arcade.mp3" />
 </BaseLayout>
 
 <style>

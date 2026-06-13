@@ -6,16 +6,30 @@ export class SoundManager {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private noiseBuf: AudioBuffer | null = null;
+  private sfxVolume = 1;
   enabled = true;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const w = window as unknown as { __arcadeAudio?: { sfxVolume?: number } };
+      this.sfxVolume = w.__arcadeAudio?.sfxVolume ?? 1;
+      window.addEventListener('arcade-audio-change', (e) => {
+        this.sfxVolume = (e as CustomEvent).detail?.sfxVolume ?? 1;
+        if (this.master) this.master.gain.value = 0.22 * this.sfxVolume;
+      });
+    }
+  }
 
   /** 在使用者手勢內呼叫以建立 / 恢復 AudioContext。 */
   ensure(): void {
     if (!this.ctx) {
+      const w = window as unknown as { __arcadeAudio?: { sfxVolume?: number } };
+      this.sfxVolume = w.__arcadeAudio?.sfxVolume ?? this.sfxVolume;
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return;
       this.ctx = new AC();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.22;
+      this.master.gain.value = 0.22 * this.sfxVolume;
       this.master.connect(this.ctx.destination);
       const len = Math.floor(this.ctx.sampleRate * 0.5);
       const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);

@@ -5,6 +5,7 @@
  * 模式：SOLO；全螢幕 PixiJS 遊戲頁，由頁底腳本載入並 code-split。
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import ArcadeBgm from '@components/ArcadeBgm.astro';
 import { defaultLang, type Language } from '@i18n/index';
 import { CHARACTERS } from '@scripts/games/bomber/engine/characters';
 
@@ -273,6 +274,7 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
       <button class="ms-btn ms-solo" id="bomber-restart">RETRY</button>
     </div>
   </main>
+  <ArcadeBgm track="/assets/games/bgm/bomber.mp3" />
 </BaseLayout>
 
 <style>

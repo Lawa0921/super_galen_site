@@ -1,0 +1,140 @@
+---
+interface Props { track: string; }
+const { track } = Astro.props;
+---
+<div class="arcade-bgm" data-open="false">
+  <button class="arcade-bgm-toggle" type="button" aria-label="音訊設定 Audio settings" aria-expanded="false">
+    <span class="arcade-bgm-icon" aria-hidden="true">🔊</span>
+  </button>
+  <div class="arcade-bgm-panel" role="group" aria-label="音量控制 Volume" hidden>
+    <label class="arcade-bgm-row">
+      <span class="arcade-bgm-label">🎵 音樂</span>
+      <input class="arcade-bgm-slider" data-audio="music" type="range" min="0" max="100" step="1" aria-label="音樂音量 Music volume" />
+    </label>
+    <label class="arcade-bgm-row">
+      <span class="arcade-bgm-label">🔊 音效</span>
+      <input class="arcade-bgm-slider" data-audio="sfx" type="range" min="0" max="100" step="1" aria-label="音效音量 SFX volume" />
+    </label>
+  </div>
+  <audio class="arcade-bgm-audio" loop preload="none" src={track}></audio>
+</div>
+
+<style>
+  .arcade-bgm { position: fixed; right: 18px; bottom: 18px; z-index: 9000; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .arcade-bgm-toggle {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 1px solid #36e6ff; background: rgba(8, 14, 22, 0.72);
+    color: #36e6ff; cursor: pointer; display: grid; place-items: center;
+    font-size: 18px; line-height: 1; opacity: 0.6;
+    transition: opacity 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .arcade-bgm-toggle:hover { opacity: 1; }
+  .arcade-bgm[data-open="true"] .arcade-bgm-toggle {
+    opacity: 1; background: rgba(54, 230, 255, 0.16); box-shadow: 0 0 14px rgba(54, 230, 255, 0.55);
+  }
+  .arcade-bgm-toggle:focus-visible { outline: 2px solid #36e6ff; outline-offset: 3px; }
+  .arcade-bgm-panel {
+    order: -1; display: flex; flex-direction: column; gap: 12px;
+    padding: 14px 16px; min-width: 190px;
+    border: 1px solid rgba(54, 230, 255, 0.5); border-radius: 10px;
+    background: rgba(8, 14, 22, 0.92); backdrop-filter: blur(6px);
+    box-shadow: 0 0 18px rgba(54, 230, 255, 0.25);
+  }
+  .arcade-bgm-panel[hidden] { display: none; }
+  .arcade-bgm-row { display: flex; flex-direction: column; gap: 6px; }
+  .arcade-bgm-label { font-size: 12px; letter-spacing: 0.08em; color: #cdefff; }
+  .arcade-bgm-slider { width: 100%; accent-color: #36e6ff; cursor: pointer; }
+  .arcade-bgm-slider:focus-visible { outline: 2px solid #36e6ff; outline-offset: 2px; }
+  /* 音樂實際播放中時，喇叭鈕脈動發光（不靠耳朵也能確認在運作） */
+  @keyframes arcade-bgm-pulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(54, 230, 255, 0.35); }
+    50% { box-shadow: 0 0 18px rgba(54, 230, 255, 0.95); }
+  }
+  .arcade-bgm[data-playing="true"] .arcade-bgm-toggle {
+    opacity: 1; animation: arcade-bgm-pulse 1.4s ease-in-out infinite;
+  }
+</style>
+
+<script>
+  const MUSIC_KEY = 'arcade-music-vol';
+  const SFX_KEY = 'arcade-sfx-vol';
+  const DEF_MUSIC = 0.5, DEF_SFX = 0.6;
+  const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+
+  function readVol(key: string, def: number): number {
+    try { const v = parseFloat(localStorage.getItem(key) ?? ''); return Number.isFinite(v) ? clamp01(v) : def; }
+    catch { return def; }
+  }
+  function writeVol(key: string, v: number) { try { localStorage.setItem(key, String(clamp01(v))); } catch {} }
+
+  function initArcadeAudio() {
+    const root = document.querySelector('.arcade-bgm');
+    if (!root) return;
+    const btn = root.querySelector('.arcade-bgm-toggle') as HTMLButtonElement;
+    const panel = root.querySelector('.arcade-bgm-panel') as HTMLElement;
+    const audio = root.querySelector('.arcade-bgm-audio') as HTMLAudioElement;
+    const icon = root.querySelector('.arcade-bgm-icon') as HTMLElement;
+    const musicSlider = root.querySelector('input[data-audio="music"]') as HTMLInputElement;
+    const sfxSlider = root.querySelector('input[data-audio="sfx"]') as HTMLInputElement;
+
+    // 真實播放狀態 → data-playing（驅動喇叭鈕脈動，視覺確認在運作）
+    audio.addEventListener('playing', () => root.setAttribute('data-playing', 'true'));
+    audio.addEventListener('pause', () => root.setAttribute('data-playing', 'false'));
+    audio.addEventListener('ended', () => root.setAttribute('data-playing', 'false'));
+
+    let musicVolume = readVol(MUSIC_KEY, DEF_MUSIC);
+    let sfxVolume = readVol(SFX_KEY, DEF_SFX);
+    let gestured = false;
+
+    function publish() {
+      (window as unknown as { __arcadeAudio?: object }).__arcadeAudio = { musicVolume, sfxVolume };
+      window.dispatchEvent(new CustomEvent('arcade-audio-change', { detail: { musicVolume, sfxVolume } }));
+    }
+
+    function applyMusic() {
+      audio.volume = clamp01(musicVolume);
+      if (musicVolume > 0 && gestured && audio.paused) {
+        const p = audio.play(); if (p && p.catch) p.catch(() => {});
+      } else if (musicVolume === 0 && !audio.paused) {
+        audio.pause();
+      }
+      icon.textContent = musicVolume > 0 ? '🔊' : '🔇';
+    }
+
+    // 初始 UI 狀態
+    musicSlider.value = String(Math.round(musicVolume * 100));
+    sfxSlider.value = String(Math.round(sfxVolume * 100));
+    audio.volume = clamp01(musicVolume);
+    icon.textContent = musicVolume > 0 ? '🔊' : '🔇';
+    publish();
+
+    // 面板開關
+    function setOpen(o: boolean) {
+      root.setAttribute('data-open', String(o));
+      btn.setAttribute('aria-expanded', String(o));
+      if (o) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
+    }
+    btn.addEventListener('click', () => setOpen(root.getAttribute('data-open') !== 'true'));
+    document.addEventListener('click', (e) => { if (!root.contains(e.target as Node)) setOpen(false); });
+
+    // slider 變更（直接設音量、clamp、持久化、廣播）
+    musicSlider.addEventListener('input', () => {
+      musicVolume = clamp01(parseInt(musicSlider.value, 10) / 100);
+      writeVol(MUSIC_KEY, musicVolume); applyMusic(); publish();
+    });
+    sfxSlider.addEventListener('input', () => {
+      sfxVolume = clamp01(parseInt(sfxSlider.value, 10) / 100);
+      writeVol(SFX_KEY, sfxVolume); publish();
+    });
+
+    // 首次互動解鎖自動播放（瀏覽器政策）
+    function onFirstGesture() { gestured = true; applyMusic(); }
+    window.addEventListener('pointerdown', onFirstGesture, { once: true });
+    window.addEventListener('keydown', onFirstGesture, { once: true });
+
+    // 嘗試立即播（網域已有自動播放權限時）
+    applyMusic();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initArcadeAudio);
+  else initArcadeAudio();
+</script>

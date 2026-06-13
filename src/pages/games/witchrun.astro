@@ -4,6 +4,7 @@
  * Mira 主演縱向彈幕。全螢幕 PixiJS，頁底腳本 code-split 載入。
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import ArcadeBgm from '@components/ArcadeBgm.astro';
 import { defaultLang, type Language } from '@i18n/index';
 
 const lang: Language = defaultLang;
@@ -64,6 +65,7 @@ const lang: Language = defaultLang;
       <button class="touch-btn touch-btn--od" id="witch-btn-od" type="button">OD</button>
     </div>
   </main>
+  <ArcadeBgm track="/assets/games/bgm/witchrun.mp3" />
 </BaseLayout>
 
 <style>
