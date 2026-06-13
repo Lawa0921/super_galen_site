@@ -36,6 +36,7 @@ const lang: Language = defaultLang;
 
     <!-- 選角畫面（電影聚光輪播） -->
     <div class="witch-select" id="witch-select" hidden>
+      <div class="select-bg" aria-hidden="true"></div>
       <div class="select-aura" aria-hidden="true"></div>
       <button class="witch-home select-back" id="select-back" type="button">← BACK</button>
       <h2 class="select-heading">CHOOSE YOUR WITCH</h2>
@@ -243,22 +244,28 @@ const lang: Language = defaultLang;
     position: absolute; inset: 0; z-index: 12;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
     padding: 20px; text-align: center; overflow: hidden;
-    background:
-      radial-gradient(ellipse at 50% 38%, rgba(10, 7, 22, 0.55), rgba(10, 7, 22, 0.92) 70%),
-      url('/assets/games/witchrun/card-witchrun.webp') center / cover no-repeat, #0a0716;
+    background: #0a0716;
     animation: witch-select-in 0.35s ease;
   }
   .witch-select[hidden] { display: none; }
   @keyframes witch-select-in { from { opacity: 0; } to { opacity: 1; } }
 
+  /* 背景：所選角色立繪的模糊暗化版（切換時整體氛圍隨角色變色） */
+  .select-bg {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: var(--bg, none) center 22% / cover no-repeat;
+    filter: blur(16px) brightness(0.45) saturate(1.1);
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
   /* 流派色光暈（隨選中角色換色） */
   .select-aura {
-    position: absolute; inset: 0; z-index: 0; pointer-events: none;
-    background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--aura) 38%, transparent), transparent 60%);
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--aura) 32%, transparent), transparent 62%);
     transition: background 0.3s ease;
     animation: select-aura-pulse 4s ease-in-out infinite alternate;
   }
-  @keyframes select-aura-pulse { from { opacity: 0.75; } to { opacity: 1; } }
+  @keyframes select-aura-pulse { from { opacity: 0.7; } to { opacity: 1; } }
 
   .select-back { position: absolute; top: 16px; left: 18px; z-index: 3; background: none; border: none; font-family: inherit; cursor: pointer; }
   .select-heading {
@@ -287,21 +294,32 @@ const lang: Language = defaultLang;
   .select-portrait { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: pixelated; animation: select-portrait-in 0.3s ease; }
   @keyframes select-portrait-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
 
-  .select-info { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 460px; }
-  .select-name { margin: 0; font-size: clamp(18px, 5vw, 30px); letter-spacing: 4px; color: var(--aura); text-shadow: 0 0 14px color-mix(in srgb, var(--aura) 70%, transparent); }
-  .select-school { margin: 0; font-size: 10px; letter-spacing: 3px; color: #c8bce0; }
-  .select-blurb { margin: 0; font-size: 9px; line-height: 1.8; color: #9a8ac0; }
+  /* 資訊面板：深色襯底，確保名稱/流派/數值在花背景上清楚可讀 */
+  .select-info {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    width: min(90%, 340px); padding: 14px 20px 16px;
+    background: rgba(8, 6, 18, 0.78);
+    border: 1px solid color-mix(in srgb, var(--aura) 55%, transparent);
+    border-radius: 12px;
+    box-shadow: 0 0 22px color-mix(in srgb, var(--aura) 28%, transparent), 0 4px 16px rgba(0, 0, 0, 0.45);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .select-name { margin: 0; font-size: clamp(20px, 5vw, 30px); letter-spacing: 4px; color: var(--aura); text-shadow: 0 0 14px color-mix(in srgb, var(--aura) 70%, transparent); }
+  .select-school { margin: 0; font-size: 10px; letter-spacing: 3px; color: #d6cdf0; }
+  .select-blurb { margin: 2px 0 0; font-size: 9px; line-height: 1.7; color: #b6a9d4; }
 
+  /* 數值條／指示點為執行期 innerHTML 注入，須用 :global 才會套用（Astro scoped 樣式不及於動態節點） */
   .select-stats { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; }
-  .stat-row { display: flex; align-items: center; gap: 10px; font-size: 9px; letter-spacing: 1px; color: #d6cdf0; }
-  .stat-label { width: 40px; text-align: right; }
-  .stat-pips { display: flex; gap: 4px; }
-  .stat-pip { width: 16px; height: 9px; border-radius: 2px; background: rgba(214, 205, 240, 0.22); border: 1px solid rgba(214, 205, 240, 0.3); }
-  .stat-pip.on { background: var(--aura); border-color: var(--aura); box-shadow: 0 0 8px color-mix(in srgb, var(--aura) 80%, transparent); }
+  .select-stats :global(.stat-row) { display: flex; align-items: center; gap: 10px; font-size: 9px; letter-spacing: 1px; color: #d6cdf0; }
+  .select-stats :global(.stat-label) { width: 40px; text-align: right; }
+  .select-stats :global(.stat-pips) { display: flex; gap: 4px; }
+  .select-stats :global(.stat-pip) { width: 16px; height: 9px; border-radius: 2px; background: rgba(214, 205, 240, 0.22); border: 1px solid rgba(214, 205, 240, 0.35); }
+  .select-stats :global(.stat-pip.on) { background: var(--aura); border-color: var(--aura); box-shadow: 0 0 8px color-mix(in srgb, var(--aura) 80%, transparent); }
 
-  .select-dots { position: relative; z-index: 2; display: flex; gap: 8px; }
-  .select-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.25); cursor: pointer; }
-  .select-dots .dot.on { background: var(--aura); box-shadow: 0 0 8px var(--aura); }
+  .select-dots { position: relative; z-index: 2; display: flex; gap: 8px; min-height: 8px; }
+  .select-dots :global(.dot) { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.25); cursor: pointer; }
+  .select-dots :global(.dot.on) { background: var(--aura); box-shadow: 0 0 8px var(--aura); }
 
   #select-confirm { position: relative; z-index: 2; background: var(--aura); box-shadow: 0 0 18px color-mix(in srgb, var(--aura) 60%, transparent); }
 
@@ -362,6 +380,7 @@ const lang: Language = defaultLang;
     if (schoolEl) schoolEl.textContent = `${c.schoolZh} · ${c.school}`;
     if (blurbEl) blurbEl.textContent = c.blurb;
     selectEl?.style.setProperty('--aura', c.colorCss);
+    selectEl?.style.setProperty('--bg', `url(/assets/games/witchrun/portrait-${id}.webp)`);
     if (statsEl) {
       statsEl.innerHTML =
         pips('SPD', spdPips(c.speedMult)) +
