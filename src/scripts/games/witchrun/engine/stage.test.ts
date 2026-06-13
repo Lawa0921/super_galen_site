@@ -37,6 +37,14 @@ describe('stage', () => {
     expect(r.wavesDone).toBe(true);
   });
 
+  // ---- 開局節奏：每關首波 1 秒內進場，避免開局空窗 ----
+
+  it('每關第一波都在 1000ms 內進場', () => {
+    for (const s of [1, 2, 3, 4] as StageId[]) {
+      expect(STAGES[s].waves[0].atMs).toBeLessThan(1000);
+    }
+  });
+
   // ---- F3.2 elite 中型機 ----
 
   it('每關恰好有一筆 elite=true 的波次', () => {

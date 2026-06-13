@@ -14,17 +14,24 @@ const lang: Language = defaultLang;
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
 
-  <main class="witch">
+  <main class="witch" data-phase="title">
     <canvas id="witch-canvas"></canvas>
 
     <!-- 標題畫面 -->
     <div class="witch-title" id="witch-title">
+      <div class="witch-title-art" aria-hidden="true"></div>
+      <div class="witch-embers" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
       <a class="witch-home" href="/games">← ARCADE</a>
-      <h1 class="witch-logo">WITCH RUN</h1>
-      <p class="witch-tagline">THE CURSED BELLTOWER</p>
-      <p class="witch-story">月蝕之夜，亡鐘自鳴。爆彈魔女 Mira 騎上掃帚——在鐘聲敲滿十二響前，飛抵塔頂封印它。</p>
-      <button class="witch-start" id="witch-start" type="button">START</button>
-      <p class="witch-keys">MOVE 方向鍵/WASD · FOCUS Shift · BOMB X · OVERDRIVE Z</p>
+      <div class="witch-title-fg">
+        <h1 class="witch-logo">WITCH RUN</h1>
+        <p class="witch-tagline">THE CURSED BELLTOWER</p>
+        <p class="witch-story">月蝕之夜，亡鐘自鳴。爆彈魔女 Mira 騎上掃帚——在鐘聲敲滿十二響前，飛抵塔頂封印它。</p>
+        <button class="witch-start" id="witch-start" type="button">START</button>
+        <p class="witch-keys">MOVE 方向鍵/WASD · FOCUS Shift · BOMB X · OVERDRIVE Z</p>
+      </div>
     </div>
 
     <!-- 遺物三選一 -->
@@ -77,13 +84,65 @@ const lang: Language = defaultLang;
 
   .witch-title {
     position: absolute; inset: 0; z-index: 10;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-    background:
-      radial-gradient(ellipse at 50% 20%, rgba(255, 90, 77, 0.12), transparent 55%),
-      linear-gradient(180deg, rgba(10, 7, 22, 0.9), rgba(10, 7, 22, 0.97));
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #0a0716; overflow: hidden;
     padding: 24px; text-align: center;
+    transition: opacity 0.45s ease;
   }
-  .witch-home { position: absolute; top: 18px; left: 20px; font-size: 11px; color: #6fa8d8; text-decoration: none; }
+  .witch-title[data-exit] { opacity: 0; pointer-events: none; }
+
+  /* 活背景：arcade key art 緩慢推鏡（ken-burns），讓首屏「活」起來 */
+  .witch-title-art {
+    position: absolute; inset: 0; z-index: 0;
+    background: url('/assets/games/witchrun/card-witchrun.webp') center 32% / cover no-repeat;
+    opacity: 0.58;
+    transform-origin: 50% 38%;
+    animation: witch-drift 26s ease-in-out infinite alternate;
+  }
+  /* 壓暗＋洋紅暈染，確保前景文字可讀 */
+  .witch-title::after {
+    content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 50% 26%, rgba(255, 90, 77, 0.2), transparent 56%),
+      linear-gradient(180deg, rgba(10, 7, 22, 0.5) 0%, rgba(10, 7, 22, 0.74) 58%, rgba(10, 7, 22, 0.95) 100%);
+  }
+  @keyframes witch-drift {
+    from { transform: scale(1.05) translateY(0); }
+    to   { transform: scale(1.14) translateY(-2.5%); }
+  }
+
+  /* 上升餘燼 */
+  .witch-embers { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .witch-embers span {
+    position: absolute; bottom: -14px; width: 4px; height: 4px; border-radius: 50%;
+    background: #ff8a5a; box-shadow: 0 0 8px 2px rgba(255, 122, 77, 0.7);
+    animation: witch-ember linear infinite;
+  }
+  .witch-embers span:nth-child(1)  { left: 8%;  animation-duration: 7.5s;  animation-delay: 0s;   }
+  .witch-embers span:nth-child(2)  { left: 18%; animation-duration: 9s;    animation-delay: 1.4s; }
+  .witch-embers span:nth-child(3)  { left: 29%; animation-duration: 6.5s;  animation-delay: 3s;   }
+  .witch-embers span:nth-child(4)  { left: 40%; animation-duration: 10s;   animation-delay: 0.8s; width: 3px; height: 3px; }
+  .witch-embers span:nth-child(5)  { left: 50%; animation-duration: 8s;    animation-delay: 2.2s; }
+  .witch-embers span:nth-child(6)  { left: 61%; animation-duration: 9.5s;  animation-delay: 4s;   width: 3px; height: 3px; }
+  .witch-embers span:nth-child(7)  { left: 71%; animation-duration: 7s;    animation-delay: 1s;   }
+  .witch-embers span:nth-child(8)  { left: 82%; animation-duration: 11s;   animation-delay: 2.8s; }
+  .witch-embers span:nth-child(9)  { left: 90%; animation-duration: 8.5s;  animation-delay: 0.4s; width: 3px; height: 3px; }
+  .witch-embers span:nth-child(10) { left: 95%; animation-duration: 7.8s;  animation-delay: 3.6s; }
+  @keyframes witch-ember {
+    0%   { transform: translateY(0) scale(1);   opacity: 0; }
+    12%  { opacity: 0.85; }
+    88%  { opacity: 0.6; }
+    100% { transform: translateY(-100vh) scale(0.35); opacity: 0; }
+  }
+
+  /* 前景內容置於裝飾層之上 */
+  .witch-title-fg {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 22px;
+    max-width: 540px;
+  }
+
+  .witch-home { position: absolute; top: 18px; left: 20px; z-index: 3; font-size: 11px; color: #6fa8d8; text-decoration: none; }
   .witch-logo {
     margin: 0; font-size: clamp(24px, 6vw, 52px); letter-spacing: 6px; color: #ff5a4d;
     text-shadow: 0 0 14px rgba(255, 90, 77, 0.8), 0 0 40px rgba(255, 90, 77, 0.4);
@@ -98,6 +157,26 @@ const lang: Language = defaultLang;
   }
   .witch-start:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255, 90, 77, 0.9); }
   .witch-keys { font-size: 8px; letter-spacing: 1px; color: #6a5a9a; }
+
+  /* 矮螢幕（手機橫向／小高度）：收斂垂直節奏，避免重心偏低、頂部過空 */
+  @media (max-height: 720px) {
+    .witch-title-fg { gap: 14px; }
+    .witch-story { line-height: 1.8; }
+  }
+  @media (max-height: 560px) {
+    .witch-title-fg { gap: 10px; }
+    .witch-story { display: none; }
+  }
+  @media (max-width: 400px) {
+    .witch-title-fg { gap: 16px; }
+    .witch-title-art { background-position: center 28%; }
+  }
+
+  /* 尊重 reduced-motion：停掉推鏡與餘燼 */
+  @media (prefers-reduced-motion: reduce) {
+    .witch-title-art { animation: none; transform: scale(1.06); }
+    .witch-embers { display: none; }
+  }
 
   .witch-overlay {
     position: absolute; inset: 0; z-index: 20;
@@ -128,16 +207,18 @@ const lang: Language = defaultLang;
   .relic-desc { font-size: 9px; line-height: 1.8; color: #9a8ac0; }
 
   .witch-touch { position: absolute; right: 14px; bottom: 18px; z-index: 5; display: none; gap: 12px; }
+  /* 觸控鈕只在實際遊玩、且無 overlay 開啟時顯示，避免在 title/overlay 半透明層下透出 */
   .touch-btn {
     width: 72px; height: 72px; border-radius: 50%; font-family: inherit; font-size: 10px;
     color: #ffd0c8; background: rgba(255, 90, 77, 0.25); border: 2px solid rgba(255, 90, 77, 0.7);
   }
   .touch-btn--od { color: #d0f4ff; background: rgba(54, 230, 255, 0.2); border-color: rgba(54, 230, 255, 0.7); }
-  @media (pointer: coarse) { .witch-touch { display: flex; } }
+  @media (pointer: coarse) { .witch[data-phase="playing"]:not([data-overlay]) .witch-touch { display: flex; } }
 </style>
 
 <script>
   const canvas = document.getElementById('witch-canvas') as HTMLCanvasElement | null;
+  const witchEl = document.querySelector('.witch') as HTMLElement | null;
   const titleEl = document.getElementById('witch-title');
   const startBtn = document.getElementById('witch-start');
   let started = false;
@@ -145,7 +226,12 @@ const lang: Language = defaultLang;
   async function start(): Promise<void> {
     if (started || !canvas) return;
     started = true;
-    titleEl?.remove();
+    witchEl?.setAttribute('data-phase', 'playing');
+    // 標題淡出後移除：與初始化解耦（固定時序，避免 headless 下因載入慢而延後移除）
+    if (titleEl) {
+      titleEl.setAttribute('data-exit', '');
+      setTimeout(() => titleEl.remove(), 480);
+    }
     const { startWitchrun } = await import('@scripts/games/witchrun/render/main');
     await startWitchrun(canvas).catch((err: unknown) => console.error('[witchrun] start failed', err));
   }

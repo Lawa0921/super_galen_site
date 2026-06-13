@@ -14,8 +14,10 @@ export const STAGES: Record<StageId, StageDef> = {
   1: {
     name: 'GRAVEYARD GATE', boss: 'gargoyle',
     waves: [
-      ...squad(2000,  'bat',   'descend', [0.3, 0.5, 0.7]),
-      ...squad(8000,  'wisp',  'sine',    [0.25, 0.75]),
+      // 開局即進場：前導蝙蝠 → 編隊，避免開場空窗
+      { atMs: 400, kind: 'bat' as EnemyKind, x: 0.5, path: 'descend' as PathKind },
+      ...squad(700,   'bat',   'descend', [0.3, 0.5, 0.7]),
+      ...squad(5000,  'wisp',  'sine',    [0.25, 0.75]),
       ...squad(14000, 'bat',   'swoopR',  [0.1, 0.1, 0.1]),
       ...squad(20000, 'bat',   'swoopL',  [0.9, 0.9, 0.9]),
       ...squad(27000, 'fairy', 'hover',   [0.35, 0.65]),
@@ -36,7 +38,7 @@ export const STAGES: Record<StageId, StageDef> = {
   2: {
     name: 'LIBRARY SPIRE', boss: 'grimoire',
     waves: [
-      ...squad(2000,  'blade', 'swoopL',  [0.9, 0.9, 0.9]),
+      ...squad(700,   'blade', 'swoopL',  [0.9, 0.9, 0.9]),
       ...squad(7000,  'blade', 'swoopR',  [0.1, 0.1, 0.1]),
       ...squad(13000, 'tome',  'hover',   [0.5]),
       ...squad(20000, 'fairy', 'sine',    [0.3, 0.7]),
@@ -57,7 +59,7 @@ export const STAGES: Record<StageId, StageDef> = {
   3: {
     name: 'CLOCKWORK FOUNDRY', boss: 'bellwright',
     waves: [
-      ...squad(2000,  'gear',  'descend', [0.5]),
+      ...squad(700,   'gear',  'descend', [0.5]),
       ...squad(8000,  'angel', 'sine',    [0.3, 0.7]),
       ...squad(15000, 'gear',  'descend', [0.3, 0.7]),
       ...squad(23000, 'blade', 'swoopL',  [0.9, 0.9, 0.9]),
@@ -77,7 +79,7 @@ export const STAGES: Record<StageId, StageDef> = {
   4: {
     name: 'THE BELFRY', boss: 'deadbell',
     waves: [
-      ...squad(2000,  'moth',  'sine',    [0.3, 0.7]),
+      ...squad(700,   'moth',  'sine',    [0.3, 0.7]),
       ...squad(8000,  'chime', 'hover',   [0.5]),
       ...squad(15000, 'moth',  'swoopL',  [0.9, 0.9, 0.9]),
       ...squad(21000, 'moth',  'swoopR',  [0.1, 0.1, 0.1]),
