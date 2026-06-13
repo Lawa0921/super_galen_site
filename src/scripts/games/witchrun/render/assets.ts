@@ -54,7 +54,7 @@ export async function loadWitchTextures(
   renderer: Renderer,
   characterId: CharacterId = DEFAULT_CHARACTER,
 ): Promise<WitchTextures> {
-  const playerUrl = characterId === 'mira' ? `${BASE}/player.png` : `${BASE}/player-${characterId}.png`;
+  const playerUrl = `${BASE}/player-${characterId}.png`;
   const urls: Record<string, string> = { player: playerUrl, coin: `${BASE}/coin.png` };
   for (const k of BULLET_KINDS) urls[`bullet-${k}`] = `${BASE}/bullet-${k}.png`;
   for (const k of ENEMY_KINDS) urls[`enemy-${k}`] = `${BASE}/enemy-${k}.png`;
