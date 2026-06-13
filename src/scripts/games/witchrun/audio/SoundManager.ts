@@ -1,14 +1,32 @@
 /** Web Audio 合成 SFX；首次手勢 ensure() 解鎖。射擊聲節流。 */
 export class SoundManager {
   private ctx: AudioContext | null = null;
+  private master: GainNode | null = null;
   private muted = false;
   private lastShootAt = 0;
+  private sfxVolume = 1;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const w = window as unknown as { __arcadeAudio?: { sfxVolume?: number } };
+      this.sfxVolume = w.__arcadeAudio?.sfxVolume ?? 1;
+      window.addEventListener('arcade-audio-change', (e) => {
+        this.sfxVolume = (e as CustomEvent).detail?.sfxVolume ?? 1;
+        if (this.master) this.master.gain.value = 1.0 * this.sfxVolume;
+      });
+    }
+  }
 
   ensure(): void {
     if (!this.ctx) {
+      const w = window as unknown as { __arcadeAudio?: { sfxVolume?: number } };
+      this.sfxVolume = w.__arcadeAudio?.sfxVolume ?? this.sfxVolume;
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return;
       this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.sfxVolume; // BASE 1.0
+      this.master.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
@@ -24,7 +42,7 @@ export class SoundManager {
     if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, t + durMs / 1000);
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + durMs / 1000);
-    osc.connect(g).connect(this.ctx.destination);
+    osc.connect(g).connect(this.master ?? this.ctx.destination);
     osc.start(t); osc.stop(t + durMs / 1000 + 0.03);
   }
 
