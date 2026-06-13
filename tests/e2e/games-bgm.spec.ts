@@ -40,3 +40,16 @@ test.describe('Dungeon Arcade BGM', () => {
     expect(res.headers()['content-type']).toMatch(/audio|mpeg|octet-stream/);
   });
 });
+
+for (const [name, p] of [['tetris', '/games/tetris'], ['bomber', '/games/bomber'], ['witchrun', '/games/witchrun']] as const) {
+  test(`${name} 頁有 BGM toggle 且預設關閉`, async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.removeItem('arcade-bgm'); } catch {} });
+    await page.goto(p);
+    await page.waitForLoadState('domcontentloaded');
+    const btn = page.locator('.arcade-bgm-toggle');
+    await expect(btn).toBeVisible();
+    await expect(btn).toHaveAttribute('aria-pressed', 'false');
+    const src = await page.locator('.arcade-bgm-audio').getAttribute('src');
+    expect(src).toContain(`/assets/games/bgm/${name}.mp3`);
+  });
+}

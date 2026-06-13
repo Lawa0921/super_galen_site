@@ -4,6 +4,7 @@
  * 模式：SOLO / vs AI / 線上對戰；全螢幕 PixiJS 遊戲頁，由頁底腳本載入並 code-split。
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import ArcadeBgm from '@components/ArcadeBgm.astro';
 import { defaultLang, type Language } from '@i18n/index';
 import { SKIN_CATALOG } from '@scripts/games/tetris/render/skins';
 import { SKILLS } from '@scripts/games/tetris/engine/run';
@@ -223,6 +224,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
       </div>
     </div>
   </main>
+  <ArcadeBgm track="/assets/games/bgm/tetris.mp3" />
 </BaseLayout>
 
 <style>
