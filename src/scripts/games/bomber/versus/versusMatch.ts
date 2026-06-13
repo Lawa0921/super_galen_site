@@ -2,9 +2,10 @@
 import type { Dir, Vec, PowerUpKind, Grid, Bomb, BlastCell, PowerUp } from '../engine/types';
 import { isWalkable, breakCrate } from '../engine/board';
 import { resolveChain } from '../engine/bomb';
+import { computeBlast } from '../engine/blast';
 import { dirDelta, speedMs } from '../engine/player';
 import { getCharacter } from '../engine/characters';
-import { BOMB_FUSE_MS, BLAST_TTL_MS, GRID_COLS, GRID_ROWS } from '../engine/constants';
+import { BOMB_FUSE_MS, BLAST_TTL_MS, GRID_COLS, GRID_ROWS, INVULN_MS } from '../engine/constants';
 import { createRng } from '../engine/rng';
 import { ARENAS, parseArena } from './arenas';
 import type { VersusState, VersusEvent, VersusPlayerInit, VPlayer, VersusInput } from './types';
@@ -168,16 +169,34 @@ export class VersusMatch {
 
     this.elapsedMs += dtMs;
 
-    // 1. 玩家移動 + 屬性遞減
-    this.stepPlayers(dtMs);
+    // 沿用單機 invulnAtStart 紀律：在移動/扣冷卻前快照每位玩家的無敵值，
+    // 傷害判定以「tick 開始」的無敵狀態為準，並在判定後才扣減（本 tick 取得的
+    // 無敵不會被同 tick 立即消耗）。
+    const invulnAtStart = new Map<string, number>();
+    for (const p of this.players) invulnAtStart.set(p.id, p.invulnMs);
 
-    // 2. 炸彈引信 + 爆炸結算
-    this.stepBombs(dtMs);
-
-    // 3. 爆風存活期遞減
+    // 1. 先遞減/清除上一 tick 的舊爆風（順序比照單機：blast 先於 bomb，
+    //    本 tick 新生的爆風才不會在生成同 tick 就被扣掉，得以參與傷害判定）。
     this.stepBlasts(dtMs);
 
-    // TODO Task 4: 爆風/碰撞傷害判定
+    // 2. 玩家移動 + 屬性遞減
+    this.stepPlayers(dtMs);
+
+    // 3. 炸彈引信 + 爆炸結算（產生本 tick 新爆風）
+    this.stepBombs(dtMs);
+
+    // 4. 爆風傷害判定（以 tick 開始的無敵快照判定）
+    this.resolveDamage(invulnAtStart);
+
+    // 5. 無敵值在傷害判定後才遞減（且僅遞減 tick 開始即有效者）
+    for (const p of this.players) {
+      if (!p.alive) continue;
+      if ((invulnAtStart.get(p.id) ?? 0) > 0) p.invulnMs = Math.max(0, p.invulnMs - dtMs);
+    }
+
+    // 6. 勝負判定
+    this.checkFinish();
+
     // TODO Task 5: sudden death 縮圈
   }
 
@@ -188,8 +207,8 @@ export class VersusMatch {
     for (const p of this.players) {
       if (!p.alive) continue;
 
-      // 遞減各項冷卻
-      if (p.invulnMs > 0) p.invulnMs = Math.max(0, p.invulnMs - dtMs);
+      // 遞減各項冷卻（invulnMs 不在此遞減——沿用單機紀律，於傷害判定後才扣，
+      // 見 step()）
       if (p.abilityCooldownMs > 0) p.abilityCooldownMs = Math.max(0, p.abilityCooldownMs - dtMs);
       if (p.moveCooldownMs > 0) {
         p.moveCooldownMs = Math.max(0, p.moveCooldownMs - dtMs);
@@ -254,6 +273,64 @@ export class VersusMatch {
     this.blasts = this.blasts.filter((bl) => bl.ttlMs > 0);
   }
 
+  // ---- 傷害 / 淘汰 ----
+
+  /** 爆風傷害判定（沿用單機 invulnAtStart 紀律）。
+   *  versus 雙方都是「格鎖定」移動的玩家、無「視覺格」需求——對稱公平，
+   *  直接以 x,y 判定是否落在爆風格。
+   *  命中：有盾 → 破盾 + 短暫無敵；無盾且 tick 開始即非無敵 → 淘汰。
+   *  同 tick 死亡者共享名次：placement = （本 tick 死後仍存活人數）+ 1，
+   *  全滅時即 placement = 1（平局名次自然落在第 1）。 */
+  private resolveDamage(invulnAtStart: Map<string, number>): void {
+    const onBlast = (x: number, y: number): boolean => this.blasts.some((b) => b.x === x && b.y === y);
+
+    // 先蒐集本 tick 命中爆風、且 tick 開始即非無敵、且無盾的待淘汰者。
+    const dying: VPlayer[] = [];
+    for (const p of this.players) {
+      if (!p.alive) continue;
+      if (!onBlast(p.x, p.y)) continue;
+      if (p.shield) {
+        // 盾擋一次：破盾 + 短暫無敵，不淘汰。
+        p.shield = false;
+        p.invulnMs = INVULN_MS;
+        continue;
+      }
+      if ((invulnAtStart.get(p.id) ?? 0) <= 0) {
+        dying.push(p);
+      }
+    }
+    if (dying.length === 0) return;
+
+    // 本 tick 死後仍存活人數（dying 之外的 alive 玩家）。
+    const aliveAfter = this.players.filter((p) => p.alive && !dying.includes(p)).length;
+    const placement = aliveAfter + 1;
+    for (const p of dying) {
+      p.alive = false;
+      p.placement = placement;
+      this.events.push({ kind: 'playerDead', playerId: p.id });
+    }
+  }
+
+  /** 勝負判定：存活 ≤ 1 即結束。
+   *  - 1 人存活：倖存者 placement=1、winnerId=其 id。
+   *  - 0 人存活（全滅同幀）：平局、winnerId=null（死亡者名次已於 resolveDamage 填為 1）。 */
+  private checkFinish(): void {
+    if (this.status !== 'playing') return;
+    const alive = this.players.filter((p) => p.alive);
+    if (alive.length > 1) return;
+
+    this.status = 'finished';
+    if (alive.length === 1) {
+      const winner = alive[0];
+      winner.placement = 1;
+      this.winnerId = winner.id;
+    } else {
+      // 全滅 = 平局。
+      this.winnerId = null;
+    }
+    this.events.push({ kind: 'finish', winnerId: this.winnerId });
+  }
+
   // ---- 放彈 ----
 
   private placeBomb(player: VPlayer): void {
@@ -271,14 +348,72 @@ export class VersusMatch {
     this.events.push({ kind: 'bombPlaced', x: player.x, y: player.y, ownerId: player.id });
   }
 
-  // ---- 技能（空殼，Task 4 實作） ----
+  // ---- 技能 ----
 
-  /** 技能啟動空殼：冷卻欄位已建置，效果由 Task 4 補充。 */
+  /** 技能啟動：扣冷卻、發事件、依角色執行 per-player 效果。 */
   private activateAbility(player: VPlayer): void {
     if (player.abilityCooldownMs > 0) return;
+
+    // detonate 需要場上有自己的彈才能發動（否則不消耗冷卻）——比照單機紀律。
+    if (player.abilityId === 'detonate' && !this.bombs.some((b) => b.owner === player.id)) return;
+
     player.abilityCooldownMs = player.abilityMaxMs;
     this.events.push({ kind: 'ability', playerId: player.id, id: player.abilityId });
-    // TODO Task 4: switch (player.abilityId) { case 'detonate': ... }
+
+    switch (player.abilityId) {
+      case 'detonate': this.effectDetonate(player); break;
+      case 'inferno': this.effectInferno(player); break;
+      case 'blink': this.effectBlink(player); break;
+      case 'bulwark': this.effectBulwark(player); break;
+    }
+  }
+
+  /** 遙控起爆（per-player）：立即引爆「自己」放置的所有炸彈（下個 tick 連鎖結算），
+   *  附短暫防護窗——絕不引爆他人的彈（owner 必須等於該玩家 id）。 */
+  private effectDetonate(player: VPlayer): void {
+    for (const b of this.bombs) {
+      if (b.owner === player.id) b.fuseMs = 0;
+    }
+    player.invulnMs = Math.max(player.invulnMs, 600);
+  }
+
+  /** 爆炎術（per-player）：以該玩家為中心瞬發大範圍爆炎，附短暫無敵以求自保。 */
+  private effectInferno(player: VPlayer): void {
+    player.invulnMs = Math.max(player.invulnMs, 700);
+    const { cells, brokenCrates } = computeBlast(this.grid, player.x, player.y, 4);
+    for (const c of brokenCrates) {
+      this.grid = breakCrate(this.grid, c.x, c.y);
+      this.events.push({ kind: 'crateBreak', x: c.x, y: c.y });
+      const key = `${c.x},${c.y}`;
+      const drop = this.hiddenPowerUps[key];
+      if (drop) { this.powerUps.push({ x: c.x, y: c.y, kind: drop }); delete this.hiddenPowerUps[key]; }
+    }
+    for (const c of cells) this.blasts.push({ x: c.x, y: c.y, ttlMs: BLAST_TTL_MS });
+    this.events.push({ kind: 'explode', cells });
+  }
+
+  /** 瞬步（per-player）：朝面向瞬移到最遠空格（最多 3 格，遇牆/彈停）。 */
+  private effectBlink(player: VPlayer): void {
+    const v = dirDelta(player.dir);
+    let steps = 0;
+    let nx = player.x, ny = player.y;
+    for (let i = 1; i <= 3; i++) {
+      const cx = player.x + v.x * i, cy = player.y + v.y * i;
+      if (!isWalkable(this.grid, cx, cy)) break;
+      if (this.bombs.some((b) => b.x === cx && b.y === cy)) break;
+      nx = cx; ny = cy;
+      steps++;
+    }
+    if (steps > 0) {
+      player.x = nx; player.y = ny;
+      player.prevX = nx; player.prevY = ny;
+      player.moveCooldownMs = 0;
+    }
+  }
+
+  /** 鐵壁（per-player）：數秒無敵。 */
+  private effectBulwark(player: VPlayer): void {
+    player.invulnMs = Math.max(player.invulnMs, 3000);
   }
 
   // ---- 道具拾取 ----
