@@ -1254,6 +1254,27 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   const modeSelect = document.getElementById('mode-select');
   let started = false;
 
+  // ── VERSUS hotseat debug entry: ?mode=hotseat ────────────
+  // 本機雙人同鍵盤（P1 WASD+Space+E、P2 方向鍵+Enter+Shift）。
+  // 可選 ?arena=0-7（越界回退 0）、?seed=<int>。網路對戰留待後續 Task。
+  if (params.get('mode') === 'hotseat' && canvas) {
+    started = true;
+    modeSelect?.remove();
+    const hint = document.querySelector('.bomber-hint') as HTMLElement | null;
+    if (hint) {
+      hint.textContent = 'P1 WASD+SPACE+E  ·  P2 ←↑→↓+ENTER+SHIFT  ·  MUTE M';
+      hint.style.display = 'block';
+    }
+    const arenaParam = Number(params.get('arena'));
+    const seedParam = Number(params.get('seed'));
+    void import('@scripts/games/bomber/render/versusMain').then(({ startVersus }) => {
+      startVersus(canvas, {
+        arenaId: Number.isFinite(arenaParam) ? arenaParam : 0,
+        seed: Number.isFinite(seedParam) && params.has('seed') ? seedParam : undefined,
+      }).catch((err: unknown) => console.error('[bomber] versus start failed', err));
+    }).catch((err: unknown) => console.error('[bomber] versus load failed', err));
+  }
+
   // ── Selection state ──────────────────────────────────────
   let selected: CharacterId = 'lena';
 
