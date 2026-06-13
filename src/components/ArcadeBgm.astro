@@ -45,12 +45,20 @@ const { track } = Astro.props;
   .arcade-bgm-label { font-size: 12px; letter-spacing: 0.08em; color: #cdefff; }
   .arcade-bgm-slider { width: 100%; accent-color: #36e6ff; cursor: pointer; }
   .arcade-bgm-slider:focus-visible { outline: 2px solid #36e6ff; outline-offset: 2px; }
+  /* 音樂實際播放中時，喇叭鈕脈動發光（不靠耳朵也能確認在運作） */
+  @keyframes arcade-bgm-pulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(54, 230, 255, 0.35); }
+    50% { box-shadow: 0 0 18px rgba(54, 230, 255, 0.95); }
+  }
+  .arcade-bgm[data-playing="true"] .arcade-bgm-toggle {
+    opacity: 1; animation: arcade-bgm-pulse 1.4s ease-in-out infinite;
+  }
 </style>
 
 <script>
   const MUSIC_KEY = 'arcade-music-vol';
   const SFX_KEY = 'arcade-sfx-vol';
-  const DEF_MUSIC = 0.4, DEF_SFX = 0.6;
+  const DEF_MUSIC = 0.5, DEF_SFX = 0.6;
   const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
   function readVol(key: string, def: number): number {
@@ -68,6 +76,11 @@ const { track } = Astro.props;
     const icon = root.querySelector('.arcade-bgm-icon') as HTMLElement;
     const musicSlider = root.querySelector('input[data-audio="music"]') as HTMLInputElement;
     const sfxSlider = root.querySelector('input[data-audio="sfx"]') as HTMLInputElement;
+
+    // 真實播放狀態 → data-playing（驅動喇叭鈕脈動，視覺確認在運作）
+    audio.addEventListener('playing', () => root.setAttribute('data-playing', 'true'));
+    audio.addEventListener('pause', () => root.setAttribute('data-playing', 'false'));
+    audio.addEventListener('ended', () => root.setAttribute('data-playing', 'false'));
 
     let musicVolume = readVol(MUSIC_KEY, DEF_MUSIC);
     let sfxVolume = readVol(SFX_KEY, DEF_SFX);
