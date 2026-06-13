@@ -515,7 +515,10 @@ export class VersusMatch {
    *  不應 hash 相同（lockstep desync 偵測賴此精準）。
    *  所有集合均以「穩定順序」串接：陣列照插入序（filter 保序、絕無重排），
    *  hiddenPowerUps 這個 Record 以 key 排序後串接（不依賴物件鍵插入序）。
-   *  純整數運算，無 Math.random / Date.now / Map/Set 迭代依賴。 */
+   *  純整數運算，無 Math.random / Date.now / Map/Set 迭代依賴。
+   *  刻意「不」納入 player.character 與 arenaId：兩者皆為每場比賽不可變、
+   *  且由共享 init 在各端完全一致，納入不增辨識度。注意：日後若有任何
+   *  改動會「變異」player.character（或讓 arenaId 於場中改變），必須回頭把它加入此 hash。 */
   stateHash(): string {
     let h = 0x811c9dc5;
     const mix = (s: string): void => {
