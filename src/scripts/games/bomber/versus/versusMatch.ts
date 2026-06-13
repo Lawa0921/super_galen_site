@@ -188,16 +188,18 @@ export class VersusMatch {
     // 4. 爆風傷害判定（以 tick 開始的無敵快照判定）
     this.resolveDamage(invulnAtStart);
 
-    // 5. 無敵值在傷害判定後才遞減（且僅遞減 tick 開始即有效者）
+    // 5. Sudden death 縮圈（塌縮格即死，無視盾/無敵）。
+    //    放在傷害判定後、勝負判定前，讓塌縮致死與本 tick 結束的勝負判定一致。
+    this.stepSuddenDeath();
+
+    // 6. 無敵值在傷害判定後才遞減（且僅遞減 tick 開始即有效者）
     for (const p of this.players) {
       if (!p.alive) continue;
       if ((invulnAtStart.get(p.id) ?? 0) > 0) p.invulnMs = Math.max(0, p.invulnMs - dtMs);
     }
 
-    // 6. 勝負判定
+    // 7. 勝負判定
     this.checkFinish();
-
-    // TODO Task 5: sudden death 縮圈
   }
 
   // ---- 私有步驟 ----
@@ -304,10 +306,54 @@ export class VersusMatch {
     // 本 tick 死後仍存活人數（dying 之外的 alive 玩家）。
     const aliveAfter = this.players.filter((p) => p.alive && !dying.includes(p)).length;
     const placement = aliveAfter + 1;
-    for (const p of dying) {
-      p.alive = false;
-      p.placement = placement;
-      this.events.push({ kind: 'playerDead', playerId: p.id });
+    for (const p of dying) this.killPlayer(p, placement);
+  }
+
+  /** 淘汰玩家：標記死亡、回填名次、發 playerDead 事件。
+   *  placement 由呼叫端依「同批死亡共享名次」語意算好後傳入
+   *  （= 該批死後仍存活人數 + 1）。傷害淘汰與塌縮淘汰共用此路徑；
+   *  盾/無敵的判定在呼叫端完成（塌縮路徑刻意不檢查盾/無敵）。 */
+  private killPlayer(player: VPlayer, placement: number): void {
+    if (!player.alive) return;
+    player.alive = false;
+    player.placement = placement;
+    this.events.push({ kind: 'playerDead', playerId: player.id });
+  }
+
+  // ---- Sudden death 塌縮圈 ----
+
+  /** Sudden death：120s 後每 3s 由外向內塌一圈（最多 MAX_COLLAPSE_RING 圈）。
+   *  該圈格子全變牆；格上的彈/道具/爆風一併清除；格上的玩家即死（無視盾/無敵）。
+   *  以 elapsedMs 推算「應塌到第幾圈」，缺幾圈就一次補齊（步進大 dtMs 也正確）。 */
+  private stepSuddenDeath(): void {
+    if (this.elapsedMs < SUDDEN_DEATH_AT_MS) return;
+    const due = 1 + Math.floor((this.elapsedMs - SUDDEN_DEATH_AT_MS) / RING_INTERVAL_MS);
+    const target = Math.min(MAX_COLLAPSE_RING, due);
+    while (this.collapsedRings < target) {
+      const r = this.collapsedRings + 1;
+      // 同一圈塌縮致死視為同批：共享名次 =（塌縮後仍存活人數）+ 1。
+      const onRing = (px: number, py: number): boolean => {
+        const d = Math.min(px, GRID_COLS - 1 - px, py, GRID_ROWS - 1 - py);
+        return d === r;
+      };
+      const dying = this.players.filter((p) => p.alive && onRing(p.x, p.y));
+      const aliveAfter = this.players.filter((p) => p.alive && !dying.includes(p)).length;
+      const placement = aliveAfter + 1;
+      for (let y = 0; y < GRID_ROWS; y++) {
+        for (let x = 0; x < GRID_COLS; x++) {
+          const d = Math.min(x, GRID_COLS - 1 - x, y, GRID_ROWS - 1 - y);
+          if (d !== r) continue;
+          this.grid[y][x] = 'wall';
+          // 該格上的彈/道具/爆風一併清除
+          this.bombs = this.bombs.filter((b) => !(b.x === x && b.y === y));
+          this.powerUps = this.powerUps.filter((p) => !(p.x === x && p.y === y));
+          this.blasts = this.blasts.filter((b) => !(b.x === x && b.y === y));
+        }
+      }
+      // 塌縮致死：無視盾/無敵，直接淘汰。
+      for (const p of dying) this.killPlayer(p, placement);
+      this.collapsedRings = r;
+      this.events.push({ kind: 'ringCollapse', ring: r });
     }
   }
 
