@@ -1,0 +1,113 @@
+// movesets.test.ts — 角色專屬主射與爆彈
+import { describe, it, expect } from 'vitest';
+import { WitchGame, chainTarget } from './game';
+import type { Enemy } from './types';
+
+/** 開局 step 一次（fireCdMs 起始 0 → 立即發射），回傳 active 自機彈。 */
+function fireOnce(character: 'mira' | 'gale' | 'frost' | 'volt') {
+  const g = new WitchGame({ seed: 1, character });
+  g.step(20);
+  return g.getState().playerBullets.filter((b) => b.active);
+}
+
+describe('主射型', () => {
+  it('balanced(Mira)：power 道直射、無穿透/連鎖/角度', () => {
+    const bs = fireOnce('mira');
+    expect(bs.length).toBe(1); // power=1
+    expect(bs.every((b) => b.vx === 0 && b.pierceLeft === 0 && b.chainLeft === 0)).toBe(true);
+  });
+
+  it('pierce(Gale)：彈道可穿透（pierceLeft≥1）', () => {
+    const bs = fireOnce('gale');
+    expect(bs.length).toBeGreaterThan(0);
+    expect(bs.every((b) => b.pierceLeft >= 1)).toBe(true);
+  });
+
+  it('fan(Frost)：一次射出多於 power 枚且有角度展開(vx≠0)', () => {
+    const bs = fireOnce('frost');
+    expect(bs.length).toBeGreaterThanOrEqual(3); // power+2
+    expect(bs.some((b) => b.vx !== 0)).toBe(true);
+  });
+
+  it('chain(Volt)：彈帶連鎖次數(chainLeft≥1)', () => {
+    const bs = fireOnce('volt');
+    expect(bs.length).toBeGreaterThan(0);
+    expect(bs.every((b) => b.chainLeft >= 1)).toBe(true);
+  });
+});
+
+describe('chainTarget 連鎖目標', () => {
+  const mk = (id: number, x: number, y: number, alive = true): Enemy => ({
+    id, kind: 'bat', x, y, hp: 10, alive, path: 'descend', t: 0, baseX: x, fireCdMs: 9999,
+  });
+
+  it('回傳半徑內最近的「另一」隻 alive 敵', () => {
+    const enemies = [mk(1, 100, 100), mk(2, 120, 100), mk(3, 400, 400)];
+    const t = chainTarget(enemies, 100, 100, 1, 200);
+    expect(t?.id).toBe(2);
+  });
+
+  it('排除來源敵與死亡敵', () => {
+    const enemies = [mk(1, 100, 100), mk(2, 110, 100, false)];
+    expect(chainTarget(enemies, 100, 100, 1, 200)).toBeNull();
+  });
+
+  it('超出半徑回傳 null', () => {
+    const enemies = [mk(1, 100, 100), mk(2, 500, 500)];
+    expect(chainTarget(enemies, 100, 100, 1, 120)).toBeNull();
+  });
+});
+
+describe('爆彈型', () => {
+  it('所有爆彈都扣 1 顆', () => {
+    for (const c of ['mira', 'gale', 'frost', 'volt'] as const) {
+      const g = new WitchGame({ seed: 1, character: c });
+      const b0 = g.getState().player.bombs;
+      g.input('bomb');
+      expect(g.getState().player.bombs).toBe(b0 - 1);
+    }
+  });
+
+  it('gust(Gale)：給較長無敵(≥1800ms)', () => {
+    const g = new WitchGame({ seed: 1, character: 'gale' });
+    g.input('bomb');
+    expect(g.getState().player.invulnMs).toBeGreaterThanOrEqual(1800);
+  });
+
+  // Boss hp 變化量（爆彈對 boss 直傷）
+  function bossDmg(character: 'mira' | 'gale' | 'frost' | 'volt'): number {
+    const g = new WitchGame({ seed: 1, character });
+    g.debugSkipToBoss();
+    g.step(16); // 生成 boss
+    const before = g.boss!.state.hp;
+    g.input('bomb');
+    return before - g.boss!.state.hp;
+  }
+
+  it('storm(Volt)：對 boss 直傷約為 inferno(Mira) 的 2 倍', () => {
+    const inf = bossDmg('mira');
+    const storm = bossDmg('volt');
+    expect(inf).toBeGreaterThan(0);
+    expect(storm).toBeGreaterThan(inf);
+    expect(storm / inf).toBeCloseTo(2, 1);
+  });
+
+  it('freeze(Frost)：凍結期間敵方不再生成新彈', () => {
+    // step() 單次上限 STEP_CAP_MS(100ms)，需多次小步推進遊戲時間
+    const adv = (g: WitchGame, ms: number): void => { for (let t = 0; t < ms; t += 16) g.step(16); };
+    const grow = (character: 'mira' | 'frost'): number => {
+      const g = new WitchGame({ seed: 1, character });
+      g.debugSkipToBoss();
+      adv(g, 2500);            // boss 進入開火
+      g.input('bomb');
+      const before = g.getState().enemyBullets.filter((b) => b.active).length;
+      adv(g, 800);
+      return g.getState().enemyBullets.filter((b) => b.active).length - before;
+    };
+    const frost = grow('frost');
+    const mira = grow('mira');
+    expect(frost).toBeLessThanOrEqual(0); // 凍結 → 無新彈、現有彈停滯
+    expect(mira).toBeGreaterThan(0);      // mira 不凍結 → boss 持續開火
+    expect(frost).toBeLessThan(mira);
+  });
+});

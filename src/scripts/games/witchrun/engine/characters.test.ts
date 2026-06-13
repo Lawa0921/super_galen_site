@@ -37,6 +37,17 @@ describe('characters', () => {
     }
   });
 
+  it('每角有專屬主射與爆彈型（mira=基準）', () => {
+    expect(CHARACTERS.mira.shotType).toBe('balanced');
+    expect(CHARACTERS.mira.bombType).toBe('inferno');
+    expect(CHARACTERS.gale.shotType).toBe('pierce');
+    expect(CHARACTERS.gale.bombType).toBe('gust');
+    expect(CHARACTERS.frost.shotType).toBe('fan');
+    expect(CHARACTERS.frost.bombType).toBe('freeze');
+    expect(CHARACTERS.volt.shotType).toBe('chain');
+    expect(CHARACTERS.volt.bombType).toBe('storm');
+  });
+
   it('流派定位：Gale 快、Frost 慢且命多、Volt 火力高且脆', () => {
     expect(CHARACTERS.gale.speedMult).toBeGreaterThan(CHARACTERS.mira.speedMult);
     expect(CHARACTERS.gale.startBombs).toBe(2);

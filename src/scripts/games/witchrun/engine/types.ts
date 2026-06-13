@@ -21,6 +21,7 @@ export interface PlayerBullet {
   dmg: number; active: boolean;
   split: boolean;     // 裂變魔彈產生的子彈不再分裂
   pierceLeft: number; // 可穿透敵人次數（0 = 不穿透；命中 Boss 一律回收）
+  chainLeft: number;  // 連鎖雷（Volt）命中後可再跳轉的次數（0 = 不連鎖）
 }
 
 export type StageId = 1 | 2 | 3 | 4;

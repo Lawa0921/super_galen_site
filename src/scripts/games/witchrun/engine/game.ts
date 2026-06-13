@@ -27,6 +27,25 @@ import { StageRunner, STAGES } from './stage';
 
 export interface WitchOptions { seed?: number; stage?: StageId; character?: CharacterId; }
 
+/** 連鎖雷跳轉半徑（px，邏輯座標）。 */
+const CHAIN_RADIUS = 170;
+
+/** 連鎖雷目標選擇（純函式）：半徑內最近的「另一」隻 alive 敵；無則 null。 */
+export function chainTarget(
+  enemies: Enemy[], fromX: number, fromY: number, excludeId: number, maxR: number,
+): Enemy | null {
+  let best: Enemy | null = null;
+  let bestD = maxR * maxR;
+  for (const e of enemies) {
+    if (!e.alive || e.id === excludeId) continue;
+    const dx = e.x - fromX;
+    const dy = e.y - fromY;
+    const d = dx * dx + dy * dy;
+    if (d <= bestD) { bestD = d; best = e; }
+  }
+  return best;
+}
+
 export class WitchGame {
   /** 公開給測試與渲染層讀取（damage 由自機彈命中觸發）。 */
   boss: BossRunner | null = null;
@@ -38,7 +57,7 @@ export class WitchGame {
   private player = makePlayer();
   private enemyBullets = new BulletPool();
   private playerBullets: PlayerBullet[] = Array.from({ length: MAX_PLAYER_BULLETS }, () => ({
-    x: 0, y: 0, vx: 0, vy: 0, dmg: 0, active: false, split: false, pierceLeft: 0,
+    x: 0, y: 0, vx: 0, vy: 0, dmg: 0, active: false, split: false, pierceLeft: 0, chainLeft: 0,
   }));
   private enemies: Enemy[] = [];
   private coins: Coin[] = [];
@@ -60,7 +79,8 @@ export class WitchGame {
   private tollTimerMs = BELL_TOLL_INTERVAL_MS;
   private tollCount = 0;
   private surgeMs = 0;
-  private freezeMs = 0;   // F4 時停用（chronos 遺物）
+  private freezeMs = 0;   // F4 時停用（chronos 遺物）/ Frost 冰結爆彈：凍結敵人與敵彈
+  private dashMs = 0;     // Gust 爆彈（Gale）：短衝刺加速
   private grazeCount = 0; // F4 starshard：累積擦彈計數
   private charDef: CharacterDef = CHARACTERS[DEFAULT_CHARACTER];
 
@@ -81,7 +101,7 @@ export class WitchGame {
 
   input(action: InputAction): void {
     if (this.status !== 'playing') return;
-    if (action === 'bomb') this.useInferno();
+    if (action === 'bomb') this.useBomb();
     else if (action === 'overdrive') this.useOverdrive();
   }
 
@@ -126,6 +146,7 @@ export class WitchGame {
     // 0) 全局十二響計時
     this.surgeMs = Math.max(0, this.surgeMs - dtMs);
     this.freezeMs = Math.max(0, this.freezeMs - dtMs);
+    this.dashMs = Math.max(0, this.dashMs - dtMs);
     this.tollTimerMs -= dtMs;
     if (this.tollTimerMs <= 0) {
       this.tollCount++;
@@ -144,7 +165,7 @@ export class WitchGame {
     const dx = (this.held.has('right') ? 1 : 0) - (this.held.has('left') ? 1 : 0);
     const dy = (this.held.has('down') ? 1 : 0) - (this.held.has('up') ? 1 : 0);
     this.player.focus = this.focusHeld;
-    movePlayer(this.player, { dx, dy }, dtMs, this.mod.speedMult * this.charDef.speedMult);
+    movePlayer(this.player, { dx, dy }, dtMs, this.mod.speedMult * this.charDef.speedMult * (this.dashMs > 0 ? 1.5 : 1));
     tickPlayer(this.player, dtMs);
     this.od.tick(dtMs);
     this.fireFieldMs = Math.max(0, this.fireFieldMs - dtMs);
@@ -162,23 +183,25 @@ export class WitchGame {
         this.bossSpawned = true;
         this.events.push({ kind: 'bossSpawn', id: this.boss.state.id });
       }
-    } else if (this.boss?.state.alive) {
+    } else if (this.boss?.state.alive && this.freezeMs <= 0) {
       for (const spec of this.boss.step(dtMs, { px: this.player.x, py: this.player.y })) {
         this.enemyBullets.spawn(spec);
       }
     }
 
-    // 3) 道中敵
+    // 3) 道中敵（freeze 期間：不移動、不開火）
     for (const e of this.enemies) {
       if (!e.alive) continue;
-      const result = stepEnemy(e, dtMs, { px: this.player.x, py: this.player.y }, this.rng);
-      for (const spec of result.spawns) {
-        this.enemyBullets.spawn(spec);
+      if (this.freezeMs <= 0) {
+        const result = stepEnemy(e, dtMs, { px: this.player.x, py: this.player.y }, this.rng);
+        for (const spec of result.spawns) {
+          this.enemyBullets.spawn(spec);
+        }
+        if (result.telegraph) {
+          this.events.push({ kind: 'telegraph', ...result.telegraph });
+        }
+        if (e.y > FIELD_H + 40 || e.x < -60 || e.x > FIELD_W + 60) e.alive = false; // 出場回收
       }
-      if (result.telegraph) {
-        this.events.push({ kind: 'telegraph', ...result.telegraph });
-      }
-      if (e.y > FIELD_H + 40 || e.x < -60 || e.x > FIELD_W + 60) e.alive = false; // 出場回收
       if (this.fireFieldMs > 0) this.damageEnemy(e, FIRE_FIELD_DPS * (dtMs / 1000));
     }
     this.enemies = this.enemies.filter((e) => e.alive);
@@ -234,13 +257,50 @@ export class WitchGame {
   private autoFire(dtMs: number): void {
     if (!this.player.alive) return;
     if (this.player.fireCdMs > 0) return;
-    this.player.fireCdMs = this.od.isActive ? FIRE_INTERVAL_MS / 2 : FIRE_INTERVAL_MS;
+    const baseInterval = this.od.isActive ? FIRE_INTERVAL_MS / 2 : FIRE_INTERVAL_MS;
     const dmg = PLAYER_BULLET_DMG * this.mod.atkMult * (this.od.isActive ? 1.5 : 1);
-    const n = this.player.power;                 // 1..4 道
-    for (let i = 0; i < n; i++) {
-      const off = (i - (n - 1) / 2) * 12;
-      this.spawnPlayerBullet(this.player.x + off, this.player.y - 14, 0, -PLAYER_BULLET_SPEED, dmg, false);
+    const power = this.player.power;             // 1..4 道
+    const px = this.player.x;
+    const py = this.player.y - 14;
+    const SPD = PLAYER_BULLET_SPEED;
+
+    switch (this.charDef.shotType) {
+      case 'pierce': {                            // Gale：速射穿風
+        this.player.fireCdMs = baseInterval * 0.6;
+        const pierce = Math.max(1, this.mod.pierce ? 1 : 0);
+        for (let i = 0; i < power; i++) {
+          const off = (i - (power - 1) / 2) * 8;
+          this.spawnPlayerBullet(px + off, py, 0, -SPD, dmg * 0.7, false, { pierce });
+        }
+        break;
+      }
+      case 'fan': {                               // Frost：寬幅冰扇
+        this.player.fireCdMs = baseInterval * 1.4;
+        const count = power + 2;
+        for (let i = 0; i < count; i++) {
+          const a = (i - (count - 1) / 2) * (12 * Math.PI / 180);
+          this.spawnPlayerBullet(px, py, Math.sin(a) * SPD, -Math.cos(a) * SPD, dmg * 1.3, false);
+        }
+        break;
+      }
+      case 'chain': {                             // Volt：連鎖雷
+        this.player.fireCdMs = baseInterval;
+        const n = Math.max(1, power);
+        for (let i = 0; i < n; i++) {
+          const off = (i - (n - 1) / 2) * 12;
+          this.spawnPlayerBullet(px + off, py, 0, -SPD, dmg * 0.9, false, { chain: 2 });
+        }
+        break;
+      }
+      default: {                                  // balanced（Mira）：現行基準
+        this.player.fireCdMs = baseInterval;
+        for (let i = 0; i < power; i++) {
+          const off = (i - (power - 1) / 2) * 12;
+          this.spawnPlayerBullet(px + off, py, 0, -SPD, dmg, false);
+        }
+      }
     }
+
     if (this.mod.familiar) {
       if (this.mod.homingFamiliar) {
         // 追蹤使魔：瞄準最近 alive 敵人
@@ -278,11 +338,16 @@ export class WitchGame {
     return best;
   }
 
-  private spawnPlayerBullet(x: number, y: number, vx: number, vy: number, dmg: number, split: boolean): void {
+  private spawnPlayerBullet(
+    x: number, y: number, vx: number, vy: number, dmg: number, split: boolean,
+    opts?: { pierce?: number; chain?: number },
+  ): PlayerBullet | null {
     const b = this.playerBullets.find((it) => !it.active);
-    if (!b) return;
+    if (!b) return null;
     b.x = x; b.y = y; b.vx = vx; b.vy = vy; b.dmg = dmg; b.split = split; b.active = true;
-    b.pierceLeft = this.mod.pierce ? 1 : 0;
+    b.pierceLeft = opts?.pierce ?? (this.mod.pierce ? 1 : 0);
+    b.chainLeft = opts?.chain ?? 0;
+    return b;
   }
 
   private stepPlayerBullets(dtMs: number): void {
@@ -325,6 +390,7 @@ export class WitchGame {
             b.active = false;
             this.damageEnemy(e, dmg);
             this.maybeSplit(b);
+            this.maybeChain(b, e);
             break;
           }
         }
@@ -343,6 +409,18 @@ export class WitchGame {
     const s = PLAYER_BULLET_SPEED * 0.8;
     this.spawnPlayerBullet(b.x, b.y, -s * 0.4, -s, b.dmg * 0.5, true);
     this.spawnPlayerBullet(b.x, b.y, s * 0.4, -s, b.dmg * 0.5, true);
+  }
+
+  /** 連鎖雷（Volt）：命中後朝半徑內最近的另一敵射出遞減的雷彈。 */
+  private maybeChain(b: PlayerBullet, hit: Enemy): void {
+    if (b.chainLeft <= 0) return;
+    const t = chainTarget(this.enemies, hit.x, hit.y, hit.id, CHAIN_RADIUS);
+    if (!t) return;
+    const dx = t.x - hit.x;
+    const dy = t.y - hit.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const spd = PLAYER_BULLET_SPEED;
+    this.spawnPlayerBullet(hit.x, hit.y, (dx / d) * spd, (dy / d) * spd, b.dmg * 0.6, true, { chain: b.chainLeft - 1 });
   }
 
   private damageEnemy(e: Enemy, dmg: number): void {
@@ -412,17 +490,48 @@ export class WitchGame {
     this.drops = this.drops.filter((d) => d.active);
   }
 
-  private useInferno(): void {
+  /** 對全場敵人與 Boss 造成爆彈直傷。 */
+  private bombDamageAll(dmg: number): void {
+    for (const e of this.enemies) if (e.alive) this.damageEnemy(e, dmg);
+    if (this.boss?.state.alive) this.boss.damage(dmg); // pendingSummon 由 step 中統一處理
+  }
+
+  /** 清除自機周邊的敵彈（防連死範圍）。 */
+  private clearBulletsNearPlayer(): void {
+    for (const b of this.enemyBullets.items) {
+      if (b.active && circleHit(b.x, b.y, b.r, this.player.x, this.player.y, HIT_CLEAR_R)) b.active = false;
+    }
+  }
+
+  /** 角色專屬爆彈：依 bombType 分派。 */
+  private useBomb(): void {
     if (this.player.bombs <= 0 || !this.player.alive) return;
     this.player.bombs--;
-    this.enemyBullets.clearAll();
-    this.player.invulnMs = Math.max(this.player.invulnMs, INFERNO_INVULN_MS + this.mod.infernoInvulnBonus);
-    for (const e of this.enemies) if (e.alive) this.damageEnemy(e, INFERNO_DMG);
-    if (this.boss?.state.alive) {
-      this.boss.damage(INFERNO_DMG);
-      // pendingSummon 由 step 中 5.5 處統一處理
+    const invulnBonus = this.mod.infernoInvulnBonus;
+    switch (this.charDef.bombType) {
+      case 'gust':   // Gale：清全屏彈＋長無敵＋衝刺，直傷低
+        this.enemyBullets.clearAll();
+        this.player.invulnMs = Math.max(this.player.invulnMs, 1800 + invulnBonus);
+        this.dashMs = 1200;
+        this.bombDamageAll(INFERNO_DMG * 0.25);
+        break;
+      case 'freeze': // Frost：凍結全場敵與彈，直傷低
+        this.freezeMs = Math.max(this.freezeMs, 2500);
+        this.clearBulletsNearPlayer();
+        this.player.invulnMs = Math.max(this.player.invulnMs, INFERNO_INVULN_MS + invulnBonus);
+        this.bombDamageAll(INFERNO_DMG * 0.3);
+        break;
+      case 'storm':  // Volt：全場高額雷擊＋自機周邊清彈
+        this.clearBulletsNearPlayer();
+        this.player.invulnMs = Math.max(this.player.invulnMs, INFERNO_INVULN_MS + invulnBonus);
+        this.bombDamageAll(INFERNO_DMG * 2);
+        break;
+      default:       // inferno（Mira）：現行
+        this.enemyBullets.clearAll();
+        this.player.invulnMs = Math.max(this.player.invulnMs, INFERNO_INVULN_MS + invulnBonus);
+        this.bombDamageAll(INFERNO_DMG);
+        if (this.mod.fireField) this.fireFieldMs = FIRE_FIELD_MS;
     }
-    if (this.mod.fireField) this.fireFieldMs = FIRE_FIELD_MS;
     this.events.push({ kind: 'inferno' });
   }
 
