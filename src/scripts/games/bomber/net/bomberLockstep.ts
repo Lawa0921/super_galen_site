@@ -1,5 +1,6 @@
 import { VersusMatch } from '../versus/versusMatch';
 import type { CharacterId, Dir } from '../engine/types';
+import type { VersusReplay } from './versusReplay';
 
 const SIM_DT = 1000 / 60;
 
@@ -88,12 +89,27 @@ export class BomberLockstep {
   /** 已經實際套用過 match.forfeit 的離場玩家（冪等，避免重複淘汰）。 */
   private leaveApplied: Set<string> = new Set();
 
+  private readonly arenaId: number;
+  private readonly characters: Record<string, CharacterId>;
+  /**
+   * 重播捕捉緩衝。inbox 在 advance() 消化後即刪除（line 292），故無法事後重建稀疏 log——
+   * 必須在「真正套用某幀」的當下記錄下來：
+   *  - replayInputs：稀疏逐幀輸入，只收「非空」的 (frame, player, actions)，
+   *    且記錄的順序與 advance() 套用順序一致（同幀依固定 playerIds 序）。
+   *  - replayForfeits：advance() 在哪一幀對哪位玩家套用了 match.forfeit。
+   * 兩者足以讓 simulateVersusReplay 1:1 重現本局（含 forfeit 結束的局）。
+   */
+  private replayInputs: Array<{ f: number; p: string; a: VersusAction[] }> = [];
+  private replayForfeits: Array<{ f: number; p: string }> = [];
+
   constructor(opts: BomberLockstepOptions) {
     this.playerIds = [...opts.playerIds];
     this.localId = opts.localId;
     this.seed = opts.seed;
     this.inputDelay = opts.inputDelay ?? INPUT_DELAY;
     this.transport = opts.transport;
+    this.arenaId = opts.arenaId;
+    this.characters = { ...opts.characters };
     this.match = new VersusMatch({
       seed: this.seed,
       arenaId: opts.arenaId,
@@ -229,6 +245,29 @@ export class BomberLockstep {
   }
 
   /**
+   * 輸出本局的可重播紀錄（比照 tetris ffaReplay）。
+   *  - seed / arenaId / characters / playerIds：重建 VersusMatch 的全部不可變參數。
+   *  - frameCount：已套用（step 過）的總幀數 == confirmedFrame。
+   *  - inputs：稀疏逐幀「某玩家」輸入（只含非空，順序 == advance() 的套用順序）。
+   *  - forfeits：advance() 在哪一幀對哪位玩家套用了 forfeit（足以重現斷線結束的局）。
+   *
+   * simulateVersusReplay(getReplay()) 會 1:1 重跑出相同的最終名次與 stateHash。
+   * 注意：本紀錄只涵蓋「已確認推進」的幀（confirmedFrame 之前）——尚未全員齊備、
+   * 還沒 step 的前緣輸入不在內（它們也尚未影響 match 狀態），故 stateHash 對得上。
+   */
+  getReplay(): VersusReplay {
+    return {
+      seed: this.seed,
+      arenaId: this.arenaId,
+      characters: { ...this.characters },
+      playerIds: [...this.playerIds],
+      frameCount: this.simFrame,
+      inputs: this.replayInputs.map((e) => ({ f: e.f, p: e.p, a: e.a.slice() })),
+      forfeits: this.replayForfeits.map((e) => ({ f: e.f, p: e.p })),
+    };
+  }
+
+  /**
    * 盡量推進所有「全員齊備」的幀。
    * 已淘汰玩家（player.alive === false）不會送輸入 → 在此自動補空輸入，避免死鎖。
    */
@@ -271,6 +310,9 @@ export class BomberLockstep {
         if (at !== undefined && this.simFrame === at) {
           this.match.forfeit(id);
           this.leaveApplied.add(id);
+          // 捕捉：replay 必須在同一 simFrame、同一 playerIds 序套用相同 forfeit，
+          // 否則 forfeit 結束的局重模擬不會收斂到相同名次/stateHash。
+          this.replayForfeits.push({ f: this.simFrame, p: id });
         }
       }
 
@@ -278,6 +320,11 @@ export class BomberLockstep {
       // 確保各端逐位元一致）。
       for (const id of this.playerIds) {
         const actions = this.inbox.get(id)!.get(this.simFrame)!;
+        // 捕捉：只收非空輸入（稀疏 log），且記錄順序與此處套用順序一致
+        //（同幀依 playerIds 固定序），simulateVersusReplay 依此序重播即逐位元一致。
+        if (actions.length > 0) {
+          this.replayInputs.push({ f: this.simFrame, p: id, a: actions.slice() });
+        }
         for (const act of actions) {
           if (act.t === 'held') this.match.setHeld(id, act.d, act.v);
         }
