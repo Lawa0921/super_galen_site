@@ -327,6 +327,15 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     <div class="bomber-over" id="bomber-over" hidden>
       <h2 class="ms-title">GAME OVER</h2>
       <p id="bomber-over-stats" class="over-stats"></p>
+      <!-- Online result: standings table (rank / player / character / Elo±) -->
+      <div id="bomber-over-standings" class="over-standings"></div>
+      <!-- Online result: local XP gained + level + progress bar -->
+      <div id="bomber-over-xp" class="over-xp"></div>
+      <!-- Online result: REMATCH / LOBBY (shown only online; hotseat uses RETRY) -->
+      <div id="bomber-over-actions" class="over-actions" hidden>
+        <button class="ms-btn ms-online" id="bomber-rematch" type="button" hidden>REMATCH</button>
+        <button class="ms-btn ms-back" id="bomber-lobby" type="button" hidden>LOBBY</button>
+      </div>
       <button class="ms-btn ms-solo" id="bomber-restart">RETRY</button>
     </div>
   </main>
@@ -1523,6 +1532,108 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     text-align: center;
     line-height: 1.8;
   }
+  .over-stats:empty {
+    display: none;
+  }
+
+  /* ─── Online result: standings table ────────────────────── */
+  .over-standings {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: min(560px, 88vw);
+    font-size: clamp(8px, 1vw, 11px);
+  }
+  .over-standings:empty {
+    display: none;
+  }
+  .res-row {
+    display: grid;
+    grid-template-columns: 2.5em 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 157, 60, 0.28);
+    background: rgba(255, 157, 60, 0.05);
+    color: #e8e2d4;
+  }
+  .res-row.is-local {
+    border-color: rgba(255, 210, 63, 0.85);
+    background: rgba(255, 210, 63, 0.1);
+  }
+  .res-rank {
+    color: #ffd23f;
+    letter-spacing: 1px;
+  }
+  .res-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .res-char {
+    color: #ff9d3c;
+    letter-spacing: 1px;
+  }
+  .res-elo {
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .res-elo.is-up {
+    color: #6bffb0;
+  }
+  .res-elo.is-down {
+    color: #ff7a6a;
+  }
+  .res-elo.is-flat {
+    color: #c7c2b6;
+  }
+  .res-elo.is-pending {
+    color: #8a857a;
+  }
+
+  /* ─── Online result: local XP block + progress bar ──────── */
+  .over-xp {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(560px, 88vw);
+    font-size: clamp(8px, 0.95vw, 11px);
+  }
+  .over-xp:empty {
+    display: none;
+  }
+  .res-xp-head {
+    display: flex;
+    justify-content: space-between;
+    color: #ffd23f;
+    letter-spacing: 1px;
+  }
+  .res-xp-gain {
+    color: #6bffb0;
+  }
+  .res-xp-bar {
+    position: relative;
+    height: 12px;
+    border: 1px solid rgba(255, 210, 63, 0.6);
+    background: rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+  .res-xp-fill {
+    display: block;
+    height: 100%;
+    width: var(--res-xp-ratio, 0%);
+    background: linear-gradient(90deg, #ff9d3c, #ffd23f);
+    transition: width 0.5s ease-out;
+  }
+
+  /* ─── Online result: REMATCH / LOBBY actions ────────────── */
+  .over-actions {
+    display: flex;
+    gap: 16px;
+  }
+  .over-actions[hidden] {
+    display: none;
+  }
 
   /* ─── Accessibility: honour reduced-motion ──────────────── */
   /* Overrides rely on equal specificity + later source order (no !important,
@@ -1540,6 +1651,7 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     .ms-btn { transition: none; }
     .roster-start { transition: none; }
     .lobby-status.pending { animation: none; }
+    .res-xp-fill { transition: none; }
     .arena-nav { transition: none; }
   }
 </style>
@@ -1663,6 +1775,30 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   let arenaIdx = 0;                // host 選的 arena（0..7）
   let connectedGuests = 0;         // host 端：已連上的 guest 數（來自 onStatus）
   let resolveStart: (() => void) | null = null; // host START → resolve waitStart
+
+  // 本端身分（ranked：錢包地址 + 簽章函式；casual：匿名 id、無簽章 → 不回報名次）。
+  // 進入 online 流程時解析一次：id 即是各端共享的 playerId（後端以此驗證簽章 reporter）。
+  let localPlayerId: string | null = null;
+  let localSignMessage: ((msg: string) => Promise<string>) | null = null;
+
+  /**
+   * 解析本端身分：嘗試連錢包（ranked，id = 地址、可簽章）；失敗/無錢包退回匿名（casual）。
+   * 只解析一次（冪等）。casual 仍可正常對戰，只是結算不回報（bomberRanking 收到無 signMessage → no-op）。
+   */
+  async function resolveIdentity(prefix: 'Host' | 'Guest'): Promise<string> {
+    if (localPlayerId) return localPlayerId;
+    try {
+      const { connectWallet } = await import('@scripts/games/tetris/net/netMain');
+      const w = await connectWallet();
+      if (w) {
+        localPlayerId = w.address;
+        localSignMessage = w.signMessage;
+        return localPlayerId;
+      }
+    } catch { /* 使用者拒絕 / 無錢包 → casual */ }
+    localPlayerId = `${prefix}-${Math.floor(Math.random() * 9000 + 1000)}`;
+    return localPlayerId;
+  }
 
   function setLobbyStatus(text: string, kind?: 'pending' | 'error'): void {
     if (!lobbyStatusEl) return;
@@ -1810,7 +1946,26 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
       hint.textContent = 'MOVE WASD/←↑→↓  ·  BOMB SPACE/ENTER  ·  SKILL E/SHIFT  ·  MUTE M';
       hint.style.display = 'block';
     }
-    await startVersusOnline(canvas, { lockstep, localId: ready.localId, arenaId: ready.arenaId });
+
+    // 結算回報接線：matchId = bomber-<seed36>-<room>；reporterId = 本端身分；
+    // signMessage 有則 ranked（回報名次），無則 casual（只顯示名次，不回報）。
+    const roomId = ready.room;
+    await startVersusOnline(canvas, {
+      lockstep,
+      localId: ready.localId,
+      arenaId: ready.arenaId,
+      ranked: {
+        seed: ready.seed,
+        roomId,
+        reporterId: ready.localId,
+        signMessage: localSignMessage ?? undefined,
+      },
+      // REMATCH：同房同設定、新 seed 重開。完整握手（host 重廣播 init 沿用既有 RTC 連線）
+      // 需改動 netMain；此處採最小可靠路徑＝重新進入 online 流程（host 重建房 / guest 重連同房號）。
+      onRematch: () => { location.href = `/games/bomber?online=1&room=${encodeURIComponent(roomId)}`; },
+      // LOBBY：返回 online 大廳入口。
+      onLobby: () => { location.href = '/games/bomber?online=1'; },
+    });
   }
 
   // ── onStatus → lobby UI ──────────────────────────────────
@@ -1853,8 +2008,10 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     const startSignal = new Promise<void>((res) => { resolveStart = res; });
     // 決定性 seed：host 單一來源（不影響任何模擬內部 RNG，僅作為各端共享的初始 seed）。
     const seed = Math.floor(Math.random() * 0x1_0000_0000) >>> 0;
+    // 身分：ranked（錢包地址，可簽章 → 回報名次）或 casual（匿名，不回報）。
+    const id = await resolveIdentity('Host');
     hostBomberGame({
-      identity: { id: hostIdentityId(), character: selected },
+      identity: { id, character: selected },
       arenaId: arenaIdx,
       maxGuests: 3, // 2-4 人：host + 最多 3 guest
       seed,
@@ -1874,20 +2031,14 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     if (lobbyCodeEl) lobbyCodeEl.textContent = room;
     setLobbyStatus('Connecting…', 'pending');
     const { joinBomberGame } = await import('@scripts/games/bomber/net/bomberNetMain');
+    // 身分：ranked（錢包地址，可簽章 → 回報名次）或 casual（匿名，不回報）。
+    const id = await resolveIdentity('Guest');
     joinBomberGame({
       room,
-      identity: { id: guestIdentityId(), character: selected },
+      identity: { id, character: selected },
       onStatus: (s) => onNetStatus(s, false),
       onReady: (r) => { void bootOnline(r); },
     }).catch((err: unknown) => onNetStatus({ phase: 'error', message: String(err) }, false));
-  }
-
-  /** 身分 id：訪客匿名（id 不影響模擬，只用於 roster 順序與 transport 路由）。 */
-  function hostIdentityId(): string {
-    return `Host-${Math.floor(Math.random() * 9000 + 1000)}`;
-  }
-  function guestIdentityId(): string {
-    return `Guest-${Math.floor(Math.random() * 9000 + 1000)}`;
   }
 
   // ── Wire ONLINE controls ─────────────────────────────────
@@ -1966,6 +2117,19 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   const charParam = params.get('char') as CharacterId | null;
   if (charParam && (VALID_CHARS as string[]).includes(charParam)) {
     start(charParam);
+  }
+
+  // ── Online deep-link: ?online=1[&room=CODE] ───────────────
+  //  REMATCH/LOBBY 結算按鈕導回此頁帶 ?online=1（&room= 給 REMATCH 同房重連）。
+  //  REMATCH 限制：未沿用既有 RTC 連線（完整握手需改 netMain）——以「同房號重新協商」近似
+  //  「同房同設定、新 seed」：guest 重連同房號，host 端會以新 seed 重開一局。
+  if (!started && params.get('online') === '1') {
+    openOnline();
+    const rejoinRoom = params.get('room');
+    if (rejoinRoom && roomInput) {
+      roomInput.value = rejoinRoom.toUpperCase();
+      void beginJoin(); // 直接重連該房（REMATCH 路徑）
+    }
   }
 
   // ── Autostart: ?mode=solo → lena (backward compat for e2e) ──

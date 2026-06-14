@@ -9,6 +9,8 @@ import { loadBomberTextures } from './assets';
 import type { Dir, CharacterId } from '../engine/types';
 import type { VersusInput } from '../versus/types';
 import type { BomberLockstep, VersusAction } from '../net/bomberLockstep';
+import { reportBomberRanked, type BomberRankResult } from '../net/bomberRanking';
+import { liveStandings } from '../net/versusReplay';
 
 export interface VersusHandle {
   match: VersusMatch;
@@ -33,6 +35,25 @@ export interface VersusOnlineBootOptions {
   localId: string;
   /** 競技場 id（決定 theme；與鎖步建構時一致，由 BomberReady.arenaId 傳入）。 */
   arenaId: number;
+  /**
+   * 排名結算接線（皆可選；缺 signMessage = casual，只顯示名次、不回報）。
+   * matchId 由 `bomber-<seed.toString(36)>-<roomId>` 組出（與 Task 14 endpoint 解析相符）。
+   */
+  ranked?: {
+    /** host 廣播的對局 seed（== lockstep replay seed）。 */
+    seed: number;
+    /** 房號（BomberReady.room）。 */
+    roomId: string;
+    /** 本端簽章地址（ranked 時為錢包地址，與 localId 一致）。 */
+    reporterId: string;
+    /** 錢包簽章函式；無 → casual（不回報，只顯示本機名次）。 */
+    signMessage?: (msg: string) => Promise<string>;
+    fetchFn?: typeof fetch;
+  };
+  /** REMATCH 按鈕（同房同設定、新 seed 重開）。未傳則該鈕隱藏。 */
+  onRematch?: () => void;
+  /** LOBBY 按鈕（返回大廳）。未傳則該鈕隱藏。 */
+  onLobby?: () => void;
 }
 
 /** 固定時間步長（與 lockstep SIM_DT 對齊；render 累積真實 dt、以此固定增量推進）。 */
@@ -77,6 +98,8 @@ async function mountVersusLoop(
   attachInput: (sound: SoundManager) => void,
   onDestroyExtra: () => void,
   lockstep?: BomberLockstep,
+  /** 線上模式覆寫：finish 時呼叫此 hook 顯示結算畫面（傳入後不顯示基本 overlay）。 */
+  onFinish?: (winnerId: string | null) => void,
 ): Promise<VersusHandle> {
   const stage = await PixiStage.create(canvas);
   const theme = ARENAS[arenaId]?.theme ?? 0;
@@ -94,18 +117,23 @@ async function mountVersusLoop(
   }
   stage.app.renderer.on('resize', relayout);
 
-  // ---- 結束 overlay（簡單版：VICTORY: <id> / DRAW） ----
+  // ---- 結束 overlay（基本版：VICTORY: <id> / DRAW；online 改走 onFinish 結算畫面） ----
   const overEl = document.getElementById('bomber-over') as HTMLElement | null;
   const overStatsEl = document.getElementById('bomber-over-stats') as HTMLElement | null;
   const titleEl = overEl?.querySelector('.ms-title') as HTMLElement | null;
   const retryBtn = document.getElementById('bomber-restart') as HTMLElement | null;
   const onRetry = () => location.reload();
-  retryBtn?.addEventListener('click', onRetry);
+  // online 模式以結算畫面（onFinish）的 LOBBY/REMATCH 取代單機 RETRY。
+  if (onFinish) { if (retryBtn) retryBtn.hidden = true; }
+  else { retryBtn?.addEventListener('click', onRetry); }
 
   let finishShown = false;
   function showFinish(winnerId: string | null): void {
     if (finishShown) return;
     finishShown = true;
+    // 線上：交給結算畫面 hook（standings/Elo/XP/REMATCH/LOBBY）。
+    if (onFinish) { onFinish(winnerId); return; }
+    // 單機/熱座：基本 VICTORY/DRAW。
     if (titleEl) titleEl.textContent = winnerId ? 'VICTORY' : 'DRAW';
     if (overStatsEl) overStatsEl.textContent = winnerId ? `WINNER: ${winnerId}` : 'DRAW';
     if (overEl) overEl.removeAttribute('hidden');
@@ -329,6 +357,48 @@ export async function startVersusOnline(
 
   void localId; // 本端玩家身分已由 lockstep（localId）持有；輸入即視為該玩家的動作
 
+  // ── 線上結算畫面：finish → 顯示名次 → 簽章回報 → 收到 results 後補 Elo±/XP ──
+  const onFinish = (winnerId: string | null): void => {
+    // 1) 先以本機名次即時顯示（不等網路；標題用本端視角 VICTORY/DEFEAT/DRAW）。
+    //    liveStandings 與 endpoint 重建名次同源（playerIds 固定序 tie-break）→ 與回報一致。
+    const standings = liveStandings(lockstep.match, lockstep.playerIds);
+    renderResultOverlay({
+      localId,
+      winnerId,
+      standings,
+      characters: charactersOf(match),
+      results: null, // ratings/xp 待回報結果回來再補
+      onRematch: opts.onRematch,
+      onLobby: opts.onLobby,
+    });
+
+    // 2) 簽章回報（各端各自送；後端共識 + SETTLED 去重）。casual 無 signMessage → 不送。
+    const rk = opts.ranked;
+    if (rk) {
+      void reportBomberRanked({
+        seed: rk.seed,
+        roomId: rk.roomId,
+        reporterId: rk.reporterId,
+        replay: lockstep.getReplay(),
+        signMessage: rk.signMessage,
+        fetchFn: rk.fetchFn,
+      }).then((report) => {
+        if (report.outcome === 'applied' && report.results) {
+          // 重繪：補上每位玩家 Elo before→after 與本端 XP/等級進度。
+          renderResultOverlay({
+            localId,
+            winnerId,
+            standings,
+            characters: charactersOf(match),
+            results: report.results,
+            onRematch: opts.onRematch,
+            onLobby: opts.onLobby,
+          });
+        }
+      });
+    }
+  };
+
   return mountVersusLoop(
     canvas,
     match,
@@ -340,5 +410,140 @@ export async function startVersusOnline(
       window.removeEventListener('keyup', onKeyUp);
     },
     lockstep,
+    onFinish,
   );
+}
+
+/** playerId → CharacterId（供結算表顯示角色）。 */
+function charactersOf(match: VersusMatch): Record<string, CharacterId> {
+  const out: Record<string, CharacterId> = {};
+  for (const p of match.getState().players) out[p.id] = p.character;
+  return out;
+}
+
+/**
+ * 繪製線上結算畫面（標準名次表 + Elo± + XP 進度條 + REMATCH/LOBBY）。
+ * 全英文、無行內樣式（樣式類別在 bomber.astro）。results 為 null 時只顯示名次（待回報）。
+ */
+function renderResultOverlay(o: {
+  localId: string;
+  winnerId: string | null;
+  standings: string[];
+  characters: Record<string, CharacterId>;
+  results: BomberRankResult[] | null;
+  onRematch?: () => void;
+  onLobby?: () => void;
+}): void {
+  const overEl = document.getElementById('bomber-over') as HTMLElement | null;
+  if (!overEl) return;
+  const titleEl = overEl.querySelector('.ms-title') as HTMLElement | null;
+  const statsEl = document.getElementById('bomber-over-stats') as HTMLElement | null;
+  const tableEl = document.getElementById('bomber-over-standings') as HTMLElement | null;
+  const xpEl = document.getElementById('bomber-over-xp') as HTMLElement | null;
+  const actionsEl = document.getElementById('bomber-over-actions') as HTMLElement | null;
+  const rematchBtn = document.getElementById('bomber-rematch') as HTMLButtonElement | null;
+  const lobbyBtn = document.getElementById('bomber-lobby') as HTMLButtonElement | null;
+
+  // 標題（本端視角）：本端冠軍→VICTORY、平局→DRAW、其餘→DEFEAT。
+  if (titleEl) {
+    titleEl.textContent = o.winnerId === null
+      ? 'DRAW'
+      : o.standings[0] === o.localId ? 'VICTORY' : 'DEFEAT';
+  }
+  if (statsEl) statsEl.textContent = '';
+
+  const resultById = new Map<string, BomberRankResult>();
+  if (o.results) for (const r of o.results) resultById.set(r.id, r);
+
+  // ── 名次表（rank / player / character / Elo±） ──
+  if (tableEl) {
+    tableEl.replaceChildren();
+    o.standings.forEach((id, i) => {
+      const row = document.createElement('div');
+      row.className = 'res-row' + (id === o.localId ? ' is-local' : '');
+
+      const rank = document.createElement('span');
+      rank.className = 'res-rank';
+      rank.textContent = `#${i + 1}`;
+
+      const name = document.createElement('span');
+      name.className = 'res-name';
+      name.textContent = id;
+
+      const char = document.createElement('span');
+      char.className = 'res-char';
+      char.textContent = (o.characters[id] ?? '?').toUpperCase();
+
+      const elo = document.createElement('span');
+      elo.className = 'res-elo';
+      const r = resultById.get(id);
+      if (r) {
+        const delta = r.ratingAfter - r.ratingBefore;
+        const sign = delta > 0 ? '+' : '';
+        elo.classList.add(delta > 0 ? 'is-up' : delta < 0 ? 'is-down' : 'is-flat');
+        elo.textContent = `${r.ratingBefore}→${r.ratingAfter} (${sign}${delta})`;
+      } else {
+        elo.classList.add('is-pending');
+        elo.textContent = o.results ? '—' : '…';
+      }
+
+      row.append(rank, name, char, elo);
+      tableEl.appendChild(row);
+    });
+  }
+
+  // ── XP：本端獲得 XP + 等級 + 進度條 ──
+  if (xpEl) {
+    xpEl.replaceChildren();
+    const mine = resultById.get(o.localId);
+    if (mine) {
+      const head = document.createElement('div');
+      head.className = 'res-xp-head';
+      const gain = document.createElement('span');
+      gain.className = 'res-xp-gain';
+      gain.textContent = `+${mine.xpGained} XP`;
+      const lvl = document.createElement('span');
+      lvl.className = 'res-xp-level';
+      lvl.textContent = `LV ${mine.level}`;
+      head.append(gain, lvl);
+
+      // 進度條：本場 xpGained 占「目前等級跨距」的比例（近似視覺）。
+      // 限制：endpoint 只回 level + xpGained（不回總 XP），無法精算本級已累積進度；
+      // 故以「本場獲得 XP / 本級門檻跨距」呈現本場貢獻量，clamp 至 [0,100]%。
+      const span = Math.max(1, xpAtLeastForLevel(mine.level + 1) - xpAtLeastForLevel(mine.level));
+      const pct = Math.max(0, Math.min(100, Math.round((mine.xpGained / span) * 100)));
+      const bar = document.createElement('div');
+      bar.className = 'res-xp-bar';
+      const fill = document.createElement('span');
+      fill.className = 'res-xp-fill';
+      // 進度以 CSS 自訂屬性驅動寬度（CSS 端 width: var(--res-xp-ratio)）——避免靜態行內樣式。
+      fill.style.setProperty('--res-xp-ratio', `${pct}%`);
+      bar.appendChild(fill);
+
+      xpEl.append(head, bar);
+    } else if (o.results === null) {
+      const wait = document.createElement('div');
+      wait.className = 'res-xp-head';
+      wait.textContent = 'Reporting result…';
+      xpEl.appendChild(wait);
+    }
+  }
+
+  // ── REMATCH / LOBBY 按鈕（只在 online 顯示；缺 handler 則隱藏該鈕） ──
+  if (actionsEl) actionsEl.hidden = !(o.onRematch || o.onLobby);
+  if (rematchBtn) {
+    rematchBtn.hidden = !o.onRematch;
+    if (o.onRematch) { rematchBtn.onclick = () => o.onRematch?.(); }
+  }
+  if (lobbyBtn) {
+    lobbyBtn.hidden = !o.onLobby;
+    if (o.onLobby) { lobbyBtn.onclick = () => o.onLobby?.(); }
+  }
+
+  overEl.removeAttribute('hidden');
+}
+
+/** 本級門檻 XP（與 progression.xpForLevel 對齊：50*L*(L-1)）。用於 XP 進度條近似填充。 */
+function xpAtLeastForLevel(level: number): number {
+  return 50 * level * (level - 1);
 }
