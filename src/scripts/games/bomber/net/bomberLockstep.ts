@@ -72,6 +72,12 @@ export class BomberLockstep {
 
   /** 每玩家每幀輸入：inbox.get(playerId).get(frame) = VersusAction[]。 */
   private inbox: Map<string, Map<number, VersusAction[]>> = new Map();
+  /**
+   * 每玩家「曾經收到過的最大輸入幀」（單調遞增，不隨 advance() 消化/刪除 inbox 而回退）。
+   * 各端對同一玩家收到的廣播集合相同（inbox 寫入冪等、星狀中繼全員同收），故此值在各端一致，
+   * 與各端的 simFrame 偏移無關——這正是 forfeit leave 幀「跨端決定性」的依據。
+   */
+  private lastInput: Map<string, number> = new Map();
   private simFrame = 0; // 下一個要模擬的幀（== confirmedFrame）
   private sendFrame = 0; // 下一個要送出的本地輸入幀
   /** 本地累積、尚未隨 tick 送出的動作。 */
@@ -94,11 +100,14 @@ export class BomberLockstep {
       players: this.playerIds.map((id) => ({ id, character: opts.characters[id] })),
     });
 
-    for (const id of this.playerIds) this.inbox.set(id, new Map());
+    for (const id of this.playerIds) {
+      this.inbox.set(id, new Map());
+      this.lastInput.set(id, -1);
+    }
 
     // 預填 frame 0..inputDelay-1 為空陣列（全員），否則開局永遠卡在 simFrame 0。
     for (let f = 0; f < this.inputDelay; f++) {
-      for (const id of this.playerIds) this.inbox.get(id)!.set(f, []);
+      for (const id of this.playerIds) this.recordInput(id, f, []);
     }
 
     this.transport.onMessage((raw) => this.handleMessage(raw));
@@ -121,16 +130,32 @@ export class BomberLockstep {
    *  1. advance() 為其自動補「空輸入」→ 不再因缺其輸入而死鎖（木桶效應）。
    *  2. 在 simFrame === frame 當幀對 match 套用一次 forfeit（強制淘汰）。
    *
-   * 決定性鐵則：各端必須以「同一個 frame」呼叫本方法（host 計算 leave 幀並透過
-   * 控制訊息廣播；全端皆套用相同幀），如此各端在相同 simFrame 套用相同 forfeit，
-   * stateHash 不分歧。frame 取 max(目前 confirmedFrame, frame) 夾住——不允許追溯到
-   * 已模擬過的歷史幀（否則該端無法在「正確幀」套用 forfeit，會與他端分歧）。
-   * 同一玩家重複呼叫採「最早的有效幀」（冪等，避免不同來源覆蓋造成偏移）。
+   * 決定性鐵則：各端必須以「同一個 frame」呼叫本方法，如此各端在相同 simFrame 套用
+   * 相同 forfeit，stateHash 不分歧。**正確的 frame 來源＝該離場玩家的
+   * `lastInputFrame(p) + 1`**（見 lastInputFrame）：此值各端一致、與各端 simFrame 偏移
+   * 無關，且恰是對局原本會卡住的前緣。呼叫端（bomber.astro）應以此推導 frame，
+   * host 計算後廣播、全端套用相同值。
+   *
+   * 注意：下方 `Math.max(this.simFrame, frame)` 只是**防禦性安全網**，正確性來自上述
+   * 「共享前緣」推導、而非此夾鉗。若以 lastInputFrame(p)+1 推導，理論上 frame 永遠 >=
+   * 各端 simFrame（沒人能模擬超過尚缺輸入的前緣），故此夾鉗應**永不觸發**。一旦真的
+   * 觸發（frame 已是過去式），代表推導出了問題（例如誤用 confirmedFrame）——此時於
+   * 較晚的 simFrame 套用會造成端間分歧，寧可記錄警告而不要悄悄在分歧幀套用。
+   * 同一玩家重複呼叫採「最早排定的有效幀」（冪等，避免不同來源覆蓋造成偏移）。
    */
   forfeit(playerId: string, frame: number): void {
     if (!this.inbox.has(playerId)) return; // 未知玩家忽略
     if (!Number.isFinite(frame)) return;
-    const at = Math.max(this.simFrame, Math.floor(frame));
+    const requested = Math.floor(frame);
+    const at = Math.max(this.simFrame, requested);
+    if (at !== requested && typeof console !== 'undefined') {
+      // 防禦性安全網被觸發＝推導出了 bug（要求的離場幀已被本端模擬過）。記錄以利偵錯，
+      // 仍夾到 simFrame 避免追溯歷史幀，但這代表端間可能分歧——不應在正常運作下發生。
+      console.warn(
+        `[BomberLockstep] forfeit(${playerId}) requested frame ${requested} < simFrame ${this.simFrame}; ` +
+          `clamping to ${at}. This indicates a non-deterministic leave-frame derivation.`,
+      );
+    }
     const existing = this.leaveAt.get(playerId);
     if (existing !== undefined && existing <= at) return; // 已排定更早/同幀：保留首次
     this.leaveAt.set(playerId, at);
@@ -184,6 +209,23 @@ export class BomberLockstep {
     if (!map) return;
     if (map.has(frame)) return; // 冪等：保留首次確認的輸入
     map.set(frame, actions);
+    // 單調記錄「曾收到的最大輸入幀」——advance() 之後會刪掉已消化的幀，但此值不回退，
+    // 故 lastInputFrame() 在各端一致（不受 simFrame 偏移影響）。
+    const prev = this.lastInput.get(id);
+    if (prev === undefined || frame > prev) this.lastInput.set(id, frame);
+  }
+
+  /**
+   * 某玩家「曾經收到過的最大輸入幀」（無任何輸入則回傳 -1）。
+   *
+   * 決定性關鍵：星狀中繼下各端對同一玩家收到的廣播集合相同（inbox 寫入冪等），故此值
+   * 在各端完全一致，與各端 simFrame 偏移無關。用於推導離場幀：一旦玩家 p 停送，
+   * 全端的鎖步都會停在 p 的「最後輸入幀 + 1」（木桶效應的共同停滯點），所以
+   * `lastInputFrame(p) + 1` 是各端算出皆相同、且正是對局原本會卡住的前緣——
+   * 在該幀套用 forfeit 不會與任何端的 simFrame 相衝。
+   */
+  lastInputFrame(playerId: string): number {
+    return this.lastInput.get(playerId) ?? -1;
   }
 
   /**

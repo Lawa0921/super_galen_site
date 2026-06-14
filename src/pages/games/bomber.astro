@@ -1762,10 +1762,14 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     });
 
     // ── 斷線 → 決定性強制淘汰 ──────────────────────────────
+    // 離場幀的決定性來源：離場玩家「最後輸入幀 + 1」（lockstep.lastInputFrame(p)+1）。
+    //   此值各端一致（星狀中繼下各端對同一玩家收到的廣播集合相同），與各端 simFrame
+    //   偏移無關，且正是該玩家停送後鎖步的共同停滯前緣——絕不可改用本端 confirmedFrame
+    //   （各端 confirmedFrame 可能不同步，會在不同 simFrame 套用 forfeit → 分歧 → desync）。
     // host：transport.onChannelClose(idx) → guestIds[idx] 對映 playerId。
-    //   host 廣播 bomber-leave{p,f}（f＝本端排程幀，與一般輸入同步），全端在同一幀 forfeit。
-    // guest：transport.onClose() → host 斷線。guest 無權廣播，僅本端把 host 標記離場
-    //   （host 走了，這局對 guest 而言實質結束；以本端 confirmedFrame 當離場幀）。
+    //   host 算 f = lastInputFrame(pid)+1 並廣播 bomber-leave{p,f}，全端在同一幀 forfeit。
+    // guest：transport.onControl 收 host 廣播的 leave → 套用 host 給的同一幀；
+    //   transport.onClose() → host 斷線，guest 本端把 host 標記離場（同樣以 lastInputFrame+1）。
     const transport = ready.transport;
     if (ready.role === 'host' && 'onChannelClose' in transport) {
       const guestIds = ready.guestIds ?? [];
@@ -1773,7 +1777,8 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
         .onChannelClose((idx: number) => {
           const pid = guestIds[idx];
           if (!pid) return;
-          const f = lockstep.confirmedFrame + 1;
+          // 共享前緣：離場玩家最後一筆輸入幀 + 1（各端一致，不受 simFrame 偏移影響）。
+          const f = lockstep.lastInputFrame(pid) + 1;
           // 廣播給其餘 guest：同一玩家、同一幀離場（決定性）。
           (transport as import('@scripts/games/bomber/net/bomberTransport').BomberHubTransport)
             .sendControl({ t: 'bomber-leave', p: pid, f });
@@ -1781,16 +1786,18 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
         });
     } else if (ready.role === 'guest' && 'onClose' in transport) {
       const spoke = transport as import('@scripts/games/bomber/net/bomberTransport').BomberSpokeTransport;
-      // guest 收到 host 廣播的 bomber-leave（某 guest 離場）→ 在 host 指定幀 forfeit（決定性）。
+      // guest 收到 host 廣播的 bomber-leave（某 guest 離場）→ 在 host 指定幀 forfeit。
+      // host 的 f 由其 lastInputFrame(p)+1 算出，因各端共享 p 的輸入記錄，等同本端自算 → 決定性。
       spoke.onControl((msg: Record<string, unknown>) => {
         if (msg.t === 'bomber-leave' && typeof msg.p === 'string' && typeof msg.f === 'number') {
           lockstep.forfeit(msg.p, msg.f);
         }
       });
       // host 頻道關閉：host 離場。guest 端把 host 標記離場（forfeit），對局收斂結束。
+      // 同樣以「host 最後輸入幀 + 1」當離場幀，與其他端推導方式一致（即使此時只剩本 guest）。
       spoke.onClose(() => {
         const hostId = ready.playerIds[0];
-        lockstep.forfeit(hostId, lockstep.confirmedFrame + 1);
+        lockstep.forfeit(hostId, lockstep.lastInputFrame(hostId) + 1);
       });
     }
 

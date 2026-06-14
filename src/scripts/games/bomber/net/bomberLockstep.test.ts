@@ -319,7 +319,6 @@ describe('BomberLockstep forfeit（斷線→決定性強制淘汰）', () => {
     );
 
     // 先正常跑數幀（全員都送輸入），確保大家都有共同已確認幀界。
-    const LEAVE_FRAME = INPUT_DELAY + 5;
     for (let f = 0; f < 12; f++) {
       for (const node of nodes) {
         if (f % 4 === 0) node.queueLocal({ t: 'held', d: 'right', v: true });
@@ -329,9 +328,12 @@ describe('BomberLockstep forfeit（斷線→決定性強制淘汰）', () => {
     }
     settle(nodes);
 
-    // P2 「斷線」：存活端 P0/P1 各自在「同一幀」對 P2 forfeit。
+    // P2 「斷線」：存活端 P0/P1 以決定性推導離場幀＝P2 最後輸入幀 + 1（各端一致），
+    // 各自對 P2 forfeit。此推導使離場幀必 >= 各端 simFrame，不觸發防禦性夾鉗。
+    const leaveFrame = nodes[0].lastInputFrame('P2') + 1;
+    expect(leaveFrame).toBe(nodes[1].lastInputFrame('P2') + 1); // 跨端推導一致
     for (const node of nodes) {
-      if (node.localId !== 'P2') node.forfeit('P2', LEAVE_FRAME);
+      if (node.localId !== 'P2') node.forfeit('P2', leaveFrame);
     }
     // P2 端停止 tick（離場）；P0/P1 繼續直到追平。
     const survivors = nodes.filter((n) => n.localId !== 'P2');
@@ -343,6 +345,78 @@ describe('BomberLockstep forfeit（斷線→決定性強制淘汰）', () => {
     expect(survivors[0].match.stateHash()).toBe(survivors[1].match.stateHash());
     const p2 = survivors[0].match.getState().players.find((p) => p.id === 'P2')!;
     expect(p2.alive).toBe(false);
+  });
+
+  it('跨端 simFrame 偏移下離場：以 lastInputFrame+1 推導 → 全端 stateHash 一致；用 confirmedFrame+1 會分歧', () => {
+    // 回歸測試：code review 指出舊 `confirmedFrame+1` 推導在「存活端 simFrame 不同步」時
+    // 各端會在不同 simFrame 套用 forfeit → match.forfeit 跑在不同幀 → stateHash 分歧 → desync。
+    //
+    // 本測試刻意「不 settle」，而是讓存活端跑出 simFrame 偏移（P0 領先 P1 一幀），
+    // 然後在偏移狀態下觸發離場。可切換離場幀推導：
+    //  - confirmedFrame+1（舊）：P0/P1 算出不同幀 → 應分歧（hashes 不相等）。
+    //  - lastInputFrame(p)+1（修正後）：各端算出相同幀（不受 simFrame 偏移影響）→ 一致。
+    const setup = (): { nodes: BomberLockstep[] } => {
+      const playerIds = ['P0', 'P1', 'P2'];
+      const characters: Record<string, CharacterId> = { P0: 'lena', P1: 'mira', P2: 'aya' };
+      const hub = new LoopbackBomberHub();
+      const nodes = playerIds.map(
+        (localId) =>
+          new BomberLockstep({ playerIds, localId, seed: 77, arenaId: 2, characters, transport: hub.transportFor(localId) }),
+      );
+      // 正常跑數幀（全員送輸入），建立共同已確認前緣。
+      for (let f = 0; f < 8; f++) for (const node of nodes) node.tick();
+      // P2 此後斷線（停止送輸入）。刻意對 P0 多 tick 數次（P1 凍結）→ 製造存活端 simFrame 偏移：
+      // P0 領先、P1 落後（兩者皆停在缺 P2 輸入的前緣，但 P0 多消化了一幀已抵達的輸入）。
+      for (let i = 0; i < 6; i++) nodes[0].tick();
+      return { nodes };
+    };
+
+    // 把存活端各自推進到對局結束（或極限），消化後比對。不能用 settle() 把偏移先抹平——
+    // 偏移正是本測試要保留的條件。落後端優先 tick，但允許領先端在落後端追上後續推進。
+    const drive = (survivors: BomberLockstep[]): void => {
+      for (let r = 0; r < 4000; r++) {
+        if (survivors.every((n) => n.match.getState().status !== 'playing')) break;
+        const max = Math.max(...survivors.map((n) => n.confirmedFrame));
+        const laggards = survivors.filter((n) => n.confirmedFrame < max);
+        const toTick = laggards.length ? laggards : survivors;
+        for (const n of toTick) n.tick();
+      }
+    };
+
+    // 先確認偏移確實存在（前提條件成立，否則測試沒測到 skew）。
+    {
+      const { nodes } = setup();
+      expect(nodes[0].confirmedFrame).not.toBe(nodes[1].confirmedFrame);
+      // 各端對 P2 的 lastInputFrame 必須一致（修正後推導的決定性基礎）。
+      expect(nodes[0].lastInputFrame('P2')).toBe(nodes[1].lastInputFrame('P2'));
+    }
+
+    // 舊推導（confirmedFrame+1）：存活端在偏移下算出不同離場幀 → 套用於不同 simFrame → 分歧。
+    {
+      const { nodes } = setup();
+      const survivors = [nodes[0], nodes[1]];
+      for (const n of survivors) n.forfeit('P2', n.confirmedFrame + 1);
+      drive(survivors);
+      // 這正是 bug：兩端最終 stateHash 不相等（desync）。
+      expect(survivors[0].match.stateHash()).not.toBe(survivors[1].match.stateHash());
+    }
+
+    // 修正後推導（lastInputFrame(p)+1）：各端算出相同離場幀 → 套用於相同 simFrame → 一致。
+    {
+      const { nodes } = setup();
+      const survivors = [nodes[0], nodes[1]];
+      // host 會算 f=lastInputFrame(P2)+1 並廣播；各端套用相同值。此處兩端皆以本端記錄推導，
+      // 因各端 P2 的輸入記錄相同，算出的 f 也相同。
+      const f0 = nodes[0].lastInputFrame('P2') + 1;
+      const f1 = nodes[1].lastInputFrame('P2') + 1;
+      expect(f0).toBe(f1); // 跨端推導一致（不受 simFrame 偏移影響）
+      survivors[0].forfeit('P2', f0);
+      survivors[1].forfeit('P2', f1);
+      drive(survivors);
+      expect(survivors[0].match.stateHash()).toBe(survivors[1].match.stateHash());
+      const p2 = survivors[0].match.getState().players.find((p) => p.id === 'P2')!;
+      expect(p2.alive).toBe(false);
+    }
   });
 });
 
