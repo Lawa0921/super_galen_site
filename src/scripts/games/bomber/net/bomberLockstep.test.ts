@@ -279,6 +279,73 @@ describe('BomberLockstep N 人鎖步', () => {
   });
 });
 
+describe('BomberLockstep forfeit（斷線→決定性強制淘汰）', () => {
+  it('forfeit 指定玩家於指定幀：該玩家停止送輸入也不死鎖、最終被淘汰', () => {
+    // 2 人局：P1 「斷線」（從不送輸入）。P0 端在某幀對 P1 forfeit →
+    // P1 被自動補空輸入（不死鎖）+ 在 leave 幀強制淘汰 → P0 勝出。
+    const playerIds = ['P0', 'P1'];
+    const characters: Record<string, CharacterId> = { P0: 'lena', P1: 'mira' };
+    let cap: ((m: BomberFrameMsg) => void) | null = null;
+    const ls = new BomberLockstep({
+      playerIds, localId: 'P0', seed: 3, arenaId: 0, characters,
+      transport: { send: () => {}, onMessage: (cb) => { cap = cb; } },
+    });
+    void cap;
+
+    // 推進到 confirmedFrame 卡住（缺 P1）。
+    for (let f = 0; f < 10; f++) ls.tick();
+    const stuck = ls.confirmedFrame;
+    expect(stuck).toBe(INPUT_DELAY); // 只消化預填空幀
+
+    // 在「目前 confirmedFrame」這幀 forfeit P1 → 之後 P1 被補空輸入、不再卡。
+    ls.forfeit('P1', ls.confirmedFrame);
+    for (let f = 0; f < 30; f++) ls.tick();
+
+    expect(ls.confirmedFrame).toBeGreaterThan(stuck);
+    const s = ls.match.getState();
+    const p1 = s.players.find((p) => p.id === 'P1')!;
+    expect(p1.alive).toBe(false);
+    expect(s.status).toBe('finished');
+    expect(s.winnerId).toBe('P0');
+  });
+
+  it('兩端對同一玩家、同一幀 forfeit → stateHash 仍一致（決定性）', () => {
+    const playerIds = ['P0', 'P1', 'P2'];
+    const characters: Record<string, CharacterId> = { P0: 'lena', P1: 'mira', P2: 'aya' };
+    const hub = new LoopbackBomberHub();
+    const nodes = playerIds.map(
+      (localId) =>
+        new BomberLockstep({ playerIds, localId, seed: 77, arenaId: 2, characters, transport: hub.transportFor(localId) }),
+    );
+
+    // 先正常跑數幀（全員都送輸入），確保大家都有共同已確認幀界。
+    const LEAVE_FRAME = INPUT_DELAY + 5;
+    for (let f = 0; f < 12; f++) {
+      for (const node of nodes) {
+        if (f % 4 === 0) node.queueLocal({ t: 'held', d: 'right', v: true });
+        if (f % 4 === 2) node.queueLocal({ t: 'held', d: 'right', v: false });
+        node.tick();
+      }
+    }
+    settle(nodes);
+
+    // P2 「斷線」：存活端 P0/P1 各自在「同一幀」對 P2 forfeit。
+    for (const node of nodes) {
+      if (node.localId !== 'P2') node.forfeit('P2', LEAVE_FRAME);
+    }
+    // P2 端停止 tick（離場）；P0/P1 繼續直到追平。
+    const survivors = nodes.filter((n) => n.localId !== 'P2');
+    for (let f = 0; f < 40; f++) for (const node of survivors) node.tick();
+    settle(survivors);
+
+    // 兩存活端推進到相同幀、stateHash 一致，且 P2 已淘汰。
+    expect(survivors[0].confirmedFrame).toBe(survivors[1].confirmedFrame);
+    expect(survivors[0].match.stateHash()).toBe(survivors[1].match.stateHash());
+    const p2 = survivors[0].match.getState().players.find((p) => p.id === 'P2')!;
+    expect(p2.alive).toBe(false);
+  });
+});
+
 describe('BomberFrameMsg 型別契約', () => {
   it('queueLocal 過濾非法本地動作（防呆，與 onMessage 同一道驗證）', () => {
     const playerIds = ['P0', 'P1'];

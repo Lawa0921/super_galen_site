@@ -377,6 +377,24 @@ export class VersusMatch {
     this.events.push({ kind: 'finish', winnerId: this.winnerId });
   }
 
+  // ---- 斷線 / 離場強制淘汰 ----
+
+  /** 強制淘汰一名玩家（網路斷線/離場）。
+   *  名次語意與 resolveDamage 一致：placement =（淘汰後仍存活人數）+ 1。
+   *  淘汰後立即判定勝負（可能使對局結束）。已淘汰/未知 id / 對局已結束 → 安全無作用。
+   *
+   *  決定性鐵則：此方法不引入任何 RNG/時間相依——它只在 BomberLockstep.advance() 的
+   *  「指定幀」由各端同步呼叫（host 廣播 leave 幀，全端在同一 simFrame 套用），
+   *  故各端套用後 stateHash 仍一致。 */
+  forfeit(playerId: string): void {
+    if (this.status !== 'playing') return;
+    const player = this.players.find((p) => p.id === playerId);
+    if (!player || !player.alive) return;
+    const aliveAfter = this.players.filter((p) => p.alive && p !== player).length;
+    this.killPlayer(player, aliveAfter + 1);
+    this.checkFinish();
+  }
+
   // ---- 放彈 ----
 
   private placeBomb(player: VPlayer): void {

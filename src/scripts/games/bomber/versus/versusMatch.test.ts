@@ -60,3 +60,38 @@ describe('VersusMatch: 移動與放彈', () => {
     expect(a.shield).toBe(true);
   });
 });
+
+describe('VersusMatch: forfeit（斷線/離場強制淘汰）', () => {
+  it('forfeit 把存活玩家標記淘汰、給名次、發 playerDead 事件', () => {
+    const m = new VersusMatch({ seed: 1, arenaId: 0, players: [
+      { id: 'a', character: 'lena' as const },
+      { id: 'b', character: 'mira' as const },
+      { id: 'c', character: 'aya' as const },
+    ] });
+    m.forfeit('a');
+    const s = m.getState();
+    const a = s.players.find((p) => p.id === 'a')!;
+    expect(a.alive).toBe(false);
+    // 淘汰當下仍有 2 人存活 → placement = 2+1 = 3
+    expect(a.placement).toBe(3);
+    const ev = m.drainEvents();
+    expect(ev.some((e) => e.kind === 'playerDead' && e.playerId === 'a')).toBe(true);
+  });
+
+  it('forfeit 使存活剩 1 人 → 立即結束、倖存者勝出', () => {
+    const m = new VersusMatch({ seed: 1, arenaId: 0, players: P2 });
+    m.forfeit('alice');
+    const s = m.getState();
+    expect(s.status).toBe('finished');
+    expect(s.winnerId).toBe('bob');
+  });
+
+  it('forfeit 已淘汰或未知 id 安全無作用（冪等）', () => {
+    const m = new VersusMatch({ seed: 1, arenaId: 0, players: P2 });
+    m.forfeit('alice');
+    const before = m.stateHash();
+    m.forfeit('alice');   // 已淘汰：不重複
+    m.forfeit('nobody');  // 未知 id：忽略
+    expect(m.stateHash()).toBe(before);
+  });
+});

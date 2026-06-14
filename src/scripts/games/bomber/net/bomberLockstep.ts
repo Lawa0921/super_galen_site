@@ -77,6 +77,11 @@ export class BomberLockstep {
   /** 本地累積、尚未隨 tick 送出的動作。 */
   private pending: VersusAction[] = [];
 
+  /** 斷線/離場玩家 → 其「離場生效幀」。自該幀起：補空輸入（免死鎖）+ 於該幀強制淘汰一次。 */
+  private leaveAt: Map<string, number> = new Map();
+  /** 已經實際套用過 match.forfeit 的離場玩家（冪等，避免重複淘汰）。 */
+  private leaveApplied: Set<string> = new Set();
+
   constructor(opts: BomberLockstepOptions) {
     this.playerIds = [...opts.playerIds];
     this.localId = opts.localId;
@@ -109,6 +114,26 @@ export class BomberLockstep {
     for (const a of actions) {
       if (isValidAction(a)) this.pending.push(a);
     }
+  }
+
+  /**
+   * 標記某玩家自 `frame` 起離場（斷線/退出）。自該幀起：
+   *  1. advance() 為其自動補「空輸入」→ 不再因缺其輸入而死鎖（木桶效應）。
+   *  2. 在 simFrame === frame 當幀對 match 套用一次 forfeit（強制淘汰）。
+   *
+   * 決定性鐵則：各端必須以「同一個 frame」呼叫本方法（host 計算 leave 幀並透過
+   * 控制訊息廣播；全端皆套用相同幀），如此各端在相同 simFrame 套用相同 forfeit，
+   * stateHash 不分歧。frame 取 max(目前 confirmedFrame, frame) 夾住——不允許追溯到
+   * 已模擬過的歷史幀（否則該端無法在「正確幀」套用 forfeit，會與他端分歧）。
+   * 同一玩家重複呼叫採「最早的有效幀」（冪等，避免不同來源覆蓋造成偏移）。
+   */
+  forfeit(playerId: string, frame: number): void {
+    if (!this.inbox.has(playerId)) return; // 未知玩家忽略
+    if (!Number.isFinite(frame)) return;
+    const at = Math.max(this.simFrame, Math.floor(frame));
+    const existing = this.leaveAt.get(playerId);
+    if (existing !== undefined && existing <= at) return; // 已排定更早/同幀：保留首次
+    this.leaveAt.set(playerId, at);
   }
 
   /**
@@ -172,12 +197,15 @@ export class BomberLockstep {
       const state = this.match.getState();
       if (state.status !== 'playing') break;
 
-      // 為已淘汰玩家補上 simFrame 的空輸入（其端不再送 → 否則永遠缺幀死鎖）。
+      // 為已淘汰／已離場玩家補上 simFrame 的空輸入（其端不再送 → 否則永遠缺幀死鎖）。
       // 依 playerIds 固定順序迭代以保確定性。
+      // - 已淘汰：player.alive === false。
+      // - 已離場（斷線 forfeit）：simFrame >= 該玩家的 leaveAt（自離場幀起不再送）。
       const dead = new Set<string>();
       for (const p of state.players) if (!p.alive) dead.add(p.id);
       for (const id of this.playerIds) {
-        if (dead.has(id) && !this.inbox.get(id)!.has(this.simFrame)) {
+        const left = this.leaveAt.has(id) && this.simFrame >= this.leaveAt.get(id)!;
+        if ((dead.has(id) || left) && !this.inbox.get(id)!.has(this.simFrame)) {
           this.inbox.get(id)!.set(this.simFrame, []);
         }
       }
@@ -191,6 +219,18 @@ export class BomberLockstep {
         }
       }
       if (!ready) break;
+
+      // 離場強制淘汰：在套用本幀輸入「之前」對所有「leaveAt === simFrame」的玩家套用一次
+      // forfeit（依 playerIds 固定順序，確保多人同幀離場時各端淘汰順序一致）。
+      // 各端皆以 host 廣播的同一 leave 幀呼叫 forfeit → 在相同 simFrame 套用 → stateHash 一致。
+      for (const id of this.playerIds) {
+        if (this.leaveApplied.has(id)) continue;
+        const at = this.leaveAt.get(id);
+        if (at !== undefined && this.simFrame === at) {
+          this.match.forfeit(id);
+          this.leaveApplied.add(id);
+        }
+      }
 
       // 套用該幀全員輸入（依 playerIds 固定順序；同一玩家內 held 先於 bomb/ability，
       // 確保各端逐位元一致）。
