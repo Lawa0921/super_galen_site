@@ -25,7 +25,8 @@ export class EntityView {
     this.glow.alpha = 0.2;
     layer.addChild(this.glow);     // 光暈在自機之下
     this.player = new Sprite(this.playerFrames[0]);
-    this.player.anchor.set(0.5);
+    // 垂直錨點對到角色身體核心（非畫布幾何中心），使 3px 被彈判定點落在看得見的身體上
+    this.player.anchor.set(0.5, tex.playerAnchorY);
     this.player.scale.set(PLAYER_RENDER_SCALE);
     layer.addChild(this.player);
     this.hitDot = new Graphics()

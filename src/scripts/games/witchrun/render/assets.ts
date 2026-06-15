@@ -4,6 +4,7 @@ import { CHARACTERS, DEFAULT_CHARACTER, type CharacterId } from '../engine/chara
 
 export interface WitchTextures {
   playerFrames: Texture[];   // idle 動畫影格（至少 1 格；缺 idle 素材時退回單張）
+  playerAnchorY: number;     // 自機 sprite 垂直錨點：讓 3px 判定點落在角色身體核心（FX 在下方，身體偏上）
   playerBullet: Texture;
   accent: number;            // 角色流派色（自機光暈／連鎖電弧用）
   bullets: Record<BulletKind, Texture>;
@@ -15,6 +16,15 @@ export interface WitchTextures {
 }
 
 const BASE = '/assets/games/witchrun';
+
+/**
+ * 自機 sprite 垂直錨點（0=頂 1=底）。idle 影格中角色「騎乘載具、FX 排氣在下方」，
+ * 身體偏畫布上半；錨點對到身體核心，讓 3px 被彈判定點落在看得見的身體上（非下方空白 FX）。
+ * 逐角不同：Gale 人小偏上需最高。值由 4399 對位驗證取得。
+ */
+const PLAYER_ANCHOR_Y: Record<CharacterId, number> = {
+  mira: 0.44, gale: 0.29, frost: 0.43, volt: 0.40,
+};
 
 const BULLET_KINDS: BulletKind[] = ['rune', 'wave', 'page', 'gear', 'wisp', 'bell'];
 const ENEMY_KINDS: EnemyKind[] = ['bat', 'wisp', 'fairy', 'tome', 'blade', 'gear', 'angel', 'moth', 'chime'];
@@ -91,6 +101,7 @@ export async function loadWitchTextures(
 
   return {
     playerFrames,
+    playerAnchorY: PLAYER_ANCHOR_Y[characterId],
     playerBullet,
     accent: CHARACTERS[characterId].color,
     bullets: Object.fromEntries(BULLET_KINDS.map((k) => [k, tex(`bullet-${k}`)])) as Record<BulletKind, Texture>,
