@@ -153,6 +153,7 @@ export type WitchEvent =
   | { kind: 'gameover' }
   | { kind: 'cleared' }
   | { kind: 'telegraph'; x1: number; y1: number; x2: number; y2: number; durMs: number }
+  | { kind: 'chainArc'; x1: number; y1: number; x2: number; y2: number }  // Volt 連鎖跳轉電弧（render 畫線）
   | { kind: 'eliteKill'; x: number; y: number }
   | { kind: 'badEnd' }
   | { kind: 'drop'; drop: 'power' | 'bomb' };

@@ -1,10 +1,18 @@
-import { Container, Sprite, Graphics } from 'pixi.js';
+import { Container, Sprite, Graphics, Texture } from 'pixi.js';
 import type { WitchState } from '../engine/types';
 import { GRAZE_R, PLAYER_HIT_R } from '../engine/constants';
 import type { WitchTextures } from './assets';
 
+const PLAYER_RENDER_SCALE = 1.35; // 自機放大，提升小尺寸下的辨識度
+const IDLE_FRAME_MS = 140;        // idle 影格輪播 ≈ 7fps
+
 export class EntityView {
   private player: Sprite;
+  private playerFrames: Texture[];
+  private frameIdx = 0;
+  private frameTimerMs = 0;
+  private idleMs = 0;              // 視覺呼吸/光暈脈動累計
+  private glow: Graphics;          // 腳下流派色光暈
   private hitDot: Graphics;        // 低速模式顯示判定點
   private boss: Sprite | null = null;
   private enemySprites = new Map<number, Sprite>();
@@ -12,8 +20,13 @@ export class EntityView {
   private dropSprites: Sprite[] = [];
 
   constructor(private layer: Container, private fx: Container, private tex: WitchTextures) {
-    this.player = new Sprite(tex.player);
+    this.playerFrames = tex.playerFrames.length > 0 ? tex.playerFrames : [Texture.EMPTY];
+    this.glow = new Graphics().ellipse(0, 0, 15, 6).fill(tex.accent);
+    this.glow.alpha = 0.2;
+    layer.addChild(this.glow);     // 光暈在自機之下
+    this.player = new Sprite(this.playerFrames[0]);
     this.player.anchor.set(0.5);
+    this.player.scale.set(PLAYER_RENDER_SCALE);
     layer.addChild(this.player);
     this.hitDot = new Graphics()
       .circle(0, 0, GRAZE_R).stroke({ width: 1, color: 0xff5a4d, alpha: 0.35 })
@@ -22,10 +35,25 @@ export class EntityView {
     layer.addChild(this.hitDot);
   }
 
-  render(s: WitchState, _dtMs: number): void {
-    // 自機（無敵中閃爍）
-    this.player.x = s.player.x; this.player.y = s.player.y;
+  render(s: WitchState, dtMs: number): void {
+    this.idleMs += dtMs;
+    // idle 影格輪播（多影格才動）
+    if (this.playerFrames.length > 1) {
+      this.frameTimerMs += dtMs;
+      if (this.frameTimerMs >= IDLE_FRAME_MS) {
+        this.frameTimerMs -= IDLE_FRAME_MS;
+        this.frameIdx = (this.frameIdx + 1) % this.playerFrames.length;
+        this.player.texture = this.playerFrames[this.frameIdx];
+      }
+    }
+    // 自機（呼吸浮動 + 無敵中閃爍）
+    const bob = Math.sin(this.idleMs / 360) * 1.5;
+    this.player.x = s.player.x; this.player.y = s.player.y + bob;
     this.player.alpha = s.player.invulnMs > 0 ? (Math.floor(s.player.invulnMs / 100) % 2 ? 0.3 : 0.9) : 1;
+    // 腳下流派色光暈（脈動；無敵時壓暗）
+    this.glow.visible = s.player.alive;
+    this.glow.x = s.player.x; this.glow.y = s.player.y + 9;
+    this.glow.alpha = s.player.invulnMs > 0 ? 0.1 : 0.16 + 0.1 * (0.5 + 0.5 * Math.sin(this.idleMs / 240));
     this.hitDot.visible = s.player.focus;
     this.hitDot.x = s.player.x; this.hitDot.y = s.player.y;
 

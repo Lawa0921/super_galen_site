@@ -18,6 +18,25 @@ interface TelegraphLine { g: Graphics; ttlMs: number; durMs: number; }
 
 export interface WitchHandle { game: WitchGame; destroy(): void; }
 
+/** Volt 連鎖電弧：兩點間畫一道鋸齒閃電（外暈 + 亮核）。 */
+function makeBolt(x1: number, y1: number, x2: number, y2: number, color: number): Graphics {
+  const segs = 6;
+  const px = -(y2 - y1), py = x2 - x1;            // 垂直方向（抖動用）
+  const plen = Math.hypot(px, py) || 1;
+  const pts: Array<[number, number]> = [[x1, y1]];
+  for (let i = 1; i < segs; i++) {
+    const t = i / segs;
+    const jitter = (Math.random() - 0.5) * 12;
+    pts.push([x1 + (x2 - x1) * t + (px / plen) * jitter, y1 + (y2 - y1) * t + (py / plen) * jitter]);
+  }
+  pts.push([x2, y2]);
+  const g = new Graphics();
+  const trace = (): void => { g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); };
+  trace(); g.stroke({ width: 5, color, alpha: 0.25 });          // 外暈
+  trace(); g.stroke({ width: 1.5, color: 0xffffff, alpha: 0.95 }); // 亮核
+  return g;
+}
+
 export async function startWitchrun(
   canvas: HTMLCanvasElement,
   opts: { character?: CharacterId } = {},
@@ -184,6 +203,10 @@ export async function startWitchrun(
           .stroke({ width: 3, color: 0xfff0c0 });
         stage.fxLayer.addChild(g);
         telegraphLines.push({ g, ttlMs: ev.durMs, durMs: ev.durMs });
+      } else if (ev.kind === 'chainArc') {
+        const g = makeBolt(ev.x1, ev.y1, ev.x2, ev.y2, tex.accent);
+        stage.fxLayer.addChild(g);
+        telegraphLines.push({ g, ttlMs: 150, durMs: 150 }); // 短暫閃電，沿用漸隱機制
       } else if (ev.kind === 'draftOpen') showDraft(ev.choices);
       else if (ev.kind === 'gameover') {
         if (overHeading) overHeading.textContent = badEndFlag ? 'THE BELL TOLLS TWELVE' : 'GAME OVER';

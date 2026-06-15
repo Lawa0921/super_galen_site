@@ -265,8 +265,8 @@ export class WitchGame {
     const SPD = PLAYER_BULLET_SPEED;
 
     switch (this.charDef.shotType) {
-      case 'pierce': {                            // Gale：速射穿風
-        this.player.fireCdMs = baseInterval * 0.6;
+      case 'pierce': {                            // Gale：機關槍（最快 50ms）
+        this.player.fireCdMs = baseInterval * 0.5;
         const pierce = Math.max(1, this.mod.pierce ? 1 : 0);
         for (let i = 0; i < power; i++) {
           const off = (i - (power - 1) / 2) * 8;
@@ -274,8 +274,8 @@ export class WitchGame {
         }
         break;
       }
-      case 'fan': {                               // Frost：寬幅冰扇
-        this.player.fireCdMs = baseInterval * 1.4;
+      case 'fan': {                               // Frost：霰彈（最慢 190ms、寬幅冰扇）
+        this.player.fireCdMs = baseInterval * 1.9;
         const count = power + 2;
         for (let i = 0; i < count; i++) {
           const a = (i - (count - 1) / 2) * (12 * Math.PI / 180);
@@ -283,8 +283,8 @@ export class WitchGame {
         }
         break;
       }
-      case 'chain': {                             // Volt：連鎖雷
-        this.player.fireCdMs = baseInterval;
+      case 'chain': {                             // Volt：連鎖電（中速 110ms，明顯 ≠ Mira）
+        this.player.fireCdMs = baseInterval * 1.1;
         const n = Math.max(1, power);
         for (let i = 0; i < n; i++) {
           const off = (i - (n - 1) / 2) * 12;
@@ -416,6 +416,8 @@ export class WitchGame {
     if (b.chainLeft <= 0) return;
     const t = chainTarget(this.enemies, hit.x, hit.y, hit.id, CHAIN_RADIUS);
     if (!t) return;
+    // 連鎖跳轉的可見電弧：render 層收到後在兩敵間畫一道短暫閃電
+    this.events.push({ kind: 'chainArc', x1: hit.x, y1: hit.y, x2: t.x, y2: t.y });
     const dx = t.x - hit.x;
     const dy = t.y - hit.y;
     const d = Math.hypot(dx, dy) || 1;

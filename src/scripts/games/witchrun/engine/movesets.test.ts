@@ -111,3 +111,42 @@ describe('爆彈型', () => {
     expect(frost).toBeLessThan(mira);
   });
 });
+
+describe('連射節奏（4 原型分化）', () => {
+  // 開局 fireCdMs 初值 0：首個 step 中 tickPlayer 先遞減(0→0)，autoFire 立即開火並把 fireCdMs 設為該角間隔。
+  function firstInterval(character: 'mira' | 'gale' | 'frost' | 'volt'): number {
+    const g = new WitchGame({ seed: 1, character });
+    g.step(1);
+    return g.getState().player.fireCdMs;
+  }
+
+  it('間隔明顯拉開：Gale<Mira<Volt<Frost', () => {
+    const gale = firstInterval('gale');
+    const mira = firstInterval('mira');
+    const volt = firstInterval('volt');
+    const frost = firstInterval('frost');
+    expect(gale).toBe(50);          // 機關槍：最快
+    expect(mira).toBe(100);         // 穩定流：基準
+    expect(volt).toBeCloseTo(110);  // 連鎖電：中速（明顯 ≠ Mira；×1.1 浮點）
+    expect(frost).toBeCloseTo(190); // 霰彈：最慢（×1.9 浮點）
+    expect(gale).toBeLessThan(mira);
+    expect(mira).toBeLessThan(volt);
+    expect(volt).toBeLessThan(frost);
+  });
+});
+
+describe('Volt 連鎖電弧事件', () => {
+  it('連鎖跳轉時發出 chainArc 事件（弧線從命中敵連到跳轉目標）', () => {
+    const g = new WitchGame({ seed: 1, character: 'volt' });
+    g.drainEvents(); // 清掉開局事件
+    g.debugSpawnElite('bat', 240, 510); // 敵 A：自機彈正上方（必中）
+    g.debugSpawnElite('bat', 290, 510); // 敵 B：A 的連鎖半徑(170)內、偏右不被直射
+    for (let t = 0; t < 160; t += 16) g.step(16); // 推進到自機彈擊中 A（720px/s，36px≈50ms）
+    const arcs = g.drainEvents().filter((e) => e.kind === 'chainArc') as Array<
+      { kind: 'chainArc'; x1: number; y1: number; x2: number; y2: number }
+    >;
+    expect(arcs.length).toBeGreaterThan(0);
+    expect(Math.abs(arcs[0].x1 - 240)).toBeLessThan(25); // 起點≈A
+    expect(Math.abs(arcs[0].x2 - 290)).toBeLessThan(25); // 終點≈B
+  });
+});
