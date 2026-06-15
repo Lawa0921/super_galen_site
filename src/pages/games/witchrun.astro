@@ -34,27 +34,41 @@ const lang: Language = defaultLang;
       </div>
     </div>
 
-    <!-- 選角畫面（電影聚光輪播） -->
+    <!-- 選角畫面（電影檔案式） -->
     <div class="witch-select" id="witch-select" hidden>
       <div class="select-bg" aria-hidden="true"></div>
       <div class="select-aura" aria-hidden="true"></div>
       <button class="witch-home select-back" id="select-back" type="button">← BACK</button>
-      <h2 class="select-heading">CHOOSE YOUR WITCH</h2>
+      <h2 class="select-heading">CHOOSE YOUR WITCH<small>詛咒鐘塔 · 選擇你的魔女</small></h2>
+
       <div class="select-stage">
-        <button class="select-arrow" id="select-prev" type="button" aria-label="上一位">◄</button>
-        <div class="select-portrait-wrap">
-          <img class="select-portrait" id="select-portrait" alt="" decoding="async" />
+        <div class="select-frame-row">
+          <button class="select-arrow" id="select-prev" type="button" aria-label="上一位">◄</button>
+          <div class="select-frame">
+            <span class="select-corner tl" aria-hidden="true"></span>
+            <span class="select-corner tr" aria-hidden="true"></span>
+            <span class="select-corner bl" aria-hidden="true"></span>
+            <span class="select-corner br" aria-hidden="true"></span>
+            <img class="select-portrait" id="select-portrait" alt="" decoding="async" />
+            <span class="select-vig" aria-hidden="true"></span>
+            <span class="select-cap" id="select-cap"></span>
+          </div>
+          <button class="select-arrow" id="select-next" type="button" aria-label="下一位">►</button>
         </div>
-        <button class="select-arrow" id="select-next" type="button" aria-label="下一位">►</button>
+        <div class="select-dossier">
+          <p class="select-name" id="select-name">MIRA</p>
+          <span class="select-school" id="select-school">爆炎 · INFERNO</span>
+          <p class="select-blurb" id="select-blurb"></p>
+          <div class="select-divider" aria-hidden="true"></div>
+          <div class="select-stats" id="select-stats"></div>
+          <div class="select-moves" id="select-moves"></div>
+        </div>
       </div>
-      <div class="select-info">
-        <p class="select-name" id="select-name">MIRA</p>
-        <p class="select-school" id="select-school">爆炎 · INFERNO</p>
-        <p class="select-blurb" id="select-blurb"></p>
-        <div class="select-stats" id="select-stats"></div>
+
+      <div class="select-bottom">
+        <div class="select-roster" id="select-roster"></div>
+        <button class="witch-start" id="select-confirm" type="button">START ▶</button>
       </div>
-      <div class="select-dots" id="select-dots" aria-hidden="true"></div>
-      <button class="witch-start" id="select-confirm" type="button">START</button>
     </div>
 
     <!-- 遺物三選一 -->
@@ -242,91 +256,124 @@ const lang: Language = defaultLang;
   .witch-select {
     --aura: #ff5a4d;
     position: absolute; inset: 0; z-index: 12;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
-    padding: 20px; text-align: center; overflow: hidden;
-    background: #0a0716;
+    display: flex; flex-direction: column;
+    padding: clamp(14px, 2.4vh, 22px) clamp(20px, 4vw, 48px) clamp(14px, 2.4vh, 20px);
+    overflow: hidden; background: #05030f;
     animation: witch-select-in 0.35s ease;
   }
   .witch-select[hidden] { display: none; }
   @keyframes witch-select-in { from { opacity: 0; } to { opacity: 1; } }
 
-  /* 背景：所選角色立繪的模糊暗化版（切換時整體氛圍隨角色變色） */
+  /* 全幅背景：所選角色立繪模糊壓暗 + 流派色染（隨角色變色） */
   .select-bg {
     position: absolute; inset: 0; z-index: 0; pointer-events: none;
-    background: var(--bg, none) center 22% / cover no-repeat;
-    filter: blur(16px) brightness(0.45) saturate(1.1);
-    transform: scale(1.15);
-    opacity: 0.7;
+    background: var(--bg, none) center / cover no-repeat;
+    filter: blur(28px) brightness(0.3) saturate(1.2);
+    transform: scale(1.12);
   }
-  /* 流派色光暈（隨選中角色換色） */
   .select-aura {
     position: absolute; inset: 0; z-index: 1; pointer-events: none;
-    background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--aura) 32%, transparent), transparent 62%);
+    background:
+      radial-gradient(120% 90% at 28% 55%, transparent 28%, #05030f 100%),
+      linear-gradient(120deg, color-mix(in srgb, var(--aura) 24%, transparent), transparent 58%);
     transition: background 0.3s ease;
     animation: select-aura-pulse 4s ease-in-out infinite alternate;
   }
-  @keyframes select-aura-pulse { from { opacity: 0.7; } to { opacity: 1; } }
+  @keyframes select-aura-pulse { from { opacity: 0.82; } to { opacity: 1; } }
 
-  .select-back { position: absolute; top: 16px; left: 18px; z-index: 3; background: none; border: none; font-family: inherit; cursor: pointer; }
+  .select-back { position: absolute; top: 16px; left: 18px; z-index: 4; background: none; border: none; font-family: inherit; cursor: pointer; color: #b9add8; letter-spacing: 2px; }
   .select-heading {
-    position: relative; z-index: 2; margin: 0; font-size: clamp(13px, 3.4vw, 20px); letter-spacing: 4px;
-    color: #eafdff; text-shadow: 0 0 12px var(--aura);
+    position: relative; z-index: 2; margin: 0; text-align: center; height: clamp(40px, 7vh, 56px);
+    font-size: clamp(14px, 2.6vw, 18px); letter-spacing: 8px; color: #fff; text-shadow: 0 0 18px var(--aura);
   }
+  .select-heading small { display: block; font-size: 8px; letter-spacing: 5px; color: var(--aura); margin-top: 7px; opacity: 0.85; }
 
+  /* 主舞台：框裱藝術卡 + 檔案面板 */
   .select-stage {
-    position: relative; z-index: 2;
-    display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+    position: relative; z-index: 2; flex: 1; min-height: 0;
+    display: flex; align-items: center; justify-content: center; gap: clamp(16px, 3vw, 44px);
+    padding: 6px 0;
   }
+  .select-frame-row { display: flex; align-items: center; gap: clamp(8px, 1.5vw, 16px); height: min(100%, 60vh); }
   .select-arrow {
-    flex: none; width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
-    font-family: inherit; font-size: 16px; color: #fff;
-    background: color-mix(in srgb, var(--aura) 22%, rgba(10, 7, 22, 0.6));
+    flex: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+    font-family: inherit; font-size: 15px; color: #fff;
+    background: color-mix(in srgb, var(--aura) 22%, rgba(8, 5, 18, 0.7));
     border: 2px solid color-mix(in srgb, var(--aura) 70%, transparent);
     transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
   .select-arrow:hover { transform: scale(1.08); box-shadow: 0 0 16px var(--aura); }
-  .select-portrait-wrap {
-    width: min(56vw, 232px); aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden;
-    border: 2px solid color-mix(in srgb, var(--aura) 80%, transparent);
-    box-shadow: 0 0 28px color-mix(in srgb, var(--aura) 55%, transparent), 0 0 6px rgba(0, 0, 0, 0.5) inset;
+
+  .select-frame {
+    position: relative; height: 100%; aspect-ratio: 3 / 4; flex: none; border-radius: 4px; overflow: hidden;
+    border: 2px solid color-mix(in srgb, var(--aura) 55%, #2a2340);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 40px color-mix(in srgb, var(--aura) 45%, transparent), 0 18px 46px rgba(0, 0, 0, 0.6);
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
   }
-  .select-portrait { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: pixelated; animation: select-portrait-in 0.3s ease; }
+  .select-portrait { width: 100%; height: 100%; object-fit: cover; display: block; animation: select-portrait-in 0.3s ease; }
   @keyframes select-portrait-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
-
-  /* 資訊面板：深色襯底，確保名稱/流派/數值在花背景上清楚可讀 */
-  .select-info {
-    position: relative; z-index: 2;
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    width: min(90%, 340px); padding: 14px 20px 16px;
-    background: rgba(8, 6, 18, 0.78);
-    border: 1px solid color-mix(in srgb, var(--aura) 55%, transparent);
-    border-radius: 12px;
-    box-shadow: 0 0 22px color-mix(in srgb, var(--aura) 28%, transparent), 0 4px 16px rgba(0, 0, 0, 0.45);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  .select-vig { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.7); }
+  .select-cap {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 0 11px; text-align: center;
+    font-size: clamp(14px, 2vw, 20px); letter-spacing: 5px; color: #fff; text-shadow: 0 0 14px var(--aura);
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), transparent);
   }
-  .select-name { margin: 0; font-size: clamp(20px, 5vw, 30px); letter-spacing: 4px; color: var(--aura); text-shadow: 0 0 14px color-mix(in srgb, var(--aura) 70%, transparent); }
-  .select-school { margin: 0; font-size: 10px; letter-spacing: 3px; color: #d6cdf0; }
-  .select-blurb { margin: 2px 0 0; font-size: 9px; line-height: 1.7; color: #b6a9d4; }
+  .select-corner { position: absolute; width: 15px; height: 15px; border: 2px solid var(--aura); z-index: 2; }
+  .select-corner.tl { top: 6px; left: 6px; border-right: 0; border-bottom: 0; }
+  .select-corner.tr { top: 6px; right: 6px; border-left: 0; border-bottom: 0; }
+  .select-corner.bl { bottom: 6px; left: 6px; border-right: 0; border-top: 0; }
+  .select-corner.br { bottom: 6px; right: 6px; border-left: 0; border-top: 0; }
 
-  /* 數值條／指示點為執行期 innerHTML 注入，須用 :global 才會套用（Astro scoped 樣式不及於動態節點） */
-  .select-stats { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; }
-  .select-stats :global(.stat-row) { display: flex; align-items: center; gap: 10px; font-size: 9px; letter-spacing: 1px; color: #d6cdf0; }
-  .select-stats :global(.stat-label) { width: 40px; text-align: right; }
-  .select-stats :global(.stat-pips) { display: flex; gap: 4px; }
-  .select-stats :global(.stat-pip) { width: 16px; height: 9px; border-radius: 2px; background: rgba(214, 205, 240, 0.22); border: 1px solid rgba(214, 205, 240, 0.35); }
+  /* 檔案面板 */
+  .select-dossier { flex: none; width: min(42vw, 400px); text-align: left; }
+  .select-name { margin: 0; font-size: clamp(26px, 4vw, 42px); letter-spacing: 5px; color: var(--aura); text-shadow: 0 0 20px color-mix(in srgb, var(--aura) 70%, transparent); }
+  .select-school { display: inline-block; margin-top: 12px; font-size: 9px; letter-spacing: 3px; color: #0b0716; background: var(--aura); padding: 6px 12px; border-radius: 3px; }
+  .select-blurb { margin: 14px 0 0; font-size: 9px; line-height: 2; color: #c9bee6; }
+  .select-divider { height: 1px; margin: 16px 0; background: linear-gradient(90deg, color-mix(in srgb, var(--aura) 60%, transparent), transparent); }
+
+  /* 數值條／招式卡／roster 為執行期 innerHTML 注入，須用 :global */
+  .select-stats { display: flex; flex-direction: column; gap: 9px; }
+  .select-stats :global(.stat-row) { display: flex; align-items: center; gap: 12px; font-size: 9px; letter-spacing: 1px; color: #9f95c0; }
+  .select-stats :global(.stat-label) { width: 46px; text-align: right; }
+  .select-stats :global(.stat-pips) { display: flex; gap: 5px; }
+  .select-stats :global(.stat-pip) { width: 20px; height: 10px; border-radius: 2px; background: rgba(214, 205, 240, 0.16); border: 1px solid rgba(214, 205, 240, 0.3); }
   .select-stats :global(.stat-pip.on) { background: var(--aura); border-color: var(--aura); box-shadow: 0 0 8px color-mix(in srgb, var(--aura) 80%, transparent); }
 
-  .select-dots { position: relative; z-index: 2; display: flex; gap: 8px; min-height: 8px; }
-  .select-dots :global(.dot) { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.25); cursor: pointer; }
-  .select-dots :global(.dot.on) { background: var(--aura); box-shadow: 0 0 8px var(--aura); }
+  .select-moves { display: flex; gap: 12px; margin-top: 16px; }
+  .select-moves :global(.move) { flex: 1; background: rgba(0, 0, 0, 0.32); border: 1px solid color-mix(in srgb, var(--aura) 30%, #2a2340); border-radius: 4px; padding: 11px 12px; }
+  .select-moves :global(.move-k) { display: block; font-size: 7px; letter-spacing: 2px; color: #8f84b3; }
+  .select-moves :global(.move-v) { display: block; font-size: 11px; color: #fff; margin-top: 7px; }
+  .select-moves :global(.move-d) { display: block; font-size: 7px; line-height: 1.7; color: #b6a9d4; margin-top: 6px; }
 
-  #select-confirm { position: relative; z-index: 2; background: var(--aura); box-shadow: 0 0 18px color-mix(in srgb, var(--aura) 60%, transparent); }
+  /* 底列：roster 縮圖 + START */
+  .select-bottom { position: relative; z-index: 2; display: flex; align-items: center; gap: 18px; height: clamp(72px, 12vh, 96px); }
+  .select-roster { display: flex; gap: 12px; flex: 1; }
+  .select-roster :global(.slot) { width: clamp(52px, 8vw, 64px); height: clamp(52px, 8vw, 64px); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; padding: 0; border: 2px solid rgba(255, 255, 255, 0.12); filter: grayscale(0.55) brightness(0.65); transition: 0.18s ease; }
+  .select-roster :global(.slot img) { width: 100%; height: 135%; object-fit: cover; object-position: 50% 10%; display: block; }
+  .select-roster :global(.slot .slot-tag) { position: absolute; left: 0; right: 0; bottom: 0; font-size: 6px; letter-spacing: 1px; text-align: center; padding: 3px 0; background: rgba(0, 0, 0, 0.62); color: #cfc6e6; }
+  .select-roster :global(.slot.on) { border-color: var(--aura); filter: none; box-shadow: 0 0 16px color-mix(in srgb, var(--aura) 70%, transparent); transform: translateY(-4px); }
 
-  @media (max-height: 720px) {
-    .witch-select { gap: 10px; }
+  #select-confirm { position: relative; z-index: 2; flex: none; background: var(--aura); color: #0b0716; box-shadow: 0 0 22px color-mix(in srgb, var(--aura) 60%, transparent); }
+
+  /* 手機：垂直堆疊 */
+  @media (max-width: 720px) {
+    .select-heading { font-size: 11px; letter-spacing: 2px; height: auto; }
+    .select-heading small { font-size: 7px; letter-spacing: 2px; margin-top: 5px; }
+    .select-back { top: 13px; font-size: 10px; }
+    .select-stage { flex-direction: column; gap: 12px; justify-content: flex-start; overflow-y: auto; }
+    .select-frame-row { height: auto; }
+    .select-frame { height: auto; width: min(56vw, 220px); }
+    .select-dossier { width: min(92vw, 420px); text-align: center; }
+    .select-school { margin-top: 10px; }
+    .select-stats :global(.stat-row) { justify-content: center; }
+    .select-divider { margin: 12px auto; width: 70%; }
+    .select-bottom { flex-direction: column; height: auto; gap: 12px; }
+    .select-roster { justify-content: center; flex-wrap: wrap; flex: none; }
+    #select-confirm { width: 100%; max-width: 420px; }
+  }
+  @media (max-height: 640px) and (min-width: 721px) {
     .select-blurb { display: none; }
-    .select-portrait-wrap { width: min(42vw, 170px); }
+    .select-frame-row { height: min(100%, 52vh); }
   }
   @media (prefers-reduced-motion: reduce) {
     .witch-select, .select-portrait { animation: none; }
@@ -348,7 +395,9 @@ const lang: Language = defaultLang;
   const schoolEl = byId('select-school');
   const blurbEl = byId('select-blurb');
   const statsEl = byId('select-stats');
-  const dotsEl = byId('select-dots');
+  const capEl = byId('select-cap');
+  const movesEl = byId('select-moves');
+  const rosterEl = byId('select-roster');
 
   const ORDER: CharacterId[] = ['mira', 'gale', 'frost', 'volt'];
   const STORE_KEY = 'witchrun-character';
@@ -365,6 +414,14 @@ const lang: Language = defaultLang;
     return `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-pips">${cells}</span></div>`;
   }
   const spdPips = (m: number): number => (m >= 1.15 ? 4 : m <= 0.9 ? 2 : 3);
+
+  const SHOT_LABEL: Record<string, string> = { balanced: '穩定流', pierce: '機關槍', fan: '寬幅冰扇', chain: '連鎖電' };
+  const SHOT_DESC: Record<string, string> = { balanced: '平行均衡彈道', pierce: '高速細針穿透', fan: '寬幅冰扇覆蓋', chain: '命中跳轉電弧' };
+  const BOMB_LABEL: Record<string, string> = { inferno: '爆炎 INFERNO', gust: '陣風 GUST', freeze: '冰封 FREEZE', storm: '雷暴 STORM' };
+  const BOMB_DESC: Record<string, string> = { inferno: '全屏爆炎 + 留火場', gust: '清彈 + 無敵衝刺', freeze: '凍結全場敵與彈', storm: '全場 2× 雷擊' };
+  function moveCard(k: string, v: string, d: string): string {
+    return `<div class="move"><span class="move-k">${k}</span><span class="move-v">${v}</span><span class="move-d">${d}</span></div>`;
+  }
 
   function renderSelect(): void {
     const id = ORDER[idx];
@@ -387,8 +444,17 @@ const lang: Language = defaultLang;
         pips('LIFE', Math.min(5, c.startLives)) +
         pips('PWR', c.startPower >= 2 ? 4 : 2);
     }
-    if (dotsEl) {
-      dotsEl.innerHTML = ORDER.map((_, i) => `<span class="dot${i === idx ? ' on' : ''}" data-i="${i}"></span>`).join('');
+    if (capEl) capEl.textContent = c.name;
+    if (movesEl) {
+      movesEl.innerHTML =
+        moveCard('主射 SHOT', SHOT_LABEL[c.shotType], SHOT_DESC[c.shotType]) +
+        moveCard('爆彈 BOMB', BOMB_LABEL[c.bombType], BOMB_DESC[c.bombType]);
+    }
+    if (rosterEl) {
+      rosterEl.innerHTML = ORDER.map((rid, i) => {
+        const rc = CHARACTERS[rid];
+        return `<button type="button" class="slot${i === idx ? ' on' : ''}" data-i="${i}" aria-label="${rc.name}"><img src="/assets/games/witchrun/portrait-${rid}.webp" alt="" /><span class="slot-tag">${rc.name}</span></button>`;
+      }).join('');
     }
   }
 
@@ -430,8 +496,9 @@ const lang: Language = defaultLang;
   byId('select-next')?.addEventListener('click', () => cycle(1));
   byId('select-confirm')?.addEventListener('click', () => void begin(ORDER[idx]));
   byId('select-back')?.addEventListener('click', hideSelect);
-  dotsEl?.addEventListener('click', (e) => {
-    const i = (e.target as HTMLElement)?.dataset?.i;
+  rosterEl?.addEventListener('click', (e) => {
+    const slot = (e.target as HTMLElement)?.closest<HTMLElement>('[data-i]');
+    const i = slot?.dataset?.i;
     if (i != null) { idx = Number(i); renderSelect(); }
   });
 
