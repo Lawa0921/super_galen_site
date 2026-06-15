@@ -20,6 +20,9 @@ const ENEMY_TANK_URL     = '/assets/games/bomber/enemy-tank.png';
 const TILES_FORGE_URL    = '/assets/games/bomber/tiles-forge.png';
 const TILES_FROST_URL    = '/assets/games/bomber/tiles-frost.png';
 const TILES_VOID_URL     = '/assets/games/bomber/tiles-void.png';
+const TILES_FEN_URL      = '/assets/games/bomber/tiles-fen.png';
+const TILES_VAULT_URL    = '/assets/games/bomber/tiles-vault.png';
+const TILES_GARDEN_URL   = '/assets/games/bomber/tiles-garden.png';
 const DECOR_URL          = '/assets/games/bomber/decor.png';
 const ENEMY_SAPPER_URL   = '/assets/games/bomber/enemy-sapper.png';
 const ENEMY_SPLITTER_URL = '/assets/games/bomber/enemy-splitter.png';
@@ -98,7 +101,8 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
          enemyWanderTex, enemyChaserTex, enemyGhostTex, enemyDasherTex,
          tilesCatTex, tilesForgeTex, enemyMimicTex, enemyTankTex,
          tilesFrostTex, tilesVoidTex, decorTex, enemySapperTex, enemySplitterTex,
-         enemyMiniTex, e4ChaserTex, e4DasherTex, e4SapperTex, e4TankTex] = await Promise.all([
+         enemyMiniTex, e4ChaserTex, e4DasherTex, e4SapperTex, e4TankTex,
+         tilesFenTex, tilesVaultTex, tilesGardenTex] = await Promise.all([
     Assets.load(SHEET_URL)    as Promise<Texture>,
     Assets.load(WALK_LENA_URL) as Promise<Texture>,
     Assets.load(WALK_MIRA_URL) as Promise<Texture>,
@@ -131,6 +135,9 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
     Assets.load(ENEMY4_DASHER_URL) as Promise<Texture>,
     Assets.load(ENEMY4_SAPPER_URL) as Promise<Texture>,
     Assets.load(ENEMY4_TANK_URL)   as Promise<Texture>,
+    Assets.load(TILES_FEN_URL)     as Promise<Texture>,
+    Assets.load(TILES_VAULT_URL)   as Promise<Texture>,
+    Assets.load(TILES_GARDEN_URL)  as Promise<Texture>,
   ]);
 
   sheet.source.scaleMode       = 'nearest';
@@ -165,6 +172,9 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   e4DasherTex.source.scaleMode   = 'nearest';
   e4SapperTex.source.scaleMode   = 'nearest';
   e4TankTex.source.scaleMode     = 'nearest';
+  tilesFenTex.source.scaleMode    = 'nearest';
+  tilesVaultTex.source.scaleMode  = 'nearest';
+  tilesGardenTex.source.scaleMode = 'nearest';
 
   // 方向性爆炸件：192×448（7 列件型 × 3 欄漸弱階段）
   const pieceRow = (row: number): Texture[] => [0, 1, 2].map((i) => frameAt(blastSetTex.source, i, row));
@@ -195,7 +205,8 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
   // 地面裝飾：640×64 條切 10 幀
   const decorFrames = Array.from({ length: 10 }, (_, i) => frameAt(decorTex.source, i, 0));
 
-  // 生態區磚塊組：0=石牢（主 sheet）、1=墓窖、2=鍛造廠（各 192×64 條：floor|wall|crate）
+  // 磚塊組（各 192×64 條：floor|wall|crate）：0=石牢(主 sheet)、1=墓窖、2=鍛造廠、
+  // 3=冰窖、4=虛空、5=毒霧沼澤、6=黃金寶庫、7=月光庭園（versus arena 5-7 專屬）
   const tileSetOf = (t: Texture) => ({
     floor: frameAt(t.source, 0, 0),
     wall:  frameAt(t.source, 1, 0),
@@ -250,6 +261,9 @@ export async function loadBomberTextures(): Promise<BomberTextures> {
       tileSetOf(tilesForgeTex),
       tileSetOf(tilesFrostTex),
       tileSetOf(tilesVoidTex),
+      tileSetOf(tilesFenTex),     // 5=毒霧沼澤
+      tileSetOf(tilesVaultTex),   // 6=黃金寶庫
+      tileSetOf(tilesGardenTex),  // 7=月光庭園
     ],
   };
 }
