@@ -54,11 +54,19 @@ export interface BomberSettleResult {
  *    updateRatings 以符合 Task 規格「2 人場走 updateRatings」。）
  * - XP 由 progression.ts xpForMatch/levelForXp 累加回推等級。
  * ratings 為各玩家當前基底（後端讀取，client 傳入一律不可信，故此處只吃後端讀到的值）。
+ *
+ * placements：伺服器重模擬 replay 得到的「真名次」map（id→placement，1=冠軍；可含同名次，
+ *   如同幀雙殺 {a:1,b:2,c:2}）。計分一律用真名次，而非 standings 陣列索引——後者會把同名次者
+ *   依 playerIds/錢包序硬拆成相鄰名次，使本應平手的兩人得到不同 Elo（±8–11）/XP（5–10），
+ *   純由位址順序決定，不公平。placements 為伺服器自算（非 client 傳入），故可信。
+ *   ※ standings[0] 仍為唯一冠軍（winnerId 非 null → placement 1 唯一）；2 人非平局場真名次
+ *     必為 [1,2]，故 2 人 updateRatings('a') 路徑不受影響。
  */
 async function applyBomberResult(
   store: RankStore,
   standings: string[],
   ratings: Record<string, number>,
+  placements: Record<string, number>,
   draw = false,
 ): Promise<BomberSettleResult[]> {
   const players = standings.length;
@@ -84,29 +92,34 @@ async function applyBomberResult(
     return out;
   }
 
-  // 1) 算新 ELO（before 用 ratings；2 人顯式 updateRatings，其餘 N-way）
+  // 真名次取用（伺服器重模擬結果；非平局場 standings[0] 必為唯一 placement 1）。
+  // 防禦：若某 id 缺真名次（理論上不會，因 placements 由同一份 replay 算出），退回陣列索引。
+  const realPlacement = (id: string, i: number): number => placements[id] ?? i + 1;
+
+  // 1) 算新 ELO（before 用 ratings；2 人顯式 updateRatings，其餘 N-way 用真名次給同名次者並列）
   let newRatings: Record<string, number>;
   if (players === 2) {
-    const [a, b] = standings; // index0 = 冠軍 = 勝方
+    const [a, b] = standings; // index0 = 冠軍 = 勝方（非平局場真名次必為 [1,2]）
     const ra = Number(ratings[a] ?? DEFAULT_RATING);
     const rb = Number(ratings[b] ?? DEFAULT_RATING);
     const upd = updateRatings(ra, rb, 'a'); // a = 冠軍 = winner
     newRatings = { [a]: upd.a, [b]: upd.b };
   } else {
+    // 真名次餵入 → placementScore 對同名次回 0.5 → 同名次玩家獲對稱 Elo。
     const ratingInput = standings.map((id, i) => ({
       id,
       rating: Number(ratings[id] ?? DEFAULT_RATING),
-      placement: i + 1,
+      placement: realPlacement(id, i),
     }));
     newRatings = updateRatingsNWay(ratingInput);
   }
 
-  // 2) 逐位玩家更新紀錄並記錄 before/after 供回應
+  // 2) 逐位玩家更新紀錄並記錄 before/after 供回應（一律以真名次計 XP / 勝負 / top3）
   const out: BomberSettleResult[] = [];
   for (let i = 0; i < standings.length; i++) {
     const id = standings[i];
-    const placement = i + 1;
-    const isWinner = placement === 1;
+    const placement = realPlacement(id, i);
+    const isWinner = placement === 1; // 唯一冠軍（winnerId 非 null → placement 1 唯一）
     const rec = (await store.getPlayer(id)) ?? fresh();
     const ratingBefore = rec.rating;
     const xpGained = xpForMatch(players, placement, isWinner);
@@ -238,10 +251,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     ratings[id] = rec?.rating ?? DEFAULT_RATING;
   }
 
-  // 平局判定：server 重模擬 replay（verify 已過 → 與宣稱名次一致），winnerId=null 即平局。
-  // 一律以 server 自算結果為準，不信任任何 client 傳入的勝者/平局旗標。
-  const draw = simulateVersusReplay(replay).winnerId === null;
+  // server 重模擬 replay（verify 已過 → 與宣稱名次/盤面一致），取真名次與勝者。
+  // 一律以 server 自算結果為準，不信任任何 client 傳入的勝者/平局旗標/名次。
+  const sim = simulateVersusReplay(replay);
+  const draw = sim.winnerId === null;
+  // 真名次 map：lowercase key 以對齊 consensus（結算與儲存皆用 lowerStandings）。
+  // sim.placements 以 replay.playerIds（原始大小寫地址）為 key → 此處統一小寫。
+  const realPlacements: Record<string, number> = {};
+  for (const [id, p] of Object.entries(sim.placements)) realPlacements[id.toLowerCase()] = p;
 
-  const results = await applyBomberResult(store, consensus, ratings, draw);
+  const results = await applyBomberResult(store, consensus, ratings, realPlacements, draw);
   return json({ outcome: 'applied', results });
 };

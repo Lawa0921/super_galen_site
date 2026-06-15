@@ -67,6 +67,16 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
       <canvas id="bomber-canvas"></canvas>
     </div>
 
+    <!-- Touch-device notice: Bomber is keyboard-only (coarse pointer → play entry suppressed) -->
+    <div class="touch-notice" id="touch-notice" hidden>
+      <h2 class="touch-notice-title">KEYBOARD REQUIRED</h2>
+      <p class="touch-notice-body">
+        Dungeon Bomber needs a <strong>keyboard</strong> to play.<br />
+        Please open this game on a <strong>computer</strong>.
+      </p>
+      <a class="ms-btn ms-back touch-notice-back" href="/games">← ARCADE</a>
+    </div>
+
     <!-- ── Mode Select — Layout B: Cinematic Hero Stage ── -->
     <div class="mode-select" id="mode-select">
       <!-- CRT scanline + vignette overlay -->
@@ -392,6 +402,43 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     opacity: 0.75;
     pointer-events: none;
     display: none; /* 僅遊戲中顯示；選角畫面隱藏（避免和 PRESS START 重疊），start() 時揭露 */
+  }
+  .bomber-hint.is-visible {
+    display: block; /* 開局後揭露操作提示（取代行內 style.display） */
+  }
+
+  /* ─── Touch-device notice (keyboard-only game) ───────── */
+  .touch-notice {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 28px;
+    text-align: center;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    background: #0a0c14;
+  }
+  .touch-notice[hidden] {
+    display: none;
+  }
+  .touch-notice-title {
+    margin: 0;
+    font-size: 18px;
+    color: #ffd23f;
+    text-shadow: 0 0 12px rgba(255, 210, 63, 0.4);
+  }
+  .touch-notice-body {
+    margin: 0;
+    font-size: 11px;
+    line-height: 2;
+    color: #cfe9ff;
+  }
+  .touch-notice-body strong {
+    color: #ffd23f;
   }
 
   /* ─── Mode-select full-screen (Layout B) ─────────────── */
@@ -1660,6 +1707,7 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   import { startBomber } from '@scripts/games/bomber/render/main';
   import type { CharacterId } from '@scripts/games/bomber/engine/types';
   import { ARENAS } from '@scripts/games/bomber/versus/arenas';
+  import { shouldShowTouchNotice } from '@scripts/games/bomber/touchNotice';
 
   const VALID_CHARS: CharacterId[] = ['lena', 'mira', 'aya', 'rosa'];
 
@@ -1669,16 +1717,28 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   let started = false;
   let onlineOpen = false; // ONLINE 大廳開啟中（攔截選角鍵盤導覽）
 
+  // ── Touch-device guard: Bomber is keyboard-only ──────────
+  // coarse pointer（手機／觸控，多半無實體鍵盤）→ 顯示「請用電腦」提示並收掉所有
+  // 遊玩入口（選角/START/ONLINE/各 autostart deep-link），避免進場後無法操作而被判離場。
+  // 桌機（fine pointer）行為完全不變。
+  const touchBlocked = shouldShowTouchNotice(matchMedia('(pointer: coarse)').matches);
+  if (touchBlocked) {
+    started = true; // 中和 start()/鍵盤導覽/所有 `!started` deep-link 入口
+    document.getElementById('touch-notice')?.removeAttribute('hidden');
+    modeSelect?.remove();
+    document.getElementById('online-screen')?.remove();
+  }
+
   // ── VERSUS hotseat debug entry: ?mode=hotseat ────────────
   // 本機雙人同鍵盤（P1 WASD+Space+E、P2 方向鍵+Enter+Shift）。
   // 可選 ?arena=0-7（越界回退 0）、?seed=<int>。網路對戰留待後續 Task。
-  if (params.get('mode') === 'hotseat' && canvas) {
+  if (!touchBlocked && params.get('mode') === 'hotseat' && canvas) {
     started = true;
     modeSelect?.remove();
     const hint = document.querySelector('.bomber-hint') as HTMLElement | null;
     if (hint) {
       hint.textContent = 'P1 WASD+SPACE+E  ·  P2 ←↑→↓+ENTER+SHIFT  ·  MUTE M';
-      hint.style.display = 'block';
+      hint.classList.add('is-visible');
     }
     const arenaParam = Number(params.get('arena'));
     const seedParam = Number(params.get('seed'));
@@ -1733,7 +1793,7 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     started = true;
     modeSelect?.remove();
     const hint = document.querySelector('.bomber-hint') as HTMLElement | null;
-    if (hint) hint.style.display = 'block';
+    if (hint) hint.classList.add('is-visible');
     startBomber(canvas, id).catch((err: unknown) => console.error('[bomber] start failed', err));
   }
 
@@ -1985,7 +2045,7 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     const hint = document.querySelector('.bomber-hint') as HTMLElement | null;
     if (hint) {
       hint.textContent = 'MOVE WASD/←↑→↓  ·  BOMB SPACE/ENTER  ·  SKILL E/SHIFT  ·  MUTE M';
-      hint.style.display = 'block';
+      hint.classList.add('is-visible');
     }
 
     // 結算回報接線：matchId = bomber-<seed36>-<room>；reporterId = 本端身分；

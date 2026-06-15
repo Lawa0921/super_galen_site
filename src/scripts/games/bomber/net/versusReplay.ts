@@ -48,6 +48,13 @@ export interface VersusReplayResult {
   stateHash: string;
   /** server 重模擬出的勝者 id；null = 平局（全滅同幀）。結算端用此判定平局，不信任 client。 */
   winnerId: string | null;
+  /**
+   * 各玩家「真實名次」map（id → placement，1=冠軍）。直接取自重模擬後 VersusMatch 的
+   * players[].placement —— 與引擎「同幀死共享名次」語意一致（如 3 人同幀雙殺 → {a:1,b:2,c:2}）。
+   * 結算端（bomber-match.ts）以此計分，避免將 standings 陣列索引（會以 playerIds 序拆開同名次者）
+   * 誤當名次而給同名次玩家不公平的 Elo/XP 差。為伺服器真名次來源，絕不信任 client 傳入。
+   */
+  placements: Record<string, number>;
 }
 
 /**
@@ -141,10 +148,16 @@ export function simulateVersusReplay(replay: VersusReplay): VersusReplayResult {
     match.step(SIM_DT);
   }
 
+  // 各玩家真實名次（id → placement）直接取自引擎，保留同幀死共享名次語意。
+  const finalState = match.getState();
+  const placements: Record<string, number> = {};
+  for (const p of finalState.players) placements[p.id] = p.placement;
+
   return {
     standings: liveStandings(match, replay.playerIds),
     stateHash: match.stateHash(),
-    winnerId: match.getState().winnerId,
+    winnerId: finalState.winnerId,
+    placements,
   };
 }
 
