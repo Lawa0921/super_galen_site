@@ -1,33 +1,71 @@
-import { Container, Sprite, Graphics } from 'pixi.js';
+import { Container, Sprite, Graphics, Texture } from 'pixi.js';
 import type { WitchState } from '../engine/types';
 import { GRAZE_R, PLAYER_HIT_R } from '../engine/constants';
 import type { WitchTextures } from './assets';
 
+const PLAYER_RENDER_SCALE = 1.35; // 自機放大，提升小尺寸下的辨識度
+const IDLE_FRAME_MS = 140;        // idle 影格輪播 ≈ 7fps
+
 export class EntityView {
   private player: Sprite;
-  private hitDot: Graphics;        // 低速模式顯示判定點
+  private playerFrames: Texture[];
+  private frameIdx = 0;
+  private frameTimerMs = 0;
+  private idleMs = 0;              // 視覺呼吸/光暈脈動累計
+  private glow: Graphics;          // 腳下流派色光暈
+  private core: Graphics;          // 常駐被彈核心點（讓玩家隨時看到 3px 判定位置）
+  private hitDot: Graphics;        // 低速模式才顯示的擦彈外環
   private boss: Sprite | null = null;
   private enemySprites = new Map<number, Sprite>();
   private coinSprites: Sprite[] = [];
   private dropSprites: Sprite[] = [];
 
   constructor(private layer: Container, private fx: Container, private tex: WitchTextures) {
-    this.player = new Sprite(tex.player);
-    this.player.anchor.set(0.5);
+    this.playerFrames = tex.playerFrames.length > 0 ? tex.playerFrames : [Texture.EMPTY];
+    this.glow = new Graphics().ellipse(0, 0, 15, 6).fill(tex.accent);
+    this.glow.alpha = 0.2;
+    layer.addChild(this.glow);     // 光暈在自機之下
+    this.player = new Sprite(this.playerFrames[0]);
+    // 垂直錨點對到角色身體核心（非畫布幾何中心），使 3px 被彈判定點落在看得見的身體上
+    this.player.anchor.set(0.5, tex.playerAnchorY);
+    this.player.scale.set(PLAYER_RENDER_SCALE);
     layer.addChild(this.player);
-    this.hitDot = new Graphics()
-      .circle(0, 0, GRAZE_R).stroke({ width: 1, color: 0xff5a4d, alpha: 0.35 })
-      .circle(0, 0, PLAYER_HIT_R + 1).fill(0xffffff);
+    // 低速模式才顯示的擦彈外環
+    this.hitDot = new Graphics().circle(0, 0, GRAZE_R).stroke({ width: 1, color: tex.accent, alpha: 0.4 });
     this.hitDot.visible = false;
     layer.addChild(this.hitDot);
+    // 常駐被彈核心點：白心 + 流派色細環，標示真實 3px 判定（始終在最上層，不隨呼吸浮動）
+    this.core = new Graphics()
+      .circle(0, 0, PLAYER_HIT_R + 1.5).fill({ color: tex.accent, alpha: 0.5 })
+      .circle(0, 0, PLAYER_HIT_R - 0.5).fill({ color: 0xffffff, alpha: 0.95 });
+    layer.addChild(this.core);
   }
 
-  render(s: WitchState, _dtMs: number): void {
-    // 自機（無敵中閃爍）
-    this.player.x = s.player.x; this.player.y = s.player.y;
+  render(s: WitchState, dtMs: number): void {
+    this.idleMs += dtMs;
+    // idle 影格輪播（多影格才動）
+    if (this.playerFrames.length > 1) {
+      this.frameTimerMs += dtMs;
+      if (this.frameTimerMs >= IDLE_FRAME_MS) {
+        this.frameTimerMs -= IDLE_FRAME_MS;
+        this.frameIdx = (this.frameIdx + 1) % this.playerFrames.length;
+        this.player.texture = this.playerFrames[this.frameIdx];
+      }
+    }
+    // 自機（呼吸浮動 + 無敵中閃爍）
+    const bob = Math.sin(this.idleMs / 360) * 1.5;
+    this.player.x = s.player.x; this.player.y = s.player.y + bob;
     this.player.alpha = s.player.invulnMs > 0 ? (Math.floor(s.player.invulnMs / 100) % 2 ? 0.3 : 0.9) : 1;
+    // 腳下流派色光暈（脈動；無敵時壓暗）
+    this.glow.visible = s.player.alive;
+    this.glow.x = s.player.x; this.glow.y = s.player.y + 9;
+    this.glow.alpha = s.player.invulnMs > 0 ? 0.1 : 0.16 + 0.1 * (0.5 + 0.5 * Math.sin(this.idleMs / 240));
     this.hitDot.visible = s.player.focus;
     this.hitDot.x = s.player.x; this.hitDot.y = s.player.y;
+    // 常駐核心點：永遠標在真實判定位置（不加 bob），無敵時壓暗
+    this.core.visible = s.player.alive;
+    this.core.x = s.player.x; this.core.y = s.player.y;
+    this.core.alpha = s.player.invulnMs > 0 ? 0.45 : 1;
 
     // 道中敵：以 id 同步 Map
     const seen = new Set<number>();

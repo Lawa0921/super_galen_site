@@ -2,14 +2,16 @@
 import type { PlayerState } from './types';
 import {
   FIELD_W, FIELD_H, PLAYER_SPEED, FOCUS_SPEED, PLAYER_SPAWN,
-  START_LIVES, START_BOMBS, INVULN_MS, POWER_MAX,
+  INVULN_MS, POWER_MAX,
 } from './constants';
+import { CHARACTERS, type CharacterDef } from './characters';
 
-export function makePlayer(): PlayerState {
+/** 依角色起始值建立自機（預設 mira＝現有基準）。 */
+export function makePlayer(def: CharacterDef = CHARACTERS.mira): PlayerState {
   return {
     x: PLAYER_SPAWN.x, y: PLAYER_SPAWN.y,
-    lives: START_LIVES, bombs: START_BOMBS,
-    power: 1, focus: false, invulnMs: 0, fireCdMs: 0, alive: true,
+    lives: def.startLives, bombs: def.startBombs,
+    power: def.startPower, focus: false, invulnMs: 0, fireCdMs: 0, alive: true,
   };
 }
 

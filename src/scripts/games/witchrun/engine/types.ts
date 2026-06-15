@@ -21,6 +21,7 @@ export interface PlayerBullet {
   dmg: number; active: boolean;
   split: boolean;     // 裂變魔彈產生的子彈不再分裂
   pierceLeft: number; // 可穿透敵人次數（0 = 不穿透；命中 Boss 一律回收）
+  chainLeft: number;  // 連鎖雷（Volt）命中後可再跳轉的次數（0 = 不連鎖）
 }
 
 export type StageId = 1 | 2 | 3 | 4;
@@ -152,6 +153,7 @@ export type WitchEvent =
   | { kind: 'gameover' }
   | { kind: 'cleared' }
   | { kind: 'telegraph'; x1: number; y1: number; x2: number; y2: number; durMs: number }
+  | { kind: 'chainArc'; x1: number; y1: number; x2: number; y2: number }  // Volt 連鎖跳轉電弧（render 畫線）
   | { kind: 'eliteKill'; x: number; y: number }
   | { kind: 'badEnd' }
   | { kind: 'drop'; drop: 'power' | 'bomb' };

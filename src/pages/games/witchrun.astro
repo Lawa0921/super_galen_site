@@ -15,17 +15,61 @@ const lang: Language = defaultLang;
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
 
-  <main class="witch">
+  <main class="witch" data-phase="title">
     <canvas id="witch-canvas"></canvas>
 
     <!-- 標題畫面 -->
     <div class="witch-title" id="witch-title">
+      <div class="witch-title-art" aria-hidden="true"></div>
+      <div class="witch-embers" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
       <a class="witch-home" href="/games">← ARCADE</a>
-      <h1 class="witch-logo">WITCH RUN</h1>
-      <p class="witch-tagline">THE CURSED BELLTOWER</p>
-      <p class="witch-story">月蝕之夜，亡鐘自鳴。爆彈魔女 Mira 騎上掃帚——在鐘聲敲滿十二響前，飛抵塔頂封印它。</p>
-      <button class="witch-start" id="witch-start" type="button">START</button>
-      <p class="witch-keys">MOVE 方向鍵/WASD · FOCUS Shift · BOMB X · OVERDRIVE Z</p>
+      <div class="witch-title-fg">
+        <h1 class="witch-logo">WITCH RUN</h1>
+        <p class="witch-tagline">THE CURSED BELLTOWER</p>
+        <p class="witch-story">月蝕之夜，亡鐘自鳴。爆彈魔女 Mira 騎上掃帚——在鐘聲敲滿十二響前，飛抵塔頂封印它。</p>
+        <button class="witch-start" id="witch-start" type="button">START</button>
+        <p class="witch-keys">MOVE 方向鍵/WASD · FOCUS Shift · BOMB X · OVERDRIVE Z</p>
+      </div>
+    </div>
+
+    <!-- 選角畫面（電影檔案式） -->
+    <div class="witch-select" id="witch-select" hidden>
+      <div class="select-bg" aria-hidden="true"></div>
+      <div class="select-aura" aria-hidden="true"></div>
+      <button class="witch-home select-back" id="select-back" type="button">← BACK</button>
+      <h2 class="select-heading">CHOOSE YOUR WITCH<small>詛咒鐘塔 · 選擇你的魔女</small></h2>
+
+      <div class="select-stage">
+        <div class="select-frame-row">
+          <button class="select-arrow" id="select-prev" type="button" aria-label="上一位">◄</button>
+          <div class="select-frame">
+            <span class="select-corner tl" aria-hidden="true"></span>
+            <span class="select-corner tr" aria-hidden="true"></span>
+            <span class="select-corner bl" aria-hidden="true"></span>
+            <span class="select-corner br" aria-hidden="true"></span>
+            <img class="select-portrait" id="select-portrait" alt="" decoding="async" />
+            <span class="select-vig" aria-hidden="true"></span>
+            <span class="select-cap" id="select-cap"></span>
+          </div>
+          <button class="select-arrow" id="select-next" type="button" aria-label="下一位">►</button>
+        </div>
+        <div class="select-dossier">
+          <p class="select-name" id="select-name">MIRA</p>
+          <span class="select-school" id="select-school">爆炎 · INFERNO</span>
+          <p class="select-blurb" id="select-blurb"></p>
+          <div class="select-divider" aria-hidden="true"></div>
+          <div class="select-stats" id="select-stats"></div>
+          <div class="select-moves" id="select-moves"></div>
+        </div>
+      </div>
+
+      <div class="select-bottom">
+        <div class="select-roster" id="select-roster"></div>
+        <button class="witch-start" id="select-confirm" type="button">START ▶</button>
+      </div>
     </div>
 
     <!-- 遺物三選一 -->
@@ -79,13 +123,65 @@ const lang: Language = defaultLang;
 
   .witch-title {
     position: absolute; inset: 0; z-index: 10;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-    background:
-      radial-gradient(ellipse at 50% 20%, rgba(255, 90, 77, 0.12), transparent 55%),
-      linear-gradient(180deg, rgba(10, 7, 22, 0.9), rgba(10, 7, 22, 0.97));
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #0a0716; overflow: hidden;
     padding: 24px; text-align: center;
+    transition: opacity 0.45s ease;
   }
-  .witch-home { position: absolute; top: 18px; left: 20px; font-size: 11px; color: #6fa8d8; text-decoration: none; }
+  .witch-title[data-exit] { opacity: 0; pointer-events: none; }
+
+  /* 活背景：arcade key art 緩慢推鏡（ken-burns），讓首屏「活」起來 */
+  .witch-title-art {
+    position: absolute; inset: 0; z-index: 0;
+    background: url('/assets/games/witchrun/card-witchrun.webp') center 32% / cover no-repeat;
+    opacity: 0.58;
+    transform-origin: 50% 38%;
+    animation: witch-drift 26s ease-in-out infinite alternate;
+  }
+  /* 壓暗＋洋紅暈染，確保前景文字可讀 */
+  .witch-title::after {
+    content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 50% 26%, rgba(255, 90, 77, 0.2), transparent 56%),
+      linear-gradient(180deg, rgba(10, 7, 22, 0.5) 0%, rgba(10, 7, 22, 0.74) 58%, rgba(10, 7, 22, 0.95) 100%);
+  }
+  @keyframes witch-drift {
+    from { transform: scale(1.05) translateY(0); }
+    to   { transform: scale(1.14) translateY(-2.5%); }
+  }
+
+  /* 上升餘燼 */
+  .witch-embers { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .witch-embers span {
+    position: absolute; bottom: -14px; width: 4px; height: 4px; border-radius: 50%;
+    background: #ff8a5a; box-shadow: 0 0 8px 2px rgba(255, 122, 77, 0.7);
+    animation: witch-ember linear infinite;
+  }
+  .witch-embers span:nth-child(1)  { left: 8%;  animation-duration: 7.5s;  animation-delay: 0s;   }
+  .witch-embers span:nth-child(2)  { left: 18%; animation-duration: 9s;    animation-delay: 1.4s; }
+  .witch-embers span:nth-child(3)  { left: 29%; animation-duration: 6.5s;  animation-delay: 3s;   }
+  .witch-embers span:nth-child(4)  { left: 40%; animation-duration: 10s;   animation-delay: 0.8s; width: 3px; height: 3px; }
+  .witch-embers span:nth-child(5)  { left: 50%; animation-duration: 8s;    animation-delay: 2.2s; }
+  .witch-embers span:nth-child(6)  { left: 61%; animation-duration: 9.5s;  animation-delay: 4s;   width: 3px; height: 3px; }
+  .witch-embers span:nth-child(7)  { left: 71%; animation-duration: 7s;    animation-delay: 1s;   }
+  .witch-embers span:nth-child(8)  { left: 82%; animation-duration: 11s;   animation-delay: 2.8s; }
+  .witch-embers span:nth-child(9)  { left: 90%; animation-duration: 8.5s;  animation-delay: 0.4s; width: 3px; height: 3px; }
+  .witch-embers span:nth-child(10) { left: 95%; animation-duration: 7.8s;  animation-delay: 3.6s; }
+  @keyframes witch-ember {
+    0%   { transform: translateY(0) scale(1);   opacity: 0; }
+    12%  { opacity: 0.85; }
+    88%  { opacity: 0.6; }
+    100% { transform: translateY(-100vh) scale(0.35); opacity: 0; }
+  }
+
+  /* 前景內容置於裝飾層之上 */
+  .witch-title-fg {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 22px;
+    max-width: 540px;
+  }
+
+  .witch-home { position: absolute; top: 18px; left: 20px; z-index: 3; font-size: 11px; color: #6fa8d8; text-decoration: none; }
   .witch-logo {
     margin: 0; font-size: clamp(24px, 6vw, 52px); letter-spacing: 6px; color: #ff5a4d;
     text-shadow: 0 0 14px rgba(255, 90, 77, 0.8), 0 0 40px rgba(255, 90, 77, 0.4);
@@ -100,6 +196,26 @@ const lang: Language = defaultLang;
   }
   .witch-start:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255, 90, 77, 0.9); }
   .witch-keys { font-size: 8px; letter-spacing: 1px; color: #6a5a9a; }
+
+  /* 矮螢幕（手機橫向／小高度）：收斂垂直節奏，避免重心偏低、頂部過空 */
+  @media (max-height: 720px) {
+    .witch-title-fg { gap: 14px; }
+    .witch-story { line-height: 1.8; }
+  }
+  @media (max-height: 560px) {
+    .witch-title-fg { gap: 10px; }
+    .witch-story { display: none; }
+  }
+  @media (max-width: 400px) {
+    .witch-title-fg { gap: 16px; }
+    .witch-title-art { background-position: center 28%; }
+  }
+
+  /* 尊重 reduced-motion：停掉推鏡與餘燼 */
+  @media (prefers-reduced-motion: reduce) {
+    .witch-title-art { animation: none; transform: scale(1.06); }
+    .witch-embers { display: none; }
+  }
 
   .witch-overlay {
     position: absolute; inset: 0; z-index: 20;
@@ -130,34 +246,286 @@ const lang: Language = defaultLang;
   .relic-desc { font-size: 9px; line-height: 1.8; color: #9a8ac0; }
 
   .witch-touch { position: absolute; right: 14px; bottom: 18px; z-index: 5; display: none; gap: 12px; }
+  /* 觸控鈕只在實際遊玩、且無 overlay 開啟時顯示，避免在 title/overlay 半透明層下透出 */
   .touch-btn {
     width: 72px; height: 72px; border-radius: 50%; font-family: inherit; font-size: 10px;
     color: #ffd0c8; background: rgba(255, 90, 77, 0.25); border: 2px solid rgba(255, 90, 77, 0.7);
   }
   .touch-btn--od { color: #d0f4ff; background: rgba(54, 230, 255, 0.2); border-color: rgba(54, 230, 255, 0.7); }
-  @media (pointer: coarse) { .witch-touch { display: flex; } }
+  @media (pointer: coarse) { .witch[data-phase="playing"]:not([data-overlay]) .witch-touch { display: flex; } }
+
+  /* ---- 選角畫面（電影聚光輪播）---- */
+  .witch-select {
+    --aura: #ff5a4d;
+    position: absolute; inset: 0; z-index: 12;
+    display: flex; flex-direction: column;
+    padding: clamp(14px, 2.4vh, 22px) clamp(20px, 4vw, 48px) clamp(14px, 2.4vh, 20px);
+    overflow: hidden; background: #05030f;
+    animation: witch-select-in 0.35s ease;
+  }
+  .witch-select[hidden] { display: none; }
+  @keyframes witch-select-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* 全幅背景：所選角色立繪模糊壓暗 + 流派色染（隨角色變色） */
+  .select-bg {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: var(--bg, none) center / cover no-repeat;
+    filter: blur(28px) brightness(0.3) saturate(1.2);
+    transform: scale(1.12);
+  }
+  .select-aura {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 28% 55%, transparent 28%, #05030f 100%),
+      linear-gradient(120deg, color-mix(in srgb, var(--aura) 24%, transparent), transparent 58%);
+    transition: background 0.3s ease;
+    animation: select-aura-pulse 4s ease-in-out infinite alternate;
+  }
+  @keyframes select-aura-pulse { from { opacity: 0.82; } to { opacity: 1; } }
+
+  .select-back { position: absolute; top: 16px; left: 18px; z-index: 4; background: none; border: none; font-family: inherit; cursor: pointer; color: #b9add8; letter-spacing: 2px; }
+  .select-heading {
+    position: relative; z-index: 2; margin: 0; text-align: center; height: clamp(40px, 7vh, 56px);
+    font-size: clamp(14px, 2.6vw, 18px); letter-spacing: 8px; color: #fff; text-shadow: 0 0 18px var(--aura);
+  }
+  .select-heading small { display: block; font-size: 8px; letter-spacing: 5px; color: var(--aura); margin-top: 7px; opacity: 0.85; }
+
+  /* 主舞台：框裱藝術卡 + 檔案面板 */
+  .select-stage {
+    position: relative; z-index: 2; flex: 1; min-height: 0;
+    display: flex; align-items: center; justify-content: center; gap: clamp(16px, 3vw, 44px);
+    padding: 6px 0;
+  }
+  .select-frame-row { display: flex; align-items: center; gap: clamp(8px, 1.5vw, 16px); height: min(100%, 60vh); }
+  .select-arrow {
+    flex: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+    font-family: inherit; font-size: 15px; color: #fff;
+    background: color-mix(in srgb, var(--aura) 22%, rgba(8, 5, 18, 0.7));
+    border: 2px solid color-mix(in srgb, var(--aura) 70%, transparent);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .select-arrow:hover { transform: scale(1.08); box-shadow: 0 0 16px var(--aura); }
+
+  .select-frame {
+    position: relative; height: 100%; aspect-ratio: 3 / 4; flex: none; border-radius: 4px; overflow: hidden;
+    border: 2px solid color-mix(in srgb, var(--aura) 55%, #2a2340);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 40px color-mix(in srgb, var(--aura) 45%, transparent), 0 18px 46px rgba(0, 0, 0, 0.6);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .select-portrait { width: 100%; height: 100%; object-fit: cover; display: block; animation: select-portrait-in 0.3s ease; }
+  @keyframes select-portrait-in { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
+  .select-vig { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.7); }
+  .select-cap {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 0 11px; text-align: center;
+    font-size: clamp(14px, 2vw, 20px); letter-spacing: 5px; color: #fff; text-shadow: 0 0 14px var(--aura);
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), transparent);
+  }
+  .select-corner { position: absolute; width: 15px; height: 15px; border: 2px solid var(--aura); z-index: 2; }
+  .select-corner.tl { top: 6px; left: 6px; border-right: 0; border-bottom: 0; }
+  .select-corner.tr { top: 6px; right: 6px; border-left: 0; border-bottom: 0; }
+  .select-corner.bl { bottom: 6px; left: 6px; border-right: 0; border-top: 0; }
+  .select-corner.br { bottom: 6px; right: 6px; border-left: 0; border-top: 0; }
+
+  /* 檔案面板 */
+  .select-dossier { flex: none; width: min(42vw, 400px); text-align: left; }
+  .select-name { margin: 0; font-size: clamp(26px, 4vw, 42px); letter-spacing: 5px; color: var(--aura); text-shadow: 0 0 20px color-mix(in srgb, var(--aura) 70%, transparent); }
+  .select-school { display: inline-block; margin-top: 12px; font-size: 9px; letter-spacing: 3px; color: #0b0716; background: var(--aura); padding: 6px 12px; border-radius: 3px; }
+  .select-blurb { margin: 14px 0 0; font-size: 9px; line-height: 2; color: #c9bee6; }
+  .select-divider { height: 1px; margin: 16px 0; background: linear-gradient(90deg, color-mix(in srgb, var(--aura) 60%, transparent), transparent); }
+
+  /* 數值條／招式卡／roster 為執行期 innerHTML 注入，須用 :global */
+  .select-stats { display: flex; flex-direction: column; gap: 9px; }
+  .select-stats :global(.stat-row) { display: flex; align-items: center; gap: 12px; font-size: 9px; letter-spacing: 1px; color: #9f95c0; }
+  .select-stats :global(.stat-label) { width: 46px; text-align: right; }
+  .select-stats :global(.stat-pips) { display: flex; gap: 5px; }
+  .select-stats :global(.stat-pip) { width: 20px; height: 10px; border-radius: 2px; background: rgba(214, 205, 240, 0.16); border: 1px solid rgba(214, 205, 240, 0.3); }
+  .select-stats :global(.stat-pip.on) { background: var(--aura); border-color: var(--aura); box-shadow: 0 0 8px color-mix(in srgb, var(--aura) 80%, transparent); }
+
+  .select-moves { display: flex; gap: 12px; margin-top: 16px; }
+  .select-moves :global(.move) { flex: 1; background: rgba(0, 0, 0, 0.32); border: 1px solid color-mix(in srgb, var(--aura) 30%, #2a2340); border-radius: 4px; padding: 11px 12px; }
+  .select-moves :global(.move-k) { display: block; font-size: 7px; letter-spacing: 2px; color: #8f84b3; }
+  .select-moves :global(.move-v) { display: block; font-size: 11px; color: #fff; margin-top: 7px; }
+  .select-moves :global(.move-d) { display: block; font-size: 7px; line-height: 1.7; color: #b6a9d4; margin-top: 6px; }
+
+  /* 底列：roster 縮圖 + START */
+  .select-bottom { position: relative; z-index: 2; display: flex; align-items: center; gap: 18px; height: clamp(72px, 12vh, 96px); }
+  .select-roster { display: flex; gap: 12px; flex: 1; }
+  .select-roster :global(.slot) { width: clamp(52px, 8vw, 64px); height: clamp(52px, 8vw, 64px); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; padding: 0; border: 2px solid rgba(255, 255, 255, 0.12); filter: grayscale(0.55) brightness(0.65); transition: 0.18s ease; }
+  .select-roster :global(.slot img) { width: 100%; height: 135%; object-fit: cover; object-position: 50% 10%; display: block; }
+  .select-roster :global(.slot .slot-tag) { position: absolute; left: 0; right: 0; bottom: 0; font-size: 6px; letter-spacing: 1px; text-align: center; padding: 3px 0; background: rgba(0, 0, 0, 0.62); color: #cfc6e6; }
+  .select-roster :global(.slot.on) { border-color: var(--aura); filter: none; box-shadow: 0 0 16px color-mix(in srgb, var(--aura) 70%, transparent); transform: translateY(-4px); }
+
+  #select-confirm { position: relative; z-index: 2; flex: none; background: var(--aura); color: #0b0716; box-shadow: 0 0 22px color-mix(in srgb, var(--aura) 60%, transparent); }
+
+  /* 手機：垂直堆疊 */
+  @media (max-width: 720px) {
+    .select-heading { font-size: 11px; letter-spacing: 2px; height: auto; }
+    .select-heading small { font-size: 7px; letter-spacing: 2px; margin-top: 5px; }
+    .select-back { top: 13px; font-size: 10px; }
+    .select-stage { flex-direction: column; gap: 12px; justify-content: flex-start; overflow-y: auto; }
+    .select-frame-row { height: auto; }
+    .select-frame { height: auto; width: min(56vw, 220px); }
+    .select-dossier { width: min(92vw, 420px); text-align: center; }
+    .select-school { margin-top: 10px; }
+    .select-stats :global(.stat-row) { justify-content: center; }
+    .select-divider { margin: 12px auto; width: 70%; }
+    .select-bottom { flex-direction: column; height: auto; gap: 12px; }
+    .select-roster { justify-content: center; flex-wrap: wrap; flex: none; }
+    #select-confirm { width: 100%; max-width: 420px; }
+  }
+  @media (max-height: 640px) and (min-width: 721px) {
+    .select-blurb { display: none; }
+    .select-frame-row { height: min(100%, 52vh); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .witch-select, .select-portrait { animation: none; }
+    .select-aura { animation: none; }
+  }
 </style>
 
 <script>
-  const canvas = document.getElementById('witch-canvas') as HTMLCanvasElement | null;
-  const titleEl = document.getElementById('witch-title');
-  const startBtn = document.getElementById('witch-start');
+  import { CHARACTERS, type CharacterId } from '@scripts/games/witchrun/engine/characters';
+
+  const byId = (id: string) => document.getElementById(id);
+  const canvas = byId('witch-canvas') as HTMLCanvasElement | null;
+  const witchEl = document.querySelector('.witch') as HTMLElement | null;
+  const titleEl = byId('witch-title');
+  const titleStartBtn = byId('witch-start');
+  const selectEl = byId('witch-select');
+  const portraitEl = byId('select-portrait') as HTMLImageElement | null;
+  const nameEl = byId('select-name');
+  const schoolEl = byId('select-school');
+  const blurbEl = byId('select-blurb');
+  const statsEl = byId('select-stats');
+  const capEl = byId('select-cap');
+  const movesEl = byId('select-moves');
+  const rosterEl = byId('select-roster');
+
+  const ORDER: CharacterId[] = ['mira', 'gale', 'frost', 'volt'];
+  const STORE_KEY = 'witchrun-character';
+  let idx = 0;
   let started = false;
 
-  async function start(): Promise<void> {
-    if (started || !canvas) return;
-    started = true;
-    titleEl?.remove();
-    const { startWitchrun } = await import('@scripts/games/witchrun/render/main');
-    await startWitchrun(canvas).catch((err: unknown) => console.error('[witchrun] start failed', err));
+  function storedId(): CharacterId {
+    const s = localStorage.getItem(STORE_KEY);
+    return s && (ORDER as string[]).includes(s) ? (s as CharacterId) : 'mira';
   }
 
-  startBtn?.addEventListener('click', () => void start());
-  document.addEventListener('keydown', (e: KeyboardEvent) => {
+  function pips(label: string, on: number): string {
+    const cells = Array.from({ length: 5 }, (_, i) => `<span class="stat-pip${i < on ? ' on' : ''}"></span>`).join('');
+    return `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-pips">${cells}</span></div>`;
+  }
+  const spdPips = (m: number): number => (m >= 1.15 ? 4 : m <= 0.9 ? 2 : 3);
+
+  const SHOT_LABEL: Record<string, string> = { balanced: '穩定流', pierce: '機關槍', fan: '寬幅冰扇', chain: '連鎖電' };
+  const SHOT_DESC: Record<string, string> = { balanced: '平行均衡彈道', pierce: '高速細針穿透', fan: '寬幅冰扇覆蓋', chain: '命中跳轉電弧' };
+  const BOMB_LABEL: Record<string, string> = { inferno: '爆炎 INFERNO', gust: '陣風 GUST', freeze: '冰封 FREEZE', storm: '雷暴 STORM' };
+  const BOMB_DESC: Record<string, string> = { inferno: '全屏爆炎 + 留火場', gust: '清彈 + 無敵衝刺', freeze: '凍結全場敵與彈', storm: '全場 2× 雷擊' };
+  function moveCard(k: string, v: string, d: string): string {
+    return `<div class="move"><span class="move-k">${k}</span><span class="move-v">${v}</span><span class="move-d">${d}</span></div>`;
+  }
+
+  function renderSelect(): void {
+    const id = ORDER[idx];
+    const c = CHARACTERS[id];
+    if (portraitEl) {
+      portraitEl.src = `/assets/games/witchrun/portrait-${id}.webp`;
+      portraitEl.alt = `${c.name} — ${c.school}`;
+      portraitEl.style.animation = 'none';
+      void portraitEl.offsetWidth;
+      portraitEl.style.animation = '';
+    }
+    if (nameEl) nameEl.textContent = c.name;
+    if (schoolEl) schoolEl.textContent = `${c.schoolZh} · ${c.school}`;
+    if (blurbEl) blurbEl.textContent = c.blurb;
+    selectEl?.style.setProperty('--aura', c.colorCss);
+    selectEl?.style.setProperty('--bg', `url(/assets/games/witchrun/portrait-${id}.webp)`);
+    if (statsEl) {
+      statsEl.innerHTML =
+        pips('SPD', spdPips(c.speedMult)) +
+        pips('LIFE', Math.min(5, c.startLives)) +
+        pips('PWR', c.startPower >= 2 ? 4 : 2);
+    }
+    if (capEl) capEl.textContent = c.name;
+    if (movesEl) {
+      movesEl.innerHTML =
+        moveCard('主射 SHOT', SHOT_LABEL[c.shotType], SHOT_DESC[c.shotType]) +
+        moveCard('爆彈 BOMB', BOMB_LABEL[c.bombType], BOMB_DESC[c.bombType]);
+    }
+    if (rosterEl) {
+      rosterEl.innerHTML = ORDER.map((rid, i) => {
+        const rc = CHARACTERS[rid];
+        return `<button type="button" class="slot${i === idx ? ' on' : ''}" data-i="${i}" aria-label="${rc.name}"><img src="/assets/games/witchrun/portrait-${rid}.webp" alt="" /><span class="slot-tag">${rc.name}</span></button>`;
+      }).join('');
+    }
+  }
+
+  function showSelect(): void {
     if (started) return;
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void start(); }
+    idx = Math.max(0, ORDER.indexOf(storedId()));
+    renderSelect();
+    titleEl?.setAttribute('data-exit', '');
+    selectEl?.removeAttribute('hidden');
+    witchEl?.setAttribute('data-phase', 'select');
+  }
+  function hideSelect(): void {
+    selectEl?.setAttribute('hidden', '');
+    titleEl?.removeAttribute('data-exit');
+    witchEl?.setAttribute('data-phase', 'title');
+  }
+  function cycle(d: number): void {
+    idx = (idx + d + ORDER.length) % ORDER.length;
+    renderSelect();
+  }
+
+  async function begin(id: CharacterId): Promise<void> {
+    if (started || !canvas) return;
+    started = true;
+    localStorage.setItem(STORE_KEY, id);
+    selectEl?.setAttribute('hidden', '');
+    witchEl?.setAttribute('data-phase', 'playing');
+    // 標題淡出後移除：與初始化解耦（固定時序，避免 headless 下因載入慢而延後移除）
+    if (titleEl) {
+      titleEl.setAttribute('data-exit', '');
+      setTimeout(() => titleEl.remove(), 480);
+    }
+    const { startWitchrun } = await import('@scripts/games/witchrun/render/main');
+    await startWitchrun(canvas, { character: id }).catch((err: unknown) => console.error('[witchrun] start failed', err));
+  }
+
+  titleStartBtn?.addEventListener('click', showSelect);
+  byId('select-prev')?.addEventListener('click', () => cycle(-1));
+  byId('select-next')?.addEventListener('click', () => cycle(1));
+  byId('select-confirm')?.addEventListener('click', () => void begin(ORDER[idx]));
+  byId('select-back')?.addEventListener('click', hideSelect);
+  rosterEl?.addEventListener('click', (e) => {
+    const slot = (e.target as HTMLElement)?.closest<HTMLElement>('[data-i]');
+    const i = slot?.dataset?.i;
+    if (i != null) { idx = Number(i); renderSelect(); }
   });
 
-  // e2e 自動開局
-  if (new URLSearchParams(location.search).get('autostart') === '1') void start();
+  // 觸控左右滑切換角色
+  let touchX = 0;
+  selectEl?.addEventListener('touchstart', (e) => { touchX = (e as TouchEvent).changedTouches[0].clientX; }, { passive: true });
+  selectEl?.addEventListener('touchend', (e) => {
+    const dx = (e as TouchEvent).changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 40) cycle(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (started) return;
+    const selecting = selectEl != null && !selectEl.hasAttribute('hidden');
+    if (selecting) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); cycle(-1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); cycle(1); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void begin(ORDER[idx]); }
+      else if (e.key === 'Escape') { e.preventDefault(); hideSelect(); }
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      showSelect();
+    }
+  });
+
+  // e2e / 深連結：跳過選角，用儲存或預設角色直接開局
+  if (new URLSearchParams(location.search).get('autostart') === '1') void begin(storedId());
 </script>
