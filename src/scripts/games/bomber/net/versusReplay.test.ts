@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BomberLockstep, LoopbackBomberHub, type VersusAction } from './bomberLockstep';
 import {
   simulateVersusReplay,
+  verifyVersusReplay,
   liveStandings,
   type VersusReplay,
 } from './versusReplay';
@@ -250,5 +251,80 @@ describe('VersusReplay 結構 — 可直接餵 VersusMatch 重建（無需 locks
           players: replay.playerIds.map((id) => ({ id, character: replay.characters[id] })),
         }),
     ).not.toThrow();
+  });
+});
+
+describe('simulateVersusReplay — 回傳重模擬 winnerId（FIX 3 平局判定來源）', () => {
+  it('分出勝負的局：winnerId = 冠軍 id（== standings[0]）', () => {
+    const { node } = runSelfBombMatch(3);
+    const replay = node.getReplay();
+    const sim = simulateVersusReplay(replay);
+    expect(sim.winnerId).toBe('P1'); // P1 奪冠
+    expect(sim.winnerId).toBe(sim.standings[0]);
+  });
+
+  it('全員同幀自爆：winnerId = null（平局）', () => {
+    const playerIds = ['P0', 'P1'];
+    const { nodes } = buildNodes(playerIds, 3, 0);
+    for (const node of nodes) node.queueLocal({ t: 'bomb' });
+    for (let f = 0; f < 6000 && nodes[0].match.getState().status === 'playing'; f++) {
+      for (const node of nodes) node.tick();
+    }
+    settle(nodes);
+    const sim = simulateVersusReplay(nodes[0].getReplay());
+    expect(sim.winnerId).toBeNull();
+  });
+});
+
+describe('verifyVersusReplay — 防禦縱深（FIX 2）', () => {
+  function legit(): { replay: VersusReplay; claimed: { standings: string[]; stateHash: string } } {
+    const { node } = runSelfBombMatch(3);
+    const replay = node.getReplay();
+    const claimed = {
+      standings: liveStandings(node.match, replay.playerIds),
+      stateHash: node.match.stateHash(),
+    };
+    return { replay, claimed };
+  }
+
+  it('合法 replay 仍通過（非破壞性）', () => {
+    const { replay, claimed } = legit();
+    expect(verifyVersusReplay(replay, claimed)).toBe(true);
+  });
+
+  it('claimed.standings 集合與 replay.playerIds 不符 → false（綁定參與者）', () => {
+    const { replay, claimed } = legit();
+    // 把一位參與者換成局外人 → 集合不等 → 拒絕（即便 hash 由 replay 算）。
+    const tampered = { ...claimed, standings: [claimed.standings[0], '0xINTRUDER'] };
+    expect(verifyVersusReplay(replay, tampered)).toBe(false);
+  });
+
+  it('standings 比對 case-insensitive（與結算端 lowerStandings 一致）→ true', () => {
+    const { replay, claimed } = legit();
+    const upper = { ...claimed, standings: claimed.standings.map((s) => s.toUpperCase()) };
+    expect(verifyVersusReplay(replay, upper)).toBe(true);
+  });
+
+  it('inputs 含畸形 action（t 不在白名單）→ false', () => {
+    const { replay, claimed } = legit();
+    const tampered: VersusReplay = {
+      ...replay,
+      inputs: [{ f: 0, p: 'P1', a: [{ t: 'nuke' } as unknown as VersusAction] }, ...replay.inputs],
+    };
+    expect(verifyVersusReplay(tampered, claimed)).toBe(false);
+  });
+
+  it('inputs 含畸形 held action（方向非法 / v 非 boolean）→ false', () => {
+    const { replay, claimed } = legit();
+    const badDir: VersusReplay = {
+      ...replay,
+      inputs: [{ f: 0, p: 'P1', a: [{ t: 'held', d: 'sideways', v: true } as unknown as VersusAction] }],
+    };
+    expect(verifyVersusReplay(badDir, claimed)).toBe(false);
+    const badV: VersusReplay = {
+      ...replay,
+      inputs: [{ f: 0, p: 'P1', a: [{ t: 'held', d: 'up', v: 1 } as unknown as VersusAction] }],
+    };
+    expect(verifyVersusReplay(badV, claimed)).toBe(false);
   });
 });

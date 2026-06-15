@@ -1,8 +1,23 @@
 import { VersusMatch } from '../versus/versusMatch';
-import type { CharacterId } from '../engine/types';
+import type { CharacterId, Dir } from '../engine/types';
 import type { VersusAction } from './bomberLockstep';
 
 const SIM_DT = 1000 / 60;
+
+/** 合法方向（與 bomberLockstep 的 VALID_DIRS 對齊）。 */
+const VALID_DIRS: ReadonlySet<string> = new Set<Dir>(['up', 'down', 'left', 'right']);
+
+/**
+ * 驗證單一 VersusAction 形狀（鏡像 bomberLockstep.isValidAction）。
+ * 不可信輸入：t ∈ {held,bomb,ability}；held 須 d 為合法 Dir、v 為 boolean。
+ */
+function isValidAction(a: unknown): a is VersusAction {
+  if (!a || typeof a !== 'object') return false;
+  const o = a as Record<string, unknown>;
+  if (o.t === 'bomb' || o.t === 'ability') return true;
+  if (o.t === 'held') return typeof o.d === 'string' && VALID_DIRS.has(o.d) && typeof o.v === 'boolean';
+  return false;
+}
 
 /** 重播上限（防 DoS / 損壞紀錄無窮迴圈）。bomber 局含 sudden death，最長約 3 分鐘。 */
 const MAX_FRAMES = 60 * 60 * 5; // 5 分鐘 frame 上限（遠超實際 sudden-death 終局）
@@ -27,10 +42,12 @@ export interface VersusReplay {
   forfeits?: Array<{ f: number; p: string }>;
 }
 
-/** simulateVersusReplay 的回傳：最終名次（冠軍在前）+ 決定性 stateHash。 */
+/** simulateVersusReplay 的回傳：最終名次（冠軍在前）+ 決定性 stateHash + 重模擬勝者。 */
 export interface VersusReplayResult {
   standings: string[];
   stateHash: string;
+  /** server 重模擬出的勝者 id；null = 平局（全滅同幀）。結算端用此判定平局，不信任 client。 */
+  winnerId: string | null;
 }
 
 /**
@@ -127,6 +144,7 @@ export function simulateVersusReplay(replay: VersusReplay): VersusReplayResult {
   return {
     standings: liveStandings(match, replay.playerIds),
     stateHash: match.stateHash(),
+    winnerId: match.getState().winnerId,
   };
 }
 
@@ -153,12 +171,16 @@ export function verifyVersusReplay(
     if (typeof replay.characters[id] !== 'string') return false;
   }
 
-  // inputs 逐筆 shape：f 有限且在範圍內、p 在名單、a 為陣列。
+  // inputs 逐筆 shape：f 有限且在範圍內、p 在名單、a 為陣列且每個 action 形狀合法。
   for (const e of replay.inputs) {
     if (!e || typeof e !== 'object') return false;
     if (!Number.isFinite(e.f) || e.f < 0 || e.f > replay.frameCount) return false;
     if (typeof e.p !== 'string' || !replay.playerIds.includes(e.p)) return false;
     if (!Array.isArray(e.a)) return false;
+    // 每筆 action 須是合法 VersusAction（與 lockstep 入口同一道閘，杜絕畸形/惡意 payload）。
+    for (const act of e.a) {
+      if (!isValidAction(act)) return false;
+    }
   }
 
   // forfeits 檢查（欄位不存在＝合法，向後相容）。
@@ -175,6 +197,14 @@ export function verifyVersusReplay(
   if (!claimed || !Array.isArray(claimed.standings) || typeof claimed.stateHash !== 'string') {
     return false;
   }
+
+  // 防禦縱深：replay 的參與者集合必須恰等於 claimed.standings 的集合（case-insensitive，
+  // 與結算端以 lowerStandings 比對一致）。否則攻擊者可用「他人對局的 replay」配上「自選名單」。
+  const idSet = (ids: string[]): Set<string> => new Set(ids.map((s) => s.toLowerCase()));
+  const a = idSet(replay.playerIds);
+  const b = idSet(claimed.standings);
+  if (a.size !== b.size) return false;
+  for (const id of a) if (!b.has(id)) return false;
 
   const sim = simulateVersusReplay(replay);
   if (sim.stateHash !== claimed.stateHash) return false;

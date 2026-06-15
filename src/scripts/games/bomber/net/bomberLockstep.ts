@@ -8,6 +8,20 @@ const SIM_DT = 1000 / 60;
  * 故「從未送幀的玩家」的全員停滯點 = INPUT_DELAY。 */
 export const INPUT_DELAY = 3;
 
+/**
+ * host 斷線時 guest 端是否應「中止整局」（而非僅 forfeit host）。
+ *
+ * 星狀（star）拓樸：所有 guest 只與 host 連線，guest 彼此無直連頻道。
+ *  - 2 人場（host+1 guest）：host 離場 → 只剩本 guest 存活 → forfeit host 即可乾淨收斂（finish）。
+ *  - 3+ 人場：host 離場後 guest 之間失去中繼，後續幀再也無法湊齊全員輸入 → lockstep 永久卡在
+ *    缺幀處，對局永不結束、永不結算、overlay 永不顯示。此時必須中止整局（MATCH VOID）。
+ *
+ * 純函式（無副作用），便於單元測試。playerCount = 對局總人數（含 host）。
+ */
+export function shouldAbortOnHostLoss(playerCount: number): boolean {
+  return playerCount > 2;
+}
+
 /** 合法方向集合，用於 onMessage / queueLocal 的 shape 驗證（網路訊息不可信）。 */
 const VALID_DIRS: ReadonlySet<string> = new Set<Dir>(['up', 'down', 'left', 'right']);
 

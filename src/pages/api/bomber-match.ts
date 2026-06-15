@@ -5,7 +5,11 @@ import { verifySignature, buildFfaResultMessage } from '@scripts/games/tetris/ne
 import { updateRatings, DEFAULT_RATING } from '@scripts/games/tetris/net/elo';
 import { updateRatingsNWay } from '@scripts/games/tetris/net/ffaElo';
 import { xpForMatch, levelForXp } from '@scripts/games/tetris/net/progression';
-import { verifyVersusReplay, type VersusReplay } from '@scripts/games/bomber/net/versusReplay';
+import {
+  verifyVersusReplay,
+  simulateVersusReplay,
+  type VersusReplay,
+} from '@scripts/games/bomber/net/versusReplay';
 
 export const prerender = false;
 
@@ -55,8 +59,30 @@ async function applyBomberResult(
   store: RankStore,
   standings: string[],
   ratings: Record<string, number>,
+  draw = false,
 ): Promise<BomberSettleResult[]> {
   const players = standings.length;
+
+  // ── 平局（全滅同幀，winnerId=null）：server 重模擬判定，不信任 client。 ──
+  // 規則：不動分（ratingAfter===ratingBefore）、不記 wins/losses、games+1、
+  //       全員對稱「參與 XP」（xpForMatch(N, N, false) = 純參與底分，無名次/勝利加成）。
+  if (draw) {
+    const out: BomberSettleResult[] = [];
+    const drawXp = xpForMatch(players, players, false); // 對稱：每人僅得參與底分
+    for (let i = 0; i < standings.length; i++) {
+      const id = standings[i];
+      const rec = (await store.getPlayer(id)) ?? fresh();
+      const ratingBefore = rec.rating;
+      rec.xp += drawXp;
+      rec.level = levelForXp(rec.xp);
+      rec.games += 1;
+      // 平局不動 rating、不記 wins/losses/top3。
+      await store.setPlayer(id, rec);
+      // placement 對平局而言全員並列 1（與引擎一致）；回應如實標 1。
+      out.push({ id, placement: 1, ratingBefore, ratingAfter: rec.rating, xpGained: drawXp, level: rec.level });
+    }
+    return out;
+  }
 
   // 1) 算新 ELO（before 用 ratings；2 人顯式 updateRatings，其餘 N-way）
   let newRatings: Record<string, number>;
@@ -169,10 +195,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ error: 'bad signature' }, 401);
   }
 
-  // ── 共識結算（過半一致）。每位玩家各回報一份 standings；達門檻 ceil(N/2) 且唯一多數才入帳 ──
+  // ── 共識結算（過半一致）。每位玩家各回報一份 standings；達門檻且唯一多數才入帳 ──
+  // 門檻 = max(2, ceil(N/2))：每場至少需「2 位不同參與者」回報一致才結算。
+  //   ceil(N/2) 在 N=2 時為 1 → 單一回報即可自結（致命）：攻擊者能偽造「自己贏受害者」
+  //   的 replay 並用自己錢包簽章，一次 POST 就讓受害者無端記敗 + 掉分。加上 max(2,…) 後
+  //   2 人場亦需受害者本人也回報同名次（亦即真的有打且認同結果）才結算。
+  //   （N=2→2、N=3→2、N=4→2；reports 以 reporter 為 key 已天然去重 → 必為「不同」參與者。）
   const store = getBomberRankStore();
   const n = lowerStandings.length;
-  const threshold = Math.ceil(n / 2);
+  const threshold = Math.max(2, Math.ceil(n / 2));
 
   // 1) 記下本次回報（以共識的 lowerStandings 為投票內容）
   await store.setBRReport(m, reporter, lowerStandings, REPORT_TTL);
@@ -207,6 +238,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     ratings[id] = rec?.rating ?? DEFAULT_RATING;
   }
 
-  const results = await applyBomberResult(store, consensus, ratings);
+  // 平局判定：server 重模擬 replay（verify 已過 → 與宣稱名次一致），winnerId=null 即平局。
+  // 一律以 server 自算結果為準，不信任任何 client 傳入的勝者/平局旗標。
+  const draw = simulateVersusReplay(replay).winnerId === null;
+
+  const results = await applyBomberResult(store, consensus, ratings, draw);
   return json({ outcome: 'applied', results });
 };

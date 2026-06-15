@@ -1,7 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { BomberLockstep, LoopbackBomberHub, INPUT_DELAY } from './bomberLockstep';
+import { BomberLockstep, LoopbackBomberHub, INPUT_DELAY, shouldAbortOnHostLoss } from './bomberLockstep';
 import type { BomberFrameMsg, VersusAction } from './bomberLockstep';
 import type { CharacterId, Dir } from '../engine/types';
+
+describe('shouldAbortOnHostLoss（FIX 4：3+ 人 host 斷線 → 中止整局）', () => {
+  it('2 人場：host 斷線 → 不中止（forfeit host 即可乾淨收斂）', () => {
+    expect(shouldAbortOnHostLoss(2)).toBe(false);
+  });
+  it('3 / 4 人場：host 斷線 → 中止（guest 彼此無頻道，lockstep 會永久卡缺幀）', () => {
+    expect(shouldAbortOnHostLoss(3)).toBe(true);
+    expect(shouldAbortOnHostLoss(4)).toBe(true);
+  });
+});
 
 const CHARS: CharacterId[] = ['lena', 'mira', 'aya', 'rosa'];
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
