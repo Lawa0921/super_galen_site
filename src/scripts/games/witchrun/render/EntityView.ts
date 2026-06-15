@@ -13,7 +13,8 @@ export class EntityView {
   private frameTimerMs = 0;
   private idleMs = 0;              // 視覺呼吸/光暈脈動累計
   private glow: Graphics;          // 腳下流派色光暈
-  private hitDot: Graphics;        // 低速模式顯示判定點
+  private core: Graphics;          // 常駐被彈核心點（讓玩家隨時看到 3px 判定位置）
+  private hitDot: Graphics;        // 低速模式才顯示的擦彈外環
   private boss: Sprite | null = null;
   private enemySprites = new Map<number, Sprite>();
   private coinSprites: Sprite[] = [];
@@ -29,11 +30,15 @@ export class EntityView {
     this.player.anchor.set(0.5, tex.playerAnchorY);
     this.player.scale.set(PLAYER_RENDER_SCALE);
     layer.addChild(this.player);
-    this.hitDot = new Graphics()
-      .circle(0, 0, GRAZE_R).stroke({ width: 1, color: 0xff5a4d, alpha: 0.35 })
-      .circle(0, 0, PLAYER_HIT_R + 1).fill(0xffffff);
+    // 低速模式才顯示的擦彈外環
+    this.hitDot = new Graphics().circle(0, 0, GRAZE_R).stroke({ width: 1, color: tex.accent, alpha: 0.4 });
     this.hitDot.visible = false;
     layer.addChild(this.hitDot);
+    // 常駐被彈核心點：白心 + 流派色細環，標示真實 3px 判定（始終在最上層，不隨呼吸浮動）
+    this.core = new Graphics()
+      .circle(0, 0, PLAYER_HIT_R + 1.5).fill({ color: tex.accent, alpha: 0.5 })
+      .circle(0, 0, PLAYER_HIT_R - 0.5).fill({ color: 0xffffff, alpha: 0.95 });
+    layer.addChild(this.core);
   }
 
   render(s: WitchState, dtMs: number): void {
@@ -57,6 +62,10 @@ export class EntityView {
     this.glow.alpha = s.player.invulnMs > 0 ? 0.1 : 0.16 + 0.1 * (0.5 + 0.5 * Math.sin(this.idleMs / 240));
     this.hitDot.visible = s.player.focus;
     this.hitDot.x = s.player.x; this.hitDot.y = s.player.y;
+    // 常駐核心點：永遠標在真實判定位置（不加 bob），無敵時壓暗
+    this.core.visible = s.player.alive;
+    this.core.x = s.player.x; this.core.y = s.player.y;
+    this.core.alpha = s.player.invulnMs > 0 ? 0.45 : 1;
 
     // 道中敵：以 id 同步 Map
     const seen = new Set<number>();
