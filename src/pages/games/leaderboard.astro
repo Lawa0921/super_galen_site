@@ -17,6 +17,10 @@ const lang: Language = defaultLang;
   <main class="lb">
     <a class="lb-home" href="/games">← ARCADE</a>
     <h1 class="lb-title">LEADERBOARD</h1>
+    <div class="lb-tabs" id="lb-tabs" role="tablist" aria-label="Leaderboard game">
+      <button class="lb-tab is-active" id="lb-tab-tetris" type="button" role="tab" aria-selected="true" data-game="tetris">TETRIS</button>
+      <button class="lb-tab" id="lb-tab-bomber" type="button" role="tab" aria-selected="false" data-game="bomber">BOMBER</button>
+    </div>
     <div class="lb-board" id="lb-board">
       <p class="lb-empty" id="lb-status">載入中…</p>
     </div>
@@ -57,6 +61,31 @@ const lang: Language = defaultLang;
     color: #eafdff;
     text-shadow: 0 0 12px rgba(54, 230, 255, 0.9), 0 0 30px rgba(54, 230, 255, 0.5);
   }
+  .lb-tabs {
+    display: flex;
+    gap: 10px;
+    width: min(760px, 94vw);
+    justify-content: center;
+  }
+  .lb-tab {
+    flex: 0 0 auto;
+    padding: 10px 22px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #6fa8d8;
+    background: rgba(8, 12, 22, 0.72);
+    border: 1px solid rgba(54, 230, 255, 0.22);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .lb-tab:hover { color: #36e6ff; }
+  .lb-tab.is-active {
+    color: #eafdff;
+    border-color: rgba(54, 230, 255, 0.6);
+    box-shadow: 0 0 14px rgba(54, 230, 255, 0.25);
+  }
   .lb-board {
     width: min(760px, 94vw);
     display: flex;
@@ -93,15 +122,24 @@ const lang: Language = defaultLang;
 <script>
   type Row = { id: string; rating: number; tier: string; wins: number; losses: number; name?: string };
 
+  type Game = 'tetris' | 'bomber';
+
   const board = document.getElementById('lb-board');
+  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.lb-tab'));
   const short = (id: string) => (id.startsWith('0x') && id.length > 12 ? `${id.slice(0, 6)}…${id.slice(-4)}` : id);
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
-  async function load(): Promise<void> {
+  let active: Game = 'tetris';
+  let reqToken = 0; // 防止慢回應覆蓋後選的分頁
+
+  async function load(game: Game): Promise<void> {
     if (!board) return;
+    const token = ++reqToken;
+    board.innerHTML = '<p class="lb-empty">載入中…</p>';
     try {
-      const res = await fetch('/api/leaderboard?n=50');
+      const res = await fetch(`/api/leaderboard?n=50&game=${game}`);
       const { rows } = (await res.json()) as { rows: Row[] };
+      if (token !== reqToken) return; // 已切換分頁，丟棄過期回應
       if (!rows || rows.length === 0) {
         board.innerHTML = '<p class="lb-empty">尚無對戰紀錄<br/>到遊戲室開一場線上對戰來上榜！</p>';
         return;
@@ -116,9 +154,25 @@ const lang: Language = defaultLang;
         .join('');
       board.innerHTML = head + body;
     } catch {
+      if (token !== reqToken) return;
       board.innerHTML = '<p class="lb-empty">排行榜載入失敗</p>';
     }
   }
 
-  void load();
+  function selectGame(game: Game): void {
+    if (game === active) return;
+    active = game;
+    for (const tab of tabs) {
+      const on = tab.dataset.game === game;
+      tab.classList.toggle('is-active', on);
+      tab.setAttribute('aria-selected', String(on));
+    }
+    void load(game);
+  }
+
+  for (const tab of tabs) {
+    tab.addEventListener('click', () => selectGame((tab.dataset.game as Game) ?? 'tetris'));
+  }
+
+  void load(active);
 </script>

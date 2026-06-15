@@ -256,6 +256,9 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
             <button class="ms-btn ms-solo roster-start" data-action="start" type="button">
               <span class="roster-start-text">▶ START</span>
             </button>
+            <button class="ms-btn ms-online roster-online" data-action="online" type="button">
+              ⚔ ONLINE
+            </button>
           </div>
         </div>
 
@@ -268,9 +271,71 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
 
     </div><!-- /mode-select -->
 
+    <!-- ── ONLINE lobby (create / join → roster → ready → start) ── -->
+    <div class="online-screen" id="online-screen" hidden>
+      <div class="crt-overlay" aria-hidden="true"></div>
+      <div class="ms-header">
+        <h2 class="ms-title">ONLINE VERSUS</h2>
+      </div>
+
+      <div class="online-body">
+        <!-- Entry: pick CREATE or JOIN -->
+        <div class="online-entry" id="online-entry">
+          <button class="ms-btn ms-online" id="online-create" type="button">CREATE ROOM</button>
+          <div class="online-join-row">
+            <input
+              class="online-input"
+              id="online-room-input"
+              maxlength="5"
+              placeholder="ROOM CODE"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="ms-btn" id="online-join-btn" type="button">JOIN</button>
+          </div>
+          <button class="ms-btn ms-back" id="online-back" type="button">← BACK</button>
+        </div>
+
+        <!-- Lobby: shown once host creates / guest joins -->
+        <div class="online-lobby" id="online-lobby" hidden>
+          <p class="lobby-label">ROOM</p>
+          <div class="lobby-code-row">
+            <span class="lobby-code" id="lobby-code">·····</span>
+            <button class="ms-btn lobby-copy" id="lobby-copy" type="button">COPY</button>
+          </div>
+
+          <ul class="lobby-roster" id="lobby-roster" aria-label="Players"></ul>
+
+          <!-- Host-only arena picker (guests see read-only label) -->
+          <div class="lobby-arena" id="lobby-arena">
+            <button class="arena-nav" id="arena-prev" type="button" aria-label="Previous map">◀</button>
+            <span class="arena-name" id="arena-name">STONE PLAZA</span>
+            <button class="arena-nav" id="arena-next" type="button" aria-label="Next map">▶</button>
+          </div>
+
+          <p class="lobby-status" id="lobby-status">Waiting for players…</p>
+
+          <div class="lobby-actions">
+            <button class="ms-btn ms-solo lobby-ready" id="lobby-ready" type="button">READY</button>
+            <button class="ms-btn ms-online lobby-start" id="lobby-start" type="button" hidden>START</button>
+          </div>
+          <button class="ms-btn ms-back lobby-cancel" id="lobby-cancel" type="button">← LEAVE</button>
+        </div>
+      </div>
+    </div><!-- /online-screen -->
+
     <div class="bomber-over" id="bomber-over" hidden>
       <h2 class="ms-title">GAME OVER</h2>
       <p id="bomber-over-stats" class="over-stats"></p>
+      <!-- Online result: standings table (rank / player / character / Elo±) -->
+      <div id="bomber-over-standings" class="over-standings"></div>
+      <!-- Online result: local XP gained + level + progress bar -->
+      <div id="bomber-over-xp" class="over-xp"></div>
+      <!-- Online result: REMATCH / LOBBY (shown only online; hotseat uses RETRY) -->
+      <div id="bomber-over-actions" class="over-actions" hidden>
+        <button class="ms-btn ms-online" id="bomber-rematch" type="button" hidden>REMATCH</button>
+        <button class="ms-btn ms-back" id="bomber-lobby" type="button" hidden>LOBBY</button>
+      </div>
       <button class="ms-btn ms-solo" id="bomber-restart">RETRY</button>
     </div>
   </main>
@@ -1200,6 +1265,249 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     50%, 100% { opacity: 0.2; }
   }
 
+  /* ─── ONLINE roster button (sits under START) ────────── */
+  .roster-online {
+    flex-shrink: 0;
+    margin-top: clamp(6px, 1vh, 10px);
+    width: 100%;
+  }
+  .ms-online {
+    border-color: rgba(255, 90, 77, 0.85);
+    color: #ffd7c2;
+  }
+  .ms-online:hover {
+    border-color: #ff5a4d;
+    background: rgba(255, 90, 40, 0.2);
+  }
+
+  /* ─── ONLINE screen (lobby) ───────────────────────────── */
+  .online-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 22;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    background: #0a0c14;
+    overflow: hidden;
+  }
+  .online-screen[hidden] {
+    display: none;
+  }
+  .online-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(14px, 2.4vh, 24px);
+    padding: clamp(16px, 3vh, 36px);
+    position: relative;
+    z-index: 5;
+    overflow-y: auto;
+  }
+
+  /* Entry: create / join */
+  .online-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: clamp(10px, 1.8vh, 16px);
+    width: clamp(240px, 40vw, 360px);
+  }
+  .online-entry[hidden] { display: none; }
+  .online-join-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .online-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(10px, 1.2vw, 13px);
+    letter-spacing: 3px;
+    text-align: center;
+    text-transform: uppercase;
+    color: #ffe9d6;
+    background: rgba(8, 12, 22, 0.9);
+    border: 2px solid rgba(255, 157, 60, 0.5);
+    padding: clamp(9px, 1.4vh, 13px) 10px;
+    box-sizing: border-box;
+  }
+  .online-input::placeholder { color: #6e5440; letter-spacing: 2px; }
+  .online-input:focus-visible {
+    outline: none;
+    border-color: #ffd23f;
+    box-shadow: 0 0 0 2px rgba(255, 210, 63, 0.35);
+  }
+  .ms-back {
+    border-color: rgba(255, 157, 60, 0.45);
+    color: #c98f6a;
+    font-size: clamp(8px, 0.95vw, 11px);
+  }
+  .ms-back:hover { color: #ff9d3c; border-color: rgba(255, 157, 60, 0.8); }
+
+  /* Lobby (after create/join) */
+  .online-lobby {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(10px, 1.8vh, 18px);
+    width: clamp(260px, 46vw, 440px);
+  }
+  .online-lobby[hidden] { display: none; }
+  .lobby-label {
+    margin: 0;
+    font-size: clamp(8px, 0.9vw, 10px);
+    letter-spacing: 4px;
+    color: #c98f6a;
+  }
+  .lobby-code-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .lobby-code {
+    font-size: clamp(28px, 6vw, 46px);
+    letter-spacing: 10px;
+    color: #ff9d3c;
+    text-shadow:
+      2px 2px 0 #0a0c14,
+      0 0 14px rgba(255, 157, 60, 0.8),
+      0 0 30px rgba(255, 90, 77, 0.4);
+    padding-left: 10px;
+  }
+  .lobby-copy { font-size: clamp(8px, 0.9vw, 10px); padding: 9px 13px; width: auto; }
+
+  /* Roster: one row per player (character + ready light) */
+  .lobby-roster {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(4px, 0.7vh, 8px);
+  }
+  .lobby-roster-item {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 1.1vw, 13px);
+    padding: clamp(6px, 0.9vh, 10px) clamp(10px, 1.2vw, 14px);
+    background: linear-gradient(
+      100deg,
+      rgba(22, 15, 12, 0.82) 0%,
+      rgba(10, 7, 16, 0.66) 100%
+    );
+    border: 1px solid rgba(255, 157, 60, 0.18);
+    border-left: 3px solid rgba(255, 157, 60, 0.5);
+    box-sizing: border-box;
+  }
+  .lobby-roster-item.is-local {
+    border-left-color: #ffd23f;
+    background: linear-gradient(
+      100deg,
+      rgba(52, 32, 18, 0.8) 0%,
+      rgba(18, 11, 18, 0.74) 100%
+    );
+  }
+  .lri-char {
+    font-size: clamp(9px, 1vw, 12px);
+    letter-spacing: 1.5px;
+    color: #ffe8cf;
+    text-shadow: 1px 1px 0 #0a0c14;
+    text-transform: uppercase;
+  }
+  .lri-host {
+    font-size: clamp(6px, 0.7vw, 8px);
+    letter-spacing: 1px;
+    color: #ffce6b;
+    margin-left: 4px;
+  }
+  .lri-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: clamp(6px, 0.7vw, 8px);
+    letter-spacing: 1px;
+    color: #b2835f;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lri-light {
+    flex-shrink: 0;
+    width: clamp(9px, 1vw, 12px);
+    height: clamp(9px, 1vw, 12px);
+    border-radius: 50%;
+    background: #3a2a10;
+    border: 1px solid rgba(255, 157, 60, 0.4);
+  }
+  .lri-light.is-ready {
+    background: #4dff88;
+    border-color: #4dff88;
+    box-shadow: 0 0 8px rgba(77, 255, 136, 0.8);
+  }
+
+  /* Arena picker (host) */
+  .lobby-arena {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 1.2vw, 16px);
+    padding: clamp(8px, 1.2vh, 12px) clamp(10px, 1.4vw, 18px);
+    border: 1px solid rgba(255, 157, 60, 0.3);
+    background: rgba(8, 6, 18, 0.7);
+  }
+  .lobby-arena.is-readonly .arena-nav { display: none; }
+  .arena-nav {
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: clamp(10px, 1.2vw, 14px);
+    color: #ff9d3c;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    transition: color 0.14s ease, transform 0.14s ease;
+  }
+  .arena-nav:hover { color: #ffd23f; transform: scale(1.2); }
+  .arena-name {
+    min-width: clamp(120px, 18vw, 180px);
+    text-align: center;
+    font-size: clamp(9px, 1.1vw, 13px);
+    letter-spacing: 2px;
+    color: #ffd7a8;
+    text-shadow: 1px 1px 0 #0a0c14, 0 0 8px rgba(255, 157, 60, 0.5);
+  }
+
+  .lobby-status {
+    margin: 0;
+    font-size: clamp(8px, 0.95vw, 11px);
+    letter-spacing: 1px;
+    color: #cfe9ff;
+    text-align: center;
+    min-height: 1.4em;
+  }
+  .lobby-status.pending { animation: lobbyPulse 1.4s ease-in-out infinite; }
+  .lobby-status.error { color: #ff7a6a; }
+  @keyframes lobbyPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  .lobby-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  .lobby-ready, .lobby-start { flex: 1 1 auto; }
+  .lobby-ready.is-ready {
+    border-color: #4dff88;
+    color: #4dff88;
+    background: rgba(77, 255, 136, 0.1);
+  }
+  .lobby-start[hidden] { display: none; }
+  .lobby-start[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .lobby-cancel { width: 100%; font-size: clamp(8px, 0.95vw, 11px); }
+
   /* ─── Game Over overlay ──────────────────────────────── */
   .bomber-over {
     position: absolute;
@@ -1224,6 +1532,108 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     text-align: center;
     line-height: 1.8;
   }
+  .over-stats:empty {
+    display: none;
+  }
+
+  /* ─── Online result: standings table ────────────────────── */
+  .over-standings {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: min(560px, 88vw);
+    font-size: clamp(8px, 1vw, 11px);
+  }
+  .over-standings:empty {
+    display: none;
+  }
+  .res-row {
+    display: grid;
+    grid-template-columns: 2.5em 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 157, 60, 0.28);
+    background: rgba(255, 157, 60, 0.05);
+    color: #e8e2d4;
+  }
+  .res-row.is-local {
+    border-color: rgba(255, 210, 63, 0.85);
+    background: rgba(255, 210, 63, 0.1);
+  }
+  .res-rank {
+    color: #ffd23f;
+    letter-spacing: 1px;
+  }
+  .res-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .res-char {
+    color: #ff9d3c;
+    letter-spacing: 1px;
+  }
+  .res-elo {
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .res-elo.is-up {
+    color: #6bffb0;
+  }
+  .res-elo.is-down {
+    color: #ff7a6a;
+  }
+  .res-elo.is-flat {
+    color: #c7c2b6;
+  }
+  .res-elo.is-pending {
+    color: #8a857a;
+  }
+
+  /* ─── Online result: local XP block + progress bar ──────── */
+  .over-xp {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(560px, 88vw);
+    font-size: clamp(8px, 0.95vw, 11px);
+  }
+  .over-xp:empty {
+    display: none;
+  }
+  .res-xp-head {
+    display: flex;
+    justify-content: space-between;
+    color: #ffd23f;
+    letter-spacing: 1px;
+  }
+  .res-xp-gain {
+    color: #6bffb0;
+  }
+  .res-xp-bar {
+    position: relative;
+    height: 12px;
+    border: 1px solid rgba(255, 210, 63, 0.6);
+    background: rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+  .res-xp-fill {
+    display: block;
+    height: 100%;
+    width: var(--res-xp-ratio, 0%);
+    background: linear-gradient(90deg, #ff9d3c, #ffd23f);
+    transition: width 0.5s ease-out;
+  }
+
+  /* ─── Online result: REMATCH / LOBBY actions ────────────── */
+  .over-actions {
+    display: flex;
+    gap: 16px;
+  }
+  .over-actions[hidden] {
+    display: none;
+  }
 
   /* ─── Accessibility: honour reduced-motion ──────────────── */
   /* Overrides rely on equal specificity + later source order (no !important,
@@ -1240,12 +1650,16 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     .roster-item { transition: none; }
     .ms-btn { transition: none; }
     .roster-start { transition: none; }
+    .lobby-status.pending { animation: none; }
+    .res-xp-fill { transition: none; }
+    .arena-nav { transition: none; }
   }
 </style>
 
 <script>
   import { startBomber } from '@scripts/games/bomber/render/main';
   import type { CharacterId } from '@scripts/games/bomber/engine/types';
+  import { ARENAS } from '@scripts/games/bomber/versus/arenas';
 
   const VALID_CHARS: CharacterId[] = ['lena', 'mira', 'aya', 'rosa'];
 
@@ -1253,6 +1667,28 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   const canvas = document.getElementById('bomber-canvas') as HTMLCanvasElement | null;
   const modeSelect = document.getElementById('mode-select');
   let started = false;
+  let onlineOpen = false; // ONLINE 大廳開啟中（攔截選角鍵盤導覽）
+
+  // ── VERSUS hotseat debug entry: ?mode=hotseat ────────────
+  // 本機雙人同鍵盤（P1 WASD+Space+E、P2 方向鍵+Enter+Shift）。
+  // 可選 ?arena=0-7（越界回退 0）、?seed=<int>。網路對戰留待後續 Task。
+  if (params.get('mode') === 'hotseat' && canvas) {
+    started = true;
+    modeSelect?.remove();
+    const hint = document.querySelector('.bomber-hint') as HTMLElement | null;
+    if (hint) {
+      hint.textContent = 'P1 WASD+SPACE+E  ·  P2 ←↑→↓+ENTER+SHIFT  ·  MUTE M';
+      hint.style.display = 'block';
+    }
+    const arenaParam = Number(params.get('arena'));
+    const seedParam = Number(params.get('seed'));
+    void import('@scripts/games/bomber/render/versusMain').then(({ startVersus }) => {
+      startVersus(canvas, {
+        arenaId: Number.isFinite(arenaParam) ? arenaParam : 0,
+        seed: Number.isFinite(seedParam) && params.has('seed') ? seedParam : undefined,
+      }).catch((err: unknown) => console.error('[bomber] versus start failed', err));
+    }).catch((err: unknown) => console.error('[bomber] versus load failed', err));
+  }
 
   // ── Selection state ──────────────────────────────────────
   let selected: CharacterId = 'lena';
@@ -1316,9 +1752,351 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     });
   });
 
+  // ═══════════════════════════════════════════════════════════
+  //  ONLINE VERSUS — lobby + handshake wiring (Task 11b)
+  //  hotseat/solo 路徑完全不受影響：online 走獨立的 startVersusOnline。
+  // ═══════════════════════════════════════════════════════════
+  const onlineScreen = document.getElementById('online-screen');
+  const onlineEntry = document.getElementById('online-entry');
+  const onlineLobby = document.getElementById('online-lobby');
+  const lobbyCodeEl = document.getElementById('lobby-code');
+  const lobbyRosterEl = document.getElementById('lobby-roster');
+  const lobbyArenaEl = document.getElementById('lobby-arena');
+  const arenaNameEl = document.getElementById('arena-name');
+  const lobbyStatusEl = document.getElementById('lobby-status');
+  const lobbyReadyBtn = document.getElementById('lobby-ready') as HTMLButtonElement | null;
+  const lobbyStartBtn = document.getElementById('lobby-start') as HTMLButtonElement | null;
+  const roomInput = document.getElementById('online-room-input') as HTMLInputElement | null;
+
+  // 大廳本地狀態（host 權威：seed/arena/順序由 host 廣播）。
+  let netRole: 'host' | 'guest' | null = null;
+  let netStarted = false;          // 已觸發 host/join 連線編排（避免重複點）
+  let localReady = false;          // 本端就緒（host START 需自身就緒 + ≥1 guest）
+  let arenaIdx = 0;                // host 選的 arena（0..7）
+  let connectedGuests = 0;         // host 端：已連上的 guest 數（來自 onStatus）
+  let resolveStart: (() => void) | null = null; // host START → resolve waitStart
+
+  // 本端身分（ranked：錢包地址 + 簽章函式；casual：匿名 id、無簽章 → 不回報名次）。
+  // 進入 online 流程時解析一次：id 即是各端共享的 playerId（後端以此驗證簽章 reporter）。
+  let localPlayerId: string | null = null;
+  let localSignMessage: ((msg: string) => Promise<string>) | null = null;
+
+  /**
+   * 解析本端身分：嘗試連錢包（ranked，id = 地址、可簽章）；失敗/無錢包退回匿名（casual）。
+   * 只解析一次（冪等）。casual 仍可正常對戰，只是結算不回報（bomberRanking 收到無 signMessage → no-op）。
+   */
+  async function resolveIdentity(prefix: 'Host' | 'Guest'): Promise<string> {
+    if (localPlayerId) return localPlayerId;
+    try {
+      const { connectWallet } = await import('@scripts/games/tetris/net/netMain');
+      const w = await connectWallet();
+      if (w) {
+        localPlayerId = w.address;
+        localSignMessage = w.signMessage;
+        return localPlayerId;
+      }
+    } catch { /* 使用者拒絕 / 無錢包 → casual */ }
+    localPlayerId = `${prefix}-${Math.floor(Math.random() * 9000 + 1000)}`;
+    return localPlayerId;
+  }
+
+  function setLobbyStatus(text: string, kind?: 'pending' | 'error'): void {
+    if (!lobbyStatusEl) return;
+    lobbyStatusEl.textContent = text;
+    lobbyStatusEl.classList.toggle('pending', kind === 'pending');
+    lobbyStatusEl.classList.toggle('error', kind === 'error');
+  }
+
+  function renderArenaName(): void {
+    if (arenaNameEl) arenaNameEl.textContent = ARENAS[arenaIdx]?.name ?? `ARENA ${arenaIdx}`;
+  }
+
+  /** 重繪大廳名單：host 在前，再依「已連上 guest 數」補占位列。 */
+  function renderRoster(): void {
+    if (!lobbyRosterEl) return;
+    lobbyRosterEl.innerHTML = '';
+    const rows: { char: string; host: boolean; local: boolean; name: string; ready: boolean }[] = [];
+    // 本端＋（host：占位 guest 列 / guest：host 占位列）
+    if (netRole === 'host') {
+      rows.push({ char: selected, host: true, local: true, name: 'YOU', ready: localReady });
+      for (let i = 0; i < connectedGuests; i++) {
+        rows.push({ char: '?', host: false, local: false, name: `GUEST ${i + 1}`, ready: true });
+      }
+    } else {
+      rows.push({ char: '?', host: true, local: false, name: 'HOST', ready: true });
+      rows.push({ char: selected, host: false, local: true, name: 'YOU', ready: localReady });
+    }
+    for (const r of rows) {
+      const li = document.createElement('li');
+      li.className = 'lobby-roster-item' + (r.local ? ' is-local' : '');
+      const charSpan = document.createElement('span');
+      charSpan.className = 'lri-char';
+      charSpan.textContent = r.char.toUpperCase();
+      if (r.host) {
+        const hostTag = document.createElement('span');
+        hostTag.className = 'lri-host';
+        hostTag.textContent = 'HOST';
+        charSpan.appendChild(hostTag);
+      }
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'lri-name';
+      nameSpan.textContent = r.name;
+      const light = document.createElement('span');
+      light.className = 'lri-light' + (r.ready ? ' is-ready' : '');
+      li.append(charSpan, nameSpan, light);
+      lobbyRosterEl.appendChild(li);
+    }
+  }
+
+  /** host：依「自身就緒 + ≥1 guest」決定 START 是否可按。 */
+  function refreshHostStart(): void {
+    if (netRole !== 'host' || !lobbyStartBtn) return;
+    lobbyStartBtn.hidden = false;
+    lobbyStartBtn.disabled = !(localReady && connectedGuests >= 1);
+  }
+
+  function openOnline(): void {
+    if (started || onlineOpen) return;
+    onlineOpen = true;
+    if (modeSelect) (modeSelect as HTMLElement).hidden = true;
+    if (onlineScreen) onlineScreen.hidden = false;
+    if (onlineEntry) onlineEntry.hidden = false;
+    if (onlineLobby) onlineLobby.hidden = true;
+    renderArenaName();
+  }
+
+  function leaveOnline(): void {
+    // 回選角畫面（未連線時）：最簡單可靠＝reload（清掉任何半開的 RTC/輪詢）。
+    location.href = '/games/bomber';
+  }
+
+  function showLobbyPanel(role: 'host' | 'guest'): void {
+    netRole = role;
+    if (onlineEntry) onlineEntry.hidden = true;
+    if (onlineLobby) onlineLobby.hidden = false;
+    if (lobbyArenaEl) lobbyArenaEl.classList.toggle('is-readonly', role !== 'host');
+    if (lobbyStartBtn) lobbyStartBtn.hidden = role !== 'host';
+    renderArenaName();
+    renderRoster();
+    refreshHostStart();
+  }
+
+  /** 由 BomberReady 建鎖步、接斷線→淘汰，啟動線上渲染。 */
+  async function bootOnline(ready: import('@scripts/games/bomber/net/bomberNetMain').BomberReady): Promise<void> {
+    if (!canvas) return;
+    const [{ BomberLockstep }, { startVersusOnline }] = await Promise.all([
+      import('@scripts/games/bomber/net/bomberLockstep'),
+      import('@scripts/games/bomber/render/versusMain'),
+    ]);
+    const lockstep = new BomberLockstep({
+      playerIds: ready.playerIds,
+      localId: ready.localId,
+      seed: ready.seed,
+      arenaId: ready.arenaId,
+      characters: ready.characters,
+      transport: ready.transport,
+    });
+
+    // ── 斷線 → 決定性強制淘汰 ──────────────────────────────
+    // 離場幀的決定性來源：離場玩家「最後輸入幀 + 1」（lockstep.lastInputFrame(p)+1）。
+    //   此值各端一致（星狀中繼下各端對同一玩家收到的廣播集合相同），與各端 simFrame
+    //   偏移無關，且正是該玩家停送後鎖步的共同停滯前緣——絕不可改用本端 confirmedFrame
+    //   （各端 confirmedFrame 可能不同步，會在不同 simFrame 套用 forfeit → 分歧 → desync）。
+    // host：transport.onChannelClose(idx) → guestIds[idx] 對映 playerId。
+    //   host 算 f = lastInputFrame(pid)+1 並廣播 bomber-leave{p,f}，全端在同一幀 forfeit。
+    // guest：transport.onControl 收 host 廣播的 leave → 套用 host 給的同一幀；
+    //   transport.onClose() → host 斷線，guest 本端把 host 標記離場（同樣以 lastInputFrame+1）。
+    const transport = ready.transport;
+    if (ready.role === 'host' && 'onChannelClose' in transport) {
+      const guestIds = ready.guestIds ?? [];
+      (transport as import('@scripts/games/bomber/net/bomberTransport').BomberHubTransport)
+        .onChannelClose((idx: number) => {
+          const pid = guestIds[idx];
+          if (!pid) return;
+          // 共享前緣：離場玩家最後一筆輸入幀 + 1（各端一致，不受 simFrame 偏移影響）。
+          const f = lockstep.lastInputFrame(pid) + 1;
+          // 廣播給其餘 guest：同一玩家、同一幀離場（決定性）。
+          (transport as import('@scripts/games/bomber/net/bomberTransport').BomberHubTransport)
+            .sendControl({ t: 'bomber-leave', p: pid, f });
+          lockstep.forfeit(pid, f);
+        });
+    } else if (ready.role === 'guest' && 'onClose' in transport) {
+      const spoke = transport as import('@scripts/games/bomber/net/bomberTransport').BomberSpokeTransport;
+      // guest 收到 host 廣播的 bomber-leave（某 guest 離場）→ 在 host 指定幀 forfeit。
+      // host 的 f 由其 lastInputFrame(p)+1 算出，因各端共享 p 的輸入記錄，等同本端自算 → 決定性。
+      spoke.onControl((msg: Record<string, unknown>) => {
+        if (msg.t === 'bomber-leave' && typeof msg.p === 'string' && typeof msg.f === 'number') {
+          lockstep.forfeit(msg.p, msg.f);
+        }
+      });
+      // host 頻道關閉：host 離場。guest 端把 host 標記離場（forfeit），對局收斂結束。
+      // 同樣以「host 最後輸入幀 + 1」當離場幀，與其他端推導方式一致（即使此時只剩本 guest）。
+      spoke.onClose(() => {
+        const hostId = ready.playerIds[0];
+        lockstep.forfeit(hostId, lockstep.lastInputFrame(hostId) + 1);
+      });
+    }
+
+    started = true;
+    onlineOpen = false;
+    if (onlineScreen) onlineScreen.remove();
+    if (modeSelect) modeSelect.remove();
+    const hint = document.querySelector('.bomber-hint') as HTMLElement | null;
+    if (hint) {
+      hint.textContent = 'MOVE WASD/←↑→↓  ·  BOMB SPACE/ENTER  ·  SKILL E/SHIFT  ·  MUTE M';
+      hint.style.display = 'block';
+    }
+
+    // 結算回報接線：matchId = bomber-<seed36>-<room>；reporterId = 本端身分；
+    // signMessage 有則 ranked（回報名次），無則 casual（只顯示名次，不回報）。
+    const roomId = ready.room;
+    await startVersusOnline(canvas, {
+      lockstep,
+      localId: ready.localId,
+      arenaId: ready.arenaId,
+      ranked: {
+        seed: ready.seed,
+        roomId,
+        reporterId: ready.localId,
+        signMessage: localSignMessage ?? undefined,
+      },
+      // REMATCH：同房同設定、新 seed 重開。完整握手（host 重廣播 init 沿用既有 RTC 連線）
+      // 需改動 netMain；此處採最小可靠路徑＝重新進入 online 流程（host 重建房 / guest 重連同房號）。
+      onRematch: () => { location.href = `/games/bomber?online=1&room=${encodeURIComponent(roomId)}`; },
+      // LOBBY：返回 online 大廳入口。
+      onLobby: () => { location.href = '/games/bomber?online=1'; },
+    });
+  }
+
+  // ── onStatus → lobby UI ──────────────────────────────────
+  function onNetStatus(
+    s: import('@scripts/games/bomber/net/bomberNetMain').BomberNetStatus,
+    isHost: boolean,
+  ): void {
+    if (s.phase === 'creating') {
+      setLobbyStatus('Creating room…', 'pending');
+    } else if (s.phase === 'lobby') {
+      if (s.room && lobbyCodeEl) lobbyCodeEl.textContent = s.room;
+      if (isHost) {
+        connectedGuests = s.connected ?? 0;
+        renderRoster();
+        refreshHostStart();
+        setLobbyStatus(
+          connectedGuests >= 1 ? 'Players joined — set ready & START' : 'Waiting for players…',
+          'pending',
+        );
+      } else {
+        setLobbyStatus('Connected · waiting for host…', 'pending');
+      }
+    } else if (s.phase === 'connecting') {
+      setLobbyStatus('Connecting…', 'pending');
+    } else if (s.phase === 'connected') {
+      setLobbyStatus('Connected — starting…');
+    } else if (s.phase === 'error') {
+      netStarted = false; // 允許重試
+      setLobbyStatus(`Error: ${s.message ?? 'connection failed'} (leave & retry)`, 'error');
+    }
+  }
+
+  // ── CREATE ROOM (host) ───────────────────────────────────
+  async function beginHost(): Promise<void> {
+    if (netStarted || !canvas) return;
+    netStarted = true;
+    showLobbyPanel('host');
+    setLobbyStatus('Creating room…', 'pending');
+    const { hostBomberGame } = await import('@scripts/games/bomber/net/bomberNetMain');
+    const startSignal = new Promise<void>((res) => { resolveStart = res; });
+    // 決定性 seed：host 單一來源（不影響任何模擬內部 RNG，僅作為各端共享的初始 seed）。
+    const seed = Math.floor(Math.random() * 0x1_0000_0000) >>> 0;
+    // 身分：ranked（錢包地址，可簽章 → 回報名次）或 casual（匿名，不回報）。
+    const id = await resolveIdentity('Host');
+    hostBomberGame({
+      identity: { id, character: selected },
+      arenaId: arenaIdx,
+      maxGuests: 3, // 2-4 人：host + 最多 3 guest
+      seed,
+      waitStart: () => startSignal,
+      onStatus: (s) => onNetStatus(s, true),
+      onReady: (r) => { void bootOnline(r); },
+    }).catch((err: unknown) => onNetStatus({ phase: 'error', message: String(err) }, true));
+  }
+
+  // ── JOIN (guest) ─────────────────────────────────────────
+  async function beginJoin(): Promise<void> {
+    const room = (roomInput?.value ?? '').trim().toUpperCase();
+    if (!room) { setLobbyStatus('Enter a room code', 'error'); return; }
+    if (netStarted || !canvas) return;
+    netStarted = true;
+    showLobbyPanel('guest');
+    if (lobbyCodeEl) lobbyCodeEl.textContent = room;
+    setLobbyStatus('Connecting…', 'pending');
+    const { joinBomberGame } = await import('@scripts/games/bomber/net/bomberNetMain');
+    // 身分：ranked（錢包地址，可簽章 → 回報名次）或 casual（匿名，不回報）。
+    const id = await resolveIdentity('Guest');
+    joinBomberGame({
+      room,
+      identity: { id, character: selected },
+      onStatus: (s) => onNetStatus(s, false),
+      onReady: (r) => { void bootOnline(r); },
+    }).catch((err: unknown) => onNetStatus({ phase: 'error', message: String(err) }, false));
+  }
+
+  // ── Wire ONLINE controls ─────────────────────────────────
+  modeSelect?.querySelectorAll<HTMLButtonElement>('[data-action="online"]').forEach((btn) => {
+    btn.addEventListener('click', openOnline);
+  });
+  document.getElementById('online-back')?.addEventListener('click', leaveOnline);
+  document.getElementById('online-create')?.addEventListener('click', () => void beginHost());
+  document.getElementById('online-join-btn')?.addEventListener('click', () => void beginJoin());
+  document.getElementById('lobby-cancel')?.addEventListener('click', leaveOnline);
+  roomInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); void beginJoin(); }
+  });
+
+  document.getElementById('lobby-copy')?.addEventListener('click', () => {
+    const code = lobbyCodeEl?.textContent ?? '';
+    if (code && navigator.clipboard) {
+      void navigator.clipboard.writeText(code).then(() => {
+        const btn = document.getElementById('lobby-copy');
+        if (btn) { const t = btn.textContent; btn.textContent = 'COPIED'; setTimeout(() => { if (btn) btn.textContent = t; }, 1200); }
+      });
+    }
+  });
+
+  // Host arena picker (◀ ▶)
+  document.getElementById('arena-prev')?.addEventListener('click', () => {
+    if (netRole !== 'host') return;
+    arenaIdx = (arenaIdx + ARENAS.length - 1) % ARENAS.length;
+    renderArenaName();
+  });
+  document.getElementById('arena-next')?.addEventListener('click', () => {
+    if (netRole !== 'host') return;
+    arenaIdx = (arenaIdx + 1) % ARENAS.length;
+    renderArenaName();
+  });
+
+  // READY toggle (local)
+  lobbyReadyBtn?.addEventListener('click', () => {
+    localReady = !localReady;
+    lobbyReadyBtn.classList.toggle('is-ready', localReady);
+    lobbyReadyBtn.textContent = localReady ? 'READY ✓' : 'READY';
+    renderRoster();
+    refreshHostStart();
+  });
+
+  // START (host only): resolve waitStart → orchestration assembles roster & broadcasts init.
+  lobbyStartBtn?.addEventListener('click', () => {
+    if (netRole !== 'host' || !resolveStart) return;
+    if (!(localReady && connectedGuests >= 1)) return;
+    lobbyStartBtn.disabled = true;
+    setLobbyStatus('Starting match…', 'pending');
+    resolveStart();
+    resolveStart = null;
+  });
+
   // ── Keyboard navigation ──────────────────────────────────
   document.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (started) return;
+    if (started || onlineOpen) return;
     const idx = VALID_CHARS.indexOf(selected);
     if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
       e.preventDefault();
@@ -1339,6 +2117,19 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   const charParam = params.get('char') as CharacterId | null;
   if (charParam && (VALID_CHARS as string[]).includes(charParam)) {
     start(charParam);
+  }
+
+  // ── Online deep-link: ?online=1[&room=CODE] ───────────────
+  //  REMATCH/LOBBY 結算按鈕導回此頁帶 ?online=1（&room= 給 REMATCH 同房重連）。
+  //  REMATCH 限制：未沿用既有 RTC 連線（完整握手需改 netMain）——以「同房號重新協商」近似
+  //  「同房同設定、新 seed」：guest 重連同房號，host 端會以新 seed 重開一局。
+  if (!started && params.get('online') === '1') {
+    openOnline();
+    const rejoinRoom = params.get('room');
+    if (rejoinRoom && roomInput) {
+      roomInput.value = rejoinRoom.toUpperCase();
+      void beginJoin(); // 直接重連該房（REMATCH 路徑）
+    }
   }
 
   // ── Autostart: ?mode=solo → lena (backward compat for e2e) ──

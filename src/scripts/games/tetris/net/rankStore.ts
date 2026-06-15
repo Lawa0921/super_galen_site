@@ -61,6 +61,10 @@ export class MemoryRankStore implements RankStore {
   private brReports = new Map<string, Map<string, { standings: string[]; exp: number }>>();
   private settledBR = new Map<string, number>();
 
+  // MemoryRankStore 的隔離靠「不同實例 = 不同 Map」達成（每個 ladder 各持一個實例），
+  // 故無須在記憶體 key 內帶 namespace；ns 參數僅為與 Upstash 介面對齊（不使用）。
+  constructor(_ns = '') { /* namespace 對記憶體實作無作用：實例即隔離 */ }
+
   async getPlayer(id: string): Promise<PlayerRecord | null> {
     const p = this.players.get(id);
     return p ? normalizePlayer(p as unknown as Record<string, unknown>) : null;
@@ -122,7 +126,16 @@ export class MemoryRankStore implements RankStore {
 
 /** Upstash Redis REST 實作。 */
 export class UpstashRankStore implements RankStore {
-  constructor(private url: string, private token: string) {}
+  /**
+   * ns：key 命名空間前綴。預設 ''（tetris：所有 key 與原本 byte-identical）。
+   * bomber ladder 傳入 'bomber:' → 所有 key（含排行榜 zset）與 tetris 完全隔離。
+   */
+  constructor(private url: string, private token: string, private ns = '') {}
+
+  /** 套用 namespace 前綴；ns='' 時回原 key（tetris 不變）。 */
+  private k(key: string): string {
+    return this.ns + key;
+  }
 
   private async cmd(...parts: string[]): Promise<unknown> {
     const path = parts.map((p) => encodeURIComponent(p)).join('/');
@@ -132,17 +145,17 @@ export class UpstashRankStore implements RankStore {
   }
 
   async getPlayer(id: string): Promise<PlayerRecord | null> {
-    const r = await this.cmd('get', `player:${id}`);
+    const r = await this.cmd('get', this.k(`player:${id}`));
     return r ? normalizePlayer(JSON.parse(String(r)) as Record<string, unknown>) : null;
   }
   async setPlayer(id: string, rec: PlayerRecord): Promise<void> {
-    await this.cmd('set', `player:${id}`, JSON.stringify(rec));
-    await this.cmd('zadd', LB_KEY, String(rec.rating), id);
+    await this.cmd('set', this.k(`player:${id}`), JSON.stringify(rec));
+    await this.cmd('zadd', this.k(LB_KEY), String(rec.rating), id);
     // 截斷排行榜（保留前 LB_MAX）
-    await this.cmd('zremrangebyrank', LB_KEY, '0', String(-(LB_MAX + 1)));
+    await this.cmd('zremrangebyrank', this.k(LB_KEY), '0', String(-(LB_MAX + 1)));
   }
   async topPlayers(n: number): Promise<Array<{ id: string; rating: number }>> {
-    const r = (await this.cmd('zrange', LB_KEY, '0', String(n - 1), 'REV', 'WITHSCORES')) as string[] | null;
+    const r = (await this.cmd('zrange', this.k(LB_KEY), '0', String(n - 1), 'REV', 'WITHSCORES')) as string[] | null;
     const out: Array<{ id: string; rating: number }> = [];
     if (Array.isArray(r)) {
       for (let i = 0; i < r.length; i += 2) out.push({ id: r[i], rating: Number(r[i + 1]) });
@@ -150,27 +163,27 @@ export class UpstashRankStore implements RankStore {
     return out;
   }
   async getReport(matchId: string, reporter: string): Promise<string | null> {
-    const r = await this.cmd('get', `rep:${matchId}:${reporter}`);
+    const r = await this.cmd('get', this.k(`rep:${matchId}:${reporter}`));
     return r === null || r === undefined ? null : String(r);
   }
   async setReport(matchId: string, reporter: string, winner: string, ttlSec: number): Promise<void> {
-    await this.cmd('set', `rep:${matchId}:${reporter}`, winner, 'EX', String(ttlSec));
+    await this.cmd('set', this.k(`rep:${matchId}:${reporter}`), winner, 'EX', String(ttlSec));
   }
   async isSettled(matchId: string): Promise<boolean> {
-    return (await this.cmd('get', `done:${matchId}`)) !== null;
+    return (await this.cmd('get', this.k(`done:${matchId}`))) !== null;
   }
   async markSettled(matchId: string, ttlSec: number): Promise<boolean> {
-    const r = await this.cmd('set', `done:${matchId}`, '1', 'NX', 'EX', String(ttlSec));
+    const r = await this.cmd('set', this.k(`done:${matchId}`), '1', 'NX', 'EX', String(ttlSec));
     return r === 'OK'; // NX 成功回 "OK"，已存在回 null
   }
   async setBRReport(matchId: string, reporterId: string, standings: string[], ttlSec: number): Promise<void> {
-    const key = `brreport:${matchId}`;
+    const key = this.k(`brreport:${matchId}`);
     await this.cmd('hset', key, reporterId, JSON.stringify(standings));
     await this.cmd('expire', key, String(ttlSec));
   }
   async getBRReportsForMatch(matchId: string): Promise<Record<string, string[]>> {
     // HGETALL 回扁平陣列 [field1, value1, field2, value2, ...]
-    const r = (await this.cmd('hgetall', `brreport:${matchId}`)) as string[] | null;
+    const r = (await this.cmd('hgetall', this.k(`brreport:${matchId}`))) as string[] | null;
     const out: Record<string, string[]> = {};
     if (Array.isArray(r)) {
       for (let i = 0; i < r.length; i += 2) {
@@ -186,21 +199,40 @@ export class UpstashRankStore implements RankStore {
     return out;
   }
   async markSettledBR(matchId: string, ttlSec: number): Promise<boolean> {
-    const r = await this.cmd('set', `settledbr:${matchId}`, '1', 'NX', 'EX', String(ttlSec));
+    const r = await this.cmd('set', this.k(`settledbr:${matchId}`), '1', 'NX', 'EX', String(ttlSec));
     return r === 'OK'; // NX 成功回 "OK"，已存在回 null
   }
+}
+
+/** 解析 env → { url, token }（缺一半即報錯，避免生產環境靜默退回記憶體）。 */
+function resolveUpstash(env: Record<string, string | undefined>): { url?: string; token?: string } {
+  // Upstash 原生命名，或 Vercel Marketplace（Upstash for Redis）注入的 KV_REST_API_* 命名
+  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
+  if ((url && !token) || (token && !url)) {
+    throw new Error('Upstash 設定不完整：REST URL 與 TOKEN 必須同時提供（KV_REST_API_URL/TOKEN 或 UPSTASH_REDIS_REST_URL/TOKEN）');
+  }
+  return { url, token };
 }
 
 let singleton: RankStore | null = null;
 export function getRankStore(env: Record<string, string | undefined> = process.env): RankStore {
   if (singleton) return singleton;
-  // Upstash 原生命名，或 Vercel Marketplace（Upstash for Redis）注入的 KV_REST_API_* 命名
-  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
-  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
-  // 只設了一半 → 主動報錯，避免生產環境靜默退回記憶體（重啟即失資料）
-  if ((url && !token) || (token && !url)) {
-    throw new Error('Upstash 設定不完整：REST URL 與 TOKEN 必須同時提供（KV_REST_API_URL/TOKEN 或 UPSTASH_REDIS_REST_URL/TOKEN）');
-  }
+  const { url, token } = resolveUpstash(env);
+  // tetris ladder：namespace 預設 ''（所有 key 與原本 byte-identical）
   singleton = url && token ? new UpstashRankStore(url, token) : new MemoryRankStore();
   return singleton;
+}
+
+/**
+ * Bomber ladder 專用 rankStore（與 tetris 完全隔離的獨立單例）。
+ * Upstash 實作所有 key 帶 'bomber:' 前綴；Memory 實作則是獨立實例（各自的 Map）。
+ * 與 getRankStore() 互不共用單例，故 bomber 的積分/XP/排行榜不會碰到 tetris 紀錄。
+ */
+let bomberSingleton: RankStore | null = null;
+export function getBomberRankStore(env: Record<string, string | undefined> = process.env): RankStore {
+  if (bomberSingleton) return bomberSingleton;
+  const { url, token } = resolveUpstash(env);
+  bomberSingleton = url && token ? new UpstashRankStore(url, token, 'bomber:') : new MemoryRankStore('bomber:');
+  return bomberSingleton;
 }

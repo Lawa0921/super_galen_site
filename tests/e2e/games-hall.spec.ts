@@ -42,7 +42,28 @@ test.describe('Dungeon Arcade — hall & mode select', () => {
     // 排行榜入口已移到 Tetris 主選單分頁；獨立頁仍可直接到達（深連結）。
     await page.goto('/games/leaderboard');
     await expect(page.getByText('LEADERBOARD')).toBeVisible();
+    // 預設 TETRIS 分頁啟用（保留原本載入行為）
+    await expect(page.locator('#lb-tab-tetris')).toHaveAttribute('aria-selected', 'true');
     // fetch 完成後不應停在「載入中」（證明 /api/leaderboard 有回應）
+    await expect(page.locator('#lb-board')).not.toContainText('載入中', { timeout: 10000 });
+  });
+
+  test('leaderboard BOMBER tab fetches game=bomber and renders', async ({ page }) => {
+    await page.goto('/games/leaderboard');
+    await expect(page.locator('#lb-tab-bomber')).toBeVisible();
+
+    // 點 BOMBER → 應打 /api/leaderboard?...game=bomber
+    const [bomberReq] = await Promise.all([
+      page.waitForRequest((req) => req.url().includes('/api/leaderboard') && req.url().includes('game=bomber'), {
+        timeout: 10000,
+      }),
+      page.locator('#lb-tab-bomber').click(),
+    ]);
+    expect(bomberReq.url()).toContain('game=bomber');
+
+    // 分頁狀態切換 + 載入結束（不停在「載入中」）
+    await expect(page.locator('#lb-tab-bomber')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#lb-tab-tetris')).toHaveAttribute('aria-selected', 'false');
     await expect(page.locator('#lb-board')).not.toContainText('載入中', { timeout: 10000 });
   });
 });
