@@ -2,6 +2,7 @@ import { Container, Sprite, Texture, Rectangle, Graphics } from 'pixi.js';
 import { speedMs } from '../engine/player';
 import { BLAST_TTL_MS, GRID_COLS, GRID_ROWS } from '../engine/constants';
 import { lerp, type Layout } from './layout';
+import { footShadowGeom, SHADOW_FILL, SHADOW_ALPHA } from './footShadow';
 import type { BomberTextures } from './assets';
 import type { VersusState, VPlayer } from '../versus/types';
 import { warningRing } from '../versus/suddenDeathWarning';
@@ -69,6 +70,10 @@ export class VersusEntityView {
   private textures: BomberTextures;
   private walkFrameCache = new Map<string, Texture>();
 
+  // --- foot shadows ---
+  /** Single Graphics drawn UNDER all player sprites (soft ground shadow). */
+  private shadowG: Graphics;
+
   // --- sprite pools ---
   private playerPool: Sprite[] = [];
   private bombPool:   Sprite[] = [];
@@ -83,6 +88,9 @@ export class VersusEntityView {
 
   constructor(private layer: Container, private fxLayer: Container, textures: BomberTextures) {
     this.textures = textures;
+    // 腳底軟陰影：entityLayer 的第一個子節點 → 永遠墊在玩家 sprite 底下、地板之上。
+    this.shadowG = new Graphics();
+    this.layer.addChildAt(this.shadowG, 0);
     this.warnG = new Graphics();
     this.fxLayer.addChild(this.warnG);
     this.fxG = new Graphics();
@@ -153,6 +161,9 @@ export class VersusEntityView {
 
     const { cell, ox, oy } = layout;
 
+    // 0. 腳底陰影：每幀重畫；存活玩家各一片扁橢圓（畫在 sprite 底下、淘汰者不畫）
+    this.shadowG.clear();
+
     // 1. 爆風 — 方向性件型 × 3 階段漸弱（比照 EntityView）
     const bKey = (x: number, y: number): number => y * 64 + x;
     const blastSet = new Set(state.blasts.map((b) => bKey(b.x, b.y)));
@@ -220,6 +231,10 @@ export class VersusEntityView {
       const progress = Math.min(1, Math.max(0, 1 - p.moveCooldownMs / speedMs(p.speedLevel)));
       const rx = lerp(p.prevX, p.x, progress);
       const ry = lerp(p.prevY, p.y, progress);
+
+      // 腳底陰影（sizeMul = 1，與玩家 sprite cell*0.95 相稱）
+      const sh = footShadowGeom(rx, ry, cell, ox, oy, 1);
+      this.shadowG.ellipse(sh.cx, sh.cy, sh.rx, sh.ry).fill({ color: SHADOW_FILL, alpha: SHADOW_ALPHA });
 
       // walk-cycle：移動中持續累加相位；靜止顯示站立幀
       const moving = p.moveCooldownMs > 0;

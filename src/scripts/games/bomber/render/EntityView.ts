@@ -4,6 +4,7 @@ import { speedMs } from '../engine/player';
 import { BLAST_TTL_MS } from '../engine/constants';
 import { enemyMoveMs } from '../engine/enemy';
 import { lerp, type Layout } from './layout';
+import { footShadowGeom, SHADOW_FILL, SHADOW_ALPHA } from './footShadow';
 import type { BomberTextures } from './assets';
 
 /**
@@ -90,6 +91,10 @@ export class EntityView {
    */
   private walkFrameCache = new Map<string, Texture>();
 
+  // --- foot shadows ---
+  /** Single Graphics drawn UNDER all character/enemy sprites (soft ground shadow). */
+  private shadowG: Graphics;
+
   // --- sprite pools ---
   private playerSp:  Sprite;
   private enemyPool: Sprite[] = [];
@@ -109,6 +114,12 @@ export class EntityView {
 
   constructor(private layer: Container, private fxLayer: Container, textures: BomberTextures) {
     this.textures = textures;
+
+    // 腳底軟陰影：作為 entityLayer 的「第一個子節點」，永遠墊在角色/敵人 sprite 底下
+    // （entityLayer 本身在 gridLayer 之上，所以陰影在地板之上、sprite 之下）。
+    // 暗色低 alpha 遠低於 bloom threshold，不會發光。
+    this.shadowG = new Graphics();
+    this.layer.addChildAt(this.shadowG, 0);
 
     // 玩家（1 個）— 初始貼圖用 lena；render 時每幀依 character 切換
     this.playerSp = this._newSprite(textures.playerLena);
@@ -227,6 +238,9 @@ export class EntityView {
 
     const { cell, ox, oy } = layout;
 
+    // 0. 腳底陰影：每幀重畫；存活角色/敵人各一片扁橢圓（畫在 sprite 底下）
+    this.shadowG.clear();
+
     // 1. 出口
     this._renderExit(state, cell, ox, oy);
 
@@ -333,6 +347,11 @@ export class EntityView {
       const sp  = this._poolGet(this.enemyPool, ei++, tex);
       const breathe = dormantMimic ? 1 + Math.sin(this.enemyAnimMs * 0.004 + enemy.id) * 0.02 : 1;
       const sizeMul = dormantMimic ? 1.0 : (ENEMY_SIZE[enemy.kind as 'splitter' | 'mini'] ?? 0.85);
+      // 腳底陰影（依顯示尺寸縮放）；休眠 mimic 偽裝成箱子、不畫陰影以免破綻
+      if (!dormantMimic) {
+        const sh = footShadowGeom(rx, ry, cell, ox, oy, sizeMul);
+        this.shadowG.ellipse(sh.cx, sh.cy, sh.rx, sh.ry).fill({ color: SHADOW_FILL, alpha: SHADOW_ALPHA });
+      }
       const size = cell * sizeMul * breathe;
       sp.width  = size;
       sp.height = size;
@@ -364,6 +383,12 @@ export class EntityView {
     const pry = lerp(p.prevY, p.y, playerProgress);
     const ppx = ox + prx * cell + cell / 2;
     const ppy = oy + pry * cell + cell / 2;
+
+    // 玩家腳底陰影（sizeMul = 1）
+    {
+      const sh = footShadowGeom(prx, pry, cell, ox, oy, 1);
+      this.shadowG.ellipse(sh.cx, sh.cy, sh.rx, sh.ry).fill({ color: SHADOW_FILL, alpha: SHADOW_ALPHA });
+    }
 
     const isInvuln     = p.invulnMs > 0;
     const blinkVisible = !isInvuln || Math.sin(this.blinkPhase) > 0;
