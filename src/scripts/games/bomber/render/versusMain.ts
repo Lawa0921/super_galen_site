@@ -186,10 +186,13 @@ async function mountVersusLoop(
   };
   stage.app.ticker.add(tick);
 
+  let destroyed = false; // 冪等保護：host-drop abort 路徑可能呼叫 destroy() 兩次（abort + 重檢）
   const handle: VersusHandle = {
     match,
     lockstep,
     destroy() {
+      if (destroyed) return; // 第二次起為 no-op，避免重複 teardown 拋錯
+      destroyed = true;
       stage.app.renderer.off('resize', relayout);
       retryBtn?.removeEventListener('click', onRetry);
       onDestroyExtra();

@@ -4,6 +4,7 @@ import { BLAST_TTL_MS, GRID_COLS, GRID_ROWS } from '../engine/constants';
 import { lerp, type Layout } from './layout';
 import type { BomberTextures } from './assets';
 import type { VersusState, VPlayer } from '../versus/types';
+import { warningRing } from '../versus/suddenDeathWarning';
 import type { AbilityId, CharacterId } from '../engine/types';
 
 /**
@@ -15,8 +16,9 @@ import type { AbilityId, CharacterId } from '../engine/types';
  * - 所有存活玩家（walk sheet：列依朝向、幀依移動 walk-cycle；淘汰者隱藏）
  * - 護盾泡（持盾玩家）、無敵閃爍
  * - 技能環形震波（drainEvents → triggerAbility）
- * - Sudden death 警告：collapsedRings 變化後 3 秒內，下一圈（d === collapsedRings+1）
- *   格子以脈動紅色半透明覆層提示即將塌縮
+ * - Sudden death 警告：以 elapsedMs 推算「即將塌縮的那一圈」（warningRing），
+ *   在該圈真正塌縮前的提前視窗內，把該圈格子以脈動紅色半透明覆層警示。
+ *   如此 ring 1 會在 120s「之前」就先閃（領先塌縮），且絕不警示引擎不塌的 ring 4+。
  *
  * 策略：沿用 EntityView 的 recreate-per-frame pool（多的隱藏、不足時新增）。
  */
@@ -63,9 +65,6 @@ export class VersusEntityView {
   private blinkPhase    = 0;
   /** 各玩家 walk-cycle 時基（id → ms），移動時累加、靜止保持站立幀。 */
   private playerWalkMs   = new Map<string, number>();
-  /** Sudden death 警告剩餘顯示時間（ms）；collapsedRings 變化時重設為 3000。 */
-  private warnMs = 0;
-  private lastCollapsedRings = 0;
 
   private textures: BomberTextures;
   private walkFrameCache = new Map<string, Texture>();
@@ -257,27 +256,20 @@ export class VersusEntityView {
   private _renderFx(state: VersusState, layout: Layout, dtMs: number): void {
     const { cell, ox, oy } = layout;
 
-    // -- Sudden death 警告覆層（下一圈格子脈動紅色半透明） --
-    if (state.collapsedRings !== this.lastCollapsedRings) {
-      this.warnMs = 3000; // 每次塌縮後警示下一圈 3 秒
-      this.lastCollapsedRings = state.collapsedRings;
-    }
+    // -- Sudden death 警告覆層（即將塌縮的那一圈，脈動紅色半透明） --
+    // 由 elapsedMs 推算（warningRing）：在塌縮前的提前視窗內警示，讓 ring 1 在 120s 前先閃，
+    // 且絕不警示引擎不塌的 ring 4+（warningRing 已封住 r > MAX_COLLAPSE_RING）。
     const wg = this.warnG;
     wg.clear();
-    if (this.warnMs > 0) {
-      this.warnMs = Math.max(0, this.warnMs - dtMs);
-      const nextRing = state.collapsedRings + 1;
-      // 圈半徑超出盤面中心則無下一圈可警示
-      const maxRing = Math.floor(Math.min(GRID_COLS, GRID_ROWS) / 2);
-      if (nextRing <= maxRing) {
-        const pulse = 0.18 + Math.abs(Math.sin(this.pulsePhase * 2.4)) * 0.32; // 0.18→0.5
-        for (let y = 0; y < GRID_ROWS; y++) {
-          for (let x = 0; x < GRID_COLS; x++) {
-            const d = Math.min(x, GRID_COLS - 1 - x, y, GRID_ROWS - 1 - y);
-            if (d !== nextRing) continue;
-            wg.rect(ox + x * cell, oy + y * cell, cell, cell)
-              .fill({ color: 0xff2a2a, alpha: pulse });
-          }
+    const warnRing = warningRing(state.elapsedMs);
+    if (warnRing !== null) {
+      const pulse = 0.18 + Math.abs(Math.sin(this.pulsePhase * 2.4)) * 0.32; // 0.18→0.5
+      for (let y = 0; y < GRID_ROWS; y++) {
+        for (let x = 0; x < GRID_COLS; x++) {
+          const d = Math.min(x, GRID_COLS - 1 - x, y, GRID_ROWS - 1 - y);
+          if (d !== warnRing) continue;
+          wg.rect(ox + x * cell, oy + y * cell, cell, cell)
+            .fill({ color: 0xff2a2a, alpha: pulse });
         }
       }
     }
