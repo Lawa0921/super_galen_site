@@ -8,8 +8,39 @@ import {
 } from './versusReplay';
 import type { CharacterId } from '../engine/types';
 import { VersusMatch } from '../versus/versusMatch';
+import { placementScore } from '@scripts/games/tetris/net/ffaElo';
 
 const CHARS: CharacterId[] = ['lena', 'mira', 'aya', 'rosa'];
+
+/**
+ * 跑一場 3 人局，P1+P2 同幀自爆（同 fuse、原地不動 → 同幀全滅），P0 全程不動倖存。
+ * 引擎名次：P0=1（冠軍），P1=P2=2（同幀死共享第 2 名）。winnerId=P0（非平局）。
+ * 回傳倖存端 nodes[0]，供取 replay 重模擬。
+ */
+function runTwoTiedSecondMatch(seed: number): {
+  node: BomberLockstep;
+  nodes: BomberLockstep[];
+  playerIds: string[];
+} {
+  const playerIds = ['P0', 'P1', 'P2'];
+  const { nodes } = buildNodes(playerIds, seed, 0);
+  // P1、P2 frame 0 自爆原地不動 → 同幀全滅 → 共享第 2 名；P0 不動 → 冠軍。
+  nodes[1].queueLocal({ t: 'bomb' });
+  nodes[2].queueLocal({ t: 'bomb' });
+  let dead = false;
+  for (let f = 0; f < 6000 && nodes[0].match.getState().status === 'playing'; f++) {
+    for (const node of nodes) {
+      if ((node.localId === 'P1' || node.localId === 'P2') && dead) continue;
+      node.tick();
+    }
+    const st = nodes[0].match.getState();
+    const p1 = st.players.find((p) => p.id === 'P1');
+    const p2 = st.players.find((p) => p.id === 'P2');
+    if (p1 && p2 && !p1.alive && !p2.alive) dead = true;
+  }
+  settle(nodes);
+  return { node: nodes[0], nodes, playerIds };
+}
 
 /** 建 N 個接同一 LoopbackBomberHub 的 BomberLockstep 節點。 */
 function buildNodes(
@@ -326,5 +357,41 @@ describe('verifyVersusReplay — 防禦縱深（FIX 2）', () => {
       inputs: [{ f: 0, p: 'P1', a: [{ t: 'held', d: 'up', v: 1 } as unknown as VersusAction] }],
     };
     expect(verifyVersusReplay(badV, claimed)).toBe(false);
+  });
+});
+
+describe('placementScore — 同名次 tie 行為（結算端依賴此）', () => {
+  it('placementScore(x, x) === 0.5（同名次＝平手期望分）', () => {
+    expect(placementScore(2, 2)).toBe(0.5);
+    expect(placementScore(1, 1)).toBe(0.5);
+    expect(placementScore(1, 2)).toBe(1);
+    expect(placementScore(2, 1)).toBe(0);
+  });
+});
+
+describe('simulateVersusReplay — 回傳真實 per-player placement map（伺服器真名次來源）', () => {
+  it('分出勝負（無同名次）：placements == standings 名次 [1,2]', () => {
+    const { node } = runSelfBombMatch(3);
+    const replay = node.getReplay();
+    const sim = simulateVersusReplay(replay);
+    // P1 冠軍 placement 1、P0 自爆 placement 2
+    expect(sim.placements).toEqual({ P1: 1, P0: 2 });
+  });
+
+  it('mid-match 同名次（P1+P2 同幀死）：placements 反映真實共享名次 {P0:1, P1:2, P2:2}', () => {
+    const { node } = runTwoTiedSecondMatch(42);
+    const replay = node.getReplay();
+    const sim = simulateVersusReplay(replay);
+    // 引擎真名次：冠軍唯一 1、兩位同幀死共享 2（非依 playerIds 序拆成 2/3）。
+    expect(sim.winnerId).toBe('P0');
+    expect(sim.placements).toEqual({ P0: 1, P1: 2, P2: 2 });
+    // standings 仍為 winner-first（平手以 playerIds 序穩定），不破壞既有契約。
+    expect(sim.standings).toEqual(['P0', 'P1', 'P2']);
+  });
+
+  it('placements 涵蓋全體 playerIds（每位皆有名次）', () => {
+    const { node } = runTwoTiedSecondMatch(7);
+    const sim = simulateVersusReplay(node.getReplay());
+    expect(Object.keys(sim.placements).sort()).toEqual(['P0', 'P1', 'P2']);
   });
 });

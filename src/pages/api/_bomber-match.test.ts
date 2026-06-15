@@ -122,6 +122,56 @@ function buildDrawScenario(seed: number, n: number) {
   return { wallets, playerIds, standings, stateHash, replay, matchId, winnerId };
 }
 
+/**
+ * 跑一場 3 人「mid-match 同名次」局：P1、P2 frame 0 自爆原地不動（同 fuse → 同幀全滅 →
+ * 共享第 2 名），P0 全程不動倖存奪冠。引擎真名次 = { P0:1, P1:2, P2:2 }、winnerId=P0（非平局）。
+ * 兩位同名次玩家在 standings 陣列中佔 index 1、2 —— 舊邏輯依索引給 placement 2/3（不公平），
+ * 新邏輯須改用重模擬真名次給兩人並列第 2 → 相同 Elo/XP。回傳與 buildScenario 同形。
+ */
+function buildTieScenario(seed: number) {
+  const n = 3;
+  const wallets = Array.from({ length: n }, () => Wallet.createRandom());
+  const playerIds = wallets.map((w) => w.address);
+  const characters: Record<string, CharacterId> = {};
+  playerIds.forEach((id, i) => (characters[id] = CHARS[i % CHARS.length]));
+
+  const hub = new LoopbackBomberHub();
+  const nodes = playerIds.map(
+    (localId) =>
+      new BomberLockstep({
+        playerIds,
+        localId,
+        seed,
+        arenaId: 0,
+        characters,
+        transport: hub.transportFor(localId),
+      }),
+  );
+  // P1、P2 同幀自爆原地不動 → 同幀全滅共享第 2 名；P0 不動 → 唯一冠軍。
+  nodes[1].queueLocal({ t: 'bomb' });
+  nodes[2].queueLocal({ t: 'bomb' });
+  let dead = false;
+  for (let f = 0; f < 6000 && nodes[0].match.getState().status === 'playing'; f++) {
+    for (const node of nodes) {
+      if ((node.localId === playerIds[1] || node.localId === playerIds[2]) && dead) continue;
+      node.tick();
+    }
+    const st = nodes[0].match.getState();
+    const p1 = st.players.find((p) => p.id === playerIds[1]);
+    const p2 = st.players.find((p) => p.id === playerIds[2]);
+    if (p1 && p2 && !p1.alive && !p2.alive) dead = true;
+  }
+  settle(nodes, hub);
+
+  const node = nodes[0];
+  const replay = node.getReplay();
+  const standings = liveStandings(node.match, playerIds);
+  const stateHash = node.match.stateHash();
+  const winnerId = node.match.getState().winnerId;
+  const matchId = `bomber-${seed.toString(36)}-room1`;
+  return { wallets, playerIds, standings, stateHash, replay, matchId, winnerId };
+}
+
 /** 為某 wallet 對 (matchId, standings) 產生合法簽章（沿用 buildFfaResultMessage）。 */
 async function sign(wallet: Wallet | HDNodeWallet, matchId: string, standings: string[]) {
   const placements = standings.map((_, i) => i + 1);
@@ -506,5 +556,84 @@ describe('POST /api/bomber-match — 平局（FIX 3：server 重模擬 winnerId=
       expect(rec!.losses).toBe(0);
       expect(rec!.games).toBe(1);
     }
+  });
+});
+
+describe('POST /api/bomber-match — mid-match 同名次公平計分（伺服器真名次，非陣列索引）', () => {
+  it('3 人場 [1,2,2]：兩位同名次玩家 ratingAfter 與 xpGained 完全相同；冠軍記勝', async () => {
+    const POST = await loadPost();
+    const { wallets, standings, stateHash, replay, matchId, winnerId } = buildTieScenario(42);
+    // 前置：此局非平局（有唯一冠軍），但有兩位同幀死共享第 2 名。
+    expect(winnerId).not.toBeNull();
+    const { simulateVersusReplay } = await import('@scripts/games/bomber/net/versusReplay');
+    const placements = simulateVersusReplay(replay).placements;
+    // 真名次：冠軍唯一 1，另兩位並列 2（其中一人在 standings index1、一人 index2）。
+    const placeVals = standings.map((id) => placements[id]);
+    expect(placeVals[0]).toBe(1); // standings[0] = 冠軍
+    expect(placeVals[1]).toBe(2);
+    expect(placeVals[2]).toBe(2); // 同名次（舊邏輯會誤判為 3）
+
+    // 達門檻（3 人門檻 2）→ applied。
+    let body: {
+      outcome: string;
+      results: Array<{ id: string; placement: number; ratingBefore: number; ratingAfter: number; xpGained: number }>;
+    } | null = null;
+    for (const w of [wallets[0], wallets[1]]) {
+      const res = await POST(
+        ctx({
+          matchId,
+          reporterId: w.address,
+          standings,
+          stateHash,
+          signature: await sign(w, matchId, standings),
+          replay,
+        }),
+      );
+      body = await res.json();
+    }
+    expect(body!.outcome).toBe('applied');
+    expect(body!.results).toHaveLength(3);
+
+    const byId = (id: string) => body!.results.find((r) => r.id === id.toLowerCase())!;
+    const champ = byId(standings[0]);
+    const tieA = byId(standings[1]);
+    const tieB = byId(standings[2]);
+
+    // 回應的 placement 應為真名次（並列 2），而非陣列索引 2/3。
+    expect(champ.placement).toBe(1);
+    expect(tieA.placement).toBe(2);
+    expect(tieB.placement).toBe(2);
+
+    // 冠軍漲分、兩位敗方掉分。
+    expect(champ.ratingAfter).toBeGreaterThan(champ.ratingBefore);
+    expect(tieA.ratingAfter).toBeLessThan(tieA.ratingBefore);
+    expect(tieB.ratingAfter).toBeLessThan(tieB.ratingBefore);
+
+    // 核心修正：兩位同名次玩家所有起手分皆相同（皆新玩家 1000），
+    // 故 ratingAfter 與 xpGained 必須「完全相等」——不得因錢包位址序而拆出 ±Elo/XP 差。
+    expect(tieA.ratingBefore).toBe(1000);
+    expect(tieB.ratingBefore).toBe(1000);
+    expect(tieA.ratingAfter).toBe(tieB.ratingAfter);
+    expect(tieA.xpGained).toBe(tieB.xpGained);
+
+    // 儲存層驗證：冠軍記 1 勝、兩位敗方各記 1 敗；三人 games 各 +1；三人皆 top3（placement<=3）。
+    const { getBomberRankStore } = await import('@scripts/games/tetris/net/rankStore');
+    const store = getBomberRankStore();
+    const cRec = await store.getPlayer(standings[0].toLowerCase());
+    expect(cRec!.wins).toBe(1);
+    expect(cRec!.losses).toBe(0);
+    expect(cRec!.top3).toBe(1);
+    for (const id of [standings[1], standings[2]]) {
+      const rec = await store.getPlayer(id.toLowerCase());
+      expect(rec!.wins).toBe(0);
+      expect(rec!.losses).toBe(1);
+      expect(rec!.top3).toBe(1);
+      expect(rec!.games).toBe(1);
+    }
+    // 兩位同名次玩家儲存的 rating 也相同（與回應一致）。
+    const ra = await store.getPlayer(standings[1].toLowerCase());
+    const rb = await store.getPlayer(standings[2].toLowerCase());
+    expect(ra!.rating).toBe(rb!.rating);
+    expect(ra!.xp).toBe(rb!.xp);
   });
 });
