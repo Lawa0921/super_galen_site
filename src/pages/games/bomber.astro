@@ -1884,7 +1884,7 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
   /** 由 BomberReady 建鎖步、接斷線→淘汰，啟動線上渲染。 */
   async function bootOnline(ready: import('@scripts/games/bomber/net/bomberNetMain').BomberReady): Promise<void> {
     if (!canvas) return;
-    const [{ BomberLockstep }, { startVersusOnline }] = await Promise.all([
+    const [{ BomberLockstep, shouldAbortOnHostLoss }, { startVersusOnline }] = await Promise.all([
       import('@scripts/games/bomber/net/bomberLockstep'),
       import('@scripts/games/bomber/render/versusMain'),
     ]);
@@ -1906,6 +1906,41 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     //   host 算 f = lastInputFrame(pid)+1 並廣播 bomber-leave{p,f}，全端在同一幀 forfeit。
     // guest：transport.onControl 收 host 廣播的 leave → 套用 host 給的同一幀；
     //   transport.onClose() → host 斷線，guest 本端把 host 標記離場（同樣以 lastInputFrame+1）。
+    // versusHandle：startVersusOnline 回傳後填入；中止整局（abort）時用它拆 loop/lockstep。
+    // onClose 在 await startVersusOnline 之前註冊，故以可變引用延後綁定。
+    let versusHandle: import('@scripts/games/bomber/render/versusMain').VersusHandle | null = null;
+    let aborted = false;
+
+    /** 中止整局（host 在 3+ 人場斷線 → guest 彼此無頻道、lockstep 必永久卡缺幀）。
+     *  拆掉渲染/鎖步迴圈並顯示 HOST LEFT — MATCH VOID overlay（LOBBY 返回大廳）。 */
+    const abortMatchVoid = (): void => {
+      if (aborted) return;
+      aborted = true;
+      try { versusHandle?.destroy(); } catch { /* 拆除失敗不應阻擋 overlay */ }
+      const overEl = document.getElementById('bomber-over') as HTMLElement | null;
+      const titleEl = overEl?.querySelector('.ms-title') as HTMLElement | null;
+      const statsEl = document.getElementById('bomber-over-stats') as HTMLElement | null;
+      const tableEl = document.getElementById('bomber-over-standings') as HTMLElement | null;
+      const xpEl = document.getElementById('bomber-over-xp') as HTMLElement | null;
+      const actionsEl = document.getElementById('bomber-over-actions') as HTMLElement | null;
+      const rematchBtn = document.getElementById('bomber-rematch') as HTMLButtonElement | null;
+      const lobbyBtn = document.getElementById('bomber-lobby') as HTMLButtonElement | null;
+      const retryBtn = document.getElementById('bomber-restart') as HTMLElement | null;
+      if (titleEl) titleEl.textContent = 'HOST LEFT';
+      if (statsEl) statsEl.textContent = 'MATCH VOID';
+      if (tableEl) tableEl.replaceChildren();
+      if (xpEl) xpEl.replaceChildren();
+      // online overlay：隱藏單機 RETRY，只給 LOBBY（無 REMATCH——對局已作廢）。
+      if (retryBtn) retryBtn.hidden = true;
+      if (rematchBtn) rematchBtn.hidden = true;
+      if (actionsEl) actionsEl.hidden = false;
+      if (lobbyBtn) {
+        lobbyBtn.hidden = false;
+        lobbyBtn.onclick = () => { location.href = '/games/bomber?online=1'; };
+      }
+      if (overEl) overEl.removeAttribute('hidden');
+    };
+
     const transport = ready.transport;
     if (ready.role === 'host' && 'onChannelClose' in transport) {
       const guestIds = ready.guestIds ?? [];
@@ -1929,9 +1964,15 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
           lockstep.forfeit(msg.p, msg.f);
         }
       });
-      // host 頻道關閉：host 離場。guest 端把 host 標記離場（forfeit），對局收斂結束。
-      // 同樣以「host 最後輸入幀 + 1」當離場幀，與其他端推導方式一致（即使此時只剩本 guest）。
+      // host 頻道關閉：host 離場。
+      //  - 2 人場：只剩本 guest 存活 → forfeit host 即可乾淨收斂結束（finish → 結算）。
+      //  - 3+ 人場（星狀拓樸）：guest 彼此無直連頻道，host 走後再也湊不齊全員輸入 →
+      //    lockstep 永久卡缺幀、對局永不結束。必須中止整局（MATCH VOID），而非只 forfeit host。
       spoke.onClose(() => {
+        if (shouldAbortOnHostLoss(ready.playerIds.length)) {
+          abortMatchVoid();
+          return;
+        }
         const hostId = ready.playerIds[0];
         lockstep.forfeit(hostId, lockstep.lastInputFrame(hostId) + 1);
       });
@@ -1950,7 +1991,7 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
     // 結算回報接線：matchId = bomber-<seed36>-<room>；reporterId = 本端身分；
     // signMessage 有則 ranked（回報名次），無則 casual（只顯示名次，不回報）。
     const roomId = ready.room;
-    await startVersusOnline(canvas, {
+    versusHandle = await startVersusOnline(canvas, {
       lockstep,
       localId: ready.localId,
       arenaId: ready.arenaId,
@@ -1966,6 +2007,8 @@ const heroMeta: Record<string, { rom: string; epithet: string; aura: string; ele
       // LOBBY：返回 online 大廳入口。
       onLobby: () => { location.href = '/games/bomber?online=1'; },
     });
+    // 若 host 在渲染掛載完成前就已斷線（abort 已觸發），補拆此 handle（destroy 冪等安全）。
+    if (aborted) { try { versusHandle.destroy(); } catch { /* noop */ } }
   }
 
   // ── onStatus → lobby UI ──────────────────────────────────
