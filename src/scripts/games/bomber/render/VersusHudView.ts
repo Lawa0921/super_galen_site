@@ -2,7 +2,14 @@ import { Container, Text, TextStyle, Graphics, Sprite } from 'pixi.js';
 import type { BomberTextures } from './assets';
 import type { VersusState, VPlayer } from '../versus/types';
 import type { AbilityId } from '../engine/types';
-import { abilityRatio, suddenDeathHud, HUD_PLAYER_TINTS } from './versusHud';
+import {
+  abilityRatio,
+  suddenDeathHud,
+  formatCountdown,
+  panelLayout,
+  HUD_PLAYER_TINTS,
+  HUD_PANEL_W,
+} from './versusHud';
 
 const FONT_FAMILY = '"Press Start 2P", Consolas, monospace';
 
@@ -27,11 +34,12 @@ interface PlayerPanel {
   /** Powerup tiers (fire / bomb / speed) + shield, drawn as one compact text line + shield icon. */
   tierText: Text;
   shieldIcon: Sprite;
+  /** Current laid-out panel width (may shrink below HUD_PANEL_W for narrow 4-player). */
+  width: number;
 }
 
-const PANEL_W = 150;
+const PANEL_W = HUD_PANEL_W;
 const PANEL_H = 50;
-const PANEL_GAP = 8;
 const ARC_R = 15;
 const ARC_CX = 18;
 const ARC_CY = 24;
@@ -175,30 +183,31 @@ export class VersusHudView {
 
     root.addChild(bg, swatch, name, abilityArc, abilityIcon, abilityLabel, tierText, shieldIcon);
     this.container.addChild(root);
-    return { root, bg, swatch, name, abilityArc, abilityIcon, abilityLabel, tierText, shieldIcon };
+    return { root, bg, swatch, name, abilityArc, abilityIcon, abilityLabel, tierText, shieldIcon, width: PANEL_W };
   }
 
   private renderPanel(panel: PlayerPanel, p: VPlayer, seat: number, isLocal: boolean): void {
     const tint = HUD_PLAYER_TINTS[seat] ?? 0xffffff;
     const out = !p.alive;
+    const w = panel.width;
 
     // -- background frame (highlight local; dim eliminated) --
     panel.bg.clear();
     const bgAlpha = out ? 0.5 : 0.92;
-    panel.bg.rect(0, 0, PANEL_W, PANEL_H).fill({ color: 0x0a0817, alpha: bgAlpha });
-    panel.bg.rect(0, 0, PANEL_W, PANEL_H).stroke({
+    panel.bg.rect(0, 0, w, PANEL_H).fill({ color: 0x0a0817, alpha: bgAlpha });
+    panel.bg.rect(0, 0, w, PANEL_H).stroke({
       color: isLocal ? 0xffce6b : 0x2a2138,
       width: isLocal ? 2 : 1,
       alpha: isLocal ? 0.95 : 0.8,
     });
     if (isLocal && !out) {
       // subtle top accent line for the local player's panel
-      panel.bg.rect(0, 0, PANEL_W, 2).fill({ color: 0xffce6b, alpha: 0.9 });
+      panel.bg.rect(0, 0, w, 2).fill({ color: 0xffce6b, alpha: 0.9 });
     }
 
     // -- colour swatch (top-right of name row) --
     panel.swatch.clear();
-    panel.swatch.rect(PANEL_W - 14, 6, 8, 8).fill({ color: tint, alpha: out ? 0.4 : 1 });
+    panel.swatch.rect(w - 14, 6, 8, 8).fill({ color: tint, alpha: out ? 0.4 : 1 });
 
     // -- name / OUT label --
     const label = (p.character ?? '?').toUpperCase();
@@ -255,29 +264,25 @@ export class VersusHudView {
     panel.shieldIcon.y = 33;
   }
 
-  /** Lay panels across the top edge: P1/P3 on the left, P2/P4 on the right, mirrored from center. */
+  /**
+   * Lay panels across the top edge via the pure, width-aware panelLayout helper:
+   * P1/P3 on the left, P2/P4 on the right, mirrored from center. Panels shrink
+   * for narrow 4-player stages so their inner edge never overlaps the top-center
+   * sudden-death timer (2-player corners keep full width). See versusHud.ts.
+   */
   private relayoutPanels(): void {
     const n = this.panels.length;
     if (n === 0) return;
     const top = 4;
 
-    // Split into left group (even seats: 0,2) and right group (odd seats: 1,3),
-    // so 2 players sit at the two top corners and 3-4 fan inward — never overlapping the
-    // top-center sudden-death timer.
-    const left: number[] = [];
-    const right: number[] = [];
-    for (let i = 0; i < n; i++) (i % 2 === 0 ? left : right).push(i);
-
-    left.forEach((seat, k) => {
+    const slots = panelLayout(this.stageW, n);
+    for (let seat = 0; seat < n; seat++) {
       const panel = this.panels[seat];
-      panel.root.x = 6 + k * (PANEL_W + PANEL_GAP);
+      const slot = slots[seat];
+      panel.root.x = slot.x;
       panel.root.y = top;
-    });
-    right.forEach((seat, k) => {
-      const panel = this.panels[seat];
-      panel.root.x = this.stageW - 6 - PANEL_W - k * (PANEL_W + PANEL_GAP);
-      panel.root.y = top;
-    });
+      panel.width = slot.panelW;
+    }
   }
 
   // ─── sudden-death timer ────────────────────────────────────────────────────────
@@ -290,7 +295,7 @@ export class VersusHudView {
     let color: number;
     if (sd.phase === 'pre') {
       const s = sd.secondsToNext;
-      text = `SUDDEN DEATH 0:${String(Math.min(99, s)).padStart(2, '0')}`;
+      text = `SUDDEN DEATH ${formatCountdown(s)}`;
       // turn amber→red as it approaches
       color = s <= 5 ? 0xff5a3c : 0xffd23f;
     } else if (sd.phase === 'collapsing') {
