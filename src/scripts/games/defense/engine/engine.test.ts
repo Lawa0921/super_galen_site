@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DefenseGame, pathLength, posAt, pickTarget } from './engine';
+import { DefenseGame, pathLength, posAt, pickTarget, TOWERS, WAVES } from './engine';
 import type { Enemy } from './engine';
 
 const L = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }]; // L 形，長 200
@@ -84,5 +84,44 @@ describe('DefenseGame', () => {
     const s = g.getState();
     expect(s.status).toBe('won');
     expect(s.gold).toBeGreaterThan(killedGold); // 有殺敵得金
+  });
+
+  it('frost 命中使敵減速（出現 slowMs>0）', () => {
+    const g = new DefenseGame();
+    g.build('s1', 'frost'); // (240,140) 覆蓋 y140 走廊
+    g.startWave();
+    let sawSlow = false;
+    for (let i = 0; i < 4000 && !sawSlow; i++) { g.step(16); if (g.getState().enemies.some((e) => e.slowMs > 0)) sawSlow = true; }
+    expect(sawSlow).toBe(true);
+  });
+
+  it('bomb 命中對濺射範圍內多敵造成傷害', () => {
+    const g = new DefenseGame();
+    g.build('s3', 'bomb'); // (240,300)，splash
+    g.startWave();
+    const mk = (id: number, dist: number): Enemy => ({ id, type: 'slime', hp: 30, maxHp: 30, speed: 0, gold: 6, dist, slowMs: 0, alive: true, x: 0, y: 0 });
+    // 注入兩隻靜止相鄰 slime 在 s3 路徑上（dist 740≈(240,300)、760≈(220,300)，相距 20 < splash）
+    (g as unknown as { enemies: Enemy[] }).enemies.push(mk(9001, 740), mk(9002, 760));
+    for (let i = 0; i < 25; i++) g.step(16); // bomb 開火→投射→命中濺射
+    const find = (id: number) => g.getState().enemies.find((e) => e.id === id);
+    const hurt = (id: number) => { const e = find(id); return e ? e.hp < 30 : true; }; // 不在陣列=已擊殺=受傷
+    expect(hurt(9001)).toBe(true);
+    expect(hurt(9002)).toBe(true);
+  });
+
+  it('升級：等級→2、扣對應金、滿級不可再升', () => {
+    const g = new DefenseGame();
+    g.build('s0', 'arrow');
+    const g1 = g.getState().gold;
+    const t = g.getState().towers[0];
+    expect(g.upgrade(t.id)).toBe(true);
+    expect(g.getState().towers[0].level).toBe(2);
+    expect(g.getState().gold).toBe(g1 - TOWERS.arrow.up.cost);
+    expect(g.upgrade(t.id)).toBe(false);
+  });
+
+  it('Boss 波（第 6、12 波）含 boss', () => {
+    expect(WAVES[5].some((g) => g.type === 'boss')).toBe(true);
+    expect(WAVES[11].some((g) => g.type === 'boss')).toBe(true);
   });
 });
