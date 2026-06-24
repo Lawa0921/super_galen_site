@@ -566,16 +566,18 @@ members:
         label: "兒童發展"
 
   - id: "thumb2086"
-    name: "Thumb2086"
+    name: "大拇哥科技"
     avatar: "/assets/img/guild/thumb2086/avatar.webp"
     page: "/guild/thumb2086.html"
+    title: "Vibe Coder | AI 驅動全端開發"
+    description: "機械背景出身，用 AI 協作開發真實系統的斜槓開發者。擅長 Android/Kotlin、TypeScript 全端、區塊鏈與 IoT 軟硬整合。"
     tags:
       - id: "vibe_coder"
         label: "Vibe Coder"
-      - id: "indie_game_dev"
-        label: "獨立遊戲開發"
-      - id: "student"
-        label: "高職統測生"
+      - id: "fullstack_dev"
+        label: "全端開發"
+      - id: "ai_driven"
+        label: "AI 驅動開發"
 
   - id: "jiayi"
     name: "出水芙蓉"
