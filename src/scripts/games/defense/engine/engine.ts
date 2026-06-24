@@ -23,11 +23,15 @@ export const PATH: Vec[] = [
   { x: 100, y: -20 }, { x: 100, y: 140 }, { x: 380, y: 140 }, { x: 380, y: 300 },
   { x: 100, y: 300 }, { x: 100, y: 460 }, { x: 380, y: 460 }, { x: 380, y: 660 },
 ];
-// 中央建塔格（涵蓋整條蛇形）。
+// 建塔格緊貼路徑「旁邊」的地板（不在路上），各自掩護鄰近走廊（敵人走清空的路）。
 export const SLOTS: Slot[] = [
-  { id: 's0', x: 240, y: 70 }, { id: 's1', x: 240, y: 140 }, { id: 's2', x: 240, y: 220 },
-  { id: 's3', x: 240, y: 300 }, { id: 's4', x: 240, y: 380 }, { id: 's5', x: 240, y: 460 },
-  { id: 's6', x: 240, y: 540 },
+  { id: 's0', x: 138, y: 82 },  // A(x100 直) 右側、近入口
+  { id: 's1', x: 240, y: 108 }, // B(y140 橫) 上方
+  { id: 's2', x: 342, y: 222 }, // C(x380 直) 左側
+  { id: 's3', x: 240, y: 270 }, // D(y300 橫) 上方（內凹）
+  { id: 's4', x: 138, y: 382 }, // E(x100 直) 右側
+  { id: 's5', x: 240, y: 432 }, // F(y460 橫) 上方
+  { id: 's6', x: 342, y: 540 }, // G(x380 直) 左側、近封印門
 ];
 
 interface TowerDef { cost: number; range: number; cdMs: number; dmg: number; splash: number; slowMs: number; up: { cost: number; dmg: number; range: number; splash: number; slowMs: number }; }
