@@ -4,6 +4,7 @@ import { SoundManager } from '../audio/SoundManager';
 import { PixiStage } from './PixiStage';
 import { GridView } from './GridView';
 import { VersusEntityView } from './VersusEntityView';
+import { VersusHudView } from './VersusHudView';
 import { computeLayout } from './layout';
 import { loadBomberTextures } from './assets';
 import type { Dir, CharacterId } from '../engine/types';
@@ -100,6 +101,8 @@ async function mountVersusLoop(
   lockstep?: BomberLockstep,
   /** 線上模式覆寫：finish 時呼叫此 hook 顯示結算畫面（傳入後不顯示基本 overlay）。 */
   onFinish?: (winnerId: string | null) => void,
+  /** 本端玩家 id（online 高亮其面板；hotseat 為 undefined → 不高亮）。 */
+  localId?: string,
 ): Promise<VersusHandle> {
   const stage = await PixiStage.create(canvas);
   const theme = ARENAS[arenaId]?.theme ?? 0;
@@ -107,13 +110,16 @@ async function mountVersusLoop(
   const textures = await loadBomberTextures();
   const grid = new GridView(stage.gridLayer, textures);
   const entity = new VersusEntityView(stage.entityLayer, stage.fxLayer, textures);
+  const hud = new VersusHudView(stage.hudLayer, textures);
   const sound = new SoundManager();
 
   let lay = computeLayout(stage.width, stage.height);
+  hud.setLayout(stage.width, stage.height);
 
   function relayout(): void {
     lay = computeLayout(stage.width, stage.height);
     grid.invalidate();
+    hud.onResize(stage.width, stage.height);
   }
   stage.app.renderer.on('resize', relayout);
 
@@ -182,6 +188,7 @@ async function mountVersusLoop(
     const s = match.getState();
     grid.render(s, lay, theme);
     entity.render(s, lay, dt);
+    hud.render(s, lay, localId);
     stage.update(dt);
   };
   stage.app.ticker.add(tick);
@@ -197,6 +204,7 @@ async function mountVersusLoop(
       retryBtn?.removeEventListener('click', onRetry);
       onDestroyExtra();
       stage.app.ticker.remove(tick);
+      hud.destroy();
       stage.app.destroy();
     },
   };
@@ -291,6 +299,10 @@ export async function startVersus(
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     },
+    undefined, // lockstep
+    undefined, // onFinish
+    // hotseat：兩位玩家共用同一鍵盤，無單一「本端」玩家 → 不高亮任何面板。
+    undefined, // localId
   );
 }
 
@@ -358,7 +370,7 @@ export async function startVersusOnline(
     window.addEventListener('keyup', onKeyUp);
   };
 
-  void localId; // 本端玩家身分已由 lockstep（localId）持有；輸入即視為該玩家的動作
+  // 本端玩家身分（localId）：輸入即視為該玩家動作，並用於 HUD 高亮本端面板。
 
   // ── 線上結算畫面：finish → 顯示名次 → 簽章回報 → 收到 results 後補 Elo±/XP ──
   const onFinish = (winnerId: string | null): void => {
@@ -414,6 +426,7 @@ export async function startVersusOnline(
     },
     lockstep,
     onFinish,
+    localId, // 線上：高亮本端玩家面板
   );
 }
 
