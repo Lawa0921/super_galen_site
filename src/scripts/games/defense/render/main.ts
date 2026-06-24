@@ -1,12 +1,9 @@
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Assets, Texture } from 'pixi.js';
 import { DefenseGame, PATH, SLOTS, FIELD_W, FIELD_H, TOWERS, type TowerType, type EnemyType } from '../engine/engine';
 
-const ENEMY_STYLE: Record<EnemyType, { r: number; color: number }> = {
-  slime: { r: 9, color: 0x7ed957 }, skeleton: { r: 10, color: 0xd8d8e0 },
-  bat: { r: 7, color: 0xb06bff }, boss: { r: 20, color: 0xff4d4d },
-};
-const TOWER_COLOR: Record<TowerType, number> = { arrow: 0xc8a24a, bomb: 0xff8a3c, frost: 0x4fd8ff, arcane: 0xc08bff };
-export const TOWER_LABEL: Record<TowerType, string> = { arrow: 'ARROW', bomb: 'BOMB', frost: 'FROST', arcane: 'ARCANE' };
+const BASE = '/assets/games/defense';
+const TOWER_FILES: TowerType[] = ['arrow', 'bomb', 'frost', 'arcane'];
+const ENEMY_FILES: EnemyType[] = ['slime', 'skeleton', 'bat', 'boss'];
 
 export interface DefenseHandle { game: DefenseGame; destroy(): void; }
 
@@ -14,22 +11,32 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   const app = new Application();
   await app.init({ canvas, resizeTo: canvas.parentElement ?? window, background: '#0a0716', antialias: false });
 
+  // 像素素材（nearest 採樣保硬邊）
+  const urls = [...TOWER_FILES.map((t) => `${BASE}/tower-${t}.png`), ...ENEMY_FILES.map((e) => `${BASE}/enemy-${e}.png`)];
+  const loaded = await Assets.load<Texture>(urls);
+  const tex = (u: string): Texture => { const t = loaded[u]; t.source.scaleMode = 'nearest'; return t; };
+  const towerTex = Object.fromEntries(TOWER_FILES.map((t) => [t, tex(`${BASE}/tower-${t}.png`)])) as Record<TowerType, Texture>;
+  const enemyTex = Object.fromEntries(ENEMY_FILES.map((e) => [e, tex(`${BASE}/enemy-${e}.png`)])) as Record<EnemyType, Texture>;
+
   const content = new Container();
   app.stage.addChild(content);
   const pathG = new Graphics();
-  const dyn = new Graphics();
-  content.addChild(pathG, dyn);
+  const towersC = new Container();
+  const enemiesC = new Container();
+  const dyn = new Graphics(); // 格/射程/血條/投射物（程式繪製）
+  content.addChild(pathG, towersC, enemiesC, dyn);
 
   // 路徑石板（畫一次）
-  pathG.moveTo(PATH[0].x, PATH[0].y);
-  for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-  pathG.stroke({ width: 34, color: 0x2a2438, cap: 'round', join: 'round' });
-  pathG.moveTo(PATH[0].x, PATH[0].y);
-  for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-  pathG.stroke({ width: 26, color: 0x3a3350, cap: 'round', join: 'round' });
+  for (const [w, c] of [[34, 0x2a2438], [26, 0x3a3350]] as const) {
+    pathG.moveTo(PATH[0].x, PATH[0].y);
+    for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
+    pathG.stroke({ width: w, color: c, cap: 'round', join: 'round' });
+  }
 
   const game = new DefenseGame();
   let selected: string | null = null;
+  const towerSprites = new Map<number, Sprite>();
+  const enemySprites = new Map<number, Sprite>();
 
   function relayout(): void {
     const W = app.renderer.width, H = app.renderer.height;
@@ -79,7 +86,6 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   const onStart = (): void => { game.startWave(); refreshHud(); };
   startBtn?.addEventListener('click', onStart);
 
-  // ---- 點擊建塔格 ----
   const onPointer = (e: PointerEvent): void => {
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * (app.renderer.width / rect.width);
@@ -92,38 +98,47 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   };
   canvas.addEventListener('pointerdown', onPointer);
 
-  // ---- draw + loop ----
   function draw(): void {
-    dyn.clear();
     const s = game.getState();
-    // 建塔格（空格虛線圈；選中高亮）
+    dyn.clear();
+    // 空格虛線圈（選中高亮）+ 選中射程圈
     for (const sl of SLOTS) {
-      const occ = s.towers.some((t) => t.slot === sl.id);
-      if (!occ) dyn.circle(sl.x, sl.y, 14).stroke({ width: 1.5, color: selected === sl.id ? 0xffd23f : 0x6a5f88, alpha: 0.8 });
+      if (!s.towers.some((t) => t.slot === sl.id))
+        dyn.circle(sl.x, sl.y, 14).stroke({ width: 1.5, color: selected === sl.id ? 0xffd23f : 0x6a5f88, alpha: 0.8 });
     }
-    // 選中射程圈
     if (selected) {
       const t = s.towers.find((x) => x.slot === selected);
       const sl = SLOTS.find((x) => x.id === selected)!;
       const range = t ? (t.level >= 2 ? TOWERS[t.type].up.range : TOWERS[t.type].range) : 120;
       dyn.circle(sl.x, sl.y, range).fill({ color: 0xffffff, alpha: 0.05 }).stroke({ width: 1, color: 0xffd23f, alpha: 0.4 });
     }
-    // 塔
+    // 塔 sprite（建一次、留存）
     for (const t of s.towers) {
-      const sl = SLOTS.find((x) => x.id === t.slot)!;
-      dyn.roundRect(sl.x - 11, sl.y - 11, 22, 22, 4).fill(TOWER_COLOR[t.type])
-        .stroke({ width: 2, color: t.level >= 2 ? 0xffd23f : 0x000000, alpha: 0.8 });
+      let sp = towerSprites.get(t.id);
+      if (!sp) {
+        sp = new Sprite(towerTex[t.type]);
+        sp.anchor.set(0.5, 0.72);
+        const sl = SLOTS.find((x) => x.id === t.slot)!;
+        sp.x = sl.x; sp.y = sl.y;
+        towersC.addChild(sp);
+        towerSprites.set(t.id, sp);
+      }
+      if (t.level >= 2) { const sl = SLOTS.find((x) => x.id === t.slot)!; dyn.circle(sl.x + 12, sl.y - 16, 3.5).fill(0xffd23f); } // 升級金點
     }
-    // 敵人 + 血條
+    // 敵人 sprite（依 id 同步）
+    const seen = new Set<number>();
     for (const e of s.enemies) {
-      const st = ENEMY_STYLE[e.type];
-      dyn.circle(e.x, e.y, st.r).fill(st.color).stroke({ width: 1, color: 0x000000, alpha: 0.5 });
+      seen.add(e.id);
+      let sp = enemySprites.get(e.id);
+      if (!sp) { sp = new Sprite(enemyTex[e.type]); sp.anchor.set(0.5); enemiesC.addChild(sp); enemySprites.set(e.id, sp); }
+      sp.x = e.x; sp.y = e.y;
       if (e.hp < e.maxHp) {
-        const w = st.r * 2;
-        dyn.rect(e.x - st.r, e.y - st.r - 5, w, 3).fill(0x000000);
-        dyn.rect(e.x - st.r, e.y - st.r - 5, w * (e.hp / e.maxHp), 3).fill(0x7ed957);
+        const w = sp.width, top = e.y - sp.height / 2 - 5;
+        dyn.rect(e.x - w / 2, top, w, 3).fill(0x000000);
+        dyn.rect(e.x - w / 2, top, w * (e.hp / e.maxHp), 3).fill(0x7ed957);
       }
     }
+    for (const [id, sp] of enemySprites) if (!seen.has(id)) { sp.destroy(); enemySprites.delete(id); }
     // 投射物
     for (const p of s.projectiles) dyn.circle(p.x, p.y, 3).fill(0xfff0a0);
   }
