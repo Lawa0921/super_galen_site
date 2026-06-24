@@ -12,25 +12,47 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   await app.init({ canvas, resizeTo: canvas.parentElement ?? window, background: '#0a0716', antialias: false });
 
   // 像素素材（nearest 採樣保硬邊）
-  const urls = [...TOWER_FILES.map((t) => `${BASE}/tower-${t}.png`), ...ENEMY_FILES.map((e) => `${BASE}/enemy-${e}.png`)];
+  const urls = [
+    ...TOWER_FILES.map((t) => `${BASE}/tower-${t}.png`),
+    ...ENEMY_FILES.map((e) => `${BASE}/enemy-${e}.png`),
+    `${BASE}/floor.webp`, `${BASE}/gate.png`,
+  ];
   const loaded = await Assets.load<Texture>(urls);
   const tex = (u: string): Texture => { const t = loaded[u]; t.source.scaleMode = 'nearest'; return t; };
   const towerTex = Object.fromEntries(TOWER_FILES.map((t) => [t, tex(`${BASE}/tower-${t}.png`)])) as Record<TowerType, Texture>;
   const enemyTex = Object.fromEntries(ENEMY_FILES.map((e) => [e, tex(`${BASE}/enemy-${e}.png`)])) as Record<EnemyType, Texture>;
+  const floorTex = tex(`${BASE}/floor.webp`);
+  const gateTex = tex(`${BASE}/gate.png`);
 
   const content = new Container();
   app.stage.addChild(content);
+  // 地城地板背景（鋪滿戰場）
+  const floor = new Sprite(floorTex);
+  floor.width = FIELD_W; floor.height = FIELD_H;
   const pathG = new Graphics();
+  // 封印門（路徑出口、底部）
+  const gate = new Sprite(gateTex);
+  gate.anchor.set(0.5, 0.5);
+  gate.scale.set(118 / gateTex.width);
+  gate.x = 380; gate.y = 606;
   const towersC = new Container();
   const enemiesC = new Container();
   const dyn = new Graphics(); // 格/射程/血條/投射物（程式繪製）
-  content.addChild(pathG, towersC, enemiesC, dyn);
+  content.addChild(floor, pathG, gate, towersC, enemiesC, dyn);
 
-  // 路徑石板（畫一次）
-  for (const [w, c] of [[34, 0x2a2438], [26, 0x3a3350]] as const) {
+  // 石道（畫一次）：外暗邊 + 石路面 + 內微亮，疊在地板上
+  const road = (w: number, c: number, a = 1): void => {
     pathG.moveTo(PATH[0].x, PATH[0].y);
     for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-    pathG.stroke({ width: w, color: c, cap: 'round', join: 'round' });
+    pathG.stroke({ width: w, color: c, alpha: a, cap: 'round', join: 'round' });
+  };
+  road(40, 0x120d1c, 0.9); // 外暗邊
+  road(32, 0x4a4458);      // 石路面
+  road(28, 0x564f6a, 0.5); // 內微亮
+  // 建塔石台（畫一次）
+  for (const sl of SLOTS) {
+    pathG.roundRect(sl.x - 16, sl.y - 13, 32, 28, 5).fill(0x231d30).stroke({ width: 2, color: 0x120d1c });
+    pathG.roundRect(sl.x - 14, sl.y - 13, 28, 13, 4).fill(0x5a5470);
   }
 
   const game = new DefenseGame();
