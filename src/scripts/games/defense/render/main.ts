@@ -1,9 +1,12 @@
 import { Application, Container, Graphics, Sprite, Assets, Texture } from 'pixi.js';
 import { DefenseGame, PATH, SLOTS, FIELD_W, FIELD_H, TOWERS, type TowerType, type EnemyType } from '../engine/engine';
+import { Effects } from './effects';
 
 const BASE = '/assets/games/defense';
 const TOWER_FILES: TowerType[] = ['arrow', 'bomb', 'frost', 'arcane'];
 const ENEMY_FILES: EnemyType[] = ['slime', 'skeleton', 'bat', 'boss'];
+const TCOL: Record<TowerType, number> = { arrow: 0xffe08a, bomb: 0xff8a3c, frost: 0x6fe6ff, arcane: 0xc08bff };
+const ECOL: Record<EnemyType, number> = { slime: 0x7ed957, skeleton: 0xd8d8e0, bat: 0xb06bff, boss: 0xff4d4d };
 
 export interface DefenseHandle { game: DefenseGame; destroy(): void; }
 
@@ -30,6 +33,9 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   const floor = new Sprite(floorTex);
   floor.width = FIELD_W; floor.height = FIELD_H;
   const pathG = new Graphics();
+  // 封印門脈動光暈（在門後）
+  const gateGlow = new Graphics().circle(0, 0, 1).fill(0x6fd8ff);
+  gateGlow.x = 380; gateGlow.y = 600; gateGlow.alpha = 0;
   // 封印門（路徑出口、底部）
   const gate = new Sprite(gateTex);
   gate.anchor.set(0.5, 0.5);
@@ -38,7 +44,9 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   const towersC = new Container();
   const enemiesC = new Container();
   const dyn = new Graphics(); // 格/射程/血條/投射物（程式繪製）
-  content.addChild(floor, pathG, gate, towersC, enemiesC, dyn);
+  const fxC = new Container(); // 爽度效果層（最上）
+  content.addChild(floor, pathG, gateGlow, gate, towersC, enemiesC, dyn, fxC);
+  const effects = new Effects(fxC);
 
   // 石道（畫一次）：外暗邊 + 石路面 + 內微亮，疊在地板上
   const road = (w: number, c: number, a = 1): void => {
@@ -57,8 +65,10 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
 
   const game = new DefenseGame();
   let selected: string | null = null;
+  let elapsed = 0;
   const towerSprites = new Map<number, Sprite>();
   const enemySprites = new Map<number, Sprite>();
+  const firePulse = new Map<number, number>(); // towerId → 開火 pop 0..1
 
   function relayout(): void {
     const W = app.renderer.width, H = app.renderer.height;
@@ -146,6 +156,9 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
         towerSprites.set(t.id, sp);
       }
       if (t.level >= 2) { const sl = SLOTS.find((x) => x.id === t.slot)!; dyn.circle(sl.x + 12, sl.y - 16, 3.5).fill(0xffd23f); } // 升級金點
+      const pulse = firePulse.get(t.id) ?? 0; // 開火放大一下
+      sp.scale.set(1 + 0.16 * pulse);
+      if (pulse > 0.02) firePulse.set(t.id, pulse * 0.8); else firePulse.delete(t.id);
     }
     // 敵人 sprite（依 id 同步）
     const seen = new Set<number>();
@@ -154,6 +167,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
       let sp = enemySprites.get(e.id);
       if (!sp) { sp = new Sprite(enemyTex[e.type]); sp.anchor.set(0.5); enemiesC.addChild(sp); enemySprites.set(e.id, sp); }
       sp.x = e.x; sp.y = e.y;
+      sp.tint = e.slowMs > 0 ? 0x8fdcff : 0xffffff; // 冰凍變藍
       if (e.hp < e.maxHp) {
         const w = sp.width, top = e.y - sp.height / 2 - 5;
         dyn.rect(e.x - w / 2, top, w, 3).fill(0x000000);
@@ -161,13 +175,33 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
       }
     }
     for (const [id, sp] of enemySprites) if (!seen.has(id)) { sp.destroy(); enemySprites.delete(id); }
-    // 投射物
-    for (const p of s.projectiles) dyn.circle(p.x, p.y, 3).fill(0xfff0a0);
+    // 投射物（依塔流派色：光暈 + 亮核）
+    for (const p of s.projectiles) {
+      const c = TCOL[p.tower];
+      dyn.circle(p.x, p.y, 5).fill({ color: c, alpha: 0.35 });
+      dyn.circle(p.x, p.y, 2.6).fill(0xffffff).stroke({ width: 1, color: c });
+    }
+    // 封印門脈動光暈
+    gateGlow.scale.set(38 + Math.sin(elapsed / 480) * 5);
+    gateGlow.alpha = 0.12 + 0.08 * (0.5 + 0.5 * Math.sin(elapsed / 480));
   }
 
   const tick = (t: { deltaMS: number }): void => {
-    game.step(t.deltaMS);
+    const dt = t.deltaMS;
+    elapsed += dt;
+    game.step(dt);
+    for (const ev of game.drainEvents()) {
+      if (ev.kind === 'fire') {
+        effects.flash(ev.x, ev.y - 8, TCOL[ev.tower]);
+        const tw = game.getState().towers.find((x) => { const sl = SLOTS.find((q) => q.id === x.slot); return sl != null && sl.x === ev.x && sl.y === ev.y; });
+        if (tw) firePulse.set(tw.id, 1);
+      } else if (ev.kind === 'hit') effects.spark(ev.x, ev.y, 0xffffff);
+      else if (ev.kind === 'blast') effects.ring(ev.x, ev.y, ev.r, 0xff8a3c);
+      else if (ev.kind === 'kill') { effects.poof(ev.x, ev.y, ECOL[ev.etype]); effects.popup(ev.x, ev.y - 6, `+${ev.gold}`, 0xffd23f); }
+      else if (ev.kind === 'leak') effects.ring(380, 600, 46, 0xff3b3b);
+    }
     draw();
+    effects.update(dt);
     refreshHud();
     const st = game.getState();
     if ((st.status === 'won' || st.status === 'lost') && resultEl?.hasAttribute('hidden')) {

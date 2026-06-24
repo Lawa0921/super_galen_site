@@ -11,9 +11,17 @@ export interface Enemy {
 export interface Tower { id: number; slot: string; type: TowerType; level: number; cdMs: number; }
 export interface Projectile {
   id: number; x: number; y: number; targetId: number; dmg: number; splash: number; slowMs: number;
-  speed: number; active: boolean;
+  speed: number; active: boolean; tower: TowerType;
 }
 export interface Slot { id: string; x: number; y: number; }
+
+/** render 接這些事件做爽度效果（不影響模擬）。 */
+export type DefenseEvent =
+  | { kind: 'fire'; x: number; y: number; tower: TowerType }
+  | { kind: 'hit'; x: number; y: number }
+  | { kind: 'blast'; x: number; y: number; r: number }
+  | { kind: 'kill'; x: number; y: number; etype: EnemyType; gold: number }
+  | { kind: 'leak'; x: number; y: number };
 
 export const FIELD_W = 480;
 export const FIELD_H = 640;
@@ -112,6 +120,7 @@ export class DefenseGame {
   private towers: Tower[] = [];
   private projectiles: Projectile[] = [];
   private queue: EnemyType[] = [];
+  private events: DefenseEvent[] = [];
   private spawnTimer = 0;
   private nid = 1; private tid = 1; private pid = 1;
   private slotPos = new Map(SLOTS.map((s) => [s.id, s]));
@@ -156,7 +165,7 @@ export class DefenseGame {
   private damage(e: Enemy, dmg: number): void {
     if (!e.alive) return;
     e.hp -= dmg;
-    if (e.hp <= 0) { e.alive = false; this.gold += e.gold; }
+    if (e.hp <= 0) { e.alive = false; this.gold += e.gold; this.events.push({ kind: 'kill', x: e.x, y: e.y, etype: e.type, gold: e.gold }); }
   }
 
   step(dtMs: number): void {
@@ -178,7 +187,7 @@ export class DefenseGame {
       e.dist += (sp * dtMs) / 1000;
       const at = posAt(PATH, e.dist);
       e.x = at.pos.x; e.y = at.pos.y;
-      if (at.reached) { e.alive = false; this.baseHp -= ENEMIES[e.type].leak; }
+      if (at.reached) { e.alive = false; this.baseHp -= ENEMIES[e.type].leak; this.events.push({ kind: 'leak', x: e.x, y: e.y }); }
     }
     // 塔開火
     for (const t of this.towers) {
@@ -188,7 +197,8 @@ export class DefenseGame {
       const pos = this.slotPos.get(t.slot) as Slot;
       const target = pickTarget(this.enemies, pos, def.range);
       if (!target) continue;
-      this.projectiles.push({ id: this.pid++, x: pos.x, y: pos.y, targetId: target.id, dmg: def.dmg, splash: def.splash, slowMs: def.slowMs, speed: PROJ_SPEED, active: true });
+      this.projectiles.push({ id: this.pid++, x: pos.x, y: pos.y, targetId: target.id, dmg: def.dmg, splash: def.splash, slowMs: def.slowMs, speed: PROJ_SPEED, active: true, tower: t.type });
+      this.events.push({ kind: 'fire', x: pos.x, y: pos.y, tower: t.type });
       t.cdMs = def.cdMs;
     }
     // 投射物
@@ -198,8 +208,12 @@ export class DefenseGame {
       if (!tgt) { p.active = false; continue; }
       const dx = tgt.x - p.x, dy = tgt.y - p.y, d = Math.hypot(dx, dy);
       if (d < 10) {
+        this.events.push({ kind: 'hit', x: tgt.x, y: tgt.y });
+        if (p.splash > 0) {
+          this.events.push({ kind: 'blast', x: tgt.x, y: tgt.y, r: p.splash });
+          for (const e of this.enemies) if (e.alive && e.id !== tgt.id && Math.hypot(e.x - tgt.x, e.y - tgt.y) <= p.splash) this.damage(e, p.dmg);
+        }
         this.damage(tgt, p.dmg);
-        if (p.splash > 0) for (const e of this.enemies) if (e.alive && e.id !== tgt.id && Math.hypot(e.x - tgt.x, e.y - tgt.y) <= p.splash) this.damage(e, p.dmg);
         if (p.slowMs > 0) tgt.slowMs = Math.max(tgt.slowMs, p.slowMs);
         p.active = false;
       } else { p.x += (dx / d) * p.speed * dtMs / 1000; p.y += (dy / d) * p.speed * dtMs / 1000; }
@@ -215,6 +229,8 @@ export class DefenseGame {
     // 失敗
     if (this.baseHp <= 0) { this.baseHp = 0; this.status = 'lost'; }
   }
+
+  drainEvents(): DefenseEvent[] { const o = this.events; this.events = []; return o; }
 
   getState() {
     return {

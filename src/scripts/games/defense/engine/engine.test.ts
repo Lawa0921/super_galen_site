@@ -124,4 +124,22 @@ describe('DefenseGame', () => {
     expect(WAVES[5].some((g) => g.type === 'boss')).toBe(true);
     expect(WAVES[11].some((g) => g.type === 'boss')).toBe(true);
   });
+
+  it('發出開火/命中/擊殺事件（供 render 做效果）', () => {
+    const g = new DefenseGame();
+    g.build('s1', 'arcane');
+    g.startWave();
+    let fired = false, hit = false, killed = false;
+    for (let i = 0; i < 5000 && !(fired && hit && killed); i++) {
+      g.step(16);
+      for (const e of g.drainEvents()) {
+        if (e.kind === 'fire') fired = true;
+        if (e.kind === 'hit') hit = true;
+        if (e.kind === 'kill') killed = true;
+      }
+    }
+    expect(fired).toBe(true);
+    expect(hit).toBe(true);
+    expect(killed).toBe(true);
+  });
 });
