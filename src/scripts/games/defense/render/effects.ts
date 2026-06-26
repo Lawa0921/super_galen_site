@@ -1,6 +1,7 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { FIELD_W, FIELD_H } from '../engine/engine';
 
-type Kind = 'flash' | 'spark' | 'poof' | 'ring';
+type Kind = 'flash' | 'spark' | 'poof' | 'ring' | 'screen';
 interface Fx { g: Graphics; kind: Kind; age: number; dur: number; r: number; color: number; active: boolean; }
 interface Pop { t: Text; age: number; dur: number; x: number; y: number; active: boolean; }
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -35,6 +36,11 @@ export class Effects {
   ring(x: number, y: number, maxR: number, color: number): void {
     const e = this.acq(); e.kind = 'ring'; e.dur = 360; e.r = maxR; e.color = color; e.g.x = x; e.g.y = y;
   }
+  /** 全屏閃光（Boss 登場等），r=起始強度。 */
+  screen(color: number, alpha = 0.5): void {
+    const e = this.acq(); e.kind = 'screen'; e.dur = 380; e.r = alpha; e.color = color; e.g.x = 0; e.g.y = 0;
+    e.g.rect(0, 0, FIELD_W, FIELD_H).fill(color);
+  }
   popup(x: number, y: number, text: string, color: number): void {
     let p = this.pops.find((q) => !q.active);
     if (!p) {
@@ -55,6 +61,7 @@ export class Effects {
       else if (e.kind === 'spark') { e.g.scale.set(e.r * (0.4 + 0.6 * t)); e.g.alpha = 1 - t; }
       else if (e.kind === 'poof') { e.g.scale.set(e.r * (0.3 + 0.7 * t)); e.g.alpha = 1 - t; }
       else if (e.kind === 'ring') { const rr = e.r * (1 - (1 - t) * (1 - t)); e.g.clear().circle(0, 0, rr).stroke({ width: 3 * (1 - t) + 1, color: e.color, alpha: 0.8 * (1 - t) }); }
+      else if (e.kind === 'screen') { e.g.alpha = e.r * (1 - t); }
     }
     for (const p of this.pops) {
       if (!p.active) continue;

@@ -57,6 +57,21 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   road(40, 0x120d1c, 0.9); // 外暗邊
   road(32, 0x4a4458);      // 石路面
   road(28, 0x564f6a, 0.5); // 內微亮
+  // cobble 鋪面（沿路三排小石塊，交錯色）
+  for (let i = 1; i < PATH.length; i++) {
+    const a = PATH[i - 1], b = PATH[i];
+    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const px = -(b.y - a.y) / len, py = (b.x - a.x) / len;
+    const n = Math.floor(len / 12);
+    for (let k = 0; k <= n; k++) {
+      const t = k / Math.max(1, n);
+      const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+      for (const off of [-10, 0, 10]) {
+        const c = ((k + off / 10) & 1) ? 0x423c5a : 0x37314a;
+        pathG.roundRect(x + px * off - 4.5, y + py * off - 4.5, 9, 9, 2).fill(c).stroke({ width: 0.6, color: 0x120d1c, alpha: 0.45 });
+      }
+    }
+  }
   // 建塔石台（畫一次）
   for (const sl of SLOTS) {
     pathG.roundRect(sl.x - 16, sl.y - 13, 32, 28, 5).fill(0x231d30).stroke({ width: 2, color: 0x120d1c });
@@ -66,9 +81,12 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   const game = new DefenseGame();
   let selected: string | null = null;
   let elapsed = 0;
+  let shakeMs = 0;
+  let baseX = 0, baseY = 0;
   const towerSprites = new Map<number, Sprite>();
   const enemySprites = new Map<number, Sprite>();
   const firePulse = new Map<number, number>(); // towerId → 開火 pop 0..1
+  const bossSeen = new Set<number>();
 
   function relayout(): void {
     const W = app.renderer.width, H = app.renderer.height;
@@ -76,6 +94,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
     content.scale.set(s);
     content.x = (W - FIELD_W * s) / 2;
     content.y = (H - FIELD_H * s) / 2;
+    baseX = content.x; baseY = content.y;
   }
   relayout();
   app.renderer.on('resize', relayout);
@@ -166,7 +185,15 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
       seen.add(e.id);
       let sp = enemySprites.get(e.id);
       if (!sp) { sp = new Sprite(enemyTex[e.type]); sp.anchor.set(0.5); enemiesC.addChild(sp); enemySprites.set(e.id, sp); }
-      sp.x = e.x; sp.y = e.y;
+      // 程式化走路動畫（依種類）
+      const ph = elapsed / 130 + e.id * 1.7;
+      let bob = 0, sx = 1, sy = 1, rot = 0;
+      if (e.type === 'slime') { const a = Math.abs(Math.sin(ph)); bob = -a * 5; sx = 1 + 0.14 * (1 - a); sy = 1 - 0.14 * (1 - a); } // 彈跳+落地壓扁
+      else if (e.type === 'bat') { sx = 1 + Math.sin(ph * 2.2) * 0.2; bob = Math.sin(ph * 2.2) * 2.5; } // 拍翅
+      else if (e.type === 'boss') { bob = Math.sin(ph * 0.6) * 2.5; sx = 1 + Math.sin(ph * 0.6) * 0.05; } // 沉重
+      else { bob = Math.sin(ph) * 1.5; rot = Math.sin(ph) * 0.06; } // 骷髏走路晃
+      sp.x = e.x; sp.y = e.y + bob;
+      sp.scale.set(sx, sy); sp.rotation = rot;
       sp.tint = e.slowMs > 0 ? 0x8fdcff : 0xffffff; // 冰凍變藍
       if (e.hp < e.maxHp) {
         const w = sp.width, top = e.y - sp.height / 2 - 5;
@@ -200,8 +227,20 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
       else if (ev.kind === 'kill') { effects.poof(ev.x, ev.y, ECOL[ev.etype]); effects.popup(ev.x, ev.y - 6, `+${ev.gold}`, 0xffd23f); }
       else if (ev.kind === 'leak') effects.ring(380, 600, 46, 0xff3b3b);
     }
+    // Boss 登場演出（首次出現）
+    for (const e of game.getState().enemies) {
+      if (e.type === 'boss' && !bossSeen.has(e.id)) {
+        bossSeen.add(e.id);
+        effects.screen(0xff3b3b, 0.42);
+        effects.ring(e.x, e.y + 30, 60, 0xff5a4d);
+        shakeMs = 440;
+      }
+    }
     draw();
     effects.update(dt);
+    // 震屏（Boss 登場）
+    if (shakeMs > 0) { shakeMs -= dt; content.x = baseX + (Math.random() - 0.5) * 7; content.y = baseY + (Math.random() - 0.5) * 7; }
+    else { content.x = baseX; content.y = baseY; }
     refreshHud();
     const st = game.getState();
     if ((st.status === 'won' || st.status === 'lost') && resultEl?.hasAttribute('hidden')) {
