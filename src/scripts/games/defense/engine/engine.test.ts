@@ -70,20 +70,16 @@ describe('DefenseGame', () => {
     expect(g.getState().baseHp).toBe(0);
   });
 
-  it('塔蓋滿 → 殺敵得金、清 12 波 → won', () => {
+  it('邊賺金邊補塔 → 清 12 波 → won', () => {
     const g = new DefenseGame();
-    for (const slot of g.getState().slots) g.build(slot.id, 'arcane');
-    const goldAfterBuild = g.getState().gold;
-    g.startWave();
-    let killedGold = goldAfterBuild;
-    for (let i = 0; i < 200000 && g.getState().status !== 'won' && g.getState().status !== 'lost'; i++) {
+    const buildAll = (): void => { for (const sl of g.getState().slots) if (!g.getState().towers.some((t) => t.slot === sl.id)) g.build(sl.id, 'arcane'); };
+    buildAll(); g.startWave();
+    for (let i = 0; i < 300000 && g.getState().status !== 'won' && g.getState().status !== 'lost'; i++) {
       g.step(16);
-      // 波間回到 building 時自動開下一波
-      if (g.getState().status === 'building') g.startWave();
+      if (g.getState().status === 'building') { buildAll(); g.startWave(); } // 波間用金幣補滿空格
     }
-    const s = g.getState();
-    expect(s.status).toBe('won');
-    expect(s.gold).toBeGreaterThan(killedGold); // 有殺敵得金
+    expect(g.getState().status).toBe('won');
+    expect(g.getState().towers.length).toBeGreaterThan(3); // 確實補了不少塔
   });
 
   it('frost 命中使敵減速（出現 slowMs>0）', () => {
@@ -97,7 +93,9 @@ describe('DefenseGame', () => {
 
   it('bomb 命中對濺射範圍內多敵造成傷害', () => {
     const g = new DefenseGame();
-    g.build('s3', 'bomb'); // (240,300)，splash
+    // 取最接近 (240,300) 的建塔格蓋炸彈塔（slots 為程式產生，不寫死 id）
+    const near = g.getState().slots.reduce((a, s) => (Math.hypot(s.x - 240, s.y - 300) < Math.hypot(a.x - 240, a.y - 300) ? s : a));
+    g.build(near.id, 'bomb');
     g.startWave();
     const mk = (id: number, dist: number): Enemy => ({ id, type: 'slime', hp: 30, maxHp: 30, speed: 0, gold: 6, dist, slowMs: 0, alive: true, x: 0, y: 0 });
     // 注入兩隻靜止相鄰 slime 在 s3 路徑上（dist 740≈(240,300)、760≈(220,300)，相距 20 < splash）

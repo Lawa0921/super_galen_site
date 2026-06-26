@@ -31,16 +31,26 @@ export const PATH: Vec[] = [
   { x: 100, y: -20 }, { x: 100, y: 140 }, { x: 380, y: 140 }, { x: 380, y: 300 },
   { x: 100, y: 300 }, { x: 100, y: 460 }, { x: 380, y: 460 }, { x: 380, y: 660 },
 ];
-// 建塔格緊貼路徑「旁邊」的地板（不在路上），各自掩護鄰近走廊（敵人走清空的路）。
-export const SLOTS: Slot[] = [
-  { id: 's0', x: 138, y: 82 },  // A(x100 直) 右側、近入口
-  { id: 's1', x: 240, y: 108 }, // B(y140 橫) 上方
-  { id: 's2', x: 342, y: 222 }, // C(x380 直) 左側
-  { id: 's3', x: 240, y: 270 }, // D(y300 橫) 上方（內凹）
-  { id: 's4', x: 138, y: 382 }, // E(x100 直) 右側
-  { id: 's5', x: 240, y: 432 }, // F(y460 橫) 上方
-  { id: 's6', x: 342, y: 540 }, // G(x380 直) 左側、近封印門
-];
+function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+  if (l2 === 0) return Math.hypot(px - ax, py - ay);
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2));
+  return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+}
+function distToPath(x: number, y: number): number {
+  let m = Infinity;
+  for (let i = 1; i < PATH.length; i++) m = Math.min(m, segDist(x, y, PATH[i - 1].x, PATH[i - 1].y, PATH[i].x, PATH[i].y));
+  return m;
+}
+// 自動產生建塔格：掃網格保留「離路 26~58px」的地板（路旁、可掩護、不擋路），給多種佈陣選擇。
+export const SLOTS: Slot[] = (() => {
+  const out: Slot[] = []; let n = 0;
+  for (let y = 82; y <= 574; y += 58) for (let x = 52; x <= 428; x += 58) {
+    const d = distToPath(x, y);
+    if (d >= 30 && d <= 48) out.push({ id: `s${n++}`, x, y });
+  }
+  return out;
+})();
 
 interface TowerDef { cost: number; range: number; cdMs: number; dmg: number; splash: number; slowMs: number; up: { cost: number; dmg: number; range: number; splash: number; slowMs: number }; }
 const T = (cost: number, range: number, cdMs: number, dmg: number, splash: number, slowMs: number, up: Partial<TowerDef['up']>): TowerDef =>

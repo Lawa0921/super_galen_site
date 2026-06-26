@@ -17,12 +17,14 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   // 像素素材（nearest 採樣保硬邊）
   const urls = [
     ...TOWER_FILES.map((t) => `${BASE}/tower-${t}.png`),
+    ...TOWER_FILES.map((t) => `${BASE}/proj-${t}.png`),
     ...ENEMY_FILES.map((e) => `${BASE}/enemy-${e}.png`),
     `${BASE}/floor.webp`, `${BASE}/gate.png`,
   ];
   const loaded = await Assets.load<Texture>(urls);
   const tex = (u: string): Texture => { const t = loaded[u]; t.source.scaleMode = 'nearest'; return t; };
   const towerTex = Object.fromEntries(TOWER_FILES.map((t) => [t, tex(`${BASE}/tower-${t}.png`)])) as Record<TowerType, Texture>;
+  const projTex = Object.fromEntries(TOWER_FILES.map((t) => [t, tex(`${BASE}/proj-${t}.png`)])) as Record<TowerType, Texture>;
   const enemyTex = Object.fromEntries(ENEMY_FILES.map((e) => [e, tex(`${BASE}/enemy-${e}.png`)])) as Record<EnemyType, Texture>;
   const floorTex = tex(`${BASE}/floor.webp`);
   const gateTex = tex(`${BASE}/gate.png`);
@@ -43,9 +45,10 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   gate.x = 380; gate.y = 606;
   const towersC = new Container();
   const enemiesC = new Container();
-  const dyn = new Graphics(); // 格/射程/血條/投射物（程式繪製）
+  const projC = new Container();  // 投射物（攻擊美術圖）
+  const dyn = new Graphics(); // 格/射程/血條（程式繪製）
   const fxC = new Container(); // 爽度效果層（最上）
-  content.addChild(floor, pathG, gateGlow, gate, towersC, enemiesC, dyn, fxC);
+  content.addChild(floor, pathG, gateGlow, gate, towersC, enemiesC, projC, dyn, fxC);
   const effects = new Effects(fxC);
 
   // 石道（畫一次）：外暗邊 + 石路面 + 內微亮，疊在地板上
@@ -86,6 +89,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   const towerSprites = new Map<number, Sprite>();
   const enemySprites = new Map<number, Sprite>();
   const firePulse = new Map<number, number>(); // towerId → 開火 pop 0..1
+  const projSprites = new Map<number, Sprite>();
   const bossSeen = new Set<number>();
 
   function relayout(): void {
@@ -202,12 +206,19 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
       }
     }
     for (const [id, sp] of enemySprites) if (!seen.has(id)) { sp.destroy(); enemySprites.delete(id); }
-    // 投射物（依塔流派色：光暈 + 亮核）
+    // 投射物：攻擊美術圖，朝目標旋轉（炸彈不轉）
+    const seenP = new Set<number>();
     for (const p of s.projectiles) {
-      const c = TCOL[p.tower];
-      dyn.circle(p.x, p.y, 5).fill({ color: c, alpha: 0.35 });
-      dyn.circle(p.x, p.y, 2.6).fill(0xffffff).stroke({ width: 1, color: c });
+      seenP.add(p.id);
+      let sp = projSprites.get(p.id);
+      if (!sp) { sp = new Sprite(projTex[p.tower]); sp.anchor.set(0.5); projC.addChild(sp); projSprites.set(p.id, sp); }
+      sp.x = p.x; sp.y = p.y;
+      if (p.tower !== 'bomb') {
+        const tgt = s.enemies.find((e) => e.id === p.targetId);
+        if (tgt) sp.rotation = Math.atan2(tgt.y - p.y, tgt.x - p.x) + Math.PI / 2;
+      }
     }
+    for (const [id, sp] of projSprites) if (!seenP.has(id)) { sp.destroy(); projSprites.delete(id); }
     // 封印門脈動光暈
     gateGlow.scale.set(38 + Math.sin(elapsed / 480) * 5);
     gateGlow.alpha = 0.12 + 0.08 * (0.5 + 0.5 * Math.sin(elapsed / 480));
@@ -244,7 +255,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
     refreshHud();
     const st = game.getState();
     if ((st.status === 'won' || st.status === 'lost') && resultEl?.hasAttribute('hidden')) {
-      if (resultText) resultText.textContent = st.status === 'won' ? 'THE GATE HOLDS' : 'THE GATE IS BREACHED';
+      if (resultText) resultText.textContent = st.status === 'won' ? '封印門守住了！' : '封印門被攻破';
       resultEl?.removeAttribute('hidden');
     }
   };

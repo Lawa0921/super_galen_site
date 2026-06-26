@@ -17,27 +17,27 @@ const lang: Language = defaultLang;
 
     <!-- 頂部 HUD -->
     <div class="td-hud">
-      <a class="td-home" href="/games">← ARCADE</a>
+      <a class="td-home" href="/games">← 遊戲廳</a>
       <span class="td-stat">💰 <b id="td-gold">0</b></span>
       <span class="td-stat">🛡 <b id="td-hp">20</b></span>
-      <span class="td-stat">WAVE <b id="td-wave">0/12</b></span>
-      <button class="td-btn td-start" id="td-start" type="button">START WAVE ▶</button>
+      <span class="td-stat">波次 <b id="td-wave">0/12</b></span>
+      <button class="td-btn td-start" id="td-start" type="button">出戰 ▶</button>
     </div>
 
     <!-- 建塔選單（選格時出現） -->
     <div class="td-menu" id="td-menu" hidden>
-      <button class="td-tower" data-build="arrow" type="button">ARROW<small>50</small></button>
-      <button class="td-tower" data-build="bomb" type="button">BOMB<small>80</small></button>
-      <button class="td-tower" data-build="frost" type="button">FROST<small>60</small></button>
-      <button class="td-tower" data-build="arcane" type="button">ARCANE<small>80</small></button>
-      <button class="td-tower td-up" id="td-upgrade" type="button" hidden>UPGRADE</button>
+      <button class="td-tower" data-build="arrow" type="button"><b>弩箭塔</b><i>快速單體</i><small>💰50</small></button>
+      <button class="td-tower" data-build="bomb" type="button"><b>炸彈塔</b><i>範圍轟炸</i><small>💰80</small></button>
+      <button class="td-tower" data-build="frost" type="button"><b>冰霜塔</b><i>減速敵人</i><small>💰60</small></button>
+      <button class="td-tower" data-build="arcane" type="button"><b>奧術塔</b><i>高傷遠程</i><small>💰80</small></button>
+      <button class="td-tower td-up" id="td-upgrade" type="button" hidden><b>升級</b><i>強化此塔</i></button>
     </div>
 
     <!-- 結果 -->
     <div class="td-result" id="td-result" hidden>
       <h2 id="td-result-text">—</h2>
-      <button class="td-btn" id="td-restart" type="button" onclick="location.reload()">RETRY</button>
-      <a class="td-link" href="/games">BACK TO ARCADE</a>
+      <button class="td-btn" id="td-restart" type="button" onclick="location.reload()">重新挑戰</button>
+      <a class="td-link" href="/games">返回遊戲廳</a>
     </div>
   </main>
 </BaseLayout>
@@ -67,10 +67,12 @@ const lang: Language = defaultLang;
     border: 1px solid #6a5f88; border-radius: 8px; }
   /* class 設了 display 會蓋掉 [hidden] 的 display:none，用 class+attr 提高特異性救回來 */
   .td-menu[hidden], .td-result[hidden], .td-tower[hidden] { display: none; }
-  .td-tower { font-family: inherit; font-size: 10px; letter-spacing: 1px; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 5px;
-    color: #eafdff; background: #2a2438; border: 1px solid #6a5f88; padding: 8px 10px; border-radius: 5px; }
-  .td-tower small { color: #ffd23f; font-size: 8px; }
+  .td-tower { font-family: inherit; letter-spacing: 0.5px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: #eafdff; background: #2a2438; border: 1px solid #6a5f88; padding: 8px 10px; border-radius: 5px; min-width: 64px; }
+  .td-tower b { font-size: 11px; font-weight: normal; }
+  .td-tower i { font-size: 8px; font-style: normal; color: #b9add8; }
+  .td-tower small { color: #ffd23f; font-size: 9px; }
   .td-tower:disabled { opacity: 0.4; cursor: default; }
   .td-up { background: #3a2f50; }
 
