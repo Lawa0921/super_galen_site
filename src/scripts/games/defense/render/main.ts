@@ -31,7 +31,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   app.stage.addChild(content);
   // 地城地板背景（鋪滿戰場）
   const floor = new Sprite(floorTex);
-  floor.width = FIELD_W; floor.height = FIELD_H;
+  floor.width = FIELD_W + 16; floor.height = FIELD_H + 16; floor.x = -8; floor.y = -8; // 多覆蓋一圈，震屏不露邊
   const pathG = new Graphics();
   // 封印門脈動光暈（在門後）
   const gateGlow = new Graphics().circle(0, 0, 1).fill(0x6fd8ff);
