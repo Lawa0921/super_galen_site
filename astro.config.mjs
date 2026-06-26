@@ -30,8 +30,9 @@ export default defineConfig({
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'web3': ['ethers'],
+          // ponytail: 函式形式（Rolldown/Astro 7 不接受物件形式）；把 ethers 收進 web3 chunk
+          manualChunks(id) {
+            if (id.includes('node_modules/ethers')) return 'web3';
           },
         },
       },
