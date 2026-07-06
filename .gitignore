@@ -53,3 +53,8 @@ localhost-*.json
 
 # superpowers brainstorm visual companion
 .superpowers/
+
+# 驗證/研究產物（截圖、素材驗證、research 暫存）—— 不入庫
+/*.png
+.research/
+**/_verify/
