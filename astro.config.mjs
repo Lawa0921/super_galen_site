@@ -30,8 +30,8 @@ export default defineConfig({
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'web3': ['ethers'],
+          manualChunks(id) {
+            if (id.includes('node_modules/ethers')) return 'web3';
           },
         },
       },
