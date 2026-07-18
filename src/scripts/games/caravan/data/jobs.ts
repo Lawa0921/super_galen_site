@@ -1,6 +1,7 @@
 import type { Move, PartyMember } from '../combat';
 import type { CompanionRecord } from '../save';
 import type { StatBlock } from '../types';
+import { unlockedMoves } from '../roster';
 
 export type JobId = 'swordsman' | 'ranger' | 'mage' | 'cleric';
 
@@ -31,6 +32,14 @@ export const JOBS: Record<JobId, JobDef> = {
         narration: '{actor}掄起重劍朝{target}狠狠劈下，造成 {amount} 點傷害！' },
       { id: 'guard', name: '架盾', kind: 'guard', target: 'self', hitStat: 'str',
         narration: '{actor}舉盾穩守，蓄勢以待。' },
+      { id: 'whirlwind-slash', name: '旋風斬', kind: 'attack', target: 'enemy', hitStat: 'str',
+        damage: { dice: 1, sides: 12, bonusStat: 'str' },
+        narration: '{actor}轉身畫出一道凌厲弧光，橫掃{target}，造成 {amount} 點傷害！',
+        minLevel: 2 },
+      { id: 'breaking-combo', name: '破陣連擊', kind: 'attack', target: 'enemy', hitStat: 'str',
+        damage: { dice: 2, sides: 8, bonusStat: 'str' },
+        narration: '{actor}連環劈斬撕開{target}的守勢，造成 {amount} 點傷害！',
+        minLevel: 3 },
       universalStrike,
     ],
   },
@@ -45,6 +54,14 @@ export const JOBS: Record<JobId, JobDef> = {
       { id: 'aimed-shot', name: '瞄準射擊', kind: 'attack', target: 'enemy', hitStat: 'dex',
         damage: { dice: 1, sides: 6, bonusStat: 'dex' },
         narration: '{actor}屏息瞄準，一箭正中{target}要害，造成 {amount} 點傷害！' },
+      { id: 'piercing-arrow', name: '穿甲箭', kind: 'attack', target: 'enemy', hitStat: 'dex',
+        damage: { dice: 1, sides: 10, bonusStat: 'dex' },
+        narration: '{actor}換上破甲箭矢，一擊貫穿{target}的護具，造成 {amount} 點傷害！',
+        minLevel: 2 },
+      { id: 'arrow-storm', name: '驟雨連射', kind: 'attack', target: 'enemy', hitStat: 'dex',
+        damage: { dice: 2, sides: 6, bonusStat: 'dex' },
+        narration: '{actor}連珠箭雨如驟雨般落向{target}，造成 {amount} 點傷害！',
+        minLevel: 3 },
       universalStrike,
     ],
   },
@@ -59,6 +76,14 @@ export const JOBS: Record<JobId, JobDef> = {
       { id: 'ice-spike', name: '冰刺', kind: 'attack', target: 'enemy', hitStat: 'int',
         damage: { dice: 1, sides: 8, bonusStat: 'int' },
         narration: '{actor}召喚寒冰尖刺貫穿{target}，造成 {amount} 點傷害！' },
+      { id: 'gravity-crush', name: '重力壓', kind: 'attack', target: 'enemy', hitStat: 'int',
+        damage: { dice: 2, sides: 8, bonusStat: 'int' },
+        narration: '{actor}扭曲空間化作無形巨力，重重壓向{target}，造成 {amount} 點傷害！',
+        minLevel: 2 },
+      { id: 'meteor-fall', name: '隕石墜', kind: 'attack', target: 'enemy', hitStat: 'int',
+        damage: { dice: 3, sides: 6, bonusStat: 'int' },
+        narration: '{actor}召喚熾焰隕石轟然墜落，砸向{target}，造成 {amount} 點傷害！',
+        minLevel: 3 },
       universalStrike,
     ],
   },
@@ -73,6 +98,14 @@ export const JOBS: Record<JobId, JobDef> = {
       { id: 'heal', name: '治癒', kind: 'support', target: 'ally', hitStat: 'cha',
         heal: { dice: 1, sides: 8, bonusStat: 'cha' },
         narration: '{actor}的祝禱化為柔光，為{target}恢復 {amount} 點生命。' },
+      { id: 'holy-nova', name: '聖光爆', kind: 'attack', target: 'enemy', hitStat: 'cha',
+        damage: { dice: 1, sides: 10, bonusStat: 'cha' },
+        narration: '{actor}引動聖光轟然爆裂，擊向{target}，造成 {amount} 點傷害！',
+        minLevel: 2 },
+      { id: 'greater-heal', name: '聖光治癒術', kind: 'support', target: 'ally', hitStat: 'cha',
+        heal: { dice: 2, sides: 6, bonusStat: 'cha' },
+        narration: '{actor}引來聖潔光輝籠罩{target}，恢復 {amount} 點生命。',
+        minLevel: 3 },
       universalStrike,
     ],
   },
@@ -88,7 +121,7 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
     maxHp: record.maxHp,
     hp: record.maxHp,
     defense: job.defense,
-    moves: job.moves,
+    moves: unlockedMoves(record),
     isProtagonist: record.id === 'protagonist',
   };
 }

@@ -10,6 +10,8 @@ export interface Move {
   damage?: { dice: number; sides: number; bonusStat?: Stat };
   heal?: { dice: number; sides: number; bonusStat?: Stat };
   narration: string; // 例：「{actor}的巨劍劈向{target}，造成 {amount} 點傷害！」
+  /** 解鎖所需等級；未標＝Lv1 起就會（M4 roster.ts unlockedMoves 依此過濾） */
+  minLevel?: number;
 }
 
 export interface CombatantBase {

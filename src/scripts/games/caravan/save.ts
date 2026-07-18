@@ -37,10 +37,31 @@ export interface SaveDataV3 {
   expedition: ExpeditionState | null;
 }
 
-/** 對外別名，後續版本跟著改指向最新 schema */
-export type SaveData = SaveDataV3;
+export interface SaveDataV4 {
+  version: 4;
+  createdAt: number;
+  gold: number;
+  flags: Record<string, boolean>;
+  protagonist: CompanionRecord;
+  companions: CompanionRecord[];
+  /** 背包：itemId -> 持有數量 */
+  inventory: Record<string, number>;
+  /** 進行中的遠征快照；重整頁面靠這個接續，非遠征中為 null */
+  expedition: ExpeditionState | null;
+  /** 馬車升級等級：economy.ts cargoCapacity 依此計算載貨上限（M4） */
+  wagonLevel: number;
+  /** 酒館招募池種子；每次歸返結算後遞增以輪替名單（M4） */
+  tavernSeed: number;
+  /** 聲望：M4 唯一效果——達門檻時酒館池首位出現 Lv2 精英傭兵 */
+  reputation: number;
+  /** 已擊殺過的隱藏迷宮 boss（locationId），用於再殺遞減報酬（M4） */
+  visitedBossDungeons: string[];
+}
 
-const CURRENT_VERSION = 3;
+/** 對外別名，後續版本跟著改指向最新 schema */
+export type SaveData = SaveDataV4;
+
+const CURRENT_VERSION = 4;
 
 function defaultProtagonist(): CompanionRecord {
   return {
@@ -59,9 +80,17 @@ function defaultProtagonist(): CompanionRecord {
 const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> = {
   1: (old) => ({ ...old, version: 2, protagonist: defaultProtagonist(), companions: [] }),
   2: (old) => ({ ...old, version: 3, inventory: {}, expedition: null }),
+  3: (old) => ({
+    ...old,
+    version: 4,
+    wagonLevel: 0,
+    tavernSeed: old.createdAt,
+    reputation: 0,
+    visitedBossDungeons: [],
+  }),
 };
 
-/** 驗證物件是否符合 SaveDataV3 的完整 shape（含 protagonist/companions/inventory/expedition）*/
+/** 驗證物件是否符合 SaveDataV4 的完整 shape（含 protagonist/companions/inventory/expedition/wagonLevel/tavernSeed/reputation/visitedBossDungeons）*/
 function isValidSaveShape(value: unknown): value is SaveData {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -76,7 +105,11 @@ function isValidSaveShape(value: unknown): value is SaveData {
     !Array.isArray(v.companions) ||
     typeof v.inventory !== 'object' ||
     v.inventory === null ||
-    (v.expedition !== null && typeof v.expedition !== 'object')
+    (v.expedition !== null && typeof v.expedition !== 'object') ||
+    typeof v.wagonLevel !== 'number' ||
+    typeof v.tavernSeed !== 'number' ||
+    typeof v.reputation !== 'number' ||
+    !Array.isArray(v.visitedBossDungeons)
   ) {
     return false;
   }
@@ -101,7 +134,7 @@ function parseAndMigrate(raw: unknown): SaveData | null {
 
 export function newGame(now: number = Date.now()): SaveData {
   return {
-    version: 3,
+    version: 4,
     createdAt: now,
     gold: 200,
     flags: {},
@@ -109,6 +142,10 @@ export function newGame(now: number = Date.now()): SaveData {
     companions: [],
     inventory: {},
     expedition: null,
+    wagonLevel: 0,
+    tavernSeed: now,
+    reputation: 0,
+    visitedBossDungeons: [],
   };
 }
 
