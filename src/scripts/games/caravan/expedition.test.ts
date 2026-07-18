@@ -2,26 +2,35 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   registerLocations,
   registerEvents,
+  registerEncounters,
   startExpedition,
   drawEvent,
   optionAvailable,
   resolveOption,
   advanceExpedition,
   settleExpedition,
+  drawRooms,
+  chooseRoom,
+  buildEncounter,
+  finishCombat,
+  applyPartyHp,
 } from './expedition';
 import type { EventCard, LocationDef, ExpeditionState } from './expedition';
 import { newGame } from './save';
 import type { SaveData, CompanionRecord } from './save';
 import type { Rng } from './rng';
+import type { EnemyUnit, PartyMember, CombatState } from './combat';
 
-/** 依序回傳指定骰值的假 RNG；weightedPick 依 pickIndex 佇列選出候選陣列中的第幾個 */
-function fakeRng(opts: { d20?: number[]; pickIndex?: number[] } = {}): Rng {
+/** 依序回傳指定骰值的假 RNG；weightedPick 依 pickIndex 佇列選出候選陣列中的第幾個；next 依序回傳（預設全 0） */
+function fakeRng(opts: { d20?: number[]; pickIndex?: number[]; next?: number[] } = {}): Rng {
   let d20i = 0;
   let picki = 0;
+  let nexti = 0;
   const d20s = opts.d20 ?? [10];
   const picks = opts.pickIndex ?? [0];
+  const nexts = opts.next ?? [0];
   return {
-    next: () => 0,
+    next: () => nexts[nexti++ % nexts.length],
     roll: () => d20s[d20i++ % d20s.length],
     d20: () => d20s[d20i++ % d20s.length],
     pick: (arr) => arr[0],
@@ -32,6 +41,32 @@ function fakeRng(opts: { d20?: number[]; pickIndex?: number[] } = {}): Rng {
       if (!hit) throw new Error(`weightedPick: index 超出範圍（${idx}）`);
       return hit.value;
     },
+  };
+}
+
+function makeEnemy(overrides: Partial<EnemyUnit> = {}): EnemyUnit {
+  return {
+    id: 'e1', name: '敵人',
+    stats: { str: 10, dex: 10, int: 10, cha: 10, con: 10 },
+    maxHp: 10, hp: 10, defense: 10, moves: [], intents: [],
+    ...overrides,
+  };
+}
+
+function makePartyMember(overrides: Partial<PartyMember> = {}): PartyMember {
+  return {
+    id: 'protagonist', name: '主角',
+    stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 },
+    maxHp: 22, hp: 22, defense: 10, moves: [], isProtagonist: true,
+    ...overrides,
+  };
+}
+
+function makeCombat(overrides: Partial<CombatState> = {}): CombatState {
+  return {
+    round: 1, order: [], turnIndex: 0,
+    party: [], enemies: [], guarding: {}, enemyIntents: {}, log: [], outcome: 'victory',
+    ...overrides,
   };
 }
 
@@ -550,5 +585,344 @@ describe('settleExpedition', () => {
     const state = makeState({ loot: { gold: 12, items: { herb: 1 } }, step: 1 });
     const result = settleExpedition(state, save);
     expect(result).toEqual({ goldGained: 12, itemsGained: { herb: 1 }, xpGained: 25 });
+  });
+});
+
+describe('drawRooms', () => {
+  it('非頂層：張數由 loc.roomsPerFloor 決定（roll 選 span 內的低點）', () => {
+    const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+    // LOC_DUNGEON_A.roomsPerFloor=[2,3]，span=2；roll 回 1 → count=2+1-1=2
+    const chosen = drawRooms(fakeRng({ d20: [1], pickIndex: [0, 0] }), state);
+    expect(chosen.length).toBe(2);
+    expect(state.roomChoices).toEqual(chosen);
+  });
+
+  it('非頂層：roll 選 span 內的高點時抽 3 張', () => {
+    const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+    // roll 回 2 → count=2+2-1=3
+    const chosen = drawRooms(fakeRng({ d20: [2], pickIndex: [0, 0, 0] }), state);
+    expect(chosen.length).toBe(3);
+  });
+
+  it('同層不重複抽同型（不放回抽法）', () => {
+    const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+    const chosen = drawRooms(fakeRng({ d20: [2], pickIndex: [0, 0, 0] }), state);
+    // pool 依序 [fight,treasure,event,rest,unknown]；每抽一張就從剩餘池移除，
+    // pickIndex 全 0 代表每次都選「剩餘池的第一個」→ fight, treasure, event
+    expect(chosen).toEqual(['fight', 'treasure', 'event']);
+    expect(new Set(chosen).size).toBe(chosen.length);
+  });
+
+  it('頂層（step===totalSteps）固定 [\'fight\']（boss）', () => {
+    const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 3, totalSteps: 3 });
+    const chosen = drawRooms(fakeRng(), state);
+    expect(chosen).toEqual(['fight']);
+    expect(state.roomChoices).toEqual(['fight']);
+  });
+
+  it('未指定 roomsPerFloor 時預設 [2,3]', () => {
+    registerLocations({
+      loc_dungeon_b: {
+        id: 'loc_dungeon_b', name: '哥布林巢穴', kind: 'dungeon', floors: 2,
+        encounterTable: [{ weight: 1, encounterId: 'enc_goblin_nest' }],
+      },
+    });
+    const state = makeState({ locationId: 'loc_dungeon_b', kind: 'dungeon', step: 1, totalSteps: 2 });
+    // 預設 span=[2,3]→span=2；roll 回 2 → count=2+2-1=3
+    const chosen = drawRooms(fakeRng({ d20: [2], pickIndex: [0, 0, 0] }), state);
+    expect(chosen.length).toBe(3);
+  });
+});
+
+describe('chooseRoom', () => {
+  describe('fight', () => {
+    it('非頂層：查 encounterTable 加權抽 encounterId，設 pendingEncounterId+phase=combat', () => {
+      const save = makeSave();
+      const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+      const result = chooseRoom(fakeRng({ pickIndex: [0] }), state, save, 'fight');
+      expect(result.encounterId).toBe('enc_spider');
+      expect(state.pendingEncounterId).toBe('enc_spider');
+      expect(state.phase).toBe('combat');
+    });
+
+    it('頂層（boss）：固定用 bossEncounterId，不查 encounterTable', () => {
+      const save = makeSave();
+      const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 3, totalSteps: 3 });
+      const result = chooseRoom(fakeRng(), state, save, 'fight');
+      expect(result.encounterId).toBe('enc_boss');
+      expect(state.pendingEncounterId).toBe('enc_boss');
+      expect(state.phase).toBe('combat');
+    });
+  });
+
+  describe('treasure', () => {
+    it('gold = roll(6)*10 + step*10，入 state.loot.gold', () => {
+      const save = makeSave();
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 2, totalSteps: 3,
+        loot: { gold: 0, items: {} },
+      });
+      // roll(6)=3、step=2 → 3*10+2*10=50；next=0.99 不中物品機率
+      const result = chooseRoom(fakeRng({ d20: [3], next: [0.99] }), state, save, 'treasure');
+      expect(result.treasureGold).toBe(50);
+      expect(state.loot.gold).toBe(50);
+      expect(state.loot.items.ore).toBeUndefined();
+    });
+
+    it('10% 機率（next()<0.1）額外給 1 個 ore（M3 簡化固定物品）', () => {
+      const save = makeSave();
+      const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+      const result = chooseRoom(fakeRng({ d20: [1], next: [0.05] }), state, save, 'treasure');
+      expect(result.treasureGold).toBeDefined();
+      expect(state.loot.items.ore).toBe(1);
+    });
+
+    it('未中機率（next()>=0.1）不給物品', () => {
+      const save = makeSave();
+      const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+      chooseRoom(fakeRng({ d20: [1], next: [0.5] }), state, save, 'treasure');
+      expect(state.loot.items.ore).toBeUndefined();
+    });
+
+    it('結算後呼叫 advanceExpedition（step 前進、phase 依 kind 推進）', () => {
+      const save = makeSave();
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3, phase: 'room-choice',
+      });
+      chooseRoom(fakeRng({ d20: [1], next: [0.99] }), state, save, 'treasure');
+      expect(state.step).toBe(2);
+      expect(state.phase).toBe('room-choice');
+    });
+  });
+
+  describe('rest', () => {
+    it('全隊回 1d6+2，不超過各自 maxHp（不同成員各自 cap）', () => {
+      const save = makeSave({
+        companions: [makeCompanion({ id: 'ally', maxHp: 20, injuredForTrips: 0 })],
+      });
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3,
+        partyHp: { [save.protagonist.id]: 10, ally: 18 },
+      });
+      // roll(6)=4 → healed=4+2=6：protagonist 10+6=16（未達 max 22）；ally 18+6=24→cap 於 20
+      const result = chooseRoom(fakeRng({ d20: [4] }), state, save, 'rest');
+      expect(result.restHealed).toBe(6);
+      expect(state.partyHp[save.protagonist.id]).toBe(16);
+      expect(state.partyHp.ally).toBe(20);
+    });
+
+    it('結算後呼叫 advanceExpedition', () => {
+      const save = makeSave();
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3, phase: 'room-choice',
+      });
+      chooseRoom(fakeRng({ d20: [4] }), state, save, 'rest');
+      expect(state.step).toBe(2);
+      expect(state.phase).toBe('room-choice');
+    });
+  });
+
+  describe('event', () => {
+    it('抽 dungeon context 事件並回傳 { event }，不呼叫 advanceExpedition', () => {
+      const save = makeSave();
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3, phase: 'room-choice',
+      });
+      // 候選（context.kind 過濾後）：[evUniversal, evDungeonOnly]；pickIndex=1 → evDungeonOnly
+      const result = chooseRoom(fakeRng({ pickIndex: [1] }), state, save, 'event');
+      expect(result.event?.id).toBe('ev_dungeon_only');
+      expect(state.phase).toBe('event');
+      expect(state.step).toBe(1); // 未呼叫 advanceExpedition
+    });
+  });
+
+  describe('unknown', () => {
+    it('next()<0.5 實際化為 fight，走 fight 邏輯', () => {
+      const save = makeSave();
+      const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+      const result = chooseRoom(fakeRng({ next: [0.1], pickIndex: [0] }), state, save, 'unknown');
+      expect(result.encounterId).toBe('enc_spider');
+      expect(state.phase).toBe('combat');
+    });
+
+    it('next()>=0.5 實際化為 treasure，走 treasure 邏輯（含 advanceExpedition）', () => {
+      const save = makeSave();
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3, phase: 'room-choice',
+      });
+      // next 佇列：[0]=0.9→實際化 treasure；[1]=0.99→物品機率未中
+      const result = chooseRoom(fakeRng({ d20: [5], next: [0.9, 0.99] }), state, save, 'unknown');
+      expect(result.treasureGold).toBe(5 * 10 + 1 * 10);
+      expect(state.step).toBe(2);
+      expect(state.phase).toBe('room-choice');
+    });
+  });
+});
+
+describe('buildEncounter', () => {
+  beforeEach(() => {
+    registerEncounters({
+      enc_spider: () => [makeEnemy({ id: 'spider-1' })],
+    });
+  });
+
+  it('查 registerEncounters 登記表生成敵人', () => {
+    const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+    const enemies = buildEncounter(fakeRng(), state, 'enc_spider');
+    expect(enemies.map((e) => e.id)).toEqual(['spider-1']);
+  });
+
+  it('找不到 encounterId 丟 Error', () => {
+    const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+    expect(() => buildEncounter(fakeRng(), state, 'no-such-encounter')).toThrow();
+  });
+
+  it('dungeon：套用 depthHpBonus×(step-1)（step=3 → +2×2=+4）', () => {
+    const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 3, totalSteps: 3 });
+    const [enemy] = buildEncounter(fakeRng(), state, 'enc_spider');
+    expect(enemy.maxHp).toBe(10 + 4);
+    expect(enemy.hp).toBe(10 + 4);
+  });
+
+  it('dungeon 第一層（step=1）：加成為 0', () => {
+    const state = makeState({ locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3 });
+    const [enemy] = buildEncounter(fakeRng(), state, 'enc_spider');
+    expect(enemy.maxHp).toBe(10);
+    expect(enemy.hp).toBe(10);
+  });
+
+  it('route：不套用深度加成', () => {
+    const state = makeState({ locationId: 'loc_route_a', kind: 'route', step: 2, totalSteps: 2 });
+    const [enemy] = buildEncounter(fakeRng(), state, 'enc_spider');
+    expect(enemy.maxHp).toBe(10);
+    expect(enemy.hp).toBe(10);
+  });
+});
+
+describe('applyPartyHp', () => {
+  it('把 state.partyHp 覆蓋到對應 member.hp', () => {
+    const state = makeState({ partyHp: { protagonist: 15, ally: 9 } });
+    const members = [makePartyMember({ id: 'protagonist', hp: 22 }), makePartyMember({ id: 'ally', hp: 20 })];
+    applyPartyHp(state, members);
+    expect(members[0].hp).toBe(15);
+    expect(members[1].hp).toBe(9);
+  });
+
+  it('partyHp 缺 key 時不動該 member 的 hp', () => {
+    const state = makeState({ partyHp: { protagonist: 15 } });
+    const members = [makePartyMember({ id: 'protagonist', hp: 22 }), makePartyMember({ id: 'stranger', hp: 7 })];
+    applyPartyHp(state, members);
+    expect(members[0].hp).toBe(15);
+    expect(members[1].hp).toBe(7); // 未出現在 partyHp，維持原值
+  });
+});
+
+describe('finishCombat', () => {
+  it('無論勝敗都把 combat.party 最終 hp 寫回 state.partyHp', () => {
+    const save = makeSave();
+    const state = makeState({ partyHp: { [save.protagonist.id]: 22 } });
+    const combat = makeCombat({
+      outcome: 'defeat',
+      party: [makePartyMember({ id: save.protagonist.id, hp: 0 })],
+    });
+    finishCombat(fakeRng(), state, save, combat, []);
+    expect(state.partyHp[save.protagonist.id]).toBe(0);
+  });
+
+  it('victory：loot gold 區間下界（roll=1 → 取最小值）', () => {
+    const save = makeSave();
+    const state = makeState({ loot: { gold: 0, items: {} } });
+    const enemy = makeEnemy({ id: 'e1', loot: { gold: [8, 8] } });
+    const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+    finishCombat(fakeRng({ d20: [1] }), state, save, combat, []);
+    expect(state.loot.gold).toBe(8);
+  });
+
+  it('victory：loot gold 區間上界（roll=span → 取最大值）', () => {
+    const save = makeSave();
+    const state = makeState({ loot: { gold: 0, items: {} } });
+    const enemy = makeEnemy({ id: 'e1', loot: { gold: [5, 10] } }); // span=6
+    const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+    finishCombat(fakeRng({ d20: [6] }), state, save, combat, []);
+    expect(state.loot.gold).toBe(10);
+  });
+
+  it('victory：itemChance 命中額外給指定物品', () => {
+    const save = makeSave();
+    const state = makeState({ loot: { gold: 0, items: {} } });
+    const enemy = makeEnemy({ id: 'e1', loot: { gold: [1, 1], itemId: 'goblin-ear', itemChance: 0.3 } });
+    const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+    finishCombat(fakeRng({ d20: [1], next: [0.1] }), state, save, combat, []);
+    expect(state.loot.items['goblin-ear']).toBe(1);
+  });
+
+  it('victory：itemChance 未命中不給物品', () => {
+    const save = makeSave();
+    const state = makeState({ loot: { gold: 0, items: {} } });
+    const enemy = makeEnemy({ id: 'e1', loot: { gold: [1, 1], itemId: 'goblin-ear', itemChance: 0.3 } });
+    const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+    finishCombat(fakeRng({ d20: [1], next: [0.5] }), state, save, combat, []);
+    expect(state.loot.items['goblin-ear']).toBeUndefined();
+  });
+
+  it('victory 後呼叫 advanceExpedition 推進 step/phase', () => {
+    const save = makeSave();
+    const state = makeState({ kind: 'dungeon', step: 1, totalSteps: 3, loot: { gold: 0, items: {} } });
+    const combat = makeCombat({ outcome: 'victory', party: [], enemies: [] });
+    finishCombat(fakeRng(), state, save, combat, []);
+    expect(state.step).toBe(2);
+    expect(state.phase).toBe('room-choice');
+  });
+
+  it('retreated：retreated=true、loot.gold 折半（向下取整）、phase=done', () => {
+    const save = makeSave();
+    const state = makeState({ loot: { gold: 7, items: {} }, step: 2, totalSteps: 5, phase: 'combat' });
+    const combat = makeCombat({ outcome: 'retreated', party: [], enemies: [] });
+    finishCombat(fakeRng(), state, save, combat, []);
+    expect(state.retreated).toBe(true);
+    expect(state.loot.gold).toBe(3);
+    expect(state.phase).toBe('done');
+  });
+
+  it('defeat：同 retreated 的折損與提前結束（phase=done）', () => {
+    const save = makeSave();
+    const state = makeState({ loot: { gold: 9, items: {} }, step: 2, totalSteps: 5, phase: 'combat' });
+    const combat = makeCombat({ outcome: 'defeat', party: [], enemies: [] });
+    finishCombat(fakeRng(), state, save, combat, []);
+    expect(state.retreated).toBe(true);
+    expect(state.loot.gold).toBe(4);
+    expect(state.phase).toBe('done');
+  });
+
+  it('fates dead：非主角傭兵從 companions 移除', () => {
+    const save = makeSave({
+      companions: [makeCompanion({ id: 'c1' }), makeCompanion({ id: 'c2' })],
+    });
+    const state = makeState();
+    const combat = makeCombat({ outcome: 'defeat', party: [], enemies: [] });
+    finishCombat(fakeRng(), state, save, combat, [{ id: 'c1', fate: 'dead' }]);
+    expect(save.companions.map((c) => c.id)).toEqual(['c2']);
+  });
+
+  it('fates dead：主角即使出現在 fates 中也不會被移除（防禦性）', () => {
+    const save = makeSave();
+    const protagonistId = save.protagonist.id;
+    const state = makeState();
+    const combat = makeCombat({ outcome: 'defeat', party: [], enemies: [] });
+    finishCombat(fakeRng(), state, save, combat, [{ id: protagonistId, fate: 'dead' }]);
+    expect(save.protagonist.id).toBe(protagonistId);
+    expect(save.protagonist.injuredForTrips).toBe(0); // dead 分支不會誤把主角轉成 injured
+  });
+
+  it('fates injured：傭兵與主角皆設 injuredForTrips=2', () => {
+    const save = makeSave({ companions: [makeCompanion({ id: 'c1', injuredForTrips: 0 })] });
+    const state = makeState();
+    const combat = makeCombat({ outcome: 'victory', party: [], enemies: [] });
+    finishCombat(fakeRng(), state, save, combat, [
+      { id: 'c1', fate: 'injured' },
+      { id: save.protagonist.id, fate: 'injured' },
+    ]);
+    expect(save.companions[0].injuredForTrips).toBe(2);
+    expect(save.protagonist.injuredForTrips).toBe(2);
   });
 });
