@@ -1,267 +1,47 @@
-# CLAUDE.md
+# CLAUDE.md — super_galen_site
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+給在此 repo 工作的 Claude Code。**全域制度**（派工、判斷、維護）在 `~/.claude/rules/`，本檔只放本專案的路由與最高頻的「別踩雷」事實。
+事實日期 2026-07-05；與程式碼矛盾時**程式碼是真相**，順手改本檔（授權見 `~/.claude/rules/maintenance.md`）。
 
-## 專案概述
+## 一句話定位
 
-這是一個結合 **Astro 靜態網站** + **RPG 遊戲化介面** + **Web3/區塊鏈整合** 的全端開發者作品集部落格。
+Astro 7 靜態站 + RPG 遊戲化介面 + Web3 代幣，但 2026 的**實際開發重心是 `/games`（4 個遊戲、連線對戰）與 `/guild`（159 個成員頁）**。舊版 CLAUDE.md 把它當「作品集部落格」是過時的重心。
 
-**核心特色**：
-- 🎮 **RPG 風格互動介面**：完整的角色狀態系統、技能樹、物品欄、成就系統
-- ⛓️ **區塊鏈整合**：可升級的 ERC-20 代幣智能合約（SuperGalenToken）與 DApp 介面
-- 🌐 **完整 i18n 支援**：支援繁中、簡中、英、日、韓五種語言
-- 📝 **技術部落格**：26+ 篇技術文章，涵蓋 Web3、前端、後端主題
-- 🚀 **現代化架構**：Astro + TypeScript + Vite HMR
+## 按需讀取（不要憑記憶行動）
 
-## 技術棧
+| 何時讀 | 檔案 |
+|--------|------|
+| 要跑指令、測試、啟動、生圖 | `docs/claude/commands.md` |
+| 要理解架構、找檔、i18n 雙檔制 | `docs/claude/architecture.md` |
+| 要宣告完成、排查「改了沒生效」、審查高危區 | `docs/claude/verify.md` |
+| 開工 / 久未接觸本 repo | `docs/claude/letter-to-future-sessions.md` |
+| 想懂本 repo 的制度為何長這樣 | `docs/claude/harness-diagnostic-supergalen-2026-07.md` |
 
-### 前端
-- **框架**：Astro 5.x（靜態網站生成）
-- **語言**：TypeScript、Vanilla JavaScript (ES6+)
-- **樣式**：SCSS 模組化架構（30+ partials）
-- **特效**：Canvas 技能樹、CSS 動畫、像素風格設計
-- **多語系**：TypeScript i18n 系統 + JSON 動態載入
+## 每 session 必記的五條雷（不讀上表也要知道）
 
-### 區塊鏈
-- **智能合約**：Solidity（SuperGalenTokenV1 可升級 UUPS 模式）
-- **開發框架**：Hardhat 2.26.x
-- **Web3 函式庫**：ethers.js v6.15
-- **升級模式**：OpenZeppelin UUPS Proxy
-- **測試**：Hardhat + Chai（2 個測試檔案，76 個測試案例）
-- **支援網路**：Localhost (31337)、Polygon (137)
+1. **i18n 是雙檔制**：`src/i18n/translations/*.ts`（伺服器端）+ `public/assets/i18n/*.json`（客戶端），各五語（en/ja/ko/zh-CN/zh-TW）。同一 key 改一邊不報錯、只顯示舊文案——**兩邊都要改**，改完 grep 驗證。
+2. **本專案沒有 prettier / eslint**，只有 `solhint` 管 Solidity。完成判準裡沒有「跑 lint」這項（合約除外），別幻想去跑不存在的指令。
+3. **智能合約是真金白銀**：`npm run deploy:polygon` 打 Polygon 主網、UUPS 升級不可逆——**只有使用者明示才能碰**。私鑰在 `.env`，絕不入庫。
+4. **「改了沒生效」先查環境再查程式碼**：4321 埠可能被別的 worktree 佔（服務別分支）、Vite 可能服務舊 `<script>`。排查順序見 `docs/claude/verify.md`，別急著重改程式碼。
+5. **驗收 UI 後必附 4321 可點連結**給使用者（memory 鐵則）；產圖後也要放到可開的網址（他看不到 Read 工具的圖）。
 
-### 測試
-- **E2E 測試**：Playwright（跨瀏覽器測試）
-- **單元測試**：Vitest
-- **智能合約測試**：Hardhat + Chai
+## 完成判準（摘要，全文見 docs/claude/verify.md）
 
-### 開發工具
-- **版本控制**：Git + GitHub
-- **套件管理**：npm
-- **部署平台**：Vercel
-- **程式碼品質**：Solhint（Solidity Linter）、TypeScript
+- 先寫失敗測試（全域 TDD 鐵則；純文案/樣式微調豁免）→ 實作 → `npx vitest run` 全套綠（不是只跑新增的）。
+- **`npm run test` 是 watch 模式會掛住**，一律用 `npx vitest run`。
+- UI 改動跑相關 e2e：`npx playwright test <spec> --project=chromium`（e2e 自動在 4002 起 server，與 4321 無關）。
+- guild 頁走 `guild-page-verify` skill；合約跑 `npm run test:contracts` + solhint。
+- push 後查 Vercel build（`gh pr checks <PR#>`）；本專案**無 GitHub Actions**。
 
-## 開發指令
+## 樣式規則
 
-### 快速啟動（推薦）
+SCSS 模組化（`src/styles/`，36 partials）。**禁 `!important`、禁行內樣式。**
 
-```bash
-# 一鍵啟動完整開發環境（Hardhat + 合約部署 + Astro）
-./dev
-```
+## 素材生成 skill 路由
 
-這個腳本會自動：
-1. 啟動 Hardhat 本地節點（端口 8545）
-2. 部署智能合約到本地網路
-3. 啟動 Astro 開發伺服器（端口 4321）
-4. 顯示測試帳戶與合約地址
+任何圖 → `nanobanana-image-gen`（預設）；使用者說「用 codex」→ `codex-image-generation`；BGM → `gemini-music-gen`；音效 → Web Audio 合成不生檔。
 
-按 `Ctrl+C` 可停止所有服務。
+## Git
 
-### Astro 開發
-
-```bash
-# 啟動開發伺服器（HMR 自動重載）
-npm run dev
-
-# 編譯為生產環境
-npm run build
-
-# 預覽生產版本
-npm run preview
-```
-
-**訪問地址**：http://localhost:4321
-
-### 區塊鏈開發
-
-```bash
-# 編譯智能合約
-npm run compile
-
-# 執行所有合約測試（76 個測試案例）
-npm run test:contracts
-
-# 啟動本地區塊鏈節點（Hardhat Network）
-npm run node
-
-# 部署到本地網路（需在另一個終端機先啟動節點）
-npm run deploy:local
-
-# 部署到 Polygon 主網（需要 .env 設定）
-npm run deploy:polygon
-
-# 執行 Solidity Linter
-npx solhint 'blockchain/contracts/**/*.sol'
-```
-
-### 測試
-
-```bash
-# 執行單元測試
-npm run test
-
-# 執行單元測試（UI 模式）
-npm run test:unit:ui
-
-# 執行 E2E 測試
-npm run test:e2e
-
-# 執行 E2E 測試（UI 模式）
-npm run test:e2e:ui
-
-# 執行所有測試
-npm run test:all
-```
-
-### i18n 系統
-
-**架構**：
-- **伺服器端**：`src/i18n/translations/*.ts`（TypeScript 翻譯檔案）
-- **客戶端**：`public/assets/i18n/*.json`（前端 JavaScript 載入）
-
-**使用方式**：
-- **Astro 組件**：`import { t } from '../i18n'; t('key.path')`
-- **HTML 文字**：`<span data-i18n="key.path">預設文字</span>`
-- **JavaScript**：`window.i18n.t('key.path')`
-
-## 檔案結構
-
-```
-my-portfolio-blog-astro/
-├── dev                          # 一鍵啟動完整開發環境腳本
-├── astro.config.mjs             # Astro 配置
-├── vercel.json                  # Vercel 部署配置
-├── src/
-│   ├── components/              # Astro 組件
-│   │   ├── layout/              # 版面組件
-│   │   ├── rpg/                 # RPG 介面組件
-│   │   ├── i18n/                # 語言切換組件
-│   │   └── web3/                # Web3 組件
-│   ├── content/
-│   │   └── blog/                # 部落格文章（Markdown）
-│   ├── i18n/
-│   │   ├── translations/        # TypeScript 翻譯檔案
-│   │   └── index.ts             # i18n 工具函數
-│   ├── pages/
-│   │   ├── [lang]/              # 多語言路由
-│   │   ├── guild/               # 公會頁面
-│   │   └── journal/             # 日誌頁面
-│   ├── scripts/                 # TypeScript 腳本
-│   └── styles/                  # SCSS 樣式檔案
-├── public/
-│   ├── assets/                  # 靜態資源
-│   │   ├── i18n/                # 前端 JSON 翻譯檔案
-│   │   ├── images/              # 圖片
-│   │   └── video/               # 影片
-│   ├── scripts/                 # 前端 JavaScript
-│   └── guild/                   # Guild 成員靜態頁面
-├── blockchain/
-│   ├── contracts/               # Solidity 智能合約
-│   ├── scripts/                 # 部署腳本
-│   ├── test/                    # 合約測試
-│   └── deployments/             # 部署記錄
-├── tests/
-│   └── e2e/                     # Playwright E2E 測試
-├── hardhat.config.js            # Hardhat 配置
-├── playwright.config.ts         # Playwright 配置
-├── vitest.config.ts             # Vitest 配置
-└── package.json                 # npm 依賴
-```
-
-## 架構概覽
-
-### 前端架構
-
-**Astro 組件結構**：
-- `BaseLayout.astro`：基礎版面（包含 SEO、腳本載入）
-- `StatusBar.astro`：RPG 狀態列
-- `GameTabs.astro`：8 個互動頁籤
-- `SkillTreePanel.astro`：Canvas 技能樹
-- 其他 RPG 面板組件
-
-**核心管理器（單例模式）**：
-- `GameStateManager`：透過 Cookie 持久化玩家狀態（HP/MP/SP/Gold）
-- `I18nManager`：多語言支援，動態載入翻譯
-- `UnifiedWalletManager`：Web3 錢包連接（純 ethers.js）
-- `SGTPurchaseManager`：代幣購買流程
-- `NetworkMonitor`：Chain ID 偵測與網路切換
-
-### 區塊鏈架構
-
-**智能合約**：
-- `SuperGalenTokenV1.sol`：可升級 ERC20 代幣（UUPS 模式）
-  - 購買機制、時間鎖、角色訪問控制、黑名單、最大供應量限制
-- `MockUSDT.sol`：本地開發用 USDT 模擬合約
-
-**部署配置**：
-- **Localhost (31337)**：MockUSDT + 測試帳戶
-- **Polygon (137)**：真實 USDT
-
-### RPG 遊戲系統
-
-**8 個主要互動頁籤**：
-1. **狀態**：屬性點數與增減益效果
-2. **技能**：Canvas 技能樹（5 大分支）
-3. **故事**：個人簡介與職涯時間軸
-4. **物品**：Diablo 2 風格裝備欄
-5. **成就**：14 個成就系統
-6. **夥伴**：團隊成員展示
-7. **購買**：SGT 代幣購買介面
-8. **日誌**：部落格文章列表
-
-## 關鍵注意事項
-
-### 效能優化
-- **Vite HMR**：開發時即時更新
-- **靜態生成**：所有頁面預先生成
-- **資源優化**：Astro 自動處理 CSS/JS 打包
-
-### 安全性
-- **絕不提交 `.env`**：包含私鑰，已在 `.gitignore`
-- **智能合約安全**：時間鎖、角色控制、暫停機制
-
-### CSS 架構
-- **SCSS 模組化**：30+ partials
-- **絕不使用 `!important`**
-- **禁止行內樣式**
-
-### 開發工作流程
-
-1. **修改翻譯**：
-   - 伺服器端：編輯 `src/i18n/translations/*.ts`
-   - 客戶端：編輯 `public/assets/i18n/*.json`
-
-2. **修改智能合約**：
-   - 編輯 `blockchain/contracts/*.sol`
-   - 執行 `npm run compile`
-   - 執行 `npm run test:contracts`
-   - 重新部署：`npm run deploy:local`
-
-3. **修改前端**：
-   - Astro 會自動 HMR 重載
-
-4. **新增部落格文章**：
-   - 在 `src/content/blog/` 新增 `YYYY-MM-DD-title.md`
-
-### 測試策略
-- **智能合約**：76 個測試案例
-- **E2E 測試**：Playwright 跨瀏覽器測試
-- **單元測試**：Vitest
-
-### Git 工作流程
-- **提交訊息格式**：Conventional Commits
-- **末尾署名**：`Co-Authored-By: Claude <noreply@anthropic.com>`
-
-## 聯絡資訊
-
-- **GitHub**: [@Lawa0921](https://github.com/Lawa0921)
-- **網站**: https://supergalen.com
-- **Email**: bag571ivy3470@gmail.com
-- **Discord**: https://discord.gg/QRyTagwSSF
-
----
-
-**最後更新**：2026-01-31
-**專案狀態**：🟢 活躍開發中
-**部署狀態**：🌐 已部署至 Vercel
+- Conventional Commits；末尾署名 `Co-Authored-By: Claude <noreply@anthropic.com>`。
+- 開工先確認**當前分支 / worktree / dev server 是誰起的**——本 repo 有十幾個 feat/ 分支與多個 worktree 並行。

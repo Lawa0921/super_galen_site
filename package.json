@@ -45,7 +45,7 @@
   },
   "homepage": "https://github.com/Lawa0921/super_galen_site#readme",
   "dependencies": {
-    "@astrojs/rss": "^4.0.15",
+    "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "^3.7.0",
     "@astrojs/vercel": "^11.0.0",
     "@openzeppelin/contracts": "^5.4.0",
