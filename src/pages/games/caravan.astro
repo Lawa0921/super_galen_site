@@ -1,0 +1,85 @@
+---
+// src/pages/games/caravan.astro
+import BaseLayout from '@components/layout/BaseLayout.astro';
+
+const pageTitle = '商隊與劍 | CARAVAN & SWORD';
+---
+
+<BaseLayout title={pageTitle} description="文字跑團 RPG：經營商隊與傭兵團，擲骰決定命運" lang="zh-TW">
+  <main class="caravan-root">
+    <!-- 標題畫面 -->
+    <section id="screen-title" class="screen">
+      <h1 class="game-title">商隊與劍</h1>
+      <p class="game-subtitle">CARAVAN &amp; SWORD</p>
+      <div class="title-actions">
+        <button id="btn-new-game" class="caravan-btn">新的旅程</button>
+        <button id="btn-continue" class="caravan-btn" hidden>繼續旅程</button>
+      </div>
+    </section>
+
+    <!-- 城鎮畫面（M1 雛形；M4 完整化） -->
+    <section id="screen-town" class="screen" hidden>
+      <h2 class="town-name">啟程之鎮</h2>
+      <p class="town-status">金幣 <span id="town-gold">0</span> G</p>
+      <p class="town-hint">（城鎮功能將在後續里程碑開放）</p>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { newGame, saveGame, loadGame } from '@scripts/games/caravan/save';
+
+  const titleScreen = document.getElementById('screen-title')!;
+  const townScreen = document.getElementById('screen-town')!;
+  const btnNew = document.getElementById('btn-new-game')!;
+  const btnContinue = document.getElementById('btn-continue')!;
+  const goldEl = document.getElementById('town-gold')!;
+
+  function showTown(gold: number): void {
+    goldEl.textContent = String(gold);
+    titleScreen.hidden = true;
+    townScreen.hidden = false;
+  }
+
+  const existing = loadGame();
+  if (existing) btnContinue.hidden = false;
+
+  btnNew.addEventListener('click', () => {
+    const save = newGame();
+    saveGame(save);
+    showTown(save.gold);
+  });
+
+  btnContinue.addEventListener('click', () => {
+    const save = loadGame();
+    if (save) showTown(save.gold);
+  });
+</script>
+
+<style>
+  .caravan-root {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f0e6; /* 淡色紙質底（動漫平塗配套的乾淨文庫基調） */
+    color: #2b2620;
+    font-family: 'Noto Serif TC', serif;
+  }
+  .screen { text-align: center; padding: 2rem; }
+  .game-title { font-size: 3rem; letter-spacing: 0.3em; margin-bottom: 0.25rem; }
+  .game-subtitle { letter-spacing: 0.5em; color: #8a7f6d; margin-bottom: 2.5rem; }
+  .title-actions { display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+  .caravan-btn {
+    font: inherit;
+    padding: 0.6rem 2.5rem;
+    border: 1px solid #2b2620;
+    background: transparent;
+    cursor: pointer;
+    letter-spacing: 0.2em;
+  }
+  .caravan-btn:hover { background: #2b2620; color: #f5f0e6; }
+  .town-name { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .town-status { font-size: 1.1rem; }
+  .town-hint { margin-top: 1.5rem; color: #8a7f6d; font-size: 0.9rem; }
+</style>
