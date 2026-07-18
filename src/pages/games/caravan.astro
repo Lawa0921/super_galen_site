@@ -180,6 +180,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   import type { TownDef } from '@scripts/games/caravan/economy';
   import {
     pendingLevelUps, applyLevelUp, unlockedMoves, generateRecruitPool, hireCost, wagePerTrip,
+    equipItem, unequipItem,
   } from '@scripts/games/caravan/roster';
   import {
     buyPrice, sellPrice, tradeSellPrice, cargoCapacity, wagonUpgradeCost, totalWage,
@@ -439,6 +440,79 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     }
   }
 
+  /** 三個裝備欄位的中文標籤（roster 卡裝備區用） */
+  const EQUIP_SLOT_LABELS: Record<'weapon' | 'armor' | 'trinket', string> = {
+    weapon: '武器', armor: '護甲', trinket: '飾品',
+  };
+  const EQUIP_SLOTS = ['weapon', 'armor', 'trinket'] as const;
+
+  /** 裝備三欄（M5 Task 2）：已裝顯示物品名＋卸下鈕（空欄不渲染）；欄位下方列 inventory 中可裝清單 */
+  function renderEquipSlots(card: HTMLElement, record: CompanionRecord): void {
+    if (!save) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'equip-slots';
+
+    for (const slot of EQUIP_SLOTS) {
+      const slotEl = document.createElement('div');
+      slotEl.className = 'equip-slot';
+      slotEl.dataset.slot = slot;
+
+      const equippedId = record.equipment[slot];
+      const equippedItem = equippedId ? ITEMS[equippedId] : null;
+
+      const label = document.createElement('p');
+      label.className = 'equip-slot-label';
+      label.textContent = `${EQUIP_SLOT_LABELS[slot]}：${equippedItem ? equippedItem.name : '（未裝備）'}`;
+      slotEl.appendChild(label);
+
+      if (equippedItem) {
+        const unequipBtn = document.createElement('button');
+        unequipBtn.type = 'button';
+        unequipBtn.className = 'caravan-btn unequip-btn';
+        unequipBtn.textContent = '卸下';
+        unequipBtn.addEventListener('click', () => {
+          if (!save) return;
+          unequipItem(save, record.id, slot);
+          saveGame(save);
+          renderTownPanels();
+        });
+        slotEl.appendChild(unequipBtn);
+      }
+
+      const candidates = Object.values(ITEMS).filter(
+        (item) => item.equip?.slot === slot && (save!.inventory[item.id] ?? 0) > 0
+      );
+      if (candidates.length > 0) {
+        const list = document.createElement('div');
+        list.className = 'equip-candidates';
+        for (const item of candidates) {
+          const minLevel = item.equip!.minLevel;
+          const levelOk = minLevel === undefined || record.level >= minLevel;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'caravan-btn equip-btn';
+          btn.dataset.itemId = item.id;
+          btn.textContent = minLevel !== undefined && !levelOk
+            ? `${item.name}（需 Lv${minLevel}）`
+            : item.name;
+          btn.disabled = !levelOk;
+          btn.addEventListener('click', () => {
+            if (!save) return;
+            equipItem(save, record.id, item.id);
+            saveGame(save);
+            renderTownPanels();
+          });
+          list.appendChild(btn);
+        }
+        slotEl.appendChild(list);
+      }
+
+      wrap.appendChild(slotEl);
+    }
+
+    card.appendChild(wrap);
+  }
+
   function renderRoster(): void {
     if (!save) return;
     const members: CompanionRecord[] = [save.protagonist, ...save.companions];
@@ -447,6 +521,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const card = document.createElement('div');
       card.className = 'roster-card';
       card.dataset.memberId = record.id;
+
+      const effective = memberFromRecord(record);
 
       const name = document.createElement('p');
       name.className = 'roster-name';
@@ -459,14 +535,19 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const stats = document.createElement('p');
       stats.className = 'roster-stats';
       stats.textContent = (Object.keys(STAT_LABELS) as Stat[])
-        .map((k) => `${STAT_LABELS[k]} ${record.stats[k]}`)
+        .map((k) => `${STAT_LABELS[k]} ${effective.stats[k]}`)
         .join('　');
+
+      const hp = document.createElement('p');
+      hp.className = 'roster-hp';
+      hp.textContent = `生命上限 ${effective.maxHp}`;
 
       const moves = document.createElement('p');
       moves.className = 'roster-moves';
-      moves.textContent = `招式：${unlockedMoves(record).map((m) => m.name).join('、')}`;
+      moves.textContent = `招式：${effective.moves.map((m) => m.name).join('、')}`;
 
-      card.append(name, xp, stats, moves);
+      card.append(name, xp, stats, hp, moves);
+      renderEquipSlots(card, record);
 
       if (record.injuredForTrips > 0) {
         const injury = document.createElement('p');
@@ -1389,9 +1470,37 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .roster-list { display: flex; flex-direction: column; gap: 0.75rem; }
   .roster-card { border: 1px solid #cfc6b0; background: #fffdf8; padding: 0.75rem 1rem; }
   .roster-name { font-weight: 600; margin: 0 0 0.3rem; }
-  .roster-xp, .roster-stats, .roster-moves { font-size: 0.85rem; color: #5c5344; margin: 0.15rem 0; }
+  .roster-xp, .roster-stats, .roster-hp, .roster-moves { font-size: 0.85rem; color: #5c5344; margin: 0.15rem 0; }
   .roster-injury { font-size: 0.85rem; color: #a4453a; margin: 0.3rem 0; }
   .levelup-btn, .dismiss-btn { margin: 0.6rem 0.6rem 0 0; padding: 0.35rem 1.1rem; font-size: 0.85rem; }
+
+  /*
+   * 裝備三欄（M5 Task 2）。兩個交疊的坑：
+   * 1) `.equip-slot` 與全域 `src/styles/_inventory.scss`（RPG 角色頁 Diablo 2 風格裝備面板
+   *    InventoryPanel.astro）同名撞了——那份規則是 60×60px 深色格子＋position:relative，
+   *    此頁若被套用會蓋住卡片內下方的升級/解雇鈕（Playwright 直接回報 pointer-events 被攔截）。
+   * 2) 本頁所有卡片/按鈕都是 client-side `document.createElement` 動態產生，Astro 預設的
+   *    scoped style 只會把 `data-astro-cid-*` 屬性掛在建置期產出的標記上，動態節點沒有這個
+   *    屬性，scoped 選擇器永遠比對不到——所以這裡沿用本檔既有模式外一律要用 :global()
+   *    才能讓規則真的生效（也才擋得住上述 (1) 的全域撞名規則）。
+   */
+  :global(.roster-card .equip-slots) { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.6rem; }
+  :global(.roster-card .equip-slot) {
+    position: static;
+    width: auto;
+    height: auto;
+    flex: 1;
+    min-width: 9rem;
+    border: 1px solid #ece5d5;
+    background: transparent;
+    padding: 0.5rem 0.6rem;
+    cursor: default;
+  }
+  :global(.roster-card .equip-slot:hover) { border-color: #ece5d5; box-shadow: none; transform: none; }
+  :global(.roster-card .equip-slot-label) { font-size: 0.85rem; color: #5c5344; margin: 0 0 0.35rem; }
+  :global(.roster-card .unequip-btn) { font-size: 0.8rem; padding: 0.25rem 0.7rem; }
+  :global(.roster-card .equip-candidates) { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.4rem; }
+  :global(.roster-card .equip-btn) { font-size: 0.8rem; padding: 0.25rem 0.7rem; text-align: left; }
 
   /* 馬車 */
   #wagon-panel .panel-status { margin-bottom: 1rem; }

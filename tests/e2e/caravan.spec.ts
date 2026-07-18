@@ -538,3 +538,80 @@ test.describe('商隊與劍：經營系統', () => {
     await expect(page.locator('#town-gold')).toHaveText('200');
   });
 });
+
+test.describe('商隊與劍：裝備系統', () => {
+  async function newGameWithSeed(page: import('@playwright/test').Page, seed: number): Promise<void> {
+    await page.goto(`/games/caravan?seed=${seed}`);
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await expect(page.locator('#screen-town')).toBeVisible();
+  }
+
+  /** 直接改 localStorage 存檔塞物品進 inventory，重整後用「繼續旅程」重新載入。 */
+  async function giveItem(page: import('@playwright/test').Page, itemId: string, qty = 1): Promise<void> {
+    await page.evaluate(
+      ({ itemId, qty }) => {
+        const raw = localStorage.getItem('caravan-save-v1');
+        const data = JSON.parse(raw!);
+        data.inventory[itemId] = (data.inventory[itemId] ?? 0) + qty;
+        localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+      },
+      { itemId, qty }
+    );
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await expect(page.locator('#screen-town')).toBeVisible();
+  }
+
+  test('遺寶裝備：塞入巢穴圖騰→roster 飾品欄穿上→生命上限精確變化→卸下→回到市集賣列', async ({ page }) => {
+    // den-idol（巢穴圖騰）equip.defense=1／maxHp=3（items.ts M5 終審移交數值）；
+    // 主角預設 maxHp=22（save.ts defaultProtagonist）——穿上後應精確為 25，卸下應精確回 22。
+    await newGameWithSeed(page, 201);
+    await giveItem(page, 'den-idol');
+
+    await page.click('.town-tab[data-town-tab="roster"]');
+    const protagonistCard = page.locator('.roster-card[data-member-id="protagonist"]');
+    await expect(protagonistCard.locator('.roster-hp')).toHaveText('生命上限 22');
+
+    const trinketSlot = protagonistCard.locator('.equip-slot[data-slot="trinket"]');
+    await expect(trinketSlot.locator('.unequip-btn')).toHaveCount(0);
+    await trinketSlot.locator('.equip-btn[data-item-id="den-idol"]').click();
+
+    await expect(trinketSlot).toContainText('巢穴圖騰');
+    await expect(trinketSlot.locator('.unequip-btn')).toBeVisible();
+    await expect(protagonistCard.locator('.roster-hp')).toHaveText('生命上限 25');
+
+    await trinketSlot.locator('.unequip-btn').click();
+    await expect(trinketSlot.locator('.unequip-btn')).toHaveCount(0);
+    await expect(protagonistCard.locator('.roster-hp')).toHaveText('生命上限 22');
+
+    await page.click('.town-tab[data-town-tab="market"]');
+    await expect(page.locator('.market-row[data-item-id="den-idol"] .sell-btn')).toBeVisible();
+  });
+
+  test('空欄不渲染卸下鈕：新檔主角三個裝備欄位皆無 .unequip-btn', async ({ page }) => {
+    await newGameWithSeed(page, 202);
+    await page.click('.town-tab[data-town-tab="roster"]');
+    const protagonistCard = page.locator('.roster-card[data-member-id="protagonist"]');
+    await expect(protagonistCard.locator('.equip-slot[data-slot="weapon"] .unequip-btn')).toHaveCount(0);
+    await expect(protagonistCard.locator('.equip-slot[data-slot="armor"] .unequip-btn')).toHaveCount(0);
+    await expect(protagonistCard.locator('.equip-slot[data-slot="trinket"] .unequip-btn')).toHaveCount(0);
+  });
+
+  test('穿裝備後進訓練場：戰鬥面板 unit-hp 分母反映 maxHp 提升', async ({ page }) => {
+    await newGameWithSeed(page, 203);
+    await giveItem(page, 'den-idol');
+
+    await page.click('.town-tab[data-town-tab="roster"]');
+    const protagonistCard = page.locator('.roster-card[data-member-id="protagonist"]');
+    await protagonistCard.locator('.equip-slot[data-slot="trinket"] .equip-btn[data-item-id="den-idol"]').click();
+    await expect(protagonistCard.locator('.roster-hp')).toHaveText('生命上限 25');
+
+    await page.click('#btn-training');
+    await expect(page.locator('#screen-combat')).toBeVisible();
+    await expect(page.locator('#combat-party .unit-hp')).toHaveText('HP 25/25');
+  });
+});
