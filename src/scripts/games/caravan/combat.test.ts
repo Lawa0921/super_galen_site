@@ -176,6 +176,41 @@ describe('動作結算', () => {
     expect(state.log.some((e) => e.kind === 'retreat')).toBe(true);
   });
 
+  it('EnemyUnit.loot 為選填欄位（型別使用 fixture，M3 Task 3 消費）', () => {
+    const foe = makeEnemy('foe', 10, { loot: { gold: [5, 10], itemId: 'iron-ore', itemChance: 0.5 } });
+    expect(foe.loot?.gold).toEqual([5, 10]);
+    expect(foe.loot?.itemId).toBe('iron-ore');
+    expect(foe.loot?.itemChance).toBe(0.5);
+  });
+
+  it('enemyAct：治療意圖鎖定敵方（含自己）中扣血最多者，玩家隊不受影響', () => {
+    const healMove: Move = { id: 'heal', name: '傷患照護', kind: 'support', target: 'ally', hitStat: 'cha',
+      heal: { dice: 1, sides: 8, bonusStat: 'cha' }, narration: '{actor}治癒了{target}，恢復 {amount} 點！' };
+    const healer = makeEnemy('healer', 10, { moves: [strike, healMove], intents: [{ weight: 1, moveId: 'heal' }],
+      stats: { str: 8, dex: 10, int: 10, cha: 16, con: 10 } });
+    const warrior = makeEnemy('warrior', 8, { hp: 4 }); // maxHp 10, hp 4 → 缺 6，全場最大缺口
+    const hero = makeMember('hero', 14);
+    const state = startCombat(scriptedRng([5, 15, 10]), [hero], [healer, warrior]);
+    expect(state.enemyIntents['healer']).toBe('heal');
+    enemyAct(scriptedRng([6]), state, 'healer'); // 6 + cha(+3) = 9 → applied = min(9, 10-4=6) = 6
+    expect(warrior.hp).toBe(10);
+    expect(hero.hp).toBe(20);
+    expect(state.log.some((e) => e.kind === 'heal')).toBe(true);
+  });
+
+  it('attemptRetreat：敵人無 attack 招時不執行攻擊，殿後者 hp 不變、outcome 仍 retreated', () => {
+    const healMove: Move = { id: 'heal', name: '祝禱', kind: 'support', target: 'ally', hitStat: 'cha',
+      heal: { dice: 1, sides: 8, bonusStat: 'cha' }, narration: '{actor}治癒了{target}！' };
+    const foe = makeEnemy('foe', 10, { moves: [healMove], intents: [{ weight: 1, moveId: 'heal' }] });
+    const a = makeMember('a', 14); const b = makeMember('b', 8);
+    const state = startCombat(scriptedRng([15, 5, 10]), [a, b], [foe]);
+    attemptRetreat(scriptedRng([]), state);
+    expect(state.outcome).toBe('retreated');
+    expect(a.hp).toBe(20);
+    expect(b.hp).toBe(20);
+    expect(state.log.every((e) => e.kind === 'info' || e.kind === 'retreat')).toBe(true);
+  });
+
   it('resolveCasualties：主角必重傷；傭兵過 DC10 重傷、不過死亡', () => {
     const boss = makeMember('boss', 10, { isProtagonist: true });
     const merc1 = makeMember('m1', 10); const merc2 = makeMember('m2', 10);
