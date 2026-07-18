@@ -1,5 +1,6 @@
 import type { StatBlock } from './types';
 import type { ExpeditionState } from './expedition';
+import { EXPEDITION_VERSION } from './expedition';
 
 export const SAVE_KEY = 'caravan-save-v1';
 
@@ -129,6 +130,12 @@ function parseAndMigrate(raw: unknown): SaveData | null {
     parsed = migrate(parsed);
   }
   if (!isValidSaveShape(parsed)) return null;
+  // 遠征快照版本防護（M4）：舊版遠征快照（缺 expeditionVersion 或版本不符）一律丟棄，
+  // 主檔（gold/inventory/roster...）完整保留——玩家不會因為引擎升級而整檔毀損，
+  // 只是進行中的那趟遠征記錄作廢。
+  if (parsed.expedition !== null && parsed.expedition.expeditionVersion !== EXPEDITION_VERSION) {
+    parsed.expedition = null;
+  }
   return parsed;
 }
 

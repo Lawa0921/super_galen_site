@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SAVE_KEY, saveGame, loadGame, exportSave, importSave, newGame } from './save';
+import { EXPEDITION_VERSION } from './expedition';
 
 // happy-dom 提供 localStorage；每案例清空
 beforeEach(() => localStorage.clear());
@@ -161,6 +162,46 @@ describe('save（版本化存檔）', () => {
 
   it('import 垃圾字串回 null', () => {
     expect(importSave('not-base64!!!')).toBeNull();
+  });
+
+  it('遠征快照版本防護：expedition 缺 expeditionVersion 欄位（舊版快照）→ load 後 expedition 為 null、gold 完好（M4）', () => {
+    const s = newGame(1000) as unknown as Record<string, unknown>;
+    s.gold = 456;
+    // 手造一個「舊版」遠征快照：沒有 expeditionVersion 欄位（M4 之前的 ExpeditionState 形狀）
+    s.expedition = {
+      locationId: 'riverside-road', kind: 'route', step: 2, totalSteps: 4,
+      phase: 'event', currentEventId: null, roomChoices: null, pendingEncounterId: null,
+      loot: { gold: 10, items: {} }, eventLog: [], retreated: false, partyHp: {},
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    const loaded = loadGame();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.expedition).toBeNull();
+    expect(loaded?.gold).toBe(456);
+  });
+
+  it('遠征快照版本防護：expeditionVersion 與 EXPEDITION_VERSION 不符時同樣丟棄', () => {
+    const s = newGame(1000) as unknown as Record<string, unknown>;
+    s.expedition = {
+      locationId: 'riverside-road', kind: 'route', step: 1, totalSteps: 4,
+      phase: 'event', currentEventId: null, roomChoices: null, pendingEncounterId: null,
+      loot: { gold: 0, items: {} }, eventLog: [], retreated: false, partyHp: {},
+      expeditionVersion: EXPEDITION_VERSION - 1, cargo: {},
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    expect(loadGame()?.expedition).toBeNull();
+  });
+
+  it('遠征快照版本防護：expeditionVersion 相符時保留遠征快照', () => {
+    const s = newGame(1000) as unknown as Record<string, unknown>;
+    s.expedition = {
+      locationId: 'riverside-road', kind: 'route', step: 1, totalSteps: 4,
+      phase: 'event', currentEventId: null, roomChoices: null, pendingEncounterId: null,
+      loot: { gold: 0, items: {} }, eventLog: [], retreated: false, partyHp: {},
+      expeditionVersion: EXPEDITION_VERSION, cargo: {},
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    expect(loadGame()?.expedition?.locationId).toBe('riverside-road');
   });
 
   it('loadGame：缺 gold/flags/createdAt 的部分毀損檔回 null', () => {

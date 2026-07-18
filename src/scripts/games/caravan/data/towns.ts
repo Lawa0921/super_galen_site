@@ -1,4 +1,5 @@
 import type { TownDef } from '../economy';
+import { registerTowns } from '../expedition';
 
 /**
  * M4 首批城鎮：3 座。
@@ -29,3 +30,5 @@ export const TOWNS: Record<string, TownDef> = {
     stock: ['herb', 'spice-pouch', 'goblin-earring', 'dried-rations'],
   },
 };
+
+registerTowns(TOWNS);
