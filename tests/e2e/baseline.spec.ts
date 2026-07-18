@@ -61,8 +61,8 @@ async function safeClick(page: Page, selector: string): Promise<void> {
 
 test.describe('首頁載入與基礎功能', () => {
   test.beforeEach(async ({ page }) => {
-    // Astro 使用 URL 路由 i18n，根路徑會重定向到 /zh-TW/
-    await page.goto('/zh-TW/');
+    // Astro i18n 設定 prefixDefaultLocale: false：預設語言 (zh-TW) 直接掛在根路徑，/zh-TW/ 不存在
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     // 等待 RPG 介面元素渲染完成
     await page.waitForSelector('.rpg-interface', { state: 'visible', timeout: 10000 });
@@ -85,7 +85,7 @@ test.describe('首頁載入與基礎功能', () => {
 
 test.describe('頁籤導航系統', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
   });
@@ -119,7 +119,7 @@ test.describe('頁籤導航系統', () => {
 
 test.describe('狀態頁籤內容', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
   });
 
@@ -145,7 +145,7 @@ test.describe('狀態頁籤內容', () => {
 
 test.describe('技能樹頁籤', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await safeClick(page, '[data-tab="skills"]');
   });
@@ -161,7 +161,7 @@ test.describe('技能樹頁籤', () => {
 
 test.describe('物品欄頁籤', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await safeClick(page, '[data-tab="inventory"]');
   });
@@ -191,7 +191,7 @@ test.describe('物品欄頁籤', () => {
 
 test.describe('成就系統頁籤', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await safeClick(page, '[data-tab="achievements"]');
   });
@@ -211,7 +211,7 @@ test.describe('成就系統頁籤', () => {
 
 test.describe('購買頁籤 (Web3)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await waitForOverlaysToDisappear(page);
     await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
@@ -234,13 +234,13 @@ test.describe('購買頁籤 (Web3)', () => {
 
 test.describe('語言切換功能', () => {
   test('應該顯示語言切換器', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('.language-switcher')).toBeVisible();
   });
 
   test('點擊語言應該導航到對應路徑', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     // 點擊英文連結
@@ -253,10 +253,11 @@ test.describe('語言切換功能', () => {
   });
 
   test('各語言版本應該可用', async ({ page }) => {
-    const languages = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko'];
+    // 預設語言 zh-TW 掛在根路徑（prefixDefaultLocale: false），其餘語言有前綴
+    const paths = ['/', '/zh-CN/', '/en/', '/ja/', '/ko/'];
 
-    for (const lang of languages) {
-      const response = await page.goto(`/${lang}/`);
+    for (const path of paths) {
+      const response = await page.goto(path);
       expect(response?.status()).toBe(200);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForSelector('.rpg-interface', { state: 'visible', timeout: 10000 });
@@ -266,14 +267,14 @@ test.describe('語言切換功能', () => {
 
 test.describe('部落格系統', () => {
   test('部落格列表頁應該載入', async ({ page }) => {
-    await page.goto('/zh-TW/blog/');
+    await page.goto('/journal/');
     await page.waitForLoadState('domcontentloaded');
 
-    await expect(page.locator('.post-list')).toBeVisible();
+    await expect(page.locator('.posts-list')).toBeVisible();
   });
 
   test('應該顯示文章卡片', async ({ page }) => {
-    await page.goto('/zh-TW/blog/');
+    await page.goto('/journal/');
     await page.waitForLoadState('domcontentloaded');
 
     const postItems = page.locator('.post-item');
@@ -282,13 +283,13 @@ test.describe('部落格系統', () => {
   });
 
   test('點擊文章應該導航到文章頁面', async ({ page }) => {
-    await page.goto('/zh-TW/blog/');
+    await page.goto('/journal/');
     await page.waitForLoadState('domcontentloaded');
     await waitForOverlaysToDisappear(page);
-    await page.waitForSelector('.post-link', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('.post-item-title a', { state: 'visible', timeout: 10000 });
 
     // 點擊第一篇文章
-    const firstPost = page.locator('.post-link').first();
+    const firstPost = page.locator('.post-item-title a').first();
     await firstPost.click();
     await page.waitForLoadState('domcontentloaded');
     await waitForOverlaysToDisappear(page);
@@ -300,12 +301,12 @@ test.describe('部落格系統', () => {
   });
 
   test('文章頁面應該有返回連結', async ({ page }) => {
-    await page.goto('/zh-TW/blog/');
+    await page.goto('/journal/');
     await page.waitForLoadState('domcontentloaded');
     await waitForOverlaysToDisappear(page);
-    await page.waitForSelector('.post-link', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('.post-item-title a', { state: 'visible', timeout: 10000 });
 
-    const firstPost = page.locator('.post-link').first();
+    const firstPost = page.locator('.post-item-title a').first();
     await firstPost.click();
     await page.waitForLoadState('domcontentloaded');
     await waitForOverlaysToDisappear(page);
@@ -330,7 +331,7 @@ test.describe('RSS Feed', () => {
 
 test.describe('SEO 元素', () => {
   test('首頁應該有正確的 meta 標籤', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
 
     // 檢查 title
     await expect(page).toHaveTitle(/SuperGalen/);
@@ -352,13 +353,13 @@ test.describe('SEO 元素', () => {
   });
 
   test('應該有 canonical URL', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     const canonical = page.locator('link[rel="canonical"]');
     await expect(canonical).toHaveAttribute('href', /.+/);
   });
 
   test('應該有 hreflang 標籤', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
 
     const hreflangZhTW = page.locator('link[hreflang="zh-TW"]');
     await expect(hreflangZhTW).toHaveAttribute('href', /.+/);
@@ -368,7 +369,7 @@ test.describe('SEO 元素', () => {
   });
 
   test('應該有 JSON-LD 結構化資料', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     const jsonLd = page.locator('script[type="application/ld+json"]');
     // script 標籤不會是 visible，但應該存在於 DOM 中
     await expect(jsonLd).toHaveCount(1);
@@ -384,7 +385,7 @@ test.describe('SEO 元素', () => {
 test.describe('響應式設計', () => {
   test('桌面版應該正確顯示', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('.game-container')).toBeVisible();
@@ -393,7 +394,7 @@ test.describe('響應式設計', () => {
 
   test('平板版應該正確顯示', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('.game-container')).toBeVisible();
@@ -401,26 +402,28 @@ test.describe('響應式設計', () => {
 
   test('手機版應該正確顯示', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('.game-container')).toBeVisible();
   });
 });
 
-test.describe('根路徑重定向', () => {
-  test('根路徑應該重定向到預設語言', async ({ page }) => {
+test.describe('根路徑預設語言', () => {
+  test('根路徑應該直接提供預設語言內容', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
-    // 應該重定向到 /zh-TW/
-    await expect(page).toHaveURL(/\/zh-TW\//);
+    // prefixDefaultLocale: false：不重定向，根路徑直接提供完整介面
+    // （html lang 屬性不檢查：i18n-manager 會依瀏覽器語言在執行期改寫它）
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('.rpg-interface')).toBeVisible();
   });
 });
 
 test.describe('故事頁籤', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await waitForOverlaysToDisappear(page);
     await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
@@ -448,7 +451,7 @@ test.describe('故事頁籤', () => {
 
 test.describe('夥伴頁籤（召喚系統）', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await safeClick(page, '[data-tab="party"]');
   });
@@ -468,23 +471,23 @@ test.describe('夥伴頁籤（召喚系統）', () => {
 
 test.describe('日誌連結（外部導航）', () => {
   test('應該顯示日誌導航連結', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('.journal-nav-btn')).toBeVisible();
   });
 
   test('日誌連結應該指向部落格', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     const journalLink = page.locator('.journal-nav-btn');
     const href = await journalLink.getAttribute('href');
-    expect(href).toContain('/blog');
+    expect(href).toContain('/journal');
   });
 });
 
 test.describe('狀態列 HP/MP/SP/Gold', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
   });
 
@@ -531,7 +534,7 @@ test.describe('狀態列 HP/MP/SP/Gold', () => {
 
 test.describe('技能樹互動', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await safeClick(page, '[data-tab="skills"]');
     await page.waitForTimeout(500);
@@ -560,7 +563,7 @@ test.describe('公會頁面', () => {
 
 test.describe('Web3 購買介面詳細測試', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await safeClick(page, '[data-tab="purchase"]');
     await page.waitForTimeout(300);
@@ -585,7 +588,7 @@ test.describe('Web3 購買介面詳細測試', () => {
 
 test.describe('遊戲狀態持久化測試', () => {
   test('重新載入頁面後狀態應該保持', async ({ page, context }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     // 記錄初始狀態
@@ -606,7 +609,7 @@ test.describe('遊戲狀態持久化測試', () => {
   });
 
   test('Cookie 應該被正確設置', async ({ page, context }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     // 等待 JavaScript 初始化並設置 Cookie
@@ -624,7 +627,7 @@ test.describe('遊戲狀態持久化測試', () => {
 
 test.describe('頁籤切換完整性測試', () => {
   test('所有 8 個頁籤都應該可切換', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     const tabs = [
@@ -639,7 +642,7 @@ test.describe('頁籤切換完整性測試', () => {
     ];
 
     for (const tab of tabs) {
-      const tabButton = page.locator(`[data-tab="${tab.id}"]`);
+      const tabButton = page.locator(`.game-tabs [data-tab="${tab.id}"]`);
       if (await tabButton.isVisible()) {
         await tabButton.click();
         await page.waitForTimeout(100);
@@ -649,7 +652,7 @@ test.describe('頁籤切換完整性測試', () => {
   });
 
   test('頁籤切換應該有視覺反饋', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
     // 點擊技能頁籤
@@ -657,17 +660,18 @@ test.describe('頁籤切換完整性測試', () => {
     await page.waitForTimeout(100);
 
     // 檢查頁籤是否有 active 類
-    const skillsTabButton = page.locator('[data-tab="skills"]');
+    const skillsTabButton = page.locator('.game-tabs [data-tab="skills"]');
     await expect(skillsTabButton).toHaveClass(/active/);
   });
 });
 
 test.describe('多語言內容一致性', () => {
   test('不同語言應該顯示相同的介面結構', async ({ page }) => {
-    const languages = ['zh-TW', 'en', 'ja'];
+    // 預設語言 zh-TW 掛在根路徑
+    const paths = ['/', '/en/', '/ja/'];
 
-    for (const lang of languages) {
-      await page.goto(`/${lang}/`);
+    for (const path of paths) {
+      await page.goto(path);
       await page.waitForLoadState('domcontentloaded');
 
       // 核心元素應該在所有語言都存在
