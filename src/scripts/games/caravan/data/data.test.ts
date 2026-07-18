@@ -3,10 +3,12 @@ import { ITEMS } from './items';
 import { LOCATIONS, visibleLocations } from './locations';
 import { ENCOUNTERS } from './enemies';
 import { EVENTS } from './events';
+import { TOWNS } from './towns';
 import type { EventCard, EffectSpec } from '../expedition';
 import { startExpedition, drawEvent } from '../expedition';
 import { createRng } from '../rng';
 import { newGame } from '../save';
+import { buyPrice, tradeSellPrice } from '../economy';
 
 function allEffects(card: EventCard): EffectSpec[] {
   const out: EffectSpec[] = [];
@@ -255,5 +257,69 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     expect(state.totalSteps).toBe(4);
     const card = drawEvent(rng, state, save);
     expect(EVENTS.some((c) => c.id === card.id)).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------
+  // towns.ts（TOWNS，M4）
+  // ---------------------------------------------------------------------
+  it('TOWNS 有 3 座城鎮，各自 id/name/desc 齊全', () => {
+    expect(Object.keys(TOWNS).length).toBe(3);
+    for (const town of Object.values(TOWNS)) {
+      expect(town.id).toBeTruthy();
+      expect(town.name).toBeTruthy();
+      expect(town.desc.length).toBeGreaterThanOrEqual(40);
+      expect(town.desc.length).toBeLessThanOrEqual(80);
+    }
+  });
+
+  it('TOWNS priceModifiers 引用的 itemId 都存在於 ITEMS', () => {
+    for (const town of Object.values(TOWNS)) {
+      for (const itemId of Object.keys(town.priceModifiers)) {
+        expect(ITEMS[itemId], `${town.id} 的 priceModifiers 引用不存在的物品 ${itemId}`).toBeDefined();
+      }
+    }
+  });
+
+  it('TOWNS stock 引用的 itemId 都存在於 ITEMS', () => {
+    for (const town of Object.values(TOWNS)) {
+      expect(town.stock.length, `${town.id} 的 stock 不應為空`).toBeGreaterThan(0);
+      for (const itemId of town.stock) {
+        expect(ITEMS[itemId], `${town.id} 的 stock 引用不存在的物品 ${itemId}`).toBeDefined();
+      }
+    }
+  });
+
+  it('孤兒物品（繃帶/乾糧/銀懷錶/香料包）都被至少一座城鎮的 stock 收錄', () => {
+    const allStock = new Set(Object.values(TOWNS).flatMap((t) => t.stock));
+    for (const itemId of ['bandage', 'dried-rations', 'silver-locket', 'spice-pouch']) {
+      expect(allStock.has(itemId), `孤兒物品 ${itemId} 未被任何城鎮收錄`).toBe(true);
+    }
+  });
+
+  it('route 的 destinationTownId（若設定）存在於 TOWNS', () => {
+    let sawDestination = false;
+    for (const loc of Object.values(LOCATIONS)) {
+      if (loc.kind !== 'route' || !loc.destinationTownId) continue;
+      sawDestination = true;
+      expect(TOWNS[loc.destinationTownId], `${loc.id} 的 destinationTownId「${loc.destinationTownId}」不存在於 TOWNS`).toBeDefined();
+    }
+    expect(sawDestination, '應至少有一條 route 設定 destinationTownId（riverside-road/blackwood-trail）').toBe(true);
+  });
+
+  it('臨水道→河灣鎮、黑森林徑→林邊聚落的 destinationTownId 對應正確', () => {
+    expect(LOCATIONS['riverside-road'].destinationTownId).toBe('riverbend-town');
+    expect(LOCATIONS['blackwood-trail'].destinationTownId).toBe('woodside-settlement');
+  });
+
+  it('差價 sanity：河灣鎮 ore 的 tradeSellPrice > 啟程之鎮 ore 的 buyPrice（押貨有利可圖）', () => {
+    const startTown = TOWNS['starting-town'];
+    const riverbend = TOWNS['riverbend-town'];
+    expect(tradeSellPrice(riverbend, 'ore')).toBeGreaterThan(buyPrice(startTown, 'ore'));
+  });
+
+  it('差價 sanity：林邊聚落 herb 的 tradeSellPrice > 啟程之鎮 herb 的 buyPrice（押貨有利可圖）', () => {
+    const startTown = TOWNS['starting-town'];
+    const woodside = TOWNS['woodside-settlement'];
+    expect(tradeSellPrice(woodside, 'herb')).toBeGreaterThan(buyPrice(startTown, 'herb'));
   });
 });

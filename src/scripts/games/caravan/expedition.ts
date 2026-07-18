@@ -50,6 +50,8 @@ export interface LocationDef {
   bossEncounterId?: string; // dungeon
   encounterTable: Array<{ weight: number; encounterId: string }>;
   depthHpBonus?: number; // dungeon：每層敵人 maxHp 加值
+  /** route 抵達的目的城鎮（economy.ts TownDef.id）；異鎮交易的落點，M4 起可選填 */
+  destinationTownId?: string;
 }
 
 export interface ExpeditionState {

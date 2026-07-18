@@ -13,6 +13,7 @@ export const LOCATIONS: Record<string, LocationDef> = {
       { weight: 60, encounterId: 'enc_wolf_pair' },
       { weight: 40, encounterId: 'enc_bandit_raid' },
     ],
+    destinationTownId: 'riverbend-town',
   },
   'blackwood-trail': {
     id: 'blackwood-trail',
@@ -23,6 +24,7 @@ export const LOCATIONS: Record<string, LocationDef> = {
       { weight: 50, encounterId: 'enc_wolf_pair' },
       { weight: 50, encounterId: 'enc_goblin_raiders' },
     ],
+    destinationTownId: 'woodside-settlement',
   },
   'abandoned-mine': {
     id: 'abandoned-mine',
