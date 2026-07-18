@@ -5,9 +5,34 @@ import { SAVE_KEY, saveGame, loadGame, exportSave, importSave, newGame } from '.
 beforeEach(() => localStorage.clear());
 
 describe('save（版本化存檔）', () => {
-  it('newGame 給出 v1 初始檔（金幣 200、無旗標）', () => {
+  it('newGame 產出 v2：含預設主角與空傭兵清單', () => {
     const s = newGame(1000);
-    expect(s).toEqual({ version: 1, createdAt: 1000, gold: 200, flags: {} });
+    expect(s.version).toBe(2);
+    expect(s.protagonist.name).toBe('你');
+    expect(s.protagonist.job).toBe('swordsman');
+    expect(s.companions).toEqual([]);
+    expect(s.gold).toBe(200);
+  });
+
+  it('v1 舊檔 loadGame 自動遷移為 v2 且保留原金幣與旗標', () => {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 1, createdAt: 5, gold: 777, flags: { met: true } }));
+    const s = loadGame();
+    expect(s?.version).toBe(2);
+    expect(s?.gold).toBe(777);
+    expect(s?.flags).toEqual({ met: true });
+    expect(s?.protagonist.id).toBe('protagonist');
+  });
+
+  it('v2 檔缺 protagonist → 視為毀損回 null', () => {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 2, createdAt: 1, gold: 5, flags: {}, companions: [] }));
+    expect(loadGame()).toBeNull();
+  });
+
+  it('importSave 對 v1 字串也會遷移（與 loadGame 同路徑）', () => {
+    const v1 = btoa(encodeURIComponent(JSON.stringify({ version: 1, createdAt: 5, gold: 42, flags: {} })));
+    const s = importSave(v1);
+    expect(s?.version).toBe(2);
+    expect(s?.gold).toBe(42);
   });
 
   it('saveGame 後 loadGame 取回相同資料', () => {
