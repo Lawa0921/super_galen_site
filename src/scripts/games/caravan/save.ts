@@ -12,6 +12,19 @@ const CURRENT_VERSION = 1;
 /** 逐版遷移表：M2+ 擴充 schema 時在此補 (v) => v+1 的轉換，玩家不清檔 */
 const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> = {};
 
+/** 驗證物件是否符合 SaveDataV1 的完整 shape（version/createdAt/gold 為 number、flags 為非 null 物件）*/
+function isValidSaveShape(value: unknown): value is SaveDataV1 {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.version === 'number' &&
+    typeof v.createdAt === 'number' &&
+    typeof v.gold === 'number' &&
+    typeof v.flags === 'object' &&
+    v.flags !== null
+  );
+}
+
 export function newGame(now: number = Date.now()): SaveDataV1 {
   return { version: 1, createdAt: now, gold: 200, flags: {} };
 }
@@ -26,12 +39,14 @@ export function loadGame(storage: Storage = localStorage): SaveDataV1 | null {
   try {
     let parsed = JSON.parse(raw) as Record<string, unknown>;
     if (typeof parsed !== 'object' || parsed === null || typeof parsed.version !== 'number') return null;
+    if ((parsed.version as number) > CURRENT_VERSION) return null;
     while ((parsed.version as number) < CURRENT_VERSION) {
       const migrate = MIGRATIONS[parsed.version as number];
       if (!migrate) return null;
       parsed = migrate(parsed);
     }
-    return parsed as unknown as SaveDataV1;
+    if (!isValidSaveShape(parsed)) return null;
+    return parsed;
   } catch {
     return null;
   }
@@ -43,8 +58,10 @@ export function exportSave(data: SaveDataV1): string {
 
 export function importSave(encoded: string): SaveDataV1 | null {
   try {
-    const parsed = JSON.parse(decodeURIComponent(atob(encoded))) as SaveDataV1;
+    const parsed = JSON.parse(decodeURIComponent(atob(encoded))) as Record<string, unknown>;
     if (typeof parsed !== 'object' || parsed === null || typeof parsed.version !== 'number') return null;
+    if ((parsed.version as number) > CURRENT_VERSION) return null;
+    if (!isValidSaveShape(parsed)) return null;
     return parsed;
   } catch {
     return null;
