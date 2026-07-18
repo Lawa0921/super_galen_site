@@ -26,6 +26,9 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         <button id="btn-training" class="caravan-btn">訓練場</button>
         <button id="btn-resume-expedition" class="caravan-btn" hidden>繼續遠征</button>
       </div>
+      <p id="expedition-expired-note" class="expedition-expired-note" hidden>
+        先前的遠征記錄已過期，已返回城鎮
+      </p>
 
       <nav id="town-tabs" class="town-tabs">
         <button type="button" class="town-tab" data-town-tab="market">市集</button>
@@ -72,6 +75,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <h2 class="quest-title">委託板</h2>
       <div id="quest-list" class="quest-list"></div>
       <p class="quest-hidden-hint" hidden>？ 迷霧深處似乎還藏著什麼，尚待線索指引……</p>
+      <p id="quest-wage-warning" class="quest-wage-warning" hidden></p>
 
       <div id="quest-outfit" class="quest-outfit" hidden>
         <h3 id="outfit-title" class="outfit-title"></h3>
@@ -152,7 +156,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 </BaseLayout>
 
 <script>
-  import { newGame, saveGame, loadGame } from '@scripts/games/caravan/save';
+  import { newGame, saveGame, loadGame, SAVE_KEY } from '@scripts/games/caravan/save';
   import type { SaveData, CompanionRecord } from '@scripts/games/caravan/save';
   import { createRng } from '@scripts/games/caravan/rng';
   import {
@@ -212,6 +216,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   const btnQuestBoard = document.getElementById('btn-quest-board')!;
   const btnResumeExpedition = document.getElementById('btn-resume-expedition')!;
   const goldEl = document.getElementById('town-gold')!;
+  const expeditionExpiredNoteEl = document.getElementById('expedition-expired-note')!;
 
   // ---- 城鎮分頁（M4：市集/酒館/隊伍/馬車） ----
   const townTabButtons = Array.from(
@@ -242,6 +247,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   const btnQuestBack = document.getElementById('btn-quest-back')!;
   const questListEl = document.getElementById('quest-list')!;
   const hiddenHintEl = document.querySelector('.quest-hidden-hint') as HTMLElement;
+  const questWageWarningEl = document.getElementById('quest-wage-warning')!;
 
   // ---- 出發整裝（M4：押貨與薪餉預覽） ----
   const questOutfitEl = document.getElementById('quest-outfit')!;
@@ -284,8 +290,25 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   const settleLogEl = document.getElementById('settle-log')!;
   const btnSettleBack = document.getElementById('btn-settle-back')!;
 
+  // 過期遠征快照提示（M4 Task 4 審查交接第 2 項）：save.ts 的 parseAndMigrate 會靜默丟棄
+  // 版本不符的 expedition 快照，UI 這層看不到「丟棄前」的原始值，所以在 loadGame() 前
+  // 自行 parse 一次 raw JSON 比對「load 前有、load 後沒有」，不改 save.ts 的既有回傳形狀。
+  let rawHadExpedition = false;
+  try {
+    const rawJson = localStorage.getItem(SAVE_KEY);
+    if (rawJson) {
+      const rawParsed = JSON.parse(rawJson) as { expedition?: unknown };
+      if (rawParsed && rawParsed.expedition) rawHadExpedition = true;
+    }
+  } catch {
+    // raw JSON 壞掉的話 loadGame() 自己也會回 null，不需要額外處理
+  }
+
   let save: SaveData | null = loadGame();
   if (save) btnContinue.hidden = false;
+  // 一次性旗標：只有「load 前 raw 有 expedition、load 後被丟棄成 null」才算過期；
+  // showTown() 顯示過一次後會清掉，btnNew（開新檔）也會清掉，不會誤觸發。
+  let expeditionExpiredOnLoad = rawHadExpedition && !!save && save.expedition === null;
 
   function updateResumeButton(): void {
     btnResumeExpedition.hidden = !(save && save.expedition);
@@ -579,11 +602,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     updateResumeButton();
     renderTownPanels();
     switchTownTab('market');
+    // 一次性提示：顯示過一次後清旗標，之後回城鎮不會再跳出來
+    expeditionExpiredNoteEl.hidden = !expeditionExpiredOnLoad;
+    expeditionExpiredOnLoad = false;
   }
 
   btnNew.addEventListener('click', () => {
     save = newGame();
     saveGame(save);
+    expeditionExpiredOnLoad = false;
     showTown(save.gold);
   });
 
@@ -599,8 +626,24 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   // 委託板（M3）
   // ---------------------------------------------------------------------
 
+  // 出發前薪餉守衛（M4 Task 4 審查修復）：.quest-item 立即出發與 #btn-depart 整裝出發
+  // 兩條入口都要在呼叫 beginExpedition() 前檢查金幣是否足夠付薪餉，共用這個函式——
+  // 審查抓到的原始 bug 是 .quest-item 那條路徑漏了這一步，startExpedition() 內部丟出的
+  // Error 沒人接住，UI 靜默無反應。金幣不足時顯示 #quest-wage-warning，不呼叫 beginExpedition。
+  function canAffordWage(currentSave: SaveData): boolean {
+    const wage = totalWage(currentSave);
+    if (currentSave.gold < wage) {
+      questWageWarningEl.textContent = `金幣不足以支付隊伍薪餉（需 ${wage}）`;
+      questWageWarningEl.hidden = false;
+      return false;
+    }
+    questWageWarningEl.hidden = true;
+    return true;
+  }
+
   function renderQuestBoard(): void {
     if (!save) return;
+    questWageWarningEl.hidden = true;
     const locs = visibleLocations(save);
     questListEl.innerHTML = '';
     for (const loc of locs) {
@@ -621,7 +664,11 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       // 直接點整列＝沿用既有「立即出發（不押貨）」行為，保持向後相容
       // （舊 e2e 依賴此行為：點 .quest-item 後立刻進入 #screen-expedition，
       // 不經任何確認步驟）。想押貨出發的話改點下面的「整裝出發」鈕。
-      div.addEventListener('click', () => beginExpedition(loc.id));
+      // 出發前仍要走 canAffordWage() 守門，金幣不足就不呼叫 beginExpedition。
+      div.addEventListener('click', () => {
+        if (!save || !canAffordWage(save)) return;
+        beginExpedition(loc.id);
+      });
       row.appendChild(div);
 
       const outfitBtn = document.createElement('button');
@@ -736,7 +783,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   }
 
   btnDepart.addEventListener('click', () => {
-    if (!outfitLocation) return;
+    if (!outfitLocation || !save || !canAffordWage(save)) return;
     const locationId = outfitLocation.id;
     const cargo = { ...stagedCargo };
     closeOutfitPanel();
@@ -1280,6 +1327,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .town-name { font-size: 1.8rem; margin-bottom: 0.5rem; }
   .town-status { font-size: 1.1rem; }
   .town-actions { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+  .expedition-expired-note { font-size: 0.85rem; color: #a4453a; margin-top: 0.75rem; }
 
   /* 城鎮分頁：市集／酒館／隊伍／馬車（M4） */
   .town-tabs {
@@ -1388,6 +1436,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .quest-kind { font-size: 0.85rem; color: #8a7f6d; margin: 0; }
   .quest-outfit-btn { font-size: 0.8rem; padding: 0.5rem 0.9rem; white-space: nowrap; }
   .quest-hidden-hint { color: #8a7f6d; font-style: italic; margin-bottom: 1rem; }
+  .quest-wage-warning { color: #a4453a; font-size: 0.85rem; margin-bottom: 1rem; }
 
   /* 出發整裝（M4） */
   .quest-outfit {
