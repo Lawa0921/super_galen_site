@@ -85,4 +85,21 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     await expect(page.locator('#combat-result')).toBeVisible();
     await expect(page.locator('#combat-result')).toContainText('撤');
   });
+
+  test('快速撤退後立即重開：舊戰鬥的敵方 timer 不得污染新戰鬥', async ({ page }) => {
+    await page.click('#btn-training');
+    await expect(page.locator('#screen-combat')).toBeVisible();
+    await page.locator('#btn-retreat').click();
+    await expect(page.locator('#combat-result')).toBeVisible();
+    await page.click('#btn-combat-back');
+    await page.click('#btn-training');
+    await expect(page.locator('#screen-combat')).toBeVisible();
+    const logsBefore = await page.locator('#combat-log p').count();
+    await page.waitForTimeout(900);   // 讓任何殭屍 timer 到期
+    const logsAfter = await page.locator('#combat-log p').count();
+    // 新戰鬥若輪到敵方，正常會有一次敵方行動；殭屍 timer 會造成「額外」行動。
+    // seed 固定下允許至多一次合法敵方行動（+2 log：action+damage 上限），不允許更多。
+    expect(logsAfter - logsBefore).toBeLessThanOrEqual(2);
+    await expect(page.locator('#screen-combat')).toBeVisible();
+  });
 });

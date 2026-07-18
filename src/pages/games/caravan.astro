@@ -201,8 +201,9 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     if (actor.side === 'enemy') {
       combatActionsEl.innerHTML = '';
       const enemyId = actor.id;
+      const scheduledState = state;
       setTimeout(() => {
-        if (!state || state.outcome !== 'ongoing') return;
+        if (state !== scheduledState || scheduledState.outcome !== 'ongoing') return;
         enemyAct(rng, state, enemyId);
         render();
       }, 600);
