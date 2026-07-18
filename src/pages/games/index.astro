@@ -13,6 +13,7 @@ const games = [
   { id: 'tetris', title: 'BATTLE TETRIS', href: '/games/tetris', active: true, art: '/assets/games/tetris/card-tetris.webp' },
   { id: 'bomber', title: 'DUNGEON BOMBER', href: '/games/bomber', active: true, art: '/assets/games/bomber/card-bomber.webp' },
   { id: 'witchrun', title: 'WITCH RUN', href: '/games/witchrun', active: true, art: '/assets/games/witchrun/card-witchrun.webp' },
+  { id: 'caravan', title: 'CARAVAN & SWORD', href: '/games/caravan', active: true, art: undefined },
 ];
 ---
 
@@ -216,6 +217,7 @@ const games = [
   .card-wall .card:nth-child(1) { animation-delay: 0.5s; }
   .card-wall .card:nth-child(2) { animation-delay: 0.64s; }
   .card-wall .card:nth-child(3) { animation-delay: 0.78s; }
+  .card-wall .card:nth-child(4) { animation-delay: 0.92s; }
   @keyframes arcadeCardIn {
     0% { opacity: 0; transform: translateY(32px) scale(0.92); }
     100% { opacity: 1; transform: translateY(0) scale(1); }
