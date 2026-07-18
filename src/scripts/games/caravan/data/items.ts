@@ -1,8 +1,25 @@
+import type { StatBlock } from '../types';
+import type { Move } from '../combat';
+
 export interface ItemDef {
   id: string;
   name: string;
   desc: string;
   value: number;
+  /** 可裝備物品的效果設定（M5 裝備三欄系統）；未設定＝純消耗/交易品 */
+  equip?: {
+    slot: 'weapon' | 'armor' | 'trinket';
+    /** 裝備所需等級門檻；未標＝無門檻 */
+    minLevel?: number;
+    /** 穿戴時屬性加值 */
+    bonus?: Partial<StatBlock>;
+    /** armor/trinket 常用：防禦加值 */
+    defense?: number;
+    /** 生命上限加值 */
+    maxHp?: number;
+    /** weapon 專用：取代職業的武器招（moves[0]，見 jobs.ts memberFromRecord） */
+    move?: Move;
+  };
 }
 
 /** M3 首批物品：12 種（藥草/繃帶/火把/哥布林耳環/礦石/蛛絲/boss 遺寶×2/雜項 4） */
@@ -48,12 +65,16 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '監工的密帳',
     desc: '記錄著非法奴役礦工帳目的皮革帳本，城裡的商會會為它付出重金。',
     value: 60,
+    // M5：終審移交轉裝備——精算帳目的直覺化為智力加持
+    equip: { slot: 'trinket', bonus: { int: 1 } },
   },
   'den-idol': {
     id: 'den-idol',
     name: '巢穴圖騰',
     desc: '哥布林部族供奉的骨雕圖騰，紋路詭異，收藏家趨之若鶩。',
     value: 70,
+    // M5：終審移交轉裝備——圖騰的庇護化為防禦與生命加持
+    equip: { slot: 'trinket', defense: 1, maxHp: 3 },
   },
   'dried-rations': {
     id: 'dried-rations',

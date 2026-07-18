@@ -35,9 +35,16 @@ export function sellPrice(town: TownDef, itemId: string): number {
   return Math.round(buyPrice(town, itemId) * 0.5);
 }
 
-/** 異鎮轉賣價格（押貨貿易的差價空間）：round(ITEMS.value × 城鎮係數 × 0.9) */
+/**
+ * 異鎮轉賣價格（押貨貿易的差價空間）：round(ITEMS.value × 城鎮係數 × 0.9)。
+ * M5 套利裁決（終審移交）：equip 類物品不吃異鎮 0.9 係數與城鎮係數，一律
+ * round(value × 0.5)（＝與原鎮 sellPrice 同量級）——裝備要嘛用、要嘛半價賣，無套利。
+ */
 export function tradeSellPrice(town: TownDef, itemId: string): number {
   const item = requireItem(itemId, 'tradeSellPrice');
+  if (item.equip) {
+    return Math.round(item.value * 0.5);
+  }
   return Math.round(item.value * priceModifier(town, itemId) * 0.9);
 }
 

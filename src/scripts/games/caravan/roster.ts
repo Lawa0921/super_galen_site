@@ -1,9 +1,10 @@
 import type { Rng } from './rng';
-import type { CompanionRecord } from './save';
+import type { CompanionRecord, SaveData } from './save';
 import type { StatBlock } from './types';
 import type { Move } from './combat';
 import { statMod } from './check';
 import { JOBS, type JobId } from './data/jobs';
+import { ITEMS } from './data/items';
 
 /** 升級累積 XP 門檻；index=level（1-based，index 0 廢棄）；Lv5 為封頂（M4） */
 export const XP_TABLE: number[] = [0, 0, 50, 120, 210, 320];
@@ -28,6 +29,11 @@ export function pendingLevelUps(record: CompanionRecord): number {
 export function applyLevelUp(record: CompanionRecord, allocate: Partial<StatBlock>): void {
   if (record.level >= MAX_LEVEL) {
     throw new Error(`已達最高等級 Lv${MAX_LEVEL}，無法再升級`);
+  }
+  for (const value of Object.values(allocate)) {
+    if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
+      throw new Error('屬性點配置每項必須為非負整數');
+    }
   }
   const total = Object.values(allocate).reduce((sum: number, v) => sum + (v ?? 0), 0);
   if (total !== 2) {
@@ -95,8 +101,86 @@ export function generateRecruitPool(rng: Rng, tavernSeed: number, reputation: nu
       stats,
       maxHp: jobDef.baseMaxHp + (isVeteran ? VETERAN_MAX_HP_BONUS : 0),
       injuredForTrips: 0,
+      equipment: { weapon: null, armor: null, trinket: null },
     });
   }
 
   return pool;
+}
+
+// -----------------------------------------------------------------------
+// 裝備三欄系統（M5 Task 1）
+// -----------------------------------------------------------------------
+
+const EQUIP_SLOTS = ['weapon', 'armor', 'trinket'] as const;
+type EquipSlot = (typeof EQUIP_SLOTS)[number];
+
+/** 依 id 找出主角或傭兵的存檔記錄；找不到回 undefined */
+function findMemberRecord(save: SaveData, memberId: string): CompanionRecord | undefined {
+  if (save.protagonist.id === memberId) return save.protagonist;
+  return save.companions.find((c) => c.id === memberId);
+}
+
+/**
+ * 從 save.inventory 扣 1 件裝備到成員身上；舊裝備（若有）退回 inventory。
+ * 不可裝時丟 Error：成員不存在／物品無 equip 欄／等級不足／庫存 0。
+ */
+export function equipItem(save: SaveData, memberId: string, itemId: string): void {
+  const record = findMemberRecord(save, memberId);
+  if (!record) {
+    throw new Error(`equipItem: 找不到成員「${memberId}」`);
+  }
+  const item = ITEMS[itemId];
+  if (!item?.equip) {
+    throw new Error(`equipItem: 「${itemId}」不是可裝備物品`);
+  }
+  if (item.equip.minLevel !== undefined && record.level < item.equip.minLevel) {
+    throw new Error(`equipItem: ${record.name} 等級不足，需 Lv${item.equip.minLevel} 才能裝備「${item.name}」`);
+  }
+  if ((save.inventory[itemId] ?? 0) <= 0) {
+    throw new Error(`equipItem: 背包中沒有「${item.name}」`);
+  }
+
+  const slot = item.equip.slot;
+  const previousId = record.equipment[slot];
+
+  save.inventory[itemId] -= 1;
+  if (save.inventory[itemId] <= 0) delete save.inventory[itemId];
+  if (previousId) {
+    save.inventory[previousId] = (save.inventory[previousId] ?? 0) + 1;
+  }
+  record.equipment[slot] = itemId;
+}
+
+/** 卸下成員某一裝備欄位，物品退回 inventory；該欄位本就空時為 no-op */
+export function unequipItem(save: SaveData, memberId: string, slot: EquipSlot): void {
+  const record = findMemberRecord(save, memberId);
+  if (!record) {
+    throw new Error(`unequipItem: 找不到成員「${memberId}」`);
+  }
+  const itemId = record.equipment[slot];
+  if (!itemId) return;
+  record.equipment[slot] = null;
+  save.inventory[itemId] = (save.inventory[itemId] ?? 0) + 1;
+}
+
+/** 加總成員三個裝備欄位的效果：屬性加值/防禦/生命上限（memberFromRecord 整合用） */
+export function equipmentBonus(record: CompanionRecord): { stats: Partial<StatBlock>; defense: number; maxHp: number } {
+  const stats: Partial<StatBlock> = {};
+  let defense = 0;
+  let maxHp = 0;
+  for (const slot of EQUIP_SLOTS) {
+    const itemId = record.equipment[slot];
+    if (!itemId) continue;
+    const equip = ITEMS[itemId]?.equip;
+    if (!equip) continue;
+    if (equip.bonus) {
+      for (const key of Object.keys(equip.bonus) as Array<keyof StatBlock>) {
+        stats[key] = (stats[key] ?? 0) + (equip.bonus[key] ?? 0);
+      }
+    }
+    if (equip.defense) defense += equip.defense;
+    if (equip.maxHp) maxHp += equip.maxHp;
+  }
+  return { stats, defense, maxHp };
 }

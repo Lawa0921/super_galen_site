@@ -44,6 +44,11 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     }
   });
 
+  it('overseer-ledger/den-idol（boss 遺寶）已轉為裝備，slot=trinket（M5 終審移交）', () => {
+    expect(ITEMS['overseer-ledger'].equip?.slot).toBe('trinket');
+    expect(ITEMS['den-idol'].equip?.slot).toBe('trinket');
+  });
+
   // ---------------------------------------------------------------------
   // locations.ts
   // ---------------------------------------------------------------------
