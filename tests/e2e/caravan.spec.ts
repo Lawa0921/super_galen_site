@@ -124,9 +124,14 @@ test.describe('商隊與劍：遠征系統', () => {
   // 種子挑選原則（見 scratch-seed-scan.ts 的一次性模擬，已刪除）：
   // 用「每一步都點第一個可用選項／房卡，戰鬥用第一招打到分出勝負」的固定策略
   // 對種子做模擬，找出「首事件確定、首選項可用、結果確定」且能驗證完整流程的種子。
-  // seed=30（臨水道）：leg1=ev_wolf_howl 首選項可用且擲骰成功；leg2=ev_wounded_traveler
-  // 首選項因缺藥草被 disable；leg4 擲骰失敗觸發 enc_wolf_pair 戰鬥，玩家一路用預設目標
-  // （不手動選標）打到 6 回合後獲勝；結算 goldGained=9、xpGained=45、無戰利品物品。
+  // seed=91（臨水道，M5 內容擴充後重新掃描——42 張事件卡擴大了加權池，
+  // 原 seed=30 的路線通用事件序列已隨之改變，故重新挑選）：
+  // leg1=ev_traveling_bard（遊唱詩人的請求）首選項擲骰失敗；
+  // leg2=ev_rare_wandering_swordsaint（流浪劍聖切磋，稀有事件）首選項擲骰失敗；
+  // leg3=ev_river_crossing（湍急的溪流）首選項擲骰成功；
+  // leg4=ev_wolf_howl（遠方的狼嚎）首選項擲骰失敗觸發 enc_wolf_pair 戰鬥，
+  // 玩家一路用預設目標（不手動選標）打到分出勝負後獲勝；
+  // 結算 goldGained=25、xpGained=45、無戰利品物品。
   // seed=2（廢棄礦坑）：第 1 層房卡固定為 fight/treasure/rest，選 treasure 得 70 金；
   // 第 2 層房卡 fight/rest，選 fight 進入 enc_mine_spiders 後立即撤退；
   // 結算 goldGained=35（70 折半無條件捨去）、xpGained=30。
@@ -152,38 +157,36 @@ test.describe('商隊與劍：遠征系統', () => {
     await expect(page.locator('.quest-hidden-hint')).toContainText('？');
   });
 
-  test('完整路線遠征（seed=30）：事件卡→擲骰→戰鬥→結算，金幣寫回城鎮', async ({ page }) => {
-    await newGameWithSeed(page, 30);
+  test('完整路線遠征（seed=91）：事件卡→擲骰→戰鬥→結算，金幣寫回城鎮', async ({ page }) => {
+    await newGameWithSeed(page, 91);
     await page.click('#btn-quest-board');
     await page.click('.quest-item[data-location-id="riverside-road"]');
     await expect(page.locator('#screen-expedition')).toBeVisible();
     await expect(page.locator('#exp-progress')).toHaveText('第 1/4 段');
 
-    // leg1：ev_wolf_howl，首選項可用，第 2 個選項因缺火把被 disable
-    await expect(page.locator('#event-title')).toHaveText('遠方的狼嚎');
+    // leg1：ev_traveling_bard（遊唱詩人的請求），首選項可用，擲骰失敗
+    await expect(page.locator('#event-title')).toHaveText('遊唱詩人的請求');
     await expect(page.locator('.event-opt[data-opt-index="0"]')).toBeEnabled();
-    await expect(page.locator('.event-opt[data-opt-index="1"]')).toBeDisabled();
     await page.click('.event-opt[data-opt-index="0"]');
     await expect(page.locator('#check-result')).toBeVisible();
+    await expect(page.locator('#check-result')).toContainText('失敗');
+    await page.click('#btn-exp-continue');
+
+    // leg2：ev_rare_wandering_swordsaint（流浪劍聖切磋，稀有事件），首選項擲骰失敗
+    await expect(page.locator('#exp-progress')).toHaveText('第 2/4 段');
+    await expect(page.locator('#event-title')).toHaveText('流浪劍聖切磋');
+    await page.click('.event-opt[data-opt-index="0"]');
+    await expect(page.locator('#check-result')).toContainText('失敗');
+    await page.click('#btn-exp-continue');
+
+    // leg3：ev_river_crossing（湍急的溪流），首選項擲骰成功
+    await expect(page.locator('#exp-progress')).toHaveText('第 3/4 段');
+    await expect(page.locator('#event-title')).toHaveText('湍急的溪流');
+    await page.click('.event-opt[data-opt-index="0"]');
     await expect(page.locator('#check-result')).toContainText('成功');
     await page.click('#btn-exp-continue');
 
-    // leg2：ev_wounded_traveler，首選項因缺藥草被 disable，改點第 2 個
-    await expect(page.locator('#exp-progress')).toHaveText('第 2/4 段');
-    await expect(page.locator('#event-title')).toHaveText('路遇傷者');
-    await expect(page.locator('.event-opt[data-opt-index="0"]')).toBeDisabled();
-    await page.click('.event-opt[data-opt-index="1"]');
-    await expect(page.locator('#check-result')).toContainText('失敗');
-    await page.click('#btn-exp-continue');
-
-    // leg3：ev_broken_wheel，首選項可用，檢定失敗但無戰鬥
-    await expect(page.locator('#exp-progress')).toHaveText('第 3/4 段');
-    await expect(page.locator('#event-title')).toHaveText('車輪斷裂');
-    await page.click('.event-opt[data-opt-index="0"]');
-    await expect(page.locator('#check-result')).toContainText('失敗');
-    await page.click('#btn-exp-continue');
-
-    // leg4：ev_wolf_howl 再次出現，檢定失敗觸發戰鬥
+    // leg4：ev_wolf_howl（遠方的狼嚎），檢定失敗觸發戰鬥
     await expect(page.locator('#exp-progress')).toHaveText('第 4/4 段');
     await expect(page.locator('#event-title')).toHaveText('遠方的狼嚎');
     await page.click('.event-opt[data-opt-index="0"]');
@@ -209,16 +212,16 @@ test.describe('商隊與劍：遠征系統', () => {
     await expect(page.locator('#combat-result')).toContainText('勝利');
     await page.click('#btn-combat-back');
 
-    // 結算畫面：seed=30 模擬得出 goldGained=9、xpGained=45、無戰利品物品
+    // 結算畫面：seed=91 模擬得出 goldGained=25、xpGained=45、無戰利品物品
     await expect(page.locator('#screen-settlement')).toBeVisible();
-    await expect(page.locator('#settle-gold')).toHaveText('9');
+    await expect(page.locator('#settle-gold')).toHaveText('25');
     await expect(page.locator('#settle-xp')).toHaveText('45');
     await expect(page.locator('#settle-items li')).toHaveText('（無）');
     await expect(page.locator('#settle-log')).toContainText('順利完成');
 
     await page.click('#btn-settle-back');
     await expect(page.locator('#screen-town')).toBeVisible();
-    await expect(page.locator('#town-gold')).toHaveText('209');
+    await expect(page.locator('#town-gold')).toHaveText('225');
   });
 
   test('遠征中重整頁面 → 城鎮出現「繼續遠征」→ 回到同一張事件卡', async ({ page }) => {
@@ -449,11 +452,11 @@ test.describe('商隊與劍：經營系統', () => {
     await expect(page.locator('#screen-expedition')).toBeHidden();
   });
 
-  test('押貨貿易（seed=30）：買 6 礦石押運臨水道，河灣鎮賣光，貿易收入精確且淨利為正', async ({ page }) => {
-    // 種子與流程完全沿用既有「完整路線遠征（seed=30）」案例的已驗證結果（見上方
-    // 遠征系統 describe）：市集買賣與押貨出發都不消耗 rng，事件/戰鬥序列逐位元組
-    // 相同（一次性 scratch 腳本已用真引擎重跑確認，見 commit 說明，未進 git）。
-    await newGameWithSeed(page, 30);
+  test('押貨貿易（seed=91）：買 6 礦石押運臨水道，河灣鎮賣光，貿易收入精確且淨利為正', async ({ page }) => {
+    // 種子與流程完全沿用既有「完整路線遠征（seed=91）」案例的已驗證結果（見上方
+    // 遠征系統 describe，M5 內容擴充後重新掃描的種子）：市集買賣與押貨出發都不消耗
+    // rng，事件/戰鬥序列逐位元組相同（一次性 scratch 腳本已用真引擎重跑確認，未進 git）。
+    await newGameWithSeed(page, 91);
     const goldAtStart = (await readSave(page)).gold;
     expect(goldAtStart).toBe(200);
 
@@ -478,15 +481,15 @@ test.describe('商隊與劍：經營系統', () => {
 
     await advanceToSettlement(page, { sellAll: true });
     await expect(page.locator('#screen-settlement')).toBeVisible();
-    // seed=30 臨水道已知確定結果：loot.gold=9、無戰利品物品、勝利未撤退——
+    // seed=91 臨水道已知確定結果：loot.gold=25、無戰利品物品、勝利未撤退——
     // 押貨 6 礦石全額到帳。tradeSellPrice(riverbend-town, ore)=round(12×1.5×0.9)=16，6 個＝96。
-    await expect(page.locator('#settle-gold')).toHaveText('9');
+    await expect(page.locator('#settle-gold')).toHaveText('25');
     await expect(page.locator('#settle-trade-gold')).toHaveText('96');
 
     await page.click('#btn-settle-back');
     await expect(page.locator('#screen-town')).toBeVisible();
     const finalGold = (await readSave(page)).gold;
-    expect(finalGold).toBe(goldBeforeDepart + 9 + 96);
+    expect(finalGold).toBe(goldBeforeDepart + 25 + 96);
     expect(finalGold).toBeGreaterThan(goldAtStart);
   });
 
@@ -613,5 +616,34 @@ test.describe('商隊與劍：裝備系統', () => {
     await page.click('#btn-training');
     await expect(page.locator('#screen-combat')).toBeVisible();
     await expect(page.locator('#combat-party .unit-hp')).toHaveText('HP 25/25');
+  });
+
+  test('武器裝備：塞入鹽晶劍並升至 Lv2→穿上→roster 招式列出現新招取代原武器招（M5 Task 3 交接）', async ({ page }) => {
+    // salt-crystal-blade（鹽晶劍）minLevel=2、equip.move='結晶爆斬'（items.ts M5 內容擴充）；
+    // 主角預設 swordsman，未裝備時 moves[0]='重斬'（heavy-slash，jobs.ts）。
+    await newGameWithSeed(page, 204);
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      const data = JSON.parse(raw!);
+      data.protagonist.level = 2;
+      data.inventory['salt-crystal-blade'] = 1;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await expect(page.locator('#screen-town')).toBeVisible();
+
+    await page.click('.town-tab[data-town-tab="roster"]');
+    const protagonistCard = page.locator('.roster-card[data-member-id="protagonist"]');
+    await expect(protagonistCard.locator('.roster-moves')).toContainText('重斬');
+    await expect(protagonistCard.locator('.roster-moves')).not.toContainText('結晶爆斬');
+
+    const weaponSlot = protagonistCard.locator('.equip-slot[data-slot="weapon"]');
+    await weaponSlot.locator('.equip-btn[data-item-id="salt-crystal-blade"]').click();
+
+    await expect(weaponSlot).toContainText('鹽晶劍');
+    await expect(protagonistCard.locator('.roster-moves')).toContainText('結晶爆斬');
+    await expect(protagonistCard.locator('.roster-moves')).not.toContainText('重斬');
   });
 });
