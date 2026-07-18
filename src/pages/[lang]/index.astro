@@ -1194,27 +1194,6 @@ const attributes = [
   }
 </script>
 
-<!-- i18n Adapter - 將翻譯暴露給傳統腳本 -->
-<script is:inline define:vars={{ trans, lang }}>
-  window.i18n = {
-    currentLanguage: lang,
-    currentTranslations: trans,
-    t: function(key) {
-      const keys = key.split('.');
-      let value = trans;
-      for (const k of keys) {
-        if (value && typeof value === 'object' && k in value) {
-          value = value[k];
-        } else {
-          return key; // 找不到翻譯時返回 key
-        }
-      }
-      return typeof value === 'string' ? value : key;
-    }
-  };
-  console.log('✅ [i18n] Adapter 初始化完成，語言:', lang);
-</script>
-
 <!-- 設置語言偏好（必須在 i18n-manager.js 之前） -->
 <script is:inline define:vars={{ lang }}>
   // 從 URL 路徑設置語言偏好，確保 I18nManager 使用正確的語言
@@ -1236,11 +1215,7 @@ const attributes = [
 <script src="/scripts/summon-animation-controller.js" defer></script>
 <script src="/scripts/summon.js" defer></script>
 
-<!-- 故事書系統 -->
-<script src="/scripts/book.js" defer></script>
-
-<!-- RPG 系統：成就、物品欄、動畫 -->
-<script src="/scripts/achievements.js" defer></script>
+<!-- RPG 系統：物品欄、動畫（book.js / achievements.js 由 LazyLoader 按需載入） -->
 <script src="/scripts/inventory.js" defer></script>
 <script src="/scripts/advanced-animations.js" defer></script>
 
@@ -1254,14 +1229,11 @@ const attributes = [
 <script src="/scripts/mobile-menu.js" defer></script>
 <script src="/scripts/main.js" defer></script>
 
-<!-- Web3 系統：錢包、網路監控、SGT 購買、賽博終端 -->
+<!-- Web3 系統：錢包、網路監控（購買面板腳本由 LazyLoader 按需載入） -->
 <script src="/scripts/contracts-config.js" defer></script>
 <script src="/scripts/unified-wallet-manager.js" defer></script>
 <script src="/scripts/simple-network-monitor.js" defer></script>
 <script src="/scripts/simple-sgt-balance.js" defer></script>
-<script src="/scripts/sgt-purchase-manager.js" defer></script>
-<script src="/scripts/cyber-terminal.js" defer></script>
-<script src="/scripts/cyber-audio.js" defer></script>
 
 <!-- 開發者工具 -->
 <script src="/scripts/cheat.js" defer></script>

@@ -13,7 +13,7 @@ async function safeClick(page, selector: string) {
 test.describe('視覺與樣式比較', () => {
 
   test('頁籤按鈕應該有正確的樣式', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
@@ -34,7 +34,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('狀態列應該有正確的漸層背景', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
@@ -52,7 +52,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('HP/MP/SP 條應該有正確的顏色', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
@@ -80,7 +80,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('技能樹 Canvas 應該已繪製內容', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
@@ -110,7 +110,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('物品欄物品應該有正確的稀有度邊框', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
@@ -139,7 +139,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('成就 hotspot 應該有正確數量', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
@@ -165,7 +165,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('語言切換器應該正常工作', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000); // 等待 JS 完全載入
 
@@ -194,7 +194,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('購買頁籤的內部頁籤應該可切換', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
@@ -212,7 +212,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('召喚區域應該存在', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
@@ -226,7 +226,7 @@ test.describe('視覺與樣式比較', () => {
   });
 
   test('故事頁籤應該顯示書本', async ({ page }) => {
-    await page.goto('/zh-TW/');
+    await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1500);
 
