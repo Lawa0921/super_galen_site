@@ -26,6 +26,9 @@ export function createRng(seed: number): Rng {
     pick: (arr) => arr[Math.floor(next() * arr.length)],
     weightedPick: (items) => {
       const total = items.reduce((sum, it) => sum + it.weight, 0);
+      if (items.length === 0 || total <= 0) {
+        throw new Error('weightedPick: 空清單或總權重為 0');
+      }
       let cursor = next() * total;
       for (const it of items) {
         cursor -= it.weight;
