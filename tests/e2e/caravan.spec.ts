@@ -287,3 +287,254 @@ test.describe('商隊與劍：遠征系統', () => {
     await expect(page.locator('#town-gold')).toHaveText('235');
   });
 });
+
+test.describe('商隊與劍：經營系統', () => {
+  async function newGameWithSeed(page: import('@playwright/test').Page, seed: number): Promise<void> {
+    await page.goto(`/games/caravan?seed=${seed}`);
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await expect(page.locator('#screen-town')).toBeVisible();
+  }
+
+  /** 直接讀 localStorage 存檔（JSON），比對 UI 沒顯示的中間值（如出發瞬間的金幣）。 */
+  async function readSave(page: import('@playwright/test').Page): Promise<Record<string, any>> {
+    return page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      return raw ? JSON.parse(raw) : null;
+    });
+  }
+
+  /** 持續買同一物品直到金幣低於門檻（用於製造「薪餉付不出」情境），buy-btn disabled 就停手。 */
+  async function buyUntilGoldBelow(
+    page: import('@playwright/test').Page,
+    itemId: string,
+    threshold: number
+  ): Promise<void> {
+    const buyBtn = page.locator(`.market-row[data-item-id="${itemId}"] .buy-btn`);
+    for (let i = 0; i < 40; i++) {
+      const save = await readSave(page);
+      if (!save || save.gold < threshold) return;
+      if (!(await buyBtn.isEnabled().catch(() => false))) return;
+      await buyBtn.click();
+    }
+  }
+
+  /**
+   * 遠征狀態機的單步推進：戰鬥用第一招打到分出勝負、事件點第一個可用選項、
+   * 房卡點第一張——寬鬆推進策略，只用於不需要精確斷言金額/xp 的案例
+   * （需要精確值的案例改走種子掃描法，見「押貨貿易」案例）。
+   */
+  async function stepExpedition(page: import('@playwright/test').Page): Promise<boolean> {
+    if (await page.locator('#screen-combat').isVisible().catch(() => false)) {
+      const result = page.locator('#combat-result');
+      if (await result.isVisible().catch(() => false)) {
+        await page.click('#btn-combat-back');
+      } else {
+        const move = page.locator('#combat-actions .move-btn').first();
+        if (await move.isVisible().catch(() => false)) {
+          await move.click();
+        }
+        await page.waitForTimeout(250);
+      }
+      return true;
+    }
+    const eventOpt = page.locator('.event-opt:not([disabled])').first();
+    if (await eventOpt.isVisible().catch(() => false)) {
+      await eventOpt.click();
+      return true;
+    }
+    const roomBtn = page.locator('.room-btn').first();
+    if (await roomBtn.isVisible().catch(() => false)) {
+      await roomBtn.click();
+      return true;
+    }
+    const cont = page.locator('#btn-exp-continue');
+    if (await cont.isVisible().catch(() => false)) {
+      await cont.click();
+      return true;
+    }
+    return false;
+  }
+
+  /** 推進到結算畫面；途中若出現異鎮交易畫面，`sellAll` 決定要不要賣光再繼續。 */
+  async function advanceToSettlement(
+    page: import('@playwright/test').Page,
+    opts: { sellAll?: boolean } = {}
+  ): Promise<void> {
+    for (let i = 0; i < 200; i++) {
+      if (await page.locator('#screen-settlement').isVisible().catch(() => false)) return;
+      if (await page.locator('#screen-trade').isVisible().catch(() => false)) {
+        if (opts.sellAll) {
+          let sellBtn = page.locator('.trade-sell-btn:not([disabled])').first();
+          while (await sellBtn.isVisible().catch(() => false)) {
+            await sellBtn.click();
+            sellBtn = page.locator('.trade-sell-btn:not([disabled])').first();
+          }
+        }
+        await page.click('#btn-trade-done');
+        continue;
+      }
+      const progressed = await stepExpedition(page);
+      if (!progressed) await page.waitForTimeout(150);
+    }
+    throw new Error('advanceToSettlement: 超過 200 步仍未抵達結算畫面');
+  }
+
+  test('市集買賣：買 2 繃帶扣款、賣 1 回收半價，金幣與庫存精確同步', async ({ page }) => {
+    await newGameWithSeed(page, 101);
+    // buyPrice(starting-town, bandage)=round(8×1)=8；sellPrice=round(8×0.5)=4（economy.ts 公式）。
+    const bandageRow = page.locator('.market-row[data-item-id="bandage"]');
+    await bandageRow.locator('.buy-btn').click();
+    await bandageRow.locator('.buy-btn').click();
+    await expect(page.locator('#market-gold')).toHaveText('184');
+    await expect(page.locator('#town-gold')).toHaveText('184');
+    await expect(bandageRow.locator('.market-name')).toContainText('持有 2');
+
+    await bandageRow.locator('.sell-btn').click();
+    await expect(page.locator('#market-gold')).toHaveText('188');
+    await expect(page.locator('#town-gold')).toHaveText('188');
+    await expect(bandageRow.locator('.market-name')).toContainText('持有 1');
+  });
+
+  test('招募與薪餉：雇用第一名旅人扣 hireCost，出發扣 totalWage', async ({ page }) => {
+    await newGameWithSeed(page, 102);
+    await page.click('.town-tab[data-town-tab="tavern"]');
+    const firstRecruit = page.locator('.recruit-card').first();
+    await expect(firstRecruit).toBeVisible();
+    await firstRecruit.locator('.hire-btn').click();
+    // 新檔聲望為 0，酒館池首位必為 Lv1（generateRecruitPool 精英門檻聲望≥30 才生效）：
+    // hireCost=30+1×20=50、wagePerTrip=8+1×4=12，兩者皆可精確斷言。
+    await expect(page.locator('#town-gold')).toHaveText('150');
+
+    await page.click('.town-tab[data-town-tab="roster"]');
+    await expect(page.locator('.roster-card')).toHaveCount(2);
+
+    await page.click('#btn-quest-board');
+    const goldBeforeDepart = (await readSave(page)).gold;
+    expect(goldBeforeDepart).toBe(150);
+    await page.click('.quest-item[data-location-id="riverside-road"]');
+    await expect(page.locator('#screen-expedition')).toBeVisible();
+    const goldAfterDepart = (await readSave(page)).gold;
+    expect(goldBeforeDepart - goldAfterDepart).toBe(12);
+
+    await advanceToSettlement(page);
+    await page.click('#btn-settle-back');
+    await expect(page.locator('#screen-town')).toBeVisible();
+
+    const finalSave = await readSave(page);
+    expect(finalSave.gold).toBeGreaterThanOrEqual(0);
+    await page.click('.town-tab[data-town-tab="roster"]');
+    await expect(page.locator('.roster-card')).toHaveCount(2);
+  });
+
+  test('薪餉守門：雇用後把金幣花到不足支付薪餉，出發被擋在委託板', async ({ page }) => {
+    await newGameWithSeed(page, 103);
+    await page.click('.town-tab[data-town-tab="tavern"]');
+    await page.locator('.recruit-card').first().locator('.hire-btn').click();
+    await expect(page.locator('#town-gold')).toHaveText('150');
+
+    await page.click('.town-tab[data-town-tab="market"]');
+    await buyUntilGoldBelow(page, 'bandage', 12); // wagePerTrip(Lv1)=12
+
+    const saveBeforeClick = await readSave(page);
+    expect(saveBeforeClick.gold).toBeLessThan(12);
+
+    await page.click('#btn-quest-board');
+    await page.click('.quest-item[data-location-id="riverside-road"]');
+    await expect(page.locator('#quest-wage-warning')).toBeVisible();
+    await expect(page.locator('#quest-wage-warning')).toContainText('12');
+    await expect(page.locator('#screen-quest')).toBeVisible();
+    await expect(page.locator('#screen-expedition')).toBeHidden();
+  });
+
+  test('押貨貿易（seed=30）：買 6 礦石押運臨水道，河灣鎮賣光，貿易收入精確且淨利為正', async ({ page }) => {
+    // 種子與流程完全沿用既有「完整路線遠征（seed=30）」案例的已驗證結果（見上方
+    // 遠征系統 describe）：市集買賣與押貨出發都不消耗 rng，事件/戰鬥序列逐位元組
+    // 相同（一次性 scratch 腳本已用真引擎重跑確認，見 commit 說明，未進 git）。
+    await newGameWithSeed(page, 30);
+    const goldAtStart = (await readSave(page)).gold;
+    expect(goldAtStart).toBe(200);
+
+    const oreRow = page.locator('.market-row[data-item-id="ore"]');
+    for (let i = 0; i < 6; i++) {
+      await oreRow.locator('.buy-btn').click();
+    }
+    const goldBeforeDepart = (await readSave(page)).gold;
+    // buyPrice(starting-town, ore)=round(12×1)=12；買 6 個＝72。
+    expect(goldBeforeDepart).toBe(goldAtStart - 72);
+
+    await page.click('#btn-quest-board');
+    await page.click('.quest-outfit-btn[data-location-id="riverside-road"]');
+    await expect(page.locator('#quest-outfit')).toBeVisible();
+    const cargoPlus = page.locator('.cargo-plus[data-item-id="ore"]');
+    for (let i = 0; i < 6; i++) {
+      await cargoPlus.click();
+    }
+    await expect(page.locator('#cargo-space')).toHaveText('載貨：6/6');
+    await page.click('#btn-depart');
+    await expect(page.locator('#screen-expedition')).toBeVisible();
+
+    await advanceToSettlement(page, { sellAll: true });
+    await expect(page.locator('#screen-settlement')).toBeVisible();
+    // seed=30 臨水道已知確定結果：loot.gold=9、無戰利品物品、勝利未撤退——
+    // 押貨 6 礦石全額到帳。tradeSellPrice(riverbend-town, ore)=round(12×1.5×0.9)=16，6 個＝96。
+    await expect(page.locator('#settle-gold')).toHaveText('9');
+    await expect(page.locator('#settle-trade-gold')).toHaveText('96');
+
+    await page.click('#btn-settle-back');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    const finalGold = (await readSave(page)).gold;
+    expect(finalGold).toBe(goldBeforeDepart + 9 + 96);
+    expect(finalGold).toBeGreaterThan(goldAtStart);
+  });
+
+  test('升級：xp 達 Lv2 門檻後配 2 點力量，卡片顯示 Lv2 與屬性變化', async ({ page }) => {
+    await newGameWithSeed(page, 105);
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      const data = JSON.parse(raw!);
+      data.protagonist.xp = 60; // XP_TABLE[2]=50，60 足以領取一次升級
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await expect(page.locator('#screen-town')).toBeVisible();
+
+    await page.click('.town-tab[data-town-tab="roster"]');
+    const protagonistCard = page.locator('.roster-card[data-member-id="protagonist"]');
+    await expect(protagonistCard.locator('.levelup-btn')).toBeVisible();
+    await protagonistCard.locator('.levelup-btn').click();
+
+    await expect(page.locator('#levelup-panel')).toBeVisible();
+    await page.click('.alloc-plus[data-stat="str"]');
+    await page.click('.alloc-plus[data-stat="str"]');
+    await expect(page.locator('#alloc-total')).toHaveText('已配點數：2 / 2');
+    await page.click('#alloc-confirm');
+    await expect(page.locator('#levelup-panel')).toBeHidden();
+
+    await expect(protagonistCard.locator('.roster-name')).toContainText('Lv2');
+    await expect(protagonistCard.locator('.roster-stats')).toContainText('力量 14');
+  });
+
+  test('快照防護：expeditionVersion 不符時遠征記錄丟棄、主檔金幣完好', async ({ page }) => {
+    await newGameWithSeed(page, 106);
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      const data = JSON.parse(raw!);
+      data.expedition = { expeditionVersion: 1, phase: 'event', locationId: 'riverside-road' };
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.locator('#btn-continue')).toBeVisible();
+    await page.click('#btn-continue');
+
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await expect(page.locator('#expedition-expired-note')).toBeVisible();
+    await expect(page.locator('#btn-resume-expedition')).toBeHidden();
+    await expect(page.locator('#town-gold')).toHaveText('200');
+  });
+});
