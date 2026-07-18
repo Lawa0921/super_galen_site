@@ -2380,12 +2380,12 @@
     <div class="tribal-border-left"></div>
     <div class="tribal-border-right"></div>
 
-    <!-- 營火音效 - 雙音軌無縫循環 -->
-    <audio id="campfire-audio-1" preload="auto">
-        <source src="/assets/audio/campfire.wav" type="audio/wav">
+    <!-- 營火音效 - 雙音軌無縫循環（preload=none：進場點擊後才載入，見下方 click handler） -->
+    <audio id="campfire-audio-1" preload="none">
+        <source src="/assets/audio/campfire.mp3" type="audio/mpeg">
     </audio>
-    <audio id="campfire-audio-2" preload="auto">
-        <source src="/assets/audio/campfire.wav" type="audio/wav">
+    <audio id="campfire-audio-2" preload="none">
+        <source src="/assets/audio/campfire.mp3" type="audio/mpeg">
     </audio>
 
     <!-- ENTRY GATE - 極簡營火入口 -->
@@ -2873,6 +2873,9 @@
                 if (!audioStarted && audio1) {
                     audioStarted = true;
                     audio1.volume = 0; // 從完全靜音開始
+
+                    // preload=none：手勢時預載第二軌，確保首次交叉淡入前已緩衝
+                    if (audio2) audio2.load();
 
                     audio1.play().then(function() {
                         setupSeamlessLoop();

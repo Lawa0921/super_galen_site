@@ -142,9 +142,8 @@ const jsonLd = type === 'article' ? {
       />
     </noscript>
 
-    <!-- 動畫庫 -->
+    <!-- 動畫庫（gsap 已移除：第一方程式碼無使用；guild 成員頁自行載入） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
 
     <!-- Alternate language links -->
     <link rel="alternate" hreflang="zh-TW" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />

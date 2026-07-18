@@ -71,9 +71,11 @@
             }
 
             try {
-                // 加上時間戳避免快取
-                const timestamp = new Date().getTime();
-                const response = await fetch(`/assets/i18n/${lang}.json?t=${timestamp}`);
+                // 開發環境加時間戳強制重載；正式環境用乾淨 URL 讓瀏覽器/CDN 快取
+                const url = isDev
+                    ? `/assets/i18n/${lang}.json?t=${new Date().getTime()}`
+                    : `/assets/i18n/${lang}.json`;
+                const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`Failed to load language: ${lang}`);
                 }

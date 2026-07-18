@@ -1,0 +1,56 @@
+---
+/**
+ * GlobalScriptsMinimal.astro
+ * 精簡版全局腳本 - 給沒有 RPG 介面的頁面（journal 列表/文章頁、guild 列表頁）。
+ * 只載入 header（錢包/主題/行動選單）、i18n 與點擊動畫所需的腳本；
+ * RPG 模組（skill-tree/inventory/summon/gamestate/cheat 等，約 259KB）不載入。
+ * 有 RPG 頁籤介面的頁面請用完整版 GlobalScripts.astro。
+ */
+---
+
+<!-- 主題初始化（避免 FOUC） -->
+<script is:inline>
+  (function() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
+
+<!-- 懶載入管理器（unified-wallet-manager 以此載入 ethers.js） -->
+<script src="/scripts/lazy-loader.js?v=2" defer></script>
+
+<!-- i18n 管理器與輔助函數 -->
+<script src="/scripts/i18n-manager.js" defer></script>
+<script src="/scripts/i18n-helper.js" defer></script>
+
+<!-- 合約配置（內嵌預設值） -->
+<script is:inline>
+  // 預設配置（當 contracts-config.js 不存在時使用）
+  window.ContractsConfig = {
+    31337: {
+      sgt: null,
+      usdt: null,
+      deployedAt: null
+    },
+    137: {
+      sgt: null,
+      usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+      deployedAt: null
+    }
+  };
+</script>
+<script is:inline src="/scripts/contracts-config.js" defer></script>
+
+<!-- Header 錢包鏈：錢包管理、SGT 餘額、網路監控 -->
+<script src="/scripts/unified-wallet-manager.js" defer></script>
+<script src="/scripts/simple-sgt-balance.js" defer></script>
+<script src="/scripts/simple-network-monitor.js" defer></script>
+
+<!-- 行動版選單控制器 -->
+<script src="/scripts/mobile-menu.js" defer></script>
+
+<!-- 全站動畫效果（點擊漣漪；頁面載入動畫在無 RPG 頁面自動跳過） -->
+<script src="/scripts/advanced-animations.js" defer></script>
+
+<!-- 主要 JavaScript（theme toggle、header 錢包事件、外部連結） -->
+<script src="/scripts/main.js" defer></script>

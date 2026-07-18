@@ -4,7 +4,7 @@
  * 展示公會成員卡片，支援卡片爆散動畫
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
-import GlobalScripts from '@components/layout/GlobalScripts.astro';
+import GlobalScriptsMinimal from '@components/layout/GlobalScriptsMinimal.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
 import { languages, defaultLang, type Language, useTranslations } from '@i18n/index';
 import yaml from 'js-yaml';
@@ -273,7 +273,7 @@ const membersJson = JSON.stringify(members);
   </section>
 
   <!-- 全局腳本 -->
-  <GlobalScripts />
+  <GlobalScriptsMinimal />
 </BaseLayout>
 
 <style>

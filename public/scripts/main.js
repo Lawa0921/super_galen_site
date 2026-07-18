@@ -561,6 +561,11 @@ function initRPGInterface() {
 // 等待其他模組載入（最多等待 5 秒）
 function waitForModules() {
     return new Promise((resolve, reject) => {
+        // 無 RPG 頁籤 DOM 的頁面（GlobalScriptsMinimal）不載入這些模組，不必輪詢等待
+        if (!document.getElementById('inventory-tab')) {
+            resolve();
+            return;
+        }
         const maxWaitTime = 5000; // 5 秒超時
         const checkInterval = 50; // 每 50ms 檢查一次
         let elapsedTime = 0;
@@ -788,6 +793,8 @@ window.scrollToSkillTree = function() {
 
 // 初始化技能樹 Tab 系統
 function initSkillTreeTab() {
+    // 無技能樹 DOM 的頁面（journal/guild 用 GlobalScriptsMinimal）直接跳過
+    if (!document.getElementById('skill-tree-canvas')) return;
     try {
         console.log('🔧 開始初始化技能樹...');
 
