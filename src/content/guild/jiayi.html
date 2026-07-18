@@ -20,6 +20,9 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
+        /* 特效元素（shockwave/游標/進場 SVG）會超出視窗，裁掉避免行動版橫向捲動 */
+        html { overflow-x: clip; }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -630,17 +633,17 @@
         </footer>
     </div>
 
-    <!-- AUDIO - Dual Track for Seamless Loop -->
-    <audio id="bgm-rain-1" preload="auto">
+    <!-- AUDIO - Dual Track for Seamless Loop（preload=none：入水點擊後才載入，見 diveBtn handler） -->
+    <audio id="bgm-rain-1" preload="none">
         <source src="../assets/audio/rain.mp3" type="audio/mpeg">
     </audio>
-    <audio id="bgm-rain-2" preload="auto">
+    <audio id="bgm-rain-2" preload="none">
         <source src="../assets/audio/rain.mp3" type="audio/mpeg">
     </audio>
-    <audio id="bgm-water-1" preload="auto">
+    <audio id="bgm-water-1" preload="none">
         <source src="../assets/audio/underwater.mp3" type="audio/mpeg">
     </audio>
-    <audio id="bgm-water-2" preload="auto">
+    <audio id="bgm-water-2" preload="none">
         <source src="../assets/audio/underwater.mp3" type="audio/mpeg">
     </audio>
 
@@ -787,6 +790,9 @@
 
             // Ensure audio is started (immediate if clicking the button)
             if (!audioPlaying) {
+                // preload=none：手勢時預載交叉淡入用的第二軌
+                audioRain.audio2?.load();
+                audioWater.audio2?.load();
                 audioRain.setVolume(1);
                 audioRain.play();
                 audioWater.play().then(() => audioWater.setVolume(0));
