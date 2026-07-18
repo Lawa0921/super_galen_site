@@ -25,7 +25,7 @@ export const TOWNS: Record<string, TownDef> = {
     id: 'woodside-settlement',
     name: '林邊聚落',
     desc: '黑森林徑的盡頭，木造矮屋沿林緣錯落，獵人與草藥商在此交易，遠道商旅捎來的香料包總能賣出好價錢，礦石則因不產而滯銷。',
-    priceModifiers: { herb: 1.5, 'spice-pouch': 1.3, ore: 0.7 },
+    priceModifiers: { herb: 2.4, 'spice-pouch': 1.8, ore: 0.7 },
     stock: ['herb', 'spice-pouch', 'goblin-earring', 'dried-rations'],
   },
 };

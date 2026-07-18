@@ -8,7 +8,7 @@ import type { EventCard, EffectSpec } from '../expedition';
 import { startExpedition, drawEvent } from '../expedition';
 import { createRng } from '../rng';
 import { newGame } from '../save';
-import { buyPrice, tradeSellPrice } from '../economy';
+import { buyPrice, tradeSellPrice, cargoCapacity } from '../economy';
 
 function allEffects(card: EventCard): EffectSpec[] {
   const out: EffectSpec[] = [];
@@ -321,5 +321,37 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     const startTown = TOWNS['starting-town'];
     const woodside = TOWNS['woodside-settlement'];
     expect(tradeSellPrice(woodside, 'herb')).toBeGreaterThan(buyPrice(startTown, 'herb'));
+  });
+
+  // ---------------------------------------------------------------------
+  // 押貨報酬量級 sanity（M4 Task 2 修復）：
+  // 「較長/較險路線的最佳單品淨利不能低於較短路線」，且雙方都落在合理區間 20-60。
+  // ---------------------------------------------------------------------
+  it('滿載押貨淨利量級 sanity：兩條路線各自的最佳單品淨利落在 20-60，且較長路線（黑森林徑 5 段）不低於較短路線（臨水道 4 段）', () => {
+    const startTown = TOWNS['starting-town'];
+    const cap = cargoCapacity(0); // 6，滿載未升級馬車
+
+    function bestRouteProfit(destTownId: string): number {
+      const destTown = TOWNS[destTownId];
+      const profits = Object.keys(destTown.priceModifiers).map(
+        (itemId) => (tradeSellPrice(destTown, itemId) - buyPrice(startTown, itemId)) * cap
+      );
+      return Math.max(...profits);
+    }
+
+    const riversideRoad = LOCATIONS['riverside-road']; // legs 4 → riverbend-town
+    const blackwoodTrail = LOCATIONS['blackwood-trail']; // legs 5 → woodside-settlement
+    expect(riversideRoad.legs).toBeLessThan(blackwoodTrail.legs!);
+
+    const riversideProfit = bestRouteProfit(riversideRoad.destinationTownId!);
+    const blackwoodProfit = bestRouteProfit(blackwoodTrail.destinationTownId!);
+
+    expect(riversideProfit).toBeGreaterThanOrEqual(20);
+    expect(riversideProfit).toBeLessThanOrEqual(60);
+    expect(blackwoodProfit).toBeGreaterThanOrEqual(20);
+    expect(blackwoodProfit).toBeLessThanOrEqual(60);
+    expect(blackwoodProfit, '較長/較險的黑森林徑最佳押貨淨利不應低於較短的臨水道（風險報酬不倒掛）').toBeGreaterThanOrEqual(
+      riversideProfit
+    );
   });
 });
