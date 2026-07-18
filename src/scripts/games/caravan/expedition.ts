@@ -315,6 +315,8 @@ export function settleExpedition(
   // 多出的那 5 xp 是完賽獎勵（刻意設計，非 bug——見 Task 2 report 的顧慮欄）。
   const xpGained = 20 + state.step * 5;
   save.protagonist.xp += xpGained;
+  // 主角的重傷趟數也要遞減——只寫不減會讓主角永久卡在重傷（M3 終審抓到的地雷）
+  save.protagonist.injuredForTrips = Math.max(0, save.protagonist.injuredForTrips - 1);
   for (const companion of save.companions) {
     if (companion.injuredForTrips === 0) {
       companion.xp += xpGained;

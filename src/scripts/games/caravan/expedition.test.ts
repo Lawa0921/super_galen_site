@@ -573,6 +573,16 @@ describe('settleExpedition', () => {
     expect(save.companions[0].injuredForTrips).toBe(0);
   });
 
+  it('主角的 injuredForTrips 也會遞減（不遞減會永久卡在重傷——M3 終審地雷）', () => {
+    const save = makeSave();
+    save.protagonist.injuredForTrips = 2;
+    const state = makeState({ step: 1 });
+    settleExpedition(state, save);
+    expect(save.protagonist.injuredForTrips).toBe(1);
+    settleExpedition(makeState({ step: 1 }), save);
+    expect(save.protagonist.injuredForTrips).toBe(0);
+  });
+
   it('結算後 save.expedition 清為 null', () => {
     const save = makeSave();
     save.expedition = makeState();

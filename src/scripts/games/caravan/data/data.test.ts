@@ -18,6 +18,16 @@ function allEffects(card: EventCard): EffectSpec[] {
 }
 
 describe('caravan content data integrity（M3 Task 4）', () => {
+  it('所有選項 requirement.itemId 都存在於 ITEMS（M3 終審覆蓋缺口）', () => {
+    for (const card of Object.values(EVENTS)) {
+      for (const opt of card.options) {
+        if (opt.requirement?.itemId) {
+          expect(ITEMS[opt.requirement.itemId], `${card.id} 的 requirement.itemId「${opt.requirement.itemId}」不存在`).toBeDefined();
+        }
+      }
+    }
+  });
+
   // ---------------------------------------------------------------------
   // items.ts
   // ---------------------------------------------------------------------
