@@ -18,6 +18,11 @@ export interface CheckResult {
   critical: 'success' | 'failure' | null;
 }
 
+/** D&D 式屬性調整值 */
+export function statMod(value: number): number {
+  return Math.floor((value - 10) / 2);
+}
+
 export function resolveCheck(rng: Rng, input: CheckInput): CheckResult {
   const die = rng.d20();
   const total = die + input.modifier + (input.bonus ?? 0);

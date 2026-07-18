@@ -66,4 +66,10 @@ describe('createRng（種子化隨機）', () => {
     }
     expect(heavy).toBeGreaterThan(900);
   });
+
+  it('weightedPick 空陣列或總權重 0 擲出 Error（M1 遺留 guard）', () => {
+    const rng = createRng(1);
+    expect(() => rng.weightedPick([])).toThrow();
+    expect(() => rng.weightedPick([{ weight: 0, value: 'x' }])).toThrow();
+  });
 });
