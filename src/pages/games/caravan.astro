@@ -21,24 +21,63 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     <section id="screen-town" class="screen" hidden>
       <h2 class="town-name">啟程之鎮</h2>
       <p class="town-status">金幣 <span id="town-gold">0</span> G</p>
-      <p class="town-hint">（城鎮功能將在後續里程碑開放）</p>
+      <div class="town-actions">
+        <button id="btn-training" class="caravan-btn">訓練場</button>
+      </div>
+      <p class="town-hint">（更多城鎮功能將在後續里程碑開放）</p>
+    </section>
+
+    <!-- 戰鬥畫面（M2：訓練場入口；M3 併入遠征遭遇） -->
+    <section id="screen-combat" class="screen" hidden>
+      <h2 class="combat-title">戰鬥</h2>
+      <div class="combat-field">
+        <div id="combat-enemies" class="combat-side"></div>
+        <div id="combat-party" class="combat-side"></div>
+      </div>
+      <div id="combat-targets" class="combat-targets"></div>
+      <div id="combat-log" class="combat-log"></div>
+      <div id="combat-actions" class="combat-actions"></div>
+      <button id="btn-retreat" class="caravan-btn combat-retreat">撤退</button>
+      <div id="combat-result" class="combat-result" hidden>
+        <p class="result-text"></p>
+        <button id="btn-combat-back" class="caravan-btn">返回城鎮</button>
+      </div>
     </section>
   </main>
 </BaseLayout>
 
 <script>
   import { newGame, saveGame, loadGame } from '@scripts/games/caravan/save';
+  import { createRng } from '@scripts/games/caravan/rng';
+  import {
+    startCombat, partyAct, enemyAct, attemptRetreat, currentActor,
+  } from '@scripts/games/caravan/combat';
+  import type { CombatState, CombatantBase, Move } from '@scripts/games/caravan/combat';
+  import { memberFromRecord } from '@scripts/games/caravan/data/jobs';
+  import { TRAINING_ENCOUNTER } from '@scripts/games/caravan/data/enemies';
 
   const titleScreen = document.getElementById('screen-title')!;
   const townScreen = document.getElementById('screen-town')!;
+  const combatScreen = document.getElementById('screen-combat')!;
   const btnNew = document.getElementById('btn-new-game')!;
   const btnContinue = document.getElementById('btn-continue')!;
+  const btnTraining = document.getElementById('btn-training')!;
   const goldEl = document.getElementById('town-gold')!;
+
+  const combatEnemiesEl = document.getElementById('combat-enemies')!;
+  const combatPartyEl = document.getElementById('combat-party')!;
+  const combatLogEl = document.getElementById('combat-log')!;
+  const combatActionsEl = document.getElementById('combat-actions')!;
+  const combatResultEl = document.getElementById('combat-result')!;
+  const combatResultTextEl = combatResultEl.querySelector('.result-text')!;
+  const btnRetreat = document.getElementById('btn-retreat')!;
+  const btnCombatBack = document.getElementById('btn-combat-back')!;
 
   function showTown(gold: number): void {
     goldEl.textContent = String(gold);
     titleScreen.hidden = true;
     townScreen.hidden = false;
+    combatScreen.hidden = true;
   }
 
   const existing = loadGame();
@@ -53,6 +92,146 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   btnContinue.addEventListener('click', () => {
     const save = loadGame();
     if (save) showTown(save.gold);
+  });
+
+  // ---- 戰鬥（M2：訓練場，純模擬、不動存檔） ----
+
+  const seedParam = new URLSearchParams(location.search).get('seed');
+  const rng = createRng(seedParam ? Number(seedParam) : Date.now());
+
+  let state: CombatState | null = null;
+
+  function unitIntentText(unit: CombatantBase): string {
+    if (!state || unit.hp <= 0) return '';
+    const moveId = state.enemyIntents[unit.id];
+    if (!moveId) return '';
+    const move = unit.moves.find((m) => m.id === moveId);
+    return move ? `意圖：${move.name}` : '';
+  }
+
+  function renderUnits(container: HTMLElement, units: CombatantBase[], showIntent: boolean): void {
+    container.innerHTML = '';
+    for (const unit of units) {
+      const card = document.createElement('div');
+      card.className = 'combat-unit';
+      card.dataset.id = unit.id;
+
+      const name = document.createElement('p');
+      name.className = 'unit-name';
+      name.textContent = unit.name;
+
+      const hp = document.createElement('p');
+      hp.className = 'unit-hp';
+      hp.textContent = `HP ${Math.max(0, unit.hp)}/${unit.maxHp}`;
+
+      const intent = document.createElement('p');
+      intent.className = 'unit-intent';
+      intent.textContent = showIntent ? unitIntentText(unit) : '';
+
+      card.append(name, hp, intent);
+      container.appendChild(card);
+    }
+  }
+
+  function renderLog(): void {
+    if (!state) return;
+    combatLogEl.innerHTML = '';
+    for (const event of state.log) {
+      const p = document.createElement('p');
+      p.textContent = event.text;
+      combatLogEl.appendChild(p);
+    }
+    combatLogEl.scrollTop = combatLogEl.scrollHeight;
+  }
+
+  function resolveTargetId(actorId: string, move: Move): string | null {
+    if (!state) return null;
+    if (move.target === 'enemy') {
+      return state.enemies.find((e) => e.hp > 0)?.id ?? null;
+    }
+    return actorId; // 支援/防禦招式 M2 固定自標
+  }
+
+  function renderActions(actorId: string): void {
+    if (!state) return;
+    combatActionsEl.innerHTML = '';
+    const actor = state.party.find((p) => p.id === actorId);
+    if (!actor) return;
+    for (const move of actor.moves) {
+      const btn = document.createElement('button');
+      btn.className = 'caravan-btn move-btn';
+      btn.dataset.moveId = move.id;
+      btn.textContent = move.name;
+      btn.addEventListener('click', () => {
+        if (!state) return;
+        const targetId = resolveTargetId(actor.id, move);
+        if (!targetId) return;
+        partyAct(rng, state, actor.id, move.id, targetId);
+        render();
+      });
+      combatActionsEl.appendChild(btn);
+    }
+  }
+
+  function showResult(outcome: CombatState['outcome']): void {
+    const text = outcome === 'victory' ? '勝利！敵人被擊潰了，商隊可以返回城鎮休整。'
+      : outcome === 'defeat' ? '敗北……商隊被迫撤回城鎮療傷。'
+      : '商隊已撤退，保住了性命。';
+    combatResultTextEl.textContent = text;
+    combatResultEl.hidden = false;
+  }
+
+  function render(): void {
+    if (!state) return;
+    renderUnits(combatEnemiesEl, state.enemies, true);
+    renderUnits(combatPartyEl, state.party, false);
+    renderLog();
+
+    if (state.outcome !== 'ongoing') {
+      combatActionsEl.innerHTML = '';
+      btnRetreat.hidden = true;
+      showResult(state.outcome);
+      return;
+    }
+    combatResultEl.hidden = true;
+    btnRetreat.hidden = false;
+
+    const actor = currentActor(state);
+    if (!actor) return;
+    if (actor.side === 'enemy') {
+      combatActionsEl.innerHTML = '';
+      const enemyId = actor.id;
+      setTimeout(() => {
+        if (!state || state.outcome !== 'ongoing') return;
+        enemyAct(rng, state, enemyId);
+        render();
+      }, 600);
+    } else {
+      renderActions(actor.id);
+    }
+  }
+
+  btnTraining.addEventListener('click', () => {
+    const save = loadGame();
+    if (!save) return;
+    state = startCombat(rng, [memberFromRecord(save.protagonist)], TRAINING_ENCOUNTER());
+    townScreen.hidden = true;
+    combatScreen.hidden = false;
+    combatResultEl.hidden = true;
+    render();
+  });
+
+  btnRetreat.addEventListener('click', () => {
+    if (!state || state.outcome !== 'ongoing') return;
+    attemptRetreat(rng, state);
+    render();
+  });
+
+  btnCombatBack.addEventListener('click', () => {
+    if (!state) return;
+    combatScreen.hidden = true;
+    townScreen.hidden = false;
+    state = null;
   });
 </script>
 
@@ -81,5 +260,48 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .caravan-btn:hover { background: #2b2620; color: #f5f0e6; }
   .town-name { font-size: 1.8rem; margin-bottom: 0.5rem; }
   .town-status { font-size: 1.1rem; }
+  .town-actions { margin-top: 1.5rem; }
   .town-hint { margin-top: 1.5rem; color: #8a7f6d; font-size: 0.9rem; }
+
+  .combat-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 1.5rem; }
+  .combat-field {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .combat-side { display: flex; flex-direction: column; gap: 0.6rem; min-width: 9rem; }
+  .combat-unit {
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.5rem 0.9rem;
+    text-align: left;
+  }
+  .unit-name { font-weight: 600; margin: 0 0 0.15rem; }
+  .unit-hp { font-size: 0.85rem; color: #5c5344; margin: 0; }
+  .unit-intent { font-size: 0.75rem; font-style: italic; color: #8a7f6d; margin: 0.15rem 0 0; min-height: 1em; }
+  .combat-targets:empty { display: none; }
+  .combat-log {
+    max-width: 30rem;
+    max-height: 8rem;
+    overflow-y: auto;
+    margin: 0 auto 1rem;
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.5rem 0.9rem;
+    text-align: left;
+  }
+  .combat-log p { margin: 0.2rem 0; font-size: 0.85rem; }
+  .combat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+  .move-btn { padding: 0.5rem 1.2rem; }
+  .combat-retreat { font-size: 0.85rem; padding: 0.4rem 1.5rem; }
+  .combat-result { margin-top: 1.5rem; }
+  .combat-result .result-text { font-size: 1.1rem; margin-bottom: 1rem; }
 </style>
