@@ -3,10 +3,12 @@ import { ITEMS } from './items';
 import { LOCATIONS, visibleLocations } from './locations';
 import { ENCOUNTERS } from './enemies';
 import { EVENTS } from './events';
+import { TOWNS } from './towns';
 import type { EventCard, EffectSpec } from '../expedition';
 import { startExpedition, drawEvent } from '../expedition';
 import { createRng } from '../rng';
 import { newGame } from '../save';
+import { buyPrice, tradeSellPrice, cargoCapacity } from '../economy';
 
 function allEffects(card: EventCard): EffectSpec[] {
   const out: EffectSpec[] = [];
@@ -255,5 +257,101 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     expect(state.totalSteps).toBe(4);
     const card = drawEvent(rng, state, save);
     expect(EVENTS.some((c) => c.id === card.id)).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------
+  // towns.ts（TOWNS，M4）
+  // ---------------------------------------------------------------------
+  it('TOWNS 有 3 座城鎮，各自 id/name/desc 齊全', () => {
+    expect(Object.keys(TOWNS).length).toBe(3);
+    for (const town of Object.values(TOWNS)) {
+      expect(town.id).toBeTruthy();
+      expect(town.name).toBeTruthy();
+      expect(town.desc.length).toBeGreaterThanOrEqual(40);
+      expect(town.desc.length).toBeLessThanOrEqual(80);
+    }
+  });
+
+  it('TOWNS priceModifiers 引用的 itemId 都存在於 ITEMS', () => {
+    for (const town of Object.values(TOWNS)) {
+      for (const itemId of Object.keys(town.priceModifiers)) {
+        expect(ITEMS[itemId], `${town.id} 的 priceModifiers 引用不存在的物品 ${itemId}`).toBeDefined();
+      }
+    }
+  });
+
+  it('TOWNS stock 引用的 itemId 都存在於 ITEMS', () => {
+    for (const town of Object.values(TOWNS)) {
+      expect(town.stock.length, `${town.id} 的 stock 不應為空`).toBeGreaterThan(0);
+      for (const itemId of town.stock) {
+        expect(ITEMS[itemId], `${town.id} 的 stock 引用不存在的物品 ${itemId}`).toBeDefined();
+      }
+    }
+  });
+
+  it('孤兒物品（繃帶/乾糧/銀懷錶/香料包）都被至少一座城鎮的 stock 收錄', () => {
+    const allStock = new Set(Object.values(TOWNS).flatMap((t) => t.stock));
+    for (const itemId of ['bandage', 'dried-rations', 'silver-locket', 'spice-pouch']) {
+      expect(allStock.has(itemId), `孤兒物品 ${itemId} 未被任何城鎮收錄`).toBe(true);
+    }
+  });
+
+  it('route 的 destinationTownId（若設定）存在於 TOWNS', () => {
+    let sawDestination = false;
+    for (const loc of Object.values(LOCATIONS)) {
+      if (loc.kind !== 'route' || !loc.destinationTownId) continue;
+      sawDestination = true;
+      expect(TOWNS[loc.destinationTownId], `${loc.id} 的 destinationTownId「${loc.destinationTownId}」不存在於 TOWNS`).toBeDefined();
+    }
+    expect(sawDestination, '應至少有一條 route 設定 destinationTownId（riverside-road/blackwood-trail）').toBe(true);
+  });
+
+  it('臨水道→河灣鎮、黑森林徑→林邊聚落的 destinationTownId 對應正確', () => {
+    expect(LOCATIONS['riverside-road'].destinationTownId).toBe('riverbend-town');
+    expect(LOCATIONS['blackwood-trail'].destinationTownId).toBe('woodside-settlement');
+  });
+
+  it('差價 sanity：河灣鎮 ore 的 tradeSellPrice > 啟程之鎮 ore 的 buyPrice（押貨有利可圖）', () => {
+    const startTown = TOWNS['starting-town'];
+    const riverbend = TOWNS['riverbend-town'];
+    expect(tradeSellPrice(riverbend, 'ore')).toBeGreaterThan(buyPrice(startTown, 'ore'));
+  });
+
+  it('差價 sanity：林邊聚落 herb 的 tradeSellPrice > 啟程之鎮 herb 的 buyPrice（押貨有利可圖）', () => {
+    const startTown = TOWNS['starting-town'];
+    const woodside = TOWNS['woodside-settlement'];
+    expect(tradeSellPrice(woodside, 'herb')).toBeGreaterThan(buyPrice(startTown, 'herb'));
+  });
+
+  // ---------------------------------------------------------------------
+  // 押貨報酬量級 sanity（M4 Task 2 修復）：
+  // 「較長/較險路線的最佳單品淨利不能低於較短路線」，且雙方都落在合理區間 20-60。
+  // ---------------------------------------------------------------------
+  it('滿載押貨淨利量級 sanity：兩條路線各自的最佳單品淨利落在 20-60，且較長路線（黑森林徑 5 段）不低於較短路線（臨水道 4 段）', () => {
+    const startTown = TOWNS['starting-town'];
+    const cap = cargoCapacity(0); // 6，滿載未升級馬車
+
+    function bestRouteProfit(destTownId: string): number {
+      const destTown = TOWNS[destTownId];
+      const profits = Object.keys(destTown.priceModifiers).map(
+        (itemId) => (tradeSellPrice(destTown, itemId) - buyPrice(startTown, itemId)) * cap
+      );
+      return Math.max(...profits);
+    }
+
+    const riversideRoad = LOCATIONS['riverside-road']; // legs 4 → riverbend-town
+    const blackwoodTrail = LOCATIONS['blackwood-trail']; // legs 5 → woodside-settlement
+    expect(riversideRoad.legs).toBeLessThan(blackwoodTrail.legs!);
+
+    const riversideProfit = bestRouteProfit(riversideRoad.destinationTownId!);
+    const blackwoodProfit = bestRouteProfit(blackwoodTrail.destinationTownId!);
+
+    expect(riversideProfit).toBeGreaterThanOrEqual(20);
+    expect(riversideProfit).toBeLessThanOrEqual(60);
+    expect(blackwoodProfit).toBeGreaterThanOrEqual(20);
+    expect(blackwoodProfit).toBeLessThanOrEqual(60);
+    expect(blackwoodProfit, '較長/較險的黑森林徑最佳押貨淨利不應低於較短的臨水道（風險報酬不倒掛）').toBeGreaterThanOrEqual(
+      riversideProfit
+    );
   });
 });

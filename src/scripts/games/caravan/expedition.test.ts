@@ -3,6 +3,7 @@ import {
   registerLocations,
   registerEvents,
   registerEncounters,
+  registerTowns,
   startExpedition,
   drawEvent,
   optionAvailable,
@@ -14,12 +15,15 @@ import {
   buildEncounter,
   finishCombat,
   applyPartyHp,
+  EXPEDITION_VERSION,
 } from './expedition';
 import type { EventCard, LocationDef, ExpeditionState } from './expedition';
 import { newGame } from './save';
 import type { SaveData, CompanionRecord } from './save';
 import type { Rng } from './rng';
 import type { EnemyUnit, PartyMember, CombatState } from './combat';
+import { tradeSellPrice } from './economy';
+import type { TownDef } from './economy';
 
 /** 依序回傳指定骰值的假 RNG；weightedPick 依 pickIndex 佇列選出候選陣列中的第幾個；next 依序回傳（預設全 0） */
 function fakeRng(opts: { d20?: number[]; pickIndex?: number[]; next?: number[] } = {}): Rng {
@@ -73,6 +77,7 @@ function makeCombat(overrides: Partial<CombatState> = {}): CombatState {
 const LOC_ROUTE_A: LocationDef = {
   id: 'loc_route_a', name: '臨水道', kind: 'route', legs: 2,
   encounterTable: [{ weight: 1, encounterId: 'enc_wolf' }],
+  destinationTownId: 'town-a',
 };
 const LOC_ROUTE_B: LocationDef = {
   id: 'loc_route_b', name: '黑森林徑', kind: 'route', legs: 1, hidden: true,
@@ -83,6 +88,11 @@ const LOC_DUNGEON_A: LocationDef = {
   roomsPerFloor: [2, 3], bossEncounterId: 'enc_boss',
   encounterTable: [{ weight: 1, encounterId: 'enc_spider' }],
   depthHpBonus: 2,
+};
+
+const TOWN_A: TownDef = {
+  id: 'town-a', name: '測試鎮', desc: '測試用城鎮。',
+  priceModifiers: { ore: 2 }, stock: ['ore', 'herb'],
 };
 
 function makeSave(overrides: Partial<SaveData> = {}): SaveData {
@@ -105,6 +115,8 @@ function makeState(overrides: Partial<ExpeditionState> = {}): ExpeditionState {
     phase: 'event', currentEventId: null, roomChoices: null, pendingEncounterId: null,
     loot: { gold: 0, items: {} }, eventLog: [], retreated: false,
     partyHp: { protagonist: 22 },
+    expeditionVersion: EXPEDITION_VERSION,
+    cargo: {},
     ...overrides,
   };
 }
@@ -138,6 +150,7 @@ beforeEach(() => {
     loc_dungeon_a: LOC_DUNGEON_A,
   });
   registerEvents([evUniversal, evRouteAOnly, evDungeonOnly, evWeightZero, evFlagged]);
+  registerTowns({ 'town-a': TOWN_A });
 });
 
 describe('startExpedition', () => {
@@ -176,6 +189,74 @@ describe('startExpedition', () => {
     expect(state.partyHp[save.protagonist.id]).toBe(save.protagonist.maxHp);
     expect(state.partyHp.healthy).toBe(18);
     expect(state.partyHp.hurt).toBeUndefined();
+  });
+
+  it('expeditionVersion 戳記為 EXPEDITION_VERSION', () => {
+    const save = makeSave();
+    const state = startExpedition(fakeRng(), save, 'loc_route_a');
+    expect(state.expeditionVersion).toBe(EXPEDITION_VERSION);
+  });
+
+  it('destinationTownId 從 LocationDef 帶入（route）', () => {
+    const save = makeSave();
+    const state = startExpedition(fakeRng(), save, 'loc_route_a');
+    expect(state.destinationTownId).toBe('town-a');
+  });
+
+  it('destinationTownId 未設定時（dungeon）維持 undefined', () => {
+    const save = makeSave();
+    const state = startExpedition(fakeRng(), save, 'loc_dungeon_a');
+    expect(state.destinationTownId).toBeUndefined();
+  });
+
+  it('未帶 cargo 時 state.cargo 為空物件（既有呼叫處相容）', () => {
+    const save = makeSave();
+    const state = startExpedition(fakeRng(), save, 'loc_route_a');
+    expect(state.cargo).toEqual({});
+  });
+
+  it('未帶 cargo、無傭兵時薪餉為 0，save.gold 不變（既有呼叫處相容）', () => {
+    const save = makeSave({ gold: 200 });
+    startExpedition(fakeRng(), save, 'loc_route_a');
+    expect(save.gold).toBe(200);
+  });
+
+  it('扣除 totalWage(save) 作為薪餉；有未重傷傭兵時 save.gold 減少對應金額', () => {
+    const save = makeSave({
+      gold: 200,
+      companions: [makeCompanion({ id: 'c1', level: 1, injuredForTrips: 0 })], // wage=8+4=12
+    });
+    startExpedition(fakeRng(), save, 'loc_route_a');
+    expect(save.gold).toBe(188);
+  });
+
+  it('金幣不足支付薪餉時丟 Error，且不改動 save', () => {
+    const save = makeSave({
+      gold: 5,
+      companions: [makeCompanion({ id: 'c1', level: 1, injuredForTrips: 0 })], // wage=12
+    });
+    expect(() => startExpedition(fakeRng(), save, 'loc_route_a')).toThrow();
+    expect(save.gold).toBe(5);
+  });
+
+  it('cargo 逐項從 save.inventory 移入 state.cargo，且不超過 cargoCapacity 時成功', () => {
+    const save = makeSave({ inventory: { ore: 3, herb: 2 } }); // wagonLevel=0 → capacity=6
+    const state = startExpedition(fakeRng(), save, 'loc_route_a', { ore: 2, herb: 1 });
+    expect(state.cargo).toEqual({ ore: 2, herb: 1 });
+    expect(save.inventory.ore).toBe(1);
+    expect(save.inventory.herb).toBe(1);
+  });
+
+  it('cargo 總件數超過 cargoCapacity(save.wagonLevel) 時丟 Error，且不改動 inventory', () => {
+    const save = makeSave({ inventory: { ore: 10 } }); // capacity=6
+    expect(() => startExpedition(fakeRng(), save, 'loc_route_a', { ore: 7 })).toThrow();
+    expect(save.inventory.ore).toBe(10);
+  });
+
+  it('cargo 指定物品在 save.inventory 中數量不足時丟 Error，且不改動 inventory', () => {
+    const save = makeSave({ inventory: { ore: 1 } });
+    expect(() => startExpedition(fakeRng(), save, 'loc_route_a', { ore: 3 })).toThrow();
+    expect(save.inventory.ore).toBe(1);
   });
 });
 
@@ -590,11 +671,86 @@ describe('settleExpedition', () => {
     expect(save.expedition).toBeNull();
   });
 
-  it('回傳 goldGained/itemsGained/xpGained 摘要', () => {
+  it('回傳 goldGained/itemsGained/xpGained/tradeGold 摘要（無 tradeSales 時 tradeGold=0）', () => {
     const save = makeSave();
     const state = makeState({ loot: { gold: 12, items: { herb: 1 } }, step: 1 });
     const result = settleExpedition(state, save);
-    expect(result).toEqual({ goldGained: 12, itemsGained: { herb: 1 }, xpGained: 25 });
+    expect(result).toEqual({ goldGained: 12, itemsGained: { herb: 1 }, xpGained: 25, tradeGold: 0 });
+  });
+
+  it('完成遠征（!retreated）聲望 +5', () => {
+    const save = makeSave();
+    expect(save.reputation).toBe(0);
+    settleExpedition(makeState({ step: 1, retreated: false }), save);
+    expect(save.reputation).toBe(5);
+  });
+
+  it('撤退/戰敗（retreated=true）不加聲望', () => {
+    const save = makeSave();
+    settleExpedition(makeState({ step: 1, retreated: true }), save);
+    expect(save.reputation).toBe(0);
+  });
+
+  it('cargo 未售出時原封退回 save.inventory', () => {
+    const save = makeSave({ inventory: {} });
+    const state = makeState({ cargo: { ore: 3 }, step: 1 });
+    settleExpedition(state, save);
+    expect(save.inventory.ore).toBe(3);
+  });
+
+  it('tradeSales：destinationTownId 存在且未撤退時，依 tradeSellPrice 折現入 tradeGold，優先扣 cargo', () => {
+    const save = makeSave({ inventory: {} });
+    const state = makeState({
+      destinationTownId: 'town-a', retreated: false, step: 1,
+      cargo: { ore: 2 }, loot: { gold: 0, items: {} },
+    });
+    // ore priceModifier=2 → tradeSellPrice = round(12*2*0.9) = round(21.6) = 22
+    const result = settleExpedition(state, save, [{ itemId: 'ore', count: 2 }]);
+    expect(result.tradeGold).toBe(44);
+    expect(save.gold).toBe(200 + 44);
+    expect(state.cargo.ore).toBe(0);
+    expect(save.inventory.ore ?? 0).toBe(0);
+  });
+
+  it('tradeSales：cargo 不足時接著扣 state.loot.items', () => {
+    const save = makeSave({ inventory: {} });
+    const state = makeState({
+      destinationTownId: 'town-a', retreated: false, step: 1,
+      cargo: { ore: 1 }, loot: { gold: 0, items: { ore: 2 } },
+    });
+    const result = settleExpedition(state, save, [{ itemId: 'ore', count: 2 }]);
+    expect(result.tradeGold).toBe(44); // 22 * 2 件
+    expect(state.cargo.ore).toBe(0);
+    expect(state.loot.items.ore).toBe(1); // 2 件 loot 只用掉 1 件
+    expect(save.inventory.ore).toBe(1); // 剩下 1 件 loot.ore 併入 itemsGained
+  });
+
+  it('tradeSales：只結算實際可售數量，超賣的部分不折現也不丟錯', () => {
+    const save = makeSave({ inventory: {} });
+    const state = makeState({
+      destinationTownId: 'town-a', retreated: false, step: 1,
+      cargo: { ore: 1 }, loot: { gold: 0, items: {} },
+    });
+    const result = settleExpedition(state, save, [{ itemId: 'ore', count: 5 }]);
+    expect(result.tradeGold).toBe(22); // 只賣得出 1 件
+  });
+
+  it('tradeSales：state.destinationTownId 未設定時丟 Error', () => {
+    const save = makeSave();
+    const state = makeState({ destinationTownId: undefined, retreated: false, cargo: { ore: 1 } });
+    expect(() => settleExpedition(state, save, [{ itemId: 'ore', count: 1 }])).toThrow();
+  });
+
+  it('tradeSales：state.retreated=true 時丟 Error（撤退/戰敗不得交易）', () => {
+    const save = makeSave();
+    const state = makeState({ destinationTownId: 'town-a', retreated: true, cargo: { ore: 1 } });
+    expect(() => settleExpedition(state, save, [{ itemId: 'ore', count: 1 }])).toThrow();
+  });
+
+  it('空 tradeSales 陣列（預設）即使 destinationTownId 缺失或已撤退也不丟錯', () => {
+    const save = makeSave();
+    const state = makeState({ destinationTownId: undefined, retreated: true });
+    expect(() => settleExpedition(state, save)).not.toThrow();
   });
 });
 
@@ -934,5 +1090,117 @@ describe('finishCombat', () => {
     ]);
     expect(save.companions[0].injuredForTrips).toBe(2);
     expect(save.protagonist.injuredForTrips).toBe(2);
+  });
+
+  describe('深度乘數（M4，dungeon 限定）', () => {
+    it('dungeon victory：gold × (1+0.25×(step-1))，向下取整（step=3 → ×1.5）', () => {
+      const save = makeSave();
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 3, totalSteps: 5,
+        loot: { gold: 0, items: {} },
+      });
+      const enemy = makeEnemy({ id: 'e1', loot: { gold: [10, 10] } });
+      const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+      finishCombat(fakeRng({ d20: [1] }), state, save, combat, []);
+      // 10 * 1.5 = 15（非 boss 層，step!==totalSteps，不觸發再殺折半）
+      expect(state.loot.gold).toBe(15);
+    });
+
+    it('route：不套用深度乘數（等同 ×1）', () => {
+      const save = makeSave();
+      const state = makeState({ kind: 'route', step: 3, totalSteps: 5, loot: { gold: 0, items: {} } });
+      const enemy = makeEnemy({ id: 'e1', loot: { gold: [10, 10] } });
+      const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+      finishCombat(fakeRng({ d20: [1] }), state, save, combat, []);
+      expect(state.loot.gold).toBe(10);
+    });
+  });
+
+  describe('隱藏迷宮遞減報酬（M4）', () => {
+    it('首殺：boss 擊殺 reputation +10、locationId 記入 visitedBossDungeons，loot 不打折', () => {
+      const save = makeSave();
+      expect(save.visitedBossDungeons).toEqual([]);
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 3, totalSteps: 3,
+        loot: { gold: 0, items: {} },
+      });
+      const enemy = makeEnemy({ id: 'boss', loot: { gold: [10, 10] } });
+      const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+      finishCombat(fakeRng({ d20: [1] }), state, save, combat, []);
+      // 深度乘數 1+0.25*2=1.5 → 15，首殺不折半
+      expect(state.loot.gold).toBe(15);
+      expect(save.reputation).toBe(10);
+      expect(save.visitedBossDungeons).toEqual(['loc_dungeon_a']);
+    });
+
+    it('再殺：locationId 已在 visitedBossDungeons 時，loot gold 再折半（向下取整）', () => {
+      const save = makeSave({ visitedBossDungeons: ['loc_dungeon_a'] });
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 3, totalSteps: 3,
+        loot: { gold: 0, items: {} },
+      });
+      const enemy = makeEnemy({ id: 'boss', loot: { gold: [10, 10] } });
+      const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+      finishCombat(fakeRng({ d20: [1] }), state, save, combat, []);
+      // 深度乘數 1.5 → 15，再殺折半 → floor(15/2)=7
+      expect(state.loot.gold).toBe(7);
+      expect(save.reputation).toBe(10); // 再殺仍給聲望
+      expect(save.visitedBossDungeons).toEqual(['loc_dungeon_a']); // 不重複記錄
+    });
+
+    it('再殺：itemChance 減半', () => {
+      const save = makeSave({ visitedBossDungeons: ['loc_dungeon_a'] });
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 3, totalSteps: 3,
+        loot: { gold: 0, items: {} },
+      });
+      const enemy = makeEnemy({ id: 'boss', loot: { gold: [1, 1], itemId: 'den-idol', itemChance: 0.6 } });
+      const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+      // next=0.35：原本 0.6 機率會命中（0.35<0.6），減半後 0.3 機率不命中（0.35>=0.3）
+      finishCombat(fakeRng({ d20: [1], next: [0.35] }), state, save, combat, []);
+      expect(state.loot.items['den-idol']).toBeUndefined();
+    });
+
+    it('非頂層 boss 層（step!==totalSteps）即使 locationId 曾在 visitedBossDungeons 也不觸發遞減', () => {
+      const save = makeSave({ visitedBossDungeons: ['loc_dungeon_a'] });
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3,
+        loot: { gold: 0, items: {} },
+      });
+      const enemy = makeEnemy({ id: 'e1', loot: { gold: [10, 10] } });
+      const combat = makeCombat({ outcome: 'victory', party: [], enemies: [enemy] });
+      finishCombat(fakeRng({ d20: [1] }), state, save, combat, []);
+      expect(state.loot.gold).toBe(10); // 深度乘數 step=1 → ×1，非 boss 層不折半、不加聲望
+      expect(save.reputation).toBe(0);
+    });
+  });
+
+  describe('cargo 損失（撤退/戰敗）', () => {
+    it('retreated：state.cargo 逐項折半（向下取整）', () => {
+      const save = makeSave();
+      const state = makeState({ cargo: { ore: 5, herb: 3 }, loot: { gold: 0, items: {} } });
+      const combat = makeCombat({ outcome: 'retreated', party: [], enemies: [] });
+      finishCombat(fakeRng(), state, save, combat, []);
+      expect(state.cargo).toEqual({ ore: 2, herb: 1 });
+    });
+
+    it('defeat：state.cargo 同 retreated 折半', () => {
+      const save = makeSave();
+      const state = makeState({ cargo: { ore: 4 }, loot: { gold: 0, items: {} } });
+      const combat = makeCombat({ outcome: 'defeat', party: [], enemies: [] });
+      finishCombat(fakeRng(), state, save, combat, []);
+      expect(state.cargo).toEqual({ ore: 2 });
+    });
+
+    it('victory：state.cargo 不受影響', () => {
+      const save = makeSave();
+      const state = makeState({
+        kind: 'dungeon', step: 1, totalSteps: 3,
+        cargo: { ore: 5 }, loot: { gold: 0, items: {} },
+      });
+      const combat = makeCombat({ outcome: 'victory', party: [], enemies: [] });
+      finishCombat(fakeRng(), state, save, combat, []);
+      expect(state.cargo).toEqual({ ore: 5 });
+    });
   });
 });
