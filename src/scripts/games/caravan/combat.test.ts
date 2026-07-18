@@ -55,6 +55,12 @@ describe('startCombat / 先攻與回合', () => {
     expect(state.order).toEqual(['hero', 'foe']);
   });
 
+  it('三方同分：隊伍成員全部排在敵人前（傳入順序穩定）', () => {
+    const state = startCombat(scriptedRng([10, 10, 10]),
+      [makeMember('p1', 10), makeMember('p2', 10)], [makeEnemy('e1', 10)]);
+    expect(state.order).toEqual(['p1', 'p2', 'e1']);
+  });
+
   it('開場為每個敵人預告意圖並記 log', () => {
     const state = startCombat(scriptedRng([10, 5]), [makeMember('hero', 14)], [makeEnemy('foe', 10)]);
     expect(state.enemyIntents['foe']).toBe('strike');

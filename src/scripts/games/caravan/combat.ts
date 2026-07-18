@@ -35,15 +35,17 @@ export interface CombatState {
 }
 
 export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]): CombatState {
-  // Interleave party and enemies for initialization roll order
+  // Interleave party and enemies for initialization roll order (骰序，不可更動——既有測試依賴)
   const all = [];
   const maxLen = Math.max(party.length, enemies.length);
   for (let i = 0; i < maxLen; i++) {
-    if (i < party.length) all.push({ id: party[i].id, dex: party[i].stats.dex, side: 0 as const });
-    if (i < enemies.length) all.push({ id: enemies[i].id, dex: enemies[i].stats.dex, side: 1 as const });
+    if (i < party.length) all.push({ id: party[i].id, dex: party[i].stats.dex });
+    if (i < enemies.length) all.push({ id: enemies[i].id, dex: enemies[i].stats.dex });
   }
-  const rolled = all.map((c, index) => ({ ...c, index, init: rng.d20() + statMod(c.dex) }));
-  rolled.sort((a, b) => b.init - a.init || a.index - b.index);
+  // Tie-break 用傳入順序（隊伍在前）的索引，與擲骰的交錯順序解耦
+  const tieBreakIndex = new Map([...party, ...enemies].map((c, index) => [c.id, index]));
+  const rolled = all.map((c) => ({ ...c, init: rng.d20() + statMod(c.dex) }));
+  rolled.sort((a, b) => b.init - a.init || tieBreakIndex.get(a.id)! - tieBreakIndex.get(b.id)!);
   const state: CombatState = {
     round: 1, order: rolled.map((r) => r.id), turnIndex: 0,
     party, enemies, guarding: {}, enemyIntents: {}, log: [], outcome: 'ongoing',
