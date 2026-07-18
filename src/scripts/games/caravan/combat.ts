@@ -19,7 +19,10 @@ export interface CombatantBase {
 
 export interface PartyMember extends CombatantBase { isProtagonist?: boolean; }
 
-export interface EnemyUnit extends CombatantBase { intents: Array<{ weight: number; moveId: string }>; }
+export interface EnemyUnit extends CombatantBase {
+  intents: Array<{ weight: number; moveId: string }>;
+  loot?: { gold: [number, number]; itemId?: string; itemChance?: number };
+}
 
 export interface CombatEvent { kind: 'action'|'damage'|'heal'|'down'|'info'|'retreat'|'victory'|'defeat'; text: string; }
 
@@ -160,9 +163,19 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
   if (!enemy || state.outcome !== 'ongoing') return;
   const moveId = state.enemyIntents[enemyId] ?? enemy.moves[0].id;
   const move = enemy.moves.find((m) => m.id === moveId) ?? enemy.moves[0];
-  const alive = state.party.filter((p) => p.hp > 0);
-  if (alive.length === 0) return;
-  const target = alive.reduce((low, p) => (p.hp < low.hp ? p : low), alive[0]);
+  let target: CombatantBase;
+  if (move.kind === 'support' && move.heal) {
+    // 治療招：目標＝敵方存活同伴（可含自己）中缺血（maxHp - hp）最大者
+    const aliveEnemies = state.enemies.filter((e) => e.hp > 0);
+    if (aliveEnemies.length === 0) return;
+    target = aliveEnemies.reduce(
+      (most, e) => (e.maxHp - e.hp > most.maxHp - most.hp ? e : most), aliveEnemies[0]
+    );
+  } else {
+    const aliveParty = state.party.filter((p) => p.hp > 0);
+    if (aliveParty.length === 0) return;
+    target = aliveParty.reduce((low, p) => (p.hp < low.hp ? p : low), aliveParty[0]);
+  }
   performMove(rng, state, enemy, move, target);
   state.enemyIntents[enemyId] = rng.weightedPick(
     enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
@@ -181,7 +194,10 @@ export function attemptRetreat(rng: Rng, state: CombatState): void {
       .map((id) => aliveParty.find((p) => p.id === id))
       .find((p) => p !== undefined)!;
     state.log.push({ kind: 'retreat', text: `${rear.name}殿後掩護撤退……` });
-    performMove(rng, state, aliveEnemy, aliveEnemy.moves[0], rear);
+    const attackMove = aliveEnemy.moves.find((m) => m.kind === 'attack');
+    if (attackMove) {
+      performMove(rng, state, aliveEnemy, attackMove, rear);
+    }
   }
   state.outcome = 'retreated';
   state.log.push({ kind: 'retreat', text: '商隊撤出了戰鬥。' });
