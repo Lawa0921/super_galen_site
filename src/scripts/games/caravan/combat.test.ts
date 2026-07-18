@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { statMod } from './check';
-import { startCombat, currentActor, advanceTurn } from './combat';
+import { startCombat, currentActor, advanceTurn, partyAct, enemyAct, attemptRetreat, resolveCasualties } from './combat';
 import type { PartyMember, EnemyUnit, Move } from './combat';
 import type { Rng } from './rng';
 
@@ -88,5 +88,105 @@ describe('startCombat / 先攻與回合', () => {
     advanceTurn(state);                    // foe
     advanceTurn(state);                    // 繞回 a → a 的架盾解除
     expect(state.guarding['a']).toBeFalsy();
+  });
+});
+
+describe('動作結算', () => {
+  function freshState(dies: number[]) {
+    // hero 先攻（骰 15+2 vs 5+0）
+    return { rng: scriptedRng(dies), state: startCombat(scriptedRng([15, 5]), [makeMember('hero', 14)], [makeEnemy('foe', 10)]) };
+  }
+
+  it('攻擊命中：d20+statMod(str) >= defense，傷害=骰+statMod、log damage、輪到敵方', () => {
+    const { state } = freshState([]);
+    // 命中骰 10+2=12 >= 10；傷害骰 4 + str(+2) = 6
+    partyAct(scriptedRng([10, 4]), state, 'hero', 'strike', 'foe');
+    expect(state.enemies[0].hp).toBe(4);
+    expect(state.log.some((e) => e.kind === 'damage' && e.text.includes('6'))).toBe(true);
+    expect(currentActor(state)).toEqual({ side: 'enemy', id: 'foe' });
+  });
+
+  it('攻擊未中：不扣血、log 落空', () => {
+    const { state } = freshState([]);
+    partyAct(scriptedRng([5]), state, 'hero', 'strike', 'foe'); // 5+2=7 < 10
+    expect(state.enemies[0].hp).toBe(10);
+    expect(state.log.at(-1)?.text).toContain('落空');
+  });
+
+  it('nat1 必失手即使修正足夠；nat20 必中', () => {
+    const a = freshState([]).state;
+    a.enemies[0].defense = 1;
+    partyAct(scriptedRng([1, 6]), a, 'hero', 'strike', 'foe');
+    expect(a.enemies[0].hp).toBe(10);
+    const b = freshState([]).state;
+    b.enemies[0].defense = 30;
+    partyAct(scriptedRng([20, 4]), b, 'hero', 'strike', 'foe');
+    expect(b.enemies[0].hp).toBe(4);
+  });
+
+  it('架盾使受擊方 defense +4', () => {
+    const state = startCombat(scriptedRng([5, 15]), [makeMember('hero', 14)], [makeEnemy('foe', 10)]);
+    // foe 先動；hero 設架盾
+    state.guarding['hero'] = true;
+    // foe 攻 hero：骰 13+1(str12)=14 < 12+4 → 未中
+    enemyAct(scriptedRng([13, 3]), state, 'foe');
+    expect(state.party[0].hp).toBe(20);
+  });
+
+  it('治療不超過 maxHp、log heal', () => {
+    const healMove: Move = { id: 'heal', name: '治癒', kind: 'support', target: 'ally', hitStat: 'cha',
+      heal: { dice: 1, sides: 8, bonusStat: 'cha' }, narration: '{actor}治癒了{target}，恢復 {amount} 點！' };
+    const cleric = makeMember('cleric', 10, { moves: [healMove], stats: { str: 8, dex: 10, int: 10, cha: 16, con: 10 } });
+    const state = startCombat(scriptedRng([15, 5]), [cleric], [makeEnemy('foe', 10)]);
+    cleric.hp = 15;
+    partyAct(scriptedRng([6]), state, 'cleric', 'heal', 'cleric'); // 6 + cha(+3) = 9 → cap 至 20
+    expect(cleric.hp).toBe(20);
+    expect(state.log.some((e) => e.kind === 'heal')).toBe(true);
+  });
+
+  it('敵方全滅 → victory；隊伍全滅 → defeat', () => {
+    const { state } = freshState([]);
+    state.enemies[0].hp = 3;
+    partyAct(scriptedRng([10, 4]), state, 'hero', 'strike', 'foe'); // 6 傷 → 倒地
+    expect(state.outcome).toBe('victory');
+    expect(currentActor(state)).toBeNull();
+
+    const s2 = startCombat(scriptedRng([5, 15]), [makeMember('hero', 14)], [makeEnemy('foe', 10)]);
+    s2.party[0].hp = 1;
+    enemyAct(scriptedRng([15, 6]), s2, 'foe'); // 命中 → hero 倒地
+    expect(s2.outcome).toBe('defeat');
+  });
+
+  it('enemyAct 用預告招式攻擊 hp 最低隊員並重新預告', () => {
+    const a = makeMember('a', 14); const b = makeMember('b', 12);
+    b.hp = 5;
+    const state = startCombat(scriptedRng([5, 15, 6]), [a, b], [makeEnemy('foe', 10)]);
+    expect(currentActor(state)?.id).toBe('foe');
+    enemyAct(scriptedRng([15, 3]), state, 'foe');   // 攻 b（hp 最低）：15+1=16 >= 12 → 3+1=4 傷
+    expect(b.hp).toBe(1);
+    expect(state.enemyIntents['foe']).toBe('strike'); // 重新預告
+  });
+
+  it('attemptRetreat：outcome=retreated、殿後者（先攻最低存活）受一擊', () => {
+    const a = makeMember('a', 14); const b = makeMember('b', 8);
+    const state = startCombat(scriptedRng([15, 5, 10]), [a, b], [makeEnemy('foe', 10)]);
+    attemptRetreat(scriptedRng([18, 4]), state);    // foe 攻殿後者 b：18+1 命中、4+1=5 傷
+    expect(state.outcome).toBe('retreated');
+    expect(b.hp).toBe(15);
+    expect(state.log.some((e) => e.kind === 'retreat')).toBe(true);
+  });
+
+  it('resolveCasualties：主角必重傷；傭兵過 DC10 重傷、不過死亡', () => {
+    const boss = makeMember('boss', 10, { isProtagonist: true });
+    const merc1 = makeMember('m1', 10); const merc2 = makeMember('m2', 10);
+    const state = startCombat(scriptedRng([10, 9, 8, 5]), [boss, merc1, merc2], [makeEnemy('foe', 10)]);
+    boss.hp = 0; merc1.hp = 0; merc2.hp = 0;
+    // merc1 擲 12+1(con12)=13 >= 10 → injured；merc2 擲 3+1=4 → dead
+    const fates = resolveCasualties(scriptedRng([12, 3]), state);
+    expect(fates).toEqual([
+      { id: 'boss', fate: 'injured' },
+      { id: 'm1', fate: 'injured' },
+      { id: 'm2', fate: 'dead' },
+    ]);
   });
 });

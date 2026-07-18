@@ -90,3 +90,113 @@ export function advanceTurn(state: CombatState): void {
     }
   }
 }
+
+function fillNarration(template: string, actor: string, target: string, amount: number): string {
+  return template.replace('{actor}', actor).replace('{target}', target).replace('{amount}', String(amount));
+}
+
+function rollDice(rng: Rng, dice: number, sides: number): number {
+  let sum = 0;
+  for (let i = 0; i < dice; i++) sum += rng.roll(sides);
+  return sum;
+}
+
+function checkOutcome(state: CombatState): void {
+  if (state.enemies.every((e) => e.hp <= 0)) {
+    state.outcome = 'victory';
+    state.log.push({ kind: 'victory', text: '敵人被擊潰了！' });
+  } else if (state.party.every((p) => p.hp <= 0)) {
+    state.outcome = 'defeat';
+    state.log.push({ kind: 'defeat', text: '商隊的旗幟倒下了……' });
+  }
+}
+
+function applyDamage(state: CombatState, target: CombatantBase, amount: number): void {
+  target.hp = Math.max(0, target.hp - amount);
+  if (target.hp === 0) state.log.push({ kind: 'down', text: `${target.name}倒下了！` });
+}
+
+function performMove(rng: Rng, state: CombatState, actor: CombatantBase, move: Move, target: CombatantBase): void {
+  if (move.kind === 'guard') {
+    state.guarding[actor.id] = true;
+    state.log.push({ kind: 'action', text: fillNarration(move.narration, actor.name, actor.name, 0) });
+    return;
+  }
+  if (move.kind === 'support' && move.heal) {
+    const amount = Math.max(1, rollDice(rng, move.heal.dice, move.heal.sides)
+      + (move.heal.bonusStat ? statMod(actor.stats[move.heal.bonusStat]) : 0));
+    const applied = Math.min(amount, target.maxHp - target.hp);
+    target.hp += applied;
+    state.log.push({ kind: 'heal', text: fillNarration(move.narration, actor.name, target.name, applied) });
+    return;
+  }
+  // attack
+  const die = rng.d20();
+  const defense = target.defense + (state.guarding[target.id] ? 4 : 0);
+  const hit = die === 20 ? true : die === 1 ? false : die + statMod(actor.stats[move.hitStat]) >= defense;
+  if (!hit) {
+    state.log.push({ kind: 'action', text: `${actor.name}的${move.name}落空了！` });
+    return;
+  }
+  const dmgSpec = move.damage ?? { dice: 1, sides: 4 };
+  const amount = Math.max(1, rollDice(rng, dmgSpec.dice, dmgSpec.sides)
+    + (dmgSpec.bonusStat ? statMod(actor.stats[dmgSpec.bonusStat]) : 0));
+  state.log.push({ kind: 'damage', text: fillNarration(move.narration, actor.name, target.name, amount) });
+  applyDamage(state, target, amount);
+}
+
+export function partyAct(rng: Rng, state: CombatState, actorId: string, moveId: string, targetId: string): void {
+  const actor = state.party.find((p) => p.id === actorId);
+  const move = actor?.moves.find((m) => m.id === moveId);
+  const targetFound = [...state.party, ...state.enemies].find((c) => c.id === targetId);
+  if (!actor || !move || !targetFound || state.outcome !== 'ongoing') return;
+  performMove(rng, state, actor, move, targetFound);
+  checkOutcome(state);
+  if (state.outcome === 'ongoing') advanceTurn(state);
+}
+
+export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
+  const enemy = state.enemies.find((e) => e.id === enemyId);
+  if (!enemy || state.outcome !== 'ongoing') return;
+  const moveId = state.enemyIntents[enemyId] ?? enemy.moves[0].id;
+  const move = enemy.moves.find((m) => m.id === moveId) ?? enemy.moves[0];
+  const alive = state.party.filter((p) => p.hp > 0);
+  if (alive.length === 0) return;
+  const target = alive.reduce((low, p) => (p.hp < low.hp ? p : low), alive[0]);
+  performMove(rng, state, enemy, move, target);
+  state.enemyIntents[enemyId] = rng.weightedPick(
+    enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
+  );
+  checkOutcome(state);
+  if (state.outcome === 'ongoing') advanceTurn(state);
+}
+
+export function attemptRetreat(rng: Rng, state: CombatState): void {
+  if (state.outcome !== 'ongoing') return;
+  const aliveParty = state.party.filter((p) => p.hp > 0);
+  const aliveEnemy = state.enemies.find((e) => e.hp > 0);
+  if (aliveParty.length > 0 && aliveEnemy) {
+    // 殿後者 = order 中最後出現的存活隊員（先攻最低）
+    const rear = [...state.order].reverse()
+      .map((id) => aliveParty.find((p) => p.id === id))
+      .find((p) => p !== undefined)!;
+    state.log.push({ kind: 'retreat', text: `${rear.name}殿後掩護撤退……` });
+    performMove(rng, state, aliveEnemy, aliveEnemy.moves[0], rear);
+  }
+  state.outcome = 'retreated';
+  state.log.push({ kind: 'retreat', text: '商隊撤出了戰鬥。' });
+}
+
+export function resolveCasualties(rng: Rng, state: CombatState): Array<{ id: string; fate: 'injured' | 'dead' }> {
+  const fates: Array<{ id: string; fate: 'injured' | 'dead' }> = [];
+  for (const member of state.party) {
+    if (member.hp > 0) continue;
+    if (member.isProtagonist) {
+      fates.push({ id: member.id, fate: 'injured' });
+    } else {
+      const roll = rng.d20() + statMod(member.stats.con);
+      fates.push({ id: member.id, fate: roll >= 10 ? 'injured' : 'dead' });
+    }
+  }
+  return fates;
+}
