@@ -1,6 +1,7 @@
 import { Application, Container, Graphics, Sprite, Assets, Texture } from 'pixi.js';
 import { DefenseGame, SLOTS, FIELD_W, FIELD_H, TOWERS, WAVES, sellValueOf, type TowerType, type EnemyType } from '../engine/engine';
 import { Effects } from './effects';
+import { SoundManager } from '../audio/SoundManager';
 
 const BASE = '/assets/games/defense';
 const TOWER_FILES: TowerType[] = ['arrow', 'bomb', 'frost', 'arcane'];
@@ -55,6 +56,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   }
 
   const game = new DefenseGame();
+  const sfx = new SoundManager();
   let selected: string | null = null;
   let speed = 1; // ×1/×2 快轉
   let elapsed = 0;
@@ -85,7 +87,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   const nextEl = $('td-next'), nextListEl = $('td-next-list');
   const menu = $('td-menu'), upgradeBtn = $('td-upgrade') as HTMLButtonElement | null;
   const sellBtn = $('td-sell') as HTMLButtonElement | null, sellGoldEl = $('td-sell-gold');
-  const resultEl = $('td-result'), resultText = $('td-result-text');
+  const resultEl = $('td-result'), resultText = $('td-result-text'), resultStats = $('td-result-stats');
 
   function refreshHud(): void {
     const s = game.getState();
@@ -124,17 +126,24 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
     }
   }
   menu?.querySelectorAll<HTMLButtonElement>('[data-build]').forEach((b) =>
-    b.addEventListener('click', () => { if (selected) game.build(selected, b.dataset.build as TowerType); refreshMenu(); refreshHud(); }));
+    b.addEventListener('click', () => {
+      sfx.ensure();
+      if (selected && game.build(selected, b.dataset.build as TowerType)) sfx.build();
+      refreshMenu(); refreshHud();
+    }));
   upgradeBtn?.addEventListener('click', () => {
+    sfx.ensure();
     const t = game.getState().towers.find((x) => x.slot === selected);
-    if (t) game.upgrade(t.id); refreshMenu(); refreshHud();
-  });
-  sellBtn?.addEventListener('click', () => {
-    const t = game.getState().towers.find((x) => x.slot === selected);
-    if (t) game.sell(t.id);
+    if (t && game.upgrade(t.id)) sfx.upgrade();
     refreshMenu(); refreshHud();
   });
-  const onStart = (): void => { game.startWave(); refreshHud(); };
+  sellBtn?.addEventListener('click', () => {
+    sfx.ensure();
+    const t = game.getState().towers.find((x) => x.slot === selected);
+    if (t && game.sell(t.id)) sfx.sell();
+    refreshMenu(); refreshHud();
+  });
+  const onStart = (): void => { sfx.ensure(); if (game.startWave()) sfx.waveStart(); refreshHud(); };
   startBtn?.addEventListener('click', onStart);
   const onSpeed = (): void => {
     speed = speed === 1 ? 2 : 1;
@@ -143,6 +152,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
   speedBtn?.addEventListener('click', onSpeed);
 
   const onPointer = (e: PointerEvent): void => {
+    sfx.ensure();
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * (app.renderer.width / rect.width);
     const sy = (e.clientY - rect.top) * (app.renderer.height / rect.height);
@@ -181,7 +191,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
       }
       if (t.level >= 2) { const sl = SLOTS.find((x) => x.id === t.slot)!; dyn.circle(sl.x + 12, sl.y - 16, 3.5).fill(0xffd23f); } // 升級金點
       const pulse = firePulse.get(t.id) ?? 0; // 開火放大一下
-      sp.scale.set(1.28 * (1 + 0.16 * pulse)); // 1.28 基準：原始 sprite 偏小
+      sp.scale.set(1 + 0.16 * pulse);
       if (pulse > 0.02) firePulse.set(t.id, pulse * 0.8); else firePulse.delete(t.id);
     }
     // 敵人 sprite（依 id 同步）
@@ -232,12 +242,13 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
     for (const ev of game.drainEvents()) {
       if (ev.kind === 'fire') {
         effects.flash(ev.x, ev.y - 8, TCOL[ev.tower]);
+        sfx.fire(ev.tower);
         const tw = game.getState().towers.find((x) => { const sl = SLOTS.find((q) => q.id === x.slot); return sl != null && sl.x === ev.x && sl.y === ev.y; });
         if (tw) firePulse.set(tw.id, 1);
-      } else if (ev.kind === 'hit') effects.spark(ev.x, ev.y, 0xffffff);
-      else if (ev.kind === 'blast') effects.ring(ev.x, ev.y, ev.r, 0xff8a3c);
-      else if (ev.kind === 'kill') { effects.poof(ev.x, ev.y, ECOL[ev.etype]); effects.popup(ev.x, ev.y - 6, `+${ev.gold}`, 0xffd23f); }
-      else if (ev.kind === 'leak') effects.ring(GATE_POS.x, GATE_POS.y, 46, 0xff3b3b);
+      } else if (ev.kind === 'hit') { effects.spark(ev.x, ev.y, 0xffffff); sfx.hit(); }
+      else if (ev.kind === 'blast') { effects.ring(ev.x, ev.y, ev.r, 0xff8a3c); sfx.blast(); }
+      else if (ev.kind === 'kill') { effects.poof(ev.x, ev.y, ECOL[ev.etype]); effects.popup(ev.x, ev.y - 6, `+${ev.gold}`, 0xffd23f); sfx.kill(); }
+      else if (ev.kind === 'leak') { effects.ring(GATE_POS.x, GATE_POS.y, 46, 0xff3b3b); sfx.leak(); }
     }
     // Boss 登場演出（首次出現）
     for (const e of game.getState().enemies) {
@@ -245,6 +256,7 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
         bossSeen.add(e.id);
         effects.screen(0xff3b3b, 0.42);
         effects.ring(e.x, e.y + 30, 60, 0xff5a4d);
+        sfx.bossRoar();
         shakeMs = 440;
       }
     }
@@ -257,6 +269,10 @@ export async function startDefense(canvas: HTMLCanvasElement): Promise<DefenseHa
     const st = game.getState();
     if ((st.status === 'won' || st.status === 'lost') && resultEl?.hasAttribute('hidden')) {
       if (resultText) resultText.textContent = st.status === 'won' ? '封印門守住了！' : '封印門被攻破';
+      if (resultStats) resultStats.textContent = st.status === 'won'
+        ? `${st.totalWaves} 波全清 · 剩餘 HP ${st.baseHp}`
+        : `撐到第 ${st.wave} 波`;
+      if (st.status === 'won') sfx.win(); else sfx.lose();
       resultEl?.removeAttribute('hidden');
     }
   };

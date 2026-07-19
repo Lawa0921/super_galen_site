@@ -39,6 +39,7 @@ const lang: Language = defaultLang;
     <!-- 結果 -->
     <div class="td-result" id="td-result" hidden>
       <h2 id="td-result-text">—</h2>
+      <p class="td-result-stats" id="td-result-stats"></p>
       <button class="td-btn" id="td-restart" type="button" onclick="location.reload()">重新挑戰</button>
       <a class="td-link" href="/games">返回遊戲廳</a>
     </div>
@@ -88,4 +89,5 @@ const lang: Language = defaultLang;
   .td-result { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 18px; background: rgba(5,3,15,0.82); text-align: center; }
   .td-result h2 { font-size: 20px; letter-spacing: 4px; color: #ffd23f; text-shadow: 0 0 16px rgba(255,210,63,0.6); }
+  .td-result-stats { font-size: 10px; letter-spacing: 2px; color: #b9add8; }
 </style>
