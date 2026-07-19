@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { ITEMS } from './items';
 import { LOCATIONS, visibleLocations } from './locations';
-import { ENCOUNTERS } from './enemies';
+import { ENCOUNTERS, TRAINING_ENCOUNTER } from './enemies';
 import { EVENTS } from './events';
 import { TOWNS } from './towns';
+import { JOBS } from './jobs';
 import type { EventCard, EffectSpec } from '../expedition';
 import { startExpedition, drawEvent } from '../expedition';
 import { createRng } from '../rng';
@@ -511,5 +514,53 @@ describe('caravan content data integrity（M3 Task 4）', () => {
       saltSpringProfit,
       '最長最險的霧嶺古道→鹽泉城押貨淨利不應低於黑森林徑（風險報酬不倒掛）'
     ).toBeGreaterThanOrEqual(blackwoodProfit);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// M5 美術資產接線：art 路徑欄位＋檔案實際存在（fs 檢查）
+// ---------------------------------------------------------------------------
+
+describe('M5 美術資產', () => {
+  const artOk = (art: string | undefined): boolean =>
+    !!art && art.startsWith('/assets/games/caravan/') && existsSync(join(process.cwd(), 'public', art));
+
+  it('四鎮皆有 art 且檔案存在', () => {
+    for (const town of Object.values(TOWNS)) {
+      expect(artOk(town.art), `${town.id} art 缺失或檔案不存在：${town.art}`).toBe(true);
+    }
+  });
+
+  it('四職業皆有 art 且檔案存在', () => {
+    for (const job of Object.values(JOBS)) {
+      expect(artOk(job.art), `${job.id} art 缺失或檔案不存在：${job.art}`).toBe(true);
+    }
+  });
+
+  it('所有敵人單位皆有 art 且檔案存在', () => {
+    const units = [...TRAINING_ENCOUNTER(), ...Object.values(ENCOUNTERS).flatMap((mk) => mk())];
+    for (const unit of units) {
+      expect(artOk(unit.art), `${unit.name} art 缺失或檔案不存在：${unit.art}`).toBe(true);
+    }
+  });
+
+  it('旗標鏈與稀有事件皆有 art 且檔案存在', () => {
+    const withArt = [
+      'ev_merchant_map', 'ev_cave_entrance', 'ev_faded_banner', 'ev_mercenary_ruins',
+      'ev_strange_merchant_intro', 'ev_strange_merchant_return', 'ev_strange_merchant_finale',
+      'ev_rare_treasure_map', 'ev_rare_wandering_swordsaint', 'ev_rare_moonlit_market',
+      'ev_rare_wounded_messenger',
+    ];
+    for (const id of withArt) {
+      const card = EVENTS.find((e) => e.id === id);
+      expect(card, `事件 ${id} 不存在`).toBeDefined();
+      expect(artOk(card!.art), `${id} art 缺失或檔案不存在：${card!.art}`).toBe(true);
+    }
+  });
+
+  it('主角立繪／標題橫幅／遊戲廳卡檔案存在', () => {
+    for (const f of ['job-protagonist.webp', 'title-banner.webp', 'card-caravan.webp']) {
+      expect(existsSync(join(process.cwd(), 'public/assets/games/caravan', f)), `${f} 不存在`).toBe(true);
+    }
   });
 });

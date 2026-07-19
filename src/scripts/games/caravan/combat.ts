@@ -17,6 +17,8 @@ export interface Move {
 export interface CombatantBase {
   id: string; name: string; stats: StatBlock;
   maxHp: number; hp: number; defense: number; moves: Move[];
+  /** 立繪路徑（M5 美術） */
+  art?: string;
 }
 
 export interface PartyMember extends CombatantBase { isProtagonist?: boolean; }

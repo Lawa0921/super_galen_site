@@ -122,6 +122,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 6,
     title: '神秘的地圖販子',
+    art: '/assets/games/caravan/event-merchant-map.webp',
     body: '一名披著破斗篷的商人攔住商隊，神秘兮兮地攤開一張泛黃的地圖殘片：「這上頭標記著一處哥布林巢穴的入口，敢不敢買下這條發財的門路？」',
     options: [
       {
@@ -150,6 +151,7 @@ export const EVENTS: EventCard[] = [
     weight: 6,
     requiresFlags: { 'clue:goblin-cave': true },
     title: '山壁上的裂隙',
+    art: '/assets/games/caravan/event-cave-entrance.webp',
     body: '按著地圖上模糊的墨跡，你注意到山壁間一處被藤蔓掩住的裂隙，隱約還能聞到野獸的騷味。地圖上打了個粗魯的叉——就是這裡。',
     options: [
       {
@@ -697,6 +699,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 6,
     title: '褪色的軍旗',
+    art: '/assets/games/caravan/event-faded-banner.webp',
     body: '路旁土坡半掩著一面褪色的軍旗，布面早被風雨侵蝕得看不清紋章，只依稀認得出一角交叉的劍與盾。旗桿深深插在土裡，彷彿有人刻意留下了什麼訊息。',
     options: [
       {
@@ -724,6 +727,7 @@ export const EVENTS: EventCard[] = [
     weight: 6,
     requiresFlags: { 'clue:mercenary-ruins': true },
     title: '傭兵團遺跡',
+    art: '/assets/games/caravan/event-mercenary-ruins.webp',
     body: '循著旗面上依稀可辨的方位，你們在雜草叢生的坡地間找到一片斷壁殘垣——散落的甲冑鏽跡斑斑，顯然是某支傭兵團全軍覆沒之地。深處似乎還有未被打撈的戰利品。',
     options: [
       {
@@ -749,6 +753,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 6,
     title: '奇怪的商人．初遇',
+    art: '/assets/games/caravan/event-strange-merchant-intro.webp',
     body: '一名披著雜色斗篷的商人不知何時跟上了商隊，貨架上擺滿了見所未見的稀奇物件。「我看你們是講信用的商隊，」他瞇眼笑道，「不如先幫我帶個口信，如何？」',
     options: [
       {
@@ -776,6 +781,7 @@ export const EVENTS: EventCard[] = [
     weight: 6,
     requiresFlags: { 'clue:strange-merchant:1': true },
     title: '奇怪的商人．再遇',
+    art: '/assets/games/caravan/event-strange-merchant-return.webp',
     body: '那名雜色斗篷商人竟又在下一段路上等著你們，像是早算準了商隊的行程。「口信我收到了，」他神秘兮兮地壓低聲音，「這次換我欠你們一份人情——猜猜看，我葫蘆裡賣的是什麼藥？」',
     options: [
       {
@@ -803,6 +809,7 @@ export const EVENTS: EventCard[] = [
     weight: 6,
     requiresFlags: { 'clue:strange-merchant:2': true },
     title: '奇怪的商人．終章',
+    art: '/assets/games/caravan/event-strange-merchant-finale.webp',
     body: '商人第三次現身時，臉上少了先前的戲謔，多了幾分認真。「一路承蒙關照，」他從懷裡取出一枚舊羅盤，鄭重地放進你的掌心，「這東西認主，往後它認你了。」',
     options: [
       {
@@ -957,6 +964,7 @@ export const EVENTS: EventCard[] = [
     context: {},
     weight: 2,
     title: '寶藏地圖',
+    art: '/assets/games/caravan/event-rare-treasure-map.webp',
     body: '一名垂死的盜賊將一張浸血的羊皮紙塞進你手裡，氣若游絲地說完最後一句話便斷了氣。展開一看，那竟是一張標記詳盡、幾乎能以假亂真的寶藏地圖。',
     options: [
       {
@@ -986,6 +994,7 @@ export const EVENTS: EventCard[] = [
     context: {},
     weight: 1,
     title: '流浪劍聖切磋',
+    art: '/assets/games/caravan/event-rare-wandering-swordsaint.webp',
     body: '一名鬚髮皆白的劍客攔在路中央，腰間長劍未出鞘，眼神卻銳利如電。「聽聞商隊裡藏著幾分本事，」他淡淡開口，「可願與老夫過幾招，切磋切磋？」',
     options: [
       {
@@ -1015,6 +1024,7 @@ export const EVENTS: EventCard[] = [
     context: {},
     weight: 1,
     title: '月光市集',
+    art: '/assets/games/caravan/event-rare-moonlit-market.webp',
     body: '夜色正濃時，商隊竟撞見一座燈籠高懸的奇異市集，攤販與貨品都透著幾分不似人間的光澤。老闆們的臉隱在陰影裡，只有交易時的笑聲格外清晰——傳說中的月光市集，居然是真的。',
     options: [
       {
@@ -1042,6 +1052,7 @@ export const EVENTS: EventCard[] = [
     context: {},
     weight: 2,
     title: '受傷的信使',
+    art: '/assets/games/caravan/event-rare-wounded-messenger.webp',
     body: '一名信使跌跌撞撞地攔住商隊，背上的箭傷還在滲血，懷裡死死護著一個火漆封緘的信封。「拜託……務必送到……」他話未說完便昏厥過去，商隊陷入兩難。',
     options: [
       {

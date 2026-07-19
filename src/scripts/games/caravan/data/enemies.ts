@@ -15,6 +15,7 @@ function makeGoblinScout(id: string): EnemyUnit {
   return {
     id, name: '哥布林斥候',
     stats: { str: 10, dex: 14, int: 8, cha: 8, con: 10 },
+    art: '/assets/games/caravan/enemy-goblin-scout.webp',
     maxHp: 8, hp: 8, defense: 11,
     moves: [dagger],
     intents: [{ weight: 1, moveId: 'dagger' }], // 只有一招，意圖全攻擊
@@ -42,6 +43,7 @@ function makeWolf(id: string): EnemyUnit {
   return {
     id, name: '荒野孤狼',
     stats: { str: 12, dex: 15, int: 4, cha: 4, con: 11 },
+    art: '/assets/games/caravan/enemy-wolf.webp',
     maxHp: 10, hp: 10, defense: 12,
     moves: [wolfBite],
     intents: [{ weight: 1, moveId: 'wolf-bite' }],
@@ -59,6 +61,7 @@ function makeBanditThug(id: string): EnemyUnit {
   return {
     id, name: '盜匪打手',
     stats: { str: 13, dex: 12, int: 8, cha: 8, con: 12 },
+    art: '/assets/games/caravan/enemy-bandit-thug.webp',
     maxHp: 12, hp: 12, defense: 13,
     moves: [banditSlash],
     intents: [{ weight: 1, moveId: 'bandit-slash' }],
@@ -83,6 +86,7 @@ function makeBanditMedic(id: string): EnemyUnit {
   return {
     id, name: '盜匪祭司',
     stats: { str: 9, dex: 12, int: 10, cha: 14, con: 10 },
+    art: '/assets/games/caravan/enemy-bandit-medic.webp',
     maxHp: 9, hp: 9, defense: 11,
     moves: [banditMend, banditDagger],
     intents: [
@@ -103,6 +107,7 @@ function makeMineSpider(id: string): EnemyUnit {
   return {
     id, name: '礦坑蜘蛛',
     stats: { str: 10, dex: 16, int: 2, cha: 2, con: 10 },
+    art: '/assets/games/caravan/enemy-mine-spider.webp',
     maxHp: 11, hp: 11, defense: 13,
     moves: [spiderBite],
     intents: [{ weight: 1, moveId: 'spider-bite' }],
@@ -120,6 +125,7 @@ function makeGoblinRaider(id: string): EnemyUnit {
   return {
     id, name: '哥布林掠奪者',
     stats: { str: 11, dex: 13, int: 8, cha: 8, con: 10 },
+    art: '/assets/games/caravan/enemy-goblin-raider.webp',
     maxHp: 9, hp: 9, defense: 12,
     moves: [raiderClub],
     intents: [{ weight: 1, moveId: 'raider-club' }],
@@ -144,6 +150,7 @@ function makeMineOverseer(): EnemyUnit {
   return {
     id: 'mine-overseer', name: '礦坑監工',
     stats: { str: 16, dex: 9, int: 8, cha: 6, con: 16 },
+    art: '/assets/games/caravan/enemy-mine-overseer.webp',
     maxHp: 30, hp: 30, defense: 15,
     moves: [overseerWhip, overseerSlam],
     intents: [
@@ -171,6 +178,7 @@ function makeGoblinDenChief(): EnemyUnit {
   return {
     id: 'goblin-den-chief', name: '巢穴頭目',
     stats: { str: 15, dex: 12, int: 9, cha: 10, con: 14 },
+    art: '/assets/games/caravan/enemy-goblin-den-chief.webp',
     maxHp: 28, hp: 28, defense: 14,
     moves: [chiefAxe, chiefHowl],
     intents: [
@@ -197,6 +205,7 @@ function makeRidgeSkirmisher(id: string): EnemyUnit {
   return {
     id, name: '山嵐游擊手',
     stats: { str: 13, dex: 14, int: 8, cha: 8, con: 11 },
+    art: '/assets/games/caravan/enemy-ridge-skirmisher.webp',
     maxHp: 13, hp: 13, defense: 13,
     moves: [ridgeSlash],
     intents: [{ weight: 1, moveId: 'ridge-slash' }],
@@ -214,6 +223,7 @@ function makeRidgeArcher(id: string): EnemyUnit {
   return {
     id, name: '山嵐弓手',
     stats: { str: 9, dex: 16, int: 9, cha: 8, con: 9 },
+    art: '/assets/games/caravan/enemy-ridge-archer.webp',
     maxHp: 10, hp: 10, defense: 12,
     moves: [ridgeArrow],
     intents: [{ weight: 1, moveId: 'ridge-arrow' }],
@@ -231,6 +241,7 @@ function makeSaltWraith(id: string): EnemyUnit {
   return {
     id, name: '鹽晶亡魂',
     stats: { str: 8, dex: 15, int: 12, cha: 6, con: 12 },
+    art: '/assets/games/caravan/enemy-salt-wraith.webp',
     maxHp: 14, hp: 14, defense: 14,
     moves: [saltShardThrow],
     intents: [{ weight: 1, moveId: 'salt-shard-throw' }],
@@ -248,6 +259,7 @@ function makeSaltGolem(id: string): EnemyUnit {
   return {
     id, name: '鹽晶傀儡',
     stats: { str: 16, dex: 8, int: 4, cha: 4, con: 17 },
+    art: '/assets/games/caravan/enemy-salt-golem.webp',
     maxHp: 19, hp: 19, defense: 16,
     moves: [crystalSlam],
     intents: [{ weight: 1, moveId: 'crystal-slam' }],
@@ -265,6 +277,7 @@ function makeRuinsWraith(id: string): EnemyUnit {
   return {
     id, name: '亡靈劍魂',
     stats: { str: 14, dex: 12, int: 9, cha: 6, con: 13 },
+    art: '/assets/games/caravan/enemy-ruins-wraith.webp',
     maxHp: 17, hp: 17, defense: 15,
     moves: [spectralSlash],
     intents: [{ weight: 1, moveId: 'spectral-slash' }],
@@ -282,6 +295,7 @@ function makeRuinsArcher(id: string): EnemyUnit {
   return {
     id, name: '折戟遊魂',
     stats: { str: 9, dex: 15, int: 9, cha: 6, con: 12 },
+    art: '/assets/games/caravan/enemy-ruins-archer.webp',
     maxHp: 14, hp: 14, defense: 14,
     moves: [boneArrow],
     intents: [{ weight: 1, moveId: 'bone-arrow' }],
@@ -305,6 +319,7 @@ function makeSaltCavernSovereign(): EnemyUnit {
   return {
     id: 'salt-cavern-sovereign', name: '鹽晶洞主',
     stats: { str: 14, dex: 10, int: 12, cha: 10, con: 18 },
+    art: '/assets/games/caravan/enemy-salt-cavern-sovereign.webp',
     maxHp: 38, hp: 38, defense: 16,
     moves: [sovereignCrystalCrush, sovereignBrineWard],
     intents: [

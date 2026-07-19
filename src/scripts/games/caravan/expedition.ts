@@ -39,6 +39,8 @@ export interface EventCard {
   requiresFlags?: Record<string, boolean>;
   title: string;
   body: string;
+  /** 事件插圖路徑（M5 美術，僅旗標鏈與稀有事件） */
+  art?: string;
   options: EventOption[];
 }
 

@@ -13,6 +13,8 @@ export interface JobDef {
   baseMaxHp: number;
   defense: number;
   moves: Move[];
+  /** 職業立繪路徑（M5 美術） */
+  art?: string;
 }
 
 /** 通用「揮擊」：所有職業都會的基礎武器攻擊，備用招式 */
@@ -24,6 +26,7 @@ const universalStrike: Move = {
 
 export const JOBS: Record<JobId, JobDef> = {
   swordsman: {
+    art: '/assets/games/caravan/job-swordsman.webp',
     id: 'swordsman', name: '劍士',
     baseStats: { str: 14, dex: 10, int: 8, cha: 10, con: 14 },
     baseMaxHp: 26, defense: 14,
@@ -45,6 +48,7 @@ export const JOBS: Record<JobId, JobDef> = {
     ],
   },
   ranger: {
+    art: '/assets/games/caravan/job-ranger.webp',
     id: 'ranger', name: '游俠',
     baseStats: { str: 10, dex: 16, int: 10, cha: 10, con: 10 },
     baseMaxHp: 20, defense: 13,
@@ -67,6 +71,7 @@ export const JOBS: Record<JobId, JobDef> = {
     ],
   },
   mage: {
+    art: '/assets/games/caravan/job-mage.webp',
     id: 'mage', name: '法師',
     baseStats: { str: 8, dex: 10, int: 16, cha: 10, con: 8 },
     baseMaxHp: 16, defense: 11,
@@ -89,6 +94,7 @@ export const JOBS: Record<JobId, JobDef> = {
     ],
   },
   cleric: {
+    art: '/assets/games/caravan/job-cleric.webp',
     id: 'cleric', name: '教士',
     baseStats: { str: 10, dex: 8, int: 12, cha: 16, con: 12 },
     baseMaxHp: 22, defense: 12,
