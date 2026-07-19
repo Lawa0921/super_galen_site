@@ -1,6 +1,7 @@
 ---
 // src/pages/games/caravan.astro
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import ArcadeBgm from '@components/ArcadeBgm.astro';
 
 const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 ---
@@ -9,6 +10,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   <main class="caravan-root">
     <!-- 標題畫面 -->
     <section id="screen-title" class="screen">
+      <img class="title-art" src="/assets/games/caravan/title-banner.webp" alt="" width="1280" height="720" loading="eager" />
       <h1 class="game-title">商隊與劍</h1>
       <p class="game-subtitle">CARAVAN &amp; SWORD</p>
       <div class="title-actions">
@@ -19,6 +21,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
     <!-- 城鎮畫面（M4：市集/酒館/隊伍/馬車四分頁） -->
     <section id="screen-town" class="screen screen-wide" hidden>
+      <img class="town-banner" src="/assets/games/caravan/town-starting-town.webp" alt="" width="1280" height="720" loading="lazy" />
       <h2 class="town-name">啟程之鎮</h2>
       <p class="town-status">金幣 <span id="town-gold">0</span> G</p>
       <div class="town-actions">
@@ -95,6 +98,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     <section id="screen-expedition" class="screen" hidden>
       <p id="exp-progress" class="exp-progress"></p>
       <div id="event-card" class="event-card" hidden>
+        <img id="event-art" class="event-art" alt="" width="960" height="720" loading="lazy" hidden />
         <h3 id="event-title" class="event-title"></h3>
         <p id="event-body" class="event-body"></p>
         <div id="event-options" class="event-options"></div>
@@ -124,6 +128,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     <!-- 異鎮交易（M4：路線抵達目的鎮，結算前可轉賣押貨與戰利品） -->
     <section id="screen-trade" class="screen" hidden>
       <h2 class="trade-title">異鎮交易</h2>
+      <img id="trade-banner" class="town-banner" alt="" width="1280" height="720" loading="lazy" hidden />
       <p id="trade-town-name" class="trade-town-name"></p>
       <div id="trade-list" class="trade-list"></div>
       <p class="trade-gold-label">預計交易收入：<span id="trade-gold-preview">0</span> G</p>
@@ -153,6 +158,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <button id="btn-settle-back" class="caravan-btn">返回城鎮</button>
     </section>
   </main>
+  <ArcadeBgm track="/assets/games/bgm/caravan.mp3" />
 </BaseLayout>
 
 <script>
@@ -180,6 +186,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   import type { TownDef } from '@scripts/games/caravan/economy';
   import {
     pendingLevelUps, applyLevelUp, unlockedMoves, generateRecruitPool, hireCost, wagePerTrip,
+    equipItem, unequipItem,
   } from '@scripts/games/caravan/roster';
   import {
     buyPrice, sellPrice, tradeSellPrice, cargoCapacity, wagonUpgradeCost, totalWage,
@@ -268,6 +275,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   const expProgressEl = document.getElementById('exp-progress')!;
   const eventCardEl = document.getElementById('event-card')!;
   const eventTitleEl = document.getElementById('event-title')!;
+  const eventArtEl = document.getElementById('event-art') as HTMLImageElement;
+  const tradeBannerEl = document.getElementById('trade-banner') as HTMLImageElement;
   const eventBodyEl = document.getElementById('event-body')!;
   const eventOptionsEl = document.getElementById('event-options')!;
   const roomChoicesEl = document.getElementById('room-choices')!;
@@ -413,6 +422,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       card.className = 'recruit-card';
       card.dataset.recruitId = record.id;
 
+      const portrait = document.createElement('img');
+      portrait.className = 'recruit-art';
+      portrait.src = JOBS[record.job].art ?? '';
+      portrait.alt = '';
+      portrait.width = 600; portrait.height = 800;
+      portrait.loading = 'lazy';
+      card.appendChild(portrait);
+
       const name = document.createElement('p');
       name.className = 'recruit-name';
       name.textContent = `${record.name}．${JOBS[record.job].name}（Lv${record.level}）`;
@@ -439,6 +456,79 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     }
   }
 
+  /** 三個裝備欄位的中文標籤（roster 卡裝備區用） */
+  const EQUIP_SLOT_LABELS: Record<'weapon' | 'armor' | 'trinket', string> = {
+    weapon: '武器', armor: '護甲', trinket: '飾品',
+  };
+  const EQUIP_SLOTS = ['weapon', 'armor', 'trinket'] as const;
+
+  /** 裝備三欄（M5 Task 2）：已裝顯示物品名＋卸下鈕（空欄不渲染）；欄位下方列 inventory 中可裝清單 */
+  function renderEquipSlots(card: HTMLElement, record: CompanionRecord): void {
+    if (!save) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'equip-slots';
+
+    for (const slot of EQUIP_SLOTS) {
+      const slotEl = document.createElement('div');
+      slotEl.className = 'equip-slot';
+      slotEl.dataset.slot = slot;
+
+      const equippedId = record.equipment[slot];
+      const equippedItem = equippedId ? ITEMS[equippedId] : null;
+
+      const label = document.createElement('p');
+      label.className = 'equip-slot-label';
+      label.textContent = `${EQUIP_SLOT_LABELS[slot]}：${equippedItem ? equippedItem.name : '（未裝備）'}`;
+      slotEl.appendChild(label);
+
+      if (equippedItem) {
+        const unequipBtn = document.createElement('button');
+        unequipBtn.type = 'button';
+        unequipBtn.className = 'caravan-btn unequip-btn';
+        unequipBtn.textContent = '卸下';
+        unequipBtn.addEventListener('click', () => {
+          if (!save) return;
+          unequipItem(save, record.id, slot);
+          saveGame(save);
+          renderTownPanels();
+        });
+        slotEl.appendChild(unequipBtn);
+      }
+
+      const candidates = Object.values(ITEMS).filter(
+        (item) => item.equip?.slot === slot && (save!.inventory[item.id] ?? 0) > 0
+      );
+      if (candidates.length > 0) {
+        const list = document.createElement('div');
+        list.className = 'equip-candidates';
+        for (const item of candidates) {
+          const minLevel = item.equip!.minLevel;
+          const levelOk = minLevel === undefined || record.level >= minLevel;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'caravan-btn equip-btn';
+          btn.dataset.itemId = item.id;
+          btn.textContent = minLevel !== undefined && !levelOk
+            ? `${item.name}（需 Lv${minLevel}）`
+            : item.name;
+          btn.disabled = !levelOk;
+          btn.addEventListener('click', () => {
+            if (!save) return;
+            equipItem(save, record.id, item.id);
+            saveGame(save);
+            renderTownPanels();
+          });
+          list.appendChild(btn);
+        }
+        slotEl.appendChild(list);
+      }
+
+      wrap.appendChild(slotEl);
+    }
+
+    card.appendChild(wrap);
+  }
+
   function renderRoster(): void {
     if (!save) return;
     const members: CompanionRecord[] = [save.protagonist, ...save.companions];
@@ -447,6 +537,16 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const card = document.createElement('div');
       card.className = 'roster-card';
       card.dataset.memberId = record.id;
+
+      const effective = memberFromRecord(record);
+
+      const portrait = document.createElement('img');
+      portrait.className = 'roster-art';
+      portrait.src = record.id === 'protagonist' ? '/assets/games/caravan/job-protagonist.webp' : (JOBS[record.job].art ?? '');
+      portrait.alt = '';
+      portrait.width = 600; portrait.height = 800;
+      portrait.loading = 'lazy';
+      card.appendChild(portrait);
 
       const name = document.createElement('p');
       name.className = 'roster-name';
@@ -459,14 +559,19 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const stats = document.createElement('p');
       stats.className = 'roster-stats';
       stats.textContent = (Object.keys(STAT_LABELS) as Stat[])
-        .map((k) => `${STAT_LABELS[k]} ${record.stats[k]}`)
+        .map((k) => `${STAT_LABELS[k]} ${effective.stats[k]}`)
         .join('　');
+
+      const hp = document.createElement('p');
+      hp.className = 'roster-hp';
+      hp.textContent = `生命上限 ${effective.maxHp}`;
 
       const moves = document.createElement('p');
       moves.className = 'roster-moves';
-      moves.textContent = `招式：${unlockedMoves(record).map((m) => m.name).join('、')}`;
+      moves.textContent = `招式：${effective.moves.map((m) => m.name).join('、')}`;
 
-      card.append(name, xp, stats, moves);
+      card.append(name, xp, stats, hp, moves);
+      renderEquipSlots(card, record);
 
       if (record.injuredForTrips > 0) {
         const injury = document.createElement('p');
@@ -871,6 +976,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     checkResultEl.textContent = '';
     roomChoicesEl.innerHTML = '';
     eventCardEl.hidden = false;
+    eventArtEl.hidden = !card.art;
+    if (card.art) eventArtEl.src = card.art;
     eventTitleEl.textContent = card.title;
     eventBodyEl.textContent = card.body;
     eventOptionsEl.innerHTML = '';
@@ -1028,6 +1135,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     tradeTownNameEl.textContent = tradeTown
       ? `商隊抵達${tradeTown.name}，趁隙卸貨轉賣：`
       : '';
+    tradeBannerEl.hidden = !tradeTown?.art;
+    if (tradeTown?.art) tradeBannerEl.src = tradeTown.art;
     renderTrade();
     showScreen('trade');
   }
@@ -1134,6 +1243,16 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const card = document.createElement('div');
       card.className = 'combat-unit';
       card.dataset.id = unit.id;
+
+      if (unit.art) {
+        const art = document.createElement('img');
+        art.className = 'unit-art';
+        art.src = unit.art;
+        art.alt = '';
+        art.width = 600; art.height = 800;
+        art.loading = 'lazy';
+        card.appendChild(art);
+      }
 
       const name = document.createElement('p');
       name.className = 'unit-name';
@@ -1294,7 +1413,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   });
 </script>
 
-<style>
+<style is:global>
   .caravan-root {
     min-height: 100vh;
     display: flex;
@@ -1303,9 +1422,38 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     background: #f5f0e6; /* 淡色紙質底（動漫平塗配套的乾淨文庫基調） */
     color: #2b2620;
     font-family: 'Noto Serif TC', serif;
+    /* M5 立繪撐高內容後，底部按鈕會落進 dev toolbar 的攔截區——留空隙 */
+    padding-bottom: 96px;
   }
   .screen { text-align: center; padding: 2rem; max-width: 34rem; }
   .screen-wide { max-width: 46rem; width: 100%; }
+  /* ---- M5 美術 ---- */
+  .title-art {
+    display: block; width: 100%; height: auto; max-height: 300px; object-fit: cover;
+    border: 1px solid #cfc6b0; border-radius: 4px; margin: 0 auto 1.25rem;
+  }
+  .town-banner {
+    display: block; width: 100%; height: auto; max-height: 200px; object-fit: cover;
+    border: 1px solid #cfc6b0; border-radius: 4px; margin: 0 auto 1rem;
+  }
+  .town-banner[hidden] { display: none; }
+  .event-art {
+    display: block; width: 100%; height: auto; max-height: 220px; object-fit: cover;
+    border: 1px solid #cfc6b0; border-radius: 4px; margin: 0 0 0.75rem;
+  }
+  .event-art[hidden] { display: none; }
+  .unit-art {
+    display: block; width: 72px; height: 96px; object-fit: cover;
+    border: 1px solid #cfc6b0; border-radius: 3px; margin-bottom: 0.4rem;
+  }
+  .roster-art {
+    float: left; width: 64px; height: 85px; object-fit: cover;
+    border: 1px solid #cfc6b0; border-radius: 3px; margin: 0 0.75rem 0.25rem 0;
+  }
+  .recruit-art {
+    width: 64px; height: 85px; object-fit: cover;
+    border: 1px solid #cfc6b0; border-radius: 3px;
+  }
   .game-title { font-size: 3rem; letter-spacing: 0.3em; margin-bottom: 0.25rem; }
   .game-subtitle { letter-spacing: 0.5em; color: #8a7f6d; margin-bottom: 2.5rem; }
   .title-actions { display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
@@ -1387,11 +1535,39 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
   /* 隊伍 */
   .roster-list { display: flex; flex-direction: column; gap: 0.75rem; }
-  .roster-card { border: 1px solid #cfc6b0; background: #fffdf8; padding: 0.75rem 1rem; }
+  .roster-card { border: 1px solid #cfc6b0; background: #fffdf8; padding: 0.75rem 1rem; overflow: hidden; }
   .roster-name { font-weight: 600; margin: 0 0 0.3rem; }
-  .roster-xp, .roster-stats, .roster-moves { font-size: 0.85rem; color: #5c5344; margin: 0.15rem 0; }
+  .roster-xp, .roster-stats, .roster-hp, .roster-moves { font-size: 0.85rem; color: #5c5344; margin: 0.15rem 0; }
   .roster-injury { font-size: 0.85rem; color: #a4453a; margin: 0.3rem 0; }
   .levelup-btn, .dismiss-btn { margin: 0.6rem 0.6rem 0 0; padding: 0.35rem 1.1rem; font-size: 0.85rem; }
+
+  /*
+   * 裝備三欄（M5 Task 2）。兩個交疊的坑：
+   * 1) `.equip-slot` 與全域 `src/styles/_inventory.scss`（RPG 角色頁 Diablo 2 風格裝備面板
+   *    InventoryPanel.astro）同名撞了——那份規則是 60×60px 深色格子＋position:relative，
+   *    此頁若被套用會蓋住卡片內下方的升級/解雇鈕（Playwright 直接回報 pointer-events 被攔截）。
+   * 2) 本頁所有卡片/按鈕都是 client-side `document.createElement` 動態產生，Astro 預設的
+   *    scoped style 只會把 `data-astro-cid-*` 屬性掛在建置期產出的標記上，動態節點沒有這個
+   *    屬性，scoped 選擇器永遠比對不到——所以這裡沿用本檔既有模式外一律要用 :global()
+   *    才能讓規則真的生效（也才擋得住上述 (1) 的全域撞名規則）。
+   */
+  .roster-card .equip-slots { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.6rem; }
+  .roster-card .equip-slot {
+    position: static;
+    width: auto;
+    height: auto;
+    flex: 1;
+    min-width: 9rem;
+    border: 1px solid #ece5d5;
+    background: transparent;
+    padding: 0.5rem 0.6rem;
+    cursor: default;
+  }
+  .roster-card .equip-slot:hover { border-color: #ece5d5; box-shadow: none; transform: none; }
+  .roster-card .equip-slot-label { font-size: 0.85rem; color: #5c5344; margin: 0 0 0.35rem; }
+  .roster-card .unequip-btn { font-size: 0.8rem; padding: 0.25rem 0.7rem; }
+  .roster-card .equip-candidates { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.4rem; }
+  .roster-card .equip-btn { font-size: 0.8rem; padding: 0.25rem 0.7rem; text-align: left; }
 
   /* 馬車 */
   #wagon-panel .panel-status { margin-bottom: 1rem; }

@@ -14,6 +14,8 @@ export interface CompanionRecord {
   maxHp: number;
   /** >0 表示重傷缺席剩餘趟數 */
   injuredForTrips: number;
+  /** 裝備三欄：itemId 或 null（M5，roster.ts equipItem/unequipItem 維護） */
+  equipment: { weapon: string | null; armor: string | null; trinket: string | null };
 }
 
 export interface SaveDataV2 {
@@ -59,10 +61,33 @@ export interface SaveDataV4 {
   visitedBossDungeons: string[];
 }
 
-/** 對外別名，後續版本跟著改指向最新 schema */
-export type SaveData = SaveDataV4;
+export interface SaveDataV5 {
+  version: 5;
+  createdAt: number;
+  gold: number;
+  flags: Record<string, boolean>;
+  protagonist: CompanionRecord;
+  companions: CompanionRecord[];
+  /** 背包：itemId -> 持有數量 */
+  inventory: Record<string, number>;
+  /** 進行中的遠征快照；重整頁面靠這個接續，非遠征中為 null */
+  expedition: ExpeditionState | null;
+  /** 馬車升級等級：economy.ts cargoCapacity 依此計算載貨上限（M4） */
+  wagonLevel: number;
+  /** 酒館招募池種子；每次歸返結算後遞增以輪替名單（M4） */
+  tavernSeed: number;
+  /** 聲望：M4 唯一效果——達門檻時酒館池首位出現 Lv2 精英傭兵 */
+  reputation: number;
+  /** 已擊殺過的隱藏迷宮 boss（locationId），用於再殺遞減報酬（M4） */
+  visitedBossDungeons: string[];
+}
 
-const CURRENT_VERSION = 4;
+/** 對外別名，後續版本跟著改指向最新 schema */
+export type SaveData = SaveDataV5;
+
+const CURRENT_VERSION = 5;
+
+const defaultEquipment = (): CompanionRecord['equipment'] => ({ weapon: null, armor: null, trinket: null });
 
 function defaultProtagonist(): CompanionRecord {
   return {
@@ -74,6 +99,7 @@ function defaultProtagonist(): CompanionRecord {
     stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 },
     maxHp: 22,
     injuredForTrips: 0,
+    equipment: defaultEquipment(),
   };
 }
 
@@ -89,9 +115,19 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
     reputation: 0,
     visitedBossDungeons: [],
   }),
+  4: (old) => {
+    const protagonist = old.protagonist as Record<string, unknown>;
+    const companions = (old.companions as Array<Record<string, unknown>>) ?? [];
+    return {
+      ...old,
+      version: 5,
+      protagonist: { ...protagonist, equipment: defaultEquipment() },
+      companions: companions.map((c) => ({ ...c, equipment: defaultEquipment() })),
+    };
+  },
 };
 
-/** 驗證物件是否符合 SaveDataV4 的完整 shape（含 protagonist/companions/inventory/expedition/wagonLevel/tavernSeed/reputation/visitedBossDungeons）*/
+/** 驗證物件是否符合 SaveDataV5 的完整 shape（含 protagonist/companions/inventory/expedition/wagonLevel/tavernSeed/reputation/visitedBossDungeons/equipment）*/
 function isValidSaveShape(value: unknown): value is SaveData {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -115,7 +151,8 @@ function isValidSaveShape(value: unknown): value is SaveData {
     return false;
   }
   const protagonist = v.protagonist as Record<string, unknown>;
-  return typeof protagonist.stats === 'object' && protagonist.stats !== null;
+  if (typeof protagonist.stats !== 'object' || protagonist.stats === null) return false;
+  return typeof protagonist.equipment === 'object' && protagonist.equipment !== null;
 }
 
 /** 解析任意輸入：逐版遷移到最新版本後驗證 shape；毀損或未來版本一律回 null */
@@ -141,7 +178,7 @@ function parseAndMigrate(raw: unknown): SaveData | null {
 
 export function newGame(now: number = Date.now()): SaveData {
   return {
-    version: 4,
+    version: 5,
     createdAt: now,
     gold: 200,
     flags: {},

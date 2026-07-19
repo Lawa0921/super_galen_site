@@ -1,18 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   XP_TABLE, levelFromXp, pendingLevelUps, applyLevelUp, unlockedMoves,
-  generateRecruitPool, hireCost, wagePerTrip,
+  generateRecruitPool, hireCost, wagePerTrip, equipItem, unequipItem, equipmentBonus,
 } from './roster';
 import { createRng } from './rng';
-import type { CompanionRecord } from './save';
+import { newGame, type SaveData, type CompanionRecord } from './save';
 import type { StatBlock } from './types';
 import { JOBS } from './data/jobs';
+import { ITEMS, type ItemDef } from './data/items';
 
 function makeCompanion(overrides: Partial<CompanionRecord> = {}): CompanionRecord {
   return {
     id: 'comp-1', name: '傭兵', job: 'swordsman', level: 1, xp: 0,
     stats: { str: 14, dex: 10, int: 8, cha: 10, con: 14 },
     maxHp: 26, injuredForTrips: 0,
+    equipment: { weapon: null, armor: null, trinket: null },
     ...overrides,
   };
 }
@@ -105,6 +107,21 @@ describe('roster（成長系統）', () => {
     const record = makeCompanion({ level: 1 });
     const before = JSON.parse(JSON.stringify(record));
     expect(() => applyLevelUp(record, { str: 5 })).toThrow();
+    expect(record).toEqual(before);
+  });
+
+  it('applyLevelUp：配點含負數丟 Error，不修改任何欄位（M5 終審移交防禦）', () => {
+    const record = makeCompanion({ level: 1 });
+    const before = JSON.parse(JSON.stringify(record));
+    // str:-1 + dex:3 總和恰為 2，但單項為負，應被擋下
+    expect(() => applyLevelUp(record, { str: -1, dex: 3 })).toThrow();
+    expect(record).toEqual(before);
+  });
+
+  it('applyLevelUp：配點含非整數（小數）丟 Error，不修改任何欄位（M5 終審移交防禦）', () => {
+    const record = makeCompanion({ level: 1 });
+    const before = JSON.parse(JSON.stringify(record));
+    expect(() => applyLevelUp(record, { str: 1.5, dex: 0.5 })).toThrow();
     expect(record).toEqual(before);
   });
 
@@ -216,6 +233,7 @@ describe('roster（成長系統）', () => {
       expect(diffs.filter((d) => d === 1).length).toBe(1);
       expect(diffs.filter((d) => d === 0).length).toBe(4);
       expect(c.maxHp).toBe(JOBS[c.job].baseMaxHp);
+      expect(c.equipment).toEqual({ weapon: null, armor: null, trinket: null });
     }
   });
 
@@ -241,5 +259,168 @@ describe('roster（成長系統）', () => {
       expect(c.level).toBe(1);
       expect(c.xp).toBe(0);
     }
+  });
+
+  // -----------------------------------------------------------------
+  // equipItem / unequipItem / equipmentBonus（M5 Task 1：裝備三欄系統）
+  // -----------------------------------------------------------------
+  describe('裝備三欄系統（equipItem/unequipItem/equipmentBonus）', () => {
+    const TEST_WEAPON: ItemDef = {
+      id: 'test-sword', name: '測試劍', desc: '測試用。', value: 30,
+      equip: { slot: 'weapon', bonus: { str: 1 } },
+    };
+    const TEST_WEAPON_2: ItemDef = {
+      id: 'test-axe', name: '測試斧', desc: '測試用。', value: 30,
+      equip: { slot: 'weapon', bonus: { str: 2 } },
+    };
+    const TEST_ARMOR: ItemDef = {
+      id: 'test-plate', name: '測試甲', desc: '測試用。', value: 40,
+      equip: { slot: 'armor', defense: 2, maxHp: 4 },
+    };
+    const TEST_TRINKET_HIGH_LEVEL: ItemDef = {
+      id: 'test-amulet', name: '測試護符', desc: '測試用。', value: 40,
+      equip: { slot: 'trinket', minLevel: 3, bonus: { cha: 1 } },
+    };
+
+    beforeEach(() => {
+      ITEMS['test-sword'] = TEST_WEAPON;
+      ITEMS['test-axe'] = TEST_WEAPON_2;
+      ITEMS['test-plate'] = TEST_ARMOR;
+      ITEMS['test-amulet'] = TEST_TRINKET_HIGH_LEVEL;
+    });
+    afterEach(() => {
+      delete ITEMS['test-sword'];
+      delete ITEMS['test-axe'];
+      delete ITEMS['test-plate'];
+      delete ITEMS['test-amulet'];
+    });
+
+    function makeSave(): SaveData {
+      return newGame(1000);
+    }
+
+    describe('equipItem', () => {
+      it('成功裝備武器：扣庫存 1、寫入 equipment.weapon', () => {
+        const save = makeSave();
+        save.inventory['test-sword'] = 1;
+        equipItem(save, 'protagonist', 'test-sword');
+        expect(save.protagonist.equipment.weapon).toBe('test-sword');
+        expect(save.inventory['test-sword']).toBeUndefined();
+      });
+
+      it('庫存有多件時只扣 1 件', () => {
+        const save = makeSave();
+        save.inventory['test-sword'] = 3;
+        equipItem(save, 'protagonist', 'test-sword');
+        expect(save.inventory['test-sword']).toBe(2);
+      });
+
+      it('換裝同一 slot 時舊裝備自動退回 inventory', () => {
+        const save = makeSave();
+        save.inventory['test-sword'] = 1;
+        save.inventory['test-axe'] = 1;
+        equipItem(save, 'protagonist', 'test-sword');
+        equipItem(save, 'protagonist', 'test-axe');
+        expect(save.protagonist.equipment.weapon).toBe('test-axe');
+        expect(save.inventory['test-sword']).toBe(1); // 舊武器退回
+        expect(save.inventory['test-axe']).toBeUndefined();
+      });
+
+      it('可裝備到傭兵身上（非主角）', () => {
+        const save = makeSave();
+        save.companions.push(makeCompanion({ id: 'comp-1' }));
+        save.inventory['test-sword'] = 1;
+        equipItem(save, 'comp-1', 'test-sword');
+        expect(save.companions[0].equipment.weapon).toBe('test-sword');
+        expect(save.protagonist.equipment.weapon).toBeNull();
+      });
+
+      it('物品無 equip 欄丟 Error', () => {
+        const save = makeSave();
+        save.inventory['herb'] = 1;
+        expect(() => equipItem(save, 'protagonist', 'herb')).toThrow();
+      });
+
+      it('未知物品 id 丟 Error', () => {
+        const save = makeSave();
+        expect(() => equipItem(save, 'protagonist', 'not-an-item')).toThrow();
+      });
+
+      it('等級不足（item.equip.minLevel > 成員 level）丟 Error', () => {
+        const save = makeSave(); // protagonist level 1
+        save.inventory['test-amulet'] = 1; // minLevel 3
+        expect(() => equipItem(save, 'protagonist', 'test-amulet')).toThrow();
+      });
+
+      it('成員不存在丟 Error', () => {
+        const save = makeSave();
+        save.inventory['test-sword'] = 1;
+        expect(() => equipItem(save, 'no-such-member', 'test-sword')).toThrow();
+      });
+
+      it('庫存 0（未持有）丟 Error', () => {
+        const save = makeSave();
+        expect(() => equipItem(save, 'protagonist', 'test-sword')).toThrow();
+      });
+
+      it('丟 Error 時不修改 save（inventory/equipment 皆不變）', () => {
+        const save = makeSave();
+        const before = JSON.parse(JSON.stringify(save));
+        expect(() => equipItem(save, 'protagonist', 'test-sword')).toThrow(); // 庫存 0
+        expect(save).toEqual(before);
+      });
+    });
+
+    describe('unequipItem', () => {
+      it('卸下後 equipment[slot] 清空、物品退回 inventory', () => {
+        const save = makeSave();
+        save.inventory['test-sword'] = 1;
+        equipItem(save, 'protagonist', 'test-sword');
+        unequipItem(save, 'protagonist', 'weapon');
+        expect(save.protagonist.equipment.weapon).toBeNull();
+        expect(save.inventory['test-sword']).toBe(1);
+      });
+
+      it('空 slot 卸裝為 no-op，不影響 inventory', () => {
+        const save = makeSave();
+        unequipItem(save, 'protagonist', 'weapon');
+        expect(save.protagonist.equipment.weapon).toBeNull();
+        expect(save.inventory).toEqual({});
+      });
+
+      it('成員不存在丟 Error', () => {
+        const save = makeSave();
+        expect(() => unequipItem(save, 'no-such-member', 'weapon')).toThrow();
+      });
+    });
+
+    describe('equipmentBonus', () => {
+      it('無裝備回全 0/空', () => {
+        const record = makeCompanion();
+        expect(equipmentBonus(record)).toEqual({ stats: {}, defense: 0, maxHp: 0 });
+      });
+
+      it('三個 slot 的 bonus/defense/maxHp 各自加總', () => {
+        const record = makeCompanion({
+          equipment: { weapon: 'test-sword', armor: 'test-plate', trinket: null },
+        });
+        const bonus = equipmentBonus(record);
+        expect(bonus.stats).toEqual({ str: 1 });
+        expect(bonus.defense).toBe(2);
+        expect(bonus.maxHp).toBe(4);
+      });
+
+      it('多個裝備的同屬性 bonus 會加總', () => {
+        ITEMS['test-charm'] = {
+          id: 'test-charm', name: '測試護符2', desc: '測試用。', value: 10,
+          equip: { slot: 'trinket', bonus: { str: 3 } },
+        };
+        const record = makeCompanion({
+          equipment: { weapon: 'test-sword', armor: null, trinket: 'test-charm' },
+        });
+        expect(equipmentBonus(record).stats).toEqual({ str: 4 });
+        delete ITEMS['test-charm'];
+      });
+    });
   });
 });

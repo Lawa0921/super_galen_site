@@ -22,6 +22,7 @@ function makeCompanion(overrides: Partial<CompanionRecord> = {}): CompanionRecor
     id: 'c1', name: '傭兵', job: 'swordsman', level: 1, xp: 0,
     stats: { str: 14, dex: 10, int: 8, cha: 10, con: 14 },
     maxHp: 26, injuredForTrips: 0,
+    equipment: { weapon: null, armor: null, trinket: null },
     ...overrides,
   };
 }
@@ -81,6 +82,13 @@ describe('economy（經濟系統）', () => {
     it('找不到物品時丟 Error', () => {
       const town = makeTown();
       expect(() => tradeSellPrice(town, 'not-a-real-item')).toThrow();
+    });
+
+    it('equip 類物品（如 den-idol）不吃異鎮 0.9 係數也不吃城鎮 priceModifiers，固定 round(value×0.5)（M5 套利修正）', () => {
+      // 即使城鎮給了溢價係數，equip 物品也一律無視，避免異鎮套利
+      const town = makeTown({ priceModifiers: { 'den-idol': 2 } });
+      expect(tradeSellPrice(town, 'den-idol')).toBe(35); // round(70*0.5)=35
+      expect(tradeSellPrice(town, 'den-idol')).toBe(sellPrice(makeTown(), 'den-idol'));
     });
   });
 

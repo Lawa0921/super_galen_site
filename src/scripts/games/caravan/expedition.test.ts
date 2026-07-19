@@ -105,6 +105,7 @@ function makeCompanion(overrides: Partial<CompanionRecord> = {}): CompanionRecor
     id: 'comp-1', name: '傭兵', job: 'cleric', level: 1, xp: 0,
     stats: { str: 10, dex: 10, int: 10, cha: 14, con: 12 },
     maxHp: 20, injuredForTrips: 0,
+    equipment: { weapon: null, armor: null, trinket: null },
     ...overrides,
   };
 }

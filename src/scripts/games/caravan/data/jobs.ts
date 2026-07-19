@@ -1,7 +1,8 @@
 import type { Move, PartyMember } from '../combat';
 import type { CompanionRecord } from '../save';
 import type { StatBlock } from '../types';
-import { unlockedMoves } from '../roster';
+import { unlockedMoves, equipmentBonus } from '../roster';
+import { ITEMS } from './items';
 
 export type JobId = 'swordsman' | 'ranger' | 'mage' | 'cleric';
 
@@ -12,6 +13,8 @@ export interface JobDef {
   baseMaxHp: number;
   defense: number;
   moves: Move[];
+  /** 職業立繪路徑（M5 美術） */
+  art?: string;
 }
 
 /** 通用「揮擊」：所有職業都會的基礎武器攻擊，備用招式 */
@@ -23,6 +26,7 @@ const universalStrike: Move = {
 
 export const JOBS: Record<JobId, JobDef> = {
   swordsman: {
+    art: '/assets/games/caravan/job-swordsman.webp',
     id: 'swordsman', name: '劍士',
     baseStats: { str: 14, dex: 10, int: 8, cha: 10, con: 14 },
     baseMaxHp: 26, defense: 14,
@@ -44,6 +48,7 @@ export const JOBS: Record<JobId, JobDef> = {
     ],
   },
   ranger: {
+    art: '/assets/games/caravan/job-ranger.webp',
     id: 'ranger', name: '游俠',
     baseStats: { str: 10, dex: 16, int: 10, cha: 10, con: 10 },
     baseMaxHp: 20, defense: 13,
@@ -66,6 +71,7 @@ export const JOBS: Record<JobId, JobDef> = {
     ],
   },
   mage: {
+    art: '/assets/games/caravan/job-mage.webp',
     id: 'mage', name: '法師',
     baseStats: { str: 8, dex: 10, int: 16, cha: 10, con: 8 },
     baseMaxHp: 16, defense: 11,
@@ -88,6 +94,7 @@ export const JOBS: Record<JobId, JobDef> = {
     ],
   },
   cleric: {
+    art: '/assets/games/caravan/job-cleric.webp',
     id: 'cleric', name: '教士',
     baseStats: { str: 10, dex: 8, int: 12, cha: 16, con: 12 },
     baseMaxHp: 22, defense: 12,
@@ -111,17 +118,34 @@ export const JOBS: Record<JobId, JobDef> = {
   },
 };
 
-/** 用 JOBS[record.job] 的 moves/defense，配上 record 自己的 stats/maxHp（含成長） */
+/**
+ * 用 JOBS[record.job] 的 moves/defense，配上 record 自己的 stats/maxHp（含成長），
+ * 再疊上裝備三欄的效果（M5）：stats/defense/maxHp 加成；weapon 若帶 move 則取代
+ * moves[0]（武器招約定——JOBS 每職業 moves[0] 恆為 kind==='attack'，見 jobs.test.ts 資料鎖定）。
+ */
 export function memberFromRecord(record: CompanionRecord): PartyMember {
   const job = JOBS[record.job];
+  const bonus = equipmentBonus(record);
+
+  const stats: StatBlock = { ...record.stats };
+  for (const key of Object.keys(bonus.stats) as Array<keyof StatBlock>) {
+    stats[key] += bonus.stats[key] ?? 0;
+  }
+  const maxHp = record.maxHp + bonus.maxHp;
+
+  const moves = unlockedMoves(record);
+  const weaponId = record.equipment.weapon;
+  const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
+  const finalMoves = weaponMove ? [weaponMove, ...moves.slice(1)] : moves;
+
   return {
     id: record.id,
     name: record.name,
-    stats: record.stats,
-    maxHp: record.maxHp,
-    hp: record.maxHp,
-    defense: job.defense,
-    moves: unlockedMoves(record),
+    stats,
+    maxHp,
+    hp: maxHp,
+    defense: job.defense + bonus.defense,
+    moves: finalMoves,
     isProtagonist: record.id === 'protagonist',
   };
 }

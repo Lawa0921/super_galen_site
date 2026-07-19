@@ -15,6 +15,7 @@ function makeGoblinScout(id: string): EnemyUnit {
   return {
     id, name: '哥布林斥候',
     stats: { str: 10, dex: 14, int: 8, cha: 8, con: 10 },
+    art: '/assets/games/caravan/enemy-goblin-scout.webp',
     maxHp: 8, hp: 8, defense: 11,
     moves: [dagger],
     intents: [{ weight: 1, moveId: 'dagger' }], // 只有一招，意圖全攻擊
@@ -42,6 +43,7 @@ function makeWolf(id: string): EnemyUnit {
   return {
     id, name: '荒野孤狼',
     stats: { str: 12, dex: 15, int: 4, cha: 4, con: 11 },
+    art: '/assets/games/caravan/enemy-wolf.webp',
     maxHp: 10, hp: 10, defense: 12,
     moves: [wolfBite],
     intents: [{ weight: 1, moveId: 'wolf-bite' }],
@@ -59,6 +61,7 @@ function makeBanditThug(id: string): EnemyUnit {
   return {
     id, name: '盜匪打手',
     stats: { str: 13, dex: 12, int: 8, cha: 8, con: 12 },
+    art: '/assets/games/caravan/enemy-bandit-thug.webp',
     maxHp: 12, hp: 12, defense: 13,
     moves: [banditSlash],
     intents: [{ weight: 1, moveId: 'bandit-slash' }],
@@ -83,6 +86,7 @@ function makeBanditMedic(id: string): EnemyUnit {
   return {
     id, name: '盜匪祭司',
     stats: { str: 9, dex: 12, int: 10, cha: 14, con: 10 },
+    art: '/assets/games/caravan/enemy-bandit-medic.webp',
     maxHp: 9, hp: 9, defense: 11,
     moves: [banditMend, banditDagger],
     intents: [
@@ -103,6 +107,7 @@ function makeMineSpider(id: string): EnemyUnit {
   return {
     id, name: '礦坑蜘蛛',
     stats: { str: 10, dex: 16, int: 2, cha: 2, con: 10 },
+    art: '/assets/games/caravan/enemy-mine-spider.webp',
     maxHp: 11, hp: 11, defense: 13,
     moves: [spiderBite],
     intents: [{ weight: 1, moveId: 'spider-bite' }],
@@ -120,6 +125,7 @@ function makeGoblinRaider(id: string): EnemyUnit {
   return {
     id, name: '哥布林掠奪者',
     stats: { str: 11, dex: 13, int: 8, cha: 8, con: 10 },
+    art: '/assets/games/caravan/enemy-goblin-raider.webp',
     maxHp: 9, hp: 9, defense: 12,
     moves: [raiderClub],
     intents: [{ weight: 1, moveId: 'raider-club' }],
@@ -144,6 +150,7 @@ function makeMineOverseer(): EnemyUnit {
   return {
     id: 'mine-overseer', name: '礦坑監工',
     stats: { str: 16, dex: 9, int: 8, cha: 6, con: 16 },
+    art: '/assets/games/caravan/enemy-mine-overseer.webp',
     maxHp: 30, hp: 30, defense: 15,
     moves: [overseerWhip, overseerSlam],
     intents: [
@@ -171,6 +178,7 @@ function makeGoblinDenChief(): EnemyUnit {
   return {
     id: 'goblin-den-chief', name: '巢穴頭目',
     stats: { str: 15, dex: 12, int: 9, cha: 10, con: 14 },
+    art: '/assets/games/caravan/enemy-goblin-den-chief.webp',
     maxHp: 28, hp: 28, defense: 14,
     moves: [chiefAxe, chiefHowl],
     intents: [
@@ -178,6 +186,147 @@ function makeGoblinDenChief(): EnemyUnit {
       { weight: 1, moveId: 'chief-howl' },
     ],
     loot: { gold: [35, 55], itemId: 'den-idol', itemChance: 0.9 },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// M5 內容擴充遭遇：霧嶺山賊／鹽晶魔物／古戰場亡靈（各 2 型）＋鹽晶洞窟 boss
+// （帶 guard 招，驗證 enemyAct 架盾 AI 路徑——engine 本已支援，見 combat.ts
+// performMove 的 guard 分支不吃 target 參數，無需修改）。
+// ---------------------------------------------------------------------------
+
+const ridgeSlash: Move = {
+  id: 'ridge-slash', name: '彎刀斜劈', kind: 'attack', target: 'enemy', hitStat: 'str',
+  damage: { dice: 1, sides: 8, bonusStat: 'str' },
+  narration: '{actor}持彎刀斜劈向{target}，造成 {amount} 點傷害！',
+};
+
+function makeRidgeSkirmisher(id: string): EnemyUnit {
+  return {
+    id, name: '山嵐游擊手',
+    stats: { str: 13, dex: 14, int: 8, cha: 8, con: 11 },
+    art: '/assets/games/caravan/enemy-ridge-skirmisher.webp',
+    maxHp: 13, hp: 13, defense: 13,
+    moves: [ridgeSlash],
+    intents: [{ weight: 1, moveId: 'ridge-slash' }],
+    loot: { gold: [4, 9], itemId: 'tattered-map', itemChance: 0.15 },
+  };
+}
+
+const ridgeArrow: Move = {
+  id: 'ridge-arrow', name: '山嵐箭', kind: 'attack', target: 'enemy', hitStat: 'dex',
+  damage: { dice: 1, sides: 6, bonusStat: 'dex' },
+  narration: '{actor}拉弓疾射，箭矢自迷霧中射向{target}，造成 {amount} 點傷害！',
+};
+
+function makeRidgeArcher(id: string): EnemyUnit {
+  return {
+    id, name: '山嵐弓手',
+    stats: { str: 9, dex: 16, int: 9, cha: 8, con: 9 },
+    art: '/assets/games/caravan/enemy-ridge-archer.webp',
+    maxHp: 10, hp: 10, defense: 12,
+    moves: [ridgeArrow],
+    intents: [{ weight: 1, moveId: 'ridge-arrow' }],
+    loot: { gold: [3, 8] },
+  };
+}
+
+const saltShardThrow: Move = {
+  id: 'salt-shard-throw', name: '鹽刃投擲', kind: 'attack', target: 'enemy', hitStat: 'dex',
+  damage: { dice: 1, sides: 8, bonusStat: 'dex' },
+  narration: '{actor}甩手擲出鋒利的鹽晶碎片，狠狠扎入{target}，造成 {amount} 點傷害！',
+};
+
+function makeSaltWraith(id: string): EnemyUnit {
+  return {
+    id, name: '鹽晶亡魂',
+    stats: { str: 8, dex: 15, int: 12, cha: 6, con: 12 },
+    art: '/assets/games/caravan/enemy-salt-wraith.webp',
+    maxHp: 14, hp: 14, defense: 14,
+    moves: [saltShardThrow],
+    intents: [{ weight: 1, moveId: 'salt-shard-throw' }],
+    loot: { gold: [5, 10], itemId: 'salt', itemChance: 0.35 },
+  };
+}
+
+const crystalSlam: Move = {
+  id: 'crystal-slam', name: '鹽晶重擊', kind: 'attack', target: 'enemy', hitStat: 'str',
+  damage: { dice: 1, sides: 8, bonusStat: 'str' },
+  narration: '{actor}掄起厚重的鹽晶巨拳砸向{target}，造成 {amount} 點傷害！',
+};
+
+function makeSaltGolem(id: string): EnemyUnit {
+  return {
+    id, name: '鹽晶傀儡',
+    stats: { str: 16, dex: 8, int: 4, cha: 4, con: 17 },
+    art: '/assets/games/caravan/enemy-salt-golem.webp',
+    maxHp: 19, hp: 19, defense: 16,
+    moves: [crystalSlam],
+    intents: [{ weight: 1, moveId: 'crystal-slam' }],
+    loot: { gold: [6, 12], itemId: 'salt', itemChance: 0.4 },
+  };
+}
+
+const spectralSlash: Move = {
+  id: 'spectral-slash', name: '幽魂劍斬', kind: 'attack', target: 'enemy', hitStat: 'str',
+  damage: { dice: 1, sides: 10, bonusStat: 'str' },
+  narration: '{actor}揮舞透明的劍影斬向{target}，造成 {amount} 點傷害！',
+};
+
+function makeRuinsWraith(id: string): EnemyUnit {
+  return {
+    id, name: '亡靈劍魂',
+    stats: { str: 14, dex: 12, int: 9, cha: 6, con: 13 },
+    art: '/assets/games/caravan/enemy-ruins-wraith.webp',
+    maxHp: 17, hp: 17, defense: 15,
+    moves: [spectralSlash],
+    intents: [{ weight: 1, moveId: 'spectral-slash' }],
+    loot: { gold: [8, 15], itemId: 'ghostflame-staff', itemChance: 0.12 },
+  };
+}
+
+const boneArrow: Move = {
+  id: 'bone-arrow', name: '枯骨箭', kind: 'attack', target: 'enemy', hitStat: 'dex',
+  damage: { dice: 1, sides: 8, bonusStat: 'dex' },
+  narration: '{actor}拉開枯骨弓，箭矢帶著寒氣射向{target}，造成 {amount} 點傷害！',
+};
+
+function makeRuinsArcher(id: string): EnemyUnit {
+  return {
+    id, name: '折戟遊魂',
+    stats: { str: 9, dex: 15, int: 9, cha: 6, con: 12 },
+    art: '/assets/games/caravan/enemy-ruins-archer.webp',
+    maxHp: 14, hp: 14, defense: 14,
+    moves: [boneArrow],
+    intents: [{ weight: 1, moveId: 'bone-arrow' }],
+    loot: { gold: [7, 13], itemId: 'ashveil-robe', itemChance: 0.12 },
+  };
+}
+
+const sovereignCrystalCrush: Move = {
+  id: 'sovereign-crystal-crush', name: '鹽晶碎壓', kind: 'attack', target: 'enemy', hitStat: 'str',
+  damage: { dice: 2, sides: 8, bonusStat: 'str' },
+  narration: '{actor}雙拳凝聚鹽晶之力，重重砸向{target}，造成 {amount} 點傷害！',
+};
+
+const sovereignBrineWard: Move = {
+  id: 'sovereign-brine-ward', name: '鹵殼護體', kind: 'guard', target: 'self', hitStat: 'con',
+  narration: '{actor}周身湧起濃稠鹵水，凝成一層堅硬的鹽殼護體。',
+};
+
+/** 鹽晶洞窟 boss：鹽晶洞主（單體，鹵殼護體為 guard 招，驗證架盾 AI） */
+function makeSaltCavernSovereign(): EnemyUnit {
+  return {
+    id: 'salt-cavern-sovereign', name: '鹽晶洞主',
+    stats: { str: 14, dex: 10, int: 12, cha: 10, con: 18 },
+    art: '/assets/games/caravan/enemy-salt-cavern-sovereign.webp',
+    maxHp: 38, hp: 38, defense: 16,
+    moves: [sovereignCrystalCrush, sovereignBrineWard],
+    intents: [
+      { weight: 3, moveId: 'sovereign-crystal-crush' },
+      { weight: 1, moveId: 'sovereign-brine-ward' },
+    ],
+    loot: { gold: [40, 65], itemId: 'salt-crystal-core', itemChance: 0.85 },
   };
 }
 
@@ -192,6 +341,11 @@ export const ENCOUNTERS: Record<string, () => EnemyUnit[]> = {
   ],
   enc_mine_overseer: () => [makeMineOverseer()],
   enc_goblin_den_chief: () => [makeGoblinDenChief()],
+  // ---- M5 內容擴充 ----
+  enc_ridge_bandits: () => [makeRidgeSkirmisher('ridge-skirmisher-1'), makeRidgeArcher('ridge-archer-1')],
+  enc_salt_crystals: () => [makeSaltWraith('salt-wraith-1'), makeSaltGolem('salt-golem-1')],
+  enc_ruins_undead: () => [makeRuinsWraith('ruins-wraith-1'), makeRuinsArcher('ruins-archer-1')],
+  enc_salt_cavern_boss: () => [makeSaltCavernSovereign()],
 };
 
 registerEncounters(ENCOUNTERS);

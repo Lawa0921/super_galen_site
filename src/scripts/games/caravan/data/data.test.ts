@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { ITEMS } from './items';
 import { LOCATIONS, visibleLocations } from './locations';
-import { ENCOUNTERS } from './enemies';
+import { ENCOUNTERS, TRAINING_ENCOUNTER } from './enemies';
 import { EVENTS } from './events';
 import { TOWNS } from './towns';
+import { JOBS } from './jobs';
 import type { EventCard, EffectSpec } from '../expedition';
 import { startExpedition, drawEvent } from '../expedition';
 import { createRng } from '../rng';
@@ -33,8 +36,8 @@ describe('caravan content data integrity（M3 Task 4）', () => {
   // ---------------------------------------------------------------------
   // items.ts
   // ---------------------------------------------------------------------
-  it('ITEMS 有 12 種，且 ore 存在（Task 3 寶箱房寫死給 ore）', () => {
-    expect(Object.keys(ITEMS).length).toBe(12);
+  it('ITEMS 有 23 種（M3 12 + M5 內容擴充 11），且 ore 存在（Task 3 寶箱房寫死給 ore）', () => {
+    expect(Object.keys(ITEMS).length).toBe(23);
     expect(ITEMS.ore).toBeDefined();
     for (const item of Object.values(ITEMS)) {
       expect(item.id).toBeTruthy();
@@ -44,13 +47,43 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     }
   });
 
+  it('overseer-ledger/den-idol（boss 遺寶）已轉為裝備，slot=trinket（M5 終審移交）', () => {
+    expect(ITEMS['overseer-ledger'].equip?.slot).toBe('trinket');
+    expect(ITEMS['den-idol'].equip?.slot).toBe('trinket');
+  });
+
+  it('equip.slot 皆為合法值 weapon/armor/trinket（M5 資料完整性）', () => {
+    const validSlots = ['weapon', 'armor', 'trinket'];
+    for (const item of Object.values(ITEMS)) {
+      if (item.equip) {
+        expect(validSlots, `${item.id} 的 equip.slot「${item.equip.slot}」不合法`).toContain(item.equip.slot);
+      }
+    }
+  });
+
+  it('equip.slot==="weapon" 的物品必有 equip.move（供 memberFromRecord 取代 moves[0]，M5）', () => {
+    for (const item of Object.values(ITEMS)) {
+      if (item.equip?.slot === 'weapon') {
+        expect(item.equip.move, `${item.id} 是武器卻無 move`).toBeDefined();
+      }
+    }
+  });
+
+  it('裝備物品共 12 件（武器 4／護甲 4／飾品 4，飾品含既有 2 個 boss 遺寶，M5）', () => {
+    const equipItems = Object.values(ITEMS).filter((item) => item.equip);
+    expect(equipItems.length).toBe(12);
+    expect(equipItems.filter((i) => i.equip!.slot === 'weapon').length).toBe(4);
+    expect(equipItems.filter((i) => i.equip!.slot === 'armor').length).toBe(4);
+    expect(equipItems.filter((i) => i.equip!.slot === 'trinket').length).toBe(4);
+  });
+
   // ---------------------------------------------------------------------
   // locations.ts
   // ---------------------------------------------------------------------
-  it('LOCATIONS 有計畫指定的 4 個地點，其中 1 個為 hidden', () => {
-    expect(Object.keys(LOCATIONS).length).toBe(4);
+  it('LOCATIONS 有計畫指定的 7 個地點（M3 4 + M5 內容擴充 3），其中 2 個為 hidden', () => {
+    expect(Object.keys(LOCATIONS).length).toBe(7);
     const hidden = Object.values(LOCATIONS).filter((l) => l.hidden);
-    expect(hidden.length).toBe(1);
+    expect(hidden.length).toBe(2);
   });
 
   it('route 地點必有 legs；dungeon 地點必有 floors/roomsPerFloor/bossEncounterId', () => {
@@ -84,11 +117,30 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     expect(before.length).toBe(3);
     expect(before.some((l) => l.hidden)).toBe(false);
 
-    const hiddenLoc = Object.values(LOCATIONS).find((l) => l.hidden)!;
+    const hiddenLoc = Object.values(LOCATIONS).find((l) => l.id === 'goblin-den')!;
     save.flags[`discovered:${hiddenLoc.id}`] = true;
     const after = visibleLocations(save);
     expect(after.length).toBe(4);
     expect(after.some((l) => l.id === hiddenLoc.id)).toBe(true);
+  });
+
+  it('minReputation 過濾：reputation 0/40/60 三檔決定霧嶺古道／鹽晶洞窟是否出現於委託板（M5）', () => {
+    const save = newGame();
+
+    save.reputation = 0;
+    let visible = visibleLocations(save).map((l) => l.id);
+    expect(visible).not.toContain('misty-ridge-trail');
+    expect(visible).not.toContain('salt-crystal-cavern');
+
+    save.reputation = 40;
+    visible = visibleLocations(save).map((l) => l.id);
+    expect(visible).toContain('misty-ridge-trail');
+    expect(visible).not.toContain('salt-crystal-cavern');
+
+    save.reputation = 60;
+    visible = visibleLocations(save).map((l) => l.id);
+    expect(visible).toContain('misty-ridge-trail');
+    expect(visible).toContain('salt-crystal-cavern');
   });
 
   // ---------------------------------------------------------------------
@@ -126,19 +178,57 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     expect(second[0].hp).toBe(second[0].maxHp);
   });
 
+  it('鹽晶洞窟 boss（鹽晶洞主）基礎 HP 落在 30-45 區間（深度加成另計，M5 量級設計）', () => {
+    const enemies = ENCOUNTERS.enc_salt_cavern_boss();
+    expect(enemies.length).toBe(1);
+    expect(enemies[0].maxHp).toBeGreaterThanOrEqual(30);
+    expect(enemies[0].maxHp).toBeLessThanOrEqual(45);
+  });
+
+  it('至少一隻敵人帶 guard 招（驗證 enemyAct 架盾 AI 路徑，M5 鹽晶洞主）', () => {
+    const hasGuardMove = Object.values(ENCOUNTERS).some((factory) =>
+      factory().some((enemy) => enemy.moves.some((m) => m.kind === 'guard'))
+    );
+    expect(hasGuardMove).toBe(true);
+  });
+
   // ---------------------------------------------------------------------
   // events.ts
   // ---------------------------------------------------------------------
-  it('EVENTS 共 15 張，路線通用 8／森林限定 3／迷宮限定 4', () => {
-    expect(EVENTS.length).toBe(15);
+  it('EVENTS 共 42 張（M3 15 + M5 內容擴充 27），各分類數量符合計畫分布', () => {
+    expect(EVENTS.length).toBe(42);
     const routeGeneric = EVENTS.filter(
       (c) => c.context.kind === 'route' && !c.context.locationIds
     );
     const forestOnly = EVENTS.filter((c) => c.context.locationIds?.includes('blackwood-trail'));
-    const dungeonOnly = EVENTS.filter((c) => c.context.kind === 'dungeon');
-    expect(routeGeneric.length).toBe(8);
+    const mistyRidgeOnly = EVENTS.filter((c) => c.context.locationIds?.includes('misty-ridge-trail'));
+    const saltCavernOnly = EVENTS.filter((c) => c.context.locationIds?.includes('salt-crystal-cavern'));
+    const dungeonKind = EVENTS.filter((c) => c.context.kind === 'dungeon');
+    const rare = EVENTS.filter((c) => !c.context.kind);
+    // 路線通用 18 = M3 既有 8 + M5 跨路線通用 10（含兩條新旗標鏈）
+    expect(routeGeneric.length).toBe(18);
     expect(forestOnly.length).toBe(3);
-    expect(dungeonOnly.length).toBe(4);
+    expect(mistyRidgeOnly.length).toBe(5);
+    expect(saltCavernOnly.length).toBe(4);
+    // dungeonKind 12 = M3 既有 4（含 1 張迷宮通用）+ M5 鹽晶洞窟限定 4 + 迷宮通用 4
+    expect(dungeonKind.length).toBe(12);
+    expect(rare.length).toBe(4);
+  });
+
+  it('稀有事件 4 張 weight 落在 1-2（寶藏地圖/流浪劍聖切磋/月光市集/受傷的信使，M5）', () => {
+    const rareIds = [
+      'ev_rare_treasure_map',
+      'ev_rare_wandering_swordsaint',
+      'ev_rare_moonlit_market',
+      'ev_rare_wounded_messenger',
+    ];
+    for (const id of rareIds) {
+      const card = EVENTS.find((c) => c.id === id);
+      expect(card, `找不到稀有事件 ${id}`).toBeDefined();
+      expect(card!.weight, `${id} weight 應落在 1-2`).toBeGreaterThanOrEqual(1);
+      expect(card!.weight, `${id} weight 應落在 1-2`).toBeLessThanOrEqual(2);
+      expect(card!.context.kind, `${id} 應無 kind 限制（route/dungeon 皆可出現）`).toBeUndefined();
+    }
   });
 
   it('所有事件 options 至少 1 個、card.weight > 0', () => {
@@ -247,6 +337,47 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     expect(LOCATIONS['goblin-den']?.hidden).toBe(true);
   });
 
+  it('新旗標鏈：褪色的軍旗→傭兵團遺跡→discover 古戰場（M5）', () => {
+    const bannerCard = EVENTS.find((c) => c.id === 'ev_faded_banner');
+    const ruinsCard = EVENTS.find((c) => c.id === 'ev_mercenary_ruins');
+    expect(bannerCard).toBeDefined();
+    expect(ruinsCard).toBeDefined();
+    expect(ruinsCard!.requiresFlags).toEqual({ 'clue:mercenary-ruins': true });
+    const bannerSetsFlag = allEffects(bannerCard!).some(
+      (e) => e.type === 'flag' && e.flag === 'clue:mercenary-ruins' && e.value === true
+    );
+    expect(bannerSetsFlag).toBe(true);
+    const ruinsDiscovers = allEffects(ruinsCard!).some(
+      (e) => e.type === 'discover' && e.locationId === 'battlefield-ruins'
+    );
+    expect(ruinsDiscovers).toBe(true);
+    expect(LOCATIONS['battlefield-ruins']?.hidden).toBe(true);
+  });
+
+  it('新旗標鏈：奇怪的商人三連環，旗標遞進且終點給獨特飾品（M5）', () => {
+    const intro = EVENTS.find((c) => c.id === 'ev_strange_merchant_intro');
+    const returnCard = EVENTS.find((c) => c.id === 'ev_strange_merchant_return');
+    const finale = EVENTS.find((c) => c.id === 'ev_strange_merchant_finale');
+    expect(intro).toBeDefined();
+    expect(returnCard).toBeDefined();
+    expect(finale).toBeDefined();
+    expect(returnCard!.requiresFlags).toEqual({ 'clue:strange-merchant:1': true });
+    expect(finale!.requiresFlags).toEqual({ 'clue:strange-merchant:2': true });
+    const introSetsFlag = allEffects(intro!).some(
+      (e) => e.type === 'flag' && e.flag === 'clue:strange-merchant:1' && e.value === true
+    );
+    expect(introSetsFlag).toBe(true);
+    const returnSetsFlag = allEffects(returnCard!).some(
+      (e) => e.type === 'flag' && e.flag === 'clue:strange-merchant:2' && e.value === true
+    );
+    expect(returnSetsFlag).toBe(true);
+    const givesCompass = allEffects(finale!).some(
+      (e) => e.type === 'item' && e.itemId === 'wanderers-compass' && e.count > 0
+    );
+    expect(givesCompass).toBe(true);
+    expect(ITEMS['wanderers-compass']?.equip?.slot).toBe('trinket');
+  });
+
   // ---------------------------------------------------------------------
   // 整合：資料檔在模組載入時完成 register，接得上 expedition.ts 引擎
   // ---------------------------------------------------------------------
@@ -262,8 +393,8 @@ describe('caravan content data integrity（M3 Task 4）', () => {
   // ---------------------------------------------------------------------
   // towns.ts（TOWNS，M4）
   // ---------------------------------------------------------------------
-  it('TOWNS 有 3 座城鎮，各自 id/name/desc 齊全', () => {
-    expect(Object.keys(TOWNS).length).toBe(3);
+  it('TOWNS 有 4 座城鎮（M3 3 + M5 鹽泉城），各自 id/name/desc 齊全', () => {
+    expect(Object.keys(TOWNS).length).toBe(4);
     for (const town of Object.values(TOWNS)) {
       expect(town.id).toBeTruthy();
       expect(town.name).toBeTruthy();
@@ -353,5 +484,105 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     expect(blackwoodProfit, '較長/較險的黑森林徑最佳押貨淨利不應低於較短的臨水道（風險報酬不倒掛）').toBeGreaterThanOrEqual(
       riversideProfit
     );
+  });
+
+  // ---------------------------------------------------------------------
+  // M5：鹽泉城（霧嶺古道終點）經濟量級 sanity——全遊戲最長（legs6）最險
+  // （reputation≥40 才解鎖）的路線，押貨淨利不應輸給黑森林徑。
+  // ---------------------------------------------------------------------
+  it('經濟量級 sanity：鹽泉城押貨路線淨利 ≥ 黑森林徑（最長最險最賺，M5）', () => {
+    const startTown = TOWNS['starting-town'];
+    const cap = cargoCapacity(0);
+
+    function bestRouteProfit(destTownId: string): number {
+      const destTown = TOWNS[destTownId];
+      const profits = Object.keys(destTown.priceModifiers).map(
+        (itemId) => (tradeSellPrice(destTown, itemId) - buyPrice(startTown, itemId)) * cap
+      );
+      return Math.max(...profits);
+    }
+
+    const mistyRidgeTrail = LOCATIONS['misty-ridge-trail'];
+    const blackwoodTrail = LOCATIONS['blackwood-trail'];
+    expect(mistyRidgeTrail.legs).toBeGreaterThan(blackwoodTrail.legs!);
+    expect(mistyRidgeTrail.minReputation).toBeGreaterThan(0);
+
+    const blackwoodProfit = bestRouteProfit(blackwoodTrail.destinationTownId!);
+    const saltSpringProfit = bestRouteProfit(mistyRidgeTrail.destinationTownId!);
+
+    expect(
+      saltSpringProfit,
+      '最長最險的霧嶺古道→鹽泉城押貨淨利不應低於黑森林徑（風險報酬不倒掛）'
+    ).toBeGreaterThanOrEqual(blackwoodProfit);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// M5 美術資產接線：art 路徑欄位＋檔案實際存在（fs 檢查）
+// ---------------------------------------------------------------------------
+
+describe('M5 美術資產', () => {
+  const artOk = (art: string | undefined): boolean =>
+    !!art && art.startsWith('/assets/games/caravan/') && existsSync(join(process.cwd(), 'public', art));
+
+  it('四鎮皆有 art 且檔案存在', () => {
+    for (const town of Object.values(TOWNS)) {
+      expect(artOk(town.art), `${town.id} art 缺失或檔案不存在：${town.art}`).toBe(true);
+    }
+  });
+
+  it('四職業皆有 art 且檔案存在', () => {
+    for (const job of Object.values(JOBS)) {
+      expect(artOk(job.art), `${job.id} art 缺失或檔案不存在：${job.art}`).toBe(true);
+    }
+  });
+
+  it('所有敵人單位皆有 art 且檔案存在', () => {
+    const units = [...TRAINING_ENCOUNTER(), ...Object.values(ENCOUNTERS).flatMap((mk) => mk())];
+    for (const unit of units) {
+      expect(artOk(unit.art), `${unit.name} art 缺失或檔案不存在：${unit.art}`).toBe(true);
+    }
+  });
+
+  it('旗標鏈與稀有事件皆有 art 且檔案存在', () => {
+    const withArt = [
+      'ev_merchant_map', 'ev_cave_entrance', 'ev_faded_banner', 'ev_mercenary_ruins',
+      'ev_strange_merchant_intro', 'ev_strange_merchant_return', 'ev_strange_merchant_finale',
+      'ev_rare_treasure_map', 'ev_rare_wandering_swordsaint', 'ev_rare_moonlit_market',
+      'ev_rare_wounded_messenger',
+    ];
+    for (const id of withArt) {
+      const card = EVENTS.find((e) => e.id === id);
+      expect(card, `事件 ${id} 不存在`).toBeDefined();
+      expect(artOk(card!.art), `${id} art 缺失或檔案不存在：${card!.art}`).toBe(true);
+    }
+  });
+
+  it('主角立繪／標題橫幅／遊戲廳卡檔案存在', () => {
+    for (const f of ['job-protagonist.webp', 'title-banner.webp', 'card-caravan.webp']) {
+      expect(existsSync(join(process.cwd(), 'public/assets/games/caravan', f)), `${f} 不存在`).toBe(true);
+    }
+  });
+});
+
+describe('M5 平衡收尾 sanity', () => {
+  it('高階迷宮報酬高於初階：鹽晶洞 boss 與小怪 loot 皆優於礦坑對應', () => {
+    const bossMax = (id: string): number => ENCOUNTERS[id]()[0].loot!.gold[1];
+    expect(bossMax('enc_salt_cavern_boss')).toBeGreaterThan(bossMax('enc_mine_overseer'));
+    const avgGold = (id: string): number => {
+      const es = ENCOUNTERS[id]();
+      return es.reduce((s, e) => s + (e.loot ? (e.loot.gold[0] + e.loot.gold[1]) / 2 : 0), 0) / es.length;
+    };
+    expect(avgGold('enc_salt_crystals')).toBeGreaterThan(avgGold('enc_mine_spiders'));
+  });
+
+  it('裝備價格落在收入曲線內：武器 60-120G（買得起、不白送），所有裝備 ≤120G', () => {
+    for (const item of Object.values(ITEMS)) {
+      if (!item.equip) continue;
+      expect(item.value, `${item.id} 裝備價超出負擔區間`).toBeLessThanOrEqual(120);
+      if (item.equip.slot === 'weapon') {
+        expect(item.value, `${item.id} 武器價低於下限`).toBeGreaterThanOrEqual(60);
+      }
+    }
   });
 });

@@ -39,6 +39,8 @@ export interface EventCard {
   requiresFlags?: Record<string, boolean>;
   title: string;
   body: string;
+  /** 事件插圖路徑（M5 美術，僅旗標鏈與稀有事件） */
+  art?: string;
   options: EventOption[];
 }
 
@@ -57,6 +59,8 @@ export interface LocationDef {
   depthHpBonus?: number; // dungeon：每層敵人 maxHp 加值
   /** route 抵達的目的城鎮（economy.ts TownDef.id）；異鎮交易的落點，M4 起可選填 */
   destinationTownId?: string;
+  /** 委託板可見門檻：save.reputation 未達此值時不列入 visibleLocations（M5，data/locations.ts） */
+  minReputation?: number;
 }
 
 export interface ExpeditionState {

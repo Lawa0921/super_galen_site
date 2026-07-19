@@ -211,6 +211,20 @@ describe('動作結算', () => {
     expect(state.log.every((e) => e.kind === 'info' || e.kind === 'retreat')).toBe(true);
   });
 
+  it('enemyAct：guard 意圖目標＝自己（設 guarding），不影響隊伍血量（M5 Task 1 架盾 AI 路徑鎖定）', () => {
+    const guardMove: Move = { id: 'guard', name: '架盾', kind: 'guard', target: 'self', hitStat: 'str',
+      narration: '{actor}舉盾穩守，蓄勢以待。' };
+    const foe = makeEnemy('foe', 10, { moves: [strike, guardMove], intents: [{ weight: 1, moveId: 'guard' }] });
+    const hero = makeMember('hero', 14);
+    const state = startCombat(scriptedRng([5, 15]), [hero], [foe]);
+    expect(state.enemyIntents['foe']).toBe('guard');
+    enemyAct(scriptedRng([]), state, 'foe');
+    expect(state.guarding['foe']).toBe(true);
+    expect(hero.hp).toBe(20);
+    expect(foe.hp).toBe(10);
+    expect(state.log.some((e) => e.kind === 'action' && e.text.includes('舉盾穩守'))).toBe(true);
+  });
+
   it('resolveCasualties：主角必重傷；傭兵過 DC10 重傷、不過死亡', () => {
     const boss = makeMember('boss', 10, { isProtagonist: true });
     const merc1 = makeMember('m1', 10); const merc2 = makeMember('m2', 10);
