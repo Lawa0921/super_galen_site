@@ -57,7 +57,7 @@ const T = (cost: number, range: number, cdMs: number, dmg: number, splash: numbe
   ({ cost, range, cdMs, dmg, splash, slowMs, up: { cost: up.cost ?? cost, dmg: up.dmg ?? dmg, range: up.range ?? range, splash: up.splash ?? splash, slowMs: up.slowMs ?? slowMs } });
 export const TOWERS: Record<TowerType, TowerDef> = {
   arrow: T(50, 110, 350, 8, 0, 0, { dmg: 16, range: 130 }),
-  bomb: T(80, 100, 950, 14, 52, 0, { dmg: 26, splash: 66 }),
+  bomb: T(80, 100, 950, 18, 52, 0, { dmg: 34, splash: 66 }),
   frost: T(60, 115, 650, 4, 0, 1200, { dmg: 8, slowMs: 1800 }),
   arcane: T(80, 170, 500, 22, 0, 0, { cost: 90, dmg: 40, range: 185 }),
 };
@@ -80,16 +80,34 @@ export const WAVES: Group[][] = [
   [{ type: 'skeleton', count: 6 }, { type: 'bat', count: 4 }],
   [{ type: 'slime', count: 10 }, { type: 'skeleton', count: 4 }],
   [{ type: 'bat', count: 12 }, { type: 'skeleton', count: 4 }],
-  [{ type: 'skeleton', count: 8 }, { type: 'bat', count: 6 }],
-  [{ type: 'slime', count: 12 }, { type: 'skeleton', count: 6 }, { type: 'bat', count: 6 }],
-  [{ type: 'boss', count: 2 }, { type: 'skeleton', count: 6 }, { type: 'bat', count: 6 }],
+  [{ type: 'skeleton', count: 10 }, { type: 'bat', count: 8 }],
+  [{ type: 'slime', count: 14 }, { type: 'skeleton', count: 8 }, { type: 'bat', count: 8 }],
+  [{ type: 'boss', count: 2 }, { type: 'skeleton', count: 8 }, { type: 'bat', count: 8 }, { type: 'slime', count: 8 }],
 ];
 
 const START_GOLD = 250;
 const BASE_HP = 20;
 const SPAWN_GAP = 700;
 const PROJ_SPEED = 340;
+const SELL_RATE = 0.7;
+const HP_SCALE = 0.35; // 每波敵人血量增幅（sim 校過的難度曲線）
+const SPEED_SCALE = 0.04; // 每波敵人速度增幅
 const waveBonus = (waveIndex: number): number => 30 + waveIndex * 10;
+const spawnGap = (waveIndex: number): number => Math.max(360, SPAWN_GAP - waveIndex * 30); // 後期出怪更密
+
+/** 敵人在第 waveIndex 波（0-based）的血量：首波為基準，逐波增強。boss 基數高、縮放減半，避免終局跳崖。 */
+export const enemyHpAt = (type: EnemyType, waveIndex: number): number =>
+  Math.round(ENEMIES[type].hp * (1 + waveIndex * (type === 'boss' ? HP_SCALE * 0.5 : HP_SCALE)));
+
+/** 敵人在第 waveIndex 波（0-based）的速度：首波為基準，逐波加快。 */
+export const enemySpeedAt = (type: EnemyType, waveIndex: number): number =>
+  Math.round(ENEMIES[type].speed * (1 + waveIndex * SPEED_SCALE));
+
+/** 賣塔可回收金額（70% 投入，含升級）。 */
+export const sellValueOf = (t: Tower): number => {
+  const d = TOWERS[t.type];
+  return Math.floor((d.cost + (t.level >= 2 ? d.up.cost : 0)) * SELL_RATE);
+};
 
 export function pathLength(path: Vec[]): number {
   let s = 0;
@@ -162,6 +180,14 @@ export class DefenseGame {
     return true;
   }
 
+  sell(towerId: number): boolean {
+    const t = this.towers.find((x) => x.id === towerId);
+    if (!t) return false;
+    this.gold += sellValueOf(t);
+    this.towers = this.towers.filter((x) => x.id !== towerId);
+    return true;
+  }
+
   upgrade(towerId: number): boolean {
     const t = this.towers.find((x) => x.id === towerId);
     if (!t || t.level >= 2) return false;
@@ -185,9 +211,10 @@ export class DefenseGame {
     if (this.spawnTimer <= 0 && this.queue.length > 0) {
       const type = this.queue.shift() as EnemyType;
       const d = ENEMIES[type];
+      const hp = enemyHpAt(type, this.waveIndex);
       const p0 = posAt(PATH, 0).pos;
-      this.enemies.push({ id: this.nid++, type, hp: d.hp, maxHp: d.hp, speed: d.speed, gold: d.gold, dist: 0, slowMs: 0, alive: true, x: p0.x, y: p0.y });
-      this.spawnTimer = SPAWN_GAP;
+      this.enemies.push({ id: this.nid++, type, hp, maxHp: hp, speed: enemySpeedAt(type, this.waveIndex), gold: d.gold, dist: 0, slowMs: 0, alive: true, x: p0.x, y: p0.y });
+      this.spawnTimer = spawnGap(this.waveIndex);
     }
     // 敵人移動
     for (const e of this.enemies) {

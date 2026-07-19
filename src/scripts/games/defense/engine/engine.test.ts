@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DefenseGame, pathLength, posAt, pickTarget, TOWERS, WAVES } from './engine';
+import { DefenseGame, pathLength, posAt, pickTarget, enemyHpAt, enemySpeedAt, sellValueOf, TOWERS, WAVES } from './engine';
 import type { Enemy } from './engine';
 
 const L = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }]; // L 形，長 200
@@ -116,6 +116,41 @@ describe('DefenseGame', () => {
     expect(g.getState().towers[0].level).toBe(2);
     expect(g.getState().gold).toBe(g1 - TOWERS.arrow.up.cost);
     expect(g.upgrade(t.id)).toBe(false);
+  });
+
+  it('賣塔：退 70% 投入、格位釋出可重建；不存在的塔賣不掉', () => {
+    const g = new DefenseGame();
+    g.build('s0', 'arrow'); // cost 50
+    const t = g.getState().towers[0];
+    const before = g.getState().gold;
+    expect(sellValueOf(t)).toBe(35); // 70% of 50
+    expect(g.sell(t.id)).toBe(true);
+    expect(g.getState().gold).toBe(before + 35);
+    expect(g.getState().towers.length).toBe(0);
+    expect(g.build('s0', 'arrow')).toBe(true); // 格位釋出
+    expect(g.sell(999)).toBe(false);
+  });
+
+  it('賣升級塔退 70%（含升級成本）', () => {
+    const g = new DefenseGame();
+    g.build('s0', 'arrow'); // 50
+    g.upgrade(g.getState().towers[0].id); // up.cost 50
+    const before = g.getState().gold;
+    expect(g.sell(g.getState().towers[0].id)).toBe(true);
+    expect(g.getState().gold).toBe(before + 70); // 70% of (50+50)
+  });
+
+  it('敵人血量與速度隨波次增強，首波不變', () => {
+    expect(enemyHpAt('slime', 0)).toBe(30); // 首波維持基準
+    expect(enemyHpAt('slime', 7)).toBeGreaterThan(enemyHpAt('slime', 0));
+    expect(enemyHpAt('boss', 11)).toBeGreaterThan(enemyHpAt('boss', 5));
+    expect(enemySpeedAt('slime', 0)).toBe(45); // 首波維持基準
+    expect(enemySpeedAt('slime', 7)).toBeGreaterThan(enemySpeedAt('slime', 0));
+    // 整合：wave1 生出的 slime maxHp 與純函式一致
+    const g = new DefenseGame();
+    g.startWave();
+    g.step(16);
+    expect(g.getState().enemies[0].maxHp).toBe(enemyHpAt('slime', 0));
   });
 
   it('Boss 波（第 6、12 波）含 boss', () => {

@@ -21,16 +21,19 @@ const lang: Language = defaultLang;
       <span class="td-stat">💰 <b id="td-gold">0</b></span>
       <span class="td-stat">🛡 <b id="td-hp">20</b></span>
       <span class="td-stat">波次 <b id="td-wave">0/12</b></span>
+      <span class="td-stat td-next" id="td-next" hidden>下一波 <span id="td-next-list"></span></span>
+      <button class="td-btn td-ghost" id="td-speed" type="button">▶ ×1</button>
       <button class="td-btn td-start" id="td-start" type="button">出戰 ▶</button>
     </div>
 
     <!-- 建塔選單（選格時出現） -->
     <div class="td-menu" id="td-menu" hidden>
-      <button class="td-tower" data-build="arrow" type="button"><b>弩箭塔</b><i>快速單體</i><small>💰50</small></button>
-      <button class="td-tower" data-build="bomb" type="button"><b>炸彈塔</b><i>範圍轟炸</i><small>💰80</small></button>
-      <button class="td-tower" data-build="frost" type="button"><b>冰霜塔</b><i>減速敵人</i><small>💰60</small></button>
-      <button class="td-tower" data-build="arcane" type="button"><b>奧術塔</b><i>高傷遠程</i><small>💰80</small></button>
+      <button class="td-tower" data-build="arrow" type="button"><img src="/assets/games/defense/tower-arrow.png" alt="" /><b>弩箭塔</b><i>快速單體</i><small>💰50</small></button>
+      <button class="td-tower" data-build="bomb" type="button"><img src="/assets/games/defense/tower-bomb.png" alt="" /><b>炸彈塔</b><i>範圍轟炸</i><small>💰80</small></button>
+      <button class="td-tower" data-build="frost" type="button"><img src="/assets/games/defense/tower-frost.png" alt="" /><b>冰霜塔</b><i>減速敵人</i><small>💰60</small></button>
+      <button class="td-tower" data-build="arcane" type="button"><img src="/assets/games/defense/tower-arcane.png" alt="" /><b>奧術塔</b><i>高傷遠程</i><small>💰80</small></button>
       <button class="td-tower td-up" id="td-upgrade" type="button" hidden><b>升級</b><i>強化此塔</i></button>
+      <button class="td-tower td-sell" id="td-sell" type="button" hidden><b>賣掉</b><i id="td-sell-gold">回收</i></button>
     </div>
 
     <!-- 結果 -->
@@ -60,7 +63,11 @@ const lang: Language = defaultLang;
   .td-btn { font-family: inherit; font-size: 11px; letter-spacing: 1px; cursor: pointer;
     color: #0b0716; background: #ffd23f; border: none; padding: 8px 14px; border-radius: 4px; }
   .td-btn:disabled { opacity: 0.4; cursor: default; }
-  .td-start { margin-left: auto; }
+  .td-start { margin-left: 8px; }
+  .td-ghost { margin-left: auto; color: #eafdff; background: #2a2438; border: 1px solid #6a5f88; }
+  .td-next { display: inline-flex; align-items: center; gap: 6px; }
+  .td-next[hidden] { display: none; }
+  .td-next img { width: 22px; height: 22px; image-rendering: pixelated; vertical-align: middle; }
 
   .td-menu { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 2;
     display: flex; gap: 8px; padding: 10px; background: rgba(16,11,30,0.9);
@@ -70,11 +77,13 @@ const lang: Language = defaultLang;
   .td-tower { font-family: inherit; letter-spacing: 0.5px; cursor: pointer;
     display: flex; flex-direction: column; align-items: center; gap: 4px;
     color: #eafdff; background: #2a2438; border: 1px solid #6a5f88; padding: 8px 10px; border-radius: 5px; min-width: 64px; }
+  .td-tower img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
   .td-tower b { font-size: 11px; font-weight: normal; }
   .td-tower i { font-size: 8px; font-style: normal; color: #b9add8; }
   .td-tower small { color: #ffd23f; font-size: 9px; }
   .td-tower:disabled { opacity: 0.4; cursor: default; }
   .td-up { background: #3a2f50; }
+  .td-sell { background: #402430; }
 
   .td-result { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 18px; background: rgba(5,3,15,0.82); text-align: center; }

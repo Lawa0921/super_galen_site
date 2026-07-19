@@ -26,4 +26,25 @@ test.describe('dungeon defense', () => {
     await page.goto('/games');
     await expect(page.locator('a[href="/games/defense"]')).toBeVisible();
   });
+
+  test('速度切換 / 下一波預覽 / 賣塔', async ({ page }) => {
+    await page.goto('/games/defense');
+    await page.waitForFunction(() => !!(window as any).__td?.game, null, { timeout: 15000 });
+    // 備戰時顯示下一波組成（含敵人 icon）
+    await expect(page.locator('#td-next')).toBeVisible();
+    await expect(page.locator('#td-next-list img').first()).toBeVisible();
+    // 速度切換 ×1 → ×2
+    await page.click('#td-speed');
+    await expect(page.locator('#td-speed')).toHaveText(/×2/);
+    // 賣塔退 70%
+    const r = await page.evaluate(() => {
+      const g = (window as any).__td.game;
+      g.build(g.getState().slots[0].id, 'arrow');
+      const before = g.getState().gold;
+      const ok = g.sell(g.getState().towers[0].id);
+      return { ok, delta: g.getState().gold - before };
+    });
+    expect(r.ok).toBe(true);
+    expect(r.delta).toBe(35);
+  });
 });
