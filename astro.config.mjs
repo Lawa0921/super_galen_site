@@ -9,6 +9,11 @@ export default defineConfig({
   output: 'static',
   adapter: vercel(),
 
+  // /games/caravan 已升格為獨立入口 /caravan（2026-07-19）
+  redirects: {
+    '/games/caravan': '/caravan',
+  },
+
   // i18n 路由配置
   i18n: {
     defaultLocale: 'zh-TW',

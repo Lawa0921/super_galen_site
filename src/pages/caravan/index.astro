@@ -1,0 +1,196 @@
+---
+/**
+ * /caravan — 《商隊與劍》獨立入口 landing。
+ * 內容量數字從 data 檔 build 時實算，不寫死。遊戲本體在 /caravan/play。
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { EVENTS } from '@scripts/games/caravan/data/events';
+import { LOCATIONS } from '@scripts/games/caravan/data/locations';
+import { TOWNS } from '@scripts/games/caravan/data/towns';
+import { JOBS } from '@scripts/games/caravan/data/jobs';
+import { ITEMS } from '@scripts/games/caravan/data/items';
+import { ENCOUNTERS, TRAINING_ENCOUNTER } from '@scripts/games/caravan/data/enemies';
+
+const allUnits = [...TRAINING_ENCOUNTER(), ...Object.values(ENCOUNTERS).flatMap((mk) => mk())];
+const stats = {
+  events: EVENTS.length,
+  locations: Object.keys(LOCATIONS).length,
+  towns: Object.keys(TOWNS).length,
+  enemies: new Set(allUnits.map((u) => u.name)).size,
+  equipment: Object.values(ITEMS).filter((i) => i.equip).length,
+  jobs: Object.keys(JOBS).length,
+};
+const jobList = Object.values(JOBS);
+---
+
+<BaseLayout
+  title="商隊與劍 CARAVAN & SWORD — 文字跑團長篇 RPG"
+  description="經營商隊、擲骰決定命運的長篇文字冒險：42 張事件卡、聲望解鎖的商路與迷宮、裝備養成與隱藏路線。"
+  lang="zh-TW"
+>
+  <main class="cv-landing">
+    <!-- Hero -->
+    <header class="cv-hero">
+      <img class="cv-hero-art" src="/assets/games/caravan/title-banner.webp" alt="" width="1280" height="720" loading="eager" />
+      <div class="cv-hero-text">
+        <p class="cv-kicker">長篇文字冒險 RPG</p>
+        <h1 class="cv-title">商隊與劍</h1>
+        <p class="cv-subtitle">CARAVAN &amp; SWORD</p>
+        <p class="cv-tagline">一輛馬車、一把劍、一條沒人走完的商路。<br />擲骰決定命運，帳本決定生死。</p>
+        <div class="cv-cta">
+          <a class="cv-btn cv-btn-primary" href="/caravan/play">開始旅程</a>
+          <a class="cv-btn cv-btn-continue" id="cv-continue" href="/caravan/play" hidden>繼續旅程</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- 內容量數字帶 -->
+    <section class="cv-stats" aria-label="遊戲內容規模">
+      <div class="cv-stat"><b>{stats.events}</b><span>張事件卡</span></div>
+      <div class="cv-stat"><b>{stats.locations}</b><span>條商路與迷宮</span></div>
+      <div class="cv-stat"><b>{stats.towns}</b><span>座城鎮</span></div>
+      <div class="cv-stat"><b>{stats.enemies}</b><span>種敵人</span></div>
+      <div class="cv-stat"><b>{stats.equipment}</b><span>件裝備</span></div>
+      <div class="cv-stat"><b>{stats.jobs}</b><span>種職業</span></div>
+    </section>
+
+    <!-- 世界觀引言 -->
+    <section class="cv-lore">
+      <p>
+        王國邊陲的商路早已不安穩：哥布林在礦坑深處築巢，霧嶺古道傳出亡靈的箭鳴，
+        鹽泉城的商人開得起任何價錢——只要你的貨能活著運到。
+        你繼承了一輛舊馬車與一小袋金幣，在啟程之鎮的廣場上召集旅伴。
+        每一次遠征都是一場跑團：抽事件、擲骰、選擇，然後承擔後果。
+      </p>
+    </section>
+
+    <!-- 特色 -->
+    <section class="cv-features">
+      <article class="cv-feature">
+        <img src="/assets/games/caravan/event-rare-treasure-map.webp" alt="" width="960" height="720" loading="lazy" />
+        <h2>擲骰決定命運</h2>
+        <p>d20 檢定驅動每個抉擇——說服、潛行、強攻或繞路。nat20 的奇蹟與 nat1 的災難都會寫進你的旅途，回合制戰鬥有意圖預示與架盾反擊。</p>
+      </article>
+      <article class="cv-feature">
+        <img src="/assets/games/caravan/town-riverbend-town.webp" alt="" width="1280" height="720" loading="lazy" />
+        <h2>商隊經營</h2>
+        <p>四鎮物價各異：礦石在河灣鎮翻倍、香料在林邊聚落搶手。升級馬車、招募旅伴、押貨跨鎮套利——薪餉與傷勢都是帳本上的真實成本。</p>
+      </article>
+      <article class="cv-feature">
+        <img src="/assets/games/caravan/event-mercenary-ruins.webp" alt="" width="960" height="720" loading="lazy" />
+        <h2>養成與祕密</h2>
+        <p>裝備三欄改寫戰鬥招式，聲望解鎖高階商路與鹽晶洞窟。褪色的軍旗、奇怪的商人三連環——旗標鏈事件把你引向地圖上不存在的地方。</p>
+      </article>
+    </section>
+
+    <!-- 職業列 -->
+    <section class="cv-jobs" aria-label="可用職業">
+      {jobList.map((job) => (
+        <figure class="cv-job">
+          <img src={job.art} alt={job.name} width="600" height="800" loading="lazy" />
+          <figcaption>{job.name}</figcaption>
+        </figure>
+      ))}
+    </section>
+
+    <!-- 底部 CTA -->
+    <footer class="cv-footer">
+      <a class="cv-btn cv-btn-primary" href="/caravan/play">啟程</a>
+      <nav class="cv-footer-links">
+        <a href="/games">← 遊戲廳</a>
+        <a href="/">主站</a>
+      </nav>
+    </footer>
+  </main>
+</BaseLayout>
+
+<script>
+  import { SAVE_KEY } from '@scripts/games/caravan/save';
+  // 有存檔才顯示「繼續旅程」
+  try {
+    if (localStorage.getItem(SAVE_KEY)) document.getElementById('cv-continue')?.removeAttribute('hidden');
+  } catch { /* localStorage 不可用時僅顯示開始 */ }
+</script>
+
+<style>
+  .cv-landing {
+    min-height: 100vh;
+    background: #f5f0e6;
+    color: #2b2620;
+    font-family: 'Noto Serif TC', serif;
+  }
+
+  /* Hero */
+  .cv-hero { position: relative; }
+  .cv-hero-art { display: block; width: 100%; height: min(62vh, 560px); object-fit: cover; }
+  .cv-hero-text {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    padding: 2rem 1rem 2.5rem; text-align: center;
+    background: linear-gradient(180deg, transparent 35%, rgba(43, 32, 20, 0.72) 100%);
+    color: #f8f3e8;
+  }
+  .cv-kicker { letter-spacing: 0.5em; font-size: 0.85rem; margin: 0 0 0.5rem; color: #ffd98a; text-shadow: 0 1px 8px rgba(43, 32, 20, 0.85); }
+  .cv-title { font-size: clamp(2.4rem, 7vw, 4rem); letter-spacing: 0.28em; margin: 0; text-shadow: 0 2px 18px rgba(0,0,0,0.55); }
+  .cv-subtitle { letter-spacing: 0.45em; margin: 0.35rem 0 0.9rem; color: #e8dcc2; font-size: 0.95rem; }
+  .cv-tagline { margin: 0 0 1.4rem; line-height: 1.9; font-size: 1.02rem; color: #f3ead6; }
+  .cv-cta { display: flex; gap: 0.9rem; }
+  .cv-btn {
+    display: inline-block; padding: 0.8rem 2.4rem; border: 1px solid #8a7a5c;
+    color: #2b2620; background: #f5f0e6; text-decoration: none; letter-spacing: 0.3em;
+    font-family: inherit; font-size: 1rem; transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .cv-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(43, 32, 20, 0.35); }
+  .cv-btn-primary { background: #b3552e; border-color: #8a3c1e; color: #fff6ea; }
+  .cv-btn-continue[hidden] { display: none; }
+
+  /* 數字帶 */
+  .cv-stats {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 0;
+    max-width: 60rem; margin: 0 auto; padding: 2.2rem 1rem 0.6rem;
+  }
+  .cv-stat {
+    flex: 1 1 8rem; text-align: center; padding: 0.6rem 1rem;
+    border-right: 1px solid #d9cfb8;
+  }
+  .cv-stat:last-child { border-right: none; }
+  .cv-stat b { display: block; font-size: 2.1rem; color: #8a3c1e; }
+  .cv-stat span { font-size: 0.85rem; letter-spacing: 0.18em; color: #6b5f4c; }
+
+  /* 世界觀 */
+  .cv-lore { max-width: 42rem; margin: 0 auto; padding: 1.8rem 1.5rem; }
+  .cv-lore p { line-height: 2.1; text-align: justify; margin: 0; font-size: 1.02rem; }
+
+  /* 特色 */
+  .cv-features {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1.6rem; max-width: 64rem; margin: 0 auto; padding: 1.2rem 1.5rem 2rem;
+  }
+  .cv-feature img {
+    display: block; width: 100%; height: 11rem; object-fit: cover;
+    border: 1px solid #cfc6b0;
+  }
+  .cv-feature h2 { font-size: 1.15rem; letter-spacing: 0.2em; margin: 0.9rem 0 0.4rem; }
+  .cv-feature p { line-height: 1.9; font-size: 0.92rem; color: #4a4234; margin: 0; }
+
+  /* 職業列 */
+  .cv-jobs {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem;
+    max-width: 60rem; margin: 0 auto; padding: 0.5rem 1.5rem 2.4rem;
+  }
+  .cv-job { margin: 0; text-align: center; }
+  .cv-job img {
+    display: block; width: 9.5rem; height: 12.5rem; object-fit: cover;
+    border: 1px solid #cfc6b0;
+  }
+  .cv-job figcaption { margin-top: 0.5rem; letter-spacing: 0.3em; font-size: 0.95rem; }
+
+  /* Footer */
+  .cv-footer {
+    display: flex; flex-direction: column; align-items: center; gap: 1.2rem;
+    padding: 1rem 1rem 3.5rem;
+  }
+  .cv-footer-links { display: flex; gap: 1.6rem; }
+  .cv-footer-links a { color: #6b5f4c; text-decoration: none; letter-spacing: 0.15em; font-size: 0.9rem; }
+  .cv-footer-links a:hover { color: #8a3c1e; }
+</style>
