@@ -1,0 +1,93 @@
+---
+/**
+ * /games/defense — Dungeon Arcade: DUNGEON DEFENSE（塔防）
+ * 全螢幕 PixiJS，DOM HUD / 建塔選單。Phase 1 程式繪製，像素素材後補。
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+const lang: Language = defaultLang;
+---
+
+<BaseLayout title="Dungeon Arcade — Dungeon Defense" description="像素塔防：守住封印門" lang={lang}>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+
+  <main class="td">
+    <canvas id="td-canvas"></canvas>
+
+    <!-- 頂部 HUD -->
+    <div class="td-hud">
+      <a class="td-home" href="/games">← 遊戲廳</a>
+      <span class="td-stat">💰 <b id="td-gold">0</b></span>
+      <span class="td-stat">🛡 <b id="td-hp">20</b></span>
+      <span class="td-stat">波次 <b id="td-wave">0/12</b></span>
+      <span class="td-stat td-next" id="td-next" hidden>下一波 <span id="td-next-list"></span></span>
+      <button class="td-btn td-ghost" id="td-speed" type="button">▶ ×1</button>
+      <button class="td-btn td-start" id="td-start" type="button">出戰 ▶</button>
+    </div>
+
+    <!-- 建塔選單（選格時出現） -->
+    <div class="td-menu" id="td-menu" hidden>
+      <button class="td-tower" data-build="arrow" type="button"><img src="/assets/games/defense/tower-arrow.png" alt="" /><b>弩箭塔</b><i>快速單體</i><small>💰50</small></button>
+      <button class="td-tower" data-build="bomb" type="button"><img src="/assets/games/defense/tower-bomb.png" alt="" /><b>炸彈塔</b><i>範圍轟炸</i><small>💰80</small></button>
+      <button class="td-tower" data-build="frost" type="button"><img src="/assets/games/defense/tower-frost.png" alt="" /><b>冰霜塔</b><i>減速敵人</i><small>💰60</small></button>
+      <button class="td-tower" data-build="arcane" type="button"><img src="/assets/games/defense/tower-arcane.png" alt="" /><b>奧術塔</b><i>高傷遠程</i><small>💰80</small></button>
+      <button class="td-tower td-up" id="td-upgrade" type="button" hidden><b>升級</b><i>強化此塔</i></button>
+      <button class="td-tower td-sell" id="td-sell" type="button" hidden><b>賣掉</b><i id="td-sell-gold">回收</i></button>
+    </div>
+
+    <!-- 結果 -->
+    <div class="td-result" id="td-result" hidden>
+      <h2 id="td-result-text">—</h2>
+      <p class="td-result-stats" id="td-result-stats"></p>
+      <button class="td-btn" id="td-restart" type="button" onclick="location.reload()">重新挑戰</button>
+      <a class="td-link" href="/games">返回遊戲廳</a>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { startDefense } from '@scripts/games/defense/render/main';
+  const canvas = document.getElementById('td-canvas') as HTMLCanvasElement | null;
+  if (canvas) void startDefense(canvas).then((h) => { (window as unknown as { __td?: unknown }).__td = h; });
+</script>
+
+<style>
+  .td { position: fixed; inset: 0; background: #0a0716; font-family: 'Press Start 2P', monospace; color: #eafdff; }
+  #td-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .td-hud { position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+    display: flex; align-items: center; gap: 16px; padding: 12px 16px;
+    background: linear-gradient(180deg, rgba(10,7,22,0.85), transparent); font-size: 11px; }
+  .td-home, .td-link { color: #b9add8; text-decoration: none; letter-spacing: 1px; }
+  .td-stat { letter-spacing: 1px; } .td-stat b { color: #ffd23f; }
+  .td-btn { font-family: inherit; font-size: 11px; letter-spacing: 1px; cursor: pointer;
+    color: #0b0716; background: #ffd23f; border: none; padding: 8px 14px; border-radius: 4px; }
+  .td-btn:disabled { opacity: 0.4; cursor: default; }
+  .td-start { margin-left: 8px; }
+  .td-ghost { margin-left: auto; color: #eafdff; background: #2a2438; border: 1px solid #6a5f88; }
+  .td-next { display: inline-flex; align-items: center; gap: 6px; }
+  .td-next[hidden] { display: none; }
+  .td-next img { width: 22px; height: 22px; image-rendering: pixelated; vertical-align: middle; }
+
+  .td-menu { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 2;
+    display: flex; gap: 8px; padding: 10px; background: rgba(16,11,30,0.9);
+    border: 1px solid #6a5f88; border-radius: 8px; }
+  /* class 設了 display 會蓋掉 [hidden] 的 display:none，用 class+attr 提高特異性救回來 */
+  .td-menu[hidden], .td-result[hidden], .td-tower[hidden] { display: none; }
+  .td-tower { font-family: inherit; letter-spacing: 0.5px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: #eafdff; background: #2a2438; border: 1px solid #6a5f88; padding: 8px 10px; border-radius: 5px; min-width: 64px; }
+  .td-tower img { width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
+  .td-tower b { font-size: 11px; font-weight: normal; }
+  .td-tower i { font-size: 8px; font-style: normal; color: #b9add8; }
+  .td-tower small { color: #ffd23f; font-size: 9px; }
+  .td-tower:disabled { opacity: 0.4; cursor: default; }
+  .td-up { background: #3a2f50; }
+  .td-sell { background: #402430; }
+
+  .td-result { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px; background: rgba(5,3,15,0.82); text-align: center; }
+  .td-result h2 { font-size: 20px; letter-spacing: 4px; color: #ffd23f; text-shadow: 0 0 16px rgba(255,210,63,0.6); }
+  .td-result-stats { font-size: 10px; letter-spacing: 2px; color: #b9add8; }
+</style>

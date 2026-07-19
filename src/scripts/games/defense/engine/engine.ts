@@ -1,0 +1,280 @@
+// Dungeon Defense engine — 純邏輯、確定性、無 RNG。座標單位 px，dt 單位 ms。
+export interface Vec { x: number; y: number; }
+export type TowerType = 'arrow' | 'bomb' | 'frost' | 'arcane';
+export type EnemyType = 'slime' | 'skeleton' | 'bat' | 'boss';
+export type Status = 'building' | 'wave' | 'won' | 'lost';
+
+export interface Enemy {
+  id: number; type: EnemyType; hp: number; maxHp: number; speed: number; gold: number;
+  dist: number; slowMs: number; alive: boolean; x: number; y: number;
+}
+export interface Tower { id: number; slot: string; type: TowerType; level: number; cdMs: number; }
+export interface Projectile {
+  id: number; x: number; y: number; targetId: number; dmg: number; splash: number; slowMs: number;
+  speed: number; active: boolean; tower: TowerType;
+}
+export interface Slot { id: string; x: number; y: number; }
+
+/** render 接這些事件做爽度效果（不影響模擬）。 */
+export type DefenseEvent =
+  | { kind: 'fire'; x: number; y: number; tower: TowerType }
+  | { kind: 'hit'; x: number; y: number }
+  | { kind: 'blast'; x: number; y: number; r: number }
+  | { kind: 'kill'; x: number; y: number; etype: EnemyType; gold: number }
+  | { kind: 'leak'; x: number; y: number };
+
+export const FIELD_W = 480;
+export const FIELD_H = 640;
+
+// 蛇形路徑：上方入口 → 下方封印門（出界）。
+export const PATH: Vec[] = [
+  { x: 100, y: -20 }, { x: 100, y: 140 }, { x: 380, y: 140 }, { x: 380, y: 300 },
+  { x: 100, y: 300 }, { x: 100, y: 460 }, { x: 380, y: 460 }, { x: 380, y: 660 },
+];
+function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+  if (l2 === 0) return Math.hypot(px - ax, py - ay);
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2));
+  return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+}
+function distToPath(x: number, y: number): number {
+  let m = Infinity;
+  for (let i = 1; i < PATH.length; i++) m = Math.min(m, segDist(x, y, PATH[i - 1].x, PATH[i - 1].y, PATH[i].x, PATH[i].y));
+  return m;
+}
+// 自動產生建塔格：掃網格保留「離路 26~58px」的地板（路旁、可掩護、不擋路），給多種佈陣選擇。
+export const SLOTS: Slot[] = (() => {
+  const out: Slot[] = []; let n = 0;
+  for (let y = 82; y <= 574; y += 58) for (let x = 52; x <= 428; x += 58) {
+    const d = distToPath(x, y);
+    if (d >= 30 && d <= 48) out.push({ id: `s${n++}`, x, y });
+  }
+  return out;
+})();
+
+interface TowerDef { cost: number; range: number; cdMs: number; dmg: number; splash: number; slowMs: number; up: { cost: number; dmg: number; range: number; splash: number; slowMs: number }; }
+const T = (cost: number, range: number, cdMs: number, dmg: number, splash: number, slowMs: number, up: Partial<TowerDef['up']>): TowerDef =>
+  ({ cost, range, cdMs, dmg, splash, slowMs, up: { cost: up.cost ?? cost, dmg: up.dmg ?? dmg, range: up.range ?? range, splash: up.splash ?? splash, slowMs: up.slowMs ?? slowMs } });
+export const TOWERS: Record<TowerType, TowerDef> = {
+  arrow: T(50, 110, 350, 8, 0, 0, { dmg: 16, range: 130 }),
+  bomb: T(80, 100, 950, 18, 52, 0, { dmg: 34, splash: 66 }),
+  frost: T(60, 115, 650, 4, 0, 1200, { dmg: 8, slowMs: 1800 }),
+  arcane: T(80, 170, 500, 22, 0, 0, { cost: 90, dmg: 40, range: 185 }),
+};
+
+const ENEMIES: Record<EnemyType, { hp: number; speed: number; gold: number; leak: number }> = {
+  slime: { hp: 30, speed: 45, gold: 6, leak: 1 },
+  skeleton: { hp: 80, speed: 35, gold: 10, leak: 2 },
+  bat: { hp: 22, speed: 80, gold: 7, leak: 1 },
+  boss: { hp: 600, speed: 28, gold: 80, leak: 10 },
+};
+
+type Group = { type: EnemyType; count: number };
+export const WAVES: Group[][] = [
+  [{ type: 'slime', count: 6 }],
+  [{ type: 'slime', count: 8 }],
+  [{ type: 'slime', count: 6 }, { type: 'bat', count: 3 }],
+  [{ type: 'skeleton', count: 4 }, { type: 'slime', count: 4 }],
+  [{ type: 'bat', count: 8 }, { type: 'slime', count: 4 }],
+  [{ type: 'boss', count: 1 }, { type: 'slime', count: 6 }],
+  [{ type: 'skeleton', count: 6 }, { type: 'bat', count: 4 }],
+  [{ type: 'slime', count: 10 }, { type: 'skeleton', count: 4 }],
+  [{ type: 'bat', count: 12 }, { type: 'skeleton', count: 4 }],
+  [{ type: 'skeleton', count: 10 }, { type: 'bat', count: 8 }],
+  [{ type: 'slime', count: 14 }, { type: 'skeleton', count: 8 }, { type: 'bat', count: 8 }],
+  [{ type: 'boss', count: 2 }, { type: 'skeleton', count: 8 }, { type: 'bat', count: 8 }, { type: 'slime', count: 8 }],
+];
+
+const START_GOLD = 250;
+const BASE_HP = 20;
+const SPAWN_GAP = 700;
+const PROJ_SPEED = 340;
+const SELL_RATE = 0.7;
+const HP_SCALE = 0.35; // 每波敵人血量增幅（sim 校過的難度曲線）
+const SPEED_SCALE = 0.04; // 每波敵人速度增幅
+const waveBonus = (waveIndex: number): number => 30 + waveIndex * 10;
+const spawnGap = (waveIndex: number): number => Math.max(360, SPAWN_GAP - waveIndex * 30); // 後期出怪更密
+
+/** 敵人在第 waveIndex 波（0-based）的血量：首波為基準，逐波增強。boss 基數高、縮放減半，避免終局跳崖。 */
+export const enemyHpAt = (type: EnemyType, waveIndex: number): number =>
+  Math.round(ENEMIES[type].hp * (1 + waveIndex * (type === 'boss' ? HP_SCALE * 0.5 : HP_SCALE)));
+
+/** 敵人在第 waveIndex 波（0-based）的速度：首波為基準，逐波加快。 */
+export const enemySpeedAt = (type: EnemyType, waveIndex: number): number =>
+  Math.round(ENEMIES[type].speed * (1 + waveIndex * SPEED_SCALE));
+
+/** 賣塔可回收金額（70% 投入，含升級）。 */
+export const sellValueOf = (t: Tower): number => {
+  const d = TOWERS[t.type];
+  return Math.floor((d.cost + (t.level >= 2 ? d.up.cost : 0)) * SELL_RATE);
+};
+
+export function pathLength(path: Vec[]): number {
+  let s = 0;
+  for (let i = 1; i < path.length; i++) s += Math.hypot(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y);
+  return s;
+}
+
+export function posAt(path: Vec[], dist: number): { pos: Vec; reached: boolean } {
+  if (dist <= 0) return { pos: { x: path[0].x, y: path[0].y }, reached: false };
+  let d = dist;
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1], b = path[i];
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (d <= len) { const t = d / len; return { pos: { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }, reached: false }; }
+    d -= len;
+  }
+  const e = path[path.length - 1];
+  return { pos: { x: e.x, y: e.y }, reached: true };
+}
+
+/** 射程內「最前進」(dist 最大) 的 alive 敵；無則 null。 */
+export function pickTarget(enemies: Enemy[], pos: Vec, range: number): Enemy | null {
+  let best: Enemy | null = null;
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    if (Math.hypot(e.x - pos.x, e.y - pos.y) > range) continue;
+    if (!best || e.dist > best.dist) best = e;
+  }
+  return best;
+}
+
+export class DefenseGame {
+  private status: Status = 'building';
+  private gold = START_GOLD;
+  private baseHp = BASE_HP;
+  private waveIndex = -1;
+  private enemies: Enemy[] = [];
+  private towers: Tower[] = [];
+  private projectiles: Projectile[] = [];
+  private queue: EnemyType[] = [];
+  private events: DefenseEvent[] = [];
+  private spawnTimer = 0;
+  private nid = 1; private tid = 1; private pid = 1;
+  private slotPos = new Map(SLOTS.map((s) => [s.id, s]));
+
+  private def(t: Tower): { range: number; cdMs: number; dmg: number; splash: number; slowMs: number } {
+    const d = TOWERS[t.type];
+    return t.level >= 2
+      ? { range: d.up.range, cdMs: d.cdMs, dmg: d.up.dmg, splash: d.up.splash, slowMs: d.up.slowMs }
+      : { range: d.range, cdMs: d.cdMs, dmg: d.dmg, splash: d.splash, slowMs: d.slowMs };
+  }
+
+  startWave(): boolean {
+    if (this.status !== 'building') return false;
+    if (this.waveIndex + 1 >= WAVES.length) return false;
+    this.waveIndex++;
+    this.queue = WAVES[this.waveIndex].flatMap((g) => Array<EnemyType>(g.count).fill(g.type));
+    this.spawnTimer = 0;
+    this.status = 'wave';
+    return true;
+  }
+
+  build(slotId: string, type: TowerType): boolean {
+    if (!this.slotPos.has(slotId)) return false;
+    if (this.towers.some((t) => t.slot === slotId)) return false;
+    const cost = TOWERS[type].cost;
+    if (this.gold < cost) return false;
+    this.gold -= cost;
+    this.towers.push({ id: this.tid++, slot: slotId, type, level: 1, cdMs: 0 });
+    return true;
+  }
+
+  sell(towerId: number): boolean {
+    const t = this.towers.find((x) => x.id === towerId);
+    if (!t) return false;
+    this.gold += sellValueOf(t);
+    this.towers = this.towers.filter((x) => x.id !== towerId);
+    return true;
+  }
+
+  upgrade(towerId: number): boolean {
+    const t = this.towers.find((x) => x.id === towerId);
+    if (!t || t.level >= 2) return false;
+    const cost = TOWERS[t.type].up.cost;
+    if (this.gold < cost) return false;
+    this.gold -= cost;
+    t.level = 2;
+    return true;
+  }
+
+  private damage(e: Enemy, dmg: number): void {
+    if (!e.alive) return;
+    e.hp -= dmg;
+    if (e.hp <= 0) { e.alive = false; this.gold += e.gold; this.events.push({ kind: 'kill', x: e.x, y: e.y, etype: e.type, gold: e.gold }); }
+  }
+
+  step(dtMs: number): void {
+    if (this.status !== 'wave') return;
+    // 生成
+    this.spawnTimer -= dtMs;
+    if (this.spawnTimer <= 0 && this.queue.length > 0) {
+      const type = this.queue.shift() as EnemyType;
+      const d = ENEMIES[type];
+      const hp = enemyHpAt(type, this.waveIndex);
+      const p0 = posAt(PATH, 0).pos;
+      this.enemies.push({ id: this.nid++, type, hp, maxHp: hp, speed: enemySpeedAt(type, this.waveIndex), gold: d.gold, dist: 0, slowMs: 0, alive: true, x: p0.x, y: p0.y });
+      this.spawnTimer = spawnGap(this.waveIndex);
+    }
+    // 敵人移動
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const sp = e.speed * (e.slowMs > 0 ? 0.5 : 1);
+      e.slowMs = Math.max(0, e.slowMs - dtMs);
+      e.dist += (sp * dtMs) / 1000;
+      const at = posAt(PATH, e.dist);
+      e.x = at.pos.x; e.y = at.pos.y;
+      if (at.reached) { e.alive = false; this.baseHp -= ENEMIES[e.type].leak; this.events.push({ kind: 'leak', x: e.x, y: e.y }); }
+    }
+    // 塔開火
+    for (const t of this.towers) {
+      t.cdMs -= dtMs;
+      if (t.cdMs > 0) continue;
+      const def = this.def(t);
+      const pos = this.slotPos.get(t.slot) as Slot;
+      const target = pickTarget(this.enemies, pos, def.range);
+      if (!target) continue;
+      this.projectiles.push({ id: this.pid++, x: pos.x, y: pos.y, targetId: target.id, dmg: def.dmg, splash: def.splash, slowMs: def.slowMs, speed: PROJ_SPEED, active: true, tower: t.type });
+      this.events.push({ kind: 'fire', x: pos.x, y: pos.y, tower: t.type });
+      t.cdMs = def.cdMs;
+    }
+    // 投射物
+    for (const p of this.projectiles) {
+      if (!p.active) continue;
+      const tgt = this.enemies.find((e) => e.id === p.targetId && e.alive);
+      if (!tgt) { p.active = false; continue; }
+      const dx = tgt.x - p.x, dy = tgt.y - p.y, d = Math.hypot(dx, dy);
+      if (d < 10) {
+        this.events.push({ kind: 'hit', x: tgt.x, y: tgt.y });
+        if (p.splash > 0) {
+          this.events.push({ kind: 'blast', x: tgt.x, y: tgt.y, r: p.splash });
+          for (const e of this.enemies) if (e.alive && e.id !== tgt.id && Math.hypot(e.x - tgt.x, e.y - tgt.y) <= p.splash) this.damage(e, p.dmg);
+        }
+        this.damage(tgt, p.dmg);
+        if (p.slowMs > 0) tgt.slowMs = Math.max(tgt.slowMs, p.slowMs);
+        p.active = false;
+      } else { p.x += (dx / d) * p.speed * dtMs / 1000; p.y += (dy / d) * p.speed * dtMs / 1000; }
+    }
+    // 清理
+    this.enemies = this.enemies.filter((e) => e.alive);
+    this.projectiles = this.projectiles.filter((p) => p.active);
+    // 波次結束
+    if (this.queue.length === 0 && this.enemies.length === 0) {
+      if (this.waveIndex >= WAVES.length - 1) this.status = 'won';
+      else { this.gold += waveBonus(this.waveIndex); this.status = 'building'; }
+    }
+    // 失敗
+    if (this.baseHp <= 0) { this.baseHp = 0; this.status = 'lost'; }
+  }
+
+  drainEvents(): DefenseEvent[] { const o = this.events; this.events = []; return o; }
+
+  getState() {
+    return {
+      status: this.status, gold: this.gold, baseHp: this.baseHp,
+      wave: this.waveIndex + 1, totalWaves: WAVES.length,
+      enemies: this.enemies, towers: this.towers, projectiles: this.projectiles,
+      slots: SLOTS, path: PATH,
+    };
+  }
+}
