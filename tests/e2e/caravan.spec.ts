@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('商隊與劍：外殼流程', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/games/caravan');
+    await page.goto('/caravan/play');
     await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
@@ -31,18 +31,45 @@ test.describe('商隊與劍：外殼流程', () => {
     await expect(page.locator('#town-gold')).toHaveText('200');
   });
 
-  test('遊戲廳有 CARAVAN & SWORD 卡片並連到遊戲', async ({ page }) => {
+  test('遊戲廳旗艦卡連到獨立入口 landing，開始旅程進入遊戲', async ({ page }) => {
     await page.goto('/games');
-    const card = page.locator('a[href="/games/caravan"]');
-    await expect(card).toBeVisible();
-    await card.click();
+    const flagship = page.locator('a.card-flagship[href="/caravan"]');
+    await expect(flagship).toBeVisible();
+    await flagship.click();
+    await expect(page).toHaveURL(/\/caravan\/?$/);
+    await page.locator('a.cv-btn-primary[href="/caravan/play"]').first().click();
     await expect(page.locator('#screen-title')).toBeVisible();
+  });
+});
+
+test.describe('商隊與劍：獨立入口 landing', () => {
+  test('內容量數字帶與 CTA 齊備；有存檔時顯示繼續旅程', async ({ page }) => {
+    await page.goto('/caravan');
+    // 數字帶六項且數字 > 0（build 時從 data 實算）
+    const stats = page.locator('.cv-stat b');
+    await expect(stats).toHaveCount(6);
+    for (const text of await stats.allTextContents()) {
+      expect(Number(text)).toBeGreaterThan(0);
+    }
+    // 無存檔：僅開始旅程
+    await expect(page.locator('#cv-continue')).toBeHidden();
+    // 造一份存檔 → 繼續旅程出現
+    await page.evaluate(() => localStorage.setItem('caravan-save-v1', '{"v":5}'));
+    await page.reload();
+    await expect(page.locator('#cv-continue')).toBeVisible();
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+  });
+
+  test('舊網址 /games/caravan 轉址到 /caravan', async ({ page }) => {
+    await page.goto('/games/caravan');
+    await expect(page).toHaveURL(/\/caravan\/?$/);
+    await expect(page.locator('.cv-title')).toBeVisible();
   });
 });
 
 test.describe('商隊與劍：訓練場戰鬥', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/games/caravan?seed=42');
+    await page.goto('/caravan/play?seed=42');
     await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
@@ -91,7 +118,7 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     // 因為 seed=42 訓練場首回合永遠輪到玩家、敵方 timer 從未排入——
     // 對「舊戰鬥敵方 timer 污染新戰鬥」的修復沒有鑑別力（還原修復仍會過，是假保護）。
     // seed=5 下訓練場開戰瞬間就輪到敵方 goblin-scout-1 先攻，敵方 timer 立即排入。
-    await page.goto('/games/caravan?seed=5');
+    await page.goto('/caravan/play?seed=5');
     await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
@@ -136,7 +163,7 @@ test.describe('商隊與劍：遠征系統', () => {
   // 第 2 層房卡 fight/rest，選 fight 進入 enc_mine_spiders 後立即撤退；
   // 結算 goldGained=35（70 折半無條件捨去）、xpGained=30。
   async function newGameWithSeed(page: import('@playwright/test').Page, seed: number): Promise<void> {
-    await page.goto(`/games/caravan?seed=${seed}`);
+    await page.goto(`/caravan/play?seed=${seed}`);
     await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
@@ -293,7 +320,7 @@ test.describe('商隊與劍：遠征系統', () => {
 
 test.describe('商隊與劍：經營系統', () => {
   async function newGameWithSeed(page: import('@playwright/test').Page, seed: number): Promise<void> {
-    await page.goto(`/games/caravan?seed=${seed}`);
+    await page.goto(`/caravan/play?seed=${seed}`);
     await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
@@ -544,7 +571,7 @@ test.describe('商隊與劍：經營系統', () => {
 
 test.describe('商隊與劍：裝備系統', () => {
   async function newGameWithSeed(page: import('@playwright/test').Page, seed: number): Promise<void> {
-    await page.goto(`/games/caravan?seed=${seed}`);
+    await page.goto(`/caravan/play?seed=${seed}`);
     await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
