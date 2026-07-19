@@ -564,3 +564,25 @@ describe('M5 美術資產', () => {
     }
   });
 });
+
+describe('M5 平衡收尾 sanity', () => {
+  it('高階迷宮報酬高於初階：鹽晶洞 boss 與小怪 loot 皆優於礦坑對應', () => {
+    const bossMax = (id: string): number => ENCOUNTERS[id]()[0].loot!.gold[1];
+    expect(bossMax('enc_salt_cavern_boss')).toBeGreaterThan(bossMax('enc_mine_overseer'));
+    const avgGold = (id: string): number => {
+      const es = ENCOUNTERS[id]();
+      return es.reduce((s, e) => s + (e.loot ? (e.loot.gold[0] + e.loot.gold[1]) / 2 : 0), 0) / es.length;
+    };
+    expect(avgGold('enc_salt_crystals')).toBeGreaterThan(avgGold('enc_mine_spiders'));
+  });
+
+  it('裝備價格落在收入曲線內：武器 60-120G（買得起、不白送），所有裝備 ≤120G', () => {
+    for (const item of Object.values(ITEMS)) {
+      if (!item.equip) continue;
+      expect(item.value, `${item.id} 裝備價超出負擔區間`).toBeLessThanOrEqual(120);
+      if (item.equip.slot === 'weapon') {
+        expect(item.value, `${item.id} 武器價低於下限`).toBeGreaterThanOrEqual(60);
+      }
+    }
+  });
+});

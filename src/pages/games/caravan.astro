@@ -1,6 +1,7 @@
 ---
 // src/pages/games/caravan.astro
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import ArcadeBgm from '@components/ArcadeBgm.astro';
 
 const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 ---
@@ -157,6 +158,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <button id="btn-settle-back" class="caravan-btn">返回城鎮</button>
     </section>
   </main>
+  <ArcadeBgm track="/assets/games/bgm/caravan.mp3" />
 </BaseLayout>
 
 <script>
