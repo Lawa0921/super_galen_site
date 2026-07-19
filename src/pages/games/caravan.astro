@@ -1,0 +1,1589 @@
+---
+// src/pages/games/caravan.astro
+import BaseLayout from '@components/layout/BaseLayout.astro';
+
+const pageTitle = '商隊與劍 | CARAVAN & SWORD';
+---
+
+<BaseLayout title={pageTitle} description="文字跑團 RPG：經營商隊與傭兵團，擲骰決定命運" lang="zh-TW">
+  <main class="caravan-root">
+    <!-- 標題畫面 -->
+    <section id="screen-title" class="screen">
+      <h1 class="game-title">商隊與劍</h1>
+      <p class="game-subtitle">CARAVAN &amp; SWORD</p>
+      <div class="title-actions">
+        <button id="btn-new-game" class="caravan-btn">新的旅程</button>
+        <button id="btn-continue" class="caravan-btn" hidden>繼續旅程</button>
+      </div>
+    </section>
+
+    <!-- 城鎮畫面（M4：市集/酒館/隊伍/馬車四分頁） -->
+    <section id="screen-town" class="screen screen-wide" hidden>
+      <h2 class="town-name">啟程之鎮</h2>
+      <p class="town-status">金幣 <span id="town-gold">0</span> G</p>
+      <div class="town-actions">
+        <button id="btn-quest-board" class="caravan-btn">委託板</button>
+        <button id="btn-training" class="caravan-btn">訓練場</button>
+        <button id="btn-resume-expedition" class="caravan-btn" hidden>繼續遠征</button>
+      </div>
+      <p id="expedition-expired-note" class="expedition-expired-note" hidden>
+        先前的遠征記錄已過期，已返回城鎮
+      </p>
+
+      <nav id="town-tabs" class="town-tabs">
+        <button type="button" class="town-tab" data-town-tab="market">市集</button>
+        <button type="button" class="town-tab" data-town-tab="tavern">酒館</button>
+        <button type="button" class="town-tab" data-town-tab="roster">隊伍</button>
+        <button type="button" class="town-tab" data-town-tab="wagon">馬車</button>
+      </nav>
+
+      <section id="screen-market" class="town-panel" hidden>
+        <p class="panel-status">持有金幣 <span id="market-gold">0</span> G</p>
+        <div id="market-list" class="market-list"></div>
+      </section>
+
+      <section id="screen-tavern" class="town-panel" hidden>
+        <p class="panel-hint">花錢雇用旅人加入商隊（傭兵上限 3 人，出征含主角共 4 人）。</p>
+        <div id="tavern-list" class="tavern-list"></div>
+      </section>
+
+      <section id="screen-roster" class="town-panel" hidden>
+        <div id="roster-list" class="roster-list"></div>
+      </section>
+
+      <section id="wagon-panel" class="town-panel" hidden>
+        <p id="wagon-status" class="panel-status"></p>
+        <button id="btn-wagon-upgrade" type="button" class="caravan-btn"></button>
+      </section>
+    </section>
+
+    <!-- 屬性配點面板（M4：升級時彈出） -->
+    <div id="levelup-panel" class="modal-overlay" hidden>
+      <div class="modal-box">
+        <h3 class="modal-title">屬性配點</h3>
+        <div id="alloc-rows" class="alloc-rows"></div>
+        <p id="alloc-total" class="alloc-total">已配點數：0 / 2</p>
+        <div class="modal-actions">
+          <button id="alloc-confirm" type="button" class="caravan-btn" disabled>確認升級</button>
+          <button id="alloc-cancel" type="button" class="caravan-btn">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 委託板（M3：選擇貿易路線／迷宮出征；M4：出發前可整裝押貨） -->
+    <section id="screen-quest" class="screen" hidden>
+      <h2 class="quest-title">委託板</h2>
+      <div id="quest-list" class="quest-list"></div>
+      <p class="quest-hidden-hint" hidden>？ 迷霧深處似乎還藏著什麼，尚待線索指引……</p>
+      <p id="quest-wage-warning" class="quest-wage-warning" hidden></p>
+
+      <div id="quest-outfit" class="quest-outfit" hidden>
+        <h3 id="outfit-title" class="outfit-title"></h3>
+        <div id="cargo-picker" class="cargo-picker"></div>
+        <p id="cargo-space" class="cargo-space"></p>
+        <p id="wage-preview" class="wage-preview"></p>
+        <div class="outfit-actions">
+          <button id="btn-depart" type="button" class="caravan-btn">出發</button>
+          <button id="btn-outfit-cancel" type="button" class="caravan-btn">取消</button>
+        </div>
+      </div>
+
+      <button id="btn-quest-back" class="caravan-btn">返回城鎮</button>
+    </section>
+
+    <!-- 遠征畫面（M3：事件卡鏈／迷宮房卡） -->
+    <section id="screen-expedition" class="screen" hidden>
+      <p id="exp-progress" class="exp-progress"></p>
+      <div id="event-card" class="event-card" hidden>
+        <h3 id="event-title" class="event-title"></h3>
+        <p id="event-body" class="event-body"></p>
+        <div id="event-options" class="event-options"></div>
+      </div>
+      <div id="room-choices" class="room-choices"></div>
+      <p id="check-result" class="check-result" hidden></p>
+      <button id="btn-exp-continue" class="caravan-btn" hidden>繼續前進</button>
+    </section>
+
+    <!-- 戰鬥畫面（M2：訓練場入口；M3 併入遠征遭遇） -->
+    <section id="screen-combat" class="screen" hidden>
+      <h2 class="combat-title">戰鬥</h2>
+      <div class="combat-field">
+        <div id="combat-enemies" class="combat-side"></div>
+        <div id="combat-party" class="combat-side"></div>
+      </div>
+      <div id="combat-targets" class="combat-targets"></div>
+      <div id="combat-log" class="combat-log"></div>
+      <div id="combat-actions" class="combat-actions"></div>
+      <button id="btn-retreat" class="caravan-btn combat-retreat">撤退</button>
+      <div id="combat-result" class="combat-result" hidden>
+        <p class="result-text"></p>
+        <button id="btn-combat-back" class="caravan-btn">返回城鎮</button>
+      </div>
+    </section>
+
+    <!-- 異鎮交易（M4：路線抵達目的鎮，結算前可轉賣押貨與戰利品） -->
+    <section id="screen-trade" class="screen" hidden>
+      <h2 class="trade-title">異鎮交易</h2>
+      <p id="trade-town-name" class="trade-town-name"></p>
+      <div id="trade-list" class="trade-list"></div>
+      <p class="trade-gold-label">預計交易收入：<span id="trade-gold-preview">0</span> G</p>
+      <button id="btn-trade-done" class="caravan-btn">前往結算</button>
+    </section>
+
+    <!-- 結算畫面（M3：遠征歸返） -->
+    <section id="screen-settlement" class="screen" hidden>
+      <h2 class="settle-title">遠征結算</h2>
+      <div id="settle-log" class="settle-log"></div>
+      <dl class="settle-stats">
+        <div class="settle-stat">
+          <dt>戰利品金幣</dt>
+          <dd><span id="settle-gold">0</span> G</dd>
+        </div>
+        <div class="settle-stat">
+          <dt>貿易收入</dt>
+          <dd><span id="settle-trade-gold">0</span> G</dd>
+        </div>
+        <div class="settle-stat">
+          <dt>經驗值</dt>
+          <dd><span id="settle-xp">0</span> XP</dd>
+        </div>
+      </dl>
+      <p class="settle-items-label">帶回的物品：</p>
+      <ul id="settle-items" class="settle-items"></ul>
+      <button id="btn-settle-back" class="caravan-btn">返回城鎮</button>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { newGame, saveGame, loadGame, SAVE_KEY } from '@scripts/games/caravan/save';
+  import type { SaveData, CompanionRecord } from '@scripts/games/caravan/save';
+  import { createRng } from '@scripts/games/caravan/rng';
+  import {
+    startCombat, partyAct, enemyAct, attemptRetreat, currentActor, resolveCasualties,
+  } from '@scripts/games/caravan/combat';
+  import type { CombatState, CombatantBase, Move, PartyMember } from '@scripts/games/caravan/combat';
+  import {
+    startExpedition, drawEvent, optionAvailable, resolveOption, drawRooms, chooseRoom,
+    buildEncounter, applyPartyHp, finishCombat, settleExpedition,
+  } from '@scripts/games/caravan/expedition';
+  import type { ExpeditionState, EventCard, RoomKind, LocationDef } from '@scripts/games/caravan/expedition';
+  import type { CheckResult } from '@scripts/games/caravan/check';
+  import { memberFromRecord, JOBS } from '@scripts/games/caravan/data/jobs';
+  import { TRAINING_ENCOUNTER } from '@scripts/games/caravan/data/enemies';
+  import { visibleLocations, LOCATIONS } from '@scripts/games/caravan/data/locations';
+  import { EVENTS } from '@scripts/games/caravan/data/events';
+  import { ITEMS } from '@scripts/games/caravan/data/items';
+  // data/towns 頂層呼叫 registerTowns(TOWNS)——本頁必須 import 才會在瀏覽器實際註冊，
+  // 否則 expedition.ts 的異鎮交易查表（getTown）會拿到空表（M3 Task 3 交接事項）。
+  import { TOWNS } from '@scripts/games/caravan/data/towns';
+  import type { TownDef } from '@scripts/games/caravan/economy';
+  import {
+    pendingLevelUps, applyLevelUp, unlockedMoves, generateRecruitPool, hireCost, wagePerTrip,
+  } from '@scripts/games/caravan/roster';
+  import {
+    buyPrice, sellPrice, tradeSellPrice, cargoCapacity, wagonUpgradeCost, totalWage,
+  } from '@scripts/games/caravan/economy';
+  import type { Stat, StatBlock } from '@scripts/games/caravan/types';
+
+  const titleScreen = document.getElementById('screen-title')!;
+  const townScreen = document.getElementById('screen-town')!;
+  const questScreen = document.getElementById('screen-quest')!;
+  const expeditionScreen = document.getElementById('screen-expedition')!;
+  const combatScreen = document.getElementById('screen-combat')!;
+  const tradeScreen = document.getElementById('screen-trade')!;
+  const settlementScreen = document.getElementById('screen-settlement')!;
+
+  const screens = {
+    title: titleScreen,
+    town: townScreen,
+    quest: questScreen,
+    expedition: expeditionScreen,
+    combat: combatScreen,
+    trade: tradeScreen,
+    settlement: settlementScreen,
+  } as const;
+
+  function showScreen(name: keyof typeof screens): void {
+    for (const key of Object.keys(screens) as (keyof typeof screens)[]) {
+      screens[key].hidden = key !== name;
+    }
+  }
+
+  const btnNew = document.getElementById('btn-new-game')!;
+  const btnContinue = document.getElementById('btn-continue')!;
+  const btnTraining = document.getElementById('btn-training')!;
+  const btnQuestBoard = document.getElementById('btn-quest-board')!;
+  const btnResumeExpedition = document.getElementById('btn-resume-expedition')!;
+  const goldEl = document.getElementById('town-gold')!;
+  const expeditionExpiredNoteEl = document.getElementById('expedition-expired-note')!;
+
+  // ---- 城鎮分頁（M4：市集/酒館/隊伍/馬車） ----
+  const townTabButtons = Array.from(
+    document.querySelectorAll<HTMLButtonElement>('.town-tab[data-town-tab]')
+  );
+  const townPanels: Record<string, HTMLElement> = {
+    market: document.getElementById('screen-market')!,
+    tavern: document.getElementById('screen-tavern')!,
+    roster: document.getElementById('screen-roster')!,
+    wagon: document.getElementById('wagon-panel')!,
+  };
+  const marketGoldEl = document.getElementById('market-gold')!;
+  const marketListEl = document.getElementById('market-list')!;
+  const tavernListEl = document.getElementById('tavern-list')!;
+  const rosterListEl = document.getElementById('roster-list')!;
+  const wagonStatusEl = document.getElementById('wagon-status')!;
+  const btnWagonUpgrade = document.getElementById('btn-wagon-upgrade') as HTMLButtonElement;
+
+  const levelupPanelEl = document.getElementById('levelup-panel')!;
+  const allocRowsEl = document.getElementById('alloc-rows')!;
+  const allocTotalEl = document.getElementById('alloc-total')!;
+  const allocConfirmBtn = document.getElementById('alloc-confirm') as HTMLButtonElement;
+  const allocCancelBtn = document.getElementById('alloc-cancel')!;
+
+  const STAT_LABELS: Record<Stat, string> = { str: '力量', dex: '敏捷', int: '智力', cha: '魅力', con: '體質' };
+  const STARTING_TOWN: TownDef = TOWNS['starting-town'];
+
+  const btnQuestBack = document.getElementById('btn-quest-back')!;
+  const questListEl = document.getElementById('quest-list')!;
+  const hiddenHintEl = document.querySelector('.quest-hidden-hint') as HTMLElement;
+  const questWageWarningEl = document.getElementById('quest-wage-warning')!;
+
+  // ---- 出發整裝（M4：押貨與薪餉預覽） ----
+  const questOutfitEl = document.getElementById('quest-outfit')!;
+  const outfitTitleEl = document.getElementById('outfit-title')!;
+  const cargoPickerEl = document.getElementById('cargo-picker')!;
+  const cargoSpaceEl = document.getElementById('cargo-space')!;
+  const wagePreviewEl = document.getElementById('wage-preview')!;
+  const btnDepart = document.getElementById('btn-depart') as HTMLButtonElement;
+  const btnOutfitCancel = document.getElementById('btn-outfit-cancel')!;
+
+  // ---- 異鎮交易（M4） ----
+  const tradeTownNameEl = document.getElementById('trade-town-name')!;
+  const tradeListEl = document.getElementById('trade-list')!;
+  const tradeGoldPreviewEl = document.getElementById('trade-gold-preview')!;
+  const btnTradeDone = document.getElementById('btn-trade-done')!;
+  const settleTradeGoldEl = document.getElementById('settle-trade-gold')!;
+
+  const expProgressEl = document.getElementById('exp-progress')!;
+  const eventCardEl = document.getElementById('event-card')!;
+  const eventTitleEl = document.getElementById('event-title')!;
+  const eventBodyEl = document.getElementById('event-body')!;
+  const eventOptionsEl = document.getElementById('event-options')!;
+  const roomChoicesEl = document.getElementById('room-choices')!;
+  const checkResultEl = document.getElementById('check-result')!;
+  const btnExpContinue = document.getElementById('btn-exp-continue')!;
+
+  const combatEnemiesEl = document.getElementById('combat-enemies')!;
+  const combatPartyEl = document.getElementById('combat-party')!;
+  const combatTargetsEl = document.getElementById('combat-targets')!;
+  const combatLogEl = document.getElementById('combat-log')!;
+  const combatActionsEl = document.getElementById('combat-actions')!;
+  const combatResultEl = document.getElementById('combat-result')!;
+  const combatResultTextEl = combatResultEl.querySelector('.result-text')!;
+  const btnRetreat = document.getElementById('btn-retreat')!;
+  const btnCombatBack = document.getElementById('btn-combat-back')!;
+
+  const settleGoldEl = document.getElementById('settle-gold')!;
+  const settleXpEl = document.getElementById('settle-xp')!;
+  const settleItemsEl = document.getElementById('settle-items')!;
+  const settleLogEl = document.getElementById('settle-log')!;
+  const btnSettleBack = document.getElementById('btn-settle-back')!;
+
+  // 過期遠征快照提示（M4 Task 4 審查交接第 2 項）：save.ts 的 parseAndMigrate 會靜默丟棄
+  // 版本不符的 expedition 快照，UI 這層看不到「丟棄前」的原始值，所以在 loadGame() 前
+  // 自行 parse 一次 raw JSON 比對「load 前有、load 後沒有」，不改 save.ts 的既有回傳形狀。
+  let rawHadExpedition = false;
+  try {
+    const rawJson = localStorage.getItem(SAVE_KEY);
+    if (rawJson) {
+      const rawParsed = JSON.parse(rawJson) as { expedition?: unknown };
+      if (rawParsed && rawParsed.expedition) rawHadExpedition = true;
+    }
+  } catch {
+    // raw JSON 壞掉的話 loadGame() 自己也會回 null，不需要額外處理
+  }
+
+  let save: SaveData | null = loadGame();
+  if (save) btnContinue.hidden = false;
+  // 一次性旗標：只有「load 前 raw 有 expedition、load 後被丟棄成 null」才算過期；
+  // showTown() 顯示過一次後會清掉，btnNew（開新檔）也會清掉，不會誤觸發。
+  let expeditionExpiredOnLoad = rawHadExpedition && !!save && save.expedition === null;
+
+  function updateResumeButton(): void {
+    btnResumeExpedition.hidden = !(save && save.expedition);
+  }
+
+  // ---------------------------------------------------------------------
+  // 城鎮分頁：市集／酒館／隊伍／馬車（M4）
+  // ---------------------------------------------------------------------
+
+  function switchTownTab(tab: string): void {
+    for (const btn of townTabButtons) {
+      btn.classList.toggle('active', btn.dataset.townTab === tab);
+    }
+    for (const [key, panel] of Object.entries(townPanels)) {
+      panel.hidden = key !== tab;
+    }
+  }
+
+  for (const btn of townTabButtons) {
+    btn.addEventListener('click', () => switchTownTab(btn.dataset.townTab!));
+  }
+
+  function renderMarket(): void {
+    if (!save) return;
+    marketGoldEl.textContent = String(save.gold);
+    const town = STARTING_TOWN;
+    const ownedIds = Object.keys(save.inventory).filter((id) => (save!.inventory[id] ?? 0) > 0);
+    const ids = Array.from(new Set([...town.stock, ...ownedIds]));
+    marketListEl.innerHTML = '';
+    for (const itemId of ids) {
+      const item = ITEMS[itemId];
+      if (!item) continue;
+      const owned = save.inventory[itemId] ?? 0;
+      const row = document.createElement('div');
+      row.className = 'market-row';
+      row.dataset.itemId = itemId;
+
+      const name = document.createElement('span');
+      name.className = 'market-name';
+      name.textContent = `${item.name}（持有 ${owned}）`;
+      row.appendChild(name);
+
+      if (town.stock.includes(itemId)) {
+        const price = buyPrice(town, itemId);
+        const buyBtn = document.createElement('button');
+        buyBtn.type = 'button';
+        buyBtn.className = 'caravan-btn buy-btn';
+        buyBtn.dataset.itemId = itemId;
+        buyBtn.textContent = `買入 ${price} G`;
+        buyBtn.disabled = save.gold < price;
+        buyBtn.addEventListener('click', () => {
+          if (!save) return;
+          save.gold -= price;
+          save.inventory[itemId] = (save.inventory[itemId] ?? 0) + 1;
+          saveGame(save);
+          renderTownPanels();
+        });
+        row.appendChild(buyBtn);
+      }
+
+      if (owned > 0) {
+        const price = sellPrice(town, itemId);
+        const sellBtn = document.createElement('button');
+        sellBtn.type = 'button';
+        sellBtn.className = 'caravan-btn sell-btn';
+        sellBtn.dataset.itemId = itemId;
+        sellBtn.textContent = `賣出 ${price} G`;
+        sellBtn.addEventListener('click', () => {
+          if (!save) return;
+          save.gold += price;
+          const remaining = Math.max(0, (save.inventory[itemId] ?? 0) - 1);
+          if (remaining === 0) delete save.inventory[itemId];
+          else save.inventory[itemId] = remaining;
+          saveGame(save);
+          renderTownPanels();
+        });
+        row.appendChild(sellBtn);
+      }
+
+      marketListEl.appendChild(row);
+    }
+  }
+
+  function renderTavern(): void {
+    if (!save) return;
+    const pool = generateRecruitPool(createRng(save.tavernSeed), save.tavernSeed, save.reputation).filter(
+      (r) => !save!.companions.some((c) => c.id === r.id)
+    );
+    tavernListEl.innerHTML = '';
+    if (pool.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'tavern-empty';
+      p.textContent = '酒館裡目前沒有想加入商隊的旅人了，晚點再來看看吧。';
+      tavernListEl.appendChild(p);
+      return;
+    }
+    const full = save.companions.length >= 3;
+    for (const record of pool) {
+      const cost = hireCost(record);
+      const wage = wagePerTrip(record);
+      const card = document.createElement('div');
+      card.className = 'recruit-card';
+      card.dataset.recruitId = record.id;
+
+      const name = document.createElement('p');
+      name.className = 'recruit-name';
+      name.textContent = `${record.name}．${JOBS[record.job].name}（Lv${record.level}）`;
+
+      const info = document.createElement('p');
+      info.className = 'recruit-info';
+      info.textContent = `雇用費 ${cost} G．每趟薪餉 ${wage} G`;
+
+      const hireBtn = document.createElement('button');
+      hireBtn.type = 'button';
+      hireBtn.className = 'caravan-btn hire-btn';
+      hireBtn.textContent = '雇用';
+      hireBtn.disabled = save.gold < cost || full;
+      hireBtn.addEventListener('click', () => {
+        if (!save) return;
+        save.gold -= cost;
+        save.companions.push(record);
+        saveGame(save);
+        renderTownPanels();
+      });
+
+      card.append(name, info, hireBtn);
+      tavernListEl.appendChild(card);
+    }
+  }
+
+  function renderRoster(): void {
+    if (!save) return;
+    const members: CompanionRecord[] = [save.protagonist, ...save.companions];
+    rosterListEl.innerHTML = '';
+    for (const record of members) {
+      const card = document.createElement('div');
+      card.className = 'roster-card';
+      card.dataset.memberId = record.id;
+
+      const name = document.createElement('p');
+      name.className = 'roster-name';
+      name.textContent = `${record.name}．${JOBS[record.job].name}（Lv${record.level}）`;
+
+      const xp = document.createElement('p');
+      xp.className = 'roster-xp';
+      xp.textContent = `經驗值 ${record.xp} XP`;
+
+      const stats = document.createElement('p');
+      stats.className = 'roster-stats';
+      stats.textContent = (Object.keys(STAT_LABELS) as Stat[])
+        .map((k) => `${STAT_LABELS[k]} ${record.stats[k]}`)
+        .join('　');
+
+      const moves = document.createElement('p');
+      moves.className = 'roster-moves';
+      moves.textContent = `招式：${unlockedMoves(record).map((m) => m.name).join('、')}`;
+
+      card.append(name, xp, stats, moves);
+
+      if (record.injuredForTrips > 0) {
+        const injury = document.createElement('p');
+        injury.className = 'roster-injury';
+        injury.textContent = `重傷中，剩餘 ${record.injuredForTrips} 趟無法出征`;
+        card.appendChild(injury);
+      }
+
+      if (pendingLevelUps(record) > 0) {
+        const levelupBtn = document.createElement('button');
+        levelupBtn.type = 'button';
+        levelupBtn.className = 'caravan-btn levelup-btn';
+        levelupBtn.textContent = '升級！';
+        levelupBtn.addEventListener('click', () => openLevelupPanel(record));
+        card.appendChild(levelupBtn);
+      }
+
+      if (record.id !== save.protagonist.id) {
+        const dismissBtn = document.createElement('button');
+        dismissBtn.type = 'button';
+        dismissBtn.className = 'caravan-btn dismiss-btn';
+        dismissBtn.textContent = '解雇';
+        dismissBtn.addEventListener('click', () => {
+          if (dismissBtn.dataset.confirm === '1') {
+            if (!save) return;
+            save.companions = save.companions.filter((c) => c.id !== record.id);
+            saveGame(save);
+            renderTownPanels();
+          } else {
+            dismissBtn.dataset.confirm = '1';
+            dismissBtn.textContent = '確定解雇？';
+          }
+        });
+        card.appendChild(dismissBtn);
+      }
+
+      rosterListEl.appendChild(card);
+    }
+  }
+
+  function renderWagon(): void {
+    if (!save) return;
+    const capacity = cargoCapacity(save.wagonLevel);
+    wagonStatusEl.textContent = `馬車等級 ${save.wagonLevel}．載貨上限 ${capacity} 件`;
+    const cost = wagonUpgradeCost(save.wagonLevel);
+    btnWagonUpgrade.textContent = `升級馬車（${cost} G）`;
+    btnWagonUpgrade.disabled = save.gold < cost;
+  }
+
+  btnWagonUpgrade.addEventListener('click', () => {
+    if (!save) return;
+    const cost = wagonUpgradeCost(save.wagonLevel);
+    if (save.gold < cost) return;
+    save.gold -= cost;
+    save.wagonLevel += 1;
+    saveGame(save);
+    renderTownPanels();
+  });
+
+  function renderTownPanels(): void {
+    if (!save) return;
+    goldEl.textContent = String(save.gold);
+    renderMarket();
+    renderTavern();
+    renderRoster();
+    renderWagon();
+  }
+
+  // ---- 屬性配點面板（M4） ----
+
+  let levelupTarget: CompanionRecord | null = null;
+  let levelupAlloc: Partial<StatBlock> = {};
+
+  function openLevelupPanel(record: CompanionRecord): void {
+    levelupTarget = record;
+    levelupAlloc = {};
+    renderLevelupPanel();
+    levelupPanelEl.hidden = false;
+  }
+
+  function closeLevelupPanel(): void {
+    levelupPanelEl.hidden = true;
+    levelupTarget = null;
+    levelupAlloc = {};
+  }
+
+  function renderLevelupPanel(): void {
+    if (!levelupTarget) return;
+    const total = Object.values(levelupAlloc).reduce((sum: number, v) => sum + (v ?? 0), 0);
+    allocRowsEl.innerHTML = '';
+    for (const stat of Object.keys(STAT_LABELS) as Stat[]) {
+      const row = document.createElement('div');
+      row.className = 'alloc-row';
+
+      const label = document.createElement('span');
+      label.className = 'alloc-label';
+      const current = levelupTarget.stats[stat] + (levelupAlloc[stat] ?? 0);
+      label.textContent = `${STAT_LABELS[stat]} ${current}`;
+
+      const plusBtn = document.createElement('button');
+      plusBtn.type = 'button';
+      plusBtn.className = 'caravan-btn alloc-plus';
+      plusBtn.dataset.stat = stat;
+      plusBtn.textContent = '＋';
+      plusBtn.disabled = total >= 2;
+      plusBtn.addEventListener('click', () => {
+        levelupAlloc[stat] = (levelupAlloc[stat] ?? 0) + 1;
+        renderLevelupPanel();
+      });
+
+      row.append(label, plusBtn);
+      allocRowsEl.appendChild(row);
+    }
+    allocTotalEl.textContent = `已配點數：${total} / 2`;
+    allocConfirmBtn.disabled = total !== 2;
+  }
+
+  allocConfirmBtn.addEventListener('click', () => {
+    if (!levelupTarget || !save) return;
+    applyLevelUp(levelupTarget, levelupAlloc);
+    saveGame(save);
+    closeLevelupPanel();
+    renderTownPanels();
+  });
+
+  allocCancelBtn.addEventListener('click', () => {
+    closeLevelupPanel();
+  });
+
+  function showTown(gold: number): void {
+    goldEl.textContent = String(gold);
+    showScreen('town');
+    updateResumeButton();
+    renderTownPanels();
+    switchTownTab('market');
+    // 一次性提示：顯示過一次後清旗標，之後回城鎮不會再跳出來
+    expeditionExpiredNoteEl.hidden = !expeditionExpiredOnLoad;
+    expeditionExpiredOnLoad = false;
+  }
+
+  btnNew.addEventListener('click', () => {
+    save = newGame();
+    saveGame(save);
+    expeditionExpiredOnLoad = false;
+    showTown(save.gold);
+  });
+
+  btnContinue.addEventListener('click', () => {
+    if (!save) return;
+    showTown(save.gold);
+  });
+
+  const seedParam = new URLSearchParams(location.search).get('seed');
+  const rng = createRng(seedParam ? Number(seedParam) : Date.now());
+
+  // ---------------------------------------------------------------------
+  // 委託板（M3）
+  // ---------------------------------------------------------------------
+
+  // 出發前薪餉守衛（M4 Task 4 審查修復）：.quest-item 立即出發與 #btn-depart 整裝出發
+  // 兩條入口都要在呼叫 beginExpedition() 前檢查金幣是否足夠付薪餉，共用這個函式——
+  // 審查抓到的原始 bug 是 .quest-item 那條路徑漏了這一步，startExpedition() 內部丟出的
+  // Error 沒人接住，UI 靜默無反應。金幣不足時顯示 #quest-wage-warning，不呼叫 beginExpedition。
+  function canAffordWage(currentSave: SaveData): boolean {
+    const wage = totalWage(currentSave);
+    if (currentSave.gold < wage) {
+      questWageWarningEl.textContent = `金幣不足以支付隊伍薪餉（需 ${wage}）`;
+      questWageWarningEl.hidden = false;
+      return false;
+    }
+    questWageWarningEl.hidden = true;
+    return true;
+  }
+
+  function renderQuestBoard(): void {
+    if (!save) return;
+    questWageWarningEl.hidden = true;
+    const locs = visibleLocations(save);
+    questListEl.innerHTML = '';
+    for (const loc of locs) {
+      const row = document.createElement('div');
+      row.className = 'quest-row';
+
+      const div = document.createElement('div');
+      div.className = 'quest-item';
+      div.dataset.locationId = loc.id;
+      const name = document.createElement('p');
+      name.className = 'quest-name';
+      name.textContent = loc.name;
+      const kind = document.createElement('p');
+      kind.className = 'quest-kind';
+      kind.textContent =
+        loc.kind === 'dungeon' ? `迷宮．共 ${loc.floors} 層` : `商路．共 ${loc.legs} 段`;
+      div.append(name, kind);
+      // 直接點整列＝沿用既有「立即出發（不押貨）」行為，保持向後相容
+      // （舊 e2e 依賴此行為：點 .quest-item 後立刻進入 #screen-expedition，
+      // 不經任何確認步驟）。想押貨出發的話改點下面的「整裝出發」鈕。
+      // 出發前仍要走 canAffordWage() 守門，金幣不足就不呼叫 beginExpedition。
+      div.addEventListener('click', () => {
+        if (!save || !canAffordWage(save)) return;
+        beginExpedition(loc.id);
+      });
+      row.appendChild(div);
+
+      const outfitBtn = document.createElement('button');
+      outfitBtn.type = 'button';
+      outfitBtn.className = 'caravan-btn quest-outfit-btn';
+      outfitBtn.dataset.locationId = loc.id;
+      outfitBtn.textContent = '整裝出發 ▸';
+      outfitBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        openOutfitPanel(loc);
+      });
+      row.appendChild(outfitBtn);
+
+      questListEl.appendChild(row);
+    }
+    const hasHidden = Object.values(LOCATIONS).some(
+      (loc) => loc.hidden && save!.flags[`discovered:${loc.id}`] !== true
+    );
+    hiddenHintEl.hidden = !hasHidden;
+    closeOutfitPanel();
+  }
+
+  btnQuestBoard.addEventListener('click', () => {
+    renderQuestBoard();
+    showScreen('quest');
+  });
+
+  btnQuestBack.addEventListener('click', () => {
+    closeOutfitPanel();
+    showScreen('town');
+  });
+
+  // ---------------------------------------------------------------------
+  // 出發整裝：押貨與薪餉預覽（M4）
+  // ---------------------------------------------------------------------
+
+  let outfitLocation: LocationDef | null = null;
+  let stagedCargo: Record<string, number> = {};
+
+  function closeOutfitPanel(): void {
+    questOutfitEl.hidden = true;
+    outfitLocation = null;
+    stagedCargo = {};
+  }
+
+  function openOutfitPanel(loc: LocationDef): void {
+    outfitLocation = loc;
+    stagedCargo = {};
+    questOutfitEl.hidden = false;
+    renderOutfitPanel();
+  }
+
+  function renderOutfitPanel(): void {
+    if (!save || !outfitLocation) return;
+    outfitTitleEl.textContent = `整裝出發：${outfitLocation.name}`;
+    const isDungeon = outfitLocation.kind === 'dungeon';
+    cargoPickerEl.hidden = isDungeon;
+    cargoSpaceEl.hidden = isDungeon;
+
+    if (!isDungeon) {
+      const capacity = cargoCapacity(save.wagonLevel);
+      const staged = Object.values(stagedCargo).reduce((sum, v) => sum + v, 0);
+      cargoSpaceEl.textContent = `載貨：${staged}/${capacity}`;
+      cargoPickerEl.innerHTML = '';
+      const entries = Object.entries(save.inventory).filter(([, count]) => count > 0);
+      if (entries.length === 0) {
+        const p = document.createElement('p');
+        p.className = 'cargo-empty';
+        p.textContent = '背包裡沒有可押運的貨物，市集買些貨再來吧。';
+        cargoPickerEl.appendChild(p);
+      }
+      for (const [itemId, owned] of entries) {
+        const stagedCount = stagedCargo[itemId] ?? 0;
+        const row = document.createElement('div');
+        row.className = 'cargo-row';
+        row.dataset.itemId = itemId;
+
+        const label = document.createElement('span');
+        label.className = 'cargo-label';
+        label.textContent = `${ITEMS[itemId]?.name ?? itemId} ${stagedCount}/${owned}`;
+
+        const minusBtn = document.createElement('button');
+        minusBtn.type = 'button';
+        minusBtn.className = 'caravan-btn cargo-minus';
+        minusBtn.dataset.itemId = itemId;
+        minusBtn.textContent = '－';
+        minusBtn.disabled = stagedCount <= 0;
+        minusBtn.addEventListener('click', () => {
+          stagedCargo[itemId] = Math.max(0, (stagedCargo[itemId] ?? 0) - 1);
+          renderOutfitPanel();
+        });
+
+        const plusBtn = document.createElement('button');
+        plusBtn.type = 'button';
+        plusBtn.className = 'caravan-btn cargo-plus';
+        plusBtn.dataset.itemId = itemId;
+        plusBtn.textContent = '＋';
+        plusBtn.disabled = stagedCount >= owned || staged >= capacity;
+        plusBtn.addEventListener('click', () => {
+          stagedCargo[itemId] = (stagedCargo[itemId] ?? 0) + 1;
+          renderOutfitPanel();
+        });
+
+        row.append(label, minusBtn, plusBtn);
+        cargoPickerEl.appendChild(row);
+      }
+    }
+
+    const wage = totalWage(save);
+    wagePreviewEl.textContent = `預計薪餉：${wage} G`;
+    btnDepart.disabled = save.gold < wage;
+  }
+
+  btnDepart.addEventListener('click', () => {
+    if (!outfitLocation || !save || !canAffordWage(save)) return;
+    const locationId = outfitLocation.id;
+    const cargo = { ...stagedCargo };
+    closeOutfitPanel();
+    beginExpedition(locationId, cargo);
+  });
+
+  btnOutfitCancel.addEventListener('click', () => {
+    closeOutfitPanel();
+  });
+
+  btnResumeExpedition.addEventListener('click', () => {
+    if (!save || !save.expedition) return;
+    expedition = save.expedition;
+    showScreen('expedition');
+    dispatchPhase();
+  });
+
+  // ---------------------------------------------------------------------
+  // 遠征狀態機（M3）
+  // ---------------------------------------------------------------------
+
+  let expedition: ExpeditionState | null = null;
+  let pendingContinue: (() => void) | null = null;
+
+  const ROOM_LABELS: Record<RoomKind, string> = {
+    fight: '⚔ 殺氣瀰漫',
+    treasure: '✧ 微光閃爍',
+    event: '？ 未明岔路',
+    rest: '☾ 靜謐歇腳處',
+    unknown: '❔ 深不可測',
+  };
+
+  function beginExpedition(locationId: string, cargo: Record<string, number> = {}): void {
+    if (!save) return;
+    expedition = startExpedition(rng, save, locationId, cargo);
+    save.expedition = expedition;
+    saveGame(save);
+    showScreen('expedition');
+    dispatchPhase();
+  }
+
+  function dispatchPhase(): void {
+    if (!expedition) return;
+    if (expedition.phase === 'event') enterEventPhase();
+    else if (expedition.phase === 'room-choice') enterRoomChoicePhase();
+    else if (expedition.phase === 'combat') enterCombatPhase();
+    else if (expedition.phase === 'done') enterSettlementPhase();
+  }
+
+  function renderExpProgress(): void {
+    if (!expedition) return;
+    const unit = expedition.kind === 'dungeon' ? '層' : '段';
+    expProgressEl.textContent = `第 ${expedition.step}/${expedition.totalSteps} ${unit}`;
+  }
+
+  function renderCheckResult(check: CheckResult | null): void {
+    if (!check) {
+      checkResultEl.hidden = true;
+      checkResultEl.textContent = '';
+      return;
+    }
+    checkResultEl.hidden = false;
+    const outcome = check.success ? '成功' : '失敗';
+    checkResultEl.textContent = `擲骰 ${check.die}（總值 ${check.total} / 目標 DC ${check.dc}）── ${outcome}！`;
+  }
+
+  function enterEventPhase(): void {
+    if (!expedition || !save) return;
+    let card: EventCard | undefined;
+    if (expedition.currentEventId) {
+      card = EVENTS.find((c) => c.id === expedition!.currentEventId);
+    }
+    if (!card) {
+      card = drawEvent(rng, expedition, save);
+      saveGame(save);
+    }
+    renderEventCard(card);
+  }
+
+  function renderEventCard(card: EventCard): void {
+    if (!save) return;
+    pendingContinue = null;
+    btnExpContinue.hidden = true;
+    checkResultEl.hidden = true;
+    checkResultEl.textContent = '';
+    roomChoicesEl.innerHTML = '';
+    eventCardEl.hidden = false;
+    eventTitleEl.textContent = card.title;
+    eventBodyEl.textContent = card.body;
+    eventOptionsEl.innerHTML = '';
+    card.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'caravan-btn event-opt';
+      btn.dataset.optIndex = String(idx);
+      btn.textContent = opt.label;
+      btn.disabled = !optionAvailable(save!, opt);
+      btn.addEventListener('click', () => handleOptionChoice(card, idx));
+      eventOptionsEl.appendChild(btn);
+    });
+    renderExpProgress();
+    showScreen('expedition');
+  }
+
+  function handleOptionChoice(card: EventCard, idx: number): void {
+    if (!expedition || !save) return;
+    const { check } = resolveOption(rng, expedition, save, card, idx);
+    saveGame(save);
+    eventOptionsEl.querySelectorAll('.event-opt').forEach((b) => {
+      (b as HTMLButtonElement).disabled = true;
+    });
+    renderCheckResult(check);
+    btnExpContinue.hidden = false;
+    pendingContinue = () => dispatchPhase();
+  }
+
+  function enterRoomChoicePhase(): void {
+    if (!expedition || !save) return;
+    if (!expedition.roomChoices) {
+      drawRooms(rng, expedition);
+      saveGame(save);
+    }
+    eventCardEl.hidden = true;
+    checkResultEl.hidden = true;
+    checkResultEl.textContent = '';
+    btnExpContinue.hidden = true;
+    pendingContinue = null;
+    renderRoomChoices();
+    renderExpProgress();
+    showScreen('expedition');
+  }
+
+  function renderRoomChoices(): void {
+    roomChoicesEl.innerHTML = '';
+    for (const room of expedition!.roomChoices ?? []) {
+      const btn = document.createElement('button');
+      btn.className = 'caravan-btn room-btn';
+      btn.dataset.room = room;
+      btn.textContent = ROOM_LABELS[room];
+      btn.addEventListener('click', () => handleRoomChoice(room));
+      roomChoicesEl.appendChild(btn);
+    }
+  }
+
+  function handleRoomChoice(room: RoomKind): void {
+    if (!expedition || !save) return;
+    roomChoicesEl.innerHTML = '';
+    const result = chooseRoom(rng, expedition, save, room);
+    saveGame(save);
+    if (result.event) {
+      renderEventCard(result.event);
+      return;
+    }
+    let message = '';
+    if (result.treasureGold !== undefined) {
+      message = `你在房間角落翻找，發現了 ${result.treasureGold} 枚金幣！`;
+    } else if (result.restHealed !== undefined) {
+      message = `商隊在此稍作歇息，全員恢復了 ${result.restHealed} 點生命。`;
+    } else if (result.encounterId) {
+      message = '房間深處傳出低吼——戰鬥一觸即發！';
+    }
+    checkResultEl.hidden = false;
+    checkResultEl.textContent = message;
+    btnExpContinue.hidden = false;
+    pendingContinue = () => dispatchPhase();
+  }
+
+  btnExpContinue.addEventListener('click', () => {
+    const fn = pendingContinue;
+    pendingContinue = null;
+    fn?.();
+  });
+
+  function buildExpeditionParty(): PartyMember[] {
+    if (!save || !expedition) return [];
+    const members = [memberFromRecord(save.protagonist)];
+    for (const companion of save.companions) {
+      if (companion.injuredForTrips === 0) members.push(memberFromRecord(companion));
+    }
+    applyPartyHp(expedition, members);
+    return members;
+  }
+
+  function enterCombatPhase(): void {
+    if (!expedition || !save) return;
+    combatContext = 'expedition';
+    const party = buildExpeditionParty();
+    const enemies = buildEncounter(rng, expedition, expedition.pendingEncounterId!);
+    state = startCombat(rng, party, enemies);
+    selectedTargetId = null;
+    showScreen('combat');
+    combatResultEl.hidden = true;
+    render();
+  }
+
+  function enterSettlementPhase(): void {
+    if (!expedition || !save) return;
+    const hasSellable =
+      !!expedition.destinationTownId &&
+      !expedition.retreated &&
+      (Object.values(expedition.cargo).some((c) => c > 0) ||
+        Object.values(expedition.loot.items).some((c) => c > 0));
+    if (hasSellable) {
+      enterTradePhase();
+      return;
+    }
+    finalizeSettlement([]);
+  }
+
+  function finalizeSettlement(tradeSales: Array<{ itemId: string; count: number }>): void {
+    if (!expedition || !save) return;
+    const finished = expedition;
+    const result = settleExpedition(finished, save, tradeSales);
+    // 招募池輪替（M4）：每趟歸返結算後種子遞增，酒館下次渲染會抽到新一批人選
+    save.tavernSeed += 1;
+    saveGame(save);
+    renderSettlement(result, finished);
+    showScreen('settlement');
+    expedition = null;
+    updateResumeButton();
+  }
+
+  // ---------------------------------------------------------------------
+  // 異鎮交易（M4）：抵達目的鎮、未撤退、且押貨/戰利品有可售物才會出現
+  // ---------------------------------------------------------------------
+
+  let tradeTown: TownDef | null = null;
+  let tradeCombined: Record<string, number> = {};
+  let tradeSoldIds: Set<string> = new Set();
+
+  function enterTradePhase(): void {
+    if (!expedition || !save) return;
+    const townId = expedition.destinationTownId!;
+    tradeTown = TOWNS[townId] ?? null;
+    tradeSoldIds = new Set();
+    tradeCombined = {};
+    for (const [itemId, count] of Object.entries(expedition.cargo)) {
+      if (count > 0) tradeCombined[itemId] = (tradeCombined[itemId] ?? 0) + count;
+    }
+    for (const [itemId, count] of Object.entries(expedition.loot.items)) {
+      if (count > 0) tradeCombined[itemId] = (tradeCombined[itemId] ?? 0) + count;
+    }
+    tradeTownNameEl.textContent = tradeTown
+      ? `商隊抵達${tradeTown.name}，趁隙卸貨轉賣：`
+      : '';
+    renderTrade();
+    showScreen('trade');
+  }
+
+  function renderTrade(): void {
+    tradeListEl.innerHTML = '';
+    let goldPreview = 0;
+    for (const [itemId, count] of Object.entries(tradeCombined)) {
+      const sold = tradeSoldIds.has(itemId);
+      const unitPrice = tradeTown ? tradeSellPrice(tradeTown, itemId) : 0;
+      if (sold) goldPreview += unitPrice * count;
+
+      const row = document.createElement('div');
+      row.className = 'trade-row';
+      row.dataset.itemId = itemId;
+
+      const label = document.createElement('span');
+      label.className = 'trade-label';
+      label.textContent = `${ITEMS[itemId]?.name ?? itemId} x${count}（單價 ${unitPrice} G）`;
+
+      const sellBtn = document.createElement('button');
+      sellBtn.type = 'button';
+      sellBtn.className = 'caravan-btn trade-sell-btn';
+      sellBtn.dataset.itemId = itemId;
+      sellBtn.textContent = sold ? '已售出' : '賣出';
+      sellBtn.disabled = sold;
+      sellBtn.addEventListener('click', () => {
+        tradeSoldIds.add(itemId);
+        renderTrade();
+      });
+
+      row.append(label, sellBtn);
+      tradeListEl.appendChild(row);
+    }
+    tradeGoldPreviewEl.textContent = String(goldPreview);
+  }
+
+  btnTradeDone.addEventListener('click', () => {
+    const tradeSales = Array.from(tradeSoldIds).map((itemId) => ({
+      itemId,
+      count: tradeCombined[itemId] ?? 0,
+    }));
+    finalizeSettlement(tradeSales);
+  });
+
+  function renderSettlement(
+    result: { goldGained: number; itemsGained: Record<string, number>; xpGained: number; tradeGold: number },
+    exp: ExpeditionState
+  ): void {
+    settleGoldEl.textContent = String(result.goldGained);
+    settleTradeGoldEl.textContent = String(result.tradeGold);
+    settleXpEl.textContent = String(result.xpGained);
+
+    settleItemsEl.innerHTML = '';
+    const entries = Object.entries(result.itemsGained);
+    if (entries.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = '（無）';
+      settleItemsEl.appendChild(li);
+    } else {
+      for (const [itemId, count] of entries) {
+        const li = document.createElement('li');
+        li.textContent = `${ITEMS[itemId]?.name ?? itemId} x${count}`;
+        settleItemsEl.appendChild(li);
+      }
+    }
+
+    settleLogEl.innerHTML = '';
+    const headline = document.createElement('p');
+    headline.className = 'settle-headline';
+    headline.textContent = exp.retreated
+      ? '商隊未能走完全程，帶著剩餘的戰利品鎩羽而歸療傷。'
+      : '商隊順利完成了這趟遠征，滿載而歸。';
+    settleLogEl.appendChild(headline);
+    for (const line of exp.eventLog) {
+      const p = document.createElement('p');
+      p.textContent = line;
+      settleLogEl.appendChild(p);
+    }
+  }
+
+  btnSettleBack.addEventListener('click', () => {
+    if (!save) return;
+    showTown(save.gold);
+  });
+
+  // ---- 戰鬥（M2：訓練場；M3：併入遠征遭遇） ----
+
+  let state: CombatState | null = null;
+  let combatContext: 'training' | 'expedition' = 'training';
+  let selectedTargetId: string | null = null;
+
+  function unitIntentText(unit: CombatantBase): string {
+    if (!state || unit.hp <= 0) return '';
+    const moveId = state.enemyIntents[unit.id];
+    if (!moveId) return '';
+    const move = unit.moves.find((m) => m.id === moveId);
+    return move ? `意圖：${move.name}` : '';
+  }
+
+  function renderUnits(container: HTMLElement, units: CombatantBase[], showIntent: boolean): void {
+    container.innerHTML = '';
+    for (const unit of units) {
+      const card = document.createElement('div');
+      card.className = 'combat-unit';
+      card.dataset.id = unit.id;
+
+      const name = document.createElement('p');
+      name.className = 'unit-name';
+      name.textContent = unit.name;
+
+      const hp = document.createElement('p');
+      hp.className = 'unit-hp';
+      hp.textContent = `HP ${Math.max(0, unit.hp)}/${unit.maxHp}`;
+
+      const intent = document.createElement('p');
+      intent.className = 'unit-intent';
+      intent.textContent = showIntent ? unitIntentText(unit) : '';
+
+      card.append(name, hp, intent);
+      container.appendChild(card);
+    }
+  }
+
+  function renderLog(): void {
+    if (!state) return;
+    combatLogEl.innerHTML = '';
+    for (const event of state.log) {
+      const p = document.createElement('p');
+      p.textContent = event.text;
+      combatLogEl.appendChild(p);
+    }
+    combatLogEl.scrollTop = combatLogEl.scrollHeight;
+  }
+
+  function resolveTargetId(actorId: string, move: Move): string | null {
+    if (!state) return null;
+    if (move.target === 'enemy') {
+      if (selectedTargetId && state.enemies.some((e) => e.id === selectedTargetId && e.hp > 0)) {
+        return selectedTargetId;
+      }
+      return state.enemies.find((e) => e.hp > 0)?.id ?? null;
+    }
+    return actorId; // 支援/防禦招式固定自標
+  }
+
+  function renderCombatTargets(): void {
+    if (!state) return;
+    const aliveEnemies = state.enemies.filter((e) => e.hp > 0);
+    combatTargetsEl.innerHTML = '';
+    if (aliveEnemies.length < 2) {
+      selectedTargetId = null;
+      return;
+    }
+    for (const enemy of aliveEnemies) {
+      const btn = document.createElement('button');
+      btn.className = 'caravan-btn target-btn';
+      btn.dataset.targetId = enemy.id;
+      btn.textContent = enemy.name;
+      if (enemy.id === selectedTargetId) btn.classList.add('target-selected');
+      btn.addEventListener('click', () => {
+        selectedTargetId = enemy.id;
+        renderCombatTargets();
+      });
+      combatTargetsEl.appendChild(btn);
+    }
+  }
+
+  function renderActions(actorId: string): void {
+    if (!state) return;
+    combatActionsEl.innerHTML = '';
+    const actor = state.party.find((p) => p.id === actorId);
+    if (!actor) return;
+    for (const move of actor.moves) {
+      const btn = document.createElement('button');
+      btn.className = 'caravan-btn move-btn';
+      btn.dataset.moveId = move.id;
+      btn.textContent = move.name;
+      btn.addEventListener('click', () => {
+        if (!state) return;
+        const targetId = resolveTargetId(actor.id, move);
+        if (!targetId) return;
+        partyAct(rng, state, actor.id, move.id, targetId);
+        selectedTargetId = null;
+        render();
+      });
+      combatActionsEl.appendChild(btn);
+    }
+  }
+
+  function showResult(outcome: CombatState['outcome']): void {
+    const text =
+      outcome === 'victory'
+        ? '勝利！敵人被擊潰了，商隊可以繼續前進。'
+        : outcome === 'defeat'
+          ? '敗北……商隊被迫撤回城鎮療傷。'
+          : '商隊已撤退，保住了性命。';
+    combatResultTextEl.textContent = text;
+    combatResultEl.hidden = false;
+  }
+
+  function render(): void {
+    if (!state) return;
+    renderUnits(combatEnemiesEl, state.enemies, true);
+    renderUnits(combatPartyEl, state.party, false);
+    renderLog();
+
+    if (state.outcome !== 'ongoing') {
+      combatActionsEl.innerHTML = '';
+      combatTargetsEl.innerHTML = '';
+      btnRetreat.hidden = true;
+      showResult(state.outcome);
+      return;
+    }
+    combatResultEl.hidden = true;
+    btnRetreat.hidden = false;
+
+    const actor = currentActor(state);
+    if (!actor) return;
+    if (actor.side === 'enemy') {
+      combatActionsEl.innerHTML = '';
+      combatTargetsEl.innerHTML = '';
+      const enemyId = actor.id;
+      const scheduledState = state;
+      setTimeout(() => {
+        if (state !== scheduledState || scheduledState.outcome !== 'ongoing') return;
+        enemyAct(rng, state, enemyId);
+        render();
+      }, 600);
+    } else {
+      renderActions(actor.id);
+      renderCombatTargets();
+    }
+  }
+
+  btnTraining.addEventListener('click', () => {
+    if (!save) return;
+    combatContext = 'training';
+    selectedTargetId = null;
+    state = startCombat(rng, [memberFromRecord(save.protagonist)], TRAINING_ENCOUNTER());
+    showScreen('combat');
+    combatResultEl.hidden = true;
+    render();
+  });
+
+  btnRetreat.addEventListener('click', () => {
+    if (!state || state.outcome !== 'ongoing') return;
+    attemptRetreat(rng, state);
+    render();
+  });
+
+  btnCombatBack.addEventListener('click', () => {
+    if (!state) return;
+    if (combatContext === 'expedition' && expedition && save) {
+      const fates = resolveCasualties(rng, state);
+      finishCombat(rng, expedition, save, state, fates);
+      saveGame(save);
+      state = null;
+      dispatchPhase();
+      return;
+    }
+    showScreen('town');
+    state = null;
+  });
+</script>
+
+<style>
+  .caravan-root {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f0e6; /* 淡色紙質底（動漫平塗配套的乾淨文庫基調） */
+    color: #2b2620;
+    font-family: 'Noto Serif TC', serif;
+  }
+  .screen { text-align: center; padding: 2rem; max-width: 34rem; }
+  .screen-wide { max-width: 46rem; width: 100%; }
+  .game-title { font-size: 3rem; letter-spacing: 0.3em; margin-bottom: 0.25rem; }
+  .game-subtitle { letter-spacing: 0.5em; color: #8a7f6d; margin-bottom: 2.5rem; }
+  .title-actions { display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+  .caravan-btn {
+    font: inherit;
+    padding: 0.6rem 2.5rem;
+    border: 1px solid #2b2620;
+    background: transparent;
+    cursor: pointer;
+    letter-spacing: 0.2em;
+  }
+  .caravan-btn:hover { background: #2b2620; color: #f5f0e6; }
+  .caravan-btn:disabled {
+    color: #b7ac98;
+    border-color: #cfc6b0;
+    cursor: not-allowed;
+  }
+  .caravan-btn:disabled:hover { background: transparent; color: #b7ac98; }
+  .town-name { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .town-status { font-size: 1.1rem; }
+  .town-actions { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+  .expedition-expired-note { font-size: 0.85rem; color: #a4453a; margin-top: 0.75rem; }
+
+  /* 城鎮分頁：市集／酒館／隊伍／馬車（M4） */
+  .town-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1.75rem 0 1.25rem;
+  }
+  .town-tab {
+    font: inherit;
+    padding: 0.4rem 1.3rem;
+    border: 1px solid #cfc6b0;
+    background: transparent;
+    color: #5c5344;
+    cursor: pointer;
+    letter-spacing: 0.15em;
+    font-size: 0.9rem;
+  }
+  .town-tab:hover { border-color: #2b2620; }
+  .town-tab.active { background: #2b2620; color: #f5f0e6; border-color: #2b2620; }
+  .town-panel { text-align: left; }
+  .panel-status { color: #5c5344; margin: 0 0 0.75rem; }
+  .panel-hint { color: #8a7f6d; font-size: 0.85rem; margin: 0 0 0.75rem; }
+
+  /* 市集 */
+  .market-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .market-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.6rem 0.9rem;
+  }
+  .market-name { flex: 1; min-width: 8rem; }
+  .buy-btn, .sell-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; }
+
+  /* 酒館 */
+  .tavern-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .tavern-empty { color: #8a7f6d; font-style: italic; }
+  .recruit-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.75rem 1rem;
+  }
+  .recruit-name { font-weight: 600; margin: 0; flex-basis: 100%; }
+  .recruit-info { font-size: 0.85rem; color: #8a7f6d; margin: 0; flex: 1; min-width: 10rem; }
+  .hire-btn { padding: 0.35rem 1.2rem; font-size: 0.85rem; }
+
+  /* 隊伍 */
+  .roster-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .roster-card { border: 1px solid #cfc6b0; background: #fffdf8; padding: 0.75rem 1rem; }
+  .roster-name { font-weight: 600; margin: 0 0 0.3rem; }
+  .roster-xp, .roster-stats, .roster-moves { font-size: 0.85rem; color: #5c5344; margin: 0.15rem 0; }
+  .roster-injury { font-size: 0.85rem; color: #a4453a; margin: 0.3rem 0; }
+  .levelup-btn, .dismiss-btn { margin: 0.6rem 0.6rem 0 0; padding: 0.35rem 1.1rem; font-size: 0.85rem; }
+
+  /* 馬車 */
+  #wagon-panel .panel-status { margin-bottom: 1rem; }
+
+  /* 屬性配點面板（modal） */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(43, 38, 32, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 20;
+  }
+  /* [hidden] 與 .modal-overlay 的 class selector 特異度相同，author style 會贏過 UA
+     stylesheet 的 [hidden]{display:none}——沒有這條，關閉的面板仍會蓋住整個畫面
+     並攔截點擊（M2 guild 頁曾踩過同類 opacity:0 版本，這裡是 display 版）。 */
+  .modal-overlay[hidden] { display: none; }
+  .modal-box { background: #fffdf8; border: 1px solid #2b2620; padding: 1.5rem; max-width: 22rem; width: 100%; text-align: left; }
+  .modal-title { margin: 0 0 1rem; letter-spacing: 0.15em; font-size: 1.2rem; }
+  .alloc-rows { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+  .alloc-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+  .alloc-plus { padding: 0.25rem 0.8rem; font-size: 0.85rem; }
+  .alloc-total { color: #8a7f6d; font-size: 0.9rem; margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+  /* 委託板 */
+  .quest-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 1.25rem; }
+  .quest-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
+  .quest-row { display: flex; align-items: stretch; gap: 0.5rem; }
+  .quest-item {
+    flex: 1;
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .quest-item:hover { border-color: #2b2620; }
+  .quest-name { font-weight: 600; margin: 0 0 0.25rem; }
+  .quest-kind { font-size: 0.85rem; color: #8a7f6d; margin: 0; }
+  .quest-outfit-btn { font-size: 0.8rem; padding: 0.5rem 0.9rem; white-space: nowrap; }
+  .quest-hidden-hint { color: #8a7f6d; font-style: italic; margin-bottom: 1rem; }
+  .quest-wage-warning { color: #a4453a; font-size: 0.85rem; margin-bottom: 1rem; }
+
+  /* 出發整裝（M4） */
+  .quest-outfit {
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 1rem 1.25rem;
+    text-align: left;
+    margin-bottom: 1.25rem;
+  }
+  .outfit-title { margin: 0 0 0.75rem; font-size: 1.1rem; letter-spacing: 0.1em; }
+  .cargo-picker { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
+  .cargo-picker[hidden] { display: none; }
+  .cargo-row { display: flex; align-items: center; gap: 0.5rem; }
+  .cargo-label { flex: 1; font-size: 0.9rem; }
+  .cargo-plus, .cargo-minus { padding: 0.2rem 0.6rem; font-size: 0.85rem; }
+  .cargo-empty { color: #8a7f6d; font-style: italic; margin: 0.3rem 0; }
+  .cargo-space, .wage-preview { font-size: 0.85rem; color: #5c5344; margin: 0.3rem 0; }
+  .outfit-actions { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
+
+  /* 遠征畫面 */
+  .exp-progress { letter-spacing: 0.2em; color: #8a7f6d; margin-bottom: 1rem; }
+  .event-card {
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    margin-bottom: 1rem;
+  }
+  .event-title { font-size: 1.3rem; margin: 0 0 0.75rem; letter-spacing: 0.1em; }
+  .event-body { line-height: 1.8; margin: 0 0 1rem; }
+  .event-options { display: flex; flex-direction: column; gap: 0.5rem; }
+  .event-opt { text-align: left; }
+  .room-choices {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .room-choices:empty { display: none; }
+  .check-result {
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  /* 戰鬥畫面 */
+  .combat-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 1.5rem; }
+  .combat-field {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .combat-side { display: flex; flex-direction: column; gap: 0.6rem; min-width: 9rem; }
+  .combat-unit {
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.5rem 0.9rem;
+    text-align: left;
+  }
+  .unit-name { font-weight: 600; margin: 0 0 0.15rem; }
+  .unit-hp { font-size: 0.85rem; color: #5c5344; margin: 0; }
+  .unit-intent { font-size: 0.75rem; font-style: italic; color: #8a7f6d; margin: 0.15rem 0 0; min-height: 1em; }
+  .combat-targets {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .combat-targets:empty { display: none; }
+  .target-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; }
+  .target-selected { background: #2b2620; color: #f5f0e6; }
+  .combat-log {
+    max-width: 30rem;
+    max-height: 8rem;
+    overflow-y: auto;
+    margin: 0 auto 1rem;
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.5rem 0.9rem;
+    text-align: left;
+  }
+  .combat-log p { margin: 0.2rem 0; font-size: 0.85rem; }
+  .combat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+  .move-btn { padding: 0.5rem 1.2rem; }
+  .combat-retreat { font-size: 0.85rem; padding: 0.4rem 1.5rem; }
+  .combat-result { margin-top: 1.5rem; }
+  .combat-result .result-text { font-size: 1.1rem; margin-bottom: 1rem; }
+
+  /* 結算畫面 */
+  .settle-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 1rem; }
+  .settle-log {
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    max-height: 10rem;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+  }
+  .settle-log p { margin: 0.3rem 0; font-size: 0.9rem; }
+  .settle-headline { font-weight: 600; }
+  .settle-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 0 0 1rem;
+  }
+  .settle-stat dt { font-size: 0.8rem; color: #8a7f6d; }
+  .settle-stat dd { font-size: 1.3rem; margin: 0; }
+  .settle-items-label { text-align: left; margin-bottom: 0.4rem; color: #8a7f6d; }
+  .settle-items {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    text-align: left;
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+  }
+  .settle-items li { padding: 0.4rem 0.9rem; border-bottom: 1px solid #ece5d5; }
+  .settle-items li:last-child { border-bottom: none; }
+
+  /* 異鎮交易（M4） */
+  .trade-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 0.75rem; }
+  .trade-town-name { color: #8a7f6d; margin-bottom: 1rem; }
+  .trade-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+  .trade-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    border: 1px solid #cfc6b0;
+    background: #fffdf8;
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+  }
+  .trade-sell-btn { padding: 0.35rem 1rem; font-size: 0.85rem; }
+  .trade-gold-label { margin-bottom: 1rem; }
+</style>
