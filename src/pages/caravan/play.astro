@@ -23,6 +23,26 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         <span class="hud-stat"><span class="hud-label">金幣</span><b id="hud-gold">0</b></span>
         <span class="hud-sep" aria-hidden="true"></span>
         <span class="hud-stat"><span class="hud-label">聲望</span><b id="hud-rep">0</b></span>
+        <span class="hud-sep" aria-hidden="true"></span>
+        <button id="btn-howto-hud" class="hud-help" type="button">玩法</button>
+      </div>
+    </div>
+
+    <!-- 玩法說明（首次可看、隨時可重看） -->
+    <div id="howto-panel" class="modal-overlay" hidden>
+      <div class="modal-box howto-box">
+        <h3 class="modal-title">怎麼玩</h3>
+        <p class="howto-lead">你是一支商隊的隊長。踏上商路，在事件與戰鬥中活下來、帶著財富與見聞歸來，讓商隊越來越強。</p>
+        <ol class="howto-steps">
+          <li><b>城鎮整備</b>——市集買賣補給、酒館招募旅伴、隊伍配裝、馬車升級載貨。</li>
+          <li><b>接下委託</b>——到<em>委託板</em>選一條商路或迷宮出發；路程越遠越危險，報酬越高。</li>
+          <li><b>遠征歷險</b>——沿途抽事件卡、擲骰做選擇；遇敵進入回合戰鬥。</li>
+          <li><b>歸城結算</b>——平安回城獲得金幣、經驗與戰利品，累積「傳承」讓下趟更強。</li>
+        </ol>
+        <p class="howto-tip">隨時可點右上角的「玩法」重看這份說明。</p>
+        <div class="modal-actions">
+          <button id="btn-howto-close" type="button" class="caravan-btn">知道了，出發</button>
+        </div>
       </div>
     </div>
     <!-- 遊戲畫面框：所有場景在此固定框內切換（全螢幕遊戲視窗，非置中卡片） -->
@@ -35,6 +55,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <div class="title-actions">
         <button id="btn-new-game" class="caravan-btn">新的旅程</button>
         <button id="btn-continue" class="caravan-btn" hidden>繼續旅程</button>
+        <button id="btn-howto-title" class="caravan-btn caravan-btn-ghost">怎麼玩？</button>
       </div>
       <p id="title-legacy" class="title-legacy" hidden></p>
       <a class="title-chronicle-link" href="/caravan#chronicle">冒險編年史 »</a>
@@ -45,6 +66,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <img class="town-banner" src="/assets/games/caravan/town-starting-town.webp" alt="" width="1280" height="720" loading="lazy" />
       <h2 class="town-name">啟程之鎮</h2>
       <p class="town-status">金幣 <span id="town-gold">0</span> G</p>
+      <p class="screen-guide">在此補給整備。準備好了就點<b>委託板</b>出發遠征、賺取財富。</p>
       <div class="town-actions">
         <button id="btn-quest-board" class="caravan-btn">委託板</button>
         <button id="btn-training" class="caravan-btn">訓練場</button>
@@ -97,6 +119,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     <!-- 委託板（M3：選擇貿易路線／迷宮出征；M4：出發前可整裝押貨） -->
     <section id="screen-quest" class="screen" hidden>
       <h2 class="quest-title">委託板</h2>
+      <p class="screen-guide">選一條商路或迷宮出發。路程越長越危險，報酬與見聞越豐厚。</p>
       <div id="quest-list" class="quest-list"></div>
       <p class="quest-hidden-hint" hidden>？ 迷霧深處似乎還藏著什麼，尚待線索指引……</p>
       <p id="quest-wage-warning" class="quest-wage-warning" hidden></p>
@@ -279,6 +302,23 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     hudRepEl.textContent = String(save.reputation);
     if (scene) hudSceneEl.textContent = scene;
   }
+
+  // ---- 玩法說明 ----
+  const howtoPanel = document.getElementById('howto-panel')!;
+  const howtoTitleBtn = document.getElementById('btn-howto-title');
+  const HOWTO_KEY = 'caravan-seen-howto';
+  const markHowtoSeen = (): void => {
+    howtoTitleBtn?.classList.remove('howto-pulse');
+    try { localStorage.setItem(HOWTO_KEY, '1'); } catch { /* ignore */ }
+  };
+  const openHowto = (): void => { howtoPanel.hidden = false; markHowtoSeen(); };
+  const closeHowto = (): void => { howtoPanel.hidden = true; };
+  howtoTitleBtn?.addEventListener('click', openHowto);
+  document.getElementById('btn-howto-hud')?.addEventListener('click', openHowto);
+  document.getElementById('btn-howto-close')?.addEventListener('click', closeHowto);
+  howtoPanel.addEventListener('click', (e) => { if (e.target === howtoPanel) closeHowto(); });
+  // 首次造訪：標題的「怎麼玩？」脈動提示（不阻擋操作）
+  try { if (!localStorage.getItem(HOWTO_KEY)) howtoTitleBtn?.classList.add('howto-pulse'); } catch { /* ignore */ }
 
   function showScreen(name: keyof typeof screens): void {
     for (const key of Object.keys(screens) as (keyof typeof screens)[]) {
@@ -2268,5 +2308,47 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     .screen-enter { animation: none; }
     .combat-unit.unit-hit { animation: none; }
     .float-num { animation-duration: 0.5s; }
+  }
+
+  /* ---- 玩法引導（onboarding）---- */
+  .hud-help {
+    font: inherit; font-size: 0.82rem; letter-spacing: 0.12em;
+    color: var(--gold-bright); background: transparent;
+    border: 1px solid var(--gold-dim); border-radius: 3px;
+    padding: 0.2rem 0.7rem; cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .hud-help::before { content: '❔ '; }
+  .hud-help:hover { background: var(--gold); color: #241505; }
+  .hud-help:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+
+  .screen-guide {
+    max-width: 34rem; margin: 0.2rem auto 0.9rem;
+    color: var(--text-dim); font-size: 0.92rem; line-height: 1.7; letter-spacing: 0.04em;
+  }
+  .screen-guide b { color: var(--gold-bright); font-weight: 700; }
+  .quest-title + .screen-guide { margin-top: -0.4rem; margin-bottom: 1.1rem; }
+
+  .caravan-btn-ghost {
+    background: transparent; border-color: var(--gold-dim); color: var(--text-dim);
+    box-shadow: none; letter-spacing: 0.15em; padding: 0.45rem 1.6rem; font-size: 0.9rem;
+  }
+  .caravan-btn-ghost:hover { background: transparent; color: var(--gold-bright); border-color: var(--gold); box-shadow: 0 0 12px rgba(201, 163, 92, 0.3); }
+  .caravan-btn-ghost.howto-pulse { animation: howtoPulse 1.8s ease-in-out infinite; color: var(--gold-bright); border-color: var(--gold); }
+  @keyframes howtoPulse {
+    0%, 100% { box-shadow: 0 0 4px rgba(201, 163, 92, 0.25); }
+    50% { box-shadow: 0 0 16px rgba(201, 163, 92, 0.7); }
+  }
+
+  .howto-box { max-width: 30rem; }
+  .howto-lead { line-height: 1.85; color: var(--text); margin: 0 0 1rem; }
+  .howto-steps { margin: 0 0 1rem; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 0.65rem; }
+  .howto-steps li { line-height: 1.7; color: var(--text-dim); }
+  .howto-steps li::marker { color: var(--gold-bright); font-weight: 700; }
+  .howto-steps b { color: var(--gold-bright); font-weight: 700; }
+  .howto-steps em { color: var(--cinnabar); font-style: normal; }
+  .howto-tip { font-size: 0.85rem; color: var(--faded, var(--text-dim)); margin: 0 0 1rem; }
+  @media (prefers-reduced-motion: reduce) {
+    .caravan-btn-ghost.howto-pulse { animation: none; }
   }
 </style>
