@@ -10,6 +10,7 @@ import { TOWNS } from '@scripts/games/caravan/data/towns';
 import { JOBS } from '@scripts/games/caravan/data/jobs';
 import { ITEMS } from '@scripts/games/caravan/data/items';
 import { ENCOUNTERS, TRAINING_ENCOUNTER } from '@scripts/games/caravan/data/enemies';
+import { ACHIEVEMENTS } from '@scripts/games/caravan/chronicle';
 
 const allUnits = [...TRAINING_ENCOUNTER(), ...Object.values(ENCOUNTERS).flatMap((mk) => mk())];
 const stats = {
@@ -93,6 +94,27 @@ const jobList = Object.values(JOBS);
       ))}
     </section>
 
+    <!-- 冒險編年史（跨輪收集進度，client 從 localStorage 渲染狀態） -->
+    <section class="cv-chronicle" id="chronicle" aria-label="冒險編年史">
+      <h2 class="cv-section-title">冒險編年史</h2>
+      <p class="cv-chronicle-legacy" id="cv-legacy" hidden></p>
+      <p class="cv-chronicle-empty" id="cv-chronicle-empty">尚未啟程——你的旅途將在此留下足跡。</p>
+      <div class="cv-progress-grid" id="cv-progress" hidden>
+        <div class="cv-progress" data-kind="events"><span class="cv-progress-label">事件圖鑑</span><span class="cv-progress-num">0 / {stats.events}</span><div class="cv-progress-bar"><i></i></div></div>
+        <div class="cv-progress" data-kind="enemies"><span class="cv-progress-label">敵人圖鑑</span><span class="cv-progress-num">0 / {stats.enemies}</span><div class="cv-progress-bar"><i></i></div></div>
+        <div class="cv-progress" data-kind="locations"><span class="cv-progress-label">商路踏破</span><span class="cv-progress-num">0 / {stats.locations}</span><div class="cv-progress-bar"><i></i></div></div>
+        <div class="cv-progress" data-kind="equipment"><span class="cv-progress-label">裝備收集</span><span class="cv-progress-num">0 / {stats.equipment}</span><div class="cv-progress-bar"><i></i></div></div>
+      </div>
+      <div class="cv-achievements">
+        {ACHIEVEMENTS.map((a) => (
+          <div class="cv-achievement" data-ach={a.id}>
+            <b>{a.name}</b>
+            <span>{a.desc}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
     <!-- 底部 CTA -->
     <footer class="cv-footer">
       <a class="cv-btn cv-btn-primary" href="/caravan/play">啟程</a>
@@ -106,10 +128,34 @@ const jobList = Object.values(JOBS);
 
 <script>
   import { SAVE_KEY } from '@scripts/games/caravan/save';
+  import { loadChronicle, collectionProgress, legacyBonusGold } from '@scripts/games/caravan/chronicle';
   // 有存檔才顯示「繼續旅程」
   try {
     if (localStorage.getItem(SAVE_KEY)) document.getElementById('cv-continue')?.removeAttribute('hidden');
   } catch { /* localStorage 不可用時僅顯示開始 */ }
+
+  // 編年史：讀 localStorage 填進度與成就狀態
+  try {
+    const chron = loadChronicle();
+    const progress = collectionProgress(chron);
+    const hasAny = chron.runs.started > 0 || chron.seenEvents.length > 0 || chron.defeatedEnemies.length > 0;
+    if (hasAny) {
+      document.getElementById('cv-chronicle-empty')?.setAttribute('hidden', '');
+      document.getElementById('cv-progress')?.removeAttribute('hidden');
+      for (const [kind, [got, total]] of Object.entries(progress)) {
+        const row = document.querySelector(`.cv-progress[data-kind="${kind}"]`);
+        if (!row) continue;
+        row.querySelector('.cv-progress-num')!.textContent = `${got} / ${total}`;
+        (row.querySelector('.cv-progress-bar i') as HTMLElement).style.width = `${total ? Math.round((got / total) * 100) : 0}%`;
+      }
+      const legacyEl = document.getElementById('cv-legacy')!;
+      legacyEl.textContent = `遠征 ${chron.runs.started} 次 · 歸來 ${chron.runs.won} 次 · 傳承 ${chron.legacyPoints} 點（新旅程起始金幣 +${legacyBonusGold(chron)} G）`;
+      legacyEl.removeAttribute('hidden');
+    }
+    for (const id of chron.unlockedAchievements) {
+      document.querySelector(`.cv-achievement[data-ach="${id}"]`)?.classList.add('unlocked');
+    }
+  } catch { /* 編年史讀取失敗時保持空狀態 */ }
 </script>
 
 <style>
@@ -184,6 +230,39 @@ const jobList = Object.values(JOBS);
     border: 1px solid #cfc6b0;
   }
   .cv-job figcaption { margin-top: 0.5rem; letter-spacing: 0.3em; font-size: 0.95rem; }
+
+  /* 冒險編年史 */
+  .cv-chronicle { max-width: 60rem; margin: 0 auto; padding: 1rem 1.5rem 2.6rem; text-align: center; }
+  .cv-section-title { font-size: 1.4rem; letter-spacing: 0.35em; margin: 0 0 0.9rem; color: #4a3420; }
+  .cv-chronicle-legacy { color: #8a3c1e; letter-spacing: 0.08em; margin: 0 0 1.2rem; font-size: 0.95rem; }
+  .cv-chronicle-legacy[hidden], .cv-chronicle-empty[hidden], .cv-progress-grid[hidden] { display: none; }
+  .cv-chronicle-empty { color: #8a7f6d; letter-spacing: 0.12em; margin: 0.4rem 0 1.4rem; }
+  .cv-progress-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1rem 1.6rem; margin: 0 0 1.6rem; text-align: left;
+  }
+  .cv-progress-label { font-size: 0.88rem; letter-spacing: 0.2em; color: #6b5f4c; }
+  .cv-progress-num { float: right; font-size: 0.88rem; color: #8a3c1e; }
+  .cv-progress-bar {
+    margin-top: 0.35rem; height: 8px; background: #e2d8c0;
+    border: 1px solid #cfc6b0; overflow: hidden;
+  }
+  .cv-progress-bar i { display: block; height: 100%; width: 0; background: #b3552e; transition: width 0.6s ease; }
+  .cv-achievements {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
+    gap: 0.7rem; text-align: left;
+  }
+  .cv-achievement {
+    border: 1px solid #d5cab0; background: #efe8d6; padding: 0.6rem 0.85rem;
+    opacity: 0.55; filter: grayscale(0.6);
+  }
+  .cv-achievement.unlocked {
+    opacity: 1; filter: none; background: #fffdf6; border-color: #c9a35c;
+    box-shadow: 0 2px 10px rgba(179, 85, 46, 0.14);
+  }
+  .cv-achievement b { display: block; font-size: 0.95rem; letter-spacing: 0.1em; }
+  .cv-achievement.unlocked b::before { content: '🏆 '; }
+  .cv-achievement span { font-size: 0.8rem; color: #6b5f4c; line-height: 1.6; }
 
   /* Footer */
   .cv-footer {

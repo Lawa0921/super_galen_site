@@ -674,3 +674,49 @@ test.describe('商隊與劍：裝備系統', () => {
     await expect(protagonistCard.locator('.roster-moves')).not.toContainText('重斬');
   });
 });
+
+test.describe('商隊與劍：冒險編年史（M6）', () => {
+  test('訓練場勝利寫入敵人圖鑑，landing 顯示收集進度', async ({ page }) => {
+    await page.goto('/caravan/play?seed=42');
+    await page.evaluate(() => {
+      localStorage.removeItem('caravan-save-v1');
+      localStorage.removeItem('caravan-chronicle-v1');
+    });
+    await page.reload();
+    await page.click('#btn-new-game');
+    await page.click('#btn-training');
+    for (let i = 0; i < 40; i++) {
+      if (await page.locator('#combat-result').isVisible()) break;
+      const move = page.locator('#combat-actions .move-btn').first();
+      if (await move.isVisible().catch(() => false)) await move.click();
+      await page.waitForTimeout(250);
+    }
+    await expect(page.locator('#combat-result')).toContainText('勝利');
+    const chron = await page.evaluate(() => JSON.parse(localStorage.getItem('caravan-chronicle-v1') ?? '{}'));
+    expect(chron.defeatedEnemies).toContain('哥布林斥候');
+    // landing 編年史區
+    await page.goto('/caravan');
+    await expect(page.locator('#cv-progress')).toBeVisible();
+    await expect(page.locator('.cv-progress[data-kind="enemies"] .cv-progress-num')).toHaveText(/^1 \//);
+    await page.evaluate(() => localStorage.removeItem('caravan-chronicle-v1'));
+  });
+
+  test('傳承點：landing 成就亮起、新旅程起始金幣 +30', async ({ page }) => {
+    await page.goto('/caravan');
+    await page.evaluate(() => localStorage.setItem('caravan-chronicle-v1', JSON.stringify({
+      v: 1, seenEvents: [], defeatedEnemies: [], visitedLocations: [], ownedEquipment: [],
+      runs: { started: 3, won: 3 }, legacyPoints: 3, unlockedAchievements: ['first-steps'],
+    })));
+    await page.reload();
+    await expect(page.locator('.cv-achievement[data-ach="first-steps"]')).toHaveClass(/unlocked/);
+    await expect(page.locator('#cv-legacy')).toContainText('傳承 3 點');
+    // 遊戲標題畫面顯示傳承、新旅程 200+30
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await expect(page.locator('#title-legacy')).toContainText('+30 G');
+    await page.click('#btn-new-game');
+    await expect(page.locator('#town-gold')).toHaveText('230');
+    await page.evaluate(() => localStorage.removeItem('caravan-chronicle-v1'));
+  });
+});
