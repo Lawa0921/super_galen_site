@@ -98,7 +98,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
     <!-- 遠征畫面（M3：事件卡鏈／迷宮房卡） -->
     <section id="screen-expedition" class="screen" hidden>
-      <p id="exp-condition" class="exp-condition" hidden></p>
+      <div id="exp-condition" class="exp-condition" hidden>
+        <img id="exp-condition-art" alt="" width="960" height="720" loading="lazy" />
+        <span id="exp-condition-text"></span>
+      </div>
       <p id="exp-progress" class="exp-progress"></p>
       <div id="event-card" class="event-card" hidden>
         <img id="event-art" class="event-art" alt="" width="960" height="720" loading="lazy" hidden />
@@ -286,11 +289,17 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   const expProgressEl = document.getElementById('exp-progress')!;
   const expConditionEl = document.getElementById('exp-condition')!;
 
-  /** M8 旅況 badge：遠征進行中顯示本趟旅況 */
+  const expConditionArtEl = document.getElementById('exp-condition-art') as HTMLImageElement;
+  const expConditionTextEl = document.getElementById('exp-condition-text')!;
+
+  /** M8 旅況 badge（M9 配統一風格插圖） */
   function renderConditionBadge(): void {
     const cond = CONDITIONS.find((c) => c.id === expedition?.conditionId);
     expConditionEl.hidden = !cond;
-    if (cond) expConditionEl.textContent = `🌦 ${cond.name}——${cond.desc}`;
+    if (!cond) return;
+    expConditionTextEl.textContent = `${cond.name}——${cond.desc}`;
+    expConditionArtEl.hidden = !cond.art;
+    if (cond.art) expConditionArtEl.src = cond.art;
   }
   const eventCardEl = document.getElementById('event-card')!;
   const eventTitleEl = document.getElementById('event-title')!;
@@ -1347,10 +1356,16 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
       const status = document.createElement('p');
       status.className = 'unit-status';
-      const icons = { poison: '☠', stun: '💫', strength: '💪' } as const;
-      status.textContent = (unit.statuses ?? [])
-        .map((s) => `${icons[s.kind]}${s.remaining}`)
-        .join(' ');
+      for (const st of unit.statuses ?? []) {
+        const icon = document.createElement('img');
+        icon.className = 'status-icon';
+        icon.src = `/assets/games/caravan/icon-${st.kind}.webp`;
+        icon.alt = st.kind;
+        icon.width = 20; icon.height = 20;
+        const count = document.createElement('span');
+        count.textContent = String(st.remaining);
+        status.append(icon, count);
+      }
 
       card.append(name, hp, intent, status);
       container.appendChild(card);
@@ -1739,8 +1754,17 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
   /* 遠征畫面 */
   .exp-progress { letter-spacing: 0.2em; color: #8a7f6d; margin-bottom: 1rem; }
-  .exp-condition { color: #8a3c1e; letter-spacing: 0.08em; margin-bottom: 0.4rem; font-size: 0.92rem; }
+  .exp-condition {
+    display: flex; align-items: center; gap: 0.7rem; justify-content: center;
+    color: #8a3c1e; letter-spacing: 0.08em; margin-bottom: 0.6rem; font-size: 0.92rem;
+  }
   .exp-condition[hidden] { display: none; }
+  .exp-condition img {
+    width: 84px; height: 63px; object-fit: cover;
+    border: 1px solid #cfc6b0; border-radius: 4px;
+  }
+  .status-icon { width: 20px; height: 20px; vertical-align: -4px; margin-right: 1px; }
+  .unit-status span { margin-right: 6px; font-size: 0.8rem; color: #7a4b9d; }
   .event-card {
     border: 1px solid #cfc6b0;
     background: #fffdf8;

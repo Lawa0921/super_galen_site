@@ -21,6 +21,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 10,
     title: '隘口的路霸',
+    art: '/assets/games/caravan/event-bandit-toll.webp',
     body: '商隊行至狹窄隘口，幾名手持棍棒的路霸從岩石後閃出，攔住了去路。為首的傢伙咧嘴一笑：「此路是我開，此樹是我栽，想過去，留下買路財。」車夫緊張地攥緊了韁繩。',
     options: [
       {
@@ -52,6 +53,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 10,
     title: '車輪斷裂',
+    art: '/assets/games/caravan/event-broken-wheel.webp',
     body: '一聲刺耳的斷裂聲響起，貨車的輪軸應聲斷裂，車身猛地一沉，貨物散落一地。夜幕即將降臨，若不盡快處理，商隊只能困在荒郊野外過夜。',
     options: [
       {
@@ -87,6 +89,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 10,
     title: '路遇傷者',
+    art: '/assets/games/caravan/event-wounded-traveler.webp',
     body: '路邊倒著一名渾身是血的旅人，斷斷續續地呻吟著。他的行囊散落一旁，看起來是遭了劫。商隊眾人面面相覷——救，還是不救？',
     options: [
       {
@@ -178,6 +181,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 10,
     title: '湍急的溪流',
+    art: '/assets/games/caravan/event-river-crossing.webp',
     body: '前方一道湍急的溪流擋住去路，水面下的石塊濕滑難行。遠處傳來潺潺水聲，混雜著若有似無的低吼，讓人不敢大意。',
     options: [
       {
@@ -206,6 +210,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 10,
     title: '篝火夜話',
+    art: '/assets/games/caravan/event-campfire-stories.webp',
     body: '夜幕低垂，商隊在路旁紮營。篝火劈啪作響，隊員們圍坐取暖，氣氛卻有些沉悶——這是連日趕路後難得的喘息時刻。',
     options: [
       {
@@ -233,6 +238,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 10,
     title: '遠方的狼嚎',
+    art: '/assets/games/caravan/event-wolf-howl.webp',
     body: '天色漸暗，遠方傳來此起彼落的狼嚎，聲音越來越近。隊員們握緊了武器，馬匹也開始不安地噴著鼻息，蹄子焦躁地刨著地面。',
     options: [
       {
@@ -269,6 +275,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route', locationIds: ['blackwood-trail'] },
     weight: 8,
     title: '林間的荒祠',
+    art: '/assets/games/caravan/event-forest-shrine.webp',
     body: '密林深處立著一座爬滿青苔的荒祠，石像的面容早已風化模糊，祠前散落著半朽的祭品。空氣中瀰漫著一股說不出的詭異寧靜。',
     options: [
       {
@@ -296,6 +303,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route', locationIds: ['blackwood-trail'] },
     weight: 8,
     title: '哥布林的腳印',
+    art: '/assets/games/caravan/event-goblin-scout-trail.webp',
     body: '泥地上留著一串雜亂的腳印，混著獸皮鞋底與粗製武器拖行的痕跡——是哥布林斥候不久前經過的痕跡。順著腳印望去，林葉還在輕輕晃動。',
     options: [
       {
@@ -324,6 +332,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route', locationIds: ['blackwood-trail'] },
     weight: 8,
     title: '隱居的採藥人',
+    art: '/assets/games/caravan/event-forest-herbalist.webp',
     body: '林間小屋前，一名白髮蒼蒼的採藥人正低頭篩選藥草，對商隊的到來恍若未覺。屋簷下掛滿了曬乾的藥草束，散發著淡淡的清香。',
     options: [
       {
@@ -354,6 +363,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon', locationIds: ['abandoned-mine'] },
     weight: 8,
     title: '瀰漫的毒氣',
+    art: '/assets/games/caravan/event-mine-gas-pocket.webp',
     body: '坑道深處瀰漫著一股嗆鼻的氣味，火把的光芒在此處微微發綠。前方的空氣彷彿凝滯，每吸一口都讓人頭暈目眩。',
     options: [
       {
@@ -383,6 +393,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon', locationIds: ['abandoned-mine'] },
     weight: 8,
     title: '坍塌的坑道',
+    art: '/assets/games/caravan/event-collapsed-tunnel.webp',
     body: '前方坑道半數坍塌，碎石與斷裂的支撐木堵住了去路。頭頂不時傳來令人心驚的碎石聲響，彷彿隨時會再次崩落。',
     options: [
       {
@@ -409,6 +420,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon', locationIds: ['goblin-den'] },
     weight: 8,
     title: '古老的圖騰柱',
+    art: '/assets/games/caravan/event-ancient-totem.webp',
     body: '巢穴深處立著一根爬滿獸骨與羽毛的圖騰柱，上頭刻著粗獷的哥布林紋樣，柱底隱約堆著一些雜物，散發著某種令人不安的氣息。',
     options: [
       {
@@ -438,6 +450,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon' },
     weight: 8,
     title: '可疑的箱子',
+    art: '/assets/games/caravan/event-unknown-chest-trap.webp',
     body: '側室角落擺著一只鑲銅木箱，箱蓋上刻著繁複的紋路，邊緣有幾道細如髮絲的刻痕——不像是自然形成的，透著一股蓄意設計的惡意。',
     options: [
       {
@@ -467,6 +480,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route', locationIds: ['misty-ridge-trail'] },
     weight: 9,
     title: '迷霧鎖徑',
+    art: '/assets/games/caravan/event-ridge-fog-veil.webp',
     body: '濃霧毫無預警地湧上山脊，能見度驟降至伸手不見五指，腳下的碎石小徑彷彿隨時會消失在白霧盡頭，隊員們只能屏息，聽著風聲辨認方向。',
     options: [
       {
@@ -492,6 +506,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route', locationIds: ['misty-ridge-trail'] },
     weight: 9,
     title: '崩毀的烽火台',
+    art: '/assets/games/caravan/event-ridge-watchtower.webp',
     body: '山道旁矗立著一座傾頹的烽火台，磚石早已崩落大半，台頂殘留的旗桿隨風搖晃，發出嘎吱怪響。誰曾在此駐守瞭望，如今只剩斷壁殘垣訴說著無人聞問的過往。',
     options: [
       {
@@ -518,6 +533,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route', locationIds: ['misty-ridge-trail'] },
     weight: 8,
     title: '山賊的箭陣',
+    art: '/assets/games/caravan/event-ridge-toll-gang.webp',
     body: '幾道人影自山脊高處探出頭來，手中弓弦緊繃，箭鏃在霧氣裡泛著冷光。「留下買路財，饒你們平安過嶺！」為首的山賊嗓音在山谷間迴盪，帶著毫不掩飾的威脅。',
     options: [
       {
@@ -543,6 +559,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route', locationIds: ['misty-ridge-trail'] },
     weight: 9,
     title: '隱居的斥候',
+    art: '/assets/games/caravan/event-ridge-hermit-scout.webp',
     body: '一名獨居的老斥候在崖邊搭了間簡陋木屋，見商隊經過，主動招呼你們歇腳。他布滿皺紋的手指向霧靄深處：「這條古道我走了三十年，什麼機關暗道，我門兒清。」',
     options: [
       {
@@ -567,6 +584,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route', locationIds: ['misty-ridge-trail'] },
     weight: 9,
     title: '山脊上的狂風',
+    art: '/assets/games/caravan/event-ridge-gale.webp',
     body: '一陣狂風毫無預警地自谷底捲上山脊，吹得眾人東倒西歪，車篷被掀得獵獵作響，貨物眼看就要被捲下懸崖。隊員們死死抓住韁繩，與狂風拔河。',
     options: [
       {
@@ -595,6 +613,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon', locationIds: ['salt-crystal-cavern'] },
     weight: 9,
     title: '幽藍鹵水潭',
+    art: '/assets/games/caravan/event-saltcavern-brine-pool.webp',
     body: '洞窟深處有一汪幽藍色的鹵水潭，水面泛著細密的鹽晶結晶，空氣中瀰漫著刺鼻的鹹澀氣味，吸得久了讓人頭暈目眩，卻又隱約看見潭底閃著微光。',
     options: [
       {
@@ -620,6 +639,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon', locationIds: ['salt-crystal-cavern'] },
     weight: 9,
     title: '結晶花叢',
+    art: '/assets/games/caravan/event-saltcavern-crystal-bloom.webp',
     body: '岩壁上綻放著一叢叢晶瑩剔透的鹽晶花，稜角銳利如刀刃，卻美得讓人捨不得錯過。輕輕一碰便能感覺到刺骨的寒意順著指尖竄上手臂。',
     options: [
       {
@@ -646,6 +666,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon', locationIds: ['salt-crystal-cavern'] },
     weight: 9,
     title: '回聲石室',
+    art: '/assets/games/caravan/event-saltcavern-echo-chamber.webp',
     body: '一間寬闊的石室裡，任何聲響都會被放大成連綿不絕的回音，方向感在此徹底失靈。隊員們的腳步聲、呼吸聲層層疊疊地反彈回來，教人分不清東西南北。',
     options: [
       {
@@ -671,6 +692,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon', locationIds: ['salt-crystal-cavern'] },
     weight: 9,
     title: '坍塌的鹽脈',
+    art: '/assets/games/caravan/event-saltcavern-collapsed-vein.webp',
     body: '一整片鹽脈從頂部崩落，堆成半人高的鹽礫擋住去路，晶亮的碎塊在火光下閃爍，底下隱約還壓著幾件銹蝕的舊工具。',
     options: [
       {
@@ -839,6 +861,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 9,
     title: '遊唱詩人的請求',
+    art: '/assets/games/caravan/event-traveling-bard.webp',
     body: '一名背著魯特琴的遊唱詩人攔下商隊，笑著提議：「讓我隨行一程，換一頓熱飯如何？我保證用歌聲逗樂你們一整晚。」他的眼神裡帶著幾分風塵僕僕的疲憊。',
     options: [
       {
@@ -863,6 +886,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 9,
     title: '拋錨的商隊',
+    art: '/assets/games/caravan/event-lost-cart.webp',
     body: '前方路邊停著一輛陷入泥坑的貨車，車主滿頭大汗地推著車輪，貨物散落一地，眼看天色將暗，他焦急地朝你們揮手求助。',
     options: [
       {
@@ -888,6 +912,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 9,
     title: '打尖客棧的傳聞',
+    art: '/assets/games/caravan/event-night-market-rumor.webp',
     body: '商隊在路邊小客棧打尖歇腳，鄰桌旅人邊喝酒邊高談闊論，話裡話外似乎提到了什麼有用的門路。你豎起耳朵，努力從嘈雜中拼湊出完整的訊息。',
     options: [
       {
@@ -910,6 +935,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 9,
     title: '跟路的野犬',
+    art: '/assets/games/caravan/event-stray-dog.webp',
     body: '一隻瘦骨嶙峋的野犬遠遠綴在商隊後頭，怯生生地不敢靠近，卻也不肯離開，濕漉漉的眼睛直勾勾地望著車上的乾糧。',
     options: [
       {
@@ -933,6 +959,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'route' },
     weight: 9,
     title: '巡遊的祭司',
+    art: '/assets/games/caravan/event-toll-shrine-priest.webp',
     body: '一名雲遊祭司在路邊設起臨時祭壇，為往來旅人祈福消災。他朝商隊微微頷首：「願聞其詳，也算是與諸位結一段善緣。」語氣平和，不見絲毫催促。',
     options: [
       {
@@ -1085,6 +1112,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon' },
     weight: 9,
     title: '搖曳的火光',
+    art: '/assets/games/caravan/event-dungeon-flicker-torch.webp',
     body: '手中的火把毫無來由地劇烈搖曳，光影在牆上扭曲成詭異的形狀，彷彿有什麼東西正屏息躲在暗處窺視著商隊的一舉一動。',
     options: [
       {
@@ -1110,6 +1138,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon' },
     weight: 9,
     title: '被遺忘的祭壇',
+    art: '/assets/games/caravan/event-dungeon-forgotten-shrine.webp',
     body: '轉角處立著一座布滿蛛網的小祭壇，供奉的神祇早已無人記得名號，壇上還擺著幾枚早已氧化發黑的銅幣，散發著陳年的靜謐氣息。',
     options: [
       {
@@ -1135,6 +1164,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon' },
     weight: 9,
     title: '狹窄的裂隙',
+    art: '/assets/games/caravan/event-dungeon-narrow-crevice.webp',
     body: '前方通道驟然收窄成一道僅容一人側身通過的裂隙，尖銳的岩壁彷彿隨時會刮傷皮肉，隊員們面面相覷，猶豫著該不該冒險擠過去。',
     options: [
       {
@@ -1160,6 +1190,7 @@ export const EVENTS: EventCard[] = [
     context: { kind: 'dungeon' },
     weight: 9,
     title: '低語的石壁',
+    art: '/assets/games/caravan/event-dungeon-whispering-walls.webp',
     body: '石壁深處傳來若有似無的低語，聽不清內容，卻讓人莫名心神不寧，彷彿有無數細小的聲音正在耳邊竊竊私語，訴說著聽不懂的古老語言。',
     options: [
       {
