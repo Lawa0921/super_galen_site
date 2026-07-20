@@ -6,6 +6,8 @@ export interface ItemDef {
   name: string;
   desc: string;
   value: number;
+  /** 裝備 icon 路徑（M10 美術統一，裝備限定） */
+  art?: string;
   /** 可裝備物品的效果設定（M5 裝備三欄系統）；未設定＝純消耗/交易品 */
   equip?: {
     slot: 'weapon' | 'armor' | 'trinket';
@@ -69,6 +71,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '監工的密帳',
     desc: '記錄著非法奴役礦工帳目的皮革帳本，城裡的商會會為它付出重金。',
     value: 60,
+    art: '/assets/games/caravan/gear-overseer-ledger.webp',
     // M5：終審移交轉裝備——精算帳目的直覺化為智力加持
     equip: { slot: 'trinket', bonus: { int: 1 } },
   },
@@ -77,6 +80,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '巢穴圖騰',
     desc: '哥布林部族供奉的骨雕圖騰，紋路詭異，收藏家趨之若鶩。',
     value: 70,
+    art: '/assets/games/caravan/gear-den-idol.webp',
     // M5：終審移交轉裝備——圖騰的庇護化為防禦與生命加持
     equip: { slot: 'trinket', defense: 1, maxHp: 3 },
   },
@@ -122,6 +126,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '鹽晶劍',
     desc: '以鹽晶洞窟深處的礦脈淬鍊而成，劍鋒帶著粗糲的結晶紋理，劈砍時偶有鹽粒迸濺，卻絲毫不損其鋒利。',
     value: 90,
+    art: '/assets/games/caravan/gear-salt-crystal-blade.webp',
     equip: {
       slot: 'weapon',
       minLevel: 2,
@@ -138,6 +143,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '山嵐反曲弓',
     desc: '取材自霧嶺古道的堅韌山木，弓身纏著防潮的皮條，即使在最潮濕的迷霧裡也能穩定發箭。',
     value: 85,
+    art: '/assets/games/caravan/gear-ridge-mist-bow.webp',
     equip: {
       slot: 'weapon',
       minLevel: 2,
@@ -154,6 +160,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '亡靈焚魂杖',
     desc: '古戰場亡靈遺留之物，杖頭殘留著幽綠鬼火，握在手中隱隱傳來低語，彷彿仍未忘記戰場上的執念。',
     value: 95,
+    art: '/assets/games/caravan/gear-ghostflame-staff.webp',
     equip: {
       slot: 'weapon',
       minLevel: 2,
@@ -170,6 +177,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '鹽泉聖錘',
     desc: '鹽泉城祭壇以鹵水加持過的權杖，錘擊落下時會揚起細白鹽霧，據說能滌淨邪祟。',
     value: 88,
+    art: '/assets/games/caravan/gear-brine-blessed-mace.webp',
     equip: {
       slot: 'weapon',
       minLevel: 2,
@@ -188,6 +196,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '山嵐輕皮甲',
     desc: '霧嶺獵人慣穿的輕便皮甲，內襯防潮油布，便於在起霧的山道間長途跋涉。',
     value: 45,
+    art: '/assets/games/caravan/gear-ridgeleather-vest.webp',
     equip: { slot: 'armor', defense: 2, bonus: { dex: 1 } },
   },
   'saltforged-mail': {
@@ -195,6 +204,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '鹽鍛鎖甲',
     desc: '以鹽泉城特有的鍛法打造，鎖環表面覆著一層防鏽的鹽膜，即使常年泡在鹵水裡也不易腐朽。',
     value: 60,
+    art: '/assets/games/caravan/gear-saltforged-mail.webp',
     equip: { slot: 'armor', defense: 3, maxHp: 2 },
   },
   'ashveil-robe': {
@@ -202,6 +212,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '灰燼法袍',
     desc: '取自古戰場焚後餘燼染製的法袍，灰黑色澤中隱約可見未散的硝煙氣息，據說能助施法者凝神。',
     value: 50,
+    art: '/assets/games/caravan/gear-ashveil-robe.webp',
     equip: { slot: 'armor', defense: 1, bonus: { int: 1 } },
   },
   'brinewarded-vestment': {
@@ -209,6 +220,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '鹽泉聖袍',
     desc: '鹽泉城神殿代代相傳的聖袍，浸過泉水加持的布料能安撫穿者心神，抵禦邪異侵擾。',
     value: 65,
+    art: '/assets/games/caravan/gear-brinewarded-vestment.webp',
     equip: { slot: 'armor', defense: 2, maxHp: 4 },
   },
 
@@ -218,6 +230,7 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '游商的羅盤',
     desc: '那名神秘商人臨別時塞進你手裡的羅盤，指針從不指向北方，卻總能在迷途時引你找到最想去的地方。',
     value: 80,
+    art: '/assets/games/caravan/gear-wanderers-compass.webp',
     equip: { slot: 'trinket', bonus: { cha: 1, dex: 1 } },
   },
   'salt-crystal-core': {
@@ -225,6 +238,72 @@ export const ITEMS: Record<string, ItemDef> = {
     name: '鹽晶核心',
     desc: '鹽晶洞主體內凝結多年的核心，觸手冰涼，隱隱透出脈動般的微光，據說蘊藏著洞窟本身的意志。',
     value: 75,
+    art: '/assets/games/caravan/gear-salt-crystal-core.webp',
     equip: { slot: 'trinket', bonus: { con: 1 }, defense: 1 },
+  },
+
+  // ---- M10 稀有裝備（Lv3 終局裝：3 件稀有事件獎勵、3 件鹽泉城高價） ----
+  'ancient-king-blade': {
+    id: 'ancient-king-blade',
+    name: '古王之劍',
+    desc: '依寶藏圖掘出的古王國佩劍，劍身銘文歷千年而不鏽，握柄傳來遠古王者的威嚴。',
+    value: 150,
+    art: '/assets/games/caravan/gear-ancient-king-blade.webp',
+    equip: {
+      slot: 'weapon', minLevel: 3,
+      move: { id: 'kings-cleave', name: '王者斬', kind: 'attack', target: 'enemy', hitStat: 'str',
+        damage: { dice: 2, sides: 8, bonusStat: 'str' },
+        narration: '{actor}揮動古王之劍，威嚴一斬劈向{target}，造成 {amount} 點傷害！' },
+    },
+  },
+  'swordsaint-bokken': {
+    id: 'swordsaint-bokken',
+    name: '劍聖的木刀',
+    desc: '流浪劍聖切磋後贈下的木刀，刀身無鋒卻蘊含一整個流派的劍意，揮出時輕若燕影。',
+    value: 140,
+    art: '/assets/games/caravan/gear-swordsaint-bokken.webp',
+    equip: {
+      slot: 'weapon', minLevel: 3,
+      move: { id: 'swallow-return', name: '燕返', kind: 'attack', target: 'enemy', hitStat: 'dex',
+        damage: { dice: 2, sides: 6, bonusStat: 'dex' },
+        narration: '{actor}木刀翻飛如燕影折返，連斬{target}，造成 {amount} 點傷害！' },
+    },
+  },
+  'royal-courier-sigil': {
+    id: 'royal-courier-sigil',
+    name: '王室信使徽章',
+    desc: '重傷信使託付的王室徽章，佩上它的商隊被視為為王室辦事——談判時無人敢輕慢。',
+    value: 130,
+    art: '/assets/games/caravan/gear-royal-courier-sigil.webp',
+    equip: { slot: 'trinket', minLevel: 3, bonus: { cha: 2 }, maxHp: 2 },
+  },
+  'brine-crystal-staff': {
+    id: 'brine-crystal-staff',
+    name: '鹵晶法杖',
+    desc: '以鹽晶洞深處的純淨鹵晶製成的法杖，杖首晶簇中封存著洞窟千年的低鳴。',
+    value: 155,
+    art: '/assets/games/caravan/gear-brine-crystal-staff.webp',
+    equip: {
+      slot: 'weapon', minLevel: 3,
+      move: { id: 'brine-burst', name: '鹵晶爆', kind: 'attack', target: 'enemy', hitStat: 'int',
+        damage: { dice: 2, sides: 8, bonusStat: 'int' },
+        narration: '{actor}的法杖迸發鹵晶洪流，轟向{target}，造成 {amount} 點傷害！' },
+    },
+  },
+  'pilgrim-warded-cloak': {
+    id: 'pilgrim-warded-cloak',
+    name: '朝聖者的護紋斗篷',
+    desc: '鹽路朝聖者代代縫入護紋的旅行斗篷，紋路在月光下泛著淡淡鹽白，能卸開刀劍與惡意。',
+    value: 145,
+    art: '/assets/games/caravan/gear-pilgrim-warded-cloak.webp',
+    equip: { slot: 'armor', minLevel: 3, defense: 3, bonus: { dex: 1 } },
+  },
+  'saltglass-talisman': {
+    id: 'saltglass-talisman',
+    name: '鹽琉璃護符',
+    desc: '鹽泉城匠人以泉心結晶燒製的護符，通透如琉璃，握在掌心能聽見泉水的脈動。',
+    value: 135,
+    art: '/assets/games/caravan/gear-saltglass-talisman.webp',
+    equip: { slot: 'trinket', minLevel: 3, bonus: { int: 2 }, defense: 1 },
   },
 };

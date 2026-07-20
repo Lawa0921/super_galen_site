@@ -521,6 +521,22 @@ test.describe('商隊與劍：經營系統', () => {
     await page.click('#btn-depart');
     await expect(page.locator('#screen-expedition')).toBeVisible();
 
+    // M10 異鎮採購區：河灣鎮 stock 含裝備（鹽鍛鎖甲）→ 採購區應顯示 icon 與買入鈕
+    for (let i = 0; i < 200; i++) {
+      if (await page.locator('#screen-trade').isVisible().catch(() => false)) break;
+      const progressed = await stepExpedition(page);
+      if (!progressed) await page.waitForTimeout(150);
+    }
+    await expect(page.locator('#trade-buy-section')).toBeVisible();
+    const buyRow = page.locator('#trade-buy-list .market-row[data-item-id="saltforged-mail"]');
+    await expect(buyRow.locator('.gear-icon')).toBeVisible();
+    const gearPrice = Number((await buyRow.locator('.buy-btn').textContent())!.match(/\d+/)![0]);
+    const goldBeforeGear = (await readSave(page)).gold;
+    await buyRow.locator('.buy-btn').click();
+    const saveAfterGear = await readSave(page);
+    expect(goldBeforeGear - saveAfterGear.gold).toBe(gearPrice);
+    expect(saveAfterGear.inventory['saltforged-mail']).toBe(1);
+
     await advanceToSettlement(page, { sellAll: true });
     await expect(page.locator('#screen-settlement')).toBeVisible();
     // seed=91 臨水道已知確定結果：loot.gold=25、無戰利品物品、勝利未撤退。
@@ -532,8 +548,8 @@ test.describe('商隊與劍：經營系統', () => {
     await page.click('#btn-settle-back');
     await expect(page.locator('#screen-town')).toBeVisible();
     const finalGold = (await readSave(page)).gold;
-    expect(finalGold).toBe(goldBeforeDepart + 25 + tradeGold);
-    expect(finalGold, '押貨淨利應為正').toBeGreaterThan(goldAtStart);
+    expect(finalGold).toBe(goldBeforeDepart + 25 + tradeGold - gearPrice); // 含 M10 採購支出
+    expect(finalGold + gearPrice, '押貨淨利（不計裝備投資）應為正').toBeGreaterThan(goldAtStart);
   });
 
   test('升級：xp 達 Lv2 門檻後配 2 點力量，卡片顯示 Lv2 與屬性變化', async ({ page }) => {
@@ -734,5 +750,64 @@ test.describe('商隊與劍：冒險編年史（M6）', () => {
     await page.click('#btn-new-game');
     await expect(page.locator('#town-gold')).toHaveText('230');
     await page.evaluate(() => localStorage.removeItem('caravan-chronicle-v1'));
+  });
+});
+
+test.describe('商隊與劍：Boss 激怒（M10）', () => {
+  test('迷宮 boss 打到半血觸發激怒 log（真實 UI 戰鬥流程）', async ({ page }) => {
+    test.setTimeout(180000);
+    await page.goto('/caravan/play?seed=71');
+    await page.evaluate(() => {
+      localStorage.removeItem('caravan-chronicle-v1');
+      // 中等輸出＋高生存主角：確保 boss 會經過半血窗口而不被秒殺、玩家也不會先死
+      const save = {
+        version: 6, createdAt: 1000, gold: 999,
+        flags: { 'discovered:goblin-den': true }, // 直入哥布林巢穴（3 層、道中無毒怪、boss 帶 enrage）
+        protagonist: {
+          id: 'protagonist', name: '你', job: 'swordsman', level: 3, xp: 200,
+          // 中庸輸出（磨 boss 必經半血窗口）＋重甲高防
+          stats: { str: 12, dex: 12, int: 10, cha: 12, con: 18 }, maxHp: 46, injuredForTrips: 0, trait: 'tough',
+          equipment: { weapon: null, armor: 'saltforged-mail', trinket: 'den-idol' },
+        },
+        companions: [], inventory: {}, expedition: null, wagonLevel: 0,
+        tavernSeed: 71, marketSeed: 71, reputation: 0, visitedBossDungeons: [],
+      };
+      localStorage.setItem('caravan-save-v1', JSON.stringify(save));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.click('#btn-quest-board');
+    await page.click('.quest-item[data-location-id="goblin-den"]');
+    await expect(page.locator('#screen-expedition')).toBeVisible();
+
+    // 走完迷宮（同遠征系統 describe 的 stepExpedition 驅動邏輯，此處自帶一份），
+    // 收集所有戰鬥 log 找激怒
+    let enrageSeen = false;
+    for (let i = 0; i < 400; i++) {
+      const logs = await page.locator('#combat-log p').allTextContents().catch(() => []);
+      if (logs.some((t) => t.includes('激怒'))) { enrageSeen = true; break; }
+      if (await page.locator('#screen-settlement').isVisible().catch(() => false)) break;
+      if (await page.locator('#screen-town').isVisible().catch(() => false)) break;
+      if (await page.locator('#screen-combat').isVisible().catch(() => false)) {
+        if (await page.locator('#combat-result').isVisible().catch(() => false)) {
+          await page.click('#btn-combat-back');
+        } else {
+          const move = page.locator('#combat-actions .move-btn').first();
+          if (await move.isVisible().catch(() => false)) await move.click();
+          await page.waitForTimeout(250);
+        }
+        continue;
+      }
+      const eventOpt = page.locator('.event-opt:not([disabled])').first();
+      if (await eventOpt.isVisible().catch(() => false)) { await eventOpt.click(); continue; }
+      const roomBtn = page.locator('.room-btn').first();
+      if (await roomBtn.isVisible().catch(() => false)) { await roomBtn.click(); continue; }
+      const cont = page.locator('#btn-exp-continue');
+      if (await cont.isVisible().catch(() => false)) { await cont.click(); continue; }
+      await page.waitForTimeout(150);
+    }
+    expect(enrageSeen, 'boss 半血應觸發激怒 log').toBe(true);
   });
 });

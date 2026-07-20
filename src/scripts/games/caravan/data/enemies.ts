@@ -158,6 +158,7 @@ function makeMineOverseer(): EnemyUnit {
       { weight: 2, moveId: 'overseer-whip' },
       { weight: 1, moveId: 'overseer-slam' },
     ],
+    enrage: { threshold: 0.5, potency: 2 }, // M10：半血激怒
     loot: { gold: [30, 50], itemId: 'overseer-ledger', itemChance: 0.8 },
   };
 }
@@ -186,6 +187,7 @@ function makeGoblinDenChief(): EnemyUnit {
       { weight: 3, moveId: 'chief-axe' },
       { weight: 1, moveId: 'chief-howl' },
     ],
+    enrage: { threshold: 0.5, potency: 2 }, // M10：半血激怒
     loot: { gold: [35, 55], itemId: 'den-idol', itemChance: 0.9 },
   };
 }
@@ -328,6 +330,7 @@ function makeSaltCavernSovereign(): EnemyUnit {
       { weight: 3, moveId: 'sovereign-crystal-crush' },
       { weight: 1, moveId: 'sovereign-brine-ward' },
     ],
+    enrage: { threshold: 0.5, potency: 3 }, // M10：半血激怒
     loot: { gold: [40, 65], itemId: 'salt-crystal-core', itemChance: 0.85 },
   };
 }
