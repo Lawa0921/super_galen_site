@@ -166,6 +166,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
 <script>
   import { newGame, saveGame, loadGame, SAVE_KEY } from '@scripts/games/caravan/save';
+  import { applyMarket } from '@scripts/games/caravan/economy';
+  import { traitById } from '@scripts/games/caravan/roster';
   import {
     loadChronicle, saveChronicle, recordEvent, recordEnemyDefeat, recordLocationVisit,
     recordEquipment, recordExpedition, evaluateAchievements, legacyBonusGold, ACHIEVEMENTS,
@@ -350,7 +352,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   function renderMarket(): void {
     if (!save) return;
     marketGoldEl.textContent = String(save.gold);
-    const town = STARTING_TOWN;
+    const town = applyMarket(STARTING_TOWN, save.marketSeed); // M7 行情
     const ownedIds = Object.keys(save.inventory).filter((id) => (save!.inventory[id] ?? 0) > 0);
     const ids = Array.from(new Set([...town.stock, ...ownedIds]));
     marketListEl.innerHTML = '';
@@ -365,6 +367,16 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const name = document.createElement('span');
       name.className = 'market-name';
       name.textContent = `${item.name}（持有 ${owned}）`;
+      // M7 行情箭頭：與基準價比較
+      const baseMod = STARTING_TOWN.priceModifiers[itemId] ?? 1;
+      const nowMod = town.priceModifiers[itemId] ?? 1;
+      if (Math.abs(nowMod - baseMod) > 0.02) {
+        const arrow = document.createElement('i');
+        arrow.className = nowMod > baseMod ? 'market-trend up' : 'market-trend down';
+        arrow.textContent = nowMod > baseMod ? '▲' : '▼';
+        arrow.title = '市場行情';
+        name.appendChild(arrow);
+      }
       row.appendChild(name);
 
       if (town.stock.includes(itemId)) {
@@ -443,7 +455,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
       const info = document.createElement('p');
       info.className = 'recruit-info';
+      const trait = traitById(record.trait);
       info.textContent = `雇用費 ${cost} G．每趟薪餉 ${wage} G`;
+      if (trait) {
+        const tag = document.createElement('span');
+        tag.className = 'trait-tag';
+        tag.textContent = `${trait.name}：${trait.desc}`;
+        info.appendChild(tag);
+      }
 
       const hireBtn = document.createElement('button');
       hireBtn.type = 'button';
@@ -562,6 +581,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const xp = document.createElement('p');
       xp.className = 'roster-xp';
       xp.textContent = `經驗值 ${record.xp} XP`;
+      const rTrait = traitById(record.trait);
+      if (rTrait) xp.textContent += `．特質「${rTrait.name}」（${rTrait.desc}）`;
 
       const stats = document.createElement('p');
       stats.className = 'roster-stats';
@@ -1134,6 +1155,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     const result = settleExpedition(finished, save, tradeSales);
     // 招募池輪替（M4）：每趟歸返結算後種子遞增，酒館下次渲染會抽到新一批人選
     save.tavernSeed += 1;
+    save.marketSeed += 1; // M7：歸返後各鎮行情輪動
     saveGame(save);
     recordExpedition(chron, finished.retreated ? 'retreat' : 'won');
     syncEquipmentToChronicle();
@@ -1161,7 +1183,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   function enterTradePhase(): void {
     if (!expedition || !save) return;
     const townId = expedition.destinationTownId!;
-    tradeTown = TOWNS[townId] ?? null;
+    tradeTown = TOWNS[townId] ? applyMarket(TOWNS[townId], save!.marketSeed) : null;
     tradeSoldIds = new Set();
     tradeCombined = {};
     for (const [itemId, count] of Object.entries(expedition.cargo)) {
@@ -1304,7 +1326,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       intent.className = 'unit-intent';
       intent.textContent = showIntent ? unitIntentText(unit) : '';
 
-      card.append(name, hp, intent);
+      const status = document.createElement('p');
+      status.className = 'unit-status';
+      const icons = { poison: '☠', stun: '💫', strength: '💪' } as const;
+      status.textContent = (unit.statuses ?? [])
+        .map((s) => `${icons[s.kind]}${s.remaining}`)
+        .join(' ');
+
+      card.append(name, hp, intent, status);
       container.appendChild(card);
     }
   }
@@ -1475,6 +1504,11 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .title-chronicle-link:hover { color: #8a3c1e; }
   .settle-achievements { color: #8a3c1e; font-weight: 600; letter-spacing: 0.05em; margin: 0 0 0.6rem; }
   .settle-achievements[hidden] { display: none; }
+  /* M7 行情與特質 */
+  .market-trend { font-style: normal; margin-left: 0.35rem; font-size: 0.8rem; }
+  .market-trend.up { color: #a4453a; }
+  .market-trend.down { color: #3a7a4e; }
+  .trait-tag { display: block; margin-top: 0.2rem; font-size: 0.8rem; color: #6b5f4c; }
   .screen-wide { max-width: 46rem; width: 100%; }
   /* ---- M5 美術 ---- */
   .title-art {
@@ -1728,6 +1762,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .unit-name { font-weight: 600; margin: 0 0 0.15rem; }
   .unit-hp { font-size: 0.85rem; color: #5c5344; margin: 0; }
   .unit-intent { font-size: 0.75rem; font-style: italic; color: #8a7f6d; margin: 0.15rem 0 0; min-height: 1em; }
+  .unit-status { font-size: 0.8rem; color: #7a4b9d; margin: 0.15rem 0 0; min-height: 1em; }
   .combat-targets {
     display: flex;
     flex-wrap: wrap;

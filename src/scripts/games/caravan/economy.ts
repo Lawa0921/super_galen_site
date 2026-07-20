@@ -14,6 +14,31 @@ export interface TownDef {
   art?: string;
 }
 
+/**
+ * 市場行情（M7）：以 marketSeed 對鎮上「非裝備」品項的價格係數做 0.75-1.35 決定性浮動，
+ * 回傳新 TownDef（不改原物件）。裝備不吃行情（延伸 M5 套利裁決）。
+ * 浮動對象＝priceModifiers 既有品項 ∪ stock 品項。
+ */
+export function applyMarket(town: TownDef, marketSeed: number): TownDef {
+  // 每鎮每品項各自可重現的偽隨機：字串雜湊 + seed（mulberry32 一步）
+  const swing = (key: string): number => {
+    let h = marketSeed >>> 0;
+    for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 2654435761);
+    h = Math.imul(h ^ (h >>> 13), 1597334677);
+    const unit = ((h ^ (h >>> 16)) >>> 0) / 4294967296; // 0-1
+    return 0.75 + unit * 0.6; // 0.75-1.35
+  };
+  const itemIds = new Set([...Object.keys(town.priceModifiers), ...town.stock]);
+  const priceModifiers: Record<string, number> = {};
+  for (const itemId of itemIds) {
+    const base = town.priceModifiers[itemId] ?? 1;
+    priceModifiers[itemId] = ITEMS[itemId]?.equip
+      ? base // 裝備維持基準
+      : Math.round(base * swing(`${town.id}:${itemId}`) * 100) / 100;
+  }
+  return { ...town, priceModifiers };
+}
+
 function priceModifier(town: TownDef, itemId: string): number {
   return town.priceModifiers[itemId] ?? 1;
 }

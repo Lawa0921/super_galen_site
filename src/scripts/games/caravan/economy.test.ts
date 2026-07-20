@@ -3,6 +3,9 @@ import {
   buyPrice, sellPrice, tradeSellPrice, cargoCapacity, wagonUpgradeCost, totalWage,
 } from './economy';
 import type { TownDef } from './economy';
+import { applyMarket } from './economy';
+import { TOWNS } from './data/towns';
+import { ITEMS } from './data/items';
 import { newGame } from './save';
 import type { CompanionRecord } from './save';
 
@@ -135,5 +138,49 @@ describe('economy（經濟系統）', () => {
       save.companions = [makeCompanion({ level: 2, injuredForTrips: 2 })];
       expect(totalWage(save)).toBe(0);
     });
+  });
+});
+
+describe('市場行情波動（M7）', () => {
+  const base = TOWNS['riverbend-town'];
+
+  it('同 seed 決定性；不同 seed 產生不同行情', () => {
+    const a1 = applyMarket(base, 7);
+    const a2 = applyMarket(base, 7);
+    expect(a1.priceModifiers).toEqual(a2.priceModifiers);
+    const b = applyMarket(base, 8);
+    expect(JSON.stringify(a1.priceModifiers)).not.toBe(JSON.stringify(b.priceModifiers));
+  });
+
+  it('行情係數把基準乘上 0.75-1.35 浮動，且不動原物件', () => {
+    const m = applyMarket(base, 3);
+    expect(m).not.toBe(base);
+    for (const [itemId, mod] of Object.entries(m.priceModifiers)) {
+      const baseMod = base.priceModifiers[itemId] ?? 1;
+      const ratio = mod / baseMod;
+      expect(ratio, `${itemId} 行情比例超界`).toBeGreaterThanOrEqual(0.75);
+      expect(ratio, `${itemId} 行情比例超界`).toBeLessThanOrEqual(1.35);
+    }
+    expect(base.priceModifiers.ore).toBe(1.5); // 原 town 不被改
+  });
+
+  it('裝備物品不吃行情（套利裁決延伸）；一般 stock 品項有行情', () => {
+    const salt = TOWNS['salt-spring-city'];
+    const m = applyMarket(salt, 11);
+    for (const itemId of Object.keys(m.priceModifiers)) {
+      if (ITEMS[itemId]?.equip) {
+        expect(m.priceModifiers[itemId], `裝備 ${itemId} 不應浮動`).toBe(salt.priceModifiers[itemId] ?? 1);
+      }
+    }
+    // 非裝備 stock 品項應獲得行情條目（即使基準為 1）
+    expect(m.priceModifiers.herb).toBeDefined();
+  });
+
+  it('newGame 有 marketSeed；行情 town 可直接餵 buyPrice/sellPrice', () => {
+    const save = newGame();
+    expect(typeof save.marketSeed).toBe('number');
+    const m = applyMarket(base, save.marketSeed);
+    expect(buyPrice(m, 'ore')).toBeGreaterThan(0);
+    expect(sellPrice(m, 'ore')).toBeGreaterThan(0);
   });
 });

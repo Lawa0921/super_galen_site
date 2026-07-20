@@ -1,7 +1,7 @@
 import type { Move, PartyMember } from '../combat';
 import type { CompanionRecord } from '../save';
 import type { StatBlock } from '../types';
-import { unlockedMoves, equipmentBonus } from '../roster';
+import { unlockedMoves, equipmentBonus, traitById } from '../roster';
 import { ITEMS } from './items';
 
 export type JobId = 'swordsman' | 'ranger' | 'mage' | 'cleric';
@@ -131,7 +131,14 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
   for (const key of Object.keys(bonus.stats) as Array<keyof StatBlock>) {
     stats[key] += bonus.stats[key] ?? 0;
   }
-  const maxHp = record.maxHp + bonus.maxHp;
+  // M7 特質加成
+  const trait = traitById(record.trait);
+  if (trait?.statBonus) {
+    for (const key of Object.keys(trait.statBonus) as Array<keyof StatBlock>) {
+      stats[key] += trait.statBonus[key] ?? 0;
+    }
+  }
+  const maxHp = record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0);
 
   const moves = unlockedMoves(record);
   const weaponId = record.equipment.weapon;
