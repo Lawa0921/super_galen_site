@@ -432,26 +432,32 @@ test.describe('商隊與劍：經營系統', () => {
     await expect(bandageRow.locator('.market-name')).toContainText('持有 1');
   });
 
-  test('招募與薪餉：雇用第一名旅人扣 hireCost，出發扣 totalWage', async ({ page }) => {
+  test('招募與薪餉：雇用扣 UI 標示的 hireCost，出發扣（旅況修正後的）薪餉', async ({ page }) => {
     await newGameWithSeed(page, 102);
     await page.click('.town-tab[data-town-tab="tavern"]');
     const firstRecruit = page.locator('.recruit-card').first();
     await expect(firstRecruit).toBeVisible();
+    // M7 特質影響雇用費/薪餉——從招募卡讀實際數字驗證扣款一致（意圖不變）
+    const infoText = (await firstRecruit.locator('.recruit-info').textContent())!;
+    const [hire, wage] = infoText.match(/\d+/g)!.map(Number);
     await firstRecruit.locator('.hire-btn').click();
-    // 新檔聲望為 0，酒館池首位必為 Lv1（generateRecruitPool 精英門檻聲望≥30 才生效）：
-    // hireCost=30+1×20=50、wagePerTrip=8+1×4=12，兩者皆可精確斷言。
-    await expect(page.locator('#town-gold')).toHaveText('150');
+    await expect(page.locator('#town-gold')).toHaveText(String(200 - hire));
 
     await page.click('.town-tab[data-town-tab="roster"]');
     await expect(page.locator('.roster-card')).toHaveCount(2);
 
     await page.click('#btn-quest-board');
     const goldBeforeDepart = (await readSave(page)).gold;
-    expect(goldBeforeDepart).toBe(150);
+    expect(goldBeforeDepart).toBe(200 - hire);
     await page.click('.quest-item[data-location-id="riverside-road"]');
     await expect(page.locator('#screen-expedition')).toBeVisible();
     const goldAfterDepart = (await readSave(page)).gold;
-    expect(goldBeforeDepart - goldAfterDepart).toBe(12);
+    // M8 旅況可能讓薪餉打折（festival ×0.5）——期望值照引擎同式計算
+    const conditionWageFactor = await page.evaluate(() => {
+      const save = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      return save.expedition?.conditionId === 'festival' ? 0.5 : 1;
+    });
+    expect(goldBeforeDepart - goldAfterDepart).toBe(Math.round(wage * conditionWageFactor));
 
     await advanceToSettlement(page);
     await page.click('#btn-settle-back');
@@ -466,19 +472,23 @@ test.describe('商隊與劍：經營系統', () => {
   test('薪餉守門：雇用後把金幣花到不足支付薪餉，出發被擋在委託板', async ({ page }) => {
     await newGameWithSeed(page, 103);
     await page.click('.town-tab[data-town-tab="tavern"]');
-    await page.locator('.recruit-card').first().locator('.hire-btn').click();
-    await expect(page.locator('#town-gold')).toHaveText('150');
+    const firstRecruit = page.locator('.recruit-card').first();
+    // M7 特質影響雇用費/薪餉——讀卡上實際數字（守門用未打折的全額薪餉判定）
+    const infoText = (await firstRecruit.locator('.recruit-info').textContent())!;
+    const [hire, wage] = infoText.match(/\d+/g)!.map(Number);
+    await firstRecruit.locator('.hire-btn').click();
+    await expect(page.locator('#town-gold')).toHaveText(String(200 - hire));
 
     await page.click('.town-tab[data-town-tab="market"]');
-    await buyUntilGoldBelow(page, 'bandage', 12); // wagePerTrip(Lv1)=12
+    await buyUntilGoldBelow(page, 'bandage', wage);
 
     const saveBeforeClick = await readSave(page);
-    expect(saveBeforeClick.gold).toBeLessThan(12);
+    expect(saveBeforeClick.gold).toBeLessThan(wage);
 
     await page.click('#btn-quest-board');
     await page.click('.quest-item[data-location-id="riverside-road"]');
     await expect(page.locator('#quest-wage-warning')).toBeVisible();
-    await expect(page.locator('#quest-wage-warning')).toContainText('12');
+    await expect(page.locator('#quest-wage-warning')).toContainText(String(wage));
     await expect(page.locator('#screen-quest')).toBeVisible();
     await expect(page.locator('#screen-expedition')).toBeHidden();
   });
