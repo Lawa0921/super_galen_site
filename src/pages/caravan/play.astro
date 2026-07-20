@@ -17,6 +17,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         <button id="btn-new-game" class="caravan-btn">新的旅程</button>
         <button id="btn-continue" class="caravan-btn" hidden>繼續旅程</button>
       </div>
+      <p id="title-legacy" class="title-legacy" hidden></p>
+      <a class="title-chronicle-link" href="/caravan#chronicle">冒險編年史 »</a>
     </section>
 
     <!-- 城鎮畫面（M4：市集/酒館/隊伍/馬車四分頁） -->
@@ -138,6 +140,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     <!-- 結算畫面（M3：遠征歸返） -->
     <section id="screen-settlement" class="screen" hidden>
       <h2 class="settle-title">遠征結算</h2>
+      <p id="settle-achievements" class="settle-achievements" hidden></p>
       <div id="settle-log" class="settle-log"></div>
       <dl class="settle-stats">
         <div class="settle-stat">
@@ -163,6 +166,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
 <script>
   import { newGame, saveGame, loadGame, SAVE_KEY } from '@scripts/games/caravan/save';
+  import {
+    loadChronicle, saveChronicle, recordEvent, recordEnemyDefeat, recordLocationVisit,
+    recordEquipment, recordExpedition, evaluateAchievements, legacyBonusGold, ACHIEVEMENTS,
+  } from '@scripts/games/caravan/chronicle';
   import type { SaveData, CompanionRecord } from '@scripts/games/caravan/save';
   import { createRng } from '@scripts/games/caravan/rng';
   import {
@@ -712,8 +719,27 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     expeditionExpiredOnLoad = false;
   }
 
+  const chron = loadChronicle();
+
+  /** 掃描存檔中的裝備（庫存＋成員身上），冪等收錄進編年史。 */
+  function syncEquipmentToChronicle(): void {
+    if (!save) return;
+    for (const id of Object.keys(save.inventory)) if (ITEMS[id]?.equip) recordEquipment(chron, id);
+    for (const m of [save.protagonist, ...save.companions]) {
+      for (const id of Object.values(m.equipment)) if (id && ITEMS[id]?.equip) recordEquipment(chron, id);
+    }
+  }
+
+  // 標題畫面：有傳承點才顯示加成
+  const titleLegacyEl = document.getElementById('title-legacy')!;
+  if (legacyBonusGold(chron) > 0) {
+    titleLegacyEl.textContent = `商會傳承：新旅程起始金幣 +${legacyBonusGold(chron)} G（傳承 ${chron.legacyPoints} 點）`;
+    titleLegacyEl.hidden = false;
+  }
+
   btnNew.addEventListener('click', () => {
     save = newGame();
+    save.gold += legacyBonusGold(chron); // 商會傳承：跨輪起始加成
     saveGame(save);
     expeditionExpiredOnLoad = false;
     showTown(save.gold);
@@ -926,6 +952,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     expedition = startExpedition(rng, save, locationId, cargo);
     save.expedition = expedition;
     saveGame(save);
+    recordLocationVisit(chron, locationId);
+    saveChronicle(chron);
     showScreen('expedition');
     dispatchPhase();
   }
@@ -976,6 +1004,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     checkResultEl.textContent = '';
     roomChoicesEl.innerHTML = '';
     eventCardEl.hidden = false;
+    if (recordEvent(chron, card.id)) saveChronicle(chron);
     eventArtEl.hidden = !card.art;
     if (card.art) eventArtEl.src = card.art;
     eventTitleEl.textContent = card.title;
@@ -1106,6 +1135,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     // 招募池輪替（M4）：每趟歸返結算後種子遞增，酒館下次渲染會抽到新一批人選
     save.tavernSeed += 1;
     saveGame(save);
+    recordExpedition(chron, finished.retreated ? 'retreat' : 'won');
+    syncEquipmentToChronicle();
+    const freshAchievements = evaluateAchievements(chron);
+    saveChronicle(chron);
+    const achEl = document.getElementById('settle-achievements')!;
+    achEl.hidden = freshAchievements.length === 0;
+    achEl.textContent = freshAchievements.length
+      ? `🏆 解鎖成就：${freshAchievements.map((id) => ACHIEVEMENTS.find((a) => a.id === id)?.name ?? id).join('、')}`
+      : '';
     renderSettlement(result, finished);
     showScreen('settlement');
     expedition = null;
@@ -1338,6 +1376,11 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   }
 
   function showResult(outcome: CombatState['outcome']): void {
+    if (outcome === 'victory' && state) {
+      for (const e of state.enemies) recordEnemyDefeat(chron, e.name);
+      evaluateAchievements(chron);
+      saveChronicle(chron);
+    }
     const text =
       outcome === 'victory'
         ? '勝利！敵人被擊潰了，商隊可以繼續前進。'
@@ -1426,6 +1469,12 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     padding-bottom: 96px;
   }
   .screen { text-align: center; padding: 2rem; max-width: 34rem; }
+  /* M6 編年史 */
+  .title-legacy { font-size: 0.85rem; color: #8a3c1e; letter-spacing: 0.08em; margin: 0.8rem 0 0; }
+  .title-chronicle-link { display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; color: #6b5f4c; text-decoration: none; letter-spacing: 0.15em; }
+  .title-chronicle-link:hover { color: #8a3c1e; }
+  .settle-achievements { color: #8a3c1e; font-weight: 600; letter-spacing: 0.05em; margin: 0 0 0.6rem; }
+  .settle-achievements[hidden] { display: none; }
   .screen-wide { max-width: 46rem; width: 100%; }
   /* ---- M5 美術 ---- */
   .title-art {
