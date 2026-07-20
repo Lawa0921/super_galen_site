@@ -7,7 +7,7 @@ import { partyCheckBonus } from './roster';
 import type { CombatState, EnemyUnit, PartyMember } from './combat';
 import type { JobId } from './data/jobs';
 import type { TownDef } from './economy';
-import { tradeSellPrice, totalWage, cargoCapacity } from './economy';
+import { tradeSellPrice, totalWage, cargoCapacity, applyMarket } from './economy';
 
 /** 遠征快照結構版本；save.ts 的 parseAndMigrate 用它防護舊版遠征快照（M4） */
 export const EXPEDITION_VERSION = 2;
@@ -64,6 +64,43 @@ export interface LocationDef {
   minReputation?: number;
 }
 
+// ---------------------------------------------------------------------------
+// 旅況系統（M8）：每趟遠征 seeded 抽一種全程修飾，隨 marketSeed 輪替
+// ---------------------------------------------------------------------------
+
+export interface ConditionDef {
+  id: string; name: string; desc: string;
+  /** 事件檢定修正 */
+  checkDelta?: number;
+  /** 異鎮賣價倍率（結算時套用） */
+  tradeFactor?: number;
+  /** 本趟薪餉倍率 */
+  wageFactor?: number;
+  /** 敵人掉落金倍率 */
+  lootFactor?: number;
+}
+
+export const CONDITIONS: ConditionDef[] = [
+  { id: 'tailwind', name: '順風和日', desc: '天朗氣清，旅途檢定 +1', checkDelta: 1 },
+  { id: 'storm', name: '暴雨連日', desc: '道路泥濘，旅途檢定 -1', checkDelta: -1 },
+  { id: 'boom', name: '商貿熱潮', desc: '目的鎮搶貨，賣價 +15%', tradeFactor: 1.15 },
+  { id: 'slump', name: '市集蕭條', desc: '目的鎮買氣低迷，賣價 -10%', tradeFactor: 0.9 },
+  { id: 'banditry', name: '盜匪橫行', desc: '路上不太平，但打劫匪的油水多 25%', lootFactor: 1.25 },
+  { id: 'festival', name: '商旅節', desc: '旅伴興致高昂，本趟薪餉半價', wageFactor: 0.5 },
+];
+
+/** 本趟旅況：locationId+marketSeed 雜湊決定（不消耗遠征 rng——seed 事件序列不受影響） */
+export function conditionForExpedition(locationId: string, marketSeed: number): ConditionDef {
+  const key = `${locationId}#cond`;
+  let h = marketSeed >>> 0;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 2654435761);
+  h = Math.imul(h ^ (h >>> 13), 1597334677);
+  return CONDITIONS[((h ^ (h >>> 16)) >>> 0) % CONDITIONS.length];
+}
+
+const conditionById = (id: string | null | undefined): ConditionDef | undefined =>
+  id ? CONDITIONS.find((c) => c.id === id) : undefined;
+
 export interface ExpeditionState {
   locationId: string;
   kind: 'route' | 'dungeon';
@@ -76,6 +113,8 @@ export interface ExpeditionState {
   loot: { gold: number; items: Record<string, number> };
   eventLog: string[]; // 遠征日誌（歸返結算顯示）
   retreated: boolean;
+  /** 本趟旅況 id（M8）；舊快照無此欄＝無旅況 */
+  conditionId?: string | null;
   /**
    * 遠征期間的即時生命值（partyId -> hp）。不在計畫文件鎖定的介面契約列表中，
    * 是實作 `hp` EffectSpec 所必需的延伸欄位（契約本身沒有別的地方能存這個數字）。
@@ -149,7 +188,8 @@ export function startExpedition(
     throw new Error(`startExpedition: 找不到地點「${locationId}」`);
   }
 
-  const wage = totalWage(save);
+  const condition = conditionForExpedition(locationId, save.marketSeed); // M8 旅況
+  const wage = Math.round(totalWage(save) * (condition.wageFactor ?? 1));
   if (save.gold < wage) {
     throw new Error(`startExpedition: 金幣不足支付薪餉（需 ${wage}，現有 ${save.gold}）`);
   }
@@ -195,6 +235,7 @@ export function startExpedition(
     loot: { gold: 0, items: {} },
     eventLog: [],
     retreated: false,
+    conditionId: condition.id,
     partyHp,
     expeditionVersion: EXPEDITION_VERSION,
     destinationTownId: loc.destinationTownId,
@@ -328,7 +369,8 @@ export function resolveOption(
   let check: CheckResult | null = null;
   let effects: EffectSpec[];
   if (opt.check) {
-    const modifier = statMod(save.protagonist.stats[opt.check.stat]) + partyCheckBonus(save);
+    const modifier = statMod(save.protagonist.stats[opt.check.stat]) + partyCheckBonus(save)
+      + (conditionById(state.conditionId)?.checkDelta ?? 0); // M8 旅況
     check = resolveCheck(rng, { stat: opt.check.stat, dc: opt.check.dc, modifier });
     effects = check.success ? opt.success : (opt.failure ?? []);
   } else {
@@ -389,10 +431,11 @@ export function settleExpedition(
     if (!state.destinationTownId || state.retreated) {
       throw new Error('settleExpedition: tradeSales 僅在抵達目的鎮且未撤退/戰敗時可用');
     }
-    const town = getTown(state.destinationTownId);
-    if (!town) {
+    const baseTown = getTown(state.destinationTownId);
+    if (!baseTown) {
       throw new Error(`settleExpedition: 找不到城鎮「${state.destinationTownId}」`);
     }
+    const town = applyMarket(baseTown, save.marketSeed); // M7 行情：實收與 UI 標價一致
     for (const sale of tradeSales) {
       if (sale.count <= 0) continue;
       let remaining = sale.count;
@@ -411,6 +454,8 @@ export function settleExpedition(
         tradeGold += tradeSellPrice(town, sale.itemId) * sold;
       }
     }
+    // M8 旅況：商貿熱潮/市集蕭條對總貿易收入套倍率
+    tradeGold = Math.round(tradeGold * (conditionById(state.conditionId)?.tradeFactor ?? 1));
   }
 
   const goldGained = state.loot.gold;
@@ -639,7 +684,7 @@ export function finishCombat(
       if (!enemy.loot) continue;
       const [min, max] = enemy.loot.gold;
       let gold = min + rng.roll(max - min + 1) - 1;
-      gold = Math.floor(gold * depthMultiplier);
+      gold = Math.floor(gold * depthMultiplier * (conditionById(state.conditionId)?.lootFactor ?? 1)); // M8 旅況
       if (isRepeatKill) {
         gold = Math.floor(gold / 2);
       }

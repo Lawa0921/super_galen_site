@@ -8,6 +8,8 @@ import {
   drawEvent,
   optionAvailable,
   resolveOption,
+  CONDITIONS,
+  conditionForExpedition,
   advanceExpedition,
   settleExpedition,
   drawRooms,
@@ -22,7 +24,11 @@ import { newGame } from './save';
 import type { SaveData, CompanionRecord } from './save';
 import type { Rng } from './rng';
 import type { EnemyUnit, PartyMember, CombatState } from './combat';
-import { tradeSellPrice } from './economy';
+import { tradeSellPrice, applyMarket } from './economy';
+import { TOWNS } from './data/towns';
+import { JOBS } from './data/jobs';
+import { createRng } from './rng';
+import { startCombat, partyAct } from './combat';
 import type { TownDef } from './economy';
 
 /** 依序回傳指定骰值的假 RNG；weightedPick 依 pickIndex 佇列選出候選陣列中的第幾個；next 依序回傳（預設全 0） */
@@ -705,10 +711,11 @@ describe('settleExpedition', () => {
       destinationTownId: 'town-a', retreated: false, step: 1,
       cargo: { ore: 2 }, loot: { gold: 0, items: {} },
     });
-    // ore priceModifier=2 → tradeSellPrice = round(12*2*0.9) = round(21.6) = 22
+    // M7 行情：實收價 = applyMarket(town, marketSeed) 後的 tradeSellPrice（UI 標價=實收）
+    const unit = tradeSellPrice(applyMarket(TOWN_A, save.marketSeed), 'ore');
     const result = settleExpedition(state, save, [{ itemId: 'ore', count: 2 }]);
-    expect(result.tradeGold).toBe(44);
-    expect(save.gold).toBe(200 + 44);
+    expect(result.tradeGold).toBe(unit * 2);
+    expect(save.gold).toBe(200 + unit * 2);
     expect(state.cargo.ore).toBe(0);
     expect(save.inventory.ore ?? 0).toBe(0);
   });
@@ -719,8 +726,9 @@ describe('settleExpedition', () => {
       destinationTownId: 'town-a', retreated: false, step: 1,
       cargo: { ore: 1 }, loot: { gold: 0, items: { ore: 2 } },
     });
+    const unit = tradeSellPrice(applyMarket(TOWN_A, save.marketSeed), 'ore');
     const result = settleExpedition(state, save, [{ itemId: 'ore', count: 2 }]);
-    expect(result.tradeGold).toBe(44); // 22 * 2 件
+    expect(result.tradeGold).toBe(unit * 2);
     expect(state.cargo.ore).toBe(0);
     expect(state.loot.items.ore).toBe(1); // 2 件 loot 只用掉 1 件
     expect(save.inventory.ore).toBe(1); // 剩下 1 件 loot.ore 併入 itemsGained
@@ -732,8 +740,9 @@ describe('settleExpedition', () => {
       destinationTownId: 'town-a', retreated: false, step: 1,
       cargo: { ore: 1 }, loot: { gold: 0, items: {} },
     });
+    const unit = tradeSellPrice(applyMarket(TOWN_A, save.marketSeed), 'ore');
     const result = settleExpedition(state, save, [{ itemId: 'ore', count: 5 }]);
-    expect(result.tradeGold).toBe(22); // 只賣得出 1 件
+    expect(result.tradeGold).toBe(unit); // 只賣得出 1 件
   });
 
   it('tradeSales：state.destinationTownId 未設定時丟 Error', () => {
@@ -1203,5 +1212,145 @@ describe('finishCombat', () => {
       finishCombat(fakeRng(), state, save, combat, []);
       expect(state.cargo).toEqual({ ore: 5 });
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// M8：旅況系統＋玩家狀態招
+// ---------------------------------------------------------------------------
+
+describe('M8 旅況系統', () => {
+  it('CONDITIONS ≥6 種、id 唯一、皆有名稱描述', () => {
+    expect(CONDITIONS.length).toBeGreaterThanOrEqual(6);
+    expect(new Set(CONDITIONS.map((c) => c.id)).size).toBe(CONDITIONS.length);
+    for (const c of CONDITIONS) { expect(c.name).toBeTruthy(); expect(c.desc).toBeTruthy(); }
+  });
+
+  it('conditionForExpedition 決定性且隨 marketSeed 輪替', () => {
+    const a = conditionForExpedition('loc_route_a', 7);
+    expect(conditionForExpedition('loc_route_a', 7)).toBe(a);
+    const seen = new Set<string>();
+    for (let s = 0; s < 12; s++) seen.add(conditionForExpedition('loc_route_a', s).id);
+    expect(seen.size).toBeGreaterThan(2); // 同路線不同輪抽到不同旅況
+  });
+
+  it('startExpedition 設 conditionId；商旅節薪餉半價', () => {
+    const findSeed = (condId: string): number => {
+      for (let s = 0; s < 400; s++) if (conditionForExpedition('loc_route_a', s).id === condId) return s;
+      throw new Error(`找不到 ${condId} 的 seed`);
+    };
+    const mkSaveWithCompanion = (marketSeed: number) => {
+      const save = newGame(1000);
+      save.marketSeed = marketSeed;
+      save.companions.push({
+        id: 'c1', name: '旅伴', job: 'swordsman', level: 1, xp: 0,
+        stats: { str: 12, dex: 12, int: 10, cha: 10, con: 12 },
+        maxHp: 20, injuredForTrips: 0, trait: null,
+        equipment: { weapon: null, armor: null, trinket: null },
+      });
+      return save;
+    };
+    // 商旅節：薪餉 12 → 6
+    const festivalSeed = findSeed('festival');
+    const s1 = mkSaveWithCompanion(festivalSeed);
+    const goldBefore1 = s1.gold;
+    const exp1 = startExpedition(createRng(1), s1, 'loc_route_a', {});
+    expect(exp1.conditionId).toBe('festival');
+    expect(goldBefore1 - s1.gold).toBe(6);
+    // 非 festival/非 wage 類：全額 12
+    const stormSeed = findSeed('storm');
+    const s2 = mkSaveWithCompanion(stormSeed);
+    const goldBefore2 = s2.gold;
+    startExpedition(createRng(1), s2, 'loc_route_a', {});
+    expect(goldBefore2 - s2.gold).toBe(12);
+  });
+
+  it('暴雨旅況讓事件檢定 total 少 1（storm checkDelta=-1）', () => {
+    const findSeed = (condId: string): number => {
+      for (let s = 0; s < 400; s++) if (conditionForExpedition('loc_route_a', s).id === condId) return s;
+      throw new Error(`找不到 ${condId} 的 seed`);
+    };
+    const run = (marketSeed: number) => {
+      const save = newGame(1000);
+      save.marketSeed = marketSeed;
+      const state = startExpedition(createRng(5), save, 'loc_route_a', {});
+      state.currentEventId = null;
+      // 造一張固定檢定事件直接 resolve（d20 固定 10）
+      const card = {
+        id: 'test-ev', context: {}, weight: 1, title: 't', body: 'b',
+        options: [{ label: 'x', check: { stat: 'str' as const, dc: 99 }, success: [], failure: [] }],
+      };
+      const rng = { next: () => 0, roll: () => 10, d20: () => 10, pick: (a: unknown[]) => a[0], weightedPick: (i: Array<{ value: unknown }>) => i[0].value } as Rng;
+      const { check } = resolveOption(rng, state, save, card as EventCard, 0);
+      return check!.total;
+    };
+    const stormTotal = run(findSeed('storm'));
+    const tailwindTotal = run(findSeed('tailwind'));
+    expect(tailwindTotal - stormTotal).toBe(2); // +1 vs -1
+  });
+
+  it('settleExpedition 貿易收入吃市場行情（M7 回歸：UI 標價=實收）與旅況 tradeFactor', () => {
+    const findSeed = (condId: string): number => {
+      for (let s = 0; s < 400; s++) if (conditionForExpedition('loc_route_a', s).id === condId) return s;
+      throw new Error(`找不到 ${condId} 的 seed`);
+    };
+    const mk = (marketSeed: number) => {
+      const save = newGame(1000);
+      save.marketSeed = marketSeed;
+      save.gold = 500;
+      save.inventory.ore = 2;
+      const state = startExpedition(createRng(5), save, 'loc_route_a', { ore: 2 });
+      state.phase = 'done';
+      state.step = state.totalSteps;
+      state.destinationTownId = 'town-a';
+      return { save, state };
+    };
+    // 非 trade 類旅況：實收 = applyMarket 價 × 數量
+    const stormSeed = findSeed('storm');
+    const { save, state } = mk(stormSeed);
+    const goldBefore = save.gold;
+    const result = settleExpedition(state, save, [{ itemId: 'ore', count: 2 }]);
+    const marketTown = applyMarket(TOWN_A, stormSeed);
+    expect(result.tradeGold).toBe(tradeSellPrice(marketTown, 'ore') * 2);
+    expect(save.gold).toBe(goldBefore + result.goldGained + result.tradeGold);
+    // 商貿熱潮：再乘 1.15（四捨五入）
+    const boomSeed = findSeed('boom');
+    const { save: s2, state: st2 } = mk(boomSeed);
+    const r2 = settleExpedition(st2, s2, [{ itemId: 'ore', count: 2 }]);
+    const boomTown = applyMarket(TOWN_A, boomSeed);
+    expect(r2.tradeGold).toBe(Math.round(tradeSellPrice(boomTown, 'ore') * 2 * 1.15));
+  });
+});
+
+describe('M8 玩家狀態招', () => {
+  it('游俠毒箭／法師寒冰束縛／教士戰吟存在且帶正確狀態', () => {
+    const ranger = JOBS.ranger.moves.find((m) => m.id === 'venom-arrow');
+    expect(ranger?.applyStatus?.kind).toBe('poison');
+    expect(ranger?.minLevel).toBe(2);
+    const mage = JOBS.mage.moves.find((m) => m.id === 'frost-bind');
+    expect(mage?.applyStatus?.kind).toBe('stun');
+    expect(mage?.minLevel).toBe(3);
+    const cleric = JOBS.cleric.moves.find((m) => m.id === 'battle-hymn');
+    expect(cleric?.applyStatus?.kind).toBe('strength');
+    expect(cleric?.kind).toBe('support');
+  });
+
+  it('純 buff support 招（無 heal）可對隊友上強化狀態', () => {
+    const party: PartyMember[] = [
+      { id: 'p1', name: '教士', stats: { str: 10, dex: 20, int: 12, cha: 16, con: 12 }, maxHp: 22, hp: 22, defense: 12,
+        moves: [JOBS.cleric.moves.find((m) => m.id === 'battle-hymn')!], isProtagonist: true },
+      { id: 'p2', name: '劍士', stats: { str: 14, dex: 15, int: 8, cha: 10, con: 14 }, maxHp: 26, hp: 26, defense: 14, moves: [] },
+    ];
+    const enemy: EnemyUnit = {
+      id: 'e1', name: '敵', stats: { str: 10, dex: 1, int: 8, cha: 8, con: 10 }, maxHp: 10, hp: 10, defense: 10,
+      moves: [{ id: 'poke', name: '戳', kind: 'attack', target: 'enemy', hitStat: 'str', damage: { dice: 1, sides: 4 }, narration: '{actor}戳{target} {amount}' }],
+      intents: [{ weight: 1, moveId: 'poke' }],
+    };
+    const state = startCombat(createRng(9), party, [enemy]);
+    state.turnIndex = state.order.indexOf('p1');
+    partyAct(createRng(9), state, 'p1', 'battle-hymn', 'p2');
+    const buffed = state.party.find((p) => p.id === 'p2')!;
+    expect(buffed.statuses?.some((s) => s.kind === 'strength')).toBe(true);
+    expect(state.log.some((l) => l.text.includes('強化'))).toBe(true);
   });
 });

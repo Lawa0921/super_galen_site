@@ -157,6 +157,17 @@ function performMove(rng: Rng, state: CombatState, actor: CombatantBase, move: M
     state.log.push({ kind: 'action', text: fillNarration(move.narration, actor.name, actor.name, 0) });
     return;
   }
+  if (move.kind === 'support' && !move.heal && move.applyStatus) {
+    // M8：純 buff support（戰吟）——直接對目標上狀態
+    const spec = move.applyStatus;
+    target.statuses ??= [];
+    const existing = target.statuses.find((s) => s.kind === spec.kind);
+    if (existing) existing.remaining = Math.max(existing.remaining, spec.duration);
+    else target.statuses.push({ kind: spec.kind, remaining: spec.duration, potency: spec.potency ?? 0 });
+    state.log.push({ kind: 'action', text: fillNarration(move.narration, actor.name, target.name, 0) });
+    state.log.push({ kind: 'info', text: `${target.name}獲得${STATUS_LABEL[spec.kind]}狀態！` });
+    return;
+  }
   if (move.kind === 'support' && move.heal) {
     const amount = Math.max(1, rollDice(rng, move.heal.dice, move.heal.sides)
       + (move.heal.bonusStat ? statMod(actor.stats[move.heal.bonusStat]) : 0));

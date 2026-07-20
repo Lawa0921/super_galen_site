@@ -98,6 +98,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
     <!-- 遠征畫面（M3：事件卡鏈／迷宮房卡） -->
     <section id="screen-expedition" class="screen" hidden>
+      <p id="exp-condition" class="exp-condition" hidden></p>
       <p id="exp-progress" class="exp-progress"></p>
       <div id="event-card" class="event-card" hidden>
         <img id="event-art" class="event-art" alt="" width="960" height="720" loading="lazy" hidden />
@@ -167,6 +168,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 <script>
   import { newGame, saveGame, loadGame, SAVE_KEY } from '@scripts/games/caravan/save';
   import { applyMarket } from '@scripts/games/caravan/economy';
+  import { CONDITIONS } from '@scripts/games/caravan/expedition';
   import { traitById } from '@scripts/games/caravan/roster';
   import {
     loadChronicle, saveChronicle, recordEvent, recordEnemyDefeat, recordLocationVisit,
@@ -282,6 +284,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   const settleTradeGoldEl = document.getElementById('settle-trade-gold')!;
 
   const expProgressEl = document.getElementById('exp-progress')!;
+  const expConditionEl = document.getElementById('exp-condition')!;
+
+  /** M8 旅況 badge：遠征進行中顯示本趟旅況 */
+  function renderConditionBadge(): void {
+    const cond = CONDITIONS.find((c) => c.id === expedition?.conditionId);
+    expConditionEl.hidden = !cond;
+    if (cond) expConditionEl.textContent = `🌦 ${cond.name}——${cond.desc}`;
+  }
   const eventCardEl = document.getElementById('event-card')!;
   const eventTitleEl = document.getElementById('event-title')!;
   const eventArtEl = document.getElementById('event-art') as HTMLImageElement;
@@ -760,6 +770,12 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
   btnNew.addEventListener('click', () => {
     save = newGame();
+    // ?seed= 同時固定 marketSeed 與 tavernSeed：行情/旅況（M7/M8）與招募池（特質）
+    // 跟事件序列一樣決定性（e2e 依賴）
+    if (seedParam) {
+      save.marketSeed = Number(seedParam);
+      save.tavernSeed = Number(seedParam);
+    }
     save.gold += legacyBonusGold(chron); // 商會傳承：跨輪起始加成
     saveGame(save);
     expeditionExpiredOnLoad = false;
@@ -975,11 +991,13 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     saveGame(save);
     recordLocationVisit(chron, locationId);
     saveChronicle(chron);
+    renderConditionBadge();
     showScreen('expedition');
     dispatchPhase();
   }
 
   function dispatchPhase(): void {
+    renderConditionBadge();
     if (!expedition) return;
     if (expedition.phase === 'event') enterEventPhase();
     else if (expedition.phase === 'room-choice') enterRoomChoicePhase();
@@ -1204,6 +1222,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   function renderTrade(): void {
     tradeListEl.innerHTML = '';
     let goldPreview = 0;
+    const tradeCondFactor = CONDITIONS.find((c) => c.id === expedition?.conditionId)?.tradeFactor ?? 1;
     for (const [itemId, count] of Object.entries(tradeCombined)) {
       const sold = tradeSoldIds.has(itemId);
       const unitPrice = tradeTown ? tradeSellPrice(tradeTown, itemId) : 0;
@@ -1231,7 +1250,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       row.append(label, sellBtn);
       tradeListEl.appendChild(row);
     }
-    tradeGoldPreviewEl.textContent = String(goldPreview);
+    tradeGoldPreviewEl.textContent = String(Math.round(goldPreview * tradeCondFactor)); // M8 旅況倍率（與結算同式）
   }
 
   btnTradeDone.addEventListener('click', () => {
@@ -1458,7 +1477,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     if (!save) return;
     combatContext = 'training';
     selectedTargetId = null;
-    state = startCombat(rng, [memberFromRecord(save.protagonist)], TRAINING_ENCOUNTER());
+    // M8：訓練場帶全隊（未重傷者）——練兵處，玩家在此實測新招與狀態效果
+    const trainingParty = [save.protagonist, ...save.companions.filter((c) => c.injuredForTrips === 0)]
+      .map(memberFromRecord);
+    state = startCombat(rng, trainingParty, TRAINING_ENCOUNTER());
     showScreen('combat');
     combatResultEl.hidden = true;
     render();
@@ -1717,6 +1739,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
   /* 遠征畫面 */
   .exp-progress { letter-spacing: 0.2em; color: #8a7f6d; margin-bottom: 1rem; }
+  .exp-condition { color: #8a3c1e; letter-spacing: 0.08em; margin-bottom: 0.4rem; font-size: 0.92rem; }
+  .exp-condition[hidden] { display: none; }
   .event-card {
     border: 1px solid #cfc6b0;
     background: #fffdf8;
