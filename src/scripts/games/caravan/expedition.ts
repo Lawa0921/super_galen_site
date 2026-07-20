@@ -70,6 +70,8 @@ export interface LocationDef {
 
 export interface ConditionDef {
   id: string; name: string; desc: string;
+  /** 旅況插圖路徑（M9 美術統一） */
+  art?: string;
   /** 事件檢定修正 */
   checkDelta?: number;
   /** 異鎮賣價倍率（結算時套用） */
@@ -81,12 +83,12 @@ export interface ConditionDef {
 }
 
 export const CONDITIONS: ConditionDef[] = [
-  { id: 'tailwind', name: '順風和日', desc: '天朗氣清，旅途檢定 +1', checkDelta: 1 },
-  { id: 'storm', name: '暴雨連日', desc: '道路泥濘，旅途檢定 -1', checkDelta: -1 },
-  { id: 'boom', name: '商貿熱潮', desc: '目的鎮搶貨，賣價 +15%', tradeFactor: 1.15 },
-  { id: 'slump', name: '市集蕭條', desc: '目的鎮買氣低迷，賣價 -10%', tradeFactor: 0.9 },
-  { id: 'banditry', name: '盜匪橫行', desc: '路上不太平，但打劫匪的油水多 25%', lootFactor: 1.25 },
-  { id: 'festival', name: '商旅節', desc: '旅伴興致高昂，本趟薪餉半價', wageFactor: 0.5 },
+  { id: 'tailwind', art: '/assets/games/caravan/cond-tailwind.webp', name: '順風和日', desc: '天朗氣清，旅途檢定 +1', checkDelta: 1 },
+  { id: 'storm', art: '/assets/games/caravan/cond-storm.webp', name: '暴雨連日', desc: '道路泥濘，旅途檢定 -1', checkDelta: -1 },
+  { id: 'boom', art: '/assets/games/caravan/cond-boom.webp', name: '商貿熱潮', desc: '目的鎮搶貨，賣價 +15%', tradeFactor: 1.15 },
+  { id: 'slump', art: '/assets/games/caravan/cond-slump.webp', name: '市集蕭條', desc: '目的鎮買氣低迷，賣價 -10%', tradeFactor: 0.9 },
+  { id: 'banditry', art: '/assets/games/caravan/cond-banditry.webp', name: '盜匪橫行', desc: '路上不太平，但打劫匪的油水多 25%', lootFactor: 1.25 },
+  { id: 'festival', art: '/assets/games/caravan/cond-festival.webp', name: '商旅節', desc: '旅伴興致高昂，本趟薪餉半價', wageFactor: 0.5 },
 ];
 
 /** 本趟旅況：locationId+marketSeed 雜湊決定（不消耗遠征 rng——seed 事件序列不受影響） */

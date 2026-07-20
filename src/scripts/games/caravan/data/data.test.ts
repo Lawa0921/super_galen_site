@@ -544,17 +544,22 @@ describe('M5 美術資產', () => {
     }
   });
 
-  it('旗標鏈與稀有事件皆有 art 且檔案存在', () => {
-    const withArt = [
-      'ev_merchant_map', 'ev_cave_entrance', 'ev_faded_banner', 'ev_mercenary_ruins',
-      'ev_strange_merchant_intro', 'ev_strange_merchant_return', 'ev_strange_merchant_finale',
-      'ev_rare_treasure_map', 'ev_rare_wandering_swordsaint', 'ev_rare_moonlit_market',
-      'ev_rare_wounded_messenger',
-    ];
-    for (const id of withArt) {
-      const card = EVENTS.find((e) => e.id === id);
-      expect(card, `事件 ${id} 不存在`).toBeDefined();
-      expect(artOk(card!.art), `${id} art 缺失或檔案不存在：${card!.art}`).toBe(true);
+  it('全部事件皆有 art 且檔案存在（M9：42/42 全圖）', () => {
+    for (const card of EVENTS) {
+      expect(artOk(card.art), `${card.id} art 缺失或檔案不存在：${card.art}`).toBe(true);
+    }
+  });
+
+  it('旅況插圖與狀態 icon 皆存在（M9 美術統一）', async () => {
+    const { CONDITIONS } = await import('../expedition');
+    for (const cond of CONDITIONS) {
+      expect(artOk(cond.art), `旅況 ${cond.id} art 缺失：${cond.art}`).toBe(true);
+    }
+    for (const kind of ['poison', 'stun', 'strength']) {
+      expect(
+        existsSync(join(process.cwd(), `public/assets/games/caravan/icon-${kind}.webp`)),
+        `狀態 icon ${kind} 不存在`
+      ).toBe(true);
     }
   });
 
