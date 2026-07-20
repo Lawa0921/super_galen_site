@@ -61,6 +61,28 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <a class="title-chronicle-link" href="/caravan#chronicle">冒險編年史 »</a>
     </section>
 
+    <!-- 創角畫面 -->
+    <section id="screen-create" class="screen" hidden>
+      <h2 class="create-title">創建你的隊長</h2>
+      <p class="screen-guide">選擇職業、分配天賦點、挑一個出身特性，然後啟程。</p>
+      <div id="create-jobs" class="create-jobs"></div>
+      <div class="create-cols">
+        <div class="create-col">
+          <h3 class="create-subtitle">天賦點 · 剩餘 <span id="create-points">3</span></h3>
+          <div id="create-alloc-rows" class="alloc-rows"></div>
+        </div>
+        <div class="create-col">
+          <h3 class="create-subtitle">出身特性</h3>
+          <div id="create-traits" class="create-traits"></div>
+          <p id="create-trait-desc" class="create-trait-desc"></p>
+        </div>
+      </div>
+      <div class="create-actions">
+        <button id="btn-create-confirm" type="button" class="caravan-btn">啟程</button>
+        <button id="btn-create-cancel" type="button" class="caravan-btn caravan-btn-ghost">返回</button>
+      </div>
+    </section>
+
     <!-- 城鎮畫面（M4：市集/酒館/隊伍/馬車四分頁） -->
     <section id="screen-town" class="screen screen-wide" hidden>
       <img class="town-banner" src="/assets/games/caravan/town-starting-town.webp" alt="" width="1280" height="720" loading="lazy" />
@@ -80,6 +102,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         <button type="button" class="town-tab" data-town-tab="market">市集</button>
         <button type="button" class="town-tab" data-town-tab="tavern">酒館</button>
         <button type="button" class="town-tab" data-town-tab="roster">隊伍</button>
+        <button type="button" class="town-tab" data-town-tab="backpack">背包</button>
         <button type="button" class="town-tab" data-town-tab="wagon">馬車</button>
       </nav>
 
@@ -95,6 +118,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
       <section id="screen-roster" class="town-panel" hidden>
         <div id="roster-list" class="roster-list"></div>
+      </section>
+
+      <section id="screen-backpack" class="town-panel" hidden>
+
+        <p class="panel-hint">商隊目前持有的物品。裝備可在<b>隊伍</b>分頁為成員穿戴。</p>
+
+        <div id="backpack-list" class="backpack-list"></div>
+
       </section>
 
       <section id="wagon-panel" class="town-panel" hidden>
@@ -224,10 +255,11 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 </BaseLayout>
 
 <script>
-  import { newGame, saveGame, loadGame, SAVE_KEY } from '@scripts/games/caravan/save';
+  import { newGame, saveGame, loadGame, SAVE_KEY, STARTING_PROFILE, CREATION_BONUS_POINTS } from '@scripts/games/caravan/save';
+  import type { CharacterChoice } from '@scripts/games/caravan/save';
   import { applyMarket } from '@scripts/games/caravan/economy';
   import { CONDITIONS } from '@scripts/games/caravan/expedition';
-  import { traitById } from '@scripts/games/caravan/roster';
+  import { traitById, TRAITS } from '@scripts/games/caravan/roster';
   import {
     loadChronicle, saveChronicle, recordEvent, recordEnemyDefeat, recordLocationVisit,
     recordEquipment, recordExpedition, evaluateAchievements, legacyBonusGold, ACHIEVEMENTS,
@@ -263,6 +295,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   import type { Stat, StatBlock } from '@scripts/games/caravan/types';
 
   const titleScreen = document.getElementById('screen-title')!;
+  const createScreen = document.getElementById('screen-create')!;
   const townScreen = document.getElementById('screen-town')!;
   const questScreen = document.getElementById('screen-quest')!;
   const expeditionScreen = document.getElementById('screen-expedition')!;
@@ -272,6 +305,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
   const screens = {
     title: titleScreen,
+    create: createScreen,
     town: townScreen,
     quest: questScreen,
     expedition: expeditionScreen,
@@ -288,6 +322,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   const hudRepEl = document.getElementById('hud-rep')!;
   const BACKDROP: Record<keyof typeof screens, { img: string; mood: string; scene: string }> = {
     title: { img: 'title-banner', mood: '', scene: '' },
+    create: { img: 'title-banner', mood: '', scene: '創建隊長' },
     town: { img: 'town-starting-town', mood: '', scene: '啟程之鎮' },
     quest: { img: 'title-banner', mood: 'road', scene: '委託板' },
     expedition: { img: 'title-banner', mood: 'road', scene: '遠征途中' },
@@ -329,8 +364,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     backdropEl.style.backgroundImage = `url('/assets/games/caravan/${b.img}.webp')`;
     backdropEl.dataset.mood = b.mood;
     // HUD：標題畫面外常駐
-    hudEl.hidden = name === 'title';
-    if (name !== 'title') refreshHud(b.scene);
+    hudEl.hidden = name === 'title' || name === 'create';
+    if (name !== 'title' && name !== 'create') refreshHud(b.scene);
     // 轉場入場動畫（重新觸發）
     const el = screens[name];
     el.classList.remove('screen-enter');
@@ -354,6 +389,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     market: document.getElementById('screen-market')!,
     tavern: document.getElementById('screen-tavern')!,
     roster: document.getElementById('screen-roster')!,
+    backpack: document.getElementById('screen-backpack')!,
     wagon: document.getElementById('wagon-panel')!,
   };
   const marketGoldEl = document.getElementById('market-gold')!;
@@ -803,6 +839,56 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     renderTownPanels();
   });
 
+  const backpackListEl = document.getElementById('backpack-list')!;
+  function renderBackpack(): void {
+    if (!save) return;
+    backpackListEl.innerHTML = '';
+    const held = Object.entries(save.inventory).filter(([, n]) => (n ?? 0) > 0);
+    if (held.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'tavern-empty';
+      empty.textContent = '背包空空如也。到市集買些補給，或出遠征帶戰利品回來。';
+      backpackListEl.appendChild(empty);
+      return;
+    }
+    for (const [itemId, count] of held) {
+      const item = ITEMS[itemId];
+      if (!item) continue;
+      const row = document.createElement('div');
+      row.className = 'backpack-row';
+      row.dataset.itemId = itemId;
+      const head = document.createElement('div');
+      head.className = 'backpack-head';
+      if (item.art) {
+        const icon = document.createElement('img');
+        icon.className = 'gear-icon';
+        icon.src = item.art; icon.alt = '';
+        icon.width = 26; icon.height = 26; icon.loading = 'lazy';
+        head.appendChild(icon);
+      }
+      const nm = document.createElement('span');
+      nm.className = 'backpack-name';
+      nm.textContent = item.name;
+      const ct = document.createElement('span');
+      ct.className = 'backpack-count';
+      ct.textContent = `×${count}`;
+      if (item.equip) {
+        const tag = document.createElement('span');
+        tag.className = 'backpack-tag';
+        const slotLabel: Record<string, string> = { weapon: '武器', armor: '護甲', trinket: '飾品' };
+        tag.textContent = slotLabel[item.equip.slot] ?? '裝備';
+        head.append(nm, tag, ct);
+      } else {
+        head.append(nm, ct);
+      }
+      const desc = document.createElement('p');
+      desc.className = 'backpack-desc';
+      desc.textContent = item.desc;
+      row.append(head, desc);
+      backpackListEl.appendChild(row);
+    }
+  }
+
   function renderTownPanels(): void {
     if (!save) return;
     goldEl.textContent = String(save.gold);
@@ -810,6 +896,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     renderMarket();
     renderTavern();
     renderRoster();
+    renderBackpack();
     renderWagon();
   }
 
@@ -903,10 +990,92 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     titleLegacyEl.hidden = false;
   }
 
+  // ---- 創角畫面 ----
+  const JOB_BLURB: Record<string, string> = {
+    swordsman: '均衡的近戰主力，高血量與防禦，適合新手。',
+    ranger: '敏捷的遠程射手，出手迅捷、命中犀利。',
+    mage: '脆弱但爆發強的法師，遠程高傷法術。',
+    cleric: '能治療與強化隊友的信仰者，魅力見長。',
+  };
+  const JOB_IDS = ['swordsman', 'ranger', 'mage', 'cleric'] as const;
+  const createJobsEl = document.getElementById('create-jobs')!;
+  const createPointsEl = document.getElementById('create-points')!;
+  const createAllocRowsEl = document.getElementById('create-alloc-rows')!;
+  const createTraitsEl = document.getElementById('create-traits')!;
+  const createTraitDescEl = document.getElementById('create-trait-desc')!;
+  const CREATE_TRAITS = TRAITS.filter((t) => ['seasoned', 'brawny', 'nimble', 'learned', 'charming', 'tough'].includes(t.id));
+  let createJob: typeof JOB_IDS[number] = 'swordsman';
+  let createAlloc: Partial<Record<Stat, number>> = {};
+  let createTrait: string | null = null;
+
+  function createAllocTotal(): number {
+    return (Object.values(createAlloc) as number[]).reduce((a, b) => a + (b ?? 0), 0);
+  }
+
+  function renderCreate(): void {
+    // 職業卡
+    createJobsEl.innerHTML = '';
+    for (const job of JOB_IDS) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'create-job' + (job === createJob ? ' selected' : '');
+      card.dataset.job = job;
+      const art = document.createElement('img');
+      art.src = JOBS[job].art ?? ''; art.alt = ''; art.width = 300; art.height = 400; art.loading = 'lazy';
+      const nm = document.createElement('b'); nm.textContent = JOBS[job].name;
+      const desc = document.createElement('span'); desc.textContent = JOB_BLURB[job];
+      card.append(art, nm, desc);
+      card.addEventListener('click', () => { createJob = job; createAlloc = {}; renderCreate(); });
+      createJobsEl.appendChild(card);
+    }
+    // 配點
+    const remaining = CREATION_BONUS_POINTS - createAllocTotal();
+    createPointsEl.textContent = String(remaining);
+    createAllocRowsEl.innerHTML = '';
+    const base = STARTING_PROFILE[createJob].stats;
+    for (const stat of Object.keys(STAT_LABELS) as Stat[]) {
+      const row = document.createElement('div'); row.className = 'alloc-row';
+      const label = document.createElement('span'); label.className = 'alloc-label';
+      label.textContent = `${STAT_LABELS[stat]} ${base[stat] + (createAlloc[stat] ?? 0)}`;
+      const minus = document.createElement('button');
+      minus.type = 'button'; minus.className = 'caravan-btn alloc-plus'; minus.textContent = '－';
+      minus.disabled = (createAlloc[stat] ?? 0) <= 0;
+      minus.addEventListener('click', () => { createAlloc[stat] = (createAlloc[stat] ?? 0) - 1; if (createAlloc[stat]! <= 0) delete createAlloc[stat]; renderCreate(); });
+      const plus = document.createElement('button');
+      plus.type = 'button'; plus.className = 'caravan-btn alloc-plus'; plus.textContent = '＋';
+      plus.disabled = remaining <= 0;
+      plus.addEventListener('click', () => { createAlloc[stat] = (createAlloc[stat] ?? 0) + 1; renderCreate(); });
+      row.append(label, minus, plus);
+      createAllocRowsEl.appendChild(row);
+    }
+    // 特性
+    createTraitsEl.innerHTML = '';
+    const chips: Array<{ id: string | null; name: string; desc: string }> = [
+      { id: null, name: '無', desc: '不帶出身特性，均衡起步。' },
+      ...CREATE_TRAITS.map((t) => ({ id: t.id, name: t.name, desc: t.desc })),
+    ];
+    for (const chip of chips) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'create-trait-chip' + (chip.id === createTrait ? ' selected' : '');
+      b.textContent = chip.name;
+      b.addEventListener('click', () => { createTrait = chip.id; renderCreate(); });
+      createTraitsEl.appendChild(b);
+    }
+    const cur = chips.find((c) => c.id === createTrait);
+    createTraitDescEl.textContent = cur ? cur.desc : '';
+  }
+
   btnNew.addEventListener('click', () => {
-    save = newGame();
-    // ?seed= 同時固定 marketSeed 與 tavernSeed：行情/旅況（M7/M8）與招募池（特質）
-    // 跟事件序列一樣決定性（e2e 依賴）
+    createJob = 'swordsman'; createAlloc = {}; createTrait = null;
+    renderCreate();
+    showScreen('create');
+  });
+  document.getElementById('btn-create-cancel')?.addEventListener('click', () => showScreen('title'));
+  document.getElementById('btn-create-confirm')?.addEventListener('click', () => {
+    const choice: CharacterChoice = { job: createJob, allocation: createAlloc, trait: createTrait };
+    save = newGame(Date.now(), choice);
+    // ?seed= 同時固定 marketSeed 與 tavernSeed（e2e 決定性依賴）
     if (seedParam) {
       save.marketSeed = Number(seedParam);
       save.tavernSeed = Number(seedParam);
@@ -2351,4 +2520,47 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   @media (prefers-reduced-motion: reduce) {
     .caravan-btn-ghost.howto-pulse { animation: none; }
   }
+
+  /* ---- 創角畫面 ---- */
+  .create-title { font-size: 1.55rem; font-weight: 900; letter-spacing: 0.3em; color: var(--gold-bright); margin: 0 0 0.4rem; text-shadow: 0 0 16px rgba(201, 163, 92, 0.35); }
+  .create-jobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.8rem; margin: 0.5rem 0 1.4rem; }
+  .create-job {
+    font: inherit; cursor: pointer; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    padding: 0.7rem 0.5rem;
+    background: var(--panel-deep); color: var(--text);
+    border: 1px solid var(--gold-dim); border-radius: 4px;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  }
+  .create-job img { width: 5.2rem; height: 6.9rem; object-fit: cover; border: 1px solid var(--gold-dim); border-radius: 3px; }
+  .create-job b { color: var(--gold-bright); letter-spacing: 0.1em; }
+  .create-job span { font-size: 0.78rem; color: var(--text-dim); line-height: 1.6; }
+  .create-job:hover { transform: translateY(-2px); border-color: var(--gold); }
+  .create-job.selected { border-color: var(--gold-bright); box-shadow: 0 0 0 1px var(--gold-bright), 0 0 18px rgba(201, 163, 92, 0.4); }
+  .create-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.4rem; text-align: left; margin-bottom: 1.4rem; }
+  .create-subtitle { font-size: 1rem; letter-spacing: 0.15em; color: var(--gold-bright); margin: 0 0 0.7rem; }
+  .create-subtitle span { color: var(--gold-bright); font-weight: 900; }
+  .create-traits { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .create-trait-chip {
+    font: inherit; cursor: pointer; padding: 0.35rem 0.9rem;
+    background: var(--panel-deep); color: var(--text-dim);
+    border: 1px solid var(--gold-dim); border-radius: 999px; letter-spacing: 0.08em; font-size: 0.88rem;
+    transition: color 0.12s ease, border-color 0.12s ease;
+  }
+  .create-trait-chip:hover { color: var(--gold-bright); border-color: var(--gold); }
+  .create-trait-chip.selected { color: #241505; background: linear-gradient(180deg, #e2c078, var(--gold)); border-color: var(--gold-bright); font-weight: 700; }
+  .create-trait-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.7; margin: 0.6rem 0 0; min-height: 2.4em; }
+  .create-actions { display: flex; gap: 0.9rem; justify-content: center; }
+
+  /* ---- 背包分頁 ---- */
+  .backpack-list { display: flex; flex-direction: column; gap: 0.55rem; }
+  .backpack-row {
+    border: 1px solid var(--gold-dim); border-left: 3px solid var(--gold); border-radius: 3px;
+    background: var(--panel-deep); padding: 0.6rem 0.9rem; text-align: left;
+  }
+  .backpack-head { display: flex; align-items: center; gap: 0.5rem; }
+  .backpack-name { font-weight: 700; color: var(--text); }
+  .backpack-count { margin-left: auto; color: var(--gold-bright); font-weight: 700; letter-spacing: 0.05em; }
+  .backpack-tag { font-size: 0.72rem; letter-spacing: 0.12em; color: #241505; background: var(--gold); border-radius: 3px; padding: 0.05rem 0.5rem; }
+  .backpack-desc { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--text-dim); line-height: 1.7; }
 </style>
