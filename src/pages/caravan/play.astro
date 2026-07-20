@@ -7,8 +7,24 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 ---
 
 <BaseLayout title={pageTitle} description="文字跑團 RPG：經營商隊與傭兵團，擲骰決定命運" lang="zh-TW">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Ma+Shan+Zheng&display=swap" />
+
   <main class="caravan-root">
     <div class="game-backdrop" aria-hidden="true"></div>
+
+    <!-- 常駐 HUD 狀態列（標題畫面隱藏） -->
+    <div id="game-hud" class="game-hud" hidden>
+      <div class="hud-left">
+        <span class="hud-scene" id="hud-scene">啟程之鎮</span>
+      </div>
+      <div class="hud-right">
+        <span class="hud-stat"><span class="hud-label">金幣</span><b id="hud-gold">0</b></span>
+        <span class="hud-sep" aria-hidden="true"></span>
+        <span class="hud-stat"><span class="hud-label">聲望</span><b id="hud-rep">0</b></span>
+      </div>
+    </div>
     <!-- 標題畫面 -->
     <section id="screen-title" class="screen">
       <img class="title-art" src="/assets/games/caravan/title-banner.webp" alt="" width="1280" height="720" loading="eager" />
@@ -119,8 +135,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     <section id="screen-combat" class="screen" hidden>
       <h2 class="combat-title">戰鬥</h2>
       <div class="combat-field">
-        <div id="combat-enemies" class="combat-side"></div>
-        <div id="combat-party" class="combat-side"></div>
+        <div class="combat-column">
+          <p class="combat-side-label combat-side-foe">敵 方</p>
+          <div id="combat-enemies" class="combat-side"></div>
+        </div>
+        <div class="combat-column">
+          <p class="combat-side-label combat-side-ally">我 方</p>
+          <div id="combat-party" class="combat-side"></div>
+        </div>
       </div>
       <div id="combat-targets" class="combat-targets"></div>
       <div id="combat-log" class="combat-log"></div>
@@ -230,10 +252,45 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     settlement: settlementScreen,
   } as const;
 
+  // ---- 場景背景／HUD／轉場（UI 升級）----
+  const backdropEl = document.querySelector<HTMLElement>('.game-backdrop')!;
+  const hudEl = document.getElementById('game-hud')!;
+  const hudSceneEl = document.getElementById('hud-scene')!;
+  const hudGoldEl = document.getElementById('hud-gold')!;
+  const hudRepEl = document.getElementById('hud-rep')!;
+  const BACKDROP: Record<keyof typeof screens, { img: string; mood: string; scene: string }> = {
+    title: { img: 'title-banner', mood: '', scene: '' },
+    town: { img: 'town-starting-town', mood: '', scene: '啟程之鎮' },
+    quest: { img: 'title-banner', mood: 'road', scene: '委託板' },
+    expedition: { img: 'title-banner', mood: 'road', scene: '遠征途中' },
+    combat: { img: 'title-banner', mood: 'battle', scene: '戰鬥' },
+    trade: { img: 'town-starting-town', mood: '', scene: '異鎮交易' },
+    settlement: { img: 'title-banner', mood: '', scene: '遠征結算' },
+  };
+
+  function refreshHud(scene: string): void {
+    if (!save) return;
+    hudGoldEl.textContent = String(save.gold);
+    hudRepEl.textContent = String(save.reputation);
+    if (scene) hudSceneEl.textContent = scene;
+  }
+
   function showScreen(name: keyof typeof screens): void {
     for (const key of Object.keys(screens) as (keyof typeof screens)[]) {
       screens[key].hidden = key !== name;
     }
+    // 場景反應式背景
+    const b = BACKDROP[name];
+    backdropEl.style.backgroundImage = `url('/assets/games/caravan/${b.img}.webp')`;
+    backdropEl.dataset.mood = b.mood;
+    // HUD：標題畫面外常駐
+    hudEl.hidden = name === 'title';
+    if (name !== 'title') refreshHud(b.scene);
+    // 轉場入場動畫（重新觸發）
+    const el = screens[name];
+    el.classList.remove('screen-enter');
+    void el.offsetWidth;
+    el.classList.add('screen-enter');
   }
 
   const btnNew = document.getElementById('btn-new-game')!;
@@ -704,6 +761,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   function renderTownPanels(): void {
     if (!save) return;
     goldEl.textContent = String(save.gold);
+    refreshHud('');
     renderMarket();
     renderTavern();
     renderRoster();
@@ -1178,6 +1236,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     combatContext = 'expedition';
     const party = buildExpeditionParty();
     const enemies = buildEncounter(rng, expedition, expedition.pendingEncounterId!);
+    combatPrevHp.clear();
     state = startCombat(rng, party, enemies);
     selectedTargetId = null;
     showScreen('combat');
@@ -1381,6 +1440,41 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   let state: CombatState | null = null;
   let combatContext: 'training' | 'expedition' = 'training';
   let selectedTargetId: string | null = null;
+  const combatPrevHp = new Map<string, number>(); // 前一次 render 的 HP，用來算浮動傷害/治療
+
+  /** 在某戰鬥卡上噴一個浮動數字（傷害紅/治療綠），並閃一下卡片 */
+  function floatCombatNumber(card: HTMLElement, text: string, kind: 'dmg' | 'heal'): void {
+    const num = document.createElement('span');
+    num.className = `float-num float-${kind}`;
+    num.textContent = text;
+    card.appendChild(num);
+    num.addEventListener('animationend', () => num.remove());
+    card.classList.remove('unit-hit');
+    void card.offsetWidth;
+    card.classList.add('unit-hit');
+  }
+
+  /** 比對本次與上次 HP，對變化的單位噴浮動數字；並標記當前行動者高亮 */
+  function paintCombatFeedback(): void {
+    if (!state) return;
+    for (const u of [...state.enemies, ...state.party]) {
+      const prev = combatPrevHp.get(u.id);
+      if (prev !== undefined && u.hp !== prev) {
+        const card = combatScreen.querySelector<HTMLElement>(`.combat-unit[data-id="${u.id}"]`);
+        if (card) {
+          const delta = prev - u.hp; // 正=受傷
+          floatCombatNumber(card, delta > 0 ? `-${delta}` : `+${-delta}`, delta > 0 ? 'dmg' : 'heal');
+        }
+      }
+      combatPrevHp.set(u.id, u.hp);
+    }
+    // 當前行動者高亮
+    combatScreen.querySelectorAll('.combat-unit.unit-active').forEach((c) => c.classList.remove('unit-active'));
+    if (state.outcome === 'ongoing') {
+      const actor = currentActor(state);
+      if (actor) combatScreen.querySelector(`.combat-unit[data-id="${actor.id}"]`)?.classList.add('unit-active');
+    }
+  }
 
   function unitIntentText(unit: CombatantBase): string {
     if (!state || unit.hp <= 0) return '';
@@ -1530,6 +1624,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     if (!state) return;
     renderUnits(combatEnemiesEl, state.enemies, true);
     renderUnits(combatPartyEl, state.party, false);
+    paintCombatFeedback();
     renderLog();
 
     if (state.outcome !== 'ongoing') {
@@ -1567,6 +1662,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     // M8：訓練場帶全隊（未重傷者）——練兵處，玩家在此實測新招與狀態效果
     const trainingParty = [save.protagonist, ...save.companions.filter((c) => c.injuredForTrips === 0)]
       .map(memberFromRecord);
+    combatPrevHp.clear();
     state = startCombat(rng, trainingParty, TRAINING_ENCOUNTER());
     showScreen('combat');
     combatResultEl.hidden = true;
@@ -1625,22 +1721,62 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     background: var(--void);
     color: var(--text);
     font-family: 'Noto Serif TC', serif;
-    padding: 2.2rem 1rem 120px; /* 底部留空隙：dev toolbar 攔截區 */
+    padding: 3.9rem 1rem 120px; /* top=HUD 高度；底部=dev toolbar 攔截區 */
   }
 
-  /* 世界背景：黃昏商隊在夜幕後 */
+  /* 世界背景：黃昏商隊在夜幕後，緩慢漂移（ken-burns） */
   .game-backdrop {
-    position: fixed; inset: -3%;
+    position: fixed; inset: -4%;
     z-index: 0;
-    background: url('/assets/games/caravan/title-banner.webp') center / cover no-repeat;
-    filter: blur(9px) brightness(0.38) saturate(0.85);
+    background-image: url('/assets/games/caravan/title-banner.webp');
+    background-position: center; background-size: cover; background-repeat: no-repeat;
+    filter: blur(9px) brightness(0.4) saturate(0.85);
+    animation: backdropDrift 44s ease-in-out infinite alternate;
+    transition: filter 0.6s ease;
   }
+  .game-backdrop[data-mood="battle"] { filter: blur(11px) brightness(0.26) saturate(0.7) hue-rotate(-8deg); }
+  .game-backdrop[data-mood="road"] { filter: blur(9px) brightness(0.34) saturate(0.9); }
   .game-backdrop::after {
     content: '';
     position: absolute; inset: 0;
-    background: radial-gradient(ellipse 90% 70% at 50% 28%, transparent 20%, rgba(10, 6, 3, 0.82) 100%);
+    background: radial-gradient(ellipse 90% 70% at 50% 28%, transparent 18%, rgba(10, 6, 3, 0.84) 100%);
+  }
+  @keyframes backdropDrift {
+    from { transform: scale(1.04) translate(-0.6%, -0.4%); }
+    to   { transform: scale(1.13) translate(0.6%, 0.5%); }
   }
   .caravan-root > *:not(.game-backdrop) { position: relative; z-index: 1; }
+
+  /* ---- 常駐 HUD 狀態列 ---- */
+  .game-hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 15;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; height: 2.9rem; padding: 0 clamp(0.8rem, 4vw, 2.4rem);
+    background: linear-gradient(180deg, rgba(18, 11, 6, 0.96), rgba(18, 11, 6, 0.78));
+    border-bottom: 1px solid var(--gold);
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+    font-size: 0.9rem;
+  }
+  .game-hud[hidden] { display: none; }
+  .hud-scene {
+    font-family: 'Ma Shan Zheng', 'Noto Serif TC', serif;
+    font-size: 1.3rem; letter-spacing: 0.16em; color: var(--gold-bright);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  }
+  .hud-scene::before { content: '❖'; margin-right: 0.5rem; color: var(--gold); font-size: 0.8em; }
+  .hud-right { display: flex; align-items: center; gap: 0.9rem; }
+  .hud-stat { display: inline-flex; align-items: baseline; gap: 0.4rem; letter-spacing: 0.1em; }
+  .hud-label { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.2em; }
+  .hud-stat b { font-size: 1.15rem; color: var(--gold-bright); font-weight: 700; }
+  #hud-gold::after { content: ' G'; font-size: 0.7rem; color: var(--text-dim); }
+  .hud-sep { width: 1px; height: 1.3rem; background: var(--gold-dim); }
+
+  /* ---- 畫面入場轉場 ---- */
+  .screen-enter { animation: screenIn 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+  }
 
   /* ---- 遊戲面板（screen）：墨面板＋金雙線框＋角飾 ---- */
   .screen {
@@ -1676,11 +1812,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
   /* ---- 標題畫面 ---- */
   .game-title {
-    font-size: 3.1rem; font-weight: 900; letter-spacing: 0.3em; margin: 0.5rem 0 0.25rem;
+    font-family: 'Ma Shan Zheng', 'Noto Serif TC', serif;
+    font-size: 4.2rem; font-weight: 400; letter-spacing: 0.14em; margin: 0.5rem 0 0.1rem;
     color: var(--gold-bright);
-    text-shadow: 0 0 22px rgba(201, 163, 92, 0.45), 0 2px 4px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 0 30px rgba(201, 163, 92, 0.5), 0 3px 6px rgba(0, 0, 0, 0.85);
   }
-  .game-subtitle { letter-spacing: 0.5em; color: var(--text-dim); margin-bottom: 2.2rem; font-size: 0.9rem; }
+  .game-subtitle {
+    font-family: 'Cinzel', serif; font-weight: 500;
+    letter-spacing: 0.42em; color: var(--text-dim); margin-bottom: 2.2rem; font-size: 0.95rem;
+  }
   .title-actions { display: flex; flex-direction: column; gap: 0.8rem; align-items: center; }
   .title-legacy { font-size: 0.85rem; color: var(--gold); letter-spacing: 0.08em; margin: 0.9rem 0 0; }
   .title-chronicle-link { display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; color: var(--text-dim); text-decoration: none; letter-spacing: 0.15em; }
@@ -2050,5 +2190,48 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   }
   @media (prefers-reduced-motion: reduce) {
     .caravan-btn, .town-tab, .quest-item, .move-btn, .hp-bar i { transition: none; }
+  }
+
+  /* ---- 戰鬥升級：雙欄陣營／浮動數字／命中閃光／行動高亮 ---- */
+  .combat-column { display: flex; flex-direction: column; gap: 0.5rem; }
+  .combat-side-label {
+    margin: 0 0 0.1rem; text-align: center;
+    font-size: 0.8rem; letter-spacing: 0.4em; font-weight: 700;
+  }
+  .combat-side-foe { color: #d98a8a; }
+  .combat-side-ally { color: #8fd39b; }
+  .combat-unit { position: relative; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+  .combat-unit.unit-active {
+    box-shadow: inset 0 1px 0 rgba(232, 200, 126, 0.1), 0 0 0 1px var(--gold-bright), 0 0 18px rgba(201, 163, 92, 0.45);
+    transform: translateY(-2px);
+  }
+  .combat-unit.unit-hit { animation: unitHit 0.34s ease; }
+  @keyframes unitHit {
+    0% { filter: brightness(1); }
+    25% { filter: brightness(2.4) saturate(0.6); transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+    75% { transform: translateX(-1px); }
+    100% { filter: brightness(1); transform: none; }
+  }
+  .float-num {
+    position: absolute; left: 50%; top: 30%;
+    transform: translateX(-50%);
+    font-weight: 900; font-size: 1.6rem; pointer-events: none;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    animation: floatUp 0.95s ease-out forwards;
+    z-index: 3;
+  }
+  .float-dmg { color: #ff8a6a; }
+  .float-heal { color: #9fe6ab; }
+  @keyframes floatUp {
+    0% { opacity: 0; transform: translate(-50%, 6px) scale(0.7); }
+    22% { opacity: 1; transform: translate(-50%, -6px) scale(1.15); }
+    100% { opacity: 0; transform: translate(-50%, -42px) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .game-backdrop { animation: none; }
+    .screen-enter { animation: none; }
+    .combat-unit.unit-hit { animation: none; }
+    .float-num { animation-duration: 0.5s; }
   }
 </style>
