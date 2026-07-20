@@ -8,6 +8,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
 <BaseLayout title={pageTitle} description="文字跑團 RPG：經營商隊與傭兵團，擲骰決定命運" lang="zh-TW">
   <main class="caravan-root">
+    <div class="game-backdrop" aria-hidden="true"></div>
     <!-- 標題畫面 -->
     <section id="screen-title" class="screen">
       <img class="title-art" src="/assets/games/caravan/title-banner.webp" alt="" width="1280" height="720" loading="eager" />
@@ -1595,395 +1596,450 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
 <style is:global>
   /* =====================================================================
-     旅途帳本（Travel Ledger）視覺系統：
-     暗色木桌舞台上攤開的紙頁——內容浮起、美術在暗框中發光。
-     tokens：desk 暗桌 / page 紙頁 / ink 墨 / cinnabar 硃 / gold 舊金 /
-             blood 敵方 / forest 我方
+     遊戲介面 v2「夜行商隊」：視覺小說×JRPG 框架。
+     世界在後（模糊暗化的黃昏商隊圖）、墨色金框面板在前、敘事用亮紙窗。
+     tokens：void 夜 / panel 墨面板 / gold 金框 / text 亮字 / cinnabar 硃 /
+             page 紙窗 / blood 敵 / forest 我
      ===================================================================== */
   .caravan-root {
-    --desk: #241b12;
+    --void: #120c07;
+    --panel: rgba(26, 17, 10, 0.90);
+    --panel-deep: rgba(14, 9, 5, 0.55);
+    --gold: #c9a35c;
+    --gold-bright: #e8c87e;
+    --gold-dim: rgba(201, 163, 92, 0.38);
+    --text: #f0e6cf;
+    --text-dim: #b8a98a;
+    --cinnabar: #c4623a;
+    --cinnabar-deep: #8a3c1e;
     --page: #f7f0df;
-    --page-deep: #efe6d0;
     --ink: #2b2620;
     --ink-soft: #5c5344;
-    --faded: #8a7f6d;
-    --cinnabar: #b3552e;
-    --cinnabar-deep: #8a3c1e;
-    --gold: #c9a35c;
-    --line: #d8ccb2;
-    --blood: #8a3030;
-    --forest: #3a5a40;
+    --blood: #b04a4a;
+    --forest: #5d9367;
 
     min-height: 100vh;
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    background:
-      radial-gradient(ellipse 120% 70% at 50% 0%, rgba(201, 163, 92, 0.10), transparent 55%),
-      radial-gradient(ellipse 140% 100% at 50% 110%, rgba(0, 0, 0, 0.55), transparent 60%),
-      linear-gradient(160deg, #2e2318 0%, var(--desk) 45%, #1d150d 100%);
-    color: var(--ink);
+    background: var(--void);
+    color: var(--text);
     font-family: 'Noto Serif TC', serif;
     padding: 2.2rem 1rem 120px; /* 底部留空隙：dev toolbar 攔截區 */
   }
 
-  /* 紙頁：內容的舞台。細噪紋＋頁緣墨線＋落在桌上的影 */
+  /* 世界背景：黃昏商隊在夜幕後 */
+  .game-backdrop {
+    position: fixed; inset: -3%;
+    z-index: 0;
+    background: url('/assets/games/caravan/title-banner.webp') center / cover no-repeat;
+    filter: blur(9px) brightness(0.38) saturate(0.85);
+  }
+  .game-backdrop::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 90% 70% at 50% 28%, transparent 20%, rgba(10, 6, 3, 0.82) 100%);
+  }
+  .caravan-root > *:not(.game-backdrop) { position: relative; z-index: 1; }
+
+  /* ---- 遊戲面板（screen）：墨面板＋金雙線框＋角飾 ---- */
   .screen {
     text-align: center;
-    padding: 2.2rem 2.4rem 2.6rem;
+    padding: 2.3rem 2.4rem 2.6rem;
     max-width: 34rem;
     width: 100%;
     background:
-      repeating-linear-gradient(0deg, rgba(43, 38, 32, 0.016) 0 2px, transparent 2px 4px),
-      linear-gradient(178deg, #faf5e9 0%, var(--page) 40%, var(--page-deep) 100%);
-    border: 1px solid rgba(43, 38, 32, 0.55);
-    border-radius: 3px;
+      linear-gradient(180deg, rgba(46, 30, 16, 0.55), transparent 120px),
+      var(--panel);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
     box-shadow:
-      inset 0 0 0 1px rgba(247, 240, 223, 0.9),
-      inset 0 0 42px rgba(140, 110, 70, 0.10),
-      0 2px 0 rgba(0, 0, 0, 0.25),
-      0 18px 50px rgba(0, 0, 0, 0.55);
+      inset 0 0 0 3px rgba(10, 6, 3, 0.6),
+      inset 0 0 0 4px var(--gold-dim),
+      inset 0 0 60px rgba(0, 0, 0, 0.45),
+      0 24px 60px rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(2px);
   }
+  /* 角飾：左上/右下金色 L 角 */
+  .screen { position: relative; }
+  .screen::before, .screen::after {
+    content: '';
+    position: absolute;
+    width: 26px; height: 26px;
+    border: 2px solid var(--gold-bright);
+    pointer-events: none;
+  }
+  .screen::before { top: 7px; left: 7px; border-right: none; border-bottom: none; }
+  .screen::after { bottom: 7px; right: 7px; border-left: none; border-top: none; }
   .screen[hidden] { display: none; }
   .screen-wide { max-width: 46rem; }
 
   /* ---- 標題畫面 ---- */
-  .game-title { font-size: 3rem; font-weight: 900; letter-spacing: 0.3em; margin: 0.4rem 0 0.25rem; text-shadow: 0 1px 0 #fff; }
-  .game-subtitle { letter-spacing: 0.5em; color: var(--faded); margin-bottom: 2.2rem; font-size: 0.9rem; }
-  .title-actions { display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
-  .title-legacy { font-size: 0.85rem; color: var(--cinnabar-deep); letter-spacing: 0.08em; margin: 0.9rem 0 0; }
-  .title-chronicle-link { display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; color: var(--faded); text-decoration: none; letter-spacing: 0.15em; border-bottom: 1px solid transparent; }
-  .title-chronicle-link:hover { color: var(--cinnabar-deep); border-bottom-color: var(--gold); }
+  .game-title {
+    font-size: 3.1rem; font-weight: 900; letter-spacing: 0.3em; margin: 0.5rem 0 0.25rem;
+    color: var(--gold-bright);
+    text-shadow: 0 0 22px rgba(201, 163, 92, 0.45), 0 2px 4px rgba(0, 0, 0, 0.8);
+  }
+  .game-subtitle { letter-spacing: 0.5em; color: var(--text-dim); margin-bottom: 2.2rem; font-size: 0.9rem; }
+  .title-actions { display: flex; flex-direction: column; gap: 0.8rem; align-items: center; }
+  .title-legacy { font-size: 0.85rem; color: var(--gold); letter-spacing: 0.08em; margin: 0.9rem 0 0; }
+  .title-chronicle-link { display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; color: var(--text-dim); text-decoration: none; letter-spacing: 0.15em; }
+  .title-chronicle-link:hover { color: var(--gold-bright); }
 
-  /* ---- 按鈕體系：墨框紙面為基準；主行動硃底 ---- */
+  /* ---- 按鈕體系：墨底金框（遊戲鈕）；主行動硃紅 ---- */
   .caravan-btn {
     font: inherit;
-    padding: 0.6rem 2.2rem;
-    border: 1px solid var(--ink);
-    border-radius: 2px;
-    background: linear-gradient(180deg, #fffdf6, #f3ead6);
-    color: var(--ink);
+    padding: 0.62rem 2.2rem;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    background: linear-gradient(180deg, rgba(60, 40, 20, 0.9), rgba(30, 19, 10, 0.95));
+    color: var(--text);
     cursor: pointer;
-    letter-spacing: 0.2em;
-    box-shadow: 0 1px 0 rgba(43, 38, 32, 0.35), 0 2px 6px rgba(43, 38, 32, 0.18);
-    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    letter-spacing: 0.22em;
+    box-shadow: inset 0 1px 0 rgba(232, 200, 126, 0.22), 0 3px 8px rgba(0, 0, 0, 0.5);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, color 0.12s ease;
   }
   .caravan-btn:hover {
-    background: var(--ink);
-    color: var(--page);
+    background: linear-gradient(180deg, #e2c078, var(--gold));
+    color: #241505;
     transform: translateY(-1px);
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 5px 12px rgba(0, 0, 0, 0.28);
+    box-shadow: 0 0 16px rgba(201, 163, 92, 0.4), 0 4px 10px rgba(0, 0, 0, 0.5);
   }
-  .caravan-btn:active { transform: translateY(0); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3); }
-  .caravan-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .caravan-btn:active { transform: translateY(0); }
+  .caravan-btn:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
   .caravan-btn:disabled {
-    color: #b7ac98;
-    border-color: var(--line);
-    background: var(--page-deep);
-    box-shadow: none;
-    cursor: not-allowed;
-    transform: none;
+    color: rgba(184, 169, 138, 0.4);
+    border-color: rgba(201, 163, 92, 0.2);
+    background: rgba(20, 13, 7, 0.6);
+    box-shadow: none; cursor: not-allowed; transform: none;
   }
-  .caravan-btn:disabled:hover { background: var(--page-deep); color: #b7ac98; }
-  /* 主行動：啟程與出戰用硃紅立起來 */
+  .caravan-btn:disabled:hover { background: rgba(20, 13, 7, 0.6); color: rgba(184, 169, 138, 0.4); }
   #btn-new-game, #btn-continue, #btn-depart, #btn-trade-done, #btn-settle-back {
-    background: linear-gradient(180deg, #c4623a, var(--cinnabar));
-    border-color: var(--cinnabar-deep);
-    color: #fff6ea;
-    text-shadow: 0 1px 0 rgba(90, 35, 12, 0.5);
+    background: linear-gradient(180deg, #d06a40, var(--cinnabar-deep));
+    border-color: #e8926b;
+    color: #fff3e4;
+    text-shadow: 0 1px 2px rgba(80, 28, 8, 0.7);
+    box-shadow: inset 0 1px 0 rgba(255, 200, 160, 0.35), 0 3px 10px rgba(0, 0, 0, 0.55), 0 0 18px rgba(196, 98, 58, 0.25);
   }
   #btn-new-game:hover, #btn-continue:hover, #btn-depart:hover, #btn-trade-done:hover, #btn-settle-back:hover {
-    background: linear-gradient(180deg, #d06a40, #bb5c33);
-    color: #fff6ea;
+    background: linear-gradient(180deg, #e07a4e, #a04a26);
+    color: #fff3e4;
+    box-shadow: 0 0 22px rgba(224, 122, 78, 0.5), 0 4px 12px rgba(0, 0, 0, 0.55);
   }
 
   /* ---- 城鎮 ---- */
-  .town-name { font-size: 1.9rem; font-weight: 900; letter-spacing: 0.22em; margin: 0.2rem 0 0.35rem; }
-  .town-status { font-size: 1.05rem; color: var(--ink-soft); }
-  .town-status b, #town-gold { color: var(--cinnabar-deep); }
-  .town-actions { margin-top: 1.4rem; display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+  .town-name {
+    font-size: 1.95rem; font-weight: 900; letter-spacing: 0.24em; margin: 0.3rem 0 0.35rem;
+    color: var(--gold-bright); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  }
+  .town-status { font-size: 1.05rem; color: var(--text-dim); }
+  .town-status b, #town-gold { color: var(--gold-bright); }
+  .town-actions { margin-top: 1.4rem; display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: center; }
   .expedition-expired-note { font-size: 0.85rem; color: var(--blood); margin-top: 0.75rem; }
 
-  /* 書籤分頁（簽名元素）：釘在頁緣的皮книж签 */
+  /* 書籤分頁（暗版）：釘在面板邊的金屬書籤 */
   .town-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.35rem;
-    margin: 1.9rem -2.4rem 1.25rem;
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem;
+    margin: 1.9rem -2.4rem 1.3rem;
     padding: 0 1.4rem;
-    border-bottom: 2px solid var(--ink);
+    border-bottom: 1px solid var(--gold);
   }
   .town-tab {
     font: inherit;
-    padding: 0.45rem 1.4rem 0.55rem;
-    border: 1px solid var(--line);
-    border-bottom: none;
+    padding: 0.45rem 1.4rem 0.5rem;
+    border: 1px solid var(--gold-dim); border-bottom: none;
     border-radius: 6px 6px 0 0;
-    background: linear-gradient(180deg, var(--page-deep), #e6dbc2);
-    color: var(--ink-soft);
+    background: rgba(20, 13, 7, 0.75);
+    color: var(--text-dim);
     cursor: pointer;
-    letter-spacing: 0.15em;
-    font-size: 0.9rem;
-    transform: translateY(2px);
-    transition: transform 0.12s ease, background 0.12s ease;
+    letter-spacing: 0.15em; font-size: 0.9rem;
+    transform: translateY(1px);
+    transition: color 0.12s ease, background 0.12s ease;
   }
-  .town-tab:hover { transform: translateY(0); color: var(--ink); }
+  .town-tab:hover { color: var(--gold-bright); }
   .town-tab.active {
-    background: linear-gradient(180deg, #fffdf6, var(--page));
-    color: var(--ink);
-    border-color: var(--ink);
-    border-top: 3px solid var(--gold);
+    background: linear-gradient(180deg, rgba(201, 163, 92, 0.22), rgba(26, 17, 10, 0.2));
+    color: var(--gold-bright);
+    border-color: var(--gold);
+    border-top: 3px solid var(--gold-bright);
     font-weight: 700;
-    transform: translateY(2px);
-    padding-top: 0.4rem;
+    padding-top: 0.38rem;
   }
   .town-panel { text-align: left; }
-  .panel-status { color: var(--ink-soft); margin: 0 0 0.75rem; }
-  .panel-hint { color: var(--faded); font-size: 0.85rem; margin: 0 0 0.75rem; }
+  .panel-status { color: var(--text-dim); margin: 0 0 0.75rem; }
+  .panel-hint { color: var(--text-dim); font-size: 0.85rem; margin: 0 0 0.75rem; opacity: 0.8; }
 
-  /* ---- 清單卡片（市集/酒館/隊伍/委託/交易 共用語言）---- */
-  .market-row, .recruit-card, .roster-card, .quest-item, .trade-row, .quest-outfit, .settle-items, .check-result {
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--gold);
-    border-radius: 2px;
-    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
-    box-shadow: 0 1px 3px rgba(43, 38, 32, 0.12);
-  }
+  /* ---- 清單卡：暗窗格＋金絲邊 ---- */
   .market-list, .tavern-list, .roster-list, .trade-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .market-row, .recruit-card, .roster-card, .quest-item, .trade-row, .quest-outfit, .settle-items, .check-result {
+    border: 1px solid var(--gold-dim);
+    border-left: 3px solid var(--gold);
+    border-radius: 3px;
+    background: var(--panel-deep);
+    box-shadow: inset 0 1px 0 rgba(232, 200, 126, 0.08);
+  }
   .market-row, .trade-row {
     display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-    gap: 0.6rem; padding: 0.6rem 0.9rem; text-align: left;
+    gap: 0.6rem; padding: 0.62rem 0.95rem; text-align: left;
   }
   .market-name { flex: 1; min-width: 8rem; }
   .buy-btn, .sell-btn, .trade-sell-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; letter-spacing: 0.08em; }
   .market-trend { font-style: normal; margin-left: 0.35rem; font-size: 0.8rem; }
-  .market-trend.up { color: var(--blood); }
-  .market-trend.down { color: var(--forest); }
+  .market-trend.up { color: #e88a8a; }
+  .market-trend.down { color: #8fd39b; }
 
-  .tavern-empty, .cargo-empty, .quest-hidden-hint { color: var(--faded); font-style: italic; }
+  .tavern-empty, .cargo-empty, .quest-hidden-hint { color: var(--text-dim); font-style: italic; }
   .recruit-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 1rem; }
-  .recruit-name { font-weight: 700; margin: 0; flex-basis: 100%; }
-  .recruit-info { font-size: 0.85rem; color: var(--faded); margin: 0; flex: 1; min-width: 10rem; }
-  .trait-tag { display: block; margin-top: 0.25rem; font-size: 0.8rem; color: var(--cinnabar-deep); }
+  .recruit-name { font-weight: 700; margin: 0; flex-basis: 100%; color: var(--gold-bright); }
+  .recruit-info { font-size: 0.85rem; color: var(--text-dim); margin: 0; flex: 1; min-width: 10rem; }
+  .trait-tag { display: block; margin-top: 0.25rem; font-size: 0.8rem; color: var(--gold); }
   .hire-btn { padding: 0.35rem 1.2rem; font-size: 0.85rem; }
 
   .roster-card { padding: 0.75rem 1rem; overflow: hidden; }
-  .roster-name { font-weight: 700; margin: 0 0 0.3rem; }
-  .roster-xp, .roster-stats, .roster-hp, .roster-moves { font-size: 0.85rem; color: var(--ink-soft); margin: 0.15rem 0; }
+  .roster-name { font-weight: 700; margin: 0 0 0.3rem; color: var(--gold-bright); }
+  .roster-xp, .roster-stats, .roster-hp, .roster-moves { font-size: 0.85rem; color: var(--text-dim); margin: 0.15rem 0; }
   .roster-injury { font-size: 0.85rem; color: var(--blood); margin: 0.3rem 0; }
   .levelup-btn, .dismiss-btn { margin: 0.6rem 0.6rem 0 0; padding: 0.35rem 1.1rem; font-size: 0.85rem; }
 
-  /* 裝備欄（沿革註解見 git 歷史：全域 _inventory.scss 撞名 + 動態節點需 global） */
+  /* 裝備欄（歷史脈絡見 git：全域 _inventory.scss 撞名＋動態節點需 global 規則） */
   .roster-card .equip-slots { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.6rem; }
   .roster-card .equip-slot {
     position: static; width: auto; height: auto; flex: 1; min-width: 9rem;
-    border: 1px dashed var(--line); border-radius: 2px;
-    background: rgba(43, 38, 32, 0.025);
+    border: 1px dashed var(--gold-dim); border-radius: 3px;
+    background: rgba(0, 0, 0, 0.25);
     padding: 0.5rem 0.6rem; cursor: default;
   }
-  .roster-card .equip-slot:hover { border-color: var(--line); box-shadow: none; transform: none; }
-  .roster-card .equip-slot-label { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.35rem; }
+  .roster-card .equip-slot:hover { border-color: var(--gold-dim); box-shadow: none; transform: none; }
+  .roster-card .equip-slot-label { font-size: 0.85rem; color: var(--text-dim); margin: 0 0 0.35rem; }
   .roster-card .unequip-btn { font-size: 0.8rem; padding: 0.25rem 0.7rem; }
   .roster-card .equip-candidates { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.4rem; }
   .roster-card .equip-btn { font-size: 0.8rem; padding: 0.25rem 0.7rem; text-align: left; }
   .gear-icon {
     width: 24px; height: 24px; object-fit: cover; vertical-align: -6px;
     margin-right: 6px; border: 1px solid var(--gold); border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(43, 38, 32, 0.25);
+    box-shadow: 0 0 6px rgba(201, 163, 92, 0.35);
   }
   .equip-slot-label .gear-icon { width: 28px; height: 28px; }
-
   #wagon-panel .panel-status { margin-bottom: 1rem; }
 
   /* ---- modal ---- */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(20, 14, 8, 0.62);
+    background: rgba(8, 5, 2, 0.72);
     display: flex; align-items: center; justify-content: center;
     padding: 1rem; z-index: 20;
   }
   .modal-overlay[hidden] { display: none; } /* class 特異度需壓過 UA [hidden] */
   .modal-box {
-    background: linear-gradient(178deg, #faf5e9, var(--page));
-    border: 1px solid var(--ink); border-radius: 3px;
+    background: var(--panel);
+    border: 1px solid var(--gold); border-radius: 4px;
     padding: 1.5rem; max-width: 22rem; width: 100%; text-align: left;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 0 0 3px rgba(10, 6, 3, 0.6), inset 0 0 0 4px var(--gold-dim), 0 24px 60px rgba(0, 0, 0, 0.8);
   }
-  .modal-title { margin: 0 0 1rem; letter-spacing: 0.15em; font-size: 1.2rem; font-weight: 900; }
+  .modal-title { margin: 0 0 1rem; letter-spacing: 0.15em; font-size: 1.2rem; font-weight: 900; color: var(--gold-bright); }
   .alloc-rows { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
   .alloc-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
   .alloc-plus { padding: 0.25rem 0.8rem; font-size: 0.85rem; }
-  .alloc-total { color: var(--faded); font-size: 0.9rem; margin-bottom: 1rem; }
+  .alloc-total { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem; }
   .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
 
-  /* ---- 委託板 ---- */
+  /* ---- 畫面大標：金字＋雙翼飾線 ---- */
   .quest-title, .settle-title, .trade-title, .combat-title {
-    font-size: 1.55rem; font-weight: 900; letter-spacing: 0.3em; margin: 0 0 1.1rem;
-    position: relative; padding-bottom: 0.55rem;
+    font-size: 1.6rem; font-weight: 900; letter-spacing: 0.32em; margin: 0 0 1.2rem;
+    color: var(--gold-bright);
+    position: relative; padding-bottom: 0.6rem;
+    text-shadow: 0 0 18px rgba(201, 163, 92, 0.35);
   }
   .quest-title::after, .settle-title::after, .trade-title::after, .combat-title::after {
     content: '';
     position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
-    width: 4.5rem; height: 3px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    width: 7rem; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
   }
   .quest-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
   .quest-row { display: flex; align-items: stretch; gap: 0.5rem; }
-  .quest-item { flex: 1; padding: 0.75rem 1rem; text-align: left; cursor: pointer; font: inherit;
-    transition: transform 0.12s ease, box-shadow 0.12s ease; }
-  .quest-item:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(43, 38, 32, 0.2); border-left-color: var(--cinnabar); }
-  .quest-name { font-weight: 700; margin: 0 0 0.25rem; }
-  .quest-kind { font-size: 0.85rem; color: var(--faded); margin: 0; }
+  .quest-item { flex: 1; padding: 0.8rem 1rem; text-align: left; cursor: pointer; font: inherit; color: var(--text);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; }
+  .quest-item:hover { transform: translateY(-1px); border-left-color: var(--gold-bright); box-shadow: 0 0 14px rgba(201, 163, 92, 0.25); }
+  .quest-name { font-weight: 700; margin: 0 0 0.25rem; color: var(--gold-bright); }
+  .quest-kind { font-size: 0.85rem; color: var(--text-dim); margin: 0; }
   .quest-outfit-btn { font-size: 0.8rem; padding: 0.5rem 0.9rem; white-space: nowrap; }
   .quest-wage-warning { color: var(--blood); font-size: 0.85rem; margin-bottom: 1rem; }
 
   .quest-outfit { padding: 1rem 1.25rem; text-align: left; margin-bottom: 1.25rem; }
-  .outfit-title { margin: 0 0 0.75rem; font-size: 1.1rem; letter-spacing: 0.1em; font-weight: 700; }
+  .outfit-title { margin: 0 0 0.75rem; font-size: 1.1rem; letter-spacing: 0.1em; font-weight: 700; color: var(--gold-bright); }
   .cargo-picker { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
   .cargo-picker[hidden] { display: none; }
   .cargo-row { display: flex; align-items: center; gap: 0.5rem; }
   .cargo-label { flex: 1; font-size: 0.9rem; }
   .cargo-plus, .cargo-minus { padding: 0.2rem 0.6rem; font-size: 0.85rem; }
-  .cargo-space, .wage-preview { font-size: 0.85rem; color: var(--ink-soft); margin: 0.3rem 0; }
+  .cargo-space, .wage-preview { font-size: 0.85rem; color: var(--text-dim); margin: 0.3rem 0; }
   .outfit-actions { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
 
   /* ---- 遠征 ---- */
-  .exp-progress { letter-spacing: 0.3em; color: var(--faded); margin-bottom: 1rem; font-size: 0.9rem; }
+  .exp-progress { letter-spacing: 0.35em; color: var(--text-dim); margin-bottom: 1rem; font-size: 0.88rem; }
   .exp-condition {
     display: flex; align-items: center; gap: 0.7rem; justify-content: center;
-    color: var(--cinnabar-deep); letter-spacing: 0.08em; margin-bottom: 0.7rem; font-size: 0.92rem;
+    color: var(--gold); letter-spacing: 0.08em; margin-bottom: 0.7rem; font-size: 0.92rem;
   }
   .exp-condition[hidden] { display: none; }
   .exp-condition img {
     width: 84px; height: 63px; object-fit: cover;
     border: 1px solid var(--gold); border-radius: 3px;
-    box-shadow: 0 2px 6px rgba(43, 38, 32, 0.3);
+    box-shadow: 0 0 10px rgba(201, 163, 92, 0.3);
   }
 
-  /* 事件卡：插圖滿幅頂圖、紙頁載文 */
+  /* 事件卡＝視覺小說窗：滿幅插圖＋亮紙文字窗（閱讀優先） */
   .event-card {
-    border: 1px solid var(--ink);
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    background: var(--page);
+    color: var(--ink);
     padding: 0 0 1.25rem;
     text-align: left;
     margin-bottom: 1rem;
     overflow: hidden;
-    box-shadow: 0 6px 18px rgba(43, 38, 32, 0.22);
+    box-shadow: inset 0 0 0 3px rgba(10, 6, 3, 0.25), 0 14px 40px rgba(0, 0, 0, 0.6);
   }
   .event-art {
-    display: block; width: 100%; height: auto; max-height: 230px; object-fit: cover;
+    display: block; width: 100%; height: auto; max-height: 235px; object-fit: cover;
     border: none; border-bottom: 2px solid var(--gold); border-radius: 0; margin: 0 0 1rem;
   }
   .event-art[hidden] { display: none; }
-  .event-title { font-size: 1.35rem; font-weight: 900; margin: 0 0 0.6rem; letter-spacing: 0.12em; padding: 0 1.4rem; }
-  .event-body { line-height: 1.9; margin: 0 0 1rem; padding: 0 1.4rem; }
-  .event-options { display: flex; flex-direction: column; gap: 0.5rem; padding: 0 1.4rem; }
+  .event-title { font-size: 1.35rem; font-weight: 900; margin: 0 0 0.6rem; letter-spacing: 0.12em; padding: 0 1.4rem; color: var(--cinnabar-deep); }
+  .event-body { line-height: 1.95; margin: 0 0 1rem; padding: 0 1.4rem; color: var(--ink); }
+  .event-options { display: flex; flex-direction: column; gap: 0.55rem; padding: 0 1.4rem; }
   .event-opt { text-align: left; letter-spacing: 0.06em; }
+  /* 亮紙窗內的按鈕改亮面變體（暗鈕貼亮紙突兀） */
+  .event-card .caravan-btn, .check-result .caravan-btn {
+    background: linear-gradient(180deg, #fffdf6, #f0e7d2);
+    border-color: var(--ink);
+    color: var(--ink);
+    box-shadow: 0 1px 0 rgba(43, 38, 32, 0.4), 0 2px 6px rgba(43, 38, 32, 0.2);
+  }
+  .event-card .caravan-btn:hover, .check-result .caravan-btn:hover { background: var(--ink); color: var(--page); }
+  .event-card .caravan-btn:disabled { background: #efe6d0; color: #b7ac98; border-color: #d8ccb2; }
   .room-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: 1rem; }
   .room-choices:empty { display: none; }
-  .check-result { padding: 0.6rem 1rem; margin-bottom: 1rem; border-left-color: var(--cinnabar); }
+  .check-result {
+    padding: 0.7rem 1rem; margin-bottom: 1rem;
+    background: var(--page); color: var(--ink);
+    border-left: 3px solid var(--cinnabar);
+  }
 
-  /* ---- 戰鬥：陣營色帶＋血條 ---- */
+  /* ---- 戰鬥：戰場面板＋技能牌指令盤 ---- */
   .combat-field { display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
   .combat-side { display: flex; flex-direction: column; gap: 0.6rem; min-width: 9.5rem; }
   .combat-unit {
-    border: 1px solid var(--line);
-    border-top: 3px solid var(--faded);
-    border-radius: 2px;
-    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    border: 1px solid var(--gold-dim);
+    border-top: 3px solid var(--text-dim);
+    border-radius: 3px;
+    background: var(--panel-deep);
     padding: 0.55rem 0.9rem;
     text-align: left;
-    box-shadow: 0 2px 6px rgba(43, 38, 32, 0.16);
+    box-shadow: inset 0 1px 0 rgba(232, 200, 126, 0.07), 0 3px 10px rgba(0, 0, 0, 0.4);
   }
   #combat-enemies .combat-unit { border-top-color: var(--blood); }
   #combat-party .combat-unit { border-top-color: var(--forest); }
-  .unit-name { font-weight: 700; margin: 0 0 0.15rem; }
-  .unit-hp { font-size: 0.8rem; color: var(--ink-soft); margin: 0; }
-  .hp-bar {
-    height: 6px; margin-top: 3px;
-    background: rgba(43, 38, 32, 0.14);
-    border-radius: 3px; overflow: hidden;
-  }
-  .hp-bar i { display: block; height: 100%; border-radius: 3px; transition: width 0.25s ease; }
-  #combat-enemies .hp-bar i { background: linear-gradient(90deg, #a84040, var(--blood)); }
-  #combat-party .hp-bar i { background: linear-gradient(90deg, #4f7a57, var(--forest)); }
-  .unit-intent { font-size: 0.75rem; font-style: italic; color: var(--faded); margin: 0.25rem 0 0; min-height: 1em; }
-  .unit-status { font-size: 0.8rem; color: #7a4b9d; margin: 0.15rem 0 0; min-height: 1em; }
+  .unit-name { font-weight: 700; margin: 0 0 0.15rem; color: var(--gold-bright); }
+  .unit-hp { font-size: 0.8rem; color: var(--text-dim); margin: 0; }
+  .hp-bar { height: 7px; margin-top: 3px; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(201, 163, 92, 0.25); border-radius: 3px; overflow: hidden; }
+  .hp-bar i { display: block; height: 100%; border-radius: 2px; transition: width 0.25s ease; }
+  #combat-enemies .hp-bar i { background: linear-gradient(90deg, #d06a6a, var(--blood)); box-shadow: 0 0 6px rgba(176, 74, 74, 0.6); }
+  #combat-party .hp-bar i { background: linear-gradient(90deg, #79b385, var(--forest)); box-shadow: 0 0 6px rgba(93, 147, 103, 0.6); }
+  .unit-intent { font-size: 0.75rem; font-style: italic; color: var(--text-dim); margin: 0.25rem 0 0; min-height: 1em; }
+  .unit-status { font-size: 0.8rem; color: #c9a0e8; margin: 0.15rem 0 0; min-height: 1em; }
   .unit-status span { margin-right: 6px; font-size: 0.8rem; }
   .status-icon { width: 20px; height: 20px; vertical-align: -4px; margin-right: 1px; }
   .unit-art {
     display: block; width: 72px; height: 96px; object-fit: cover;
     border: 1px solid var(--gold); border-radius: 3px; margin-bottom: 0.45rem;
-    box-shadow: 0 2px 5px rgba(43, 38, 32, 0.3);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
   }
   .combat-targets { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem; }
   .combat-targets:empty { display: none; }
   .target-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; }
-  .target-selected { background: var(--ink); color: var(--page); }
+  .target-selected { background: linear-gradient(180deg, #e2c078, var(--gold)); color: #241505; }
   .combat-log {
     max-width: 30rem; max-height: 8.5rem; overflow-y: auto;
     margin: 0 auto 1rem;
-    border: 1px solid var(--line);
+    border: 1px solid var(--gold-dim);
     border-left: 3px solid var(--cinnabar);
-    border-radius: 2px;
-    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.4);
     padding: 0.55rem 0.95rem; text-align: left;
   }
-  .combat-log p { margin: 0.22rem 0; font-size: 0.85rem; line-height: 1.6; }
-  .combat-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-bottom: 1rem; }
-  .move-btn { padding: 0.5rem 1.2rem; }
-  .combat-retreat { font-size: 0.85rem; padding: 0.4rem 1.5rem; }
+  .combat-log p { margin: 0.24rem 0; font-size: 0.85rem; line-height: 1.65; color: var(--text); }
+  /* 技能牌指令盤 */
+  .combat-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem; margin-bottom: 1rem; }
+  .move-btn {
+    padding: 0.85rem 1.35rem;
+    min-width: 6.2rem;
+    border: 1px solid var(--gold);
+    border-radius: 5px;
+    background:
+      linear-gradient(180deg, rgba(201, 163, 92, 0.16), transparent 45%),
+      linear-gradient(180deg, rgba(52, 34, 17, 0.95), rgba(24, 15, 8, 0.98));
+    letter-spacing: 0.22em;
+    font-size: 1rem;
+    box-shadow: inset 0 1px 0 rgba(232, 200, 126, 0.3), inset 0 -6px 12px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.55);
+  }
+  .move-btn:hover {
+    background: linear-gradient(180deg, #e6c67e, #b8924e);
+    color: #241505;
+    box-shadow: 0 0 22px rgba(201, 163, 92, 0.5), 0 5px 12px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
+  }
+  .combat-retreat { font-size: 0.85rem; padding: 0.4rem 1.5rem; opacity: 0.85; }
   .combat-result { margin-top: 1.5rem; }
-  .combat-result .result-text { font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: 0.08em; }
+  .combat-result .result-text { font-size: 1.2rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 0.1em; color: var(--gold-bright); }
 
   /* ---- 結算 ---- */
-  .settle-achievements { color: var(--cinnabar-deep); font-weight: 700; letter-spacing: 0.05em; margin: 0 0 0.6rem; }
+  .settle-achievements { color: var(--gold-bright); font-weight: 700; letter-spacing: 0.05em; margin: 0 0 0.6rem; }
   .settle-achievements[hidden] { display: none; }
   .settle-log {
-    border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 2px;
-    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    border: 1px solid var(--gold-dim); border-left: 3px solid var(--gold); border-radius: 3px;
+    background: rgba(0, 0, 0, 0.4);
     padding: 0.75rem 1rem; text-align: left; max-height: 10rem; overflow-y: auto; margin-bottom: 1rem;
   }
   .settle-log p { margin: 0.3rem 0; font-size: 0.9rem; }
-  .settle-headline { font-weight: 700; }
+  .settle-headline { font-weight: 700; color: var(--gold-bright); }
   .settle-stats { display: flex; justify-content: center; gap: 2rem; margin: 0 0 1rem; }
-  .settle-stat dt { font-size: 0.8rem; color: var(--faded); letter-spacing: 0.15em; }
-  .settle-stat dd { font-size: 1.45rem; margin: 0.1rem 0 0; font-weight: 900; color: var(--cinnabar-deep); }
-  .settle-items-label { text-align: left; margin-bottom: 0.4rem; color: var(--faded); }
+  .settle-stat dt { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 0.15em; }
+  .settle-stat dd { font-size: 1.5rem; margin: 0.1rem 0 0; font-weight: 900; color: var(--gold-bright); text-shadow: 0 0 14px rgba(201, 163, 92, 0.35); }
+  .settle-items-label { text-align: left; margin-bottom: 0.4rem; color: var(--text-dim); }
   .settle-items { list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; }
-  .settle-items li { padding: 0.45rem 0.9rem; border-bottom: 1px solid #ece5d5; }
+  .settle-items li { padding: 0.45rem 0.9rem; border-bottom: 1px solid rgba(201, 163, 92, 0.18); }
   .settle-items li:last-child { border-bottom: none; }
 
   /* ---- 異鎮交易 ---- */
-  .trade-town-name { color: var(--faded); margin-bottom: 1rem; }
+  .trade-town-name { color: var(--text-dim); margin-bottom: 1rem; }
   .trade-gold-label { margin-bottom: 1rem; }
-  .trade-gold-label span { color: var(--cinnabar-deep); font-weight: 700; }
-  .trade-buy-title { font-size: 1rem; letter-spacing: 0.2em; margin: 1.3rem 0 0.5rem; color: var(--ink); font-weight: 700; }
+  .trade-gold-label span { color: var(--gold-bright); font-weight: 700; }
+  .trade-buy-title { font-size: 1rem; letter-spacing: 0.2em; margin: 1.3rem 0 0.5rem; color: var(--gold-bright); font-weight: 700; }
   #trade-buy-section[hidden] { display: none; }
 
-  /* ---- 圖片元素 ---- */
+  /* ---- 圖片：金框窗 ---- */
   .title-art {
     display: block; width: 100%; height: auto; max-height: 300px; object-fit: cover;
-    border: 1px solid var(--ink); border-radius: 3px; margin: 0 auto 1.4rem;
-    box-shadow: 0 6px 20px rgba(43, 38, 32, 0.3);
+    border: 1px solid var(--gold); border-radius: 4px; margin: 0 auto 1.4rem;
+    box-shadow: inset 0 0 0 3px rgba(10, 6, 3, 0.4), 0 10px 30px rgba(0, 0, 0, 0.6);
   }
   .town-banner {
     display: block; width: 100%; height: auto; max-height: 200px; object-fit: cover;
-    border: 1px solid var(--ink); border-radius: 3px; margin: 0 auto 1rem;
-    box-shadow: 0 4px 14px rgba(43, 38, 32, 0.25);
+    border: 1px solid var(--gold); border-radius: 4px; margin: 0 auto 1rem;
+    box-shadow: inset 0 0 0 3px rgba(10, 6, 3, 0.4), 0 8px 24px rgba(0, 0, 0, 0.55);
   }
   .town-banner[hidden] { display: none; }
   .roster-art {
     float: left; width: 64px; height: 85px; object-fit: cover;
     border: 1px solid var(--gold); border-radius: 3px; margin: 0 0.75rem 0.25rem 0;
-    box-shadow: 0 2px 6px rgba(43, 38, 32, 0.28);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   }
   .recruit-art {
     width: 64px; height: 85px; object-fit: cover;
     border: 1px solid var(--gold); border-radius: 3px;
-    box-shadow: 0 2px 6px rgba(43, 38, 32, 0.28);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   }
 
   @media (max-width: 560px) {
@@ -1992,8 +2048,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     .town-tabs { margin-left: -1.1rem; margin-right: -1.1rem; padding: 0 0.5rem; }
     .event-title, .event-body, .event-options { padding-left: 1.1rem; padding-right: 1.1rem; }
   }
-
   @media (prefers-reduced-motion: reduce) {
-    .caravan-btn, .town-tab, .quest-item, .hp-bar i { transition: none; }
+    .caravan-btn, .town-tab, .quest-item, .move-btn, .hp-bar i { transition: none; }
   }
 </style>
