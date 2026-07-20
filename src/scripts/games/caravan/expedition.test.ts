@@ -18,6 +18,7 @@ import {
   finishCombat,
   applyPartyHp,
   EXPEDITION_VERSION,
+  useItemOnExpedition,
 } from './expedition';
 import type { EventCard, LocationDef, ExpeditionState } from './expedition';
 import { newGame } from './save';
@@ -1352,5 +1353,42 @@ describe('M8 玩家狀態招', () => {
     const buffed = state.party.find((p) => p.id === 'p2')!;
     expect(buffed.statuses?.some((s) => s.kind === 'strength')).toBe(true);
     expect(state.log.some((l) => l.text.includes('強化'))).toBe(true);
+  });
+});
+
+describe('M11 羈絆遞增與遠征道具', () => {
+  it('settleExpedition：參戰（未重傷）旅伴 bond +1，重傷者不加', () => {
+    const save = newGame(1000);
+    const mkComp = (id: string, injured: number): CompanionRecord => ({
+      id, name: id, job: 'ranger', level: 1, xp: 0,
+      stats: { str: 10, dex: 14, int: 10, cha: 10, con: 11 }, maxHp: 20,
+      injuredForTrips: injured, trait: null,
+      equipment: { weapon: null, armor: null, trinket: null },
+    });
+    save.companions.push(mkComp('c-ok', 0), mkComp('c-hurt', 2));
+    const state = startExpedition(createRng(7), save, 'loc_route_a');
+    state.step = state.totalSteps + 1;
+    state.phase = 'done';
+    settleExpedition(state, save);
+    expect(save.companions.find((c) => c.id === 'c-ok')?.bond).toBe(1);
+    expect(save.companions.find((c) => c.id === 'c-hurt')?.bond ?? 0).toBe(0);
+  });
+
+  it('useItemOnExpedition：治療目標 partyHp（clamp maxHp）並扣背包', () => {
+    const save = newGame(1000);
+    save.inventory['herb'] = 2;
+    const state = startExpedition(createRng(7), save, 'loc_route_a');
+    state.partyHp['protagonist'] = 10;
+    useItemOnExpedition(state, save, 'herb', 'protagonist');
+    expect(state.partyHp['protagonist']).toBe(16); // herb 回 6
+    expect(save.inventory['herb']).toBe(1);
+  });
+
+  it('useItemOnExpedition：背包沒有該道具/道具不可用 → 丟錯', () => {
+    const save = newGame(1000);
+    const state = startExpedition(createRng(7), save, 'loc_route_a');
+    expect(() => useItemOnExpedition(state, save, 'herb', 'protagonist')).toThrow();
+    save.inventory['iron-ore'] = 1;
+    expect(() => useItemOnExpedition(state, save, 'iron-ore', 'protagonist')).toThrow();
   });
 });

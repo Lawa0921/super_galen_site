@@ -6,6 +6,7 @@ import { resolveCheck, statMod } from './check';
 import { partyCheckBonus } from './roster';
 import type { CombatState, EnemyUnit, PartyMember } from './combat';
 import type { JobId } from './data/jobs';
+import { ITEMS } from './data/items';
 import type { TownDef } from './economy';
 import { tradeSellPrice, totalWage, cargoCapacity, applyMarket } from './economy';
 
@@ -423,6 +424,29 @@ export function advanceExpedition(rng: Rng, state: ExpeditionState): void {
  * 未售出的 cargo 一律退回 save.inventory（含被 finishCombat 撤退/戰敗折半後的殘餘）。
  * 完成遠征（!state.retreated）聲望 +5。
  */
+/**
+ * M11 遠征途中使用消耗品：治療類作用於 partyHp（clamp 至該成員 maxHp），
+ * cure/buff 為戰鬥限定效果、途中使用視為無效丟錯。扣減 save.inventory。
+ */
+export function useItemOnExpedition(
+  state: ExpeditionState,
+  save: SaveData,
+  itemId: string,
+  targetId: string
+): void {
+  if ((save.inventory[itemId] ?? 0) <= 0) throw new Error(`背包沒有「${itemId}」`);
+  const item = ITEMS[itemId];
+  if (!item?.use) throw new Error(`「${itemId}」不是可使用的道具`);
+  if (item.use.kind !== 'heal') throw new Error(`「${item.name}」只能在戰鬥中使用`);
+  if (!(targetId in state.partyHp)) throw new Error(`目標「${targetId}」不在遠征隊伍中`);
+  const maxHp =
+    targetId === save.protagonist.id
+      ? save.protagonist.maxHp
+      : (save.companions.find((c) => c.id === targetId)?.maxHp ?? 0);
+  state.partyHp[targetId] = Math.min(maxHp, state.partyHp[targetId] + item.use.amount);
+  save.inventory[itemId] -= 1;
+}
+
 export function settleExpedition(
   state: ExpeditionState,
   save: SaveData,
@@ -481,6 +505,7 @@ export function settleExpedition(
   for (const companion of save.companions) {
     if (companion.injuredForTrips === 0) {
       companion.xp += xpGained;
+      companion.bond = (companion.bond ?? 0) + 1; // M11 羈絆：同行完成一趟
     } else {
       companion.injuredForTrips = Math.max(0, companion.injuredForTrips - 1);
     }

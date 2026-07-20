@@ -45,6 +45,18 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         </div>
       </div>
     </div>
+
+    <!-- M11 職業專精選擇面板 -->
+    <div id="spec-panel" class="modal-overlay" hidden>
+      <div class="modal-box spec-box">
+        <h3 class="modal-title">選擇專精</h3>
+        <p class="spec-hint">Lv4 的抉擇將定義這名成員的戰鬥之道——<b>選定後不可更改</b>。</p>
+        <div id="spec-options" class="spec-options"></div>
+        <div class="modal-actions">
+          <button id="btn-spec-cancel" type="button" class="caravan-btn caravan-btn-ghost">再想想</button>
+        </div>
+      </div>
+    </div>
     <!-- 遊戲畫面框：所有場景在此固定框內切換（全螢幕遊戲視窗，非置中卡片） -->
     <div class="game-frame">
     <!-- 標題畫面 -->
@@ -186,7 +198,12 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       </div>
       <div id="room-choices" class="room-choices"></div>
       <p id="check-result" class="check-result" hidden></p>
-      <button id="btn-exp-continue" class="caravan-btn" hidden>繼續前進</button>
+      <div id="exp-party" class="exp-party"></div>
+      <div class="exp-actions">
+        <button id="btn-exp-continue" class="caravan-btn" hidden>繼續前進</button>
+        <button id="btn-exp-item" class="caravan-btn caravan-btn-ghost" hidden>使用道具</button>
+      </div>
+      <div id="exp-item-list" class="exp-item-list" hidden></div>
     </section>
 
     <!-- 戰鬥畫面（M2：訓練場入口；M3 併入遠征遭遇） -->
@@ -267,12 +284,13 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   import type { SaveData, CompanionRecord } from '@scripts/games/caravan/save';
   import { createRng } from '@scripts/games/caravan/rng';
   import {
-    startCombat, partyAct, enemyAct, attemptRetreat, currentActor, resolveCasualties,
+    startCombat, partyAct, enemyAct, attemptRetreat, currentActor, resolveCasualties, useItemInCombat,
   } from '@scripts/games/caravan/combat';
+  import type { ItemCombatUse } from '@scripts/games/caravan/combat';
   import type { CombatState, CombatantBase, Move, PartyMember } from '@scripts/games/caravan/combat';
   import {
     startExpedition, drawEvent, optionAvailable, resolveOption, drawRooms, chooseRoom,
-    buildEncounter, applyPartyHp, finishCombat, settleExpedition,
+    buildEncounter, applyPartyHp, finishCombat, settleExpedition, useItemOnExpedition,
   } from '@scripts/games/caravan/expedition';
   import type { ExpeditionState, EventCard, RoomKind, LocationDef } from '@scripts/games/caravan/expedition';
   import type { CheckResult } from '@scripts/games/caravan/check';
@@ -287,7 +305,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   import type { TownDef } from '@scripts/games/caravan/economy';
   import {
     pendingLevelUps, applyLevelUp, unlockedMoves, generateRecruitPool, hireCost, wagePerTrip,
-    equipItem, unequipItem,
+    equipItem, unequipItem, SPECIALIZATIONS, SPECIALIZATION_LEVEL, chooseSpecialization, specById,
+    bondTier, BOND_TIER_NAMES,
   } from '@scripts/games/caravan/roster';
   import {
     buyPrice, sellPrice, tradeSellPrice, cargoCapacity, wagonUpgradeCost, totalWage,
@@ -735,6 +754,35 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     card.appendChild(wrap);
   }
 
+  // ---- M11 專精面板 ----
+  const specPanelEl = document.getElementById('spec-panel')!;
+  const specOptionsEl = document.getElementById('spec-options')!;
+  document.getElementById('btn-spec-cancel')?.addEventListener('click', () => { specPanelEl.hidden = true; });
+
+  function openSpecPanel(record: CompanionRecord): void {
+    specOptionsEl.innerHTML = '';
+    for (const spec of SPECIALIZATIONS[record.job]) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'spec-option';
+      card.dataset.specId = spec.id;
+      const nm = document.createElement('b');
+      nm.textContent = spec.name;
+      const desc = document.createElement('span');
+      desc.textContent = spec.desc;
+      card.append(nm, desc);
+      card.addEventListener('click', () => {
+        if (!save) return;
+        chooseSpecialization(record, spec.id);
+        saveGame(save);
+        specPanelEl.hidden = true;
+        renderTownPanels();
+      });
+      specOptionsEl.appendChild(card);
+    }
+    specPanelEl.hidden = false;
+  }
+
   function renderRoster(): void {
     if (!save) return;
     const members: CompanionRecord[] = [save.protagonist, ...save.companions];
@@ -763,6 +811,12 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       xp.textContent = `經驗值 ${record.xp} XP`;
       const rTrait = traitById(record.trait);
       if (rTrait) xp.textContent += `．特質「${rTrait.name}」（${rTrait.desc}）`;
+      const rSpec = specById(record.specialization);
+      if (rSpec) xp.textContent += `．專精「${rSpec.name}」`;
+      if (record.id !== 'protagonist') {
+        const tier = bondTier(record.bond);
+        if (tier > 0) xp.textContent += `．羈絆「${BOND_TIER_NAMES[tier]}」（同行 ${record.bond} 趟）`;
+      }
 
       const stats = document.createElement('p');
       stats.className = 'roster-stats';
@@ -795,6 +849,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         levelupBtn.textContent = '升級！';
         levelupBtn.addEventListener('click', () => openLevelupPanel(record));
         card.appendChild(levelupBtn);
+      }
+
+      if (record.level >= SPECIALIZATION_LEVEL && !record.specialization) {
+        const specBtn = document.createElement('button');
+        specBtn.type = 'button';
+        specBtn.className = 'caravan-btn spec-btn';
+        specBtn.textContent = '選擇專精';
+        specBtn.addEventListener('click', () => openSpecPanel(record));
+        card.appendChild(specBtn);
       }
 
       if (record.id !== save.protagonist.id) {
@@ -877,6 +940,11 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         tag.className = 'backpack-tag';
         const slotLabel: Record<string, string> = { weapon: '武器', armor: '護甲', trinket: '飾品' };
         tag.textContent = slotLabel[item.equip.slot] ?? '裝備';
+        head.append(nm, tag, ct);
+      } else if (item.use) {
+        const tag = document.createElement('span');
+        tag.className = 'backpack-tag backpack-tag-use';
+        tag.textContent = '可使用';
         head.append(nm, tag, ct);
       } else {
         head.append(nm, ct);
@@ -1313,6 +1381,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     if (!expedition) return;
     const unit = expedition.kind === 'dungeon' ? '層' : '段';
     expProgressEl.textContent = `第 ${expedition.step}/${expedition.totalSteps} ${unit}`;
+    renderExpParty();
   }
 
   function renderCheckResult(check: CheckResult | null): void {
@@ -1338,6 +1407,85 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     }
     renderEventCard(card);
   }
+
+  // ---- M11 消耗品 ----
+  const expPartyEl = document.getElementById('exp-party')!;
+  const btnExpItem = document.getElementById('btn-exp-item')! as HTMLButtonElement;
+  const expItemListEl = document.getElementById('exp-item-list')!;
+
+  function usableItems(): Array<{ id: string; name: string; count: number }> {
+    if (!save) return [];
+    return Object.entries(save.inventory)
+      .filter(([id, n]) => (n ?? 0) > 0 && ITEMS[id]?.use)
+      .map(([id, n]) => ({ id, name: ITEMS[id].name, count: n }));
+  }
+
+  /** 遠征隊伍狀態帶：每位成員名字＋HP 條（損耗可視化） */
+  function renderExpParty(): void {
+    if (!save || !expedition) return;
+    expPartyEl.innerHTML = '';
+    const members = [save.protagonist, ...save.companions.filter((c) => c.id in expedition!.partyHp)];
+    for (const member of members) {
+      if (!(member.id in expedition.partyHp)) continue;
+      const chip = document.createElement('div');
+      chip.className = 'exp-member';
+      chip.dataset.memberId = member.id;
+      const nm = document.createElement('span');
+      nm.className = 'exp-member-name';
+      nm.textContent = member.name;
+      const hpText = document.createElement('span');
+      hpText.className = 'exp-member-hp';
+      hpText.textContent = `${expedition.partyHp[member.id]}/${member.maxHp}`;
+      const bar = document.createElement('div');
+      bar.className = 'hp-bar exp-member-bar';
+      const fill = document.createElement('i');
+      fill.style.width = `${Math.round((expedition.partyHp[member.id] / member.maxHp) * 100)}%`;
+      bar.appendChild(fill);
+      chip.append(nm, hpText, bar);
+      expPartyEl.appendChild(chip);
+    }
+    // 道具鈕：有可用治療品且隊伍有損耗才亮
+    const anyHeal = usableItems().some((it) => ITEMS[it.id].use!.kind === 'heal');
+    const anyHurt = members.some((m) => m.id in expedition!.partyHp && expedition!.partyHp[m.id] < m.maxHp);
+    btnExpItem.hidden = !(anyHeal && anyHurt);
+    if (btnExpItem.hidden) { expItemListEl.hidden = true; expItemListEl.innerHTML = ''; }
+  }
+
+  /** 遠征途中用藥：治療目前 HP 比例最低的成員 */
+  function lowestHpMemberId(): string | null {
+    if (!save || !expedition) return null;
+    let worst: { id: string; ratio: number } | null = null;
+    for (const member of [save.protagonist, ...save.companions]) {
+      const hp = expedition.partyHp[member.id];
+      if (hp === undefined || hp >= member.maxHp) continue;
+      const ratio = hp / member.maxHp;
+      if (!worst || ratio < worst.ratio) worst = { id: member.id, ratio };
+    }
+    return worst?.id ?? null;
+  }
+
+  btnExpItem.addEventListener('click', () => {
+    expItemListEl.hidden = !expItemListEl.hidden;
+    if (expItemListEl.hidden) return;
+    expItemListEl.innerHTML = '';
+    for (const it of usableItems().filter((x) => ITEMS[x.id].use!.kind === 'heal')) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'caravan-btn exp-item-btn';
+      btn.dataset.itemId = it.id;
+      btn.textContent = `${it.name} ×${it.count}`;
+      btn.addEventListener('click', () => {
+        if (!save || !expedition) return;
+        const targetId = lowestHpMemberId();
+        if (!targetId) return;
+        useItemOnExpedition(expedition, save, it.id, targetId);
+        saveGame(save);
+        expItemListEl.hidden = true;
+        renderExpParty();
+      });
+      expItemListEl.appendChild(btn);
+    }
+  });
 
   function renderEventCard(card: EventCard): void {
     if (!save) return;
@@ -1796,6 +1944,56 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     }
   }
 
+  /** M11 戰鬥道具：ItemDef.use → 引擎 ItemCombatUse */
+  function toCombatUse(itemId: string): ItemCombatUse | null {
+    const item = ITEMS[itemId];
+    if (!item?.use) return null;
+    if (item.use.kind === 'heal') return { kind: 'heal', amount: item.use.amount, name: item.name };
+    if (item.use.kind === 'cure') return { kind: 'cure', name: item.name };
+    return { kind: 'buff', status: item.use.status, name: item.name };
+  }
+
+  /** 道具目標：治療/解毒選 HP 比例最低（或中毒）的存活隊友；強化給行動者 */
+  function itemTargetId(actorId: string, use: ItemCombatUse): string {
+    if (!state) return actorId;
+    if (use.kind === 'buff') return actorId;
+    const alive = state.party.filter((u) => u.hp > 0);
+    if (use.kind === 'cure') {
+      const poisoned = alive.find((u) => (u.statuses ?? []).some((st) => st.kind === 'poison'));
+      if (poisoned) return poisoned.id;
+    }
+    let worst = alive[0];
+    for (const u of alive) if (u.hp / u.maxHp < worst.hp / worst.maxHp) worst = u;
+    return worst?.id ?? actorId;
+  }
+
+  function renderItemMenu(actorId: string): void {
+    if (!state) return;
+    combatActionsEl.innerHTML = '';
+    for (const it of usableItems()) {
+      const btn = document.createElement('button');
+      btn.className = 'caravan-btn move-btn item-btn';
+      btn.dataset.itemId = it.id;
+      btn.textContent = `${it.name} ×${it.count}`;
+      btn.addEventListener('click', () => {
+        if (!state || !save) return;
+        const use = toCombatUse(it.id);
+        if (!use) return;
+        useItemInCombat(state, actorId, use, itemTargetId(actorId, use));
+        save.inventory[it.id] -= 1;
+        saveGame(save);
+        selectedTargetId = null;
+        render();
+      });
+      combatActionsEl.appendChild(btn);
+    }
+    const back = document.createElement('button');
+    back.className = 'caravan-btn move-btn item-back-btn';
+    back.textContent = '返回';
+    back.addEventListener('click', () => renderActions(actorId));
+    combatActionsEl.appendChild(back);
+  }
+
   function renderActions(actorId: string): void {
     if (!state) return;
     combatActionsEl.innerHTML = '';
@@ -1815,6 +2013,13 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         render();
       });
       combatActionsEl.appendChild(btn);
+    }
+    if (usableItems().length > 0) {
+      const itemBtn = document.createElement('button');
+      itemBtn.className = 'caravan-btn move-btn combat-item-toggle';
+      itemBtn.textContent = '道具';
+      itemBtn.addEventListener('click', () => renderItemMenu(actorId));
+      combatActionsEl.appendChild(itemBtn);
     }
   }
 
@@ -2585,4 +2790,37 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .backpack-count { margin-left: auto; color: var(--gold-bright); font-weight: 700; letter-spacing: 0.05em; }
   .backpack-tag { font-size: 0.72rem; letter-spacing: 0.12em; color: #241505; background: var(--gold); border-radius: 3px; padding: 0.05rem 0.5rem; }
   .backpack-desc { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--text-dim); line-height: 1.7; }
+
+  /* ---- M11：遠征隊伍帶／道具／專精 ---- */
+  .exp-party { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0.4rem 0 0.7rem; }
+  .exp-member {
+    display: flex; align-items: center; gap: 0.45rem;
+    padding: 0.3rem 0.7rem;
+    background: var(--panel-deep); border: 1px solid var(--gold-dim); border-radius: 3px;
+    font-size: 0.85rem;
+  }
+  .exp-member-name { color: var(--text); font-weight: 700; }
+  .exp-member-hp { color: var(--text-dim); font-size: 0.8rem; }
+  .exp-member-bar { width: 4.5rem; }
+  .exp-actions { display: flex; justify-content: center; gap: 0.7rem; }
+  .exp-item-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.6rem; }
+  .exp-item-btn, .item-btn { letter-spacing: 0.08em; }
+  .combat-item-toggle { border-style: dashed; }
+  .spec-box { max-width: 30rem; }
+  .spec-hint { color: var(--text-dim); line-height: 1.7; margin: 0 0 1rem; }
+  .spec-hint b { color: var(--seal-bright); }
+  .spec-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
+  .spec-option {
+    font: inherit; cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 0.4rem;
+    padding: 0.9rem;
+    background: var(--panel-deep); color: var(--text);
+    border: 1px solid var(--gold-dim); border-radius: 4px;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  }
+  .spec-option b { color: var(--gold-bright); letter-spacing: 0.1em; font-size: 1.05rem; }
+  .spec-option span { font-size: 0.85rem; color: var(--text-dim); line-height: 1.7; }
+  .spec-option:hover { border-color: var(--seal); box-shadow: 0 0 14px rgba(181, 52, 43, 0.3); }
+  .spec-btn { margin: 0.6rem 0.6rem 0 0; padding: 0.35rem 1.1rem; font-size: 0.85rem; background: var(--seal); border-color: var(--seal-bright); color: #f7ece0; }
+  .backpack-tag-use { background: var(--forest); color: #10201a; }
 </style>
