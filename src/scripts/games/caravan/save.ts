@@ -1,4 +1,5 @@
 import type { StatBlock } from './types';
+import type { JobId } from './data/jobs';
 import type { ExpeditionState } from './expedition';
 import { EXPEDITION_VERSION } from './expedition';
 
@@ -96,6 +97,58 @@ export type SaveData = SaveDataV6;
 const CURRENT_VERSION = 6;
 
 const defaultEquipment = (): CompanionRecord['equipment'] => ({ weapon: null, armor: null, trinket: null });
+
+/** 創角配點池：職業起始屬性之外可額外分配的點數 */
+export const CREATION_BONUS_POINTS = 3;
+
+/** 每職業的主角起始屬性與生命上限。劍士＝舊版預設（e2e 相容鐵則）。 */
+export const STARTING_PROFILE: Record<JobId, { stats: StatBlock; maxHp: number }> = {
+  swordsman: { stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 }, maxHp: 22 },
+  ranger: { stats: { str: 10, dex: 14, int: 10, cha: 10, con: 11 }, maxHp: 20 },
+  mage: { stats: { str: 8, dex: 10, int: 14, cha: 11, con: 9 }, maxHp: 17 },
+  cleric: { stats: { str: 10, dex: 9, int: 11, cha: 14, con: 12 }, maxHp: 21 },
+};
+
+export interface CharacterChoice {
+  job: JobId;
+  /** 額外配點（總和 ≤ CREATION_BONUS_POINTS，每項非負整數） */
+  allocation?: Partial<StatBlock>;
+  /** 起始特性 id（roster.ts TRAITS）；未選為 null */
+  trait?: string | null;
+}
+
+/** 依創角選擇建立主角記錄。劍士＋0 配點＋無特性 === defaultProtagonist()。 */
+export function createProtagonist(choice: CharacterChoice): CompanionRecord {
+  const profile = STARTING_PROFILE[choice.job];
+  if (!profile) throw new Error(`createProtagonist: 未知職業「${choice.job}」`);
+  const alloc = choice.allocation ?? {};
+  let total = 0;
+  for (const value of Object.values(alloc)) {
+    if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
+      throw new Error('創角配點每項必須為非負整數');
+    }
+    total += value ?? 0;
+  }
+  if (total > CREATION_BONUS_POINTS) {
+    throw new Error(`創角配點總和不可超過 ${CREATION_BONUS_POINTS}`);
+  }
+  const stats: StatBlock = { ...profile.stats };
+  for (const key of Object.keys(alloc) as Array<keyof StatBlock>) {
+    stats[key] += alloc[key] ?? 0;
+  }
+  return {
+    id: 'protagonist',
+    name: '你',
+    job: choice.job,
+    level: 1,
+    xp: 0,
+    stats,
+    maxHp: profile.maxHp,
+    injuredForTrips: 0,
+    trait: choice.trait ?? null,
+    equipment: defaultEquipment(),
+  };
+}
 
 function defaultProtagonist(): CompanionRecord {
   return {
@@ -197,13 +250,13 @@ function parseAndMigrate(raw: unknown): SaveData | null {
   return parsed;
 }
 
-export function newGame(now: number = Date.now()): SaveData {
+export function newGame(now: number = Date.now(), choice?: CharacterChoice): SaveData {
   return {
     version: 6,
     createdAt: now,
     gold: 200,
     flags: {},
-    protagonist: defaultProtagonist(),
+    protagonist: choice ? createProtagonist(choice) : defaultProtagonist(),
     companions: [],
     inventory: {},
     expedition: null,

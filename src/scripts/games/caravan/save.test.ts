@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SAVE_KEY, saveGame, loadGame, exportSave, importSave, newGame } from './save';
+import { SAVE_KEY, saveGame, loadGame, exportSave, importSave, newGame, createProtagonist, STARTING_PROFILE, CREATION_BONUS_POINTS } from './save';
 import { EXPEDITION_VERSION } from './expedition';
 
 // happy-dom 提供 localStorage；每案例清空
@@ -288,5 +288,53 @@ describe('save（版本化存檔）', () => {
   it('importSave：編碼後缺欄位的存檔回 null', () => {
     const encoded = btoa(encodeURIComponent(JSON.stringify({ version: 1 })));
     expect(importSave(encoded)).toBeNull();
+  });
+});
+
+describe('創角系統（createProtagonist / newGame config）', () => {
+  it('劍士起始＋0 配點＋無特性 === 舊版預設主角（e2e 相容鐵則）', () => {
+    const legacy = newGame(1000).protagonist;
+    const created = createProtagonist({ job: 'swordsman' });
+    expect(created).toEqual(legacy);
+  });
+
+  it('STARTING_PROFILE 四職業齊備、屬性有差異、maxHp 為正', () => {
+    for (const job of ['swordsman', 'ranger', 'mage', 'cleric'] as const) {
+      expect(STARTING_PROFILE[job]).toBeDefined();
+      expect(STARTING_PROFILE[job].maxHp).toBeGreaterThan(0);
+    }
+    expect(STARTING_PROFILE.mage.stats.int).toBeGreaterThan(STARTING_PROFILE.swordsman.stats.int);
+    expect(STARTING_PROFILE.ranger.stats.dex).toBeGreaterThan(STARTING_PROFILE.swordsman.stats.dex);
+  });
+
+  it('職業決定 job/起始屬性/maxHp/招式來源', () => {
+    const mage = createProtagonist({ job: 'mage' });
+    expect(mage.job).toBe('mage');
+    expect(mage.stats).toEqual(STARTING_PROFILE.mage.stats);
+    expect(mage.maxHp).toBe(STARTING_PROFILE.mage.maxHp);
+    expect(mage.id).toBe('protagonist');
+    expect(mage.level).toBe(1);
+  });
+
+  it('配點加到起始屬性；總和上限 CREATION_BONUS_POINTS；超過/負數丟錯', () => {
+    const c = createProtagonist({ job: 'swordsman', allocation: { str: 2, con: 1 } });
+    expect(c.stats.str).toBe(STARTING_PROFILE.swordsman.stats.str + 2);
+    expect(c.stats.con).toBe(STARTING_PROFILE.swordsman.stats.con + 1);
+    expect(() => createProtagonist({ job: 'swordsman', allocation: { str: CREATION_BONUS_POINTS + 1 } })).toThrow();
+    expect(() => createProtagonist({ job: 'swordsman', allocation: { str: -1 } })).toThrow();
+    expect(() => createProtagonist({ job: 'swordsman', allocation: { str: 1.5 } })).toThrow();
+  });
+
+  it('特性選擇寫入 protagonist.trait；未選為 null', () => {
+    expect(createProtagonist({ job: 'ranger', trait: 'seasoned' }).trait).toBe('seasoned');
+    expect(createProtagonist({ job: 'ranger' }).trait).toBeNull();
+  });
+
+  it('newGame 帶 config 用 createProtagonist；不帶維持舊預設', () => {
+    const custom = newGame(2000, { job: 'mage', allocation: { int: 2 } });
+    expect(custom.protagonist.job).toBe('mage');
+    expect(custom.protagonist.stats.int).toBe(STARTING_PROFILE.mage.stats.int + 2);
+    expect(custom.gold).toBe(200);
+    expect(newGame(2000).protagonist.job).toBe('swordsman');
   });
 });

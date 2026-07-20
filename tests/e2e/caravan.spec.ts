@@ -16,6 +16,7 @@ test.describe('商隊與劍：外殼流程', () => {
 
   test('開新檔 → 城鎮畫面顯示初始金幣 200', async ({ page }) => {
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
     await expect(page.locator('#screen-title')).toBeHidden();
     await expect(page.locator('#town-gold')).toHaveText('200');
@@ -23,6 +24,7 @@ test.describe('商隊與劍：外殼流程', () => {
 
   test('開新檔後重新整理 → 「繼續旅程」可見且回到城鎮', async ({ page }) => {
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('#btn-continue')).toBeVisible();
@@ -74,6 +76,7 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
   });
 
@@ -123,6 +126,7 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
     await page.click('#btn-training');
     await expect(page.locator('#screen-combat')).toBeVisible();
@@ -168,6 +172,7 @@ test.describe('商隊與劍：遠征系統', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
   }
 
@@ -325,6 +330,7 @@ test.describe('商隊與劍：經營系統', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
   }
 
@@ -608,6 +614,7 @@ test.describe('商隊與劍：裝備系統', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
   }
 
@@ -716,6 +723,7 @@ test.describe('商隊與劍：冒險編年史（M6）', () => {
     });
     await page.reload();
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await page.click('#btn-training');
     for (let i = 0; i < 40; i++) {
       if (await page.locator('#combat-result').isVisible()) break;
@@ -748,6 +756,7 @@ test.describe('商隊與劍：冒險編年史（M6）', () => {
     await page.reload();
     await expect(page.locator('#title-legacy')).toContainText('+30 G');
     await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#town-gold')).toHaveText('230');
     await page.evaluate(() => localStorage.removeItem('caravan-chronicle-v1'));
   });
@@ -809,5 +818,52 @@ test.describe('商隊與劍：Boss 激怒（M10）', () => {
       await page.waitForTimeout(150);
     }
     expect(enrageSeen, 'boss 半血應觸發激怒 log').toBe(true);
+  });
+});
+
+test.describe('商隊與劍：創角與背包', () => {
+  test('創角：選法師＋配點＋特性，主角依選擇建立', async ({ page }) => {
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await expect(page.locator('#screen-create')).toBeVisible();
+
+    await page.click('.create-job[data-job="mage"]');
+    // 加 2 點智力
+    const intRow = page.locator('#create-alloc-rows .alloc-row', { hasText: '智力' });
+    await intRow.locator('.alloc-plus').last().click();
+    await intRow.locator('.alloc-plus').last().click();
+    await expect(page.locator('#create-points')).toHaveText('1');
+    // 選博學特性
+    await page.locator('.create-trait-chip', { hasText: '博學' }).click();
+    await page.click('#btn-create-confirm');
+
+    await expect(page.locator('#screen-town')).toBeVisible();
+    const p = await page.evaluate(() => JSON.parse(localStorage.getItem('caravan-save-v1')!).protagonist);
+    expect(p.job).toBe('mage');
+    expect(p.stats.int).toBe(16); // 法師起始 14 + 2
+    expect(p.trait).toBe('learned');
+  });
+
+  test('背包分頁：買入的物品顯示於背包（含裝備標籤）', async ({ page }) => {
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+
+    await page.locator('.market-row[data-item-id="herb"] .buy-btn').click();
+    await page.locator('.market-row[data-item-id="ridgeleather-vest"] .buy-btn').click();
+    await page.click('.town-tab[data-town-tab="backpack"]');
+
+    const herbRow = page.locator('.backpack-row[data-item-id="herb"]');
+    await expect(herbRow.locator('.backpack-name')).toHaveText('藥草');
+    await expect(herbRow.locator('.backpack-count')).toHaveText('×1');
+    const gearRow = page.locator('.backpack-row[data-item-id="ridgeleather-vest"]');
+    await expect(gearRow.locator('.backpack-tag')).toHaveText('護甲');
   });
 });
