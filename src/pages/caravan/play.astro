@@ -138,6 +138,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <p id="trade-town-name" class="trade-town-name"></p>
       <div id="trade-list" class="trade-list"></div>
       <p class="trade-gold-label">預計交易收入：<span id="trade-gold-preview">0</span> G</p>
+      <div id="trade-buy-section" hidden>
+        <h3 class="trade-buy-title">本鎮特產</h3>
+        <div id="trade-buy-list" class="trade-list"></div>
+      </div>
       <button id="btn-trade-done" class="caravan-btn">前往結算</button>
     </section>
 
@@ -385,7 +389,16 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
       const name = document.createElement('span');
       name.className = 'market-name';
-      name.textContent = `${item.name}（持有 ${owned}）`;
+      if (item.art) {
+        const gicon = document.createElement('img');
+        gicon.className = 'gear-icon';
+        gicon.src = item.art;
+        gicon.alt = '';
+        gicon.width = 24; gicon.height = 24;
+        gicon.loading = 'lazy';
+        name.appendChild(gicon);
+      }
+      name.append(`${item.name}（持有 ${owned}）`);
       // M7 行情箭頭：與基準價比較
       const baseMod = STARTING_TOWN.priceModifiers[itemId] ?? 1;
       const nowMod = town.priceModifiers[itemId] ?? 1;
@@ -523,7 +536,16 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 
       const label = document.createElement('p');
       label.className = 'equip-slot-label';
-      label.textContent = `${EQUIP_SLOT_LABELS[slot]}：${equippedItem ? equippedItem.name : '（未裝備）'}`;
+      if (equippedItem?.art) {
+        const icon = document.createElement('img');
+        icon.className = 'gear-icon';
+        icon.src = equippedItem.art;
+        icon.alt = '';
+        icon.width = 28; icon.height = 28;
+        icon.loading = 'lazy';
+        label.appendChild(icon);
+      }
+      label.append(`${EQUIP_SLOT_LABELS[slot]}：${equippedItem ? equippedItem.name : '（未裝備）'}`);
       slotEl.appendChild(label);
 
       if (equippedItem) {
@@ -1207,6 +1229,47 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   let tradeCombined: Record<string, number> = {};
   let tradeSoldIds: Set<string> = new Set();
 
+  /** M10 異鎮採購：抵達鎮的 stock 裝備可現場買入（鹽泉城稀有裝的正規入手途徑） */
+  function renderTradeBuy(): void {
+    const section = document.getElementById('trade-buy-section')!;
+    const list = document.getElementById('trade-buy-list')!;
+    list.innerHTML = '';
+    if (!save || !tradeTown) { section.hidden = true; return; }
+    const goods = tradeTown.stock.map((id) => ITEMS[id]).filter((it) => it?.equip);
+    section.hidden = goods.length === 0;
+    for (const item of goods) {
+      const price = buyPrice(tradeTown, item.id);
+      const row = document.createElement('div');
+      row.className = 'market-row';
+      row.dataset.itemId = item.id;
+      const name = document.createElement('span');
+      name.className = 'market-name';
+      if (item.art) {
+        const icon = document.createElement('img');
+        icon.className = 'gear-icon';
+        icon.src = item.art; icon.alt = '';
+        icon.width = 24; icon.height = 24; icon.loading = 'lazy';
+        name.appendChild(icon);
+      }
+      const lv = item.equip!.minLevel ? `（Lv${item.equip!.minLevel}）` : '';
+      name.append(`${item.name}${lv}`);
+      const buyBtn = document.createElement('button');
+      buyBtn.type = 'button';
+      buyBtn.className = 'caravan-btn buy-btn';
+      buyBtn.textContent = `買入 ${price} G`;
+      buyBtn.disabled = save.gold < price;
+      buyBtn.addEventListener('click', () => {
+        if (!save || save.gold < price) return;
+        save.gold -= price;
+        save.inventory[item.id] = (save.inventory[item.id] ?? 0) + 1;
+        saveGame(save);
+        renderTradeBuy();
+      });
+      row.append(name, buyBtn);
+      list.appendChild(row);
+    }
+  }
+
   function enterTradePhase(): void {
     if (!expedition || !save) return;
     const townId = expedition.destinationTownId!;
@@ -1260,6 +1323,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       tradeListEl.appendChild(row);
     }
     tradeGoldPreviewEl.textContent = String(Math.round(goldPreview * tradeCondFactor)); // M8 旅況倍率（與結算同式）
+    renderTradeBuy();
   }
 
   btnTradeDone.addEventListener('click', () => {
@@ -1546,6 +1610,13 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .market-trend.up { color: #a4453a; }
   .market-trend.down { color: #3a7a4e; }
   .trait-tag { display: block; margin-top: 0.2rem; font-size: 0.8rem; color: #6b5f4c; }
+  .trade-buy-title { font-size: 1rem; letter-spacing: 0.2em; margin: 1.2rem 0 0.5rem; color: #4a3420; }
+  #trade-buy-section[hidden] { display: none; }
+  .gear-icon {
+    width: 24px; height: 24px; object-fit: cover; vertical-align: -6px;
+    margin-right: 6px; border: 1px solid #cfc6b0; border-radius: 4px;
+  }
+  .equip-slot-label .gear-icon { width: 28px; height: 28px; }
   .screen-wide { max-width: 46rem; width: 100%; }
   /* ---- M5 美術 ---- */
   .title-art {

@@ -36,8 +36,8 @@ describe('caravan content data integrity（M3 Task 4）', () => {
   // ---------------------------------------------------------------------
   // items.ts
   // ---------------------------------------------------------------------
-  it('ITEMS 有 23 種（M3 12 + M5 內容擴充 11），且 ore 存在（Task 3 寶箱房寫死給 ore）', () => {
-    expect(Object.keys(ITEMS).length).toBe(23);
+  it('ITEMS 有 29 種（M3 12 + M5 11 + M10 稀有裝 6），且 ore 存在（Task 3 寶箱房寫死給 ore）', () => {
+    expect(Object.keys(ITEMS).length).toBe(29);
     expect(ITEMS.ore).toBeDefined();
     for (const item of Object.values(ITEMS)) {
       expect(item.id).toBeTruthy();
@@ -69,12 +69,12 @@ describe('caravan content data integrity（M3 Task 4）', () => {
     }
   });
 
-  it('裝備物品共 12 件（武器 4／護甲 4／飾品 4，飾品含既有 2 個 boss 遺寶，M5）', () => {
+  it('裝備物品共 18 件（M5 12＋M10 稀有 6：武器 7／護甲 5／飾品 6）', () => {
     const equipItems = Object.values(ITEMS).filter((item) => item.equip);
-    expect(equipItems.length).toBe(12);
-    expect(equipItems.filter((i) => i.equip!.slot === 'weapon').length).toBe(4);
-    expect(equipItems.filter((i) => i.equip!.slot === 'armor').length).toBe(4);
-    expect(equipItems.filter((i) => i.equip!.slot === 'trinket').length).toBe(4);
+    expect(equipItems.length).toBe(18);
+    expect(equipItems.filter((i) => i.equip!.slot === 'weapon').length).toBe(7);
+    expect(equipItems.filter((i) => i.equip!.slot === 'armor').length).toBe(5);
+    expect(equipItems.filter((i) => i.equip!.slot === 'trinket').length).toBe(6);
   });
 
   // ---------------------------------------------------------------------
@@ -581,13 +581,58 @@ describe('M5 平衡收尾 sanity', () => {
     expect(avgGold('enc_salt_crystals')).toBeGreaterThan(avgGold('enc_mine_spiders'));
   });
 
-  it('裝備價格落在收入曲線內：武器 60-120G（買得起、不白送），所有裝備 ≤120G', () => {
+  it('裝備價格落在收入曲線內：一般裝 ≤120G；Lv3 稀有裝 121-160G（終局區段，M10）', () => {
     for (const item of Object.values(ITEMS)) {
       if (!item.equip) continue;
-      expect(item.value, `${item.id} 裝備價超出負擔區間`).toBeLessThanOrEqual(120);
-      if (item.equip.slot === 'weapon') {
-        expect(item.value, `${item.id} 武器價低於下限`).toBeGreaterThanOrEqual(60);
+      if (item.equip.minLevel === 3) {
+        expect(item.value, `${item.id} 稀有裝價位超界`).toBeGreaterThan(120);
+        expect(item.value, `${item.id} 稀有裝價位超界`).toBeLessThanOrEqual(160);
+      } else {
+        expect(item.value, `${item.id} 一般裝備價超出負擔區間`).toBeLessThanOrEqual(120);
+        if (item.equip.slot === 'weapon') {
+          expect(item.value, `${item.id} 武器價低於下限`).toBeGreaterThanOrEqual(60);
+        }
       }
+    }
+  });
+});
+
+describe('M10 稀有裝備與裝備 icon', () => {
+  it('裝備 18 件（M5 12＋M10 稀有 6）；稀有 3 件在鹽泉城 stock、3 件在稀有事件獎勵', () => {
+    const equipItems = Object.values(ITEMS).filter((i) => i.equip);
+    expect(equipItems.length).toBe(18);
+    const salt = TOWNS['salt-spring-city'];
+    for (const id of ['brine-crystal-staff', 'pilgrim-warded-cloak', 'saltglass-talisman']) {
+      expect(ITEMS[id]?.equip, `${id} 應為裝備`).toBeDefined();
+      expect(salt.stock, `${id} 應在鹽泉城 stock`).toContain(id);
+    }
+    const rewardOf = (evId: string): string[] => {
+      const card = EVENTS.find((e) => e.id === evId)!;
+      return card.options.flatMap((o) => [...o.success, ...(o.failure ?? [])])
+        .filter((fx) => fx.type === 'item').map((fx) => (fx as { itemId: string }).itemId);
+    };
+    expect(rewardOf('ev_rare_treasure_map')).toContain('ancient-king-blade');
+    expect(rewardOf('ev_rare_wandering_swordsaint')).toContain('swordsaint-bokken');
+    expect(rewardOf('ev_rare_wounded_messenger')).toContain('royal-courier-sigil');
+  });
+
+  it('稀有裝備皆 Lv3 需求且價格 121-160（終局裝，區隔一般裝 ≤120）', () => {
+    for (const id of ['ancient-king-blade', 'swordsaint-bokken', 'royal-courier-sigil', 'brine-crystal-staff', 'pilgrim-warded-cloak', 'saltglass-talisman']) {
+      const item = ITEMS[id];
+      expect(item.equip!.minLevel, `${id} 應為 Lv3 裝`).toBe(3);
+      expect(item.value).toBeGreaterThan(120);
+      expect(item.value).toBeLessThanOrEqual(160);
+    }
+  });
+
+  it('全部 18 件裝備皆有 icon art 且檔案存在（M10 美術統一）', () => {
+    for (const item of Object.values(ITEMS)) {
+      if (!item.equip) continue;
+      expect(item.art, `裝備 ${item.id} 缺 art 欄位`).toBeTruthy();
+      expect(
+        existsSync(join(process.cwd(), 'public', item.art!)),
+        `裝備 ${item.id} icon 檔案不存在：${item.art}`
+      ).toBe(true);
     }
   });
 });

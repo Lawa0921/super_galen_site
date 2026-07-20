@@ -48,7 +48,7 @@ export const TOWNS: Record<string, TownDef> = {
       'saltforged-mail': 1.3,
       'brinewarded-vestment': 1.3,
     },
-    stock: ['salt', 'salt-crystal-blade', 'brine-blessed-mace', 'saltforged-mail', 'brinewarded-vestment', 'herb', 'torch'],
+    stock: ['salt', 'salt-crystal-blade', 'brine-blessed-mace', 'saltforged-mail', 'brinewarded-vestment', 'brine-crystal-staff', 'pilgrim-warded-cloak', 'saltglass-talisman', 'herb', 'torch'],
   },
 };
 

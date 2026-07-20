@@ -998,6 +998,7 @@ export const EVENTS: EventCard[] = [
         label: '循圖尋寶（智力）',
         check: { stat: 'int', dc: 14 },
         success: [
+          { type: 'item', itemId: 'ancient-king-blade', count: 1 },
           { type: 'gold', amount: 60 },
           { type: 'item', itemId: 'ore', count: 2 },
           { type: 'log', text: '你按圖索驥，竟真的在標記處挖出一箱埋藏多年的財寶！' },
@@ -1028,6 +1029,7 @@ export const EVENTS: EventCard[] = [
         label: '拔劍應戰（力量）',
         check: { stat: 'str', dc: 15 },
         success: [
+          { type: 'item', itemId: 'swordsaint-bokken', count: 1 },
           { type: 'gold', amount: 40 },
           { type: 'log', text: '你堪堪接下劍聖數招，他撫掌大笑，留下一袋銀幣以示嘉許，飄然遠去。' },
         ],
@@ -1086,6 +1088,7 @@ export const EVENTS: EventCard[] = [
         label: '施救並代為送信（體質）',
         check: { stat: 'con', dc: 13 },
         success: [
+          { type: 'item', itemId: 'royal-courier-sigil', count: 1 },
           { type: 'gold', amount: 45 },
           { type: 'log', text: '你妥善包紮傷口並代為送達信件，收件人重重酬謝了商隊。' },
         ],

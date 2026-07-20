@@ -33,6 +33,10 @@ export interface PartyMember extends CombatantBase { isProtagonist?: boolean; }
 export interface EnemyUnit extends CombatantBase {
   intents: Array<{ weight: number; moveId: string }>;
   loot?: { gold: [number, number]; itemId?: string; itemChance?: number };
+  /** Boss 激怒（M10）：HP 比例 ≤ threshold 時觸發一次，自我強化 potency（永續） */
+  enrage?: { threshold: number; potency: number };
+  /** runtime：激怒已觸發 */
+  enraged?: boolean;
 }
 
 export interface CombatEvent { kind: 'action'|'damage'|'heal'|'down'|'info'|'retreat'|'victory'|'defeat'; text: string; }
@@ -128,6 +132,14 @@ function checkOutcome(state: CombatState): void {
 function applyDamage(state: CombatState, target: CombatantBase, amount: number): void {
   target.hp = Math.max(0, target.hp - amount);
   if (target.hp === 0) state.log.push({ kind: 'down', text: `${target.name}倒下了！` });
+  // M10 Boss 激怒：半血觸發一次，自我強化（永續）
+  const boss = target as EnemyUnit;
+  if (boss.enrage && !boss.enraged && target.hp > 0 && target.hp <= target.maxHp * boss.enrage.threshold) {
+    boss.enraged = true;
+    target.statuses ??= [];
+    target.statuses.push({ kind: 'strength', remaining: 99, potency: boss.enrage.potency });
+    state.log.push({ kind: 'info', text: `${target.name}被逼入絕境，發出震耳咆哮——激怒了！攻勢變得更加兇猛！` });
+  }
 }
 
 const STATUS_LABEL: Record<StatusKind, string> = { poison: '中毒', stun: '暈眩', strength: '強化' };

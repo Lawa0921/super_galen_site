@@ -338,3 +338,43 @@ describe('戰鬥狀態效果（M7）', () => {
     expect(boss.moves.some((m) => m.applyStatus?.kind === 'stun')).toBe(true);
   });
 });
+
+describe('Boss 激怒機制（M10）', () => {
+  const mkHero = (): PartyMember[] => [{
+    id: 'hero', name: '英雄', stats: { str: 16, dex: 20, int: 10, cha: 10, con: 14 },
+    maxHp: 30, hp: 30, defense: 5, isProtagonist: true,
+    moves: [{ id: 'hit', name: '揮擊', kind: 'attack', target: 'enemy', hitStat: 'str', damage: { dice: 1, sides: 6, bonusStat: 'str' }, narration: '{actor}攻擊{target}，{amount} 傷害' }],
+  }];
+  const mkBoss = (): EnemyUnit => ({
+    id: 'boss', name: '魔王', stats: { str: 14, dex: 1, int: 8, cha: 8, con: 14 },
+    maxHp: 20, hp: 20, defense: 1,
+    enrage: { threshold: 0.5, potency: 3 },
+    moves: [{ id: 'smash', name: '猛擊', kind: 'attack', target: 'enemy', hitStat: 'str', damage: { dice: 1, sides: 6 }, narration: '{actor}猛擊{target}，{amount} 傷害' }],
+    intents: [{ weight: 1, moveId: 'smash' }],
+  });
+
+  it('HP 降至門檻以下觸發激怒（獲得強化＋log），且只觸發一次', () => {
+    const state = startCombat(createRng(9), mkHero(), [mkBoss()]);
+    const boss = state.enemies[0];
+    state.turnIndex = state.order.indexOf('hero');
+    // 打到半血以下（scriptedRng：命中骰 15、傷害骰足以過半）
+    partyAct(scriptedRng([15, 6]), state, 'hero', 'hit', 'boss'); // 6+3(str16 mod)=9 → hp 11
+    expect(boss.statuses?.some((s) => s.kind === 'strength')).toBeFalsy(); // 11/20 > 0.5 未觸發
+    state.turnIndex = state.order.indexOf('hero');
+    partyAct(scriptedRng([15, 3]), state, 'hero', 'hit', 'boss'); // -6 → hp 5 ≤ 50%
+    expect(boss.statuses?.some((s) => s.kind === 'strength')).toBe(true);
+    expect(state.log.some((l) => l.text.includes('激怒'))).toBe(true);
+    const strengthCount = boss.statuses!.filter((s) => s.kind === 'strength').length;
+    state.turnIndex = state.order.indexOf('hero');
+    partyAct(scriptedRng([15, 1]), state, 'hero', 'hit', 'boss'); // 再打不重複觸發
+    expect(boss.statuses!.filter((s) => s.kind === 'strength').length).toBe(strengthCount);
+  });
+
+  it('三大 boss 資料皆帶 enrage；一般小怪不帶', async () => {
+    const { ENCOUNTERS } = await import('./data/enemies');
+    for (const encId of ['enc_mine_overseer', 'enc_goblin_den_chief', 'enc_salt_cavern_boss']) {
+      expect(ENCOUNTERS[encId]()[0].enrage, `${encId} 缺 enrage`).toBeDefined();
+    }
+    expect(ENCOUNTERS.enc_wolf_pair()[0].enrage).toBeUndefined();
+  });
+});
