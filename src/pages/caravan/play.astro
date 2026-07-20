@@ -25,6 +25,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         <span class="hud-stat"><span class="hud-label">聲望</span><b id="hud-rep">0</b></span>
       </div>
     </div>
+    <!-- 遊戲畫面框：所有場景在此固定框內切換（全螢幕遊戲視窗，非置中卡片） -->
+    <div class="game-frame">
     <!-- 標題畫面 -->
     <section id="screen-title" class="screen">
       <img class="title-art" src="/assets/games/caravan/title-banner.webp" alt="" width="1280" height="720" loading="eager" />
@@ -122,9 +124,11 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <p id="exp-progress" class="exp-progress"></p>
       <div id="event-card" class="event-card" hidden>
         <img id="event-art" class="event-art" alt="" width="960" height="720" loading="lazy" hidden />
-        <h3 id="event-title" class="event-title"></h3>
-        <p id="event-body" class="event-body"></p>
-        <div id="event-options" class="event-options"></div>
+        <div class="event-textbox">
+          <h3 id="event-title" class="event-title"></h3>
+          <p id="event-body" class="event-body"></p>
+          <div id="event-options" class="event-options"></div>
+        </div>
       </div>
       <div id="room-choices" class="room-choices"></div>
       <p id="check-result" class="check-result" hidden></p>
@@ -191,6 +195,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <ul id="settle-items" class="settle-items"></ul>
       <button id="btn-settle-back" class="caravan-btn">返回城鎮</button>
     </section>
+    </div>
   </main>
   <ArcadeBgm track="/assets/games/bgm/caravan.mp3" />
 </BaseLayout>
@@ -1745,8 +1750,6 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     from { transform: scale(1.04) translate(-0.6%, -0.4%); }
     to   { transform: scale(1.13) translate(0.6%, 0.5%); }
   }
-  .caravan-root > *:not(.game-backdrop) { position: relative; z-index: 1; }
-
   /* ---- 常駐 HUD 狀態列 ---- */
   .game-hud {
     position: fixed; top: 0; left: 0; right: 0; z-index: 15;
@@ -1778,37 +1781,45 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     to   { opacity: 1; transform: none; }
   }
 
-  /* ---- 遊戲面板（screen）：墨面板＋金雙線框＋角飾 ---- */
-  .screen {
-    text-align: center;
-    padding: 2.3rem 2.4rem 2.6rem;
-    max-width: 34rem;
-    width: 100%;
+  /* ---- 全螢幕遊戲視窗：墨面板＋金雙線框＋四角金飾。所有場景在框內切換 ---- */
+  .game-frame {
+    position: relative; z-index: 1;
+    width: min(1040px, 96vw);
+    height: calc(100vh - 3.4rem);
+    margin: 3.4rem auto 0;
     background:
-      linear-gradient(180deg, rgba(46, 30, 16, 0.55), transparent 120px),
+      linear-gradient(180deg, rgba(46, 30, 16, 0.5), transparent 180px),
       var(--panel);
     border: 1px solid var(--gold);
-    border-radius: 4px;
+    border-radius: 5px;
     box-shadow:
       inset 0 0 0 3px rgba(10, 6, 3, 0.6),
       inset 0 0 0 4px var(--gold-dim),
-      inset 0 0 60px rgba(0, 0, 0, 0.45),
-      0 24px 60px rgba(0, 0, 0, 0.75);
+      inset 0 0 90px rgba(0, 0, 0, 0.5),
+      0 20px 60px rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(2px);
+    overflow: hidden;
   }
-  /* 角飾：左上/右下金色 L 角 */
-  .screen { position: relative; }
-  .screen::before, .screen::after {
-    content: '';
-    position: absolute;
-    width: 26px; height: 26px;
+  .game-frame::before, .game-frame::after {
+    content: ''; position: absolute; z-index: 4;
+    width: 30px; height: 30px;
     border: 2px solid var(--gold-bright);
     pointer-events: none;
   }
-  .screen::before { top: 7px; left: 7px; border-right: none; border-bottom: none; }
-  .screen::after { bottom: 7px; right: 7px; border-left: none; border-top: none; }
+  .game-frame::before { top: 9px; left: 9px; border-right: none; border-bottom: none; }
+  .game-frame::after { bottom: 9px; right: 9px; border-left: none; border-top: none; }
+
+  /* 場景＝框內滿版分頁；內容多時框內捲動 */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    text-align: center;
+    padding: 1.9rem clamp(1rem, 3.5vw, 2.6rem) 96px;
+    overflow-y: auto; overflow-x: hidden;
+  }
   .screen[hidden] { display: none; }
-  .screen-wide { max-width: 46rem; }
+  #screen-title { justify-content: center; }
+  .screen-wide, .town-panel { width: 100%; }
 
   /* ---- 標題畫面 ---- */
   .game-title {
@@ -2029,48 +2040,72 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     box-shadow: 0 0 10px rgba(201, 163, 92, 0.3);
   }
 
-  /* 事件卡＝視覺小說窗：滿幅插圖＋亮紙文字窗（閱讀優先） */
+  /* 遠征畫面＝視覺小說：插圖填滿舞台、敘事停靠底部暗框（VN textbox） */
+  #screen-expedition { padding-bottom: 1.6rem; }
+  .exp-progress { order: -1; }
   .event-card {
+    position: relative;
+    flex: 1; min-height: 15rem;
     border: 1px solid var(--gold);
     border-radius: 4px;
-    background: var(--page);
-    color: var(--ink);
-    padding: 0 0 1.25rem;
-    text-align: left;
-    margin-bottom: 1rem;
+    background: #0b0704;
     overflow: hidden;
-    box-shadow: inset 0 0 0 3px rgba(10, 6, 3, 0.25), 0 14px 40px rgba(0, 0, 0, 0.6);
+    margin-bottom: 0.5rem;
+    box-shadow: inset 0 0 0 2px rgba(10, 6, 3, 0.5), 0 14px 40px rgba(0, 0, 0, 0.6);
   }
+  .event-card[hidden] { display: none; }
+  /* 插圖＝整個舞台背景 */
   .event-art {
-    display: block; width: 100%; height: auto; max-height: 235px; object-fit: cover;
-    border: none; border-bottom: 2px solid var(--gold); border-radius: 0; margin: 0 0 1rem;
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    border: none; border-radius: 0; margin: 0; display: block;
   }
   .event-art[hidden] { display: none; }
-  .event-title { font-size: 1.35rem; font-weight: 900; margin: 0 0 0.6rem; letter-spacing: 0.12em; padding: 0 1.4rem; color: var(--cinnabar-deep); }
-  .event-body { line-height: 1.95; margin: 0 0 1rem; padding: 0 1.4rem; color: var(--ink); }
-  .event-options { display: flex; flex-direction: column; gap: 0.55rem; padding: 0 1.4rem; }
-  .event-opt { text-align: left; letter-spacing: 0.06em; }
-  /* 亮紙窗內的按鈕改亮面變體（暗鈕貼亮紙突兀） */
-  .event-card .caravan-btn, .check-result .caravan-btn {
-    background: linear-gradient(180deg, #fffdf6, #f0e7d2);
-    border-color: var(--ink);
-    color: var(--ink);
-    box-shadow: 0 1px 0 rgba(43, 38, 32, 0.4), 0 2px 6px rgba(43, 38, 32, 0.2);
+  /* 底部停靠對話框＋名牌 */
+  .event-textbox {
+    position: absolute; left: 0.9rem; right: 0.9rem; bottom: 0.9rem;
+    z-index: 2;
+    background: linear-gradient(180deg, rgba(14, 9, 5, 0.82), rgba(10, 6, 3, 0.95));
+    border: 1px solid var(--gold);
+    border-radius: 5px;
+    padding: 1.5rem 1.4rem 1.1rem;
+    text-align: left;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(232, 200, 126, 0.15);
+    backdrop-filter: blur(3px);
   }
-  .event-card .caravan-btn:hover, .check-result .caravan-btn:hover { background: var(--ink); color: var(--page); }
-  .event-card .caravan-btn:disabled { background: #efe6d0; color: #b7ac98; border-color: #d8ccb2; }
-  .room-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: 1rem; }
-  .room-choices:empty { display: none; }
+  .event-title {
+    position: absolute; top: -0.95rem; left: 1rem;
+    margin: 0; padding: 0.28rem 1.1rem;
+    font-size: 1.15rem; font-weight: 700; letter-spacing: 0.1em;
+    color: #fff3e4;
+    background: linear-gradient(180deg, #c4623a, var(--cinnabar-deep));
+    border: 1px solid #e8926b; border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  }
+  .event-body { line-height: 1.95; margin: 0.3rem 0 1rem; color: var(--text); font-size: 1.02rem; }
+  .event-options { display: flex; flex-direction: column; gap: 0.55rem; }
+  .event-opt { text-align: left; letter-spacing: 0.06em; }
+  .room-choices { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 0.9rem; flex: 1; margin-bottom: 1rem; }
+  .room-choices:empty { display: none; flex: 0; }
   .check-result {
     padding: 0.7rem 1rem; margin-bottom: 1rem;
-    background: var(--page); color: var(--ink);
-    border-left: 3px solid var(--cinnabar);
+    background: rgba(0, 0, 0, 0.55); color: var(--text);
+    border: 1px solid var(--gold-dim); border-left: 3px solid var(--cinnabar); border-radius: 3px;
   }
 
-  /* ---- 戰鬥：戰場面板＋技能牌指令盤 ---- */
-  .combat-field { display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-  .combat-side { display: flex; flex-direction: column; gap: 0.6rem; min-width: 9.5rem; }
+  /* ---- 戰鬥＝JRPG 戰場：敵方列在上、我方列在下、指令窗停靠底部 ---- */
+  #screen-combat { padding-bottom: 1.6rem; }
+  .combat-field {
+    display: flex; flex-direction: column; gap: 1rem;
+    align-items: center; margin-bottom: 0.8rem;
+  }
+  .combat-column { width: 100%; }
+  .combat-side {
+    display: flex; flex-direction: row; flex-wrap: wrap;
+    justify-content: center; gap: 0.8rem;
+  }
   .combat-unit {
+    width: 12rem;
     border: 1px solid var(--gold-dim);
     border-top: 3px solid var(--text-dim);
     border-radius: 3px;
