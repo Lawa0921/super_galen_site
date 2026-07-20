@@ -1912,21 +1912,24 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
              page 紙窗 / blood 敵 / forest 我
      ===================================================================== */
   .caravan-root {
-    --void: #120c07;
-    --panel: rgba(26, 17, 10, 0.90);
-    --panel-deep: rgba(14, 9, 5, 0.55);
-    --gold: #c9a35c;
-    --gold-bright: #e8c87e;
-    --gold-dim: rgba(201, 163, 92, 0.38);
-    --text: #f0e6cf;
-    --text-dim: #b8a98a;
-    --cinnabar: #c4623a;
-    --cinnabar-deep: #8a3c1e;
-    --page: #f7f0df;
-    --ink: #2b2620;
-    --ink-soft: #5c5344;
-    --blood: #b04a4a;
-    --forest: #5d9367;
+    /* 「商隊帳冊」設計系統：墨底＋茶褐克制結構＋硃砂印紅招牌強調＋宣紙閱讀島 */
+    --void: #17130d;            /* 溫墨底 */
+    --panel: rgba(30, 23, 15, 0.90);
+    --panel-deep: rgba(18, 13, 8, 0.52);
+    --gold: #9c8a66;            /* 結構線＝茶褐（原金框降級） */
+    --gold-bright: #ece2cd;     /* 標題＝暖象牙（非飽和金） */
+    --gold-dim: rgba(156, 138, 102, 0.30);
+    --seal: #b5342b;            /* 硃砂印紅＝唯一強調色/招牌印章 */
+    --seal-bright: #d24a3a;
+    --text: #e9e0cd;
+    --text-dim: #b0a184;
+    --cinnabar: #b5342b;
+    --cinnabar-deep: #8a2b22;
+    --page: #ece2cc;            /* 宣紙閱讀島 */
+    --ink: #241c12;
+    --ink-soft: #5a4c38;
+    --blood: #b0473f;
+    --forest: #6f9b86;          /* 青玉＝我方/正向 */
 
     min-height: 100vh;
     display: flex;
@@ -2075,16 +2078,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   }
   .caravan-btn:disabled:hover { background: rgba(20, 13, 7, 0.6); color: rgba(184, 169, 138, 0.4); }
   #btn-new-game, #btn-continue, #btn-depart, #btn-trade-done, #btn-settle-back {
-    background: linear-gradient(180deg, #d06a40, var(--cinnabar-deep));
-    border-color: #e8926b;
-    color: #fff3e4;
-    text-shadow: 0 1px 2px rgba(80, 28, 8, 0.7);
-    box-shadow: inset 0 1px 0 rgba(255, 200, 160, 0.35), 0 3px 10px rgba(0, 0, 0, 0.55), 0 0 18px rgba(196, 98, 58, 0.25);
+    background: var(--seal);
+    border-color: var(--seal-bright);
+    color: #f7ece0; letter-spacing: 0.26em;
+    text-shadow: 0 1px 2px rgba(70, 16, 12, 0.6);
+    box-shadow: inset 0 0 0 1px rgba(247, 236, 224, 0.18), 0 3px 10px rgba(0, 0, 0, 0.5);
   }
   #btn-new-game:hover, #btn-continue:hover, #btn-depart:hover, #btn-trade-done:hover, #btn-settle-back:hover {
-    background: linear-gradient(180deg, #e07a4e, #a04a26);
-    color: #fff3e4;
-    box-shadow: 0 0 22px rgba(224, 122, 78, 0.5), 0 4px 12px rgba(0, 0, 0, 0.55);
+    background: var(--seal-bright); color: #fff;
+    box-shadow: 0 0 20px rgba(181, 52, 43, 0.5), 0 4px 12px rgba(0, 0, 0, 0.5);
   }
 
   /* ---- 城鎮 ---- */
@@ -2118,10 +2120,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   }
   .town-tab:hover { color: var(--gold-bright); }
   .town-tab.active {
-    background: linear-gradient(180deg, rgba(201, 163, 92, 0.22), rgba(26, 17, 10, 0.2));
+    background: linear-gradient(180deg, rgba(181, 52, 43, 0.16), rgba(30, 23, 15, 0.2));
     color: var(--gold-bright);
     border-color: var(--gold);
-    border-top: 3px solid var(--gold-bright);
+    border-top: 3px solid var(--seal);
     font-weight: 700;
     padding-top: 0.38rem;
   }
@@ -2213,14 +2215,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .quest-title::after, .settle-title::after, .trade-title::after, .combat-title::after {
     content: '';
     position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
-    width: 7rem; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+    width: 5rem; height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--seal-bright) 30%, var(--seal) 70%, transparent);
   }
   .quest-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
   .quest-row { display: flex; align-items: stretch; gap: 0.5rem; }
   .quest-item { flex: 1; padding: 0.8rem 1rem; text-align: left; cursor: pointer; font: inherit; color: var(--text);
     transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; }
-  .quest-item:hover { transform: translateY(-1px); border-left-color: var(--gold-bright); box-shadow: 0 0 14px rgba(201, 163, 92, 0.25); }
+  .quest-item:hover { transform: translateY(-1px); border-left-color: var(--seal); box-shadow: 0 0 14px rgba(181, 52, 43, 0.22); }
   .quest-name { font-weight: 700; margin: 0 0 0.25rem; color: var(--gold-bright); }
   .quest-kind { font-size: 0.85rem; color: var(--text-dim); margin: 0; }
   .quest-outfit-btn { font-size: 0.8rem; padding: 0.5rem 0.9rem; white-space: nowrap; }
@@ -2274,26 +2276,37 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .event-textbox {
     position: absolute; left: 0.9rem; right: 0.9rem; bottom: 0.9rem;
     z-index: 2;
-    background: linear-gradient(180deg, rgba(14, 9, 5, 0.82), rgba(10, 6, 3, 0.95));
-    border: 1px solid var(--gold);
-    border-radius: 5px;
-    padding: 1.5rem 1.4rem 1.1rem;
+    background:
+      repeating-linear-gradient(0deg, rgba(36, 28, 18, 0.018) 0 2px, transparent 2px 4px),
+      linear-gradient(178deg, #f1e8d4, var(--page));
+    color: var(--ink);
+    border: 1px solid var(--seal);
+    border-radius: 3px;
+    padding: 1.7rem 1.4rem 1.1rem;
     text-align: left;
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(232, 200, 126, 0.15);
-    backdrop-filter: blur(3px);
+    box-shadow: 0 -4px 26px rgba(0, 0, 0, 0.55), inset 0 0 0 3px rgba(236, 226, 204, 0.7);
   }
+  /* 名牌＝硃砂印章 */
   .event-title {
-    position: absolute; top: -0.95rem; left: 1rem;
-    margin: 0; padding: 0.28rem 1.1rem;
-    font-size: 1.15rem; font-weight: 700; letter-spacing: 0.1em;
-    color: #fff3e4;
-    background: linear-gradient(180deg, #c4623a, var(--cinnabar-deep));
-    border: 1px solid #e8926b; border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+    position: absolute; top: -0.9rem; left: 1rem;
+    margin: 0; padding: 0.3rem 1.1rem;
+    font-size: 1.12rem; font-weight: 700; letter-spacing: 0.14em;
+    color: #f7ece0;
+    background: var(--seal);
+    border: 1px solid var(--seal-bright); border-radius: 2px;
+    box-shadow: 0 3px 10px rgba(90, 20, 15, 0.5), inset 0 0 0 1px rgba(247, 236, 224, 0.25);
   }
-  .event-body { line-height: 1.95; margin: 0.3rem 0 1rem; color: var(--text); font-size: 1.02rem; }
+  .event-body { line-height: 1.95; margin: 0.35rem 0 1rem; color: var(--ink); font-size: 1.02rem; }
   .event-options { display: flex; flex-direction: column; gap: 0.55rem; }
   .event-opt { text-align: left; letter-spacing: 0.06em; }
+  /* 宣紙島上的按鈕改亮面（暗鈕貼紙面突兀） */
+  .event-textbox .caravan-btn {
+    background: linear-gradient(180deg, #fbf4e2, #e4d8bd);
+    border-color: var(--ink-soft); color: var(--ink);
+    box-shadow: 0 1px 0 rgba(36, 28, 18, 0.35), 0 2px 5px rgba(36, 28, 18, 0.18);
+  }
+  .event-textbox .caravan-btn:hover { background: var(--seal); border-color: var(--seal-bright); color: #f7ece0; }
+  .event-textbox .caravan-btn:disabled { background: #e0d4b8; color: #9a8f76; border-color: #cfc2a4; }
   .room-choices { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 0.9rem; flex: 1; margin-bottom: 1rem; }
   .room-choices:empty { display: none; flex: 0; }
   .check-result {
@@ -2343,7 +2356,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .combat-targets { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem; }
   .combat-targets:empty { display: none; }
   .target-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; }
-  .target-selected { background: linear-gradient(180deg, #e2c078, var(--gold)); color: #241505; }
+  .target-selected { background: var(--seal); border-color: var(--seal-bright); color: #f7ece0; }
   .combat-log {
     max-width: 30rem; max-height: 8.5rem; overflow-y: auto;
     margin: 0 auto 1rem;
@@ -2360,18 +2373,19 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     padding: 0.85rem 1.35rem;
     min-width: 6.2rem;
     border: 1px solid var(--gold);
-    border-radius: 5px;
+    border-radius: 4px;
     background:
-      linear-gradient(180deg, rgba(201, 163, 92, 0.16), transparent 45%),
-      linear-gradient(180deg, rgba(52, 34, 17, 0.95), rgba(24, 15, 8, 0.98));
+      linear-gradient(180deg, rgba(156, 138, 102, 0.12), transparent 45%),
+      linear-gradient(180deg, rgba(48, 37, 24, 0.95), rgba(22, 16, 9, 0.98));
     letter-spacing: 0.22em;
     font-size: 1rem;
-    box-shadow: inset 0 1px 0 rgba(232, 200, 126, 0.3), inset 0 -6px 12px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.55);
+    box-shadow: inset 0 1px 0 rgba(236, 226, 204, 0.14), inset 0 -6px 12px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.55);
   }
   .move-btn:hover {
-    background: linear-gradient(180deg, #e6c67e, #b8924e);
-    color: #241505;
-    box-shadow: 0 0 22px rgba(201, 163, 92, 0.5), 0 5px 12px rgba(0, 0, 0, 0.5);
+    background: var(--seal);
+    border-color: var(--seal-bright);
+    color: #f7ece0;
+    box-shadow: 0 0 20px rgba(181, 52, 43, 0.5), 0 5px 12px rgba(0, 0, 0, 0.5);
     transform: translateY(-2px);
   }
   .combat-retreat { font-size: 0.85rem; padding: 0.4rem 1.5rem; opacity: 0.85; }
@@ -2536,7 +2550,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .create-job b { color: var(--gold-bright); letter-spacing: 0.1em; }
   .create-job span { font-size: 0.78rem; color: var(--text-dim); line-height: 1.6; }
   .create-job:hover { transform: translateY(-2px); border-color: var(--gold); }
-  .create-job.selected { border-color: var(--gold-bright); box-shadow: 0 0 0 1px var(--gold-bright), 0 0 18px rgba(201, 163, 92, 0.4); }
+  .create-job.selected { border-color: var(--seal); box-shadow: 0 0 0 2px var(--seal), 0 0 18px rgba(181, 52, 43, 0.4); }
+  .create-job.selected::after {
+    content: '選'; position: absolute; top: -0.6rem; right: -0.5rem;
+    width: 1.5rem; height: 1.5rem; display: grid; place-items: center;
+    font-size: 0.75rem; color: #f7ece0; background: var(--seal);
+    border: 1px solid var(--seal-bright); border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(70, 16, 12, 0.5);
+  }
+  .create-job { position: relative; }
   .create-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.4rem; text-align: left; margin-bottom: 1.4rem; }
   .create-subtitle { font-size: 1rem; letter-spacing: 0.15em; color: var(--gold-bright); margin: 0 0 0.7rem; }
   .create-subtitle span { color: var(--gold-bright); font-weight: 900; }
@@ -2548,7 +2570,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     transition: color 0.12s ease, border-color 0.12s ease;
   }
   .create-trait-chip:hover { color: var(--gold-bright); border-color: var(--gold); }
-  .create-trait-chip.selected { color: #241505; background: linear-gradient(180deg, #e2c078, var(--gold)); border-color: var(--gold-bright); font-weight: 700; }
+  .create-trait-chip.selected { color: #f7ece0; background: var(--seal); border-color: var(--seal-bright); font-weight: 700; }
   .create-trait-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.7; margin: 0.6rem 0 0; min-height: 2.4em; }
   .create-actions { display: flex; gap: 0.9rem; justify-content: center; }
 
