@@ -2,8 +2,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   XP_TABLE, levelFromXp, pendingLevelUps, applyLevelUp, unlockedMoves,
   generateRecruitPool, hireCost, wagePerTrip, equipItem, unequipItem, equipmentBonus,
+  SPECIALIZATIONS, chooseSpecialization, bondTier, partyCheckBonus,
   TRAITS, partyCheckBonus,
 } from './roster';
+import { memberFromRecord } from './data/jobs';
 import { createRng } from './rng';
 import { newGame, type SaveData, type CompanionRecord } from './save';
 import type { StatBlock } from './types';
@@ -463,5 +465,92 @@ describe('旅伴特質（M7）', () => {
     expect(partyCheckBonus(save)).toBe(0);
     save.companions.push({ ...r, trait: 'seasoned' }, { ...r, id: 'x2', trait: 'seasoned' });
     expect(partyCheckBonus(save)).toBe(2);
+  });
+});
+
+describe('M11 職業專精（Lv4 二選一）', () => {
+  const mk = (over: Partial<CompanionRecord> = {}): CompanionRecord => ({
+    id: 'protagonist', name: '你', job: 'swordsman', level: 4, xp: 210,
+    stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 }, maxHp: 22,
+    injuredForTrips: 0, trait: null,
+    equipment: { weapon: null, armor: null, trinket: null },
+    ...over,
+  });
+
+  it('SPECIALIZATIONS：每職業恰 2 個選項，各有名稱/說明/專屬招', () => {
+    for (const job of ['swordsman', 'ranger', 'mage', 'cleric'] as const) {
+      const specs = SPECIALIZATIONS[job];
+      expect(specs).toHaveLength(2);
+      for (const spec of specs) {
+        expect(spec.name.length).toBeGreaterThan(0);
+        expect(spec.desc.length).toBeGreaterThan(0);
+        expect(spec.move.id.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('chooseSpecialization：Lv4 可選；選後寫入 record.specialization', () => {
+    const r = mk();
+    chooseSpecialization(r, 'berserker');
+    expect(r.specialization).toBe('berserker');
+  });
+
+  it('chooseSpecialization：Lv<4 丟錯；已有專精再選丟錯；非本職業選項丟錯', () => {
+    expect(() => chooseSpecialization(mk({ level: 3 }), 'berserker')).toThrow();
+    const chosen = mk({ specialization: 'berserker' });
+    expect(() => chooseSpecialization(chosen, 'bulwark')).toThrow();
+    expect(() => chooseSpecialization(mk(), 'hawkeye')).toThrow(); // 游俠專精配劍士
+  });
+
+  it('memberFromRecord：專精被動疊上（狂戰士 +2 力量）且專屬招入列', () => {
+    const base = memberFromRecord(mk());
+    const spec = memberFromRecord(mk({ specialization: 'berserker' }));
+    expect(spec.stats.str).toBe(base.stats.str + 2);
+    expect(spec.moves.some((m) => m.id === SPECIALIZATIONS.swordsman[0].move.id)).toBe(true);
+    expect(base.moves.some((m) => m.id === SPECIALIZATIONS.swordsman[0].move.id)).toBe(false);
+  });
+
+  it('memberFromRecord：鐵壁衛防禦與生命被動生效', () => {
+    const base = memberFromRecord(mk());
+    const spec = memberFromRecord(mk({ specialization: 'bulwark' }));
+    expect(spec.defense).toBeGreaterThan(base.defense);
+    expect(spec.maxHp).toBeGreaterThan(base.maxHp);
+  });
+});
+
+describe('M11 旅伴羈絆', () => {
+  it('bondTier：0-1 趟=0、2-4=1、5-8=2、9+=3', () => {
+    expect(bondTier(0)).toBe(0);
+    expect(bondTier(1)).toBe(0);
+    expect(bondTier(2)).toBe(1);
+    expect(bondTier(4)).toBe(1);
+    expect(bondTier(5)).toBe(2);
+    expect(bondTier(8)).toBe(2);
+    expect(bondTier(9)).toBe(3);
+    expect(bondTier(undefined)).toBe(0);
+  });
+
+  it('partyCheckBonus 計入旅伴羈絆 tier 總和', () => {
+    const save = newGame(1000);
+    const base = partyCheckBonus(save);
+    save.companions.push({
+      id: 'c1', name: '甲', job: 'ranger', level: 1, xp: 0,
+      stats: { str: 10, dex: 14, int: 10, cha: 10, con: 11 }, maxHp: 20,
+      injuredForTrips: 0, trait: null, bond: 5,
+      equipment: { weapon: null, armor: null, trinket: null },
+    });
+    expect(partyCheckBonus(save)).toBe(base + 2); // bond 5 → tier 2
+  });
+
+  it('memberFromRecord：羈絆 tier 每階 +2 maxHp（主角無羈絆不加）', () => {
+    const rec: CompanionRecord = {
+      id: 'c1', name: '甲', job: 'ranger', level: 1, xp: 0,
+      stats: { str: 10, dex: 14, int: 10, cha: 10, con: 11 }, maxHp: 20,
+      injuredForTrips: 0, trait: null,
+      equipment: { weapon: null, armor: null, trinket: null },
+    };
+    const noBond = memberFromRecord(rec);
+    const bonded = memberFromRecord({ ...rec, bond: 9 }); // tier 3
+    expect(bonded.maxHp).toBe(noBond.maxHp + 6);
   });
 });

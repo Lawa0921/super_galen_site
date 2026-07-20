@@ -867,3 +867,86 @@ test.describe('商隊與劍：創角與背包', () => {
     await expect(gearRow.locator('.backpack-tag')).toHaveText('護甲');
   });
 });
+
+test.describe('商隊與劍：M11 RPG 深度', () => {
+  test('專精：Lv4 主角選狂戰士 → 力量 +2、血怒斬入列、選後鎖定', async ({ page }) => {
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      data.protagonist.level = 4;
+      data.protagonist.xp = 210;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('.town-tab[data-town-tab="roster"]');
+
+    const card = page.locator('.roster-card[data-member-id="protagonist"]');
+    await card.locator('.spec-btn').click();
+    await expect(page.locator('#spec-panel')).toBeVisible();
+    await page.click('.spec-option[data-spec-id="berserker"]');
+    await expect(page.locator('#spec-panel')).toBeHidden();
+
+    await expect(card.locator('.roster-xp')).toContainText('專精「狂戰士」');
+    await expect(card.locator('.roster-stats')).toContainText('力量 14'); // 12 + 2
+    await expect(card.locator('.roster-moves')).toContainText('血怒斬');
+    await expect(card.locator('.spec-btn')).toHaveCount(0);
+  });
+
+  test('戰鬥道具：買藥草進訓練場 → 道具選單使用 → 背包扣減且寫入戰鬥記錄', async ({ page }) => {
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+
+    await page.locator('.market-row[data-item-id="herb"] .buy-btn').click();
+    await page.click('#btn-training');
+    await expect(page.locator('#screen-combat')).toBeVisible();
+
+    await page.locator('.combat-item-toggle').click();
+    await page.locator('.item-btn[data-item-id="herb"]').click();
+    await expect(page.locator('#combat-log')).toContainText('使用藥草');
+    const herbLeft = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('caravan-save-v1')!).inventory.herb
+    );
+    expect(herbLeft).toBe(0);
+  });
+
+  test('羈絆：bond=5 的旅伴顯示「信賴」且生命上限 +4', async ({ page }) => {
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      data.companions.push({
+        id: 'bond-ally', name: '老友', job: 'ranger', level: 1, xp: 0,
+        stats: { str: 10, dex: 14, int: 10, cha: 10, con: 11 }, maxHp: 20,
+        injuredForTrips: 0, trait: null, bond: 5,
+        equipment: { weapon: null, armor: null, trinket: null },
+      });
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('.town-tab[data-town-tab="roster"]');
+
+    const ally = page.locator('.roster-card[data-member-id="bond-ally"]');
+    await expect(ally.locator('.roster-xp')).toContainText('羈絆「信賴」（同行 5 趟）');
+    await expect(ally.locator('.roster-hp')).toHaveText('生命上限 24'); // 20 + tier2×2
+  });
+});

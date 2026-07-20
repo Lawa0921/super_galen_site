@@ -39,8 +39,120 @@ export const traitById = (id: string | null | undefined): TraitDef | undefined =
 
 /** 全隊事件檢定加成：加總所有成員特質的 checkBonus（M7） */
 export function partyCheckBonus(save: SaveData): number {
-  return [save.protagonist, ...save.companions]
+  const traitSum = [save.protagonist, ...save.companions]
     .reduce((sum, m) => sum + (traitById(m.trait)?.checkBonus ?? 0), 0);
+  // M11 羈絆：旅伴 tier 總和（主角無羈絆欄）
+  const bondSum = save.companions.reduce((sum, c) => sum + bondTier(c.bond), 0);
+  return traitSum + bondSum;
+}
+
+// ---------------------------------------------------------------------------
+// M11 旅伴羈絆：同行完成遠征的趟數 → tier（檢定與生命加成）
+// ---------------------------------------------------------------------------
+
+/** 羈絆 tier：0-1 趟=0、2-4=1（同行）、5-8=2（信賴）、9+=3（莫逆） */
+export function bondTier(bond: number | undefined): number {
+  const b = bond ?? 0;
+  if (b >= 9) return 3;
+  if (b >= 5) return 2;
+  if (b >= 2) return 1;
+  return 0;
+}
+
+export const BOND_TIER_NAMES = ['', '同行', '信賴', '莫逆'] as const;
+/** 每 tier 的 maxHp 加成（jobs.ts memberFromRecord 套用） */
+export const BOND_HP_PER_TIER = 2;
+
+// ---------------------------------------------------------------------------
+// M11 職業專精：Lv4 二選一進階（被動加成＋專屬招式）
+// ---------------------------------------------------------------------------
+
+export interface SpecializationDef {
+  id: string;
+  name: string;
+  desc: string;
+  /** 被動：屬性/防禦/生命上限加成 */
+  statBonus?: Partial<StatBlock>;
+  defense?: number;
+  maxHp?: number;
+  /** 專屬招式（入列於職業招式之後） */
+  move: Move;
+}
+
+export const SPECIALIZATION_LEVEL = 4;
+
+export const SPECIALIZATIONS: Record<CompanionRecord['job'], SpecializationDef[]> = {
+  swordsman: [
+    { id: 'berserker', name: '狂戰士', desc: '捨守取攻的戰場猛獸。力量 +2，習得「血怒斬」。',
+      statBonus: { str: 2 },
+      move: { id: 'blood-rage-slash', name: '血怒斬', kind: 'attack', target: 'enemy', hitStat: 'str',
+        damage: { dice: 2, sides: 10, bonusStat: 'str' },
+        narration: '{actor}雙目赤紅，狂嘯著將全身之力灌入一斬，劈向{target}，造成 {amount} 點傷害！' } },
+    { id: 'bulwark', name: '鐵壁衛', desc: '隊伍的不動壁壘。防禦 +2、生命上限 +6，習得「盾牆猛擊」。',
+      defense: 2, maxHp: 6,
+      move: { id: 'shield-bash', name: '盾牆猛擊', kind: 'attack', target: 'enemy', hitStat: 'str',
+        damage: { dice: 1, sides: 8, bonusStat: 'con' },
+        applyStatus: { kind: 'stun', duration: 1 },
+        narration: '{actor}舉盾撞向{target}，造成 {amount} 點傷害並將其震得暈頭轉向！' } },
+  ],
+  ranger: [
+    { id: 'hawkeye', name: '鷹眼', desc: '百步穿楊的神射手。敏捷 +2，習得「奪命狙擊」。',
+      statBonus: { dex: 2 },
+      move: { id: 'deadeye-shot', name: '奪命狙擊', kind: 'attack', target: 'enemy', hitStat: 'dex',
+        damage: { dice: 2, sides: 8, bonusStat: 'dex' },
+        narration: '{actor}屏息凝神，一箭破空而出，貫穿{target}，造成 {amount} 點傷害！' } },
+    { id: 'trapper', name: '陷阱師', desc: '荒野的獵人智者。體質 +1、防禦 +1，習得「絆足陷阱」。',
+      statBonus: { con: 1 }, defense: 1,
+      move: { id: 'snare-trap', name: '絆足陷阱', kind: 'attack', target: 'enemy', hitStat: 'dex',
+        damage: { dice: 1, sides: 6, bonusStat: 'dex' },
+        applyStatus: { kind: 'stun', duration: 1 },
+        narration: '{actor}拋出鐵絆索纏住{target}，造成 {amount} 點傷害並使其動彈不得！' } },
+  ],
+  mage: [
+    { id: 'elementalist', name: '元素使', desc: '駕馭風暴的天災法師。智力 +2，習得「連鎖閃電」。',
+      statBonus: { int: 2 },
+      move: { id: 'chain-lightning', name: '連鎖閃電', kind: 'attack', target: 'enemy', hitStat: 'int',
+        damage: { dice: 2, sides: 10, bonusStat: 'int' },
+        narration: '{actor}指尖迸出蛛網般的紫電，轟向{target}，造成 {amount} 點傷害！' } },
+    { id: 'occultist', name: '秘術師', desc: '窺探禁忌的暗影學者。智力 +1、生命上限 +4，習得「腐蝕詛咒」。',
+      statBonus: { int: 1 }, maxHp: 4,
+      move: { id: 'corrosive-curse', name: '腐蝕詛咒', kind: 'attack', target: 'enemy', hitStat: 'int',
+        damage: { dice: 1, sides: 6, bonusStat: 'int' },
+        applyStatus: { kind: 'poison', duration: 3, potency: 2 },
+        narration: '{actor}低聲唸出禁咒，黑霧纏上{target}，造成 {amount} 點傷害並持續侵蝕！' } },
+  ],
+  cleric: [
+    { id: 'hierophant', name: '大祭司', desc: '聖光的化身。魅力 +2，習得「神聖賜福」。',
+      statBonus: { cha: 2 },
+      move: { id: 'divine-blessing', name: '神聖賜福', kind: 'support', target: 'ally', hitStat: 'cha',
+        heal: { dice: 3, sides: 6, bonusStat: 'cha' },
+        narration: '{actor}張開雙臂引下天光，{target}沐浴其中，恢復 {amount} 點生命。' } },
+    { id: 'inquisitor', name: '審判官', desc: '揮舞聖裁之錘的戰鬥祭司。力量 +1、防禦 +1，習得「聖裁之錘」。',
+      statBonus: { str: 1 }, defense: 1,
+      move: { id: 'judgement-hammer', name: '聖裁之錘', kind: 'attack', target: 'enemy', hitStat: 'cha',
+        damage: { dice: 2, sides: 8, bonusStat: 'cha' },
+        narration: '{actor}高舉聖錘宣告裁決，重重砸向{target}，造成 {amount} 點傷害！' } },
+  ],
+};
+
+export function specById(id: string | null | undefined): SpecializationDef | null {
+  if (!id) return null;
+  for (const specs of Object.values(SPECIALIZATIONS)) {
+    const found = specs.find((sp) => sp.id === id);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Lv4 起可選、僅能選一次、僅限本職業的選項 */
+export function chooseSpecialization(record: CompanionRecord, specId: string): void {
+  if (record.level < SPECIALIZATION_LEVEL) {
+    throw new Error(`專精需 Lv${SPECIALIZATION_LEVEL}（目前 Lv${record.level}）`);
+  }
+  if (record.specialization) throw new Error('已選定專精，不可更改');
+  const spec = SPECIALIZATIONS[record.job].find((sp) => sp.id === specId);
+  if (!spec) throw new Error(`職業「${record.job}」沒有專精「${specId}」`);
+  record.specialization = specId;
 }
 
 /** 升級累積 XP 門檻；index=level（1-based，index 0 廢棄）；Lv5 為封頂（M4） */

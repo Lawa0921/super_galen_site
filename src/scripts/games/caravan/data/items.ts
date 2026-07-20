@@ -8,6 +8,11 @@ export interface ItemDef {
   value: number;
   /** 裝備 icon 路徑（M10 美術統一，裝備限定） */
   art?: string;
+  /** M11 消耗品效果：戰鬥與遠征中可使用；未設定＝純交易品 */
+  use?:
+    | { kind: 'heal'; amount: number }
+    | { kind: 'cure' }
+    | { kind: 'buff'; status: { kind: 'strength'; duration: number; potency: number } };
   /** 可裝備物品的效果設定（M5 裝備三欄系統）；未設定＝純消耗/交易品 */
   equip?: {
     slot: 'weapon' | 'armor' | 'trinket';
@@ -33,12 +38,28 @@ export const ITEMS: Record<string, ItemDef> = {
   herb: {
     id: 'herb',
     name: '藥草',
-    desc: '山野常見的藥草，搗碎外敷可止血鎮痛，旅人隨身必備。',
+    desc: '山野常見的藥草，搗碎外敷可止血鎮痛。使用後恢復 6 點生命。',
     value: 5,
+    use: { kind: 'heal', amount: 6 },
+  },
+  antidote: {
+    id: 'antidote',
+    name: '解毒劑',
+    desc: '以蛇膽與苦艾熬成的藥劑，入喉極苦。使用後清除中毒狀態。',
+    value: 12,
+    use: { kind: 'cure' },
+  },
+  'war-tonic': {
+    id: 'war-tonic',
+    name: '行軍補劑',
+    desc: '傭兵間流傳的濃烈藥酒，飲下後血氣翻湧。使用後短暫提升攻擊力。',
+    value: 20,
+    use: { kind: 'buff', status: { kind: 'strength', duration: 2, potency: 2 } },
   },
   bandage: {
     id: 'bandage',
     name: '繃帶',
+    use: { kind: 'heal', amount: 12 },
     desc: '浸過藥水的紗布，是戰場急救的最後一道防線。',
     value: 8,
   },

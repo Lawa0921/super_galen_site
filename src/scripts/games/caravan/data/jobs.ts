@@ -1,7 +1,7 @@
 import type { Move, PartyMember } from '../combat';
 import type { CompanionRecord } from '../save';
 import type { StatBlock } from '../types';
-import { unlockedMoves, equipmentBonus, traitById } from '../roster';
+import { unlockedMoves, equipmentBonus, traitById, specById, bondTier, BOND_HP_PER_TIER } from '../roster';
 import { ITEMS } from './items';
 
 export type JobId = 'swordsman' | 'ranger' | 'mage' | 'cleric';
@@ -152,12 +152,25 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
       stats[key] += trait.statBonus[key] ?? 0;
     }
   }
-  const maxHp = record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0);
+  // M11 專精被動
+  const spec = specById(record.specialization);
+  if (spec?.statBonus) {
+    for (const key of Object.keys(spec.statBonus) as Array<keyof StatBlock>) {
+      stats[key] += spec.statBonus[key] ?? 0;
+    }
+  }
+  // M11 羈絆：旅伴 tier 每階 +BOND_HP_PER_TIER 生命上限（主角無 bond 欄自然為 0）
+  const bondHp = bondTier(record.bond) * BOND_HP_PER_TIER;
+  const maxHp = record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0) + (spec?.maxHp ?? 0) + bondHp;
 
   const moves = unlockedMoves(record);
   const weaponId = record.equipment.weapon;
   const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
-  const finalMoves = weaponMove ? [weaponMove, ...moves.slice(1)] : moves;
+  const baseMoves = weaponMove ? [weaponMove, ...moves.slice(1)] : moves;
+  // 專屬招插在通用「揮擊」之前（揮擊恆為最後一招）
+  const finalMoves = spec
+    ? [...baseMoves.slice(0, -1), spec.move, baseMoves[baseMoves.length - 1]]
+    : baseMoves;
 
   return {
     id: record.id,
@@ -165,7 +178,7 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
     stats,
     maxHp,
     hp: maxHp,
-    defense: job.defense + bonus.defense,
+    defense: job.defense + bonus.defense + (spec?.defense ?? 0),
     moves: finalMoves,
     isProtagonist: record.id === 'protagonist',
   };

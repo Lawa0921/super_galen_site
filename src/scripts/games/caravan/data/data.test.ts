@@ -36,8 +36,8 @@ describe('caravan content data integrity（M3 Task 4）', () => {
   // ---------------------------------------------------------------------
   // items.ts
   // ---------------------------------------------------------------------
-  it('ITEMS 有 29 種（M3 12 + M5 11 + M10 稀有裝 6），且 ore 存在（Task 3 寶箱房寫死給 ore）', () => {
-    expect(Object.keys(ITEMS).length).toBe(29);
+  it('ITEMS 有 31 種（M3 12 + M5 11 + M10 稀有裝 6 + M11 消耗品 2），且 ore 存在（Task 3 寶箱房寫死給 ore）', () => {
+    expect(Object.keys(ITEMS).length).toBe(31);
     expect(ITEMS.ore).toBeDefined();
     for (const item of Object.values(ITEMS)) {
       expect(item.id).toBeTruthy();

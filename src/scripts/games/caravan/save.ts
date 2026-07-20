@@ -19,6 +19,10 @@ export interface CompanionRecord {
   trait?: string | null;
   /** 裝備三欄：itemId 或 null（M5，roster.ts equipItem/unequipItem 維護） */
   equipment: { weapon: string | null; armor: string | null; trinket: string | null };
+  /** M11 職業專精 id（roster.ts SPECIALIZATIONS）；Lv4 起可選，未選＝undefined/null */
+  specialization?: string | null;
+  /** M11 旅伴羈絆：與主角同行完成的遠征趟數（主角自身不使用此欄） */
+  bond?: number;
 }
 
 export interface SaveDataV2 {

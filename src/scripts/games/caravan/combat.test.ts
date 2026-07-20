@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { statMod } from './check';
-import { startCombat, currentActor, advanceTurn, partyAct, enemyAct, attemptRetreat, resolveCasualties } from './combat';
+import { startCombat, currentActor, advanceTurn, partyAct, enemyAct, attemptRetreat, resolveCasualties, useItemInCombat } from './combat';
 import type { PartyMember, EnemyUnit, Move, CombatState } from './combat';
 import { createRng } from './rng';
 import type { Rng } from './rng';
@@ -376,5 +376,66 @@ describe('Boss 激怒機制（M10）', () => {
       expect(ENCOUNTERS[encId]()[0].enrage, `${encId} 缺 enrage`).toBeDefined();
     }
     expect(ENCOUNTERS.enc_wolf_pair()[0].enrage).toBeUndefined();
+  });
+});
+
+describe('M11 戰鬥道具（useItemInCombat）', () => {
+  const healer = (): PartyMember => ({
+    id: 'p1', name: '你', stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 },
+    maxHp: 22, hp: 10, defense: 14, isProtagonist: true,
+    moves: [{ id: 'strike', name: '揮擊', kind: 'attack', target: 'enemy', hitStat: 'str',
+      damage: { dice: 1, sides: 6, bonusStat: 'str' }, narration: '{actor}攻擊{target}造成{amount}點傷害' }],
+  });
+  const foe = (): EnemyUnit => ({
+    id: 'e1', name: '哥布林', stats: { str: 10, dex: 10, int: 8, cha: 6, con: 10 },
+    maxHp: 8, hp: 8, defense: 10, xp: 10,
+    moves: [{ id: 'stab', name: '短刀', kind: 'attack', target: 'enemy', hitStat: 'str',
+      damage: { dice: 1, sides: 4, bonusStat: 'str' }, narration: '{actor}刺向{target}造成{amount}點傷害' }],
+    intents: [{ moveId: 'stab', weight: 1 }],
+  });
+
+  it('治療道具：目標回血不超過 maxHp、消耗行動（輪到下一位）、寫入 log', () => {
+    const state = startCombat(scriptedRng([20, 1]), [healer()], [foe()]);
+    useItemInCombat(state, 'p1', { kind: 'heal', amount: 6, name: '藥草' }, 'p1');
+    const unit = state.party[0];
+    expect(unit.hp).toBe(16);
+    expect(state.log.some((e) => e.text.includes('藥草'))).toBe(true);
+    expect(currentActor(state)?.side).toBe('enemy'); // 行動已消耗
+  });
+
+  it('治療不溢出 maxHp', () => {
+    const member = healer(); member.hp = 20;
+    const state = startCombat(scriptedRng([20, 1]), [member], [foe()]);
+    useItemInCombat(state, 'p1', { kind: 'heal', amount: 12, name: '繃帶' }, 'p1');
+    expect(state.party[0].hp).toBe(22);
+  });
+
+  it('解毒道具：清除目標身上的 poison，保留其他狀態', () => {
+    const member = healer();
+    member.statuses = [
+      { kind: 'poison', remaining: 2, potency: 2 },
+      { kind: 'strength', remaining: 2, potency: 3 },
+    ];
+    const state = startCombat(scriptedRng([20, 1]), [member], [foe()]);
+    useItemInCombat(state, 'p1', { kind: 'cure', name: '解毒劑' }, 'p1');
+    const statuses = state.party[0].statuses ?? [];
+    expect(statuses.some((st) => st.kind === 'poison')).toBe(false);
+    expect(statuses.some((st) => st.kind === 'strength')).toBe(true);
+  });
+
+  it('強化道具：附加 strength 狀態', () => {
+    const state = startCombat(scriptedRng([20, 1]), [healer()], [foe()]);
+    useItemInCombat(state, 'p1', { kind: 'buff', status: { kind: 'strength', duration: 2, potency: 2 }, name: '行軍補劑' }, 'p1');
+    const statuses = state.party[0].statuses ?? [];
+    expect(statuses.some((st) => st.kind === 'strength' && st.potency === 2)).toBe(true);
+  });
+
+  it('對倒下的隊友使用丟錯；戰鬥已結束丟錯', () => {
+    const member = healer(); member.hp = 0;
+    const ally = healer(); ally.id = 'p2'; ally.name = '甲';
+    const state = startCombat(scriptedRng([20, 1]), [ally, member], [foe()]);
+    expect(() => useItemInCombat(state, 'p2', { kind: 'heal', amount: 6, name: '藥草' }, 'p1')).toThrow();
+    state.outcome = 'victory';
+    expect(() => useItemInCombat(state, 'p2', { kind: 'heal', amount: 6, name: '藥草' }, 'p2')).toThrow();
   });
 });

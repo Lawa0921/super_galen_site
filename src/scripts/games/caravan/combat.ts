@@ -268,6 +268,37 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
   if (state.outcome === 'ongoing') advanceTurn(state);
 }
 
+/** M11 戰鬥道具效果（資料層 ItemDef.use 轉譯後傳入） */
+export type ItemCombatUse =
+  | { kind: 'heal'; amount: number; name: string }
+  | { kind: 'cure'; name: string }
+  | { kind: 'buff'; status: { kind: StatusKind; duration: number; potency?: number }; name: string };
+
+/**
+ * M11 戰鬥中使用道具：治療/解毒/強化目標隊友。
+ * 消耗使用者的行動（advanceTurn）；背包扣減由呼叫端（UI/遠征層）負責。
+ */
+export function useItemInCombat(state: CombatState, actorId: string, use: ItemCombatUse, targetId: string): void {
+  if (state.outcome !== 'ongoing') throw new Error('useItemInCombat: 戰鬥已結束');
+  const actor = state.party.find((u) => u.id === actorId);
+  const target = state.party.find((u) => u.id === targetId);
+  if (!actor || actor.hp <= 0) throw new Error('useItemInCombat: 使用者不存在或已倒下');
+  if (!target || target.hp <= 0) throw new Error('useItemInCombat: 目標不存在或已倒下');
+  if (use.kind === 'heal') {
+    const healed = Math.min(use.amount, target.maxHp - target.hp);
+    target.hp += healed;
+    state.log.push({ kind: 'heal', text: `${actor.name}使用${use.name}，${target.name}恢復 ${healed} 點生命。` });
+  } else if (use.kind === 'cure') {
+    target.statuses = (target.statuses ?? []).filter((st) => st.kind !== 'poison');
+    state.log.push({ kind: 'info', text: `${actor.name}使用${use.name}，${target.name}的毒被清除了。` });
+  } else {
+    target.statuses = target.statuses ?? [];
+    target.statuses.push({ kind: use.status.kind, remaining: use.status.duration, potency: use.status.potency ?? 0 });
+    state.log.push({ kind: 'info', text: `${actor.name}使用${use.name}，${target.name}獲得強化！` });
+  }
+  advanceTurn(state);
+}
+
 export function attemptRetreat(rng: Rng, state: CombatState): void {
   if (state.outcome !== 'ongoing') return;
   const aliveParty = state.party.filter((p) => p.hp > 0);

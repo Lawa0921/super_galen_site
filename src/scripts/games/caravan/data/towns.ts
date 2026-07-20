@@ -18,7 +18,7 @@ export const TOWNS: Record<string, TownDef> = {
     name: '啟程之鎮',
     desc: '商隊由此啟程，青石廣場終年人聲鼎沸，鐵匠爐火不熄，貨棧招牌層層疊疊，是踏上未知路途前最後一次安穩補給。',
     priceModifiers: {},
-    stock: ['herb', 'bandage', 'torch', 'dried-rations', 'ore', 'spider-silk', 'spice-pouch', 'ridgeleather-vest'],
+    stock: ['herb', 'bandage', 'antidote', 'war-tonic', 'torch', 'dried-rations', 'ore', 'spider-silk', 'spice-pouch', 'ridgeleather-vest'],
   },
   'riverbend-town': {
     id: 'riverbend-town',
