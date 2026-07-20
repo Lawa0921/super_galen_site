@@ -9,14 +9,21 @@ export interface Move {
   hitStat: Stat;
   damage?: { dice: number; sides: number; bonusStat?: Stat };
   heal?: { dice: number; sides: number; bonusStat?: Stat };
+  /** 命中後附加狀態（M7）：poison 每回合行動前扣 potency；stun 跳過一次行動；strength 出手傷害 +potency */
+  applyStatus?: { kind: StatusKind; duration: number; potency?: number };
   narration: string; // 例：「{actor}的巨劍劈向{target}，造成 {amount} 點傷害！」
   /** 解鎖所需等級；未標＝Lv1 起就會（M4 roster.ts unlockedMoves 依此過濾） */
   minLevel?: number;
 }
 
+export type StatusKind = 'poison' | 'stun' | 'strength';
+export interface StatusEffect { kind: StatusKind; remaining: number; potency: number; }
+
 export interface CombatantBase {
   id: string; name: string; stats: StatBlock;
   maxHp: number; hp: number; defense: number; moves: Move[];
+  /** 進行中狀態效果（M7，戰鬥 runtime） */
+  statuses?: StatusEffect[];
   /** 立繪路徑（M5 美術） */
   art?: string;
 }
@@ -123,6 +130,27 @@ function applyDamage(state: CombatState, target: CombatantBase, amount: number):
   if (target.hp === 0) state.log.push({ kind: 'down', text: `${target.name}倒下了！` });
 }
 
+const STATUS_LABEL: Record<StatusKind, string> = { poison: '中毒', stun: '暈眩', strength: '強化' };
+
+/** 行動前狀態結算（M7）：毒發作扣血、暈眩跳過本次行動。回傳 false＝本次行動被取消。 */
+function tickStatuses(state: CombatState, actor: CombatantBase): boolean {
+  if (!actor.statuses?.length) return true;
+  let canAct = true;
+  for (const st of actor.statuses) {
+    if (st.kind === 'poison') {
+      state.log.push({ kind: 'damage', text: `${actor.name}毒素發作，損失 ${st.potency} 點生命！` });
+      applyDamage(state, actor, st.potency);
+      st.remaining -= 1;
+    } else if (st.kind === 'stun') {
+      state.log.push({ kind: 'info', text: `${actor.name}暈眩中，無法行動！` });
+      st.remaining -= 1;
+      canAct = false;
+    }
+  }
+  actor.statuses = actor.statuses.filter((st) => st.remaining > 0);
+  return canAct && actor.hp > 0;
+}
+
 function performMove(rng: Rng, state: CombatState, actor: CombatantBase, move: Move, target: CombatantBase): void {
   if (move.kind === 'guard') {
     state.guarding[actor.id] = true;
@@ -146,10 +174,26 @@ function performMove(rng: Rng, state: CombatState, actor: CombatantBase, move: M
     return;
   }
   const dmgSpec = move.damage ?? { dice: 1, sides: 4 };
+  // M7 強化：出手傷害 +potency，用一次遞減
+  const strength = actor.statuses?.find((s) => s.kind === 'strength');
+  const strengthBonus = strength?.potency ?? 0;
+  if (strength) {
+    strength.remaining -= 1;
+    actor.statuses = actor.statuses!.filter((s) => s.remaining > 0);
+  }
   const amount = Math.max(1, rollDice(rng, dmgSpec.dice, dmgSpec.sides)
-    + (dmgSpec.bonusStat ? statMod(actor.stats[dmgSpec.bonusStat]) : 0));
+    + (dmgSpec.bonusStat ? statMod(actor.stats[dmgSpec.bonusStat]) : 0) + strengthBonus);
   state.log.push({ kind: 'damage', text: fillNarration(move.narration, actor.name, target.name, amount) });
   applyDamage(state, target, amount);
+  // M7 命中附加狀態（同類刷新為較長持續）
+  if (move.applyStatus && target.hp > 0) {
+    const spec = move.applyStatus;
+    target.statuses ??= [];
+    const existing = target.statuses.find((s) => s.kind === spec.kind);
+    if (existing) existing.remaining = Math.max(existing.remaining, spec.duration);
+    else target.statuses.push({ kind: spec.kind, remaining: spec.duration, potency: spec.potency ?? 0 });
+    state.log.push({ kind: 'info', text: `${target.name}陷入${STATUS_LABEL[spec.kind]}狀態！` });
+  }
 }
 
 export function partyAct(rng: Rng, state: CombatState, actorId: string, moveId: string, targetId: string): void {
@@ -157,6 +201,11 @@ export function partyAct(rng: Rng, state: CombatState, actorId: string, moveId: 
   const move = actor?.moves.find((m) => m.id === moveId);
   const targetFound = [...state.party, ...state.enemies].find((c) => c.id === targetId);
   if (!actor || !move || !targetFound || state.outcome !== 'ongoing') return;
+  if (!tickStatuses(state, actor)) {
+    checkOutcome(state);
+    if (state.outcome === 'ongoing') advanceTurn(state);
+    return;
+  }
   performMove(rng, state, actor, move, targetFound);
   checkOutcome(state);
   if (state.outcome === 'ongoing') advanceTurn(state);
@@ -165,6 +214,14 @@ export function partyAct(rng: Rng, state: CombatState, actorId: string, moveId: 
 export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
   const enemy = state.enemies.find((e) => e.id === enemyId);
   if (!enemy || state.outcome !== 'ongoing') return;
+  if (!tickStatuses(state, enemy)) {
+    state.enemyIntents[enemyId] = rng.weightedPick(
+      enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
+    );
+    checkOutcome(state);
+    if (state.outcome === 'ongoing') advanceTurn(state);
+    return;
+  }
   const moveId = state.enemyIntents[enemyId] ?? enemy.moves[0].id;
   const move = enemy.moves.find((m) => m.id === moveId) ?? enemy.moves[0];
   let target: CombatantBase;

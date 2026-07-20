@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { statMod } from './check';
 import { startCombat, currentActor, advanceTurn, partyAct, enemyAct, attemptRetreat, resolveCasualties } from './combat';
-import type { PartyMember, EnemyUnit, Move } from './combat';
+import type { PartyMember, EnemyUnit, Move, CombatState } from './combat';
+import { createRng } from './rng';
 import type { Rng } from './rng';
 
 /** 依序回傳指定骰值的假 RNG（骰完循環）；next 固定 0（weightedPick 取第一個非零權重項） */
@@ -237,5 +238,103 @@ describe('動作結算', () => {
       { id: 'm1', fate: 'injured' },
       { id: 'm2', fate: 'dead' },
     ]);
+  });
+});
+
+describe('戰鬥狀態效果（M7）', () => {
+  const poisonMove: Move = {
+    id: 'venom', name: '毒牙', kind: 'attack', target: 'enemy', hitStat: 'str',
+    damage: { dice: 1, sides: 4 },
+    applyStatus: { kind: 'poison', duration: 2, potency: 2 },
+    narration: '{actor}咬中{target}，造成 {amount} 點傷害！',
+  };
+  const stunMove: Move = {
+    id: 'slam', name: '重壓', kind: 'attack', target: 'enemy', hitStat: 'str',
+    damage: { dice: 1, sides: 4 },
+    applyStatus: { kind: 'stun', duration: 1 },
+    narration: '{actor}重壓{target}，造成 {amount} 點傷害！',
+  };
+
+  const mkParty = (): PartyMember[] => [{
+    id: 'hero', name: '英雄', stats: { str: 14, dex: 20, int: 10, cha: 10, con: 14 },
+    maxHp: 30, hp: 30, defense: 5, isProtagonist: true,
+    moves: [{ id: 'hit', name: '揮擊', kind: 'attack', target: 'enemy', hitStat: 'str', damage: { dice: 1, sides: 4 }, narration: '{actor}攻擊{target}，{amount} 傷害' }],
+  }];
+  const mkEnemy = (moves: Move[], hp = 20): EnemyUnit => ({
+    id: 'foe', name: '敵人', stats: { str: 14, dex: 1, int: 8, cha: 8, con: 10 },
+    maxHp: hp, hp, defense: 1, moves,
+    intents: moves.map((m) => ({ weight: 1, moveId: m.id })),
+  });
+
+  function freshState(enemyMoves: Move[]): CombatState {
+    // dex 20 vs 1：hero 必先攻
+    return startCombat(createRng(7), mkParty(), [mkEnemy(enemyMoves)]);
+  }
+
+  it('攻擊命中附加中毒；中毒者行動前發作扣血、持續遞減、歸零解除', () => {
+    const rng = createRng(3);
+    const state = freshState([poisonMove]);
+    // 敵人對英雄上毒（直接 performMove 路徑：敵人行動）
+    state.turnIndex = state.order.indexOf('foe');
+    enemyAct(rng, state, 'foe');
+    const hero = state.party[0];
+    expect(hero.statuses?.some((s) => s.kind === 'poison')).toBe(true);
+    const hpAfterBite = hero.hp;
+    // 英雄行動：毒發作 -2
+    partyAct(rng, state, 'hero', 'hit', 'foe');
+    expect(hero.hp).toBe(hpAfterBite - 2);
+    expect(hero.statuses?.find((s) => s.kind === 'poison')?.remaining).toBe(1);
+    expect(state.log.some((l) => l.text.includes('毒'))).toBe(true);
+    // 第二次行動：再 -2 且解除
+    state.turnIndex = state.order.indexOf('hero');
+    partyAct(rng, state, 'hero', 'hit', 'foe');
+    expect(hero.hp).toBe(hpAfterBite - 4);
+    expect(hero.statuses?.some((s) => s.kind === 'poison')).toBe(false);
+  });
+
+  it('暈眩：行動被跳過（不出招），輪替照常、狀態解除', () => {
+    const rng = createRng(3);
+    const state = freshState([stunMove]);
+    state.turnIndex = state.order.indexOf('foe');
+    enemyAct(rng, state, 'foe');
+    const hero = state.party[0];
+    expect(hero.statuses?.some((s) => s.kind === 'stun')).toBe(true);
+    const foeHpBefore = state.enemies[0].hp;
+    partyAct(rng, state, 'hero', 'hit', 'foe');
+    expect(state.enemies[0].hp).toBe(foeHpBefore); // 沒出招
+    expect(state.log.some((l) => l.text.includes('暈'))).toBe(true);
+    expect(hero.statuses?.some((s) => s.kind === 'stun')).toBe(false);
+    expect(state.order[state.turnIndex]).not.toBe('hero'); // 輪替發生
+  });
+
+  it('強化：出手傷害 +potency、次數遞減歸零解除', () => {
+    const rng = scriptedRng([10, 3]); // d20=10 必中（defense 1）、傷害骰 3
+    const state = freshState([poisonMove]);
+    const hero = state.party[0];
+    hero.statuses = [{ kind: 'strength', remaining: 1, potency: 5 }];
+    const foeHpBefore = state.enemies[0].hp;
+    partyAct(rng, state, 'hero', 'hit', 'foe');
+    const dealt = foeHpBefore - state.enemies[0].hp;
+    expect(dealt).toBe(3 + 5); // 傷害骰 3（hit 招無 bonusStat）+ 強化 5
+    expect(hero.statuses.some((s) => s.kind === 'strength')).toBe(false);
+  });
+
+  it('毒可以致死並觸發倒下與勝負判定', () => {
+    const rng = createRng(3);
+    const state = freshState([poisonMove]);
+    const hero = state.party[0];
+    hero.hp = 2;
+    hero.statuses = [{ kind: 'poison', remaining: 3, potency: 2 }];
+    partyAct(rng, state, 'hero', 'hit', 'foe');
+    expect(hero.hp).toBe(0);
+    expect(state.outcome).toBe('defeat');
+  });
+
+  it('蜘蛛毒牙與鹽晶洞主重壓帶狀態（資料接線）', async () => {
+    const { ENCOUNTERS } = await import('./data/enemies');
+    const spider = ENCOUNTERS.enc_mine_spiders()[0];
+    expect(spider.moves.some((m) => m.applyStatus?.kind === 'poison')).toBe(true);
+    const boss = ENCOUNTERS.enc_salt_cavern_boss()[0];
+    expect(boss.moves.some((m) => m.applyStatus?.kind === 'stun')).toBe(true);
   });
 });

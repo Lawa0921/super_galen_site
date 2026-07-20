@@ -14,6 +14,8 @@ export interface CompanionRecord {
   maxHp: number;
   /** >0 表示重傷缺席剩餘趟數 */
   injuredForTrips: number;
+  /** 旅伴特質 id（roster.ts TRAITS）；主角與 M7 前的舊成員為 null */
+  trait?: string | null;
   /** 裝備三欄：itemId 或 null（M5，roster.ts equipItem/unequipItem 維護） */
   equipment: { weapon: string | null; armor: string | null; trinket: string | null };
 }
@@ -82,10 +84,16 @@ export interface SaveDataV5 {
   visitedBossDungeons: string[];
 }
 
-/** 對外別名，後續版本跟著改指向最新 schema */
-export type SaveData = SaveDataV5;
+export interface SaveDataV6 extends Omit<SaveDataV5, 'version'> {
+  version: 6;
+  /** 市場行情種子；每次歸返結算後遞增，各鎮物價隨之波動（M7） */
+  marketSeed: number;
+}
 
-const CURRENT_VERSION = 5;
+/** 對外別名，後續版本跟著改指向最新 schema */
+export type SaveData = SaveDataV6;
+
+const CURRENT_VERSION = 6;
 
 const defaultEquipment = (): CompanionRecord['equipment'] => ({ weapon: null, armor: null, trinket: null });
 
@@ -99,6 +107,7 @@ function defaultProtagonist(): CompanionRecord {
     stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 },
     maxHp: 22,
     injuredForTrips: 0,
+    trait: null,
     equipment: defaultEquipment(),
   };
 }
@@ -125,9 +134,20 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
       companions: companions.map((c) => ({ ...c, equipment: defaultEquipment() })),
     };
   },
+  5: (old) => {
+    const protagonist = old.protagonist as Record<string, unknown>;
+    const companions = (old.companions as Array<Record<string, unknown>>) ?? [];
+    return {
+      ...old,
+      version: 6,
+      marketSeed: (old.createdAt as number) + 1,
+      protagonist: { ...protagonist, trait: null },
+      companions: companions.map((c) => ({ ...c, trait: c.trait ?? null })),
+    };
+  },
 };
 
-/** 驗證物件是否符合 SaveDataV5 的完整 shape（含 protagonist/companions/inventory/expedition/wagonLevel/tavernSeed/reputation/visitedBossDungeons/equipment）*/
+/** 驗證物件是否符合 SaveDataV6 的完整 shape（含 marketSeed；v5 及更早由 MIGRATIONS 先升版再驗）*/
 function isValidSaveShape(value: unknown): value is SaveData {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -145,6 +165,7 @@ function isValidSaveShape(value: unknown): value is SaveData {
     (v.expedition !== null && typeof v.expedition !== 'object') ||
     typeof v.wagonLevel !== 'number' ||
     typeof v.tavernSeed !== 'number' ||
+    typeof v.marketSeed !== 'number' ||
     typeof v.reputation !== 'number' ||
     !Array.isArray(v.visitedBossDungeons)
   ) {
@@ -178,7 +199,7 @@ function parseAndMigrate(raw: unknown): SaveData | null {
 
 export function newGame(now: number = Date.now()): SaveData {
   return {
-    version: 5,
+    version: 6,
     createdAt: now,
     gold: 200,
     flags: {},
@@ -188,6 +209,7 @@ export function newGame(now: number = Date.now()): SaveData {
     expedition: null,
     wagonLevel: 0,
     tavernSeed: now,
+    marketSeed: now + 1,
     reputation: 0,
     visitedBossDungeons: [],
   };

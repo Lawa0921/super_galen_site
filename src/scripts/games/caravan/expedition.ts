@@ -3,6 +3,7 @@ import type { Stat } from './types';
 import type { SaveData } from './save';
 import type { CheckResult } from './check';
 import { resolveCheck, statMod } from './check';
+import { partyCheckBonus } from './roster';
 import type { CombatState, EnemyUnit, PartyMember } from './combat';
 import type { JobId } from './data/jobs';
 import type { TownDef } from './economy';
@@ -327,7 +328,7 @@ export function resolveOption(
   let check: CheckResult | null = null;
   let effects: EffectSpec[];
   if (opt.check) {
-    const modifier = statMod(save.protagonist.stats[opt.check.stat]);
+    const modifier = statMod(save.protagonist.stats[opt.check.stat]) + partyCheckBonus(save);
     check = resolveCheck(rng, { stat: opt.check.stat, dc: opt.check.dc, modifier });
     effects = check.success ? opt.success : (opt.failure ?? []);
   } else {

@@ -100,6 +100,7 @@ function makeBanditMedic(id: string): EnemyUnit {
 const spiderBite: Move = {
   id: 'spider-bite', name: '毒牙', kind: 'attack', target: 'enemy', hitStat: 'dex',
   damage: { dice: 1, sides: 6, bonusStat: 'dex' },
+  applyStatus: { kind: 'poison', duration: 2, potency: 2 }, // M7：毒牙見血封喉
   narration: '{actor}以毒牙刺向{target}，造成 {amount} 點傷害！',
 };
 
@@ -306,6 +307,7 @@ function makeRuinsArcher(id: string): EnemyUnit {
 const sovereignCrystalCrush: Move = {
   id: 'sovereign-crystal-crush', name: '鹽晶碎壓', kind: 'attack', target: 'enemy', hitStat: 'str',
   damage: { dice: 2, sides: 8, bonusStat: 'str' },
+  applyStatus: { kind: 'stun', duration: 1 }, // M7：碎壓震得人眼冒金星
   narration: '{actor}雙拳凝聚鹽晶之力，重重砸向{target}，造成 {amount} 點傷害！',
 };
 

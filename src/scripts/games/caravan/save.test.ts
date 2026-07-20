@@ -6,9 +6,9 @@ import { EXPEDITION_VERSION } from './expedition';
 beforeEach(() => localStorage.clear());
 
 describe('save（版本化存檔）', () => {
-  it('newGame 產出 v5：含預設主角、空傭兵清單、空背包、無進行中遠征、經營層預設值、裝備三欄皆空（M5）', () => {
+  it('newGame 產出 v6：含預設主角、空傭兵清單、空背包、無進行中遠征、經營層預設值、裝備三欄皆空（M5）', () => {
     const s = newGame(1000);
-    expect(s.version).toBe(5);
+    expect(s.version).toBe(6);
     expect(s.protagonist.name).toBe('你');
     expect(s.protagonist.job).toBe('swordsman');
     expect(s.protagonist.equipment).toEqual({ weapon: null, armor: null, trinket: null });
@@ -22,10 +22,10 @@ describe('save（版本化存檔）', () => {
     expect(s.visitedBossDungeons).toEqual([]);
   });
 
-  it('v1 舊檔 loadGame 一路遷移到 v5 且保留原金幣與旗標，tavernSeed 取 createdAt', () => {
+  it('v1 舊檔 loadGame 一路遷移到 v6 且保留原金幣與旗標，tavernSeed 取 createdAt、marketSeed 取 createdAt+1', () => {
     localStorage.setItem(SAVE_KEY, JSON.stringify({ version: 1, createdAt: 5, gold: 777, flags: { met: true } }));
     const s = loadGame();
-    expect(s?.version).toBe(5);
+    expect(s?.version).toBe(6);
     expect(s?.gold).toBe(777);
     expect(s?.flags).toEqual({ met: true });
     expect(s?.protagonist.id).toBe('protagonist');
@@ -34,11 +34,13 @@ describe('save（版本化存檔）', () => {
     expect(s?.expedition).toBeNull();
     expect(s?.wagonLevel).toBe(0);
     expect(s?.tavernSeed).toBe(5);
+    expect(s?.marketSeed).toBe(6); // createdAt+1（M7）
+    expect(s?.protagonist.trait).toBeNull(); // M7 舊成員無特質
     expect(s?.reputation).toBe(0);
     expect(s?.visitedBossDungeons).toEqual([]);
   });
 
-  it('v2 舊檔 loadGame 遷移為 v5：補上 inventory/expedition/經營層/裝備欄位，其餘欄位不變', () => {
+  it('v2 舊檔 loadGame 遷移為 v6：補上 inventory/expedition/經營層/裝備欄位，其餘欄位不變', () => {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({
@@ -52,7 +54,7 @@ describe('save（版本化存檔）', () => {
       })
     );
     const s = loadGame();
-    expect(s?.version).toBe(5);
+    expect(s?.version).toBe(6);
     expect(s?.gold).toBe(300);
     expect(s?.inventory).toEqual({});
     expect(s?.expedition).toBeNull();
@@ -63,7 +65,7 @@ describe('save（版本化存檔）', () => {
     expect(s?.protagonist.equipment).toEqual({ weapon: null, armor: null, trinket: null });
   });
 
-  it('v3 舊檔 loadGame 遷移為 v5：補上 wagonLevel/tavernSeed/reputation/visitedBossDungeons/裝備欄位', () => {
+  it('v3 舊檔 loadGame 遷移為 v6：補上 wagonLevel/tavernSeed/reputation/visitedBossDungeons/裝備欄位', () => {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({
@@ -79,7 +81,7 @@ describe('save（版本化存檔）', () => {
       })
     );
     const s = loadGame();
-    expect(s?.version).toBe(5);
+    expect(s?.version).toBe(6);
     expect(s?.gold).toBe(150);
     expect(s?.inventory).toEqual({ herb: 2 });
     expect(s?.wagonLevel).toBe(0);
@@ -89,7 +91,7 @@ describe('save（版本化存檔）', () => {
     expect(s?.protagonist.equipment).toEqual({ weapon: null, armor: null, trinket: null });
   });
 
-  it('v4 舊檔 loadGame 遷移為 v5：主角與全部傭兵補上 equipment 預設（weapon/armor/trinket 皆 null，M5）', () => {
+  it('v4 舊檔 loadGame 遷移為 v6：主角與全部傭兵補上 equipment 預設與 trait null（M5/M7）', () => {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({
@@ -114,7 +116,7 @@ describe('save（版本化存檔）', () => {
       })
     );
     const s = loadGame();
-    expect(s?.version).toBe(5);
+    expect(s?.version).toBe(6);
     expect(s?.gold).toBe(500);
     expect(s?.protagonist.equipment).toEqual({ weapon: null, armor: null, trinket: null });
     expect(s?.companions).toHaveLength(2);
@@ -172,10 +174,10 @@ describe('save（版本化存檔）', () => {
     expect(loadGame()).toBeNull();
   });
 
-  it('importSave 對 v1 字串也會遷移到 v5（與 loadGame 同路徑）', () => {
+  it('importSave 對 v1 字串也會遷移到 v6（與 loadGame 同路徑）', () => {
     const v1 = btoa(encodeURIComponent(JSON.stringify({ version: 1, createdAt: 5, gold: 42, flags: {} })));
     const s = importSave(v1);
-    expect(s?.version).toBe(5);
+    expect(s?.version).toBe(6);
     expect(s?.gold).toBe(42);
     expect(s?.inventory).toEqual({});
     expect(s?.tavernSeed).toBe(5);

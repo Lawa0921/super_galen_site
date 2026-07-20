@@ -412,19 +412,23 @@ test.describe('商隊與劍：經營系統', () => {
     throw new Error('advanceToSettlement: 超過 200 步仍未抵達結算畫面');
   }
 
-  test('市集買賣：買 2 繃帶扣款、賣 1 回收半價，金幣與庫存精確同步', async ({ page }) => {
+  test('市集買賣：扣款與 UI 標價一致、賣出回收標示價，金幣與庫存精確同步', async ({ page }) => {
     await newGameWithSeed(page, 101);
-    // buyPrice(starting-town, bandage)=round(8×1)=8；sellPrice=round(8×0.5)=4（economy.ts 公式）。
+    // M7 行情波動後價格隨 marketSeed 浮動——改從 UI 標價動態驗證（意圖不變：標價=實扣=庫存同步）。
     const bandageRow = page.locator('.market-row[data-item-id="bandage"]');
+    const buyPriceNow = Number((await bandageRow.locator('.buy-btn').textContent())!.match(/\d+/)![0]);
+    expect(buyPriceNow).toBeGreaterThan(0);
     await bandageRow.locator('.buy-btn').click();
     await bandageRow.locator('.buy-btn').click();
-    await expect(page.locator('#market-gold')).toHaveText('184');
-    await expect(page.locator('#town-gold')).toHaveText('184');
+    const afterBuy = 200 - buyPriceNow * 2;
+    await expect(page.locator('#market-gold')).toHaveText(String(afterBuy));
+    await expect(page.locator('#town-gold')).toHaveText(String(afterBuy));
     await expect(bandageRow.locator('.market-name')).toContainText('持有 2');
 
+    const sellPriceNow = Number((await bandageRow.locator('.sell-btn').textContent())!.match(/\d+/)![0]);
     await bandageRow.locator('.sell-btn').click();
-    await expect(page.locator('#market-gold')).toHaveText('188');
-    await expect(page.locator('#town-gold')).toHaveText('188');
+    await expect(page.locator('#market-gold')).toHaveText(String(afterBuy + sellPriceNow));
+    await expect(page.locator('#town-gold')).toHaveText(String(afterBuy + sellPriceNow));
     await expect(bandageRow.locator('.market-name')).toContainText('持有 1');
   });
 
@@ -488,12 +492,13 @@ test.describe('商隊與劍：經營系統', () => {
     expect(goldAtStart).toBe(200);
 
     const oreRow = page.locator('.market-row[data-item-id="ore"]');
+    // M7 行情：礦石買價隨 marketSeed 浮動，從 UI 標價動態計算
+    const orePrice = Number((await oreRow.locator('.buy-btn').textContent())!.match(/\d+/)![0]);
     for (let i = 0; i < 6; i++) {
       await oreRow.locator('.buy-btn').click();
     }
     const goldBeforeDepart = (await readSave(page)).gold;
-    // buyPrice(starting-town, ore)=round(12×1)=12；買 6 個＝72。
-    expect(goldBeforeDepart).toBe(goldAtStart - 72);
+    expect(goldBeforeDepart).toBe(goldAtStart - orePrice * 6);
 
     await page.click('#btn-quest-board');
     await page.click('.quest-outfit-btn[data-location-id="riverside-road"]');
@@ -508,16 +513,17 @@ test.describe('商隊與劍：經營系統', () => {
 
     await advanceToSettlement(page, { sellAll: true });
     await expect(page.locator('#screen-settlement')).toBeVisible();
-    // seed=91 臨水道已知確定結果：loot.gold=25、無戰利品物品、勝利未撤退——
-    // 押貨 6 礦石全額到帳。tradeSellPrice(riverbend-town, ore)=round(12×1.5×0.9)=16，6 個＝96。
+    // seed=91 臨水道已知確定結果：loot.gold=25、無戰利品物品、勝利未撤退。
+    // M7 行情：異鎮賣價浮動——貿易收入從結算畫面讀出後驗算帳一致與淨利為正。
     await expect(page.locator('#settle-gold')).toHaveText('25');
-    await expect(page.locator('#settle-trade-gold')).toHaveText('96');
+    const tradeGold = Number(await page.locator('#settle-trade-gold').textContent());
+    expect(tradeGold).toBeGreaterThan(0);
 
     await page.click('#btn-settle-back');
     await expect(page.locator('#screen-town')).toBeVisible();
     const finalGold = (await readSave(page)).gold;
-    expect(finalGold).toBe(goldBeforeDepart + 25 + 96);
-    expect(finalGold).toBeGreaterThan(goldAtStart);
+    expect(finalGold).toBe(goldBeforeDepart + 25 + tradeGold);
+    expect(finalGold, '押貨淨利應為正').toBeGreaterThan(goldAtStart);
   });
 
   test('升級：xp 達 Lv2 門檻後配 2 點力量，卡片顯示 Lv2 與屬性變化', async ({ page }) => {

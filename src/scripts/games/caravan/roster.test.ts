@@ -2,11 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   XP_TABLE, levelFromXp, pendingLevelUps, applyLevelUp, unlockedMoves,
   generateRecruitPool, hireCost, wagePerTrip, equipItem, unequipItem, equipmentBonus,
+  TRAITS, partyCheckBonus,
 } from './roster';
 import { createRng } from './rng';
 import { newGame, type SaveData, type CompanionRecord } from './save';
 import type { StatBlock } from './types';
-import { JOBS } from './data/jobs';
+import { JOBS, memberFromRecord } from './data/jobs';
 import { ITEMS, type ItemDef } from './data/items';
 
 function makeCompanion(overrides: Partial<CompanionRecord> = {}): CompanionRecord {
@@ -422,5 +423,45 @@ describe('roster（成長系統）', () => {
         delete ITEMS['test-charm'];
       });
     });
+  });
+});
+
+describe('旅伴特質（M7）', () => {
+  it('TRAITS：至少 8 種、id 唯一、皆有名稱與描述', () => {
+    expect(TRAITS.length).toBeGreaterThanOrEqual(8);
+    expect(new Set(TRAITS.map((t: { id: string }) => t.id)).size).toBe(TRAITS.length);
+    for (const t of TRAITS) { expect(t.name).toBeTruthy(); expect(t.desc).toBeTruthy(); }
+  });
+
+  it('招募池每人帶特質；主角無特質', () => {
+    const pool = generateRecruitPool(createRng(99), 99, 0);
+    for (const r of pool) {
+      expect(r.trait, `${r.name} 缺特質`).toBeTruthy();
+      expect(TRAITS.some((t: { id: string }) => t.id === r.trait)).toBe(true);
+    }
+    expect(newGame().protagonist.trait).toBeNull();
+  });
+
+  it('特質影響薪餉與雇用費（greedy：便宜請、養得貴）', () => {
+    const r = generateRecruitPool(createRng(1), 1, 0)[0];
+    const asTrait = (trait: string | null) => ({ ...r, trait });
+    const baseWage = wagePerTrip(asTrait(null));
+    expect(wagePerTrip(asTrait('greedy'))).toBe(baseWage + 3);
+    expect(wagePerTrip(asTrait('frugal'))).toBe(baseWage - 2);
+    expect(hireCost(asTrait('greedy'))).toBe(hireCost(asTrait(null)) - 10);
+  });
+
+  it('特質屬性/HP 加成進入 memberFromRecord；partyCheckBonus 加總老練', () => {
+    const r = generateRecruitPool(createRng(2), 2, 0)[0];
+    const brawny = memberFromRecord({ ...r, trait: 'brawny' });
+    const plain = memberFromRecord({ ...r, trait: null });
+    expect(brawny.stats.str).toBe(plain.stats.str + 2);
+    const tough = memberFromRecord({ ...r, trait: 'tough' });
+    expect(tough.maxHp).toBe(plain.maxHp + 4);
+
+    const save = newGame();
+    expect(partyCheckBonus(save)).toBe(0);
+    save.companions.push({ ...r, trait: 'seasoned' }, { ...r, id: 'x2', trait: 'seasoned' });
+    expect(partyCheckBonus(save)).toBe(2);
   });
 });

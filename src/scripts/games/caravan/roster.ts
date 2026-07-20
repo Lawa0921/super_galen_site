@@ -6,6 +6,43 @@ import { statMod } from './check';
 import { JOBS, type JobId } from './data/jobs';
 import { ITEMS } from './data/items';
 
+// -----------------------------------------------------------------------
+// 旅伴特質（M7）：招募池人物隨機帶 1 種，影響檢定/薪餉/屬性——招誰變成決策
+// -----------------------------------------------------------------------
+
+export interface TraitDef {
+  id: string; name: string; desc: string;
+  /** 全隊事件檢定加成（老練旅伴的建議） */
+  checkBonus?: number;
+  /** 每趟薪餉增減 */
+  wageDelta?: number;
+  /** 雇用費增減（負值＝便宜） */
+  hireDelta?: number;
+  /** 戰鬥屬性加成（memberFromRecord 整合） */
+  statBonus?: Partial<StatBlock>;
+  maxHpBonus?: number;
+}
+
+export const TRAITS: TraitDef[] = [
+  { id: 'seasoned', name: '老練', desc: '旅途檢定 +1（全隊）', checkBonus: 1 },
+  { id: 'greedy', name: '貪財', desc: '雇用費 -10，但每趟薪餉 +3', wageDelta: 3, hireDelta: -10 },
+  { id: 'frugal', name: '儉樸', desc: '每趟薪餉 -2', wageDelta: -2 },
+  { id: 'brawny', name: '強壯', desc: '力量 +2', statBonus: { str: 2 } },
+  { id: 'nimble', name: '靈巧', desc: '敏捷 +2', statBonus: { dex: 2 } },
+  { id: 'learned', name: '博學', desc: '智力 +2', statBonus: { int: 2 } },
+  { id: 'charming', name: '迷人', desc: '魅力 +2', statBonus: { cha: 2 } },
+  { id: 'tough', name: '硬朗', desc: '生命上限 +4', maxHpBonus: 4 },
+];
+
+export const traitById = (id: string | null | undefined): TraitDef | undefined =>
+  id ? TRAITS.find((t) => t.id === id) : undefined;
+
+/** 全隊事件檢定加成：加總所有成員特質的 checkBonus（M7） */
+export function partyCheckBonus(save: SaveData): number {
+  return [save.protagonist, ...save.companions]
+    .reduce((sum, m) => sum + (traitById(m.trait)?.checkBonus ?? 0), 0);
+}
+
 /** 升級累積 XP 門檻；index=level（1-based，index 0 廢棄）；Lv5 為封頂（M4） */
 export const XP_TABLE: number[] = [0, 0, 50, 120, 210, 320];
 
@@ -52,14 +89,14 @@ export function unlockedMoves(record: CompanionRecord): Move[] {
   return JOBS[record.job].moves.filter((move) => (move.minLevel ?? 1) <= record.level);
 }
 
-/** 雇用花費：30 + level×20 */
+/** 雇用花費：30 + level×20 + 特質增減（M7） */
 export function hireCost(record: CompanionRecord): number {
-  return 30 + record.level * 20;
+  return 30 + record.level * 20 + (traitById(record.trait)?.hireDelta ?? 0);
 }
 
-/** 每趟薪餉：8 + level×4（M3 終審給定的經濟基準——一趟路線覆蓋 2-3 趟小隊薪餉） */
+/** 每趟薪餉：8 + level×4 + 特質增減（M3 經濟基準；M7 特質） */
 export function wagePerTrip(record: CompanionRecord): number {
-  return 8 + record.level * 4;
+  return 8 + record.level * 4 + (traitById(record.trait)?.wageDelta ?? 0);
 }
 
 const JOB_IDS: JobId[] = ['swordsman', 'ranger', 'mage', 'cleric'];
@@ -101,6 +138,7 @@ export function generateRecruitPool(rng: Rng, tavernSeed: number, reputation: nu
       stats,
       maxHp: jobDef.baseMaxHp + (isVeteran ? VETERAN_MAX_HP_BONUS : 0),
       injuredForTrips: 0,
+      trait: rng.pick(TRAITS).id, // M7：每位旅伴一種特質
       equipment: { weapon: null, armor: null, trinket: null },
     });
   }
