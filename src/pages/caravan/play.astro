@@ -1414,6 +1414,13 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       hp.className = 'unit-hp';
       hp.textContent = `HP ${Math.max(0, unit.hp)}/${unit.maxHp}`;
 
+      const hpBar = document.createElement('div');
+      hpBar.className = 'hp-bar';
+      const hpFill = document.createElement('i');
+      hpFill.style.width = `${Math.max(0, Math.round((Math.max(0, unit.hp) / unit.maxHp) * 100))}%`;
+      hpBar.appendChild(hpFill);
+      hp.appendChild(hpBar);
+
       const intent = document.createElement('p');
       intent.className = 'unit-intent';
       intent.textContent = showIntent ? unitIntentText(unit) : '';
@@ -1587,382 +1594,406 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
 </script>
 
 <style is:global>
+  /* =====================================================================
+     旅途帳本（Travel Ledger）視覺系統：
+     暗色木桌舞台上攤開的紙頁——內容浮起、美術在暗框中發光。
+     tokens：desk 暗桌 / page 紙頁 / ink 墨 / cinnabar 硃 / gold 舊金 /
+             blood 敵方 / forest 我方
+     ===================================================================== */
   .caravan-root {
+    --desk: #241b12;
+    --page: #f7f0df;
+    --page-deep: #efe6d0;
+    --ink: #2b2620;
+    --ink-soft: #5c5344;
+    --faded: #8a7f6d;
+    --cinnabar: #b3552e;
+    --cinnabar-deep: #8a3c1e;
+    --gold: #c9a35c;
+    --line: #d8ccb2;
+    --blood: #8a3030;
+    --forest: #3a5a40;
+
     min-height: 100vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    background: #f5f0e6; /* 淡色紙質底（動漫平塗配套的乾淨文庫基調） */
-    color: #2b2620;
+    background:
+      radial-gradient(ellipse 120% 70% at 50% 0%, rgba(201, 163, 92, 0.10), transparent 55%),
+      radial-gradient(ellipse 140% 100% at 50% 110%, rgba(0, 0, 0, 0.55), transparent 60%),
+      linear-gradient(160deg, #2e2318 0%, var(--desk) 45%, #1d150d 100%);
+    color: var(--ink);
     font-family: 'Noto Serif TC', serif;
-    /* M5 立繪撐高內容後，底部按鈕會落進 dev toolbar 的攔截區——留空隙 */
-    padding-bottom: 96px;
+    padding: 2.2rem 1rem 120px; /* 底部留空隙：dev toolbar 攔截區 */
   }
-  .screen { text-align: center; padding: 2rem; max-width: 34rem; }
-  /* M6 編年史 */
-  .title-legacy { font-size: 0.85rem; color: #8a3c1e; letter-spacing: 0.08em; margin: 0.8rem 0 0; }
-  .title-chronicle-link { display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; color: #6b5f4c; text-decoration: none; letter-spacing: 0.15em; }
-  .title-chronicle-link:hover { color: #8a3c1e; }
-  .settle-achievements { color: #8a3c1e; font-weight: 600; letter-spacing: 0.05em; margin: 0 0 0.6rem; }
-  .settle-achievements[hidden] { display: none; }
-  /* M7 行情與特質 */
-  .market-trend { font-style: normal; margin-left: 0.35rem; font-size: 0.8rem; }
-  .market-trend.up { color: #a4453a; }
-  .market-trend.down { color: #3a7a4e; }
-  .trait-tag { display: block; margin-top: 0.2rem; font-size: 0.8rem; color: #6b5f4c; }
-  .trade-buy-title { font-size: 1rem; letter-spacing: 0.2em; margin: 1.2rem 0 0.5rem; color: #4a3420; }
-  #trade-buy-section[hidden] { display: none; }
-  .gear-icon {
-    width: 24px; height: 24px; object-fit: cover; vertical-align: -6px;
-    margin-right: 6px; border: 1px solid #cfc6b0; border-radius: 4px;
+
+  /* 紙頁：內容的舞台。細噪紋＋頁緣墨線＋落在桌上的影 */
+  .screen {
+    text-align: center;
+    padding: 2.2rem 2.4rem 2.6rem;
+    max-width: 34rem;
+    width: 100%;
+    background:
+      repeating-linear-gradient(0deg, rgba(43, 38, 32, 0.016) 0 2px, transparent 2px 4px),
+      linear-gradient(178deg, #faf5e9 0%, var(--page) 40%, var(--page-deep) 100%);
+    border: 1px solid rgba(43, 38, 32, 0.55);
+    border-radius: 3px;
+    box-shadow:
+      inset 0 0 0 1px rgba(247, 240, 223, 0.9),
+      inset 0 0 42px rgba(140, 110, 70, 0.10),
+      0 2px 0 rgba(0, 0, 0, 0.25),
+      0 18px 50px rgba(0, 0, 0, 0.55);
   }
-  .equip-slot-label .gear-icon { width: 28px; height: 28px; }
-  .screen-wide { max-width: 46rem; width: 100%; }
-  /* ---- M5 美術 ---- */
-  .title-art {
-    display: block; width: 100%; height: auto; max-height: 300px; object-fit: cover;
-    border: 1px solid #cfc6b0; border-radius: 4px; margin: 0 auto 1.25rem;
-  }
-  .town-banner {
-    display: block; width: 100%; height: auto; max-height: 200px; object-fit: cover;
-    border: 1px solid #cfc6b0; border-radius: 4px; margin: 0 auto 1rem;
-  }
-  .town-banner[hidden] { display: none; }
-  .event-art {
-    display: block; width: 100%; height: auto; max-height: 220px; object-fit: cover;
-    border: 1px solid #cfc6b0; border-radius: 4px; margin: 0 0 0.75rem;
-  }
-  .event-art[hidden] { display: none; }
-  .unit-art {
-    display: block; width: 72px; height: 96px; object-fit: cover;
-    border: 1px solid #cfc6b0; border-radius: 3px; margin-bottom: 0.4rem;
-  }
-  .roster-art {
-    float: left; width: 64px; height: 85px; object-fit: cover;
-    border: 1px solid #cfc6b0; border-radius: 3px; margin: 0 0.75rem 0.25rem 0;
-  }
-  .recruit-art {
-    width: 64px; height: 85px; object-fit: cover;
-    border: 1px solid #cfc6b0; border-radius: 3px;
-  }
-  .game-title { font-size: 3rem; letter-spacing: 0.3em; margin-bottom: 0.25rem; }
-  .game-subtitle { letter-spacing: 0.5em; color: #8a7f6d; margin-bottom: 2.5rem; }
+  .screen[hidden] { display: none; }
+  .screen-wide { max-width: 46rem; }
+
+  /* ---- 標題畫面 ---- */
+  .game-title { font-size: 3rem; font-weight: 900; letter-spacing: 0.3em; margin: 0.4rem 0 0.25rem; text-shadow: 0 1px 0 #fff; }
+  .game-subtitle { letter-spacing: 0.5em; color: var(--faded); margin-bottom: 2.2rem; font-size: 0.9rem; }
   .title-actions { display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+  .title-legacy { font-size: 0.85rem; color: var(--cinnabar-deep); letter-spacing: 0.08em; margin: 0.9rem 0 0; }
+  .title-chronicle-link { display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; color: var(--faded); text-decoration: none; letter-spacing: 0.15em; border-bottom: 1px solid transparent; }
+  .title-chronicle-link:hover { color: var(--cinnabar-deep); border-bottom-color: var(--gold); }
+
+  /* ---- 按鈕體系：墨框紙面為基準；主行動硃底 ---- */
   .caravan-btn {
     font: inherit;
-    padding: 0.6rem 2.5rem;
-    border: 1px solid #2b2620;
-    background: transparent;
+    padding: 0.6rem 2.2rem;
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+    background: linear-gradient(180deg, #fffdf6, #f3ead6);
+    color: var(--ink);
     cursor: pointer;
     letter-spacing: 0.2em;
+    box-shadow: 0 1px 0 rgba(43, 38, 32, 0.35), 0 2px 6px rgba(43, 38, 32, 0.18);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
   }
-  .caravan-btn:hover { background: #2b2620; color: #f5f0e6; }
+  .caravan-btn:hover {
+    background: var(--ink);
+    color: var(--page);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), 0 5px 12px rgba(0, 0, 0, 0.28);
+  }
+  .caravan-btn:active { transform: translateY(0); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3); }
+  .caravan-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   .caravan-btn:disabled {
     color: #b7ac98;
-    border-color: #cfc6b0;
+    border-color: var(--line);
+    background: var(--page-deep);
+    box-shadow: none;
     cursor: not-allowed;
+    transform: none;
   }
-  .caravan-btn:disabled:hover { background: transparent; color: #b7ac98; }
-  .town-name { font-size: 1.8rem; margin-bottom: 0.5rem; }
-  .town-status { font-size: 1.1rem; }
-  .town-actions { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
-  .expedition-expired-note { font-size: 0.85rem; color: #a4453a; margin-top: 0.75rem; }
+  .caravan-btn:disabled:hover { background: var(--page-deep); color: #b7ac98; }
+  /* 主行動：啟程與出戰用硃紅立起來 */
+  #btn-new-game, #btn-continue, #btn-depart, #btn-trade-done, #btn-settle-back {
+    background: linear-gradient(180deg, #c4623a, var(--cinnabar));
+    border-color: var(--cinnabar-deep);
+    color: #fff6ea;
+    text-shadow: 0 1px 0 rgba(90, 35, 12, 0.5);
+  }
+  #btn-new-game:hover, #btn-continue:hover, #btn-depart:hover, #btn-trade-done:hover, #btn-settle-back:hover {
+    background: linear-gradient(180deg, #d06a40, #bb5c33);
+    color: #fff6ea;
+  }
 
-  /* 城鎮分頁：市集／酒館／隊伍／馬車（M4） */
+  /* ---- 城鎮 ---- */
+  .town-name { font-size: 1.9rem; font-weight: 900; letter-spacing: 0.22em; margin: 0.2rem 0 0.35rem; }
+  .town-status { font-size: 1.05rem; color: var(--ink-soft); }
+  .town-status b, #town-gold { color: var(--cinnabar-deep); }
+  .town-actions { margin-top: 1.4rem; display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+  .expedition-expired-note { font-size: 0.85rem; color: var(--blood); margin-top: 0.75rem; }
+
+  /* 書籤分頁（簽名元素）：釘在頁緣的皮книж签 */
   .town-tabs {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.5rem;
-    margin: 1.75rem 0 1.25rem;
+    gap: 0.35rem;
+    margin: 1.9rem -2.4rem 1.25rem;
+    padding: 0 1.4rem;
+    border-bottom: 2px solid var(--ink);
   }
   .town-tab {
     font: inherit;
-    padding: 0.4rem 1.3rem;
-    border: 1px solid #cfc6b0;
-    background: transparent;
-    color: #5c5344;
+    padding: 0.45rem 1.4rem 0.55rem;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, var(--page-deep), #e6dbc2);
+    color: var(--ink-soft);
     cursor: pointer;
     letter-spacing: 0.15em;
     font-size: 0.9rem;
+    transform: translateY(2px);
+    transition: transform 0.12s ease, background 0.12s ease;
   }
-  .town-tab:hover { border-color: #2b2620; }
-  .town-tab.active { background: #2b2620; color: #f5f0e6; border-color: #2b2620; }
+  .town-tab:hover { transform: translateY(0); color: var(--ink); }
+  .town-tab.active {
+    background: linear-gradient(180deg, #fffdf6, var(--page));
+    color: var(--ink);
+    border-color: var(--ink);
+    border-top: 3px solid var(--gold);
+    font-weight: 700;
+    transform: translateY(2px);
+    padding-top: 0.4rem;
+  }
   .town-panel { text-align: left; }
-  .panel-status { color: #5c5344; margin: 0 0 0.75rem; }
-  .panel-hint { color: #8a7f6d; font-size: 0.85rem; margin: 0 0 0.75rem; }
+  .panel-status { color: var(--ink-soft); margin: 0 0 0.75rem; }
+  .panel-hint { color: var(--faded); font-size: 0.85rem; margin: 0 0 0.75rem; }
 
-  /* 市集 */
-  .market-list { display: flex; flex-direction: column; gap: 0.6rem; }
-  .market-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.6rem;
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 0.6rem 0.9rem;
+  /* ---- 清單卡片（市集/酒館/隊伍/委託/交易 共用語言）---- */
+  .market-row, .recruit-card, .roster-card, .quest-item, .trade-row, .quest-outfit, .settle-items, .check-result {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--gold);
+    border-radius: 2px;
+    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    box-shadow: 0 1px 3px rgba(43, 38, 32, 0.12);
+  }
+  .market-list, .tavern-list, .roster-list, .trade-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .market-row, .trade-row {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.6rem; padding: 0.6rem 0.9rem; text-align: left;
   }
   .market-name { flex: 1; min-width: 8rem; }
-  .buy-btn, .sell-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; }
+  .buy-btn, .sell-btn, .trade-sell-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; letter-spacing: 0.08em; }
+  .market-trend { font-style: normal; margin-left: 0.35rem; font-size: 0.8rem; }
+  .market-trend.up { color: var(--blood); }
+  .market-trend.down { color: var(--forest); }
 
-  /* 酒館 */
-  .tavern-list { display: flex; flex-direction: column; gap: 0.75rem; }
-  .tavern-empty { color: #8a7f6d; font-style: italic; }
-  .recruit-card {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 0.75rem 1rem;
-  }
-  .recruit-name { font-weight: 600; margin: 0; flex-basis: 100%; }
-  .recruit-info { font-size: 0.85rem; color: #8a7f6d; margin: 0; flex: 1; min-width: 10rem; }
+  .tavern-empty, .cargo-empty, .quest-hidden-hint { color: var(--faded); font-style: italic; }
+  .recruit-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 1rem; }
+  .recruit-name { font-weight: 700; margin: 0; flex-basis: 100%; }
+  .recruit-info { font-size: 0.85rem; color: var(--faded); margin: 0; flex: 1; min-width: 10rem; }
+  .trait-tag { display: block; margin-top: 0.25rem; font-size: 0.8rem; color: var(--cinnabar-deep); }
   .hire-btn { padding: 0.35rem 1.2rem; font-size: 0.85rem; }
 
-  /* 隊伍 */
-  .roster-list { display: flex; flex-direction: column; gap: 0.75rem; }
-  .roster-card { border: 1px solid #cfc6b0; background: #fffdf8; padding: 0.75rem 1rem; overflow: hidden; }
-  .roster-name { font-weight: 600; margin: 0 0 0.3rem; }
-  .roster-xp, .roster-stats, .roster-hp, .roster-moves { font-size: 0.85rem; color: #5c5344; margin: 0.15rem 0; }
-  .roster-injury { font-size: 0.85rem; color: #a4453a; margin: 0.3rem 0; }
+  .roster-card { padding: 0.75rem 1rem; overflow: hidden; }
+  .roster-name { font-weight: 700; margin: 0 0 0.3rem; }
+  .roster-xp, .roster-stats, .roster-hp, .roster-moves { font-size: 0.85rem; color: var(--ink-soft); margin: 0.15rem 0; }
+  .roster-injury { font-size: 0.85rem; color: var(--blood); margin: 0.3rem 0; }
   .levelup-btn, .dismiss-btn { margin: 0.6rem 0.6rem 0 0; padding: 0.35rem 1.1rem; font-size: 0.85rem; }
 
-  /*
-   * 裝備三欄（M5 Task 2）。兩個交疊的坑：
-   * 1) `.equip-slot` 與全域 `src/styles/_inventory.scss`（RPG 角色頁 Diablo 2 風格裝備面板
-   *    InventoryPanel.astro）同名撞了——那份規則是 60×60px 深色格子＋position:relative，
-   *    此頁若被套用會蓋住卡片內下方的升級/解雇鈕（Playwright 直接回報 pointer-events 被攔截）。
-   * 2) 本頁所有卡片/按鈕都是 client-side `document.createElement` 動態產生，Astro 預設的
-   *    scoped style 只會把 `data-astro-cid-*` 屬性掛在建置期產出的標記上，動態節點沒有這個
-   *    屬性，scoped 選擇器永遠比對不到——所以這裡沿用本檔既有模式外一律要用 :global()
-   *    才能讓規則真的生效（也才擋得住上述 (1) 的全域撞名規則）。
-   */
+  /* 裝備欄（沿革註解見 git 歷史：全域 _inventory.scss 撞名 + 動態節點需 global） */
   .roster-card .equip-slots { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.6rem; }
   .roster-card .equip-slot {
-    position: static;
-    width: auto;
-    height: auto;
-    flex: 1;
-    min-width: 9rem;
-    border: 1px solid #ece5d5;
-    background: transparent;
-    padding: 0.5rem 0.6rem;
-    cursor: default;
+    position: static; width: auto; height: auto; flex: 1; min-width: 9rem;
+    border: 1px dashed var(--line); border-radius: 2px;
+    background: rgba(43, 38, 32, 0.025);
+    padding: 0.5rem 0.6rem; cursor: default;
   }
-  .roster-card .equip-slot:hover { border-color: #ece5d5; box-shadow: none; transform: none; }
-  .roster-card .equip-slot-label { font-size: 0.85rem; color: #5c5344; margin: 0 0 0.35rem; }
+  .roster-card .equip-slot:hover { border-color: var(--line); box-shadow: none; transform: none; }
+  .roster-card .equip-slot-label { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.35rem; }
   .roster-card .unequip-btn { font-size: 0.8rem; padding: 0.25rem 0.7rem; }
   .roster-card .equip-candidates { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.4rem; }
   .roster-card .equip-btn { font-size: 0.8rem; padding: 0.25rem 0.7rem; text-align: left; }
+  .gear-icon {
+    width: 24px; height: 24px; object-fit: cover; vertical-align: -6px;
+    margin-right: 6px; border: 1px solid var(--gold); border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(43, 38, 32, 0.25);
+  }
+  .equip-slot-label .gear-icon { width: 28px; height: 28px; }
 
-  /* 馬車 */
   #wagon-panel .panel-status { margin-bottom: 1rem; }
 
-  /* 屬性配點面板（modal） */
+  /* ---- modal ---- */
   .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(43, 38, 32, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    z-index: 20;
+    position: fixed; inset: 0;
+    background: rgba(20, 14, 8, 0.62);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem; z-index: 20;
   }
-  /* [hidden] 與 .modal-overlay 的 class selector 特異度相同，author style 會贏過 UA
-     stylesheet 的 [hidden]{display:none}——沒有這條，關閉的面板仍會蓋住整個畫面
-     並攔截點擊（M2 guild 頁曾踩過同類 opacity:0 版本，這裡是 display 版）。 */
-  .modal-overlay[hidden] { display: none; }
-  .modal-box { background: #fffdf8; border: 1px solid #2b2620; padding: 1.5rem; max-width: 22rem; width: 100%; text-align: left; }
-  .modal-title { margin: 0 0 1rem; letter-spacing: 0.15em; font-size: 1.2rem; }
+  .modal-overlay[hidden] { display: none; } /* class 特異度需壓過 UA [hidden] */
+  .modal-box {
+    background: linear-gradient(178deg, #faf5e9, var(--page));
+    border: 1px solid var(--ink); border-radius: 3px;
+    padding: 1.5rem; max-width: 22rem; width: 100%; text-align: left;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  }
+  .modal-title { margin: 0 0 1rem; letter-spacing: 0.15em; font-size: 1.2rem; font-weight: 900; }
   .alloc-rows { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
   .alloc-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
   .alloc-plus { padding: 0.25rem 0.8rem; font-size: 0.85rem; }
-  .alloc-total { color: #8a7f6d; font-size: 0.9rem; margin-bottom: 1rem; }
+  .alloc-total { color: var(--faded); font-size: 0.9rem; margin-bottom: 1rem; }
   .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
 
-  /* 委託板 */
-  .quest-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 1.25rem; }
+  /* ---- 委託板 ---- */
+  .quest-title, .settle-title, .trade-title, .combat-title {
+    font-size: 1.55rem; font-weight: 900; letter-spacing: 0.3em; margin: 0 0 1.1rem;
+    position: relative; padding-bottom: 0.55rem;
+  }
+  .quest-title::after, .settle-title::after, .trade-title::after, .combat-title::after {
+    content: '';
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    width: 4.5rem; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
   .quest-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
   .quest-row { display: flex; align-items: stretch; gap: 0.5rem; }
-  .quest-item {
-    flex: 1;
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 0.75rem 1rem;
-    text-align: left;
-    cursor: pointer;
-  }
-  .quest-item:hover { border-color: #2b2620; }
-  .quest-name { font-weight: 600; margin: 0 0 0.25rem; }
-  .quest-kind { font-size: 0.85rem; color: #8a7f6d; margin: 0; }
+  .quest-item { flex: 1; padding: 0.75rem 1rem; text-align: left; cursor: pointer; font: inherit;
+    transition: transform 0.12s ease, box-shadow 0.12s ease; }
+  .quest-item:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(43, 38, 32, 0.2); border-left-color: var(--cinnabar); }
+  .quest-name { font-weight: 700; margin: 0 0 0.25rem; }
+  .quest-kind { font-size: 0.85rem; color: var(--faded); margin: 0; }
   .quest-outfit-btn { font-size: 0.8rem; padding: 0.5rem 0.9rem; white-space: nowrap; }
-  .quest-hidden-hint { color: #8a7f6d; font-style: italic; margin-bottom: 1rem; }
-  .quest-wage-warning { color: #a4453a; font-size: 0.85rem; margin-bottom: 1rem; }
+  .quest-wage-warning { color: var(--blood); font-size: 0.85rem; margin-bottom: 1rem; }
 
-  /* 出發整裝（M4） */
-  .quest-outfit {
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 1rem 1.25rem;
-    text-align: left;
-    margin-bottom: 1.25rem;
-  }
-  .outfit-title { margin: 0 0 0.75rem; font-size: 1.1rem; letter-spacing: 0.1em; }
+  .quest-outfit { padding: 1rem 1.25rem; text-align: left; margin-bottom: 1.25rem; }
+  .outfit-title { margin: 0 0 0.75rem; font-size: 1.1rem; letter-spacing: 0.1em; font-weight: 700; }
   .cargo-picker { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
   .cargo-picker[hidden] { display: none; }
   .cargo-row { display: flex; align-items: center; gap: 0.5rem; }
   .cargo-label { flex: 1; font-size: 0.9rem; }
   .cargo-plus, .cargo-minus { padding: 0.2rem 0.6rem; font-size: 0.85rem; }
-  .cargo-empty { color: #8a7f6d; font-style: italic; margin: 0.3rem 0; }
-  .cargo-space, .wage-preview { font-size: 0.85rem; color: #5c5344; margin: 0.3rem 0; }
+  .cargo-space, .wage-preview { font-size: 0.85rem; color: var(--ink-soft); margin: 0.3rem 0; }
   .outfit-actions { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
 
-  /* 遠征畫面 */
-  .exp-progress { letter-spacing: 0.2em; color: #8a7f6d; margin-bottom: 1rem; }
+  /* ---- 遠征 ---- */
+  .exp-progress { letter-spacing: 0.3em; color: var(--faded); margin-bottom: 1rem; font-size: 0.9rem; }
   .exp-condition {
     display: flex; align-items: center; gap: 0.7rem; justify-content: center;
-    color: #8a3c1e; letter-spacing: 0.08em; margin-bottom: 0.6rem; font-size: 0.92rem;
+    color: var(--cinnabar-deep); letter-spacing: 0.08em; margin-bottom: 0.7rem; font-size: 0.92rem;
   }
   .exp-condition[hidden] { display: none; }
   .exp-condition img {
     width: 84px; height: 63px; object-fit: cover;
-    border: 1px solid #cfc6b0; border-radius: 4px;
-  }
-  .status-icon { width: 20px; height: 20px; vertical-align: -4px; margin-right: 1px; }
-  .unit-status span { margin-right: 6px; font-size: 0.8rem; color: #7a4b9d; }
-  .event-card {
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 1.25rem 1.5rem;
-    text-align: left;
-    margin-bottom: 1rem;
-  }
-  .event-title { font-size: 1.3rem; margin: 0 0 0.75rem; letter-spacing: 0.1em; }
-  .event-body { line-height: 1.8; margin: 0 0 1rem; }
-  .event-options { display: flex; flex-direction: column; gap: 0.5rem; }
-  .event-opt { text-align: left; }
-  .room-choices {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  .room-choices:empty { display: none; }
-  .check-result {
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 0.6rem 1rem;
-    margin-bottom: 1rem;
+    border: 1px solid var(--gold); border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(43, 38, 32, 0.3);
   }
 
-  /* 戰鬥畫面 */
-  .combat-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 1.5rem; }
-  .combat-field {
-    display: flex;
-    justify-content: center;
-    gap: 3rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-  }
-  .combat-side { display: flex; flex-direction: column; gap: 0.6rem; min-width: 9rem; }
-  .combat-unit {
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 0.5rem 0.9rem;
+  /* 事件卡：插圖滿幅頂圖、紙頁載文 */
+  .event-card {
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    padding: 0 0 1.25rem;
     text-align: left;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(43, 38, 32, 0.22);
   }
-  .unit-name { font-weight: 600; margin: 0 0 0.15rem; }
-  .unit-hp { font-size: 0.85rem; color: #5c5344; margin: 0; }
-  .unit-intent { font-size: 0.75rem; font-style: italic; color: #8a7f6d; margin: 0.15rem 0 0; min-height: 1em; }
+  .event-art {
+    display: block; width: 100%; height: auto; max-height: 230px; object-fit: cover;
+    border: none; border-bottom: 2px solid var(--gold); border-radius: 0; margin: 0 0 1rem;
+  }
+  .event-art[hidden] { display: none; }
+  .event-title { font-size: 1.35rem; font-weight: 900; margin: 0 0 0.6rem; letter-spacing: 0.12em; padding: 0 1.4rem; }
+  .event-body { line-height: 1.9; margin: 0 0 1rem; padding: 0 1.4rem; }
+  .event-options { display: flex; flex-direction: column; gap: 0.5rem; padding: 0 1.4rem; }
+  .event-opt { text-align: left; letter-spacing: 0.06em; }
+  .room-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .room-choices:empty { display: none; }
+  .check-result { padding: 0.6rem 1rem; margin-bottom: 1rem; border-left-color: var(--cinnabar); }
+
+  /* ---- 戰鬥：陣營色帶＋血條 ---- */
+  .combat-field { display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .combat-side { display: flex; flex-direction: column; gap: 0.6rem; min-width: 9.5rem; }
+  .combat-unit {
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--faded);
+    border-radius: 2px;
+    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    padding: 0.55rem 0.9rem;
+    text-align: left;
+    box-shadow: 0 2px 6px rgba(43, 38, 32, 0.16);
+  }
+  #combat-enemies .combat-unit { border-top-color: var(--blood); }
+  #combat-party .combat-unit { border-top-color: var(--forest); }
+  .unit-name { font-weight: 700; margin: 0 0 0.15rem; }
+  .unit-hp { font-size: 0.8rem; color: var(--ink-soft); margin: 0; }
+  .hp-bar {
+    height: 6px; margin-top: 3px;
+    background: rgba(43, 38, 32, 0.14);
+    border-radius: 3px; overflow: hidden;
+  }
+  .hp-bar i { display: block; height: 100%; border-radius: 3px; transition: width 0.25s ease; }
+  #combat-enemies .hp-bar i { background: linear-gradient(90deg, #a84040, var(--blood)); }
+  #combat-party .hp-bar i { background: linear-gradient(90deg, #4f7a57, var(--forest)); }
+  .unit-intent { font-size: 0.75rem; font-style: italic; color: var(--faded); margin: 0.25rem 0 0; min-height: 1em; }
   .unit-status { font-size: 0.8rem; color: #7a4b9d; margin: 0.15rem 0 0; min-height: 1em; }
-  .combat-targets {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+  .unit-status span { margin-right: 6px; font-size: 0.8rem; }
+  .status-icon { width: 20px; height: 20px; vertical-align: -4px; margin-right: 1px; }
+  .unit-art {
+    display: block; width: 72px; height: 96px; object-fit: cover;
+    border: 1px solid var(--gold); border-radius: 3px; margin-bottom: 0.45rem;
+    box-shadow: 0 2px 5px rgba(43, 38, 32, 0.3);
   }
+  .combat-targets { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem; }
   .combat-targets:empty { display: none; }
   .target-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; }
-  .target-selected { background: #2b2620; color: #f5f0e6; }
+  .target-selected { background: var(--ink); color: var(--page); }
   .combat-log {
-    max-width: 30rem;
-    max-height: 8rem;
-    overflow-y: auto;
+    max-width: 30rem; max-height: 8.5rem; overflow-y: auto;
     margin: 0 auto 1rem;
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 0.5rem 0.9rem;
-    text-align: left;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--cinnabar);
+    border-radius: 2px;
+    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    padding: 0.55rem 0.95rem; text-align: left;
   }
-  .combat-log p { margin: 0.2rem 0; font-size: 0.85rem; }
-  .combat-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.6rem;
-    margin-bottom: 1rem;
-  }
+  .combat-log p { margin: 0.22rem 0; font-size: 0.85rem; line-height: 1.6; }
+  .combat-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-bottom: 1rem; }
   .move-btn { padding: 0.5rem 1.2rem; }
   .combat-retreat { font-size: 0.85rem; padding: 0.4rem 1.5rem; }
   .combat-result { margin-top: 1.5rem; }
-  .combat-result .result-text { font-size: 1.1rem; margin-bottom: 1rem; }
+  .combat-result .result-text { font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: 0.08em; }
 
-  /* 結算畫面 */
-  .settle-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 1rem; }
+  /* ---- 結算 ---- */
+  .settle-achievements { color: var(--cinnabar-deep); font-weight: 700; letter-spacing: 0.05em; margin: 0 0 0.6rem; }
+  .settle-achievements[hidden] { display: none; }
   .settle-log {
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 0.75rem 1rem;
-    text-align: left;
-    max-height: 10rem;
-    overflow-y: auto;
-    margin-bottom: 1rem;
+    border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 2px;
+    background: linear-gradient(180deg, #fffdf6, #fbf5e7);
+    padding: 0.75rem 1rem; text-align: left; max-height: 10rem; overflow-y: auto; margin-bottom: 1rem;
   }
   .settle-log p { margin: 0.3rem 0; font-size: 0.9rem; }
-  .settle-headline { font-weight: 600; }
-  .settle-stats {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    margin: 0 0 1rem;
-  }
-  .settle-stat dt { font-size: 0.8rem; color: #8a7f6d; }
-  .settle-stat dd { font-size: 1.3rem; margin: 0; }
-  .settle-items-label { text-align: left; margin-bottom: 0.4rem; color: #8a7f6d; }
-  .settle-items {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.5rem;
-    text-align: left;
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-  }
-  .settle-items li { padding: 0.4rem 0.9rem; border-bottom: 1px solid #ece5d5; }
+  .settle-headline { font-weight: 700; }
+  .settle-stats { display: flex; justify-content: center; gap: 2rem; margin: 0 0 1rem; }
+  .settle-stat dt { font-size: 0.8rem; color: var(--faded); letter-spacing: 0.15em; }
+  .settle-stat dd { font-size: 1.45rem; margin: 0.1rem 0 0; font-weight: 900; color: var(--cinnabar-deep); }
+  .settle-items-label { text-align: left; margin-bottom: 0.4rem; color: var(--faded); }
+  .settle-items { list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; }
+  .settle-items li { padding: 0.45rem 0.9rem; border-bottom: 1px solid #ece5d5; }
   .settle-items li:last-child { border-bottom: none; }
 
-  /* 異鎮交易（M4） */
-  .trade-title { font-size: 1.6rem; letter-spacing: 0.3em; margin-bottom: 0.75rem; }
-  .trade-town-name { color: #8a7f6d; margin-bottom: 1rem; }
-  .trade-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
-  .trade-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.6rem;
-    border: 1px solid #cfc6b0;
-    background: #fffdf8;
-    padding: 0.6rem 0.9rem;
-    text-align: left;
-  }
-  .trade-sell-btn { padding: 0.35rem 1rem; font-size: 0.85rem; }
+  /* ---- 異鎮交易 ---- */
+  .trade-town-name { color: var(--faded); margin-bottom: 1rem; }
   .trade-gold-label { margin-bottom: 1rem; }
+  .trade-gold-label span { color: var(--cinnabar-deep); font-weight: 700; }
+  .trade-buy-title { font-size: 1rem; letter-spacing: 0.2em; margin: 1.3rem 0 0.5rem; color: var(--ink); font-weight: 700; }
+  #trade-buy-section[hidden] { display: none; }
+
+  /* ---- 圖片元素 ---- */
+  .title-art {
+    display: block; width: 100%; height: auto; max-height: 300px; object-fit: cover;
+    border: 1px solid var(--ink); border-radius: 3px; margin: 0 auto 1.4rem;
+    box-shadow: 0 6px 20px rgba(43, 38, 32, 0.3);
+  }
+  .town-banner {
+    display: block; width: 100%; height: auto; max-height: 200px; object-fit: cover;
+    border: 1px solid var(--ink); border-radius: 3px; margin: 0 auto 1rem;
+    box-shadow: 0 4px 14px rgba(43, 38, 32, 0.25);
+  }
+  .town-banner[hidden] { display: none; }
+  .roster-art {
+    float: left; width: 64px; height: 85px; object-fit: cover;
+    border: 1px solid var(--gold); border-radius: 3px; margin: 0 0.75rem 0.25rem 0;
+    box-shadow: 0 2px 6px rgba(43, 38, 32, 0.28);
+  }
+  .recruit-art {
+    width: 64px; height: 85px; object-fit: cover;
+    border: 1px solid var(--gold); border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(43, 38, 32, 0.28);
+  }
+
+  @media (max-width: 560px) {
+    .caravan-root { padding: 1rem 0.6rem 120px; }
+    .screen { padding: 1.6rem 1.1rem 2rem; }
+    .town-tabs { margin-left: -1.1rem; margin-right: -1.1rem; padding: 0 0.5rem; }
+    .event-title, .event-body, .event-options { padding-left: 1.1rem; padding-right: 1.1rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .caravan-btn, .town-tab, .quest-item, .hp-bar i { transition: none; }
+  }
 </style>
