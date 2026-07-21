@@ -16,6 +16,7 @@ test.describe('商隊與劍：外殼流程', () => {
 
   test('開新檔 → 城鎮畫面顯示初始金幣 200', async ({ page }) => {
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
     await expect(page.locator('#screen-title')).toBeHidden();
@@ -24,6 +25,7 @@ test.describe('商隊與劍：外殼流程', () => {
 
   test('開新檔後重新整理 → 「繼續旅程」可見且回到城鎮', async ({ page }) => {
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
@@ -76,6 +78,7 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
   });
@@ -126,6 +129,7 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
     await page.click('#btn-training');
@@ -172,6 +176,7 @@ test.describe('商隊與劍：遠征系統', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
   }
@@ -330,6 +335,7 @@ test.describe('商隊與劍：經營系統', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
   }
@@ -633,6 +639,7 @@ test.describe('商隊與劍：裝備系統', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#screen-town')).toBeVisible();
   }
@@ -742,6 +749,7 @@ test.describe('商隊與劍：冒險編年史（M6）', () => {
     });
     await page.reload();
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await page.click('#btn-training');
     for (let i = 0; i < 40; i++) {
@@ -775,6 +783,7 @@ test.describe('商隊與劍：冒險編年史（M6）', () => {
     await page.reload();
     await expect(page.locator('#title-legacy')).toContainText('+30 G');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
     await expect(page.locator('#town-gold')).toHaveText('230');
     await page.evaluate(() => localStorage.removeItem('caravan-chronicle-v1'));
@@ -847,6 +856,7 @@ test.describe('商隊與劍：創角與背包', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await expect(page.locator('#screen-create')).toBeVisible();
 
     await page.click('.create-job[data-job="mage"]');
@@ -872,6 +882,7 @@ test.describe('商隊與劍：創角與背包', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm');
     await expect(page.locator('#screen-town')).toBeVisible();
 
@@ -894,6 +905,7 @@ test.describe('商隊與劍：M11 RPG 深度', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm');
     await expect(page.locator('#screen-town')).toBeVisible();
     await page.evaluate(() => {
@@ -925,6 +937,7 @@ test.describe('商隊與劍：M11 RPG 深度', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm');
     await expect(page.locator('#screen-town')).toBeVisible();
 
@@ -947,6 +960,7 @@ test.describe('商隊與劍：M11 RPG 深度', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm');
     await expect(page.locator('#screen-town')).toBeVisible();
     await page.evaluate(() => {
@@ -977,6 +991,7 @@ test.describe('商隊與劍：M12 商會目標', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm');
     await expect(page.locator('#screen-town')).toBeVisible();
 
@@ -992,6 +1007,7 @@ test.describe('商隊與劍：M12 商會目標', () => {
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
     await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm');
     await expect(page.locator('#screen-town')).toBeVisible();
     await page.evaluate(() => {
@@ -1005,5 +1021,31 @@ test.describe('商隊與劍：M12 商會目標', () => {
 
     await expect(page.locator('#goal-rank')).toHaveText('特許商人');
     await expect(page.locator('#goal-next')).toContainText('聲望 45/60');
+  });
+});
+
+test.describe('商隊與劍：序章演出', () => {
+  test('新的旅程 → 序章三拍 → 前往商會進入商會登記；跳過鈕直達', async ({ page }) => {
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+
+    await page.click('#btn-new-game');
+    await expect(page.locator('#screen-prologue')).toBeVisible();
+    await expect(page.locator('#prologue-text')).toContainText('暮色');
+    await page.click('#btn-prologue-next');
+    await expect(page.locator('#prologue-text')).toContainText('老商人');
+    await page.click('#btn-prologue-next');
+    await expect(page.locator('#btn-prologue-next')).toHaveText('▸ 前往商會');
+    await page.click('#btn-prologue-next');
+    await expect(page.locator('#screen-create')).toBeVisible();
+    await expect(page.locator('.create-title')).toHaveText('商會登記');
+
+    // 跳過路徑
+    await page.click('#btn-create-cancel');
+    await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip');
+    await expect(page.locator('#screen-create')).toBeVisible();
   });
 });
