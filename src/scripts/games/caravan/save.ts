@@ -23,6 +23,12 @@ export interface CompanionRecord {
   specialization?: string | null;
   /** M11 旅伴羈絆：與主角同行完成的遠征趟數（主角自身不使用此欄） */
   bond?: number;
+  /** M14 冒險技能 rank（skillId -> 0-5）；主角使用 */
+  skills?: Record<string, number>;
+  /** M14 未分配技能點（升級 +1） */
+  skillPoints?: number;
+  /** M14 鐵匠強化：各裝備欄的 +N（0-3），跟人走（換裝保留） */
+  equipmentPlus?: { weapon: number; armor: number; trinket: number };
 }
 
 export interface SaveDataV2 {
@@ -115,12 +121,18 @@ export const STARTING_PROFILE: Record<JobId, { stats: StatBlock; maxHp: number }
   cleric: { stats: { str: 10, dex: 9, int: 11, cha: 14, con: 12 }, maxHp: 21 },
 };
 
+/** M14 創角擲骰：每項屬性允許偏離職業基準的範圍 */
+export const STAT_ROLL_MIN = -2;
+export const STAT_ROLL_MAX = 3;
+
 export interface CharacterChoice {
   job: JobId;
   /** 額外配點（總和 ≤ CREATION_BONUS_POINTS，每項非負整數） */
   allocation?: Partial<StatBlock>;
   /** 起始特性 id（roster.ts TRAITS）；未選為 null */
   trait?: string | null;
+  /** M14 擲骰結果：每項須落在 [base+STAT_ROLL_MIN, base+STAT_ROLL_MAX]；未帶＝職業基準 */
+  statRoll?: StatBlock;
 }
 
 /** 依創角選擇建立主角記錄。劍士＋0 配點＋無特性 === defaultProtagonist()。 */
@@ -138,7 +150,16 @@ export function createProtagonist(choice: CharacterChoice): CompanionRecord {
   if (total > CREATION_BONUS_POINTS) {
     throw new Error(`創角配點總和不可超過 ${CREATION_BONUS_POINTS}`);
   }
-  const stats: StatBlock = { ...profile.stats };
+  const base = choice.statRoll ?? profile.stats;
+  if (choice.statRoll) {
+    for (const key of Object.keys(profile.stats) as Array<keyof StatBlock>) {
+      const offset = choice.statRoll[key] - profile.stats[key];
+      if (offset < STAT_ROLL_MIN || offset > STAT_ROLL_MAX) {
+        throw new Error(`擲骰屬性超出允許範圍（${String(key)} 偏離 ${offset}）`);
+      }
+    }
+  }
+  const stats: StatBlock = { ...base };
   for (const key of Object.keys(alloc) as Array<keyof StatBlock>) {
     stats[key] += alloc[key] ?? 0;
   }

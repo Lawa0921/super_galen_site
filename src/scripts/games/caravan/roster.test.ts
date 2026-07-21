@@ -3,11 +3,12 @@ import {
   XP_TABLE, levelFromXp, pendingLevelUps, applyLevelUp, unlockedMoves,
   generateRecruitPool, hireCost, wagePerTrip, equipItem, unequipItem, equipmentBonus,
   SPECIALIZATIONS, chooseSpecialization, bondTier, partyCheckBonus,
+  SKILLS, spendSkillPoint, skillCheckBonus, smithCost, upgradeEquipment, rollStats,
   TRAITS, partyCheckBonus,
 } from './roster';
 import { memberFromRecord } from './data/jobs';
 import { createRng } from './rng';
-import { newGame, type SaveData, type CompanionRecord } from './save';
+import { newGame, STARTING_PROFILE as STARTING_PROFILE_REF, type SaveData, type CompanionRecord } from './save';
 import type { StatBlock } from './types';
 import { JOBS, memberFromRecord } from './data/jobs';
 import { ITEMS, type ItemDef } from './data/items';
@@ -400,7 +401,7 @@ describe('roster（成長系統）', () => {
     describe('equipmentBonus', () => {
       it('無裝備回全 0/空', () => {
         const record = makeCompanion();
-        expect(equipmentBonus(record)).toEqual({ stats: {}, defense: 0, maxHp: 0 });
+        expect(equipmentBonus(record)).toEqual({ stats: {}, defense: 0, maxHp: 0, damageBonus: 0 });
       });
 
       it('三個 slot 的 bonus/defense/maxHp 各自加總', () => {
@@ -552,5 +553,118 @@ describe('M11 旅伴羈絆', () => {
     const noBond = memberFromRecord(rec);
     const bonded = memberFromRecord({ ...rec, bond: 9 }); // tier 3
     expect(bonded.maxHp).toBe(noBond.maxHp + 6);
+  });
+});
+
+describe('M14 冒險技能', () => {
+  const mkRec = (over: Partial<CompanionRecord> = {}): CompanionRecord => ({
+    id: 'protagonist', name: '你', job: 'swordsman', level: 1, xp: 0,
+    stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 }, maxHp: 22,
+    injuredForTrips: 0, trait: null,
+    equipment: { weapon: null, armor: null, trinket: null },
+    ...over,
+  });
+
+  it('SKILLS：五技能一一對應五屬性', () => {
+    expect(SKILLS).toHaveLength(5);
+    const stats = SKILLS.map((sk) => sk.stat).sort();
+    expect(stats).toEqual(['cha', 'con', 'dex', 'int', 'str']);
+  });
+
+  it('applyLevelUp 升級同時獲得 1 技能點', () => {
+    const r = mkRec({ xp: 60 });
+    applyLevelUp(r, { str: 2 });
+    expect(r.skillPoints).toBe(1);
+  });
+
+  it('spendSkillPoint：消耗點數升 rank；無點數/滿 rank(5) 丟錯', () => {
+    const r = mkRec({ skillPoints: 2 });
+    spendSkillPoint(r, 'negotiation');
+    expect(r.skills?.negotiation).toBe(1);
+    expect(r.skillPoints).toBe(1);
+    expect(() => spendSkillPoint(mkRec(), 'negotiation')).toThrow();
+    const maxed = mkRec({ skillPoints: 1, skills: { negotiation: 5 } });
+    expect(() => spendSkillPoint(maxed, 'negotiation')).toThrow();
+    expect(() => spendSkillPoint(mkRec({ skillPoints: 1 }), 'nope')).toThrow();
+  });
+
+  it('skillCheckBonus：回傳該屬性對應技能的 rank；未學為 0', () => {
+    const r = mkRec({ skills: { negotiation: 3, survival: 1 } });
+    expect(skillCheckBonus(r, 'cha')).toBe(3);
+    expect(skillCheckBonus(r, 'con')).toBe(1);
+    expect(skillCheckBonus(r, 'str')).toBe(0);
+    expect(skillCheckBonus(mkRec(), 'cha')).toBe(0);
+  });
+});
+
+describe('M14 鐵匠強化', () => {
+  const mkRec = (over: Partial<CompanionRecord> = {}): CompanionRecord => ({
+    id: 'protagonist', name: '你', job: 'swordsman', level: 1, xp: 0,
+    stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 }, maxHp: 22,
+    injuredForTrips: 0, trait: null,
+    equipment: { weapon: 'salt-crystal-blade', armor: 'ridgeleather-vest', trinket: 'den-idol' },
+    ...over,
+  });
+
+  it('smithCost：+1=40G+1礦、+2=80G+2礦、+3=120G+3礦', () => {
+    expect(smithCost(0)).toEqual({ gold: 40, ore: 1 });
+    expect(smithCost(1)).toEqual({ gold: 80, ore: 2 });
+    expect(smithCost(2)).toEqual({ gold: 120, ore: 3 });
+  });
+
+  it('upgradeEquipment：扣金幣與礦石、slot plus +1；封頂 +3、無裝備/資源不足丟錯', () => {
+    const save = newGame(1000);
+    save.protagonist = mkRec();
+    save.gold = 200; save.inventory['ore'] = 2;
+    upgradeEquipment(save, 'protagonist', 'weapon');
+    expect(save.protagonist.equipmentPlus?.weapon).toBe(1);
+    expect(save.gold).toBe(160);
+    expect(save.inventory['ore']).toBe(1);
+
+    const capped = newGame(1000);
+    capped.protagonist = mkRec({ equipmentPlus: { weapon: 3, armor: 0, trinket: 0 } });
+    capped.gold = 999; capped.inventory['ore'] = 9;
+    expect(() => upgradeEquipment(capped, 'protagonist', 'weapon')).toThrow();
+
+    const bare = newGame(1000);
+    bare.gold = 999; bare.inventory['ore'] = 9;
+    expect(() => upgradeEquipment(bare, 'protagonist', 'weapon')).toThrow(); // 未裝備
+
+    const poor = newGame(1000);
+    poor.protagonist = mkRec();
+    poor.gold = 10; poor.inventory['ore'] = 9;
+    expect(() => upgradeEquipment(poor, 'protagonist', 'weapon')).toThrow();
+  });
+
+  it('equipmentBonus：armor plus → 防禦 +N、trinket plus → 生命 +2N、weapon plus → damageBonus +N', () => {
+    const plain = equipmentBonus(mkRec());
+    const plused = equipmentBonus(mkRec({ equipmentPlus: { weapon: 2, armor: 3, trinket: 1 } }));
+    expect(plused.defense).toBe(plain.defense + 3);
+    expect(plused.maxHp).toBe(plain.maxHp + 2);
+    expect(plused.damageBonus).toBe(2);
+    expect(plain.damageBonus).toBe(0);
+    // 空 slot 的 plus 不生效
+    const empty = equipmentBonus(mkRec({ equipment: { weapon: null, armor: null, trinket: null }, equipmentPlus: { weapon: 3, armor: 3, trinket: 3 } }));
+    expect(empty.damageBonus).toBe(0);
+    expect(empty.defense).toBe(0);
+  });
+
+  it('memberFromRecord：weapon plus 轉為 PartyMember.damageBonus', () => {
+    const m = memberFromRecord(mkRec({ equipmentPlus: { weapon: 2, armor: 0, trinket: 0 } }));
+    expect(m.damageBonus).toBe(2);
+  });
+});
+
+describe('M14 創角擲骰', () => {
+  it('rollStats：每項屬性落在 [base-2, base+3]；同種子可重現', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const rolled = rollStats(createRng(seed), 'mage');
+      const base = STARTING_PROFILE_REF.mage.stats;
+      for (const key of Object.keys(base) as Array<keyof StatBlock>) {
+        expect(rolled[key]).toBeGreaterThanOrEqual(base[key] - 2);
+        expect(rolled[key]).toBeLessThanOrEqual(base[key] + 3);
+      }
+    }
+    expect(rollStats(createRng(9), 'ranger')).toEqual(rollStats(createRng(9), 'ranger'));
   });
 });

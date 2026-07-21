@@ -1,5 +1,6 @@
 import type { Rng } from './rng';
 import type { CompanionRecord, SaveData } from './save';
+import { STARTING_PROFILE, STAT_ROLL_MIN, STAT_ROLL_MAX } from './save';
 import type { StatBlock } from './types';
 import type { Move } from './combat';
 import { statMod } from './check';
@@ -135,6 +136,76 @@ export const SPECIALIZATIONS: Record<CompanionRecord['job'], SpecializationDef[]
   ],
 };
 
+// ---------------------------------------------------------------------------
+// M14 冒險技能：五技能一一對應五屬性，rank 加成遠征檢定（expedition resolveOption）
+// ---------------------------------------------------------------------------
+
+export interface SkillDef { id: string; name: string; stat: keyof StatBlock; desc: string; }
+
+export const SKILL_RANK_CAP = 5;
+
+export const SKILLS: SkillDef[] = [
+  { id: 'martial', name: '武藝', stat: 'str', desc: '刀劍拳腳的功底——力量檢定 +rank' },
+  { id: 'scouting', name: '偵查', stat: 'dex', desc: '先一步察覺危險——敏捷檢定 +rank' },
+  { id: 'lore', name: '博識', stat: 'int', desc: '商路見聞與古籍知識——智力檢定 +rank' },
+  { id: 'negotiation', name: '交涉', stat: 'cha', desc: '討價還價與談判——魅力檢定 +rank' },
+  { id: 'survival', name: '生存', stat: 'con', desc: '風餐露宿的本領——體質檢定 +rank' },
+];
+
+export function spendSkillPoint(record: CompanionRecord, skillId: string): void {
+  const skill = SKILLS.find((sk) => sk.id === skillId);
+  if (!skill) throw new Error(`未知技能「${skillId}」`);
+  if ((record.skillPoints ?? 0) <= 0) throw new Error('沒有可用的技能點');
+  const rank = record.skills?.[skillId] ?? 0;
+  if (rank >= SKILL_RANK_CAP) throw new Error(`「${skill.name}」已達最高 rank ${SKILL_RANK_CAP}`);
+  record.skills = { ...(record.skills ?? {}), [skillId]: rank + 1 };
+  record.skillPoints = (record.skillPoints ?? 0) - 1;
+}
+
+/** 該屬性對應技能的 rank（遠征檢定加成） */
+export function skillCheckBonus(record: CompanionRecord, stat: keyof StatBlock): number {
+  const skill = SKILLS.find((sk) => sk.stat === stat);
+  if (!skill) return 0;
+  return record.skills?.[skill.id] ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// M14 鐵匠強化：per-slot +N（跟人走），weapon=+N 傷害、armor=+N 防禦、trinket=+2N 生命
+// ---------------------------------------------------------------------------
+
+export const SMITH_PLUS_CAP = 3;
+
+export function smithCost(currentPlus: number): { gold: number; ore: number } {
+  return { gold: 40 * (currentPlus + 1), ore: currentPlus + 1 };
+}
+
+export function upgradeEquipment(save: SaveData, memberId: string, slot: EquipSlot): void {
+  const record = memberId === save.protagonist.id
+    ? save.protagonist
+    : save.companions.find((c) => c.id === memberId);
+  if (!record) throw new Error(`找不到成員「${memberId}」`);
+  if (!record.equipment[slot]) throw new Error('該欄位沒有裝備，無法強化');
+  const plus = record.equipmentPlus?.[slot] ?? 0;
+  if (plus >= SMITH_PLUS_CAP) throw new Error(`已達強化上限 +${SMITH_PLUS_CAP}`);
+  const cost = smithCost(plus);
+  if (save.gold < cost.gold) throw new Error(`金幣不足（需 ${cost.gold}）`);
+  if ((save.inventory['ore'] ?? 0) < cost.ore) throw new Error(`礦石不足（需 ${cost.ore}）`);
+  save.gold -= cost.gold;
+  save.inventory['ore'] -= cost.ore;
+  record.equipmentPlus = { weapon: 0, armor: 0, trinket: 0, ...(record.equipmentPlus ?? {}), [slot]: plus + 1 };
+}
+
+/** M14 創角擲骰：每項屬性 = 職業基準 + [STAT_ROLL_MIN, STAT_ROLL_MAX] 均勻隨機 */
+export function rollStats(rng: Rng, job: JobId): StatBlock {
+  const profile = STARTING_PROFILE[job];
+  const rolled = { ...profile.stats };
+  const span = STAT_ROLL_MAX - STAT_ROLL_MIN + 1;
+  for (const key of Object.keys(rolled) as Array<keyof StatBlock>) {
+    rolled[key] = profile.stats[key] + STAT_ROLL_MIN + (rng.roll(span) - 1);
+  }
+  return rolled;
+}
+
 export function specById(id: string | null | undefined): SpecializationDef | null {
   if (!id) return null;
   for (const specs of Object.values(SPECIALIZATIONS)) {
@@ -194,6 +265,7 @@ export function applyLevelUp(record: CompanionRecord, allocate: Partial<StatBloc
   }
   record.level += 1;
   record.maxHp += 3 + statMod(record.stats.con);
+  record.skillPoints = (record.skillPoints ?? 0) + 1; // M14 冒險技能
 }
 
 /** 依 record.level 過濾 JOBS[record.job].moves；招式無 minLevel 視為 Lv1 起就會 */
@@ -315,10 +387,11 @@ export function unequipItem(save: SaveData, memberId: string, slot: EquipSlot): 
 }
 
 /** 加總成員三個裝備欄位的效果：屬性加值/防禦/生命上限（memberFromRecord 整合用） */
-export function equipmentBonus(record: CompanionRecord): { stats: Partial<StatBlock>; defense: number; maxHp: number } {
+export function equipmentBonus(record: CompanionRecord): { stats: Partial<StatBlock>; defense: number; maxHp: number; damageBonus: number } {
   const stats: Partial<StatBlock> = {};
   let defense = 0;
   let maxHp = 0;
+  let damageBonus = 0;
   for (const slot of EQUIP_SLOTS) {
     const itemId = record.equipment[slot];
     if (!itemId) continue;
@@ -331,6 +404,13 @@ export function equipmentBonus(record: CompanionRecord): { stats: Partial<StatBl
     }
     if (equip.defense) defense += equip.defense;
     if (equip.maxHp) maxHp += equip.maxHp;
+    // M14 鐵匠強化（slot 有裝備才生效）
+    const plus = record.equipmentPlus?.[slot] ?? 0;
+    if (plus > 0) {
+      if (slot === 'weapon') damageBonus += plus;
+      if (slot === 'armor') defense += plus;
+      if (slot === 'trinket') maxHp += plus * 2;
+    }
   }
-  return { stats, defense, maxHp };
+  return { stats, defense, maxHp, damageBonus };
 }

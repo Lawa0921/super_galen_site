@@ -338,3 +338,15 @@ describe('創角系統（createProtagonist / newGame config）', () => {
     expect(newGame(2000).protagonist.job).toBe('swordsman');
   });
 });
+
+describe('M14 創角擲骰（createProtagonist statRoll）', () => {
+  it('statRoll 在允許範圍內作為配點基底；超出範圍丟錯', () => {
+    const base = STARTING_PROFILE.swordsman.stats;
+    const roll = { ...base, str: base.str + 3, con: base.con - 2 };
+    const created = createProtagonist({ job: 'swordsman', statRoll: roll, allocation: { str: 1 } });
+    expect(created.stats.str).toBe(base.str + 4); // 骰 +3 再配 1
+    expect(created.stats.con).toBe(base.con - 2);
+    expect(() => createProtagonist({ job: 'swordsman', statRoll: { ...base, str: base.str + 4 } })).toThrow();
+    expect(() => createProtagonist({ job: 'swordsman', statRoll: { ...base, dex: base.dex - 3 } })).toThrow();
+  });
+});

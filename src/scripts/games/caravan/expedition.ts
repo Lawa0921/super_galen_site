@@ -3,7 +3,7 @@ import type { Stat } from './types';
 import type { SaveData } from './save';
 import type { CheckResult } from './check';
 import { resolveCheck, statMod } from './check';
-import { partyCheckBonus } from './roster';
+import { partyCheckBonus, skillCheckBonus } from './roster';
 import type { CombatState, EnemyUnit, PartyMember } from './combat';
 import type { JobId } from './data/jobs';
 import { ITEMS } from './data/items';
@@ -401,7 +401,7 @@ export function resolveOption(
   let check: CheckResult | null = null;
   let effects: EffectSpec[];
   if (opt.check) {
-    const modifier = statMod(save.protagonist.stats[opt.check.stat]) + partyCheckBonus(save)
+    const modifier = statMod(save.protagonist.stats[opt.check.stat]) + partyCheckBonus(save) + skillCheckBonus(save.protagonist, opt.check.stat)
       + (conditionById(state.conditionId)?.checkDelta ?? 0); // M8 旅況
     check = resolveCheck(rng, { stat: opt.check.stat, dc: opt.check.dc, modifier });
     effects = check.success ? opt.success : (opt.failure ?? []);

@@ -180,6 +180,7 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
     hp: maxHp,
     defense: job.defense + bonus.defense + (spec?.defense ?? 0),
     moves: finalMoves,
+    damageBonus: bonus.damageBonus,
     isProtagonist: record.id === 'protagonist',
   };
 }
