@@ -11,10 +11,19 @@ export interface Move {
   heal?: { dice: number; sides: number; bonusStat?: Stat };
   /** 命中後附加狀態（M7）：poison 每回合行動前扣 potency；stun 跳過一次行動；strength 出手傷害 +potency */
   applyStatus?: { kind: StatusKind; duration: number; potency?: number };
+  /** M15 傷害屬性（attack 專用）；無＝中性 */
+  element?: Element;
   narration: string; // 例：「{actor}的巨劍劈向{target}，造成 {amount} 點傷害！」
   /** 解鎖所需等級；未標＝Lv1 起就會（M4 roster.ts unlockedMoves 依此過濾） */
   minLevel?: number;
 }
+
+/** M15 傷害屬性：斬/刺/打/火/冰/聖；undefined＝中性（不觸發弱點/抗性） */
+export type Element = 'slash' | 'pierce' | 'blunt' | 'fire' | 'frost' | 'holy';
+
+export const ELEMENT_LABELS: Record<Element, string> = {
+  slash: '斬', pierce: '刺', blunt: '打', fire: '火', frost: '冰', holy: '聖',
+};
 
 export type StatusKind = 'poison' | 'stun' | 'strength';
 export interface StatusEffect { kind: StatusKind; remaining: number; potency: number; }
@@ -34,6 +43,14 @@ export interface PartyMember extends CombatantBase { isProtagonist?: boolean; }
 
 export interface EnemyUnit extends CombatantBase {
   intents: Array<{ weight: number; moveId: string }>;
+  /** M15 弱點屬性：命中 ×1.5 並削 1 護勢 */
+  weaknesses?: Element[];
+  /** M15 抗性屬性：命中 ×0.5 */
+  resists?: Element[];
+  /** M15 護勢上限：弱點命中削減、歸零破防（暈眩 1 回合＋重置） */
+  maxPoise?: number;
+  /** runtime：目前護勢（startCombat 初始化） */
+  poise?: number;
   loot?: { gold: [number, number]; itemId?: string; itemChance?: number };
   /** Boss 激怒（M10）：HP 比例 ≤ threshold 時觸發一次，自我強化 potency（永續） */
   enrage?: { threshold: number; potency: number };
@@ -71,6 +88,7 @@ export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]
     party, enemies, guarding: {}, enemyIntents: {}, log: [], outcome: 'ongoing',
   };
   for (const enemy of enemies) {
+    if (enemy.maxPoise !== undefined && enemy.poise === undefined) enemy.poise = enemy.maxPoise;
     state.enemyIntents[enemy.id] = rng.weightedPick(
       enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
     );
@@ -206,11 +224,39 @@ function performMove(rng: Rng, state: CombatState, actor: CombatantBase, move: M
     strength.remaining -= 1;
     actor.statuses = actor.statuses!.filter((s) => s.remaining > 0);
   }
-  const amount = Math.max(1, rollDice(rng, dmgSpec.dice, dmgSpec.sides)
+  const baseAmount = Math.max(1, rollDice(rng, dmgSpec.dice, dmgSpec.sides)
     + (dmgSpec.bonusStat ? statMod(actor.stats[dmgSpec.bonusStat]) : 0) + strengthBonus
     + (actor.damageBonus ?? 0));
+  // M15 屬性弱點/抗性（僅對帶弱點表的目標＝敵人生效）
+  const foe = 'intents' in target ? (target as EnemyUnit) : null;
+  let amount = baseAmount;
+  let hitWeakness = false;
+  if (foe && move.element) {
+    if (foe.weaknesses?.includes(move.element)) {
+      amount = Math.round(baseAmount * 1.5);
+      hitWeakness = true;
+    } else if (foe.resists?.includes(move.element)) {
+      amount = Math.max(1, Math.round(baseAmount * 0.5));
+    }
+  }
   state.log.push({ kind: 'damage', text: fillNarration(move.narration, actor.name, target.name, amount) });
+  if (hitWeakness) state.log.push({ kind: 'info', text: `擊中弱點！${target.name}被${ELEMENT_LABELS[move.element!]}屬性重創！` });
+  else if (foe && move.element && foe.resists?.includes(move.element)) {
+    state.log.push({ kind: 'info', text: `效果不佳……${target.name}對${ELEMENT_LABELS[move.element!]}屬性有抗性。` });
+  }
   applyDamage(state, target, amount);
+  // M15 破防：弱點命中削護勢，歸零＝暈眩＋重置
+  if (foe && hitWeakness && foe.poise !== undefined && foe.hp > 0) {
+    foe.poise -= 1;
+    if (foe.poise <= 0) {
+      foe.poise = foe.maxPoise ?? 0;
+      foe.statuses ??= [];
+      const stunned = foe.statuses.find((s) => s.kind === 'stun');
+      if (stunned) stunned.remaining = Math.max(stunned.remaining, 1);
+      else foe.statuses.push({ kind: 'stun', remaining: 1, potency: 0 });
+      state.log.push({ kind: 'info', text: `${foe.name}的架勢被徹底打散——破防！下一次行動陷入暈眩！` });
+    }
+  }
   // M7 命中附加狀態（同類刷新為較長持續）
   if (move.applyStatus && target.hp > 0) {
     const spec = move.applyStatus;

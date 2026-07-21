@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ITEMS } from './items';
+import { SPECIALIZATIONS } from '../roster';
 import { LOCATIONS, visibleLocations } from './locations';
 import { ENCOUNTERS, TRAINING_ENCOUNTER } from './enemies';
 import { EVENTS } from './events';
@@ -633,6 +634,34 @@ describe('M10 稀有裝備與裝備 icon', () => {
         existsSync(join(process.cwd(), 'public', item.art!)),
         `裝備 ${item.id} icon 檔案不存在：${item.art}`
       ).toBe(true);
+    }
+  });
+});
+
+describe('M15 戰術資料鎖', () => {
+  it('所有玩家攻擊招式（職業/專精/武器招）皆有 element', () => {
+    const allMoves = [
+      ...Object.values(JOBS).flatMap((job) => job.moves),
+      ...Object.values(SPECIALIZATIONS).flat().map((spec) => spec.move),
+      ...Object.values(ITEMS).filter((it) => it.equip?.move).map((it) => it.equip!.move!),
+    ];
+    for (const move of allMoves) {
+      if (move.kind === 'attack') {
+        expect(move.element, `${move.id} 缺 element`).toBeTruthy();
+      }
+    }
+  });
+
+  it('所有敵人皆有弱點與護勢；boss 護勢 ≥ 4；抗性不與弱點重疊', () => {
+    for (const factory of Object.values(ENCOUNTERS)) {
+      for (const enemy of factory()) {
+        expect(enemy.weaknesses?.length, `${enemy.name} 缺弱點`).toBeGreaterThan(0);
+        expect(enemy.maxPoise, `${enemy.name} 缺護勢`).toBeGreaterThan(0);
+        for (const r of enemy.resists ?? []) {
+          expect(enemy.weaknesses).not.toContain(r);
+        }
+        if (enemy.enrage) expect(enemy.maxPoise!).toBeGreaterThanOrEqual(4);
+      }
     }
   });
 });

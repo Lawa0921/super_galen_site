@@ -333,7 +333,9 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   import { createRng } from '@scripts/games/caravan/rng';
   import {
     startCombat, partyAct, enemyAct, attemptRetreat, currentActor, resolveCasualties, useItemInCombat,
+    ELEMENT_LABELS,
   } from '@scripts/games/caravan/combat';
+  import type { EnemyUnit } from '@scripts/games/caravan/combat';
   import type { ItemCombatUse } from '@scripts/games/caravan/combat';
   import type { CombatState, CombatantBase, Move, PartyMember } from '@scripts/games/caravan/combat';
   import {
@@ -2184,6 +2186,32 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       intent.className = 'unit-intent';
       intent.textContent = showIntent ? unitIntentText(unit) : '';
 
+      // M15 戰術資訊：弱點屬性 chips ＋ 護勢 pips（敵人限定）
+      const tactics = document.createElement('p');
+      tactics.className = 'unit-tactics';
+      const foe = unit as EnemyUnit;
+      if (showIntent && (foe.weaknesses?.length || foe.maxPoise)) {
+        if (foe.weaknesses?.length) {
+          const weak = document.createElement('span');
+          weak.className = 'unit-weak';
+          weak.textContent = `弱點 ${foe.weaknesses.map((el) => ELEMENT_LABELS[el]).join('·')}`;
+          tactics.appendChild(weak);
+        }
+        if (foe.resists?.length) {
+          const resist = document.createElement('span');
+          resist.className = 'unit-resist';
+          resist.textContent = `抗性 ${foe.resists.map((el) => ELEMENT_LABELS[el]).join('·')}`;
+          tactics.appendChild(resist);
+        }
+        if (foe.maxPoise) {
+          const poise = document.createElement('span');
+          poise.className = 'unit-poise';
+          const current = foe.poise ?? foe.maxPoise;
+          poise.textContent = `護勢 ${'◆'.repeat(Math.max(0, current))}${'◇'.repeat(foe.maxPoise - Math.max(0, current))}`;
+          tactics.appendChild(poise);
+        }
+      }
+
       const status = document.createElement('p');
       status.className = 'unit-status';
       for (const st of unit.statuses ?? []) {
@@ -2197,7 +2225,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         status.append(icon, count);
       }
 
-      card.append(name, hp, intent, status);
+      card.append(name, hp, intent, tactics, status);
       container.appendChild(card);
     }
   }
@@ -2306,6 +2334,12 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       btn.className = 'caravan-btn move-btn';
       btn.dataset.moveId = move.id;
       btn.textContent = move.name;
+      if (move.element) {
+        const tag = document.createElement('span');
+        tag.className = `move-element move-element-${move.element}`;
+        tag.textContent = ELEMENT_LABELS[move.element];
+        btn.appendChild(tag);
+      }
       btn.addEventListener('click', () => {
         if (!state) return;
         const targetId = resolveTargetId(actor.id, move);
@@ -3392,4 +3426,20 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   }
   .smith-btn { font-size: 0.78rem; padding: 0.25rem 0.7rem; margin-top: 0.3rem; }
   .smith-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ---- M15 戰術戰鬥 ---- */
+  .unit-tactics { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem; font-size: 0.72rem; margin: 0.2rem 0 0; }
+  .unit-weak { color: var(--seal-bright); letter-spacing: 0.05em; }
+  .unit-resist { color: var(--text-dim); letter-spacing: 0.05em; }
+  .unit-poise { color: var(--gold-bright); letter-spacing: 0.12em; }
+  .move-element {
+    display: inline-grid; place-items: center;
+    margin-left: 0.45rem; width: 1.25rem; height: 1.25rem;
+    font-size: 0.72rem; border-radius: 50%;
+    border: 1px solid currentColor;
+  }
+  .move-element-slash, .move-element-pierce, .move-element-blunt { color: var(--gold-bright); }
+  .move-element-fire { color: #e07a4e; }
+  .move-element-frost { color: #8fb8d8; }
+  .move-element-holy { color: #ecd98f; }
 </style>

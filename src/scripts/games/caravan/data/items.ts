@@ -153,7 +153,7 @@ export const ITEMS: Record<string, ItemDef> = {
       minLevel: 2,
       bonus: { str: 1 },
       move: {
-        id: 'crystal-shatter-slash', name: '結晶爆斬', kind: 'attack', target: 'enemy', hitStat: 'str',
+        id: 'crystal-shatter-slash', element: 'slash', name: '結晶爆斬', kind: 'attack', target: 'enemy', hitStat: 'str',
         damage: { dice: 1, sides: 12, bonusStat: 'str' },
         narration: '{actor}揮劍劈開凝結的鹽晶，碎屑迸射刺向{target}，造成 {amount} 點傷害！',
       },
@@ -170,7 +170,7 @@ export const ITEMS: Record<string, ItemDef> = {
       minLevel: 2,
       bonus: { dex: 1 },
       move: {
-        id: 'wind-splitting-volley', name: '破風連矢', kind: 'attack', target: 'enemy', hitStat: 'dex',
+        id: 'wind-splitting-volley', element: 'pierce', name: '破風連矢', kind: 'attack', target: 'enemy', hitStat: 'dex',
         damage: { dice: 2, sides: 6, bonusStat: 'dex' },
         narration: '{actor}連珠箭雨破風而出，狠狠釘向{target}，造成 {amount} 點傷害！',
       },
@@ -187,7 +187,7 @@ export const ITEMS: Record<string, ItemDef> = {
       minLevel: 2,
       bonus: { int: 1 },
       move: {
-        id: 'soulfire-burst', name: '焚魂爆焰', kind: 'attack', target: 'enemy', hitStat: 'int',
+        id: 'soulfire-burst', element: 'fire', name: '焚魂爆焰', kind: 'attack', target: 'enemy', hitStat: 'int',
         damage: { dice: 2, sides: 8, bonusStat: 'int' },
         narration: '{actor}引動杖中怨靈之焰，狂暴地灼燒{target}，造成 {amount} 點傷害！',
       },
@@ -204,7 +204,7 @@ export const ITEMS: Record<string, ItemDef> = {
       minLevel: 2,
       bonus: { cha: 1 },
       move: {
-        id: 'brine-light-smite', name: '鹽光聖擊', kind: 'attack', target: 'enemy', hitStat: 'cha',
+        id: 'brine-light-smite', element: 'holy', name: '鹽光聖擊', kind: 'attack', target: 'enemy', hitStat: 'cha',
         damage: { dice: 1, sides: 10, bonusStat: 'cha' },
         narration: '{actor}以聖錘重擊，鹹澀的聖光爆裂在{target}身上，造成 {amount} 點傷害！',
       },
@@ -272,7 +272,7 @@ export const ITEMS: Record<string, ItemDef> = {
     art: '/assets/games/caravan/gear-ancient-king-blade.webp',
     equip: {
       slot: 'weapon', minLevel: 3,
-      move: { id: 'kings-cleave', name: '王者斬', kind: 'attack', target: 'enemy', hitStat: 'str',
+      move: { id: 'kings-cleave', element: 'slash', name: '王者斬', kind: 'attack', target: 'enemy', hitStat: 'str',
         damage: { dice: 2, sides: 8, bonusStat: 'str' },
         narration: '{actor}揮動古王之劍，威嚴一斬劈向{target}，造成 {amount} 點傷害！' },
     },
@@ -285,7 +285,7 @@ export const ITEMS: Record<string, ItemDef> = {
     art: '/assets/games/caravan/gear-swordsaint-bokken.webp',
     equip: {
       slot: 'weapon', minLevel: 3,
-      move: { id: 'swallow-return', name: '燕返', kind: 'attack', target: 'enemy', hitStat: 'dex',
+      move: { id: 'swallow-return', element: 'slash', name: '燕返', kind: 'attack', target: 'enemy', hitStat: 'dex',
         damage: { dice: 2, sides: 6, bonusStat: 'dex' },
         narration: '{actor}木刀翻飛如燕影折返，連斬{target}，造成 {amount} 點傷害！' },
     },
@@ -306,7 +306,7 @@ export const ITEMS: Record<string, ItemDef> = {
     art: '/assets/games/caravan/gear-brine-crystal-staff.webp',
     equip: {
       slot: 'weapon', minLevel: 3,
-      move: { id: 'brine-burst', name: '鹵晶爆', kind: 'attack', target: 'enemy', hitStat: 'int',
+      move: { id: 'brine-burst', element: 'frost', name: '鹵晶爆', kind: 'attack', target: 'enemy', hitStat: 'int',
         damage: { dice: 2, sides: 8, bonusStat: 'int' },
         narration: '{actor}的法杖迸發鹵晶洪流，轟向{target}，造成 {amount} 點傷害！' },
     },

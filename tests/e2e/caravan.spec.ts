@@ -1151,3 +1151,33 @@ test.describe('商隊與劍：M14 角色深度', () => {
     expect(data.inventory.ore).toBe(0);
   });
 });
+
+test.describe('商隊與劍：M15 戰術戰鬥', () => {
+  test('訓練場：敵卡顯示弱點/護勢、招式帶屬性標籤、弱點命中寫入戰鬥記錄', async ({ page }) => {
+    await page.goto('/caravan/play?seed=55');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.click('#btn-training');
+    await expect(page.locator('#screen-combat')).toBeVisible();
+
+    const enemyCard = page.locator('#combat-enemies .combat-unit').first();
+    await expect(enemyCard.locator('.unit-weak')).toHaveText('弱點 斬');
+    await expect(enemyCard.locator('.unit-poise')).toContainText('護勢');
+
+    const heavySlash = page.locator('#combat-actions .move-btn', { hasText: '重斬' });
+    await expect(heavySlash.locator('.move-element')).toHaveText('斬');
+    // d20 可能落空——連打直到命中一次弱點（哥布林防禦低，數擊內必中）
+    for (let i = 0; i < 8; i++) {
+      const log = (await page.locator('#combat-log').textContent()) ?? '';
+      if (log.includes('擊中弱點')) break;
+      if (await heavySlash.isVisible().catch(() => false)) await heavySlash.click();
+      await page.waitForTimeout(600);
+    }
+    await expect(page.locator('#combat-log')).toContainText('擊中弱點');
+  });
+});
