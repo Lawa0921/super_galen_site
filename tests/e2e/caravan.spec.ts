@@ -605,6 +605,25 @@ test.describe('商隊與劍：經營系統', () => {
     await expect(page.locator('#btn-resume-expedition')).toBeHidden();
     await expect(page.locator('#town-gold')).toHaveText('200');
   });
+
+  test('M12 晉階：聲望 58 完成遠征 +5 跨過 60 → 結算出現「商會重鎮」晉階橫幅', async ({ page }) => {
+    await newGameWithSeed(page, 55);
+    await page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      data.reputation = 58;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('#btn-quest-board');
+    await page.click('.quest-item[data-location-id="riverside-road"]');
+    await advanceToSettlement(page);
+
+    await expect(page.locator('#rankup-banner')).toBeVisible();
+    await expect(page.locator('#rankup-name')).toHaveText('商會重鎮');
+    await expect(page.locator('#settle-goal')).toContainText('距「商會之主」');
+  });
 });
 
 test.describe('商隊與劍：裝備系統', () => {
@@ -948,5 +967,43 @@ test.describe('商隊與劍：M11 RPG 深度', () => {
     const ally = page.locator('.roster-card[data-member-id="bond-ally"]');
     await expect(ally.locator('.roster-xp')).toContainText('羈絆「信賴」（同行 5 趟）');
     await expect(ally.locator('.roster-hp')).toHaveText('生命上限 24'); // 20 + tier2×2
+  });
+});
+
+test.describe('商隊與劍：M12 商會目標', () => {
+  test('新檔城鎮顯示目標卡：行腳商、下一階見習商人 0/20、HUD 階級章', async ({ page }) => {
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+
+    await expect(page.locator('#goal-rank')).toHaveText('行腳商');
+    await expect(page.locator('#goal-next')).toContainText('下一階「見習商人」：聲望 0/20');
+    await expect(page.locator('#hud-rank')).toHaveText('行腳商');
+    await expect(page.locator('.title-premise')).toBeAttached(); // 標題前提句存在
+  });
+
+  test('聲望 45 → 目標卡顯示特許商人、下一階商會重鎮 45/60', async ({ page }) => {
+    await page.goto('/caravan/play');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      data.reputation = 45;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+
+    await expect(page.locator('#goal-rank')).toHaveText('特許商人');
+    await expect(page.locator('#goal-next')).toContainText('聲望 45/60');
   });
 });
