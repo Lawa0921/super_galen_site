@@ -630,6 +630,33 @@ test.describe('商隊與劍：經營系統', () => {
     await expect(page.locator('#rankup-name')).toHaveText('商會重鎮');
     await expect(page.locator('#settle-goal')).toContainText('距「商會之主」');
   });
+
+  test('M13 無盡遠路：聲望 40 開契約、tier 顯示縮放、完成後下一張開放', async ({ page }) => {
+    await newGameWithSeed(page, 55);
+    await page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      data.reputation = 45;
+      data.endlessTier = 2;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('#btn-quest-board');
+
+    const endlessItem = page.locator('.quest-item[data-location-id="endless-road"]');
+    await expect(endlessItem.locator('.quest-endless-badge')).toHaveText('第 3 張契約');
+    await expect(endlessItem.locator('.quest-kind')).toContainText('共 6 段');
+    await expect(endlessItem.locator('.quest-kind')).toContainText('×1.50');
+
+    await endlessItem.click();
+    await advanceToSettlement(page);
+    await expect(page.locator('#settle-goal')).toContainText('第 3 張完成——第 4 張已開放');
+    const tier = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('caravan-save-v1')!).endlessTier
+    );
+    expect(tier).toBe(3);
+  });
 });
 
 test.describe('商隊與劍：裝備系統', () => {

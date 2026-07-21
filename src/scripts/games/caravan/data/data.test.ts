@@ -80,8 +80,8 @@ describe('caravan content data integrity（M3 Task 4）', () => {
   // ---------------------------------------------------------------------
   // locations.ts
   // ---------------------------------------------------------------------
-  it('LOCATIONS 有計畫指定的 7 個地點（M3 4 + M5 內容擴充 3），其中 2 個為 hidden', () => {
-    expect(Object.keys(LOCATIONS).length).toBe(7);
+  it('LOCATIONS 有 8 個地點（M3 4 + M5 擴充 3 + M13 無盡遠路），其中 2 個為 hidden', () => {
+    expect(Object.keys(LOCATIONS).length).toBe(8);
     const hidden = Object.values(LOCATIONS).filter((l) => l.hidden);
     expect(hidden.length).toBe(2);
   });

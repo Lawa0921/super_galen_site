@@ -93,6 +93,8 @@ export interface SaveDataV6 extends Omit<SaveDataV5, 'version'> {
   version: 6;
   /** 市場行情種子；每次歸返結算後遞增，各鎮物價隨之波動（M7） */
   marketSeed: number;
+  /** M13 無盡遠路契約層數；optional 不 bump 版本（舊檔視為 0） */
+  endlessTier?: number;
 }
 
 /** 對外別名，後續版本跟著改指向最新 schema */

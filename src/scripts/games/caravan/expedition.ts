@@ -63,6 +63,8 @@ export interface LocationDef {
   destinationTownId?: string;
   /** 委託板可見門檻：save.reputation 未達此值時不列入 visibleLocations（M5，data/locations.ts） */
   minReputation?: number;
+  /** M13 無盡遠路：契約制無盡模式（每次完成 save.endlessTier +1，難度/報酬隨 tier 成長） */
+  endless?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +128,8 @@ export interface ExpeditionState {
    * 「遠征受的傷會帶進戰鬥」，需額外決定要不要接上這裡。
    */
   partyHp: Record<string, number>;
+  /** M13 無盡遠路：出發當下的契約層數快照（非 endless 地點為 undefined） */
+  endlessTier?: number;
   /** 遠征快照結構版本（M4）；save.ts loadGame 用它判斷舊版遠征快照是否該丟棄 */
   expeditionVersion: number;
   /** route 抵達的目的城鎮（economy.ts TownDef.id）；從 LocationDef 帶入，dungeon 無此值（M4） */
@@ -179,6 +183,28 @@ function getLocation(locationId: string): LocationDef | undefined {
 // 狀態機
 // ---------------------------------------------------------------------------
 
+/**
+ * M13 無盡縮放：tier 越高段數越長（封頂 +6）、敵人更硬更痛、報酬與經驗越豐。
+ * 敵人強化沿用 boss 激怒的「常駐 strength」機制（combat.ts：出手傷害 +potency）。
+ */
+export interface EndlessScaling {
+  extraLegs: number;
+  enemyHpBonus: number;
+  enemyStrength: number;
+  goldFactor: number;
+  xpBonus: number;
+}
+
+export function endlessScaling(tier: number): EndlessScaling {
+  return {
+    extraLegs: Math.min(tier, 6),
+    enemyHpBonus: tier * 3,
+    enemyStrength: Math.ceil(tier / 2),
+    goldFactor: 1 + tier * 0.25,
+    xpBonus: tier * 5,
+  };
+}
+
 export function startExpedition(
   rng: Rng,
   save: SaveData,
@@ -217,7 +243,9 @@ export function startExpedition(
     stateCargo[itemId] = count;
   }
 
-  const totalSteps = loc.kind === 'dungeon' ? (loc.floors ?? 1) : (loc.legs ?? 1);
+  const endlessTier = loc.endless ? (save.endlessTier ?? 0) : undefined;
+  const baseSteps = loc.kind === 'dungeon' ? (loc.floors ?? 1) : (loc.legs ?? 1);
+  const totalSteps = baseSteps + (endlessTier !== undefined ? endlessScaling(endlessTier).extraLegs : 0);
 
   const partyHp: Record<string, number> = { [save.protagonist.id]: save.protagonist.maxHp };
   for (const companion of save.companions) {
@@ -240,6 +268,7 @@ export function startExpedition(
     retreated: false,
     conditionId: condition.id,
     partyHp,
+    ...(endlessTier !== undefined ? { endlessTier } : {}),
     expeditionVersion: EXPEDITION_VERSION,
     destinationTownId: loc.destinationTownId,
     cargo: stateCargo,
@@ -484,7 +513,9 @@ export function settleExpedition(
     tradeGold = Math.round(tradeGold * (conditionById(state.conditionId)?.tradeFactor ?? 1));
   }
 
-  const goldGained = state.loot.gold;
+  // M13 無盡遠路：戰利品金依 tier 放大；完成（未撤退）才升下一張契約
+  const scaling = state.endlessTier !== undefined ? endlessScaling(state.endlessTier) : null;
+  const goldGained = scaling ? Math.round(state.loot.gold * scaling.goldFactor) : state.loot.gold;
   const itemsGained = { ...state.loot.items };
 
   save.gold += goldGained + tradeGold;
@@ -498,7 +529,7 @@ export function settleExpedition(
 
   // 完賽時 step=totalSteps+1（advanceExpedition 遞增後才會把 phase 轉成 'done'），
   // 多出的那 5 xp 是完賽獎勵（刻意設計，非 bug——見 Task 2 report 的顧慮欄）。
-  const xpGained = 20 + state.step * 5;
+  const xpGained = 20 + state.step * 5 + (scaling?.xpBonus ?? 0);
   save.protagonist.xp += xpGained;
   // 主角的重傷趟數也要遞減——只寫不減會讓主角永久卡在重傷（M3 終審抓到的地雷）
   save.protagonist.injuredForTrips = Math.max(0, save.protagonist.injuredForTrips - 1);
@@ -513,6 +544,9 @@ export function settleExpedition(
 
   if (!state.retreated) {
     save.reputation += 5;
+    if (state.endlessTier !== undefined) {
+      save.endlessTier = state.endlessTier + 1; // 下一張契約
+    }
   }
 
   save.expedition = null;
@@ -646,6 +680,17 @@ export function buildEncounter(rng: Rng, state: ExpeditionState, encounterId: st
     throw new Error(`buildEncounter: 找不到遭遇「${encounterId}」（先呼叫 registerEncounters 登記）`);
   }
   const enemies = factory();
+  // M13 無盡縮放：tier > 0 時敵人更硬（+hp）更痛（常駐 strength，沿 boss 激怒機制）
+  if (state.endlessTier !== undefined && state.endlessTier > 0) {
+    const endless = endlessScaling(state.endlessTier);
+    for (const enemy of enemies) {
+      enemy.maxHp += endless.enemyHpBonus;
+      enemy.hp += endless.enemyHpBonus;
+      if (endless.enemyStrength > 0) {
+        enemy.statuses = [...(enemy.statuses ?? []), { kind: 'strength', remaining: 99, potency: endless.enemyStrength }];
+      }
+    }
+  }
   if (state.kind === 'dungeon') {
     const loc = getLocation(state.locationId);
     const bonus = (loc?.depthHpBonus ?? 0) * (state.step - 1);

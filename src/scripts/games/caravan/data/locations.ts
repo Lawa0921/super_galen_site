@@ -8,6 +8,21 @@ import type { SaveData } from '../save';
  * 隱藏路線「古戰場」（旗標鏈 discover，見 data/events.ts ev_faded_banner→ev_mercenary_ruins）。
  */
 export const LOCATIONS: Record<string, LocationDef> = {
+  'endless-road': {
+    id: 'endless-road',
+    name: '無盡遠路',
+    kind: 'route',
+    legs: 4,
+    endless: true,
+    minReputation: 40,
+    destinationTownId: 'riverbend-town',
+    encounterTable: [
+      { weight: 35, encounterId: 'enc_wolf_pair' },
+      { weight: 30, encounterId: 'enc_bandit_raid' },
+      { weight: 20, encounterId: 'enc_goblin_raiders' },
+      { weight: 15, encounterId: 'enc_ridge_bandits' },
+    ],
+  },
   'riverside-road': {
     id: 'riverside-road',
     name: '臨水道',

@@ -40,6 +40,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
           <li><b>接下委託</b>——到<em>委託板</em>選一條商路或迷宮出發；路程越遠越危險，報酬越高。</li>
           <li><b>遠征歷險</b>——沿途抽事件卡、擲骰做選擇；遇敵進入回合戰鬥。</li>
           <li><b>歸城結算</b>——獲得金幣、經驗與<em>聲望</em>；聲望推動商會階級，解鎖更遠的商路與迷宮。</li>
+          <li><b>無盡遠路</b>——聲望 40 後開放的契約商路：每完成一張契約，下一張更長更兇險、報酬更豐厚，<em>沒有盡頭</em>。</li>
         </ol>
         <p class="howto-tip">隨時可點右上角的「玩法」重看這份說明。</p>
         <div class="modal-actions">
@@ -333,6 +334,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   import {
     startExpedition, drawEvent, optionAvailable, resolveOption, drawRooms, chooseRoom,
     buildEncounter, applyPartyHp, finishCombat, settleExpedition, useItemOnExpedition,
+    endlessScaling,
   } from '@scripts/games/caravan/expedition';
   import type { ExpeditionState, EventCard, RoomKind, LocationDef } from '@scripts/games/caravan/expedition';
   import type { CheckResult } from '@scripts/games/caravan/check';
@@ -822,7 +824,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const ratio = Math.min(1, progress.reputation.have / progress.reputation.need);
       barFill.style.width = `${Math.round(ratio * 100)}%`;
     } else {
-      nextEl.textContent = '你已登上商會的頂點——旅途仍在繼續。';
+      const tier = save.endlessTier ?? 0;
+      nextEl.textContent = tier > 0
+        ? `商會之主的傳說仍在書寫——無盡遠路已完成 ${tier} 張契約，下一張更兇險、更豐厚。`
+        : '你已登上商會的頂點——無盡遠路的契約，等著為你的傳說添頁。';
       bar.hidden = true;
     }
     const hudRank = document.getElementById('hud-rank');
@@ -1380,8 +1385,18 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       name.textContent = loc.name;
       const kind = document.createElement('p');
       kind.className = 'quest-kind';
-      kind.textContent =
-        loc.kind === 'dungeon' ? `迷宮．共 ${loc.floors} 層` : `商路．共 ${loc.legs} 段`;
+      if (loc.endless) {
+        const tier = save.endlessTier ?? 0;
+        const scaling = endlessScaling(tier);
+        kind.textContent = `無盡契約．共 ${(loc.legs ?? 1) + scaling.extraLegs} 段．戰利品 ×${scaling.goldFactor.toFixed(2)}`;
+        const badge = document.createElement('span');
+        badge.className = 'quest-endless-badge';
+        badge.textContent = `第 ${tier + 1} 張契約`;
+        name.appendChild(badge);
+      } else {
+        kind.textContent =
+          loc.kind === 'dungeon' ? `迷宮．共 ${loc.floors} 層` : `商路．共 ${loc.legs} 段`;
+      }
       div.append(name, kind);
       // 直接點整列＝沿用既有「立即出發（不押貨）」行為，保持向後相容
       // （舊 e2e 依賴此行為：點 .quest-item 後立刻進入 #screen-expedition，
@@ -1817,6 +1832,9 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       rankupEl.hidden = true;
     }
     const goalEl = document.getElementById('settle-goal')!;
+    const endlessLine = (finished.endlessTier !== undefined && !finished.retreated)
+      ? `無盡契約 第 ${finished.endlessTier + 1} 張完成——第 ${finished.endlessTier + 2} 張已開放！　`
+      : '';
     const progressAfter = rankProgress(save);
     if (progressAfter) {
       const nx = nextRank(save)!;
@@ -1824,9 +1842,9 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       if (progressAfter.bossClears) {
         text += `、魔窟 ${progressAfter.bossClears.have}/${progressAfter.bossClears.need}`;
       }
-      goalEl.textContent = text;
+      goalEl.textContent = endlessLine + text;
     } else {
-      goalEl.textContent = isFinalRank(save) ? '商會之主——你的名字已成為傳說。' : '';
+      goalEl.textContent = endlessLine + (isFinalRank(save) ? '商會之主——你的名字已成為傳說。' : '');
     }
     // 招募池輪替（M4）：每趟歸返結算後種子遞增，酒館下次渲染會抽到新一批人選
     save.tavernSeed += 1;
@@ -3256,5 +3274,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .settle-goal { font-size: 0.9rem; color: var(--gold-bright); letter-spacing: 0.05em; margin: 0.2rem 0 1rem; }
   @media (prefers-reduced-motion: reduce) {
     .rankup-banner { animation: none; }
+  }
+
+  /* ---- M13 無盡遠路 ---- */
+  .quest-endless-badge {
+    display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.55rem;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+    color: #f7ece0; background: var(--seal);
+    border: 1px solid var(--seal-bright); border-radius: 999px;
+    vertical-align: 0.1em;
   }
 </style>
