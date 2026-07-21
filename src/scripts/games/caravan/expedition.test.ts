@@ -19,6 +19,7 @@ import {
   applyPartyHp,
   EXPEDITION_VERSION,
   useItemOnExpedition,
+  endlessScaling,
 } from './expedition';
 import type { EventCard, LocationDef, ExpeditionState } from './expedition';
 import { newGame } from './save';
@@ -1390,5 +1391,76 @@ describe('M11 羈絆遞增與遠征道具', () => {
     expect(() => useItemOnExpedition(state, save, 'herb', 'protagonist')).toThrow();
     save.inventory['iron-ore'] = 1;
     expect(() => useItemOnExpedition(state, save, 'iron-ore', 'protagonist')).toThrow();
+  });
+});
+
+describe('M13 無盡遠路（契約制無盡模式）', () => {
+  const ENDLESS_LOC: LocationDef = {
+    id: 'loc_endless', name: '無盡遠路', kind: 'route', legs: 4, endless: true,
+    encounterTable: [{ weight: 100, encounterId: 'enc_a' }],
+  };
+  const ENC_A_FACTORY = () => [makeEnemy({ id: 'endless-foe' })];
+  beforeEach(() => {
+    registerLocations({ loc_endless: ENDLESS_LOC, loc_route_a: LOC_ROUTE_A });
+    registerEvents([evUniversal]);
+    registerEncounters({ enc_a: ENC_A_FACTORY });
+  });
+
+  it('endlessScaling：tier 0 無加成；tier 4 段數+4、敵血+12、敵強化2、報酬×2、xp+20', () => {
+    expect(endlessScaling(0)).toEqual({ extraLegs: 0, enemyHpBonus: 0, enemyStrength: 0, goldFactor: 1, xpBonus: 0 });
+    expect(endlessScaling(4)).toEqual({ extraLegs: 4, enemyHpBonus: 12, enemyStrength: 2, goldFactor: 2, xpBonus: 20 });
+    expect(endlessScaling(9).extraLegs).toBe(6); // 段數成長封頂 +6
+  });
+
+  it('startExpedition：endless 地點快照 save.endlessTier 並加長段數', () => {
+    const save = newGame(1000);
+    const s0 = startExpedition(createRng(7), save, 'loc_endless');
+    expect(s0.endlessTier).toBe(0);
+    expect(s0.totalSteps).toBe(4);
+    save.endlessTier = 3;
+    const s3 = startExpedition(createRng(7), save, 'loc_endless');
+    expect(s3.endlessTier).toBe(3);
+    expect(s3.totalSteps).toBe(7);
+    // 非 endless 地點不帶 tier
+    expect(startExpedition(createRng(7), save, 'loc_route_a').endlessTier).toBeUndefined();
+  });
+
+  it('buildEncounter：tier 4 敵人 hp/maxHp +12 且帶常駐強化 potency 2；tier 0 不動', () => {
+    const save = newGame(1000);
+    save.endlessTier = 4;
+    const state = startExpedition(createRng(7), save, 'loc_endless');
+    const scaled = buildEncounter(createRng(7), state, 'enc_a');
+    const base = ENC_A_FACTORY();
+    expect(scaled[0].maxHp).toBe(base[0].maxHp + 12);
+    expect(scaled[0].hp).toBe(base[0].hp + 12);
+    expect(scaled[0].statuses).toEqual([{ kind: 'strength', remaining: 99, potency: 2 }]);
+
+    save.endlessTier = 0;
+    const flat = buildEncounter(createRng(7), startExpedition(createRng(7), save, 'loc_endless'), 'enc_a');
+    expect(flat[0].maxHp).toBe(base[0].maxHp);
+    expect(flat[0].statuses).toBeUndefined();
+  });
+
+  it('settleExpedition：tier 2 完成→戰利品 ×1.5、xp +10、endlessTier 2→3；撤退不升 tier', () => {
+    const save = newGame(1000);
+    save.endlessTier = 2;
+    const state = startExpedition(createRng(7), save, 'loc_endless');
+    state.step = state.totalSteps + 1;
+    state.phase = 'done';
+    state.loot.gold = 100;
+    const goldBefore = save.gold;
+    const result = settleExpedition(state, save);
+    expect(result.goldGained).toBe(150);
+    expect(save.gold).toBe(goldBefore + 150);
+    expect(save.endlessTier).toBe(3);
+    expect(result.xpGained).toBe(20 + (state.step - 1) * 5 + 5 + 10); // 基礎公式 + tier 2 加成
+
+    const save2 = newGame(1000);
+    save2.endlessTier = 2;
+    const retreatState = startExpedition(createRng(7), save2, 'loc_endless');
+    retreatState.retreated = true;
+    retreatState.phase = 'done';
+    settleExpedition(retreatState, save2);
+    expect(save2.endlessTier).toBe(2);
   });
 });
