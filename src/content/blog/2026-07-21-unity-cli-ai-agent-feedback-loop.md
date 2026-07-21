@@ -16,11 +16,11 @@ author: "Galen"
 
 這正是 AI coding 搬進遊戲開發後最常見的錯覺：**會改程式碼，不等於會修改一個正在運作的遊戲。**
 
-2026 年 7 月 20 日，Unity 發布新的 [Unity CLI](https://unity.com/blog/meet-the-unity-cli) 與實驗中的 `com.unity.pipeline` package；隔天的 Unite Seoul 則把這套工具放進更大的 Unity Production Pipeline 敘事。官方示範裡，AI agent 接到「角色偶爾穿地板」的回報後，直接檢查執行中的場景，找到被停用的 collider，修正狀態，再重新進入 Play Mode 確認結果。
+2026 年 7 月 20 日，Unity 發布新的 [Unity CLI](https://unity.com/blog/meet-the-unity-cli) 與實驗中的 `com.unity.pipeline` package；Unity 也在 7 月 21 日舉辦的 [Unite Seoul](https://unity.com/events/unite-2026) 期間，把這套開發工具放進更大的 Unity Production Pipeline 敘事。官方示範裡，AI agent 接到「角色偶爾穿地板」的回報後，直接檢查執行中的場景，找到被停用的 collider，修正狀態，再重新進入 Play Mode 確認結果。
 
 乍看之下，新聞標題可以寫成「AI 現在會操作 Unity 了」。
 
-但真正重要的不是 AI 多學會一組 Unity 指令，而是 Unity 首次把遊戲引擎裡的**觀察、行動與驗證**整理成 agent 可以穩定使用的介面。
+但真正重要的不是 AI 多學會一組 Unity 指令，而是 Unity 這次把遊戲引擎裡的**觀察、行動與驗證**整理成 agent 可以程式化呼叫的介面。
 
 我的觀點是：
 
@@ -36,7 +36,7 @@ Unity 這次同時談 CLI、Pipeline package 與 Production Pipeline，很容易
 | **`com.unity.pipeline`** | 透過本機 API 控制執行中的 Editor 或 development build，呼叫註冊指令、跑測試、觸發 import，甚至執行即時 C# | Unity 6.0 以上；package 仍是 experimental |
 | **Unity Production Pipeline** | 讓 web app、DCC 工具、自動化系統與 agent 透過統一 API 存取專案、資產、build 與協作流程 | closed beta 期間，官方文件明確寫著 Pipeline REST APIs 仍是 **read-only** |
 
-也就是說，可在本機形成回饋迴圈的開發工具已經可以試用；雲端 production 的完整寫入與跨團隊工作流，仍在 beta 階段。Unity 官方論壇表示 closed beta 會持續收團隊，目標在 11 月 general availability，但 roadmap 本身不是交付承諾。
+也就是說，可在本機形成回饋迴圈的開發工具已經可以試用；截至本文查核日，官方仍將 Unity Production Pipeline 標示為 beta，並明文說 closed beta 期間的 Pipeline REST APIs 是 read-only。Unity 官方論壇表示 closed beta 會持續收團隊，目標在 11 月 general availability，但 roadmap 本身不是交付承諾。
 
 這個區分很重要。今天可以認真討論的是「agent 如何操作一個開著的 Unity 專案」，不是「無人工作室已經成立」。
 
@@ -56,11 +56,11 @@ Unity 這次同時談 CLI、Pipeline package 與 Production Pipeline，很容易
 - 關卡可以通關，但攝影機在最後一段遮住出口。
 - 多人同步在單機測試正常，上線後卻只有 host 看得到結果。
 
-2026 年的 preprint [GameDevBench](https://arxiv.org/abs/2602.11103) 把 132 個真實教學衍生任務放進 Godot，測試 agent 修改動畫、shader、collision、scene layout 與遊戲邏輯的能力。論文摘要中，最佳 agent 也只完成 54.5% 的任務；任務從偏 gameplay logic 轉向更依賴視覺理解的 2D graphics 時，成功率由 46.9% 降到 31.6%。
+2026 年的 preprint [GameDevBench v2](https://arxiv.org/abs/2602.11103v2) 把 333 個真實教學衍生任務放進 Godot，測試 agent 修改動畫、shader、collision、scene layout 與遊戲邏輯的能力。論文摘要中，最佳 agent 與方法也只完成 53.8% 的任務；在 8 個 agent 使用各自 native harness 且開啟 multimodal feedback 的結果中，平均成功率從偏 gameplay logic 的 51.4%，降到更依賴視覺理解的 2D graphics 任務的 33.0%。
 
-更值得注意的是，研究者沒有先換一個更大的模型，只是補上 screenshot 與 video feedback。以其中一組結果為例，Claude Sonnet 4.5 的成功率便從 33.3% 提升到 47.7%。
+更值得注意的是，研究者沒有先換模型，只是補上 screenshot 與 video feedback。以 full task set 的其中一組結果為例，GPT-5.4 的成功率便從 41.1% 提升到 52.0%。
 
-另一篇 7 月發布的 preprint [GameEngineBench](https://arxiv.org/abs/2607.03525) 則用九個真實 Unreal Engine 5 repositories 建立 110 個 C++ 任務。最強設定的 pass@1 是 55.5%，而且有 31 題所有受測設定都無法解出。作者指出，patch 即使能編譯，仍可能因為 object lifecycle、network replication 或 engine subsystem 的互動而失敗。
+另一篇 7 月發布的 preprint [GameEngineBench v2](https://arxiv.org/abs/2607.03525v2) 則用九個真實 Unreal Engine 5 repositories 建立 110 個 C++ 任務。在它結合 runtime tests 與 LLM judge 的評估 protocol 下，最強設定的 pass@1 是 55.5%，而且有 31 題所有受測設定都無法解出。作者指出，patch 即使能編譯，仍可能因為 object lifecycle、network replication 或 engine subsystem 的互動而失敗。
 
 這兩組數字不能直接拿來比較 Unity CLI 的成效：引擎、模型、任務與評分方法都不同，而且它們都是 preprint。它們共同支持的只有一個較保守、但很關鍵的結論：
 
@@ -126,9 +126,11 @@ inspect-active-colliders
 
 Unity CLI 與 Pipeline package 直接強化前兩層。它們也能幫 agent 啟動 build、擷取狀態，為第三層提供材料；但 engine state 不是玩家經驗本身。
 
-[GUI Agents for Continual Game Generation](https://arxiv.org/abs/2605.28258) 這篇 preprint 更進一步，讓一個 GUI agent 實際用滑鼠與鍵盤玩 browser games，再把觀察交回 coding agent。這個 Play2Code 迴圈得到 66.8% 的 rubric pass rate，比 single-pass baseline 高 37.1 個百分點，也比另一個 agentic-coding baseline 高 14.6 個百分點。
+[GUI Agents for Continual Game Generation v1](https://arxiv.org/abs/2605.28258v1) 這篇 preprint 更進一步，讓一個 GUI agent 實際用滑鼠與鍵盤玩 browser games，再把觀察交回 coding agent。這個 Play2Code 迴圈得到 66.8% 的 rubric pass rate，比 single-pass baseline 高 37.1 個百分點，也比另一個 agentic-coding baseline 高 14.6 個百分點。
 
-但作者同時發現 GUI playtester 也有類似人類的個別偏好。這提醒我們：自動 playtest 可以抓「按鈕沒反應」或「勝利條件沒觸發」，卻不能把某個 agent 的品味偽裝成所有玩家的樂趣。
+這項研究目前只測 HTML-based games；作者把 native engine 與 3D games 明列為未來工作，因此它不能直接證明同樣增益會出現在 Unity 專案。
+
+但作者同時發現，不同 GUI agent backbones 關注的問題類型並不相同，呈現出作者所稱、類似人類測試者的 idiosyncratic feedback。這提醒我們：自動 playtest 可以抓「按鈕沒反應」或「勝利條件沒觸發」，卻不能把某個 agent 的關注偏好偽裝成所有玩家的樂趣。
 
 所以合理的分工不是 AI 取代 playtester，而是：
 
@@ -140,13 +142,13 @@ Unity CLI 與 Pipeline package 直接強化前兩層。它們也能幫 agent 啟
 
 能執行任意 C# 是強大的除錯能力，也是非常寬的權限。
 
-Unity 說 `eval` 由 security token 保護；development Player 的 runtime control 預設關閉、只允許 localhost，且不應放進 production。這些是必要的底線，但 token 只是在回答「誰能進來」，沒有回答「進來之後能做什麼」。
+Unity 說 `eval` 由 security token 保護；development Player 的 runtime control 預設關閉、只允許 localhost，且不應放進 production。不過這篇官方文章沒有說明 token 是否具備 capability scopes 或 method-level authorization，因此不能只憑「有 token」就把 `eval` 視為 sandbox。
 
 如果 agent 可以呼叫專案內所有 API，它理論上也可能刪除 assets、改寫 scene、觸發昂貴 build，或把錯誤狀態保存回版本控制。這不是 Unity 已發生的安全事件，而是從能力範圍推導出的工程風險。
 
 因此我會把 Unity 的兩種入口分工得很清楚：
 
-- **已知、重複的工作走 `[CliCommand]`**：輸入驗證、權限、輸出格式與副作用都能被團隊約束。
+- **已知、重複的工作走 `[CliCommand]`**：把可執行範圍縮成明確 method，並由團隊在 method 內實作輸入驗證、輸出格式與副作用限制。
 - **未知問題才暫時用 `eval` 探索**：把它當 debugger，不把它當 production automation API。
 
 再加上三條很無聊、卻比「全自動」更重要的規則：
@@ -203,20 +205,22 @@ Unity 這次真正交給 AI agent 的，不只是一個 terminal。
 ## 帶走三句話
 
 1. **Unity CLI 的關鍵不是命令列，而是讓 agent 能觀察、行動、驗證，再根據結果修正。**
-2. **遊戲 benchmark 顯示，視覺與 runtime feedback 能顯著改善 agent，但目前離可靠的全自動遊戲開發仍很遠。**
+2. **本文引用的遊戲 benchmark 顯示，在特定實驗設定中，視覺或 runtime feedback 能明顯改善部分 agent，但目前離可靠的全自動遊戲開發仍很遠。**
 3. **先把安全、可回復、可判定的驗證流程交給 agent；創意方向與玩家感受仍要由人負責。**
 
 ---
 
 ## 本文來源
 
-*事實查核說明：本文資料查閱於 2026 年 7 月 21 日。Unity CLI、`com.unity.pipeline` 與 Unity AI 皆處於 experimental 或 beta 階段；Production Pipeline REST APIs 在 closed beta 期間為 read-only。文中對權限分層、`eval` 使用方式與小型團隊導入順序的建議，是根據官方公布的能力範圍所做的工程判斷，不是 Unity 的官方安全指南。三篇 agent benchmark 均為 arXiv preprint，數字只代表各自的模型、引擎、任務與評估設定，不宜橫向排名。*
+*事實查核說明：本文資料查閱於 2026 年 7 月 21 日。Unity CLI 與 `com.unity.pipeline` 皆由官方標示為 experimental；Unity Production Pipeline 為 beta，Pipeline REST APIs 在 closed beta 期間為 read-only。文中對權限分層、`eval` 使用方式與小型團隊導入順序的建議，是根據官方公布的能力範圍所做的工程判斷，不是 Unity 的官方安全指南。三篇 agent benchmark 均為 arXiv preprint；本文數字分別鎖定 GameDevBench v2、GameEngineBench v2 與 GUI Agents for Continual Game Generation v1，只代表各自的模型、引擎、任務與評估設定，不宜橫向排名。*
 
 - [Meet the Unity CLI: manage Unity from your terminal（Unity）](https://unity.com/blog/meet-the-unity-cli)
+- [Unite 2026：Seoul 活動日期（Unity）](https://unity.com/events/unite-2026)
 - [Unity CLI 使用文件（Unity Docs）](https://docs.unity.com/en-us/unity-cli/use-unity-cli)
+- [Unity Pipeline package：local HTTP API 與 Unity 6.0 需求（Unity Docs）](https://docs.unity.com/en-us/unity-production-pipeline/local-tools-cli/unity-pipeline-package)
 - [Unity Pipeline architecture（Unity Docs）](https://docs.unity.com/en-us/unity-production-pipeline/overview)
 - [Unity Pipeline APIs：closed beta 期間為 read-only（Unity Docs）](https://docs.unity.com/en-us/unity-production-pipeline/pipeline-api)
 - [Opening your Unity production to the whole team（Unity Discussions，Official）](https://discussions.unity.com/t/opening-your-unity-production-to-the-whole-team-closed-beta-is-live/1731109)
-- [GameDevBench: Evaluating Agentic Capabilities Through Game Development（arXiv）](https://arxiv.org/abs/2602.11103)
-- [GameEngineBench: Evaluating Coding Agents on Real C++ Runtime Environments（arXiv）](https://arxiv.org/abs/2607.03525)
-- [GUI Agents for Continual Game Generation（arXiv）](https://arxiv.org/abs/2605.28258)
+- [GameDevBench: Evaluating Agentic Capabilities Through Game Development v2（arXiv）](https://arxiv.org/abs/2602.11103v2)
+- [GameEngineBench: Evaluating Coding Agents on Real C++ Runtime Environments v2（arXiv）](https://arxiv.org/abs/2607.03525v2)
+- [GUI Agents for Continual Game Generation v1（arXiv）](https://arxiv.org/abs/2605.28258v1)
