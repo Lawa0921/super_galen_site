@@ -110,6 +110,11 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         <div class="create-col">
           <h3 class="create-subtitle">天賦點 · 剩餘 <span id="create-points">3</span></h3>
           <div id="create-alloc-rows" class="alloc-rows"></div>
+          <div class="create-roll-row">
+            <button id="btn-roll-stats" type="button" class="caravan-btn caravan-btn-ghost">🎲 擲骰天賦</button>
+            <button id="btn-roll-reset" type="button" class="caravan-btn caravan-btn-ghost" hidden>還原基準</button>
+          </div>
+          <p class="create-roll-hint">命運的骰子：每項屬性在基準 −2 ～ +3 之間浮動，不滿意可以再擲。</p>
         </div>
         <div class="create-col">
           <h3 class="create-subtitle">出身特性</h3>
@@ -351,6 +356,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     pendingLevelUps, applyLevelUp, unlockedMoves, generateRecruitPool, hireCost, wagePerTrip,
     equipItem, unequipItem, SPECIALIZATIONS, SPECIALIZATION_LEVEL, chooseSpecialization, specById,
     bondTier, BOND_TIER_NAMES, XP_TABLE,
+    SKILLS, SKILL_RANK_CAP, spendSkillPoint, smithCost, SMITH_PLUS_CAP, upgradeEquipment, rollStats,
   } from '@scripts/games/caravan/roster';
   import {
     buyPrice, sellPrice, tradeSellPrice, cargoCapacity, wagonUpgradeCost, totalWage,
@@ -758,6 +764,13 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       slotEl.appendChild(label);
 
       if (equippedItem) {
+        const plus = record.equipmentPlus?.[slot] ?? 0;
+        if (plus > 0) {
+          const plusTag = document.createElement('span');
+          plusTag.className = 'smith-plus-tag';
+          plusTag.textContent = `+${plus}`;
+          label.appendChild(plusTag);
+        }
         const unequipBtn = document.createElement('button');
         unequipBtn.type = 'button';
         unequipBtn.className = 'caravan-btn unequip-btn';
@@ -769,6 +782,23 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
           renderTownPanels();
         });
         slotEl.appendChild(unequipBtn);
+        // M14 鐵匠強化
+        if (plus < SMITH_PLUS_CAP) {
+          const cost = smithCost(plus);
+          const smithBtn = document.createElement('button');
+          smithBtn.type = 'button';
+          smithBtn.className = 'caravan-btn smith-btn';
+          smithBtn.dataset.slot = slot;
+          smithBtn.textContent = `強化 +${plus + 1}（${cost.gold}G＋礦石×${cost.ore}）`;
+          smithBtn.disabled = save.gold < cost.gold || (save.inventory['ore'] ?? 0) < cost.ore;
+          smithBtn.addEventListener('click', () => {
+            if (!save) return;
+            upgradeEquipment(save, record.id, slot);
+            saveGame(save);
+            renderTownPanels();
+          });
+          slotEl.appendChild(smithBtn);
+        }
       }
 
       const candidates = Object.values(ITEMS).filter(
@@ -981,6 +1011,40 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       }
 
       sheet.append(name, xp, stats, hp, moves);
+      // M14 冒險技能區
+      const skillsWrap = document.createElement('div');
+      skillsWrap.className = 'roster-skills';
+      const points = record.skillPoints ?? 0;
+      const skillsTitle = document.createElement('p');
+      skillsTitle.className = 'roster-skills-title';
+      skillsTitle.textContent = points > 0 ? `冒險技能（可用點數 ${points}）` : '冒險技能';
+      skillsWrap.appendChild(skillsTitle);
+      const skillRow = document.createElement('div');
+      skillRow.className = 'skill-chips';
+      for (const skill of SKILLS) {
+        const rank = record.skills?.[skill.id] ?? 0;
+        const chip = document.createElement('span');
+        chip.className = 'skill-chip' + (rank > 0 ? ' learned' : '');
+        chip.title = skill.desc;
+        chip.textContent = `${skill.name} ${'●'.repeat(rank)}${'○'.repeat(SKILL_RANK_CAP - rank)}`;
+        if (points > 0 && rank < SKILL_RANK_CAP) {
+          const plus = document.createElement('button');
+          plus.type = 'button';
+          plus.className = 'skill-plus';
+          plus.dataset.skillId = skill.id;
+          plus.textContent = '＋';
+          plus.addEventListener('click', () => {
+            if (!save) return;
+            spendSkillPoint(record, skill.id);
+            saveGame(save);
+            renderTownPanels();
+          });
+          chip.appendChild(plus);
+        }
+        skillRow.appendChild(chip);
+      }
+      skillsWrap.appendChild(skillRow);
+      sheet.appendChild(skillsWrap);
       card.appendChild(sheet);
       renderEquipSlots(sheet, record);
 
@@ -1225,6 +1289,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   let createJob: typeof JOB_IDS[number] = 'swordsman';
   let createAlloc: Partial<Record<Stat, number>> = {};
   let createTrait: string | null = null;
+  let rolledStats: Record<Stat, number> | null = null; // M14 擲骰結果；null=職業基準
 
   function createAllocTotal(): number {
     return (Object.values(createAlloc) as number[]).reduce((a, b) => a + (b ?? 0), 0);
@@ -1243,14 +1308,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       const nm = document.createElement('b'); nm.textContent = JOBS[job].name;
       const desc = document.createElement('span'); desc.textContent = JOB_BLURB[job];
       card.append(art, nm, desc);
-      card.addEventListener('click', () => { createJob = job; createAlloc = {}; renderCreate(); });
+      card.addEventListener('click', () => { createJob = job; createAlloc = {}; rolledStats = null; renderCreate(); });
       createJobsEl.appendChild(card);
     }
     // 配點
     const remaining = CREATION_BONUS_POINTS - createAllocTotal();
     createPointsEl.textContent = String(remaining);
     createAllocRowsEl.innerHTML = '';
-    const base = STARTING_PROFILE[createJob].stats;
+    const base = rolledStats ?? STARTING_PROFILE[createJob].stats;
+    document.getElementById('btn-roll-reset')!.hidden = rolledStats === null;
     for (const stat of Object.keys(STAT_LABELS) as Stat[]) {
       const row = document.createElement('div'); row.className = 'alloc-row';
       const label = document.createElement('span'); label.className = 'alloc-label';
@@ -1310,10 +1376,21 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   }
 
   function enterCreation(): void {
-    createJob = 'swordsman'; createAlloc = {}; createTrait = null;
+    createJob = 'swordsman'; createAlloc = {}; createTrait = null; rolledStats = null;
     renderCreate();
     showScreen('create');
   }
+
+  document.getElementById('btn-roll-stats')?.addEventListener('click', () => {
+    rolledStats = rollStats(rng, createJob);
+    createAlloc = {};
+    renderCreate();
+  });
+  document.getElementById('btn-roll-reset')?.addEventListener('click', () => {
+    rolledStats = null;
+    createAlloc = {};
+    renderCreate();
+  });
 
   btnNew.addEventListener('click', () => {
     prologueIndex = 0;
@@ -1328,7 +1405,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   document.getElementById('btn-prologue-skip')?.addEventListener('click', enterCreation);
   document.getElementById('btn-create-cancel')?.addEventListener('click', () => showScreen('title'));
   document.getElementById('btn-create-confirm')?.addEventListener('click', () => {
-    const choice: CharacterChoice = { job: createJob, allocation: createAlloc, trait: createTrait };
+    const choice: CharacterChoice = {
+      job: createJob, allocation: createAlloc, trait: createTrait,
+      ...(rolledStats ? { statRoll: rolledStats } : {}),
+    };
     save = newGame(Date.now(), choice);
     // ?seed= 同時固定 marketSeed 與 tavernSeed（e2e 決定性依賴）
     if (seedParam) {
@@ -3284,4 +3364,32 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     border: 1px solid var(--seal-bright); border-radius: 999px;
     vertical-align: 0.1em;
   }
+
+  /* ---- M14：擲骰／技能／鐵匠 ---- */
+  .create-roll-row { display: flex; gap: 0.6rem; margin-top: 0.8rem; }
+  .create-roll-hint { font-size: 0.78rem; color: var(--text-dim); margin: 0.45rem 0 0; line-height: 1.6; }
+  .roster-skills { margin: 0.1rem 0 0.4rem; }
+  .roster-skills-title { font-size: 0.8rem; letter-spacing: 0.08em; color: var(--gold-bright); margin: 0 0 0.3rem; }
+  .skill-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .skill-chip {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.12rem 0.55rem; font-size: 0.76rem; letter-spacing: 0.04em;
+    color: var(--text-dim); background: var(--panel-deep);
+    border: 1px solid var(--gold-dim); border-radius: 3px;
+  }
+  .skill-chip.learned { color: var(--text); border-color: var(--gold); }
+  .skill-plus {
+    font: inherit; cursor: pointer; line-height: 1;
+    width: 1.15rem; height: 1.15rem; display: grid; place-items: center;
+    color: #f7ece0; background: var(--seal);
+    border: 1px solid var(--seal-bright); border-radius: 3px;
+  }
+  .skill-plus:hover { background: var(--seal-bright); }
+  .smith-plus-tag {
+    margin-left: 0.4rem; padding: 0 0.4rem;
+    font-size: 0.72rem; font-weight: 700;
+    color: #f7ece0; background: var(--seal); border-radius: 3px;
+  }
+  .smith-btn { font-size: 0.78rem; padding: 0.25rem 0.7rem; margin-top: 0.3rem; }
+  .smith-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 </style>

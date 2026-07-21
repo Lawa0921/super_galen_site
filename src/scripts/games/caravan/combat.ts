@@ -22,6 +22,8 @@ export interface StatusEffect { kind: StatusKind; remaining: number; potency: nu
 export interface CombatantBase {
   id: string; name: string; stats: StatBlock;
   maxHp: number; hp: number; defense: number; moves: Move[];
+  /** M14 鐵匠強化：武器 +N 固定傷害加值 */
+  damageBonus?: number;
   /** 進行中狀態效果（M7，戰鬥 runtime） */
   statuses?: StatusEffect[];
   /** 立繪路徑（M5 美術） */
@@ -205,7 +207,8 @@ function performMove(rng: Rng, state: CombatState, actor: CombatantBase, move: M
     actor.statuses = actor.statuses!.filter((s) => s.remaining > 0);
   }
   const amount = Math.max(1, rollDice(rng, dmgSpec.dice, dmgSpec.sides)
-    + (dmgSpec.bonusStat ? statMod(actor.stats[dmgSpec.bonusStat]) : 0) + strengthBonus);
+    + (dmgSpec.bonusStat ? statMod(actor.stats[dmgSpec.bonusStat]) : 0) + strengthBonus
+    + (actor.damageBonus ?? 0));
   state.log.push({ kind: 'damage', text: fillNarration(move.narration, actor.name, target.name, amount) });
   applyDamage(state, target, amount);
   // M7 命中附加狀態（同類刷新為較長持續）

@@ -1076,3 +1076,78 @@ test.describe('商隊與劍：序章演出', () => {
     await expect(page.locator('#screen-create')).toBeVisible();
   });
 });
+
+test.describe('商隊與劍：M14 角色深度', () => {
+  async function freshCreate(page: import('@playwright/test').Page): Promise<void> {
+    await page.goto('/caravan/play?seed=77');
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
+  }
+
+  test('創角擲骰：擲骰後屬性在基準 ±範圍內變動、確認後入檔；還原鈕回基準', async ({ page }) => {
+    await freshCreate(page);
+    await page.click('#btn-roll-stats');
+    await expect(page.locator('#btn-roll-reset')).toBeVisible();
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    const stats = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('caravan-save-v1')!).protagonist.stats
+    );
+    const base = { str: 12, dex: 12, int: 10, cha: 12, con: 12 };
+    for (const key of Object.keys(base) as Array<keyof typeof base>) {
+      expect(stats[key]).toBeGreaterThanOrEqual(base[key] - 2);
+      expect(stats[key]).toBeLessThanOrEqual(base[key] + 3);
+    }
+  });
+
+  test('冒險技能：有技能點時 roster 可加點、rank 點點顯示、點數遞減', async ({ page }) => {
+    await freshCreate(page);
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      data.protagonist.skillPoints = 1;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('.town-tab[data-town-tab="roster"]');
+
+    await page.click('.skill-plus[data-skill-id="scouting"]');
+    const card = page.locator('.roster-card[data-member-id="protagonist"]');
+    await expect(card.locator('.skill-chip', { hasText: '偵查' })).toContainText('●');
+    const data = await page.evaluate(() => JSON.parse(localStorage.getItem('caravan-save-v1')!));
+    expect(data.protagonist.skills.scouting).toBe(1);
+    expect(data.protagonist.skillPoints).toBe(0);
+  });
+
+  test('鐵匠強化：花 40G+1 礦把武器強化到 +1，標籤與下一級費用更新', async ({ page }) => {
+    await freshCreate(page);
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      data.protagonist.equipment.weapon = 'salt-crystal-blade';
+      data.gold = 100;
+      data.inventory = { ore: 1 };
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('.town-tab[data-town-tab="roster"]');
+
+    const card = page.locator('.roster-card[data-member-id="protagonist"]');
+    await card.locator('.smith-btn[data-slot="weapon"]').click();
+    await expect(card.locator('.smith-plus-tag')).toHaveText('+1');
+    await expect(card.locator('.smith-btn[data-slot="weapon"]')).toContainText('80G');
+    const data = await page.evaluate(() => JSON.parse(localStorage.getItem('caravan-save-v1')!));
+    expect(data.protagonist.equipmentPlus.weapon).toBe(1);
+    expect(data.gold).toBe(60);
+    expect(data.inventory.ore).toBe(0);
+  });
+});
