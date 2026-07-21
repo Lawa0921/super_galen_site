@@ -439,3 +439,66 @@ describe('M11 戰鬥道具（useItemInCombat）', () => {
     expect(() => useItemInCombat(state, 'p2', { kind: 'heal', amount: 6, name: '藥草' }, 'p2')).toThrow();
   });
 });
+
+describe('M15 戰術戰鬥：屬性弱點與破防', () => {
+  const attacker = (): PartyMember => ({
+    id: 'p1', name: '你', stats: { str: 12, dex: 12, int: 10, cha: 12, con: 12 },
+    maxHp: 22, hp: 22, defense: 14, isProtagonist: true,
+    moves: [
+      { id: 'slash-hit', name: '斬擊', kind: 'attack', target: 'enemy', hitStat: 'str', element: 'slash',
+        damage: { dice: 1, sides: 6, bonusStat: 'str' }, narration: '{actor}斬向{target}造成{amount}點傷害' },
+      { id: 'blunt-hit', name: '鈍擊', kind: 'attack', target: 'enemy', hitStat: 'str', element: 'blunt',
+        damage: { dice: 1, sides: 6, bonusStat: 'str' }, narration: '{actor}砸向{target}造成{amount}點傷害' },
+      { id: 'plain-hit', name: '普擊', kind: 'attack', target: 'enemy', hitStat: 'str',
+        damage: { dice: 1, sides: 6, bonusStat: 'str' }, narration: '{actor}擊向{target}造成{amount}點傷害' },
+    ],
+  });
+  const foe = (over: Partial<EnemyUnit> = {}): EnemyUnit => ({
+    id: 'e1', name: '哥布林', stats: { str: 10, dex: 10, int: 8, cha: 6, con: 10 },
+    maxHp: 40, hp: 40, defense: 5, xp: 10,
+    weaknesses: ['slash'], resists: ['blunt'], maxPoise: 2,
+    moves: [{ id: 'stab', name: '短刀', kind: 'attack', target: 'enemy', hitStat: 'str',
+      damage: { dice: 1, sides: 4, bonusStat: 'str' }, narration: '{actor}刺向{target}造成{amount}點傷害' }],
+    intents: [{ moveId: 'stab', weight: 1 }],
+    ...over,
+  });
+
+  // scriptedRng：d20 與 damage roll 共用序列——[10(命中), 4(傷害骰)] 基礎傷 4+1(str mod)=5
+  it('弱點 ×1.5（進位）＋「擊中弱點」log；抗性 ×0.5；中性不變', () => {
+    const s1 = startCombat(scriptedRng([10, 4, 1]), [attacker()], [foe()]);
+    partyAct(scriptedRng([10, 4]), s1, 'p1', 'slash-hit', 'e1');
+    expect(s1.enemies[0].hp).toBe(40 - 8); // round(5×1.5)=8
+    expect(s1.log.some((e) => e.text.includes('擊中弱點'))).toBe(true);
+
+    const s2 = startCombat(scriptedRng([10, 4, 1]), [attacker()], [foe()]);
+    partyAct(scriptedRng([10, 4]), s2, 'p1', 'blunt-hit', 'e1');
+    expect(s2.enemies[0].hp).toBe(40 - 3); // round(5×0.5)=3（min 1 保底不觸發）
+    expect(s2.log.some((e) => e.text.includes('效果不佳'))).toBe(true);
+
+    const s3 = startCombat(scriptedRng([10, 4, 1]), [attacker()], [foe()]);
+    partyAct(scriptedRng([10, 4]), s3, 'p1', 'plain-hit', 'e1');
+    expect(s3.enemies[0].hp).toBe(40 - 5);
+  });
+
+  it('破防：弱點命中削 1 護勢、中性不削；歸零→暈眩＋護勢重置＋「破防」log', () => {
+    const state = startCombat(scriptedRng([10, 4, 1]), [attacker()], [foe()]);
+    expect(state.enemies[0].poise).toBe(2);
+    partyAct(scriptedRng([10, 4]), state, 'p1', 'slash-hit', 'e1');
+    expect(state.enemies[0].poise).toBe(1);
+    // 中性攻擊不削
+    partyAct(scriptedRng([10, 4]), state, 'p1', 'plain-hit', 'e1');
+    expect(state.enemies[0].poise).toBe(1);
+    // 第二次弱點命中 → 破防
+    partyAct(scriptedRng([10, 4]), state, 'p1', 'slash-hit', 'e1');
+    expect(state.enemies[0].poise).toBe(2); // 重置
+    expect((state.enemies[0].statuses ?? []).some((st) => st.kind === 'stun')).toBe(true);
+    expect(state.log.some((e) => e.text.includes('破防'))).toBe(true);
+  });
+
+  it('落空不削護勢也不觸發弱點', () => {
+    const state = startCombat(scriptedRng([2, 4, 1]), [attacker()], [foe()]);
+    partyAct(scriptedRng([2]), state, 'p1', 'slash-hit', 'e1'); // d20=2+1 < defense 5? 3<5 落空
+    expect(state.enemies[0].hp).toBe(40);
+    expect(state.enemies[0].poise).toBe(2);
+  });
+});
