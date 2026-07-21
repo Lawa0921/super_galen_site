@@ -24,6 +24,8 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
         <span class="hud-sep" aria-hidden="true"></span>
         <span class="hud-stat"><span class="hud-label">聲望</span><b id="hud-rep">0</b></span>
         <span class="hud-sep" aria-hidden="true"></span>
+        <span id="hud-rank" class="hud-rank"></span>
+        <span class="hud-sep" aria-hidden="true"></span>
         <button id="btn-howto-hud" class="hud-help" type="button">玩法</button>
       </div>
     </div>
@@ -32,12 +34,12 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     <div id="howto-panel" class="modal-overlay" hidden>
       <div class="modal-box howto-box">
         <h3 class="modal-title">怎麼玩</h3>
-        <p class="howto-lead">你是一支商隊的隊長。踏上商路，在事件與戰鬥中活下來、帶著財富與見聞歸來，讓商隊越來越強。</p>
+        <p class="howto-lead">你是一支商隊的隊長。從「行腳商」起家，靠一趟趟遠征累積聲望，討平三大魔窟——最終登上<b>商會之主</b>的寶座。</p>
         <ol class="howto-steps">
           <li><b>城鎮整備</b>——市集買賣補給、酒館招募旅伴、隊伍配裝、馬車升級載貨。</li>
           <li><b>接下委託</b>——到<em>委託板</em>選一條商路或迷宮出發；路程越遠越危險，報酬越高。</li>
           <li><b>遠征歷險</b>——沿途抽事件卡、擲骰做選擇；遇敵進入回合戰鬥。</li>
-          <li><b>歸城結算</b>——平安回城獲得金幣、經驗與戰利品，累積「傳承」讓下趟更強。</li>
+          <li><b>歸城結算</b>——獲得金幣、經驗與<em>聲望</em>；聲望推動商會階級，解鎖更遠的商路與迷宮。</li>
         </ol>
         <p class="howto-tip">隨時可點右上角的「玩法」重看這份說明。</p>
         <div class="modal-actions">
@@ -64,6 +66,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <img class="title-art" src="/assets/games/caravan/title-banner.webp" alt="" width="1280" height="720" loading="eager" />
       <h1 class="game-title">商隊與劍</h1>
       <p class="game-subtitle">CARAVAN &amp; SWORD</p>
+      <p class="title-premise">一輛馬車、一袋銅幣——目標，<b>商會之主</b>。</p>
       <div class="title-actions">
         <button id="btn-new-game" class="caravan-btn">新的旅程</button>
         <button id="btn-continue" class="caravan-btn" hidden>繼續旅程</button>
@@ -100,6 +103,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       <img class="town-banner" src="/assets/games/caravan/town-starting-town.webp" alt="" width="1280" height="720" loading="lazy" />
       <h2 class="town-name">啟程之鎮</h2>
       <p class="town-status">金幣 <span id="town-gold">0</span> G</p>
+      <div id="goal-card" class="goal-card">
+        <span id="goal-rank" class="goal-rank"></span>
+        <div class="goal-body">
+          <p id="goal-desc" class="goal-desc"></p>
+          <p id="goal-next" class="goal-next"></p>
+          <div id="goal-bar" class="goal-bar"><i id="goal-bar-fill"></i></div>
+        </div>
+      </div>
       <p class="screen-guide">在此補給整備。準備好了就點<b>委託板</b>出發遠征、賺取財富。</p>
       <div class="town-actions">
         <button id="btn-quest-board" class="caravan-btn">委託板</button>
@@ -246,6 +257,11 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     <!-- 結算畫面（M3：遠征歸返） -->
     <section id="screen-settlement" class="screen" hidden>
       <h2 class="settle-title">遠征結算</h2>
+      <div id="rankup-banner" class="rankup-banner" hidden>
+        <span class="rankup-label">商會晉升</span>
+        <b id="rankup-name"></b>
+        <p id="rankup-desc"></p>
+      </div>
       <p id="settle-achievements" class="settle-achievements" hidden></p>
       <div id="settle-log" class="settle-log"></div>
       <dl class="settle-stats">
@@ -262,6 +278,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
           <dd><span id="settle-xp">0</span> XP</dd>
         </div>
       </dl>
+      <p id="settle-goal" class="settle-goal"></p>
       <p class="settle-items-label">帶回的物品：</p>
       <ul id="settle-items" class="settle-items"></ul>
       <button id="btn-settle-back" class="caravan-btn">返回城鎮</button>
@@ -276,6 +293,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   import type { CharacterChoice } from '@scripts/games/caravan/save';
   import { applyMarket } from '@scripts/games/caravan/economy';
   import { CONDITIONS } from '@scripts/games/caravan/expedition';
+  import { RANKS, currentRank, nextRank, rankProgress, isFinalRank } from '@scripts/games/caravan/goals';
   import { traitById, TRAITS } from '@scripts/games/caravan/roster';
   import {
     loadChronicle, saveChronicle, recordEvent, recordEnemyDefeat, recordLocationVisit,
@@ -351,6 +369,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   };
 
   function refreshHud(scene: string): void {
+    if (save) {
+      const hudRank = document.getElementById('hud-rank');
+      if (hudRank) hudRank.textContent = currentRank(save).name;
+    }
     if (!save) return;
     hudGoldEl.textContent = String(save.gold);
     hudRepEl.textContent = String(save.reputation);
@@ -754,6 +776,32 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     card.appendChild(wrap);
   }
 
+  // ---- M12 商會目標卡 ----
+  function renderGoalCard(): void {
+    if (!save) return;
+    const rank = currentRank(save);
+    const next = nextRank(save);
+    const progress = rankProgress(save);
+    document.getElementById('goal-rank')!.textContent = rank.name;
+    document.getElementById('goal-desc')!.textContent = rank.desc;
+    const nextEl = document.getElementById('goal-next')!;
+    const barFill = document.getElementById('goal-bar-fill')!;
+    const bar = document.getElementById('goal-bar')!;
+    if (next && progress) {
+      let text = `下一階「${next.name}」：聲望 ${progress.reputation.have}/${progress.reputation.need}`;
+      if (progress.bossClears) text += `．魔窟討伐 ${progress.bossClears.have}/${progress.bossClears.need}`;
+      nextEl.textContent = text;
+      bar.hidden = false;
+      const ratio = Math.min(1, progress.reputation.have / progress.reputation.need);
+      barFill.style.width = `${Math.round(ratio * 100)}%`;
+    } else {
+      nextEl.textContent = '你已登上商會的頂點——旅途仍在繼續。';
+      bar.hidden = true;
+    }
+    const hudRank = document.getElementById('hud-rank');
+    if (hudRank) hudRank.textContent = rank.name;
+  }
+
   // ---- M11 專精面板 ----
   const specPanelEl = document.getElementById('spec-panel')!;
   const specOptionsEl = document.getElementById('spec-options')!;
@@ -1099,6 +1147,7 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   });
 
   function showTown(gold: number): void {
+    renderGoalCard();
     goldEl.textContent = String(gold);
     showScreen('town');
     updateResumeButton();
@@ -1698,7 +1747,29 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   function finalizeSettlement(tradeSales: Array<{ itemId: string; count: number }>): void {
     if (!expedition || !save) return;
     const finished = expedition;
+    const rankBefore = currentRank(save);
     const result = settleExpedition(finished, save, tradeSales);
+    const rankAfter = currentRank(save);
+    const rankupEl = document.getElementById('rankup-banner')!;
+    if (rankAfter.id !== rankBefore.id) {
+      rankupEl.hidden = false;
+      document.getElementById('rankup-name')!.textContent = rankAfter.name;
+      document.getElementById('rankup-desc')!.textContent = rankAfter.desc;
+    } else {
+      rankupEl.hidden = true;
+    }
+    const goalEl = document.getElementById('settle-goal')!;
+    const progressAfter = rankProgress(save);
+    if (progressAfter) {
+      const nx = nextRank(save)!;
+      let text = `聲望 ${save.reputation}．距「${nx.name}」還差 ${Math.max(0, nx.minReputation - save.reputation)} 聲望`;
+      if (progressAfter.bossClears) {
+        text += `、魔窟 ${progressAfter.bossClears.have}/${progressAfter.bossClears.need}`;
+      }
+      goalEl.textContent = text;
+    } else {
+      goalEl.textContent = isFinalRank(save) ? '商會之主——你的名字已成為傳說。' : '';
+    }
     // 招募池輪替（M4）：每趟歸返結算後種子遞增，酒館下次渲染會抽到新一批人選
     save.tavernSeed += 1;
     save.marketSeed += 1; // M7：歸返後各鎮行情輪動
@@ -2977,5 +3048,56 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .alloc-row .alloc-label { min-width: 4.6rem; }
   @media (prefers-reduced-motion: reduce) {
     .roster-card { animation: none; }
+  }
+
+  /* ---- M12 商會目標 ---- */
+  .title-premise { font-size: 0.95rem; letter-spacing: 0.14em; color: var(--text-dim); margin: 0.2rem 0 0.9rem; }
+  .title-premise b { color: var(--seal-bright); font-weight: 700; }
+  .goal-card {
+    display: flex; align-items: center; gap: 0.9rem;
+    max-width: 30rem; margin: 0.7rem auto 0.9rem;
+    padding: 0.65rem 0.95rem; text-align: left;
+    background: var(--panel-deep);
+    border: 1px solid var(--gold-dim); border-left: 3px solid var(--seal);
+    border-radius: 3px;
+  }
+  .goal-rank {
+    flex: none; padding: 0.4rem 0.75rem;
+    font-weight: 900; letter-spacing: 0.18em; font-size: 1rem;
+    color: #f7ece0; background: var(--seal);
+    border: 1px solid var(--seal-bright); border-radius: 3px;
+    box-shadow: 0 2px 8px rgba(70, 16, 12, 0.45), inset 0 0 0 1px rgba(247, 236, 224, 0.2);
+    writing-mode: vertical-rl; text-orientation: upright;
+  }
+  .goal-body { min-width: 0; flex: 1; }
+  .goal-desc { margin: 0 0 0.3rem; font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+  .goal-next { margin: 0 0 0.35rem; font-size: 0.85rem; color: var(--gold-bright); letter-spacing: 0.04em; }
+  .goal-bar {
+    height: 6px; border-radius: 3px; overflow: hidden;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+  }
+  .goal-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--seal), var(--seal-bright)); }
+  .hud-rank {
+    font-size: 0.82rem; letter-spacing: 0.14em; font-weight: 700;
+    color: #f7ece0; background: var(--seal);
+    padding: 0.14rem 0.6rem; border-radius: 3px;
+    border: 1px solid var(--seal-bright);
+  }
+  .rankup-banner {
+    max-width: 26rem; margin: 0 auto 1rem;
+    padding: 1rem 1.2rem;
+    background: linear-gradient(180deg, rgba(181, 52, 43, 0.18), transparent), var(--panel-deep);
+    border: 1px solid var(--seal-bright); border-radius: 4px;
+    box-shadow: 0 0 24px rgba(181, 52, 43, 0.35);
+    animation: rankupPop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+  @keyframes rankupPop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+  .rankup-label { display: block; font-size: 0.78rem; letter-spacing: 0.3em; color: var(--seal-bright); margin-bottom: 0.2rem; }
+  .rankup-banner b { font-size: 1.5rem; letter-spacing: 0.25em; color: var(--gold-bright); }
+  .rankup-banner p { margin: 0.4rem 0 0; font-size: 0.88rem; color: var(--text-dim); line-height: 1.7; }
+  .settle-goal { font-size: 0.9rem; color: var(--gold-bright); letter-spacing: 0.05em; margin: 0.2rem 0 1rem; }
+  @media (prefers-reduced-motion: reduce) {
+    .rankup-banner { animation: none; }
   }
 </style>
