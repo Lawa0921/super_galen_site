@@ -23,13 +23,13 @@ Rationale: This issue matches an existing report.
 
 2026 年 7 月 23 日，GitHub 在 public preview 推出 [Issues agent automation controls](https://github.blog/changelog/2026-07-23-agent-automation-controls-in-github-issues-in-public-preview/)。Agent 對 label、field、issue type、assignee 與關閉 issue 等操作附上 rationale，並把 confidence 分成 high、medium、low；repository 可以設定門檻，讓高信心操作自動套用，其餘留給人審核。
 
-這是一個值得肯定的方向。它承認 agent 不該只有「全自動」與「全部人工」兩種模式。
+這比只有「全自動」與「全部人工」兩個開關，更接近真實工作流。
 
 但我的觀點是：
 
 > **Confidence 適合決定先看哪一筆，不適合決定哪一筆不必驗證。**
 
-如果沒有實際準確率、失敗成本與獨立證據，「High」只是一個會影響人類判斷的介面元素。
+如果沒有實際準確率、失敗成本與獨立證據，「High」就不是工程證據，只是一個會影響人類判斷的 badge。
 
 ## GitHub 新增的其實是三種不同工具
 
@@ -77,7 +77,9 @@ GitHub 目前的功能文件說明了 high、medium、low 與四種 automation l
 
 另一篇 2024 年的人機自動化研究也提供了有用的對照。在模擬無人載具任務中，[提高 automation transparency 改善了使用自動化建議的準確性](https://doi.org/10.1186/s41235-024-00599-x)；單獨顯示「somewhat／highly confident」則沒有帶來整體正確率提升，雖然參與者確實會依信心高低改變接受建議的程度。
 
-所以 rationale 可能有價值，confidence 也能用來分流；但兩者都不是 correctness proof。
+所以 rationale 可以幫助人理解，confidence 也能用來分流。
+
+但兩者都不能證明結果是對的。
 
 ## Godot 遇到的是另一端：生成變便宜，審查沒有
 
@@ -87,7 +89,7 @@ Godot Foundation 在 2026 年 6 月宣布[收緊貢獻政策](https://godotengin
 
 Godot 因而採取非常保守的界線：禁止 autonomous AI agent 與 vibe coding、禁止用 AI 產生大段程式碼，並要求 AI 使用必須揭露。這是 Godot 對自己社群、維護能力與風險做出的政策選擇，不代表所有專案都該照抄。
 
-但它揭露了一個 agent 經濟學：
+但它揭露了一個很現實的算式：
 
 ```text
 產生變更的成本 ↓
@@ -99,9 +101,9 @@ Godot 因而採取非常保守的界線：禁止 autonomous AI agent 與 vibe co
 
 GitHub 的 confidence controls 正好可以回應這個瓶頸，但前提不是「相信 High」，而是讓團隊把有限審查時間花在**高風險、低可回復、缺乏證據**的操作上。
 
-## 實務上，先按風險分層，不要先按信心分層
+## 我現在會怎麼設定 Agent 自動化？
 
-我會先問兩件事：
+我的規則沒有很華麗。先問兩件事：
 
 1. 做錯的代價有多大？
 2. 做錯後能否快速、完整地恢復？
