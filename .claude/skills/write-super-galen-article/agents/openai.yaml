@@ -1,0 +1,4 @@
+interface:
+  display_name: "撰寫 SuperGalen 文章"
+  short_description: "依 Galen 個人風格撰寫、查證並對抗審查專案文章"
+  default_prompt: "使用 $write-super-galen-article，依 Galen 的個人風格研究、撰寫、對抗審查並驗證一篇聚焦的繁體中文文章。"
