@@ -2,9 +2,9 @@
 layout: post
 title: "AI 說「高信心」時，誰更容易出錯？Agent 自動化缺的不是膽量，而是證據"
 date: 2026-07-24
-categories: [AI, 程式開發, 心理學, 遊戲開發]
-tags: [AI Agent, GitHub Copilot, Automation Bias, Confidence Calibration, Code Review, Godot]
-description: "GitHub 開始用 confidence、rationale 與 approval 分流 agent 操作，但心理學研究提醒我們：信心標籤會改變人的判斷，只有校準過才有用。真正可靠的自動化，應按風險配置權限，並用測試與可回復性取代自信。"
+categories: [AI, 程式開發]
+tags: [AI Agent, GitHub Copilot, Automation Bias, Confidence Calibration, Code Review]
+description: "GitHub 開始用 confidence、rationale 與 approval 分流 agent 操作，但「High」不等於已經校準，更不是安全邊界。真正可靠的自動化，應按風險配置權限，並用測試與可回復性取代自信。"
 author: "Galen"
 ---
 
@@ -81,26 +81,6 @@ GitHub 目前的功能文件說明了 high、medium、low 與四種 automation l
 
 但兩者都不能證明結果是對的。
 
-## Godot 遇到的是另一端：生成變便宜，審查沒有
-
-把鏡頭從企業 repository 移到開源遊戲引擎，問題會更清楚。
-
-Godot Foundation 在 2026 年 6 月宣布[收緊貢獻政策](https://godotengine.org/article/contribution-policy-2026/)。官方描述的瓶頸不是沒有人送 PR，而是合格 reviewer 太少；AI 讓產生 contribution 的成本下降，review effort 與 reviewer 數量卻沒有同步改善。
-
-Godot 因而採取非常保守的界線：禁止 autonomous AI agent 與 vibe coding、禁止用 AI 產生大段程式碼，並要求 AI 使用必須揭露。這是 Godot 對自己社群、維護能力與風險做出的政策選擇，不代表所有專案都該照抄。
-
-但它揭露了一個很現實的算式：
-
-```text
-產生變更的成本 ↓
-需要審查的變更量 ↑
-可靠審查的供給不變
-```
-
-如果自動化只是把更多「High confidence」工作推進 queue，卻沒有降低每筆驗證成本，最後省下的是 agent 的時間，燒掉的是 maintainer 的注意力。
-
-GitHub 的 confidence controls 正好可以回應這個瓶頸，但前提不是「相信 High」，而是讓團隊把有限審查時間花在**高風險、低可回復、缺乏證據**的操作上。
-
 ## 我現在會怎麼設定 Agent 自動化？
 
 我的規則沒有很華麗。先問兩件事：
@@ -171,18 +151,17 @@ GitHub 這次更新最有價值的地方，不是 agent 終於敢說「High」�
 
 1. **Confidence 是審查 queue 的排序訊號，不是正確性證明；沒有校準資料時尤其如此。**
 2. **Rationale、approval 與 permission 是三種不同控制；真正的安全邊界必須在 server-side 權限與可執行的驗證上。**
-3. **Agent 讓生成變便宜後，工程瓶頸會移到 review；最值得自動化的是可判定、低風險、可回復的工作。**
+3. **先自動化可判定、低風險、可回復的工作，再用實際錯誤率調整 confidence 門檻。**
 
 ---
 
 ## 本文來源
 
-*事實查核說明：本文資料查閱於 2026 年 7 月 24 日。GitHub 的 rationale、confidence 與 approvals 仍在 public preview，且目前只適用於 agent 對 issue attributes 的特定操作。文中對不同風險操作的自動化建議，是根據 GitHub 公開的權限模型、Godot 的維護經驗與人機決策研究做出的工程判斷，不是 GitHub 或 Godot 的官方導入標準。AAAI 與 Communications Psychology 研究的任務分別是邏輯題與知覺／知識判斷；2024 年研究使用模擬無人載具管理任務，三者都不是 GitHub code review 實驗，因此本文不將其效果量直接外推到軟體開發。*
+*事實查核說明：本文資料查閱於 2026 年 7 月 24 日。GitHub 的 rationale、confidence 與 approvals 仍在 public preview，且目前只適用於 agent 對 issue attributes 的特定操作。文中對不同風險操作的自動化建議，是根據 GitHub 公開的權限模型與人機決策研究做出的工程判斷，不是 GitHub 的官方導入標準。AAAI 與 Communications Psychology 研究的任務分別是邏輯題與知覺／知識判斷；2024 年研究使用模擬無人載具管理任務，三者都不是 GitHub code review 實驗，因此本文不將其效果量直接外推到軟體開發。*
 
 - [Agent automation controls in GitHub Issues in public preview（GitHub Changelog）](https://github.blog/changelog/2026-07-23-agent-automation-controls-in-github-issues-in-public-preview/)
 - [About rationale, confidence, and approvals for issues（GitHub Docs）](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-automation-rationale-and-approvals)
 - [Risks and mitigations for GitHub Copilot cloud agent（GitHub Docs）](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/risks-and-mitigations)
-- [Changes to our Contribution Policies（Godot Engine）](https://godotengine.org/article/contribution-policy-2026/)
 - [Too Sure for Our Own Good: A User Study on AI Confidence and Human Reliance（AAAI 2026）](https://doi.org/10.1609/aaai.v40i21.38798)
 - [Beliefs about accuracy shape confidence attributions to humans and artificial agents（Communications Psychology, 2026）](https://www.nature.com/articles/s44271-026-00445-4)
 - [Transparency improves the accuracy of automation use, but automation confidence information does not（Cognitive Research, 2024）](https://doi.org/10.1186/s41235-024-00599-x)
