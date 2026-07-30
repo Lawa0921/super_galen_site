@@ -27,7 +27,7 @@ Rationale: This issue matches an existing report.
 
 但我的觀點是：
 
-> **Confidence 適合決定先看哪一筆，不適合決定哪一筆不必驗證。**
+> **Confidence 適合決定先看哪一筆，不適合單獨決定哪一筆可以跳過驗證。**
 
 如果沒有實際準確率、失敗成本與獨立證據，「High」就不是工程證據，只是一個會影響人類判斷的 badge。
 
@@ -55,7 +55,13 @@ GitHub 把 rationale、confidence 與 approval 放在同一套功能裡，但三
 
 這就是 **confidence calibration**：信心不是語氣，而要與長期觀察到的正確率對得上。
 
-GitHub 目前的功能文件說明了 high、medium、low 與四種 automation level 如何互動，但這份文件沒有公布這三個等級在不同 repository、action type 或模型上的實際準確率，也沒有提供 false positive rate。Public preview 階段有這個空白並不奇怪；它只是代表團隊不該把預設的 High 當成已替自己完成校準。
+GitHub 目前的功能文件說明了 high、medium、low 與四種 automation level 如何互動；但截至本文查核日，這份文件與官方公告都沒有公布三個等級在不同 repository、action type 或模型上的實際準確率，也沒有提供 false positive rate。Public preview 階段有這個空白並不奇怪；它只是代表團隊不該把預設的 High 當成已替自己完成校準。
+
+最接近這個問題的 LLM 實證，是 2026 年 7 月發布的 preprint [ConfidenceBench](https://arxiv.org/abs/2607.20526)。研究用 200 道未公開的選擇題、三次獨立執行，測試 15 個 frontier LLM 口頭回報的信心，並用 Brier score 評估預測機率與實際結果是否對得上。
+
+結果裡，最準確的模型不一定校準得最好；數個模型即使答題準確率尚可，信心校準仍比校準過的隨機基準更差。
+
+這份研究測的是 prompt 引導出的 verbalized confidence，不是 GitHub Issues 的 high／medium／low，也尚未經同行評審。它不能證明 GitHub 的 High 不準，但足以推翻一個偷懶的前提：**模型表達得很有把握，不代表這份把握天然對應到正確率。**
 
 2026 年 AAAI 論文 [Too Sure for Our Own Good](https://doi.org/10.1609/aaai.v40i21.38798) 用 184 位參與者與邏輯題測試 AI confidence 對人類判斷的影響。研究中，校準良好的信心分數讓決策正確率提高約 20 個百分點；校準不良時只提高約 2 個百分點，並增加 automation bias 與 conservatism bias。
 
@@ -65,17 +71,7 @@ GitHub 目前的功能文件說明了 high、medium、low 與四種 automation l
 
 > **人真的會使用 confidence cue，所以錯誤的 confidence 不只是沒幫助，而會系統性地改變人的行為。**
 
-## 我們甚至會替 AI 腦補更多自信
-
-風險不只來自 agent 顯示的 badge，也來自人如何閱讀機器的行為。
-
-2026 年刊於 Communications Psychology 的研究 [Beliefs about accuracy shape confidence attributions to humans and artificial agents](https://www.nature.com/articles/s44271-026-00445-4)，做了七個 preregistered experiments。參與者觀看人類與 AI 做知覺判斷，再評估決策者看起來多有信心。
-
-即使人類與 AI 的準確率、反應時間和行為完全相同，參與者仍持續認為 AI 更有信心。研究者再透過實驗操弄發現，這種差異部分來自人們對 agent 能力的既有信念。
-
-這不表示所有人都盲信 AI；研究測量的是「看起來多有信心」，不是所有情境下的服從率。但它提醒產品設計者：一個冷靜、結構化、附理由的自動化介面，本身就可能讓使用者感覺它比實際更確定。
-
-另一篇 2024 年的人機自動化研究也提供了有用的對照。在模擬無人載具任務中，[提高 automation transparency 改善了使用自動化建議的準確性](https://doi.org/10.1186/s41235-024-00599-x)；單獨顯示「somewhat／highly confident」則沒有帶來整體正確率提升，雖然參與者確實會依信心高低改變接受建議的程度。
+另一篇 2024 年的人機自動化研究也得到相近的警告。在模擬無人載具任務中，[提高 automation transparency 改善了使用自動化建議的準確性](https://doi.org/10.1186/s41235-024-00599-x)；提供「somewhat／highly confident」沒有改善整體成果，參與者卻仍會依信心高低改變接受建議的程度。
 
 所以 rationale 可以幫助人理解，confidence 也能用來分流。
 
@@ -112,18 +108,21 @@ GitHub 目前的功能文件說明了 high、medium、low 與四種 automation l
 
 導入 confidence-based automation 後，最小可行的監測不需要一套華麗 AI observability 平台。
 
-先記四個數字就夠：
+先記四組資料就夠：
 
 1. 每種 action type 被標成 high、medium、low 的數量。
-2. 每個等級最後被接受、修改、拒絕或回滾的比例。
+2. 每個等級經抽樣複核後，實際正確與錯誤的比例。
 3. false positive 與 false negative 各自造成的成本。
-4. 模型、prompt、repository 規則改變後，以上數字是否漂移。
+4. 被修改、拒絕或回滾的比例，以及模型、prompt、repository 規則改變後是否漂移。
+
+不能直接把「人按了 Accept」當成 ground truth。前面的研究正好說明，人會受到 confidence cue 影響；如果再用人的接受率回頭證明 confidence 很準，只是在用同一個偏差替自己背書。最好替每種 action 先定義可檢查的正確條件，再由不知道原始 confidence 的人或規則抽樣複核。
 
 不要把所有操作混成一個 accuracy。自動補錯 label 與自動關掉真正的 crash report，即使都叫「一次錯誤」，成本完全不同。
 
 當累積足夠紀錄後，團隊才能提出可驗證的規則：
 
 ```text
+假設團隊實際量到：
 過去四週，dependency label 的 High precision 為 99.2%
 而且錯誤可在 audit job 自動回復
 → 允許自動套用
@@ -157,11 +156,11 @@ GitHub 這次更新最有價值的地方，不是 agent 終於敢說「High」�
 
 ## 本文來源
 
-*事實查核說明：本文資料查閱於 2026 年 7 月 24 日。GitHub 的 rationale、confidence 與 approvals 仍在 public preview，且目前只適用於 agent 對 issue attributes 的特定操作。文中對不同風險操作的自動化建議，是根據 GitHub 公開的權限模型與人機決策研究做出的工程判斷，不是 GitHub 的官方導入標準。AAAI 與 Communications Psychology 研究的任務分別是邏輯題與知覺／知識判斷；2024 年研究使用模擬無人載具管理任務，三者都不是 GitHub code review 實驗，因此本文不將其效果量直接外推到軟體開發。*
+*事實查核說明：本文資料查閱於 2026 年 7 月 24 日。GitHub 的 rationale、confidence 與 approvals 仍在 public preview，且目前只適用於 agent 對 issue attributes 的特定操作。文中對不同風險操作的自動化建議，是根據 GitHub 公開的權限模型與相關研究做出的工程判斷，不是 GitHub 的官方導入標準。ConfidenceBench 是使用 200 道未公開選擇題測量 verbalized confidence 的 preprint；AAAI 與 2024 年人機自動化研究的任務則分別是邏輯題與模擬無人載具管理。三者都不是 GitHub Issues 或 code review 實驗，因此本文不把它們的結果直接外推成 GitHub confidence 的實際準確率。*
 
 - [Agent automation controls in GitHub Issues in public preview（GitHub Changelog）](https://github.blog/changelog/2026-07-23-agent-automation-controls-in-github-issues-in-public-preview/)
 - [About rationale, confidence, and approvals for issues（GitHub Docs）](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-automation-rationale-and-approvals)
 - [Risks and mitigations for GitHub Copilot cloud agent（GitHub Docs）](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/risks-and-mitigations)
+- [ConfidenceBench: Evaluating Confidence Calibration in Large Language Models（arXiv preprint, 2026）](https://arxiv.org/abs/2607.20526)
 - [Too Sure for Our Own Good: A User Study on AI Confidence and Human Reliance（AAAI 2026）](https://doi.org/10.1609/aaai.v40i21.38798)
-- [Beliefs about accuracy shape confidence attributions to humans and artificial agents（Communications Psychology, 2026）](https://www.nature.com/articles/s44271-026-00445-4)
 - [Transparency improves the accuracy of automation use, but automation confidence information does not（Cognitive Research, 2024）](https://doi.org/10.1186/s41235-024-00599-x)
