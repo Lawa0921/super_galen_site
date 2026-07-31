@@ -39,6 +39,11 @@ export interface CompanionRecord {
   skillPoints?: number;
   /** M14 鐵匠強化：各裝備欄的 +N（0-3），跟人走（換裝保留） */
   equipmentPlus?: { weapon: number; armor: number; trinket: number };
+  /**
+   * M18 戰技配置：本角色帶入戰鬥的招式 id（最多 4 招）。
+   * optional 讓既有 v6 存檔自動採用預設配置，不需要清檔或升版。
+   */
+  preparedMoveIds?: string[];
 }
 
 export interface SaveDataV2 {

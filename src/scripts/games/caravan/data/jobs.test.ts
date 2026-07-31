@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { JOBS, memberFromRecord } from './jobs';
+import {
+  JOBS,
+  MOVE_LOADOUT_CAP,
+  availableMovesFromRecord,
+  memberFromRecord,
+  preparedMovesFromRecord,
+  setPreparedMoves,
+} from './jobs';
 import { ITEMS, type ItemDef } from './items';
 import type { CompanionRecord } from '../save';
 import type { Move } from '../combat';
@@ -28,6 +35,35 @@ describe('jobs（武器招約定與 memberFromRecord 裝備整合，M5 Task 1）
     const aimedShot = JOBS.ranger.moves.find((move) => move.id === 'aimed-shot');
     expect(aimedShot?.hitBonus).toBe(3);
     expect(aimedShot?.area).not.toBe(true);
+  });
+
+  describe('M18 戰技配置', () => {
+    it('舊存檔在已知招式超過上限時預設攜帶前四招', () => {
+      const record = makeRecord({ level: 3 });
+      expect(availableMovesFromRecord(record)).toHaveLength(5);
+      expect(MOVE_LOADOUT_CAP).toBe(4);
+      expect(preparedMovesFromRecord(record).map((move) => move.id))
+        .toEqual(['heavy-slash', 'guard', 'whirlwind-slash', 'breaking-combo']);
+      expect(record.preparedMoveIds).toBeUndefined();
+    });
+
+    it('玩家可在已解鎖招式中配置一至四招，戰鬥成員只帶入該配置', () => {
+      const record = makeRecord({ level: 3 });
+      expect(setPreparedMoves(record, ['guard', 'strike'])).toEqual(['guard', 'strike']);
+      expect(memberFromRecord(record).moves.map((move) => move.id)).toEqual(['guard', 'strike']);
+    });
+
+    it('未知、空白或超量配置會拒絕且不修改既有配置', () => {
+      const record = makeRecord({ level: 3, preparedMoveIds: ['guard', 'strike'] });
+      for (const invalid of [
+        [],
+        ['guard', 'not-a-move'],
+        ['heavy-slash', 'guard', 'whirlwind-slash', 'breaking-combo', 'strike'],
+      ]) {
+        expect(() => setPreparedMoves(record, invalid)).toThrow();
+        expect(record.preparedMoveIds).toEqual(['guard', 'strike']);
+      }
+    });
   });
 
   describe('memberFromRecord 裝備整合', () => {
@@ -65,6 +101,16 @@ describe('jobs（武器招約定與 memberFromRecord 裝備整合，M5 Task 1）
       const member = memberFromRecord(record);
       expect(member.moves[0].id).toBe('test-weapon-move');
       expect(member.moves.slice(1).map((m) => m.id)).toEqual(withoutWeapon.slice(1));
+    });
+
+    it('已配置職業首招時，換上帶招式武器會以武器招平滑取代', () => {
+      const record = makeRecord({
+        level: 3,
+        preparedMoveIds: ['heavy-slash', 'guard', 'strike'],
+        equipment: { weapon: 'test-weapon', armor: null, trinket: null },
+      });
+      expect(memberFromRecord(record).moves.map((move) => move.id))
+        .toEqual(['test-weapon-move', 'guard', 'strike']);
     });
 
     it('武器無 move 欄位時 moves[0] 維持職業原招（僅套用屬性加成）', () => {

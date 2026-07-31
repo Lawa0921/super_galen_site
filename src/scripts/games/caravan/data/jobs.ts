@@ -25,6 +25,9 @@ export interface JobDef {
   art?: string;
 }
 
+/** M18：每名角色最多攜帶四招，讓升級後的技能選擇形成構築取捨。 */
+export const MOVE_LOADOUT_CAP = 4;
+
 /** 通用「揮擊」：所有職業都會的基礎武器攻擊，備用招式 */
 const universalStrike: Move = {
   id: 'strike', element: 'blunt', name: '揮擊', kind: 'attack', target: 'enemy', hitStat: 'str',
@@ -140,10 +143,66 @@ export const JOBS: Record<JobId, JobDef> = {
   },
 };
 
+/** 包含等級解鎖、武器招式與專精招式的完整已知戰技清單。 */
+export function availableMovesFromRecord(record: CompanionRecord): Move[] {
+  const moves = unlockedMoves(record);
+  const weaponId = record.equipment.weapon;
+  const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
+  const baseMoves = weaponMove ? [weaponMove, ...moves.slice(1)] : moves;
+  const spec = specById(record.specialization);
+  // 專屬招放在兩招職業核心技之後，讓舊存檔的預設四招必定能體現專精身分。
+  return spec
+    ? [...baseMoves.slice(0, 2), spec.move, ...baseMoves.slice(2)]
+    : baseMoves;
+}
+
 /**
- * 用 JOBS[record.job] 的 moves/defense，配上 record 自己的 stats/maxHp（含成長），
- * 再疊上裝備三欄的效果（M5）：stats/defense/maxHp 加成；weapon 若帶 move 則取代
- * moves[0]（武器招約定——JOBS 每職業 moves[0] 恆為 kind==='attack'，見 jobs.test.ts 資料鎖定）。
+ * 依已知戰技整理實際攜帶配置。
+ * 舊存檔採前四招；裝上帶招式的武器時，若原本配置了職業首招，會平滑替換成武器招。
+ */
+export function preparedMovesFromRecord(record: CompanionRecord): Move[] {
+  const available = availableMovesFromRecord(record);
+  if (available.length === 0) return [];
+  if (!record.preparedMoveIds) return available.slice(0, MOVE_LOADOUT_CAP);
+
+  const requested = new Set(record.preparedMoveIds);
+  const weaponId = record.equipment.weapon;
+  const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
+  const originalWeaponMove = unlockedMoves(record)[0];
+  if (
+    weaponMove &&
+    originalWeaponMove &&
+    requested.has(originalWeaponMove.id) &&
+    !available.some((move) => move.id === originalWeaponMove.id)
+  ) {
+    requested.delete(originalWeaponMove.id);
+    requested.add(weaponMove.id);
+  }
+  const prepared = available
+    .filter((move) => requested.has(move.id))
+    .slice(0, MOVE_LOADOUT_CAP);
+  return prepared.length > 0 ? prepared : available.slice(0, 1);
+}
+
+/** 寫入一組合法戰技配置；未知招式、空配置與超過四招都拒絕且不修改角色。 */
+export function setPreparedMoves(record: CompanionRecord, moveIds: string[]): string[] {
+  const known = availableMovesFromRecord(record);
+  const requested = new Set(moveIds);
+  const prepared = known.filter((move) => requested.has(move.id));
+  if (
+    prepared.length === 0 ||
+    prepared.length > MOVE_LOADOUT_CAP ||
+    prepared.length !== requested.size
+  ) {
+    throw new Error(`戰技配置必須是 1～${MOVE_LOADOUT_CAP} 個已解鎖招式`);
+  }
+  record.preparedMoveIds = prepared.map((move) => move.id);
+  return [...record.preparedMoveIds];
+}
+
+/**
+ * 將角色成長、裝備、特質、專精與戰技配置整合成實際戰鬥成員。
+ * 武器招式替換與出戰招式上限都已在 preparedMovesFromRecord 內處理。
  */
 export function memberFromRecord(record: CompanionRecord): PartyMember {
   const job = JOBS[record.job];
@@ -158,15 +217,6 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
   const bondHp = bondTier(record.bond) * BOND_HP_PER_TIER;
   const maxHp = record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0) + (spec?.maxHp ?? 0) + bondHp;
 
-  const moves = unlockedMoves(record);
-  const weaponId = record.equipment.weapon;
-  const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
-  const baseMoves = weaponMove ? [weaponMove, ...moves.slice(1)] : moves;
-  // 專屬招插在通用「揮擊」之前（揮擊恆為最後一招）
-  const finalMoves = spec
-    ? [...baseMoves.slice(0, -1), spec.move, baseMoves[baseMoves.length - 1]]
-    : baseMoves;
-
   return {
     id: record.id,
     name: record.name,
@@ -174,7 +224,7 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
     maxHp,
     hp: maxHp,
     defense: job.defense + bonus.defense + (spec?.defense ?? 0),
-    moves: finalMoves,
+    moves: preparedMovesFromRecord(record),
     damageBonus: bonus.damageBonus,
     isProtagonist: record.id === 'protagonist',
   };
