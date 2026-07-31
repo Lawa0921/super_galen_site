@@ -1,4 +1,4 @@
-import type { EnemyUnit } from '../combat';
+import type { DamageElement, EnemyUnit } from '../combat';
 import type { LocationDef } from '../expedition';
 import { registerLocations } from '../expedition';
 import type { SaveData } from '../save';
@@ -10,6 +10,7 @@ import { ENCOUNTERS } from './enemies';
  * 隱藏路線「古戰場」（旗標鏈 discover，見 data/events.ts ev_faded_banner→ev_mercenary_ruins）。
  * M19 擴充：兩張聲望 70 的高階戰術契約，讓戰技配置與押貨目的形成真正取捨。
  * M20 修正：高階契約改用三人精英編成，不再重用早期兩人遭遇造成難度倒退。
+ * M21 情報：由實際遭遇工廠推導敵群規模、弱點與抗性，避免委託文字和戰鬥資料漂移。
  */
 
 /**
@@ -67,6 +68,46 @@ ENCOUNTERS.enc_elite_frontier_horde = () => {
   const goblins = encounterUnits('enc_goblin_raiders');
   return [elite(ruins[1], 'horde'), elite(goblins[0], 'horde'), elite(goblins[1], 'horde')];
 };
+
+export interface LocationIntel {
+  enemyCountMin: number;
+  enemyCountMax: number;
+  weaknesses: DamageElement[];
+  resists: DamageElement[];
+  averageHp: number;
+  averageDefense: number;
+  averagePoise: number;
+}
+
+/**
+ * 從地點的所有隨機遭遇推導玩家出發前可用的可信情報。
+ * 每次都呼叫全新的遭遇工廠，不讀寫註冊表內的可變敵人狀態。
+ */
+export function locationIntel(location: LocationDef): LocationIntel {
+  const encounters = location.encounterTable.map((entry) => {
+    const factory = ENCOUNTERS[entry.encounterId];
+    if (!factory) throw new Error(`locationIntel: 遭遇「${entry.encounterId}」不存在`);
+    return factory();
+  });
+  const units = encounters.flat();
+  const weaknesses = new Set<DamageElement>();
+  const resists = new Set<DamageElement>();
+  for (const unit of units) {
+    for (const element of unit.weaknesses ?? []) weaknesses.add(element);
+    for (const element of unit.resists ?? []) resists.add(element);
+  }
+  const average = (values: number[]): number =>
+    values.length === 0 ? 0 : Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
+  return {
+    enemyCountMin: encounters.length === 0 ? 0 : Math.min(...encounters.map((units) => units.length)),
+    enemyCountMax: encounters.length === 0 ? 0 : Math.max(...encounters.map((units) => units.length)),
+    weaknesses: [...weaknesses].sort(),
+    resists: [...resists].sort(),
+    averageHp: average(units.map((unit) => unit.maxHp)),
+    averageDefense: average(units.map((unit) => unit.defense)),
+    averagePoise: average(units.map((unit) => unit.maxPoise ?? 0)),
+  };
+}
 
 export const LOCATIONS: Record<string, LocationDef> = {
   'endless-road': {
@@ -130,8 +171,6 @@ export const LOCATIONS: Record<string, LocationDef> = {
     bossEncounterId: 'enc_goblin_den_chief',
     encounterTable: [{ weight: 100, encounterId: 'enc_goblin_raiders' }],
   },
-
-  // ---- M5 內容擴充：第三路線／高階迷宮／隱藏路線 -----------------------
   'misty-ridge-trail': {
     id: 'misty-ridge-trail',
     name: '霧嶺古道',
@@ -163,11 +202,9 @@ export const LOCATIONS: Record<string, LocationDef> = {
     legs: 3,
     encounterTable: [{ weight: 100, encounterId: 'enc_ruins_undead' }],
   },
-
-  // ---- M19/M20 高階戰術契約：專屬三人精英編成 -------------------------
   'guild-salt-convoy': {
     id: 'guild-salt-convoy',
-    name: '商會特許．鹽晶護運〔聖／打〕',
+    name: '商會特許．鹽晶護運 → 鹽泉城〔精英×3｜弱聖打｜抗斬刺〕',
     kind: 'route',
     legs: 7,
     minReputation: 70,
@@ -176,7 +213,7 @@ export const LOCATIONS: Record<string, LocationDef> = {
   },
   'free-trader-frontier': {
     id: 'free-trader-frontier',
-    name: '自由商旅．邊境環線〔斬／刺〕',
+    name: '自由商旅．邊境環線 → 林邊聚落〔精英×3｜弱斬刺〕',
     kind: 'route',
     legs: 8,
     minReputation: 70,
@@ -188,10 +225,6 @@ export const LOCATIONS: Record<string, LocationDef> = {
   },
 };
 
-/**
- * 委託板可見地點：hidden 且未設 `discovered:<id>` 旗標的地點不列入；
- * minReputation 設定時 save.reputation 未達門檻也不列入（M5，兩條件各自獨立判斷）。
- */
 export function visibleLocations(save: SaveData): LocationDef[] {
   return Object.values(LOCATIONS).filter((loc) => {
     if (loc.hidden && save.flags[`discovered:${loc.id}`] !== true) return false;
