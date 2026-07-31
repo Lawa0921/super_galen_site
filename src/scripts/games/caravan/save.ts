@@ -6,6 +6,13 @@ import { resolveCharacterGenesis } from './data/genesis';
 import type { CharacterGenesis } from './data/genesis';
 import { deriveGrowthProfile, latentStatBonuses, realizedGrowthBonuses } from './data/growth';
 import type { GrowthProfile } from './data/growth';
+import {
+  CAREER_LEVELS,
+  careerReward,
+  chooseCareerMilestone,
+  isValidCareerMilestone,
+} from './data/careers';
+import type { CareerMilestone, CareerReward } from './data/careers';
 
 export const SAVE_KEY = 'caravan-save-v1';
 export type FormationRow = 'front' | 'back';
@@ -32,6 +39,8 @@ export interface CompanionRecord {
   growth?: GrowthProfile;
   /** M24 已永久實現到角色基礎值的潛力等級；optional 保持 v6 舊檔相容。 */
   growthRealizedLevel?: number;
+  /** M25 Lv2～Lv5 已鎖定並領取的職涯路線；主角使用，舊角色可自動補算。 */
+  careerMilestones?: CareerMilestone[];
   equipment: { weapon: string | null; armor: string | null; trinket: string | null };
   specialization?: string | null;
   bond?: number;
@@ -71,6 +80,7 @@ export interface SaveDataV6 extends Omit<SaveDataV5, 'version'> {
 export type SaveData = SaveDataV6;
 
 const CURRENT_VERSION = 6;
+const CAREER_SKILL_RANK_CAP = 5;
 const defaultEquipment = (): CompanionRecord['equipment'] => ({ weapon: null, armor: null, trinket: null });
 export const CREATION_BONUS_POINTS = 3;
 export const STARTING_PROFILE: Record<JobId, { stats: StatBlock; maxHp: number }> = {
@@ -199,6 +209,66 @@ export function realizeSaveGrowth(data: SaveData): SaveData {
   return data;
 }
 
+function applyCareerReward(data: SaveData, record: CompanionRecord, reward: CareerReward): void {
+  if (reward.stats) {
+    for (const stat of Object.keys(reward.stats) as Array<keyof StatBlock>) {
+      record.stats[stat] += reward.stats[stat] ?? 0;
+    }
+  }
+  if (reward.maxHp) record.maxHp = Math.max(8, record.maxHp + reward.maxHp);
+  if (reward.skill) {
+    const current = record.skills?.[reward.skill.id] ?? 0;
+    record.skills = {
+      ...(record.skills ?? {}),
+      [reward.skill.id]: Math.min(CAREER_SKILL_RANK_CAP, current + reward.skill.amount),
+    };
+  }
+  if (reward.skillPoints) record.skillPoints = (record.skillPoints ?? 0) + reward.skillPoints;
+  if (reward.gold) data.gold += reward.gold;
+  if (reward.reputation) data.reputation += reward.reputation;
+  if (reward.inventory) {
+    for (const [itemId, count] of Object.entries(reward.inventory)) {
+      if (count > 0) data.inventory[itemId] = (data.inventory[itemId] ?? 0) + count;
+    }
+  }
+}
+
+/**
+ * M25 職涯里程碑：先看已實現潛力與玩家投入，再鎖定該級路線並一次性發放獎勵。
+ * 僅主角的 M22/M23 命運角色啟用；舊版與無出身角色保持原流程。
+ */
+export function realizeSaveCareer(data: SaveData): SaveData {
+  const record = data.protagonist;
+  if (!record.genesis || !record.growth) return data;
+
+  const valid = Array.isArray(record.careerMilestones)
+    ? record.careerMilestones.filter(isValidCareerMilestone)
+    : [];
+  const byLevel = new Map(valid.map((milestone) => [milestone.level, milestone]));
+  const targetLevel = Math.max(1, Math.min(5, Math.floor(record.level)));
+
+  for (const level of CAREER_LEVELS) {
+    if (level > targetLevel || byLevel.has(level)) continue;
+    const milestone = chooseCareerMilestone({
+      stats: record.stats,
+      skills: record.skills,
+      growth: record.growth,
+    }, level);
+    applyCareerReward(data, record, careerReward(level, milestone.pathId));
+    byLevel.set(level, milestone);
+  }
+
+  record.careerMilestones = [...byLevel.values()].sort((a, b) => a.level - b.level);
+  return data;
+}
+
+/** 所有持久化前置交易的單一入口，順序固定為潛力成長後再判定職涯。 */
+export function realizeSaveProgression(data: SaveData): SaveData {
+  realizeSaveGrowth(data);
+  realizeSaveCareer(data);
+  return data;
+}
+
 function parseAndMigrate(raw: unknown): SaveData | null {
   if (typeof raw !== 'object' || raw === null) return null;
   let parsed = raw as Record<string, unknown>;
@@ -211,7 +281,7 @@ function parseAndMigrate(raw: unknown): SaveData | null {
   if (!isValidSaveShape(parsed)) return null;
   if (parsed.expeditionPlan !== undefined && !isValidExpeditionPlan(parsed.expeditionPlan)) delete parsed.expeditionPlan;
   if (parsed.expedition !== null && !isCurrentExpeditionSnapshot(parsed.expedition)) parsed.expedition = null;
-  return realizeSaveGrowth(parsed);
+  return realizeSaveProgression(parsed);
 }
 
 export function newGame(now: number = Date.now(), choice?: CharacterChoice): SaveData {
@@ -225,6 +295,7 @@ export function newGame(now: number = Date.now(), choice?: CharacterChoice): Sav
     const growth = deriveGrowthProfile(protagonist.stats, STARTING_PROFILE[protagonist.job].stats, genesis.profile);
     protagonist.growth = growth;
     protagonist.growthRealizedLevel = 1;
+    protagonist.careerMilestones = [];
     const seed = latentStatBonuses(growth, 2);
     for (const stat of Object.keys(seed) as Array<keyof StatBlock>) protagonist.stats[stat] += seed[stat] ?? 0;
     protagonist.maxHp = Math.max(8, protagonist.maxHp + genesis.effects.maxHpDelta + Math.max(0, growth.potential.con - 3));
@@ -242,7 +313,7 @@ export function newGame(now: number = Date.now(), choice?: CharacterChoice): Sav
 }
 
 export function saveGame(data: SaveData, storage: Storage = localStorage): void {
-  storage.setItem(SAVE_KEY, JSON.stringify(realizeSaveGrowth(data)));
+  storage.setItem(SAVE_KEY, JSON.stringify(realizeSaveProgression(data)));
 }
 export function loadGame(storage: Storage = localStorage): SaveData | null {
   const raw = storage.getItem(SAVE_KEY);
@@ -250,7 +321,7 @@ export function loadGame(storage: Storage = localStorage): SaveData | null {
   try { return parseAndMigrate(JSON.parse(raw)); } catch { return null; }
 }
 export function exportSave(data: SaveData): string {
-  return btoa(encodeURIComponent(JSON.stringify(realizeSaveGrowth(data))));
+  return btoa(encodeURIComponent(JSON.stringify(realizeSaveProgression(data))));
 }
 export function importSave(encoded: string): SaveData | null {
   try { return parseAndMigrate(JSON.parse(decodeURIComponent(atob(encoded)))); } catch { return null; }
