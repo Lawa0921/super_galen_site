@@ -1,0 +1,291 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="商隊檔案 — 商隊與劍"
+  description="檢視角色命運、五維潛力、職涯、編隊、商隊特許分數與下一章發展條件。"
+  lang="zh-TW"
+>
+  <main class="dossier-page">
+    <header class="dossier-hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD</p>
+      <h1>商隊檔案</h1>
+      <p>把命運、潛力、職涯、編隊與特許放在同一張帳頁上。</p>
+      <nav>
+        <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan">返回入口</a>
+      </nav>
+    </header>
+
+    <section id="dossier-empty" class="empty-state" hidden>
+      <h2>尚未找到商隊存檔</h2>
+      <p>先建立角色並開始旅程，商隊檔案才會形成。</p>
+      <a href="/caravan/play">開始旅程</a>
+    </section>
+
+    <div id="dossier-content" hidden>
+      <section class="summary-grid">
+        <article class="panel identity-panel">
+          <p class="section-kicker">角色命運</p>
+          <h2 id="identity-name">—</h2>
+          <p id="identity-job" class="muted">—</p>
+          <dl class="identity-list">
+            <div><dt>完整命運</dt><dd id="identity-genesis">—</dd></div>
+            <div><dt>出身道路</dt><dd id="identity-lifepath">—</dd></div>
+            <div><dt>天賦方向</dt><dd id="identity-aptitude">—</dd></div>
+            <div><dt>開局缺陷</dt><dd id="identity-burden">—</dd></div>
+            <div><dt>潛力簽名</dt><dd id="identity-growth">—</dd></div>
+          </dl>
+        </article>
+
+        <article class="panel company-panel">
+          <p class="section-kicker">商隊現況</p>
+          <h2 id="company-charter">尚未取得特許</h2>
+          <p id="company-candidate" class="muted">—</p>
+          <div class="metric-grid">
+            <div><b id="metric-gold">0</b><span>金幣</span></div>
+            <div><b id="metric-reputation">0</b><span>聲望</span></div>
+            <div><b id="metric-wagon">0</b><span>馬車</span></div>
+            <div><b id="metric-party">0</b><span>出征者</span></div>
+            <div><b id="metric-companions">0</b><span>旅伴</span></div>
+            <div><b id="metric-inventory">0</b><span>物資種類</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div><p class="section-kicker">角色數值</p><h2>基礎、有效與潛力</h2></div>
+          <p>有效值包含裝備、特質與專精；潛力為 1～5。</p>
+        </div>
+        <div id="stat-grid" class="stat-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div><p class="section-kicker">職涯軌跡</p><h2>Lv2～Lv5 的發展選擇</h2></div>
+          <p>里程碑一旦形成便不會因短期換裝而改寫。</p>
+        </div>
+        <div id="career-timeline" class="career-timeline"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div><p class="section-kicker">商隊編成</p><h2>出征、職務與後備</h2></div>
+          <p>只有健康且實際出征者會計入特許的編隊指標。</p>
+        </div>
+        <div id="member-grid" class="member-grid"></div>
+      </section>
+
+      <section class="panel charter-panel">
+        <div class="section-head">
+          <div><p class="section-kicker">特許形成</p><h2>五種商隊身份分數</h2></div>
+          <p>目前身份成立後永久鎖定；未成立時最高分為候選。</p>
+        </div>
+        <div id="charter-scores" class="charter-scores"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div><p class="section-kicker">下一步</p><h2 id="next-tier-title">特許第一章</h2></div>
+          <p id="next-tier-status">—</p>
+        </div>
+        <div id="requirement-list" class="requirement-list"></div>
+      </section>
+
+      <section class="panel audit-panel">
+        <div class="section-head">
+          <div><p class="section-kicker">資料稽核</p><h2>存檔一致性</h2></div>
+          <p>此頁只讀，不會偷偷補發獎勵或修改存檔。</p>
+        </div>
+        <div id="audit-list" class="audit-list"></div>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { loadGame } from '@scripts/games/caravan/save';
+  import { buildCompanyDossier } from '@scripts/games/caravan/data/dossier';
+
+  const byId = (id: string) => document.getElementById(id)!;
+  const text = (id: string, value: string | number) => { byId(id).textContent = String(value); };
+
+  const save = loadGame();
+  if (!save) {
+    byId('dossier-empty').removeAttribute('hidden');
+  } else {
+    const dossier = buildCompanyDossier(save);
+    byId('dossier-content').removeAttribute('hidden');
+
+    text('identity-name', dossier.protagonist.name);
+    text('identity-job', `${dossier.protagonist.job} · Lv${dossier.protagonist.level} · XP ${dossier.protagonist.xp} · HP ${dossier.protagonist.maxHp}`);
+    text('identity-genesis', dossier.protagonist.genesis);
+    text('identity-lifepath', dossier.protagonist.lifepath);
+    text('identity-aptitude', dossier.protagonist.aptitude);
+    text('identity-burden', dossier.protagonist.burden);
+    text('identity-growth', dossier.protagonist.growthSignature);
+
+    text('company-charter', `${dossier.charter.currentName}${dossier.charter.currentTier ? `・第 ${dossier.charter.currentTier} 章` : ''}`);
+    text('company-candidate', dossier.charter.currentId
+      ? `身份已鎖定；目前最高分候選仍為 ${dossier.charter.scores[0]?.name ?? '—'}`
+      : `目前候選：${dossier.charter.candidateName}`);
+    text('metric-gold', dossier.company.gold);
+    text('metric-reputation', dossier.company.reputation);
+    text('metric-wagon', `Lv${dossier.company.wagonLevel}`);
+    text('metric-party', dossier.company.activeCount);
+    text('metric-companions', dossier.company.companionCount);
+    text('metric-inventory', dossier.company.inventoryKinds);
+
+    const statGrid = byId('stat-grid');
+    for (const stat of dossier.protagonist.stats) {
+      const article = document.createElement('article');
+      article.className = 'stat-card';
+      article.innerHTML = `
+        <h3>${stat.name}</h3>
+        <div><b>${stat.base}</b><span>基礎</span></div>
+        <div><b>${stat.effective}</b><span>有效</span></div>
+        <div><b>${stat.potential ?? '—'}</b><span>潛力</span></div>`;
+      statGrid.appendChild(article);
+    }
+
+    const careerTimeline = byId('career-timeline');
+    for (const career of dossier.protagonist.careers) {
+      const article = document.createElement('article');
+      article.className = `career-step${career.pathId ? ' formed' : ''}`;
+      article.innerHTML = `<span>Lv${career.level}</span><b>${career.name}</b><small>${career.score === null ? '等待升級與培養方向' : `形成分數 ${career.score}`}</small>`;
+      careerTimeline.appendChild(article);
+    }
+
+    const memberGrid = byId('member-grid');
+    for (const member of dossier.company.members) {
+      const article = document.createElement('article');
+      article.className = `member-card ${member.row === 'reserve' ? 'reserve' : 'active'}`;
+      const row = member.row === 'reserve' ? '後備' : member.row === 'front' ? '前排' : '後排';
+      const injury = member.injuredForTrips > 0 ? ` · 重傷 ${member.injuredForTrips} 趟` : '';
+      article.innerHTML = `
+        <div><b>${member.name}</b><span>${member.job} · Lv${member.level}</span></div>
+        <p>${row}${member.roleName ? ` · ${member.roleName}` : ''}${injury}</p>
+        <small>裝備 ${member.equippedSlots}/3 · 羈絆 ${member.bond}</small>`;
+      memberGrid.appendChild(article);
+    }
+
+    const maxScore = Math.max(1, ...dossier.charter.scores.map((score) => score.score));
+    const charterScores = byId('charter-scores');
+    for (const score of dossier.charter.scores) {
+      const article = document.createElement('article');
+      article.className = `charter-score${score.locked ? ' locked' : ''}`;
+      const width = Math.max(3, Math.round((score.score / maxScore) * 100));
+      article.innerHTML = `
+        <div><b>${score.name}${score.locked ? '〔已鎖定〕' : ''}</b><span>${score.score} 分</span></div>
+        <p>${score.desc}</p>
+        <div class="score-track"><i style="width:${width}%"></i></div>`;
+      charterScores.appendChild(article);
+    }
+
+    if (dossier.charter.nextTier === null) {
+      text('next-tier-title', '特許已完成');
+      text('next-tier-status', '三章均已完成。');
+    } else {
+      text('next-tier-title', `${dossier.charter.currentId ? dossier.charter.currentName : dossier.charter.candidateName}・第 ${dossier.charter.nextTier} 章`);
+      text('next-tier-status', dossier.charter.nextTierEligible ? '所有條件已達成；下一次保存將完成章節。' : '仍有條件尚未達成。');
+    }
+    const requirementList = byId('requirement-list');
+    if (dossier.charter.requirements.length === 0) {
+      requirementList.innerHTML = '<p class="empty-copy">目前沒有待完成的章節條件。</p>';
+    } else {
+      for (const requirement of dossier.charter.requirements) {
+        const row = document.createElement('div');
+        row.className = `requirement ${requirement.met ? 'met' : 'missing'}`;
+        row.innerHTML = `<span>${requirement.met ? '✓' : '○'}</span><b>${requirement.label}</b><small>${requirement.current} / ${requirement.target}</small>`;
+        requirementList.appendChild(row);
+      }
+    }
+
+    const auditList = byId('audit-list');
+    if (dossier.audit.length === 0) {
+      auditList.innerHTML = '<p class="audit-ok">✓ 未發現存檔結構異常。</p>';
+    } else {
+      for (const item of dossier.audit) {
+        const row = document.createElement('p');
+        row.className = `audit-item ${item.severity}`;
+        row.textContent = `${item.severity === 'error' ? '錯誤' : '警告'}：${item.message}`;
+        auditList.appendChild(row);
+      }
+    }
+  }
+</script>
+
+<style>
+  :global(body) { background: #17130f; }
+  .dossier-page {
+    min-height: 100vh;
+    padding: 2rem clamp(1rem, 4vw, 3rem) 5rem;
+    color: #eee2ca;
+    background:
+      radial-gradient(circle at top left, rgba(179,85,46,.18), transparent 32rem),
+      linear-gradient(180deg, #211a13, #12100d);
+    font-family: 'Noto Serif TC', serif;
+  }
+  .dossier-hero { max-width: 78rem; margin: 0 auto 2rem; border-bottom: 1px solid #6c5840; padding-bottom: 1.5rem; }
+  .dossier-hero h1 { margin: .2rem 0; font-size: clamp(2.3rem, 6vw, 4.6rem); letter-spacing: .18em; }
+  .dossier-hero > p:not(.eyebrow) { color: #cbb99a; }
+  .eyebrow, .section-kicker { color: #e99a5e; letter-spacing: .24em; font-size: .78rem; text-transform: uppercase; }
+  nav { display: flex; gap: .8rem; margin-top: 1rem; }
+  nav a, .empty-state a { color: #fff0d5; border: 1px solid #91623e; padding: .55rem .9rem; text-decoration: none; }
+  #dossier-content, .empty-state { max-width: 78rem; margin: 0 auto; }
+  .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .panel { background: rgba(44,34,24,.88); border: 1px solid #5d4934; padding: clamp(1rem, 3vw, 1.6rem); margin-bottom: 1rem; box-shadow: 0 18px 50px rgba(0,0,0,.18); }
+  .panel h2 { margin: .15rem 0 .45rem; }
+  .muted, .section-head p { color: #b9a78b; }
+  .identity-list { margin: 1.2rem 0 0; }
+  .identity-list div { display: grid; grid-template-columns: 7rem 1fr; gap: .6rem; padding: .45rem 0; border-top: 1px solid rgba(193,163,119,.18); }
+  dt { color: #b99b70; } dd { margin: 0; }
+  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; margin-top: 1.2rem; }
+  .metric-grid div { background: #18130f; padding: .8rem; text-align: center; }
+  .metric-grid b { display: block; color: #f0b16f; font-size: 1.4rem; }
+  .metric-grid span { color: #ab9a7f; font-size: .78rem; }
+  .section-head { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+  .section-head h2 { margin: .1rem 0 0; }
+  .section-head > p { max-width: 32rem; margin: 0; text-align: right; }
+  .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .7rem; }
+  .stat-card { background: #18130f; padding: .9rem; }
+  .stat-card h3 { margin: 0 0 .7rem; color: #eeb173; }
+  .stat-card div { display: flex; justify-content: space-between; padding: .25rem 0; }
+  .stat-card span { color: #9e8b70; }
+  .career-timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; }
+  .career-step { border-left: 3px solid #5b4a37; background: #18130f; padding: 1rem; }
+  .career-step.formed { border-color: #c66c3f; }
+  .career-step span, .career-step small { display: block; color: #a99576; }
+  .career-step b { display: block; margin: .35rem 0; }
+  .member-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .7rem; }
+  .member-card { background: #18130f; padding: .9rem; border-top: 3px solid #9f6845; }
+  .member-card.reserve { opacity: .66; border-color: #51483d; }
+  .member-card div { display: flex; justify-content: space-between; gap: .5rem; }
+  .member-card span, .member-card small { color: #a99576; }
+  .charter-scores { display: grid; gap: .75rem; }
+  .charter-score { background: #18130f; padding: .9rem; }
+  .charter-score.locked { outline: 1px solid #e69b5f; }
+  .charter-score > div:first-child { display: flex; justify-content: space-between; }
+  .charter-score p { margin: .35rem 0 .7rem; color: #aa987c; }
+  .score-track { height: .45rem; background: #3a2d22; overflow: hidden; }
+  .score-track i { display: block; height: 100%; background: linear-gradient(90deg, #a64f2d, #e0a25e); }
+  .requirement-list { display: grid; gap: .5rem; }
+  .requirement { display: grid; grid-template-columns: 2rem 1fr auto; align-items: center; background: #18130f; padding: .75rem; }
+  .requirement.met span { color: #91c98e; } .requirement.missing span { color: #e19a65; }
+  .requirement small { color: #a99576; }
+  .audit-item, .audit-ok { margin: .45rem 0; padding: .7rem; background: #18130f; }
+  .audit-item.error { border-left: 3px solid #d45c4d; }
+  .audit-item.warning { border-left: 3px solid #d3a34f; }
+  .audit-ok { border-left: 3px solid #70a36c; }
+  .empty-state { text-align: center; padding: 5rem 1rem; }
+  [hidden] { display: none !important; }
+  @media (max-width: 760px) {
+    .summary-grid { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .career-timeline { grid-template-columns: 1fr 1fr; }
+    .section-head { display: block; }
+    .section-head > p { text-align: left; }
+  }
+</style>
