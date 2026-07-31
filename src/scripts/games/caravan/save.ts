@@ -4,6 +4,8 @@ import type { ExpeditionState } from './expedition';
 import { EXPEDITION_VERSION } from './expedition';
 import { resolveCharacterGenesis } from './data/genesis';
 import type { CharacterGenesis } from './data/genesis';
+import { deriveGrowthProfile, latentStatBonuses } from './data/growth';
+import type { GrowthProfile } from './data/growth';
 
 export const SAVE_KEY = 'caravan-save-v1';
 export type FormationRow = 'front' | 'back';
@@ -26,6 +28,8 @@ export interface CompanionRecord {
   injuredForTrips: number;
   trait?: string | null;
   genesis?: CharacterGenesis;
+  /** M23 五維成長潛力；舊角色缺少時沿用原本成長規則。 */
+  growth?: GrowthProfile;
   equipment: { weapon: string | null; armor: string | null; trinket: string | null };
   specialization?: string | null;
   bond?: number;
@@ -89,9 +93,7 @@ export function createProtagonist(choice: CharacterChoice): CompanionRecord {
   const allocation = choice.allocation ?? {};
   let total = 0;
   for (const value of Object.values(allocation)) {
-    if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
-      throw new Error('創角配點每項必須為非負整數');
-    }
+    if (value !== undefined && (!Number.isInteger(value) || value < 0)) throw new Error('創角配點每項必須為非負整數');
     total += value ?? 0;
   }
   if (total > CREATION_BONUS_POINTS) throw new Error(`創角配點總和不可超過 ${CREATION_BONUS_POINTS}`);
@@ -99,9 +101,7 @@ export function createProtagonist(choice: CharacterChoice): CompanionRecord {
   if (choice.statRoll) {
     for (const stat of Object.keys(profile.stats) as Array<keyof StatBlock>) {
       const offset = choice.statRoll[stat] - profile.stats[stat];
-      if (offset < STAT_ROLL_MIN || offset > STAT_ROLL_MAX) {
-        throw new Error(`擲骰屬性超出允許範圍（${String(stat)} 偏離 ${offset}）`);
-      }
+      if (offset < STAT_ROLL_MIN || offset > STAT_ROLL_MAX) throw new Error(`擲骰屬性超出允許範圍（${String(stat)} 偏離 ${offset}）`);
     }
   }
   const stats = { ...base };
@@ -190,7 +190,11 @@ export function newGame(now: number = Date.now(), choice?: CharacterChoice): Sav
   let reputation = 0;
   if (genesis) {
     protagonist.genesis = genesis.profile;
-    protagonist.maxHp = Math.max(8, protagonist.maxHp + genesis.effects.maxHpDelta);
+    const growth = deriveGrowthProfile(protagonist.stats, STARTING_PROFILE[protagonist.job].stats, genesis.profile);
+    protagonist.growth = growth;
+    const seed = latentStatBonuses(growth, 2);
+    for (const stat of Object.keys(seed) as Array<keyof StatBlock>) protagonist.stats[stat] += seed[stat] ?? 0;
+    protagonist.maxHp = Math.max(8, protagonist.maxHp + genesis.effects.maxHpDelta + Math.max(0, growth.potential.con - 3));
     protagonist.skills = { ...genesis.effects.skills };
     protagonist.skillPoints = genesis.effects.skillPoints;
     gold = Math.max(50, gold + genesis.effects.goldDelta);
