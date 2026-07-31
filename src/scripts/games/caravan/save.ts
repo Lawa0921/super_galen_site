@@ -13,6 +13,18 @@ import {
   isValidCareerMilestone,
 } from './data/careers';
 import type { CareerMilestone, CareerReward } from './data/careers';
+import {
+  COMPANY_CHARTER_ORDER,
+  chooseCompanyCharter,
+  companyCharterReward,
+  companyCharterTierEligible,
+  isValidCompanyCharterProgress,
+} from './data/charters';
+import type {
+  CompanyCharterId,
+  CompanyCharterProgress,
+  CompanyCharterReward,
+} from './data/charters';
 
 export const SAVE_KEY = 'caravan-save-v1';
 export type FormationRow = 'front' | 'back';
@@ -76,6 +88,8 @@ export interface SaveDataV6 extends Omit<SaveDataV5, 'version'> {
   marketSeed: number;
   endlessTier?: number;
   expeditionPlan?: ExpeditionPlan;
+  /** M26 商隊特許與已完成章節；optional 保持 v6 舊檔相容。 */
+  companyCharter?: CompanyCharterProgress;
 }
 export type SaveData = SaveDataV6;
 
@@ -262,10 +276,100 @@ export function realizeSaveCareer(data: SaveData): SaveData {
   return data;
 }
 
-/** 所有持久化前置交易的單一入口，順序固定為潛力成長後再判定職涯。 */
+const charterIdentityFlag = (id: CompanyCharterId): string => `company-charter:${id}`;
+const charterRewardFlag = (id: CompanyCharterId, tier: 1 | 2 | 3): string =>
+  `company-charter-reward:${id}:${tier}`;
+
+function lockedCompanyCharter(data: SaveData): CompanyCharterId | null {
+  const flagged = COMPANY_CHARTER_ORDER.find((id) => data.flags[charterIdentityFlag(id)] === true);
+  if (flagged) return flagged;
+  return isValidCompanyCharterProgress(data.companyCharter) ? data.companyCharter.id : null;
+}
+
+function appliedCompanyCharterTier(data: SaveData, id: CompanyCharterId): 0 | 1 | 2 | 3 {
+  let tier: 0 | 1 | 2 | 3 = 0;
+  for (const candidate of [1, 2, 3] as const) {
+    if (data.flags[charterRewardFlag(id, candidate)] === true) tier = candidate;
+  }
+  if (isValidCompanyCharterProgress(data.companyCharter) && data.companyCharter.id === id) {
+    tier = Math.max(tier, data.companyCharter.tier) as 0 | 1 | 2 | 3;
+  }
+  return tier;
+}
+
+function applyCompanyCharterReward(
+  data: SaveData,
+  id: CompanyCharterId,
+  tier: 1 | 2 | 3,
+  reward: CompanyCharterReward,
+): void {
+  const receipt = charterRewardFlag(id, tier);
+  if (data.flags[receipt] === true) return;
+
+  const protagonist = data.protagonist;
+  if (reward.stats) {
+    for (const stat of Object.keys(reward.stats) as Array<keyof StatBlock>) {
+      protagonist.stats[stat] += reward.stats[stat] ?? 0;
+    }
+  }
+  if (reward.maxHp) protagonist.maxHp = Math.max(8, protagonist.maxHp + reward.maxHp);
+  if (reward.skill) {
+    const current = protagonist.skills?.[reward.skill.id] ?? 0;
+    protagonist.skills = {
+      ...(protagonist.skills ?? {}),
+      [reward.skill.id]: Math.min(CAREER_SKILL_RANK_CAP, current + reward.skill.amount),
+    };
+  }
+  if (reward.skillPoints) protagonist.skillPoints = (protagonist.skillPoints ?? 0) + reward.skillPoints;
+  if (reward.gold) data.gold += reward.gold;
+  if (reward.reputation) data.reputation += reward.reputation;
+  if (reward.wagonLevels) data.wagonLevel += reward.wagonLevels;
+  if (reward.inventory) {
+    for (const [itemId, count] of Object.entries(reward.inventory)) {
+      if (count > 0) data.inventory[itemId] = (data.inventory[itemId] ?? 0) + count;
+    }
+  }
+  if (reward.bondAll) {
+    for (const companion of data.companions) companion.bond = (companion.bond ?? 0) + reward.bondAll;
+  }
+  data.flags[receipt] = true;
+}
+
+/**
+ * M26 商隊特許：以命運、職涯、編隊、經濟、探索、裝備與羈絆共同判定。
+ * 身份首次成立後永久鎖定；三章依跨系統條件逐步完成，且每章獎勵有獨立收據。
+ */
+export function realizeSaveCompanyCharter(data: SaveData): SaveData {
+  if (!data.protagonist.genesis || !data.protagonist.growth) return data;
+
+  let id = lockedCompanyCharter(data);
+  if (!id) {
+    id = chooseCompanyCharter(data);
+    if (!id) {
+      if (data.companyCharter !== undefined && !isValidCompanyCharterProgress(data.companyCharter)) {
+        delete data.companyCharter;
+      }
+      return data;
+    }
+    data.flags[charterIdentityFlag(id)] = true;
+  }
+
+  let tier = appliedCompanyCharterTier(data, id);
+  for (const candidate of [1, 2, 3] as const) {
+    if (candidate <= tier || !companyCharterTierEligible(data, id, candidate)) continue;
+    applyCompanyCharterReward(data, id, candidate, companyCharterReward(id, candidate));
+    tier = candidate;
+  }
+  data.companyCharter = { id, tier };
+  data.flags[charterIdentityFlag(id)] = true;
+  return data;
+}
+
+/** 所有持久化前置交易的單一入口：潛力 → 職涯 → 商隊特許。 */
 export function realizeSaveProgression(data: SaveData): SaveData {
   realizeSaveGrowth(data);
   realizeSaveCareer(data);
+  realizeSaveCompanyCharter(data);
   return data;
 }
 
