@@ -1,6 +1,11 @@
 import { ITEMS } from './data/items';
-import type { SaveData } from './save';
-import { wagePerTrip } from './roster';
+import type { ExpeditionPlan, SaveData } from './save';
+import {
+  EXPEDITION_ROLES,
+  RESERVE_WAGE_FACTOR,
+  normalizeExpeditionPlan,
+  wagePerTrip,
+} from './roster';
 
 export interface TownDef {
   id: string;
@@ -85,9 +90,22 @@ export function wagonUpgradeCost(wagonLevel: number): number {
   return 120 + wagonLevel * 180;
 }
 
-/** 未重傷（injuredForTrips===0）傭兵每趟薪餉合計（wagePerTrip，roster.ts） */
-export function totalWage(save: SaveData): number {
-  return save.companions
-    .filter((companion) => companion.injuredForTrips === 0)
+/**
+ * M17 薪餉：出征傭兵領全額；健康後備收 25% 留營費。
+ * 軍需官讓後備費再減半。主角永不領薪。
+ */
+export function totalWage(save: SaveData, candidate?: ExpeditionPlan): number {
+  const plan = normalizeExpeditionPlan(save, candidate);
+  const activeIds = new Set(plan.activeIds);
+  const active = save.companions
+    .filter((companion) => companion.injuredForTrips === 0 && activeIds.has(companion.id))
     .reduce((sum, companion) => sum + wagePerTrip(companion), 0);
+  const reserveBase = save.companions
+    .filter((companion) => companion.injuredForTrips === 0 && !activeIds.has(companion.id))
+    .reduce((sum, companion) => sum + wagePerTrip(companion), 0);
+  const hasQuartermaster = !!plan.roles.quartermaster;
+  const quartermasterFactor = hasQuartermaster
+    ? (EXPEDITION_ROLES.quartermaster.reserveWageFactor ?? 1)
+    : 1;
+  return active + Math.ceil(reserveBase * RESERVE_WAGE_FACTOR * quartermasterFactor);
 }

@@ -5,6 +5,16 @@ import { EXPEDITION_VERSION } from './expedition';
 
 export const SAVE_KEY = 'caravan-save-v1';
 
+/** M17 編隊：每次遠征最多四人，主角必定出征。 */
+export type FormationRow = 'front' | 'back';
+export type ExpeditionRole = 'captain' | 'scout' | 'quartermaster' | 'medic';
+
+export interface ExpeditionPlan {
+  activeIds: string[];
+  positions: Record<string, FormationRow>;
+  roles: Partial<Record<ExpeditionRole, string>>;
+}
+
 export interface CompanionRecord {
   id: string;
   name: string;
@@ -101,6 +111,11 @@ export interface SaveDataV6 extends Omit<SaveDataV5, 'version'> {
   marketSeed: number;
   /** M13 無盡遠路契約層數；optional 不 bump 版本（舊檔視為 0） */
   endlessTier?: number;
+  /**
+   * M17 編隊計畫；optional 以相容既有 v6 存檔。
+   * 缺少時由 roster.ts normalizeExpeditionPlan 依現有健康成員建立預設編隊。
+   */
+  expeditionPlan?: ExpeditionPlan;
 }
 
 /** 對外別名，後續版本跟著改指向最新 schema */
@@ -256,6 +271,37 @@ function isValidSaveShape(value: unknown): value is SaveData {
   return typeof protagonist.equipment === 'object' && protagonist.equipment !== null;
 }
 
+function isValidExpeditionPlan(value: unknown): value is ExpeditionPlan {
+  if (typeof value !== 'object' || value === null) return false;
+  const plan = value as Record<string, unknown>;
+  if (
+    !Array.isArray(plan.activeIds) ||
+    !plan.activeIds.every((id) => typeof id === 'string') ||
+    typeof plan.positions !== 'object' ||
+    plan.positions === null ||
+    typeof plan.roles !== 'object' ||
+    plan.roles === null
+  ) {
+    return false;
+  }
+  if (!Object.values(plan.positions).every((row) => row === 'front' || row === 'back')) return false;
+  return Object.values(plan.roles).every((id) => id === undefined || typeof id === 'string');
+}
+
+function isCurrentExpeditionSnapshot(value: unknown): value is ExpeditionState {
+  if (typeof value !== 'object' || value === null) return false;
+  const expedition = value as Record<string, unknown>;
+  return (
+    expedition.expeditionVersion === EXPEDITION_VERSION &&
+    Array.isArray(expedition.partyIds) &&
+    expedition.partyIds.every((id) => typeof id === 'string') &&
+    typeof expedition.positions === 'object' &&
+    expedition.positions !== null &&
+    typeof expedition.roles === 'object' &&
+    expedition.roles !== null
+  );
+}
+
 /** 解析任意輸入：逐版遷移到最新版本後驗證 shape；毀損或未來版本一律回 null */
 function parseAndMigrate(raw: unknown): SaveData | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -268,10 +314,14 @@ function parseAndMigrate(raw: unknown): SaveData | null {
     parsed = migrate(parsed);
   }
   if (!isValidSaveShape(parsed)) return null;
-  // 遠征快照版本防護（M4）：舊版遠征快照（缺 expeditionVersion 或版本不符）一律丟棄，
+  // M17 為 v6 optional 欄位，不因舊玩家缺少它而 bump 存檔版本；毀損內容則退回預設編隊。
+  if (parsed.expeditionPlan !== undefined && !isValidExpeditionPlan(parsed.expeditionPlan)) {
+    delete parsed.expeditionPlan;
+  }
+  // 遠征快照版本防護（M4/M17）：舊版或缺少當前編隊欄位的遠征快照一律丟棄，
   // 主檔（gold/inventory/roster...）完整保留——玩家不會因為引擎升級而整檔毀損，
   // 只是進行中的那趟遠征記錄作廢。
-  if (parsed.expedition !== null && parsed.expedition.expeditionVersion !== EXPEDITION_VERSION) {
+  if (parsed.expedition !== null && !isCurrentExpeditionSnapshot(parsed.expedition)) {
     parsed.expedition = null;
   }
   return parsed;

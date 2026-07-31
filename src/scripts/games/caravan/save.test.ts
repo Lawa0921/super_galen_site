@@ -251,10 +251,39 @@ describe('save（版本化存檔）', () => {
       locationId: 'riverside-road', kind: 'route', step: 1, totalSteps: 4,
       phase: 'event', currentEventId: null, roomChoices: null, pendingEncounterId: null,
       loot: { gold: 0, items: {} }, eventLog: [], retreated: false, partyHp: {},
+      partyIds: ['protagonist'], positions: { protagonist: 'front' }, roles: { captain: 'protagonist' },
       expeditionVersion: EXPEDITION_VERSION, cargo: {},
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(s));
     expect(loadGame()?.expedition?.locationId).toBe('riverside-road');
+  });
+
+  it('遠征快照版本相符但缺少 M17 編隊欄位時丟棄，避免半升級快照破壞 UI', () => {
+    const s = newGame(1000) as unknown as Record<string, unknown>;
+    s.expedition = {
+      locationId: 'riverside-road', kind: 'route', step: 1, totalSteps: 4,
+      phase: 'event', currentEventId: null, roomChoices: null, pendingEncounterId: null,
+      loot: { gold: 0, items: {} }, eventLog: [], retreated: false, partyHp: {},
+      expeditionVersion: EXPEDITION_VERSION, cargo: {},
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    expect(loadGame()?.expedition).toBeNull();
+  });
+
+  it('M17 編隊計畫可匯出再匯入；毀損的 optional 編隊欄位會退回預設而不毀掉整份存檔', () => {
+    const s = newGame(1000);
+    s.expeditionPlan = {
+      activeIds: ['protagonist'],
+      positions: { protagonist: 'front' },
+      roles: { captain: 'protagonist' },
+    };
+    expect(importSave(exportSave(s))?.expeditionPlan).toEqual(s.expeditionPlan);
+
+    const damaged = { ...s, expeditionPlan: { activeIds: 'protagonist' } };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(damaged));
+    const loaded = loadGame();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.expeditionPlan).toBeUndefined();
   });
 
   it('loadGame：缺 gold/flags/createdAt 的部分毀損檔回 null', () => {

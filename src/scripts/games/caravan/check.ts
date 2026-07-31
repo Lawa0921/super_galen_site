@@ -16,6 +16,18 @@ export interface CheckResult {
   dc: number;
   success: boolean;
   critical: 'success' | 'failure' | null;
+  /** M17：實際負責這次遠征檢定的出征者。 */
+  actorId?: string;
+  actorName?: string;
+  /** M17：UI 顯示完整公式，避免玩家只看到不透明總值。 */
+  breakdown?: {
+    stat: number;
+    skill: number;
+    role: number;
+    party: number;
+    captain: number;
+    condition: number;
+  };
 }
 
 /** D&D 式屬性調整值 */

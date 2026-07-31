@@ -1,4 +1,5 @@
 import type { Rng } from './rng';
+import type { FormationRow } from './save';
 import type { Stat, StatBlock } from './types';
 import { statMod } from './check';
 
@@ -7,6 +8,10 @@ export interface Move {
   kind: 'attack' | 'guard' | 'support';
   target: 'enemy' | 'ally' | 'self';
   hitStat: Stat;
+  /** M16 隊伍戰術：對敵方全體逐一進行命中與傷害判定 */
+  area?: boolean;
+  /** M16 隊伍戰術：命中檢定的固定加值 */
+  hitBonus?: number;
   damage?: { dice: number; sides: number; bonusStat?: Stat };
   heal?: { dice: number; sides: number; bonusStat?: Stat };
   /** 命中後附加狀態（M7）：poison 每回合行動前扣 potency；stun 跳過一次行動；strength 出手傷害 +potency */
@@ -39,7 +44,11 @@ export interface CombatantBase {
   art?: string;
 }
 
-export interface PartyMember extends CombatantBase { isProtagonist?: boolean; }
+export interface PartyMember extends CombatantBase {
+  isProtagonist?: boolean;
+  /** M17 前後排：單體敵襲優先鎖定仍存活的前排。 */
+  formationRow?: FormationRow;
+}
 
 export interface EnemyUnit extends CombatantBase {
   intents: Array<{ weight: number; moveId: string }>;
@@ -183,7 +192,22 @@ function tickStatuses(state: CombatState, actor: CombatantBase): boolean {
   return canAct && actor.hp > 0;
 }
 
-function performMove(rng: Rng, state: CombatState, actor: CombatantBase, move: Move, target: CombatantBase): void {
+function consumeStrength(actor: CombatantBase): number {
+  const strength = actor.statuses?.find((s) => s.kind === 'strength');
+  if (!strength) return 0;
+  strength.remaining -= 1;
+  actor.statuses = actor.statuses!.filter((s) => s.remaining > 0);
+  return strength.potency;
+}
+
+function performMove(
+  rng: Rng,
+  state: CombatState,
+  actor: CombatantBase,
+  move: Move,
+  target: CombatantBase,
+  strengthBonus = 0,
+): void {
   if (move.kind === 'guard') {
     state.guarding[actor.id] = true;
     state.log.push({ kind: 'action', text: fillNarration(move.narration, actor.name, actor.name, 0) });
@@ -211,19 +235,16 @@ function performMove(rng: Rng, state: CombatState, actor: CombatantBase, move: M
   // attack
   const die = rng.d20();
   const defense = target.defense + (state.guarding[target.id] ? 4 : 0);
-  const hit = die === 20 ? true : die === 1 ? false : die + statMod(actor.stats[move.hitStat]) >= defense;
+  const hit = die === 20
+    ? true
+    : die === 1
+      ? false
+      : die + statMod(actor.stats[move.hitStat]) + (move.hitBonus ?? 0) >= defense;
   if (!hit) {
     state.log.push({ kind: 'action', text: `${actor.name}的${move.name}落空了！` });
     return;
   }
   const dmgSpec = move.damage ?? { dice: 1, sides: 4 };
-  // M7 強化：出手傷害 +potency，用一次遞減
-  const strength = actor.statuses?.find((s) => s.kind === 'strength');
-  const strengthBonus = strength?.potency ?? 0;
-  if (strength) {
-    strength.remaining -= 1;
-    actor.statuses = actor.statuses!.filter((s) => s.remaining > 0);
-  }
   const baseAmount = Math.max(1, rollDice(rng, dmgSpec.dice, dmgSpec.sides)
     + (dmgSpec.bonusStat ? statMod(actor.stats[dmgSpec.bonusStat]) : 0) + strengthBonus
     + (actor.damageBonus ?? 0));
@@ -278,7 +299,15 @@ export function partyAct(rng: Rng, state: CombatState, actorId: string, moveId: 
     if (state.outcome === 'ongoing') advanceTurn(state);
     return;
   }
-  performMove(rng, state, actor, move, targetFound);
+  if (move.kind === 'attack' && move.area) {
+    const strengthBonus = consumeStrength(actor);
+    for (const target of state.enemies.filter((enemy) => enemy.hp > 0)) {
+      performMove(rng, state, actor, move, target, strengthBonus);
+    }
+  } else {
+    const strengthBonus = move.kind === 'attack' ? consumeStrength(actor) : 0;
+    performMove(rng, state, actor, move, targetFound, strengthBonus);
+  }
   checkOutcome(state);
   if (state.outcome === 'ongoing') advanceTurn(state);
 }
@@ -307,9 +336,28 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
   } else {
     const aliveParty = state.party.filter((p) => p.hp > 0);
     if (aliveParty.length === 0) return;
-    target = aliveParty.reduce((low, p) => (p.hp < low.hp ? p : low), aliveParty[0]);
+    const frontLine = aliveParty.filter((member) => member.formationRow !== 'back');
+    const targetPool = frontLine.length > 0 ? frontLine : aliveParty;
+    target = targetPool.reduce((low, p) => (p.hp < low.hp ? p : low), targetPool[0]);
+    // M16：架盾中的隊員會攔截原本打向隊友的單體攻擊，讓坦克能實際保護脆皮。
+    if (move.kind === 'attack' && !move.area && !state.guarding[target.id]) {
+      const guardian = state.order
+        .map((id) => state.party.find((member) => member.id === id))
+        .find((member) => member && member.hp > 0 && state.guarding[member.id]);
+      if (guardian && guardian.id !== target.id) {
+        state.log.push({ kind: 'info', text: `${guardian.name}持盾上前，替${target.name}攔下攻擊！` });
+        target = guardian;
+      }
+    }
   }
-  performMove(rng, state, enemy, move, target);
+  const strengthBonus = move.kind === 'attack' ? consumeStrength(enemy) : 0;
+  if (move.kind === 'attack' && move.area) {
+    for (const member of state.party.filter((partyMember) => partyMember.hp > 0)) {
+      performMove(rng, state, enemy, move, member, strengthBonus);
+    }
+  } else {
+    performMove(rng, state, enemy, move, target, strengthBonus);
+  }
   state.enemyIntents[enemyId] = rng.weightedPick(
     enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
   );
@@ -360,7 +408,7 @@ export function attemptRetreat(rng: Rng, state: CombatState): void {
     state.log.push({ kind: 'retreat', text: `${rear.name}殿後掩護撤退……` });
     const attackMove = aliveEnemy.moves.find((m) => m.kind === 'attack');
     if (attackMove) {
-      performMove(rng, state, aliveEnemy, attackMove, rear);
+      performMove(rng, state, aliveEnemy, attackMove, rear, consumeStrength(aliveEnemy));
     }
   }
   state.outcome = 'retreated';

@@ -73,10 +73,10 @@ test.describe('商隊與劍：獨立入口 landing', () => {
 
 test.describe('商隊與劍：訓練場戰鬥', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/caravan/play?seed=42');
+    await page.route('https://**/*', (route) => route.abort());
+    await page.goto('/caravan/play?seed=42', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
-    await page.reload();
-    await page.waitForLoadState('domcontentloaded');
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.click('#btn-new-game');
     await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
@@ -90,6 +90,71 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     await expect(page.locator('#combat-party .combat-unit')).toHaveCount(1);
     await expect(page.locator('#combat-enemies .unit-intent').first()).not.toBeEmpty();
     await expect(page.locator('#combat-log p').first()).toContainText('戰鬥開始');
+  });
+
+  test('M16：治癒先選擇隊友，並在道路戰場內呈現戰鬥', async ({ page }) => {
+    await page.click('.town-tab[data-town-tab="tavern"]');
+    await page.locator('.hire-btn:not([disabled])').first().click();
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      if (!raw) throw new Error('測試存檔不存在');
+      const data = JSON.parse(raw);
+      data.protagonist.job = 'cleric';
+      data.protagonist.stats = { str: 10, dex: 100, int: 12, cha: 16, con: 12 };
+      data.protagonist.maxHp = 22;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('#btn-training');
+    await expect(page.locator('#combat-actions [data-move-id="heal"]')).toBeVisible();
+    await page.locator('#combat-actions [data-move-id="heal"]').click();
+    await expect(page.locator('#combat-targets .ally-target-btn')).toHaveCount(2);
+    await expect(page.locator('#combat-targets')).toContainText('選擇隊友');
+    await expect(page.locator('#screen-combat')).toHaveCSS('background-image', /battlefield-road/);
+  });
+
+  test('M16：範圍技與命中修正會在招式牌顯示戰術標記', async ({ page }) => {
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      if (!raw) throw new Error('測試存檔不存在');
+      const data = JSON.parse(raw);
+      data.protagonist.job = 'mage';
+      data.protagonist.level = 2;
+      data.protagonist.xp = 50;
+      data.protagonist.stats = { str: 8, dex: 100, int: 16, cha: 10, con: 8 };
+      data.protagonist.maxHp = 16;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('#btn-training');
+    const gravity = page.locator('#combat-actions [data-move-id="gravity-crush"]');
+    await expect(gravity).toBeVisible();
+    await expect(gravity.locator('.move-area')).toHaveText('範');
+
+    await page.click('#btn-retreat');
+    await page.click('#btn-combat-back');
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      if (!raw) throw new Error('測試存檔不存在');
+      const data = JSON.parse(raw);
+      data.protagonist.job = 'ranger';
+      data.protagonist.level = 1;
+      data.protagonist.xp = 0;
+      data.protagonist.stats = { str: 10, dex: 100, int: 10, cha: 10, con: 10 };
+      data.protagonist.maxHp = 20;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('#btn-training');
+    const aimed = page.locator('#combat-actions [data-move-id="aimed-shot"]');
+    await expect(aimed).toBeVisible();
+    await expect(aimed.locator('.move-hit')).toHaveText('命中+3');
   });
 
   test('打到分出勝負：點招式推進、log 累積、結果面板出現、可返回城鎮', async ({ page }) => {
@@ -192,6 +257,72 @@ test.describe('商隊與劍：遠征系統', () => {
     await expect(page.locator('.quest-item[data-location-id="goblin-den"]')).toHaveCount(0);
     await expect(page.locator('.quest-hidden-hint')).toBeVisible();
     await expect(page.locator('.quest-hidden-hint')).toContainText('？');
+  });
+
+  test('M17：六人名冊可選四人出征，前後排與職務會鎖入遠征快照', async ({ page }) => {
+    await page.route('https://**/*', (route) => route.abort());
+    await page.goto('/caravan/play?seed=117', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip');
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.evaluate(() => {
+      const save = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      const jobs = ['swordsman', 'ranger', 'mage', 'cleric', 'ranger'];
+      save.gold = 999;
+      save.companions = jobs.map((job, index) => ({
+        id: `c${index + 1}`,
+        name: `旅伴${index + 1}`,
+        job,
+        level: 1,
+        xp: 0,
+        stats: { str: 11, dex: 11 + index, int: 10 + index, cha: 10 + index, con: 11 },
+        maxHp: 18,
+        injuredForTrips: 0,
+        trait: null,
+        equipment: { weapon: null, armor: null, trinket: null },
+      }));
+      localStorage.setItem('caravan-save-v1', JSON.stringify(save));
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.click('#btn-continue');
+    await page.click('#btn-quest-board');
+    await page.click('.quest-outfit-btn[data-location-id="riverside-road"]');
+
+    await expect(page.locator('#quest-outfit')).toBeVisible();
+    await expect(page.locator('#outfit-party .outfit-member')).toHaveCount(6);
+    await expect(page.locator('#outfit-party .outfit-member.active')).toHaveCount(4);
+    await expect(page.locator('#outfit-party .outfit-member.reserve')).toHaveCount(2);
+    await expect(page.locator('#outfit-roles .outfit-role-select')).toHaveCount(4);
+
+    await page.locator('.outfit-member[data-member-id="c3"] .outfit-deploy-btn').click();
+    await expect(page.locator('#outfit-party .outfit-member.active')).toHaveCount(3);
+    await page.locator('.outfit-member[data-member-id="c4"] .outfit-deploy-btn').click();
+    await page.locator('.outfit-member[data-member-id="c2"] .formation-row-btn').click();
+    await expect(page.locator('.outfit-member[data-member-id="c2"] .formation-row-btn')).toHaveText('前排');
+    await page.locator('.outfit-role-select[data-role="scout"]').selectOption('c4');
+
+    const roleHolders = await page.locator('.outfit-role-select').evaluateAll((selects) =>
+      selects.map((select) => (select as HTMLSelectElement).value).filter(Boolean)
+    );
+    expect(new Set(roleHolders).size).toBe(roleHolders.length);
+
+    await page.click('#btn-depart');
+    await expect(page.locator('#screen-expedition')).toBeVisible();
+    await expect(page.locator('#exp-party .exp-member')).toHaveCount(4);
+    await expect(page.locator('#exp-party .exp-member[data-member-id="c3"]')).toHaveCount(0);
+    await expect(page.locator('#exp-party .exp-member[data-member-id="c5"]')).toHaveCount(0);
+    await expect(page.locator('#exp-party .exp-member[data-member-id="c2"] .exp-member-assignment')).toContainText('前排');
+    await expect(page.locator('#exp-party .exp-member[data-member-id="c4"] .exp-member-assignment')).toContainText('斥候');
+
+    const expedition = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('caravan-save-v1')!).expedition
+    );
+    expect(expedition.partyIds).toEqual(['protagonist', 'c1', 'c2', 'c4']);
+    expect(expedition.positions.c2).toBe('front');
+    expect(expedition.roles.scout).toBe('c4');
   });
 
   test('完整路線遠征（seed=91）：事件卡→擲骰→戰鬥→結算，金幣寫回城鎮', async ({ page }) => {

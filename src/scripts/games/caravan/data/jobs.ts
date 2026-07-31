@@ -1,7 +1,15 @@
 import type { Move, PartyMember } from '../combat';
 import type { CompanionRecord } from '../save';
 import type { StatBlock } from '../types';
-import { unlockedMoves, equipmentBonus, traitById, specById, bondTier, BOND_HP_PER_TIER } from '../roster';
+import {
+  unlockedMoves,
+  equipmentBonus,
+  effectiveStats,
+  traitById,
+  specById,
+  bondTier,
+  BOND_HP_PER_TIER,
+} from '../roster';
 import { ITEMS } from './items';
 
 export type JobId = 'swordsman' | 'ranger' | 'mage' | 'cleric';
@@ -37,7 +45,7 @@ export const JOBS: Record<JobId, JobDef> = {
       { id: 'guard', name: '架盾', kind: 'guard', target: 'self', hitStat: 'str',
         narration: '{actor}舉盾穩守，蓄勢以待。' },
       { id: 'whirlwind-slash', element: 'slash', name: '旋風斬', kind: 'attack', target: 'enemy', hitStat: 'str',
-        damage: { dice: 1, sides: 12, bonusStat: 'str' },
+        area: true, damage: { dice: 1, sides: 6, bonusStat: 'str' },
         narration: '{actor}轉身畫出一道凌厲弧光，橫掃{target}，造成 {amount} 點傷害！',
         minLevel: 2 },
       { id: 'breaking-combo', element: 'slash', name: '破陣連擊', kind: 'attack', target: 'enemy', hitStat: 'str',
@@ -57,7 +65,7 @@ export const JOBS: Record<JobId, JobDef> = {
         damage: { dice: 1, sides: 8, bonusStat: 'dex' },
         narration: '{actor}拉弓疾射，箭矢直取{target}，造成 {amount} 點傷害！' },
       { id: 'aimed-shot', element: 'pierce', name: '瞄準射擊', kind: 'attack', target: 'enemy', hitStat: 'dex',
-        damage: { dice: 1, sides: 6, bonusStat: 'dex' },
+        hitBonus: 3, damage: { dice: 1, sides: 6, bonusStat: 'dex' },
         narration: '{actor}屏息瞄準，一箭正中{target}要害，造成 {amount} 點傷害！' },
       { id: 'venom-arrow', element: 'pierce', name: '毒箭', kind: 'attack', target: 'enemy', hitStat: 'dex',
         damage: { dice: 1, sides: 6, bonusStat: 'dex' },
@@ -69,7 +77,7 @@ export const JOBS: Record<JobId, JobDef> = {
         narration: '{actor}換上破甲箭矢，一擊貫穿{target}的護具，造成 {amount} 點傷害！',
         minLevel: 2 },
       { id: 'arrow-storm', element: 'pierce', name: '驟雨連射', kind: 'attack', target: 'enemy', hitStat: 'dex',
-        damage: { dice: 2, sides: 6, bonusStat: 'dex' },
+        area: true, damage: { dice: 1, sides: 4, bonusStat: 'dex' },
         narration: '{actor}連珠箭雨如驟雨般落向{target}，造成 {amount} 點傷害！',
         minLevel: 3 },
       universalStrike,
@@ -88,7 +96,7 @@ export const JOBS: Record<JobId, JobDef> = {
         damage: { dice: 1, sides: 8, bonusStat: 'int' },
         narration: '{actor}召喚寒冰尖刺貫穿{target}，造成 {amount} 點傷害！' },
       { id: 'gravity-crush', element: 'blunt', name: '重力壓', kind: 'attack', target: 'enemy', hitStat: 'int',
-        damage: { dice: 2, sides: 8, bonusStat: 'int' },
+        area: true, damage: { dice: 1, sides: 6, bonusStat: 'int' },
         narration: '{actor}扭曲空間化作無形巨力，重重壓向{target}，造成 {amount} 點傷害！',
         minLevel: 2 },
       { id: 'frost-bind', element: 'frost', name: '寒冰束縛', kind: 'attack', target: 'enemy', hitStat: 'int',
@@ -97,7 +105,7 @@ export const JOBS: Record<JobId, JobDef> = {
         narration: '{actor}召出冰晶纏上{target}，造成 {amount} 點傷害並將其凍結！',
         minLevel: 3 },
       { id: 'meteor-fall', element: 'fire', name: '隕石墜', kind: 'attack', target: 'enemy', hitStat: 'int',
-        damage: { dice: 3, sides: 6, bonusStat: 'int' },
+        area: true, damage: { dice: 2, sides: 6, bonusStat: 'int' },
         narration: '{actor}召喚熾焰隕石轟然墜落，砸向{target}，造成 {amount} 點傷害！',
         minLevel: 3 },
       universalStrike,
@@ -116,7 +124,7 @@ export const JOBS: Record<JobId, JobDef> = {
         heal: { dice: 1, sides: 8, bonusStat: 'cha' },
         narration: '{actor}的祝禱化為柔光，為{target}恢復 {amount} 點生命。' },
       { id: 'holy-nova', element: 'holy', name: '聖光爆', kind: 'attack', target: 'enemy', hitStat: 'cha',
-        damage: { dice: 1, sides: 10, bonusStat: 'cha' },
+        area: true, damage: { dice: 1, sides: 6, bonusStat: 'cha' },
         narration: '{actor}引動聖光轟然爆裂，擊向{target}，造成 {amount} 點傷害！',
         minLevel: 2 },
       { id: 'battle-hymn', name: '戰吟', kind: 'support', target: 'ally', hitStat: 'cha',
@@ -141,24 +149,11 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
   const job = JOBS[record.job];
   const bonus = equipmentBonus(record);
 
-  const stats: StatBlock = { ...record.stats };
-  for (const key of Object.keys(bonus.stats) as Array<keyof StatBlock>) {
-    stats[key] += bonus.stats[key] ?? 0;
-  }
+  const stats: StatBlock = effectiveStats(record);
   // M7 特質加成
   const trait = traitById(record.trait);
-  if (trait?.statBonus) {
-    for (const key of Object.keys(trait.statBonus) as Array<keyof StatBlock>) {
-      stats[key] += trait.statBonus[key] ?? 0;
-    }
-  }
   // M11 專精被動
   const spec = specById(record.specialization);
-  if (spec?.statBonus) {
-    for (const key of Object.keys(spec.statBonus) as Array<keyof StatBlock>) {
-      stats[key] += spec.statBonus[key] ?? 0;
-    }
-  }
   // M11 羈絆：旅伴 tier 每階 +BOND_HP_PER_TIER 生命上限（主角無 bond 欄自然為 0）
   const bondHp = bondTier(record.bond) * BOND_HP_PER_TIER;
   const maxHp = record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0) + (spec?.maxHp ?? 0) + bondHp;

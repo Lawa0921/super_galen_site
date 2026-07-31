@@ -1,17 +1,27 @@
 import type { Rng } from './rng';
 import type { Stat } from './types';
-import type { SaveData } from './save';
+import type { ExpeditionPlan, ExpeditionRole, FormationRow, SaveData } from './save';
 import type { CheckResult } from './check';
 import { resolveCheck, statMod } from './check';
-import { partyCheckBonus, skillCheckBonus } from './roster';
+import {
+  EXPEDITION_ROLES,
+  effectiveStats,
+  memberRecordById,
+  memberRole,
+  normalizeExpeditionPlan,
+  partyCheckBonus,
+  setExpeditionPlan,
+  skillCheckBonus,
+} from './roster';
 import type { CombatState, EnemyUnit, PartyMember } from './combat';
 import type { JobId } from './data/jobs';
+import { memberFromRecord } from './data/jobs';
 import { ITEMS } from './data/items';
 import type { TownDef } from './economy';
 import { tradeSellPrice, totalWage, cargoCapacity, applyMarket } from './economy';
 
 /** 遠征快照結構版本；save.ts 的 parseAndMigrate 用它防護舊版遠征快照（M4） */
-export const EXPEDITION_VERSION = 2;
+export const EXPEDITION_VERSION = 3;
 
 // ---------------------------------------------------------------------------
 // Effect DSL（M3 鎖定，見 docs/superpowers/plans/2026-07-18-caravan-m3-expedition.md）
@@ -128,6 +138,12 @@ export interface ExpeditionState {
    * 「遠征受的傷會帶進戰鬥」，需額外決定要不要接上這裡。
    */
   partyHp: Record<string, number>;
+  /** M17 出發時鎖定的出征名單；後備不會中途加入、領 XP 或羈絆。 */
+  partyIds: string[];
+  /** M17 出發時鎖定的前後排。 */
+  positions: Record<string, FormationRow>;
+  /** M17 出發時鎖定的互斥遠征職務。 */
+  roles: Partial<Record<ExpeditionRole, string>>;
   /** M13 無盡遠路：出發當下的契約層數快照（非 endless 地點為 undefined） */
   endlessTier?: number;
   /** 遠征快照結構版本（M4）；save.ts loadGame 用它判斷舊版遠征快照是否該丟棄 */
@@ -209,7 +225,8 @@ export function startExpedition(
   rng: Rng,
   save: SaveData,
   locationId: string,
-  cargo: Record<string, number> = {}
+  cargo: Record<string, number> = {},
+  candidatePlan?: ExpeditionPlan,
 ): ExpeditionState {
   void rng; // 保留給 Task 3：地城開場可能要立刻 drawRooms
   const loc = getLocation(locationId);
@@ -217,8 +234,9 @@ export function startExpedition(
     throw new Error(`startExpedition: 找不到地點「${locationId}」`);
   }
 
+  const plan = normalizeExpeditionPlan(save, candidatePlan);
   const condition = conditionForExpedition(locationId, save.marketSeed); // M8 旅況
-  const wage = Math.round(totalWage(save) * (condition.wageFactor ?? 1));
+  const wage = Math.round(totalWage(save, plan) * (condition.wageFactor ?? 1));
   if (save.gold < wage) {
     throw new Error(`startExpedition: 金幣不足支付薪餉（需 ${wage}，現有 ${save.gold}）`);
   }
@@ -235,7 +253,8 @@ export function startExpedition(
     }
   }
 
-  // 驗證全部通過才動手扣款/扣貨，避免半途丟錯留下髒狀態
+  // 驗證全部通過才寫入編隊並扣款/扣貨，避免半途丟錯留下髒狀態
+  setExpeditionPlan(save, plan);
   save.gold -= wage;
   const stateCargo: Record<string, number> = {};
   for (const [itemId, count] of cargoEntries) {
@@ -247,11 +266,10 @@ export function startExpedition(
   const baseSteps = loc.kind === 'dungeon' ? (loc.floors ?? 1) : (loc.legs ?? 1);
   const totalSteps = baseSteps + (endlessTier !== undefined ? endlessScaling(endlessTier).extraLegs : 0);
 
-  const partyHp: Record<string, number> = { [save.protagonist.id]: save.protagonist.maxHp };
-  for (const companion of save.companions) {
-    if (companion.injuredForTrips === 0) {
-      partyHp[companion.id] = companion.maxHp;
-    }
+  const partyHp: Record<string, number> = {};
+  for (const id of plan.activeIds) {
+    const record = memberRecordById(save, id);
+    if (record) partyHp[id] = memberFromRecord(record).maxHp;
   }
 
   return {
@@ -268,6 +286,9 @@ export function startExpedition(
     retreated: false,
     conditionId: condition.id,
     partyHp,
+    partyIds: [...plan.activeIds],
+    positions: { ...plan.positions },
+    roles: { ...plan.roles },
     ...(endlessTier !== undefined ? { endlessTier } : {}),
     expeditionVersion: EXPEDITION_VERSION,
     destinationTownId: loc.destinationTownId,
@@ -305,14 +326,13 @@ export function drawEvent(rng: Rng, state: ExpeditionState, save: SaveData): Eve
   return card;
 }
 
-/** job 在隊上（主角或未重傷傭兵）？item 在包內？兩者皆須滿足（若都指定） */
-export function optionAvailable(save: SaveData, opt: EventOption): boolean {
+/** job 在本次出征隊伍？item 在包內？兩者皆須滿足（若都指定）。 */
+export function optionAvailable(save: SaveData, opt: EventOption, state?: ExpeditionState): boolean {
   const requirement = opt.requirement;
   if (!requirement) return true;
   if (requirement.job) {
-    const hasJob =
-      save.protagonist.job === requirement.job ||
-      save.companions.some((c) => c.job === requirement.job && c.injuredForTrips === 0);
+    const activeIds = state?.partyIds ?? normalizeExpeditionPlan(save).activeIds;
+    const hasJob = activeIds.some((id) => memberRecordById(save, id)?.job === requirement.job);
     if (!hasJob) return false;
   }
   if (requirement.itemId) {
@@ -331,11 +351,9 @@ function applyHpEffect(
   targetId: string,
   amount: number
 ): void {
-  const isProtagonist = targetId === save.protagonist.id;
-  const maxHp = isProtagonist
-    ? save.protagonist.maxHp
-    : save.companions.find((c) => c.id === targetId)?.maxHp;
-  if (maxHp === undefined) return;
+  const record = memberRecordById(save, targetId);
+  if (!record) return;
+  const maxHp = memberFromRecord(record).maxHp;
   const current = state.partyHp[targetId] ?? maxHp;
   // 遠征事件不打死人，只有戰鬥才會——所以下限是 1 不是 0
   state.partyHp[targetId] = clamp(current + amount, 1, maxHp);
@@ -380,7 +398,7 @@ function applyEffect(effect: EffectSpec, state: ExpeditionState, save: SaveData)
 }
 
 /**
- * 擲骰（用主角對應屬性）、套 effects（fight 設 pendingEncounterId+phase='combat'；
+ * 擲骰（由本次出征隊最適任成員執行）、套 effects（fight 設 pendingEncounterId+phase='combat'；
  * 其餘立即入 loot/save）、推進 phase/step。
  */
 export function resolveOption(
@@ -394,16 +412,51 @@ export function resolveOption(
   if (!opt) {
     throw new Error(`resolveOption: 選項索引超出範圍（${optIndex}）`);
   }
-  if (!optionAvailable(save, opt)) {
+  if (!optionAvailable(save, opt, state)) {
     throw new Error(`resolveOption: 選項「${opt.label}」不符資格`);
   }
 
   let check: CheckResult | null = null;
   let effects: EffectSpec[];
   if (opt.check) {
-    const modifier = statMod(save.protagonist.stats[opt.check.stat]) + partyCheckBonus(save) + skillCheckBonus(save.protagonist, opt.check.stat)
-      + (conditionById(state.conditionId)?.checkDelta ?? 0); // M8 旅況
-    check = resolveCheck(rng, { stat: opt.check.stat, dc: opt.check.dc, modifier });
+    const activeIds = state.partyIds ?? normalizeExpeditionPlan(save).activeIds;
+    const plan: ExpeditionPlan = {
+      activeIds,
+      positions: state.positions ?? normalizeExpeditionPlan(save).positions,
+      roles: state.roles ?? normalizeExpeditionPlan(save).roles,
+    };
+    const candidates = activeIds
+      .map((id) => memberRecordById(save, id))
+      .filter((record): record is NonNullable<typeof record> => record !== undefined)
+      .map((record) => {
+        const stat = statMod(effectiveStats(record)[opt.check!.stat]);
+        const skill = skillCheckBonus(record, opt.check!.stat);
+        const role = memberRole(plan, record.id);
+        const roleDef = role ? EXPEDITION_ROLES[role] : null;
+        const roleBonus = roleDef?.checkStat === opt.check!.stat ? (roleDef.checkBonus ?? 0) : 0;
+        return { record, stat, skill, roleBonus, score: stat + skill + roleBonus };
+      });
+    const leader = candidates.sort((a, b) => b.score - a.score)[0];
+    if (!leader) throw new Error('resolveOption: 出征隊伍沒有可執行檢定的成員');
+    const party = partyCheckBonus(save, activeIds);
+    const captain = plan.roles.captain
+      ? (EXPEDITION_ROLES.captain.teamCheckBonus ?? 0)
+      : 0;
+    const condition = conditionById(state.conditionId)?.checkDelta ?? 0;
+    const modifier = leader.stat + leader.skill + leader.roleBonus + party + captain + condition;
+    check = {
+      ...resolveCheck(rng, { stat: opt.check.stat, dc: opt.check.dc, modifier }),
+      actorId: leader.record.id,
+      actorName: leader.record.name,
+      breakdown: {
+        stat: leader.stat,
+        skill: leader.skill,
+        role: leader.roleBonus,
+        party,
+        captain,
+        condition,
+      },
+    };
     effects = check.success ? opt.success : (opt.failure ?? []);
   } else {
     effects = opt.success;
@@ -468,10 +521,8 @@ export function useItemOnExpedition(
   if (!item?.use) throw new Error(`「${itemId}」不是可使用的道具`);
   if (item.use.kind !== 'heal') throw new Error(`「${item.name}」只能在戰鬥中使用`);
   if (!(targetId in state.partyHp)) throw new Error(`目標「${targetId}」不在遠征隊伍中`);
-  const maxHp =
-    targetId === save.protagonist.id
-      ? save.protagonist.maxHp
-      : (save.companions.find((c) => c.id === targetId)?.maxHp ?? 0);
+  const record = memberRecordById(save, targetId);
+  const maxHp = record ? memberFromRecord(record).maxHp : 0;
   state.partyHp[targetId] = Math.min(maxHp, state.partyHp[targetId] + item.use.amount);
   save.inventory[itemId] -= 1;
 }
@@ -530,14 +581,15 @@ export function settleExpedition(
   // 完賽時 step=totalSteps+1（advanceExpedition 遞增後才會把 phase 轉成 'done'），
   // 多出的那 5 xp 是完賽獎勵（刻意設計，非 bug——見 Task 2 report 的顧慮欄）。
   const xpGained = 20 + state.step * 5 + (scaling?.xpBonus ?? 0);
-  save.protagonist.xp += xpGained;
+  const activeIds = new Set(state.partyIds ?? normalizeExpeditionPlan(save).activeIds);
+  if (activeIds.has(save.protagonist.id)) save.protagonist.xp += xpGained;
   // 主角的重傷趟數也要遞減——只寫不減會讓主角永久卡在重傷（M3 終審抓到的地雷）
   save.protagonist.injuredForTrips = Math.max(0, save.protagonist.injuredForTrips - 1);
   for (const companion of save.companions) {
-    if (companion.injuredForTrips === 0) {
+    if (companion.injuredForTrips === 0 && activeIds.has(companion.id)) {
       companion.xp += xpGained;
       companion.bond = (companion.bond ?? 0) + 1; // M11 羈絆：同行完成一趟
-    } else {
+    } else if (companion.injuredForTrips > 0) {
       companion.injuredForTrips = Math.max(0, companion.injuredForTrips - 1);
     }
   }
@@ -646,13 +698,14 @@ export function chooseRoom(
       return { treasureGold };
     }
     case 'rest': {
-      const restHealed = rng.roll(6) + 2;
+      const medicBonus = state.roles?.medic
+        ? (EXPEDITION_ROLES.medic.restBonus ?? 0)
+        : 0;
+      const restHealed = rng.roll(6) + 2 + medicBonus;
       for (const id of Object.keys(state.partyHp)) {
-        const maxHp =
-          id === save.protagonist.id
-            ? save.protagonist.maxHp
-            : save.companions.find((c) => c.id === id)?.maxHp;
-        if (maxHp === undefined) continue;
+        const record = memberRecordById(save, id);
+        if (!record) continue;
+        const maxHp = memberFromRecord(record).maxHp;
         state.partyHp[id] = Math.min(maxHp, state.partyHp[id] + restHealed);
       }
       advanceExpedition(rng, state);
