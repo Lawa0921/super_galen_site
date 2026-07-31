@@ -101,8 +101,21 @@ export function latentStatBonuses(
   ) as Partial<StatBlock>;
 }
 
+/** M23 創角時已永久寫入存檔的潛力萌芽。 */
+export function creationGrowthSeed(profile: GrowthProfile | undefined): GrowthCombatBonuses {
+  if (!isValidGrowthProfile(profile)) {
+    return { stats: {}, maxHp: 0, defense: 0, damageBonus: 0 };
+  }
+  return {
+    stats: latentStatBonuses(profile, 2),
+    maxHp: Math.max(0, profile.potential.con - 3),
+    defense: 0,
+    damageBonus: 0,
+  };
+}
+
 /**
- * 潛力在戰鬥中的衍生成長。所有增益 Lv1 都是 0；Lv5 仍被嚴格限制：
+ * 潛力完整成長曲線。Lv5 仍被嚴格限制：
  * - 潛在屬性總和 4
  * - 額外生命最多 5
  * - 額外防禦最多 2
@@ -130,6 +143,32 @@ export function growthCombatBonuses(
       Math.floor((levels * Math.max(0, profile.potential.dex + profile.potential.con - 2)) / 16),
     ),
     damageBonus: Math.min(3, Math.floor((levels * Math.max(0, offensePotential - 2)) / 4)),
+  };
+}
+
+/**
+ * M24 實際套用的成長包：完整曲線扣掉 M23 已永久寫入的創角萌芽。
+ * 只回傳非負差分，因此角色不會因升級暫時失去已取得的生命或屬性。
+ */
+export function realizedGrowthBonuses(
+  profile: GrowthProfile | undefined,
+  level: number,
+): GrowthCombatBonuses {
+  if (!isValidGrowthProfile(profile)) {
+    return { stats: {}, maxHp: 0, defense: 0, damageBonus: 0 };
+  }
+  const full = growthCombatBonuses(profile, level);
+  const seed = creationGrowthSeed(profile);
+  const stats: Partial<StatBlock> = {};
+  for (const stat of STAT_ORDER) {
+    const delta = (full.stats[stat] ?? 0) - (seed.stats[stat] ?? 0);
+    if (delta > 0) stats[stat] = delta;
+  }
+  return {
+    stats,
+    maxHp: Math.max(0, full.maxHp - seed.maxHp),
+    defense: full.defense,
+    damageBonus: full.damageBonus,
   };
 }
 

@@ -4,7 +4,7 @@ import type { ExpeditionState } from './expedition';
 import { EXPEDITION_VERSION } from './expedition';
 import { resolveCharacterGenesis } from './data/genesis';
 import type { CharacterGenesis } from './data/genesis';
-import { deriveGrowthProfile, latentStatBonuses } from './data/growth';
+import { deriveGrowthProfile, latentStatBonuses, realizedGrowthBonuses } from './data/growth';
 import type { GrowthProfile } from './data/growth';
 
 export const SAVE_KEY = 'caravan-save-v1';
@@ -30,6 +30,8 @@ export interface CompanionRecord {
   genesis?: CharacterGenesis;
   /** M23 五維成長潛力；舊角色缺少時沿用原本成長規則。 */
   growth?: GrowthProfile;
+  /** M24 已永久實現到角色基礎值的潛力等級；optional 保持 v6 舊檔相容。 */
+  growthRealizedLevel?: number;
   equipment: { weapon: string | null; armor: string | null; trinket: string | null };
   specialization?: string | null;
   bond?: number;
@@ -167,6 +169,36 @@ function isCurrentExpeditionSnapshot(value: unknown): value is ExpeditionState {
     typeof expedition.roles === 'object' && expedition.roles !== null;
 }
 
+function realizeMemberGrowth(record: CompanionRecord): void {
+  if (!record.growth) return;
+  const targetLevel = Math.max(1, Math.min(5, Math.floor(record.level)));
+  const rawCurrent = record.growthRealizedLevel;
+  const currentLevel = Number.isInteger(rawCurrent) && rawCurrent! >= 1 && rawCurrent! <= 5
+    ? rawCurrent!
+    : 1;
+  if (targetLevel <= currentLevel) {
+    record.growthRealizedLevel = currentLevel;
+    return;
+  }
+
+  const previous = realizedGrowthBonuses(record.growth, currentLevel);
+  const next = realizedGrowthBonuses(record.growth, targetLevel);
+  for (const stat of Object.keys(next.stats) as Array<keyof StatBlock>) {
+    const delta = (next.stats[stat] ?? 0) - (previous.stats[stat] ?? 0);
+    if (delta > 0) record.stats[stat] += delta;
+  }
+  const hpDelta = next.maxHp - previous.maxHp;
+  if (hpDelta > 0) record.maxHp += hpDelta;
+  record.growthRealizedLevel = targetLevel;
+}
+
+/** M24 成長交易：冪等地補齊所有角色尚未實現的潛力，不碰裝備、專精或手動配點。 */
+export function realizeSaveGrowth(data: SaveData): SaveData {
+  realizeMemberGrowth(data.protagonist);
+  for (const companion of data.companions) realizeMemberGrowth(companion);
+  return data;
+}
+
 function parseAndMigrate(raw: unknown): SaveData | null {
   if (typeof raw !== 'object' || raw === null) return null;
   let parsed = raw as Record<string, unknown>;
@@ -179,7 +211,7 @@ function parseAndMigrate(raw: unknown): SaveData | null {
   if (!isValidSaveShape(parsed)) return null;
   if (parsed.expeditionPlan !== undefined && !isValidExpeditionPlan(parsed.expeditionPlan)) delete parsed.expeditionPlan;
   if (parsed.expedition !== null && !isCurrentExpeditionSnapshot(parsed.expedition)) parsed.expedition = null;
-  return parsed;
+  return realizeSaveGrowth(parsed);
 }
 
 export function newGame(now: number = Date.now(), choice?: CharacterChoice): SaveData {
@@ -192,6 +224,7 @@ export function newGame(now: number = Date.now(), choice?: CharacterChoice): Sav
     protagonist.genesis = genesis.profile;
     const growth = deriveGrowthProfile(protagonist.stats, STARTING_PROFILE[protagonist.job].stats, genesis.profile);
     protagonist.growth = growth;
+    protagonist.growthRealizedLevel = 1;
     const seed = latentStatBonuses(growth, 2);
     for (const stat of Object.keys(seed) as Array<keyof StatBlock>) protagonist.stats[stat] += seed[stat] ?? 0;
     protagonist.maxHp = Math.max(8, protagonist.maxHp + genesis.effects.maxHpDelta + Math.max(0, growth.potential.con - 3));
@@ -208,13 +241,17 @@ export function newGame(now: number = Date.now(), choice?: CharacterChoice): Sav
   };
 }
 
-export function saveGame(data: SaveData, storage: Storage = localStorage): void { storage.setItem(SAVE_KEY, JSON.stringify(data)); }
+export function saveGame(data: SaveData, storage: Storage = localStorage): void {
+  storage.setItem(SAVE_KEY, JSON.stringify(realizeSaveGrowth(data)));
+}
 export function loadGame(storage: Storage = localStorage): SaveData | null {
   const raw = storage.getItem(SAVE_KEY);
   if (!raw) return null;
   try { return parseAndMigrate(JSON.parse(raw)); } catch { return null; }
 }
-export function exportSave(data: SaveData): string { return btoa(encodeURIComponent(JSON.stringify(data))); }
+export function exportSave(data: SaveData): string {
+  return btoa(encodeURIComponent(JSON.stringify(realizeSaveGrowth(data))));
+}
 export function importSave(encoded: string): SaveData | null {
   try { return parseAndMigrate(JSON.parse(decodeURIComponent(atob(encoded)))); } catch { return null; }
 }
