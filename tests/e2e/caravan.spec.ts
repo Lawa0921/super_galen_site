@@ -157,6 +157,50 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     await expect(aimed.locator('.move-hit')).toHaveText('命中+3');
   });
 
+  test('M18：城鎮戰役中樞呈現出征隊，四格戰技配置會實際限制戰鬥指令', async ({ page }) => {
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      if (!raw) throw new Error('測試存檔不存在');
+      const data = JSON.parse(raw);
+      data.protagonist.job = 'mage';
+      data.protagonist.level = 3;
+      data.protagonist.xp = 120;
+      data.protagonist.stats = { str: 8, dex: 100, int: 16, cha: 10, con: 8 };
+      data.protagonist.maxHp = 16;
+      delete data.protagonist.preparedMoveIds;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.click('#btn-continue');
+
+    await expect(page.locator('.town-scene')).toBeVisible();
+    await expect(page.locator('.town-console')).toBeVisible();
+    await expect(page.locator('#town-party-ribbon .town-party-card')).toHaveCount(1);
+    await expect(page.locator('#town-party-ribbon')).toContainText('後排');
+
+    await page.click('.town-tab[data-town-tab="roster"]');
+    const card = page.locator('.roster-card[data-member-id="protagonist"]');
+    await expect(card.locator('.move-chip.prepared')).toHaveCount(4);
+    await expect(card.locator('.move-chip.unprepared')).toHaveCount(2);
+    await card.locator('.move-chip[data-move-id="frost-bind"]').click();
+    await card.locator('.move-chip[data-move-id="meteor-fall"]').click();
+    await expect(card.locator('.move-chip[data-move-id="meteor-fall"]')).toHaveClass(/prepared/);
+    await expect(page.locator('#game-toast')).toContainText('隕石墜');
+
+    const prepared = await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      if (!raw) throw new Error('測試存檔不存在');
+      return JSON.parse(raw).protagonist.preparedMoveIds as string[];
+    });
+    expect(prepared).toHaveLength(4);
+    expect(prepared).toContain('meteor-fall');
+    expect(prepared).not.toContain('frost-bind');
+
+    await page.click('#btn-training');
+    await expect(page.locator('#combat-actions [data-move-id="meteor-fall"]')).toBeVisible();
+    await expect(page.locator('#combat-actions [data-move-id="frost-bind"]')).toHaveCount(0);
+  });
+
   test('打到分出勝負：點招式推進、log 累積、結果面板出現、可返回城鎮', async ({ page }) => {
     await page.click('#btn-training');
     await expect(page.locator('#screen-combat')).toBeVisible();

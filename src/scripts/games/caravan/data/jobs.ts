@@ -25,6 +25,9 @@ export interface JobDef {
   art?: string;
 }
 
+/** M18：每名角色最多攜帶四招，讓升級後的技能選擇形成構築取捨。 */
+export const MOVE_LOADOUT_CAP = 4;
+
 /** 通用「揮擊」：所有職業都會的基礎武器攻擊，備用招式 */
 const universalStrike: Move = {
   id: 'strike', element: 'blunt', name: '揮擊', kind: 'attack', target: 'enemy', hitStat: 'str',
@@ -140,10 +143,95 @@ export const JOBS: Record<JobId, JobDef> = {
   },
 };
 
+/** 包含等級解鎖、武器招式與專精招式的完整已知戰技清單。 */
+export function availableMovesFromRecord(record: CompanionRecord): Move[] {
+  const moves = unlockedMoves(record);
+  const weaponId = record.equipment.weapon;
+  const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
+  const baseMoves = weaponMove ? [weaponMove, ...moves.slice(1)] : moves;
+  const spec = specById(record.specialization);
+  // 專屬招放在兩招職業核心技之後，讓舊存檔的預設四招必定能體現專精身分。
+  return spec
+    ? [...baseMoves.slice(0, 2), spec.move, ...baseMoves.slice(2)]
+    : baseMoves;
+}
+
+function weaponMoveIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const item of Object.values(ITEMS)) {
+    if (item.equip?.slot === 'weapon' && item.equip.move) ids.add(item.equip.move.id);
+  }
+  return ids;
+}
+
 /**
- * 用 JOBS[record.job] 的 moves/defense，配上 record 自己的 stats/maxHp（含成長），
- * 再疊上裝備三欄的效果（M5）：stats/defense/maxHp 加成；weapon 若帶 move 則取代
- * moves[0]（武器招約定——JOBS 每職業 moves[0] 恆為 kind==='attack'，見 jobs.test.ts 資料鎖定）。
+ * 將存檔中的「武器招式槽」對齊目前裝備：
+ * - 換武器時，舊武器招平滑換成新武器招。
+ * - 卸下武器時，恢復職業原本的首招。
+ * - 玩家本來就沒攜帶武器招時，不會擅自塞回去。
+ */
+function normalizePreparedMoveIds(record: CompanionRecord): Set<string> {
+  const raw = record.preparedMoveIds;
+  if (!Array.isArray(raw)) return new Set<string>();
+  const requested = new Set(raw.filter((id): id is string => typeof id === 'string'));
+  const classWeaponMove = unlockedMoves(record)[0];
+  const equippedWeaponId = record.equipment.weapon;
+  const equippedWeaponMove = equippedWeaponId ? ITEMS[equippedWeaponId]?.equip?.move : undefined;
+  const allWeaponMoveIds = weaponMoveIds();
+  const hadWeaponSlot = !!classWeaponMove && (
+    requested.has(classWeaponMove.id) ||
+    [...requested].some((id) => allWeaponMoveIds.has(id))
+  );
+
+  if (hadWeaponSlot) {
+    requested.delete(classWeaponMove.id);
+    for (const id of allWeaponMoveIds) requested.delete(id);
+    const replacement = equippedWeaponMove ?? classWeaponMove;
+    if (replacement) requested.add(replacement.id);
+  }
+  return requested;
+}
+
+/**
+ * 依已知戰技整理實際攜帶配置。
+ * 舊存檔採前四招；武器替換與卸下都會保留原本佔用的武器招式槽。
+ * 毀損或已過期的配置退回安全預設，不讓玩家帶著空配置進入戰鬥。
+ */
+export function preparedMovesFromRecord(record: CompanionRecord): Move[] {
+  const available = availableMovesFromRecord(record);
+  if (available.length === 0) return [];
+  if (!Array.isArray(record.preparedMoveIds) || record.preparedMoveIds.length === 0) {
+    return available.slice(0, MOVE_LOADOUT_CAP);
+  }
+
+  const requested = normalizePreparedMoveIds(record);
+  const prepared = available
+    .filter((move) => requested.has(move.id))
+    .slice(0, MOVE_LOADOUT_CAP);
+  return prepared.length > 0 ? prepared : available.slice(0, MOVE_LOADOUT_CAP);
+}
+
+/** 寫入一組合法戰技配置；未知、重複、空配置與超過四招都拒絕且不修改角色。 */
+export function setPreparedMoves(record: CompanionRecord, moveIds: string[]): string[] {
+  const known = availableMovesFromRecord(record);
+  const requested = new Set(moveIds);
+  const prepared = known.filter((move) => requested.has(move.id));
+  if (
+    moveIds.some((id) => typeof id !== 'string') ||
+    moveIds.length !== requested.size ||
+    prepared.length === 0 ||
+    prepared.length > MOVE_LOADOUT_CAP ||
+    prepared.length !== requested.size
+  ) {
+    throw new Error(`戰技配置必須是 1～${MOVE_LOADOUT_CAP} 個不重複的已解鎖招式`);
+  }
+  record.preparedMoveIds = prepared.map((move) => move.id);
+  return [...record.preparedMoveIds];
+}
+
+/**
+ * 將角色成長、裝備、特質、專精與戰技配置整合成實際戰鬥成員。
+ * 武器招式替換與出戰招式上限都已在 preparedMovesFromRecord 內處理。
  */
 export function memberFromRecord(record: CompanionRecord): PartyMember {
   const job = JOBS[record.job];
@@ -158,15 +246,6 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
   const bondHp = bondTier(record.bond) * BOND_HP_PER_TIER;
   const maxHp = record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0) + (spec?.maxHp ?? 0) + bondHp;
 
-  const moves = unlockedMoves(record);
-  const weaponId = record.equipment.weapon;
-  const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
-  const baseMoves = weaponMove ? [weaponMove, ...moves.slice(1)] : moves;
-  // 專屬招插在通用「揮擊」之前（揮擊恆為最後一招）
-  const finalMoves = spec
-    ? [...baseMoves.slice(0, -1), spec.move, baseMoves[baseMoves.length - 1]]
-    : baseMoves;
-
   return {
     id: record.id,
     name: record.name,
@@ -174,7 +253,7 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
     maxHp,
     hp: maxHp,
     defense: job.defense + bonus.defense + (spec?.defense ?? 0),
-    moves: finalMoves,
+    moves: preparedMovesFromRecord(record),
     damageBonus: bonus.damageBonus,
     isProtagonist: record.id === 'protagonist',
   };
