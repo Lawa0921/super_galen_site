@@ -156,45 +156,74 @@ export function availableMovesFromRecord(record: CompanionRecord): Move[] {
     : baseMoves;
 }
 
+function weaponMoveIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const item of Object.values(ITEMS)) {
+    if (item.equip?.slot === 'weapon' && item.equip.move) ids.add(item.equip.move.id);
+  }
+  return ids;
+}
+
+/**
+ * 將存檔中的「武器招式槽」對齊目前裝備：
+ * - 換武器時，舊武器招平滑換成新武器招。
+ * - 卸下武器時，恢復職業原本的首招。
+ * - 玩家本來就沒攜帶武器招時，不會擅自塞回去。
+ */
+function normalizePreparedMoveIds(record: CompanionRecord): Set<string> {
+  const raw = record.preparedMoveIds;
+  if (!Array.isArray(raw)) return new Set<string>();
+  const requested = new Set(raw.filter((id): id is string => typeof id === 'string'));
+  const classWeaponMove = unlockedMoves(record)[0];
+  const equippedWeaponId = record.equipment.weapon;
+  const equippedWeaponMove = equippedWeaponId ? ITEMS[equippedWeaponId]?.equip?.move : undefined;
+  const allWeaponMoveIds = weaponMoveIds();
+  const hadWeaponSlot = !!classWeaponMove && (
+    requested.has(classWeaponMove.id) ||
+    [...requested].some((id) => allWeaponMoveIds.has(id))
+  );
+
+  if (hadWeaponSlot) {
+    requested.delete(classWeaponMove.id);
+    for (const id of allWeaponMoveIds) requested.delete(id);
+    const replacement = equippedWeaponMove ?? classWeaponMove;
+    if (replacement) requested.add(replacement.id);
+  }
+  return requested;
+}
+
 /**
  * 依已知戰技整理實際攜帶配置。
- * 舊存檔採前四招；裝上帶招式的武器時，若原本配置了職業首招，會平滑替換成武器招。
+ * 舊存檔採前四招；武器替換與卸下都會保留原本佔用的武器招式槽。
+ * 毀損或已過期的配置退回安全預設，不讓玩家帶著空配置進入戰鬥。
  */
 export function preparedMovesFromRecord(record: CompanionRecord): Move[] {
   const available = availableMovesFromRecord(record);
   if (available.length === 0) return [];
-  if (!record.preparedMoveIds) return available.slice(0, MOVE_LOADOUT_CAP);
-
-  const requested = new Set(record.preparedMoveIds);
-  const weaponId = record.equipment.weapon;
-  const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
-  const originalWeaponMove = unlockedMoves(record)[0];
-  if (
-    weaponMove &&
-    originalWeaponMove &&
-    requested.has(originalWeaponMove.id) &&
-    !available.some((move) => move.id === originalWeaponMove.id)
-  ) {
-    requested.delete(originalWeaponMove.id);
-    requested.add(weaponMove.id);
+  if (!Array.isArray(record.preparedMoveIds) || record.preparedMoveIds.length === 0) {
+    return available.slice(0, MOVE_LOADOUT_CAP);
   }
+
+  const requested = normalizePreparedMoveIds(record);
   const prepared = available
     .filter((move) => requested.has(move.id))
     .slice(0, MOVE_LOADOUT_CAP);
-  return prepared.length > 0 ? prepared : available.slice(0, 1);
+  return prepared.length > 0 ? prepared : available.slice(0, MOVE_LOADOUT_CAP);
 }
 
-/** 寫入一組合法戰技配置；未知招式、空配置與超過四招都拒絕且不修改角色。 */
+/** 寫入一組合法戰技配置；未知、重複、空配置與超過四招都拒絕且不修改角色。 */
 export function setPreparedMoves(record: CompanionRecord, moveIds: string[]): string[] {
   const known = availableMovesFromRecord(record);
   const requested = new Set(moveIds);
   const prepared = known.filter((move) => requested.has(move.id));
   if (
+    moveIds.some((id) => typeof id !== 'string') ||
+    moveIds.length !== requested.size ||
     prepared.length === 0 ||
     prepared.length > MOVE_LOADOUT_CAP ||
     prepared.length !== requested.size
   ) {
-    throw new Error(`戰技配置必須是 1～${MOVE_LOADOUT_CAP} 個已解鎖招式`);
+    throw new Error(`戰技配置必須是 1～${MOVE_LOADOUT_CAP} 個不重複的已解鎖招式`);
   }
   record.preparedMoveIds = prepared.map((move) => move.id);
   return [...record.preparedMoveIds];
