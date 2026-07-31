@@ -168,6 +168,44 @@ describe('動作結算', () => {
     expect(state.enemyIntents['foe']).toBe('strike'); // 重新預告
   });
 
+  it('hitBonus 會加入一般命中檢定', () => {
+    const aimed: Move = { ...strike, id: 'aimed', name: '瞄準', hitBonus: 3 };
+    const hero = makeMember('hero', 14, { moves: [aimed] });
+    const foe = makeEnemy('foe', 10, { defense: 14 });
+    const state = startCombat(scriptedRng([15, 5]), [hero], [foe]);
+    // 9 + STR(+2) + 命中(+3) = 14，恰好命中。
+    partyAct(scriptedRng([9, 4]), state, 'hero', 'aimed', 'foe');
+    expect(foe.hp).toBe(4);
+  });
+
+  it('範圍攻擊逐一命中所有存活敵人，強化只消耗一層但作用於整次攻擊', () => {
+    const sweep: Move = { ...strike, id: 'sweep', name: '橫掃', area: true };
+    const hero = makeMember('hero', 14, {
+      moves: [sweep],
+      statuses: [{ kind: 'strength', remaining: 1, potency: 3 }],
+    });
+    const foes = [makeEnemy('foe-a', 10), makeEnemy('foe-b', 8)];
+    const state = startCombat(scriptedRng([20, 19, 1]), [hero], foes);
+    partyAct(scriptedRng([10, 3, 10, 4]), state, 'hero', 'sweep', 'foe-a');
+    // 兩名敵人都吃到 STR(+2) 與單次強化(+3)。
+    expect(foes[0].hp).toBe(2);
+    expect(foes[1].hp).toBe(1);
+    expect(hero.statuses?.some((status) => status.kind === 'strength')).toBe(false);
+  });
+
+  it('架盾者會攔截敵人原本打向低血量隊友的單體攻擊', () => {
+    const guardian = makeMember('guardian', 14, { defense: 12 });
+    const wounded = makeMember('wounded', 12, { hp: 4, defense: 8 });
+    const foe = makeEnemy('foe', 10);
+    const state = startCombat(scriptedRng([5, 4, 18]), [guardian, wounded], [foe]);
+    state.turnIndex = state.order.indexOf('foe');
+    state.guarding[guardian.id] = true;
+    enemyAct(scriptedRng([20, 4]), state, foe.id);
+    expect(wounded.hp).toBe(4);
+    expect(guardian.hp).toBe(15);
+    expect(state.log.some((event) => event.text.includes('攔下攻擊'))).toBe(true);
+  });
+
   it('attemptRetreat：outcome=retreated、殿後者（先攻最低存活）受一擊', () => {
     const a = makeMember('a', 14); const b = makeMember('b', 8);
     const state = startCombat(scriptedRng([15, 5, 10]), [a, b], [makeEnemy('foe', 10)]);

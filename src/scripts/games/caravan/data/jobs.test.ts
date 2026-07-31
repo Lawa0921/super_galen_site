@@ -21,6 +21,15 @@ describe('jobs（武器招約定與 memberFromRecord 裝備整合，M5 Task 1）
     }
   });
 
+  it('M16：各職業至少有一種清群手段，瞄準射擊提供命中取捨', () => {
+    for (const job of Object.values(JOBS)) {
+      expect(job.moves.some((move) => move.area), `${job.name} 缺少範圍招式`).toBe(true);
+    }
+    const aimedShot = JOBS.ranger.moves.find((move) => move.id === 'aimed-shot');
+    expect(aimedShot?.hitBonus).toBe(3);
+    expect(aimedShot?.area).not.toBe(true);
+  });
+
   describe('memberFromRecord 裝備整合', () => {
     const TEST_WEAPON_MOVE: Move = {
       id: 'test-weapon-move', name: '測試武器技', kind: 'attack', target: 'enemy', hitStat: 'str',

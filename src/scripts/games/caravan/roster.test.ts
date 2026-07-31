@@ -4,9 +4,8 @@ import {
   generateRecruitPool, hireCost, wagePerTrip, equipItem, unequipItem, equipmentBonus,
   SPECIALIZATIONS, chooseSpecialization, bondTier, partyCheckBonus,
   SKILLS, spendSkillPoint, skillCheckBonus, smithCost, upgradeEquipment, rollStats,
-  TRAITS, partyCheckBonus,
+  TRAITS,
 } from './roster';
-import { memberFromRecord } from './data/jobs';
 import { createRng } from './rng';
 import { newGame, STARTING_PROFILE as STARTING_PROFILE_REF, type SaveData, type CompanionRecord } from './save';
 import type { StatBlock } from './types';

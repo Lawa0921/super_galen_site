@@ -439,8 +439,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     }
     // 場景反應式背景
     const b = BACKDROP[name];
-    backdropEl.style.backgroundImage = `url('/assets/games/caravan/${b.img}.webp')`;
+    const isDungeonBattle =
+      name === 'combat' && combatContext === 'expedition' && expedition?.kind === 'dungeon';
+    const sceneImage = name === 'combat'
+      ? (isDungeonBattle ? 'battlefield-dungeon' : 'battlefield-road')
+      : b.img;
+    const sceneUrl = `url('/assets/games/caravan/${sceneImage}.webp')`;
+    backdropEl.style.backgroundImage = sceneUrl;
     backdropEl.dataset.mood = b.mood;
+    if (name === 'combat') combatScreen.style.setProperty('--combat-battlefield', sceneUrl);
     // HUD：標題畫面外常駐
     hudEl.hidden = name === 'title' || name === 'create' || name === 'prologue';
     if (!hudEl.hidden) refreshHud(b.scene);
@@ -2211,6 +2218,12 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
           tactics.appendChild(poise);
         }
       }
+      if (!showIntent && state?.guarding[unit.id]) {
+        const guard = document.createElement('span');
+        guard.className = 'unit-guard';
+        guard.textContent = '護衛';
+        tactics.appendChild(guard);
+      }
 
       const status = document.createElement('p');
       status.className = 'unit-status';
@@ -2274,6 +2287,37 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     }
   }
 
+  function renderAllyTargets(actorId: string, move: Move): void {
+    if (!state) return;
+    combatTargetsEl.innerHTML = '';
+    const prompt = document.createElement('span');
+    prompt.className = 'target-prompt';
+    prompt.textContent = `${move.name}：選擇隊友`;
+    combatTargetsEl.appendChild(prompt);
+    for (const ally of state.party.filter((member) => member.hp > 0)) {
+      const btn = document.createElement('button');
+      btn.className = 'caravan-btn target-btn ally-target-btn';
+      btn.dataset.targetId = ally.id;
+      btn.dataset.targetSide = 'ally';
+      btn.textContent = `${ally.name}　${ally.hp}/${ally.maxHp}`;
+      btn.addEventListener('click', () => {
+        if (!state) return;
+        partyAct(rng, state, actorId, move.id, ally.id);
+        selectedTargetId = null;
+        render();
+      });
+      combatTargetsEl.appendChild(btn);
+    }
+    const cancel = document.createElement('button');
+    cancel.className = 'caravan-btn target-btn target-cancel';
+    cancel.textContent = '取消';
+    cancel.addEventListener('click', () => {
+      renderCombatTargets();
+      renderActions(actorId);
+    });
+    combatTargetsEl.appendChild(cancel);
+  }
+
   /** M11 戰鬥道具：ItemDef.use → 引擎 ItemCombatUse */
   function toCombatUse(itemId: string): ItemCombatUse | null {
     const item = ITEMS[itemId];
@@ -2334,6 +2378,18 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       btn.className = 'caravan-btn move-btn';
       btn.dataset.moveId = move.id;
       btn.textContent = move.name;
+      if (move.area) {
+        const area = document.createElement('span');
+        area.className = 'move-tag move-area';
+        area.textContent = '範';
+        btn.appendChild(area);
+      }
+      if (move.hitBonus) {
+        const hit = document.createElement('span');
+        hit.className = 'move-tag move-hit';
+        hit.textContent = `命中+${move.hitBonus}`;
+        btn.appendChild(hit);
+      }
       if (move.element) {
         const tag = document.createElement('span');
         tag.className = `move-element move-element-${move.element}`;
@@ -2342,6 +2398,10 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
       }
       btn.addEventListener('click', () => {
         if (!state) return;
+        if (move.target === 'ally') {
+          renderAllyTargets(actor.id, move);
+          return;
+        }
         const targetId = resolveTargetId(actor.id, move);
         if (!targetId) return;
         partyAct(rng, state, actor.id, move.id, targetId);
@@ -2961,7 +3021,14 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   }
 
   /* ---- 戰鬥＝JRPG 戰場：敵方列在上、我方列在下、指令窗停靠底部 ---- */
-  #screen-combat { padding-bottom: 1.6rem; }
+  #screen-combat {
+    padding-bottom: 1.6rem;
+    background-image:
+      linear-gradient(180deg, rgba(12, 8, 4, 0.42), rgba(12, 8, 4, 0.72)),
+      var(--combat-battlefield, url('/assets/games/caravan/battlefield-road.webp'));
+    background-position: center;
+    background-size: cover;
+  }
   .combat-field {
     display: flex; flex-direction: column; gap: 1rem;
     align-items: center; margin-bottom: 0.8rem;
@@ -3002,6 +3069,9 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .combat-targets:empty { display: none; }
   .target-btn { padding: 0.35rem 0.9rem; font-size: 0.85rem; }
   .target-selected { background: var(--seal); border-color: var(--seal-bright); color: #f7ece0; }
+  .target-prompt { flex-basis: 100%; color: var(--gold-bright); font-size: 0.84rem; letter-spacing: 0.08em; }
+  .ally-target-btn { border-color: var(--forest); }
+  .target-cancel { opacity: 0.72; }
   .combat-log {
     max-width: 30rem; max-height: 8.5rem; overflow-y: auto;
     margin: 0 auto 1rem;
@@ -3033,6 +3103,19 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
     box-shadow: 0 0 20px rgba(181, 52, 43, 0.5), 0 5px 12px rgba(0, 0, 0, 0.5);
     transform: translateY(-2px);
   }
+  .move-tag, .move-element {
+    display: inline-block;
+    margin-left: 0.45rem;
+    padding: 0.05rem 0.3rem;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    font-size: 0.62rem;
+    line-height: 1.2;
+    letter-spacing: 0;
+    vertical-align: 0.14em;
+  }
+  .move-area { color: #f0b36c; }
+  .move-hit { color: #9fd3ef; }
   .combat-retreat { font-size: 0.85rem; padding: 0.4rem 1.5rem; opacity: 0.85; }
   .combat-result { margin-top: 1.5rem; }
   .combat-result .result-text { font-size: 1.2rem; font-weight: 900; margin-bottom: 1rem; letter-spacing: 0.1em; color: var(--gold-bright); }
@@ -3102,6 +3185,15 @@ const pageTitle = '商隊與劍 | CARAVAN & SWORD';
   .combat-unit.unit-active {
     box-shadow: inset 0 1px 0 rgba(232, 200, 126, 0.1), 0 0 0 1px var(--gold-bright), 0 0 18px rgba(201, 163, 92, 0.45);
     transform: translateY(-2px);
+  }
+  .unit-guard {
+    display: inline-block;
+    color: #d7efe0;
+    border: 1px solid var(--forest);
+    border-radius: 2px;
+    padding: 0.05rem 0.35rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
   }
   .combat-unit.unit-hit { animation: unitHit 0.34s ease; }
   @keyframes unitHit {

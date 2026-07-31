@@ -73,10 +73,10 @@ test.describe('商隊與劍：獨立入口 landing', () => {
 
 test.describe('商隊與劍：訓練場戰鬥', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/caravan/play?seed=42');
+    await page.route('https://**/*', (route) => route.abort());
+    await page.goto('/caravan/play?seed=42', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
-    await page.reload();
-    await page.waitForLoadState('domcontentloaded');
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.click('#btn-new-game');
     await page.click('#btn-prologue-skip'); // 序章演出：e2e 一律跳過
     await page.click('#btn-create-confirm'); // 創角：預設劍士＋0 配點＝舊版主角
@@ -90,6 +90,71 @@ test.describe('商隊與劍：訓練場戰鬥', () => {
     await expect(page.locator('#combat-party .combat-unit')).toHaveCount(1);
     await expect(page.locator('#combat-enemies .unit-intent').first()).not.toBeEmpty();
     await expect(page.locator('#combat-log p').first()).toContainText('戰鬥開始');
+  });
+
+  test('M16：治癒先選擇隊友，並在道路戰場內呈現戰鬥', async ({ page }) => {
+    await page.click('.town-tab[data-town-tab="tavern"]');
+    await page.locator('.hire-btn:not([disabled])').first().click();
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      if (!raw) throw new Error('測試存檔不存在');
+      const data = JSON.parse(raw);
+      data.protagonist.job = 'cleric';
+      data.protagonist.stats = { str: 10, dex: 100, int: 12, cha: 16, con: 12 };
+      data.protagonist.maxHp = 22;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('#btn-training');
+    await expect(page.locator('#combat-actions [data-move-id="heal"]')).toBeVisible();
+    await page.locator('#combat-actions [data-move-id="heal"]').click();
+    await expect(page.locator('#combat-targets .ally-target-btn')).toHaveCount(2);
+    await expect(page.locator('#combat-targets')).toContainText('選擇隊友');
+    await expect(page.locator('#screen-combat')).toHaveCSS('background-image', /battlefield-road/);
+  });
+
+  test('M16：範圍技與命中修正會在招式牌顯示戰術標記', async ({ page }) => {
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      if (!raw) throw new Error('測試存檔不存在');
+      const data = JSON.parse(raw);
+      data.protagonist.job = 'mage';
+      data.protagonist.level = 2;
+      data.protagonist.xp = 50;
+      data.protagonist.stats = { str: 8, dex: 100, int: 16, cha: 10, con: 8 };
+      data.protagonist.maxHp = 16;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('#btn-training');
+    const gravity = page.locator('#combat-actions [data-move-id="gravity-crush"]');
+    await expect(gravity).toBeVisible();
+    await expect(gravity.locator('.move-area')).toHaveText('範');
+
+    await page.click('#btn-retreat');
+    await page.click('#btn-combat-back');
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('caravan-save-v1');
+      if (!raw) throw new Error('測試存檔不存在');
+      const data = JSON.parse(raw);
+      data.protagonist.job = 'ranger';
+      data.protagonist.level = 1;
+      data.protagonist.xp = 0;
+      data.protagonist.stats = { str: 10, dex: 100, int: 10, cha: 10, con: 10 };
+      data.protagonist.maxHp = 20;
+      localStorage.setItem('caravan-save-v1', JSON.stringify(data));
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('#btn-continue');
+    await page.click('#btn-training');
+    const aimed = page.locator('#combat-actions [data-move-id="aimed-shot"]');
+    await expect(aimed).toBeVisible();
+    await expect(aimed.locator('.move-hit')).toHaveText('命中+3');
   });
 
   test('打到分出勝負：點招式推進、log 累積、結果面板出現、可返回城鎮', async ({ page }) => {
