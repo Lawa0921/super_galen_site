@@ -6,6 +6,7 @@ import type { SaveData } from '../save';
  * M3 首批地點：貿易路線 2 條、迷宮 1 座、隱藏迷宮 1 座（旗標鏈 discover）。
  * M5 擴充：第三路線「霧嶺古道」（reputation≥40）、高階迷宮「鹽晶洞窟」（reputation≥60）、
  * 隱藏路線「古戰場」（旗標鏈 discover，見 data/events.ts ev_faded_banner→ev_mercenary_ruins）。
+ * M19 擴充：兩張聲望 70 的高階戰術契約，讓戰技配置與押貨目的形成真正取捨。
  */
 export const LOCATIONS: Record<string, LocationDef> = {
   'endless-road': {
@@ -101,6 +102,33 @@ export const LOCATIONS: Record<string, LocationDef> = {
     hidden: true,
     legs: 3,
     encounterTable: [{ weight: 100, encounterId: 'enc_ruins_undead' }],
+  },
+
+  // ---- M19 高階戰術契約：目的地、敵情與推薦屬性都明確分流 -----------
+  'guild-salt-convoy': {
+    id: 'guild-salt-convoy',
+    name: '商會特許．鹽晶護運〔聖／打〕',
+    kind: 'route',
+    legs: 7,
+    minReputation: 70,
+    destinationTownId: 'salt-spring-city',
+    encounterTable: [
+      { weight: 65, encounterId: 'enc_salt_crystals' },
+      { weight: 35, encounterId: 'enc_ridge_bandits' },
+    ],
+  },
+  'free-trader-frontier': {
+    id: 'free-trader-frontier',
+    name: '自由商旅．邊境環線〔斬／刺〕',
+    kind: 'route',
+    legs: 8,
+    minReputation: 70,
+    destinationTownId: 'woodside-settlement',
+    encounterTable: [
+      { weight: 40, encounterId: 'enc_ridge_bandits' },
+      { weight: 35, encounterId: 'enc_ruins_undead' },
+      { weight: 25, encounterId: 'enc_goblin_raiders' },
+    ],
   },
 };
 
