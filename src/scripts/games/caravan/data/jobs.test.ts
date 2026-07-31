@@ -53,16 +53,26 @@ describe('jobs（武器招約定與 memberFromRecord 裝備整合，M5 Task 1）
       expect(memberFromRecord(record).moves.map((move) => move.id)).toEqual(['guard', 'strike']);
     });
 
-    it('未知、空白或超量配置會拒絕且不修改既有配置', () => {
+    it('未知、重複、空白或超量配置會拒絕且不修改既有配置', () => {
       const record = makeRecord({ level: 3, preparedMoveIds: ['guard', 'strike'] });
       for (const invalid of [
         [],
+        ['guard', 'guard'],
         ['guard', 'not-a-move'],
         ['heavy-slash', 'guard', 'whirlwind-slash', 'breaking-combo', 'strike'],
       ]) {
         expect(() => setPreparedMoves(record, invalid)).toThrow();
         expect(record.preparedMoveIds).toEqual(['guard', 'strike']);
       }
+    });
+
+    it('毀損或已過期配置不會讓角色空手進戰鬥，而是退回安全預設', () => {
+      const damaged = makeRecord({
+        level: 3,
+        preparedMoveIds: ['removed-move', 'removed-move'],
+      });
+      expect(preparedMovesFromRecord(damaged).map((move) => move.id))
+        .toEqual(['heavy-slash', 'guard', 'whirlwind-slash', 'breaking-combo']);
     });
   });
 
@@ -72,9 +82,18 @@ describe('jobs（武器招約定與 memberFromRecord 裝備整合，M5 Task 1）
       damage: { dice: 1, sides: 4, bonusStat: 'str' },
       narration: '{actor}揮動測試武器擊向{target}，造成 {amount} 點傷害！',
     };
+    const SECOND_WEAPON_MOVE: Move = {
+      id: 'second-weapon-move', name: '第二武器技', kind: 'attack', target: 'enemy', hitStat: 'str',
+      damage: { dice: 1, sides: 8, bonusStat: 'str' },
+      narration: '{actor}使出第二武器技擊向{target}，造成 {amount} 點傷害！',
+    };
     const TEST_WEAPON: ItemDef = {
       id: 'test-weapon', name: '測試武器', desc: '測試用武器。', value: 20,
       equip: { slot: 'weapon', bonus: { str: 2 }, move: TEST_WEAPON_MOVE },
+    };
+    const SECOND_WEAPON: ItemDef = {
+      id: 'second-weapon', name: '第二武器', desc: '另一把測試武器。', value: 30,
+      equip: { slot: 'weapon', move: SECOND_WEAPON_MOVE },
     };
     const TEST_ARMOR: ItemDef = {
       id: 'test-armor', name: '測試護甲', desc: '測試用護甲。', value: 20,
@@ -83,10 +102,12 @@ describe('jobs（武器招約定與 memberFromRecord 裝備整合，M5 Task 1）
 
     beforeEach(() => {
       ITEMS['test-weapon'] = TEST_WEAPON;
+      ITEMS['second-weapon'] = SECOND_WEAPON;
       ITEMS['test-armor'] = TEST_ARMOR;
     });
     afterEach(() => {
       delete ITEMS['test-weapon'];
+      delete ITEMS['second-weapon'];
       delete ITEMS['test-armor'];
     });
 
@@ -111,6 +132,36 @@ describe('jobs（武器招約定與 memberFromRecord 裝備整合，M5 Task 1）
       });
       expect(memberFromRecord(record).moves.map((move) => move.id))
         .toEqual(['test-weapon-move', 'guard', 'strike']);
+    });
+
+    it('已配置武器招時換另一把武器，保留槽位並改成新武器技', () => {
+      const record = makeRecord({
+        level: 3,
+        preparedMoveIds: ['test-weapon-move', 'guard', 'strike'],
+        equipment: { weapon: 'second-weapon', armor: null, trinket: null },
+      });
+      expect(memberFromRecord(record).moves.map((move) => move.id))
+        .toEqual(['second-weapon-move', 'guard', 'strike']);
+    });
+
+    it('卸下武器後，原武器招槽恢復為職業首招，不會讓角色無預警少一招', () => {
+      const record = makeRecord({
+        level: 3,
+        preparedMoveIds: ['test-weapon-move', 'guard', 'strike'],
+        equipment: { weapon: null, armor: null, trinket: null },
+      });
+      expect(memberFromRecord(record).moves.map((move) => move.id))
+        .toEqual(['heavy-slash', 'guard', 'strike']);
+    });
+
+    it('玩家刻意不攜帶武器招時，換裝不會擅自加入武器技', () => {
+      const record = makeRecord({
+        level: 3,
+        preparedMoveIds: ['guard', 'whirlwind-slash', 'strike'],
+        equipment: { weapon: 'test-weapon', armor: null, trinket: null },
+      });
+      expect(memberFromRecord(record).moves.map((move) => move.id))
+        .toEqual(['guard', 'whirlwind-slash', 'strike']);
     });
 
     it('武器無 move 欄位時 moves[0] 維持職業原招（僅套用屬性加成）', () => {
