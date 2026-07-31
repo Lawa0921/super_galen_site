@@ -43,7 +43,8 @@ describe('M19 高階戰術契約', () => {
         ENCOUNTERS[entry.encounterId]().flatMap((enemy) => enemy.weaknesses ?? [])
       )
     );
-    expect(weaknesses).toEqual(expect.objectContaining(new Set(['holy', 'blunt'])));
+    expect(weaknesses.has('holy')).toBe(true);
+    expect(weaknesses.has('blunt')).toBe(true);
   });
 
   it('自由商旅環線與鹽晶護運的敵群及目的地不同，避免兩個按鈕實際上是同一關', () => {
