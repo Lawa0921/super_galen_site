@@ -168,6 +168,22 @@ describe('動作結算', () => {
     expect(state.enemyIntents['foe']).toBe('strike'); // 重新預告
   });
 
+  it('M17：單體敵襲優先鎖定前排，前排全倒後才會攻擊後排', () => {
+    const front = makeMember('front', 12, { formationRow: 'front', hp: 12 });
+    const back = makeMember('back', 16, { formationRow: 'back', hp: 2 });
+    const foe = makeEnemy('foe', 10);
+    const state = startCombat(scriptedRng([5, 4, 18]), [front, back], [foe]);
+    state.turnIndex = state.order.indexOf('foe');
+    enemyAct(scriptedRng([20, 3]), state, foe.id);
+    expect(front.hp).toBe(8);
+    expect(back.hp).toBe(2);
+
+    front.hp = 0;
+    state.turnIndex = state.order.indexOf('foe');
+    enemyAct(scriptedRng([20, 1]), state, foe.id);
+    expect(back.hp).toBe(0);
+  });
+
   it('hitBonus 會加入一般命中檢定', () => {
     const aimed: Move = { ...strike, id: 'aimed', name: '瞄準', hitBonus: 3 };
     const hero = makeMember('hero', 14, { moves: [aimed] });

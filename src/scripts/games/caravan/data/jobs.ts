@@ -1,7 +1,15 @@
 import type { Move, PartyMember } from '../combat';
 import type { CompanionRecord } from '../save';
 import type { StatBlock } from '../types';
-import { unlockedMoves, equipmentBonus, traitById, specById, bondTier, BOND_HP_PER_TIER } from '../roster';
+import {
+  unlockedMoves,
+  equipmentBonus,
+  effectiveStats,
+  traitById,
+  specById,
+  bondTier,
+  BOND_HP_PER_TIER,
+} from '../roster';
 import { ITEMS } from './items';
 
 export type JobId = 'swordsman' | 'ranger' | 'mage' | 'cleric';
@@ -141,24 +149,11 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
   const job = JOBS[record.job];
   const bonus = equipmentBonus(record);
 
-  const stats: StatBlock = { ...record.stats };
-  for (const key of Object.keys(bonus.stats) as Array<keyof StatBlock>) {
-    stats[key] += bonus.stats[key] ?? 0;
-  }
+  const stats: StatBlock = effectiveStats(record);
   // M7 特質加成
   const trait = traitById(record.trait);
-  if (trait?.statBonus) {
-    for (const key of Object.keys(trait.statBonus) as Array<keyof StatBlock>) {
-      stats[key] += trait.statBonus[key] ?? 0;
-    }
-  }
   // M11 專精被動
   const spec = specById(record.specialization);
-  if (spec?.statBonus) {
-    for (const key of Object.keys(spec.statBonus) as Array<keyof StatBlock>) {
-      stats[key] += spec.statBonus[key] ?? 0;
-    }
-  }
   // M11 羈絆：旅伴 tier 每階 +BOND_HP_PER_TIER 生命上限（主角無 bond 欄自然為 0）
   const bondHp = bondTier(record.bond) * BOND_HP_PER_TIER;
   const maxHp = record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0) + (spec?.maxHp ?? 0) + bondHp;

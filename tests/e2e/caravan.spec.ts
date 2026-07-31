@@ -259,6 +259,72 @@ test.describe('商隊與劍：遠征系統', () => {
     await expect(page.locator('.quest-hidden-hint')).toContainText('？');
   });
 
+  test('M17：六人名冊可選四人出征，前後排與職務會鎖入遠征快照', async ({ page }) => {
+    await page.route('https://**/*', (route) => route.abort());
+    await page.goto('/caravan/play?seed=117', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => localStorage.removeItem('caravan-save-v1'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.click('#btn-new-game');
+    await page.click('#btn-prologue-skip');
+    await page.click('#btn-create-confirm');
+    await expect(page.locator('#screen-town')).toBeVisible();
+    await page.evaluate(() => {
+      const save = JSON.parse(localStorage.getItem('caravan-save-v1')!);
+      const jobs = ['swordsman', 'ranger', 'mage', 'cleric', 'ranger'];
+      save.gold = 999;
+      save.companions = jobs.map((job, index) => ({
+        id: `c${index + 1}`,
+        name: `旅伴${index + 1}`,
+        job,
+        level: 1,
+        xp: 0,
+        stats: { str: 11, dex: 11 + index, int: 10 + index, cha: 10 + index, con: 11 },
+        maxHp: 18,
+        injuredForTrips: 0,
+        trait: null,
+        equipment: { weapon: null, armor: null, trinket: null },
+      }));
+      localStorage.setItem('caravan-save-v1', JSON.stringify(save));
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.click('#btn-continue');
+    await page.click('#btn-quest-board');
+    await page.click('.quest-outfit-btn[data-location-id="riverside-road"]');
+
+    await expect(page.locator('#quest-outfit')).toBeVisible();
+    await expect(page.locator('#outfit-party .outfit-member')).toHaveCount(6);
+    await expect(page.locator('#outfit-party .outfit-member.active')).toHaveCount(4);
+    await expect(page.locator('#outfit-party .outfit-member.reserve')).toHaveCount(2);
+    await expect(page.locator('#outfit-roles .outfit-role-select')).toHaveCount(4);
+
+    await page.locator('.outfit-member[data-member-id="c3"] .outfit-deploy-btn').click();
+    await expect(page.locator('#outfit-party .outfit-member.active')).toHaveCount(3);
+    await page.locator('.outfit-member[data-member-id="c4"] .outfit-deploy-btn').click();
+    await page.locator('.outfit-member[data-member-id="c2"] .formation-row-btn').click();
+    await expect(page.locator('.outfit-member[data-member-id="c2"] .formation-row-btn')).toHaveText('前排');
+    await page.locator('.outfit-role-select[data-role="scout"]').selectOption('c4');
+
+    const roleHolders = await page.locator('.outfit-role-select').evaluateAll((selects) =>
+      selects.map((select) => (select as HTMLSelectElement).value).filter(Boolean)
+    );
+    expect(new Set(roleHolders).size).toBe(roleHolders.length);
+
+    await page.click('#btn-depart');
+    await expect(page.locator('#screen-expedition')).toBeVisible();
+    await expect(page.locator('#exp-party .exp-member')).toHaveCount(4);
+    await expect(page.locator('#exp-party .exp-member[data-member-id="c3"]')).toHaveCount(0);
+    await expect(page.locator('#exp-party .exp-member[data-member-id="c5"]')).toHaveCount(0);
+    await expect(page.locator('#exp-party .exp-member[data-member-id="c2"] .exp-member-assignment')).toContainText('前排');
+    await expect(page.locator('#exp-party .exp-member[data-member-id="c4"] .exp-member-assignment')).toContainText('斥候');
+
+    const expedition = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('caravan-save-v1')!).expedition
+    );
+    expect(expedition.partyIds).toEqual(['protagonist', 'c1', 'c2', 'c4']);
+    expect(expedition.positions.c2).toBe('front');
+    expect(expedition.roles.scout).toBe('c4');
+  });
+
   test('完整路線遠征（seed=91）：事件卡→擲骰→戰鬥→結算，金幣寫回城鎮', async ({ page }) => {
     await newGameWithSeed(page, 91);
     await page.click('#btn-quest-board');

@@ -1,5 +1,11 @@
 import type { Rng } from './rng';
-import type { CompanionRecord, SaveData } from './save';
+import type {
+  CompanionRecord,
+  ExpeditionPlan,
+  ExpeditionRole,
+  FormationRow,
+  SaveData,
+} from './save';
 import { STARTING_PROFILE, STAT_ROLL_MIN, STAT_ROLL_MAX } from './save';
 import type { StatBlock } from './types';
 import type { Move } from './combat';
@@ -38,12 +44,16 @@ export const TRAITS: TraitDef[] = [
 export const traitById = (id: string | null | undefined): TraitDef | undefined =>
   id ? TRAITS.find((t) => t.id === id) : undefined;
 
-/** 全隊事件檢定加成：加總所有成員特質的 checkBonus（M7） */
-export function partyCheckBonus(save: SaveData): number {
+/** 全隊事件檢定加成：只加總本次出征者的特質與羈絆（M17）。 */
+export function partyCheckBonus(save: SaveData, memberIds?: string[]): number {
+  const included = new Set(memberIds ?? [save.protagonist.id, ...save.companions.map((c) => c.id)]);
   const traitSum = [save.protagonist, ...save.companions]
+    .filter((member) => included.has(member.id))
     .reduce((sum, m) => sum + (traitById(m.trait)?.checkBonus ?? 0), 0);
   // M11 羈絆：旅伴 tier 總和（主角無羈絆欄）
-  const bondSum = save.companions.reduce((sum, c) => sum + bondTier(c.bond), 0);
+  const bondSum = save.companions
+    .filter((companion) => included.has(companion.id))
+    .reduce((sum, c) => sum + bondTier(c.bond), 0);
   return traitSum + bondSum;
 }
 
@@ -63,6 +73,172 @@ export function bondTier(bond: number | undefined): number {
 export const BOND_TIER_NAMES = ['', '同行', '信賴', '莫逆'] as const;
 /** 每 tier 的 maxHp 加成（jobs.ts memberFromRecord 套用） */
 export const BOND_HP_PER_TIER = 2;
+
+// ---------------------------------------------------------------------------
+// M17 真正的編隊：六人名冊、四人出征、前後排與互斥遠征職務
+// ---------------------------------------------------------------------------
+
+export const ROSTER_CAP = 6;
+export const EXPEDITION_PARTY_CAP = 4;
+export const RESERVE_WAGE_FACTOR = 0.25;
+
+export interface ExpeditionRoleDef {
+  id: ExpeditionRole;
+  name: string;
+  desc: string;
+  /** 該職務擅長的事件檢定屬性。 */
+  checkStat?: keyof StatBlock;
+  /** 只有職務持有人執行對應檢定時才加入。 */
+  checkBonus?: number;
+  /** 只要職務有人擔任，整隊所有事件檢定都加入。 */
+  teamCheckBonus?: number;
+  /** 後備留營費倍率。 */
+  reserveWageFactor?: number;
+  /** 地下城休息房的額外回復。 */
+  restBonus?: number;
+}
+
+export const EXPEDITION_ROLES: Record<ExpeditionRole, ExpeditionRoleDef> = {
+  captain: {
+    id: 'captain',
+    name: '隊長',
+    desc: '整隊檢定 +1；本人進行魅力檢定時再 +2。',
+    checkStat: 'cha',
+    checkBonus: 2,
+    teamCheckBonus: 1,
+  },
+  scout: {
+    id: 'scout',
+    name: '斥候',
+    desc: '本人進行敏捷檢定時 +2。',
+    checkStat: 'dex',
+    checkBonus: 2,
+  },
+  quartermaster: {
+    id: 'quartermaster',
+    name: '軍需官',
+    desc: '本人進行智力檢定時 +2；後備成員留營費減半。',
+    checkStat: 'int',
+    checkBonus: 2,
+    reserveWageFactor: 0.5,
+  },
+  medic: {
+    id: 'medic',
+    name: '醫護',
+    desc: '本人進行體質檢定時 +2；休息房額外恢復 2 點生命。',
+    checkStat: 'con',
+    checkBonus: 2,
+    restBonus: 2,
+  },
+};
+
+export function memberRecordById(save: SaveData, memberId: string): CompanionRecord | undefined {
+  return memberId === save.protagonist.id
+    ? save.protagonist
+    : save.companions.find((companion) => companion.id === memberId);
+}
+
+export function healthyRoster(save: SaveData): CompanionRecord[] {
+  return [
+    save.protagonist,
+    ...save.companions.filter((companion) => companion.injuredForTrips === 0),
+  ];
+}
+
+function defaultRow(record: CompanionRecord): FormationRow {
+  return record.job === 'swordsman' ? 'front' : 'back';
+}
+
+function roleCandidateScore(record: CompanionRecord, role: ExpeditionRole): number {
+  const stat = EXPEDITION_ROLES[role].checkStat;
+  return stat ? effectiveStats(record)[stat] : record.level;
+}
+
+/**
+ * 將舊檔、傷員、已解雇成員與重複職務整理成可出發的編隊。
+ * 缺少 M17 計畫的舊 v6 存檔會沿用舊行為：主角＋前三名健康旅伴。
+ */
+export function normalizeExpeditionPlan(
+  save: SaveData,
+  candidate: ExpeditionPlan | undefined = save.expeditionPlan,
+): ExpeditionPlan {
+  const roster = healthyRoster(save);
+  const validIds = new Set(roster.map((member) => member.id));
+  const requested = candidate?.activeIds ?? roster.map((member) => member.id);
+  const desiredSize = candidate
+    ? Math.min(EXPEDITION_PARTY_CAP, Math.max(1, requested.length))
+    : Math.min(EXPEDITION_PARTY_CAP, roster.length);
+  const activeIds: string[] = [save.protagonist.id];
+  for (const id of requested) {
+    if (
+      id !== save.protagonist.id &&
+      validIds.has(id) &&
+      !activeIds.includes(id) &&
+      activeIds.length < EXPEDITION_PARTY_CAP
+    ) {
+      activeIds.push(id);
+    }
+  }
+  // 既定出征者受傷或離隊時，以健康後備補足原先隊伍人數。
+  for (const member of roster) {
+    if (activeIds.length >= desiredSize) break;
+    if (!activeIds.includes(member.id)) activeIds.push(member.id);
+  }
+
+  const positions: Record<string, FormationRow> = {};
+  for (const id of activeIds) {
+    const member = memberRecordById(save, id)!;
+    const requestedRow = candidate?.positions?.[id];
+    positions[id] = requestedRow === 'front' || requestedRow === 'back'
+      ? requestedRow
+      : defaultRow(member);
+  }
+  // 所有人都躲後排會讓敵人選擇規則失去意義；至少保留一名前排。
+  if (!activeIds.some((id) => positions[id] === 'front')) positions[activeIds[0]] = 'front';
+
+  const roles: Partial<Record<ExpeditionRole, string>> = {};
+  const assigned = new Set<string>();
+  for (const role of Object.keys(EXPEDITION_ROLES) as ExpeditionRole[]) {
+    const holder = candidate?.roles?.[role];
+    if (holder && activeIds.includes(holder) && !assigned.has(holder)) {
+      roles[role] = holder;
+      assigned.add(holder);
+    }
+  }
+  // 每人最多一個職務；尚未分配的職務交給最適合的未任職成員。
+  for (const role of Object.keys(EXPEDITION_ROLES) as ExpeditionRole[]) {
+    if (roles[role]) continue;
+    const holder = activeIds
+      .filter((id) => !assigned.has(id))
+      .map((id) => memberRecordById(save, id)!)
+      .sort((a, b) => roleCandidateScore(b, role) - roleCandidateScore(a, role))[0];
+    if (!holder) continue;
+    roles[role] = holder.id;
+    assigned.add(holder.id);
+  }
+
+  return { activeIds, positions, roles };
+}
+
+export function setExpeditionPlan(save: SaveData, plan: ExpeditionPlan): ExpeditionPlan {
+  const normalized = normalizeExpeditionPlan(save, plan);
+  save.expeditionPlan = normalized;
+  return normalized;
+}
+
+export function expeditionMembers(save: SaveData, plan?: ExpeditionPlan): CompanionRecord[] {
+  const normalized = normalizeExpeditionPlan(save, plan);
+  return normalized.activeIds
+    .map((id) => memberRecordById(save, id))
+    .filter((member): member is CompanionRecord => member !== undefined);
+}
+
+export function memberRole(plan: ExpeditionPlan, memberId: string): ExpeditionRole | null {
+  for (const role of Object.keys(EXPEDITION_ROLES) as ExpeditionRole[]) {
+    if (plan.roles[role] === memberId) return role;
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // M11 職業專精：Lv4 二選一進階（被動加成＋專屬招式）
@@ -413,4 +589,26 @@ export function equipmentBonus(record: CompanionRecord): { stats: Partial<StatBl
     }
   }
   return { stats, defense, maxHp, damageBonus };
+}
+
+/** 裝備、人物特質與職業專精全部貫通到戰鬥及 M17 遠征檢定。 */
+export function effectiveStats(record: CompanionRecord): StatBlock {
+  const stats: StatBlock = { ...record.stats };
+  const equipment = equipmentBonus(record);
+  for (const key of Object.keys(equipment.stats) as Array<keyof StatBlock>) {
+    stats[key] += equipment.stats[key] ?? 0;
+  }
+  const trait = traitById(record.trait);
+  if (trait?.statBonus) {
+    for (const key of Object.keys(trait.statBonus) as Array<keyof StatBlock>) {
+      stats[key] += trait.statBonus[key] ?? 0;
+    }
+  }
+  const specialization = specById(record.specialization);
+  if (specialization?.statBonus) {
+    for (const key of Object.keys(specialization.statBonus) as Array<keyof StatBlock>) {
+      stats[key] += specialization.statBonus[key] ?? 0;
+    }
+  }
+  return stats;
 }

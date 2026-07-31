@@ -138,6 +138,37 @@ describe('economy（經濟系統）', () => {
       save.companions = [makeCompanion({ level: 2, injuredForTrips: 2 })];
       expect(totalWage(save)).toBe(0);
     });
+
+    it('M17：健康後備只收 25% 留營費，軍需官再把後備費減半', () => {
+      const save = newGame();
+      save.companions = Array.from({ length: 5 }, (_, index) => makeCompanion({
+        id: `c${index + 1}`,
+        level: 1,
+      })); // 每人 12 G
+      const reserveOnly = {
+        activeIds: ['protagonist'],
+        positions: { protagonist: 'front' as const },
+        roles: { captain: 'protagonist' },
+      };
+      expect(totalWage(save, reserveOnly)).toBe(15); // 5×12×25%
+
+      const fullParty = {
+        activeIds: ['protagonist', 'c1', 'c2', 'c3'],
+        positions: {
+          protagonist: 'front' as const,
+          c1: 'front' as const,
+          c2: 'back' as const,
+          c3: 'back' as const,
+        },
+        roles: {
+          captain: 'protagonist',
+          scout: 'c1',
+          quartermaster: 'c2',
+          medic: 'c3',
+        },
+      };
+      expect(totalWage(save, fullParty)).toBe(39); // 出征 36 + ceil(後備24×25%×50%)=3
+    });
   });
 });
 

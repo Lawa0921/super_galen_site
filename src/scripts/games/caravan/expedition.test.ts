@@ -124,6 +124,9 @@ function makeState(overrides: Partial<ExpeditionState> = {}): ExpeditionState {
     phase: 'event', currentEventId: null, roomChoices: null, pendingEncounterId: null,
     loot: { gold: 0, items: {} }, eventLog: [], retreated: false,
     partyHp: { protagonist: 22 },
+    partyIds: ['protagonist'],
+    positions: { protagonist: 'front' },
+    roles: { captain: 'protagonist' },
     expeditionVersion: EXPEDITION_VERSION,
     cargo: {},
     ...overrides,
@@ -180,6 +183,22 @@ describe('startExpedition', () => {
     expect(state.kind).toBe('dungeon');
     expect(state.totalSteps).toBe(3);
     expect(state.phase).toBe('room-choice');
+  });
+
+  it('M17：出發鎖定編隊、前後排與職務，partyHp 使用完整有效生命上限', () => {
+    const companion = makeCompanion({ id: 'c1', job: 'ranger' });
+    const save = makeSave({ companions: [companion] });
+    save.protagonist.trait = 'tough'; // memberFromRecord 有效生命 22+4
+    const state = startExpedition(fakeRng(), save, 'loc_route_a', {}, {
+      activeIds: ['protagonist', 'c1'],
+      positions: { protagonist: 'front', c1: 'back' },
+      roles: { captain: 'protagonist', scout: 'c1' },
+    });
+    expect(state.partyIds).toEqual(['protagonist', 'c1']);
+    expect(state.positions).toEqual({ protagonist: 'front', c1: 'back' });
+    expect(state.roles).toMatchObject({ captain: 'protagonist', scout: 'c1' });
+    expect(state.partyHp.protagonist).toBe(26);
+    expect(save.expeditionPlan?.activeIds).toEqual(['protagonist', 'c1']);
   });
 
   it('不存在的地點 id 丟 Error', () => {
@@ -246,6 +265,7 @@ describe('startExpedition', () => {
     });
     expect(() => startExpedition(fakeRng(), save, 'loc_route_a')).toThrow();
     expect(save.gold).toBe(5);
+    expect(save.expeditionPlan).toBeUndefined();
   });
 
   it('cargo 逐項從 save.inventory 移入 state.cargo，且不超過 cargoCapacity 時成功', () => {
@@ -424,6 +444,47 @@ describe('resolveOption', () => {
     const result = resolveOption(fakeRng({ d20: [10] }), state, save, card, 0);
     expect(result.check?.success).toBe(true);
     expect(state.loot.gold).toBe(10);
+  });
+
+  it('M17：由最適任出征者執行檢定，職務、技能與完整公式進入結果', () => {
+    const scout = makeCompanion({
+      id: 'scout',
+      name: '沈昭',
+      job: 'ranger',
+      stats: { str: 8, dex: 20, int: 10, cha: 8, con: 10 },
+      skills: { scouting: 2 },
+    });
+    const save = makeSave({ companions: [scout] });
+    const state = makeState({
+      partyIds: ['protagonist', 'scout'],
+      partyHp: { protagonist: 22, scout: 20 },
+      positions: { protagonist: 'front', scout: 'back' },
+      roles: { captain: 'protagonist', scout: 'scout' },
+    });
+    const card: EventCard = {
+      id: 'scout-check', context: {}, weight: 1, title: '伏擊徵兆', body: '草葉逆風而動。',
+      options: [{ label: '查明動靜', check: { stat: 'dex', dc: 18 }, success: [], failure: [] }],
+    };
+    const result = resolveOption(fakeRng({ d20: [8] }), state, save, card, 0);
+    expect(result.check?.actorId).toBe('scout');
+    expect(result.check?.actorName).toBe('沈昭');
+    expect(result.check?.breakdown).toEqual({
+      stat: 5, skill: 2, role: 2, party: 0, captain: 1, condition: 0,
+    });
+    expect(result.check?.total).toBe(18);
+    expect(result.check?.success).toBe(true);
+  });
+
+  it('M17：事件職業條件只檢查出征名單，不讓後備解鎖選項', () => {
+    const mage = makeCompanion({ id: 'mage', job: 'mage' });
+    const save = makeSave({ companions: [mage] });
+    const option = { label: '解讀術式', requirement: { job: 'mage' as const }, success: [] };
+    const reserveState = makeState({ partyIds: ['protagonist'] });
+    expect(optionAvailable(save, option, reserveState)).toBe(false);
+    expect(optionAvailable(save, option, makeState({
+      partyIds: ['protagonist', 'mage'],
+      partyHp: { protagonist: 22, mage: 20 },
+    }))).toBe(true);
   });
 
   it('有 check：失敗時套用 failure 效果', () => {
@@ -641,11 +702,22 @@ describe('settleExpedition', () => {
     expect(save.protagonist.xp).toBe(35);
   });
 
-  it('未重傷傭兵一起拿 xp', () => {
-    const save = makeSave({ companions: [makeCompanion({ id: 'c1', xp: 0, injuredForTrips: 0 })] });
-    const state = makeState({ step: 1 });
+  it('M17：只有實際出征的未重傷傭兵拿 xp 與羈絆，健康後備不偷拿成長', () => {
+    const save = makeSave({
+      companions: [
+        makeCompanion({ id: 'active', xp: 0, injuredForTrips: 0 }),
+        makeCompanion({ id: 'reserve', xp: 0, injuredForTrips: 0 }),
+      ],
+    });
+    const state = makeState({
+      step: 1,
+      partyIds: ['protagonist', 'active'],
+      partyHp: { protagonist: 22, active: 20 },
+    });
     settleExpedition(state, save);
-    expect(save.companions[0].xp).toBe(25);
+    expect(save.companions[0]).toMatchObject({ xp: 25, bond: 1 });
+    expect(save.companions[1]).toMatchObject({ xp: 0 });
+    expect(save.companions[1].bond ?? 0).toBe(0);
   });
 
   it('重傷傭兵不拿 xp，injuredForTrips -1', () => {
@@ -887,6 +959,22 @@ describe('chooseRoom', () => {
       expect(result.restHealed).toBe(6);
       expect(state.partyHp[save.protagonist.id]).toBe(16);
       expect(state.partyHp.ally).toBe(20);
+    });
+
+    it('M17：醫護職務讓地下城休息額外恢復 2 點生命', () => {
+      const save = makeSave({
+        companions: [makeCompanion({ id: 'medic', maxHp: 20 })],
+      });
+      const state = makeState({
+        locationId: 'loc_dungeon_a', kind: 'dungeon', step: 1, totalSteps: 3,
+        partyIds: ['protagonist', 'medic'],
+        partyHp: { protagonist: 5, medic: 5 },
+        positions: { protagonist: 'front', medic: 'back' },
+        roles: { captain: 'protagonist', medic: 'medic' },
+      });
+      const result = chooseRoom(fakeRng({ d20: [4] }), state, save, 'rest');
+      expect(result.restHealed).toBe(8);
+      expect(state.partyHp).toMatchObject({ protagonist: 13, medic: 13 });
     });
 
     it('結算後呼叫 advanceExpedition', () => {

@@ -1,4 +1,5 @@
 import type { Rng } from './rng';
+import type { FormationRow } from './save';
 import type { Stat, StatBlock } from './types';
 import { statMod } from './check';
 
@@ -43,7 +44,11 @@ export interface CombatantBase {
   art?: string;
 }
 
-export interface PartyMember extends CombatantBase { isProtagonist?: boolean; }
+export interface PartyMember extends CombatantBase {
+  isProtagonist?: boolean;
+  /** M17 前後排：單體敵襲優先鎖定仍存活的前排。 */
+  formationRow?: FormationRow;
+}
 
 export interface EnemyUnit extends CombatantBase {
   intents: Array<{ weight: number; moveId: string }>;
@@ -331,7 +336,9 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
   } else {
     const aliveParty = state.party.filter((p) => p.hp > 0);
     if (aliveParty.length === 0) return;
-    target = aliveParty.reduce((low, p) => (p.hp < low.hp ? p : low), aliveParty[0]);
+    const frontLine = aliveParty.filter((member) => member.formationRow !== 'back');
+    const targetPool = frontLine.length > 0 ? frontLine : aliveParty;
+    target = targetPool.reduce((low, p) => (p.hp < low.hp ? p : low), targetPool[0]);
     // M16：架盾中的隊員會攔截原本打向隊友的單體攻擊，讓坦克能實際保護脆皮。
     if (move.kind === 'attack' && !move.area && !state.guarding[target.id]) {
       const guardian = state.order

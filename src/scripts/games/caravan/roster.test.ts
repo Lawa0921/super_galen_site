@@ -4,7 +4,8 @@ import {
   generateRecruitPool, hireCost, wagePerTrip, equipItem, unequipItem, equipmentBonus,
   SPECIALIZATIONS, chooseSpecialization, bondTier, partyCheckBonus,
   SKILLS, spendSkillPoint, skillCheckBonus, smithCost, upgradeEquipment, rollStats,
-  TRAITS,
+  TRAITS, EXPEDITION_PARTY_CAP, EXPEDITION_ROLES, ROSTER_CAP,
+  memberRole, normalizeExpeditionPlan, setExpeditionPlan,
 } from './roster';
 import { createRng } from './rng';
 import { newGame, STARTING_PROFILE as STARTING_PROFILE_REF, type SaveData, type CompanionRecord } from './save';
@@ -23,6 +24,52 @@ function makeCompanion(overrides: Partial<CompanionRecord> = {}): CompanionRecor
 }
 
 describe('roster（成長系統）', () => {
+  describe('M17 編隊與遠征職務', () => {
+    it('名冊上限 6、每趟最多 4 人；舊檔預設沿用主角＋前三名健康旅伴', () => {
+      expect(ROSTER_CAP).toBe(6);
+      expect(EXPEDITION_PARTY_CAP).toBe(4);
+      const save = newGame();
+      save.companions = Array.from({ length: 5 }, (_, index) => makeCompanion({
+        id: `c${index + 1}`,
+        name: `成員${index + 1}`,
+      }));
+      const plan = normalizeExpeditionPlan(save);
+      expect(plan.activeIds).toEqual(['protagonist', 'c1', 'c2', 'c3']);
+      expect(new Set(Object.values(plan.roles)).size).toBe(plan.activeIds.length);
+      expect(plan.activeIds.some((id) => plan.positions[id] === 'front')).toBe(true);
+    });
+
+    it('傷員或離隊者不會留在編隊，健康後備會補足原隊伍人數', () => {
+      const save = newGame();
+      save.companions = [
+        makeCompanion({ id: 'injured', injuredForTrips: 2 }),
+        makeCompanion({ id: 'reserve', job: 'ranger' }),
+      ];
+      const plan = normalizeExpeditionPlan(save, {
+        activeIds: ['protagonist', 'injured'],
+        positions: { protagonist: 'back', injured: 'front' },
+        roles: { captain: 'injured' },
+      });
+      expect(plan.activeIds).toEqual(['protagonist', 'reserve']);
+      expect(plan.positions.protagonist).toBe('front');
+      expect(Object.values(plan.roles)).not.toContain('injured');
+    });
+
+    it('每人最多一個職務，重新指派後可查回身分', () => {
+      const save = newGame();
+      save.companions = [makeCompanion({ id: 'c1', job: 'ranger' })];
+      const plan = setExpeditionPlan(save, {
+        activeIds: ['protagonist', 'c1'],
+        positions: { protagonist: 'front', c1: 'back' },
+        roles: { captain: 'protagonist', scout: 'c1', medic: 'c1' },
+      });
+      expect(Object.values(plan.roles).filter((id) => id === 'c1')).toHaveLength(1);
+      expect(memberRole(plan, 'protagonist')).not.toBeNull();
+      expect(memberRole(plan, 'c1')).not.toBeNull();
+      expect(EXPEDITION_ROLES[memberRole(plan, 'c1')!].name).toBeTruthy();
+    });
+  });
+
   // -----------------------------------------------------------------
   // XP_TABLE / levelFromXp
   // -----------------------------------------------------------------
