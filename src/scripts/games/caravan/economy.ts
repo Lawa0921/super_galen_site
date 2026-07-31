@@ -1,11 +1,6 @@
 import { ITEMS } from './data/items';
 import type { ExpeditionPlan, SaveData } from './save';
-import {
-  EXPEDITION_ROLES,
-  RESERVE_WAGE_FACTOR,
-  normalizeExpeditionPlan,
-  wagePerTrip,
-} from './roster';
+import { companyPayrollBreakdown } from './data/operations';
 
 export interface TownDef {
   id: string;
@@ -25,20 +20,19 @@ export interface TownDef {
  * 浮動對象＝priceModifiers 既有品項 ∪ stock 品項。
  */
 export function applyMarket(town: TownDef, marketSeed: number): TownDef {
-  // 每鎮每品項各自可重現的偽隨機：字串雜湊 + seed（mulberry32 一步）
   const swing = (key: string): number => {
     let h = marketSeed >>> 0;
     for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 2654435761);
     h = Math.imul(h ^ (h >>> 13), 1597334677);
-    const unit = ((h ^ (h >>> 16)) >>> 0) / 4294967296; // 0-1
-    return 0.75 + unit * 0.6; // 0.75-1.35
+    const unit = ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    return 0.75 + unit * 0.6;
   };
   const itemIds = new Set([...Object.keys(town.priceModifiers), ...town.stock]);
   const priceModifiers: Record<string, number> = {};
   for (const itemId of itemIds) {
     const base = town.priceModifiers[itemId] ?? 1;
     priceModifiers[itemId] = ITEMS[itemId]?.equip
-      ? base // 裝備維持基準
+      ? base
       : Math.round(base * swing(`${town.id}:${itemId}`) * 100) / 100;
   }
   return { ...town, priceModifiers };
@@ -50,9 +44,7 @@ function priceModifier(town: TownDef, itemId: string): number {
 
 function requireItem(itemId: string, callerName: string) {
   const item = ITEMS[itemId];
-  if (!item) {
-    throw new Error(`${callerName}: 找不到物品「${itemId}」`);
-  }
+  if (!item) throw new Error(`${callerName}: 找不到物品「${itemId}」`);
   return item;
 }
 
@@ -69,14 +61,11 @@ export function sellPrice(town: TownDef, itemId: string): number {
 
 /**
  * 異鎮轉賣價格（押貨貿易的差價空間）：round(ITEMS.value × 城鎮係數 × 0.9)。
- * M5 套利裁決（終審移交）：equip 類物品不吃異鎮 0.9 係數與城鎮係數，一律
- * round(value × 0.5)（＝與原鎮 sellPrice 同量級）——裝備要嘛用、要嘛半價賣，無套利。
+ * 裝備不吃異鎮套利，一律半價出售。
  */
 export function tradeSellPrice(town: TownDef, itemId: string): number {
   const item = requireItem(itemId, 'tradeSellPrice');
-  if (item.equip) {
-    return Math.round(item.value * 0.5);
-  }
+  if (item.equip) return Math.round(item.value * 0.5);
   return Math.round(item.value * priceModifier(town, itemId) * 0.9);
 }
 
@@ -91,21 +80,10 @@ export function wagonUpgradeCost(wagonLevel: number): number {
 }
 
 /**
- * M17 薪餉：出征傭兵領全額；健康後備收 25% 留營費。
- * 軍需官讓後備費再減半。主角永不領薪。
+ * M29 營運薪餉：保留 M17 出征／後備／軍需官規則，再套用 M28 工程形成的
+ * 維護費、方案效率、特許相性、羈絆忠誠與職涯多樣性。
+ * 無有效工程收據時，結果精確等同舊版薪餉。
  */
 export function totalWage(save: SaveData, candidate?: ExpeditionPlan): number {
-  const plan = normalizeExpeditionPlan(save, candidate);
-  const activeIds = new Set(plan.activeIds);
-  const active = save.companions
-    .filter((companion) => companion.injuredForTrips === 0 && activeIds.has(companion.id))
-    .reduce((sum, companion) => sum + wagePerTrip(companion), 0);
-  const reserveBase = save.companions
-    .filter((companion) => companion.injuredForTrips === 0 && !activeIds.has(companion.id))
-    .reduce((sum, companion) => sum + wagePerTrip(companion), 0);
-  const hasQuartermaster = !!plan.roles.quartermaster;
-  const quartermasterFactor = hasQuartermaster
-    ? (EXPEDITION_ROLES.quartermaster.reserveWageFactor ?? 1)
-    : 1;
-  return active + Math.ceil(reserveBase * RESERVE_WAGE_FACTOR * quartermasterFactor);
+  return companyPayrollBreakdown(save, candidate).total;
 }
