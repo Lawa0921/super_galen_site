@@ -1,0 +1,147 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="公司憲章 — 商隊與劍"
+  description="制定帶有優勢與代價的公司條款，改變動態委託的門檻、成本與報酬。"
+  lang="zh-TW"
+>
+  <main class="constitution-page">
+    <header class="hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD · M35</p>
+      <h1>公司憲章</h1>
+      <p>將商隊的命運、職涯與組織選擇寫成長期規則。每項條款都有一個主要優勢與一個必須承擔的代價。</p>
+      <nav>
+        <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan/mandates">公司委託</a>
+        <a href="/caravan/governance">營運治理</a>
+      </nav>
+    </header>
+
+    <section id="empty" class="panel" hidden>
+      <h2>找不到商隊存檔</h2>
+      <p>先建立旅程，再制定公司憲章。</p>
+    </section>
+
+    <section id="summary" class="panel" hidden>
+      <div>
+        <p class="eyebrow">CURRENT CLAUSE</p>
+        <h2 id="current-title">尚未制定</h2>
+      </div>
+      <p id="cost-copy"></p>
+    </section>
+
+    <section id="warnings" class="warnings" hidden></section>
+    <section id="clauses" class="clauses"></section>
+    <p id="status" class="status" aria-live="polite"></p>
+  </main>
+</BaseLayout>
+
+<script>
+  import { loadGame, saveGame } from '@scripts/games/caravan/save';
+  import {
+    CONSTITUTION_CLAUSES,
+    CONSTITUTION_CLAUSE_ORDER,
+    companyConstitutionState,
+    enactCompanyConstitution,
+  } from '@scripts/games/caravan/data/constitution';
+
+  const emptyEl = document.getElementById('empty')!;
+  const summaryEl = document.getElementById('summary')!;
+  const currentTitleEl = document.getElementById('current-title')!;
+  const costCopyEl = document.getElementById('cost-copy')!;
+  const warningsEl = document.getElementById('warnings')!;
+  const clausesEl = document.getElementById('clauses')!;
+  const statusEl = document.getElementById('status')!;
+
+  const text = (tag: string, value: string, className?: string): HTMLElement => {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = value;
+    return element;
+  };
+
+  function render(): void {
+    const save = loadGame();
+    clausesEl.replaceChildren();
+    warningsEl.replaceChildren();
+    if (!save) {
+      emptyEl.hidden = false;
+      summaryEl.hidden = true;
+      return;
+    }
+    emptyEl.hidden = true;
+    summaryEl.hidden = false;
+    const state = companyConstitutionState(save);
+    currentTitleEl.textContent = state.active ? CONSTITUTION_CLAUSES[state.active].name : '尚未制定';
+    costCopyEl.textContent = state.amendmentGoldCost === 0
+      ? '首次制定免費。'
+      : `修憲成本：${state.amendmentGoldCost} G＋聲望 ${state.amendmentReputationCost}。目前 ${save.gold} G／聲望 ${save.reputation}。`;
+
+    warningsEl.hidden = state.warnings.length === 0;
+    for (const warning of state.warnings) warningsEl.append(text('p', warning));
+
+    for (const id of CONSTITUTION_CLAUSE_ORDER) {
+      const clause = CONSTITUTION_CLAUSES[id];
+      const card = document.createElement('article');
+      card.className = 'clause-card';
+      if (state.active === id) card.classList.add('active');
+      card.append(
+        text('p', id.toUpperCase(), 'eyebrow'),
+        text('h2', clause.name),
+        text('p', clause.summary, 'summary'),
+        text('p', `優勢：${clause.advantage}`, 'advantage'),
+        text('p', `代價：${clause.cost}`, 'cost'),
+      );
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.disabled = state.active === id && state.warnings.length === 0;
+      button.textContent = state.active === id ? '目前生效' : state.amendmentGoldCost === 0 ? '制定此條款' : '支付成本修憲';
+      button.addEventListener('click', () => {
+        const latest = loadGame();
+        if (!latest) {
+          statusEl.textContent = '存檔已不存在。';
+          return;
+        }
+        try {
+          enactCompanyConstitution(latest, id);
+          saveGame(latest);
+          statusEl.textContent = `「${clause.name}」已生效。公司委託將立即採用新條款。`;
+        } catch (error) {
+          statusEl.textContent = error instanceof Error ? error.message : '條款制定失敗。';
+        }
+        render();
+      });
+      card.append(button);
+      clausesEl.append(card);
+    }
+  }
+
+  render();
+</script>
+
+<style>
+  :global(body) { background: #11100d; color: #eee6d5; }
+  .constitution-page { width: min(1120px, calc(100% - 28px)); margin: 0 auto; padding: 42px 0 80px; }
+  .hero, .panel, .clause-card { border: 1px solid #4a4032; background: #1a1713; }
+  .hero { padding: 32px; background: linear-gradient(135deg, #241c13, #15120e); }
+  .eyebrow { margin: 0 0 7px; color: #c9a45e; font-size: .72rem; letter-spacing: .17em; text-transform: uppercase; }
+  h1, h2, p { margin-top: 0; }
+  h1 { margin-bottom: 12px; font-size: clamp(2.1rem, 5vw, 4.2rem); }
+  .hero > p:not(.eyebrow), .summary, .panel p, .status { color: #b9b0a1; line-height: 1.7; }
+  nav { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px; }
+  a { color: #e0bd78; }
+  .panel { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-top: 18px; padding: 20px 24px; }
+  .warnings { margin-top: 18px; padding: 14px 18px; border-left: 3px solid #c75e4b; background: #2a1916; }
+  .warnings p { margin: 4px 0; }
+  .clauses { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 18px; }
+  .clause-card { padding: 22px; }
+  .clause-card.active { border-color: #b9924d; box-shadow: inset 0 0 0 1px #6c532d; }
+  .advantage { color: #a9c982; }
+  .cost { color: #dc9a82; }
+  button { width: 100%; margin-top: 12px; padding: 11px; border: 1px solid #c39b54; background: #a97934; color: #160f08; font: inherit; font-weight: 700; cursor: pointer; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .status { min-height: 1.6em; margin-top: 16px; }
+  @media (max-width: 760px) { .panel { align-items: flex-start; flex-direction: column; } }
+</style>
