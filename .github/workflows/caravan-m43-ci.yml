@@ -1,0 +1,46 @@
+name: Caravan M43 Armory CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - 'src/pages/caravan/armory.astro'
+      - 'src/pages/caravan/endurance.astro'
+      - '.github/workflows/caravan-m43-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - 'src/pages/caravan/armory.astro'
+      - 'src/pages/caravan/endurance.astro'
+      - '.github/workflows/caravan-m43-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  build-and-armory-review:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: M43 armory transactions and endurance
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/armory.m43.test.ts
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+      - name: M43 multidimensional player adversarial review
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/armory.balance.m43.test.ts
+      - name: Combat, magic, and M42 endurance regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/combat.test.ts
+          src/scripts/games/caravan/data/arcana.m41.test.ts
+          src/scripts/games/caravan/data/endurance.m42.test.ts
+          src/scripts/games/caravan/data/endurance.balance.m42.test.ts
