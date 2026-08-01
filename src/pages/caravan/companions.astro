@@ -1,0 +1,139 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="旅伴身世登記 — 商隊與劍"
+  description="為旅伴建立可重現的出身、潛力與職涯，使整支商隊都參與長期角色系統。"
+  lang="zh-TW"
+>
+  <main class="origin-page">
+    <header class="hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD · M31</p>
+      <h1>旅伴身世登記</h1>
+      <p>旅伴不再只是職業與隨機屬性。登記會補上命運、五維潛力、技能與既有等級對應的職涯脈絡。</p>
+      <nav>
+        <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan/dossier">商隊檔案</a>
+        <a href="/caravan/forge">命運鍛造所</a>
+      </nav>
+    </header>
+
+    <section id="empty" class="panel" hidden>
+      <h2>目前沒有可登記的旅伴</h2>
+      <p>先在酒館招募旅伴，再回來查看每個人的命運與長期成長。</p>
+    </section>
+
+    <section class="notice panel">
+      <h2>登記規則</h2>
+      <p>只補上角色能力層：命運、潛力、合理成長、生命、技能與職涯。不会補發金幣、物資、聲望、馬車或特許獎勵，也不能重複登記。</p>
+    </section>
+
+    <section id="cards" class="cards"></section>
+    <p id="status" class="status" aria-live="polite"></p>
+  </main>
+</BaseLayout>
+
+<script>
+  import { loadGame, saveGame } from '@scripts/games/caravan/save';
+  import {
+    previewAllCompanionOrigins,
+    registerCompanionOrigin,
+  } from '@scripts/games/caravan/data/companionOrigins';
+
+  const cards = document.getElementById('cards')!;
+  const empty = document.getElementById('empty')!;
+  const status = document.getElementById('status')!;
+  const statNames: Record<string, string> = {
+    str: '力量', dex: '敏捷', int: '智力', cha: '魅力', con: '體質',
+  };
+  const skillNames: Record<string, string> = {
+    martial: '武藝', scouting: '偵查', lore: '博識', negotiation: '交涉', survival: '生存',
+  };
+
+  let save = loadGame();
+
+  function formatMap(values: Record<string, number | undefined>, names: Record<string, string>): string {
+    const entries = Object.entries(values).filter(([, value]) => (value ?? 0) !== 0);
+    return entries.length
+      ? entries.map(([key, value]) => `${names[key] ?? key} ${Number(value) > 0 ? '+' : ''}${value}`).join('、')
+      : '無';
+  }
+
+  function render(): void {
+    cards.innerHTML = '';
+    if (!save || save.companions.length === 0) {
+      empty.removeAttribute('hidden');
+      return;
+    }
+    empty.setAttribute('hidden', '');
+    const previews = previewAllCompanionOrigins(save);
+    for (const preview of previews) {
+      const record = save.companions.find((companion) => companion.id === preview.companionId)!;
+      const article = document.createElement('article');
+      article.className = 'panel companion-card';
+      article.innerHTML = `
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">${record.job.toUpperCase()} · Lv${record.level}</p>
+            <h2>${record.name}</h2>
+          </div>
+          <span class="badge ${preview.alreadyRegistered ? 'done' : ''}">${preview.alreadyRegistered ? '已登記' : '待確認'}</span>
+        </div>
+        <dl>
+          <div><dt>出身道路</dt><dd>${preview.lifepathName}</dd></div>
+          <div><dt>完整命運</dt><dd>${preview.genesisName}</dd></div>
+          <div><dt>五維潛力</dt><dd>${preview.growthSignature}</dd></div>
+          <div><dt>職涯脈絡</dt><dd>${preview.careerSequence}</dd></div>
+          <div><dt>屬性增量</dt><dd>${formatMap(preview.statBonuses, statNames)}</dd></div>
+          <div><dt>生命增量</dt><dd>${preview.maxHpBonus >= 0 ? '+' : ''}${preview.maxHpBonus}</dd></div>
+          <div><dt>技能增量</dt><dd>${formatMap(preview.skillBonuses, skillNames)}</dd></div>
+        </dl>
+      `;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = preview.alreadyRegistered ? '已完成登記' : '確認身世登記';
+      button.disabled = preview.alreadyRegistered;
+      button.addEventListener('click', () => {
+        if (!save) return;
+        try {
+          registerCompanionOrigin(save, preview.companionId);
+          saveGame(save);
+          status.textContent = `${record.name} 的身世已登記並保存。`;
+          render();
+        } catch (error) {
+          status.textContent = error instanceof Error ? error.message : '身世登記失敗。';
+        }
+      });
+      article.appendChild(button);
+      cards.appendChild(article);
+    }
+  }
+
+  render();
+</script>
+
+<style>
+  .origin-page { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 80px; }
+  .hero { margin-bottom: 24px; }
+  .hero h1 { margin: 4px 0 8px; font-size: clamp(2rem, 6vw, 4rem); }
+  .hero nav { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+  .hero a, button { border: 1px solid currentColor; border-radius: 999px; padding: 10px 16px; text-decoration: none; background: transparent; color: inherit; cursor: pointer; }
+  .panel { border: 1px solid rgba(150,130,95,.42); border-radius: 18px; padding: 20px; background: rgba(28,24,19,.72); }
+  .notice { margin-bottom: 20px; }
+  .notice h2 { margin-top: 0; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 18px; }
+  .companion-card { display: flex; flex-direction: column; gap: 16px; }
+  .card-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+  .card-head h2 { margin: 2px 0 0; }
+  .eyebrow { margin: 0; letter-spacing: .12em; opacity: .72; font-size: .78rem; }
+  .badge { border: 1px solid #c9a45f; border-radius: 999px; padding: 5px 9px; font-size: .78rem; }
+  .badge.done { opacity: .65; }
+  dl { display: grid; gap: 9px; margin: 0; }
+  dl div { display: grid; grid-template-columns: 92px 1fr; gap: 12px; }
+  dt { opacity: .68; }
+  dd { margin: 0; }
+  button { align-self: flex-start; }
+  button:disabled { cursor: default; opacity: .48; }
+  .status { min-height: 1.5em; margin-top: 18px; }
+</style>
