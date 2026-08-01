@@ -115,7 +115,7 @@ export function enduranceCampOptions(run: ArmoryEnduranceRun, save: SaveData): C
     }
     return {
       ...option,
-      description: `${option.description} 並立即承受依個人負重計算的行軍疲勞；超載施法者可能增加秘法灼傷。`,
+      description: `${option.description} 並立即承受依個人負重計算的強行軍疲勞；超載施法者可能增加秘法灼傷。`,
     };
   });
 }
