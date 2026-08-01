@@ -4,16 +4,17 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
 <BaseLayout
   title="餘燼朝聖 — 商隊與劍"
-  description="連續迎戰灰燼騎士、無舌唱詩班與龍燼化身，讓生命、秘法、神恩和補給跨戰保留。"
+  description="連續迎戰灰燼騎士、無舌唱詩班與龍燼化身，讓生命、秘法、神恩、武裝負重和補給跨戰保留。"
   lang="zh-TW"
 >
   <main class="endurance-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M42 EXPEDITION ENDURANCE</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M43 ARMORY ENDURANCE</p>
       <h1>餘燼朝聖</h1>
-      <p>三場戰鬥、兩次營地決策。生命、秘法、神恩與秘法灼傷不會在戰後自動重置；你必須決定何時休息、何時守夜，以及是否為更高報酬強行軍。</p>
+      <p>三場戰鬥、兩次營地決策。生命、秘法、神恩、秘法灼傷與出發時的武裝負重不會在戰後自動重置；鋼鐵能保命，也會降低紮營效率並提高強行軍疲勞。</p>
       <nav>
         <a href="/caravan/play">返回主冒險</a>
+        <a href="/caravan/armory">武裝整備所</a>
         <a href="/caravan/ashen-reliquary">灰燼聖匣</a>
       </nav>
     </header>
@@ -64,9 +65,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     isEnduranceRun,
     type EnduranceCampChoice,
     type EnduranceRun,
-  } from '@scripts/games/caravan/data/endurance';
+  } from '@scripts/games/caravan/data/enduranceArmory';
 
-  const RUN_KEY = 'caravan-endurance-v2';
+  const RUN_KEY = 'caravan-endurance-armory-v1';
   const noticeEl = document.getElementById('notice')!;
   const progressEl = document.getElementById('progress')!;
   const intentEl = document.getElementById('intent')!;
@@ -145,9 +146,12 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       const resist = (enemy.resists ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
       card.append(text('p', `弱點：${weak}｜抗性：${resist}`, 'affinity'));
     } else {
-      const member = unit as PartyMember;
+      const member = unit as PartyMember & { armoryBurden?: number; armoryCapacity?: number; armoryOverload?: number; armoryWarnings?: string[] };
       card.append(text('p', member.formationRow === 'back' ? '後排' : '前排', 'formation'));
+      card.append(text('p', `武裝負重 ${member.armoryBurden ?? 0}/${member.armoryCapacity ?? 0}${member.armoryOverload ? `｜超載 ${member.armoryOverload}` : ''}`, 'armory'));
       if (member.mystic) card.append(text('p', mysticPowerText(member.mystic), `mystic mystic-${member.mystic.kind}`));
+      const costly = (member.armoryWarnings ?? []).filter((warning) => !warning.startsWith('武器熟練'));
+      if (costly.length > 0) card.append(text('p', costly.join(' '), 'armory-warning'));
     }
     return card;
   }
@@ -316,7 +320,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     campEl.append(
       text('p', `CAMP ${run.stage - 1}`, 'eyebrow'),
       text('h2', '營火只能維持到天亮'),
-      text('p', '選擇一項整備。倒地成員不會在營地復活，生命與魔法資源也不會自行恢復。'),
+      text('p', '選擇一項整備。倒地成員不會在營地復活；重裝者還必須花時間卸甲、清理鎖環與重新束帶。'),
     );
     const grid = document.createElement('div');
     grid.className = 'camp-grid';
@@ -355,9 +359,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       resultEl.append(
         text('p', 'PILGRIMAGE ENDED', 'eyebrow'),
         text('h2', '遠征隊未能走到龍燼之心'),
-        text('p', `本次止步於第 ${run.stage} 戰。倒地、補給、魔法消耗與過載決策共同造成了結果。`),
+        text('p', `本次止步於第 ${run.stage} 戰。倒地、補給、魔法消耗、武裝重量與過載決策共同造成了結果。`),
         button('從第一戰重新挑戰', resetRun),
-        link('返回主冒險重新整備', '/caravan/play', 'return-link'),
+        link('返回武裝整備所', '/caravan/armory', 'return-link'),
       );
       return;
     }
@@ -416,8 +420,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       }
       noticeEl.append(
         text('h2', `健康出征隊 ${access.partySize} 人`),
-        text('p', '開始後，三場戰鬥共享生命與魔法狀態。每次行動都會保存；中途關頁只會保留損傷並追加疲勞。'),
-        button('開始餘燼朝聖', () => {
+        text('p', '開始後會鎖定目前武裝與負重。三場戰鬥共享生命與魔法狀態；每次行動都會保存，中途關頁只會保留損傷並追加疲勞。'),
+        link('先檢查武裝與負重', '/caravan/armory', 'return-link'),
+        button('以目前武裝開始餘燼朝聖', () => {
           run = createEnduranceRun(save);
           saveRun();
           startBattle();
@@ -455,6 +460,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .unit { padding: 15px; border: 1px solid #49362d; background: #201613; }
   .unit.down { opacity: .45; }
   .unit-status { color: #d8b87d !important; } .affinity { color: #c89d88 !important; } .formation { color: #9fb88d !important; }
+  .armory { color: #d7ad75 !important; } .armory-warning { color: #e18d73 !important; font-size: .86rem; }
   .mystic-mana { color: #8fc3df !important; } .mystic-favor { color: #e7cc75 !important; }
   .actions, .camp, .result, .log-panel { margin-top: 18px; padding: 22px; }
   .action-resource { color: #d8c284 !important; }
