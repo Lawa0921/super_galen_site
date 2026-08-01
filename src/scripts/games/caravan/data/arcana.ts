@@ -96,7 +96,7 @@ export function mysticRuleForMove(move: Move): MysticMoveRule | null {
 
 function decoratedMove(move: Move): Move {
   const rule = mysticRuleForMove(move);
-  if (!rule) return { ...move };
+  if (!rule || move.name.includes('〔')) return { ...move };
   const resource = MYSTIC_KIND_LABELS[rule.kind];
   const school = MYSTIC_SCHOOL_LABELS[rule.school];
   const suffix = rule.cost > 0
@@ -122,7 +122,10 @@ function powerFor(member: PartyMember, kind: MysticKind): MysticPower {
   };
 }
 
-/** 建立戰鬥用副本，不修改角色存檔或共用的 JOBS 招式物件。 */
+/**
+ * 保留傳入角色物件身分，因遠征與既有測試會在戰鬥後讀取同一份 HP；
+ * 只替換招式陣列為安全副本，避免修改 JOBS 共用資料。
+ */
 export function prepareMysticPartyMember(member: PartyMember): PartyMember {
   const copiedMoves = member.moves.map((move) => ({ ...move }));
   const hasMana = copiedMoves.some((move) => mysticRuleForMove(move)?.kind === 'mana');
@@ -131,13 +134,9 @@ export function prepareMysticPartyMember(member: PartyMember): PartyMember {
   if (hasMana && !expanded.some((move) => move.id === ARCANE_FOCUS_MOVE.id)) expanded.push({ ...ARCANE_FOCUS_MOVE });
   if (!hasMana && hasFavor && !expanded.some((move) => move.id === FIELD_PRAYER_MOVE.id)) expanded.push({ ...FIELD_PRAYER_MOVE });
   const kind: MysticKind | null = hasMana ? 'mana' : hasFavor ? 'favor' : null;
-  return {
-    ...member,
-    stats: { ...member.stats },
-    statuses: member.statuses?.map((status) => ({ ...status })) ?? [],
-    moves: expanded.map(decoratedMove),
-    mystic: kind ? powerFor(member, kind) : undefined,
-  };
+  member.moves = expanded.map(decoratedMove);
+  member.mystic = kind ? powerFor(member, kind) : undefined;
+  return member;
 }
 
 export function mysticPowerText(power: MysticPower | undefined): string {
