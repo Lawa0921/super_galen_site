@@ -85,11 +85,16 @@ function frontier(entries: Probe[]): Probe[] {
   return entries.filter((candidate) => !entries.some((other) => other !== candidate && dominates(other, candidate)));
 }
 
+function compact(entry: Probe): string {
+  return `${entry.key}{DEF${entry.defense},HP${entry.hp},DEX${entry.dex},OFF${entry.offense},MYS${entry.mystic},W${entry.burden},O${entry.overload},!${entry.warnings}}`;
+}
+
 describe('M43 player-perspective multidimensional adversarial review', () => {
   for (const job of ['swordsman', 'ranger', 'mage', 'cleric'] as const) {
     it(`${job} keeps several non-dominated armory identities`, () => {
       const entries = probes(job);
       const efficient = frontier(entries);
+      console.log(`[M43 ARMORY] ${job}: frontier=${efficient.length}/16 :: ${efficient.map(compact).join(' | ')}`);
       expect(entries).toHaveLength(16);
       expect(efficient.length).toBeGreaterThanOrEqual(3);
       expect(entries.some((entry) => entry.warnings === 0 && entry.overload === 0)).toBe(true);
@@ -103,6 +108,7 @@ describe('M43 player-perspective multidimensional adversarial review', () => {
     for (const job of ['swordsman', 'ranger', 'mage', 'cleric'] as const) {
       for (const entry of frontier(probes(job))) frontiers.set(entry.key, (frontiers.get(entry.key) ?? 0) + 1);
     }
+    console.log(`[M43 ARMORY] frontier overlap :: ${[...frontiers.entries()].sort((a, b) => b[1] - a[1]).map(([key, count]) => `${key}=${count}`).join(', ')}`);
     expect(Math.max(...frontiers.values())).toBeLessThan(4);
   });
 
@@ -115,6 +121,7 @@ describe('M43 player-perspective multidimensional adversarial review', () => {
     const mobileArcher = ranger.find((entry) => entry.key === 'ridge-mist-bow/ridgeleather-vest')!;
     const arcaneFocus = mage.find((entry) => entry.key === 'ghostflame-staff/ashveil-robe')!;
     const sacredFocus = cleric.find((entry) => entry.key === 'brine-blessed-mace/brinewarded-vestment')!;
+    console.log(`[M43 ARMORY] identities :: steel=${compact(heavySteel)} | mobility=${compact(mobileArcher)} | arcana=${compact(arcaneFocus)} | theurgy=${compact(sacredFocus)}`);
     expect(heavySteel.defense).toBeGreaterThan(arcaneFocus.defense);
     expect(mobileArcher.dex).toBeGreaterThan(heavySteel.dex);
     expect(arcaneFocus.mystic).toBeGreaterThan(0);
@@ -126,9 +133,11 @@ describe('M43 player-perspective multidimensional adversarial review', () => {
     for (const job of ['swordsman', 'ranger', 'mage', 'cleric'] as const) {
       const entries = probes(job);
       const strained = entries.filter((entry) => entry.warnings > 0);
+      const dominatedStrained = strained.filter((entry) => entries.some((other) => dominates(other, entry)));
+      console.log(`[M43 ARMORY] ${job}: strained=${strained.length}, dominated-strained=${dominatedStrained.length}`);
       expect(strained.length).toBeGreaterThan(0);
       expect(strained.every((entry) => entry.defense > 0 && entry.hp > 0 && entry.dex > 0)).toBe(true);
-      expect(strained.some((entry) => entries.some((other) => dominates(other, entry)))).toBe(true);
+      expect(dominatedStrained.length).toBeGreaterThan(0);
     }
   });
 });
