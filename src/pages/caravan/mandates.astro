@@ -4,17 +4,18 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
 <BaseLayout
   title="公司委託議程 — 商隊與劍"
-  description="依命運、職涯、特許、工程、治理與市場週期形成的動態公司委託。"
+  description="依命運、職涯、特許、工程、治理、公司憲章與市場週期形成的動態公司委託。"
   lang="zh-TW"
 >
   <main class="mandate-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M34</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M34 / M35</p>
       <h1>公司委託議程</h1>
-      <p>每個市場週期會形成三項不同領域的公司級委託。每項都有專業、資本與實地三種解法，但本週期只能完成其中一項。</p>
+      <p>每個市場週期會形成三項不同領域的公司級委託。公司憲章會同時改變解法門檻、成本與報酬；本週期仍只能完成其中一項。</p>
       <nav>
         <a href="/caravan/play">返回遊戲</a>
         <a href="/caravan/governance">營運治理</a>
+        <a href="/caravan/constitution">公司憲章</a>
         <a href="/caravan/initiatives">長程工程</a>
       </nav>
     </header>
@@ -40,11 +41,11 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 <script>
   import { loadGame, saveGame } from '@scripts/games/caravan/save';
   import {
-    companyMandateAgenda,
-    completeCompanyMandate,
-    type CompanyMandate,
-    type MandateRoute,
-  } from '@scripts/games/caravan/data/mandates';
+    constitutionalMandateAgenda,
+    completeConstitutionalMandate,
+  } from '@scripts/games/caravan/data/constitutionalMandates';
+  import type { CompanyMandate, MandateRoute } from '@scripts/games/caravan/data/mandates';
+  import { CONSTITUTION_CLAUSES } from '@scripts/games/caravan/data/constitution';
 
   const emptyEl = document.getElementById('empty')!;
   const summaryEl = document.getElementById('summary')!;
@@ -91,11 +92,16 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     }
     emptyEl.hidden = true;
     summaryEl.hidden = false;
-    const agenda = companyMandateAgenda(save);
+    const agenda = constitutionalMandateAgenda(save);
     cycleTitleEl.textContent = `市場週期 ${agenda.cycle}`;
-    cycleStateEl.textContent = agenda.completed
-      ? `本週期已完成 ${agenda.completedMandateId ?? '一項委託'}（${agenda.completedRouteId ?? '已結算'}）。`
-      : `目前資金 ${save.gold} G；請從三項委託中選擇一項完成。`;
+    const constitutionName = agenda.constitution
+      ? CONSTITUTION_CLAUSES[agenda.constitution].name
+      : '未制定條款';
+    cycleStateEl.textContent = agenda.constitutionWarnings.length > 0
+      ? agenda.constitutionWarnings.join(' ')
+      : agenda.completed
+        ? `本週期已完成 ${agenda.completedMandateId ?? '一項委託'}（${agenda.completedRouteId ?? '已結算'}）。`
+        : `目前資金 ${save.gold} G；公司憲章：${constitutionName}；請從三項委託中選擇一項完成。`;
 
     for (const mandate of agenda.mandates) {
       const card = document.createElement('article');
@@ -110,9 +116,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       );
       head.append(titleWrap, text('span', `${mandate.primaryStat.toUpperCase()} / ${mandate.primarySkill}`, 'domain-tag'));
       card.append(head, text('p', mandate.description, 'description'));
-
-      const reward = text('p', `獎勵：${rewardText(mandate)}`, 'reward');
-      card.append(reward);
+      card.append(text('p', `政策後獎勵：${rewardText(mandate)}`, 'reward'));
 
       const routes = document.createElement('div');
       routes.className = 'routes';
@@ -123,15 +127,19 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
           text('h3', route.name),
           text('p', route.description),
           text('p', `能力 ${route.score} / ${route.threshold}`, 'score'),
-          text('p', `成本：${routeCost(route)}`, 'cost'),
+          text('p', `政策後成本：${routeCost(route)}`, 'cost'),
         );
-        if (!route.eligible) {
-          routeEl.append(text('p', route.blockers.join('；'), 'blockers'));
-        }
+        if (!route.eligible) routeEl.append(text('p', route.blockers.join('；'), 'blockers'));
         const button = document.createElement('button');
         button.type = 'button';
-        button.disabled = agenda.completed || !route.eligible;
-        button.textContent = agenda.completed ? '本週期已結算' : route.eligible ? `採用${route.name}` : '條件不足';
+        button.disabled = agenda.completed || !route.eligible || agenda.constitutionWarnings.length > 0;
+        button.textContent = agenda.completed
+          ? '本週期已結算'
+          : agenda.constitutionWarnings.length > 0
+            ? '憲章資料衝突'
+            : route.eligible
+              ? `採用${route.name}`
+              : '條件不足';
         button.addEventListener('click', () => {
           const latest = loadGame();
           if (!latest) {
@@ -139,9 +147,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
             return;
           }
           try {
-            const result = completeCompanyMandate(latest, mandate.id, route.id);
+            const result = completeConstitutionalMandate(latest, mandate.id, route.id);
             saveGame(latest);
-            statusEl.textContent = `已完成「${mandate.title}」的${route.name}；獲得 ${result.reward.gold} G 與聲望 +${result.reward.reputation}。`;
+            statusEl.textContent = `已完成「${mandate.title}」的${route.name}；獲得 ${result.reward.gold} G、聲望 +${result.reward.reputation}。`;
           } catch (error) {
             statusEl.textContent = error instanceof Error ? error.message : '委託結算失敗。';
           }
