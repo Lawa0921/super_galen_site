@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="商隊議事會｜商隊與劍" description="隊伍化學反應與商隊議事會。">
+  <main class="shell">
+    <h1>商隊議事會</h1>
+    <p id="status">正在讀取商隊資料……</p>
+    <p><a href="/caravan/play">返回遊戲</a></p>
+  </main>
+</BaseLayout>
+
+<script>
+  import { loadGame } from '@scripts/games/caravan/save';
+  import { teamChemistryProfile } from '@scripts/games/caravan/data/teamChemistry';
+
+  const status = document.getElementById('status')!;
+  const save = loadGame();
+  if (!save) {
+    status.textContent = '找不到商隊存檔。';
+  } else {
+    const ids = [save.protagonist.id, ...save.companions.slice(0, 3).map((record) => record.id)];
+    const profile = teamChemistryProfile(save, ids);
+    status.textContent = `目前化學反應：${profile.grade}（${profile.score}）`;
+  }
+</script>
+
+<style>
+  :global(body) { background: #12100d; color: #eee5d2; }
+  .shell { width: min(760px, calc(100% - 28px)); margin: 0 auto; padding: 56px 0; }
+  a { color: #dfbf7d; }
+</style>
