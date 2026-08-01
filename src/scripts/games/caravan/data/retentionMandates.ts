@@ -14,13 +14,13 @@ import {
   type CompanionRetentionProfile,
 } from './retention';
 
-export interface RetentionMandateAgenda extends ReturnType<typeof riskMandateAgenda> {
+export type RetentionMandateAgenda = ReturnType<typeof riskMandateAgenda> & {
   retentionProfiles: CompanionRetentionProfile[];
   retentionWarnings: string[];
   retentionDispute: CompanionRetentionProfile | null;
   securityStipend: number;
   partnershipShareRate: number;
-}
+};
 
 export interface RetentionMandateCompletion extends MandateCompletion {
   partnershipBondIds: string[];
