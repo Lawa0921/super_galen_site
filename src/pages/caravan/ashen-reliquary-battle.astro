@@ -1,0 +1,231 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+---
+
+<BaseLayout title="灰燼聖匣戰鬥 — 商隊與劍" description="迎戰灰燼騎士、無舌唱詩班與龍燼化身。" lang="zh-TW">
+  <main class="battle-page">
+    <header class="hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD · M40 RELIQUARY COMBAT</p>
+      <h1 id="battle-title">灰燼聖匣戰鬥</h1>
+      <p id="battle-copy">弱點、護勢、敵方意圖、前後排與 Boss 激怒都會影響這場戰鬥。</p>
+      <nav><a href="/caravan/ashen-reliquary">返回灰燼聖匣</a><a href="/caravan/play">返回主冒險</a></nav>
+    </header>
+    <section id="notice" class="panel"></section>
+    <section id="intent" class="intent" hidden></section>
+    <section id="battlefield" class="battlefield" hidden>
+      <div><p class="eyebrow">ENEMIES</p><div id="enemies" class="units"></div></div>
+      <div><p class="eyebrow">EXPEDITION PARTY</p><div id="party" class="units"></div></div>
+    </section>
+    <section id="actions" class="actions" hidden></section>
+    <section id="result" class="result" hidden></section>
+    <section class="log-panel"><p class="eyebrow">BATTLE CHRONICLE</p><div id="log" class="log"></div></section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { loadGame, saveGame } from '@scripts/games/caravan/save';
+  import { createRng, type Rng } from '@scripts/games/caravan/rng';
+  import {
+    ELEMENT_LABELS, attemptRetreat, currentActor, enemyAct, partyAct, startCombat,
+    type CombatState, type EnemyUnit, type Move, type PartyMember,
+  } from '@scripts/games/caravan/combat';
+  import {
+    RELIQUARY_BATTLE_NAMES, applyReliquaryBattleInjuries, buildReliquaryParty,
+    completeReliquaryBattle, createReliquaryEncounter, reliquaryBattleAccess,
+    type ReliquaryBattleStage,
+  } from '@scripts/games/caravan/data/ashenReliquaryCombat';
+  import {
+    beginReliquaryBattleAttempt,
+    finishReliquaryBattleAttempt,
+  } from '@scripts/games/caravan/data/ashenReliquaryAttempts';
+
+  const titleEl = document.getElementById('battle-title')!;
+  const copyEl = document.getElementById('battle-copy')!;
+  const noticeEl = document.getElementById('notice')!;
+  const intentEl = document.getElementById('intent')!;
+  const battlefieldEl = document.getElementById('battlefield')!;
+  const enemiesEl = document.getElementById('enemies')!;
+  const partyEl = document.getElementById('party')!;
+  const actionsEl = document.getElementById('actions')!;
+  const resultEl = document.getElementById('result')!;
+  const logEl = document.getElementById('log')!;
+  const parsedStage = Number(new URLSearchParams(window.location.search).get('stage'));
+  const stage = ([1, 2, 3] as number[]).includes(parsedStage) ? parsedStage as ReliquaryBattleStage : null;
+  let combat: CombatState | null = null;
+  let rng: Rng | null = null;
+  let settled = false;
+
+  const text = (tag: string, value: string, className?: string): HTMLElement => {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = value;
+    return element;
+  };
+
+  function unitCard(unit: PartyMember | EnemyUnit): HTMLElement {
+    const card = document.createElement('article');
+    card.className = `unit ${unit.hp <= 0 ? 'down' : ''}`;
+    const enemy = 'intents' in unit ? unit as EnemyUnit : null;
+    const statuses = (unit.statuses ?? []).map((status) => `${status.kind} ${status.remaining}`).join('、');
+    const poise = enemy?.maxPoise !== undefined ? `｜護勢 ${enemy.poise ?? enemy.maxPoise}/${enemy.maxPoise}` : '';
+    card.append(text('h3', unit.name), text('p', `HP ${unit.hp}/${unit.maxHp}${poise}${statuses ? `｜${statuses}` : ''}`, 'unit-status'));
+    if (enemy) {
+      const weak = (enemy.weaknesses ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
+      const resist = (enemy.resists ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
+      card.append(text('p', `弱點：${weak}｜抗性：${resist}`, 'affinity'));
+    } else card.append(text('p', (unit as PartyMember).formationRow === 'back' ? '後排' : '前排', 'formation'));
+    return card;
+  }
+
+  function renderUnits(): void {
+    if (!combat) return;
+    enemiesEl.replaceChildren(...combat.enemies.map(unitCard));
+    partyEl.replaceChildren(...combat.party.map(unitCard));
+  }
+
+  function renderIntent(): void {
+    if (!combat || combat.outcome !== 'ongoing') { intentEl.hidden = true; return; }
+    const lines = combat.enemies.filter((enemy) => enemy.hp > 0).map((enemy) => {
+      const move = enemy.moves.find((entry) => entry.id === combat!.enemyIntents[enemy.id]);
+      return `${enemy.name}：${move?.name ?? '未知意圖'}`;
+    });
+    intentEl.replaceChildren(text('strong', `第 ${combat.round} 輪｜敵方意圖`), text('span', lines.join('　')));
+    intentEl.hidden = lines.length === 0;
+  }
+
+  function renderLog(): void {
+    logEl.replaceChildren();
+    for (const entry of combat?.log.slice(-20) ?? []) logEl.append(text('p', entry.text, entry.kind));
+  }
+
+  function button(label: string, action: () => void, className?: string): HTMLButtonElement {
+    const el = document.createElement('button');
+    el.type = 'button'; el.textContent = label; if (className) el.className = className;
+    el.addEventListener('click', action);
+    return el;
+  }
+
+  function moveButtons(actor: PartyMember, move: Move): HTMLButtonElement[] {
+    if (!combat) return [];
+    if (move.kind === 'guard') return [button(move.name, () => act(actor.id, move.id, actor.id))];
+    if (move.kind === 'attack') {
+      const targets = combat.enemies.filter((enemy) => enemy.hp > 0);
+      if (targets.length === 0) return [];
+      if (move.area) return [button(`${move.name}｜敵方全體`, () => act(actor.id, move.id, targets[0].id))];
+      return targets.map((target) => button(`${move.name} → ${target.name}`, () => act(actor.id, move.id, target.id)));
+    }
+    return combat.party.filter((member) => member.hp > 0)
+      .map((target) => button(`${move.name} → ${target.name}`, () => act(actor.id, move.id, target.id)));
+  }
+
+  function renderActions(): void {
+    actionsEl.replaceChildren();
+    const actorInfo = combat ? currentActor(combat) : null;
+    if (!combat || combat.outcome !== 'ongoing' || actorInfo?.side !== 'party') { actionsEl.hidden = true; return; }
+    const actor = combat.party.find((member) => member.id === actorInfo.id)!;
+    actionsEl.hidden = false;
+    actionsEl.append(text('h2', `${actor.name}的行動`), text('p', '根據敵方意圖、弱點與護勢選擇戰技。'));
+    const grid = document.createElement('div'); grid.className = 'action-grid';
+    for (const move of actor.moves) grid.append(...moveButtons(actor, move));
+    grid.append(button('撤退並承受傷勢', retreat, 'retreat'));
+    actionsEl.append(grid);
+  }
+
+  function runEnemyTurns(): void {
+    if (!combat || !rng) return;
+    let safety = 0;
+    while (combat.outcome === 'ongoing' && currentActor(combat)?.side === 'enemy' && safety < 30) {
+      const actor = currentActor(combat); if (!actor) break;
+      enemyAct(rng, combat, actor.id); safety += 1;
+    }
+  }
+
+  function act(actorId: string, moveId: string, targetId: string): void {
+    if (!combat || !rng || settled) return;
+    partyAct(rng, combat, actorId, moveId, targetId);
+    runEnemyTurns(); settleOutcome(); render();
+  }
+
+  function retreat(): void {
+    if (!combat || !rng || settled) return;
+    attemptRetreat(rng, combat); settleOutcome(); render();
+  }
+
+  function settleOutcome(): void {
+    if (!combat || !stage || settled || combat.outcome === 'ongoing') return;
+    const latest = loadGame(); if (!latest) return;
+    try {
+      let receipt = '';
+      if (combat.outcome === 'victory') receipt = completeReliquaryBattle(latest, stage);
+      finishReliquaryBattleAttempt(latest, stage);
+      const injured = applyReliquaryBattleInjuries(latest, combat);
+      if (combat.outcome !== 'victory' && injured.length === 0) {
+        latest.protagonist.injuredForTrips = Math.max(latest.protagonist.injuredForTrips, 1);
+        injured.push('protagonist');
+      }
+      saveGame(latest); settled = true; resultEl.hidden = false;
+      resultEl.replaceChildren(
+        text('p', combat.outcome === 'victory' ? 'VICTORY' : combat.outcome === 'retreated' ? 'RETREAT' : 'DEFEAT', 'eyebrow'),
+        text('h2', combat.outcome === 'victory' ? `${RELIQUARY_BATTLE_NAMES[stage]}獲勝` : '遠征隊退出戰場'),
+        text('p', combat.outcome === 'victory' ? `勝利收據已寫入：${receipt}。現在可以返回本幕選擇解法。` : '本幕尚未通過，整備後可以再次挑戰。'),
+        text('p', `養傷：${injured.join('、') || '無'}`, 'injuries'),
+      );
+      const link = document.createElement('a'); link.href = '/caravan/ashen-reliquary'; link.className = 'return-link';
+      link.textContent = combat.outcome === 'victory' ? '返回聖匣選擇本幕解法' : '返回聖匣整備'; resultEl.append(link);
+    } catch (error) {
+      resultEl.hidden = false;
+      resultEl.replaceChildren(text('p', error instanceof Error ? error.message : '戰鬥結算失敗。'));
+    }
+  }
+
+  function render(): void { renderUnits(); renderIntent(); renderActions(); renderLog(); }
+
+  function boot(): void {
+    if (!stage) { noticeEl.append(text('h2', '無效的戰鬥幕次'), text('p', '請從灰燼聖匣任務頁進入。')); return; }
+    const save = loadGame(); if (!save) { noticeEl.append(text('h2', '找不到商隊存檔')); return; }
+    const access = reliquaryBattleAccess(save, stage);
+    titleEl.textContent = RELIQUARY_BATTLE_NAMES[stage];
+    copyEl.textContent = stage === 1
+      ? '灰燼騎士會架盾與激怒；聖與鈍擊可破勢，火與斬擊效果不佳。'
+      : stage === 2
+        ? '唱詩班會施放全隊震波與暈眩；聖火能迅速撕開亡魂護勢。'
+        : '龍燼化身會範圍吐息並在半血激怒；冰與聖屬性是關鍵。';
+    if (!access.allowed) { noticeEl.append(text('h2', access.completed ? '戰鬥已完成' : '目前無法進入'), text('p', access.reason)); return; }
+    const attempt = beginReliquaryBattleAttempt(save, stage);
+    saveGame(save);
+    const party = buildReliquaryParty(save);
+    noticeEl.append(
+      text('h2', `出征隊 ${party.length} 人`),
+      text('p', attempt.abandonmentPenalty ?? '使用目前出征編成；受傷旅伴不會被帶入。中途關頁會留下戰鬥嘗試收據。'),
+    );
+    rng = createRng((save.createdAt + save.marketSeed + stage * 7919) >>> 0);
+    combat = startCombat(rng, party, createReliquaryEncounter(stage));
+    battlefieldEl.hidden = false; runEnemyTurns(); settleOutcome(); render();
+  }
+
+  boot();
+</script>
+
+<style>
+  :global(body) { background: #0f0b0a; color: #efe5d3; }
+  .battle-page { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 42px 0 80px; }
+  .hero, .panel, .actions, .log-panel, .result { border: 1px solid #4b352c; background: #19110f; }
+  .hero { padding: 34px; background: radial-gradient(circle at 78% 18%, #572016 0, transparent 32%), linear-gradient(135deg, #261611, #0f0b0a); }
+  .eyebrow { margin: 0 0 7px; color: #d59a59; font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; }
+  h1, h2, h3, p { margin-top: 0; } h1 { margin-bottom: 12px; font-size: clamp(2.2rem, 6vw, 4.6rem); }
+  .hero p, .panel p, .actions p, .unit p, .result p { color: #bcae9e; line-height: 1.7; }
+  nav { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px; } a { color: #e4b66c; }
+  .panel { display: flex; justify-content: space-between; gap: 18px; margin-top: 18px; padding: 18px 22px; }
+  .intent { display: flex; gap: 16px; margin-top: 18px; padding: 14px 18px; border-left: 3px solid #c06b44; background: #2b1713; }
+  .battlefield { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+  .units { display: grid; gap: 10px; } .unit { padding: 15px; border: 1px solid #49372e; background: #201714; } .unit.down { opacity: .45; }
+  .unit-status { color: #d5b77e !important; } .affinity { color: #c69c89 !important; } .formation { color: #9db78a !important; }
+  .actions, .result, .log-panel { margin-top: 18px; padding: 22px; }
+  .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  button, .return-link { display: block; padding: 11px 12px; border: 1px solid #d1a25c; background: #a96b31; color: #160d08; font: inherit; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
+  button.retreat { background: transparent; color: #db9d84; border-color: #8e5141; }
+  .return-link { width: fit-content; margin-top: 14px; } .injuries { color: #d58c78 !important; }
+  .log { max-height: 360px; overflow: auto; } .log p { margin: 0; padding: 7px 0; border-bottom: 1px solid #2f241f; color: #bcae9e; }
+  .log p.damage { color: #d79a82; } .log p.heal, .log p.victory { color: #a9c783; } .log p.info { color: #d2bb84; }
+  @media (max-width: 820px) { .battlefield, .action-grid { grid-template-columns: 1fr; } .panel, .intent { flex-direction: column; } }
+</style>
