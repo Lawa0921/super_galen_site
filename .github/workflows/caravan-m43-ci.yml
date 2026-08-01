@@ -32,8 +32,26 @@ jobs:
         run: npm run build
       - name: M43 armory transactions
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/armory.m43.test.ts
-      - name: M43 armory-aware endurance
-        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+      - name: M43 endurance snapshot and party load
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+          -t "requires a strict armory snapshot|snapshots personal and party load"
+      - name: M43 burden-scaled camp recovery
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+          -t "makes camp recovery less efficient"
+      - name: M43 burden-scaled forced march
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+          -t "turns forced march into an immediate"
+      - name: M43 camp clarity and atomicity
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+          -t "surfaces the burden consequence|does not allow a second camp action"
       - name: M43 multidimensional player adversarial review
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/armory.balance.m43.test.ts
       - name: Combat, magic, and M42 endurance regression
