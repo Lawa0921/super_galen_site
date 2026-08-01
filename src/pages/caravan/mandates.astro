@@ -4,16 +4,17 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
 <BaseLayout
   title="公司委託議程 — 商隊與劍"
-  description="依命運、職涯、特許、工程、治理、公司憲章與市場週期形成的動態公司委託。"
+  description="依命運、職涯、特許、工程、治理、憲章、公司職務與市場週期形成的動態委託。"
   lang="zh-TW"
 >
   <main class="mandate-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M34 / M35</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M34–M36</p>
       <h1>公司委託議程</h1>
-      <p>每個市場週期會形成三項不同領域的公司級委託。公司憲章會同時改變解法門檻、成本與報酬；本週期仍只能完成其中一項。</p>
+      <p>公司憲章決定優先價值，公司官員把旅伴能力轉化為組織執行力；每個市場週期仍只能完成其中一項委託。</p>
       <nav>
         <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan/offices">公司職務</a>
         <a href="/caravan/governance">營運治理</a>
         <a href="/caravan/constitution">公司憲章</a>
         <a href="/caravan/initiatives">長程工程</a>
@@ -33,6 +34,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       <p id="cycle-state"></p>
     </section>
 
+    <section id="warnings" class="warnings" hidden></section>
     <section id="cards" class="cards"></section>
     <p id="status" class="status" aria-live="polite"></p>
   </main>
@@ -41,9 +43,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 <script>
   import { loadGame, saveGame } from '@scripts/games/caravan/save';
   import {
-    constitutionalMandateAgenda,
-    completeConstitutionalMandate,
-  } from '@scripts/games/caravan/data/constitutionalMandates';
+    officeMandateAgenda,
+    completeOfficeMandate,
+  } from '@scripts/games/caravan/data/officeMandates';
   import type { CompanyMandate, MandateRoute } from '@scripts/games/caravan/data/mandates';
   import { CONSTITUTION_CLAUSES } from '@scripts/games/caravan/data/constitution';
 
@@ -51,6 +53,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   const summaryEl = document.getElementById('summary')!;
   const cycleTitleEl = document.getElementById('cycle-title')!;
   const cycleStateEl = document.getElementById('cycle-state')!;
+  const warningsEl = document.getElementById('warnings')!;
   const cardsEl = document.getElementById('cards')!;
   const statusEl = document.getElementById('status')!;
 
@@ -85,29 +88,31 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   function render(): void {
     const save = loadGame();
     cardsEl.replaceChildren();
+    warningsEl.replaceChildren();
     if (!save) {
       emptyEl.hidden = false;
       summaryEl.hidden = true;
+      warningsEl.hidden = true;
       return;
     }
     emptyEl.hidden = true;
     summaryEl.hidden = false;
-    const agenda = constitutionalMandateAgenda(save);
+    const agenda = officeMandateAgenda(save);
     cycleTitleEl.textContent = `市場週期 ${agenda.cycle}`;
     const constitutionName = agenda.constitution
       ? CONSTITUTION_CLAUSES[agenda.constitution].name
       : '未制定條款';
-    cycleStateEl.textContent = agenda.constitutionWarnings.length > 0
-      ? agenda.constitutionWarnings.join(' ')
-      : agenda.completed
-        ? `本週期已完成 ${agenda.completedMandateId ?? '一項委託'}（${agenda.completedRouteId ?? '已結算'}）。`
-        : `目前資金 ${save.gold} G；公司憲章：${constitutionName}；請從三項委託中選擇一項完成。`;
+    const allWarnings = [...agenda.constitutionWarnings, ...agenda.officeWarnings];
+    warningsEl.hidden = allWarnings.length === 0;
+    for (const warning of allWarnings) warningsEl.append(text('p', warning));
+    cycleStateEl.textContent = agenda.completed
+      ? `本週期已完成 ${agenda.completedMandateId ?? '一項委託'}（${agenda.completedRouteId ?? '已結算'}）。`
+      : `目前資金 ${save.gold} G；公司憲章：${constitutionName}；官員津貼 ${agenda.officeUpkeep} G／委託。`;
 
     for (const mandate of agenda.mandates) {
       const card = document.createElement('article');
       card.className = 'mandate-card';
       if (agenda.completedMandateId === mandate.id) card.classList.add('completed');
-
       const head = document.createElement('header');
       const titleWrap = document.createElement('div');
       titleWrap.append(
@@ -116,7 +121,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       );
       head.append(titleWrap, text('span', `${mandate.primaryStat.toUpperCase()} / ${mandate.primarySkill}`, 'domain-tag'));
       card.append(head, text('p', mandate.description, 'description'));
-      card.append(text('p', `政策後獎勵：${rewardText(mandate)}`, 'reward'));
+      card.append(text('p', `政策與人事後獎勵：${rewardText(mandate)}`, 'reward'));
 
       const routes = document.createElement('div');
       routes.className = 'routes';
@@ -132,11 +137,11 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
         if (!route.eligible) routeEl.append(text('p', route.blockers.join('；'), 'blockers'));
         const button = document.createElement('button');
         button.type = 'button';
-        button.disabled = agenda.completed || !route.eligible || agenda.constitutionWarnings.length > 0;
+        button.disabled = agenda.completed || !route.eligible || allWarnings.length > 0;
         button.textContent = agenda.completed
           ? '本週期已結算'
-          : agenda.constitutionWarnings.length > 0
-            ? '憲章資料衝突'
+          : allWarnings.length > 0
+            ? '組織資料衝突'
             : route.eligible
               ? `採用${route.name}`
               : '條件不足';
@@ -147,7 +152,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
             return;
           }
           try {
-            const result = completeConstitutionalMandate(latest, mandate.id, route.id);
+            const result = completeOfficeMandate(latest, mandate.id, route.id);
             saveGame(latest);
             statusEl.textContent = `已完成「${mandate.title}」的${route.name}；獲得 ${result.reward.gold} G、聲望 +${result.reward.reputation}。`;
           } catch (error) {
@@ -178,6 +183,8 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   nav { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px; }
   a { color: #e0bd78; }
   .panel { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-top: 18px; padding: 20px 24px; }
+  .warnings { margin-top: 18px; padding: 14px 18px; border-left: 3px solid #bd5f4e; background: #2b1916; }
+  .warnings p { margin: 4px 0; }
   .cards { display: grid; gap: 18px; margin-top: 18px; }
   .mandate-card { padding: 24px; }
   .mandate-card.completed { border-color: #9e7d42; }
