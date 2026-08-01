@@ -9,11 +9,12 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 >
   <main class="quest-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M39–M40 WORLD QUEST</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M39–M42 WORLD QUEST</p>
       <h1>灰燼聖匣</h1>
       <p class="premise">王領、白燭教會與法師塔都在尋找一只從焚毀修道院中甦醒的聖匣。裡面不是聖骨，而是一顆仍在跳動的古龍心火。每一幕必須先突破正式戰鬥，才能決定如何處理眼前的魔法與政治後果。</p>
       <nav>
         <a href="/caravan/play">返回冒險</a>
+        <a href="/caravan/endurance">餘燼朝聖</a>
         <a href="/caravan/mandates">行會委託</a>
         <a href="/caravan/constitution">商會誓約</a>
         <a href="/caravan/offices">行會職司</a>
@@ -137,9 +138,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     if (!state.unlocked) return;
 
     summaryTitleEl.textContent = state.completed
-      ? '聖匣的命運已經決定'
+      ? '聖匣的命運已經決定；餘燼朝聖已開放'
       : `目前進度：第 ${state.currentStage ?? 1} 幕`;
-    summaryCopyEl.textContent = `金幣 ${save.gold} G｜聲望 ${save.reputation}｜每幕先戰鬥，再選一條解法；最終決定不可逆。`;
+    summaryCopyEl.textContent = `金幣 ${save.gold} G｜聲望 ${save.reputation}｜每幕先戰鬥，再選一條解法；完成世界任務後可挑戰三戰連續試煉。`;
 
     warningEl.hidden = state.warnings.length === 0;
     for (const warning of state.warnings) warningEl.append(text('p', warning));
@@ -150,8 +151,13 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
         text('p', 'WORLD STATE', 'eyebrow'),
         text('h2', ENDING_NAMES[state.ending]),
         text('p', ENDING_TEXT[state.ending]),
-        text('p', '這個結局已開始影響後續行會委託。', 'ending-note'),
+        text('p', '這個結局已開始影響後續行會委託；餘燼朝聖也已加入行會試煉名冊。', 'ending-note'),
       );
+      const enduranceLink = document.createElement('a');
+      enduranceLink.href = '/caravan/endurance';
+      enduranceLink.className = 'battle-link';
+      enduranceLink.textContent = '進入餘燼朝聖：三戰連續試煉';
+      endingEl.append(enduranceLink);
     }
 
     for (const stage of state.stages) {
@@ -272,7 +278,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .battle-gate.cleared { border-left-color: #759051; background: #1d2417; }
   .battle-name { min-width: 190px; font-weight: 700; color: #e0b16c; }
   .battle-gate p { flex: 1; margin-bottom: 0; }
-  .battle-link { padding: 10px 13px; border: 1px solid #d0a25c; background: #a96b31; color: #160d08; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .battle-link { display: inline-block; padding: 10px 13px; border: 1px solid #d0a25c; background: #a96b31; color: #160d08; font-weight: 700; text-decoration: none; white-space: nowrap; }
   .routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
   .route { display: flex; flex-direction: column; padding: 17px; border: 1px solid #42332a; background: #211814; }
   .route.eligible { border-color: #80613d; }
