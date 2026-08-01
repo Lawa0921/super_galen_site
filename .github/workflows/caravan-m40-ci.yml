@@ -1,0 +1,54 @@
+name: Caravan M40 CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - 'src/pages/caravan/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/caravan-m40-ci.yml'
+  push:
+    branches:
+      - master
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - 'src/pages/caravan/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/caravan-m40-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: caravan-m40-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-combat-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build production site
+        run: npm run build
+
+      - name: Run reliquary combat and world-state tests
+        run: >-
+          npx vitest run
+          src/scripts/games/caravan/data/ashenReliquaryCombat.m40.test.ts
+          src/scripts/games/caravan/data/ashenReliquaryAttempts.m40.test.ts
+          src/scripts/games/caravan/data/ashenReliquary.m39.test.ts
+          src/scripts/games/caravan/data/ashenReliquary.balance.m39.test.ts
