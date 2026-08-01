@@ -63,6 +63,7 @@ describe('M43 armory-aware endurance', () => {
   it('requires a strict armory snapshot and rejects plain M42 runs', () => {
     const data = save();
     const run = createEnduranceRun(data);
+    console.log(`[M43 ENDURANCE] snapshot valid=${isEnduranceRun(run)} burden=${run.partyBurden}/${run.partyCapacity} overload=${run.partyOverload}`);
     expect(isEnduranceRun(run)).toBe(true);
     const plain = { ...run } as Record<string, unknown>;
     delete plain.armoryVersion;
@@ -71,6 +72,7 @@ describe('M43 armory-aware endurance', () => {
 
   it('snapshots personal and party load at departure', () => {
     const run = createEnduranceRun(save());
+    console.log(`[M43 ENDURANCE] members=${Object.entries(run.armory).map(([id, profile]) => `${id}:${profile.burden}/${profile.capacity}+${profile.overload}`).join(', ')}`);
     expect(run.partyBurden).toBeGreaterThan(0);
     expect(run.partyCapacity).toBeGreaterThan(0);
     expect(run.armory.protagonist.burden).toBeGreaterThan(run.armory.mage.burden);
@@ -85,6 +87,7 @@ describe('M43 armory-aware endurance', () => {
     applyEnduranceCamp(run, data, 'ration-rest');
     const heavyGainRatio = (run.members.protagonist.hp - heavyBefore) / run.members.protagonist.maxHp;
     const lightGainRatio = (run.members.mage.hp - lightBefore) / run.members.mage.maxHp;
+    console.log(`[M43 ENDURANCE] rest heavy=${heavyBefore}->${run.members.protagonist.hp}/${run.members.protagonist.maxHp} (${heavyGainRatio.toFixed(3)}), light=${lightBefore}->${run.members.mage.hp}/${run.members.mage.maxHp} (${lightGainRatio.toFixed(3)})`);
     expect(heavyGainRatio).toBeGreaterThan(0.15);
     expect(lightGainRatio).toBeGreaterThan(heavyGainRatio);
   });
@@ -99,6 +102,7 @@ describe('M43 armory-aware endurance', () => {
     applyEnduranceCamp(run, data, 'forced-march');
     const heavyLossRatio = (heavyBefore - run.members.protagonist.hp) / heavyMax;
     const lightLossRatio = (lightBefore - run.members.mage.hp) / lightMax;
+    console.log(`[M43 ENDURANCE] march heavy=${heavyBefore}->${run.members.protagonist.hp}/${heavyMax} (${heavyLossRatio.toFixed(3)}), light=${lightBefore}->${run.members.mage.hp}/${lightMax} (${lightLossRatio.toFixed(3)}), strain=${run.members.mage.mystic?.strain ?? 0}`);
     expect(heavyLossRatio).toBeGreaterThan(lightLossRatio);
     expect(run.forcedMarches).toBe(1);
     expect(run.phase).toBe('battle');
@@ -110,6 +114,7 @@ describe('M43 armory-aware endurance', () => {
     const data = save();
     const run = reachCamp(data);
     const descriptions = enduranceCampOptions(run, data).map((option) => option.description).join('\n');
+    console.log(`[M43 ENDURANCE] camp descriptions=${descriptions}`);
     expect(descriptions).toContain('負重');
     expect(descriptions).toContain('重裝');
     expect(descriptions).toContain('強行軍疲勞');
