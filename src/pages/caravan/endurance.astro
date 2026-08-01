@@ -53,6 +53,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   import {
     applyEnduranceCamp,
     beginEnduranceBattle,
+    checkpointEnduranceBattle,
     claimEnduranceReward,
     createEnduranceRun,
     enduranceAccess,
@@ -65,7 +66,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     type EnduranceRun,
   } from '@scripts/games/caravan/data/endurance';
 
-  const RUN_KEY = 'caravan-endurance-v1';
+  const RUN_KEY = 'caravan-endurance-v2';
   const noticeEl = document.getElementById('notice')!;
   const progressEl = document.getElementById('progress')!;
   const intentEl = document.getElementById('intent')!;
@@ -118,6 +119,14 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     element.disabled = disabled;
     element.title = title;
     element.addEventListener('click', action);
+    return element;
+  }
+
+  function link(label: string, href: string, className = ''): HTMLAnchorElement {
+    const element = document.createElement('a');
+    element.href = href;
+    element.textContent = label;
+    element.className = className;
     return element;
   }
 
@@ -223,10 +232,17 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     }
   }
 
+  function persistCurrentBattle(): void {
+    if (!run || !combat) return;
+    checkpointEnduranceBattle(run, combat);
+    saveRun();
+  }
+
   function act(actorId: string, moveId: string, targetId: string, overcast: boolean): void {
     if (!combat || !rng || !run) return;
     partyAct(rng, combat, actorId, moveId, targetId, { overcast });
     runEnemyTurns();
+    persistCurrentBattle();
     settleBattle();
     render();
   }
@@ -234,6 +250,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   function retreat(): void {
     if (!combat || !rng || !run) return;
     attemptRetreat(rng, combat);
+    persistCurrentBattle();
     settleBattle();
     render();
   }
@@ -256,15 +273,23 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   function startBattle(): void {
     const save = loadGame();
     if (!save || !run) return;
-    rng = createRng((save.createdAt + run.stage * 7919 + run.abandonmentCount * 104729) >>> 0);
-    combat = beginEnduranceBattle(run, save, rng);
-    saveRun();
-    battlefieldEl.hidden = false;
-    campEl.hidden = true;
-    resultEl.hidden = true;
-    runEnemyTurns();
-    settleBattle();
-    render();
+    try {
+      rng = createRng((save.createdAt + run.stage * 7919 + run.abandonmentCount * 104729) >>> 0);
+      combat = beginEnduranceBattle(run, save, rng);
+      persistCurrentBattle();
+      battlefieldEl.hidden = false;
+      campEl.hidden = true;
+      resultEl.hidden = true;
+      runEnemyTurns();
+      persistCurrentBattle();
+      settleBattle();
+      render();
+    } catch (error) {
+      saveRun();
+      combat = null;
+      noticeEl.replaceChildren(text('p', error instanceof Error ? error.message : '無法開始朝聖戰鬥。'));
+      render();
+    }
   }
 
   function chooseCamp(choice: EnduranceCampChoice): void {
@@ -291,7 +316,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     campEl.append(
       text('p', `CAMP ${run.stage - 1}`, 'eyebrow'),
       text('h2', '營火只能維持到天亮'),
-      text('p', '選擇一項整備。生命與魔法資源不會自行恢復。'),
+      text('p', '選擇一項整備。倒地成員不會在營地復活，生命與魔法資源也不會自行恢復。'),
     );
     const grid = document.createElement('div');
     grid.className = 'camp-grid';
@@ -312,7 +337,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       const reward = claimEnduranceReward(run, save);
       saveGame(save);
       saveRun();
-      resultEl.append(text('p', `已取得 ${reward.gold} G、聲望 +${reward.reputation}。`, 'claimed'));
+      noticeEl.replaceChildren(text('p', `已取得 ${reward.gold} G、聲望 +${reward.reputation}。完成一趟一般遠征、讓市場週期輪轉後，行會才會發布下一份朝聖契約。`));
       render();
     } catch (error) {
       noticeEl.replaceChildren(text('p', error instanceof Error ? error.message : '獎勵結算失敗。'));
@@ -330,8 +355,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       resultEl.append(
         text('p', 'PILGRIMAGE ENDED', 'eyebrow'),
         text('h2', '遠征隊未能走到龍燼之心'),
-        text('p', `本次完成到第 ${run.stage} 戰。生命、補給與過載決策共同造成了結果。`),
-        button('重新開始新朝聖', resetRun),
+        text('p', `本次止步於第 ${run.stage} 戰。倒地、補給、魔法消耗與過載決策共同造成了結果。`),
+        button('從第一戰重新挑戰', resetRun),
+        link('返回主冒險重新整備', '/caravan/play', 'return-link'),
       );
       return;
     }
@@ -340,8 +366,8 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       text('p', 'PILGRIMAGE COMPLETE', 'eyebrow'),
       text('h2', '三重火印已被突破'),
       text('p', `強行軍 ${run.forcedMarches} 次；獎勵 ${reward.gold} G、聲望 +${reward.reputation}。`),
-      button(run.claimed ? '獎勵已領取' : '領取朝聖獎勵', claimReward, '', run.claimed),
-      button('開始新的朝聖', resetRun, 'secondary'),
+      button(run.claimed ? '本週期獎勵已領取' : '領取朝聖獎勵', claimReward, '', run.claimed),
+      link('返回主冒險推進市場週期', '/caravan/play', 'return-link'),
     );
   }
 
@@ -378,17 +404,19 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       noticeEl.append(text('h2', '找不到商隊存檔'), text('p', '先建立商隊並整備出征隊。'));
       return;
     }
-    const access = enduranceAccess(save);
-    if (!access.allowed) {
-      noticeEl.append(text('h2', '餘燼朝聖尚未開放'), text('p', access.reason));
-      return;
-    }
     const stored = loadRun();
-    run = stored?.saveCreatedAt === save.createdAt ? stored : null;
+    run = stored?.saveCreatedAt === save.createdAt && stored.marketSeed === save.marketSeed ? stored : null;
+    if (stored && !run) localStorage.removeItem(RUN_KEY);
+
     if (!run) {
+      const access = enduranceAccess(save);
+      if (!access.allowed) {
+        noticeEl.append(text('h2', '餘燼朝聖尚未開放'), text('p', access.reason));
+        return;
+      }
       noticeEl.append(
         text('h2', `健康出征隊 ${access.partySize} 人`),
-        text('p', '開始後，三場戰鬥共享生命與魔法狀態。中途重新整理會造成全隊疲勞，而不是免費重骰。'),
+        text('p', '開始後，三場戰鬥共享生命與魔法狀態。每次行動都會保存；中途關頁只會保留損傷並追加疲勞。'),
         button('開始餘燼朝聖', () => {
           run = createEnduranceRun(save);
           saveRun();
@@ -397,10 +425,11 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       );
       return;
     }
+
     noticeEl.append(
       text('h2', '朝聖紀錄仍在燃燒'),
       text('p', enduranceRunSummary(run)),
-      button('放棄並重新開始', resetRun, 'secondary'),
+      button('放棄整趟朝聖並從第一戰重來', resetRun, 'secondary'),
     );
     if (run.phase === 'battle') startBattle();
     else render();
@@ -433,11 +462,11 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .camp-grid article { display: flex; flex-direction: column; padding: 17px; border: 1px solid #4a382d; background: #211713; }
   .camp-grid button { margin-top: auto; }
   .blocker { color: #df8e77 !important; }
-  button { display: block; padding: 11px 12px; border: 1px solid #d2a45d; background: #a96b31; color: #160d08; font: inherit; font-weight: 700; cursor: pointer; }
+  button, .return-link { display: block; padding: 11px 12px; border: 1px solid #d2a45d; background: #a96b31; color: #160d08; font: inherit; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
   button:disabled { opacity: .42; cursor: not-allowed; }
   button.overcast { border-color: #cf6556; background: #6f2c25; color: #f3ddd6; }
   button.retreat, button.secondary { background: transparent; color: #db9d84; border-color: #8e5141; }
-  .claimed { color: #aecb8c !important; }
+  .return-link { width: fit-content; margin-top: 12px; }
   .log { max-height: 360px; overflow: auto; }
   .log p { margin: 0; padding: 7px 0; border-bottom: 1px solid #30241e; color: #bdae9d; }
   .log p.damage { color: #d99a82; } .log p.heal, .log p.victory { color: #a9c783; } .log p.info { color: #d4bd84; }
