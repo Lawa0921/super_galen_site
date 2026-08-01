@@ -1,19 +1,238 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import BaseLayout from '@components/layout/BaseLayout.astro';
 ---
 
-<BaseLayout title="商隊議事會｜商隊與劍" description="隊伍化學反應與商隊議事會。">
+<BaseLayout
+  title="商隊議事會 — 商隊與劍"
+  description="以命運、職涯與羈絆分析隊伍化學反應，召開不可重複的商隊議事會。"
+  lang="zh-TW"
+>
   <main class="shell">
-    <p class="eyebrow">CARAVAN &amp; SWORD · M32</p>
-    <h1>商隊議事會</h1>
-    <p>隊伍化學反應功能正在載入。</p>
-    <p><a href="/caravan/play">返回遊戲</a></p>
+    <header class="hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD · M32</p>
+      <h1>商隊議事會</h1>
+      <p>選擇 2～4 名健康成員。不同出身、職涯、共同經歷與缺陷衝突會形成公開可驗證的化學反應。</p>
+      <nav>
+        <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan/companions">旅伴身世</a>
+        <a href="/caravan/dossier">商隊檔案</a>
+      </nav>
+    </header>
+
+    <section id="missing" class="panel" hidden>
+      <h2>找不到商隊存檔</h2>
+      <p>先建立旅程並招募旅伴，再回來召開議事會。</p>
+    </section>
+
+    <div id="app" hidden>
+      <section class="panel">
+        <div class="heading-row">
+          <h2>參與成員</h2>
+          <span id="count"></span>
+        </div>
+        <p class="muted">隊長固定參加；傷員不能參加；最多四人。</p>
+        <div id="members" class="member-grid"></div>
+      </section>
+
+      <section class="panel result">
+        <div class="score-box">
+          <strong id="score">0</strong>
+          <span id="grade">穩定</span>
+        </div>
+        <div>
+          <p class="eyebrow">CHEMISTRY</p>
+          <h2 id="title">第 1 次正式議事會</h2>
+          <p id="summary" class="muted"></p>
+          <p><b id="cost">0 G</b> · 旅伴羈絆 <b id="reward">+0</b></p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>正負因素</h2>
+        <div id="factors" class="factor-list"></div>
+        <div id="blockers" class="blockers" hidden></div>
+        <button id="conduct" type="button">召開議事會</button>
+        <p id="message" class="message" aria-live="polite"></p>
+      </section>
+    </div>
   </main>
 </BaseLayout>
 
+<script>
+  import { loadGame, saveGame } from '@scripts/games/caravan/save';
+  import { conductTeamCouncil, teamChemistryProfile } from '@scripts/games/caravan/data/teamChemistry';
+
+  const missingEl = document.getElementById('missing')!;
+  const appEl = document.getElementById('app')!;
+  const membersEl = document.getElementById('members')!;
+  const countEl = document.getElementById('count')!;
+  const scoreEl = document.getElementById('score')!;
+  const gradeEl = document.getElementById('grade')!;
+  const titleEl = document.getElementById('title')!;
+  const summaryEl = document.getElementById('summary')!;
+  const costEl = document.getElementById('cost')!;
+  const rewardEl = document.getElementById('reward')!;
+  const factorsEl = document.getElementById('factors')!;
+  const blockersEl = document.getElementById('blockers')!;
+  const buttonEl = document.getElementById('conduct') as HTMLButtonElement;
+  const messageEl = document.getElementById('message')!;
+
+  let save = loadGame();
+  let selected = new Set<string>();
+
+  function node(tag: string, value: string, className = ''): HTMLElement {
+    const element = document.createElement(tag);
+    element.textContent = value;
+    if (className) element.className = className;
+    return element;
+  }
+
+  function resetSelection(): void {
+    if (!save) return;
+    selected = new Set([save.protagonist.id]);
+    const candidates = save.expeditionPlan?.activeIds ?? save.companions.map((record) => record.id);
+    for (const id of candidates) {
+      if (selected.size >= 4) break;
+      const record = save.companions.find((companion) => companion.id === id);
+      if (record && record.injuredForTrips === 0) selected.add(id);
+    }
+  }
+
+  function renderMembers(): void {
+    if (!save) return;
+    membersEl.replaceChildren();
+    for (const record of [save.protagonist, ...save.companions]) {
+      const label = document.createElement('label');
+      label.className = 'member';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = selected.has(record.id);
+      input.disabled = record.id === save.protagonist.id || record.injuredForTrips > 0;
+      input.addEventListener('change', () => {
+        if (input.checked && selected.size >= 4) {
+          input.checked = false;
+          messageEl.textContent = '議事會最多四人。';
+          return;
+        }
+        if (input.checked) selected.add(record.id);
+        else selected.delete(record.id);
+        render();
+      });
+
+      const copy = document.createElement('div');
+      copy.append(
+        node('strong', record.name),
+        node('span', record.id === save.protagonist.id ? '隊長｜固定參與' : `羈絆 ${record.bond ?? 0}`, 'muted'),
+        node(
+          'small',
+          record.injuredForTrips > 0
+            ? `養傷中，剩餘 ${record.injuredForTrips} 趟`
+            : record.genesis && record.growth
+              ? `${record.genesis.lifepathId} · ${record.genesis.aptitudeId} · ${record.genesis.burdenId}`
+              : '身世尚未登記',
+          'muted',
+        ),
+      );
+      label.append(input, copy);
+      membersEl.append(label);
+    }
+  }
+
+  function render(): void {
+    if (!save) return;
+    renderMembers();
+    const profile = teamChemistryProfile(save, Array.from(selected));
+    countEl.textContent = `${selected.size} / 4 人`;
+    scoreEl.textContent = profile.score > 0 ? `+${profile.score}` : String(profile.score);
+    gradeEl.textContent = profile.grade;
+    titleEl.textContent = `第 ${profile.councilNumber} 次正式議事會`;
+    summaryEl.textContent = profile.score < 0
+      ? '共同缺陷與方法重疊超過互補優勢，請更換成員。'
+      : profile.score === 0
+        ? '隊伍可以穩定合作，但尚未形成強烈互補。'
+        : '不同人生道路已形成可持續的共同方法。';
+    costEl.textContent = `${profile.councilCost} G`;
+    rewardEl.textContent = `每人 +${profile.bondReward}`;
+
+    factorsEl.replaceChildren();
+    if (profile.factors.length === 0) factorsEl.append(node('p', '目前沒有明顯因素。', 'muted'));
+    for (const entry of profile.factors) {
+      const row = document.createElement('div');
+      row.className = entry.value >= 0 ? 'factor positive' : 'factor negative';
+      row.append(
+        node('b', entry.value > 0 ? `+${entry.value}` : String(entry.value)),
+        node('span', `${entry.label}｜${entry.detail}`),
+      );
+      factorsEl.append(row);
+    }
+
+    blockersEl.replaceChildren();
+    blockersEl.hidden = profile.blockingReasons.length === 0;
+    for (const reason of profile.blockingReasons) blockersEl.append(node('p', reason));
+    buttonEl.disabled = !profile.eligible;
+    buttonEl.textContent = profile.eligible ? `支付 ${profile.councilCost} G，召開議事會` : '目前無法召開';
+  }
+
+  buttonEl.addEventListener('click', () => {
+    const latest = loadGame();
+    if (!latest) {
+      messageEl.textContent = '存檔已不存在。';
+      return;
+    }
+    try {
+      const result = conductTeamCouncil(latest, Array.from(selected));
+      saveGame(latest);
+      save = latest;
+      messageEl.textContent = `議事會完成；${result.affectedCompanionIds.length} 名旅伴羈絆各 +${result.bondReward}。`;
+      render();
+    } catch (error) {
+      save = latest;
+      messageEl.textContent = error instanceof Error ? error.message : '議事會失敗。';
+      render();
+    }
+  });
+
+  if (!save) {
+    missingEl.hidden = false;
+  } else {
+    appEl.hidden = false;
+    resetSelection();
+    render();
+  }
+</script>
+
 <style>
   :global(body) { background: #12100d; color: #eee5d2; }
-  .shell { width: min(760px, calc(100% - 28px)); margin: 0 auto; padding: 56px 0; }
-  .eyebrow { color: #c7a464; letter-spacing: .16em; }
-  a { color: #dfbf7d; }
+  .shell { width: min(1000px, calc(100% - 28px)); margin: 0 auto; padding: 42px 0 80px; }
+  .hero, .panel { border: 1px solid #4b4032; background: #1b1712; padding: 24px; }
+  .panel { margin-top: 16px; }
+  .hero { background: linear-gradient(135deg, #241d14, #15120e); }
+  .eyebrow { color: #c7a464; font-size: .72rem; letter-spacing: .16em; }
+  h1 { font-size: clamp(2.2rem, 6vw, 4.3rem); margin: 6px 0 12px; }
+  h2, p { margin-top: 0; }
+  nav { display: flex; gap: 14px; flex-wrap: wrap; }
+  a { color: #e0c183; }
+  .heading-row, .result { display: flex; justify-content: space-between; gap: 18px; align-items: center; }
+  .muted, .message { color: #aca294; }
+  .member-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+  .member { display: flex; gap: 10px; padding: 14px; border: 1px solid #44392b; background: #211c16; }
+  .member div { display: grid; gap: 4px; }
+  .member input { accent-color: #c49a4a; }
+  .score-box { width: 112px; height: 112px; display: grid; place-content: center; text-align: center; border: 1px solid #b98e48; border-radius: 50%; }
+  .score-box strong { font-size: 2.4rem; }
+  .score-box span { color: #d7ba7d; }
+  .factor-list { display: grid; gap: 8px; }
+  .factor { display: grid; grid-template-columns: 44px 1fr; gap: 10px; padding: 11px; border: 1px solid #41372b; }
+  .positive b { color: #a8cd83; }
+  .negative b { color: #e28c78; }
+  .blockers { margin-top: 14px; padding: 10px 14px; border-left: 3px solid #b75346; background: #2b1916; }
+  .blockers p { margin: 4px 0; }
+  button { margin-top: 16px; padding: 12px 18px; border: 1px solid #d1a95e; background: #b98636; color: #160e07; font: inherit; font-weight: 700; }
+  button:disabled { opacity: .45; }
+  .message { min-height: 1.4em; margin-bottom: 0; }
+  @media (max-width: 620px) {
+    .hero, .panel { padding: 17px; }
+    .result { align-items: flex-start; }
+    .score-box { width: 88px; height: 88px; }
+  }
 </style>
