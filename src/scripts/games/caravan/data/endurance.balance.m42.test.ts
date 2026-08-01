@@ -23,6 +23,7 @@ import {
 const COMPOSITIONS: Record<string, CompanionRecord['job'][]> = {
   balanced: ['swordsman', 'ranger', 'mage', 'cleric'],
   martial: ['swordsman', 'swordsman', 'ranger', 'cleric'],
+  pureMartial: ['swordsman', 'swordsman', 'ranger', 'ranger'],
   arcane: ['swordsman', 'mage', 'mage', 'cleric'],
   noCleric: ['swordsman', 'swordsman', 'ranger', 'mage'],
 };
@@ -52,6 +53,7 @@ function makeSave(jobs: CompanionRecord['job'][], seed: number): SaveData {
   data.protagonist = members[0];
   data.companions = members.slice(1);
   data.reputation = 50;
+  data.flags['world-quest:ashen-reliquary:completed'] = true;
   data.inventory = { ...data.inventory, 'dried-rations': 6, herb: 6, bandage: 6 };
   data.expeditionPlan = {
     activeIds: members.map((member) => member.id),
@@ -171,20 +173,24 @@ function simulate(jobs: CompanionRecord['job'][], seed: number): { victory: bool
 }
 
 describe('M42 automated player-perspective balance probes', () => {
-  it('all representative party identities have a viable seed and can reach the final battle', () => {
+  it('all representative party identities have viable wins but no deterministic strategy is guaranteed', () => {
+    const winCounts: number[] = [];
     for (const [name, jobs] of Object.entries(COMPOSITIONS)) {
-      const results = Array.from({ length: 16 }, (_, index) => simulate(jobs, 9100 + index));
+      const results = Array.from({ length: 20 }, (_, index) => simulate(jobs, 9100 + index));
       const wins = results.filter((result) => result.victory).length;
       const finalReach = results.filter((result) => result.stage === 3).length;
+      winCounts.push(wins);
       expect(finalReach, `${name} should reach stage 3 in at least one deterministic run`).toBeGreaterThan(0);
       expect(wins, `${name} should have at least one winning deterministic run`).toBeGreaterThan(0);
+      expect(wins, `${name} should still face a meaningful chance of failure`).toBeLessThan(results.length);
     }
+    expect(Math.max(...winCounts) - Math.min(...winCounts)).toBeLessThanOrEqual(15);
   });
 
   it('the camp policy uses multiple recovery paths instead of one universal answer', () => {
     const choices = new Set<EnduranceCampChoice>();
     for (const jobs of Object.values(COMPOSITIONS)) {
-      for (let seed = 9200; seed < 9212; seed += 1) {
+      for (let seed = 9200; seed < 9216; seed += 1) {
         for (const choice of simulate(jobs, seed).camps) choices.add(choice);
       }
     }
@@ -194,10 +200,12 @@ describe('M42 automated player-perspective balance probes', () => {
     expect(choices.size).toBeGreaterThanOrEqual(3);
   });
 
-  it('stronger rewards are tied to observable forced-march danger', () => {
-    const cautious = simulate(COMPOSITIONS.balanced, 9301);
-    const aggressive = simulate(COMPOSITIONS.martial, 9302);
-    expect(cautious.camps.length).toBeLessThanOrEqual(2);
-    expect(aggressive.camps.length).toBeLessThanOrEqual(2);
+  it('both magic-free and healing-free parties can finish the full pilgrimage', () => {
+    const pureMartialWins = Array.from({ length: 24 }, (_, index) => simulate(COMPOSITIONS.pureMartial, 9300 + index))
+      .filter((result) => result.victory).length;
+    const noClericWins = Array.from({ length: 24 }, (_, index) => simulate(COMPOSITIONS.noCleric, 9400 + index))
+      .filter((result) => result.victory).length;
+    expect(pureMartialWins).toBeGreaterThan(0);
+    expect(noClericWins).toBeGreaterThan(0);
   });
 });
