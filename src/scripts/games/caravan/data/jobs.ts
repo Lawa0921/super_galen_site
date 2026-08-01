@@ -11,6 +11,7 @@ import {
   BOND_HP_PER_TIER,
 } from '../roster';
 import { ITEMS } from './items';
+import { adjustMovesForArmory, armoryProfile, type ArmoryProfile } from './armory';
 
 export type JobId = 'swordsman' | 'ranger' | 'mage' | 'cleric';
 
@@ -23,6 +24,15 @@ export interface JobDef {
   moves: Move[];
   /** 職業立繪路徑（M5 美術） */
   art?: string;
+}
+
+export interface ArmoryPartyMemberRuntime {
+  mysticCapacityBonus?: { mana: number; favor: number };
+  armoryBurden?: number;
+  armoryCapacity?: number;
+  armoryOverload?: number;
+  armoryWarnings?: string[];
+  armoryProfile?: ArmoryProfile;
 }
 
 /** M18：每名角色最多攜帶四招，讓升級後的技能選擇形成構築取捨。 */
@@ -150,7 +160,6 @@ export function availableMovesFromRecord(record: CompanionRecord): Move[] {
   const weaponMove = weaponId ? ITEMS[weaponId]?.equip?.move : undefined;
   const baseMoves = weaponMove ? [weaponMove, ...moves.slice(1)] : moves;
   const spec = specById(record.specialization);
-  // 專屬招放在兩招職業核心技之後，讓舊存檔的預設四招必定能體現專精身分。
   return spec
     ? [...baseMoves.slice(0, 2), spec.move, ...baseMoves.slice(2)]
     : baseMoves;
@@ -164,12 +173,6 @@ function weaponMoveIds(): Set<string> {
   return ids;
 }
 
-/**
- * 將存檔中的「武器招式槽」對齊目前裝備：
- * - 換武器時，舊武器招平滑換成新武器招。
- * - 卸下武器時，恢復職業原本的首招。
- * - 玩家本來就沒攜帶武器招時，不會擅自塞回去。
- */
 function normalizePreparedMoveIds(record: CompanionRecord): Set<string> {
   const raw = record.preparedMoveIds;
   if (!Array.isArray(raw)) return new Set<string>();
@@ -192,11 +195,6 @@ function normalizePreparedMoveIds(record: CompanionRecord): Set<string> {
   return requested;
 }
 
-/**
- * 依已知戰技整理實際攜帶配置。
- * 舊存檔採前四招；武器替換與卸下都會保留原本佔用的武器招式槽。
- * 毀損或已過期的配置退回安全預設，不讓玩家帶著空配置進入戰鬥。
- */
 export function preparedMovesFromRecord(record: CompanionRecord): Move[] {
   const available = availableMovesFromRecord(record);
   if (available.length === 0) return [];
@@ -211,7 +209,6 @@ export function preparedMovesFromRecord(record: CompanionRecord): Move[] {
   return prepared.length > 0 ? prepared : available.slice(0, MOVE_LOADOUT_CAP);
 }
 
-/** 寫入一組合法戰技配置；未知、重複、空配置與超過四招都拒絕且不修改角色。 */
 export function setPreparedMoves(record: CompanionRecord, moveIds: string[]): string[] {
   const known = availableMovesFromRecord(record);
   const requested = new Set(moveIds);
@@ -230,31 +227,39 @@ export function setPreparedMoves(record: CompanionRecord, moveIds: string[]): st
 }
 
 /**
- * 將角色成長、裝備、特質、專精與戰技配置整合成實際戰鬥成員。
- * 武器招式替換與出戰招式上限都已在 preparedMovesFromRecord 內處理。
+ * 將角色成長、裝備、特質、專精、武裝熟練與戰技配置整合成實際戰鬥成員。
+ * M43 不禁止跨職裝備，而是把不合訓練的代價公開轉成命中、屬性、負重與施法上限。
  */
 export function memberFromRecord(record: CompanionRecord): PartyMember {
   const job = JOBS[record.job];
   const bonus = equipmentBonus(record);
-
+  const armory = armoryProfile(record);
   const stats: StatBlock = effectiveStats(record);
-  // M7 特質加成
+  for (const stat of Object.keys(armory.statAdjustments) as Array<keyof StatBlock>) {
+    stats[stat] += armory.statAdjustments[stat] ?? 0;
+  }
   const trait = traitById(record.trait);
-  // M11 專精被動
   const spec = specById(record.specialization);
-  // M11 羈絆：旅伴 tier 每階 +BOND_HP_PER_TIER 生命上限（主角無 bond 欄自然為 0）
   const bondHp = bondTier(record.bond) * BOND_HP_PER_TIER;
-  const maxHp = record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0) + (spec?.maxHp ?? 0) + bondHp;
+  const maxHp = Math.max(1, record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0)
+    + (spec?.maxHp ?? 0) + bondHp + armory.maxHpAdjustment);
 
-  return {
+  const member: PartyMember & ArmoryPartyMemberRuntime = {
     id: record.id,
     name: record.name,
     stats,
     maxHp,
     hp: maxHp,
-    defense: job.defense + bonus.defense + (spec?.defense ?? 0),
-    moves: preparedMovesFromRecord(record),
-    damageBonus: bonus.damageBonus,
+    defense: Math.max(1, job.defense + bonus.defense + (spec?.defense ?? 0) + armory.defenseAdjustment),
+    moves: adjustMovesForArmory(record, preparedMovesFromRecord(record)),
+    damageBonus: (bonus.damageBonus ?? 0) + armory.damageAdjustment,
     isProtagonist: record.id === 'protagonist',
+    mysticCapacityBonus: armory.mysticCapacity,
+    armoryBurden: armory.burden,
+    armoryCapacity: armory.capacity,
+    armoryOverload: armory.overload,
+    armoryWarnings: [...armory.warnings],
+    armoryProfile: armory,
   };
+  return member;
 }
