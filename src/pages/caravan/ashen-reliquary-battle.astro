@@ -5,9 +5,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 <BaseLayout title="灰燼聖匣戰鬥 — 商隊與劍" description="迎戰灰燼騎士、無舌唱詩班與龍燼化身。" lang="zh-TW">
   <main class="battle-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M40 RELIQUARY COMBAT</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M41 ARCANE &amp; FAITH</p>
       <h1 id="battle-title">灰燼聖匣戰鬥</h1>
-      <p id="battle-copy">弱點、護勢、敵方意圖、前後排與 Boss 激怒都會影響這場戰鬥。</p>
+      <p id="battle-copy">弱點、護勢、敵方意圖、秘法、神恩與 Boss 激怒都會影響這場戰鬥。</p>
       <nav><a href="/caravan/ashen-reliquary">返回灰燼聖匣</a><a href="/caravan/play">返回主冒險</a></nav>
     </header>
     <section id="notice" class="panel"></section>
@@ -26,18 +26,16 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   import { loadGame, saveGame } from '@scripts/games/caravan/save';
   import { createRng, type Rng } from '@scripts/games/caravan/rng';
   import {
-    ELEMENT_LABELS, attemptRetreat, currentActor, enemyAct, partyAct, startCombat,
+    ELEMENT_LABELS, attemptRetreat, currentActor, enemyAct, partyAct, partyMoveAvailability, startCombat,
     type CombatState, type EnemyUnit, type Move, type PartyMember,
   } from '@scripts/games/caravan/combat';
+  import { mysticPowerText } from '@scripts/games/caravan/data/arcana';
   import {
     RELIQUARY_BATTLE_NAMES, applyReliquaryBattleInjuries, buildReliquaryParty,
     completeReliquaryBattle, createReliquaryEncounter, reliquaryBattleAccess,
     type ReliquaryBattleStage,
   } from '@scripts/games/caravan/data/ashenReliquaryCombat';
-  import {
-    beginReliquaryBattleAttempt,
-    finishReliquaryBattleAttempt,
-  } from '@scripts/games/caravan/data/ashenReliquaryAttempts';
+  import { beginReliquaryBattleAttempt, finishReliquaryBattleAttempt } from '@scripts/games/caravan/data/ashenReliquaryAttempts';
 
   const titleEl = document.getElementById('battle-title')!;
   const copyEl = document.getElementById('battle-copy')!;
@@ -73,7 +71,11 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       const weak = (enemy.weaknesses ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
       const resist = (enemy.resists ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
       card.append(text('p', `弱點：${weak}｜抗性：${resist}`, 'affinity'));
-    } else card.append(text('p', (unit as PartyMember).formationRow === 'back' ? '後排' : '前排', 'formation'));
+    } else {
+      const member = unit as PartyMember;
+      card.append(text('p', member.formationRow === 'back' ? '後排' : '前排', 'formation'));
+      if (member.mystic) card.append(text('p', mysticPowerText(member.mystic), `mystic mystic-${member.mystic.kind}`));
+    }
     return card;
   }
 
@@ -95,27 +97,58 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
   function renderLog(): void {
     logEl.replaceChildren();
-    for (const entry of combat?.log.slice(-20) ?? []) logEl.append(text('p', entry.text, entry.kind));
+    for (const entry of combat?.log.slice(-24) ?? []) logEl.append(text('p', entry.text, entry.kind));
   }
 
-  function button(label: string, action: () => void, className?: string): HTMLButtonElement {
-    const el = document.createElement('button');
-    el.type = 'button'; el.textContent = label; if (className) el.className = className;
-    el.addEventListener('click', action);
-    return el;
+  function button(
+    label: string,
+    action: () => void,
+    className?: string,
+    disabled = false,
+    title = '',
+  ): HTMLButtonElement {
+    const element = document.createElement('button');
+    element.type = 'button';
+    element.textContent = label;
+    if (className) element.className = className;
+    element.disabled = disabled;
+    element.title = title;
+    element.addEventListener('click', action);
+    return element;
+  }
+
+  function targetsFor(move: Move): Array<{ id: string; name: string }> {
+    if (!combat) return [];
+    if (move.target === 'self') return [];
+    if (move.kind === 'attack') {
+      const targets = combat.enemies.filter((enemy) => enemy.hp > 0);
+      if (move.area) return targets.length ? [{ id: targets[0].id, name: '敵方全體' }] : [];
+      return targets.map((target) => ({ id: target.id, name: target.name }));
+    }
+    return combat.party.filter((member) => member.hp > 0).map((target) => ({ id: target.id, name: target.name }));
+  }
+
+  function labeledMoveButtons(actor: PartyMember, move: Move, overcast: boolean): HTMLButtonElement[] {
+    const availability = partyMoveAvailability(actor, move, { overcast });
+    const className = overcast ? 'overcast' : undefined;
+    const prefix = overcast ? `禁式過載（反噬 ${availability.backlash}）・` : '';
+    if (move.kind === 'guard' || move.target === 'self') {
+      return [button(`${prefix}${move.name}`, () => act(actor.id, move.id, actor.id, overcast), className, !availability.allowed, availability.reason)];
+    }
+    return targetsFor(move).map((target) => button(
+      `${prefix}${move.name} → ${target.name}`,
+      () => act(actor.id, move.id, target.id, overcast),
+      className,
+      !availability.allowed,
+      availability.reason,
+    ));
   }
 
   function moveButtons(actor: PartyMember, move: Move): HTMLButtonElement[] {
-    if (!combat) return [];
-    if (move.kind === 'guard') return [button(move.name, () => act(actor.id, move.id, actor.id))];
-    if (move.kind === 'attack') {
-      const targets = combat.enemies.filter((enemy) => enemy.hp > 0);
-      if (targets.length === 0) return [];
-      if (move.area) return [button(`${move.name}｜敵方全體`, () => act(actor.id, move.id, targets[0].id))];
-      return targets.map((target) => button(`${move.name} → ${target.name}`, () => act(actor.id, move.id, target.id)));
-    }
-    return combat.party.filter((member) => member.hp > 0)
-      .map((target) => button(`${move.name} → ${target.name}`, () => act(actor.id, move.id, target.id)));
+    const normal = partyMoveAvailability(actor, move);
+    const buttons = labeledMoveButtons(actor, move, false);
+    if (!normal.allowed && normal.canOvercast) buttons.push(...labeledMoveButtons(actor, move, true));
+    return buttons;
   }
 
   function renderActions(): void {
@@ -124,7 +157,15 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     if (!combat || combat.outcome !== 'ongoing' || actorInfo?.side !== 'party') { actionsEl.hidden = true; return; }
     const actor = combat.party.find((member) => member.id === actorInfo.id)!;
     actionsEl.hidden = false;
-    actionsEl.append(text('h2', `${actor.name}的行動`), text('p', '根據敵方意圖、弱點與護勢選擇戰技。'));
+    const resource = actor.mystic ? `｜${mysticPowerText(actor.mystic)}` : '';
+    actionsEl.append(
+      text('h2', `${actor.name}的行動${resource}`),
+      text('p', actor.mystic?.kind === 'mana'
+        ? '炎術消耗高、霜術較節制；秘法不足時可承受反噬過載，專注能恢復秘法並降低灼傷。'
+        : actor.mystic?.kind === 'favor'
+          ? '聖擊與戰地禱告建立神恩；治療、聖光與戰吟必須消耗神恩。'
+          : '根據敵方意圖、弱點與護勢選擇戰技。'),
+    );
     const grid = document.createElement('div'); grid.className = 'action-grid';
     for (const move of actor.moves) grid.append(...moveButtons(actor, move));
     grid.append(button('撤退並承受傷勢', retreat, 'retreat'));
@@ -140,10 +181,11 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     }
   }
 
-  function act(actorId: string, moveId: string, targetId: string): void {
+  function act(actorId: string, moveId: string, targetId: string, overcast = false): void {
     if (!combat || !rng || settled) return;
-    partyAct(rng, combat, actorId, moveId, targetId);
-    runEnemyTurns(); settleOutcome(); render();
+    const result = partyAct(rng, combat, actorId, moveId, targetId, { overcast });
+    if (result.acted) runEnemyTurns();
+    settleOutcome(); render();
   }
 
   function retreat(): void {
@@ -186,10 +228,10 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     const access = reliquaryBattleAccess(save, stage);
     titleEl.textContent = RELIQUARY_BATTLE_NAMES[stage];
     copyEl.textContent = stage === 1
-      ? '灰燼騎士會架盾與激怒；聖與鈍擊可破勢，火與斬擊效果不佳。'
+      ? '灰燼騎士會架盾與激怒；聖與鈍擊可破勢，法師必須管理秘法。'
       : stage === 2
-        ? '唱詩班會施放全隊震波與暈眩；聖火能迅速撕開亡魂護勢。'
-        : '龍燼化身會範圍吐息並在半血激怒；冰與聖屬性是關鍵。';
+        ? '唱詩班會施放全隊震波與暈眩；教士需要以聖擊建立神恩維持治療。'
+        : '龍燼化身會範圍吐息並在半血激怒；冰、聖屬性與施法資源是關鍵。';
     if (!access.allowed) { noticeEl.append(text('h2', access.completed ? '戰鬥已完成' : '目前無法進入'), text('p', access.reason)); return; }
     const attempt = beginReliquaryBattleAttempt(save, stage);
     saveGame(save);
@@ -220,9 +262,12 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .battlefield { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
   .units { display: grid; gap: 10px; } .unit { padding: 15px; border: 1px solid #49372e; background: #201714; } .unit.down { opacity: .45; }
   .unit-status { color: #d5b77e !important; } .affinity { color: #c69c89 !important; } .formation { color: #9db78a !important; }
+  .mystic { margin-bottom: 0; font-weight: 700; } .mystic-mana { color: #8fb9df !important; } .mystic-favor { color: #e0ca80 !important; }
   .actions, .result, .log-panel { margin-top: 18px; padding: 22px; }
   .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   button, .return-link { display: block; padding: 11px 12px; border: 1px solid #d1a25c; background: #a96b31; color: #160d08; font: inherit; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  button.overcast { border-color: #d06155; background: #6e241f; color: #f4d8cc; }
   button.retreat { background: transparent; color: #db9d84; border-color: #8e5141; }
   .return-link { width: fit-content; margin-top: 14px; } .injuries { color: #d58c78 !important; }
   .log { max-height: 360px; overflow: auto; } .log p { margin: 0; padding: 7px 0; border-bottom: 1px solid #2f241f; color: #bcae9e; }
