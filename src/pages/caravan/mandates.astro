@@ -1,0 +1,190 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="公司委託議程 — 商隊與劍"
+  description="依命運、職涯、特許、工程、治理與市場週期形成的動態公司委託。"
+  lang="zh-TW"
+>
+  <main class="mandate-page">
+    <header class="hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD · M34</p>
+      <h1>公司委託議程</h1>
+      <p>每個市場週期會形成三項不同領域的公司級委託。每項都有專業、資本與實地三種解法，但本週期只能完成其中一項。</p>
+      <nav>
+        <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan/governance">營運治理</a>
+        <a href="/caravan/initiatives">長程工程</a>
+      </nav>
+    </header>
+
+    <section id="empty" class="panel" hidden>
+      <h2>找不到商隊存檔</h2>
+      <p>先建立旅程，再回來查看本週期議程。</p>
+    </section>
+
+    <section id="summary" class="panel" hidden>
+      <div>
+        <p class="eyebrow">MARKET CYCLE</p>
+        <h2 id="cycle-title"></h2>
+      </div>
+      <p id="cycle-state"></p>
+    </section>
+
+    <section id="cards" class="cards"></section>
+    <p id="status" class="status" aria-live="polite"></p>
+  </main>
+</BaseLayout>
+
+<script>
+  import { loadGame, saveGame } from '@scripts/games/caravan/save';
+  import {
+    companyMandateAgenda,
+    completeCompanyMandate,
+    type CompanyMandate,
+    type MandateRoute,
+  } from '@scripts/games/caravan/data/mandates';
+
+  const emptyEl = document.getElementById('empty')!;
+  const summaryEl = document.getElementById('summary')!;
+  const cycleTitleEl = document.getElementById('cycle-title')!;
+  const cycleStateEl = document.getElementById('cycle-state')!;
+  const cardsEl = document.getElementById('cards')!;
+  const statusEl = document.getElementById('status')!;
+
+  const text = (tag: string, value: string, className?: string): HTMLElement => {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = value;
+    return element;
+  };
+
+  function itemList(items: Record<string, number>): string {
+    const entries = Object.entries(items).filter(([, count]) => count > 0);
+    return entries.length > 0 ? entries.map(([id, count]) => `${id} ×${count}`).join('、') : '無';
+  }
+
+  function rewardText(mandate: CompanyMandate): string {
+    const reward = mandate.reward;
+    const parts = [`${reward.gold} G`, `聲望 +${reward.reputation}`];
+    if (Object.keys(reward.inventory).length > 0) parts.push(itemList(reward.inventory));
+    if (reward.bondAll > 0) parts.push(`全旅伴羈絆 +${reward.bondAll}`);
+    if (reward.skillPoints > 0) parts.push(`技能點 +${reward.skillPoints}`);
+    return parts.join('｜');
+  }
+
+  function routeCost(route: MandateRoute): string {
+    const parts: string[] = [];
+    if (route.goldCost > 0) parts.push(`${route.goldCost} G`);
+    if (Object.keys(route.inventoryCost).length > 0) parts.push(itemList(route.inventoryCost));
+    return parts.length > 0 ? parts.join('＋') : '無直接成本';
+  }
+
+  function render(): void {
+    const save = loadGame();
+    cardsEl.replaceChildren();
+    if (!save) {
+      emptyEl.hidden = false;
+      summaryEl.hidden = true;
+      return;
+    }
+    emptyEl.hidden = true;
+    summaryEl.hidden = false;
+    const agenda = companyMandateAgenda(save);
+    cycleTitleEl.textContent = `市場週期 ${agenda.cycle}`;
+    cycleStateEl.textContent = agenda.completed
+      ? `本週期已完成 ${agenda.completedMandateId ?? '一項委託'}（${agenda.completedRouteId ?? '已結算'}）。`
+      : `目前資金 ${save.gold} G；請從三項委託中選擇一項完成。`;
+
+    for (const mandate of agenda.mandates) {
+      const card = document.createElement('article');
+      card.className = 'mandate-card';
+      if (agenda.completedMandateId === mandate.id) card.classList.add('completed');
+
+      const head = document.createElement('header');
+      const titleWrap = document.createElement('div');
+      titleWrap.append(
+        text('p', `${mandate.domain.toUpperCase()} · 難度 ${mandate.difficulty}`, 'eyebrow'),
+        text('h2', mandate.title),
+      );
+      head.append(titleWrap, text('span', `${mandate.primaryStat.toUpperCase()} / ${mandate.primarySkill}`, 'domain-tag'));
+      card.append(head, text('p', mandate.description, 'description'));
+
+      const reward = text('p', `獎勵：${rewardText(mandate)}`, 'reward');
+      card.append(reward);
+
+      const routes = document.createElement('div');
+      routes.className = 'routes';
+      for (const route of mandate.routes) {
+        const routeEl = document.createElement('section');
+        routeEl.className = `route ${route.eligible ? 'eligible' : 'blocked'}`;
+        routeEl.append(
+          text('h3', route.name),
+          text('p', route.description),
+          text('p', `能力 ${route.score} / ${route.threshold}`, 'score'),
+          text('p', `成本：${routeCost(route)}`, 'cost'),
+        );
+        if (!route.eligible) {
+          routeEl.append(text('p', route.blockers.join('；'), 'blockers'));
+        }
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.disabled = agenda.completed || !route.eligible;
+        button.textContent = agenda.completed ? '本週期已結算' : route.eligible ? `採用${route.name}` : '條件不足';
+        button.addEventListener('click', () => {
+          const latest = loadGame();
+          if (!latest) {
+            statusEl.textContent = '存檔已不存在。';
+            return;
+          }
+          try {
+            const result = completeCompanyMandate(latest, mandate.id, route.id);
+            saveGame(latest);
+            statusEl.textContent = `已完成「${mandate.title}」的${route.name}；獲得 ${result.reward.gold} G 與聲望 +${result.reward.reputation}。`;
+          } catch (error) {
+            statusEl.textContent = error instanceof Error ? error.message : '委託結算失敗。';
+          }
+          render();
+        });
+        routeEl.append(button);
+        routes.append(routeEl);
+      }
+      card.append(routes);
+      cardsEl.append(card);
+    }
+  }
+
+  render();
+</script>
+
+<style>
+  :global(body) { background: #11100d; color: #eee6d5; }
+  .mandate-page { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 42px 0 80px; }
+  .hero, .panel, .mandate-card { border: 1px solid #4a4032; background: #1a1713; }
+  .hero { padding: 32px; background: linear-gradient(135deg, #241c13, #15120e); }
+  .eyebrow { margin: 0 0 7px; color: #c9a45e; font-size: .72rem; letter-spacing: .17em; text-transform: uppercase; }
+  h1, h2, h3, p { margin-top: 0; }
+  h1 { margin-bottom: 12px; font-size: clamp(2.1rem, 5vw, 4.2rem); }
+  .hero > p:not(.eyebrow), .description, .route p, .panel p, .status { color: #b9b0a1; line-height: 1.7; }
+  nav { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px; }
+  a { color: #e0bd78; }
+  .panel { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-top: 18px; padding: 20px 24px; }
+  .cards { display: grid; gap: 18px; margin-top: 18px; }
+  .mandate-card { padding: 24px; }
+  .mandate-card.completed { border-color: #9e7d42; }
+  .mandate-card > header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+  .domain-tag { padding: 6px 10px; border: 1px solid #5b4a31; color: #d9b972; white-space: nowrap; }
+  .reward { padding: 12px; background: #211d16; border-left: 3px solid #b88a3f; }
+  .routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+  .route { padding: 16px; border: 1px solid #443a2d; background: #201c17; }
+  .route.eligible { border-color: #7c7044; }
+  .route.blocked { opacity: .68; }
+  .score { color: #d7bd84 !important; }
+  .cost { color: #d7a17e !important; }
+  .blockers { color: #df8f7b !important; }
+  button { width: 100%; margin-top: 12px; padding: 11px; border: 1px solid #c39b54; background: #a97934; color: #160f08; font: inherit; font-weight: 700; cursor: pointer; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .status { min-height: 1.6em; margin-top: 16px; }
+  @media (max-width: 820px) { .routes { grid-template-columns: 1fr; } .panel, .mandate-card > header { align-items: flex-start; flex-direction: column; } }
+</style>
