@@ -1,0 +1,192 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="公司職務席位 — 商隊與劍"
+  description="依旅伴命運、潛力、職涯、技能與羈絆任命公司官員。"
+  lang="zh-TW"
+>
+  <main class="office-page">
+    <header class="hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD · M36</p>
+      <h1>公司職務席位</h1>
+      <p>旅伴不再只是出征人手。任命合格官員能強化對應公司委託，但每席都會從委託金幣報酬中支付 3 G 津貼。</p>
+      <nav>
+        <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan/mandates">公司委託</a>
+        <a href="/caravan/companions">旅伴身世</a>
+        <a href="/caravan/constitution">公司憲章</a>
+      </nav>
+    </header>
+
+    <section id="empty" class="panel" hidden>
+      <h2>找不到商隊存檔</h2>
+      <p>先建立旅程並招募旅伴，再回來設置公司職務。</p>
+    </section>
+
+    <section id="summary" class="panel" hidden>
+      <div>
+        <p class="eyebrow">OFFICE BOARD</p>
+        <h2 id="summary-title"></h2>
+      </div>
+      <p id="summary-copy"></p>
+    </section>
+
+    <section id="warnings" class="warnings" hidden></section>
+    <section id="cards" class="cards"></section>
+    <p id="status" class="status" aria-live="polite"></p>
+  </main>
+</BaseLayout>
+
+<script>
+  import { loadGame, saveGame } from '@scripts/games/caravan/save';
+  import {
+    COMPANY_OFFICES,
+    COMPANY_OFFICE_ORDER,
+    appointCompanyOfficer,
+    companyOfficeState,
+    dismissCompanyOfficer,
+    officeCandidate,
+    type CompanyOfficeId,
+  } from '@scripts/games/caravan/data/offices';
+
+  const emptyEl = document.getElementById('empty')!;
+  const summaryEl = document.getElementById('summary')!;
+  const summaryTitleEl = document.getElementById('summary-title')!;
+  const summaryCopyEl = document.getElementById('summary-copy')!;
+  const warningsEl = document.getElementById('warnings')!;
+  const cardsEl = document.getElementById('cards')!;
+  const statusEl = document.getElementById('status')!;
+
+  const text = (tag: string, value: string, className?: string): HTMLElement => {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = value;
+    return element;
+  };
+
+  function render(): void {
+    const save = loadGame();
+    cardsEl.replaceChildren();
+    warningsEl.replaceChildren();
+    if (!save) {
+      emptyEl.hidden = false;
+      summaryEl.hidden = true;
+      return;
+    }
+    emptyEl.hidden = true;
+    summaryEl.hidden = false;
+    const state = companyOfficeState(save);
+    summaryTitleEl.textContent = `已設置 ${state.assignments.length} / 3 席`;
+    summaryCopyEl.textContent = `目前資金 ${save.gold} G；有效席位每個市場委託支付 3 G 官員津貼。`;
+    warningsEl.hidden = state.warnings.length === 0;
+    for (const warning of state.warnings) warningsEl.append(text('p', warning));
+
+    for (const officeId of COMPANY_OFFICE_ORDER) {
+      const def = COMPANY_OFFICES[officeId];
+      const assignment = state.assignments.find((entry) => entry.officeId === officeId);
+      const card = document.createElement('article');
+      card.className = 'office-card';
+      const head = document.createElement('header');
+      const copy = document.createElement('div');
+      copy.append(text('p', def.domain.toUpperCase(), 'eyebrow'), text('h2', def.name));
+      head.append(copy, text('span', assignment ? `Tier ${assignment.tier}` : '空缺', 'badge'));
+      card.append(head, text('p', def.description, 'description'));
+      if (assignment) {
+        const current = document.createElement('div');
+        current.className = 'current';
+        current.append(
+          text('strong', assignment.memberName),
+          text('span', `資格 ${assignment.qualification}｜羈絆階級 ${assignment.bondTier}`),
+        );
+        const dismiss = document.createElement('button');
+        dismiss.type = 'button';
+        dismiss.className = 'secondary';
+        dismiss.textContent = '撤除職務';
+        dismiss.addEventListener('click', () => {
+          const latest = loadGame();
+          if (!latest) return;
+          try {
+            dismissCompanyOfficer(latest, officeId);
+            saveGame(latest);
+            statusEl.textContent = `已撤除${def.name}。重新任命此席位需支付 25 G。`;
+          } catch (error) {
+            statusEl.textContent = error instanceof Error ? error.message : '撤職失敗。';
+          }
+          render();
+        });
+        current.append(dismiss);
+        card.append(current);
+      }
+
+      const candidates = document.createElement('div');
+      candidates.className = 'candidates';
+      for (const companion of save.companions) {
+        const candidate = officeCandidate(save, officeId, companion.id);
+        const row = document.createElement('div');
+        row.className = `candidate ${candidate.eligible ? 'eligible' : 'blocked'}`;
+        const body = document.createElement('div');
+        body.append(
+          text('strong', companion.name),
+          text('span', `資格 ${candidate.qualification} / ${candidate.threshold}｜任命 ${candidate.appointmentCost} G`),
+        );
+        if (!candidate.eligible) body.append(text('small', candidate.blockers.join('；')));
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.disabled = !candidate.eligible;
+        button.textContent = candidate.eligible ? '任命' : '不可任命';
+        button.addEventListener('click', () => {
+          const latest = loadGame();
+          if (!latest) return;
+          try {
+            const result = appointCompanyOfficer(latest, officeId, companion.id);
+            saveGame(latest);
+            statusEl.textContent = `${result.memberName} 已就任${def.name}（Tier ${result.tier}）。`;
+          } catch (error) {
+            statusEl.textContent = error instanceof Error ? error.message : '任命失敗。';
+          }
+          render();
+        });
+        row.append(body, button);
+        candidates.append(row);
+      }
+      if (save.companions.length === 0) candidates.append(text('p', '目前沒有旅伴可供任命。'));
+      card.append(candidates);
+      cardsEl.append(card);
+    }
+  }
+
+  render();
+</script>
+
+<style>
+  :global(body) { background: #11100d; color: #eee6d5; }
+  .office-page { width: min(1120px, calc(100% - 28px)); margin: 0 auto; padding: 42px 0 80px; }
+  .hero, .panel, .office-card { border: 1px solid #4a4032; background: #1a1713; }
+  .hero { padding: 32px; background: linear-gradient(135deg, #241c13, #15120e); }
+  .eyebrow { margin: 0 0 7px; color: #c9a45e; font-size: .72rem; letter-spacing: .17em; text-transform: uppercase; }
+  h1, h2, p { margin-top: 0; }
+  h1 { margin-bottom: 12px; font-size: clamp(2.1rem, 5vw, 4.2rem); }
+  .hero > p:not(.eyebrow), .description, .panel p, .candidate span, .candidate small, .status { color: #b9b0a1; line-height: 1.65; }
+  nav { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px; }
+  a { color: #e0bd78; }
+  .panel { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-top: 18px; padding: 20px 24px; }
+  .warnings { margin-top: 18px; padding: 14px 18px; border-left: 3px solid #bd5f4e; background: #2b1916; }
+  .warnings p { margin: 4px 0; }
+  .cards { display: grid; gap: 18px; margin-top: 18px; }
+  .office-card { padding: 22px; }
+  .office-card > header { display: flex; justify-content: space-between; gap: 16px; }
+  .badge { padding: 6px 10px; border: 1px solid #6b5938; color: #d9b972; height: fit-content; }
+  .current { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px; margin: 14px 0; background: #252018; border-left: 3px solid #a88443; }
+  .current > span { color: #c7bca9; }
+  .candidates { display: grid; gap: 9px; margin-top: 14px; }
+  .candidate { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 12px; border: 1px solid #41382d; background: #201c17; }
+  .candidate > div { display: grid; gap: 4px; }
+  .candidate.blocked { opacity: .62; }
+  button { padding: 9px 13px; border: 1px solid #c39b54; background: #a97934; color: #160f08; font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  button.secondary { background: transparent; color: #dfbd7c; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .status { min-height: 1.6em; margin-top: 16px; }
+  @media (max-width: 720px) { .panel, .current, .candidate { align-items: flex-start; flex-direction: column; } }
+</style>
