@@ -127,9 +127,13 @@ describe('M43 medieval armory doctrines', () => {
     mage.equipment = { weapon: 'ghostflame-staff', armor: 'ashveil-robe', trinket: 'saltglass-talisman' };
     cleric.equipment = { weapon: 'brine-blessed-mace', armor: 'brinewarded-vestment', trinket: null };
     const load = partyArmoryLoad(save);
+    const profiles = Object.values(load.members);
     expect(load.burden).toBeGreaterThan(0);
     expect(load.capacity).toBeGreaterThan(load.burden);
     expect(load.overload).toBe(0);
-    expect(new Set(Object.values(load.members).map((profile) => `${profile.weaponFit}/${profile.armorFit}`)).size).toBeGreaterThan(1);
+    expect(profiles.every((profile) => profile.weaponFit === 'mastered' && profile.armorFit === 'mastered')).toBe(true);
+    expect(new Set(profiles.map((profile) => profile.burden)).size).toBeGreaterThanOrEqual(3);
+    expect(profiles.filter((profile) => profile.mysticCapacity.mana > 0)).toHaveLength(1);
+    expect(profiles.filter((profile) => profile.mysticCapacity.favor > 0)).toHaveLength(1);
   });
 });
