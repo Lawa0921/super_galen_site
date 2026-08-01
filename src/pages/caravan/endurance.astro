@@ -1,0 +1,477 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="餘燼朝聖 — 商隊與劍"
+  description="連續迎戰灰燼騎士、無舌唱詩班與龍燼化身，讓生命、秘法、神恩和補給跨戰保留。"
+  lang="zh-TW"
+>
+  <main class="endurance-page">
+    <header class="hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD · M42 EXPEDITION ENDURANCE</p>
+      <h1>餘燼朝聖</h1>
+      <p>三場戰鬥、兩次營地決策。生命、秘法、神恩與秘法灼傷不會在戰後自動重置；你必須決定何時休息、何時守夜，以及是否為更高報酬強行軍。</p>
+      <nav>
+        <a href="/caravan/play">返回主冒險</a>
+        <a href="/caravan/ashen-reliquary">灰燼聖匣</a>
+      </nav>
+    </header>
+
+    <section id="notice" class="panel"></section>
+    <section id="progress" class="progress" hidden></section>
+    <section id="intent" class="intent" hidden></section>
+
+    <section id="battlefield" class="battlefield" hidden>
+      <div><p class="eyebrow">ENEMIES</p><div id="enemies" class="units"></div></div>
+      <div><p class="eyebrow">PILGRIM PARTY</p><div id="party" class="units"></div></div>
+    </section>
+
+    <section id="actions" class="actions" hidden></section>
+    <section id="camp" class="camp" hidden></section>
+    <section id="result" class="result" hidden></section>
+    <section class="log-panel"><p class="eyebrow">PILGRIMAGE CHRONICLE</p><div id="log" class="log"></div></section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { loadGame, saveGame } from '@scripts/games/caravan/save';
+  import { createRng, type Rng } from '@scripts/games/caravan/rng';
+  import {
+    ELEMENT_LABELS,
+    attemptRetreat,
+    currentActor,
+    enemyAct,
+    partyAct,
+    partyMoveAvailability,
+    type CombatState,
+    type EnemyUnit,
+    type Move,
+    type PartyMember,
+  } from '@scripts/games/caravan/combat';
+  import { mysticPowerText, mysticRuleForMove } from '@scripts/games/caravan/data/arcana';
+  import {
+    applyEnduranceCamp,
+    beginEnduranceBattle,
+    checkpointEnduranceBattle,
+    claimEnduranceReward,
+    createEnduranceRun,
+    enduranceAccess,
+    enduranceCampOptions,
+    enduranceReward,
+    enduranceRunSummary,
+    finishEnduranceBattle,
+    isEnduranceRun,
+    type EnduranceCampChoice,
+    type EnduranceRun,
+  } from '@scripts/games/caravan/data/endurance';
+
+  const RUN_KEY = 'caravan-endurance-v2';
+  const noticeEl = document.getElementById('notice')!;
+  const progressEl = document.getElementById('progress')!;
+  const intentEl = document.getElementById('intent')!;
+  const battlefieldEl = document.getElementById('battlefield')!;
+  const enemiesEl = document.getElementById('enemies')!;
+  const partyEl = document.getElementById('party')!;
+  const actionsEl = document.getElementById('actions')!;
+  const campEl = document.getElementById('camp')!;
+  const resultEl = document.getElementById('result')!;
+  const logEl = document.getElementById('log')!;
+
+  let run: EnduranceRun | null = null;
+  let combat: CombatState | null = null;
+  let rng: Rng | null = null;
+
+  const text = (tag: string, value: string, className?: string): HTMLElement => {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = value;
+    return element;
+  };
+
+  function saveRun(): void {
+    if (!run) localStorage.removeItem(RUN_KEY);
+    else localStorage.setItem(RUN_KEY, JSON.stringify(run));
+  }
+
+  function loadRun(): EnduranceRun | null {
+    try {
+      const raw = localStorage.getItem(RUN_KEY);
+      if (!raw) return null;
+      const value = JSON.parse(raw);
+      return isEnduranceRun(value) ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function button(
+    label: string,
+    action: () => void,
+    className = '',
+    disabled = false,
+    title = '',
+  ): HTMLButtonElement {
+    const element = document.createElement('button');
+    element.type = 'button';
+    element.textContent = label;
+    element.className = className;
+    element.disabled = disabled;
+    element.title = title;
+    element.addEventListener('click', action);
+    return element;
+  }
+
+  function link(label: string, href: string, className = ''): HTMLAnchorElement {
+    const element = document.createElement('a');
+    element.href = href;
+    element.textContent = label;
+    element.className = className;
+    return element;
+  }
+
+  function unitCard(unit: PartyMember | EnemyUnit): HTMLElement {
+    const card = document.createElement('article');
+    card.className = `unit ${unit.hp <= 0 ? 'down' : ''}`;
+    const enemy = 'intents' in unit ? unit as EnemyUnit : null;
+    const statuses = (unit.statuses ?? []).map((status) => `${status.kind} ${status.remaining}`).join('、');
+    const poise = enemy?.maxPoise !== undefined ? `｜護勢 ${enemy.poise ?? enemy.maxPoise}/${enemy.maxPoise}` : '';
+    card.append(
+      text('h3', unit.name),
+      text('p', `HP ${Math.max(0, unit.hp)}/${unit.maxHp}${poise}${statuses ? `｜${statuses}` : ''}`, 'unit-status'),
+    );
+    if (enemy) {
+      const weak = (enemy.weaknesses ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
+      const resist = (enemy.resists ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
+      card.append(text('p', `弱點：${weak}｜抗性：${resist}`, 'affinity'));
+    } else {
+      const member = unit as PartyMember;
+      card.append(text('p', member.formationRow === 'back' ? '後排' : '前排', 'formation'));
+      if (member.mystic) card.append(text('p', mysticPowerText(member.mystic), `mystic mystic-${member.mystic.kind}`));
+    }
+    return card;
+  }
+
+  function renderUnits(): void {
+    if (!combat) return;
+    enemiesEl.replaceChildren(...combat.enemies.map(unitCard));
+    partyEl.replaceChildren(...combat.party.map(unitCard));
+  }
+
+  function renderIntent(): void {
+    if (!combat || combat.outcome !== 'ongoing') { intentEl.hidden = true; return; }
+    const lines = combat.enemies.filter((enemy) => enemy.hp > 0).map((enemy) => {
+      const move = enemy.moves.find((entry) => entry.id === combat!.enemyIntents[enemy.id]);
+      return `${enemy.name}：${move?.name ?? '未知意圖'}`;
+    });
+    intentEl.replaceChildren(text('strong', `第 ${combat.round} 輪｜敵方意圖`), text('span', lines.join('　')));
+    intentEl.hidden = lines.length === 0;
+  }
+
+  function renderLog(): void {
+    logEl.replaceChildren();
+    for (const entry of combat?.log.slice(-28) ?? []) logEl.append(text('p', entry.text, entry.kind));
+  }
+
+  function targetsFor(move: Move): Array<{ id: string; name: string }> {
+    if (!combat) return [];
+    if (move.target === 'self') return [];
+    if (move.kind === 'attack') {
+      const targets = combat.enemies.filter((enemy) => enemy.hp > 0);
+      if (move.area) return targets.length ? [{ id: targets[0].id, name: '敵方全體' }] : [];
+      return targets.map((target) => ({ id: target.id, name: target.name }));
+    }
+    return combat.party.filter((member) => member.hp > 0).map((target) => ({ id: target.id, name: target.name }));
+  }
+
+  function moveButtons(actor: PartyMember, move: Move, overcast: boolean): HTMLButtonElement[] {
+    const availability = partyMoveAvailability(actor, move, { overcast });
+    const prefix = overcast ? `禁式過載（反噬 ${availability.backlash}）・` : '';
+    const className = overcast ? 'overcast' : '';
+    if (move.kind === 'guard' || move.target === 'self') {
+      return [button(`${prefix}${move.name}`, () => act(actor.id, move.id, actor.id, overcast), className, !availability.allowed, availability.reason)];
+    }
+    return targetsFor(move).map((target) => button(
+      `${prefix}${move.name} → ${target.name}`,
+      () => act(actor.id, move.id, target.id, overcast),
+      className,
+      !availability.allowed,
+      availability.reason,
+    ));
+  }
+
+  function renderActions(): void {
+    actionsEl.replaceChildren();
+    const actorInfo = combat ? currentActor(combat) : null;
+    if (!combat || combat.outcome !== 'ongoing' || actorInfo?.side !== 'party') { actionsEl.hidden = true; return; }
+    const actor = combat.party.find((member) => member.id === actorInfo.id)!;
+    actionsEl.hidden = false;
+    actionsEl.append(text('h2', `${actor.name}的行動`));
+    if (actor.mystic) actionsEl.append(text('p', mysticPowerText(actor.mystic), 'action-resource'));
+    const grid = document.createElement('div');
+    grid.className = 'action-grid';
+    for (const move of actor.moves) {
+      grid.append(...moveButtons(actor, move, false));
+      const rule = mysticRuleForMove(move);
+      if (rule?.kind === 'mana' && rule.overcast && actor.mystic && actor.mystic.current < rule.cost) {
+        grid.append(...moveButtons(actor, move, true));
+      }
+    }
+    grid.append(button('撤退並結束朝聖', retreat, 'retreat'));
+    actionsEl.append(grid);
+  }
+
+  function runEnemyTurns(): void {
+    if (!combat || !rng) return;
+    let safety = 0;
+    while (combat.outcome === 'ongoing' && currentActor(combat)?.side === 'enemy' && safety < 30) {
+      const actor = currentActor(combat);
+      if (!actor) break;
+      enemyAct(rng, combat, actor.id);
+      safety += 1;
+    }
+  }
+
+  function persistCurrentBattle(): void {
+    if (!run || !combat) return;
+    checkpointEnduranceBattle(run, combat);
+    saveRun();
+  }
+
+  function act(actorId: string, moveId: string, targetId: string, overcast: boolean): void {
+    if (!combat || !rng || !run) return;
+    partyAct(rng, combat, actorId, moveId, targetId, { overcast });
+    runEnemyTurns();
+    persistCurrentBattle();
+    settleBattle();
+    render();
+  }
+
+  function retreat(): void {
+    if (!combat || !rng || !run) return;
+    attemptRetreat(rng, combat);
+    persistCurrentBattle();
+    settleBattle();
+    render();
+  }
+
+  function settleBattle(): void {
+    if (!combat || !run || combat.outcome === 'ongoing' || run.phase !== 'battle') return;
+    finishEnduranceBattle(run, combat);
+    saveRun();
+  }
+
+  function renderProgress(): void {
+    if (!run) { progressEl.hidden = true; return; }
+    progressEl.hidden = false;
+    progressEl.replaceChildren(
+      text('strong', `朝聖進度：${run.stage}/3`),
+      text('span', enduranceRunSummary(run)),
+    );
+  }
+
+  function startBattle(): void {
+    const save = loadGame();
+    if (!save || !run) return;
+    try {
+      rng = createRng((save.createdAt + run.stage * 7919 + run.abandonmentCount * 104729) >>> 0);
+      combat = beginEnduranceBattle(run, save, rng);
+      persistCurrentBattle();
+      battlefieldEl.hidden = false;
+      campEl.hidden = true;
+      resultEl.hidden = true;
+      runEnemyTurns();
+      persistCurrentBattle();
+      settleBattle();
+      render();
+    } catch (error) {
+      saveRun();
+      combat = null;
+      noticeEl.replaceChildren(text('p', error instanceof Error ? error.message : '無法開始朝聖戰鬥。'));
+      render();
+    }
+  }
+
+  function chooseCamp(choice: EnduranceCampChoice): void {
+    const save = loadGame();
+    if (!save || !run) return;
+    try {
+      applyEnduranceCamp(run, save, choice);
+      saveGame(save);
+      saveRun();
+      startBattle();
+    } catch (error) {
+      noticeEl.replaceChildren(text('p', error instanceof Error ? error.message : '營地選擇失敗。'));
+    }
+  }
+
+  function renderCamp(): void {
+    const save = loadGame();
+    campEl.replaceChildren();
+    if (!save || !run || run.phase !== 'camp') { campEl.hidden = true; return; }
+    campEl.hidden = false;
+    battlefieldEl.hidden = true;
+    actionsEl.hidden = true;
+    intentEl.hidden = true;
+    campEl.append(
+      text('p', `CAMP ${run.stage - 1}`, 'eyebrow'),
+      text('h2', '營火只能維持到天亮'),
+      text('p', '選擇一項整備。倒地成員不會在營地復活，生命與魔法資源也不會自行恢復。'),
+    );
+    const grid = document.createElement('div');
+    grid.className = 'camp-grid';
+    for (const option of enduranceCampOptions(run, save)) {
+      const card = document.createElement('article');
+      card.append(text('h3', option.name), text('p', option.description));
+      if (option.blocker) card.append(text('p', option.blocker, 'blocker'));
+      card.append(button('選擇此整備', () => chooseCamp(option.id), '', !option.eligible, option.blocker ?? ''));
+      grid.append(card);
+    }
+    campEl.append(grid);
+  }
+
+  function claimReward(): void {
+    const save = loadGame();
+    if (!save || !run) return;
+    try {
+      const reward = claimEnduranceReward(run, save);
+      saveGame(save);
+      saveRun();
+      noticeEl.replaceChildren(text('p', `已取得 ${reward.gold} G、聲望 +${reward.reputation}。完成一趟一般遠征、讓市場週期輪轉後，行會才會發布下一份朝聖契約。`));
+      render();
+    } catch (error) {
+      noticeEl.replaceChildren(text('p', error instanceof Error ? error.message : '獎勵結算失敗。'));
+    }
+  }
+
+  function renderResult(): void {
+    resultEl.replaceChildren();
+    if (!run || (run.phase !== 'victory' && run.phase !== 'defeat')) { resultEl.hidden = true; return; }
+    resultEl.hidden = false;
+    battlefieldEl.hidden = true;
+    actionsEl.hidden = true;
+    intentEl.hidden = true;
+    if (run.phase === 'defeat') {
+      resultEl.append(
+        text('p', 'PILGRIMAGE ENDED', 'eyebrow'),
+        text('h2', '遠征隊未能走到龍燼之心'),
+        text('p', `本次止步於第 ${run.stage} 戰。倒地、補給、魔法消耗與過載決策共同造成了結果。`),
+        button('從第一戰重新挑戰', resetRun),
+        link('返回主冒險重新整備', '/caravan/play', 'return-link'),
+      );
+      return;
+    }
+    const reward = enduranceReward(run);
+    resultEl.append(
+      text('p', 'PILGRIMAGE COMPLETE', 'eyebrow'),
+      text('h2', '三重火印已被突破'),
+      text('p', `強行軍 ${run.forcedMarches} 次；獎勵 ${reward.gold} G、聲望 +${reward.reputation}。`),
+      button(run.claimed ? '本週期獎勵已領取' : '領取朝聖獎勵', claimReward, '', run.claimed),
+      link('返回主冒險推進市場週期', '/caravan/play', 'return-link'),
+    );
+  }
+
+  function resetRun(): void {
+    run = null;
+    combat = null;
+    localStorage.removeItem(RUN_KEY);
+    boot();
+  }
+
+  function render(): void {
+    renderProgress();
+    renderCamp();
+    renderResult();
+    if (combat && run?.phase === 'battle') {
+      renderUnits();
+      renderIntent();
+      renderActions();
+      renderLog();
+    }
+  }
+
+  function boot(): void {
+    noticeEl.replaceChildren();
+    progressEl.hidden = true;
+    battlefieldEl.hidden = true;
+    actionsEl.hidden = true;
+    campEl.hidden = true;
+    resultEl.hidden = true;
+    intentEl.hidden = true;
+    logEl.replaceChildren();
+    const save = loadGame();
+    if (!save) {
+      noticeEl.append(text('h2', '找不到商隊存檔'), text('p', '先建立商隊並整備出征隊。'));
+      return;
+    }
+    const stored = loadRun();
+    run = stored?.saveCreatedAt === save.createdAt && stored.marketSeed === save.marketSeed ? stored : null;
+    if (stored && !run) localStorage.removeItem(RUN_KEY);
+
+    if (!run) {
+      const access = enduranceAccess(save);
+      if (!access.allowed) {
+        noticeEl.append(text('h2', '餘燼朝聖尚未開放'), text('p', access.reason));
+        return;
+      }
+      noticeEl.append(
+        text('h2', `健康出征隊 ${access.partySize} 人`),
+        text('p', '開始後，三場戰鬥共享生命與魔法狀態。每次行動都會保存；中途關頁只會保留損傷並追加疲勞。'),
+        button('開始餘燼朝聖', () => {
+          run = createEnduranceRun(save);
+          saveRun();
+          startBattle();
+        }),
+      );
+      return;
+    }
+
+    noticeEl.append(
+      text('h2', '朝聖紀錄仍在燃燒'),
+      text('p', enduranceRunSummary(run)),
+      button('放棄整趟朝聖並從第一戰重來', resetRun, 'secondary'),
+    );
+    if (run.phase === 'battle') startBattle();
+    else render();
+  }
+
+  boot();
+</script>
+
+<style>
+  :global(body) { background: #0d0a09; color: #f1e7d6; }
+  .endurance-page { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 42px 0 80px; }
+  .hero, .panel, .actions, .camp, .result, .log-panel { border: 1px solid #50382c; background: #19110e; }
+  .hero { padding: 34px; background: radial-gradient(circle at 82% 18%, #612319 0, transparent 34%), linear-gradient(135deg, #2b1710, #0d0a09); }
+  .eyebrow { margin: 0 0 7px; color: #d89d5b; font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; }
+  h1, h2, h3, p { margin-top: 0; } h1 { margin-bottom: 12px; font-size: clamp(2.4rem, 6vw, 5rem); }
+  .hero p, .panel p, .actions p, .unit p, .camp p, .result p { color: #bdae9d; line-height: 1.7; }
+  nav { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px; } a { color: #e5b76e; }
+  .panel, .progress, .intent { display: flex; justify-content: space-between; gap: 18px; margin-top: 18px; padding: 18px 22px; }
+  .progress { border-left: 3px solid #9f7b46; background: #211912; }
+  .intent { border-left: 3px solid #c06943; background: #2a1713; }
+  .battlefield { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+  .units { display: grid; gap: 10px; }
+  .unit { padding: 15px; border: 1px solid #49362d; background: #201613; }
+  .unit.down { opacity: .45; }
+  .unit-status { color: #d8b87d !important; } .affinity { color: #c89d88 !important; } .formation { color: #9fb88d !important; }
+  .mystic-mana { color: #8fc3df !important; } .mystic-favor { color: #e7cc75 !important; }
+  .actions, .camp, .result, .log-panel { margin-top: 18px; padding: 22px; }
+  .action-resource { color: #d8c284 !important; }
+  .action-grid, .camp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .camp-grid article { display: flex; flex-direction: column; padding: 17px; border: 1px solid #4a382d; background: #211713; }
+  .camp-grid button { margin-top: auto; }
+  .blocker { color: #df8e77 !important; }
+  button, .return-link { display: block; padding: 11px 12px; border: 1px solid #d2a45d; background: #a96b31; color: #160d08; font: inherit; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
+  button:disabled { opacity: .42; cursor: not-allowed; }
+  button.overcast { border-color: #cf6556; background: #6f2c25; color: #f3ddd6; }
+  button.retreat, button.secondary { background: transparent; color: #db9d84; border-color: #8e5141; }
+  .return-link { width: fit-content; margin-top: 12px; }
+  .log { max-height: 360px; overflow: auto; }
+  .log p { margin: 0; padding: 7px 0; border-bottom: 1px solid #30241e; color: #bdae9d; }
+  .log p.damage { color: #d99a82; } .log p.heal, .log p.victory { color: #a9c783; } .log p.info { color: #d4bd84; }
+  @media (max-width: 820px) {
+    .battlefield, .action-grid, .camp-grid { grid-template-columns: 1fr; }
+    .panel, .progress, .intent { flex-direction: column; }
+  }
+</style>
