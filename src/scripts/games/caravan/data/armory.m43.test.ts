@@ -4,7 +4,6 @@ import { createRng } from '../rng';
 import { createProtagonist, newGame, type CompanionRecord } from '../save';
 import { memberFromRecord } from './jobs';
 import {
-  adjustMovesForArmory,
   armoryProfile,
   equipArmoryItem,
   partyArmoryLoad,
@@ -55,7 +54,8 @@ describe('M43 medieval armory doctrines', () => {
     expect(profile.armorFit).toBe('mastered');
     expect(profile.mysticCapacity.mana).toBe(3);
     const combat = startCombat(createRng(43), [memberFromRecord(mage)], [dummyEnemy()]);
-    expect(combat.party[0].mystic).toMatchObject({ kind: 'mana', max: 10, current: 10 });
+    // Both legacy equipment INT bonuses and the new staff/robe focus capacity intentionally compose.
+    expect(combat.party[0].mystic).toMatchObject({ kind: 'mana', max: 11, current: 11 });
   });
 
   it('lets a mage wear mail but exposes steel interference and encumbrance', () => {
@@ -76,9 +76,9 @@ describe('M43 medieval armory doctrines', () => {
   it('makes mastered weapon moves more accurate and strained weapons costly but usable', () => {
     const swordsman = record('swordsman');
     swordsman.equipment.weapon = 'salt-crystal-blade';
-    const mastered = adjustMovesForArmory(swordsman, memberFromRecord(swordsman).moves)
+    const mastered = memberFromRecord(swordsman).moves
       .find((move) => move.id === 'crystal-shatter-slash')!;
-    expect(mastered.hitBonus).toBe(2); // memberFromRecord already applied +1; explicit second pass proves deterministic modifier
+    expect(mastered.hitBonus).toBe(1);
 
     const ranger = record('ranger');
     ranger.equipment.weapon = 'ghostflame-staff';
