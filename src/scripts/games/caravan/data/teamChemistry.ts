@@ -1,18 +1,18 @@
 import type { CompanionRecord, SaveData } from '../save';
-import type { GenesisAptitudeId, GenesisBurdenId, GenesisTraitId } from './genesis';
-import { GENESIS_APTITUDES, GENESIS_BURDENS, GENESIS_LIFEPATHS } from './genesis';
-import type { CareerPathId } from './careers';
-import { CAREER_PATHS, isValidCareerMilestone } from './careers';
+
+type LifepathId = 'seasoned' | 'brawny' | 'nimble' | 'learned' | 'charming' | 'tough';
+type StatId = 'str' | 'dex' | 'int' | 'cha' | 'con';
+type CareerId = 'martial' | 'scouting' | 'lore' | 'negotiation' | 'survival';
 
 export interface ChemistryMember {
   id: string;
   name: string;
   isProtagonist: boolean;
   registered: boolean;
-  lifepathId: GenesisTraitId | null;
-  aptitudeId: GenesisAptitudeId | null;
-  burdenId: GenesisBurdenId | null;
-  latestCareerId: CareerPathId | null;
+  lifepathId: LifepathId | null;
+  aptitudeId: StatId | null;
+  burdenId: StatId | null;
+  latestCareerId: CareerId | null;
   bond: number;
   bondTier: number;
 }
@@ -47,8 +47,26 @@ export interface CouncilResult {
   receipt: string;
 }
 
-const COUNCIL_COSTS = [30, 60, 100] as const;
-const MAX_COUNCILS = COUNCIL_COSTS.length;
+const COUNCIL_COSTS: readonly number[] = [30, 60, 100];
+const MAX_COUNCILS = 3;
+const LIFEPATH_NAMES: Record<LifepathId, string> = {
+  seasoned: '流浪老手',
+  brawny: '苦役鬥士',
+  nimble: '邊境跑商',
+  learned: '失學書吏',
+  charming: '市井掮客',
+  tough: '礦難倖存者',
+};
+const APTITUDE_NAMES: Record<StatId, string> = {
+  str: '武勇天賦', dex: '機敏天賦', int: '求知天賦', cha: '領袖天賦', con: '韌性天賦',
+};
+const BURDEN_NAMES: Record<StatId, string> = {
+  str: '人手不足', dex: '舊傷遲滯', int: '帳目生疏', cha: '名聲不佳', con: '體弱多病',
+};
+const CAREER_NAMES: Record<CareerId, string> = {
+  martial: '武鬥之路', scouting: '斥候之路', lore: '學識之路', negotiation: '交涉之路', survival: '生存之路',
+};
+const CAREER_IDS: readonly CareerId[] = ['martial', 'scouting', 'lore', 'negotiation', 'survival'];
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -62,17 +80,27 @@ function bondTier(value: number | undefined): number {
   return 0;
 }
 
-function latestCareer(record: CompanionRecord): CareerPathId | null {
-  const valid = (record.careerMilestones ?? [])
-    .filter(isValidCareerMilestone)
-    .sort((a, b) => b.level - a.level);
-  return valid[0]?.pathId ?? null;
+function isCareerId(value: unknown): value is CareerId {
+  return typeof value === 'string' && CAREER_IDS.includes(value as CareerId);
+}
+
+function latestCareer(record: CompanionRecord): CareerId | null {
+  const milestones = Array.isArray(record.careerMilestones) ? record.careerMilestones : [];
+  let bestLevel = -1;
+  let selected: CareerId | null = null;
+  for (const milestone of milestones) {
+    if (!milestone || !isCareerId(milestone.pathId) || !Number.isFinite(milestone.level)) continue;
+    if (milestone.level > bestLevel) {
+      bestLevel = milestone.level;
+      selected = milestone.pathId;
+    }
+  }
+  return selected;
 }
 
 function memberById(save: SaveData, id: string): CompanionRecord | undefined {
-  return id === save.protagonist.id
-    ? save.protagonist
-    : save.companions.find((companion) => companion.id === id);
+  if (id === save.protagonist.id) return save.protagonist;
+  return save.companions.find((companion) => companion.id === id);
 }
 
 function councilCount(save: SaveData): number {
@@ -101,10 +129,6 @@ function chemistryMember(save: SaveData, id: string): ChemistryMember {
   };
 }
 
-function factor(id: string, label: string, value: number, detail: string): ChemistryFactor {
-  return { id, label, value, detail };
-}
-
 function grade(score: number): TeamChemistryProfile['grade'] {
   if (score <= -2) return '衝突';
   if (score < 0) return '生疏';
@@ -114,17 +138,27 @@ function grade(score: number): TeamChemistryProfile['grade'] {
 }
 
 function canonicalIds(memberIds: string[]): string[] {
-  return [...new Set(memberIds)].sort((a, b) => a.localeCompare(b));
+  const ids: string[] = [];
+  for (const id of memberIds) {
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return ids.sort((a, b) => a.localeCompare(b));
+}
+
+function addFactor(
+  factors: ChemistryFactor[],
+  id: string,
+  label: string,
+  value: number,
+  detail: string,
+): void {
+  factors.push({ id, label, value, detail });
 }
 
 /**
- * M32 隊伍化學反應：只讀分析正式成員資料，不修改存檔。
- * 分數被硬限制在 -2～+3，避免取代屬性、技能、職務與既有羈絆系統。
+ * 只讀分析正式成員資料。效果硬限制在 -2～+3，避免取代屬性、技能、職務或日常羈絆。
  */
-export function teamChemistryProfile(
-  save: SaveData,
-  memberIds: string[],
-): TeamChemistryProfile {
+export function teamChemistryProfile(save: SaveData, memberIds: string[]): TeamChemistryProfile {
   const ids = canonicalIds(memberIds);
   const blockingReasons: string[] = [];
   if (ids.length < 2 || ids.length > 4) blockingReasons.push('議事會需要 2～4 名成員。');
@@ -142,71 +176,70 @@ export function teamChemistryProfile(
   }
 
   const factors: ChemistryFactor[] = [];
-  const registered = members.filter((member) => member.registered);
-  const distinctLifepaths = new Set(registered.map((member) => member.lifepathId)).size;
-  if (distinctLifepaths >= 2) {
-    const value = Math.min(2, distinctLifepaths - 1);
-    factors.push(factor('lifepath-diversity', '不同道路的見聞', value, `${distinctLifepaths} 種出身互補`));
+  const lifepaths: string[] = [];
+  const aptitudes: string[] = [];
+  const careers: string[] = [];
+  const burdenCounts: Record<string, number> = {};
+  let unregisteredCount = 0;
+  let bondTierSum = 0;
+
+  for (const member of members) {
+    if (!member.registered) unregisteredCount++;
+    if (member.lifepathId && !lifepaths.includes(member.lifepathId)) lifepaths.push(member.lifepathId);
+    if (member.aptitudeId && !aptitudes.includes(member.aptitudeId)) aptitudes.push(member.aptitudeId);
+    if (member.latestCareerId && !careers.includes(member.latestCareerId)) careers.push(member.latestCareerId);
+    if (member.burdenId) burdenCounts[member.burdenId] = (burdenCounts[member.burdenId] ?? 0) + 1;
+    bondTierSum += member.bondTier;
   }
 
-  const distinctCareers = new Set(
-    members.map((member) => member.latestCareerId).filter((id): id is CareerPathId => id !== null),
-  ).size;
-  if (distinctCareers >= 2) {
-    factors.push(factor('career-coverage', '職涯互補', 1, `${distinctCareers} 種成熟職涯`));
-  } else if (members.length >= 3 && distinctCareers === 1) {
-    factors.push(factor('career-overlap', '方法過度單一', -1, '多人使用相同職涯方法'));
+  if (lifepaths.length >= 2) {
+    addFactor(factors, 'lifepath-diversity', '不同道路的見聞', Math.min(2, lifepaths.length - 1), `${lifepaths.length} 種出身互補`);
+  }
+  if (careers.length >= 2) {
+    addFactor(factors, 'career-coverage', '職涯互補', 1, `${careers.length} 種成熟職涯`);
+  } else if (members.length >= 3 && careers.length === 1) {
+    addFactor(factors, 'career-overlap', '方法過度單一', -1, '多人使用相同職涯方法');
+  }
+  if (aptitudes.length >= 3) {
+    addFactor(factors, 'aptitude-coverage', '天賦覆蓋', 1, `${aptitudes.length} 種天賦方向`);
   }
 
-  const aptitudes = new Set(
-    registered.map((member) => member.aptitudeId).filter((id): id is GenesisAptitudeId => id !== null),
-  );
-  if (aptitudes.size >= 3) {
-    factors.push(factor('aptitude-coverage', '天賦覆蓋', 1, `${aptitudes.size} 種天賦方向`));
+  let burdenPenalty = 0;
+  const burdenDetails: string[] = [];
+  for (const id of Object.keys(burdenCounts) as StatId[]) {
+    const count = burdenCounts[id] ?? 0;
+    if (count < 2) continue;
+    burdenPenalty += count - 1;
+    burdenDetails.push(`${BURDEN_NAMES[id]}×${count}`);
   }
-
-  const burdenCounts = new Map<GenesisBurdenId, number>();
-  for (const member of registered) {
-    if (member.burdenId) burdenCounts.set(member.burdenId, (burdenCounts.get(member.burdenId) ?? 0) + 1);
+  if (burdenPenalty > 0) {
+    addFactor(factors, 'shared-burdens', '缺陷互相放大', -Math.min(2, burdenPenalty), burdenDetails.join('、'));
   }
-  const burdenConflicts = [...burdenCounts.entries()].filter(([, count]) => count >= 2);
-  if (burdenConflicts.length > 0) {
-    const value = -Math.min(2, burdenConflicts.reduce((sum, [, count]) => sum + count - 1, 0));
-    const detail = burdenConflicts
-      .map(([id, count]) => `${GENESIS_BURDENS[id].name}×${count}`)
-      .join('、');
-    factors.push(factor('shared-burdens', '缺陷互相放大', value, detail));
-  }
-
-  const bondTierSum = members.reduce((sum, member) => sum + member.bondTier, 0);
   if (bondTierSum >= 3) {
-    const value = bondTierSum >= 6 ? 2 : 1;
-    factors.push(factor('earned-trust', '共同經歷', value, `羈絆階級合計 ${bondTierSum}`));
+    addFactor(factors, 'earned-trust', '共同經歷', bondTierSum >= 6 ? 2 : 1, `羈絆階級合計 ${bondTierSum}`);
   }
-
-  const unregisteredCount = members.filter((member) => !member.registered).length;
   if (unregisteredCount > 0) {
-    factors.push(factor('unknown-histories', '彼此尚未理解', -1, `${unregisteredCount} 人尚未完成身世登記`));
+    addFactor(factors, 'unknown-histories', '彼此尚未理解', -1, `${unregisteredCount} 人尚未完成身世登記`);
   }
 
-  const rawScore = factors.reduce((sum, entry) => sum + entry.value, 0);
+  let rawScore = 0;
+  for (const entry of factors) rawScore += entry.value;
   const score = clamp(rawScore, -2, 3);
   const completedCouncils = councilCount(save);
   const councilNumber = completedCouncils + 1;
-  const councilCost: number = COUNCIL_COSTS[completedCouncils] ?? 0;
+  const councilCost = COUNCIL_COSTS[completedCouncils] ?? 0;
   const bondReward = score >= 3 ? 3 : score >= 1 ? 2 : 1;
 
   if (completedCouncils >= MAX_COUNCILS) blockingReasons.push('本商隊已完成三次正式議事會。');
   if (score < 0) blockingReasons.push('目前隊伍化學反應為負，請調整成員組合。');
   if (save.gold < councilCost) blockingReasons.push(`金幣不足，需要 ${councilCost} G。`);
-  if (members.filter((member) => !member.isProtagonist).length === 0) {
-    blockingReasons.push('至少需要一名旅伴參與。');
-  }
+  if (!members.some((member) => !member.isProtagonist)) blockingReasons.push('至少需要一名旅伴參與。');
 
-  const signature = ids.map((id) => {
+  const signatureParts: string[] = [];
+  for (const id of ids) {
     const member = members.find((entry) => entry.id === id);
-    return [id, member?.lifepathId ?? 'none', member?.latestCareerId ?? 'none'].join(':');
-  }).join('|');
+    signatureParts.push([id, member?.lifepathId ?? 'none', member?.latestCareerId ?? 'none'].join(':'));
+  }
 
   return {
     memberIds: ids,
@@ -220,29 +253,24 @@ export function teamChemistryProfile(
     bondReward,
     eligible: blockingReasons.length === 0,
     blockingReasons,
-    signature,
+    signature: signatureParts.join('|'),
   };
 }
 
-/** 原子執行議事會；成功後只修改金幣、旅伴羈絆與防重收據。 */
-export function conductTeamCouncil(
-  save: SaveData,
-  memberIds: string[],
-): CouncilResult {
+/** 成功後只修改金幣、旅伴羈絆與防重收據。 */
+export function conductTeamCouncil(save: SaveData, memberIds: string[]): CouncilResult {
   const profile = teamChemistryProfile(save, memberIds);
   if (!profile.eligible) throw new Error(profile.blockingReasons.join(' '));
 
   const slotFlag = `company-council-slot:${profile.councilNumber}`;
   const receipt = `company-council:${profile.councilNumber}:${profile.signature}`;
-  if (save.flags[slotFlag] === true || save.flags[receipt] === true) {
-    throw new Error('這次議事會已經完成。');
-  }
+  if (save.flags[slotFlag] === true || save.flags[receipt] === true) throw new Error('這次議事會已經完成。');
 
-  // 全部驗證完成後才開始寫入。
   const affected = profile.members.filter((member) => !member.isProtagonist);
   save.gold -= profile.councilCost;
   for (const member of affected) {
-    const record = save.companions.find((companion) => companion.id === member.id)!;
+    const record = save.companions.find((companion) => companion.id === member.id);
+    if (!record) throw new Error(`成員「${member.id}」已不存在。`);
     record.bond = (record.bond ?? 0) + profile.bondReward;
   }
   save.flags[slotFlag] = true;
@@ -259,9 +287,9 @@ export function conductTeamCouncil(
 
 export function chemistryMemberDescription(member: ChemistryMember): string {
   const parts: string[] = [];
-  if (member.lifepathId) parts.push(GENESIS_LIFEPATHS[member.lifepathId].name);
-  if (member.aptitudeId) parts.push(GENESIS_APTITUDES[member.aptitudeId].name);
-  if (member.burdenId) parts.push(GENESIS_BURDENS[member.burdenId].name);
-  if (member.latestCareerId) parts.push(CAREER_PATHS[member.latestCareerId].name);
+  if (member.lifepathId) parts.push(LIFEPATH_NAMES[member.lifepathId]);
+  if (member.aptitudeId) parts.push(APTITUDE_NAMES[member.aptitudeId]);
+  if (member.burdenId) parts.push(BURDEN_NAMES[member.burdenId]);
+  if (member.latestCareerId) parts.push(CAREER_NAMES[member.latestCareerId]);
   return parts.length > 0 ? parts.join('・') : '身世尚未登記';
 }
