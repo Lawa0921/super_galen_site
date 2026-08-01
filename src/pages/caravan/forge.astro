@@ -1,0 +1,388 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="命運鍛造所 — 商隊與劍"
+  description="預演角色命運、五維潛力、Lv2 至 Lv5 職涯與商隊特許，並建立正式新旅程。"
+  lang="zh-TW"
+>
+  <main class="forge-page">
+    <header class="forge-hero">
+      <p class="eyebrow">CARAVAN &amp; SWORD · M30</p>
+      <h1>命運鍛造所</h1>
+      <p>用正式成長規則預演一生。預覽不會修改存檔，確認後只建立 Lv1 角色。</p>
+      <nav>
+        <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan/dossier">商隊檔案</a>
+        <a href="/caravan/initiatives">長程工程</a>
+      </nav>
+    </header>
+
+    <section class="panel search-space">
+      <p class="kicker">可規劃空間</p>
+      <strong id="forge-space">—</strong>
+      <span id="forge-space-desc">—</span>
+      <small>這是合法輸入軌跡數，不代表每條軌跡都會形成不同最終結果。</small>
+    </section>
+
+    <section class="panel controls-panel">
+      <div class="section-head">
+        <div><p class="kicker">第一步</p><h2>職業與出身</h2></div>
+        <p>出身同時改變開局資源、技能、生命、潛力傾向與後續特許。</p>
+      </div>
+      <div class="two-cols">
+        <label>職業<select id="forge-job"></select></label>
+        <label>出身道路<select id="forge-trait"></select></label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><p class="kicker">第二步</p><h2>擲骰與三點配置</h2></div>
+        <p>每項擲骰可在職業基準 -2 至 +3；自由配置總和必須恰好三點。</p>
+      </div>
+      <div id="creation-grid" class="stat-editor"></div>
+      <p id="creation-total" class="total-line"></p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><p class="kicker">第三步</p><h2>Lv2～Lv5 訓練計畫</h2></div>
+        <p>每級配置兩點屬性。技能在該級職涯鎖定後投入，因此主要影響下一級選路。</p>
+      </div>
+      <div id="training-grid" class="training-grid"></div>
+    </section>
+
+    <section class="action-bar">
+      <button id="btn-preview" type="button">重新預演</button>
+      <button id="btn-create" type="button" class="primary">以此命運建立新旅程</button>
+      <span id="forge-status" role="status"></span>
+    </section>
+
+    <section id="preview-panel" class="preview-stack" hidden>
+      <article class="panel identity-card">
+        <p class="kicker">命運結果</p>
+        <h2 id="preview-genesis">—</h2>
+        <div class="identity-grid">
+          <div><span>出身</span><b id="preview-life">—</b></div>
+          <div><span>天賦</span><b id="preview-aptitude">—</b></div>
+          <div><span>缺陷</span><b id="preview-burden">—</b></div>
+          <div><span>潛力</span><b id="preview-growth">—</b></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <div><p class="kicker">初始角色</p><h2>正式 Lv1 建檔結果</h2></div>
+          <p>包含命運效果與 Lv2 潛力萌芽，但不包含未來訓練。</p>
+        </div>
+        <div id="initial-summary" class="summary-grid"></div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <div><p class="kicker">發展路線</p><h2>四次職涯里程碑</h2></div>
+          <p>每列顯示鎖定當下五條路線的真實分數。</p>
+        </div>
+        <div id="career-results" class="career-results"></div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <div><p class="kicker">商隊方向</p><h2 id="charter-title">尚未形成候選特許</h2></div>
+          <p>以 Lv5 規劃結果、最低成立聲望與當前單人編成推估；實際遊玩仍會受旅伴、裝備、探索與資產改變。</p>
+        </div>
+        <div id="charter-scores" class="score-list"></div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <div><p class="kicker">最終快照</p><h2>Lv5 預演數值</h2></div>
+          <p id="development-signature" class="signature">—</p>
+        </div>
+        <div id="final-summary" class="summary-grid"></div>
+      </article>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import type { JobId } from '@scripts/games/caravan/data/jobs';
+  import { JOBS } from '@scripts/games/caravan/data/jobs';
+  import type { GenesisTraitId } from '@scripts/games/caravan/data/genesis';
+  import { GENESIS_LIFEPATHS } from '@scripts/games/caravan/data/genesis';
+  import type { CareerLevel, CareerPathId } from '@scripts/games/caravan/data/careers';
+  import { CAREER_LEVELS, CAREER_PATHS } from '@scripts/games/caravan/data/careers';
+  import type { StatBlock } from '@scripts/games/caravan/types';
+  import {
+    FORGE_STAT_NAMES,
+    FORGE_STAT_ORDER,
+    createForgedSave,
+    defaultGenesisForgeInput,
+    genesisForgeSearchSpace,
+    previewGenesisForge,
+    sortedCharterScores,
+  } from '@scripts/games/caravan/data/genesisForge';
+  import type { GenesisForgeInput } from '@scripts/games/caravan/data/genesisForge';
+  import { SAVE_KEY, STARTING_PROFILE, saveGame } from '@scripts/games/caravan/save';
+
+  const jobSelect = document.getElementById('forge-job') as HTMLSelectElement;
+  const traitSelect = document.getElementById('forge-trait') as HTMLSelectElement;
+  const creationGrid = document.getElementById('creation-grid')!;
+  const trainingGrid = document.getElementById('training-grid')!;
+  const status = document.getElementById('forge-status')!;
+  const previewPanel = document.getElementById('preview-panel')!;
+  let plan: GenesisForgeInput = defaultGenesisForgeInput();
+
+  const setText = (id: string, value: string | number) => {
+    document.getElementById(id)!.textContent = String(value);
+  };
+  const numberValue = (value: string) => Number.isFinite(Number(value)) ? Number(value) : 0;
+  const statLine = (stats: StatBlock) => FORGE_STAT_ORDER.map((stat) => `${stat.toUpperCase()} ${stats[stat]}`).join(' · ');
+
+  function populateSelectors(): void {
+    jobSelect.innerHTML = '';
+    for (const job of Object.keys(JOBS) as JobId[]) {
+      const option = document.createElement('option');
+      option.value = job;
+      option.textContent = JOBS[job].name;
+      jobSelect.appendChild(option);
+    }
+    traitSelect.innerHTML = '';
+    for (const trait of Object.keys(GENESIS_LIFEPATHS) as GenesisTraitId[]) {
+      const option = document.createElement('option');
+      option.value = trait;
+      option.textContent = `${GENESIS_LIFEPATHS[trait].name}｜${GENESIS_LIFEPATHS[trait].desc}`;
+      traitSelect.appendChild(option);
+    }
+  }
+
+  function creationTotal(): number {
+    return FORGE_STAT_ORDER.reduce((sum, stat) => sum + (plan.allocation[stat] ?? 0), 0);
+  }
+
+  function renderCreationEditor(): void {
+    creationGrid.innerHTML = '';
+    const baseline = STARTING_PROFILE[plan.job].stats;
+    for (const stat of FORGE_STAT_ORDER) {
+      const row = document.createElement('div');
+      row.className = 'stat-row';
+      const offset = plan.statRoll[stat] - baseline[stat];
+      row.innerHTML = `
+        <b>${FORGE_STAT_NAMES[stat]}</b>
+        <span>基準 ${baseline[stat]}</span>
+        <label>擲骰偏移 <input type="number" min="-2" max="3" step="1" value="${offset}" data-roll="${stat}"></label>
+        <label>自由配置 <input type="number" min="0" max="3" step="1" value="${plan.allocation[stat] ?? 0}" data-create="${stat}"></label>
+        <strong>${plan.statRoll[stat] + (plan.allocation[stat] ?? 0)}</strong>`;
+      creationGrid.appendChild(row);
+    }
+    setText('creation-total', `已配置 ${creationTotal()}／3 點`);
+    creationGrid.querySelectorAll<HTMLInputElement>('[data-roll]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const stat = input.dataset.roll as keyof StatBlock;
+        plan.statRoll[stat] = STARTING_PROFILE[plan.job].stats[stat] + numberValue(input.value);
+        renderCreationEditor();
+      });
+    });
+    creationGrid.querySelectorAll<HTMLInputElement>('[data-create]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const stat = input.dataset.create as keyof StatBlock;
+        plan.allocation[stat] = numberValue(input.value);
+        renderCreationEditor();
+      });
+    });
+  }
+
+  function renderTrainingEditor(): void {
+    trainingGrid.innerHTML = '';
+    for (const level of CAREER_LEVELS) {
+      const card = document.createElement('article');
+      card.className = 'training-card';
+      const rows = FORGE_STAT_ORDER.map((stat) => `
+        <label>${FORGE_STAT_NAMES[stat]}
+          <input type="number" min="0" max="2" step="1" value="${plan.training[level].allocation[stat] ?? 0}" data-level="${level}" data-stat="${stat}">
+        </label>`).join('');
+      const options = Object.keys(CAREER_PATHS).map((id) => {
+        const pathId = id as CareerPathId;
+        return `<option value="${pathId}" ${plan.training[level].skillId === pathId ? 'selected' : ''}>${CAREER_PATHS[pathId].name}</option>`;
+      }).join('');
+      card.innerHTML = `
+        <h3>Lv${level}</h3>
+        <div class="training-stats">${rows}</div>
+        <label class="skill-select">里程碑後投入技能
+          <select data-skill-level="${level}"><option value="">保留技能點</option>${options}</select>
+        </label>
+        <p>配置總和：${FORGE_STAT_ORDER.reduce((sum, stat) => sum + (plan.training[level].allocation[stat] ?? 0), 0)}／2</p>`;
+      trainingGrid.appendChild(card);
+    }
+    trainingGrid.querySelectorAll<HTMLInputElement>('[data-level]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const level = Number(input.dataset.level) as CareerLevel;
+        const stat = input.dataset.stat as keyof StatBlock;
+        plan.training[level].allocation[stat] = numberValue(input.value);
+        renderTrainingEditor();
+      });
+    });
+    trainingGrid.querySelectorAll<HTMLSelectElement>('[data-skill-level]').forEach((select) => {
+      select.addEventListener('change', () => {
+        const level = Number(select.dataset.skillLevel) as CareerLevel;
+        plan.training[level].skillId = select.value ? select.value as CareerPathId : null;
+      });
+    });
+  }
+
+  function renderSnapshot(targetId: string, snapshot: { stats: StatBlock; maxHp: number; skills: Record<string, number>; skillPoints: number; level: number }): void {
+    const target = document.getElementById(targetId)!;
+    target.innerHTML = `
+      <div><span>等級</span><b>Lv${snapshot.level}</b></div>
+      <div><span>生命上限</span><b>${snapshot.maxHp}</b></div>
+      <div class="wide"><span>五維屬性</span><b>${statLine(snapshot.stats)}</b></div>
+      <div class="wide"><span>冒險技能</span><b>${Object.entries(snapshot.skills).map(([id, rank]) => `${CAREER_PATHS[id as CareerPathId]?.name ?? id} ${rank}`).join(' · ') || '尚無'}</b></div>
+      <div><span>剩餘技能點</span><b>${snapshot.skillPoints}</b></div>`;
+  }
+
+  function runPreview(): void {
+    try {
+      const preview = previewGenesisForge(plan);
+      status.textContent = '預演完成；尚未修改正式存檔。';
+      status.className = 'ok';
+      previewPanel.removeAttribute('hidden');
+      setText('preview-genesis', preview.genesisName);
+      setText('preview-life', preview.lifepathName);
+      setText('preview-aptitude', preview.aptitudeName);
+      setText('preview-burden', preview.burdenName);
+      setText('preview-growth', preview.growthSignature);
+      renderSnapshot('initial-summary', preview.initial);
+      renderSnapshot('final-summary', preview.final);
+      setText('development-signature', preview.developmentSignature);
+
+      const careers = document.getElementById('career-results')!;
+      careers.innerHTML = '';
+      for (const projection of preview.projectedCareers) {
+        const card = document.createElement('article');
+        card.className = 'career-card';
+        const scores = Object.entries(projection.scorecard)
+          .sort((a, b) => b[1] - a[1])
+          .map(([id, score]) => `${CAREER_PATHS[id as CareerPathId].name} ${score}`)
+          .join(' · ');
+        card.innerHTML = `
+          <div><span>Lv${projection.level}</span><h3>${projection.pathName}</h3><b>${projection.selectedScore} 分</b></div>
+          <p>${scores}</p>
+          <small>配點：${Object.entries(projection.plannedAllocation).map(([stat, value]) => `${FORGE_STAT_NAMES[stat as keyof StatBlock]} +${value}`).join('、')}；技能：${projection.plannedSkillId ? CAREER_PATHS[projection.plannedSkillId].name : '保留'}${projection.skillApplied ? '（已投入）' : ''}</small>`;
+        careers.appendChild(card);
+      }
+
+      const charterScores = document.getElementById('charter-scores')!;
+      charterScores.innerHTML = '';
+      if (!preview.projectedCharter) {
+        setText('charter-title', '尚未形成候選特許');
+      } else {
+        setText('charter-title', `候選：${preview.projectedCharter.name}`);
+        for (const entry of sortedCharterScores(preview.projectedCharter)) {
+          const row = document.createElement('div');
+          row.innerHTML = `<span>${entry.name}</span><b>${entry.score}</b>`;
+          charterScores.appendChild(row);
+        }
+      }
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : '預演失敗';
+      status.className = 'error';
+      previewPanel.setAttribute('hidden', '');
+    }
+  }
+
+  populateSelectors();
+  jobSelect.value = plan.job;
+  traitSelect.value = plan.trait ?? 'seasoned';
+  renderCreationEditor();
+  renderTrainingEditor();
+  const space = genesisForgeSearchSpace();
+  setText('forge-space', Number(space.total).toLocaleString('zh-TW'));
+  setText('forge-space-desc', space.explanation);
+  runPreview();
+
+  jobSelect.addEventListener('change', () => {
+    plan = defaultGenesisForgeInput(jobSelect.value as JobId, traitSelect.value as GenesisTraitId);
+    renderCreationEditor();
+    renderTrainingEditor();
+    runPreview();
+  });
+  traitSelect.addEventListener('change', () => {
+    plan.trait = traitSelect.value as GenesisTraitId;
+    runPreview();
+  });
+  document.getElementById('btn-preview')!.addEventListener('click', runPreview);
+  document.getElementById('btn-create')!.addEventListener('click', () => {
+    try {
+      const overwrite = localStorage.getItem(SAVE_KEY) !== null;
+      if (overwrite && !window.confirm('目前已有商隊存檔。建立新旅程會覆蓋舊存檔，確定繼續？')) return;
+      const save = createForgedSave(plan);
+      saveGame(save);
+      window.location.href = '/caravan/play';
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : '建立旅程失敗';
+      status.className = 'error';
+    }
+  });
+</script>
+
+<style>
+  .forge-page { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 36px 0 80px; color: #eee4cf; }
+  .forge-hero { padding: 30px; border: 1px solid #7d6544; background: linear-gradient(135deg, #251c17, #11100f); }
+  .forge-hero h1 { margin: 4px 0 8px; font-size: clamp(2rem, 5vw, 4rem); }
+  .forge-hero p { color: #cbbd9f; }
+  .forge-hero nav { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+  .forge-hero a { color: #e9c77a; }
+  .eyebrow, .kicker { margin: 0; color: #c99f53; letter-spacing: .16em; font-size: .76rem; text-transform: uppercase; }
+  .panel { margin-top: 18px; padding: 22px; border: 1px solid #594932; background: rgba(22, 19, 16, .94); }
+  .section-head { display: flex; justify-content: space-between; gap: 20px; align-items: end; margin-bottom: 18px; }
+  .section-head h2 { margin: 3px 0 0; }
+  .section-head > p { max-width: 520px; margin: 0; color: #a99c86; }
+  .search-space { display: grid; grid-template-columns: auto 1fr; gap: 5px 20px; align-items: center; }
+  .search-space .kicker, .search-space small { grid-column: 1 / -1; }
+  .search-space strong { font-size: clamp(1.6rem, 4vw, 3rem); color: #e9c77a; }
+  .search-space span, .search-space small { color: #a99c86; }
+  .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  label { display: grid; gap: 7px; color: #cfc2aa; }
+  select, input { min-width: 0; padding: 9px; border: 1px solid #67563c; border-radius: 4px; color: #f3ead8; background: #171513; }
+  .stat-editor { display: grid; gap: 8px; }
+  .stat-row { display: grid; grid-template-columns: 90px 90px 1fr 1fr 65px; gap: 10px; align-items: center; padding: 10px; background: #191613; }
+  .stat-row strong { text-align: center; color: #e9c77a; font-size: 1.2rem; }
+  .total-line { text-align: right; color: #c99f53; }
+  .training-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .training-card { padding: 15px; border: 1px solid #493d2d; background: #191613; }
+  .training-card h3 { margin-top: 0; color: #e9c77a; }
+  .training-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .skill-select { margin-top: 12px; }
+  .training-card p { color: #a99c86; }
+  .action-bar { position: sticky; bottom: 0; z-index: 4; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; padding: 14px; border: 1px solid #7d6544; background: rgba(16, 14, 12, .97); }
+  button { padding: 11px 17px; border: 1px solid #846c47; border-radius: 4px; color: #ead9b8; background: #262019; cursor: pointer; }
+  button.primary { color: #17120b; background: #d2aa60; font-weight: 700; }
+  #forge-status { color: #bdb09a; }
+  #forge-status.error { color: #e79178; }
+  #forge-status.ok { color: #9bc58f; }
+  .preview-stack { display: block; }
+  .identity-grid, .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .identity-grid div, .summary-grid div { display: grid; gap: 5px; padding: 12px; background: #191613; }
+  .identity-grid span, .summary-grid span { color: #948975; font-size: .8rem; }
+  .summary-grid .wide { grid-column: span 2; }
+  .career-results { display: grid; gap: 10px; }
+  .career-card { padding: 14px; border-left: 3px solid #c99f53; background: #191613; }
+  .career-card > div { display: flex; gap: 12px; align-items: center; }
+  .career-card h3 { margin: 0; flex: 1; }
+  .career-card p, .career-card small { color: #aaa08e; }
+  .score-list { display: grid; gap: 7px; }
+  .score-list div { display: flex; justify-content: space-between; padding: 10px; background: #191613; }
+  .signature { overflow-wrap: anywhere; color: #c99f53 !important; }
+  [hidden] { display: none !important; }
+  @media (max-width: 760px) {
+    .section-head { display: block; }
+    .two-cols, .training-grid, .identity-grid, .summary-grid { grid-template-columns: 1fr; }
+    .summary-grid .wide { grid-column: auto; }
+    .stat-row { grid-template-columns: 70px 1fr; }
+    .stat-row label { grid-column: span 2; }
+    .training-stats { grid-template-columns: repeat(2, 1fr); }
+    .action-bar { position: static; }
+  }
+</style>
