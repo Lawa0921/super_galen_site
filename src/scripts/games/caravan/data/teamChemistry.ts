@@ -1,8 +1,34 @@
-import type { CompanionRecord, SaveData } from '../save';
-
 type LifepathId = 'seasoned' | 'brawny' | 'nimble' | 'learned' | 'charming' | 'tough';
 type StatId = 'str' | 'dex' | 'int' | 'cha' | 'con';
 type CareerId = 'martial' | 'scouting' | 'lore' | 'negotiation' | 'survival';
+
+interface ChemistryGenesis {
+  lifepathId: LifepathId;
+  aptitudeId: StatId;
+  burdenId: StatId;
+}
+
+interface ChemistryMilestone {
+  level: number;
+  pathId: string;
+}
+
+interface ChemistryRecord {
+  id: string;
+  name: string;
+  injuredForTrips: number;
+  bond?: number;
+  genesis?: ChemistryGenesis;
+  growth?: unknown;
+  careerMilestones?: ChemistryMilestone[];
+}
+
+export interface ChemistrySave {
+  gold: number;
+  flags: Record<string, boolean>;
+  protagonist: ChemistryRecord;
+  companions: ChemistryRecord[];
+}
 
 export interface ChemistryMember {
   id: string;
@@ -84,7 +110,7 @@ function isCareerId(value: unknown): value is CareerId {
   return typeof value === 'string' && CAREER_IDS.includes(value as CareerId);
 }
 
-function latestCareer(record: CompanionRecord): CareerId | null {
+function latestCareer(record: ChemistryRecord): CareerId | null {
   const milestones = Array.isArray(record.careerMilestones) ? record.careerMilestones : [];
   let bestLevel = -1;
   let selected: CareerId | null = null;
@@ -98,12 +124,12 @@ function latestCareer(record: CompanionRecord): CareerId | null {
   return selected;
 }
 
-function memberById(save: SaveData, id: string): CompanionRecord | undefined {
+function memberById(save: ChemistrySave, id: string): ChemistryRecord | undefined {
   if (id === save.protagonist.id) return save.protagonist;
   return save.companions.find((companion) => companion.id === id);
 }
 
-function councilCount(save: SaveData): number {
+function councilCount(save: ChemistrySave): number {
   let count = 0;
   for (let index = 1; index <= MAX_COUNCILS; index++) {
     if (save.flags[`company-council-slot:${index}`] === true) count++;
@@ -111,7 +137,7 @@ function councilCount(save: SaveData): number {
   return count;
 }
 
-function chemistryMember(save: SaveData, id: string): ChemistryMember {
+function chemistryMember(save: ChemistrySave, id: string): ChemistryMember {
   const record = memberById(save, id);
   if (!record) throw new Error(`找不到成員「${id}」`);
   const genesis = record.genesis;
@@ -158,7 +184,7 @@ function addFactor(
 /**
  * 只讀分析正式成員資料。效果硬限制在 -2～+3，避免取代屬性、技能、職務或日常羈絆。
  */
-export function teamChemistryProfile(save: SaveData, memberIds: string[]): TeamChemistryProfile {
+export function teamChemistryProfile(save: ChemistrySave, memberIds: string[]): TeamChemistryProfile {
   const ids = canonicalIds(memberIds);
   const blockingReasons: string[] = [];
   if (ids.length < 2 || ids.length > 4) blockingReasons.push('議事會需要 2～4 名成員。');
@@ -258,7 +284,7 @@ export function teamChemistryProfile(save: SaveData, memberIds: string[]): TeamC
 }
 
 /** 成功後只修改金幣、旅伴羈絆與防重收據。 */
-export function conductTeamCouncil(save: SaveData, memberIds: string[]): CouncilResult {
+export function conductTeamCouncil(save: ChemistrySave, memberIds: string[]): CouncilResult {
   const profile = teamChemistryProfile(save, memberIds);
   if (!profile.eligible) throw new Error(profile.blockingReasons.join(' '));
 
