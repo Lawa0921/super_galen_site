@@ -47,11 +47,16 @@ jobs:
           npx vitest run --reporter=verbose
           src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
           -t "turns forced march into an immediate"
-      - name: M43 camp clarity and atomicity
+      - name: M43 camp consequence clarity
         run: >-
           npx vitest run --reporter=verbose
           src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
-          -t "surfaces the burden consequence|does not allow a second camp action"
+          -t "surfaces the burden consequence"
+      - name: M43 camp transaction atomicity
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+          -t "does not allow a second camp action"
       - name: M43 multidimensional player adversarial review
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/armory.balance.m43.test.ts
       - name: Combat, magic, and M42 endurance regression
