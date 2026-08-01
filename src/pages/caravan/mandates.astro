@@ -4,16 +4,17 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
 <BaseLayout
   title="公司委託議程 — 商隊與劍"
-  description="依命運、職涯、特許、工程、治理、憲章、公司職務與市場週期形成的動態委託。"
+  description="依命運、職涯、特許、工程、治理、憲章、職務、風險與市場週期形成的動態委託。"
   lang="zh-TW"
 >
   <main class="mandate-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M34–M36</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M34–M37</p>
       <h1>公司委託議程</h1>
-      <p>公司憲章決定優先價值，公司官員把旅伴能力轉化為組織執行力；每個市場週期仍只能完成其中一項委託。</p>
+      <p>公司憲章決定優先價值，官員轉化旅伴能力，未解決危機則形成可見成本；每個市場週期仍只能完成其中一項委託。</p>
       <nav>
         <a href="/caravan/play">返回遊戲</a>
+        <a href="/caravan/risks">風險帳本</a>
         <a href="/caravan/offices">公司職務</a>
         <a href="/caravan/governance">營運治理</a>
         <a href="/caravan/constitution">公司憲章</a>
@@ -34,6 +35,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       <p id="cycle-state"></p>
     </section>
 
+    <section id="crisis" class="crisis" hidden></section>
     <section id="warnings" class="warnings" hidden></section>
     <section id="cards" class="cards"></section>
     <p id="status" class="status" aria-live="polite"></p>
@@ -43,9 +45,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 <script>
   import { loadGame, saveGame } from '@scripts/games/caravan/save';
   import {
-    officeMandateAgenda,
-    completeOfficeMandate,
-  } from '@scripts/games/caravan/data/officeMandates';
+    riskMandateAgenda,
+    completeRiskMandate,
+  } from '@scripts/games/caravan/data/riskMandates';
   import type { CompanyMandate, MandateRoute } from '@scripts/games/caravan/data/mandates';
   import { CONSTITUTION_CLAUSES } from '@scripts/games/caravan/data/constitution';
 
@@ -53,6 +55,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   const summaryEl = document.getElementById('summary')!;
   const cycleTitleEl = document.getElementById('cycle-title')!;
   const cycleStateEl = document.getElementById('cycle-state')!;
+  const crisisEl = document.getElementById('crisis')!;
   const warningsEl = document.getElementById('warnings')!;
   const cardsEl = document.getElementById('cards')!;
   const statusEl = document.getElementById('status')!;
@@ -89,15 +92,17 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     const save = loadGame();
     cardsEl.replaceChildren();
     warningsEl.replaceChildren();
+    crisisEl.replaceChildren();
     if (!save) {
       emptyEl.hidden = false;
       summaryEl.hidden = true;
+      crisisEl.hidden = true;
       warningsEl.hidden = true;
       return;
     }
     emptyEl.hidden = true;
     summaryEl.hidden = false;
-    const agenda = officeMandateAgenda(save);
+    const agenda = riskMandateAgenda(save);
     cycleTitleEl.textContent = `市場週期 ${agenda.cycle}`;
     const constitutionName = agenda.constitution
       ? CONSTITUTION_CLAUSES[agenda.constitution].name
@@ -108,6 +113,19 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     cycleStateEl.textContent = agenda.completed
       ? `本週期已完成 ${agenda.completedMandateId ?? '一項委託'}（${agenda.completedRouteId ?? '已結算'}）。`
       : `目前資金 ${save.gold} G；公司憲章：${constitutionName}；官員津貼 ${agenda.officeUpkeep} G／委託。`;
+
+    const crisis = agenda.riskCrisis;
+    crisisEl.hidden = !crisis;
+    if (crisis) {
+      crisisEl.append(
+        text('strong', `${crisis.title}｜嚴重度 ${crisis.severity}`),
+        text('span', crisis.resolved ? '本週期危機已解決，委託不再受罰。' : `未解決：${crisis.mandatePenalty}`),
+      );
+      const link = document.createElement('a');
+      link.href = '/caravan/risks';
+      link.textContent = crisis.resolved ? '查看風險帳本' : '前往處理危機';
+      crisisEl.append(link);
+    }
 
     for (const mandate of agenda.mandates) {
       const card = document.createElement('article');
@@ -121,7 +139,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       );
       head.append(titleWrap, text('span', `${mandate.primaryStat.toUpperCase()} / ${mandate.primarySkill}`, 'domain-tag'));
       card.append(head, text('p', mandate.description, 'description'));
-      card.append(text('p', `政策與人事後獎勵：${rewardText(mandate)}`, 'reward'));
+      card.append(text('p', `政策、人事與風險後獎勵：${rewardText(mandate)}`, 'reward'));
 
       const routes = document.createElement('div');
       routes.className = 'routes';
@@ -132,7 +150,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
           text('h3', route.name),
           text('p', route.description),
           text('p', `能力 ${route.score} / ${route.threshold}`, 'score'),
-          text('p', `政策後成本：${routeCost(route)}`, 'cost'),
+          text('p', `最終成本：${routeCost(route)}`, 'cost'),
         );
         if (!route.eligible) routeEl.append(text('p', route.blockers.join('；'), 'blockers'));
         const button = document.createElement('button');
@@ -152,7 +170,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
             return;
           }
           try {
-            const result = completeOfficeMandate(latest, mandate.id, route.id);
+            const result = completeRiskMandate(latest, mandate.id, route.id);
             saveGame(latest);
             statusEl.textContent = `已完成「${mandate.title}」的${route.name}；獲得 ${result.reward.gold} G、聲望 +${result.reward.reputation}。`;
           } catch (error) {
@@ -183,6 +201,8 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   nav { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 20px; }
   a { color: #e0bd78; }
   .panel { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-top: 18px; padding: 20px 24px; }
+  .crisis { display: flex; gap: 16px; align-items: center; margin-top: 18px; padding: 14px 18px; border-left: 3px solid #b96050; background: #2a1915; }
+  .crisis span { flex: 1; color: #d3b7a8; }
   .warnings { margin-top: 18px; padding: 14px 18px; border-left: 3px solid #bd5f4e; background: #2b1916; }
   .warnings p { margin: 4px 0; }
   .cards { display: grid; gap: 18px; margin-top: 18px; }
@@ -201,5 +221,5 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   button { width: 100%; margin-top: 12px; padding: 11px; border: 1px solid #c39b54; background: #a97934; color: #160f08; font: inherit; font-weight: 700; cursor: pointer; }
   button:disabled { opacity: .45; cursor: not-allowed; }
   .status { min-height: 1.6em; margin-top: 16px; }
-  @media (max-width: 820px) { .routes { grid-template-columns: 1fr; } .panel, .mandate-card > header { align-items: flex-start; flex-direction: column; } }
+  @media (max-width: 820px) { .routes { grid-template-columns: 1fr; } .panel, .mandate-card > header, .crisis { align-items: flex-start; flex-direction: column; } }
 </style>
