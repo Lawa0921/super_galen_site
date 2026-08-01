@@ -30,11 +30,10 @@ jobs:
       - run: npm ci
       - name: Production build
         run: npm run build
-      - name: M43 armory transactions and endurance
-        run: >-
-          npx vitest run --reporter=verbose
-          src/scripts/games/caravan/data/armory.m43.test.ts
-          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+      - name: M43 armory transactions
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/armory.m43.test.ts
+      - name: M43 armory-aware endurance
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
       - name: M43 multidimensional player adversarial review
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/armory.balance.m43.test.ts
       - name: Combat, magic, and M42 endurance regression
