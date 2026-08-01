@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng';
 import { createProtagonist, newGame, type CompanionRecord, type SaveData } from '../save';
 import {
-  ENDURANCE_RECEIPT,
   applyEnduranceCamp,
   beginEnduranceBattle,
+  checkpointEnduranceBattle,
   claimEnduranceReward,
   createEnduranceRun,
   enduranceAccess,
   enduranceCampOptions,
+  enduranceReceiptForMarket,
   enduranceReward,
   finishEnduranceBattle,
   isEnduranceRun,
@@ -42,6 +43,7 @@ function save(): SaveData {
     member('cleric', 'cleric', '白燭'),
   ];
   data.reputation = 40;
+  data.flags['world-quest:ashen-reliquary:completed'] = true;
   data.inventory = {
     ...data.inventory,
     'dried-rations': 5,
@@ -57,19 +59,30 @@ function save(): SaveData {
 }
 
 describe('M42 expedition endurance', () => {
-  it('requires reputation and at least three healthy members', () => {
+  it('requires the world quest, reputation, a healthy captain, and three healthy members', () => {
     const data = save();
+    delete data.flags['world-quest:ashen-reliquary:completed'];
+    expect(enduranceAccess(data).allowed).toBe(false);
+    data.flags['world-quest:ashen-reliquary:completed'] = true;
     data.reputation = 19;
     expect(enduranceAccess(data).allowed).toBe(false);
     data.reputation = 40;
+    data.protagonist.injuredForTrips = 1;
+    expect(enduranceAccess(data).allowed).toBe(false);
+    data.protagonist.injuredForTrips = 0;
     data.companions[0].injuredForTrips = 2;
     data.companions[1].injuredForTrips = 2;
     expect(enduranceAccess(data).allowed).toBe(false);
   });
 
-  it('does not accept legacy or partial run shapes', () => {
-    expect(isEnduranceRun({ version: 0 })).toBe(false);
-    expect(isEnduranceRun({ version: 1, stage: 1 })).toBe(false);
+  it('rejects legacy, partial, and corrupted run shapes instead of migrating them', () => {
+    expect(isEnduranceRun({ version: 1 })).toBe(false);
+    expect(isEnduranceRun({ version: 2, stage: 1 })).toBe(false);
+    const data = save();
+    const run = createEnduranceRun(data);
+    expect(isEnduranceRun(run)).toBe(true);
+    run.members.protagonist.hp = -1;
+    expect(isEnduranceRun(run)).toBe(false);
   });
 
   it('carries HP, mana, favor, and strain into the next battle', () => {
@@ -97,7 +110,21 @@ describe('M42 expedition endurance', () => {
     expect(nextCleric.mystic).toMatchObject({ kind: 'favor', current: 3 });
   });
 
-  it('ration rest consumes one ration and restores all endurance resources', () => {
+  it('keeps a downed member out for the remainder of the pilgrimage', () => {
+    const data = save();
+    const run = createEnduranceRun(data);
+    const first = beginEnduranceBattle(run, data, createRng(151));
+    first.party.find((entry) => entry.id === 'ranger')!.hp = 0;
+    first.outcome = 'victory';
+    finishEnduranceBattle(run, first);
+    expect(run.members.ranger.hp).toBe(0);
+    applyEnduranceCamp(run, data, 'ration-rest');
+    expect(run.members.ranger.hp).toBe(0);
+    const second = beginEnduranceBattle(run, data, createRng(152));
+    expect(second.party.some((entry) => entry.id === 'ranger')).toBe(false);
+  });
+
+  it('ration rest consumes one ration and restores living endurance resources', () => {
     const data = save();
     const run = createEnduranceRun(data);
     const combat = beginEnduranceBattle(run, data, createRng(201));
@@ -114,11 +141,8 @@ describe('M42 expedition endurance', () => {
     applyEnduranceCamp(run, data, 'ration-rest');
     expect(data.inventory['dried-rations']).toBe(before - 1);
     expect(Object.values(run.members).every((entry) => entry.hp > entry.maxHp / 2)).toBe(true);
-    const mage = run.members.mage.mystic!;
-    const cleric = run.members.cleric.mystic!;
-    expect(mage.current).toBe(2);
-    expect(mage.strain).toBe(1);
-    expect(cleric.current).toBe(1);
+    expect(run.members.mage.mystic).toMatchObject({ current: 2, strain: 1 });
+    expect(run.members.cleric.mystic).toMatchObject({ current: 1 });
   });
 
   it('arcane and sacred vigils require the matching living caster and herb', () => {
@@ -155,15 +179,25 @@ describe('M42 expedition endurance', () => {
     expect(enduranceReward(run)).toMatchObject({ gold: 150, reputation: 10 });
   });
 
-  it('refreshing an open battle causes fatigue instead of a free reroll', () => {
+  it('checkpoints real losses before applying refresh fatigue', () => {
     const data = save();
     const run = createEnduranceRun(data);
     const first = beginEnduranceBattle(run, data, createRng(501));
-    const originalHp = first.party.map((entry) => entry.maxHp);
+    const captain = first.party.find((entry) => entry.id === 'protagonist')!;
+    const mage = first.party.find((entry) => entry.id === 'mage')!;
+    captain.hp = 12;
+    mage.hp = 8;
+    mage.mystic!.current = 0;
+    mage.mystic!.strain = 2;
+    checkpointEnduranceBattle(run, first);
+
     const retry = beginEnduranceBattle(run, data, createRng(502));
+    const retryCaptain = retry.party.find((entry) => entry.id === 'protagonist')!;
+    const retryMage = retry.party.find((entry) => entry.id === 'mage')!;
     expect(run.abandonmentCount).toBe(1);
-    expect(retry.party.every((entry, index) => entry.hp < originalHp[index])).toBe(true);
-    expect(retry.party.find((entry) => entry.id === 'mage')?.mystic?.strain).toBe(1);
+    expect(retryCaptain.hp).toBeLessThan(12);
+    expect(retryMage.hp).toBeLessThan(8);
+    expect(retryMage.mystic).toMatchObject({ current: 0, strain: 3 });
   });
 
   it('defeat ends the run and cannot enter camp', () => {
@@ -176,7 +210,7 @@ describe('M42 expedition endurance', () => {
     expect(() => applyEnduranceCamp(run, data, 'forced-march')).toThrow('目前不能進行營地選擇');
   });
 
-  it('victory reward is atomic and can only be claimed once', () => {
+  it('allows one reward per market cycle and becomes replayable after the cycle advances', () => {
     const data = save();
     const run = createEnduranceRun(data);
     for (let stage = 1; stage <= 3; stage += 1) {
@@ -188,7 +222,19 @@ describe('M42 expedition endurance', () => {
     const goldBefore = data.gold;
     const reward = claimEnduranceReward(run, data);
     expect(data.gold).toBe(goldBefore + reward.gold);
-    expect(data.flags[ENDURANCE_RECEIPT]).toBe(true);
+    expect(data.flags[enduranceReceiptForMarket(run.marketSeed)]).toBe(true);
     expect(() => claimEnduranceReward(run, data)).toThrow('已領取');
+    expect(() => createEnduranceRun(data)).toThrow('本市場週期');
+
+    data.marketSeed += 1;
+    const nextRun = createEnduranceRun(data);
+    expect(nextRun.marketSeed).toBe(data.marketSeed);
+  });
+
+  it('invalidates a run when the market cycle changes mid-pilgrimage', () => {
+    const data = save();
+    const run = createEnduranceRun(data);
+    data.marketSeed += 1;
+    expect(() => beginEnduranceBattle(run, data, createRng(801))).toThrow('市場週期已變更');
   });
 });
