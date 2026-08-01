@@ -27,22 +27,26 @@ const COMPOSITIONS: Record<string, CompanionRecord['job'][]> = {
   noCleric: ['swordsman', 'swordsman', 'ranger', 'mage'],
 };
 
+/**
+ * 代表「完成灰燼聖匣後、但尚未畢業」的 Lv4 角色，而不是滿級／滿技能測試木樁。
+ * 這組數值刻意保留職業身分，並讓三戰續航仍有失敗可能。
+ */
 function record(job: CompanionRecord['job'], id: string): CompanionRecord {
   const member = createProtagonist({ job });
   member.id = id;
   member.name = `${job}-${id}`;
-  member.level = 5;
-  member.xp = 9999;
+  member.level = 4;
+  member.xp = 999;
   member.injuredForTrips = 0;
   member.stats = job === 'swordsman'
-    ? { str: 20, dex: 13, int: 9, cha: 11, con: 19 }
+    ? { str: 18, dex: 12, int: 9, cha: 11, con: 17 }
     : job === 'ranger'
-      ? { str: 12, dex: 21, int: 12, cha: 11, con: 15 }
+      ? { str: 11, dex: 19, int: 11, cha: 11, con: 14 }
       : job === 'mage'
-        ? { str: 8, dex: 13, int: 22, cha: 12, con: 13 }
-        : { str: 12, dex: 10, int: 15, cha: 22, con: 17 };
-  member.maxHp = job === 'swordsman' ? 39 : job === 'cleric' ? 34 : job === 'ranger' ? 31 : 28;
-  member.skills = { martial: 4, scouting: 4, lore: 4, negotiation: 4, survival: 4 };
+        ? { str: 8, dex: 12, int: 19, cha: 11, con: 12 }
+        : { str: 11, dex: 9, int: 13, cha: 19, con: 15 };
+  member.maxHp = job === 'swordsman' ? 33 : job === 'cleric' ? 30 : job === 'ranger' ? 27 : 24;
+  member.skills = { martial: 3, scouting: 3, lore: 3, negotiation: 3, survival: 3 };
   return member;
 }
 
@@ -149,9 +153,9 @@ function chooseCamp(data: SaveData, run: ReturnType<typeof createEnduranceRun>):
   const favorRatio = favor.length
     ? favor.reduce((sum, member) => sum + member.mystic!.current / member.mystic!.max, 0) / favor.length
     : 1;
-  if (averageHp < 0.62 && (data.inventory['dried-rations'] ?? 0) > 0) return 'ration-rest';
-  if (mana.length && manaRatio < 0.28 && (data.inventory.herb ?? 0) > 0) return 'arcane-vigil';
-  if (favor.length && (averageHp < 0.82 || favorRatio < 0.25) && (data.inventory.herb ?? 0) > 0) return 'sacred-vigil';
+  if (averageHp < 0.68 && (data.inventory['dried-rations'] ?? 0) > 0) return 'ration-rest';
+  if (mana.length && manaRatio < 0.4 && (data.inventory.herb ?? 0) > 0) return 'arcane-vigil';
+  if (favor.length && (averageHp < 0.82 || favorRatio < 0.35) && (data.inventory.herb ?? 0) > 0) return 'sacred-vigil';
   return 'forced-march';
 }
 
