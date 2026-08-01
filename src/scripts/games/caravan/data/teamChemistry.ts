@@ -193,7 +193,7 @@ export function teamChemistryProfile(
   const score = clamp(rawScore, -2, 3);
   const completedCouncils = councilCount(save);
   const councilNumber = completedCouncils + 1;
-  const councilCost = completedCouncils < MAX_COUNCILS ? COUNCIL_COSTS[completedCouncils] : 0;
+  const councilCost: number = COUNCIL_COSTS[completedCouncils] ?? 0;
   const bondReward = score >= 3 ? 3 : score >= 1 ? 2 : 1;
 
   if (completedCouncils >= MAX_COUNCILS) blockingReasons.push('本商隊已完成三次正式議事會。');
