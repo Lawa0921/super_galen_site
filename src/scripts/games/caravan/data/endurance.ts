@@ -5,9 +5,9 @@ import type { SaveData } from '../save';
 import { buildReliquaryParty, createReliquaryEncounter } from './ashenReliquaryCombat';
 import type { ReliquaryBattleStage } from './ashenReliquaryCombat';
 
-export const ENDURANCE_RUN_VERSION = 1;
+export const ENDURANCE_RUN_VERSION = 2;
 export const ENDURANCE_MIN_REPUTATION = 20;
-export const ENDURANCE_RECEIPT = 'endurance:ember-pilgrimage:claimed';
+export const ENDURANCE_RECEIPT_PREFIX = 'endurance:ember-pilgrimage';
 
 export type EndurancePhase = 'battle' | 'camp' | 'victory' | 'defeat';
 export type EnduranceCampChoice = 'ration-rest' | 'arcane-vigil' | 'sacred-vigil' | 'forced-march';
@@ -19,8 +19,9 @@ export interface EnduranceMemberState {
 }
 
 export interface EnduranceRun {
-  version: 1;
+  version: 2;
   saveCreatedAt: number;
+  marketSeed: number;
   stage: ReliquaryBattleStage;
   phase: EndurancePhase;
   members: Record<string, EnduranceMemberState>;
@@ -51,6 +52,17 @@ export interface EnduranceReward {
   inventory: Record<string, number>;
 }
 
+const CAMP_CHOICES: EnduranceCampChoice[] = [
+  'ration-rest',
+  'arcane-vigil',
+  'sacred-vigil',
+  'forced-march',
+];
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
 function cloneMystic(power: MysticPower | undefined): MysticPower | undefined {
   return power ? { ...power } : undefined;
 }
@@ -59,8 +71,26 @@ function healthyParty(save: SaveData): PartyMember[] {
   return buildReliquaryParty(save);
 }
 
+export function enduranceReceiptForMarket(marketSeed: number): string {
+  return `${ENDURANCE_RECEIPT_PREFIX}:${marketSeed}`;
+}
+
 export function enduranceAccess(save: SaveData): EnduranceAccess {
   const party = healthyParty(save);
+  if (save.flags['world-quest:ashen-reliquary:completed'] !== true) {
+    return {
+      allowed: false,
+      reason: '必須先完成灰燼聖匣世界任務，餘燼朝聖才會出現在行會名冊。',
+      partySize: party.length,
+    };
+  }
+  if (save.protagonist.injuredForTrips > 0) {
+    return {
+      allowed: false,
+      reason: '隊長仍在養傷，不能主持餘燼朝聖。',
+      partySize: party.length,
+    };
+  }
   if (save.reputation < ENDURANCE_MIN_REPUTATION) {
     return {
       allowed: false,
@@ -75,6 +105,13 @@ export function enduranceAccess(save: SaveData): EnduranceAccess {
       partySize: party.length,
     };
   }
+  if (save.flags[enduranceReceiptForMarket(save.marketSeed)] === true) {
+    return {
+      allowed: false,
+      reason: '本市場週期的餘燼朝聖已完成；完成一趟一般遠征後，行會才會發布下一份朝聖契約。',
+      partySize: party.length,
+    };
+  }
   return { allowed: true, reason: '遠征隊已可接受餘燼朝聖。', partySize: party.length };
 }
 
@@ -86,19 +123,40 @@ function initialMemberState(member: PartyMember): EnduranceMemberState {
   };
 }
 
+function validMystic(value: unknown): value is MysticPower {
+  if (!value || typeof value !== 'object') return false;
+  const power = value as Partial<MysticPower>;
+  return (power.kind === 'mana' || power.kind === 'favor')
+    && Number.isFinite(power.max) && power.max! > 0
+    && Number.isFinite(power.current) && power.current! >= 0 && power.current! <= power.max!
+    && Number.isFinite(power.strain) && power.strain! >= 0 && power.strain! <= 5;
+}
+
+function validMemberState(value: unknown): value is EnduranceMemberState {
+  if (!value || typeof value !== 'object') return false;
+  const member = value as Partial<EnduranceMemberState>;
+  return Number.isFinite(member.maxHp) && member.maxHp! > 0
+    && Number.isFinite(member.hp) && member.hp! >= 0 && member.hp! <= member.maxHp!
+    && (member.mystic === undefined || validMystic(member.mystic));
+}
+
 /** M42 不提供舊格式遷移；格式不符時直接要求開始新試煉。 */
 export function isEnduranceRun(value: unknown): value is EnduranceRun {
   if (!value || typeof value !== 'object') return false;
   const run = value as Partial<EnduranceRun>;
+  const members = run.members && typeof run.members === 'object' ? Object.values(run.members) : [];
   return run.version === ENDURANCE_RUN_VERSION
     && Number.isInteger(run.saveCreatedAt)
+    && Number.isInteger(run.marketSeed)
     && (run.stage === 1 || run.stage === 2 || run.stage === 3)
     && (run.phase === 'battle' || run.phase === 'camp' || run.phase === 'victory' || run.phase === 'defeat')
-    && !!run.members && typeof run.members === 'object'
-    && Number.isInteger(run.forcedMarches)
-    && Array.isArray(run.camps)
+    && members.length >= 3
+    && members.every(validMemberState)
+    && Number.isInteger(run.forcedMarches) && run.forcedMarches! >= 0 && run.forcedMarches! <= 2
+    && Array.isArray(run.camps) && run.camps.length <= 2
+    && run.camps.every((choice) => CAMP_CHOICES.includes(choice))
     && typeof run.battleOpen === 'boolean'
-    && Number.isInteger(run.abandonmentCount)
+    && Number.isInteger(run.abandonmentCount) && run.abandonmentCount! >= 0
     && typeof run.claimed === 'boolean';
 }
 
@@ -109,6 +167,7 @@ export function createEnduranceRun(save: SaveData): EnduranceRun {
   return {
     version: ENDURANCE_RUN_VERSION,
     saveCreatedAt: save.createdAt,
+    marketSeed: save.marketSeed,
     stage: 1,
     phase: 'battle',
     members,
@@ -118,6 +177,10 @@ export function createEnduranceRun(save: SaveData): EnduranceRun {
     abandonmentCount: 0,
     claimed: false,
   };
+}
+
+function livingMemberCount(run: EnduranceRun): number {
+  return Object.values(run.members).filter((state) => state.hp > 0).length;
 }
 
 function memberAverageHp(run: EnduranceRun): number {
@@ -130,10 +193,10 @@ function applyRunState(run: EnduranceRun, party: PartyMember[]): void {
   for (const member of party) {
     const stored = run.members[member.id];
     if (!stored) continue;
-    member.hp = Math.max(1, Math.min(member.maxHp, stored.hp));
+    member.hp = clamp(stored.hp, 0, member.maxHp);
     if (member.mystic && stored.mystic && member.mystic.kind === stored.mystic.kind) {
-      member.mystic.current = Math.max(0, Math.min(member.mystic.max, stored.mystic.current));
-      member.mystic.strain = Math.max(0, Math.min(5, stored.mystic.strain));
+      member.mystic.current = clamp(stored.mystic.current, 0, member.mystic.max);
+      member.mystic.strain = clamp(stored.mystic.strain, 0, 5);
     }
   }
 }
@@ -149,43 +212,63 @@ function scaleThreat(run: EnduranceRun, combat: CombatState): void {
   }
   combat.log.push({
     kind: 'info',
-    text: `強行軍使遠征隊搶得先機，但第 ${run.stage} 戰的敵人也得到 +${run.forcedMarches} 攻勢與額外生命。`,
+    text: `強行軍提高報酬，也讓第 ${run.stage} 戰的敵人獲得 +${run.forcedMarches} 攻勢與額外生命。`,
   });
+}
+
+function captureMembers(run: EnduranceRun, combat: CombatState): void {
+  for (const member of combat.party) {
+    run.members[member.id] = {
+      hp: clamp(member.hp, 0, member.maxHp),
+      maxHp: member.maxHp,
+      mystic: cloneMystic(member.mystic),
+    };
+  }
+}
+
+/** 每次玩家與敵方行動後保存實際損耗，關頁不能抹掉已承受的傷害或魔法消耗。 */
+export function checkpointEnduranceBattle(run: EnduranceRun, combat: CombatState): void {
+  if (run.phase !== 'battle' || !run.battleOpen) return;
+  captureMembers(run, combat);
 }
 
 /**
  * 開戰時若上一場仍標記為進行中，代表重新整理／關頁後重開。
- * 不回溯舊戰鬥，而是直接施加全隊 10% 疲勞與秘法灼傷，防止免費重骰。
+ * 先恢復最後一次行動檢查點，再額外施加全隊 10% 疲勞與秘法灼傷。
  */
 export function beginEnduranceBattle(run: EnduranceRun, save: SaveData, rng: Rng): CombatState {
   if (run.saveCreatedAt !== save.createdAt) throw new Error('這份試煉不屬於目前的遊戲存檔。');
+  if (run.marketSeed !== save.marketSeed) throw new Error('市場週期已變更，這份朝聖契約已失效。');
   if (run.phase !== 'battle') throw new Error('目前不是戰鬥階段。');
-  const party = healthyParty(save).filter((member) => run.members[member.id]);
-  if (party.length < 1) throw new Error('遠征隊已沒有可戰鬥成員。');
+  const party = healthyParty(save).filter((member) => (run.members[member.id]?.hp ?? 0) > 0);
+  if (party.length < 1) {
+    run.battleOpen = false;
+    run.phase = 'defeat';
+    throw new Error('遠征隊已沒有可戰鬥成員。');
+  }
   const combat = startCombat(rng, party, createReliquaryEncounter(run.stage));
   applyRunState(run, combat.party);
   if (run.battleOpen) {
     run.abandonmentCount += 1;
     for (const member of combat.party) {
       const fatigue = Math.max(1, Math.ceil(member.maxHp * 0.1));
-      member.hp = Math.max(1, member.hp - fatigue);
+      member.hp = Math.max(0, member.hp - fatigue);
       if (member.mystic?.kind === 'mana') member.mystic.strain = Math.min(5, member.mystic.strain + 1);
     }
-    combat.log.push({ kind: 'info', text: '上一次戰鬥被中途放棄：全隊承受 10% 疲勞，法師秘法灼傷 +1。' });
+    combat.log.push({
+      kind: 'info',
+      text: '上一次戰鬥被中途放棄：保留當時所有損耗，再承受 10% 疲勞；法師秘法灼傷 +1。',
+    });
   }
   run.battleOpen = true;
   scaleThreat(run, combat);
-  return combat;
-}
-
-function captureMembers(run: EnduranceRun, combat: CombatState): void {
-  for (const member of combat.party) {
-    run.members[member.id] = {
-      hp: Math.max(0, member.hp),
-      maxHp: member.maxHp,
-      mystic: cloneMystic(member.mystic),
-    };
+  checkpointEnduranceBattle(run, combat);
+  if (combat.party.every((member) => member.hp <= 0)) {
+    run.battleOpen = false;
+    run.phase = 'defeat';
+    throw new Error('放棄戰鬥的疲勞使最後一名朝聖者倒下。');
   }
+  return combat;
 }
 
 export function finishEnduranceBattle(run: EnduranceRun, combat: CombatState): void {
@@ -193,7 +276,7 @@ export function finishEnduranceBattle(run: EnduranceRun, combat: CombatState): v
   if (combat.outcome === 'ongoing') throw new Error('戰鬥尚未結束。');
   captureMembers(run, combat);
   run.battleOpen = false;
-  if (combat.outcome !== 'victory') {
+  if (combat.outcome !== 'victory' || livingMemberCount(run) === 0) {
     run.phase = 'defeat';
     return;
   }
@@ -222,14 +305,14 @@ export function enduranceCampOptions(run: EnduranceRun, save: SaveData): CampOpt
     {
       id: 'arcane-vigil',
       name: '秘法守夜',
-      description: '需要法師並消耗藥草 1；秘法回滿，但法師灼傷 +1，全隊只恢復 10% 生命。',
+      description: '需要仍可行動的法師並消耗藥草 1；秘法回滿，但法師灼傷 +1，全隊只恢復 10% 生命。',
       eligible: hasMystic(run, 'mana') && (save.inventory.herb ?? 0) >= 1,
       blocker: !hasMystic(run, 'mana') ? '隊伍沒有仍可行動的法師。' : (save.inventory.herb ?? 0) < 1 ? '缺少藥草。' : null,
     },
     {
       id: 'sacred-vigil',
       name: '聖禱守夜',
-      description: '需要教士並消耗藥草 1；神恩回滿，全隊恢復 22% 生命。',
+      description: '需要仍可行動的教士並消耗藥草 1；神恩回滿，全隊恢復 22% 生命。',
       eligible: hasMystic(run, 'favor') && (save.inventory.herb ?? 0) >= 1,
       blocker: !hasMystic(run, 'favor') ? '隊伍沒有仍可行動的教士。' : (save.inventory.herb ?? 0) < 1 ? '缺少藥草。' : null,
     },
@@ -244,11 +327,13 @@ export function enduranceCampOptions(run: EnduranceRun, save: SaveData): CampOpt
 }
 
 function healState(state: EnduranceMemberState, ratio: number): void {
+  if (state.hp <= 0) return;
   const amount = Math.max(1, Math.round(state.maxHp * ratio));
   state.hp = Math.min(state.maxHp, state.hp + amount);
 }
 
 export function applyEnduranceCamp(run: EnduranceRun, save: SaveData, choice: EnduranceCampChoice): void {
+  if (run.marketSeed !== save.marketSeed) throw new Error('市場週期已變更，這份朝聖契約已失效。');
   if (run.phase !== 'camp') throw new Error('目前不能進行營地選擇。');
   const option = enduranceCampOptions(run, save).find((entry) => entry.id === choice);
   if (!option) throw new Error(`未知營地選項「${choice}」。`);
@@ -257,8 +342,8 @@ export function applyEnduranceCamp(run: EnduranceRun, save: SaveData, choice: En
   if (choice === 'ration-rest') {
     save.inventory['dried-rations'] -= 1;
     for (const state of Object.values(run.members)) {
-      if (state.hp <= 0) continue;
       healState(state, 0.35);
+      if (state.hp <= 0) continue;
       if (state.mystic?.kind === 'mana') {
         state.mystic.current = Math.min(state.mystic.max, state.mystic.current + 2);
         state.mystic.strain = Math.max(0, state.mystic.strain - 1);
@@ -269,9 +354,8 @@ export function applyEnduranceCamp(run: EnduranceRun, save: SaveData, choice: En
   } else if (choice === 'arcane-vigil') {
     save.inventory.herb -= 1;
     for (const state of Object.values(run.members)) {
-      if (state.hp <= 0) continue;
       healState(state, 0.1);
-      if (state.mystic?.kind === 'mana') {
+      if (state.hp > 0 && state.mystic?.kind === 'mana') {
         state.mystic.current = state.mystic.max;
         state.mystic.strain = Math.min(5, state.mystic.strain + 1);
       }
@@ -279,9 +363,8 @@ export function applyEnduranceCamp(run: EnduranceRun, save: SaveData, choice: En
   } else if (choice === 'sacred-vigil') {
     save.inventory.herb -= 1;
     for (const state of Object.values(run.members)) {
-      if (state.hp <= 0) continue;
       healState(state, 0.22);
-      if (state.mystic?.kind === 'favor') state.mystic.current = state.mystic.max;
+      if (state.hp > 0 && state.mystic?.kind === 'favor') state.mystic.current = state.mystic.max;
     }
   } else {
     run.forcedMarches += 1;
@@ -304,20 +387,22 @@ export function enduranceReward(run: EnduranceRun): EnduranceReward {
 }
 
 export function claimEnduranceReward(run: EnduranceRun, save: SaveData): EnduranceReward {
+  if (run.marketSeed !== save.marketSeed) throw new Error('市場週期已變更，這份朝聖契約已失效。');
   if (run.phase !== 'victory') throw new Error('尚未完成餘燼朝聖。');
-  if (run.claimed || save.flags[ENDURANCE_RECEIPT] === true) throw new Error('餘燼朝聖獎勵已領取。');
+  const receipt = enduranceReceiptForMarket(run.marketSeed);
+  if (run.claimed || save.flags[receipt] === true) throw new Error('本市場週期的餘燼朝聖獎勵已領取。');
   const reward = enduranceReward(run);
   save.gold += reward.gold;
   save.reputation += reward.reputation;
   for (const [itemId, count] of Object.entries(reward.inventory)) {
     save.inventory[itemId] = (save.inventory[itemId] ?? 0) + count;
   }
-  save.flags[ENDURANCE_RECEIPT] = true;
+  save.flags[receipt] = true;
   run.claimed = true;
   return reward;
 }
 
 export function enduranceRunSummary(run: EnduranceRun): string {
   const hp = Math.round(memberAverageHp(run) * 100);
-  return `第 ${run.stage} 戰｜${run.phase}｜平均生命 ${hp}%｜強行軍 ${run.forcedMarches}｜放棄戰鬥 ${run.abandonmentCount}`;
+  return `第 ${run.stage} 戰｜${run.phase}｜存活 ${livingMemberCount(run)}/${Object.keys(run.members).length}｜平均生命 ${hp}%｜強行軍 ${run.forcedMarches}｜放棄 ${run.abandonmentCount}`;
 }
