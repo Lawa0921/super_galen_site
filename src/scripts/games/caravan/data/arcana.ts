@@ -12,8 +12,11 @@ export interface MysticMoveRule {
   strainRelief: number;
 }
 
+interface ArmoryMysticRuntime {
+  mysticCapacityBonus?: Partial<Record<MysticKind, number>>;
+}
+
 const RULES: Record<string, MysticMoveRule> = {
-  // 法師核心：炎術偏爆發，霜術偏節制與控制。
   fireball: { kind: 'mana', school: 'pyromancy', cost: 2, gain: 0, overcast: true, strainRelief: 0 },
   'ice-spike': { kind: 'mana', school: 'cryomancy', cost: 1, gain: 0, overcast: true, strainRelief: 0 },
   'gravity-crush': { kind: 'mana', school: 'arcane', cost: 2, gain: 0, overcast: true, strainRelief: 0 },
@@ -21,7 +24,6 @@ const RULES: Record<string, MysticMoveRule> = {
   'meteor-fall': { kind: 'mana', school: 'pyromancy', cost: 4, gain: 0, overcast: true, strainRelief: 0 },
   'arcane-focus': { kind: 'mana', school: 'arcane', cost: 0, gain: 3, overcast: false, strainRelief: 1 },
 
-  // 教士核心：聖擊建立神恩，奇蹟消耗神恩。
   'holy-strike': { kind: 'favor', school: 'theurgy', cost: 0, gain: 1, overcast: false, strainRelief: 0 },
   heal: { kind: 'favor', school: 'theurgy', cost: 1, gain: 0, overcast: false, strainRelief: 0 },
   'holy-nova': { kind: 'favor', school: 'theurgy', cost: 2, gain: 0, overcast: false, strainRelief: 0 },
@@ -64,10 +66,6 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
-/**
- * 未逐招登記的裝備／專精法術仍會依命中屬性與傷害屬性取得保守規則，
- * 避免日後新增魔法招式時意外繞過秘法或神恩成本。
- */
 export function mysticRuleForMove(move: Move): MysticMoveRule | null {
   const explicit = RULES[move.id];
   if (explicit) return explicit;
@@ -108,8 +106,9 @@ function decoratedMove(move: Move): Move {
 }
 
 function maximumPower(member: PartyMember, kind: MysticKind): number {
-  if (kind === 'mana') return clamp(4 + Math.floor(member.stats.int / 5), 5, 9);
-  return clamp(2 + Math.floor(member.stats.cha / 5), 4, 7);
+  const bonus = (member as PartyMember & ArmoryMysticRuntime).mysticCapacityBonus?.[kind] ?? 0;
+  if (kind === 'mana') return clamp(4 + Math.floor(member.stats.int / 5) + bonus, 3, 12);
+  return clamp(2 + Math.floor(member.stats.cha / 5) + bonus, 2, 10);
 }
 
 function powerFor(member: PartyMember, kind: MysticKind): MysticPower {
@@ -122,10 +121,6 @@ function powerFor(member: PartyMember, kind: MysticKind): MysticPower {
   };
 }
 
-/**
- * 保留傳入角色物件身分，因遠征與既有測試會在戰鬥後讀取同一份 HP；
- * 只替換招式陣列為安全副本，避免修改 JOBS 共用資料。
- */
 export function prepareMysticPartyMember(member: PartyMember): PartyMember {
   const copiedMoves = member.moves.map((move) => ({ ...move }));
   const hasMana = copiedMoves.some((move) => mysticRuleForMove(move)?.kind === 'mana');
