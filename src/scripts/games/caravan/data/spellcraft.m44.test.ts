@@ -101,7 +101,7 @@ describe('M44 spellcraft counterplay', () => {
     state.enemyIntents[caster.id] = 'salt-shard-throw';
     forceTurn(state, caster.id);
     enemyAct(scriptedRng([20, 1]), state, caster.id);
-    expect(guard.hp).toBe(40); // 1 點魔法傷害被 4 點護法完全吃掉
+    expect(guard.hp).toBe(40);
     expect(guard.statuses?.some((status) => status.kind === 'ward')).toBe(false);
 
     guard.statuses = [{ kind: 'ward', remaining: 1, potency: 4 }];
@@ -179,6 +179,6 @@ describe('M44 spellcraft counterplay', () => {
     forceTurn(state, mage.id);
     const wardEnemy = partyAct(scriptedRng([10]), state, mage.id, 'arcane-focus', foe.id);
     expect(wardEnemy).toMatchObject({ acted: false, reason: '這個招式不能指定該目標。' });
-    expect(foe.statuses?.some((status) => status.kind === 'ward')).toBe(false);
+    expect(foe.statuses?.some((status) => status.kind === 'ward') ?? false).toBe(false);
   });
 });
