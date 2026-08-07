@@ -23,6 +23,11 @@ const RULES: Record<string, MysticMoveRule> = {
   'frost-bind': { kind: 'mana', school: 'cryomancy', cost: 2, gain: 0, overcast: true, strainRelief: 0 },
   'meteor-fall': { kind: 'mana', school: 'pyromancy', cost: 4, gain: 0, overcast: true, strainRelief: 0 },
   'arcane-focus': { kind: 'mana', school: 'arcane', cost: 0, gain: 3, overcast: false, strainRelief: 1 },
+  // M44：鹽晶亡魂的投刃由寒鹽魔力凝成，敵方同樣受秘法資源限制。
+  'salt-shard-throw': { kind: 'mana', school: 'cryomancy', cost: 2, gain: 0, overcast: false, strainRelief: 0 },
+  // M44：兩個 Lv4 法師專精的代表招式明確歸屬學派，不再只靠元素 fallback 推斷。
+  'chain-lightning': { kind: 'mana', school: 'pyromancy', cost: 3, gain: 0, overcast: true, strainRelief: 0 },
+  'corrosive-curse': { kind: 'mana', school: 'arcane', cost: 2, gain: 0, overcast: true, strainRelief: 0 },
 
   'holy-strike': { kind: 'favor', school: 'theurgy', cost: 0, gain: 1, overcast: false, strainRelief: 0 },
   heal: { kind: 'favor', school: 'theurgy', cost: 1, gain: 0, overcast: false, strainRelief: 0 },
@@ -44,22 +49,29 @@ export const MYSTIC_SCHOOL_LABELS: Record<MysticSchool, string> = {
   theurgy: '神術',
 };
 
+/**
+ * M44：秘法恢復不再只是空過一回合。
+ * 施法者在收束魔力時，可把護幕覆到一名隊友身上；護法只抵擋下一次魔法命中。
+ */
 export const ARCANE_FOCUS_MOVE: Move = {
   id: 'arcane-focus',
-  name: '秘法專注',
+  name: '秘法護持',
   kind: 'support',
-  target: 'self',
+  target: 'ally',
   hitStat: 'int',
-  narration: '{actor}收束散亂的魔力，在呼吸間重新排列符文。',
+  applyStatus: { kind: 'ward', duration: 1, potency: 4 },
+  narration: '{actor}收束散亂的魔力，將重排的符文化作護幕覆在{target}身上。',
 };
 
+/** M44：戰地禱告同時把一次神聖護佑交給一名隊友。 */
 export const FIELD_PRAYER_MOVE: Move = {
   id: 'field-prayer',
-  name: '戰地禱告',
+  name: '戰地祝禱',
   kind: 'support',
-  target: 'self',
+  target: 'ally',
   hitStat: 'cha',
-  narration: '{actor}低聲重申誓詞，讓神恩再次回應。',
+  applyStatus: { kind: 'ward', duration: 1, potency: 3 },
+  narration: '{actor}低聲重申誓詞，讓神恩回應並護佑{target}。',
 };
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -121,6 +133,10 @@ function powerFor(member: PartyMember, kind: MysticKind): MysticPower {
   };
 }
 
+/**
+ * 雖沿用 M41 名稱，M44 開始敵人也會走同一條初始化路徑。
+ * EnemyUnit 在結構上相容 PartyMember（額外欄位不影響），因此可共享同一套魔力公平規則。
+ */
 export function prepareMysticPartyMember(member: PartyMember): PartyMember {
   const copiedMoves = member.moves.map((move) => ({ ...move }));
   const hasMana = copiedMoves.some((move) => mysticRuleForMove(move)?.kind === 'mana');
