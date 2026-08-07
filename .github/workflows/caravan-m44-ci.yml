@@ -1,0 +1,45 @@
+name: Caravan M44 Spellcraft CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - '.github/workflows/caravan-m44-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - '.github/workflows/caravan-m44-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  build-and-spellcraft-review:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: M44 spellcraft transactions and abuse paths
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts
+      - name: M44 multidimensional player adversarial review
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts
+      - name: Core combat and M41 magic regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/combat.test.ts
+          src/scripts/games/caravan/data/arcana.m41.test.ts
+      - name: M42 expedition and M43 armory regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/endurance.m42.test.ts
+          src/scripts/games/caravan/data/endurance.balance.m42.test.ts
+          src/scripts/games/caravan/data/armory.m43.test.ts
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+          src/scripts/games/caravan/data/armory.balance.m43.test.ts
