@@ -12,6 +12,7 @@ import {
 import { statMod } from '../check';
 import type { Rng } from '../rng';
 import type { CompanionRecord, SaveData } from '../save';
+import { armorProtectionForDiscipline } from './armorProfiles.m48';
 import { memberFromRecord } from './jobs';
 import { ritualEnemyAct } from './rituals.m45';
 
@@ -197,6 +198,7 @@ function reaverCaptain(): EnemyUnit {
     id: 'convoy-reaver-captain', name: '斷旗劫騎・領頭者',
     stats: { str: 15, dex: 12, int: 8, cha: 12, con: 15 }, maxHp: 32, hp: 32, defense: 14,
     weaknesses: ['blunt', 'holy'], resists: ['slash'], maxPoise: 3,
+    armorProtection: armorProtectionForDiscipline('mail'),
     moves: [reaverSlash, reaverBrace],
     intents: [{ weight: 3, moveId: reaverSlash.id }, { weight: 1, moveId: reaverBrace.id }],
     enrage: { threshold: 0.4, potency: 2 },
@@ -208,6 +210,7 @@ function hookRaider(): EnemyUnit {
     id: 'convoy-hook-raider', name: '鉤索掠手',
     stats: { str: 11, dex: 15, int: 8, cha: 8, con: 11 }, maxHp: 24, hp: 24, defense: 13,
     weaknesses: ['frost', 'slash'], resists: ['pierce'], maxPoise: 2,
+    armorProtection: armorProtectionForDiscipline('light'),
     moves: [hookStrike], intents: [{ weight: 1, moveId: hookStrike.id }],
   };
 }
@@ -217,6 +220,7 @@ function ashArsonist(): EnemyUnit {
     id: 'convoy-ash-arsonist', name: '灰火縱咒師',
     stats: { str: 7, dex: 11, int: 16, cha: 12, con: 10 }, maxHp: 24, hp: 24, defense: 12,
     weaknesses: ['frost', 'pierce'], resists: ['fire'], maxPoise: 2,
+    armorProtection: armorProtectionForDiscipline('robe'),
     moves: [ashBolt], intents: [{ weight: 1, moveId: ashBolt.id }],
   };
 }

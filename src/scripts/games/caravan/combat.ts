@@ -8,6 +8,10 @@ import {
   mysticRuleForMove,
   prepareMysticPartyMember,
 } from './data/arcana';
+import {
+  resolveArmorMitigation,
+  type ArmorProtection,
+} from './data/armorProfiles.m48';
 
 export interface Move {
   id: string; name: string;
@@ -18,6 +22,8 @@ export interface Move {
   area?: boolean;
   /** M16 隊伍戰術：命中檢定的固定加值 */
   hitBonus?: number;
+  /** M48：只削減物理護甲的平坦減傷，不影響命中，也不穿透魔法防護。 */
+  armorPiercing?: number;
   damage?: { dice: number; sides: number; bonusStat?: Stat };
   heal?: { dice: number; sides: number; bonusStat?: Stat };
   /** M44：ward 為一次性魔法護法；remaining 代表可抵擋的命中次數。 */
@@ -52,6 +58,8 @@ export interface CombatantBase {
   maxHp: number; hp: number; defense: number; moves: Move[];
   /** M14 鐵匠強化：武器 +N 固定傷害加值 */
   damageBonus?: number;
+  /** M48：裝備或敵人本身的材質防護。 */
+  armorProtection?: ArmorProtection;
   /** 進行中狀態效果（M7/M44，戰鬥 runtime） */
   statuses?: StatusEffect[];
   /** M41 戰鬥中的秘法／神恩，不寫回角色存檔。M44 起敵方施法者也遵守同規則。 */
@@ -307,9 +315,26 @@ function performMove(
     }
   }
 
+  const spellRule = mysticRuleForMove(move);
+  const armor = resolveArmorMitigation(target.armorProtection, move, !!spellRule);
+  if (armor.baseReduction > 0) {
+    if (armor.reduction > 0) {
+      amount = Math.max(1, amount - armor.reduction);
+      state.log.push({
+        kind: 'info',
+        text: `${target.name}的${armor.label}削去了 ${armor.reduction} 點${armor.magical ? '魔法' : '物理'}傷害。`,
+      });
+    }
+    if (armor.bypassed > 0) {
+      state.log.push({
+        kind: 'info',
+        text: `${actor.name}的${move.name}穿透了 ${armor.bypassed} 點護甲減傷！`,
+      });
+    }
+  }
+
   // M44：護法只反制真正的魔法招式，不會把劍、箭、毒牙等物理威脅也一併作廢。
   let wardAbsorbed = 0;
-  const spellRule = mysticRuleForMove(move);
   if (spellRule) {
     const ward = target.statuses?.find((status) => status.kind === 'ward' && status.remaining > 0);
     if (ward) {

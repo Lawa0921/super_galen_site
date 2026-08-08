@@ -4,14 +4,14 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
 <BaseLayout
   title="武裝整備所 — 商隊與劍"
-  description="依照中世紀劍與魔法世界的武器熟練、護甲重量、施法媒介與負重整備遠征隊。"
+  description="依照中世紀劍與魔法世界的武器熟練、護甲材質、施法媒介與負重整備遠征隊。"
   lang="zh-TW"
 >
   <main class="armory-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M43 ARMORY DOCTRINES</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M48 ARMOR PROFILES</p>
       <h1>武裝整備所</h1>
-      <p>鋼鐵會保命，也會拖慢腳步；法杖、法袍與聖衣能擴張施法容量，但無法提供鎖甲的可靠防護。跨職裝備不被禁止，代價會清楚列在整備報告中。</p>
+      <p>鋼鐵不再只是一個防禦數字。鎖甲擅長吃下刀斬與部分箭刺，輕甲提供有限斬擊保護；法袍與聖衣則把重量換成秘法、神恩與對應魔法防護。跨職裝備仍不禁止，但每個代價都必須能被玩家看見。</p>
       <nav>
         <a href="/caravan/play">返回主冒險</a>
         <a href="/caravan/endurance">前往餘燼朝聖</a>
@@ -22,7 +22,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       <h2>整備原則</h2>
       <div class="doctrine-grid">
         <article><strong>武器熟練</strong><span>熟練流派命中 +1；勉強運用命中 -2、傷害 -1，仍保留跨職構築。</span></article>
-        <article><strong>護甲重量</strong><span>鎖甲防護最高，但降低敏捷並干擾秘法手勢；超過個人負重容量會再扣敏捷與生命。</span></article>
+        <article><strong>護甲材質</strong><span>鎖甲抗斬、略抗刺，但不會神奇吸收鈍擊；穿甲箭可削掉物理護甲減傷。</span></article>
+        <article><strong>秘法織物</strong><span>法袍能削減少量火／霜魔法；聖衣對神聖衝擊最可靠。這些防護不會替代一次性護法。</span></article>
+        <article><strong>護甲重量</strong><span>鎖甲防護最穩，但降低敏捷並干擾秘法手勢；超過個人負重容量會再扣敏捷與生命。</span></article>
         <article><strong>施法媒介</strong><span>法杖與法袍提高秘法上限；錘杖、聖衣與王室聖印提高神恩上限。</span></article>
         <article><strong>遠征負重</strong><span>負重會進入朝聖整備快照，影響紮營效率與強行軍疲勞。</span></article>
       </div>
@@ -38,6 +40,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   import { loadGame, saveGame, type CompanionRecord, type SaveData } from '@scripts/games/caravan/save';
   import { ITEMS } from '@scripts/games/caravan/data/items';
   import { memberFromRecord } from '@scripts/games/caravan/data/jobs';
+  import { armorProtectionText } from '@scripts/games/caravan/data/armorProfiles.m48';
   import {
     ARMOR_DISCIPLINE_LABELS,
     GEAR_FIT_LABELS,
@@ -135,6 +138,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       text('p', `Lv${record.level}｜防禦 ${member.defense}｜生命 ${member.maxHp}｜敏捷 ${member.stats.dex}`, 'summary'),
       text('p', `個人負重 ${profile.burden}/${profile.capacity}${profile.overload ? `｜超載 ${profile.overload}` : ''}`, 'load'),
       text('p', fitText(record, profile), 'fit'),
+      text('p', `材質防護：${armorProtectionText(profile.armorProtection)}`, 'protection'),
       text('p', `秘法上限修正 ${profile.mysticCapacity.mana >= 0 ? '+' : ''}${profile.mysticCapacity.mana}｜神恩上限修正 ${profile.mysticCapacity.favor >= 0 ? '+' : ''}${profile.mysticCapacity.favor}`, 'mystic'),
     );
 
@@ -188,7 +192,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     loadEl.replaceChildren(
       text('h2', '目前出征隊負重'),
       text('p', `${partyLoad.burden}/${partyLoad.capacity}${partyLoad.overload ? `｜超載 ${partyLoad.overload}` : '｜整隊可負荷'}`),
-      text('p', '負重不只是介面資訊：武裝已立即影響戰鬥面板、武器命中與秘法／神恩容量；餘燼朝聖會把整備快照鎖入行程。'),
+      text('p', '護甲材質、武器熟練與負重都已進入實際戰鬥：鎖甲會削斬／刺傷害、法袍與聖衣會處理特定魔法，穿甲技則能削弱物理減傷；餘燼朝聖仍會把整備快照鎖入行程。'),
     );
     const members = [save.protagonist, ...save.companions];
     rosterEl.replaceChildren(...members.map(memberCard));
@@ -198,7 +202,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   if (!save) {
     noticeEl.replaceChildren(text('h2', '尚未建立商隊'), text('p', '請先返回主冒險建立角色與存檔。'));
   } else {
-    noticeEl.textContent = '武裝報告會即時計算，不會隱藏跨職裝備的代價。';
+    noticeEl.textContent = '武裝報告會即時計算，不會隱藏跨職裝備、負重或材質防護的代價。';
     render();
   }
 </script>
@@ -219,7 +223,8 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .member-card { padding: 1.25rem; border: 1px solid #5e503d; background: #1b1713; }
   .member-card.overloaded { border-color: #a54b3b; box-shadow: inset 4px 0 #a54b3b; }
   .member-card h2 { margin: .2rem 0 .5rem; font-size: 1.8rem; }
-  .summary, .load, .fit, .mystic { color: #d7c7aa; }
+  .summary, .load, .fit, .protection, .mystic { color: #d7c7aa; }
+  .protection { color: #e1c98f; }
   .equipment { display: grid; gap: .45rem; margin: 1rem 0; }
   .equipment-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .6rem .75rem; background: #282117; }
   .warnings { margin: 1rem 0; padding-left: 1.3rem; line-height: 1.6; color: #e4c68d; }
