@@ -1,4 +1,4 @@
-name: Caravan M49 Martial Engagement CI
+name: Caravan M49–M50 Combat Doctrine CI
 
 on:
   pull_request:
@@ -38,6 +38,9 @@ jobs:
 
       - name: M49 medieval tone consistency
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/medievalTone.m49.test.ts
+
+      - name: M50 pre-action readability and dynamic labels
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/combatReadability.m50.test.ts
 
       - name: Core combat and M41 magic regression
         run: >-
