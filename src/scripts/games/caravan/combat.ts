@@ -152,6 +152,7 @@ export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]
     state.enemyIntents[enemy.id] = chooseEnemyIntent(rng, enemy);
   }
   state.log.push({ kind: 'info', text: '戰鬥開始！' });
+  collapseFrontLineIfNeeded(state);
   for (const member of party) {
     if (member.mystic) state.log.push({ kind: 'info', text: `${member.name}：${mysticPowerText(member.mystic)}。` });
   }
@@ -213,9 +214,23 @@ function checkOutcome(state: CombatState): void {
   }
 }
 
+/**
+ * M49：前排一旦全數倒下，後排就不再享有「安全距離」的假象。
+ * 將仍存活的後排提升為前排，讓近戰恢復正常貼身命中、弓弩承受近身壓力，
+ * 同時使守勢角色可以在真正接戰後攔截同伴。這只改戰鬥 runtime，不回寫編隊存檔。
+ */
+function collapseFrontLineIfNeeded(state: CombatState): void {
+  const aliveParty = state.party.filter((member) => member.hp > 0);
+  if (aliveParty.length === 0) return;
+  if (aliveParty.some((member) => member.formationRow !== 'back')) return;
+  for (const member of aliveParty) member.formationRow = 'front';
+  state.log.push({ kind: 'info', text: '前線崩潰！後排成員被迫上前接戰。' });
+}
+
 function applyDamage(state: CombatState, target: CombatantBase, amount: number): void {
   target.hp = Math.max(0, target.hp - amount);
   if (target.hp === 0) state.log.push({ kind: 'down', text: `${target.name}倒下了！` });
+  collapseFrontLineIfNeeded(state);
   const boss = target as EnemyUnit;
   if (boss.enrage && !boss.enraged && target.hp > 0 && target.hp <= target.maxHp * boss.enrage.threshold) {
     boss.enraged = true;
