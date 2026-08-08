@@ -2,6 +2,10 @@ import type { Move } from '../combat';
 import type { CompanionRecord, SaveData } from '../save';
 import type { StatBlock } from '../types';
 import { ITEMS, type ItemDef } from './items';
+import {
+  armorProtectionForDiscipline,
+  type ArmorProtection,
+} from './armorProfiles.m48';
 
 export type WeaponDiscipline = 'blade' | 'bow' | 'staff' | 'mace';
 export type ArmorDiscipline = 'light' | 'mail' | 'robe' | 'vestment';
@@ -28,6 +32,7 @@ export interface ArmoryProfile {
   maxHpAdjustment: number;
   statAdjustments: Partial<StatBlock>;
   mysticCapacity: { mana: number; favor: number };
+  armorProtection?: ArmorProtection;
   warnings: string[];
 }
 
@@ -200,6 +205,7 @@ export function armoryProfile(record: CompanionRecord): ArmoryProfile {
     maxHpAdjustment,
     statAdjustments,
     mysticCapacity: { mana, favor },
+    armorProtection: armorProtectionForDiscipline(armorRule?.armor),
     warnings,
   };
 }
@@ -207,11 +213,15 @@ export function armoryProfile(record: CompanionRecord): ArmoryProfile {
 export function adjustMovesForArmory(record: CompanionRecord, moves: Move[]): Move[] {
   const weaponId = record.equipment.weapon;
   const weaponMoveId = weaponId ? ITEMS[weaponId]?.equip?.move?.id : null;
-  if (!weaponMoveId) return moves.map((move) => ({ ...move }));
   const profile = armoryProfile(record);
-  return moves.map((move) => move.id === weaponMoveId
-    ? { ...move, hitBonus: (move.hitBonus ?? 0) + profile.weaponHitBonus }
-    : { ...move });
+  return moves.map((move) => {
+    const adjusted: Move = { ...move };
+    if (move.id === 'piercing-arrow') adjusted.armorPiercing = Math.max(adjusted.armorPiercing ?? 0, 2);
+    if (weaponMoveId && move.id === weaponMoveId) {
+      adjusted.hitBonus = (move.hitBonus ?? 0) + profile.weaponHitBonus;
+    }
+    return adjusted;
+  });
 }
 
 export function partyArmoryLoad(save: SaveData, memberIds?: string[]): PartyArmoryLoad {
