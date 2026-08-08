@@ -28,6 +28,8 @@ const RULES: Record<string, MysticMoveRule> = {
   // M44：無舌領唱者是以亡魂秘法模仿聖歌，不應同時要求另一條神恩資源。
   'reliquary-silent-chorus': { kind: 'mana', school: 'arcane', cost: 3, gain: 0, overcast: false, strainRelief: 0 },
   'reliquary-lament-touch': { kind: 'mana', school: 'cryomancy', cost: 2, gain: 0, overcast: false, strainRelief: 0 },
+  // M45：心火吐息是古龍心火術式，不再被當成無限免費的魅力系普通攻擊。
+  'reliquary-ember-breath': { kind: 'mana', school: 'pyromancy', cost: 4, gain: 0, overcast: false, strainRelief: 0 },
   // M44：兩個 Lv4 法師專精的代表招式明確歸屬學派，不再只靠元素 fallback 推斷。
   'chain-lightning': { kind: 'mana', school: 'pyromancy', cost: 3, gain: 0, overcast: true, strainRelief: 0 },
   'corrosive-curse': { kind: 'mana', school: 'arcane', cost: 2, gain: 0, overcast: true, strainRelief: 0 },
