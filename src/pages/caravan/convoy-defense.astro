@@ -2,12 +2,12 @@
 import BaseLayout from '@components/layout/BaseLayout.astro';
 ---
 
-<BaseLayout title="裂旗商路護運 — 商隊與劍" description="守住馬車、控住伏兵，或在隘口打開前擊潰敵人。" lang="zh-TW">
+<BaseLayout title="裂旗商路護運 — 商隊與劍" description="守住馬車、擊潰戰意，或迫使伏兵棄械。" lang="zh-TW">
   <main class="convoy-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M46 BATTLEFIELD OBJECTIVES</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M46–M47 OBJECTIVES &amp; MORALE</p>
       <h1>黑蠟急件｜裂旗商路護運</h1>
-      <p>這不是討伐。車夫需要四輪時間拉開裂旗關的鎖鏈；你的任務是讓貨車活著穿過去。</p>
+      <p>這不是討伐。車夫需要四輪時間拉開裂旗關的鎖鏈；你可以護住貨車、擊潰伏兵，也可以先打碎他們的戰意再喝令棄械。</p>
       <nav><a href="/caravan/play">返回啟程之鎮</a><a href="/caravan/mandates">行會文書</a><a href="/caravan/armory">武裝整備</a><a href="/caravan/endurance">餘燼朝聖</a></nav>
     </header>
 
@@ -36,16 +36,22 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     applyConvoyBattleInjuries,
     beginConvoyAttempt,
     braceConvoy,
-    claimConvoyDefenseReward,
     convoyBraceValue,
     convoyDefenseAccess,
     convoyEnemyAct,
-    convoyPartyAct,
     convoyThreatForEnemy,
-    createConvoyDefenseBattle,
     projectedConvoyPressure,
-    type ConvoyDefenseBattle,
   } from '@scripts/games/caravan/data/convoyDefense.m46';
+  import {
+    aftermathPreview,
+    claimMoraleConvoyReward,
+    commandAvailability,
+    commandMorale,
+    createMoraleConvoyDefenseBattle,
+    moraleConvoyPartyAct,
+    type MoraleConvoyBattle,
+    type MoraleDisposition,
+  } from '@scripts/games/caravan/data/convoyMorale.m47';
   import { ritualIntentText } from '@scripts/games/caravan/data/rituals.m45';
 
   const noticeEl = document.getElementById('notice')!;
@@ -58,9 +64,10 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   const resultEl = document.getElementById('result')!;
   const logEl = document.getElementById('log')!;
 
-  let battle: ConvoyDefenseBattle | null = null;
+  let battle: MoraleConvoyBattle | null = null;
   let rng: Rng | null = null;
   let settled = false;
+  let awaitingAftermath = false;
 
   const text = (tag: string, value: string, className?: string): HTMLElement => {
     const element = document.createElement(tag);
@@ -82,17 +89,21 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
   function unitCard(unit: PartyMember | EnemyUnit): HTMLElement {
     const enemy = 'intents' in unit ? unit as EnemyUnit : null;
+    const morale = enemy && battle ? battle.morale[enemy.id] : undefined;
     const card = document.createElement('article');
-    card.className = `unit ${unit.hp <= 0 ? 'down' : ''}`;
+    card.className = `unit ${unit.hp <= 0 ? 'down' : ''} ${morale?.routed ? 'routed' : ''}`;
     const status = (unit.statuses ?? []).map((entry) => `${entry.kind} ${entry.remaining}`).join('、');
     const poise = enemy?.maxPoise !== undefined ? `｜護勢 ${enemy.poise ?? enemy.maxPoise}/${enemy.maxPoise}` : '';
     card.append(text('h3', unit.name), text('p', `HP ${unit.hp}/${unit.maxHp}${poise}${status ? `｜${status}` : ''}`));
     if (enemy) {
       const weak = (enemy.weaknesses ?? []).map((entry) => ELEMENT_LABELS[entry]).join('、') || '無';
       const resist = (enemy.resists ?? []).map((entry) => ELEMENT_LABELS[entry]).join('、') || '無';
-      card.append(
-        text('p', `突破壓力 ${convoyThreatForEnemy(enemy)}｜弱點 ${weak}｜抗性 ${resist}`, 'affinity'),
-      );
+      card.append(text('p', `突破壓力 ${convoyThreatForEnemy(enemy)}｜弱點 ${weak}｜抗性 ${resist}`, 'affinity'));
+      if (morale) {
+        card.append(text('p', morale.routed
+          ? '戰意 0｜已棄械退出戰列'
+          : `戰意 ${morale.current}/${morale.max}${morale.defiance ? `｜抗拒 ${morale.defiance}` : ''}${morale.leader ? '｜領頭者' : ''}`, morale.routed ? 'morale routed-label' : 'morale'));
+      }
       if (enemy.mystic) card.append(text('p', mysticPowerText(enemy.mystic), 'mystic'));
     } else {
       const member = unit as PartyMember;
@@ -108,8 +119,8 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     objectiveEl.replaceChildren(
       text('p', 'ESCORT OBJECTIVE', 'eyebrow'),
       text('h2', `${battle.wagon.name}｜耐久 ${battle.wagon.hp}/${battle.wagon.maxHp}`),
-      text('p', `已撐過 ${battle.completedRounds}/${battle.holdRounds} 輪｜目前伏兵突破壓力 ${pressure}｜本輪護車 ${battle.protection}/10`),
-      text('p', '每完成一輪，仍能行動的伏兵會把突破壓力施加到馬車。擊殺、暈眩與護車都能降低實際損傷；撐滿四輪就能撤離，不必殺光。', 'hint'),
+      text('p', `已撐過 ${battle.completedRounds}/${battle.holdRounds} 輪｜目前突破壓力 ${pressure}｜本輪護車 ${battle.protection}/10｜已棄械 ${battle.routedEnemies.size} 人`),
+      text('p', '撐滿四輪即可撤離，不必殺光。人類伏兵的戰意會因傷亡、半血與破勢下降；但完整戰意時不能靠魅力直接跳過戰鬥。', 'hint'),
     );
     objectiveEl.hidden = false;
   }
@@ -139,15 +150,22 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   }
 
   function act(actorId: string, moveId: string, targetId: string, overcast = false): void {
-    if (!battle || !rng || settled) return;
-    const result = convoyPartyAct(rng, battle, actorId, moveId, targetId, { overcast });
+    if (!battle || !rng || settled || awaitingAftermath) return;
+    const result = moraleConvoyPartyAct(rng, battle, actorId, moveId, targetId, { overcast });
     if (result.acted) runEnemyTurns();
     settleOutcome(); render();
   }
 
   function brace(actor: PartyMember): void {
-    if (!battle || !rng || settled) return;
+    if (!battle || !rng || settled || awaitingAftermath) return;
     const result = braceConvoy(rng, battle, actor.id);
+    if (result.acted) runEnemyTurns();
+    settleOutcome(); render();
+  }
+
+  function command(actor: PartyMember, enemy: EnemyUnit): void {
+    if (!battle || !rng || settled || awaitingAftermath) return;
+    const result = commandMorale(rng, battle, actor.id, enemy.id);
     if (result.acted) runEnemyTurns();
     settleOutcome(); render();
   }
@@ -169,17 +187,27 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
   function renderActions(): void {
     actionsEl.replaceChildren();
-    if (!battle || battle.combat.outcome !== 'ongoing') { actionsEl.hidden = true; return; }
+    if (!battle || battle.combat.outcome !== 'ongoing' || awaitingAftermath) { actionsEl.hidden = true; return; }
     const actorInfo = currentActor(battle.combat);
     if (!actorInfo || actorInfo.side !== 'party') { actionsEl.hidden = true; return; }
     const actor = battle.combat.party.find((member) => member.id === actorInfo.id)!;
     actionsEl.hidden = false;
     actionsEl.append(
       text('h2', `${actor.name}的行動${actor.mystic ? `｜${mysticPowerText(actor.mystic)}` : ''}`),
-      text('p', `護住馬車會犧牲這一回合的輸出／治療，建立 ${convoyBraceValue(actor)} 點護車值；本輪總護車最多 10。`, 'hint'),
+      text('p', `護車建立 ${convoyBraceValue(actor)} 點防護；喝止則用魅力嘗試壓垮已動搖的敵人，但會消耗完整一回合，失敗還會提高對方抗拒。`, 'hint'),
     );
     const grid = document.createElement('div'); grid.className = 'action-grid';
     grid.append(button(`護住馬車（+${Math.min(convoyBraceValue(actor), Math.max(0, 10 - battle.protection))}）`, () => brace(actor), 'brace'));
+    for (const enemy of battle.combat.enemies.filter((candidate) => candidate.hp > 0 && battle!.morale[candidate.id])) {
+      const availability = commandAvailability(battle, actor, enemy);
+      grid.append(button(
+        availability.allowed ? `喝止 ${enemy.name}（DC ${availability.dc}）` : `喝止 ${enemy.name}（尚未動搖）`,
+        () => command(actor, enemy),
+        'command',
+        !availability.allowed,
+        availability.reason,
+      ));
+    }
     for (const move of actor.moves) grid.append(...moveButtons(actor, move));
     grid.append(button('放棄護運並撤離', retreat, 'retreat'));
     actionsEl.append(grid);
@@ -196,38 +224,93 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   }
 
   function retreat(): void {
-    if (!battle || !rng || settled) return;
+    if (!battle || !rng || settled || awaitingAftermath) return;
     attemptRetreat(rng, battle.combat);
     settleOutcome(); render();
   }
 
-  function settleOutcome(): void {
-    if (!battle || settled || battle.combat.outcome === 'ongoing') return;
-    const latest = loadGame(); if (!latest) return;
-    const injured = applyConvoyBattleInjuries(latest, battle.combat);
-    let rewardText = '';
-    if (battle.combat.outcome === 'victory') {
-      const reward = claimConvoyDefenseReward(latest, battle);
-      rewardText = `行會支付 ${reward.gold} G、聲望 +${reward.reputation}${reward.pristineBonus ? '；貨車保存良好，包含 10 G 完整交貨獎金' : ''}。`;
-    }
-    saveGame(latest);
-    settled = true;
+  function renderFinalResult(title: string, body: string, injuries: string[]): void {
+    if (!battle) return;
     resultEl.hidden = false;
     resultEl.replaceChildren(
       text('p', battle.combat.outcome === 'victory' ? 'CONTRACT COMPLETE' : battle.combat.outcome === 'retreated' ? 'CONTRACT ABANDONED' : 'CONTRACT FAILED', 'eyebrow'),
-      text('h2', battle.combat.outcome === 'victory' ? '白蠟貨車穿過裂旗關' : '黑蠟急件沒有送達'),
-      text('p', battle.combat.outcome === 'victory'
-        ? rewardText
-        : '沒有護運報酬；未完成嘗試會保留。下次重新接受時必須重新整隊，消耗補給或金幣，且馬車會帶著額外損傷進場。'),
-      text('p', `貨車剩餘耐久 ${battle.wagon.hp}/${battle.wagon.maxHp}｜養傷：${injured.join('、') || '無'}`),
+      text('h2', title),
+      text('p', body),
+      text('p', `貨車剩餘耐久 ${battle.wagon.hp}/${battle.wagon.maxHp}｜養傷：${injuries.join('、') || '無'}`),
     );
     const link = document.createElement('a'); link.href = '/caravan/play'; link.className = 'return-link'; link.textContent = '返回啟程之鎮';
     resultEl.append(link);
   }
 
+  function finalizeVictory(disposition?: MoraleDisposition): void {
+    if (!battle || settled) return;
+    const latest = loadGame(); if (!latest) return;
+    try {
+      const injuries = applyConvoyBattleInjuries(latest, battle.combat);
+      const reward = claimMoraleConvoyReward(latest, battle, disposition);
+      saveGame(latest);
+      settled = true;
+      awaitingAftermath = false;
+      const after = reward.aftermath;
+      const aftermathText = after.disposition === 'release'
+        ? `你放走 ${after.routedCount} 名棄械伏兵；聲望 +${after.reputation}。`
+        : after.disposition === 'disarm'
+          ? `你收繳 ${after.routedCount} 名伏兵的武器與贓物，追加 ${after.gold} G。`
+          : after.disposition === 'ransom'
+            ? `你押送 ${after.routedCount} 名俘虜換取贖金，追加 ${after.gold} G、乾糧 -1。`
+            : '沒有留下需要處置的俘虜。';
+      renderFinalResult(
+        '白蠟貨車穿過裂旗關',
+        `行會支付 ${reward.base.gold} G、聲望 +${reward.base.reputation}${reward.base.pristineBonus ? '；貨車保存良好，包含 10 G 完整交貨獎金' : ''}。${aftermathText}`,
+        injuries,
+      );
+    } catch (error) {
+      resultEl.hidden = false;
+      resultEl.replaceChildren(text('p', error instanceof Error ? error.message : '護運結算失敗。'));
+    }
+  }
+
+  function showAftermath(): void {
+    if (!battle || awaitingAftermath || settled) return;
+    const latest = loadGame(); if (!latest) return;
+    awaitingAftermath = true;
+    actionsEl.hidden = true;
+    const release = aftermathPreview(latest, battle, 'release');
+    const disarm = aftermathPreview(latest, battle, 'disarm');
+    const ransom = aftermathPreview(latest, battle, 'ransom');
+    const hasRation = (latest.inventory['dried-rations'] ?? 0) > 0;
+    resultEl.hidden = false;
+    resultEl.replaceChildren(
+      text('p', 'SURRENDER AFTERMATH', 'eyebrow'),
+      text('h2', `${battle.routedEnemies.size} 名伏兵已棄械`),
+      text('p', '戰鬥已經贏了；現在決定商隊如何對待活下來的人。三種選擇交換聲望、金錢與補給，不存在無代價的最佳答案。'),
+      button(`放行｜聲望 +${release.reputation}`, () => finalizeVictory('release'), 'aftermath'),
+      button(`繳械搜身｜追加 ${disarm.gold} G`, () => finalizeVictory('disarm'), 'aftermath'),
+      button(`押送贖金｜追加 ${ransom.gold} G、乾糧 -1`, () => finalizeVictory('ransom'), 'aftermath', !hasRation, hasRation ? '' : '沒有乾糧，不能押送俘虜。'),
+    );
+  }
+
+  function settleOutcome(): void {
+    if (!battle || settled || battle.combat.outcome === 'ongoing') return;
+    if (battle.combat.outcome === 'victory') {
+      if (battle.routedEnemies.size > 0) showAftermath();
+      else finalizeVictory();
+      return;
+    }
+    const latest = loadGame(); if (!latest) return;
+    const injuries = applyConvoyBattleInjuries(latest, battle.combat);
+    saveGame(latest);
+    settled = true;
+    renderFinalResult(
+      '黑蠟急件沒有送達',
+      '沒有護運報酬；未完成嘗試會保留。下次重新接受時必須消耗補給或金幣，而且馬車會帶著額外損傷進場。',
+      injuries,
+    );
+  }
+
   function renderLog(): void {
     logEl.replaceChildren();
-    for (const entry of battle?.combat.log.slice(-32) ?? []) logEl.append(text('p', entry.text, entry.kind));
+    for (const entry of battle?.combat.log.slice(-36) ?? []) logEl.append(text('p', entry.text, entry.kind));
   }
 
   function render(): void {
@@ -244,9 +327,10 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     noticeEl.append(
       text('h2', `護衛隊 ${access.partySize} 人｜裂旗關伏擊`),
       text('p', attempt.penalty ?? '首次進場不收額外整備費。重新整理、關頁、撤退或戰敗都會保留未完成嘗試；下一次必須付出重新整隊代價。'),
+      text('p', '戰意規則只套用在會怕死、能溝通的人類伏兵；亡靈、魔物與龍燼不會因一句喝止就退場。', 'hint'),
     );
-    rng = createRng((save.createdAt + save.marketSeed * 17 + 46046) >>> 0);
-    battle = createConvoyDefenseBattle(save, rng, attempt.startingWagonHp);
+    rng = createRng((save.createdAt + save.marketSeed * 17 + 47047) >>> 0);
+    battle = createMoraleConvoyDefenseBattle(save, rng, attempt.startingWagonHp);
     battlefieldEl.hidden = false;
     runEnemyTurns(); settleOutcome(); render();
   }
@@ -269,17 +353,22 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .units { display: grid; gap: .65rem; }
   .unit { border: 1px solid #4d4337; background: #1a1713; padding: .75rem; }
   .unit h3, .unit p { margin: .15rem 0; }
-  .unit.down { opacity: .45; }
+  .unit.down { opacity: .55; }
+  .unit.routed { border-style: dashed; border-color: #77705f; }
   .affinity { color: #cfb68c; font-size: .9rem; }
   .formation, .mystic, .hint { color: #baa98d; font-size: .92rem; }
+  .morale { color: #e0b978; font-size: .92rem; }
+  .routed-label { color: #a7b29a; }
   .action-grid { display: flex; flex-wrap: wrap; gap: .55rem; }
   button { border: 1px solid #7a674c; background: #2a2118; color: #f3dfb7; padding: .65rem .8rem; cursor: pointer; }
   button:hover:not(:disabled) { background: #3b2c1d; }
   button:disabled { opacity: .45; cursor: not-allowed; }
   button.brace { border-color: #c09149; color: #ffd58b; }
+  button.command { border-color: #8d7041; color: #ffe1a1; }
   button.overcast { border-color: #9c3b3b; color: #ffb4a5; }
   button.retreat { border-color: #704443; }
-  .log { max-height: 360px; overflow: auto; }
+  button.aftermath { margin: .5rem .45rem .2rem 0; border-color: #9b7d4e; }
+  .log { max-height: 390px; overflow: auto; }
   .log p { margin: .28rem 0; }
   .log .damage, .log .defeat { color: #e7927c; }
   .log .heal, .log .victory { color: #9bd69b; }
