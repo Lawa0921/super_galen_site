@@ -3,7 +3,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 import { defaultLang, type Language } from '@i18n/index';
 import {
   abilityCatalog,
+  abilityGrades,
   growthBadges,
+  rankChapters,
   rankSteps,
   scoutProfiles,
   type AbilityId,
@@ -14,16 +16,41 @@ const initialProfile = profiles.apple;
 const initialStars = initialProfile.startingStars;
 const abilityEntries = Object.values(abilityCatalog);
 
-function getAbilityGrowth(abilityId: AbilityId, xp: number) {
+function getRankInfo(stars: number) {
+  const reached = rankSteps.filter((rank) => stars >= rank.stars);
+  const current = reached.at(-1) ?? {
+    level: 0,
+    stars: 0,
+    name: '見習小兵',
+    symbol: '🪶',
+    gift: '再收集幾顆星，就能正式加入偵查隊',
+    chapterId: 'rookie-camp',
+  };
+  const next = rankSteps.find((rank) => stars < rank.stars) ?? null;
+  return { current, next };
+}
+
+function getAbilityGrowth(abilityId: AbilityId, abilityStars: number) {
   const ability = abilityCatalog[abilityId];
-  const level = Math.min(10, Math.floor(xp / 10) + 1);
-  const stageIndex = Math.min(ability.growthNames.length - 1, Math.floor((level - 1) / 3));
+  const stars = Math.max(0, Math.min(abilityGrades.length, abilityStars));
+  const grade = stars === 0 ? '尚未啟程' : abilityGrades[stars - 1];
+  const stageStars = stars === 0 ? 0 : ((stars - 1) % 3) + 1;
+  const growthIndex = Math.min(ability.growthNames.length - 1, Math.floor(stars / 6));
   return {
-    level,
-    progress: level === 10 ? 100 : (xp % 10) * 10,
-    growthName: ability.growthNames[stageIndex],
+    stars,
+    grade,
+    stageStars,
+    progress: Math.round((stars / abilityGrades.length) * 100),
+    nextGrade: stars >= abilityGrades.length ? null : abilityGrades[stars],
+    growthName: ability.growthNames[growthIndex],
   };
 }
+
+const initialRank = getRankInfo(initialStars);
+const initialRankProgress = initialRank.next
+  ? ((initialStars - initialRank.current.stars) / (initialRank.next.stars - initialRank.current.stars)) * 100
+  : 100;
+const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.current.stars;
 ---
 
 <BaseLayout
@@ -31,8 +58,9 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
   description="Apple 與 Amy 的圖文生活任務、能力花園與星光升階旅程"
   image="/assets/img/family-missions/family-missions-hero.webp"
   lang={lang}
+  indexable={false}
 >
-  <main class="family-missions" data-theme={initialProfile.theme}>
+  <main class="family-missions" data-theme={initialProfile.theme} data-motion-ready="false">
     <div class="floating-sparkles" aria-hidden="true">
       <span>✦</span><span>●</span><span>✦</span><span>●</span><span>✦</span>
     </div>
@@ -50,6 +78,11 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
       <a class="home-link" href="/" aria-label="回到 SuperGalen's Dungeon 首頁">
         <span aria-hidden="true">←</span> 回到主站
       </a>
+      <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true" aria-label="關閉任務音效">
+        <span class="sound-toggle__on" aria-hidden="true">🔔</span>
+        <span class="sound-toggle__off" aria-hidden="true">🔕</span>
+        <small>任務音效</small>
+      </button>
       <div class="quest-hero__copy">
         <p class="eyebrow">SUPERGALEN FAMILY QUEST</p>
         <h1>雙羽星光<br />任務所</h1>
@@ -92,7 +125,7 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
         </nav>
       </section>
 
-      <section class="scout-story-card" aria-labelledby="scout-name">
+      <section class="scout-story-card" aria-labelledby="scout-name" aria-live="polite">
         <div class="scout-portrait-wrap">
           <div class="scout-portrait-frame">
             <img
@@ -115,10 +148,10 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
           <p class="scout-story" id="scout-story">{initialProfile.story}</p>
 
           <div class="rank-overview">
-            <div class="rank-medal" aria-hidden="true">🔎</div>
+            <div class="rank-medal" id="rank-medal" aria-hidden="true">{initialRank.current.symbol}</div>
             <div>
-              <span>目前軍階</span>
-              <strong id="scout-rank" data-testid="scout-rank">初級偵查兵</strong>
+              <span id="rank-level-label">第 {initialRank.current.level} / 50 階</span>
+              <strong id="scout-rank" data-testid="scout-rank">{initialRank.current.name}</strong>
             </div>
             <div class="star-wallet">
               <span aria-hidden="true">★</span>
@@ -129,10 +162,15 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
 
           <div class="rank-progress" aria-label="前往下一個軍階的進度">
             <div class="rank-progress__labels">
-              <strong id="next-rank">下一站：中級偵查兵</strong>
-              <span id="next-rank-note">再收集 70 顆星星</span>
+              <strong id="next-rank">下一站：{initialRank.next?.name}</strong>
+              <span id="next-rank-note">再收集 {(initialRank.next?.stars ?? 500) - initialStars} 顆星星</span>
             </div>
-            <progress class="rank-progress__track" id="rank-progress-bar" max="100" value="0">0%</progress>
+            <progress class="rank-progress__track" id="rank-progress-bar" max="100" value={initialRankProgress}>{initialRankProgress}%</progress>
+            <div class="mini-star-trail" id="mini-star-trail" aria-label={`本階已收集 ${initialStepStars} / 10 顆星`}>
+              {Array.from({ length: 10 }, (_, index) => (
+                <span class={index < initialStepStars ? 'is-lit' : ''} data-star-step={index + 1}>★</span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -153,9 +191,10 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
 
         <div class="mission-list" id="mission-list">
           {initialProfile.tasks.map((task, index) => {
-            const ability = abilityCatalog[task.abilityId];
+            const taskAbilities = task.abilityIds.map((abilityId) => abilityCatalog[abilityId]);
+            const primaryAbility = taskAbilities[0];
             return (
-              <article class={`mission-card mission-card--${task.abilityId}`} data-task-id={task.id}>
+              <article class={`mission-card mission-card--${primaryAbility.id}`} data-task-id={task.id}>
                 <div class="mission-card__topline">
                   <span class="mission-card__number">任務 {String(index + 1).padStart(2, '0')}</span>
                   <span class="difficulty-tag">{task.difficulty}</span>
@@ -167,15 +206,29 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
                 <p class="mission-card__story">{task.story}</p>
                 <h3>{task.title}</h3>
                 <p class="mission-card__description">{task.description}</p>
+                <button class="mission-guide-toggle" type="button" aria-expanded="false" data-action="toggle-guide">
+                  <span aria-hidden="true">🧭</span> 偷看三步任務口訣 <i aria-hidden="true">＋</i>
+                </button>
+                <ol class="mission-guide" aria-hidden="true">
+                  {task.steps.map((step, stepIndex) => <li><span>{stepIndex + 1}</span>{step}</li>)}
+                </ol>
                 <div class="mission-card__details">
                   <span>⏱ {task.estimatedMinutes}</span>
                   <span>🏷 {task.skillTag}</span>
                 </div>
-                <div class="mission-card__reward" aria-label={`獎勵：${ability.name}能力與 ${task.rewardStars} 顆星星`}>
-                  <span>{ability.icon} {ability.name} ＋{task.abilityXp}</span>
-                  <strong>★ ＋{task.rewardStars}</strong>
+                <div class="mission-card__reward" aria-label={`獎勵：1 顆任務星；${taskAbilities.map((ability) => ability.name).join('、')}各加 1 顆能力星`}>
+                  <span class="ability-reward-list">
+                    {taskAbilities.map((ability) => <i>{ability.icon} {ability.name} ＋1</i>)}
+                  </span>
+                  <strong>★ ＋1</strong>
                 </div>
-                <button class="mission-complete" type="button" aria-label={`完成：${task.title}`} data-task-id={task.id}>
+                <button
+                  class="mission-complete"
+                  type="button"
+                  aria-label={`完成：${task.title}`}
+                  data-task-id={task.id}
+                  data-reward-preview={`${taskAbilities.map((ability) => `${ability.name} +1`).join('、')}、任務星 +1`}
+                >
                   <span class="mission-complete__ready">我完成了，蓋章！</span>
                   <span class="mission-complete__done">已回報</span>
                 </button>
@@ -191,27 +244,51 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
           <div>
             <p>MY GROWING GARDEN</p>
             <h2>我的能力花園</h2>
-            <span>不是分數，是每一次練習後長出來的小小力量。</span>
+            <span>每個任務可培養一項或多項能力；涉及的能力各長出一顆星。</span>
           </div>
+        </div>
+
+        <div class="ability-scale" aria-label="能力階級說明">
+          <div>
+            <strong>能力階級</strong>
+            <span>從 F 慢慢成長到 S</span>
+          </div>
+          <ol>
+            {['F', 'E', 'D', 'C', 'B', 'A', 'S'].map((letter) => <li>{letter}<small>−　　＋</small></li>)}
+          </ol>
+          <p><span aria-hidden="true">★</span> 一顆能力星前進一段：F− → F → F＋ → E− …… → S＋</p>
         </div>
 
         <div class="ability-grid" id="ability-grid">
           {abilityEntries.map((ability) => {
-            const xp = initialProfile.baseAbilityXp[ability.id];
-            const growth = getAbilityGrowth(ability.id, xp);
+            const growth = getAbilityGrowth(ability.id, initialProfile.baseAbilityStars[ability.id]);
             return (
               <article class={`ability-card ability-card--${ability.id}`} data-testid={`ability-${ability.id}`}>
                 <div class="ability-card__icon" aria-hidden="true">{ability.icon}</div>
                 <div class="ability-card__copy">
                   <div class="ability-card__title">
                     <h3>{ability.name}</h3>
-                    <span>Lv.{growth.level}</span>
+                    <span class="ability-grade">{growth.grade}</span>
                   </div>
                   <p>{ability.description}</p>
+                  <div class="ability-stage-stars" aria-label={`${growth.grade}，本階段 ${growth.stageStars} 顆星`}>
+                    {[1, 2, 3].map((star) => <span class={star <= growth.stageStars ? 'is-filled' : ''}>★</span>)}
+                  </div>
                   <progress class="ability-card__meter" max="100" value={growth.progress} aria-label={`${ability.name}成長進度`}>
                     {growth.progress}%
                   </progress>
-                  <small>現在是：{growth.growthName}</small>
+                  <small>{growth.stars} / 21 顆能力星 · {growth.nextGrade ? `下一顆升到 ${growth.nextGrade}` : '已達 S＋'}</small>
+                  <button class="ability-inspect" type="button" aria-expanded="false" data-action="toggle-ability">
+                    展開 F−～S＋成長軌道 <span aria-hidden="true">⌄</span>
+                  </button>
+                  <div class="ability-ladder" aria-hidden="true">
+                    {abilityGrades.map((grade, gradeIndex) => (
+                      <span
+                        class={`${gradeIndex < growth.stars ? 'is-earned' : ''}${gradeIndex === growth.stars - 1 ? ' is-current' : ''}`}
+                        title={`${grade}：第 ${gradeIndex + 1} 顆能力星`}
+                      >{grade}</span>
+                    ))}
+                  </div>
                 </div>
               </article>
             );
@@ -250,22 +327,52 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
           <span class="section-heading__icon" aria-hidden="true">✨</span>
           <div>
             <p>STARLIGHT JOURNEY</p>
-            <h2>星光升階旅程</h2>
-            <span>星星只會累積、不會扣除；每一階都代表多了一點獨立與成熟。</span>
+            <h2>500 星・50 階成長地圖</h2>
+            <span>每完成一個任務得到 1 顆星，每 10 顆星升 1 階；全程分成 10 個冒險章節。</span>
           </div>
         </div>
-        <ol class="rank-trail" id="rank-trail">
-          {rankSteps.map((rank) => (
-            <li class={initialStars >= rank.stars ? 'is-reached' : ''} data-rank-stars={rank.stars}>
-              <span class="rank-trail__symbol" aria-hidden="true">{rank.symbol}</span>
-              <div>
-                <small>{rank.stars} 星</small>
-                <h3>{rank.name}</h3>
-                <p>{rank.gift}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <div class="rank-map" id="rank-trail">
+          {rankChapters.map((chapter, chapterIndex) => {
+            const isCurrent = initialStars >= chapterIndex * 50
+              && (initialStars < chapter.endStars || (chapter.endStars === 500 && initialStars === 500));
+            return (
+              <article
+                class={`rank-chapter${isCurrent ? ' is-current is-open' : ''}${initialStars >= chapter.endStars ? ' is-complete' : ''}`}
+                data-rank-chapter={chapter.id}
+                data-start-stars={chapterIndex * 50}
+                data-end-stars={chapter.endStars}
+              >
+                <header class="rank-chapter__header">
+                  <span class="rank-chapter__number">冒險 {String(chapterIndex + 1).padStart(2, '0')}</span>
+                  <span class="rank-chapter__symbol" aria-hidden="true">{chapter.symbol}</span>
+                  <div>
+                    <h3>{chapter.name}</h3>
+                    <p>{chapter.subtitle}</p>
+                  </div>
+                  <strong>{chapter.startStars}–{chapter.endStars} ★</strong>
+                  <button
+                    class="rank-chapter__toggle"
+                    type="button"
+                    aria-expanded={isCurrent ? 'true' : 'false'}
+                    aria-label={`${isCurrent ? '收起' : '展開'}${chapter.name}的五個軍階`}
+                  >{isCurrent ? '收起地圖' : '展開地圖'} <span aria-hidden="true">⌄</span></button>
+                </header>
+                <ol class="rank-chapter__steps">
+                  {chapter.ranks.map((rank) => (
+                    <li class={initialStars >= rank.stars ? 'is-reached' : ''} data-rank-stars={rank.stars}>
+                      <span class="rank-step__dot">{rank.level}</span>
+                      <div>
+                        <small>{rank.stars} 星</small>
+                        <h4>{rank.name}</h4>
+                        <p>{rank.gift}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </article>
+            );
+          })}
+        </div>
       </section>
 
       <aside class="family-rule">
@@ -275,25 +382,60 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
     </div>
 
     <div class="mission-toast" id="mission-toast" role="status" aria-live="polite"></div>
+    <div class="mission-win" id="mission-win" aria-hidden="true">
+      <div class="mission-win__burst" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="mission-win__card">
+        <small>MISSION COMPLETE!</small>
+        <span class="mission-win__icon" id="mission-win-icon" aria-hidden="true">★</span>
+        <strong id="mission-win-title">任務完成</strong>
+        <div id="mission-win-rewards"></div>
+        <p><b>★ ＋1</b> 任務星已收進星星袋</p>
+      </div>
+    </div>
+    <div class="reward-flight-layer" id="reward-flight-layer" aria-hidden="true"></div>
     <div class="celebration" aria-hidden="true">
       <span>★</span><span>●</span><span>✦</span><span>●</span><span>★</span><span>✦</span>
+      <span>◆</span><span>★</span><span>●</span><span>✦</span><span>★</span><span>◆</span>
+    </div>
+
+    <div class="rank-up-overlay" id="rank-up-overlay" role="dialog" aria-modal="true" aria-label="升階成功" hidden>
+      <div class="rank-up-sky" aria-hidden="true"><span>☁</span><span>✦</span><span>☁</span></div>
+      <div class="rank-up-card">
+        <p class="rank-up-eyebrow">RANK UP!</p>
+        <span class="rank-up-level" id="rank-up-level">第 4 階</span>
+        <div class="rank-up-medal" id="rank-up-medal" aria-hidden="true">🌱</div>
+        <p class="rank-up-name" id="rank-up-scout-name">Apple</p>
+        <h2 id="rank-up-title">中級偵查兵</h2>
+        <div class="rank-up-unlock">
+          <span aria-hidden="true">🔓</span>
+          <div><small>新的獨立能力</small><strong id="rank-up-gift">能準備自己的小裝備</strong></div>
+        </div>
+        <button id="rank-up-close" type="button" aria-label="收下新軍階">收下新軍階，繼續出發！</button>
+      </div>
     </div>
   </main>
 </BaseLayout>
 
-<script define:vars={{ profiles, abilities: abilityCatalog, ranks: rankSteps, badges: growthBadges }}>
-  const STORAGE_KEY = 'supergalen-family-missions-v2';
-  const LEGACY_STORAGE_KEY = 'supergalen-family-missions-v1';
+<script define:vars={{ profiles, abilities: abilityCatalog, grades: abilityGrades, ranks: rankSteps, badges: growthBadges }}>
+  const STORAGE_KEY = 'supergalen-family-missions-v3';
+  const LEGACY_STORAGE_KEYS = ['supergalen-family-missions-v2', 'supergalen-family-missions-v1'];
+  const LEGACY_STARTING_STARS = { apple: 80, amy: 0 };
   const todayKey = new Date().toLocaleDateString('en-CA');
   let activeProfileId = 'apple';
   let state = loadState();
+  let toastTimer;
+  let celebrationTimer;
+  let missionWinTimer;
+  let effectsSoundOn = localStorage.getItem('supergalen-family-sound') !== 'off';
+  let audioContext;
 
   const page = document.querySelector('.family-missions');
   const missionList = document.querySelector('#mission-list');
   const tabs = Array.from(document.querySelectorAll('[data-profile]'));
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function blankProfileState() {
-    return { bonusStars: 0, abilityBonus: {}, dailyDate: todayKey, completed: [] };
+    return { earnedStars: 0, abilityBonusStars: {}, dailyDate: todayKey, completed: [] };
   }
 
   function loadState() {
@@ -301,16 +443,29 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
 
     try {
       const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-      const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
+      const legacy = LEGACY_STORAGE_KEYS
+        .map((key) => JSON.parse(localStorage.getItem(key) || 'null'))
+        .find(Boolean);
       const saved = current || legacy;
       if (!saved?.profiles) return fallback;
 
       for (const profileId of Object.keys(fallback)) {
         const profileState = saved.profiles[profileId] || blankProfileState();
         const isToday = profileState.dailyDate === todayKey;
+        const isLegacy = !current;
+        const legacyTotal = (LEGACY_STARTING_STARS[profileId] || 0) + (Number(profileState.bonusStars) || 0);
+        const earnedStars = isLegacy
+          ? Math.max(0, legacyTotal - profiles[profileId].startingStars)
+          : Math.max(0, Number(profileState.earnedStars) || 0);
+        const rawAbilityBonus = isLegacy ? (profileState.abilityBonus || {}) : (profileState.abilityBonusStars || {});
+        const abilityBonusStars = {};
+        for (const abilityId of Object.keys(abilities)) {
+          const rawValue = Math.max(0, Number(rawAbilityBonus[abilityId]) || 0);
+          abilityBonusStars[abilityId] = isLegacy ? Math.round(rawValue / 7) : rawValue;
+        }
         fallback[profileId] = {
-          bonusStars: Number(profileState.bonusStars) || 0,
-          abilityBonus: profileState.abilityBonus || {},
+          earnedStars,
+          abilityBonusStars,
           dailyDate: todayKey,
           completed: isToday && Array.isArray(profileState.completed) ? profileState.completed : [],
         };
@@ -326,36 +481,87 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
   }
 
   function totalStars(profile) {
-    return profile.startingStars + state[profile.id].bonusStars;
+    return Math.min(500, profile.startingStars + state[profile.id].earnedStars);
   }
 
   function rankInfo(stars) {
-    let current = ranks[0];
-    let next = null;
+    let current = {
+      level: 0,
+      stars: 0,
+      name: '見習小兵',
+      symbol: '🪶',
+      gift: '再收集幾顆星，就能正式加入偵查隊',
+      chapterId: 'rookie-camp',
+    };
     for (const step of ranks) {
       if (stars >= step.stars) current = step;
-      else {
-        next = step;
-        break;
-      }
     }
+    const next = ranks.find((step) => stars < step.stars) || null;
     return { current, next };
   }
 
-  function abilityGrowth(ability, xp) {
-    const level = Math.min(10, Math.floor(xp / 10) + 1);
-    const stageIndex = Math.min(ability.growthNames.length - 1, Math.floor((level - 1) / 3));
+  function abilityGrowth(ability, abilityStars) {
+    const stars = Math.max(0, Math.min(grades.length, abilityStars));
+    const grade = stars === 0 ? '尚未啟程' : grades[stars - 1];
     return {
-      level,
-      progress: level === 10 ? 100 : (xp % 10) * 10,
-      growthName: ability.growthNames[stageIndex],
+      stars,
+      grade,
+      stageStars: stars === 0 ? 0 : ((stars - 1) % 3) + 1,
+      progress: Math.round((stars / grades.length) * 100),
+      nextGrade: stars >= grades.length ? null : grades[stars],
     };
   }
 
+  function abilityLadderHtml(stars) {
+    return grades.map((grade, index) => {
+      const classes = `${index < stars ? 'is-earned' : ''}${index === stars - 1 ? ' is-current' : ''}`;
+      return `<span class="${classes}" title="${grade}：第 ${index + 1} 顆能力星">${grade}</span>`;
+    }).join('');
+  }
+
+  function playSound(kind = 'complete') {
+    if (!effectsSoundOn) return;
+    try {
+      audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+      const now = audioContext.currentTime;
+      const notes = kind === 'rank'
+        ? [[523.25, 0], [659.25, 0.12], [783.99, 0.24], [1046.5, 0.4]]
+        : kind === 'switch'
+          ? [[392, 0], [523.25, 0.08]]
+          : [[659.25, 0], [783.99, 0.1], [987.77, 0.22]];
+      notes.forEach(([frequency, delay], index) => {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = kind === 'rank' ? 'triangle' : 'sine';
+        oscillator.frequency.setValueAtTime(frequency, now + delay);
+        gain.gain.setValueAtTime(0.0001, now + delay);
+        gain.gain.exponentialRampToValueAtTime(index === notes.length - 1 ? 0.11 : 0.075, now + delay + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.22);
+        oscillator.connect(gain).connect(audioContext.destination);
+        oscillator.start(now + delay);
+        oscillator.stop(now + delay + 0.24);
+      });
+    } catch {
+      // Web Audio 不可用時仍保留所有視覺回饋。
+    }
+  }
+
+  function updateSoundButton() {
+    const button = document.querySelector('#sound-toggle');
+    button.setAttribute('aria-pressed', effectsSoundOn ? 'true' : 'false');
+    button.setAttribute('aria-label', effectsSoundOn ? '關閉任務音效' : '開啟任務音效');
+    button.classList.toggle('is-muted', !effectsSoundOn);
+  }
+
   function createMissionCard(task, index, completed) {
-    const ability = abilities[task.abilityId];
+    const taskAbilities = task.abilityIds.map((abilityId) => abilities[abilityId]);
+    const primaryAbility = taskAbilities[0];
+    const abilityRewardHtml = taskAbilities
+      .map((ability) => `<i>${ability.icon} ${ability.name} ＋1</i>`)
+      .join('');
+    const abilityNames = taskAbilities.map((ability) => ability.name).join('、');
     const card = document.createElement('article');
-    card.className = `mission-card mission-card--${task.abilityId}${completed ? ' is-completed' : ''}`;
+    card.className = `mission-card mission-card--${primaryAbility.id} mission-card--order-${index + 1}${completed ? ' is-completed' : ''}`;
     card.dataset.taskId = task.id;
     card.innerHTML = `
       <div class="mission-card__topline">
@@ -368,9 +574,13 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
       <p class="mission-card__story"></p>
       <h3></h3>
       <p class="mission-card__description"></p>
+      <button class="mission-guide-toggle" type="button" aria-expanded="false" data-action="toggle-guide">
+        <span aria-hidden="true">🧭</span> 偷看三步任務口訣 <i aria-hidden="true">＋</i>
+      </button>
+      <ol class="mission-guide" aria-hidden="true">${task.steps.map((step, stepIndex) => `<li><span>${stepIndex + 1}</span></li>`).join('')}</ol>
       <div class="mission-card__details"><span>⏱ ${task.estimatedMinutes}</span><span>🏷 ${task.skillTag}</span></div>
-      <div class="mission-card__reward"><span>${ability.icon} ${ability.name} ＋${task.abilityXp}</span><strong>★ ＋${task.rewardStars}</strong></div>
-      <button class="mission-complete" type="button" data-task-id="${task.id}">
+      <div class="mission-card__reward"><span class="ability-reward-list">${abilityRewardHtml}</span><strong>★ ＋1</strong></div>
+      <button class="mission-complete" type="button" data-task-id="${task.id}" data-reward-preview="${taskAbilities.map((ability) => `${ability.name} +1`).join('、')}、任務星 +1">
         <span class="mission-complete__ready">我完成了，蓋章！</span>
         <span class="mission-complete__done">已回報</span>
       </button>
@@ -378,10 +588,11 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
     card.querySelector('.mission-card__story').textContent = task.story;
     card.querySelector('h3').textContent = task.title;
     card.querySelector('.mission-card__description').textContent = task.description;
+    card.querySelectorAll('.mission-guide li').forEach((item, stepIndex) => item.append(task.steps[stepIndex]));
     const button = card.querySelector('.mission-complete');
     button.setAttribute('aria-label', completed ? `已回報：${task.title}` : `完成：${task.title}`);
     button.disabled = completed;
-    card.querySelector('.mission-card__reward').setAttribute('aria-label', `獎勵：${ability.name}能力與 ${task.rewardStars} 顆星星`);
+    card.querySelector('.mission-card__reward').setAttribute('aria-label', `獎勵：1 顆任務星；${abilityNames}各加 1 顆能力星`);
     return card;
   }
 
@@ -389,18 +600,26 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
     const grid = document.querySelector('#ability-grid');
     const profileState = state[profile.id];
     const cards = Object.values(abilities).map((ability) => {
-      const xp = profile.baseAbilityXp[ability.id] + (Number(profileState.abilityBonus[ability.id]) || 0);
-      const growth = abilityGrowth(ability, xp);
+      const abilityStars = profile.baseAbilityStars[ability.id] + (Number(profileState.abilityBonusStars[ability.id]) || 0);
+      const growth = abilityGrowth(ability, abilityStars);
+      const stagePips = [1, 2, 3]
+        .map((star) => `<span class="${star <= growth.stageStars ? 'is-filled' : ''}">★</span>`)
+        .join('');
       const card = document.createElement('article');
       card.className = `ability-card ability-card--${ability.id}`;
       card.dataset.testid = `ability-${ability.id}`;
       card.innerHTML = `
         <div class="ability-card__icon" aria-hidden="true">${ability.icon}</div>
         <div class="ability-card__copy">
-          <div class="ability-card__title"><h3>${ability.name}</h3><span>Lv.${growth.level}</span></div>
+          <div class="ability-card__title"><h3>${ability.name}</h3><span class="ability-grade">${growth.grade}</span></div>
           <p>${ability.description}</p>
+          <div class="ability-stage-stars" aria-label="${growth.grade}，本階段 ${growth.stageStars} 顆星">${stagePips}</div>
           <progress class="ability-card__meter" max="100" value="${growth.progress}" aria-label="${ability.name}成長進度">${growth.progress}%</progress>
-          <small>現在是：${growth.growthName}</small>
+          <small>${growth.stars} / 21 顆能力星 · ${growth.nextGrade ? `下一顆升到 ${growth.nextGrade}` : '已達 S＋'}</small>
+          <button class="ability-inspect" type="button" aria-expanded="false" data-action="toggle-ability">
+            展開 F−～S＋成長軌道 <span aria-hidden="true">⌄</span>
+          </button>
+          <div class="ability-ladder" aria-hidden="true">${abilityLadderHtml(growth.stars)}</div>
         </div>
       `;
       return card;
@@ -429,9 +648,103 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
     document.querySelectorAll('[data-rank-stars]').forEach((item) => {
       item.classList.toggle('is-reached', stars >= Number(item.dataset.rankStars));
     });
+    document.querySelectorAll('[data-rank-chapter]').forEach((chapter) => {
+      const start = Number(chapter.dataset.startStars);
+      const end = Number(chapter.dataset.endStars);
+      const isCurrent = stars >= start && (stars < end || (end === 500 && stars === 500));
+      chapter.classList.toggle('is-current', isCurrent);
+      chapter.classList.toggle('is-complete', stars >= end);
+      chapter.classList.toggle('is-open', isCurrent);
+      const toggle = chapter.querySelector('.rank-chapter__toggle');
+      toggle.setAttribute('aria-expanded', isCurrent ? 'true' : 'false');
+      toggle.firstChild.textContent = isCurrent ? '收起地圖 ' : '展開地圖 ';
+    });
   }
 
-  function renderProfile(profileId) {
+  function renderMiniStarTrail(stars, animateLast = false) {
+    const currentRank = rankInfo(stars).current;
+    const stepStars = stars >= 500 ? 10 : Math.max(0, stars - currentRank.stars);
+    const trail = document.querySelector('#mini-star-trail');
+    trail.setAttribute('aria-label', `本階已收集 ${stepStars} / 10 顆星`);
+    trail.querySelectorAll('[data-star-step]').forEach((star, index) => {
+      const lit = index < stepStars;
+      star.classList.toggle('is-lit', lit);
+      star.classList.toggle('is-new', animateLast && lit && index === stepStars - 1);
+    });
+  }
+
+  function showMissionWin(task) {
+    const panel = document.querySelector('#mission-win');
+    document.querySelector('#mission-win-icon').textContent = task.icon;
+    document.querySelector('#mission-win-title').textContent = task.title;
+    const rewards = document.querySelector('#mission-win-rewards');
+    rewards.replaceChildren(...task.abilityIds.map((abilityId) => {
+      const chip = document.createElement('span');
+      chip.textContent = `${abilities[abilityId].icon} ${abilities[abilityId].name} ＋1`;
+      return chip;
+    }));
+    window.clearTimeout(missionWinTimer);
+    panel.classList.remove('is-visible');
+    requestAnimationFrame(() => panel.classList.add('is-visible'));
+    missionWinTimer = window.setTimeout(() => panel.classList.remove('is-visible'), reducedMotion.matches ? 900 : 2200);
+  }
+
+  function replayClass(element, className, duration = 900) {
+    if (!element) return;
+    element.classList.remove(className);
+    void element.offsetWidth;
+    element.classList.add(className);
+    window.setTimeout(() => element.classList.remove(className), duration);
+  }
+
+  function flyReward(origin, target, symbol, className, delay = 0) {
+    if (!origin || !target || reducedMotion.matches || typeof target.animate !== 'function') return;
+    const targetRect = target.getBoundingClientRect();
+    const endX = targetRect.left + targetRect.width / 2;
+    const endY = targetRect.top + targetRect.height / 2;
+    const particle = document.createElement('span');
+    particle.className = `reward-particle ${className}`;
+    particle.textContent = symbol;
+    document.querySelector('#reward-flight-layer').append(particle);
+    const animation = particle.animate([
+      { transform: `translate(${origin.x}px, ${origin.y}px) scale(.45) rotate(-20deg)`, opacity: 0 },
+      { transform: `translate(${origin.x}px, ${origin.y - 36}px) scale(1.35) rotate(8deg)`, opacity: 1, offset: 0.22 },
+      { transform: `translate(${endX}px, ${endY - 12}px) scale(.78) rotate(180deg)`, opacity: 1, offset: 0.82 },
+      { transform: `translate(${endX}px, ${endY}px) scale(.25) rotate(240deg)`, opacity: 0 },
+    ], {
+      duration: 980,
+      delay,
+      easing: 'cubic-bezier(.2,.82,.22,1)',
+      fill: 'forwards',
+    });
+    animation.finished.finally(() => particle.remove());
+  }
+
+  function showRankUp(profile, rank) {
+    const overlay = document.querySelector('#rank-up-overlay');
+    document.querySelector('#rank-up-level').textContent = `第 ${rank.level} 階`;
+    document.querySelector('#rank-up-medal').textContent = rank.symbol;
+    document.querySelector('#rank-up-scout-name').textContent = `${profile.shortName} 升階成功`;
+    document.querySelector('#rank-up-title').textContent = rank.name;
+    document.querySelector('#rank-up-gift').textContent = rank.gift;
+    overlay.hidden = false;
+    requestAnimationFrame(() => {
+      overlay.classList.add('is-visible');
+      document.querySelector('#rank-up-close').focus({ preventScroll: true });
+    });
+  }
+
+  function hideRankUp() {
+    const overlay = document.querySelector('#rank-up-overlay');
+    overlay.classList.remove('is-visible');
+    window.setTimeout(() => {
+      overlay.hidden = true;
+      const activeTab = tabs.find((tab) => tab.dataset.profile === activeProfileId);
+      activeTab?.focus({ preventScroll: true });
+    }, reducedMotion.matches ? 0 : 260);
+  }
+
+  function renderProfile(profileId, options = {}) {
     const profile = profiles[profileId];
     const profileState = state[profileId];
     const stars = totalStars(profile);
@@ -440,8 +753,10 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
     const nextThreshold = rank.next?.stars ?? previousThreshold;
     const progress = rank.next ? ((stars - previousThreshold) / (nextThreshold - previousThreshold)) * 100 : 100;
 
+    const profileChanged = profileId !== activeProfileId;
     activeProfileId = profileId;
     page.dataset.theme = profile.theme;
+    if (profileChanged) replayClass(document.querySelector('.scout-story-card'), 'is-switching', 680);
     const portrait = document.querySelector('#scout-portrait');
     portrait.src = profile.portrait;
     portrait.alt = profile.portraitAlt;
@@ -450,6 +765,8 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
     document.querySelector('#scout-call-sign').textContent = profile.callSign;
     document.querySelector('#scout-greeting').textContent = profile.greeting;
     document.querySelector('#scout-story').textContent = profile.story;
+    document.querySelector('#rank-medal').textContent = rank.current.symbol;
+    document.querySelector('#rank-level-label').textContent = `第 ${rank.current.level} / 50 階`;
     document.querySelector('#scout-rank').textContent = rank.current.name;
     document.querySelector('#star-count').textContent = String(stars);
     document.querySelector('#next-rank').textContent = rank.next ? `下一站：${rank.next.name}` : '最高階達成！';
@@ -457,6 +774,7 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
       ? `再收集 ${rank.next.stars - stars} 顆星星`
       : '繼續收集生活裡的美好成就';
     document.querySelector('#rank-progress-bar').value = Math.max(0, Math.min(100, progress));
+    renderMiniStarTrail(stars, Boolean(options.justCompletedTaskId));
     document.querySelector('#completed-count').textContent = String(profileState.completed.length);
     document.querySelector('.mission-count > span').textContent = ` / ${profile.tasks.length}`;
 
@@ -469,37 +787,149 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
     missionList.replaceChildren(...profile.tasks.map((task, index) => (
       createMissionCard(task, index, profileState.completed.includes(task.id))
     )));
+    missionList.querySelectorAll('.mission-card').forEach((card, index) => {
+      card.classList.add('is-entering');
+      window.setTimeout(() => card.classList.remove('is-entering'), 760 + index * 80);
+    });
     renderAbilityGarden(profile);
     renderBadges(stars);
     renderRankTrail(stars);
+
+    if (options.justCompletedTaskId) {
+      const completedCard = missionList.querySelector(`[data-task-id="${options.justCompletedTaskId}"]`);
+      replayClass(completedCard, 'is-just-completed', 1150);
+    }
+    if (Array.isArray(options.grownAbilityIds)) {
+      options.grownAbilityIds.forEach((abilityId, index) => {
+        const abilityCard = document.querySelector(`[data-testid="ability-${abilityId}"]`);
+        window.setTimeout(() => abilityCard?.classList.add('is-just-grown'), 250 + index * 130);
+      });
+    }
   }
 
-  function completeMission(taskId) {
+  function completeMission(taskId, sourceButton) {
     const profile = profiles[activeProfileId];
     const profileState = state[activeProfileId];
     if (profileState.completed.includes(taskId)) return;
     const task = profile.tasks.find((item) => item.id === taskId);
     if (!task) return;
 
+    const previousRank = rankInfo(totalStars(profile)).current;
+    const sourceRect = sourceButton?.getBoundingClientRect();
+    const rewardOrigin = sourceRect ? {
+      x: sourceRect.left + sourceRect.width / 2,
+      y: sourceRect.top + sourceRect.height / 2,
+    } : null;
+
     profileState.completed.push(taskId);
-    profileState.bonusStars += task.rewardStars;
-    profileState.abilityBonus[task.abilityId] = (Number(profileState.abilityBonus[task.abilityId]) || 0) + task.abilityXp;
+    profileState.earnedStars += 1;
+    for (const abilityId of task.abilityIds) {
+      profileState.abilityBonusStars[abilityId] = (Number(profileState.abilityBonusStars[abilityId]) || 0) + 1;
+    }
     saveState();
-    renderProfile(activeProfileId);
+    renderProfile(activeProfileId, {
+      justCompletedTaskId: taskId,
+      grownAbilityIds: task.abilityIds,
+    });
+
+    const newRank = rankInfo(totalStars(profile)).current;
+    const starWallet = document.querySelector('.star-wallet');
+    flyReward(rewardOrigin, starWallet, '★', 'reward-particle--star');
+    task.abilityIds.forEach((abilityId, index) => {
+      const target = document.querySelector(`[data-testid="ability-${abilityId}"] .ability-card__icon`);
+      flyReward(rewardOrigin, target, abilities[abilityId].icon, 'reward-particle--ability', 110 + index * 140);
+      window.setTimeout(() => replayClass(target, 'is-sparkling', 780), 760 + index * 130);
+    });
+    window.setTimeout(() => replayClass(starWallet, 'is-rewarded', 1050), 680);
+    replayClass(document.querySelector('.mission-count'), 'is-rewarded', 850);
+    showMissionWin(task);
+    playSound(newRank.level > previousRank.level ? 'rank' : 'complete');
+    if (typeof navigator.vibrate === 'function') navigator.vibrate(newRank.level > previousRank.level ? [35, 45, 80] : 35);
 
     const toast = document.querySelector('#mission-toast');
-    toast.textContent = `任務完成回報！${profile.shortName} 得到 ${task.rewardStars} 顆星星，${abilities[task.abilityId].name}也長大了！`;
+    const abilityNames = task.abilityIds.map((abilityId) => abilities[abilityId].name).join('、');
+    toast.textContent = `任務完成回報！${profile.shortName} 得到 1 顆任務星，${abilityNames}各得到 1 顆能力星！`;
     toast.classList.add('is-visible');
     page.classList.remove('is-celebrating');
     requestAnimationFrame(() => page.classList.add('is-celebrating'));
-    window.setTimeout(() => toast.classList.remove('is-visible'), 3200);
-    window.setTimeout(() => page.classList.remove('is-celebrating'), 1200);
+    window.clearTimeout(toastTimer);
+    window.clearTimeout(celebrationTimer);
+    toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 3600);
+    celebrationTimer = window.setTimeout(() => page.classList.remove('is-celebrating'), 1500);
+
+    if (newRank.level > previousRank.level) {
+      window.setTimeout(() => showRankUp(profile, newRank), reducedMotion.matches ? 0 : 900);
+    }
   }
 
-  tabs.forEach((tab) => tab.addEventListener('click', () => renderProfile(tab.dataset.profile)));
+  tabs.forEach((tab) => tab.addEventListener('click', () => {
+    renderProfile(tab.dataset.profile);
+    playSound('switch');
+  }));
   missionList.addEventListener('click', (event) => {
+    const guideButton = event.target.closest('[data-action="toggle-guide"]');
+    if (guideButton) {
+      const card = guideButton.closest('.mission-card');
+      const expanded = !card.classList.contains('is-guide-open');
+      card.classList.toggle('is-guide-open', expanded);
+      guideButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      card.querySelector('.mission-guide').setAttribute('aria-hidden', expanded ? 'false' : 'true');
+      guideButton.querySelector('i').textContent = expanded ? '−' : '＋';
+      return;
+    }
     const button = event.target.closest('.mission-complete');
-    if (button?.dataset.taskId) completeMission(button.dataset.taskId);
+    if (button?.dataset.taskId) completeMission(button.dataset.taskId, button);
+  });
+
+  document.querySelector('#ability-grid').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="toggle-ability"]');
+    if (!button) return;
+    const card = button.closest('.ability-card');
+    const expanded = !card.classList.contains('is-expanded');
+    card.classList.toggle('is-expanded', expanded);
+    button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    button.firstChild.textContent = expanded ? '收起成長軌道 ' : '展開 F−～S＋成長軌道 ';
+    card.querySelector('.ability-ladder').setAttribute('aria-hidden', expanded ? 'false' : 'true');
+  });
+
+  document.querySelector('#rank-trail').addEventListener('click', (event) => {
+    const button = event.target.closest('.rank-chapter__toggle');
+    if (!button) return;
+    const chapter = button.closest('.rank-chapter');
+    const expanded = !chapter.classList.contains('is-open');
+    chapter.classList.toggle('is-open', expanded);
+    button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    button.firstChild.textContent = expanded ? '收起地圖 ' : '展開地圖 ';
+  });
+
+  document.querySelector('#sound-toggle').addEventListener('click', () => {
+    effectsSoundOn = !effectsSoundOn;
+    localStorage.setItem('supergalen-family-sound', effectsSoundOn ? 'on' : 'off');
+    updateSoundButton();
+    if (effectsSoundOn) playSound('switch');
+  });
+
+  missionList.addEventListener('pointermove', (event) => {
+    const card = event.target.closest('.mission-card');
+    if (!card || event.pointerType === 'touch' || reducedMotion.matches) return;
+    const rect = card.getBoundingClientRect();
+    card.style.setProperty('--tilt-x', `${((event.clientY - rect.top) / rect.height - 0.5) * -4}deg`);
+    card.style.setProperty('--tilt-y', `${((event.clientX - rect.left) / rect.width - 0.5) * 5}deg`);
+  });
+  missionList.addEventListener('pointerout', (event) => {
+    const card = event.target.closest('.mission-card');
+    if (card && !card.contains(event.relatedTarget)) {
+      card.style.removeProperty('--tilt-x');
+      card.style.removeProperty('--tilt-y');
+    }
+  });
+
+  document.querySelector('#rank-up-close').addEventListener('click', hideRankUp);
+  document.querySelector('#rank-up-overlay').addEventListener('click', (event) => {
+    if (event.target.id === 'rank-up-overlay') hideRankUp();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !document.querySelector('#rank-up-overlay').hidden) hideRankUp();
   });
 
   document.querySelector('#today-label').textContent = new Intl.DateTimeFormat('zh-TW', {
@@ -508,5 +938,8 @@ function getAbilityGrowth(abilityId: AbilityId, xp: number) {
     weekday: 'long',
   }).format(new Date());
 
+  page.dataset.motionReady = 'true';
+  updateSoundButton();
+  requestAnimationFrame(() => page.classList.add('is-ready'));
   renderProfile(activeProfileId);
 </script>

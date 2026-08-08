@@ -45,7 +45,10 @@ export default defineConfig({
   },
 
   // 整合
-  integrations: [sitemap()],
+  integrations: [sitemap({
+    // 家庭任務是知道網址才可進入的隱藏頁，不列入公開網站地圖。
+    filter: (page) => !new URL(page).pathname.startsWith('/family-missions'),
+  })],
 
   // 建構輸出
   build: {
