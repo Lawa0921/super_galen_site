@@ -1,5 +1,6 @@
 import type { CombatState, EnemyUnit, Move, PartyMember } from '../combat';
 import type { CompanionRecord, SaveData } from '../save';
+import { armorProtectionForDiscipline } from './armorProfiles.m48';
 import { memberFromRecord } from './jobs';
 
 export type ReliquaryBattleStage = 1 | 2 | 3;
@@ -103,6 +104,7 @@ function ashKnight(): EnemyUnit {
     id: 'reliquary-ash-knight', name: '灰燼騎士・守橋者',
     stats: { str: 16, dex: 10, int: 10, cha: 8, con: 16 }, maxHp: 28, hp: 28, defense: 15,
     weaknesses: ['holy', 'blunt'], resists: ['fire', 'slash'], maxPoise: 4,
+    armorProtection: armorProtectionForDiscipline('mail'),
     moves: [ashCleave, ashWard], intents: [
       { weight: 3, moveId: ashCleave.id }, { weight: 1, moveId: ashWard.id },
     ],
@@ -114,6 +116,7 @@ function cinderSquire(): EnemyUnit {
     id: 'reliquary-cinder-squire', name: '燼甲侍從',
     stats: { str: 11, dex: 15, int: 8, cha: 7, con: 11 }, maxHp: 14, hp: 14, defense: 12,
     weaknesses: ['frost', 'blunt'], resists: ['fire'], maxPoise: 2,
+    armorProtection: armorProtectionForDiscipline('light'),
     moves: [cinderSpear], intents: [{ weight: 1, moveId: cinderSpear.id }],
   };
 }
