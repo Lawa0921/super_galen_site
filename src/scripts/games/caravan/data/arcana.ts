@@ -112,7 +112,9 @@ export function mysticRuleForMove(move: Move): MysticMoveRule | null {
 
 function stripM50Suffix(name: string): string {
   return name
+    .replace(/〔(?:近戰|遠程)(?: -2)?〕$/u, '')
     .replace(/〔(?:近戰|遠程)・(?:命中 -2|站位適配)〕$/u, '')
+    .replace(/〔(?:護衛|自保)〕$/u, '')
     .replace(/〔守勢・(?:可護衛|自保)〕$/u, '');
 }
 
