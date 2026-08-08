@@ -87,7 +87,7 @@ describe('M48 armor protection and penetration', () => {
     const slash = resolveProtectionDamage(20, mail, 'slash');
     const blunt = resolveProtectionDamage(20, mail, 'blunt');
     expect(slash.amount).toBe(14);
-    expect(slash.protected).toBe(true);
+    expect(slash.mitigated).toBe(true);
     expect(slash.message).toContain('卸去了 6 點斬擊傷害');
     expect(blunt.amount).toBe(24);
     expect(blunt.exposed).toBe(true);
