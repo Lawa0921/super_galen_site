@@ -61,6 +61,8 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
   indexable={false}
 >
   <main class="family-missions" data-theme={initialProfile.theme} data-motion-ready="false">
+    <div class="pixel-scroll-meter" aria-hidden="true"><span id="pixel-scroll-meter"></span></div>
+    <div class="pixel-screen-grid" aria-hidden="true"></div>
     <div class="floating-sparkles" aria-hidden="true">
       <span>✦</span><span>●</span><span>✦</span><span>●</span><span>✦</span>
     </div>
@@ -84,14 +86,24 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
         <small>任務音效</small>
       </button>
       <div class="quest-hero__copy">
-        <p class="eyebrow">SUPERGALEN FAMILY QUEST</p>
+        <p class="eyebrow">SUPERGALEN FAMILY QUEST · 16-BIT EDITION</p>
         <h1>雙羽星光<br />任務所</h1>
         <p>任務不在螢幕裡，真正的冒險就在每天的生活裡。</p>
         <span class="date-sticker" id="today-label">今天的任務</span>
+        <div class="hero-command">
+          <button id="quest-start" type="button"><span aria-hidden="true">▶</span> 進入今日任務</button>
+          <small><i aria-hidden="true"></i> 5 QUESTS READY</small>
+        </div>
       </div>
       <div class="quest-hero__seal" aria-hidden="true">
-        <span>★</span>
-        <small>生活冒險<br />出發！</small>
+        <span>▶</span>
+        <small>PRESS<br />START</small>
+      </div>
+      <div class="pixel-hero-hud" aria-label="目前遊戲狀態">
+        <span>PLAYER <b id="hud-player">APPLE</b></span>
+        <span>LV <b id="hud-level">03</b></span>
+        <span>STAR <b id="hud-stars">039</b></span>
+        <span>QUEST <b id="hud-quests">0/5</b></span>
       </div>
     </header>
 
@@ -382,6 +394,9 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     </div>
 
     <div class="mission-toast" id="mission-toast" role="status" aria-live="polite"></div>
+    <div class="pixel-combo" id="pixel-combo" aria-hidden="true"><small>DAILY COMBO</small><strong>×1</strong></div>
+    <div class="pixel-hit-layer" id="pixel-hit-layer" aria-hidden="true"></div>
+    <div class="quest-warp" id="quest-warp" aria-hidden="true"><span>QUEST START!</span><small>今天也升級一小步</small></div>
     <div class="mission-win" id="mission-win" aria-hidden="true">
       <div class="mission-win__burst" aria-hidden="true"><span></span><span></span><span></span></div>
       <div class="mission-win__card">
@@ -526,6 +541,8 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
       const now = audioContext.currentTime;
       const notes = kind === 'rank'
         ? [[523.25, 0], [659.25, 0.12], [783.99, 0.24], [1046.5, 0.4]]
+        : kind === 'start'
+          ? [[261.63, 0], [392, 0.08], [523.25, 0.18]]
         : kind === 'switch'
           ? [[392, 0], [523.25, 0.08]]
           : [[659.25, 0], [783.99, 0.1], [987.77, 0.22]];
@@ -769,6 +786,10 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     document.querySelector('#rank-level-label').textContent = `第 ${rank.current.level} / 50 階`;
     document.querySelector('#scout-rank').textContent = rank.current.name;
     document.querySelector('#star-count').textContent = String(stars);
+    document.querySelector('#hud-player').textContent = profile.shortName.toUpperCase();
+    document.querySelector('#hud-level').textContent = String(rank.current.level).padStart(2, '0');
+    document.querySelector('#hud-stars').textContent = String(stars).padStart(3, '0');
+    document.querySelector('#hud-quests').textContent = `${profileState.completed.length}/${profile.tasks.length}`;
     document.querySelector('#next-rank').textContent = rank.next ? `下一站：${rank.next.name}` : '最高階達成！';
     document.querySelector('#next-rank-note').textContent = rank.next
       ? `再收集 ${rank.next.stars - stars} 顆星星`
@@ -827,6 +848,10 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
       profileState.abilityBonusStars[abilityId] = (Number(profileState.abilityBonusStars[abilityId]) || 0) + 1;
     }
     saveState();
+    page.classList.remove('is-pixel-hit');
+    void page.offsetWidth;
+    page.classList.add('is-pixel-hit');
+    window.setTimeout(() => page.classList.remove('is-pixel-hit'), reducedMotion.matches ? 0 : 520);
     renderProfile(activeProfileId, {
       justCompletedTaskId: taskId,
       grownAbilityIds: task.abilityIds,
@@ -843,6 +868,9 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     window.setTimeout(() => replayClass(starWallet, 'is-rewarded', 1050), 680);
     replayClass(document.querySelector('.mission-count'), 'is-rewarded', 850);
     showMissionWin(task);
+    const combo = document.querySelector('#pixel-combo');
+    combo.querySelector('strong').textContent = `×${profileState.completed.length}`;
+    replayClass(combo, 'is-visible', 1500);
     playSound(newRank.level > previousRank.level ? 'rank' : 'complete');
     if (typeof navigator.vibrate === 'function') navigator.vibrate(newRank.level > previousRank.level ? [35, 45, 80] : 35);
 
@@ -866,6 +894,16 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     renderProfile(tab.dataset.profile);
     playSound('switch');
   }));
+
+  document.querySelector('#quest-start').addEventListener('click', () => {
+    const warp = document.querySelector('#quest-warp');
+    playSound('start');
+    warp.classList.add('is-visible');
+    window.setTimeout(() => {
+      document.querySelector('.mission-board').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
+    }, reducedMotion.matches ? 0 : 360);
+    window.setTimeout(() => warp.classList.remove('is-visible'), reducedMotion.matches ? 150 : 920);
+  });
   missionList.addEventListener('click', (event) => {
     const guideButton = event.target.closest('[data-action="toggle-guide"]');
     if (guideButton) {
@@ -924,6 +962,28 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     }
   });
 
+  document.addEventListener('pointerdown', (event) => {
+    if (reducedMotion.matches || event.pointerType === 'touch' && event.isPrimary === false) return;
+    const layer = document.querySelector('#pixel-hit-layer');
+    const colors = ['#ffe45e', '#ff7897', '#6ee7b7', '#78b7ff'];
+    for (let index = 0; index < 6; index += 1) {
+      const pixel = document.createElement('i');
+      pixel.style.setProperty('--hit-x', `${event.clientX}px`);
+      pixel.style.setProperty('--hit-y', `${event.clientY}px`);
+      pixel.style.setProperty('--hit-dx', `${(index - 2.5) * 13}px`);
+      pixel.style.setProperty('--hit-dy', `${-18 - (index % 3) * 10}px`);
+      pixel.style.setProperty('--hit-color', colors[index % colors.length]);
+      layer.append(pixel);
+      pixel.addEventListener('animationend', () => pixel.remove(), { once: true });
+    }
+  });
+
+  function updateScrollMeter() {
+    const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    document.querySelector('#pixel-scroll-meter').style.width = `${Math.min(100, (window.scrollY / maxScroll) * 100)}%`;
+  }
+  window.addEventListener('scroll', updateScrollMeter, { passive: true });
+
   document.querySelector('#rank-up-close').addEventListener('click', hideRankUp);
   document.querySelector('#rank-up-overlay').addEventListener('click', (event) => {
     if (event.target.id === 'rank-up-overlay') hideRankUp();
@@ -940,6 +1000,7 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
 
   page.dataset.motionReady = 'true';
   updateSoundButton();
+  updateScrollMeter();
   requestAnimationFrame(() => page.classList.add('is-ready'));
   renderProfile(activeProfileId);
 </script>
