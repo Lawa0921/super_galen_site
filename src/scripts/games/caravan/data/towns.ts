@@ -24,7 +24,7 @@ export const TOWNS: Record<string, TownDef> = {
     id: 'riverbend-town',
     art: '/assets/games/caravan/town-riverbend-town.webp',
     name: '河灣鎮',
-    desc: '臨水道的終點，碼頭終日停滿駁船，鍛造坊搶收礦石與蛛絲，草藥卻因盛產而賤價，偶有溺水旅人的銀懷錶被沖上岸轉手拍賣。',
+    desc: '臨水道的終點，碼頭終日停滿駁船，鍛造坊搶收礦石與蛛絲，草藥卻因盛產而賤價，偶有溺水旅人的銀墜盒被沖上岸轉手拍賣。',
     priceModifiers: { ore: 1.5, 'spider-silk': 1.4, herb: 0.6 },
     stock: ['herb', 'silver-locket', 'ore', 'spider-silk', 'saltforged-mail'],
   },
