@@ -20,7 +20,7 @@ export interface Move {
   hitBonus?: number;
   damage?: { dice: number; sides: number; bonusStat?: Stat };
   heal?: { dice: number; sides: number; bonusStat?: Stat };
-  /** 命中後附加狀態（M7）：poison 每回合行動前扣 potency；stun 跳過一次行動；strength 出手傷害 +potency */
+  /** M44：ward 為一次性魔法護法；remaining 代表可抵擋的命中次數。 */
   applyStatus?: { kind: StatusKind; duration: number; potency?: number };
   /** M15 傷害屬性（attack 專用）；無＝中性 */
   element?: Element;
@@ -36,7 +36,7 @@ export const ELEMENT_LABELS: Record<Element, string> = {
   slash: '斬', pierce: '刺', blunt: '打', fire: '火', frost: '冰', holy: '聖',
 };
 
-export type StatusKind = 'poison' | 'stun' | 'strength';
+export type StatusKind = 'poison' | 'stun' | 'strength' | 'ward';
 export interface StatusEffect { kind: StatusKind; remaining: number; potency: number; }
 
 /** M41：法師使用秘法、教士使用神恩；strain 僅對秘法過載有意義。 */
@@ -52,9 +52,9 @@ export interface CombatantBase {
   maxHp: number; hp: number; defense: number; moves: Move[];
   /** M14 鐵匠強化：武器 +N 固定傷害加值 */
   damageBonus?: number;
-  /** 進行中狀態效果（M7，戰鬥 runtime） */
+  /** 進行中狀態效果（M7/M44，戰鬥 runtime） */
   statuses?: StatusEffect[];
-  /** M41 戰鬥中的秘法／神恩，不寫回角色存檔。 */
+  /** M41 戰鬥中的秘法／神恩，不寫回角色存檔。M44 起敵方施法者也遵守同規則。 */
   mystic?: MysticPower;
   /** 立繪路徑（M5 美術） */
   art?: string;
@@ -115,8 +115,9 @@ export interface PartyActionResult {
 }
 
 export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]): CombatState {
-  // M41：保留角色物件身分，只替換安全招式副本並初始化戰鬥資源。
+  // M41/M44：雙方施法者共用同一套招式裝飾、秘法／神恩容量與恢復手段。
   for (const member of party) prepareMysticPartyMember(member);
+  for (const enemy of enemies) prepareMysticPartyMember(enemy);
   // Interleave party and enemies for initialization roll order (骰序不可更動——既有測試依賴)
   const all = [];
   const maxLen = Math.max(party.length, enemies.length);
@@ -133,13 +134,14 @@ export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]
   };
   for (const enemy of enemies) {
     if (enemy.maxPoise !== undefined && enemy.poise === undefined) enemy.poise = enemy.maxPoise;
-    state.enemyIntents[enemy.id] = rng.weightedPick(
-      enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
-    );
+    state.enemyIntents[enemy.id] = chooseEnemyIntent(rng, enemy);
   }
   state.log.push({ kind: 'info', text: '戰鬥開始！' });
   for (const member of party) {
     if (member.mystic) state.log.push({ kind: 'info', text: `${member.name}：${mysticPowerText(member.mystic)}。` });
+  }
+  for (const enemy of enemies) {
+    if (enemy.mystic) state.log.push({ kind: 'info', text: `${enemy.name}顯露施法氣息：${mysticPowerText(enemy.mystic)}。` });
   }
   return state;
 }
@@ -208,7 +210,9 @@ function applyDamage(state: CombatState, target: CombatantBase, amount: number):
   }
 }
 
-const STATUS_LABEL: Record<StatusKind, string> = { poison: '中毒', stun: '暈眩', strength: '強化' };
+const STATUS_LABEL: Record<StatusKind, string> = {
+  poison: '中毒', stun: '暈眩', strength: '強化', ward: '護法',
+};
 
 function tickStatuses(state: CombatState, actor: CombatantBase): boolean {
   if (!actor.statuses?.length) return true;
@@ -223,6 +227,7 @@ function tickStatuses(state: CombatState, actor: CombatantBase): boolean {
       st.remaining -= 1;
       canAct = false;
     }
+    // M44 ward 是命中次數制，由魔法傷害真正打中時才消耗，不隨持有者回合自然衰減。
   }
   actor.statuses = actor.statuses.filter((st) => st.remaining > 0);
   return canAct && actor.hp > 0;
@@ -253,8 +258,12 @@ function performMove(
     const spec = move.applyStatus;
     target.statuses ??= [];
     const existing = target.statuses.find((s) => s.kind === spec.kind);
-    if (existing) existing.remaining = Math.max(existing.remaining, spec.duration);
-    else target.statuses.push({ kind: spec.kind, remaining: spec.duration, potency: spec.potency ?? 0 });
+    if (existing) {
+      existing.remaining = Math.max(existing.remaining, spec.duration);
+      existing.potency = Math.max(existing.potency, spec.potency ?? 0);
+    } else {
+      target.statuses.push({ kind: spec.kind, remaining: spec.duration, potency: spec.potency ?? 0 });
+    }
     state.log.push({ kind: 'action', text: fillNarration(move.narration, actor.name, target.name, 0) });
     state.log.push({ kind: 'info', text: `${target.name}獲得${STATUS_LABEL[spec.kind]}狀態！` });
     return;
@@ -297,6 +306,24 @@ function performMove(
       amount = Math.max(1, Math.round(baseAmount * 0.5));
     }
   }
+
+  // M44：護法只反制真正的魔法招式，不會把劍、箭、毒牙等物理威脅也一併作廢。
+  let wardAbsorbed = 0;
+  const spellRule = mysticRuleForMove(move);
+  if (spellRule) {
+    const ward = target.statuses?.find((status) => status.kind === 'ward' && status.remaining > 0);
+    if (ward) {
+      wardAbsorbed = Math.min(amount, ward.potency);
+      amount = Math.max(0, amount - wardAbsorbed);
+      ward.remaining -= 1;
+      target.statuses = target.statuses!.filter((status) => status.remaining > 0);
+      state.log.push({
+        kind: 'info',
+        text: `${target.name}的護法削去了 ${wardAbsorbed} 點魔法傷害！`,
+      });
+    }
+  }
+
   state.log.push({ kind: 'damage', text: fillNarration(move.narration, actor.name, target.name, amount) });
   if (hitWeakness) state.log.push({ kind: 'info', text: `擊中弱點！${target.name}被${ELEMENT_LABELS[move.element!]}屬性重創！` });
   else if (foe && move.element && foe.resists?.includes(move.element)) {
@@ -314,12 +341,17 @@ function performMove(
       state.log.push({ kind: 'info', text: `${foe.name}的架勢被徹底打散——破防！下一次行動陷入暈眩！` });
     }
   }
-  if (move.applyStatus && target.hp > 0) {
+  const fullyWarded = !!spellRule && wardAbsorbed > 0 && amount === 0;
+  if (move.applyStatus && target.hp > 0 && !fullyWarded) {
     const spec = move.applyStatus;
     target.statuses ??= [];
     const existing = target.statuses.find((s) => s.kind === spec.kind);
-    if (existing) existing.remaining = Math.max(existing.remaining, spec.duration);
-    else target.statuses.push({ kind: spec.kind, remaining: spec.duration, potency: spec.potency ?? 0 });
+    if (existing) {
+      existing.remaining = Math.max(existing.remaining, spec.duration);
+      existing.potency = Math.max(existing.potency, spec.potency ?? 0);
+    } else {
+      target.statuses.push({ kind: spec.kind, remaining: spec.duration, potency: spec.potency ?? 0 });
+    }
     state.log.push({ kind: 'info', text: `${target.name}陷入${STATUS_LABEL[spec.kind]}狀態！` });
   }
 }
@@ -408,6 +440,34 @@ function finishMysticAction(state: CombatState, actor: PartyMember, move: Move, 
   state.log.push({ kind: 'info', text: `${actor.name}：${mysticPowerText(actor.mystic)}。` });
 }
 
+function enemyRecoveryMove(enemy: EnemyUnit): Move | undefined {
+  if (!enemy.mystic) return undefined;
+  const id = enemy.mystic.kind === 'mana' ? 'arcane-focus' : 'field-prayer';
+  return enemy.moves.find((move) => move.id === id);
+}
+
+/**
+ * M44：敵人不會偷偷過載。若抽到付不起的法術，意圖直接改成公開的恢復／護持行動。
+ * 若資料損壞到沒有恢復招式，退回任何仍可合法執行的招式，避免 AI 卡死。
+ */
+function chooseEnemyIntent(rng: Rng, enemy: EnemyUnit): string {
+  const intendedId = rng.weightedPick(
+    enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
+  );
+  const intended = enemy.moves.find((move) => move.id === intendedId) ?? enemy.moves[0];
+  if (intended && partyMoveAvailability(enemy, intended).allowed) return intended.id;
+  const recovery = enemyRecoveryMove(enemy);
+  if (recovery) return recovery.id;
+  const fallback = enemy.moves.find((move) => partyMoveAvailability(enemy, move).allowed);
+  return fallback?.id ?? intendedId;
+}
+
+function validPartyTarget(state: CombatState, actor: PartyMember, move: Move, target: CombatantBase): boolean {
+  if (move.target === 'self') return target.id === actor.id;
+  if (move.target === 'ally') return state.party.some((member) => member.id === target.id && member.hp > 0);
+  return state.enemies.some((enemy) => enemy.id === target.id && enemy.hp > 0);
+}
+
 export function partyAct(
   rng: Rng,
   state: CombatState,
@@ -421,6 +481,9 @@ export function partyAct(
   const targetFound = [...state.party, ...state.enemies].find((c) => c.id === targetId);
   if (!actor || !move || !targetFound || state.outcome !== 'ongoing') {
     return { acted: false, overcast: false, backlash: 0, reason: '行動資料無效。' };
+  }
+  if (!validPartyTarget(state, actor, move, targetFound)) {
+    return { acted: false, overcast: false, backlash: 0, reason: '這個招式不能指定該目標。' };
   }
   const availability = partyMoveAvailability(actor, move, options);
   if (!availability.allowed) {
@@ -457,22 +520,51 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
   const enemy = state.enemies.find((e) => e.id === enemyId);
   if (!enemy || state.outcome !== 'ongoing') return;
   if (!tickStatuses(state, enemy)) {
-    state.enemyIntents[enemyId] = rng.weightedPick(
-      enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
-    );
+    state.enemyIntents[enemyId] = chooseEnemyIntent(rng, enemy);
     checkOutcome(state);
     if (state.outcome === 'ongoing') advanceTurn(state);
     return;
   }
-  const moveId = state.enemyIntents[enemyId] ?? enemy.moves[0].id;
-  const move = enemy.moves.find((m) => m.id === moveId) ?? enemy.moves[0];
+
+  const intendedId = state.enemyIntents[enemyId] ?? enemy.moves[0].id;
+  let move = enemy.moves.find((candidate) => candidate.id === intendedId) ?? enemy.moves[0];
+  let availability = partyMoveAvailability(enemy, move);
+  if (!availability.allowed) {
+    move = enemyRecoveryMove(enemy)
+      ?? enemy.moves.find((candidate) => partyMoveAvailability(enemy, candidate).allowed)
+      ?? move;
+    availability = partyMoveAvailability(enemy, move);
+  }
+  if (!availability.allowed) {
+    state.log.push({ kind: 'info', text: `${enemy.name}無法完成預定行動，施法節奏被迫中斷。` });
+    state.enemyIntents[enemyId] = chooseEnemyIntent(rng, enemy);
+    advanceTurn(state);
+    return;
+  }
+
+  const mystic = beginMysticAction(state, enemy, move, availability);
   let target: CombatantBase;
-  if (move.kind === 'support' && move.heal) {
-    const aliveEnemies = state.enemies.filter((e) => e.hp > 0);
+  if (move.kind === 'support') {
+    const aliveEnemies = state.enemies.filter((candidate) => candidate.hp > 0);
     if (aliveEnemies.length === 0) return;
-    target = aliveEnemies.reduce(
-      (most, e) => (e.maxHp - e.hp > most.maxHp - most.hp ? e : most), aliveEnemies[0]
-    );
+    if (move.target === 'self') {
+      target = enemy;
+    } else if (move.heal) {
+      target = aliveEnemies.reduce(
+        (most, candidate) => (
+          candidate.maxHp - candidate.hp > most.maxHp - most.hp ? candidate : most
+        ),
+        aliveEnemies[0]
+      );
+    } else {
+      // 護法優先交給生命比例最低的同伴，讓玩家可從公開意圖判斷其防守企圖。
+      target = aliveEnemies.reduce(
+        (lowest, candidate) => (
+          candidate.hp / candidate.maxHp < lowest.hp / lowest.maxHp ? candidate : lowest
+        ),
+        aliveEnemies[0]
+      );
+    }
   } else {
     const aliveParty = state.party.filter((p) => p.hp > 0);
     if (aliveParty.length === 0) return;
@@ -489,6 +581,7 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
       }
     }
   }
+
   const strengthBonus = move.kind === 'attack' ? consumeStrength(enemy) : 0;
   if (move.kind === 'attack' && move.area) {
     for (const member of state.party.filter((partyMember) => partyMember.hp > 0)) {
@@ -497,9 +590,8 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
   } else {
     performMove(rng, state, enemy, move, target, strengthBonus);
   }
-  state.enemyIntents[enemyId] = rng.weightedPick(
-    enemy.intents.map((it) => ({ weight: it.weight, value: it.moveId }))
-  );
+  finishMysticAction(state, enemy, move, mystic.overcast);
+  state.enemyIntents[enemyId] = chooseEnemyIntent(rng, enemy);
   checkOutcome(state);
   if (state.outcome === 'ongoing') advanceTurn(state);
 }
@@ -525,7 +617,7 @@ export function useItemInCombat(state: CombatState, actorId: string, use: ItemCo
   } else {
     target.statuses = target.statuses ?? [];
     target.statuses.push({ kind: use.status.kind, remaining: use.status.duration, potency: use.status.potency ?? 0 });
-    state.log.push({ kind: 'info', text: `${actor.name}使用${use.name}，${target.name}獲得強化！` });
+    state.log.push({ kind: 'info', text: `${actor.name}使用${use.name}，${target.name}獲得${STATUS_LABEL[use.status.kind]}！` });
   }
   advanceTurn(state);
 }
@@ -539,8 +631,16 @@ export function attemptRetreat(rng: Rng, state: CombatState): void {
       .map((id) => aliveParty.find((p) => p.id === id))
       .find((p) => p !== undefined)!;
     state.log.push({ kind: 'retreat', text: `${rear.name}殿後掩護撤退……` });
-    const attackMove = aliveEnemy.moves.find((m) => m.kind === 'attack');
-    if (attackMove) performMove(rng, state, aliveEnemy, attackMove, rear, consumeStrength(aliveEnemy));
+    // M44：撤退追擊也不能繞過敵方秘法資源；只選當下合法的攻擊。
+    const attackMove = aliveEnemy.moves.find(
+      (move) => move.kind === 'attack' && partyMoveAvailability(aliveEnemy, move).allowed
+    );
+    if (attackMove) {
+      const availability = partyMoveAvailability(aliveEnemy, attackMove);
+      const mystic = beginMysticAction(state, aliveEnemy, attackMove, availability);
+      performMove(rng, state, aliveEnemy, attackMove, rear, consumeStrength(aliveEnemy));
+      finishMysticAction(state, aliveEnemy, attackMove, mystic.overcast);
+    }
   }
   state.outcome = 'retreated';
   state.log.push({ kind: 'retreat', text: '商隊撤出了戰鬥。' });

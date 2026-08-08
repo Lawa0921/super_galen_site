@@ -1,0 +1,84 @@
+name: Caravan M44 Spellcraft CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - '.github/workflows/caravan-m44-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - '.github/workflows/caravan-m44-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  build-and-spellcraft-review:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        run: npm run build
+
+      - name: M44 ward recovery and refresh
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "turns arcane recovery"
+      - name: M44 magic-only ward separation
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "wards only magical damage"
+      - name: M44 full ward status blocking
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "fully warded spells"
+      - name: M44 hostile mage resource cycle
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "makes enemy mages"
+      - name: M44 hostile priest resource cycle
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "makes hostile priests"
+      - name: M44 illegal target abuse paths
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "rejects player-side illegal targets"
+      - name: M44 live salt-wraith and bandit-priest integration
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "live salt wraith and bandit priest"
+      - name: M44 live reliquary cantor spell coherence
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "live tongueless cantor"
+
+      - name: M44 pressure versus ward Pareto
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts -t "real Pareto tradeoff"
+      - name: M44 pure martial exhaustion window
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts -t "pure martial party functional"
+      - name: M44 physical threat anti-ward-spam
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts -t "purely physical threat"
+      - name: M44 dual-caster ward banking cap
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts -t "dual casters cannot bank"
+
+      - name: Core combat and M41 magic regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/combat.test.ts
+          src/scripts/games/caravan/data/arcana.m41.test.ts
+
+      - name: M42 balanced composition probe
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.balance.m42.test.ts -t "balanced party has viable"
+      - name: M42 martial composition probe
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.balance.m42.test.ts -t "martial party with cleric"
+      - name: M42 pure martial composition probe
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.balance.m42.test.ts -t "pure martial party has viable"
+      - name: M42 double-mage composition probe
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.balance.m42.test.ts -t "double-mage party"
+      - name: M42 no-cleric composition probe
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.balance.m42.test.ts -t "party without cleric"
+      - name: M42 composition spread probe
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.balance.m42.test.ts -t "composition win rates"
+      - name: M42 camp-policy diversity probe
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.balance.m42.test.ts -t "camp policy uses"
+
+      - name: M42 expedition state regression
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.m42.test.ts
+      - name: M43 armory and endurance regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/armory.m43.test.ts
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+          src/scripts/games/caravan/data/armory.balance.m43.test.ts
