@@ -100,3 +100,5 @@ export function resolveArmorMitigation(
     label: protection.label,
   };
 }
+
+// M48 validation trigger: keep gameplay gates running against the current master implementation.
