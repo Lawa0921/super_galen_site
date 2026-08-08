@@ -33,6 +33,8 @@ export interface ArmoryPartyMemberRuntime {
   armoryOverload?: number;
   armoryWarnings?: string[];
   armoryProfile?: ArmoryProfile;
+  /** M48：實際受擊時使用的護甲材質輪廓。 */
+  armorProtection?: ArmoryProfile['armorProtection'];
 }
 
 /** M18：每名角色最多攜帶四招，讓升級後的技能選擇形成構築取捨。 */
@@ -229,6 +231,7 @@ export function setPreparedMoves(record: CompanionRecord, moveIds: string[]): st
 /**
  * 將角色成長、裝備、特質、專精、武裝熟練與戰技配置整合成實際戰鬥成員。
  * M43 不禁止跨職裝備，而是把不合訓練的代價公開轉成命中、屬性、負重與施法上限。
+ * M48 再把護甲材質輪廓帶入戰鬥，使斬、刺、鈍與真正魔法在受擊端產生可讀差異。
  */
 export function memberFromRecord(record: CompanionRecord): PartyMember {
   const job = JOBS[record.job];
@@ -260,6 +263,7 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
     armoryOverload: armory.overload,
     armoryWarnings: [...armory.warnings],
     armoryProfile: armory,
+    armorProtection: armory.armorProtection,
   };
   return member;
 }
