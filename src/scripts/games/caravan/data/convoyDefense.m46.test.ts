@@ -91,8 +91,8 @@ describe('M46 convoy objective combat', () => {
 
   it('turns convoy protection into a real action cost, respects turn ownership, and caps stacked protection', () => {
     const battle = createConvoyDefenseBattle(preparedSave(), createRng(47));
-    const [front, second] = battle.combat.party;
-    battle.combat.order = [front.id, second.id];
+    const [front, second, third] = battle.combat.party;
+    battle.combat.order = [front.id, second.id, third.id];
     battle.combat.turnIndex = 0;
 
     const firstBrace = braceConvoy(createRng(470), battle, front.id);
