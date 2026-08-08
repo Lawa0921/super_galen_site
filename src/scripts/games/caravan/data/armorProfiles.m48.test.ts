@@ -153,7 +153,7 @@ describe('M48 armor material profiles', () => {
     state.enemyIntents[mage.id] = 'fireball';
     const before = target.hp;
     enemyAct(fixedRng, state, mage.id);
-    expect(before - target.hp).toBe(5); // 6 + INT mod 3 - robe 1 - ward 3
+    expect(before - target.hp).toBe(2); // 1d6 max 6 - robe 1 - ward 3
     expect(target.statuses?.some((status) => status.kind === 'ward')).toBe(false);
     expect(state.log.some((entry) => entry.text.includes('法袍削去了 1 點魔法傷害'))).toBe(true);
     expect(state.log.some((entry) => entry.text.includes('護法削去了 3 點魔法傷害'))).toBe(true);
