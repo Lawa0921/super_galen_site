@@ -112,8 +112,9 @@ function probe(policy: Policy): Probe {
     forceTurn(state, front.id);
     partyAct(scriptedRng([10]), state, front.id, guardMove.id, front.id);
   } else {
-    forceTurn(state, caster.id);
-    partyAct(scriptedRng([20, 4]), state, caster.id, fireball.id, boss.id);
+    // Pressure remains available even when the mage is nearly dry: the martial front-liner can spend tempo on damage.
+    forceTurn(state, front.id);
+    partyAct(scriptedRng([20, 4]), state, front.id, strike.id, boss.id);
   }
 
   forceTurn(state, boss.id);
