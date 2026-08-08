@@ -15,6 +15,7 @@ M46 addresses a gameplay problem rather than adding another management layer: mo
 - Any living party member may spend their turn bracing the wagon. Constitution and frontline position improve the protection value, but total protection is capped at 10 per round.
 - Healing restores escorts, not the wooden wagon. Clerics therefore preserve the people who can continue defending instead of becoming direct objective healers.
 - Full annihilation is still a valid fast victory through the ordinary combat engine.
+- The contract is linked directly from the existing Guild Hall / Black-Wax Documents page instead of requiring a hidden URL.
 
 ## Sword-and-magic role identities
 
@@ -29,7 +30,8 @@ M46 addresses a gameplay problem rather than adding another management layer: mo
 - Convoy brace validates actual turn ownership before acting.
 - Bracing consumes an ordinary combat action and still loses the action when stun prevents it.
 - Multiple escorts cannot stack more than 10 convoy protection in one round.
-- Closing / refreshing an unresolved convoy battle is not a free initiative or RNG reroll. Re-entry consumes one dried ration when possible, otherwise charges emergency gold, and every abandonment removes four starting wagon durability down to a floor of 12.
+- Closing, refreshing, deliberately retreating, or losing an unresolved convoy battle all leave the attempt receipt active. Re-entry consumes one dried ration when possible, otherwise charges emergency gold, and every unresolved retry removes four starting wagon durability down to a floor of 12.
+- Contract reward settlement receives the actual battle state and rejects ongoing, retreated, defeated, or destroyed-wagon states in the data layer rather than trusting UI-only gating.
 - Contract reward is issued at most once per market cycle.
 - Wagon condition matters: finishing at 70% durability or better grants a 10 G intact-delivery bonus.
 
@@ -49,6 +51,8 @@ Acceptance gates:
 - A party with no swordsman must also have successful seeded escorts; the dedicated frontline class cannot become mandatory.
 - Successful escorts must be possible with enemies still alive, proving that the new objective is not cosmetic kill-all combat.
 - The wagon must be able to fail while party members remain alive, proving that protecting the caravan is a real independent loss condition.
+- Retreat/defeat/reload retries must pay the same unresolved-attempt economy; no exit path may become a free RNG reset.
+- Reward settlement must reject any non-victory battle state before mutating gold, reputation, or receipts.
 - M40 live fantasy encounters, M41 magic resources, M42 composition/endurance, M43 armory, M44 spellcraft, M45 rituals, and core combat remain regression gates.
 
 This is automated adversarial gameplay review. It is intentionally stricter than unit correctness, but it does not replace several-hour human UX playtesting.
