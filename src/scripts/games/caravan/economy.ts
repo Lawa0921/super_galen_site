@@ -8,7 +8,7 @@ export interface TownDef {
   desc: string;
   /** itemId -> 價格係數（如 1.4/0.7）；未列出的物品視為 1.0 */
   priceModifiers: Record<string, number>;
-  /** 該鎮商店可購買的物品清單（含孤兒物品：繃帶/乾糧/銀懷錶/香料包，M4） */
+  /** 該鎮商店可購買的物品清單（含孤兒物品：繃帶/乾糧/銀墜盒/香料包，M4） */
   stock: string[];
   /** 城鎮橫幅圖路徑（M5 美術） */
   art?: string;
