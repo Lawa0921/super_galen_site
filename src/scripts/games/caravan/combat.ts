@@ -12,6 +12,11 @@ import {
   resolveArmorMitigation,
   type ArmorProtection,
 } from './data/armorProfiles.m48';
+import {
+  canGuardIntercept,
+  formationAttackProfile,
+  type EngagementBand,
+} from './data/martialEngagement.m49';
 
 export interface Move {
   id: string; name: string;
@@ -24,6 +29,8 @@ export interface Move {
   hitBonus?: number;
   /** M48：只削減物理護甲的平坦減傷，不影響命中，也不穿透魔法防護。 */
   armorPiercing?: number;
+  /** M49：可覆寫自動判定的交戰距離；真正魔法仍由 arcana 規則優先判定。 */
+  engagement?: EngagementBand;
   damage?: { dice: number; sides: number; bonusStat?: Stat };
   heal?: { dice: number; sides: number; bonusStat?: Stat };
   /** M44：ward 為一次性魔法護法；remaining 代表可抵擋的命中次數。 */
@@ -288,13 +295,16 @@ function performMove(
     state.log.push({ kind: 'action', text: fillNarration(move.narration, actor.name, target.name, 0) });
     return;
   }
+  const spellRule = mysticRuleForMove(move);
+  const partyActor = state.party.find((member) => member.id === actor.id);
+  const formation = formationAttackProfile(partyActor?.formationRow, move, !!spellRule);
   const die = rng.d20();
   const defense = target.defense + (state.guarding[target.id] ? 4 : 0);
   const hit = die === 20
     ? true
     : die === 1
       ? false
-      : die + statMod(actor.stats[move.hitStat]) + (move.hitBonus ?? 0) >= defense;
+      : die + statMod(actor.stats[move.hitStat]) + (move.hitBonus ?? 0) + formation.hitModifier >= defense;
   if (!hit) {
     state.log.push({ kind: 'action', text: `${actor.name}的${move.name}落空了！` });
     return;
@@ -315,7 +325,6 @@ function performMove(
     }
   }
 
-  const spellRule = mysticRuleForMove(move);
   const armor = resolveArmorMitigation(target.armorProtection, move, !!spellRule);
   if (armor.baseReduction > 0) {
     if (armor.reduction > 0) {
@@ -526,6 +535,8 @@ export function partyAct(
     if (state.outcome === 'ongoing') advanceTurn(state);
     return { acted: true, overcast: mystic.overcast, backlash: mystic.backlash, reason: '施法者被反噬擊倒。' };
   }
+  const formation = formationAttackProfile(actor.formationRow, move, !!mysticRuleForMove(move));
+  if (formation.message) state.log.push({ kind: 'info', text: formation.message });
   if (move.kind === 'attack' && move.area) {
     const strengthBonus = consumeStrength(actor);
     for (const target of state.enemies.filter((enemy) => enemy.hp > 0)) {
@@ -599,7 +610,7 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
     if (move.kind === 'attack' && !move.area && !state.guarding[target.id]) {
       const guardian = state.order
         .map((id) => state.party.find((member) => member.id === id))
-        .find((member) => member && member.hp > 0 && state.guarding[member.id]);
+        .find((member) => member && member.hp > 0 && state.guarding[member.id] && canGuardIntercept(member.formationRow));
       if (guardian && guardian.id !== target.id) {
         state.log.push({ kind: 'info', text: `${guardian.name}持盾上前，替${target.name}攔下攻擊！` });
         target = guardian;
