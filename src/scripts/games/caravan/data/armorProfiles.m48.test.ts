@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { partyAct, startCombat, type EnemyUnit, type Move, type PartyMember } from '../combat';
+import { enemyAct, partyAct, startCombat, type EnemyUnit, type Move, type PartyMember } from '../combat';
 import type { Rng } from '../rng';
 import { createProtagonist, type CompanionRecord } from '../save';
 import { armoryProfile } from './armory';
@@ -127,6 +127,36 @@ describe('M48 armor material profiles', () => {
     };
     expect(hit(fireball, 'robe').damage).toBeLessThan(hit(fireball, 'mail').damage);
     expect(hit(holy, 'vestment').damage).toBeLessThan(hit(holy, 'light').damage);
+  });
+
+  it('stacks passive robe protection before the one-charge M44 ward instead of replacing either layer', () => {
+    const target: PartyMember = {
+      id: 'robe-mage', name: '法袍法師',
+      stats: { str: 8, dex: 10, int: 16, cha: 10, con: 10 },
+      maxHp: 30, hp: 30, defense: 1,
+      armorProtection: armorProtectionForDiscipline('robe'),
+      statuses: [{ kind: 'ward', remaining: 1, potency: 3 }],
+      moves: [{ id: 'strike', name: '揮擊', kind: 'attack', target: 'enemy', hitStat: 'str', element: 'blunt', damage: { dice: 1, sides: 2 }, narration: '' }],
+    };
+    const fireball: Move = {
+      id: 'fireball', name: '火球', kind: 'attack', target: 'enemy', hitStat: 'int', element: 'fire',
+      damage: { dice: 1, sides: 6 }, narration: '{actor}以火球擊中{target}，造成 {amount} 點傷害。',
+    };
+    const mage: EnemyUnit = {
+      id: 'hostile-mage', name: '敵方法師',
+      stats: { str: 8, dex: 10, int: 16, cha: 10, con: 10 },
+      maxHp: 20, hp: 20, defense: 1, moves: [fireball], intents: [{ weight: 1, moveId: 'fireball' }],
+    };
+    const state = startCombat(fixedRng, [target], [mage]);
+    state.order = [mage.id, target.id];
+    state.turnIndex = 0;
+    state.enemyIntents[mage.id] = 'fireball';
+    const before = target.hp;
+    enemyAct(fixedRng, state, mage.id);
+    expect(before - target.hp).toBe(5); // 6 + INT mod 3 - robe 1 - ward 3
+    expect(target.statuses?.some((status) => status.kind === 'ward')).toBe(false);
+    expect(state.log.some((entry) => entry.text.includes('法袍削去了 1 點魔法傷害'))).toBe(true);
+    expect(state.log.some((entry) => entry.text.includes('護法削去了 3 點魔法傷害'))).toBe(true);
   });
 
   it('turns the ranger piercing-arrow name into a real armor-piercing combat property', () => {
