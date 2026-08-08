@@ -48,19 +48,19 @@ describe('M50 pre-action combat readability', () => {
     expect(front.hint).toContain('替隊友攔截');
     expect(back.shortLabel).toBe('守勢・自保');
     expect(back.hint).toContain('只能保護自己');
-    expect(combatMoveDisplayName(makeActor('front'), guard)).toBe('防禦架勢〔守勢・可護衛〕');
-    expect(combatMoveDisplayName(makeActor('back'), guard)).toBe('防禦架勢〔守勢・自保〕');
+    expect(combatMoveDisplayName(makeActor('front'), guard)).toBe('防禦架勢〔護衛〕');
+    expect(combatMoveDisplayName(makeActor('back'), guard)).toBe('防禦架勢〔自保〕');
   });
 
-  it('changes mundane action labels when the same actor changes rows', () => {
+  it('changes compact mundane action labels when the same actor changes rows', () => {
     const swordsman = makeActor('back');
-    expect(combatMoveDisplayName(swordsman, melee)).toContain('命中 -2');
+    expect(combatMoveDisplayName(swordsman, melee)).toBe('長劍斬擊〔近戰 -2〕');
     swordsman.formationRow = 'front';
-    expect(combatMoveDisplayName(swordsman, melee)).toContain('站位適配');
+    expect(combatMoveDisplayName(swordsman, melee)).toBe('長劍斬擊〔近戰〕');
 
     const archer = makeActor('back');
-    expect(combatMoveDisplayName(archer, ranged)).toContain('站位適配');
+    expect(combatMoveDisplayName(archer, ranged)).toBe('長弓射擊〔遠程〕');
     archer.formationRow = 'front';
-    expect(combatMoveDisplayName(archer, ranged)).toContain('命中 -2');
+    expect(combatMoveDisplayName(archer, ranged)).toBe('長弓射擊〔遠程 -2〕');
   });
 });
