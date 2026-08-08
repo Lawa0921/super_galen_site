@@ -8,7 +8,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       <p class="eyebrow">CARAVAN &amp; SWORD · M46 BATTLEFIELD OBJECTIVES</p>
       <h1>黑蠟急件｜裂旗商路護運</h1>
       <p>這不是討伐。車夫需要四輪時間拉開裂旗關的鎖鏈；你的任務是讓貨車活著穿過去。</p>
-      <nav><a href="/caravan/play">返回啟程之鎮</a><a href="/caravan/armory">武裝整備</a><a href="/caravan/endurance">餘燼朝聖</a></nav>
+      <nav><a href="/caravan/play">返回啟程之鎮</a><a href="/caravan/mandates">行會文書</a><a href="/caravan/armory">武裝整備</a><a href="/caravan/endurance">餘燼朝聖</a></nav>
     </header>
 
     <section id="notice" class="panel"></section>
@@ -43,7 +43,6 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     convoyPartyAct,
     convoyThreatForEnemy,
     createConvoyDefenseBattle,
-    finishConvoyAttempt,
     projectedConvoyPressure,
     type ConvoyDefenseBattle,
   } from '@scripts/games/caravan/data/convoyDefense.m46';
@@ -205,11 +204,10 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   function settleOutcome(): void {
     if (!battle || settled || battle.combat.outcome === 'ongoing') return;
     const latest = loadGame(); if (!latest) return;
-    finishConvoyAttempt(latest);
     const injured = applyConvoyBattleInjuries(latest, battle.combat);
     let rewardText = '';
     if (battle.combat.outcome === 'victory') {
-      const reward = claimConvoyDefenseReward(latest, battle.wagon.hp);
+      const reward = claimConvoyDefenseReward(latest, battle);
       rewardText = `行會支付 ${reward.gold} G、聲望 +${reward.reputation}${reward.pristineBonus ? '；貨車保存良好，包含 10 G 完整交貨獎金' : ''}。`;
     }
     saveGame(latest);
@@ -218,7 +216,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     resultEl.replaceChildren(
       text('p', battle.combat.outcome === 'victory' ? 'CONTRACT COMPLETE' : battle.combat.outcome === 'retreated' ? 'CONTRACT ABANDONED' : 'CONTRACT FAILED', 'eyebrow'),
       text('h2', battle.combat.outcome === 'victory' ? '白蠟貨車穿過裂旗關' : '黑蠟急件沒有送達'),
-      text('p', battle.combat.outcome === 'victory' ? rewardText : '沒有護運報酬；本市場週期仍可重新接受這張急件。'),
+      text('p', battle.combat.outcome === 'victory'
+        ? rewardText
+        : '沒有護運報酬；未完成嘗試會保留。下次重新接受時必須重新整隊，消耗補給或金幣，且馬車會帶著額外損傷進場。'),
       text('p', `貨車剩餘耐久 ${battle.wagon.hp}/${battle.wagon.maxHp}｜養傷：${injured.join('、') || '無'}`),
     );
     const link = document.createElement('a'); link.href = '/caravan/play'; link.className = 'return-link'; link.textContent = '返回啟程之鎮';
@@ -243,7 +243,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     saveGame(save);
     noticeEl.append(
       text('h2', `護衛隊 ${access.partySize} 人｜裂旗關伏擊`),
-      text('p', attempt.penalty ?? '首次進場不收額外整備費。中途重新整理／關頁會被視為放棄陣形，下一次馬車將帶著損傷重新進場。'),
+      text('p', attempt.penalty ?? '首次進場不收額外整備費。重新整理、關頁、撤退或戰敗都會保留未完成嘗試；下一次必須付出重新整隊代價。'),
     );
     rng = createRng((save.createdAt + save.marketSeed * 17 + 46046) >>> 0);
     battle = createConvoyDefenseBattle(save, rng, attempt.startingWagonHp);
