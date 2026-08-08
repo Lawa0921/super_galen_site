@@ -7,9 +7,19 @@ test.describe('雙羽任務所', () => {
     await page.reload();
   });
 
-  test('從主站導覽可進入任務頁', async ({ page }) => {
+  test('任務頁維持隱藏且不出現在主站導覽', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('a[href="/family-missions"]').first()).toContainText('雙羽任務');
+    await expect(page.locator('a[href="/family-missions"]')).toHaveCount(0);
+    await page.goto('/family-missions');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/i);
+  });
+
+  test('像素冒險介面提供 HUD 與任務開始過場', async ({ page }) => {
+    await expect(page.locator('.pixel-hero-hud')).toContainText('APPLE');
+    await expect(page.locator('.pixel-hero-hud')).toContainText('039');
+    await page.getByRole('button', { name: '進入今日任務' }).click();
+    await expect(page.locator('#quest-warp')).toHaveClass(/is-visible/);
+    await expect(page.locator('#quest-warp')).toContainText('QUEST START!');
   });
 
   test('孩子可以切換角色並回報生活任務', async ({ page }) => {
