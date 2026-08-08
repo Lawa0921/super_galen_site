@@ -1,7 +1,8 @@
-import type { Move } from '../combat';
+import type { Element, Move } from '../combat';
 import type { CompanionRecord, SaveData } from '../save';
 import type { StatBlock } from '../types';
 import { ITEMS, type ItemDef } from './items';
+import type { ProtectionProfile } from './armorProtection.m48';
 
 export type WeaponDiscipline = 'blade' | 'bow' | 'staff' | 'mace';
 export type ArmorDiscipline = 'light' | 'mail' | 'robe' | 'vestment';
@@ -14,6 +15,8 @@ export interface ArmoryItemRule {
   armor?: ArmorDiscipline;
   manaCapacity?: number;
   favorCapacity?: number;
+  /** M48：實際受擊倍率；低於 1 是防護，高於 1 是護甲暴露面。 */
+  protection?: Partial<Record<Element, number>>;
 }
 
 export interface ArmoryProfile {
@@ -28,6 +31,8 @@ export interface ArmoryProfile {
   maxHpAdjustment: number;
   statAdjustments: Partial<StatBlock>;
   mysticCapacity: { mana: number; favor: number };
+  /** M48：由實際裝備物件導出的受擊輪廓，戰鬥 runtime 直接讀取。 */
+  armorProtection: ProtectionProfile | null;
   warnings: string[];
 }
 
@@ -47,11 +52,26 @@ const RULES: Record<string, ArmoryItemRule> = {
   'brine-crystal-staff': { itemId: 'brine-crystal-staff', burden: 1, weapon: 'staff', manaCapacity: 1 },
   'brine-blessed-mace': { itemId: 'brine-blessed-mace', burden: 2, weapon: 'mace', favorCapacity: 1 },
 
-  'ridgeleather-vest': { itemId: 'ridgeleather-vest', burden: 1, armor: 'light' },
-  'pilgrim-warded-cloak': { itemId: 'pilgrim-warded-cloak', burden: 2, armor: 'light' },
-  'saltforged-mail': { itemId: 'saltforged-mail', burden: 3, armor: 'mail', manaCapacity: -2 },
-  'ashveil-robe': { itemId: 'ashveil-robe', burden: 1, armor: 'robe', manaCapacity: 2 },
-  'brinewarded-vestment': { itemId: 'brinewarded-vestment', burden: 1, armor: 'vestment', favorCapacity: 2 },
+  'ridgeleather-vest': {
+    itemId: 'ridgeleather-vest', burden: 1, armor: 'light',
+    protection: { slash: 0.9, pierce: 1.1 },
+  },
+  'pilgrim-warded-cloak': {
+    itemId: 'pilgrim-warded-cloak', burden: 2, armor: 'light',
+    protection: { slash: 0.9, pierce: 1.05, fire: 0.9, frost: 0.9, holy: 0.85 },
+  },
+  'saltforged-mail': {
+    itemId: 'saltforged-mail', burden: 3, armor: 'mail', manaCapacity: -2,
+    protection: { slash: 0.7, pierce: 0.85, blunt: 1.2, fire: 1.1 },
+  },
+  'ashveil-robe': {
+    itemId: 'ashveil-robe', burden: 1, armor: 'robe', manaCapacity: 2,
+    protection: { slash: 1.15, pierce: 1.15, blunt: 1.05, fire: 0.75, frost: 0.9 },
+  },
+  'brinewarded-vestment': {
+    itemId: 'brinewarded-vestment', burden: 1, armor: 'vestment', favorCapacity: 2,
+    protection: { slash: 1.1, pierce: 1.1, blunt: 1.05, fire: 0.9, frost: 0.9, holy: 0.7 },
+  },
 
   'overseer-ledger': { itemId: 'overseer-ledger', burden: 1 },
   'den-idol': { itemId: 'den-idol', burden: 1 },
@@ -132,6 +152,23 @@ export function armoryCarryCapacity(record: CompanionRecord): number {
   return clamp(2 + Math.floor((con - 10) / 2) + Math.floor(survival / 2) + profession, 1, 10);
 }
 
+function protectionFromArmorRule(rule: ArmoryItemRule | null, fit: GearFit | null): ProtectionProfile | null {
+  if (!rule?.protection) return null;
+  const multipliers: Partial<Record<Element, number>> = {};
+  for (const element of Object.keys(rule.protection) as Element[]) {
+    const configured = rule.protection[element];
+    if (configured === undefined) continue;
+    // 勉強穿戴只會削弱「正面防護」；笨重或版型錯誤造成的暴露面不會憑空消失。
+    multipliers[element] = fit === 'strained' && configured < 1
+      ? 1 - (1 - configured) * 0.5
+      : configured;
+  }
+  return {
+    source: ITEMS[rule.itemId]?.name ?? rule.itemId,
+    multipliers,
+  };
+}
+
 export function armoryProfile(record: CompanionRecord): ArmoryProfile {
   const weaponRule = armoryRuleForItem(record.equipment.weapon);
   const armorRule = armoryRuleForItem(record.equipment.armor);
@@ -155,6 +192,7 @@ export function armoryProfile(record: CompanionRecord): ArmoryProfile {
   let damageAdjustment = 0;
   let mana = (weaponRule?.manaCapacity ?? 0) + (armorRule?.manaCapacity ?? 0) + (trinketRule?.manaCapacity ?? 0);
   let favor = (weaponRule?.favorCapacity ?? 0) + (armorRule?.favorCapacity ?? 0) + (trinketRule?.favorCapacity ?? 0);
+  const armorProtection = protectionFromArmorRule(armorRule, armorFit);
   const warnings: string[] = [];
 
   if (weaponFit === 'strained') {
@@ -173,6 +211,9 @@ export function armoryProfile(record: CompanionRecord): ArmoryProfile {
     if (record.job === 'mage') mana -= 1;
     if (record.job === 'cleric') favor -= 1;
     warnings.push('護甲版型與訓練不合：敏捷 -1、負重 +1，施法者額外失去資源上限。');
+    if (armorProtection && Object.values(armorRule?.protection ?? {}).some((multiplier) => (multiplier ?? 1) < 1)) {
+      warnings.push('護甲訓練不足：減傷抗性只能發揮一半，原本的受擊弱點仍會完整承受。');
+    }
   }
   if (armorRule?.armor === 'robe' && record.job !== 'mage') mana = Math.min(0, mana);
   if (armorRule?.armor === 'vestment' && record.job !== 'cleric') favor = Math.min(0, favor);
@@ -200,6 +241,7 @@ export function armoryProfile(record: CompanionRecord): ArmoryProfile {
     maxHpAdjustment,
     statAdjustments,
     mysticCapacity: { mana, favor },
+    armorProtection,
     warnings,
   };
 }
