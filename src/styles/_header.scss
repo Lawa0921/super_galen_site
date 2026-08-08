@@ -744,3 +744,18 @@ $mobile-menu-item-height: 52px;
         padding: 14px;
     }
 }
+
+.family-mission-nav-link {
+    border-color: rgba(255, 196, 73, 0.75);
+    color: #ffe6a6;
+    box-shadow: 0 0 10px rgba(255, 196, 73, 0.28);
+
+    i {
+        color: #ffc449;
+    }
+
+    &:hover {
+        color: #fff8e5;
+        box-shadow: 0 0 18px rgba(255, 196, 73, 0.62);
+    }
+}
