@@ -8,6 +8,9 @@ import {
   type PartyMember,
 } from '../combat';
 import type { Rng } from '../rng';
+import { mysticRuleForMove } from './arcana';
+import { createReliquaryEncounter } from './ashenReliquaryCombat';
+import { ENCOUNTERS } from './enemies';
 
 function scriptedRng(values: number[]): Rng {
   let index = 0;
@@ -180,5 +183,52 @@ describe('M44 spellcraft counterplay', () => {
     const wardEnemy = partyAct(scriptedRng([10]), state, mage.id, 'arcane-focus', foe.id);
     expect(wardEnemy).toMatchObject({ acted: false, reason: '這個招式不能指定該目標。' });
     expect(foe.statuses?.some((status) => status.kind === 'ward') ?? false).toBe(false);
+  });
+
+  it('wires the live salt wraith and bandit priest into the same fair resource rules', () => {
+    const guard = member('guard', [strike]);
+    guard.maxHp = guard.hp = 100;
+
+    const saltState = startCombat(scriptedRng([20, 19, 1]), [guard], ENCOUNTERS.enc_salt_crystals());
+    const wraith = saltState.enemies.find((enemy) => enemy.id === 'salt-wraith-1')!;
+    expect(wraith.mystic).toMatchObject({ kind: 'mana', current: 6, max: 6 });
+    expect(wraith.moves.find((move) => move.id === 'salt-shard-throw')?.name).toContain('秘法 2');
+    expect(wraith.moves.some((move) => move.id === 'arcane-focus')).toBe(true);
+
+    const raidState = startCombat(scriptedRng([20, 19, 18, 1]), [guard], ENCOUNTERS.enc_bandit_raid());
+    const priest = raidState.enemies.find((enemy) => enemy.id === 'bandit-medic-1')!;
+    expect(priest.mystic).toMatchObject({ kind: 'favor', current: 1 });
+    expect(priest.moves.find((move) => move.id === 'bandit-mend')?.name).toContain('神恩 1');
+    expect(priest.moves.some((move) => move.id === 'field-prayer')).toBe(true);
+  });
+
+  it('keeps the live tongueless cantor on one coherent亡魂秘法 resource instead of deadlocking half its kit', () => {
+    const guard = member('guard', [strike]);
+    guard.maxHp = guard.hp = 120;
+    const encounter = createReliquaryEncounter(2);
+    const cantor = encounter.find((enemy) => enemy.id === 'reliquary-tongueless-cantor')!;
+    const state = startCombat(scriptedRng([20, 19, 18, 17, 1]), [guard], encounter);
+
+    expect(cantor.mystic).toMatchObject({ kind: 'mana', current: 7, max: 7 });
+    const chorus = cantor.moves.find((move) => move.id === 'reliquary-silent-chorus')!;
+    const lament = cantor.moves.find((move) => move.id === 'reliquary-lament-touch')!;
+    expect(mysticRuleForMove(chorus)).toMatchObject({ kind: 'mana', school: 'arcane', cost: 3 });
+    expect(mysticRuleForMove(lament)).toMatchObject({ kind: 'mana', school: 'cryomancy', cost: 2 });
+
+    forceTurn(state, cantor.id);
+    state.enemyIntents[cantor.id] = chorus.id;
+    enemyAct(scriptedRng([20, 1, 1, 1]), state, cantor.id);
+    expect(cantor.mystic?.current).toBe(4);
+
+    forceTurn(state, cantor.id);
+    state.enemyIntents[cantor.id] = lament.id;
+    enemyAct(scriptedRng([20, 1]), state, cantor.id);
+    expect(cantor.mystic?.current).toBe(2);
+
+    forceTurn(state, cantor.id);
+    state.enemyIntents[cantor.id] = chorus.id;
+    enemyAct(scriptedRng([10]), state, cantor.id);
+    expect(cantor.mystic?.current).toBe(5);
+    expect(state.log.some((entry) => entry.text.includes('無法調用神恩'))).toBe(false);
   });
 });
