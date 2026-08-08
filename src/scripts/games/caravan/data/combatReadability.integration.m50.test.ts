@@ -39,9 +39,9 @@ describe('M50 live combat readability integration', () => {
     const archer = member('archer', 'front', [bow]);
     startCombat(rng, [swordsman, archer], [enemy()]);
 
-    expect(swordsman.moves[0].name).toContain('近戰・命中 -2');
-    expect(swordsman.moves[1].name).toBe('防禦架勢〔守勢・自保〕');
-    expect(archer.moves[0].name).toContain('遠程・命中 -2');
+    expect(swordsman.moves[0].name).toBe('長劍斬擊〔近戰 -2〕');
+    expect(swordsman.moves[1].name).toBe('防禦架勢〔自保〕');
+    expect(archer.moves[0].name).toBe('長弓射擊〔遠程 -2〕');
   });
 
   it('updates the same live label when battlefield row changes after combat starts', () => {
@@ -49,12 +49,12 @@ describe('M50 live combat readability integration', () => {
     startCombat(rng, [swordsman], [enemy()]);
     // all-rear start is immediately exposed by M49 frontline collapse
     expect(swordsman.formationRow).toBe('front');
-    expect(swordsman.moves[0].name).toContain('近戰・站位適配');
+    expect(swordsman.moves[0].name).toBe('長劍斬擊〔近戰〕');
 
     swordsman.formationRow = 'back';
-    expect(swordsman.moves[0].name).toContain('近戰・命中 -2');
+    expect(swordsman.moves[0].name).toBe('長劍斬擊〔近戰 -2〕');
     swordsman.formationRow = 'front';
-    expect(swordsman.moves[0].name).toContain('近戰・站位適配');
+    expect(swordsman.moves[0].name).toBe('長劍斬擊〔近戰〕');
   });
 
   it('keeps real magic resource labels clean instead of stacking a mundane range suffix', () => {
@@ -69,7 +69,7 @@ describe('M50 live combat readability integration', () => {
     const defender = member('defender', 'front', [guard]);
     startCombat(rng, [defender], [enemy()]);
     expect(defender.moves[0].id).toBe('guard');
-    expect(defender.moves[0].name).toContain('防禦架勢');
+    expect(defender.moves[0].name).toBe('防禦架勢〔護衛〕');
     expect(defender.moves[0].narration).not.toContain('盾');
     expect(defender.moves[0].narration).toContain('武器與護具');
   });
@@ -77,9 +77,8 @@ describe('M50 live combat readability integration', () => {
   it('does not duplicate M50 suffixes if the same runtime member is initialized again', () => {
     const fighter = member('fighter', 'front', [sword]);
     startCombat(rng, [fighter], [enemy()]);
-    const once = fighter.moves[0].name;
+    expect(fighter.moves[0].name).toBe('長劍斬擊〔近戰〕');
     startCombat(rng, [fighter], [enemy()]);
-    expect(fighter.moves[0].name).toBe(once);
-    expect((fighter.moves[0].name.match(/站位適配/g) ?? []).length).toBe(1);
+    expect(fighter.moves[0].name).toBe('長劍斬擊〔近戰〕');
   });
 });
