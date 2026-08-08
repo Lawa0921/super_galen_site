@@ -8,6 +8,7 @@ import {
   mysticRuleForMove,
   prepareMysticPartyMember,
 } from './data/arcana';
+import { resolveCombatArmorProtection } from './data/armorProtection.m48';
 
 export interface Move {
   id: string; name: string;
@@ -305,6 +306,14 @@ function performMove(
     } else if (foe.resists?.includes(move.element)) {
       amount = Math.max(1, Math.round(baseAmount * 0.5));
     }
+  }
+
+  // M48：角色護甲不是單純 DEF 數字；命中後再依實際護甲處理斬／刺／鈍與魔法受擊輪廓。
+  // 穿甲只繞過正面減傷，不會抹除鈍擊、火焰等護甲弱點。
+  const armorResolution = resolveCombatArmorProtection(amount, target, move);
+  amount = armorResolution.amount;
+  if (armorResolution.message) {
+    state.log.push({ kind: 'info', text: armorResolution.message });
   }
 
   // M44：護法只反制真正的魔法招式，不會把劍、箭、毒牙等物理威脅也一併作廢。
