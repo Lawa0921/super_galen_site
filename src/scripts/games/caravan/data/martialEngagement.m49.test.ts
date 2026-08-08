@@ -38,6 +38,17 @@ function attack(id: string, hitStat: 'str' | 'dex' | 'int', element: Move['eleme
   };
 }
 
+function guardMove(id = 'guard'): Move {
+  return {
+    id,
+    name: '架盾',
+    kind: 'guard',
+    target: 'self',
+    hitStat: 'str',
+    narration: '{actor}舉盾穩守。',
+  };
+}
+
 function member(id: string, move: Move, row: 'front' | 'back', stats: PartyMember['stats']): PartyMember {
   return {
     id,
@@ -49,6 +60,10 @@ function member(id: string, move: Move, row: 'front' | 'back', stats: PartyMembe
     moves: [move],
     formationRow: row,
   };
+}
+
+function frontAnchor(id = 'anchor'): PartyMember {
+  return member(id, guardMove(`${id}-guard`), 'front', { str: 12, dex: 10, int: 8, cha: 8, con: 12 });
 }
 
 function enemy(id = 'foe', defense = 12): EnemyUnit {
@@ -70,7 +85,7 @@ describe('M49 live martial engagement integration', () => {
     const slash = attack('test-slash', 'str', 'slash');
     const hero = member('hero', slash, 'back', { str: 14, dex: 14, int: 8, cha: 8, con: 12 });
     const foe = enemy();
-    const state = startCombat(scriptedRng([15, 5]), [hero], [foe]);
+    const state = startCombat(scriptedRng([15, 5, 10]), [frontAnchor(), hero], [foe]);
 
     // 11 + STR 2 = 13：正常會命中 DEF 12；後排近戰 -2 後只剩 11。
     partyAct(scriptedRng([11, 4]), state, hero.id, slash.id, foe.id);
@@ -92,7 +107,7 @@ describe('M49 live martial engagement integration', () => {
 
     const backArcher = member('back-archer', bow, 'back', { str: 8, dex: 16, int: 8, cha: 8, con: 10 });
     const backFoe = enemy('back-foe');
-    const backState = startCombat(scriptedRng([15, 5]), [backArcher], [backFoe]);
+    const backState = startCombat(scriptedRng([15, 5, 10]), [frontAnchor('bow-anchor'), backArcher], [backFoe]);
     partyAct(scriptedRng([10, 4]), backState, backArcher.id, bow.id, backFoe.id);
 
     expect(backFoe.hp).toBeLessThan(20);
@@ -113,10 +128,7 @@ describe('M49 live martial engagement integration', () => {
   });
 
   it('back-row guard keeps personal defense but can no longer teleport forward to intercept an ally', () => {
-    const guard: Move = {
-      id: 'guard', name: '架盾', kind: 'guard', target: 'self', hitStat: 'str',
-      narration: '{actor}舉盾穩守。',
-    };
+    const guard = guardMove();
     const front = member('front', attack('front-strike', 'str', 'slash'), 'front', { str: 12, dex: 10, int: 8, cha: 8, con: 12 });
     front.hp = 6;
     const backGuard = member('back-guard', guard, 'back', { str: 14, dex: 10, int: 8, cha: 8, con: 14 });
@@ -133,10 +145,7 @@ describe('M49 live martial engagement integration', () => {
   });
 
   it('front-row guard still intercepts, preserving the swordsman protector role', () => {
-    const guard: Move = {
-      id: 'guard', name: '架盾', kind: 'guard', target: 'self', hitStat: 'str',
-      narration: '{actor}舉盾穩守。',
-    };
+    const guard = guardMove();
     const victim = member('victim', attack('victim-strike', 'str', 'slash'), 'front', { str: 10, dex: 10, int: 8, cha: 8, con: 10 });
     victim.hp = 6;
     const guardian = member('guardian', guard, 'front', { str: 14, dex: 10, int: 8, cha: 8, con: 14 });
@@ -150,5 +159,44 @@ describe('M49 live martial engagement integration', () => {
     expect(victim.hp).toBe(6);
     expect(guardian.hp).toBeLessThan(20);
     expect(state.log.some((entry) => entry.text.includes('guardian持盾上前') && entry.text.includes('victim'))).toBe(true);
+  });
+
+  it('promotes surviving rear members when the frontline falls, so the engagement model follows the battlefield instead of stale setup data', () => {
+    const slash = attack('rear-sword', 'str', 'slash');
+    const front = member('fragile-front', attack('front-strike', 'str', 'slash'), 'front', { str: 10, dex: 10, int: 8, cha: 8, con: 10 });
+    front.hp = 1;
+    const rearSword = member('rear-sword-user', slash, 'back', { str: 14, dex: 12, int: 8, cha: 8, con: 12 });
+    const rearArcher = member('rear-archer', attack('rear-arrow', 'dex', 'pierce'), 'back', { str: 8, dex: 16, int: 8, cha: 8, con: 10 });
+    const foe = enemy();
+    const state = startCombat(scriptedRng([5, 18, 7, 6]), [front, rearSword, rearArcher], [foe]);
+    state.turnIndex = state.order.indexOf(foe.id);
+
+    enemyAct(scriptedRng([20, 3]), state, foe.id);
+
+    expect(front.hp).toBe(0);
+    expect(rearSword.formationRow).toBe('front');
+    expect(rearArcher.formationRow).toBe('front');
+    expect(state.log.some((entry) => entry.text.includes('前線崩潰') && entry.text.includes('被迫上前接戰'))).toBe(true);
+
+    const foeHpBeforeSword = foe.hp;
+    // 10 + STR 2 = 12：被提升為前排後，近戰不再吃舊的後排 -2，應命中。
+    partyAct(scriptedRng([10, 4]), state, rearSword.id, slash.id, foe.id);
+    expect(foe.hp).toBeLessThan(foeHpBeforeSword);
+
+    const foeHpBeforeArrow = foe.hp;
+    // 10 + DEX 3 - 2 = 11：同一崩線會讓弓手真正承受前排近身壓力。
+    partyAct(scriptedRng([10, 4]), state, rearArcher.id, rearArcher.moves[0].id, foe.id);
+    expect(foe.hp).toBe(foeHpBeforeArrow);
+    expect(state.log.some((entry) => entry.text.includes('前排近身壓力') && entry.text.includes('rear-arrow'))).toBe(true);
+  });
+
+  it('normalizes an impossible all-rear combat start into an exposed frontline instead of granting a phantom safe row', () => {
+    const sword = member('solo-sword', attack('solo-slash', 'str', 'slash'), 'back', { str: 14, dex: 12, int: 8, cha: 8, con: 12 });
+    const archer = member('solo-archer', attack('solo-arrow', 'dex', 'pierce'), 'back', { str: 8, dex: 16, int: 8, cha: 8, con: 10 });
+    const state = startCombat(scriptedRng([15, 10, 5]), [sword, archer], [enemy()]);
+
+    expect(sword.formationRow).toBe('front');
+    expect(archer.formationRow).toBe('front');
+    expect(state.log.some((entry) => entry.text.includes('前線崩潰'))).toBe(true);
   });
 });
