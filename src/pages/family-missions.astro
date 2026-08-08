@@ -1,0 +1,512 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+import {
+  abilityCatalog,
+  growthBadges,
+  rankSteps,
+  scoutProfiles,
+  type AbilityId,
+} from '@data/family-missions';
+const lang: Language = defaultLang;
+const profiles = scoutProfiles;
+const initialProfile = profiles.apple;
+const initialStars = initialProfile.startingStars;
+const abilityEntries = Object.values(abilityCatalog);
+
+function getAbilityGrowth(abilityId: AbilityId, xp: number) {
+  const ability = abilityCatalog[abilityId];
+  const level = Math.min(10, Math.floor(xp / 10) + 1);
+  const stageIndex = Math.min(ability.growthNames.length - 1, Math.floor((level - 1) / 3));
+  return {
+    level,
+    progress: level === 10 ? 100 : (xp % 10) * 10,
+    growthName: ability.growthNames[stageIndex],
+  };
+}
+---
+
+<BaseLayout
+  title="雙羽星光任務所｜SuperGalen's Dungeon"
+  description="Apple 與 Amy 的圖文生活任務、能力花園與星光升階旅程"
+  image="/assets/img/family-missions/family-missions-hero.webp"
+  lang={lang}
+>
+  <main class="family-missions" data-theme={initialProfile.theme}>
+    <div class="floating-sparkles" aria-hidden="true">
+      <span>✦</span><span>●</span><span>✦</span><span>●</span><span>✦</span>
+    </div>
+
+    <header class="quest-hero">
+      <img
+        class="quest-hero__art"
+        src="/assets/img/family-missions/family-missions-hero.webp"
+        alt="雙羽小小偵查員在漂浮島營地尋找生活任務"
+        width="1600"
+        height="878"
+        fetchpriority="high"
+      />
+      <div class="quest-hero__shade" aria-hidden="true"></div>
+      <a class="home-link" href="/" aria-label="回到 SuperGalen's Dungeon 首頁">
+        <span aria-hidden="true">←</span> 回到主站
+      </a>
+      <div class="quest-hero__copy">
+        <p class="eyebrow">SUPERGALEN FAMILY QUEST</p>
+        <h1>雙羽星光<br />任務所</h1>
+        <p>任務不在螢幕裡，真正的冒險就在每天的生活裡。</p>
+        <span class="date-sticker" id="today-label">今天的任務</span>
+      </div>
+      <div class="quest-hero__seal" aria-hidden="true">
+        <span>★</span>
+        <small>生活冒險<br />出發！</small>
+      </div>
+    </header>
+
+    <div class="quest-shell">
+      <section class="scout-picker" aria-labelledby="scout-picker-title">
+        <div class="section-heading section-heading--compact">
+          <span class="section-heading__icon" aria-hidden="true">🪶</span>
+          <div>
+            <p>CHOOSE YOUR SCOUT</p>
+            <h2 id="scout-picker-title">今天是誰來出任務？</h2>
+          </div>
+        </div>
+
+        <nav class="scout-tabs" role="tablist" aria-label="選擇小小偵查員">
+          {Object.values(profiles).map((profile, index) => (
+            <button
+              class={`scout-tab scout-tab--${profile.theme}${index === 0 ? ' is-active' : ''}`}
+              type="button"
+              role="tab"
+              aria-selected={index === 0 ? 'true' : 'false'}
+              data-profile={profile.id}
+            >
+              <img src={profile.portrait} alt="" width="80" height="80" />
+              <span class="scout-tab__copy">
+                <strong>{profile.shortName}</strong>
+                <small>{profile.callSign}</small>
+              </span>
+              <span class="scout-tab__check" aria-hidden="true">✓</span>
+            </button>
+          ))}
+        </nav>
+      </section>
+
+      <section class="scout-story-card" aria-labelledby="scout-name">
+        <div class="scout-portrait-wrap">
+          <div class="scout-portrait-frame">
+            <img
+              id="scout-portrait"
+              data-testid="scout-portrait"
+              src={initialProfile.portrait}
+              alt={initialProfile.portraitAlt}
+              width="900"
+              height="900"
+            />
+          </div>
+          <span class="portrait-pin portrait-pin--top" aria-hidden="true">{initialProfile.symbol}</span>
+          <span class="portrait-pin portrait-pin--bottom" aria-hidden="true">★</span>
+        </div>
+
+        <div class="scout-story-card__copy">
+          <p class="story-label">今日出勤 · <span id="scout-call-sign">{initialProfile.callSign}</span></p>
+          <h2 id="scout-name" data-testid="scout-name">{initialProfile.name}</h2>
+          <p class="scout-greeting" id="scout-greeting">{initialProfile.greeting}</p>
+          <p class="scout-story" id="scout-story">{initialProfile.story}</p>
+
+          <div class="rank-overview">
+            <div class="rank-medal" aria-hidden="true">🔎</div>
+            <div>
+              <span>目前軍階</span>
+              <strong id="scout-rank" data-testid="scout-rank">初級偵查兵</strong>
+            </div>
+            <div class="star-wallet">
+              <span aria-hidden="true">★</span>
+              <strong id="star-count" data-testid="star-count">{initialStars}</strong>
+              <small>顆星星</small>
+            </div>
+          </div>
+
+          <div class="rank-progress" aria-label="前往下一個軍階的進度">
+            <div class="rank-progress__labels">
+              <strong id="next-rank">下一站：中級偵查兵</strong>
+              <span id="next-rank-note">再收集 70 顆星星</span>
+            </div>
+            <progress class="rank-progress__track" id="rank-progress-bar" max="100" value="0">0%</progress>
+          </div>
+        </div>
+      </section>
+
+      <section class="mission-board" aria-labelledby="mission-board-title">
+        <div class="section-heading mission-board__heading">
+          <span class="section-heading__icon" aria-hidden="true">🗺️</span>
+          <div>
+            <p>TODAY'S ADVENTURES</p>
+            <h2 id="mission-board-title">今天的任務地圖</h2>
+            <span>挑一張最想做的任務卡，完成後再回來蓋章。</span>
+          </div>
+          <div class="mission-count" aria-live="polite">
+            <strong id="completed-count">0</strong><span> / {initialProfile.tasks.length}</span>
+            <small>今日蓋章</small>
+          </div>
+        </div>
+
+        <div class="mission-list" id="mission-list">
+          {initialProfile.tasks.map((task, index) => {
+            const ability = abilityCatalog[task.abilityId];
+            return (
+              <article class={`mission-card mission-card--${task.abilityId}`} data-task-id={task.id}>
+                <div class="mission-card__topline">
+                  <span class="mission-card__number">任務 {String(index + 1).padStart(2, '0')}</span>
+                  <span class="difficulty-tag">{task.difficulty}</span>
+                </div>
+                <div class="mission-card__illustration" aria-hidden="true">
+                  <span>{task.icon}</span>
+                  <i></i><i></i><i></i>
+                </div>
+                <p class="mission-card__story">{task.story}</p>
+                <h3>{task.title}</h3>
+                <p class="mission-card__description">{task.description}</p>
+                <div class="mission-card__details">
+                  <span>⏱ {task.estimatedMinutes}</span>
+                  <span>🏷 {task.skillTag}</span>
+                </div>
+                <div class="mission-card__reward" aria-label={`獎勵：${ability.name}能力與 ${task.rewardStars} 顆星星`}>
+                  <span>{ability.icon} {ability.name} ＋{task.abilityXp}</span>
+                  <strong>★ ＋{task.rewardStars}</strong>
+                </div>
+                <button class="mission-complete" type="button" aria-label={`完成：${task.title}`} data-task-id={task.id}>
+                  <span class="mission-complete__ready">我完成了，蓋章！</span>
+                  <span class="mission-complete__done">已回報</span>
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section class="ability-garden" role="region" aria-label="能力花園">
+        <div class="section-heading">
+          <span class="section-heading__icon" aria-hidden="true">🌷</span>
+          <div>
+            <p>MY GROWING GARDEN</p>
+            <h2>我的能力花園</h2>
+            <span>不是分數，是每一次練習後長出來的小小力量。</span>
+          </div>
+        </div>
+
+        <div class="ability-grid" id="ability-grid">
+          {abilityEntries.map((ability) => {
+            const xp = initialProfile.baseAbilityXp[ability.id];
+            const growth = getAbilityGrowth(ability.id, xp);
+            return (
+              <article class={`ability-card ability-card--${ability.id}`} data-testid={`ability-${ability.id}`}>
+                <div class="ability-card__icon" aria-hidden="true">{ability.icon}</div>
+                <div class="ability-card__copy">
+                  <div class="ability-card__title">
+                    <h3>{ability.name}</h3>
+                    <span>Lv.{growth.level}</span>
+                  </div>
+                  <p>{ability.description}</p>
+                  <progress class="ability-card__meter" max="100" value={growth.progress} aria-label={`${ability.name}成長進度`}>
+                    {growth.progress}%
+                  </progress>
+                  <small>現在是：{growth.growthName}</small>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section class="badge-shelf" role="region" aria-label="成長徽章">
+        <div class="section-heading">
+          <span class="section-heading__icon" aria-hidden="true">🏕️</span>
+          <div>
+            <p>SKILL BADGES</p>
+            <h2>成長徽章收藏</h2>
+            <span>軍階代表慢慢獨立，徽章則記錄「我已經會做的事」。</span>
+          </div>
+        </div>
+        <div class="badge-grid" id="badge-grid">
+          {growthBadges.map((badge) => {
+            const unlocked = initialStars >= badge.unlockStars;
+            return (
+              <article class={`badge-card${unlocked ? ' is-unlocked' : ' is-locked'}`}>
+                <div class="badge-card__seal" aria-hidden="true">{unlocked ? badge.icon : '🔒'}</div>
+                <div>
+                  <span>{unlocked ? '已解鎖' : `${badge.unlockStars} 星解鎖`}</span>
+                  <h3>{badge.name}</h3>
+                  <p>{badge.description}</p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section class="rank-journey" role="region" aria-label="升階旅程">
+        <div class="section-heading">
+          <span class="section-heading__icon" aria-hidden="true">✨</span>
+          <div>
+            <p>STARLIGHT JOURNEY</p>
+            <h2>星光升階旅程</h2>
+            <span>星星只會累積、不會扣除；每一階都代表多了一點獨立與成熟。</span>
+          </div>
+        </div>
+        <ol class="rank-trail" id="rank-trail">
+          {rankSteps.map((rank) => (
+            <li class={initialStars >= rank.stars ? 'is-reached' : ''} data-rank-stars={rank.stars}>
+              <span class="rank-trail__symbol" aria-hidden="true">{rank.symbol}</span>
+              <div>
+                <small>{rank.stars} 星</small>
+                <h3>{rank.name}</h3>
+                <p>{rank.gift}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <aside class="family-rule">
+        <span aria-hidden="true">💌</span>
+        <p><strong>雙羽任務所的約定：</strong>不考試、不扣星，也不比誰比較快。願意試一小步，就是一次真正的升級。</p>
+      </aside>
+    </div>
+
+    <div class="mission-toast" id="mission-toast" role="status" aria-live="polite"></div>
+    <div class="celebration" aria-hidden="true">
+      <span>★</span><span>●</span><span>✦</span><span>●</span><span>★</span><span>✦</span>
+    </div>
+  </main>
+</BaseLayout>
+
+<script define:vars={{ profiles, abilities: abilityCatalog, ranks: rankSteps, badges: growthBadges }}>
+  const STORAGE_KEY = 'supergalen-family-missions-v2';
+  const LEGACY_STORAGE_KEY = 'supergalen-family-missions-v1';
+  const todayKey = new Date().toLocaleDateString('en-CA');
+  let activeProfileId = 'apple';
+  let state = loadState();
+
+  const page = document.querySelector('.family-missions');
+  const missionList = document.querySelector('#mission-list');
+  const tabs = Array.from(document.querySelectorAll('[data-profile]'));
+
+  function blankProfileState() {
+    return { bonusStars: 0, abilityBonus: {}, dailyDate: todayKey, completed: [] };
+  }
+
+  function loadState() {
+    const fallback = { apple: blankProfileState(), amy: blankProfileState() };
+
+    try {
+      const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
+      const saved = current || legacy;
+      if (!saved?.profiles) return fallback;
+
+      for (const profileId of Object.keys(fallback)) {
+        const profileState = saved.profiles[profileId] || blankProfileState();
+        const isToday = profileState.dailyDate === todayKey;
+        fallback[profileId] = {
+          bonusStars: Number(profileState.bonusStars) || 0,
+          abilityBonus: profileState.abilityBonus || {},
+          dailyDate: todayKey,
+          completed: isToday && Array.isArray(profileState.completed) ? profileState.completed : [],
+        };
+      }
+      return fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ profiles: state }));
+  }
+
+  function totalStars(profile) {
+    return profile.startingStars + state[profile.id].bonusStars;
+  }
+
+  function rankInfo(stars) {
+    let current = ranks[0];
+    let next = null;
+    for (const step of ranks) {
+      if (stars >= step.stars) current = step;
+      else {
+        next = step;
+        break;
+      }
+    }
+    return { current, next };
+  }
+
+  function abilityGrowth(ability, xp) {
+    const level = Math.min(10, Math.floor(xp / 10) + 1);
+    const stageIndex = Math.min(ability.growthNames.length - 1, Math.floor((level - 1) / 3));
+    return {
+      level,
+      progress: level === 10 ? 100 : (xp % 10) * 10,
+      growthName: ability.growthNames[stageIndex],
+    };
+  }
+
+  function createMissionCard(task, index, completed) {
+    const ability = abilities[task.abilityId];
+    const card = document.createElement('article');
+    card.className = `mission-card mission-card--${task.abilityId}${completed ? ' is-completed' : ''}`;
+    card.dataset.taskId = task.id;
+    card.innerHTML = `
+      <div class="mission-card__topline">
+        <span class="mission-card__number">任務 ${String(index + 1).padStart(2, '0')}</span>
+        <span class="difficulty-tag">${task.difficulty}</span>
+      </div>
+      <div class="mission-card__illustration" aria-hidden="true">
+        <span>${task.icon}</span><i></i><i></i><i></i>
+      </div>
+      <p class="mission-card__story"></p>
+      <h3></h3>
+      <p class="mission-card__description"></p>
+      <div class="mission-card__details"><span>⏱ ${task.estimatedMinutes}</span><span>🏷 ${task.skillTag}</span></div>
+      <div class="mission-card__reward"><span>${ability.icon} ${ability.name} ＋${task.abilityXp}</span><strong>★ ＋${task.rewardStars}</strong></div>
+      <button class="mission-complete" type="button" data-task-id="${task.id}">
+        <span class="mission-complete__ready">我完成了，蓋章！</span>
+        <span class="mission-complete__done">已回報</span>
+      </button>
+    `;
+    card.querySelector('.mission-card__story').textContent = task.story;
+    card.querySelector('h3').textContent = task.title;
+    card.querySelector('.mission-card__description').textContent = task.description;
+    const button = card.querySelector('.mission-complete');
+    button.setAttribute('aria-label', completed ? `已回報：${task.title}` : `完成：${task.title}`);
+    button.disabled = completed;
+    card.querySelector('.mission-card__reward').setAttribute('aria-label', `獎勵：${ability.name}能力與 ${task.rewardStars} 顆星星`);
+    return card;
+  }
+
+  function renderAbilityGarden(profile) {
+    const grid = document.querySelector('#ability-grid');
+    const profileState = state[profile.id];
+    const cards = Object.values(abilities).map((ability) => {
+      const xp = profile.baseAbilityXp[ability.id] + (Number(profileState.abilityBonus[ability.id]) || 0);
+      const growth = abilityGrowth(ability, xp);
+      const card = document.createElement('article');
+      card.className = `ability-card ability-card--${ability.id}`;
+      card.dataset.testid = `ability-${ability.id}`;
+      card.innerHTML = `
+        <div class="ability-card__icon" aria-hidden="true">${ability.icon}</div>
+        <div class="ability-card__copy">
+          <div class="ability-card__title"><h3>${ability.name}</h3><span>Lv.${growth.level}</span></div>
+          <p>${ability.description}</p>
+          <progress class="ability-card__meter" max="100" value="${growth.progress}" aria-label="${ability.name}成長進度">${growth.progress}%</progress>
+          <small>現在是：${growth.growthName}</small>
+        </div>
+      `;
+      return card;
+    });
+    grid.replaceChildren(...cards);
+  }
+
+  function renderBadges(stars) {
+    const grid = document.querySelector('#badge-grid');
+    const cards = badges.map((badge) => {
+      const unlocked = stars >= badge.unlockStars;
+      const card = document.createElement('article');
+      card.className = `badge-card ${unlocked ? 'is-unlocked' : 'is-locked'}`;
+      card.innerHTML = `
+        <div class="badge-card__seal" aria-hidden="true">${unlocked ? badge.icon : '🔒'}</div>
+        <div><span>${unlocked ? '已解鎖' : `${badge.unlockStars} 星解鎖`}</span><h3></h3><p></p></div>
+      `;
+      card.querySelector('h3').textContent = badge.name;
+      card.querySelector('p').textContent = badge.description;
+      return card;
+    });
+    grid.replaceChildren(...cards);
+  }
+
+  function renderRankTrail(stars) {
+    document.querySelectorAll('[data-rank-stars]').forEach((item) => {
+      item.classList.toggle('is-reached', stars >= Number(item.dataset.rankStars));
+    });
+  }
+
+  function renderProfile(profileId) {
+    const profile = profiles[profileId];
+    const profileState = state[profileId];
+    const stars = totalStars(profile);
+    const rank = rankInfo(stars);
+    const previousThreshold = rank.current.stars;
+    const nextThreshold = rank.next?.stars ?? previousThreshold;
+    const progress = rank.next ? ((stars - previousThreshold) / (nextThreshold - previousThreshold)) * 100 : 100;
+
+    activeProfileId = profileId;
+    page.dataset.theme = profile.theme;
+    const portrait = document.querySelector('#scout-portrait');
+    portrait.src = profile.portrait;
+    portrait.alt = profile.portraitAlt;
+    document.querySelector('.portrait-pin--top').textContent = profile.symbol;
+    document.querySelector('#scout-name').textContent = profile.name;
+    document.querySelector('#scout-call-sign').textContent = profile.callSign;
+    document.querySelector('#scout-greeting').textContent = profile.greeting;
+    document.querySelector('#scout-story').textContent = profile.story;
+    document.querySelector('#scout-rank').textContent = rank.current.name;
+    document.querySelector('#star-count').textContent = String(stars);
+    document.querySelector('#next-rank').textContent = rank.next ? `下一站：${rank.next.name}` : '最高階達成！';
+    document.querySelector('#next-rank-note').textContent = rank.next
+      ? `再收集 ${rank.next.stars - stars} 顆星星`
+      : '繼續收集生活裡的美好成就';
+    document.querySelector('#rank-progress-bar').value = Math.max(0, Math.min(100, progress));
+    document.querySelector('#completed-count').textContent = String(profileState.completed.length);
+    document.querySelector('.mission-count > span').textContent = ` / ${profile.tasks.length}`;
+
+    tabs.forEach((tab) => {
+      const selected = tab.dataset.profile === profileId;
+      tab.classList.toggle('is-active', selected);
+      tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+    });
+
+    missionList.replaceChildren(...profile.tasks.map((task, index) => (
+      createMissionCard(task, index, profileState.completed.includes(task.id))
+    )));
+    renderAbilityGarden(profile);
+    renderBadges(stars);
+    renderRankTrail(stars);
+  }
+
+  function completeMission(taskId) {
+    const profile = profiles[activeProfileId];
+    const profileState = state[activeProfileId];
+    if (profileState.completed.includes(taskId)) return;
+    const task = profile.tasks.find((item) => item.id === taskId);
+    if (!task) return;
+
+    profileState.completed.push(taskId);
+    profileState.bonusStars += task.rewardStars;
+    profileState.abilityBonus[task.abilityId] = (Number(profileState.abilityBonus[task.abilityId]) || 0) + task.abilityXp;
+    saveState();
+    renderProfile(activeProfileId);
+
+    const toast = document.querySelector('#mission-toast');
+    toast.textContent = `任務完成回報！${profile.shortName} 得到 ${task.rewardStars} 顆星星，${abilities[task.abilityId].name}也長大了！`;
+    toast.classList.add('is-visible');
+    page.classList.remove('is-celebrating');
+    requestAnimationFrame(() => page.classList.add('is-celebrating'));
+    window.setTimeout(() => toast.classList.remove('is-visible'), 3200);
+    window.setTimeout(() => page.classList.remove('is-celebrating'), 1200);
+  }
+
+  tabs.forEach((tab) => tab.addEventListener('click', () => renderProfile(tab.dataset.profile)));
+  missionList.addEventListener('click', (event) => {
+    const button = event.target.closest('.mission-complete');
+    if (button?.dataset.taskId) completeMission(button.dataset.taskId);
+  });
+
+  document.querySelector('#today-label').textContent = new Intl.DateTimeFormat('zh-TW', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  }).format(new Date());
+
+  renderProfile(activeProfileId);
+</script>
