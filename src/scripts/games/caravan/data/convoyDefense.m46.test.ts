@@ -10,6 +10,7 @@ import {
   claimConvoyDefenseReward,
   convoyAbandonmentCount,
   convoyAdvanceTurnForTest,
+  convoyAttemptActive,
   convoyDefenseAccess,
   convoyRewardReceipt,
   createConvoyDefenseBattle,
@@ -150,33 +151,48 @@ describe('M46 convoy objective combat', () => {
     expect(battle.combat.outcome).toBe('defeat');
   });
 
-  it('turns refresh abandonment into escalating wagon damage plus a supply/economy penalty', () => {
+  it('turns every unresolved attempt, including retreat/defeat, into an escalating retry cost', () => {
     const save = preparedSave();
     const first = beginConvoyAttempt(save);
     expect(first.abandonmentCount).toBe(0);
     expect(first.startingWagonHp).toBe(CONVOY_WAGON_MAX_HP);
     expect(save.inventory['dried-rations']).toBe(3);
+    expect(convoyAttemptActive(save)).toBe(true);
+
+    const failedBattle = createConvoyDefenseBattle(save, createRng(501));
+    failedBattle.combat.outcome = 'retreated';
+    expect(() => claimConvoyDefenseReward(save, failedBattle)).toThrow('護運尚未成功');
+    expect(convoyAttemptActive(save)).toBe(true);
 
     const second = beginConvoyAttempt(save);
     expect(second.abandonmentCount).toBe(1);
     expect(second.startingWagonHp).toBe(CONVOY_WAGON_MAX_HP - 4);
     expect(save.inventory['dried-rations']).toBe(2);
-    expect(second.penalty).toContain('中途放棄');
+    expect(second.penalty).toContain('沒有完成');
 
     beginConvoyAttempt(save);
     expect(convoyAbandonmentCount(save)).toBe(2);
     expect(save.inventory['dried-rations']).toBe(1);
   });
 
-  it('rewards wagon condition, grants only once per market cycle, and blocks repeated farming', () => {
+  it('requires a real victory before reward, rewards wagon condition once, and blocks repeated farming', () => {
     const save = preparedSave();
-    const pristine = claimConvoyDefenseReward(save, 25);
+    beginConvoyAttempt(save);
+    const battle = createConvoyDefenseBattle(save, createRng(51));
+
+    expect(() => claimConvoyDefenseReward(save, battle)).toThrow('護運尚未成功');
+    expect(convoyAttemptActive(save)).toBe(true);
+
+    battle.combat.outcome = 'victory';
+    battle.wagon.hp = 25;
+    const pristine = claimConvoyDefenseReward(save, battle);
     expect(pristine.pristineBonus).toBe(true);
     expect(pristine.gold).toBe(52);
     expect(pristine.reputation).toBe(2);
     expect(save.flags[convoyRewardReceipt(save.marketSeed)]).toBe(true);
+    expect(convoyAttemptActive(save)).toBe(false);
     expect(convoyDefenseAccess(save).allowed).toBe(false);
-    expect(() => claimConvoyDefenseReward(save, 30)).toThrow();
+    expect(() => claimConvoyDefenseReward(save, battle)).toThrow();
 
     save.marketSeed += 1;
     expect(convoyDefenseAccess(save).allowed).toBe(true);
