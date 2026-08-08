@@ -39,6 +39,10 @@ jobs:
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "makes hostile priests"
       - name: M44 illegal target abuse paths
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "rejects player-side illegal targets"
+      - name: M44 live salt-wraith and bandit-priest integration
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "live salt wraith and bandit priest"
+      - name: M44 live reliquary cantor spell coherence
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.m44.test.ts -t "live tongueless cantor"
 
       - name: M44 pressure versus ward Pareto
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts -t "real Pareto tradeoff"
