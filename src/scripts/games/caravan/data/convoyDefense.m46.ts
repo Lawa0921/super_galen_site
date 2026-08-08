@@ -102,6 +102,10 @@ function abandonmentPrefix(marketSeed: number): string {
   return `${ABANDON_PREFIX}:${marketSeed}:`;
 }
 
+export function convoyAttemptActive(save: SaveData): boolean {
+  return save.flags[attemptReceipt(save.marketSeed)] === true;
+}
+
 export function convoyAbandonmentCount(save: SaveData): number {
   const prefix = abandonmentPrefix(save.marketSeed);
   return Object.keys(save.flags).filter((key) => key.startsWith(prefix) && save.flags[key] === true).length;
@@ -133,8 +137,9 @@ export function convoyDefenseAccess(save: SaveData): ConvoyDefenseAccess {
 }
 
 /**
- * Refresh/closing the page cannot be a free reroll. Re-entering an unresolved battle consumes
- * a ration (or 8G when supplies are empty) and the abandoned wagon begins increasingly damaged.
+ * Refresh, closing the page, retreating, or losing cannot be a free reroll. The attempt receipt
+ * is deliberately cleared only after a paid victory. Re-entering any unresolved contract consumes
+ * a ration (or emergency gold) and the wagon begins increasingly damaged.
  */
 export function beginConvoyAttempt(save: SaveData): ConvoyAttemptResult {
   const access = convoyDefenseAccess(save);
@@ -147,11 +152,11 @@ export function beginConvoyAttempt(save: SaveData): ConvoyAttemptResult {
     if ((save.inventory['dried-rations'] ?? 0) > 0) {
       save.inventory['dried-rations'] -= 1;
       if (save.inventory['dried-rations'] <= 0) delete save.inventory['dried-rations'];
-      penalty = '上一次護運被中途放棄：重新整隊消耗乾糧 1，馬車也留下額外損傷。';
+      penalty = '上一趟護運沒有完成：重新整隊消耗乾糧 1，馬車也留下額外損傷。';
     } else {
       const paid = Math.min(8, save.gold);
       save.gold -= paid;
-      penalty = `上一次護運被中途放棄：沒有乾糧，只能支付 ${paid} G 緊急整備，馬車也留下額外損傷。`;
+      penalty = `上一趟護運沒有完成：沒有乾糧，只能支付 ${paid} G 緊急整備，馬車也留下額外損傷。`;
     }
   }
   save.flags[attempt] = true;
@@ -375,10 +380,17 @@ export function applyConvoyBattleInjuries(save: SaveData, combat: CombatState): 
   return injured;
 }
 
-export function claimConvoyDefenseReward(save: SaveData, wagonHp: number): ConvoyReward {
+/**
+ * Settlement is enforced in the data layer, not only by the battle page. A destroyed wagon,
+ * retreat, defeat, or a still-running battle can never mint the contract reward.
+ */
+export function claimConvoyDefenseReward(save: SaveData, battle: ConvoyDefenseBattle): ConvoyReward {
+  if (battle.combat.outcome !== 'victory' || battle.wagon.hp <= 0) {
+    throw new Error('護運尚未成功，不能領取黑蠟急件報酬。');
+  }
   const receipt = convoyRewardReceipt(save.marketSeed);
   if (save.flags[receipt] === true) throw new Error('本市場週期的護運報酬已領取。');
-  const pristineBonus = wagonHp >= Math.ceil(CONVOY_WAGON_MAX_HP * 0.7);
+  const pristineBonus = battle.wagon.hp >= Math.ceil(CONVOY_WAGON_MAX_HP * 0.7);
   const reward: ConvoyReward = { gold: 42 + (pristineBonus ? 10 : 0), reputation: 2, pristineBonus };
   save.gold += reward.gold;
   save.reputation += reward.reputation;
