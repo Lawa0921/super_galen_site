@@ -17,7 +17,7 @@ export interface ProtectionResolution {
   configuredMultiplier: number;
   effectiveMultiplier: number;
   armorPenetration: number;
-  protected: boolean;
+  mitigated: boolean;
   exposed: boolean;
   bypassed: boolean;
   message: string;
@@ -62,7 +62,7 @@ export function resolveProtectionDamage(
       configuredMultiplier: 1,
       effectiveMultiplier: 1,
       armorPenetration: 0,
-      protected: false,
+      mitigated: false,
       exposed: false,
       bypassed: false,
       message: '',
@@ -79,13 +79,13 @@ export function resolveProtectionDamage(
   const resolved = effectiveMultiplier === 1
     ? originalAmount
     : Math.max(1, Math.round(originalAmount * effectiveMultiplier));
-  const protected = resolved < originalAmount;
+  const mitigated = resolved < originalAmount;
   const exposed = resolved > originalAmount;
   const bypassed = configuredMultiplier < 1 && effectiveMultiplier > configuredMultiplier;
 
   let message = '';
   const elementText = ELEMENT_TEXT[element];
-  if (protected) {
+  if (mitigated) {
     const reduced = originalAmount - resolved;
     message = `${profile.source}卸去了 ${reduced} 點${elementText}傷害${bypassed ? '，但穿甲效果削弱了這層防護' : ''}。`;
   } else if (exposed) {
@@ -100,7 +100,7 @@ export function resolveProtectionDamage(
     configuredMultiplier,
     effectiveMultiplier,
     armorPenetration: penetration,
-    protected,
+    mitigated,
     exposed,
     bypassed,
     message,
