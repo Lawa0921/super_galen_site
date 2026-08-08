@@ -113,8 +113,8 @@ export const ITEMS: Record<string, ItemDef> = {
   },
   'silver-locket': {
     id: 'silver-locket',
-    name: '銀懷錶',
-    desc: '刻著陌生家徽的銀製懷錶，錶蓋內側還留著一撮髮絲，不知是誰的遺物。',
+    name: '銀墜盒',
+    desc: '刻著陌生家徽的銀製墜盒，鉸鏈內側還夾著一撮髮絲，不知是誰的遺物。',
     value: 25,
   },
   'tattered-map': {
@@ -231,7 +231,7 @@ export const ITEMS: Record<string, ItemDef> = {
   'ashveil-robe': {
     id: 'ashveil-robe',
     name: '灰燼法袍',
-    desc: '取自古戰場焚後餘燼染製的法袍，灰黑色澤中隱約可見未散的硝煙氣息，據說能助施法者凝神。',
+    desc: '取自古戰場焚後餘燼染製的法袍，灰黑色澤中隱約可見未散的焦煙氣息，據說能助施法者凝神。',
     value: 50,
     art: '/assets/games/caravan/gear-ashveil-robe.webp',
     equip: { slot: 'armor', defense: 1, bonus: { int: 1 } },
