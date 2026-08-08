@@ -1,5 +1,4 @@
 import type { Move, PartyMember } from '../combat';
-import { mysticRuleForMove } from './arcana';
 import { formationAttackProfile } from './martialEngagement.m49';
 
 export interface CombatMoveForecast {
@@ -15,9 +14,13 @@ const ROW_LABEL: Record<'front' | 'back', string> = {
 
 /**
  * M50：把 M49 已經存在的站位規則在玩家按下招式前就說清楚。
- * 只讀 runtime 狀態，不改戰鬥數值；真正結算仍由 combat.ts 使用同一份 M49 規則。
+ * isMystic 由 M41/M44 的 arcana 真實規則提供，避免用元素外觀猜測魔法。
  */
-export function combatMoveForecast(actor: PartyMember, move: Move): CombatMoveForecast {
+export function combatMoveForecast(
+  actor: PartyMember,
+  move: Move,
+  isMystic = false,
+): CombatMoveForecast {
   const row = actor.formationRow === 'back' ? 'back' : 'front';
 
   if (move.kind === 'guard') {
@@ -38,8 +41,7 @@ export function combatMoveForecast(actor: PartyMember, move: Move): CombatMoveFo
     return { shortLabel: '', hint: '', penalized: false };
   }
 
-  const mystic = !!mysticRuleForMove(move);
-  const formation = formationAttackProfile(actor.formationRow, move, mystic);
+  const formation = formationAttackProfile(actor.formationRow, move, isMystic);
   const rowLabel = ROW_LABEL[row];
 
   if (formation.engagement === 'mystic') {
@@ -64,4 +66,22 @@ export function combatMoveForecast(actor: PartyMember, move: Move): CombatMoveFo
     hint: `${rowLabel}${kindLabel}：目前站位不會受到額外命中懲罰。`,
     penalized: false,
   };
+}
+
+/**
+ * 所有戰鬥頁本來就直接顯示 move.name；M50 在 runtime 讓名稱成為可預判資訊，
+ * 因此前線崩潰改變 formationRow 後，下一次 render 也會同步反映新站位。
+ */
+export function combatMoveDisplayName(
+  actor: PartyMember,
+  move: Move,
+  isMystic = false,
+): string {
+  const forecast = combatMoveForecast(actor, move, isMystic);
+  const baseName = move.kind === 'guard' ? '防禦架勢' : move.name;
+  if (move.kind === 'guard') return `${baseName}〔${forecast.shortLabel}〕`;
+  if (move.kind === 'attack' && !isMystic && forecast.shortLabel) {
+    return `${baseName}〔${forecast.shortLabel}〕`;
+  }
+  return baseName;
 }
