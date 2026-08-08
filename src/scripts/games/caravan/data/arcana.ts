@@ -1,4 +1,5 @@
 import type { Move, MysticPower, PartyMember } from '../combat';
+import { combatMoveDisplayName } from './combatReadability.m50';
 
 export type MysticKind = 'mana' | 'favor';
 export type MysticSchool = 'pyromancy' | 'cryomancy' | 'arcane' | 'theurgy';
@@ -109,9 +110,17 @@ export function mysticRuleForMove(move: Move): MysticMoveRule | null {
   return null;
 }
 
+function stripM50Suffix(name: string): string {
+  return name
+    .replace(/〔(?:近戰|遠程)・(?:命中 -2|站位適配)〕$/u, '')
+    .replace(/〔守勢・(?:可護衛|自保)〕$/u, '');
+}
+
 function decoratedMove(move: Move): Move {
-  const rule = mysticRuleForMove(move);
-  if (!rule || move.name.includes('〔')) return { ...move };
+  const cleanName = stripM50Suffix(move.name);
+  const cleanMove = cleanName === move.name ? move : { ...move, name: cleanName };
+  const rule = mysticRuleForMove(cleanMove);
+  if (!rule || cleanMove.name.includes('〔')) return { ...cleanMove };
   const resource = MYSTIC_KIND_LABELS[rule.kind];
   const school = MYSTIC_SCHOOL_LABELS[rule.school];
   const suffix = rule.cost > 0
@@ -119,7 +128,26 @@ function decoratedMove(move: Move): Move {
     : rule.gain > 0
       ? `${resource} +${rule.gain}`
       : resource;
-  return { ...move, name: `${school}・${move.name}〔${suffix}〕` };
+  return { ...cleanMove, name: `${school}・${cleanMove.name}〔${suffix}〕` };
+}
+
+function readableCombatMove(member: PartyMember, move: Move): Move {
+  const decorated = decoratedMove(move);
+  // 敵人沒有玩家編隊 row，不額外灌入玩家站位 UI；維持公開意圖文案乾淨。
+  if (member.formationRow === undefined) return decorated;
+
+  const baseForForecast = { ...decorated, name: stripM50Suffix(decorated.name) };
+  const mystical = !!mysticRuleForMove(baseForForecast);
+  const readable: Move = { ...decorated };
+  if (readable.kind === 'guard') {
+    readable.narration = '{actor}穩住腳步，以武器與護具架起防禦。';
+  }
+  Object.defineProperty(readable, 'name', {
+    enumerable: true,
+    configurable: true,
+    get: () => combatMoveDisplayName(member, baseForForecast, mystical),
+  });
+  return readable;
 }
 
 function maximumPower(member: PartyMember, kind: MysticKind): number {
@@ -141,6 +169,7 @@ function powerFor(member: PartyMember, kind: MysticKind): MysticPower {
 /**
  * 雖沿用 M41 名稱，M44 開始敵人也會走同一條初始化路徑。
  * EnemyUnit 在結構上相容 PartyMember（額外欄位不影響），因此可共享同一套魔力公平規則。
+ * M50 再把玩家目前前後排對招式的影響直接灌進 runtime 名稱，所有戰鬥頁自動共用。
  */
 export function prepareMysticPartyMember(member: PartyMember): PartyMember {
   const copiedMoves = member.moves.map((move) => ({ ...move }));
@@ -150,7 +179,7 @@ export function prepareMysticPartyMember(member: PartyMember): PartyMember {
   if (hasMana && !expanded.some((move) => move.id === ARCANE_FOCUS_MOVE.id)) expanded.push({ ...ARCANE_FOCUS_MOVE });
   if (!hasMana && hasFavor && !expanded.some((move) => move.id === FIELD_PRAYER_MOVE.id)) expanded.push({ ...FIELD_PRAYER_MOVE });
   const kind: MysticKind | null = hasMana ? 'mana' : hasFavor ? 'favor' : null;
-  member.moves = expanded.map(decoratedMove);
+  member.moves = expanded.map((move) => readableCombatMove(member, move));
   member.mystic = kind ? powerFor(member, kind) : undefined;
   return member;
 }
