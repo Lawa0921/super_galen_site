@@ -36,6 +36,9 @@ jobs:
       - name: M49 multidimensional player review
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/martialEngagement.balance.m49.test.ts
 
+      - name: M49 medieval tone consistency
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/medievalTone.m49.test.ts
+
       - name: Core combat and M41 magic regression
         run: >-
           npx vitest run --reporter=verbose
