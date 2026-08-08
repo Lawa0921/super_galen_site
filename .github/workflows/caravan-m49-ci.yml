@@ -39,8 +39,11 @@ jobs:
       - name: M49 medieval tone consistency
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/medievalTone.m49.test.ts
 
-      - name: M50 pre-action readability and dynamic labels
-        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/combatReadability.m50.test.ts
+      - name: M50 pre-action readability and live labels
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/combatReadability.m50.test.ts
+          src/scripts/games/caravan/data/combatReadability.integration.m50.test.ts
 
       - name: Core combat and M41 magic regression
         run: >-
