@@ -71,6 +71,7 @@ export function combatMoveForecast(
 /**
  * 所有戰鬥頁本來就直接顯示 move.name；M50 在 runtime 讓名稱成為可預判資訊，
  * 因此前線崩潰改變 formationRow 後，下一次 render 也會同步反映新站位。
+ * 按鈕只顯示最短必要資訊，完整理由仍由 forecast/log 提供。
  */
 export function combatMoveDisplayName(
   actor: PartyMember,
@@ -79,9 +80,14 @@ export function combatMoveDisplayName(
 ): string {
   const forecast = combatMoveForecast(actor, move, isMystic);
   const baseName = move.kind === 'guard' ? '防禦架勢' : move.name;
-  if (move.kind === 'guard') return `${baseName}〔${forecast.shortLabel}〕`;
-  if (move.kind === 'attack' && !isMystic && forecast.shortLabel) {
-    return `${baseName}〔${forecast.shortLabel}〕`;
+  if (move.kind === 'guard') {
+    return `${baseName}〔${actor.formationRow === 'back' ? '自保' : '護衛'}〕`;
+  }
+  if (move.kind === 'attack' && !isMystic) {
+    const kindLabel = forecast.shortLabel.startsWith('遠程') ? '遠程' : '近戰';
+    return forecast.penalized
+      ? `${baseName}〔${kindLabel} -2〕`
+      : `${baseName}〔${kindLabel}〕`;
   }
   return baseName;
 }
