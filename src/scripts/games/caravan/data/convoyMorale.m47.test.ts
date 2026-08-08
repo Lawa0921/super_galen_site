@@ -152,9 +152,10 @@ describe('M47 morale, rout and surrender', () => {
     expect(battle.combat.log.some((entry) => entry.text.includes('棄械'))).toBe(true);
   });
 
-  it('keeps undead and the Dragon Ember Avatar unyielding', () => {
-    const cantor = createReliquaryEncounter(2).find((enemy) => enemy.id === 'reliquary-cantor')!;
+  it('keeps live Reliquary undead and the Dragon Ember Avatar unyielding', () => {
+    const cantor = createReliquaryEncounter(2).find((enemy) => enemy.id === 'reliquary-tongueless-cantor')!;
     const avatar = createReliquaryEncounter(3).find((enemy) => enemy.id === 'reliquary-ember-avatar')!;
+    expect(cantor.name).toBe('無舌領唱者');
     expect(moraleProfileForEnemy(cantor)).toBeNull();
     expect(moraleProfileForEnemy(avatar)).toBeNull();
   });
