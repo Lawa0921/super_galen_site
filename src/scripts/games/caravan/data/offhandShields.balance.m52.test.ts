@@ -118,7 +118,7 @@ describe('M52 multidimensional player adversarial review', () => {
     const noShieldBash = noShieldMember.moves.find((move) => move.id === 'shield-bash')!;
     expect(noShieldBash.name).toContain('壁壘猛擊');
     expect(noShieldBash.name).not.toContain('盾牆');
-    expect(noShieldBash.narration).not.toContain('盾面');
+    expect(noShieldBash.narration).not.toContain('盾');
 
     const shielded = record();
     shielded.specialization = 'bulwark';
@@ -128,7 +128,7 @@ describe('M52 multidimensional player adversarial review', () => {
     startCombat(rng, [shieldMember], [dummy()]);
     const shieldBash = shieldMember.moves.find((move) => move.id === 'shield-bash')!;
     expect(shieldBash.name).toContain('盾牆猛擊');
-    expect(shieldBash.narration).toContain('盾面');
+    expect(shieldBash.narration).toContain('盾');
   });
 
   it('keeps both shields in the real economy instead of making them debug-only equipment', () => {
