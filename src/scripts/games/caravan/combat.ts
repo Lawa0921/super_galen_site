@@ -88,6 +88,8 @@ export interface PartyMember extends CombatantBase {
   formationCanFallBack?: boolean;
   /** 精通 III：最後前排可由後排隊友接替。 */
   formationReliefFallback?: boolean;
+  /** M43/M52 jobs runtime：盾牌只在 guarding 時計入防禦，不改面板常駐 defense。 */
+  armoryProfile?: { shieldReady?: boolean; shieldGuardBonus?: number };
 }
 
 export interface EnemyUnit extends CombatantBase {
@@ -221,6 +223,16 @@ function rollDice(rng: Rng, dice: number, sides: number): number {
   let sum = 0;
   for (let i = 0; i < dice; i++) sum += rng.roll(sides);
   return sum;
+}
+
+/** M52：盾牌只在已進入 guarding 時增加命中門檻；未架勢時完全不改常駐 defense。 */
+function guardingDefenseBonus(state: CombatState, target: CombatantBase): number {
+  if (!state.guarding[target.id]) return 0;
+  const partyTarget = state.party.find((member) => member.id === target.id);
+  const shieldBonus = partyTarget?.armoryProfile?.shieldReady
+    ? partyTarget.armoryProfile.shieldGuardBonus ?? 0
+    : 0;
+  return 4 + shieldBonus;
 }
 
 function checkOutcome(state: CombatState): void {
@@ -399,7 +411,7 @@ function performMove(
   const partyActor = state.party.find((member) => member.id === actor.id);
   const formation = formationAttackProfile(partyActor?.formationRow, move, !!spellRule);
   const die = rng.d20();
-  const defense = target.defense + (state.guarding[target.id] ? 4 : 0);
+  const defense = target.defense + guardingDefenseBonus(state, target);
   const hit = die === 20
     ? true
     : die === 1
