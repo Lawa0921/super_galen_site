@@ -1,0 +1,108 @@
+name: Caravan M52 Offhand Shield CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - 'src/pages/caravan/**'
+      - '.github/workflows/caravan-m52-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - 'src/pages/caravan/**'
+      - '.github/workflows/caravan-m52-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  build-and-player-review:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: M52 handedness and shield rules
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/offhandShields.m52.test.ts
+
+      - name: M52 live shield combat integration
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/offhandShields.integration.m52.test.ts
+
+      - name: M52 multidimensional player adversarial review
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/offhandShields.balance.m52.test.ts
+
+      - name: M51 veteran mastery regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/veteranMastery.m51.test.ts
+          src/scripts/games/caravan/data/veteranMastery.integration.m51.test.ts
+          src/scripts/games/caravan/data/veteranMastery.balance.m51.test.ts
+
+      - name: M49-M50 formation and readability regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/martialEngagement.m49.test.ts
+          src/scripts/games/caravan/data/martialEngagement.balance.m49.test.ts
+          src/scripts/games/caravan/data/medievalTone.m49.test.ts
+          src/scripts/games/caravan/data/combatReadability.m50.test.ts
+          src/scripts/games/caravan/data/combatReadability.integration.m50.test.ts
+          src/scripts/games/caravan/data/combatReadability.balance.m50.test.ts
+
+      - name: Core combat and M41 magic regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/combat.test.ts
+          src/scripts/games/caravan/data/arcana.m41.test.ts
+
+      - name: M40 live Reliquary combat regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/ashenReliquaryCombat.m40.test.ts
+          src/scripts/games/caravan/data/ashenReliquaryAttempts.m40.test.ts
+
+      - name: M42 endurance and composition diversity regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/endurance.m42.test.ts
+          src/scripts/games/caravan/data/endurance.balance.m42.test.ts
+
+      - name: M43 armory and endurance regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/armory.m43.test.ts
+          src/scripts/games/caravan/data/enduranceArmory.m43.test.ts
+          src/scripts/games/caravan/data/armory.balance.m43.test.ts
+
+      - name: M44 spellcraft counterplay regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/spellcraft.m44.test.ts
+          src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts
+
+      - name: M45 ritual counterplay regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/rituals.m45.test.ts
+          src/scripts/games/caravan/data/rituals.balance.m45.test.ts
+
+      - name: M46 convoy and M47 morale regression
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/convoyDefense.m46.test.ts
+          src/scripts/games/caravan/data/convoyDefense.balance.m46.test.ts
+          src/scripts/games/caravan/data/convoyMorale.m47.test.ts
+          src/scripts/games/caravan/data/convoyMorale.balance.m47.test.ts
+
+      - name: M48 armor lifecycle and multidimensional review
+        run: >-
+          npx vitest run --reporter=verbose
+          src/scripts/games/caravan/data/armorProfiles.m48.test.ts
+          src/scripts/games/caravan/data/armorProfiles.balance.m48.test.ts
