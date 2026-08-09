@@ -123,4 +123,13 @@ describe('M51 multidimensional player adversarial review', () => {
     expect(state.party.every((member) => member.formationRow === 'front')).toBe(true);
     expect(state.log.some((entry) => entry.text.includes('前線崩潰'))).toBe(true);
   });
+
+  it('derives mastery without mutating the persistent character record or adding save fields', () => {
+    const source = record(750);
+    const before = JSON.parse(JSON.stringify(source)) as CompanionRecord;
+    const member = memberFromRecord(source);
+    expect(source).toEqual(before);
+    expect('veteranMasteryRank' in source).toBe(false);
+    expect(member.veteranMasteryRank).toBe(3);
+  });
 });
