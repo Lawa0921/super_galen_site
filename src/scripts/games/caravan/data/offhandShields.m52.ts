@@ -110,7 +110,7 @@ export function handLoadoutProfile(record: Pick<CompanionRecord, 'equipment'>): 
     shieldReady: ready,
     shieldGuardBonus: ready ? shield?.guardBonus ?? 0 : 0,
     offhandBurden: shield?.burden ?? 0,
-    manaCapacity: shield?.manaCapacity ?? 0,
+    manaCapacity: ready ? shield?.manaCapacity ?? 0 : 0,
     warning,
   };
 }
