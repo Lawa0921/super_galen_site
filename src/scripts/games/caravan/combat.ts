@@ -31,6 +31,8 @@ export interface Move {
   armorPiercing?: number;
   /** M49：可覆寫自動判定的交戰距離；真正魔法仍由 arcana 規則優先判定。 */
   engagement?: EngagementBand;
+  /** M51：老兵橫向戰術——花完整一回合切換前後排。 */
+  formationShift?: 'toggle';
   damage?: { dice: number; sides: number; bonusStat?: Stat };
   heal?: { dice: number; sides: number; bonusStat?: Stat };
   /** M44：ward 為一次性魔法護法；remaining 代表可抵擋的命中次數。 */
@@ -79,6 +81,13 @@ export interface PartyMember extends CombatantBase {
   isProtagonist?: boolean;
   /** M17 前後排：單體敵襲優先鎖定仍存活的前排。 */
   formationRow?: FormationRow;
+  /** M51：不寫回存檔的老兵精通 runtime。 */
+  veteranMasteryRank?: number;
+  veteranNextXp?: number | null;
+  /** 目前是否可安全後撤；由整隊即時站位計算。 */
+  formationCanFallBack?: boolean;
+  /** 精通 III：最後前排可由後排隊友接替。 */
+  formationReliefFallback?: boolean;
 }
 
 export interface EnemyUnit extends CombatantBase {
@@ -129,6 +138,8 @@ export interface PartyActionResult {
   reason?: string;
 }
 
+const VETERAN_RANK_LABEL = ['', 'I', 'II', 'III'] as const;
+
 export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]): CombatState {
   // M41/M44：雙方施法者共用同一套招式裝飾、秘法／神恩容量與恢復手段。
   for (const member of party) prepareMysticPartyMember(member);
@@ -154,6 +165,14 @@ export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]
   state.log.push({ kind: 'info', text: '戰鬥開始！' });
   collapseFrontLineIfNeeded(state);
   for (const member of party) {
+    const rank = Math.max(0, Math.min(3, Math.floor(member.veteranMasteryRank ?? 0)));
+    if (rank > 0) {
+      const next = member.veteranNextXp;
+      state.log.push({
+        kind: 'info',
+        text: `${member.name}：老兵精通 ${VETERAN_RANK_LABEL[rank]}${next ? `；下一階需 ${next} XP` : '；已完成全部精通'}。`,
+      });
+    }
     if (member.mystic) state.log.push({ kind: 'info', text: `${member.name}：${mysticPowerText(member.mystic)}。` });
   }
   for (const enemy of enemies) {
@@ -214,6 +233,24 @@ function checkOutcome(state: CombatState): void {
   }
 }
 
+/** M51：把「能不能後撤」預先算進角色 runtime，讓所有戰鬥 UI 共用同一真相。 */
+function refreshFormationRuntime(state: CombatState): void {
+  const alive = state.party.filter((member) => member.hp > 0);
+  const fronts = alive.filter((member) => member.formationRow !== 'back');
+  const rears = alive.filter((member) => member.formationRow === 'back');
+  for (const member of state.party) {
+    if (member.hp <= 0 || member.formationRow === 'back') {
+      member.formationCanFallBack = false;
+      member.formationReliefFallback = false;
+      continue;
+    }
+    const hasOtherFront = fronts.some((front) => front.id !== member.id);
+    const canRelief = !hasOtherFront && (member.veteranMasteryRank ?? 0) >= 3 && rears.length > 0;
+    member.formationCanFallBack = hasOtherFront || canRelief;
+    member.formationReliefFallback = canRelief;
+  }
+}
+
 /**
  * M49：前排一旦全數倒下，後排就不再享有「安全距離」的假象。
  * 將仍存活的後排提升為前排，讓近戰恢復正常貼身命中、弓弩承受近身壓力，
@@ -222,9 +259,11 @@ function checkOutcome(state: CombatState): void {
 function collapseFrontLineIfNeeded(state: CombatState): void {
   const aliveParty = state.party.filter((member) => member.hp > 0);
   if (aliveParty.length === 0) return;
-  if (aliveParty.some((member) => member.formationRow !== 'back')) return;
-  for (const member of aliveParty) member.formationRow = 'front';
-  state.log.push({ kind: 'info', text: '前線崩潰！後排成員被迫上前接戰。' });
+  if (!aliveParty.some((member) => member.formationRow !== 'back')) {
+    for (const member of aliveParty) member.formationRow = 'front';
+    state.log.push({ kind: 'info', text: '前線崩潰！後排成員被迫上前接戰。' });
+  }
+  refreshFormationRuntime(state);
 }
 
 function applyDamage(state: CombatState, target: CombatantBase, amount: number): void {
@@ -271,6 +310,47 @@ function consumeStrength(actor: CombatantBase): number {
   return strength.potency;
 }
 
+/** M51：精通換位只改站位與既有守勢，不直接碰攻擊、屬性或生命。 */
+function performFormationShift(state: CombatState, actor: PartyMember): void {
+  if (actor.formationRow === 'back') {
+    actor.formationRow = 'front';
+    if ((actor.veteranMasteryRank ?? 0) >= 2) {
+      state.guarding[actor.id] = true;
+      state.log.push({ kind: 'action', text: `${actor.name}從後排前進接戰，並在踏入前線時架起守勢。` });
+    } else {
+      state.log.push({ kind: 'action', text: `${actor.name}抓住空隙，從後排前進接戰。` });
+    }
+    refreshFormationRuntime(state);
+    return;
+  }
+
+  if (!actor.formationCanFallBack) {
+    state.log.push({ kind: 'info', text: `${actor.name}無法後撤：至少要有人留在前線接敵。` });
+    return;
+  }
+
+  if (actor.formationReliefFallback) {
+    const relief = state.party
+      .filter((member) => member.hp > 0 && member.id !== actor.id && member.formationRow === 'back')
+      .sort((a, b) => b.defense - a.defense || b.hp - a.hp || state.party.indexOf(a) - state.party.indexOf(b))[0];
+    if (!relief) {
+      actor.formationCanFallBack = false;
+      actor.formationReliefFallback = false;
+      state.log.push({ kind: 'info', text: `${actor.name}找不到能接替前線的隊友，後撤中止。` });
+      return;
+    }
+    actor.formationRow = 'back';
+    relief.formationRow = 'front';
+    state.log.push({ kind: 'action', text: `${actor.name}老練地退出接戰線，${relief.name}立刻接替前線。` });
+    refreshFormationRuntime(state);
+    return;
+  }
+
+  actor.formationRow = 'back';
+  state.log.push({ kind: 'action', text: `${actor.name}趁同伴穩住前線，後撤到安全距離。` });
+  refreshFormationRuntime(state);
+}
+
 function performMove(
   rng: Rng,
   state: CombatState,
@@ -282,6 +362,11 @@ function performMove(
   if (move.kind === 'guard') {
     state.guarding[actor.id] = true;
     state.log.push({ kind: 'action', text: fillNarration(move.narration, actor.name, actor.name, 0) });
+    return;
+  }
+  if (move.kind === 'support' && move.formationShift) {
+    const partyActor = state.party.find((member) => member.id === actor.id);
+    if (partyActor) performFormationShift(state, partyActor);
     return;
   }
   if (move.kind === 'support' && !move.heal && move.applyStatus) {
@@ -415,6 +500,25 @@ export function partyMoveAvailability(
   move: Move,
   options: PartyActionOptions = {},
 ): PartyMoveAvailability {
+  if (move.formationShift) {
+    if (actor.formationRow === 'back') {
+      return { allowed: true, canOvercast: false, cost: 0, current: 0, shortfall: 0, backlash: 0, reason: '' };
+    }
+    const allowed = actor.formationCanFallBack === true;
+    return {
+      allowed,
+      canOvercast: false,
+      cost: 0,
+      current: 0,
+      shortfall: 0,
+      backlash: 0,
+      reason: allowed
+        ? ''
+        : (actor.veteranMasteryRank ?? 0) >= 3
+          ? '後排沒有能接替前線的存活隊友，現在不能後撤。'
+          : '至少需要另一名存活前排隊友接敵，現在不能後撤。',
+    };
+  }
   const rule = mysticRuleForMove(move);
   if (!rule) {
     return { allowed: true, canOvercast: false, cost: 0, current: 0, shortfall: 0, backlash: 0, reason: '' };
