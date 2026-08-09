@@ -92,7 +92,8 @@ Automated gates attack the feature from multiple player perspectives:
 7. **Information fairness** — live labels must say advance, guarded advance, fallback, rotation, or no replacement before click.
 8. **Dynamic battlefield truth** — M49 frontline collapse and M51 repositioning use the same runtime `formationRow`; labels follow the new row automatically.
 9. **Idempotency** — repeated combat initialization cannot stack M51 suffixes.
-10. **Regression** — M40–M50 combat, spellcraft, endurance, armory, rituals, convoy, morale, armor and formation tests remain green.
+10. **Save compatibility** — mastery is derived from existing fields and cannot mutate the persistent character record.
+11. **Regression** — M40–M50 combat, spellcraft, endurance, armory, rituals, convoy, morale, armor and formation tests remain green.
 
 ## Rejected alternatives
 
@@ -118,4 +119,4 @@ Rejected. It recreates an all-rear exploit. Rank III is a rotation, not invisibi
 
 ## Save compatibility
 
-No new persistent field is required. Veteran rank is derived from existing `record.level` and `record.xp`; combat-only row/guard/runtime flags remain ephemeral. Old saves therefore obtain the correct mastery automatically from their existing values.
+No new persistent field is required. Veteran rank is derived from existing `record.level` and `record.xp`; combat-only row/guard/runtime flags remain ephemeral. `memberFromRecord()` is regression-tested not to mutate the source character record. Old saves therefore obtain the correct mastery automatically from their existing values.
