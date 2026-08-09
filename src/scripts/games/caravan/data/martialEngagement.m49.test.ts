@@ -144,7 +144,7 @@ describe('M49 live martial engagement integration', () => {
     expect(state.log.some((entry) => entry.text.includes('替front攔下攻擊'))).toBe(false);
   });
 
-  it('front-row guard still intercepts, preserving the swordsman protector role', () => {
+  it('front-row guard still intercepts without inventing a shield item', () => {
     const guard = guardMove();
     const victim = member('victim', attack('victim-strike', 'str', 'slash'), 'front', { str: 10, dex: 10, int: 8, cha: 8, con: 10 });
     victim.hp = 6;
@@ -158,7 +158,8 @@ describe('M49 live martial engagement integration', () => {
 
     expect(victim.hp).toBe(6);
     expect(guardian.hp).toBeLessThan(20);
-    expect(state.log.some((entry) => entry.text.includes('guardian持盾上前') && entry.text.includes('victim'))).toBe(true);
+    expect(state.log.some((entry) => entry.text.includes('guardian挺身上前') && entry.text.includes('victim'))).toBe(true);
+    expect(state.log.some((entry) => entry.text.includes('持盾'))).toBe(false);
   });
 
   it('promotes surviving rear members when the frontline falls, so the engagement model follows the battlefield instead of stale setup data', () => {
