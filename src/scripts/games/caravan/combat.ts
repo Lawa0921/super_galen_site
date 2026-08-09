@@ -17,6 +17,14 @@ import {
   formationAttackProfile,
   type EngagementBand,
 } from './data/martialEngagement.m49';
+import {
+  collapseEnemyFrontLine,
+  enemyCanBypassPartyFront,
+  enemyFormationLabel,
+  enemyLineGate,
+  initializeEnemyFormation,
+  legalEnemyTargets,
+} from './data/enemyFormation.m54';
 
 export interface Move {
   id: string; name: string;
@@ -94,6 +102,8 @@ export interface PartyMember extends CombatantBase {
 
 export interface EnemyUnit extends CombatantBase {
   intents: Array<{ weight: number; moveId: string }>;
+  /** M54：敵人也使用與玩家相同的前後排距離規則；缺少時由開戰規則推導。 */
+  formationRow?: FormationRow;
   /** M15 弱點屬性：命中 ×1.5 並削 1 護勢 */
   weaknesses?: Element[];
   /** M15 抗性屬性：命中 ×0.5 */
@@ -132,6 +142,11 @@ export interface PartyMoveAvailability {
   reason: string;
 }
 
+export interface PartyTargetAvailability {
+  allowed: boolean;
+  reason: string;
+}
+
 export interface PartyActionOptions { overcast?: boolean; }
 export interface PartyActionResult {
   acted: boolean;
@@ -160,12 +175,22 @@ export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]
     round: 1, order: rolled.map((r) => r.id), turnIndex: 0,
     party, enemies, guarding: {}, enemyIntents: {}, log: [], outcome: 'ongoing',
   };
+  const enemyFormation = initializeEnemyFormation(enemies);
   for (const enemy of enemies) {
     if (enemy.maxPoise !== undefined && enemy.poise === undefined) enemy.poise = enemy.maxPoise;
     state.enemyIntents[enemy.id] = chooseEnemyIntent(rng, enemy);
   }
   state.log.push({ kind: 'info', text: '戰鬥開始！' });
   collapseFrontLineIfNeeded(state);
+  const enemyFront = enemies.filter((enemy) => enemy.hp > 0 && enemy.formationRow !== 'back').map((enemy) => enemy.name);
+  const enemyBack = enemies.filter((enemy) => enemy.hp > 0 && enemy.formationRow === 'back').map((enemy) => enemy.name);
+  state.log.push({
+    kind: 'info',
+    text: `敵陣：前排 ${enemyFront.join('、') || '無'}｜後排 ${enemyBack.join('、') || '無'}。近戰與長柄必須先突破前線；遠程與真正魔法可以越線。`,
+  });
+  if (enemyFormation.promoted.length > 0) {
+    state.log.push({ kind: 'info', text: '敵軍沒有可掩護後排的前線單位，所有敵人被迫暴露在近身接戰線。' });
+  }
   for (const member of party) {
     const rank = Math.max(0, Math.min(3, Math.floor(member.veteranMasteryRank ?? 0)));
     if (rank > 0) {
@@ -278,10 +303,18 @@ function collapseFrontLineIfNeeded(state: CombatState): void {
   refreshFormationRuntime(state);
 }
 
+function collapseEnemyFrontLineIfNeeded(state: CombatState): void {
+  const result = collapseEnemyFrontLine(state.enemies);
+  if (result.promoted.length > 0) {
+    state.log.push({ kind: 'info', text: '敵方前線崩潰！剩餘後排敵人被迫上前接戰，弓弩與長柄開始承受近身壓力。' });
+  }
+}
+
 function applyDamage(state: CombatState, target: CombatantBase, amount: number): void {
   target.hp = Math.max(0, target.hp - amount);
   if (target.hp === 0) state.log.push({ kind: 'down', text: `${target.name}倒下了！` });
   collapseFrontLineIfNeeded(state);
+  collapseEnemyFrontLineIfNeeded(state);
   const boss = target as EnemyUnit;
   if (boss.enrage && !boss.enraged && target.hp > 0 && target.hp <= target.maxHp * boss.enrage.threshold) {
     boss.enraged = true;
@@ -409,7 +442,8 @@ function performMove(
   }
   const spellRule = mysticRuleForMove(move);
   const partyActor = state.party.find((member) => member.id === actor.id);
-  const formation = formationAttackProfile(partyActor?.formationRow, move, !!spellRule);
+  const enemyActor = state.enemies.find((member) => member.id === actor.id);
+  const formation = formationAttackProfile(partyActor?.formationRow ?? enemyActor?.formationRow, move, !!spellRule);
   const die = rng.d20();
   const defense = target.defense + guardingDefenseBonus(state, target);
   const hit = die === 20
@@ -627,10 +661,31 @@ function chooseEnemyIntent(rng: Rng, enemy: EnemyUnit): string {
   return fallback?.id ?? intendedId;
 }
 
-function validPartyTarget(state: CombatState, actor: PartyMember, move: Move, target: CombatantBase): boolean {
-  if (move.target === 'self') return target.id === actor.id;
-  if (move.target === 'ally') return state.party.some((member) => member.id === target.id && member.hp > 0);
-  return state.enemies.some((enemy) => enemy.id === target.id && enemy.hp > 0);
+export function legalEnemyTargetsForMove(state: CombatState, move: Move): EnemyUnit[] {
+  return legalEnemyTargets(state.enemies, move);
+}
+
+export function partyTargetAvailability(
+  state: CombatState,
+  actor: PartyMember,
+  move: Move,
+  target: CombatantBase,
+): PartyTargetAvailability {
+  if (move.target === 'self') {
+    return { allowed: target.id === actor.id, reason: target.id === actor.id ? '' : '這個招式只能指定自己。' };
+  }
+  if (move.target === 'ally') {
+    const allowed = state.party.some((member) => member.id === target.id && member.hp > 0);
+    return { allowed, reason: allowed ? '' : '這個招式只能指定仍可行動的隊友。' };
+  }
+  if (move.kind === 'attack' && move.area) {
+    const allowed = legalEnemyTargetsForMove(state, move).length > 0;
+    return { allowed, reason: allowed ? '' : '目前沒有這個招式能合法命中的敵人。' };
+  }
+  const enemy = state.enemies.find((candidate) => candidate.id === target.id && candidate.hp > 0);
+  if (!enemy) return { allowed: false, reason: '這個招式不能指定該目標。' };
+  const gate = enemyLineGate(state.enemies, move, enemy);
+  return { allowed: gate.allowed, reason: gate.reason };
 }
 
 export function partyAct(
@@ -647,8 +702,10 @@ export function partyAct(
   if (!actor || !move || !targetFound || state.outcome !== 'ongoing') {
     return { acted: false, overcast: false, backlash: 0, reason: '行動資料無效。' };
   }
-  if (!validPartyTarget(state, actor, move, targetFound)) {
-    return { acted: false, overcast: false, backlash: 0, reason: '這個招式不能指定該目標。' };
+  const targetAvailability = partyTargetAvailability(state, actor, move, targetFound);
+  if (!targetAvailability.allowed) {
+    state.log.push({ kind: 'info', text: targetAvailability.reason });
+    return { acted: false, overcast: false, backlash: 0, reason: targetAvailability.reason };
   }
   const availability = partyMoveAvailability(actor, move, options);
   if (!availability.allowed) {
@@ -670,7 +727,7 @@ export function partyAct(
   if (formation.message) state.log.push({ kind: 'info', text: formation.message });
   if (move.kind === 'attack' && move.area) {
     const strengthBonus = consumeStrength(actor);
-    for (const target of state.enemies.filter((enemy) => enemy.hp > 0)) {
+    for (const target of legalEnemyTargetsForMove(state, move)) {
       performMove(rng, state, actor, move, target, strengthBonus);
     }
   } else {
@@ -681,6 +738,13 @@ export function partyAct(
   checkOutcome(state);
   if (state.outcome === 'ongoing') advanceTurn(state);
   return { acted: true, overcast: mystic.overcast, backlash: mystic.backlash };
+}
+
+function partyTargetsForEnemyMove(state: CombatState, move: Move): PartyMember[] {
+  const alive = state.party.filter((member) => member.hp > 0);
+  if (alive.length === 0 || enemyCanBypassPartyFront(move)) return alive;
+  const front = alive.filter((member) => member.formationRow !== 'back');
+  return front.length > 0 ? front : alive;
 }
 
 export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
@@ -709,6 +773,8 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
     return;
   }
 
+  const formation = formationAttackProfile(enemy.formationRow, move, !!mysticRuleForMove(move));
+  if (formation.message) state.log.push({ kind: 'info', text: `敵方${enemyFormationLabel(enemy)}：${formation.message}` });
   const mystic = beginMysticAction(state, enemy, move, availability);
   let target: CombatantBase;
   if (move.kind === 'support') {
@@ -733,10 +799,8 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
       );
     }
   } else {
-    const aliveParty = state.party.filter((p) => p.hp > 0);
-    if (aliveParty.length === 0) return;
-    const frontLine = aliveParty.filter((member) => member.formationRow !== 'back');
-    const targetPool = frontLine.length > 0 ? frontLine : aliveParty;
+    const targetPool = partyTargetsForEnemyMove(state, move);
+    if (targetPool.length === 0) return;
     target = targetPool.reduce((low, p) => (p.hp < low.hp ? p : low), targetPool[0]);
     if (move.kind === 'attack' && !move.area && !state.guarding[target.id]) {
       const guardian = state.order
@@ -751,7 +815,7 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
 
   const strengthBonus = move.kind === 'attack' ? consumeStrength(enemy) : 0;
   if (move.kind === 'attack' && move.area) {
-    for (const member of state.party.filter((partyMember) => partyMember.hp > 0)) {
+    for (const member of partyTargetsForEnemyMove(state, move)) {
       performMove(rng, state, enemy, move, member, strengthBonus);
     }
   } else {
