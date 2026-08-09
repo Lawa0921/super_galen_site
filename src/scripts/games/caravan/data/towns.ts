@@ -1,6 +1,7 @@
 import type { TownDef } from '../economy';
 import { registerTowns } from '../expedition';
 import './offhandShields.m52';
+import './reachPolearms.m53';
 
 /**
  * M4 首批城鎮：3 座。
@@ -12,6 +13,7 @@ import './offhandShields.m52';
  * 押貨鹽晶洞窟（reputation≥60）掉落的「鹽」走霧嶺古道到此變現，是全遊戲最長
  * （legs6）也最賺的押貨路線（見 data.test.ts 經濟量級 sanity）。
  * M52 再加入副手盾牌：基礎小圓盾可在啟程之鎮取得，鹽鋼鳶盾留給鹽泉城中期整備。
+ * M53 加入長柄武器：基礎戰矛早期可買，鹽鋼長槍則留給鹽泉城較成熟的第二列構築。
  */
 export const TOWNS: Record<string, TownDef> = {
   'starting-town': {
@@ -20,7 +22,7 @@ export const TOWNS: Record<string, TownDef> = {
     name: '啟程之鎮',
     desc: '商隊由此啟程，青石廣場終年人聲鼎沸，鐵匠爐火不熄，貨棧招牌層層疊疊，是踏上未知路途前最後一次安穩補給。',
     priceModifiers: {},
-    stock: ['herb', 'bandage', 'antidote', 'war-tonic', 'torch', 'dried-rations', 'ore', 'spider-silk', 'spice-pouch', 'ridgeleather-vest', 'oak-buckler'],
+    stock: ['herb', 'bandage', 'antidote', 'war-tonic', 'torch', 'dried-rations', 'ore', 'spider-silk', 'spice-pouch', 'ridgeleather-vest', 'oak-buckler', 'ashwood-war-spear'],
   },
   'riverbend-town': {
     id: 'riverbend-town',
@@ -50,8 +52,9 @@ export const TOWNS: Record<string, TownDef> = {
       'saltforged-mail': 1.3,
       'brinewarded-vestment': 1.3,
       'salt-rim-kite-shield': 1.25,
+      'saltsteel-pike': 1.2,
     },
-    stock: ['salt', 'salt-crystal-blade', 'brine-blessed-mace', 'saltforged-mail', 'brinewarded-vestment', 'brine-crystal-staff', 'pilgrim-warded-cloak', 'saltglass-talisman', 'salt-rim-kite-shield', 'herb', 'torch'],
+    stock: ['salt', 'salt-crystal-blade', 'brine-blessed-mace', 'saltforged-mail', 'brinewarded-vestment', 'brine-crystal-staff', 'pilgrim-warded-cloak', 'saltglass-talisman', 'salt-rim-kite-shield', 'saltsteel-pike', 'herb', 'torch'],
   },
 };
 
