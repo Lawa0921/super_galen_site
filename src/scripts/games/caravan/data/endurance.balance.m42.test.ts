@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   currentActor,
   enemyAct,
+  legalEnemyTargetsForMove,
   partyAct,
   partyMoveAvailability,
   type CombatState,
@@ -82,7 +83,8 @@ function chooseTarget(state: CombatState, move: Move): string {
     const alive = state.party.filter((member) => member.hp > 0);
     return alive.reduce((lowest, member) => member.hp / member.maxHp < lowest.hp / lowest.maxHp ? member : lowest, alive[0]).id;
   }
-  const alive = state.enemies.filter((enemy) => enemy.hp > 0);
+  const legal = move.kind === 'attack' ? legalEnemyTargetsForMove(state, move) : [];
+  const alive = legal.length > 0 ? legal : state.enemies.filter((enemy) => enemy.hp > 0);
   if (move.area) return alive[0].id;
   const element = move.element;
   const weak = element ? alive.filter((enemy) => enemy.weaknesses?.includes(element)) : [];
@@ -235,8 +237,8 @@ describe('M42 automated player-perspective balance probes', () => {
   });
 
   it('stress-checks double-mage outcomes across a wider deterministic window', () => {
-    const stress = compositionReport('arcane-stress', COMPOSITIONS.arcane, 9360, 80);
-    expect(stress.total).toBe(80);
+    const stress = compositionReport('arcane-stress', COMPOSITIONS.arcane, 9360, 200);
+    expect(stress.total).toBe(200);
     expect(stress.finalReach).toBeGreaterThan(0);
   });
 
