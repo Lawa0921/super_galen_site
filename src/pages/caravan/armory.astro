@@ -4,14 +4,14 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
 <BaseLayout
   title="武裝整備所 — 商隊與劍"
-  description="依照中世紀劍與魔法世界的武器熟練、護甲材質、施法媒介與負重整備遠征隊。"
+  description="依照中世紀劍與魔法世界的武器熟練、雙手武器、副手盾牌、護甲材質、施法媒介與負重整備遠征隊。"
   lang="zh-TW"
 >
   <main class="armory-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M48 ARMOR PROFILES</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M52 HANDS &amp; SHIELDS</p>
       <h1>武裝整備所</h1>
-      <p>鋼鐵不再只是一個防禦數字。鎖甲擅長吃下刀斬與部分箭刺，輕甲提供有限斬擊保護；法袍與聖衣則把重量換成秘法、神恩與對應魔法防護。跨職裝備仍不禁止，但每個代價都必須能被玩家看見。</p>
+      <p>鋼鐵不再只是一個防禦數字。刀劍、弓弩、法杖與錘杖有不同訓練；弓與法杖等雙手武器會占滿雙手，盾牌則只有在真正持用並主動進入守勢時才強化防禦。跨職與混裝仍不禁止，但重量、手部占用、施法干擾與實際收益都必須先讓玩家看見。</p>
       <nav>
         <a href="/caravan/play">返回主冒險</a>
         <a href="/caravan/endurance">前往餘燼朝聖</a>
@@ -22,11 +22,13 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       <h2>整備原則</h2>
       <div class="doctrine-grid">
         <article><strong>武器熟練</strong><span>熟練流派命中 +1；勉強運用命中 -2、傷害 -1，仍保留跨職構築。</span></article>
+        <article><strong>手部占用</strong><span>刀劍與錘杖多為單手；反曲弓、法杖與部分長兵器視為雙手。雙手武器在使用時會讓副手盾牌收起。</span></article>
+        <article><strong>盾牌守勢</strong><span>盾牌不提供常駐防禦。只有主動使用防禦架勢時才增加額外防禦，因此盾牌是回合決策，不是免費第四件護甲。</span></article>
         <article><strong>護甲材質</strong><span>鎖甲抗斬、略抗刺，但不會神奇吸收鈍擊；穿甲箭可削掉物理護甲減傷。</span></article>
         <article><strong>秘法織物</strong><span>法袍能削減少量火／霜魔法；聖衣對神聖衝擊最可靠。這些防護不會替代一次性護法。</span></article>
         <article><strong>護甲重量</strong><span>鎖甲防護最穩，但降低敏捷並干擾秘法手勢；超過個人負重容量會再扣敏捷與生命。</span></article>
-        <article><strong>施法媒介</strong><span>法杖與法袍提高秘法上限；錘杖、聖衣與王室聖印提高神恩上限。</span></article>
-        <article><strong>遠征負重</strong><span>負重會進入朝聖整備快照，影響紮營效率與強行軍疲勞。</span></article>
+        <article><strong>施法媒介</strong><span>法杖與法袍提高秘法上限；錘杖、聖衣與王室聖印提高神恩上限。大型盾真正持在手上時也可能妨礙秘法手勢。</span></article>
+        <article><strong>遠征負重</strong><span>武器、護甲、飾品與副手都計入負重；盾就算收在背上仍然有重量，並會進入朝聖整備快照。</span></article>
       </div>
     </section>
 
@@ -51,8 +53,14 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     equippableInventory,
     partyArmoryLoad,
     unequipArmoryItem,
+    type ArmoryEquipSlot,
     type ArmoryProfile,
   } from '@scripts/games/caravan/data/armory';
+  import {
+    offhandId,
+    shieldRule,
+    weaponHands,
+  } from '@scripts/games/caravan/data/offhandShields.m52';
 
   const noticeEl = document.getElementById('notice')!;
   const loadEl = document.getElementById('party-load')!;
@@ -92,6 +100,15 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     return `${weapon}｜${armor}`;
   }
 
+  function handText(profile: ArmoryProfile): string {
+    const hands = profile.weaponHands === 2 ? '雙手武器' : profile.weaponHands === 1 ? '單手武器' : '未持武器';
+    if (!profile.offhandId) return `${hands}｜副手空置`;
+    const shield = itemName(profile.offhandId);
+    return profile.shieldReady
+      ? `${hands}｜${shield}就緒・防禦架勢額外 +${profile.shieldGuardBonus}`
+      : `${hands}｜${shield}收起・目前無守勢加成`;
+  }
+
   function equip(record: CompanionRecord, itemId: string): void {
     if (!save) return;
     try {
@@ -104,7 +121,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     }
   }
 
-  function unequip(record: CompanionRecord, slot: keyof CompanionRecord['equipment']): void {
+  function unequip(record: CompanionRecord, slot: ArmoryEquipSlot): void {
     if (!save) return;
     try {
       unequipArmoryItem(save, record.id, slot);
@@ -116,11 +133,16 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     }
   }
 
-  function equipmentLine(record: CompanionRecord, slot: keyof CompanionRecord['equipment'], label: string): HTMLElement {
+  function equippedId(record: CompanionRecord, slot: ArmoryEquipSlot): string | null {
+    return slot === 'offhand' ? offhandId(record) : record.equipment[slot];
+  }
+
+  function equipmentLine(record: CompanionRecord, slot: ArmoryEquipSlot, label: string): HTMLElement {
     const row = document.createElement('div');
     row.className = 'equipment-row';
-    row.append(text('span', `${label}：${itemName(record.equipment[slot])}`));
-    if (record.equipment[slot]) row.append(button('卸下', () => unequip(record, slot)));
+    const itemId = equippedId(record, slot);
+    row.append(text('span', `${label}：${itemName(itemId)}`));
+    if (itemId) row.append(button('卸下', () => unequip(record, slot)));
     return row;
   }
 
@@ -138,6 +160,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       text('p', `Lv${record.level}｜防禦 ${member.defense}｜生命 ${member.maxHp}｜敏捷 ${member.stats.dex}`, 'summary'),
       text('p', `個人負重 ${profile.burden}/${profile.capacity}${profile.overload ? `｜超載 ${profile.overload}` : ''}`, 'load'),
       text('p', fitText(record, profile), 'fit'),
+      text('p', handText(profile), profile.shieldReady ? 'hands shield-ready' : 'hands'),
       text('p', `材質防護：${armorProtectionText(profile.armorProtection)}`, 'protection'),
       text('p', `秘法上限修正 ${profile.mysticCapacity.mana >= 0 ? '+' : ''}${profile.mysticCapacity.mana}｜神恩上限修正 ${profile.mysticCapacity.favor >= 0 ? '+' : ''}${profile.mysticCapacity.favor}`, 'mystic'),
     );
@@ -146,6 +169,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     equipment.className = 'equipment';
     equipment.append(
       equipmentLine(record, 'weapon', '武器'),
+      equipmentLine(record, 'offhand', '副手'),
       equipmentLine(record, 'armor', '護甲'),
       equipmentLine(record, 'trinket', '飾品'),
     );
@@ -167,8 +191,19 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       const required = item.equip?.minLevel ?? 1;
       const disabled = record.level < required;
       const rule = armoryRuleForItem(item.id);
-      const tags = [item.equip?.slot, rule?.weapon ? WEAPON_DISCIPLINE_LABELS[rule.weapon] : '', rule?.armor ? ARMOR_DISCIPLINE_LABELS[rule.armor] : '', `負重 ${rule?.burden ?? 0}`]
-        .filter(Boolean).join('｜');
+      const shield = shieldRule(item.id);
+      const slotLabel: Record<string, string> = { weapon: '武器', offhand: '副手', armor: '護甲', trinket: '飾品' };
+      const handTag = item.equip?.slot === 'weapon'
+        ? weaponHands(item.id) === 2 ? '雙手' : '單手'
+        : shield ? `盾牌・守勢 +${shield.guardBonus}` : '';
+      const burden = rule?.burden ?? shield?.burden ?? 0;
+      const tags = [
+        slotLabel[item.equip?.slot ?? ''] ?? '裝備',
+        handTag,
+        rule?.weapon ? WEAPON_DISCIPLINE_LABELS[rule.weapon] : '',
+        rule?.armor ? ARMOR_DISCIPLINE_LABELS[rule.armor] : '',
+        `負重 ${burden}`,
+      ].filter(Boolean).join('｜');
       const option = document.createElement('article');
       option.className = 'inventory-item';
       option.append(
@@ -192,7 +227,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     loadEl.replaceChildren(
       text('h2', '目前出征隊負重'),
       text('p', `${partyLoad.burden}/${partyLoad.capacity}${partyLoad.overload ? `｜超載 ${partyLoad.overload}` : '｜整隊可負荷'}`),
-      text('p', '護甲材質、武器熟練與負重都已進入實際戰鬥：鎖甲會削斬／刺傷害、法袍與聖衣會處理特定魔法，穿甲技則能削弱物理減傷；餘燼朝聖仍會把整備快照鎖入行程。'),
+      text('p', '護甲材質、武器熟練、手部占用、副手盾牌與負重都已進入實際戰鬥：盾牌只有在單手／空手狀態下能強化守勢，雙手武器會把盾收起；餘燼朝聖仍會把完整整備快照鎖入行程。'),
     );
     const members = [save.protagonist, ...save.companions];
     rosterEl.replaceChildren(...members.map(memberCard));
@@ -202,7 +237,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   if (!save) {
     noticeEl.replaceChildren(text('h2', '尚未建立商隊'), text('p', '請先返回主冒險建立角色與存檔。'));
   } else {
-    noticeEl.textContent = '武裝報告會即時計算，不會隱藏跨職裝備、負重或材質防護的代價。';
+    noticeEl.textContent = '武裝報告會即時計算，不會隱藏跨職裝備、雙手占用、盾牌收起、負重或材質防護的代價。';
     render();
   }
 </script>
@@ -223,7 +258,8 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .member-card { padding: 1.25rem; border: 1px solid #5e503d; background: #1b1713; }
   .member-card.overloaded { border-color: #a54b3b; box-shadow: inset 4px 0 #a54b3b; }
   .member-card h2 { margin: .2rem 0 .5rem; font-size: 1.8rem; }
-  .summary, .load, .fit, .protection, .mystic { color: #d7c7aa; }
+  .summary, .load, .fit, .hands, .protection, .mystic { color: #d7c7aa; }
+  .hands.shield-ready { color: #e1c98f; }
   .protection { color: #e1c98f; }
   .equipment { display: grid; gap: .45rem; margin: 1rem 0; }
   .equipment-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .6rem .75rem; background: #282117; }
