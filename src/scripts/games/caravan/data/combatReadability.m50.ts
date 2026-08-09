@@ -17,10 +17,18 @@ function readyShieldBonus(actor: PartyMember): number {
   return armory?.shieldReady ? Math.max(0, armory.shieldGuardBonus ?? 0) : 0;
 }
 
+function engagementLabel(engagement: 'melee' | 'ranged' | 'reach' | 'mystic'): string {
+  if (engagement === 'ranged') return '遠程';
+  if (engagement === 'reach') return '長柄';
+  if (engagement === 'mystic') return '魔法';
+  return '近戰';
+}
+
 /**
  * M50：把 M49 已經存在的站位規則在玩家按下招式前就說清楚。
  * M51 延伸同一資訊契約：老兵換位也必須在出手前說明會前進、後撤或輪替。
  * M52 再要求盾牌的守勢收益在按下防禦以前可見，且收起的盾不能假裝生效。
+ * M53 把 reach 長柄距離也納入同一份預判：後排適配、前排近身命中 -1。
  * isMystic 由 M41/M44 的 arcana 真實規則提供，避免用元素外觀猜測魔法。
  */
 export function combatMoveForecast(
@@ -68,17 +76,17 @@ export function combatMoveForecast(
   const formation = formationAttackProfile(actor.formationRow, move, isMystic);
   const rowLabel = ROW_LABEL[row];
   if (formation.engagement === 'mystic') {
-    return { shortLabel: '魔法・站位自由', hint: `${rowLabel}施法：真正的秘法／神術不受近戰與遠程的站位命中懲罰。`, penalized: false };
+    return { shortLabel: '魔法・站位自由', hint: `${rowLabel}施法：真正的秘法／神術不受近戰、遠程或長柄武器的站位命中懲罰。`, penalized: false };
   }
 
-  const kindLabel = formation.engagement === 'ranged' ? '遠程' : '近戰';
+  const kindLabel = engagementLabel(formation.engagement);
   if (formation.hitModifier < 0) {
     return { shortLabel: `${kindLabel}・命中 ${formation.hitModifier}`, hint: formation.message, penalized: true };
   }
   return { shortLabel: `${kindLabel}・站位適配`, hint: `${rowLabel}${kindLabel}：目前站位不會受到額外命中懲罰。`, penalized: false };
 }
 
-/** M50–M52：action name 必須反映當下真正可用的站位／盾牌狀態。 */
+/** M50–M53：action name 必須反映當下真正可用的站位／盾牌／交戰距離。 */
 export function combatMoveDisplayName(actor: PartyMember, move: Move, isMystic = false): string {
   const forecast = combatMoveForecast(actor, move, isMystic);
   const shieldBonus = readyShieldBonus(actor);
@@ -93,8 +101,11 @@ export function combatMoveDisplayName(actor: PartyMember, move: Move, isMystic =
     return `${baseName}〔${role}${shieldBonus > 0 ? `・盾+${shieldBonus}` : ''}〕`;
   }
   if (move.kind === 'attack' && !isMystic) {
-    const kindLabel = forecast.shortLabel.startsWith('遠程') ? '遠程' : '近戰';
-    return forecast.penalized ? `${baseName}〔${kindLabel} -2〕` : `${baseName}〔${kindLabel}〕`;
+    const formation = formationAttackProfile(actor.formationRow, move, false);
+    const kindLabel = engagementLabel(formation.engagement);
+    return formation.hitModifier < 0
+      ? `${baseName}〔${kindLabel} ${formation.hitModifier}〕`
+      : `${baseName}〔${kindLabel}〕`;
   }
   return baseName;
 }
