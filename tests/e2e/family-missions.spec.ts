@@ -17,6 +17,8 @@ test.describe('雙羽任務所', () => {
   test('像素冒險介面提供 HUD 與任務開始過場', async ({ page }) => {
     await expect(page.locator('.pixel-hero-hud')).toContainText('APPLE');
     await expect(page.locator('.pixel-hero-hud')).toContainText('039');
+    await expect(page.locator('#hero-pixel-art')).toHaveClass(/is-rendered/);
+    await expect(page.locator('#scout-portrait-pixel')).toHaveClass(/is-rendered/);
     await page.getByRole('button', { name: '進入今日任務' }).click();
     await expect(page.locator('#quest-warp')).toHaveClass(/is-visible/);
     await expect(page.locator('#quest-warp')).toContainText('QUEST START!');
