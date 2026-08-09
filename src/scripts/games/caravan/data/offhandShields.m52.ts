@@ -90,18 +90,28 @@ export function weaponHands(itemId: string | null | undefined): 0 | 1 | 2 {
   return TWO_HANDED_WEAPONS.has(itemId) ? 2 : 1;
 }
 
+function recordWeaponHands(record: Pick<CompanionRecord, 'equipment' | 'job'>): 0 | 1 | 2 {
+  const equipped = weaponHands(record.equipment.weapon);
+  if (equipped > 0) return equipped;
+  // A ranger's base kit and class attacks explicitly use a bow even before a weapon item is equipped.
+  // Treat that implicit bow as two-handed so an empty equipment slot cannot bypass the shield rule.
+  if (record.job === 'ranger') return 2;
+  return 0;
+}
+
 export function shieldRule(itemId: string | null | undefined): ShieldRule | null {
   return itemId ? SHIELD_RULES[itemId] ?? null : null;
 }
 
-export function handLoadoutProfile(record: Pick<CompanionRecord, 'equipment'>): HandLoadoutProfile {
+export function handLoadoutProfile(record: Pick<CompanionRecord, 'equipment' | 'job'>): HandLoadoutProfile {
   const equipment = equipmentView(record);
-  const hands = weaponHands(equipment.weapon);
+  const hands = recordWeaponHands(record);
   const offhand = equipment.offhand ?? null;
   const shield = shieldRule(offhand);
   const ready = !!shield && hands < 2;
+  const implicitWeapon = !equipment.weapon && record.job === 'ranger' ? '游俠的預設弓' : '雙手武器';
   const warning = shield && !ready
-    ? `${ITEMS[equipment.weapon!]?.name ?? '雙手武器'}佔滿雙手；${M52_OFFHAND_ITEMS[shield.itemId]?.name ?? shield.itemId}目前只能收在背帶上，守勢加成不生效。`
+    ? `${equipment.weapon ? ITEMS[equipment.weapon]?.name ?? implicitWeapon : implicitWeapon}佔滿雙手；${M52_OFFHAND_ITEMS[shield.itemId]?.name ?? shield.itemId}目前只能收在背帶上，守勢加成不生效。`
     : '';
   return {
     weaponHands: hands,
