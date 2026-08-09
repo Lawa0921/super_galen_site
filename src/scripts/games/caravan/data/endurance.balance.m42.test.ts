@@ -234,6 +234,11 @@ describe('M42 automated player-perspective balance probes', () => {
     expectViableButNotGuaranteed(report('arcane', 9160));
   });
 
+  it('stress-checks the pre-M54 double-mage baseline across 200 seeds', () => {
+    const stress = compositionReport('arcane-pre-m54-stress', COMPOSITIONS.arcane, 9360, 200);
+    expect(stress.total).toBe(200);
+  });
+
   it('party without cleric has viable but non-guaranteed outcomes', () => {
     expectViableButNotGuaranteed(report('noCleric', 9180));
   });
