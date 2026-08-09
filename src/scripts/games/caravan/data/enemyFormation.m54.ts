@@ -9,6 +9,21 @@ export interface EnemyLineGate {
   engagement: EngagementBand | null;
 }
 
+/**
+ * Two pre-M49 enemy arrows were authored before element/engagement metadata existed.
+ * Their names/narration are unambiguously bows, so M54 repairs them at combat-runtime
+ * instead of letting them remain fake melee attacks forever.
+ */
+const LEGACY_RANGED_BOW_IDS = new Set(['ridge-arrow', 'bone-arrow']);
+
+export function normalizeEnemyWeaponSemantics(enemy: EnemyUnit): void {
+  for (const move of enemy.moves) {
+    if (!LEGACY_RANGED_BOW_IDS.has(move.id)) continue;
+    move.engagement = 'ranged';
+    move.element ??= 'pierce';
+  }
+}
+
 function attackEngagement(move: Move): EngagementBand | null {
   if (move.kind !== 'attack') return null;
   return engagementForMove(move, !!mysticRuleForMove(move));
@@ -37,6 +52,7 @@ export function preferredEnemyRow(enemy: EnemyUnit): FormationRow {
  */
 export function initializeEnemyFormation(enemies: EnemyUnit[]): { promoted: string[] } {
   for (const enemy of enemies) {
+    normalizeEnemyWeaponSemantics(enemy);
     enemy.formationRow = preferredEnemyRow(enemy);
   }
   return collapseEnemyFrontLine(enemies);
