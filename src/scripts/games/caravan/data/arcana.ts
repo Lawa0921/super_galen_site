@@ -74,8 +74,8 @@ export function mysticRuleForMove(move: Move): MysticMoveRule | null {
 function stripM50Suffix(name: string): string {
   return name
     .replace(/〔(?:前進(?:・守勢)?(?:・盾\+\d+)?|後撤|輪替後撤|無人接替)〕$/u, '')
-    .replace(/〔(?:近戰|遠程)(?: -2)?〕$/u, '')
-    .replace(/〔(?:近戰|遠程)・(?:命中 -2|站位適配)〕$/u, '')
+    .replace(/〔(?:(?:近戰|遠程)(?: -2)?|長柄(?: -1)?)〕$/u, '')
+    .replace(/〔(?:(?:近戰|遠程)・(?:命中 -2|站位適配)|長柄・(?:命中 -1|站位適配))〕$/u, '')
     .replace(/〔(?:護衛|自保)(?:・盾\+\d+)?〕$/u, '')
     .replace(/〔守勢・(?:可護衛|自保)(?:・盾\+\d+)?〕$/u, '');
 }
