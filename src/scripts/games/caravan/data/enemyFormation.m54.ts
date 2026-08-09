@@ -30,11 +30,32 @@ function attackEngagement(move: Move): EngagementBand | null {
 }
 
 /**
+ * A rear missile troop may carry an authored melee sidearm without becoming a frontliner.
+ * Once physically forced into the front rank, switch its future intent deck to those
+ * existing melee attacks. This never invents a weapon: pure archers keep shooting under
+ * the normal -2 close-pressure penalty, and real spellcasters keep their magic plan.
+ */
+function switchPromotedMissileTroopToSidearm(enemy: EnemyUnit): void {
+  const attackBands = enemy.moves
+    .map((move) => ({ move, engagement: attackEngagement(move) }))
+    .filter((entry): entry is { move: Move; engagement: EngagementBand } => entry.engagement !== null);
+  if (!attackBands.some((entry) => entry.engagement === 'ranged')) return;
+  if (attackBands.some((entry) => entry.engagement === 'mystic')) return;
+  const meleeFallbacks = attackBands.filter((entry) => entry.engagement === 'melee').map((entry) => entry.move);
+  if (meleeFallbacks.length === 0) return;
+  enemy.intents = meleeFallbacks.map((move) => ({
+    weight: enemy.intents.find((intent) => intent.moveId === move.id)?.weight ?? 1,
+    moveId: move.id,
+  }));
+}
+
+/**
  * M54 enemy formation inference is deliberately conservative:
  * - any real melee attack makes the unit a frontline candidate;
  * - guard-only units also prefer the front;
  * - pure ranged/reach/mystic/support units prefer the rear;
- * - explicit authored formationRow always wins.
+ * - explicit authored formationRow always wins. This lets authored rear skirmishers carry
+ *   a sidearm without pretending that dagger is their preferred opening battlefield role.
  */
 export function preferredEnemyRow(enemy: EnemyUnit): FormationRow {
   if (enemy.formationRow === 'front' || enemy.formationRow === 'back') return enemy.formationRow;
@@ -61,12 +82,19 @@ export function initializeEnemyFormation(enemies: EnemyUnit[]): { promoted: stri
 /**
  * M54 mirrors M49 frontline collapse: once every living enemy frontliner is gone,
  * all surviving rear units are forced into close engagement.
+ *
+ * Missile troops with an explicitly authored melee sidearm change their future intent
+ * deck after promotion. The already telegraphed current shot is not rewritten mid-turn;
+ * after that committed volley they draw the sidearm for subsequent actions.
  */
 export function collapseEnemyFrontLine(enemies: EnemyUnit[]): { promoted: string[] } {
   const alive = enemies.filter((enemy) => enemy.hp > 0);
   if (alive.length === 0 || alive.some((enemy) => enemy.formationRow !== 'back')) return { promoted: [] };
   const promoted = alive.map((enemy) => enemy.id);
-  for (const enemy of alive) enemy.formationRow = 'front';
+  for (const enemy of alive) {
+    enemy.formationRow = 'front';
+    switchPromotedMissileTroopToSidearm(enemy);
+  }
   return { promoted };
 }
 
