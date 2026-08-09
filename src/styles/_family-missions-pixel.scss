@@ -101,6 +101,22 @@ body:has(.family-missions) {
   transform: scale(1.05);
 }
 
+.quest-hero__pixel-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  image-rendering: pixelated;
+  filter: saturate(1.28) contrast(1.12) brightness(0.94);
+  transform: scale(1.012);
+  transition: opacity 180ms steps(2, end);
+}
+
+.quest-hero__pixel-art.is-rendered {
+  opacity: 1;
+}
+
 .family-missions.is-ready .quest-hero__art {
   animation: pixel-hero-pan 12s steps(12, end) infinite alternate;
 }
@@ -379,6 +395,19 @@ body:has(.family-missions) {
   image-rendering: pixelated;
   filter: saturate(1.34) contrast(1.12);
 }
+
+.scout-portrait-pixel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  image-rendering: pixelated;
+  filter: saturate(1.32) contrast(1.12);
+  transition: opacity 120ms steps(2, end);
+}
+
+.scout-portrait-pixel.is-rendered { opacity: 1; }
 
 .portrait-pin {
   border: 3px solid var(--pixel-ink);
