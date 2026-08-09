@@ -243,6 +243,15 @@ export function adjustMovesForArmory(record: CompanionRecord, moves: Move[]): Mo
   return moves.map((move) => {
     const adjusted: Move = { ...move };
     if (move.id === 'piercing-arrow') adjusted.armorPiercing = Math.max(adjusted.armorPiercing ?? 0, 2);
+    if (move.id === 'shield-bash') {
+      if (profile.shieldReady) {
+        adjusted.name = '盾牆猛擊';
+        adjusted.narration = '{actor}架起手中盾牌猛撞{target}，造成 {amount} 點傷害並將其震得暈頭轉向！';
+      } else {
+        adjusted.name = '壁壘猛擊';
+        adjusted.narration = '{actor}以肩甲與武器護手猛撞{target}，造成 {amount} 點傷害並將其震得暈頭轉向！';
+      }
+    }
     if (weaponMoveId && move.id === weaponMoveId) {
       adjusted.hitBonus = (move.hitBonus ?? 0) + profile.weaponHitBonus;
     }
