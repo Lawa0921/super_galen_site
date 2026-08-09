@@ -98,6 +98,11 @@ const cinderSpear: Move = {
   damage: { dice: 1, sides: 6, bonusStat: 'dex' },
   narration: '{actor}投出仍在燃燒的斷矛，刺中{target}，造成 {amount} 點傷害！',
 };
+const cinderSidearm: Move = {
+  id: 'reliquary-cinder-sidearm', name: '燼鋼短刀', kind: 'attack', target: 'enemy', hitStat: 'dex', element: 'slash',
+  damage: { dice: 1, sides: 4, bonusStat: 'dex' },
+  narration: '{actor}棄下斷矛，拔出腰間燼鋼短刀貼身劃向{target}，造成 {amount} 點傷害！',
+};
 
 function ashKnight(): EnemyUnit {
   return {
@@ -113,11 +118,11 @@ function ashKnight(): EnemyUnit {
 }
 function cinderSquire(): EnemyUnit {
   return {
-    id: 'reliquary-cinder-squire', name: '燼甲侍從',
+    id: 'reliquary-cinder-squire', name: '燼甲侍從', formationRow: 'back',
     stats: { str: 11, dex: 15, int: 8, cha: 7, con: 11 }, maxHp: 14, hp: 14, defense: 12,
     weaknesses: ['frost', 'blunt'], resists: ['fire'], maxPoise: 2,
     armorProtection: armorProtectionForDiscipline('light'),
-    moves: [cinderSpear], intents: [{ weight: 1, moveId: cinderSpear.id }],
+    moves: [cinderSpear, cinderSidearm], intents: [{ weight: 1, moveId: cinderSpear.id }],
   };
 }
 
