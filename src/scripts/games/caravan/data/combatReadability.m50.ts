@@ -14,6 +14,7 @@ const ROW_LABEL: Record<'front' | 'back', string> = {
 
 /**
  * M50：把 M49 已經存在的站位規則在玩家按下招式前就說清楚。
+ * M51 延伸同一資訊契約：老兵換位也必須在出手前說明會前進、後撤或輪替。
  * isMystic 由 M41/M44 的 arcana 真實規則提供，避免用元素外觀猜測魔法。
  */
 export function combatMoveForecast(
@@ -22,6 +23,38 @@ export function combatMoveForecast(
   isMystic = false,
 ): CombatMoveForecast {
   const row = actor.formationRow === 'back' ? 'back' : 'front';
+
+  if (move.formationShift) {
+    if (row === 'back') {
+      const guardedAdvance = (actor.veteranMasteryRank ?? 0) >= 2;
+      return {
+        shortLabel: guardedAdvance ? '前進・守勢' : '前進',
+        hint: guardedAdvance
+          ? '花費完整一回合進入前排；精通 II 會同時進入守勢，直到下一次自身行動前有效。'
+          : '花費完整一回合從後排進入前排，不造成傷害。',
+        penalized: false,
+      };
+    }
+    if (actor.formationReliefFallback) {
+      return {
+        shortLabel: '輪替後撤',
+        hint: '精通 III：由後排中防禦最高的存活隊友接替前線後，你才會退到後排。',
+        penalized: false,
+      };
+    }
+    if (actor.formationCanFallBack) {
+      return {
+        shortLabel: '後撤',
+        hint: '花費完整一回合退到後排；其他存活前排會繼續接敵。',
+        penalized: false,
+      };
+    }
+    return {
+      shortLabel: '無人接替',
+      hint: '你是目前最後一名前排，而且沒有符合精通 III 輪替條件的後排隊友；現在不能後撤。',
+      penalized: false,
+    };
+  }
 
   if (move.kind === 'guard') {
     return row === 'front'
@@ -70,7 +103,7 @@ export function combatMoveForecast(
 
 /**
  * 所有戰鬥頁本來就直接顯示 move.name；M50 在 runtime 讓名稱成為可預判資訊，
- * 因此前線崩潰改變 formationRow 後，下一次 render 也會同步反映新站位。
+ * 因此前線崩潰或 M51 老兵換位改變 formationRow 後，下一次 render 都會同步反映。
  * 按鈕只顯示最短必要資訊，完整理由仍由 forecast/log 提供。
  */
 export function combatMoveDisplayName(
@@ -80,6 +113,7 @@ export function combatMoveDisplayName(
 ): string {
   const forecast = combatMoveForecast(actor, move, isMystic);
   const baseName = move.kind === 'guard' ? '防禦架勢' : move.name;
+  if (move.formationShift) return `${baseName}〔${forecast.shortLabel}〕`;
   if (move.kind === 'guard') {
     return `${baseName}〔${actor.formationRow === 'back' ? '自保' : '護衛'}〕`;
   }
