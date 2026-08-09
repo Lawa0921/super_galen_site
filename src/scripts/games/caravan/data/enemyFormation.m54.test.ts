@@ -18,6 +18,10 @@ const ranged: Move = {
   id: 'm54-bow', name: '長弓', kind: 'attack', target: 'enemy', hitStat: 'dex', element: 'pierce',
   damage: { dice: 1, sides: 8, bonusStat: 'dex' }, narration: '',
 };
+const sidearm: Move = {
+  id: 'm54-dagger', name: '短刀', kind: 'attack', target: 'enemy', hitStat: 'dex', element: 'slash',
+  damage: { dice: 1, sides: 4, bonusStat: 'dex' }, narration: '',
+};
 const reach: Move = {
   id: 'm54-spear', name: '長槍', kind: 'attack', target: 'enemy', hitStat: 'str', element: 'pierce', engagement: 'reach',
   damage: { dice: 1, sides: 8, bonusStat: 'str' }, narration: '',
@@ -48,6 +52,7 @@ describe('M54 enemy formation rules', () => {
   it('preserves explicit authored rows instead of overriding encounter design', () => {
     expect(preferredEnemyRow(enemy('explicit-front-archer', [ranged], 'front'))).toBe('front');
     expect(preferredEnemyRow(enemy('explicit-back-sword', [melee], 'back'))).toBe('back');
+    expect(preferredEnemyRow(enemy('rear-skirmisher', [ranged, sidearm], 'back'))).toBe('back');
   });
 
   it('repairs pre-M49 enemy bow metadata so named bow shots are truly pierce/ranged', () => {
@@ -81,6 +86,34 @@ describe('M54 enemy formation rules', () => {
     expect(collapseEnemyFrontLine([front, backA, backB]).promoted).toEqual(['back-a', 'back-b']);
     expect(backA.formationRow).toBe('front');
     expect(backB.formationRow).toBe('front');
+  });
+
+  it('switches a promoted missile troop to an actually authored melee sidearm', () => {
+    const front = enemy('screen', [melee], 'front');
+    const skirmisher = enemy('skirmisher', [ranged, sidearm], 'back');
+    skirmisher.intents = [{ weight: 1, moveId: ranged.id }];
+    initializeEnemyFormation([front, skirmisher]);
+    expect(skirmisher.formationRow).toBe('back');
+    expect(skirmisher.intents.map((intent) => intent.moveId)).toEqual([ranged.id]);
+
+    front.hp = 0;
+    collapseEnemyFrontLine([front, skirmisher]);
+    expect(skirmisher.formationRow).toBe('front');
+    expect(skirmisher.intents.map((intent) => intent.moveId)).toEqual([sidearm.id]);
+  });
+
+  it('does not invent a sidearm for pure ranged troops or replace real spellcasting plans', () => {
+    const archer = enemy('pure-archer', [ranged], 'back');
+    collapseEnemyFrontLine([archer]);
+    expect(archer.intents.map((intent) => intent.moveId)).toEqual([ranged.id]);
+
+    const spellblade = enemy('spellblade', [ranged, sidearm, magic], 'back');
+    spellblade.intents = [
+      { weight: 2, moveId: ranged.id },
+      { weight: 2, moveId: magic.id },
+    ];
+    collapseEnemyFrontLine([spellblade]);
+    expect(spellblade.intents.map((intent) => intent.moveId)).toEqual([ranged.id, magic.id]);
   });
 
   it('lets ranged and true magic bypass a living enemy screen but blocks melee and reach', () => {
