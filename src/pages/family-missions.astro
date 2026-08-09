@@ -76,6 +76,7 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
         height="878"
         fetchpriority="high"
       />
+      <canvas class="quest-hero__pixel-art" id="hero-pixel-art" width="240" height="132" aria-hidden="true"></canvas>
       <div class="quest-hero__shade" aria-hidden="true"></div>
       <a class="home-link" href="/" aria-label="回到 SuperGalen's Dungeon 首頁">
         <span aria-hidden="true">←</span> 回到主站
@@ -148,6 +149,7 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
               width="900"
               height="900"
             />
+            <canvas class="scout-portrait-pixel" id="scout-portrait-pixel" width="112" height="112" aria-hidden="true"></canvas>
           </div>
           <span class="portrait-pin portrait-pin--top" aria-hidden="true">{initialProfile.symbol}</span>
           <span class="portrait-pin portrait-pin--bottom" aria-hidden="true">★</span>
@@ -570,6 +572,37 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     button.classList.toggle('is-muted', !effectsSoundOn);
   }
 
+  function drawPixelArt(image, canvas) {
+    if (!image?.complete || !image.naturalWidth || !canvas) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    const sourceRatio = image.naturalWidth / image.naturalHeight;
+    const targetRatio = canvas.width / canvas.height;
+    let sourceWidth = image.naturalWidth;
+    let sourceHeight = image.naturalHeight;
+    let sourceX = 0;
+    let sourceY = 0;
+    if (sourceRatio > targetRatio) {
+      sourceWidth = image.naturalHeight * targetRatio;
+      sourceX = (image.naturalWidth - sourceWidth) / 2;
+    } else {
+      sourceHeight = image.naturalWidth / targetRatio;
+      sourceY = (image.naturalHeight - sourceHeight) / 2;
+    }
+    context.imageSmoothingEnabled = false;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
+    canvas.classList.add('is-rendered');
+  }
+
+  function refreshPortraitPixels() {
+    const portrait = document.querySelector('#scout-portrait');
+    const canvas = document.querySelector('#scout-portrait-pixel');
+    canvas.classList.remove('is-rendered');
+    if (portrait.complete) drawPixelArt(portrait, canvas);
+    else portrait.addEventListener('load', () => drawPixelArt(portrait, canvas), { once: true });
+  }
+
   function createMissionCard(task, index, completed) {
     const taskAbilities = task.abilityIds.map((abilityId) => abilities[abilityId]);
     const primaryAbility = taskAbilities[0];
@@ -777,6 +810,7 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     const portrait = document.querySelector('#scout-portrait');
     portrait.src = profile.portrait;
     portrait.alt = profile.portraitAlt;
+    refreshPortraitPixels();
     document.querySelector('.portrait-pin--top').textContent = profile.symbol;
     document.querySelector('#scout-name').textContent = profile.name;
     document.querySelector('#scout-call-sign').textContent = profile.callSign;
@@ -997,6 +1031,11 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     day: 'numeric',
     weekday: 'long',
   }).format(new Date());
+
+  const heroArt = document.querySelector('.quest-hero__art');
+  const heroCanvas = document.querySelector('#hero-pixel-art');
+  if (heroArt.complete) drawPixelArt(heroArt, heroCanvas);
+  else heroArt.addEventListener('load', () => drawPixelArt(heroArt, heroCanvas), { once: true });
 
   page.dataset.motionReady = 'true';
   updateSoundButton();
