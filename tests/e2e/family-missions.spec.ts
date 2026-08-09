@@ -22,6 +22,7 @@ test.describe('雙羽任務所', () => {
     await page.getByRole('button', { name: '進入今日任務' }).click();
     await expect(page.locator('#quest-warp')).toHaveClass(/is-visible/);
     await expect(page.locator('#quest-warp')).toContainText('QUEST START!');
+    await expect(page.locator('#quest-chain-count')).toHaveText('0 / 5');
   });
 
   test('孩子可以切換角色並回報生活任務', async ({ page }) => {
@@ -39,6 +40,12 @@ test.describe('雙羽任務所', () => {
     await expect(page.getByTestId('ability-responsibility')).toHaveClass(/is-just-grown/);
     await expect(page.locator('.star-wallet')).toHaveClass(/is-rewarded/);
     await expect(page.locator('#mission-win')).toHaveClass(/is-visible/);
+    await expect(page.locator('#mission-win-stars-before')).toHaveText('39');
+    await expect(page.locator('#mission-win-stars-after')).toHaveText('40 ★');
+    await expect(page.locator('#quest-chain-count')).toHaveText('1 / 5');
+    await expect(page.locator('#quest-chain-track .is-lit')).toHaveCount(1);
+    await expect(page.locator('#scout-reaction-text')).toContainText('星星和能力都變強了');
+    await expect(page.locator('#ability-level-up')).toHaveClass(/is-visible/);
     await expect(page.locator('#mini-star-trail .is-lit')).toHaveCount(0);
     await expect(page.getByText('已回報', { exact: true })).toBeVisible();
 
@@ -58,6 +65,21 @@ test.describe('雙羽任務所', () => {
     await expect(page.getByTestId('scout-rank')).toContainText('小兵');
     await expect(page.getByTestId('star-count')).toHaveText('11');
     await expect(page.getByTestId('scout-portrait')).toHaveAttribute('src', /amy-scout/);
+  });
+
+  test('完成五個任務會開啟今日全破寶箱', async ({ page }) => {
+    await page.getByRole('tab', { name: /Amy/ }).click();
+    for (let index = 0; index < 5; index += 1) {
+      await page.locator('.mission-complete:not(:disabled)').first().click();
+    }
+
+    await expect(page.locator('#quest-chain-count')).toHaveText('5 / 5');
+    await expect(page.locator('#quest-chain-hud')).toHaveClass(/is-perfect/);
+    const dailyClear = page.getByRole('dialog', { name: '今日任務全破' });
+    await expect(dailyClear).toBeVisible();
+    await expect(dailyClear).toContainText('Amy 今日全破');
+    await dailyClear.getByRole('button', { name: '查看今天成長的能力' }).click();
+    await expect(dailyClear).toBeHidden();
   });
 
   test('任務與屬性以圖文並茂的靜態內容呈現', async ({ page }) => {

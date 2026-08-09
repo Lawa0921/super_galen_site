@@ -153,6 +153,10 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
           </div>
           <span class="portrait-pin portrait-pin--top" aria-hidden="true">{initialProfile.symbol}</span>
           <span class="portrait-pin portrait-pin--bottom" aria-hidden="true">★</span>
+          <div class="scout-reaction is-visible" id="scout-reaction" role="status" aria-live="polite">
+            <span id="scout-reaction-text">Apple 已經準備好出發了！</span>
+            <i aria-hidden="true"></i>
+          </div>
         </div>
 
         <div class="scout-story-card__copy">
@@ -397,6 +401,21 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
 
     <div class="mission-toast" id="mission-toast" role="status" aria-live="polite"></div>
     <div class="pixel-combo" id="pixel-combo" aria-hidden="true"><small>DAILY COMBO</small><strong>×1</strong></div>
+    <aside class="quest-chain-hud" id="quest-chain-hud" aria-label="今日任務連擊進度">
+      <div class="quest-chain-hud__title">
+        <span>QUEST CHAIN</span>
+        <strong id="quest-chain-count">0 / 5</strong>
+      </div>
+      <div class="quest-chain-track" id="quest-chain-track" aria-hidden="true">
+        {initialProfile.tasks.map((_, index) => <i data-chain-step={index + 1}>★</i>)}
+      </div>
+      <small id="quest-chain-message">完成第一個任務，點亮連擊！</small>
+    </aside>
+    <div class="ability-level-up" id="ability-level-up" aria-hidden="true">
+      <small>ABILITY UP!</small>
+      <span id="ability-level-up-icon">🎒</span>
+      <div><strong id="ability-level-up-name">責任成長</strong><b id="ability-level-up-grade">F → F＋</b></div>
+    </div>
     <div class="pixel-hit-layer" id="pixel-hit-layer" aria-hidden="true"></div>
     <div class="quest-warp" id="quest-warp" aria-hidden="true"><span>QUEST START!</span><small>今天也升級一小步</small></div>
     <div class="mission-win" id="mission-win" aria-hidden="true">
@@ -406,6 +425,9 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
         <span class="mission-win__icon" id="mission-win-icon" aria-hidden="true">★</span>
         <strong id="mission-win-title">任務完成</strong>
         <div id="mission-win-rewards"></div>
+        <div class="mission-win__counter" aria-label="任務星增加一顆">
+          <span id="mission-win-stars-before">39</span><i aria-hidden="true">▶</i><strong id="mission-win-stars-after">40 ★</strong>
+        </div>
         <p><b>★ ＋1</b> 任務星已收進星星袋</p>
       </div>
     </div>
@@ -430,6 +452,17 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
         <button id="rank-up-close" type="button" aria-label="收下新軍階">收下新軍階，繼續出發！</button>
       </div>
     </div>
+    <div class="daily-clear-overlay" id="daily-clear-overlay" role="dialog" aria-modal="true" aria-label="今日任務全破" hidden>
+      <div class="daily-clear-rays" aria-hidden="true"></div>
+      <div class="daily-clear-card">
+        <p>ALL QUESTS CLEAR!</p>
+        <div class="daily-clear-chest" aria-hidden="true"><span>★</span></div>
+        <strong id="daily-clear-name">Apple 今日全破！</strong>
+        <div class="daily-clear-stars" aria-hidden="true"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div>
+        <span>五個生活任務全部完成<br />今天的努力已經收進冒險紀錄！</span>
+        <button id="daily-clear-close" type="button">查看今天成長的能力</button>
+      </div>
+    </div>
   </main>
 </BaseLayout>
 
@@ -443,6 +476,9 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
   let toastTimer;
   let celebrationTimer;
   let missionWinTimer;
+  let reactionTimer;
+  let abilityLevelTimer;
+  let pendingDailyClearProfileId = null;
   let effectsSoundOn = localStorage.getItem('supergalen-family-sound') !== 'off';
   let audioContext;
 
@@ -541,17 +577,21 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     try {
       audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
       const now = audioContext.currentTime;
-      const notes = kind === 'rank'
-        ? [[523.25, 0], [659.25, 0.12], [783.99, 0.24], [1046.5, 0.4]]
+      const notes = kind === 'clear'
+        ? [[392, 0], [523.25, 0.1], [659.25, 0.2], [783.99, 0.31], [1046.5, 0.48]]
+        : kind === 'rank'
+          ? [[523.25, 0], [659.25, 0.12], [783.99, 0.24], [1046.5, 0.4]]
         : kind === 'start'
           ? [[261.63, 0], [392, 0.08], [523.25, 0.18]]
+        : kind === 'open'
+          ? [[330, 0], [440, 0.07]]
         : kind === 'switch'
           ? [[392, 0], [523.25, 0.08]]
           : [[659.25, 0], [783.99, 0.1], [987.77, 0.22]];
       notes.forEach(([frequency, delay], index) => {
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
-        oscillator.type = kind === 'rank' ? 'triangle' : 'sine';
+        oscillator.type = kind === 'rank' || kind === 'clear' ? 'triangle' : kind === 'open' ? 'square' : 'sine';
         oscillator.frequency.setValueAtTime(frequency, now + delay);
         gain.gain.setValueAtTime(0.0001, now + delay);
         gain.gain.exponentialRampToValueAtTime(index === notes.length - 1 ? 0.11 : 0.075, now + delay + 0.025);
@@ -570,6 +610,74 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     button.setAttribute('aria-pressed', effectsSoundOn ? 'true' : 'false');
     button.setAttribute('aria-label', effectsSoundOn ? '關閉任務音效' : '開啟任務音效');
     button.classList.toggle('is-muted', !effectsSoundOn);
+  }
+
+  function showScoutReaction(message, mood = 'happy', duration = 2800) {
+    const reaction = document.querySelector('#scout-reaction');
+    const text = document.querySelector('#scout-reaction-text');
+    window.clearTimeout(reactionTimer);
+    text.textContent = message;
+    reaction.dataset.mood = mood;
+    reaction.classList.remove('is-visible');
+    void reaction.offsetWidth;
+    reaction.classList.add('is-visible');
+    reactionTimer = window.setTimeout(() => reaction.classList.remove('is-visible'), reducedMotion.matches ? 1400 : duration);
+  }
+
+  function updateQuestChain(profile) {
+    const completed = state[profile.id].completed;
+    const hud = document.querySelector('#quest-chain-hud');
+    const count = completed.length;
+    document.querySelector('#quest-chain-count').textContent = `${count} / ${profile.tasks.length}`;
+    document.querySelector('#quest-chain-message').textContent = count === profile.tasks.length
+      ? 'PERFECT！今天的任務全部完成！'
+      : count === 0
+        ? '完成第一個任務，點亮連擊！'
+        : `連擊中！再完成 ${profile.tasks.length - count} 個任務就全破`;
+    document.querySelectorAll('[data-chain-step]').forEach((step, index) => {
+      step.classList.toggle('is-lit', index < count);
+      step.classList.toggle('is-current', index === count && count < profile.tasks.length);
+    });
+    hud.classList.toggle('is-perfect', count === profile.tasks.length);
+    hud.setAttribute('aria-label', `今日任務已完成 ${count} / ${profile.tasks.length}`);
+  }
+
+  function showAbilityLevelUp(abilityId, beforeGrade, afterGrade, delay = 0) {
+    if (beforeGrade === afterGrade || afterGrade === '尚未啟程') return;
+    window.setTimeout(() => {
+      const banner = document.querySelector('#ability-level-up');
+      const ability = abilities[abilityId];
+      window.clearTimeout(abilityLevelTimer);
+      document.querySelector('#ability-level-up-icon').textContent = ability.icon;
+      document.querySelector('#ability-level-up-name').textContent = `${ability.name}能力成長！`;
+      document.querySelector('#ability-level-up-grade').textContent = `${beforeGrade} ▶ ${afterGrade}`;
+      banner.classList.remove('is-visible');
+      void banner.offsetWidth;
+      banner.classList.add('is-visible');
+      abilityLevelTimer = window.setTimeout(() => banner.classList.remove('is-visible'), reducedMotion.matches ? 1100 : 2100);
+    }, delay);
+  }
+
+  function showDailyClear(profile) {
+    const overlay = document.querySelector('#daily-clear-overlay');
+    document.querySelector('#daily-clear-name').textContent = `${profile.shortName} 今日全破！`;
+    overlay.hidden = false;
+    requestAnimationFrame(() => {
+      overlay.classList.add('is-visible');
+      document.querySelector('#daily-clear-close').focus({ preventScroll: true });
+    });
+    replayClass(document.querySelector('.scout-story-card'), 'is-cheering', 1800);
+    showScoutReaction('五個任務都完成了！今天是完美冒險日！', 'perfect', 4800);
+    playSound('clear');
+  }
+
+  function hideDailyClear() {
+    const overlay = document.querySelector('#daily-clear-overlay');
+    overlay.classList.remove('is-visible');
+    window.setTimeout(() => {
+      overlay.hidden = true;
+      document.querySelector('.ability-garden')?.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
+    }, reducedMotion.matches ? 0 : 260);
   }
 
   function drawPixelArt(image, canvas) {
@@ -723,7 +831,7 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     });
   }
 
-  function showMissionWin(task) {
+  function showMissionWin(task, starsBefore, starsAfter) {
     const panel = document.querySelector('#mission-win');
     document.querySelector('#mission-win-icon').textContent = task.icon;
     document.querySelector('#mission-win-title').textContent = task.title;
@@ -733,6 +841,8 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
       chip.textContent = `${abilities[abilityId].icon} ${abilities[abilityId].name} ＋1`;
       return chip;
     }));
+    document.querySelector('#mission-win-stars-before').textContent = String(starsBefore);
+    document.querySelector('#mission-win-stars-after').textContent = `${starsAfter} ★`;
     window.clearTimeout(missionWinTimer);
     panel.classList.remove('is-visible');
     requestAnimationFrame(() => panel.classList.add('is-visible'));
@@ -791,6 +901,11 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
       overlay.hidden = true;
       const activeTab = tabs.find((tab) => tab.dataset.profile === activeProfileId);
       activeTab?.focus({ preventScroll: true });
+      if (pendingDailyClearProfileId) {
+        const clearProfile = profiles[pendingDailyClearProfileId];
+        pendingDailyClearProfileId = null;
+        window.setTimeout(() => showDailyClear(clearProfile), 220);
+      }
     }, reducedMotion.matches ? 0 : 260);
   }
 
@@ -832,6 +947,7 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     renderMiniStarTrail(stars, Boolean(options.justCompletedTaskId));
     document.querySelector('#completed-count').textContent = String(profileState.completed.length);
     document.querySelector('.mission-count > span').textContent = ` / ${profile.tasks.length}`;
+    updateQuestChain(profile);
 
     tabs.forEach((tab) => {
       const selected = tab.dataset.profile === profileId;
@@ -869,7 +985,12 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     const task = profile.tasks.find((item) => item.id === taskId);
     if (!task) return;
 
-    const previousRank = rankInfo(totalStars(profile)).current;
+    const previousStars = totalStars(profile);
+    const previousRank = rankInfo(previousStars).current;
+    const previousAbilityGrades = Object.fromEntries(task.abilityIds.map((abilityId) => {
+      const stars = profile.baseAbilityStars[abilityId] + (Number(profileState.abilityBonusStars[abilityId]) || 0);
+      return [abilityId, abilityGrowth(abilities[abilityId], stars).grade];
+    }));
     const sourceRect = sourceButton?.getBoundingClientRect();
     const rewardOrigin = sourceRect ? {
       x: sourceRect.left + sourceRect.width / 2,
@@ -892,6 +1013,7 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     });
 
     const newRank = rankInfo(totalStars(profile)).current;
+    const newStars = totalStars(profile);
     const starWallet = document.querySelector('.star-wallet');
     flyReward(rewardOrigin, starWallet, '★', 'reward-particle--star');
     task.abilityIds.forEach((abilityId, index) => {
@@ -901,10 +1023,18 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     });
     window.setTimeout(() => replayClass(starWallet, 'is-rewarded', 1050), 680);
     replayClass(document.querySelector('.mission-count'), 'is-rewarded', 850);
-    showMissionWin(task);
+    showMissionWin(task, previousStars, newStars);
     const combo = document.querySelector('#pixel-combo');
     combo.querySelector('strong').textContent = `×${profileState.completed.length}`;
     replayClass(combo, 'is-visible', 1500);
+    replayClass(document.querySelector('#quest-chain-hud'), 'is-pulsing', 1000);
+    replayClass(document.querySelector('.scout-story-card'), 'is-cheering', 1500);
+    showScoutReaction(`太棒了！「${task.title}」完成，星星和能力都變強了！`, 'cheer', 4200);
+    task.abilityIds.forEach((abilityId, index) => {
+      const abilityStars = profile.baseAbilityStars[abilityId] + (Number(profileState.abilityBonusStars[abilityId]) || 0);
+      const nextGrade = abilityGrowth(abilities[abilityId], abilityStars).grade;
+      showAbilityLevelUp(abilityId, previousAbilityGrades[abilityId], nextGrade, 900 + index * 1250);
+    });
     playSound(newRank.level > previousRank.level ? 'rank' : 'complete');
     if (typeof navigator.vibrate === 'function') navigator.vibrate(newRank.level > previousRank.level ? [35, 45, 80] : 35);
 
@@ -922,11 +1052,16 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     if (newRank.level > previousRank.level) {
       window.setTimeout(() => showRankUp(profile, newRank), reducedMotion.matches ? 0 : 900);
     }
+    if (profileState.completed.length === profile.tasks.length) {
+      if (newRank.level > previousRank.level) pendingDailyClearProfileId = profile.id;
+      else window.setTimeout(() => showDailyClear(profile), reducedMotion.matches ? 100 : 2400);
+    }
   }
 
   tabs.forEach((tab) => tab.addEventListener('click', () => {
     renderProfile(tab.dataset.profile);
     playSound('switch');
+    showScoutReaction(`${profiles[tab.dataset.profile].shortName} 出發！今天想先挑哪一張任務卡？`, 'ready');
   }));
 
   document.querySelector('#quest-start').addEventListener('click', () => {
@@ -947,6 +1082,8 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
       guideButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
       card.querySelector('.mission-guide').setAttribute('aria-hidden', expanded ? 'false' : 'true');
       guideButton.querySelector('i').textContent = expanded ? '−' : '＋';
+      playSound('open');
+      if (expanded) showScoutReaction(`發現任務提示！照著 1、2、3 慢慢完成就可以了。`, 'hint');
       return;
     }
     const button = event.target.closest('.mission-complete');
@@ -962,6 +1099,8 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     button.firstChild.textContent = expanded ? '收起成長軌道 ' : '展開 F−～S＋成長軌道 ';
     card.querySelector('.ability-ladder').setAttribute('aria-hidden', expanded ? 'false' : 'true');
+    playSound('open');
+    if (expanded) showScoutReaction(`${card.querySelector('h3').textContent}的成長軌道打開了！下一顆星就在前面。`, 'hint');
   });
 
   document.querySelector('#rank-trail').addEventListener('click', (event) => {
@@ -972,6 +1111,7 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     chapter.classList.toggle('is-open', expanded);
     button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     button.firstChild.textContent = expanded ? '收起地圖 ' : '展開地圖 ';
+    playSound('open');
   });
 
   document.querySelector('#sound-toggle').addEventListener('click', () => {
@@ -1023,7 +1163,13 @@ const initialStepStars = initialStars >= 500 ? 10 : initialStars - initialRank.c
     if (event.target.id === 'rank-up-overlay') hideRankUp();
   });
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !document.querySelector('#rank-up-overlay').hidden) hideRankUp();
+    if (event.key !== 'Escape') return;
+    if (!document.querySelector('#daily-clear-overlay').hidden) hideDailyClear();
+    else if (!document.querySelector('#rank-up-overlay').hidden) hideRankUp();
+  });
+  document.querySelector('#daily-clear-close').addEventListener('click', hideDailyClear);
+  document.querySelector('#daily-clear-overlay').addEventListener('click', (event) => {
+    if (event.target.id === 'daily-clear-overlay') hideDailyClear();
   });
 
   document.querySelector('#today-label').textContent = new Intl.DateTimeFormat('zh-TW', {
