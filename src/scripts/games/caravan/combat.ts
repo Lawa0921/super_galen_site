@@ -627,7 +627,7 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
         .map((id) => state.party.find((member) => member.id === id))
         .find((member) => member && member.hp > 0 && state.guarding[member.id] && canGuardIntercept(member.formationRow));
       if (guardian && guardian.id !== target.id) {
-        state.log.push({ kind: 'info', text: `${guardian.name}持盾上前，替${target.name}攔下攻擊！` });
+        state.log.push({ kind: 'info', text: `${guardian.name}挺身上前，替${target.name}攔下攻擊！` });
         target = guardian;
       }
     }
