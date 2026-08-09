@@ -12,6 +12,7 @@ import {
 } from '../roster';
 import { ITEMS } from './items';
 import { adjustMovesForArmory, armoryProfile, type ArmoryProfile } from './armory';
+import { appendVeteranMasteryMoves, veteranMasteryProfile } from './veteranMastery.m51';
 
 export type JobId = 'swordsman' | 'ranger' | 'mage' | 'cleric';
 
@@ -35,6 +36,9 @@ export interface ArmoryPartyMemberRuntime {
   armoryProfile?: ArmoryProfile;
   /** M48：實際受擊時使用的護甲材質輪廓。 */
   armorProtection?: ArmoryProfile['armorProtection'];
+  /** M51：Lv5 後以既有 XP 驅動的橫向老兵精通，不寫回新欄位。 */
+  veteranMasteryRank?: number;
+  veteranNextXp?: number | null;
 }
 
 /** M18：每名角色最多攜帶四招，讓升級後的技能選擇形成構築取捨。 */
@@ -232,11 +236,13 @@ export function setPreparedMoves(record: CompanionRecord, moveIds: string[]): st
  * 將角色成長、裝備、特質、專精、武裝熟練與戰技配置整合成實際戰鬥成員。
  * M43 不禁止跨職裝備，而是把不合訓練的代價公開轉成命中、屬性、負重與施法上限。
  * M48 再把護甲材質輪廓帶入戰鬥，使斬、刺、鈍與真正魔法在受擊端產生可讀差異。
+ * M51 只以 Lv5 後既有 XP 解鎖橫向戰術，不增加角色永久數值，也不佔四格戰技配置。
  */
 export function memberFromRecord(record: CompanionRecord): PartyMember {
   const job = JOBS[record.job];
   const bonus = equipmentBonus(record);
   const armory = armoryProfile(record);
+  const veteran = veteranMasteryProfile(record);
   const stats: StatBlock = effectiveStats(record);
   for (const stat of Object.keys(armory.statAdjustments) as Array<keyof StatBlock>) {
     stats[stat] += armory.statAdjustments[stat] ?? 0;
@@ -246,6 +252,8 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
   const bondHp = bondTier(record.bond) * BOND_HP_PER_TIER;
   const maxHp = Math.max(1, record.maxHp + bonus.maxHp + (trait?.maxHpBonus ?? 0)
     + (spec?.maxHp ?? 0) + bondHp + armory.maxHpAdjustment);
+  const prepared = adjustMovesForArmory(record, preparedMovesFromRecord(record));
+  const combatMoves = appendVeteranMasteryMoves(record, prepared);
 
   const member: PartyMember & ArmoryPartyMemberRuntime = {
     id: record.id,
@@ -254,7 +262,7 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
     maxHp,
     hp: maxHp,
     defense: Math.max(1, job.defense + bonus.defense + (spec?.defense ?? 0) + armory.defenseAdjustment),
-    moves: adjustMovesForArmory(record, preparedMovesFromRecord(record)),
+    moves: combatMoves,
     damageBonus: (bonus.damageBonus ?? 0) + armory.damageAdjustment,
     isProtagonist: record.id === 'protagonist',
     mysticCapacityBonus: armory.mysticCapacity,
@@ -264,6 +272,8 @@ export function memberFromRecord(record: CompanionRecord): PartyMember {
     armoryWarnings: [...armory.warnings],
     armoryProfile: armory,
     armorProtection: armory.armorProtection,
+    veteranMasteryRank: veteran.rank,
+    veteranNextXp: veteran.nextXp,
   };
   return member;
 }
