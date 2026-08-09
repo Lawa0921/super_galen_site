@@ -112,11 +112,11 @@ export function mysticRuleForMove(move: Move): MysticMoveRule | null {
 
 function stripM50Suffix(name: string): string {
   return name
-    .replace(/〔(?:前進(?:・守勢)?|後撤|輪替後撤|無人接替)〕$/u, '')
+    .replace(/〔(?:前進(?:・守勢)?(?:・盾\+\d+)?|後撤|輪替後撤|無人接替)〕$/u, '')
     .replace(/〔(?:近戰|遠程)(?: -2)?〕$/u, '')
     .replace(/〔(?:近戰|遠程)・(?:命中 -2|站位適配)〕$/u, '')
-    .replace(/〔(?:護衛|自保)〕$/u, '')
-    .replace(/〔守勢・(?:可護衛|自保)〕$/u, '');
+    .replace(/〔(?:護衛|自保)(?:・盾\+\d+)?〕$/u, '')
+    .replace(/〔守勢・(?:可護衛|自保)(?:・盾\+\d+)?〕$/u, '');
 }
 
 function decoratedMove(move: Move): Move {
@@ -172,7 +172,7 @@ function powerFor(member: PartyMember, kind: MysticKind): MysticPower {
 /**
  * 雖沿用 M41 名稱，M44 開始敵人也會走同一條初始化路徑。
  * EnemyUnit 在結構上相容 PartyMember（額外欄位不影響），因此可共享同一套魔力公平規則。
- * M50/M51 再把玩家目前前後排與老兵換位資訊灌進 runtime 名稱，所有戰鬥頁自動共用。
+ * M50/M51/M52 把玩家目前前後排、老兵換位與可用盾牌資訊灌進 runtime 名稱，所有戰鬥頁自動共用。
  */
 export function prepareMysticPartyMember(member: PartyMember): PartyMember {
   const copiedMoves = member.moves.map((move) => ({ ...move }));
