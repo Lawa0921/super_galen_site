@@ -40,6 +40,17 @@ describe('M52 offhand and handedness rules', () => {
     expect(weaponHands('swordsaint-bokken')).toBe(2);
   });
 
+  it('treats the ranger default bow as two-handed even with an empty weapon item slot', () => {
+    const ranger = record('ranger');
+    setOffhandId(ranger, 'oak-buckler');
+    const hand = handLoadoutProfile(ranger);
+    expect(ranger.equipment.weapon).toBeNull();
+    expect(hand.weaponHands).toBe(2);
+    expect(hand.shieldReady).toBe(false);
+    expect(hand.shieldGuardBonus).toBe(0);
+    expect(hand.warning).toContain('游俠的預設弓');
+  });
+
   it('makes a buckler ready beside a one-handed weapon but never grants passive defense', () => {
     const fighter = record();
     fighter.equipment.weapon = 'salt-crystal-blade';
