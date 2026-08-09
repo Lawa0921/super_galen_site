@@ -12,9 +12,15 @@ const ROW_LABEL: Record<'front' | 'back', string> = {
   back: '後排',
 };
 
+function readyShieldBonus(actor: PartyMember): number {
+  const armory = actor.armoryProfile;
+  return armory?.shieldReady ? Math.max(0, armory.shieldGuardBonus ?? 0) : 0;
+}
+
 /**
  * M50：把 M49 已經存在的站位規則在玩家按下招式前就說清楚。
  * M51 延伸同一資訊契約：老兵換位也必須在出手前說明會前進、後撤或輪替。
+ * M52 再要求盾牌的守勢收益在按下防禦以前可見，且收起的盾不能假裝生效。
  * isMystic 由 M41/M44 的 arcana 真實規則提供，避免用元素外觀猜測魔法。
  */
 export function combatMoveForecast(
@@ -27,10 +33,14 @@ export function combatMoveForecast(
   if (move.formationShift) {
     if (row === 'back') {
       const guardedAdvance = (actor.veteranMasteryRank ?? 0) >= 2;
+      const shieldBonus = guardedAdvance ? readyShieldBonus(actor) : 0;
+      const guardTotal = 4 + shieldBonus;
       return {
-        shortLabel: guardedAdvance ? '前進・守勢' : '前進',
+        shortLabel: guardedAdvance
+          ? shieldBonus > 0 ? `前進・守勢・盾+${shieldBonus}` : '前進・守勢'
+          : '前進',
         hint: guardedAdvance
-          ? '花費完整一回合進入前排；精通 II 會同時進入守勢，直到下一次自身行動前有效。'
+          ? `花費完整一回合進入前排；精通 II 會同時進入守勢，防禦 +${guardTotal}${shieldBonus > 0 ? `（含盾牌 +${shieldBonus}）` : ''}，直到下一次自身行動前有效。`
           : '花費完整一回合從後排進入前排，不造成傷害。',
         penalized: false,
       };
@@ -57,15 +67,18 @@ export function combatMoveForecast(
   }
 
   if (move.kind === 'guard') {
+    const shieldBonus = readyShieldBonus(actor);
+    const guardTotal = 4 + shieldBonus;
+    const defenseText = `防禦 +${guardTotal}${shieldBonus > 0 ? `（含盾牌 +${shieldBonus}）` : ''}`;
     return row === 'front'
       ? {
-          shortLabel: '守勢・可護衛',
-          hint: '防禦 +4；位於前排時可替隊友攔截敵方單體攻擊。',
+          shortLabel: shieldBonus > 0 ? `守勢・可護衛・盾+${shieldBonus}` : '守勢・可護衛',
+          hint: `${defenseText}；位於前排時可替隊友攔截敵方單體攻擊。`,
           penalized: false,
         }
       : {
-          shortLabel: '守勢・自保',
-          hint: '防禦 +4；後排守勢只能保護自己，不能隔空替前排隊友攔截。',
+          shortLabel: shieldBonus > 0 ? `守勢・自保・盾+${shieldBonus}` : '守勢・自保',
+          hint: `${defenseText}；後排守勢只能保護自己，不能隔空替前排隊友攔截。`,
           penalized: false,
         };
   }
@@ -104,7 +117,7 @@ export function combatMoveForecast(
 /**
  * 所有戰鬥頁本來就直接顯示 move.name；M50 在 runtime 讓名稱成為可預判資訊，
  * 因此前線崩潰或 M51 老兵換位改變 formationRow 後，下一次 render 都會同步反映。
- * 按鈕只顯示最短必要資訊，完整理由仍由 forecast/log 提供。
+ * M52 盾牌亦只在真正 ready 時加上簡短標記；收在背上的盾不會污染按鈕。
  */
 export function combatMoveDisplayName(
   actor: PartyMember,
@@ -115,7 +128,9 @@ export function combatMoveDisplayName(
   const baseName = move.kind === 'guard' ? '防禦架勢' : move.name;
   if (move.formationShift) return `${baseName}〔${forecast.shortLabel}〕`;
   if (move.kind === 'guard') {
-    return `${baseName}〔${actor.formationRow === 'back' ? '自保' : '護衛'}〕`;
+    const shieldBonus = readyShieldBonus(actor);
+    const role = actor.formationRow === 'back' ? '自保' : '護衛';
+    return `${baseName}〔${role}${shieldBonus > 0 ? `・盾+${shieldBonus}` : ''}〕`;
   }
   if (move.kind === 'attack' && !isMystic) {
     const kindLabel = forecast.shortLabel.startsWith('遠程') ? '遠程' : '近戰';
