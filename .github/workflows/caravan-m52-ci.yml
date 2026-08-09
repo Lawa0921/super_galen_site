@@ -39,6 +39,9 @@ jobs:
       - name: M52 multidimensional player adversarial review
         run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/offhandShields.balance.m52.test.ts
 
+      - name: M52 bulwark equipment semantics
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/shieldSemantics.m52.test.ts
+
       - name: M51 veteran mastery regression
         run: >-
           npx vitest run --reporter=verbose
