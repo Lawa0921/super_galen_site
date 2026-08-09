@@ -1,0 +1,30 @@
+name: Diagnostic M44 Combined
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/diag-m44-combined.yml'
+      - 'src/scripts/games/caravan/**'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: M44 main full-file
+        continue-on-error: true
+        run: npx vitest run --reporter=dot src/scripts/games/caravan/data/spellcraft.m44.test.ts
+      - name: M44 balance full-file
+        continue-on-error: true
+        run: npx vitest run --reporter=dot src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts
+      - name: M44 main plus balance combined
+        continue-on-error: true
+        run: >-
+          npx vitest run --reporter=dot
+          src/scripts/games/caravan/data/spellcraft.m44.test.ts
+          src/scripts/games/caravan/data/spellcraft.balance.m44.test.ts
