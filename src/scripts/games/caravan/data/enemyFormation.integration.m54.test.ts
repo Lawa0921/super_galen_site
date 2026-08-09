@@ -17,6 +17,10 @@ const ranged: Move = {
   id: 'm54-live-arrow', name: '長弓箭', kind: 'attack', target: 'enemy', hitStat: 'dex', element: 'pierce',
   damage: { dice: 1, sides: 6, bonusStat: 'dex' }, narration: '{actor}射向{target}，造成 {amount} 點傷害！',
 };
+const sidearm: Move = {
+  id: 'm54-live-dagger', name: '短刀', kind: 'attack', target: 'enemy', hitStat: 'dex', element: 'slash',
+  damage: { dice: 1, sides: 4, bonusStat: 'dex' }, narration: '{actor}拔刀劃向{target}，造成 {amount} 點傷害！',
+};
 const magic: Move = {
   id: 'fireball', name: '火球', kind: 'attack', target: 'enemy', hitStat: 'int', element: 'fire',
   damage: { dice: 1, sides: 6, bonusStat: 'int' }, narration: '{actor}灼燒{target}，造成 {amount} 點傷害！',
@@ -124,6 +128,28 @@ describe('M54 live enemy formation parity', () => {
     const rearState = startCombat(initRng, [freshHero], [freshScreen, rearArcher]);
     enemyAct(actionRng(11), rearState, rearArcher.id);
     expect(freshHero.hp).toBeLessThan(freshHero.maxHp); // same die from rear: 11 + 2 >= 12
+  });
+
+  it('keeps the committed ranged volley, then draws an authored sidearm after frontline collapse', () => {
+    const hero = party('hero', 'front');
+    const screen = enemy('screen', 'front', [melee], 1);
+    const skirmisher = enemy('skirmisher', 'back', [ranged, sidearm]);
+    skirmisher.intents = [{ weight: 1, moveId: ranged.id }];
+    const state = startCombat(initRng, [hero], [screen, skirmisher]);
+    expect(state.enemyIntents[skirmisher.id]).toBe(ranged.id);
+
+    partyAct(actionRng(20, 6), state, hero.id, melee.id, screen.id);
+    expect(skirmisher.formationRow).toBe('front');
+    expect(skirmisher.intents.map((intent) => intent.moveId)).toEqual([sidearm.id]);
+    expect(state.enemyIntents[skirmisher.id]).toBe(ranged.id); // already telegraphed volley remains truthful
+
+    enemyAct(actionRng(1), state, skirmisher.id);
+    expect(state.enemyIntents[skirmisher.id]).toBe(sidearm.id);
+
+    hero.hp = hero.maxHp;
+    enemyAct(actionRng(11), state, skirmisher.id);
+    expect(hero.hp).toBeLessThan(hero.maxHp); // dagger: 11 + DEX 2, no front-ranged penalty
+    expect(state.log.some((entry) => entry.text.includes('短刀'))).toBe(true);
   });
 
   it('lets enemy ranged attacks threaten a low-HP player rear while enemy melee remains pinned to the frontline', () => {
