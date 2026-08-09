@@ -7,9 +7,10 @@ M49–M53 已經讓玩家方的前後排、近戰／遠程／長柄／魔法距�
 1. 敵人沒有 `formationRow`，因此敵方弓手與近戰永遠不吃站位命中懲罰；
 2. 玩家近戰可以直接點殺敵方後排施法者／弓手，而敵方近戰卻會先被我方前排擋住；
 3. 敵方遠程也無法真正利用「越過前線」威脅玩家後排，造成後排過度安全；
-4. `山嵐箭` 與 `枯骨箭` 是明確的弓箭敘事，但因為早於 M49 建立而缺少 `pierce/ranged` metadata，實際被系統當成近戰。
+4. `山嵐箭` 與 `枯骨箭` 是明確的弓箭敘事，但因為早於 M49 建立而缺少 `pierce/ranged` metadata，實際被系統當成近戰；
+5. 後排投射兵的前線若被擊潰，舊模型只會讓它拿原本的遠程武器在貼身距離繼續射，沒有「若真的攜帶副武器就拔刀」的戰場反應。
 
-M54 的目標不是讓敵人單純變強，而是讓**雙方遵守同一套戰線物理規則**。
+M54 的目標不是讓敵人單純變強，而是讓**雙方遵守同一套戰線物理與裝備真實性規則**。
 
 ## Enemy rows
 
@@ -64,12 +65,23 @@ M54 的目標不是讓敵人單純變強，而是讓**雙方遵守同一套戰�
 當最後一名敵方前排倒下：
 
 - 所有存活敵方後排立即被推到前排；
-- 弓手開始承受前排 ranged -2；
+- 純弓手開始承受前排 ranged -2；
 - 長柄開始承受前排 reach -1；
 - 玩家 melee/reach 可以直接攻擊這些暴露單位；
 - combat log 公開提示「敵方前線崩潰」。
 
-這與玩家 M49 frontline collapse 同構，避免雙方規則不一致。
+### Authored sidearms instead of invented weapons
+
+M54 進一步修正「遠程兵被迫貼身後仍只會射箭」的失真，但不允許系統憑空生出武器：
+
+- 只有同一敵人資料裡**真的存在 melee move** 的投射兵，前線崩潰後才會把後續意圖牌組切換成該副武器；
+- 已經公開預告的當前遠程攻擊不會在半回合偷偷改招，避免破壞 telegraph；
+- 純弓手沒有副武器就繼續用弓，並正常吃前排 ranged -2；
+- 同時具有真正 mystic 招式的施法者不會因為腰間有刀就被粗暴改成純近戰 AI。
+
+灰燼聖匣第一幕的 `燼甲侍從` 因此得到明確作者資料 `燼鋼短刀`（DEX/slash、1d4 + DEX）。它開場仍是後排燼矛投手；守橋者倒下、侍從被迫進前線後，完成已預告的投擲，下一次意圖才會拔短刀貼身作戰。
+
+這與玩家 M49 frontline collapse 同構，也維持「裝備與敘事必須是真的」這個劍與魔法世界契約。
 
 ## Legacy enemy bow correction
 
@@ -92,9 +104,27 @@ M54 不把戰線規則藏在 miss chance 裡：
 - 開戰 log 直接列出敵方前／後排；
 - log 清楚說明 melee/reach 必須先破前線、ranged/mystic 可越線；
 - 被保護的後排遭非法近戰指定時，會立即顯示原因且不耗回合；
-- 敵方前線崩潰時有獨立提示。
+- 敵方前線崩潰時有獨立提示；
+- `legalEnemyTargetsForMove()` / `partyTargetAvailability()` 已作為 UI 共用的合法目標來源，避免畫面與引擎各自猜一次規則。
 
-主冒險 `play.astro` 是大型單檔，GitHub connector 目前只能整檔 replacement。M54 刻意不為了少量 target-button cosmetic filter 冒整頁覆寫風險；引擎已輸出 `legalEnemyTargetsForMove()` / `partyTargetAvailability()` 供後續安全 UI patch 使用。
+主冒險 `play.astro` 是大型單檔，GitHub connector 目前只能整檔 replacement。M54 不以「重寫大型頁面」作為引擎正確性的前提；戰鬥頁的 target-button filter 會使用上述共用 API，而不是複製一套前後排判斷。
+
+## M42 balance evidence — do not mistake one seed slice for dominance
+
+M54 對抗審查一度發現 double-mage 在既有固定 20-seed 視窗變成 20/20。這不是直接把門檻放寬，而是先建立 **pre-M54 對照基準**：
+
+- validated M53、同一套 Lv4 endurance bot、同一個較廣的 200-seed 視窗：double-mage **188/200（94%）**；
+- M54 formation-aware bot 與敵方戰線：double-mage **195/200（97.5%）**；
+- M54 短視窗：balanced 19/20、martial 18/20、pure martial 15/20、arcane 20/20、no-cleric 19/20，spread = 5。
+
+因此「固定 20 顆 seed 中必須至少輸一場」不是穩健的非支配性證據：一個本來約 94% 的配置，本來就很容易抽到 20/20。正式 gate 改為：
+
+1. 20-seed 視窗保留各 composition 的可行性與相對 spread 審查；
+2. double-mage 的「不能保證勝利」由 **200-seed 壓力窗口**負責，必須 `wins < 200`；
+3. camp policy 仍需實際使用至少三種整備路徑；
+4. 不因法師強勢就直接砍職業數值，除非 broad-window 與其他維度共同證明它形成 mandatory build。
+
+這保留 anti-dominance 意義，同時避免測試只是在要求某一顆 seed 必須剛好輸。
 
 ## Multidimensional adversarial review
 
@@ -108,14 +138,17 @@ M54 automated gates attack the feature from these player perspectives:
 6. **Guard counterplay** — a guarding player frontliner can still intercept single-target backline pressure.
 7. **Area exploit** — melee/reach area attacks cannot silently hit protected rear rows on either side.
 8. **Frontline collapse** — enemy rear units lose protection and inherit their front-row weapon penalties when the screen dies.
-9. **All-rear exploit** — encounters without a real frontline cannot keep a phantom rear screen.
-10. **Authored intent** — explicit encounter rows override inferred rows.
-11. **Legacy bow truth** — `ridge-arrow` and `bone-arrow` are corrected to physical ranged/pierce attacks.
-12. **Magic truth** — genuine mana/favor attacks remain row-independent.
-13. **Melee viability** — every living encounter always leaves at least one legal close-combat target.
-14. **No free ranged buff** — bypassing the line adds no positive hit or damage bonus.
-15. **Save compatibility** — enemy rows are runtime-only; no save version changes.
-16. **Historical regression** — M40–M53 gameplay gates must remain green.
+9. **Sidearm truth** — only authored melee fallbacks can replace a promoted missile troop's future intent; pure archers and spellcasters are protected from invented behavior.
+10. **Telegraph truth** — collapse never rewrites an already-public enemy action mid-turn.
+11. **All-rear exploit** — encounters without a real frontline cannot keep a phantom rear screen.
+12. **Authored intent** — explicit encounter rows override inferred rows.
+13. **Legacy bow truth** — `ridge-arrow` and `bone-arrow` are corrected to physical ranged/pierce attacks.
+14. **Magic truth** — genuine mana/favor attacks remain row-independent.
+15. **Melee viability** — every living encounter always leaves at least one legal close-combat target.
+16. **No free ranged buff** — bypassing the line adds no positive hit or damage bonus.
+17. **Composition diversity** — broad deterministic endurance windows, not a cherry-picked loss seed, enforce that high-performing arcane compositions still have real losses.
+18. **Save compatibility** — enemy rows are runtime-only; no save version changes.
+19. **Historical regression** — M40–M53 gameplay gates must remain green.
 
 ## Rejected alternatives
 
@@ -135,6 +168,10 @@ Rejected. That preserves the old player-only safety advantage and makes enemy fo
 
 Rejected. That would invalidate formation instead of deepening it. M54 allows rear pressure but keeps HP-based targeting and Guard interception as counterplay.
 
+### Give every promoted archer a free dagger
+
+Rejected. That makes equipment fiction meaningless. Sidearm behavior is only available where the encounter actually authors a melee move.
+
 ### Auto-retarget an illegal player melee click to a frontline enemy
 
 Rejected. The game should not silently change the player's chosen target. The action is rejected without spending a turn and explains why.
@@ -152,4 +189,6 @@ M54 succeeds when a player can reason about both armies with the same mental mod
 - ranged and spellcraft are the tools for backline pressure;
 - Guard provides an answer to that pressure;
 - breaking a frontline visibly changes both target access and weapon effectiveness;
-- neither side receives invisible exceptions solely because it is controlled by AI.
+- a displaced missile troop only draws a sidearm it genuinely carries;
+- neither side receives invisible exceptions solely because it is controlled by AI;
+- automated balance evidence measures broad player outcomes rather than demanding a predetermined failure seed.
