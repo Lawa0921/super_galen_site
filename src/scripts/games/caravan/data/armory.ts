@@ -13,8 +13,9 @@ import {
   unequipOffhandItem,
   type M52OffhandItem,
 } from './offhandShields.m52';
+import './reachPolearms.m53';
 
-export type WeaponDiscipline = 'blade' | 'bow' | 'staff' | 'mace';
+export type WeaponDiscipline = 'blade' | 'bow' | 'staff' | 'mace' | 'polearm';
 export type ArmorDiscipline = 'light' | 'mail' | 'robe' | 'vestment';
 export type GearFit = 'mastered' | 'trained' | 'strained';
 export type ArmoryEquipSlot = keyof CompanionRecord['equipment'] | 'offhand';
@@ -64,6 +65,8 @@ const RULES: Record<string, ArmoryItemRule> = {
   'ghostflame-staff': { itemId: 'ghostflame-staff', burden: 1, weapon: 'staff', manaCapacity: 1 },
   'brine-crystal-staff': { itemId: 'brine-crystal-staff', burden: 1, weapon: 'staff', manaCapacity: 1 },
   'brine-blessed-mace': { itemId: 'brine-blessed-mace', burden: 2, weapon: 'mace', favorCapacity: 1 },
+  'ashwood-war-spear': { itemId: 'ashwood-war-spear', burden: 2, weapon: 'polearm' },
+  'saltsteel-pike': { itemId: 'saltsteel-pike', burden: 3, weapon: 'polearm' },
 
   'ridgeleather-vest': { itemId: 'ridgeleather-vest', burden: 1, armor: 'light' },
   'pilgrim-warded-cloak': { itemId: 'pilgrim-warded-cloak', burden: 2, armor: 'light' },
@@ -80,10 +83,10 @@ const RULES: Record<string, ArmoryItemRule> = {
 };
 
 const WEAPON_FIT: Record<CompanionRecord['job'], Record<WeaponDiscipline, GearFit>> = {
-  swordsman: { blade: 'mastered', mace: 'trained', bow: 'trained', staff: 'strained' },
-  ranger: { blade: 'trained', mace: 'strained', bow: 'mastered', staff: 'strained' },
-  mage: { blade: 'trained', mace: 'strained', bow: 'strained', staff: 'mastered' },
-  cleric: { blade: 'trained', mace: 'mastered', bow: 'strained', staff: 'trained' },
+  swordsman: { blade: 'mastered', mace: 'trained', bow: 'trained', staff: 'strained', polearm: 'mastered' },
+  ranger: { blade: 'trained', mace: 'strained', bow: 'mastered', staff: 'strained', polearm: 'trained' },
+  mage: { blade: 'trained', mace: 'strained', bow: 'strained', staff: 'mastered', polearm: 'strained' },
+  cleric: { blade: 'trained', mace: 'mastered', bow: 'strained', staff: 'trained', polearm: 'trained' },
 };
 
 const ARMOR_FIT: Record<CompanionRecord['job'], Record<ArmorDiscipline, GearFit>> = {
@@ -104,6 +107,7 @@ export const WEAPON_DISCIPLINE_LABELS: Record<WeaponDiscipline, string> = {
   bow: '弓弩',
   staff: '法杖',
   mace: '錘杖',
+  polearm: '長柄',
 };
 
 export const ARMOR_DISCIPLINE_LABELS: Record<ArmorDiscipline, string> = {
