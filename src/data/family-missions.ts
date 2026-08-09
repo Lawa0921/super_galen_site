@@ -25,6 +25,8 @@ export interface MissionTask {
   estimatedMinutes: string;
   difficulty: '輕鬆' | '小挑戰' | '大挑戰';
   skillTag: string;
+  /** 主線影響每日榮譽星；自由挑戰只給收藏與能力成長。 */
+  kind: 'main' | 'free';
 }
 
 export interface ScoutProfile {
@@ -39,7 +41,7 @@ export interface ScoutProfile {
   startingStars: number;
   greeting: string;
   story: string;
-  /** 1 顆為 F-，每顆能力星前進一小段，21 顆為 S+。 */
+  /** 每顆能力星前進一小步，21 顆走完「萌芽」到「閃耀」七階段。 */
   baseAbilityStars: Record<AbilityId, number>;
   tasks: MissionTask[];
 }
@@ -102,10 +104,15 @@ export const abilityCatalog = {
 } as const;
 
 /**
- * 能力階級共有 7 個字母階級，每階 3 段：F-、F、F+ …… S-、S、S+。
+ * 能力階級共有 7 個兒童可理解的階段，每階 3 個小步。
  * 每完成一項涉及該能力的任務，就增加 1 顆能力星並前進一段。
  */
-export const abilityGrades = ['F-', 'F', 'F+', 'E-', 'E', 'E+', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+', 'S-', 'S', 'S+'] as const;
+export const abilityStages = ['萌芽', '練習', '熟悉', '穩定', '熟練', '自主', '閃耀'] as const;
+export const abilityGrades = abilityStages.flatMap((stage) => [
+  `${stage} 1`,
+  `${stage} 2`,
+  `${stage} 3`,
+]) as readonly string[];
 
 type RankSeed = readonly [name: string, gift: string];
 
@@ -280,6 +287,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '5 分鐘',
         difficulty: '輕鬆',
         skillTag: '自理',
+        kind: 'main',
       },
       {
         id: 'apple-reading',
@@ -292,6 +300,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '10 分鐘',
         difficulty: '小挑戰',
         skillTag: '表達',
+        kind: 'main',
       },
       {
         id: 'apple-english-hunt',
@@ -304,6 +313,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '8 分鐘',
         difficulty: '小挑戰',
         skillTag: '觀察',
+        kind: 'main',
       },
       {
         id: 'apple-kindness',
@@ -316,6 +326,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '隨時',
         difficulty: '大挑戰',
         skillTag: '主動',
+        kind: 'free',
       },
       {
         id: 'apple-feelings',
@@ -328,6 +339,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '3 分鐘',
         difficulty: '小挑戰',
         skillTag: '溝通',
+        kind: 'free',
       },
     ],
   },
@@ -363,6 +375,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '5 分鐘',
         difficulty: '輕鬆',
         skillTag: '自理',
+        kind: 'main',
       },
       {
         id: 'amy-counting',
@@ -375,6 +388,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '5 分鐘',
         difficulty: '輕鬆',
         skillTag: '數數',
+        kind: 'main',
       },
       {
         id: 'amy-english-ears',
@@ -387,6 +401,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '5 分鐘',
         difficulty: '小挑戰',
         skillTag: '聆聽',
+        kind: 'main',
       },
       {
         id: 'amy-manners',
@@ -399,6 +414,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '隨時',
         difficulty: '輕鬆',
         skillTag: '禮貌',
+        kind: 'free',
       },
       {
         id: 'amy-sharing',
@@ -411,6 +427,7 @@ export const scoutProfiles: Record<ScoutId, ScoutProfile> = {
         estimatedMinutes: '隨時',
         difficulty: '大挑戰',
         skillTag: '分享',
+        kind: 'free',
       },
     ],
   },
