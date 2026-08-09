@@ -149,7 +149,7 @@ describe('M54 live enemy formation parity', () => {
     hero.hp = hero.maxHp;
     enemyAct(actionRng(11), state, skirmisher.id);
     expect(hero.hp).toBeLessThan(hero.maxHp); // dagger: 11 + DEX 2, no front-ranged penalty
-    expect(state.log.some((entry) => entry.text.includes('短刀'))).toBe(true);
+    expect(state.log.some((entry) => entry.text.includes('拔刀劃向'))).toBe(true);
   });
 
   it('lets enemy ranged attacks threaten a low-HP player rear while enemy melee remains pinned to the frontline', () => {
