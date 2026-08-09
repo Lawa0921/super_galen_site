@@ -1473,3 +1473,243 @@ a:focus-visible {
   .ability-level-up.is-visible { opacity: 1; transform: translateX(-50%); }
   .daily-clear-overlay.is-visible .daily-clear-card { transform: none; }
 }
+
+/* 行為回饋循環：接取、回報、家長確認、成長。 */
+.family-missions [hidden] { display: none !important; }
+
+.parent-base-toggle {
+  position: absolute;
+  z-index: 8;
+  top: 26px;
+  right: 104px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 46px;
+  padding: 7px 12px;
+  border: 3px solid var(--pixel-ink);
+  border-radius: 0;
+  color: var(--pixel-ink);
+  background: #fff3b8;
+  box-shadow: 4px 4px 0 var(--pixel-shadow);
+  font: 800 .72rem/1 'Courier New', 'Noto Sans TC', monospace;
+  cursor: pointer;
+}
+
+.parent-base-toggle.has-pending { background: var(--pixel-gold); animation: pixel-button-pulse 1.4s steps(2, end) infinite; }
+.parent-base-toggle b { min-width: 20px; padding: 4px; color: #fff; background: #d83b58; }
+
+.game-mode-tabs {
+  position: sticky;
+  z-index: 15;
+  top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 20px 0 14px;
+  padding: 8px;
+  border: 4px solid var(--pixel-ink);
+  background: #30264d;
+  box-shadow: 6px 6px 0 var(--pixel-shadow);
+}
+
+.game-mode-tabs button {
+  min-height: 54px;
+  border: 3px solid #161225;
+  color: #fff9df;
+  background: #554a76;
+  box-shadow: inset -3px -3px 0 #30264d;
+  font: 900 clamp(.72rem, 2vw, .92rem)/1.2 'Courier New', 'Noto Sans TC', monospace;
+  cursor: pointer;
+}
+
+.game-mode-tabs button.is-active {
+  color: var(--pixel-ink);
+  background: var(--pixel-gold);
+  box-shadow: inset -3px -3px 0 #d79824, 0 0 0 2px #fff3a2;
+  transform: translateY(2px);
+}
+
+.mission-status-tag {
+  padding: 5px 7px;
+  border: 2px solid var(--pixel-ink);
+  color: #fff;
+  background: #71678d;
+  font-size: .67rem;
+  font-weight: 900;
+}
+
+.mission-card.is-in-progress { outline: 4px solid var(--pixel-gold); outline-offset: -8px; }
+.mission-card.is-in-progress .mission-status-tag { color: var(--pixel-ink); background: var(--pixel-gold); }
+.mission-card.is-pending { filter: saturate(.82); }
+.mission-card.is-pending .mission-status-tag { color: var(--pixel-ink); background: #9de8ff; }
+.mission-card.is-confirmed .mission-status-tag { background: #3e9b66; }
+.mission-card.is-confirmed::after { content: '家長已看見'; }
+
+.mission-next-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0;
+  padding: 9px;
+  border: 3px dashed #b36d20;
+  color: #593912;
+  background: #fff0b8;
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+.base-building {
+  margin: 24px 0;
+  padding: clamp(18px, 4vw, 34px);
+  border: 4px solid var(--pixel-ink);
+  background: var(--pixel-panel);
+  box-shadow: inset 0 0 0 3px #fff9e2, 8px 8px 0 var(--pixel-shadow);
+}
+.base-collection-counter { display: grid; min-width: 86px; padding: 8px; border: 3px solid var(--pixel-ink); background: #fff; text-align: center; }
+.base-collection-counter strong { color: var(--accent-dark); font-size: 1.65rem; }
+.base-collection-counter span { font-size: .65rem; font-weight: 900; }
+.base-scene { margin-top: 20px; padding: 20px; border: 4px solid var(--pixel-ink); background: linear-gradient(#74bce7 0 42%, #78c67f 42% 68%, #d8a95d 68%); }
+.base-campfire { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 88px; font-size: 3.2rem; }
+.base-campfire span { display: flex; gap: 6px; }
+.base-campfire i { color: #5c5670; opacity: .42; font-style: normal; font-size: 1.2rem; filter: grayscale(1); }
+.base-campfire i.is-lit { color: #fff17a; opacity: 1; filter: none; text-shadow: 3px 3px 0 #b85c24; }
+.base-collection-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; padding: 0; list-style: none; }
+.base-collection-grid li { display: grid; place-items: center; min-height: 100px; padding: 10px 5px; border: 3px dashed rgba(36,27,53,.7); color: #393049; background: rgba(255,255,255,.52); filter: grayscale(1); opacity: .52; text-align: center; }
+.base-collection-grid li span { font-size: 2rem; }
+.base-collection-grid li strong { margin-top: 5px; font-size: .68rem; }
+.base-collection-grid li.is-built { border-style: solid; background: #fff1a8; filter: none; opacity: 1; box-shadow: 4px 4px 0 #5d5932; animation: base-piece-arrive 420ms steps(4, end); }
+.base-scene > p { margin: 14px 0 0; padding: 9px; border: 3px solid var(--pixel-ink); background: #fff8d8; font-size: .74rem; font-weight: 900; text-align: center; }
+
+@keyframes base-piece-arrive { from { transform: translateY(-12px) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.mission-complete:disabled { cursor: default; filter: none; opacity: .86; }
+
+.mission-report-overlay,
+.parent-base-overlay {
+  position: fixed;
+  z-index: 520;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  overflow-y: auto;
+  opacity: 0;
+  background: rgba(20, 15, 38, .86);
+  transition: opacity 180ms steps(2, end);
+}
+
+.mission-report-overlay.is-visible,
+.parent-base-overlay.is-visible { opacity: 1; }
+
+.mission-report-card,
+.parent-base-card {
+  position: relative;
+  width: min(620px, 100%);
+  padding: 28px;
+  border: 5px solid var(--pixel-ink);
+  color: var(--pixel-ink);
+  background: var(--pixel-panel-light);
+  box-shadow: 0 0 0 5px var(--pixel-gold), 12px 12px 0 var(--pixel-shadow);
+  text-align: center;
+  transform: translateY(18px) scale(.96);
+  transition: transform 180ms steps(3, end);
+}
+
+.parent-base-card { width: min(760px, 100%); text-align: left; }
+.is-visible > .mission-report-card,
+.is-visible > .parent-base-card { transform: none; }
+
+.overlay-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 38px;
+  height: 38px;
+  border: 3px solid var(--pixel-ink);
+  color: #fff;
+  background: #d84f62;
+  font: 900 1.25rem/1 monospace;
+  cursor: pointer;
+}
+
+.report-eyebrow { margin: 0 0 10px; color: var(--accent-dark); font-weight: 900; letter-spacing: .16em; }
+.report-mission-icon { display: block; margin: 4px 0; font-size: 3.8rem; image-rendering: pixelated; }
+.mission-report-card h2,
+.parent-base-card h2 { margin: 0 42px 10px; font-size: clamp(1.35rem, 5vw, 2rem); }
+
+.effort-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0; }
+.effort-choices button {
+  min-height: 112px;
+  padding: 12px 8px;
+  border: 4px solid var(--pixel-ink);
+  color: var(--pixel-ink);
+  background: #fff;
+  box-shadow: 5px 5px 0 #b6a77b;
+  cursor: pointer;
+}
+.effort-choices button span { display: block; margin-bottom: 8px; font-size: 2rem; }
+.effort-choices button strong { font-size: .82rem; }
+.effort-choices button.is-selected { background: #fff0a1; box-shadow: inset -4px -4px 0 #e0b438; transform: translate(3px, 3px); }
+
+.send-report,
+#parent-pin-submit {
+  min-height: 52px;
+  padding: 10px 18px;
+  border: 4px solid var(--pixel-ink);
+  color: #fff;
+  background: var(--accent-dark);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+  font: 900 .9rem/1.2 'Courier New', 'Noto Sans TC', monospace;
+  cursor: pointer;
+}
+.send-report:disabled { opacity: .42; cursor: not-allowed; }
+.mission-report-card > small { display: block; margin-top: 15px; line-height: 1.5; }
+
+.parent-pin-panel { max-width: 440px; margin: 22px auto 0; padding: 20px; border: 3px solid var(--pixel-ink); background: #fff4c9; }
+.parent-pin-panel label { display: block; margin: 14px 0 6px; font-weight: 900; }
+.parent-pin-panel input { width: 100%; height: 54px; border: 4px solid var(--pixel-ink); background: #fff; font: 900 1.5rem/1 monospace; text-align: center; letter-spacing: .5em; }
+.parent-pin-error { min-height: 1.4em; color: #b8243e; font-weight: 800; }
+
+.parent-queue__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin: 20px 0 14px; }
+.parent-queue__heading div { display: grid; gap: 5px; }
+.parent-queue__heading span { font-size: .78rem; line-height: 1.5; }
+.parent-queue__heading button { border: 3px solid var(--pixel-ink); padding: 7px 10px; background: #e7e1ef; font-weight: 900; cursor: pointer; }
+.parent-review-card { margin: 12px 0; padding: 16px; border: 4px solid var(--pixel-ink); background: #fff; box-shadow: 5px 5px 0 #b8aa83; }
+.parent-review-card header { display: flex; align-items: center; gap: 12px; }
+.parent-review-card header > span { font-size: 2rem; }
+.parent-review-card h3 { margin: 2px 0; }
+.parent-effort { font-weight: 800; }
+.parent-praise-preview { padding: 10px; border-left: 5px solid var(--pixel-green); background: #eaf9e9; line-height: 1.6; }
+.parent-review-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.parent-review-actions button { min-height: 48px; border: 3px solid var(--pixel-ink); background: #f2ecdc; font-weight: 900; cursor: pointer; }
+.parent-review-actions button:first-child { background: #bff2c8; }
+.parent-review-actions button:nth-child(2) { background: #ccecff; }
+.parent-review-actions button:last-child { background: #fff0a7; }
+.parent-empty { padding: 24px; border: 3px dashed #8e84a2; text-align: center; }
+.mission-win__praise { max-width: 410px; margin: 5px auto 10px; font-weight: 900; line-height: 1.45; }
+
+@media (max-width: 700px) {
+  .parent-base-toggle { top: 82px; right: 12px; padding: 6px 8px; }
+  .parent-base-toggle small { display: none; }
+  .game-mode-tabs { top: 8px; gap: 4px; padding: 5px; }
+  .game-mode-tabs button { min-height: 48px; padding: 6px 3px; font-size: .66rem; }
+  .game-mode-tabs button span { display: block; margin-bottom: 3px; }
+  .effort-choices { grid-template-columns: 1fr; }
+  .effort-choices button { min-height: 68px; display: flex; align-items: center; gap: 12px; text-align: left; }
+  .effort-choices button span { margin: 0; }
+  .mission-report-card,
+  .parent-base-card { padding: 22px 14px; border-width: 4px; }
+  .parent-review-actions { grid-template-columns: 1fr; }
+  .parent-queue__heading { align-items: stretch; flex-direction: column; }
+  .base-collection-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parent-base-toggle.has-pending { animation: none; }
+  .mission-report-overlay,
+  .parent-base-overlay,
+  .mission-report-card,
+  .parent-base-card { transition: none; }
+  .base-collection-grid li.is-built { animation: none; }
+}
