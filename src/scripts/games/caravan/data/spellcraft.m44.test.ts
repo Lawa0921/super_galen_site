@@ -181,7 +181,7 @@ describe('M44 spellcraft counterplay', () => {
 
     forceTurn(state, mage.id);
     const wardEnemy = partyAct(scriptedRng([10]), state, mage.id, 'arcane-focus', foe.id);
-    expect(wardEnemy).toMatchObject({ acted: false, reason: '這個招式不能指定該目標。' });
+    expect(wardEnemy).toMatchObject({ acted: false, reason: '這個招式只能指定仍可行動的隊友。' });
     expect(foe.statuses?.some((status) => status.kind === 'ward') ?? false).toBe(false);
   });
 
