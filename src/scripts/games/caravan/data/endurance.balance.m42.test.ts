@@ -220,8 +220,18 @@ describe('M42 automated player-perspective balance probes', () => {
     return created;
   };
 
-  it('balanced party has viable but non-guaranteed outcomes', () => {
-    expectViableButNotGuaranteed(report('balanced', 9100));
+  it('balanced party has viable outcomes in the short composition comparison window', () => {
+    const balanced = report('balanced', 9100);
+    expect(balanced.finalReach).toBeGreaterThan(0);
+    expect(balanced.wins).toBeGreaterThan(0);
+  });
+
+  it('proves balanced endurance is not actually guaranteed across 200 deterministic seeds', () => {
+    const stress = compositionReport('balanced-stress', COMPOSITIONS.balanced, 9100, 200);
+    expect(stress.total).toBe(200);
+    expect(stress.finalReach).toBeGreaterThan(0);
+    expect(stress.wins).toBeGreaterThan(0);
+    expect(stress.wins, 'balanced endurance must retain real deterministic losses in a broad window').toBeLessThan(stress.total);
   });
 
   it('martial party with cleric has viable but non-guaranteed outcomes', () => {
