@@ -1,6 +1,12 @@
 import type { FormationRow } from '../save';
 import type { EnemyUnit, Move } from '../combat';
 import { mysticRuleForMove } from './arcana';
+import type { BattlefieldTerrain } from './battlefieldTerrain.m55';
+import {
+  attackDeliveryForMove,
+  lineOfEffectProfile,
+  moveCanBypassFrontline,
+} from './battlefieldLineOfEffect.m57';
 import { engagementForMove, type EngagementBand } from './martialEngagement.m49';
 
 export interface EnemyLineGate {
@@ -107,42 +113,62 @@ export function livingEnemyFrontExists(enemies: EnemyUnit[]): boolean {
 }
 
 /**
- * A living enemy frontline physically protects rear targets from close-combat attacks.
- * Ranged weapons and true magic can bypass the line; melee and reach must break it first.
- * This is a hard target gate, but rejected attempts must not spend the player's turn.
+ * M54/M57 enemy-line gate.
+ * A protected rear target can be reached only if the attack's delivery can cross the frontline;
+ * even then, a direct attack may still be stopped by a solid authored battlefield obstruction.
+ * This is intentionally symmetric for mundane and mystical attacks: "magic" alone never means
+ * contactless, wall-piercing or overhead.
  */
-export function enemyLineGate(enemies: EnemyUnit[], move: Move, target: EnemyUnit): EnemyLineGate {
+export function enemyLineGate(
+  enemies: EnemyUnit[],
+  move: Move,
+  target: EnemyUnit,
+  terrain?: BattlefieldTerrain,
+): EnemyLineGate {
   if (move.kind !== 'attack' || target.hp <= 0) {
     return { allowed: target.hp > 0, reason: target.hp > 0 ? '' : '目標已經倒下。', engagement: null };
   }
   const engagement = engagementForMove(move, !!mysticRuleForMove(move));
-  if (target.formationRow !== 'back' || !livingEnemyFrontExists(enemies)) {
+  const frontlineAlive = livingEnemyFrontExists(enemies);
+  if (target.formationRow !== 'back' || !frontlineAlive) {
     return { allowed: true, reason: '', engagement };
   }
-  if (engagement === 'ranged' || engagement === 'mystic') {
-    return { allowed: true, reason: '', engagement };
+
+  if (!moveCanBypassFrontline(move)) {
+    const delivery = attackDeliveryForMove(move);
+    const label = engagement === 'reach'
+      ? '長柄武器'
+      : engagement === 'mystic' && delivery === 'contact'
+        ? '貼身法術／聖技'
+        : '近戰武器';
+    return {
+      allowed: false,
+      reason: `${target.name}仍在敵方後排，前線尚未突破；${label}必須先處理仍存活的前排敵人。`,
+      engagement,
+    };
   }
-  const label = engagement === 'reach' ? '長柄武器' : '近戰武器';
-  return {
-    allowed: false,
-    reason: `${target.name}仍在敵方後排，前線尚未突破；${label}必須先處理仍存活的前排敵人。`,
-    engagement,
-  };
+
+  const line = lineOfEffectProfile(terrain, target.formationRow, frontlineAlive, move);
+  if (line.blocked) return { allowed: false, reason: line.message, engagement };
+  return { allowed: true, reason: '', engagement };
 }
 
-/** Party attacks that can legally reach the enemy line. Used by both single-target and area attacks. */
-export function legalEnemyTargets(enemies: EnemyUnit[], move: Move): EnemyUnit[] {
+/** Party attacks that can legally reach the enemy line and any authored solid obstruction. */
+export function legalEnemyTargets(
+  enemies: EnemyUnit[],
+  move: Move,
+  terrain?: BattlefieldTerrain,
+): EnemyUnit[] {
   const alive = enemies.filter((enemy) => enemy.hp > 0);
   if (move.kind !== 'attack') return alive;
-  return alive.filter((enemy) => enemyLineGate(alive, move, enemy).allowed);
+  return alive.filter((enemy) => enemyLineGate(alive, move, enemy, terrain).allowed);
 }
 
 /**
- * Enemy targeting uses the same line logic in reverse.
- * Close combat attacks the player's frontline; ranged/mystic attacks may threaten anyone.
+ * Enemy targeting uses the same delivery logic in reverse.
+ * Contact attacks stay on the player's frontline; direct/overhead attacks may cross the line,
+ * after which M57 terrain obstruction is checked per target by the combat engine.
  */
 export function enemyCanBypassPartyFront(move: Move): boolean {
-  if (move.kind !== 'attack') return false;
-  const engagement = engagementForMove(move, !!mysticRuleForMove(move));
-  return engagement === 'ranged' || engagement === 'mystic';
+  return moveCanBypassFrontline(move);
 }
