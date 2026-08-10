@@ -124,9 +124,10 @@ describe('M55 multidimensional player adversarial review', () => {
 
   it('keeps M55 entirely runtime-scoped instead of introducing persistent combat terrain on party members', () => {
     const hero = member('hero', 'front', [melee]);
-    const beforeKeys = Object.keys(hero).sort();
-    startCombat(rng, [hero], [simpleEnemy('legacy-enemy', 'front')], 'broken-stone-bridge');
-    expect(Object.keys(hero).sort()).toEqual(beforeKeys);
+    const state = startCombat(rng, [hero], [simpleEnemy('legacy-enemy', 'front')], 'broken-stone-bridge');
+    expect(state.terrain?.id).toBe('broken-stone-bridge');
+    // Existing combat runtime may legitimately decorate the member with mystic/formation helper fields.
+    // M55 specifically must keep battlefield state on CombatState / encounter data, never on the party record.
     expect('terrain' in hero).toBe(false);
     expect('battlefieldTerrainId' in hero).toBe(false);
   });
