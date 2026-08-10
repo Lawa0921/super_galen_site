@@ -9,7 +9,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 >
   <main class="endurance-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M43 ARMORY ENDURANCE</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M56 TACTICAL READABILITY</p>
       <h1>餘燼朝聖</h1>
       <p>三場戰鬥、兩次營地決策。生命、秘法、神恩、秘法灼傷與出發時的武裝負重不會在戰後自動重置；鋼鐵能保命，也會降低紮營效率並提高強行軍疲勞。</p>
       <nav>
@@ -66,6 +66,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     type EnduranceCampChoice,
     type EnduranceRun,
   } from '@scripts/games/caravan/data/enduranceArmory';
+  import { tacticalTargetChoices, tacticalUnitSummary } from '@scripts/games/caravan/data/tacticalReadability.m56';
 
   const RUN_KEY = 'caravan-endurance-armory-v1';
   const noticeEl = document.getElementById('notice')!;
@@ -141,13 +142,13 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       text('h3', unit.name),
       text('p', `HP ${Math.max(0, unit.hp)}/${unit.maxHp}${poise}${statuses ? `｜${statuses}` : ''}`, 'unit-status'),
     );
+    if (combat) card.append(text('p', tacticalUnitSummary(combat, enemy ? 'enemy' : 'party', unit), 'tactical-position'));
     if (enemy) {
       const weak = (enemy.weaknesses ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
       const resist = (enemy.resists ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
       card.append(text('p', `弱點：${weak}｜抗性：${resist}`, 'affinity'));
     } else {
       const member = unit as PartyMember & { armoryBurden?: number; armoryCapacity?: number; armoryOverload?: number; armoryWarnings?: string[] };
-      card.append(text('p', member.formationRow === 'back' ? '後排' : '前排', 'formation'));
       card.append(text('p', `武裝負重 ${member.armoryBurden ?? 0}/${member.armoryCapacity ?? 0}${member.armoryOverload ? `｜超載 ${member.armoryOverload}` : ''}`, 'armory'));
       if (member.mystic) card.append(text('p', mysticPowerText(member.mystic), `mystic mystic-${member.mystic.kind}`));
       const costly = (member.armoryWarnings ?? []).filter((warning) => !warning.startsWith('武器熟練'));
@@ -177,30 +178,20 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     for (const entry of combat?.log.slice(-28) ?? []) logEl.append(text('p', entry.text, entry.kind));
   }
 
-  function targetsFor(move: Move): Array<{ id: string; name: string }> {
-    if (!combat) return [];
-    if (move.target === 'self') return [];
-    if (move.kind === 'attack') {
-      const targets = combat.enemies.filter((enemy) => enemy.hp > 0);
-      if (move.area) return targets.length ? [{ id: targets[0].id, name: '敵方全體' }] : [];
-      return targets.map((target) => ({ id: target.id, name: target.name }));
-    }
-    return combat.party.filter((member) => member.hp > 0).map((target) => ({ id: target.id, name: target.name }));
-  }
-
   function moveButtons(actor: PartyMember, move: Move, overcast: boolean): HTMLButtonElement[] {
+    if (!combat) return [];
     const availability = partyMoveAvailability(actor, move, { overcast });
     const prefix = overcast ? `禁式過載（反噬 ${availability.backlash}）・` : '';
     const className = overcast ? 'overcast' : '';
     if (move.kind === 'guard' || move.target === 'self') {
       return [button(`${prefix}${move.name}`, () => act(actor.id, move.id, actor.id, overcast), className, !availability.allowed, availability.reason)];
     }
-    return targetsFor(move).map((target) => button(
-      `${prefix}${move.name} → ${target.name}`,
+    return tacticalTargetChoices(combat, actor, move).map((target) => button(
+      `${prefix}${move.name} → ${target.label}`,
       () => act(actor.id, move.id, target.id, overcast),
       className,
-      !availability.allowed,
-      availability.reason,
+      !availability.allowed || !target.allowed,
+      availability.reason || target.reason,
     ));
   }
 
@@ -212,6 +203,13 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     actionsEl.hidden = false;
     actionsEl.append(text('h2', `${actor.name}的行動`));
     if (actor.mystic) actionsEl.append(text('p', mysticPowerText(actor.mystic), 'action-resource'));
+    actionsEl.append(text(
+      'p',
+      combat.terrain && combat.terrain.id !== 'open-ground'
+        ? `戰場：${combat.terrain.name}。灰色後排目標仍會保留在畫面上並說明阻擋原因；可射擊的掩體目標則直接顯示這一招的命中修正。`
+        : '灰色後排目標仍會保留在畫面上並說明阻擋原因；遠程與真正魔法仍會顯示可合法越線的目標。',
+      'tactical-hint',
+    ));
     const grid = document.createElement('div');
     grid.className = 'action-grid';
     for (const move of actor.moves) {
@@ -244,8 +242,8 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 
   function act(actorId: string, moveId: string, targetId: string, overcast: boolean): void {
     if (!combat || !rng || !run) return;
-    partyAct(rng, combat, actorId, moveId, targetId, { overcast });
-    runEnemyTurns();
+    const result = partyAct(rng, combat, actorId, moveId, targetId, { overcast });
+    if (result.acted) runEnemyTurns();
     persistCurrentBattle();
     settleBattle();
     render();
@@ -459,11 +457,13 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .units { display: grid; gap: 10px; }
   .unit { padding: 15px; border: 1px solid #49362d; background: #201613; }
   .unit.down { opacity: .45; }
-  .unit-status { color: #d8b87d !important; } .affinity { color: #c89d88 !important; } .formation { color: #9fb88d !important; }
+  .unit-status { color: #d8b87d !important; } .affinity { color: #c89d88 !important; }
+  .tactical-position { color: #9fb88d !important; font-weight: 700; }
   .armory { color: #d7ad75 !important; } .armory-warning { color: #e18d73 !important; font-size: .86rem; }
   .mystic-mana { color: #8fc3df !important; } .mystic-favor { color: #e7cc75 !important; }
   .actions, .camp, .result, .log-panel { margin-top: 18px; padding: 22px; }
   .action-resource { color: #d8c284 !important; }
+  .tactical-hint { color: #9fb5c8 !important; border-top: 1px solid #3a2b22; padding-top: 9px; }
   .action-grid, .camp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .camp-grid article { display: flex; flex-direction: column; padding: 17px; border: 1px solid #4a382d; background: #211713; }
   .camp-grid button { margin-top: auto; }
