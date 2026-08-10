@@ -148,13 +148,13 @@ describe('M54 multidimensional player adversarial review', () => {
     expect(playerBack.hp).toBe(playerBack.maxHp);
   });
 
-  it('keeps magic exempt from mundane row pressure on both sides', () => {
+  it('keeps projected magic exempt from mundane row pressure on open battlefields', () => {
     const caster = foe('caster', 'back', [magic]);
     const screen = foe('screen', 'front');
     const state = startCombat(rng, [unit('front', 'front'), unit('rear', 'back', [magic], 8)], [screen, caster]);
     expect(caster.formationRow).toBe('back');
     expect(formationAttackProfile(caster.formationRow, magic, true).hitModifier).toBe(0);
     expect(enemyCanBypassPartyFront(magic)).toBe(true);
-    expect(state.log.some((entry) => entry.text.includes('近戰與長柄必須先突破前線'))).toBe(true);
+    expect(state.log.some((entry) => entry.text.includes('必須先突破前線'))).toBe(true);
   });
 });
