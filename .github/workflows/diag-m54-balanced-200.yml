@@ -1,0 +1,26 @@
+name: Diagnostic M54 Balanced 200
+
+on:
+  pull_request:
+    paths:
+      - 'src/scripts/games/caravan/**'
+      - '.github/workflows/diag-m54-balanced-200.yml'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Expand balanced probe to 200 seeds at runtime
+        run: >-
+          python3 -c "from pathlib import Path; p=Path('src/scripts/games/caravan/data/endurance.balance.m42.test.ts'); s=p.read_text(); old='function compositionReport(name: string, jobs: CompanionRecord[\"job\"][], startSeed: number, total = 20): CompositionReport'; print('double-quote signature present', old in s)"
+      - name: Patch default sample count for diagnostic only
+        run: >-
+          python3 -c "from pathlib import Path; p=Path('src/scripts/games/caravan/data/endurance.balance.m42.test.ts'); s=p.read_text(); old='function compositionReport(name: string, jobs: CompanionRecord[\'job\'][], startSeed: number, total = 20): CompositionReport'; assert old in s; p.write_text(s.replace(old, old.replace('total = 20', 'total = 200'), 1))"
+      - name: M54 balanced 200-seed baseline
+        run: npx vitest run --reporter=verbose src/scripts/games/caravan/data/endurance.balance.m42.test.ts -t "balanced party has viable"
