@@ -190,12 +190,13 @@ const hookStrike: Move = {
 const ashBolt: Move = {
   id: 'convoy-ash-bolt', name: '灰火箭', kind: 'attack', target: 'enemy', hitStat: 'int', element: 'fire',
   damage: { dice: 1, sides: 7, bonusStat: 'int' },
-  narration: '{actor}捻碎焦黑符紙，灰火箭穿過車陣擊中{target}，造成 {amount} 點傷害！',
+  narration: '{actor}捻碎焦黑符紙，灰火箭沿關隘缺口撲向{target}，造成 {amount} 點傷害！',
 };
 
 function reaverCaptain(): EnemyUnit {
   return {
     id: 'convoy-reaver-captain', name: '斷旗劫騎・領頭者',
+    battlefieldTerrainId: 'ruined-battlements',
     stats: { str: 15, dex: 12, int: 8, cha: 12, con: 15 }, maxHp: 32, hp: 32, defense: 14,
     weaknesses: ['blunt', 'holy'], resists: ['slash'], maxPoise: 3,
     armorProtection: armorProtectionForDiscipline('mail'),
