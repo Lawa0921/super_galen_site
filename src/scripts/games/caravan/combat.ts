@@ -34,6 +34,12 @@ import {
   type BattlefieldSide,
   type ProjectileCoverProfile,
 } from './data/battlefieldTerrain.m55';
+import {
+  attackDeliveryForMove,
+  lineOfEffectProfile,
+  type AttackDelivery,
+  type LineOfEffectProfile,
+} from './data/battlefieldLineOfEffect.m57';
 
 export interface Move {
   id: string; name: string;
@@ -48,6 +54,8 @@ export interface Move {
   armorPiercing?: number;
   /** M49：可覆寫自動判定的交戰距離；真正魔法仍由 arcana 規則優先判定。 */
   engagement?: EngagementBand;
+  /** M57：招式如何到達目標。未標時依近戰／遠程／魔法語意保守推導。 */
+  delivery?: AttackDelivery;
   /** M51：老兵橫向戰術——花完整一回合切換前後排。 */
   formationShift?: 'toggle';
   damage?: { dice: number; sides: number; bonusStat?: Stat };
@@ -139,7 +147,7 @@ export interface CombatState {
   party: PartyMember[]; enemies: EnemyUnit[];
   guarding: Record<string, boolean>;
   enemyIntents: Record<string, string>;
-  /** M55：本場地形只存在戰鬥 runtime；未設定即沿用舊版開闊戰場。 */
+  /** M55/M57：本場地形與作用線只存在戰鬥 runtime；未設定即沿用舊版開闊戰場。 */
   terrain?: BattlefieldTerrain;
   log: CombatEvent[];
   outcome: 'ongoing' | 'victory' | 'defeat' | 'retreated';
@@ -220,7 +228,7 @@ export function startCombat(
   const enemyBack = enemies.filter((enemy) => enemy.hp > 0 && enemy.formationRow === 'back').map((enemy) => enemy.name);
   state.log.push({
     kind: 'info',
-    text: `敵陣：前排 ${enemyFront.join('、') || '無'}｜後排 ${enemyBack.join('、') || '無'}。近戰與長柄必須先突破前線；遠程與真正魔法可以越線。`,
+    text: `敵陣：前排 ${enemyFront.join('、') || '無'}｜後排 ${enemyBack.join('、') || '無'}。近戰、長柄與貼身法術必須先突破前線；直線遠程／法術可越線但仍受實體作用線遮蔽；明確越頂招式可跨越遮蔽。`,
   });
   if (enemyFormation.promoted.length > 0) {
     state.log.push({ kind: 'info', text: '敵軍沒有可掩護後排的前線單位，所有敵人被迫暴露在近身接戰線。' });
@@ -451,6 +459,27 @@ export function targetCoverForecast(
   const isMystic = !!mysticRuleForMove(move);
   const engagement = engagementForMove(move, isMystic);
   return projectileCoverProfile(state.terrain, side, row, engagement, isMystic, frontlineAlive);
+}
+
+function emptyLineOfEffectProfile(move: Move): LineOfEffectProfile {
+  const delivery = attackDeliveryForMove(move);
+  return { delivery, bypassesFrontline: move.kind === 'attack' && delivery !== 'contact', blocked: false, message: '' };
+}
+
+/** M57：UI、玩家行動與敵方 AI 共用同一份「直線作用線是否被實體遮蔽物切斷」真相。 */
+export function targetLineOfEffectForecast(
+  state: CombatState,
+  move: Move,
+  target: CombatantBase,
+): LineOfEffectProfile {
+  if (move.kind !== 'attack') return emptyLineOfEffectProfile(move);
+  const partyTarget = state.party.find((member) => member.id === target.id);
+  const enemyTarget = state.enemies.find((enemy) => enemy.id === target.id);
+  if (!partyTarget && !enemyTarget) return emptyLineOfEffectProfile(move);
+  const row = partyTarget?.formationRow ?? enemyTarget?.formationRow;
+  const sideUnits = partyTarget ? state.party : state.enemies;
+  const frontlineAlive = sideUnits.some((unit) => unit.hp > 0 && unit.formationRow !== 'back');
+  return lineOfEffectProfile(state.terrain, row, frontlineAlive, move);
 }
 
 function performMove(
@@ -721,7 +750,7 @@ function chooseEnemyIntent(rng: Rng, enemy: EnemyUnit): string {
 }
 
 export function legalEnemyTargetsForMove(state: CombatState, move: Move): EnemyUnit[] {
-  return legalEnemyTargets(state.enemies, move);
+  return legalEnemyTargets(state.enemies, move, state.terrain);
 }
 
 export function partyTargetAvailability(
@@ -743,7 +772,7 @@ export function partyTargetAvailability(
   }
   const enemy = state.enemies.find((candidate) => candidate.id === target.id && candidate.hp > 0);
   if (!enemy) return { allowed: false, reason: '這個招式不能指定該目標。' };
-  const gate = enemyLineGate(state.enemies, move, enemy);
+  const gate = enemyLineGate(state.enemies, move, enemy, state.terrain);
   return { allowed: gate.allowed, reason: gate.reason };
 }
 
@@ -801,9 +830,13 @@ export function partyAct(
 
 function partyTargetsForEnemyMove(state: CombatState, move: Move): PartyMember[] {
   const alive = state.party.filter((member) => member.hp > 0);
-  if (alive.length === 0 || enemyCanBypassPartyFront(move)) return alive;
+  if (alive.length === 0) return alive;
   const front = alive.filter((member) => member.formationRow !== 'back');
-  return front.length > 0 ? front : alive;
+  if (front.length === 0) return alive;
+  if (!enemyCanBypassPartyFront(move)) return front;
+  return alive.filter((member) => (
+    member.formationRow !== 'back' || !targetLineOfEffectForecast(state, move, member).blocked
+  ));
 }
 
 export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
@@ -861,7 +894,12 @@ export function enemyAct(rng: Rng, state: CombatState, enemyId: string): void {
     const targetPool = partyTargetsForEnemyMove(state, move);
     if (targetPool.length === 0) return;
     target = targetPool.reduce((low, p) => (p.hp < low.hp ? p : low), targetPool[0]);
-    if (move.kind === 'attack' && !move.area && !state.guarding[target.id]) {
+    if (
+      move.kind === 'attack'
+      && !move.area
+      && attackDeliveryForMove(move) !== 'overhead'
+      && !state.guarding[target.id]
+    ) {
       const guardian = state.order
         .map((id) => state.party.find((member) => member.id === id))
         .find((member) => member && member.hp > 0 && state.guarding[member.id] && canGuardIntercept(member.formationRow));
