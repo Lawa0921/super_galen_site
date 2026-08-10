@@ -5,7 +5,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 <BaseLayout title="灰燼聖匣戰鬥 — 商隊與劍" description="迎戰灰燼騎士、無舌唱詩班與龍燼化身。" lang="zh-TW">
   <main class="battle-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M45 RITUAL COUNTERPLAY</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M56 TACTICAL READABILITY</p>
       <h1 id="battle-title">灰燼聖匣戰鬥</h1>
       <p id="battle-copy">讀取敵方意圖，在輸出、防守、護法與中斷儀式之間做選擇。</p>
       <nav><a href="/caravan/ashen-reliquary">返回灰燼聖匣</a><a href="/caravan/armory">武裝整備</a><a href="/caravan/play">返回主冒險</a></nav>
@@ -42,6 +42,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   import {
     ritualChargeFor, ritualEnemyAct, ritualIntentText,
   } from '@scripts/games/caravan/data/rituals.m45';
+  import { tacticalTargetChoices, tacticalUnitSummary } from '@scripts/games/caravan/data/tacticalReadability.m56';
 
   const titleEl = document.getElementById('battle-title')!;
   const copyEl = document.getElementById('battle-copy')!;
@@ -84,6 +85,10 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       text('p', `HP ${unit.hp}/${unit.maxHp}${poise}${statuses ? `｜${statuses}` : ''}`, 'unit-status'),
     );
 
+    if (combat) {
+      card.append(text('p', tacticalUnitSummary(combat, enemy ? 'enemy' : 'party', unit), 'tactical-position'));
+    }
+
     if (enemy) {
       const weak = (enemy.weaknesses ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
       const resist = (enemy.resists ?? []).map((element) => ELEMENT_LABELS[element]).join('、') || '無';
@@ -92,7 +97,6 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       if (charging) card.append(text('p', '⚠ 儀式蓄力中：在它下次行動前中斷', 'ritual-warning'));
     } else {
       const member = unit as PartyMember;
-      card.append(text('p', member.formationRow === 'back' ? '後排' : '前排', 'formation'));
       if (member.mystic) card.append(text('p', mysticPowerText(member.mystic), `mystic mystic-${member.mystic.kind}`));
     }
     return card;
@@ -138,18 +142,8 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     return element;
   }
 
-  function targetsFor(move: Move): Array<{ id: string; name: string }> {
-    if (!combat) return [];
-    if (move.target === 'self') return [];
-    if (move.kind === 'attack') {
-      const targets = combat.enemies.filter((enemy) => enemy.hp > 0);
-      if (move.area) return targets.length ? [{ id: targets[0].id, name: '敵方全體' }] : [];
-      return targets.map((target) => ({ id: target.id, name: target.name }));
-    }
-    return combat.party.filter((member) => member.hp > 0).map((target) => ({ id: target.id, name: target.name }));
-  }
-
   function labeledMoveButtons(actor: PartyMember, move: Move, overcast: boolean): HTMLButtonElement[] {
+    if (!combat) return [];
     const availability = partyMoveAvailability(actor, move, { overcast });
     const className = overcast ? 'overcast' : undefined;
     const prefix = overcast ? `禁式過載（反噬 ${availability.backlash}）・` : '';
@@ -162,12 +156,12 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
         availability.reason,
       )];
     }
-    return targetsFor(move).map((target) => button(
-      `${prefix}${move.name} → ${target.name}`,
+    return tacticalTargetChoices(combat, actor, move).map((target) => button(
+      `${prefix}${move.name} → ${target.label}`,
       () => act(actor.id, move.id, target.id, overcast),
       className,
-      !availability.allowed,
-      availability.reason,
+      !availability.allowed || !target.allowed,
+      availability.reason || target.reason,
     ));
   }
 
@@ -200,9 +194,13 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       : actor.mystic?.kind === 'favor'
         ? '神恩必須先建立再消耗；祝禱可護住隊友，但會犧牲當回合輸出。'
         : '物理職業不消耗魔力；利用盾擊、陷阱、弱點破勢或直接壓血都能處理儀式。';
+    const terrainHint = combat.terrain && combat.terrain.id !== 'open-ground'
+      ? `戰場：${combat.terrain.name}。目標按鈕會標出前後排與這一招實際承受的掩體；灰色後排目標仍看得見，但代表目前被前線擋住。`
+      : '目標按鈕會標出前後排；灰色後排目標仍看得見，但代表目前被前線擋住。';
     actionsEl.append(
       text('h2', `${actor.name}的行動${resource}`),
       text('p', `${baseHint}${ritualAdvice()}`),
+      text('p', terrainHint, 'tactical-hint'),
     );
     const grid = document.createElement('div');
     grid.className = 'action-grid';
@@ -339,12 +337,13 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .unit p { margin: 5px 0; font-size: 14px; line-height: 1.45; }
   .unit-status { color: #d8c9b4; }
   .affinity { color: #bdb09d; }
-  .formation { color: #a6b7c7; }
+  .tactical-position { color: #a6b7c7; font-weight: 700; }
   .mystic-mana { color: #9cb9ee; }
   .mystic-favor { color: #edd690; }
   .ritual-warning { color: #ffbd68; font-weight: 700; }
   .actions h2, .result h2 { margin: 0 0 8px; }
   .actions > p { color: #cfc0aa; line-height: 1.7; }
+  .actions > .tactical-hint { color: #aebfd0; border-top: 1px solid #34291e; padding-top: 9px; }
   .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 9px; }
   button { appearance: none; text-align: left; border: 1px solid #72583b; border-radius: 7px; background: #241b12; color: #eadfc9; padding: 11px 12px; cursor: pointer; line-height: 1.4; }
   button:hover:not(:disabled) { border-color: #d5a85f; background: #302217; }
