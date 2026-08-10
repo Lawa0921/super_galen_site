@@ -2,12 +2,17 @@ import {
   legalEnemyTargetsForMove,
   partyTargetAvailability,
   targetCoverForecast,
+  targetLineOfEffectForecast,
   type CombatState,
   type CombatantBase,
   type Move,
   type PartyMember,
 } from '../combat';
 import { projectileCoverProfile, type BattlefieldSide } from './battlefieldTerrain.m55';
+import {
+  attackDeliveryForMove,
+  solidRearObstructionActive,
+} from './battlefieldLineOfEffect.m57';
 
 export interface TacticalTargetChoice {
   id: string;
@@ -32,8 +37,9 @@ function coverLabel(modifier: number): string {
 }
 
 /**
- * M56 player information contract for a visible combatant card.
- * It intentionally describes only rules the engine already enforces; no page should infer rows or cover itself.
+ * M56/M57 player information contract for a visible combatant card.
+ * It intentionally describes only rules the engine already enforces; no page should infer rows,
+ * cover or solid line obstruction itself.
  */
 export function tacticalUnitSummary(
   state: CombatState,
@@ -55,6 +61,7 @@ export function tacticalUnitSummary(
   );
   const parts = ['後排'];
   if (frontlineAlive) parts.push('受前線保護');
+  if (solidRearObstructionActive(state.terrain, unit.formationRow, frontlineAlive)) parts.push('實體遮蔽');
   if (cover.applies) parts.push(coverLabel(cover.hitModifier));
   return parts.join('｜');
 }
@@ -62,7 +69,10 @@ export function tacticalUnitSummary(
 function attackTargetLabel(state: CombatState, move: Move, target: CombatState['enemies'][number], allowed: boolean): string {
   const parts = [rowLabel(target)];
   const cover = targetCoverForecast(state, move, target);
-  if (!allowed && target.formationRow === 'back') parts.push('前線保護');
+  const line = targetLineOfEffectForecast(state, move, target);
+  if (!allowed && line.blocked) parts.push('實體遮蔽');
+  else if (!allowed && target.formationRow === 'back') parts.push('前線保護');
+  if (line.delivery === 'overhead') parts.push('越頂');
   if (cover.applies) parts.push(coverLabel(cover.hitModifier));
   return `${target.name}【${parts.join('｜')}】`;
 }
@@ -73,10 +83,11 @@ function areaTargetChoice(state: CombatState, move: Move): TacticalTargetChoice[
   const alive = state.enemies.filter((enemy) => enemy.hp > 0);
   const frontlineOnly = legal.length < alive.length && legal.every((enemy) => enemy.formationRow !== 'back');
   const covered = legal.filter((enemy) => targetCoverForecast(state, move, enemy).applies);
+  const deliveryText = attackDeliveryForMove(move) === 'overhead' ? '｜越頂' : '';
   const coverText = covered.length > 0 ? `｜${covered.length} 名受掩體影響` : '';
   return [{
     id: legal[0].id,
-    label: `${frontlineOnly ? '敵方前排全體' : '敵方全體'}（${legal.length}）${coverText}`,
+    label: `${frontlineOnly ? '敵方前排全體' : '敵方全體'}（${legal.length}）${deliveryText}${coverText}`,
     allowed: true,
     reason: '',
     targetCount: legal.length,
@@ -87,9 +98,10 @@ function areaTargetChoice(state: CombatState, move: Move): TacticalTargetChoice[
 }
 
 /**
- * The reusable M56 UI source of truth.
+ * The reusable M56/M57 UI source of truth.
  * - blocked rear targets remain visible but disabled, so the player can understand *why* they cannot be selected;
- * - ranged / mystic attacks expose the legal rear option;
+ * - direct attacks expose solid line blockers instead of pretending magic can pass through walls;
+ * - explicit overhead attacks advertise the bypass while still exposing any physical cover penalty;
  * - area actions report the exact engine target set rather than pretending every AoE hits every rank;
  * - ally/self actions remain compatible with the original combat loop.
  */
