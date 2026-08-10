@@ -5,7 +5,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 <BaseLayout title="裂旗商路護運 — 商隊與劍" description="守住馬車、擊潰戰意，或迫使伏兵棄械。" lang="zh-TW">
   <main class="convoy-page">
     <header class="hero">
-      <p class="eyebrow">CARAVAN &amp; SWORD · M46–M47 OBJECTIVES &amp; MORALE</p>
+      <p class="eyebrow">CARAVAN &amp; SWORD · M56 TACTICAL READABILITY</p>
       <h1>黑蠟急件｜裂旗商路護運</h1>
       <p>這不是討伐。車夫需要四輪時間拉開裂旗關的鎖鏈；你可以護住貨車、擊潰伏兵，也可以先打碎他們的戰意再喝令棄械。</p>
       <nav><a href="/caravan/play">返回啟程之鎮</a><a href="/caravan/mandates">行會文書</a><a href="/caravan/armory">武裝整備</a><a href="/caravan/endurance">餘燼朝聖</a></nav>
@@ -53,6 +53,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     type MoraleDisposition,
   } from '@scripts/games/caravan/data/convoyMorale.m47';
   import { ritualIntentText } from '@scripts/games/caravan/data/rituals.m45';
+  import { tacticalTargetChoices, tacticalUnitSummary } from '@scripts/games/caravan/data/tacticalReadability.m56';
 
   const noticeEl = document.getElementById('notice')!;
   const objectiveEl = document.getElementById('objective')!;
@@ -95,6 +96,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     const status = (unit.statuses ?? []).map((entry) => `${entry.kind} ${entry.remaining}`).join('、');
     const poise = enemy?.maxPoise !== undefined ? `｜護勢 ${enemy.poise ?? enemy.maxPoise}/${enemy.maxPoise}` : '';
     card.append(text('h3', unit.name), text('p', `HP ${unit.hp}/${unit.maxHp}${poise}${status ? `｜${status}` : ''}`));
+    if (battle) card.append(text('p', tacticalUnitSummary(battle.combat, enemy ? 'enemy' : 'party', unit), 'tactical-position'));
     if (enemy) {
       const weak = (enemy.weaknesses ?? []).map((entry) => ELEMENT_LABELS[entry]).join('、') || '無';
       const resist = (enemy.resists ?? []).map((entry) => ELEMENT_LABELS[entry]).join('、') || '無';
@@ -107,7 +109,6 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
       if (enemy.mystic) card.append(text('p', mysticPowerText(enemy.mystic), 'mystic'));
     } else {
       const member = unit as PartyMember;
-      card.append(text('p', member.formationRow === 'back' ? '後排' : '前排', 'formation'));
       if (member.mystic) card.append(text('p', mysticPowerText(member.mystic), 'mystic'));
     }
     return card;
@@ -139,16 +140,6 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     partyEl.replaceChildren(...battle.combat.party.map(unitCard));
   }
 
-  function targetsFor(move: Move): Array<{ id: string; name: string }> {
-    if (!battle || move.target === 'self') return [];
-    if (move.kind === 'attack') {
-      const targets = battle.combat.enemies.filter((enemy) => enemy.hp > 0);
-      if (move.area) return targets.length ? [{ id: targets[0].id, name: '敵方全體' }] : [];
-      return targets.map((target) => ({ id: target.id, name: target.name }));
-    }
-    return battle.combat.party.filter((member) => member.hp > 0).map((target) => ({ id: target.id, name: target.name }));
-  }
-
   function act(actorId: string, moveId: string, targetId: string, overcast = false): void {
     if (!battle || !rng || settled || awaitingAftermath) return;
     const result = moraleConvoyPartyAct(rng, battle, actorId, moveId, targetId, { overcast });
@@ -171,17 +162,25 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   }
 
   function moveButtons(actor: PartyMember, move: Move): HTMLButtonElement[] {
+    if (!battle) return [];
     const normal = partyMoveAvailability(actor, move);
-    const make = (targetId: string, targetName: string, overcast: boolean) => {
+    const targets = move.kind === 'guard' || move.target === 'self'
+      ? [{ id: actor.id, label: '', allowed: true, reason: '', targetCount: 1, coverHitModifier: 0 }]
+      : tacticalTargetChoices(battle.combat, actor, move);
+    const make = (target: typeof targets[number], overcast: boolean) => {
       const availability = partyMoveAvailability(actor, move, { overcast });
       const prefix = overcast ? `禁式過載（反噬 ${availability.backlash}）・` : '';
-      return button(`${prefix}${move.name}${targetName ? ` → ${targetName}` : ''}`, () => act(actor.id, move.id, targetId, overcast), overcast ? 'overcast' : '', !availability.allowed, availability.reason);
+      const targetLabel = target.label ? ` → ${target.label}` : '';
+      return button(
+        `${prefix}${move.name}${targetLabel}`,
+        () => act(actor.id, move.id, target.id, overcast),
+        overcast ? 'overcast' : '',
+        !availability.allowed || !target.allowed,
+        availability.reason || target.reason,
+      );
     };
-    const targets = move.kind === 'guard' || move.target === 'self'
-      ? [{ id: actor.id, name: '' }]
-      : targetsFor(move);
-    const buttons = targets.map((target) => make(target.id, target.name, false));
-    if (!normal.allowed && normal.canOvercast) buttons.push(...targets.map((target) => make(target.id, target.name, true)));
+    const buttons = targets.map((target) => make(target, false));
+    if (!normal.allowed && normal.canOvercast) buttons.push(...targets.map((target) => make(target, true)));
     return buttons;
   }
 
@@ -195,6 +194,7 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
     actionsEl.append(
       text('h2', `${actor.name}的行動${actor.mystic ? `｜${mysticPowerText(actor.mystic)}` : ''}`),
       text('p', `護車建立 ${convoyBraceValue(actor)} 點防護；喝止則用魅力嘗試壓垮已動搖的敵人，但會消耗完整一回合，失敗還會提高對方抗拒。`, 'hint'),
+      text('p', '武器目標會標出前後排；灰色後排表示目前被前線保護。喝止與護車仍使用各自的護送／戰意規則，不會被武器射線規則誤判。', 'tactical-hint'),
     );
     const grid = document.createElement('div'); grid.className = 'action-grid';
     grid.append(button(`護住馬車（+${Math.min(convoyBraceValue(actor), Math.max(0, 10 - battle.protection))}）`, () => brace(actor), 'brace'));
@@ -356,7 +356,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
   .unit.down { opacity: .55; }
   .unit.routed { border-style: dashed; border-color: #77705f; }
   .affinity { color: #cfb68c; font-size: .9rem; }
-  .formation, .mystic, .hint { color: #baa98d; font-size: .92rem; }
+  .tactical-position, .mystic, .hint { color: #baa98d; font-size: .92rem; }
+  .tactical-position { color: #9fb4c4; font-weight: 700; }
+  .tactical-hint { color: #9fb4c4; font-size: .9rem; border-top: 1px solid #342a20; padding-top: .55rem; }
   .morale { color: #e0b978; font-size: .92rem; }
   .routed-label { color: #a7b29a; }
   .action-grid { display: flex; flex-wrap: wrap; gap: .55rem; }
