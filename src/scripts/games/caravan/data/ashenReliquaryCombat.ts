@@ -107,6 +107,7 @@ const cinderSidearm: Move = {
 function ashKnight(): EnemyUnit {
   return {
     id: 'reliquary-ash-knight', name: '灰燼騎士・守橋者',
+    battlefieldTerrainId: 'broken-stone-bridge',
     stats: { str: 16, dex: 10, int: 10, cha: 8, con: 16 }, maxHp: 28, hp: 28, defense: 15,
     weaknesses: ['holy', 'blunt'], resists: ['fire', 'slash'], maxPoise: 4,
     armorProtection: armorProtectionForDiscipline('mail'),
