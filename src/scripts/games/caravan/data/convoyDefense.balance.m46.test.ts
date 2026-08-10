@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   currentActor,
+  legalEnemyTargetsForMove,
   partyMoveAvailability,
   type Move,
   type PartyMember,
@@ -135,6 +136,14 @@ function lowestPartyTarget(party: PartyMember[]): PartyMember {
     .reduce((lowest, member) => member.hp / member.maxHp < lowest.hp / lowest.maxHp ? member : lowest);
 }
 
+function highestThreatTarget(
+  battle: ReturnType<typeof createConvoyDefenseBattle>,
+  move: Move,
+): ReturnType<typeof createConvoyDefenseBattle>['combat']['enemies'][number] | undefined {
+  return legalEnemyTargetsForMove(battle.combat, move)
+    .sort((a, b) => convoyThreatForEnemy(b) - convoyThreatForEnemy(a) || a.hp - b.hp)[0];
+}
+
 function takeAdaptivePartyTurn(rng: Rng, battle: ReturnType<typeof createConvoyDefenseBattle>): void {
   const actorInfo = currentActor(battle.combat);
   if (!actorInfo || actorInfo.side !== 'party') return;
@@ -143,13 +152,13 @@ function takeAdaptivePartyTurn(rng: Rng, battle: ReturnType<typeof createConvoyD
   const pressure = projectedConvoyPressure(battle);
 
   const frostBind = actor.moves.find((move) => move.id === 'frost-bind');
-  const highThreat = [...enemies].sort((a, b) => convoyThreatForEnemy(b) - convoyThreatForEnemy(a) || a.hp - b.hp)[0];
+  const frostTarget = frostBind ? highestThreatTarget(battle, frostBind) : undefined;
   if (
-    frostBind && highThreat &&
-    !highThreat.statuses?.some((status) => status.kind === 'stun' && status.remaining > 0) &&
+    frostBind && frostTarget &&
+    !frostTarget.statuses?.some((status) => status.kind === 'stun' && status.remaining > 0) &&
     partyMoveAvailability(actor, frostBind).allowed && pressure >= 7
   ) {
-    convoyPartyAct(rng, battle, actor.id, frostBind.id, highThreat.id);
+    convoyPartyAct(rng, battle, actor.id, frostBind.id, frostTarget.id);
     return;
   }
 
@@ -168,8 +177,10 @@ function takeAdaptivePartyTurn(rng: Rng, battle: ReturnType<typeof createConvoyD
   const attacks = actor.moves
     .filter((move) => move.kind === 'attack' && partyMoveAvailability(actor, move).allowed)
     .sort((a, b) => moveScore(b) - moveScore(a));
-  if (attacks.length > 0 && highThreat) {
-    convoyPartyAct(rng, battle, actor.id, attacks[0].id, highThreat.id);
+  for (const attack of attacks) {
+    const legalTarget = highestThreatTarget(battle, attack);
+    if (!legalTarget) continue;
+    convoyPartyAct(rng, battle, actor.id, attack.id, legalTarget.id);
     return;
   }
 
@@ -179,8 +190,8 @@ function takeAdaptivePartyTurn(rng: Rng, battle: ReturnType<typeof createConvoyD
     return;
   }
 
-  const fallback = actor.moves[0];
-  if (fallback && highThreat) convoyPartyAct(rng, battle, actor.id, fallback.id, highThreat.id);
+  // A player who has no legal attack should protect the objective rather than repeatedly click a blocked rear target.
+  if (enemies.length > 0) braceConvoy(rng, battle, actor.id);
 }
 
 function simulate(jobs: CompanionRecord['job'][], seed: number): { won: boolean; wagonHp: number; completedRounds: number } {
