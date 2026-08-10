@@ -14,6 +14,7 @@ import {
 } from './data/armorProfiles.m48';
 import {
   canGuardIntercept,
+  engagementForMove,
   formationAttackProfile,
   type EngagementBand,
 } from './data/martialEngagement.m49';
@@ -25,6 +26,14 @@ import {
   initializeEnemyFormation,
   legalEnemyTargets,
 } from './data/enemyFormation.m54';
+import {
+  battlefieldTerrain,
+  projectileCoverProfile,
+  type BattlefieldTerrain,
+  type BattlefieldTerrainId,
+  type BattlefieldSide,
+  type ProjectileCoverProfile,
+} from './data/battlefieldTerrain.m55';
 
 export interface Move {
   id: string; name: string;
@@ -104,6 +113,8 @@ export interface EnemyUnit extends CombatantBase {
   intents: Array<{ weight: number; moveId: string }>;
   /** M54：敵人也使用與玩家相同的前後排距離規則；缺少時由開戰規則推導。 */
   formationRow?: FormationRow;
+  /** M55：遭遇可由其中一名敵方資料標記戰場；只存在 combat runtime，不進存檔。 */
+  battlefieldTerrainId?: BattlefieldTerrainId;
   /** M15 弱點屬性：命中 ×1.5 並削 1 護勢 */
   weaknesses?: Element[];
   /** M15 抗性屬性：命中 ×0.5 */
@@ -128,6 +139,8 @@ export interface CombatState {
   party: PartyMember[]; enemies: EnemyUnit[];
   guarding: Record<string, boolean>;
   enemyIntents: Record<string, string>;
+  /** M55：本場地形只存在戰鬥 runtime；未設定即沿用舊版開闊戰場。 */
+  terrain?: BattlefieldTerrain;
   log: CombatEvent[];
   outcome: 'ongoing' | 'victory' | 'defeat' | 'retreated';
 }
@@ -157,7 +170,25 @@ export interface PartyActionResult {
 
 const VETERAN_RANK_LABEL = ['', 'I', 'II', 'III'] as const;
 
-export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]): CombatState {
+function authoredTerrainForEnemies(enemies: EnemyUnit[], override?: BattlefieldTerrainId): BattlefieldTerrain | undefined {
+  if (override) return battlefieldTerrain(override);
+  const authored = [...new Set(
+    enemies
+      .map((enemy) => enemy.battlefieldTerrainId)
+      .filter((id): id is BattlefieldTerrainId => id !== undefined)
+  )];
+  if (authored.length > 1) {
+    throw new Error(`同一遭遇宣告了互相衝突的戰場地形：${authored.join('、')}`);
+  }
+  return battlefieldTerrain(authored[0]);
+}
+
+export function startCombat(
+  rng: Rng,
+  party: PartyMember[],
+  enemies: EnemyUnit[],
+  terrainOverride?: BattlefieldTerrainId,
+): CombatState {
   // M41/M44：雙方施法者共用同一套招式裝飾、秘法／神恩容量與恢復手段。
   for (const member of party) prepareMysticPartyMember(member);
   for (const enemy of enemies) prepareMysticPartyMember(enemy);
@@ -173,7 +204,7 @@ export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]
   rolled.sort((a, b) => b.init - a.init || tieBreakIndex.get(a.id)! - tieBreakIndex.get(b.id)!);
   const state: CombatState = {
     round: 1, order: rolled.map((r) => r.id), turnIndex: 0,
-    party, enemies, guarding: {}, enemyIntents: {}, log: [], outcome: 'ongoing',
+    party, enemies, guarding: {}, enemyIntents: {}, terrain: authoredTerrainForEnemies(enemies, terrainOverride), log: [], outcome: 'ongoing',
   };
   const enemyFormation = initializeEnemyFormation(enemies);
   for (const enemy of enemies) {
@@ -182,6 +213,9 @@ export function startCombat(rng: Rng, party: PartyMember[], enemies: EnemyUnit[]
   }
   state.log.push({ kind: 'info', text: '戰鬥開始！' });
   collapseFrontLineIfNeeded(state);
+  if (state.terrain && state.terrain.id !== 'open-ground') {
+    state.log.push({ kind: 'info', text: `地形：${state.terrain.name}——${state.terrain.description}` });
+  }
   const enemyFront = enemies.filter((enemy) => enemy.hp > 0 && enemy.formationRow !== 'back').map((enemy) => enemy.name);
   const enemyBack = enemies.filter((enemy) => enemy.hp > 0 && enemy.formationRow === 'back').map((enemy) => enemy.name);
   state.log.push({
@@ -396,6 +430,29 @@ function performFormationShift(state: CombatState, actor: PartyMember): void {
   refreshFormationRuntime(state);
 }
 
+function emptyCoverProfile(): ProjectileCoverProfile {
+  return { grade: 'none', hitModifier: 0, applies: false, message: '' };
+}
+
+/** M55：提供 UI、測試與正式命中結算同一份「這個目標現在有沒有投射掩體」真相。 */
+export function targetCoverForecast(
+  state: CombatState,
+  move: Move,
+  target: CombatantBase,
+): ProjectileCoverProfile {
+  if (move.kind !== 'attack') return emptyCoverProfile();
+  const partyTarget = state.party.find((member) => member.id === target.id);
+  const enemyTarget = state.enemies.find((enemy) => enemy.id === target.id);
+  const side: BattlefieldSide | null = partyTarget ? 'party' : enemyTarget ? 'enemy' : null;
+  if (!side) return emptyCoverProfile();
+  const row = partyTarget?.formationRow ?? enemyTarget?.formationRow;
+  const sideUnits = side === 'party' ? state.party : state.enemies;
+  const frontlineAlive = sideUnits.some((unit) => unit.hp > 0 && unit.formationRow !== 'back');
+  const isMystic = !!mysticRuleForMove(move);
+  const engagement = engagementForMove(move, isMystic);
+  return projectileCoverProfile(state.terrain, side, row, engagement, isMystic, frontlineAlive);
+}
+
 function performMove(
   rng: Rng,
   state: CombatState,
@@ -444,13 +501,15 @@ function performMove(
   const partyActor = state.party.find((member) => member.id === actor.id);
   const enemyActor = state.enemies.find((member) => member.id === actor.id);
   const formation = formationAttackProfile(partyActor?.formationRow ?? enemyActor?.formationRow, move, !!spellRule);
+  const cover = targetCoverForecast(state, move, target);
+  if (cover.message) state.log.push({ kind: 'info', text: `${target.name}：${cover.message}` });
   const die = rng.d20();
   const defense = target.defense + guardingDefenseBonus(state, target);
   const hit = die === 20
     ? true
     : die === 1
       ? false
-      : die + statMod(actor.stats[move.hitStat]) + (move.hitBonus ?? 0) + formation.hitModifier >= defense;
+      : die + statMod(actor.stats[move.hitStat]) + (move.hitBonus ?? 0) + formation.hitModifier + cover.hitModifier >= defense;
   if (!hit) {
     state.log.push({ kind: 'action', text: `${actor.name}的${move.name}落空了！` });
     return;
