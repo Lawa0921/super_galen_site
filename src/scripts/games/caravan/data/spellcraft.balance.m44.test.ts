@@ -77,7 +77,7 @@ function forceTurn(state: ReturnType<typeof startCombat>, id: string): void {
 
 interface Probe {
   enemyHp: number;
-  frontHp: number;
+  threatenedHp: number;
   mageMana: number;
   partyActions: number;
 }
@@ -89,10 +89,11 @@ function twoCycleProbe(policy: 'pressure' | 'warded'): Probe {
   const state = startCombat(scriptedRng([20, 19, 1]), [front, caster], [foe]);
   let partyActions = 0;
 
-  // Cycle 1: mage chooses immediate damage or sacrifices tempo for protection/resource posture.
+  // M54 lets hostile magic cross the line and pressure the actual low-HP rear target.
+  // A rational ward plan protects that threatened caster instead of a frontliner the spell will not choose.
   forceTurn(state, caster.id);
   if (policy === 'pressure') partyAct(scriptedRng([20, 1]), state, caster.id, 'fireball', foe.id);
-  else partyAct(scriptedRng([10]), state, caster.id, 'arcane-focus', front.id);
+  else partyAct(scriptedRng([10]), state, caster.id, 'arcane-focus', caster.id);
   partyActions += 1;
 
   forceTurn(state, foe.id);
@@ -103,7 +104,7 @@ function twoCycleProbe(policy: 'pressure' | 'warded'): Probe {
   partyAct(scriptedRng([20, 1]), state, front.id, 'strike', foe.id);
   partyActions += 1;
 
-  // Cycle 2: both plans now attack; warded plan has paid one earlier action for survival and mana posture.
+  // Cycle 2: both plans now attack; warded plan paid one earlier action for survival and mana posture.
   forceTurn(state, caster.id);
   partyAct(scriptedRng([20, 1]), state, caster.id, 'fireball', foe.id);
   partyActions += 1;
@@ -114,7 +115,7 @@ function twoCycleProbe(policy: 'pressure' | 'warded'): Probe {
 
   return {
     enemyHp: foe.hp,
-    frontHp: front.hp,
+    threatenedHp: caster.hp,
     mageMana: caster.mystic?.current ?? 0,
     partyActions,
   };
@@ -122,11 +123,11 @@ function twoCycleProbe(policy: 'pressure' | 'warded'): Probe {
 
 function dominates(a: Probe, b: Probe): boolean {
   const noWorse = a.enemyHp <= b.enemyHp
-    && a.frontHp >= b.frontHp
+    && a.threatenedHp >= b.threatenedHp
     && a.mageMana >= b.mageMana
     && a.partyActions <= b.partyActions;
   const strictlyBetter = a.enemyHp < b.enemyHp
-    || a.frontHp > b.frontHp
+    || a.threatenedHp > b.threatenedHp
     || a.mageMana > b.mageMana
     || a.partyActions < b.partyActions;
   return noWorse && strictlyBetter;
@@ -139,7 +140,7 @@ describe('M44 player-perspective multidimensional adversarial review', () => {
     console.log(`[M44 SPELLCRAFT] pressure=${JSON.stringify(pressure)} warded=${JSON.stringify(warded)}`);
 
     expect(pressure.enemyHp).toBeLessThan(warded.enemyHp); // 壓力流更快削血
-    expect(warded.frontHp).toBeGreaterThan(pressure.frontHp); // 護法流保留更多前排生命
+    expect(warded.threatenedHp).toBeGreaterThan(pressure.threatenedHp); // 護法流保住實際被敵方法術越線鎖定的後排
     expect(warded.mageMana).toBeGreaterThan(pressure.mageMana); // 護持同時建立更健康的資源姿態
     expect(dominates(pressure, warded)).toBe(false);
     expect(dominates(warded, pressure)).toBe(false);
