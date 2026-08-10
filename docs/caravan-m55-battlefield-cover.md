@@ -137,6 +137,33 @@ M55 automated review attacks the feature from these player perspectives:
 13. **Historical builds** — M40–M54 regressions must remain green.
 14. **Composition diversity** — M42 endurance and M46 convoy probes must stay viable rather than terrain becoming a mandatory class gate.
 
+## Historical balance calibration
+
+M55 made the old M42 balanced-party short window show `20/20`, which initially looked like a possible terrain-driven dominance regression. We did not relax the test or nerf terrain blindly.
+
+Two temporary, unmerged diagnostic PRs ran the **same balanced composition over the same 200 deterministic seeds**:
+
+- M54 validated gameplay baseline: **192/200 wins**;
+- M55 current gameplay: **192/200 wins**.
+
+The total broad-window performance is identical. M55 changed which seeds fail inside the 200-run window, causing the old 20-seed slice to move from 19/20 to 20/20, but it did not turn the composition into a guaranteed winner.
+
+The formal M42 gate therefore now follows the same evidence-based structure already used for double-mage endurance:
+
+- the 20-seed balanced window remains for viability and cross-composition comparison;
+- a dedicated 200-seed balanced stress probe enforces real deterministic losses;
+- the 200-seed double-mage stress probe remains and likewise requires real losses.
+
+At the validated M55 head:
+
+- balanced stress: **192/200**;
+- double-mage stress: **195/200**;
+- martial short window: **18/20**;
+- pure-martial short window: **15/20**;
+- no-cleric short window: **19/20**.
+
+This preserves both class diversity and the anti-dominance requirement without engineering artificial “must lose inside these exact 20 seeds” outcomes.
+
 ## Rejected alternatives
 
 ### Flat terrain `+DEF`
@@ -171,10 +198,37 @@ Rejected for this milestone. Hidden random terrain would make deterministic enco
 
 Rejected. M55 is about geometry and target protection, not another source of raw damage inflation.
 
+## Validation
+
+Gameplay-validated M55 head: `853d36d8eeed223693d0f6d67997ffb9e38ac89d`.
+
+At that head, **18/18 Caravan GitHub Actions workflows passed**. This includes:
+
+- production build;
+- M55 battlefield-cover rules;
+- M55 live broken-bridge integration;
+- M55 multidimensional player adversarial review;
+- M54 enemy formation parity;
+- M53 reach/polearms;
+- M52 shields/handedness;
+- M51 veteran mastery/reposition;
+- M49–M50 formation/readability;
+- core combat and M41 magic;
+- M40 live Reliquary combat;
+- M42 endurance, balanced 200-seed stress and double-mage 200-seed stress;
+- M43 armory/endurance;
+- M44 spellcraft;
+- M45 ritual counterplay;
+- M46 convoy objective including pure-martial viability;
+- M47 morale;
+- M48 armor lifecycle and multidimensional review.
+
+The branch tip after this head only records validation documentation; it does not change gameplay behavior.
+
 ## Acceptance target
 
 M55 succeeds when terrain creates a new tactical question without deleting old answers:
 
 > Do I accept a harder physical shot into cover, use magic to pressure the rear, or break the frontline so the enemy loses the protected shooting position?
 
-All three routes must remain understandable, bounded and compatible with the existing sword-and-magic combat ecosystem.
+All three routes remain understandable, bounded and compatible with the existing sword-and-magic combat ecosystem.
