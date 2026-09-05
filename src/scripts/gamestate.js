@@ -40,6 +40,7 @@
         reviveCountdown: 0,        // 復活倒數時間
         isReviving: false          // 是否正在復活倒數中
     };
+    const clickDamageEvents = new WeakSet();
 
     // Cookie 工具函數
     const CookieManager = {
@@ -510,8 +511,10 @@
         },
 
         // 處理點擊消耗 - SP 優先機制
-        handleClickDamage() {
+        handleClickDamage(event) {
+            if (event && clickDamageEvents.has(event)) return;
             if (gameState.isDead) return; // 死亡時不受傷
+            if (event) clickDamageEvents.add(event);
             
             if (gameState.sp > 0) {
                 // 先扣 SP：1-3 點隨機
@@ -547,6 +550,10 @@
                 }
                 return 'hp';
             }
+        },
+
+        isClickDamageHandled(event) {
+            return Boolean(event && clickDamageEvents.has(event));
         },
         
         // 創建爆擊傷害彈出效果

@@ -793,6 +793,7 @@
     
     // === 金幣系統 ===
     let goldAmount = 0;
+    let goldEventsInitialized = false;
     
     // 初始化金幣系統
     function initGoldSystem() {
@@ -814,8 +815,11 @@
 
         updateGoldDisplay();
 
-        // 為所有可互動元素添加事件監聽，觸發金幣增加
-        addGoldEventListeners();
+        // 為所有可互動元素添加事件監聽，觸發金幣增加（只綁一次）
+        if (!goldEventsInitialized) {
+            addGoldEventListeners();
+            goldEventsInitialized = true;
+        }
         console.log('✅ [金幣系統] 初始化完成');
     }
     
@@ -828,7 +832,7 @@
     }
     
     // 增加金幣
-    function addGold(amount) {
+    function addGold(amount, event) {
         console.log('💰 [addGold] 函數被呼叫', { amount });
 
         // 檢查死亡狀態，死亡時不能賺錢
@@ -844,8 +848,10 @@
 
         // 先消耗 SP/HP（整合點擊消耗機制）
         if (window.GameState && typeof window.GameState.handleClickDamage === 'function') {
-            console.log('⚡ [addGold] 呼叫 handleClickDamage()');
-            const consumedResource = window.GameState.handleClickDamage();
+            const alreadyHandled = event && typeof window.GameState.isClickDamageHandled === 'function'
+                && window.GameState.isClickDamageHandled(event);
+            console.log('⚡ [addGold] 呼叫 handleClickDamage()', { alreadyHandled });
+            const consumedResource = alreadyHandled ? 'already-handled' : window.GameState.handleClickDamage(event);
             console.log('📊 [addGold] consumedResource:', consumedResource);
 
             // 如果沒有成功消耗資源（可能因為死亡），則不給金幣
@@ -1073,7 +1079,7 @@
                 target: e.target.className
             });
             console.log('✅ [金幣系統] 觸發 addGold()');
-            addGold();
+            addGold(undefined, e);
         });
         
         // 滑鼠右鍵事件（藥水使用等）
