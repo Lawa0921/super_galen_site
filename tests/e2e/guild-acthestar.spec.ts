@@ -27,6 +27,12 @@ test('real contact links and credits remain reachable', async ({ page }) => {
   await navigation.getByRole('link', { name: 'Credits', exact: true }).click();
   await expect(page.locator('#filmography h2')).toBeInViewport();
   await expect(page.locator('#filmography')).toContainText('Actor + Stunt Coordinator');
+  await expect(page.locator('#filmography')).toContainText('Power: Original Sins');
+  await expect(page.locator('#filmography')).toContainText('2026');
+  await expect(page.locator('#filmography')).toContainText('Character Role');
+  await expect(page.locator('.clapboard-section')).not.toContainText('Currently Filming');
+  await expect(page.locator('#filmography')).not.toContainText('Now Filming');
+  await expect(page.locator('[data-i18n^="dossier.status"], .timeline-live, .timeline-entry.now')).toHaveCount(0);
   await page.evaluate(() => window.scrollTo(0, 0));
   await navigation.getByRole('link', { name: 'Contact', exact: true }).click();
   await expect(page.locator('#contact')).toBeInViewport();
@@ -42,6 +48,8 @@ test('English and Chinese switch real content and preserve the choice', async ({
   await page.locator('button[data-lang="zh-TW"]').click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await expect(page.locator('.actor-monologue')).toContainText('一位出生於台灣');
+  await expect(page.locator('.clapboard-section')).not.toContainText('拍攝中');
+  await expect(page.locator('#filmography')).not.toContainText('拍攝中');
   await expect(page.locator('button[data-lang="zh-TW"]')).toHaveAttribute('aria-pressed', 'true');
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');

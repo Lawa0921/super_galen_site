@@ -379,15 +379,6 @@
             border: 2px solid var(--backstage);
             box-shadow: 0 0 8px rgba(107, 26, 26, 0.4);
         }
-        .timeline-entry.now::before {
-            background: #cc3333;
-            box-shadow: 0 0 12px rgba(204, 51, 51, 0.5);
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { box-shadow: 0 0 8px rgba(204, 51, 51, 0.4); }
-            50% { box-shadow: 0 0 16px rgba(204, 51, 51, 0.7); }
-        }
         .timeline-year {
             font-family: var(--font-script); font-size: 0.65rem;
             color: var(--curtain-highlight); letter-spacing: 0.15em;
@@ -427,11 +418,6 @@
             font-family: var(--font-script); font-size: 0.65rem;
             color: var(--spotlight-warm);
         }
-        .timeline-live {
-            font-family: var(--font-script); font-size: 0.6rem;
-            color: #cc3333;
-        }
-        .timeline-live i { font-size: 0.3rem; margin-right: 0.2rem; vertical-align: middle; }
 
         /* ===== CRAFT: SCRIPT PAGES ===== */
         .script-section {
@@ -950,7 +936,6 @@
                 <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.origin.label">Origin</span><span class="clapboard-value" data-i18n="dossier.origin.value">Taiwan &rarr; New York City</span></div>
                 <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.guild.label">Guild</span><span class="clapboard-value" data-i18n="dossier.guild.value">SAG-AFTRA</span></div>
                 <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.height.label">Height</span><span class="clapboard-value" data-i18n="dossier.height.value">5'11&quot; (180 cm)</span></div>
-                <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.status.label">Status</span><span class="clapboard-value" data-i18n="dossier.status.value">Currently Filming</span></div>
             </div>
         </div>
     </section>
@@ -962,13 +947,12 @@
         <div class="act-label reveal" data-i18n="act.credits">Act II &mdash; Credits</div>
         <h2 class="stage-title reveal" data-i18n="credits.heading">Credits</h2>
         <div class="timeline">
-            <div class="timeline-entry now reveal">
+            <div class="timeline-entry reveal">
                 <div class="timeline-year">2026</div>
                 <div class="timeline-title">Power: Original Sins</div>
                 <div class="timeline-meta">
                     <span class="timeline-role" data-i18n="credits.power.role">Character Role</span>
                     <span class="timeline-badge">Starz</span>
-                    <span class="timeline-live"><i class="fas fa-circle" aria-hidden="true"></i> <span data-i18n="credits.now">Now Filming</span></span>
                 </div>
             </div>
             <div class="timeline-entry reveal">
@@ -1152,9 +1136,8 @@
             'actor.guild': '作為 SAG-AFTRA 工會成員，我持續在獨立電影、電視劇與舞台之間穿行。表演的核心不在於聲量，而在於<span class="hl">真實</span>。每個角色都是一次機會，用每一個沉默證明：不需要被看見，也能被感受到。',
             'dossier.label': '演員資料', 'dossier.production.label': '主題', 'dossier.actor.label': '演員',
             'dossier.origin.label': '起點', 'dossier.origin.value': '台灣 → 紐約市',
-            'dossier.guild.label': '工會', 'dossier.height.label': '身高', 'dossier.status.label': '近況',
-            'dossier.status.value': '拍攝中', 'act.credits': 'Act II — 演出作品',
-            'credits.heading': '演出作品', 'credits.now': '拍攝中',
+            'dossier.guild.label': '工會', 'dossier.height.label': '身高',
+            'act.credits': 'Act II — 演出作品', 'credits.heading': '演出作品',
             'credits.power.role': '角色演出', 'credits.fire.role': '泳池派對賓客',
             'credits.silence.role': '日本士兵', 'credits.brawler.role': '格鬥俱樂部觀眾',
             'credits.crashing.role': '喜劇俱樂部顧客', 'credits.succession.role': '演員＋特技協調師',
