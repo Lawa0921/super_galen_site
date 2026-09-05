@@ -1034,38 +1034,23 @@ function initResourceSystem() {
     }
 
     // 隨機事件系統已移至 GameState 系統中統一管理
-    
-    // 綁定按鈕點擊事件
+
+    // 綁定按鈕點擊事件；同一個元素只會匹配一次，避免重複扣除
     function bindButtonEvents() {
-        // 所有可點擊的按鈕
-        const clickableElements = [
-            ...document.querySelectorAll('.tab-btn'),
-            ...document.querySelectorAll('button'),
-            ...document.querySelectorAll('.btn'),
-            ...document.querySelectorAll('.social-link')
-        ];
-        
+        const clickableElements = document.querySelectorAll('.tab-btn, button, .btn, .social-link');
+
         clickableElements.forEach(element => {
             element.addEventListener('click', (e) => {
-                // 檢查是否在物品欄面板內（避免與金幣系統重複觸發）
-                const isInInventoryPanel = e.target.closest('.d2-inventory-panel');
+                if (e.target.closest('.d2-inventory-panel')) return;
 
-                if (isInInventoryPanel) {
-                    // 物品欄內的點擊由 inventory.js 處理（會呼叫 SP/HP 消耗）
-                    return;
-                }
-                
-                // 其他區域的點擊直接觸發 SP/HP 消耗
                 if (window.GameState && typeof window.GameState.handleClickDamage === 'function') {
-                    window.GameState.handleClickDamage();
-                    
-                    // 更新本地資源狀態以保持同步
+                    window.GameState.handleClickDamage(e);
+
                     const gameState = window.GameState.getState();
                     resources.hp.current = gameState.hp;
                     resources.sp.current = gameState.sp;
                     resources.mp.current = gameState.mp;
-                    
-                    // 更新 UI 顯示
+
                     updateResourceDisplay('hp');
                     updateResourceDisplay('sp');
                     updateResourceDisplay('mp');
@@ -1099,8 +1084,7 @@ function initResourceSystem() {
             window.DebugUtils.debugLog('本地自動回復已停用，使用 GameState 系統統一管理');
             window.DebugUtils.debugLog('隨機事件系統已整合到 GameState 系統中');
         }
-        
-        // 綁定按鈕事件
+
         bindButtonEvents();
     }
     
