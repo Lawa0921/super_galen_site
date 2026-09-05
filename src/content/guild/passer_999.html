@@ -560,7 +560,7 @@
       transition: none;
     }
     .voice-slide.active {
-      opacity: 1; pointer-events: auto;
+      opacity: 1; pointer-events: none;
       transform: translateY(0);
     }
     .voice-slide .quote-mark {
@@ -927,7 +927,7 @@
   <!-- SCROLL-DRIVEN VIDEO SECTION -->
   <section class="video-section" id="videoSection">
     <div class="video-sticky">
-      <video id="scrollVideo" muted playsinline preload="auto"
+      <video id="scrollVideo" muted playsinline preload="none"
         src="/assets/img/guild/passer_999/video_1.mp4">
       </video>
     </div>
@@ -1659,12 +1659,24 @@
         });
       }
 
-      // 1. Scroll video — must be fully buffered
+      // 1. Scroll video loads only after the visitor enters the page
       const scrollVid = document.getElementById('scrollVideo');
-      addResource(new Promise(resolve => {
-        if (scrollVid.readyState >= 4) { resolve(); return; }
-        scrollVid.addEventListener('canplaythrough', resolve, { once: true });
-      }));
+      let pageRevealed = false;
+
+      function revealPage() {
+        if (pageRevealed) return;
+        pageRevealed = true;
+        loaderScreen.style.display = 'none';
+        document.body.classList.remove('loading');
+        if (scrollVid.preload === 'none') {
+          scrollVid.preload = 'metadata';
+          scrollVid.load();
+        }
+        initScrollVideo();
+      }
+
+      // Never trap visitors behind a slow image or font request.
+      setTimeout(revealPage, 2500);
 
       // 2. Hero portrait image
       const heroImg = document.getElementById('heroPortrait');
@@ -1689,6 +1701,7 @@
 
       // When all loaded, show enter button
       Promise.all(resources).then(() => {
+        if (pageRevealed) return;
         gsap.to({ v: displayPct }, {
           v: 100, duration: 0.3,
           onUpdate: function() {
@@ -1697,6 +1710,7 @@
             loaderPct.textContent = v + '%';
           },
           onComplete: () => {
+            if (pageRevealed) return;
             scrollVid.currentTime = 0;
             gsap.to(loaderEnter, {
               opacity: 1, duration: 0.5, ease: 'power2.out',
@@ -1808,9 +1822,7 @@
             requestAnimationFrame(frame);
           } else {
             // Burn complete — remove loader
-            loaderScreen.style.display = 'none';
-            document.body.classList.remove('loading');
-            initScrollVideo();
+            revealPage();
           }
         }
         requestAnimationFrame(frame);
@@ -1819,6 +1831,8 @@
       // Enter button — trigger burn effect
       loaderEnter.addEventListener('click', () => {
         loaderEnter.style.pointerEvents = 'none';
+        scrollVid.preload = 'metadata';
+        scrollVid.load();
         burnAwayLoader();
       });
     })();
@@ -1831,19 +1845,29 @@
       const progressTrack = document.getElementById('videoProgressTrack');
       const hint = document.getElementById('videoHint');
 
+      if (video.readyState < 1) {
+        const onMetadata = () => {
+          video.removeEventListener('error', onError);
+          initScrollVideo();
+        };
+        const onError = () => {
+          video.removeEventListener('loadedmetadata', onMetadata);
+          skipVideoSection();
+        };
+        video.addEventListener('loadedmetadata', onMetadata, { once: true });
+        video.addEventListener('error', onError, { once: true });
+        return;
+      }
+
       gsap.registerPlugin(ScrollTrigger);
 
-      // Ensure page starts at top
-      window.scrollTo(0, 0);
-
-      setTimeout(() => { hint.style.opacity = '1'; }, 600);
+      hint.style.opacity = '1';
       video.currentTime = 0;
 
       let videoDone = false;
       const videoDuration = video.duration || 1;
 
-      // Use ScrollTrigger pin — section is pinned to viewport,
-      // scroll drives video playback. Cannot be skipped.
+      // Keep the pin and seeking active in both scroll directions.
       ScrollTrigger.create({
         trigger: section,
         start: 'top top',
@@ -1851,7 +1875,6 @@
         pin: section.querySelector('.video-sticky'),
         scrub: 0.1,
         onUpdate: (self) => {
-          if (videoDone) return;
           const progress = self.progress;
           const t = progress * videoDuration;
 
@@ -1859,13 +1882,11 @@
           video.currentTime = t;
 
           // Update progress bar
-          if (progress > 0 && progress < 0.98) {
-            progressTrack.style.opacity = '1';
-            hint.style.opacity = '1';
-          }
+          progressTrack.style.opacity = progress < 0.98 ? '1' : '0';
+          hint.style.opacity = progress < 0.98 ? '1' : '0';
           progressBar.style.width = (progress * 100) + '%';
 
-          // Video complete — smooth crossfade to content
+          // Reveal the content once; the video stays available on the way back.
           if (progress >= 0.98 && !videoDone) {
             videoDone = true;
 
@@ -1874,37 +1895,8 @@
             if (window._showVideoPlanes) window._showVideoPlanes();
 
             const content = document.getElementById('content');
-            const sticky = section.querySelector('.video-sticky');
-
-            // Kill ScrollTrigger first so scroll position can change freely
-            ScrollTrigger.getAll().forEach(st => {
-              if (st.trigger === section || st.vars.trigger === section) st.kill();
-            });
-
-            // Make sticky fixed-position so it stays in view during collapse
-            sticky.style.position = 'fixed';
-            sticky.style.top = '0';
-            sticky.style.left = '0';
-            sticky.style.width = '100%';
-            sticky.style.height = '100vh';
-            sticky.style.zIndex = '10';
-
-            // Collapse section height instantly (it's behind the fixed sticky)
-            section.style.height = '0';
-            section.style.overflow = 'hidden';
-            window.scrollTo(0, 0);
-
-            // Now crossfade: video fades out while content fades in simultaneously
-            const fadeTl = gsap.timeline();
-            fadeTl
-              .set(progressTrack, { display: 'none' })
-              .set(hint, { display: 'none' })
-              .to(content, { opacity: 1, duration: 0.8, ease: 'power2.out' }, 0)
-              .to(sticky, { opacity: 0, duration: 1.0, ease: 'power2.inOut' }, 0.2)
-              .call(() => {
-                sticky.style.display = 'none';
-                animateContent();
-              });
+            gsap.to(content, { opacity: 1, duration: 0.8, ease: 'power2.out' });
+            animateContent();
           }
         }
       });
@@ -2282,20 +2274,32 @@
     const scrollVidFallback = document.getElementById('scrollVideo');
     const videoSection = document.getElementById('videoSection');
     const contentEl = document.getElementById('content');
+    let videoSkipped = false;
 
     function skipVideoSection() {
-      if (contentAnimated) return;
+      if (videoSkipped) return;
+      videoSkipped = true;
+      if (typeof ScrollTrigger !== 'undefined') {
+        ScrollTrigger.getAll().forEach(trigger => {
+          if (trigger.trigger === videoSection || trigger.vars.trigger === videoSection) trigger.kill();
+        });
+      }
       if (videoSection) {
         videoSection.style.height = '0';
         videoSection.style.overflow = 'hidden';
+        videoSection.querySelector('.video-sticky').style.display = 'none';
       }
       const pt = document.getElementById('videoProgressTrack');
       const vh = document.getElementById('videoHint');
       if (pt) pt.style.display = 'none';
       if (vh) vh.style.display = 'none';
       if (contentEl) contentEl.style.opacity = '1';
-      if (window._startBgVideos) window._startBgVideos();
       if (window._showVideoPlanes) window._showVideoPlanes();
+      if (!contentAnimated) {
+        window.addEventListener('scroll', () => {
+          if (window._startBgVideos) window._startBgVideos();
+        }, { once: true, passive: true });
+      }
       animateContent();
     }
 
