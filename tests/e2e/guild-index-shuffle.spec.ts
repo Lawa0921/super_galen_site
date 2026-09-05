@@ -66,3 +66,116 @@ test.describe('公會首頁 — 重新抽取卡堆動畫', () => {
     ).toBeGreaterThanOrEqual(0);
   });
 });
+
+test.describe('公會首頁 — 冒險者搜尋與鍵盤操作', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForLoadState('domcontentloaded');
+  });
+
+  test('可從完整名冊搜尋姓名，並處理清除與無結果狀態', async ({ page }) => {
+    const search = page.locator('#guild-search-input');
+    await expect(search).toBeVisible();
+
+    await search.fill('1庭');
+    await expect(page.locator('#card-stack-container')).toBeHidden();
+    await expect(page.locator('#guild-showcase')).toBeVisible();
+    await expect(page.locator('#guild-members-grid .guild-member-card')).toHaveCount(1);
+    await expect(page.locator('#guild-members-grid .member-name')).toContainText('1庭');
+    await expect(page.locator('#guild-members-grid .member-link')).toBeVisible();
+    await expect(page.locator('#guild-members-grid .member-link')).toHaveAttribute(
+      'href',
+      '/guild/1tingrealty'
+    );
+
+    await search.fill('民主教育');
+    const resultCard = page.locator('#guild-members-grid .guild-member-card');
+    await expect(resultCard).toHaveCount(1);
+    await expect(page.locator('#guild-members-grid .member-name')).toContainText('Regina');
+    await expect.poll(
+      () => resultCard.evaluate((card) => getComputedStyle(card).opacity),
+      { message: '搜尋結果卡片應完成入場狀態' }
+    ).toBe('1');
+    const resultBox = await resultCard.boundingBox();
+    expect(resultBox).not.toBeNull();
+    expect(resultBox!.x).toBeGreaterThanOrEqual(0);
+
+    await search.fill('查無此冒險者-zzzz');
+    await expect(page.locator('#guild-members-grid .guild-member-card')).toHaveCount(0);
+    await expect(page.locator('#guild-no-results')).toBeVisible();
+
+    await search.fill('');
+    await expect(page.locator('#guild-no-results')).toBeHidden();
+    await expect(page.locator('#guild-members-grid .guild-member-card')).toHaveCount(10);
+  });
+
+  test('抽卡入口可用 Enter 操作，並揭露可聚焦的成員連結', async ({ page }) => {
+    const stack = page.locator('#card-stack-container');
+    await expect(stack).toHaveAttribute('role', 'button');
+    await expect(stack).toHaveAttribute('tabindex', '0');
+    await expect(stack).toHaveAttribute('aria-expanded', 'false');
+
+    await stack.focus();
+    await expect(stack).toBeFocused();
+    await stack.press('Enter');
+
+    await expect(stack).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#guild-showcase')).toBeVisible();
+    await expect(page.locator('#guild-members-grid .member-link')).toHaveCount(10);
+    await page.locator('#guild-members-grid .member-link').first().focus();
+    await expect(page.locator('#guild-members-grid .member-link').first()).toBeFocused();
+  });
+
+  test('390px 手機寬度仍可完整操作搜尋欄', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(BASE_URL);
+
+    const search = page.locator('#guild-search-input');
+    await expect(search).toBeVisible();
+    const box = await search.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+  });
+
+  test('多語頁搜尋結果保留語言前綴', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/en/guild/');
+    const search = page.locator('#guild-search-input');
+    await search.fill('Renee Chen');
+
+    await expect(page.locator('#guild-members-grid .guild-member-card')).toHaveCount(1);
+    await expect(page.locator('#guild-members-grid .member-link')).toHaveAttribute(
+      'href',
+      '/en/guild/1tingrealty'
+    );
+  });
+
+  test('抽卡動畫期間輸入姓名，動畫結束仍保留搜尋結果', async ({ page }) => {
+    const stack = page.locator('#card-stack-container');
+    const search = page.locator('#guild-search-input');
+    const resultCard = page.locator('#guild-members-grid .guild-member-card');
+
+    await stack.click();
+    await search.fill('1庭');
+    await page.waitForTimeout(1200);
+
+    await expect(resultCard).toHaveCount(1);
+    await expect(resultCard.locator('.member-name')).toContainText('1庭');
+  });
+
+  test('重新抽取期間再次搜尋，動畫結束仍顯示單一結果', async ({ page }) => {
+    const search = page.locator('#guild-search-input');
+    const resultCard = page.locator('#guild-members-grid .guild-member-card');
+
+    await search.fill('1庭');
+    await expect(resultCard).toHaveCount(1);
+    await page.locator('#guild-refresh-btn').click();
+    await search.fill('民主教育');
+    await page.waitForTimeout(2400);
+
+    await expect(resultCard).toHaveCount(1);
+    await expect(resultCard.locator('.member-name')).toContainText('Regina');
+    await expect(page.locator('#guild-showcase')).toBeVisible();
+  });
+});

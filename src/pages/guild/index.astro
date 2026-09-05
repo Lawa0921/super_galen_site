@@ -222,8 +222,31 @@ const membersJson = JSON.stringify(members);
 
       <!-- 內容容器（與首頁 tab-content 風格一致） -->
       <div class="guild-content">
+        <div class="guild-search-panel">
+          <label class="guild-search-label" for="guild-search-input">
+            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+            <span data-i18n="guild.featured_members">{t('guild.featured_members') || '精選冒險者'}</span>
+          </label>
+          <input
+            id="guild-search-input"
+            class="guild-search-input"
+            type="search"
+            placeholder={t('guild.search_placeholder') || '搜尋標籤...'}
+            data-i18n-placeholder="guild.search_placeholder"
+            autocomplete="off"
+          />
+        </div>
+
         <!-- 卡片堆疊區域（點擊前） -->
-        <div class="card-stack-container" id="card-stack-container">
+        <div
+          class="card-stack-container"
+          id="card-stack-container"
+          role="button"
+          tabindex="0"
+          aria-controls="guild-showcase"
+          aria-expanded="false"
+          aria-label={t('guild.click_to_reveal') || '點擊抽取冒險者'}
+        >
           <div class="card-stack" id="card-stack">
             <!-- 卡片堆疊由 JS 動態生成 -->
           </div>
@@ -254,6 +277,10 @@ const membersJson = JSON.stringify(members);
           <div class="members-grid" id="guild-members-grid">
             <!-- 成員卡片由 JS 動態渲染 -->
           </div>
+          <div id="guild-no-results" class="guild-no-results hidden" role="status" aria-live="polite">
+            <i class="fas fa-user-slash" aria-hidden="true"></i>
+            <span data-i18n="guild.no_results">{t('guild.no_results') || '沒有符合條件的成員'}</span>
+          </div>
         </section>
       </div>
 
@@ -276,6 +303,79 @@ const membersJson = JSON.stringify(members);
     flex-direction: column;
     position: relative;
     overflow: visible;
+  }
+
+  .guild-search-panel {
+    position: relative;
+    z-index: 2;
+    width: min(100%, 42rem);
+    margin: 0 auto 1.75rem;
+  }
+
+  .guild-search-label {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.55rem;
+    color: #ffd700;
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .guild-search-input {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(78, 205, 196, 0.55);
+    border-radius: 0.35rem;
+    outline: 1px solid transparent;
+    background:
+      linear-gradient(90deg, rgba(78, 205, 196, 0.08), transparent 30%),
+      rgba(5, 10, 28, 0.88);
+    color: #f8fafc;
+    font: inherit;
+    box-shadow: inset 0 0 18px rgba(78, 205, 196, 0.06), 0 0 0 rgba(78, 205, 196, 0);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .guild-search-input::placeholder {
+    color: rgba(226, 232, 240, 0.58);
+  }
+
+  .guild-search-input:focus-visible {
+    border-color: #4ecdc4;
+    outline-color: #ffd700;
+    outline-offset: 3px;
+    box-shadow: inset 0 0 18px rgba(78, 205, 196, 0.1), 0 0 24px rgba(78, 205, 196, 0.2);
+  }
+
+  .guild-no-results {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    min-height: 9rem;
+    color: rgba(226, 232, 240, 0.72);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.06em;
+  }
+
+  .guild-no-results.hidden {
+    display: none;
+  }
+
+  [data-theme="light"] .guild-search-input {
+    border-color: rgba(180, 130, 0, 0.55);
+    background: rgba(255, 252, 240, 0.92);
+    color: #1e293b;
+  }
+
+  [data-theme="light"] .guild-search-input::placeholder,
+  [data-theme="light"] .guild-no-results {
+    color: rgba(30, 41, 59, 0.65);
   }
 
   /* ===== 星空粒子背景 ===== */
@@ -1595,6 +1695,7 @@ const membersJson = JSON.stringify(members);
     // ===== 狀態 =====
     var GUILD_MEMBERS = [];
     var hasExploded = false;
+    var searchQuery = '';
 
     // ===== 工具函數 =====
     function shuffleArray(array) {
@@ -1627,6 +1728,16 @@ const membersJson = JSON.stringify(members);
       return '等待加入';
     }
 
+    function getMemberSearchText(member) {
+      var tags = (member.tags || []).flatMap(function(tag) {
+        return typeof tag === 'string' ? [tag] : [tag.id, tag.label, getTagName(tag)];
+      });
+      return [member.id, member.name, member.title, member.description].concat(tags)
+        .filter(Boolean)
+        .join(' ')
+        .toLocaleLowerCase();
+    }
+
     // ===== 卡片堆疊 =====
     function createCardStack() {
       var stack = document.getElementById('card-stack');
@@ -1650,6 +1761,8 @@ const membersJson = JSON.stringify(members);
       var stackContainer = document.getElementById('card-stack-container');
       var showcase = document.getElementById('guild-showcase');
       var stackCards = document.querySelectorAll('.stack-card');
+
+      if (stackContainer) stackContainer.setAttribute('aria-expanded', 'true');
 
       stackCards.forEach(function(card, i) {
         var angle = Math.random() * Math.PI * 2;
@@ -1761,14 +1874,15 @@ const membersJson = JSON.stringify(members);
     }
 
     // ===== 渲染成員 =====
-    function renderMembers(withAnimation) {
+    function renderMembers(withAnimation, filteredMembers) {
       if (withAnimation === undefined) withAnimation = true;
       var grid = document.getElementById('guild-members-grid');
       if (!grid) return;
 
       grid.textContent = '';
 
-      var members = shuffleArray(GUILD_MEMBERS).slice(0, CONFIG.displayCount);
+      var isSearch = Array.isArray(filteredMembers);
+      var members = isSearch ? filteredMembers : shuffleArray(GUILD_MEMBERS).slice(0, CONFIG.displayCount);
       var fragment = document.createDocumentFragment();
 
       members.forEach(function(member) {
@@ -1776,7 +1890,7 @@ const membersJson = JSON.stringify(members);
         fragment.appendChild(card);
       });
 
-      if (members.length < CONFIG.displayCount) {
+      if (!isSearch && members.length < CONFIG.displayCount) {
         var placeholderCount = CONFIG.displayCount - members.length;
         for (var i = 0; i < placeholderCount; i++) {
           var placeholderCard = createMemberCard(null, true);
@@ -1786,28 +1900,58 @@ const membersJson = JSON.stringify(members);
 
       grid.appendChild(fragment);
 
+      var noResults = document.getElementById('guild-no-results');
+      if (noResults) noResults.classList.toggle('hidden', !isSearch || members.length > 0);
+
+      var cards = grid.querySelectorAll('.guild-member-card');
       if (withAnimation) {
-        var cards = grid.querySelectorAll('.guild-member-card');
         cards.forEach(function(card, i) {
           setTimeout(function() {
             card.classList.add('slide-in');
           }, i * CONFIG.slideInDelay);
         });
+      } else {
+        cards.forEach(function(card) { card.classList.add('slide-in'); });
       }
 
-      updateStats();
+      updateStats(isSearch ? members.length : GUILD_MEMBERS.length);
     }
 
     function renderAndAnimateMembers() {
-      renderMembers(true);
+      var normalized = searchQuery.trim().toLocaleLowerCase();
+      var filteredMembers = normalized
+        ? GUILD_MEMBERS.filter(function(member) { return getMemberSearchText(member).includes(normalized); })
+        : null;
+      renderMembers(true, filteredMembers);
     }
 
     // ===== 更新統計 =====
-    function updateStats() {
+    function updateStats(count) {
       var countEl = document.getElementById('guild-member-count');
       if (countEl) {
-        countEl.textContent = String(GUILD_MEMBERS.length);
+        countEl.textContent = String(count);
       }
+    }
+
+    function searchMembers(query) {
+      var stackContainer = document.getElementById('card-stack-container');
+      var showcase = document.getElementById('guild-showcase');
+      if (!stackContainer || !showcase) return;
+      searchQuery = query;
+
+      if (!hasExploded) {
+        hasExploded = true;
+        stackContainer.classList.add('hidden');
+        stackContainer.setAttribute('aria-expanded', 'true');
+        showcase.classList.remove('hidden');
+      }
+
+      var normalized = query.trim().toLocaleLowerCase();
+      // ponytail: 159 筆資料直接掃描；成員上千且輸入延遲可量測時再建索引。
+      var matches = normalized
+        ? GUILD_MEMBERS.filter(function(member) { return getMemberSearchText(member).includes(normalized); })
+        : null;
+      renderMembers(false, matches);
     }
 
     // ===== 重新抽取 =====
@@ -1817,8 +1961,12 @@ const membersJson = JSON.stringify(members);
       var stackContainer = document.getElementById('card-stack-container');
       var guildContent = document.querySelector('.guild-content');
       var refreshBtn = document.getElementById('guild-refresh-btn');
+      var searchInput = document.getElementById('guild-search-input');
 
       if (!grid || !showcase || !stackContainer || !guildContent) return;
+
+      if (searchInput) searchInput.value = '';
+      searchQuery = '';
 
       if (refreshBtn) {
         refreshBtn.classList.add('shuffling');
@@ -1858,11 +2006,20 @@ const membersJson = JSON.stringify(members);
 
       var totalDuration = 1200 + cards.length * 100;
       setTimeout(function() {
+        if (searchQuery) {
+          showcase.classList.remove('hidden');
+          stackContainer.classList.add('hidden');
+          stackContainer.setAttribute('aria-expanded', 'true');
+          hasExploded = true;
+          renderAndAnimateMembers();
+          return;
+        }
         showcase.classList.add('hidden');
         grid.textContent = '';
         createCardStack();
         stackContainer.classList.remove('hidden');
         stackContainer.classList.add('reforming');
+        stackContainer.setAttribute('aria-expanded', 'false');
         hasExploded = false;
 
         setTimeout(function() {
@@ -1886,6 +2043,18 @@ const membersJson = JSON.stringify(members);
       var stackContainer = document.getElementById('card-stack-container');
       if (stackContainer) {
         stackContainer.addEventListener('click', explodeCards);
+        stackContainer.addEventListener('keydown', function(event) {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          explodeCards();
+        });
+      }
+
+      var searchInput = document.getElementById('guild-search-input');
+      if (searchInput) {
+        searchInput.addEventListener('input', function(event) {
+          searchMembers(event.target.value);
+        });
       }
 
       var refreshBtn = document.getElementById('guild-refresh-btn');
@@ -1897,9 +2066,9 @@ const membersJson = JSON.stringify(members);
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 100); });
+      document.addEventListener('DOMContentLoaded', init);
     } else {
-      setTimeout(init, 100);
+      init();
     }
   })();
 </script>
