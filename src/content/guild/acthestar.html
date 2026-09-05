@@ -1,9 +1,9 @@
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AC — The Silent Frame</title>
-    <meta name="description" content="Albert Chang — 台灣出生、紐約磨練的演員。在沉默中演繹，在光影間穿行。">
+    <title>Albert Chang — The Silent Frame</title>
+    <meta name="description" content="Albert Chang — Actor, SAG-AFTRA, New York. The Silent Frame.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Archivo+Narrow:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500&family=Special+Elite&display=swap" rel="stylesheet">
@@ -136,10 +136,26 @@
         }
         .back-nav:hover { opacity: 1; }
 
+        .language-switcher {
+            position: fixed; top: 1.35rem; right: 5rem; z-index: 300;
+            display: flex; align-items: center; gap: 0.35rem;
+            font-family: var(--font-script); font-size: 0.75rem;
+            letter-spacing: 0.08em;
+        }
+        .language-switcher button {
+            border: 0; min-width: 44px; min-height: 44px; padding: 0.25rem 0.15rem; background: transparent;
+            color: var(--script-cream); cursor: pointer; font: inherit; font-size: 0.9rem;
+        }
+        .language-switcher button[aria-pressed="true"] { color: var(--spotlight-warm); }
+        .language-switcher button:focus-visible,
+        .professional-nav a:focus-visible,
+        .curtain-call-socials a:focus-visible { outline: 1px solid var(--spotlight-warm); outline-offset: 4px; }
+        .language-divider { color: var(--text-dim); }
+
         /* ===== DUST PARTICLES ===== */
         #dust-canvas {
             position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; z-index: 1;
+            width: 100%; height: 100%; z-index: 11;
             pointer-events: none;
         }
 
@@ -172,8 +188,8 @@
             clip-path: polygon(0 0, 100% 0, 100% 60%, 95% 100%, 85% 70%, 75% 100%, 65% 70%, 55% 100%, 45% 70%, 35% 100%, 25% 70%, 15% 100%, 5% 70%, 0 60%);
         }
         .theater-text {
-            position: relative; z-index: 4;
-            text-align: center; opacity: 0;
+            position: relative; z-index: 7;
+            text-align: center; opacity: 1; padding: 0 1.5rem;
         }
         .theater-text .now-presenting {
             font-family: var(--font-script); font-size: 0.9rem;
@@ -186,17 +202,28 @@
             line-height: 0.9; letter-spacing: 0.02em;
             text-shadow: 0 0 80px rgba(245,222,179,0.3), 0 0 160px rgba(245,222,179,0.1);
         }
-        .theater-text h1 .the {
-            display: block; font-weight: 400; font-style: italic;
-            font-size: 0.35em; letter-spacing: 0.3em;
-            color: var(--script-cream); opacity: 0.7;
-            margin-bottom: 0.3em;
+        .theater-text .production-title {
+            margin-top: 0.75rem; font-family: var(--font-display);
+            font-size: clamp(1.2rem, 3vw, 2rem); font-style: italic;
+            color: var(--script-cream); letter-spacing: 0.12em;
         }
         .theater-text .subtitle {
-            font-family: var(--font-body); font-size: 0.85rem;
-            color: var(--text-muted); letter-spacing: 0.4em;
+            font-family: var(--font-body); font-size: 0.95rem;
+            color: var(--script-cream); letter-spacing: 0.2em;
             text-transform: uppercase; margin-top: 1.5rem;
         }
+        .professional-nav {
+            display: flex; justify-content: center; gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .professional-nav a {
+            color: var(--spotlight-warm); font-family: var(--font-script);
+            font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase;
+            text-decoration: none; border-bottom: 1px solid var(--curtain-highlight);
+            min-height: 44px; display: inline-flex; align-items: center;
+            padding: 0.5rem 0.25rem; transition: color 0.3s, border-color 0.3s;
+        }
+        .professional-nav a:hover { color: var(--spotlight-bright); border-color: var(--spotlight-warm); }
         .scroll-cue {
             position: absolute; bottom: 2rem; left: 50%;
             transform: translateX(-50%); z-index: 4;
@@ -499,14 +526,6 @@
             opacity: 0; transition: opacity 0.4s;
         }
         .backstage-photo:hover .photo-label { opacity: 1; }
-        .backstage-photo .photo-caption-secret {
-            position: absolute; bottom: 2.5rem; left: 1rem;
-            font-family: var(--font-cn); font-size: 0.7rem;
-            color: var(--spotlight-warm); opacity: 0;
-            font-style: italic;
-            transition: opacity 0.5s 0.2s;
-        }
-        .backstage-photo:hover .photo-caption-secret { opacity: 0.7; }
 
         /* ===== FINAL MONOLOGUE ===== */
         .final-monologue {
@@ -558,15 +577,28 @@
             color: var(--curtain-highlight); font-style: italic;
             margin-bottom: 2rem;
         }
+        .contact-heading {
+            position: relative; z-index: 1;
+            font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3rem);
+            color: var(--spotlight-warm); margin-bottom: 0.8rem;
+        }
+        .curtain-call-contact {
+            position: relative; z-index: 1;
+            font-family: var(--font-body); color: var(--text);
+            font-size: 0.9rem; margin: -0.5rem auto 2rem;
+        }
+        .curtain-call-contact strong { color: var(--spotlight-warm); font-weight: 500; }
         .curtain-call-socials {
             display: flex; justify-content: center; gap: 2.5rem;
             margin-bottom: 2.5rem;
         }
         .curtain-call-socials a {
-            color: var(--text-muted); font-size: 1.3rem;
+            color: var(--spotlight-warm); font-size: 1.3rem; min-height: 44px;
             transition: color 0.3s, transform 0.3s;
             text-decoration: none;
+            display: inline-flex; align-items: center; gap: 0.45rem;
         }
+        .social-label { font-family: var(--font-body); font-size: 0.95rem; letter-spacing: 0.04em; }
         .curtain-call-socials a:hover {
             color: var(--spotlight-warm); transform: translateY(-3px);
         }
@@ -658,15 +690,20 @@
             .timeline { padding-left: 2rem; }
             .timeline-entry::before { left: -2rem; }
             .back-nav { top: 1rem; left: 1rem; }
-            .clapboard-body { padding: 1rem 1.2rem; }
             .scene-counter { right: 0.8rem; }
             .scene-counter-label { display: none; }
             .scene-dot { width: 5px; height: 5px; }
             .filmstrip-deco { display: none; }
             .letterbox-top.active, .letterbox-bottom.active { height: 24px; }
+            .language-switcher { top: 0.9rem; right: 3.5rem; }
+            .professional-nav { gap: 1rem; }
+            .professional-nav a { font-size: 0.85rem; }
+            .curtain-call-socials { gap: 1.2rem; flex-wrap: wrap; }
         }
         @media (max-width: 480px) {
             .theater-text h1 { font-size: 2.8rem; }
+            .theater-text .subtitle { letter-spacing: 0.08em; font-size: 0.9rem; }
+            .theater-text .production-title { font-size: 1.15rem; }
             .final-monologue { padding: 6rem 1.5rem; }
         }
 
@@ -712,15 +749,19 @@
             height: 100%;
         }
 
-        /* ===== REVEAL (GSAP-only, CSS initial state) ===== */
-        .reveal {
-            opacity: 0; transform: translateY(25px);
+        /* Visible by default; GSAP owns animated reveal states when available. */
+        .reveal { opacity: 1; }
+        .no-motion .curtain-left, .no-motion .curtain-right { transform: scaleX(0); }
+        .no-motion .theater-text, .no-motion .scroll-cue, .no-motion .reveal {
+            opacity: 1; transform: none;
         }
-        /* Fallback: if JS fails, show content after 4s */
-        @media (prefers-reduced-motion: no-preference) {
-            .reveal { animation: fallback-reveal 0s 4s forwards; }
-            @keyframes fallback-reveal { to { opacity: 1; transform: none; } }
-        }
+        .no-motion .mono-line { opacity: 1; transform: none; color: var(--text); }
+        .no-motion .scroll-monologue, .no-motion .scroll-monologue-inner { height: auto; min-height: 100vh; }
+        .no-motion .monologue-lines { padding: 5rem 1.5rem; }
+        html.no-motion { scroll-behavior: auto; }
+        .no-motion * { animation: none; scroll-behavior: auto; }
+        .no-motion .scene-counter { opacity: 1; }
+        #cooperPhoto:focus-visible, .scene-dot:focus-visible { outline: 2px solid var(--spotlight-warm); outline-offset: 4px; }
 
         /* ===== MOUSE SPOTLIGHT ===== */
         .mouse-spotlight {
@@ -845,9 +886,15 @@
     <!-- Ambient spotlight layer -->
     <div class="spotlight-layer" id="spotlightLayer"></div>
 
+    <nav class="language-switcher" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <span class="language-divider" aria-hidden="true">|</span>
+        <button type="button" data-lang="zh-TW" aria-pressed="false">中文</button>
+    </nav>
+
     <!-- Navigation -->
     <a href="/guild/" class="back-nav">
-        <i class="fas fa-chevron-left"></i> ARCHIVE
+        <i class="fas fa-chevron-left" aria-hidden="true"></i> <span data-i18n="nav.archive">ARCHIVE</span>
     </a>
 
     <!-- ===== ACT I: THE THEATER — CURTAIN OPENS ===== -->
@@ -856,13 +903,18 @@
         <div class="curtain-left" id="curtainLeft"></div>
         <div class="curtain-right" id="curtainRight"></div>
         <div class="theater-text" id="theaterText">
-            <div class="now-presenting">Now Presenting</div>
-            <h1><span class="the">the silent</span>FRAME</h1>
-            <div class="subtitle">Albert Chang &mdash; Actor / Stunt Performer</div>
+            <div class="now-presenting" data-i18n="hero.presenting">Now Presenting</div>
+            <h1 data-i18n="hero.name">Albert Chang</h1>
+            <div class="production-title" data-i18n="hero.production">The Silent Frame</div>
+            <div class="subtitle" data-i18n="hero.subtitle">Actor | SAG-AFTRA | New York</div>
+            <nav class="professional-nav" aria-label="Professional information">
+                <a href="#filmography" data-i18n="nav.credits">Credits</a>
+                <a href="#contact" data-i18n="nav.contact">Contact</a>
+            </nav>
         </div>
         <div class="scroll-cue" id="scrollCue">
-            <span>Enter the theater</span>
-            <i class="fas fa-chevron-down arrow"></i>
+            <span data-i18n="nav.enter">Enter the theater</span>
+            <i class="fas fa-chevron-down arrow" aria-hidden="true"></i>
         </div>
     </section>
 
@@ -870,30 +922,18 @@
     <div class="curtain-transition"><div class="drape"></div></div>
 
     <section class="stage-section" id="actor">
-        <div class="act-label reveal">Act I &mdash; The Actor</div>
-        <h2 class="stage-title reveal">In <em>Silence</em>,<br>I Speak</h2>
+        <div class="act-label reveal" data-i18n="act.actor">Act I &mdash; The Actor</div>
+        <h2 class="stage-title reveal" data-i18n="actor.heading">In <em>Silence</em>,<br>I Speak</h2>
         <div class="actor-spotlight">
             <div class="actor-avatar-stage reveal">
-                <img src="/assets/img/guild/acthestar/avatar.webp" alt="AC" loading="lazy">
+                <img src="/assets/img/guild/acthestar/avatar.webp" width="150" height="150" alt="Illustrated leopard avatar representing Albert Chang" data-i18n-alt="avatar.alt" loading="lazy">
             </div>
             <div class="actor-monologue">
-                <p class="reveal">
-                    我是 <span class="hl">AC</span>，一位出生於台灣、目前定居紐約市的演員。
-                    在不同文化之間成長的經歷塑造了我的視角和表演方式。從台北的巷弄到曼哈頓的舞台，
-                    每一次跨越都讓我更理解 — 身份並非單一的標籤，而是無數故事的交疊。
-                </p>
-                <span class="stage-direction reveal">(A pause. The spotlight narrows.)</span>
-                <p class="reveal">
-                    我不是家喻戶曉的名字，也沒有過著好萊塢式的夢幻生活。但我致力於表演這門藝術，
-                    並專注於講述<span class="hl">有意義的故事</span>。紐約是我持續磨練技藝、
-                    試鏡、合作的地方，也是我追求熱愛的表演工作的舞台。
-                </p>
-                <span class="stage-direction reveal">(He turns to face the audience.)</span>
-                <p class="reveal">
-                    作為 SAG-AFTRA 工會成員，我持續在獨立電影、電視劇與舞台之間穿行。
-                    表演的核心不在於聲量，而在於<span class="hl">真實</span>。
-                    每個角色都是一次機會，用每一個沉默證明：不需要被看見，也能被感受到。
-                </p>
+                <p class="reveal" data-i18n="actor.intro">I am <span class="hl">AC</span>, an actor born in Taiwan and now based in New York City. Growing between cultures shaped my perspective and the way I perform. From Taipei's lanes to Manhattan's stages, every crossing reminds me that identity is not one label, but countless stories layered together.</p>
+                <span class="stage-direction reveal" data-i18n="actor.direction.pause">(A pause. The spotlight narrows.)</span>
+                <p class="reveal" data-i18n="actor.mission">I am not a household name, and I do not live a Hollywood dream. I am committed to the craft of acting and to telling <span class="hl">meaningful stories</span>. New York is where I keep training, auditioning, collaborating, and making room for the work I love.</p>
+                <span class="stage-direction reveal" data-i18n="actor.direction.turn">(He turns to face the audience.)</span>
+                <p class="reveal" data-i18n="actor.guild">As a SAG-AFTRA member, I move between independent films, television, and the stage. Acting is not about volume, but <span class="hl">truth</span>. Every role is a chance to prove, in each silence, that something does not need to be seen to be felt.</p>
             </div>
         </div>
     </section>
@@ -902,15 +942,15 @@
     <div class="curtain-transition"><div class="drape"></div></div>
 
     <section class="clapboard-section">
-        <div class="act-label reveal">Dossier</div>
+        <div class="act-label reveal" data-i18n="dossier.label">Dossier</div>
         <div class="dossier-card reveal">
             <div class="dossier-body">
-                <div class="clapboard-row"><span class="clapboard-label">Production</span><span class="clapboard-value">The Silent Frame</span></div>
-                <div class="clapboard-row"><span class="clapboard-label">Actor</span><span class="clapboard-value">Albert Chang (AC)</span></div>
-                <div class="clapboard-row"><span class="clapboard-label">Origin</span><span class="clapboard-value">Taiwan &rarr; New York City</span></div>
-                <div class="clapboard-row"><span class="clapboard-label">Guild</span><span class="clapboard-value">SAG-AFTRA</span></div>
-                <div class="clapboard-row"><span class="clapboard-label">Height</span><span class="clapboard-value">5'11" (180 cm)</span></div>
-                <div class="clapboard-row"><span class="clapboard-label">Status</span><span class="clapboard-value">Currently Filming</span></div>
+                <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.production.label">Production</span><span class="clapboard-value" data-i18n="dossier.production.value">The Silent Frame</span></div>
+                <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.actor.label">Actor</span><span class="clapboard-value" data-i18n="dossier.actor.value">Albert Chang (AC)</span></div>
+                <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.origin.label">Origin</span><span class="clapboard-value" data-i18n="dossier.origin.value">Taiwan &rarr; New York City</span></div>
+                <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.guild.label">Guild</span><span class="clapboard-value" data-i18n="dossier.guild.value">SAG-AFTRA</span></div>
+                <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.height.label">Height</span><span class="clapboard-value" data-i18n="dossier.height.value">5'11&quot; (180 cm)</span></div>
+                <div class="clapboard-row"><span class="clapboard-label" data-i18n="dossier.status.label">Status</span><span class="clapboard-value" data-i18n="dossier.status.value">Currently Filming</span></div>
             </div>
         </div>
     </section>
@@ -919,23 +959,23 @@
     <div class="curtain-transition"><div class="drape"></div></div>
 
     <section class="timeline-section" id="filmography">
-        <div class="act-label reveal">Act II &mdash; The Reel</div>
-        <h2 class="stage-title reveal">Filmography</h2>
+        <div class="act-label reveal" data-i18n="act.credits">Act II &mdash; Credits</div>
+        <h2 class="stage-title reveal" data-i18n="credits.heading">Credits</h2>
         <div class="timeline">
             <div class="timeline-entry now reveal">
                 <div class="timeline-year">2026</div>
                 <div class="timeline-title">Power: Original Sins</div>
                 <div class="timeline-meta">
-                    <span class="timeline-role">Character Role</span>
+                    <span class="timeline-role" data-i18n="credits.power.role">Character Role</span>
                     <span class="timeline-badge">Starz</span>
-                    <span class="timeline-live"><i class="fas fa-circle"></i> Now Filming</span>
+                    <span class="timeline-live"><i class="fas fa-circle" aria-hidden="true"></i> <span data-i18n="credits.now">Now Filming</span></span>
                 </div>
             </div>
             <div class="timeline-entry reveal">
                 <div class="timeline-year">2022</div>
                 <div class="timeline-title">Fire Island</div>
                 <div class="timeline-meta">
-                    <span class="timeline-role">Pool Party Guest</span>
+                    <span class="timeline-role" data-i18n="credits.fire.role">Pool Party Guest</span>
                     <span class="timeline-badge">Film</span>
                     <span class="timeline-rating"><i class="fas fa-star"></i> 6.7</span>
                 </div>
@@ -944,7 +984,7 @@
                 <div class="timeline-year">2020</div>
                 <div class="timeline-title">Breaking the Silence</div>
                 <div class="timeline-meta">
-                    <span class="timeline-role">Japanese Soldier</span>
+                    <span class="timeline-role" data-i18n="credits.silence.role">Japanese Soldier</span>
                     <span class="timeline-badge">Short</span>
                     <span class="timeline-rating"><i class="fas fa-star"></i> 8.6</span>
                 </div>
@@ -953,7 +993,7 @@
                 <div class="timeline-year">2019</div>
                 <div class="timeline-title">Bare Knuckle Brawler</div>
                 <div class="timeline-meta">
-                    <span class="timeline-role">Fight Club Attendee</span>
+                    <span class="timeline-role" data-i18n="credits.brawler.role">Fight Club Attendee</span>
                     <span class="timeline-badge">Film</span>
                     <span class="timeline-rating"><i class="fas fa-star"></i> 3.1</span>
                 </div>
@@ -962,7 +1002,7 @@
                 <div class="timeline-year">2019</div>
                 <div class="timeline-title">Crashing</div>
                 <div class="timeline-meta">
-                    <span class="timeline-role">Comedy Club Patron</span>
+                    <span class="timeline-role" data-i18n="credits.crashing.role">Comedy Club Patron</span>
                     <span class="timeline-badge">HBO</span>
                     <span class="timeline-rating"><i class="fas fa-star"></i> 7.6</span>
                 </div>
@@ -971,7 +1011,7 @@
                 <div class="timeline-year">2018</div>
                 <div class="timeline-title">Succession</div>
                 <div class="timeline-meta">
-                    <span class="timeline-role">Actor + Stunt Coordinator</span>
+                    <span class="timeline-role" data-i18n="credits.succession.role">Actor + Stunt Coordinator</span>
                     <span class="timeline-badge">HBO</span>
                     <span class="timeline-rating"><i class="fas fa-star"></i> 8.8</span>
                 </div>
@@ -980,7 +1020,7 @@
                 <div class="timeline-year">2015</div>
                 <div class="timeline-title">Hunting Season</div>
                 <div class="timeline-meta">
-                    <span class="timeline-role">Bar Patron</span>
+                    <span class="timeline-role" data-i18n="credits.hunting.role">Bar Patron</span>
                     <span class="timeline-badge">Series</span>
                     <span class="timeline-rating"><i class="fas fa-star"></i> 7.3</span>
                 </div>
@@ -993,14 +1033,14 @@
         <div class="scroll-monologue-inner">
             <div class="monologue-stage-bg" id="monologueBg"></div>
             <div class="monologue-lines">
-                <p class="mono-line" data-line="0">我不是家喻戶曉的名字。</p>
-                <p class="mono-line" data-line="1">也沒有過著好萊塢式的夢幻生活。</p>
-                <p class="mono-line" data-line="2">但我致力於表演這門藝術。</p>
-                <p class="mono-line" data-line="3">每一次試鏡，都是一次重新認識自己的機會。</p>
-                <p class="mono-line" data-line="4">每一次被拒絕，都是離角色更近一步。</p>
-                <p class="mono-line" data-line="5">在沉默中，我學會了用身體說故事。</p>
-                <p class="mono-line" data-line="6">不需要被看見，也能被感受到。</p>
-                <p class="mono-line mono-line-final" data-line="7">This is my stage.</p>
+                <p class="mono-line" data-line="0" data-i18n="monologue.0">I am not a household name.</p>
+                <p class="mono-line" data-line="1" data-i18n="monologue.1">I do not live a Hollywood dream.</p>
+                <p class="mono-line" data-line="2" data-i18n="monologue.2">But I am devoted to the craft of acting.</p>
+                <p class="mono-line" data-line="3" data-i18n="monologue.3">Every audition is a chance to meet myself again.</p>
+                <p class="mono-line" data-line="4" data-i18n="monologue.4">Every rejection brings me one step closer to the role.</p>
+                <p class="mono-line" data-line="5" data-i18n="monologue.5">In silence, I learned to tell stories with my body.</p>
+                <p class="mono-line" data-line="6" data-i18n="monologue.6">Something does not need to be seen to be felt.</p>
+                <p class="mono-line mono-line-final" data-line="7" data-i18n="monologue.7">This is my stage.</p>
             </div>
         </div>
     </section>
@@ -1009,47 +1049,31 @@
     <div class="curtain-transition"><div class="drape"></div></div>
 
     <section class="script-section" id="craft">
-        <div class="act-label reveal">Act III &mdash; The Craft</div>
-        <h2 class="stage-title reveal">What I <em>Bring</em> to the Stage</h2>
+        <div class="act-label reveal" data-i18n="act.craft">Act III &mdash; The Craft</div>
+        <h2 class="stage-title reveal" data-i18n="craft.heading">What I <em>Bring</em> to the Stage</h2>
         <div class="script-pages">
             <div class="script-page reveal">
                 <div class="script-page-icon"><i class="fas fa-theater-masks"></i></div>
-                <h3>Screen Acting</h3>
-                <p>
-                    從 HBO 的 Succession 到獨立短片 Breaking the Silence，
-                    我在鏡頭前呈現從沉默的張力到爆發的衝突。無論是主角或配角，
-                    每個角色都值得被完整地活過一次。
-                </p>
+                <h3 data-i18n="craft.screen.title">Screen Acting</h3>
+                <p data-i18n="craft.screen.body">From HBO's Succession to the independent short Breaking the Silence, I bring tension, silence, and conflict to the camera. Lead or supporting, every role deserves to be lived fully.</p>
                 <span class="script-page-number">p.1</span>
             </div>
             <div class="script-page reveal">
                 <div class="script-page-icon"><i class="fas fa-bolt"></i></div>
-                <h3>Stunt Coordination</h3>
-                <p>
-                    不只是演，還要讓動作說話。在 Succession 擔任特技協調師的經驗，
-                    讓我理解如何在安全與真實之間找到最完美的平衡。
-                    身體就是最誠實的敘事工具。
-                </p>
+                <h3 data-i18n="craft.stunt.title">Stunt Coordination</h3>
+                <p data-i18n="craft.stunt.body">Movement has a voice, too. My experience as a stunt coordinator on Succession taught me to find the balance between safety and truth. The body is the most honest storytelling tool.</p>
                 <span class="script-page-number">p.2</span>
             </div>
             <div class="script-page reveal">
                 <div class="script-page-icon"><i class="fas fa-globe-asia"></i></div>
-                <h3>Cross-Cultural Bridge</h3>
-                <p>
-                    在台灣出生、紐約淬鍊。我能自然切換東西方的表演語彙，
-                    理解不同文化背景下的情感表達方式。
-                    這讓我成為跨文化製作中獨特的資產。
-                </p>
+                <h3 data-i18n="craft.bridge.title">Cross-Cultural Bridge</h3>
+                <p data-i18n="craft.bridge.body">Born in Taiwan, shaped in New York. I move naturally between Eastern and Western performance languages and understand emotional expression across cultures. That makes me a distinct asset in cross-cultural productions.</p>
                 <span class="script-page-number">p.3</span>
             </div>
             <div class="script-page reveal">
                 <div class="script-page-icon"><i class="fas fa-film"></i></div>
-                <h3>Cinema Advocate</h3>
-                <p>
-                    電影不只是工作，更是信仰。從 del Toro 的 Frankenstein
-                    到 David Archuleta 的真實告白，我持續探索影像如何觸動人心，
-                    如何讓沉默的情感在銀幕上被聽見。
-                </p>
+                <h3 data-i18n="craft.cinema.title">Cinema Advocate</h3>
+                <p data-i18n="craft.cinema.body">Cinema is more than work; it is a belief. From del Toro's Frankenstein to David Archuleta's honest confession, I keep exploring how images move us and let quiet emotion be heard on screen.</p>
                 <span class="script-page-number">p.4</span>
             </div>
         </div>
@@ -1060,24 +1084,24 @@
     <div class="curtain-transition"><div class="drape"></div></div>
 
     <section class="backstage-section" id="backstage">
-        <div class="act-label reveal">Act IV &mdash; Backstage</div>
-        <h2 class="stage-title reveal">Behind the <em>Curtain</em></h2>
+        <div class="act-label reveal" data-i18n="act.backstage">Act IV &mdash; Backstage</div>
+        <h2 class="stage-title reveal" data-i18n="backstage.heading">Behind the <em>Curtain</em></h2>
         <div class="backstage-wall">
-            <div class="backstage-photo reveal" id="cooperPhoto" style="position:relative;cursor:pointer;">
+            <div class="backstage-photo reveal" id="cooperPhoto" role="button" tabindex="0" aria-label="Reveal the backstage anecdote (activate twice)" style="position:relative;cursor:pointer;">
                 <div class="photo-tape"></div>
-                <img src="/assets/img/guild/acthestar/bradley_cooper.webp" alt="With Bradley Cooper at Frankenstein screening" loading="lazy">
-                <span class="photo-label">Frankenstein screening, with Bradley Cooper</span>
-                <span class="easter-egg-tooltip" id="easterEgg">"No selfies"... well, almost.</span>
+                <img src="/assets/img/guild/acthestar/bradley_cooper.webp" width="1368" height="1824" alt="With Bradley Cooper at a Frankenstein screening" loading="lazy">
+                <span class="photo-label" data-i18n="backstage.cooper.label">Frankenstein screening, with Bradley Cooper</span>
+                <span class="easter-egg-tooltip" id="easterEgg" data-i18n="backstage.cooper.egg">"No selfies"... well, almost.</span>
             </div>
             <div class="backstage-photo reveal">
                 <div class="photo-tape"></div>
-                <img src="/assets/img/guild/acthestar/frankenstein.webp" alt="Frankenstein Premiere" loading="lazy">
-                <span class="photo-label">Guillermo del Toro's Frankenstein</span>
+                <img src="/assets/img/guild/acthestar/frankenstein.webp" width="1824" height="1368" alt="Screen at a Frankenstein screening" loading="lazy">
+                <span class="photo-label" data-i18n="backstage.frankenstein">Guillermo del Toro's Frankenstein</span>
             </div>
             <div class="backstage-photo reveal">
                 <div class="photo-tape"></div>
-                <img src="/assets/img/guild/acthestar/devout.webp" alt="Devout by David Archuleta" loading="lazy">
-                <span class="photo-label">Devout &mdash; David Archuleta</span>
+                <img src="/assets/img/guild/acthestar/devout.webp" width="320" height="490" alt="Devout book cover by David Archuleta" loading="lazy">
+                <span class="photo-label" data-i18n="backstage.devout">Devout &mdash; David Archuleta</span>
             </div>
         </div>
     </section>
@@ -1093,33 +1117,126 @@
     </section>
 
     <!-- ===== CURTAIN CALL ===== -->
-    <footer class="curtain-call">
-        <div class="curtain-call-title reveal">Curtain Call</div>
+    <footer class="curtain-call" id="contact">
+        <div class="curtain-call-title reveal" data-i18n="contact.curtain">Curtain Call</div>
+        <h2 class="contact-heading" data-i18n="contact.heading">Contact</h2>
+        <p class="curtain-call-contact" data-i18n="contact.note">For professional contact, reach out through <strong>Instagram</strong> or <strong>Threads</strong>.</p>
         <div class="curtain-call-socials">
             <a href="https://www.threads.com/@acthestar" target="_blank" rel="noopener noreferrer" aria-label="Threads">
-                <i class="fab fa-threads"></i>
+                <i class="fab fa-threads" aria-hidden="true"></i><span class="social-label" data-i18n="contact.threads">Threads</span>
             </a>
             <a href="https://www.instagram.com/acthestar/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <i class="fab fa-instagram"></i>
+                <i class="fab fa-instagram" aria-hidden="true"></i><span class="social-label" data-i18n="contact.instagram">Instagram</span>
             </a>
             <a href="https://m.imdb.com/name/nm9922349/" target="_blank" rel="noopener noreferrer" aria-label="IMDb">
-                <i class="fab fa-imdb"></i>
+                <i class="fab fa-imdb" aria-hidden="true"></i><span class="social-label">IMDb</span>
             </a>
         </div>
         <p class="curtain-call-credit">Made with <i class="fas fa-heart" style="color:var(--curtain);font-size:0.5rem;margin:0 0.2rem;"></i> by SuperGalen's Dungeon</p>
     </footer>
 
     <script>
+    /* Content and navigation do not depend on the animation libraries. */
+    (function() {
+        const elements = [...document.querySelectorAll('[data-i18n]')];
+        const english = Object.fromEntries(elements.map(el => [el.dataset.i18n, el.innerHTML]));
+        const chinese = {
+            'nav.archive': '返回公會', 'hero.presenting': '即將登場',
+            'hero.subtitle': '演員 | SAG-AFTRA | 紐約',
+            'nav.credits': '演出作品', 'nav.contact': '聯絡', 'nav.enter': '走進劇場',
+            'act.actor': 'Act I — 演員', 'actor.heading': '在<em>沉默</em>中，<br>我說話',
+            'actor.intro': '我是 <span class="hl">AC</span>，一位出生於台灣、目前定居紐約市的演員。在不同文化之間成長的經歷塑造了我的視角和表演方式。從台北的巷弄到曼哈頓的舞台，每一次跨越都讓我更理解 — 身份並非單一的標籤，而是無數故事的交疊。',
+            'actor.direction.pause': '（停頓。聚光燈漸漸收攏。）',
+            'actor.mission': '我不是家喻戶曉的名字，也沒有過著好萊塢式的夢幻生活。但我致力於表演這門藝術，並專注於講述<span class="hl">有意義的故事</span>。紐約是我持續磨練技藝、試鏡、合作的地方，也是我追求熱愛的表演工作的舞台。',
+            'actor.direction.turn': '（他轉身面向觀眾。）',
+            'actor.guild': '作為 SAG-AFTRA 工會成員，我持續在獨立電影、電視劇與舞台之間穿行。表演的核心不在於聲量，而在於<span class="hl">真實</span>。每個角色都是一次機會，用每一個沉默證明：不需要被看見，也能被感受到。',
+            'dossier.label': '演員資料', 'dossier.production.label': '主題', 'dossier.actor.label': '演員',
+            'dossier.origin.label': '起點', 'dossier.origin.value': '台灣 → 紐約市',
+            'dossier.guild.label': '工會', 'dossier.height.label': '身高', 'dossier.status.label': '近況',
+            'dossier.status.value': '拍攝中', 'act.credits': 'Act II — 演出作品',
+            'credits.heading': '演出作品', 'credits.now': '拍攝中',
+            'credits.power.role': '角色演出', 'credits.fire.role': '泳池派對賓客',
+            'credits.silence.role': '日本士兵', 'credits.brawler.role': '格鬥俱樂部觀眾',
+            'credits.crashing.role': '喜劇俱樂部顧客', 'credits.succession.role': '演員＋特技協調師',
+            'credits.hunting.role': '酒吧顧客',
+            'monologue.0': '我不是家喻戶曉的名字。', 'monologue.1': '也沒有過著好萊塢式的夢幻生活。',
+            'monologue.2': '但我致力於表演這門藝術。', 'monologue.3': '每一次試鏡，都是一次重新認識自己的機會。',
+            'monologue.4': '每一次被拒絕，都是離角色更近一步。', 'monologue.5': '在沉默中，我學會了用身體說故事。',
+            'monologue.6': '不需要被看見，也能被感受到。', 'monologue.7': '這是我的舞台。',
+            'act.craft': 'Act III — 技藝', 'craft.heading': '我帶上舞台的<em>技藝</em>',
+            'craft.screen.title': '鏡頭表演',
+            'craft.screen.body': '從 HBO 的 Succession 到獨立短片 Breaking the Silence，我在鏡頭前呈現從沉默的張力到爆發的衝突。無論是主角或配角，每個角色都值得被完整地活過一次。',
+            'craft.stunt.title': '特技協調',
+            'craft.stunt.body': '不只是演，還要讓動作說話。在 Succession 擔任特技協調師的經驗，讓我理解如何在安全與真實之間找到最完美的平衡。身體就是最誠實的敘事工具。',
+            'craft.bridge.title': '跨文化橋樑',
+            'craft.bridge.body': '在台灣出生、紐約淬鍊。我能自然切換東西方的表演語彙，理解不同文化背景下的情感表達方式。這讓我成為跨文化製作中獨特的資產。',
+            'craft.cinema.title': '電影愛好者',
+            'craft.cinema.body': '電影不只是工作，更是信仰。從 del Toro 的 Frankenstein 到 David Archuleta 的真實告白，我持續探索影像如何觸動人心，如何讓沉默的情感在銀幕上被聽見。',
+            'act.backstage': 'Act IV — 幕後', 'backstage.heading': '<em>幕後</em>時刻',
+            'backstage.cooper.label': 'Frankenstein 放映會，與 Bradley Cooper',
+            'backstage.cooper.egg': '「不准自拍」……好吧，差一點。',
+            'backstage.frankenstein': 'Guillermo del Toro 的 Frankenstein',
+            'backstage.devout': 'David Archuleta 的 Devout',
+            'contact.curtain': 'Curtain Call — 謝幕',
+            'contact.heading': '聯絡', 'contact.note': '工作聯絡可透過現有的 <strong>Instagram</strong> 或 <strong>Threads</strong> 公開帳號。'
+        };
+        function setLanguage(language) {
+            const lang = language === 'zh-TW' ? language : 'en';
+            document.documentElement.lang = lang;
+            elements.forEach(el => { el.innerHTML = (lang === 'zh-TW' && chinese[el.dataset.i18n]) || english[el.dataset.i18n]; });
+            document.querySelector('[data-i18n-alt="avatar.alt"]').alt = lang === 'en' ? 'Illustrated leopard avatar representing Albert Chang' : '代表 Albert Chang 的豹頭插畫頭像';
+            document.querySelectorAll('[data-lang]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.lang === lang)));
+            try { localStorage.setItem('acthestar_language', lang); } catch { /* Storage is optional. */ }
+            window.ScrollTrigger?.refresh();
+        }
+        let language = 'en';
+        try { language = localStorage.getItem('acthestar_language') || language; } catch { /* Default to English. */ }
+        setLanguage(language);
+        document.querySelectorAll('[data-lang]').forEach(button => button.addEventListener('click', () => setLanguage(button.dataset.lang)));
+
+        // Quick work links should not be interrupted by ScrollTrigger's load refresh.
+        document.querySelectorAll('.professional-nav a').forEach(link => link.addEventListener('click', event => {
+            event.preventDefault();
+            window.ScrollTrigger?.refresh();
+            history.pushState(null, '', link.hash);
+            document.querySelector(link.hash).scrollIntoView({ behavior: 'instant' });
+        }));
+
+        const noMotion = matchMedia('(prefers-reduced-motion: reduce)').matches || !window.gsap || !window.ScrollTrigger;
+        document.documentElement.classList.toggle('no-motion', noMotion);
+        const openCurtains = () => document.querySelectorAll('.curtain-left, .curtain-right').forEach(el => el.classList.add('opened'));
+        setTimeout(openCurtains, 2500);
+        if (noMotion) openCurtains();
+
+        try {
+            const takes = (parseInt(localStorage.getItem('acthestar_takes'), 10) || 0) + 1;
+            localStorage.setItem('acthestar_takes', String(takes));
+            document.getElementById('takeNum').textContent = takes;
+        } catch { /* The visit counter must not block content. */ }
+
+        const scenes = ['#theater', '#actor', '.clapboard-section', '#filmography', '#scrollMonologue', '#craft', '#backstage', '#contact'];
+        document.querySelectorAll('.scene-dot').forEach(dot => {
+            dot.setAttribute('role', 'button'); dot.tabIndex = 0;
+            dot.setAttribute('aria-label', dot.title);
+            dot.addEventListener('click', () => document.querySelector(scenes[Number(dot.dataset.scene)])?.scrollIntoView({ behavior: noMotion ? 'instant' : 'smooth' }));
+        });
+        document.querySelectorAll('.scene-dot, #cooperPhoto').forEach(el => el.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); el.click(); }
+        }));
+        let eggClicks = 0;
+        document.getElementById('cooperPhoto').addEventListener('click', () => {
+            if (++eggClicks < 2) return;
+            const egg = document.getElementById('easterEgg');
+            egg.classList.add('show');
+            setTimeout(() => egg.classList.remove('show'), 3000);
+            eggClicks = 0;
+        });
+    })();
+
     /* ===== MAIN SCRIPT ===== */
     (function() {
+        if (document.documentElement.classList.contains('no-motion')) return;
         gsap.registerPlugin(ScrollTrigger);
-
-        // === TAKE COUNTER (localStorage) ===
-        const takeKey = 'acthestar_takes';
-        let takes = parseInt(localStorage.getItem(takeKey) || '0', 10) + 1;
-        localStorage.setItem(takeKey, takes);
-        const takeNum = document.getElementById('takeNum');
-        if (takeNum) takeNum.textContent = takes;
 
         // === CURTAIN OPEN ===
         const tl = gsap.timeline({ delay: 0.5 });
@@ -1219,12 +1336,6 @@
             document.querySelector('.curtain-call')
         ];
         const sceneDots = document.querySelectorAll('.scene-dot');
-        sceneDots.forEach(dot => {
-            dot.addEventListener('click', () => {
-                const idx = parseInt(dot.dataset.scene);
-                if (scenes[idx]) scenes[idx].scrollIntoView({ behavior: 'smooth' });
-            });
-        });
 
         // === SPOTLIGHT FOLLOWS SCROLL + SCENE COUNTER UPDATE ===
         ScrollTrigger.create({
@@ -1397,33 +1508,20 @@
             });
         }
 
-        // === EASTER EGG: COOPER PHOTO ===
-        const cooperPhoto = document.getElementById('cooperPhoto');
-        const easterEgg = document.getElementById('easterEgg');
-        let eggClicks = 0;
-        if (cooperPhoto && easterEgg) {
-            cooperPhoto.addEventListener('click', () => {
-                eggClicks++;
-                if (eggClicks >= 2) {
-                    easterEgg.classList.add('show');
-                    setTimeout(() => easterEgg.classList.remove('show'), 3000);
-                    eggClicks = 0;
-                }
-            });
-        }
-
     })();
 
     /* ===== STAGE DUST (Three.js) ===== */
     (function() {
         const canvas = document.getElementById('dust-canvas');
-        if (!canvas || typeof THREE === 'undefined') return;
+        if (!canvas || typeof THREE === 'undefined' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 3;
 
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+        let renderer;
+        try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false }); }
+        catch { return; }
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -1459,6 +1557,7 @@
                 if (pos[i*3+1] < -4) { pos[i*3+1] = 4; pos[i*3] = (Math.random()-0.5)*8; }
             }
             geometry.attributes.position.needsUpdate = true;
+            points.rotation.y = window.scrollY * 0.00005;
             renderer.render(scene, camera);
         }
         animate();
