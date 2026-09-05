@@ -52,6 +52,38 @@ test('English and Chinese switch real content and preserve the choice', async ({
   await expect(page.locator('button[data-lang="en"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('language changes fade out then in and rapid clicks keep the latest choice', async ({ page }) => {
+  await page.goto(pageUrl, { waitUntil: 'domcontentloaded' });
+  const immediateLanguage = await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>('button[data-lang="zh-TW"]')!.click();
+    return document.documentElement.lang;
+  });
+  expect(immediateLanguage).toBe('en');
+  await expect.poll(() => page.evaluate(() => document.body.getAnimations().length)).toBeGreaterThan(0);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
+  await expect.poll(() => page.evaluate(() => document.body.getAnimations().length)).toBe(0);
+  expect(await page.locator('body').evaluate(el => getComputedStyle(el).opacity)).toBe('1');
+  await page.evaluate(() => {
+    for (const lang of ['en', 'zh-TW', 'en']) {
+      document.querySelector<HTMLButtonElement>(`button[data-lang="${lang}"]`)!.click();
+    }
+  });
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect.poll(() => page.evaluate(() => document.body.getAnimations().length)).toBe(0);
+  await expect(page.locator('button[data-lang="en"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.locator('body').evaluate(el => getComputedStyle(el).opacity)).toBe('1');
+});
+
+test('reduced motion switches language immediately without a fade', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(pageUrl, { waitUntil: 'domcontentloaded' });
+  const state = await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>('button[data-lang="zh-TW"]')!.click();
+    return { language: document.documentElement.lang, animations: document.body.getAnimations().length };
+  });
+  expect(state).toEqual({ language: 'zh-TW', animations: 0 });
+});
+
 test('essential information survives unavailable animation scripts and storage', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

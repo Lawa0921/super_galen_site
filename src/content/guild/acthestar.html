@@ -32,7 +32,7 @@
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; overflow-x: hidden; }
+        html { scroll-behavior: smooth; overflow-x: hidden; background: var(--backstage); }
         body {
             font-family: var(--font-body);
             background: var(--backstage);
@@ -1192,7 +1192,29 @@
         let language = 'en';
         try { language = localStorage.getItem('acthestar_language') || language; } catch { /* Default to English. */ }
         setLanguage(language);
-        document.querySelectorAll('[data-lang]').forEach(button => button.addEventListener('click', () => setLanguage(button.dataset.lang)));
+        let languageFade = null;
+        async function changeLanguage(lang) {
+            if (lang === document.documentElement.lang && !languageFade) return;
+            const opacity = getComputedStyle(document.body).opacity;
+            languageFade?.cancel();
+            languageFade = null;
+            if (matchMedia('(prefers-reduced-motion: reduce)').matches || !document.body.animate) {
+                setLanguage(lang);
+                return;
+            }
+            const fadeOut = document.body.animate(
+                { opacity: [opacity, 0] }, { duration: 140, easing: 'ease-out', fill: 'forwards' }
+            );
+            languageFade = fadeOut;
+            try { await fadeOut.finished; } catch { return; }
+            setLanguage(lang);
+            fadeOut.cancel();
+            const fadeIn = document.body.animate({ opacity: [0, 1] }, { duration: 180, easing: 'ease-in' });
+            languageFade = fadeIn;
+            try { await fadeIn.finished; } catch { /* A newer choice replaced this animation. */ }
+            if (languageFade === fadeIn) languageFade = null;
+        }
+        document.querySelectorAll('[data-lang]').forEach(button => button.addEventListener('click', () => changeLanguage(button.dataset.lang)));
 
         // Quick work links should not be interrupted by ScrollTrigger's load refresh.
         document.querySelectorAll('.professional-nav a').forEach(link => link.addEventListener('click', event => {
