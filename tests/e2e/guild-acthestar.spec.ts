@@ -37,8 +37,9 @@ test('real contact links and credits remain reachable', async ({ page }) => {
   await navigation.getByRole('link', { name: 'Contact', exact: true }).click();
   await expect(page.locator('#contact')).toBeInViewport();
   await expect(page.locator('#contact').getByRole('link', { name: /Instagram/i })).toHaveAttribute('href', 'https://www.instagram.com/acthestar/');
+  await expect(page.locator('#contact')).toContainText('munknown936@gmail.com');
+  await expect(page.locator('#contact').getByRole('link', { name: 'munknown936@gmail.com' })).toHaveAttribute('href', 'mailto:munknown936@gmail.com');
   await expect(page.locator('#contact')).toContainText('Curtain Call');
-  await expect(page.locator('a[href^="mailto:"], a[href$=".pdf"]')).toHaveCount(0);
   await expect(page.locator('a[href="/guild/"]')).toHaveCount(1);
 });
 
@@ -47,6 +48,9 @@ test('English and Chinese switch real content and preserve the choice', async ({
   const original = await page.locator('.actor-monologue').innerText();
   await page.locator('button[data-lang="zh-TW"]').click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
+  await page.locator('#contact').scrollIntoViewIfNeeded();
+  await expect(page.locator('#contact')).toContainText('專業聯絡信箱');
+  await expect(page.locator('#contact').getByRole('link', { name: 'munknown936@gmail.com' })).toHaveAttribute('href', 'mailto:munknown936@gmail.com');
   await expect(page.locator('.actor-monologue')).toContainText('一位出生於台灣');
   await expect(page.locator('.clapboard-section')).not.toContainText('拍攝中');
   await expect(page.locator('#filmography')).not.toContainText('拍攝中');

@@ -573,6 +573,8 @@
             font-family: var(--font-body); color: var(--text);
             font-size: 0.9rem; margin: -0.5rem auto 2rem;
         }
+        .curtain-call-contact a { color: var(--spotlight-warm); }
+        .curtain-call-contact a:focus-visible { outline: 1px solid var(--spotlight-warm); outline-offset: 4px; }
         .curtain-call-contact strong { color: var(--spotlight-warm); font-weight: 500; }
         .curtain-call-socials {
             display: flex; justify-content: center; gap: 2.5rem;
@@ -1104,7 +1106,7 @@
     <footer class="curtain-call" id="contact">
         <div class="curtain-call-title reveal" data-i18n="contact.curtain">Curtain Call</div>
         <h2 class="contact-heading" data-i18n="contact.heading">Contact</h2>
-        <p class="curtain-call-contact" data-i18n="contact.note">For professional contact, reach out through <strong>Instagram</strong> or <strong>Threads</strong>.</p>
+        <p class="curtain-call-contact" data-i18n="contact.note">For professional contact, email <a href="mailto:munknown936@gmail.com">munknown936@gmail.com</a> or reach out through <strong>Instagram</strong> or <strong>Threads</strong>.</p>
         <div class="curtain-call-socials">
             <a href="https://www.threads.com/@acthestar" target="_blank" rel="noopener noreferrer" aria-label="Threads">
                 <i class="fab fa-threads" aria-hidden="true"></i><span class="social-label" data-i18n="contact.threads">Threads</span>
@@ -1161,7 +1163,7 @@
             'backstage.frankenstein': 'Guillermo del Toro 的 Frankenstein',
             'backstage.devout': 'David Archuleta 的 Devout',
             'contact.curtain': 'Curtain Call — 謝幕',
-            'contact.heading': '聯絡', 'contact.note': '工作聯絡可透過現有的 <strong>Instagram</strong> 或 <strong>Threads</strong> 公開帳號。'
+            'contact.heading': '聯絡', 'contact.note': '專業聯絡信箱：<a href="mailto:munknown936@gmail.com">munknown936@gmail.com</a>，或透過現有的 <strong>Instagram</strong> 或 <strong>Threads</strong> 公開帳號。'
         };
         function setLanguage(language) {
             const lang = language === 'zh-TW' ? language : 'en';
