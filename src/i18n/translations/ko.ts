@@ -1014,7 +1014,7 @@ export const ko = {
           event_0: {
             date: '현재 스킬 트리',
             title: '풀스택 × AI 응용의 무기고',
-            description: '프론트엔드：HTML/CSS/JS 기본기, Tailwind + Bootstrap, Stimulus/Hotwire, Phoenix LiveView. 백엔드：Ruby on Rails(첫사랑), Elixir Phoenix(함수형의 세례), Node.js(자동화의 좋은 친구), PostgreSQL(인덱스가 내 성능을 구했다). 블록체인：Solidity, Hardhat, ethers.js. DevOps：Terraform/Ansible, Git(근육 기억). AI 응용：Claude Code 같은 AI 도구를 깊이 활용해 개발을 보조하고, 로컬 LLM 서비스 레이어를 직접 띄워 multi-agent와 RAG를 가지고 놀고, LLM API와 벡터 검색을 연동하고, Langfuse로 token이 돈을 얼마나 태우는지 지켜본다. 하지만 가장 강한 무기는 어떤 프레임워크를 다룰 줄 아는 게 아니라, 모호한 AI 아이디어를 명확하게 논의해 실제로 돌아가는 계획으로 바꾸는 능력이다.'
+            description: '프론트엔드：HTML/CSS/JS 기본기, Tailwind + Bootstrap, Stimulus/Hotwire, Phoenix LiveView. 백엔드：Ruby on Rails(첫사랑), Elixir Phoenix(함수형의 세례), Python(AI 서비스에도 필요), Node.js(자동화의 좋은 친구), PostgreSQL(인덱스가 내 성능을 구했고 운영도 구했다), OpenSearch, Solid Queue／Sidekiq. 연동：LINE, Messenger, Instagram, WhatsApp, Zendesk, Omnichat, SHOPLINE, 91APP——플랫폼 API의 지뢰는 웬만큼 다 밟아봤다. 블록체인：Solidity, Hardhat, ethers.js. DevOps：Kamal + Docker, GitHub Actions(OIDC로 장기 키는 두지 않는다), AWS, Terraform／Ansible, Git(근육 기억). AI 응용：Claude Code／Codex를 깊이 활용해 개발을 보조하고, 로컬 LLM 서비스 레이어를 직접 띄워 multi-agent와 RAG를 가지고 놀고, LLM API와 벡터 검색을 연동하고, Langfuse로 token이 돈을 얼마나 태우는지 지켜본다. 하지만 가장 강한 무기는 어떤 프레임워크를 다룰 줄 아는 게 아니라, 모호한 AI 아이디어를 명확하게 논의해 실제로 돌아가는 계획으로 바꾸는 능력이다.'
           },
           event_1: {
             date: '다음 장',

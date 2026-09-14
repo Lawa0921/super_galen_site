@@ -1116,7 +1116,7 @@
           "event_0": {
             "date": "技能树现况",
             "title": "全栈 × AI 应用的武器库",
-            "description": "前端：HTML/CSS/JS 基本功、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。后端：Ruby on Rails（初恋）、Elixir Phoenix（函数式洗礼）、Node.js（自动化好伙伴）、PostgreSQL（索引救了我的性能）。区块链：Solidity、Hardhat、ethers.js。DevOps：Terraform/Ansible、Git（肌肉记忆）。AI 应用：深度使用 Claude Code 等 AI 工具辅助开发、自建本地 LLM 服務层玩 multi-agent 与 RAG、对接 LLM API 与向量检索、用 Langfuse 盯著 token 烧多少钱。但最强的武器不是会某个框架，而是能把一个模糊的 AI 点子讨论清楚、变成可落地的计划。"
+            "description": "前端：HTML/CSS/JS 基本功、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。后端：Ruby on Rails（初恋）、Elixir Phoenix（函数式洗礼）、Python（AI 服务也得会）、Node.js（自动化好伙伴）、PostgreSQL（索引救了我的性能，也救过 production）、OpenSearch、Solid Queue／Sidekiq。对接：LINE、Messenger、Instagram、WhatsApp、Zendesk、Omnichat、SHOPLINE、91APP——平台 API 的坑我大概都踩过。区块链：Solidity、Hardhat、ethers.js。DevOps：Kamal + Docker、GitHub Actions（OIDC 不放长效密钥）、AWS、Terraform／Ansible、Git（肌肉记忆）。AI 应用：深度使用 Claude Code／Codex 辅助开发、自建本地 LLM 服务层玩 multi-agent 与 RAG、对接 LLM API 与向量检索、用 Langfuse 盯著 token 烧多少钱。但最强的武器不是会某个框架，而是能把一个模糊的 AI 点子讨论清楚、变成可落地的计划。"
           },
           "event_1": {
             "date": "下一章",

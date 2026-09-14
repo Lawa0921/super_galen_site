@@ -1123,7 +1123,7 @@ export const zh_TW = {
           event_0: {
             date: '技能樹現況',
             title: '全端 × AI 應用的武器庫',
-            description: '前端：HTML/CSS/JS 基本功、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。後端：Ruby on Rails（初戀）、Elixir Phoenix（函數式洗禮）、Node.js（自動化好夥伴）、PostgreSQL（索引救了我的效能）。區塊鏈：Solidity、Hardhat、ethers.js。DevOps：Terraform/Ansible、Git（肌肉記憶）。AI 應用：深度使用 Claude Code 等 AI 工具輔助開發、自架本機 LLM 服務層玩 multi-agent 與 RAG、串接 LLM API 與向量檢索、用 Langfuse 盯著 token 燒多少錢。但最強的武器不是會某個框架，而是能把一個模糊的 AI 點子討論清楚、變成可落地的計畫。'
+            description: '前端：HTML/CSS/JS 基本功、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。後端：Ruby on Rails（初戀）、Elixir Phoenix（函數式洗禮）、Python（AI 服務也得會）、Node.js（自動化好夥伴）、PostgreSQL（索引救了我的效能，也救過 production）、OpenSearch、Solid Queue／Sidekiq。串接：LINE、Messenger、Instagram、WhatsApp、Zendesk、Omnichat、SHOPLINE、91APP——平台 API 的坑我大概都踩過。區塊鏈：Solidity、Hardhat、ethers.js。DevOps：Kamal + Docker、GitHub Actions（OIDC 不放長效金鑰）、AWS、Terraform／Ansible、Git（肌肉記憶）。AI 應用：深度使用 Claude Code／Codex 輔助開發、自架本機 LLM 服務層玩 multi-agent 與 RAG、串接 LLM API 與向量檢索、用 Langfuse 盯著 token 燒多少錢。但最強的武器不是會某個框架，而是能把一個模糊的 AI 點子討論清楚、變成可落地的計畫。'
           },
           event_1: {
             date: '下一章',

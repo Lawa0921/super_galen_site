@@ -1014,7 +1014,7 @@ export const ja = {
           event_0: {
             date: '現在のスキルツリー',
             title: 'フルスタック × AI応用の武器庫',
-            description: 'フロントエンド：HTML/CSS/JSの基礎、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。バックエンド：Ruby on Rails（初恋）、Elixir Phoenix（関数型の洗礼）、Node.js（自動化の良き相棒）、PostgreSQL（インデックスがパフォーマンスを救った）。ブロックチェーン：Solidity、Hardhat、ethers.js。DevOps：Terraform/Ansible、Git（既に筋肉記憶）。AI応用：Claude Codeなどのツールを深く使って開発を補助、ローカルLLMのサービス層を自前で立ててmulti-agentやRAGを試す、LLM APIとベクトル検索の連携、Langfuseでtokenがいくら燃えているか見張る。だが最強の武器はどれかのフレームワークが使えることではなく、ぼんやりしたAIのアイデアを議論で明確にして、現実に落とせる計画へ変えられること。'
+            description: 'フロントエンド：HTML/CSS/JSの基礎、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。バックエンド：Ruby on Rails（初恋）、Elixir Phoenix（関数型の洗礼）、Python（AIサービスにも必要）、Node.js（自動化の良き相棒）、PostgreSQL（インデックスがパフォーマンスを救い、本番も救った）、OpenSearch、Solid Queue／Sidekiq。連携：LINE、Messenger、Instagram、WhatsApp、Zendesk、Omnichat、SHOPLINE、91APP——プラットフォームAPIの地雷はだいたい踏んだ。ブロックチェーン：Solidity、Hardhat、ethers.js。DevOps：Kamal + Docker、GitHub Actions（OIDCで長期キーは置かない）、AWS、Terraform／Ansible、Git（既に筋肉記憶）。AI応用：Claude Code／Codexを深く使って開発を補助、ローカルLLMのサービス層を自前で立ててmulti-agentやRAGを試す、LLM APIとベクトル検索の連携、Langfuseでtokenがいくら燃えているか見張る。だが最強の武器はどれかのフレームワークが使えることではなく、ぼんやりしたAIのアイデアを議論で明確にして、現実に落とせる計画へ変えられること。'
           },
           event_1: {
             date: '次の章',
