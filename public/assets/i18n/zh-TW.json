@@ -1102,7 +1102,7 @@
           "event_1": {
             "date": "2024.12-至今",
             "title": "JTCG：AI 浪頭上的翻譯蒟蒻與領路人",
-            "description": "加入 AI 科技公司做 AI 客服產品。在這裡我的超能力不是「自己刻 AI 演算法」——那是 AI 團隊的活——而是當那個能在商業、客服、RD 三邊來回翻譯的人：把「老闆想要 AI 變更聰明」拆解成「到底要改哪個檢索條件、補哪段 log、串哪個平台」，再給出做得出來、上得了線的落地方案。我深度使用 AI 工具輔助開發、跑 POC 驗證可行性（像把 LINE OA 的事件跨平台轉發到 LINE WORKS 一次跑通）、在架構決策上提供方向；真正親手做的是串接整合 LINE／Messenger 等渠道與 SHOPLINE／91APP 等電商平台、把商品檢索的 DB 索引和 SQL 重寫到冷啟動從 35 秒掉到 0.3 秒、替所有 LLM 呼叫補上 Langfuse 觀測性與 token 用量、寫 E2E、review 隊友的 PR。正式環境爆 P0 的時候，我是先分級、追根因、決定退版還是熱修的那個人。一句話：我負責讓 AI 從「聽起來很潮」變成「真的能上線、還能維護」。"
+            "description": "加入 AI 科技公司做 AI 客服產品。在這裡我的超能力不是「自己刻 AI 演算法」——那是 AI 團隊的活——而是當那個能在商業、客服、RD 三邊來回翻譯的人：把「老闆想要 AI 變更聰明」拆解成「到底要改哪個檢索條件、補哪段 log、串哪個平台」，再給出做得出來、上得了線的落地方案。真正親手做的部分：客服 SaaS 主平台開 repo 三週我就上車，開發原生 LINE、Instagram、WhatsApp 渠道整合，把訊息串進 Zendesk／Omnichat 等客服系統與 SHOPLINE／91APP 等電商平台；正式環境搜尋卡死時，追出讓 PostgreSQL 索引失效的查詢寫法，改成前綴搜尋並補上查詢逾時與複合索引，資料量最大的客戶在基準測試裡快了約 40 倍；用 advisory lock 收掉建單 deadlock；替新版效能儀表板搭資料管線，讓 PostgreSQL 和 OpenSearch 互相對帳；把服務的 CI/CD 從長效 AWS 金鑰換成 OIDC 最小權限；補強 Langfuse 追蹤、修好 LLM 成本日報；還 review 過同事 500 多支 PR。開發時深度使用 Claude Code／Codex，搭配規格驅動與「先寫失敗測試再實作」——AI 打草稿，我負責把關，出包也是我收尾。正式環境爆 P0 的時候，我是追根因、交出修正、事後把來龍去脈寫成文件的那個人。這些累積也讓我拿過一次產品團隊季度獎金評選第一名。一句話：我負責讓 AI 從「聽起來很潮」變成「真的能上線、還能維護」。"
           },
           "event_2": {
             "date": "2024-至今",
@@ -1117,7 +1117,7 @@
           "event_0": {
             "date": "技能樹現況",
             "title": "全端 × AI 應用的武器庫",
-            "description": "前端：HTML/CSS/JS 基本功、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。後端：Ruby on Rails（初戀）、Elixir Phoenix（函數式洗禮）、Node.js（自動化好夥伴）、PostgreSQL（索引救了我的效能）。區塊鏈：Solidity、Hardhat、ethers.js。DevOps：Terraform/Ansible、Git（肌肉記憶）。AI 應用：深度使用 Claude Code 等 AI 工具輔助開發、自架本機 LLM 服務層玩 multi-agent 與 RAG、串接 LLM API 與向量檢索、用 Langfuse 盯著 token 燒多少錢。但最強的武器不是會某個框架，而是能把一個模糊的 AI 點子討論清楚、變成可落地的計畫。"
+            "description": "前端：HTML/CSS/JS 基本功、Tailwind + Bootstrap、Stimulus/Hotwire、Phoenix LiveView。後端：Ruby on Rails（初戀）、Elixir Phoenix（函數式洗禮）、Python（AI 服務也得會）、Node.js（自動化好夥伴）、PostgreSQL（索引救了我的效能，也救過 production）、OpenSearch、Solid Queue／Sidekiq。串接：LINE、Messenger、Instagram、WhatsApp、Zendesk、Omnichat、SHOPLINE、91APP——平台 API 的坑我大概都踩過。區塊鏈：Solidity、Hardhat、ethers.js。DevOps：Kamal + Docker、GitHub Actions（OIDC 不放長效金鑰）、AWS、Terraform／Ansible、Git（肌肉記憶）。AI 應用：深度使用 Claude Code／Codex 輔助開發、自架本機 LLM 服務層玩 multi-agent 與 RAG、串接 LLM API 與向量檢索、用 Langfuse 盯著 token 燒多少錢。但最強的武器不是會某個框架，而是能把一個模糊的 AI 點子討論清楚、變成可落地的計畫。"
           },
           "event_1": {
             "date": "下一章",

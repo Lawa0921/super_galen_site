@@ -999,7 +999,7 @@ export const ko = {
           event_1: {
             date: '2024.12-현재',
             title: 'JTCG：AI 물결 위의 통역 곤약과 길잡이',
-            description: 'AI 테크 회사에 입사해 AI 고객 응대 제품을 만든다. 여기서 내 초능력은 「AI 알고리즘을 직접 짜는 것」이 아니다 - 그건 AI 팀의 일이다 - 내 역할은 비즈니스, CS, RD 세 진영 사이를 오가며 통역하는 사람이 되는 것이다：「사장님이 AI를 더 똑똑하게 만들고 싶다」를 「도대체 어떤 검색 조건을 바꾸고, 어느 log를 보강하고, 어떤 플랫폼을 연동해야 하는지」로 분해하고, 만들 수 있고 출시까지 가능한 실전 해법을 내놓는다. AI 도구를 깊이 활용해 개발을 보조하고, POC로 실현 가능성을 검증하며(예를 들어 LINE OA의 이벤트를 LINE WORKS로 크로스 플랫폼 전달하는 걸 한 번에 통과시켰다), 아키텍처 결정에서 방향을 제시한다; 직접 손으로 한 일은 LINE／Messenger 등 채널과 SHOPLINE／91APP 등 이커머스 플랫폼 연동 통합, 상품 검색의 DB 인덱스와 SQL을 다시 짜서 콜드 스타트를 35초에서 0.3초로 줄인 것, 모든 LLM 호출에 Langfuse 관측성과 token 사용량을 붙인 것, E2E 작성, 팀원 PR review다. 운영 환경에 P0가 터지면, 먼저 등급을 나누고 근본 원인을 추적하고 롤백이냐 핫픽스냐를 결정하는 사람이 바로 나다. 한마디로：나는 AI를 「듣기엔 멋진 것」에서 「진짜로 출시되고, 유지보수까지 되는 것」으로 만드는 일을 맡는다.'
+            description: 'AI 테크 회사에 입사해 AI 고객 응대 제품을 만든다. 여기서 내 초능력은 「AI 알고리즘을 직접 짜는 것」이 아니다 - 그건 AI 팀의 일이다 - 내 역할은 비즈니스, CS, RD 세 진영 사이를 오가며 통역하는 사람이 되는 것이다：「사장님이 AI를 더 똑똑하게 만들고 싶다」를 「도대체 어떤 검색 조건을 바꾸고, 어느 log를 보강하고, 어떤 플랫폼을 연동해야 하는지」로 분해하고, 만들 수 있고 출시까지 가능한 실전 해법을 내놓는다. 직접 손으로 한 일은：고객 응대 SaaS 플랫폼에는 저장소 생성 3주 만에 합류했고, 네이티브 LINE・Instagram・WhatsApp 채널 연동을 개발했으며, 메시지를 Zendesk／Omnichat 같은 CS 시스템과 SHOPLINE／91APP 같은 이커머스 플랫폼에 연결했다. 운영 환경에서 검색이 멈췄을 때는 PostgreSQL 인덱스를 무력화하던 쿼리 방식을 찾아내 접두어 검색으로 바꾸고 쿼리 타임아웃과 복합 인덱스를 추가해, 데이터가 가장 많은 고객의 쿼리가 벤치마크에서 약 40배 빨라졌다. advisory lock으로 티켓 생성 deadlock을 잡고, 새 성능 대시보드의 데이터 파이프라인을 짜서 PostgreSQL과 OpenSearch가 서로 대조하게 했으며, 한 서비스의 CI/CD를 장기 유효 AWS 키에서 최소 권한 OIDC로 바꾸고, Langfuse 추적을 보강하고 LLM 비용 일일 리포트를 고쳤으며, 팀원 PR을 500개 넘게 review했다. 개발할 때는 Claude Code／Codex를 깊이 활용하고 스펙 주도와 「실패하는 테스트부터 쓰고 구현」을 함께 쓴다 - AI가 초안을 쓰고, 내가 리뷰로 지키고, 터지면 뒷수습도 내가 한다. 운영 환경에 P0가 터지면 근본 원인을 추적하고 수정을 내놓고 나중에 경위를 문서로 남기는 사람이 바로 나다. 이런 축적 덕분에 제품팀 분기 보너스 평가에서 1위를 한 적도 있다. 한마디로：나는 AI를 「듣기엔 멋진 것」에서 「진짜로 출시되고, 유지보수까지 되는 것」으로 만드는 일을 맡는다.'
           },
           event_2: {
             date: '2024-현재',
@@ -1014,7 +1014,7 @@ export const ko = {
           event_0: {
             date: '현재 스킬 트리',
             title: '풀스택 × AI 응용의 무기고',
-            description: '프론트엔드：HTML/CSS/JS 기본기, Tailwind + Bootstrap, Stimulus/Hotwire, Phoenix LiveView. 백엔드：Ruby on Rails(첫사랑), Elixir Phoenix(함수형의 세례), Node.js(자동화의 좋은 친구), PostgreSQL(인덱스가 내 성능을 구했다). 블록체인：Solidity, Hardhat, ethers.js. DevOps：Terraform/Ansible, Git(근육 기억). AI 응용：Claude Code 같은 AI 도구를 깊이 활용해 개발을 보조하고, 로컬 LLM 서비스 레이어를 직접 띄워 multi-agent와 RAG를 가지고 놀고, LLM API와 벡터 검색을 연동하고, Langfuse로 token이 돈을 얼마나 태우는지 지켜본다. 하지만 가장 강한 무기는 어떤 프레임워크를 다룰 줄 아는 게 아니라, 모호한 AI 아이디어를 명확하게 논의해 실제로 돌아가는 계획으로 바꾸는 능력이다.'
+            description: '프론트엔드：HTML/CSS/JS 기본기, Tailwind + Bootstrap, Stimulus/Hotwire, Phoenix LiveView. 백엔드：Ruby on Rails(첫사랑), Elixir Phoenix(함수형의 세례), Python(AI 서비스에도 필요), Node.js(자동화의 좋은 친구), PostgreSQL(인덱스가 내 성능을 구했고 운영도 구했다), OpenSearch, Solid Queue／Sidekiq. 연동：LINE, Messenger, Instagram, WhatsApp, Zendesk, Omnichat, SHOPLINE, 91APP——플랫폼 API의 지뢰는 웬만큼 다 밟아봤다. 블록체인：Solidity, Hardhat, ethers.js. DevOps：Kamal + Docker, GitHub Actions(OIDC로 장기 키는 두지 않는다), AWS, Terraform／Ansible, Git(근육 기억). AI 응용：Claude Code／Codex를 깊이 활용해 개발을 보조하고, 로컬 LLM 서비스 레이어를 직접 띄워 multi-agent와 RAG를 가지고 놀고, LLM API와 벡터 검색을 연동하고, Langfuse로 token이 돈을 얼마나 태우는지 지켜본다. 하지만 가장 강한 무기는 어떤 프레임워크를 다룰 줄 아는 게 아니라, 모호한 AI 아이디어를 명확하게 논의해 실제로 돌아가는 계획으로 바꾸는 능력이다.'
           },
           event_1: {
             date: '다음 장',
