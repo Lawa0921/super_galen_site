@@ -13,6 +13,7 @@ interface Props {
   type?: 'website' | 'article';
   publishedTime?: string;
   author?: string;
+  indexable?: boolean;
 }
 
 const {
@@ -23,6 +24,7 @@ const {
   type = 'website',
   publishedTime,
   author = 'Galen',
+  indexable = true,
 } = Astro.props;
 
 // 網站基本資訊
@@ -90,6 +92,7 @@ const jsonLd = type === 'article' ? {
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
     <meta name="author" content={author} />
+    {!indexable && <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />}
 
     <!-- Canonical URL -->
     <link rel="canonical" href={canonicalUrl} />
@@ -119,8 +122,8 @@ const jsonLd = type === 'article' ? {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
 
-    <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <!-- 隱藏頁不輸出結構化資料，避免被搜尋引擎當成公開內容探索 -->
+    {indexable && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
 
     <!-- Font Awesome (非同步載入) -->
     <link
@@ -145,13 +148,17 @@ const jsonLd = type === 'article' ? {
     <!-- 動畫庫（gsap 已移除：第一方程式碼無使用；guild 成員頁自行載入） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
 
-    <!-- Alternate language links -->
-    <link rel="alternate" hreflang="zh-TW" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="zh-CN" href={`${siteUrl}/zh-CN${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="en" href={`${siteUrl}/en${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="ja" href={`${siteUrl}/ja${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="ko" href={`${siteUrl}/ko${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="x-default" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+    <!-- 隱藏頁不建立多語系探索路徑 -->
+    {indexable && (
+      <>
+        <link rel="alternate" hreflang="zh-TW" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+        <link rel="alternate" hreflang="zh-CN" href={`${siteUrl}/zh-CN${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+        <link rel="alternate" hreflang="en" href={`${siteUrl}/en${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+        <link rel="alternate" hreflang="ja" href={`${siteUrl}/ja${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+        <link rel="alternate" hreflang="ko" href={`${siteUrl}/ko${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+        <link rel="alternate" hreflang="x-default" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+      </>
+    )}
 
     <title>{title}</title>
 

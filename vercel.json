@@ -5,6 +5,15 @@
   "outputDirectory": "dist",
   "headers": [
     {
+      "source": "/family-missions/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive, nosnippet, noimageindex"
+        }
+      ]
+    },
+    {
       "source": "/assets/(.*)",
       "headers": [
         {
