@@ -34,7 +34,7 @@ test.describe('SPJ Guild Page (High-Vis Tavern)', () => {
     await expect(dialogueBox).toContainText('歡迎，冒險者');
 
     // Scroll and verify text changes (proves scroll interaction works)
-    await page.mouse.wheel(0, 1500);
+    await page.evaluate(() => window.scrollBy(0, 1500));
     await page.waitForFunction(
       () => {
         const el = document.getElementById('dialogue-text');
@@ -113,14 +113,15 @@ test.describe('SPJ Guild Page (High-Vis Tavern)', () => {
 
   test('should show social profile card at the end', async ({ page }) => {
     await page.click('#intro-overlay');
-    await page.waitForTimeout(3000);
+    await expect(page.locator('#dialogue-text')).toHaveAttribute('data-index', '0');
 
     const socialCard = page.locator('#social-card');
     await expect(socialCard).toBeAttached();
     await expect(socialCard).toHaveCSS('opacity', '0');
 
-    await page.mouse.wheel(0, 8000);
-    await page.waitForTimeout(1500);
+    // Firefox clamps a single wheel delta; reach the actual end of the story track.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(page.locator('#dialogue-text')).toHaveAttribute('data-index', '7');
 
     await expect(socialCard).toHaveCSS('opacity', '1');
     await expect(page.locator('#social-card .social-card-name')).toContainText('SPJ');

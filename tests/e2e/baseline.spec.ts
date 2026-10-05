@@ -236,6 +236,10 @@ test.describe('語言切換功能', () => {
   test('應該顯示語言切換器', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
+    if (page.viewportSize()!.width <= 1024) {
+      await page.locator('#mobile-menu-toggle').click();
+      await expect(page.locator('#mobile-menu')).toBeVisible();
+    }
     await expect(page.locator('.language-switcher')).toBeVisible();
   });
 
@@ -444,8 +448,14 @@ test.describe('故事頁籤', () => {
   });
 
   test('應該顯示書本結構', async ({ page }) => {
-    // book.js 生成的書本結構
-    await expect(page.locator('.book-spine')).toBeVisible();
+    const spine = page.locator('.book-spine');
+    await expect(spine).toBeAttached();
+    // 手機採單頁版型，書脊仍在 DOM 中但依設計隱藏。
+    if (page.viewportSize()!.width <= 640) {
+      await expect(spine).toBeHidden();
+    } else {
+      await expect(spine).toBeVisible();
+    }
   });
 });
 

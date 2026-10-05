@@ -316,7 +316,7 @@ test.describe('VIC NAIL 互動效果', () => {
   });
 
   test('點擊時應產生特效元素', async ({ page }) => {
-    await page.click('body', { position: { x: 400, y: 400 } });
+    await page.locator('#hero').click();
     await page.waitForTimeout(100);
     const sparkle = page.locator('.click-sparkle');
     const count = await sparkle.count();

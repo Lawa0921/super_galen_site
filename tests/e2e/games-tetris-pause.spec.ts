@@ -7,6 +7,7 @@ async function waitGameReady(page: import('@playwright/test').Page): Promise<voi
 }
 
 test.describe('遊戲中 ESC 暫停選單', () => {
+  test.skip(({ isMobile }) => isMobile, 'Tetris gameplay requires a physical keyboard');
   test('SOLO：ESC 跳出 PAUSED 選單、繼續可關閉', async ({ page }) => {
     await page.goto('/games/tetris?mode=solo');
     await waitGameReady(page);

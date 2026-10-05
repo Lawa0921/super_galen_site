@@ -16,7 +16,7 @@ import { test, expect, type Page } from '@playwright/test';
  * （30s 靜默 + 20s 遷移上限 + 緩衝）。WebRTC 需 chromium。
  */
 test.describe('Dungeon Arcade — FFA host-leave migration continuation', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard WebRTC gameplay runs on desktop Chromium only');
   test.setTimeout(240_000);
 
   test('closing the HOST context migrates to a new host and the match continues to a result', async ({ browser }) => {

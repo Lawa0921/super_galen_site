@@ -5,8 +5,8 @@ import { test, expect } from '@playwright/test';
  * Pixi 需 WebGL；headless 下僅 chromium 穩定，故其餘瀏覽器跳過。
  */
 test.describe('Dungeon Arcade — Tetris', () => {
-  test('single-player page loads, inits engine, and responds to input', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
+  test('single-player page loads, inits engine, and responds to input', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
 
     await page.goto('/games/tetris?mode=solo'); // 跳過模式選單直接開單人
     await expect(page.locator('#tetris-canvas')).toBeVisible();

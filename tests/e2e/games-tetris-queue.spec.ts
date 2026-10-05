@@ -13,7 +13,7 @@ import { test, expect, type Page } from '@playwright/test';
  */
 test.describe('Dungeon Arcade — quick match queue', () => {
   test.describe.configure({ mode: 'serial' });
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard WebRTC gameplay runs on desktop Chromium only');
   test.setTimeout(150_000);
 
   test('two players press QUICK MATCH and auto-match into a 1v1 lockstep game', async ({ browser }) => {

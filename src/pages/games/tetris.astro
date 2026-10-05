@@ -1325,6 +1325,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
       pausable = false; // 線上對戰為 P2P 鎖步，不可暫停
     } else if (s.phase === 'error') {
       started = false; // 允許重試
+      showLobby('error'); // 初始化可能在 creating 回呼之前失敗，仍須顯示錯誤與取消入口。
       if (lobbyWait) {
         lobbyWait.textContent = `連線失敗：${s.message ?? ''}（按取消重試）`;
         lobbyWait.classList.remove('pending');
@@ -1405,6 +1406,7 @@ const skillCards = Object.entries(SKILLS).map(([id, s]) => ({ id, name: s.name, 
       pausable = false;
     } else if (s.phase === 'error') {
       started = false;
+      showLobby('error');
       if (lobbyWait) {
         lobbyWait.textContent = `連線失敗：${s.message ?? ''}（按取消重試）`;
         lobbyWait.classList.remove('pending');

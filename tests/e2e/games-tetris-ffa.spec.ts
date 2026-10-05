@@ -12,7 +12,7 @@ import { test, expect, type Page } from '@playwright/test';
  * WebRTC 需 chromium。連線較慢，timeout 給足。
  */
 test.describe('Dungeon Arcade — FFA (N-player) online battle', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard WebRTC gameplay runs on desktop Chromium only');
   test.setTimeout(120_000);
 
   test('three browsers connect in a star and stay in FFA lockstep sync', async ({ browser }) => {

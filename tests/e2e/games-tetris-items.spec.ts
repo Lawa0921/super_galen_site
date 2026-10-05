@@ -1,5 +1,28 @@
 import { test, expect, type Page } from '@playwright/test';
 
+// 啟動偶發失敗時保留真正的 URL／載入錯誤，避免只有「debug run 未出現」的逾時。
+const startupEvents = new WeakMap<Page, unknown[]>();
+test.beforeEach(async ({ page }) => {
+  const events: unknown[] = [];
+  startupEvents.set(page, events);
+  page.on('framenavigated', frame => {
+    if (frame === page.mainFrame()) events.push({ type: 'navigation', url: frame.url() });
+  });
+  page.on('pageerror', error => events.push({ type: 'pageerror', message: String(error) }));
+  page.on('requestfailed', request => events.push({ type: 'requestfailed', url: request.url(), failure: request.failure() }));
+  page.on('response', response => {
+    if (response.status() >= 400) events.push({ type: 'http', url: response.url(), status: response.status() });
+  });
+});
+test.afterEach(async ({ page }, info) => {
+  if (info.status !== info.expectedStatus) {
+    await info.attach('tetris-startup', {
+      body: JSON.stringify({ url: page.url(), events: startupEvents.get(page) }, null, 2),
+      contentType: 'application/json',
+    });
+  }
+});
+
 /**
  * Phase 4 T7 — 道具接線基本流（T8 會擴充 perk 三選一）。
  * Pixi 需 WebGL；headless 下僅 chromium 穩定。
@@ -42,7 +65,7 @@ const fillEnergy = (page: Page) =>
   });
 
 test.describe('Dungeon Arcade — items (skill pick + energy + V key)', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
 
   test('深連結 ?mode=solo&skill=bomb 直接開局：run 掛載且 energy=0', async ({ page }) => {
     await page.goto('/games/tetris?mode=solo&skill=bomb');
@@ -111,7 +134,7 @@ test.describe('Dungeon Arcade — items (skill pick + energy + V key)', () => {
 });
 
 test.describe('Dungeon Arcade — perks（T8 SOLO 三選一）', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
 
   test('SOLO 升級→三選一出現→按 1 選卡→perkLevel 反映、遊戲恢復', async ({ page }) => {
     await page.goto('/games/tetris?mode=solo&skill=bomb');

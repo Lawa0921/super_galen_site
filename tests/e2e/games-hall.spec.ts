@@ -1,18 +1,17 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * 遊戲廳 + 模式選單煙霧測試。啟動遊戲需 WebGL，故 chromium-only。
+ * 遊戲廳與排行榜涵蓋所有裝置；鍵盤遊戲煙霧測試使用桌面 Chromium。
  */
 test.describe('Dungeon Arcade — hall & mode select', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
-
   test('hall lists Battle Tetris and links into the game', async ({ page }) => {
     await page.goto('/games');
     await expect(page.getByText('DUNGEON ARCADE')).toBeVisible();
     await expect(page.locator('a[href="/games/tetris"]')).toBeVisible();
   });
 
-  test('mode-select appears with no param and starts vs-AI on pick', async ({ page }) => {
+  test('mode-select appears with no param and starts vs-AI on pick', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
     await page.goto('/games/tetris');
     await expect(page.locator('#mode-select')).toBeVisible();
 
@@ -28,7 +27,8 @@ test.describe('Dungeon Arcade — hall & mode select', () => {
     );
   });
 
-  test('deep link ?mode=solo skips the menu and starts solo', async ({ page }) => {
+  test('deep link ?mode=solo skips the menu and starts solo', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
     await page.goto('/games/tetris?mode=solo');
     await expect(page.locator('#mode-select')).toHaveCount(0);
     await page.waitForFunction(

@@ -1386,7 +1386,10 @@
                 document.body.style.overflow = 'hidden';
 
         overlay.addEventListener('click', () => {
-            const tl = gsap.timeline();
+            let entranceFallback;
+            const tl = gsap.timeline({
+                onComplete: () => window.clearTimeout(entranceFallback)
+            });
 
             // Entrance icon zoom and splash
             gsap.to('#entrance-icon', {
@@ -1475,7 +1478,12 @@
                 stagger: 0.15,
                 ease: "back.out(1.5)"
             }, "-=0.6");
-        });
+            // 低幀率時 GSAP 的動畫時鐘可能遠慢於實際時間；仍須完成整段進場並解鎖內容。
+            entranceFallback = window.setTimeout(
+                () => tl.progress(1),
+                Math.ceil(tl.totalDuration() * 1000) + 500
+            );
+        }, { once: true });
 
 
         // 3D Tilt interaction for Polaroids

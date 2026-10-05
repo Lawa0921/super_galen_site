@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 test.describe('passer_999 滾動影片與 loader', () => {
   test('passer 初次 preload none，loader fallback 後主動載入影片', async ({ page }) => {
-    const requests: string[] = [];
     await page.addInitScript(() => {
       const w = window as unknown as Record<string, any>;
       const nativeLoad = HTMLMediaElement.prototype.load;
@@ -24,7 +23,6 @@ test.describe('passer_999 滾動影片與 loader', () => {
       path: 'public/assets/img/guild/letshavefun/intro-video.mp4',
       contentType: 'video/mp4'
     }));
-    page.on('request', request => requests.push(request.url()));
     await page.goto('/guild/passer_999/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#scrollVideo')).toHaveAttribute('preload', 'none');
     // preload is a browser hint; verify that the page itself has not started loading.
@@ -33,7 +31,10 @@ test.describe('passer_999 滾動影片與 loader', () => {
     await expect(page.locator('#loaderScreen')).toBeHidden();
     await expect(page.locator('#scrollVideo')).toHaveAttribute('preload', 'metadata');
     expect(await page.evaluate(() => (window as unknown as Record<string, number>).__scrollLoadCalls)).toBe(1);
-    await expect.poll(() => requests.some(url => url.includes('/passer_999/video_1.mp4'))).toBe(true);
+    // WebKit 的原生媒體請求不一定經過 Playwright request 事件，直接確認影片取得 metadata。
+    await expect.poll(() => page.locator('#scrollVideo').evaluate(video =>
+      (video as HTMLVideoElement).readyState,
+    )).toBeGreaterThanOrEqual(1);
     expect(await page.locator('#videoSection').evaluate(section => section.getBoundingClientRect().height)).toBeGreaterThan(0);
   });
 
@@ -102,7 +103,10 @@ for (const width of [1440, 390]) {
     }));
     for (let lap = 0; lap < 2; lap++) {
       await page.evaluate(y => window.scrollTo(0, y), runway.end + 844);
-      await expect(page.locator('#content')).toHaveCSS('opacity', '1');
+      // 驗證內容已淡入；動畫尾端的浮點值不必精確等於字串 "1"。
+      await expect.poll(() => page.locator('#content').evaluate(content =>
+        Number.parseFloat(getComputedStyle(content).opacity),
+      )).toBeGreaterThan(0.99);
       await page.waitForTimeout(1400);
       await page.evaluate(y => window.scrollTo(0, y), (runway.start + runway.end) / 2);
       await expect(page.locator('#videoSection .video-sticky')).toBeVisible();
@@ -120,7 +124,11 @@ for (const width of [1440, 390]) {
 }
 
 test('passer loader 在未互動時也會於三秒內解除', async ({ page }) => {
+  // 此頁 DOMContentLoaded 不依賴 timer；先暫停時鐘，避免載入耗時與並行負載影響三秒契約。
+  await page.clock.install({ time: new Date('2026-10-05T00:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-10-05T01:00:00Z'));
   await page.goto('/guild/passer_999/', { waitUntil: 'domcontentloaded' });
+  await page.clock.fastForward(3000);
   await expect(page.locator('#loaderScreen')).toBeHidden({ timeout: 3500 });
   await expect(page.locator('body')).not.toHaveClass(/loading/);
   await expect(page.locator('#videoSection .video-sticky')).toBeVisible();
@@ -248,7 +256,6 @@ test('passer voice dot 可點擊切換內容', async ({ page }) => {
       delay === 5000 ? 0 : nativeSetInterval(callback, delay, ...args)) as typeof window.setInterval;
   });
   await page.goto('/guild/passer_999/', { waitUntil: 'domcontentloaded' });
-  await page.locator('#loaderEnter').click({ force: true });
   await expect(page.locator('#loaderScreen')).toBeHidden({ timeout: 10000 });
   await page.locator('#voices').evaluate((section) => {
     window.scrollTo(0, section.getBoundingClientRect().top + window.scrollY + section.clientHeight / 2 - window.innerHeight / 2);
