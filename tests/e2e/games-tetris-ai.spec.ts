@@ -5,8 +5,8 @@ import { test, expect } from '@playwright/test';
  * Pixi 需 WebGL；headless 下僅 chromium 穩定。
  */
 test.describe('Dungeon Arcade — vs AI', () => {
-  test('AI opponent plays on its own (no human input)', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
+  test('AI opponent plays on its own (no human input)', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
 
     await page.goto('/games/tetris?mode=ai&diff=hard');
     await expect(page.locator('#tetris-canvas')).toBeVisible();
@@ -32,8 +32,8 @@ test.describe('Dungeon Arcade — vs AI', () => {
       .toBeGreaterThan(0);
   });
 
-  test('deep link ?diff=insane starts the god-mode AI (80ms think delay)', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
+  test('deep link ?diff=insane starts the god-mode AI (80ms think delay)', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
 
     await page.goto('/games/tetris?mode=ai&diff=insane');
     await expect(page.locator('#main-menu')).toHaveCount(0);

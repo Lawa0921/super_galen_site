@@ -18,12 +18,15 @@ npx vitest run [path]         # 單元測試（約 100 檔，集中在 src/scrip
 npm run test:e2e:chromium     # e2e 單瀏覽器（日常用這個）
 npm run test:e2e              # e2e 全 5 瀏覽器（很慢，大改動或收尾才跑）
 npm run test:contracts        # Hardhat 合約測試（52 案例）
-npm run test:all              # vitest run + 全瀏覽器 e2e（收尾用）
+npm run test:tooling          # E2E 服務啟動與埠占用回歸測試
+npm run test:all              # vitest run + tooling + 全瀏覽器 e2e（收尾用）
 ```
 
 **雷**：
 - `npm run test` / `npm run test:unit` 是 **vitest watch 模式，會掛住不退出**。腳本與 session 裡一律用 `npx vitest run`。
-- e2e 的 Playwright 會自動在 **4002** 起 dev server（`playwright.config.ts` 的 webServer，本地會 reuse 既有的）；e2e 不需要也不使用 4321。
+- E2E 預設在 **4002** 啟動專用服務；以 Astro API 在前景執行，快取與日常 dev server 隔離，不會重用既有服務（2026-10-05 更新）。埠被其他工作樹占用時會失敗，請透過 `E2E_PORT` 指定空閒埠，不要停止別人的服務。
+- 專用 E2E 服務關閉熱更新，避免 Vite 最佳化新依賴時重新整理正在操作的頁面；修改程式後需重跑測試。
+- PowerShell 範例：`$env:E2E_PORT = '4003'`，再執行 `npm.cmd run test:all`；完成後 `Remove-Item Env:E2E_PORT`。WSL 可用 `E2E_PORT=4003 npm run test:all`。E2E 不需要也不使用 4321。
 - 跑全套測試時導檔再摘要，不要讓原始輸出進主對話：
   `npx vitest run > /tmp/claude-vitest.log 2>&1; tail -30 /tmp/claude-vitest.log`
 

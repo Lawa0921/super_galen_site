@@ -167,7 +167,10 @@ test.describe('視覺與樣式比較', () => {
   test('語言切換器應該正常工作', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(3000); // 等待 JS 完全載入
+    if (page.viewportSize()!.width <= 1024) {
+      await page.locator('#mobile-menu-toggle').click();
+      await expect(page.locator('#mobile-menu')).toBeVisible();
+    }
 
     // 確認語言切換器按鈕存在並可點擊
     const langBtn = page.locator('#language-current');
@@ -175,7 +178,7 @@ test.describe('視覺與樣式比較', () => {
 
     // 點擊語言切換器按鈕
     await langBtn.click();
-    await page.waitForTimeout(500);
+    await expect(page.locator('#language-dropdown')).toBeVisible();
 
     // 應該有 5 種語言選項（無論下拉選單是否可見，選項應該存在於 DOM 中）
     const optionCount = await page.locator('.language-option').count();

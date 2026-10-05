@@ -5,8 +5,8 @@ import { test, expect } from '@playwright/test';
  * Pixi 需 WebGL；headless 下僅 chromium 穩定，故其餘瀏覽器跳過。
  */
 test.describe('Dungeon Arcade — Dungeon Bomber', () => {
-  test('solo page loads, inits engine, and responds to input', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
+  test('solo page loads, inits engine, and responds to input', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
 
     // 1. 收集 console errors
     const consoleErrors: string[] = [];

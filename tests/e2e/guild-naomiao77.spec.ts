@@ -8,19 +8,11 @@ import { test, expect, Page } from '@playwright/test';
 
 const BASE_URL = '/guild/naomiao77/';
 
-/** Dismiss entrance overlay via JS click and wait for transition */
+/** Enter through the visible overlay and wait until it stops blocking the page. */
 async function dismissEntrance(page: Page): Promise<void> {
-  const dismissed = await page.evaluate(() => {
-    const overlay = document.getElementById('entrance-overlay');
-    if (overlay && !overlay.classList.contains('hidden')) {
-      overlay.click();
-      return true;
-    }
-    return false;
-  });
-  if (dismissed) {
-    await page.waitForTimeout(2500);
-  }
+  const overlay = page.locator('#entrance-overlay');
+  await overlay.click();
+  await expect(overlay).toBeHidden();
 }
 
 test.describe('Guild - naomiao77 Enhanced Page', () => {
@@ -120,18 +112,26 @@ test.describe('Guild - naomiao77 Enhanced Page', () => {
 
     test('should hide entrance overlay after click', async ({ page }) => {
       await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-      const overlay = page.locator('#entrance-overlay');
-      await expect(overlay).toBeAttached();
+      await dismissEntrance(page);
+    });
 
+    test('stalled entrance animation still reveals usable content', async ({ page }) => {
+      await page.clock.install({ time: new Date('2026-10-05T00:00:00Z') });
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+      await page.clock.pauseAt(new Date('2026-10-05T01:00:00Z'));
       await page.evaluate(() => {
-        const el = document.getElementById('entrance-overlay');
-        if (el && !el.classList.contains('hidden')) el.click();
+        const animation = (window as any).gsap;
+        document.getElementById('entrance-overlay')!.click();
+        // 模擬低幀率或背景頁面：停止動畫，再由瀏覽器時鐘推進 fallback 計時。
+        animation.ticker.sleep();
+        animation.ticker.wake = () => {};
       });
-      await page.waitForTimeout(3000);
-
-      // After clicking, the overlay should be hidden or removed
-      const isVisible = await overlay.isVisible().catch(() => false);
-      expect(isVisible).toBe(false);
+      await page.clock.fastForward(5000);
+      await expect(page.locator('#entrance-overlay')).toBeHidden({ timeout: 5000 });
+      await expect(page.locator('#main-content')).toHaveCSS('opacity', '1');
+      await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
     });
   });
 

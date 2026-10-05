@@ -131,6 +131,11 @@ test.describe('journal / guild 列表頁腳本瘦身', () => {
     await page.waitForLoadState('domcontentloaded');
     await assertNoBannedScripts(page);
 
+    if (page.viewportSize()!.width <= 1024) {
+      await page.locator('#mobile-menu-toggle').click();
+      await expect(page.locator('#mobile-menu')).toBeVisible();
+    }
+
     // 主題切換正常（main.js initThemeToggle；checkbox 被樣式蓋住，點外層 slider）
     const themeBefore = await page.evaluate(() =>
       document.documentElement.getAttribute('data-theme')

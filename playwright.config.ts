@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import { getE2EPort } from './tests/e2e/support/server-settings.mjs';
+
+const baseURL = `http://127.0.0.1:${getE2EPort()}`;
 
 /**
  * Playwright E2E 測試配置
@@ -9,14 +12,14 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 4,
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['list'],
   ],
 
   use: {
-    baseURL: 'http://localhost:4002',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -55,9 +58,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev -- --port 4002',
-    url: 'http://localhost:4002',
-    reuseExistingServer: !process.env.CI,
+    command: 'node tests/e2e/support/server.mjs',
+    url: baseURL,
+    reuseExistingServer: false,
     timeout: 120000,
   },
 });

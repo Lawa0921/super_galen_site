@@ -98,7 +98,9 @@ const { track } = Astro.props;
       } else if (musicVolume === 0 && !audio.paused) {
         audio.pause();
       }
-      icon.textContent = musicVolume > 0 ? '🔊' : '🔇';
+      const nextIcon = musicVolume > 0 ? '🔊' : '🔇';
+      // 首次 pointerdown 也會進來；替換相同文字節點會讓 WebKit 取消後續 click。
+      if (icon.textContent !== nextIcon) icon.textContent = nextIcon;
     }
 
     // 初始 UI 狀態

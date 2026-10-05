@@ -7,7 +7,7 @@ import { test, expect, type Page } from '@playwright/test';
  * WebRTC 需 chromium。
  */
 test.describe('Dungeon Arcade — online battle', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard WebRTC gameplay runs on desktop Chromium only');
   test.setTimeout(90_000);
 
   test('two browsers connect by room code and stay in lockstep sync', async ({ browser }) => {

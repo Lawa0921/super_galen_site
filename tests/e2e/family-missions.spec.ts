@@ -7,13 +7,16 @@ test.describe('雙羽任務所', () => {
     await page.reload();
   });
 
-  test('從主站導覽可進入任務頁', async ({ page }) => {
+  test('主站不公開任務入口，直接網址仍可進入', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('a[href="/family-missions"]').first()).toContainText('雙羽任務');
+    await expect(page.locator('a[href^="/family-missions"]')).toHaveCount(0);
+    const response = await page.goto('/family-missions');
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole('heading', { level: 1, name: /^雙羽星光\s*任務所$/ })).toBeVisible();
   });
 
   test('孩子可以切換角色並回報生活任務', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: '雙羽星光任務所' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /^雙羽星光\s*任務所$/ })).toBeVisible();
     await expect(page.getByTestId('scout-name')).toContainText('林芮羽 Apple');
     await expect(page.getByTestId('scout-rank')).toContainText('初級偵查兵');
     await expect(page.getByTestId('star-count')).toHaveText('80');
@@ -23,7 +26,9 @@ test.describe('雙羽任務所', () => {
     await expect(page.getByRole('status')).toContainText('任務完成回報');
     await expect(page.getByTestId('star-count')).toHaveText('82');
     await expect(page.getByTestId('ability-responsibility')).toContainText('責任');
-    await expect(page.getByText('已回報', { exact: true })).toBeVisible();
+    const reportedMission = page.getByRole('button', { name: '已回報：整理自己的物品', exact: true });
+    await expect(reportedMission).toBeVisible();
+    await expect(reportedMission).toBeDisabled();
 
     await page.reload();
     await expect(page.getByTestId('star-count')).toHaveText('82');

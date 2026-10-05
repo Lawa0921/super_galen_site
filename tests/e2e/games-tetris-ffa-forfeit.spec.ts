@@ -13,7 +13,7 @@ import { test, expect, type Page } from '@playwright/test';
  * 故判敗 poll timeout 給 55s。WebRTC 需 chromium。
  */
 test.describe('Dungeon Arcade — FFA guest-leave forfeit continuation', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard WebRTC gameplay runs on desktop Chromium only');
   test.setTimeout(180_000);
 
   test('closing a guest context forfeits them and the match continues to a result', async ({ browser }) => {

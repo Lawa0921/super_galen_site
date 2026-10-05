@@ -7,7 +7,7 @@ import { test, expect, type Page } from '@playwright/test';
  * 兜底期間（>10s 起）留下者畫面會先出現「N 秒後判離」倒數警示，這裡一併驗證。
  */
 test.describe('1v1 — opponent leave forfeit win', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard WebRTC gameplay runs on desktop Chromium only');
   test.setTimeout(180_000);
 
   test('host sees forfeit win after guest context closes abruptly', async ({ browser }) => {
