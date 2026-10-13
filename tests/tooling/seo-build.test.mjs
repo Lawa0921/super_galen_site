@@ -69,6 +69,36 @@ describe('SEO build output', { skip }, () => {
     assert.doesNotMatch(robots, /Crawl-delay/i);
   });
 
+  test('robots.txt 封鎖 Google-Extended，且 User-agent: * 仍允許一般爬取', () => {
+    const robots = readFileSync(join(dist, 'robots.txt'), 'utf8');
+    // 依 User-agent 行切成群組：{ agents: [...], rules: [...] }
+    const groups = [];
+    let current = null;
+    for (const raw of robots.split(/\r?\n/)) {
+      const line = raw.replace(/#.*/, '').trim();
+      const m = line.match(/^([A-Za-z-]+):\s*(.*)$/);
+      if (!m) continue;
+      const [, key, value] = m;
+      if (/^user-agent$/i.test(key)) {
+        if (!current || current.rules.length) groups.push((current = { agents: [], rules: [] }));
+        current.agents.push(value);
+      } else if (/^(allow|disallow)$/i.test(key) && current) {
+        current.rules.push(`${key.toLowerCase()}: ${value}`);
+      }
+    }
+    const groupFor = (agent) => groups.find((g) => g.agents.some((a) => a.toLowerCase() === agent.toLowerCase()));
+
+    const extended = groupFor('Google-Extended');
+    assert.ok(extended, '缺少 User-agent: Google-Extended 群組');
+    assert.deepEqual(extended.rules, ['disallow: /']);
+
+    const star = groupFor('*');
+    assert.ok(star, '缺少 User-agent: * 群組');
+    assert.ok(star.rules.includes('allow: /'), 'User-agent: * 應保留 Allow: /');
+    assert.ok(!star.rules.includes('disallow: /'), 'User-agent: * 不可整站封鎖');
+    assert.match(robots, new RegExp(`^Sitemap: ${ORIGIN}/sitemap-index\\.xml$`, 'm'));
+  });
+
   test('sitemap 全部使用 www 正式網域', () => {
     const index = readFileSync(join(dist, 'sitemap-index.xml'), 'utf8');
     for (const [, loc] of index.matchAll(/<loc>([^<]+)<\/loc>/g)) assert.ok(loc.startsWith(`${ORIGIN}/`), loc);
@@ -215,6 +245,19 @@ describe('SEO build output', { skip }, () => {
     const desc = attr((html.match(/<meta name="description"[^>]*>/) || [''])[0], 'content');
     assert.notEqual(desc, '這是我的個人部落格，展示作品集、履歷和有趣的互動專案');
     assert.match(desc, /AI/);
+  });
+
+  test('各語系首頁 meta description 已在地化且互不相同', () => {
+    const descs = ['/', '/en/', '/ja/', '/ko/', '/zh-CN/'].map((p) => {
+      const html = readFileSync(htmlFor(p), 'utf8');
+      return attr((html.match(/<meta name="description"[^>]*>/) || [''])[0], 'content');
+    });
+    assert.equal(new Set(descs).size, descs.length, descs.join(' | '));
+    for (const d of descs) {
+      assert.match(d, /Galen/);
+      assert.match(d, /AI/);
+      assert.doesNotMatch(d, /個人部落格|personal blog|個人ブログ|개인 블로그/);
+    }
   });
 
   test('每篇日誌文章都在 sitemap 且被 /journal/ 列表連結', () => {

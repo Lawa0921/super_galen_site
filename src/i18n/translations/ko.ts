@@ -114,7 +114,7 @@ export const ko = {
   lang_name: '한국어',
   site: {
     title: 'SuperGalen의 던전',
-    description: '포트폴리오, 이력서, 인터랙티브 프로젝트를 소개하는 개인 블로그'
+    description: 'Galen의 RPG 스타일 개인 사이트입니다. AI, Codex, 게임 개발을 다룬 기술 일지와 브라우저에서 바로 즐길 수 있는 미니 게임, 길드 멤버 소개 페이지를 만나 보세요.'
   },
   common: {
     confirm: '확인',

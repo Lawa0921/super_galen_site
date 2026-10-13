@@ -17,3 +17,7 @@ Allow: /en/
 Allow: /ja/
 Allow: /ko/
 Allow: /assets/
+
+# 不提供 Gemini 等 Google AI 模型訓練使用（Google-Extended 為控制權杖，非實體爬蟲，不影響 Google 搜尋）
+User-agent: Google-Extended
+Disallow: /
