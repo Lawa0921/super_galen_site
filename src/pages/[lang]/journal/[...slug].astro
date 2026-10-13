@@ -7,11 +7,12 @@ import { getCollection, render } from 'astro:content';
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import GlobalScriptsMinimal from '@components/layout/GlobalScriptsMinimal.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
-import { languages, type Language, useTranslations } from '@i18n/index';
+import { languages, defaultLang, type Language, useTranslations } from '@i18n/index';
 
 export async function getStaticPaths() {
   // 支援的語言列表（必須在 getStaticPaths 內定義）
-  const supportedLangs = Object.keys(languages) as Language[];
+  // 預設語言由 /journal/[slug]/ 處理（/zh-TW/journal/* 會 301 到無前綴網址）
+  const supportedLangs = (Object.keys(languages) as Language[]).filter((l) => l !== defaultLang);
   const posts = await getCollection('blog');
 
   return supportedLangs.flatMap((lang) =>
@@ -57,6 +58,7 @@ const localeMap: Record<Language, string> = {
   type="article"
   publishedTime={post.data.date.toISOString()}
   author={post.data.author || 'Galen'}
+  noindex
 >
   <header class="site-header">
     <div class="header-content">

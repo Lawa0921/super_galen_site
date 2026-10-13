@@ -7,10 +7,11 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import GlobalScriptsMinimal from '@components/layout/GlobalScriptsMinimal.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
-import { languages, type Language, useTranslations } from '@i18n/index';
+import { languages, defaultLang, type Language, useTranslations } from '@i18n/index';
 
 export function getStaticPaths() {
-  const supportedLangs = Object.keys(languages) as Language[];
+  // 預設語言由 /journal/ 處理（/zh-TW/journal/ 會 301 到 /journal/）
+  const supportedLangs = (Object.keys(languages) as Language[]).filter((l) => l !== defaultLang);
   return supportedLangs.map((lang) => ({
     params: { lang },
   }));
@@ -65,7 +66,7 @@ const localeMap: Record<Language, string> = {
 };
 ---
 
-<BaseLayout title={pageTitle} lang={lang}>
+<BaseLayout title={pageTitle} lang={lang} hreflang>
   <!-- Header - 與首頁一致 -->
   <header class="site-header">
     <nav class="site-nav">

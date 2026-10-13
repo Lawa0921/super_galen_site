@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Sitemap (Astro 自動生成)
-Sitemap: https://supergalen.com/sitemap-index.xml
+Sitemap: https://www.supergalen.com/sitemap-index.xml
 
 # 禁止索引的路徑
 Disallow: /admin/
@@ -17,6 +17,3 @@ Allow: /en/
 Allow: /ja/
 Allow: /ko/
 Allow: /assets/
-
-# 爬取延遲（秒）
-Crawl-delay: 1

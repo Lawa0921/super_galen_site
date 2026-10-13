@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { languages, defaultLang, type Language } from '@i18n/index';
+import { guildHeadTags } from '@i18n/seo';
 
 const langLabels: Record<string, string> = {
   'zh-TW': '繁中',
@@ -76,6 +77,17 @@ let modifiedHtml = htmlContent
   .replace(/href="\/"/g, `href="/${lang}/"`)
   // 修改其他 guild member 連結
   .replace(/href="\/guild\/([^"]+)"/g, `href="/${lang}/guild/$1"`);
+
+// SEO：沒有翻譯檔時內容即繁中來源 → noindex；有翻譯檔時輸出 canonical + hreflang
+const seoTags = guildHeadTags({
+  siteUrl: Astro.site?.origin ?? 'https://www.supergalen.com',
+  member,
+  lang,
+  translatedLangs: availableTranslations,
+  untranslated: !hasTranslation,
+});
+modifiedHtml = modifiedHtml.replace('</head>', `  ${seoTags}
+</head>`);
 
 // 注入語言切換按鈕（僅當有翻譯版本時）
 if (availableTranslations.length > 0) {

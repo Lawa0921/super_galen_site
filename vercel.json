@@ -3,6 +3,18 @@
   "framework": "astro",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/zh-TW",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/zh-TW/:path((?!rss\\.xml$).*)",
+      "destination": "/:path",
+      "statusCode": 301
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
