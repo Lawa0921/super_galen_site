@@ -1884,7 +1884,7 @@
       "stage_delivery": {
         "authorized": true,
         "date": "2026-10-14",
-        "user_instruction": "??????? PR merge ?????????",
+      "user_instruction": "先把階段功能發 PR merge 吧，現階段先到這裡",
         "scope": "Current stage PR and merge, including necessary runtime assets and ordinary repository integration; no final art acceptance is implied.",
         "commercial_approval": false
       }
@@ -1998,7 +1998,7 @@
   "stage_delivery": {
     "authorized": true,
     "date": "2026-10-14",
-    "user_instruction": "??????? PR merge ?????????",
+      "user_instruction": "先把階段功能發 PR merge 吧，現階段先到這裡",
     "scope": "Current stage PR and merge, including necessary runtime assets and ordinary repository integration; no final art acceptance is implied.",
     "commercial_approval": false
   }

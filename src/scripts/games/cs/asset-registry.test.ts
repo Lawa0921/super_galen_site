@@ -86,6 +86,10 @@ describe('CS runtime asset registry', () => {
       expect(record).toMatchObject({ runtime_publish_allowed: true, assembly_human_review: 'pending' });
       expect(record.source_approval).toBe('stage-integration-authorized; final source-selection review pending');
       expect(record.stage_delivery).toMatchObject({ authorized: true, commercial_approval: false });
+      expect(record.stage_delivery.user_instruction).toBe('先把階段功能發 PR merge 吧，現階段先到這裡');
+    }
+    for (const record of [registry, queue]) {
+      expect(record.stage_delivery.user_instruction).toBe('先把階段功能發 PR merge 吧，現階段先到這裡');
     }
     const grenades = JSON.parse(readFileSync('art-factory/cs/contracts/grenades-v37.asset-contract.json', 'utf8'));
     const grenadeFlags = { runtime_publish_allowed: grenades.runtime_publish_allowed,
