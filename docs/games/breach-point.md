@@ -50,7 +50,7 @@
 
 資產預算：`public/assets/games/cs/` 全部檔案上限由 32 MB 放寬為 34 MB（主代理決定；`fabric-detail-asset.test.ts` 同步）。理由：V37 新增 CC0 手雷 GLB 約 0.67 MB、三張 HUD 圖示約 8 KB，同期另有灰泥牆近景細節，原 32 MB 已剩不到 0.2 MB。
 
-目前本機預覽另使用 V38 `fx/utility-masks.webp`（75,328 bytes）呈現煙霧與爆炸，來源是 Kenney Particle Pack 1.1 的 CC0 素材。授權檔已核對；來源選用與人工美術核准仍待確認，契約只允許本機預覽，尚未允許正式發布。詳 `art-factory/cs/contracts/utility-fx-v38.asset-contract.json`。
+本階段使用 V38 `fx/utility-masks.webp`（75,328 bytes）呈現煙霧與爆炸，來源是 Kenney Particle Pack 1.1 的 CC0 素材。授權檔已核對，使用者已授權本階段 repository PR／merge 及其必要素材整合；最終來源選擇、人工美術與商用驗收仍待確認。詳 `art-factory/cs/contracts/utility-fx-v38.asset-contract.json`。
 
 ## 開發與驗證
 
