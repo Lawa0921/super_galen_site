@@ -119,6 +119,10 @@ function checkOutcome(s: BattleState): boolean {
 }
 
 function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): void {
+  if (actor.side === 'enemy') {
+    const taunter = living(s.party).find((c) => c.taunt > 0);
+    if (taunter) act = { ...act, target: taunter.key } as EnemyAction;
+  }
   const physical = (t: Combatant) =>
     applyEffect(actor, t, { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: actor.melee }, ctx);
   switch (act.kind) {

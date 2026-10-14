@@ -23,4 +23,18 @@ describe('keymap', () => {
     expect(fn.mock.calls).toEqual([['left']]);
     sel.remove();
   });
+  it('leaves Enter and Space to a focused button but still moves with arrows', () => {
+    const fn = vi.fn();
+    const off = bindKeys(window, fn);
+    const b = document.createElement('button');
+    document.body.append(b);
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    b.dispatchEvent(enter);
+    b.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    b.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true }));
+    off();
+    b.remove();
+    expect(enter.defaultPrevented).toBe(false);
+    expect(fn.mock.calls).toEqual([['up']]);
+  });
 });

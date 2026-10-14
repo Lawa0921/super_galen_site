@@ -16,6 +16,8 @@ export function bindKeys(target: Window, handler: (a: InputAction) => void): () 
     if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) return;
     const a = mapKey(e.key);
     if (!a) return;
+    // Enter/Space on a focused button must keep pressing that button.
+    if ((a === 'confirm' || a === 'cancel') && (el instanceof HTMLButtonElement || el instanceof HTMLAnchorElement)) return;
     e.preventDefault();
     handler(a);
   };

@@ -34,6 +34,20 @@ describe('save', () => {
     expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(h) }))).toEqual({ status: 'corrupt' });
     expect(loadGame(memoryStorage({ [SAVE_KEY]: 'null' }))).toEqual({ status: 'corrupt' });
   });
+  it('rejects malformed nested values that later code would iterate', () => {
+    const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
+      const g = newGame();
+      mut(g);
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(bad((g) => { (g.revealed as unknown as Record<string, unknown>).slime = 5; })).toBe('corrupt');
+    expect(bad((g) => { (g.revealed as unknown as Record<string, unknown>).slime = ['lava']; })).toBe('corrupt');
+    expect(bad((g) => { (g.dungeon.explored as unknown as Record<string, unknown>)['1'] = 5; })).toBe('corrupt');
+    expect(bad((g) => { (g.dungeon.opened as unknown as unknown[]).push(7); })).toBe('corrupt');
+    expect(bad((g) => { g.party.front = ['bobby', null, null]; })).toBe('corrupt');
+    expect(bad((g) => { g.party.front = ['liz', 'liz', null]; })).toBe('corrupt');
+    expect(bad((g) => { g.party.roster.liz.equip.weapon = 'nope'; })).toBe('corrupt');
+  });
   it('survives storage that throws (private mode)', () => {
     const throwing = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } };
     expect(saveGame(throwing, newGame())).toBe(false);

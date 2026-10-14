@@ -97,6 +97,14 @@ describe('resolveRound', () => {
     expect(s.party[0].hp).toBe(90);
     expect(s.party[1].hp).toBe(100);
   });
+  it('makes a taunt cast this round pull the slower enemy at once', () => {
+    const s = resolveRound(
+      makeBattle([P('p1', { max: { spd: 20 } as never }), P('p2', { max: { spd: 20 } as never })], [E('e0')]),
+      { p1: { kind: 'skill', skill: 'provoke' }, p2: { kind: 'defend' } }, rng,
+    );
+    expect(s.party[0].hp).toBe(80);
+    expect(s.party[1].hp).toBe(100);
+  });
   it('flees on a good roll but never from a boss', () => {
     const fled = resolveRound(makeBattle([P('p')], [E('e0')]), { p: { kind: 'escape' } }, constRng(0.1));
     expect(fled.outcome).toBe('fled');

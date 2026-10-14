@@ -72,7 +72,7 @@ export async function mountStarlantern(): Promise<void> {
   }
 
   function onMove(dir: Dir): void {
-    if (busy) return;
+    if (busy || showingResult) return;
     const r = game.move(dir);
     switch (r.kind) {
       case 'ignored': return;
@@ -93,11 +93,19 @@ export async function mountStarlantern(): Promise<void> {
   async function playRound(actions: Record<string, Action>): Promise<void> {
     if (busy) return;
     busy = true;
-    const r = game.submitRound(actions);
-    if (!r) { busy = false; return; }
-    menu.showLog(r.battle);
-    await battleView.play(r.battle, sfx);
-    busy = false;
+    let r: ReturnType<Game['submitRound']> = null;
+    try {
+      r = game.submitRound(actions);
+      if (r) {
+        menu.showLog(r.battle);
+        await battleView.play(r.battle, sfx);
+      }
+    } catch (err) {
+      console.error('[starlantern] round failed', err);
+    } finally {
+      busy = false;
+    }
+    if (!r) { if (game.battle) menu.show(game.battle); return; }
     if (!r.end) { menu.show(r.battle); return; }
     showingResult = true;
     if (r.end.outcome === 'win') sfx.win(); else if (r.end.outcome === 'lose') sfx.lose(); else sfx.menu();

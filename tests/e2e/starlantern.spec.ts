@@ -30,6 +30,14 @@ test.describe('starlantern', () => {
       else await page.waitForTimeout(50);
     }
     await expect(page.locator('#sl-result')).toContainText('勝利');
+    type Dbg = { __starlanternDebug: { game: { pos: { x: number; y: number }; encounter: number } } };
+    const snap = () => page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      return { pos: { ...g.pos }, encounter: g.encounter };
+    });
+    const before = await snap();
+    for (const k of ['ArrowRight', 'ArrowLeft', 'ArrowRight', 'ArrowLeft']) await page.keyboard.press(k);
+    expect(await snap()).toEqual(before);
     await page.click('#sl-continue');
     await expect(root).toHaveAttribute('data-phase', 'map');
 
