@@ -32,7 +32,7 @@ const contactEmail = 'bag571ivy3470@gmail.com';
       <h2>一、本站的資料處理</h2>
       <h3>不使用分析與廣告追蹤</h3>
       <p>
-        本站未安裝 Google Analytics、Vercel Analytics 或任何流量分析、廣告與跨站追蹤程式，也不設定廣告或追蹤用 cookie。
+        本站未安裝 Google Analytics、Vercel Analytics 或任何流量分析、廣告與跨站追蹤程式；本站自身不設定廣告或追蹤用 cookie。部分頁面嵌入的第三方內容（見下方「主機與第三方資源」）可能由該服務依其政策設定 cookie。
       </p>
 
       <h3>瀏覽器本機儲存</h3>
@@ -50,7 +50,13 @@ const contactEmail = 'bag571ivy3470@gmail.com';
       <ul>
         <li>本站由 Vercel 託管，Vercel 為提供服務可能處理連線所需的 IP 位址、瀏覽器資訊等標準請求紀錄。</li>
         <li>
-          部分頁面會從 cdnjs（Cloudflare）、jsDelivr、Google Fonts 載入字型與程式庫；載入時這些服務會收到您的 IP 位址與瀏覽器資訊，並依其各自的隱私權政策處理。
+          部分頁面會從以下來源載入字型、程式庫或素材：cdnjs（Cloudflare）、jsDelivr、unpkg、esm.sh、cdn.tailwindcss.com、Google Fonts，以及個別公會頁使用的 ui-avatars.com（頭像備援圖）與 actions.google.com（音效檔）。載入時這些服務會收到您的 IP 位址與瀏覽器資訊，並依其各自的隱私權政策處理。
+        </li>
+        <li>
+          部分公會成員頁嵌入第三方內容：YouTube 影片（www.youtube.com，cmy_fantasy、jiuliyue、lubu、zorio 頁）、TradingView 圖表（cryptohot 頁）、Apple Podcasts 播放器（e_nian 頁）。這些服務可能依其政策設定 cookie，並收到您的 IP 位址與瀏覽器資訊。
+        </li>
+        <li>
+          christine 公會頁的聯絡表單由 formsubmit.co 代為寄送給該成員，您填寫的內容會送交 formsubmit.co，本站不保存。
         </li>
       </ul>
 
@@ -60,7 +66,13 @@ const contactEmail = 'bag571ivy3470@gmail.com';
           電子報訂閱：首頁的訂閱表單由 follow.it 提供，您填寫的 Email 會直接送交 follow.it 處理，本站不保存。
         </li>
         <li>
-          Web3 錢包與連線對戰遊戲：連接錢包（如 MetaMask）後，錢包地址、您設定的暱稱、對戰戰績與積分會保存在排行榜資料庫（Upstash Redis）並公開顯示於排行榜；建立連線所需的訊號資料暫存約 5 分鐘後自動過期。回報對戰結果時，伺服器會在記憶體中以 IP 位址做短暫的防濫用頻率限制，不寫入資料庫。
+          Web3 錢包與連線對戰遊戲：連接錢包（如 MetaMask）後，錢包地址、您設定的暱稱、對戰戰績與積分會保存在排行榜資料庫（Upstash Redis）並公開顯示於排行榜；排隊配對時，會在 Redis 暫存玩家 id、暱稱與積分，約 15 秒未續約即自動過期；建立連線所需的訊號資料暫存約 5 分鐘後自動過期。
+        </li>
+        <li>
+          連線對戰採瀏覽器點對點（WebRTC）連線：建立連線時會使用 Google 的 STUN 伺服器（stun.l.google.com），Google 會收到玩家的 IP 位址；點對點連線也會讓對戰雙方的瀏覽器得知彼此的 IP 位址。
+        </li>
+        <li>
+          呼叫對戰相關 API（排隊配對、回報結果）時，伺服器會在記憶體中以 IP 位址做短暫的防濫用頻率限制，不寫入資料庫。
         </li>
       </ul>
 
@@ -93,7 +105,13 @@ const contactEmail = 'bag571ivy3470@gmail.com';
         <h2>English Summary</h2>
         <p>Last updated: {lastUpdated}</p>
         <p>
-          <strong>This website.</strong> SuperGalen's Dungeon does not use Google Analytics, Vercel Analytics, or any analytics, advertising, or cross-site tracking scripts. A first-party cookie (<code>SuperGalenGameState</code>) and localStorage keep game-style UI values, preferences, game records, and interactive page progress in your browser only. The site is hosted on Vercel, and some pages load fonts and libraries from cdnjs, jsDelivr, and Google Fonts, which receive standard request data (such as IP address and user agent). Optional features: the newsletter form is handled by follow.it; if you connect a Web3 wallet to play online games, your wallet address, nickname, and match results are stored in the leaderboard database (Upstash Redis) and shown publicly.
+          <strong>This website.</strong> SuperGalen's Dungeon does not use Google Analytics, Vercel Analytics, or any analytics, advertising, or cross-site tracking scripts, and the site itself does not set advertising or tracking cookies. A first-party cookie (<code>SuperGalenGameState</code>) and localStorage keep game-style UI values, preferences, game records, and interactive page progress in your browser only. The site is hosted on Vercel. Some pages load fonts, libraries, or media from cdnjs (Cloudflare), jsDelivr, unpkg, esm.sh, cdn.tailwindcss.com, Google Fonts, ui-avatars.com, and actions.google.com, which receive standard request data (such as IP address and user agent).
+        </p>
+        <p>
+          <strong>Third-party embeds.</strong> Some guild member pages embed third-party content: YouTube videos (www.youtube.com), a TradingView chart, and an Apple Podcasts player. These services may set their own cookies and receive your IP address and browser information under their own policies. One guild page uses a contact form delivered by formsubmit.co.
+        </p>
+        <p>
+          <strong>Optional features.</strong> The newsletter form is handled by follow.it. If you connect a Web3 wallet to play online games, your wallet address, nickname, and match results are stored in the leaderboard database (Upstash Redis) and shown publicly. While matchmaking, your player id, nickname, and rating are kept in Redis for about 15 seconds unless renewed. Online matches use peer-to-peer WebRTC connections: a Google STUN server (stun.l.google.com) is used to set up the connection, so Google receives players' IP addresses, and both players can see each other's IP addresses. When you call the match APIs (matchmaking and result reporting), your IP address is used briefly in server memory for rate limiting and is not stored in the database.
         </p>
         <p>
           <strong>Claude GSC MCP.</strong> Claude GSC MCP is a personal tool used only by the site owner. With the owner's own authorization, it accesses the owner's own Google Search Console data with read-only access, solely to analyze the search performance of the owner's websites. The data is not shared with, sold, or transferred to any third party, and is not used to train AI or machine learning models. OAuth tokens are stored only on the owner's local computer. Access can be revoked at any time from the Google Account "Third-party apps &amp; services" page. Use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.

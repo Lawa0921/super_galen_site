@@ -270,6 +270,18 @@ describe('SEO build output', { skip }, () => {
     assert.match(html, /Claude GSC MCP/);
     assert.match(html, /bag571ivy3470@gmail\.com/);
     assert.match(html, /2026-10-14/);
+    // 揭露完整性：第三方嵌入、CDN 清單、WebRTC STUN、對戰 API 頻率限制與排隊暫存（中英皆需）
+    assert.match(html, /本站自身不設定/);
+    assert.doesNotMatch(html, /也不設定廣告或追蹤用 cookie/);
+    for (const host of ['www.youtube.com', 'TradingView', 'Apple Podcasts', 'unpkg', 'esm.sh', 'cdn.tailwindcss.com', 'ui-avatars.com', 'actions.google.com', 'formsubmit.co']) {
+      assert.ok(html.split(host).length - 1 >= 2, `${host} 應在中英兩段都揭露`);
+    }
+    assert.ok(html.split('stun.l.google.com').length - 1 >= 2, 'STUN 應在中英兩段都揭露');
+    assert.match(html, /對戰雙方[^<]*彼此[^<]*IP/);
+    assert.match(html, /see each other.{1,6}s IP addresses/);
+    assert.match(html, /排隊配對、回報結果/);
+    assert.match(html, /約 15 秒/);
+    assert.match(html, /about 15 seconds/);
     assert.ok(!sitemapLocs.some((loc) => loc.startsWith(`${ORIGIN}/privacy`)), '/privacy/ 不應在 sitemap');
     // 新增 privacy 頁前 sitemap 共 221 筆；privacy 排除後總數應不變（新增可索引頁時同步更新此數字）
     assert.equal(sitemapLocs.length, 221);
