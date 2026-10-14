@@ -1,3 +1,4 @@
+import type { BattleState } from './battle';
 import type { Combatant } from './combatant';
 
 export function makeCombatant(p: Partial<Combatant> & { key: string; side: Combatant['side'] }): Combatant {
@@ -19,4 +20,8 @@ export function memoryStorage(seed: Record<string, string> = {}) {
     setItem: (k: string, v: string) => { map.set(k, v); },
     removeItem: (k: string) => { map.delete(k); },
   };
+}
+
+export function makeBattle(party: Combatant[], enemies: Combatant[], extra: Partial<BattleState> = {}): BattleState {
+  return { round: 0, party, enemies, boss: false, inventory: {}, revealed: {}, itemBoost: false, log: [], outcome: 'ongoing', ...extra };
 }
