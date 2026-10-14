@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
-import { isUntranslatedLocalePath, listGuildTranslations } from './src/i18n/seo.ts';
+import { isExcludedFromSitemap, listGuildTranslations } from './src/i18n/seo.ts';
 
 const guildTranslations = listGuildTranslations();
 
@@ -48,8 +48,8 @@ export default defineConfig({
   // 整合
   integrations: [
     sitemap({
-      // 未翻譯的語系頁（noindex）不進 sitemap
-      filter: (page) => !isUntranslatedLocalePath(page, guildTranslations),
+      // 未翻譯的語系頁與 /privacy/ 等 noindex 頁不進 sitemap
+      filter: (page) => !isExcludedFromSitemap(page, guildTranslations),
     }),
   ],
 

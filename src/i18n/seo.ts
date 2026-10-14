@@ -35,6 +35,16 @@ export function isUntranslatedLocalePath(urlOrPath: string, guildTranslations: S
   return false;
 }
 
+/** 公開但 noindex 的獨立頁（例：隱私權政策），不進 sitemap */
+const NOINDEX_PAGES = ['/privacy/'];
+
+/** sitemap filter：未翻譯語系頁與 NOINDEX_PAGES 皆排除 */
+export function isExcludedFromSitemap(urlOrPath: string, guildTranslations: Set<string>): boolean {
+  const pathname = urlOrPath.startsWith('http') ? new URL(urlOrPath).pathname : urlOrPath;
+  const normalized = pathname.endsWith('/') ? pathname : `${pathname}/`;
+  return NOINDEX_PAGES.includes(normalized) || isUntranslatedLocalePath(pathname, guildTranslations);
+}
+
 /**
  * 公會成員頁（原始 HTML）要注入 <head> 的 SEO 標籤
  * - 未翻譯：noindex（內容即繁中來源）

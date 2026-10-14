@@ -260,6 +260,25 @@ describe('SEO build output', { skip }, () => {
     }
   });
 
+  test('/privacy/ 隱私權政策頁存在、noindex、不在 sitemap，且 sitemap 總數不變', () => {
+    const file = htmlFor('/privacy/');
+    assert.ok(file, 'dist/client/privacy/index.html 不存在');
+    const html = readFileSync(file, 'utf8');
+    assert.ok(isNoindex(html), '/privacy/ 應 noindex');
+    assert.equal(alternatesOf(html).length, 0, '/privacy/ 不應有 hreflang');
+    assert.equal(canonicalOf(html), `${ORIGIN}/privacy/`);
+    assert.match(html, /Claude GSC MCP/);
+    assert.match(html, /bag571ivy3470@gmail\.com/);
+    assert.match(html, /2026-10-14/);
+    assert.ok(!sitemapLocs.some((loc) => loc.startsWith(`${ORIGIN}/privacy`)), '/privacy/ 不應在 sitemap');
+    // 新增 privacy 頁前 sitemap 共 221 筆；privacy 排除後總數應不變（新增可索引頁時同步更新此數字）
+    assert.equal(sitemapLocs.length, 221);
+  });
+
+  test('首頁頁尾連到 /privacy/', () => {
+    assert.ok(readFileSync(htmlFor('/'), 'utf8').includes('href="/privacy/"'), '首頁頁尾應連到 /privacy/');
+  });
+
   test('每篇日誌文章都在 sitemap 且被 /journal/ 列表連結', () => {
     const list = readFileSync(htmlFor('/journal/'), 'utf8');
     for (const id of blogIds) {
