@@ -1,0 +1,30 @@
+---
+import '../../styles/_starlantern.scss';
+---
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>星燈迷宮 Starlantern</title>
+  </head>
+  <body class="sl-body">
+    <main class="sl" id="sl-root" data-phase="town">
+      <header class="sl-top">
+        <h1 class="sl-title">星燈迷宮</h1>
+        <span class="sl-gold" id="sl-gold"></span>
+      </header>
+      <p class="sl-notice" id="sl-notice" role="status" hidden></p>
+      <section class="sl-town" id="sl-town"></section>
+      <section class="sl-stage"><canvas id="sl-canvas"></canvas></section>
+      <section class="sl-hud" id="sl-hud"></section>
+      <section class="sl-battle" id="sl-battle"></section>
+      <section class="sl-clear" id="sl-clear"></section>
+    </main>
+    <script>
+      import { mountStarlantern } from '../../scripts/games/starlantern/client';
+      void mountStarlantern();
+    </script>
+  </body>
+</html>
