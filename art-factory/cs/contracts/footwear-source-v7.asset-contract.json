@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_footwear_source_v7",
+  "category": "character_equipment_parts",
+  "postprocess_profile": "character_equipment_parts",
+  "state": "raw_source_only",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_report": "art-factory/cs/runs/run-20261004-v7-footwear-source/qa/source-provenance.json",
+  "intent": "Evaluate low-cut black footwear with civilian field outfit; avoid incompatible tall biker boots intersecting trousers",
+  "license": "CC0 explicit 2020 release",
+  "raw_preservation": "All source members byte-exact including upstream whitespace; authored JSON uses LF",
+  "gates": [
+    "actual GLB shoe/trouser hem fit",
+    "skin and foot/ankle deformation",
+    "correct alpha/material and no geometry placeholders",
+    "draw/texture/bytes and performance budgets"
+  ],
+  "external_deployment": false
+}

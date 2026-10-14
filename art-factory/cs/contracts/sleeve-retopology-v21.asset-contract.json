@@ -1,0 +1,24 @@
+{
+  "schema": "cs-sleeve-retopology-v21",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/sleeve-fit-v18.asset-contract.json",
+  "screen_id": "cs-first-person-rifle",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "licensed_source_sleeve_retopology",
+  "status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "design": "Use the largest connected pure-left-arm sleeve component from the licensed MakeHuman jacket and unchanged V18 Basis geometry as a source surface. First perform one built-in QuadriFlow source-topology study, preserve source boundary, then transfer original UV/material provenance and current target skin weights by actual source-surface correspondence. No cylinder, cap, skin hiding or failed V19/V20 geometry. Preserve all other garment geometry, FPS skin/rig/gun and camera. Automatic topology is an authoring candidate, not final cloth shape approval.",
+  "gates": [
+    "source patch is a connected component of actual licensed clothing, with original polygon/UV and boundary evidence",
+    "one deterministic built-in remesh with frozen target400faces, boundary preservation and seed0; no parameter grid",
+    "source correspondence, UV/material attribution, finite normalized weights and deviation reported",
+    "open cuff/armhole boundary and connection to unchanged garment must be verified before assembly",
+    "nonmanifold, degenerates, slivers, source-shape deviation and actual posed skin crossings evaluated",
+    "six views and intermediate poses are required for assembly acceptance; source-topology study alone cannot publish"
+  ],
+  "decision": "rejected-lost-cuff-and-uv-seams",
+  "decision_evidence": "art-factory/cs/runs/run-20261007-v21-sleeve-retopology/qa/study1-source-remesh/review.json"
+}

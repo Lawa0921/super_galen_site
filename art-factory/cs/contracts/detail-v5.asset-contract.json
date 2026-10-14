@@ -1,0 +1,52 @@
+{
+  "schema": "asset-contract-v1",
+  "bundle_id": "breach-point-detail-v5",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_run": "art-factory/cs/runs/run-20261003-v5-detail",
+  "scope": "Continue the authorized old-quarter detail revision; preserve all nine collision volumes and licensed gun-body geometry/UV/PBR.",
+  "environment_budget": {
+    "triangles_max": 80000,
+    "draws_max": 33,
+    "bytes_max": 8000000
+  },
+  "hand_budget_per_weapon": {
+    "hand_triangles_max": 3500,
+    "draws_max_over_original": 2,
+    "bytes_max": 5000000
+  },
+  "hand_requirements": [
+    "continuous palm/wrist",
+    "curved fingers and thumb",
+    "close-fitting knuckles",
+    "single continuous sleeve",
+    "embedded authored glove normal/roughness",
+    "no floating plates or intersecting cuffs"
+  ],
+  "anchor_contract": {
+    "muzzle": "One nonrendering node; model-local negative Z points along barrel",
+    "ejection_port": "One nonrendering node; model-local positive X is outward ejection"
+  },
+  "casing_budget": {
+    "triangles_max": 300,
+    "draws_max": 2,
+    "bytes_max": 50000
+  },
+  "original_model_authorship": "Blender source scripts and packed blend files; existing CC0 sources retained with hashes.",
+  "qa_gates": [
+    "candidate/source hashes",
+    "gun body unchanged",
+    "anchor count/position/basis",
+    "geometry and draw budgets",
+    "embedded image sources",
+    "relocated blend portability",
+    "true renderer close-up comparison",
+    "independent assembly review",
+    "runtime/profile SHA agreement"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "publication_scope": "local_repository",
+  "independent_runtime_review": "art-factory/cs/runs/run-20261003-v5-combat/qa/visual-review.json"
+}

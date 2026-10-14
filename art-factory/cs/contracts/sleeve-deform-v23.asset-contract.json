@@ -1,0 +1,55 @@
+{
+  "schema": "cs-sleeve-deform-v23",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs-first-person-rifle",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "licensed_source_deformation_diagnosis",
+  "status": "rejected",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "design": "Test one causal hypothesis before authoring: current linear skinning may compress the fitted source garment at the elbow. Compare untouched V18 cloth with Blender preserve-volume skinning at the same three poses, leaving original skin linear, topology/UV/weights/rest geometry/rig/camera unchanged. Only change the garment modifier boolean in memory; no native save or render for this diagnosis. Evaluate local inner-elbow gap, actual surfaces and source geometry quality. Do not assume dual-quaternion deformation fixes fit or can be exported directly to current runtime.",
+  "source_scene": "art-factory/cs/runs/run-20261007-v18-sleeve-fit/raw/study3-preserved-anchor.blend",
+  "source_sha256": "2071e906c4955a4180c53d5a465bf3bb056972b320d90f26db36220b22a3f4fc",
+  "diagnostic_decision": "Cloth-only DQ rejected: hip deficits17-to17 and ADS23-to25; sampled inner-elbow signed gaps worsen by up to8.82mm. Source file was not saved.",
+  "transport_candidate": {
+    "source": "Untouched V18 Basis, original source skin triangle IDs and barycentric coordinates from surface-transfer.json",
+    "core_vertex_ids": [
+      2736,
+      2849,
+      3212,
+      3213,
+      3249,
+      3313,
+      3323
+    ],
+    "domain": "Original609-vertex/582-quad pure-left-arm sleeve component; fixed54 boundary vertices",
+    "falloff": "One fixed four-edge-ring support around the seven measured negative-radial inner-elbow witnesses, also zero at either boundary; quintic smootherstep of min(1-core_distance/4,boundary_distance/4,1). No ring search.",
+    "transport": "Fixed barycentric surface point plus complete original tangent/normal offset rotated by orthonormal rest-to-posed source triangle frame and world scale.0744. No triangle shear/scale transfer or new posed correspondence.",
+    "pose_keys": "Separate hip and ADS inverse-LBS rest correctives, one active at each endpoint; reload Basis. Any intermediate test uses partition-of-unity key weights and interpolated original bones.",
+    "preflight_limits": {
+      "maximum_posed_move_m": 0.012,
+      "maximum_rest_move_raw": 0.5,
+      "maximum_affine_condition": 4,
+      "minimum_posed_source_triangle_area_ratio": 0.2,
+      "maximum_edge_delta_jump_over_rest_length": 0.5,
+      "new_normal_reversals": 0,
+      "new_degenerates": 0,
+      "new_quality_below_0p02_slivers": 0,
+      "maximum_edge_length_ratio": 2
+    },
+    "acceptance": "Preflight is not art acceptance. Actual Blender tessellation, unchanged boundary/topology/UV/weights/skin, all450 local points, crossings, six views and two fixed50% intermediate states must be checked. If the one candidate fails quality, close the recipe without varying triangle correspondence, offset amount or rings."
+  },
+  "gates": [
+    "LBS baseline matches archived V18 evaluated vertices and triangles exactly",
+    "Original skin matches archived V17 in every pose under either cloth modifier state",
+    "No source file changes, topology/UV/weight edits, skin masking, capped openings or retopology",
+    "Report signed nearest-surface distances as local diagnostics, not containment proof",
+    "Use actual Blender evaluated triangles for any crossing audit",
+    "No runtime promotion without a separately verified deform/export strategy and six-view visual evidence"
+  ],
+  "decision": "rejected-dq-and-fixed-surface-transport",
+  "decision_evidence": "art-factory/cs/runs/run-20261007-v23-sleeve-deform/qa/review.json"
+}

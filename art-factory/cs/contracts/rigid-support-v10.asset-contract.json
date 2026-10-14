@@ -1,0 +1,16 @@
+{
+  "schema": "cs-rigid-support-v10",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "scope": "Rifle-only rigid correction of the existing V5 left glove and cuff. No finger pose or anatomical approval.",
+  "source": "public/assets/games/cs/rifle.glb",
+  "source_sha256": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c",
+  "source_authorization": "Existing registered original Blender V5 hands and CC0 rifle; translation and index partition only.",
+  "candidate_root": "art-factory/cs/runs/run-20261006-v10-rigid-support/candidate",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "preserve": ["all source positions/normals/UV bytes", "all materials and textures", "weapon geometry", "right-hand placement", "muzzle/ejection anchors", "triangle count"],
+  "budgets": {"hand_draw_calls": 4, "glb_bytes_max": 5242880},
+  "gates": ["exact source triangle partition", "single rigid left-hand transform", "actual triangle crossing diagnostics", "matched camera hip/ADS/fire/reload review", "zero rest drift", "independent review"],
+  "limits": ["Existing hand shape is not a realistic articulated hand", "Triangle crossing alone does not prove no containment or coplanar overlap", "No approval based solely on a reduced nearest-point gap"],
+  "stop_rule": "At most two manually measured placements; reject if rigid correction cannot improve visible attachment without new intersections. Do not restart V9 solve/weight optimization."
+}

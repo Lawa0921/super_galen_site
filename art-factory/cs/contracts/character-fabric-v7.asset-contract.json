@@ -1,0 +1,93 @@
+{
+  "schema": "cs-character-fabric-v7-contract",
+  "asset_id": "browser-cs-character-fabric-v7",
+  "project_id": "super_galen_site",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "profile_path": "art-factory/cs/profile.json",
+  "source_glb": "art-factory/cs/runs/run-20261004-v7-character-layers/candidate/full-body-review.glb",
+  "source_sha256": "092ad05459f171274120111ad5b82668dc5a564a3244b8efab94cf07e64096ea",
+  "source_contract": "art-factory/cs/contracts/character-layers-v7.asset-contract.json",
+  "scope": "New generated diffuse derivatives of CC0 tee and trousers; explicitly retains their original cut. Does not claim material replacement fixes anatomy, tailoring or animation. Earlier layers candidate remains art-failed.",
+  "mode_inference_decision": {
+    "selected_profile": "character_equipment_parts",
+    "confidence": "high",
+    "rationale": "Opaque diffuse edits on existing 3D UV islands; source alpha and image layout remain fixed; no UI keying.",
+    "clarifying_question": null
+  },
+  "lifecycle_status": "approved",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "assembly_agent_review": "bounded_fabric_visual_pass; budget_visual_pass; final_code_review_pass",
+  "runtime_publish_allowed": false,
+  "screen_breakdown_path": "art-factory/cs/runs/run-20261004-v7-character-fabric/screen-breakdown.json",
+  "generation": {
+    "tool": "built-in image_gen",
+    "mode": "edit",
+    "prompts": [
+      "art-factory/cs/runs/run-20261004-v7-character-fabric/prompts/tee.txt",
+      "art-factory/cs/runs/run-20261004-v7-character-fabric/prompts/pants.txt"
+    ],
+    "raw_root": "art-factory/cs/runs/run-20261004-v7-character-fabric/raw",
+    "actual_output_dimensions": [
+      1254,
+      1254
+    ],
+    "resolution_alignment": "1254 square generated RGB aligned to source 2048; maximum 2x upscale guard; budget diffuse finally 1024. Upscaling is not new detail."
+  },
+  "alpha_policy": "Retain original encoded alpha per texel. Generated RGB is composited only inside actual mesh UV footprint plus bounded texture padding; unused atlas pixels remain source. Opaque output is intentional, not a cutout.",
+  "allowed_operations": [
+    "generated RGB edit",
+    "size alignment to original 2048 square if aspect ratio exact",
+    "deterministic UV footprint mask with 8px dilation",
+    "preserve source alpha",
+    "embedded PNG payload replacement",
+    "existing linear-light and normalized-normal texture optimizer"
+  ],
+  "invariants": [
+    "source SHA pinned",
+    "all non-image bufferView bytes exact",
+    "all scene/skin/material/sampler JSON exact except storage offsets",
+    "all other embedded images exact before optimization",
+    "two selected baseColor images only",
+    "source image alpha exact before optimization",
+    "no new draw calls, vertices, meshes or materials"
+  ],
+  "qa_gates": [
+    "replacement role and source checks",
+    "generated image square and RGB/RGBA finite 8-bit channels",
+    "target diffuse alpha equal to source",
+    "unselected atlas pixels byte-exact after deterministic composition",
+    "compare original UV mapped 9-view GLB including arm and ankle probes",
+    "no sports logo/orange band retained on used shirt UV",
+    "no new visible atlas seams, painted hardware or baked-light conflict",
+    "no new tailoring or whole-CS2-quality claim",
+    "optimized result <=20,000,000 bytes, all non-image payloads exact and existing MASK gates pass"
+  ],
+  "known_limits": [
+    "Tee remains short sleeved and trousers retain original civilian cut.",
+    "Material-only candidate, broad animation and in-game skinned performance are unverified.",
+    "Generated layout must be visually checked; mechanical source-UV preservation cannot prove painted seam alignment.",
+    "Budget stage resizes original normal maps with vector renormalization; only full stage preserves their original bytes. No new normal or roughness texture was generated."
+  ],
+  "intended_runtime_path": "public/assets/games/cs/soldier.glb",
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-character-fabric/candidate",
+  "qa_root": "art-factory/cs/runs/run-20261004-v7-character-fabric/qa",
+  "candidate": {
+    "full_sha256": "52fe75b59eebe3ff87bbaeb01e6ad91051bdde0d44d11b51452210f6fc4a3783",
+    "full_bytes": 69870704,
+    "budget_sha256": "06f2d364168d6f1a12cb534ba217b0d0022d3f2a504c404258a5ded032a81639",
+    "budget_bytes": 17330640,
+    "meshes": 8,
+    "bones": 53,
+    "geometry_and_camera_matches_source": true
+  },
+  "approval_scope": "fabric-only candidate assembly, not full character or runtime",
+  "qa_evidence": [
+    "art-factory\\cs\\runs\\run-20261004-v7-character-fabric\\qa\\fabric-mechanical.json",
+    "art-factory\\cs\\runs\\run-20261004-v7-character-fabric\\qa\\optimization-qa.json",
+    "art-factory\\cs\\runs\\run-20261004-v7-character-fabric\\qa\\independent-review.json",
+    "art-factory\\cs\\runs\\run-20261004-v7-character-fabric\\qa\\verification.json"
+  ]
+}

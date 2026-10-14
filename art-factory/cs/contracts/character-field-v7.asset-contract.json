@@ -1,0 +1,62 @@
+{
+  "schema": "cs-character-field-v7-contract",
+  "project_id": "super_galen_site",
+  "asset_id": "browser-cs-character-field-v7-review-candidate",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contracts": [
+    "art-factory/cs/contracts/character-source-v7.asset-contract.json",
+    "art-factory/cs/contracts/character-kit-source-v7.asset-contract.json"
+  ],
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-character-field/candidate",
+  "qa_root": "art-factory/cs/runs/run-20261004-v7-character-field/qa",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "assembly_agent_review": "failed_vest_shirt_and_trouser_boot_intersections",
+  "lifecycle_status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "candidate": {
+    "body": "male_generic proxy over MPFB hm08 male basemesh",
+    "rig": "MPFB v2.0.17 GameEngine, 53 joints, hm08 weight source",
+    "outfit": ["CC0 male_casualsuit01 dark long-sleeve shirt/trousers", "Mindfront tactical vest", "Mindfront biker boots"],
+    "eyes": "CC0 MakeHuman high-poly eyes with original brown iris/pupil texture",
+    "mouth": ["CC0 teeth_base", "CC0 tongue01"],
+    "hands": "anatomical ungloved hands; superhero gauntlet excluded",
+    "height_m": 1.7305,
+    "full_body_glb": "candidate/full-body-review.glb",
+    "source_blend": "candidate/full-body-source.blend",
+    "gloved_forearms_glb": null
+  },
+  "tooling": {
+    "blender": "5.2.1 LTS",
+    "mpfb_commit": "80919fa4682335c41847f761a4d79dcad4124732",
+    "execution": "isolated user resources/extensions, factory startup, disable autoexec, offline mode, four CPU threads",
+    "license_separation": "MPFB program code GPL-3.0-or-later stays in isolated tooling; bundled rig/weights and system art are CC0 asset data."
+  },
+  "provenance_and_modifications": "art-factory/cs/runs/run-20261004-v7-character-field/source-provenance-and-modifications.json",
+  "qa_evidence": [
+    "qa/rig-qa.json",
+    "qa/assembly-qa.json",
+    "qa/mask-diagnostic.json",
+    "qa/deformation-probe.json",
+    "qa/glb-source-mechanical.json",
+    "qa/glb-final-mechanical.json",
+    "qa/glb-uv-alpha.json",
+    "qa/review-front.png",
+    "qa/review-side.png",
+    "qa/review-head.png",
+    "qa/review-hands.png",
+    "qa/assessment.md"
+  ],
+  "known_failures": [
+    "blue shirt protrudes through vest shoulder straps in actual GLB render",
+    "trouser legs substantially protrude through tall biker boots",
+    "civilian field outfit is not confirmed tactical or CS2 art direction",
+    "bare anatomical hands are technical review only; suitable tactical gloves remain unselected",
+    "94,908 triangles and 71.2 MB GLB have no approved runtime or performance budget",
+    "bounded arm/finger deformation mechanics pass does not approve animated clothing fit",
+    "independent art, true gameplay renderer and performance gates remain open"
+  ],
+  "forbidden": ["runtime publication", "CS2 quality claim", "recolored superhero gloves as tactical gloves", "placeholder geometry/material replacement"]
+}

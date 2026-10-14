@@ -12,6 +12,8 @@ export default defineConfig({
   site: 'https://www.supergalen.com',
   output: 'static',
   adapter: vercel(),
+  // Keep the development toolbar from covering fixed game controls and HUDs.
+  devToolbar: { enabled: false },
 
   // i18n 路由配置
   i18n: {

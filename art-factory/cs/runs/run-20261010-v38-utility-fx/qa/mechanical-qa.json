@@ -1,0 +1,138 @@
+{
+  "asset": "public/assets/games/cs/fx/utility-masks.webp",
+  "bytes": 75328,
+  "sha256": "a6f0a9c4fca39d4c7aac0014da7360579dc30d55a1c72cc83379c4c8c17fbfa4",
+  "color_space": "linear data (THREE.NoColorSpace)",
+  "layout": [
+    [
+      "smoke_07",
+      "smoke_04",
+      "smoke_10"
+    ],
+    [
+      "dirt_02",
+      "scorch_01",
+      "fire_02"
+    ]
+  ],
+  "sources": {
+    "smoke_07": {
+      "path": "art-factory/cs/runs/run-20261010-v38-utility-fx/raw/third-party/kenney-particle-pack/smoke_07.png",
+      "sha256": "f7419fa4f11e346d0fb36a17ecbf616083c6962633c7847d92119c994ed9b4e4",
+      "bytes": 77838,
+      "size": [
+        512,
+        512
+      ]
+    },
+    "smoke_04": {
+      "path": "art-factory/cs/runs/run-20261010-v38-utility-fx/raw/third-party/kenney-particle-pack/smoke_04.png",
+      "sha256": "2db2f69874cdb1e5203f2f86803d5debde30402590cf50a810afaba882184616",
+      "bytes": 97568,
+      "size": [
+        512,
+        512
+      ]
+    },
+    "smoke_10": {
+      "path": "art-factory/cs/runs/run-20261010-v38-utility-fx/raw/third-party/kenney-particle-pack/smoke_10.png",
+      "sha256": "35d1082a87de7558aeeab210fecb43997c958e162ede896587d1930f66e6ae67",
+      "bytes": 90497,
+      "size": [
+        512,
+        512
+      ]
+    },
+    "dirt_02": {
+      "path": "art-factory/cs/runs/run-20261010-v38-utility-fx/raw/third-party/kenney-particle-pack/dirt_02.png",
+      "sha256": "fcecc70b561f80568b3391c3dc1180126d86ce4fbd4d1b01518e6045203e10a3",
+      "bytes": 54060,
+      "size": [
+        512,
+        512
+      ]
+    },
+    "scorch_01": {
+      "path": "art-factory/cs/runs/run-20261010-v38-utility-fx/raw/third-party/kenney-particle-pack/scorch_01.png",
+      "sha256": "ea72697696638786ccd4795a346d177b1b6a904331b5536a7e85a7ed927b93a5",
+      "bytes": 60598,
+      "size": [
+        512,
+        512
+      ]
+    },
+    "fire_02": {
+      "path": "art-factory/cs/runs/run-20261010-v38-utility-fx/raw/third-party/kenney-particle-pack/fire_02.png",
+      "sha256": "e2677330b0668033b0744276da74de605164aa5d58203bf251a8ec84e62c2108",
+      "bytes": 88453,
+      "size": [
+        512,
+        512
+      ]
+    }
+  },
+  "masks": {
+    "smoke_07": {
+      "tile": 0,
+      "source_peak": 146,
+      "channel": "r",
+      "border_max": 0,
+      "mean": 35.9,
+      "coverage": 0.3471,
+      "peak": 255
+    },
+    "smoke_04": {
+      "tile": 0,
+      "source_peak": 170,
+      "channel": "g",
+      "border_max": 0,
+      "mean": 31.9,
+      "coverage": 0.4209,
+      "peak": 255
+    },
+    "smoke_10": {
+      "tile": 0,
+      "source_peak": 168,
+      "channel": "b",
+      "border_max": 0,
+      "mean": 41.31,
+      "coverage": 0.3578,
+      "peak": 255
+    },
+    "dirt_02": {
+      "tile": 1,
+      "source_peak": 255,
+      "channel": "r",
+      "border_max": 0,
+      "mean": 16.4,
+      "coverage": 0.1491,
+      "peak": 255
+    },
+    "scorch_01": {
+      "tile": 1,
+      "source_peak": 255,
+      "channel": "g",
+      "border_max": 0,
+      "mean": 8.43,
+      "coverage": 0.1062,
+      "peak": 255
+    },
+    "fire_02": {
+      "tile": 1,
+      "source_peak": 254,
+      "channel": "b",
+      "border_max": 0,
+      "mean": 11.35,
+      "coverage": 0.1803,
+      "peak": 255
+    }
+  },
+  "gates": {
+    "dimensions": true,
+    "lossless_round_trip": true,
+    "no_edge_touching": true,
+    "non_empty": true,
+    "budget_bytes": true
+  },
+  "pass": true
+}

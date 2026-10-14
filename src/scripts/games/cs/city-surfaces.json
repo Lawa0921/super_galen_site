@@ -1,0 +1,679 @@
+{
+  "schema": "city-surfaces-v32",
+  "source": "art-factory/cs/runs/run-20261008-v32-city-extension/raw/city-source.json",
+  "source_sha256": "4a4ed73aa38c596c90770067aadc0ce7eebef2ae6af0897dc6b70d1ab74e923b",
+  "surfaces": [
+    {
+      "id": "perimeter_west_0",
+      "min": [
+        -42,
+        0,
+        -28
+      ],
+      "max": [
+        -32,
+        8.4,
+        -20
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_west_2",
+      "min": [
+        -42,
+        0,
+        -12
+      ],
+      "max": [
+        -32,
+        7.6,
+        -4
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_west_3",
+      "min": [
+        -42,
+        0,
+        -4
+      ],
+      "max": [
+        -32,
+        9.5,
+        4
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_west_4",
+      "min": [
+        -42,
+        0,
+        4
+      ],
+      "max": [
+        -32,
+        8.4,
+        12
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_west_5",
+      "min": [
+        -42,
+        0,
+        12
+      ],
+      "max": [
+        -32,
+        10.2,
+        20
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_west_6",
+      "min": [
+        -42,
+        0,
+        20
+      ],
+      "max": [
+        -32,
+        7.6,
+        28
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_east_0",
+      "min": [
+        32,
+        0,
+        -28
+      ],
+      "max": [
+        42,
+        8.4,
+        -20
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_east_1",
+      "min": [
+        32,
+        0,
+        -20
+      ],
+      "max": [
+        42,
+        10.2,
+        -12
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_east_2",
+      "min": [
+        32,
+        0,
+        -12
+      ],
+      "max": [
+        42,
+        7.6,
+        -4
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_east_3",
+      "min": [
+        32,
+        0,
+        -4
+      ],
+      "max": [
+        42,
+        9.5,
+        4
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_east_4",
+      "min": [
+        32,
+        0,
+        4
+      ],
+      "max": [
+        42,
+        8.4,
+        12
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_east_5",
+      "min": [
+        32,
+        0,
+        12
+      ],
+      "max": [
+        42,
+        10.2,
+        20
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_east_6",
+      "min": [
+        32,
+        0,
+        20
+      ],
+      "max": [
+        42,
+        7.6,
+        28
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_north_0",
+      "min": [
+        -24,
+        0,
+        -46
+      ],
+      "max": [
+        -16,
+        9.2,
+        -36
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_north_1",
+      "min": [
+        -16,
+        0,
+        -46
+      ],
+      "max": [
+        -8,
+        7.1,
+        -36
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_north_2",
+      "min": [
+        -8,
+        0,
+        -46
+      ],
+      "max": [
+        0,
+        11.1,
+        -36
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_north_3",
+      "min": [
+        0,
+        0,
+        -46
+      ],
+      "max": [
+        8,
+        8.3,
+        -36
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_north_4",
+      "min": [
+        8,
+        0,
+        -46
+      ],
+      "max": [
+        16,
+        9.2,
+        -36
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_north_5",
+      "min": [
+        16,
+        0,
+        -46
+      ],
+      "max": [
+        24,
+        7.1,
+        -36
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_south_0",
+      "min": [
+        -24,
+        0,
+        36
+      ],
+      "max": [
+        -16,
+        9.2,
+        46
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_south_1",
+      "min": [
+        -16,
+        0,
+        36
+      ],
+      "max": [
+        -8,
+        7.1,
+        46
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_south_2",
+      "min": [
+        -8,
+        0,
+        36
+      ],
+      "max": [
+        0,
+        11.1,
+        46
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_south_3",
+      "min": [
+        0,
+        0,
+        36
+      ],
+      "max": [
+        8,
+        8.3,
+        46
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_south_4",
+      "min": [
+        8,
+        0,
+        36
+      ],
+      "max": [
+        16,
+        9.2,
+        46
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "perimeter_south_5",
+      "min": [
+        16,
+        0,
+        36
+      ],
+      "max": [
+        24,
+        7.1,
+        46
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "corner-return-8m-0",
+      "min": [
+        -32.0,
+        0.0,
+        -46.0
+      ],
+      "max": [
+        -24.0,
+        9.199999809265137,
+        -36.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "corner-return-8m-1",
+      "min": [
+        24.0,
+        0.0,
+        -46.0
+      ],
+      "max": [
+        32.0,
+        9.199999809265137,
+        -36.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "corner-return-8m-2",
+      "min": [
+        -32.0,
+        0.0,
+        36.0
+      ],
+      "max": [
+        -24.0,
+        9.199999809265137,
+        46.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "corner-return-8m-3",
+      "min": [
+        24.0,
+        0.0,
+        36.0
+      ],
+      "max": [
+        32.0,
+        9.199999809265137,
+        46.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "corner-wing-8m-0",
+      "min": [
+        -42.0,
+        0.0,
+        -36.0
+      ],
+      "max": [
+        -32.0,
+        8.399999618530273,
+        -28.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "corner-wing-8m-1",
+      "min": [
+        32.0,
+        0.0,
+        28.0
+      ],
+      "max": [
+        42.0,
+        8.399999618530273,
+        36.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "corner-wing-8m-2",
+      "min": [
+        32.0,
+        0.0,
+        -36.0
+      ],
+      "max": [
+        42.0,
+        8.399999618530273,
+        -28.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "corner-wing-8m-3",
+      "min": [
+        -42.0,
+        0.0,
+        28.0
+      ],
+      "max": [
+        -32.0,
+        8.399999618530273,
+        36.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-0-0",
+      "min": [
+        -28.0,
+        0.0,
+        -56.0
+      ],
+      "max": [
+        -18.0,
+        24.399999618530273,
+        -48.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-0-1",
+      "min": [
+        -28.0,
+        0.0,
+        48.0
+      ],
+      "max": [
+        -18.0,
+        24.399999618530273,
+        56.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-0-2",
+      "min": [
+        -55.0,
+        0.0,
+        -18.0
+      ],
+      "max": [
+        -47.0,
+        24.399999618530273,
+        -7.999999523162842
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-0-3",
+      "min": [
+        49.0,
+        0.0,
+        12.0
+      ],
+      "max": [
+        57.0,
+        24.399999618530273,
+        22.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-1-0",
+      "min": [
+        -5.0,
+        0.0,
+        -60.0
+      ],
+      "max": [
+        5.0,
+        26.0,
+        -52.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-1-1",
+      "min": [
+        -5.000000476837158,
+        0.0,
+        52.0
+      ],
+      "max": [
+        5.000000476837158,
+        26.0,
+        60.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-1-2",
+      "min": [
+        -57.0,
+        0.0,
+        12.0
+      ],
+      "max": [
+        -49.0,
+        26.0,
+        22.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-2-0",
+      "min": [
+        19.0,
+        0.0,
+        -57.0
+      ],
+      "max": [
+        29.0,
+        22.799999237060547,
+        -49.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-2-1",
+      "min": [
+        19.0,
+        0.0,
+        49.0
+      ],
+      "max": [
+        29.0,
+        22.799999237060547,
+        57.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "roofline-residence-2-2",
+      "min": [
+        47.0,
+        0.0,
+        -18.0
+      ],
+      "max": [
+        55.0,
+        22.799999237060547,
+        -8.0
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "licensed-west-wall",
+      "min": [
+        -34.813,
+        0,
+        -28
+      ],
+      "max": [
+        -32.06,
+        8.4,
+        -12
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "boundary-plinth-west",
+      "min": [
+        -24.23,
+        0,
+        -28.24
+      ],
+      "max": [
+        -24.01,
+        0.18,
+        28.24
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "boundary-plinth-east",
+      "min": [
+        24.01,
+        0,
+        -28.24
+      ],
+      "max": [
+        24.23,
+        0.18,
+        28.24
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "boundary-plinth-north",
+      "min": [
+        -24.24,
+        0,
+        -28.23
+      ],
+      "max": [
+        24.24,
+        0.18,
+        -28.01
+      ],
+      "surface": "stone"
+    },
+    {
+      "id": "boundary-plinth-south",
+      "min": [
+        -24.24,
+        0,
+        28.01
+      ],
+      "max": [
+        24.24,
+        0.18,
+        28.23
+      ],
+      "surface": "stone"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "run": "art-factory/cs/runs/run-20261007-v28-runtime",
+  "asset_id": "cs_armory_v28",
+  "category": "weapon_thumbnail",
+  "postprocess_profile": "hard_alpha_icon",
+  "mode_inference_decision": {
+    "selected_profile": "hard_alpha_icon",
+    "candidate_profiles": [
+      "hard_alpha_icon"
+    ],
+    "confidence": "high",
+    "rationale": "Native transparent studio renders of already approved weapon models; exact alpha conversion with no chroma key.",
+    "clarifying_question": null
+  },
+  "screen": {
+    "screen_id": "cs-armory",
+    "postprocess_profile": "hard_alpha_icon",
+    "source_mode": "studio render of existing published, licensed CC0 weapon GLBs; exclude view_hands",
+    "assets": [
+      "pistol",
+      "smg",
+      "rifle",
+      "sniper"
+    ],
+    "size": [
+      768,
+      384
+    ],
+    "alpha_policy": "Native Blender film transparency, no chroma key needed. Antialiased silhouette; no text or background.",
+    "source_registry": "art-factory/cs/manifests/asset_registry.json",
+    "runtime_pattern": "public/assets/games/cs/armory/{weapon}.webp",
+    "gates": [
+      "source hash and license lineage",
+      "dimensions",
+      "transparent border",
+      "nonempty unclipped silhouette",
+      "all four weapons recognisable",
+      "runtime hash and browser loading"
+    ]
+  },
+  "status": "published-local",
+  "publication_scope": "local_repository",
+  "review": "art-factory/cs/runs/run-20261007-v28-runtime/qa/review.json"
+}

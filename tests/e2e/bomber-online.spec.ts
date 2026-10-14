@@ -8,10 +8,21 @@ import { test, expect, type Page } from '@playwright/test';
  * WebRTC 需 chromium。
  */
 test.describe('Dungeon Bomber — online battle', () => {
-  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Keyboard WebRTC gameplay runs on desktop Chromium only');
+  test.skip(({ browserName }) => browserName !== 'chromium', 'WebRTC requires chromium');
   test.setTimeout(120_000);
 
-  test('two browsers connect by room code and enter a synced versus match', async ({ browser }) => {
+  test('two browsers connect by room code and enter a synced versus match', async ({ browser, page, isMobile }, testInfo) => {
+    if (isMobile) {
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.goto('/games/bomber?online=1');
+      await expect(page.locator('#touch-notice')).toBeVisible();
+      await expect(page.locator('#online-screen')).toHaveCount(0);
+      await page.locator('.touch-notice-back').click();
+      await expect(page).toHaveURL(/\/games\/?$/);
+      expect(errors).toEqual([]);
+      return;
+    }
     const ctxHost = await browser.newContext();
     const ctxGuest = await browser.newContext();
     const host = await ctxHost.newPage();
@@ -48,8 +59,7 @@ test.describe('Dungeon Bomber — online battle', () => {
       await waitVersus(guest);
 
       // ── 核心斷言：兩端都到 versus、2 名玩家、status==='playing' ──
-      const h0 = await readMatch(host);
-      const g0 = await readMatch(guest);
+      const [h0, g0] = await Promise.all([readMatch(host), readMatch(guest)]);
       expect(h0.players).toBe(2);
       expect(g0.players).toBe(2);
       expect(h0.status).toBe('playing');
@@ -78,8 +88,12 @@ test.describe('Dungeon Bomber — online battle', () => {
       // 讓鎖步把輸入消化掉、兩端追平
       await host.waitForTimeout(800);
 
-      const h1 = await readMatch(host);
-      const g1 = await readMatch(guest);
+      // 兩端並行取樣，避免第二次 evaluate 的排程時間被算成鎖步幀差。
+      const [h1, g1] = await Promise.all([readMatch(host), readMatch(guest)]);
+      await testInfo.attach('lockstep-samples', {
+        body: JSON.stringify({ initial: { host: h0, guest: g0 }, afterInput: { host: h1, guest: g1 } }),
+        contentType: 'application/json',
+      });
 
       // 鎖步持續推進、兩端確認幀接近（同機 loopback → 偏移很小）
       expect(h1.frame).toBeGreaterThan(30);
@@ -88,6 +102,9 @@ test.describe('Dungeon Bomber — online battle', () => {
 
       // 決定性鎖步：找共同確認幀，兩端 stateHash 必須一致（無論 playing/finished）。
       const synced = await assertHashSyncAtCommonFrame(host, guest);
+      await testInfo.attach('lockstep-common-frame', {
+        body: JSON.stringify(synced), contentType: 'application/json',
+      });
       expect(synced.matchedFrame).toBeGreaterThan(30);
       expect(synced.hostHash).toBe(synced.guestHash);
     } finally {

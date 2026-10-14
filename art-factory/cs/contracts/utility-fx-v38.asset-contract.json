@@ -1,0 +1,45 @@
+{
+  "asset_id": "cs-utility-fx-v38",
+  "screen_id": "cs-gameplay-utility",
+  "status": "candidate",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "runtime_atlas_pack",
+  "source_mode": "licensed_human_authored_candidate",
+  "source_license": "CC0 1.0; bundled Kenney Particle Pack 1.1 License.txt inspected",
+  "source_approval": "stage-integration-authorized; final source-selection review pending",
+  "asset_generation_manual_review": true,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "local_preview_only": false,
+  "source_directory": "art-factory/cs/runs/run-20261010-v38-utility-fx/raw/third-party/kenney-particle-pack",
+  "processing_script": "art-factory/cs/source/cook_cs_utility_fx_v38.mjs",
+  "alpha_policy": "RGB packed scalar masks, linear NoColorSpace. Source alpha multiplied by luminance. Soft alpha is intentional for volumetric FX; all six mask borders are zero. No localizable text.",
+  "candidate_runtime_path": "public/assets/games/cs/fx/utility-masks.webp",
+  "sha256": "a6f0a9c4fca39d4c7aac0014da7360579dc30d55a1c72cc83379c4c8c17fbfa4",
+  "bytes": 75328,
+  "dimensions": [
+    512,
+    256
+  ],
+  "mechanical_qa": "art-factory/cs/runs/run-20261010-v38-utility-fx/qa/mechanical-qa.json",
+  "mechanical_qa_pass": true,
+  "independent_visual_review": "2026-10-12: current-version low HE gray-disc defect reproduced, then narrow ring transparency/tint correction independently passed 12 high/low/near/time-sequence captures. Real GPU center transparency and ring visibility regression passed. Uniform smoke interior is the existing veil design, not a confirmed defect. Source selection, complete lifetime/terrain review and human commercial visual approval remain pending.",
+  "captures": [
+    "art-factory/cs/runs/run-20261010-v38-utility-fx/qa/codex-v1/capture.json",
+    "art-factory/cs/runs/run-20261010-v38-utility-fx/qa/codex-v2/capture.json",
+    "art-factory/cs/runs/run-20261010-v38-utility-fx/qa/codex-current-oct12/capture.json",
+    "art-factory/cs/runs/run-20261010-v38-utility-fx/qa/codex-annulus-oct12/capture.json"
+  ],
+  "notes": [
+    "The existing atlas is included in the current-stage PR and merge explicitly requested by the user on 2026-10-14. Final artistic/source-selection and commercial acceptance remain pending.",
+    "All runtime light/particle/decal pools are bounded and reset by simulation state. High quality samples separate AO depth; low quality retains ordinary depth testing."
+  ],
+  "publication_scope": "stage_repository_merge",
+  "stage_delivery": {
+    "authorized": true,
+    "date": "2026-10-14",
+    "user_instruction": "??????? PR merge ?????????",
+    "scope": "Current stage PR and merge, including necessary runtime assets and ordinary repository integration; no final art acceptance is implied.",
+    "commercial_approval": false
+  }
+}

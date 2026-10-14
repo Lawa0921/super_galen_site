@@ -283,8 +283,9 @@ describe('SEO build output', { skip }, () => {
     assert.match(html, /約 15 秒/);
     assert.match(html, /about 15 seconds/);
     assert.ok(!sitemapLocs.some((loc) => loc.startsWith(`${ORIGIN}/privacy`)), '/privacy/ 不應在 sitemap');
-    // 新增 privacy 頁前 sitemap 共 221 筆；privacy 排除後總數應不變（新增可索引頁時同步更新此數字）
-    assert.equal(sitemapLocs.length, 221);
+    // 原有 221 筆加上可索引的 Breach Point；privacy 仍不加入 sitemap。
+    assert.ok(sitemapLocs.includes(`${ORIGIN}/games/cs/`), 'Breach Point 應在 sitemap');
+    assert.equal(sitemapLocs.length, 222);
   });
 
   test('首頁頁尾連到 /privacy/', () => {

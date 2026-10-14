@@ -1,0 +1,23 @@
+{
+  "asset_id": "browser-cs-locomotion-aim-v7",
+  "status": "deformation-rejected",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_motion": "art-factory/cs/runs/run-20261005-v7-cmu-body-track/candidate/body-compact-v1.json",
+  "source_character_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "prior_rejection": "art-factory/cs/runs/run-20261005-v7-combat-strafe/rejection.md",
+  "requirements": [
+    "Use native-speed forward gait near actual 1.3 m/s movement",
+    "Separate movement, pelvis and aim orientations without moving bone origins or changing hierarchy",
+    "Keep native foot world transforms and knee bend using whole-cycle reachable IK",
+    "Verify world weapon aim separately from weapon-relative grip",
+    "Inspect actual torso, clothing and leg deformation before accepting any yaw separation",
+    "Retain ground, material slip, seam, true-mesh clearance and 40 mm drop requirements"
+  ],
+  "development_integration_allowed": false,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "assembly_human_review": "not-ready",
+  "verification": "art-factory/cs/runs/run-20261005-v7-locomotion-aim/qa/verification-v1.json",
+  "rejection": "art-factory/cs/runs/run-20261005-v7-locomotion-aim/rejection.md",
+  "next_action": "Repair and validate native skin deformation with fixed pose matrices before adding independent locomotion/aim yaw."
+}

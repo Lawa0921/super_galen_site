@@ -1,0 +1,141 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "breach-point-old-quarter-architecture-v6",
+  "category": "3d_game_assets",
+  "scope": "candidate assembly: V5 scene with only the official round tower replacing market_tower",
+  "source_mode": "approved-cc0-polyhaven-gltf-with-original-pbr-materials",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_review": {
+    "asset": "Modular Fort 01",
+    "creator": "Rico Cilliers",
+    "asset_page": "https://polyhaven.com/a/modular_fort_01",
+    "license": "CC0-1.0",
+    "license_page": "https://polyhaven.com/license",
+    "source_api": "https://api.polyhaven.com/files/modular_fort_01",
+    "resolution": "1k",
+    "source_manifest": "art-factory/cs/runs/run-20261004-v6-architecture/source-manifest.json",
+    "runtime_publish_allowed": false
+  },
+  "import_policy": {
+    "preserve_source_uv": true,
+    "preserve_source_materials": true,
+    "preserve_source_structure": true,
+    "preview_images_are_runtime_assets": false,
+    "map_integration_in_this_checkpoint": "round tower locally integrated after independent visual, mechanical and performance checks; no external deployment",
+    "valve_assets_allowed": false
+  },
+  "candidate_targets": [
+    "modular_fort_01_wall_thin_gate_01",
+    "modular_fort_01_tower_round",
+    "modular_fort_01_wall_thick_corner_01",
+    "modular_fort_01_wall_thick_corner_02"
+  ],
+  "geometry_budget": {
+    "existing_environment_triangles": 73522,
+    "existing_environment_draw_calls": 31,
+    "existing_environment_runtime_bytes": 7491680,
+    "architecture_increment_triangle_max": 8000,
+    "architecture_increment_draw_call_max": 4,
+    "architecture_increment_bytes_max": 1500000,
+    "collision_policy": "Retain all 9 existing colliders; architecture modules must be placed inside existing collider footprints or non-walkable boundary space and cannot create route traversal.",
+    "integration_status": "published locally; true-renderer LIMITED PASS, 51 mechanical checks passed and eight performance scenarios verified"
+  },
+  "placement_contract": {
+    "module": "modular_fort_01_tower_round",
+    "target_center_x": -20.0,
+    "target_center_z": -38.0,
+    "uniform_scale": 1.1,
+    "base_y": 0.0,
+    "expected_runtime_bounds": {
+      "min": [
+        -28.71114730834961,
+        0.0,
+        -46.71114730834961
+      ],
+      "max": [
+        -11.288858413696289,
+        14.847967147827148,
+        -29.288856506347656
+      ]
+    },
+    "bounds_tolerance_m": 1e-05,
+    "walkable_map_bounds": {
+      "minX": -24.0,
+      "maxX": 24.0,
+      "minZ": -28.0,
+      "maxZ": 28.0
+    },
+    "walkable_intrusion": false,
+    "collision_proof": "Tower maxZ remains 1.2888548851m south of map minZ -28; all 9 existing colliders and routes remain unchanged.",
+    "placement_report": "art-factory/cs/runs/run-20261004-v6-architecture/qa/placement-contract.json"
+  },
+  "candidate_paths": {
+    "ingest_script": "art-factory/cs/source/ingest_cs_architecture_v6.py",
+    "inventory_script": "art-factory/cs/source/build_cs_architecture_v6.py",
+    "assembly_script": "art-factory/cs/source/build_cs_architecture_v6.py --assemble",
+    "imported_blend": "art-factory/cs/runs/run-20261004-v6-architecture/raw/modular_fort_01_imported.blend",
+    "module_inventory": "art-factory/cs/runs/run-20261004-v6-architecture/qa/module-inventory.json",
+    "contact_sheet": "art-factory/cs/runs/run-20261004-v6-architecture/qa/architecture-contact-sheet.png",
+    "placement_contract": "art-factory/cs/runs/run-20261004-v6-architecture/qa/placement-contract.json",
+    "architecture_candidate_glb": "art-factory/cs/runs/run-20261004-v6-architecture/candidate/environment-architecture.glb",
+    "architecture_packed_blend": "art-factory/cs/runs/run-20261004-v6-architecture/raw/environment-architecture.blend"
+  },
+  "qa_gates": [
+    "official_api_size_and_md5",
+    "source_sha256_manifest",
+    "blender_import_inventory",
+    "original_material_contact_sheet",
+    "module_triangle_and_material_inventory",
+    "deterministic_tower_texture_resize_and_hash",
+    "placement_bounds_and_walkable_intrusion",
+    "nine_collider_name_preservation",
+    "architecture_increment_budget",
+    "cpu_player_view_checkpoint",
+    "assembly_human_review"
+  ],
+  "qa_result": {
+    "status": "published-local-architecture-assembly",
+    "module_count": 22,
+    "source_triangles": 28218,
+    "source_estimated_draw_calls": 45,
+    "target_modules_present": true,
+    "contact_sheet_generated": true,
+    "candidate_generated": true,
+    "candidate_build_report": "art-factory/cs/runs/run-20261004-v6-architecture/qa/architecture-build.json",
+    "candidate_sha256": "a7fc59b39997abe7c8a425b59bb1774b86c900bab13378112b1308cd5afdc6a1",
+    "candidate_triangles": 76290,
+    "candidate_draw_calls": 33,
+    "candidate_runtime_bytes": 7640880,
+    "candidate_increment": {
+      "triangles": 2768,
+      "draw_calls": 2,
+      "bytes": 149200
+    },
+    "nine_colliders_preserved": true,
+    "walkable_intrusion": false,
+    "source_uv_preserved": true,
+    "source_material_structure_preserved": true,
+    "asset_generation_manual_review": false,
+    "assembly_human_review": "pending",
+    "runtime_publish_allowed": true,
+    "mechanical_review": "art-factory/cs/runs/run-20261004-v6-architecture/qa/root-mechanical.json",
+    "visual_review": "art-factory/cs/runs/run-20261004-v6-architecture/qa/visual-review.json",
+    "publication_evidence": "art-factory/cs/runs/run-20261004-v6-architecture/qa/published-bundle-integrity.json",
+    "map_integration": "public/assets/games/cs/environment.glb; local repository only"
+  },
+  "forbidden_content": [
+    "Valve asset extraction",
+    "webpage preview used as runtime source",
+    "hand-drawn placeholder architecture",
+    "tower built from stacked boxes",
+    "new gameplay collision shells",
+    "unregistered runtime assets"
+  ],
+  "handoff_note": "Only V5 market_tower is replaced by the official CC0 round tower at the A boundary; B dome, V5 geometry, nine colliders and routes remain. Mechanical, independent limited visual and performance checks support local publication. It does not claim a complete V6 environment, CS2-quality parity, human acceptance or external deployment.",
+  "status": "published_local_improvement",
+  "runtime_publish_allowed": true,
+  "publication_scope": "local_repository",
+  "external_deployment": false,
+  "assembly_human_review": "pending"
+}

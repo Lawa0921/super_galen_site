@@ -1387,9 +1387,14 @@
 
         overlay.addEventListener('click', () => {
             let entranceFallback;
-            const tl = gsap.timeline({
-                onComplete: () => window.clearTimeout(entranceFallback)
-            });
+            const entranceSplashes = [];
+            const tl = gsap.timeline({ onComplete: () => {
+                clearTimeout(entranceFallback);
+                entranceSplashes.forEach(sp => { gsap.killTweensOf(sp); sp.remove(); });
+            } });
+            // Long frames can make GSAP's smoothed clock lag behind wall time.
+            // Finish this entrance sequence so decorative motion cannot lock the page.
+            entranceFallback = setTimeout(() => { if (tl.progress() < 1) tl.progress(1); }, 3500);
 
             // Entrance icon zoom and splash
             gsap.to('#entrance-icon', {
@@ -1416,6 +1421,7 @@
                 sp.style.background = splashColors[si % splashColors.length];
                 sp.style.filter = `blur(${8 + Math.random() * 12}px)`;
                 document.body.appendChild(sp);
+                entranceSplashes.push(sp);
 
                 const sAngle = (Math.PI * 2 / 12) * si;
                 const sDist = 150 + Math.random() * 300;
@@ -1478,11 +1484,6 @@
                 stagger: 0.15,
                 ease: "back.out(1.5)"
             }, "-=0.6");
-            // 低幀率時 GSAP 的動畫時鐘可能遠慢於實際時間；仍須完成整段進場並解鎖內容。
-            entranceFallback = window.setTimeout(
-                () => tl.progress(1),
-                Math.ceil(tl.totalDuration() * 1000) + 500
-            );
         }, { once: true });
 
 

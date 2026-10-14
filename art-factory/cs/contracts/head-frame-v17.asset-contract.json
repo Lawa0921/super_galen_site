@@ -1,0 +1,26 @@
+{
+  "schema": "cs-head-frame-v17",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/wrist-chain-v16.asset-contract.json",
+  "screen_id": "cs-first-person-rifle",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "mode": "licensed-native-rig-camera-calibration",
+  "design": "Preserve the v16 study2 rig and all gun-local skin/weapon relationships. Apply one common camera-Z+.1 translation to all scene roots except camera, including lighting. Use78degree vertical FOV instead of58; same sight axis with effective ADS eye relief.08. No bone, mesh, finger or contact edits.",
+  "camera_contract": "Candidate only. Actual game viewCamera remains58degrees; no claim of runtime integration or projection parity with current game settings.",
+  "source_opening_scope": "Original arm mesh ends in two20vertex upper-arm loops, not complete shoulders. Frustum-excluded loops and zero near-plane cuts cannot alone prove that an open tube interior is invisible. Native rendered review is mandatory; source-derived sleeve/shoulder coverage remains unresolved structure.",
+  "gates": [
+    "new explicit projection helper has RED/GREEN tests and matches Three.js projection for candidate parameters",
+    "original geometry, weights, UV, bone rest/hierarchy and pose animation remain unchanged",
+    "three saved poses preserve gun-local evaluated skin while camera-space points equal prior+translation",
+    "source boundary/frustum and near-plane checks use actual78degree camera",
+    "hip/ADS/reload native renders independently reviewed for visible inner surfaces and sight/framing",
+    "no claim that inherited rejected grip contacts or missing sleeves are fixed"
+  ],
+  "status": "static-cut-control-retained-assembly-not-approved",
+  "scene": "art-factory/cs/runs/run-20261007-v17-head-frame/raw/study1-head-frame.blend",
+  "review": "art-factory/cs/runs/run-20261007-v17-head-frame/qa/study1-head-frame/review.json",
+  "source_invariant_scope": "Skin vertices/polygons/weights/groups/UV; bone parents/rest; constraintname/type/mute/enabled; arm/gun fcurve data_path,index,keyco,interpolation. No claim about all scene properties. Parents, common world transform and camera projection intentionally change.",
+  "projection_recomputation": "art-factory/cs/runs/run-20261007-v17-head-frame/qa/three-projection-verification.json"
+}

@@ -1,0 +1,23 @@
+{
+  "asset_id": "browser-cs-palm-anchor-v7",
+  "status": "bounded-support-grid-no-eligible-proposal",
+  "screen_id": "cs-third-person-character",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-palm-anchor",
+  "source_mode": "Finite rigid palm support relocation on licensed source geometry; no mesh, UV, weights or finger-angle edits",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "requirements": [
+    "Preserve sealed prior experiments, weapon transform, right hand, left wrist orientation and frozen wrap finger commands",
+    "Evaluate exactly 12 prescribed tangential offsets: world X[-20,-10,0,10]mm by Z[-10,0,10]mm; no iterative search",
+    "Choose actual parallel underside triangles within120mm of the old palm support in the tangential plane; rigid palm vertex must have an opposing palmar face",
+    "Solve support normal travel within plus/minus20mm at1mm clearance, then reject translations longer than25mm",
+    "Re-solve left arm for each feasible anchor and measure raw pad distance, normal opposition, all hand/gun and left inter-finger crossings, body/arms and invariants",
+    "At most one diagnostic proposal may be retained: no sampled hand/body/arm/inter-finger crossings, at least two fingers each improve at least one proximal/middle minimum by2mm, no proximal/middle minimum worsens by more than1mm, and actual palm clearance remains within tolerance",
+    "Improving minima must face an actual handguard-region triangle (weapon-local centroid X[-.07,.07],Y[.035,.17],Z[-.46,-.17] metres) with opposing normals; preserve nearest face/point evidence for independent visual review",
+    "Root and independent visual review remain required; an improved proposal is not an accepted complete grip or a runtime asset",
+    "Vertex-ray support is a bounded proposal only, not a whole-palm contact or containment proof; no valid anchor found is not a global infeasibility proof"
+  ],
+  "assembly_human_review": "not-ready-all-support-proposals-failed"
+}
