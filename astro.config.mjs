@@ -2,10 +2,14 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
+import { isUntranslatedLocalePath, listGuildTranslations } from './src/i18n/seo.ts';
+
+const guildTranslations = listGuildTranslations();
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://supergalen.com',
+  // 正式網域為 www（apex 會 308 轉到 www）；canonical / hreflang / sitemap 都以此為準
+  site: 'https://www.supergalen.com',
   output: 'static',
   adapter: vercel(),
 
@@ -17,6 +21,8 @@ export default defineConfig({
       prefixDefaultLocale: false, // 預設語言不加前綴，與 Jekyll 一致
     },
   },
+
+  // /zh-TW/* 與無前綴頁內容相同：301 轉址寫在 vercel.json（Astro 產生的轉址規則不吃結尾斜線）
 
   // Vite 配置
   vite: {
@@ -40,7 +46,12 @@ export default defineConfig({
   },
 
   // 整合
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      // 未翻譯的語系頁（noindex）不進 sitemap
+      filter: (page) => !isUntranslatedLocalePath(page, guildTranslations),
+    }),
+  ],
 
   // 建構輸出
   build: {

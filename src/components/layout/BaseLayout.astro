@@ -4,6 +4,7 @@
  * 主佈局組件 - 包含 HTML 結構、head 標籤、SEO 優化、以及全局樣式
  */
 import '@styles/main.scss';
+import { getAlternateLanguages, defaultLang } from '@i18n/index';
 
 interface Props {
   title: string;
@@ -13,6 +14,10 @@ interface Props {
   type?: 'website' | 'article';
   publishedTime?: string;
   author?: string;
+  /** 未翻譯的語系頁：輸出 noindex，且不輸出 hreflang */
+  noindex?: boolean;
+  /** 頁面在五個語系都有（已翻譯 UI 的）版本時才輸出 hreflang */
+  hreflang?: boolean;
 }
 
 const {
@@ -23,10 +28,13 @@ const {
   type = 'website',
   publishedTime,
   author = 'Galen',
+  noindex = false,
+  hreflang = false,
 } = Astro.props;
 
 // 網站基本資訊
-const siteUrl = 'https://supergalen.com';
+// 正式網域來自 astro.config.mjs 的 site（www）
+const siteUrl = (Astro.site?.origin ?? 'https://www.supergalen.com');
 const siteName = "SuperGalen's Dungeon";
 
 // 語言對應的 HTML lang 屬性
@@ -43,6 +51,16 @@ const ogImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
 
 // 當前頁面的 canonical URL
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
+
+// hreflang：預設語言（zh-TW）與 x-default 都指向無前綴網址
+const alternates = hreflang && !noindex
+  ? getAlternateLanguages(Astro.url.pathname).map(({ lang: code, url }) => ({
+      hreflang: code as string,
+      href: new URL(url, siteUrl).toString(),
+    }))
+  : [];
+const xDefault = alternates.find((alt) => alt.hreflang === defaultLang);
+if (xDefault) alternates.push({ hreflang: 'x-default', href: xDefault.href });
 
 // JSON-LD 結構化資料
 const jsonLd = type === 'article' ? {
@@ -90,6 +108,7 @@ const jsonLd = type === 'article' ? {
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
     <meta name="author" content={author} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
 
     <!-- Canonical URL -->
     <link rel="canonical" href={canonicalUrl} />
@@ -146,12 +165,7 @@ const jsonLd = type === 'article' ? {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
 
     <!-- Alternate language links -->
-    <link rel="alternate" hreflang="zh-TW" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="zh-CN" href={`${siteUrl}/zh-CN${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="en" href={`${siteUrl}/en${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="ja" href={`${siteUrl}/ja${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="ko" href={`${siteUrl}/ko${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
-    <link rel="alternate" hreflang="x-default" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+    {alternates.map((alt) => <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />)}
 
     <title>{title}</title>
 
