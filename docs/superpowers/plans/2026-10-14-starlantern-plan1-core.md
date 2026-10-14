@@ -443,6 +443,7 @@ const LIST: SkillDef[] = [
 ];
 
 export const SKILLS: Record<string, SkillDef> = Object.fromEntries(LIST.map((s) => [s.id, s]));
+```
 
 - [ ] **Step 10: 寫 `data/materials.ts`**
 
