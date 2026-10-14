@@ -3,7 +3,7 @@
  * 未翻譯的語系頁（內容仍是繁中來源）不應被索引，也不應進 sitemap
  */
 import { describe, it, expect } from 'vitest';
-import { isUntranslatedLocalePath, guildTranslationKey, guildHeadTags } from './seo';
+import { isUntranslatedLocalePath, isExcludedFromSitemap, guildTranslationKey, guildHeadTags } from './seo';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { translations } from './translations';
@@ -34,6 +34,20 @@ describe('isUntranslatedLocalePath', () => {
   it('接受完整 URL 與不含結尾斜線的路徑', () => {
     expect(isUntranslatedLocalePath('https://www.supergalen.com/en/journal/x/', translated)).toBe(true);
     expect(isUntranslatedLocalePath('/en/guild/tyou', translated)).toBe(true);
+  });
+});
+
+describe('isExcludedFromSitemap', () => {
+  it('隱私權政策頁（noindex）不進 sitemap，完整 URL 與無結尾斜線皆適用', () => {
+    expect(isExcludedFromSitemap('https://www.supergalen.com/privacy/', translated)).toBe(true);
+    expect(isExcludedFromSitemap('/privacy', translated)).toBe(true);
+  });
+
+  it('沿用未翻譯語系頁的排除規則，其餘頁面保留', () => {
+    expect(isExcludedFromSitemap('/en/journal/x/', translated)).toBe(true);
+    for (const p of ['/', '/journal/x/', '/ja/guild/tyou/', '/privacy-notes/', '/games/']) {
+      expect(isExcludedFromSitemap(p, translated)).toBe(false);
+    }
   });
 });
 
