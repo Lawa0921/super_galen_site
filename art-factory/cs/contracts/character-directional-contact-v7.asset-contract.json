@@ -1,0 +1,37 @@
+{
+  "asset_id": "browser-cs-directional-contact-v7",
+  "status": "ground-and-yaw-improved-local-slip-rejected",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "licensed-human-motion-capture-derived-contact-correction",
+  "source_manifest": "art-factory/cs/runs/run-20261005-v7-directional-motion/manifest.json",
+  "source_character": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_character_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-directional-contact",
+  "requirements": [
+    "Preserve true left/right/backward source cycle and native duration",
+    "Measure supporting material motion with actual actor XYZ travel",
+    "No hierarchy, bone-length, model or weapon byte changes",
+    "Pelvis drop at most 40mm, fail unreachable feet rather than stretch bones",
+    "No ground penetration, stance clearance and velocity must be measured on true shoe geometry",
+    "Loop value/velocity and frozen grip must remain consistent",
+    "Offline candidate only until world-motion, transition and game-speed QA is complete"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "development_integration_allowed": false,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "verification": "art-factory/cs/runs/run-20261005-v7-directional-contact/qa/verification-v1.json",
+  "gates": {
+    "min_ground_m": -1e-05,
+    "max_lowest_shoe_m": 0.003,
+    "max_stance_material_rms_mps": 0.03,
+    "max_pelvis_drop_m": 0.04
+  },
+  "failed_gates": [
+    "backward:localSlip",
+    "left:localSlip"
+  ],
+  "next_action": "Inspect ball/toe motion at backward-right phase .01171875 and left-right phase .455078125; non-foot-rigid residual is present only on the two failing soles. Do not freeze whole stance roll without evidence.",
+  "frame_limit": "Offline actor yaw=0 and horizontal ground. UI rotates completed poses afterwards; no mid-clip turning or slope support is claimed."
+}

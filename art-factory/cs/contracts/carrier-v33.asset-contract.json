@@ -1,0 +1,66 @@
+{
+  "schema": "asset-contract-v1",
+  "asset_id": "cs_authored_modular_carrier_v33",
+  "status": "qa_failed",
+  "screen_id": "cs-third-person-character-and-first-person-hands",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "profile": "authored-3d-character-equipment-parts",
+  "mode_inference_decision": "High confidence: editable Blender mesh modules, not a raster/sprite workflow. Opaque cloth surfaces with existing licensed PBR maps; no chroma key.",
+  "source_mode": "Original authored plate-carrier geometry on existing licensed V33 anatomy and rig; existing licensed fabric normal/roughness with a generated neutral fabric albedo tile",
+  "fabric_albedo": {
+    "raw": "art-factory/cs/runs/run-20261008-v33-character/raw/carrier-fabric-a.png",
+    "profile": "opaque_background",
+    "use": "Repeat-wrapped albedo only; no inferred physical normal map",
+    "postprocess": "deterministic resize to512, linear-light neutral remap and JPEG quality90; no hand painting",
+    "gates": [
+      "opaque",
+      "no baked seams/logos/shadows",
+      "seam edge variation near interior variation",
+      "texture budget",
+      "game-light review"
+    ],
+    "raw_sha256": "dff429d6aa61ee4debc3edc9e49db5b2dc89be29c5033073ea7b167ac74e8945"
+  },
+  "source_blend": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-j-eyewear-f/tactical-character.blend",
+  "baseline_runtime_sha256": "852ce7ffe3f08aed4440c79cc8558f749080a69eb52e6d5ab3b766b259891f9d",
+  "modules": [
+    "curved front and rear plate bags",
+    "padded shoulder straps",
+    "wrapped cummerbund",
+    "MOLLE attachment bands",
+    "three separate magazine pouches",
+    "edge binding and seams",
+    "rear drag handle",
+    "small team identifiers"
+  ],
+  "allowed_changes": [
+    "replace old vest geometry",
+    "reposition existing carrier identification patch",
+    "keep uniform and helmet in subdued author colors by removing team selector from their material names",
+    "repair old zero-height front belt as a curved vertical ribbon",
+    "new carrier cloth material with generated neutral albedo and licensed fabric maps"
+  ],
+  "preservation": [
+    "53-joint skeleton and inverse bind matrices",
+    "body/eye/eyewear/headgear geometry",
+    "all non-carrier skin data",
+    "all first-person weapons and hands",
+    "source encoded maps including stage7 helmet coating"
+  ],
+  "gates": [
+    "editable modular source",
+    "finite and nondegenerate new triangles",
+    "normalized weights with at most four influences",
+    "actor total <=40000 triangles",
+    "bounded primitives and package <=32000000 bytes",
+    "actual game renderer front/back/side/aim/walk/run inspection",
+    "no significant garment/body/weapon penetration",
+    "independent read-only technical and visual review"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not_requested_candidate_failed",
+  "runtime_publish_allowed": false,
+  "quality_scope": "Major chest-equipment candidate only; not full-character, FPS-arm or CS2-quality acceptance",
+  "candidate": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-m-carrier-b/soldier.glb",
+  "review": "art-factory/cs/runs/run-20261008-v33-character/qa/carrier-b-review.json"
+}

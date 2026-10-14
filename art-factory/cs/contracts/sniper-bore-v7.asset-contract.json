@@ -1,0 +1,52 @@
+{
+  "schema": "cs-sniper-bore-v7-contract",
+  "asset_id": "browser-cs-sniper-bore-v7",
+  "project_id": "super_galen_site",
+  "profile": "art-factory/cs/profile.json",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "character_equipment_parts",
+  "category": "3d_game_assets",
+  "source": "art-factory/cs/runs/run-20261003-v5-detail/candidate/sniper-runtime.glb",
+  "source_sha256": "98d88f6e1d80eaf657257ad15ddaa5f46e9b5ec77076b361d6dc887f5c95c81b",
+  "source_license": "Existing verified 3DModelsCC0 author weapon and project generated view-hand source; no new geometry or images",
+  "lifecycle_status": "published_local",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "correction": "Rotate the complete weapon root so its true muzzle annulus normal points -Z; translate root so the annulus center matches the existing world muzzle anchor. Set muzzle local position/orientation to the new physical exit. Preserve all original hierarchy and binary payloads.",
+  "measurement": {
+    "mesh": "3DModelsCC0_sniper_Barrel",
+    "primitive": 0,
+    "annulus_faces_inclusive": [
+      888,
+      919
+    ],
+    "unique_vertices": 32,
+    "rings": "Two planar concentric 16-vertex rings, consistently wound",
+    "source_axis_error_degrees_approx": 10.46029,
+    "maximum_plane_range_m": 2e-06
+  },
+  "invariants": [
+    "GLB BIN chunk byte exact, including positions/normals/UVs/images/indices",
+    "All JSON unchanged except sniper root and muzzle rotation/translation",
+    "Original world muzzle anchor position unchanged within 0.0000001m",
+    "Actual transformed annulus center error below 0.0000001m, normal direction error below 0.0001 degrees",
+    "No new mesh, draw, texture, bone, material, animation node or dependency",
+    "First-person weapon and third-person use same source convention"
+  ],
+  "qa_gates": [
+    "TDD source mismatch and corrected physical annulus direction/center",
+    "Known source topology/sha guard and malformed source rejection",
+    "Independent Three.js world-space geometry measurement",
+    "Source/candidate weapon profile and real renderer hip/ADS/reload/muzzle capture",
+    "Related weapon/feedback unit tests and CS browser checks",
+    "Full unit, build, same-device runtime performance before local publication"
+  ],
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-sniper-bore/candidate",
+  "qa_root": "art-factory/cs/runs/run-20261004-v7-sniper-bore/qa",
+  "runtime_target": "public/assets/games/cs/sniper.glb",
+  "external_deployment_allowed": false,
+  "verification": "art-factory/cs/runs/run-20261004-v7-sniper-bore/qa/verification.json",
+  "candidate_sha256": "5b7a730821e88bb4c26769ef95de710274c08f3b0291776026d39133981eb2f1",
+  "publication_scope": "local_repository"
+}

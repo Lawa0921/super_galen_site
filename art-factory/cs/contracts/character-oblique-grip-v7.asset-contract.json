@@ -1,0 +1,57 @@
+{
+  "asset_id": "browser-cs-oblique-grip-v7",
+  "status": "single-oblique-frame-candidate-rejected",
+  "screen_id": "cs-third-person-character",
+  "screen_breakdown_path": "art-factory/cs/manifests/asset_screen_breakdown_plan.json",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-oblique-grip",
+  "source_mode": "Existing authorized CC0 skinned character and rifle; authored pose only, unchanged geometry/weights",
+  "postprocess_profile": "ui_mockup_only",
+  "mode_inference_decision": {
+    "selected_profile": "ui_mockup_only",
+    "confidence": "high",
+    "rationale": "One offline pose candidate and source-face locator; no runtime GLB"
+  },
+  "sources": {
+    "calibration": {
+      "path": "art-factory/cs/runs/run-20261005-v7-finger-hinge/inputs/primary-frozen-v1.json",
+      "sha256": "10544a8ab86415c18c76620495d1c0263ede8d3824b28cd7180410896e7b51b0"
+    },
+    "reviewedPatches": {
+      "path": "art-factory/cs/runs/run-20261005-v7-hand-wrap/qa/patch-review-v1/report.json",
+      "sha256": "92a95eb60c2f714999a3b83c8bc7e636e8da020123adcee4d1547244514adbc2"
+    },
+    "baselineMeasure": {
+      "path": "art-factory/cs/runs/run-20261005-v7-anchor-wrap/qa/fit-v1/report.json",
+      "sha256": "a3819f0e01e7c90c10a4ce023789733ff929ad8df8c7561357e02db8b8cb07b6"
+    },
+    "character": {
+      "path": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+      "sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1"
+    },
+    "rifle": {
+      "path": "public/assets/games/cs/rifle.glb",
+      "sha256": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c"
+    }
+  },
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "independent-review-rejected",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "alpha_policy": "Opaque diagnostic captures; source alpha-tested material retained; no chroma-key asset.",
+  "candidateCount": 1,
+  "optimizerEvaluations": 0,
+  "exportedGlbs": 0,
+  "design": "Replace only left palm contact point/normal and wrist frame with actual original face 5789; transport original targetLong by shortest normal rotation, source frameNormal equals actual rigid palm patch normal. Keep 39 finger controls unchanged.",
+  "requirements": [
+    "Build fresh stance from new calibration because palm mount/target frame are cached at construction.",
+    "No left-hand mirroring, no inferred broad support area. Capture selected original face and surroundings.",
+    "Original palm clearance 1mm within .1mm, signed distance positive; all four long fingers require two segments each with 3 vertices and 2 faces within original 1.5mm/contact-normal gate.",
+    "Zero sampled-alpha crossings for all hand/digits, between fingers, weapon/torso, weapon/arms and left forearm/torso.",
+    "Preserve source geometry/weights/binds/parents/local positions/scales, weapon and all non-left-arm world matrices. Finger/body commands and right-hand config unchanged.",
+    "One candidate, one full measurement and multi-view captures. No fitting, angle sweep, gate relaxation or runtime integration; failed candidate remains rejected."
+  ],
+  "accepted_candidate": null,
+  "verification": "art-factory/cs/runs/run-20261005-v7-oblique-grip/qa/verification-v1.json"
+}

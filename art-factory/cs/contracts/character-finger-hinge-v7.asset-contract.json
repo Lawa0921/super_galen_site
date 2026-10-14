@@ -1,0 +1,85 @@
+{
+  "asset_id": "browser-cs-finger-hinge-v7",
+  "status": "diagnostic-complete-angle-gate-failed-grip-unapproved",
+  "screen_id": "cs-third-person-character",
+  "screen_breakdown_path": "art-factory/cs/manifests/asset_screen_breakdown_plan.json",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-finger-hinge",
+  "source_mode": "Finite diagnostic of existing authorized CC0 skin and rifle; no new art or geometry",
+  "postprocess_profile": "ui_mockup_only",
+  "mode_inference_decision": {
+    "selected_profile": "ui_mockup_only",
+    "confidence": "high",
+    "rationale": "Offline 3D pose inspection only; no publishable asset"
+  },
+  "source_brief": "Distinguish incorrect curl axes/skin evaluation from palm-to-foreend geometry mismatch using weighted skin derivatives.",
+  "sources": {
+    "calibration": {
+      "path": "art-factory/cs/runs/run-20261005-v7-anchor-wrap/candidate/primary-fit-v1.json",
+      "sha256": "10544a8ab86415c18c76620495d1c0263ede8d3824b28cd7180410896e7b51b0"
+    },
+    "reviewedPatches": {
+      "path": "art-factory/cs/runs/run-20261005-v7-hand-wrap/qa/patch-review-v1/report.json",
+      "sha256": "92a95eb60c2f714999a3b83c8bc7e636e8da020123adcee4d1547244514adbc2"
+    },
+    "baselineMeasure": {
+      "path": "art-factory/cs/runs/run-20261005-v7-anchor-wrap/qa/fit-v1/report.json",
+      "sha256": "a3819f0e01e7c90c10a4ce023789733ff929ad8df8c7561357e02db8b8cb07b6"
+    },
+    "character": {
+      "path": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+      "sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1"
+    },
+    "rifle": {
+      "path": "public/assets/games/cs/rifle.glb",
+      "sha256": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c"
+    }
+  },
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "independent-diagnostic-review-complete-grip-unapproved",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "alpha_policy": "Opaque diagnostic screenshots; no chroma-key output.",
+  "step_degrees": 1,
+  "perturbations": 16,
+  "optimizer_evaluations": 0,
+  "exported_glbs": 0,
+  "joint_order": [
+    "index_01_l",
+    "index_02_l",
+    "middle_01_l",
+    "middle_02_l",
+    "ring_01_l",
+    "ring_02_l",
+    "pinky_01_l",
+    "pinky_02_l"
+  ],
+  "requirements": [
+    "Use only sealed primary final calibration and reviewed real pad face IDs. Baseline full reach must exactly reproduce its sealed report, treating signed zero as identical.",
+    "For each joint control only its final curl command, baseline minus one degree and plus one degree, in that order. Retain splay, distal curls, all other fingers, body and right-hand commands.",
+    "Record actual pad vertices, four original skin indices/weights, joint origin/effective world axis, nearest visible weapon triangle/normal and gap components.",
+    "Compare actual central differences in mm/degree to the exact weighted linear blend skinning derivative and separately to the naive rigid whole-vertex approximation.",
+    "Expected effective axis uses cached rest visual-to-bone conversion and baseline posed quaternion; compare to the observed minus-to-plus world quaternion rotation.",
+    "Keep weapon, hand/palm, right hand and non-left-finger bone matrices fixed; allow only controlled joint and descendants. Verify all restored matrices/vertices, topology, weights and parentage.",
+    "Measure gap derivative toward the frozen baseline closest surface point; report nearest-face switching separately. Do not infer containment from nearest signed distance.",
+    "Record bone lengths and actual nearby foreend triangle extent in weapon-local coordinates; do not assume one scalar hand scale explains contact.",
+    "One baseline and sixteen prescribed perturbations, then restore. No optimizer, new anchor/rotation sweep, extra perturbation or candidate export.",
+    "This is a local diagnostic, not proof of global grip feasibility or approval of a runtime character. Preserve failed/partial output with no silent repeat.",
+    "One extra baseline replay after the v1 preflight missing-field failure; v1 had zero nonzero perturbations. V2 adds the original forearmTorso comparison and per-pose exact geometry/weights checks. No change to the 16-state domain."
+  ],
+  "protocol_correction": "art-factory/cs/runs/run-20261005-v7-finger-hinge/qa/protocol-correction-v1.json",
+  "derived_section_protocol": {
+    "source": "same saved baseline + original rifle GLB only",
+    "additionalPoses": 0,
+    "optimizerEvaluations": 0,
+    "worldTriangleToleranceM": 1e-10,
+    "planeToleranceLocalM": 1e-12,
+    "sections": "four proximal area-weighted centers at their saved local z",
+    "coplanarPolicy": "any fully coplanar face makes nearest section distance unknown; retain geometry and counts",
+    "interpretation": "same-z XY nearest distance only; MCP/palm markers projected from own z; no contact/containment/feasibility claim"
+  },
+  "accepted_candidate": null,
+  "original_axis_agreement": false,
+  "verification": "art-factory/cs/runs/run-20261005-v7-finger-hinge/qa/verification-v1.json"
+}

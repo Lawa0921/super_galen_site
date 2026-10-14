@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_identification_patches_v35",
+  "status": "published",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs-world-and-viewmodel",
+  "source_mode": "User-authorized original editable Blender equipment; fit to existing approved MakeHuman garment and tactical vest surfaces",
+  "postprocess_profile": "project_glb_modular_assembly",
+  "alpha_policy": "Opaque authored 3D patches",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "approved-chest-only (coordinator option 3, 2026-10-09)",
+  "runtime_publish_allowed": true,
+  "baseline_sha256": "852ce7ffe3f08aed4440c79cc8558f749080a69eb52e6d5ab3b766b259891f9d",
+  "source_blend": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-j-eyewear-f/tactical-character.blend",
+  "allowed_objects": [
+    "shoulder_team_patch",
+    "shoulder_team_patch.001",
+    "carrier_team_patch"
+  ],
+  "allowed_runtime_delta": "Only team_color primitive POSITION/NORMAL/TEXCOORD_0/JOINTS_0/WEIGHTS_0/indices; rest of document and binary prefixes preserved",
+  "gates": [
+    "All patch support rays reach outward-facing continuous garment/vest surfaces",
+    "Paired front/back vertices share exact exported top4 skin rows; no independent layer fitting",
+    "Closed two-manifold components, finite UV/normals/weights, no degenerate faces or static self intersection",
+    "360 runtime poses: zero transverse garment/self crossings, non-negative support gap within 6.5mm",
+    "Same-light actual runtime close views confirm attached thin cloth instead of floating blocks",
+    "12 primitives and 53 bones retained; no new textures or materials; bundle below 32MB"
+  ],
+  "review": {
+    "date": "2026-10-09",
+    "published": true,
+    "rounds": [
+      {
+        "round": 0,
+        "sha256": "bee24b79b32c9e82bff37b09ab10f9939da699c82206ae41e0270ffad4fefc20",
+        "method": "9x9 projected grid, barycentric-blended weights, clearance 1.5mm",
+        "artifact": "art-factory/cs/runs/run-20261009-v35-readiness/round0/soldier-bee24b79.glb",
+        "motion_audit": "art-factory/cs/runs/run-20261009-v35-readiness/round0/patch-motion.json",
+        "result": "FAIL: 43740 garment crossings (all 360 poses), support gap -1.26..+1.70mm; static bind crossings shoulder vs combat_team_uniform (grid chords bridge sleeve crease facets); carrier patch crossed by shirt/body"
+      },
+      {
+        "round": 1,
+        "sha256": "020b17d2509db8f8134e6239183cae407596ccf52c0edea031581d2039032bf3",
+        "method": "17x17 grid, clearance 3.5mm",
+        "result": "FAIL: static crossings gone, but gap -3.32..+3.62mm, 10620 garment + 23580 self crossings; LBS of blended weights across large donor triangles drifts up to 6.8mm"
+      },
+      {
+        "round": 2,
+        "sha256": "47384a2bac22fde2d23dabf5cc254e738d77fbb0cd077d256e9517881b39ef9f",
+        "method": "topology copy: donor triangles clipped to rectangle, exact donor skin rows, clearance 2mm; carrier moved x -.100 -> +.100",
+        "artifact": "art-factory/cs/runs/run-20261009-v35-readiness/candidate/soldier.glb",
+        "motion_audit": "art-factory/cs/runs/run-20261009-v35-readiness/qa/patch-motion.json",
+        "result": "FAIL: carrier patch 0 garment/body crossings and no gap failures (self crossings not split per patch; 0 at bind); shoulders: 3150 garment + 8010 self crossings, gap min -1.88mm (pistol/sniper/smg); rifle 0 garment crossings, gap >= +0.17mm but 14 self crossings/frame"
+      }
+    ],
+    "gates": {
+      "motion_360": "FAIL (round 2): see qa/patch-motion.json",
+      "same_light_close_views": "PARTIAL: patches read as thin cloth hugging sleeve/vest instead of the baseline floating block, but shoulder patch outline is ragged where the sleeve creases; evidence qa/patches-candidate/ (baseline in qa/patches-candidate/baseline/)",
+      "primitives_bones_materials_bundle": "PASS: 12 primitives, 53 bones, materials/images/textures byte-identical; bundle 29.23MB with round-2 candidate (< 32MB)"
+    },
+    "rejection_reason": "Baseline combat_team_uniform self-intersects inside both shoulder patch footprints in all 360 runtime poses (qa/sleeve-selfcross-map.json; probe_cs_sleeve_fold_v35.mjs: ~5.5 crossings/frame, adjacent facets flip to dot -0.98). Any patch that conforms to that sleeve inherits garment/self crossings and negative support gaps; the allowed delta (team_color primitive only) cannot repair the sleeve skinning. Clean-sleeve placements exist only as smaller (~40x42mm), asymmetric or shoulder-top positions (left x-.205 z1.37; right only z1.40), which is a style decision.",
+    "next_options": [
+      "Fix combat_team_uniform shoulder skin weights/topology upstream, then rerun author_cs_patches_v35.py (round-2 method) + audit_cs_patches_motion_v35.mjs",
+      "Approve smaller/asymmetric shoulder placement from qa/sleeve-selfcross-map.json",
+      "Ship carrier-only patch (passes) as a separate scoped change"
+    ],
+    "tools": [
+      "art-factory/cs/source/audit_cs_patches_motion_v35.mjs",
+      "art-factory/cs/source/probe_cs_vest_clearance_v35.mjs",
+      "art-factory/cs/source/probe_cs_sleeve_map_v35.mjs",
+      "art-factory/cs/source/probe_cs_sleeve_fold_v35.mjs",
+      "art-factory/cs/source/capture_cs_readability_v35.mjs <glb> <outDir> --patches"
+    ],
+    "final_decision": "Option 3: publish chest-only; shoulders deferred"
+  },
+  "scope": "chest-only",
+  "published": {
+    "date": "2026-10-09",
+    "runtime_path": "public/assets/games/cs/soldier.glb",
+    "sha256": "a0fef53119a2d172078b2a64ea370050472638df2c61960afc46bb723f2e47e2",
+    "bytes": 4090320,
+    "source_cook": "art-factory/cs/source/cook_cs_patches_chest_v35.mjs",
+    "fitted_source": "art-factory/cs/runs/run-20261009-v35-readiness/raw/fitted-patches.json (sha 436eb2fe…, round-2 carrier rows)",
+    "composition": "baseline 852ce7ff shoulder components kept exactly (192 vertices / 376 triangles, values asserted identical); baseline chest component (96 vertices) replaced by round-2 carrier_team_patch (112 triangles, x +.100, clearance 2mm, exact vest skin rows)",
+    "qa": {
+      "mechanical": "art-factory/cs/runs/run-20261009-v35-readiness/qa/patch-chest-mechanical.json",
+      "motion": "art-factory/cs/runs/run-20261009-v35-readiness/qa/patch-chest-motion.json",
+      "baseline_motion": "art-factory/cs/runs/run-20261009-v35-readiness/qa/patch-baseline-motion.json",
+      "chest_motion": "360 poses: chest 0 garment/body/self crossings (baseline chest: 19080 vest crossings), support gap 1.91-2.00mm",
+      "shoulders_motion": "identical to baseline: garment 21330(+x)/19710(-x), body 22860/20250, static 54/48 shirt + 69/72 body",
+      "views": [
+        "art-factory/cs/runs/run-20261009-v35-readiness/qa/patches-chest/",
+        "art-factory/cs/runs/run-20261009-v35-readiness/qa/patches-chest/chest/",
+        "art-factory/cs/runs/run-20261009-v35-readiness/qa/patches-chest/chest-baseline/",
+        "art-factory/cs/runs/run-20261009-v35-readiness/qa/patches-candidate/baseline/"
+      ],
+      "view_verdict": "0.6m chest close-up: new chest patch reads as a thin strip lying on the vest; shoulders unchanged from baseline",
+      "structure": "12 primitives, 53 bones, materials/images/textures identical; bundle 29.16MB < 32MB"
+    }
+  },
+  "deferred": {
+    "shoulder_team_patch": "deferred: baseline shoulder blocks retained. Root cause: combat_team_uniform sleeve skinning self-intersects inside the shoulder patch footprints in all 360 runtime poses (qa/sleeve-selfcross-map.json, probe_cs_sleeve_fold_v35.mjs), so any conforming shoulder patch inherits garment/self crossings. Needs upstream sleeve skin-weight/topology fix, then rerun author_cs_patches_v35.py + audit."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_rigid_detail_v34",
+  "status": "published",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs-world-and-viewmodel",
+  "source_mode": "Existing approved V5 original Blender crate components and CC0 sniper; new editable rigid assembly parts; existing approved PBR only",
+  "postprocess_profile": "project_glb_modular_assembly",
+  "alpha_policy": "opaque 3D mesh; chroma-key inapplicable",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "map_source": "src/scripts/games/cs/map-data.json",
+  "map_sha256": "93a607b019df20d24ff4535d393d3de4e05ad4505bd9300294a720449ee57710",
+  "budget": {
+    "runtime_bytes_max": 32000000,
+    "environment_triangles_max": 150000,
+    "environment_primitives": 32,
+    "sniper_primitives": 12,
+    "new_materials": 0
+  },
+  "gates": [
+    "Original decoded triangle streams exact, only additive rigid parts",
+    "Hands/skins/animations/anchors exact",
+    "Environment collision from map; decorative lip <=0.03m",
+    "Image pixels exact; lossless encoding permitted",
+    "Candidate close views and gameplay background QA",
+    "Registered local runtime hashes and rollback sources"
+  ],
+  "source_blend": "art-factory\\cs\\runs\\run-20261009-v34-handling-detail\\raw\\cover-kit.blend",
+  "candidate_paths": [
+    "art-factory\\cs\\runs\\run-20261009-v34-handling-detail\\candidate\\environment.glb",
+    "art-factory\\cs\\runs\\run-20261009-v34-handling-detail\\candidate\\sniper.glb"
+  ],
+  "review_sha256": "2a3efc6926297ced5136f918220b82e087c510f86880608b520c4bac03a3767e",
+  "review": "art-factory/cs/runs/run-20261009-v34-handling-detail/qa/review.json",
+  "publication_scope": "local_repository",
+  "external_deployment_allowed": false,
+  "qa": "art-factory/cs/runs/run-20261009-v34-handling-detail/qa/verification.json",
+  "runtime_bundle_bytes": 31668796,
+  "scope_adjustment": "Bolt collar deferred: donor tip selection was a partial ring; no guessed bolt geometry published."
+}

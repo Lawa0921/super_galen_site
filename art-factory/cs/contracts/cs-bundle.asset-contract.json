@@ -1,0 +1,25 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "browser-cs-dock-07",
+  "category": "3d_game_assets",
+  "source_mode": "blender-authored-original",
+  "postprocess_profile": "opaque_background",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": ["opaque_background", "card_art"],
+    "confidence": "high",
+    "rationale": "GLB meshes are runtime scene assets; card-cs.webp is a rendered opaque assembly preview.",
+    "clarifying_question": null
+  },
+  "style": {"palette": ["industrial_gray", "oxidized_orange", "petroleum_blue"], "lighting": "sunset_key_plus_petroleum_fill"},
+  "runtime_root": "public/assets/games/cs",
+  "source_root": "art-factory/cs/runs/run-20261003-v2/raw",
+  "build_script": "art-factory/cs/source/build_cs_assets.py",
+  "qa_script": "art-factory/cs/source/qa_glb_assets.py",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "forbidden_content": ["localizable_runtime_text", "third_party_logo", "watermark", "placeholder_geometry"],
+  "qa_gates": ["glb_header", "gltf_y_up_bounds", "materials_present", "triangle_count", "bytes_and_sha256", "collision_bounds_exact", "render_preview_seen"]
+}

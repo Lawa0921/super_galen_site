@@ -1,0 +1,107 @@
+{
+  "schema": "cs-collision-contract-v3",
+  "map_bounds": {
+    "x_min": -24,
+    "x_max": 24,
+    "z_min": -28,
+    "z_max": 28,
+    "ground_y": 0
+  },
+  "sites": {
+    "A": {
+      "x": -15,
+      "z": -16,
+      "radius": 3.4
+    },
+    "B": {
+      "x": 15,
+      "z": -16,
+      "radius": 3.4
+    }
+  },
+  "spawns": {
+    "attack": {
+      "x": 0,
+      "z": 23
+    },
+    "defend": {
+      "x": 0,
+      "z": -23
+    }
+  },
+  "obstacles": [
+    {
+      "id": "COLLIDER_warehouse",
+      "min_x": -6,
+      "max_x": 6,
+      "min_z": -4,
+      "max_z": 4,
+      "y_high": 7.8
+    },
+    {
+      "id": "COLLIDER_container-west",
+      "min_x": -22,
+      "max_x": -10,
+      "min_z": 1,
+      "max_z": 4,
+      "y_high": 6.8
+    },
+    {
+      "id": "COLLIDER_container-east",
+      "min_x": 10,
+      "max_x": 22,
+      "min_z": -4,
+      "max_z": -1,
+      "y_high": 8.6
+    },
+    {
+      "id": "COLLIDER_container-southwest",
+      "min_x": -16,
+      "max_x": -10,
+      "min_z": 10,
+      "max_z": 13,
+      "y_high": 6.2
+    },
+    {
+      "id": "COLLIDER_container-southeast",
+      "min_x": 10,
+      "max_x": 16,
+      "min_z": 11,
+      "max_z": 14,
+      "y_high": 6.8
+    },
+    {
+      "id": "COLLIDER_crates-a",
+      "min_x": -20,
+      "max_x": -17,
+      "min_z": -12,
+      "max_z": -9,
+      "y_high": 1.6
+    },
+    {
+      "id": "COLLIDER_crates-b",
+      "min_x": 16,
+      "max_x": 19,
+      "min_z": -13,
+      "max_z": -10,
+      "y_high": 1.6
+    },
+    {
+      "id": "COLLIDER_container-northwest",
+      "min_x": -6,
+      "max_x": -3,
+      "min_z": -19,
+      "max_z": -13,
+      "y_high": 7.8
+    },
+    {
+      "id": "COLLIDER_container-northeast",
+      "min_x": 3,
+      "max_x": 6,
+      "min_z": -16,
+      "max_z": -10,
+      "y_high": 8.4
+    }
+  ],
+  "source": "src/scripts/games/cs/map-data.json"
+}

@@ -1,0 +1,41 @@
+{
+  "asset_id": "browser-cs-native-skin-v7",
+  "status": "qa_failed",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "source_motion": "art-factory/cs/runs/run-20261005-v7-cmu-body-track/candidate/body-compact-v1.json",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-native-skin",
+  "requirements": [
+    "First isolate native retarget matrices from skin weights using reproducible CPU skin snapshots",
+    "Keep positions, triangle indices, UVs, material, textures, bind transforms, bone hierarchy and source assets byte-exact",
+    "Initially edit only field_trousers existing nonzero WEIGHTS_0 slots inside the pelvis/thigh blend region; never discard an influence or add a joint",
+    "Keep seam duplicate weights consistent and retain protected rows outside the declared edit domain; preserve spine_01 weights to retain the calibrated -0.5 rad spine reference shape",
+    "Compare reference and full native gait on identical matrices; inspect all affected faces and adjacent regions, not only known failures",
+    "No runtime integration until actual full-cycle deformation, contact, clothing clearance and visual QA pass"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "verification": "art-factory/cs/runs/run-20261005-v7-native-skin/qa/checkpoint-v1.json",
+  "next_action": "Constrained fixed-pose weight optimization or bounded topology/corrective deformation; simple smoothing and contact rollback rejected.",
+  "constrained_search": {
+    "status": "qa_failed",
+    "candidate": "pants-constrained-v2",
+    "runtime_publish_allowed": false,
+    "development_integrated": false,
+    "manifest": "art-factory/cs/runs/run-20261005-v7-native-skin/manifest-constrained-v1.json",
+    "verification": "art-factory/cs/runs/run-20261005-v7-native-skin/qa/checkpoint-v2.json",
+    "preview_url": "http://localhost:4002/@fs/C:/Users/bag57/projects/super_galen_site/.claude/worktrees/cs/art-factory/cs/runs/run-20261005-v7-native-skin/qa/preview-constrained.html",
+    "next_action": "Locate visible defects at gameplay distances, then assess bounded topology or pose correction; do not continue same-solver iteration tuning",
+    "transfer_regions": [
+      "pelvis/thigh with all spine slots fixed",
+      "left/right thigh/calf",
+      "left/right calf/foot"
+    ],
+    "selection": "Dynamic source faces plus one-ring; fixed slots and exact-position welded seams",
+    "dq": "Rejected offline original-weight comparison only"
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "breach-point-combat-fx-v5",
+  "category": "combat_effect",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "built-in-image_gen-transparent-original",
+  "screen_ids": [
+    "first-person-combat"
+  ],
+  "screen_breakdown_path": "art-factory/cs/runs/run-20261003-v5-fx/screen-breakdown.json",
+  "postprocess_profile": "soft_alpha_fx",
+  "mode_inference_decision": {
+    "selected_profile": "soft_alpha_fx",
+    "candidate_profiles": [
+      "soft_alpha_fx",
+      "prop_decal_cutout"
+    ],
+    "confidence": "high",
+    "rationale": "Muzzle flash and dust require intentional soft alpha. The bullet mark uses the same preserved-alpha compositing path so chipped edges can fade naturally.",
+    "clarifying_question": null
+  },
+  "alpha_policy": "Preserve generated straight alpha, including soft edge falloff. Direct transparent generation is a documented exception to the usual magenta key preference because keyed extraction would damage translucent fire and dust. Do not paint pixels or synthesize replacement texture.",
+  "blend_intent": "straight-alpha normal blending; shader tint of dust may provide subtle non-gory hit feedback",
+  "functional_geometry_exceptions": [
+    "Short-lived tracer and spark LineSegments represent moving light trails; they do not substitute for authored scene/weapon/character art.",
+    "Crosshair and directional damage arcs remain live CSS geometry so they can track aim/spread/bearing precisely; all labels remain DOM text."
+  ],
+  "runtime_pool_limits": {
+    "tracers": 64,
+    "sparks": 48,
+    "dust": 32,
+    "decals": 48,
+    "casings": 24,
+    "world_flash": 8,
+    "view_flash": 4
+  },
+  "runtime_tuning": {
+    "stone_dust_meters": 0.22,
+    "stone_dust_seconds": 0.3,
+    "stone_decal_meters": 0.065,
+    "decal_max_seconds": 12,
+    "transparent_fx_excluded_from_ssao_depth": true
+  },
+  "assets": [
+    {
+      "asset_id": "muzzle_flash",
+      "target_candidate": "art-factory/cs/runs/run-20261003-v5-fx/candidate/muzzle-flash.webp",
+      "intended_runtime_path": "public/assets/games/cs/fx/muzzle-flash.webp",
+      "dimensions": [
+        256,
+        256
+      ]
+    },
+    {
+      "asset_id": "impact_dust",
+      "target_candidate": "art-factory/cs/runs/run-20261003-v5-fx/candidate/impact-dust.webp",
+      "intended_runtime_path": "public/assets/games/cs/fx/impact-dust.webp",
+      "dimensions": [
+        256,
+        256
+      ]
+    },
+    {
+      "asset_id": "stone_impact",
+      "target_candidate": "art-factory/cs/runs/run-20261003-v5-fx/candidate/stone-impact.webp",
+      "intended_runtime_path": "public/assets/games/cs/fx/stone-impact.webp",
+      "dimensions": [
+        256,
+        256
+      ]
+    }
+  ],
+  "allowed_postprocess": [
+    "trim_transparent_bounds",
+    "add_transparent_margin",
+    "resize_lanczos",
+    "encode_webp",
+    "compose_review_preview"
+  ],
+  "forbidden_content": [
+    "Valve assets",
+    "weapon",
+    "person",
+    "text",
+    "watermark",
+    "background scene",
+    "opaque rectangular box",
+    "magenta key color",
+    "hand-drawn replacement art"
+  ],
+  "qa_gates": [
+    "raw_source_prompt_hash",
+    "dimensions",
+    "alpha_bbox_and_margin",
+    "transparent_corners",
+    "no_magenta_pollution",
+    "no_premultiplied_black_fringe",
+    "dark_light_checker_review",
+    "no_subject_clipping",
+    "combined_candidate_bytes_under_300kb"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "publication_scope": "local_repository",
+  "external_deployment_allowed": false,
+  "independent_runtime_review": "art-factory/cs/runs/run-20261003-v5-combat/qa/visual-review.json"
+}

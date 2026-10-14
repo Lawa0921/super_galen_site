@@ -1,0 +1,95 @@
+{
+  "schema": "cs-character-layers-v7-contract",
+  "project_id": "super_galen_site",
+  "asset_id": "browser-cs-character-layers-v7-technical-candidate",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contracts": [
+    "art-factory/cs/contracts/character-source-v7.asset-contract.json",
+    "art-factory/cs/contracts/character-kit-source-v7.asset-contract.json",
+    "art-factory/cs/contracts/footwear-source-v7.asset-contract.json",
+    "art-factory/cs/contracts/character-fit-v7.asset-contract.json"
+  ],
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-character-layers/candidate",
+  "qa_root": "art-factory/cs/runs/run-20261004-v7-character-layers/qa",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "assembly_agent_review": "bounded_layer_fit_pass; tactical_art_direction_failed",
+  "lifecycle_status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "candidate": {
+    "body": "male_generic proxy over MPFB hm08 male basemesh; no unverified new body masking",
+    "rig": "same 53-bone GameEngine rig and source weights as frozen sock-trim character",
+    "top": "original connected short-sleeve CC0 male_casualsuit04 component, 810 source vertices, 1528 triangles, chest emblem retained",
+    "trousers": "original connected dark CC0 male_elegantsuit01 component, 1357 source vertices, 2626 triangles",
+    "vest": "unchanged original Mindfront tactical vest, CC BY 4.0",
+    "footwear": "unchanged locally passed CC0 shoes04 upper-sock trim from fit run",
+    "head": "unchanged skin, brown eyes, teeth and tongue",
+    "hands": "bare anatomical hands and forearms",
+    "review_glb": "candidate/full-body-review.glb",
+    "review_glb_sha256": "092ad05459f171274120111ad5b82668dc5a564a3244b8efab94cf07e64096ea",
+    "source_blend": "candidate/layers-source.blend",
+    "source_blend_sha256": "572f906e5a1c23cf2ab5ecb30435e5e7cb38e7f9b4a6cf50333a2cd070b68d22"
+  },
+  "tooling": {
+    "blender": "5.2.1 LTS",
+    "mpfb_commit": "80919fa4682335c41847f761a4d79dcad4124732",
+    "execution": "isolated user resources/extensions, factory startup, disable autoexec, offline mode, four CPU threads",
+    "license_separation": "MPFB GPL program code stays in local tooling; CC0 source clothes, rig and weights remain asset data."
+  },
+  "provenance_and_modifications": "art-factory/cs/runs/run-20261004-v7-character-layers/source-provenance-and-modifications.json",
+  "qa_evidence": [
+    "qa/assessment.md",
+    "qa/build.log",
+    "qa/build-retry.log",
+    "qa/source-assembly.json",
+    "qa/isolated-proxy-tooling.json",
+    "qa/raw-glb-mechanical.json",
+    "qa/raw-glb-uv-alpha.json",
+    "qa/final-glb-mechanical.json",
+    "qa/normal-transform-qa.json",
+    "qa/protected-payload-comparison.json",
+    "qa/deformation-smoke.json",
+    "qa/review-front.png",
+    "qa/review-back.png",
+    "qa/review-side.png"
+  ],
+  "mechanical_findings": {
+    "source_component_islands_and_original_surviving_attributes_preserved": true,
+    "protected_vest_shoes_eyes_teeth_tongue_glb_buffers_identical_to_sock_trim": true,
+    "shared_embedded_images_identical_to_sock_trim": true,
+    "new_tee_and_trouser_embedded_images_identical_to_pinned_source": true,
+    "exported_normal_errors": 0,
+    "source_archive_sha256": "b542127a8e25547c7c29c19f2d1d2adb9a664c80396ecd694095dbc8028a0107",
+    "joint_count": 53,
+    "primitive_draw_count": 8,
+    "triangles": 76562,
+    "glb_bytes": 68751848
+  },
+  "independent_actual_glb_review": {
+    "evidence_root": "art-factory/cs/runs/run-20261004-v7-character-browser/qa/layers-v1-fit-poses",
+    "glb_sha256_matches": true,
+    "loader_errors": [],
+    "bounded_layer_fit": "pass in nine rest/arm/ankle views; not broad gameplay animation",
+    "tactical_art_direction": "fail",
+    "human_review": "pending"
+  },
+  "known_failures_or_limits": [
+    "original orange chest emblem remains visible in source preview and is not approved tactical styling",
+    "short sleeves expose bare forearms and anatomical hands; no tactical glove source is approved",
+    "source preview shows a blue/orange tee hem below the vest and smooth civilian trousers",
+    "no source-supported component-specific top/trouser body mask exists; original whole-suit masks were withheld and body/clothing intersections may remain",
+    "independent actual GLB review passed only bounded rest/arm/ankle layer fit; broad animation, gameplay renderer and waist/ankle continuity beyond probes remain unverified",
+    "royal-blue/orange-logo sports shirt and low-detail dark trousers with coarse hems miss tactical art direction",
+    "76,562 triangles, eight draws and 68.75 MB GLB have no approved runtime/performance budget",
+    "source diffuse/normal/AO paths remain from MakeHuman; source specular/roughness and final CS2 art direction are not approved"
+  ],
+  "forbidden": [
+    "runtime publication",
+    "CS2 quality claim",
+    "painting out the source emblem to disguise clothing mismatch",
+    "hiding visible garment faces with unsupported masks",
+    "nearest-surface vest expansion or old glove solver"
+  ]
+}

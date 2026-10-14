@@ -1,0 +1,39 @@
+{
+  "schema": "cs-character-cmu-cycle-v7-contract",
+  "asset_id": "browser-cs-cmu-cycles-v7",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contract": "art-factory/cs/contracts/character-cmu-motion-v7.asset-contract.json",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-cmu-cycles",
+  "source_mode": "licensed-motion-capture-postprocess",
+  "postprocess_profile": "character_equipment_parts",
+  "status": "development-gameplay-cycles-contact-pending",
+  "processing": {
+    "cycle": "Bounded same-support endpoint search; local C1 overlap crossfade using retained source handles. No full-cycle large root drift correction.",
+    "root": "Split horizontal p0 + phase * displacement + residual; preserve displacement as cycle distance and close only residual/vertical tracks.",
+    "source_interpolation": "Cubic Hermite interpolation of root residual and relative quaternion log vectors; reject log angles near pi. Blend rotations by shortest-arc slerp across the local seam window.",
+    "toe": "Measure terminal ball direction from weighted toe-cap vertices projected to the authored forefoot sole plane; use heel-to-forefoot centers for forward sign, not forefoot PCA's widest axis.",
+    "target": "Absolute segment bases preserve actual source directions; keep all target bone parents, positions/scales, geometry, materials and frozen rifle rest.",
+    "runtime_candidate": "After target bake and finite checks, drive opt-in development actors from resolved displacement with cached baked quaternions; do not run source parsing or whole-mesh foot scans each gameplay frame.",
+    "runtime_interpolation": "Cyclic Catmull-Rom target quaternion components, neighbor hemisphere correction and normalization; no duplicated endpoint in cyclic neighborhood. Validate seams using the actual consumer.",
+    "phase_alignment": "Run phase +0.5 relative to walk, applied to all bone and pelvis tracks before blending. Independent target-FK marker checks and actual controller blend captures; this is not shoe contact acceptance."
+  },
+  "requirements": [
+    "Preserve raw sources and earlier diagnostic evidence; register new candidates separately.",
+    "TDD for cycle seam value/velocity, preserved middle interval, root-motion separation, antipodal quaternion samples, branch/handle rejection and measured leaf directions.",
+    "Use central differences with real samples outside the selected interval; clearly distinguish intervals and inclusive samples.",
+    "Measure final target quaternion seam below 1e-5 rad and velocity mismatch below 1e-3 rad/s after contact corrections; never infer target seams solely from source curves.",
+    "Report per-bone maximum/RMS source correction, contact penetration/slip, reach refusal and all source/instance/hand invariants.",
+    "Inspect continuous playback across at least two cycles, transitions and real-game movement before runtime animation acceptance.",
+    "Benchmark five-actor gameplay under the same renderer/quality conditions; numerical or static checks alone do not prove acceptable FPS."
+  ],
+  "alpha_policy": "Motion and geometry-derived calibration only; existing texture alpha and all image bytes unchanged.",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "external_deployment_allowed": false,
+  "development_runtime": {
+    "opt_in_url": "http://localhost:4002/games/cs?skinCandidate=1",
+    "candidate": "art-factory/cs/runs/run-20261005-v7-cmu-cycles/candidate/cycles-v3.json",
+    "normal_runtime_published": false
+  }
+}

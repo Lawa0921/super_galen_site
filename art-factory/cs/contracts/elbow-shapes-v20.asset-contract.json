@@ -1,0 +1,24 @@
+{
+  "schema": "cs-elbow-shapes-v20",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/sleeve-fit-v18.asset-contract.json",
+  "screen_id": "cs-first-person-rifle",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "licensed_garment_pose_corrective",
+  "status": "rejected",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "design": "Return to untouched V18 study3 Basis. Author separate hip and ADS left-elbow shape keys using one coherent smooth radial sculpt field per pose, source bone and actual exposed patch as spatial reference. Fixed outside boundary, C2 falloff, no cuff/shoulder/right-arm/body editing. Reload retains Basis. Saved fixed-pose affine maps convert posed sculpt displacements to shape-key rest deltas only where condition<=4. Use one measured core-gap amount per pose, not plane or scalar grids. If shape gates fail, close this route and move to sleeve-only retopology.",
+  "gates": [
+    "untouched Basis, skin, rig, gun, camera, original clothing topology/UV/weights/materials",
+    "helpers test coherent core/falloff/fixed boundary, ill-conditioned maps, finite inputs and displacement bound",
+    "maximum rest displacement .5raw; zero new normal reversals, degenerates or slivers; maximum edge ratio2, reportp95",
+    "actual left-elbow ROI crossings and six original views, independent visual review",
+    "fixed50% hip-to-ADS and hip-to-reload pose/key blends checked against actual saved scene",
+    "not full art, continuous animation, hand/gun contacts, materials, runtime or performance acceptance"
+  ],
+  "decision": "radial-direction-route-rejected",
+  "decision_evidence": "art-factory/cs/runs/run-20261007-v20-elbow-shapes/qa/review.json"
+}

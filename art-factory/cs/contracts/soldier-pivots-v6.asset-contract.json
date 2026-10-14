@@ -1,0 +1,45 @@
+{
+  "schema": "cs-soldier-pivots-v6",
+  "asset_id": "browser-cs-soldier-pivots-v6",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "deterministic_transform_of_existing_reviewed_soldier",
+  "source": "art-factory/cs/runs/run-20261003-v3-characters/candidate/soldier-runtime.glb",
+  "source_sha256": "6d4f59f0a1c5ab4a6a72ba4e13c2c071f01b769092ab78642c5835c5c0af7144",
+  "candidate": "art-factory/cs/runs/run-20261004-v6-soldier/candidate/soldier.glb",
+  "scope": "Rebase only two rigid leg pivots to authored hips while preserving every mesh world transform and the complete binary chunk.",
+  "hip_actor_local": {
+    "left_leg": [
+      -0.104,
+      1.02,
+      0.016
+    ],
+    "right_leg": [
+      0.104,
+      1.02,
+      0.016
+    ]
+  },
+  "forbidden": [
+    "new geometry",
+    "new textures",
+    "changes to hitboxes",
+    "changes to gameplay",
+    "changes to other articulation groups"
+  ],
+  "qa_gates": [
+    "source_sha256",
+    "identical_binary_chunk",
+    "unchanged_mesh_world_matrices_at_rest",
+    "actual_glb_hip_anchor_during_walking",
+    "visual_walk_and_idle",
+    "no_extra_draw_calls_or_triangles"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "status": "published_local_improvement",
+  "publication_scope": "local_repository",
+  "external_deployment": false
+}

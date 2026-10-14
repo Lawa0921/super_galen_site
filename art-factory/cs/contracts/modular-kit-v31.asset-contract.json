@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_modular_assembly_v31",
+  "status": "published",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "mode_inference_decision": {
+    "selected_profile": "character_equipment_parts",
+    "confidence": "high",
+    "rationale": "The profile's named-part assembly and source-preservation gates are applied to opaque static architecture; no bitmap generation."
+  },
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "design": "docs/superpowers/specs/2026-10-08-cs-modular-assembly-design.md",
+  "screen_id": "cs-west-perimeter",
+  "screen_breakdown": {
+    "views": [
+      "part-library",
+      "socket-assembly",
+      "west-near",
+      "west-long",
+      "site-a",
+      "spawn"
+    ],
+    "parts": [
+      "crenellated-wall-8m",
+      "plain-wall-8m",
+      "crenellated-wall-16m",
+      "gate-8m"
+    ]
+  },
+  "source_mode": "Verified CC0 source geometry, original editable collection and socket assembly; existing approved CC0 PBR image payloads reused without reencoding.",
+  "source_manifest": "art-factory/cs/runs/run-20261004-v6-architecture/source-manifest.json",
+  "source_gltf_sha256": "829ac97d4c5c5672d3055d772e0ef4b545ad93cb4b639296f34e3ddf04cf9faf",
+  "source_bin_sha256": "de86e71af4cd5b37006914a8e7ae7de59b245b73364317f1886285a6aa797f57",
+  "baseline_sha256": "24207b5af65d0da8c34a43e6fb99f41e7f7d849d3a4b8a41164afd1eb5ba55c0",
+  "map_source": "src/scripts/games/cs/map-data.json",
+  "map_source_sha256": "45159e6662a17003a640b28c2488955dfce04ba218bab8ff3db912940fdf1b71",
+  "units": "meters",
+  "up": "Y",
+  "collision_policy": "Boundary scenery only; no new gameplay colliders. Generate a complete current collision snapshot from map-data, never the historical nine-box collision_bounds contract. Gate is not approved as traversable geometry.",
+  "budget": {
+    "environment_triangles_max": 90000,
+    "environment_primitives_max": 32,
+    "new_runtime_textures": 0,
+    "runtime_bytes_max": 28000000
+  },
+  "qa_gates": [
+    "source hashes and license",
+    "shared uniform source scale",
+    "socket adjacency and orientation",
+    "actual geometry seams",
+    "all other node streams and image bytes exact",
+    "map-data and legacy extras preserved",
+    "outside walkable bounds",
+    "editable Blender assets and instances",
+    "independent closeup and native browser review",
+    "background high and low gameplay sampling"
+  ],
+  "alpha_policy": "Opaque PBR; no chroma key applicable.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "publication_scope": "local_repository",
+  "review": "art-factory/cs/runs/run-20261008-v31-modular-assembly/qa/review.json"
+}

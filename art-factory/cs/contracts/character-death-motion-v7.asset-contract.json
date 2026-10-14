@@ -1,0 +1,35 @@
+{
+  "asset_id": "browser-cs-death-motion-v7",
+  "status": "qa_failed_weapon_body_contact",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contract": "art-factory/cs/contracts/character-motion-source-v7.asset-contract.json",
+  "source_motion": "art-factory/cs/runs/run-20261005-v7-motion-source/raw/UAL1_Standard.glb",
+  "source_sha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997",
+  "source_clip": "Death01",
+  "source_license": "CC0-1.0; existing official source archive and license retained",
+  "character": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-death-motion",
+  "requirements": [
+    "Keep authoritative hp, shooting, collision, round and spectator rules unchanged",
+    "Retarget using uncalibrated source/target rest frames; never treat calibrated rifle pose as the retarget bind pose",
+    "Blend from actual death-entry pose without accumulating transforms; preserve bone lengths, topology and materials",
+    "Retain the right-hand weapon relation only until release; preserve the release transform in death-entry actor coordinates and restore the exact original mount on seek/reset",
+    "Offline weapon simulation uses the licensed rifle geometry as convex-hull input, inherited centre-of-mass/angular velocity, metre units and a flat floor at actor-local y=0; this is not a general map-wall collision solution",
+    "Pin source motion, character, rifle, calibration, ground bake, hull input and physics dependency hashes; runtime playback must not import the offline physics engine",
+    "Check rendered weapon vertices at physics steps and interpolated poses; measure dynamic body crossings and do not accept floor-only physics when the weapon passes through the body",
+    "Validate continuous full 2.4-second motion, body and rifle ground penetration, final settlement, clothing deformation, walls and round reset",
+    "No runtime integration before visual/contact acceptance; six existing actors maximum and bounded data/cost"
+  ],
+  "probes": {
+    "ground_lift": "candidate/ground-lift-v2.json; 107 adaptive keys; sampled body floor pass at 961 poses, full animation acceptance pending",
+    "held_weapon": "qa/held-contact-v2/report.json; inherited stock contact and increased torso crossings at 0.1s; do not use a late 0.1s release",
+    "released_weapon": "candidate/drop-v2.json; HalfSpace floor; 2109 playback poses pass floor and reset, but 97 body-contact samples contain 10 crossing frames at 0-0.25s; candidate rejected for runtime",
+    "next_action": "Resolve initial shoulder/stock penetration, then add posed kinematic body collision to the offline bake; keep floor parameters and release time fixed; require full surface-crossing and visual revalidation",
+    "superseded_contact_probe": "qa/held-contact-v1 had per-mesh face IDs reused in a concatenated alpha lookup; v2 reindexes the snapshot; v1 is diagnostic only"
+  },
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false
+}

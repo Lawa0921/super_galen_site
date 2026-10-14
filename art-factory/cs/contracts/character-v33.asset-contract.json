@@ -1,0 +1,194 @@
+{
+  "schema": "asset-contract-v1",
+  "asset_id": "cs_tactical_character_v33",
+  "status": "partially-integrated-local",
+  "screen_id": "cs-third-person-character-and-first-person-hands",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_authorization": "User-authorized local realistic character revision; licensed MakeHuman/CC0/CC BY sources and original Blender equipment. No Valve assets.",
+  "source_geometry": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_provenance": "art-factory/cs/runs/run-20261004-v7-character-field/source-provenance-and-modifications.json",
+  "source_pose": "art-factory/cs/runs/run-20261008-v33-character/raw/posed-anatomical.glb",
+  "source_pose_status": "Historical pose is a starting point for new authoring, not inherited visual approval.",
+  "changes": [
+    "anatomical continuous full body",
+    "weighted combat sleeves and gloves",
+    "cargo tailoring",
+    "helmet shell and fitted eye protection",
+    "shared tactical fabric and leather direction for FPS hands",
+    "production skeletal actor adapter"
+  ],
+  "budgets": {
+    "scope": "triangles/primitives/character_bytes apply to the full-body soldier; FPS packages include original weapon geometry and must not increase their existing triangle/primitive counts during sleeve replacement",
+    "triangles": 40000,
+    "primitives": 12,
+    "max_texture_dimension": 1024,
+    "character_bytes": 4500000,
+    "runtime_bundle_bytes": 32000000
+  },
+  "required_views": [
+    "front",
+    "back",
+    "side",
+    "head",
+    "hands",
+    "walk",
+    "aim",
+    "four-weapons",
+    "native-game",
+    "fps-hip",
+    "fps-ads",
+    "fps-reload"
+  ],
+  "qa_gates": [
+    "source hashes and licenses",
+    "53 bones and finite normalized weights",
+    "instance isolation",
+    "no obvious armor/garment penetration",
+    "new visual review",
+    "all weapons remain skeletal",
+    "team distinction",
+    "bounded five-bot performance",
+    "actual-game captures"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "current_candidates": {
+    "soldier": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-l-coating-b/soldier.glb",
+    "pistol": "art-factory/cs/runs/run-20261008-v33-character/candidate/fps-shared-cloth-f/pistol.glb",
+    "rifle": "art-factory/cs/runs/run-20261008-v33-character/candidate/fps-shared-cloth-f/rifle.glb",
+    "smg": "art-factory/cs/runs/run-20261008-v33-character/candidate/fps-shared-cloth-f/smg.glb",
+    "sniper": "art-factory/cs/runs/run-20261008-v33-character/candidate/fps-shared-cloth-f/sniper.glb"
+  },
+  "independent_review": {
+    "verdict": "pass-for-local-incremental-integration",
+    "review_record": "art-factory/cs/runs/run-20261008-v33-character/qa/review-stage-2.json",
+    "overall_cs2_quality": "not-achieved"
+  },
+  "fps_rig_contract": {
+    "joints": 48,
+    "clips": 1,
+    "clip": "fps_reload",
+    "seconds": [
+      0,
+      1
+    ],
+    "closed_endpoints": true,
+    "max_influences": 4,
+    "runtime_ik": false,
+    "grip_visual_approval": true
+  },
+  "qa_checkpoint": {
+    "unit_tests": 1496,
+    "unit_files": 147,
+    "chromium_tests": 47,
+    "chromium_scope": "Stage7 games-cs-renderer.spec.ts and games-cs.spec.ts; prior world-template milestone passed 64 CS tests",
+    "candidate_switch_rerun": 1,
+    "build_exit": 0,
+    "public_assets": "soldier kit-l-coating-b, unchanged stage5 FPS; published-path stage7 verification passed",
+    "native_perf": "art-factory/cs/runs/run-20261008-v33-character/qa/gameplay-native-stage6-world/report.json",
+    "native_perf_coverage": "Both modes cover live player, spectator and next round; predates stage7 coating and is not a stage7 performance claim",
+    "performance_acceptance": "not-achieved; occasional long frames remain",
+    "preview": "art-factory/cs/runs/run-20261008-v33-character/qa/preview.html",
+    "reload_video": "art-factory/cs/runs/run-20261008-v33-character/qa/native-stage1/pistol-reload.webm",
+    "runtime_bundle_bytes": 31833840,
+    "verification": "art-factory/cs/runs/run-20261008-v33-character/qa/verification-stage7.json",
+    "preview_verification": "art-factory/cs/runs/run-20261008-v33-character/qa/preview-stage13-verification.json",
+    "reload_videos": [
+      "art-factory/cs/runs/run-20261008-v33-character/qa/native-stage5/pistol-reload.webm",
+      "art-factory/cs/runs/run-20261008-v33-character/qa/native-stage5/rifle-reload.webm",
+      "art-factory/cs/runs/run-20261008-v33-character/qa/native-stage5/smg-reload.webm",
+      "art-factory/cs/runs/run-20261008-v33-character/qa/native-stage5/sniper-reload.webm"
+    ],
+    "head_chromium_tests": 18,
+    "garment_chromium_tests": 63,
+    "garment_build_exit": 0,
+    "garment_verification": "art-factory/cs/runs/run-20261008-v33-character/qa/verification-stage4.json",
+    "cloth_stage5": "40 public captures, four videos,1492 unit tests,63 Chromium tests and build pass; native sample completed, performance still unaccepted",
+    "head_stage6": "Licensed eyewear and eye alpha repair;68 public-path captures,1492 unit/63 Chromium/4 tool tests and build pass; no new performance acceptance"
+  },
+  "publication_scope": [
+    "soldier",
+    "pistol",
+    "rifle",
+    "smg",
+    "sniper"
+  ],
+  "runtime_not_approved": [],
+  "shared_fps_textures": {
+    "images": 5,
+    "bytes": 1578675,
+    "saved_bundle_bytes": 4733933,
+    "runtime": "src/scripts/games/cs/shared-model-textures.ts"
+  },
+  "head_refinement": {
+    "review": "art-factory/cs/runs/run-20261008-v33-character/qa/review-stage-6.json",
+    "source_script": "art-factory/cs/source/assemble_cs_eyewear_v33.py",
+    "eye_alpha_repair": true,
+    "licensed_eyewear": true,
+    "triangles": 38529,
+    "primitives": 12
+  },
+  "garment_refinement": {
+    "review": "art-factory/cs/runs/run-20261008-v33-character/qa/review-stage-4.json",
+    "source_script": "art-factory/cs/source/assemble_cs_garment_v33.py",
+    "original_cloth_uv_and_normal": true,
+    "authored_body_mask": true,
+    "carrier_fit": {
+      "vertices": 219,
+      "maxOffset": 0.05000320965051651,
+      "clearance": 0.014,
+      "source": "tactical_vest author mesh",
+      "clothFacesRemoved": 0
+    },
+    "triangles": 37465,
+    "primitives": 12
+  },
+  "fps_sleeve_refinement": {
+    "status": "locally-integrated-stage5; silhouette and glove refinement remain",
+    "runtime_publish_allowed": true,
+    "source": "art-factory/cs/runs/run-20261004-v7-character-field/candidate/full-body-unfixed-source.glb",
+    "goal": "Bake licensed garment surface detail onto reviewed FPS cloth; preserve stable topology, weights, four 48-bone grips and reloads. Silhouette refinement remains a separate unfinished requirement.",
+    "requiredGates": [
+      "source/target bone frame contract",
+      "original glove/finger surfaces and gun bytes unchanged",
+      "48-bone hierarchy and closed reload clip unchanged",
+      "cuff overlap and fixed shoulder in all reload frames",
+      "no ADS obstruction",
+      "shared images and 32MB recursive budget",
+      "actual renderer review"
+    ],
+    "review": "art-factory/cs/runs/run-20261008-v33-character/qa/review-stage-5.json",
+    "surface_contract": "art-factory/cs/runs/run-20261008-v33-character/qa/shared-cloth-f-surface-contract.json",
+    "normal_footprint": {
+      "footprintPixels": 673516,
+      "covered": 673516,
+      "uncoveredFootprint": 0,
+      "rawNegativeZCovered": 50764,
+      "fallbackCovered": 76097,
+      "acceptedCovered": 597419,
+      "minRawCoveredZ": -0.9999846216542477,
+      "minOutputZ": 0.7887778502726163,
+      "detailStrength": 0.65,
+      "minimumHitDot": 0.25,
+      "fullStrengthDot": 0.55,
+      "minimumAlignedCoverage": 0.8,
+      "feather": "3x3 scalar confidence average clamped to original confidence; invalid centers remain flat",
+      "alignedCoverage": 0.887015304758907,
+      "orientationSource": "bake-only donor winding aligned against baseline before projection; invalid normal-side hits fall back flat",
+      "rawSourcePreserved": true
+    }
+  },
+  "structural_glove_candidate": {
+    "contract": "art-factory/cs/contracts/fps-structural-glove-v33.asset-contract.json",
+    "status": "rifle-right-hand-candidate-qa",
+    "runtime_publish_allowed": false
+  },
+  "helmet_coating": {
+    "baseline": "kit-j-eyewear-f",
+    "candidate": "kit-l-coating-b",
+    "materialOnly": true,
+    "review": "art-factory/cs/runs/run-20261008-v33-character/qa/review-stage-7.json"
+  }
+}

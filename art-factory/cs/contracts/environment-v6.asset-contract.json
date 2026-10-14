@@ -1,0 +1,113 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "breach-point-old-quarter-ground-material-v6",
+  "category": "3d_game_assets",
+  "scope": "ground material local improvement",
+  "complete_v6_environment": false,
+  "source_mode": "v5_geometry_with_approved_cc0_pbr_ground_source",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "opaque_background",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": [
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "Opaque 3D environment candidate exported as Y-up GLB with PBR materials; this run changes ground material inputs only.",
+    "clarifying_question": null
+  },
+  "source_review": {
+    "base_builder": "art-factory/cs/source/build_cs_environment_v5.py",
+    "candidate_builder": "art-factory/cs/source/build_cs_environment_v6_ground.py",
+    "source_maps": "art-factory/cs/runs/run-20261004-v6-environment/texture-sources-v6.json",
+    "ground_source_page": "https://polyhaven.com/a/cobblestone_pavement",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "source_note": "Official Poly Haven Cobblestone Pavement color, normal and roughness maps are copied into the owned raw run and rehashed before export. Existing V5 geometry and non-ground PBR remain unchanged. No Valve assets are used.",
+    "runtime_publish_allowed": false
+  },
+  "geometry_contract": {
+    "coordinate_system": "Y-up GLB, ground XZ, forward -Z",
+    "collision_source": "src/scripts/games/cs/map-data.json",
+    "collision_policy": "Preserve all 9 V5 collider node names and exact minX/maxX/minZ/maxZ/height bounds.",
+    "v5_geometry_unchanged": true,
+    "v6_geometry_additions": false,
+    "tower_prop_facade_scope": "deferred; excluded from this candidate",
+    "ground_geometry_additions": false,
+    "triangle_max": 100000,
+    "draw_call_max": 31,
+    "runtime_bytes_max": 9000000
+  },
+  "ground_material_contract": {
+    "material_source": "cobblestone_pavement",
+    "map_roles": [
+      "color",
+      "normal",
+      "roughness"
+    ],
+    "uv_scale_meters": 2.5,
+    "variation": "Four low-frequency base-color tint variants over the same sourced PBR maps; no geometry seams, wear strips, decals, hand-painted pixels or GPU shader pass.",
+    "existing_v5_ground_mesh": "retained exactly"
+  },
+  "candidate_paths": {
+    "raw_blend": "art-factory/cs/runs/run-20261004-v6-environment/raw/environment.blend",
+    "unoptimized_glb": "art-factory/cs/runs/run-20261004-v6-environment/candidate/environment.glb",
+    "runtime_candidate_glb": "art-factory/cs/runs/run-20261004-v6-environment/candidate/environment-runtime.glb",
+    "mechanical_qa": "art-factory/cs/runs/run-20261004-v6-environment/qa/environment-mechanical-v6-ground.json",
+    "cpu_checkpoints": [
+      "art-factory/cs/runs/run-20261004-v6-environment/qa/environment-v6-ground-spawn.png",
+      "art-factory/cs/runs/run-20261004-v6-environment/qa/environment-v6-ground-overview.png",
+      "art-factory/cs/runs/run-20261004-v6-environment/qa/environment-v6-ground-close.png"
+    ],
+    "source_manifest": "art-factory/cs/runs/run-20261004-v6-environment/texture-sources-v6.json",
+    "rejected_v1_evidence": "art-factory/cs/runs/run-20261004-v6-environment/qa/rejected-v1",
+    "rejected_v2_evidence": "art-factory/cs/runs/run-20261004-v6-environment/qa/rejected-v2"
+  },
+  "qa_gates": [
+    "source_license_and_hash",
+    "glb_header",
+    "gltf_y_up_bounds",
+    "collision_bounds_exact",
+    "ground_pbr_maps_present",
+    "no_v6_geometry_additions",
+    "triangle_budget",
+    "draw_call_budget_v5_limit",
+    "runtime_byte_budget",
+    "cpu_spawn_overview_and_ground_close_checkpoint",
+    "assembly_human_review"
+  ],
+  "qa_result": {
+    "status": "published-ground-material-only",
+    "runtime_publish_allowed": true,
+    "mechanical_report": "art-factory/cs/runs/run-20261004-v6-environment/qa/environment-mechanical-v6-ground.json",
+    "measured_triangles": 73522,
+    "measured_draw_calls": 31,
+    "measured_runtime_bytes": 7491680,
+    "collider_count": 9,
+    "source_hash_count": 18,
+    "runtime_sha256": "6484d2ff45841b51bf4cefd89a8d03bacc6cbfc8fa5a48b7d5b47c615c367a1c",
+    "raw_blend_sha256": "bf4d74ee69107e8f284cb2ea1426c35b6e4f06c847577c89b97503eb918df5d0",
+    "asset_generation_manual_review": false,
+    "assembly_human_review": "pending",
+    "rejected_paths": [
+      "art-factory/cs/runs/run-20261004-v6-environment/qa/rejected-v1",
+      "art-factory/cs/runs/run-20261004-v6-environment/qa/rejected-v2"
+    ],
+    "published_path": "public/assets/games/cs/environment.glb",
+    "independent_visual_review": "qa/visual-review-ground.json"
+  },
+  "forbidden_content": [
+    "Valve asset extraction",
+    "third_party_logo",
+    "flat-untextured-placeholder-surfaces",
+    "fake ground seam or wear geometry",
+    "new gameplay collision shells",
+    "V6 tower prop facade additions in this run",
+    "unregistered-runtime-assets"
+  ],
+  "handoff_note": "This is a finite ground-material local improvement candidate based on the original V5 geometry. It is NOT a complete V6 environment and makes no CS2-quality parity claim. Root must inspect the true renderer and performance before any local integration; do not publish or copy to public/runtime. Formal tower, prop and facade work is deferred to a separate candidate.",
+  "runtime_publish_allowed": true,
+  "publication_scope": "local_repository",
+  "external_deployment_allowed": false
+}

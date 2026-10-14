@@ -1,0 +1,32 @@
+{
+  "asset_id": "browser-cs-directional-toes-v7",
+  "status": "native-directional-contact-and-toe-gates-pass",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_manifest": "art-factory/cs/runs/run-20261005-v7-directional-contact/manifest.json",
+  "source_mode": "licensed-motion-capture-with-measured-sole-contact-correction",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-directional-toes",
+  "source_character_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "requirements": [
+    "Derive actual target toe hinge and rigid forefoot sole plane from authored character",
+    "Preserve source toe movement outside forefoot support",
+    "Recompute material baseline after orientation changes",
+    "All six feet: material RMS <=0.03m/s during declared support",
+    "No penetration, lowest shoe <=3mm, pelvis drop <=40mm, loop/grip/rig preserved"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "development_integration_allowed": false,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "verification": "art-factory/cs/runs/run-20261005-v7-directional-toes/qa/verification-v1.json",
+  "pipeline": "stance-yaw-toes-limited-v2",
+  "gates": {
+    "max_stance_material_rms_mps": 0.03,
+    "min_ground_m": -1e-05,
+    "max_lowest_shoe_m": 0.003,
+    "max_pelvis_drop_m": 0.04,
+    "max_edge_length_change": 0.2
+  },
+  "next_action": "Prepare motion for actual combat lateral speed (~1.3 m/s), then bake and verify directional transitions before runtime integration.",
+  "frame_limit": "Native .44-.67 m/s, fixed actor heading, horizontal ground; UI yaw is post-solve. No dynamic turning, slopes or game-speed acceptance."
+}

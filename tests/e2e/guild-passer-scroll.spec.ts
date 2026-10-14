@@ -19,10 +19,6 @@ test.describe('passer_999 滾動影片與 loader', () => {
         return nativeSetTimeout(callback, delay, ...args);
       }) as typeof window.setTimeout;
     });
-    await page.route('**/passer_999/video_1.mp4', route => route.fulfill({
-      path: 'public/assets/img/guild/letshavefun/intro-video.mp4',
-      contentType: 'video/mp4'
-    }));
     await page.goto('/guild/passer_999/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#scrollVideo')).toHaveAttribute('preload', 'none');
     // preload is a browser hint; verify that the page itself has not started loading.
@@ -31,10 +27,12 @@ test.describe('passer_999 滾動影片與 loader', () => {
     await expect(page.locator('#loaderScreen')).toBeHidden();
     await expect(page.locator('#scrollVideo')).toHaveAttribute('preload', 'metadata');
     expect(await page.evaluate(() => (window as unknown as Record<string, number>).__scrollLoadCalls)).toBe(1);
-    // WebKit 的原生媒體請求不一定經過 Playwright request 事件，直接確認影片取得 metadata。
-    await expect.poll(() => page.locator('#scrollVideo').evaluate(video =>
-      (video as HTMLVideoElement).readyState,
-    )).toBeGreaterThanOrEqual(1);
+    // Native media loading is not always exposed through Playwright request events.
+    // Exercise the actual page asset and the metadata required by scroll mapping.
+    await expect.poll(() => page.locator('#scrollVideo').evaluate((video: HTMLVideoElement) =>
+      video.readyState >= 1 && video.error === null && Number.isFinite(video.duration)
+      && video.duration > 0 && video.videoWidth > 0 && video.videoHeight > 0
+    )).toBe(true);
     expect(await page.locator('#videoSection').evaluate(section => section.getBoundingClientRect().height)).toBeGreaterThan(0);
   });
 
@@ -89,6 +87,23 @@ test('passer Enter 後等待 metadata 再建立 scroll video mapping', async ({ 
   });
   await expect(page.locator('#content')).toHaveCSS('opacity', '1');
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+});
+
+test('passer 內容淡入在動畫時鐘停滯時仍會完成', async ({ page }) => {
+  await page.goto('/guild/passer_999/', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#loaderScreen')).toBeHidden();
+  await page.waitForFunction(() => (document.querySelector('#scrollVideo') as HTMLVideoElement).readyState >= 2);
+  await page.evaluate(() => {
+    const w = window as unknown as Record<string, any>;
+    w.gsap.globalTimeline.pause();
+    const section = document.querySelector('#videoSection') as HTMLElement;
+    window.scrollTo(0, section.offsetTop + section.clientHeight);
+  });
+  await expect.poll(() => page.evaluate(() => {
+    const w = window as unknown as Record<string, any>;
+    return w.ScrollTrigger.getAll().find((trigger: any) => trigger.trigger === document.querySelector('#videoSection'))?.progress;
+  })).toBe(1);
+  await expect(page.locator('#content')).toHaveCSS('opacity', '1', { timeout: 3500 });
 });
 
 for (const width of [1440, 390]) {

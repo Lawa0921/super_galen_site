@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
  * 之後才轉正。根因是 `@keyframes stack-reform` 的起始幀使用了
  * `rotateY(180deg)`，使 X 軸縮放分量（DOMMatrix.m11）變為負值。
  *
- * 此測試直接檢查重組動畫起始幀的 transform：m11 必須 >= 0
+ * 此測試直接檢查重組動畫起始幀的 transform：m11 必須 >= 0（容許浮點誤差）
  * （不得在 X 軸鏡像）。用 computed animationName 取得實際 keyframes
  * 名稱，避免受 Astro scoped style 對名稱雜湊化的影響。
  */
@@ -60,10 +60,17 @@ test.describe('公會首頁 — 重新抽取卡堆動畫', () => {
     });
 
     expect(m11, '找不到 stack-reform 重組動畫起始幀，或無法解析其 transform').not.toBeNull();
+    // Firefox represents scale(0.5) rotateY(-90deg) as approximately -1.1e-16.
+    // Allow matrix rounding only; a mirrored 180-degree control must still fail.
     expect(
       m11,
       '重組動畫起始幀在 X 軸鏡像（rotateY 越過 90°），會造成「重新抽取」後卡堆左右相反'
-    ).toBeGreaterThanOrEqual(0);
+    ).toBeGreaterThanOrEqual(-1e-12);
+    const mirroredM11 = await page.evaluate(() =>
+      new DOMMatrix('scale(0.5) rotateY(180deg)').m11
+    );
+    expect(mirroredM11, '180-degree mirrored control must remain outside the tolerance')
+      .toBeLessThan(-1e-12);
   });
 });
 

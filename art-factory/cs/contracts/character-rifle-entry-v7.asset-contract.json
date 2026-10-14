@@ -1,0 +1,35 @@
+{
+  "asset_id": "browser-cs-rifle-entry-v7",
+  "status": "contact_probe",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/character-death-motion-v7.asset-contract.json",
+  "source_character": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_calibration": "art-factory/cs/runs/run-20261004-v7-rifle-grip/calibration-v17-thumb-patch.json",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-rifle-entry",
+  "death_extension": {
+    "motion_source": "art-factory/cs/runs/run-20261005-v7-motion-source/raw/UAL1_Standard.glb",
+    "motion_clip": "Death01",
+    "source_fingers": "Optional source rotation retarget, blended after the 0.01 second weapon release over 0.12 seconds; preserve wrist and major-bone tracks",
+    "palm_physics": "Offline Rapier only; convex hull from visible release-pose palm vertices with hand-bone weight >= 0.5, following sampled hand transforms; initial overlaps remain sensors until measured separation",
+    "floor_presentation_correction": "Preserve raw physics file. Derive a separate Y-only display correction from the visible rifle mesh, target +2 mm above a flat floor, maximum 8 mm, interpolation tolerance 0.25 mm. Never move the release pose or change source rotation.",
+    "acceptance": [
+      "Actual visible mesh checks across complete playback, including drop keys and midpoints, must stay above floor within 1 mm tolerance",
+      "Independent visual review and sampled whole-body, hand and head/chest intersection evidence remain separate from proxy contact statistics",
+      "Preserve release continuity, reverse seek/reset, original rig/source and second-instance invariants",
+      "Initial whole-finger grip crossings remain a failed gate; do not call post-release improvement a full grip or runtime acceptance",
+      "Physics and contact correction run offline; no physics runtime dependency is added"
+    ]
+  },
+  "requirements": [
+    "Resolve initial rifle stock/torso/vest penetration with both hands recomputed by the existing arm and finger solvers",
+    "Preserve licensed geometry, UVs, materials, bone lengths and parent chains; never hide or delete crossing surfaces",
+    "Use a bounded placement probe, preserve every refused placement and do not retry by unbounded parameter search",
+    "Require visible gun versus torso/vest surface crossings to be zero and preserve palm/index contact accuracy",
+    "Review shoulder support, wrist/elbow anatomy, finger contact and silhouette from three views before accepting a placement",
+    "A contact-clean entry alone does not approve death playback, body physics, gait, aim or runtime integration"
+  ],
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "assembly_human_review": "not-ready"
+}

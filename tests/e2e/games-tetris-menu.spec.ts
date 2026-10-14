@@ -44,7 +44,7 @@ test.afterEach(async ({ page }, info) => {
 // tab 必須能被真實使用者點擊（不被 PLAY 分頁的模式選單覆蓋層攔截），故用真實 .click()。
 test.describe('Tetris 主選單三分頁', () => {
   test('預設顯示 PLAY 分頁與模式按鈕', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'Touch devices show the keyboard requirement instead of play controls');
+    test.skip(isMobile, 'Touch entry and deep links are covered in games-tetris-mobile.spec.ts');
     await page.goto('/games/tetris');
     await expect(page.locator('.mm-tab', { hasText: 'PLAY' })).toHaveClass(/is-active/);
     await expect(page.locator('[data-mode="solo"]')).toBeVisible();
@@ -90,7 +90,7 @@ test.describe('Tetris 主選單三分頁', () => {
   });
 
   test('點過「線上對戰」後切回 PLAY → SOLO/AI 仍可選（回退修正）', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'Touch devices do not expose online gameplay controls');
+    test.skip(isMobile, 'Touch entry hides online gameplay controls');
     await page.goto('/games/tetris');
     await page.locator('[data-mode="online"]').click();        // 進線上面板（隱藏模式選單）
     await expect(page.locator('#online-panel')).toBeVisible();

@@ -1,0 +1,28 @@
+{
+  "schema": "cs-screen-framed-pose-v15",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/native-pose-v15.asset-contract.json",
+  "run": "art-factory\\cs\\runs\\run-20261007-v15-native-pose",
+  "screen_id": "cs-first-person-rifle",
+  "mode": "licensed-native-rig-whole-pose-authoring",
+  "config": "art-factory/cs/runs/run-20261007-v15-native-pose/raw/study4-screen-framed-palms.json",
+  "source": "raw/study3-fixed-shoulders.blend",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "scope": "Fixed-body three-pose block; source-derived analytic full receiver/magazine/hand framing; pose-specific magazine hand. No finished animation or glove/sleeve material claim.",
+  "gates": [
+    "source topology/rest/weights/UV/bone hierarchy/constraints unchanged",
+    "fixed camera-local shoulders and unstretched bone lengths",
+    "runtime58degree camera parity",
+    "hip/reload complete fitted hull inside5% safe frame",
+    "native evaluated skin and complete external camera review",
+    "near-plane and source boundary visibility",
+    "source-derived ADS optical matrix retained",
+    "anatomical contact and silhouette review before any promotion"
+  ],
+  "not_completion": "The scale and screen anchor are authored candidate choices. Readability, body proportion, contacts and camera cuts must pass together; no individual numerical gate approves runtime art.",
+  "review": "art-factory/cs/runs/run-20261007-v15-native-pose/qa/study4-screen-framed-palms/review.json",
+  "status": "hip-reload-framing-pass-whole-pose-and-contact-rejected",
+  "hand_scope": "All >=.999 summed hand/palm/finger/thumb-weight vertices; mixed forearm/wrist seams are excluded and are not claimed as part of the fitted hull."
+}

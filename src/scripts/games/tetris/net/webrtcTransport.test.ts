@@ -186,3 +186,13 @@ describe('WebRtcTransport：gathering 懸掛時 SDP 產出仍須秒級', () => {
     expect(await isResolved(p)).toBe(true);
   });
 });
+
+
+describe('WebRtcTransport capability errors', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([undefined, null])('reports an actionable error when WebRTC is unavailable (%s)', value => {
+    vi.stubGlobal('RTCPeerConnection', value);
+    expect(() => new WebRtcTransport()).toThrow(/不支援.*WebRTC/);
+  });
+});

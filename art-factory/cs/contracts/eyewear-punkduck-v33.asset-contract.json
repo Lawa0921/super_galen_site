@@ -1,0 +1,22 @@
+{
+  "asset_id": "cs_eyewear_punkduck_v33",
+  "status": "locally-integrated-stage6",
+  "style_guide": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_provenance": "art-factory/cs/runs/run-20261008-v33-character/qa/punkduck-eyewear-provenance.json",
+  "source_author": "punkduck",
+  "source_license": "CC BY 3.0",
+  "mode": "licensed_3d_equipment_module",
+  "screen_id": "cs-world-character",
+  "requirements": [
+    "Replace bulky program-built eyewear with licensed wraparound model",
+    "Preserve source UV and structure; graphite material variant with smoked lens alpha",
+    "Head rigid binding;53-joint base anatomy/garment remains unchanged",
+    "No head/helmet/temple intersections; actual renderer closeups and gameplay view",
+    "40000tri/12primitives/32MB whole runtime budget"
+  ],
+  "candidate_path": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-j-eyewear-f/soldier.glb",
+  "runtime_publish_allowed": true,
+  "runtime_path": "public/assets/games/cs/soldier.glb",
+  "asset_generation_manual_review": false,
+  "qa_report": "art-factory/cs/runs/run-20261008-v33-character/qa/review-stage-6.json"
+}

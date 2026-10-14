@@ -1,0 +1,30 @@
+{
+  "scope": "Existing development-only skinCandidate dependencies; inclusion is not art approval or production publishing.",
+  "consumer": "src/scripts/games/cs/skin-candidate.ts",
+  "fixtures": [
+    {
+      "path": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+      "bytes": 17330640,
+      "sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+      "contract": "art-factory/cs/contracts/character-gait-v7.asset-contract.json"
+    },
+    {
+      "path": "art-factory/cs/runs/run-20261004-v7-rifle-grip/calibration-v17-thumb-patch.json",
+      "bytes": 13799,
+      "sha256": "a643bc94b294e916e8f6ff61366af456684802bb975dc8a8c8a060deba62551f",
+      "contract": "art-factory/cs/contracts/rifle-grip-v7.asset-contract.json"
+    },
+    {
+      "path": "art-factory/cs/runs/run-20261005-v7-character-lod/candidate/vest-half-v2.u16",
+      "bytes": 111168,
+      "sha256": "67f4cb45ad3d49bae863a4748ebf087c32c2d3df4b59a4a00c94ed49e1fc2b79",
+      "contract": "art-factory/cs/contracts/character-lod-v7.asset-contract.json"
+    },
+    {
+      "path": "art-factory/cs/runs/run-20261005-v7-cmu-body-track/candidate/body-compact-v1.json",
+      "bytes": 3117944,
+      "sha256": "15132eadb5a63f972399717233b9e4e85af8f810403fc3d930280f1cced9866b",
+      "contract": "art-factory/cs/contracts/character-cmu-body-track-v7.asset-contract.json"
+    }
+  ]
+}

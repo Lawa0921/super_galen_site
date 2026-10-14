@@ -1,0 +1,54 @@
+{
+  "asset_id": "cs_helmet_coating_v33",
+  "status": "locally-integrated-stage7",
+  "style_guide": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs-world-character",
+  "source_mode": "generated_surface_texture",
+  "postprocess_profile": "gltf_pbr",
+  "mode_inference_decision": {
+    "confidence": "high",
+    "rationale": "A fully opaque tileable material source used on the existing validated helmet surface. This is not a replacement model or a rendered helmet image."
+  },
+  "baseline": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-j-eyewear-f/soldier.glb",
+  "baseline_sha256": "37f7a5ffa26aabd187fb53e16136cf42f609dceebc811ffaa0f906835359f5a4",
+  "raw_path": "art-factory/cs/runs/run-20261008-v33-character/raw/helmet-coating-a.png",
+  "prompt_packet": "art-factory/cs/runs/run-20261008-v33-character/prompts/helmet-coating-a.json",
+  "candidate_path": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-l-coating-b/soldier.glb",
+  "alpha_policy": "opaque material; no chroma key because every texel is surface data",
+  "geometry_policy": "Exact preservation of all baseline geometry attributes, indices, skin weights, inverse bind matrices and node transforms. Material-only candidate, no topology or fit adjustment.",
+  "material_policy": "Only team_helmet_shell changes. Preserve the existing material slot and gameplay team tint. Replace albedo, normal and MR maps; normalScale .35 to 1 and roughnessFactor to 1 are explicit material changes for the new source-derived maps, not scalar-preservation claims. Metallic remains zero. Nonmetallic matte composite coating, subtle albedo mottling and restrained microrelief. No fabricated baked contact shadows or large scratches.",
+  "allowed_postprocess": [
+    "resize",
+    "color-space conversion",
+    "linear-light albedo normalization",
+    "bounded base-color JPEG RMSE <= 2.5",
+    "lossless encoding of data maps",
+    "source-derived height/normal and roughness mapping with documented parameters"
+  ],
+  "forbidden": [
+    "old steel-helmet UV islands",
+    "exposed silver metal",
+    "cloth weave",
+    "rivets",
+    "edge rings",
+    "text",
+    "watermarks",
+    "baked directional highlights",
+    "changing character silhouette",
+    "adding material slots"
+  ],
+  "qa_gates": [
+    "opaque square source",
+    "tile seam inspection",
+    "all non-helmet material maps and settings exact",
+    "geometry and rig exact",
+    "same-camera head/front/side renderer comparison",
+    "no seam or oversized grain at combat distance",
+    "whole runtime <= 32000000 bytes"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "candidate preview pending",
+  "runtime_publish_allowed": true,
+  "runtime_path": "public/assets/games/cs/soldier.glb",
+  "qa_report": "art-factory/cs/runs/run-20261008-v33-character/qa/review-stage-7.json"
+}

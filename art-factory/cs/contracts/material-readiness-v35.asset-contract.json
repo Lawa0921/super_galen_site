@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_material_readiness_v35",
+  "status": "published",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs-world-and-viewmodel",
+  "source_mode": "Material assembly using existing approved Poly Haven CC0 Modular Fort and rusty_metal_02 images embedded in V34; no generated pixels or new image sources",
+  "postprocess_profile": "project_glb_modular_assembly",
+  "alpha_policy": "Opaque PBR glTF materials; chroma key inapplicable",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "approved_by_lead_agent_same_camera_review",
+  "runtime_publish_allowed": true,
+  "runtime_target": "public/assets/games/cs/environment.glb",
+  "baseline_sha256": "fb0c429d8bf6aa52e0f249696547a9144684507b8f613d6aaea1b45875562ea1",
+  "allowed_delta": [
+    "architecture_fort_trim and architecture_fort_wall: base/normal/MR indices to already embedded matching 1K maps; retain all scalar factors and original UV",
+    "dark_iron: reuse weathered_metal normal at scale 0.35 and MR; roughnessFactor 1; retain dark base color and metallicFactor"
+  ],
+  "invariants": [
+    "GLB binary chunk byte-identical; all geometry, UV, nodes, images, textures, sampler definitions unchanged",
+    "Only three named materials may differ; 32 primitives and 147562 triangles retained",
+    "No new image, mesh, material or draw call; runtime bundle <=32000000 bytes",
+    "Same-camera before/candidate high and low captures plus close views; no atlas mismatch, inverted normal or plastic/glitter metal",
+    "Review sealed to candidate SHA and actual capture images before local publication"
+  ],
+  "source_evidence": [
+    "art-factory/cs/source/build_cs_architecture_v6.py",
+    "art-factory/cs/runs/run-20261003-v3-environment/texture-sources.json",
+    "art-factory/cs/runs/run-20261009-v34-handling-detail/qa/verification.json"
+  ],
+  "commercial_readiness": "not_ready; limited material repair does not resolve character, map or complete product quality",
+  "published_sha256": "477600c325d572a1bec261b0f52533fb387fe87ec59765d83c94a7337737e4b7",
+  "review_evidence": [
+    "art-factory/cs/runs/run-20261009-v35-readiness/qa/material-mechanical.json",
+    "art-factory/cs/runs/run-20261009-v35-readiness/qa/material-before/high-tower-close.png",
+    "art-factory/cs/runs/run-20261009-v35-readiness/qa/material-candidate/high-tower-close.png",
+    "art-factory/cs/runs/run-20261009-v35-readiness/qa/material-candidate/high-iron-close.png"
+  ],
+  "review_notes": "Tower wall: 1K maps restore legible coursed stone vs blurred 256px baseline; trim unchanged in tone. Dark iron: subtle roughness/normal response, no glitter or inverted normals observed. Baseline retained at raw/environment-baseline.glb for rollback."
+}

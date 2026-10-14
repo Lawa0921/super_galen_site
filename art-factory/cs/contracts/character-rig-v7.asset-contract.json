@@ -1,0 +1,60 @@
+{
+  "schema": "cs-character-rig-v7-contract",
+  "project_id": "super_galen_site",
+  "asset_id": "browser-cs-character-rig-v7-review-candidate",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contract": "art-factory/cs/contracts/character-source-v7.asset-contract.json",
+  "source_root": "art-factory/cs/runs/run-20261004-v7-character-source/raw/extracted",
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-character-rig/candidate",
+  "qa_root": "art-factory/cs/runs/run-20261004-v7-character-rig/qa",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "assembly_agent_review": "failed_visual_direction_and_fit",
+  "lifecycle_status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "target_brief": "Approximately 1.8 m male tactical character with rigged fitted clothing and complete gloves/forearms; source fidelity review only",
+  "actual_candidate": {
+    "body": "male_generic proxy over MPFB hm08 male basemesh",
+    "rig": "MPFB v2.0.17 GameEngine, 53 joints, hm08 weight source",
+    "outfit": ["Elvaerwyn + Punkduck EMT jacket", "Elvaerwyn + Punkduck EMT pants", "Mindfront tactical vest", "Mindfront biker boots", "culturalibre gloves 3"],
+    "height_m": 1.7305,
+    "full_body_glb": "candidate/full-body-review.glb",
+    "source_blend": "candidate/full-body-source.blend",
+    "gloved_forearms_glb": null,
+    "gloved_forearms_reason": "Safe forearm extraction and deformed cuff/hand fit were not verified; source geometry was not arbitrarily cut."
+  },
+  "tooling": {
+    "mpfb_tag": "v2.0.17",
+    "mpfb_commit": "80919fa4682335c41847f761a4d79dcad4124732",
+    "mpfb_source_zip_sha256": "c8ccfc6269f82cf95661ef81475ddd5a8586f70810ba58940a3d26f7fc281d17",
+    "blender": "5.2.1 LTS",
+    "execution": "isolated user resources/extensions, factory startup, disable autoexec, offline mode, four CPU threads",
+    "license_separation": "MPFB code GPL-3.0-or-later stays in isolated tooling; bundled basemesh/rig/weights CC0 are asset data, not runtime program code."
+  },
+  "provenance_and_modifications": "art-factory/cs/runs/run-20261004-v7-character-rig/source-provenance-and-modifications.json",
+  "qa_evidence": [
+    "qa/rig-milestone.json",
+    "qa/assembly-qa.json",
+    "qa/mask-diagnostic.json",
+    "qa/deformation-probe.json",
+    "qa/glb-mechanical.json",
+    "qa/glb-material-opaque-diagnostic.json",
+    "qa/glb-material-final-diagnostic.json",
+    "qa/review-front.png",
+    "qa/review-side.png",
+    "qa/review-hands.png",
+    "qa/assessment.md"
+  ],
+  "known_failures": [
+    "EMT red/white garment and green gloves do not match the desired tactical visual direction",
+    "jacket/vest, sleeve/glove, and pants/boots show overlap or visible clipping",
+    "the original has six BLEND/doubleSided materials; independent Three.js review proved body/jacket/pants OPAQUE fixes head transparency, while final glove OPAQUE and vest/boots MASK remain diagnostic",
+    "eye meshes are absent from this candidate",
+    "124k source triangles before masking, 105616 exported triangles and 62.5 MB GLB exceed any unproven runtime budget",
+    "specular source textures for vest/boots are not mapped by MPFB GameEngine material bridge",
+    "independent art, true renderer, deformation and performance gates have not passed"
+  ],
+  "forbidden": ["gloves 1 (license conflict)", "runtime publication", "CS2 quality claim", "placeholder geometry/material replacement"]
+}
