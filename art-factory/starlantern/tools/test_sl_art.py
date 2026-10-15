@@ -209,3 +209,13 @@ def test_alpha_qa_allows_declared_in_palette_magenta_like_pixels():
     rgba = np.zeros((10, 10, 4), np.uint8); rgba[2:8, 2:8] = (20, 120, 60, 255); rgba[5, 5] = (231, 89, 172, 255)
     assert not A.alpha_qa(Image.fromarray(rgba, 'RGBA'))['pass']
     assert A.alpha_qa(Image.fromarray(rgba, 'RGBA'), allow_residue=1)['pass']
+
+
+def test_slice_grid_trims_edge_lines_blended_with_magenta():
+    img = canvas(28, 24); arr = np.asarray(img).copy()
+    arr[2:22, 2:22] = (120, 140, 110)
+    arr[2:22, 22] = (162, 88, 156)                  # right column blended with the gutter
+    arr[21, 2:22] = (170, 95, 160)                  # bottom row blended too
+    arr[5, 22] = (120, 140, 110)                    # a few real pixels in that column do not keep it
+    assert A.slice_grid(Image.fromarray(arr, 'RGB'), 1, 1)[0].size == (21, 20)      # icons: untouched
+    assert A.slice_grid(Image.fromarray(arr, 'RGB'), 1, 1, trim=True)[0].size == (20, 19)

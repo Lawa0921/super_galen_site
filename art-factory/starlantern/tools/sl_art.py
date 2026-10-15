@@ -97,13 +97,27 @@ def _runs(active):
     return [(int(a), int(b)) for a, b in edges.reshape(-1, 2)]
 
 
-def slice_grid(img, cols, rows):
+def _trim_blended_edges(cell, share=0.3):
+    """Drop outer rows/columns where at least `share` of the pixels are blended with the magenta gutter."""
+    a = np.asarray(cell.convert('RGB'))
+    bad = _near_magenta(a, 110) | _magenta_tint(a)
+    y0, y1, x0, x1 = 0, a.shape[0], 0, a.shape[1]
+    while y1 - y0 > 2 and bad[y0, x0:x1].mean() >= share: y0 += 1
+    while y1 - y0 > 2 and bad[y1 - 1, x0:x1].mean() >= share: y1 -= 1
+    while x1 - x0 > 2 and bad[y0:y1, x0].mean() >= share: x0 += 1
+    while x1 - x0 > 2 and bad[y0:y1, x1 - 1].mean() >= share: x1 -= 1
+    return cell.crop((x0, y0, x1, y1))
+
+
+def slice_grid(img, cols, rows, trim=False):
     """Cells separated by full-magenta gutters, row-major. Raises ValueError when the count differs."""
     rgb = np.asarray(img.convert('RGB')); fg = ~(_near_magenta(rgb, 45) | _magenta_tint(rgb))
     xs, ys = _runs(fg.any(axis=0)), _runs(fg.any(axis=1))
     if len(xs) != cols or len(ys) != rows:
         raise ValueError(f'expected {cols}x{rows} cells, found {len(xs)}x{len(ys)}')
-    return [img.crop((x0, y0, x1, y1)) for y0, y1 in ys for x0, x1 in xs]
+    cells = [img.crop((x0, y0, x1, y1)) for y0, y1 in ys for x0, x1 in xs]
+    # Opaque tiles must not keep gutter-blended edge lines; transparent icons keep their magenta surroundings.
+    return [_trim_blended_edges(c) for c in cells] if trim else cells
 
 
 def seam_score(img):
@@ -161,7 +175,7 @@ def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, b
     workdir = Path(workdir or ROOT / 'work' / aid); workdir.mkdir(parents=True, exist_ok=True)
     img = Image.open(raw).convert('RGB')
     if kind in ('tile-sheet', 'icon-sheet'):
-        cells = slice_grid(img, cols, rows)
+        cells = slice_grid(img, cols, rows, trim=kind == 'tile-sheet')
         targets = ids or []
         results = {}
         for cell, cid in zip(cells, targets):
