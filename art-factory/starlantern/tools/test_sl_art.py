@@ -122,7 +122,9 @@ def test_seeded_registry_covers_every_runtime_asset():
     reg = seed_registry.build()
     assets = reg['assets']
     runtime = [a['runtime'] for a in assets.values() if 'runtime' in a]
-    assert len(runtime) == 166 and len(set(runtime)) == 166
+    assert len(runtime) == 183 and len(set(runtime)) == 183
+    assert assets['npc-guild-happy']['runtime'] == '/assets/games/starlantern/npc/guild-happy.png'
+    assert assets['scene-title']['runtime'] == '/assets/games/starlantern/scene/title.png'
     for m in ('attack', 'hit', 'dying', 'down', 'ultimate'):
         assert assets[f'char-liz-portrait-{m}']['runtime'] == f'/assets/games/starlantern/char/liz-portrait-{m}.png'
     assert 'char-liz-portrait-hurt' not in assets

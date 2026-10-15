@@ -67,7 +67,7 @@ FX = {
 
 
 # Target art-pixel heights per category; scarlet's approved sprites set the standee (283) and portrait (115) scale.
-HEIGHT = {'standee': 280, 'portrait': 115, 'party': 32, 'enemy': 64, 'boss': 150, 'icon': 32, 'fx': 64}
+HEIGHT = {'npc': 180, 'logo': 90, 'cursor': 12, 'standee': 280, 'portrait': 115, 'party': 32, 'enemy': 64, 'boss': 150, 'icon': 32, 'fx': 64}
 
 
 # The five extra faces (spec section 5); each is generated from the character's normal portrait.
@@ -77,6 +77,22 @@ MOOD_FACES = {
     'dying': 'badly hurt and exhausted, bruised and dirty face, torn collar, sweat, half-closed eyes, breathing heavily',
     'down': 'knocked out and collapsed, eyes closed, head tilted down, battered and dusty, hair dishevelled',
     'ultimate': 'unleashing her ultimate technique: intense heroic expression, glowing eyes, wind-swept hair, a burst of colourful aura behind her',
+}
+
+
+UI_SCENES = {
+    'title': 'Title screen landscape: the frontier town of Lumia at dusk wrapped in thick evening mist, seen from a hill, with a huge glowing crack in the ground beyond the town where star-lantern light spills out',
+    'town': 'Main street of the frontier town of Lumia at dusk: stone-paved road, timber-framed houses with warm lit windows, hanging lanterns, evening mist, the glowing labyrinth crack visible far away',
+    'guild': "Interior of an adventurers' guild hall: a long wooden reception counter on the left, a notice board with pinned papers, hanging oil lamps, wooden beams, the right third of the picture kept fairly plain for a character to stand in front of",
+    'shop': 'Interior of a cosy item shop: shelves of potions, bottles and gear, a wooden counter, herbs hanging from the ceiling, warm lamplight, the right third kept fairly plain',
+    'inn': 'Interior of a warm inn lobby: fireplace, wooden stairs to the rooms, a front desk with a bell, rugs, evening light, the right third kept fairly plain',
+    'gate': "Adventurers' camp at the edge of the glowing labyrinth crack: wooden palisade, a guard post, torches, supply crates, mist, the right third kept fairly plain",
+}
+UI_NPCS = {
+    'guild': ('the guild receptionist, a capable gentle woman in her twenties with short chestnut hair, a neat dark green vest uniform with a guild badge', 'guild hall'),
+    'shop': ('the item shop keeper, a cheerful plump old man with a white moustache, round glasses and an apron full of pockets', 'item shop'),
+    'inn': ('the innkeeper, a warm motherly woman in her forties with tied-back auburn hair, a blouse and a striped apron', 'inn'),
+    'gate': ('the gate guard, a grizzled veteran soldier with a scar over one eye, short grey beard, worn leather and steel armour, holding a spear', 'camp'),
 }
 
 
@@ -133,6 +149,24 @@ def jobs():
     for k, desc in FX.items():
         write(f'fx-{k}', f'Single pixel art battle effect of {desc}, bold flat shapes, no soft glow gradients, no transparency, 16-bit JRPG style, strict square pixel grid, about 64 art pixels tall. Centred on a perfectly flat solid pure magenta #FF00FF background with empty space around it. No text.')
         out.append(dict(id=f'fx-{k}', images=[], kind='sprite', height=HEIGHT['fx']))
+    # --- Game UI (plan 3): scenes, NPC busts, logo, window frame, cursor ---
+    bg1, anchor_char = newest('bg-f1'), newest('char-scarlet-standee')
+    SCENE = 'Match the pixel art style, palette and pixel density of the attached approved backdrop. 16:9 pixel art scene, 16-bit JRPG style, strict square pixel grid, limited palette, no anti-aliasing, no blur. No people, no text, no letters, no signs with writing. Fill the whole canvas edge to edge.'
+    for sid, desc in UI_SCENES.items():
+        write(f'scene-{sid}', f'{desc}. {SCENE}')
+        out.append(dict(id=f'scene-{sid}', images=[bg1], kind='opaque', block=4))
+    for nid, (desc, place) in UI_NPCS.items():
+        for mood, face in (('normal', 'calm friendly expression'), ('happy', 'bright happy smile, eyes slightly closed')):
+            aid = f'npc-{nid}' if mood == 'normal' else f'npc-{nid}-happy'
+            ref = [anchor_char] if mood == 'normal' else [('dep', f'npc-{nid}')]
+            write(aid, f'Pixel art half-body portrait (from the waist up) of an original character: {desc}, {face}, facing slightly left, standing in a {place}. Match the art style, pixel density, outline and colouring of the attached approved sprite (a different character). 16-bit JRPG style, {PIX}. Perfectly flat solid pure magenta #FF00FF background around the figure; the body may be cut off by the bottom edge. No text. {ORIGINAL}')
+            out.append(dict(id=aid, images=ref, kind='sprite', height=HEIGHT['npc'], **({'dep': f'npc-{nid}'} if mood == 'happy' else {})))
+    write('ui-logo', 'Game title logo reading exactly the four Traditional Chinese characters 星燈迷宮 in large bold pixel art lettering, warm gold letters with a dark outline, a small glowing star lantern ornament woven into the design, 16-bit JRPG title logo style, strict square pixel grid, limited palette, no anti-aliasing. Perfectly flat solid pure magenta #FF00FF background around it. No other text.')
+    out.append(dict(id='ui-logo', images=[], kind='sprite', height=HEIGHT['logo']))
+    write('ui-window', 'A square pixel art game menu window frame, 48 by 48 art pixels, seen flat on: a thin gold border two pixels wide with a dark navy inner line, small star-lantern ornaments in the four corners, straight edges designed to repeat. The whole inside of the frame is perfectly flat solid pure magenta #FF00FF (it will become transparent). 16-bit JRPG menu window style, strict square pixel grid, no anti-aliasing. No text.')
+    out.append(dict(id='ui-window', images=[], kind='sprite', block=4))
+    write('ui-cursor', 'A tiny pixel art menu cursor: a gold arrow pointing right with a dark outline, about 12 art pixels tall, 16-bit JRPG style, strict square pixel grid, no anti-aliasing. Centred on a perfectly flat solid pure magenta #FF00FF background with empty space around it. No text.')
+    out.append(dict(id='ui-cursor', images=[], kind='sprite', height=HEIGHT['cursor']))
     write('ui-frame', 'A square pixel art UI panel frame, 48 by 48 art pixels: dark navy fill, ornate brass border 16 art pixels wide with small star-lantern motifs in the four corners, the straight edge segments between the corners are plain and designed to repeat, fills the canvas edge to edge. 16-bit JRPG menu window style, strict square pixel grid, limited palette, no anti-aliasing. No text.')
     out.append(dict(id='ui-frame', images=[], kind='opaque'))
     return out

@@ -34,6 +34,14 @@ def build():
     for e in ids_in('enemies.ts'): put(f'enemy-{e}', 'sprite', f'enemy/{e}.png')
     for k in FX: put(f'fx-{k}', 'sprite', f'fx/{k}.png')
     put('ui-frame', 'opaque', 'ui/frame.png')
+    # Game UI (plan 3): scenes, NPC busts, logo, window frame and cursor.
+    for s in ['title', 'town', 'guild', 'shop', 'inn', 'gate']: put(f'scene-{s}', 'opaque', f'scene/{s}.png')
+    for n in ['guild', 'shop', 'inn', 'gate']:
+        put(f'npc-{n}', 'sprite', f'npc/{n}.png', allow_edge=['bottom'])
+        put(f'npc-{n}-happy', 'sprite', f'npc/{n}-happy.png', allow_edge=['bottom'])
+    put('ui-logo', 'sprite', 'ui/logo.png')
+    put('ui-window', 'sprite', 'ui/window.png', allow_edge=['left', 'top', 'right', 'bottom'])
+    put('ui-cursor', 'sprite', 'ui/cursor.png')
     skills, items, mats, equips = ids_in('skills.ts'), ids_in('items.ts'), ids_in('materials.ts'), ids_in('equipment.ts')
     icons = [f'icon-{i}' for i in skills + items + mats + equips]
     for i in icons: put(i, 'sprite', f'icon/{i[5:]}.png')

@@ -3971,6 +3971,121 @@
       "allow_edge": [
         "bottom"
       ]
+    },
+    "scene-title": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/scene/title.png"
+    },
+    "scene-town": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/scene/town.png"
+    },
+    "scene-guild": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/scene/guild.png"
+    },
+    "scene-shop": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/scene/shop.png"
+    },
+    "scene-inn": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/scene/inn.png"
+    },
+    "scene-gate": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/scene/gate.png"
+    },
+    "npc-guild": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/npc/guild.png",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "npc-guild-happy": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/npc/guild-happy.png",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "npc-shop": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/npc/shop.png",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "npc-shop-happy": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/npc/shop-happy.png",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "npc-inn": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/npc/inn.png",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "npc-inn-happy": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/npc/inn-happy.png",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "npc-gate": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/npc/gate.png",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "npc-gate-happy": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/npc/gate-happy.png",
+      "allow_edge": [
+        "bottom"
+      ]
+    },
+    "ui-logo": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/ui/logo.png"
+    },
+    "ui-window": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/ui/window.png",
+      "allow_edge": [
+        "left",
+        "top",
+        "right",
+        "bottom"
+      ]
+    },
+    "ui-cursor": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/ui/cursor.png"
     }
   }
 }
