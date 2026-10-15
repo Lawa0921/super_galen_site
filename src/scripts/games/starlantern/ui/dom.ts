@@ -3,10 +3,13 @@ import { EQUIPMENT } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
 import type { Dir } from '../engine/map';
+import type { ArtIndex } from '../render/textures';
 
-export interface UiHooks { refresh(): void; say(msg: string): void; sfx: SoundManager; move(dir: Dir): void }
+export interface UiHooks { refresh(): void; say(msg: string): void; sfx: SoundManager; move(dir: Dir): void; art: ArtIndex }
 
 interface ElOpts { id?: string; class?: string; text?: string; attrs?: Record<string, string> }
+
+export const present = <T>(xs: (T | null)[]): T[] => xs.filter((x): x is T => x !== null);
 
 export function el<K extends keyof HTMLElementTagNameMap>(tag: K, opts: ElOpts = {}, children: (Node | string)[] = []): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);

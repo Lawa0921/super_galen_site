@@ -4,7 +4,8 @@ import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
 import type { Dir } from '../engine/map';
 import { activeIds, statsOf } from '../engine/party';
-import { button, el, meter, type UiHooks } from './dom';
+import { portraitImg } from './art';
+import { button, el, meter, present, type UiHooks } from './dom';
 
 const DIRS: Dir[] = ['up', 'left', 'right', 'down'];
 
@@ -13,9 +14,9 @@ export function renderHud(root: HTMLElement, game: Game, ui: UiHooks): void {
   const party = activeIds(game.state.party).map((id) => {
     const m = game.state.party.roster[id];
     const st = statsOf(m);
-    return el('div', { class: m.hp > 0 ? 'sl-member' : 'sl-member sl-member--down' }, [
-      el('div', { text: CHARACTERS[id].name }), meter(m.hp, st.hp, 'sl-hp'), meter(m.tp, st.tp, 'sl-tp'),
-    ]);
+    return el('div', { class: m.hp > 0 ? 'sl-member' : 'sl-member sl-member--down' }, present<Node>([
+      portraitImg(ui.art, id, m.hp, st.hp), el('div', { text: CHARACTERS[id].name }), meter(m.hp, st.hp, 'sl-hp'), meter(m.tp, st.tp, 'sl-tp'),
+    ]));
   });
   const pad = el('div', { class: 'sl-pad' }, DIRS.map((dir) => {
     const b = button(T.map.dirs[dir], () => ui.move(dir), { class: `sl-btn sl-pad-${dir}` });

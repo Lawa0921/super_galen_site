@@ -9,6 +9,7 @@ import { bindKeys } from './input/keymap';
 import { createApp } from './render/app';
 import { BattleView } from './render/BattleView';
 import { MapView } from './render/MapView';
+import { art } from './render/artPaths';
 import { TextureBank, loadManifest } from './render/textures';
 import { BattleMenu } from './ui/battleMenu';
 import { renderClear } from './ui/clear';
@@ -41,6 +42,7 @@ export async function mountStarlantern(): Promise<void> {
   const sfx = new SoundManager();
   const bank = new TextureBank();
   await bank.preload(await loadManifest());
+  root.classList.toggle('sl-framed', bank.has(art.frame));
   const mapView = new MapView(bank);
   const battleView = new BattleView(fast, bank);
   const app = await createApp(byId('sl-canvas') as HTMLCanvasElement).catch((err: unknown) => {
@@ -69,8 +71,8 @@ export async function mountStarlantern(): Promise<void> {
     setTimeout(() => card.classList.remove(cls), fast ? 0 : 320);
   };
 
-  const hooks: UiHooks = { refresh, say, sfx, move: onMove };
-  const menu = new BattleMenu(byId('sl-battle'), game, (actions) => void playRound(actions));
+  const hooks: UiHooks = { refresh, say, sfx, move: onMove, art: bank };
+  const menu = new BattleMenu(byId('sl-battle'), game, (actions) => void playRound(actions), bank);
 
   function refresh(): void {
     if (game.notice) { say(T.notices[game.notice]); game.notice = null; }

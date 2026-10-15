@@ -103,3 +103,17 @@ $sl-gold: #ffd166;
   .sl-stage { height: 260px; }
   .sl-party { grid-template-columns: repeat(3, 1fr); }
 }
+
+.sl-portrait, .sl-standee, .sl-icon { image-rendering: pixelated; }
+.sl-portrait { width: 48px; height: 48px; object-fit: contain; }
+.sl-portrait--down { filter: grayscale(1) brightness(0.7); }
+.sl-standee { float: left; height: 120px; margin-right: 8px; }
+.sl-icon { width: 24px; height: 24px; margin-right: 4px; vertical-align: middle; object-fit: contain; }
+.sl-framed {
+  .sl-panel, .sl-card, .sl-member, .sl-log, .sl-notice, .sl-stage {
+    border-style: solid;
+    border-width: 12px;
+    border-image: url('/assets/games/starlantern/ui/frame.png') 16 fill / 12px round;
+    image-rendering: pixelated;
+  }
+}

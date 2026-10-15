@@ -8,7 +8,8 @@ import type { Game } from '../engine/game';
 import { recruit, setFormation, statsOf } from '../engine/party';
 import { buy, equip, innCost, isUnlocked, reviveCost, revive, sell, unequip, type TownResult } from '../engine/town';
 import type { CharacterId, Slot } from '../engine/types';
-import { button, el, itemName, meter, type UiHooks } from './dom';
+import { iconImg, portraitImg, standeeImg } from './art';
+import { button, el, itemName, meter, present, type UiHooks } from './dom';
 
 export type TownTab = 'guild' | 'shop' | 'inn' | 'depart';
 let tab: TownTab = 'guild';
@@ -48,6 +49,10 @@ function guild(game: Game, ui: UiHooks): HTMLElement {
       ui.sfx.menu();
       ui.refresh();
     }, { id: `sl-recruit-${id}` })));
+  for (const b of recruits.querySelectorAll<HTMLButtonElement>('button')) {
+    const face = portraitImg(ui.art, b.id.slice('sl-recruit-'.length), 1, 1);
+    if (face) b.prepend(face);
+  }
   const members = p.recruited.map((id) => {
     const m = p.roster[id];
     const st = statsOf(m);
@@ -62,6 +67,7 @@ function guild(game: Game, ui: UiHooks): HTMLElement {
       return el('label', {}, [T.slot[slot], s]);
     });
     return el('article', { class: 'sl-card' }, [
+      ...present([standeeImg(ui.art, id)]),
       el('h4', { text: `${CHARACTERS[id].title} ${CHARACTERS[id].name} ${T.guild.level(m.level)}` }),
       el('div', { class: 'sl-bars' }, [`HP ${m.hp}/${st.hp}`, meter(m.hp, st.hp, 'sl-hp'), `TP ${m.tp}/${st.tp}`, meter(m.tp, st.tp, 'sl-tp')]),
       el('p', { class: 'sl-stats', text: (['atk', 'def', 'mag', 'res', 'spd'] as const).map((k) => `${T.stat[k]} ${st[k]}`).join('　') }),
@@ -75,15 +81,18 @@ function shop(game: Game, ui: UiHooks): HTMLElement {
   const mats = Object.entries(game.state.inventory).filter(([id, n]) => MATERIALS[id] && n > 0);
   const sellList = mats.length
     ? mats.map(([id, n]) => el('div', { class: 'sl-row' }, [
+      ...present([iconImg(ui.art, id)]),
       `${T.shop.price(MATERIALS[id].name, MATERIALS[id].price)} ×${n}`,
       button(T.shop.sellOne, () => report(game.apply(sell(game.state, id, 1)), ui), { id: `sl-sell-${id}` }),
       button(T.shop.sellAll, () => report(game.apply(sell(game.state, id, n)), ui), { id: `sl-sell-all-${id}` }),
     ]))
     : [el('p', { text: T.shop.nothing })];
   const goods = [...Object.values(ITEMS), ...Object.values(EQUIPMENT)].map((g) => {
+    const icon = iconImg(ui.art, g.id);
     const locked = 'slot' in g && !isUnlocked(game.state, g.id);
     const need = locked ? (g.unlock ?? []).map((u) => T.shop.needs(MATERIALS[u.mat].name, u.qty)).join('、') : '';
     return el('div', { class: 'sl-row' }, [
+      ...present([icon]),
       button(T.shop.price(g.name, g.price), () => report(game.apply(buy(game.state, g.id)), ui), { id: `sl-buy-${g.id}`, disabled: locked }),
       el('span', { class: 'sl-note', text: need || `${game.state.inventory[g.id] ?? 0}` }),
     ]);

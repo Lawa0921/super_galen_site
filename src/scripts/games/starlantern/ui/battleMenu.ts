@@ -7,7 +7,9 @@ import type { BattleEvent, Combatant } from '../engine/combatant';
 import type { BattleEnd, Game } from '../engine/game';
 import { learnedSkills } from '../engine/party';
 import type { CharacterId, Target } from '../engine/types';
-import { button, el, itemName, meter } from './dom';
+import { NO_ART, type ArtIndex } from '../render/textures';
+import { iconImg, portraitImg } from './art';
+import { button, el, itemName, meter, present } from './dom';
 
 type Pending = { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'attack' };
 type Mode = { view: 'root' } | { view: 'skills' } | { view: 'items' } | { view: 'target'; pick: 'enemy' | 'ally' | 'deadAlly'; pending: Pending };
@@ -18,7 +20,7 @@ export class BattleMenu {
   private index = 0;
   private mode: Mode = { view: 'root' };
 
-  constructor(private root: HTMLElement, private game: Game, private onSubmit: (a: Record<string, Action>) => void) {}
+  constructor(private root: HTMLElement, private game: Game, private onSubmit: (a: Record<string, Action>) => void, private art: ArtIndex = NO_ART) {}
 
   show(state: BattleState): void {
     this.state = state;
@@ -108,6 +110,8 @@ export class BattleMenu {
         const def = SKILLS[s];
         const b = button(`${def.name}（${T.cmd.tp(def.tp)}）`, () => this.withTarget(def.target, { kind: 'skill', skill: s }), { disabled: actor.tp < def.tp });
         b.dataset.skill = s;
+        const icon = iconImg(this.art, s);
+        if (icon) b.prepend(icon);
         b.title = def.desc;
         return b;
       });
@@ -117,6 +121,8 @@ export class BattleMenu {
       const list = Object.entries(this.state!.inventory).filter(([id, n]) => ITEMS[id]?.battle && n > 0).map(([id, n]) => {
         const b = button(`${ITEMS[id].name} ×${n}`, () => this.withTarget(ITEMS[id].target, { kind: 'item', item: id }));
         b.dataset.item = id;
+        const icon = iconImg(this.art, id);
+        if (icon) b.prepend(icon);
         return b;
       });
       return el('div', { class: 'sl-panel' }, [head, el('div', { class: 'sl-row' }, [...list, back])]);
@@ -163,6 +169,7 @@ export class BattleMenu {
       const cls = ['sl-member', c.key === activeKey ? 'sl-member--active' : '', c.alive ? '' : 'sl-member--down'].filter(Boolean).join(' ');
       const tags = [c.poison ? T.battle.poison : '', c.sleep > 0 ? T.battle.sleep : ''].filter(Boolean).join(' ');
       return el('div', { class: cls, attrs: { 'data-key': c.key } }, [
+        ...present([portraitImg(this.art, c.defId, c.hp, c.max.hp)]),
         el('div', { text: `${c.name}${tags ? ` ${tags}` : ''}` }),
         `HP ${c.hp}/${c.max.hp}`, meter(c.hp, c.max.hp, 'sl-hp'),
         `TP ${c.tp}/${c.max.tp}`, meter(c.tp, c.max.tp, 'sl-tp'),

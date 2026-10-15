@@ -3,11 +3,12 @@ import { renderTown } from './town';
 import { Game } from '../engine/game';
 import { constRng, memoryStorage } from '../engine/testing';
 import type { UiHooks } from './dom';
+import { NO_ART } from '../render/textures';
 
 function setup(storage = memoryStorage()) {
   const game = new Game(constRng(0.99), storage);
   const root = document.createElement('div');
-  const hooks: UiHooks = { refresh: vi.fn(() => renderTown(root, game, hooks)), say: vi.fn(), move: vi.fn(), sfx: { menu: vi.fn(), bump: vi.fn() } as never };
+  const hooks: UiHooks = { refresh: vi.fn(() => renderTown(root, game, hooks)), say: vi.fn(), move: vi.fn(), art: NO_ART, sfx: { menu: vi.fn(), bump: vi.fn() } as never };
   renderTown(root, game, hooks);
   const click = (sel: string) => (root.querySelector(sel) as HTMLButtonElement).click();
   return { game, root, hooks, click, storage };
