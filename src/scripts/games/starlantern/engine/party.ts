@@ -8,7 +8,7 @@ export const STARTING_RECRUITS: CharacterId[] = ['scarlet', 'chizuru', 'liz', 'n
 const STAT_KEYS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 const SLOTS: Slot[] = ['weapon', 'armor', 'accessory'];
 
-export const expToNext = (level: number): number => Math.floor(15 * level ** 1.6);
+export const expToNext = (level: number): number => Math.floor(14 * level ** 1.3);
 
 export function statsOf(m: Member): Stats {
   const def = CHARACTERS[m.id];

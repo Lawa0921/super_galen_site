@@ -120,7 +120,7 @@ describe('resolveRound', () => {
 describe('after battle', () => {
   it('sums rewards and rolls drops, doubled by dropBoost', () => {
     const s = makeBattle([P('p')], [E('e0', { defId: 'slime' }), E('e1', { defId: 'bat' })]);
-    expect(rewards(s, constRng(0), false)).toEqual({ exp: 12, gold: 9, drops: { moss: 1, 'bat-wing': 1 } });
+    expect(rewards(s, constRng(0), false)).toEqual({ exp: 9, gold: 9, drops: { moss: 1, 'bat-wing': 1 } });
     expect(rewards(s, constRng(0.99), false).drops).toEqual({});
     expect(rewards(s, constRng(0.7), false).drops).toEqual({});
     expect(rewards(s, constRng(0.7), true).drops).toEqual({ moss: 1, 'bat-wing': 1 });

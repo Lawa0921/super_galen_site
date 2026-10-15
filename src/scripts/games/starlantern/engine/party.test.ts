@@ -45,11 +45,11 @@ describe('formation', () => {
 
 describe('experience', () => {
   it('uses the curve', () => {
-    expect(expToNext(1)).toBe(15);
-    expect(expToNext(2)).toBe(45);
+    expect(expToNext(1)).toBe(14);
+    expect(expToNext(2)).toBe(34);
   });
   it('levels up, carries over, raises current HP by the gain and learns skills', () => {
-    const r = gainExp(newMember('noel'), 15 + 45 + 3);
+    const r = gainExp(newMember('noel'), 14 + 34 + 3);
     expect([r.member.level, r.member.exp, r.levels]).toEqual([3, 3, 2]);
     expect(r.member.hp).toBe(28 + 8);
     expect(r.learned).toEqual(['ice-star']);
