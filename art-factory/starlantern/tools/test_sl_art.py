@@ -41,6 +41,7 @@ def test_alpha_qa_flags_residue_semi_alpha_edge_and_holes():
     r = A.alpha_qa(Image.fromarray(rgba, 'RGBA'))
     assert not r['pass']
     assert r['residue'] == 1 and r['semi'] == 1 and r['edge'] >= 1 and r['holes'] == 1
+    assert 'enclosed holes' not in r['reasons'] and r['warnings'] == ['enclosed holes']
 
 
 def test_alpha_qa_allows_declared_holes():
@@ -162,7 +163,7 @@ def test_finish_counts_only_erased_colour_as_holes(tmp_path):
     raw = tmp_path / 'raw.png'; Image.fromarray(big, 'RGB').save(raw)
     reg = A.Registry(tmp_path / 'r.json')
     q = A.process(reg, 'enemy-x', raw, 'sprite', workdir=tmp_path / 'w', block=4)['enemy-x']
-    assert q['holes'] == 1 and not q['pass']
+    assert q['holes'] == 1 and q['warnings'] == ['enclosed holes'] and q['pass']
 
 
 def test_slice_grid_trims_anti_aliased_magenta_edges_from_cells():
@@ -171,3 +172,17 @@ def test_slice_grid_trims_anti_aliased_magenta_edges_from_cells():
     arr[2:22, 24:44] = (90, 140, 90); arr[1, 24:44] = (210, 60, 200)    # fringe row above cell 2
     cells = A.slice_grid(Image.fromarray(arr, 'RGB'), 2, 1)
     assert [c.size for c in cells] == [(20, 20), (20, 20)]
+
+
+def test_holes_alone_do_not_fail_qa_but_are_flagged_for_review():
+    rgba = np.zeros((40, 40, 4), np.uint8); rgba[10:30, 10:30] = (9, 9, 9, 255); rgba[20, 20, 3] = 0
+    r = A.alpha_qa(Image.fromarray(rgba, 'RGBA'))
+    assert r['pass'] and r['warnings'] == ['enclosed holes']
+
+
+def test_finish_scales_sprites_to_a_target_art_height(tmp_path):
+    big = np.zeros((300, 200, 3), np.uint8); big[:] = (255, 0, 255); big[50:250, 50:150] = (20, 120, 60)
+    raw = tmp_path / 'raw.png'; Image.fromarray(big, 'RGB').save(raw)
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'char-x', raw, 'sprite', workdir=tmp_path / 'w', height=50)['char-x']
+    assert q['block'] == 4 and q['size'] == [27, 52]

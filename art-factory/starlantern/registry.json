@@ -2,8 +2,25 @@
   "assets": {
     "char-noel-standee": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/noel-standee.png"
+      "status": "qa_failed",
+      "runtime": "/assets/games/starlantern/char/noel-standee.png",
+      "final": "art-factory/starlantern/work/char-noel-standee/char-noel-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-standee\\char-noel-standee-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 12,
+        "block": 6,
+        "size": [
+          124,
+          214
+        ]
+      }
     },
     "char-noel-portrait": {
       "kind": "sprite",
@@ -17,8 +34,25 @@
     },
     "char-chizuru-standee": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/chizuru-standee.png"
+      "status": "qa_failed",
+      "runtime": "/assets/games/starlantern/char/chizuru-standee.png",
+      "final": "art-factory/starlantern/work/char-chizuru-standee/char-chizuru-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-standee\\char-chizuru-standee-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 26,
+        "block": 4,
+        "size": [
+          199,
+          352
+        ]
+      }
     },
     "char-chizuru-portrait": {
       "kind": "sprite",
@@ -32,8 +66,25 @@
     },
     "char-liz-standee": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/liz-standee.png"
+      "status": "qa_failed",
+      "runtime": "/assets/games/starlantern/char/liz-standee.png",
+      "final": "art-factory/starlantern/work/char-liz-standee/char-liz-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-standee\\char-liz-standee-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 90,
+        "size": [
+          11,
+          18
+        ]
+      }
     },
     "char-liz-portrait": {
       "kind": "sprite",
@@ -126,13 +177,45 @@
     },
     "char-selene-standee": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/selene-standee.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/selene-standee.png",
+      "final": "art-factory/starlantern/work/char-selene-standee/char-selene-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-standee\\char-selene-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 139,
+        "size": [
+          8,
+          12
+        ]
+      }
     },
     "char-selene-portrait": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/selene-portrait.png"
+      "status": "qa_failed",
+      "runtime": "/assets/games/starlantern/char/selene-portrait.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait/char-selene-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait\\char-selene-portrait-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 9,
+        "size": [
+          136,
+          127
+        ]
+      }
     },
     "char-selene-portrait-hurt": {
       "kind": "sprite",
