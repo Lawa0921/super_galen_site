@@ -89,6 +89,12 @@ $sl-gold: #ffd166;
 .sl-member { padding: 4px; border: 1px solid $sl-line; font-size: 0.8rem; }
 .sl-member--active { border-color: $sl-gold; }
 .sl-member--down { opacity: 0.45; filter: grayscale(1); }
+.sl-member--acting { box-shadow: 0 0 0 2px $sl-gold; }
+.sl-member--hit { animation: sl-hit 0.2s steps(2) 1; }
+@keyframes sl-hit {
+  0% { transform: translateX(-4px); filter: brightness(2); }
+  100% { transform: translateX(4px); filter: none; }
+}
 .sl-log { min-height: 4.5em; margin: 6px 0; padding: 6px 8px; border: 1px solid $sl-line; font-size: 0.85rem; color: $sl-dim; }
 
 .sl-clear { padding: 24px; text-align: center; }

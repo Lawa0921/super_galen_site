@@ -162,7 +162,7 @@ export class BattleMenu {
     return el('div', { class: 'sl-party' }, this.state!.party.map((c) => {
       const cls = ['sl-member', c.key === activeKey ? 'sl-member--active' : '', c.alive ? '' : 'sl-member--down'].filter(Boolean).join(' ');
       const tags = [c.poison ? T.battle.poison : '', c.sleep > 0 ? T.battle.sleep : ''].filter(Boolean).join(' ');
-      return el('div', { class: cls }, [
+      return el('div', { class: cls, attrs: { 'data-key': c.key } }, [
         el('div', { text: `${c.name}${tags ? ` ${tags}` : ''}` }),
         `HP ${c.hp}/${c.max.hp}`, meter(c.hp, c.max.hp, 'sl-hp'),
         `TP ${c.tp}/${c.max.tp}`, meter(c.tp, c.max.tp, 'sl-tp'),

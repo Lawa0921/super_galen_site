@@ -16,6 +16,11 @@ function setup(enemyIds = ['slime', 'bat'], boss = false) {
 }
 
 describe('battle menu', () => {
+  it('marks each party card with its combatant key', () => {
+    const { root, state } = setup();
+    const cards = [...root.querySelectorAll<HTMLElement>('.sl-party .sl-member')];
+    expect(cards.map((c) => c.dataset.key)).toEqual(state.party.map((c) => c.key));
+  });
   it('auto-attacks with every able member', () => {
     const { q, submit } = setup();
     q('#sl-auto')!.click();

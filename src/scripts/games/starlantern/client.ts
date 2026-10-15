@@ -42,7 +42,7 @@ export async function mountStarlantern(): Promise<void> {
   const bank = new TextureBank();
   await bank.preload(await loadManifest());
   const mapView = new MapView(bank);
-  const battleView = new BattleView(fast);
+  const battleView = new BattleView(fast, bank);
   const app = await createApp(byId('sl-canvas') as HTMLCanvasElement).catch((err: unknown) => {
     console.error('[starlantern] renderer failed; the game stays playable without the canvas', err);
     return null;
@@ -59,6 +59,15 @@ export async function mountStarlantern(): Promise<void> {
     return app ? { width: app.screen.width, height: app.screen.height } : { width: 0, height: 0 };
   };
   const say = (msg: string) => { notice.textContent = msg; notice.hidden = !msg; };
+  const pulseCard = (key: string, cue: 'acting' | 'hit') => {
+    const card = document.querySelector<HTMLElement>(`#sl-battle .sl-member[data-key="${key}"]`);
+    if (!card) return;
+    const cls = `sl-member--${cue}`;
+    card.classList.remove(cls);
+    void card.offsetWidth;
+    card.classList.add(cls);
+    setTimeout(() => card.classList.remove(cls), fast ? 0 : 320);
+  };
 
   const hooks: UiHooks = { refresh, say, sfx, move: onMove };
   const menu = new BattleMenu(byId('sl-battle'), game, (actions) => void playRound(actions));
@@ -86,7 +95,7 @@ export async function mountStarlantern(): Promise<void> {
       case 'battle': case 'boss':
         sfx.encounter();
         refresh();
-        battleView.setup(game.battle!, size());
+        battleView.setup(game.battle!, size(), game.floor);
         menu.show(game.battle!);
         return;
     }
@@ -101,7 +110,7 @@ export async function mountStarlantern(): Promise<void> {
       r = game.submitRound(actions);
       if (r) {
         menu.showLog(r.battle);
-        await battleView.play(r.battle, sfx);
+        await battleView.play(r.battle, sfx, pulseCard);
       }
     } catch (err) {
       console.error('[starlantern] round failed', err);
