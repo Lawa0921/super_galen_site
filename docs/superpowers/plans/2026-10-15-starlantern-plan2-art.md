@@ -1960,3 +1960,45 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
 - [ ] **Step 5: 交付**：派 fresh-context 審查代理（最強模型）審整個計畫二的 diff，依 executing-plans 的 Final Review 規則處理；之後給使用者 http://127.0.0.1:4354/games/starlantern 試玩連結與截圖，並列出所有 ruling 與延後的小問題。
+
+---
+
+## 追加任務（2026-10-15 使用者要求：6 種頭貼、絕技量表與演出）
+
+規格依據：spec 第 4 節「絕技量表」「絕技演出」、第 5 節「角色頭貼 48」。以下三個任務在 Task 14 之前執行。
+
+### Task 15: 絕技量表與 8 招絕技（引擎）
+
+**Files:** Create `data/ultimates.ts`、Modify `engine/types.ts`、`engine/combatant.ts`、`engine/battle.ts`、`engine/save.ts`、`engine/sim.ts`；Test `engine/battle.test.ts`、`engine/save.test.ts`、`data/data.test.ts`、`engine/balance.test.ts`。
+
+**Interfaces（Produces）:**
+- `Member.limit?: number`（0–100，缺省視為 0）；`Combatant.limit: number`。
+- `LIMIT_MAX = 100`、`LIMIT_PER_ACTION = 12`、`LIMIT_PER_HIT_SCALE = 40`（`engine/battle.ts` export）。
+- `Action` 增加 `{ kind: 'ultimate'; target?: string }`；`BattleEvent` 的 `act` 增加選填 `ultimate?: string`（絕技 id）；新增 `{ type: 'no-limit'; actor: string }`。
+- `ULTIMATES: Record<CharacterId, UltimateDef>`，`UltimateDef = { id; name; owner; target: Target; effects: Effect[]; desc }`。
+
+**測試（先寫、看它失敗）:**
+1. 隊員攻擊一次量表 +12；被打到時加 `floor(傷害 ÷ 最大 HP × 40)`，至少 1；上限 100。
+2. 量表未滿時送出 ultimate：記 `no-limit`、沒有效果、量表不變。
+3. 量表滿時送出 ultimate：量表歸零、記 `act` 且 `ultimate` 為該角色絕技 id、效果套用（諾艾兒的打到全部敵人）。
+4. `writeBack` 把量表寫回 `Member.limit`；`createBattle` 從 `Member.limit` 讀入。
+5. 存檔：`limit` 缺省可讀；不是 0–100 的數字視為壞檔。
+6. 資料：8 位角色各有一招絕技、owner 正確、target 合法。
+7. 平衡測試仍全綠（模擬玩家在量表滿時使用絕技）。
+
+### Task 16: 戰鬥介面：量表、絕技指令、6 種頭貼切換、絕技演出
+
+**Files:** Modify `render/artPaths.ts`（`Mood` 改為 `'normal' | 'attack' | 'hit' | 'dying' | 'down' | 'ultimate'`）、`render/battleCues.ts`、`render/BattleView.ts`、`ui/art.ts`、`ui/battleMenu.ts`、`client.ts`、`audio/SoundManager.ts`、`src/pages/games/starlantern.astro`（`#sl-cutin` 容器）、`src/styles/_starlantern.scss`；Test 對應的 `*.test.ts`、`src/scripts/games/audio-sfx-volume.test.ts`。
+
+**行為:**
+- `moodFor(hp, max)`：HP 0 → `down`；≤ 30% → `dying`；否則 `normal`。
+- 頭貼退回順序：指定表情 → `normal`；`down` 沒圖時用 `normal` 加灰階 class。
+- `battleCues`：`act` 帶 `ultimate` 時產生 `{ kind: 'ultimate', key, name }`；隊員的 `act` 讓卡片換攻擊頭貼，被打中換受擊頭貼，演出後回到依 HP 決定的表情。
+- 戰鬥卡片顯示絕技量表 `meter.sl-limit`；量表滿時出現 `#sl-cmd-ultimate`，依絕技 target 走選目標流程。
+- 演出：`#sl-cutin` 疊層，暗幕 → 斜向光帶滑入（絕技頭貼放大、集中線、名稱）→ 閃白，約 1.2 秒；`fast=1` 時略過；`prefers-reduced-motion` 時只淡入淡出。音效 `SoundManager.ultimate()`。
+
+### Task 17: 6 種頭貼量產
+
+**Files:** `art-factory/starlantern/tools/seed_registry.py`、`registry.json`、`tools/batch.py`、`render/artPaths.ts` 的 `allArtUrls`（166 個）。
+- 原 `portrait-hurt` 改名為 `portrait-hit`（受擊），含 raw 目錄、work 檔與登錄表鍵；新增 `portrait-attack`、`portrait-dying`、`portrait-down`、`portrait-ultimate`，以該角色已通過的一般頭貼為參考生成。
+- 測試：pytest 與 artPaths 測試的總數改為 166，並檢查 6 種表情的路徑。
