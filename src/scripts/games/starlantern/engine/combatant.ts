@@ -9,10 +9,13 @@ export interface Combatant {
   weak: Element[]; resist: Element[]; boss: boolean; alive: boolean;
   poison: boolean; sleep: number; buffs: Buff[]; taunt: number;
   turret: { power: number; turns: number } | null; defending: boolean;
+  /** Ultimate gauge, 0–100; enemies keep 0. */
+  limit: number;
 }
 
 export type BattleEvent =
-  | { type: 'act'; actor: string; label: string }
+  | { type: 'act'; actor: string; label: string; ultimate?: string }
+  | { type: 'no-limit'; actor: string }
   | { type: 'damage'; target: string; amount: number; element: Element; mult: number }
   | { type: 'ko'; target: string }
   | { type: 'heal'; target: string; amount: number }
@@ -63,6 +66,7 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
 }
 
 export function dealDamage(t: Combatant, amount: number): void {
+  if (t.side === 'party' && t.alive && amount > 0) t.limit = Math.min(100, t.limit + Math.max(1, Math.floor((amount / t.max.hp) * 40)));
   t.hp = Math.max(0, t.hp - amount);
   t.sleep = 0;
   if (t.hp === 0) {

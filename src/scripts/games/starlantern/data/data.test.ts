@@ -6,6 +6,7 @@ import { ITEMS } from './items';
 import { EQUIPMENT } from './equipment';
 import { MATERIALS } from './materials';
 import { FLOORS } from './floors';
+import { ULTIMATES } from './ultimates';
 
 describe('data integrity', () => {
   it('matches the spec content counts', () => {
@@ -66,5 +67,17 @@ describe('data integrity', () => {
   it('places every normal enemy in some encounter group', () => {
     const used = new Set(FLOORS.flatMap((f) => f.encounters.flat()));
     for (const e of Object.values(ENEMIES)) if (!e.boss) expect(used.has(e.id), e.id).toBe(true);
+  });
+});
+
+describe('ultimates', () => {
+  it('gives every character one ultimate with a valid target', () => {
+    for (const id of CHARACTER_IDS) {
+      const u = ULTIMATES[id];
+      expect(u.owner).toBe(id);
+      expect(['enemy', 'enemies', 'ally', 'allies', 'self']).toContain(u.target);
+      expect(u.effects.length).toBeGreaterThan(0);
+    }
+    expect(new Set(CHARACTER_IDS.map((id) => ULTIMATES[id].id)).size).toBe(8);
   });
 });

@@ -47,6 +47,10 @@ describe('save', () => {
     expect(bad((g) => { g.party.front = ['bobby', null, null]; })).toBe('corrupt');
     expect(bad((g) => { g.party.front = ['liz', 'liz', null]; })).toBe('corrupt');
     expect(bad((g) => { g.party.roster.liz.equip.weapon = 'nope'; })).toBe('corrupt');
+    expect(bad((g) => { g.party.roster.liz.limit = 101; })).toBe('corrupt');
+    expect(bad((g) => { (g.party.roster.liz as unknown as Record<string, unknown>).limit = 'full'; })).toBe('corrupt');
+    expect(bad((g) => { g.party.roster.liz.limit = 60; })).toBe('ok');
+    expect(bad((g) => { delete g.party.roster.liz.limit; })).toBe('ok');
   });
   it('survives storage that throws (private mode)', () => {
     const throwing = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } };

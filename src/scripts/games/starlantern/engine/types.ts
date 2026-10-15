@@ -24,6 +24,7 @@ export interface SkillDef {
   id: string; name: string; owner: CharacterId; learnLevel: number; tp: number; hpCost?: number;
   target: Target; effects: Effect[]; passive?: Passive; desc: string;
 }
+export interface UltimateDef { id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string }
 export interface CharacterDef {
   id: CharacterId; title: string; name: string; row: Row; melee: boolean; base: Stats; growth: Stats; skills: string[];
 }
@@ -41,7 +42,8 @@ export interface MaterialDef { id: string; name: string; price: number }
 export interface FloorDef {
   id: 1 | 2 | 3; name: string; rows: string[]; encounters: string[][]; rate: [number, number]; chestLoot: { item: string; qty: number }[];
 }
-export interface Member { id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, string>> }
+/** `limit` is the ultimate gauge (0–100); older saves omit it. */
+export interface Member { id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, string>>; limit?: number }
 export interface Party {
   roster: Record<CharacterId, Member>; recruited: CharacterId[]; front: (CharacterId | null)[]; back: (CharacterId | null)[];
 }

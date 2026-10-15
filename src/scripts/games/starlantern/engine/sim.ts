@@ -1,7 +1,7 @@
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
 import { SKILLS } from '../data/skills';
-import { createBattle, resolveRound, type Action, type BattleState, type Outcome } from './battle';
+import { LIMIT_MAX, createBattle, resolveRound, type Action, type BattleState, type Outcome } from './battle';
 import { expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
 import { mulberry32 } from './rng';
 import type { CharacterId, Party } from './types';
@@ -16,7 +16,7 @@ export function partyAt(level: number): Party {
   return p;
 }
 
-/** A plain player: heal when someone is under half HP, else the strongest affordable damage skill, else attack. */
+/** A plain player: ultimate when the gauge is full, heal when someone is under half HP, else the strongest affordable damage skill, else attack. */
 function choose(s: BattleState, party: Party): Record<string, Action> {
   const out: Record<string, Action> = {};
   const foes = s.enemies.filter((e) => e.alive);
@@ -24,6 +24,7 @@ function choose(s: BattleState, party: Party): Record<string, Action> {
   for (const c of s.party.filter((x) => x.alive)) {
     const target = foes[0]?.key ?? '';
     const id = c.key as CharacterId;
+    if (c.limit >= LIMIT_MAX) { out[c.key] = { kind: 'ultimate', target }; continue; }
     const skills = learnedSkills(id, party.roster[id].level).filter((sk) => !SKILLS[sk].passive && SKILLS[sk].tp <= c.tp);
     const heal = skills.find((sk) => SKILLS[sk].effects.some((e) => e.kind === 'heal'));
     if (hurt && heal) { out[c.key] = { kind: 'skill', skill: heal, target: hurt.key }; continue; }

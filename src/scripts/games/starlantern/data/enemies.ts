@@ -27,7 +27,7 @@ const LIST: EnemyDef[] = [
       { name: '暮色搖籃曲', chance: 0.25, target: 'enemies', effects: [{ kind: 'inflict', status: 'sleep', chance: 0.4 }] },
       { name: '影炎', chance: 0.4, target: 'enemy', effects: [{ kind: 'damage', power: 130, element: 'fire', scale: 'mag', melee: false }] },
     ] },
-  { id: 'lanterneater', name: '燈喰之獸', floor: 3, boss: true, stats: s(900, 34, 20, 30, 20, 12), weak: ['ice'], resist: ['fire'], exp: 300, gold: 0,
+  { id: 'lanterneater', name: '燈喰之獸', floor: 3, boss: true, stats: s(1100, 36, 20, 30, 20, 12), weak: ['ice'], resist: ['fire'], exp: 300, gold: 0,
     drops: [],
     skills: [
       { name: '吞光', chance: 0.35, target: 'enemies', effects: [{ kind: 'damage', power: 110, element: 'fire', scale: 'mag', melee: false }] },

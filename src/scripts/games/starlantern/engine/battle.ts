@@ -2,6 +2,7 @@ import { CHARACTERS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
 import { ITEMS } from '../data/items';
 import { SKILLS } from '../data/skills';
+import { ULTIMATES } from '../data/ultimates';
 import { stat, dealDamage, type BattleEvent, type Combatant } from './combatant';
 import { hasPassive, statsOf } from './party';
 import { pick, type Rng } from './rng';
@@ -13,7 +14,8 @@ export type Action =
   | { kind: 'skill'; skill: string; target?: string }
   | { kind: 'defend' }
   | { kind: 'item'; item: string; target?: string }
-  | { kind: 'escape' };
+  | { kind: 'escape' }
+  | { kind: 'ultimate'; target?: string };
 export type Outcome = 'ongoing' | 'win' | 'lose' | 'fled';
 
 export interface BattleState {
@@ -24,12 +26,17 @@ export interface BattleState {
 
 type EnemyAction = { kind: 'attack'; target?: string } | { kind: 'enemy-skill'; index: number; target?: string };
 
-const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, turret: null, defending: false });
+export const LIMIT_MAX = 100;
+export const LIMIT_PER_ACTION = 12;
+/** Damage taken adds floor(damage / max HP * this), at least 1 (see dealDamage). */
+export const LIMIT_PER_HIT_SCALE = 40;
+
+const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, turret: null, defending: false, limit: 0 });
 
 function fromMember(m: Member, row: Row): Combatant {
   const def = CHARACTERS[m.id];
   return { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
-    row, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0 };
+    row, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0 };
 }
 
 function fromEnemy(id: string, key: string, name: string): Combatant {
@@ -162,6 +169,15 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       return;
     case 'escape':
       return;
+    case 'ultimate': {
+      const u = ULTIMATES[actor.defId as CharacterId];
+      if (!u) return;
+      if (actor.limit < LIMIT_MAX) { s.log.push({ type: 'no-limit', actor: actor.key }); return; }
+      actor.limit = 0;
+      s.log.push({ type: 'act', actor: actor.key, label: u.name, ultimate: u.id });
+      for (const t of resolveTargets(s, actor, u.target, act.target, rng)) for (const eff of u.effects) applyEffect(actor, t, eff, ctx);
+      return;
+    }
   }
 }
 
@@ -205,7 +221,10 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     if (!actor.alive) continue;
     if (actor.sleep > 0) { actor.sleep -= 1; s.log.push({ type: 'asleep', actor: actor.key }); continue; }
     const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
-    if (act) perform(s, actor, act, ctx, rng);
+    if (act) {
+      perform(s, actor, act, ctx, rng);
+      if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + LIMIT_PER_ACTION);
+    }
     if (checkOutcome(s)) return s;
   }
   endOfRound(s, ctx, rng);
@@ -229,7 +248,7 @@ export function writeBack(p: Party, s: BattleState): Party {
   const roster = { ...p.roster };
   for (const c of s.party) {
     const id = c.key as CharacterId;
-    roster[id] = { ...roster[id], hp: c.alive ? c.hp : 0, tp: c.tp };
+    roster[id] = { ...roster[id], hp: c.alive ? c.hp : 0, tp: c.tp, limit: c.limit };
   }
   return { ...p, roster };
 }

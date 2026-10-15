@@ -29,6 +29,7 @@ function isValid(d: Record<string, unknown>): boolean {
   for (const id of CHARACTER_IDS) {
     const m = (p.roster as Record<string, unknown>)[id];
     if (!isObj(m) || m.id !== id || !isObj(m.equip)) return false;
+    if (m.limit !== undefined && !(typeof m.limit === 'number' && m.limit >= 0 && m.limit <= 100)) return false;
     for (const [slot, eid] of Object.entries(m.equip)) if (EQUIPMENT[eid as string]?.slot !== slot) return false;
     if (!Number.isInteger(m.level) || (m.level as number) < 1 || (m.level as number) > MAX_LEVEL) return false;
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createBattle, escapeChance, resolveRound, rewards, turnOrder, writeBack } from './battle';
+import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, turnOrder, writeBack } from './battle';
+import { ULTIMATES } from '../data/ultimates';
 import { newParty } from './party';
 import { constRng, makeBattle, makeCombatant } from './testing';
 
@@ -132,5 +133,40 @@ describe('after battle', () => {
     const p = writeBack(party, s);
     expect([p.roster.scarlet.hp, p.roster.scarlet.tp]).toEqual([7, 1]);
     expect(party.roster.scarlet.hp).toBe(48);
+  });
+});
+
+describe('ultimate gauge', () => {
+  const weakFoe = () => E('e0', { max: { hp: 999, atk: 1, spd: 1 } as never, sleep: 5 }); // asleep: never hits back
+  it('fills by 12 per action and by damage taken, capped at 100', () => {
+    const s = makeBattle([P('scarlet', { max: { hp: 100, spd: 50 } as never })], [E('e0', { max: { hp: 999, atk: 40, spd: 1 } as never })]);
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, rng);
+    const hit = r.log.find((e) => e.type === 'damage' && e.target === 'scarlet') as { amount: number };
+    expect(r.party[0].limit).toBe(LIMIT_PER_ACTION + Math.max(1, Math.floor((hit.amount / 100) * LIMIT_PER_HIT_SCALE)));
+    const full = resolveRound(makeBattle([P('scarlet', { limit: 95 })], [weakFoe()]), { scarlet: { kind: 'defend' } }, rng);
+    expect(full.party[0].limit).toBe(LIMIT_MAX);
+  });
+  it('refuses the ultimate until the gauge is full', () => {
+    const r = resolveRound(makeBattle([P('noel', { defId: 'noel', limit: 99 })], [weakFoe()]), { noel: { kind: 'ultimate' } }, rng);
+    expect(r.log).toContainEqual({ type: 'no-limit', actor: 'noel' });
+    expect(r.enemies[0].hp).toBe(999);
+    expect(r.party[0].limit).toBe(99);
+  });
+  it('spends a full gauge on the character ultimate', () => {
+    const s = makeBattle([P('noel', { defId: 'noel', limit: 100 })], [weakFoe(), E('e1', { max: { hp: 999, atk: 1, spd: 1 } as never, sleep: 5 })]);
+    const r = resolveRound(s, { noel: { kind: 'ultimate' } }, rng);
+    expect(r.log).toContainEqual({ type: 'act', actor: 'noel', label: ULTIMATES.noel.name, ultimate: ULTIMATES.noel.id });
+    expect(r.enemies.every((e) => e.hp < 999)).toBe(true);
+    // reset to 0 with no action bonus; the woken enemies may hit back for a point or two
+    expect(r.party[0].limit).toBeLessThan(LIMIT_PER_ACTION);
+  });
+  it('carries the gauge between battles through the party', () => {
+    const party = newParty();
+    party.roster.liz.limit = 70;
+    const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    expect(s.party.find((c) => c.key === 'liz')!.limit).toBe(70);
+    expect(s.party.find((c) => c.key === 'noel')!.limit).toBe(0);
+    s.party.find((c) => c.key === 'liz')!.limit = 100;
+    expect(writeBack(party, s).roster.liz.limit).toBe(100);
   });
 });
