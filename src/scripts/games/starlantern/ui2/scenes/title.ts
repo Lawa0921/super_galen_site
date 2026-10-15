@@ -10,6 +10,7 @@ export class TitleScene implements Scene {
   private view!: MenuView;
   private ask: MenuView | null = null;
   private root!: HTMLElement;
+  private menuWin!: HTMLElement;
 
   constructor(private ctx: SceneCtx) {}
 
@@ -22,7 +23,8 @@ export class TitleScene implements Scene {
     this.view = new MenuView(menu, { pick: (it) => this.pick(it.id), moved: () => this.ctx.sfx.cursor() });
     const bg = this.ctx.art.has(art.scene('title')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('title'), alt: '' } })] : [];
     const logo = this.ctx.art.has(art.logo) ? el('img', { class: 'slx-logo', attrs: { src: art.logo, alt: '星燈迷宮' } }) : el('h1', { class: 'slx-logo-text', text: '星燈迷宮' });
-    root.append(el('div', { class: 'slx-scene slx-title' }, [...bg, logo, win('slx-title-menu', [this.view.el])]));
+    this.menuWin = win('slx-title-menu', [this.view.el]);
+    root.append(el('div', { class: 'slx-scene slx-title' }, [...bg, logo, this.menuWin]));
   }
 
   exit(): void {}
@@ -35,16 +37,18 @@ export class TitleScene implements Scene {
   private pick(id: string): void {
     this.ctx.sfx.confirm();
     if (id === 'cont') { this.ctx.go('town'); return; }
-    if (id !== 'new') return;
+    if (id !== 'new' || this.ask) return;
     if (!this.ctx.hasSave()) { this.ctx.newGame(); this.ctx.go('town'); return; }
     const box = confirmBox(T.ui2.title.overwrite, (yes) => {
       box.el.remove();
       this.ask = null;
+      this.menuWin.removeAttribute('inert');
       if (yes) { this.ctx.newGame(); this.ctx.go('town'); } else this.ctx.sfx.cancel();
     });
     box.view.menu.setCursor(1);
     box.view.render();
     this.ask = box.view;
+    this.menuWin.setAttribute('inert', '');
     this.root.append(box.el);
   }
 }

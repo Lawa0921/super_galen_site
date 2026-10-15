@@ -4028,18 +4028,54 @@
     },
     "scene-shop": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/scene/shop.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/scene/shop.png",
+      "final": "art-factory/starlantern/work/scene-shop/scene-shop.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-shop\\scene-shop-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 18.08790254165394,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
     },
     "scene-inn": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/scene/inn.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/scene/inn.png",
+      "final": "art-factory/starlantern/work/scene-inn/scene-inn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-inn\\scene-inn-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 28.252212494485732,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
     },
     "scene-gate": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/scene/gate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/scene/gate.png",
+      "final": "art-factory/starlantern/work/scene-gate/scene-gate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-gate\\scene-gate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 64.79497268315858,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
     },
     "npc-guild": {
       "kind": "sprite",
@@ -4064,7 +4100,8 @@
           186
         ]
       },
-      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
     },
     "npc-guild-happy": {
       "kind": "sprite",
@@ -4091,15 +4128,32 @@
           185
         ]
       },
-      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
     },
     "npc-shop": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/npc/shop.png",
       "allow_edge": [
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/npc-shop/npc-shop.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-shop\\npc-shop-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          173,
+          176
+        ]
+      }
     },
     "npc-shop-happy": {
       "kind": "sprite",
@@ -4163,7 +4217,8 @@
           90
         ]
       },
-      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
     },
     "ui-window": {
       "kind": "sprite",
@@ -4191,7 +4246,8 @@
           316
         ]
       },
-      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
     },
     "ui-cursor": {
       "kind": "sprite",
@@ -4213,7 +4269,8 @@
           14
         ]
       },
-      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
+      "defringe": "strong"
     }
   }
 }

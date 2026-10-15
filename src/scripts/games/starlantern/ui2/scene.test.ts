@@ -23,3 +23,17 @@ describe('Router', () => {
     expect(root.childElementCount).toBe(1);
   });
 });
+
+describe('Router guards', () => {
+  it('ignores a second switch while one is running and locks pointer input meanwhile', async () => {
+    const log: string[] = [];
+    const root = document.createElement('div');
+    const r = new Router(root, (n) => fake(log, n), {} as never, 20);
+    const first = r.go('title');
+    expect(root.hasAttribute('inert')).toBe(true);
+    void r.go('town');
+    await first;
+    expect(log.filter((l) => l.startsWith('enter'))).toEqual(['enter title']);
+    expect(root.hasAttribute('inert')).toBe(false);
+  });
+});

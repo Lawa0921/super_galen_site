@@ -42,14 +42,20 @@ def _dark_magenta(rgb):
     return (g <= 25) & (r >= 100) & (b >= 90) & (np.abs(r - b) <= 60)
 
 
-def defringe(img, passes=3):
-    """Make near-magenta (or dark-magenta) opaque pixels that touch transparency transparent, peeling up to `passes` layers."""
+def defringe(img, strong=False):
+    """Make magenta fringe that touches transparency transparent.
+
+    Default (every sprite): one pass, near-magenta within 90 only, so real lavender, violet and pink edges survive.
+    strong=True (opt-in per asset via registry `defringe: strong`, for UI frames and logos): up to 3 passes, a wider
+    120 threshold and dark-magenta outline blends.
+    """
     arr = np.asarray(img.convert('RGBA')).copy()
-    for _ in range(passes):
+    for _ in range(3 if strong else 1):
         clear = arr[..., 3] == 0
         touch = np.zeros_like(clear)
         touch[1:] |= clear[:-1]; touch[:-1] |= clear[1:]; touch[:, 1:] |= clear[:, :-1]; touch[:, :-1] |= clear[:, 1:]
-        hit = touch & ~clear & (_near_magenta(arr[..., :3], 120) | _dark_magenta(arr[..., :3]))
+        bad = (_near_magenta(arr[..., :3], 120) | _dark_magenta(arr[..., :3])) if strong else _near_magenta(arr[..., :3], 90)
+        hit = touch & ~clear & bad
         if not hit.any(): break
         arr[hit] = 0
     return Image.fromarray(arr, 'RGBA')
@@ -215,7 +221,7 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None):
             subject = cut.crop(bbox)
             pad = Image.new('RGBA', (subject.width + 2 * block, subject.height + 2 * block))
             pad.paste(subject, (block, block))
-            final = defringe(to_art_pixels(pad, block))
+            final = defringe(to_art_pixels(pad, block), strong=reg.data['assets'].get(aid, {}).get('defringe') == 'strong')
             src = Image.new('RGB', pad.size, (255, 0, 255)); src.paste(img.crop(bbox), (block, block))
             hint = _near_magenta(np.asarray(to_art_pixels(src, block)), 30)
             entry = reg.data['assets'].get(aid, {})

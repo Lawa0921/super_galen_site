@@ -31,3 +31,16 @@ describe('TownScene', () => {
     expect(go).toHaveBeenCalledWith('title');
   });
 });
+
+describe('TownScene pointer', () => {
+  it('ignores a facility click while the greeting is still on screen', () => {
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    const line = root.querySelector('.slx-talk .slx-text')!.textContent;
+    (root.querySelector('[data-id=guild]') as HTMLElement).click();
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(line);
+    expect(go).not.toHaveBeenCalled();
+  });
+});

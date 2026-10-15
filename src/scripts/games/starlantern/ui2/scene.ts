@@ -21,7 +21,9 @@ export class Router {
   current(): SceneName | null { return this.name; }
 
   async go(name: SceneName): Promise<void> {
+    if (this.switching) return;
     this.switching = true;
+    this.root.setAttribute('inert', '');
     this.root.classList.add('slx-fade');
     await this.wait();
     this.scene?.exit();
@@ -31,6 +33,7 @@ export class Router {
     this.scene.enter(this.root);
     this.root.classList.remove('slx-fade');
     await this.wait();
+    this.root.removeAttribute('inert');
     this.switching = false;
   }
 

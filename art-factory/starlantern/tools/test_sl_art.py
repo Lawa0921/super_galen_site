@@ -236,7 +236,7 @@ def test_finish_fails_a_subject_cut_off_by_the_raw_canvas_unless_that_side_is_al
 def test_defringe_also_clears_dark_magenta_blended_into_outlines():
     rgba = np.zeros((10, 10, 4), np.uint8); rgba[2:8, 2:8] = (20, 20, 20, 255)
     rgba[2, 4] = (174, 7, 145, 255); rgba[5, 5] = (174, 7, 145, 255); rgba[2, 6] = (120, 40, 160, 255)
-    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))
+    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA'), strong=True))
     assert out[2, 4, 3] == 0          # edge: dark magenta fringe
     assert out[5, 5, 3] == 255        # inside: kept
     assert out[2, 6, 3] == 255        # edge but a real deep purple (green channel present): kept
@@ -245,12 +245,22 @@ def test_defringe_also_clears_dark_magenta_blended_into_outlines():
 def test_defringe_peels_a_two_pixel_thick_fringe():
     rgba = np.zeros((10, 12, 4), np.uint8); rgba[2:8, 2:10] = (20, 20, 20, 255)
     rgba[2:8, 2] = (174, 7, 145, 255); rgba[2:8, 3] = (160, 10, 130, 255)
-    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))
+    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA'), strong=True))
     assert (out[2:8, 2:4, 3] == 0).all() and (out[2:8, 4:10, 3] == 255).all()
 
 
 def test_defringe_clears_bright_pink_fringe_but_keeps_pink_hair_on_the_edge():
     rgba = np.zeros((10, 10, 4), np.uint8); rgba[2:8, 2:8] = (20, 20, 20, 255)
     rgba[2, 3] = (241, 101, 181, 255); rgba[2, 6] = (240, 150, 190, 255)
-    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))
+    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA'), strong=True))
     assert out[2, 3, 3] == 0 and out[2, 6, 3] == 255
+
+
+def test_default_defringe_keeps_real_purples_and_pinks_on_the_edge():
+    rgba = np.zeros((10, 14, 4), np.uint8); rgba[2:8, 2:12] = (20, 20, 20, 255)
+    for x, c in [(3, (180, 110, 220)), (5, (150, 100, 230)), (7, (120, 0, 120)), (9, (241, 101, 181))]:
+        rgba[2, x] = (*c, 255)
+    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))
+    assert all(out[2, x, 3] == 255 for x in (3, 5, 7, 9))
+    rgba[2, 11] = (230, 40, 220, 255)               # near-magenta fringe is still removed by default
+    assert np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))[2, 11, 3] == 0

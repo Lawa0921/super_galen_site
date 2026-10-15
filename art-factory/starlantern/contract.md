@@ -73,3 +73,4 @@
 
 ## 審核狀態
 以 `registry.json` 為準；`python art-factory/starlantern/tools/sl_art.py status` 印出各狀態數量。
+- 去背邊緣清理：預設只清一層、門檻 90，保留真正的淡紫、紫與粉紅邊。視窗框、logo、游標與已核准的 NPC 半身像在登錄表標 `defringe: strong`（最多 3 層、門檻 120、加暗洋紅），因為它們的雜邊較厚。

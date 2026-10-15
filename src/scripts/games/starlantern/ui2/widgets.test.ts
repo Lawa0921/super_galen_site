@@ -79,3 +79,16 @@ describe('confirmBox', () => {
     expect(on).toHaveBeenLastCalledWith(false);
   });
 });
+
+describe('MenuView pointer guard', () => {
+  it('ignores clicks and hovers while its window is inert', () => {
+    const pick = vi.fn();
+    const v = new MenuView(mk(), { pick });
+    const host = document.createElement('div'); host.append(v.el); host.setAttribute('inert', '');
+    const opts = v.el.querySelectorAll('[role=option]');
+    opts[2].dispatchEvent(new Event('pointerenter'));
+    (opts[2] as HTMLElement).click();
+    expect(pick).not.toHaveBeenCalled();
+    expect(v.menu.cursor).toBe(0);
+  });
+});

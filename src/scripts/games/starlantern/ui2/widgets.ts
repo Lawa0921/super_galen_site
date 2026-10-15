@@ -22,12 +22,18 @@ export class MenuView {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } });
       li.addEventListener('pointerenter', () => {
+        if (this.locked()) return;
         const before = this.menu.cursor;
         if (this.menu.setCursor(i) && this.menu.cursor !== before) { this.render(); this.on.moved?.(); }
       });
-      li.addEventListener('click', () => { if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.on.pick(item); } });
+      li.addEventListener('click', () => { if (this.locked()) return; if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.on.pick(item); } });
       return li;
     }));
+  }
+
+  /** Pointer input only reaches the active window: anything inside an inert subtree (under a dialogue, a modal or a scene switch) is ignored. */
+  private locked(): boolean {
+    return !!this.el.closest('[inert]');
   }
 
   onAction(a: UiAction): boolean {

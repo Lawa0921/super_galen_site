@@ -47,3 +47,13 @@ describe('TitleScene', () => {
     expect(c.newGame).not.toHaveBeenCalled();
   });
 });
+
+describe('TitleScene pointer', () => {
+  it('opens only one overwrite question when 新遊戲 is double-clicked', () => {
+    const c = ctx(true); const root = document.createElement('div');
+    const s = new TitleScene(c); s.enter(root);
+    const newGame = root.querySelector('[data-id=new]') as HTMLElement;
+    newGame.click(); newGame.click();
+    expect(root.querySelectorAll('.slx-confirm')).toHaveLength(1);
+  });
+});

@@ -12,7 +12,8 @@ $slx-gold: #e8c46a;
 $slx-win: rgba(10, 14, 34, 0.86);
 
 html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; background: #000; }
-.slx-body { display: grid; place-items: center; }
+// place-content centres the 640px track even when the window is narrower, so scale() shrinks around the window centre.
+.slx-body { display: grid; place-items: center; place-content: center; }
 
 .slx-screen {
   position: relative;

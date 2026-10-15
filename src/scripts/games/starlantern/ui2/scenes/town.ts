@@ -10,6 +10,7 @@ const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'settings'] as const;
 
 export class TownScene implements Scene {
   private view!: MenuView;
+  private menuWin!: HTMLElement;
   private talk: Dialogue;
 
   constructor(private ctx: SceneCtx, charsPerSecond = 30) {
@@ -25,10 +26,10 @@ export class TownScene implements Scene {
       ...bg,
       win('slx-place', [document.createTextNode(t.place)]),
       win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]),
-      win('slx-town-menu', [this.view.el]),
+      (this.menuWin = win('slx-town-menu', [this.view.el])),
       this.talk.el,
     ]));
-    void this.talk.say(t.place.split(' ').pop() ?? '', t.lines[Math.floor(this.ctx.game.rng() * t.lines.length)]);
+    void this.speak(t.place.split(' ').pop() ?? '', t.lines[Math.floor(this.ctx.game.rng() * t.lines.length)]);
   }
 
   exit(): void {}
@@ -38,8 +39,15 @@ export class TownScene implements Scene {
     this.view.onAction(a);
   }
 
+  /** The menu ignores the pointer while a line is on screen, matching the keyboard. */
+  private async speak(name: string, text: string): Promise<void> {
+    this.menuWin.setAttribute('inert', '');
+    await this.talk.say(name, text);
+    this.menuWin.removeAttribute('inert');
+  }
+
   private pick(label: string): void {
     this.ctx.sfx.confirm();
-    void this.talk.say('', T.ui2.town.soon(label));
+    void this.speak('', T.ui2.town.soon(label));
   }
 }
