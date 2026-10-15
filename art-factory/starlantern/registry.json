@@ -224,53 +224,221 @@
     },
     "char-safira-standee": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/safira-standee.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/safira-standee.png",
+      "final": "art-factory/starlantern/work/char-safira-standee/char-safira-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-standee\\char-safira-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 161,
+        "size": [
+          8,
+          10
+        ]
+      }
     },
     "char-safira-portrait": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/safira-portrait.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/safira-portrait.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait/char-safira-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait\\char-safira-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 7,
+        "size": [
+          155,
+          156
+        ]
+      }
     },
     "char-safira-portrait-hurt": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/safira-portrait-hurt.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-hurt.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-hurt/char-safira-portrait-hurt.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-hurt\\char-safira-portrait-hurt-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 12,
+        "block": 7,
+        "size": [
+          155,
+          156
+        ]
+      }
     },
     "char-bobby-standee": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/bobby-standee.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/bobby-standee.png",
+      "final": "art-factory/starlantern/work/char-bobby-standee/char-bobby-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-standee\\char-bobby-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 111,
+        "size": [
+          9,
+          15
+        ]
+      }
     },
     "char-bobby-portrait": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/bobby-portrait.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait/char-bobby-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait\\char-bobby-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 9,
+        "size": [
+          136,
+          134
+        ]
+      }
     },
     "char-bobby-portrait-hurt": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/bobby-portrait-hurt.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-hurt.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-hurt/char-bobby-portrait-hurt.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-hurt\\char-bobby-portrait-hurt-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 9,
+        "size": [
+          136,
+          136
+        ]
+      }
     },
     "map-party-up": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/map/party-up.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/map/party-up.png",
+      "final": "art-factory/starlantern/work/map-party-up/map-party-up.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\0.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          30,
+          43
+        ]
+      }
     },
     "map-party-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/map/party-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/map/party-down.png",
+      "final": "art-factory/starlantern/work/map-party-down/map-party-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          30,
+          43
+        ]
+      }
     },
     "map-party-left": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/map/party-left.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/map/party-left.png",
+      "final": "art-factory/starlantern/work/map-party-left/map-party-left.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          28,
+          43
+        ]
+      }
     },
     "map-party-right": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/map/party-right.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/map/party-right.png",
+      "final": "art-factory/starlantern/work/map-party-right/map-party-right.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          28,
+          43
+        ]
+      }
     },
     "sheet-tiles-f1": {
       "kind": "tile-sheet",
@@ -616,33 +784,135 @@
     },
     "enemy-bat": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/enemy/bat.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/enemy/bat.png",
+      "final": "art-factory/starlantern/work/enemy-bat/enemy-bat.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bat\\enemy-bat-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 9,
+        "size": [
+          132,
+          72
+        ]
+      }
     },
     "enemy-wolf": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/enemy/wolf.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/enemy/wolf.png",
+      "final": "art-factory/starlantern/work/enemy-wolf/enemy-wolf.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-wolf\\enemy-wolf-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 8,
+        "size": [
+          108,
+          131
+        ]
+      }
     },
     "enemy-beetle": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/enemy/beetle.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/enemy/beetle.png",
+      "final": "art-factory/starlantern/work/enemy-beetle/enemy-beetle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-beetle\\enemy-beetle-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 13,
+        "size": [
+          72,
+          60
+        ]
+      }
     },
     "enemy-wisp": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/enemy/wisp.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/enemy/wisp.png",
+      "final": "art-factory/starlantern/work/enemy-wisp/enemy-wisp.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-wisp\\enemy-wisp-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          54,
+          70
+        ]
+      }
     },
     "enemy-lizard": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/enemy/lizard.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/enemy/lizard.png",
+      "final": "art-factory/starlantern/work/enemy-lizard/enemy-lizard.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-lizard\\enemy-lizard-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 11,
+        "size": [
+          82,
+          75
+        ]
+      }
     },
     "enemy-golem": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/enemy/golem.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/enemy/golem.png",
+      "final": "art-factory/starlantern/work/enemy-golem/enemy-golem.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-golem\\enemy-golem-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          78,
+          73
+        ]
+      }
     },
     "enemy-shade": {
       "kind": "sprite",
@@ -1067,8 +1337,20 @@
     },
     "map-fog": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/map/fog.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/map/fog.png",
+      "final": "art-factory/starlantern/work/map-fog/map-fog.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\map-fog\\map-fog-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 1.8955342902711325,
+        "block": 6,
+        "size": [
+          209,
+          209
+        ]
+      }
     }
   }
 }
