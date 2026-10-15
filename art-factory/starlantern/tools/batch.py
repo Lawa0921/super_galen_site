@@ -36,7 +36,7 @@ ENEMIES = {
 }
 TERRAIN = {
     2: ('dark blue crystal cave with glowing cyan crystals and wet rock', 'dark raised blue-black rock with cyan crystal shards on top', 'pale blue-grey smooth cave floor'),
-    3: ('ancient star temple of deep violet stone with gold trim and floating lantern lights', 'dark raised violet stone block with gold trim on top', 'pale cream marble temple floor with faint gold star inlays'),
+    3: ('ancient star temple of deep violet stone with gold trim and floating lantern lights', 'a solid dark violet stone block filling the whole wall tile edge to edge with gold trim on top, no floor visible in it', 'pale cream marble temple floor with faint gold star inlays'),
 }
 ICONS = {
     'fire-star': 'a red five-pointed star wrapped in flame', 'ice-star': 'a pale blue five-pointed star made of ice', 'hex': 'a purple curse sigil with a downward arrow',

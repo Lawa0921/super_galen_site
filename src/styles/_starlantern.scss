@@ -112,8 +112,9 @@ $sl-gold: #ffd166;
 .sl-framed {
   .sl-panel, .sl-card, .sl-member, .sl-log, .sl-notice, .sl-stage {
     border-style: solid;
-    border-width: 12px;
-    border-image: url('/assets/games/starlantern/ui/frame.png') 16 fill / 12px round;
+    border-width: 14px;
+    // the generated frame is 114px with ~20px corner ornaments, so slice by percentage
+    border-image: url('/assets/games/starlantern/ui/frame.png') 18% fill / 14px round;
     image-rendering: pixelated;
   }
 }
