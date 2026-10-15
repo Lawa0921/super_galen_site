@@ -118,3 +118,10 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 
 .slx-shop-list { min-width: 250px; }
 .slx-name-line { color: $slx-gold; margin: 0 0 2px; }
+
+.slx-night { position: absolute; inset: 0; display: grid; place-items: center; background: #000; color: $slx-ink; font-size: 16px; animation: slx-night 1.2s ease-in-out both; }
+@keyframes slx-night { 0% { opacity: 0; } 25%, 75% { opacity: 1; } 100% { opacity: 0; } }
+.slx-floors { left: 150px; top: 56px; width: 260px; }
+.slx-floors .slx-opt { padding: 4px 6px 4px 16px; }
+.slx-floors .slx-ico { width: 64px; height: 36px; object-fit: cover; }
+@media (prefers-reduced-motion: reduce) { .slx-night { animation: none; } }

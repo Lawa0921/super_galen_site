@@ -81,6 +81,12 @@ export const T = {
       gate: { place: '迷宮入口', npc: '葛倫', greet: ['要下去了嗎？別逞強。', '裂口今天也在發光。'] },
       leave: '離開',
     },
+    inn: {
+      rest: (cost: number) => `休息（${cost} G）`, revive: '復活', ask: (cost: number) => `住一晚要 ${cost} G，要休息嗎？`,
+      morning: '──隔天早上', saved: '已存檔。', saveFailed: '存檔失敗了……瀏覽器不允許儲存。',
+      nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
+    },
+    gate: { choose: '選擇樓層', floor: (n: number, name: string) => `第 ${n} 層 ${name}`, locked: '尚未到達', soon: '迷宮畫面在下一階段開放，敬請期待。' },
     shop: {
       buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,
