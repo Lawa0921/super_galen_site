@@ -2,23 +2,24 @@
   "assets": {
     "char-noel-standee": {
       "kind": "sprite",
-      "status": "qa_failed",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/char/noel-standee.png",
       "final": "art-factory/starlantern/work/char-noel-standee/char-noel-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-standee\\char-noel-standee-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
+        "pass": true,
+        "reasons": [],
+        "warnings": [
           "enclosed holes"
         ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 12,
-        "block": 6,
+        "holes": 18,
+        "block": 5,
         "size": [
-          124,
-          214
+          148,
+          256
         ]
       }
     },
@@ -29,23 +30,24 @@
     },
     "char-chizuru-standee": {
       "kind": "sprite",
-      "status": "qa_failed",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/char/chizuru-standee.png",
       "final": "art-factory/starlantern/work/char-chizuru-standee/char-chizuru-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-standee\\char-chizuru-standee-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
+        "pass": true,
+        "reasons": [],
+        "warnings": [
           "enclosed holes"
         ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 26,
-        "block": 4,
+        "holes": 18,
+        "block": 5,
         "size": [
-          199,
-          352
+          159,
+          282
         ]
       }
     },
@@ -56,23 +58,24 @@
     },
     "char-liz-standee": {
       "kind": "sprite",
-      "status": "qa_failed",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/char/liz-standee.png",
       "final": "art-factory/starlantern/work/char-liz-standee/char-liz-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-standee\\char-liz-standee-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
+        "pass": true,
+        "reasons": [],
+        "warnings": [
           "enclosed holes"
         ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 1,
-        "block": 90,
+        "holes": 8,
+        "block": 5,
         "size": [
-          11,
-          18
+          156,
+          284
         ]
       }
     },
@@ -83,8 +86,26 @@
     },
     "char-sylvie-standee": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/sylvie-standee.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/sylvie-standee.png",
+      "final": "art-factory/starlantern/work/char-sylvie-standee/char-sylvie-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-standee\\char-sylvie-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 5,
+        "size": [
+          160,
+          278
+        ]
+      }
     },
     "char-sylvie-portrait": {
       "kind": "sprite",
@@ -142,36 +163,42 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "residue": 0,
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 1,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
-        "block": 139,
+        "holes": 31,
+        "block": 5,
         "size": [
-          8,
-          12
+          161,
+          279
         ]
-      }
+      },
+      "allow_residue": 1,
+      "notes": "1 in-palette pink pixel (231,89,172) at art (45,69) inside the face, surrounded by skin; checked visually"
     },
     "char-selene-portrait": {
       "kind": "sprite",
-      "status": "qa_failed",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/char/selene-portrait.png",
       "final": "art-factory/starlantern/work/char-selene-portrait/char-selene-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait\\char-selene-portrait-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
+        "pass": true,
+        "reasons": [],
+        "warnings": [
           "enclosed holes"
         ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 7,
-        "block": 9,
+        "holes": 11,
+        "block": 10,
         "size": [
-          136,
-          127
+          123,
+          114
         ]
       }
     },
@@ -184,15 +211,17 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
-        "block": 161,
+        "holes": 35,
+        "block": 5,
         "size": [
-          8,
-          10
+          196,
+          269
         ]
       }
     },
@@ -211,11 +240,11 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 7,
-        "block": 7,
+        "holes": 2,
+        "block": 9,
         "size": [
-          155,
-          156
+          121,
+          122
         ]
       }
     },
@@ -228,15 +257,17 @@
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
-        "block": 111,
+        "holes": 11,
+        "block": 5,
         "size": [
-          9,
-          15
+          160,
+          280
         ]
       }
     },
@@ -255,11 +286,11 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 4,
-        "block": 9,
+        "holes": 5,
+        "block": 10,
         "size": [
-          136,
-          134
+          122,
+          121
         ]
       }
     },
@@ -277,10 +308,10 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "block": 8,
+        "block": 10,
         "size": [
-          30,
-          43
+          24,
+          35
         ]
       }
     },
@@ -298,10 +329,10 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "block": 8,
+        "block": 10,
         "size": [
-          30,
-          43
+          24,
+          35
         ]
       }
     },
@@ -319,10 +350,10 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "block": 8,
+        "block": 10,
         "size": [
-          28,
-          43
+          23,
+          35
         ]
       }
     },
@@ -340,10 +371,10 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "block": 8,
+        "block": 10,
         "size": [
-          28,
-          43
+          23,
+          35
         ]
       }
     },
@@ -725,7 +756,7 @@
     },
     "sheet-tiles-f3": {
       "kind": "tile-sheet",
-      "status": "todo",
+      "status": "processed",
       "parts": [
         "tile-f3-wall",
         "tile-f3-floor",
@@ -738,57 +769,178 @@
         "tile-f3-boss"
       ],
       "cols": 3,
-      "rows": 3
+      "rows": 3,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png"
     },
     "tile-f3-wall": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-wall.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-wall.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 64.73387096774194,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "tile-f3-floor": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-floor.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-floor.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-floor.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 34.094086021505376,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "tile-f3-door": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-door.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-door.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-door.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 69.75,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "tile-f3-up": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-up.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-up.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-up.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 15.010752688172044,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "tile-f3-down": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-down.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 35.74731182795699,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "tile-f3-chest": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-chest.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-chest.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-chest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 23.591397849462364,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "tile-f3-chest-open": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-chest-open.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-chest-open.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-chest-open.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 19.169354838709676,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "tile-f3-entrance": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-entrance.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-entrance.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-entrance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 33.653225806451616,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "tile-f3-boss": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f3-boss.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-boss.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-boss.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 65.8521505376344,
+        "block": 6,
+        "size": [
+          62,
+          62
+        ]
+      }
     },
     "bg-f3": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/bg/f3.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/bg/f3.png",
+      "final": "art-factory/starlantern/work/bg-f3/bg-f3.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f3\\bg-f3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 13.753729342699106,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
     },
     "enemy-slime": {
       "kind": "sprite",
@@ -825,11 +977,11 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 2,
-        "block": 9,
+        "holes": 1,
+        "block": 10,
         "size": [
-          132,
-          72
+          119,
+          65
         ]
       }
     },
@@ -848,11 +1000,11 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 6,
-        "block": 8,
+        "holes": 1,
+        "block": 16,
         "size": [
-          108,
-          131
+          55,
+          67
         ]
       }
     },
@@ -870,10 +1022,10 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "block": 13,
+        "block": 12,
         "size": [
-          72,
-          60
+          78,
+          65
         ]
       }
     },
@@ -891,10 +1043,10 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "block": 12,
+        "block": 13,
         "size": [
-          54,
-          70
+          50,
+          65
         ]
       }
     },
@@ -913,11 +1065,11 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 4,
-        "block": 11,
+        "holes": 6,
+        "block": 12,
         "size": [
-          82,
-          75
+          76,
+          68
         ]
       }
     },
@@ -935,35 +1087,33 @@
         "semi": 0,
         "edge": 0,
         "holes": 0,
-        "block": 12,
+        "block": 13,
         "size": [
-          78,
-          73
+          72,
+          67
         ]
       }
     },
     "enemy-shade": {
       "kind": "sprite",
-      "status": "qa_failed",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/enemy/shade.png",
       "final": "art-factory/starlantern/work/enemy-shade/enemy-shade.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-shade\\enemy-shade-a1.png",
       "qa": {
-        "pass": false,
-        "reasons": [
-          "magenta residue"
-        ],
+        "pass": true,
+        "reasons": [],
         "warnings": [
           "enclosed holes"
         ],
-        "residue": 4,
+        "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 8,
-        "block": 10,
+        "holes": 2,
+        "block": 18,
         "size": [
-          69,
-          120
+          39,
+          68
         ]
       }
     },
@@ -982,347 +1132,1441 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 7,
-        "block": 6,
+        "holes": 6,
+        "block": 8,
         "size": [
-          196,
-          205
+          147,
+          154
         ]
       }
     },
     "fx-slash": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/fx/slash.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/slash.png",
+      "final": "art-factory/starlantern/work/fx-slash/fx-slash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-slash\\fx-slash-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 14,
+        "size": [
+          58,
+          65
+        ]
+      }
     },
     "fx-pierce": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/fx/pierce.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/pierce.png",
+      "final": "art-factory/starlantern/work/fx-pierce/fx-pierce.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-pierce\\fx-pierce-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          263,
+          62
+        ]
+      }
     },
     "fx-strike": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/fx/strike.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/strike.png",
+      "final": "art-factory/starlantern/work/fx-strike/fx-strike.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-strike\\fx-strike-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          62,
+          65
+        ]
+      }
     },
     "fx-fire": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/fx/fire.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/fire.png",
+      "final": "art-factory/starlantern/work/fx-fire/fx-fire.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-fire\\fx-fire-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 14,
+        "size": [
+          62,
+          67
+        ]
+      }
     },
     "fx-ice": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/fx/ice.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/ice.png",
+      "final": "art-factory/starlantern/work/fx-ice/fx-ice.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-ice\\fx-ice-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 14,
+        "size": [
+          56,
+          64
+        ]
+      }
     },
     "fx-thunder": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/fx/thunder.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/thunder.png",
+      "final": "art-factory/starlantern/work/fx-thunder/fx-thunder.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-thunder\\fx-thunder-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 17,
+        "size": [
+          26,
+          67
+        ]
+      }
     },
     "fx-heal": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/fx/heal.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/heal.png",
+      "final": "art-factory/starlantern/work/fx-heal/fx-heal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-heal\\fx-heal-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 14,
+        "size": [
+          25,
+          65
+        ]
+      }
     },
     "fx-buff": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/fx/buff.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/buff.png",
+      "final": "art-factory/starlantern/work/fx-buff/fx-buff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-buff\\fx-buff-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          46,
+          66
+        ]
+      }
     },
     "ui-frame": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/ui/frame.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/ui/frame.png",
+      "final": "art-factory/starlantern/work/ui-frame/ui-frame.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-frame\\ui-frame-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 3.7339181286549707,
+        "block": 11,
+        "size": [
+          114,
+          114
+        ]
+      }
     },
     "icon-fire-star": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/fire-star.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/fire-star.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-fire-star.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          34,
+          35
+        ]
+      }
     },
     "icon-ice-star": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/ice-star.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/ice-star.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-ice-star.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          33,
+          34
+        ]
+      }
     },
     "icon-hex": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/hex.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/hex.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-hex.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 25,
+        "block": 8,
+        "size": [
+          31,
+          34
+        ]
+      }
     },
     "icon-thunder-star": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/thunder-star.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/thunder-star.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-thunder-star.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          35,
+          35
+        ]
+      }
     },
     "icon-sweep": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/sweep.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/sweep.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-sweep.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "block": 7,
+        "size": [
+          36,
+          33
+        ]
+      }
     },
     "icon-ward": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/ward.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/ward.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-ward.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          34,
+          35
+        ]
+      }
     },
     "icon-pierce": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/pierce.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/pierce.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-pierce.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 5,
+        "size": [
+          52,
+          35
+        ]
+      }
     },
     "icon-twin-slash": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/twin-slash.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/twin-slash.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-twin-slash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          33,
+          32
+        ]
+      }
     },
     "icon-stealth": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/stealth.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/stealth.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-stealth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 7,
+        "size": [
+          38,
+          34
+        ]
+      }
     },
     "icon-treasure-sense": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/treasure-sense.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/treasure-sense.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-treasure-sense.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          40,
+          37
+        ]
+      }
     },
     "icon-triple-slash": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/triple-slash.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/triple-slash.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-triple-slash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          36,
+          35
+        ]
+      }
     },
     "icon-aimed-shot": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/aimed-shot.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/aimed-shot.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-aimed-shot.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          45,
+          36
+        ]
+      }
     },
     "icon-pin-shot": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/pin-shot.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/pin-shot.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-pin-shot.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          38,
+          33
+        ]
+      }
     },
     "icon-arrow-rain": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/arrow-rain.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/arrow-rain.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-arrow-rain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 7,
+        "size": [
+          36,
+          36
+        ]
+      }
     },
     "icon-provoke": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/provoke.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/provoke.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-provoke.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          36,
+          35
+        ]
+      }
     },
     "icon-flame-burst": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/flame-burst.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/flame-burst.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-flame-burst.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          32,
+          34
+        ]
+      }
     },
     "icon-iron-wall": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/iron-wall.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/iron-wall.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-iron-wall.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          23,
+          34
+        ]
+      }
     },
     "icon-moonlight": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/moonlight.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/moonlight.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-moonlight.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 8,
+        "size": [
+          32,
+          34
+        ]
+      }
     },
     "icon-cleanse": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/cleanse.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/cleanse.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-cleanse.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          32,
+          32
+        ]
+      }
     },
     "icon-dream": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/dream.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/dream.png",
+      "final": "art-factory/starlantern/work/sheet-icons-1/icon-dream.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          37,
+          34
+        ]
+      }
     },
     "icon-rebirth": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/rebirth.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/rebirth.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-rebirth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          29,
+          32
+        ]
+      }
     },
     "icon-blade-dance": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/blade-dance.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/blade-dance.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-blade-dance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 11,
+        "block": 7,
+        "size": [
+          32,
+          32
+        ]
+      }
     },
     "icon-war-dance": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/war-dance.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/war-dance.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-war-dance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          33,
+          33
+        ]
+      }
     },
     "icon-mirage": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/mirage.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/mirage.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-mirage.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 6,
+        "size": [
+          36,
+          34
+        ]
+      }
     },
     "icon-turret": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/turret.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/turret.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-turret.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          36,
+          34
+        ]
+      }
     },
     "icon-tinker": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/tinker.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/tinker.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-tinker.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 6,
+        "size": [
+          37,
+          37
+        ]
+      }
     },
     "icon-barrier": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/barrier.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/barrier.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-barrier.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          29,
+          32
+        ]
+      }
     },
     "icon-potion": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/potion.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/potion.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-potion.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          24,
+          32
+        ]
+      }
     },
     "icon-ether": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/ether.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/ether.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-ether.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          25,
+          32
+        ]
+      }
     },
     "icon-antidote": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/antidote.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/antidote.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-antidote.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          26,
+          32
+        ]
+      }
     },
     "icon-phoenix": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/phoenix.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/phoenix.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-phoenix.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          29,
+          32
+        ]
+      }
     },
     "icon-return-lamp": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/return-lamp.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/return-lamp.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-return-lamp.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          21,
+          35
+        ]
+      }
     },
     "icon-moss": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/moss.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/moss.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-moss.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          40,
+          36
+        ]
+      }
     },
     "icon-bat-wing": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/bat-wing.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/bat-wing.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-bat-wing.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          31,
+          33
+        ]
+      }
     },
     "icon-thorn-fang": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/thorn-fang.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/thorn-fang.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-thorn-fang.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          29,
+          32
+        ]
+      }
     },
     "icon-crystal-shell": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/crystal-shell.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/crystal-shell.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-crystal-shell.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          33,
+          37
+        ]
+      }
     },
     "icon-ice-crystal": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/ice-crystal.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/ice-crystal.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-ice-crystal.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          27,
+          33
+        ]
+      }
     },
     "icon-lizard-scale": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/lizard-scale.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/lizard-scale.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-lizard-scale.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          30,
+          37
+        ]
+      }
     },
     "icon-star-stone": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/star-stone.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/star-stone.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-star-stone.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 7,
+        "size": [
+          29,
+          33
+        ]
+      }
     },
     "icon-dusk-cloth": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/dusk-cloth.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/dusk-cloth.png",
+      "final": "art-factory/starlantern/work/sheet-icons-2/icon-dusk-cloth.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          40,
+          36
+        ]
+      }
     },
     "icon-old-coin": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/old-coin.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/old-coin.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-old-coin.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 5,
+        "size": [
+          34,
+          35
+        ]
+      }
     },
     "icon-ancient-gear": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/ancient-gear.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/ancient-gear.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-ancient-gear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          32,
+          32
+        ]
+      }
     },
     "icon-wooden-staff": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/wooden-staff.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/wooden-staff.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-wooden-staff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          28,
+          34
+        ]
+      }
     },
     "icon-iron-sword": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/iron-sword.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/iron-sword.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-iron-sword.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          35,
+          37
+        ]
+      }
     },
     "icon-hunter-bow": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/hunter-bow.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/hunter-bow.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-hunter-bow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          28,
+          33
+        ]
+      }
     },
     "icon-thorn-spear": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/thorn-spear.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/thorn-spear.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-thorn-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          26,
+          32
+        ]
+      }
     },
     "icon-crystal-blade": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/crystal-blade.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/crystal-blade.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-crystal-blade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          30,
+          32
+        ]
+      }
     },
     "icon-frost-staff": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/frost-staff.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/frost-staff.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-frost-staff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          20,
+          33
+        ]
+      }
     },
     "icon-star-saber": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/star-saber.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/star-saber.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-star-saber.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          32,
+          35
+        ]
+      }
     },
     "icon-cloth-robe": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/cloth-robe.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/cloth-robe.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-cloth-robe.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 8,
+        "size": [
+          26,
+          32
+        ]
+      }
     },
     "icon-leather-vest": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/leather-vest.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/leather-vest.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-leather-vest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 6,
+        "size": [
+          32,
+          33
+        ]
+      }
     },
     "icon-scale-mail": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/scale-mail.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/scale-mail.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-scale-mail.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          32,
+          32
+        ]
+      }
     },
     "icon-dusk-mantle": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/dusk-mantle.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/dusk-mantle.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-dusk-mantle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 7,
+        "size": [
+          31,
+          34
+        ]
+      }
     },
     "icon-moss-charm": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/moss-charm.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/moss-charm.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-moss-charm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          27,
+          33
+        ]
+      }
     },
     "icon-bat-earring": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/bat-earring.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/bat-earring.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-bat-earring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "block": 5,
+        "size": [
+          30,
+          36
+        ]
+      }
     },
     "icon-crystal-pendant": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/crystal-pendant.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/crystal-pendant.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-crystal-pendant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          26,
+          33
+        ]
+      }
     },
     "icon-gear-ring": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/icon/gear-ring.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/icon/gear-ring.png",
+      "final": "art-factory/starlantern/work/sheet-icons-3/icon-gear-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 6,
+        "size": [
+          30,
+          31
+        ]
+      }
     },
     "sheet-icons-1": {
       "kind": "icon-sheet",
-      "status": "todo",
+      "status": "processed",
       "parts": [
         "icon-fire-star",
         "icon-ice-star",
@@ -1346,11 +2590,12 @@
         "icon-dream"
       ],
       "cols": 5,
-      "rows": 4
+      "rows": 4,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png"
     },
     "sheet-icons-2": {
       "kind": "icon-sheet",
-      "status": "todo",
+      "status": "processed",
       "parts": [
         "icon-rebirth",
         "icon-blade-dance",
@@ -1374,11 +2619,12 @@
         "icon-dusk-cloth"
       ],
       "cols": 5,
-      "rows": 4
+      "rows": 4,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png"
     },
     "sheet-icons-3": {
       "kind": "icon-sheet",
-      "status": "todo",
+      "status": "processed",
       "parts": [
         "icon-old-coin",
         "icon-ancient-gear",
@@ -1399,7 +2645,8 @@
         "icon-gear-ring"
       ],
       "cols": 5,
-      "rows": 4
+      "rows": 4,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png"
     },
     "map-fog": {
       "kind": "opaque",
@@ -1480,11 +2727,11 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 12,
-        "block": 7,
+        "holes": 4,
+        "block": 9,
         "size": [
-          155,
-          156
+          121,
+          122
         ]
       }
     },
@@ -1503,11 +2750,11 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 1,
-        "block": 9,
+        "holes": 2,
+        "block": 11,
         "size": [
-          136,
-          136
+          112,
+          112
         ]
       }
     },

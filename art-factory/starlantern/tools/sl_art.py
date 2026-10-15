@@ -20,7 +20,12 @@ def _near_magenta(rgb, margin):
 def cutout(img, margin=70):
     """Magenta (and near-magenta fringe) -> alpha 0; everything else alpha 255. No semi-alpha is produced."""
     rgb = np.asarray(img.convert('RGB'))
-    alpha = np.where(_near_magenta(rgb, margin) | _magenta_tint(rgb), 0, 255).astype(np.uint8)
+    bg = _near_magenta(rgb, margin) | _magenta_tint(rgb)
+    # Anti-aliased fringe: near-magenta pixels that touch the background. The same colour inside the subject is kept.
+    touch = np.zeros_like(bg)
+    touch[1:] |= bg[:-1]; touch[:-1] |= bg[1:]; touch[:, 1:] |= bg[:, :-1]; touch[:, :-1] |= bg[:, 1:]
+    bg |= touch & _near_magenta(rgb, 90)
+    alpha = np.where(bg, 0, 255).astype(np.uint8)
     out = np.dstack([rgb, alpha]); out[alpha == 0, :3] = 0
     return Image.fromarray(out, 'RGBA')
 
@@ -29,6 +34,15 @@ def _magenta_tint(rgb):
     """Bright pixels where red and blue dominate green: anti-aliased magenta fringe, not pinks or purples."""
     c = rgb.astype(np.int16); r, g, b = c[..., 0], c[..., 1], c[..., 2]
     return (r >= 150) & (b >= 150) & (g <= np.minimum(r, b) - 90)
+
+
+def defringe(img):
+    """Make near-magenta opaque pixels that touch transparency transparent (fringe exposed by downscaling)."""
+    arr = np.asarray(img.convert('RGBA')).copy(); clear = arr[..., 3] == 0
+    touch = np.zeros_like(clear)
+    touch[1:] |= clear[:-1]; touch[:-1] |= clear[1:]; touch[:, 1:] |= clear[:, :-1]; touch[:, :-1] |= clear[:, 1:]
+    arr[touch & ~clear & _near_magenta(arr[..., :3], 90)] = 0
+    return Image.fromarray(arr, 'RGBA')
 
 
 def _enclosed_transparent(alpha, small=16):
@@ -53,7 +67,7 @@ def _enclosed_transparent(alpha, small=16):
     return mask
 
 
-def alpha_qa(img, allow_holes=0, bg_hint=None):
+def alpha_qa(img, allow_holes=0, bg_hint=None, allow_residue=0):
     arr = np.asarray(img.convert('RGBA')); a = arr[..., 3]
     opaque = a == 255
     residue = int((opaque & _near_magenta(arr[..., :3], 90)).sum())
@@ -63,7 +77,7 @@ def alpha_qa(img, allow_holes=0, bg_hint=None):
     pocket = _enclosed_transparent(a)
     if bg_hint is not None: pocket &= ~bg_hint
     holes = int(pocket.sum())
-    reasons = [r for r, bad in (('magenta residue', residue), ('semi alpha', semi), ('touches edge', edge)) if bad]
+    reasons = [r for r, bad in (('magenta residue', residue > allow_residue), ('semi alpha', semi), ('touches edge', edge)) if bad]
     # Narrow real gaps (hair strands, staff vs. body) are common in codex output, so small pockets are flagged for
     # visual review instead of failing; the contract records this exception.
     warnings = ['enclosed holes'] if holes > allow_holes else []
@@ -177,10 +191,11 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None):
             subject = cut.crop(bbox)
             pad = Image.new('RGBA', (subject.width + 2 * block, subject.height + 2 * block))
             pad.paste(subject, (block, block))
-            final = to_art_pixels(pad, block)
+            final = defringe(to_art_pixels(pad, block))
             src = Image.new('RGB', pad.size, (255, 0, 255)); src.paste(img.crop(bbox), (block, block))
             hint = _near_magenta(np.asarray(to_art_pixels(src, block)), 30)
-            qa = alpha_qa(final, reg.data['assets'].get(aid, {}).get('allow_holes', 0), hint)
+            entry = reg.data['assets'].get(aid, {})
+            qa = alpha_qa(final, entry.get('allow_holes', 0), hint, entry.get('allow_residue', 0))
     qa.update(block=block, size=list(final.size))
     out = Path(workdir) / f'{aid}.png'; final.save(out)
     (Path(workdir) / f'{aid}.qa.json').write_text(json.dumps(qa, indent=2), encoding='utf-8')

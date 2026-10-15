@@ -7,10 +7,10 @@
   "residue": 0,
   "semi": 0,
   "edge": 0,
-  "holes": 6,
-  "block": 8,
+  "holes": 1,
+  "block": 16,
   "size": [
-    108,
-    131
+    55,
+    67
   ]
 }

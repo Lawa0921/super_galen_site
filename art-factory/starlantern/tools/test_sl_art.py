@@ -188,3 +188,24 @@ def test_finish_scales_sprites_to_a_target_art_height(tmp_path):
     reg = A.Registry(tmp_path / 'r.json')
     q = A.process(reg, 'char-x', raw, 'sprite', workdir=tmp_path / 'w', height=50)['char-x']
     assert q['block'] == 4 and q['size'] == [27, 52]
+
+
+def test_cutout_strips_near_magenta_fringe_on_the_edge_but_keeps_it_inside():
+    arr = np.asarray(blob(w=40, h=40, box=(10, 10, 30, 30))).copy()
+    arr[10, 15] = (167, 81, 176)   # fringe on the subject's edge, touching the background
+    arr[20, 20] = (167, 81, 176)   # same purple deep inside the subject
+    a = np.asarray(A.cutout(Image.fromarray(arr, 'RGB')))[..., 3]
+    assert a[10, 15] == 0 and a[20, 20] == 255
+
+
+def test_defringe_clears_near_magenta_pixels_on_the_alpha_edge():
+    rgba = np.zeros((10, 10, 4), np.uint8); rgba[2:8, 2:8] = (20, 120, 60, 255)
+    rgba[2, 4] = (165, 84, 203, 255); rgba[5, 5] = (165, 84, 203, 255)
+    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))
+    assert out[2, 4, 3] == 0 and out[5, 5, 3] == 255
+
+
+def test_alpha_qa_allows_declared_in_palette_magenta_like_pixels():
+    rgba = np.zeros((10, 10, 4), np.uint8); rgba[2:8, 2:8] = (20, 120, 60, 255); rgba[5, 5] = (231, 89, 172, 255)
+    assert not A.alpha_qa(Image.fromarray(rgba, 'RGBA'))['pass']
+    assert A.alpha_qa(Image.fromarray(rgba, 'RGBA'), allow_residue=1)['pass']
