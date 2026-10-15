@@ -4,7 +4,7 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
-import { Dialogue, MenuView, win } from '../widgets';
+import { Dialogue, MenuView, backControl, win } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate';
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
@@ -16,6 +16,7 @@ export abstract class FacilityScene implements Scene {
   private layers: Layer[] = [];
   private view!: MenuView;
   private cmdWin!: HTMLElement;
+  private back!: HTMLElement;
   private gold!: HTMLElement;
   private npc: HTMLImageElement | null = null;
   private talk: Dialogue;
@@ -23,7 +24,7 @@ export abstract class FacilityScene implements Scene {
   private talking = false;
 
   constructor(protected ctx: SceneCtx, protected id: FacilityId, cps = 30) {
-    this.talk = new Dialogue(cps);
+    this.talk = new Dialogue(cps, () => { this.talking = false; this.syncInert(); });
   }
 
   protected abstract commands(): MenuItem[];
@@ -37,8 +38,9 @@ export abstract class FacilityScene implements Scene {
     this.gold = win('slx-gold');
     this.cmdWin = win('slx-cmd');
     this.stage = el('div', { class: 'slx-stage' });
+    this.back = backControl(() => this.onAction('cancel'));
     root.append(el('div', { class: `slx-scene slx-facility slx-${this.id}` }, [
-      ...bg, ...(this.npc ? [this.npc] : []), win('slx-place', [document.createTextNode(f.place)]), this.gold, this.cmdWin, this.stage, this.talk.el,
+      ...bg, ...(this.npc ? [this.npc] : []), win('slx-place', [document.createTextNode(f.place)]), this.gold, this.back, this.cmdWin, this.stage, this.talk.el,
     ]));
     this.refresh();
     void this.say(f.greet[Math.floor(this.ctx.game.rng() * f.greet.length)]);
@@ -109,6 +111,7 @@ export abstract class FacilityScene implements Scene {
   private syncInert(): void {
     const lock = (e: HTMLElement, on: boolean) => (on ? e.setAttribute('inert', '') : e.removeAttribute('inert'));
     lock(this.cmdWin, this.talking || this.layers.length > 0);
+    lock(this.back, this.talking);
     this.layers.forEach((l, i) => lock(l.el, this.talking || i < this.layers.length - 1));
   }
 

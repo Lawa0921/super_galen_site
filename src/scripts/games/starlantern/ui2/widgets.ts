@@ -66,14 +66,19 @@ export class Dialogue {
   readonly el: HTMLElement;
   private name = el('b', { class: 'slx-name' });
   private text = el('span', { class: 'slx-text' });
+  /** Blinking mark shown once the whole line is on screen. */
+  private next = el('span', { class: 'slx-next', text: '▼', attrs: { 'aria-hidden': 'true', hidden: '' } });
   private full = '';
   private timer: ReturnType<typeof setInterval> | null = null;
   private resolve: (() => void) | null = null;
 
-  constructor(private charsPerSecond: number) {
-    this.el = win('slx-talk', [this.name, this.text]);
+  /** `onClose` runs synchronously when a line is dismissed, so owners can unlock their windows before the next click. */
+  constructor(private charsPerSecond: number, private onClose?: () => void) {
+    this.el = win('slx-talk', [this.name, this.text, this.next]);
     this.el.hidden = true;
     this.el.setAttribute('aria-live', 'polite');
+    // Mouse and touch: a click anywhere on the box does what the confirm key does.
+    this.el.addEventListener('click', () => { if (!this.el.closest('[inert]')) this.onAction('confirm'); });
   }
 
   busy(): boolean { return this.resolve !== null; }
@@ -84,14 +89,15 @@ export class Dialogue {
     this.name.textContent = name;
     this.name.hidden = !name;
     this.el.hidden = false;
-    if (!Number.isFinite(this.charsPerSecond)) this.text.textContent = text;
+    this.next.setAttribute('hidden', '');
+    if (!Number.isFinite(this.charsPerSecond)) { this.text.textContent = text; this.next.removeAttribute('hidden'); }
     else {
       let n = 0;
       this.text.textContent = '';
       this.timer = setInterval(() => {
         n += 1;
         this.text.textContent = [...this.full].slice(0, n).join('');
-        if (n >= [...this.full].length) this.stop();
+        if (n >= [...this.full].length) { this.stop(); this.next.removeAttribute('hidden'); }
       }, 1000 / this.charsPerSecond);
     }
     return new Promise((r) => { this.resolve = r; });
@@ -99,10 +105,11 @@ export class Dialogue {
 
   onAction(a: UiAction): boolean {
     if (!this.resolve || a !== 'confirm') return false;
-    if (this.timer) { this.stop(); this.text.textContent = this.full; return true; }
+    if (this.timer) { this.stop(); this.text.textContent = this.full; this.next.removeAttribute('hidden'); return true; }
     const r = this.resolve;
     this.resolve = null;
     this.el.hidden = true;
+    this.onClose?.();
     r();
     return true;
   }
@@ -127,7 +134,14 @@ export class QtyView {
   private label = el('span', { class: 'slx-qty-n' });
 
   constructor(private max: number, private on: { change(qty: number): void; done(qty: number): void; cancel(): void }) {
-    this.el = win('slx-qty', [el('span', { text: '◀ ' }), this.label, el('span', { text: ' ▶' })]);
+    const down = el('span', { class: 'slx-qty-down', text: '◀ ' });
+    const up = el('span', { class: 'slx-qty-up', text: ' ▶' });
+    this.el = win('slx-qty', [down, this.label, up]);
+    // Mouse: the arrows step by one, the number confirms.
+    const tap = (a: UiAction) => () => { if (!this.el.closest('[inert]')) this.onAction(a); };
+    down.addEventListener('click', tap('left'));
+    up.addEventListener('click', tap('right'));
+    this.label.addEventListener('click', tap('confirm'));
     this.show();
   }
 
@@ -144,4 +158,13 @@ export class QtyView {
   }
 
   private show(): void { this.label.textContent = `× ${this.qty}`; }
+}
+
+/** On-screen 返回 for mouse and touch players; the owner treats it as the cancel key. */
+export function backControl(onBack: () => void): HTMLElement {
+  const b = win('slx-back', [document.createTextNode('返回')]);
+  b.setAttribute('role', 'button');
+  b.setAttribute('tabindex', '-1');
+  b.addEventListener('click', () => { if (!b.closest('[inert]')) onBack(); });
+  return b;
 }

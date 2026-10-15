@@ -82,4 +82,23 @@ test.describe('starlantern next ui', () => {
     expect(await page.evaluate(() => !!localStorage.getItem('starlantern-save'))).toBe(true);
     expect(await page.locator('#sl-screen button, #sl-screen select').count()).toBe(0);
   });
+
+  test('plays with the mouse only: menus, dialogue and the 返回 control', async ({ page }) => {
+    await page.goto('/games/starlantern-next');
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    const talkThrough = async () => { for (let i = 0; i < 4 && (await page.locator('.slx-talk').isVisible()); i++) await page.locator('.slx-talk').click(); };
+    await page.locator('.slx-title [data-id=new]').click();
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await talkThrough();
+    await page.locator('.slx-town [data-id=guild]').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await talkThrough();
+    await page.locator('.slx-cmd [data-id=formation]').click();
+    await expect(page.locator('.slx-formation')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-formation')).toHaveCount(0);
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible();
+  });
 });

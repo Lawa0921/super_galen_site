@@ -72,3 +72,20 @@ describe('FacilityScene pointer', () => {
     expect(root.querySelector('.slx-cmd')!.hasAttribute('inert')).toBe(false);
   });
 });
+
+describe('FacilityScene mouse', () => {
+  it('the 返回 control closes one window per click, then leaves; it is locked during a line', () => {
+    const c = ctx(); const root = document.createElement('div');
+    const s = new Probe(c, 'guild', Infinity); s.enter(root);
+    const back = root.querySelector('.slx-back') as HTMLElement;
+    back.click();                                   // greeting on screen: ignored
+    expect(c.go).not.toHaveBeenCalled();
+    (root.querySelector('.slx-talk') as HTMLElement).click();   // close the greeting by mouse
+    s.onAction('confirm');                          // open sub window
+    back.click();
+    expect(root.querySelectorAll('.slx-layer')).toHaveLength(0);
+    expect(c.go).not.toHaveBeenCalled();
+    back.click();
+    expect(c.go).toHaveBeenCalledWith('town');
+  });
+});

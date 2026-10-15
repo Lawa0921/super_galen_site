@@ -132,3 +132,14 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 .slx-layer.slx-confirm { left: 50%; top: 45%; }
 .slx-shop .slx-info { left: 452px; width: 150px; }
 .slx-shop-list { min-width: 266px; }
+
+// Mouse and touch controls
+.slx-back { right: 92px; top: 10px; padding: 2px 10px; cursor: pointer; color: $slx-ink; }
+.slx-back:hover { color: $slx-gold; }
+.slx-back[inert] { color: $slx-dim; }
+.slx-talk { cursor: pointer; }
+.slx-next { position: absolute; right: 10px; bottom: 4px; color: $slx-gold; font-size: 8px; animation: slx-blink 0.8s steps(2) infinite; }
+@keyframes slx-blink { 50% { opacity: 0; } }
+.slx-qty-down, .slx-qty-up, .slx-qty-n { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .slx-next { animation: none; } }
+

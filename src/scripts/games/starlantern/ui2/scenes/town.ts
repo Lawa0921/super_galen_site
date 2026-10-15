@@ -4,17 +4,18 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
-import { Dialogue, MenuView, win } from '../widgets';
+import { Dialogue, MenuView, backControl, win } from '../widgets';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'settings'] as const;
 
 export class TownScene implements Scene {
   private view!: MenuView;
   private menuWin!: HTMLElement;
+  private backEl!: HTMLElement;
   private talk: Dialogue;
 
   constructor(private ctx: SceneCtx, charsPerSecond = 30) {
-    this.talk = new Dialogue(charsPerSecond);
+    this.talk = new Dialogue(charsPerSecond, () => { this.menuWin?.removeAttribute('inert'); this.backEl?.removeAttribute('inert'); });
   }
 
   enter(root: HTMLElement): void {
@@ -27,6 +28,7 @@ export class TownScene implements Scene {
       win('slx-place', [document.createTextNode(t.place)]),
       win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]),
       (this.menuWin = win('slx-town-menu', [this.view.el])),
+      (this.backEl = backControl(() => this.onAction('cancel'))),
       this.talk.el,
     ]));
     void this.speak(t.place.split(' ').pop() ?? '', t.lines[Math.floor(this.ctx.game.rng() * t.lines.length)]);
@@ -42,8 +44,8 @@ export class TownScene implements Scene {
   /** The menu ignores the pointer while a line is on screen, matching the keyboard. */
   private async speak(name: string, text: string): Promise<void> {
     this.menuWin.setAttribute('inert', '');
+    this.backEl.setAttribute('inert', '');
     await this.talk.say(name, text);
-    this.menuWin.removeAttribute('inert');
   }
 
   private pick(id: string, label: string): void {

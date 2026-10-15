@@ -45,3 +45,15 @@ describe('TownScene pointer', () => {
     expect(go).not.toHaveBeenCalled();
   });
 });
+
+describe('TownScene mouse', () => {
+  it('has a 返回 control that goes back to the title once the greeting is closed', () => {
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    (root.querySelector('.slx-talk') as HTMLElement).click();
+    (root.querySelector('.slx-back') as HTMLElement).click();
+    expect(go).toHaveBeenCalledWith('title');
+  });
+});

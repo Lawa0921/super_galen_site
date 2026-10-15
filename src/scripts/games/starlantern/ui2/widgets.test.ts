@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
-import { Dialogue, MenuView, QtyView, confirmBox } from './widgets';
+import { Dialogue, MenuView, QtyView, backControl, confirmBox } from './widgets';
 
 const mk = () => new Menu([{ id: 'a', label: '冒險者公會' }, { id: 'b', label: '道具店', disabled: true }, { id: 'c', label: '旅館' }]);
 
@@ -144,5 +144,46 @@ describe('MenuView scrolling', () => {
     for (let i = 0; i < 8; i++) v.onAction('down');
     (v.el.querySelectorAll('[role=option]')[0] as HTMLElement).click();
     expect(pick).toHaveBeenCalledWith(expect.objectContaining({ id: '4' }));
+  });
+});
+
+describe('mouse interaction', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('a click on the dialogue completes the line, shows the continue mark, then closes it', async () => {
+    vi.useFakeTimers();
+    const d = new Dialogue(20);
+    const done = vi.fn();
+    void d.say('安娜', '歡迎回來。').then(done);
+    await vi.advanceTimersByTimeAsync(60);
+    expect(d.el.querySelector('.slx-next')!.hasAttribute('hidden')).toBe(true);
+    d.el.click();
+    expect(d.el.querySelector('.slx-text')!.textContent).toBe('歡迎回來。');
+    expect(d.el.querySelector('.slx-next')!.hasAttribute('hidden')).toBe(false);
+    d.el.click();
+    await vi.runAllTimersAsync();
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('the quantity window steps with the arrows and confirms when the number is clicked', () => {
+    const done = vi.fn();
+    const q = new QtyView(5, { change: vi.fn(), done, cancel: vi.fn() });
+    (q.el.querySelector('.slx-qty-up') as HTMLElement).click();
+    (q.el.querySelector('.slx-qty-up') as HTMLElement).click();
+    (q.el.querySelector('.slx-qty-down') as HTMLElement).click();
+    (q.el.querySelector('.slx-qty-n') as HTMLElement).click();
+    expect(done).toHaveBeenCalledWith(2);
+  });
+
+  it('a back control reports a click as cancel and ignores clicks while inert', () => {
+    const onBack = vi.fn();
+    const b = backControl(onBack);
+    expect(b.getAttribute('role')).toBe('button');
+    expect(b.textContent).toBe('返回');
+    b.click();
+    expect(onBack).toHaveBeenCalledTimes(1);
+    b.setAttribute('inert', '');
+    b.click();
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });

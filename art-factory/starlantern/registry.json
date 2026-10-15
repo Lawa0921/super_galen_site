@@ -4157,43 +4157,133 @@
     },
     "npc-shop-happy": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/npc/shop-happy.png",
       "allow_edge": [
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/npc-shop-happy/npc-shop-happy.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-shop-happy\\npc-shop-happy-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          173,
+          176
+        ]
+      },
+      "reason": "arm cut by the canvas edge; apron changed from brown to green (must match npc-shop)"
     },
     "npc-inn": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/npc/inn.png",
       "allow_edge": [
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/npc-inn/npc-inn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-inn\\npc-inn-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 8,
+        "block": 7,
+        "size": [
+          136,
+          184
+        ]
+      }
     },
     "npc-inn-happy": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/npc/inn-happy.png",
       "allow_edge": [
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/npc-inn-happy/npc-inn-happy.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-inn-happy\\npc-inn-happy-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 7,
+        "size": [
+          132,
+          187
+        ]
+      }
     },
     "npc-gate": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/npc/gate.png",
       "allow_edge": [
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/npc-gate/npc-gate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-gate\\npc-gate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 8,
+        "size": [
+          132,
+          184
+        ]
+      }
     },
     "npc-gate-happy": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/npc/gate-happy.png",
       "allow_edge": [
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/npc-gate-happy/npc-gate-happy.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-gate-happy\\npc-gate-happy-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 8,
+        "size": [
+          132,
+          184
+        ]
+      },
+      "reason": "scarf changed from red to dark (must match npc-gate)"
     },
     "ui-logo": {
       "kind": "sprite",
