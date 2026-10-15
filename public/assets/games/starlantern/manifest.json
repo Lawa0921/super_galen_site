@@ -139,6 +139,11 @@
     "/assets/games/starlantern/map/party-left.png",
     "/assets/games/starlantern/map/party-right.png",
     "/assets/games/starlantern/map/party-up.png",
+    "/assets/games/starlantern/npc/guild-happy.png",
+    "/assets/games/starlantern/npc/guild.png",
+    "/assets/games/starlantern/scene/guild.png",
+    "/assets/games/starlantern/scene/title.png",
+    "/assets/games/starlantern/scene/town.png",
     "/assets/games/starlantern/tiles/f1-boss.png",
     "/assets/games/starlantern/tiles/f1-chest-open.png",
     "/assets/games/starlantern/tiles/f1-chest.png",
@@ -166,6 +171,9 @@
     "/assets/games/starlantern/tiles/f3-floor.png",
     "/assets/games/starlantern/tiles/f3-up.png",
     "/assets/games/starlantern/tiles/f3-wall.png",
-    "/assets/games/starlantern/ui/frame.png"
+    "/assets/games/starlantern/ui/cursor.png",
+    "/assets/games/starlantern/ui/frame.png",
+    "/assets/games/starlantern/ui/logo.png",
+    "/assets/games/starlantern/ui/window.png"
   ]
 }

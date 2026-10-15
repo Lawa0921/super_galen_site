@@ -3974,7 +3974,7 @@
     },
     "scene-title": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/scene/title.png",
       "final": "art-factory/starlantern/work/scene-title/scene-title.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-title\\scene-title-a1.png",
@@ -3987,11 +3987,12 @@
           418,
           235
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
     },
     "scene-town": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/scene/town.png",
       "final": "art-factory/starlantern/work/scene-town/scene-town.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-town\\scene-town-a1.png",
@@ -4004,11 +4005,12 @@
           418,
           235
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
     },
     "scene-guild": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/scene/guild.png",
       "final": "art-factory/starlantern/work/scene-guild/scene-guild.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-guild\\scene-guild-a1.png",
@@ -4021,7 +4023,8 @@
           418,
           235
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
     },
     "scene-shop": {
       "kind": "opaque",
@@ -4040,7 +4043,7 @@
     },
     "npc-guild": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/npc/guild.png",
       "allow_edge": [
         "bottom"
@@ -4060,11 +4063,12 @@
           131,
           186
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
     },
     "npc-guild-happy": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/npc/guild-happy.png",
       "allow_edge": [
         "bottom"
@@ -4086,7 +4090,8 @@
           139,
           185
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
     },
     "npc-shop": {
       "kind": "sprite",
@@ -4138,7 +4143,7 @@
     },
     "ui-logo": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/ui/logo.png",
       "final": "art-factory/starlantern/work/ui-logo/ui-logo.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-logo\\ui-logo-a1.png",
@@ -4157,11 +4162,12 @@
           252,
           90
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
     },
     "ui-window": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/ui/window.png",
       "allow_edge": [
         "left",
@@ -4184,11 +4190,12 @@
           316,
           316
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
     },
     "ui-cursor": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/ui/cursor.png",
       "final": "art-factory/starlantern/work/ui-cursor/ui-cursor.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-cursor\\ui-cursor-a1.png",
@@ -4205,7 +4212,8 @@
           14,
           14
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看"
     }
   }
 }
