@@ -103,6 +103,11 @@ def jobs():
         out += [dict(id=sid, images=[anchor, AF / f'reference/crops/{c}.png'], kind='sprite', height=HEIGHT['standee']),
                 dict(id=pid, images=[('dep', sid)], kind='sprite', dep=sid, height=HEIGHT['portrait'])]
         out += [dict(id=f'char-{c}-portrait-{mood}', images=[('dep', pid)], kind='sprite', dep=pid, height=HEIGHT['portrait']) for mood in MOOD_FACES]
+    # Scarlet's standee and normal portrait are the approved style samples; only her extra faces are generated here.
+    for mood, face in MOOD_FACES.items():
+        if mood == 'hit': continue
+        write(f'char-scarlet-portrait-{mood}', f'Square bust portrait in pixel art of exactly the same girl as the attached portrait, same framing, size, palette and outfit, but {face}. 16-bit JRPG dialogue portrait style, {PIX}. Perfectly flat solid pure magenta #FF00FF background around her with empty margin, no frame, no text.')
+        out.append(dict(id=f'char-scarlet-portrait-{mood}', images=[('dep', 'char-scarlet-portrait')], kind='sprite', dep='char-scarlet-portrait', height=HEIGHT['portrait']))
     write('sheet-map-party', f'Pixel art map icon of one small chibi adventurer in a hooded travelling cloak carrying a glowing star lantern, drawn four times in one row with wide magenta gaps: walking up seen from behind, walking down seen from the front, walking left, walking right. Tiny top-down RPG map sprite, about 24 art pixels tall each, 16-bit JRPG style, {PIX}. Perfectly flat solid pure magenta #FF00FF background. No text. {ORIGINAL}')
     out.append(dict(id='sheet-map-party', images=[], kind='strip', parts=['map-party-up', 'map-party-down', 'map-party-left', 'map-party-right'], height=HEIGHT['party']))
     write('map-fog', f'One square top-down pixel art map tile of unexplored darkness: deep blue-black swirling mist with a few faint wisps, very dark so it hides what is underneath, designed to tile seamlessly when repeated in every direction, fills the square edge to edge, about 32 by 32 art pixels. 16-bit JRPG style, strict square pixel grid, limited palette, no anti-aliasing. No text.')

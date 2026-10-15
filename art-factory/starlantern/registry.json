@@ -25,8 +25,26 @@
     },
     "char-noel-portrait": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/noel-portrait.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/noel-portrait.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait/char-noel-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait\\char-noel-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      }
     },
     "char-chizuru-standee": {
       "kind": "sprite",
@@ -53,8 +71,26 @@
     },
     "char-chizuru-portrait": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/chizuru-portrait.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait/char-chizuru-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait\\char-chizuru-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 13,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      }
     },
     "char-liz-standee": {
       "kind": "sprite",
@@ -81,8 +117,26 @@
     },
     "char-liz-portrait": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/liz-portrait.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/liz-portrait.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait/char-liz-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait\\char-liz-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          102,
+          121
+        ]
+      }
     },
     "char-sylvie-standee": {
       "kind": "sprite",
@@ -109,8 +163,26 @@
     },
     "char-sylvie-portrait": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/sylvie-portrait.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait/char-sylvie-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait\\char-sylvie-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      }
     },
     "char-scarlet-standee": {
       "kind": "sprite",
@@ -770,160 +842,169 @@
       ],
       "cols": 3,
       "rows": 3,
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png"
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png"
     },
     "tile-f3-wall": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-wall.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-wall.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 64.73387096774194,
+        "seam": 29.981182795698924,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "tile-f3-floor": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-floor.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-floor.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 34.094086021505376,
+        "seam": 34.79838709677419,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "tile-f3-door": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-door.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-door.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 69.75,
+        "seam": 63.77956989247312,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "tile-f3-up": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-up.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-up.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 15.010752688172044,
+        "seam": 11.959677419354838,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "tile-f3-down": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-down.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-down.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 35.74731182795699,
+        "seam": 35.424731182795696,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "tile-f3-chest": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-chest.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-chest.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 23.591397849462364,
+        "seam": 16.131720430107528,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "tile-f3-chest-open": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-chest-open.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-chest-open.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 19.169354838709676,
+        "seam": 14.85752688172043,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "tile-f3-entrance": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-entrance.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-entrance.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 33.653225806451616,
+        "seam": 36.354838709677416,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "tile-f3-boss": {
       "kind": "opaque",
       "status": "qa_passed",
       "runtime": "/assets/games/starlantern/tiles/f3-boss.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-boss.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "seam": 65.8521505376344,
+        "seam": 61.05107526881721,
         "block": 6,
         "size": [
           62,
           62
         ]
-      }
+      },
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
     },
     "bg-f3": {
       "kind": "opaque",
@@ -2667,23 +2748,95 @@
     },
     "char-noel-portrait-hit": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/noel-portrait-hit.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-hit/char-noel-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-hit\\char-noel-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      }
     },
     "char-chizuru-portrait-hit": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/chizuru-portrait-hit.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-hit/char-chizuru-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-hit\\char-chizuru-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "block": 10,
+        "size": [
+          115,
+          111
+        ]
+      }
     },
     "char-liz-portrait-hit": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/liz-portrait-hit.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-hit/char-liz-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-hit\\char-liz-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          103,
+          121
+        ]
+      }
     },
     "char-sylvie-portrait-hit": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/sylvie-portrait-hit.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-hit/char-sylvie-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-hit\\char-sylvie-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      }
     },
     "char-scarlet-portrait-hit": {
       "kind": "sprite",
@@ -2709,8 +2862,26 @@
     },
     "char-selene-portrait-hit": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/selene-portrait-hit.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-hit.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-hit/char-selene-portrait-hit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-hit\\char-selene-portrait-hit-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      }
     },
     "char-safira-portrait-hit": {
       "kind": "sprite",
@@ -2760,83 +2931,373 @@
     },
     "char-noel-portrait-attack": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/noel-portrait-attack.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-attack/char-noel-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-attack\\char-noel-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          119
+        ]
+      }
     },
     "char-noel-portrait-dying": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/noel-portrait-dying.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-dying/char-noel-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-dying\\char-noel-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      }
     },
     "char-noel-portrait-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/noel-portrait-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-down/char-noel-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-down\\char-noel-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          117,
+          117
+        ]
+      }
     },
     "char-noel-portrait-ultimate": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/noel-portrait-ultimate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-noel-portrait-ultimate/char-noel-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-ultimate\\char-noel-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 1,
+        "semi": 0,
+        "edge": 0,
+        "holes": 66,
+        "block": 10,
+        "size": [
+          123,
+          120
+        ]
+      },
+      "allow_residue": 1,
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually"
     },
     "char-chizuru-portrait-attack": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/chizuru-portrait-attack.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-attack/char-chizuru-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-attack\\char-chizuru-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 9,
+        "block": 10,
+        "size": [
+          125,
+          111
+        ]
+      }
     },
     "char-chizuru-portrait-dying": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/chizuru-portrait-dying.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-dying/char-chizuru-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-dying\\char-chizuru-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 12,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      }
     },
     "char-chizuru-portrait-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/chizuru-portrait-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-down/char-chizuru-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-down\\char-chizuru-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 18,
+        "block": 9,
+        "size": [
+          128,
+          123
+        ]
+      }
     },
     "char-chizuru-portrait-ultimate": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/chizuru-portrait-ultimate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-ultimate/char-chizuru-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-ultimate\\char-chizuru-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 1,
+        "semi": 0,
+        "edge": 0,
+        "holes": 50,
+        "block": 10,
+        "size": [
+          122,
+          116
+        ]
+      },
+      "allow_residue": 1,
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually"
     },
     "char-liz-portrait-attack": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/liz-portrait-attack.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-attack/char-liz-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-attack\\char-liz-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          115,
+          121
+        ]
+      }
     },
     "char-liz-portrait-dying": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/liz-portrait-dying.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-dying/char-liz-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-dying\\char-liz-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          102,
+          121
+        ]
+      }
     },
     "char-liz-portrait-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/liz-portrait-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-down/char-liz-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-down\\char-liz-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          111,
+          120
+        ]
+      }
     },
     "char-liz-portrait-ultimate": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/liz-portrait-ultimate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-liz-portrait-ultimate/char-liz-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-ultimate\\char-liz-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 34,
+        "block": 10,
+        "size": [
+          122,
+          122
+        ]
+      }
     },
     "char-sylvie-portrait-attack": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/sylvie-portrait-attack.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-attack/char-sylvie-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-attack\\char-sylvie-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          124,
+          120
+        ]
+      }
     },
     "char-sylvie-portrait-dying": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/sylvie-portrait-dying.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-dying/char-sylvie-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-dying\\char-sylvie-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      }
     },
     "char-sylvie-portrait-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/sylvie-portrait-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-down/char-sylvie-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-down\\char-sylvie-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          119
+        ]
+      }
     },
     "char-sylvie-portrait-ultimate": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/sylvie-portrait-ultimate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-ultimate/char-sylvie-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-ultimate\\char-sylvie-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 35,
+        "block": 10,
+        "size": [
+          125,
+          120
+        ]
+      }
     },
     "char-scarlet-portrait-attack": {
       "kind": "sprite",
@@ -2860,63 +3321,283 @@
     },
     "char-selene-portrait-attack": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/selene-portrait-attack.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-attack/char-selene-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-attack\\char-selene-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 5,
+        "semi": 0,
+        "edge": 0,
+        "holes": 8,
+        "block": 10,
+        "size": [
+          124,
+          114
+        ]
+      },
+      "allow_residue": 5,
+      "notes": "5 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually"
     },
     "char-selene-portrait-dying": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/selene-portrait-dying.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-dying/char-selene-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-dying\\char-selene-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      }
     },
     "char-selene-portrait-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/selene-portrait-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-down/char-selene-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-down\\char-selene-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 10,
+        "size": [
+          122,
+          114
+        ]
+      }
     },
     "char-selene-portrait-ultimate": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/selene-portrait-ultimate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-selene-portrait-ultimate/char-selene-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-ultimate\\char-selene-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 1,
+        "semi": 0,
+        "edge": 0,
+        "holes": 239,
+        "block": 10,
+        "size": [
+          123,
+          117
+        ]
+      },
+      "allow_residue": 1,
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually"
     },
     "char-safira-portrait-attack": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/safira-portrait-attack.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-attack/char-safira-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-attack\\char-safira-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 9,
+        "size": [
+          123,
+          122
+        ]
+      }
     },
     "char-safira-portrait-dying": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/safira-portrait-dying.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-dying/char-safira-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-dying\\char-safira-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      }
     },
     "char-safira-portrait-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/safira-portrait-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-down/char-safira-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-down\\char-safira-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 9,
+        "size": [
+          121,
+          121
+        ]
+      }
     },
     "char-safira-portrait-ultimate": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/safira-portrait-ultimate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-safira-portrait-ultimate/char-safira-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-ultimate\\char-safira-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 18,
+        "block": 10,
+        "size": [
+          118,
+          113
+        ]
+      }
     },
     "char-bobby-portrait-attack": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/bobby-portrait-attack.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-attack/char-bobby-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-attack\\char-bobby-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 8,
+        "block": 10,
+        "size": [
+          124,
+          119
+        ]
+      }
     },
     "char-bobby-portrait-dying": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/bobby-portrait-dying.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-dying/char-bobby-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-dying\\char-bobby-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 10,
+        "size": [
+          123,
+          121
+        ]
+      }
     },
     "char-bobby-portrait-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/bobby-portrait-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-down/char-bobby-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-down\\char-bobby-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 10,
+        "size": [
+          116,
+          117
+        ]
+      }
     },
     "char-bobby-portrait-ultimate": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/bobby-portrait-ultimate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-bobby-portrait-ultimate/char-bobby-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-ultimate\\char-bobby-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 60,
+        "block": 11,
+        "size": [
+          114,
+          112
+        ]
+      }
     }
   }
 }
