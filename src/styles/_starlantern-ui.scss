@@ -1,0 +1,45 @@
+@font-face {
+  font-family: 'Cubic 11';
+  src: url('/assets/fonts/cubic-11/Cubic_11.woff2') format('woff2');
+  font-display: swap;
+}
+
+$slx-w: 640px;
+$slx-h: 360px;
+$slx-ink: #f1ead8;
+$slx-dim: #b7ae9a;
+$slx-gold: #e8c46a;
+$slx-win: rgba(10, 14, 34, 0.86);
+
+html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; background: #000; }
+.slx-body { display: grid; place-items: center; }
+
+.slx-screen {
+  position: relative;
+  width: $slx-w;
+  height: $slx-h;
+  overflow: hidden;
+  background: #05060c;
+  color: $slx-ink;
+  font: 12px/16px 'Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  image-rendering: pixelated;
+  transform-origin: center;
+  user-select: none;
+}
+.slx-ui { position: absolute; inset: 0; }
+
+// Integer scales when the window has room; below 640x360 shrink proportionally.
+@each $k in 2, 3, 4, 5, 6 {
+  @media (min-width: $slx-w * $k) and (min-height: $slx-h * $k) {
+    .slx-screen { transform: scale($k); }
+  }
+}
+// Sass cannot divide viewport units by pixels, so step down in 5% increments: each rule applies once the
+// window is smaller than the previous step, and later (smaller) steps win.
+$slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
+@for $i from 2 through length($slx-steps) {
+  $prev: nth($slx-steps, $i - 1);
+  @media (max-width: $slx-w * $prev - 1px), (max-height: $slx-h * $prev - 1px) {
+    .slx-screen { transform: scale(nth($slx-steps, $i)); }
+  }
+}

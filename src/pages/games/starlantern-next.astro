@@ -1,0 +1,22 @@
+---
+import '../../styles/_starlantern-ui.scss';
+---
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <title>星燈迷宮 Starlantern</title>
+    <link rel="preload" href="/assets/fonts/cubic-11/Cubic_11.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body class="slx-body">
+    <main id="sl-screen" class="slx-screen" aria-label="星燈迷宮">
+      <div id="sl-ui" class="slx-ui"></div>
+    </main>
+    <script>
+      import { mountNext } from '../../scripts/games/starlantern/ui2/main';
+      void mountNext();
+    </script>
+  </body>
+</html>
