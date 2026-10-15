@@ -9,7 +9,8 @@ $slx-h: 360px;
 $slx-ink: #f1ead8;
 $slx-dim: #b7ae9a;
 $slx-gold: #e8c46a;
-$slx-win: rgba(10, 14, 34, 0.86);
+// nearly opaque so stacked windows never show the text underneath
+$slx-win: rgba(10, 14, 34, 0.96);
 
 html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; background: #000; }
 // place-content centres the 640px track even when the window is narrower, so scale() shrinks around the window centre.
@@ -125,3 +126,9 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 .slx-floors .slx-opt { padding: 4px 6px 4px 16px; }
 .slx-floors .slx-ico { width: 64px; height: 36px; object-fit: cover; }
 @media (prefers-reduced-motion: reduce) { .slx-night { animation: none; } }
+
+// Interface fixes after the first facility screenshots
+.slx-more { list-style: none; text-align: center; font-size: 8px; line-height: 10px; color: $slx-dim; }
+.slx-layer.slx-confirm { left: 50%; top: 45%; }
+.slx-shop .slx-info { left: 452px; width: 150px; }
+.slx-shop-list { min-width: 266px; }

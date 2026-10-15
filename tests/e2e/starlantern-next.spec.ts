@@ -52,4 +52,34 @@ test.describe('starlantern next ui', () => {
     await expect(page.locator('.slx-title')).toBeVisible();
     expect(await page.locator('#sl-screen button, #sl-screen select').count()).toBe(0);
   });
+
+  test('walks through the four facilities with the keyboard', async ({ page }) => {
+    await page.goto('/games/starlantern-next');
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    const closeTalk = async () => { for (let i = 0; i < 4 && (await page.locator('.slx-talk').isVisible()); i++) await page.keyboard.press('z'); };
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await closeTalk();
+    await page.keyboard.press('Enter');                       // 冒險者公會
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await closeTalk();
+    await page.keyboard.press('Enter');                       // 編隊
+    await expect(page.locator('.slx-formation [role=option]')).toHaveCount(5);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');                      // back to town
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await closeTalk();
+    await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');                       // 旅館
+    await expect(page.locator('.slx-inn')).toBeVisible();
+    await closeTalk();
+    await page.keyboard.press('Enter');                       // 休息
+    await page.keyboard.press('ArrowUp');                     // 是
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+    expect(await page.evaluate(() => !!localStorage.getItem('starlantern-save'))).toBe(true);
+    expect(await page.locator('#sl-screen button, #sl-screen select').count()).toBe(0);
+  });
 });

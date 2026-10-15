@@ -34,7 +34,7 @@ export class GuildScene extends FacilityScene {
   }
 
   private list(items: MenuItem[], pick: (it: MenuItem) => void, cls = '', start = 0): MenuView {
-    const v = new MenuView(new Menu(items, start), { pick: (it) => { this.ctx.sfx.confirm(); pick(it); }, moved: () => this.ctx.sfx.cursor(), cancel: () => this.pop() });
+    const v = new MenuView(new Menu(items, start), { pick: (it) => { this.ctx.sfx.confirm(); pick(it); }, moved: () => this.ctx.sfx.cursor(), cancel: () => this.pop() }, 10);
     this.push({ el: win(`slx-list ${cls}`, [v.el]), onAction: (a) => v.onAction(a) });
     return v;
   }

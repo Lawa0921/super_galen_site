@@ -31,10 +31,11 @@ export class Router {
     this.scene = this.make(name, { ...this.ctx, go: (n) => { void this.go(n); } });
     this.name = name;
     this.scene.enter(this.root);
+    // Input is dropped only while the old scene fades out; once the new one is on screen it responds during its fade-in.
     this.root.classList.remove('slx-fade');
-    await this.wait();
     this.root.removeAttribute('inert');
     this.switching = false;
+    await this.wait();
   }
 
   onAction(a: UiAction): void {

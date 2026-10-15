@@ -16,17 +16,18 @@ describe('TownScene', () => {
     expect(root.querySelector('.slx-talk .slx-text')!.textContent!.length).toBeGreaterThan(0);
   });
 
-  it('answers a facility with a not-yet line, closes it with confirm, and returns to title on cancel', () => {
+  it('enters a facility, keeps settings as a not-yet line, and returns to title on cancel', () => {
     const go = vi.fn();
     const root = document.createElement('div');
     const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
     s.enter(root);
     s.onAction('confirm');               // greeting closes
     s.onAction('confirm');               // 冒險者公會
-    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toContain('冒險者公會');
-    s.onAction('down');                  // dialogue open: menu must not move
-    s.onAction('confirm');               // close line
-    expect(root.querySelector('[aria-selected=true]')!.textContent).toBe('冒險者公會');
+    expect(go).toHaveBeenCalledWith('guild');
+    for (let i = 0; i < 4; i++) s.onAction('down');
+    s.onAction('confirm');               // 設定
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toContain('設定');
+    s.onAction('confirm');
     s.onAction('cancel');
     expect(go).toHaveBeenCalledWith('title');
   });

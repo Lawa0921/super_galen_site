@@ -60,7 +60,7 @@ export class ShopScene extends FacilityScene {
       pick: (it) => this.askQty(it.id, () => { v.menu.items.splice(0, v.menu.items.length, ...this.goods()); if (v.menu.cursor >= v.menu.items.length) v.menu.setCursor(0); v.render(); }),
       moved: () => { this.ctx.sfx.cursor(); show(); },
       cancel: () => { info.remove(); this.pop(); },
-    });
+    }, 12);
     show();
     this.stage.append(info);
     this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
@@ -112,7 +112,7 @@ export class ShopScene extends FacilityScene {
       },
       moved: () => this.ctx.sfx.cursor(),
       cancel: () => this.pop(),
-    });
+    }, 12);
     this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
   }
 }

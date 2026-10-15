@@ -118,3 +118,31 @@ describe('QtyView', () => {
     q.onAction('cancel'); expect(cancel).toHaveBeenCalled();
   });
 });
+
+describe('MenuView scrolling', () => {
+  it('shows a window of rows that follows the cursor, with more-above/below markers', () => {
+    const items = Array.from({ length: 12 }, (_, i) => ({ id: String(i), label: `項目${i}` }));
+    const v = new MenuView(new Menu(items), { pick: vi.fn() }, 5);
+    const labels = () => [...v.el.querySelectorAll('[role=option] .slx-label')].map((o) => o.textContent);
+    expect(labels()).toEqual(['項目0', '項目1', '項目2', '項目3', '項目4']);
+    expect(v.el.querySelector('.slx-more-up')).toBeNull();
+    expect(v.el.querySelector('.slx-more-down')).not.toBeNull();
+    for (let i = 0; i < 6; i++) v.onAction('down');
+    expect(labels()).toEqual(['項目2', '項目3', '項目4', '項目5', '項目6']);
+    expect(v.el.querySelector('[aria-selected=true] .slx-label')!.textContent).toBe('項目6');
+    expect(v.el.querySelector('.slx-more-up')).not.toBeNull();
+    v.onAction('up'); v.onAction('up'); v.onAction('up'); v.onAction('up'); v.onAction('up');
+    expect(labels()[0]).toBe('項目1');
+    v.onAction('up'); v.onAction('up');         // wraps to the last item
+    expect(labels()).toEqual(['項目7', '項目8', '項目9', '項目10', '項目11']);
+  });
+
+  it('a pointer click on a visible row picks that item, not the row index', () => {
+    const items = Array.from({ length: 12 }, (_, i) => ({ id: String(i), label: `項目${i}` }));
+    const pick = vi.fn();
+    const v = new MenuView(new Menu(items), { pick }, 5);
+    for (let i = 0; i < 8; i++) v.onAction('down');
+    (v.el.querySelectorAll('[role=option]')[0] as HTMLElement).click();
+    expect(pick).toHaveBeenCalledWith(expect.objectContaining({ id: '4' }));
+  });
+});

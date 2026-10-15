@@ -9,15 +9,25 @@ export function win(cls: string, children: Node[] = []): HTMLElement {
 export class MenuView {
   readonly el: HTMLElement;
   private list: HTMLElement;
+  private top = 0;
 
-  constructor(readonly menu: Menu, private on: { pick(item: MenuItem): void; moved?(): void; cancel?(): void }) {
+  /** `rows` limits how many options are on screen; the window scrolls to keep the cursor visible. */
+  constructor(readonly menu: Menu, private on: { pick(item: MenuItem): void; moved?(): void; cancel?(): void }, private rows = Infinity) {
     this.list = el('ul', { class: 'slx-menu', attrs: { role: 'listbox' } });
     this.el = this.list;
     this.render();
   }
 
   render(): void {
-    this.list.replaceChildren(...this.menu.items.map((item, i) => {
+    const n = this.menu.items.length;
+    const c = Math.max(0, this.menu.cursor);
+    if (c < this.top) this.top = c;
+    if (c >= this.top + this.rows) this.top = c - this.rows + 1;
+    this.top = Math.max(0, Math.min(this.top, n - Math.min(n, this.rows)));
+    const end = Math.min(n, this.top + this.rows);
+    const marker = (cls: string, text: string) => el('li', { class: `slx-more ${cls}`, text, attrs: { 'aria-hidden': 'true' } });
+    const rows = this.menu.items.slice(this.top, end).map((item, k) => {
+      const i = this.top + k;
       const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', attrs: {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
@@ -32,7 +42,8 @@ export class MenuView {
       });
       li.addEventListener('click', () => { if (this.locked()) return; if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.on.pick(item); } });
       return li;
-    }));
+    });
+    this.list.replaceChildren(...(this.top > 0 ? [marker('slx-more-up', '▲')] : []), ...rows, ...(end < n ? [marker('slx-more-down', '▼')] : []));
   }
 
   /** Pointer input only reaches the active window: anything inside an inert subtree (under a dialogue, a modal or a scene switch) is ignored. */

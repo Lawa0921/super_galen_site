@@ -8,6 +8,10 @@ import { bindUiInput } from './input';
 import { Router, type SceneName } from './scene';
 import { TitleScene } from './scenes/title';
 import { TownScene } from './scenes/town';
+import { GuildScene } from './scenes/guild';
+import { ShopScene } from './scenes/shop';
+import { InnScene } from './scenes/inn';
+import { GateScene } from './scenes/gate';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -20,8 +24,16 @@ export async function mountNext(): Promise<void> {
   let game = Game.boot(mulberry32(Date.now() >>> 0), storage);
   const sfx = new SoundManager();
   const bank = new TextureBank();
-  const make = (name: SceneName, ctx: Parameters<ConstructorParameters<typeof Router>[1]>[1]) =>
-    name === 'title' ? new TitleScene(ctx) : new TownScene(ctx);
+  const make = (name: SceneName, ctx: Parameters<ConstructorParameters<typeof Router>[1]>[1]) => {
+    switch (name) {
+      case 'title': return new TitleScene(ctx);
+      case 'town': return new TownScene(ctx);
+      case 'guild': return new GuildScene(ctx);
+      case 'shop': return new ShopScene(ctx);
+      case 'inn': return new InnScene(ctx);
+      case 'gate': return new GateScene(ctx);
+    }
+  };
   const ctx = {
     get game() { return game; },
     art: bank, sfx,

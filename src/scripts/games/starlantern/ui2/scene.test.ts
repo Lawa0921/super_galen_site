@@ -37,3 +37,17 @@ describe('Router guards', () => {
     expect(root.hasAttribute('inert')).toBe(false);
   });
 });
+
+describe('Router input timing', () => {
+  it('accepts input as soon as the new scene is on screen, during the fade-in', async () => {
+    const log: string[] = [];
+    const root = document.createElement('div');
+    const r = new Router(root, (n) => fake(log, n), {} as never, 40);
+    const going = r.go('title');
+    await new Promise((res) => setTimeout(res, 30));   // past the 20 ms fade-out, scene entered
+    r.onAction('confirm');
+    await going;
+    expect(log).toEqual(['enter title', 'title:confirm']);
+    expect(root.hasAttribute('inert')).toBe(false);
+  });
+});

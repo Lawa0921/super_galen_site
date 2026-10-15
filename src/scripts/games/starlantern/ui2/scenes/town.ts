@@ -20,7 +20,7 @@ export class TownScene implements Scene {
   enter(root: HTMLElement): void {
     const t = T.ui2.town;
     const menu = new Menu(FACILITIES.map((id) => ({ id, label: t.facilities[id] })));
-    this.view = new MenuView(menu, { pick: (it) => this.pick(it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.ctx.go('title'); } });
+    this.view = new MenuView(menu, { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.ctx.go('title'); } });
     const bg = this.ctx.art.has(art.scene('town')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('town'), alt: '' } })] : [];
     root.append(el('div', { class: 'slx-scene slx-town' }, [
       ...bg,
@@ -46,8 +46,9 @@ export class TownScene implements Scene {
     this.menuWin.removeAttribute('inert');
   }
 
-  private pick(label: string): void {
+  private pick(id: string, label: string): void {
     this.ctx.sfx.confirm();
+    if (id === 'guild' || id === 'shop' || id === 'inn' || id === 'gate') { this.ctx.go(id); return; }
     void this.speak('', T.ui2.town.soon(label));
   }
 }
