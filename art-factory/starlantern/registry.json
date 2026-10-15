@@ -2,7 +2,7 @@
   "assets": {
     "char-noel-standee": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/noel-standee.png",
       "final": "art-factory/starlantern/work/char-noel-standee/char-noel-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-standee\\char-noel-standee-a1.png",
@@ -21,11 +21,12 @@
           148,
           256
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-noel-portrait": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/noel-portrait.png",
       "final": "art-factory/starlantern/work/char-noel-portrait/char-noel-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait\\char-noel-portrait-a1.png",
@@ -44,11 +45,12 @@
           118,
           119
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-chizuru-standee": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/chizuru-standee.png",
       "final": "art-factory/starlantern/work/char-chizuru-standee/char-chizuru-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-standee\\char-chizuru-standee-a1.png",
@@ -67,11 +69,12 @@
           159,
           282
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-chizuru-portrait": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/chizuru-portrait.png",
       "final": "art-factory/starlantern/work/char-chizuru-portrait/char-chizuru-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait\\char-chizuru-portrait-a1.png",
@@ -90,11 +93,12 @@
           127,
           123
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-liz-standee": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/liz-standee.png",
       "final": "art-factory/starlantern/work/char-liz-standee/char-liz-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-standee\\char-liz-standee-a1.png",
@@ -113,11 +117,12 @@
           156,
           284
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-liz-portrait": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/liz-portrait.png",
       "final": "art-factory/starlantern/work/char-liz-portrait/char-liz-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait\\char-liz-portrait-a1.png",
@@ -136,11 +141,12 @@
           102,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-sylvie-standee": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/sylvie-standee.png",
       "final": "art-factory/starlantern/work/char-sylvie-standee/char-sylvie-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-standee\\char-sylvie-standee-a1.png",
@@ -159,11 +165,12 @@
           160,
           278
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-sylvie-portrait": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/sylvie-portrait.png",
       "final": "art-factory/starlantern/work/char-sylvie-portrait/char-sylvie-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait\\char-sylvie-portrait-a1.png",
@@ -182,11 +189,12 @@
           122,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-scarlet-standee": {
       "kind": "sprite",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/scarlet-standee.png",
       "final": "art-factory/starlantern/work/char-scarlet-standee/char-scarlet-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-standee\\char-scarlet-standee-a1.png",
@@ -208,7 +216,7 @@
     },
     "char-scarlet-portrait": {
       "kind": "sprite",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait.png",
       "final": "art-factory/starlantern/work/char-scarlet-portrait/char-scarlet-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait\\char-scarlet-portrait-a1.png",
@@ -228,7 +236,7 @@
     },
     "char-selene-standee": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/selene-standee.png",
       "final": "art-factory/starlantern/work/char-selene-standee/char-selene-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-standee\\char-selene-standee-a1.png",
@@ -249,11 +257,12 @@
         ]
       },
       "allow_residue": 1,
-      "notes": "1 in-palette pink pixel (231,89,172) at art (45,69) inside the face, surrounded by skin; checked visually"
+      "notes": "1 in-palette pink pixel (231,89,172) at art (45,69) inside the face, surrounded by skin; checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-selene-portrait": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/selene-portrait.png",
       "final": "art-factory/starlantern/work/char-selene-portrait/char-selene-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait\\char-selene-portrait-a1.png",
@@ -272,11 +281,12 @@
           123,
           114
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-safira-standee": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/safira-standee.png",
       "final": "art-factory/starlantern/work/char-safira-standee/char-safira-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-standee\\char-safira-standee-a1.png",
@@ -295,11 +305,12 @@
           196,
           269
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-safira-portrait": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/safira-portrait.png",
       "final": "art-factory/starlantern/work/char-safira-portrait/char-safira-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait\\char-safira-portrait-a1.png",
@@ -318,11 +329,12 @@
           121,
           122
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-bobby-standee": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/bobby-standee.png",
       "final": "art-factory/starlantern/work/char-bobby-standee/char-bobby-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-standee\\char-bobby-standee-a1.png",
@@ -341,11 +353,12 @@
           160,
           280
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-bobby-portrait": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/bobby-portrait.png",
       "final": "art-factory/starlantern/work/char-bobby-portrait/char-bobby-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait\\char-bobby-portrait-a1.png",
@@ -364,11 +377,12 @@
           122,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "map-party-up": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/map/party-up.png",
       "final": "art-factory/starlantern/work/map-party-up/map-party-up.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\0.png",
@@ -385,11 +399,12 @@
           24,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "map-party-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/map/party-down.png",
       "final": "art-factory/starlantern/work/map-party-down/map-party-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\1.png",
@@ -406,11 +421,12 @@
           24,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "map-party-left": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/map/party-left.png",
       "final": "art-factory/starlantern/work/map-party-left/map-party-left.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\2.png",
@@ -427,11 +443,12 @@
           23,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "map-party-right": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/map/party-right.png",
       "final": "art-factory/starlantern/work/map-party-right/map-party-right.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-map-party\\sheet-map-party-a1-frames\\3.png",
@@ -448,7 +465,8 @@
           23,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "sheet-tiles-f1": {
       "kind": "tile-sheet",
@@ -470,7 +488,7 @@
     },
     "tile-f1-wall": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-wall.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-wall.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -487,7 +505,7 @@
     },
     "tile-f1-floor": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-floor.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-floor.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -504,7 +522,7 @@
     },
     "tile-f1-door": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-door.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-door.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -521,7 +539,7 @@
     },
     "tile-f1-up": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-up.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-up.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -538,7 +556,7 @@
     },
     "tile-f1-down": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-down.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -555,7 +573,7 @@
     },
     "tile-f1-chest": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-chest.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-chest.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -572,7 +590,7 @@
     },
     "tile-f1-chest-open": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-chest-open.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-chest-open.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -589,7 +607,7 @@
     },
     "tile-f1-entrance": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-entrance.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-entrance.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -606,7 +624,7 @@
     },
     "tile-f1-boss": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f1-boss.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-boss.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -623,7 +641,7 @@
     },
     "bg-f1": {
       "kind": "opaque",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/bg/f1.png",
       "final": "art-factory/starlantern/work/bg-f1/bg-f1.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f1\\bg-f1-a1.png",
@@ -658,7 +676,7 @@
     },
     "tile-f2-wall": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-wall.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-wall.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -671,11 +689,12 @@
           62,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f2-floor": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-floor.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-floor.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -688,11 +707,12 @@
           61,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f2-door": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-door.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-door.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -705,11 +725,12 @@
           62,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f2-up": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-up.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-up.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -722,11 +743,12 @@
           62,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f2-down": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-down.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -739,11 +761,12 @@
           61,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f2-chest": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-chest.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-chest.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -756,11 +779,12 @@
           62,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f2-chest-open": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-chest-open.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-chest-open.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -773,11 +797,12 @@
           62,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f2-entrance": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-entrance.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-entrance.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -790,11 +815,12 @@
           61,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f2-boss": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f2-boss.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f2/tile-f2-boss.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f2\\sheet-tiles-f2-a1.png",
@@ -807,11 +833,12 @@
           62,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "bg-f2": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/bg/f2.png",
       "final": "art-factory/starlantern/work/bg-f2/bg-f2.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f2\\bg-f2-a1.png",
@@ -824,7 +851,8 @@
           418,
           235
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "sheet-tiles-f3": {
       "kind": "tile-sheet",
@@ -846,7 +874,7 @@
     },
     "tile-f3-wall": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-wall.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-wall.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -860,11 +888,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f3-floor": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-floor.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-floor.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -878,11 +907,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f3-door": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-door.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-door.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -896,11 +926,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f3-up": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-up.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-up.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -914,11 +945,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f3-down": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-down.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -932,11 +964,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f3-chest": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-chest.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-chest.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -950,11 +983,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f3-chest-open": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-chest-open.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-chest-open.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -968,11 +1002,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f3-entrance": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-entrance.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-entrance.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -986,11 +1021,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "tile-f3-boss": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/tiles/f3-boss.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f3/tile-f3-boss.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f3\\sheet-tiles-f3-a2.png",
@@ -1004,11 +1040,12 @@
           62
         ]
       },
-      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2"
+      "reason": "walls unreadable on the map (mostly floor colour); regenerating sheet a2",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "bg-f3": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/bg/f3.png",
       "final": "art-factory/starlantern/work/bg-f3/bg-f3.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f3\\bg-f3-a1.png",
@@ -1021,11 +1058,12 @@
           418,
           235
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "enemy-slime": {
       "kind": "sprite",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/slime.png",
       "final": "art-factory/starlantern/work/enemy-slime/enemy-slime.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-slime\\enemy-slime-a1.png",
@@ -1045,7 +1083,7 @@
     },
     "enemy-bat": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/bat.png",
       "final": "art-factory/starlantern/work/enemy-bat/enemy-bat.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-bat\\enemy-bat-a1.png",
@@ -1064,11 +1102,12 @@
           119,
           65
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "enemy-wolf": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/wolf.png",
       "final": "art-factory/starlantern/work/enemy-wolf/enemy-wolf.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-wolf\\enemy-wolf-a1.png",
@@ -1087,11 +1126,12 @@
           55,
           67
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "enemy-beetle": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/beetle.png",
       "final": "art-factory/starlantern/work/enemy-beetle/enemy-beetle.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-beetle\\enemy-beetle-a1.png",
@@ -1108,11 +1148,12 @@
           78,
           65
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "enemy-wisp": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/wisp.png",
       "final": "art-factory/starlantern/work/enemy-wisp/enemy-wisp.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-wisp\\enemy-wisp-a1.png",
@@ -1129,11 +1170,12 @@
           50,
           65
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "enemy-lizard": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/lizard.png",
       "final": "art-factory/starlantern/work/enemy-lizard/enemy-lizard.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-lizard\\enemy-lizard-a1.png",
@@ -1152,11 +1194,12 @@
           76,
           68
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "enemy-golem": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/golem.png",
       "final": "art-factory/starlantern/work/enemy-golem/enemy-golem.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-golem\\enemy-golem-a1.png",
@@ -1173,11 +1216,12 @@
           72,
           67
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "enemy-shade": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/shade.png",
       "final": "art-factory/starlantern/work/enemy-shade/enemy-shade.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-shade\\enemy-shade-a1.png",
@@ -1196,11 +1240,12 @@
           39,
           68
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "enemy-lanterneater": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/enemy/lanterneater.png",
       "final": "art-factory/starlantern/work/enemy-lanterneater/enemy-lanterneater.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-lanterneater\\enemy-lanterneater-a1.png",
@@ -1219,11 +1264,12 @@
           147,
           154
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "fx-slash": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/slash.png",
       "final": "art-factory/starlantern/work/fx-slash/fx-slash.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-slash\\fx-slash-a1.png",
@@ -1240,11 +1286,12 @@
           58,
           65
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "fx-pierce": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/pierce.png",
       "final": "art-factory/starlantern/work/fx-pierce/fx-pierce.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-pierce\\fx-pierce-a1.png",
@@ -1261,11 +1308,12 @@
           263,
           62
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "fx-strike": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/strike.png",
       "final": "art-factory/starlantern/work/fx-strike/fx-strike.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-strike\\fx-strike-a1.png",
@@ -1282,11 +1330,12 @@
           62,
           65
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "fx-fire": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/fire.png",
       "final": "art-factory/starlantern/work/fx-fire/fx-fire.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-fire\\fx-fire-a1.png",
@@ -1303,11 +1352,12 @@
           62,
           67
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "fx-ice": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/ice.png",
       "final": "art-factory/starlantern/work/fx-ice/fx-ice.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-ice\\fx-ice-a1.png",
@@ -1326,11 +1376,12 @@
           56,
           64
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "fx-thunder": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/thunder.png",
       "final": "art-factory/starlantern/work/fx-thunder/fx-thunder.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-thunder\\fx-thunder-a1.png",
@@ -1349,11 +1400,12 @@
           26,
           67
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "fx-heal": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/heal.png",
       "final": "art-factory/starlantern/work/fx-heal/fx-heal.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-heal\\fx-heal-a1.png",
@@ -1372,11 +1424,12 @@
           25,
           65
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "fx-buff": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/fx/buff.png",
       "final": "art-factory/starlantern/work/fx-buff/fx-buff.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-buff\\fx-buff-a1.png",
@@ -1393,11 +1446,12 @@
           46,
           66
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "ui-frame": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/ui/frame.png",
       "final": "art-factory/starlantern/work/ui-frame/ui-frame.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-frame\\ui-frame-a1.png",
@@ -1410,11 +1464,12 @@
           114,
           114
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-fire-star": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/fire-star.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-fire-star.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1431,11 +1486,12 @@
           34,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-ice-star": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/ice-star.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-ice-star.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1452,11 +1508,12 @@
           33,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-hex": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/hex.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-hex.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1475,11 +1532,12 @@
           31,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-thunder-star": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/thunder-star.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-thunder-star.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1496,11 +1554,12 @@
           35,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-sweep": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/sweep.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-sweep.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1519,11 +1578,12 @@
           36,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-ward": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/ward.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-ward.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1542,11 +1602,12 @@
           34,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-pierce": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/pierce.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-pierce.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1565,11 +1626,12 @@
           52,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-twin-slash": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/twin-slash.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-twin-slash.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1586,11 +1648,12 @@
           33,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-stealth": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/stealth.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-stealth.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1609,11 +1672,12 @@
           38,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-treasure-sense": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/treasure-sense.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-treasure-sense.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1630,11 +1694,12 @@
           40,
           37
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-triple-slash": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/triple-slash.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-triple-slash.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1651,11 +1716,12 @@
           36,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-aimed-shot": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/aimed-shot.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-aimed-shot.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1672,11 +1738,12 @@
           45,
           36
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-pin-shot": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/pin-shot.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-pin-shot.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1693,11 +1760,12 @@
           38,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-arrow-rain": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/arrow-rain.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-arrow-rain.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1716,11 +1784,12 @@
           36,
           36
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-provoke": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/provoke.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-provoke.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1739,11 +1808,12 @@
           36,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-flame-burst": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/flame-burst.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-flame-burst.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1760,11 +1830,12 @@
           32,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-iron-wall": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/iron-wall.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-iron-wall.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1781,11 +1852,12 @@
           23,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-moonlight": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/moonlight.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-moonlight.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1804,11 +1876,12 @@
           32,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-cleanse": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/cleanse.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-cleanse.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1827,11 +1900,12 @@
           32,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-dream": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/dream.png",
       "final": "art-factory/starlantern/work/sheet-icons-1/icon-dream.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-1\\sheet-icons-1-a1.png",
@@ -1848,11 +1922,12 @@
           37,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-rebirth": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/rebirth.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-rebirth.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -1869,11 +1944,12 @@
           29,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-blade-dance": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/blade-dance.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-blade-dance.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -1892,11 +1968,12 @@
           32,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-war-dance": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/war-dance.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-war-dance.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -1913,11 +1990,12 @@
           33,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-mirage": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/mirage.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-mirage.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -1936,11 +2014,12 @@
           36,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-turret": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/turret.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-turret.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -1957,11 +2036,12 @@
           36,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-tinker": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/tinker.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-tinker.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -1980,11 +2060,12 @@
           37,
           37
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-barrier": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/barrier.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-barrier.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2001,11 +2082,12 @@
           29,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-potion": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/potion.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-potion.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2022,11 +2104,12 @@
           24,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-ether": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/ether.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-ether.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2043,11 +2126,12 @@
           25,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-antidote": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/antidote.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-antidote.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2064,11 +2148,12 @@
           26,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-phoenix": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/phoenix.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-phoenix.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2087,11 +2172,12 @@
           29,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-return-lamp": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/return-lamp.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-return-lamp.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2110,11 +2196,12 @@
           21,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-moss": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/moss.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-moss.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2131,11 +2218,12 @@
           40,
           36
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-bat-wing": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/bat-wing.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-bat-wing.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2152,11 +2240,12 @@
           31,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-thorn-fang": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/thorn-fang.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-thorn-fang.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2173,11 +2262,12 @@
           29,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-crystal-shell": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/crystal-shell.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-crystal-shell.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2194,11 +2284,12 @@
           33,
           37
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-ice-crystal": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/ice-crystal.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-ice-crystal.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2215,11 +2306,12 @@
           27,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-lizard-scale": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/lizard-scale.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-lizard-scale.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2236,11 +2328,12 @@
           30,
           37
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-star-stone": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/star-stone.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-star-stone.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2259,11 +2352,12 @@
           29,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-dusk-cloth": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/dusk-cloth.png",
       "final": "art-factory/starlantern/work/sheet-icons-2/icon-dusk-cloth.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-2\\sheet-icons-2-a1.png",
@@ -2280,11 +2374,12 @@
           40,
           36
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-old-coin": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/old-coin.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-old-coin.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2301,11 +2396,12 @@
           34,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-ancient-gear": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/ancient-gear.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-ancient-gear.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2322,11 +2418,12 @@
           32,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-wooden-staff": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/wooden-staff.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-wooden-staff.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2343,11 +2440,12 @@
           28,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-iron-sword": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/iron-sword.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-iron-sword.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2364,11 +2462,12 @@
           35,
           37
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-hunter-bow": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/hunter-bow.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-hunter-bow.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2385,11 +2484,12 @@
           28,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-thorn-spear": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/thorn-spear.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-thorn-spear.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2406,11 +2506,12 @@
           26,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-crystal-blade": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/crystal-blade.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-crystal-blade.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2427,11 +2528,12 @@
           30,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-frost-staff": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/frost-staff.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-frost-staff.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2448,11 +2550,12 @@
           20,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-star-saber": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/star-saber.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-star-saber.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2469,11 +2572,12 @@
           32,
           35
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-cloth-robe": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/cloth-robe.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-cloth-robe.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2490,11 +2594,12 @@
           26,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-leather-vest": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/leather-vest.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-leather-vest.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2511,11 +2616,12 @@
           32,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-scale-mail": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/scale-mail.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-scale-mail.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2532,11 +2638,12 @@
           32,
           32
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-dusk-mantle": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/dusk-mantle.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-dusk-mantle.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2555,11 +2662,12 @@
           31,
           34
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-moss-charm": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/moss-charm.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-moss-charm.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2576,11 +2684,12 @@
           27,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-bat-earring": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/bat-earring.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-bat-earring.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2599,11 +2708,12 @@
           30,
           36
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-crystal-pendant": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/crystal-pendant.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-crystal-pendant.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2620,11 +2730,12 @@
           26,
           33
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "icon-gear-ring": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/icon/gear-ring.png",
       "final": "art-factory/starlantern/work/sheet-icons-3/icon-gear-ring.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-icons-3\\sheet-icons-3-a1.png",
@@ -2643,7 +2754,8 @@
           30,
           31
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "sheet-icons-1": {
       "kind": "icon-sheet",
@@ -2731,7 +2843,7 @@
     },
     "map-fog": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/map/fog.png",
       "final": "art-factory/starlantern/work/map-fog/map-fog.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\map-fog\\map-fog-a1.png",
@@ -2744,11 +2856,12 @@
           209,
           209
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-noel-portrait-hit": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/noel-portrait-hit.png",
       "final": "art-factory/starlantern/work/char-noel-portrait-hit/char-noel-portrait-hit.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-hit\\char-noel-portrait-hit-a1.png",
@@ -2767,11 +2880,12 @@
           118,
           119
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-chizuru-portrait-hit": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/chizuru-portrait-hit.png",
       "final": "art-factory/starlantern/work/char-chizuru-portrait-hit/char-chizuru-portrait-hit.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-hit\\char-chizuru-portrait-hit-a1.png",
@@ -2790,11 +2904,12 @@
           115,
           111
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-liz-portrait-hit": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/liz-portrait-hit.png",
       "final": "art-factory/starlantern/work/char-liz-portrait-hit/char-liz-portrait-hit.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-hit\\char-liz-portrait-hit-a1.png",
@@ -2813,11 +2928,12 @@
           103,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-sylvie-portrait-hit": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/sylvie-portrait-hit.png",
       "final": "art-factory/starlantern/work/char-sylvie-portrait-hit/char-sylvie-portrait-hit.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-hit\\char-sylvie-portrait-hit-a1.png",
@@ -2836,11 +2952,12 @@
           122,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-scarlet-portrait-hit": {
       "kind": "sprite",
-      "status": "approved",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait-hit.png",
       "final": "art-factory/starlantern/work/char-scarlet-portrait-hit/char-scarlet-portrait-hit.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-hit\\char-scarlet-portrait-hit-a1.png",
@@ -2862,7 +2979,7 @@
     },
     "char-selene-portrait-hit": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/selene-portrait-hit.png",
       "final": "art-factory/starlantern/work/char-selene-portrait-hit/char-selene-portrait-hit.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-hit\\char-selene-portrait-hit-a1.png",
@@ -2881,11 +2998,12 @@
           123,
           114
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-safira-portrait-hit": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/safira-portrait-hit.png",
       "final": "art-factory/starlantern/work/char-safira-portrait-hit/char-safira-portrait-hit.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-hit\\char-safira-portrait-hit-a1.png",
@@ -2904,11 +3022,12 @@
           121,
           122
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-bobby-portrait-hit": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/bobby-portrait-hit.png",
       "final": "art-factory/starlantern/work/char-bobby-portrait-hit/char-bobby-portrait-hit.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-hit\\char-bobby-portrait-hit-a1.png",
@@ -2927,11 +3046,12 @@
           112,
           112
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-noel-portrait-attack": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/noel-portrait-attack.png",
       "final": "art-factory/starlantern/work/char-noel-portrait-attack/char-noel-portrait-attack.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-attack\\char-noel-portrait-attack-a1.png",
@@ -2950,11 +3070,12 @@
           122,
           119
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-noel-portrait-dying": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/noel-portrait-dying.png",
       "final": "art-factory/starlantern/work/char-noel-portrait-dying/char-noel-portrait-dying.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-dying\\char-noel-portrait-dying-a1.png",
@@ -2973,11 +3094,12 @@
           118,
           119
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-noel-portrait-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/noel-portrait-down.png",
       "final": "art-factory/starlantern/work/char-noel-portrait-down/char-noel-portrait-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-down\\char-noel-portrait-down-a1.png",
@@ -2996,11 +3118,12 @@
           117,
           117
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-noel-portrait-ultimate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/noel-portrait-ultimate.png",
       "final": "art-factory/starlantern/work/char-noel-portrait-ultimate/char-noel-portrait-ultimate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-ultimate\\char-noel-portrait-ultimate-a1.png",
@@ -3021,11 +3144,12 @@
         ]
       },
       "allow_residue": 1,
-      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually"
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-chizuru-portrait-attack": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/chizuru-portrait-attack.png",
       "final": "art-factory/starlantern/work/char-chizuru-portrait-attack/char-chizuru-portrait-attack.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-attack\\char-chizuru-portrait-attack-a1.png",
@@ -3044,11 +3168,12 @@
           125,
           111
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-chizuru-portrait-dying": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/chizuru-portrait-dying.png",
       "final": "art-factory/starlantern/work/char-chizuru-portrait-dying/char-chizuru-portrait-dying.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-dying\\char-chizuru-portrait-dying-a1.png",
@@ -3067,11 +3192,12 @@
           127,
           123
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-chizuru-portrait-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/chizuru-portrait-down.png",
       "final": "art-factory/starlantern/work/char-chizuru-portrait-down/char-chizuru-portrait-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-down\\char-chizuru-portrait-down-a1.png",
@@ -3090,11 +3216,12 @@
           128,
           123
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-chizuru-portrait-ultimate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/chizuru-portrait-ultimate.png",
       "final": "art-factory/starlantern/work/char-chizuru-portrait-ultimate/char-chizuru-portrait-ultimate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-ultimate\\char-chizuru-portrait-ultimate-a1.png",
@@ -3115,11 +3242,12 @@
         ]
       },
       "allow_residue": 1,
-      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually"
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-liz-portrait-attack": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/liz-portrait-attack.png",
       "final": "art-factory/starlantern/work/char-liz-portrait-attack/char-liz-portrait-attack.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-attack\\char-liz-portrait-attack-a1.png",
@@ -3138,11 +3266,12 @@
           115,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-liz-portrait-dying": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/liz-portrait-dying.png",
       "final": "art-factory/starlantern/work/char-liz-portrait-dying/char-liz-portrait-dying.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-dying\\char-liz-portrait-dying-a1.png",
@@ -3161,11 +3290,12 @@
           102,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-liz-portrait-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/liz-portrait-down.png",
       "final": "art-factory/starlantern/work/char-liz-portrait-down/char-liz-portrait-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-down\\char-liz-portrait-down-a1.png",
@@ -3184,11 +3314,12 @@
           111,
           120
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-liz-portrait-ultimate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/liz-portrait-ultimate.png",
       "final": "art-factory/starlantern/work/char-liz-portrait-ultimate/char-liz-portrait-ultimate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-ultimate\\char-liz-portrait-ultimate-a1.png",
@@ -3207,11 +3338,12 @@
           122,
           122
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-sylvie-portrait-attack": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/sylvie-portrait-attack.png",
       "final": "art-factory/starlantern/work/char-sylvie-portrait-attack/char-sylvie-portrait-attack.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-attack\\char-sylvie-portrait-attack-a1.png",
@@ -3228,11 +3360,12 @@
           124,
           120
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-sylvie-portrait-dying": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/sylvie-portrait-dying.png",
       "final": "art-factory/starlantern/work/char-sylvie-portrait-dying/char-sylvie-portrait-dying.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-dying\\char-sylvie-portrait-dying-a1.png",
@@ -3251,11 +3384,12 @@
           122,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-sylvie-portrait-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/sylvie-portrait-down.png",
       "final": "art-factory/starlantern/work/char-sylvie-portrait-down/char-sylvie-portrait-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-down\\char-sylvie-portrait-down-a1.png",
@@ -3274,11 +3408,12 @@
           122,
           119
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-sylvie-portrait-ultimate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/sylvie-portrait-ultimate.png",
       "final": "art-factory/starlantern/work/char-sylvie-portrait-ultimate/char-sylvie-portrait-ultimate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-ultimate\\char-sylvie-portrait-ultimate-a1.png",
@@ -3297,11 +3432,12 @@
           125,
           120
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-scarlet-portrait-attack": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait-attack.png",
       "final": "art-factory/starlantern/work/char-scarlet-portrait-attack/char-scarlet-portrait-attack.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-attack\\char-scarlet-portrait-attack-a1.png",
@@ -3320,11 +3456,12 @@
           113,
           115
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-scarlet-portrait-dying": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait-dying.png",
       "final": "art-factory/starlantern/work/char-scarlet-portrait-dying/char-scarlet-portrait-dying.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-dying\\char-scarlet-portrait-dying-a1.png",
@@ -3341,11 +3478,12 @@
           108,
           115
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-scarlet-portrait-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait-down.png",
       "final": "art-factory/starlantern/work/char-scarlet-portrait-down/char-scarlet-portrait-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-down\\char-scarlet-portrait-down-a1.png",
@@ -3364,11 +3502,12 @@
           103,
           114
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-scarlet-portrait-ultimate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait-ultimate.png",
       "final": "art-factory/starlantern/work/char-scarlet-portrait-ultimate/char-scarlet-portrait-ultimate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-ultimate\\char-scarlet-portrait-ultimate-a1.png",
@@ -3387,11 +3526,12 @@
           114,
           115
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-selene-portrait-attack": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/selene-portrait-attack.png",
       "final": "art-factory/starlantern/work/char-selene-portrait-attack/char-selene-portrait-attack.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-attack\\char-selene-portrait-attack-a1.png",
@@ -3412,11 +3552,12 @@
         ]
       },
       "allow_residue": 5,
-      "notes": "5 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually"
+      "notes": "5 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-selene-portrait-dying": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/selene-portrait-dying.png",
       "final": "art-factory/starlantern/work/char-selene-portrait-dying/char-selene-portrait-dying.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-dying\\char-selene-portrait-dying-a1.png",
@@ -3435,11 +3576,12 @@
           123,
           114
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-selene-portrait-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/selene-portrait-down.png",
       "final": "art-factory/starlantern/work/char-selene-portrait-down/char-selene-portrait-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-down\\char-selene-portrait-down-a1.png",
@@ -3458,11 +3600,12 @@
           122,
           114
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-selene-portrait-ultimate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/selene-portrait-ultimate.png",
       "final": "art-factory/starlantern/work/char-selene-portrait-ultimate/char-selene-portrait-ultimate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-ultimate\\char-selene-portrait-ultimate-a1.png",
@@ -3483,11 +3626,12 @@
         ]
       },
       "allow_residue": 1,
-      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually"
+      "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-safira-portrait-attack": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/safira-portrait-attack.png",
       "final": "art-factory/starlantern/work/char-safira-portrait-attack/char-safira-portrait-attack.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-attack\\char-safira-portrait-attack-a1.png",
@@ -3506,11 +3650,12 @@
           123,
           122
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-safira-portrait-dying": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/safira-portrait-dying.png",
       "final": "art-factory/starlantern/work/char-safira-portrait-dying/char-safira-portrait-dying.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-dying\\char-safira-portrait-dying-a1.png",
@@ -3529,11 +3674,12 @@
           121,
           122
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-safira-portrait-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/safira-portrait-down.png",
       "final": "art-factory/starlantern/work/char-safira-portrait-down/char-safira-portrait-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-down\\char-safira-portrait-down-a1.png",
@@ -3552,11 +3698,12 @@
           121,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-safira-portrait-ultimate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/safira-portrait-ultimate.png",
       "final": "art-factory/starlantern/work/char-safira-portrait-ultimate/char-safira-portrait-ultimate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-ultimate\\char-safira-portrait-ultimate-a1.png",
@@ -3575,11 +3722,12 @@
           118,
           113
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-bobby-portrait-attack": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/bobby-portrait-attack.png",
       "final": "art-factory/starlantern/work/char-bobby-portrait-attack/char-bobby-portrait-attack.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-attack\\char-bobby-portrait-attack-a1.png",
@@ -3598,11 +3746,12 @@
           124,
           119
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-bobby-portrait-dying": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/bobby-portrait-dying.png",
       "final": "art-factory/starlantern/work/char-bobby-portrait-dying/char-bobby-portrait-dying.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-dying\\char-bobby-portrait-dying-a1.png",
@@ -3621,11 +3770,12 @@
           123,
           121
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-bobby-portrait-down": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/bobby-portrait-down.png",
       "final": "art-factory/starlantern/work/char-bobby-portrait-down/char-bobby-portrait-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-down\\char-bobby-portrait-down-a1.png",
@@ -3644,11 +3794,12 @@
           116,
           117
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     },
     "char-bobby-portrait-ultimate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/char/bobby-portrait-ultimate.png",
       "final": "art-factory/starlantern/work/char-bobby-portrait-ultimate/char-bobby-portrait-ultimate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-ultimate\\char-bobby-portrait-ultimate-a1.png",
@@ -3667,7 +3818,8 @@
           114,
           112
         ]
-      }
+      },
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
     }
   }
 }
