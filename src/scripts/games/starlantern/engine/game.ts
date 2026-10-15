@@ -26,6 +26,7 @@ export class Game {
   phase: Phase = 'town';
   floor = 1;
   pos: Pos = { x: 0, y: 0 };
+  facing: Dir = 'down';
   encounter = 0;
   battle: BattleState | null = null;
   notice: Notice | null = null;
@@ -60,6 +61,7 @@ export class Game {
     if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return { ok: false, reason: 'party-down' };
     this.floor = floor;
     this.pos = { ...this.map().entrance };
+    this.facing = 'down';
     this.encounter = 0;
     this.phase = 'map';
     this.revealHere();
@@ -68,6 +70,7 @@ export class Game {
 
   move(dir: Dir): MoveResult {
     if (this.phase !== 'map') return { kind: 'ignored' };
+    this.facing = dir;
     const r = step(this.map(), this.pos, dir);
     if (!r.moved) return { kind: 'blocked' };
     this.pos = r.pos;

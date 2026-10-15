@@ -28,6 +28,15 @@ describe('boot', () => {
 });
 
 describe('departing', () => {
+  it('turns to face the move direction even when blocked, and faces down on departure', () => {
+    const g = new Game(calm(), null);
+    expect(g.depart(1)).toEqual({ ok: true });
+    expect(g.facing).toBe('down');
+    g.move('up'); // the entrance on floor 1 has a wall above it
+    expect(g.facing).toBe('up');
+    g.move('right');
+    expect(g.facing).toBe('right');
+  });
   it('enters a reached floor at its entrance and reveals around it', () => {
     const g = inMap(1);
     expect([g.phase, g.pos]).toEqual(['map', { x: 1, y: 1 }]);

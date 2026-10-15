@@ -41,7 +41,7 @@ export async function mountStarlantern(): Promise<void> {
   const sfx = new SoundManager();
   const bank = new TextureBank();
   await bank.preload(await loadManifest());
-  const mapView = new MapView();
+  const mapView = new MapView(bank);
   const battleView = new BattleView(fast);
   const app = await createApp(byId('sl-canvas') as HTMLCanvasElement).catch((err: unknown) => {
     console.error('[starlantern] renderer failed; the game stays playable without the canvas', err);
