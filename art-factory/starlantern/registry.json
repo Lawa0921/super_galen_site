@@ -62,7 +62,7 @@
     },
     "char-scarlet-standee": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/char/scarlet-standee.png",
       "final": "art-factory/starlantern/work/char-scarlet-standee/char-scarlet-standee.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-standee\\char-scarlet-standee-a1.png",
@@ -84,7 +84,7 @@
     },
     "char-scarlet-portrait": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait.png",
       "final": "art-factory/starlantern/work/char-scarlet-portrait/char-scarlet-portrait.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait\\char-scarlet-portrait-a1.png",
@@ -104,7 +104,7 @@
     },
     "char-scarlet-portrait-hurt": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait-hurt.png",
       "final": "art-factory/starlantern/work/char-scarlet-portrait-hurt/char-scarlet-portrait-hurt.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-hurt\\char-scarlet-portrait-hurt-a1.png",
@@ -209,7 +209,7 @@
     },
     "tile-f1-wall": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-wall.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-wall.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -226,7 +226,7 @@
     },
     "tile-f1-floor": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-floor.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-floor.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -243,7 +243,7 @@
     },
     "tile-f1-door": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-door.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-door.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -260,7 +260,7 @@
     },
     "tile-f1-up": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-up.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-up.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -277,7 +277,7 @@
     },
     "tile-f1-down": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-down.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-down.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -294,7 +294,7 @@
     },
     "tile-f1-chest": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-chest.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-chest.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -311,7 +311,7 @@
     },
     "tile-f1-chest-open": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-chest-open.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-chest-open.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -328,7 +328,7 @@
     },
     "tile-f1-entrance": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-entrance.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-entrance.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -345,7 +345,7 @@
     },
     "tile-f1-boss": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/tiles/f1-boss.png",
       "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-boss.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a2.png",
@@ -362,7 +362,7 @@
     },
     "bg-f1": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/bg/f1.png",
       "final": "art-factory/starlantern/work/bg-f1/bg-f1.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f1\\bg-f1-a1.png",
@@ -513,7 +513,7 @@
     },
     "enemy-slime": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "approved",
       "runtime": "/assets/games/starlantern/enemy/slime.png",
       "final": "art-factory/starlantern/work/enemy-slime/enemy-slime.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-slime\\enemy-slime-a1.png",
@@ -981,6 +981,11 @@
       ],
       "cols": 5,
       "rows": 4
+    },
+    "map-fog": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/map/fog.png"
     }
   }
 }

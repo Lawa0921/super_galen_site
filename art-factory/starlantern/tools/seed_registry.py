@@ -24,6 +24,7 @@ def build():
         put(f'char-{c}-portrait', 'sprite', f'char/{c}-portrait.png')
         put(f'char-{c}-portrait-hurt', 'sprite', f'char/{c}-portrait-hurt.png')
     for d in DIRS: put(f'map-party-{d}', 'sprite', f'map/party-{d}.png')
+    put('map-fog', 'opaque', 'map/fog.png')
     for n in (1, 2, 3):
         put(f'sheet-tiles-f{n}', 'tile-sheet', parts=[f'tile-f{n}-{t}' for t in TILES], cols=3, rows=3)
         for t in TILES: put(f'tile-f{n}-{t}', 'opaque', f'tiles/f{n}-{t}.png')

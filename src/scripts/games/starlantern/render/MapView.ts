@@ -1,13 +1,21 @@
-import { Container, Graphics, Sprite } from 'pixi.js';
+import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import type { Game } from '../engine/game';
 import type { Tile } from '../engine/map';
 import { art, tileKey } from './artPaths';
+import { fogState } from './fog';
 import type { TextureBank } from './textures';
 
 const COLORS: Record<Tile, number> = {
   wall: 0x2a2d3a, floor: 0x5b6150, door: 0x9c6644, up: 0x8ecae6, down: 0x219ebc, chest: 0xe9c46a, entrance: 0x90be6d, boss: 0xd62828,
 };
 const FOG = 0x05060a;
+/** Remembered tiles are drawn darker so the area around the party stands out. */
+const MEMORY_TINT = 0x6a6e86;
+
+function dim(color: number): number {
+  const r = (color >> 16) & 0xff, g = (color >> 8) & 0xff, b = color & 0xff;
+  return (Math.floor(r * 0.45) << 16) | (Math.floor(g * 0.45) << 8) | Math.floor(b * 0.5);
+}
 const HOP_FRAMES = 10;
 
 export class MapView {
@@ -37,18 +45,25 @@ export class MapView {
     this.blocks.clear();
     this.fog.clear();
     for (const s of this.tiles.removeChildren()) s.destroy();
+    const fogTex = this.bank?.get(art.fog) ?? null;
     for (let y = 0; y < map.height; y++) {
       for (let x = 0; x < map.width; x++) {
         const t = map.tiles[y][x];
         const opened = t === 'chest' && game.state.dungeon.opened.includes(`${game.floor}:${x},${y}`);
-        if (!seen.has(`${x},${y}`)) { this.fog.rect(x * cell, y * cell, cell, cell).fill(FOG); continue; }
+        const state = fogState(seen, game.pos, x, y);
+        if (state === 'hidden') {
+          if (fogTex) this.tiles.addChild(this.cellSprite(fogTex, x, y, cell));
+          else this.fog.rect(x * cell, y * cell, cell, cell).fill(FOG);
+          continue;
+        }
         const tex = this.bank?.get(art.tile(game.floor, tileKey(t, opened))) ?? null;
         if (tex) {
-          const s = new Sprite(tex);
-          s.x = x * cell; s.y = y * cell; s.width = cell; s.height = cell;
+          const s = this.cellSprite(tex, x, y, cell);
+          if (state === 'memory') s.tint = MEMORY_TINT;
           this.tiles.addChild(s);
         } else {
-          this.blocks.rect(x * cell, y * cell, cell, cell).fill(COLORS[opened ? 'floor' : t]);
+          const color = COLORS[opened ? 'floor' : t];
+          this.blocks.rect(x * cell, y * cell, cell, cell).fill(state === 'memory' ? dim(color) : color);
         }
       }
     }
@@ -69,6 +84,12 @@ export class MapView {
     if (far) { this.marker.x = tx; this.marker.y = ty; }
     else if (tx !== this.target.x || ty !== this.target.y) this.hop = HOP_FRAMES;
     this.target = { x: tx, y: ty };
+  }
+
+  private cellSprite(tex: Texture, x: number, y: number, cell: number): Sprite {
+    const s = new Sprite(tex);
+    s.x = x * cell; s.y = y * cell; s.width = cell; s.height = cell;
+    return s;
   }
 
   /** Slide toward the tile with a small hop; called from the Pixi ticker. */

@@ -29,6 +29,7 @@ export const art = {
   standee: (cid: string) => `${ART_BASE}/char/${cid}-standee.png`,
   icon: (id: string) => `${ART_BASE}/icon/${id}.png`,
   frame: `${ART_BASE}/ui/frame.png`,
+  fog: `${ART_BASE}/map/fog.png`,
 };
 
 export function tileKey(t: Tile, opened: boolean): TileKey {
@@ -54,6 +55,7 @@ export function allArtUrls(): string[] {
   const urls: string[] = [];
   for (const id of CHARACTER_IDS) urls.push(art.standee(id), art.portrait(id, 'normal'), art.portrait(id, 'hurt'));
   for (const d of DIRS) urls.push(art.party(d));
+  urls.push(art.fog);
   for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.bg(f)); }
   for (const id of Object.keys(ENEMIES)) urls.push(art.enemy(id));
   for (const k of FX_KEYS) urls.push(art.fx(k));

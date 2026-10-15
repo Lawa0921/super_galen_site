@@ -121,7 +121,8 @@ def test_seeded_registry_covers_every_runtime_asset():
     reg = seed_registry.build()
     assets = reg['assets']
     runtime = [a['runtime'] for a in assets.values() if 'runtime' in a]
-    assert len(runtime) == 133 and len(set(runtime)) == 133
+    assert len(runtime) == 134 and len(set(runtime)) == 134
+    assert assets['map-fog']['runtime'] == '/assets/games/starlantern/map/fog.png'
     assert all(r.startswith(A.BASE) for r in runtime)
     assert assets['char-scarlet-portrait-hurt']['runtime'] == '/assets/games/starlantern/char/scarlet-portrait-hurt.png'
     assert assets['tile-f2-chest-open']['runtime'] == '/assets/games/starlantern/tiles/f2-chest-open.png'
