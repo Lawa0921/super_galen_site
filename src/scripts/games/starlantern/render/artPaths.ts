@@ -30,6 +30,11 @@ export const art = {
   standee: (cid: string) => `${ART_BASE}/char/${cid}-standee.png`,
   icon: (id: string) => `${ART_BASE}/icon/${id}.png`,
   frame: `${ART_BASE}/ui/frame.png`,
+  scene: (id: 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate') => `${ART_BASE}/scene/${id}.png`,
+  npc: (id: 'guild' | 'shop' | 'inn' | 'gate', mood: 'normal' | 'happy') => `${ART_BASE}/npc/${id}${mood === 'happy' ? '-happy' : ''}.png`,
+  logo: `${ART_BASE}/ui/logo.png`,
+  window: `${ART_BASE}/ui/window.png`,
+  cursor: `${ART_BASE}/ui/cursor.png`,
   fog: `${ART_BASE}/map/fog.png`,
 };
 

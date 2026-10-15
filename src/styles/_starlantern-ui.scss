@@ -65,3 +65,14 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 .slx-confirm { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 200px; text-align: center; }
 .slx-confirm p { margin: 0 0 6px; }
 @media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
+
+.slx-ui { transition: opacity 0.15s linear; }
+.slx-ui.slx-fade { opacity: 0; }
+.slx-scene { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, #1d2340, #05060c 70%); }
+.slx-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.slx-title .slx-logo { position: absolute; left: 50%; top: 40px; width: 360px; transform: translateX(-50%); }
+.slx-title .slx-logo-text { position: absolute; left: 0; right: 0; top: 70px; margin: 0; text-align: center; font-size: 48px; line-height: 56px; color: $slx-gold; font-weight: normal; text-shadow: 0 3px 0 #000; }
+.slx-title-menu { left: 50%; top: 220px; transform: translateX(-50%); min-width: 140px; }
+.slx-place { left: 12px; top: 10px; font-size: 16px; line-height: 20px; color: $slx-ink; }
+.slx-gold { right: 12px; top: 10px; color: $slx-gold; }
+.slx-town-menu { left: 12px; top: 48px; min-width: 150px; }

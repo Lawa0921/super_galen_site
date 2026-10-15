@@ -66,5 +66,14 @@ export const T = {
     escape: (ok: boolean) => (ok ? '成功逃跑了' : '逃跑失敗'),
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
   },
+  ui2: {
+    title: { newGame: '新遊戲', cont: '繼續', settings: '設定', overwrite: '已有存檔，開始新遊戲會覆蓋它。要繼續嗎？' },
+    town: {
+      place: '邊境小鎮 露米亞',
+      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '迷宮入口', settings: '設定' },
+      lines: ['暮霧又濃了些。冒險者們，今天要往哪裡去？', '聽說迷宮深處有星燈的光。', '補給品記得在出發前備齊。'],
+      soon: (name: string) => `${name}的新介面正在製作中，下一階段開放。`,
+    },
+  },
   clear: { title: '星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '回到城鎮' },
 };

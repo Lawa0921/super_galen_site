@@ -31,4 +31,23 @@ test.describe('starlantern next ui', () => {
     await page.goto('/games/starlantern-next');
     await expect(page.locator('#sl-ui')).toBeVisible();
   });
+
+  test('plays title → town with the keyboard only', async ({ page }) => {
+    await page.goto('/games/starlantern-next');
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
+    await expect(page.locator('.slx-title [role=option]').nth(1)).toHaveAttribute('aria-disabled', 'true');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expect(page.locator('.slx-place')).toHaveText('邊境小鎮 露米亞');
+    // the greeting types out: the first confirm completes it, the next closes it
+    for (let i = 0; i < 4 && (await page.locator('.slx-talk').isVisible()); i++) await page.keyboard.press('z');
+    await expect(page.locator('.slx-talk')).toBeHidden();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('.slx-town [aria-selected=true]')).toHaveText('道具店');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.slx-title')).toBeVisible();
+    expect(await page.locator('#sl-screen button, #sl-screen select').count()).toBe(0);
+  });
 });
