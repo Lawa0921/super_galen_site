@@ -8,6 +8,8 @@ test.describe('starlantern', () => {
   test('城鎮 → 出發 → 戰鬥勝利 → 回城住宿存檔 → 重新載入', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    const badArt: string[] = [];
+    page.on('response', (r) => { if (r.url().includes('/assets/games/starlantern/') && r.status() >= 400) badArt.push(`${r.status()} ${r.url()}`); });
     await page.goto('/games/starlantern?seed=7&fast=1');
     const root = page.locator('#sl-root');
     await page.waitForFunction(() => Boolean((window as unknown as { __starlanternDebug?: unknown }).__starlanternDebug), undefined, { timeout: 20000 });
@@ -15,6 +17,7 @@ test.describe('starlantern', () => {
 
     await page.click('#sl-tab-guild');
     await expect(page.locator('.sl-formation select')).toHaveCount(5);
+    await expect(page.locator('.sl-card .sl-standee').first()).toBeVisible();
     await page.click('#sl-tab-depart');
     await page.click('#sl-depart-1');
     await expect(root).toHaveAttribute('data-phase', 'map');
@@ -23,6 +26,7 @@ test.describe('starlantern', () => {
       await page.keyboard.press(i % 2 === 0 ? 'ArrowRight' : 'ArrowLeft');
     }
     await expect(root).toHaveAttribute('data-phase', 'battle');
+    await expect(page.locator('#sl-battle .sl-portrait').first()).toBeVisible();
 
     for (let i = 0; i < 60 && !(await page.locator('#sl-continue').isVisible()); i++) {
       const auto = page.locator('#sl-auto');
@@ -52,6 +56,7 @@ test.describe('starlantern', () => {
     await expect(root).toHaveAttribute('data-phase', 'town');
     await expect(page.locator('#sl-gold')).toHaveText(gold ?? '');
     expect(await page.evaluate(() => localStorage.getItem('starlantern-save'))).not.toBeNull();
+    expect(badArt).toEqual([]);
     expect(errors).toEqual([]);
   });
 
