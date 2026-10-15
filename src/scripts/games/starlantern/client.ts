@@ -9,6 +9,7 @@ import { bindKeys } from './input/keymap';
 import { createApp } from './render/app';
 import { BattleView } from './render/BattleView';
 import { MapView } from './render/MapView';
+import { TextureBank, loadManifest } from './render/textures';
 import { BattleMenu } from './ui/battleMenu';
 import { renderClear } from './ui/clear';
 import { itemName, type UiHooks } from './ui/dom';
@@ -38,6 +39,8 @@ export async function mountStarlantern(): Promise<void> {
   const { seed, fast } = params();
   const game = Game.boot(mulberry32(seed), safeStorage());
   const sfx = new SoundManager();
+  const bank = new TextureBank();
+  await bank.preload(await loadManifest());
   const mapView = new MapView();
   const battleView = new BattleView(fast);
   const app = await createApp(byId('sl-canvas') as HTMLCanvasElement).catch((err: unknown) => {
