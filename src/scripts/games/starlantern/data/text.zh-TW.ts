@@ -81,6 +81,18 @@ export const T = {
       gate: { place: '迷宮入口', npc: '葛倫', greet: ['要下去了嗎？別逞強。', '裂口今天也在發光。'] },
       leave: '離開',
     },
+    guild: {
+      formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態', empty: '（空）', unequip: '（卸下）',
+      front: (i: number, name: string) => `前排 ${i}：${name}`, back: (i: number, name: string) => `後排 ${i}：${name}`,
+      slot: (slot: string, name: string) => `${slot}：${name}`, none: '（未裝備）',
+      ask: (name: string) => `要讓 ${name} 加入隊伍嗎？`, recruited: (name: string) => `${name} 加入了隊伍！`, equipped: '裝備好了。',
+      learnedAt: (lv: number) => `Lv ${lv} 習得`, ultimate: '絕技', gauge: (n: number) => `量表 ${n}%`,
+      roles: {
+        noel: '後排。火、冰、雷攻擊；降低敵人能力、毒。', chizuru: '前排。全體攻擊；我方減傷。', liz: '前或後。多段攻擊；降低遇敵、素材掉落加成。',
+        sylvie: '後排。單體高傷；先制攻擊、提高逃跑率。', scarlet: '前排。吸引攻擊、替隊友擋傷；消耗 HP 打火屬性大傷害。',
+        selene: '後排。治療、復活、解毒；催眠。', safira: '前排。多段攻擊、提高閃避；全隊增益。', bobby: '後排。放置砲台每回合攻擊；道具效果加倍、護盾。',
+      } as Record<string, string>,
+    },
   },
   clear: { title: '星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '回到城鎮' },
 };

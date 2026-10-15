@@ -104,3 +104,14 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 .slx-ico { width: 12px; height: 12px; object-fit: contain; }
 .slx-right { margin-left: auto; padding-left: 12px; color: $slx-dim; }
 .slx-qty { left: 300px; top: 150px; min-width: 70px; text-align: center; }
+
+.slx-list { left: 150px; top: 56px; min-width: 170px; max-height: 240px; overflow: hidden; }
+.slx-list .slx-ico { width: 16px; height: 16px; }
+.slx-info { left: 340px; top: 56px; width: 180px; }
+.slx-info img { display: block; height: 120px; margin: 0 auto 4px; }
+.slx-desc { color: $slx-dim; margin: 2px 0; }
+.slx-status { left: 150px; top: 40px; width: 360px; min-height: 220px; }
+.slx-status img { float: right; height: 150px; }
+.slx-status h3 { margin: 0 0 4px; font-size: 12px; font-weight: normal; color: $slx-gold; }
+.slx-status p { margin: 2px 0; }
+.slx-skills { margin: 4px 0; padding-left: 14px; }
