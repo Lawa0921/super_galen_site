@@ -81,6 +81,11 @@ export const T = {
       gate: { place: '迷宮入口', npc: '葛倫', greet: ['要下去了嗎？別逞強。', '裂口今天也在發光。'] },
       leave: '離開',
     },
+    shop: {
+      buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, needs: (text: string) => `需要 ${text}`,
+      bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,
+      unlocked: (names: string) => `託你的福，現在可以做出 ${names} 了！`, nothing: '沒有可以賣的素材。', canEquip: '能裝備', cannot: '不能裝備',
+    },
     guild: {
       formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態', empty: '（空）', unequip: '（卸下）',
       front: (i: number, name: string) => `前排 ${i}：${name}`, back: (i: number, name: string) => `後排 ${i}：${name}`,
