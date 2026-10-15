@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
-import { Dialogue, MenuView, confirmBox } from './widgets';
+import { Dialogue, MenuView, QtyView, confirmBox } from './widgets';
 
 const mk = () => new Menu([{ id: 'a', label: '冒險者公會' }, { id: 'b', label: '道具店', disabled: true }, { id: 'c', label: '旅館' }]);
 
@@ -90,5 +90,31 @@ describe('MenuView pointer guard', () => {
     (opts[2] as HTMLElement).click();
     expect(pick).not.toHaveBeenCalled();
     expect(v.menu.cursor).toBe(0);
+  });
+});
+
+describe('MenuView columns', () => {
+  it('renders an icon and a right-hand column without changing the label', () => {
+    const v = new MenuView(new Menu([{ id: 'potion', label: '回復藥', icon: '/assets/games/starlantern/icon/potion.png', right: '30 G' }]), { pick: vi.fn() });
+    const li = v.el.querySelector('[role=option]')!;
+    expect(li.querySelector('img')!.getAttribute('src')).toBe('/assets/games/starlantern/icon/potion.png');
+    expect(li.querySelector('.slx-label')!.textContent).toBe('回復藥');
+    expect(li.querySelector('.slx-right')!.textContent).toBe('30 G');
+  });
+});
+
+describe('QtyView', () => {
+  it('steps by 1 and 10, clamps to 1..max and reports the result', () => {
+    const change = vi.fn(); const done = vi.fn(); const cancel = vi.fn();
+    const q = new QtyView(12, { change, done, cancel });
+    expect(q.qty).toBe(1);
+    q.onAction('left'); expect(q.qty).toBe(1);
+    q.onAction('right'); q.onAction('right'); expect(q.qty).toBe(3);
+    q.onAction('up'); expect(q.qty).toBe(12);
+    q.onAction('down'); expect(q.qty).toBe(2);
+    expect(change).toHaveBeenLastCalledWith(2);
+    expect(q.el.textContent).toContain('2');
+    q.onAction('confirm'); expect(done).toHaveBeenCalledWith(2);
+    q.onAction('cancel'); expect(cancel).toHaveBeenCalled();
   });
 });

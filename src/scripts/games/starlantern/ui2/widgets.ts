@@ -18,9 +18,13 @@ export class MenuView {
 
   render(): void {
     this.list.replaceChildren(...this.menu.items.map((item, i) => {
-      const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', text: item.label, attrs: {
+      const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', attrs: {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
-      } });
+      } }, [
+        ...(item.icon ? [el('img', { class: 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
+        el('span', { class: 'slx-label', text: item.label }),
+        ...(item.right !== undefined ? [el('span', { class: 'slx-right', text: item.right })] : []),
+      ]);
       li.addEventListener('pointerenter', () => {
         if (this.locked()) return;
         const before = this.menu.cursor;
@@ -104,4 +108,29 @@ export function confirmBox(question: string, on: (yes: boolean) => void): { el: 
     cancel: () => on(false),
   });
   return { el: win('slx-confirm', [el('p', { text: question }), view.el]), view };
+}
+
+export class QtyView {
+  readonly el: HTMLElement;
+  qty = 1;
+  private label = el('span', { class: 'slx-qty-n' });
+
+  constructor(private max: number, private on: { change(qty: number): void; done(qty: number): void; cancel(): void }) {
+    this.el = win('slx-qty', [el('span', { text: '◀ ' }), this.label, el('span', { text: ' ▶' })]);
+    this.show();
+  }
+
+  onAction(a: UiAction): boolean {
+    const step = a === 'left' ? -1 : a === 'right' ? 1 : a === 'down' ? -10 : a === 'up' ? 10 : 0;
+    if (step) {
+      const next = Math.min(this.max, Math.max(1, this.qty + step));
+      if (next !== this.qty) { this.qty = next; this.show(); this.on.change(next); }
+      return true;
+    }
+    if (a === 'confirm') { this.on.done(this.qty); return true; }
+    if (a === 'cancel') { this.on.cancel(); return true; }
+    return false;
+  }
+
+  private show(): void { this.label.textContent = `× ${this.qty}`; }
 }

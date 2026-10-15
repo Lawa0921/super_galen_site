@@ -1,4 +1,4 @@
-export interface MenuItem { id: string; label: string; disabled?: boolean; note?: string }
+export interface MenuItem { id: string; label: string; disabled?: boolean; note?: string; icon?: string; right?: string }
 
 /** Cursor over a list: skips disabled items, wraps at both ends, never loops when nothing is selectable. */
 export class Menu {

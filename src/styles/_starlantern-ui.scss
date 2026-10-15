@@ -94,3 +94,13 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
     background: url('/assets/games/starlantern/ui/cursor.png') center / contain no-repeat;
   }
 }
+
+.slx-npc { position: absolute; right: 0; bottom: 0; height: 330px; }
+.slx-cmd { left: 12px; top: 56px; min-width: 120px; }
+.slx-stage { position: absolute; inset: 0; pointer-events: none; }
+.slx-stage > * { pointer-events: auto; }
+.slx-layer { left: 150px; top: 56px; max-width: 300px; }
+.slx-opt { display: flex; align-items: center; gap: 4px; }
+.slx-ico { width: 12px; height: 12px; object-fit: contain; }
+.slx-right { margin-left: auto; padding-left: 12px; color: $slx-dim; }
+.slx-qty { left: 300px; top: 150px; min-width: 70px; text-align: center; }

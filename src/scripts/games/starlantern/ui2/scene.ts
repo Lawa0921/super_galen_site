@@ -3,7 +3,7 @@ import type { SoundManager } from '../audio/SoundManager';
 import type { ArtIndex } from '../render/textures';
 import type { UiAction } from './input';
 
-export type SceneName = 'title' | 'town';
+export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate';
 export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void }
 export interface SceneCtx {
   game: Game; art: ArtIndex; sfx: Pick<SoundManager, 'cursor' | 'confirm' | 'cancel' | 'error'>;
