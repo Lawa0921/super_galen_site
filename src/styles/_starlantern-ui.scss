@@ -76,3 +76,20 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 .slx-place { left: 12px; top: 10px; font-size: 16px; line-height: 20px; color: $slx-ink; }
 .slx-gold { right: 12px; top: 10px; color: $slx-gold; }
 .slx-town-menu { left: 12px; top: 48px; min-width: 150px; }
+
+// Generated window frame and cursor; switched on by ui2/main.ts only when the art is published.
+.slx-skinned {
+  .slx-win {
+    border: 8px solid transparent;
+    border-image: url('/assets/games/starlantern/ui/window.png') 33% / 8px round;
+    border-radius: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+  .slx-sel::before {
+    content: '';
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    background: url('/assets/games/starlantern/ui/cursor.png') center / contain no-repeat;
+  }
+}

@@ -2,6 +2,7 @@ import { SoundManager } from '../audio/SoundManager';
 import { Game } from '../engine/game';
 import { mulberry32 } from '../engine/rng';
 import { SAVE_KEY } from '../engine/save';
+import { art } from '../render/artPaths';
 import { TextureBank, loadManifest } from '../render/textures';
 import { bindUiInput } from './input';
 import { Router, type SceneName } from './scene';
@@ -35,6 +36,7 @@ export async function mountNext(): Promise<void> {
   const menuArt = urls.filter((u) => /\/(scene|npc)\/|\/ui\/(logo|window|cursor)\.png$/.test(u));
   await bank.preload(menuArt);
   void bank.preload(urls.filter((u) => !menuArt.includes(u)));
+  document.getElementById('sl-screen')?.classList.toggle('slx-skinned', bank.has(art.window) && bank.has(art.cursor));
   ui.dataset.ready = 'true';
   await router.go('title');
 }
