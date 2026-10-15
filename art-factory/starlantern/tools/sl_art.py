@@ -210,6 +210,11 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None):
             hint = _near_magenta(np.asarray(to_art_pixels(src, block)), 30)
             entry = reg.data['assets'].get(aid, {})
             qa = alpha_qa(final, entry.get('allow_holes', 0), hint, entry.get('allow_residue', 0))
+            # The padded final can never touch its own edge, so check the raw canvas: a subject cut off by the
+            # generator fails, except on sides the contract allows (bust portraits end at the bottom edge).
+            sides = {'left': bbox[0] == 0, 'top': bbox[1] == 0, 'right': bbox[2] == img.width, 'bottom': bbox[3] == img.height}
+            if any(cut_side and side not in entry.get('allow_edge', []) for side, cut_side in sides.items()):
+                qa['reasons'].append('subject cut by the canvas edge'); qa['pass'] = False
     qa.update(block=block, size=list(final.size))
     out = Path(workdir) / f'{aid}.png'; final.save(out)
     (Path(workdir) / f'{aid}.qa.json').write_text(json.dumps(qa, indent=2), encoding='utf-8')

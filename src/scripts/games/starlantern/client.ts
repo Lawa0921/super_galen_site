@@ -43,8 +43,6 @@ export async function mountStarlantern(): Promise<void> {
   const game = Game.boot(mulberry32(seed), safeStorage());
   const sfx = new SoundManager();
   const bank = new TextureBank();
-  await bank.preload(await loadManifest());
-  root.classList.toggle('sl-framed', bank.has(art.frame));
   const mapView = new MapView(bank);
   const battleView = new BattleView(fast, bank);
   const app = await createApp(byId('sl-canvas') as HTMLCanvasElement).catch((err: unknown) => {
@@ -149,4 +147,9 @@ export async function mountStarlantern(): Promise<void> {
   });
   (window as unknown as { __starlanternDebug?: { game: Game } }).__starlanternDebug = { game };
   refresh();
+  // Art streams in after the first frame: the game is playable with colour blocks until then (spec section 7).
+  void loadManifest().then((urls) => bank.preload(urls)).then(() => {
+    root.classList.toggle('sl-framed', bank.has(art.frame));
+    if (!busy) refresh();
+  });
 }

@@ -10,6 +10,7 @@
 - 原創：不得模仿既有作品角色、標誌、商標；prompt 裡不寫任何作品名或畫師名。
 - 原圖保存在 `C:\Users\bag57\art-refs\starlantern\raw\<id>\`；repo 內保存 prompt、gen.json、gate.json、qa.json 與成品。
 - QA（`sl_art.py` 自動）：透明素材不得有 magenta 殘留、半透明像素、碰到畫布邊；可拼接圖塊 `seam` ≤ 24（超過時交給使用者在審核頁判斷）。
+- 畫布邊：主體不得被原圖畫布切到（`subject cut by the canvas edge`）。半身頭貼允許碰到下緣（`allow_edge: [bottom]`）；個別肩膀碰到側邊的頭貼，在登錄表記錄 `allow_edge` 與原因。
 - 例外：主體內 16 px 以下、且原圖不是純 magenta 的封閉透明洞只列為警告（`warnings`），由人工在審核頁檢查，不自動退件。原因是 codex 輸出的頭髮、武器與身體之間常有真正的細縫。
 - 尺寸：codex 不遵守指定的像素數，所以透明素材以「目標美術像素高度」決定縮放（`--height`）：立繪 280、頭貼 115、地圖隊伍 32、一般敵人 64、頭目 150、圖示 32、特效 64；圖塊表與背景用固定 `--block`（6、4）。
 

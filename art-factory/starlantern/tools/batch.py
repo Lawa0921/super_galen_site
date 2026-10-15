@@ -6,7 +6,7 @@ has not passed is skipped. Each run makes at most one new attempt per id (re-run
 import json, subprocess, sys
 from pathlib import Path
 
-REPO = Path('C:/Users/bag57/.codex/worktrees/4182/super_galen_site')
+REPO = Path(__file__).resolve().parents[3]
 AF = REPO / 'art-factory/starlantern'
 RAW = Path('C:/Users/bag57/art-refs/starlantern/raw')
 PROMPTS = AF / 'prompts'
@@ -170,6 +170,7 @@ def main():
         for im in images: argv += ['--image', im]
         if job['kind'] == 'strip': argv += ['--strip-auto', str(len(job['parts']))]
         g = subprocess.run(argv, cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace') if not reprocess else None
+        # codex_still exits 1 when its own gate fails; sl_art re-checks every gate, so its verdict is the one recorded.
         raw = RAW / aid / f'{aid}-a{n}.png'
         if not raw.exists(): print(f'[no output] {aid} a{n}: {g.stdout[-300:] if g else ""}', flush=True); continue
         proc = [sys.executable, str(TOOLS / 'sl_art.py'), 'process']

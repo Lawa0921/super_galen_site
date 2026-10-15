@@ -19,10 +19,19 @@ export class BattleView {
   readonly root = new Container();
   private slots = new Map<string, Slot>();
   private defIds = new Map<string, string>();
+  /** Pending timers, animation frames and shatters of the current battle; cleared when a new battle is set up. */
+  private timers = new Set<ReturnType<typeof setTimeout>>();
+  private frames = new Set<number>();
+  private shattering: Promise<void>[] = [];
 
   constructor(private fast = false, private bank: TextureBank | null = null) {}
 
   setup(state: BattleState, size: { width: number; height: number }, floor: number): void {
+    for (const t of this.timers) clearTimeout(t);
+    for (const f of this.frames) cancelAnimationFrame(f);
+    this.timers.clear();
+    this.frames.clear();
+    this.shattering = [];
     for (const c of this.root.removeChildren()) c.destroy({ children: true });
     this.slots.clear();
     this.defIds.clear();
@@ -80,11 +89,13 @@ export class BattleView {
       }
       if (cue.kind === 'fx' && cue.fx === 'heal') sfx.heal();
       if ((cue.kind === 'hit' || cue.kind === 'fx') && cue.fx && slot) this.effect(slot, cue.fx);
-      if (cue.kind === 'ko') { sfx.ko(); if (slot) this.shatter(slot); }
+      if (cue.kind === 'ko') { sfx.ko(); if (slot) this.shattering.push(this.shatter(slot)); }
     }
+    await Promise.all(this.shattering);
+    this.shattering = [];
     for (const e of state.enemies) {
       const s = this.slots.get(e.key);
-      if (s && !e.alive) s.box.alpha = 0;
+      if (s && !e.alive && !s.box.destroyed) s.box.alpha = 0;
     }
   }
 
@@ -95,7 +106,7 @@ export class BattleView {
     const x0 = slot.box.x;
     slot.box.x = x0 + 6;
     this.later(60, () => { slot.box.x = x0; });
-    this.later(90, () => { slot.body.filters = []; });
+    this.later(90, () => { slot.body.filters = []; f.destroy(); });
   }
 
   private effect(slot: Slot, key: Parameters<typeof art.fx>[0]): void {
@@ -109,10 +120,10 @@ export class BattleView {
     this.later(220, () => { slot.box.removeChild(s); s.destroy(); });
   }
 
-  private shatter(slot: Slot): void {
+  private shatter(slot: Slot): Promise<void> {
     const tex = slot.texture;
     const sprite = slot.body.children[0];
-    if (!tex || !(sprite instanceof Sprite) || this.fast) { slot.box.alpha = this.fast ? 0 : 0.15; return; }
+    if (!tex || !(sprite instanceof Sprite) || this.fast) { slot.box.alpha = this.fast ? 0 : 0.15; return Promise.resolve(); }
     const { width: w, height: h } = tex.frame;
     const k = sprite.scale.x;
     sprite.visible = false;
@@ -126,12 +137,23 @@ export class BattleView {
       return { p, vx: (i % 2 ? 1 : -1) * 2.5, vy: i < 2 ? -2 : 1 };
     });
     let frame = 0;
-    const tick = () => {
-      frame++;
-      for (const { p, vx, vy } of pieces) { p.x += vx; p.y += vy + frame * 0.3; p.alpha = Math.max(0, 1 - frame / 24); }
-      if (frame < 24) requestAnimationFrame(tick); else slot.box.alpha = 0;
-    };
-    requestAnimationFrame(tick);
+    return new Promise((resolve) => {
+      const tick = () => {
+        if (slot.box.destroyed) { resolve(); return; }
+        frame++;
+        for (const { p, vx, vy } of pieces) { p.x += vx; p.y += vy + frame * 0.3; p.alpha = Math.max(0, 1 - frame / 24); }
+        if (frame < 24) { this.frame(tick); return; }
+        slot.box.alpha = 0;
+        for (const { p } of pieces) p.texture.destroy();
+        resolve();
+      };
+      this.frame(tick);
+    });
+  }
+
+  private frame(fn: () => void): void {
+    const id = requestAnimationFrame(() => { this.frames.delete(id); fn(); });
+    this.frames.add(id);
   }
 
   private popup(slot: Slot, text: string, color: number): void {
@@ -143,7 +165,8 @@ export class BattleView {
   }
 
   private later(ms: number, fn: () => void): void {
-    setTimeout(fn, this.fast ? 0 : ms);
+    const id = setTimeout(() => { this.timers.delete(id); fn(); }, this.fast ? 0 : ms);
+    this.timers.add(id);
   }
 
   private wait(ms: number): Promise<void> {

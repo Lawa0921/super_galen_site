@@ -219,3 +219,13 @@ def test_slice_grid_trims_edge_lines_blended_with_magenta():
     arr[5, 22] = (120, 140, 110)                    # a few real pixels in that column do not keep it
     assert A.slice_grid(Image.fromarray(arr, 'RGB'), 1, 1)[0].size == (21, 20)      # icons: untouched
     assert A.slice_grid(Image.fromarray(arr, 'RGB'), 1, 1, trim=True)[0].size == (20, 19)
+
+
+def test_finish_fails_a_subject_cut_off_by_the_raw_canvas_unless_that_side_is_allowed(tmp_path):
+    big = np.zeros((120, 80, 3), np.uint8); big[:] = (255, 0, 255); big[20:120, 20:60] = (20, 120, 60)   # feet cut at the bottom
+    raw = tmp_path / 'raw.png'; Image.fromarray(big, 'RGB').save(raw)
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'char-x', raw, 'sprite', workdir=tmp_path / 'w', block=4)['char-x']
+    assert not q['pass'] and 'subject cut by the canvas edge' in q['reasons']
+    reg.set('char-y', allow_edge=['bottom'])
+    assert A.process(reg, 'char-y', raw, 'sprite', workdir=tmp_path / 'w2', block=4)['char-y']['pass']

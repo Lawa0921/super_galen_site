@@ -87,7 +87,8 @@ $sl-gold: #ffd166;
 .sl-battle { margin-top: 8px; }
 .sl-party { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .sl-member { padding: 4px; border: 1px solid $sl-line; font-size: 0.8rem; }
-.sl-member--active { border-color: $sl-gold; }
+// outline, not border colour: the published frame's border-image would hide a border colour
+.sl-member--active { border-color: $sl-gold; outline: 3px solid $sl-gold; outline-offset: -3px; }
 .sl-member--down { opacity: 0.45; filter: grayscale(1); }
 .sl-member--acting { box-shadow: 0 0 0 2px $sl-gold; }
 .sl-member--hit { animation: sl-hit 0.2s steps(2) 1; }
@@ -134,6 +135,7 @@ $sl-gold: #ffd166;
   overflow: hidden;
   pointer-events: none;
 }
+.sl-cutin[hidden] { display: none; }
 .sl-cutin--on { animation: sl-cutin-dim 1.2s ease-out both; }
 .sl-cutin__lines {
   position: absolute;

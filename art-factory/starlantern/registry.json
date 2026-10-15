@@ -46,7 +46,10 @@
           119
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-chizuru-standee": {
       "kind": "sprite",
@@ -94,7 +97,10 @@
           123
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-liz-standee": {
       "kind": "sprite",
@@ -142,7 +148,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-sylvie-standee": {
       "kind": "sprite",
@@ -190,7 +199,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-scarlet-standee": {
       "kind": "sprite",
@@ -232,7 +244,10 @@
           108,
           115
         ]
-      }
+      },
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-selene-standee": {
       "kind": "sprite",
@@ -282,7 +297,10 @@
           114
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-safira-standee": {
       "kind": "sprite",
@@ -330,7 +348,10 @@
           122
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-bobby-standee": {
       "kind": "sprite",
@@ -378,7 +399,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "map-party-up": {
       "kind": "sprite",
@@ -2881,7 +2905,10 @@
           119
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-chizuru-portrait-hit": {
       "kind": "sprite",
@@ -2905,7 +2932,10 @@
           111
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-liz-portrait-hit": {
       "kind": "sprite",
@@ -2929,7 +2959,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-sylvie-portrait-hit": {
       "kind": "sprite",
@@ -2953,7 +2986,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-scarlet-portrait-hit": {
       "kind": "sprite",
@@ -2975,7 +3011,10 @@
         ]
       },
       "allow_holes": 1,
-      "notes": "1 pocket at raw (562,203) is dark magenta (187,1,179) between hair strands; checked visually; block forced to 11 to match the normal portrait"
+      "notes": "1 pocket at raw (562,203) is dark magenta (187,1,179) between hair strands; checked visually; block forced to 11 to match the normal portrait",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-selene-portrait-hit": {
       "kind": "sprite",
@@ -2999,7 +3038,10 @@
           114
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-safira-portrait-hit": {
       "kind": "sprite",
@@ -3023,7 +3065,10 @@
           122
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-bobby-portrait-hit": {
       "kind": "sprite",
@@ -3047,7 +3092,10 @@
           112
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-noel-portrait-attack": {
       "kind": "sprite",
@@ -3071,7 +3119,12 @@
           119
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom",
+        "left"
+      ],
+      "notes": "bust shoulder/robe meets the left edge near the bottom corner; head and weapon intact; checked visually"
     },
     "char-noel-portrait-dying": {
       "kind": "sprite",
@@ -3095,7 +3148,10 @@
           119
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-noel-portrait-down": {
       "kind": "sprite",
@@ -3119,7 +3175,10 @@
           117
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-noel-portrait-ultimate": {
       "kind": "sprite",
@@ -3145,7 +3204,10 @@
       },
       "allow_residue": 1,
       "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-chizuru-portrait-attack": {
       "kind": "sprite",
@@ -3169,7 +3231,10 @@
           111
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-chizuru-portrait-dying": {
       "kind": "sprite",
@@ -3193,7 +3258,10 @@
           123
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-chizuru-portrait-down": {
       "kind": "sprite",
@@ -3217,7 +3285,10 @@
           123
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-chizuru-portrait-ultimate": {
       "kind": "sprite",
@@ -3243,7 +3314,10 @@
       },
       "allow_residue": 1,
       "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-liz-portrait-attack": {
       "kind": "sprite",
@@ -3267,7 +3341,12 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom",
+        "right"
+      ],
+      "notes": "bust shoulder/robe meets the right edge near the bottom corner; head and weapon intact; checked visually"
     },
     "char-liz-portrait-dying": {
       "kind": "sprite",
@@ -3291,7 +3370,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-liz-portrait-down": {
       "kind": "sprite",
@@ -3315,7 +3397,10 @@
           120
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-liz-portrait-ultimate": {
       "kind": "sprite",
@@ -3339,7 +3424,10 @@
           122
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-sylvie-portrait-attack": {
       "kind": "sprite",
@@ -3361,7 +3449,10 @@
           120
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-sylvie-portrait-dying": {
       "kind": "sprite",
@@ -3385,7 +3476,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-sylvie-portrait-down": {
       "kind": "sprite",
@@ -3409,7 +3503,10 @@
           119
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-sylvie-portrait-ultimate": {
       "kind": "sprite",
@@ -3433,7 +3530,10 @@
           120
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-scarlet-portrait-attack": {
       "kind": "sprite",
@@ -3457,7 +3557,10 @@
           115
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-scarlet-portrait-dying": {
       "kind": "sprite",
@@ -3479,7 +3582,10 @@
           115
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-scarlet-portrait-down": {
       "kind": "sprite",
@@ -3503,7 +3609,10 @@
           114
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-scarlet-portrait-ultimate": {
       "kind": "sprite",
@@ -3527,7 +3636,12 @@
           115
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom",
+        "right"
+      ],
+      "notes": "bust shoulder/robe meets the right edge near the bottom corner; head and weapon intact; checked visually"
     },
     "char-selene-portrait-attack": {
       "kind": "sprite",
@@ -3552,8 +3666,12 @@
         ]
       },
       "allow_residue": 5,
-      "notes": "5 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "notes": "5 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually | bust shoulder/robe meets the right edge near the bottom corner; head and weapon intact; checked visually",
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom",
+        "right"
+      ]
     },
     "char-selene-portrait-dying": {
       "kind": "sprite",
@@ -3577,7 +3695,10 @@
           114
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-selene-portrait-down": {
       "kind": "sprite",
@@ -3601,7 +3722,10 @@
           114
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-selene-portrait-ultimate": {
       "kind": "sprite",
@@ -3627,7 +3751,10 @@
       },
       "allow_residue": 1,
       "notes": "1 in-palette purple/pink pixel(s) inside hair or robe (not touching background); checked visually",
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-safira-portrait-attack": {
       "kind": "sprite",
@@ -3651,7 +3778,10 @@
           122
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-safira-portrait-dying": {
       "kind": "sprite",
@@ -3675,7 +3805,10 @@
           122
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-safira-portrait-down": {
       "kind": "sprite",
@@ -3699,7 +3832,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-safira-portrait-ultimate": {
       "kind": "sprite",
@@ -3723,7 +3859,10 @@
           113
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-bobby-portrait-attack": {
       "kind": "sprite",
@@ -3747,7 +3886,10 @@
           119
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-bobby-portrait-dying": {
       "kind": "sprite",
@@ -3771,7 +3913,10 @@
           121
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-bobby-portrait-down": {
       "kind": "sprite",
@@ -3795,7 +3940,10 @@
           117
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     },
     "char-bobby-portrait-ultimate": {
       "kind": "sprite",
@@ -3819,7 +3967,10 @@
           112
         ]
       },
-      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續"
+      "approved_by": "user 2026-10-15: no redo requested on review page, replied 繼續",
+      "allow_edge": [
+        "bottom"
+      ]
     }
   }
 }

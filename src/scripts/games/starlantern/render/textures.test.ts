@@ -20,6 +20,17 @@ describe('TextureBank', () => {
   });
 });
 
+describe('TextureBank timeouts', () => {
+  it('gives up on a request that never settles', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const bank = new TextureBank(() => new Promise<Texture>(() => {}), 30);
+    await bank.preload(['/assets/games/starlantern/stuck.png']);
+    expect(bank.get('/assets/games/starlantern/stuck.png')).toBeNull();
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+});
+
 describe('loadManifest', () => {
   it('returns the listed urls', async () => {
     const f = vi.fn(async () => new Response(JSON.stringify({ version: 1, urls: ['/assets/games/starlantern/enemy/slime.png'] })));
