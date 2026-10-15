@@ -1,0 +1,801 @@
+{
+  "assets": {
+    "char-noel-standee": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/noel-standee.png"
+    },
+    "char-noel-portrait": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/noel-portrait.png"
+    },
+    "char-noel-portrait-hurt": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-hurt.png"
+    },
+    "char-chizuru-standee": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/chizuru-standee.png"
+    },
+    "char-chizuru-portrait": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait.png"
+    },
+    "char-chizuru-portrait-hurt": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-hurt.png"
+    },
+    "char-liz-standee": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/liz-standee.png"
+    },
+    "char-liz-portrait": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/liz-portrait.png"
+    },
+    "char-liz-portrait-hurt": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-hurt.png"
+    },
+    "char-sylvie-standee": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/sylvie-standee.png"
+    },
+    "char-sylvie-portrait": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait.png"
+    },
+    "char-sylvie-portrait-hurt": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-hurt.png"
+    },
+    "char-scarlet-standee": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/scarlet-standee.png"
+    },
+    "char-scarlet-portrait": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait.png"
+    },
+    "char-scarlet-portrait-hurt": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-hurt.png"
+    },
+    "char-selene-standee": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/selene-standee.png"
+    },
+    "char-selene-portrait": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/selene-portrait.png"
+    },
+    "char-selene-portrait-hurt": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-hurt.png"
+    },
+    "char-safira-standee": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/safira-standee.png"
+    },
+    "char-safira-portrait": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/safira-portrait.png"
+    },
+    "char-safira-portrait-hurt": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-hurt.png"
+    },
+    "char-bobby-standee": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/bobby-standee.png"
+    },
+    "char-bobby-portrait": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait.png"
+    },
+    "char-bobby-portrait-hurt": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-hurt.png"
+    },
+    "map-party-up": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/map/party-up.png"
+    },
+    "map-party-down": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/map/party-down.png"
+    },
+    "map-party-left": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/map/party-left.png"
+    },
+    "map-party-right": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/map/party-right.png"
+    },
+    "sheet-tiles-f1": {
+      "kind": "tile-sheet",
+      "status": "todo",
+      "parts": [
+        "tile-f1-wall",
+        "tile-f1-floor",
+        "tile-f1-door",
+        "tile-f1-up",
+        "tile-f1-down",
+        "tile-f1-chest",
+        "tile-f1-chest-open",
+        "tile-f1-entrance",
+        "tile-f1-boss"
+      ],
+      "cols": 3,
+      "rows": 3
+    },
+    "tile-f1-wall": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall.png"
+    },
+    "tile-f1-floor": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-floor.png"
+    },
+    "tile-f1-door": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-door.png"
+    },
+    "tile-f1-up": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-up.png"
+    },
+    "tile-f1-down": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-down.png"
+    },
+    "tile-f1-chest": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-chest.png"
+    },
+    "tile-f1-chest-open": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-chest-open.png"
+    },
+    "tile-f1-entrance": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-entrance.png"
+    },
+    "tile-f1-boss": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f1-boss.png"
+    },
+    "bg-f1": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/bg/f1.png"
+    },
+    "sheet-tiles-f2": {
+      "kind": "tile-sheet",
+      "status": "todo",
+      "parts": [
+        "tile-f2-wall",
+        "tile-f2-floor",
+        "tile-f2-door",
+        "tile-f2-up",
+        "tile-f2-down",
+        "tile-f2-chest",
+        "tile-f2-chest-open",
+        "tile-f2-entrance",
+        "tile-f2-boss"
+      ],
+      "cols": 3,
+      "rows": 3
+    },
+    "tile-f2-wall": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-wall.png"
+    },
+    "tile-f2-floor": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-floor.png"
+    },
+    "tile-f2-door": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-door.png"
+    },
+    "tile-f2-up": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-up.png"
+    },
+    "tile-f2-down": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-down.png"
+    },
+    "tile-f2-chest": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-chest.png"
+    },
+    "tile-f2-chest-open": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-chest-open.png"
+    },
+    "tile-f2-entrance": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-entrance.png"
+    },
+    "tile-f2-boss": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f2-boss.png"
+    },
+    "bg-f2": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/bg/f2.png"
+    },
+    "sheet-tiles-f3": {
+      "kind": "tile-sheet",
+      "status": "todo",
+      "parts": [
+        "tile-f3-wall",
+        "tile-f3-floor",
+        "tile-f3-door",
+        "tile-f3-up",
+        "tile-f3-down",
+        "tile-f3-chest",
+        "tile-f3-chest-open",
+        "tile-f3-entrance",
+        "tile-f3-boss"
+      ],
+      "cols": 3,
+      "rows": 3
+    },
+    "tile-f3-wall": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall.png"
+    },
+    "tile-f3-floor": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-floor.png"
+    },
+    "tile-f3-door": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-door.png"
+    },
+    "tile-f3-up": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-up.png"
+    },
+    "tile-f3-down": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-down.png"
+    },
+    "tile-f3-chest": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-chest.png"
+    },
+    "tile-f3-chest-open": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-chest-open.png"
+    },
+    "tile-f3-entrance": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-entrance.png"
+    },
+    "tile-f3-boss": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/tiles/f3-boss.png"
+    },
+    "bg-f3": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/bg/f3.png"
+    },
+    "enemy-slime": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/slime.png"
+    },
+    "enemy-bat": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/bat.png"
+    },
+    "enemy-wolf": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/wolf.png"
+    },
+    "enemy-beetle": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/beetle.png"
+    },
+    "enemy-wisp": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/wisp.png"
+    },
+    "enemy-lizard": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/lizard.png"
+    },
+    "enemy-golem": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/golem.png"
+    },
+    "enemy-shade": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/shade.png"
+    },
+    "enemy-lanterneater": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/enemy/lanterneater.png"
+    },
+    "fx-slash": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/fx/slash.png"
+    },
+    "fx-pierce": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/fx/pierce.png"
+    },
+    "fx-strike": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/fx/strike.png"
+    },
+    "fx-fire": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/fx/fire.png"
+    },
+    "fx-ice": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/fx/ice.png"
+    },
+    "fx-thunder": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/fx/thunder.png"
+    },
+    "fx-heal": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/fx/heal.png"
+    },
+    "fx-buff": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/fx/buff.png"
+    },
+    "ui-frame": {
+      "kind": "opaque",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/ui/frame.png"
+    },
+    "icon-fire-star": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/fire-star.png"
+    },
+    "icon-ice-star": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/ice-star.png"
+    },
+    "icon-hex": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/hex.png"
+    },
+    "icon-thunder-star": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/thunder-star.png"
+    },
+    "icon-sweep": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/sweep.png"
+    },
+    "icon-ward": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/ward.png"
+    },
+    "icon-pierce": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/pierce.png"
+    },
+    "icon-twin-slash": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/twin-slash.png"
+    },
+    "icon-stealth": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/stealth.png"
+    },
+    "icon-treasure-sense": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/treasure-sense.png"
+    },
+    "icon-triple-slash": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/triple-slash.png"
+    },
+    "icon-aimed-shot": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/aimed-shot.png"
+    },
+    "icon-pin-shot": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/pin-shot.png"
+    },
+    "icon-arrow-rain": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/arrow-rain.png"
+    },
+    "icon-provoke": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/provoke.png"
+    },
+    "icon-flame-burst": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/flame-burst.png"
+    },
+    "icon-iron-wall": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/iron-wall.png"
+    },
+    "icon-moonlight": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/moonlight.png"
+    },
+    "icon-cleanse": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/cleanse.png"
+    },
+    "icon-dream": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/dream.png"
+    },
+    "icon-rebirth": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/rebirth.png"
+    },
+    "icon-blade-dance": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/blade-dance.png"
+    },
+    "icon-war-dance": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/war-dance.png"
+    },
+    "icon-mirage": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/mirage.png"
+    },
+    "icon-turret": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/turret.png"
+    },
+    "icon-tinker": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/tinker.png"
+    },
+    "icon-barrier": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/barrier.png"
+    },
+    "icon-potion": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/potion.png"
+    },
+    "icon-ether": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/ether.png"
+    },
+    "icon-antidote": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/antidote.png"
+    },
+    "icon-phoenix": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/phoenix.png"
+    },
+    "icon-return-lamp": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/return-lamp.png"
+    },
+    "icon-moss": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/moss.png"
+    },
+    "icon-bat-wing": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/bat-wing.png"
+    },
+    "icon-thorn-fang": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/thorn-fang.png"
+    },
+    "icon-crystal-shell": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/crystal-shell.png"
+    },
+    "icon-ice-crystal": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/ice-crystal.png"
+    },
+    "icon-lizard-scale": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/lizard-scale.png"
+    },
+    "icon-star-stone": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/star-stone.png"
+    },
+    "icon-dusk-cloth": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/dusk-cloth.png"
+    },
+    "icon-old-coin": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/old-coin.png"
+    },
+    "icon-ancient-gear": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/ancient-gear.png"
+    },
+    "icon-wooden-staff": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/wooden-staff.png"
+    },
+    "icon-iron-sword": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/iron-sword.png"
+    },
+    "icon-hunter-bow": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/hunter-bow.png"
+    },
+    "icon-thorn-spear": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/thorn-spear.png"
+    },
+    "icon-crystal-blade": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/crystal-blade.png"
+    },
+    "icon-frost-staff": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/frost-staff.png"
+    },
+    "icon-star-saber": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/star-saber.png"
+    },
+    "icon-cloth-robe": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/cloth-robe.png"
+    },
+    "icon-leather-vest": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/leather-vest.png"
+    },
+    "icon-scale-mail": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/scale-mail.png"
+    },
+    "icon-dusk-mantle": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/dusk-mantle.png"
+    },
+    "icon-moss-charm": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/moss-charm.png"
+    },
+    "icon-bat-earring": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/bat-earring.png"
+    },
+    "icon-crystal-pendant": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/crystal-pendant.png"
+    },
+    "icon-gear-ring": {
+      "kind": "sprite",
+      "status": "todo",
+      "runtime": "/assets/games/starlantern/icon/gear-ring.png"
+    },
+    "sheet-icons-1": {
+      "kind": "icon-sheet",
+      "status": "todo",
+      "parts": [
+        "icon-fire-star",
+        "icon-ice-star",
+        "icon-hex",
+        "icon-thunder-star",
+        "icon-sweep",
+        "icon-ward",
+        "icon-pierce",
+        "icon-twin-slash",
+        "icon-stealth",
+        "icon-treasure-sense",
+        "icon-triple-slash",
+        "icon-aimed-shot",
+        "icon-pin-shot",
+        "icon-arrow-rain",
+        "icon-provoke",
+        "icon-flame-burst",
+        "icon-iron-wall",
+        "icon-moonlight",
+        "icon-cleanse",
+        "icon-dream"
+      ],
+      "cols": 5,
+      "rows": 4
+    },
+    "sheet-icons-2": {
+      "kind": "icon-sheet",
+      "status": "todo",
+      "parts": [
+        "icon-rebirth",
+        "icon-blade-dance",
+        "icon-war-dance",
+        "icon-mirage",
+        "icon-turret",
+        "icon-tinker",
+        "icon-barrier",
+        "icon-potion",
+        "icon-ether",
+        "icon-antidote",
+        "icon-phoenix",
+        "icon-return-lamp",
+        "icon-moss",
+        "icon-bat-wing",
+        "icon-thorn-fang",
+        "icon-crystal-shell",
+        "icon-ice-crystal",
+        "icon-lizard-scale",
+        "icon-star-stone",
+        "icon-dusk-cloth"
+      ],
+      "cols": 5,
+      "rows": 4
+    },
+    "sheet-icons-3": {
+      "kind": "icon-sheet",
+      "status": "todo",
+      "parts": [
+        "icon-old-coin",
+        "icon-ancient-gear",
+        "icon-wooden-staff",
+        "icon-iron-sword",
+        "icon-hunter-bow",
+        "icon-thorn-spear",
+        "icon-crystal-blade",
+        "icon-frost-staff",
+        "icon-star-saber",
+        "icon-cloth-robe",
+        "icon-leather-vest",
+        "icon-scale-mail",
+        "icon-dusk-mantle",
+        "icon-moss-charm",
+        "icon-bat-earring",
+        "icon-crystal-pendant",
+        "icon-gear-ring"
+      ],
+      "cols": 5,
+      "rows": 4
+    }
+  }
+}

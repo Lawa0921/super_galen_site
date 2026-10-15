@@ -114,3 +114,16 @@ def test_runtime_path_must_stay_under_starlantern_base(tmp_path):
     reg = A.Registry(tmp_path / 'r.json')
     with pytest.raises(ValueError):
         reg.set('evil', runtime='/assets/games/other/x.png')
+
+
+def test_seeded_registry_covers_every_runtime_asset():
+    import seed_registry
+    reg = seed_registry.build()
+    assets = reg['assets']
+    runtime = [a['runtime'] for a in assets.values() if 'runtime' in a]
+    assert len(runtime) == 133 and len(set(runtime)) == 133
+    assert all(r.startswith(A.BASE) for r in runtime)
+    assert assets['char-scarlet-portrait-hurt']['runtime'] == '/assets/games/starlantern/char/scarlet-portrait-hurt.png'
+    assert assets['tile-f2-chest-open']['runtime'] == '/assets/games/starlantern/tiles/f2-chest-open.png'
+    assert assets['sheet-icons-1']['parts'][0] == 'icon-fire-star'
+    assert len(assets['sheet-icons-3']['parts']) == 17
