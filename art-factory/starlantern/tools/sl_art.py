@@ -36,12 +36,22 @@ def _magenta_tint(rgb):
     return (r >= 150) & (b >= 150) & (g <= np.minimum(r, b) - 90)
 
 
-def defringe(img):
-    """Make near-magenta opaque pixels that touch transparency transparent (fringe exposed by downscaling)."""
-    arr = np.asarray(img.convert('RGBA')).copy(); clear = arr[..., 3] == 0
-    touch = np.zeros_like(clear)
-    touch[1:] |= clear[:-1]; touch[:-1] |= clear[1:]; touch[:, 1:] |= clear[:, :-1]; touch[:, :-1] |= clear[:, 1:]
-    arr[touch & ~clear & _near_magenta(arr[..., :3], 90)] = 0
+def _dark_magenta(rgb):
+    """Magenta blended into a dark outline: red and blue present, almost no green (real purples keep some green)."""
+    c = rgb.astype(np.int16); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    return (g <= 25) & (r >= 100) & (b >= 90) & (np.abs(r - b) <= 60)
+
+
+def defringe(img, passes=3):
+    """Make near-magenta (or dark-magenta) opaque pixels that touch transparency transparent, peeling up to `passes` layers."""
+    arr = np.asarray(img.convert('RGBA')).copy()
+    for _ in range(passes):
+        clear = arr[..., 3] == 0
+        touch = np.zeros_like(clear)
+        touch[1:] |= clear[:-1]; touch[:-1] |= clear[1:]; touch[:, 1:] |= clear[:, :-1]; touch[:, :-1] |= clear[:, 1:]
+        hit = touch & ~clear & (_near_magenta(arr[..., :3], 120) | _dark_magenta(arr[..., :3]))
+        if not hit.any(): break
+        arr[hit] = 0
     return Image.fromarray(arr, 'RGBA')
 
 

@@ -231,3 +231,26 @@ def test_finish_fails_a_subject_cut_off_by_the_raw_canvas_unless_that_side_is_al
     assert not q['pass'] and 'subject cut by the canvas edge' in q['reasons']
     reg.set('char-y', allow_edge=['bottom'])
     assert A.process(reg, 'char-y', raw, 'sprite', workdir=tmp_path / 'w2', block=4)['char-y']['pass']
+
+
+def test_defringe_also_clears_dark_magenta_blended_into_outlines():
+    rgba = np.zeros((10, 10, 4), np.uint8); rgba[2:8, 2:8] = (20, 20, 20, 255)
+    rgba[2, 4] = (174, 7, 145, 255); rgba[5, 5] = (174, 7, 145, 255); rgba[2, 6] = (120, 40, 160, 255)
+    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))
+    assert out[2, 4, 3] == 0          # edge: dark magenta fringe
+    assert out[5, 5, 3] == 255        # inside: kept
+    assert out[2, 6, 3] == 255        # edge but a real deep purple (green channel present): kept
+
+
+def test_defringe_peels_a_two_pixel_thick_fringe():
+    rgba = np.zeros((10, 12, 4), np.uint8); rgba[2:8, 2:10] = (20, 20, 20, 255)
+    rgba[2:8, 2] = (174, 7, 145, 255); rgba[2:8, 3] = (160, 10, 130, 255)
+    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))
+    assert (out[2:8, 2:4, 3] == 0).all() and (out[2:8, 4:10, 3] == 255).all()
+
+
+def test_defringe_clears_bright_pink_fringe_but_keeps_pink_hair_on_the_edge():
+    rgba = np.zeros((10, 10, 4), np.uint8); rgba[2:8, 2:8] = (20, 20, 20, 255)
+    rgba[2, 3] = (241, 101, 181, 255); rgba[2, 6] = (240, 150, 190, 255)
+    out = np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))
+    assert out[2, 3, 3] == 0 and out[2, 6, 3] == 255

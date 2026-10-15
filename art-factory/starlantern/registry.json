@@ -3974,18 +3974,54 @@
     },
     "scene-title": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/scene/title.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/scene/title.png",
+      "final": "art-factory/starlantern/work/scene-title/scene-title.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-title\\scene-title-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 51.52585598425464,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
     },
     "scene-town": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/scene/town.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/scene/town.png",
+      "final": "art-factory/starlantern/work/scene-town/scene-town.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-town\\scene-town-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 36.54744646917099,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
     },
     "scene-guild": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/scene/guild.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/scene/guild.png",
+      "final": "art-factory/starlantern/work/scene-guild/scene-guild.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-guild\\scene-guild-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 19.927198072550816,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
     },
     "scene-shop": {
       "kind": "opaque",
@@ -4004,19 +4040,53 @@
     },
     "npc-guild": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/npc/guild.png",
       "allow_edge": [
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/npc-guild/npc-guild.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-guild\\npc-guild-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 7,
+        "size": [
+          131,
+          186
+        ]
+      }
     },
     "npc-guild-happy": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/npc/guild-happy.png",
       "allow_edge": [
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/npc-guild-happy/npc-guild-happy.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-guild-happy\\npc-guild-happy-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 7,
+        "size": [
+          139,
+          185
+        ]
+      }
     },
     "npc-shop": {
       "kind": "sprite",
@@ -4068,24 +4138,74 @@
     },
     "ui-logo": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/ui/logo.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/ui/logo.png",
+      "final": "art-factory/starlantern/work/ui-logo/ui-logo.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-logo\\ui-logo-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 29,
+        "block": 6,
+        "size": [
+          252,
+          90
+        ]
+      }
     },
     "ui-window": {
       "kind": "sprite",
-      "status": "todo",
+      "status": "qa_passed",
       "runtime": "/assets/games/starlantern/ui/window.png",
       "allow_edge": [
         "left",
         "top",
         "right",
         "bottom"
-      ]
+      ],
+      "final": "art-factory/starlantern/work/ui-window/ui-window.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-window\\ui-window-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 4,
+        "size": [
+          316,
+          316
+        ]
+      }
     },
     "ui-cursor": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/ui/cursor.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/ui/cursor.png",
+      "final": "art-factory/starlantern/work/ui-cursor/ui-cursor.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\ui-cursor\\ui-cursor-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 15,
+        "size": [
+          14,
+          14
+        ]
+      }
     }
   }
 }
