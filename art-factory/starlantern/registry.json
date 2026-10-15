@@ -3301,23 +3301,93 @@
     },
     "char-scarlet-portrait-attack": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/scarlet-portrait-attack.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-attack.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-attack/char-scarlet-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-attack\\char-scarlet-portrait-attack-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          113,
+          115
+        ]
+      }
     },
     "char-scarlet-portrait-dying": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/scarlet-portrait-dying.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-dying.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-dying/char-scarlet-portrait-dying.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-dying\\char-scarlet-portrait-dying-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      }
     },
     "char-scarlet-portrait-down": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/scarlet-portrait-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-down.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-down/char-scarlet-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-down\\char-scarlet-portrait-down-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 11,
+        "size": [
+          103,
+          114
+        ]
+      }
     },
     "char-scarlet-portrait-ultimate": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/scarlet-portrait-ultimate.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-ultimate.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-ultimate/char-scarlet-portrait-ultimate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-ultimate\\char-scarlet-portrait-ultimate-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 13,
+        "block": 11,
+        "size": [
+          114,
+          115
+        ]
+      }
     },
     "char-selene-portrait-attack": {
       "kind": "sprite",
