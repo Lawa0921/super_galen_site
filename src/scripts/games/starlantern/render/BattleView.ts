@@ -64,15 +64,19 @@ export class BattleView {
     });
   }
 
-  async play(state: BattleState, sfx: SoundManager, onParty?: (key: string, cue: 'acting' | 'hit') => void): Promise<void> {
+  async play(
+    state: BattleState, sfx: SoundManager,
+    onParty?: (key: string, cue: 'acting' | 'hit' | 'ultimate', name?: string) => void | Promise<void>,
+  ): Promise<void> {
     for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null)) {
       if (cue.kind === 'wait') { await this.wait(cue.ms); continue; }
       const slot = this.slots.get(cue.key);
-      if (cue.kind === 'act') { if (!slot) onParty?.(cue.key, 'acting'); continue; }
+      if (cue.kind === 'ultimate') { if (!slot) await onParty?.(cue.key, 'ultimate', cue.name); continue; }
+      if (cue.kind === 'act') { if (!slot) void onParty?.(cue.key, 'acting'); continue; }
       if (cue.kind === 'hit') {
         if (cue.weak) sfx.weak(); else sfx.hit();
         if (slot) { this.flash(slot); this.popup(slot, String(cue.amount), cue.weak ? 0xffd166 : 0xffffff); }
-        else onParty?.(cue.key, 'hit');
+        else void onParty?.(cue.key, 'hit');
       }
       if (cue.kind === 'fx' && cue.fx === 'heal') sfx.heal();
       if ((cue.kind === 'hit' || cue.kind === 'fx') && cue.fx && slot) this.effect(slot, cue.fx);

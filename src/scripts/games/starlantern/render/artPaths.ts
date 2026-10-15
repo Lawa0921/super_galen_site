@@ -11,7 +11,8 @@ export const ART_BASE = '/assets/games/starlantern';
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
 export type TileKey = Tile | 'chest-open';
 export type FxKey = 'slash' | 'pierce' | 'strike' | 'fire' | 'ice' | 'thunder' | 'heal' | 'buff';
-export type Mood = 'normal' | 'hurt';
+export type Mood = 'normal' | 'attack' | 'hit' | 'dying' | 'down' | 'ultimate';
+export const MOODS: Mood[] = ['normal', 'attack', 'hit', 'dying', 'down', 'ultimate'];
 
 export const TILE_KEYS: TileKey[] = ['wall', 'floor', 'door', 'up', 'down', 'chest', 'chest-open', 'entrance', 'boss'];
 export const FX_KEYS: FxKey[] = ['slash', 'pierce', 'strike', 'fire', 'ice', 'thunder', 'heal', 'buff'];
@@ -25,7 +26,7 @@ export const art = {
   bg: (floor: number) => `${ART_BASE}/bg/f${floor}.png`,
   enemy: (id: string) => `${ART_BASE}/enemy/${id}.png`,
   fx: (key: FxKey) => `${ART_BASE}/fx/${key}.png`,
-  portrait: (cid: string, mood: Mood) => `${ART_BASE}/char/${cid}-portrait${mood === 'hurt' ? '-hurt' : ''}.png`,
+  portrait: (cid: string, mood: Mood) => `${ART_BASE}/char/${cid}-portrait${mood === 'normal' ? '' : `-${mood}`}.png`,
   standee: (cid: string) => `${ART_BASE}/char/${cid}-standee.png`,
   icon: (id: string) => `${ART_BASE}/icon/${id}.png`,
   frame: `${ART_BASE}/ui/frame.png`,
@@ -37,7 +38,8 @@ export function tileKey(t: Tile, opened: boolean): TileKey {
 }
 
 export function moodFor(hp: number, max: number): Mood {
-  return hp > 0 && hp <= max * 0.3 ? 'hurt' : 'normal';
+  if (hp <= 0) return 'down';
+  return hp <= max * 0.3 ? 'dying' : 'normal';
 }
 
 export function effectFor(ev: BattleEvent, actorDefId: string | null): FxKey | null {
@@ -53,7 +55,7 @@ export function effectFor(ev: BattleEvent, actorDefId: string | null): FxKey | n
 
 export function allArtUrls(): string[] {
   const urls: string[] = [];
-  for (const id of CHARACTER_IDS) urls.push(art.standee(id), art.portrait(id, 'normal'), art.portrait(id, 'hurt'));
+  for (const id of CHARACTER_IDS) urls.push(art.standee(id), ...MOODS.map((m) => art.portrait(id, m)));
   for (const d of DIRS) urls.push(art.party(d));
   urls.push(art.fog);
   for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.bg(f)); }

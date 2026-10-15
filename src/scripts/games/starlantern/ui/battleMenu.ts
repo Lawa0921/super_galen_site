@@ -1,6 +1,8 @@
 import { CHARACTERS } from '../data/characters';
 import { ITEMS } from '../data/items';
 import { SKILLS } from '../data/skills';
+import { ULTIMATES } from '../data/ultimates';
+import { LIMIT_MAX } from '../engine/battle';
 import { T } from '../data/text.zh-TW';
 import type { Action, BattleState } from '../engine/battle';
 import type { BattleEvent, Combatant } from '../engine/combatant';
@@ -11,7 +13,7 @@ import { NO_ART, type ArtIndex } from '../render/textures';
 import { iconImg, portraitImg } from './art';
 import { button, el, itemName, meter, present } from './dom';
 
-type Pending = { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'attack' };
+type Pending = { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'attack' } | { kind: 'ultimate' };
 type Mode = { view: 'root' } | { view: 'skills' } | { view: 'items' } | { view: 'target'; pick: 'enemy' | 'ally' | 'deadAlly'; pending: Pending };
 
 export class BattleMenu {
@@ -71,6 +73,7 @@ export class BattleMenu {
   private finish(p: Pending, target?: string): void {
     if (p.kind === 'attack') this.choose({ kind: 'attack', target: target ?? this.firstEnemy() });
     else if (p.kind === 'skill') this.choose({ kind: 'skill', skill: p.skill, target });
+    else if (p.kind === 'ultimate') this.choose(target ? { kind: 'ultimate', target } : { kind: 'ultimate' });
     else this.choose({ kind: 'item', item: p.item, target });
   }
 
@@ -142,6 +145,9 @@ export class BattleMenu {
     return el('div', { class: 'sl-panel' }, [head, el('div', { class: 'sl-row' }, [
       button(T.cmd.attack, () => this.withTarget('enemy', { kind: 'attack' }), { id: 'sl-cmd-attack' }),
       button(T.cmd.skill, () => { this.mode = { view: 'skills' }; this.render(); }, { id: 'sl-cmd-skill' }),
+      ...(actor.limit >= LIMIT_MAX && ULTIMATES[actor.defId as CharacterId]
+        ? [button(T.cmd.ultimate(ULTIMATES[actor.defId as CharacterId].name), () => this.withTarget(ULTIMATES[actor.defId as CharacterId].target, { kind: 'ultimate' }), { id: 'sl-cmd-ultimate', class: 'sl-btn sl-btn--ultimate' })]
+        : []),
       button(T.cmd.defend, () => this.choose({ kind: 'defend' }), { id: 'sl-cmd-defend' }),
       button(T.cmd.item, () => { this.mode = { view: 'items' }; this.render(); }, { id: 'sl-cmd-item', disabled: !hasItems }),
       button(T.cmd.escape, () => this.choose({ kind: 'escape' }), { id: 'sl-cmd-escape', disabled: this.state!.boss }),
@@ -173,6 +179,7 @@ export class BattleMenu {
         el('div', { text: `${c.name}${tags ? ` ${tags}` : ''}` }),
         `HP ${c.hp}/${c.max.hp}`, meter(c.hp, c.max.hp, 'sl-hp'),
         `TP ${c.tp}/${c.max.tp}`, meter(c.tp, c.max.tp, 'sl-tp'),
+        T.cmd.gauge(c.limit), meter(c.limit, LIMIT_MAX, c.limit >= LIMIT_MAX ? 'sl-limit sl-limit--full' : 'sl-limit'),
       ]);
     }));
   }
@@ -195,6 +202,7 @@ export class BattleMenu {
         case 'turret': return T.log.turret(name(e.target));
         case 'asleep': return T.log.asleep(name(e.actor));
         case 'no-tp': return T.log.noTp(name(e.actor));
+        case 'no-limit': return T.log.noLimit(name(e.actor));
         case 'escape': return T.log.escape(e.success);
         case 'poison-tick': return T.log.poison(name(e.target), e.amount);
       }

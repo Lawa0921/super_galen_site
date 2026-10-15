@@ -9,6 +9,8 @@ CHARS = ['noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bob
 TILES = ['wall', 'floor', 'door', 'up', 'down', 'chest', 'chest-open', 'entrance', 'boss']
 FX = ['slash', 'pierce', 'strike', 'fire', 'ice', 'thunder', 'heal', 'buff']
 DIRS = ['up', 'down', 'left', 'right']
+# Portrait moods besides the normal face (spec section 5: six faces per character).
+MOODS = ['attack', 'hit', 'dying', 'down', 'ultimate']
 
 
 def ids_in(file, pattern=r"\bid: '([a-z0-9-]+)'"):
@@ -22,7 +24,7 @@ def build():
     for c in CHARS:
         put(f'char-{c}-standee', 'sprite', f'char/{c}-standee.png')
         put(f'char-{c}-portrait', 'sprite', f'char/{c}-portrait.png')
-        put(f'char-{c}-portrait-hurt', 'sprite', f'char/{c}-portrait-hurt.png')
+        for m in MOODS: put(f'char-{c}-portrait-{m}', 'sprite', f'char/{c}-portrait-{m}.png')
     for d in DIRS: put(f'map-party-{d}', 'sprite', f'map/party-{d}.png')
     put('map-fog', 'opaque', 'map/fog.png')
     for n in (1, 2, 3):

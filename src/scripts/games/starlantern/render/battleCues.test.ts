@@ -35,3 +35,15 @@ describe('battleCues', () => {
     ]);
   });
 });
+
+describe('ultimate cue', () => {
+  it('announces an ultimate before its hits', () => {
+    const log: BattleEvent[] = [
+      { type: 'act', actor: 'scarlet', label: '紅蓮劫火', ultimate: 'ult-scarlet' },
+      { type: 'damage', target: 'e0', amount: 99, element: 'fire', mult: 1 },
+    ];
+    expect(battleCues(log, defIdOf).slice(0, 3)).toEqual([
+      { kind: 'ultimate', key: 'scarlet', name: '紅蓮劫火' }, { kind: 'act', key: 'scarlet' }, { kind: 'wait', ms: 260 },
+    ]);
+  });
+});

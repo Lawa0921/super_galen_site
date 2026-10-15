@@ -6,7 +6,7 @@ import { ART_BASE, allArtUrls, art, effectFor, moodFor, parseManifest, tileKey }
 
 describe('artPaths', () => {
   it('builds urls under the starlantern base', () => {
-    expect(art.portrait('scarlet', 'hurt')).toBe(`${ART_BASE}/char/scarlet-portrait-hurt.png`);
+    for (const m of ['attack', 'hit', 'dying', 'down', 'ultimate'] as const) expect(art.portrait('scarlet', m)).toBe(`${ART_BASE}/char/scarlet-portrait-${m}.png`);
     expect(art.portrait('scarlet', 'normal')).toBe(`${ART_BASE}/char/scarlet-portrait.png`);
     expect(art.tile(2, 'chest-open')).toBe(`${ART_BASE}/tiles/f2-chest-open.png`);
     expect(art.icon('fire-star')).toBe(`${ART_BASE}/icon/fire-star.png`);
@@ -14,8 +14,8 @@ describe('artPaths', () => {
 
   it('lists one url per asset with no duplicates', () => {
     const urls = allArtUrls();
-    expect(urls).toHaveLength(134);
-    expect(new Set(urls).size).toBe(134);
+    expect(urls).toHaveLength(166);
+    expect(new Set(urls).size).toBe(166);
     expect(urls).toContain(`${ART_BASE}/map/fog.png`);
     for (const id of CHARACTER_IDS) expect(urls).toContain(art.standee(id));
     for (const id of Object.keys(ENEMIES)) expect(urls).toContain(art.enemy(id));
@@ -33,10 +33,10 @@ describe('artPaths', () => {
     expect(tileKey('wall', true)).toBe('wall');
   });
 
-  it('switches to the hurt face at 30% hp but not when down', () => {
-    expect(moodFor(30, 100)).toBe('hurt');
+  it('picks the dying face at 30% hp and the down face at 0', () => {
+    expect(moodFor(30, 100)).toBe('dying');
     expect(moodFor(31, 100)).toBe('normal');
-    expect(moodFor(0, 100)).toBe('normal');
+    expect(moodFor(0, 100)).toBe('down');
   });
 
   it('picks an effect per event', () => {

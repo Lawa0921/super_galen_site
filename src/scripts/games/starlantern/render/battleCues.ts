@@ -2,6 +2,7 @@ import type { BattleEvent } from '../engine/combatant';
 import { effectFor, type FxKey } from './artPaths';
 
 export type Cue =
+  | { kind: 'ultimate'; key: string; name: string }
   | { kind: 'act'; key: string }
   | { kind: 'hit'; key: string; amount: number; weak: boolean; fx: FxKey | null }
   | { kind: 'fx'; key: string; fx: FxKey }
@@ -14,6 +15,7 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
   for (const ev of log) {
     if (ev.type === 'act') {
       actor = defIdOf(ev.actor);
+      if (ev.ultimate) out.push({ kind: 'ultimate', key: ev.actor, name: ev.label });
       out.push({ kind: 'act', key: ev.actor }, { kind: 'wait', ms: 260 });
       continue;
     }

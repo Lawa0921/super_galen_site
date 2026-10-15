@@ -70,6 +70,16 @@ FX = {
 HEIGHT = {'standee': 280, 'portrait': 115, 'party': 32, 'enemy': 64, 'boss': 150, 'icon': 32, 'fx': 64}
 
 
+# The five extra faces (spec section 5); each is generated from the character's normal portrait.
+MOOD_FACES = {
+    'hit': 'wincing in pain at the moment of being hit, one eye squeezed shut, a small scratch on the cheek, hair slightly messy',
+    'attack': 'shouting a fierce battle cry, mouth open, sharp determined eyes, leaning forward into an attack',
+    'dying': 'badly hurt and exhausted, bruised and dirty face, torn collar, sweat, half-closed eyes, breathing heavily',
+    'down': 'knocked out and collapsed, eyes closed, head tilted down, battered and dusty, hair dishevelled',
+    'ultimate': 'unleashing her ultimate technique: intense heroic expression, glowing eyes, wind-swept hair, a burst of colourful aura behind her',
+}
+
+
 def newest(aid):
     files = sorted((RAW / aid).glob(f'{aid}-a*.png'), key=lambda p: p.stat().st_mtime)
     files = [f for f in files if not f.stem.endswith('-magenta')]
@@ -85,13 +95,14 @@ def jobs():
     out = []
     anchor = newest('char-scarlet-standee')
     for c, desc in CHARS.items():
-        sid, pid, hid = f'char-{c}-standee', f'char-{c}-portrait', f'char-{c}-portrait-hurt'
+        sid, pid = f'char-{c}-standee', f'char-{c}-portrait'
         write(sid, f'Full-body pixel art character sprite of an original heroine: {desc}. Match the art style, proportions, pixel density, outline and colouring of the first attached image, which shows an approved sprite of a different character. Use the second attached image only for this character\'s hair, colours, outfit and weapon. Standing three-quarter view facing the viewer and slightly left, relaxed idle pose, plain practical adventurer outfit, about 5 heads tall. 16-bit JRPG style, {PIX}. Centred on a perfectly flat solid pure magenta #FF00FF background with generous empty space around her. No text, no labels, no ground shadow, no particles. {ORIGINAL}')
         write(pid, f'Square bust portrait in pixel art of the same girl as the attached full-body sprite ({desc}), head and shoulders only, gentle confident expression, facing slightly left. Match the framing and style of a 16-bit JRPG dialogue portrait, {PIX}. Perfectly flat solid pure magenta #FF00FF background around her with empty margin, no frame, no text.')
-        write(hid, f'Square bust portrait in pixel art of exactly the same girl as the attached portrait, same framing, size and palette, but wincing in pain with one eye squeezed shut, a small scratch on the cheek, hair slightly messy. 16-bit JRPG dialogue portrait style, {PIX}. Perfectly flat solid pure magenta #FF00FF background around her with empty margin, no frame, no text.')
+        for mood, face in MOOD_FACES.items():
+            write(f'char-{c}-portrait-{mood}', f'Square bust portrait in pixel art of exactly the same girl as the attached portrait, same framing, size, palette and outfit, but {face}. 16-bit JRPG dialogue portrait style, {PIX}. Perfectly flat solid pure magenta #FF00FF background around her with empty margin, no frame, no text.')
         out += [dict(id=sid, images=[anchor, AF / f'reference/crops/{c}.png'], kind='sprite', height=HEIGHT['standee']),
-                dict(id=pid, images=[('dep', sid)], kind='sprite', dep=sid, height=HEIGHT['portrait']),
-                dict(id=hid, images=[('dep', pid)], kind='sprite', dep=pid, height=HEIGHT['portrait'])]
+                dict(id=pid, images=[('dep', sid)], kind='sprite', dep=sid, height=HEIGHT['portrait'])]
+        out += [dict(id=f'char-{c}-portrait-{mood}', images=[('dep', pid)], kind='sprite', dep=pid, height=HEIGHT['portrait']) for mood in MOOD_FACES]
     write('sheet-map-party', f'Pixel art map icon of one small chibi adventurer in a hooded travelling cloak carrying a glowing star lantern, drawn four times in one row with wide magenta gaps: walking up seen from behind, walking down seen from the front, walking left, walking right. Tiny top-down RPG map sprite, about 24 art pixels tall each, 16-bit JRPG style, {PIX}. Perfectly flat solid pure magenta #FF00FF background. No text. {ORIGINAL}')
     out.append(dict(id='sheet-map-party', images=[], kind='strip', parts=['map-party-up', 'map-party-down', 'map-party-left', 'map-party-right'], height=HEIGHT['party']))
     write('map-fog', f'One square top-down pixel art map tile of unexplored darkness: deep blue-black swirling mist with a few faint wisps, very dark so it hides what is underneath, designed to tile seamlessly when repeated in every direction, fills the square edge to edge, about 32 by 32 art pixels. 16-bit JRPG style, strict square pixel grid, limited palette, no anti-aliasing. No text.')

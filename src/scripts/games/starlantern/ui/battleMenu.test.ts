@@ -16,6 +16,16 @@ function setup(enemyIds = ['slime', 'bat'], boss = false) {
 }
 
 describe('battle menu', () => {
+  it('shows each gauge and offers the ultimate only when it is full', () => {
+    const { q, root, state, menu, submit } = setup();
+    expect(root.querySelectorAll('.sl-party meter.sl-limit')).toHaveLength(5);
+    expect(q('#sl-cmd-ultimate')).toBeNull();
+    state.party[0].limit = 100;
+    menu.show(state);
+    q('#sl-cmd-ultimate')!.click();
+    for (let i = 0; i < 4; i++) q('#sl-cmd-defend')!.click();
+    expect(submit.mock.calls[0][0].scarlet).toEqual({ kind: 'ultimate' });
+  });
   it('marks each party card with its combatant key', () => {
     const { root, state } = setup();
     const cards = [...root.querySelectorAll<HTMLElement>('.sl-party .sl-member')];

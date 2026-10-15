@@ -38,6 +38,7 @@ export const T = {
   cmd: {
     attack: '攻擊', skill: '技能', defend: '防禦', item: '道具', escape: '逃跑', auto: '全員攻擊', back: '返回',
     choose: (name: string) => `${name} 的行動`, target: '選擇目標', tp: (n: number) => `${n} TP`,
+    ultimate: (name: string) => `絕技：${name}`, gauge: (n: number) => `絕技 ${n}%`,
   },
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
@@ -61,6 +62,7 @@ export const T = {
     turret: (who: string) => `${who} 設置了砲台`,
     asleep: (who: string) => `${who} 正在睡覺`,
     noTp: (who: string) => `${who} 的 TP 不足`,
+    noLimit: (who: string) => `${who} 的絕技量表還沒滿`,
     escape: (ok: boolean) => (ok ? '成功逃跑了' : '逃跑失敗'),
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
   },

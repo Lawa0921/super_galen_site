@@ -15,6 +15,8 @@ import { BattleMenu } from './ui/battleMenu';
 import { renderClear } from './ui/clear';
 import { itemName, type UiHooks } from './ui/dom';
 import { renderHud } from './ui/hud';
+import { showMood } from './ui/art';
+import { playCutIn } from './ui/cutin';
 import { renderTown } from './ui/town';
 
 function params(): { seed: number; fast: boolean } {
@@ -61,14 +63,27 @@ export async function mountStarlantern(): Promise<void> {
     return app ? { width: app.screen.width, height: app.screen.height } : { width: 0, height: 0 };
   };
   const say = (msg: string) => { notice.textContent = msg; notice.hidden = !msg; };
-  const pulseCard = (key: string, cue: 'acting' | 'hit') => {
+  /** Card reactions during playback: a momentary face and class, or the ultimate cut-in (awaited). */
+  const pulseCard = async (key: string, cue: 'acting' | 'hit' | 'ultimate', name = ''): Promise<void> => {
     const card = document.querySelector<HTMLElement>(`#sl-battle .sl-member[data-key="${key}"]`);
+    const face = card?.querySelector<HTMLImageElement>('.sl-portrait') ?? null;
+    const before = face?.getAttribute('src') ?? null;
+    if (face) showMood(bank, face, cue === 'acting' ? 'attack' : cue);
+    const restore = () => { if (face && before) face.setAttribute('src', before); };
+    if (cue === 'ultimate') {
+      sfx.ultimate();
+      const ult = art.portrait(key, 'ultimate');
+      const portrait = bank.has(ult) ? ult : bank.has(art.portrait(key, 'normal')) ? art.portrait(key, 'normal') : null;
+      await playCutIn(byId('sl-cutin'), { name, portrait, fast });
+      restore();
+      return;
+    }
     if (!card) return;
     const cls = `sl-member--${cue}`;
     card.classList.remove(cls);
     void card.offsetWidth;
     card.classList.add(cls);
-    setTimeout(() => card.classList.remove(cls), fast ? 0 : 320);
+    setTimeout(() => { card.classList.remove(cls); restore(); }, fast ? 0 : 320);
   };
 
   const hooks: UiHooks = { refresh, say, sfx, move: onMove, art: bank };

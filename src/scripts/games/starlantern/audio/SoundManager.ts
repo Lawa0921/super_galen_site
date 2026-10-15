@@ -65,5 +65,7 @@ export class SoundManager {
   heal(): void { this.blip(520, 220, 'sine', 0.1, 1040); }
   ko(): void { this.blip(300, 300, 'triangle', 0.12, 50); }
   win(): void { this.blip(523, 120, 'square', 0.1); this.blip(784, 260, 'square', 0.1); }
+  /** Rising chord for an ultimate cut-in. */
+  ultimate(): void { this.blip(392, 160, 'sawtooth', 0.12, 784); this.blip(587, 420, 'square', 0.1, 1175); }
   lose(): void { this.blip(220, 500, 'triangle', 0.12, 55); }
 }
