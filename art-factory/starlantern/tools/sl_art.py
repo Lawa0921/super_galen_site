@@ -20,13 +20,19 @@ def _near_magenta(rgb, margin):
 def cutout(img, margin=70):
     """Magenta (and near-magenta fringe) -> alpha 0; everything else alpha 255. No semi-alpha is produced."""
     rgb = np.asarray(img.convert('RGB'))
-    alpha = np.where(_near_magenta(rgb, margin), 0, 255).astype(np.uint8)
+    alpha = np.where(_near_magenta(rgb, margin) | _magenta_tint(rgb), 0, 255).astype(np.uint8)
     out = np.dstack([rgb, alpha]); out[alpha == 0, :3] = 0
     return Image.fromarray(out, 'RGBA')
 
 
-def _enclosed_transparent(alpha):
-    """Transparent pixels not reachable from the border through transparent pixels."""
+def _magenta_tint(rgb):
+    """Bright pixels where red and blue dominate green: anti-aliased magenta fringe, not pinks or purples."""
+    c = rgb.astype(np.int16); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    return (r >= 150) & (b >= 150) & (g <= np.minimum(r, b) - 90)
+
+
+def _enclosed_transparent(alpha, small=16):
+    """Pixels in enclosed transparent pockets of at most `small` pixels (over-erasure); larger pockets are real gaps."""
     h, w = alpha.shape; clear = alpha == 0; seen = np.zeros_like(clear)
     stack = [(y, x) for y in range(h) for x in (0, w - 1) if clear[y, x]] + [(y, x) for x in range(w) for y in (0, h - 1) if clear[y, x]]
     while stack:
@@ -35,17 +41,28 @@ def _enclosed_transparent(alpha):
         seen[y, x] = True
         for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
             if 0 <= ny < h and 0 <= nx < w and clear[ny, nx] and not seen[ny, nx]: stack.append((ny, nx))
-    return int((clear & ~seen).sum())
+    pockets = clear & ~seen; mask = np.zeros_like(clear)
+    while pockets.any():
+        y, x = map(int, np.argwhere(pockets)[0]); comp = [(y, x)]; pockets[y, x] = False; i = 0
+        while i < len(comp):
+            cy, cx = comp[i]; i += 1
+            for ny, nx in ((cy + 1, cx), (cy - 1, cx), (cy, cx + 1), (cy, cx - 1)):
+                if 0 <= ny < h and 0 <= nx < w and pockets[ny, nx]: pockets[ny, nx] = False; comp.append((ny, nx))
+        if len(comp) <= small:
+            for cy, cx in comp: mask[cy, cx] = True
+    return mask
 
 
-def alpha_qa(img, allow_holes=0):
+def alpha_qa(img, allow_holes=0, bg_hint=None):
     arr = np.asarray(img.convert('RGBA')); a = arr[..., 3]
     opaque = a == 255
     residue = int((opaque & _near_magenta(arr[..., :3], 90)).sum())
     semi = int(((a > 0) & (a < 255)).sum())
     border = np.zeros_like(opaque); border[0, :] = border[-1, :] = True; border[:, 0] = border[:, -1] = True
     edge = int((opaque & border).sum())
-    holes = _enclosed_transparent(a)
+    pocket = _enclosed_transparent(a)
+    if bg_hint is not None: pocket &= ~bg_hint
+    holes = int(pocket.sum())
     reasons = [r for r, bad in (('magenta residue', residue), ('semi alpha', semi), ('touches edge', edge),
                                 ('enclosed holes', holes > allow_holes)) if bad]
     return {'pass': not reasons, 'reasons': reasons, 'residue': residue, 'semi': semi, 'edge': edge, 'holes': holes}
@@ -66,7 +83,7 @@ def _runs(active):
 
 def slice_grid(img, cols, rows):
     """Cells separated by full-magenta gutters, row-major. Raises ValueError when the count differs."""
-    rgb = np.asarray(img.convert('RGB')); fg = ~_near_magenta(rgb, 45)
+    rgb = np.asarray(img.convert('RGB')); fg = ~(_near_magenta(rgb, 45) | _magenta_tint(rgb))
     xs, ys = _runs(fg.any(axis=0)), _runs(fg.any(axis=1))
     if len(xs) != cols or len(ys) != rows:
         raise ValueError(f'expected {cols}x{rows} cells, found {len(xs)}x{len(ys)}')
@@ -123,7 +140,7 @@ class Registry:
         out.write_text(json.dumps({'version': 1, 'urls': urls}, indent=2) + '\n', encoding='utf-8')
 
 
-def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None):
+def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, block=None):
     """Postprocess one raw codex PNG into final file(s) under art-factory/starlantern/work/<aid>/ and record QA."""
     workdir = Path(workdir or ROOT / 'work' / aid); workdir.mkdir(parents=True, exist_ok=True)
     img = Image.open(raw).convert('RGB')
@@ -132,16 +149,17 @@ def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None):
         targets = ids or []
         results = {}
         for cell, cid in zip(cells, targets):
-            results[cid] = _finish(reg, cid, cell, 'opaque' if kind == 'tile-sheet' else 'sprite', workdir, raw)
+            results[cid] = _finish(reg, cid, cell, 'opaque' if kind == 'tile-sheet' else 'sprite', workdir, raw, block)
         reg.set(aid, status='processed', raw=str(raw), parts=targets)
         return results
-    return {aid: _finish(reg, aid, img, kind, workdir, raw)}
+    return {aid: _finish(reg, aid, img, kind, workdir, raw, block)}
 
 
-def _finish(reg, aid, img, kind, workdir, raw):
-    probe = img if kind == 'opaque' else img.crop(cutout(img).getbbox() or (0, 0, img.width, img.height))
-    info = G.detect_grid(np.asarray(probe, np.int16), 3.0, max(24.0, probe.height / 8))
-    block = max(1, round((info['block_x'] + info['block_y']) / 2))
+def _finish(reg, aid, img, kind, workdir, raw, block=None):
+    if block is None:
+        probe = img if kind == 'opaque' else img.crop(cutout(img).getbbox() or (0, 0, img.width, img.height))
+        info = G.detect_grid(np.asarray(probe, np.int16), 3.0, max(24.0, probe.height / 8))
+        block = max(1, round((info['block_x'] + info['block_y']) / 2))
     if kind == 'opaque':
         final = to_art_pixels(img.convert('RGBA'), block)
         qa = {'pass': True, 'reasons': [], 'seam': seam_score(final)}
@@ -155,7 +173,9 @@ def _finish(reg, aid, img, kind, workdir, raw):
             pad = Image.new('RGBA', (subject.width + 2 * block, subject.height + 2 * block))
             pad.paste(subject, (block, block))
             final = to_art_pixels(pad, block)
-            qa = alpha_qa(final, reg.data['assets'].get(aid, {}).get('allow_holes', 0))
+            src = Image.new('RGB', pad.size, (255, 0, 255)); src.paste(img.crop(bbox), (block, block))
+            hint = _near_magenta(np.asarray(to_art_pixels(src, block)), 30)
+            qa = alpha_qa(final, reg.data['assets'].get(aid, {}).get('allow_holes', 0), hint)
     qa.update(block=block, size=list(final.size))
     out = Path(workdir) / f'{aid}.png'; final.save(out)
     (Path(workdir) / f'{aid}.qa.json').write_text(json.dumps(qa, indent=2), encoding='utf-8')
@@ -170,6 +190,7 @@ def main(argv=None):
     p = sub.add_parser('process'); p.add_argument('--id', required=True); p.add_argument('--raw', required=True, type=Path)
     p.add_argument('--kind', required=True, choices=['sprite', 'opaque', 'tile-sheet', 'icon-sheet'])
     p.add_argument('--ids'); p.add_argument('--cols', type=int); p.add_argument('--rows', type=int)
+    p.add_argument('--block', type=int, help='art-pixel size override when grid detection misreads painterly art')
     a = sub.add_parser('approve'); a.add_argument('--id', required=True)
     r = sub.add_parser('reject'); r.add_argument('--id', required=True); r.add_argument('--reason', required=True)
     pub = sub.add_parser('publish'); pub.add_argument('--approved', action='store_true', required=True)
@@ -177,7 +198,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
     reg = Registry(ROOT / 'registry.json'); public = ROOT.parents[1] / 'public'
     if args.cmd == 'process':
-        out = process(reg, args.id, args.raw, args.kind, args.ids.split(',') if args.ids else None, args.cols, args.rows)
+        out = process(reg, args.id, args.raw, args.kind, args.ids.split(',') if args.ids else None, args.cols, args.rows, block=args.block)
         print(json.dumps(out, ensure_ascii=False)); return 0 if all(q['pass'] for q in out.values()) else 1
     if args.cmd == 'approve': reg.approve(args.id)
     if args.cmd == 'reject': reg.reject(args.id, args.reason, public)

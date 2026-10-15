@@ -127,3 +127,46 @@ def test_seeded_registry_covers_every_runtime_asset():
     assert assets['tile-f2-chest-open']['runtime'] == '/assets/games/starlantern/tiles/f2-chest-open.png'
     assert assets['sheet-icons-1']['parts'][0] == 'icon-fire-star'
     assert len(assets['sheet-icons-3']['parts']) == 17
+
+
+def test_cutout_removes_magenta_tinted_fringe_but_keeps_pinks_and_purples():
+    arr = np.asarray(blob(w=60, h=20, box=(5, 5, 55, 15))).copy()
+    arr[10, 10] = (185, 80, 175)    # anti-aliased magenta fringe (distance 80)
+    arr[10, 20] = (240, 150, 190)   # pink hair
+    arr[10, 30] = (120, 40, 160)    # deep purple cloth
+    arr[10, 40] = (200, 180, 230)   # lavender hair
+    a = np.asarray(A.cutout(Image.fromarray(arr, 'RGB')))[..., 3]
+    assert a[10, 10] == 0
+    assert a[10, 20] == 255 and a[10, 30] == 255 and a[10, 40] == 255
+
+
+def test_alpha_qa_ignores_large_enclosed_gaps_like_arm_gaps():
+    rgba = np.zeros((40, 40, 4), np.uint8); rgba[5:35, 5:35] = (9, 9, 9, 255)
+    rgba[12:20, 12:20, 3] = 0       # 64 px gap between arm and body
+    r = A.alpha_qa(Image.fromarray(rgba, 'RGBA'))
+    assert r['pass'] and r['holes'] == 0
+
+
+def test_alpha_qa_ignores_pockets_that_were_pure_magenta_in_the_source():
+    rgba = np.zeros((40, 40, 4), np.uint8); rgba[10:30, 10:30] = (9, 9, 9, 255); rgba[20, 20, 3] = 0
+    hint = np.zeros((40, 40), bool); hint[20, 20] = True
+    assert A.alpha_qa(Image.fromarray(rgba, 'RGBA'), bg_hint=hint)['pass']
+
+
+def test_finish_counts_only_erased_colour_as_holes(tmp_path):
+    big = np.zeros((40, 40, 3), np.uint8); big[:] = (255, 0, 255)
+    big[8:32, 8:32] = (20, 120, 60)
+    big[16:20, 16:20] = (255, 0, 255)     # real 1-art-px gap of pure magenta
+    big[24:28, 24:28] = (190, 75, 180)    # magenta-ish fringe colour inside the body: erased
+    raw = tmp_path / 'raw.png'; Image.fromarray(big, 'RGB').save(raw)
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'enemy-x', raw, 'sprite', workdir=tmp_path / 'w', block=4)['enemy-x']
+    assert q['holes'] == 1 and not q['pass']
+
+
+def test_slice_grid_trims_anti_aliased_magenta_edges_from_cells():
+    img = canvas(46, 24); arr = np.asarray(img).copy()
+    arr[2:22, 2:22] = (90, 140, 90); arr[2:22, 22] = (200, 70, 190)     # fringe column on the right of cell 1
+    arr[2:22, 24:44] = (90, 140, 90); arr[1, 24:44] = (210, 60, 200)    # fringe row above cell 2
+    cells = A.slice_grid(Image.fromarray(arr, 'RGB'), 2, 1)
+    assert [c.size for c in cells] == [(20, 20), (20, 20)]

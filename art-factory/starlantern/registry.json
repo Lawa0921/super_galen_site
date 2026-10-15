@@ -62,18 +62,67 @@
     },
     "char-scarlet-standee": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/scarlet-standee.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/scarlet-standee.png",
+      "final": "art-factory/starlantern/work/char-scarlet-standee/char-scarlet-standee.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-standee\\char-scarlet-standee-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "block": 5,
+        "size": [
+          158,
+          283
+        ]
+      },
+      "allow_holes": 3,
+      "notes": "3 enclosed pockets are magenta gaps between hair strands at raw (603,55),(698,110),(743,475); checked visually"
     },
     "char-scarlet-portrait": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/scarlet-portrait.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait/char-scarlet-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait\\char-scarlet-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      }
     },
     "char-scarlet-portrait-hurt": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/char/scarlet-portrait-hurt.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-hurt.png",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-hurt/char-scarlet-portrait-hurt.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-hurt\\char-scarlet-portrait-hurt-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          107,
+          114
+        ]
+      },
+      "allow_holes": 1,
+      "notes": "1 pocket at raw (562,203) is dark magenta (187,1,179) between hair strands; checked visually; block forced to 11 to match the normal portrait"
     },
     "char-selene-standee": {
       "kind": "sprite",
@@ -142,7 +191,7 @@
     },
     "sheet-tiles-f1": {
       "kind": "tile-sheet",
-      "status": "todo",
+      "status": "processed",
       "parts": [
         "tile-f1-wall",
         "tile-f1-floor",
@@ -155,57 +204,178 @@
         "tile-f1-boss"
       ],
       "cols": 3,
-      "rows": 3
+      "rows": 3,
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png"
     },
     "tile-f1-wall": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-wall.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-wall.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 97.25,
+        "block": 6,
+        "size": [
+          60,
+          60
+        ]
+      }
     },
     "tile-f1-floor": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-floor.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-floor.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-floor.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 59.17834274952919,
+        "block": 6,
+        "size": [
+          59,
+          60
+        ]
+      }
     },
     "tile-f1-door": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-door.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-door.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-door.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 113.94999999999999,
+        "block": 6,
+        "size": [
+          60,
+          60
+        ]
+      }
     },
     "tile-f1-up": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-up.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-up.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-up.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 82.06468926553671,
+        "block": 6,
+        "size": [
+          60,
+          59
+        ]
+      }
     },
     "tile-f1-down": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-down.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-down.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 32.46610169491525,
+        "block": 6,
+        "size": [
+          59,
+          59
+        ]
+      }
     },
     "tile-f1-chest": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-chest.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-chest.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-chest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 88.44025423728814,
+        "block": 6,
+        "size": [
+          60,
+          59
+        ]
+      }
     },
     "tile-f1-chest-open": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-chest-open.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-chest-open.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-chest-open.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 64.61031073446327,
+        "block": 6,
+        "size": [
+          60,
+          59
+        ]
+      }
     },
     "tile-f1-entrance": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-entrance.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-entrance.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-entrance.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 29.132768361581924,
+        "block": 6,
+        "size": [
+          59,
+          59
+        ]
+      }
     },
     "tile-f1-boss": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/tiles/f1-boss.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-boss.png",
+      "final": "art-factory/starlantern/work/sheet-tiles-f1/tile-f1-boss.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-tiles-f1\\sheet-tiles-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 80.23813559322033,
+        "block": 6,
+        "size": [
+          60,
+          59
+        ]
+      }
     },
     "bg-f1": {
       "kind": "opaque",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/bg/f1.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/bg/f1.png",
+      "final": "art-factory/starlantern/work/bg-f1/bg-f1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\bg-f1\\bg-f1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 37.89913977399979,
+        "block": 4,
+        "size": [
+          418,
+          235
+        ]
+      }
     },
     "sheet-tiles-f2": {
       "kind": "tile-sheet",
@@ -343,8 +513,23 @@
     },
     "enemy-slime": {
       "kind": "sprite",
-      "status": "todo",
-      "runtime": "/assets/games/starlantern/enemy/slime.png"
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/enemy/slime.png",
+      "final": "art-factory/starlantern/work/enemy-slime/enemy-slime.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-slime\\enemy-slime-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 12,
+        "size": [
+          53,
+          53
+        ]
+      }
     },
     "enemy-bat": {
       "kind": "sprite",
