@@ -2,11 +2,14 @@ import { ENEMIES } from '../data/enemies';
 import { CONDITIONS } from '../data/conditions';
 import { FLOORS } from '../data/floors';
 import { REGIONS } from '../data/regions';
+import { depthLevel } from './levels';
+import { rarityWeights, rollTier } from './loot/drops';
+import { itemLevel, rollItem } from './loot/item';
 import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
-import { MAX_LEVEL, expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
+import { MAX_LEVEL, SLOTS, expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
 import { mulberry32 } from './rng';
 import { scaleEnemy } from './scaling';
-import type { BuffStat, CharacterId, Party, SkillDef } from './types';
+import type { BuffStat, CharacterId, GearSlot, Party, Rarity, SkillDef } from './types';
 
 type Altar = { stat: BuffStat; pct: number }[];
 
@@ -18,6 +21,30 @@ export function partyAt(level: number): Party {
     const m = { ...newMember(id), level };
     const s = statsOf(m);
     p.roster[id] = { ...m, hp: s.hp, tp: s.tp };
+  }
+  return p;
+}
+
+/**
+ * `partyAt(level)` with every slot of every member filled by a monster drop of that depth.
+ * Without `rarity` each piece rolls its tier as a plain-condition monster drop would; a legendary-tier roll
+ * counts as rare, since a special's power is not a stat and stays out of the expectation.
+ */
+export function kitParty(level: number, depth: number, seed: number, rarity?: Rarity): Party {
+  const rng = mulberry32(seed);
+  const p = partyAt(level);
+  const ilvl = itemLevel(depth, 'monster');
+  const weights = rarityWeights('monster', depthLevel(depth), 'plain');
+  let uid = 1;
+  for (const id of Object.keys(p.roster) as CharacterId[]) {
+    const m = { ...p.roster[id], equip: { ...p.roster[id].equip } };
+    for (const s of SLOTS) {
+      const slot: GearSlot = s === 'ring1' || s === 'ring2' ? 'ring' : s;
+      const tier = rarity ?? rollTier(rng, weights);
+      m.equip[s] = rollItem(rng, { uid: uid++, ilvl, rarity: tier === 'legendaryTier' ? 'rare' : tier, slot });
+    }
+    const st = statsOf(m);
+    p.roster[id] = { ...m, hp: st.hp, tp: st.tp };
   }
   return p;
 }
@@ -58,10 +85,12 @@ export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed:
   return { outcome: s.outcome, rounds, hpLoss: 1 - left / maxHp };
 }
 
-export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar): { rate: number; hpLoss: number } {
+/** With `kitSeed`, the party wears `kitParty(level, depth, kitSeed)` instead of nothing. */
+export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar, kitSeed?: number): { rate: number; hpLoss: number } {
   let wins = 0, loss = 0, n = 0;
   for (const g of groups) for (let k = 1; k <= seeds; k++) {
-    const r = simBattle(partyAt(level), g, boss, k * 7919, scale, altar);
+    const party = kitSeed === undefined ? partyAt(level) : kitParty(level, scale?.depth ?? 1, kitSeed);
+    const r = simBattle(party, g, boss, k * 7919, scale, altar);
     n++; loss += r.hpLoss; if (r.outcome === 'win') wins++;
   }
   return { rate: wins / n, hpLoss: loss / n };

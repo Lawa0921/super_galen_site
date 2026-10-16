@@ -7,8 +7,14 @@ export const RARITY_RANK: Record<Rarity, number> = { common: 0, magic: 1, rare: 
 export const AFFIX_COUNT = { magic: [1, 2], rare: [3, 4], legendary: [3, 3] } as const;
 /** Lowest share of an affix's range a roll of this rarity can land on. */
 export const ROLL_FLOOR: Record<Rarity, number> = { common: 0, magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 };
-/** The one global affix multiplier; only the balance pass (plan 5a task 18) may change it. */
-export const AFFIX_SCALE = 1;
+/**
+ * The two loot balance knobs, tuned against engine/balance.test.ts tests 10–11 (a party in random gear keeps the bands;
+ * a full rare kit does not one-round a boss). Change them only with those tests.
+ * AFFIX_SCALE: the one global multiplier on every affix roll range.
+ */
+export const AFFIX_SCALE = 0.8;
+/** IMPLICIT_PER_ILVL: a base's own bonus grows by this share per item level above the base's level. */
+export const IMPLICIT_PER_ILVL = 0.02;
 
 /** Carry weight by slot. */
 export const SLOT_WEIGHT: Record<GearSlot, number> = { weapon: 6, offhand: 5, head: 4, body: 8, hands: 4, feet: 4, neck: 3, ring: 3 };

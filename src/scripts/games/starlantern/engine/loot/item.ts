@@ -1,4 +1,4 @@
-import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, ROLL_FLOOR, SLOT_WEIGHT, SPECIALS, affixRange } from '../../data/gear';
+import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, ROLL_FLOOR, SLOT_WEIGHT, SPECIALS, affixRange } from '../../data/gear';
 import { EQUIPMENT } from '../../data/equipment';
 import { depthLevel } from '../levels';
 import { pick, randInt, type Rng } from '../rng';
@@ -58,10 +58,10 @@ export function rollItem(rng: Rng, o: RollOpts): ItemInstance {
   return item;
 }
 
-/** The base's own bonus, grown 4% per item level above the base's level. */
+/** The base's own bonus, grown IMPLICIT_PER_ILVL per item level above the base's level. */
 export function implicitStats(it: ItemInstance): Partial<Stats> {
   const b = EQUIPMENT[it.base];
-  const grow = 1 + 0.04 * Math.max(0, it.ilvl - b.ilvl);
+  const grow = 1 + IMPLICIT_PER_ILVL * Math.max(0, it.ilvl - b.ilvl);
   const out: Partial<Stats> = {};
   for (const [k, v] of Object.entries(b.bonus) as [keyof Stats, number][]) out[k] = Math.round(v * grow);
   return out;

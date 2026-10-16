@@ -38,7 +38,7 @@ export function rarityWeights(source: DropSource, depthLv: number, cond: Conditi
   return w;
 }
 
-function rollTier(rng: Rng, w: Record<Tier, number>): Tier {
+export function rollTier(rng: Rng, w: Record<Tier, number>): Tier {
   const tiers = ['common', 'magic', 'rare', 'legendaryTier'] as const;
   const total = tiers.reduce((s, t) => s + w[t], 0);
   let r = rng() * total;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  AFFIXES, AFFIX_COUNT, AFFIX_SCALE, GEAR_SLOTS, POWERS, RARITIES, RARITY_RANK, ROLL_FLOOR, SETS, SLOT_WEIGHT, SPECIALS,
+  AFFIXES, AFFIX_COUNT, AFFIX_SCALE, GEAR_SLOTS, IMPLICIT_PER_ILVL, POWERS, RARITIES, RARITY_RANK, ROLL_FLOOR, SETS, SLOT_WEIGHT, SPECIALS,
   affixRange, codexName, generalLegendaries, regionSpecials,
 } from './gear';
 import { REGIONS } from './regions';
@@ -58,7 +58,9 @@ describe('rarity and weight tables', () => {
     expect(RARITY_RANK).toEqual({ common: 0, magic: 1, rare: 2, legendary: 3, unique: 4, set: 5 });
     expect(AFFIX_COUNT).toEqual({ magic: [1, 2], rare: [3, 4], legendary: [3, 3] });
     expect(ROLL_FLOOR).toEqual({ common: 0, magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 });
-    expect(AFFIX_SCALE).toBe(1);
+    // The two loot knobs, tuned against engine/balance.test.ts tests 10–11.
+    expect(AFFIX_SCALE).toBe(0.8);
+    expect(IMPLICIT_PER_ILVL).toBe(0.02);
     expect(SLOT_WEIGHT).toEqual({ weapon: 6, offhand: 5, head: 4, body: 8, hands: 4, feet: 4, neck: 3, ring: 3 });
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FLOORS } from '../data/floors';
-import { expToNext } from './party';
-import { avgExp, fightsToLevel, groupExp, winRate } from './sim';
+import { SLOTS, expToNext } from './party';
+import { avgExp, fightsToLevel, groupExp, kitParty, simBattle, winRate } from './sim';
 import { REGIONS, type RegionId } from '../data/regions';
 import type { BattleScale } from './battle';
 import { ALTAR_STAT_CAP_PCT } from './events';
@@ -83,6 +83,35 @@ describe('balance', () => {
       const r = winRate(depthLevel(d), encounterTable('mainline', d), false, 40, scale, stacked);
       expect(r.rate, `depth ${d}`).toBeGreaterThanOrEqual(0.85);
       expect(r.hpLoss, `depth ${d}`).toBeGreaterThanOrEqual(0.1);
+    }
+  });
+
+  it('10. random gear in expectation keeps the bands', () => {
+    // The kit is really worn: every slot of every member, uids from 1.
+    const kit = kitParty(depthLevel(4), 4, 1);
+    const worn = Object.values(kit.roster).flatMap((m) => SLOTS.map((s) => m.equip[s]));
+    expect(worn.every((it) => !!it)).toBe(true);
+    expect(worn.map((it) => it!.uid)).toEqual(worn.map((_, i) => i + 1));
+    for (const d of [4, 6, 8, 10]) for (const region of ['mainline', 'blaze'] as const) {
+      const scale = { depth: d, region };
+      const gs = encounterTable(region, d);
+      let rate = 0, hpLoss = 0;
+      for (let kitSeed = 1; kitSeed <= 5; kitSeed++) {
+        const r = winRate(depthLevel(d), gs, false, 8, scale, undefined, kitSeed);
+        rate += r.rate / 5;
+        hpLoss += r.hpLoss / 5;
+      }
+      const label = `${region} depth ${d} with gear`;
+      expect(rate, label).toBeGreaterThanOrEqual(0.85);
+      expect(hpLoss, label).toBeGreaterThanOrEqual(0.1);
+      expect(hpLoss, label).toBeLessThanOrEqual(0.45);
+    }
+  }, 120_000);
+
+  it('11. a full rare kit does not one-round a boss', () => {
+    for (const d of [5, 10]) for (let seed = 1; seed <= 20; seed++) {
+      const r = simBattle(kitParty(depthLevel(d), d, seed, 'rare'), ['lanterneater'], true, seed, { depth: d, region: 'mainline' });
+      expect(r.rounds, `depth ${d} seed ${seed}`).toBeGreaterThanOrEqual(3);
     }
   });
 });

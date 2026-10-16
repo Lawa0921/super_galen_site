@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mulberry32 } from '../rng';
-import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
+import { AFFIXES, AFFIX_COUNT, GEAR_SLOTS, IMPLICIT_PER_ILVL, ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
 import { EQUIPMENT } from '../../data/equipment';
 import type { GearSlot, Rarity } from '../types';
 import { baseFor, implicitStats, itemLevel, itemName, itemSlot, itemStats, itemWeight, rollItem, sellPrice } from './item';
@@ -118,7 +118,8 @@ describe('baseFor', () => {
 describe('item numbers', () => {
   it('implicit grows with item level', () => {
     const it = { uid: 1, base: 'star-saber', rarity: 'common' as Rarity, ilvl: 42, affixes: [], enhance: 0 };
-    expect(implicitStats(it).atk).toBe(34);
+    // star-saber: atk 15 at item level 10.
+    expect(implicitStats(it).atk).toBe(Math.round(15 * (1 + IMPLICIT_PER_ILVL * 32)));
     expect(implicitStats({ ...it, ilvl: 10 }).atk).toBe(15);
     expect(implicitStats({ ...it, ilvl: 3 }).atk).toBe(15);
   });
