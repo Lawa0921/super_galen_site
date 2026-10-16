@@ -47,7 +47,10 @@ export const art = {
 };
 
 /** Event tiles with art of their own in the art factory; a chest uses its terrain's chest tile instead. */
-export type EventTileKey = 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault' | 'vault-open' | 'key' | 'trap';
+export type EventTileKey = 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault'
+  // reserved: opened vault art (published in the art batch; an opened vault turns to floor today, so nothing draws it yet)
+  | 'vault-open'
+  | 'key' | 'trap';
 
 export function tileKey(t: Tile, opened: boolean): TileKey {
   return t === 'chest' && opened ? 'chest-open' : t;

@@ -50,7 +50,7 @@ describe('floorOf', () => {
 describe('terrainOf', () => {
   it('cycles the three themes on the mainline and keeps a region theme fixed', () => {
     expect([1, 2, 3, 4, 5, 6, 7].map((d) => terrainOf('mainline', d))).toEqual([1, 2, 3, 1, 2, 3, 1]);
-    expect([1, 4, 9].map((d) => terrainOf('blaze', d))).toEqual([2, 2, 2]);
+    expect([1, 4, 9].map((d) => terrainOf('blaze', d))).toEqual([3, 3, 3]);   // the warm temple, not the ice cave
     expect(terrainOf('mire', 12)).toBe(1);
   });
 });

@@ -21,6 +21,11 @@ export function capacity(party: Party): number {
   return 40 + activeIds(party).reduce((n, id) => n + statsOf(party.roster[id]).atk, 0) * 0.5;
 }
 
+/** A weight as shown to the player: at most one decimal place (32.5, 60). */
+export function formatWeight(n: number): string {
+  return String(Math.round(n * 10) / 10);
+}
+
 /** Weight on the party's backs: the consumables brought along plus the run pack. */
 export function carried(state: GameState, run: Run): number {
   let w = 0;

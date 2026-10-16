@@ -48,6 +48,8 @@ export class MapView {
   /** Event markers: art with a gentle bob and glow once published, text glyphs until then. */
   private marks = new Container();
   private bobbing: { s: Sprite; y: number; phase: number }[] = [];
+  /** Text glyphs by `kind@x,y`, kept across draws; a marker that is gone is destroyed. */
+  private glyphs = new Map<string, Text>();
   private clock = 0;
   private bright = 0;
   private marker = new Container();
@@ -62,6 +64,7 @@ export class MapView {
   /** `calm`: reduced motion, no hop while walking. */
   constructor(private bank: TextureBank | null = null, private calm = false) {
     this.marker.addChild(this.dot, this.icon);
+    this.marks.label = 'markers';
     this.world.addChild(this.tiles, this.edges, this.marks, this.marker);
     this.root.addChild(this.world);
   }
@@ -156,8 +159,9 @@ export class MapView {
 
   /** Markers on seen cells: the event art when it has loaded, else a text glyph. A chest's own tile art is its marker. */
   private drawMarkers(game: Game, seen: ReadonlySet<string>, sight: number): void {
-    for (const c of this.marks.removeChildren()) c.destroy();
+    for (const c of this.marks.removeChildren()) if (!(c instanceof Text)) c.destroy();   // glyphs are cached below
     this.bobbing = [];
+    const keep = new Set<string>();
     const cell = MAP_CELL;
     const chestArt = !!this.bank?.get(art.tile(game.terrain(), 'chest'));
     for (const m of markersOf(game)) {
@@ -176,16 +180,23 @@ export class MapView {
         this.bobbing.push({ s, y: cy, phase: (m.x * 7 + m.y * 13) % 10 });
         continue;
       }
-      const t = new Text({
-        text: MARKER_GLYPH[m.kind],
-        style: { fontFamily: GLYPH_FONT, fontSize: 24, fontWeight: 'bold', fill: GLYPH_FILL[m.kind] ?? 0xe8c46a, stroke: { color: 0x14100a, width: 5 } },
-      });
-      t.anchor.set(0.5);
-      t.x = cx; t.y = cy;
+      const id = `${m.kind}@${m.x},${m.y}`;
+      keep.add(id);
+      let t = this.glyphs.get(id);
+      if (!t) {
+        t = new Text({
+          text: MARKER_GLYPH[m.kind],
+          style: { fontFamily: GLYPH_FONT, fontSize: 24, fontWeight: 'bold', fill: GLYPH_FILL[m.kind] ?? 0xe8c46a, stroke: { color: 0x14100a, width: 5 } },
+        });
+        t.anchor.set(0.5);
+        t.x = cx; t.y = cy;
+        t.label = `glyph-${m.kind}`;
+        this.glyphs.set(id, t);
+      }
       t.alpha = memory ? 0.6 : 1;
-      t.label = `glyph-${m.kind}`;
       this.marks.addChild(t);
     }
+    for (const [id, t] of this.glyphs) if (!keep.has(id)) { t.destroy(); this.glyphs.delete(id); }
   }
 
   /**

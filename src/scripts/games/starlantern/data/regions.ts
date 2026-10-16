@@ -18,7 +18,7 @@ export interface RegionDef {
 export const REGIONS: Record<RegionId, RegionDef> = {
   mainline: { id: 'mainline', name: '星燈迷宮・本道', terrain: 'cycle', element: null, trait: null, weak: [], resist: [], skill: null, material: null },
   blaze: {
-    id: 'blaze', name: '熾焰之地', terrain: 2, element: 'fire', trait: 'burn', weak: ['ice'], resist: ['fire'], material: 'blaze-core',
+    id: 'blaze', name: '熾焰之地', terrain: 3, element: 'fire', trait: 'burn', weak: ['ice'], resist: ['fire'], material: 'blaze-core',
     skill: { name: '烈焰吐息', chance: 0.3, target: 'row', effects: [{ kind: 'damage', power: 70, element: 'fire', scale: 'mag', melee: false }] },
   },
   frost: {

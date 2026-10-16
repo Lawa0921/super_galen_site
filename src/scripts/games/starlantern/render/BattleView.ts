@@ -19,32 +19,47 @@ function colorFor(defId: string): number {
 /** Colours of regional variants: the element's for fire, ice and thunder; by region for the element-less ones. */
 export const TINT_COLORS = {
   fire: 0xff6a2a, ice: 0x5fe3f2, thunder: 0xffe14a,
-  mire: 0x8fd14f, shade: 0xa274ff, iron: 0x9ba8b8,
+  mire: 0x8fd14f, shade: 0xa274ff, iron: 0x9cb8dc,
 } as const;
+type TintKey = keyof typeof TINT_COLORS;
+/**
+ * Per colour: `mix` is how far the sprite is recoloured (its own shading is kept, so it stays readable); `glow` the
+ * outer glow strength; `rim` a thin cool outline for steel, whose grey would otherwise vanish into the background.
+ */
+export const TINT_STYLE: Record<TintKey, { mix: number; glow: number; rim?: number }> = {
+  fire: { mix: 0.56, glow: 2.6 },
+  ice: { mix: 0.58, glow: 3.4 },
+  thunder: { mix: 0.5, glow: 2.6 },
+  mire: { mix: 0.48, glow: 2.4 },
+  shade: { mix: 0.64, glow: 3.2 },
+  iron: { mix: 0.72, glow: 3, rim: 0xdcecff },
+};
 const ELITE_GOLD = 0xffd34d;
-/** How far the colour matrix pulls the sprite toward its tint (the sprite must stay readable). */
-const TINT_MIX = 0.4;
 
-/** The tint colour of an enemy: by element, or for `phys` and elites by the run's region (mire, shade and iron are all `phys`). */
-function tintColor(tint: Combatant['tint'], region: RegionId | undefined): number | null {
+/** The tint of an enemy: by element, or for `phys` and elites by the run's region (mire, shade and iron are all `phys`). */
+function tintKey(tint: Combatant['tint'], region: RegionId | undefined): TintKey | null {
   if (!tint) return null;
-  if (tint === 'fire' || tint === 'ice' || tint === 'thunder') return TINT_COLORS[tint];
+  if (tint === 'fire' || tint === 'ice' || tint === 'thunder') return tint;
   if (!region || region === 'mainline') return null;
   const el = REGIONS[region].element;
-  if (el === 'fire' || el === 'ice' || el === 'thunder') return TINT_COLORS[el];
-  return region === 'mire' || region === 'shade' || region === 'iron' ? TINT_COLORS[region] : null;
+  if (el === 'fire' || el === 'ice' || el === 'thunder') return el;
+  return region === 'mire' || region === 'shade' || region === 'iron' ? region : null;
 }
 
-/** A colour matrix that mixes the sprite toward `color` and lifts its shadows a little, keeping alpha. */
-function tintMatrix(color: number): ColorMatrix {
-  const r = ((color >> 16) & 0xff) / 255, g = ((color >> 8) & 0xff) / 255, b = (color & 0xff) / 255;
-  const k = TINT_MIX, lift = 0.05;
-  return [
-    1 - k + k * r, 0, 0, 0, lift * r,
-    0, 1 - k + k * g, 0, 0, lift * g,
-    0, 0, 1 - k + k * b, 0, lift * b,
-    0, 0, 0, 1, 0,
-  ];
+/**
+ * A colour matrix that recolours the sprite toward `color` by `k`: each channel blends the original with the pixel's
+ * brightness times the colour (slightly boosted), so any sprite hue reads as the tint while light and shadow stay.
+ */
+function tintMatrix(color: number, k: number): ColorMatrix {
+  const c = [((color >> 16) & 0xff) / 255, ((color >> 8) & 0xff) / 255, (color & 0xff) / 255];
+  const boost = 1.3, lift = 0.04;
+  const row = (i: number) => {
+    const out = [0.299, 0.587, 0.114].map((w) => k * w * c[i] * boost);
+    out[i] += 1 - k;
+    return [...out, 0, lift * c[i]];
+  };
+  const [r, g, b] = [row(0), row(1), row(2)];
+  return [r[0], r[1], r[2], r[3], r[4], g[0], g[1], g[2], g[3], g[4], b[0], b[1], b[2], b[3], b[4], 0, 0, 0, 1, 0];
 }
 
 /** One enemy in the picture: its sprite, an HP bar under its name, and its announced next move above its head. */
@@ -148,8 +163,9 @@ export class BattleView {
       box.alpha = e.alive ? 1 : 0;
       intent.y = Math.max(TOP_CLEAR - ground, -body.height - 30);
       this.scene.addChild(box);
-      const color = tintColor(e.tint, region);
-      const base = this.tintFor(color, elite);
+      const key = tintKey(e.tint, region);
+      const color = key ? TINT_COLORS[key] : null;
+      const base = this.tintFor(key, elite);
       body.filters = base;
       const slot: Slot = { key: e.key, box, body, texture: tex, hp: e.hp, max: e.max.hp, bar, intent, name: label, base, tint: { color, elite } };
       this.slots.set(e.key, slot);
@@ -159,15 +175,18 @@ export class BattleView {
   }
 
   /** A regional variant: a colour matrix toward its colour and a soft outer glow. An elite: a gold outline. */
-  private tintFor(color: number | null, elite: boolean): Filter[] {
+  private tintFor(key: TintKey | null, elite: boolean): Filter[] {
     const out: Filter[] = [];
-    if (color !== null) {
+    const style = key ? TINT_STYLE[key] : null;
+    const color = key ? TINT_COLORS[key] : 0;
+    if (style) {
       const m = new ColorMatrixFilter();
-      m.matrix = tintMatrix(color);
+      m.matrix = tintMatrix(color, style.mix);
       out.push(m);
     }
     if (elite) out.push(new OutlineFilter({ thickness: 2, color: ELITE_GOLD, quality: 0.2 }));
-    if (color !== null) out.push(new GlowFilter({ distance: 12, outerStrength: 2.4, innerStrength: 0, color, alpha: 0.75, quality: 0.3 }));
+    else if (style?.rim !== undefined) out.push(new OutlineFilter({ thickness: 1, color: style.rim, alpha: 0.85, quality: 0.2 }));
+    if (style) out.push(new GlowFilter({ distance: 14, outerStrength: style.glow, innerStrength: 0, color, alpha: 0.8, quality: 0.3 }));
     this.tintFilters.push(...out);
     return out;
   }

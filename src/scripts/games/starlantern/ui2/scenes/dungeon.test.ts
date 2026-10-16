@@ -4,7 +4,7 @@ import type { Portal } from '../../engine/dungeon/run';
 import { DELTA, tileAt } from '../../engine/map';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
-import { capacity, carried, weightOf } from '../../data/weights';
+import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weights';
 import { MATERIALS } from '../../data/materials';
 import { DungeonScene } from './dungeon';
 
@@ -193,7 +193,9 @@ describe('DungeonScene', () => {
 });
 
 describe('DungeonScene readouts', () => {
-  const kg = (n: number) => String(Math.round(n * 10) / 10);
+  it('formats weights to one decimal place at most', () => {
+    expect([kg(32.5), kg(60), kg(0.25 + 0.5), kg(63.49999)]).toEqual(['32.5', '60', '0.8', '63.5']);
+  });
 
   it('shows the carried weight above the key hint, yellow over 80% and red when full', () => {
     const { game, root, s } = setup();

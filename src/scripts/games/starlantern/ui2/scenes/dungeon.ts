@@ -2,7 +2,7 @@ import { CHARACTERS } from '../../data/characters';
 import { CONDITIONS } from '../../data/conditions';
 import { FLOORS } from '../../data/floors';
 import { ITEMS } from '../../data/items';
-import { capacity, carried } from '../../data/weights';
+import { capacity, carried, formatWeight } from '../../data/weights';
 import { T } from '../../data/text.zh-TW';
 import { floorOf } from '../../engine/dungeon/run';
 import { step, type Dir } from '../../engine/map';
@@ -26,7 +26,6 @@ const CONDITION_BANNER_MS = 2000;
 const FLASH_MS = 450;
 /** The readout turns yellow past this share of the carry limit, red at the limit. */
 const HEAVY_SHARE = 0.8;
-const kg = (n: number) => String(Math.round(n * 10) / 10);
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Labyrinth: map on the Pixi stage, party bar, floor name, encounter lamp, events as dialogue, a field menu. */
@@ -119,7 +118,7 @@ export class DungeonScene implements Scene {
     this.weightEl.hidden = !run;
     if (!run) return;
     const w = carried(g.state, run), cap = capacity(g.state.party);
-    this.weightEl.textContent = T.ui2.dungeon.weight(kg(w), kg(cap));
+    this.weightEl.textContent = T.ui2.dungeon.weight(formatWeight(w), formatWeight(cap));
     this.weightEl.classList.toggle('slx-weight-full', w >= cap);
     this.weightEl.classList.toggle('slx-weight-heavy', w < cap && w > cap * HEAVY_SHARE);
   }

@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
 import { makeBattle, makeCombatant } from '../engine/testing';
-import { BattleView, TINT_COLORS } from './BattleView';
+import { OutlineFilter } from 'pixi-filters';
+import { BattleView, TINT_COLORS, TINT_STYLE } from './BattleView';
 import type { TextureBank } from './textures';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
@@ -175,6 +176,18 @@ describe('BattleView regional tints', () => {
     expect(view.tintOf('e2')).toEqual({ color: null, elite: true });
     expect(view.filtersOf('e2')).toHaveLength(1);
     expect(new Set([TINT_COLORS.fire, TINT_COLORS.ice, TINT_COLORS.thunder, TINT_COLORS.mire, TINT_COLORS.shade, TINT_COLORS.iron]).size).toBe(6);
+  });
+
+  it('keeps every regional colour readable: a strong mix for every region, a stronger cyan glow and a cool rim on steel', () => {
+    for (const k of Object.keys(TINT_COLORS) as (keyof typeof TINT_COLORS)[]) expect(TINT_STYLE[k].mix, k).toBeGreaterThanOrEqual(0.45);
+    expect(TINT_STYLE.ice.glow).toBeGreaterThan(TINT_STYLE.fire.glow);
+    expect(TINT_STYLE.iron.rim).toBeDefined();
+    const view = new BattleView(true, bank);
+    view.setup(fight(), { width: 640, height: 360 }, 1, 0, 0, 'iron');
+    expect(view.filtersOf('e1').some((f) => f instanceof OutlineFilter)).toBe(true);   // the steel rim
+    expect(view.filtersOf('e1')).toHaveLength(3);
+    view.setup(fight(), { width: 640, height: 360 }, 1, 0, 0, 'mire');
+    expect(view.filtersOf('e1')).toHaveLength(2);
   });
 
   it('the target highlight adds to the tint and gives it back when it moves on', () => {

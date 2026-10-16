@@ -1,4 +1,4 @@
-import { Texture, TilingSprite } from 'pixi.js';
+import { Text, Texture, TilingSprite } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { Game } from '../engine/game';
 import { DELTA, tileAt } from '../engine/map';
@@ -230,6 +230,26 @@ describe('MapView event markers', () => {
     }
     const tileUrls = urls.filter((u) => /\/tiles\/f\d-/.test(u));
     expect(tileUrls.some((u) => /-(fountain|trap|merchant|altar|elite|vault|key)\.png$/.test(u))).toBe(false);
+  });
+
+  it('keeps each marker glyph across draws and drops the ones that are spent', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(MAIN, 1);
+    exploreAll(game);
+    const chest = floorOf(game.run!, 1).contents.find((c) => c.kind === 'chest')!.at;
+    const view = new MapView(noEventArt);
+    view.draw(game, SIZE);
+    const marks = view.root.children[0] as unknown as { children: { label: string; children: unknown[] }[] };
+    const layer = () => (marks.children.find((c) => c.label === 'markers') as unknown as { children: Text[] });
+    const first = [...layer().children];
+    view.draw(game, SIZE);
+    expect(layer().children).toHaveLength(first.length);
+    expect(layer().children.every((t, i) => t === first[i])).toBe(true);   // the same Text objects, not new ones
+    const box = first.find((t) => t.text === '箱')!;
+    expect(stepOnto(game, chest).kind).toBe('chest');
+    view.draw(game, SIZE);
+    expect(layer().children).not.toContain(box);
+    expect(box.destroyed).toBe(true);
   });
 
   it('a spent chest shows its open tile and no marker', () => {
