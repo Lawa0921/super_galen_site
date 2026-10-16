@@ -1,14 +1,18 @@
-/** `prev` / `next` page between party members on the status and equipment screens. */
-export type UiAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel' | 'menu' | 'auto' | 'prev' | 'next';
+/** `prev` / `next` page between party members on the status and equipment screens; `swap` (Tab) switches focus between panes. */
+export type UiAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel' | 'menu' | 'auto' | 'prev' | 'next' | 'swap';
 
 const KEYS: Record<string, UiAction> = {
   ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down',
   ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right',
   Enter: 'confirm', ' ': 'confirm', z: 'confirm', Z: 'confirm',
   Escape: 'cancel', Backspace: 'cancel', x: 'cancel', X: 'cancel', c: 'menu', C: 'menu',
-  q: 'prev', Q: 'prev', PageUp: 'prev', e: 'next', E: 'next', PageDown: 'next',
+  q: 'prev', Q: 'prev', PageUp: 'prev', e: 'next', E: 'next', PageDown: 'next', Tab: 'swap',
 };
 const REPEATABLE = new Set<UiAction>(['up', 'down', 'left', 'right']);
+
+function isFormField(t: EventTarget | null): boolean {
+  return t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName));
+}
 
 export function uiActionFor(key: string): UiAction | null {
   return KEYS[key] ?? null;
@@ -28,6 +32,7 @@ export function bindUiInput(target: Window, handler: (a: UiAction) => void): () 
   const onKey = (e: KeyboardEvent) => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;   // browser shortcuts (copy, tab switching, zoom) stay the browser's
     if (e.key === 'F11') { e.preventDefault(); void toggleFullscreen(document.getElementById('sl-screen') ?? document.documentElement); return; }
+    if (e.key === 'Tab' && isFormField(e.target)) return;   // Tab keeps moving focus inside a real form field
     const a = uiActionFor(e.key);
     if (!a) return;
     e.preventDefault();

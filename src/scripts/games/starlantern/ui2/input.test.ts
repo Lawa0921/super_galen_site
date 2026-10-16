@@ -36,6 +36,33 @@ describe('bindUiInput', () => {
     off();
   });
 
+  it('Tab maps to swap and does not move browser focus', () => {
+    expect(uiActionFor('Tab')).toBe('swap');
+    const handler = vi.fn();
+    const off = bindUiInput(window, handler);
+    const e = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true });
+    window.dispatchEvent(e);
+    expect(handler).toHaveBeenCalledWith('swap');
+    expect(e.defaultPrevented).toBe(true);
+    off();
+  });
+
+  it('lets Ctrl+Tab through to the browser and leaves Tab alone inside a real form field', () => {
+    const handler = vi.fn();
+    const off = bindUiInput(window, handler);
+    const ctrl = new KeyboardEvent('keydown', { key: 'Tab', ctrlKey: true, cancelable: true });
+    window.dispatchEvent(ctrl);
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    const inField = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    input.dispatchEvent(inField);
+    input.remove();
+    expect(handler).not.toHaveBeenCalled();
+    expect(ctrl.defaultPrevented).toBe(false);
+    expect(inField.defaultPrevented).toBe(false);
+    off();
+  });
+
   it('treats a right click as cancel', () => {
     const handler = vi.fn();
     const off = bindUiInput(window, handler);
