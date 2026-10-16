@@ -26,7 +26,7 @@ export type MoveResult =
   | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number; tp: number }
   | { kind: 'key' }
   /** The pack cannot take the pick-up: it stays on the ground (the chest stays shut) until something is discarded. */
-  | { kind: 'full'; item: string; qty: number }
+  | { kind: 'full'; item: string; qty: number; need: number }
   | { kind: 'vault'; loot: Record<string, number> };
 export interface BattleEnd {
   outcome: 'win' | 'lose' | 'fled'; exp: number; gold: number; drops: Record<string, number>;
@@ -58,7 +58,7 @@ export class Game {
   private eliteAt: Pos | null = null;
   notice: Notice | null = null;
   /** What the last safe return brought home; the town screen shows it, then clears it. */
-  banked: { items: Record<string, number>; gold: number } | null = null;
+  banked: { items: Record<string, number>; gold: number; viaLamp: boolean } | null = null;
 
   constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState) {
     this.state = state ?? newGame();
@@ -242,14 +242,15 @@ export class Game {
     if (!this.contentAt('vault', at) || tileAt(this.map(), at) !== 'vault' || !this.run!.keys.has(this.floor)) return null;
     const loot: Record<string, number> = {};
     if (FLOORS[this.terrain() - 1].chestLoot.length) {
-      const one = this.rollChest();
+      const one = this.rollChest(`vault:${this.spotId(at)}`);
       loot[one.item] = one.qty * VAULT_CHEST_MULT;
     }
     // TODO(plan 5): rare materials replace this placeholder.
     loot[VAULT_PLACEHOLDER.item] = (loot[VAULT_PLACEHOLDER.item] ?? 0) + VAULT_PLACEHOLDER.qty;
-    if (!this.fits(loot)) {
+    const need = this.shortBy(loot);
+    if (need > 0) {
       const [item, qty] = Object.entries(loot)[0];
-      return { kind: 'full', item, qty };
+      return { kind: 'full', item, qty, need };
     }
     for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
     this.map().tiles[at.y][at.x] = 'floor';
@@ -265,14 +266,14 @@ export class Game {
   useReturnLamp(): boolean {
     if (this.phase !== 'map' || (this.state.inventory['return-lamp'] ?? 0) <= 0) return false;
     addItem(this.state.inventory, 'return-lamp', -1);
-    this.toTown();
+    this.toTown(true);
     return true;
   }
 
   /** Throw away up to `qty` of an item: the run pack first, then the consumables brought along. Returns how many went. */
   discard(id: string, qty: number): number {
     const run = this.run;
-    if (!run || !Number.isInteger(qty) || qty <= 0) return 0;
+    if (this.phase !== 'map' || !run || !Number.isInteger(qty) || qty <= 0) return 0;
     let left = qty;
     const fromPack = Math.min(left, run.loot.items[id] ?? 0);
     addItem(run.loot.items, id, -fromPack);
@@ -334,8 +335,7 @@ export class Game {
 
   restartAfterClear(): void {
     if (this.phase !== 'clear') return;
-    this.phase = 'town';
-    this.run = null;
+    this.toTown();   // the clear banks the run pack like any safe return
   }
 
   /** The mainline's depth 3 holds the story boss: beating it clears the game. */
@@ -344,13 +344,13 @@ export class Game {
   }
 
   /** A safe return: what the run pack holds now counts, and the town is told what came home. */
-  private toTown(): void {
+  private toTown(viaLamp = false): void {
     const loot = this.run?.loot;
     this.banked = null;
     if (loot && (loot.gold > 0 || Object.keys(loot.items).length)) {
       for (const [id, n] of Object.entries(loot.items)) addItem(this.state.inventory, id, n);
       this.state.gold += loot.gold;
-      this.banked = { items: { ...loot.items }, gold: loot.gold };
+      this.banked = { items: { ...loot.items }, gold: loot.gold, viaLamp };
       this.notice = 'banked';
     }
     this.phase = 'town';
@@ -377,15 +377,20 @@ export class Game {
     addItem(ITEMS[item] ? this.state.inventory : this.run!.loot.items, item, qty);
   }
 
-  /** Whether the whole of `loot`, taken together, fits under the weight limit. */
-  private fits(loot: Record<string, number>): boolean {
+  /** How much weight `loot`, taken together, is over the limit by (0 or less when it fits). */
+  private shortBy(loot: Record<string, number>): number {
     const add = Object.entries(loot).reduce((w, [id, n]) => w + n * weightOf(id), 0);
-    return carried(this.state, this.run!) + add <= capacity(this.state.party);
+    return carried(this.state, this.run!) + add - capacity(this.state.party);
   }
 
-  private rollChest(): { item: string; qty: number } {
+  /** Rolled once per spot and remembered, so a chest that did not fit rolls the same when the party comes back. */
+  private rollChest(key: string): { item: string; qty: number } {
+    const kept = this.run!.rolls[key];
+    if (kept) return kept;
     const loot = pick(this.rng, FLOORS[this.terrain() - 1].chestLoot);
-    return { item: loot.item, qty: Math.max(1, Math.round(loot.qty * CONDITIONS[this.run!.condition].dropMul)) };
+    const rolled = { item: loot.item, qty: Math.max(1, Math.round(loot.qty * CONDITIONS[this.run!.condition].dropMul)) };
+    this.run!.rolls[key] = rolled;
+    return rolled;
   }
 
   private openChest(): MoveResult | null {
@@ -393,8 +398,9 @@ export class Game {
     const id = this.spotId();
     if (run.opened.has(id)) return null;
     if (!FLOORS[this.terrain() - 1].chestLoot.length) return null;
-    const { item, qty } = this.rollChest();
-    if (!this.fits({ [item]: qty })) return { kind: 'full', item, qty };
+    const { item, qty } = this.rollChest(`chest:${id}`);
+    const need = this.shortBy({ [item]: qty });
+    if (need > 0) return { kind: 'full', item, qty, need };
     run.opened.add(id);
     this.grant(item, qty);
     return { kind: 'chest', item, qty };
@@ -410,6 +416,7 @@ export class Game {
   private wipe(): void {
     // Levels and exp stay, the run pack is lost and a quarter of the gold goes; the inn save is not read back.
     this.state.gold = Math.floor(this.state.gold * 0.75);
+    for (const m of Object.values(this.state.party.roster)) if (m.hp <= 0) m.hp = 1;   // the fallen are carried home
     this.banked = null;
     this.phase = 'town';
     this.run = null;

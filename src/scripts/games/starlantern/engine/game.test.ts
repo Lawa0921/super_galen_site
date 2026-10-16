@@ -255,7 +255,7 @@ describe('battles', () => {
     for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
     g.submitRound({});
     expect(g.state.gold).toBe(150);
-    g.state.party.roster.scarlet.hp = 10;
+    expect(Object.values(g.state.party.roster).every((m) => m.hp >= 1)).toBe(true);   // the fallen come home with 1 HP
     expect(g.depart(MAIN, 1)).toEqual({ ok: true });
     expect([g.run!.loot, g.state.gold]).toEqual([{ items: {}, gold: 0 }, 150]);
     expect(g.returnToTown()).toBe(true);
@@ -363,6 +363,69 @@ describe('inn', () => {
 });
 
 describe('run pack', () => {
+  it('a full chest keeps its roll and does not touch the rng when stepped on again', () => {
+    let calls = 0;
+    const g = new Game(() => { calls++; return 0.99; }, null);
+    g.state.dungeon.reached.mainline = 3;
+    g.depart(MAIN, 1);
+    g.run!.loot.items['star-stone'] = Math.floor((capacity(g.state.party) - carried(g.state, g.run!)) * 2);
+    const chest = contentOf(g, 'chest')!.at;
+    const first = stepOnto(g, chest);
+    expect(first.kind).toBe('full');
+    const after = calls;
+    expect(stepOnto(g, chest)).toEqual(first);
+    expect(calls).toBe(after);   // a chest tile never rolls twice
+    expect(g.run!.rolls[`chest:1:${posKey(chest)}`]).toEqual({ item: 'old-coin', qty: 2 });
+  });
+  it('clearing the game banks the run pack', () => {
+    const g = inMap(3);
+    g.run!.loot.items.moss = 2;
+    stepOnto(g, g.map().boss!);
+    for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('clear');
+    g.restartAfterClear();
+    expect([g.phase, g.run, g.notice, g.state.inventory.moss]).toEqual(['town', null, 'banked', 2]);
+    expect(g.banked!.items.moss).toBe(2);
+  });
+  it('the lamp flags its use on the banked report', () => {
+    const g = inMap(1);
+    g.run!.loot.items.moss = 1;
+    g.state.inventory['return-lamp'] = 1;
+    g.useReturnLamp();
+    expect(g.banked!.viaLamp).toBe(true);
+    const h = inMap(1);
+    h.run!.loot.items.moss = 1;
+    h.returnToTown();
+    expect(h.banked!.viaLamp).toBe(false);
+  });
+  it('discard only works on the map', () => {
+    const g = inMap(1);
+    g.run!.loot.items.moss = 3;
+    g.phase = 'battle';
+    expect(g.discard('moss', 1)).toBe(0);
+    g.phase = 'map';
+    expect(g.discard('moss', 1)).toBe(1);
+  });
+  it('battle drops that partly fit are split between the pack and BattleEnd.left', () => {
+    let checked = 0;
+    for (let seed = 1; seed <= 60 && !checked; seed++) {
+      const g = new Game(mulberry32(seed), null);
+      g.depart(MAIN, 1);
+      g.encounter = 99;
+      g.move('right');
+      g.run!.loot.items['star-stone'] = Math.floor((capacity(g.state.party) - carried(g.state, g.run!)) * 2) - 1;   // room for one 0.5 drop
+      for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+      const end = g.submitRound({})!.end!;
+      const total = Object.values(end.drops).reduce((a, b) => a + b, 0);
+      if (total < 2) continue;
+      checked++;
+      const left = Object.values(end.left).reduce((a, b) => a + b, 0);
+      expect(total - left).toBe(1);
+      for (const [id, n] of Object.entries(end.drops)) expect((g.run!.loot.items[id] ?? 0) + (end.left[id] ?? 0)).toBe(n);
+    }
+    expect(checked).toBe(1);
+  });
   it('loot waits in the run pack and is banked on return', () => {
     const g = inMap(1);
     const chest = contentOf(g, 'chest')!.at;
@@ -372,7 +435,7 @@ describe('run pack', () => {
     stepOnto(g, g.map().entrance);
     expect(g.returnToTown()).toBe(true);
     expect([g.state.inventory['old-coin'], g.state.gold, g.notice]).toEqual([2, 180, 'banked']);
-    expect(g.banked).toEqual({ items: { 'old-coin': 2 }, gold: 30 });
+    expect(g.banked).toEqual({ items: { 'old-coin': 2 }, gold: 30, viaLamp: false });
   });
   it('the return lamp banks the pack too', () => {
     const g = inMap(1);
@@ -395,7 +458,10 @@ describe('run pack', () => {
     g.run!.loot.items['star-stone'] = Math.floor((cap - carried(g.state, g.run!)) * 2) - 1;   // 0.5 each: room for under 1 more
     const chest = contentOf(g, 'chest')!.at;
     const before = { ...g.run!.loot.items };
-    expect(stepOnto(g, chest)).toEqual({ kind: 'full', item: 'old-coin', qty: 2 });
+
+    const full = stepOnto(g, chest);
+    expect(full).toMatchObject({ kind: 'full', item: 'old-coin', qty: 2 });
+    expect((full as { need: number }).need).toBeCloseTo(1.5);   // 2 weight wanted, 0.5 of room
     expect(g.run!.loot.items).toEqual(before);
     expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(false);
     expect(g.discard('star-stone', 10)).toBe(10);

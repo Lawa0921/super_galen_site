@@ -7,6 +7,7 @@ import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
 import { statsOf } from './party';
 import { ITEMS } from '../data/items';
+import { capacity, carried } from '../data/weights';
 import { constRng } from './testing';
 import type { Content } from './dungeon/rooms';
 import type { Pos } from './types';
@@ -193,6 +194,17 @@ describe('altar', () => {
 });
 
 describe('vault', () => {
+  it('a vault that does not fit reports the weight it needs and stays shut', () => {
+    const g = gameWith('vault', 'key');
+    const vault = contentOf(g, 'vault').at;
+    g.run!.keys.add(1);
+    stepOnto(g, vault);
+    g.run!.loot.items['star-stone'] = Math.floor((capacity(g.state.party) - carried(g.state, g.run!)) * 2);
+    const r = g.openVault(vault);
+    expect(r).toMatchObject({ kind: 'full' });
+    expect((r as { need: number }).need).toBeGreaterThan(0);
+    expect(tileAt(g.map(), vault)).toBe('vault');
+  });
   it("the vault opens only with this floor's key", () => {
     const g = gameWith('vault', 'key');
     const vault = contentOf(g, 'vault').at;
