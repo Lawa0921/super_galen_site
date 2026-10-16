@@ -107,9 +107,10 @@ export function formatClock(time: number): string {
  * 玩家深度描述。feetY = 玩家腳底所在 tile 列；surfaceAtCol = 玩家所在欄的地表高度（第一個實心格 y）；
  * cavernY = 洞穴層起點。站在地表上時 feetY = surfaceAtCol - 1（深度 0）。
  */
-export function depthLabel(feetY: number, surfaceAtCol: number, cavernY: number): string {
+export function depthLabel(feetY: number, surfaceAtCol: number, cavernY: number, moltenY = Infinity): string {
   const d = feetY + 1 - surfaceAtCol;
   if (d <= 0) return '地表';
+  if (feetY >= moltenY) return `熔岩深淵 · 地下 ${d} 格`;
   if (feetY >= cavernY) return `洞穴層 · 地下 ${d} 格`;
   return `地下 ${d} 格`;
 }

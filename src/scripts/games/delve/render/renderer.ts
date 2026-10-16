@@ -205,7 +205,7 @@ export class Renderer {
     ctx.setTransform(1, 0, 0, 1, -camX, -camY);
     const surf = w.surface;
     this.bg.drawUnderground(ctx, camX, camY, vw, vh,
-      (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, w.cavernY * S);
+      (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity);
 
     const r = visibleChunks(camX, camY, vw, vh, CPX, w.chunksX, w.chunksY);
     let budget = REDRAW_BUDGET, drawn = 0;
@@ -379,6 +379,12 @@ export class Renderer {
       for (let x = tx0; x < tx1; x++) {
         const f = fg[row + x];
         if (f === T.CRYSTAL || f === T.GLOW_MUSHROOM) { cool.push({ x: x * S + 8, y: y * S + 9 }); continue; }
+        if (f === T.CANDLE || f === T.LANTERN) { seen.push({ x: x * S + 8, y: y * S + (f === T.LANTERN ? 8 : 5) }); continue; }
+        // 熔岩石：只有外露在空氣下的那幾格發光暈（隔格取樣、有上限，避免整片深淵都是光暈）
+        if (f === T.MAGMA_ROCK) {
+          if (((x + y) & 1) === 0 && y > 0 && fg[row - W + x] === T.AIR && seen.length < 160) seen.push({ x: x * S + 8, y: y * S + 2 });
+          continue;
+        }
         if (f !== T.TORCH) continue;
         const c = this.sprites.torches[flameFrame(t, x, y)];
         ctx.drawImage(c, x * S + 3, y * S);

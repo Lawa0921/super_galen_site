@@ -8,6 +8,10 @@
 import { T } from '../engine/tiles';
 import { CACTUS_STYLE } from './autotile';
 import { Bmp, INK, h01, hex, ramp, type RGB } from './pixel';
+import {
+  platformBmp, doorClosedBmp, doorOpenBmp, doorLockedBmp, lockedChestBmp, chainBmp, bannerBmp, candleBmp, lanternBmp,
+  bookshelfBmp, bonesBmp, loreTabletBmp,
+} from './dungeonArt';
 
 const S = 16;
 
@@ -34,6 +38,24 @@ export const PAL2 = {
   snowWall: ramp('#0c0a12', '#18204a', '#2c2838', '#423f54', '#423f54', '#5e5e74', '#5e5e74'),
   iceWall: ramp('#0c0a12', '#18204a', '#18204a', '#2c4486', '#2c4486', '#3e74c4', '#3e74c4'),
   mudWall: ramp('#0c0a12', '#0c0a12', '#16301e', '#1c1424', '#214528', '#2a1810', '#2a1810'),
+  // 深度層
+  deep: ramp('#0c0a12', '#1c1424', '#2c2838', '#2c2450', '#423f54', '#463c78', '#707490'),
+  basalt: ramp('#0c0a12', '#0c0a12', '#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490'),
+  ash: ramp('#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490', '#858aa0', '#b4b9c8'),
+  obsidian: ramp('#0c0a12', '#0c0a12', '#18204a', '#2c2450', '#463c78', '#7a5a8c', '#b8788e'),
+  magma: ramp('#2a1810', '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0'),
+  deepWall: ramp('#0c0a12', '#0c0a12', '#18204a', '#1c1424', '#1c1424', '#2c2450', '#2c2450'),
+  basaltWall: ramp('#0c0a12', '#0c0a12', '#1c1424', '#2a1810', '#2a1810', '#472819', '#472819'),
+  // 地城三色（磚 / 牆）
+  brickBlue: ramp('#0c0a12', '#18204a', '#2c4486', '#3e74c4', '#5c9ce0', '#94c8ee', '#cceaf8'),
+  brickGreen: ramp('#0c0a12', '#16301e', '#214528', '#3f7468', '#6a9c88', '#a2c8b0', '#cceaf8'),
+  brickPink: ramp('#1c1424', '#2c2450', '#463c78', '#7a5a8c', '#b8788e', '#f2b888', '#f2e2b0'),
+  wallBlue: ramp('#0c0a12', '#0c0a12', '#18204a', '#18204a', '#2c4486', '#2c4486', '#3e74c4'),
+  wallGreen: ramp('#0c0a12', '#0c0a12', '#16301e', '#16301e', '#214528', '#214528', '#3f7468'),
+  wallPink: ramp('#0c0a12', '#0c0a12', '#1c1424', '#2c2450', '#2c2450', '#463c78', '#463c78'),
+};
+export const BRICK_PAL: Record<number, RGB[]> = {
+  [T.DUNGEON_BRICK_BLUE]: PAL2.brickBlue, [T.DUNGEON_BRICK_GREEN]: PAL2.brickGreen, [T.DUNGEON_BRICK_PINK]: PAL2.brickPink,
 };
 
 /** 平滑值雜訊（同 textures.vnoise） */
@@ -208,8 +230,126 @@ function texBrick(v: number): Bmp {
   return b;
 }
 
+// ── 深度層材料 ───────────────────────────────────────────
+/** 深層岩：比石頭暗、偏藍紫，帶斜向層理與少量亮點 */
+function texDeep(v: number): Bmp {
+  const p = PAL2.deep, b = new Bmp(S, S), seed = 1001 + v * 11;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const n = vnoise(x + v * 5, y, 6, seed);
+    const band = ((x + y * 2 + Math.floor(vnoise(x, y, 8, seed + 1) * 4) + v * 3) % 9 + 9) % 9;
+    let c = n > 0.64 ? p[4] : n < 0.28 ? p[2] : p[3];
+    if (band === 0) c = p[2];
+    else if (band === 1 && n > 0.4) c = p[5];
+    b.set(x, y, c);
+  }
+  for (let k = 0; k < 2; k++) {
+    const x = 2 + Math.floor(h01(k, 1, seed) * 11), y = 2 + Math.floor(h01(k, 2, seed) * 11);
+    lump(b, x, y, 2 + k, p[5], p[1]);
+  }
+  b.set(Math.floor(h01(3, 3, seed) * 14), Math.floor(h01(3, 4, seed) * 14), p[6]);
+  return b;
+}
+/** 玄武岩：直立柱狀節理（每 5 px 一根柱，柱頂亮、柱縫暗，柱間上下錯開） */
+function texBasalt(v: number): Bmp {
+  const p = PAL2.basalt, b = new Bmp(S, S), seed = 1021 + v * 7;
+  for (let x = 0; x < S; x++) {
+    const col = Math.floor((x + v * 2) / 5), cx = ((x + v * 2) % 5 + 5) % 5;
+    const off = Math.floor(h01(col, 1, seed) * 8);
+    const tone = h01(col, 2, seed) > 0.5 ? 3 : 4;
+    for (let y = 0; y < S; y++) {
+      const yy = (y + off) % 8;
+      let c = p[tone];
+      if (cx === 4) c = p[1];
+      else if (cx === 0) c = p[tone + 1];
+      if (yy === 0 && cx !== 4) c = p[1];
+      else if (yy === 1 && cx !== 4) c = p[tone + 2 > 6 ? 6 : tone + 2];
+      b.set(x, y, c);
+    }
+  }
+  return b;
+}
+/** 灰燼：柔軟顆粒，成簇的亮 / 暗小團 */
+function texAsh(v: number): Bmp {
+  const p = PAL2.ash, b = new Bmp(S, S), seed = 1041 + v * 13;
+  base3(b, p, 3, 4, seed, 0.32, 0.66, v * 3);
+  for (let k = 0; k < 5; k++) {
+    const x = Math.floor(h01(k, 1, seed) * 14), y = Math.floor(h01(k, 2, seed) * 14);
+    b.set(x, y, k & 1 ? p[5] : p[1]); b.set(x + 1, y, k & 1 ? p[4] : p[2]);
+  }
+  return b;
+}
+/** 黑曜石：玻璃質的暗紫，帶銳利的斜向高光與貝殼狀斷口 */
+function texObsidian(v: number): Bmp {
+  const p = PAL2.obsidian, b = new Bmp(S, S), seed = 1061 + v * 5;
+  const pts: [number, number][] = [];
+  for (let k = 0; k < 4; k++) pts.push([h01(k, 1, seed) * S, h01(k, 2, seed) * S]);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const q = voronoi(x, y, pts);
+    const e = q.d2 - q.d1;
+    let c = p[h01(q.i, 3, seed) > 0.5 ? 3 : 2];
+    if (e < 1) c = p[1];
+    else if (e < 2 && (x + 0.5 - q.cx) + (y + 0.5 - q.cy) < 0) c = p[4];
+    b.set(x, y, c);
+  }
+  for (let i = 0; i < 5; i++) { const x = 3 + v * 3 + i, y = 9 - i; b.set(x, y, p[5]); if (i === 2) b.set(x, y - 1, p[6]); }
+  return b;
+}
+/** 熔岩石：暗色岩殼碎片之間透出發亮的熔岩縫（縫越寬越亮） */
+function texMagma(v: number): Bmp {
+  const p = PAL2.magma, cr = PAL2.basalt, b = new Bmp(S, S), seed = 1081 + v * 9;
+  const pts: [number, number][] = [];
+  for (let k = 0; k < 5; k++) pts.push([h01(k, 1, seed) * S, h01(k, 2, seed) * S]);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const q = voronoi(x, y, pts);
+    const e = q.d2 - q.d1;
+    let c: RGB;
+    if (e < 0.9) c = p[5];
+    else if (e < 1.8) c = p[4];
+    else if (e < 2.6) c = p[2];
+    else c = (x + 0.5 - q.cx) + (y + 0.5 - q.cy) < -1.5 ? cr[4] : h01(q.i, 3, seed) > 0.5 ? cr[3] : cr[2];
+    b.set(x, y, c);
+  }
+  return b;
+}
+/** 地城磚：大塊（8×4）磚、深色縫、左上倒角亮邊，部分磚角缺損 */
+function texDungeonBrick(v: number, p: RGB[]): Bmp {
+  const b = new Bmp(S, S), seed = 1101 + v * 3;
+  for (let y = 0; y < S; y++) {
+    const row = Math.floor(y / 4), by = y % 4, off = (row & 1) * 4 + v * 2;
+    for (let x = 0; x < S; x++) {
+      const bx = ((x + off) % 8 + 8) % 8, brick = Math.floor((x + off) / 8) + row * 7;
+      const tone = h01(brick, row, seed) > 0.55 ? 4 : 3;
+      let c = p[tone];
+      if (by === 3 || bx === 7) c = p[1];
+      else if (by === 0 || bx === 0) c = p[tone + 1];
+      else if (by === 2 && bx >= 5) c = p[tone - 1];
+      if (by === 0 && bx === 0 && h01(brick, 9, seed) > 0.6) c = p[1]; // 缺角
+      b.set(x, y, c);
+    }
+  }
+  return b;
+}
+/** 地城牆：同一磚紋的暗色版 */
+function texDungeonWall(v: number, p: RGB[]): Bmp {
+  const b = new Bmp(S, S);
+  for (let y = 0; y < S; y++) {
+    const row = Math.floor(y / 4), by = y % 4, off = (row & 1) * 4 + v * 2;
+    for (let x = 0; x < S; x++) {
+      const bx = ((x + off) % 8 + 8) % 8;
+      b.set(x, y, by === 3 || bx === 7 ? p[1] : by === 0 ? p[4] : p[3]);
+    }
+  }
+  return b;
+}
+
 export function texMaterial(id: number, v: number): Bmp | null {
   switch (id) {
+    case T.DEEP_STONE: return texDeep(v);
+    case T.BASALT: return texBasalt(v);
+    case T.ASH: return texAsh(v);
+    case T.OBSIDIAN: return texObsidian(v);
+    case T.MAGMA_ROCK: return texMagma(v);
+    case T.DUNGEON_BRICK_BLUE: case T.DUNGEON_BRICK_GREEN: case T.DUNGEON_BRICK_PINK: return texDungeonBrick(v, BRICK_PAL[id]);
     case T.CLAY: return texClay(v);
     case T.GRAVEL: return texGravel(v);
     case T.GRANITE: return texGranite(v);
@@ -226,6 +366,8 @@ export const MATERIAL_PAL: Record<number, RGB[]> = {
   [T.SILVER_ORE]: PAL2.stone, [T.GOLD_ORE]: PAL2.stone, [T.CLAY]: PAL2.clay, [T.GRAVEL]: PAL2.gravel,
   [T.GRANITE]: PAL2.granite, [T.MARBLE]: PAL2.marble, [T.SANDSTONE]: PAL2.sandstone, [T.SNOW]: PAL2.snow,
   [T.ICE]: PAL2.ice, [T.MUD]: PAL2.mud, [T.JUNGLE_GRASS]: PAL2.mud, [T.MUSHROOM_GRASS]: PAL2.mud, [T.STONE_BRICK]: PAL2.stone,
+  [T.DEEP_STONE]: PAL2.deep, [T.BASALT]: PAL2.basalt, [T.ASH]: PAL2.ash, [T.OBSIDIAN]: PAL2.obsidian, [T.MAGMA_ROCK]: PAL2.magma,
+  [T.DUNGEON_BRICK_BLUE]: PAL2.brickBlue, [T.DUNGEON_BRICK_GREEN]: PAL2.brickGreen, [T.DUNGEON_BRICK_PINK]: PAL2.brickPink,
 };
 
 // ── 背景牆 ─────────────────────────────────────────────
@@ -264,6 +406,20 @@ export function texWall2(id: number, v: number): { b: Bmp; pal: RGB[] } | null {
       if (id === 6) for (let i = 0; i < 4; i++) b.set((v * 4 + i + 3) % S, 3 + i, p[6]);
       if (id === 7) { b.set(4 + v * 3, 6, hex('#214528')); b.set(5 + v * 3, 6, hex('#214528')); }
       return { b, pal: p };
+    }
+    case 8: case 9: { // 深層岩牆 / 玄武岩牆：大塊暗岩面
+      const p = id === 8 ? PAL2.deepWall : PAL2.basaltWall, seed = 861 + id * 7 + v * 5;
+      const pts: [number, number][] = [];
+      for (let k = 0; k < 3; k++) pts.push([h01(k, 1, seed) * S, h01(k, 2, seed) * S]);
+      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+        const q = voronoi(x, y, pts), e = q.d2 - q.d1;
+        b.set(x, y, e < 1.1 ? p[1] : e < 2.2 && (x + 0.5 - q.cx) + (y + 0.5 - q.cy) < 0 ? p[5] : h01(q.i, 3, seed) > 0.5 ? p[4] : p[3]);
+      }
+      return { b, pal: p };
+    }
+    case 10: case 11: case 12: {
+      const p = id === 10 ? PAL2.wallBlue : id === 11 ? PAL2.wallGreen : PAL2.wallPink;
+      return { b: texDungeonWall(v, p), pal: p };
     }
     default: return null;
   }
@@ -613,6 +769,18 @@ export function decorBmp(id: number, style: number): Bmp {
     case T.POT: return pot(style);
     case T.CHEST: return chestBmp();
     case T.BEAM: return beam();
+    case T.PLATFORM: return platformBmp(style);
+    case T.DOOR_CLOSED: return doorClosedBmp(style);
+    case T.DOOR_OPEN: return doorOpenBmp(style);
+    case T.DOOR_LOCKED: return doorLockedBmp(style);
+    case T.LOCKED_CHEST: return lockedChestBmp();
+    case T.CHAIN: return chainBmp(style);
+    case T.BANNER: return bannerBmp(style);
+    case T.CANDLE: return candleBmp(style);
+    case T.LANTERN: return lanternBmp();
+    case T.BOOKSHELF: return bookshelfBmp(style);
+    case T.BONES: return bonesBmp(style);
+    case T.LORE_TABLET: return loreTabletBmp();
     default: return new Bmp(S, S);
   }
 }

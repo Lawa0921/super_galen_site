@@ -24,6 +24,8 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'stone_brick', out: { item: 'stone_brick', n: 2 }, inputs: [{ item: 'stone', n: 2 }], station: 'workbench' },
   { id: 'torch_crystal', out: { item: 'torch', n: 6 }, inputs: [{ item: 'wood', n: 1 }, { item: 'crystal', n: 1 }], station: null },
   { id: 'silver_coin', out: { item: 'silver_coin', n: 1 }, inputs: [{ item: 'copper_coin', n: 100 }], station: null },
+  { id: 'platform', out: { item: 'platform', n: 2 }, inputs: [{ item: 'planks', n: 1 }], station: null },
+  { id: 'wooden_door', out: { item: 'wooden_door', n: 1 }, inputs: [{ item: 'planks', n: 6 }], station: 'workbench' },
 ];
 
 export function findRecipe(id: string): Recipe | undefined {

@@ -22,8 +22,12 @@ export class World {
   surfaceY = 0;
   /** 每欄生成時的地表高度（地形 pass 的第一個實心格 y；之後玩家挖掘不改變）。HUD 深度用。 */
   surface: Int16Array;
-  /** 洞穴層（岩層大洞窟）起始 y */
+  /** 岩層起始 y（泥土層之下；最深的那欄） */
+  rockY = 0;
+  /** 洞穴層（深層岩、大洞窟網路）起始 y（最淺的那欄） */
   cavernY = 0;
+  /** 熔岩深淵起始 y（最淺的那欄） */
+  moltenY = 0;
   /** 每欄地表的生態區（BIOME） */
   readonly biome: Uint8Array;
   /** 箱子內容：key = tile index（y*width+x） */

@@ -11,7 +11,12 @@ export type ItemId =
   // ── 物件 / 素材 / 錢 ──
   | 'chest' | 'pumpkin' | 'glow_mushroom' | 'mushroom' | 'crystal' | 'cactus'
   | 'copper_coin' | 'silver_coin'
-  | 'silver_pickaxe' | 'gold_pickaxe';
+  | 'silver_pickaxe' | 'gold_pickaxe'
+  // ── 深度層 / 地城 ──
+  | 'deep_stone' | 'basalt' | 'ash' | 'obsidian' | 'magma_rock'
+  | 'dungeon_brick_blue' | 'dungeon_brick_green' | 'dungeon_brick_pink'
+  | 'platform' | 'wooden_door' | 'dungeon_key' | 'golden_key'
+  | 'lantern' | 'rune_pickaxe' | 'explorer_map';
 
 export interface PickStats { speed: number; tier: number; }
 export interface ItemDef {
@@ -20,6 +25,10 @@ export interface ItemDef {
   maxStack: number;
   place?: number;
   pick?: PickStats;
+  /** 拿在手上時在玩家身邊發光的強度（0..1） */
+  heldLight?: number;
+  /** 獨特道具（地城戰利品） */
+  unique?: boolean;
 }
 
 const block = (id: ItemId, zh: string, en: string, place: number): ItemDef =>
@@ -62,6 +71,22 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   silver_coin: mat('silver_coin', '銀幣', 'Silver Coin'),
   silver_pickaxe: pick('silver_pickaxe', '銀鎬', 'Silver Pickaxe', 3.6, 4),
   gold_pickaxe: pick('gold_pickaxe', '金鎬', 'Gold Pickaxe', 4.4, 5),
+  deep_stone: block('deep_stone', '深層岩', 'Deep Rock', T.DEEP_STONE),
+  basalt: block('basalt', '玄武岩', 'Basalt', T.BASALT),
+  ash: block('ash', '灰燼', 'Ash', T.ASH),
+  obsidian: block('obsidian', '黑曜石', 'Obsidian', T.OBSIDIAN),
+  magma_rock: block('magma_rock', '熔岩石', 'Magma Rock', T.MAGMA_ROCK),
+  dungeon_brick_blue: block('dungeon_brick_blue', '藍地城磚', 'Blue Dungeon Brick', T.DUNGEON_BRICK_BLUE),
+  dungeon_brick_green: block('dungeon_brick_green', '綠地城磚', 'Green Dungeon Brick', T.DUNGEON_BRICK_GREEN),
+  dungeon_brick_pink: block('dungeon_brick_pink', '粉地城磚', 'Pink Dungeon Brick', T.DUNGEON_BRICK_PINK),
+  platform: block('platform', '木平台', 'Wooden Platform', T.PLATFORM),
+  // 木門：放置時往上佔 3 格（game.tryPlace 特別處理）
+  wooden_door: { ...block('wooden_door', '木門', 'Wooden Door', T.DOOR_CLOSED), maxStack: 99 },
+  dungeon_key: { ...mat('dungeon_key', '地城鑰匙', 'Dungeon Key'), maxStack: 99 },
+  golden_key: { ...mat('golden_key', '金鑰匙', 'Golden Key'), maxStack: 99 },
+  lantern: { id: 'lantern', name: { zh: '探險提燈', en: "Delver's Lantern" }, maxStack: 1, heldLight: 1, unique: true },
+  rune_pickaxe: { ...pick('rune_pickaxe', '符文鎬', 'Rune Pickaxe', 5.6, 5), unique: true },
+  explorer_map: { id: 'explorer_map', name: { zh: '探險家地圖', en: "Explorer's Map" }, maxStack: 1, unique: true },
 };
 
 export function isItemId(v: unknown): v is ItemId {

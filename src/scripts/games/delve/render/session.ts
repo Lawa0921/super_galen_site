@@ -138,7 +138,7 @@ export function bootDelve(root: HTMLElement): Session {
     const r = restoreGame(bytes);
     if (!r.ok) {
       if (r.error === 'gen_version') {
-        say(msgEl, `這個存檔是舊版地圖產生器（v${r.saveGenVersion ?? '?'}）做的，新版地圖更大、有新的生態區，舊世界無法繼續。可以先從選單匯出備份，再按下面的按鈕開一個新世界。`);
+        say(msgEl, `這個存檔是舊版地圖產生器（v${r.saveGenVersion ?? '?'}）做的，新版地圖重做了洞穴、地層、生態區形狀並加入地城，舊世界無法繼續。可以先從選單匯出備份，再按下面的按鈕開一個新世界。`);
         if (upgradeNew && msgEl === titleMsg) upgradeNew.hidden = false;
       } else say(msgEl, `存檔讀取失敗：${r.message}`);
       return false;

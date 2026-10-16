@@ -411,11 +411,18 @@ function cloudLayer(i: number): IndexedLayer {
 }
 
 /** 地下背景暗紋（64×64 可平鋪）：大塊岩面 + 縫。keep < 1 時以 2×2 Bayer 挖空（淡入用，不用半透明） */
-function caveBackdrop(rock: boolean, keep = 1): HTMLCanvasElement {
+type BackdropKind = boolean | 'deep' | 'molten';
+const BACKDROP_PAL: Record<string, string[]> = {
+  rock: ['#0b0b11', '#121219', '#181821', '#1e1e29'],
+  dirt: ['#0e0907', '#160e0a', '#1d140e', '#241a12'],
+  // 洞穴層：偏藍紫的深色岩面；熔岩深淵：暗紅褐（遠處熔岩的反光）
+  deep: ['#0c0a12', '#0c0a12', '#18204a', '#1c1424'],
+  molten: ['#2a1810', '#472819', '#6c1e14', '#472819'],
+};
+function caveBackdrop(kind: BackdropKind, keep = 1): HTMLCanvasElement {
   const N = 64, b = new Bmp(N, N);
-  const pal = rock
-    ? [hex('#0b0b11'), hex('#121219'), hex('#181821'), hex('#1e1e29')]
-    : [hex('#0e0907'), hex('#160e0a'), hex('#1d140e'), hex('#241a12')];
+  const rock = kind !== false;
+  const pal = BACKDROP_PAL[kind === true ? 'rock' : kind === false ? 'dirt' : kind].map(hex);
   const pts: [number, number][] = [];
   for (let gy = 0; gy < 4; gy++) for (let gx = 0; gx < 4; gx++) pts.push([(gx + 0.2 + h01(gx, gy, rock ? 3 : 4) * 0.6) * 16, (gy + 0.2 + h01(gx, gy, rock ? 5 : 6) * 0.6) * 16]);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -465,6 +472,8 @@ export class Background {
   private ugPats: (CanvasPattern | null)[] | null = null;
   readonly dirtCave = caveBackdrop(false);
   readonly rockCave = caveBackdrop(true);
+  readonly deepCave = caveBackdrop('deep');
+  readonly moltenCave = caveBackdrop('molten');
   /** 土層淡入：4 階 Bayer 挖空的同一張紋理 */
   private dirtFade = [0.2, 0.4, 0.6, 0.8].map((k) => caveBackdrop(false, k));
   private cloudSeed: number;
@@ -608,10 +617,10 @@ export class Background {
    * 前 64 px 用 4 階 Bayer 挖空淡入（不用半透明），cavernY 起換岩層紋。
    */
   drawUnderground(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number,
-    colTop: (tx: number) => number, tile: number, cavernY: number): void {
+    colTop: (tx: number) => number, tile: number, cavernY: number, deepY = Infinity, moltenY = Infinity): void {
     const bottom = camY + vh + 1;
     const fade = 64, step = fade / 4;
-    if (!this.ugPats) this.ugPats = [...this.dirtFade, this.dirtCave, this.rockCave].map((img) => ctx.createPattern(img, 'repeat'));
+    if (!this.ugPats) this.ugPats = [...this.dirtFade, this.dirtCave, this.rockCave, this.deepCave, this.moltenCave].map((img) => ctx.createPattern(img, 'repeat'));
     const pats = this.ugPats;
     // 視差 0.5：圖樣隨鏡頭半速移動（對齊整數美術 px）
     const m = new DOMMatrix([1, 0, 0, 1, snapPx(camX * 0.5), snapPx(camY * 0.5)]);
@@ -629,7 +638,9 @@ export class Background {
       if (y0 >= bottom) continue;
       for (let i = 0; i < 4; i++) band(i, x, y0 + i * step, Math.min(cavernY, y0 + (i + 1) * step));
       band(4, x, y0 + fade, cavernY);
-      band(5, x, Math.max(y0, cavernY), Infinity);
+      band(5, x, Math.max(y0, cavernY), deepY);
+      band(6, x, Math.max(y0, deepY), moltenY);
+      band(7, x, Math.max(y0, moltenY), Infinity);
     }
   }
 }

@@ -14,12 +14,20 @@ export const T = {
   GLOW_MUSHROOM: 37, CRYSTAL: 38, STALACTITE: 39, STALAGMITE: 40, COBWEB: 41, BEAM: 42,
   // ── 迷你生態區 ──
   MUSHROOM_GRASS: 43,
+  // ── 深度層：深層岩（洞穴層）、熔岩深淵（玄武岩 / 灰燼 / 黑曜石 / 發光熔岩石） ──
+  DEEP_STONE: 44, BASALT: 45, ASH: 46, OBSIDIAN: 47, MAGMA_ROCK: 48,
+  // ── 地城：三色地城磚（每個世界挑一色）、單向平台、門、上鎖的門 / 寶箱、裝飾 ──
+  DUNGEON_BRICK_BLUE: 49, DUNGEON_BRICK_GREEN: 50, DUNGEON_BRICK_PINK: 51,
+  PLATFORM: 52, DOOR_CLOSED: 53, DOOR_OPEN: 54, DOOR_LOCKED: 55, LOCKED_CHEST: 56,
+  CHAIN: 57, BANNER: 58, CANDLE: 59, LANTERN: 60, BOOKSHELF: 61, BONES: 62, LORE_TABLET: 63,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
 export const W = {
   NONE: 0, DIRT_WALL: 1, STONE_WALL: 2,
   PLANK_WALL: 3, SANDSTONE_WALL: 4, SNOW_WALL: 5, ICE_WALL: 6, MUD_WALL: 7,
+  DEEP_STONE_WALL: 8, BASALT_WALL: 9,
+  DUNGEON_WALL_BLUE: 10, DUNGEON_WALL_GREEN: 11, DUNGEON_WALL_PINK: 12,
 } as const;
 export type WallId = (typeof W)[keyof typeof W];
 
@@ -53,17 +61,19 @@ export interface TileDef {
   replaceable: boolean;
   /** 基礎顏色（render 程式材質 / 世界總覽圖用） */
   color: string;
+  /** 實心但以物件精靈繪製（門），不走自動接邊 */
+  sprite: boolean;
 }
 
 export interface WallDef { id: number; key: string; name: LocalName; color: string; }
 
-type TileInit = Omit<TileDef, 'minTier' | 'needsSupport' | 'light' | 'support' | 'replaceable' | 'blocksLight'> &
-  Partial<Pick<TileDef, 'minTier' | 'light' | 'support' | 'replaceable' | 'blocksLight'>>;
+type TileInit = Omit<TileDef, 'minTier' | 'needsSupport' | 'light' | 'support' | 'replaceable' | 'blocksLight' | 'sprite'> &
+  Partial<Pick<TileDef, 'minTier' | 'light' | 'support' | 'replaceable' | 'blocksLight' | 'sprite'>>;
 function def(d: TileInit): TileDef {
   const support = d.support ?? 'none';
   return {
     ...d, minTier: d.minTier ?? 1, light: d.light ?? 0, replaceable: d.replaceable ?? false,
-    blocksLight: d.blocksLight ?? d.solid, support, needsSupport: support !== 'none',
+    blocksLight: d.blocksLight ?? d.solid, support, needsSupport: support !== 'none', sprite: d.sprite ?? false,
   };
 }
 const n = (zh: string, en: string): LocalName => ({ zh, en });
@@ -72,8 +82,11 @@ const block = (id: number, key: string, name: LocalName, hardness: number, drop:
   def({ id, key, name, solid: true, hardness, drop, color, minTier });
 /** 非實心裝飾 */
 const decor = (id: number, key: string, name: LocalName, support: Support, drop: ItemId | null, color: string,
-  extra: Partial<Pick<TileDef, 'hardness' | 'light' | 'replaceable'>> = {}): TileDef =>
-  def({ id, key, name, solid: false, hardness: extra.hardness ?? 0.08, drop, color, support, light: extra.light, replaceable: extra.replaceable });
+  extra: Partial<Pick<TileDef, 'hardness' | 'light' | 'replaceable' | 'minTier'>> = {}): TileDef =>
+  def({ id, key, name, solid: false, hardness: extra.hardness ?? 0.08, drop, color, support, light: extra.light, replaceable: extra.replaceable, minTier: extra.minTier });
+/** 鎬等級：地城磚要金鎬；上鎖的門 / 寶箱 / 古碑挖不動 */
+export const TIER_GOLD = 5;
+export const TIER_UNBREAKABLE = 99;
 
 export const TILES: readonly TileDef[] = [
   def({ id: T.AIR, key: 'air', name: n('空氣', 'Air'), solid: false, hardness: 0, drop: null, color: '#000000' }),
@@ -122,6 +135,28 @@ export const TILES: readonly TileDef[] = [
   decor(T.COBWEB, 'cobweb', n('蜘蛛網', 'Cobweb'), 'none', null, '#b4b9c8', { hardness: 0.05, replaceable: true }),
   decor(T.BEAM, 'beam', n('木樑', 'Wooden Beam'), 'none', 'wood', '#7c4c2e', { hardness: 0.5 }),
   block(T.MUSHROOM_GRASS, 'mushroom_grass', n('蘑菇草', 'Mushroom Grass'), 0.4, 'mud', '#4aaeb0'),
+  // ── 深度層 ──
+  block(T.DEEP_STONE, 'deep_stone', n('深層岩', 'Deep Rock'), 1.1, 'deep_stone', '#423f54'),
+  block(T.BASALT, 'basalt', n('玄武岩', 'Basalt'), 1.3, 'basalt', '#2c2838', 2),
+  block(T.ASH, 'ash', n('灰燼', 'Ash'), 0.3, 'ash', '#5e5e74'),
+  block(T.OBSIDIAN, 'obsidian', n('黑曜石', 'Obsidian'), 3.4, 'obsidian', '#2c2450', 4),
+  def({ id: T.MAGMA_ROCK, key: 'magma_rock', name: n('熔岩石', 'Magma Rock'), solid: true, hardness: 1.8, drop: 'magma_rock', color: '#e8701c', minTier: 3, light: 0.85 }),
+  // ── 地城 ──
+  block(T.DUNGEON_BRICK_BLUE, 'dungeon_brick_blue', n('藍地城磚', 'Blue Dungeon Brick'), 2.6, 'dungeon_brick_blue', '#2c4486', TIER_GOLD),
+  block(T.DUNGEON_BRICK_GREEN, 'dungeon_brick_green', n('綠地城磚', 'Green Dungeon Brick'), 2.6, 'dungeon_brick_green', '#3f7468', TIER_GOLD),
+  block(T.DUNGEON_BRICK_PINK, 'dungeon_brick_pink', n('粉地城磚', 'Pink Dungeon Brick'), 2.6, 'dungeon_brick_pink', '#7a5a8c', TIER_GOLD),
+  decor(T.PLATFORM, 'platform', n('木平台', 'Wooden Platform'), 'none', 'platform', '#966139', { hardness: 0.2 }),
+  def({ id: T.DOOR_CLOSED, key: 'door_closed', name: n('木門', 'Wooden Door'), solid: true, hardness: 0.6, drop: null, color: '#7c4c2e', sprite: true }),
+  decor(T.DOOR_OPEN, 'door_open', n('木門（開）', 'Wooden Door (open)'), 'none', null, '#7c4c2e', { hardness: 0.6 }),
+  def({ id: T.DOOR_LOCKED, key: 'door_locked', name: n('上鎖的門', 'Locked Door'), solid: true, hardness: 1, drop: null, color: '#b4b9c8', sprite: true, minTier: TIER_UNBREAKABLE }),
+  decor(T.LOCKED_CHEST, 'locked_chest', n('金寶箱', 'Golden Chest'), 'floor', null, '#ffd86a', { hardness: 0.5, minTier: TIER_UNBREAKABLE }),
+  decor(T.CHAIN, 'chain', n('鐵鍊', 'Chain'), 'ceiling', null, '#707490', { hardness: 0.1 }),
+  decor(T.BANNER, 'banner', n('旗幟', 'Banner'), 'ceiling', null, '#a83a10', { hardness: 0.1 }),
+  decor(T.CANDLE, 'candle', n('蠟燭', 'Candle'), 'floor', null, '#fff4c0', { hardness: 0.05, light: 0.7 }),
+  decor(T.LANTERN, 'lantern', n('吊燈', 'Hanging Lamp'), 'ceiling', null, '#ffd86a', { hardness: 0.1, light: 0.92 }),
+  decor(T.BOOKSHELF, 'bookshelf', n('書架', 'Bookshelf'), 'floor', 'planks', '#623924', { hardness: 0.4 }),
+  decor(T.BONES, 'bones', n('骨堆', 'Bone Pile'), 'floor', null, '#f2e2b0', { hardness: 0.1 }),
+  decor(T.LORE_TABLET, 'lore_tablet', n('古碑', 'Ancient Tablet'), 'floor', null, '#858aa0', { hardness: 1, minTier: TIER_UNBREAKABLE }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -133,20 +168,35 @@ export const WALLS: readonly WallDef[] = [
   { id: W.SNOW_WALL, key: 'snow_wall', name: n('雪牆', 'Snow Wall'), color: '#5e5e74' },
   { id: W.ICE_WALL, key: 'ice_wall', name: n('冰牆', 'Ice Wall'), color: '#2c4486' },
   { id: W.MUD_WALL, key: 'mud_wall', name: n('泥巴牆', 'Mud Wall'), color: '#16301e' },
+  { id: W.DEEP_STONE_WALL, key: 'deep_stone_wall', name: n('深層岩牆', 'Deep Rock Wall'), color: '#1c1424' },
+  { id: W.BASALT_WALL, key: 'basalt_wall', name: n('玄武岩牆', 'Basalt Wall'), color: '#2a1810' },
+  { id: W.DUNGEON_WALL_BLUE, key: 'dungeon_wall_blue', name: n('藍地城牆', 'Blue Dungeon Wall'), color: '#18204a' },
+  { id: W.DUNGEON_WALL_GREEN, key: 'dungeon_wall_green', name: n('綠地城牆', 'Green Dungeon Wall'), color: '#16301e' },
+  { id: W.DUNGEON_WALL_PINK, key: 'dungeon_wall_pink', name: n('粉地城牆', 'Pink Dungeon Wall'), color: '#2c2450' },
 ];
+
+/** 地城配色：每個世界挑一色（磚 + 背景牆） */
+export const DUNGEON_COLORS = [
+  { key: 'blue', brick: T.DUNGEON_BRICK_BLUE, wall: W.DUNGEON_WALL_BLUE },
+  { key: 'green', brick: T.DUNGEON_BRICK_GREEN, wall: W.DUNGEON_WALL_GREEN },
+  { key: 'pink', brick: T.DUNGEON_BRICK_PINK, wall: W.DUNGEON_WALL_PINK },
+] as const;
 
 // 熱路徑查表（lighting / physics 每格讀取）
 export const SOLID_LUT = new Uint8Array(256);
 export const BLOCKS_LIGHT_LUT = new Uint8Array(256);
 export const LIGHT_LUT = new Float32Array(256);
-/** 非實心、靜態畫進 chunk 的裝飾物件 */
+/** 靜態畫進 chunk 的物件精靈（非實心裝飾 + 門） */
 export const DECOR_LUT = new Uint8Array(256);
+/** 單向平台：只有從上方落下時才擋 */
+export const PLATFORM_LUT = new Uint8Array(256);
 for (const t of TILES) {
   SOLID_LUT[t.id] = t.solid ? 1 : 0;
   BLOCKS_LIGHT_LUT[t.id] = t.blocksLight ? 1 : 0;
   LIGHT_LUT[t.id] = t.light;
-  DECOR_LUT[t.id] = !t.solid && (t.id >= T.CHEST || t.id === T.WORKBENCH) ? 1 : 0;
+  DECOR_LUT[t.id] = t.sprite || (!t.solid && (t.id >= T.CHEST || t.id === T.WORKBENCH)) ? 1 : 0;
 }
+PLATFORM_LUT[T.PLATFORM] = 1;
 
 export function tileDef(id: number): TileDef {
   return TILES[id] ?? TILES[T.AIR];
@@ -154,3 +204,32 @@ export function tileDef(id: number): TileDef {
 export function isSolidTile(id: number): boolean { return SOLID_LUT[id] === 1; }
 export function blocksLight(id: number): boolean { return BLOCKS_LIGHT_LUT[id] === 1; }
 export function isDecor(id: number): boolean { return DECOR_LUT[id] === 1; }
+export function isPlatformTile(id: number): boolean { return PLATFORM_LUT[id] === 1; }
+export function isDoorTile(id: number): boolean { return id === T.DOOR_CLOSED || id === T.DOOR_OPEN || id === T.DOOR_LOCKED; }
+/** 有內容的箱子 tile（普通箱 + 上鎖寶箱） */
+export function isChestTile(id: number): boolean { return id === T.CHEST || id === T.LOCKED_CHEST; }
+export function isDungeonBrick(id: number): boolean { return id >= T.DUNGEON_BRICK_BLUE && id <= T.DUNGEON_BRICK_PINK; }
+/** 按「使用」會互動（而不是放方塊）的 tile */
+export function isInteractive(id: number): boolean { return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET; }
+
+/**
+ * 地面型物件是否站得住：正下方實心，或疊在允許的東西上（仙人掌疊仙人掌、書架疊書架、蠟燭放書架上）；
+ * 平台也算地面（書架、蠟燭、骨堆、陶罐、箱子可以放平台上）。
+ */
+export function floorOk(id: number, below: number): boolean {
+  if (SOLID_LUT[below] === 1) return true;
+  if (id === T.CACTUS) return below === T.CACTUS;
+  if (id === T.BOOKSHELF) return below === T.BOOKSHELF || below === T.PLATFORM;
+  if (id === T.CANDLE) return below === T.BOOKSHELF || below === T.PLATFORM;
+  if (id === T.BONES || id === T.POT || id === T.CHEST) return below === T.PLATFORM;
+  return false;
+}
+/** 垂吊型物件是否掛得住：正上方實心，或接在鏈 / 藤 / 旗幟下面 */
+export function ceilOk(id: number, above: number): boolean {
+  if (SOLID_LUT[above] === 1) return true;
+  if (id === T.VINE) return above === T.VINE || above === T.LEAVES;
+  if (id === T.CHAIN) return above === T.CHAIN || above === T.PLATFORM;
+  if (id === T.BANNER) return above === T.BANNER || above === T.PLATFORM;
+  if (id === T.LANTERN) return above === T.CHAIN || above === T.PLATFORM;
+  return false;
+}

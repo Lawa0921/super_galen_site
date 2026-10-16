@@ -71,7 +71,15 @@ export const DECOR_STYLES: Record<number, number> = {
   [T.PUMPKIN]: 2, [T.CACTUS]: 6, [T.DEAD_BUSH]: 3, [T.SNOW_SHRUB]: 3, [T.FERN]: 3, [T.VINE]: 3,
   [T.GLOW_MUSHROOM]: 3, [T.CRYSTAL]: 8, [T.STALACTITE]: 6, [T.STALAGMITE]: 6, [T.COBWEB]: 2, [T.BEAM]: 1,
   [T.WORKBENCH]: 1,
+  [T.PLATFORM]: 4, [T.DOOR_CLOSED]: 3, [T.DOOR_OPEN]: 3, [T.DOOR_LOCKED]: 3, [T.LOCKED_CHEST]: 1,
+  [T.CHAIN]: 2, [T.BANNER]: 4, [T.CANDLE]: 2, [T.LANTERN]: 1, [T.BOOKSHELF]: 3, [T.BONES]: 3, [T.LORE_TABLET]: 1,
 };
+/** 門 / 旗幟等直向多格物件：同種在上 → 不是頂；同種在下 → 不是底 */
+function doorPart(id: number, n: Neighbor): number {
+  const same = (t: number): boolean => t === id;
+  const up = same(n(0, -1)), dn = same(n(0, 1));
+  return !up ? 0 : dn ? 1 : 2;
+}
 
 function cellHash(x: number, y: number): number {
   let h = Math.imul(x, 73856093) ^ Math.imul(y, 19349663);
@@ -102,6 +110,17 @@ export function decorStyle(id: number, x: number, y: number, n: Neighbor): numbe
     case T.STALACTITE: return (n(0, -1) === T.ICE ? 3 : 0) + (h % 3);
     case T.STALAGMITE: return (n(0, 1) === T.ICE ? 3 : 0) + (h % 3);
     case T.COBWEB: return solid(-1, 0) ? 0 : solid(1, 0) ? 1 : h & 1;
+    case T.PLATFORM: {
+      const l = n(-1, 0) === T.PLATFORM || solid(-1, 0), r = n(1, 0) === T.PLATFORM || solid(1, 0);
+      return l && r ? 0 : !l && r ? 1 : l && !r ? 2 : 3;
+    }
+    case T.DOOR_CLOSED: case T.DOOR_OPEN: case T.DOOR_LOCKED: return doorPart(id, n);
+    case T.BANNER: {
+      // 同一欄同色：顏色看 x 雜湊；上面不是旗幟 → 頂部
+      const blue = (cellHash(x, 7) & 1) === 1 ? 2 : 0;
+      return blue + (n(0, -1) === T.BANNER ? 1 : 0);
+    }
+    case T.CHAIN: return y & 1;
     default: return h % (DECOR_STYLES[id] ?? 1);
   }
 }

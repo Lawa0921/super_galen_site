@@ -2,15 +2,19 @@
 // 只用 + − × ÷ / floor / abs 與整數雜湊，不用 Math.sin / pow 等超越函數，確保跨引擎位元一致。
 // 演算法概念參考泰拉（地表 feature 隨機漫步、TileRunner 菱形筆刷、依面積縮放的 pass 數量），程式為自行重寫。
 //
-// Pass 順序：生態區配置 → 地形（含沙丘 / 雪峰 / 懸崖 / 突岩）→ 土石互滲、黏土、碎石 → 洞穴（小洞、蟲洞、大洞窟、
-// 地表坑道）→ 花崗岩 / 大理石 → 生態區轉換（材料 + 背景牆）→ 礦脈 → 草 / 叢林草 → 出生點 → 結構（礦坑、小屋、遺跡）
-// → 樹 → 地表裝飾 → 地下裝飾。
+// Pass 順序：生態區配置 → 地形（沙丘 / 雪峰 / 大山塊 / 乾湖床 / 懸崖 / 突岩）→ 深度層（泥土層厚度起伏、岩層、
+// 洞穴層深層岩、熔岩深淵）→ 土石互滲、黏土、碎石 → 洞穴系統（義大利麵隧道、柏林蟲、長水平廊道、洞穴層大洞窟網路
+// + 連通、巨大洞室、熔岩深淵開闊帶、少量小洞、地表坑道 / 裂谷 / 天坑）→ 花崗岩 / 大理石 → 生態區轉換（有機形狀：
+// 沙漠淚滴、雪原往下收窄成冰洞、叢林鼓起再收）→ 迷你生態區 → 礦脈群 → 熔岩深淵細節 → 草 → 出生點 → 結構
+// （礦坑、小屋、遺跡、地城）→ 樹 → 地表裝飾 → 地下裝飾 → 浮空島。
 import { World, BIOME, type BiomeId } from './world';
 import { Rng, subSeed } from './rng';
-import { T, W, SOLID_LUT } from './tiles';
+import { T, W, SOLID_LUT, DUNGEON_COLORS } from './tiles';
 import { WORLD_W, WORLD_H } from './constants';
 import { chestLoot, type ChestKind } from './loot';
-import { fbm2, seedInt, vnoise1 } from './noise';
+import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from './noise';
+import { carveChamber, carveNetwork, carveNoiseTunnels, perlinWorm, carveDisc, paintBlob, noisePockets, fillTinyPockets } from './gen/caves';
+import { generateDungeon, type DungeonInfo } from './gen/dungeon';
 
 export interface GenOptions { width?: number; height?: number; }
 export interface GenBands {
@@ -18,7 +22,9 @@ export interface GenBands {
 }
 export interface BiomeSegment { biome: BiomeId; x0: number; x1: number; }
 export type StructureKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'chasm' | 'ravine' | 'frozen_lake'
-  | 'mushroom_biome' | 'crystal_cave' | 'sky_island';
+  | 'mushroom_biome' | 'crystal_cave' | 'sky_island' | 'lake_bed' | 'sinkhole' | 'dungeon';
+/** 每欄的深度層分界（第一個屬於該層的 y） */
+export interface GenLayers { rock: Int16Array; deep: Int16Array; molten: Int16Array; }
 /** 地表地形種類（依生態區挑）；reserved = 預留給地城的平地 */
 export type LandformType = 'plains' | 'hills' | 'mountains' | 'valley' | 'dunes' | 'mesa' | 'frozen_lake' | 'swamp' | 'reserved';
 export interface Landform { type: LandformType; x0: number; x1: number; }
@@ -45,6 +51,10 @@ export interface GenResult {
   landforms: Landform[];
   /** 地城預留區：靠一側海灘內側，生態區與結構都避開 */
   dungeonZone: ReservedZone;
+  /** 每欄深度層分界 */
+  layers: GenLayers;
+  /** 地城（房間圖、門、鑰匙、寶箱）；世界太小放不下時 null */
+  dungeon: DungeonInfo | null;
 }
 
 export interface RunnerOptions {
@@ -99,7 +109,8 @@ export function tileRunner(
 
 const isRock = (id: number): boolean => id === T.STONE || id === T.DIRT;
 const isOreHost = (id: number): boolean =>
-  id === T.STONE || id === T.DIRT || id === T.SANDSTONE || id === T.ICE || id === T.MUD || id === T.SNOW;
+  id === T.STONE || id === T.DIRT || id === T.SANDSTONE || id === T.ICE || id === T.MUD || id === T.SNOW
+  || id === T.DEEP_STONE || id === T.BASALT;
 const isSolid = (id: number): boolean => SOLID_LUT[id] === 1;
 
 /** 地表 feature：平台 / 丘 / 谷 / 山 / 峽谷，各自決定每欄高度變化的偏向。 */
@@ -119,10 +130,11 @@ const LF_FEATURES: Record<LandformType, Feature[]> = {
 };
 /** 遇到 feature 切換時出現懸崖的機率（1/n；0 = 不會） */
 const LF_CLIFF: Record<LandformType, number> = {
-  plains: 0, hills: 9, mountains: 3, valley: 5, dunes: 0, mesa: 0, frozen_lake: 0, swamp: 0, reserved: 0,
+  plains: 0, hills: 9, mountains: 4, valley: 5, dunes: 0, mesa: 0, frozen_lake: 0, swamp: 0, reserved: 0,
 };
+/** 森林：山比較少（6 段裡 1 段），但每座都是大山塊 */
 const LF_BY_BIOME: Record<number, LandformType[]> = {
-  [BIOME.FOREST]: ['plains', 'hills', 'mountains', 'valley'],
+  [BIOME.FOREST]: ['plains', 'hills', 'valley', 'plains', 'hills', 'mountains'],
   [BIOME.DESERT]: ['dunes', 'mesa'],
   [BIOME.SNOW]: ['mountains', 'hills', 'frozen_lake'],
   [BIOME.JUNGLE]: ['hills', 'swamp'],
@@ -223,6 +235,8 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
   const rockLine = new Int16Array(width);
   const cliffs: { x: number; d: number }[] = [];
   const lakes: { x0: number; x1: number; level: number }[] = [];
+  const lakeBeds: { x0: number; x1: number; level: number }[] = [];
+  const sinks: { x: number; r: number; depth: number }[] = [];
   const minS = Math.floor(height * 0.17), maxS = Math.floor(height * 0.27), minSnow = Math.floor(height * 0.11);
   /** 地表最高點限制：雪原內可以更高（雪峰），往邊界 90 欄內平滑過渡回一般限制，避免邊界出現垂直斷崖 */
   const loAt = (x: number, base: number): number => {
@@ -348,6 +362,27 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       if (surface[x] < lo) surface[x] = lo;
       if (surface[x] > hiLim) surface[x] = hiLim;
     }
+    // 大山塊：森林 / 雪原的 mountains 段疊一座寬而高的山（稜線帶雜訊鋸齒），比隨機漫步的小山大得多
+    const ms = seedInt(seed, 'massif');
+    for (const lf of landforms) {
+      if (lf.type !== 'mountains') continue;
+      const len = lf.x1 - lf.x0;
+      if (len < 70) continue;
+      const hw = Math.min(Math.floor(len / 2) - 6, rng.int(60, 120)), hh = rng.int(38, 72);
+      const cx = lf.x0 + Math.floor(len / 2) + rng.int(-Math.floor(len / 8), Math.floor(len / 8) + 1);
+      const lean = rng.range(-0.25, 0.25);
+      for (let x = cx - hw; x <= cx + hw; x++) {
+        if (x < 1 || x >= width - 1) continue;
+        let t = (x - cx) / hw;
+        t = t < 0 ? t * (1 - lean) : t * (1 + lean);
+        const a = Math.abs(t);
+        if (a >= 1) continue;
+        const body = (1 - a) * (1 - a * 0.35);
+        const ridge = (vnoise1(x, 9, ms) - 0.5) * 7 * body + (vnoise1(x, 23, ms + 1) - 0.5) * 10 * body;
+        const fade = Math.min(1, (1 - a) * 4);
+        surface[x] = Math.max(minSnow - 12, Math.round(surface[x] - (hh * body + ridge) * fade));
+      }
+    }
     // 結冰湖：雪原 frozen_lake 段挖一個碗，之後填成平的冰面
     for (const lf of landforms) {
       if (lf.type !== 'frozen_lake') continue;
@@ -362,6 +397,37 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       }
       lakes.push({ x0, x1: x0 + lw, level });
     }
+    // 乾湖床：森林平原 / 丘陵偶爾一個淺碗（之後鋪黏土、沙、碎石），天坑：漏斗形凹陷（之後往下挖豎井）
+    const farOk = (x0: number, x1: number): boolean => Math.abs((x0 + x1) / 2 - width / 2) > width * 0.08 && !inDz(x0, 30) && !inDz(x1, 30)
+      && biomes.every((b) => x1 < b.x0 - 30 || x0 > b.x1 + 30) && x0 > beachW + 20 && x1 < width - beachW - 20;
+    const nBeds = Math.max(1, Math.round(width / 1400));
+    for (let k = 0, tries = 0; k < nBeds && tries < 40; tries++) {
+      const lf = landforms[rng.int(0, landforms.length)];
+      if ((lf.type !== 'plains' && lf.type !== 'hills') || lf.x1 - lf.x0 < 70) continue;
+      const lw = rng.int(28, Math.min(64, lf.x1 - lf.x0 - 20)), x0 = rng.int(lf.x0 + 10, lf.x1 - lw - 10);
+      if (!farOk(x0, x0 + lw) || lakeBeds.some((l) => Math.abs(l.x0 - x0) < 120)) continue;
+      const ld = rng.int(6, 12);
+      const level = Math.max(surface[x0], surface[x0 + lw - 1]);
+      for (let x = x0; x < x0 + lw; x++) {
+        const t = ((x - x0) + 0.5) / lw * 2 - 1;
+        surface[x] = Math.max(surface[x], level + Math.round(ld * (1 - t * t) * (1 - t * t * 0.3)));
+      }
+      lakeBeds.push({ x0, x1: x0 + lw, level });
+      k++;
+    }
+    const nSinks = Math.max(1, Math.round(width / 1000));
+    for (let k = 0, tries = 0; k < nSinks && tries < 40; tries++) {
+      const x = rng.int(40, Math.max(41, width - 40)), r = rng.int(4, 8);
+      if (!farOk(x - 16, x + 16) || sinks.some((s) => Math.abs(s.x - x) < 150) || lakeBeds.some((l) => x > l.x0 - 30 && x < l.x1 + 30)) continue;
+      if (lakes.some((l) => x > l.x0 - 30 && x < l.x1 + 30)) continue;
+      const R = r * 3;
+      for (let xx = x - R; xx <= x + R; xx++) {
+        const t = Math.abs(xx - x) / R;
+        surface[xx] += Math.round((1 - t) * (1 - t) * r * 1.2);
+      }
+      sinks.push({ x, r, depth: rng.int(18, 46) });
+      k++;
+    }
     // 海灘：世界兩端往海邊緩降
     const bl = surface[Math.min(width - 1, beachW)], br = surface[Math.max(0, width - 1 - beachW)];
     for (let x = 0; x < beachW && x < width; x++) {
@@ -374,21 +440,49 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     const l = surface[x - 1], r = surface[x + 1];
     if (l === r && Math.abs(surface[x] - l) === 1) surface[x] = l;
   }
+  // ── 深度層：泥土層厚度（低頻大起伏 + 中頻小起伏）、岩層、洞穴層（深層岩）、熔岩深淵（玄武岩）──
+  // 分界線各自帶雜訊；填色時在分界附近再用 2D 雜訊抖動成團塊狀交界（不是直線）。
+  const deepLine = new Int16Array(width), moltenLine = new Int16Array(width);
   {
-    const rng = subSeed(seed, 'rockline');
-    let rock = surface[0] + Math.floor(height * 0.1);
+    const ln = seedInt(seed, 'layers');
     for (let x = 0; x < width; x++) {
-      while (rng.chance(3)) rock += rng.int(-2, 3);
-      const rMin = surface[x] + Math.floor(height * 0.04), rMax = surface[x] + Math.floor(height * 0.13);
-      if (rock < rMin) rock = rMin; if (rock > rMax) rock = rMax;
-      rockLine[x] = rock;
+      const thick = height * (0.028 + 0.088 * vnoise1(x, 210, ln)) + (vnoise1(x, 37, ln + 1) - 0.5) * 16;
+      rockLine[x] = surface[x] + Math.max(10, Math.round(thick));
+      const d = Math.round(height * 0.47 + (vnoise1(x, 170, ln + 2) - 0.5) * height * 0.06 + (vnoise1(x, 55, ln + 3) - 0.5) * 26 + (vnoise1(x, 13, ln + 6) - 0.5) * 8);
+      deepLine[x] = Math.min(height - 4, Math.max(rockLine[x] + Math.round(height * 0.05), d));
+      const m = Math.round(height * 0.845 + (vnoise1(x, 130, ln + 4) - 0.5) * height * 0.035 + (vnoise1(x, 29, ln + 5) - 0.5) * 9);
+      moltenLine[x] = Math.min(height - 2, Math.max(deepLine[x] + Math.round(height * 0.12), m));
     }
+    const dith = new NoiseField(width, height, 5, 5, ln + 9);
+    const dith2 = new NoiseField(width, height, 18, 12, ln + 10);
     for (let x = 0; x < width; x++) {
-      const sx = surface[x], rx = rockLine[x];
+      const sx = surface[x], rx = rockLine[x], dx = deepLine[x], mx = moltenLine[x];
       for (let y = Math.max(0, sx); y < height; y++) {
         const i = y * WW + x;
-        fg[i] = y < rx ? T.DIRT : T.STONE;
-        if (y >= sx + 3) wall[i] = y < rx ? W.DIRT_WALL : W.STONE_WALL;
+        let t: number, wl: number;
+        const near = Math.abs(y - rx) < 5 || Math.abs(y - dx) < 16 || Math.abs(y - mx) < 10;
+        const j = near ? dith.at(x, y) - 0.5 : 0;
+        const j2 = near ? dith2.at(x, y) - 0.5 : 0;
+        if (y < rx + j * 8) { t = T.DIRT; wl = W.DIRT_WALL; }
+        else if (y < dx + j * 14 + j2 * 18) { t = T.STONE; wl = W.STONE_WALL; }
+        else if (y < mx + j * 14 + j2 * 6) { t = T.DEEP_STONE; wl = W.DEEP_STONE_WALL; }
+        else { t = T.BASALT; wl = W.BASALT_WALL; }
+        fg[i] = t;
+        if (y >= sx + 3) wall[i] = wl;
+      }
+    }
+  }
+  // 乾湖床：碗底鋪 2–3 層黏土 / 沙 / 碎石（不長草）
+  {
+    const ls = seedInt(seed, 'lake-beds');
+    for (const lb of lakeBeds) {
+      for (let x = lb.x0; x < lb.x1; x++) {
+        const deep = surface[x] - lb.level;
+        if (deep < 2) continue;
+        for (let k = 0; k < 3; k++) {
+          const y = surface[x] + k, n = vnoise1(x + k * 31, 6, ls);
+          put(x, y, k === 0 ? (n > 0.6 ? T.SAND : T.CLAY) : n > 0.7 ? T.GRAVEL : T.CLAY);
+        }
       }
     }
   }
@@ -421,98 +515,150 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     surfaceLow = Math.min(surfaceLow, surface[x]); surfaceHigh = Math.max(surfaceHigh, surface[x]);
     rockLow = Math.min(rockLow, rockLine[x]); rockHigh = Math.max(rockHigh, rockLine[x]);
   }
+  let deepTop = height, moltenTop = height;
+  for (let x = 0; x < width; x++) { deepTop = Math.min(deepTop, deepLine[x]); moltenTop = Math.min(moltenTop, moltenLine[x]); }
   world.surfaceY = Math.min(height - 1, surfaceHigh + 10);
-  world.cavernY = Math.min(height - 1, rockHigh);
+  world.rockY = Math.min(height - 1, rockHigh);
+  world.cavernY = Math.min(height - 1, deepTop);
+  world.moltenY = Math.min(height - 1, moltenTop);
   world.surface.set(surface); // 洞穴挖穿前的地形地表（HUD 深度用）
   const bands: GenBands = { surfaceLow, surfaceHigh, rockLow, rockHigh };
+  const layers: GenLayers = { rock: rockLine, deep: deepLine, molten: moltenLine };
   const bottom = height - 1;
   const cavernY = world.cavernY;
   const yIn = (rng: Rng, lo: number, hi: number): number => rng.int(Math.min(lo, hi - 1), Math.max(lo + 1, hi));
-  const deepY = cavernY + Math.floor((bottom - cavernY) * 0.55);
+  /** 洞穴層中段（較深的迷你生態區 / 花崗岩用） */
+  const deepY = deepTop + Math.floor((moltenTop - deepTop) * 0.5);
   const dungeonZone: ReservedZone = {
     x0: dzX0, x1: dzX1, y0: Math.max(2, surfaceLow - 40),
-    y1: Math.min(height - 2, cavernY + Math.floor((height - cavernY) * 0.4)), side: dungeonLeft ? 'left' : 'right',
+    y1: Math.min(height - 2, Math.max(rockHigh + 40, cavernY + Math.floor((moltenTop - cavernY) * 0.55))), side: dungeonLeft ? 'left' : 'right',
   };
   const occupied: Rect[] = [{ x: dzX0, y: dungeonZone.y0, w: dzW, h: dungeonZone.y1 - dungeonZone.y0 }];
   const structures: Structure[] = [];
   for (const lk of lakes) structures.push({ kind: 'frozen_lake', x: lk.x0, y: lk.level, w: lk.x1 - lk.x0, h: 16 });
+  for (const lb of lakeBeds) structures.push({ kind: 'lake_bed', x: lb.x0, y: lb.level - 2, w: lb.x1 - lb.x0, h: 16 });
 
-  // ── Rocks in dirt / Dirt in rocks / 黏土 / 碎石 ─────────────────
+  // ── 土石互滲（兩個方向都有，大塊團狀）/ 黏土 / 碎石 ─────────────────
+  const rocky = (id: number): boolean => id === T.STONE || id === T.DIRT || id === T.GRAVEL || id === T.DEEP_STONE;
   {
-    const rng = subSeed(seed, 'rocks-in-dirt');
-    for (let k = 0; k < A * 0.0012; k++) {
-      tileRunner(world, rng, rng.int(0, width), yIn(rng, surfaceHigh, rockHigh), rng.int(2, 7), rng.int(2, 23), T.STONE, { only: isRock });
-    }
-  }
-  {
-    const rng = subSeed(seed, 'dirt-in-rocks');
-    for (let k = 0; k < A * 0.0008; k++) {
-      tileRunner(world, rng, rng.int(0, width), yIn(rng, rockLow, bottom), rng.int(2, 8), rng.int(2, 21), T.DIRT, { only: isRock });
-    }
+    // 雙向互滲：泥土層裡的石頭團、岩層 / 洞穴層裡的泥土團、洞穴層裡夾一般石頭——都用雜訊團塊（有機形狀，不是菱形）
+    const ps = seedInt(seed, 'pockets');
+    noisePockets(world, new FbmField(width, height, 22, 14, ps, 2, 0.5), 0.66, (x) => surface[x] + 4, (x) => rockLine[x] + 4, (id) => id === T.DIRT, T.STONE);
+    noisePockets(world, new FbmField(width, height, 7, 6, ps + 3, 2, 0.5), 0.76, (x) => surface[x] + 3, (x) => rockLine[x], (id) => id === T.DIRT, T.STONE);
+    noisePockets(world, new FbmField(width, height, 26, 16, ps + 5, 2, 0.5), 0.665, (x) => rockLine[x] - 4, (x) => deepLine[x] + 40, (id) => id === T.STONE || id === T.DEEP_STONE, T.DIRT);
+    noisePockets(world, new FbmField(width, height, 44, 26, ps + 7, 2, 0.5), 0.65, (x) => deepLine[x], (x) => moltenLine[x] - 10, (id) => id === T.DEEP_STONE, T.STONE);
+    noisePockets(world, new FbmField(width, height, 30, 18, ps + 9, 2, 0.5), 0.68, (x) => moltenLine[x] - 40, (x) => moltenLine[x] + 8, (id) => id === T.DEEP_STONE, T.BASALT);
   }
   {
     const rng = subSeed(seed, 'clay');
     for (let k = 0; k < A * 0.00012; k++) {
-      tileRunner(world, rng, rng.int(0, width), yIn(rng, surfaceLow, surfaceHigh + 40), rng.int(4, 10), rng.int(4, 18), T.CLAY, { only: (id) => id === T.DIRT });
+      const x = rng.int(0, width);
+      tileRunner(world, rng, x, yIn(rng, surface[x], rockLine[x] + 10), rng.int(4, 10), rng.int(4, 18), T.CLAY, { only: (id) => id === T.DIRT });
     }
   }
   {
     const rng = subSeed(seed, 'gravel');
     for (let k = 0; k < A * 0.0001; k++) {
-      tileRunner(world, rng, rng.int(0, width), yIn(rng, surfaceHigh, cavernY + 80), rng.int(3, 8), rng.int(3, 14), T.GRAVEL, { only: isRock });
+      const x = rng.int(0, width);
+      tileRunner(world, rng, x, yIn(rng, rockLine[x] - 10, deepLine[x] + 60), rng.int(3, 8), rng.int(3, 14), T.GRAVEL, { only: isRock });
     }
   }
-  // ── 洞穴 ─────────────────────────────────────────────────
+  // ── 洞穴系統 ──────────────────────────────────────────────
+  const spawnSafe = (x: number): boolean => Math.abs(x - width / 2) < width * 0.02;
+  const caveSeed = seedInt(seed, 'caves');
+  // 1) 泥土層 + 岩層的義大利麵隧道：細長、蜿蜒、彼此交會成網；低頻遮罩讓某些區域是大片實心岩
+  carveNoiseTunnels(world, {
+    top: (x) => surface[x] + (spawnSafe(x) ? 30 : 9), bottom: (x) => deepLine[x] + 24,
+    seed: caveSeed, width: 0.024, keep: (id) => id === T.ICE,
+  });
+  // 2) 柏林蟲：岩層 / 洞穴層的大隧道，半徑 1.5–5 起伏、偶爾分岔
+  {
+    const rng = subSeed(seed, 'worms');
+    const n = Math.max(2, Math.round(width / 115 * (height / 1200)));
+    for (let k = 0; k < n; k++) {
+      const x = rng.int(20, Math.max(21, width - 20));
+      if (inDz(x, 20)) continue;
+      const deep = rng.next() < 0.42;
+      const y0 = deep ? deepLine[x] + 10 : rockLine[x] + 6, y1 = deep ? moltenLine[x] - 20 : deepLine[x] + 20;
+      if (y1 - y0 < 12) continue;
+      perlinWorm(world, rng, {
+        x, y: rng.int(y0, y1), steps: rng.int(140, 420), r0: rng.range(1.4, 2.2), r1: rng.range(2.8, deep ? 5.6 : 4.4),
+        turn: rng.range(0.04, 0.1), flat: rng.range(0.25, 0.75), yMin: y0 - 10, yMax: y1 + 10, branch: 1 / 260,
+      });
+    }
+  }
+  // 3) 長水平廊道：幾條橫跨很遠、只微微起伏的通道
+  {
+    const rng = subSeed(seed, 'corridors');
+    const n = Math.max(1, Math.round(width / 650));
+    for (let k = 0; k < n; k++) {
+      const x = rng.int(40, Math.max(41, width - 40));
+      if (inDz(x, 40)) continue;
+      const lo = rng.chance(2) ? rockLine[x] + 12 : deepLine[x] + 20, hi = lo + Math.floor(height * 0.12);
+      perlinWorm(world, rng, {
+        x, y: rng.int(lo, Math.max(lo + 1, Math.min(hi, moltenLine[x] - 30))), steps: rng.int(380, 820),
+        r0: rng.range(1.6, 2.1), r1: rng.range(2.6, 3.4), turn: 0.08, flat: 0.96,
+        dx: rng.chance(2) ? 1 : -1, dy: 0, yMin: lo - 30, yMax: hi + 30,
+      });
+    }
+  }
+  // 4) 洞穴層的大洞窟網路（細胞自動機 + 移除小洞 + 連通）
+  const network = carveNetwork(world, {
+    yTop: deepTop - 6, yBot: moltenTop - 12, threshold: 0.55, seed: caveSeed + 101,
+    rng: subSeed(seed, 'network'), minCells: 70,
+  });
+  // 5) 巨大洞室：洞穴層裡少數圓頂大廳，各有風味（螢光菇 / 水晶 / 普通），兩側再接柏林蟲出去
+  {
+    const rng = subSeed(seed, 'caverns');
+    const n = Math.max(1, Math.round(width / 700));
+    const placed: Rect[] = [];
+    for (let k = 0, tries = 0; k < n && tries < n * 12; tries++) {
+      const rx = rng.int(40, 82), ry = rng.int(22, 40);
+      const x = rng.int(Math.min(rx + 20, width - 1), Math.max(rx + 21, width - rx - 20));
+      const lo = deepTop + ry + 8, hi = moltenTop - ry - 16;
+      if (hi <= lo) continue;
+      const y = rng.int(lo, hi);
+      const r: Rect = { x: x - rx, y: y - ry, w: rx * 2, h: ry * 2 };
+      if (inDz(x - rx, 20) || inDz(x + rx, 20) || placed.some((o) => overlap(o, r, 30))) continue;
+      carveChamber(world, x, y, rx, ry, caveSeed + 200 + k);
+      for (const side of [-1, 1]) {
+        perlinWorm(world, rng, {
+          x: x + side * rx * 0.8, y: y + rng.int(-5, 6), steps: rng.int(60, 160), r0: 1.8, r1: 3.6, turn: 0.2, flat: 0.5,
+          dx: side, dy: rng.range(-0.3, 0.3), yMin: deepTop, yMax: moltenTop - 10,
+        });
+      }
+      placed.push(r);
+      const f = rng.int(0, 3);
+      structures.push({ kind: 'cavern', x: r.x, y: r.y, w: r.w, h: r.h, flavor: f === 0 ? 'mushroom' : f === 1 ? 'crystal' : 'plain' });
+      k++;
+    }
+  }
+  // 6) 熔岩深淵開闊帶：深淵中段一條橫貫世界、帶岩柱與浮島的大空間（無背景牆 → 看得到紅色深淵背景）
+  {
+    const yC = Math.round(height - height * 0.078), hb = Math.max(6, Math.round(height * 0.052));
+    const mf = new FbmField(width, height, 120, 34, caveSeed + 300, 3, 0.55);
+    for (let x = 0; x < width; x++) {
+      const yc = yC + (vnoise1(x, 150, caveSeed + 310) - 0.5) * hb * 0.9;
+      const hbx = hb * (0.7 + 0.6 * vnoise1(x, 90, caveSeed + 311));
+      const y0 = Math.max(moltenLine[x] + 8, Math.floor(yc - hbx - 10)), y1 = Math.min(height - 12, Math.ceil(yc + hbx + 10));
+      for (let y = y0; y < y1; y++) {
+        const q = (y - yc) / hbx;
+        const bias = 0.56 * (1 - q * q);
+        if (mf.at(x, y) + bias <= 0.8) continue;
+        const i = y * WW + x;
+        if (SOLID_LUT[fg[i]] !== 1) continue;
+        fg[i] = T.AIR;
+        wall[i] = W.NONE;
+      }
+    }
+  }
+  // 7) 少量小洞（岩層 / 洞穴層），不再滿地都是
   {
     const rng = subSeed(seed, 'small-holes');
-    for (let k = 0; k < A * 0.0005; k++) {
-      const x = rng.int(0, width), y = yIn(rng, surfaceHigh + 8, bottom);
-      tileRunner(world, rng, x, y, rng.int(2, 5), rng.int(2, 20), -1);
-      tileRunner(world, rng, x, y, rng.int(8, 15), rng.int(7, 30), -1);
-    }
-  }
-  {
-    const rng = subSeed(seed, 'dirt-caves');
-    for (let k = 0; k < A * 3e-5; k++) {
+    for (let k = 0; k < A * 0.000025; k++) {
       const x = rng.int(0, width);
-      if (inSpawnBand(x)) continue;
-      tileRunner(world, rng, x, yIn(rng, surfaceHigh + 5, rockHigh), rng.int(5, 15), rng.int(30, 200), -1);
-    }
-  }
-  {
-    const rng = subSeed(seed, 'rock-caves');
-    for (let k = 0; k < A * 0.00013; k++) {
-      tileRunner(world, rng, rng.int(0, width), yIn(rng, rockHigh, bottom), rng.int(6, 20), rng.int(50, 300), -1);
-    }
-  }
-  {
-    // 細長隧道網：岩層裡又細又長的蟲洞
-    const rng = subSeed(seed, 'tunnels');
-    for (let k = 0; k < A * 1.2e-5; k++) {
-      const x = rng.int(0, width), y = yIn(rng, rockHigh, bottom - 10);
-      tileRunner(world, rng, x, y, rng.int(3, 5), rng.int(200, 450), -1);
-      if (rng.chance(2)) tileRunner(world, rng, x, y, rng.int(3, 4), rng.int(80, 200), -1);
-    }
-  }
-  {
-    // 深層：更大的洞
-    const rng = subSeed(seed, 'deep-caves');
-    for (let k = 0; k < A * 2e-5; k++) {
-      tileRunner(world, rng, rng.int(0, width), yIn(rng, deepY, bottom - 10), rng.int(14, 27), rng.int(60, 160), -1);
-    }
-  }
-  {
-    // 大洞窟：少數巨大空腔，各自有風味（螢光菇 / 水晶 / 普通）
-    const rng = subSeed(seed, 'caverns');
-    const n = Math.max(1, Math.floor(width / 420));
-    for (let k = 0; k < n; k++) {
-      const x = rng.int(Math.min(40, width - 1), Math.max(41, width - 40));
-      const y = yIn(rng, cavernY + 40, bottom - 60);
-      const str = rng.int(34, 56), steps = rng.int(30, 70);
-      tileRunner(world, rng, x, y, str, steps, -1, { speedY: rng.range(-0.3, 0.3) });
-      const r = Math.floor(str * 0.75);
-      const f = rng.int(0, 3);
-      structures.push({ kind: 'cavern', x: x - r, y: y - r, w: r * 2, h: r * 2, flavor: f === 0 ? 'mushroom' : f === 1 ? 'crystal' : 'plain' });
+      if (inDz(x, 4)) continue;
+      carveChamber(world, x, yIn(rng, rockLine[x] + 6, moltenLine[x] - 10), rng.int(4, 10), rng.int(3, 7), caveSeed + 700 + k);
     }
   }
   {
@@ -520,7 +666,8 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     const n = Math.max(1, Math.floor(width * 0.004));
     for (let k = 0; k < n; k++) {
       const x = rng.int(0, width);
-      if (inSpawnBand(x) || x < 30 || x > width - 30) continue;
+      if (inSpawnBand(x) || x < 30 || x > width - 30 || inDz(x, 10)) continue;
+      if (lakes.some((l) => x > l.x0 - 12 && x < l.x1 + 12)) continue;
       tileRunner(world, rng, x, surface[x], rng.int(3, 6), rng.int(20, 60), -1, { speedX: rng.range(-1, 1), speedY: 1 });
     }
   }
@@ -532,6 +679,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       for (let tries = 0; tries < 8; tries++) {
         const x = rng.int(30, Math.max(31, width - 30));
         if (inSpawnBand(x) || Math.abs(x - width / 2) < width * 0.07 || inDz(x, 30) || x < beachW + 10 || x > width - beachW - 10) continue;
+        if (lakes.some((l) => x > l.x0 - 20 && x < l.x1 + 20) || lakeBeds.some((l) => x > l.x0 - 20 && x < l.x1 + 20)) continue;
         const top = surface[x] - 1, len = Math.min(height - 30 - top, rng.int(90, 220));
         if (len < 70) continue;
         let cx = x, drift = 0;
@@ -553,20 +701,31 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       tileRunner(world, rng, cx, surface[cx] + 2, rng.int(9, 15), steps, -1, { speedX: rng.range(-0.2, 0.2), speedY: 1 });
       structures.push({ kind: 'ravine', x: cx - 10, y: surface[cx], w: 20, h: steps });
     }
+    // 天坑：漏斗底往下一口圓井，井底開成小洞室，通常會接到隧道網
+    for (const s of sinks) {
+      const top = surface[s.x];
+      perlinWorm(world, rng, {
+        x: s.x, y: top - 2, steps: Math.ceil(s.depth / Math.max(0.8, s.r * 0.55)), r0: s.r * 0.75, r1: s.r,
+        turn: 0.06, flat: 0, dx: 0, dy: 1, yMin: top - 4, yMax: top + s.depth + 20,
+      });
+      carveDisc(world, s.x, top + s.depth, s.r + 3);
+      structures.push({ kind: 'sinkhole', x: s.x - s.r * 3, y: top - 4, w: s.r * 6, h: s.depth + s.r + 6 });
+    }
   }
-  // ── 花崗岩（深處）/ 大理石（岩層上段）：大塊岩體，中間常有空洞 ──────
+  // 填掉洞穴挖完後殘留的孤立小氣泡（< 24 格），地底不再滿是零碎小洞
+  fillTinyPockets(world, (x) => surface[x] + 6, 24);
+  // ── 花崗岩（洞穴層，較多）/ 大理石（岩層下段 ~ 洞穴層上段）：大塊有機岩體，中間常有空洞 ──────
   {
     const rng = subSeed(seed, 'granite-marble');
-    const n = Math.max(1, Math.floor(width / 330));
-    const rocky = (id: number): boolean => id === T.STONE || id === T.DIRT || id === T.GRAVEL;
-    for (let k = 0; k < n * 2; k++) {
-      const granite = k % 2 === 0;
+    const nG = Math.max(1, Math.round(width / 220)), nM = Math.max(1, Math.round(width / 300));
+    for (let k = 0; k < nG + nM; k++) {
+      const granite = k < nG;
       const x = rng.int(0, width);
-      const y = granite ? yIn(rng, cavernY + Math.floor((bottom - cavernY) * 0.35), bottom - 20) : yIn(rng, rockHigh, cavernY + Math.floor((bottom - cavernY) * 0.45));
-      const str = rng.int(30, 50);
-      tileRunner(world, rng, x, y, str, rng.int(25, 60), granite ? T.GRANITE : T.MARBLE, { only: rocky });
-      tileRunner(world, rng, x + rng.int(-20, 21), y + rng.int(-12, 13), Math.floor(str * 0.8), rng.int(20, 40), granite ? T.GRANITE : T.MARBLE, { only: rocky });
-      if (rng.chance(2)) tileRunner(world, rng, x, y, Math.floor(str * 0.5), rng.int(8, 18), -1);
+      if (inDz(x, 40)) continue;
+      const y = granite ? yIn(rng, deepLine[x] + 20, moltenLine[x] - 25) : yIn(rng, rockLine[x] + 30, deepLine[x] + 80);
+      const rx = rng.int(18, 38), ry = rng.int(12, 24);
+      paintBlob(world, x, y, rx, ry, granite ? T.GRANITE : T.MARBLE, caveSeed + 500 + k, rocky);
+      if (rng.chance(3)) carveChamber(world, x + rng.int(-rx >> 1, (rx >> 1) + 1), y + rng.int(-4, 5), rx * 0.4, ry * 0.5, caveSeed + 600 + k);
     }
   }
   // ── 森林的沙地 ─────────────────────────────────────────────
@@ -579,50 +738,74 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       tileRunner(world, rng, x, surface[x] + 2, rng.int(10, 22), rng.int(4, 10), T.SAND, { speedX: rng.range(-1, 1), speedY: 0, only: (id) => id === T.DIRT });
     }
   }
-  // ── 生態區轉換：材料 + 背景牆，邊界隨深度起伏 ──────────────────
+  // ── 生態區轉換：有機形狀 ─────────────────────────────────────
+  //   沙漠：地表沙地 → 地下砂岩「淚滴」（先變寬再收成尖底），裡面有大量直條狀砂岩洞
+  //   雪原：往下逐漸收窄成冰洞（冰 / 石混合 + 冰洞）
+  //   叢林：中段鼓起再收、隨深度左右漂移，底部停在熔岩深淵上方
+  //   左右邊界兩個八度起伏 + 逐格雜訊抖動；底部也是雜訊邊界。都不會延伸到世界底部。
   {
     const ns = seedInt(seed, 'biome-noise');
+    const edgeN = new FbmField(width, height, 13, 13, ns + 11, 2, 0.5);
+    const matN = new FbmField(width, height, 15, 15, ns + 5, 2, 0.5);
+    const caveA = new FbmField(width, height, 26, 30, ns + 21, 2, 0.5);
+    const caveB = new FbmField(width, height, 14, 48, ns + 23, 2, 0.5);
+    const span = moltenTop - deepTop;
     biomes.forEach((seg, si) => {
-      const s0 = ns + si * 101;
-      const bottomAt = (x: number): number => {
-        if (seg.biome === BIOME.DESERT) return rockHigh + Math.floor(height * 0.1) + Math.floor(vnoise1(x, 40, s0 + 1) * 60 + vnoise1(x, 11, s0 + 7) * 16);
-        if (seg.biome === BIOME.SNOW) return cavernY + Math.floor((height - cavernY) * 0.45) + Math.floor(vnoise1(x, 50, s0 + 1) * 70 + vnoise1(x, 12, s0 + 7) * 16);
-        return height;
+      const s0 = ns + si * 101, b = seg.biome;
+      const w = seg.x1 - seg.x0, mid = (seg.x0 + seg.x1) / 2;
+      let top = height;
+      for (let x = Math.max(0, seg.x0); x < Math.min(width, seg.x1); x++) top = Math.min(top, surface[x]);
+      const yB = b === BIOME.DESERT ? deepTop + Math.floor(span * 0.3) : b === BIOME.SNOW ? deepTop + Math.floor(span * 0.45) : moltenTop - 28;
+      const depth = Math.max(10, yB - top);
+      const prof = (t: number): number => {
+        if (b === BIOME.DESERT) {
+          if (t < 0.3) return 1 + 0.42 * (t / 0.3);
+          const u = (t - 0.3) / 0.7;
+          return 1.42 * Math.max(0, 1 - 0.62 * u - 0.38 * u * u);
+        }
+        if (b === BIOME.SNOW) {
+          const p = 1 - 0.7 * t * Math.sqrt(t);
+          return t > 0.88 ? p * Math.sqrt(Math.max(0, 1 - (t - 0.88) / 0.12)) : p;
+        }
+        const p = 1 + 2 * t * (1 - t);
+        return t > 0.84 ? p * Math.sqrt(Math.max(0, 1 - (t - 0.84) / 0.16)) : p;
       };
-      const sL = surface[Math.max(0, Math.min(width - 1, seg.x0))], sR = surface[Math.max(0, Math.min(width - 1, seg.x1 - 1))];
-      for (let y = 0; y < height; y++) {
-        const fl = Math.max(0.25, Math.min(1, (y - sL) / 40)), fr = Math.max(0.25, Math.min(1, (y - sR) / 40));
-        // 地下沙漠往兩側變寬
-        const widen = seg.biome === BIOME.DESERT ? Math.floor(Math.max(0, Math.min(26, (y - sL - 30) * 0.15))) : 0;
-        // 兩個八度的邊界起伏（大彎 + 小鋸齒），越深越明顯
-        const wob = (k: number): number => (vnoise1(y, 70, s0 + k) - 0.5) * 70 + (vnoise1(y, 17, s0 + k + 9) - 0.5) * 22;
-        const xl = seg.x0 + Math.round(wob(2) * fl) - widen;
-        const xr = seg.x1 + Math.round(wob(3) * fr) + widen;
-        const J = 18; // 邊界附近逐格抖動成團塊狀（不是直線）
-        for (let x = Math.max(0, xl - J); x < Math.min(width, xr + J); x++) {
-          if (x < xl + J || x >= xr - J) {
-            const f = x < xl + J ? fl : fr;
-            const jx = x + (fbm2(x, y, 9, s0 + 11) - 0.5) * 2 * J * f;
-            if (jx < xl || jx >= xr) continue;
-          }
-          const by = bottomAt(x);
-          if (y > by + 12) continue;
-          if (y > by - 12 && y - by > (fbm2(x, y, 8, s0 + 13) - 0.5) * 24) continue;
-          const i = y * WW + x, t = fg[i], wl = wall[i];
-          if (seg.biome === BIOME.DESERT) {
+      for (let y = Math.max(1, top - 2); y < Math.min(height - 1, yB); y++) {
+        const t = (y - top) / depth;
+        const f = Math.max(0.35, Math.min(1, (y - top) / 40));
+        const lean = (vnoise1(y, 230, s0 + 40) - 0.5) * w * (b === BIOME.JUNGLE ? 0.7 : 0.3) * Math.min(1, t * 2.5);
+        const wob = (k: number): number => ((vnoise1(y, 80, s0 + k) - 0.5) * 46 + (vnoise1(y, 19, s0 + k + 9) - 0.5) * 14) * f;
+        const hw = (w / 2) * prof(Math.max(0, t)) * (1 + (vnoise1(y, 64, s0 + 20) - 0.5) * 0.22);
+        const c = mid + lean, xl = c - hw + wob(2), xr = c + hw + wob(3);
+        if (xr - xl < 2) continue;
+        const J = 14;
+        for (let x = Math.max(0, Math.floor(xl - J)); x < Math.min(width, Math.ceil(xr + J)); x++) {
+          const jx = x + (edgeN.at(x, y) - 0.5) * 2 * J * f;
+          if (jx < xl || jx >= xr) continue;
+          if (y < surface[x] - 1) continue;
+          const i = y * WW + x, tl = fg[i], wl = wall[i];
+          const inner = Math.min(1, Math.min(jx - xl, xr - jx) / 18);
+          if (b === BIOME.DESERT) {
             const sandTo = surface[x] + 13 + Math.floor(vnoise1(x, 20, s0 + 4) * 10);
-            if (t === T.DIRT || t === T.GRASS || t === T.STONE || t === T.CLAY || t === T.GRAVEL) {
-              fg[i] = y < sandTo || fbm2(x, y, 14, s0 + 5) > 0.74 ? T.SAND : T.SANDSTONE;
+            if (tl === T.DIRT || tl === T.GRASS || tl === T.STONE || tl === T.CLAY || tl === T.GRAVEL || tl === T.DEEP_STONE || tl === T.SAND) {
+              fg[i] = y < sandTo || matN.at(x, y) > 0.68 ? T.SAND : T.SANDSTONE;
             }
             if (wl) wall[i] = W.SANDSTONE_WALL;
-          } else if (seg.biome === BIOME.SNOW) {
-            if (t === T.DIRT || t === T.GRASS || t === T.CLAY || t === T.SAND) fg[i] = T.SNOW;
-            else if ((t === T.STONE || t === T.GRAVEL) && fbm2(x, y, 16, s0 + 5) > 0.44) fg[i] = T.ICE;
+            // 砂岩洞：直條拉長的細縫 + 大泡泡
+            if (y > sandTo + 6 && t > 0.08 && SOLID_LUT[fg[i]] === 1) {
+              const k = inner * Math.min(1, (t - 0.08) * 6);
+              if (Math.abs(caveB.at(x, y) - 0.5) < 0.034 * k || caveA.at(x, y) > 0.7 - 0.04 * k) fg[i] = T.AIR;
+            }
+          } else if (b === BIOME.SNOW) {
+            if (tl === T.DIRT || tl === T.GRASS || tl === T.CLAY || tl === T.SAND) fg[i] = T.SNOW;
+            else if ((tl === T.STONE || tl === T.GRAVEL || tl === T.DEEP_STONE) && matN.at(x, y) > 0.45) fg[i] = T.ICE;
             if (wl) wall[i] = y < rockLine[x] ? W.SNOW_WALL : W.ICE_WALL;
+            if (y > rockLine[x] + 8 && SOLID_LUT[fg[i]] === 1 && caveA.at(x, y) > 0.69 - 0.03 * inner) fg[i] = T.AIR;
           } else {
-            if (t === T.DIRT || t === T.GRASS || t === T.CLAY || t === T.SAND || t === T.GRAVEL) fg[i] = T.MUD;
-            else if (t === T.STONE && fbm2(x, y, 15, s0 + 5) > 0.5) fg[i] = T.MUD;
+            if (tl === T.DIRT || tl === T.GRASS || tl === T.CLAY || tl === T.SAND || tl === T.GRAVEL) fg[i] = T.MUD;
+            else if ((tl === T.STONE || tl === T.DEEP_STONE) && matN.at(x, y) > 0.47) fg[i] = T.MUD;
             if (wl) wall[i] = W.MUD_WALL;
+            if (y > rockLine[x] && SOLID_LUT[fg[i]] === 1 && caveA.at(x, y) > 0.685 - 0.035 * inner) fg[i] = T.AIR;
           }
         }
       }
@@ -639,12 +822,12 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       for (let tries = 0; tries < 10; tries++) {
         const rx = mush ? rng.int(55, 86) : rng.int(40, 61), ry = mush ? rng.int(28, 43) : rng.int(24, 35);
         const cx = rng.int(rx + 10, Math.max(rx + 11, width - rx - 10));
-        const cy = mush ? yIn(rng, cavernY + ry + 10, cavernY + Math.floor((bottom - cavernY) * 0.5)) : yIn(rng, deepY, bottom - ry - 12);
+        const cy = mush ? yIn(rng, rockHigh + ry + 10, deepTop + Math.floor((moltenTop - deepTop) * 0.4)) : yIn(rng, deepY, moltenTop - ry - 12);
         const rect: Rect = { x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 };
         if (cy + ry >= height - 4 || cy - ry < 4) continue;
         if (mush && (colBiome[cx] !== BIOME.FOREST || colBiome[Math.max(0, cx - rx)] !== BIOME.FOREST || colBiome[Math.min(width - 1, cx + rx)] !== BIOME.FOREST)) continue;
         if (inDz(cx - rx, 20) || inDz(cx + rx, 20) || occupied.some((o) => overlap(o, rect, 10))) continue;
-        for (let c = 0; c < (mush ? 7 : 5); c++) {
+        for (let c = 0; c < (mush ? 9 : 5); c++) {
           tileRunner(world, rng, cx + rng.int(-Math.floor(rx * 0.65), Math.floor(rx * 0.65) + 1), cy + rng.int(-Math.floor(ry * 0.45), Math.floor(ry * 0.45) + 1),
             mush ? rng.int(16, 27) : rng.int(14, 23), rng.int(20, 50), -1, { speedY: rng.range(-0.3, 0.3) });
         }
@@ -683,24 +866,83 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       }
     }
   }
-  // ── Shinies（礦脈：越深越多、越好） ─────────────────────────
+  // ── Shinies：礦脈群（每群 2–6 條同向的細長礦脈），依深度層分帶：銅（泥土 / 岩層）、鐵（岩層 ~ 洞穴層上段）、
+  //    銀（岩層下段 ~ 洞穴層）、金（洞穴層下段 ~ 熔岩深淵頂）
   {
     const rng = subSeed(seed, 'shinies');
-    const ore = (count: number, lo: number, hi: number, s0: number, s1: number, st0: number, st1: number, type: number): void => {
-      for (let k = 0; k < count; k++) {
-        tileRunner(world, rng, rng.int(0, width), yIn(rng, lo, hi), rng.int(s0, s1), rng.int(st0, st1), type, { only: isOreHost });
+    const k0 = A / (4200 * 1200);
+    const cluster = (count: number, band: (x: number) => [number, number], type: number, s0: number, s1: number): void => {
+      for (let k = 0; k < count * k0; k++) {
+        const x = rng.int(0, width);
+        const [lo, hi] = band(x);
+        if (hi - lo < 4 || inDz(x, 3)) continue;
+        const y = rng.int(lo, hi), veins = rng.int(2, 7);
+        const ang = rng.range(-1, 1), sy = rng.range(-0.5, 0.5);
+        for (let v = 0; v < veins; v++) {
+          tileRunner(world, rng, x + rng.int(-9, 10), y + rng.int(-6, 7), rng.int(s0, s1), rng.int(5, 15), type,
+            { only: isOreHost, speedX: ang + rng.range(-0.3, 0.3), speedY: sy + rng.range(-0.3, 0.3) });
+        }
       }
     };
-    const goldTop = cavernY + Math.floor((bottom - cavernY) * 0.3);
-    ore(A * 6e-5, surfaceLow, surfaceHigh + 10, 3, 6, 2, 6, T.COPPER_ORE);
-    ore(A * 8e-5, surfaceHigh, rockHigh, 3, 7, 3, 7, T.COPPER_ORE);
-    ore(A * 0.00016, rockLow, bottom, 4, 9, 4, 8, T.COPPER_ORE);
-    ore(A * 4e-5, surfaceHigh + 10, rockHigh, 3, 6, 3, 6, T.IRON_ORE);
-    ore(A * 0.00014, rockHigh, bottom, 4, 8, 4, 8, T.IRON_ORE);
-    ore(A * 2e-5, surfaceHigh + 30, rockHigh, 3, 5, 3, 6, T.SILVER_ORE);
-    ore(A * 8e-5, rockHigh, bottom, 3, 7, 3, 7, T.SILVER_ORE);
-    ore(A * 7e-5, goldTop, bottom, 3, 7, 3, 7, T.GOLD_ORE);
+    cluster(150, (x) => [surface[x] + 4, rockLine[x] + 20], T.COPPER_ORE, 3, 6);
+    cluster(260, (x) => [rockLine[x], deepLine[x] - 10], T.COPPER_ORE, 3, 6);
+    cluster(220, (x) => [rockLine[x] + 10, deepLine[x] + 80], T.IRON_ORE, 3, 6);
+    cluster(80, (x) => [deepLine[x] + 80, moltenLine[x] - 40], T.IRON_ORE, 3, 6);
+    cluster(170, (x) => [deepLine[x] - 40, deepLine[x] + Math.floor((moltenLine[x] - deepLine[x]) * 0.7)], T.SILVER_ORE, 3, 6);
+    cluster(160, (x) => [deepLine[x] + Math.floor((moltenLine[x] - deepLine[x]) * 0.35), moltenLine[x] + 25], T.GOLD_ORE, 3, 6);
   }
+  // ── 熔岩深淵細節：灰燼地板、低窪處的發光熔岩石池、熔岩石脈、黑曜石殼 ─────────
+  {
+    const rng = subSeed(seed, 'molten');
+    const isMoltenRock = (id: number): boolean => id === T.BASALT || id === T.DEEP_STONE || id === T.STONE;
+    for (let k = 0; k < A * 0.00006; k++) {
+      const x = rng.int(0, width);
+      paintBlob(world, x, yIn(rng, moltenLine[x], height - 4), rng.int(3, 9), rng.int(2, 5), T.MAGMA_ROCK, caveSeed + 800 + k, (id) => id === T.BASALT);
+    }
+    for (let k = 0; k < A * 0.00003; k++) {
+      const x = rng.int(0, width);
+      tileRunner(world, rng, x, yIn(rng, moltenLine[x] - 10, height - 4), rng.int(3, 7), rng.int(5, 16), T.OBSIDIAN, { only: isMoltenRock });
+    }
+    // 每欄找開闊帶的地板（由下往上第一個「上方是空氣」的實心格）
+    const floorY = new Int16Array(width).fill(-1);
+    for (let x = 0; x < width; x++) {
+      for (let y = height - 3; y > moltenLine[x]; y--) {
+        const i = y * WW + x;
+        if (SOLID_LUT[fg[i]] === 1 && fg[i - WW] === T.AIR && wall[i - WW] === W.NONE) { floorY[x] = y; break; }
+      }
+    }
+    // 灰燼地板：地板往下 2–4 格
+    for (let x = 0; x < width; x++) {
+      const fy = floorY[x];
+      if (fy < 0) continue;
+      const d = 2 + Math.floor(vnoise1(x, 9, caveSeed + 400) * 3);
+      for (let y = fy; y < fy + d && y < height; y++) if (fg[y * WW + x] === T.BASALT) fg[y * WW + x] = T.ASH;
+    }
+    // 熔岩石池：比左右 ±10 欄平均更低的窪地，填到平均高度（實心、發光）
+    for (let x = 10; x < width - 10; x++) {
+      const fy = floorY[x];
+      if (fy < 0) continue;
+      let s = 0, n = 0;
+      for (let k = -10; k <= 10; k++) if (floorY[x + k] >= 0) { s += floorY[x + k]; n++; }
+      const lvl = Math.round(s / n) - 1;
+      for (let y = lvl; y < fy; y++) {
+        const i = y * WW + x;
+        if (fg[i] === T.AIR) fg[i] = T.MAGMA_ROCK;
+      }
+      if (lvl < fy) for (let y = fy; y < fy + 2; y++) if (fg[y * WW + x] === T.ASH) fg[y * WW + x] = T.MAGMA_ROCK;
+    }
+    // 黑曜石殼：緊貼熔岩石的玄武岩一半變黑曜石
+    for (let y = Math.max(1, moltenTop - 20); y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const i = y * WW + x;
+        if (fg[i] !== T.BASALT && fg[i] !== T.ASH) continue;
+        if ((fg[i - 1] === T.MAGMA_ROCK || fg[i + 1] === T.MAGMA_ROCK || fg[i + WW] === T.MAGMA_ROCK || fg[i - WW] === T.MAGMA_ROCK) && rng.chance(2)) fg[i] = T.OBSIDIAN;
+      }
+    }
+    // 世界底部 6 格一律實心
+    for (let y = height - 6; y < height; y++) for (let x = 0; x < width; x++) if (fg[y * WW + x] === T.AIR) fg[y * WW + x] = T.BASALT;
+  }
+  void network;
   // ── 重新量地表（洞穴可能挖穿地表） ───────────────────────
   const remeasure = (): void => {
     for (let x = 0; x < width; x++) {
@@ -806,7 +1048,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       for (let tries = 0; tries < 6; tries++) {
         const w = rng.int(9, 16), h = rng.int(6, 9);
         const x = rng.int(40, Math.max(41, width - 40 - w));
-        const y = yIn(rng, surface[x] + 26, height - 40);
+        const y = yIn(rng, surface[x] + 26, moltenLine[x] - 30);
         const r: Rect = { x, y, w, h };
         if (y + h >= height - 6 || !free(r, 5)) continue;
         const floorY = y + h - 1;
@@ -894,6 +1136,13 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       }
     }
   }
+  // ── 地城：預留區裡的入口塔 + 多房間地城（房間圖 + MST + 額外迴圈、上鎖的門與鑰匙） ──
+  const dungeon = generateDungeon(world, {
+    seed: seedStr, zone: dungeonZone, surface,
+    color: DUNGEON_COLORS[subSeed(seed, 'dungeon-color').int(0, DUNGEON_COLORS.length)],
+    depthFrac,
+  });
+  if (dungeon) structures.push({ kind: 'dungeon', ...dungeon.bbox });
   remeasure();
 
   // ── Trees：森林闊葉樹、雪原松樹、叢林大樹（樹幹 + 菱形樹葉格，外觀由 render 依地面挑） ──
@@ -979,12 +1228,13 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       return null;
     };
     const deep = cavernY + Math.floor((bottom - cavernY) * 0.25);
-    const stony = (t: number): boolean => t === T.STONE || t === T.GRANITE || t === T.MARBLE || t === T.ICE || t === T.SANDSTONE || t === T.GRAVEL;
+    const stony = (t: number): boolean => t === T.STONE || t === T.GRANITE || t === T.MARBLE || t === T.ICE || t === T.SANDSTONE || t === T.GRAVEL
+      || t === T.DEEP_STONE || t === T.BASALT || t === T.OBSIDIAN;
     const jungly = (t: number): boolean => t === T.MUD || t === T.JUNGLE_GRASS;
     for (let y = 2; y < height - 2; y++) {
       for (let x = 1; x < width - 1; x++) {
         const i = y * WW + x;
-        if (fg[i] !== T.AIR || y <= surface[x] + 1) continue;
+        if (fg[i] !== T.AIR || y <= surface[x] + 1 || wall[i] >= W.DUNGEON_WALL_BLUE) continue;
         const below = fg[i + WW], above = fg[i - WW];
         const floor = isSolid(below), ceil = isSolid(above);
         if (!floor && !ceil) continue;
@@ -1081,5 +1331,5 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
   }
   // ── 每欄地表的生態區 ──────────────────────────────────────
   world.biome.set(colBiome);
-  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone };
+  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon };
 }

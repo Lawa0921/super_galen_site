@@ -9,6 +9,7 @@ import { TILE_SIZE } from '../engine/constants';
 import { EDGE, FRAME_COLS, MAT, VARIANTS, DECOR_STYLES, frameColumn, type Mat } from './autotile';
 import { MATERIAL_PAL, PAL2, chestBmp, decorBmp, iconCactus, iconCoins, iconShard, texMaterial, texWall2 } from './decor';
 import { Bmp, INK, bayer, css, h01, hex, mix, ramp, shade, toCanvas, type RGB } from './pixel';
+import { RUNE_METAL, iconDoor, iconKey, iconLantern, iconMap, iconPlatform } from './dungeonArt';
 
 const S = TILE_SIZE;
 export { VARIANTS };
@@ -46,7 +47,9 @@ const WALL_ROW0 = FG_ROW0 + TILES.length;
 const BLEND_ROW0 = WALL_ROW0 + WALLS.length;  // 3 列：MAT.DIRT/SAND/STONE
 const MISC_ROW = BLEND_ROW0 + 3;              // 裂痕 0..3、草葉 4..6、叢林草葉 7..9
 const ICON_ROW = MISC_ROW + 1;
-const ROWS = ICON_ROW + 1;
+/** 圖示佔兩列（每列 FRAME_COLS 個） */
+const ICON_ROWS = 2;
+const ROWS = ICON_ROW + ICON_ROWS;
 
 // ── 小工具 ───────────────────────────────────────────────
 /** 平滑值雜訊（cell 格點雜湊 + 雙線性），0..1 */
@@ -547,21 +550,33 @@ const ICON_ORDER: ItemId[] = [
   'silver_ore', 'gold_ore', 'clay', 'gravel', 'granite', 'marble', 'sandstone', 'snow', 'ice', 'mud', 'stone_brick',
   'chest', 'pumpkin', 'glow_mushroom', 'mushroom', 'crystal', 'cactus', 'copper_coin', 'silver_coin',
   'silver_pickaxe', 'gold_pickaxe',
+  'deep_stone', 'basalt', 'ash', 'obsidian', 'magma_rock', 'dungeon_brick_blue', 'dungeon_brick_green', 'dungeon_brick_pink',
+  'platform', 'wooden_door', 'dungeon_key', 'golden_key', 'lantern', 'rune_pickaxe', 'explorer_map',
 ];
+export { ICON_ORDER };
 export const PICK_METAL: Record<string, RGB[]> = {
   wood_pickaxe: ramp('#2a1810', '#623924', '#7c4c2e', '#966139', '#b07a4b', '#c99660', '#d8ba76'),
   copper_pickaxe: PAL.copper,
   iron_pickaxe: PAL.metal,
   silver_pickaxe: PAL2.silver,
   gold_pickaxe: PAL2.gold,
+  rune_pickaxe: RUNE_METAL,
 };
 /** 方塊道具 → 圖示用的 (tile id) */
 const BLOCK_ICON: Partial<Record<ItemId, number>> = {
   clay: T.CLAY, gravel: T.GRAVEL, granite: T.GRANITE, marble: T.MARBLE, sandstone: T.SANDSTONE,
   snow: T.SNOW, ice: T.ICE, mud: T.MUD, stone_brick: T.STONE_BRICK,
+  deep_stone: T.DEEP_STONE, basalt: T.BASALT, ash: T.ASH, obsidian: T.OBSIDIAN, magma_rock: T.MAGMA_ROCK,
+  dungeon_brick_blue: T.DUNGEON_BRICK_BLUE, dungeon_brick_green: T.DUNGEON_BRICK_GREEN, dungeon_brick_pink: T.DUNGEON_BRICK_PINK,
 };
-function paintIcon(item: ItemId): Bmp {
+export function paintIcon(item: ItemId): Bmp {
   switch (item) {
+    case 'platform': return iconPlatform();
+    case 'wooden_door': return iconDoor();
+    case 'dungeon_key': return iconKey(false);
+    case 'golden_key': return iconKey(true);
+    case 'lantern': return iconLantern();
+    case 'explorer_map': return iconMap();
     case 'dirt': return iconBlock(texDirt(0), PAL.dirt);
     case 'stone': return iconBlock(texStone(0), PAL.stone);
     case 'sand': return iconBlock(texSand(0), PAL.sand);
@@ -656,7 +671,7 @@ export function buildAtlas(): Atlas {
   for (let v = 0; v < 3; v++) put(grassBlades(v), 4 + v, MISC_ROW);
   for (let v = 0; v < 3; v++) put(grassBlades(v, true), 7 + v, MISC_ROW);
   const iconBmps = new Map<ItemId, Bmp>();
-  ICON_ORDER.forEach((item, i) => { const b = paintIcon(item); iconBmps.set(item, b); put(b, i, ICON_ROW); });
+  ICON_ORDER.forEach((item, i) => { const b = paintIcon(item); iconBmps.set(item, b); put(b, i % FRAME_COLS, ICON_ROW + Math.floor(i / FRAME_COLS)); });
 
   const colors: string[] = TILES.map((t) => {
     const pal = TILE_PAL[t.id];
@@ -673,7 +688,10 @@ export function buildAtlas(): Atlas {
     blades: (v, jungle) => ({ sx: ((jungle ? 7 : 4) + (v % 3)) * S, sy: MISC_ROW * S }),
     decor: (id, style) => ({ sx: (style % FRAME_COLS) * S, sy: (FG_ROW0 + id) * S }),
     crack: (s) => ({ sx: Math.max(0, Math.min(3, s)) * S, sy: MISC_ROW * S }),
-    icon: (item) => ({ sx: Math.max(0, ICON_ORDER.indexOf(item)) * S, sy: ICON_ROW * S }),
+    icon: (item) => {
+      const i = Math.max(0, ICON_ORDER.indexOf(item));
+      return { sx: (i % FRAME_COLS) * S, sy: (ICON_ROW + Math.floor(i / FRAME_COLS)) * S };
+    },
     tileColor: (id) => colors[id] ?? '#888888',
     tileInk: (id) => inks[id] ?? '#1c1424',
     iconBmp: (item) => iconBmps.get(item) ?? new Bmp(S, S),

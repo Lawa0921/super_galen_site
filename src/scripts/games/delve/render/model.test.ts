@@ -106,6 +106,8 @@ describe('HUD 文字', () => {
     expect(depthLabel(149, 150, 220)).toBe('地表');
     // 進入洞穴層
     expect(depthLabel(229, 140, 220)).toBe('洞穴層 · 地下 90 格');
+    expect(depthLabel(529, 140, 220, 500)).toBe('熔岩深淵 · 地下 390 格');
+    expect(depthLabel(329, 140, 220, 500)).toBe('洞穴層 · 地下 190 格');
   });
   it('blockedMessage：occupied 不提示', () => {
     expect(blockedMessage('reach')).toMatch(/太遠/);

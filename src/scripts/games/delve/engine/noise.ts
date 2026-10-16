@@ -36,3 +36,56 @@ export function vnoise1(x: number, cell: number, s: number): number {
 export function fbm2(x: number, y: number, cell: number, s: number): number {
   return vnoise2(x, y, cell, s) * 0.68 + vnoise2(x, y, cell * 0.4, s + 7) * 0.32;
 }
+
+/**
+ * 預先算好格點值的 2D 值雜訊場（cellX × cellY 格距，可各向異性）。比逐點 hash 快很多，
+ * 用於整片地底的洞穴 / 材料遮罩。座標超出建立範圍時夾到邊界格點。
+ */
+export class NoiseField {
+  private readonly gw: number;
+  private readonly gh: number;
+  private readonly v: Float32Array;
+  private readonly ix: number;
+  private readonly iy: number;
+  constructor(width: number, height: number, readonly cellX: number, readonly cellY: number, seed: number) {
+    this.gw = Math.floor(width / cellX) + 3;
+    this.gh = Math.floor(height / cellY) + 3;
+    this.v = new Float32Array(this.gw * this.gh);
+    for (let gy = 0; gy < this.gh; gy++) for (let gx = 0; gx < this.gw; gx++) this.v[gy * this.gw + gx] = hash2(gx, gy, seed);
+    this.ix = 1 / cellX; this.iy = 1 / cellY;
+  }
+  /** 0..1 */
+  at(x: number, y: number): number {
+    let fx = x * this.ix, fy = y * this.iy;
+    if (fx < 0) fx = 0; if (fy < 0) fy = 0;
+    let gx = Math.floor(fx), gy = Math.floor(fy);
+    if (gx > this.gw - 2) gx = this.gw - 2;
+    if (gy > this.gh - 2) gy = this.gh - 2;
+    let tx = fx - gx, ty = fy - gy;
+    if (tx > 1) tx = 1; if (ty > 1) ty = 1;
+    tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+    const i = gy * this.gw + gx, v = this.v, w = this.gw;
+    const a = v[i], b = v[i + 1], c = v[i + w], d = v[i + w + 1];
+    return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty;
+  }
+}
+
+/** 多個八度的 NoiseField 疊加（權重正規化），0..1 */
+export class FbmField {
+  private readonly fields: NoiseField[] = [];
+  private readonly weights: number[] = [];
+  constructor(width: number, height: number, cellX: number, cellY: number, seed: number, octaves = 3, gain = 0.5) {
+    let w = 1, sum = 0;
+    for (let o = 0; o < octaves; o++) {
+      const k = 1 << o;
+      this.fields.push(new NoiseField(width, height, Math.max(1, cellX / k), Math.max(1, cellY / k), seed + o * 7919));
+      this.weights.push(w); sum += w; w *= gain;
+    }
+    for (let o = 0; o < octaves; o++) this.weights[o] /= sum;
+  }
+  at(x: number, y: number): number {
+    let s = 0;
+    for (let o = 0; o < this.fields.length; o++) s += this.fields[o].at(x, y) * this.weights[o];
+    return s;
+  }
+}

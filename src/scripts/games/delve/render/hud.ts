@@ -215,7 +215,7 @@ export class Hud {
     if (this.frame % 10 === 0) {
       const g = this.game, f = g.feetTile(), w = g.world;
       const area = regionLabel(w.biomeAt(f.x), g.structures, f.x, f.y);
-      this.q('#delve-status').textContent = `${formatClock(g.time)} · ${area} · ${depthLabel(f.y, w.surfaceAt(f.x), w.cavernY)} · X ${f.x}`;
+      this.q('#delve-status').textContent = `${formatClock(g.time)} · ${area} · ${depthLabel(f.y, w.surfaceAt(f.x), w.cavernY, w.moltenY || Infinity)} · X ${f.x}`;
     }
     if (this.frame % 30 === 0) this.refresh();
   }
