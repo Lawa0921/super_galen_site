@@ -73,6 +73,13 @@ export class BattleView {
     });
   }
 
+  /** Point just above an enemy, in stage coordinates, for the DOM target cursor. */
+  anchor(key: string): { x: number; y: number } | null {
+    const slot = this.slots.get(key);
+    if (!slot || slot.box.destroyed) return null;
+    return { x: slot.box.x, y: slot.box.y - slot.body.height };
+  }
+
   async play(
     state: BattleState, sfx: SoundManager,
     onParty?: (key: string, cue: 'acting' | 'hit' | 'ultimate', name?: string) => void | Promise<void>,

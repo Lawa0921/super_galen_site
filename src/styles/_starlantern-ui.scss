@@ -181,3 +181,95 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 @keyframes slx-pm-hit { 0% { transform: translateX(-2px); filter: brightness(2); } 100% { transform: translateX(2px); } }
 @keyframes slx-pm-act { 0% { transform: translateY(-3px); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .slx-pm-hit, .slx-pm-acting { animation: none; } }
+
+// Battle
+.slx-battle { background: transparent; }
+.slx-msg { left: 8px; right: 8px; top: 6px; min-height: 36px; white-space: pre-line; }
+.slx-bcmd { left: 6px; bottom: 70px; min-width: 132px; }
+.slx-who { color: $slx-gold; margin-bottom: 2px; }
+.slx-bsub { left: 150px; bottom: 70px; min-width: 200px; }
+.slx-bsub .slx-right { min-width: 40px; text-align: right; }
+.slx-result { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
+.slx-result h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-result p { margin: 1px 0; }
+.slx-target { position: absolute; top: 118px; width: 12px; margin-left: -6px; text-align: center; color: $slx-gold; animation: slx-bob 0.6s ease-in-out infinite alternate; }
+@keyframes slx-bob { to { transform: translateY(4px); } }
+// One class per (enemy count, index): enemies stand at width * (i + 1) / (n + 1), as BattleView lays them out.
+@for $n from 1 through 4 {
+  @for $i from 0 through $n - 1 {
+    .slx-target-#{$n}-#{$i} { left: 640px * ($i + 1) / ($n + 1); }
+  }
+}
+@media (prefers-reduced-motion: reduce) { .slx-target { animation: none; } }
+
+// Ultimate cut-in (timings match CUTIN_MS = 1200 in ui/cutin.ts)
+.sl-cutin {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sl-cutin[hidden] { display: none; }
+.sl-cutin--on { animation: sl-cutin-dim 1.2s ease-out both; }
+.sl-cutin__lines {
+  position: absolute;
+  inset: -50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 236, 200, 0.22) 0deg 2deg, transparent 2deg 9deg);
+  mask-image: radial-gradient(circle, transparent 18%, #000 60%);
+  animation: sl-cutin-lines 1.2s linear both;
+}
+.sl-cutin__band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4vw;
+  // wider than the screen so the tilted edges stay off-screen; offset by half the overflow to stay centred
+  position: absolute;
+  left: -20vw;
+  top: 33vh;
+  width: 140vw;
+  height: 34vh;
+  background: linear-gradient(90deg, rgba(120, 20, 30, 0.95), rgba(217, 160, 70, 0.95) 50%, rgba(120, 20, 30, 0.95));
+  border-block: 4px solid $slx-gold;
+  transform: rotate(-8deg);
+  animation: sl-cutin-band 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.sl-cutin__face { height: 150%; transform: rotate(8deg); image-rendering: pixelated; }
+.sl-cutin__name {
+  transform: rotate(8deg);
+  color: #fff;
+  font-size: clamp(28px, 6vw, 64px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-shadow: 0 3px 0 #000, 0 0 18px rgba(255, 200, 120, 0.8);
+}
+.sl-cutin__flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: sl-cutin-flash 1.2s ease-out both; }
+@keyframes sl-cutin-dim {
+  0% { background: rgba(5, 6, 12, 0); }
+  15%, 80% { background: rgba(5, 6, 12, 0.75); }
+  100% { background: rgba(5, 6, 12, 0); }
+}
+@keyframes sl-cutin-band {
+  0% { transform: translateX(-120%) rotate(-8deg); }
+  22%, 78% { transform: translateX(0) rotate(-8deg); }
+  100% { transform: translateX(120%) rotate(-8deg); }
+}
+@keyframes sl-cutin-lines {
+  0% { opacity: 0; transform: rotate(0deg); }
+  20%, 80% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(20deg); }
+}
+@keyframes sl-cutin-flash {
+  0%, 78% { opacity: 0; }
+  86% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sl-cutin__band, .sl-cutin__lines, .sl-cutin__flash { animation: none; }
+  .sl-cutin__lines, .sl-cutin__flash { display: none; }
+  .sl-cutin__band { transform: rotate(-8deg); }
+}
+

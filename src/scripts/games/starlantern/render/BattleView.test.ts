@@ -43,3 +43,14 @@ describe('BattleView', () => {
     expect(errors).toEqual([]);
   });
 });
+
+describe('BattleView anchors', () => {
+  it('gives the screen point above each enemy for the target cursor', () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    const a = view.anchor('e0')!;
+    expect(a.x).toBeCloseTo(320, 0);
+    expect(a.y).toBeLessThan(360 * 0.85);
+    expect(view.anchor('nobody')).toBeNull();
+  });
+});
