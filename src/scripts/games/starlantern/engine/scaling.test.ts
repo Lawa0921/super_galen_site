@@ -20,7 +20,11 @@ describe('depthLevel', () => {
 
 describe('scaleEnemy', () => {
   it('depth 1 mainline enemies are unchanged', () => {
-    for (const def of Object.values(ENEMIES)) expect(scaleEnemy(def, 1, MAIN, false), def.id).toEqual(def);
+    for (const def of Object.values(ENEMIES)) {
+      const { sec, ...rest } = scaleEnemy(def, 1, MAIN, false);
+      expect(rest, def.id).toEqual(def);
+      expect(Object.values(sec ?? { missing: 1 }).every((v) => v === 0), `${def.id} sec`).toBe(true);
+    }
     const plain = createBattle({ party: newParty(), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {} });
     const scaled = createBattle({ party: newParty(), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {}, scale: { depth: 1, region: 'mainline' } });
     expect(scaled.enemies).toEqual(plain.enemies);
@@ -81,12 +85,31 @@ describe('scaleEnemy', () => {
     expect(names).toEqual(['深層・熾焰・燈喰之獸', '深層・霜凍・燈喰之獸', '深層・雷鳴・燈喰之獸', '深層・腐毒・燈喰之獸', '深層・暗影・燈喰之獸', '深層・鋼鐵・燈喰之獸']);
   });
 
-  it('region traits shape the stats: mire tough, storm and shade fast, iron armoured but slower to hurt', () => {
+  it('a depth 10 wolf has crit 9 and compensated hp', () => {
+    // scaleEnemy(wolf, 10, mainline) before enemy secondaries: hp 718, atk 218, mag 50 (level 38, home 2: 36 over).
+    const w = scaleEnemy(wolf, 10, MAIN, false);
+    expect(w.sec).toMatchObject({ crit: 9, evasion: 7.2, fireRes: 18, iceRes: 18, thunderRes: 18 });
+    expect(w.stats.hp).toBe(Math.round(718 * (1 - 0.072) * (1 - 0.3 * 0.18)));
+    expect(w.stats.atk).toBe(Math.round(218 / (1 + 0.09 * 0.5)));
+    expect(w.stats.mag).toBe(Math.round(50 / (1 + 0.09 * 0.5)));
+  });
+
+  it('shade monsters gain evasion and crit instead of the old speed stand-in', () => {
+    const w = scaleEnemy(wolf, 1, REGIONS.shade, false);
+    const base = wolf.stats;
+    expect(w.stats.spd).toBe(base.spd);
+    expect(w.sec).toMatchObject({ crit: 5, evasion: 5 });
+    expect(w.stats.hp).toBe(Math.round(base.hp * 0.95));
+    expect(w.stats.atk).toBe(Math.round(base.atk / 1.025));
+    // other regions gain nothing at home depth
+    expect(Object.values(scaleEnemy(wolf, 1, REGIONS.storm, false).sec!).every((v) => v === 0)).toBe(true);
+  });
+
+  it('region traits shape the stats: mire tough, storm fast, iron armoured but slower to hurt', () => {
     const at = (r: RegionId) => scaleEnemy(wolf, 1, REGIONS[r], false).stats;
     const base = wolf.stats;
     expect(at('mire').hp).toBe(Math.round(base.hp * 1.3));
     expect(at('storm').spd).toBe(Math.round(base.spd * 1.3));
-    expect(at('shade').spd).toBe(Math.round(base.spd * 1.15));
     expect([at('iron').def, at('iron').atk]).toEqual([Math.round(base.def * 1.4), Math.round(base.atk * 0.9)]);
     expect(at('blaze')).toEqual(base);
     expect(at('frost')).toEqual(base);

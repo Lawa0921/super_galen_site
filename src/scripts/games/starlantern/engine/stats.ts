@@ -69,7 +69,7 @@ export function capSheet(s: Sheet): Sheet {
 }
 
 const ARMOR_MAX = 0.75;
-const EVADE_MAX = 0.5;
+export const EVADE_MAX = 0.5;
 const rating = (value: number, attackerLevel: number, max: number): number => {
   const v = Math.max(0, value);
   const denom = v + 50 * attackerLevel;

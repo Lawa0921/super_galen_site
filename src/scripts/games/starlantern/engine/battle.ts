@@ -57,10 +57,14 @@ function fromMember(m: Member, cell: number): Combatant {
     x, level: m.level, powers: powersOf(m) };
 }
 
+/** An enemy carries only its non-zero secondaries, like a member; a missing key reads as 0. */
+const nonZero = (sec: Partial<Record<SecondaryKey, number>>): Partial<Record<SecondaryKey, number>> =>
+  Object.fromEntries(Object.entries(sec).filter(([, v]) => v));
+
 function fromEnemy(d: EnemyDef, key: string, name: string, tint: Combatant['tint'], level: number): Combatant {
   const c: Combatant = { ...fresh(), key, side: 'enemy', defId: d.id, name, max: { ...d.stats }, hp: d.stats.hp, tp: d.stats.tp,
     row: 'front', melee: true, weak: [...d.weak], resist: [...d.resist], boss: !!d.boss, alive: true,
-    x: { ...(d.sec ?? {}) }, level, powers: [] };
+    x: nonZero(d.sec ?? {}), level, powers: [] };
   if (tint) c.tint = tint;
   return c;
 }

@@ -43,7 +43,9 @@ describe('derived stats in battle', () => {
     expect(sc.powers).toEqual(powersOf(party.roster.scarlet));
     expect(sc.powers).toEqual(['lg-scarlet']);
     expect(s.party.find((c) => c.key === 'noel')!.level).toBe(1);
-    expect(s.enemies.map((e) => [e.level, e.x, e.powers])).toEqual([[depthLevel(3), {}, []], [depthLevel(3), {}, []]]);
+    // The slime is met 8 levels over its home and carries that depth's secondaries; the boss is below its home and carries none.
+    const slimeSec = { crit: 2, evasion: 1.6, fireRes: 4, iceRes: 4, thunderRes: 4 };
+    expect(s.enemies.map((e) => [e.level, e.x, e.powers])).toEqual([[depthLevel(3), slimeSec, []], [depthLevel(3), {}, []]]);
     // Without a scale, an enemy is met at its home level.
     const plain = createBattle({ party, enemyIds: ['slime', 'lanterneater'], inventory: {}, revealed: {} });
     expect(plain.enemies.map((e) => e.level)).toEqual([homeLevel(ENEMIES.slime), homeLevel(ENEMIES.lanterneater)]);

@@ -7,6 +7,7 @@ import { terrainOf } from './dungeon/run';
 import { expToNext } from './party';
 import { depthLevel } from './levels';
 import { pick, type Rng } from './rng';
+import { compensation, enemySecondary } from './stats';
 import type { Element, EnemyDef, StatKey, Stats } from './types';
 
 export { depthLevel } from './levels';
@@ -80,13 +81,12 @@ const DEEP_FROM = 4;
 const PREFIX: Record<RegionId, string> = { mainline: '', blaze: '熾焰', frost: '霜凍', storm: '雷鳴', mire: '腐毒', shade: '暗影', iron: '鋼鐵' };
 
 /**
- * Region traits as plain stat changes (spec §3.0): mire monsters are tough, storm ones fast, shade ones quick to act,
- * iron ones armoured but hit softer. Evasion, crits and blocking are not in the battle engine; this is the stand-in.
+ * Region traits as plain stat changes (spec §3.0): mire monsters are tough, storm ones fast, iron ones armoured but
+ * hit softer. Shade's evasive trait is real evasion and crit (stats.enemySecondary), not a stat change.
  */
 const TRAIT: Partial<Record<NonNullable<RegionDef['trait']>, Partial<Record<StatKey, number>>>> = {
   poison: { hp: 1.3 },
   swift: { spd: 1.3 },
-  evasive: { spd: 1.15 },
   armored: { def: 1.4, atk: 0.9 },
 };
 
@@ -104,6 +104,7 @@ function mul(stats: Stats, by: Partial<Record<StatKey, number>>): Stats {
 
 /**
  * A monster as met at this depth, in this region, possibly as an elite, under a run condition (default: none).
+ * It carries the secondaries of its depth and region (`sec`), and its stats pay for them last (stats.compensation).
  * Returns a new definition; `def` is untouched.
  */
 export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elite: boolean, condition: ConditionDef = CONDITIONS.plain): EnemyDef {
@@ -111,6 +112,8 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
   if (region.trait && TRAIT[region.trait]) stats = mul(stats, TRAIT[region.trait]!);
   if (elite) stats = mul(stats, ELITE);
   if (condition.enemyAtkMul !== 1) stats = mul(stats, { atk: condition.enemyAtkMul, mag: condition.enemyAtkMul });
+  const sec = enemySecondary(depthLevel(depth), homeLevel(def), region.trait);
+  stats = mul(stats, compensation(sec));
   const reward = rewardGrowth(def, depth) * (elite ? ELITE_REWARD : 1);
   const regional = region.id !== 'mainline';
   const name = [depth >= DEEP_FROM ? '深層' : '', PREFIX[region.id], def.name].filter(Boolean).join('・');
@@ -118,6 +121,7 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     ...def,
     name: `${elite ? '★' : ''}${name}`,
     stats,
+    sec,
     weak: regional ? [...region.weak] : [...def.weak],
     resist: regional ? [...region.resist] : [...def.resist],
     skills: region.skill ? [...def.skills, region.skill] : [...def.skills],

@@ -111,6 +111,19 @@ describe('calcDamage with derived stats', () => {
     expect(calcDamage({ ...a, x: { iceDmg: 50 } }, t, fire, r).amount).toBe(20);
   });
 
+  it('an enemy evades at most half of the hits, like a member', () => {
+    const blur = { ...t, x: { evasion: 90 } };
+    expect(calcDamage(a, blur, phys, seq([0.49, 0.5])).miss).toBe(true);
+    expect(calcDamage(a, blur, phys, seq([0.51, 0.5])).miss).toBe(false);
+  });
+
+  it('a negative resistance is a weakness, held at -100 (double damage)', () => {
+    const r = constRng(0.5);
+    expect(calcDamage(a, { ...t, x: { fireRes: -50 } }, fire, r).amount).toBe(30);
+    expect(calcDamage(a, { ...t, x: { fireRes: -100 } }, fire, r).amount).toBe(40);
+    expect(calcDamage(a, { ...t, x: { fireRes: -500 } }, fire, r).amount).toBe(40);
+  });
+
   it('vuln only on weakness hits; eliteDmg only on elites and bosses', () => {
     const r = constRng(0.5);
     const sharp = { ...a, x: { vuln: 100 } };

@@ -1,6 +1,6 @@
 import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
-import { armorReduction, evadeChance } from './stats';
+import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats } from './types';
 
 export interface Buff { stat: BuffStat; pct: number; turns: number }
@@ -81,7 +81,8 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   const ax = (k: SecondaryKey): number => a.x[k] ?? 0;
   const tx = (k: SecondaryKey): number => t.x[k] ?? 0;
   const el = elementMult(t, spec.element);
-  const evade = t.side === 'party' ? evadeChance(tx('evasion'), a.level) : tx('evasion') / 100;
+  // An enemy's evasion is a plain percentage, held at the same 50% as a member's rated evasion.
+  const evade = t.side === 'party' ? evadeChance(tx('evasion'), a.level) : Math.min(EVADE_MAX, tx('evasion') / 100);
   if (roll(evade, rng)) return { amount: 0, mult: el, crit: false, miss: true };
   const atk = stat(a, spec.scale);
   const def = stat(t, spec.scale === 'atk' ? 'def' : 'res');
@@ -92,7 +93,8 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   const variance = 0.9 + rng() * 0.2;
   // Every factor below is exactly 1 when its stat is absent, so such a hit keeps its old value to the bit.
   const hitEl = spec.element;
-  if (hitEl !== 'phys') mult *= (1 + ax(`${hitEl}Dmg`) / 100) * (1 - tx(`${hitEl}Res`) / 100);
+  // A negative resistance is a weakness, held at -100 (double damage).
+  if (hitEl !== 'phys') mult *= (1 + ax(`${hitEl}Dmg`) / 100) * (1 - Math.max(-100, tx(`${hitEl}Res`)) / 100);
   if (t.weak.includes(spec.element)) mult *= 1 + ax('vuln') / 100;
   if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
   const crit = roll(ax('crit') / 100, rng);
