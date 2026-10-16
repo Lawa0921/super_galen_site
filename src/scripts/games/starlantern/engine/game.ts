@@ -351,16 +351,25 @@ export class Game {
   }
 
   /**
-   * Go down the stairs the party stands on; null when not on stairs. Taking the stairs clears the floor left behind:
-   * its depth-clear exp goes out as a fight's does (the bench gets half, the downed nothing).
+   * Go down the stairs the party stands on; null when not on stairs. Taking the stairs clears the floor left behind, and
+   * the first clear of a depth in a region (the depth is at or past its `reached`) pays the depth-clear exp as a fight
+   * does (the bench gets half, the downed nothing). A depth cleared before pays nothing: levels outlive runs and wipes,
+   * so the party already has what the grant was for. `clear` is set only when someone gained exp.
    */
   descend(): MoveResult | null {
     if (this.phase !== 'map' || !this.run || tileAt(this.map(), this.pos) !== 'down') return null;
-    const exp = Math.round(depthClearExp(this.floor) * CONDITIONS[this.run.condition].expMul);
-    const standing = activeIds(this.state.party).filter((id) => this.state.party.roster[id].hp > 0);
-    const awarded = awardExp(this.state.party, exp, standing);
-    this.state.party = awarded.party;
-    return { ...this.changeFloor(this.floor + 1), clear: { exp, levelUps: awarded.results.filter((x) => x.levels > 0) } };
+    const first = this.floor >= this.state.dungeon.reached[this.run.region];
+    const exp = first ? Math.round(depthClearExp(this.floor) * CONDITIONS[this.run.condition].expMul) : 0;
+    const before = this.state.party.roster;
+    const standing = activeIds(this.state.party).filter((id) => before[id].hp > 0);
+    const awarded = exp > 0 ? awardExp(this.state.party, exp, standing) : null;
+    const gained = awarded?.results.some(({ id }) => {
+      const m = awarded.party.roster[id];
+      return m.level !== before[id].level || m.exp !== before[id].exp;
+    });
+    if (awarded) this.state.party = awarded.party;
+    const floor = this.changeFloor(this.floor + 1);
+    return gained ? { ...floor, clear: { exp, levelUps: awarded!.results.filter((x) => x.levels > 0) } } : floor;
   }
 
   private stairs(): MoveResult {

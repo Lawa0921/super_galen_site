@@ -121,7 +121,9 @@ describe('balance', () => {
       const rooms = depthPace(d, 'rooms');
       expect(rooms, `depth ${d} rooms`).toBeGreaterThanOrEqual(next - 1);
       expect(rooms, `depth ${d} rooms`).toBeLessThanOrEqual(next + 1);
-      expect(depthPace(d, 'direct'), `depth ${d} direct`).toBeGreaterThanOrEqual(next - 2);
+      const direct = depthPace(d, 'direct');
+      expect(direct, `depth ${d} direct`).toBeGreaterThanOrEqual(next - 2);
+      expect(direct, `depth ${d} direct`).toBeLessThanOrEqual(next + 1);
     }
   });
 });

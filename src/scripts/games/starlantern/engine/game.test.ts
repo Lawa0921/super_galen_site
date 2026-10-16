@@ -1106,13 +1106,51 @@ describe('depth-clear exp', () => {
     expect(r.clear.exp).toBe(Math.round(depthClearExp(1) * CONDITIONS.fierce.expMul));
   });
 
-  it('descending at Lv50 grants nothing and does not throw', () => {
+  it('descending at Lv50 grants nothing, reports no clear and does not throw', () => {
     const g = new Game(calm(), null);
     g.depart(MAIN, 1);
     for (const id of g.state.party.recruited) g.state.party.roster[id].level = MAX_LEVEL;
     const r = downstairs(g, g.map().down!);
-    if (r?.kind !== 'floor' || !r.clear) throw new Error('no clear');
-    expect(r.clear.levelUps).toEqual([]);
+    expect(r).toEqual({ kind: 'floor', floor: 2 });
     for (const id of g.state.party.recruited) expect([id, g.state.party.roster[id].level, g.state.party.roster[id].exp]).toEqual([id, MAX_LEVEL, 0]);
+  });
+
+  it('reports no clear when every active member is down and nobody waits on the bench', () => {
+    const g = new Game(calm(), null);
+    g.depart(MAIN, 1);
+    expect(stepOnto(g, g.map().down!).kind).toBe('stairs');
+    for (const id of g.state.party.recruited) g.state.party.roster[id].hp = 0;
+    expect(g.descend()).toEqual({ kind: 'floor', floor: 2 });
+    for (const id of g.state.party.recruited) expect([id, g.state.party.roster[id].exp]).toEqual([id, 0]);
+  });
+
+  it('a second run through a depth already cleared gets no grant', () => {
+    const g = new Game(calm(), null);
+    g.depart(MAIN, 1);
+    const first = downstairs(g, g.map().down!);
+    expect(first?.kind === 'floor' && first.clear?.exp).toBe(depthClearExp(1));
+    expect(g.returnToTown()).toBe(true);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    const before = structuredClone(g.state.party.roster);
+    expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
+    expect(g.state.party.roster).toEqual(before);
+  });
+
+  it("another region's first clear of the same depth does get the grant", () => {
+    const g = new Game(calm(), null);
+    g.depart(MAIN, 1);
+    downstairs(g, g.map().down!);
+    expect(g.returnToTown()).toBe(true);
+    expect(g.depart({ region: 'storm', condition: 'plain' }, 1)).toEqual({ ok: true });
+    const r = downstairs(g, g.map().down!);
+    expect(r?.kind === 'floor' && r.clear?.exp).toBe(depthClearExp(1));
+  });
+
+  it('the grant follows the saved reached depth: a depth above it pays nothing, and the depth stays reached', () => {
+    const g = new Game(calm(), null);
+    g.state.dungeon.reached.mainline = 5;
+    g.depart(MAIN, 1);
+    expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
+    expect(g.state.dungeon.reached.mainline).toBe(5);
   });
 });

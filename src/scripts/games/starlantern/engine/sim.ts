@@ -138,6 +138,8 @@ function bfs(map: FloorMap, from: Pos): Map<string, number> {
  * Encounters met clearing one mainline depth on foot (balance test 12): `rooms` walks to the nearest unvisited room
  * centre (ties to the lower room id) until all are visited, then to the stairs; `direct` walks straight to the stairs.
  * Each step fills the encounter gauge once at the depth's rate.
+ * Every depth is measured as a non-boss floor (`boss: false`), boss depths (mainline 3, every 5th) too: boss floors are
+ * out of scope here, since the boss pays its own exp (balance test 6) on top of the fights and clear grant counted here.
  */
 export function clearFights(depth: number, seed: number, route: 'rooms' | 'direct'): number {
   const { map, rooms } = genFloor(seed, { depth, boss: false });

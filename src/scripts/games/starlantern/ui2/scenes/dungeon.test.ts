@@ -108,6 +108,38 @@ describe('DungeonScene', () => {
       expect(t.text()).toContain('踏破獎勵：經驗值 +');
       expect(t.text()).toContain('升到 Lv');
     });
+
+    it('shows no reward line when nobody gains exp', async () => {
+      const t = setup();
+      for (const id of t.game.state.party.recruited) t.game.state.party.roster[id].level = 50;
+      toStairs(t);
+      t.pick('前往');
+      expect(t.text()).toBe('第 2 層　水晶洞窟');
+      t.s.onAction('confirm');
+      await Promise.resolve();
+      expect(t.root.querySelector<HTMLElement>('.slx-talk')!.hidden).toBe(true);
+      expect(t.text()).not.toContain('踏破獎勵');
+    });
+
+    it('the reward line stays quiet once the scene has exited', async () => {
+      const t = setup();
+      toStairs(t);
+      t.pick('前往');
+      t.s.exit();
+      t.s.onAction('confirm');
+      await Promise.resolve();
+      expect(t.text()).not.toContain('踏破獎勵');
+    });
+
+    it('the reward line does not override a newer line', async () => {
+      const t = setup();
+      toStairs(t);
+      t.pick('前往');
+      (t.s as unknown as { say(text: string): Promise<void> }).say('新的訊息');
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(t.text()).toBe('新的訊息');
+    });
   });
 
   it('bumps into walls and walks on floors', () => {

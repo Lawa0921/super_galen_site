@@ -45,6 +45,10 @@ export class DungeonScene implements Scene {
   private layers: Layer[] = [];
   private talk: Dialogue;
   private leaving = false;
+  /** Set on exit, so a line waiting on an earlier one (the depth-clear reward) never speaks on a scene that has gone. */
+  private exited = false;
+  /** Counts the lines said, so a follow-up line can tell that a newer one took its turn. */
+  private said = 0;
   /** Banner and flash removals; cleared on exit so none outlives the scene. */
   private timers = new Set<ReturnType<typeof setTimeout>>();
 
@@ -55,6 +59,7 @@ export class DungeonScene implements Scene {
 
   enter(root: HTMLElement): void {
     this.root = root;
+    this.exited = false;
     this.floorName = win('slx-floorname');
     this.lamp = win('slx-lamp');
     this.pad = el('div', { class: 'slx-pad' }, DIRS.map((d) => this.tapper(`slx-pad-${d}`, T.map.dirs[d], d)));
@@ -74,6 +79,7 @@ export class DungeonScene implements Scene {
   }
 
   exit(): void {
+    this.exited = true;
     this.talk.stop();
     for (const t of this.timers) clearTimeout(t);
     this.timers.clear();
@@ -153,6 +159,7 @@ export class DungeonScene implements Scene {
   }
 
   private say(text: string | Rich): Promise<void> {
+    this.said++;
     const shown = this.talk.say('', text);
     this.syncInert();
     return shown;
@@ -259,7 +266,9 @@ export class DungeonScene implements Scene {
     const clear = r.clear;
     if (!clear) return;
     const lines = [T.map.cleared(clear.exp), ...levelUpLines(clear.levelUps, this.ctx.game.state.party).map((l) => l.text)];
-    void named.then(() => this.say(lines.join('\n')));
+    const turn = this.said;
+    // Only after the player dismisses the floor name: not when a newer line replaced it, nor once the scene has gone.
+    void named.then(() => { if (!this.exited && this.said === turn) void this.say(lines.join('\n')); });
   }
 
   private push(layer: Layer): void {
