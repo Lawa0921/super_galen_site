@@ -3,6 +3,7 @@ import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { GateScene, portalArt } from './gate';
+import { specialLines } from '../../engine/compare';
 import { capacity, carried, formatWeight } from '../../data/weights';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
@@ -36,7 +37,7 @@ describe('GateScene: the portal plaza', () => {
     expect(blaze.querySelector('.slx-portal-trait')!.textContent).toContain('灼燒');
     expect(blaze.querySelector('.slx-portal-monsters')!.textContent).toContain('苔蘚史萊姆');
     expect(blaze.querySelector('.slx-portal-cond')!.textContent).toContain('濃霧');
-    expect(blaze.querySelector('.slx-portal-gear')!.textContent).toBe('限定裝備：？？？');
+    expect(blaze.querySelector('.slx-portal-gear')!.textContent).toContain('限定裝備');
     expect(blaze.querySelector('.slx-portal-drop')!.textContent).toBe('主要掉落：火焰核');
     expect(cards()[2].querySelector('.slx-portal-drop')!.textContent).toBe('主要掉落：鋼鐵碎片');
     expect(cards()[0].querySelector('.slx-portal-drop')!.textContent).toBe('主要掉落：一般素材');
@@ -145,5 +146,48 @@ describe('GateScene: the portal plaza', () => {
     expect(go).not.toHaveBeenCalled();
     expect(game.phase).toBe('town');
     expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('出戰成員全部倒下，無法出發');
+  });
+});
+
+describe('GateScene: region-only gear on the portal cards', () => {
+  const items = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.slx-portal-gear .slx-codex-item[data-special]')];
+
+  it('a regional card lists two specials and its set, unknown until obtained', () => {
+    const { cards } = setup();
+    const its = items(cards()[1]);
+    expect(its.map((i) => i.dataset.special)).toEqual(['blaze-heart-sword', 'blaze-ember-ring', 'set-blaze']);
+    expect(its.map((i) => i.textContent)).toEqual(['灼心之劍（未取得）', '餘燼指環（未取得）', '焰紋套裝（未取得）']);
+    expect(its.every((i) => i.classList.contains('slx-codex-unknown'))).toBe(true);
+    expect(its[0].classList.contains('slx-rarity-legendary')).toBe(true);
+    expect(its[1].classList.contains('slx-rarity-unique')).toBe(true);
+    expect(its[2].classList.contains('slx-rarity-set')).toBe(true);
+    expect(items(cards()[2]).map((i) => i.dataset.special)).toEqual(['iron-unbroken-shield', 'iron-bulwark-plate', 'set-iron']);
+  });
+
+  it('an obtained special shows its name, rarity word and first line', () => {
+    const { cards } = setup((g) => { g.state.codex.push('blaze-heart-sword', 'set-blaze'); });
+    const [sword, ring, set] = items(cards()[1]);
+    expect(sword.classList.contains('slx-codex-unknown')).toBe(false);
+    expect(sword.querySelector('.slx-codex-name')!.textContent).toBe('灼心之劍・傳說');
+    expect(sword.querySelector('.slx-codex-line')!.textContent).toBe(specialLines('blaze-heart-sword')[0].text);
+    expect(set.classList.contains('slx-codex-unknown')).toBe(false);
+    expect(set.querySelector('.slx-codex-line')!.textContent).toBe(specialLines('set-blaze')[0].text);
+    expect(ring.classList.contains('slx-codex-unknown')).toBe(true);
+    expect(ring.textContent).toBe('餘燼指環（未取得）');
+  });
+
+  it('the mainline card lists the general legendaries', () => {
+    const { cards } = setup();
+    const its = items(cards()[0]);
+    expect(its).toHaveLength(8);
+    expect(its.map((i) => i.dataset.special)).toContain('lg-noel');
+    expect(its.every((i) => i.classList.contains('slx-rarity-legendary'))).toBe(true);
+  });
+
+  it('no silhouette image without art, and one when the icon is published', () => {
+    const { root } = setup();
+    expect(root.querySelector('.slx-codex-silhouette')).toBeNull();
+    const withArt = setup(undefined, { has: (u: string) => u.endsWith('/icon/lg-noel.png') } as unknown as ArtIndex);
+    expect(withArt.root.querySelectorAll('.slx-codex-silhouette')).toHaveLength(1);
   });
 });

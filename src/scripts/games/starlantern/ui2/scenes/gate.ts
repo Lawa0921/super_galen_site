@@ -2,9 +2,11 @@ import { CONDITIONS } from '../../data/conditions';
 import { ENEMIES } from '../../data/enemies';
 import { FLOORS } from '../../data/floors';
 import { MATERIALS } from '../../data/materials';
+import { SETS, SPECIALS, codexName, generalLegendaries, regionSpecials } from '../../data/gear';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
+import { specialLines } from '../../engine/compare';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
 import { depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art } from '../../render/artPaths';
@@ -36,6 +38,12 @@ function monsterNames(region: RegionId, reached: number): string[] {
   return [...ids].map((id) => ENEMIES[id]?.name ?? id);
 }
 
+/** Ids a card lists: a region's special items and its set, or the mainline's general legendaries. */
+function gearIds(region: RegionId): string[] {
+  if (region === 'mainline') return generalLegendaries().map((s) => s.id);
+  return [...regionSpecials(region).map((s) => s.id), ...Object.values(SETS).filter((s) => s.region === region).map((s) => s.id)];
+}
+
 /** Three portal cards side by side: ←→ or the pointer chooses, Enter or a click goes in. */
 class PortalCards {
   readonly el: HTMLElement;
@@ -47,6 +55,20 @@ class PortalCards {
     const row = el('div', { class: 'slx-portal-row', attrs: { role: 'listbox', 'aria-label': T.ui2.gate.choose } }, this.cards);
     this.el = el('div', { class: 'slx-portals' }, [row, el('p', { class: 'slx-portal-hint', text: T.ui2.gate.hint })]);
     this.render();
+  }
+
+  /** One region-only item: its name until obtained is dimmed with 「（未取得）」; once in the codex it shows rarity and its first line. */
+  private gearItem(id: string): HTMLElement {
+    const G = T.ui2.gate;
+    const rarity = SPECIALS[id]?.rarity ?? 'set';
+    const known = this.ctx.game.state.codex.includes(id);
+    const icon = art.icon(id);
+    const pic = this.ctx.art.has(icon) ? [el('img', { class: known ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src: icon, alt: '' } })] : [];
+    const name = known && rarity !== 'set' ? `${codexName(id)}・${T.rarity[rarity]}` : known ? codexName(id) : G.unknownGear(codexName(id));
+    const body = [el('span', { class: 'slx-codex-name', text: name })];
+    const first = known ? specialLines(id)[0] : undefined;
+    return el('div', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id } },
+      [...pic, ...body, ...(first ? [el('span', { class: 'slx-codex-line', text: first.text })] : [])]);
   }
 
   private card(p: Portal, i: number): HTMLElement {
@@ -70,7 +92,8 @@ class PortalCards {
       el('div', { class: 'slx-portal-cond' }, [el('span', { class: 'slx-portal-label', text: G.condition }), el('b', { text: cond.name })]),
       el('div', { class: 'slx-portal-desc', text: cond.desc }),
       el('div', { class: 'slx-portal-drop', text: G.drop(r.material ? MATERIALS[r.material]?.name ?? r.material : G.commonDrop) }),
-      el('div', { class: 'slx-portal-gear', text: G.gear }),
+      el('div', { class: 'slx-portal-gear' }, [el('div', { class: 'slx-portal-label', text: G.gear }), ...gearIds(p.region).map((id) => this.gearItem(id))]),
+      el('div', { class: 'slx-codex-more', text: G.moreGear, attrs: { hidden: '' } }),
       el('div', { class: 'slx-portal-depth', text: reached > 0 ? G.deepest(reached) : G.notYet }),
     ]);
     c.setAttribute('role', 'option');
@@ -79,6 +102,15 @@ class PortalCards {
     c.addEventListener('pointermove', () => { if (!this.locked() && this.cursor !== i) { this.cursor = i; this.render(); this.ctx.sfx.cursor(); } });
     c.addEventListener('click', () => { if (this.locked()) return; this.cursor = i; this.render(); this.on.pick(i); });
     return c;
+  }
+
+  /** Once the cards are on screen: a list longer than its card (everything obtained) says it scrolls. */
+  markOverflow(): void {
+    for (const c of this.cards) {
+      const list = c.querySelector<HTMLElement>('.slx-portal-gear');
+      const more = c.querySelector<HTMLElement>('.slx-codex-more');
+      if (list && more) more.hidden = list.scrollHeight <= list.clientHeight + 1;
+    }
   }
 
   private locked(): boolean {
@@ -102,7 +134,13 @@ class PortalCards {
     }
     if (a === 'confirm') { this.on.pick(this.cursor); return true; }
     if (a === 'cancel') { this.on.cancel(); return true; }
-    return a === 'up' || a === 'down';
+    if (a === 'up' || a === 'down') {
+      // The chosen card's gear list scrolls when it is longer than the card (everything obtained).
+      const list = this.cards[this.cursor].querySelector<HTMLElement>('.slx-portal-gear');
+      if (list) list.scrollTop += a === 'down' ? 28 : -28;
+      return true;
+    }
+    return false;
   }
 }
 
@@ -125,6 +163,7 @@ export class GateScene extends FacilityScene {
       cancel: () => this.pop(),
     });
     this.push({ el: cards.el, onAction: (a) => cards.onAction(a) });
+    cards.markOverflow();
   }
 
   /** Depth 1 or a reached multiple of 5 (the mainline keeps a shortcut to every floor reached). */

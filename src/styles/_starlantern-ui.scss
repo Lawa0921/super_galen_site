@@ -838,7 +838,17 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-portal-cond { margin-top: 3px; }
 .slx-portal-cond b { font-weight: normal; color: $slx-gold; }
 .slx-portal-drop { margin-top: 3px; }
-.slx-portal-gear { color: #c9b8ff; }
+// The list takes the room the card has left. When every item is obtained it can outgrow that: it then scrolls (wheel, or ↑↓ on the chosen card)
+// with a thin visible bar, instead of being cut off.
+.slx-portal-gear { margin-top: 3px; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: $slx-gold transparent; }
+// Obtained names take their rarity colour (.slx-rarity-*); unobtained ones are dimmed. A first line wraps rather than being cut.
+.slx-codex-item { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; font-size: 12px; line-height: 14px; overflow-wrap: anywhere; }
+// Unobtained names run together like the monster names (the mainline lists eight), each kept whole; obtained ones take a row with their line.
+.slx-codex-unknown { display: inline-block; margin-right: 6px; color: $slx-dim; word-break: keep-all; }
+.slx-codex-more { margin: 0; text-align: right; font-size: 10px; line-height: 12px; color: $slx-gold; }
+.slx-codex-line { flex-basis: 100%; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-codex-silhouette, .slx-codex-icon { width: 14px; height: 14px; align-self: center; image-rendering: pixelated; }
+.slx-codex-silhouette { filter: brightness(0); }
 .slx-portal-depth { margin-top: auto; color: $slx-dim; text-align: right; }
 .slx-portal-hint { margin: 0; text-align: center; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
 .slx-layer.slx-depths { left: 50%; top: 84px; translate: -50% 0; min-width: 200px; max-width: none; }
