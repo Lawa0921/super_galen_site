@@ -88,11 +88,13 @@ UI_SCENES = {
     'inn': 'Interior of a warm inn lobby: fireplace, wooden stairs to the rooms, a front desk with a bell, rugs, evening light, the right third kept fairly plain',
     'gate': "Adventurers' camp at the edge of the glowing labyrinth crack: wooden palisade, a guard post, torches, supply crates, mist, the right third kept fairly plain",
 }
+# Japanese anime-style character design rendered as pixel art (user: keep pixel art, but the art style behind it should feel Japanese).
+JP = 'Japanese anime-style JRPG character design rendered as detailed pixel art, like a classic Japanese console RPG portrait: anime proportions, large expressive eyes, clean facial lines, stylised anime hair'
 UI_NPCS = {
-    'guild': ('the guild receptionist, a capable gentle woman in her twenties with short chestnut hair, a neat dark green vest uniform with a guild badge', 'guild hall'),
-    'shop': ('the item shop keeper, a cheerful plump old man with a white moustache, round glasses and an apron full of pockets', 'item shop'),
-    'inn': ('the innkeeper, a warm motherly woman in her forties with tied-back auburn hair, a blouse and a striped apron', 'inn'),
-    'gate': ('the gate guard, a grizzled veteran soldier with a scar over one eye, short grey beard, worn leather and steel armour, holding a spear', 'camp'),
+    'guild': (f'{JP}; the guild receptionist, a capable gentle young woman with short chestnut hair, a neat dark green vest uniform with a guild badge', 'guild hall'),
+    'shop': (f'{JP}; the item shop keeper, a cheerful youthful-looking man in his thirties with messy ash-blond hair tied back, narrow smiling eyes, round glasses, a brown apron full of pockets with potion bottles', 'item shop'),
+    'inn': (f'{JP}; the innkeeper, a kind young-looking woman with long auburn hair in a loose side braid, gentle eyes, a cream blouse and a striped apron', 'inn'),
+    'gate': (f'{JP}; the gate guard, a stern handsome veteran knight in his thirties with short silver hair, a small scar on the cheek, a red scarf, steel and leather armour, holding a spear', 'camp'),
 }
 
 

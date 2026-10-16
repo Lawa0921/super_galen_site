@@ -19,6 +19,9 @@ import { PartyBar } from '../partyBar';
 import type { Scene, SceneCtx } from '../scene';
 import { MenuView, win } from '../widgets';
 
+/** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
+export const BATTLE_LEFT = 150;
+
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 type Pending = { kind: 'attack' } | { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'ultimate' };
 
@@ -54,7 +57,7 @@ export class BattleScene implements Scene {
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
-      this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.floor);
+      this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.floor, BATTLE_LEFT);
     }
     this.msg.textContent = this.state.enemies.map((e) => e.name).join('、');
     this.startRound();

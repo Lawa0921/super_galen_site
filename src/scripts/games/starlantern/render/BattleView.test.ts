@@ -54,3 +54,11 @@ describe('BattleView anchors', () => {
     expect(view.anchor('nobody')).toBeNull();
   });
 });
+
+describe('BattleView left inset', () => {
+  it('spreads enemies over the area right of the command window', () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 160);
+    expect(view.anchor('e0')!.x).toBeCloseTo(160 + (640 - 160) / 2, 0);
+  });
+});

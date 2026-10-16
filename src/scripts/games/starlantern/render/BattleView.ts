@@ -26,7 +26,8 @@ export class BattleView {
 
   constructor(private fast = false, private bank: TextureBank | null = null) {}
 
-  setup(state: BattleState, size: { width: number; height: number }, floor: number): void {
+  /** `left` reserves space on the left (the command window) so enemies are never hidden behind it. */
+  setup(state: BattleState, size: { width: number; height: number }, floor: number, left = 0): void {
     for (const t of this.timers) clearTimeout(t);
     for (const f of this.frames) cancelAnimationFrame(f);
     this.timers.clear();
@@ -47,7 +48,7 @@ export class BattleView {
       this.root.addChild(new Graphics().rect(0, 0, size.width, size.height).fill(0x141826));
     }
     const n = state.enemies.length;
-    const slotW = size.width / (n + 1);
+    const slotW = (size.width - left) / (n + 1);
     state.enemies.forEach((e, i) => {
       const box = new Container();
       const body = new Container();
@@ -65,7 +66,7 @@ export class BattleView {
       const label = new Text({ text: e.name, style: { fill: 0xffffff, fontSize: 14, stroke: { color: 0x000000, width: 3 } } });
       label.anchor.set(0.5, 0);
       box.addChild(body, label);
-      box.x = slotW * (i + 1);
+      box.x = left + slotW * (i + 1);
       box.y = size.height * 0.85;
       box.alpha = e.alive ? 1 : 0;
       this.root.addChild(box);
