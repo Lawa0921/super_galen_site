@@ -1,10 +1,12 @@
+import { CHARACTERS } from '../data/characters';
 import { POWERS, SETS, SPECIALS } from '../data/gear';
 import { T } from '../data/text.zh-TW';
 import { implicitStats } from './loot/item';
 import { setCounts, sheetOf } from './party';
 import type { AnyStat, ItemInstance, Member, Sheet, Slot } from './types';
 
-export interface ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore'; text: string; active?: boolean }
+/** `active`: a set bonus the wearer has reached. `usable`: whether the wearer's kit has a power's skill (only with a wearer). */
+export interface ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore'; text: string; active?: boolean; usable?: boolean }
 
 const EPS = 1e-6;
 
@@ -35,11 +37,11 @@ function setLines(setId: string, reached?: number): ItemLine[] {
   ];
 }
 
-/** Lines for one piece of gear: its base bonus, rolled affixes, then power, set bonuses and story. `wearer` marks the set bonuses reached. */
+/** Lines for one piece of gear: its base bonus, rolled affixes, then power, set bonuses and story. `wearer` marks the set bonuses reached and whether the power works for them. */
 export function itemLines(it: ItemInstance, wearer?: Member): ItemLine[] {
   const out: ItemLine[] = [];
   const implicit = statText(implicitStats(it) as Partial<Sheet>);
-  if (implicit) out.push({ kind: 'implicit', text: implicit });
+  if (implicit) out.push({ kind: 'implicit', text: T.gear.implicit(implicit) });
   for (const a of it.affixes) out.push({ kind: 'affix', text: T.gear.affix(a.key, a.value) });
   const sp = it.special ? SPECIALS[it.special] : undefined;
   if (sp) out.push(...specialLines(sp.id, wearer));
@@ -52,7 +54,7 @@ export function specialLines(id: string, wearer?: Member): ItemLine[] {
   if (!sp) return setLines(id);
   const out: ItemLine[] = [];
   const power = sp.power ? POWERS[sp.power] : undefined;
-  if (power) out.push({ kind: 'power', text: power.text });
+  if (power) out.push({ kind: 'power', text: power.text, ...(wearer ? { usable: CHARACTERS[wearer.id].skills.includes(power.skill) } : {}) });
   if (sp.set) out.push(...setLines(sp.set, wearer ? setCounts(wearer)[sp.set] ?? 0 : undefined));
   out.push({ kind: 'lore', text: sp.lore });
   return out;

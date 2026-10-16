@@ -36,6 +36,13 @@ function setup(prep?: (g: Game) => void, arg = 'scarlet') {
 }
 
 describe('EquipScene', () => {
+  it('a filled slot still names its slot above the gear', () => {
+    const { slot } = setup((g) => { g.state.party.roster.scarlet.equip.head = plainItem('leather-cap', 9); });
+    expect(slot('head').querySelector('.slx-slot-tag')!.textContent).toBe('頭部');
+    expect(slot('head').querySelector('.slx-slot-name')!.textContent).toBe('皮帽');
+    expect(slot('neck').querySelector('.slx-slot-tag')).toBeNull();     // empty: the slot's name alone
+  });
+
   it('nine slots in the figure order and sixty bag cells', () => {
     const { root, slot, cell } = setup((g) => {
       g.state.bag = [plainItem('iron-sword', 1), gear('cloth-gloves', 2, 'legendary', { special: 'lg-bobby' })];
@@ -142,7 +149,7 @@ describe('EquipScene', () => {
     expect(d.textContent).toContain(T.gear.ilvl(10));
     expect(d.textContent).toContain(T.gear.weight(itemWeight(saber)));
     expect(d.textContent).toContain(T.gear.junk);
-    expect(d.textContent).toContain('攻擊 +15');                        // implicit line
+    expect(d.textContent).toContain('基礎 攻擊 +15');                   // implicit line
     expect(d.textContent).toContain('暴擊率 +5%');                      // affix line
     expect(d.textContent).toContain('鐵劍');                            // compared against what is worn
     const up = d.querySelector('.slx-cmp-row.slx-up[data-stat=atk]')!;
@@ -232,5 +239,117 @@ describe('EquipScene', () => {
     cell(0).click();
     expect(worn().ring2?.base).toBe('copper-ring');
     expect(worn().ring1).toBeUndefined();
+  });
+
+  it('a touch tap with no hover still moves the view, even when the tap is refused', () => {
+    const { cell, at, sfx, root } = setup();
+    cell(5).click();                                                   // empty cell, no target: refused
+    expect(sfx.error).toHaveBeenCalled();
+    expect(at()).toBe('bag:5');
+    expect(root.querySelectorAll('.slx-bag .slx-cur')).toHaveLength(1);
+    expect(cell(5).classList.contains('slx-cur')).toBe(true);
+    expect(root.querySelector('.slx-equip-scene')!.getAttribute('data-focus')).toBe('bag');
+  });
+
+  it('from the figure the menu acts on the worn piece the detail shows: take it off, but no junk mark', () => {
+    const { press, root, worn, game } = setup((g) => {
+      g.state.party.roster.scarlet.equip.weapon = plainItem('wooden-staff', 9);
+      g.state.bag = [gear('star-saber', 3, 'rare')];
+    });
+    press('menu');
+    const menu = root.querySelector('.slx-bag-menu')!;
+    expect(menu.querySelector('[data-id=junk]')!.textContent).toContain('木杖');
+    expect(menu.querySelector('[data-id=junk]')!.textContent).not.toContain('星紋軍刀');
+    expect(menu.querySelector('[data-id=junk]')!.getAttribute('aria-disabled')).toBe('true');
+    (menu.querySelector('[data-id=unequip]') as HTMLElement).click();
+    expect(worn().weapon).toBeUndefined();
+    expect(game.state.bag.map((it) => it.uid)).toEqual([3, 9]);
+  });
+
+  it('the flash lands on the newly filled slot, not on the next bag item', () => {
+    const { press, slot, cell } = setup((g) => { g.state.bag = [plainItem('iron-sword', 1), plainItem('leather-vest', 2)]; });
+    press('swap', 'confirm');                                          // sword into the empty weapon slot; the vest moves to cell 0
+    expect(slot('weapon').classList.contains('slx-flash')).toBe(true);
+    expect(cell(0).classList.contains('slx-flash')).toBe(false);
+  });
+
+  it('a swap flashes the slot and the cell the old piece came back to', () => {
+    const { press, slot, cell } = setup((g) => { g.state.party.roster.scarlet.equip.weapon = plainItem('wooden-staff', 9); });
+    press('swap', 'confirm');                                          // sword in, staff back into cell 0
+    expect(slot('weapon').classList.contains('slx-flash')).toBe(true);
+    expect(cell(0).classList.contains('slx-flash')).toBe(true);
+  });
+
+  it('Q/E in target mode clears the target and the dimming', () => {
+    const { press, root } = setup((g) => { g.state.bag = [plainItem('leather-vest', 2), plainItem('iron-sword', 1)]; });
+    press('confirm');
+    expect(root.querySelector('.slx-unfit')).not.toBeNull();
+    press('next');
+    expect(root.querySelector('.slx-doll-target')).toBeNull();
+    expect(root.querySelector('.slx-unfit')).toBeNull();
+  });
+
+  it('a target ring slot other than defaultSlotFor is the one compared and filled', () => {
+    const { press, detail, worn } = setup((g) => {
+      const eq = g.state.party.roster.scarlet.equip;
+      eq.ring1 = plainItem('copper-ring', 7);
+      eq.ring2 = gear('star-ring', 8, 'magic');
+      g.state.bag = [gear('star-ring', 5, 'rare')];
+    });
+    press('down', 'right', 'right', 'confirm');                        // target 戒指 2 (defaultSlotFor would say 戒指 1)
+    expect(detail().querySelector('.slx-cmp-head')!.textContent).toContain('星紋戒・魔法');
+    press('confirm');
+    expect(worn().ring2?.uid).toBe(5);
+    expect(worn().ring1?.uid).toBe(7);
+  });
+
+  it('a full bag refuses to take gear off, says why, and reads 60／60', () => {
+    const { press, root, sfx, worn, cell } = setup((g) => {
+      g.state.party.roster.scarlet.equip.weapon = plainItem('wooden-staff', 9);
+      g.state.bag = Array.from({ length: 60 }, (_, i) => plainItem('leather-cap', 200 + i));
+    });
+    expect(root.querySelector('.slx-bag-count')!.textContent).toBe('背包 60／60');
+    expect(cell(59).textContent).toBe('皮帽');
+    press('menu');
+    (root.querySelector('.slx-bag-menu [data-id=unequip]') as HTMLElement).click();
+    expect(sfx.error).toHaveBeenCalled();
+    expect(worn().weapon?.uid).toBe(9);
+    expect(root.querySelector('.slx-equip-notice')!.textContent).toBe(T.ui2.equip.full);
+    press('down');                                                     // the notice goes with the next action
+    expect(root.querySelector('.slx-equip-notice')!.textContent).toBe('');
+  });
+
+  it('an empty bag: every cell empty, Enter refuses, nothing to mark', () => {
+    const { press, root, sfx, game } = setup((g) => { g.state.bag = []; });
+    expect(root.querySelector('.slx-bag-count')!.textContent).toBe('背包 0／60');
+    expect([...root.querySelectorAll('.slx-bag-cell')].every((c) => c.textContent === '')).toBe(true);
+    press('swap', 'confirm');
+    expect(sfx.error).toHaveBeenCalled();
+    expect(game.state.bag).toEqual([]);
+    press('menu');
+    expect(root.querySelector('.slx-bag-menu [data-id=junk]')!.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it("a power the viewed member cannot use is dimmed and says so; one in the member's kit is not", () => {
+    const { press, detail } = setup((g) => {
+      g.state.bag = [gear('cloth-gloves', 2, 'legendary', { special: 'lg-bobby' }), gear('leather-cap', 3, 'legendary', { special: 'lg-scarlet' })];
+    });
+    press('swap');                                                     // 長效齒輪手套 (turret) on 絲嘉蕾
+    const off = detail().querySelector('.slx-line-power')!;
+    expect(off.classList.contains('slx-line-off')).toBe(true);
+    expect(off.textContent).toContain(T.gear.cannotUse);
+    press('right');                                                    // scarlet's own provoke power
+    const on = detail().querySelector('.slx-line-power')!;
+    expect(on.classList.contains('slx-line-off')).toBe(false);
+    expect(on.textContent).not.toContain(T.gear.cannotUse);
+  });
+
+  it('the portrait row is built once per member, not on every key or hover', () => {
+    const { press, root } = setup();
+    const arrow = root.querySelector('.slx-equip-head .slx-status-arrow')!;
+    press('down', 'swap', 'right');
+    expect(root.contains(arrow)).toBe(true);
+    press('next');
+    expect(root.contains(arrow)).toBe(false);
   });
 });

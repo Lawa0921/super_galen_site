@@ -51,8 +51,14 @@ export class EquipScene implements Scene {
   private dollCur = DOLL.indexOf('weapon');
   private bagCur = 0;
   private target: Slot | null = null;
-  /** Cells that just changed hands; they flash once. */
-  private flash: { slot: Slot; index: number } | null = null;
+  /** What just changed hands flashes once: the slot, and the bag cell only when a piece landed there. */
+  private flash: { slot: Slot; index: number | null } | null = null;
+  /** Why the last action was refused; cleared by the next action. */
+  private notice = '';
+  /** Member the head row was built for; it is rebuilt only when the member changes. */
+  private headId: CharacterId | null = null;
+  /** What each doll slot shows, so its children are rebuilt only when that changes. */
+  private dollKeys: string[] = [];
   private menuView: MenuView | null = null;
   private menuWin: HTMLElement | null = null;
   private sceneEl!: HTMLElement;
@@ -64,6 +70,7 @@ export class EquipScene implements Scene {
   private statsWin!: HTMLElement;
   private detail!: HTMLElement;
   private keyhint!: HTMLElement;
+  private noticeEl!: HTMLElement;
   private dollCells: HTMLElement[] = [];
   private bagCells: HTMLElement[] = [];
 
@@ -89,10 +96,11 @@ export class EquipScene implements Scene {
     this.statsWin = win('slx-equip-stats');
     this.detail = win('slx-item-detail');
     this.keyhint = el('p', { class: 'slx-keyhint' });
+    this.noticeEl = el('p', { class: 'slx-equip-notice', attrs: { 'aria-live': 'polite' } });
 
     const bg = this.ctx.art.has(art.scene('guild')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('guild'), alt: '' } })] : [];
     this.sceneEl = el('div', { class: 'slx-scene slx-equip-scene' }, [
-      ...bg, this.head, this.bagWin, this.dollWin, this.statsWin, this.detail, this.keyhint, backControl(() => this.onAction('cancel')),
+      ...bg, this.head, this.bagWin, this.dollWin, this.statsWin, this.detail, this.keyhint, this.noticeEl, backControl(() => this.onAction('cancel')),
     ]);
     root.append(this.sceneEl);
     this.render();
@@ -101,6 +109,7 @@ export class EquipScene implements Scene {
   exit(): void {}
 
   onAction(a: UiAction): void {
+    this.notice = '';
     if (this.menuView) {
       if (a === 'cancel' || a === 'menu') { this.ctx.sfx.cancel(); this.closeMenu(); return; }
       this.menuView.onAction(a);
@@ -133,7 +142,8 @@ export class EquipScene implements Scene {
       return true;
     };
     node.addEventListener('pointermove', () => { if (go()) this.render(); });
-    node.addEventListener('click', () => { if (node.closest('[inert]')) return; go(); this.pick(); });
+    // A touch tap has no hover first: go() moves the cursor, and pick() renders on every branch, refusals included.
+    node.addEventListener('click', () => { if (node.closest('[inert]')) return; this.notice = ''; go(); this.pick(); });
     return node;
   }
 
@@ -183,12 +193,24 @@ export class EquipScene implements Scene {
     const s = this.ctx.game.state;
     if (!it) {
       const t = this.target;
-      if (!t || !this.member.equip[t]) { this.ctx.sfx.error(); return; }
-      this.done(unequip(s, this.id, t), t, s.bag.length);
+      if (!t || !this.member.equip[t]) { this.refuse(''); return; }
+      this.takeOff(t);
       return;
     }
     const slot = this.slotFor(it);
-    this.done(equip(s, this.id, it.uid, slot), slot, this.bagCur);
+    this.done(equip(s, this.id, it.uid, slot), slot, this.member.equip[slot] ? this.bagCur : null);
+  }
+
+  /** Puts the gear in `slot` into the bag; a full bag refuses and says so. */
+  private takeOff(slot: Slot): void {
+    this.done(unequip(this.ctx.game.state, this.id, slot), slot, this.bag.length);
+  }
+
+  /** The error cue, the reason (if any) under the hint, and a render so a tap's cursor move shows. */
+  private refuse(reason: string): void {
+    this.ctx.sfx.error();
+    this.notice = reason;
+    this.render();
   }
 
   /** Where bag gear goes: the target when it fits there, else its default slot. */
@@ -196,8 +218,9 @@ export class EquipScene implements Scene {
     return this.target && fits(it, this.target) ? this.target : defaultSlotFor(this.member, it);
   }
 
-  private done(r: TownResult, slot: Slot, index: number): void {
-    if (!this.ctx.game.apply(r).ok) { this.ctx.sfx.error(); return; }
+  private done(r: TownResult, slot: Slot, index: number | null): void {
+    const res = this.ctx.game.apply(r);
+    if (!res.ok) { this.refuse(res.reason === 'full' ? T.ui2.equip.full : T.reasons[res.reason] ?? ''); return; }
     this.ctx.sfx.confirm();
     this.target = null;
     this.flash = null;
@@ -210,11 +233,17 @@ export class EquipScene implements Scene {
   private openMenu(): void {
     const t = T.ui2.equip.menu;
     const auto = this.ctx.game.state.autoJunk;
-    const it = this.bag[this.bagCur];
+    // The menu acts on the piece the detail shows: bag gear can be marked; worn gear can be taken off, not marked.
+    const wornSlot = this.focus === 'doll' ? DOLL[this.dollCur] : null;
+    const worn = wornSlot ? this.member.equip[wornSlot] : undefined;
+    const it = wornSlot ? undefined : this.bag[this.bagCur];
+    const junk: MenuItem = worn ? { id: 'junk', label: t.wornNoMark(gearLabel(worn)), disabled: true }
+      : { id: 'junk', label: !it ? t.markNone : it.junk ? t.unmark(gearLabel(it)) : t.mark(gearLabel(it)), disabled: !it };
     const items: MenuItem[] = [
       ...SORTS.map((k) => ({ id: `sort-${k}`, label: t.sort[k] })),
       ...AUTOS.map((k) => ({ id: `auto-${k}`, label: t.auto[k], right: k === auto ? t.current : '' })),
-      { id: 'junk', label: !it ? t.markNone : it.junk ? t.unmark(gearLabel(it)) : t.mark(gearLabel(it)), disabled: !it },
+      junk,
+      ...(worn ? [{ id: 'unequip', label: t.unequip(gearLabel(worn)) }] : []),
     ];
     this.menuView = new MenuView(new Menu(items), { pick: (m) => this.menuPick(m.id), moved: () => this.ctx.sfx.cursor() });
     this.menuWin = win('slx-bag-menu', [el('div', { class: 'slx-who', text: t.title }), this.menuView.el]);
@@ -233,11 +262,12 @@ export class EquipScene implements Scene {
   private menuPick(id: string): void {
     const s = this.ctx.game.state;
     const [kind, arg] = id.split('-') as [string, string];
-    const it = this.bag[this.bagCur];
+    if (kind === 'unequip') { this.closeMenu(); this.takeOff(DOLL[this.dollCur]); return; }
+    const it = this.focus === 'bag' ? this.bag[this.bagCur] : undefined;
     const r = kind === 'sort' ? sortBagIn(s, arg as (typeof SORTS)[number])
       : kind === 'auto' ? setAutoJunk(s, arg as AutoJunk)
         : it ? toggleJunk(s, it.uid) : null;
-    if (!r || !this.ctx.game.apply(r).ok) { this.ctx.sfx.error(); return; }
+    if (!r || !this.ctx.game.apply(r).ok) { this.refuse(''); return; }
     this.ctx.sfx.confirm();
     this.flash = null;
     this.closeMenu();
@@ -250,7 +280,8 @@ export class EquipScene implements Scene {
     for (const w of [this.bagWin, this.dollWin, this.statsWin, this.detail]) w.toggleAttribute('inert', menuOpen);
     this.bagWin.classList.toggle('slx-area-on', this.focus === 'bag');
     this.dollWin.classList.toggle('slx-area-on', this.focus === 'doll');
-    this.renderHead();
+    if (this.headId !== this.id) this.renderHead();
+    this.noticeEl.textContent = this.notice;
 
     this.bagCount.textContent = T.ui2.equip.bag(this.bag.length, BAG_SIZE);
     this.bagCells.forEach((c, i) => {
@@ -277,7 +308,13 @@ export class EquipScene implements Scene {
       if (i === this.dollCur) cls.push('slx-cur');
       if (this.flash?.slot === slot) cls.push('slx-flash');
       c.className = cls.join(' ');
-      c.textContent = it ? short(itemName(it)) : T.slot[slot];
+      // A filled slot keeps a small slot label over the name: position alone does not say which slot is which.
+      const key = it ? `${slot}|${itemName(it)}` : slot;
+      if (this.dollKeys[i] !== key) {
+        this.dollKeys[i] = key;
+        if (it) c.replaceChildren(el('span', { class: 'slx-slot-tag', text: T.slot[slot] }), el('span', { class: 'slx-slot-name', text: short(itemName(it)) }));
+        else c.textContent = T.slot[slot];
+      }
       c.setAttribute('aria-label', it ? T.ui2.equip.worn(T.slot[slot], gearLabel(it)) : T.slot[slot]);
       c.setAttribute('aria-selected', String(i === this.dollCur));
     });
@@ -287,6 +324,7 @@ export class EquipScene implements Scene {
   }
 
   private renderHead(): void {
+    this.headId = this.id;
     const def = CHARACTERS[this.id];
     const m = this.member;
     const face = this.ctx.art.has(art.portrait(this.id, 'normal')) ? [el('img', { class: 'slx-equip-face', attrs: { src: art.portrait(this.id, 'normal'), alt: '' } })] : [];
@@ -316,8 +354,10 @@ export class EquipScene implements Scene {
         ]),
       );
       if (it.junk) out.push(el('div', { class: 'slx-item-junk', text: T.gear.junk }));
+      // A power whose skill the viewed member lacks is dimmed and says so.
       out.push(el('div', { class: 'slx-item-lines' }, itemLines(it, m).map((l) =>
-        el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}`, text: l.text }))));
+        el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}${l.usable === false ? ' slx-line-off' : ''}`, text: l.text },
+          l.usable === false ? [el('span', { class: 'slx-line-note', text: T.gear.cannotUse })] : []))));
       if (onBag) {
         const slot = this.slotFor(it);
         const worn = m.equip[slot];

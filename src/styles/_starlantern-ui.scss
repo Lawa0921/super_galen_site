@@ -519,6 +519,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-bag-cell.slx-rarity-legendary, .slx-bag-cell.slx-rarity-unique, .slx-bag-cell.slx-rarity-set,
 .slx-doll-slot.slx-rarity-legendary, .slx-doll-slot.slx-rarity-unique, .slx-doll-slot.slx-rarity-set { text-shadow: 0 0 4px currentColor; }
 .slx-doll-slot.slx-slot-empty { color: $slx-dim; border-style: dashed; }
+.slx-doll-slot { align-content: center; }
+.slx-slot-tag { font-size: 10px; line-height: 10px; color: $slx-dim; text-shadow: none; }
 .slx-bag-cell:hover, .slx-doll-slot:hover { border-color: #c9a35a; }
 .slx-cur { z-index: 1; box-shadow: 0 0 0 1px rgba(232, 196, 106, 0.45); }
 .slx-area-on .slx-cur { box-shadow: 0 0 0 2px $slx-gold, 0 0 8px rgba(232, 196, 106, 0.6); animation: slx-cur-pulse 1.2s ease-in-out infinite; }
@@ -541,6 +543,9 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-line-power { color: #ff9a3c; }
 .slx-line-set { color: $slx-dim; }
 .slx-line-set.slx-line-on { color: #8fe08f; }
+.slx-line-off { opacity: 0.5; }
+.slx-line-note { display: block; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-equip-notice { position: absolute; left: 8px; bottom: 18px; margin: 0; font-size: 10px; line-height: 12px; color: #ff8a7a; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
 .slx-line-lore { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
 .slx-cmp-head { margin-bottom: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
 .slx-cmp-row { display: flex; justify-content: space-between; gap: 6px; line-height: 14px; }

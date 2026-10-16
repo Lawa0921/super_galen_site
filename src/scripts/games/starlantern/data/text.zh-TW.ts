@@ -36,6 +36,9 @@ export const T = {
     statName: STAT_NAME,
     affix: (key: AnyStat, value: number) => `${STAT_NAME[key]} +${value}${POINT_STATS.includes(key) ? '' : '%'}`,
     ilvl: (n: number) => `物品等級 ${n}`,
+    /** The base bonus line, set apart from rolled affixes on the same stat. */
+    implicit: (text: string) => `基礎 ${text}`,
+    cannotUse: '此角色無法發動',
     setBonus: (n: number, text: string) => `${n} 件：${text}`,
     setFour: '（同時擁有 2 件效果）',
     junk: '已標為垃圾',
@@ -146,6 +149,7 @@ export const T = {
       takeOff: (slot: string) => `Enter 卸下${slot}的裝備`,
       pickSlot: 'Enter 選這一格，再到背包挑裝備',
       emptyCell: '空格',
+      full: '背包已滿，無法卸下。先整理背包吧。',
       /** The number of a comparison row: `+11`, `-3%`. */
       delta: (key: AnyStat, v: number) => `${v > 0 ? '+' : ''}${Math.round(v * 10) / 10}${POINT_STATS.includes(key) ? '' : '%'}`,
       menu: {
@@ -156,6 +160,8 @@ export const T = {
         mark: (name: string) => `標記垃圾：${name}`,
         unmark: (name: string) => `取消標記：${name}`,
         markNone: '標記垃圾（先選一件）',
+        wornNoMark: (name: string) => `標記垃圾：${name}（穿著中）`,
+        unequip: (name: string) => `卸下：${name}`,
       },
       hint: '方向鍵 移動　Tab 切換　Enter 決定　C 選單　Q／E 換人　Esc 返回',
       hintTarget: 'Enter 穿上　選空格 卸下　Esc 取消目標',

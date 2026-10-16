@@ -49,8 +49,16 @@ describe('itemLines', () => {
     const it: ItemInstance = { ...plainItem('iron-sword', 1), rarity: 'rare', affixes: [{ key: 'crit', value: 5 }, { key: 'atk', value: 7 }, { key: 'evasion', value: 40 }] };
     const lines = itemLines(it).filter((l) => l.kind === 'affix').map((l) => l.text);
     expect(lines).toEqual(['暴擊率 +5%', '攻擊 +7', '閃避 +40']);
-    expect(itemLines(it)[0]).toEqual({ kind: 'implicit', text: '攻擊 +4' });
+    expect(itemLines(it)[0]).toEqual({ kind: 'implicit', text: '基礎 攻擊 +4' });   // 基礎 sets the base bonus apart from a same-stat affix
   });
+  it('a power line says whether the wearer can use it: only a member whose kit has the skill', () => {
+    const gloves = rollItem(mulberry32(5), { uid: 5, ilvl: 10, rarity: 'legendary', special: 'lg-bobby' });   // turret
+    const power = (m?: Member) => itemLines(gloves, m).find((l) => l.kind === 'power')!;
+    expect(power({ ...newMember('bobby'), equip: {} }).usable).toBe(true);
+    expect(power({ ...newMember('scarlet'), equip: {} }).usable).toBe(false);
+    expect(power().usable).toBeUndefined();                                // no wearer: nothing to judge
+  });
+
   it('shows the power and the lore of a legendary', () => {
     const lg = rollItem(mulberry32(3), { uid: 3, ilvl: 10, rarity: 'legendary', special: 'mire-whisper-gloves' });
     const lines = itemLines(lg);
