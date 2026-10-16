@@ -11,10 +11,10 @@ import { ITEMS, isItemId, type ItemId } from './items';
 import { LORE } from './lore';
 import { TILE_SIZE } from './constants';
 
-/** 分類：地域（地表生態區）、地層、洞窟與秘境、遺跡與建築、地城、密室 */
+/** 分類：地表區域（生態區）、地層、洞窟與秘境、遺跡與建築、地城、密室 */
 export type RegionCat = 'land' | 'depth' | 'cave' | 'site' | 'dungeon' | 'secret';
 export const CATEGORY_LABEL: Record<RegionCat, string> = {
-  land: '地域', depth: '地層', cave: '洞窟與秘境', site: '遺跡與建築', dungeon: '地城', secret: '密室',
+  land: '地表區域', depth: '地層', cave: '洞窟與秘境', site: '遺跡與建築', dungeon: '地下城', secret: '密室',
 };
 export const CATEGORY_ORDER: readonly RegionCat[] = ['land', 'depth', 'cave', 'site', 'dungeon', 'secret'];
 
@@ -26,6 +26,8 @@ export interface Region {
   name: string;
   /** 外接框（tile） */
   x: number; y: number; w: number; h: number;
+  /** 地圖上名字 / 圖示的錨點（tile）；x = -1 表示橫跨整個世界（跟著畫面置中） */
+  ax: number; ay: number;
   contains(x: number, y: number): boolean;
 }
 
@@ -106,7 +108,9 @@ export function buildRegions(src: RegionSource): Region[] {
   const { width: W, height: H, layers } = src;
   const nm = new Namer(src.seed);
   const out: Region[] = [];
-  const add = (r: Omit<Region, 'id'>): void => { out.push({ ...r, id: out.length }); };
+  const add = (r: Omit<Region, 'id' | 'ax' | 'ay'> & { ax?: number; ay?: number }): void => {
+    out.push({ ...r, ax: r.ax ?? Math.floor(r.x + r.w / 2), ay: r.ay ?? Math.floor(r.y + r.h / 2), id: out.length });
+  };
   const clampX = (x: number): number => Math.max(0, Math.min(W - 1, x));
   /** 欄範圍 [x0,x1)、y 介於 top(x) 與 bot(x) 之間 */
   const cols = (x0: number, x1: number, top: (x: number) => number, bot: (x: number) => number) => (x: number, y: number): boolean =>
@@ -138,18 +142,18 @@ export function buildRegions(src: RegionSource): Region[] {
     for (let x = l.x0; x < l.x1; x++) top = Math.min(top, src.surface[clampX(x)]);
     let bot = 0;
     for (let x = l.x0; x < l.x1; x++) bot = Math.max(bot, deep(x));
-    add({ cat: 'land', kind: l.kind, name: l.name, x: l.x0, y: 0, w: l.x1 - l.x0, h: bot, contains: cols(l.x0, l.x1, () => 0, deep) });
-    void top;
+    add({ cat: 'land', kind: l.kind, name: l.name, x: l.x0, y: 0, w: l.x1 - l.x0, h: bot, ay: Math.max(4, top - 14), contains: cols(l.x0, l.x1, () => 0, deep) });
   }
 
   // ── 地層 ──
   const minOf = (a: Int16Array): number => { let m = H; for (let i = 0; i < a.length; i++) m = Math.min(m, a[i]); return m; };
+  const maxOf = (a: Int16Array): number => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, a[i]); return m; };
   add({ cat: 'depth', kind: 'rock_layer', name: nm.fixed('地底岩層'), x: 0, y: minOf(layers.rock), w: W, h: H - minOf(layers.rock),
-    contains: cols(0, W, (x) => layers.rock[x], deep) });
+    ax: -1, ay: maxOf(layers.rock) + 12, contains: cols(0, W, (x) => layers.rock[x], deep) });
   add({ cat: 'depth', kind: 'cavern_layer', name: nm.fixed('洞穴層'), x: 0, y: minOf(layers.deep), w: W, h: H - minOf(layers.deep),
-    contains: cols(0, W, deep, (x) => layers.molten[x]) });
+    ax: -1, ay: maxOf(layers.deep) + 12, contains: cols(0, W, deep, (x) => layers.molten[x]) });
   add({ cat: 'depth', kind: 'molten', name: nm.fixed('熔岩深淵'), x: 0, y: minOf(layers.molten), w: W, h: H - minOf(layers.molten),
-    contains: cols(0, W, (x) => layers.molten[x], () => H) });
+    ax: -1, ay: maxOf(layers.molten) + 12, contains: cols(0, W, (x) => layers.molten[x], () => H) });
 
   // ── 結構 / 迷你生態區 / 洞窟 ──
   for (const s of src.structures) {

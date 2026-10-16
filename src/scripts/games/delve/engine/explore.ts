@@ -82,7 +82,14 @@ export class ExploredMap {
     if (this.bits[i >> 3] & m) return false;
     this.bits[i >> 3] |= m;
     this.count++;
-    this.dirty.add(Math.floor(y / CHUNK) * this.chunksX + Math.floor(x / CHUNK));
+    const cx = Math.floor(x / CHUNK), cy = Math.floor(y / CHUNK), ci = cy * this.chunksX + cx;
+    this.dirty.add(ci);
+    // 迷霧邊緣的抖動看 4 鄰：chunk 邊上的格揭露時，鄰 chunk 也要重畫
+    const lx = x - cx * CHUNK, ly = y - cy * CHUNK;
+    if (lx === 0 && cx > 0) this.dirty.add(ci - 1);
+    if (lx === CHUNK - 1 && x + 1 < this.width) this.dirty.add(ci + 1);
+    if (ly === 0 && cy > 0) this.dirty.add(ci - this.chunksX);
+    if (ly === CHUNK - 1 && y + 1 < this.height) this.dirty.add(ci + this.chunksX);
     return true;
   }
 

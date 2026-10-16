@@ -3,7 +3,7 @@ import type { DelveGame } from '../engine/game';
 import { ITEMS } from '../engine/items';
 import { HOTBAR_SIZE, INV_SIZE } from '../engine/constants';
 import { drawIcon, type Atlas } from './textures';
-import { countLabel, depthLabel, formatClock, recipeRows, regionLabel } from './model';
+import { countLabel, formatClock, recipeRows, statusText } from './model';
 import { CHEST_SLOTS } from '../engine/loot';
 
 /** 圖示以原生 16×16 烘進小 canvas，由 CSS 以整數倍（image-rendering: pixelated）放大 */
@@ -214,8 +214,14 @@ export class Hud {
     this.frame++;
     if (this.frame % 10 === 0) {
       const g = this.game, f = g.feetTile(), w = g.world;
-      const area = regionLabel(w.biomeAt(f.x), g.structures, f.x, f.y);
-      this.q('#delve-status').textContent = `${formatClock(g.time)} · ${area} · ${depthLabel(f.y, w.surfaceAt(f.x), w.cavernY, w.moltenY || Infinity)} · X ${f.x}`;
+      // 區域：已發現的最小地區名（結構 > 生態區）；沒有就是未知之地
+      const here = g.discovery.regionsAt(f.x, f.y).filter((r) => r.cat !== 'depth' && g.discovery.isFound(r.id)).sort((a, b) => a.w * a.h - b.w * b.h);
+      const area = here[0]?.name ?? g.discovery.regionsAt(f.x, f.y).find((r) => g.discovery.isFound(r.id))?.name ?? '未知之地';
+      const nav = g.navInfo();
+      this.q('#delve-status').textContent = statusText({
+        clock: formatClock(g.time), area, feetY: f.y, surface: w.surfaceAt(f.x), cavernY: w.cavernY, moltenY: w.moltenY || Infinity,
+        east: nav.east, depth: nav.depth,
+      });
     }
     if (this.frame % 30 === 0) this.refresh();
   }

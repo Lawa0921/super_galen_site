@@ -115,6 +115,56 @@ export function depthLabel(feetY: number, surfaceAtCol: number, cavernY: number,
   return `地下 ${d} 格`;
 }
 
+/** 沒有深度計時只顯示地層名稱 */
+export function layerName(feetY: number, surfaceAtCol: number, cavernY: number, moltenY = Infinity): string {
+  if (feetY + 1 - surfaceAtCol <= 0) return '地表';
+  if (feetY >= moltenY) return '熔岩深淵';
+  if (feetY >= cavernY) return '洞穴層';
+  return '地下';
+}
+
+/**
+ * HUD 狀態列：時間 · 區域 · 深度 · 東西座標。
+ * 深度：有深度計 → 「地下 N 格」（含地層），沒有 → 只有地層名稱；東西：有指南針才顯示（相對出生點）。
+ */
+export function statusText(o: {
+  clock: string; area: string; feetY: number; surface: number; cavernY: number; moltenY: number;
+  east: number | null; depth: number | null;
+}): string {
+  const parts = [o.clock, o.area, o.depth !== null ? depthLabel(o.feetY, o.surface, o.cavernY, o.moltenY) : layerName(o.feetY, o.surface, o.cavernY, o.moltenY)];
+  if (o.east !== null) parts.push(o.east > 0 ? `東 ${o.east}` : o.east < 0 ? `西 ${-o.east}` : '出生點');
+  return parts.join(' · ');
+}
+
+export interface BannerMsg { title: string; sub: string; }
+/** 發現橫幅：一次一則、每則 dur 秒，依序播放；佇列滿了丟掉最舊的 */
+export class BannerQueue {
+  private queue: BannerMsg[] = [];
+  private cur: BannerMsg | null = null;
+  private t = 0;
+  constructor(readonly dur = 2.8, readonly max = 4) {}
+  push(m: BannerMsg): void {
+    this.queue.push(m);
+    while (this.queue.length > this.max) this.queue.shift();
+  }
+  get pending(): number { return this.queue.length; }
+  /** 0..1：目前這則播到哪 */
+  get progress(): number { return this.cur ? Math.min(1, this.t / this.dur) : 0; }
+  tick(dt: number): BannerMsg | null {
+    if (this.cur) {
+      this.t += dt;
+      if (this.t >= this.dur) this.cur = null;
+    }
+    if (!this.cur && this.queue.length) { this.cur = this.queue.shift()!; this.t = 0; }
+    return this.cur;
+  }
+}
+
+export function percentLabel(f: number): string { return `${Math.round(Math.max(0, Math.min(1, f)) * 100)}%`; }
+export function distanceLabel(tiles: number): string {
+  return `${Math.round(tiles).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} 格`;
+}
+
 const BLOCKED: Record<BlockReason, string | null> = {
   reach: '太遠了，靠近一點',
   tier: '需要更好的鎬才挖得動',

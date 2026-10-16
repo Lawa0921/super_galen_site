@@ -85,13 +85,14 @@ export function attachControls(o: ControlsOptions): Controls {
     if (isTextTarget(e.target)) return;
     const a = keyAction(e.code);
     if (a === 'menu') { e.preventDefault(); o.onMenu(); return; }
-    if (o.isBlocked()) return;
-    if (a === 'inventory') { if (!e.repeat) o.onInventory(); e.preventDefault(); return; }
+    // 地圖 / 日誌：地圖開著（遊戲暫停）時也要能用同一個鍵關掉，由呼叫端決定要不要理
     if (a === 'map' || a === 'minimap' || a === 'journal') {
       if (!e.repeat) (a === 'map' ? o.onMap : a === 'minimap' ? o.onMinimap : o.onJournal)?.();
       e.preventDefault();
       return;
     }
+    if (o.isBlocked()) return;
+    if (a === 'inventory') { if (!e.repeat) o.onInventory(); e.preventDefault(); return; }
     if (a === 'zoomIn' || a === 'zoomOut') { if (!e.repeat) o.onZoom?.(a === 'zoomIn' ? 1 : -1); e.preventDefault(); return; }
     if (a === 'left' || a === 'right' || a === 'jump' || a === 'up' || a === 'down') {
       keys[a] = true; e.preventDefault(); applyMove(); return;
