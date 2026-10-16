@@ -291,6 +291,139 @@ test.describe('delve', () => {
     expect(errors).toEqual([]);
   });
 
+  /** tile 中心 → 畫面座標 */
+  const tileOnScreen = (page: Page, x: number, y: number): Promise<{ sx: number; sy: number }> => page.evaluate(([x, y]) => {
+    const r = window.__delveDebug!.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
+    return { sx: c.left + ((x + 0.5) * 16 - r.drawCam.x) * r.zoom, sy: c.top + ((y + 0.5) * 16 - r.drawCam.y) * r.zoom };
+  }, [x, y]);
+  const rightClick = async (page: Page, p: { sx: number; sy: number }): Promise<void> => {
+    await page.mouse.move(p.sx, p.sy);
+    await page.mouse.down({ button: 'right' }); await page.waitForTimeout(120); await page.mouse.up({ button: 'right' });
+    await page.waitForTimeout(80);
+  };
+
+  test('探索：M 開關全地圖；debug 傳送到小屋 → 發現橫幅 + 日誌「遺跡與建築」+1', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=alpha&autostart=1&fresh=1');
+    await waitGame(page);
+    await expect(page.locator('#delve-minimap')).toBeVisible();
+    await page.keyboard.press('KeyM');
+    await expect(page.locator('#delve-map')).toBeVisible();
+    expect(await page.evaluate(() => window.__delveDebug!.handle.paused)).toBe(true);
+    await expect(page.locator('#delve-map-info')).toContainText('標記 0/20');
+    await page.keyboard.press('KeyM');
+    await expect(page.locator('#delve-map')).toBeHidden();
+    // 日誌：先記下「遺跡與建築」的數字
+    await page.keyboard.press('KeyJ');
+    const count = page.locator('#delve-journal [data-cat="site"] .delve-j-count');
+    await expect(count).toBeVisible();
+    const before = Number(await count.getAttribute('data-count'));
+    await page.keyboard.press('KeyJ');
+    await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game;
+      const c = g.structures.find((s: { kind: string; chest?: unknown }) => s.kind === 'cabin' && s.chest);
+      g.teleport(c.chest.x + 1, c.chest.y);
+      d.handle.renderer.snapCamera();
+    });
+    await expect(page.locator('#delve-banner')).toHaveClass(/is-on/, { timeout: 5000 });
+    await expect(page.locator('#delve-banner-title')).toContainText('發現：');
+    await page.keyboard.press('KeyJ');
+    await expect.poll(async () => Number(await count.getAttribute('data-count'))).toBe(before + 1);
+    expect(errors).toEqual([]);
+  });
+
+  test('繩索：右鍵在天花板下放繩、再點繩往下延伸；按住 W 往上爬', async ({ page }) => {
+    await page.goto('/games/delve?seed=ropes&autostart=1&fresh=1');
+    await waitGame(page);
+    const at = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, w = g.world;
+      // 造一個 6 寬、8 高的空間，頂上一排石頭
+      const t = g.feetTile(), x0 = t.x + 2, top = t.y - 7;
+      for (let y = top; y < top + 8; y++) for (let x = x0; x < x0 + 6; x++) { w.setFg(x, y, y === top ? 3 : 0); w.setWall(x, y, 0); }
+      for (let x = x0; x < x0 + 6; x++) w.setFg(x, top + 8, 3);
+      g.teleport(x0 + 3, top + 7);
+      g.give('rope', 30);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'rope');
+      g.inventory.swap(i, 2); g.selectSlot(2);
+      d.handle.renderer.snapCamera();
+      return { x: x0 + 3, top };
+    });
+    await page.waitForTimeout(300);
+    const p = await tileOnScreen(page, at.x, at.top + 1);
+    for (let k = 0; k < 7; k++) await rightClick(page, p);
+    const n = await page.evaluate(([x, top]) => { const w = window.__delveDebug!.game.world; let n = 0; for (let y = top + 1; y < top + 8; y++) if (w.getFg(x, y) === 65) n++; return n; }, [at.x, at.top]);
+    expect(n).toBeGreaterThanOrEqual(7);
+    const y0 = await page.evaluate(() => window.__delveDebug!.game.player.y);
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(500);
+    const st = await page.evaluate(() => window.__delveDebug!.game.getState().player);
+    await page.keyboard.up('KeyW');
+    expect(st.climbing).toBe(true);
+    expect(st.y).toBeLessThan(y0 - 32);
+  });
+
+  test('床：放床、右鍵設定重生點（提示）；傳送石引導後傳回床邊', async ({ page }) => {
+    await page.goto('/games/delve?seed=beds&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    const b = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world, t = g.feetTile();
+      const x = t.x + 3, y = t.y;
+      for (let k = 0; k < 2; k++) { w.setFg(x + k, y, 0); w.setFg(x + k, y - 1, 0); w.setFg(x + k, y + 1, 3); }
+      g.give('bed', 1); g.give('recall_stone', 1);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'bed');
+      g.inventory.swap(i, 2); g.selectSlot(2);
+      return { x, y };
+    });
+    const p = await tileOnScreen(page, b.x, b.y);
+    await rightClick(page, p);
+    expect(await page.evaluate(([x, y]) => window.__delveDebug!.game.world.getFg(x, y), [b.x, b.y])).toBe(66);
+    await rightClick(page, p);
+    await expect(page.locator('#delve-toast')).toContainText('重生點');
+    expect(await page.evaluate(() => window.__delveDebug!.game.bed)).toEqual(b);
+    // 走遠 → 手持傳送石右鍵 → 引導後回到床頭那格
+    await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game;
+      const x = g.spawn.x - 40; g.teleport(x, g.world.surfaceAt(x) - 1); d.handle.renderer.snapCamera();
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'recall_stone');
+      g.inventory.swap(i, 3); g.selectSlot(3);
+    });
+    await page.waitForTimeout(200);
+    await page.mouse.move(640, 200);
+    await page.mouse.down({ button: 'right' }); await page.waitForTimeout(100); await page.mouse.up({ button: 'right' });
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.feetTile().x), { timeout: 5000 }).toBe(b.x);
+  });
+
+  test('存檔 → 重新整理 → 繼續：迷霧、地圖標記（點全地圖放的）、日誌都還在', async ({ page }) => {
+    await page.goto('/games/delve?seed=savemap&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      g.explored.revealDisc(g.spawn.x + 200, g.spawn.y + 50, 20);
+      g.discovery.readLore(4);
+    });
+    await page.keyboard.press('KeyM');
+    await expect(page.locator('#delve-map')).toBeVisible();
+    await page.mouse.click(400, 380);
+    await expect(page.locator('#delve-map-info')).toContainText('標記 1/20');
+    await page.keyboard.press('KeyM');
+    const before = await page.evaluate(async () => {
+      const d = window.__delveDebug!, g = d.game;
+      await d.save();
+      return { count: g.explored.count, markers: g.markers, disc: g.discovery.toJSON() };
+    });
+    expect(before.markers.length).toBe(1);
+    await page.goto('/games/delve');
+    await page.click('#delve-continue');
+    await waitGame(page);
+    const after = await page.evaluate(() => { const g = window.__delveDebug!.game; return { count: g.explored.count, markers: g.markers, lore: g.discovery.toJSON().lore, found: g.discovery.toJSON().regions }; });
+    expect(after.count).toBeGreaterThanOrEqual(before.count);
+    expect(after.markers).toEqual(before.markers);
+    expect(after.lore).toEqual(before.disc.lore);
+    for (const id of before.disc.regions) expect(after.found).toContain(id);
+  });
+
   test('遊戲廳卡片連到 /games/delve', async ({ page }) => {
     await page.goto('/games');
     const link = page.locator('a[href="/games/delve"]');
