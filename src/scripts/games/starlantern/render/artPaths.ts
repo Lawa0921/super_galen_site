@@ -103,6 +103,11 @@ export function allArtUrls(): string[] {
     'thorn-gauntlets', 'straw-sandals', 'bat-boots', 'copper-ring', 'star-ring',
     // plan 5a: rare materials have no icon yet
     'star-tear', 'king-scale',
+    // plan 5b: the skill-tree skills have no icon yet
+    'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
+    'spiral-spear', 'thousand-spear', 'sacred-sake', 'great-barrier', 'thunder-thrust', 'heaven-spear',
+    'shadow-flurry', 'smoke-bomb', 'fortune-strike', 'quickstep', 'venom-edge', 'phantom-step',
+    'heart-shot', 'starfall-arrow', 'snare-shot', 'hunters-mark', 'fire-arrow', 'storm-volley',
   ]);
   for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) {
     if (!NO_ICON_YET.has(id)) urls.push(art.icon(id));
