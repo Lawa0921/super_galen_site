@@ -12,7 +12,7 @@ describe('TownScene', () => {
     s.enter(root);
     expect(root.querySelector('.slx-place')!.textContent).toBe('邊境小鎮 露米亞');
     expect(root.querySelector('.slx-gold')!.textContent).toBe('150 G');
-    expect([...root.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual(['冒險者公會', '道具店', '旅館', '迷宮入口', '設定']);
+    expect([...root.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual(['冒險者公會', '道具店', '旅館', '傳送門廣場', '設定']);
     expect(root.querySelector('.slx-talk .slx-text')!.textContent!.length).toBeGreaterThan(0);
   });
 
@@ -73,5 +73,28 @@ describe('TownScene notices', () => {
     s.enter(root);
     expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('全滅……冒險背包遺失在迷宮裡，身上的金幣也少了四分之一。');
     expect(game.notice).toBeNull();
+  });
+
+  it('greets with what came home, mentions the lamp, and clears the haul', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'lamp';
+    game.banked = { items: { potion: 2, 'old-coin': 3 }, gold: 120, viaLamp: true };
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('歸還之燈的光芒把隊伍帶回了城鎮。帶回了：回復藥 ×2、古代銀幣 ×3、120 G。');
+    expect(game.banked).toBeNull();
+    expect(game.notice).toBeNull();
+  });
+
+  it('greets a walk home the same way, without the lamp', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 40, viaLamp: false };
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('平安回城。帶回了：40 G。');
+    expect(game.banked).toBeNull();
   });
 });

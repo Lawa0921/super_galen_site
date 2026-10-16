@@ -1,6 +1,7 @@
 import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
-import { el } from '../../ui/dom';
+import type { Game } from '../../engine/game';
+import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
@@ -8,6 +9,13 @@ import { textCps } from '../settings';
 import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'settings'] as const;
+
+/** 「平安回城。帶回了：回復藥 ×2、120 G。」 — the lamp's own words replace 平安回城 when it brought the party home. */
+export function bankedLine(b: NonNullable<Game['banked']>): string {
+  const parts = Object.entries(b.items).filter(([, n]) => n > 0).map(([id, n]) => `${itemName(id)} ×${n}`);
+  if (b.gold > 0) parts.push(T.gold(b.gold));
+  return T.ui2.banked(b.viaLamp, parts.join('、'));
+}
 
 export class TownScene implements Scene {
   private view!: MenuView;
@@ -37,8 +45,12 @@ export class TownScene implements Scene {
       this.talk.el,
     ]));
     const notice = this.ctx.game.notice;
+    const banked = this.ctx.game.banked;
     this.ctx.game.notice = null;
-    if (notice) void this.speak('', T.notices[notice]);
+    this.ctx.game.banked = null;
+    // A safe return (walking home, or the lamp, whose notice replaces 'banked') says what came home.
+    if (banked && (notice === 'banked' || notice === 'lamp')) void this.speak('', bankedLine(banked));
+    else if (notice) void this.speak('', T.notices[notice]);
     else void this.speak(t.place.split(' ').pop() ?? '', t.lines[Math.floor(this.ctx.game.rng() * t.lines.length)]);
   }
 

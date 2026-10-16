@@ -155,9 +155,11 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
     await key('Enter');
     await expect(page.locator('.slx-town')).toBeVisible(); await closeTalk();
-    await choose('.slx-town', '迷宮入口');
+    await choose('.slx-town', '傳送門廣場');
     await expect(page.locator('.slx-gate')).toBeVisible(); await closeTalk();
-    await key('Enter');                                    // 選擇樓層
+    await key('Enter');                                    // 選擇傳送門
+    await expect(page.locator('.slx-portal')).toHaveCount(3);
+    await key('Enter');                                    // 星燈迷宮・本道 (the first card)
     await key('Enter');                                    // 第 1 層
     await key('ArrowUp'); await key('Enter');              // 是
     await expect(page.locator('.slx-dungeon')).toBeVisible();
@@ -166,6 +168,7 @@ test.describe('starlantern', () => {
       await key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
       await closeTalk();
       if (await page.locator('.slx-confirm').isVisible()) await key('Enter');   // stepping on the return point asks; default 否
+      if (await page.locator('.slx-event').isVisible()) await key('Escape');    // an event room (or a full pack): leave it
     }
     await expect(page.locator('.slx-battle')).toBeVisible();
     for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {

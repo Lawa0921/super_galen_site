@@ -1,8 +1,10 @@
 import { CHARACTERS } from '../../data/characters';
+import { CONDITIONS } from '../../data/conditions';
 import { FLOORS } from '../../data/floors';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
-import type { Dir } from '../../engine/map';
+import { floorOf } from '../../engine/dungeon/run';
+import { step, type Dir } from '../../engine/map';
 import { rowOfCell } from '../../engine/formation';
 import { activeIds, statsOf } from '../../engine/party';
 import { useFieldItem } from '../../engine/town';
@@ -14,9 +16,12 @@ import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
+import { eventLayer, fullLayer, type EventHost } from './event';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
+const CONDITION_BANNER_MS = 2000;
+const FLASH_MS = 450;
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Labyrinth: map on the Pixi stage, party bar, floor name, encounter lamp, events as dialogue, a field menu. */
@@ -50,6 +55,7 @@ export class DungeonScene implements Scene {
     root.append(this.body);
     this.ctx.stage?.show('map');
     this.refresh();
+    if (this.ctx.from === 'gate') this.conditionBanner();
   }
 
   exit(): void {
@@ -94,7 +100,55 @@ export class DungeonScene implements Scene {
     this.syncInert();
   }
 
+  /** Fresh from the plaza: the run condition crosses the screen once (the corner badge keeps it on screen afterwards). */
+  private conditionBanner(): void {
+    const run = this.ctx.game.run;
+    if (!run) return;
+    const c = CONDITIONS[run.condition];
+    const b = el('div', { class: `slx-banner slx-banner-condition slx-cond-${c.id}`, attrs: { role: 'status' } }, [
+      el('span', { class: 'slx-banner-text', text: T.ui2.gate.banner(c.name) }),
+      el('span', { class: 'slx-banner-sub', text: c.desc }),
+    ]);
+    this.body.append(b);
+    setTimeout(() => b.remove(), this.ctx.fast ? 0 : CONDITION_BANNER_MS);
+  }
+
+  /** A short red flash over the whole screen (a trap went off). */
+  private flash(): void {
+    const f = el('div', { class: 'slx-flash-hurt', attrs: { 'aria-hidden': 'true' } });
+    this.body.append(f);
+    setTimeout(() => f.remove(), this.ctx.fast ? 0 : FLASH_MS);
+  }
+
+  /** The labyrinth's side of an event window. */
+  private host(dir?: Dir): EventHost {
+    return {
+      ctx: this.ctx,
+      push: (l) => this.push(l),
+      pop: () => this.pop(),
+      popAll: () => this.popAll(),
+      say: (t) => this.say(t),
+      refresh: () => this.refresh(),
+      fight: () => { if (dir) this.step(dir); },
+    };
+  }
+
   private move(dir: Dir): void {
+    const g = this.ctx.game;
+    // An elite is seen from the doorway: ask before stepping in, since stepping in starts the fight.
+    const ahead = g.phase === 'map' ? step(g.map(), g.pos, dir) : null;
+    if (ahead?.moved && ahead.tile === 'elite') {
+      g.facing = dir;
+      const c = floorOf(g.run!, g.floor).contents.find((x) => x.kind === 'elite' && x.at.x === ahead.pos.x && x.at.y === ahead.pos.y)
+        ?? { kind: 'elite' as const, at: ahead.pos, room: -1 };
+      this.ctx.sfx.cursor();
+      this.push(eventLayer(this.host(dir), c));
+      return;
+    }
+    this.step(dir);
+  }
+
+  private step(dir: Dir): void {
     const s = this.ctx.sfx;
     const r = this.ctx.game.move(dir);
     switch (r.kind) {
@@ -104,6 +158,16 @@ export class DungeonScene implements Scene {
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
       case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
       case 'chest': s.chest?.(); this.refresh(); this.say(T.map.chest(itemName(r.item), r.qty)); return;
+      case 'event': s.step?.(); this.refresh(); this.push(eventLayer(this.host(), r.content)); return;
+      case 'trap':
+        s.hit?.();
+        this.ctx.vibrate?.(60);
+        this.refresh();
+        this.flash();
+        this.say(r.effect === 'hurt' ? T.ui2.event.trap.hurt(r.amount) : T.ui2.event.trap.poison(r.amount, r.tp));
+        return;
+      case 'key': s.chest?.(); this.refresh(); this.say(T.ui2.event.key); return;
+      case 'full': s.error(); this.refresh(); this.push(fullLayer(this.host(), r)); return;
       case 'battle': case 'boss': {
         s.encounter?.();
         this.leaving = true;

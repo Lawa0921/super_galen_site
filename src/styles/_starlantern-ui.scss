@@ -123,9 +123,6 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 
 .slx-night { position: absolute; inset: 0; display: grid; place-items: center; background: #000; color: $slx-ink; font-size: 16px; animation: slx-night 1.2s ease-in-out both; }
 @keyframes slx-night { 0% { opacity: 0; } 25%, 75% { opacity: 1; } 100% { opacity: 0; } }
-.slx-floors { left: 150px; top: 56px; width: 260px; }
-.slx-floors .slx-opt { padding: 4px 6px 4px 16px; }
-.slx-floors .slx-ico { width: 64px; height: 36px; object-fit: cover; }
 @media (prefers-reduced-motion: reduce) { .slx-night { animation: none; } }
 
 // Interface fixes after the first facility screenshots
@@ -640,3 +637,57 @@ $slx-battle-left: 150px;
 @keyframes slx-banner-band { 0% { translate: -110% 0; } 18%, 82% { translate: 0 0; } 100% { translate: 110% 0; opacity: 0; } }
 @keyframes slx-banner-text { 0% { scale: 2.4; opacity: 0; } 22% { scale: 1; opacity: 1; } 82% { scale: 1; opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 60px 0; } }
 @media (prefers-reduced-motion: reduce) { .slx-banner::before, .slx-banner-text { animation: none; } }
+
+// Portal plaza (plan 4): three cards side by side. Approved art drops in through .slx-portal-art / .slx-portal-icon
+// (gate.ts portalArt); until then the cards are words only.
+.slx-layer.slx-portals { position: absolute; left: 12px; right: 12px; top: 48px; bottom: 6px; max-width: none; display: flex; flex-direction: column; gap: 4px; }
+.slx-portal-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.slx-portals .slx-portal { position: relative; display: flex; flex-direction: column; gap: 1px; overflow: hidden; cursor: pointer; transition: translate 0.12s ease-out; }
+.slx-portals .slx-portal-on { border-color: $slx-gold; box-shadow: inset 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.55); translate: 0 -3px; }
+.slx-portal-art { display: block; width: 100%; height: 64px; object-fit: cover; image-rendering: pixelated; margin-bottom: 2px; }
+.slx-portal-name { font-size: 16px; line-height: 20px; color: $slx-ink; }
+.slx-portal-on .slx-portal-name { color: $slx-gold; }
+.slx-portal-trait { display: flex; align-items: center; gap: 4px; }
+.slx-portal-icon { width: 16px; height: 16px; image-rendering: pixelated; }
+.slx-portal-affinity, .slx-portal-desc { color: $slx-dim; }
+// Names break at the 、 between them, not inside a name.
+.slx-portal-monsters { word-break: keep-all; overflow-wrap: anywhere; }
+.slx-portal-label { margin-top: 3px; color: $slx-dim; }
+.slx-portal-cond .slx-portal-label { margin: 0 6px 0 0; }
+.slx-portal-cond { margin-top: 3px; }
+.slx-portal-cond b { font-weight: normal; color: $slx-gold; }
+.slx-portal-gear { margin-top: 3px; color: #c9b8ff; }
+.slx-portal-depth { margin-top: auto; color: $slx-dim; text-align: right; }
+.slx-portal-hint { margin: 0; text-align: center; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
+.slx-layer.slx-depths { left: 50%; top: 84px; translate: -50% 0; min-width: 200px; max-width: none; }
+.slx-depths .slx-ico { width: 48px; height: 27px; object-fit: cover; }
+.slx-gate .slx-confirm p { white-space: pre-line; }
+@media (prefers-reduced-motion: reduce) { .slx-portals .slx-portal { transition: none; } }
+
+// Event rooms: one window over the labyrinth; the pad and lower windows are inert while it is open.
+.slx-layer.slx-event { left: 50%; top: 40px; translate: -50% 0; width: 300px; max-width: none; }
+.slx-event-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.slx-event-title { font-size: 14px; line-height: 18px; color: $slx-gold; }
+.slx-event-art { width: 32px; height: 32px; image-rendering: pixelated; }
+.slx-event p { margin: 0 0 4px; }
+.slx-event-gold { color: $slx-gold; text-align: right; }
+.slx-event-cost { color: #ff9a8a; }
+.slx-event-gain { color: #8fe08f; }
+.slx-event-ask { color: $slx-gold; }
+.slx-event .slx-menu { margin-top: 2px; }
+.slx-event-elite { border-color: #ff7a6b; }
+.slx-full { border-color: #ff7a6b; }
+.slx-full .slx-event-title { color: #ff9a8a; }
+
+// A trap: the screen flashes red once.
+.slx-flash-hurt { position: absolute; inset: 0; z-index: 40; pointer-events: none; background: rgba(220, 30, 20, 0.5); animation: slx-flash-hurt 0.45s ease-out forwards; }
+@keyframes slx-flash-hurt { from { opacity: 1; } to { opacity: 0; } }
+
+// The run condition crosses the screen on arrival from the plaza (same band as the battle banners, held longer).
+.slx-banner-condition { top: 124px; height: 80px; grid-template-rows: auto auto; align-content: center; gap: 2px; }
+.slx-banner-condition::before { animation: slx-banner-cond-band 2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+// Opacity is held at every stop: with only the last stop the eased fade would thin the band out almost at once.
+@keyframes slx-banner-cond-band { 0% { translate: -110% 0; opacity: 1; } 16%, 84% { translate: 0 0; opacity: 1; } 100% { translate: 110% 0; opacity: 0; } }
+.slx-banner-condition .slx-banner-text { font-size: 26px; line-height: 32px; letter-spacing: 4px; animation-duration: 2s; }
+.slx-banner-sub { position: relative; font-size: 12px; line-height: 16px; color: $slx-ink; skew: -10deg 0; text-shadow: 0 1px 0 #000, 0 0 3px #000; animation: slx-banner-text 2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+@media (prefers-reduced-motion: reduce) { .slx-flash-hurt { animation: none; opacity: 0.3; } .slx-banner-condition::before, .slx-banner-sub { animation: none; } }

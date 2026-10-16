@@ -32,10 +32,14 @@ export abstract class FacilityScene implements Scene {
   protected abstract commands(): MenuItem[];
   protected abstract onCommand(id: string): void;
 
+  /** The scene picture behind the facility; a subclass can offer newer art first. */
+  protected sceneArt(): string { return art.scene(this.id); }
+
   enter(root: HTMLElement): void {
     this.root = root;
     const f = T.ui2.facility[this.id];
-    const bg = this.ctx.art.has(art.scene(this.id)) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene(this.id), alt: '' } })] : [];
+    const scene = this.sceneArt();
+    const bg = this.ctx.art.has(scene) ? [el('img', { class: 'slx-bg', attrs: { src: scene, alt: '' } })] : [];
     if (this.ctx.art.has(art.npc(this.id, 'normal'))) this.npc = el('img', { class: 'slx-npc', attrs: { src: art.npc(this.id, 'normal'), alt: '' } });
     this.gold = win('slx-gold');
     this.cmdWin = win('slx-cmd');

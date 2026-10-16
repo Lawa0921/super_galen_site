@@ -115,7 +115,7 @@ export const T = {
     },
     town: {
       place: '邊境小鎮 露米亞',
-      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '迷宮入口', settings: '設定' },
+      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', settings: '設定' },
       lines: ['暮霧又濃了些。冒險者們，今天要往哪裡去？', '聽說迷宮深處有星燈的光。', '補給品記得在出發前備齊。'],
       soon: (name: string) => `${name}的新介面正在製作中，下一階段開放。`,
       toTitle: '要回到標題畫面嗎？上次在旅館存檔之後的進度不會保留。',
@@ -124,7 +124,7 @@ export const T = {
       guild: { place: '冒險者公會', npc: '安娜', greet: ['歡迎回來，要整頓隊伍嗎？', '今天也請平安歸來。'] },
       shop: { place: '道具店', npc: '歐里克', greet: ['歡迎光臨！看看有什麼需要的。', '剛進了新貨喔。'] },
       inn: { place: '月影旅館', npc: '瑪莎', greet: ['辛苦了，要休息一下嗎？', '熱湯已經準備好了。'] },
-      gate: { place: '迷宮入口', npc: '葛倫', greet: ['要下去了嗎？別逞強。', '裂口今天也在發光。'] },
+      gate: { place: '傳送門廣場', npc: '葛倫', greet: ['三座傳送門都開著。要去哪裡？別逞強。', '傳送門今天也在發光。'] },
       leave: '離開',
     },
     dungeon: {
@@ -136,7 +136,44 @@ export const T = {
       morning: '──隔天早上', saved: '已存檔。', saveFailed: '存檔失敗了……瀏覽器不允許儲存。',
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
     },
-    gate: { choose: '選擇樓層', floor: (n: number, name: string) => `第 ${n} 層 ${name}`, locked: '尚未到達', soon: '迷宮畫面在下一階段開放，敬請期待。', ask: (n: number, name: string) => `要前往第 ${n} 層 ${name} 嗎？` },
+    gate: {
+      choose: '選擇傳送門', floor: (n: number, name?: string) => (name ? `第 ${n} 層 ${name}` : `第 ${n} 層`),
+      depthTitle: '起始深度', deepest: (n: number) => `最深 第 ${n} 層`, notYet: '尚未進入',
+      element: (name: string | null) => (name ? `${name}屬性` : '無屬性'),
+      traits: { burn: '灼燒', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,
+      noTrait: '無特性', weak: (els: string) => `弱 ${els}`, resist: (els: string) => `抗 ${els}`,
+      monsters: '怪物', condition: '本次狀況', gear: '限定裝備：？？？',
+      ask: (region: string, n: number, cond: string) => `要從第 ${n} 層進入「${region}」嗎？\n本次狀況：${cond}`,
+      banner: (cond: string) => `本次狀況　${cond}`,
+      hint: '←→ 選擇　Enter／點擊 決定　Esc／右鍵 返回',
+    },
+    event: {
+      leave: '離開',
+      fountain: { title: '泉水', desc: '清澈的泉水湧出。喝下能回復全隊 HP 與 TP 的 30%，每趟只能喝一次。', drink: '飲用', done: '喝下泉水，全隊的 HP 與 TP 回復了。' },
+      merchant: { title: '流浪商人', desc: '「旅途中缺什麼嗎？價錢跟城裡一樣。」', gold: (n: number) => `持有 ${n} G` },
+      altar: {
+        title: '祭壇', accept: '接受', decline: '拒絕',
+        cost: (hpPct: number | undefined, gold: number | undefined) => `代價：${[hpPct ? `全隊 HP ${hpPct}%` : '', gold ? `${gold} G` : ''].filter(Boolean).join('、')}`,
+        gain: (stat: string, pct: number) => `收益：全隊${stat} +${pct}%（本趟有效）`,
+        done: '祭壇的光芒流進隊伍的身體。', refused: '祭壇沒有回應……付不起代價，或這項能力已經提升到上限。',
+      },
+      vault: {
+        title: '寶庫', locked: '厚重的寶庫上了鎖。需要這一層的鑰匙。', ready: '用這一層的鑰匙可以打開寶庫。', open: '開啟',
+        opened: (list: string) => `打開寶庫：${list}`,
+      },
+      elite: { title: '精英怪', desc: '房間中央有一隻強大的敵人（★）。', ask: '要挑戰嗎？', fight: '挑戰' },
+      trap: {
+        hurt: (n: number) => `陷阱！全隊受到 ${n} 點傷害。`,
+        poison: (n: number, tp: number) => `毒氣陷阱！全隊受到 ${n} 點傷害${tp > 0 ? `，TP 最多減少 ${tp}` : ''}。`,
+      },
+      key: '撿到了寶庫的鑰匙。',
+      full: {
+        title: '背包已滿', desc: (name: string, qty: number, need: number) => `${name} ×${qty} 放不下（還差重量 ${need}）。`, which: '要丟掉什麼來換？',
+        giveUp: '放棄', ask: (name: string, n: number) => `要丟掉 ${name} ×${n} 嗎？`,
+        freed: '空出位置了。再走上寶箱一次就能撿起來。', left: '先把它留在原地吧。',
+      },
+    },
+    banked: (viaLamp: boolean, list: string) => `${viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。'}帶回了：${list}。`,
     shop: {
       buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,
