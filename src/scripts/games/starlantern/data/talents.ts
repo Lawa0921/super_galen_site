@@ -20,7 +20,7 @@ export const KEYSTONES: Record<KeystoneId, { name: string; desc: string }> = {
   'crit-tp': { name: '心眼', desc: `暴擊時回復 ${V.critTp} TP` },
   'kill-tp': { name: '乘勝', desc: `擊倒敵人時回復 ${V.killTp} TP` },
   'weak-tp': { name: '看破', desc: `打中弱點時回復 ${V.weakTp} TP` },
-  'last-stand': { name: '背水', desc: `HP 低於 ${V.lastStandHp * 100}% 時，造成的傷害 +${V.lastStandPct}%` },
+  'last-stand': { name: '背水', desc: `HP 低於 ${Math.round(V.lastStandHp * 100)}% 時，造成的傷害 +${V.lastStandPct}%` },
   'opening-gauge': { name: '先機', desc: `戰鬥開始時絕技量表 +${V.openingGauge}` },
   regen: { name: '再生', desc: `每回合結束時回復最大 HP 的 ${V.regenPct}%` },
   'taunt-guard': { name: '堅守', desc: `挑釁中受到的傷害 −${V.tauntGuardPct}%` },
@@ -84,28 +84,38 @@ export const BOARDS = Object.fromEntries(CHARACTER_IDS.map((c) => {
 export const TALENT_NODES: Record<string, { node: TalentNode; owner: CharacterId }> = {};
 for (const c of CHARACTER_IDS) for (const node of BOARDS[c]) TALENT_NODES[node.id] = { node, owner: c };
 
-export type TalentBlocker = 'maxed' | 'adjacency' | 'gate' | 'keystone-cap';
+export type TalentBlocker = 'unknown' | 'maxed' | 'adjacency' | 'gate' | 'keystone-cap';
 
-/** Ranks held on the character's normal nodes (keystones excluded). */
+/** A node's rank: integers in [0, maxRank] only; anything else (string, NaN, negative, fractional, over max) counts as 0. */
+function rankOf(node: TalentNode, ranks: Record<string, number>): number {
+  const r = ranks[node.id];
+  return Number.isInteger(r) && r >= 0 && r <= node.maxRank ? r : 0;
+}
+
+/** Ranks held on the character's normal nodes (keystones excluded). Unknown ids and malformed values count as 0. */
 export function boardPoints(owner: CharacterId, ranks: Record<string, number>): number {
-  return BOARDS[owner].reduce((s, n) => s + (n.keystone ? 0 : ranks[n.id] ?? 0), 0);
+  return BOARDS[owner].reduce((s, n) => s + (n.keystone ? 0 : rankOf(n, ranks)), 0);
 }
 /** Keystones the character holds. */
 export function keystoneCount(owner: CharacterId, ranks: Record<string, number>): number {
-  return BOARDS[owner].filter((n) => n.keystone && (ranks[n.id] ?? 0) > 0).length;
+  return BOARDS[owner].filter((n) => n.keystone && rankOf(n, ranks) > 0).length;
 }
 
-/** Why one more rank on `nodeId` is refused, or null when allowed. Pure; spending the point is the caller's business. */
+/**
+ * Why one more rank on `nodeId` is refused, or null when allowed. Pure; spending the point is the caller's business.
+ * Task 11 replays saved builds from `{}` by calling this one point at a time, so saved ranks are never trusted directly.
+ */
 export function talentBlocker(owner: CharacterId, nodeId: string, ranks: Record<string, number>): TalentBlocker | null {
-  const node = TALENT_NODES[nodeId]?.node;
-  if (!node || TALENT_NODES[nodeId].owner !== owner) throw new Error(`unknown talent node ${nodeId} for ${owner}`);
-  if ((ranks[nodeId] ?? 0) >= node.maxRank) return 'maxed';
+  const entry = Object.hasOwn(TALENT_NODES, nodeId) ? TALENT_NODES[nodeId] : undefined;
+  if (!entry || entry.owner !== owner) return 'unknown';
+  const node = entry.node;
+  if (rankOf(node, ranks) >= node.maxRank) return 'maxed';
   if (node.keystone) {
     if (boardPoints(owner, ranks) < KEYSTONE_GATE) return 'gate';
     if (keystoneCount(owner, ranks) >= MAX_KEYSTONES) return 'keystone-cap';
     return null;
   }
   if (node.row === 0) return null;
-  const above = BOARDS[owner].some((n) => !n.keystone && n.row === node.row - 1 && Math.abs(n.col - node.col) <= 1 && (ranks[n.id] ?? 0) > 0);
+  const above = BOARDS[owner].some((n) => !n.keystone && n.row === node.row - 1 && Math.abs(n.col - node.col) <= 1 && rankOf(n, ranks) > 0);
   return above ? null : 'adjacency';
 }

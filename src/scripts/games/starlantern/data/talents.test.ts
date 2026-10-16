@@ -9,7 +9,7 @@ const V = KEYSTONE_VALUES;
 /** Normal nodes of noel's board, row-major, that satisfy adjacency when taken in this order. */
 const normals = (c: string) => BOARDS[c as 'noel'].filter((n) => !n.keystone);
 const ks = (c: string) => BOARDS[c as 'noel'].filter((n) => n.keystone);
-/** Ranks totalling `pts` on noel's board, filling rows from the bottom up so adjacency holds. */
+/** Ranks totalling `pts` on noel's board, filling normal nodes row-major from the top, so small totals stay in rows 0-1. */
 const fill = (c: string, pts: number): Record<string, number> => {
   const out: Record<string, number> = {};
   let left = pts;
@@ -28,7 +28,7 @@ describe('talent boards', () => {
       for (const n of ks(c)) expect(n.maxRank).toBe(1);
       for (const n of b) { expect(all.has(n.id)).toBe(false); all.add(n.id); expect(TALENT_NODES[n.id].owner).toBe(c); }
     }
-    expect(all.size).toBe(8 * 27);
+    expect(all.size).toBe(CHARACTER_IDS.length * 27);
   });
 
   it('every palette stat has a positive TALENT_PER value and appears 4 times on its board', () => {
@@ -51,7 +51,7 @@ describe('talent boards', () => {
     expect(KEYSTONES['crit-tp'].desc).toBe(`暴擊時回復 ${V.critTp} TP`);
     expect(KEYSTONES['kill-tp'].desc).toBe(`擊倒敵人時回復 ${V.killTp} TP`);
     expect(KEYSTONES['weak-tp'].desc).toBe(`打中弱點時回復 ${V.weakTp} TP`);
-    expect(KEYSTONES['last-stand'].desc).toBe(`HP 低於 ${V.lastStandHp * 100}% 時，造成的傷害 +${V.lastStandPct}%`);
+    expect(KEYSTONES['last-stand'].desc).toBe(`HP 低於 ${Math.round(V.lastStandHp * 100)}% 時，造成的傷害 +${V.lastStandPct}%`);
     expect(KEYSTONES['opening-gauge'].desc).toBe(`戰鬥開始時絕技量表 +${V.openingGauge}`);
     expect(KEYSTONES.regen.desc).toBe(`每回合結束時回復最大 HP 的 ${V.regenPct}%`);
     expect(KEYSTONES['taunt-guard'].desc).toBe(`挑釁中受到的傷害 −${V.tauntGuardPct}%`);
@@ -59,6 +59,7 @@ describe('talent boards', () => {
 
   it('normal nodes sit on the 6x4 grid and keystones on row 6', () => {
     expect(TEMPLATE).toHaveLength(BOARD_ROWS);
+    for (const line of TEMPLATE) expect(line).toHaveLength(BOARD_COLS);
     for (const c of CHARACTER_IDS) {
       const seen = new Set<string>();
       for (const n of normals(c)) {
@@ -83,6 +84,10 @@ describe('talent rules', () => {
     expect(talentBlocker('noel', 'noel-t10', { 'noel-t02': 1 })).toBe('adjacency'); // two columns away
     expect(talentBlocker('noel', 'noel-t21', { 'noel-t13': 1 })).toBe('adjacency');
     expect(talentBlocker('noel', 'noel-t00', { 'noel-t00': 5 })).toBe('maxed');
+    expect(talentBlocker('noel', 'noel-t13', { 'noel-t02': 1 })).toBeNull(); // right edge, diagonal
+    expect(talentBlocker('noel', 'noel-t13', { 'noel-t03': 1 })).toBeNull();
+    expect(talentBlocker('noel', 'noel-t13', { 'noel-t01': 1 })).toBe('adjacency');
+    expect(talentBlocker('noel', 'noel-t20', { 'noel-t00': 5 })).toBe('adjacency'); // rank only on row r-2
   });
 
   it('keystones ignore adjacency and open at exactly KEYSTONE_GATE board points', () => {
@@ -109,5 +114,22 @@ describe('talent rules', () => {
 
   it('other characters board points are not counted', () => {
     expect(talentBlocker('noel', 'noel-k0', fill('chizuru', 20))).toBe('gate');
+  });
+
+  it('unknown and foreign node ids are reported as unknown, not thrown', () => {
+    expect(talentBlocker('noel', 'nope', {})).toBe('unknown');
+    expect(talentBlocker('noel', 'chizuru-t00', {})).toBe('unknown');
+    expect(talentBlocker('noel', '__proto__', {})).toBe('unknown');
+  });
+
+  it('malformed ranks count as 0 (Task 11 replays builds from {} and never trusts saved ranks directly)', () => {
+    const bad = {
+      'noel-t00': '5', 'noel-t01': NaN, 'noel-t02': -3, 'noel-t03': 99, 'noel-t10': 1.5, 'ghost-node': 50,
+      'noel-k0': 'x', 'noel-k1': 7, 'noel-k2': -1,
+    } as unknown as Record<string, number>;
+    expect(boardPoints('noel', bad)).toBe(0);
+    expect(keystoneCount('noel', bad)).toBe(0);
+    expect(talentBlocker('noel', 'noel-k2', bad)).toBe('gate');
+    expect(boardPoints('noel', { 'noel-t00': 5, 'noel-t01': 2 })).toBe(7);
   });
 });
