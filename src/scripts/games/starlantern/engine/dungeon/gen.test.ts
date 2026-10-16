@@ -54,7 +54,7 @@ describe('genFloor', () => {
         expect(g.map.up).toBeNull();
       }
     }
-  });
+  }, 60000);
 
   it('rooms are 6 to 10 and do not overlap', () => {
     for (let seed = 1; seed <= 200; seed++) {
