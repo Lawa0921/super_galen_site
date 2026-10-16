@@ -2,911 +2,1238 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 把固定的 3 格商店裝備換成會掉落的 9 格「物品實體」：有主屬性與衍生屬性、六種稀有度、通用詞綴池、地區限定的傳說／獨特／套裝、掉落光柱，以及能比較增減的人形裝備頁與 60 格背包。
+**Goal:** 把固定的 3 格商店裝備，換成會掉落的 9 格「物品實體」。內容包括：
+- 主屬性與衍生屬性；
+- 六種稀有度，以及通用詞綴池；
+- 地區限定的傳說、獨特、套裝；
+- 依稀有度變化的掉落光柱；
+- 能比較增減的人形裝備頁，以及 60 格的背包。
 
 **Architecture:**
-- 屬性分兩層。舊的 7 項（`Stats`）照舊是底層，戰鬥公式仍讀它。新增主屬性與衍生屬性，合起來稱為 `Sheet`。
-  - 角色自然成長的主屬性不再換算，因為它已經算在舊 7 項裡了；只有裝備和套裝給的主屬性會換算成衍生屬性。這樣「沒穿裝備的隊伍」數值與現在完全相同，現有的平衡測試不會動。
-- 物品是純資料 `ItemInstance`。產生、掉落、背包都是純函式，放在 `engine/loot/`，輸入裡一定有 `Rng`。
-  - `Game` 只負責把結果放進冒險背包或倉庫，並在回城時入庫。
-- 介面沿用 ui2 的 `MenuView`、`win`、`STATUS_TABS`。物品沒有圖示美術（留給 5d），一律是文字，再用 SCSS 依稀有度上色、加外框。
+- **屬性分兩層。**
+  - 舊的 7 項（`Stats`）照舊是底層。
+  - 主屬性與衍生屬性合起來叫 `Sheet`。
+  - 角色自然成長的主屬性只顯示、不換算，因為它已經算在舊 7 項裡；只有裝備和套裝給的主屬性會換算。
+  - 所以沒穿裝備的隊伍，數值和現在完全一樣。
+- **物品是純資料 `ItemInstance`。**
+  - 產生、掉落、背包都是 `engine/loot/` 底下的純函式，輸入一定帶著 `Rng`。
+  - 迷宮裡和裝備有關的亂數，都從這趟潛入的種子另外衍生，不從 `game.rng` 拿。因此現有種子測試抽到的亂數序列不變。
+- **介面沿用 ui2 的 `MenuView`、`win`、`STATUS_TABS`。**
+  - 物品沒有圖示（圖示留給 5d），只顯示文字，再依稀有度加上 SCSS 的顏色與外框。
+- **相依關係：**
+  - `engine/levels.ts` 是最底層的模組。
+  - `engine/loot/*` 只依賴 levels、資料檔和 rng，不依賴 `party` 或 `scaling`。
+  - `party` 依賴 `loot/item`。
 
-**Tech Stack:** TypeScript、Vitest、Pixi.js 8（這次不動 Pixi）、DOM 介面加 SCSS、Web Audio 合成音效、Playwright e2e。
+**Tech Stack:** TypeScript、Vitest（happy-dom）、DOM 介面加上 SCSS、Web Audio 合成音效、Playwright e2e。
 
 **Spec:**
-- `docs/superpowers/specs/2026-10-16-starlantern-progression-design.md`（§3、§4、§5、§8 的裝備部分、§9）
-- 接點：`docs/superpowers/specs/2026-10-16-starlantern-roguelike-dungeon-design.md`（§3.1 重量、§3.3 寶箱／精英／寶庫、§3.7 深度等級）
+- `docs/superpowers/specs/2026-10-16-starlantern-progression-design.md`：§3、§4、§5、§8 的裝備部分、§9。
+- 接點：`docs/superpowers/specs/2026-10-16-starlantern-roguelike-dungeon-design.md`：§3.1、§3.3、§3.7。
+- 已核定的裁決：`.superpowers/sdd/2026-10-16-starlantern-plan5a-loot-core/progress.md`。
 
-> 路徑寫法：沒有以 `src/` 或 `tests/` 開頭的路徑，都在 `src/scripts/games/starlantern/` 底下。
+> 沒有以 `src/` 或 `tests/` 開頭的路徑，都在 `src/scripts/games/starlantern/` 底下。
 
 ## Global Constraints
-- 測試只能用 `npx vitest run <路徑>`。全套用 `npx vitest run --testTimeout=20000`。不可以用 `npm run test`，它是 watch 模式，會卡住。
-- e2e 用 `E2E_PORT=4352 npx playwright test tests/e2e/starlantern --project=chromium`。這個參數是篩選字串，會對到 `tests/e2e/starlantern.spec.ts`。不可以用 4321 埠。
-- 本專案沒有 prettier、eslint，也沒有 type-check 腳本，不要去跑。
-- SCSS 禁用 `!important`。禁止行內樣式，包括 JS 的 `element.style`。
-- 保留每個檔案原本的換行格式。例如 `engine/party.ts`、`engine/battle.ts`、`engine/state.ts` 是 CRLF；`ui2/scenes/equip.ts` 與 `src/styles/_starlantern-ui.scss` 是 LF；`data/text.zh-TW.ts` 混用兩種。改檔前先用 `git ls-files --eol <檔案>` 確認。
-- commit 一律寫出明確路徑，不可以用 `git add -A`。commit 訊息結尾加上 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。
-- 繁體中文文案一律放在 `data/text.zh-TW.ts`。
-- 所有隨機都用帶種子的 `Rng`（`engine/rng.ts` 的 `mulberry32`），不可以用 `Math.random`。音效的白噪音是唯一例外，因為現有寫法就是這樣。
-- `engine/balance.test.ts` 的門檻一律不可放寬。
-- 美術：不可以做假圖示，不可以用 CSS 形狀畫物品。5d 之前，物品顯示為文字，加上 SCSS 的稀有度顏色與外框。
-  - 新的底材 id 與稀有素材 id 都要加進 `render/artPaths.ts` 的 `NO_ICON_YET`。因為 `allArtUrls()` 的數量（`artPaths.test.ts` 寫的是 219）和 registry 比對都不可以改變。
-- 存檔版本從 3 變成 4，舊檔直接重置（使用者已同意）。
+- **單元測試**
+  - 只能用 `npx vitest run <路徑>`；全套用 `npx vitest run --testTimeout=20000`。
+  - 不可以用 `npm run test`，它是 watch 模式，會卡住。
+- **e2e**
+  - 用 `E2E_PORT=4352 npx playwright test tests/e2e/starlantern --project=chromium`。
+  - 這個參數是篩選字串，會對到 `tests/e2e/starlantern.spec.ts`。
+  - 不可以用 4321 埠。
+- **工具**：本專案沒有 prettier、eslint，也沒有 type-check 腳本，不要去跑。
+- **SCSS**：禁止 `!important`；禁止行內樣式，包括 JS 的 `element.style`。
+- **換行**：保留每個檔案原本的換行格式（CRLF、LF 或混用）。改檔前先用 `git ls-files --eol <檔案>` 確認。
+- **commit**
+  - 一律寫出完整路徑，不可以用 `git add -A`。
+  - 訊息結尾加上 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`。
+- **文案**：繁體中文一律放在 `data/text.zh-TW.ts`。
+- **亂數**：一律用帶種子的 `Rng`，也就是 `engine/rng.ts` 的 `mulberry32`。
+  - 唯一的例外是 SoundManager 現有的白噪音。
+- **平衡**：`engine/balance.test.ts` 的門檻一律不可以放寬。
+- **美術**
+  - 不可以做假圖示，也不可以用 CSS 形狀畫物品。
+  - 光柱是程式效果，已經裁定通過。
+  - 新的底材 id 與稀有素材 id，都要加進 `render/artPaths.ts` 裡 `allArtUrls()` 的區域變數 `NO_ICON_YET`，直接在原地編輯。這樣 `artPaths.test.ts` 的 219 與 registry 比對都不會變。
+- **存檔**：版本從 3 變成 4，舊檔直接重置。
+- **測試修改規則**
+  - 某個任務會弄壞的每一個測試檔，都要列在該任務的 Files 裡，並寫明怎麼改。
+  - 改動共用資料形狀的任務，驗證步驟一律跑全套。
+  - 因為亂數序列改變而受影響的測試，改成斷言行為，不可以寫死新的數字。
+- **擲值公式**（全計畫只寫在這裡一次）
+  - 數值 = `round(lo + (hi − lo) × f)`，最少是 1。
+  - `f = floor + (1 − floor) × u`，其中 `u = rng()`，`floor = ROLL_FLOOR[rarity]`。
+  - `[lo, hi] = affixRange(key, ilvl)`，這個範圍已經乘過 `AFFIX_SCALE`。
+  - 所有稀有度都用這條公式，包括獨特和套裝。
 
 ## Review Focus
-1. **背包或負重已滿時，裝備絕不能悄悄消失**：撿不起來就留在原地並回報 `full`；倉庫滿 60 格時，卸下裝備或購買都要被拒絕。由 Task 4 與 Task 6 測試。
-2. **極深的樓層**：第 50 層的物品等級約 198。詞綴值、`sheetOf` 和戰鬥傷害都必須是有限數字，百分比屬性不可超過上限，減傷不超過 75%，閃避不超過 50%。由 Task 1、Task 2、Task 5 測試。
-3. **兩個戒指格**：同一個 `uid` 不能同時戴在 ring1 與 ring2；兩格都滿時，要換掉玩家指定的那一格；同一件套裝部件出現兩次，只算 1 件。由 Task 4 測試。
-4. **全滅與重複頭目**：全滅時，這趟撿到的裝備要全部失去，而且不能記進圖鑑；「重複打倒」依「地區＋深度」分開計算，而且存檔重讀後仍然記得。由 Task 6 測試。
-5. **靜音**：音量設為 0 時，掉落音效不可以建立任何音訊節點，但光柱照常顯示；`fast` 模式下光柱不留計時器。由 Task 11 測試。
+1. **背包或負重滿了，裝備絕不能悄悄消失。**
+   - 撿不起來時，留在原地並回報 `full`。
+   - 倉庫滿 60 格時，卸下裝備和購買都要被拒絕。
+   - 測試在 Task 4、Task 5、Task 10。
+2. **極深的樓層。** 第 50 層的頭目掉落，物品等級是 202。
+   - 詞綴、`sheetOf`、傷害都必須是有限數字。
+   - 百分比屬性不能超過上限；減傷最多 75%，閃避最多 50%。
+   - 測試在 Task 1、Task 3、Task 7。
+3. **兩個戒指格。**
+   - 同一個 `uid` 不能戴兩次。
+   - 兩格都滿時，換掉玩家指定的那一格。
+   - 同一件套裝部件戴兩件，只算 1 件。
+   - 測試在 Task 4。
+4. **全滅與重複頭目。**
+   - 全滅時，這趟撿到的裝備全部失去，也不記入圖鑑。
+   - 重複頭目依「地區＋深度」分開計算。
+   - 存檔後重讀，頭目擊殺次數仍在。
+   - 測試在 Task 5 與 Task 10。
+5. **靜音。**
+   - 音量是 0 時，不建立任何音訊節點，但光柱照樣出現。
+   - fast 模式下光柱不留計時器。
+   - 測試在 Task 17。
 
 ---
 
 ## File Structure
-- `engine/types.ts`：新增屬性鍵、稀有度、9 個欄位、`ItemInstance`，並改 `Member.equip`。
-- `engine/stats.ts`（新）：屬性分類、主屬性換算、上限、收益遞減公式，以及敵人依深度得到的暴擊、閃避和元素抗性。
-- `data/equipment.ts`：25 件普通底材。原本的 15 件改到新的欄位，另外新增 10 件。
-- `data/gear.ts`（新）：稀有度、詞綴池、欄位重量、傳說特效、獨特與套裝。
-- `engine/loot/item.ts`（新）：物品等級、產生物品、物品給的數值、賣價、名稱。
-- `engine/loot/drops.ts`（新）：稀有度權重、各來源的掉落、地區限定、頭目保底、稀有素材。
+- `engine/levels.ts`（新）：`depthLevel` 等純粹的等級計算，是最底層的模組。
+- `engine/stats.ts`（新）：屬性分類、主屬性換算、上限、收益遞減、敵人的深度屬性與補償。
+- `data/equipment.ts`：25 件普通底材。
+- `data/gear.ts`（新）：稀有度、詞綴池、欄位重量、特效、獨特與套裝，以及查名稱的小工具。
+- `engine/loot/item.ts`（新）：物品等級、擲物品、底材加成、物品數值、名稱、重量、賣價。
+- `engine/loot/drops.ts`（新）：稀有度權重、各種來源的掉落、地區限定、頭目、稀有素材、迷宮裡的掉落亂數。
 - `engine/loot/bag.ts`（新）：背包上限、排序、自動標記。
-- `engine/party.ts`：`statSources` 和 `sheetOf` 改讀物品實體，並計入套裝與主屬性換算。
-- `engine/combatant.ts`、`engine/battle.ts`、`engine/skills.ts`：衍生屬性進入戰鬥，以及傳說特效。
-- `engine/scaling.ts`：敵人依深度得到的衍生屬性，並補償難度。
+- `engine/party.ts`：屬性來源改讀物品實體、套裝、特效、戒指的預設格。
 - `engine/state.ts`、`engine/save.ts`、`engine/town.ts`：存檔 v4、倉庫、穿脫、買賣。
-- `engine/game.ts`、`engine/dungeon/run.ts`、`engine/events.ts`、`data/weights.ts`、`data/materials.ts`：掉落進冒險背包、重量、精英與寶庫。
-- `engine/compare.ts`（新）：換裝增減與物品說明行。
-- `ui2/scenes/equip.ts`、`ui2/scenes/statusTabs.ts`、`ui2/scenes/shop.ts`、`ui2/scenes/gate.ts`、`ui2/lootFx.ts`（新）、`audio/SoundManager.ts`、`ui2/scene.ts`。
-- `data/text.zh-TW.ts`、`src/styles/_starlantern-ui.scss`、`render/artPaths.ts`。
-- `engine/sim.ts`、`engine/balance.test.ts`、`tests/e2e/starlantern.spec.ts`。
+- `engine/combatant.ts`、`engine/battle.ts`、`engine/skills.ts`、`engine/scaling.ts`：戰鬥中的衍生屬性、敵人的深度屬性、特效。
+- `engine/game.ts`、`engine/dungeon/run.ts`、`engine/events.ts`、`data/weights.ts`、`data/materials.ts`：掉落、重量、精英、寶庫、頭目。
+- `engine/compare.ts`（新）：換裝比較與物品說明。
+- UI：
+  - `ui2/scenes/equip.ts`、`statusTabs.ts`、`status.ts`、`shop.ts`、`gate.ts`、`battle.ts`、`dungeon.ts`、`event.ts`；
+  - `ui2/lootFx.ts`（新）、`ui2/input.ts`、`ui2/scene.ts`、`audio/SoundManager.ts`；
+  - `src/styles/_starlantern-ui.scss`。
+- 平衡與 e2e：`engine/sim.ts`、`engine/balance.test.ts`、`tests/e2e/starlantern.spec.ts`。
 
 ---
 
-### Task 1: 屬性模型（主屬性、衍生屬性、收益遞減、敵人的深度屬性）
+### Task 1: 等級模組與屬性模型
 
 **Files:**
-- Create: `engine/stats.ts`, `engine/stats.test.ts`
-- Modify: `engine/types.ts`, `data/characters.ts`
+- Create：`engine/levels.ts`、`engine/stats.ts`、`engine/stats.test.ts`
+- Modify：
+  - `engine/scaling.ts`：把 `depthLevel` 搬到 levels.ts，這裡改成 `export { depthLevel } from './levels'`。
+  - `engine/types.ts`
+  - `data/characters.ts`
+  - `data/data.test.ts`：新增 affinity 的測試。
 
 **Interfaces:**
+- Produces（`engine/levels.ts`）：
+  - `export const depthLevel = (depth: number): number => 2 + 4 * (depth - 1)`
+  - 只 import `./types`，這樣它就是最底層，不會形成循環依賴。
 - Produces（`engine/types.ts`）：
   - `export type PrimaryKey = 'str' | 'int' | 'agi' | 'wil'`
-  - `export type SecondaryKey = 'crit' | 'critDmg' | 'vuln' | 'eliteDmg' | 'multi' | 'armor' | 'evasion' | 'block' | 'meleeDR' | 'rangedDR' | 'fireRes' | 'iceRes' | 'thunderRes' | 'fireDmg' | 'iceDmg' | 'thunderDmg' | 'poisonRes' | 'sleepRes' | 'tpRegen' | 'tpCost' | 'gauge' | 'heal' | 'goldFind' | 'matFind' | 'expBonus'`
-  - `export type AnyStat = StatKey | PrimaryKey | SecondaryKey`
+  - `export type SecondaryKey`，一共 25 個鍵：
+    - 攻擊：`crit`、`critDmg`、`vuln`、`eliteDmg`、`multi`
+    - 防禦：`armor`、`evasion`、`block`、`meleeDR`、`rangedDR`
+    - 元素：`fireRes`、`iceRes`、`thunderRes`、`fireDmg`、`iceDmg`、`thunderDmg`、`poisonRes`、`sleepRes`
+    - 資源：`tpRegen`、`tpCost`、`gauge`、`heal`
+    - 其他：`goldFind`、`matFind`、`expBonus`
+  - `export type AnyStat = StatKey | PrimaryKey | SecondaryKey`，一共 36 個鍵。
   - `export type Sheet = Record<AnyStat, number>`
-  - `CharacterDef` 新增 `affinity: PrimaryKey`
-  - `EnemyDef` 新增 `sec?: Partial<Record<SecondaryKey, number>>`
-  - 百分比屬性一律存成「百分點」，例如暴擊 5 代表 5%。`armor`、`evasion`、`tpRegen` 是點數，不是百分比。
+  - `CharacterDef` 新增 `affinity: PrimaryKey`。
+  - `EnemyDef` 新增 `sec?: Partial<Record<SecondaryKey, number>>`。
+  - 百分比屬性存成百分點；`armor`、`evasion`、`tpRegen` 存成點數。
 - Produces（`engine/stats.ts`）：
-  - `export const PRIMARY_KEYS: PrimaryKey[]`、`export const SECONDARY_KEYS: SecondaryKey[]`
-  - `export type StatCategory = 'primary' | 'attack' | 'defense' | 'element' | 'resource' | 'other'`
-  - `export const STAT_CATEGORIES: { id: StatCategory; keys: AnyStat[] }[]`，內容如下：
+  - `PRIMARY_KEYS`、`SECONDARY_KEYS`
+  - `type StatCategory = 'primary' | 'attack' | 'defense' | 'element' | 'resource' | 'other'`
+  - `STAT_CATEGORIES: { id: StatCategory; keys: AnyStat[] }[]`
     - primary：str、int、agi、wil
     - attack：atk、mag、crit、critDmg、vuln、eliteDmg、multi、spd
     - defense：hp、def、res、armor、evasion、block、meleeDR、rangedDR
-    - element：fireRes、iceRes、thunderRes、fireDmg、iceDmg、thunderDmg、poisonRes、sleepRes
+    - element：三種元素的抗性與傷害、poisonRes、sleepRes
     - resource：tp、tpRegen、tpCost、gauge、heal
     - other：goldFind、matFind、expBonus
-  - `export function emptySheet(): Sheet`：全部是 0。
-  - `export function naturalPrimary(def: CharacterDef, level: number): Record<PrimaryKey, number>`
-  - `export function convertPrimary(p: Partial<Record<PrimaryKey, number>>, affinity: PrimaryKey): Partial<Sheet>`
-  - `export const PARTY_BASE: Partial<Record<SecondaryKey, number>> = { critDmg: 50 }`：暴擊時的傷害是 ×1.5。
-  - `export const CAPS: Partial<Record<SecondaryKey, number>>`
-  - `export function capSheet(s: Sheet): Sheet`
-  - `export function armorReduction(armor: number, attackerLevel: number): number`：回傳 0 到 0.75。
-  - `export function evadeChance(rating: number, attackerLevel: number): number`：回傳 0 到 0.5。
-  - `export function enemySecondary(depthLv: number, homeLv: number, trait: RegionDef['trait']): Partial<Record<SecondaryKey, number>>`
-  - `export function compensation(sec: Partial<Record<SecondaryKey, number>>): Partial<Record<StatKey, number>>`：回傳能力值的倍率。
+  - `emptySheet(): Sheet`
+  - `naturalPrimary(def: CharacterDef, level: number): Record<PrimaryKey, number>`
+  - `convertPrimary(p: Partial<Record<PrimaryKey, number>>, affinity: PrimaryKey): Partial<Sheet>`
+  - `PARTY_BASE = { critDmg: 50 }`
+  - `CAPS: Partial<Record<SecondaryKey, number>>`、`capSheet(s: Sheet): Sheet`
+  - `armorReduction(armor: number, attackerLevel: number): number`
+  - `evadeChance(rating: number, attackerLevel: number): number`
+  - `enemySecondary(depthLv: number, homeLv: number, trait: RegionDef['trait']): Partial<Record<SecondaryKey, number>>`
+  - `compensation(sec: Partial<Record<SecondaryKey, number>>): Partial<Record<StatKey, number>>`
 
-**本任務固定的數值（全部是 (implementer's call → fixed here)）**
-- **自然主屬性**：直接取舊屬性的基礎加成長。
-  - 力量 = atk；智力 = mag；敏捷 = spd；意志 = round(tp ÷ 2)。
-  - 這些自然值不換算，只用來顯示，以及計算負重上限。
-- **主屬性換算**（每 1 點；角色的 `affinity` 那一項 ×1.5）：
+**本任務固定的數值**（以下都是 (implementer's call → fixed here)）：
+- **自然主屬性**（只顯示，也用來算負重上限）：
+  - 力量 = 基礎加成長的 atk
+  - 智力 = mag
+  - 敏捷 = spd
+  - 意志 = round(tp ÷ 2)
+- **換算**（每 1 點；角色的 affinity 那一項乘 1.5）：
   - 力量：atk +1、armor +2
-  - 智力：mag +1；火、冰、雷抗性各 +0.5
+  - 智力：mag +1，三種元素抗性各 +0.5
   - 敏捷：crit +0.2、spd +0.5
   - 意志：tp +1、heal +1
 - **affinity**：noel int、chizuru str、liz agi、sylvie agi、scarlet str、selene wil、safira agi、bobby int。
-- **上限 `CAPS`**：
-  - crit 60、multi 50、block 50
-  - meleeDR 50、rangedDR 50
-  - 火、冰、雷抗性 75
+- **上限 CAPS**：
+  - crit 60、multi 50、block 50、meleeDR 50、rangedDR 50
+  - 三種元素抗性各 75
   - poisonRes 80、sleepRes 80
-  - tpCost 50、goldFind 100、matFind 100、expBonus 100
-- **收益遞減**（照 spec §3 的公式，敵人等級用深度等級）：
+  - tpCost 50
+  - goldFind、matFind、expBonus 各 100
+- **收益遞減**：
   - 減傷 = armor ÷ (armor + 50 × 攻擊者等級)，最多 0.75。
   - 閃避 = evasion ÷ (evasion + 50 × 攻擊者等級)，最多 0.5。
-- **敵人的衍生屬性**：令 `over = max(0, depthLv − homeLv)`。
+- **敵人的深度屬性**：令 `over = max(0, depthLv − homeLv)`。
   - crit = min(15, 0.25 × over)
-  - evasion = min(12, 0.2 × over)：敵人的閃避直接就是百分比，不經過遞減公式。
-  - 火、冰、雷抗性 = min(30, 0.5 × over)
-  - 地區 `evasive`（暗影）再加 crit +5、evasion +5。
-- **難度補償 `compensation`**：讓同一深度等級、沒穿裝備的隊伍，勝率和現在一樣。破解這些新屬性要靠裝備。
-  - hp × (1 − evasion ÷ 100) × (1 − 0.3 × 元素抗性 ÷ 100)
-  - atk 與 mag ÷ (1 + crit ÷ 100 × 0.5)
+  - evasion = min(12, 0.2 × over)，這是直接的百分比。
+  - 三種元素抗性 = min(30, 0.5 × over)
+  - trait 是 `evasive` 時，crit 和 evasion 再各加 5。
+- **補償 `compensation`**：
+  - hp 乘以 (1 − evasion ÷ 100) × (1 − 0.3 × 元素抗性 ÷ 100)。
+  - atk 與 mag 除以 (1 + crit ÷ 100 × 0.5)。
 
-- [ ] **Step 1: 寫失敗的測試** `engine/stats.test.ts`
-  - `natural primaries mirror the old stats and do not convert`：scarlet Lv1 的 `naturalPrimary` 是 `{ str: 13, int: 6, agi: 7, wil: 7 }`。
-  - `primaries from gear convert, with the affinity at 1.5x`：
-    - `convertPrimary({ str: 10 }, 'str')` 等於 `{ atk: 15, armor: 30 }`；
-    - `convertPrimary({ str: 10 }, 'int')` 等於 `{ atk: 10, armor: 20 }`。
-  - `armor and evasion have diminishing returns and caps`：
-    - `armorReduction(100, 2)` 等於 0.5；
-    - `armorReduction(1e9, 2)` 等於 0.75；
-    - `evadeChance(0, 10)` 等於 0；
-    - 對 armor 0、100、200、400，數值單調遞增，但每次的增量越來越小。
-  - `enemy crit, evasion and resistances grow with depth level and are zero at home`：
-    - `enemySecondary(2, 2, null)` 等於 `{}`，或全部是 0；
-    - `enemySecondary(38, 2, null).crit` 等於 9；
-    - `enemySecondary(500, 2, 'evasive').crit` 等於 20（上限 15，加暗影的 5）。
-  - Review Focus 2：`caps hold and nothing is NaN at depth level 198`：用 1e6 的數值餵 `capSheet`，每個鍵都是有限數字，而且不超過上限。
-  - 在 `data/data.test.ts` 加一項：`every character has an affinity`。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/engine/stats.test.ts`
-  - Expected：FAIL，原因是找不到 `./stats`。
-- [ ] **Step 3: 實作 `engine/stats.ts`，並在 `data/characters.ts` 補上 `affinity`**
-- [ ] **Step 4: 執行測試，確認通過**
-  - 同一個指令，外加 `npx vitest run src/scripts/games/starlantern/data`。
+- [ ] **Step 1: 寫失敗的測試**
+  - `stats.test.ts`：
+    - `natural primaries mirror the old stats and do not convert`：scarlet Lv1 是 `{ str: 13, int: 6, agi: 7, wil: 7 }`。
+    - `primaries from gear convert, the affinity at 1.5x`：
+      - `convertPrimary({ str: 10 }, 'str')` 等於 `{ atk: 15, armor: 30 }`；
+      - affinity 換成 `'int'` 時，等於 `{ atk: 10, armor: 20 }`。
+    - `armor and evasion have diminishing returns and caps`：
+      - `armorReduction(100, 2)` 等於 0.5；
+      - `armorReduction(1e9, 2)` 等於 0.75；
+      - armor 依序是 0、100、200、400 時，數值單調上升，而且每一步增加的量越來越少。
+    - `enemy secondaries are zero at home and grow with depth level`：
+      - `enemySecondary(2, 2, null)` 的每一項都是 0；
+      - `enemySecondary(38, 2, null).crit` 等於 9；
+      - `enemySecondary(500, 2, 'evasive').crit` 等於 20。
+    - `compensation keeps finite multipliers at the caps`。
+    - Review Focus 2：`capSheet holds every cap and stays finite at 1e6`。
+  - `data.test.ts`：`every character has an affinity`。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine/stats.test.ts src/scripts/games/starlantern/data`
+- [ ] **Step 3: 實作**
+- [ ] **Step 4: 執行全套，確認全部通過**
+  - 原因：scaling.ts 的 export 有變。
+  - `npx vitest run src/scripts/games/starlantern --testTimeout=20000`
 - [ ] **Step 5: commit**
-  - 只 `git add` 本任務 Files 列出的檔案（完整路徑）。
-  - 訊息：`feat(starlantern): primary and derived stats with diminishing returns`
+  - 訊息：`feat(starlantern): level module and primary/derived stat model`
 
-### Task 2: 裝備資料（9 個欄位、25 件底材、稀有度、詞綴池、特效、獨特與套裝）
+### Task 2: 裝備資料與 25 件底材
 
 **Files:**
-- Create: `data/gear.ts`, `data/gear.test.ts`
-- Modify: `data/equipment.ts`, `engine/types.ts`, `data/data.test.ts`, `render/artPaths.ts`
+- Create：`data/gear.ts`、`data/gear.test.ts`
+- Modify：
+  - `data/equipment.ts`、`engine/types.ts`、`render/artPaths.ts`
+  - `data/weights.ts`：改用 `SLOT_WEIGHT`。
+  - `data/data.test.ts`：底材數量從 15 改成 25，並新增欄位與物品等級的測試。
+  - `engine/town.ts`、`engine/save.ts`：改用過渡用的 `legacySlot`。
+  - `ui2/scenes/equip.ts`、`ui2/scenes/shop.ts`：同上。
+  - `engine/game.test.ts`：第 527 行 `weightOf('moss-charm')` 從 2 改成 3。
 
 **Interfaces:**
 - Produces（`engine/types.ts`）：
-  - `export type Rarity = 'common' | 'magic' | 'rare' | 'legendary' | 'unique' | 'set'`
-  - `export type GearSlot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring'`
-  - `EquipDef` 改成 `{ id; name; slot: GearSlot; ilvl: number; price; bonus: Partial<Stats>; unlock? }`
-  - `export interface ItemInstance { uid: number; base: string; rarity: Rarity; ilvl: number; affixes: { key: AnyStat; value: number }[]; special?: string; enhance: number; junk?: boolean }`
-    - `enhance` 一律是 0，留給 5c。
-  - 本任務還不改 `Slot` 和 `Member`；那些在 Task 4。
+  - `Rarity = 'common' | 'magic' | 'rare' | 'legendary' | 'unique' | 'set'`
+  - `GearSlot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring'`
+  - `EquipDef` 改成 `{ id; name; slot: GearSlot; ilvl: number; price; bonus: Partial<Stats>; unlock? }`。
+  - `ItemInstance { uid: number; base: string; rarity: Rarity; ilvl: number; affixes: { key: AnyStat; value: number }[]; special?: string; enhance: number; junk?: boolean }`
+    - `enhance` 一律是 0。
+- Produces（`data/equipment.ts`）：
+  - `legacySlot(g: GearSlot): 'weapon' | 'armor' | 'accessory'` 是過渡用的工具：
+    - weapon 對到 weapon；
+    - body、offhand、head、hands、feet 對到 armor；
+    - neck、ring 對到 accessory。
+  - Task 4 會把它和所有呼叫點一起刪掉。
 - Produces（`data/gear.ts`）：
-  - `export const RARITIES: Rarity[]`：順序就是 spec 表格的順序。
-  - `export const RARITY_RANK: Record<Rarity, number>`：common 0、magic 1、rare 2、legendary 3、unique 4、set 5。
-  - `export const AFFIX_COUNT = { magic: [1, 2], rare: [3, 4], legendary: [3, 3] } as const`
-  - `export const ROLL_FLOOR = { magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 } as const`
-  - `export const AFFIX_SCALE = 1`：整個詞綴池唯一的總倍率。Task 13 的平衡測試沒過時，只能調這一個數，並把最後的值寫進 commit 訊息。
-  - `export interface AffixDef { slots: GearSlot[]; lo: [number, number]; hi: [number, number] }`
-    - `lo` 和 `hi` 都寫成 `[物品等級 1 時的值, 物品等級 50 時的值]`。
-  - `export const AFFIXES: Record<AnyStat, AffixDef>`
-  - `export function affixRange(key: AnyStat, ilvl: number): [number, number]`：在兩點之間線性內插；超過 50 時照同一條線往外延伸。
-  - `export const SLOT_WEIGHT: Record<GearSlot, number>`
-  - `export interface SkillMod { hits?: number; target?: Target; powerPct?: number; element?: Element; hpCost?: number; turns?: number; chance?: number; extra?: Effect[] }`
-  - `export interface PowerDef { id: string; skill: string; text: string; mod: SkillMod }`
-  - `export const POWERS: Record<string, PowerDef>`
-  - `export interface SpecialDef { id: string; name: string; rarity: 'legendary' | 'unique' | 'set'; slot: GearSlot; region: RegionId | null; source: 'any' | 'elite' | 'boss'; power?: string; fixed?: AnyStat[]; set?: string; lore: string }`
-  - `export const SPECIALS: Record<string, SpecialDef>`
-  - `export interface SetDef { id: string; name: string; region: RegionId; pieces: string[]; two: Partial<Sheet>; four: Partial<Sheet> }`
-  - `export const SETS: Record<string, SetDef>`
-  - `export function regionSpecials(region: RegionId): SpecialDef[]`：只回傳傳說與獨特，不含套裝部件。
+  - `GEAR_SLOTS: GearSlot[]`：順序同上。
+  - `RARITIES: Rarity[]`
+  - `RARITY_RANK`：common 0、magic 1、rare 2、legendary 3、unique 4、set 5。
+  - `AFFIX_COUNT = { magic: [1, 2], rare: [3, 4], legendary: [3, 3] }`
+  - `ROLL_FLOOR = { common: 0, magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 }`
+  - `AFFIX_SCALE = 1`：唯一的全域倍率，只有 Task 18 可以調整。
+  - `AffixDef { slots: GearSlot[]; lo: [number, number]; hi: [number, number] }`：括號裡是物品等級 1 與 50 時的值。
+  - `AFFIXES: Record<AnyStat, AffixDef>`
+  - `affixRange(key, ilvl): [number, number]`
+    - 在兩點之間線性內插，超過 50 照同一條線往外延伸；
+    - 最後乘上 `AFFIX_SCALE`。
+  - `SLOT_WEIGHT: Record<GearSlot, number>`
+  - `SkillMod { hits?; target?; powerPct?; element?; hpCost?; turns?; chance?; extra?: Effect[] }`
+  - `PowerDef { id; skill: string; text: string; mod: SkillMod }`、`POWERS`
+  - `SpecialDef { id; name; rarity: 'legendary' | 'unique' | 'set'; slot: GearSlot; region: RegionId | null; source: 'any' | 'elite' | 'boss'; power?: string; fixed?: AnyStat[]; set?: string; lore: string }`、`SPECIALS`
+  - `SetDef { id; name; region: RegionId; pieces: string[]; two: Partial<Sheet>; four: Partial<Sheet> }`、`SETS`
+  - `regionSpecials(region: RegionId): SpecialDef[]`：該地區的傳說與獨特，不含套裝部件。
+  - `generalLegendaries(): SpecialDef[]`：`region === null` 的傳說，一共 8 件。
+  - `codexName(id: string): string`：特殊物品 id 或套裝 id 都可以查名稱。查不到時回傳 id 本身。
 
-**底材（`data/equipment.ts`，共 25 件，全部是普通級）** (implementer's call → fixed here)
-- 原本的 15 件：id、名稱、加成和解鎖條件都不變，只改欄位並補上物品等級。
-  - 武器：wooden-staff、iron-sword、hunter-bow 是 Lv1；thorn-spear 5；crystal-blade 7；frost-staff 7；star-saber 10。
-  - armor 改成 body：cloth-robe 1、leather-vest 1、scale-mail 7、dusk-mantle 10。
-  - accessory 改成 neck：moss-charm 2、bat-earring 3、crystal-pendant 7。
-  - accessory 改成 ring：gear-ring 10。
-- 新的 10 件（格式：id 名稱 欄位 物品等級 加成 價格 解鎖）：
-  - `wooden-buckler` 木圓盾 offhand 1 `{def:2}` 30
-  - `crystal-aegis` 晶盾 offhand 8 `{def:5,res:3}` 150，解鎖 crystal-shell×4
-  - `leather-cap` 皮帽 head 1 `{def:1,res:1}` 25
-  - `scale-helm` 鱗盔 head 7 `{def:4,res:2}` 140，解鎖 lizard-scale×4
-  - `cloth-gloves` 布手套 hands 1 `{atk:1,def:1}` 25
-  - `thorn-gauntlets` 荊棘臂甲 hands 5 `{atk:3,def:2}` 100，解鎖 thorn-fang×6
-  - `straw-sandals` 草鞋 feet 1 `{spd:1}` 25
-  - `bat-boots` 蝠翼靴 feet 4 `{spd:3,def:1}` 90，解鎖 bat-wing×6
-  - `copper-ring` 銅戒 ring 1 `{hp:8}` 30
-  - `star-ring` 星紋戒 ring 10 `{atk:4,mag:4}` 260，解鎖 star-stone×5
+**底材**（以下都是 (implementer's call → fixed here)，全部是普通級）：
+- 原本的 15 件：id、名稱、加成、價格、解鎖條件都不變，只改欄位並補上物品等級。
+  - 武器：wooden-staff、iron-sword、hunter-bow 都是 Lv1；thorn-spear 5；crystal-blade 7；frost-staff 7；star-saber 10。
+  - 原本 armor 的改成 body：cloth-robe 1、leather-vest 1、scale-mail 7、dusk-mantle 10。
+  - 原本 accessory 的改成 neck：moss-charm 2、bat-earring 3、crystal-pendant 7。
+  - gear-ring 改成 ring，物品等級 10。
+- 新增 10 件（id／名稱／欄位／物品等級／加成／價格／解鎖）：
 
-**欄位重量 `SLOT_WEIGHT`** (implementer's call → fixed here)
-- weapon 6、offhand 5、head 4、body 8、hands 4、feet 4、neck 3、ring 3。
-- 都落在迷宮設計 §3.1 的 3–8 之間：武器與身體最重，戒指與項鍊最輕。
+| id | 名稱 | 欄位 | 物品等級 | 加成 | 價格 | 解鎖 |
+|---|---|---|---|---|---|---|
+| wooden-buckler | 木圓盾 | offhand | 1 | def 2 | 30 | — |
+| crystal-aegis | 晶盾 | offhand | 8 | def 5、res 3 | 150 | crystal-shell ×4 |
+| leather-cap | 皮帽 | head | 1 | def 1、res 1 | 25 | — |
+| scale-helm | 鱗盔 | head | 7 | def 4、res 2 | 140 | lizard-scale ×4 |
+| cloth-gloves | 布手套 | hands | 1 | atk 1、def 1 | 25 | — |
+| thorn-gauntlets | 荊棘臂甲 | hands | 5 | atk 3、def 2 | 100 | thorn-fang ×6 |
+| straw-sandals | 草鞋 | feet | 1 | spd 1 | 25 | — |
+| bat-boots | 蝠翼靴 | feet | 4 | spd 3、def 1 | 90 | bat-wing ×6 |
+| copper-ring | 銅戒 | ring | 1 | hp 8 | 30 | — |
+| star-ring | 星紋戒 | ring | 10 | atk 4、mag 4 | 260 | star-stone ×5 |
 
-**詞綴池 `AFFIXES`** (implementer's call → fixed here)
-- 格式：鍵：可出現的欄位｜Lv1 時的 lo–hi → Lv50 時的 lo–hi。
-- 欄位縮寫：W 武器、O 副手、H 頭、B 身、G 手、F 腳、N 項鍊、R 戒指。
-- str、int、agi、wil：全部欄位｜1–2 → 10–18
-- atk：W G R｜1–2 → 12–20
-- mag：W O N R｜1–2 → 12–20
-- hp：O H B F N｜5–10 → 60–110
-- def：O H B G F｜1–2 → 10–16
-- res：O H B N｜1–2 → 10–16
-- spd：G F N｜1–1 → 4–7
-- tp：O H N R｜2–4 → 12–20
-- crit：W G N R｜1–2 → 4–7
-- critDmg：W G R｜5–10 → 20–35（spec 的例子：暴擊傷害只出現在武器、手、戒指）
-- vuln：W N｜3–6 → 10–18
-- eliteDmg：W O R｜3–6 → 10–18
-- multi：W G｜2–4 → 6–10
-- armor：O H B G F｜4–8 → 150–250
-- evasion：H G F N｜4–8 → 150–250
-- block：O｜3–6 → 10–16
-- meleeDR：O B｜2–3 → 6–10
-- rangedDR：H B｜2–3 → 6–10
-- fireRes、iceRes、thunderRes：O H B F N R｜3–6 → 12–20
-- fireDmg、iceDmg、thunderDmg：W N R｜3–6 → 12–20
-- poisonRes、sleepRes：H F N｜5–10 → 20–35
-- tpRegen：N R｜1–1 → 2–3
-- tpCost：H N｜3–5 → 8–12
-- gauge：B N R｜3–6 → 10–16
-- heal：W O N｜3–6 → 10–18
-- goldFind、matFind：R N，再各加 H／G｜5–10 → 20–35
-- expBonus：N R｜2–4 → 6–10
+**欄位重量**：weapon 6、offhand 5、head 4、body 8、hands 4、feet 4、neck 3、ring 3。
 
-**傳說特效 `POWERS` 與特殊物品 `SPECIALS`** (implementer's call → fixed here；名稱沿用 spec 的暫定名)
-- `SkillMod` 的規則：
-  - `powerPct` 同時套用在傷害的 power、治療的 power，以及增益的 pct（取整數）；
-  - `hits` 和 `target` 會覆寫原值；
-  - `extra` 會接在效果清單的最後面。
-- 不限地區的傳說，每位角色 1 件，`region: null`、`source: 'any'`：
-  - `lg-noel` 群星之戒 ring：火之星彈改成打全體，威力 70%。（target 'enemies'，powerPct 70）
-  - `lg-chizuru` 雙月槍 weapon：橫掃改成打兩次，威力 65%。這是 spec 的例子。
-  - `lg-liz` 三叉刃 weapon：雙刃改成 3 段。
-  - `lg-sylvie` 破甲箭袋 offhand：瞄準射擊另外讓目標防禦 −20%，持續 3 回合。（用 extra）
-  - `lg-scarlet` 挑戰者紋章 neck：挑釁另外讓自己防禦 +25%，持續 3 回合。（用 extra，target 是 self）
-  - `lg-selene` 滿月頭冠 head：月光改成治療全體，威力 60%。
-  - `lg-safira` 四拍舞靴 feet：刃舞改成 4 段。
-  - `lg-bobby` 長效齒輪手套 hands：砲台持續 5 回合。
-- 地區限定：每個地區 1 件傳說、1 件獨特、1 套套裝。
-  - 熾焰：傳說 `blaze-heart-sword` 灼心之劍 weapon，爆炎斬不再消耗 HP（hpCost 0）；獨特 `blaze-ember-ring` 餘燼指環 ring，固定詞綴 [fireDmg, fireRes, atk]。
-  - 霜凍：獨特 `frost-winter-staff` 永冬權杖 weapon，[mag, iceDmg, int]；傳說 `frost-bloom-neck` 霜華頸鍊 neck，冰之星彈打全體，威力 70%。
-  - 雷鳴：傳說 `storm-thunder-bow` 疾雷之弓 weapon，瞄準射擊變成雷屬性，威力 120%；獨特 `storm-swift-boots` 迅雷之靴 feet，[spd, agi, evasion]。
-  - 腐毒：獨特 `mire-miasma-mask` 瘴氣面具 head，[poisonRes, hp, armor]；傳說 `mire-whisper-gloves` 沼語手套 hands，衰弱咒的中毒機率變成 100%（chance 1）。
-  - 暗影：傳說 `shade-silent-blade` 無聲之刃 weapon，`source: 'elite'`，三連刃改成 4 段；獨特 `shade-raven-cloak` 夜鴉披風 body，[evasion, agi, crit]。
-  - 鋼鐵：獨特 `iron-unbroken-shield` 不破之盾 offhand，`source: 'boss'`，[block, armor, meleeDR]；傳說 `iron-bulwark-plate` 鐵壁胸甲 body，鐵壁改成作用全體，威力 50%。
-- 套裝：每套 4 件。部件 id 是 `${setId}-${slot}`；名稱是套裝名的詞幹加欄位名詞。
-  - 欄位名詞：weapon 之刃、offhand 之盾、head 之冠、body 之鎧、hands 之手甲、feet 之靴、neck 之鍊、ring 之戒。例如「焰紋之刃」。
-  - 部件的固定詞綴：weapon 與 body 拿主題的 3 個鍵，其他欄位拿前 2 個。
-  - 固定詞綴不受一般的欄位限制，因為這些是專屬物品。
+**詞綴池**：欄位縮寫是 W 武器、O 副手、H 頭、B 身、G 手、F 腳、N 項鍊、R 戒指。每列寫「Lv1 時的 lo–hi → Lv50 時的 lo–hi」。
 
-| 套裝 id | 名稱 | 欄位 | 主題詞綴 | 2 件 | 4 件 |
+| 詞綴 | 欄位 | 數值 |
+|---|---|---|
+| str、int、agi、wil | 全部 8 個欄位 | 1–2 → 10–18 |
+| atk | W G R | 1–2 → 12–20 |
+| mag | W O N R | 1–2 → 12–20 |
+| hp | O H B F N | 5–10 → 60–110 |
+| def | O H B G F | 1–2 → 10–16 |
+| res | O H B N | 1–2 → 10–16 |
+| spd | G F N | 1–1 → 4–7 |
+| tp | O H N R | 2–4 → 12–20 |
+| crit | W G N R | 1–2 → 4–7 |
+| critDmg | W G R | 5–10 → 20–35 |
+| vuln | W N | 3–6 → 10–18 |
+| eliteDmg | W O R | 3–6 → 10–18 |
+| multi | W G | 2–4 → 6–10 |
+| armor | O H B G F | 4–8 → 150–250 |
+| evasion | H G F N | 4–8 → 150–250 |
+| block | O | 3–6 → 10–16 |
+| meleeDR | O B | 2–3 → 6–10 |
+| rangedDR | H B | 2–3 → 6–10 |
+| 三種元素抗性 | O H B F N R | 3–6 → 12–20 |
+| 三種元素傷害 | W N R | 3–6 → 12–20 |
+| poisonRes、sleepRes | H F N | 5–10 → 20–35 |
+| tpRegen | N R | 1–1 → 2–3 |
+| tpCost | H N | 3–5 → 8–12 |
+| gauge | B N R | 3–6 → 10–16 |
+| heal | W O N | 3–6 → 10–18 |
+| goldFind | H N R | 5–10 → 20–35 |
+| matFind | G N R | 5–10 → 20–35 |
+| expBonus | N R | 2–4 → 6–10 |
+
+**特效 POWERS 與特殊物品 SPECIALS**（名稱都是 spec 的暫定名）：
+- **SkillMod 的套用規則**
+  - `powerPct` 套用在三種地方：傷害的 power、治療的 power、增益的 pct，結果取整數。
+  - `hits`、`target`、`element`、`turns`、`chance` 直接覆寫原值。
+  - `hpCost` 用 `??` 判斷，所以 0 也算有效值。
+  - `extra` 接在原本效果的後面。
+- **8 件通用傳說**（`region: null`、`source: 'any'`）：
+
+| id | 名稱 | 欄位 | 特效 |
+|---|---|---|---|
+| lg-noel | 群星之戒 | ring | 火之星彈改為打全體，威力 70% |
+| lg-chizuru | 雙月槍 | weapon | 橫掃打 2 次，威力 65% |
+| lg-liz | 三叉刃 | weapon | 雙刃改為 3 段 |
+| lg-sylvie | 破甲箭袋 | offhand | 瞄準射擊額外使目標防禦 −20%，持續 3 回合 |
+| lg-scarlet | 挑戰者紋章 | neck | 挑釁額外使自己防禦 +25%，持續 3 回合 |
+| lg-selene | 滿月頭冠 | head | 月光改為治療全體，威力 60% |
+| lg-safira | 四拍舞靴 | feet | 刃舞改為 4 段 |
+| lg-bobby | 長效齒輪手套 | hands | 砲台持續 5 回合 |
+
+- **地區限定**：每個地區 1 件傳說、1 件獨特。獨特物品寫的是固定詞綴。
+
+| 地區 | 物品 | 欄位 | 內容 |
+|---|---|---|---|
+| 熾焰 | 灼心之劍（傳說） | weapon | 爆炎斬的 HP 消耗變成 0 |
+| 熾焰 | 餘燼指環（獨特） | ring | fireDmg、fireRes、atk |
+| 霜凍 | 永冬權杖（獨特） | weapon | mag、iceDmg、int |
+| 霜凍 | 霜華頸鍊（傳說） | neck | 冰之星彈改為打全體，威力 70% |
+| 雷鳴 | 疾雷之弓（傳說） | weapon | 瞄準射擊改為雷屬性，威力 120% |
+| 雷鳴 | 迅雷之靴（獨特） | feet | spd、agi、evasion |
+| 腐毒 | 瘴氣面具（獨特） | head | poisonRes、hp、armor |
+| 腐毒 | 沼語手套（傳說） | hands | 衰弱咒的中毒機率變成 1 |
+| 暗影 | 無聲之刃（傳說，source 'elite'） | weapon | 三連刃改為 4 段 |
+| 暗影 | 夜鴉披風（獨特） | body | evasion、agi、crit |
+| 鋼鐵 | 不破之盾（獨特，source 'boss'） | offhand | block、armor、meleeDR |
+| 鋼鐵 | 鐵壁胸甲（傳說） | body | 鐵壁改為作用全體，威力 50% |
+
+  - 物品 id 依序是：`blaze-heart-sword`、`blaze-ember-ring`、`frost-winter-staff`、`frost-bloom-neck`、`storm-thunder-bow`、`storm-swift-boots`、`mire-miasma-mask`、`mire-whisper-gloves`、`shade-silent-blade`、`shade-raven-cloak`、`iron-unbroken-shield`、`iron-bulwark-plate`。
+- **套裝**：每套 4 件。
+  - 部件 id 是 `${setId}-${slot}`。
+  - 部件名稱是「套裝詞幹 + 欄位名詞」。欄位名詞：weapon 之刃、offhand 之盾、head 之冠、body 之鎧、hands 之手甲、feet 之靴、neck 之鍊、ring 之戒。
+  - 固定詞綴：weapon 與 body 拿 3 個主題詞綴，其他欄位拿前 2 個。
+  - 固定詞綴不受欄位詞綴池的限制。
+  - 套裝加成只用百分比和小數值，不會隨物品等級變大。
+
+| 套裝 | 名稱 | 欄位 | 主題詞綴 | 2 件 | 4 件 |
 |---|---|---|---|---|---|
-| set-blaze | 焰紋套裝 | weapon body hands ring | fireDmg atk str | fireDmg +15 | crit +8、fireDmg +20 |
-| set-frost | 霜語套裝 | weapon head neck ring | iceDmg mag int | iceDmg +15 | tpCost +15、iceRes +20 |
-| set-storm | 雷鳴套裝 | weapon hands feet ring | thunderDmg spd agi | thunderDmg +15 | multi +12、spd +5 |
-| set-mire | 沼行套裝 | head body feet neck | poisonRes hp wil | poisonRes +30 | heal +20、tpRegen +2 |
-| set-shade | 夜幕套裝 | weapon head hands feet | evasion crit agi | crit +6 | critDmg +30、vuln +15 |
-| set-iron | 鐵壁套裝 | offhand head body feet | armor def str | meleeDR +10 | block +15、rangedDR +10 |
+| set-blaze | 焰紋套裝 | weapon、body、hands、ring | fireDmg、atk、str | fireDmg +15 | crit +8、fireDmg +20 |
+| set-frost | 霜語套裝 | weapon、head、neck、ring | iceDmg、mag、int | iceDmg +15 | tpCost +15、iceRes +20 |
+| set-storm | 雷鳴套裝 | weapon、hands、feet、ring | thunderDmg、spd、agi | thunderDmg +15 | multi +12、spd +5 |
+| set-mire | 沼行套裝 | head、body、feet、neck | poisonRes、hp、wil | poisonRes +30 | heal +20、tpRegen +2 |
+| set-shade | 夜幕套裝 | weapon、head、hands、feet | evasion、crit、agi | crit +6 | critDmg +30、vuln +15 |
+| set-iron | 鐵壁套裝 | offhand、head、body、feet | armor、def、str | meleeDR +10 | block +15、rangedDR +10 |
 
-- 套裝加成只用百分比與小數值，不會隨物品等級變大。這是刻意的：套裝的價值在於固定詞綴會隨物品等級成長。
-
-- [ ] **Step 1: 寫失敗的測試** `data/gear.test.ts`
-  - `crit damage only rolls on weapons, hands and rings`：`AFFIXES.critDmg.slots` 剛好是 `['weapon', 'hands', 'ring']`。
-  - `every slot can roll at least four affixes`。
-  - `affixRange interpolates and extrapolates`：
-    - `affixRange('atk', 1)` 等於 `[1, 2]`；
-    - `affixRange('atk', 50)` 等於 `[12, 20]`；
-    - 第 198 級的值是有限數字，而且大於第 50 級。
-  - `each region has one legendary, one unique and a four-piece set`：mainline 沒有限定物品。
-  - `every power names a real skill and every special points at a real slot`：用 `SKILLS` 檢查。
-  - `set pieces cover four distinct slots and point back at their set`。
-  - 修改 `data/data.test.ts`：
-    - 把 `toHaveLength(15)` 改成 25；
-    - 加上 `every base has a known slot and an ilvl of at least 1`。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/data`
+- [ ] **Step 1: 寫失敗的測試**
+  - `gear.test.ts`：
+    - `each slot's affix pool matches the table exactly`：從 `AFFIXES` 反推每個欄位的鍵集合，和上方詞綴表逐一 `toEqual`。表格在測試裡寫成常數。
+    - `affixRange interpolates, extrapolates and scales`：
+      - `affixRange('atk', 1)` 等於 `[1 * AFFIX_SCALE, 2 * AFFIX_SCALE]`；
+      - 物品等級 50 時是 `[12, 20]` 乘上 `AFFIX_SCALE`；
+      - 物品等級 198 時是有限數字，而且大於 50 時的值。
+    - `each region has one legendary, one unique and a four-piece set; mainline has none`。
+    - `generalLegendaries lists the eight character legendaries`。
+    - `every power names a real skill; hpCost 0 is kept`：用 `SKILLS` 檢查技能是否存在。
+    - `set pieces cover four distinct slots and point back at their set`。
+    - `codexName names specials and sets, and falls back to the id`。
+  - `data.test.ts`：
+    - 底材數量改成 25；
+    - `every base has a known GearSlot and an ilvl >= 1`。
+  - `game.test.ts:527`：期望值從 2 改成 3，因為 neck 的重量是 3；第 524 行的總重不變。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/data`
 - [ ] **Step 3: 實作**
-  - 把 10 件新底材的 id 加進 `render/artPaths.ts` 的 `NO_ICON_YET`。
-- [ ] **Step 4: 執行測試，確認通過**
-  - 同時執行 `npx vitest run src/scripts/games/starlantern/render`：`artPaths.test.ts` 的 219 不變。
-  - 注意：本任務之後，`engine/party.ts` 的 `SLOTS` 仍然讀 `'armor'` 和 `'accessory'`。Vitest 不做型別檢查，所以現有測試會照樣通過；Task 4 會換掉這些。
+  - `town.ts` 的 `equip` 和 `unequip`、`save.ts:36` 的欄位檢查、`equip.ts` 的候選清單、`shop.ts` 的 describe，都改用 `legacySlot(EQUIPMENT[id].slot)`。
+  - 過渡期間，新欄位的底材會出現在舊的 3 格裡。這是刻意的，Task 4 會移除。
+  - 10 個新底材的 id 加進 `NO_ICON_YET`。
+- [ ] **Step 4: 執行全套，確認全部通過**
+  - `npx vitest run src/scripts/games/starlantern --testTimeout=20000`
+  - `town.test.ts:56-61` 用 `'accessory'` 卸下 moss-charm 的測試，因為有 `legacySlot`，維持原樣也會通過。
 - [ ] **Step 5: commit**
-  - 訊息：`feat(starlantern): gear data — nine slots, rarities, affix pool, specials and sets`
+  - 訊息：`feat(starlantern): gear data — rarities, affix pool, specials, sets and 25 bases`
 
-### Task 3: 產生物品與掉落表
+### Task 3: 擲物品與掉落表
 
 **Files:**
-- Create: `engine/loot/item.ts`, `engine/loot/item.test.ts`, `engine/loot/drops.ts`, `engine/loot/drops.test.ts`
-- Modify: `data/conditions.ts`, `data/materials.ts`, `render/artPaths.ts`
+- Create：`engine/loot/item.ts`、`engine/loot/item.test.ts`、`engine/loot/drops.ts`、`engine/loot/drops.test.ts`
+- Modify：
+  - `data/conditions.ts`
+  - `data/materials.ts`
+  - `data/data.test.ts`：第 18 行的素材數量從 16 改成 18。
+  - `render/artPaths.ts`：把 `star-tear`、`king-scale` 加進 `NO_ICON_YET`。
 
 **Interfaces:**
-- Consumes：Task 2 的 `AFFIXES`、`affixRange`、`AFFIX_COUNT`、`ROLL_FLOOR`、`AFFIX_SCALE`、`SPECIALS`、`SETS`、`EQUIPMENT`；`engine/scaling.ts` 的 `depthLevel`。
+- Consumes：
+  - Task 1：`depthLevel`，只從 `engine/levels.ts` 引入。
+  - Task 2：`AFFIXES`、`affixRange`、`AFFIX_COUNT`、`ROLL_FLOOR`、`SPECIALS`、`SETS`、`generalLegendaries`、`regionSpecials`、`SLOT_WEIGHT`、`GEAR_SLOTS`、`EQUIPMENT`。
 - Produces（`engine/loot/item.ts`）：
-  - `export type DropSource = 'monster' | 'chest' | 'elite' | 'vault' | 'boss'`
-  - `export function itemLevel(depth: number, source: DropSource): number`
-    - (implementer's call → fixed here) 公式是 `depthLevel(depth)`，再依來源加：monster 0、chest 0、elite 2、vault 2、boss 4。
-  - `export function baseFor(rng: Rng, slot: GearSlot, ilvl: number): string`：在這個欄位裡，從物品等級 ≤ ilvl 的底材中，取等級最高的 2 件，二選一。
-  - `export function rollItem(rng: Rng, o: { uid: number; ilvl: number; rarity: Rarity; slot?: GearSlot; special?: string }): ItemInstance`
-    - 沒指定欄位時，從 8 種欄位平均抽一種。
-    - 普通、魔法、稀有、傳說：從該欄位允許的詞綴裡抽，不重複，數量照 `AFFIX_COUNT`。
-    - 數值 = `round((lo + (hi − lo) × (floor + (1 − floor) × u)) × AFFIX_SCALE)`，最小是 1。其中 `floor` 是 `ROLL_FLOOR[rarity]`，`u = rng()`。
-    - 傳說、獨特、套裝都要指定 `special`，`special` 存它的 id；底材用該特殊物品欄位裡等級最高的底材。
-    - 傳說另外加 3 個隨機詞綴。
-    - 獨特與套裝：詞綴就是 `fixed` 的鍵，`u` 固定是 1，所以數值就是 `floor` 那一點。
-  - `export function itemStats(it: ItemInstance): Partial<Sheet>`
-    - 底材加成會隨物品等級放大：`round(bonus × (1 + 0.04 × max(0, it.ilvl − base.ilvl)))`；
-    - 再加上所有詞綴。
-  - `export function itemName(it: ItemInstance): string`：特殊物品用 `SPECIALS[id].name`，否則用底材名稱。
-  - `export function itemSlot(it: ItemInstance): GearSlot`
-  - `export function itemWeight(it: ItemInstance): number`：等於 `SLOT_WEIGHT[itemSlot(it)]`。
-  - `export function sellPrice(it: ItemInstance): number`
-    - (implementer's call → fixed here) 公式是 `round((10 + 2 × ilvl) × m)`。
-    - m 依稀有度：common 1、magic 2、rare 4、legendary 10、unique 10、set 8。
+  - `type DropSource = 'monster' | 'chest' | 'elite' | 'vault' | 'boss'`
+  - `itemLevel(depth, source)`：等於 `depthLevel(depth)` 加上來源加成。
+    - monster 0、chest 0、elite 2、vault 2、boss 4。
+    - (implementer's call → fixed here)
+  - `baseFor(rng, slot, ilvl): string`：
+    - 候選是這個欄位裡 `ilvl` ≤ 物品等級的底材；
+    - 取等級最高的 2 件抽一件；只有 1 件就直接用它；
+    - 一件都沒有時，用這個欄位等級最低的底材。
+  - `rollItem(rng, o: { uid: number; ilvl: number; rarity: Rarity; slot?: GearSlot; base?: string; special?: string }): ItemInstance`
+    - 欄位的決定順序：`base` 的欄位 → `special` 的欄位 → `o.slot` → 從 `GEAR_SLOTS` 平均抽。
+    - 底材的決定順序：`o.base` → 特殊物品用該欄位等級最高的底材 → `baseFor`。
+    - 詞綴：
+      - 普通、魔法、稀有、傳說：從該欄位的詞綴池抽，不重複，數量依 `AFFIX_COUNT`。
+      - 獨特與套裝：用 `fixed` 裡的鍵。
+      - 數值一律用 Global Constraints 的擲值公式。
+  - `implicitStats(it): Partial<Stats>`：等於 `round(bonus × (1 + 0.04 × max(0, it.ilvl − base.ilvl)))`。
+  - `itemStats(it): Partial<Sheet>`：`implicitStats` 加上所有詞綴。
+  - `itemName(it)`、`itemSlot(it): GearSlot`、`itemWeight(it)`（等於 `SLOT_WEIGHT[itemSlot]`）
+  - `sellPrice(it)`：`round((10 + 2 × ilvl) × m)`，m 依稀有度如下。(implementer's call → fixed here)
+    - common 1、magic 2、rare 4、legendary 10、unique 10、set 8。
 - Produces（`engine/loot/drops.ts`）：
-  - `export type Tier = 'common' | 'magic' | 'rare' | 'legendaryTier'`
-  - `export function rarityWeights(source: DropSource, depthLv: number, cond: ConditionDef): Record<Tier, number>`
-  - `export const GEAR_CHANCE = { monster: 0.08, chest: 0.35 }`：每打倒 1 隻怪，以及每開 1 個寶箱。
-  - `export const BOSS_LEGENDARY = { first: 0.2, repeat: 0.1 }`
-  - `export interface DropCtx { uid: () => number; depth: number; region: RegionId; condition: ConditionId; source: DropSource; bossRepeat?: boolean }`
-  - `export function rollGear(rng: Rng, ctx: DropCtx): ItemInstance`：一定回傳 1 件；要不要掉，由呼叫的人判斷。
-  - `export function rollBossGear(rng: Rng, ctx: DropCtx): ItemInstance[]`：回傳 2 件。
-    - 第 1 件至少是稀有；它的傳說級機率照 `BOSS_LEGENDARY` 決定，重複打倒時減半。
-    - 第 2 件照 elite 的權重抽。
-  - `export const RARE_MATERIALS = ['star-tear', 'ancient-gear', 'king-scale']`
-  - `export function rollRareMaterial(rng: Rng): string`
-- Modify `data/conditions.ts`：`ConditionDef` 新增 `rarityMul: number`。
-  - (implementer's call → fixed here) bounty 1.5、fierce 1.25，其他都是 1。
-- Modify `data/materials.ts`：新增 `{ id: 'star-tear', name: '星燈之淚', price: 80 }` 和 `{ id: 'king-scale', name: '王者之鱗', price: 100 }`。
-  - `ancient-gear` 已經存在，直接沿用。
-  - 這些素材的用途由 5c 補上。
-  - 兩個新 id 都要加進 `NO_ICON_YET`。
+  - `type Tier = 'common' | 'magic' | 'rare' | 'legendaryTier'`
+  - `rarityWeights(source, depthLv, cond, bossRepeat = false): Record<Tier, number>`
+  - `GEAR_CHANCE = { monster: 0.08, chest: 0.35 }`
+  - `BOSS_LEGENDARY = { first: 0.2, repeat: 0.1 }`
+  - `DropCtx { uid: () => number; depth; region; condition; source; bossRepeat? }`
+  - `rollGear(rng, ctx): ItemInstance`
+  - `rollBossGear(rng, ctx): ItemInstance[]`
+    - 回傳 2 件：第 1 件用 boss 權重，第 2 件用 elite 權重。
+  - `RARE_MATERIALS = ['star-tear', 'ancient-gear', 'king-scale']`、`rollRareMaterial(rng)`
+- `data/conditions.ts`：新增 `rarityMul`，bounty 1.5、fierce 1.25，其他都是 1。(implementer's call → fixed here)
+- `data/materials.ts`：新增 `star-tear` 星燈之淚（80 G）、`king-scale` 王者之鱗（100 G）。
 
-**稀有度權重** (implementer's call → fixed here)，令 L = 深度等級、c = `rarityMul`：
-- monster：
+**稀有度權重**（L 是深度等級，c 是 `rarityMul`；(implementer's call → fixed here)）：
+- **monster**：
   - common 70
   - magic 24 × (1 + L/40)
   - rare 5.5 × (1 + L/20) × c
   - legendaryTier 0.5 × (1 + L/20) × c
-- chest：和 monster 一樣，但 rare 與 legendaryTier 再 ×1.5。
-- elite：common 是 0，所以至少是魔法級；rare 與 legendaryTier 再 ×3。
-- vault：common 和 magic 都是 0，所以至少是稀有級；legendaryTier 再 ×3。
-- **抽到 legendaryTier 之後**：
-  - mainline：一律是不限地區的傳說。
+- **chest**：同 monster，但 rare 與 legendaryTier 再乘 1.5。
+- **elite**：common 0；rare 與 legendaryTier 再乘 3。
+- **vault**：common 0、magic 0；legendaryTier 再乘 3。
+- **boss**：common 0、magic 0、rare 1 − p、legendaryTier p。
+  - p 是 `BOSS_LEGENDARY.first`；`bossRepeat` 時改用 `.repeat`。
+  - 頭目權重不受深度和本次狀況影響。
+- **抽到 legendaryTier 之後：**
+  - mainline：從 `generalLegendaries()` 抽。
   - 隨機地區：
-    - 50% 是傳說；其中 40% 是該地區的傳說，60% 是不限地區的傳說；
-    - 25% 是該地區的獨特；
-    - 25% 是該地區套裝中隨機的一件。
-  - 如果抽到的特殊物品 `source` 不符合（例如普通怪抽到 `boss` 限定的物品），就改成不限地區的傳說。
-  - `elite` 限定的物品，精英和頭目都可以掉。
+    - 50% 傳說：其中 40% 是地區傳說，60% 是通用傳說；
+    - 25% 地區獨特；
+    - 25% 地區套裝的隨機部件。
+  - `source` 不符合時，改成通用傳說。`'elite'` 的物品，精英和頭目都可以掉。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `item.test.ts`：
-    - `same seed, same item`：同樣的參數呼叫兩次，結果 `toEqual`。
-    - `affix counts follow the rarity`：每種稀有度各跑 500 個種子。common 0 個；magic 1–2 個；rare 3–4 個；legendary 剛好 3 個，而且有 `special`。
-    - `affixes respect the slot pool and never repeat`：跑 2000 個種子，每個詞綴的 key 都在 `AFFIXES[key].slots` 裡含有 `itemSlot(it)`。
-    - `values stay in range and rarer sits higher`：rare 的每個值 ≥ 區間的 25% 那一點；同一個 ilvl 下，rare 的平均值 > magic 的平均值。
-    - `uniques and set pieces carry their fixed affixes`。
-    - `implicit grows with item level`：ilvl 42 的 star-saber，atk 等於 `round(15 × (1 + 0.04 × 32))`，也就是 34。
-    - Review Focus 2：`depth 50 items are finite`：`itemLevel(50, 'boss')` 等於 `2 + 4 × 49 + 4`，也就是 202；這個等級的物品，每個值都是有限整數。
-  - `drops.test.ts`：機率檢驗用 N = 20000，容許誤差 4σ，也就是 `4 × sqrt(p(1 − p) / N)`。
-    - `monster rarity matches the weights at depth 1 and 10`：觀察到的比例對 `rarityWeights` 算出的期望值。
-    - `deeper, elite and bounty raise rare odds`：rare 的權重比例 depth 10 > depth 1；elite > monster；bounty > plain。
-    - `elites never drop common; vaults never below rare; a boss's first item is at least rare`。
-    - `a repeat boss halves the legendary-tier chance`：觀察到的比例約 0.2 對 0.1，各在 4σ 內。
-    - `region-only gear never drops elsewhere`：跑 mainline 2000 次，`special` 只會是 `lg-*`。
-    - `boss-only gear drops only from bosses`：鋼鐵地區的 monster 與 elite 跑 20000 次，都不會出現 `iron-unbroken-shield`。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/engine/loot`
+    - `same seed, same item`。
+    - `affix counts follow the rarity`：每種稀有度跑 500 個種子。
+    - `random affixes stay in their slot pool and never repeat`：只測 common、magic、rare、legendary 這四種，跑 2000 個種子。
+    - `uniques and set pieces carry exactly their fixed affixes`：用 `SPECIALS[id].fixed` 和套裝的主題比對。
+    - `values follow the roll formula`：
+      - 每個值都在 `[round(lo + (hi − lo) × floor), round(hi)]` 之間；
+      - 獨特與套裝的值也要 ≥ floor 那一點，證明 `ROLL_FLOOR` 有作用。
+    - `rare averages above magic`。
+    - `base option picks that base`。
+    - `baseFor with no fitting base takes the lowest`：neck、物品等級 1，得到 `moss-charm`。
+    - `baseFor with exactly one candidate takes it`：offhand、物品等級 3，得到 `wooden-buckler`。
+    - `implicit grows with item level`：物品等級 42 的 star-saber，`implicitStats` 的 atk 等於 34。
+    - Review Focus 2：`itemLevel(50, 'boss') is 202 and its items are finite integers`。
+  - `drops.test.ts`：機率檢驗用 N = 20000，容許誤差 4σ。
+    - `monster rarity matches rarityWeights at depth 1 and 10`。
+    - `deeper, elite and bounty raise rare odds`。
+    - `elites never common; vaults and bosses never below rare`。
+    - `a repeat boss halves the legendary-tier chance`：約 0.2 和 0.1。
+    - `region-only gear never drops in the mainline`：只會出現 `lg-*`。
+    - `boss-only gear drops only from bosses`。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine/loot src/scripts/games/starlantern/data`
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行測試，確認通過**
-  - 外加 `npx vitest run src/scripts/games/starlantern/data src/scripts/games/starlantern/render`。
+  - `item.ts` 不可以 import `scaling.ts` 或 `party.ts`。
+- [ ] **Step 4: 執行，確認通過**
+  - 同一個指令，外加 `npx vitest run src/scripts/games/starlantern/render`。
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): seeded item rolls and drop tables`
 
-### Task 4: 物品實體進入角色、倉庫與存檔 v4
+### Task 4: 角色改穿物品實體，倉庫與 9 個欄位（原 4a）
+
+這次是一次性的資料形狀翻轉，所以會一起改到所有讀寫 `Member.equip` 的地方。其他狀態欄位，以及城鎮的買賣，留到 Task 5 與 Task 6。
 
 **Files:**
-- Create: `engine/loot/bag.ts`, `engine/loot/bag.test.ts`
-- Modify:
-  - `engine/types.ts`, `engine/party.ts`, `engine/party.test.ts`
-  - `engine/state.ts`, `engine/save.ts`, `engine/save.test.ts`
-  - `engine/town.ts`, `engine/town.test.ts`
-  - `data/text.zh-TW.ts`
-  - `ui2/scenes/statusTabs.ts`, `ui2/scenes/equip.ts`, `ui2/scenes/equip.test.ts`, `ui2/scenes/status.test.ts`, `ui2/scenes/shop.ts`, `ui2/scenes/shop.test.ts`
+- Create：`engine/loot/bag.ts`、`engine/loot/bag.test.ts`
+- Modify：
+  - `engine/types.ts`、`engine/party.ts`、`engine/party.test.ts`
+  - `engine/state.ts`：只加 `bag`、`nextUid`，並把 `SAVE_VERSION` 改成 4。
+  - `engine/save.ts`、`engine/save.test.ts`：驗證裝備與背包。
+  - `engine/town.ts`、`engine/town.test.ts`：`equip`、`unequip`、`mintUid`。
+  - `data/equipment.ts`：刪掉 `legacySlot`。
+  - 讀取端的最小改動：
+    - `ui2/scenes/statusTabs.ts`：裝備分頁改用 `itemName`、`itemStats`。
+    - `ui2/scenes/equip.ts`：候選清單改從 `bag` 取，`wear` 改用 uid。
+    - `ui2/scenes/shop.ts`：describe 改用 `statsOf` 加上一件暫時的普通實體。
+  - 測試夾具：
+    - `ui2/scenes/equip.test.ts`、`ui2/scenes/status.test.ts`、`ui2/scenes/guild.test.ts`：把「放進 `inventory`」改成「在 `bag` 放一件實體」。
+    - 斷言 `equip.weapon === 'iron-sword'` 的地方，改成 `equip.weapon?.base === 'iron-sword'`。
+  - `data/text.zh-TW.ts`：`T.slot` 改成 9 格。
 
 **Interfaces:**
-- Consumes：Task 1 的 `naturalPrimary`、`convertPrimary`、`capSheet`、`emptySheet`、`PARTY_BASE`；Task 3 的 `rollItem`、`itemStats`、`itemSlot`、`itemName`、`sellPrice`；Task 2 的 `SETS`、`SPECIALS`。
+- Consumes：Task 1 的 `naturalPrimary`、`convertPrimary`、`capSheet`、`emptySheet`、`PARTY_BASE`；Task 3 的 `rollItem`、`itemStats`、`itemSlot`；Task 2 的 `SETS`、`SPECIALS`、`RARITY_RANK`、`GEAR_SLOTS`。
 - Produces（`engine/types.ts`）：
-  - `export type Slot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring1' | 'ring2'`
+  - `Slot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring1' | 'ring2'`
   - `Member.equip: Partial<Record<Slot, ItemInstance>>`
 - Produces（`engine/party.ts`）：
-  - `export const SLOTS: Slot[]`：照上面的順序，取代原本私有的 `SLOTS`。
-  - `export function slotsFor(g: GearSlot): Slot[]`：ring 對應 `['ring1', 'ring2']`，其他對應自己。
-  - `export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'primary'`
-  - `export function statSources(m: Member): { source: StatSource; stats: Partial<Sheet> }[]`
-    - base 與 growth：舊 7 項，加上自然主屬性；base 還要含 `PARTY_BASE`。
-    - gear：所有已穿物品的 `itemStats` 加總。
-    - set：已達到 2 件或 4 件的套裝加成。
-    - primary：gear 與 set 的主屬性用 `convertPrimary` 換算出的結果。
-  - `export function sheetOf(m: Member): Sheet`：把各來源加總，再 `capSheet`。
-  - `statsOf(m): Stats`：簽名不變，改成從 `sheetOf` 取舊的 7 項。整數屬性一律無條件捨去。
-  - `export function setCounts(m: Member): Record<string, number>`：同一件套裝部件（同一個 `special`）只算 1 次。
-  - `export function powersOf(m: Member): string[]`：已穿傳說的 `POWERS` id。
+  - `SLOTS: Slot[]`
+  - `slotsFor(g: GearSlot): Slot[]`
+  - `defaultSlotFor(m: Member, it: ItemInstance): Slot`
+    - 戒指規則只寫在這裡一個地方：先放第一個空的戒指格；兩格都滿時放 ring1。
+    - 其他物品就放自己的欄位。
+  - `type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'primary'`
+  - `statSources(m): { source: StatSource; stats: Partial<Sheet> }[]`
+    - base 包含 `PARTY_BASE` 與自然主屬性。
+  - `sheetOf(m): Sheet`：加總所有來源後再套用 `capSheet`。
+  - `statsOf(m): Stats`：簽名不變，改成從 `sheetOf` 取值，整數一律無條件捨去。
+  - `setCounts(m): Record<string, number>`：同一個 `special` 只算 1 件。
+  - `powersOf(m): string[]`
 - Produces（`engine/loot/bag.ts`）：
-  - `export const BAG_SIZE = 60`
-  - `export type AutoJunk = 'off' | 'common' | 'magic'`：'magic' 代表普通和魔法都標記。
-  - `export function sortBag(bag: ItemInstance[], by: 'rarity' | 'slot' | 'ilvl'): ItemInstance[]`
-    - 穩定排序。rarity 依 `RARITY_RANK` 由高到低；slot 依 `SLOTS` 的順序；ilvl 由高到低。
-  - `export function applyAutoJunk(it: ItemInstance, mode: AutoJunk): ItemInstance`：傳說、獨特、套裝永遠不標記。
-- Produces（`engine/state.ts`）：
-  - `GameState` 新增 `bag: ItemInstance[]`、`nextUid: number`、`codex: string[]`、`autoJunk: AutoJunk`。
-  - `DungeonProgress` 新增 `bossKills: Record<string, number>`，鍵是 `${region}:${depth}`。
-  - `SAVE_VERSION = 4`。
-  - 背包只放裝備。素材與消耗品照舊放在 `inventory` 的數量表。(implementer's call → fixed here)
+  - `BAG_SIZE = 60`
+  - `type AutoJunk = 'off' | 'common' | 'magic'`
+  - `sortBag(bag, by: 'rarity' | 'slot' | 'ilvl')`：穩定排序。
+    - slot 依 `GEAR_SLOTS` 的順序；rarity 和 ilvl 都由高到低。
+  - `applyAutoJunk(it, mode)`：傳說、獨特、套裝永遠不會被標記。
+- Produces（`engine/state.ts`）：`GameState` 新增 `bag: ItemInstance[]`、`nextUid: number`。
+  - 背包只放裝備；素材和消耗品照舊放在 `inventory`。(implementer's call → fixed here)
 - Produces（`engine/town.ts`）：
-  - `TownResult` 的 reason 新增 `'full'`。
-  - `export function mintUid(s: GameState): number`：回傳 `s.nextUid`，然後把它加 1。
-  - `buy(s, id)`：如果 id 是底材，就產生一件普通級實體，物品等級是 `EQUIPMENT[id].ilvl`，放進 `bag`。背包滿了回傳 `'full'`。
-  - `equip(s, memberId, uid: number, slot?: Slot): TownResult`：從 `bag` 拿出物品。
-    - 戒指沒指定格子時，放進第一個空的戒指格；兩格都滿時，放 ring1。
-    - 換下來的物品回到 `bag`。
-    - 欄位不符合時回傳 `'invalid'`。
-  - `unequip(s, memberId, slot)`：背包滿了回傳 `'full'`。
-  - `export function sellGear(s: GameState, uids: number[]): TownResult`：照 `sellPrice` 給金幣。不計入 `sold`，因為解鎖只看素材。
-  - `export function toggleJunk(s: GameState, uid: number): TownResult`
-  - `export function setAutoJunk(s: GameState, mode: AutoJunk): TownResult`
-  - `export function sortBagIn(s: GameState, by: 'rarity' | 'slot' | 'ilvl'): TownResult`
-- `ui/dom.ts` 的 `itemName(id)` 不改，仍然只接受字串 id。物品實體的名稱用 `engine/loot/item.ts` 的 `itemName`。
-  - 同一個檔案需要兩者時，把 loot 的那個 import 成 `gearName`，避免撞名。
+  - `TownResult` 的失敗原因新增 `'full'`。
+  - `mintUid(s): number`：回傳目前的 `s.nextUid`，然後把它加 1。
+  - `equip(s, memberId, uid: number, slot?: Slot): TownResult`
+    - 物品從 `bag` 取出；沒有指定 `slot` 時用 `defaultSlotFor`；換下的物品放回 `bag`。
+    - 欄位不合時回傳 `'invalid'`。
+  - `unequip(s, memberId, slot)`：背包滿時回傳 `'full'`。
+- `ui/dom.ts` 的 `itemName(id: string)` 不改。同一個檔案同時需要兩種名稱時，把 loot 的 `itemName` import 成 `gearName`。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `party.test.ts`：
-    - `no gear means the same numbers as before`：對每位角色、Lv 1 和 Lv 20，`statsOf` 都等於「base + growth × (level − 1)」，也就是現有的公式。
-    - `gear primaries convert and show as their own source`：穿上一件有 `str: 10` 的物品後，scarlet 的 `statSources` 有 `primary` 這一列，內容是 atk +15、armor +30。
-    - `two pieces of a set give the two-piece bonus, four give both`。
-    - Review Focus 3：`the same set piece twice counts once`：ring1 和 ring2 都戴同一件套裝戒指部件時，`setCounts` 等於 1。
-  - `bag.test.ts`：
-    - `sorts by rarity, slot and item level, stable`；
-    - `auto junk marks common (and magic) but never legendary, unique or set`。
+    - 第 13、23 行改成穿一件 iron-sword 的普通實體，期望值不變（13 + 4）。
+    - `no gear means the same numbers as before`：對每位角色，在 Lv1 與 Lv20 都成立。
+    - `gear primaries convert and show as their own source`。
+    - `two pieces give the two-piece bonus, four give both`。
+    - Review Focus 3：`the same set piece twice counts once`。
+    - `defaultSlotFor fills the first empty ring slot, then ring1`。
+  - `bag.test.ts`：`sorts by rarity, slot and item level, stable`、`auto junk never marks legendary, unique or set`。
   - `town.test.ts`：
-    - `buying a base puts a common item of its level in the bag`；
-    - `equip swaps through the bag, rings fill the first empty ring slot, then the chosen one`；
-    - Review Focus 3：`one uid cannot be worn twice`：同一個 `uid` 已經在 ring1，再對 ring2 呼叫 `equip`，要失敗（它已經不在背包裡了），而且狀態不變；
-    - Review Focus 1：`a full bag refuses unequip and buying`：60 件時都回傳 `'full'`，狀態不變；
-    - `selling gear pays sellPrice and does not count toward unlocks`。
+    - 第 50–61 行改寫：用 `bag` 裡的 moss-charm 實體，`unequip(..., 'neck')`；HP 被壓回上限的期望值（48）不變。
+    - `equip swaps through the bag; rings use defaultSlotFor unless a slot is given`。
+    - Review Focus 3：`one uid cannot be worn twice`。
+    - Review Focus 1：`a full bag refuses unequip`。
   - `save.test.ts`：
-    - `round-trips bag, equipped instances, codex and boss kills`；
-    - `rejects a duplicate uid, an unknown base, an affix key that does not exist, a ring in the weapon slot, a bag over 60, and nextUid not above every uid`；
+    - `rejects a duplicate uid, an unknown base, an unknown affix key, a ring in the weapon slot, a bag over 60, and nextUid not above every uid`；
     - `a version-3 save reports version`。
-  - UI 測試只做最小的改寫，讓現有斷言保持通過：
-    - 把 `inventory['iron-sword'] = 1` 改成在 `bag` 放一件實體；
-    - 把 `equip.weapon === 'iron-sword'` 改成 `equip.weapon?.base === 'iron-sword'`。
-    - 不可以刪測試，也不可以降低斷言。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/engine src/scripts/games/starlantern/ui2`
+  - UI 測試：照 Files 的說明修改夾具，現有斷言一條都不刪。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine`
 - [ ] **Step 3: 實作**
-  - `T.slot` 改成 9 格：武器、副手、頭部、身體、手部、腳部、項鍊、戒指 1、戒指 2。
-  - `statusTabs.ts` 的 `SLOT_ORDER` 改用 `SLOTS`。
-  - `equip.ts` 和 `shop.ts` 只換成新的資料存取方式；版面在 Task 8 和 Task 10 才改。
-- [ ] **Step 4: 執行測試，確認通過**
-  - Run：`npx vitest run src/scripts/games/starlantern`，全部通過。
-  - 再用 grep 確認 `starlantern/` 底下已經沒有 `'armor'` 或 `'accessory'` 當作欄位使用。
+- [ ] **Step 4: 執行全套，確認全部通過**
+  - `npx vitest run src/scripts/games/starlantern --testTimeout=20000`
+  - 再執行 `git grep -n -e "'accessory'" -e legacySlot -- src/scripts/games/starlantern`，結果必須是空的。
+  - 注意：`'armor'` 現在是屬性鍵，不在這次檢查的範圍內。
 - [ ] **Step 5: commit**
-  - 訊息：`feat(starlantern): gear as item instances in nine slots, bag of 60, save v4`
+  - 訊息：`feat(starlantern): members wear item instances in nine slots, bag of 60`
 
-### Task 5: 衍生屬性進入戰鬥，敵人依深度變強，以及傳說特效
+### Task 5: 存檔 v4 的其餘欄位，以及城鎮的買賣（原 4b）
 
 **Files:**
-- Modify:
-  - `engine/combatant.ts`, `engine/combatant.test.ts`
-  - `engine/battle.ts`, `engine/battle.test.ts`
-  - `engine/skills.ts`, `engine/skills.test.ts`
-  - `engine/scaling.ts`, `engine/scaling.test.ts`
-  - `engine/testing.ts`
-  - `data/text.zh-TW.ts`
-  - `ui2/battleText.ts`, `ui2/battleText.test.ts`
+- Modify：`engine/state.ts`、`engine/save.ts`、`engine/save.test.ts`、`engine/town.ts`、`engine/town.test.ts`
 
 **Interfaces:**
-- Consumes：Task 1 的 `armorReduction`、`evadeChance`、`enemySecondary`、`compensation`；Task 4 的 `sheetOf`、`powersOf`；Task 2 的 `POWERS`、`SkillMod`。
+- Consumes：Task 3 的 `rollItem`（帶 `base`）、`sellPrice`；Task 4 的 `mintUid`、`BAG_SIZE`、`sortBag`、`AutoJunk`。
 - Produces：
-  - `Combatant` 新增：
-    - `x: Partial<Record<SecondaryKey, number>>`
-    - `level: number`：隊員是自己的等級；敵人是深度等級，沒有強化時用 `homeLevel(def)`。
-    - `powers: string[]`
-  - `makeCombatant` 的預設：`x: {}`、`level: 1`、`powers: []`。
-  - `calcDamage(a, t, spec, rng)` 回傳 `{ amount: number; mult: number; crit: boolean; miss: boolean }`。
-  - `BattleEvent` 的 damage 新增 `crit?: boolean`，另外新增 `{ type: 'miss'; target: string }`。
-  - `export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef`（`engine/skills.ts`）
-  - `export function skillFor(c: Combatant, id: string): SkillDef`（`engine/battle.ts`）：把這位隊員身上 `powers` 指向這個技能的特效，依序套上。
-  - `scaleEnemy` 回傳的 `EnemyDef` 帶有 `sec`（`enemySecondary`）。能力值除了原本的倍率，再乘上 `compensation(sec)`。
-  - `rewards(s, rng, dropBoost, dropMul)` 簽名不變。在裡面讀存活隊員的 `x.goldFind`、`x.matFind`、`x.expBonus` 加總（各自上限 100）：
-    - 金幣與經驗各乘以 (1 + 加總 ÷ 100)，四捨五入；
-    - 素材的掉落機率乘以 (1 + matFind ÷ 100)。
-- **公式順序**（在 `calcDamage` 裡）：
-  1. 閃避：隊員用 `evadeChance(t.x.evasion, a.level)`；敵人直接用 `t.x.evasion ÷ 100`。
-  2. 原本的基礎傷害、弱點與抗性倍率。
-  3. 攻擊方的 `${element}Dmg`；目標的 `${element}Res`。phys 不吃這兩項。
-  4. `vuln`：只在打中弱點（倍率 > 1）時生效。(implementer's call → fixed here：遊戲裡沒有「易傷」狀態，所以用「打中弱點」代替。)
-  5. `eliteDmg`：目標是 `boss`，或 `tint === 'elite'` 時生效。
-  6. 暴擊：機率是 `a.x.crit`；暴擊時 ×(1 + `a.x.critDmg` ÷ 100)。敵人的 critDmg 一律是 50。
-  7. phys 傷害吃目標的 `armorReduction(t.x.armor, a.level)`。
-  8. phys 傷害吃 `block`：機率 = block ÷ 100，擋下時減半。
-  9. melee 吃 `meleeDR`，否則吃 `rangedDR`。
-  10. 最後是原本的防禦姿態 ×0.5。
-- **其他鉤子**：
-  - `multi`：只對 `hits` 是 1 或沒寫的傷害效果；有 `multi ÷ 100` 的機率多打 1 段。
-  - `tpCost`：技能消耗變成 `ceil(tp × (1 − tpCost ÷ 100))`；原本 > 0 的技能最少要 1。
-  - `tpRegen`：每回合結束時，存活的隊員回復這麼多 TP。
-  - `gauge`：每次行動和受傷累積的絕技量表 ×(1 + gauge ÷ 100)，無條件捨去。
-  - `heal`：治療量 ×(1 + heal ÷ 100)。
-  - `poisonRes`、`sleepRes`：中毒與睡眠的機率 ×(1 − res ÷ 100)。
-- **亂數規則**：只有機率 > 0 時才抽亂數，包括閃避、暴擊、格擋、多段。
-  - 這樣沒有這些屬性的戰鬥，抽到的亂數序列和現在完全相同，現有的種子測試與平衡數字都不會改變。
+  - `GameState` 新增 `codex: string[]`、`autoJunk: AutoJunk`；`DungeonProgress` 新增 `bossKills: Record<string, number>`，鍵的格式是 `${region}:${depth}`。
+  - `buy(s, id)`：
+    - id 是底材時，呼叫 `rollItem(rng, { uid: mintUid(n), ilvl: EQUIPMENT[id].ilvl, rarity: 'common', base: id })`，結果放進 `bag`。
+    - 普通級不會擲詞綴，所以 rng 傳 `mulberry32(0)` 即可。
+    - 背包滿時回傳 `'full'`。
+  - `sellGear(s, uids: number[])`：賣價依 `sellPrice`。賣掉的裝備不計入 `sold`。
+  - `toggleJunk(s, uid)`、`setAutoJunk(s, mode)`、`sortBagIn(s, by)`：回傳型別都是 `TownResult`。
+- 存檔驗證：`codex` 裡的每一項都要能被 `codexName` 查到；`bossKills` 是計數；`autoJunk` 必須是三個合法值之一。
+
+- [ ] **Step 1: 寫失敗的測試**
+  - `save.test.ts`：
+    - Review Focus 4：`round-trips codex, auto junk and boss kills`。這個「存讀後擊殺次數仍在」的測試只在這裡寫一次。
+    - `rejects an unknown codex id, a negative boss kill count, a bad auto-junk mode`。
+  - `town.test.ts`：
+    - `buying a base puts a common item of that base and level in the bag`。
+    - Review Focus 1：`a full bag refuses buying`。
+    - `selling gear pays sellPrice and does not count toward unlocks`。
+    - `junk toggles; sorting reorders the bag`。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine/save.test.ts src/scripts/games/starlantern/engine/town.test.ts`
+- [ ] **Step 3: 實作**
+- [ ] **Step 4: 執行全套，確認全部通過**
+  - 原因：`GameState` 的形狀有變。
+- [ ] **Step 5: commit**
+  - 訊息：`feat(starlantern): save v4 with codex, boss kills and junk; buy and sell gear`
+
+### Task 6: 介面跟上新的資料形狀（原 4c）
+
+**Files:**
+- Modify：
+  - `ui2/scenes/shop.ts`、`ui2/scenes/shop.test.ts`
+  - `ui2/scenes/statusTabs.ts`、`ui2/scenes/status.test.ts`
+  - `ui2/scenes/equip.ts`、`ui2/scenes/equip.test.ts`
+  - `data/text.zh-TW.ts`
+
+**Interfaces:**
+- Consumes：Task 5 的 `buy`、`'full'`；Task 4 的 `SLOTS`、`defaultSlotFor`、`equip`。
+- 商店：
+  - 買底材後放進 `bag`。
+  - 失敗原因是 `'full'` 時，說「背包已滿（60 件）」。
+  - 購買數量的上限，同時受金幣和背包剩餘格數限制。
+- 狀態頁的裝備分頁：照 `SLOTS` 列出 9 格，名稱加上 `.slx-rarity-${r}`。
+- 裝備頁（保持舊的版面）：
+  - 候選清單是 `bag` 裡符合所選欄位的物品；
+  - 選戒指格時，穿到玩家選的那一格。
+  - 新版面留到 Task 14。
+
+- [ ] **Step 1: 寫失敗的 DOM 測試**
+  - `shop.test.ts`：
+    - `buying a base adds it to the bag and the full bag is announced`；
+    - `the quantity box caps at the free bag slots`。
+  - `status.test.ts`：`the gear page lists nine slots with rarity classes`。
+  - `equip.test.ts`：`a ring goes to the chosen ring slot`。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/ui2`
+- [ ] **Step 3: 實作**
+- [ ] **Step 4: 執行 ui2 測試，確認通過**
+  - `npx vitest run src/scripts/games/starlantern/ui2`
+- [ ] **Step 5: commit**
+  - 訊息：`feat(starlantern): shop, sheet and equip screens read the bag`
+
+### Task 7: 戰鬥傷害公式（原 5a）
+
+**Files:**
+- Modify：
+  - `engine/combatant.ts`、`engine/combatant.test.ts`
+  - `engine/battle.ts`、`engine/battle.test.ts`
+  - `engine/skills.ts`
+  - `engine/testing.ts`
+  - `ui2/battleText.ts`、`ui2/battleText.test.ts`
+  - `data/text.zh-TW.ts`
+
+**Interfaces:**
+- Consumes：Task 1 的 `armorReduction`、`evadeChance`；Task 4 的 `sheetOf`、`powersOf`；`scaling.ts` 的 `homeLevel`。
+- Produces：
+  - `Combatant` 新增 `x: Partial<Record<SecondaryKey, number>>`、`level: number`、`powers: string[]`。
+  - `battle.ts` 裡建立戰鬥單位的私有函式：
+    - `fromMember(m, cell)`：`level = m.level`；`x` 取自 `sheetOf(m)` 的衍生屬性；`powers = powersOf(m)`。
+    - `fromEnemy(d, key, name, tint, level)`：`x` 取自 `d.sec ?? {}`；`powers` 是空陣列。
+    - 敵人等級由 `createBattle` 傳入：有 `sc` 時是 `depthLevel(sc.depth)`，否則是 `homeLevel(d)`。
+  - `engine/testing.ts` 的 `makeCombatant` 預設 `x: {}`、`level: 1`、`powers: []`。
+  - `calcDamage(a, t, spec, rng)` 回傳 `{ amount; mult; crit: boolean; miss: boolean }`。
+  - `BattleEvent`：damage 事件新增 `crit?: boolean`；另外新增 `{ type: 'miss'; target: string }`。
+  - `applyEffect`：命中失敗時記錄 `miss`；`multi` 有機率多打 1 段，只對 `hits` 是 1 或沒寫的效果。
+- **calcDamage 的順序：**
+  1. 閃避：隊員用 `evadeChance(t.x.evasion, a.level)`；敵人用 `t.x.evasion ÷ 100`。
+  2. 原本的基礎傷害與弱點／抗性倍率。
+  3. 元素加成：攻擊方的 `${el}Dmg`、受擊方的 `${el}Res`；phys 兩者都不吃。
+  4. `vuln`：只在打中弱點時生效。
+  5. `eliteDmg`：目標是 boss，或是 `tint === 'elite'`。
+  6. 暴擊：機率是 `crit ÷ 100`，傷害乘以 (1 + critDmg ÷ 100)；敵人一律用 50。
+  7. 物理傷害吃 `armorReduction(t.x.armor, a.level)`。
+  8. 物理傷害吃格擋：機率是 `block ÷ 100`，擋下時減半。
+  9. 近戰吃 `meleeDR`，其他吃 `rangedDR`。
+  10. 最後套用原本的防禦減半。
+- **亂數規則**：只有在機率 > 0 時才抽亂數。因此沒有這些屬性的戰鬥，抽到的序列和現在完全相同。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `combatant.test.ts`：
-    - `zero secondaries consume no extra randomness`：用一個會計數的 rng，x 是空的時候，`calcDamage` 只呼叫 rng 1 次，和現在一樣。
-    - `crit multiplies by 1 + critDmg`：`constRng(0)`，crit 100 → `crit: true`。
+    - `zero secondaries consume exactly one random number, as before`：用一個會計數的 rng 確認。
+    - `crit multiplies by 1 + critDmg`。
     - `an evaded hit deals nothing and logs miss`。
     - `armor only reduces physical damage, with diminishing returns`。
-    - `fire damage bonus and fire resistance multiply; physical ignores both`。
+    - `fire bonus and resistance multiply; physical ignores both`。
+    - `vuln only on weakness hits; eliteDmg only on elites and bosses`。
     - Review Focus 2：`damage stays finite with capped stats at level 198`。
   - `battle.test.ts`：
-    - `tpRegen restores TP at the end of the round`；
-    - `tpCost lowers the cost but never to zero`；
-    - `gold and exp find raise rewards`。
-  - `skills.test.ts`：
-    - `patchSkill applies hits, target, power, element, hpCost, turns, chance and extra`；
-    - `a member wearing 雙月槍 sweeps twice`：`skillFor` 回傳的 `sweep` 是 `hits: 2`、`power: 52`（80 × 65%）。
-  - `scaling.test.ts`：
-    - `depth 1 mainline enemies are unchanged`：現有的測試要繼續通過；`sec` 是空的，或全部是 0。
-    - `deep enemies gain crit, evasion and resistances, compensated in hp and attack`：第 10 層的狼 `sec.crit` 等於 9；hp 等於「舊的值 × (1 − 0.072) × (1 − 0.3 × 0.18)」，四捨五入。
+    - `members fight with their sheet's secondaries and level; enemies with the fight's depth level`。
+    - `multi adds one hit only to single-hit effects`。
   - `battleText.test.ts`：`a crit and a miss are worded`。
-- [ ] **Step 2: 執行測試，確認失敗**
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine src/scripts/games/starlantern/ui2/battleText.test.ts`
 - [ ] **Step 3: 實作**
-  - 這幾個檔案都是 CRLF（見 Global Constraints）。
-  - 文案加到 `T.log`：`miss: (who) => \`${who} 閃過了攻擊\``；`crit: '（暴擊）'`，接在傷害那一行後面。
-- [ ] **Step 4: 執行測試，確認通過**
-  - Run：`npx vitest run src/scripts/games/starlantern/engine --testTimeout=20000`
-  - `balance.test.ts` 第 1–9 項必須全部通過，不可放寬門檻。
-  - 第 7、8 項如果因為亂數雜訊掉出範圍，可以調的只有 `compensation` 的 0.3 和 0.5 這兩個係數。調整後在 commit 訊息寫明新的值。
+  - 新增文案：
+    - `T.log.miss(who)`：「${who} 閃過了攻擊」
+    - `T.log.crit`：「（暴擊）」
+- [ ] **Step 4: 執行全套，確認全部通過**
+  - `balance.test.ts` 第 1–9 項的數字不可以變：沒穿裝備時，不會多抽亂數。
 - [ ] **Step 5: commit**
-  - 訊息：`feat(starlantern): crits, evasion, armor, resistances and legendary powers in battle`
+  - 訊息：`feat(starlantern): crits, evasion, armor, block and elemental modifiers in damage`
 
-### Task 6: 掉落接進迷宮（冒險背包、重量、精英、寶庫、頭目、圖鑑）
+### Task 8: 敵人的深度屬性與補償（原 5b）
 
 **Files:**
-- Modify:
-  - `engine/game.ts`, `engine/game.test.ts`
-  - `engine/dungeon/run.ts`, `engine/dungeon/run.test.ts`
-  - `engine/save.test.ts`
-  - `engine/events.ts`, `engine/events.test.ts`
-  - `data/weights.ts`
-  - `ui2/scenes/battle.ts`, `ui2/scenes/dungeon.ts`, `ui2/scenes/event.ts`
-  - `data/text.zh-TW.ts`
+- Modify：`engine/scaling.ts`、`engine/scaling.test.ts`、`engine/balance.test.ts`（只執行，不修改）
 
 **Interfaces:**
-- Consumes：Task 3 的 `rollGear`、`rollBossGear`、`rollRareMaterial`、`GEAR_CHANCE`、`itemWeight`；Task 4 的 `BAG_SIZE`、`applyAutoJunk`、`mintUid`、`sheetOf`。
+- Consumes：Task 1 的 `enemySecondary`、`compensation`。
 - Produces：
-  - `Run.loot` 改成 `{ items: Record<string, number>; gold: number; gear: ItemInstance[] }`。
-  - `Run.rolls` 的值改成 `{ item: string; qty: number; gear?: ItemInstance }`：寶箱開出的裝備第一次就固定下來，`item` 是底材 id，`qty` 是 1。
-  - `BattleEnd` 新增 `gear: ItemInstance[]`（帶走的）和 `gearLeft: ItemInstance[]`（放不下的）。
-  - `MoveResult`：
-    - `chest` 新增 `gear?: ItemInstance`；
-    - `vault` 新增 `gear: ItemInstance[]`；
-    - `full` 新增 `gear?: ItemInstance` 和 `bag?: boolean`：`bag` 為 true 代表 60 格滿了，不是超重。
-  - `Game.discardGear(uid: number): boolean`：從冒險背包丟掉一件。
-  - `data/weights.ts`：
-    - `capacity(party)` 改成 `40 + 上陣成員 sheetOf(m).str 合計 × 0.5`。因為自然力量 = atk，沒穿裝備時的數字和現在相同。
-    - `carried(state, run)` 再加上 `run.loot.gear` 的 `itemWeight`。
-    - 身上穿著的裝備不計重量。(implementer's call → fixed here)
-    - `weightOf(id)` 刪掉讀 `EQUIPMENT` 的分支，因為裝備只會以物品實體存在。
-  - 「放得下」的規則：重量沒超過上限，而且 `state.bag.length + run.loot.gear.length < BAG_SIZE`。
-- **規則**：
-  - 一般戰鬥：每打倒 1 隻怪，有 `GEAR_CHANCE.monster` 的機率掉 1 件。來源是 monster；精英那一隻用 elite。
-  - 精英：必掉 1 件 elite 來源的裝備，再加 1 個 `rollRareMaterial`。
-    - 這就是 `game.ts` 的 `// TODO(plan 5): elites always drop a rare material`，完成後刪掉這行 TODO。
-  - 頭目：用 `rollBossGear`，鍵是 `${region}:${depth}`。
-    - `bossRepeat` 在 `state.dungeon.bossKills[key] > 0` 時為真；打倒後把它加 1。
-    - 本道第 3 層的劇情頭目也記錄。
-  - 寶箱：有 `GEAR_CHANCE.chest` 的機率開出 1 件 chest 來源的裝備，取代原本的寶箱內容。
-  - 寶庫：維持 3 倍的寶箱量；`VAULT_PLACEHOLDER` 改成 1 個稀有素材，再加 1 件 vault 來源的裝備。
-    - 刪掉 `events.ts` 和 `game.ts` 裡指向計畫 5 的 TODO。
-  - 撿起時，依 `state.autoJunk` 套上 `applyAutoJunk`。
-  - 平安回城時，`run.loot.gear` 併入 `state.bag`。特殊物品的 id，以及套裝的 id，加進 `state.codex`，不重複。
-  - 全滅時照舊清空冒險背包，裝備也一起失去，`codex` 不變。
-  - `banked` 新增 `gear: ItemInstance[]`。
-- 介面只做最小的串接，光柱在 Task 11：
-  - 戰鬥結果、寶箱訊息、寶庫訊息，用 `itemName` 列出裝備名稱；
-  - 每一行加上 `slx-rarity-${rarity}` 的 class；
-  - `fullLayer` 遇到 `bag: true` 時，顯示「背包已滿（60 件）」，並列出冒險背包裡的裝備，讓玩家可以丟。
+  - `scaleEnemy` 回傳的 `EnemyDef` 帶上 `sec`。
+  - 能力值在原本的倍率之後，再乘上 `compensation(sec)`。
+  - 刪除 `TRAIT.evasive`（spd ×1.15 的替代品）以及它的說明註解，因為現在已經有真正的閃避與暴擊。
+- **對平衡的影響**：
+  - 暗影地區的怪少了 15% 速度，多了 evasion +5 與 crit +5。這兩項會被補償，所以 HP 和攻擊會略低。
+  - 整體可能稍微變簡單。第 7 項暗影的 hpLoss 下限 0.1 是需要觀察的點。
 
 - [ ] **Step 1: 寫失敗的測試**
-  - `game.test.ts`：
-    - `an elite always drops gear of magic or better and one rare material`；
-    - `a boss drops a rare-or-better item; beating the same boss again halves the legendary chance (keyed by region and depth)`：檢查 `bossKills` 的計數，以及傳給 `rollBossGear` 的 `bossRepeat`。
-    - `a vault pays a rare-or-better item and a rare material, not old coins`；
-    - `gear waits in the run pack and is banked, adding specials to the codex`；
-    - Review Focus 4：`a wipe loses run gear and leaves the codex untouched`；
-    - Review Focus 1：`a full bag (60 with the run pack) keeps the chest shut and reports full with bag: true`。重量也一樣：超重時回報 `full`，而且裝備仍留在原地；丟掉一件之後，再踩一次就撿得起來。
-    - `capacity uses strength and is unchanged for a party without gear`。
-  - `save.test.ts`：Review Focus 4 的 `boss kills survive a save and reload`。
-- [ ] **Step 2: 執行測試，確認失敗**
+  - `scaling.test.ts`：
+    - `depth 1 mainline enemies are unchanged`：保留現有測試，並加上「`sec` 每一項都是 0」。
+    - `a depth 10 wolf has crit 9 and compensated hp`：
+      - hp 等於 `round(舊 hp × (1 − 0.072) × (1 − 0.3 × 0.18))`；
+      - 舊 hp 是現在 `scaleEnemy` 在第 10 層的結果，在測試裡先計算出來。
+    - `shade monsters gain evasion and crit instead of the old speed stand-in`。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine/scaling.test.ts`
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行測試，確認通過**
-  - Run：`npx vitest run src/scripts/games/starlantern --testTimeout=20000`，全部通過。
+- [ ] **Step 4: 執行全套，確認全部通過**
+  - `balance.test.ts` 第 1–9 項必須全部通過，門檻不可以放寬。
+  - 第 7、8 項如果因為雜訊或暗影的變化掉出範圍，只能調 `compensation` 裡的 0.3 和 0.5。調整後的值要寫在 commit 訊息裡。
+- [ ] **Step 5: commit**
+  - 訊息：`feat(starlantern): deep enemies crit, evade and resist, compensated`
+
+### Task 9: 傳說特效、其他戰鬥鉤子，以及戰鬥畫面與模擬改讀實際技能（原 5c）
+
+**Files:**
+- Modify：
+  - `engine/skills.ts`、`engine/skills.test.ts`
+  - `engine/battle.ts`、`engine/battle.test.ts`
+  - `engine/sim.ts`
+  - `ui2/scenes/battle.ts`、`ui2/scenes/battle.test.ts`
+
+**Interfaces:**
+- Consumes：Task 2 的 `POWERS`、`SkillMod`；Task 7 的 `Combatant.powers`、`x`。
+- Produces：
+  - `patchSkill(def: SkillDef, mod: SkillMod): SkillDef`，放在 `engine/skills.ts`。
+  - `skillFor(c: Combatant, id: string): SkillDef`，放在 `engine/battle.ts`：依序套上這個角色身上、指向這個技能的特效。
+  - `skillCost(c: Combatant, id: string): number`，放在 `engine/battle.ts`：
+    - 計算 `ceil(tp × (1 − tpCost ÷ 100))`；
+    - 原本 TP > 0 的技能，最少要 1。
+  - `perform` 的 skill 分支改用 `skillFor` 和 `skillCost`。
+  - `ui2/scenes/battle.ts` 第 174、181 行，以及 `engine/sim.ts` 的 `choose()`，目標與 TP 都改讀 `skillFor` 和 `skillCost`，不再直接讀 `SKILLS`。
+  - 其他鉤子：
+    - `tpRegen`：每回合結束時回復 TP。
+    - `gauge`：每次累積的絕技量表乘以 (1 + gauge ÷ 100)，結果無條件捨去。
+    - `heal`：治療量乘以 (1 + heal ÷ 100)。
+    - `poisonRes`、`sleepRes`：中毒、睡眠機率乘以 (1 − res ÷ 100)。
+  - `rewards(s, rng, dropBoost, dropMul)` 簽名不變。在函式內加總存活隊員的 goldFind、matFind、expBonus，每項最多 100：
+    - 金幣與經驗乘以 (1 + 加總 ÷ 100)，四捨五入；
+    - 素材機率乘以 (1 + matFind ÷ 100)。
+
+- [ ] **Step 1: 寫失敗的測試**
+  - `skills.test.ts`：
+    - `patchSkill applies every SkillMod field; hpCost 0 is kept`。
+    - `a member wearing 雙月槍 sweeps twice at power 52`。
+  - `battle.test.ts`：
+    - `tpRegen restores TP at the end of the round`。
+    - `tpCost lowers the cost but never to zero`。
+    - `gold and exp find raise rewards`。
+    - `sleep resistance lowers the chance`：用 `constRng`，觀察結果是否跨過門檻。
+  - `ui2/scenes/battle.test.ts`：
+    - `a legendary that makes 月光 hit all allies skips the target pick`。
+    - `the skill list shows the reduced TP cost and greys by it`。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine src/scripts/games/starlantern/ui2/scenes/battle.test.ts`
+- [ ] **Step 3: 實作**
+- [ ] **Step 4: 執行全套，確認全部通過**
+- [ ] **Step 5: commit**
+  - 訊息：`feat(starlantern): legendary powers and resource hooks, read by screen and sim`
+
+### Task 10: 掉落接進迷宮（引擎，原 6a）
+
+**Files:**
+- Modify：
+  - `engine/game.ts`、`engine/game.test.ts`
+  - `engine/dungeon/run.ts`、`engine/dungeon/run.test.ts`
+  - `engine/events.ts`、`engine/events.test.ts`
+  - `engine/loot/drops.ts`：`lootRng` 與 `chestHasGear` 放在這裡。
+  - `data/weights.ts`
+  - `ui2/scenes/event.test.ts`：
+    - 第 161 行改成斷言 `RARE_MATERIALS` 裡有某一項 ≥ 1；
+    - 第 205–222 行改用 `chestHasGear` 為假的寶箱，其餘斷言不變。
+
+**Interfaces:**
+- Consumes：Task 3 的 `rollGear`、`rollBossGear`、`rollRareMaterial`、`GEAR_CHANCE`、`itemWeight`；Task 4 的 `BAG_SIZE`、`applyAutoJunk`、`mintUid`、`sheetOf`；Task 5 的 `codex`、`bossKills`、`autoJunk`。
+- Produces：
+  - `Run` 的變動：
+    - `loot` 新增 `gear: ItemInstance[]`；
+    - 新增 `gearRolls: Record<string, ItemInstance | null>`：寶箱和寶庫的裝備，第一次擲出後就固定；
+    - 新增 `lootDraws: number`。
+  - `lootRng(run: Run): Rng`，放在 `engine/loot/drops.ts`：
+    - 回傳 `mulberry32(hash(run.seed, run.lootDraws++))`；
+    - 迷宮裡所有與裝備有關的亂數都從這裡拿，不碰 `game.rng`。
+  - `chestHasGear(run: Run, depth: number, at: Pos): boolean`：
+    - 依「種子＋深度＋座標」雜湊，對 `GEAR_CHANCE.chest` 做判斷；
+    - 純函式，不會改變任何狀態。
+  - `BattleEnd` 新增 `gear: ItemInstance[]`、`gearLeft: ItemInstance[]`。
+  - `MoveResult` 的變動：
+    - `chest` 新增 `gear?: ItemInstance`；
+    - `vault` 新增 `gear: ItemInstance[]`；
+    - `full` 新增 `gear?: ItemInstance` 與 `bag?: boolean`。
+  - `Game.discardGear(uid): boolean`。
+  - `Game.mintUid(): number`：包裝 `mintUid(this.state)`，給 e2e 的除錯介面使用。
+  - `data/weights.ts`：
+    - `capacity(party)` = 40 + 上陣成員的 `sheetOf(m).str` 合計 × 0.5。
+    - `carried(state, run)` 加上冒險背包裡裝備的 `itemWeight` 合計。身上穿著的裝備不計入。
+    - `weightOf(id)` 刪掉讀 `EQUIPMENT` 的那個分支。
+  - 「放得下」的條件：沒有超重，而且 `bag.length + run.loot.gear.length < BAG_SIZE`。
+- **規則：**
+  - 一般戰鬥：每打倒 1 隻怪，有 `GEAR_CHANCE.monster` 的機率掉一件，來源是 monster。
+  - 精英：必掉 1 件來源是 elite 的裝備，再加 1 個 `rollRareMaterial`。完成後刪掉 `game.ts:343` 的 TODO。
+  - 頭目：
+    - 呼叫 `rollBossGear`，`bossRepeat = bossKills[key] > 0`，然後把 `bossKills[key]` 加 1；
+    - 本道第 3 層的劇情頭目也要計數。
+  - 寶箱：
+    - 素材照舊從 `rollChest` / `run.rolls` 來，維持原樣；
+    - `chestHasGear` 為真時，另外加一件來源是 chest 的裝備，存在 `gearRolls`；
+    - 是否放得下，要把素材重量和 `itemWeight` 加在一起算。
+  - 寶庫：
+    - 素材部分是 `rollChest` 的 3 倍，只有素材乘 3；
+    - 刪掉 `VAULT_PLACEHOLDER`，改給 1 個稀有素材，再加 1 件來源是 vault 的裝備；
+    - 同時刪掉 `events.ts:51-53` 與 `game.ts:262` 的 TODO。
+  - 撿起來的裝備，套用 `applyAutoJunk(it, state.autoJunk)`。
+  - `toTown`：
+    - 判斷要不要入庫時，`loot.gear` 也要算進去；
+    - 裝備併入 `bag`；
+    - 特殊物品的 id 與套裝 id 加進 `codex`，不重複；
+    - `banked` 新增 `gear` 欄位。
+  - 全滅：裝備也一起失去，`codex` 不變。
+
+- [ ] **Step 1: 寫失敗的測試，並更新被影響的測試**
+  - `game.test.ts`：
+    - 第 148–160、418、474–478、503–509 行：原本斷言寶箱精確結果的測試，改成挑一個 `chestHasGear` 為假的寶箱，斷言內容不變。
+    - 第 520–528 行改寫：冒險背包的裝備放進 `run.loot.gear`，各件重量用 `itemWeight` 計算。
+    - `an elite always drops magic-or-better gear and one rare material`。
+    - `a boss drops rare-or-better; the same region and depth again passes bossRepeat`。
+    - `a chest with gear gives its materials and the item; weight counts both`。
+    - `a vault triples materials only and adds a rare material and a rare-or-better item`。
+    - `gear waits in the run pack and is banked, specials and sets into the codex`。
+    - `a gear-only run still banks`。
+    - Review Focus 4：`a wipe loses run gear and leaves the codex untouched`。
+    - Review Focus 1：`a full bag (60 with the run pack) keeps the chest shut and reports full with bag: true; discarding makes room`。
+    - `capacity rises by 5 when a member wears str +10`。這個測試在 capacity 還讀 atk 時會失敗。
+    - `gear randomness does not touch game.rng`：開箱前後各取一次 `game.rng()`，和對照組相同。
+  - `events.test.ts` 第 215–226 行：改成斷言「素材 = 寶箱的 3 倍」、「恰好 1 個 `RARE_MATERIALS` 裡的素材」、「`gear` 有一件稀有以上」。
+  - `run.test.ts`：`lootRng advances and is reproducible from the seed`；`chestHasGear is pure and hits about 35% over 2000 spots`。
+  - `ui2/scenes/event.test.ts`：照 Files 的說明修改。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine`
+- [ ] **Step 3: 實作**
+- [ ] **Step 4: 執行全套，確認全部通過**
+  - `npx vitest run src/scripts/games/starlantern --testTimeout=20000`
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): monsters, chests, elites, vaults and bosses drop gear`
 
-### Task 7: 換裝比較與物品說明
+### Task 11: 掉落顯示在畫面上（介面，原 6b）
 
 **Files:**
-- Create: `engine/compare.ts`, `engine/compare.test.ts`
-- Modify: `data/text.zh-TW.ts`
+- Modify：
+  - `ui2/scenes/battle.ts`、`ui2/scenes/battle.test.ts`
+  - `ui2/scenes/dungeon.ts`、`ui2/scenes/dungeon.test.ts`
+  - `ui2/scenes/event.ts`、`ui2/scenes/event.test.ts`
+  - `data/text.zh-TW.ts`
 
 **Interfaces:**
-- Consumes：Task 4 的 `sheetOf`、`slotsFor`、`setCounts`；Task 3 的 `itemStats`、`itemSlot`。
+- Consumes：Task 10 的 `BattleEnd.gear` / `gearLeft`、`MoveResult` 的 `gear` 和 `bag`、`Game.discardGear`；Task 3 的 `itemName`。
+- 畫面：
+  - 戰鬥結果、寶箱、寶庫的訊息都列出裝備名稱，每一行加上 `.slx-rarity-${r}`；
+  - 放不下的裝備顯示「背包已滿，留下了 X」。
+- `fullLayer` 遇到 `bag: true` 時：
+  - 標題是「背包已滿（60 件）」；
+  - 清單列出冒險背包裡的裝備，選一件就呼叫 `discardGear`，再呼叫 `pickUpHere`。
+
+- [ ] **Step 1: 寫失敗的 DOM 測試**
+  - `battle.test.ts`：`won gear is listed with its rarity class; gear left behind is named`。
+  - `dungeon.test.ts`：`a chest with gear names the item in its rarity colour`。
+  - `event.test.ts`：
+    - `the vault lists its gear`；
+    - `a full bag offers run-pack gear to discard and then picks up`。
+- [ ] **Step 2: 執行，確認失敗**
+- [ ] **Step 3: 實作**
+- [ ] **Step 4: 執行全套，確認全部通過**
+- [ ] **Step 5: commit**
+  - 訊息：`feat(starlantern): show dropped gear by rarity and let a full bag make room`
+
+### Task 12: 換裝比較與物品說明
+
+**Files:**
+- Create：`engine/compare.ts`、`engine/compare.test.ts`
+- Modify：`data/text.zh-TW.ts`
+
+**Interfaces:**
+- Consumes：Task 4 的 `sheetOf`、`setCounts`；Task 3 的 `implicitStats`、`itemSlot`；Task 2 的 `SPECIALS`、`POWERS`、`SETS`。
 - Produces：
-  - `export function compareDelta(m: Member, slot: Slot, item: ItemInstance | null): Partial<Record<AnyStat, number>>`：只回傳不是 0 的差值。`item` 是 null 時代表卸下。
-  - `export function defaultSlotFor(m: Member, it: ItemInstance): Slot`
-    - (implementer's call → fixed here) 戒指的規則：有空的戒指格就用它；兩格都滿時，用 ring1。
-  - `export interface ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore'; text: string; active?: boolean }`
-  - `export function itemLines(it: ItemInstance, wearer?: Member): ItemLine[]`
-    - 有 wearer 時，套裝的 2 件和 4 件加成要標出 `active`。
-- 文案 `T.gear`：
-  - `rarity: Record<Rarity, string>`：普通、魔法、稀有、傳說、獨特、套裝；
-  - `statName: Record<AnyStat, string>`：主屬性叫「力量／智力／敏捷／意志」，其他照 spec §3 的名稱；
-  - `affix(key, value)`：百分比屬性顯示成「暴擊率 +5%」，點數屬性顯示成「護甲 +40」；
-  - `ilvl(n)`：「物品等級 n」；
-  - `setBonus(n, text)`；
-  - `junk`：「已標記」；
-  - `weight(w)`。
+  - `compareDelta(m: Member, slot: Slot, item: ItemInstance | null): Partial<Record<AnyStat, number>>`：只回傳不為 0 的差值。
+  - `ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore'; text: string; active?: boolean }`
+  - `itemLines(it: ItemInstance, wearer?: Member): ItemLine[]`：底材加成那一行用 `implicitStats`。
+  - `specialLines(id: string): ItemLine[]`：傳入特殊物品 id 或套裝 id，回傳特效、故事或套裝加成。給圖鑑卡片用，不需要物品實體。
+  - 文案 `T.gear`：
+    - `rarity: Record<Rarity, string>`
+    - `statName: Record<AnyStat, string>`
+    - `affix(key, value)`：百分比屬性顯示「%」，點數屬性顯示數字。
+    - `ilvl(n)`、`setBonus(n, text)`、`junk`、`weight(w)`
 
 - [ ] **Step 1: 寫失敗的測試**
-  - `the delta of a better sword is positive in attack and zero elsewhere`；
-  - `comparing a ring uses the chosen ring slot`；
-  - `unequipping shows the loss`；
-  - `set lines mark the bonuses the wearer has reached`；
-  - `percent stats read as percent, points as points`。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/engine/compare.test.ts`
+  - `the delta of a better sword is positive in attack only`
+  - `comparing a ring uses the given ring slot`
+  - `unequipping shows the loss`
+  - `set lines mark the bonuses the wearer has reached`
+  - `percent stats read as percent, points as points`
+  - `specialLines works from an id alone`
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine/compare.test.ts`
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行測試，確認通過**
+- [ ] **Step 4: 執行，確認通過**
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): gear comparison and item lines`
 
-### Task 8: 裝備頁（9 格人形配置、背包格、物品詳情、排序、自動標記）
+### Task 13: Tab 鍵與切換動作
 
 **Files:**
-- Modify: `ui2/scenes/equip.ts`, `ui2/scenes/equip.test.ts`, `data/text.zh-TW.ts`, `src/styles/_starlantern-ui.scss`
+- Modify：`ui2/input.ts`、`ui2/input.test.ts`
 
 **Interfaces:**
-- Consumes：Task 4 的 `equip`、`unequip`、`toggleJunk`、`setAutoJunk`、`sortBagIn`、`BAG_SIZE`；Task 7 的 `compareDelta`、`defaultSlotFor`、`itemLines`。
-- **版面**：
-  - 左邊是 `.slx-doll`：3 欄的 CSS grid，9 個 `.slx-doll-slot[data-slot]`，排成人形。
-    - 第 1 列：項鍊、頭、副手
-    - 第 2 列：武器、身、手
-    - 第 3 列：戒指 1、腳、戒指 2
-  - 中間是 `.slx-bag`：10 × 6 的 `.slx-bag-cell`。
-  - 右邊是 `.slx-item-detail`：名稱、欄位、物品等級、說明行，以及比較列。
-  - 每格只放文字：欄位名稱，或物品名稱的前 4 個字。外框與文字顏色來自 `.slx-rarity-${r}`。不放任何圖形。
-- **操作**：
-  - 方向鍵在目前的區域內移動。`Q`／`E` 換人。
-  - 在人形格按 Enter：焦點移到背包，背包只亮起符合這一格的物品。
-  - 在背包按 Enter：穿上。目標格是剛才選的格子，沒有的話用 `defaultSlotFor`。
-  - 背包裡，在人形格按左鍵，或在背包第 1 欄按左鍵，都會切換區域。
-  - `C`（menu）打開背包選單：排序（稀有度／欄位／物品等級）、自動標記（關／普通／普通與魔法）、標記或取消標記目前這件。
-  - Esc 一層一層退出。
-  - 滑鼠：點格子等同移動加 Enter。
-- 比較列沿用現有的 `.slx-cmp-row`、`.slx-up`、`.slx-down`，列出 `compareDelta` 的每個鍵。
-- 已標記的物品加上 `.slx-junk`，以灰色顯示。
+- Produces：
+  - `UiAction` 新增 `'swap'`；
+  - `KEYS` 新增 `Tab: 'swap'`，並在 `bindUiInput` 裡對 Tab 呼叫 `preventDefault`，避免瀏覽器移動焦點。
+  - 其他場景收到 `'swap'` 時都忽略。
 
-- [ ] **Step 1: 寫失敗的測試** `equip.test.ts`
-  - `shows nine slots laid out as a figure and a bag of sixty cells`；
-  - `picking a slot then a bag item equips it and the old one returns to the bag`；
-  - `the detail shows affixes and a green/red comparison`：比較列有 `.slx-up` 和 `.slx-down`；
-  - `rings go to the slot the player chose`；
-  - `the bag menu sorts by rarity and sets auto junk`；
-  - `each rarity gets its class and no element carries a style attribute`：用 `querySelectorAll('[style]').length === 0` 檢查；
-  - 現有的換人、取消、滑鼠測試，改寫後要繼續通過。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/ui2/scenes/equip.test.ts`
+- [ ] **Step 1: 寫失敗的測試**
+  - `Tab maps to swap and does not move browser focus`。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/ui2/input.test.ts`
 - [ ] **Step 3: 實作**
-  - SCSS 的稀有度色票放在 `_starlantern-ui.scss` 的變數 `$slx-rarity`：
-    - common #e8e8e8
-    - magic #6f9cff
-    - rare #ffd84a
-    - legendary #ff9a3c
-    - unique #d4af37
-    - set #5fd068
-  - 用 `@each` 產生 `.slx-rarity-*` 的文字色與外框色。(implementer's call → fixed here)
-- [ ] **Step 4: 執行測試，確認通過**
-  - 外加 `npx vitest run src/scripts/games/starlantern/ui2`。
+- [ ] **Step 4: 執行全套，確認全部通過**
+  - 原因：`UiAction` 的形狀有變。
+- [ ] **Step 5: commit**
+  - 訊息：`feat(starlantern): Tab swaps focus areas`
+
+### Task 14: 裝備頁（人形配置、背包格、物品詳情、排序、自動標記）
+
+**Files:**
+- Modify：`ui2/scenes/equip.ts`、`ui2/scenes/equip.test.ts`、`data/text.zh-TW.ts`、`src/styles/_starlantern-ui.scss`
+
+**Interfaces:**
+- Consumes：
+  - Task 4 的 `equip`、`unequip`、`defaultSlotFor`、`BAG_SIZE`；
+  - Task 5 的 `toggleJunk`、`setAutoJunk`、`sortBagIn`；
+  - Task 12 的 `compareDelta`、`itemLines`；
+  - Task 13 的 `'swap'`。
+- **版面**（由左到右）：
+  - `.slx-bag`：10 欄 × 6 列的 `.slx-bag-cell`。
+  - `.slx-doll`：3 × 3 的格子，每格是 `.slx-doll-slot[data-slot]`：
+    - 第 1 列：項鍊、頭、副手；
+    - 第 2 列：武器、身、手；
+    - 第 3 列：戒指 1、腳、戒指 2。
+  - `.slx-item-detail`：名稱、欄位、物品等級、`itemLines`、比較列。
+  - 每一格只顯示文字（欄位名稱，或物品名稱的前 4 個字），顏色和外框來自 `.slx-rarity-*`。
+- **鍵盤**（規則只寫這一次）：
+  - 方向鍵只在目前的區域裡移動，到邊緣就停住。只有下面兩個邊緣例外：
+    - 在人形格最左那一欄按「左」，焦點換到背包，停在同一列的最右格；
+    - 在背包最右那一欄按「右」，焦點換到人形格，停在同一列的最左格。
+  - `swap`（Tab）在兩個區域之間切換，游標停在各自上次的位置。
+  - 在人形格按 Enter：把這一格設成「目標格」，焦點換到背包，不符合的物品變暗。
+  - 在背包按 Enter：
+    - 穿到目標格，前提是物品符合目標格；
+    - 否則穿到 `defaultSlotFor` 決定的格子。
+    - 穿上後清掉目標格。
+  - `menu`（C）打開背包選單：
+    - 排序：依稀有度、欄位、物品等級；
+    - 自動標記：關閉、普通、普通與魔法；
+    - 標記或取消標記目前這件。
+  - `Q` / `E` 換人；Esc 先清掉目標格，再按一次才離開畫面。
+  - 滑鼠點任一格，等同把游標移到那裡再按 Enter。
+- 比較列沿用 `.slx-cmp-row`、`.slx-up`、`.slx-down`。已標記的物品加上 `.slx-junk`。
+- SCSS：
+  - 新增 `$slx-rarity` 對照表：common #e8e8e8、magic #6f9cff、rare #ffd84a、legendary #ff9a3c、unique #d4af37、set #5fd068。
+  - 用 `@each` 產生 `.slx-rarity-*`。
+  - (implementer's call → fixed here)
+
+- [ ] **Step 1: 寫失敗的 DOM 測試**
+  - `nine slots in the figure order and sixty bag cells`
+  - `arrows stay inside the figure; Left from its left column and Tab go to the bag; Right from the bag's right column comes back`
+  - `Enter on a slot then a bag item equips into that slot, the old item returns to the bag`
+  - `a ring picked from the bag with no target goes to defaultSlotFor`
+  - `the detail shows affixes and up/down comparison rows`
+  - `the bag menu sorts and sets auto junk; marked items are greyed`
+  - `no element carries a style attribute`
+  - 現有的換人、取消、滑鼠測試，改寫後都要通過。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/ui2/scenes/equip.test.ts`
+- [ ] **Step 3: 實作**
+- [ ] **Step 4: 執行 ui2 測試，確認通過**
+  - `npx vitest run src/scripts/games/starlantern/ui2`
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): paper-doll equipment page with bag, detail and comparison`
 
-### Task 9: 狀態頁（「能力」改成分類摺疊並列出來源，「裝備」顯示 9 格）
+### Task 15: 狀態頁的「能力」分頁（分類摺疊、來源、列游標）
 
 **Files:**
-- Modify: `ui2/scenes/statusTabs.ts`, `ui2/scenes/status.test.ts`, `data/text.zh-TW.ts`, `src/styles/_starlantern-ui.scss`
+- Modify：`ui2/scenes/statusTabs.ts`、`ui2/scenes/status.ts`、`ui2/scenes/status.test.ts`、`data/text.zh-TW.ts`、`src/styles/_starlantern-ui.scss`
 
 **Interfaces:**
-- Consumes：Task 1 的 `STAT_CATEGORIES`；Task 4 的 `statSources`、`sheetOf`。
+- Consumes：
+  - Task 1 的 `STAT_CATEGORIES`、`StatCategory`；
+  - Task 4 的 `statSources`、`sheetOf`；
+  - Task 12 的 `T.gear.statName`（36 個屬性的名稱）與 `itemLines`（裝備分頁用）。
 - Produces：
-  - `stats` 分頁的 `render`：每個分類是一個 `section.slx-stat-cat[data-cat]`。
-    - 標題是 `.slx-stat-cat-head`，`role=button`，帶 `aria-expanded`；
-    - 內容是現有格式的表格：每個來源一欄，最後是合計。每一列是 `tr[data-stat]`。
-  - `stats` 分頁新增 `onAction`：上下鍵移動分類游標；Enter 切換摺疊；其他按鍵回傳 false。
-  - 摺疊狀態存在模組層級的 `Set<StatCategory>`，換人時保留。預設只展開 primary 和 attack。(implementer's call → fixed here)
-  - `T.ui2.status.sources` 新增 `set: '套裝'`、`primary: '主屬性'`。
-  - `T.ui2.status.cats: Record<StatCategory, string>`：主屬性、攻擊、防禦、元素、資源、其他。
-  - 加總是 0 的列照樣顯示，但加上 `.slx-zero`，用淡色表示。
-  - `gear` 分頁：9 格，名稱依稀有度上色，後面接 `itemLines` 的詞綴摘要。
+  - 每個分類是一個 `section.slx-stat-cat[data-cat]`：
+    - 標題是 `.slx-stat-cat-head`，帶有 `aria-expanded`；
+    - 內容是一張表，每個來源一欄，最後一欄是合計。表格寫法和現在一樣，所以 `.slx-${source}` 不變。
+  - 有一個列游標 `.slx-row-cur`，可以停在分類標題和看得到的資料列上：
+    - `onAction('up' | 'down')` 移動游標，並呼叫 `scrollIntoView({ block: 'nearest' })`，讓游標保持在畫面內；
+    - Enter 停在標題上時，摺疊或展開該分類；
+    - 其他按鍵回傳 false。
+  - 摺疊狀態和游標位置存在模組裡，換人時保留。預設只展開 primary 與 attack。(implementer's call → fixed here)
+  - `status.ts` 的 `render()`：只有切換分頁或換人時才把 `scrollTop` 歸零。同一個分頁重畫時，保留原本的捲動位置。
+  - `T.ui2.status.sources` 新增 `set: '套裝'`、`primary: '主屬性'`；`T.ui2.status.cats` 是 6 個分類名稱。
+  - 合計為 0 的列加上 `.slx-zero`。
 
-- [ ] **Step 1: 寫失敗的測試**
-  - `the stats page groups stats into six collapsible categories`；
-  - `each row shows its sources: base, growth, gear, set and primary`：讓 scarlet 戴一件 str 物品；`[data-stat=atk] .slx-primary` 的文字符合 `/^\+\d+$/`；
-  - `Enter folds and unfolds the category under the cursor, and the state survives paging to another member`；
-  - `the gear page lists nine slots`；
-  - 現有的 `[data-stat=atk] .slx-total`、`.slx-gear` 斷言繼續有效。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/ui2/scenes/status.test.ts`
+- [ ] **Step 1: 寫失敗的 DOM 測試**
+  - `six collapsible categories; rows show base, growth, gear, set and primary sources`：scarlet 戴一件 str 物品時，`[data-stat=atk] .slx-primary` 的文字符合 `/^\+\d+$/`。
+  - `up/down move the row cursor across headers and rows and keep it in view`：happy-dom 沒有 `scrollIntoView`，在原型上 stub，再斷言有被呼叫。
+  - `folding keeps the scroll position`：先設 `bodyEl.scrollTop = 120`，按 Enter 摺疊後重畫，`scrollTop` 仍然是 120。
+  - `other tabs still scroll the body with up/down`
+  - `fold state survives paging to another member`
+  - 現有的 `.slx-total` 和 `.slx-gear` 斷言繼續通過。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/ui2/scenes/status.test.ts`
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行測試，確認通過**
+- [ ] **Step 4: 執行，確認通過**
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): character sheet groups stats by category with sources`
 
-### Task 10: 商店（普通底材、賣素材解鎖高階底材、賣裝備、一鍵賣出已標記）
+### Task 16: 商店的比較與賣裝備
 
 **Files:**
-- Modify: `ui2/scenes/shop.ts`, `ui2/scenes/shop.test.ts`, `data/text.zh-TW.ts`
+- Modify：`ui2/scenes/shop.ts`、`ui2/scenes/shop.test.ts`、`data/text.zh-TW.ts`
 
 **Interfaces:**
-- Consumes：Task 4 的 `buy`、`sellGear`、`isUnlocked`；Task 3 的 `sellPrice`、`itemName`；Task 7 的 `compareDelta`、`defaultSlotFor`。
+- Consumes：
+  - Task 5 的 `sellGear`；
+  - Task 3 的 `rollItem`（用 `base`，產生暫時的實體來預覽）、`sellPrice`、`itemName`；
+  - Task 12 的 `compareDelta`；
+  - Task 4 的 `defaultSlotFor`。
 - 購買清單：
-  - 道具，加上 25 件底材。底材用 `.slx-rarity-common`，右欄是價格與物品等級。
+  - 25 件底材都加上 `.slx-rarity-common`；
+  - 說明欄顯示每位上陣成員穿上之後的 `compareDelta`；
   - 鎖住的底材照舊顯示「需要 素材×N」。
-  - 說明欄改成用 `compareDelta`，算出每位上陣成員換上之後的差值。
-- 解鎖訊息照舊用 `T.ui2.shop.unlocked`。
-- 販賣：分成「素材」和「裝備」兩頁。
-  - 裝備頁列出 `bag`，右欄是 `sellPrice`。
-  - 第一列是「賣出全部已標記（N 件）」；沒有標記的物品時，這一列停用。
+- 販賣分成「素材」和「裝備」兩頁：
+  - 裝備頁的右欄顯示 `sellPrice`；
+  - 第一列是「賣出全部已標記（N 件）」，沒有已標記的物品時停用。
 
-- [ ] **Step 1: 寫失敗的測試**
-  - `buying a base adds a common item to the bag, and a full bag refuses`；
-  - `selling materials still unlocks higher bases (thorn-gauntlets after six thorn fangs)`；
-  - `selling gear pays its price; sell all marked sells only the marked`。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/ui2/scenes/shop.test.ts`
+- [ ] **Step 1: 寫失敗的 DOM 測試**
+  - `selling six thorn fangs unlocks thorn-gauntlets`
+  - `the base preview lists per-member deltas`
+  - `selling gear pays its price; sell all marked sells only marked items`
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/ui2/scenes/shop.test.ts`
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行測試，確認通過**
+- [ ] **Step 4: 執行，確認通過**
 - [ ] **Step 5: commit**
-  - 訊息：`feat(starlantern): shop sells common bases and buys back gear`
+  - 訊息：`feat(starlantern): shop compares bases and buys back gear`
 
-### Task 11: 掉落光柱與音效
+### Task 17: 掉落光柱與音效
 
 **Files:**
-- Create: `ui2/lootFx.ts`, `ui2/lootFx.test.ts`, `audio/SoundManager.test.ts`
-- Modify: `audio/SoundManager.ts`, `ui2/scene.ts`, `ui2/scenes/battle.ts`, `ui2/scenes/battle.test.ts`, `ui2/scenes/dungeon.ts`, `ui2/scenes/dungeon.test.ts`, `ui2/scenes/event.ts`, `src/styles/_starlantern-ui.scss`
+- Create：`ui2/lootFx.ts`、`ui2/lootFx.test.ts`、`audio/SoundManager.test.ts`
+- Modify：
+  - `audio/SoundManager.ts`、`ui2/scene.ts`
+  - `ui2/scenes/battle.ts`、`ui2/scenes/battle.test.ts`
+  - `ui2/scenes/dungeon.ts`、`ui2/scenes/dungeon.test.ts`
+  - `ui2/scenes/event.ts`、`ui2/scenes/event.test.ts`
+  - `src/styles/_starlantern-ui.scss`
 
 **Interfaces:**
+- Consumes：Task 10 的 `BattleEnd.gear` 與 `MoveResult` 的 `gear`；Task 14 的 `$slx-rarity`。
 - Produces：
-  - `export function showPillar(host: HTMLElement, rarity: Rarity, fast: boolean): HTMLElement | null`
-    - 在 host 裡加一個 `.slx-pillar.slx-rarity-${rarity}`，傳說另外加 `.slx-pillar-legend`。
-    - 普通級不出光柱，回傳 null。
-    - fast 為 true 時，直接回傳元素，不設計時器；否則 1200ms 後移除，傳說是 2000ms。
-  - `SoundManager.loot(rarity: Rarity): void`：用現有的 `blip` 和 `noise` 合成。
-    - (implementer's call → fixed here) 音高依稀有度上升：
-      - magic：一聲 660Hz；
-      - rare：660 加 990；
-      - legendary、unique、set：三和弦 523、784、1047，傳說再接一段 noise 的閃光聲。
-    - 有效音量（`sfxVolume × playerVolume`）是 0 時，直接 return，不呼叫 `ensure()`，也不建立任何節點。這就是「尊重靜音設定」：設定頁的音量 0，或全站的 sfxVolume 0。
+  - `showPillar(host: HTMLElement, rarity: Rarity, fast: boolean): HTMLElement | null`
+    - 普通級回傳 null；
+    - 會加上 `.slx-pillar.slx-rarity-${r}`，傳說另外加 `.slx-pillar-legend`；
+    - `fast` 時不設定計時器；否則 1200 ms 後移除，傳說是 2000 ms。
+  - `SoundManager.loot(rarity: Rarity)`：(implementer's call → fixed here)
+    - magic：660 Hz；
+    - rare：660 Hz 再接 990 Hz；
+    - legendary、unique、set：523、784、1047 Hz 三和弦；傳說另外加一段 noise。
+    - 有效音量是 0 時，直接 return，不呼叫 `ensure()`。
   - `SceneCtx.sfx` 的 `Partial<Pick<…>>` 加上 `'loot'`。
-- 觸發點：一次掉落只觸發 1 次，取這次掉落中稀有度最高的那件。
-  - 戰鬥結果顯示時；
-  - 迷宮裡寶箱或寶庫開出裝備時。
-- 光柱是程式效果：漸層加上 CSS 動畫，和現有狀態頁的 `slx-status-rays` 光芒同一種做法。它不是物品圖示，也不是假美術。(implementer's call → fixed here；見文末「與 spec 的衝突」第 4 點)
+- 觸發時機：每次掉落只觸發一次，用最高稀有度的那件。觸發點有三個：戰鬥結果、寶箱、寶庫。
+- 光柱是程式效果（漸層加上 CSS 動畫），已經裁定通過。
 
 - [ ] **Step 1: 寫失敗的測試**
   - `lootFx.test.ts`：
-    - `a pillar per rarity, none for common, a special one for legendary`；
-    - Review Focus 5：`fast mode leaves no timers`：用 `vi.useFakeTimers()`，確認 `vi.getTimerCount()` 是 0。
-  - `SoundManager.test.ts`：
-    - Review Focus 5：`muted loot makes no audio nodes`：stub 一個 `window.AudioContext`，計算 `createOscillator` 被呼叫幾次。`setVolume(0)` 之後呼叫 `loot('legendary')`，次數是 0；`setVolume(1)` 之後次數 > 0。
-  - `battle.test.ts` 和 `dungeon.test.ts` 各加一項：`the best drop raises one pillar and plays loot once`。
-- [ ] **Step 2: 執行測試，確認失敗**
+    - `a pillar per rarity, none for common, a special one for legendary`
+    - Review Focus 5：`fast mode leaves no timers`：用 `vi.getTimerCount()` 確認是 0。
+  - `SoundManager.test.ts`：Review Focus 5：`muted loot makes no audio nodes`。
+    - stub `window.AudioContext`，計算 `createOscillator` 被呼叫的次數；
+    - `setVolume(0)` 時是 0 次，`setVolume(1)` 時大於 0。
+  - `battle.test.ts`、`dungeon.test.ts`、`event.test.ts`：`the best drop raises one pillar and plays loot once`。
+- [ ] **Step 2: 執行，確認失敗**
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行測試，確認通過**
-  - Run：`npx vitest run src/scripts/games/starlantern/ui2 src/scripts/games/starlantern/audio`
+- [ ] **Step 4: 執行，確認通過**
+  - `npx vitest run src/scripts/games/starlantern/ui2 src/scripts/games/starlantern/audio`
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): light pillars and chimes for drops by rarity`
 
-### Task 12: 傳送門卡片顯示地區限定裝備
+### Task 18: 傳送門卡片上的限定裝備
 
 **Files:**
-- Modify: `ui2/scenes/gate.ts`, `ui2/scenes/gate.test.ts`, `data/text.zh-TW.ts`, `src/styles/_starlantern-ui.scss`
+- Modify：`ui2/scenes/gate.ts`、`ui2/scenes/gate.test.ts`、`data/text.zh-TW.ts`、`src/styles/_starlantern-ui.scss`
 
 **Interfaces:**
-- Consumes：Task 2 的 `regionSpecials`、`SETS`；Task 4 的 `state.codex`。
-- `.slx-portal-gear` 改成一份清單：該地區的 2 件特殊物品，加上 1 套套裝名。
-  - 每項是 `.slx-codex-item[data-special]`，帶上 `.slx-rarity-*`。
-  - 還沒取得的：加 `.slx-codex-unknown`，文字是「名稱（未取得）」。
-    - 剪影要等 5d 的圖示：`ctx.art.has(art.icon(id))` 為真時，才放 `<img class="slx-codex-silhouette">`，用 SCSS 的 `filter: brightness(0)` 變成剪影。
-    - 5a 沒有圖示，所以只有文字。(implementer's call → fixed here)
-  - 已取得的：顯示名稱，加上詞綴摘要（`itemLines` 裡的 power 或 lore 那一行）。
-- 本道（mainline）顯示「不限地區的傳說」。
+- Consumes：
+  - Task 2 的 `regionSpecials`、`generalLegendaries`、`SETS`、`codexName`；
+  - Task 12 的 `specialLines`；
+  - Task 5 的 `state.codex`。
+- `.slx-portal-gear` 改成一份清單：
+  - 地區卡片列出 2 件特殊物品和 1 套套裝；
+  - 本道卡片列出 `generalLegendaries()`。
+- 清單的每一項：
+  - 外層是 `.slx-codex-item[data-special]`，加上 `.slx-rarity-*`；
+  - 名稱用 `codexName`；
+  - 還沒取得的，加上 `.slx-codex-unknown`，文字是「名稱（未取得）」；
+  - 已經取得的，附上 `specialLines(id)` 的第一行。
+- 剪影：只有 `ctx.art.has(art.icon(id))` 為真時，才放 `<img class="slx-codex-silhouette">`，用 SCSS 的 `filter: brightness(0)` 做成剪影。5a 沒有圖示，所以只會有文字。
 
-- [ ] **Step 1: 寫失敗的測試**
-  - `a regional card lists its two specials and its set, unknown until obtained`；
-  - `an obtained special shows plainly`；
-  - `no silhouette image without art`。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/ui2/scenes/gate.test.ts`
+- [ ] **Step 1: 寫失敗的 DOM 測試**
+  - `a regional card lists two specials and its set, unknown until obtained`
+  - `an obtained special shows its first line`
+  - `the mainline card lists the general legendaries`
+  - `no silhouette image without art`
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/ui2/scenes/gate.test.ts`
 - [ ] **Step 3: 實作**
-- [ ] **Step 4: 執行測試，確認通過**
+- [ ] **Step 4: 執行，確認通過**
 - [ ] **Step 5: commit**
   - 訊息：`feat(starlantern): portal cards show region-only gear`
 
-### Task 13: 平衡模擬加入隨機裝備的期望值
+### Task 19: 平衡模擬加入隨機裝備的期望值
 
 **Files:**
-- Modify: `engine/sim.ts`, `engine/balance.test.ts`
+- Modify：`engine/sim.ts`、`engine/balance.test.ts`
 
 **Interfaces:**
-- Consumes：Task 3 的 `rollGear`、`itemLevel`；Task 4 的 `SLOTS`、`slotsFor`。
+- Consumes：
+  - Task 3 的 `rollItem`、`rarityWeights`、`itemLevel`、`generalLegendaries`；
+  - Task 4 的 `SLOTS`、`slotsFor`。
 - Produces：
-  - `export function kitParty(level: number, depth: number, seed: number, rarity?: Rarity): Party`
-    - 以 `partyAt(level)` 為基礎，每位成員的 9 格各穿 1 件 `rollGear` 產生的裝備；
-    - 來源 monster，`depth` 照參數，`region: 'mainline'`，rng 是 `mulberry32(seed)`；
-    - 如果給了 `rarity`，就強制那個稀有度，給測試 11 用。
-  - `winRate(level, groups, boss, seeds, scale, altar, kitSeed?: number)`：有 `kitSeed` 時，改用 `kitParty(level, scale?.depth ?? 1, kitSeed)` 當隊伍。
-  - `simBattle` 的簽名不變。
-- 第 1–9 項維持沒穿裝備，數字不可改。
+  - `kitParty(level: number, depth: number, seed: number, rarity?: Rarity): Party`
+    - 以 `partyAt(level)` 為基礎；
+    - 每位成員的 9 格，各放一件 `rollItem` 擲出的物品；
+    - 物品等級是 `itemLevel(depth, 'monster')`，rng 是 `mulberry32(seed)`；
+    - `uid` 從 1 開始依序遞增；`slot` 從對應的 `GearSlot` 取得。
+    - 沒有指定 `rarity` 時：
+      - 依 `rarityWeights('monster', depthLevel(depth), CONDITIONS.plain)` 擲出 tier；
+      - 擲到 legendaryTier 時，算成稀有。因為特效不是能力值，不算入期望值。(implementer's call → fixed here)
+  - `winRate(level, groups, boss, seeds, scale, altar, kitSeed?)`：有 `kitSeed` 時，改用 `kitParty(level, scale?.depth ?? 1, kitSeed)`。
+- 第 1–9 項仍然是沒穿裝備的隊伍。
 
 - [ ] **Step 1: 寫失敗的測試**
-  - 在 `balance.test.ts` 加入：
-    - `10. random gear in expectation keeps the bands`：
-      - 對 d = 4、6、8、10，region 是 mainline 和 blaze；
-      - kitSeed 1–5 各跑 8 個戰鬥種子，取平均；
-      - 勝率 ≥ 0.85；hpLoss 在 0.1 到 0.45 之間。
-    - `11. a full rare kit does not one-round a boss`：
-      - 對深度 5 和 10 的頭目（`scale: { depth, region: 'mainline' }`，敵人 `['lanterneater']`）；
-      - 直接呼叫 `simBattle`，隊伍是 `kitParty(depthLevel(d), d, seed, 'rare')`，seed 取 1–20；
-      - 每一場的 `rounds` 都 ≥ 3。
-  - 這兩項是新的門檻，不是放寬舊的。
-- [ ] **Step 2: 執行測試，確認失敗**
-  - Run：`npx vitest run src/scripts/games/starlantern/engine/balance.test.ts --testTimeout=20000`
-  - Expected：FAIL，原因是 `kitParty` 不存在。
-- [ ] **Step 3: 實作 `kitParty`**
-  - 測試 10 或 11 如果沒過，可以調的只有 `AFFIX_SCALE`（Task 2）。調整後，Task 3 的詞綴範圍測試要跟著過，因為測試是依 `AFFIX_SCALE` 計算的。
-- [ ] **Step 4: 執行測試，確認通過**
+  - `10. random gear in expectation keeps the bands`
+    - d 取 4、6、8、10；region 取 mainline 與 blaze；
+    - kitSeed 1–5，每個各跑 8 場，取平均；
+    - 勝率 ≥ 0.85，hpLoss 介於 0.1 與 0.45 之間。
+  - `11. a full rare kit does not one-round a boss`
+    - 用 `simBattle(kitParty(depthLevel(d), d, seed, 'rare'), ['lanterneater'], true, seed, { depth: d, region: 'mainline' })`；
+    - d 取 5 與 10，seed 取 1–20；
+    - 每一場的 `rounds` 都 ≥ 3。
+- [ ] **Step 2: 執行，確認失敗**
+  - `npx vitest run src/scripts/games/starlantern/engine/balance.test.ts --testTimeout=20000`
+  - 預期：失敗，原因是找不到 `kitParty`。
+- [ ] **Step 3: 實作**
+  - 第 10 或第 11 項沒過時，只能調整 `AFFIX_SCALE`。
+  - Task 2 與 Task 3 的測試都是依 `AFFIX_SCALE` 計算的，所以改了之後仍會通過。
+- [ ] **Step 4: 執行全套，確認全部通過**
   - 第 1–11 項全部通過。
 - [ ] **Step 5: commit**
   - 訊息：`test(starlantern): balance with the expected value of random gear`
-  - 如果調過 `AFFIX_SCALE`，在訊息裡寫出最後的值。
+  - 有調過 `AFFIX_SCALE` 的話，要寫出最後的值。
 
-### Task 14: 端對端、全套測試、截圖與審查
+### Task 20: 端對端、全套測試、截圖與審查
 
 **Files:**
-- Modify: `tests/e2e/starlantern.spec.ts`
+- Modify：`tests/e2e/starlantern.spec.ts`
 
-- [ ] **Step 1: e2e `gear drops, comes home and is worn`**
-  - 出發後，用 `__starlanternDebug.game.run.loot.gear.push(...)` 放進一件傳說；
-  - 用歸還之燈回城，確認回城訊息列出它；
-  - 進公會的「裝備」，在人形格選武器，再從背包選它；
+- [ ] **Step 1：e2e `gear drops, comes home and is worn`**
+  - 出發後，在頁面裡用 `g.mintUid()` 取得 uid，組出一件傳說，推進 `g.run.loot.gear`；
+  - 用歸還之燈回城，回城訊息要列出這件；
+  - 到公會的「裝備」：在人形格選武器，再在背包選這件；
   - 比較列出現 `.slx-up`；
-  - 「狀態」的「能力」顯示主屬性分類，並有套裝或主屬性的來源欄；
-  - 全程不得有 console error。
-- [ ] **Step 2: e2e `a rare chest drop raises a pillar`**
-  - 用 debug 在 `run.rolls` 預先放一件稀有物品，再走上寶箱；
+  - 「狀態」的「能力」分頁有「主屬性」分類與來源欄；
+  - 全程沒有 console error；
+  - 最後在旅館存檔，重新整理後選「繼續」，存檔仍然有效，表示 uid 和 `nextUid` 一致。
+- [ ] **Step 2：e2e `a rare chest drop raises a pillar`**
+  - 用 `g.mintUid()` 做一件稀有，放進某個寶箱的 `g.run.gearRolls[key]`，再走上那個寶箱；
   - 畫面出現 `.slx-pillar.slx-rarity-rare`。
-- [ ] **Step 3: 跑全套並截圖**
-  - 執行 `npx vitest run --testTimeout=20000` 全套，以及 e2e 全套。
-  - 截圖：裝備頁（每種稀有度至少各 1 件）、物品比較、能力分類、各稀有度的光柱、傳送門卡片的限定裝備。
-- [ ] **Step 4: 審查**
-  - 派一個沒參與開發的 opus 代理，用 `~/.claude/skills/review-pr/SKILL.md` 審查本計畫的 diff，並處理它找到的問題。
-- [ ] **Step 5: commit**
+- [ ] **Step 3：全套測試與截圖**
+  - 執行 `npx vitest run --testTimeout=20000`，以及 e2e 全套；
+  - 截圖：各稀有度的物品、比較畫面、能力分類、光柱、傳送門卡片。
+- [ ] **Step 4：審查**
+  - 派一個沒參與開發的 opus 代理，用 `~/.claude/skills/review-pr/SKILL.md` 審查本計畫的 diff，並處理它提出的問題。
+- [ ] **Step 5：commit**
   - 訊息：`test(starlantern): loot core end-to-end`
 
 ---
 
-## 與 spec 的衝突與缺口（實作前請使用者確認）
-1. **限定裝備的範圍**：§5 說「只有少數」獨特、傳說、套裝是地區限定，暗示也有不限地區的獨特和套裝；但 spec 只定義了不限地區的傳說。本計畫的作法：不限地區的只有 8 件傳說（每位角色 1 件），獨特與套裝全部是地區限定。
-2. **主屬性換算會重複計算**：§3 說主屬性「依角色的係數」換算，但舊的 7 項本來就已經包含成長。本計畫的作法：自然主屬性只顯示、不換算；只有裝備和套裝給的主屬性才換算。
-3. **自動分解**：分解要等 5c 的鍛造屋。本計畫的作法是「只標記」，不自動賣掉，理由如下：
-   - 標記可以反悔，自動賣掉不能；
-   - 撿到之後，玩家還來得及看一眼；
-   - 5c 可以直接把「已標記」改成「一鍵分解」，換成精華，不必再改設定的語意。
-4. **光柱和美術政策**：§8 要求光柱，美術政策禁止用 CSS 畫物品。本計畫把光柱當成程式效果（漸層加動畫），和現有的 `slx-status-rays` 同類。如果使用者認為光柱也要走美術流程，Task 11 只要改 SCSS。
-5. **傳送門的剪影需要圖示**：圖示要等 5d，所以 5a 先用「名稱（未取得）」代替，圖示到位後自動變成剪影。
-6. **傳說特效綁的是現有技能 id**：5b 會把技能放進技能樹。如果 5b 改了技能 id，`POWERS` 必須跟著改。
-7. **「易傷加成」沒有對應的狀態**：遊戲裡沒有易傷狀態。本計畫定義為「打中弱點時的額外傷害」。
-8. **敵人的新屬性會讓深處的戰鬥變難**：§3 要求敵人有暴擊、閃避、元素抗性；§10 要求勝率維持在現有範圍。本計畫的作法：用 `compensation` 降低敵人的 HP 和攻擊，讓沒穿裝備時難度不變。這等於「深處的怪更會閃、更會暴擊，但比較脆」。
-9. **稀有素材的歸屬**：素材目錄屬於 5c，但精英的 TODO（`engine/game.ts:343`）和寶庫的佔位（`engine/events.ts:51-53`、`engine/game.ts:262`）現在就需要稀有素材。本計畫先建立 `star-tear` 和 `king-scale` 兩個 id；「每種素材都有用途」的測試由 5c 負責。
-10. **commit 署名不一致**：專案 `CLAUDE.md` 寫的是 `Co-Authored-By: Claude <noreply@anthropic.com>`，本計畫照使用者的指示，用 `Claude Opus 5.5`。
+## 已裁定的 spec 衝突（見 progress.md）
+1. 不限地區的只有傳說；獨特與套裝全部是地區限定。
+2. 自然主屬性只顯示，不換算。
+3. 自動分解在 5c 之前只做標記。
+4. 光柱是程式效果。
+5. 剪影要等 5d 的圖示。
+6. 傳說特效綁定現有的技能 id，5b 要接手處理。
+7. 易傷等於打中弱點時的加成。
+8. 稀有素材的 id 現在先建立。
+9. 敵人的新屬性加上補償。
+10. commit 署名用 Claude Opus 5.5。
