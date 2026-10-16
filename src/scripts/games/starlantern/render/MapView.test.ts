@@ -272,8 +272,11 @@ describe('MapView under 濃霧', () => {
     fog.depart({ region: 'mainline', condition: 'fog' }, 1);
     const view = new MapView(bank);
     view.draw(fog, { width: 640, height: 296 });
-    expect(view.tileCount()).toBeGreaterThan(1);   // the reveal radius is unchanged
-    expect(view.brightCount()).toBe(1);
+    expect([view.tileCount(), view.brightCount()]).toEqual([1, 1]);   // fog reveals only the cell the party stands on
+    const dir = (['up', 'down', 'left', 'right'] as const).find((d) => tileAt(fog.map(), { x: fog.pos.x + DELTA[d].x, y: fog.pos.y + DELTA[d].y }) === 'floor')!;
+    expect(fog.move(dir).kind).toBe('moved');
+    view.draw(fog, { width: 640, height: 296 });
+    expect([view.tileCount(), view.brightCount()]).toEqual([2, 1]);   // the cell left behind is remembered, dimmed
     const plain = new Game(constRng(0.99), null);
     plain.depart(MAIN, 1);
     const v2 = new MapView(bank);
