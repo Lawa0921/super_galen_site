@@ -1,7 +1,7 @@
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import type { CharacterId } from '../../engine/types';
-import { hasSpent, innCost, respec, respecCost, revive, reviveCost } from '../../engine/town';
+import { hasSpent, innCost, respecCost, revive, reviveCost } from '../../engine/town';
 import { el } from '../../ui/dom';
 import { Menu, type MenuItem } from '../menu';
 import type { UiAction } from '../input';
@@ -54,7 +54,7 @@ export class InnScene extends FacilityScene {
     const cost = respecCost(this.ctx.game.state.party.roster[id].level);
     const box = confirmBox(T.ui2.inn.askRespec(name, cost), (yes) => {
       if (!yes) { this.pop(); return; }
-      const r = this.ctx.game.apply(respec(this.ctx.game.state, id));
+      const r = this.ctx.game.respec(id);
       this.popAll();
       if (!r.ok) { this.fail(r.reason); return; }
       this.refresh();

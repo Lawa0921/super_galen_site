@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
 import { buy, equip, innCost, isUnlocked, respec, respecCost, rest, revive, reviveCost, sell, sellGear, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
-import { autoSpend, newTree, raiseTalent, skillPointsLeft, talentPointsLeft } from './progression';
+import { autoSpend, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
 import { plainItem } from './testing';
 import { BAG_SIZE, mintUid } from './loot/bag';
@@ -217,6 +217,7 @@ describe('respec', () => {
     if (!r.ok) throw new Error('no hp talent');
     return r.member;
   };
+  const hpOnlyFull = (): Member => { const m = hpOnly(); m.hp = statsOf(m).hp; return m; };
   const gameWith = (m: Member, gold: number) => {
     const s = newGame();
     s.party.roster.scarlet = m;
@@ -240,14 +241,28 @@ describe('respec', () => {
     expect(talentPointsLeft(after)).toBe(talentPointsLeft(lv10()));
   });
   it('respec clamps HP and TP to the lower maximum', () => {
-    const m = hpOnly();
+    const base: Member = { ...newGame().party.roster.noel, level: 10, tree: newTree('noel'), talents: {} };
+    let m = base;
+    for (const node of ['noel-t01', 'noel-t11']) {   // t11 is a tp talent, reached through t01
+      const r = raiseTalent(m, node);
+      if (!r.ok) throw new Error(`cannot raise ${node}: ${r.reason}`);
+      m = r.member;
+    }
+    expect(statsOf(m).tp).toBeGreaterThan(statsOf(base).tp);
     m.hp = statsOf(m).hp; m.tp = statsOf(m).tp;
-    const r = respec(gameWith(m, 300), 'scarlet');
+    const s = newGame();
+    s.party.roster.noel = m;
+    s.gold = 300;
+    if (!s.party.recruited.includes('noel')) s.party.recruited.push('noel');
+    const r = respec(s, 'noel');
     if (!r.ok) throw new Error('respec failed');
-    const after = r.state.party.roster.scarlet;
-    expect(statsOf(after).hp).toBeLessThan(m.hp);
-    expect(after.hp).toBe(statsOf(after).hp);
-    expect(after.tp).toBeLessThanOrEqual(statsOf(after).tp);
+    const after = r.state.party.roster.noel;
+    expect(statsOf(after).tp).toBeLessThan(m.tp);
+    expect(after.tp).toBe(statsOf(after).tp);
+    const h = respec(gameWith(hpOnlyFull(), 300), 'scarlet');
+    if (!h.ok) throw new Error('respec failed');
+    expect(h.state.party.roster.scarlet.hp).toBe(statsOf(h.state.party.roster.scarlet).hp);
+    expect(statsOf(h.state.party.roster.scarlet).hp).toBeLessThan(hpOnlyFull().hp);
   });
   it('respec is refused without gold or with nothing spent, and costs nothing then', () => {
     const m = spent();
@@ -265,5 +280,22 @@ describe('respec', () => {
     const r = respec(gameWith(m, 300), 'scarlet');
     expect(r.ok && r.state.party.roster.scarlet.tree).toEqual(newTree('scarlet'));
     expect(respec(gameWith(hpOnly(), 300), 'scarlet').ok).toBe(true);   // talents alone count too
+  });
+  it('refuses a roster member who is not recruited', () => {
+    const s = newGame();
+    const out = (Object.keys(s.party.roster) as (keyof typeof s.party.roster)[]).find((id) => !s.party.recruited.includes(id))!;
+    s.party.roster[out].talents = { [`${out}-t01`]: 1 };
+    expect(respec(s, out)).toEqual({ ok: false, reason: 'invalid' });
+    expect(s.gold).toBe(150);
+  });
+  it('keeps equipment and the rest of the member, and the reset build is a legal one', () => {
+    const m = spent();
+    m.equip.weapon = plainItem('iron-sword', 1);
+    const r = respec(gameWith(m, 300), 'scarlet');
+    if (!r.ok) throw new Error('respec failed');
+    const after = r.state.party.roster.scarlet;
+    expect(after.equip).toEqual(m.equip);
+    expect([after.level, after.exp]).toEqual([m.level, m.exp]);
+    expect(validBuild('scarlet', after.level, after.tree, after.talents)).toBe(true);
   });
 });

@@ -169,7 +169,7 @@ export const respecCost = (level: number): number => 25 * level;
  */
 export function respec(s: GameState, memberId: CharacterId): TownResult {
   const m = s.party.roster[memberId];
-  if (!m) return fail('invalid');
+  if (!m || !s.party.recruited.includes(memberId)) return fail('invalid');
   if (!hasSpent(m)) return fail('invalid');
   const cost = respecCost(m.level);
   if (s.gold < cost) return fail('gold');

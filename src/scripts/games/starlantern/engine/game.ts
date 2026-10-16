@@ -19,7 +19,7 @@ import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { rollPortals } from './portals';
 import { newGame, type GameState } from './state';
-import { addItem, buy as townBuy, rest as innRest, type TownResult } from './town';
+import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import type { CharacterId, ItemInstance, Member, Pos } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
@@ -507,6 +507,14 @@ export class Game {
     if (!r.ok) return r;
     this.state = r.state;
     this.notice = this.storage && saveGame(this.storage, this.state) ? 'saved' : 'save-failed';
+    return r;
+  }
+
+  /** The inn's respec: town only, and saved like a night's rest so a reload cannot undo a paid reset. */
+  respec(id: CharacterId): TownResult {
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const r = this.apply(townRespec(this.state, id));
+    if (r.ok) this.notice = this.storage && saveGame(this.storage, this.state) ? 'saved' : 'save-failed';
     return r;
   }
 

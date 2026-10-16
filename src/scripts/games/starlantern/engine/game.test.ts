@@ -1154,4 +1154,27 @@ describe('depth-clear exp', () => {
     expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
     expect(g.state.dungeon.reached.mainline).toBe(5);
   });
+
+describe('respec', () => {
+  const spend = (g: Game) => { g.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 }; };
+  it('saves the respec: a reload keeps the reset build and the gold taken', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage);
+    spend(g);
+    const gold = g.state.gold;
+    expect(g.respec('scarlet').ok).toBe(true);
+    expect(g.notice).toBe('saved');
+    const back = Game.boot(calm(), storage);
+    expect(back.state.party.roster.scarlet.talents).toEqual({});
+    expect(back.state.gold).toBe(gold - 25);
+  });
+  it('is refused outside town and then changes nothing', () => {
+    const g = inMap();
+    spend(g);
+    const gold = g.state.gold;
+    expect(g.respec('scarlet')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.state.gold).toBe(gold);
+    expect(g.state.party.roster.scarlet.talents).toEqual({ 'scarlet-t01': 1 });
+  });
+});
 });

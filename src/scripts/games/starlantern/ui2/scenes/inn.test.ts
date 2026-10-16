@@ -72,7 +72,7 @@ describe('InnScene', () => {
   });
 
   it('重置配點 lists members with their price and resets after a yes', async () => {
-    const { game, s, root, opts } = setup();
+    const { game, s, root, opts, storage } = setup();
     game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };
     const gold = game.state.gold;
     s.onAction('down'); s.onAction('down'); s.onAction('confirm');   // 重置配點
@@ -87,6 +87,7 @@ describe('InnScene', () => {
     s.onAction('up'); s.onAction('confirm');                         // 是
     expect(game.state.party.roster.scarlet.talents).toEqual({});
     expect(game.state.gold).toBe(gold - 25);
+    expect(storage.map.get('starlantern-save')).toBeTruthy();   // saved
     await vi.waitFor(() => expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('絲嘉蕾的配點已重置，點數可以重新分配了。'));
     expect(opts().length).toBe(4);
   });
@@ -105,7 +106,7 @@ describe('InnScene', () => {
     expect(game.state.gold).toBe(gold);
   });
 
-  it('explains when a member has nothing to reset, and when gold is short', async () => {
+  it('explains when a member has nothing to reset', async () => {
     const { game, s, root } = setup();
     s.onAction('down'); s.onAction('down'); s.onAction('confirm');
     s.onAction('confirm');                                           // first member, nothing spent
