@@ -6,7 +6,7 @@ import type { Settings } from '../settings';
 import { SettingsScene } from './settings';
 
 function setup(from?: 'title' | 'town') {
-  let saved: Settings = { volume: 70, textSpeed: 'mid' };
+  let saved: Settings = { volume: 70, textSpeed: 'mid', vibrate: true };
   const store = { get: () => saved, set: vi.fn((s: Settings) => { saved = s; }) };
   const go = vi.fn();
   const fullscreen = vi.fn();
@@ -23,7 +23,7 @@ function setup(from?: 'title' | 'town') {
 describe('SettingsScene', () => {
   it('lists volume, text speed, fullscreen, controls and back with current values', () => {
     const { root } = setup();
-    expect([...root.querySelectorAll('[role=option] .slx-label')].map((o) => o.textContent)).toEqual(['音效音量', '文字速度', '全螢幕', '按鍵說明', '返回']);
+    expect([...root.querySelectorAll('[role=option] .slx-label')].map((o) => o.textContent)).toEqual(['音效音量', '文字速度', '震動', '全螢幕', '按鍵說明', '返回']);
     expect(root.querySelector('[data-id=volume] .slx-right')!.textContent).toContain('70%');
     expect(root.querySelector('[data-id=speed] .slx-right')!.textContent).toContain('中');
   });
@@ -55,6 +55,14 @@ describe('SettingsScene', () => {
     expect(saved().textSpeed).toBe('slow');
     row('volume').click();
     expect(saved().volume).toBe(80);
+  });
+
+  it('turns vibration on and off', () => {
+    const { row, saved, root } = setup();
+    expect(root.querySelector('[data-id=vibrate] .slx-right')!.textContent).toContain('開');
+    row('vibrate').click();
+    expect(saved().vibrate).toBe(false);
+    expect(root.querySelector('[data-id=vibrate] .slx-right')!.textContent).toContain('關');
   });
 
   it('toggles fullscreen and shows the controls until dismissed', () => {

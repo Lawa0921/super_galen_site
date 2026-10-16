@@ -68,6 +68,7 @@ export async function mountNext(): Promise<void> {
     continueGame: () => { game = Game.boot(mulberry32(seed), storage); },
     stage, fast,
     settings: settingsStore,
+    vibrate: (ms: number) => { if (settings.vibrate) { try { navigator.vibrate?.(ms); } catch { /* not supported */ } } },
     fullscreen: () => toggleFullscreen(document.getElementById('sl-screen') ?? document.documentElement),
   };
   const router = new Router(ui, make, ctx);

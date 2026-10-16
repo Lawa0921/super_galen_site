@@ -45,6 +45,7 @@ export class SettingsScene implements Scene {
     return [
       { id: 'volume', label: t.volume, right: `◀ ${v.volume}% ▶` },
       { id: 'speed', label: t.speed, right: `◀ ${t.speeds[v.textSpeed]} ▶` },
+      { id: 'vibrate', label: t.vibrate, right: `◀ ${v.vibrate ? t.on : t.off} ▶` },
       { id: 'fullscreen', label: t.fullscreen },
       { id: 'keys', label: t.keys },
       { id: 'back', label: t.back },
@@ -68,15 +69,17 @@ export class SettingsScene implements Scene {
       const i = TEXT_SPEEDS.indexOf(v.textSpeed) + d;
       const n = TEXT_SPEEDS.length;
       next = { ...v, textSpeed: TEXT_SPEEDS[wrap ? (i + n) % n : Math.max(0, Math.min(n - 1, i))] };
+    } else if (id === 'vibrate') {
+      next = { ...v, vibrate: !v.vibrate };
     } else return;
-    if (next.volume === v.volume && next.textSpeed === v.textSpeed) { this.ctx.sfx.error(); return; }
+    if (next.volume === v.volume && next.textSpeed === v.textSpeed && next.vibrate === v.vibrate) { this.ctx.sfx.error(); return; }
     this.ctx.settings?.set?.(next);
     this.ctx.sfx.cursor();
     this.refresh();
   }
 
   private pick(id: string): void {
-    if (id === 'volume' || id === 'speed') { this.step(id, 1, true); return; }
+    if (id === 'volume' || id === 'speed' || id === 'vibrate') { this.step(id, 1, true); return; }
     this.ctx.sfx.confirm();
     if (id === 'fullscreen') { void this.ctx.fullscreen?.(); return; }
     if (id === 'keys') { this.openKeys(); return; }

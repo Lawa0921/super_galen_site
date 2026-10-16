@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { art } from '../render/artPaths';
 import { NO_ART } from '../render/textures';
 import { PartyBar } from './partyBar';
@@ -75,6 +75,21 @@ describe('PartyBar', () => {
     bar.update([m('scarlet')]);
     bar.pulse('scarlet', 'hit', 10, { fxAnim: 'fire' });
     expect(bar.el.querySelector('[data-key=scarlet] .slx-pm-fxa.slx-pm-fxa-fire')).not.toBeNull();
+  });
+
+  it('leaves a white ghost of lost HP that drains down to the new value', async () => {
+    vi.useFakeTimers();
+    try {
+      const bar = new PartyBar(NO_ART);
+      bar.update([m('scarlet', 30)]);
+      bar.update([m('scarlet', 10)]);
+      const ghost = () => bar.el.querySelector('[data-key=scarlet] .slx-bar-hp .slx-ghost')!;
+      expect(ghost().classList.contains('slx-fill-20')).toBe(true);
+      await vi.advanceTimersByTimeAsync(400);
+      expect(ghost().classList.contains('slx-fill-7')).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps a low-HP member\'s panel flashing a warning', () => {

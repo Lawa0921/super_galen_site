@@ -193,6 +193,7 @@ export class BattleScene implements Scene {
     const c = v.menu.current();
     this.showNote(c?.note);
     const e = c ? this.state.enemies.findIndex((x) => x.key === c.id) : -1;
+    this.ctx.stage?.battleView.highlight?.(e >= 0 ? c!.id : null);
     // An ally target lights that member's panel; anything else keeps the acting member lit.
     const ally = c && this.state.party.some((x) => x.key === c.id) ? c.id : null;
     this.updateBar(ally ?? this.actors()[this.index]?.key ?? null);
@@ -246,6 +247,7 @@ export class BattleScene implements Scene {
 
   private popLayer(): void {
     this.layers.pop()?.el.remove();
+    this.ctx.stage?.battleView.highlight?.(null);
     this.marker.setAttribute('hidden', '');
     this.showNote(undefined);
     this.updateBar(this.actors()[this.index]?.key ?? null);
@@ -256,6 +258,7 @@ export class BattleScene implements Scene {
 
   private clearLayers(): void {
     while (this.layers.length) this.layers.pop()!.el.remove();
+    this.ctx.stage?.battleView.highlight?.(null);
     this.marker.setAttribute('hidden', '');
     this.showNote(undefined);
     this.cmd.removeAttribute('inert');
@@ -389,6 +392,7 @@ export class BattleScene implements Scene {
       const max = this.state.party.find((c) => c.key === key)?.max.hp ?? 1;
       const heavy = !!extra?.weak || (amount ?? 0) >= max / 4;
       this.impact(heavy, extra?.fx ?? null);
+      if (heavy) this.ctx.vibrate?.(60);
       const fxKey = extra?.fx ?? null;
       const still = fxKey ? art.fx(fxKey) : null;
       opts = {
@@ -401,15 +405,15 @@ export class BattleScene implements Scene {
   }
 
   private showResult(end: BattleEnd): void {
-    const lines: string[] = [];
+    const lines: { text: string; up?: boolean }[] = [];
     if (end.outcome === 'win') {
       this.ctx.sfx.win?.();
-      lines.push(T.battle.exp(end.exp), T.battle.gold(end.gold));
-      for (const [id, n] of Object.entries(end.drops)) lines.push(T.battle.drop(itemName(id), n));
+      lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
+      for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const u of end.levelUps) {
         const who = CHARACTERS[u.id].name;
-        lines.push(T.battle.levelUp(who, this.ctx.game.state.party.roster[u.id].level));
-        for (const s of u.learned) lines.push(T.battle.learned(who, SKILLS[s].name));
+        lines.push({ text: T.battle.levelUp(who, this.ctx.game.state.party.roster[u.id].level), up: true });
+        for (const s of u.learned) lines.push({ text: T.battle.learned(who, SKILLS[s].name), up: true });
       }
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
@@ -425,6 +429,6 @@ export class BattleScene implements Scene {
     // A held or repeated key must not skip the rewards: accept input after a short beat.
     this.resultReady = !!this.ctx.fast;
     if (!this.resultReady) setTimeout(() => { this.resultReady = true; }, 300);
-    this.body.append(win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { text: l }))), this.result.el]));
+    this.body.append(win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { text: l.text, class: l.up ? 'slx-levelup' : undefined }))), this.result.el]));
   }
 }

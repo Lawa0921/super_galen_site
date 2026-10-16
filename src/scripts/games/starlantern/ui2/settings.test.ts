@@ -9,9 +9,9 @@ const mem = (init: Record<string, string> = {}) => {
 describe('settings', () => {
   it('round-trips through storage', () => {
     const s = mem();
-    expect(saveSettings(s, { volume: 40, textSpeed: 'fast' })).toBe(true);
-    expect(loadSettings(s)).toEqual({ volume: 40, textSpeed: 'fast' });
-    expect(JSON.parse(s.m.get(SETTINGS_KEY)!)).toEqual({ volume: 40, textSpeed: 'fast' });
+    expect(saveSettings(s, { volume: 40, textSpeed: 'fast', vibrate: false })).toBe(true);
+    expect(loadSettings(s)).toEqual({ volume: 40, textSpeed: 'fast', vibrate: false });
+    expect(JSON.parse(s.m.get(SETTINGS_KEY)!)).toEqual({ volume: 40, textSpeed: 'fast', vibrate: false });
   });
 
   it('falls back to defaults for missing, broken or out-of-range values', () => {
@@ -25,8 +25,8 @@ describe('settings', () => {
   });
 
   it('turns text speed into characters per second', () => {
-    expect(textCps({ settings: { get: () => ({ volume: 50, textSpeed: 'slow' }) } })).toBeLessThan(textCps({}));
-    expect(textCps({ settings: { get: () => ({ volume: 50, textSpeed: 'instant' }) } })).toBe(Infinity);
+    expect(textCps({ settings: { get: () => ({ volume: 50, textSpeed: 'slow', vibrate: true }) } })).toBeLessThan(textCps({}));
+    expect(textCps({ settings: { get: () => ({ volume: 50, textSpeed: 'instant', vibrate: true }) } })).toBe(Infinity);
     expect(textCps({})).toBe(30);
   });
 });

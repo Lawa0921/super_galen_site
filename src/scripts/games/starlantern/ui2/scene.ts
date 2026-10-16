@@ -26,6 +26,8 @@ export interface SceneCtx {
   from?: SceneName;
   arg?: string;
   fullscreen?(): Promise<void> | void;
+  /** A short buzz on phones (heavy hits); main.ts honours the vibration setting. */
+  vibrate?(ms: number): void;
 }
 
 /** One scene at a time; fades out and in, and drops input while switching so held keys cannot skip a screen. */

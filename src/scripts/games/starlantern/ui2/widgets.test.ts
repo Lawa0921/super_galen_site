@@ -19,6 +19,12 @@ describe('MenuView', () => {
     expect(v.el.querySelector('button, select')).toBeNull();
   });
 
+  it('flashes the option that was picked', () => {
+    const v = new MenuView(mk(), { pick: vi.fn() });
+    v.onAction('confirm');
+    expect(v.el.querySelector('[aria-selected=true]')!.classList.contains('slx-picked')).toBe(true);
+  });
+
   it('ignores a resting pointer that a newly opened window appears under', () => {
     const pick = vi.fn();
     const v = new MenuView(mk(), { pick });

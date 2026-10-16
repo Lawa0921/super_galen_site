@@ -128,6 +128,15 @@ describe('BattleScene', () => {
     expect(go).toHaveBeenCalledWith('dungeon');
   });
 
+  it('marks level-ups in the results so they stand out', async () => {
+    const { s, root } = setup((g) => { for (const e of g.battle!.enemies) e.hp = 1; g.state.party.roster.scarlet.exp = 999; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const ups = [...root.querySelectorAll('.slx-result .slx-levelup')].map((e) => e.textContent);
+    expect(ups.some((t) => t!.includes('絲嘉蕾'))).toBe(true);
+  });
+
   it('shows the wipe and returns to town after a loss', async () => {
     const { go, s, root } = setup((g) => {
       g.battle!.party.forEach((c, i) => { c.hp = i === 0 ? 1 : 0; c.alive = i === 0; });   // one member left standing
@@ -324,6 +333,41 @@ describe('BattleScene sound and failure safety', () => {
     expect(seen[2]).toBeNull();
     expect(seen[3]).toBeNull();
     expect(cutin).toHaveBeenCalledTimes(2);
+  });
+
+  it('lights the enemy under the target cursor and lets go when the list closes', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    const highlight = vi.fn();
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), play: vi.fn(), anchor: () => null, highlight } };
+    const root = document.createElement('div');
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    s.onAction('confirm');                                   // 攻擊 → target list
+    expect(highlight).toHaveBeenLastCalledWith('e0');
+    s.onAction('down');
+    expect(highlight).toHaveBeenLastCalledWith('e1');
+    s.onAction('cancel');
+    expect(highlight).toHaveBeenLastCalledWith(null);
+  });
+
+  it('buzzes the device on a heavy hit to the party', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    const key = game.battle!.party[0].key;
+    const max = game.battle!.party[0].max.hp;
+    const vibrate = vi.fn();
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
+      play: async (_s: unknown, _fx: unknown, on: (k: string, cue: string, name?: string, amount?: number, extra?: unknown) => Promise<void>) => {
+        await on(key, 'hit', undefined, 1, { fx: null, weak: false });
+        await on(key, 'hit', undefined, Math.ceil(max / 2), { fx: null, weak: false });
+      } } };
+    const root = document.createElement('div');
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true, vibrate });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    await flush();
+    expect(vibrate).toHaveBeenCalledTimes(1);
   });
 
   it('puts the target arrow just above the enemy under the cursor', () => {

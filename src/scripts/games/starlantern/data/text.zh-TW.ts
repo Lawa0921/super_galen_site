@@ -98,7 +98,7 @@ export const T = {
       hint: '↑↓ 選擇　Enter 決定　Q／E 換人　Esc 返回',
     },
     settings: {
-      title: '設定', volume: '音效音量', speed: '文字速度', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
+      title: '設定', volume: '音效音量', speed: '文字速度', vibrate: '震動', on: '開', off: '關', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
       speeds: { slow: '慢', mid: '中', fast: '快', instant: '立即' } as Record<'slow' | 'mid' | 'fast' | 'instant', string>,
       hint: '←→ 調整　點擊 切換　Esc／右鍵 返回',
       close: '點擊或按 Enter／Esc 關閉',

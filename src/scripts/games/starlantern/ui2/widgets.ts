@@ -41,10 +41,15 @@ export class MenuView {
         const before = this.menu.cursor;
         if (this.menu.setCursor(i) && this.menu.cursor !== before) { this.render(); this.on.moved?.(); }
       });
-      li.addEventListener('click', () => { if (this.locked()) return; if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.on.pick(item); } });
+      li.addEventListener('click', () => { if (this.locked()) return; if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.flashPick(); this.on.pick(item); } });
       return li;
     });
     this.list.replaceChildren(...(this.top > 0 ? [marker('slx-more-up', '▲')] : []), ...rows, ...(end < n ? [marker('slx-more-down', '▼')] : []));
+  }
+
+  /** A quick flash on the chosen row, so a pick is felt even when the next window opens at once. */
+  private flashPick(): void {
+    this.list.querySelector('[aria-selected=true]')?.classList.add('slx-picked');
   }
 
   /** Pointer input only reaches the active window: anything inside an inert subtree (under a dialogue, a modal or a scene switch) is ignored. */
@@ -57,7 +62,7 @@ export class MenuView {
       if (this.menu.move(a === 'down' ? 1 : -1)) { this.render(); this.on.moved?.(); }
       return true;
     }
-    if (a === 'confirm') { const it = this.menu.current(); if (it) this.on.pick(it); return true; }
+    if (a === 'confirm') { const it = this.menu.current(); if (it) { this.flashPick(); this.on.pick(it); } return true; }
     if (a === 'cancel' && this.on.cancel) { this.on.cancel(); return true; }
     return false;
   }

@@ -51,6 +51,27 @@ describe('DungeonScene', () => {
     expect(game.pos).toEqual(at);
   });
 
+  it('plays an encounter transition before the battle starts, red for the boss', async () => {
+    vi.useFakeTimers();
+    try {
+      const game = new Game(constRng(0.99), null);
+      game.depart(1);
+      game.encounter = 99;
+      const go = vi.fn();
+      const root = document.createElement('div');
+      const s = new DungeonScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: false }, Infinity);
+      s.enter(root);
+      s.onAction('right');
+      expect(root.querySelector('.slx-encounter')).not.toBeNull();
+      expect(root.querySelector('.slx-encounter-boss')).toBeNull();
+      expect(go).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(600);
+      expect(go).toHaveBeenCalledWith('battle');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('asks before returning to town at the entrance', () => {
     const { game, go, s, root } = setup();
     s.onAction('right'); s.onAction('left');

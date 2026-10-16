@@ -16,6 +16,7 @@ import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
+const ENCOUNTER_MS = 520;
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Labyrinth: map on the Pixi stage, party bar, floor name, encounter lamp, events as dialogue, a field menu. */
@@ -103,12 +104,18 @@ export class DungeonScene implements Scene {
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
       case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[r.floor - 1].name)); return;
       case 'chest': s.chest?.(); this.refresh(); this.say(T.map.chest(itemName(r.item), r.qty)); return;
-      case 'battle': case 'boss':
+      case 'battle': case 'boss': {
         s.encounter?.();
         this.leaving = true;
         this.root.setAttribute('inert', '');
-        this.ctx.go('battle');
+        // A flash and closing bars before the battle (red for the boss); skipped in fast mode.
+        const wipe = el('div', { class: r.kind === 'boss' ? 'slx-encounter slx-encounter-boss' : 'slx-encounter', attrs: { 'aria-hidden': 'true' } },
+          [0, 1, 2, 3, 4, 5].map((i) => el('span', { class: `slx-enc-bar slx-enc-bar-${i}` })));
+        this.body.append(wipe);
+        if (this.ctx.fast) this.ctx.go('battle');
+        else setTimeout(() => this.ctx.go('battle'), ENCOUNTER_MS);
         return;
+      }
     }
     this.refresh();
   }

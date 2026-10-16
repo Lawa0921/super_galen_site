@@ -15,10 +15,17 @@ export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko';
 export interface PulseOpts { fx?: string; fxAnim?: string; heavy?: boolean; weak?: boolean }
 
 /** A drawn bar (a native <meter> cannot be styled reliably); the fill width is a 5% step class, any value above 0 shows at least one step. */
+/** 5% step for a value; anything above 0 shows at least one step. */
+function stepOf(value: number, max: number): number {
+  const m = Math.max(1, max);
+  const v = Math.max(0, Math.min(m, value));
+  return v <= 0 ? 0 : Math.max(1, Math.round((v / m) * 20));
+}
+
 function bar(value: number, max: number, cls: string): HTMLElement {
   const m = Math.max(1, max);
   const v = Math.max(0, Math.min(m, value));
-  const step = v <= 0 ? 0 : Math.max(1, Math.round((v / m) * 20));
+  const step = stepOf(v, m);
   return el('span', { class: `slx-bar ${cls}`, attrs: { role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(m), 'aria-valuenow': String(v) } }, [
     el('span', { class: `slx-fill slx-fill-${step}` }),
   ]);
@@ -29,7 +36,9 @@ const TRANSIENT = ['slx-pm-hit', 'slx-pm-acting', 'slx-pm-heal', 'slx-pm-ko'];
 const PULSE_MS = 450;
 const POP_MS = 900;
 
-interface Panel { el: HTMLElement; body: HTMLElement; face: HTMLImageElement | null; member: BarMember; until: number }
+/** `ghost` is HP just lost, still drawn white behind the bar until it drains (GHOST_MS). */
+interface Panel { el: HTMLElement; body: HTMLElement; face: HTMLImageElement | null; member: BarMember; until: number; ghost: number | null; drain: ReturnType<typeof setTimeout> | null }
+const GHOST_MS = 350;
 
 /** The five member panels along the bottom of the labyrinth and battle screens. */
 export class PartyBar {
@@ -43,7 +52,10 @@ export class PartyBar {
     const keys = new Set(members.map((m) => m.key));
     for (const [k, p] of this.panels) if (!keys.has(k)) { p.el.remove(); this.panels.delete(k); }
     const order = members.map((m) => {
-      const p = this.panels.get(m.key) ?? this.create(m);
+      const known = this.panels.get(m.key);
+      const p = known ?? this.create(m);
+      if (known && m.hp < known.member.hp) this.loseHp(p, Math.max(p.ghost ?? 0, known.member.hp));
+      if (p.ghost !== null && m.hp >= p.ghost) p.ghost = null;
       p.member = m;
       const transient = TRANSIENT.filter((c) => p.el.classList.contains(c));
       const danger = m.alive && m.hp > 0 && m.hp <= m.maxHp / 4;
@@ -52,7 +64,7 @@ export class PartyBar {
       p.body.replaceChildren(
         el('span', { class: 'slx-pm-name' }, [m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : [])]),
         el('span', { class: 'slx-pm-num', text: `${m.hp}/${m.maxHp}` }),
-        bar(m.hp, m.maxHp, m.hp > 0 && m.hp <= m.maxHp / 4 ? 'slx-bar-hp slx-low' : 'slx-bar-hp'),
+        this.hpBar(p),
         bar(m.tp, m.maxTp, 'slx-bar-tp'),
         bar(m.limit, 100, m.limit >= 100 ? 'slx-bar-limit slx-bar-full' : 'slx-bar-limit'),
       );
@@ -93,10 +105,30 @@ export class PartyBar {
   private create(m: BarMember): Panel {
     const panel = el('div', { class: 'slx-pm', attrs: { 'data-key': m.key } });
     const body = el('div', { class: 'slx-pm-body' });
-    const p: Panel = { el: panel, body, face: null, member: m, until: 0 };
+    const p: Panel = { el: panel, body, face: null, member: m, until: 0, ghost: null, drain: null };
     panel.append(body);
     this.panels.set(m.key, p);
     return p;
+  }
+
+  /** HP bar with the white ghost of what was just lost, when there is one. */
+  private hpBar(p: Panel): HTMLElement {
+    const m = p.member;
+    const b = bar(m.hp, m.maxHp, m.hp > 0 && m.hp <= m.maxHp / 4 ? 'slx-bar-hp slx-low' : 'slx-bar-hp');
+    if (p.ghost !== null && p.ghost > m.hp) b.prepend(el('span', { class: `slx-ghost slx-fill-${stepOf(p.ghost, m.maxHp)}` }));
+    return b;
+  }
+
+  /** Start (or extend) the ghost from `from` HP; after a beat it drains to the current value (a width transition). */
+  private loseHp(p: Panel, from: number): void {
+    p.ghost = from;
+    if (p.drain) clearTimeout(p.drain);
+    p.drain = setTimeout(() => {
+      p.drain = null;
+      p.ghost = null;
+      const g = p.el.querySelector('.slx-ghost');
+      if (g) g.className = `slx-ghost slx-fill-${stepOf(p.member.hp, p.member.maxHp)}`;
+    }, GHOST_MS);
   }
 
   /** The face for the member's current HP (normal, dying or down). */

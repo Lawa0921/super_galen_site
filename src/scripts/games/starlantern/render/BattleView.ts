@@ -28,12 +28,15 @@ export class BattleView {
   private frames = new Set<number>();
   private shattering: Promise<void>[] = [];
   private size = { width: 640, height: 360 };
+  private lit = new Map<string, ColorMatrixFilter>();
 
   constructor(private fast = false, private bank: TextureBank | null = null) {}
 
   /** `left` and `bottom` reserve space (command window, party bar) so enemies and their names are never hidden behind them. */
   setup(state: BattleState, size: { width: number; height: number }, floor: number, left = 0, bottom = 0): void {
     this.size = size;
+    for (const f of this.lit.values()) f.destroy();
+    this.lit.clear();
     for (const t of this.timers) clearTimeout(t);
     for (const f of this.frames) cancelAnimationFrame(f);
     this.timers.clear();
@@ -154,6 +157,23 @@ export class BattleView {
     this.root.addChild(g);
     steps.slice(1).forEach((a, i) => this.later(50 * (i + 1), () => { if (!g.destroyed) g.alpha = a; }));
     this.later(50 * steps.length, () => { if (!g.destroyed) { this.root.removeChild(g); g.destroy(); } });
+  }
+
+  /** The enemy under the target cursor glows; null clears it. */
+  highlight(key: string | null): void {
+    for (const [k, f] of this.lit) {
+      if (k === key) continue;
+      const slot = this.slots.get(k);
+      if (slot && !slot.body.destroyed) slot.body.filters = [];
+      f.destroy();
+      this.lit.delete(k);
+    }
+    const slot = key ? this.slots.get(key) : undefined;
+    if (!key || !slot || slot.body.destroyed || this.lit.has(key)) return;
+    const f = new ColorMatrixFilter();
+    f.brightness(1.45, false);
+    slot.body.filters = [f];
+    this.lit.set(key, f);
   }
 
   /** An enemy about to act lunges toward the camera and settles back. */

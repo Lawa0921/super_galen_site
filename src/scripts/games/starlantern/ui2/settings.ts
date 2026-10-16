@@ -1,9 +1,9 @@
 export type TextSpeed = 'slow' | 'mid' | 'fast' | 'instant';
-export interface Settings { volume: number; textSpeed: TextSpeed }
+export interface Settings { volume: number; textSpeed: TextSpeed; vibrate: boolean }
 export interface SettingsStore { get(): Settings; set?(s: Settings): void }
 
 export const SETTINGS_KEY = 'starlantern-settings';
-export const DEFAULT_SETTINGS: Settings = { volume: 70, textSpeed: 'mid' };
+export const DEFAULT_SETTINGS: Settings = { volume: 70, textSpeed: 'mid', vibrate: true };
 export const TEXT_SPEEDS: TextSpeed[] = ['slow', 'mid', 'fast', 'instant'];
 const CPS: Record<TextSpeed, number> = { slow: 15, mid: 30, fast: 60, instant: Infinity };
 
@@ -18,7 +18,8 @@ export function loadSettings(storage: Storage | null): Settings {
   }
   const volume = typeof raw.volume === 'number' && raw.volume >= 0 && raw.volume <= 100 ? Math.round(raw.volume / 10) * 10 : DEFAULT_SETTINGS.volume;
   const textSpeed = TEXT_SPEEDS.includes(raw.textSpeed as TextSpeed) ? (raw.textSpeed as TextSpeed) : DEFAULT_SETTINGS.textSpeed;
-  return { volume, textSpeed };
+  const vibrate = typeof raw.vibrate === 'boolean' ? raw.vibrate : DEFAULT_SETTINGS.vibrate;
+  return { volume, textSpeed, vibrate };
 }
 
 export function saveSettings(storage: Storage | null, s: Settings): boolean {
