@@ -8,6 +8,7 @@
 import { T } from '../engine/tiles';
 import { CACTUS_STYLE } from './autotile';
 import { Bmp, INK, h01, hex, ramp, type RGB } from './pixel';
+import { bedFootBmp, bedHeadBmp, ropeBmp } from './exploreArt';
 import {
   platformBmp, doorClosedBmp, doorOpenBmp, doorLockedBmp, lockedChestBmp, chainBmp, bannerBmp, candleBmp, lanternBmp,
   bookshelfBmp, bonesBmp, loreTabletBmp,
@@ -781,6 +782,9 @@ export function decorBmp(id: number, style: number): Bmp {
     case T.BOOKSHELF: return bookshelfBmp(style);
     case T.BONES: return bonesBmp(style);
     case T.LORE_TABLET: return loreTabletBmp();
+    case T.ROPE: return ropeBmp(style);
+    case T.BED_HEAD: return bedHeadBmp();
+    case T.BED_FOOT: return bedFootBmp();
     default: return new Bmp(S, S);
   }
 }

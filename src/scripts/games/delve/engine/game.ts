@@ -9,12 +9,12 @@
 import { World } from './world';
 import { generateWorld, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
-import { T, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, floorOk, ceilOk } from './tiles';
-import { ITEMS, type ItemId, type PickStats } from './items';
+import { T, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
+import { ITEMS, type Accessory, type ItemId, type PickStats } from './items';
 import { potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult } from './crafting';
-import { makeBody, stepPlayer, onPlatform, type Body, type PlayerMotion } from './physics';
+import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight } from './lighting';
 import {
   TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH,
@@ -37,7 +37,11 @@ export type DelveEvent =
   | { type: 'door'; open: boolean; x: number; y: number; unlocked: boolean }
   | { type: 'unlock'; x: number; y: number; item: ItemId }
   | { type: 'lore'; id: number; x: number; y: number }
-  | { type: 'hint'; id: 'platform' };
+  | { type: 'hint'; id: 'platform' }
+  /** 床：set = 設定重生點；false = 床被拆掉、重生點回到出生點 */
+  | { type: 'spawn'; set: boolean; x: number; y: number }
+  /** 傳送石：開始引導 / 取消 / 完成傳送（x,y = 目的地腳底 tile） */
+  | { type: 'recall'; phase: 'start' | 'cancel' | 'done'; x: number; y: number };
 
 export interface MiningState { x: number; y: number; elapsed: number; need: number; }
 
@@ -46,7 +50,7 @@ export interface DelveState {
   tick: number;
   time: number;
   sky: number;
-  player: { x: number; y: number; vx: number; vy: number; onGround: boolean; tileX: number; tileY: number; gfxOffY: number };
+  player: { x: number; y: number; vx: number; vy: number; onGround: boolean; tileX: number; tileY: number; gfxOffY: number; climbing: boolean };
   spawn: { x: number; y: number };
   aim: { x: number; y: number };
   selected: number;
@@ -56,6 +60,10 @@ export interface DelveState {
   nearWorkbench: boolean;
   /** 開著的箱子 */
   chest: { x: number; y: number } | null;
+  /** 傳送石引導進度 0..1（0 = 沒在引導） */
+  recall: number;
+  /** 床（重生點）；null = 出生點 */
+  bed: { x: number; y: number } | null;
 }
 
 /** 徒手（背包沒有鎬）時的挖掘能力 */
@@ -64,6 +72,10 @@ const HAND: PickStats = { speed: 0.35, tier: 1 };
 const START_TIME = DAY_LENGTH * 0.3;
 /** 同一個 blocked 提示重複出現的最短間隔（秒） */
 const BLOCK_REPEAT = 1.8;
+/** 傳送石引導時間（秒） */
+export const RECALL_TIME = 1.2;
+/** 磁石增加的伸手距離（格） */
+export const MAGNET_REACH = 3;
 
 export class DelveGame {
   static readonly TILE_SIZE = TILE_SIZE;
@@ -87,9 +99,17 @@ export class DelveGame {
   time = START_TIME;
   tick = 0;
 
-  private motion: PlayerMotion = { jumpTimer: 0, jumpWasHeld: false };
+  private motion: PlayerMotion = { jumpTimer: 0, jumpWasHeld: false, climbing: false };
   private moveX = 0;
   private jump = false;
+  private upHeld = false;
+  /** 床（重生點，床頭 tile）；存檔內容 */
+  bed: { x: number; y: number } | null = null;
+  /** 傳送石引導經過秒數；null = 沒在引導 */
+  private recallT: number | null = null;
+  /** 飾品快取（以背包裡的飾品簽名判斷是否要重算） */
+  private accSig = '';
+  private acc = new Set<Accessory>();
   private aim = { x: 0, y: 0 };
   private miningHeld = false;
   private dropHeld = false;
@@ -127,6 +147,8 @@ export class DelveGame {
   // ── 輸入 ───────────────────────────────────────────────
   setMoveX(v: number): void { this.moveX = Math.max(-1, Math.min(1, v)); }
   setJump(held: boolean): void { this.jump = held; }
+  /** 按住「上」（W / ↑）：在繩索上往上爬，否則等同跳躍 */
+  setUp(held: boolean): void { this.upHeld = held; }
   /** 按住「下」：穿過單向平台 */
   setDrop(held: boolean): void { this.dropHeld = held; }
   /** 游標所指 tile 座標 */
@@ -151,7 +173,8 @@ export class DelveGame {
   step(dt: number = FIXED_DT): void {
     this.tick++;
     this.time += dt;
-    stepPlayer(this.world, this.player, this.motion, { moveX: this.moveX, jump: this.jump, drop: this.dropHeld }, dt);
+    stepPlayer(this.world, this.player, this.motion, { moveX: this.moveX, jump: this.jump, drop: this.dropHeld, up: this.upHeld }, dt, this.moveStats());
+    this.updateRecall(dt);
     if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
       this.platformHinted = true;
       this.events.push({ type: 'hint', id: 'platform' });
@@ -160,13 +183,16 @@ export class DelveGame {
     if (this.placeCooldown > 0) this.placeCooldown -= dt;
     if (this.useHeld && this.placeCooldown <= 0) {
       const { x, y } = this.aim;
+      const held = this.inventory.selectedStack();
       if (isInteractive(this.world.getFg(x, y))) {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
+      } else if (held && ITEMS[held.item].use === 'recall') {
+        if (!this.useConsumed) { this.useConsumed = true; this.startRecall(); }
       } else if (!this.useConsumed && this.tryPlace(x, y)) this.placeCooldown = PLACE_COOLDOWN;
     }
     if (this.openChest) {
       const { x, y } = this.openChest;
-      if (!isChestTile(this.world.getFg(x, y)) || !this.canReach(x, y, REACH_TILES + 1.5)) this.closeChest();
+      if (!isChestTile(this.world.getFg(x, y)) || !this.canReach(x, y, this.reach() + 1.5)) this.closeChest();
     }
   }
 
@@ -207,6 +233,8 @@ export class DelveGame {
     }
     // 木門：整扇（3 格）只掉一個木門，算在最上面那格
     if (id === T.DOOR_CLOSED || id === T.DOOR_OPEN) return isDoorTile(this.world.getFg(x, y - 1)) ? [] : [{ item: 'wooden_door', n: 1 }];
+    // 床：整張只掉一個，算在床頭；孤立的床尾也掉一個
+    if (id === T.BED_FOOT) return this.world.getFg(x - 1, y) === T.BED_HEAD ? [] : [{ item: 'bed', n: 1 }];
     const d = tileDef(id).drop;
     return d ? [{ item: d, n: 1 }] : [];
   }
@@ -225,7 +253,11 @@ export class DelveGame {
       if (gone.has(k)) return;
       gone.add(k);
       tiles.push([tx, ty]);
-      for (const d of this.dropsFor(w.getFg(tx, ty), tx, ty)) drops.set(d.item, (drops.get(d.item) ?? 0) + d.n);
+      const tid = w.getFg(tx, ty);
+      for (const d of this.dropsFor(tid, tx, ty)) drops.set(d.item, (drops.get(d.item) ?? 0) + d.n);
+      // 床的另一半一起拆
+      if (tid === T.BED_HEAD && w.getFg(tx + 1, ty) === T.BED_FOOT) take(tx + 1, ty);
+      if (tid === T.BED_FOOT && w.getFg(tx - 1, ty) === T.BED_HEAD) take(tx - 1, ty);
     };
     const id = w.getFg(x, y);
     if (id === T.AIR || !w.inBounds(x, y)) return { tiles, drops, fits: true, chest: false };
@@ -244,6 +276,7 @@ export class DelveGame {
           || solidAfter(nx, ny - 1) || solidAfter(nx, ny + 1);
         case 'floor': return floorOk(nid, tileAfter(nx, ny + 1));
         case 'ceiling': return ceilOk(nid, tileAfter(nx, ny - 1));
+        case 'rope': return ropeOk(tileAfter(nx, ny - 1), tileAfter(nx - 1, ny), tileAfter(nx + 1, ny));
         default: return true;
       }
     };
@@ -276,6 +309,10 @@ export class DelveGame {
     const all = plan.tiles.map(([tx, ty]) => { const tid = this.world.getFg(tx, ty); return { tx, ty, tid, drops: this.dropsFor(tid, tx, ty) }; });
     for (const { tx, ty, tid, drops } of all) {
       this.world.setFg(tx, ty, T.AIR);
+      if (tid === T.BED_HEAD && this.bed && this.bed.x === tx && this.bed.y === ty) {
+        this.bed = null;
+        this.events.push({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y });
+      }
       for (const d of drops) this.inventory.add(d.item, d.n);
       this.events.push({ type: 'mine', x: tx, y: ty, tile: tid, item: drops.length ? drops[0].item : null });
     }
@@ -309,6 +346,7 @@ export class DelveGame {
     const sup = tileDef(place).support;
     if (sup === 'floor') return floorOk(place, this.world.getFg(x, y + 1));
     if (sup === 'ceiling') return ceilOk(place, this.world.getFg(x, y - 1));
+    if (sup === 'rope') return ropeOk(this.world.getFg(x, y - 1), this.world.getFg(x - 1, y), this.world.getFg(x + 1, y));
     if (place === T.PLATFORM && (this.world.getFg(x - 1, y) === T.PLATFORM || this.world.getFg(x + 1, y) === T.PLATFORM)) return true;
     return this.hasSupport(x, y);
   }
@@ -359,17 +397,57 @@ export class DelveGame {
     return true;
   }
 
+  /** 床放置：(x,y) 床頭、(x+1,y) 床尾，兩格都要空、下面都要實心 */
+  private placeBed(x: number, y: number, item: ItemId): boolean {
+    const w = this.world;
+    for (let k = 0; k < 2; k++) {
+      const c = w.getFg(x + k, y);
+      if (!w.inBounds(x + k, y) || (c !== T.AIR && !tileDef(c).replaceable)) { this.block('place', 'occupied', x, y); return false; }
+      if (!isSolidTile(w.getFg(x + k, y + 1))) { this.block('place', 'support', x, y); return false; }
+    }
+    w.setFg(x, y, T.BED_HEAD);
+    w.setFg(x + 1, y, T.BED_FOOT);
+    this.inventory.takeFromSlot(this.inventory.selected, 1);
+    this.events.push({ type: 'place', x, y, tile: T.BED_HEAD, item });
+    return true;
+  }
+
+  /** 繩索放置：點在繩索上 → 接在這條繩索最下面；點在空格 → 要有支撐（天花板 / 繩索 / 平台 / 側牆） */
+  private placeRope(x: number, y: number, item: ItemId): boolean {
+    const w = this.world;
+    let ty = y;
+    if (w.getFg(x, y) === T.ROPE) {
+      while (ty < w.height - 1 && w.getFg(x, ty) === T.ROPE) ty++;
+      const c = w.getFg(x, ty);
+      if (c !== T.AIR && !tileDef(c).replaceable) return false; // 到底了（靜默：按住時不洗提示）
+    } else {
+      const c = w.getFg(x, y);
+      if (c !== T.AIR && !tileDef(c).replaceable) { this.block('place', 'occupied', x, y); return false; }
+      if (!this.placeSupported(x, y, T.ROPE)) { this.block('place', 'support', x, y); return false; }
+    }
+    if (w.getFg(x, ty) !== T.AIR) w.setFg(x, ty, T.AIR);
+    w.setFg(x, ty, T.ROPE);
+    this.inventory.takeFromSlot(this.inventory.selected, 1);
+    this.events.push({ type: 'place', x, y: ty, tile: T.ROPE, item });
+    return true;
+  }
+
   /** 嘗試以快捷欄選中的方塊放在 (x,y)。 */
   tryPlace(x: number, y: number): boolean {
     const stack = this.inventory.selectedStack();
     const place = stack ? ITEMS[stack.item].place : undefined;
     if (!stack || place === undefined) return false;
     if (!this.world.inBounds(x, y)) return false;
+    if (place === T.ROPE) {
+      if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+      return this.placeRope(x, y, stack.item);
+    }
     const cur = this.world.getFg(x, y);
     const replace = cur !== T.AIR && cur !== place && tileDef(cur).replaceable;
     if (cur !== T.AIR && !replace) { this.block('place', 'occupied', x, y); return false; }
     if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
     if (place === T.DOOR_CLOSED) return this.placeDoor(x, y, stack.item);
+    if (place === T.BED_HEAD) return this.placeBed(x, y, stack.item);
     if (isSolidTile(place) && this.tileOverlapsPlayer(x, y)) { this.block('place', 'body', x, y); return false; }
     if (!this.placeSupported(x, y, place)) { this.block('place', 'support', x, y); return false; }
     if (replace) {
@@ -398,6 +476,69 @@ export class DelveGame {
 
   private currentPick(): PickStats { return this.inventory.bestPick() ?? HAND; }
 
+  // ── 飾品 / 移動能力 ───────────────────────────────────
+  /** 背包裡有沒有某種飾品（任一格即可） */
+  hasAccessory(a: Accessory): boolean {
+    const sl = this.inventory.slots;
+    let sig = '';
+    for (let i = 0; i < sl.length; i++) { const st = sl[i]; if (st && ITEMS[st.item].accessory) sig += st.item + ','; }
+    if (sig !== this.accSig) {
+      this.accSig = sig;
+      this.acc = new Set(sig.split(',').filter(Boolean).map((id) => ITEMS[id as ItemId].accessory as Accessory));
+    }
+    return this.acc.has(a);
+  }
+  moveStats(): MoveStats {
+    return { runMul: this.hasAccessory('run') ? 1.45 : 1, jumpMul: this.hasAccessory('jump') ? 1.25 : 1 };
+  }
+  /** 伸手距離（格）：磁石 +3 */
+  reach(): number { return REACH_TILES + (this.hasAccessory('magnet') ? MAGNET_REACH : 0); }
+  /** 導航資訊：有指南針才有東西座標（相對出生點，東 = 正），有深度計才有深度格數 */
+  navInfo(): { east: number | null; depth: number | null } {
+    const f = this.feetTile();
+    return {
+      east: this.hasAccessory('compass') ? f.x - this.spawn.x : null,
+      depth: this.hasAccessory('depth') ? Math.max(0, f.y + 1 - this.world.surfaceAt(f.x)) : null,
+    };
+  }
+
+  // ── 床 / 傳送石 ───────────────────────────────────────
+  /** 重生點（腳底 tile）：床還在 → 床頭那格；否則出生點 */
+  respawnPoint(): { x: number; y: number } {
+    const b = this.bed;
+    if (b && this.world.getFg(b.x, b.y) === T.BED_HEAD) return { x: b.x, y: b.y };
+    return { x: this.spawn.x, y: this.spawn.y };
+  }
+  private useBed(x: number, y: number): boolean {
+    const hx = this.world.getFg(x, y) === T.BED_FOOT ? x - 1 : x;
+    if (this.world.getFg(hx, y) !== T.BED_HEAD) return false;
+    this.bed = { x: hx, y };
+    this.events.push({ type: 'spawn', set: true, x: hx, y });
+    return true;
+  }
+  private startRecall(): void {
+    if (this.recallT !== null) return;
+    this.recallT = 0;
+    const r = this.respawnPoint();
+    this.events.push({ type: 'recall', phase: 'start', x: r.x, y: r.y });
+  }
+  private updateRecall(dt: number): void {
+    if (this.recallT === null) return;
+    const r = this.respawnPoint();
+    if (this.moveX !== 0 || this.jump || this.upHeld) {
+      this.recallT = null;
+      this.events.push({ type: 'recall', phase: 'cancel', x: r.x, y: r.y });
+      return;
+    }
+    this.recallT += dt;
+    if (this.recallT + 1e-9 >= RECALL_TIME) {
+      this.recallT = null;
+      this.teleport(r.x, r.y);
+      this.closeChest();
+      this.events.push({ type: 'recall', phase: 'done', x: r.x, y: r.y });
+    }
+  }
+
   // ── 查詢 ───────────────────────────────────────────────
   /** 玩家中心（px） */
   playerCenter(): { x: number; y: number } {
@@ -414,7 +555,7 @@ export class DelveGame {
     return { x: Math.floor((p.x + p.w / 2) / TILE_SIZE), y: Math.floor((p.y + p.h - 0.001) / TILE_SIZE) };
   }
   /** 玩家中心到 tile 中心的距離 ≤ REACH_TILES 格 */
-  canReach(tx: number, ty: number, reach: number = REACH_TILES): boolean {
+  canReach(tx: number, ty: number, reach: number = this.reach()): boolean {
     const c = this.playerCenter();
     const dx = (tx + 0.5) * TILE_SIZE - c.x, dy = (ty + 0.5) * TILE_SIZE - c.y;
     const r = reach * TILE_SIZE;
@@ -448,6 +589,7 @@ export class DelveGame {
     if (!isInteractive(id)) return false;
     if (!this.canReach(x, y)) { this.block('use', 'reach', x, y); return false; }
     if (isDoorTile(id)) return this.useDoor(x, y);
+    if (isBedTile(id)) return this.useBed(x, y);
     if (id === T.LORE_TABLET) {
       const t = this.dungeon?.tablets.find((q) => q.x === x && q.y === y);
       this.events.push({ type: 'lore', id: t ? t.id : (x * 7 + y) % 5, x, y });
@@ -528,7 +670,9 @@ export class DelveGame {
     const held = this.inventory.selectedStack();
     const pt = this.playerTile();
     const v = held ? (held.item === 'torch' ? 0.85 : ITEMS[held.item].heldLight ?? 0) : 0;
-    return [{ x: pt.x, y: pt.y, v: Math.max(0.22, v) }, ...(v >= 1 ? [{ x: pt.x, y: pt.y - 1, v: 1 }] : [])];
+    // 夜視護符：身邊一圈柔和的微光（比火把暗、不需要拿在手上）
+    const night = this.hasAccessory('night') ? 0.78 : 0;
+    return [{ x: pt.x, y: pt.y, v: Math.max(0.22, v, night) }, ...(v >= 1 ? [{ x: pt.x, y: pt.y - 1, v: 1 }] : [])];
   }
 
   /** 計算視窗（tile 座標）+ 外框的光照。 */
@@ -550,7 +694,7 @@ export class DelveGame {
       tick: this.tick,
       time: this.time,
       sky: this.skyLevel(),
-      player: { x: p.x, y: p.y, vx: p.vx, vy: p.vy, onGround: p.onGround, tileX: t.x, tileY: t.y, gfxOffY: p.gfxOffY },
+      player: { x: p.x, y: p.y, vx: p.vx, vy: p.vy, onGround: p.onGround, tileX: t.x, tileY: t.y, gfxOffY: p.gfxOffY, climbing: Boolean(this.motion.climbing) },
       spawn: { ...this.spawn },
       aim: { ...this.aim },
       selected: this.inventory.selected,
@@ -559,6 +703,8 @@ export class DelveGame {
       mining: this.mining ? { x: this.mining.x, y: this.mining.y, progress: Math.min(1, this.mining.elapsed / this.mining.need) } : null,
       nearWorkbench: this.nearWorkbench(),
       chest: this.openChest ? { ...this.openChest } : null,
+      recall: this.recallT === null ? 0 : Math.min(1, this.recallT / RECALL_TIME),
+      bed: this.bed ? { ...this.bed } : null,
     };
   }
 
@@ -570,6 +716,7 @@ export class DelveGame {
     p.y = (ty + 1) * TILE_SIZE - p.h;
     p.vx = 0; p.vy = 0; p.gfxOffY = 0;
     this.motion.jumpTimer = 0;
+    this.motion.climbing = false;
   }
   /** 立即挖掉一格（不檢查距離 / 等級），掉落物照常入背包。 */
   mineInstant(x: number, y: number): boolean { return this.breakTile(x, y); }

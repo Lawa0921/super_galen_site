@@ -26,6 +26,12 @@ export const RECIPES: readonly Recipe[] = [
   { id: 'silver_coin', out: { item: 'silver_coin', n: 1 }, inputs: [{ item: 'copper_coin', n: 100 }], station: null },
   { id: 'platform', out: { item: 'platform', n: 2 }, inputs: [{ item: 'planks', n: 1 }], station: null },
   { id: 'wooden_door', out: { item: 'wooden_door', n: 1 }, inputs: [{ item: 'planks', n: 6 }], station: 'workbench' },
+  // ── 探索工具 ──
+  { id: 'rope', out: { item: 'rope', n: 8 }, inputs: [{ item: 'wood', n: 1 }], station: null },
+  { id: 'bed', out: { item: 'bed', n: 1 }, inputs: [{ item: 'planks', n: 15 }], station: 'workbench' },
+  { id: 'recall_stone', out: { item: 'recall_stone', n: 1 }, inputs: [{ item: 'crystal', n: 3 }, { item: 'stone', n: 20 }], station: 'workbench' },
+  { id: 'compass', out: { item: 'compass', n: 1 }, inputs: [{ item: 'iron_ore', n: 6 }, { item: 'copper_ore', n: 2 }], station: 'workbench' },
+  { id: 'depth_meter', out: { item: 'depth_meter', n: 1 }, inputs: [{ item: 'copper_ore', n: 8 }, { item: 'stone', n: 10 }], station: 'workbench' },
 ];
 
 export function findRecipe(id: string): Recipe | undefined {

@@ -148,6 +148,6 @@ describe('crafting', () => {
   it('availableRecipes 依材料與工作台過濾', () => {
     const inv = new Inventory();
     inv.add('wood', 1);
-    expect(availableRecipes(inv, free).map((r) => r.id).sort()).toEqual(['planks', 'torch']);
+    expect(availableRecipes(inv, free).map((r) => r.id).sort()).toEqual(['planks', 'rope', 'torch']);
   });
 });

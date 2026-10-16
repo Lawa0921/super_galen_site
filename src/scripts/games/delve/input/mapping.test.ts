@@ -12,8 +12,12 @@ describe('keyAction', () => {
     expect(keyAction('KeyD')).toBe('right');
     expect(keyAction('ArrowRight')).toBe('right');
     expect(keyAction('Space')).toBe('jump');
-    expect(keyAction('KeyW')).toBe('jump');
-    expect(keyAction('ArrowUp')).toBe('jump');
+    // W / ↑：在繩索上往上爬，否則等同跳躍（由物理決定）
+    expect(keyAction('KeyW')).toBe('up');
+    expect(keyAction('ArrowUp')).toBe('up');
+    expect(keyAction('KeyM')).toBe('map');
+    expect(keyAction('KeyN')).toBe('minimap');
+    expect(keyAction('KeyJ')).toBe('journal');
     expect(keyAction('KeyE')).toBe('inventory');
     expect(keyAction('Escape')).toBe('menu');
     expect(keyAction('KeyQ')).toBeNull();
@@ -79,6 +83,10 @@ describe('touchIntent', () => {
   it('點到箱子 → use（開箱），不論手上拿什麼', () => {
     expect(touchIntent({ item: 'dirt', count: 3 }, T.CHEST)).toBe('use');
     expect(touchIntent(null, T.CHEST)).toBe('use');
+    // 傳送石：點哪裡都是使用；床：互動
+    expect(touchIntent({ item: 'recall_stone', count: 1 }, T.AIR)).toBe('use');
+    expect(touchIntent({ item: 'dirt', count: 3 }, T.BED_FOOT)).toBe('use');
+    expect(touchIntent({ item: 'rope', count: 3 }, T.AIR)).toBe('place');
     expect(touchIntent({ item: 'dirt', count: 3 }, T.STONE)).toBe('place');
   });
 });

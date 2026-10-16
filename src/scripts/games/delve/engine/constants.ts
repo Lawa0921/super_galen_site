@@ -21,6 +21,9 @@ export const JUMP_SPEED = 300;
 export const JUMP_HOLD = 0.25;
 /** 最大 step-up 高度（px），超過一格就擋。 */
 export const STEP_MAX = 16.1;
+/** 繩索攀爬速度（上 / 下）與攀爬時的水平速度（px/s） */
+export const CLIMB_SPEED = 120;
+export const CLIMB_X = 70;
 /** 每個碰撞子步最多移動多少 px（< 半格，避免穿透）。 */
 export const SUBSTEP_PX = 7;
 

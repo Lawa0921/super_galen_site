@@ -1,6 +1,6 @@
 // world.ts — 固定大小 tile 世界。每層一個 typed array（row-major：i = y*width + x）。
 import { CHUNK } from './constants';
-import { SOLID_LUT, PLATFORM_LUT, T } from './tiles';
+import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from './tiles';
 import type { Stack } from './inventory';
 import { CHEST_SLOTS, type Drop } from './loot';
 
@@ -93,6 +93,12 @@ export class World {
   isPlatform(x: number, y: number): boolean {
     if (!this.inBounds(x, y)) return false;
     return PLATFORM_LUT[this.fg[y * this.width + x]] === 1;
+  }
+
+  /** 可攀爬（繩索；物理用） */
+  isClimbable(x: number, y: number): boolean {
+    if (!this.inBounds(x, y)) return false;
+    return CLIMB_LUT[this.fg[y * this.width + x]] === 1;
   }
 
   setFg(x: number, y: number, id: number): boolean {

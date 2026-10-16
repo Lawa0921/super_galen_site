@@ -10,6 +10,9 @@ import { EDGE, FRAME_COLS, MAT, VARIANTS, DECOR_STYLES, frameColumn, type Mat } 
 import { MATERIAL_PAL, PAL2, chestBmp, decorBmp, iconCactus, iconCoins, iconShard, texMaterial, texWall2 } from './decor';
 import { Bmp, INK, bayer, css, h01, hex, mix, ramp, shade, toCanvas, type RGB } from './pixel';
 import { RUNE_METAL, iconDoor, iconKey, iconLantern, iconMap, iconPlatform } from './dungeonArt';
+import {
+  crackStone, iconBed, iconCompass, iconDepthMeter, iconJumpBoots, iconMagnet, iconNightAmulet, iconRecall, iconRope, iconSwiftBoots,
+} from './exploreArt';
 
 const S = TILE_SIZE;
 export { VARIANTS };
@@ -35,6 +38,7 @@ const TILE_PAL: Record<number, RGB[]> = {
   [T.DIRT]: PAL.dirt, [T.GRASS]: PAL.dirt, [T.STONE]: PAL.stone, [T.SAND]: PAL.sand,
   [T.PLANKS]: PAL.planks, [T.COPPER_ORE]: PAL.stone, [T.IRON_ORE]: PAL.stone,
   [T.WOOD]: PAL.bark, [T.LEAVES]: PAL.grass, [T.TORCH]: PAL.torch, [T.WORKBENCH]: PAL.planks,
+  [T.CRACKED_STONE]: PAL.stone,
   ...MATERIAL_PAL,
 };
 const ORE_PAL: Record<number, RGB[]> = {
@@ -254,6 +258,7 @@ function texTile(id: number, v: number): Bmp {
   switch (id) {
     case T.DIRT: case T.GRASS: return texDirt(v);
     case T.STONE: return texStone(v);
+    case T.CRACKED_STONE: return crackStone(texStone(v), PAL.stone, v);
     case T.SAND: return texSand(v);
     case T.PLANKS: return texPlanks(v);
     case T.COPPER_ORE: case T.IRON_ORE: case T.SILVER_ORE: case T.GOLD_ORE: return texOre(id, v);
@@ -552,6 +557,7 @@ const ICON_ORDER: ItemId[] = [
   'silver_pickaxe', 'gold_pickaxe',
   'deep_stone', 'basalt', 'ash', 'obsidian', 'magma_rock', 'dungeon_brick_blue', 'dungeon_brick_green', 'dungeon_brick_pink',
   'platform', 'wooden_door', 'dungeon_key', 'golden_key', 'lantern', 'rune_pickaxe', 'explorer_map',
+  'rope', 'bed', 'recall_stone', 'compass', 'depth_meter', 'jump_boots', 'swift_boots', 'night_amulet', 'magnet',
 ];
 export { ICON_ORDER };
 export const PICK_METAL: Record<string, RGB[]> = {
@@ -577,6 +583,15 @@ export function paintIcon(item: ItemId): Bmp {
     case 'golden_key': return iconKey(true);
     case 'lantern': return iconLantern();
     case 'explorer_map': return iconMap();
+    case 'rope': return iconRope();
+    case 'bed': return iconBed();
+    case 'recall_stone': return iconRecall();
+    case 'compass': return iconCompass();
+    case 'depth_meter': return iconDepthMeter();
+    case 'jump_boots': return iconJumpBoots();
+    case 'swift_boots': return iconSwiftBoots();
+    case 'night_amulet': return iconNightAmulet();
+    case 'magnet': return iconMagnet();
     case 'dirt': return iconBlock(texDirt(0), PAL.dirt);
     case 'stone': return iconBlock(texStone(0), PAL.stone);
     case 'sand': return iconBlock(texSand(0), PAL.sand);

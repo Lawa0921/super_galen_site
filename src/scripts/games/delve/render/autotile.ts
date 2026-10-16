@@ -41,7 +41,7 @@ export function blendMat(tile: number): Mat {
   switch (tile) {
     case T.DIRT: case T.GRASS: return MAT.DIRT;
     case T.SAND: return MAT.SAND;
-    case T.STONE: case T.COPPER_ORE: case T.IRON_ORE: return MAT.STONE;
+    case T.STONE: case T.CRACKED_STONE: case T.COPPER_ORE: case T.IRON_ORE: return MAT.STONE;
     default: return MAT.NONE;
   }
 }
@@ -73,6 +73,7 @@ export const DECOR_STYLES: Record<number, number> = {
   [T.WORKBENCH]: 1,
   [T.PLATFORM]: 4, [T.DOOR_CLOSED]: 3, [T.DOOR_OPEN]: 3, [T.DOOR_LOCKED]: 3, [T.LOCKED_CHEST]: 1,
   [T.CHAIN]: 2, [T.BANNER]: 4, [T.CANDLE]: 2, [T.LANTERN]: 1, [T.BOOKSHELF]: 3, [T.BONES]: 3, [T.LORE_TABLET]: 1,
+  [T.ROPE]: 4, [T.BED_HEAD]: 1, [T.BED_FOOT]: 1,
 };
 /** 門 / 旗幟等直向多格物件：同種在上 → 不是頂；同種在下 → 不是底 */
 function doorPart(id: number, n: Neighbor): number {
@@ -121,6 +122,11 @@ export function decorStyle(id: number, x: number, y: number, n: Neighbor): numbe
       return blue + (n(0, -1) === T.BANNER ? 1 : 0);
     }
     case T.CHAIN: return y & 1;
+    case T.ROPE: {
+      // 0 中段、1 底端、2 頂端（繩結）、3 單格
+      const up = n(0, -1) === T.ROPE, dn = n(0, 1) === T.ROPE;
+      return up ? (dn ? 0 : 1) : dn ? 2 : 3;
+    }
     default: return h % (DECOR_STYLES[id] ?? 1);
   }
 }

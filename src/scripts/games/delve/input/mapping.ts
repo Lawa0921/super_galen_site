@@ -4,14 +4,16 @@ import { T, isInteractive } from '../engine/tiles';
 import type { Stack } from '../engine/inventory';
 import { HOTBAR_SIZE, TILE_SIZE } from '../engine/constants';
 
-export type KeyAction = 'left' | 'right' | 'jump' | 'down' | 'inventory' | 'menu' | 'zoomIn' | 'zoomOut';
+export type KeyAction = 'left' | 'right' | 'jump' | 'up' | 'down' | 'inventory' | 'menu' | 'zoomIn' | 'zoomOut'
+  | 'map' | 'minimap' | 'journal';
 
 const KEYS: Record<string, KeyAction> = {
   KeyA: 'left', ArrowLeft: 'left',
   KeyD: 'right', ArrowRight: 'right',
-  Space: 'jump', KeyW: 'jump', ArrowUp: 'jump',
+  Space: 'jump', KeyW: 'up', ArrowUp: 'up',
   KeyS: 'down', ArrowDown: 'down',
   KeyE: 'inventory',
+  KeyM: 'map', KeyN: 'minimap', KeyJ: 'journal',
   Escape: 'menu',
   Equal: 'zoomIn', NumpadAdd: 'zoomIn',
   Minus: 'zoomOut', NumpadSubtract: 'zoomOut',
@@ -70,6 +72,7 @@ export function mouseIntent(buttons: number): { mine: boolean; use: boolean } {
 /** 觸控點格子時：點到箱子 / 門 / 古碑 → use（互動）；手持可放置的方塊 → place，否則 mine。 */
 export function touchIntent(held: Stack | null, aimTile: number = T.AIR): 'place' | 'mine' | 'use' {
   if (aimTile === T.CHEST || isInteractive(aimTile)) return 'use';
+  if (held && ITEMS[held.item]?.use) return 'use';
   if (held && ITEMS[held.item]?.place !== undefined) return 'place';
   return 'mine';
 }

@@ -20,6 +20,8 @@ export const T = {
   DUNGEON_BRICK_BLUE: 49, DUNGEON_BRICK_GREEN: 50, DUNGEON_BRICK_PINK: 51,
   PLATFORM: 52, DOOR_CLOSED: 53, DOOR_OPEN: 54, DOOR_LOCKED: 55, LOCKED_CHEST: 56,
   CHAIN: 57, BANNER: 58, CANDLE: 59, LANTERN: 60, BOOKSHELF: 61, BONES: 62, LORE_TABLET: 63,
+  // ── 探索：裂紋石（密室的假牆，一敲就碎）、繩索、床（床頭 + 床尾兩格） ──
+  CRACKED_STONE: 64, ROPE: 65, BED_HEAD: 66, BED_FOOT: 67,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -35,9 +37,10 @@ export interface LocalName { zh: string; en: string; }
 
 /**
  * 支撐種類：none = 不需要；any = 相鄰任一實心或背牆（火把）；
- * floor = 正下方實心（或同種 tile 疊起來，例如仙人掌）；ceiling = 正上方實心（或同種 tile 垂吊，例如藤蔓）。
+ * floor = 正下方實心（或同種 tile 疊起來，例如仙人掌）；ceiling = 正上方實心（或同種 tile 垂吊，例如藤蔓）；
+ * rope = 繩索：正上方是實心 / 繩索 / 平台，或左右任一側貼著實心（豎井壁）。
  */
-export type Support = 'none' | 'any' | 'floor' | 'ceiling';
+export type Support = 'none' | 'any' | 'floor' | 'ceiling' | 'rope';
 
 export interface TileDef {
   id: number;
@@ -157,6 +160,11 @@ export const TILES: readonly TileDef[] = [
   decor(T.BOOKSHELF, 'bookshelf', n('書架', 'Bookshelf'), 'floor', 'planks', '#623924', { hardness: 0.4 }),
   decor(T.BONES, 'bones', n('骨堆', 'Bone Pile'), 'floor', null, '#f2e2b0', { hardness: 0.1 }),
   decor(T.LORE_TABLET, 'lore_tablet', n('古碑', 'Ancient Tablet'), 'floor', null, '#858aa0', { hardness: 1, minTier: TIER_UNBREAKABLE }),
+  // ── 探索 ──
+  block(T.CRACKED_STONE, 'cracked_stone', n('裂紋石', 'Cracked Stone'), 0.22, 'stone', '#5e5e74'),
+  decor(T.ROPE, 'rope', n('繩索', 'Rope'), 'rope', 'rope', '#c99660', { hardness: 0.05 }),
+  decor(T.BED_HEAD, 'bed_head', n('床', 'Bed'), 'floor', 'bed', '#a83a10', { hardness: 0.3 }),
+  decor(T.BED_FOOT, 'bed_foot', n('床', 'Bed'), 'floor', null, '#a83a10', { hardness: 0.3 }),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -197,6 +205,9 @@ for (const t of TILES) {
   DECOR_LUT[t.id] = t.sprite || (!t.solid && (t.id >= T.CHEST || t.id === T.WORKBENCH)) ? 1 : 0;
 }
 PLATFORM_LUT[T.PLATFORM] = 1;
+/** 可攀爬（繩索） */
+export const CLIMB_LUT = new Uint8Array(256);
+CLIMB_LUT[T.ROPE] = 1;
 
 export function tileDef(id: number): TileDef {
   return TILES[id] ?? TILES[T.AIR];
@@ -210,7 +221,12 @@ export function isDoorTile(id: number): boolean { return id === T.DOOR_CLOSED ||
 export function isChestTile(id: number): boolean { return id === T.CHEST || id === T.LOCKED_CHEST; }
 export function isDungeonBrick(id: number): boolean { return id >= T.DUNGEON_BRICK_BLUE && id <= T.DUNGEON_BRICK_PINK; }
 /** 按「使用」會互動（而不是放方塊）的 tile */
-export function isInteractive(id: number): boolean { return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET; }
+export function isInteractive(id: number): boolean { return isChestTile(id) || isDoorTile(id) || id === T.LORE_TABLET || isBedTile(id); }
+export function isBedTile(id: number): boolean { return id === T.BED_HEAD || id === T.BED_FOOT; }
+/** 繩索掛得住：正上方實心 / 繩索 / 平台，或左右貼著實心 */
+export function ropeOk(above: number, left: number, right: number): boolean {
+  return SOLID_LUT[above] === 1 || above === T.ROPE || above === T.PLATFORM || SOLID_LUT[left] === 1 || SOLID_LUT[right] === 1;
+}
 
 /**
  * 地面型物件是否站得住：正下方實心，或疊在允許的東西上（仙人掌疊仙人掌、書架疊書架、蠟燭放書架上）；

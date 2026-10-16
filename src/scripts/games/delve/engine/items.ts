@@ -16,7 +16,16 @@ export type ItemId =
   | 'deep_stone' | 'basalt' | 'ash' | 'obsidian' | 'magma_rock'
   | 'dungeon_brick_blue' | 'dungeon_brick_green' | 'dungeon_brick_pink'
   | 'platform' | 'wooden_door' | 'dungeon_key' | 'golden_key'
-  | 'lantern' | 'rune_pickaxe' | 'explorer_map';
+  | 'lantern' | 'rune_pickaxe' | 'explorer_map'
+  // ── 探索工具 / 飾品 ──
+  | 'rope' | 'bed' | 'recall_stone' | 'compass' | 'depth_meter'
+  | 'jump_boots' | 'swift_boots' | 'night_amulet' | 'magnet';
+
+/**
+ * 飾品效果（放在背包任一格即生效）：jump 跳更高、run 跑更快、night 身邊微光、magnet 伸手距離更遠、
+ * compass HUD 顯示東西座標、depth HUD 顯示深度格數、map 全地圖顯示所有地標位置。
+ */
+export type Accessory = 'jump' | 'run' | 'night' | 'magnet' | 'compass' | 'depth' | 'map';
 
 export interface PickStats { speed: number; tier: number; }
 export interface ItemDef {
@@ -27,8 +36,12 @@ export interface ItemDef {
   pick?: PickStats;
   /** 拿在手上時在玩家身邊發光的強度（0..1） */
   heldLight?: number;
-  /** 獨特道具（地城戰利品） */
+  /** 獨特道具（地城 / 探索戰利品） */
   unique?: boolean;
+  /** 飾品效果（在背包裡就生效） */
+  accessory?: Accessory;
+  /** 主動使用（手持按「使用」）：recall = 引導後傳送回重生點 */
+  use?: 'recall';
 }
 
 const block = (id: ItemId, zh: string, en: string, place: number): ItemDef =>
@@ -86,7 +99,17 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   golden_key: { ...mat('golden_key', '金鑰匙', 'Golden Key'), maxStack: 99 },
   lantern: { id: 'lantern', name: { zh: '探險提燈', en: "Delver's Lantern" }, maxStack: 1, heldLight: 1, unique: true },
   rune_pickaxe: { ...pick('rune_pickaxe', '符文鎬', 'Rune Pickaxe', 5.6, 5), unique: true },
-  explorer_map: { id: 'explorer_map', name: { zh: '探險家地圖', en: "Explorer's Map" }, maxStack: 1, unique: true },
+  explorer_map: { id: 'explorer_map', name: { zh: '探險家地圖', en: "Explorer's Map" }, maxStack: 1, unique: true, accessory: 'map' },
+  rope: block('rope', '繩索', 'Rope', T.ROPE),
+  // 床：放置時佔兩格（床頭 + 右邊床尾，game.tryPlace 特別處理）
+  bed: { ...block('bed', '床', 'Bed', T.BED_HEAD), maxStack: 99 },
+  recall_stone: { id: 'recall_stone', name: { zh: '傳送石', en: 'Recall Stone' }, maxStack: 1, use: 'recall' },
+  compass: { id: 'compass', name: { zh: '指南針', en: 'Compass' }, maxStack: 1, accessory: 'compass' },
+  depth_meter: { id: 'depth_meter', name: { zh: '深度計', en: 'Depth Gauge' }, maxStack: 1, accessory: 'depth' },
+  jump_boots: { id: 'jump_boots', name: { zh: '跳躍靴', en: 'Springstep Boots' }, maxStack: 1, unique: true, accessory: 'jump' },
+  swift_boots: { id: 'swift_boots', name: { zh: '疾行靴', en: 'Windrunner Boots' }, maxStack: 1, unique: true, accessory: 'run' },
+  night_amulet: { id: 'night_amulet', name: { zh: '夜視護符', en: 'Owl-Eye Amulet' }, maxStack: 1, unique: true, accessory: 'night' },
+  magnet: { id: 'magnet', name: { zh: '磁石', en: 'Lodestone' }, maxStack: 1, unique: true, accessory: 'magnet' },
 };
 
 export function isItemId(v: unknown): v is ItemId {

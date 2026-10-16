@@ -14,6 +14,10 @@ export interface ControlsOptions {
   screenToWorld: (sx: number, sy: number) => { x: number; y: number };
   onInventory: () => void;
   onMenu: () => void;
+  /** M：全地圖、N：小地圖開關、J：探險日誌 */
+  onMap?: () => void;
+  onMinimap?: () => void;
+  onJournal?: () => void;
   /** +1 放大 / −1 縮小 */
   onZoom?: (d: number) => void;
   /** 選單開啟等暫停狀態時忽略遊戲輸入 */
@@ -34,7 +38,7 @@ function isTextTarget(t: EventTarget | null): boolean {
 
 export function attachControls(o: ControlsOptions): Controls {
   const { game, canvas, root } = o;
-  const keys = { left: false, right: false, jump: false, down: false };
+  const keys = { left: false, right: false, jump: false, up: false, down: false };
   let joyMove: -1 | 0 | 1 | null = null;
   let joyUp = false;
   let joyDown = false;
@@ -63,7 +67,8 @@ export function attachControls(o: ControlsOptions): Controls {
   };
   const applyMove = (): void => {
     game.setMoveX(joyMove !== null && joyMove !== 0 ? joyMove : moveAxis(keys.left, keys.right));
-    game.setJump(keys.jump || jumpTouch || joyUp);
+    game.setJump(keys.jump || jumpTouch);
+    game.setUp(keys.up || joyUp);
     game.setDrop(keys.down || joyDown);
   };
   const aimAt = (sx: number, sy: number): void => {
@@ -82,8 +87,13 @@ export function attachControls(o: ControlsOptions): Controls {
     if (a === 'menu') { e.preventDefault(); o.onMenu(); return; }
     if (o.isBlocked()) return;
     if (a === 'inventory') { if (!e.repeat) o.onInventory(); e.preventDefault(); return; }
+    if (a === 'map' || a === 'minimap' || a === 'journal') {
+      if (!e.repeat) (a === 'map' ? o.onMap : a === 'minimap' ? o.onMinimap : o.onJournal)?.();
+      e.preventDefault();
+      return;
+    }
     if (a === 'zoomIn' || a === 'zoomOut') { if (!e.repeat) o.onZoom?.(a === 'zoomIn' ? 1 : -1); e.preventDefault(); return; }
-    if (a === 'left' || a === 'right' || a === 'jump' || a === 'down') {
+    if (a === 'left' || a === 'right' || a === 'jump' || a === 'up' || a === 'down') {
       keys[a] = true; e.preventDefault(); applyMove(); return;
     }
     const s = slotForKey(e.code);
@@ -91,10 +101,10 @@ export function attachControls(o: ControlsOptions): Controls {
   });
   on(window, 'keyup', (e: KeyboardEvent) => {
     const a = keyAction(e.code);
-    if (a === 'left' || a === 'right' || a === 'jump' || a === 'down') { keys[a] = false; applyMove(); }
+    if (a === 'left' || a === 'right' || a === 'jump' || a === 'up' || a === 'down') { keys[a] = false; applyMove(); }
   });
   const releaseAll = (): void => {
-    keys.left = keys.right = keys.jump = keys.down = false;
+    keys.left = keys.right = keys.jump = keys.up = keys.down = false;
     joyMove = null; joyUp = false; joyDown = false; jumpTouch = false;
     touchAim = null;
     mouseButtons = 0;
