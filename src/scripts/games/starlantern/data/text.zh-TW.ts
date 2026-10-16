@@ -1,9 +1,23 @@
-import type { BuffStat, Rarity, Slot, StatKey } from '../engine/types';
+import type { AnyStat, BuffStat, Rarity, Slot, StatKey } from '../engine/types';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
 const SLOT: Record<Slot, string> = {
   weapon: '武器', offhand: '副手', head: '頭部', body: '身體', hands: '手部', feet: '腳部', neck: '項鍊', ring1: '戒指 1', ring2: '戒指 2',
 };
+
+const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' };
+const STAT_NAME: Record<AnyStat, string> = {
+  hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度',
+  str: '力量', int: '智力', agi: '敏捷', wil: '意志',
+  crit: '暴擊率', critDmg: '暴擊傷害', vuln: '弱點傷害', eliteDmg: '對精英傷害', multi: '連擊率',
+  armor: '護甲', evasion: '閃避', block: '格擋率', meleeDR: '近戰減傷', rangedDR: '遠程減傷',
+  fireRes: '火抗', iceRes: '冰抗', thunderRes: '雷抗', fireDmg: '火焰傷害', iceDmg: '冰霜傷害', thunderDmg: '雷電傷害',
+  poisonRes: '毒抗', sleepRes: '睡眠抗性',
+  tpRegen: 'TP 回復', tpCost: 'TP 消耗減少', gauge: '絕技充能', heal: '治療效果',
+  goldFind: '金幣掉落', matFind: '素材掉落', expBonus: '經驗加成',
+};
+/** Stats that read as points; every other stat reads as a percent. */
+const POINT_STATS: AnyStat[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd', 'str', 'int', 'agi', 'wil', 'armor', 'evasion', 'tpRegen'];
 
 /** The homecoming sentence, alone or ahead of what came home. */
 const home = (viaLamp: boolean) => (viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。');
@@ -15,8 +29,18 @@ export const T = {
   slotKind: { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>,
   gold: (n: number) => `${n} G`,
   /** Rarity words (spec §4). Loot lines show the word after a gear name; common gear leaves it out. */
-  rarity: { common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' } as Record<Rarity, string>,
+  rarity: RARITY,
   gearLabel: (name: string, rarity: string) => `${name}・${rarity}`,
+  gear: {
+    rarity: RARITY,
+    statName: STAT_NAME,
+    affix: (key: AnyStat, value: number) => `${STAT_NAME[key]} +${value}${POINT_STATS.includes(key) ? '' : '%'}`,
+    ilvl: (n: number) => `物品等級 ${n}`,
+    setBonus: (n: number, text: string) => `${n} 件：${text}`,
+    setFour: '（同時擁有 2 件效果）',
+    junk: '已標為垃圾',
+    weight: (w: number) => `重量 ${w}`,
+  },
   tabs: { guild: '公會', shop: '商店', inn: '旅館', depart: '出發' },
   shop: {
     sell: '賣出素材', sellOne: '賣 1 個', sellAll: '全部賣出', buy: '購買', nothing: '沒有可賣的素材',

@@ -81,7 +81,7 @@ const POWER_LIST: PowerDef[] = [
   { id: 'blaze-heart-sword', skill: 'flame-burst', text: '爆炎斬不再消耗 HP', mod: { hpCost: 0 } },
   { id: 'frost-bloom-neck', skill: 'ice-star', text: '冰之星彈改為打全體，威力 70%', mod: { target: 'enemies', powerPct: 70 } },
   { id: 'storm-thunder-bow', skill: 'aimed-shot', text: '瞄準射擊改為雷屬性，威力 120%', mod: { element: 'thunder', powerPct: 120 } },
-  { id: 'mire-whisper-gloves', skill: 'hex', text: '衰弱咒的中毒機率變成 100%', mod: { chance: 1 } },
+  { id: 'mire-whisper-gloves', skill: 'hex', text: '衰弱咒必定使目標中毒（頭目減半）', mod: { chance: 1 } },
   { id: 'shade-silent-blade', skill: 'triple-slash', text: '三連刃改為 4 段', mod: { hits: 4 } },
   { id: 'iron-bulwark-plate', skill: 'iron-wall', text: '鐵壁改為作用全體，威力 50%', mod: { target: 'allies', powerPct: 50 } },
 ];
