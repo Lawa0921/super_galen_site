@@ -145,13 +145,13 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
 
 /**
  * The enemy side's knob for party progression power that the stat curves miss: skill-tree ranks and mod nodes now
- * (plan 5b Task 8), talents and keystones later (Tasks 9-10 retune this same knob). Every enemy in a fight, bosses
+ * (plan 5b Task 8) and talents (Task 9) now, keystones later (Task 10 retunes this same knob). Every enemy in a fight, bosses
  * included, has its HP, atk and mag multiplied by `enemyPower(level)`, `level` being its level in that fight (the depth
  * level, or its home level without a scale): 1 up to level `from`, then `1 + amount` above it. A step, not a slope: the
- * default tree's bonuses are mostly bought by Lv11-14, and a per-level slope swamps the deep bands (see the Task 8 sweep
- * in the commit that set it). Floors 1-3 (enemies up to Lv10) keep their tuned numbers.
+ * default tree's bonuses are mostly bought by Lv11-14, and a per-level slope swamps the deep bands (see the Task 8 and
+ * Task 9 sweeps in the commits that set it). Floors 1-3 (enemies up to Lv10) keep their tuned numbers.
  */
-export const ENEMY_POWER = { from: 10, amount: 0.17 };
+export const ENEMY_POWER = { from: 10, amount: 0.26 };
 export const enemyPower = (level: number): number => (level > ENEMY_POWER.from ? 1 + ENEMY_POWER.amount : 1);
 
 /** A monster with ENEMY_POWER applied at `level`; a new definition, `def` untouched (the same one at power 1). */
