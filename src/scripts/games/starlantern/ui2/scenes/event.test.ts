@@ -9,6 +9,7 @@ import { statsOf } from '../../engine/party';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { ITEMS } from '../../data/items';
+import type { ItemInstance } from '../../engine/types';
 import { DungeonScene } from './dungeon';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
@@ -273,5 +274,64 @@ describe('Review Focus 2', () => {
     expect(layer()).toBeNull();
     expect(root.querySelector('.slx-field-menu')).toBeNull();
     expect(game.pos).toEqual(at);
+  });
+});
+
+describe('gear from chests and the vault', () => {
+  const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
+
+  it('the vault lists its gear', () => {
+    const { game, s, root, pick, plant, text } = setup();
+    game.run!.keys.add(game.floor);
+    const { dir, at } = plant('vault');
+    game.run!.gearRolls[`vault:${game.floor}:${at.x},${at.y}`] = gearOf(55, 'hunter-bow', 'unique');
+    s.onAction(dir);
+    pick('開啟');
+    expect(text()).toContain('打開寶庫');
+    expect(text()).toContain('獵弓');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-unique')!.textContent).toBe('獵弓');
+  });
+
+  it('a bag already full from town says the run pack has no gear to throw away', () => {
+    const { game, s, root, options, pick, plant, text } = setup();
+    game.state.bag = Array.from({ length: 60 }, (_, i) => gearOf(1000 + i, 'cloth-robe', 'common'));
+    game.run!.keys.add(game.floor);
+    const { dir } = plant('vault');
+    s.onAction(dir);
+    pick('開啟');
+    const box = root.querySelector('.slx-full')!;
+    expect(box.textContent).toContain('冒險背包裡沒有裝備可以丟');
+    expect(options()).toEqual(['放棄']);
+    pick('放棄');
+    expect(text()).toBe('先把它留在原地吧。');
+  });
+
+  it('a full bag offers run-pack gear to discard and then picks up', () => {
+    const { game, s, root, options, pick, text } = setup();
+    game.state.bag = Array.from({ length: 59 }, (_, i) => gearOf(1000 + i, 'cloth-robe', 'common'));
+    game.run!.loot.gear.push(gearOf(9, 'iron-sword', 'magic'));   // 59 + 1: the bag is promised full
+    // A cell whose chest rolls gear, with the party moved beside it.
+    const m = game.map();
+    let dir: Dir | undefined, at = { x: 0, y: 0 };
+    for (let y = 1; y < m.height - 1 && !dir; y++) for (let x = 1; x < m.width - 1 && !dir; x++) {
+      if (tileAt(m, { x, y }) !== 'floor' || !chestHasGear(game.run!, game.floor, { x, y })) continue;
+      dir = DIRS.find((d) => tileAt(m, { x: x - DELTA[d].x, y: y - DELTA[d].y }) === 'floor');
+      if (dir) { at = { x, y }; game.pos = { x: x - DELTA[dir].x, y: y - DELTA[dir].y }; m.tiles[y][x] = 'chest'; }
+    }
+    if (!dir) throw new Error('no gear chest cell');
+    game.run!.gearRolls[`chest:${game.floor}:${at.x},${at.y}`] = gearOf(10, 'hunter-bow', 'rare');
+    s.onAction(dir);
+    const box = root.querySelector('.slx-full')!;
+    expect(box.querySelector('.slx-event-title')!.textContent).toBe('背包已滿（60 件）');
+    expect(box.querySelector('.slx-rarity-rare')!.textContent).toBe('獵弓');   // what is waiting to be picked up
+    expect(options()).toContain('鐵劍');
+    expect(box.querySelector('[data-id="gear:9"] .slx-label')!.classList.contains('slx-rarity-magic')).toBe(true);
+    pick('鐵劍');
+    expect(root.querySelector('.slx-layer:last-child')!.textContent).toContain('丟掉 鐵劍');
+    pick('是');
+    expect(root.querySelector('.slx-full')).toBeNull();
+    expect(text()).toContain('打開寶箱');
+    expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([10]);
+    expect(game.run!.opened.has(`${game.floor}:${at.x},${at.y}`)).toBe(true);
   });
 });

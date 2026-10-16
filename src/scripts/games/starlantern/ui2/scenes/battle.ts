@@ -1,5 +1,5 @@
 import type { SoundManager } from '../../audio/SoundManager';
-import type { PartyCue } from '../../render/BattleView';
+import type { HitExtra, PartyCue } from '../../render/BattleView';
 import type { FxKey } from '../../render/artPaths';
 import { CHARACTERS } from '../../data/characters';
 import { ITEMS } from '../../data/items';
@@ -9,17 +9,19 @@ import { ULTIMATES } from '../../data/ultimates';
 import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import type { BattleEnd } from '../../engine/game';
+import { itemName as gearName } from '../../engine/loot/item';
 import { learnedSkills } from '../../engine/party';
 import type { CharacterId, Target } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
 import { battleLines } from '../battleText';
+import { fillRich, gearPart } from '../loot';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar, type PulseOpts } from '../partyBar';
 import type { Scene, SceneCtx } from '../scene';
-import { MenuView, backControl, win } from '../widgets';
+import { MenuView, backControl, richNodes, win, type Rich } from '../widgets';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
 export const BATTLE_LEFT = 150;
@@ -381,7 +383,8 @@ export class BattleScene implements Scene {
     this.msg.textContent = this.actLine ? `${this.actLine}\n${lines[i]}` : lines[i];
   }
 
-  private async playLines(lines: string[]): Promise<void> {
+  private async playLines(all: string[]): Promise<void> {
+    const lines = all.filter(Boolean);   // TP regen has no line
     if (this.ctx.fast) { this.msg.textContent = lines.slice(-2).join('\n'); return; }
     for (const line of lines) {
       this.msg.textContent = line;
@@ -389,7 +392,7 @@ export class BattleScene implements Scene {
     }
   }
 
-  private async onParty(key: string, cue: PartyCue, name?: string, amount?: number, extra?: { fx: FxKey | null; weak: boolean }): Promise<void> {
+  private async onParty(key: string, cue: PartyCue, name?: string, amount?: number, extra?: HitExtra): Promise<void> {
     if (cue === 'ultimate') {
       this.ctx.sfx.ultimate?.();
       const ult = art.portrait(key, 'ultimate');
@@ -398,6 +401,11 @@ export class BattleScene implements Scene {
       return;
     }
     const shown = this.before?.get(key);
+    if (cue === 'tp' && shown && amount) {
+      const max = this.state.party.find((c) => c.key === key)?.max.tp ?? shown.tp + amount;
+      shown.tp = Math.min(max, shown.tp + amount);
+      this.updateBar(null);
+    }
     if (cue === 'hit' || cue === 'heal') {
       // Take each hit off (or add each heal to) the pre-round value as it plays; without an amount, show the round's result.
       const max = this.state.party.find((c) => c.key === key)?.max.hp ?? 0;
@@ -410,13 +418,13 @@ export class BattleScene implements Scene {
     let opts: PulseOpts = {};
     if (cue === 'hit') {
       const max = this.state.party.find((c) => c.key === key)?.max.hp ?? 1;
-      const heavy = !!extra?.weak || (amount ?? 0) >= max / 4;
+      const heavy = !!extra?.weak || !!extra?.crit || (amount ?? 0) >= max / 4;
       this.impact(heavy, extra?.fx ?? null);
       if (heavy) this.ctx.vibrate?.(60);
       const fxKey = extra?.fx ?? null;
       const still = fxKey ? art.fx(fxKey) : null;
       opts = {
-        heavy, weak: extra?.weak,
+        heavy, weak: extra?.weak, crit: extra?.crit, resist: extra?.resist,
         fxAnim: fxKey && this.ctx.art.has(art.fxAnim(fxKey)) ? fxKey : undefined,
         fx: still && this.ctx.art.has(still) ? still : undefined,
       };
@@ -440,16 +448,19 @@ export class BattleScene implements Scene {
   }
 
   private renderResult(end: BattleEnd, fanfare = true): void {
-    const lines: { text: string; up?: boolean }[] = [];
+    // `cls` styles the whole line: a level-up, or a piece of gear in its rarity colour.
+    const lines: { text: string | Rich; cls?: string }[] = [];
     if (end.outcome === 'win') {
       if (fanfare) this.ctx.sfx.win?.();
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
+      for (const it of end.gear) lines.push({ text: gearName(it), cls: `slx-loot-gear slx-rarity-${it.rarity}` });
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
+      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });
       for (const u of end.levelUps) {
         const who = CHARACTERS[u.id].name;
-        lines.push({ text: T.battle.levelUp(who, this.ctx.game.state.party.roster[u.id].level), up: true });
-        for (const s of u.learned) lines.push({ text: T.battle.learned(who, SKILLS[s].name), up: true });
+        lines.push({ text: T.battle.levelUp(who, this.ctx.game.state.party.roster[u.id].level), cls: 'slx-levelup' });
+        for (const s of u.learned) lines.push({ text: T.battle.learned(who, SKILLS[s].name), cls: 'slx-levelup' });
       }
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
@@ -465,6 +476,6 @@ export class BattleScene implements Scene {
     // A held or repeated key must not skip the rewards: accept input after a short beat.
     this.resultReady = !!this.ctx.fast;
     if (!this.resultReady) setTimeout(() => { this.resultReady = true; }, 300);
-    this.body.append(win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { text: l.text, class: l.up ? 'slx-levelup' : undefined }))), this.result.el]));
+    this.body.append(win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { class: l.cls }, typeof l.text === 'string' ? [l.text] : richNodes(l.text)))), this.result.el]));
   }
 }

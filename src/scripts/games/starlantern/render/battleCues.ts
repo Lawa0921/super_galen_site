@@ -6,7 +6,12 @@ export type Cue =
   | { kind: 'line'; index: number }
   | { kind: 'ultimate'; key: string; name: string }
   | { kind: 'act'; key: string }
-  | { kind: 'hit'; key: string; amount: number; weak: boolean; fx: FxKey | null }
+  /** `crit` and `resist` (an element the target resists) are set only when true. */
+  | { kind: 'hit'; key: string; amount: number; weak: boolean; crit?: true; resist?: true; fx: FxKey | null }
+  /** An evaded attack: a MISS pop over the target. */
+  | { kind: 'miss'; key: string }
+  /** End-of-round TP regen on a member: a quiet pop, no line and no pause. */
+  | { kind: 'tp'; key: string; amount: number }
   | { kind: 'fx'; key: string; fx: FxKey; amount?: number }
   | { kind: 'ko'; key: string }
   | { kind: 'wait'; ms: number };
@@ -25,8 +30,14 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
       out.push({ kind: 'line', index }, { kind: 'act', key: ev.actor }, { kind: 'wait', ms: ACT_MS });
       return;
     }
+    if (ev.type === 'tp' && ev.regen) { out.push({ kind: 'tp', key: ev.target, amount: ev.amount }); return; }
     out.push({ kind: 'line', index });
-    if (ev.type === 'damage') out.push({ kind: 'hit', key: ev.target, amount: ev.amount, weak: ev.mult > 1, fx: effectFor(ev, actor) });
+    if (ev.type === 'damage') {
+      out.push({
+        kind: 'hit', key: ev.target, amount: ev.amount, weak: ev.mult > 1,
+        ...(ev.crit ? { crit: true as const } : {}), ...(ev.mult < 1 ? { resist: true as const } : {}), fx: effectFor(ev, actor),
+      });
+    } else if (ev.type === 'miss') out.push({ kind: 'miss', key: ev.target });
     else if (ev.type === 'ko') out.push({ kind: 'ko', key: ev.target });
     else if ('target' in ev) {
       const fx = effectFor(ev, actor);

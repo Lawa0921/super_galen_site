@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
+import type { ItemInstance } from '../../engine/types';
 import { TownScene } from './town';
 
 describe('TownScene', () => {
@@ -96,5 +97,33 @@ describe('TownScene notices', () => {
     s.enter(root);
     expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('平安回城。帶回了：40 G。');
     expect(game.banked).toBeNull();
+  });
+});
+
+describe('TownScene banked gear', () => {
+  const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
+  const enter = (game: Game) => {
+    const root = document.createElement('div');
+    new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(root);
+    return root;
+  };
+
+  it('names the gear that came home in its rarity colour', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 40, viaLamp: false, gear: [gearOf(1, 'iron-sword', 'rare')], overflow: [] };
+    const root = enter(game);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('平安回城。帶回了：鐵劍、40 G。');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-rare')!.textContent).toBe('鐵劍');
+  });
+
+  it('says plainly which gear was lost because the bag was full', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 0, viaLamp: false, gear: [gearOf(1, 'iron-sword', 'rare')], overflow: [gearOf(2, 'hunter-bow', 'magic'), gearOf(3, 'cloth-robe', 'common')] };
+    const root = enter(game);
+    const text = root.querySelector('.slx-talk .slx-text')!.textContent!;
+    expect(text).toContain('背包已滿（60 件），沒能帶回：獵弓、布袍。');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-magic')!.textContent).toBe('獵弓');
   });
 });

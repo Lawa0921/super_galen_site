@@ -228,7 +228,7 @@ describe('resource hooks', () => {
     const s = resolveRound(makeBattle([P('p', { tp: 5, x: { tpRegen: 3 } }), P('q', { tp: 19, x: { tpRegen: 3 } }), P('r', { tp: 5 })], [sleeper()]),
       { p: { kind: 'defend' }, q: { kind: 'defend' }, r: { kind: 'defend' } }, rng);
     expect(s.party.map((c) => c.tp)).toEqual([8, 20, 5]);
-    expect(s.log).toContainEqual({ type: 'tp', target: 'p', amount: 3 });
+    expect(s.log).toContainEqual({ type: 'tp', target: 'p', amount: 3, regen: true });
     expect(s.log.filter((e) => e.type === 'tp' && e.target === 'r')).toEqual([]);
     // The fallen regain nothing.
     const dead = resolveRound(makeBattle([P('p', { tp: 5, x: { tpRegen: 3 } }), P('d', { tp: 0, hp: 0, alive: false, x: { tpRegen: 3 } })], [sleeper()]), { p: { kind: 'defend' } }, rng);

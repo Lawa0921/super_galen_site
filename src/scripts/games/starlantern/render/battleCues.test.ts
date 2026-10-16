@@ -40,6 +40,28 @@ describe('battleCues', () => {
     const log: BattleEvent[] = [{ type: 'act', actor: 'scarlet', label: '回復藥' }, { type: 'heal', target: 'scarlet', amount: 60 }];
     expect(battleCues(log, defIdOf)).toContainEqual({ kind: 'fx', key: 'scarlet', fx: 'heal', amount: 60 });
   });
+
+  it('marks crits and resisted hits, and turns an evaded attack into a miss cue', () => {
+    const log: BattleEvent[] = [
+      { type: 'act', actor: 'sylvie', label: '射擊' },
+      { type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1, crit: true },
+      { type: 'damage', target: 'e0', amount: 4, element: 'fire', mult: 0.5 },
+      { type: 'miss', target: 'e0' },
+    ];
+    const cues = battleCues(log, defIdOf);
+    expect(cues).toContainEqual({ kind: 'hit', key: 'e0', amount: 30, weak: false, crit: true, fx: 'pierce' });
+    expect(cues).toContainEqual({ kind: 'hit', key: 'e0', amount: 4, weak: false, resist: true, fx: 'fire' });
+    expect(cues).toContainEqual({ kind: 'miss', key: 'e0' });
+    expect(cues.filter((c) => c.kind === 'line')).toHaveLength(4);   // a miss still has its line
+  });
+
+  it('TP regen is a quiet pop: no message line and no reading pause', () => {
+    const log: BattleEvent[] = [{ type: 'tp', target: 'scarlet', amount: 3, regen: true }];
+    expect(battleCues(log, defIdOf)).toEqual([{ kind: 'tp', key: 'scarlet', amount: 3 }]);
+    // a TP potion is not regen: it keeps its line
+    const potion = battleCues([{ type: 'tp', target: 'scarlet', amount: 20 }], defIdOf);
+    expect(potion).toContainEqual({ kind: 'line', index: 0 });
+  });
 });
 
 describe('ultimate cue', () => {

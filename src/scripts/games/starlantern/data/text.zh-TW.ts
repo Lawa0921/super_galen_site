@@ -45,6 +45,9 @@ export const T = {
     leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
     levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`, learned: (name: string, skill: string) => `${name} 學會了「${skill}」`,
     weak: (els: string) => `已知弱點：${els}`,
+    /** Words that pop over a struck enemy or member. */
+    pop: { miss: 'MISS', crit: '暴擊！', weak: '弱點！', resist: '抗性', tp: (n: number) => `+${n} TP` },
+    gearLeft: (name: string) => `背包已滿，留下了 ${name}`,
   },
   element: { phys: '物理', fire: '火', ice: '冰', thunder: '雷' },
   log: {
@@ -138,6 +141,7 @@ export const T = {
       status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',
       noItems: '沒有可以使用的道具。', askLamp: '要使用歸還之燈回到城鎮嗎？', who: (item: string) => `${item}要給誰使用？`, used: (item: string, who: string) => `${who} 使用了${item}。`, menuHint: '選單',
       weight: (now: string, cap: string) => `重量 ${now}／${cap}`,
+      bagRoom: (n: number) => `背包剩 ${n} 格，帶回的裝備放不下的會遺失。`,
       conditionItem: (name: string) => `本次狀況　${name}`, conditionLine: (name: string, desc: string) => `${name}：${desc}`,
     },
     inn: {
@@ -187,9 +191,14 @@ export const T = {
         title: '背包已滿', desc: (name: string, qty: number, need: number) => `${name} ×${qty} 放不下（還差重量 ${need}）。`, which: '要丟掉什麼來換？',
         giveUp: '放棄', ask: (name: string, n: number) => `要丟掉 ${name} ×${n} 嗎？`,
         freed: '空出位置了。再走上寶箱一次就能撿起來。', left: '先把它留在原地吧。',
+        bagTitle: (n: number) => `背包已滿（${n} 件）`, bagDesc: (name: string) => `${name} 放不下：背包沒有空位了。`,
+        whichGear: '要丟掉哪件裝備來騰出空位？', askGear: (name: string) => `要丟掉 ${name} 嗎？`,
+        noGear: '冒險背包裡沒有裝備可以丟。回城整理背包之後再來吧。',
       },
     },
+    home: (viaLamp: boolean) => (viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。'),
     banked: (viaLamp: boolean, list: string) => `${viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。'}帶回了：${list}。`,
+    bankedLost: (n: number, list: string) => `背包已滿（${n} 件），沒能帶回：${list}。`,
     shop: {
       buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, bagFull: '背包已滿（60 件）', needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,

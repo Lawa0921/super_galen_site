@@ -128,3 +128,36 @@ describe('PartyBar', () => {
     expect(after.textContent).toContain('25/30');
   });
 });
+
+describe('PartyBar stat pops', () => {
+  it('shows MISS on an evaded attack without shaking the panel', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet')]);
+    bar.pulse('scarlet', 'miss');
+    const p = bar.el.querySelector('.slx-pm')!;
+    expect(p.querySelector('.slx-pm-miss')!.textContent).toBe('MISS');
+    expect(p.classList.contains('slx-pm-hit')).toBe(false);
+  });
+
+  it('a crit has its own pop and tag, a resisted hit a small 抗性 tag', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet'), m('liz')]);
+    bar.pulse('scarlet', 'hit', 12, { crit: true });
+    const s = bar.el.querySelector('[data-key=scarlet]')!;
+    expect(s.querySelector('.slx-pm-pop.slx-pm-pop-crit')!.textContent).toBe('-12');
+    expect(s.querySelector('.slx-pm-crit')!.textContent).toBe('暴擊！');
+    bar.pulse('liz', 'hit', 3, { resist: true });
+    const l = bar.el.querySelector('[data-key=liz]')!;
+    expect(l.querySelector('.slx-pm-resist')!.textContent).toBe('抗性');
+    expect(l.querySelector('.slx-pm-pop-crit')).toBeNull();
+  });
+
+  it('TP regen is a quiet blue pop with no shake or glow', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet')]);
+    bar.pulse('scarlet', 'tp', 3);
+    const p = bar.el.querySelector('.slx-pm')!;
+    expect(p.querySelector('.slx-pm-pop.slx-pm-pop-tp')!.textContent).toBe('+3 TP');
+    expect(['slx-pm-hit', 'slx-pm-heal', 'slx-pm-acting', 'slx-pm-ko'].some((c) => p.classList.contains(c))).toBe(false);
+  });
+});

@@ -5,20 +5,21 @@ import { ITEMS } from '../../data/items';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { T } from '../../data/text.zh-TW';
 import { floorOf } from '../../engine/dungeon/run';
+import { BAG_SIZE } from '../../engine/loot/bag';
 import { step, type Dir } from '../../engine/map';
 import { rowOfCell } from '../../engine/formation';
 import { activeIds, statsOf } from '../../engine/party';
 import { useFieldItem } from '../../engine/town';
 import type { CharacterId } from '../../engine/types';
-import { el, itemName } from '../../ui/dom';
+import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { Minimap } from '../minimap';
 import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
-import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
-import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
+import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
+import { chestLine, eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
@@ -146,7 +147,7 @@ export class DungeonScene implements Scene {
     return [badge, tip];
   }
 
-  private say(text: string): void {
+  private say(text: string | Rich): void {
     void this.talk.say('', text);
     this.syncInert();
   }
@@ -214,7 +215,7 @@ export class DungeonScene implements Scene {
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
       case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
       case 'stairs': s.step?.(); this.refresh(); this.push(stairsLayer(this.host(), r, () => this.descend())); return;
-      case 'chest': s.chest?.(); this.refresh(); this.say(T.map.chest(itemName(r.item), r.qty)); return;
+      case 'chest': s.chest?.(); this.refresh(); this.say(chestLine(r)); return;
       case 'event': s.step?.(); this.refresh(); this.push(eventLayer(this.host(), r.content)); return;
       case 'trap':
         s.hit?.();
@@ -286,8 +287,18 @@ export class DungeonScene implements Scene {
     this.push({ el: win(cls, [...(title ? [el('div', { class: 'slx-who', text: title })] : []), v.el]), onAction: (a) => v.onAction(a) });
   }
 
+  /**
+   * Going home banks the run pack's gear into the bag while it has slots; the rest is lost. When the run carries more gear
+   * than the bag has room for, the question says how many slots are left.
+   */
+  private bagWarning(question: string): string {
+    const g = this.ctx.game;
+    const room = Math.max(0, BAG_SIZE - g.state.bag.length);
+    return (g.run?.loot.gear.length ?? 0) > room ? `${question}\n${T.ui2.dungeon.bagRoom(room)}` : question;
+  }
+
   private askTown(): void {
-    const box = confirmBox(T.ui2.dungeon.askTown, (yes) => {
+    const box = confirmBox(this.bagWarning(T.ui2.dungeon.askTown), (yes) => {
       this.pop();
       if (yes && this.ctx.game.returnToTown()) { this.leaving = true; this.ctx.go('town'); }
     });
@@ -320,7 +331,7 @@ export class DungeonScene implements Scene {
 
   private askLamp(): void {
     const g = this.ctx.game;
-    const box = confirmBox(T.ui2.dungeon.askLamp, (yes) => {
+    const box = confirmBox(this.bagWarning(T.ui2.dungeon.askLamp), (yes) => {
       this.pop();
       if (!yes || !g.useReturnLamp()) return;
       g.notice = 'lamp';

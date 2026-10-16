@@ -2,6 +2,27 @@ import { el } from '../ui/dom';
 import type { UiAction } from './input';
 import { Menu, type MenuItem } from './menu';
 
+/** A line with coloured parts: plain text, or `{ text, cls }` drawn in a span of that class (a rarity colour, say). */
+export type RichPart = string | { text: string; cls: string };
+export type Rich = RichPart[];
+
+const partText = (p: RichPart): string => (typeof p === 'string' ? p : p.text);
+export const richText = (r: string | Rich): string => (typeof r === 'string' ? r : r.map(partText).join(''));
+
+/** The first `n` characters of a rich line as nodes; each coloured part keeps its span while it types out. */
+export function richNodes(r: Rich, n = Infinity): Node[] {
+  const out: Node[] = [];
+  let left = n;
+  for (const p of r) {
+    if (left <= 0) break;
+    const chars = [...partText(p)];
+    const shown = chars.slice(0, left).join('');
+    left -= chars.length;
+    out.push(typeof p === 'string' ? document.createTextNode(shown) : el('span', { class: p.cls, text: shown }));
+  }
+  return out;
+}
+
 export function win(cls: string, children: Node[] = []): HTMLElement {
   return el('div', { class: `slx-win ${cls}` }, children);
 }
@@ -32,7 +53,7 @@ export class MenuView {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
         ...(item.icon ? [el('img', { class: 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
-        el('span', { class: 'slx-label', text: item.label }),
+        el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
         ...(item.right !== undefined ? [el('span', { class: 'slx-right', text: item.right })] : []),
       ]);
       // pointermove, not pointerenter: a window that opens under a resting mouse must not steal the keyboard cursor.
@@ -74,7 +95,7 @@ export class Dialogue {
   private text = el('span', { class: 'slx-text' });
   /** Blinking mark shown once the whole line is on screen. */
   private next = el('span', { class: 'slx-next', text: '▼', attrs: { 'aria-hidden': 'true', hidden: '' } });
-  private full = '';
+  private full: Rich = [];
   private timer: ReturnType<typeof setInterval> | null = null;
   private resolve: (() => void) | null = null;
 
@@ -89,13 +110,13 @@ export class Dialogue {
 
   busy(): boolean { return this.resolve !== null; }
 
-  say(name: string, text: string): Promise<void> {
+  say(name: string, text: string | Rich): Promise<void> {
     this.stop();
     // A newer line replaces the old one: settle the old promise so nothing awaits it forever.
     const old = this.resolve;
     this.resolve = null;
     old?.();
-    this.full = text;
+    this.full = typeof text === 'string' ? [text] : text;
     this.name.textContent = name;
     this.name.hidden = !name;
     this.el.hidden = false;
@@ -107,8 +128,8 @@ export class Dialogue {
       this.el.setAttribute('aria-busy', 'true');
       this.timer = setInterval(() => {
         n += 1;
-        this.text.textContent = [...this.full].slice(0, n).join('');
-        if (n >= [...this.full].length) this.complete();
+        this.text.replaceChildren(...richNodes(this.full, n));
+        if (n >= [...richText(this.full)].length) this.complete();
       }, 1000 / this.charsPerSecond);
     }
     return new Promise((r) => { this.resolve = r; });
@@ -128,7 +149,7 @@ export class Dialogue {
   /** Whole line on screen: the ▼ mark shows and screen readers (aria-busy off) read it once. */
   private complete(): void {
     this.stop();
-    this.text.textContent = this.full;
+    this.text.replaceChildren(...richNodes(this.full));
     this.next.removeAttribute('hidden');
     this.el.setAttribute('aria-busy', 'false');
   }

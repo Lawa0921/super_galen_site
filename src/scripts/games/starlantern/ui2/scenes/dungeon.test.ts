@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import type { Portal } from '../../engine/dungeon/run';
-import { DELTA, tileAt } from '../../engine/map';
+import { DELTA, tileAt, type Dir } from '../../engine/map';
+import { chestHasGear } from '../../engine/loot/drops';
+import type { ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weights';
@@ -295,5 +297,54 @@ describe('DungeonScene readouts', () => {
     const c = root.querySelector<HTMLCanvasElement>('canvas.slx-minimap')!;
     expect([c.width, c.height]).toEqual([120, 88]);
     expect(c.getAttribute('style')).toBeNull();
+  });
+});
+
+describe('DungeonScene loot', () => {
+  const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
+  /** Put a gear chest next to the party (moving the party beside a cell whose chest rolls gear); returns the step onto it. */
+  const gearChest = (game: Game, gear: ItemInstance): Dir => {
+    const m = game.map();
+    for (let y = 1; y < m.height - 1; y++) for (let x = 1; x < m.width - 1; x++) {
+      if (m.tiles[y][x] !== 'floor' || !chestHasGear(game.run!, game.floor, { x, y })) continue;
+      const dir = (['up', 'down', 'left', 'right'] as const).find((d) => tileAt(m, { x: x - DELTA[d].x, y: y - DELTA[d].y }) === 'floor');
+      if (!dir) continue;
+      m.tiles[y][x] = 'chest';
+      game.pos = { x: x - DELTA[dir].x, y: y - DELTA[dir].y };
+      game.run!.gearRolls[`chest:${game.floor}:${x},${y}`] = gear;
+      return dir;
+    }
+    throw new Error('no gear chest cell');
+  };
+
+  it('a chest with gear names the item in its rarity colour', () => {
+    const { game, s, root, text } = setup();
+    const dir = gearChest(game, gearOf(77, 'iron-sword', 'legendary'));
+    s.onAction(dir);
+    expect(text()).toContain('打開寶箱');
+    expect(text()).toContain('鐵劍');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-legendary')!.textContent).toBe('鐵劍');
+    expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([77]);
+  });
+
+  it('warns at the lamp and at the entrance when the bag cannot take all the run gear', () => {
+    const { game, s, pick, root } = setup();
+    game.state.bag = Array.from({ length: 59 }, (_, i) => gearOf(1000 + i, 'cloth-robe', 'common'));
+    game.run!.loot.gear.push(gearOf(1, 'iron-sword', 'rare'), gearOf(2, 'hunter-bow', 'magic'));
+    s.onAction('menu');
+    pick('歸還之燈');
+    expect(root.querySelector('.slx-confirm')!.textContent).toContain('背包剩 1 格');
+    s.onAction('cancel');
+    s.onAction('cancel');
+    s.onAction('right'); s.onAction('left');
+    expect(root.querySelector('.slx-confirm')!.textContent).toContain('背包剩 1 格');
+  });
+
+  it('says nothing about the bag when the run gear fits', () => {
+    const { game, s, pick, root } = setup();
+    game.run!.loot.gear.push(gearOf(1, 'iron-sword', 'rare'));
+    s.onAction('menu');
+    pick('歸還之燈');
+    expect(root.querySelector('.slx-confirm')!.textContent).not.toContain('背包剩');
   });
 });

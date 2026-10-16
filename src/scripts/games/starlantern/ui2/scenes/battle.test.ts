@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import type { Combatant } from '../../engine/combatant';
+import type { ItemInstance } from '../../engine/types';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { BattleScene } from './battle';
@@ -495,5 +496,58 @@ describe('BattleScene sound and failure safety', () => {
     expect(root.hasAttribute('inert')).toBe(false);
     expect(root.querySelectorAll('.slx-bcmd [role=option]').length).toBeGreaterThan(0);
     err.mockRestore();
+  });
+});
+
+describe('BattleScene loot and stat cues', () => {
+  const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
+
+  it('won gear is listed with its rarity class; gear left behind is named', async () => {
+    const { game, s, root } = setup();
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {},
+      gear: [gearOf(1, 'iron-sword', 'rare'), gearOf(2, 'cloth-robe', 'common')], gearLeft: [gearOf(3, 'hunter-bow', 'magic')] };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const sword = [...root.querySelectorAll('.slx-result-lines p')].find((p) => p.textContent!.includes('鐵劍'))!;
+    expect(sword.classList.contains('slx-rarity-rare')).toBe(true);
+    const robe = [...root.querySelectorAll('.slx-result-lines p')].find((p) => p.textContent!.includes('布袍'))!;
+    expect(robe.classList.contains('slx-rarity-common')).toBe(true);
+    const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+    expect(lines).toContain('背包已滿，留下了 獵弓');
+    expect(root.querySelector('.slx-result-lines .slx-rarity-magic')!.textContent).toBe('獵弓');
+  });
+
+  it('shows MISS, crit and TP pops on the struck member, and no message line for TP regen', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+    const root = document.createElement('div');
+    const key = game.battle!.party[0].key;
+    const found: string[] = [];
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
+      play: async (_s: unknown, _fx: unknown, on: (k: string, cue: string, name?: string, amount?: number, extra?: object) => Promise<void>) => {
+        const panel = () => root.querySelector(`.slx-pm[data-key="${key}"]`)!;
+        await on(key, 'miss'); found.push(panel().querySelector('.slx-pm-miss')?.textContent ?? '');
+        await on(key, 'hit', undefined, 5, { fx: null, weak: false, crit: true }); found.push(panel().querySelector('.slx-pm-crit')?.textContent ?? '');
+        await on(key, 'tp', undefined, 3); found.push(panel().querySelector('.slx-pm-pop-tp')?.textContent ?? '');
+      } } };
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    await flush();
+    expect(found).toEqual(['MISS', '暴擊！', '+3 TP']);
+  });
+
+  it('without a stage, the message window never shows a TP regen line', async () => {
+    const { game, s, root } = setup();
+    const key = game.battle!.party[0].key;
+    vi.spyOn(game, 'submitRound').mockImplementation(() => ({ battle: { ...game.battle!, log: [
+      { type: 'act', actor: key, label: '防禦' }, { type: 'tp', target: key, amount: 3, regen: true },
+    ] }, end: null }));
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    await flush();
+    expect(root.querySelector('.slx-msg')!.textContent).not.toContain('TP');
+    expect(root.querySelector('.slx-msg')!.textContent!.trim()).not.toBe('');
   });
 });

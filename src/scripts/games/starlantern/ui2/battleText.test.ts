@@ -22,4 +22,9 @@ describe('battleLines', () => {
     ];
     expect(battleLines(log, () => '苔蘚史萊姆')).toEqual(['苔蘚史萊姆 受到 30 傷害（暴擊）', '苔蘚史萊姆 受到 45 傷害（弱點）（暴擊）', '苔蘚史萊姆 閃過了攻擊']);
   });
+
+  it('TP regen has no line (the member panel shows it); a TP potion keeps its line', () => {
+    const log: BattleEvent[] = [{ type: 'tp', target: 'p', amount: 3, regen: true }, { type: 'tp', target: 'p', amount: 20 }];
+    expect(battleLines(log, () => '絲嘉蕾')).toEqual(['', '絲嘉蕾 回復 20 TP']);
+  });
 });

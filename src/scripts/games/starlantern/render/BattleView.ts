@@ -1,6 +1,7 @@
 import { ColorMatrixFilter, Container, Graphics, Rectangle, Sprite, Text, Texture, type ColorMatrix, type Filter } from 'pixi.js';
 import { GlowFilter, OutlineFilter } from 'pixi-filters';
 import { REGIONS, type RegionId } from '../data/regions';
+import { T } from '../data/text.zh-TW';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
 import type { Combatant } from '../engine/combatant';
@@ -74,11 +75,21 @@ const BAR_W = 64;
 /** Nothing in the picture may rise above the message window. */
 const TOP_CLEAR = 52;
 
+/** Pop colours: a crit burns orange, a resisted hit is a cold grey-blue, a miss a pale grey. */
+const CRIT_COLOR = 0xff9a3c;
+const RESIST_COLOR = 0x9fb3c8;
+const MISS_COLOR = 0xd8d4e6;
+const T_CRIT = { text: T.battle.pop.crit, fill: 0xffb35c, stroke: 0x5a1a00 };
+const T_WEAK = { text: T.battle.pop.weak, fill: 0xffd166, stroke: 0x7a1a10 };
+const T_RESIST = { text: T.battle.pop.resist, fill: 0xc8d6e6, stroke: 0x1a2a3a };
+
 /** Pause on each impact so a hit lands before the next thing happens. */
 const HIT_STOP_MS = 80;
 /** How far an enemy drops in from when a battle opens. */
 const DROP_PX = 28;
-export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko';
+export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko' | 'miss' | 'tp';
+/** What the party bar needs to draw a hit: its effect, and whether it was a weak point, a crit or resisted. */
+export interface HitExtra { fx: FxKey | null; weak: boolean; crit?: boolean; resist?: boolean }
 
 export class BattleView {
   readonly root = new Container();
@@ -223,7 +234,7 @@ export class BattleView {
   /** Party members are drawn by the DOM party bar; these cues tell it what to show. */
   async play(
     state: BattleState, sfx: SoundManager,
-    onParty?: (key: string, cue: PartyCue, name?: string, amount?: number, extra?: { fx: FxKey | null; weak: boolean }) => void | Promise<void>,
+    onParty?: (key: string, cue: PartyCue, name?: string, amount?: number, extra?: HitExtra) => void | Promise<void>,
     onLine?: (index: number) => void,
   ): Promise<void> {
     for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null)) {
@@ -235,16 +246,22 @@ export class BattleView {
         if (slot) await this.lunge(slot); else void onParty?.(cue.key, 'acting');
         continue;
       }
+      if (cue.kind === 'tp') { if (!slot) void onParty?.(cue.key, 'tp', undefined, cue.amount); continue; }
+      if (cue.kind === 'miss') {
+        if (slot) this.popup(slot, T.battle.pop.miss, MISS_COLOR, { small: true }); else void onParty?.(cue.key, 'miss');
+        continue;
+      }
       if (cue.kind === 'hit') {
-        if (cue.weak) sfx.weak(); else sfx.hit();
+        if (cue.weak || cue.crit) sfx.weak(); else sfx.hit();
         if (cue.fx) sfx.element?.(cue.fx);
         if (slot) {
           slot.hp = Math.max(0, slot.hp - cue.amount);
           if (!slot.bar.destroyed) this.drawBar(slot);
-          this.flash(slot, cue.weak);
-          this.popup(slot, String(cue.amount), cue.weak ? 0xffd166 : 0xffffff, cue.weak);
-          if (cue.weak) { this.shake(6); this.punch(); }
-        } else void onParty?.(cue.key, 'hit', undefined, cue.amount, { fx: cue.fx, weak: cue.weak });
+          this.flash(slot, cue.weak || !!cue.crit);
+          const color = cue.crit ? CRIT_COLOR : cue.weak ? 0xffd166 : cue.resist ? RESIST_COLOR : 0xffffff;
+          this.popup(slot, String(cue.amount), color, { weak: cue.weak, crit: cue.crit, resist: cue.resist });
+          if (cue.weak || cue.crit) { this.shake(6); this.punch(); }
+        } else void onParty?.(cue.key, 'hit', undefined, cue.amount, { fx: cue.fx, weak: cue.weak, ...(cue.crit ? { crit: true } : {}), ...(cue.resist ? { resist: true } : {}) });
       }
       if (cue.kind === 'fx' && cue.fx === 'heal') { sfx.heal(); if (!slot && cue.amount !== undefined) void onParty?.(cue.key, 'heal', undefined, cue.amount); }
       if ((cue.kind === 'hit' || cue.kind === 'fx') && cue.fx && slot) this.effect(slot, cue.fx);
@@ -483,24 +500,32 @@ export class BattleView {
     this.frames.add(id);
   }
 
-  private popup(slot: Slot, text: string, color: number, weak = false): void {
-    const t = new Text({ text, style: { fill: color, fontSize: weak ? 32 : 26, fontWeight: 'bold', stroke: { color: 0x000000, width: 5 } } });
+  /**
+   * The number (or MISS) over an enemy, with small tags above it: 弱點！ for a weak point, 暴擊！ for a crit, 抗性 for a
+   * resisted element. A crit's number is the biggest. Reduced motion keeps everything still; the words carry it.
+   */
+  private popup(slot: Slot, text: string, color: number, o: { weak?: boolean; crit?: boolean; resist?: boolean; small?: boolean } = {}): void {
+    const size = o.crit ? 36 : o.weak ? 32 : o.small || o.resist ? 22 : 26;
+    const t = new Text({ text, style: { fill: color, fontSize: size, fontWeight: 'bold', stroke: { color: 0x000000, width: 5 } } });
     t.anchor.set(0.5);
     t.y = -slot.body.height - 12;
-    t.scale.set(1.6);
+    t.scale.set(this.calm ? 1 : o.crit ? 1.9 : 1.6);
     slot.box.addChild(t);
     const parts: Text[] = [t];
-    if (weak) {
-      const tag = new Text({ text: '弱點！', style: { fill: 0xffd166, fontSize: 14, fontWeight: 'bold', stroke: { color: 0x7a1a10, width: 4 } } });
+    const tags = [o.crit && T_CRIT, o.weak && T_WEAK, o.resist && T_RESIST].filter((x): x is typeof T_CRIT => !!x);
+    tags.forEach((g, i) => {
+      const tag = new Text({ text: g.text, style: { fill: g.fill, fontSize: 14, fontWeight: 'bold', stroke: { color: g.stroke, width: 4 } } });
       tag.anchor.set(0.5);
-      tag.y = t.y - 26;
+      tag.y = t.y - size + 6 - i * 16;
       slot.box.addChild(tag);
       parts.push(tag);
-    }
+    });
     // A new battle may have torn the sprites down before these run.
-    this.later(40, () => { if (!t.destroyed) t.scale.set(1.2); });
-    this.later(80, () => { if (!t.destroyed) t.scale.set(1); });
-    this.later(200, () => { if (!t.destroyed) t.y -= 4; });
+    if (!this.calm) {
+      this.later(40, () => { if (!t.destroyed) t.scale.set(1.2); });
+      this.later(80, () => { if (!t.destroyed) t.scale.set(1); });
+      this.later(200, () => { if (!t.destroyed) t.y -= 4; });
+    }
     this.later(600, () => { for (const x of parts) if (!x.destroyed) { slot.box.removeChild(x); x.destroy(); } });
   }
 

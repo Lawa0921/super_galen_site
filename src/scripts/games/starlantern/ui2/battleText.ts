@@ -10,7 +10,7 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'miss': return T.log.miss(nameOf(e.target));
       case 'ko': return T.log.ko(nameOf(e.target));
       case 'heal': return T.log.heal(nameOf(e.target), e.amount);
-      case 'tp': return T.log.tp(nameOf(e.target), e.amount);
+      case 'tp': return e.regen ? '' : T.log.tp(nameOf(e.target), e.amount);   // regen pops on the member instead
       case 'revive': return T.log.revive(nameOf(e.target));
       case 'cure': return T.log.cure(nameOf(e.target));
       case 'status': return T.log.status(nameOf(e.target), e.status);

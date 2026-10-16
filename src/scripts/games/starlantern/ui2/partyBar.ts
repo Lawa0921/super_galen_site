@@ -1,5 +1,6 @@
 import { portraitImg, showMood } from '../ui/art';
 import { el } from '../ui/dom';
+import { T } from '../data/text.zh-TW';
 import type { Row } from '../engine/types';
 import type { ArtIndex } from '../render/textures';
 
@@ -7,12 +8,14 @@ const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' 
 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row }
-export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko';
+/** `miss` and `tp` only pop a word or number: no face, shake or glow. */
+export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko' | 'miss' | 'tp';
 /**
  * `fxAnim` plays a published 4-frame effect sheet over the face (its image is set per key in the stylesheet);
- * `fx` lays a single effect image instead; `heavy` enlarges the number; `weak` calls out a weak-point hit.
+ * `fx` lays a single effect image instead; `heavy` enlarges the number; `weak` calls out a weak-point hit, `crit` a
+ * critical one (its own colour and tag), `resist` an element the member resisted.
  */
-export interface PulseOpts { fx?: string; fxAnim?: string; heavy?: boolean; weak?: boolean }
+export interface PulseOpts { fx?: string; fxAnim?: string; heavy?: boolean; weak?: boolean; crit?: boolean; resist?: boolean }
 
 /** A drawn bar (a native <meter> cannot be styled reliably); the fill width is a 5% step class, any value above 0 shows at least one step. */
 /** 5% step for a value; anything above 0 shows at least one step. */
@@ -86,6 +89,7 @@ export class PartyBar {
   pulse(key: string, mood: PulseMood, amount?: number, opts: PulseOpts = {}): void {
     const p = this.panels.get(key);
     if (!p) return;
+    if (mood === 'miss' || mood === 'tp') { this.quietPop(p, mood, amount); return; }
     if (p.face) showMood(this.art, p.face, mood === 'heal' ? 'normal' : mood === 'ko' ? 'down' : mood);
     const cls = mood === 'hit' ? 'slx-pm-hit' : mood === 'heal' ? 'slx-pm-heal' : mood === 'ko' ? 'slx-pm-ko' : 'slx-pm-acting';
     p.el.classList.remove(...TRANSIENT);
@@ -101,12 +105,25 @@ export class PartyBar {
     if (opts.fxAnim) extras.push(el('span', { class: `slx-pm-fxa slx-pm-fxa-${opts.fxAnim}`, attrs: { 'aria-hidden': 'true' } }));
     else if (opts.fx) extras.push(el('img', { class: 'slx-pm-fx', attrs: { src: opts.fx, alt: '', 'aria-hidden': 'true' } }));
     if (amount !== undefined && (mood === 'hit' || mood === 'heal')) {
-      const cls = ['slx-pm-pop', mood === 'heal' ? 'slx-pm-pop-heal' : '', opts.heavy ? 'slx-pm-pop-big' : ''].filter(Boolean).join(' ');
+      const cls = ['slx-pm-pop', mood === 'heal' ? 'slx-pm-pop-heal' : '', opts.heavy ? 'slx-pm-pop-big' : '', opts.crit ? 'slx-pm-pop-crit' : ''].filter(Boolean).join(' ');
       extras.push(el('span', { class: cls, text: `${mood === 'heal' ? '+' : '-'}${amount}`, attrs: { 'aria-hidden': 'true' } }));
     }
-    if (opts.weak) extras.push(el('span', { class: 'slx-pm-weak', text: '弱點！', attrs: { 'aria-hidden': 'true' } }));
+    // Tags stack above the face: 暴擊！ on top, then 弱點！ or 抗性.
+    const tags = [opts.crit && ['slx-pm-crit', T.battle.pop.crit], opts.weak && ['slx-pm-weak', T.battle.pop.weak], opts.resist && ['slx-pm-resist', T.battle.pop.resist]]
+      .filter((x): x is string[] => !!x);
+    tags.forEach(([cls, text], i) => extras.push(el('span', { class: `${cls} slx-pm-tag-${i}`, text, attrs: { 'aria-hidden': 'true' } })));
     p.el.append(...extras);
     setTimeout(() => { for (const x of extras) x.remove(); }, POP_MS);
+  }
+
+  /** MISS or a TP gain: a word or number rising off the panel and nothing else, so it never reads as a hit. */
+  private quietPop(p: Panel, mood: 'miss' | 'tp', amount?: number): void {
+    if (mood === 'tp' && !amount) return;
+    const pop = mood === 'miss'
+      ? el('span', { class: 'slx-pm-miss', text: T.battle.pop.miss, attrs: { 'aria-hidden': 'true' } })
+      : el('span', { class: 'slx-pm-pop slx-pm-pop-tp', text: T.battle.pop.tp(amount!), attrs: { 'aria-hidden': 'true' } });
+    p.el.append(pop);
+    setTimeout(() => pop.remove(), POP_MS);
   }
 
   private create(m: BarMember): Panel {

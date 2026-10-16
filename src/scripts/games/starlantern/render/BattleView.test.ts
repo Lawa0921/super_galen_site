@@ -1,4 +1,4 @@
-import { ColorMatrixFilter, Container, Sprite, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Sprite, Text, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
@@ -202,5 +202,48 @@ describe('BattleView regional tints', () => {
     expect(view.filtersOf('e3')).toHaveLength(1);
     view.highlight(null);
     expect(view.filtersOf('e3')).toHaveLength(0);
+  });
+});
+
+describe('BattleView stat cues', () => {
+  const texts = (view: BattleView) => enemyBox(view).children.filter((c) => c instanceof Text).map((c) => (c as Text).text);
+
+  it('pops MISS over an enemy that evaded, and tags crits and resisted hits', () => {
+    const view = new BattleView(false, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    void view.play(battle([{ type: 'miss', target: 'e0' }]), sfx);
+    expect(texts(view)).toContain('MISS');
+    const crit = new BattleView(false, bank);
+    crit.setup(battle([]), { width: 640, height: 360 }, 1);
+    void crit.play(battle([{ type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1, crit: true }]), sfx);
+    expect(texts(crit)).toEqual(expect.arrayContaining(['30', '暴擊！']));
+    const resist = new BattleView(false, bank);
+    resist.setup(battle([]), { width: 640, height: 360 }, 1);
+    void resist.play(battle([{ type: 'damage', target: 'e0', amount: 4, element: 'fire', mult: 0.5 }]), sfx);
+    expect(texts(resist)).toEqual(expect.arrayContaining(['4', '抗性']));
+  });
+
+  it('hands a party miss, crit, resist and TP regen to the party bar', async () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    const on = vi.fn();
+    await view.play(battle([
+      { type: 'miss', target: 'scarlet' },
+      { type: 'damage', target: 'scarlet', amount: 9, element: 'ice', mult: 0.5, crit: true },
+      { type: 'tp', target: 'scarlet', amount: 3, regen: true },
+      { type: 'tp', target: 'e0', amount: 3, regen: true },
+    ]), sfx, on);
+    expect(on).toHaveBeenCalledWith('scarlet', 'miss');
+    expect(on).toHaveBeenCalledWith('scarlet', 'hit', undefined, 9, { fx: expect.anything(), weak: false, crit: true, resist: true });
+    expect(on).toHaveBeenCalledWith('scarlet', 'tp', undefined, 3);
+    expect(on.mock.calls.filter((c) => c[0] === 'e0')).toEqual([]);   // enemies show no TP
+  });
+
+  it('keeps pops still for reduced motion', () => {
+    const view = new BattleView(false, bank, true);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    void view.play(battle([{ type: 'miss', target: 'e0' }]), sfx);
+    const pop = enemyBox(view).children.find((c) => c instanceof Text && c.text === 'MISS') as Text;
+    expect(pop.scale.x).toBe(1);
   });
 });

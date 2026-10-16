@@ -1,4 +1,5 @@
-export interface MenuItem { id: string; label: string; disabled?: boolean; note?: string; icon?: string; right?: string }
+/** `cls` is added to the label (a rarity colour, say). */
+export interface MenuItem { id: string; label: string; disabled?: boolean; note?: string; icon?: string; right?: string; cls?: string }
 
 /** Cursor over a list: skips disabled items, wraps at both ends, never loops when nothing is selectable. */
 export class Menu {

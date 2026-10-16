@@ -1,20 +1,28 @@
 import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
 import type { Game } from '../../engine/game';
+import { BAG_SIZE } from '../../engine/loot/bag';
 import { el, itemName } from '../../ui/dom';
+import { fillRich, gearPart, joinParts } from '../loot';
 import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
-import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
+import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'settings'] as const;
 
-/** 「平安回城。帶回了：回復藥 ×2、120 G。」 — the lamp's own words replace 平安回城 when it brought the party home. */
-export function bankedLine(b: NonNullable<Game['banked']>): string {
-  const parts = Object.entries(b.items).filter(([, n]) => n > 0).map(([id, n]) => `${itemName(id)} ×${n}`);
+/**
+ * 「平安回城。帶回了：回復藥 ×2、鐵劍、120 G。」 — the lamp's own words replace 平安回城 when it brought the party home.
+ * Gear is named in its rarity colour; gear the full bag could not take is named once more as lost.
+ */
+export function bankedLine(b: NonNullable<Game['banked']>): Rich {
+  const parts: RichPart[] = Object.entries(b.items).filter(([, n]) => n > 0).map(([id, n]) => `${itemName(id)} ×${n}`);
+  parts.push(...b.gear.map(gearPart));
   if (b.gold > 0) parts.push(T.gold(b.gold));
-  return T.ui2.banked(b.viaLamp, parts.join('、'));
+  const line: Rich = parts.length ? fillRich((list) => T.ui2.banked(b.viaLamp, list), joinParts(parts)) : [T.ui2.home(b.viaLamp)];
+  if (b.overflow.length) line.push(...fillRich((list) => T.ui2.bankedLost(BAG_SIZE, list), joinParts(b.overflow.map(gearPart))));
+  return line;
 }
 
 export class TownScene implements Scene {
@@ -81,7 +89,7 @@ export class TownScene implements Scene {
   }
 
   /** The menu ignores the pointer while a line is on screen, matching the keyboard. */
-  private async speak(name: string, text: string): Promise<void> {
+  private async speak(name: string, text: string | Rich): Promise<void> {
     this.menuWin.setAttribute('inert', '');
     this.backEl.setAttribute('inert', '');
     await this.talk.say(name, text);

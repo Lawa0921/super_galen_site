@@ -67,7 +67,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-talk { left: 12px; right: 12px; bottom: 10px; min-height: 52px; padding: 10px 12px 8px; }
 .slx-name { position: absolute; top: -9px; left: 10px; padding: 0 6px; background: $slx-win; border: 1px solid #c9a35a; color: $slx-gold; font-weight: normal; }
 .slx-confirm { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 200px; text-align: center; }
-.slx-confirm p { margin: 0 0 6px; }
+.slx-confirm p { margin: 0 0 6px; white-space: pre-line; }
 @media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
 
 .slx-ui { transition: opacity 0.15s linear; }
@@ -512,6 +512,31 @@ $slx-battle-left: 150px;
 @keyframes slx-pm-fx { 0% { scale: 0.4; opacity: 1; rotate: -20deg; } 40% { scale: 1.25; opacity: 1; } 100% { scale: 1.4; opacity: 0; rotate: 10deg; } }
 .slx-pm-pop-big { font-size: 28px; line-height: 28px; top: -14px; }
 .slx-pm-weak { position: absolute; left: 46px; top: -16px; z-index: 3; font-size: 12px; color: #ffd166; text-shadow: 1px 1px 0 #7a1a10, -1px -1px 0 #7a1a10, 1px -1px 0 #7a1a10, -1px 1px 0 #7a1a10; animation: slx-pm-pop 0.9s ease-out forwards; }
+// Stat pops (ui2/partyBar.ts): a crit burns orange and larger, a resisted hit gets a cold 抗性 tag, an evaded attack a
+// pale MISS that drifts up without any shake, and TP regen a small quiet blue number. Tags stack: the second sits higher.
+.slx-pm-pop-crit { font-size: 30px; line-height: 30px; top: -16px; color: #ff9a3c; }
+.slx-pm-crit, .slx-pm-resist { position: absolute; left: 46px; top: -16px; z-index: 3; font-size: 12px; animation: slx-pm-pop 0.9s ease-out forwards; }
+.slx-pm-crit { color: #ffb35c; text-shadow: 1px 1px 0 #5a1a00, -1px -1px 0 #5a1a00, 1px -1px 0 #5a1a00, -1px 1px 0 #5a1a00; }
+.slx-pm-resist { color: #c8d6e6; text-shadow: 1px 1px 0 #1a2a3a, -1px -1px 0 #1a2a3a, 1px -1px 0 #1a2a3a, -1px 1px 0 #1a2a3a; }
+.slx-pm-tag-1 { top: -30px; }
+.slx-pm-miss {
+  position: absolute; right: 8px; top: -4px; z-index: 3; pointer-events: none;
+  font-size: 15px; line-height: 15px; letter-spacing: 1px; color: #d8d4e6;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  animation: slx-pm-miss 0.9s ease-out forwards;
+}
+@keyframes slx-pm-miss { 0% { translate: -6px 0; opacity: 0; } 20% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
+.slx-pm-pop-tp { font-size: 12px; line-height: 12px; top: 14px; color: #8fb8ff; }
+@media (prefers-reduced-motion: reduce) {
+  .slx-pm-weak, .slx-pm-crit, .slx-pm-resist, .slx-pm-miss { animation: none; }
+}
+// Gear in loot lines: the name in its rarity colour; the rarer pieces glow, and battle results slide each piece in.
+.slx-gear-drop.slx-rarity-legendary, .slx-gear-drop.slx-rarity-unique, .slx-gear-drop.slx-rarity-set,
+.slx-loot-gear.slx-rarity-legendary, .slx-loot-gear.slx-rarity-unique, .slx-loot-gear.slx-rarity-set { text-shadow: 0 0 6px currentColor; }
+.slx-result .slx-loot-gear { animation: slx-loot-in 0.35s ease-out both; }
+.slx-result .slx-loot-left { color: $slx-dim; }
+@keyframes slx-loot-in { from { translate: -8px 0; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .slx-result .slx-loot-gear { animation: none; } }
 // A member at a quarter of their HP or less keeps warning
 .slx-pm-danger { animation: slx-pm-danger 0.9s ease-in-out infinite alternate; }
 // A hit or an action on a low-HP member still shakes or lifts it (same weight, so these come after).

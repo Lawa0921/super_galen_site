@@ -284,7 +284,7 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
     if (c.alive && regen > 0 && c.tp < c.max.tp) {
       const before = c.tp;
       c.tp = Math.min(c.max.tp, c.tp + regen);
-      s.log.push({ type: 'tp', target: c.key, amount: c.tp - before });
+      s.log.push({ type: 'tp', target: c.key, amount: c.tp - before, regen: true });
     }
     c.buffs = c.buffs.map((b) => ({ ...b, turns: b.turns - 1 })).filter((b) => b.turns > 0);
     c.taunt = Math.max(0, c.taunt - 1);

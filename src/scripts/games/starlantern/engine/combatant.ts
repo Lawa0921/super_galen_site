@@ -32,7 +32,8 @@ export type BattleEvent =
   | { type: 'miss'; target: string }
   | { type: 'ko'; target: string }
   | { type: 'heal'; target: string; amount: number }
-  | { type: 'tp'; target: string; amount: number }
+  /** `regen`: the end-of-round tpRegen, shown as a quiet pop rather than a message line. */
+  | { type: 'tp'; target: string; amount: number; regen?: boolean }
   | { type: 'revive'; target: string }
   | { type: 'cure'; target: string }
   | { type: 'status'; target: string; status: 'poison' | 'sleep' }

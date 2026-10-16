@@ -228,3 +228,20 @@ describe('mouse interaction', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Dialogue rich lines', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('types a line with coloured parts, keeping each part in its span as it appears', async () => {
+    vi.useFakeTimers();
+    const d = new Dialogue(20);
+    void d.say('', ['打開寶箱：', { text: '鐵劍', cls: 'slx-rarity-rare' }, '。']);
+    await vi.advanceTimersByTimeAsync(300);   // 6 characters
+    const text = d.el.querySelector('.slx-text')!;
+    expect(text.textContent).toBe('打開寶箱：鐵');
+    expect(text.querySelector('.slx-rarity-rare')!.textContent).toBe('鐵');
+    d.onAction('confirm');
+    expect(text.textContent).toBe('打開寶箱：鐵劍。');
+    expect(text.querySelector('.slx-rarity-rare')!.textContent).toBe('鐵劍');
+  });
+});

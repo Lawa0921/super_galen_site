@@ -3,6 +3,8 @@ import { T } from '../../data/text.zh-TW';
 import { weightOf } from '../../data/weights';
 import type { Content } from '../../engine/dungeon/rooms';
 import { altarAt } from '../../engine/events';
+import { BAG_SIZE } from '../../engine/loot/bag';
+import { itemName as gearName } from '../../engine/loot/item';
 import type { MoveResult } from '../../engine/game';
 import type { Pos } from '../../engine/types';
 import { ART_BASE } from '../../render/artPaths';
@@ -10,7 +12,8 @@ import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, confirmBox, win } from '../widgets';
+import { fillRich, gearPart, joinParts } from '../loot';
+import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
 
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 export type FullResult = Extract<MoveResult, { kind: 'full' }>;
@@ -23,8 +26,8 @@ export interface EventHost {
   /** Close the top window. */
   pop(): void;
   popAll(): void;
-  /** A line in the dialogue box; windows below it ignore input until it closes. */
-  say(text: string): void;
+  /** A line in the dialogue box (rich lines colour gear by rarity); windows below it ignore input until it closes. */
+  say(text: string | Rich): void;
   /** Redraw the party bar and the map after something changed. */
   refresh(): void;
   /** Step onto the elite and start its fight. */
@@ -58,6 +61,14 @@ function eventWindow(host: EventHost, kind: EventKind | 'full' | 'stairs', title
 }
 
 const line = (text: string, cls = 'slx-event-text') => el('p', { class: cls, text });
+const richLine = (r: Rich, cls = 'slx-event-text') => el('p', { class: cls }, richNodes(r));
+
+export type ChestResult = Extract<MoveResult, { kind: 'chest' }>;
+
+/** 「打開寶箱：發光苔 ×2、鐵劍」 — the gear, when the chest held any, in its rarity colour. */
+export function chestLine(r: ChestResult): Rich {
+  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear)] : [])];
+}
 const leaveItem = (): MenuItem => ({ id: 'leave', label: T.ui2.event.leave });
 
 export type StairsResult = Extract<MoveResult, { kind: 'stairs' }>;
@@ -140,10 +151,11 @@ export function showPickUp(host: EventHost, r: MoveResult | null, vault = false)
   if (r?.kind === 'vault') {
     ctx.sfx.chest?.();
     host.refresh();
-    host.say(T.ui2.event.vault.opened(Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`).join('、')));
+    const parts: RichPart[] = [...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map(gearPart)];
+    host.say(fillRich(T.ui2.event.vault.opened, joinParts(parts)));
     return;
   }
-  if (r?.kind === 'chest') { ctx.sfx.chest?.(); host.refresh(); host.say(T.map.chest(itemName(r.item), r.qty)); return; }
+  if (r?.kind === 'chest') { ctx.sfx.chest?.(); host.refresh(); host.say(chestLine(r)); return; }
   ctx.sfx.error();
   host.say(vault ? T.ui2.event.vault.failed : T.reasons.invalid);
 }
@@ -158,10 +170,48 @@ function carriedItems(host: EventHost): Record<string, number> {
 }
 
 /**
+ * 背包已滿（60 件）: the town bag, with the run pack's gear promised to it, has no slot for the gear in this pick-up. The
+ * window names that gear and lists the run pack's gear; throwing one away (after a yes) frees a slot and retries the pick-up.
+ * When the pack is also too heavy, the carried materials are listed too.
+ */
+function bagFullLayer(host: EventHost, r: FullResult, retry?: () => void): Layer {
+  const F = T.ui2.event.full;
+  const { ctx } = host;
+  const g = ctx.game;
+  const body = [
+    ...(r.gear ? [richLine(fillRich(F.bagDesc, [gearPart(r.gear)]))] : []),
+    ...(r.need > 0 ? [line(F.desc(itemName(r.item), r.qty, Number(fmtWeight(r.need))))] : []),
+    line(g.run?.loot.gear.length ? F.whichGear : F.noGear, 'slx-event-ask'),
+  ];
+  const held = r.need > 0 ? carriedItems(host) : {};
+  const items: MenuItem[] = [
+    ...(g.run?.loot.gear ?? []).map((it) => ({ id: `gear:${it.uid}`, label: gearName(it), cls: `slx-rarity-${it.rarity}` })),
+    ...Object.entries(held).map(([id, n]) => ({ id, label: itemName(id), right: `×${n}` })),
+    { id: 'leave', label: F.giveUp },
+  ];
+  const giveUp = () => { ctx.sfx.cancel(); host.pop(); host.say(F.left); };
+  const after = () => { host.popAll(); host.refresh(); if (retry) retry(); else host.say(F.freed); };
+  return eventWindow(host, 'full', F.bagTitle(BAG_SIZE), body, items, (id) => {
+    const gear = id.startsWith('gear:') ? g.run?.loot.gear.find((it) => `gear:${it.uid}` === id) : undefined;
+    const n = gear ? 1 : Math.min(held[id], Math.ceil(r.need / weightOf(id)));
+    const box = confirmBox(gear ? F.askGear(gearName(gear)) : F.ask(itemName(id), n), (yes) => {
+      host.pop();
+      if (!yes) return;
+      if (gear) g.discardGear(gear.uid); else g.discard(id, n);
+      after();   // a retry that still does not fit opens this window again with what is left
+    });
+    box.view.menu.setCursor(1);
+    box.view.render();
+    host.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+  }, giveUp);
+}
+
+/**
  * 背包已滿: the pick-up stays where it is. Pick something to throw away (enough of it to make room, after a yes), or give up.
  * Once there is room, `retry` takes the pick-up (Game.pickUpHere through showPickUp); without it the line says to step on it again.
  */
 export function fullLayer(host: EventHost, r: FullResult, retry?: () => void): Layer {
+  if (r.bag) return bagFullLayer(host, r, retry);
   const F = T.ui2.event.full;
   const { ctx } = host;
   const g = ctx.game;
