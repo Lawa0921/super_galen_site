@@ -29,7 +29,11 @@ export class StatusScene implements Scene {
 
   enter(root: HTMLElement): void {
     const p = this.ctx.game.state.party;
-    this.id = p.recruited.includes(this.ctx.arg as CharacterId) ? (this.ctx.arg as CharacterId) : (activeIds(p)[0] ?? p.recruited[0]);
+    const arg = this.ctx.arg ?? '';
+    this.id = p.recruited.includes(arg as CharacterId) ? (arg as CharacterId) : (activeIds(p)[0] ?? p.recruited[0]);
+    // `tab:<id>` (the guild's skill-tree and talent entries): open that page, with its kept cursor brought into view.
+    const want = arg.startsWith('tab:') ? STATUS_TABS.findIndex((t) => t.id === arg.slice(4)) : -1;
+    if (want >= 0) { this.tab = want; STATUS_TABS[want].reveal?.(); }
     this.standee = el('div', { class: 'slx-status-art' });
     const arrow = (cls: string, text: string, a: UiAction) => {
       const b = el('span', { class: `slx-status-arrow ${cls}`, text, attrs: { role: 'button' } });

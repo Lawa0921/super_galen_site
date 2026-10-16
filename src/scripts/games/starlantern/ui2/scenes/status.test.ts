@@ -50,6 +50,30 @@ describe('StatusScene', () => {
     expect(body()).toContain('近戰（100%）');
   });
 
+  it('a tab: arg opens that tab on the first active member, with the cursor revealed', () => {
+    const reveal = vi.fn();
+    const orig = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = reveal;
+    try {
+      for (const [id, label, node] of [['tree', '技能樹', '.slx-tree-node.slx-row-cur'], ['talent', '天賦', '.slx-talent-node.slx-row-cur']]) {
+        reveal.mockClear();
+        const { root, tab, name } = setup(`tab:${id}`);
+        expect(tab()).toBe(label);
+        expect(name()).toContain('絲嘉蕾');
+        expect(root.querySelector(node)).not.toBeNull();
+        expect(reveal).toHaveBeenCalled();
+      }
+    } finally {
+      if (orig) Element.prototype.scrollIntoView = orig; else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
+  it('a tab: arg with an unknown tab falls back to the stats tab', () => {
+    const { tab, name } = setup('tab:nope');
+    expect(tab()).toBe('能力');
+    expect(name()).toContain('絲嘉蕾');
+  });
+
   it('switches tabs with left/right and the mouse', () => {
     const { s, root, tab, body } = setup('noel');
     s.onAction('right');

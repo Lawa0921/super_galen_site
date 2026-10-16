@@ -38,6 +38,8 @@ export interface StatusTab {
   render(ctx: SceneCtx, id: CharacterId, redraw: (change?: () => void) => void): HTMLElement;
   onAction?(a: UiAction, ctx: SceneCtx, id: CharacterId): boolean;
   shown?(body: HTMLElement): void;
+  /** Opened straight onto this page (not by paging to it): bring the kept cursor into view once the page is shown. */
+  reveal?(): void;
   leave?(): void;
 }
 
@@ -408,6 +410,7 @@ const tree: StatusTab = {
     return false;
   },
   leave: leaveTree,
+  reveal() { treeView.reveal = true; },
   shown(body) {
     const cols = body.querySelector<HTMLElement>('.slx-tree-cols');
     if (cols) cols.scrollTop = treeView.top;
@@ -597,6 +600,7 @@ const talent: StatusTab = {
     return false;
   },
   leave: leaveTalent,
+  reveal() { talentView.reveal = true; },
   shown(body) {
     const board = body.querySelector<HTMLElement>('.slx-talent-board');
     if (!board) return;

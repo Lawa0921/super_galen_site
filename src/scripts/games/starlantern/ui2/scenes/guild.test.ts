@@ -28,7 +28,7 @@ function setup(from?: 'formation' | 'status') {
 describe('GuildScene', () => {
   it('lists the guild commands', () => {
     const { root } = setup();
-    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', '招募', '裝備', '狀態', '離開']);
+    expect([...root.querySelectorAll('.slx-cmd [role=option]')].map((o) => o.textContent)).toEqual(['編隊', '招募', '裝備', '狀態', '技能樹', '天賦', '離開']);
   });
 
   it('recruits after a confirmation', () => {
@@ -49,6 +49,14 @@ describe('GuildScene', () => {
     expect(go).toHaveBeenLastCalledWith('equip');
     pick('狀態');
     expect(go).toHaveBeenLastCalledWith('status');
+  });
+
+  it('技能樹 and 天賦 open the status screen on their tab', () => {
+    const { pick, go } = setup();
+    pick('技能樹');
+    expect(go).toHaveBeenLastCalledWith('status', 'tab:tree');
+    pick('天賦');
+    expect(go).toHaveBeenLastCalledWith('status', 'tab:talent');
   });
 
   it('skips the greeting when coming back from one of its own screens, with the cursor on that command', () => {

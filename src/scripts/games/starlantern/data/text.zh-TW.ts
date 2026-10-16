@@ -377,7 +377,7 @@ export const T = {
       soldGear: (n: number, g: number) => `收下 ${n} 件裝備，這是 ${g} G。`,
     },
     guild: {
-      formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態',
+      formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦',
       ask: (name: string) => `要讓 ${name} 加入隊伍嗎？`, recruited: (name: string) => `${name} 加入了隊伍！`,
       roles: {
         noel: '後排。火、冰、雷攻擊；降低敵人能力、毒。', chizuru: '前排。全體攻擊；我方減傷。', liz: '前或後。多段攻擊；降低遇敵、素材掉落加成。',

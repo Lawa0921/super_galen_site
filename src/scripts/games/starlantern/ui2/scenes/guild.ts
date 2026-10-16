@@ -19,12 +19,13 @@ export class GuildScene extends FacilityScene {
   protected commands(): MenuItem[] {
     const g = T.ui2.guild;
     const canRecruit = CHARACTER_IDS.some((id) => !this.ctx.game.state.party.recruited.includes(id));
-    return [{ id: 'formation', label: g.formation }, { id: 'recruit', label: g.recruit, disabled: !canRecruit }, { id: 'equip', label: g.equip }, { id: 'status', label: g.status }];
+    return [{ id: 'formation', label: g.formation }, { id: 'recruit', label: g.recruit, disabled: !canRecruit }, { id: 'equip', label: g.equip }, { id: 'status', label: g.status }, { id: 'tree', label: g.tree }, { id: 'talent', label: g.talent }];
   }
 
   protected onCommand(id: string): void {
     if (id === 'recruit') this.recruitList();
     else if (id === 'formation' || id === 'equip' || id === 'status') this.ctx.go(id);
+    else if (id === 'tree' || id === 'talent') this.ctx.go('status', `tab:${id}`);
   }
 
   private faceIcon(id: CharacterId): string | undefined {
