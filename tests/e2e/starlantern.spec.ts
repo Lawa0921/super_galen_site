@@ -304,4 +304,136 @@ test.describe('starlantern', () => {
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.inventory['star-stone'])).toBe(2);
     expect(w.errors).toEqual([]);
   });
+
+  /** Keys for a walk over plain floor from the party to the nearest `goal` tile not in `skip` (BFS over the live map). */
+  const pathTo = (page: Page, goal: string, skip: string[] = []) => page.evaluate(({ goal, skip }) => {
+    const g = (window as unknown as Dbg).__starlanternDebug.game;
+    const m = g.map();
+    const D: [string, number, number][] = [['ArrowUp', 0, -1], ['ArrowDown', 0, 1], ['ArrowLeft', -1, 0], ['ArrowRight', 1, 0]];
+    const prev = new Map<string, { from: string; k: string } | null>([[`${g.pos.x},${g.pos.y}`, null]]);
+    const q = [{ ...g.pos }];
+    while (q.length) {
+      const p = q.shift()!;
+      for (const [k, dx, dy] of D) {
+        const n = { x: p.x + dx, y: p.y + dy }, id = `${n.x},${n.y}`;
+        const t = m.tiles[n.y]?.[n.x];
+        if (!t || prev.has(id)) continue;
+        if (t === goal && !skip.includes(id)) {
+          const out: string[] = [k];
+          for (let c: string | undefined = `${p.x},${p.y}`; c && prev.get(c); c = prev.get(c)!.from) out.unshift(prev.get(c)!.k);
+          return { at: id, keys: out };
+        }
+        if (!['floor', 'door'].includes(t)) continue;
+        prev.set(id, { from: `${p.x},${p.y}`, k });
+        q.push(n);
+      }
+    }
+    return null;
+  }, { goal, skip });
+
+  test('gear drops, comes home and is worn', async ({ page }) => {
+    const w = await setup(page, 7);
+    await depart(page, w);
+    // A legendary spear as the labyrinth would hand it over, its uid minted by the game itself.
+    const uid: number = await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const uid = g.mintUid();
+      g.run.loot.gear.push({
+        uid, base: 'thorn-spear', rarity: 'legendary', ilvl: 6, enhance: 0, special: 'lg-chizuru',
+        affixes: [{ key: 'atk', value: 9 }, { key: 'crit', value: 4 }, { key: 'str', value: 6 }],
+      });
+      return uid;
+    });
+    await lampHome(page, w);
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('帶回了');
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('雙月槍・傳說');
+    await w.closeTalk();
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=equip]').click();
+    await expect(page.locator('.slx-equip-scene')).toBeVisible();
+    await page.locator('.slx-doll-slot[data-slot=weapon]').click();
+    await expect(page.locator('.slx-doll-target')).toHaveAttribute('data-slot', 'weapon');
+    const cell = page.locator('.slx-bag-cell[aria-label="雙月槍・傳說"]');
+    await expect(cell).toHaveClass(/slx-rarity-legendary/);
+    await cell.hover();                                                // the cursor on it: the comparison shows
+    await expect(page.locator('.slx-item-detail .slx-cmp .slx-cmp-row.slx-up').first()).toBeVisible();
+    await expect(page.locator('.slx-item-detail .slx-line-power')).toContainText('橫掃打 2 次');
+    await cell.click();                                                // and wears it
+    await expect(page.locator('.slx-doll-slot[data-slot=weapon]')).toHaveClass(/slx-rarity-legendary/);
+    expect(await page.evaluate((u) => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      return Object.values(s.party.roster).some((m: any) => m.equip.weapon?.uid === u);
+    }, uid)).toBe(true);
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-cmd [data-id=status]').click();
+    await expect(page.locator('.slx-status-scene')).toBeVisible();
+    await page.locator('[data-tab=stats]').click();
+    const primary = page.locator('.slx-stat-cat[data-cat=primary]');
+    await expect(primary.locator('.slx-stat-cat-head')).toHaveText('主屬性');
+    // One column per stat source: the gear column holds the spear's strength.
+    await expect(primary.locator('thead th')).toContainText(['裝備', '主屬性']);
+    await expect(primary.locator('tr[data-stat=str] td.slx-gear')).toHaveText('+6');
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter'); await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expect(page.locator('.slx-town .slx-talk')).not.toContainText('存檔無法讀取');
+    // The save loaded as valid: the spear is still worn, and every uid sits below nextUid exactly once.
+    const check = await page.evaluate((u) => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      const uids = [...s.bag, ...Object.values(s.party.roster).flatMap((m: any) => Object.values(m.equip))].map((it: any) => it.uid);
+      const worn = Object.values(s.party.roster).some((m: any) => m.equip.weapon?.uid === u && m.equip.weapon.special === 'lg-chizuru');
+      return { worn, unique: new Set(uids).size === uids.length, below: uids.every((x: number) => x < s.nextUid), codex: s.codex.includes('lg-chizuru') };
+    }, uid);
+    expect(check).toEqual({ worn: true, unique: true, below: true, codex: true });
+    expect(w.errors).toEqual([]);
+  });
+
+  test('a rare chest drop raises a pillar', async ({ page }) => {
+    const w = await setup(page, 7);
+    await depart(page, w);
+    // Every chest on the floor is given a rare under its own minted uid; whichever chest holds gear (chestHasGear,
+    // fixed by the run seed) hands its rare over when opened.
+    const chests: number = await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      let n = 0;
+      g.map().tiles.forEach((row: string[], y: number) => row.forEach((t, x) => {
+        if (t !== 'chest') return;
+        g.run.gearRolls[`chest:${g.floor}:${x},${y}`] = {
+          uid: g.mintUid(), base: 'iron-sword', rarity: 'rare', ilvl: 4, enhance: 0,
+          affixes: [{ key: 'atk', value: 3 }, { key: 'crit', value: 2 }, { key: 'hp', value: 9 }],
+        };
+        n++;
+      }));
+      return n;
+    });
+    expect(chests).toBeGreaterThan(0);
+    const pillar = page.locator('.slx-pillar.slx-rarity-rare');
+    const tried: string[] = [];
+    let raised = false;
+    for (let c = 0; c < chests && !raised; c++) {
+      const route = await pathTo(page, 'chest', tried);
+      if (!route) break;
+      tried.push(route.at);
+      for (const k of route.keys) {
+        await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.encounter = 0; });
+        await page.keyboard.press(k);
+      }
+      raised = (await pillar.count()) > 0;
+      await w.closeTalk();
+    }
+    expect(raised).toBe(true);
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.loot.gear.map((it: any) => it.rarity))).toContain('rare');
+    expect(w.errors).toEqual([]);
+  });
 });
