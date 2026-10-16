@@ -272,9 +272,14 @@ export const T = {
     banked: (viaLamp: boolean, list: string) => `${home(viaLamp)}帶回了：${list}。`,
     bankedLost: (n: number, list: string) => `背包已滿（${n} 件），沒能帶回：${list}。`,
     shop: {
-      buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, bagFull: '背包已滿（60 件）', needs: (text: string) => `需要 ${text}`,
+      buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, bagFull: (n: number) => `背包已滿（${n} 件）`, needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,
       unlocked: (names: string) => `託你的福，現在可以做出 ${names} 了！`, nothing: '沒有可以賣的素材。',
+      pages: { mats: '素材', gear: '裝備' }, nothingGear: '沒有可以賣的裝備。', marked: '已標記',
+      sellMarked: (n: number) => `賣出全部已標記（${n} 件）`,
+      askMarked: (n: number, g: number) => `要賣出已標記的 ${n} 件裝備，共 ${g} G 嗎？`,
+      askOne: (name: string, g: number) => `要賣出 ${name}（${g} G）嗎？`,
+      soldGear: (n: number, g: number) => `收下 ${n} 件裝備，這是 ${g} G。`,
     },
     guild: {
       formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態',

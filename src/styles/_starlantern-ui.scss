@@ -136,6 +136,15 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-shop-list { max-height: none; }
 .slx-shop .slx-info { left: 452px; width: 150px; }
 .slx-shop-list { min-width: 266px; }
+.slx-shop-pages { min-width: 120px; }
+// Buy list preview: one line per active member, each changed stat coloured by direction (the arrows come from the words, not the colour).
+.slx-shop .slx-info { max-height: 250px; overflow-y: auto; }
+.slx-cmp-list { list-style: none; padding-left: 0; }
+.slx-cmp-member { margin: 0 0 3px; line-height: 13px; }
+.slx-cmp-member b { margin-right: 6px; color: $slx-gold; font-weight: normal; }
+.slx-cmp-member span { margin-right: 5px; white-space: nowrap; }
+.slx-cmp-member .slx-up { color: #8fe08f; }
+.slx-cmp-member .slx-down { color: #ff8a7a; }
 
 // Mouse and touch controls
 .slx-back { right: 92px; top: 10px; padding: 2px 10px; cursor: pointer; color: $slx-ink; }

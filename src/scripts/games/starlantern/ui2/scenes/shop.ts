@@ -3,16 +3,18 @@ import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
+import { compareDelta } from '../../engine/compare';
 import { BAG_SIZE } from '../../engine/loot/bag';
-import { rollItem } from '../../engine/loot/item';
+import { itemName, rollItem, sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
-import { buy, isUnlocked, sell } from '../../engine/town';
+import { buy, isUnlocked, sell, sellGear } from '../../engine/town';
+import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, QtyView, win } from '../widgets';
+import { MenuView, QtyView, confirmBox, win } from '../widgets';
 import { FacilityScene } from './facility';
 
 export class ShopScene extends FacilityScene {
@@ -36,7 +38,9 @@ export class ShopScene extends FacilityScene {
     return [...Object.values(ITEMS), ...Object.values(EQUIPMENT)].map((g) => {
       const locked = 'slot' in g && !isUnlocked(s, g.id);
       const needs = locked ? (g.unlock ?? []).map((u) => `${MATERIALS[u.mat].name}×${u.qty}`).join('、') : '';
-      return { id: g.id, label: g.name, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${g.price} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
+      // Every base is a plain (common) piece: the rarity word and colour say so.
+      const gear = 'slot' in g ? { label: T.gearLabel(g.name, T.rarity.common), cls: 'slx-rarity-common' } : { label: g.name };
+      return { id: g.id, ...gear, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${g.price} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
     });
   }
 
@@ -51,11 +55,12 @@ export class ShopScene extends FacilityScene {
     const temp = rollItem(mulberry32(0), { uid: 0, ilvl: eq.ilvl, rarity: 'common', base: id });
     const rows = activeIds(s.party).map((cid) => {
       const m = s.party.roster[cid];
-      const now = statsOf(m); const after = statsOf({ ...m, equip: { ...m.equip, [defaultSlotFor(m, temp)]: temp } });
-      const d = (Object.keys(eq.bonus) as (keyof typeof now)[]).map((k) => `${T.stat[k]}${after[k] - now[k] >= 0 ? '+' : ''}${after[k] - now[k]}`).join(' ');
-      return el('li', { text: `${CHARACTERS[cid].name}　${d}` });
+      const delta = compareDelta(m, defaultSlotFor(m, temp), temp);
+      const stats = (Object.keys(T.gear.statName) as AnyStat[]).filter((k) => delta[k]).map((k) =>
+        el('span', { class: delta[k]! > 0 ? 'slx-up' : 'slx-down', attrs: { 'data-stat': k }, text: `${T.gear.statName[k]}${T.ui2.equip.delta(k, delta[k]!)}` }));
+      return el('li', { class: 'slx-cmp-member' }, [el('b', { text: CHARACTERS[cid].name }), ...(stats.length ? stats : [el('span', { class: 'slx-desc', text: T.ui2.equip.noChange })])]);
     });
-    return [el('p', { text: `${T.slotKind[eq.slot]}　${bonus}` }), el('ul', { class: 'slx-skills' }, rows)];
+    return [el('p', { text: `${T.slotKind[eq.slot]}　${bonus}` }), el('ul', { class: 'slx-skills slx-cmp-list' }, rows)];
   }
 
   private buyList(): void {
@@ -73,7 +78,7 @@ export class ShopScene extends FacilityScene {
 
   /** The town bag (gear) is a different limit from the pack's weight, so it says its own number. */
   private shopFail(reason: string): void {
-    if (reason === 'full') { this.ctx.sfx.error(); void this.say(T.ui2.shop.bagFull); } else this.fail(reason);
+    if (reason === 'full') { this.ctx.sfx.error(); void this.say(T.ui2.shop.bagFull(BAG_SIZE)); } else this.fail(reason);
   }
 
   private askQty(id: string, after: () => void): void {
@@ -99,7 +104,17 @@ export class ShopScene extends FacilityScene {
     this.push({ el: q.el, onAction: (a) => q.onAction(a) });
   }
 
+  /** Selling has two pages: materials (counted toward unlocks) and bag gear (never counted). */
   private sellList(): void {
+    const pages = new MenuView(new Menu([{ id: 'mats', label: T.ui2.shop.pages.mats }, { id: 'gear', label: T.ui2.shop.pages.gear }]), {
+      pick: (it) => (it.id === 'mats' ? this.sellMats() : this.sellGearList()),
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    });
+    this.push({ el: win('slx-list slx-shop-pages', [pages.el]), onAction: (a) => pages.onAction(a) });
+  }
+
+  private sellMats(): void {
     const mats = () => Object.entries(this.ctx.game.state.inventory).filter(([id, n]) => MATERIALS[id] && n > 0)
       .map(([id, n]) => ({ id, label: MATERIALS[id].name, icon: this.icon(id), right: `${MATERIALS[id].price} G  ${T.ui2.shop.owned(n)}` }));
     if (!mats().length) { void this.say(T.ui2.shop.nothing); return; }
@@ -123,6 +138,51 @@ export class ShopScene extends FacilityScene {
           cancel: () => this.pop(),
         }, MATERIALS[it.id].price);
         this.push({ el: q.el, onAction: (a) => q.onAction(a) });
+      },
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    }, 12);
+    this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  private gearRows(): MenuItem[] {
+    const bag = this.ctx.game.state.bag;
+    const marked = bag.filter((it) => it.junk).length;
+    return [
+      { id: 'sell-marked', label: T.ui2.shop.sellMarked(marked), disabled: marked === 0 },
+      ...bag.map((it) => ({
+        id: `g${it.uid}`, label: T.gearLabel(itemName(it), T.rarity[it.rarity]), cls: `slx-rarity-${it.rarity}`,
+        right: `${it.junk ? `${T.ui2.shop.marked}  ` : ''}${sellPrice(it)} G`,
+      })),
+    ];
+  }
+
+  private sellGearList(): void {
+    if (!this.ctx.game.state.bag.length) { void this.say(T.ui2.shop.nothingGear); return; }
+    const v: MenuView = new MenuView(new Menu(this.gearRows(), 1), {
+      pick: (it) => {
+        const st = this.ctx.game.state;
+        // Only what the confirm names is sold: one piece, or exactly the marked ones.
+        const uids = it.id === 'sell-marked' ? st.bag.filter((x) => x.junk).map((x) => x.uid) : st.bag.filter((x) => `g${x.uid}` === it.id).map((x) => x.uid);
+        const total = st.bag.filter((x) => uids.includes(x.uid)).reduce((n, x) => n + sellPrice(x), 0);
+        if (!uids.length) return;
+        const box = confirmBox(it.id === 'sell-marked' ? T.ui2.shop.askMarked(uids.length, total) : T.ui2.shop.askOne(it.label, total), (yes) => {
+          this.pop(!yes);
+          if (!yes) return;
+          const r = this.ctx.game.apply(sellGear(this.ctx.game.state, uids));
+          if (!r.ok) { this.fail(r.reason); return; }
+          this.refresh();
+          if (this.ctx.game.state.bag.length) {
+            const rows = this.gearRows();
+            v.menu.items.splice(0, v.menu.items.length, ...rows);
+            if (v.menu.cursor < 0 || v.menu.items[v.menu.cursor].disabled) v.menu.setCursor(Math.max(1, Math.min(v.menu.cursor, rows.length - 1)));
+            v.render();
+          } else this.popAll();
+          void this.say(T.ui2.shop.soldGear(uids.length, total), 'happy');
+        });
+        box.view.menu.setCursor(1);
+        box.view.render();
+        this.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
       },
       moved: () => this.ctx.sfx.cursor(),
       cancel: () => this.pop(),
