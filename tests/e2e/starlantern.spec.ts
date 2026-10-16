@@ -470,6 +470,15 @@ test.describe('starlantern', () => {
     await expect(up).toBeHidden();
     await expect(down).toBeVisible();
     await expect(page.locator('.slx-talent-row[data-row="0"] .slx-talent-tier')).toHaveText('第1列');
+    // Two-line cells: at least 3 whole rows fit at 1280x720, and no cell's bonus or state is cut off.
+    const fit = await page.evaluate(() => {
+      const b = document.querySelector('.slx-talent-board')!.getBoundingClientRect();
+      const row = document.querySelector('.slx-talent-row')!.getBoundingClientRect();
+      const cut = [...document.querySelectorAll<HTMLElement>('.slx-talent-sub > span')].filter((s) => s.scrollWidth > s.clientWidth + 0.5).map((s) => s.textContent);
+      return { rows: b.height / row.height, cut };
+    });
+    expect(fit.rows).toBeGreaterThanOrEqual(3);
+    expect(fit.cut).toEqual([]);
 
     // The bottom end: the last keystone, rows hidden above.
     for (let i = 0; i < 26; i++) await w.key('ArrowDown');
@@ -488,6 +497,111 @@ test.describe('starlantern', () => {
     for (let i = 0; i < 12 && (await up.isVisible()); i++) await up.click();
     await expect(up).toBeHidden();
     expect(await board.evaluate((b) => b.scrollTop)).toBe(0);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('spends skill and talent points, then resets them at the inn', async ({ page }) => {
+    const w = await setup(page, 7);
+    const noel = () => page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      const m = s.party.roster.noel;
+      return { gold: s.gold, level: m.level, tree: m.tree, talents: m.talents };
+    });
+    /** Reload, continue, and check the town did not have to throw the save away. */
+    const reloadContinue = async () => {
+      await page.reload();
+      await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+      await w.key('Enter');
+      await expect(page.locator('.slx-town')).toBeVisible();
+      await expect(page.locator('.slx-town .slx-talk')).not.toContainText('存檔無法讀取');
+      await w.closeTalk();
+    };
+    const status = page.locator('.slx-status-name');
+    const toNoel = async () => {
+      for (let i = 0; i < 8 && !((await status.textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
+      await expect(status).toContainText('諾艾兒');
+    };
+    const guildTab = async (tab: 'tree' | 'talent') => {
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await page.locator(`.slx-guild [data-id=${tab}]`).click();
+      await expect(page.locator('.slx-status-scene')).toBeVisible();
+      await expect(page.locator(`[data-tab=${tab}]`)).toHaveAttribute('aria-selected', 'true');
+    };
+    const backToTown = async () => {
+      await page.locator('.slx-back').click();
+      await expect(page.locator('.slx-guild')).toBeVisible();
+      await page.locator('.slx-back').click();
+      await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    };
+    // Lv7: skillPoints 5, talentPoints 1.
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.noel.level = 7;
+      g.state.gold = 1000;
+    });
+
+    // The guild's 技能樹 entry opens the tree tab on the first member; page to Noel.
+    await guildTab('tree');
+    await expect(status).toContainText('絲嘉蕾');
+    await toNoel();
+    const ice = page.locator('.slx-tree-node[data-node=ice-star]');
+    await expect(ice).toContainText('0／3');
+    await ice.click();                                      // moves the cursor here
+    await expect(ice).toHaveClass(/slx-row-cur/);
+    await ice.click();                                      // the two-press spend: arms
+    await expect(ice).toContainText('0／3');
+    await ice.click();                                      // and raises
+    await expect(ice).toContainText('1／3');
+
+    // 天賦: the cursor starts on noel-t00, so two clicks arm and raise.
+    await page.locator('[data-tab=talent]').click();
+    const t00 = page.locator('.slx-talent-node[data-node=noel-t00]');
+    await expect(t00).toContainText('0／5');
+    await t00.click(); await t00.click();
+    await expect(t00).toContainText('1／5');
+    await page.locator('[data-tab=stats]').click();
+    await expect(page.locator('tr[data-stat=int] td.slx-talent')).toHaveText('+2');
+    expect(await noel()).toEqual({ gold: 1000, level: 7, tree: { 'fire-star': 1, 'ice-star': 1 }, talents: { 'noel-t00': 1 } });
+
+    // A spend in town is saved at once, and the saved build reloads as valid.
+    await backToTown();
+    await reloadContinue();
+    expect(await noel()).toEqual({ gold: 1000, level: 7, tree: { 'fire-star': 1, 'ice-star': 1 }, talents: { 'noel-t00': 1 } });
+
+    // The inn's 重置配點 for Noel costs 25 x 7 and gives every point back.
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-inn', '重置配點');
+    await w.choose('.slx-list', '諾艾兒');
+    const ask = page.locator('.slx-inn .slx-confirm');
+    await expect(ask).toContainText('諾艾兒');
+    await expect(ask).toContainText(`${25 * 7} G`);
+    await expect(ask.locator('[aria-selected=true] .slx-label')).toHaveText('否');   // defaults to no
+    await w.key('ArrowUp'); await w.key('Enter');                                    // 是
+    await expect(page.locator('.slx-inn .slx-talk')).toContainText('配點已重置');
+    expect(await noel()).toEqual({ gold: 1000 - 25 * 7, level: 7, tree: { 'fire-star': 1 }, talents: {} });
+    await w.closeTalk();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    await guildTab('tree');
+    await toNoel();
+    await expect(page.locator('.slx-tree-node[data-node=ice-star]')).toContainText('0／3');
+    await page.locator('[data-tab=talent]').click();
+    await expect(page.locator('.slx-talent-node[data-node=noel-t00]')).toContainText('0／5');
+    await backToTown();
+
+    // Last, a night at the inn saves, and the reset build reloads as valid.
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-inn', '休息');
+    await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+    const saved = await noel();
+    expect(saved.gold).toBeLessThan(1000 - 25 * 7);
+    await reloadContinue();
+    expect(await noel()).toEqual({ ...saved, tree: { 'fire-star': 1 }, talents: {} });
     expect(w.errors).toEqual([]);
   });
 });
