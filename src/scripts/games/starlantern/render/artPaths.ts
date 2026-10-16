@@ -75,7 +75,8 @@ export function allArtUrls(): string[] {
   for (const s of ['title', 'town', 'guild', 'shop', 'inn', 'gate'] as const) urls.push(art.scene(s));
   for (const n of ['guild', 'shop', 'inn', 'gate'] as const) urls.push(art.npc(n, 'normal'), art.npc(n, 'happy'));
   urls.push(art.logo, art.window, art.cursor);
-  for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) urls.push(art.icon(id));
+  // Region materials (price 0) have no icon art yet; they join the list when the art lands.
+  for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.values(MATERIALS).filter((m) => m.price > 0).map((m) => m.id), ...Object.keys(EQUIPMENT)]) urls.push(art.icon(id));
   return urls;
 }
 

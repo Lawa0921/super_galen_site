@@ -15,7 +15,7 @@ describe('data integrity', () => {
     expect(enemies.filter((e) => !e.boss)).toHaveLength(8);
     expect(enemies.filter((e) => e.boss).map((e) => e.id)).toEqual(['lanterneater']);
     expect(Object.keys(EQUIPMENT)).toHaveLength(15);
-    expect(Object.keys(MATERIALS)).toHaveLength(10);
+    expect(Object.keys(MATERIALS)).toHaveLength(16);
     expect(FLOORS.map((f) => f.id)).toEqual([1, 2, 3]);
   });
 

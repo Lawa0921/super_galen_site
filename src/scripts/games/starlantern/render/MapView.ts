@@ -5,9 +5,13 @@ import { art, tileKey } from './artPaths';
 import { fogState } from './fog';
 import type { TextureBank } from './textures';
 
-const COLORS: Record<Tile, number> = {
+const COLORS: Partial<Record<Tile, number>> = {
   wall: 0x2a2d3a, floor: 0x5b6150, door: 0x9c6644, up: 0x8ecae6, down: 0x219ebc, chest: 0xe9c46a, entrance: 0x90be6d, boss: 0xd62828,
 };
+/** Fill colour for a tile without art; kinds with no colour of their own (fountain, trap, ...) show plain floor. */
+export function tileColor(t: Tile, opened: boolean): number {
+  return COLORS[opened ? 'floor' : t] ?? COLORS.floor!;
+}
 const FOG = 0x05060a;
 /** Remembered tiles are drawn darker so the area around the party stands out. */
 const MEMORY_TINT = 0x6a6e86;
@@ -88,7 +92,7 @@ export class MapView {
           if (state === 'memory') s.tint = MEMORY_TINT;
           this.tiles.addChild(s);
         } else {
-          const color = COLORS[opened ? 'floor' : t];
+          const color = tileColor(t, opened);
           const g = new Graphics().rect(x * cell, y * cell, cell, cell).fill(state === 'memory' ? dim(color) : color);
           this.tiles.addChild(g);
         }

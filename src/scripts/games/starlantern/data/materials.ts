@@ -11,6 +11,12 @@ const LIST: MaterialDef[] = [
   { id: 'dusk-cloth', name: '暮影布', price: 32 },
   { id: 'old-coin', name: '古代銀幣', price: 40 },
   { id: 'ancient-gear', name: '古代齒輪', price: 60 },
+  { id: 'blaze-core', name: '火焰核', price: 0 },
+  { id: 'frost-heart', name: '霜之心', price: 0 },
+  { id: 'storm-stone', name: '雷鳴石', price: 0 },
+  { id: 'mire-gland', name: '毒腺', price: 0 },
+  { id: 'shade-crystal', name: '暗影結晶', price: 0 },
+  { id: 'iron-shard', name: '鋼鐵碎片', price: 0 },
 ];
 
 export const MATERIALS: Record<string, MaterialDef> = Object.fromEntries(LIST.map((m) => [m.id, m]));

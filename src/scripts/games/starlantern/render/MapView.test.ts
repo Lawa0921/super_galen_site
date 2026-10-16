@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Game } from '../engine/game';
 import { constRng } from '../engine/testing';
 import { fogState } from './fog';
-import { MAP_CELL, MapView } from './MapView';
+import { MAP_CELL, MapView, tileColor } from './MapView';
 import type { TextureBank } from './textures';
 
 const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
@@ -106,5 +106,15 @@ describe('MapView wall autotiling', () => {
     view.draw(game, { width: 640, height: 296 });
     expect(view.countByLabel('wall-face')).toBe(0);
     expect(view.countByLabel('wall')).toBeGreaterThan(0);
+  });
+});
+
+describe('MapView tile colours', () => {
+  it('draws the floor under tile kinds that have no art or colour of their own', () => {
+    for (const t of ['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key'] as const) {
+      expect(tileColor(t, false), t).toBe(tileColor('floor', false));
+    }
+    expect(tileColor('chest', true)).toBe(tileColor('floor', false));
+    expect(tileColor('boss', false)).not.toBe(tileColor('floor', false));
   });
 });
