@@ -38,6 +38,7 @@ export const T = {
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
     exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`, drop: (name: string, n: number) => `${name} ×${n}`,
+    leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
     levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`, learned: (name: string, skill: string) => `${name} 學會了「${skill}」`,
     weak: (els: string) => `已知弱點：${els}`,
   },

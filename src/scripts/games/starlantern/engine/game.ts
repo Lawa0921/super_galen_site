@@ -30,6 +30,7 @@ export type MoveResult =
   | { kind: 'full'; item: string; qty: number; need: number }
   | { kind: 'vault'; loot: Record<string, number> };
 export interface BattleEnd {
+  /** `drops` lists only what went into the party's hands. */
   outcome: 'win' | 'lose' | 'fled'; exp: number; gold: number; drops: Record<string, number>;
   levelUps: { id: CharacterId; levels: number; learned: string[] }[];
   /** Drops that did not fit in the pack and were left behind. */
@@ -313,11 +314,12 @@ export class Game {
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'));
     this.run!.loot.gold += rw.gold;
+    const taken: Record<string, number> = {};
     const left: Record<string, number> = {};
     for (const [mat, n] of Object.entries(rw.drops)) {
       const room = Math.max(0, Math.floor((capacity(this.state.party) - carried(this.state, this.run!)) / weightOf(mat)));
       const take = Math.min(n, room);
-      if (take > 0) this.grant(mat, take);
+      if (take > 0) { this.grant(mat, take); taken[mat] = take; }
       if (take < n) left[mat] = n - take;
     }
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
@@ -328,7 +330,7 @@ export class Game {
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
     if (b.boss && this.isStoryDepth(this.floor)) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
     else this.phase = 'map';
-    return { battle: b, end: { outcome: 'win', ...rw, levelUps: awarded.results.filter((x) => x.levels > 0), left } };
+    return { battle: b, end: { outcome: 'win', ...rw, drops: taken, levelUps: awarded.results.filter((x) => x.levels > 0), left } };
   }
 
   rest(): TownResult {

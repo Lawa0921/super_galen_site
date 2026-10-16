@@ -440,6 +440,7 @@ export class BattleScene implements Scene {
       if (fanfare) this.ctx.sfx.win?.();
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
+      for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
       for (const u of end.levelUps) {
         const who = CHARACTERS[u.id].name;
         lines.push({ text: T.battle.levelUp(who, this.ctx.game.state.party.roster[u.id].level), up: true });

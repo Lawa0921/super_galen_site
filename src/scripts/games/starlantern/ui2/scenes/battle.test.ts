@@ -118,6 +118,31 @@ describe('BattleScene', () => {
     expect(Object.values(submit.mock.calls[0][0]).every((a) => a.kind === 'attack')).toBe(true);
   });
 
+  it('lists only the drops taken and names what a full pack left behind', async () => {
+    const { game, s, root } = setup();
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps: [], left: { 'bat-wing': 2, 'thorn-fang': 1 } };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+    expect(lines).toContain('發光苔 ×1');
+    expect(lines).toContain('背包已滿，留下了 蝙蝠翼膜 ×2');
+    expect(lines).toContain('背包已滿，留下了 荊棘牙 ×1');
+    expect(lines).not.toContain('蝙蝠翼膜 ×2');
+  });
+
+  it('shows no left-behind line when everything fit', async () => {
+    const { game, s, root } = setup();
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: { moss: 1 }, levelUps: [], left: {} };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+    expect(lines).toEqual(['經驗值 +5', '金錢 +7', '發光苔 ×1']);
+  });
+
   it('shows the results after a win and returns to the labyrinth', async () => {
     const { go, s, root } = setup((g) => { for (const e of g.battle!.enemies) e.hp = 1; });
     for (let i = 0; i < 5; i++) s.onAction('down');

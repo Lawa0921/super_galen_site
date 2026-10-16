@@ -452,12 +452,12 @@ describe('run pack', () => {
       g.run!.loot.items['star-stone'] = Math.floor((capacity(g.state.party) - carried(g.state, g.run!)) * 2) - 1;   // room for one 0.5 drop
       for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
       const end = g.submitRound({})!.end!;
-      const total = Object.values(end.drops).reduce((a, b) => a + b, 0);
-      if (total < 2) continue;
-      checked++;
+      const taken = Object.values(end.drops).reduce((a, b) => a + b, 0);
       const left = Object.values(end.left).reduce((a, b) => a + b, 0);
-      expect(total - left).toBe(1);
-      for (const [id, n] of Object.entries(end.drops)) expect((g.run!.loot.items[id] ?? 0) + (end.left[id] ?? 0)).toBe(n);
+      if (taken + left < 2) continue;
+      checked++;
+      expect(taken).toBe(1);   // end.drops lists only what went into the pack
+      for (const [id, n] of Object.entries(end.drops)) expect(g.run!.loot.items[id]).toBe(n);
     }
     expect(checked).toBe(1);
   });
@@ -522,6 +522,17 @@ describe('run pack', () => {
     expect(weightOf('moss-charm')).toBe(2);
     expect(capacity(g.state.party)).toBeGreaterThan(40);
   });
+  it('battle drops with room all go into the pack and are all reported', () => {
+    const g = new Game(mulberry32(1), null);
+    g.depart(MAIN, 1);
+    g.encounter = 99;
+    g.move('right');
+    for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    const end = g.submitRound({})!.end!;
+    expect(Object.keys(end.drops).length).toBeGreaterThan(0);
+    expect(end.left).toEqual({});
+    expect(g.run!.loot.items).toEqual(end.drops);
+  });
   it('battle drops past the limit are left behind and reported', () => {
     const g = new Game(mulberry32(1), null);
     g.depart(MAIN, 1);
@@ -530,9 +541,9 @@ describe('run pack', () => {
     g.run!.loot.items['star-stone'] = Math.floor(capacity(g.state.party) * 2);   // exactly full
     for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
     const end = g.submitRound({})!.end!;
-    const dropped = Object.values(end.drops).reduce((a, b) => a + b, 0);
-    expect(dropped).toBeGreaterThan(0);
-    expect(end.left).toEqual(end.drops);
+    const left = Object.values(end.left).reduce((a, b) => a + b, 0);
+    expect(left).toBeGreaterThan(0);
+    expect(end.drops).toEqual({});   // nothing was taken, so nothing is reported as obtained
     expect(Object.keys(g.run!.loot.items)).toEqual(['star-stone']);
   });
 });
