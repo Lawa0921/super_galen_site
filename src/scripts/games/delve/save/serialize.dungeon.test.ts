@@ -20,9 +20,9 @@ function scene(): DelveGame {
 }
 
 describe('存檔格式 3（地城狀態）', { timeout: 180_000 }, () => {
-  it('格式版本 3', () => {
-    expect(SAVE_FORMAT).toBe(3);
-    expect(snapshotGame(scene()).header.format).toBe(3);
+  it('格式版本 ≥ 3（4 起加了探索欄位，見 serialize.explore.test.ts）', () => {
+    expect(SAVE_FORMAT).toBeGreaterThanOrEqual(3);
+    expect(snapshotGame(scene()).header.format).toBe(SAVE_FORMAT);
   });
   it('門開 / 關、用鑰匙解鎖的門、金寶箱已解鎖、已用鑰匙數、寶箱剩下的內容都能存回來', () => {
     const g = scene(), w = g.world;

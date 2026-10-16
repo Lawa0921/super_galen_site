@@ -9,6 +9,7 @@
 import { World } from './world';
 import { generateWorld, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
+type GenRelic = { x: number; y: number; item: ItemId; where: string };
 import { T, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
 import { ITEMS, type Accessory, type ItemId, type PickStats } from './items';
 import { potLoot, type Drop } from './loot';
@@ -16,6 +17,8 @@ import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult } from './crafting';
 import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats, type PlayerMotion } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight } from './lighting';
+import { ExploredMap, toggleMarker, type MapMarker } from './explore';
+import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
 import {
   TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH,
 } from './constants';
@@ -36,7 +39,12 @@ export type DelveEvent =
   | { type: 'chest'; open: boolean; x: number; y: number }
   | { type: 'door'; open: boolean; x: number; y: number; unlocked: boolean }
   | { type: 'unlock'; x: number; y: number; item: ItemId }
-  | { type: 'lore'; id: number; x: number; y: number }
+  /** 讀古碑；first = 第一次讀到（收進日誌） */
+  | { type: 'lore'; id: number; x: number; y: number; first: boolean }
+  /** 第一次進入某地區 / 地標 */
+  | { type: 'discover'; region: { id: number; name: string; cat: RegionCat; kind: string } }
+  /** 第一次拿到某件珍寶（獨特道具） */
+  | { type: 'treasure'; item: ItemId }
   | { type: 'hint'; id: 'platform' }
   /** 床：set = 設定重生點；false = 床被拆掉、重生點回到出生點 */
   | { type: 'spawn'; set: boolean; x: number; y: number }
@@ -76,6 +84,10 @@ const BLOCK_REPEAT = 1.8;
 export const RECALL_TIME = 1.2;
 /** 磁石增加的伸手距離（格） */
 export const MAGNET_REACH = 3;
+/** 玩家周圍自動揭露的半徑（格） */
+export const REVEAL_RADIUS = 9;
+/** 畫面上光照 ≥ 此值的格算「看見了」 */
+export const REVEAL_LIGHT = 0.3;
 
 export class DelveGame {
   static readonly TILE_SIZE = TILE_SIZE;
@@ -93,6 +105,20 @@ export class DelveGame {
   readonly layers: GenLayers;
   /** 地城（房間 / 門 / 鑰匙位置）；小世界沒有 */
   readonly dungeon: DungeonInfo | null;
+  /** 所有古碑（id = 碑文編號） */
+  readonly tablets: readonly { x: number; y: number; id: number }[];
+  /** 珍寶箱位置（debug / e2e） */
+  readonly relics: GenRelic[];
+  /** 地區 / 地標（依種子命名） */
+  readonly regions: readonly Region[];
+  /** 戰爭迷霧（存檔內容） */
+  explored: ExploredMap;
+  /** 發現 / 日誌（存檔內容） */
+  discovery: Discovery;
+  /** 使用者地圖標記（存檔內容） */
+  markers: MapMarker[] = [];
+  private tabletAt = new Map<number, number>();
+  private lastTile = { x: -1, y: -1 };
   player: Body;
   inventory: Inventory;
   /** 遊戲內經過秒數（日夜循環用） */
@@ -137,11 +163,29 @@ export class DelveGame {
     this.dungeonZone = gen.dungeonZone;
     this.layers = gen.layers;
     this.dungeon = gen.dungeon;
+    this.tablets = gen.tablets;
+    this.relics = gen.relics;
+    for (const t of gen.tablets) this.tabletAt.set(this.world.idx(t.x, t.y), t.id);
+    this.regions = buildRegions({
+      seed: this.seed, width: this.world.width, height: this.world.height, spawn: gen.spawn,
+      surface: this.world.surface, layers: gen.layers, biomes: gen.biomes, structures: gen.structures, dungeon: gen.dungeon,
+    });
+    this.explored = new ExploredMap(this.world.width, this.world.height);
+    this.discovery = new Discovery(this.regions, { loreTotal: gen.tablets.length });
     this.player = makeBody(0, 0);
     this.teleport(this.spawn.x, this.spawn.y);
     this.inventory = starterInventory();
     this.aim = { x: this.spawn.x, y: this.spawn.y + 1 };
     this.world.markAllDirty();
+    // 出生點：周圍已揭露、所在地區算已發現（不跳橫幅）
+    this.explored.revealDisc(this.spawn.x, this.spawn.y, REVEAL_RADIUS + 6);
+    this.discovery.visit(this.spawn.x, this.spawn.y);
+  }
+
+  /** 換掉探索狀態（存檔還原用） */
+  setExploration(explored: ExploredMap, markers: MapMarker[]): void {
+    this.explored = explored;
+    this.markers = markers;
   }
 
   // ── 輸入 ───────────────────────────────────────────────
@@ -175,6 +219,7 @@ export class DelveGame {
     this.time += dt;
     stepPlayer(this.world, this.player, this.motion, { moveX: this.moveX, jump: this.jump, drop: this.dropHeld, up: this.upHeld }, dt, this.moveStats());
     this.updateRecall(dt);
+    this.updateExploration();
     if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
       this.platformHinted = true;
       this.events.push({ type: 'hint', id: 'platform' });
@@ -502,6 +547,36 @@ export class DelveGame {
     };
   }
 
+  // ── 探索 ─────────────────────────────────────────────
+  private updateExploration(): void {
+    const t = this.playerTile(), c = this.playerCenter(), f = this.feetTile();
+    this.discovery.track(c.x, c.y, f.y + 1 - this.world.surfaceAt(f.x));
+    if (t.x !== this.lastTile.x || t.y !== this.lastTile.y) {
+      this.lastTile = t;
+      this.explored.revealDisc(t.x, t.y, REVEAL_RADIUS);
+      for (const r of this.discovery.visit(t.x, t.y)) {
+        this.events.push({ type: 'discover', region: { id: r.id, name: r.name, cat: r.cat, kind: r.kind } });
+      }
+    }
+    if (this.tick % 20 === 0) {
+      for (const st of this.inventory.slots) {
+        if (st && ITEMS[st.item].unique && this.discovery.gainTreasure(st.item)) this.events.push({ type: 'treasure', item: st.item });
+      }
+    }
+  }
+  /** 畫面上（view，tile 座標）光照夠亮的格 → 揭露。回傳新揭露格數 */
+  revealLit(L: LightMap, view: LightRect): number { return this.explored.revealLit(L, view, REVEAL_LIGHT); }
+  /** 在地圖 (x,y) 新增 / 移除標記 */
+  toggleMarker(x: number, y: number): 'added' | 'removed' | 'full' {
+    const r = toggleMarker(this.markers, x, y);
+    this.markers = r.markers;
+    return r.action;
+  }
+  /** 古碑 (x,y) 的碑文編號 */
+  tabletId(x: number, y: number): number {
+    return this.tabletAt.get(this.world.idx(x, y)) ?? ((x * 7 + y) % 14);
+  }
+
   // ── 床 / 傳送石 ───────────────────────────────────────
   /** 重生點（腳底 tile）：床還在 → 床頭那格；否則出生點 */
   respawnPoint(): { x: number; y: number } {
@@ -591,8 +666,8 @@ export class DelveGame {
     if (isDoorTile(id)) return this.useDoor(x, y);
     if (isBedTile(id)) return this.useBed(x, y);
     if (id === T.LORE_TABLET) {
-      const t = this.dungeon?.tablets.find((q) => q.x === x && q.y === y);
-      this.events.push({ type: 'lore', id: t ? t.id : (x * 7 + y) % 5, x, y });
+      const lid = this.tabletId(x, y);
+      this.events.push({ type: 'lore', id: lid, x, y, first: this.discovery.readLore(lid) });
       return true;
     }
     if (id === T.LOCKED_CHEST && !w.unlocked.has(w.idx(x, y))) {

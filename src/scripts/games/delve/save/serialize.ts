@@ -3,6 +3,9 @@
 // 載入時用 seed 重新生成，再覆蓋被修改的 chunk（chunk 內的箱子以存檔為準）。
 // format 1（M1）沒有 chests；format 2 起 header.chests = [{ i: tile index, slots }]（含金寶箱）；
 // format 3 起 header.unlocked = 已用金鑰匙打開的金寶箱 tile index（排序）、header.keysUsed = 累計用掉的鑰匙數。
+// format 4 起（探索）：header.explored = 戰爭迷霧位元圖的 RLE（engine/explore.ts）再 base64、header.markers = 地圖標記、
+//   header.discovery = 已發現的地區 id / 讀過的碑文 / 拿到的珍寶 / 最深紀錄 / 移動距離、header.bed = 床（重生點）。
+//   舊格式（1–3）讀進來 = 什麼都沒探索、沒有標記、沒有床。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -17,8 +20,10 @@ import { CHEST_SLOTS } from '../engine/loot';
 import { CHUNK, GEN_VERSION, INV_SIZE } from '../engine/constants';
 import { TILES, WALLS, T, isChestTile } from '../engine/tiles';
 import { ITEMS, isItemId } from '../engine/items';
+import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker } from '../engine/explore';
+import type { DiscoveryJSON } from '../engine/discovery';
 
-export const SAVE_FORMAT = 3;
+export const SAVE_FORMAT = 4;
 export const CHUNK_BYTES = CHUNK * CHUNK * 2;
 const MAGIC = [0x44, 0x4c, 0x56, 0x53]; // "DLVS"
 const MAX_DIM = 8192;
@@ -43,6 +48,14 @@ export interface SaveHeader {
   unlocked?: number[];
   /** 累計用掉的鑰匙數；format 3 起 */
   keysUsed?: number;
+  /** 戰爭迷霧：RLE 位元圖的 base64；format 4 起 */
+  explored?: string;
+  /** 地圖標記；format 4 起 */
+  markers?: MapMarker[];
+  /** 發現 / 日誌；format 4 起 */
+  discovery?: DiscoveryJSON;
+  /** 床（重生點）；format 4 起 */
+  bed?: { x: number; y: number } | null;
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
 export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
@@ -140,9 +153,26 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       chests,
       unlocked: [...w.unlocked].sort((a, b) => a - b),
       keysUsed: w.keysUsed,
+      explored: toBase64(game.explored.encode()),
+      markers: game.markers.map((m) => ({ x: m.x, y: m.y })),
+      discovery: game.discovery.toJSON(),
+      bed: game.bed ? { ...game.bed } : null,
     },
     chunks,
   };
+}
+
+// ── base64（瀏覽器與 Node 都有 btoa / atob） ───────────────
+function toBase64(b: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function fromBase64(s: string): Uint8Array {
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
 export function encodeSave(data: SaveData): Uint8Array {
@@ -195,6 +225,40 @@ function validKeysUsed(v: unknown): number {
   if (v === undefined) return 0;
   if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) throw new SaveFormatError('keysUsed');
   return v;
+}
+
+/** 迷霧：base64 → RLE → 長度要剛好 width*height（否則損毀）；回傳原字串 */
+function validExplored(v: unknown, width: number, height: number): string | undefined {
+  if (v === undefined) return undefined;
+  if (typeof v !== 'string') throw new SaveFormatError('explored');
+  // 尺寸本身不合法時交給 restoreGame 的 size 檢查
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > MAX_DIM || height > MAX_DIM) return v;
+  try {
+    decodeRle(fromBase64(v), width * height);
+  } catch {
+    throw new SaveFormatError('explored');
+  }
+  return v;
+}
+function validMarkers(v: unknown): MapMarker[] {
+  if (v === undefined) return [];
+  if (!Array.isArray(v) || v.length > MAX_MARKERS) throw new SaveFormatError('markers');
+  return v.map((m) => {
+    const o = m as { x?: unknown; y?: unknown } | null;
+    if (!o || !Number.isInteger(o.x) || !Number.isInteger(o.y)) throw new SaveFormatError('markers');
+    return { x: o.x as number, y: o.y as number };
+  });
+}
+function validBed(v: unknown): { x: number; y: number } | null {
+  if (v === undefined || v === null) return null;
+  const o = v as { x?: unknown; y?: unknown };
+  if (typeof o !== 'object' || !Number.isInteger(o.x) || !Number.isInteger(o.y)) throw new SaveFormatError('bed');
+  return { x: o.x as number, y: o.y as number };
+}
+function validDiscovery(v: unknown): DiscoveryJSON | undefined {
+  if (v === undefined) return undefined;
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new SaveFormatError('discovery');
+  return v as DiscoveryJSON;
 }
 
 function validChests(v: unknown): ChestSave[] {
@@ -255,6 +319,10 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     chests: validChests(h.chests),
     unlocked: validUnlocked(h.unlocked),
     keysUsed: validKeysUsed(h.keysUsed),
+    explored: validExplored(h.explored, h.width, h.height),
+    markers: validMarkers(h.markers),
+    discovery: validDiscovery(h.discovery),
+    bed: validBed(h.bed),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -310,12 +378,16 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       validChests(data.header.chests);
       validUnlocked(data.header.unlocked);
       validKeysUsed(data.header.keysUsed);
+      validExplored(data.header.explored, data.header.width, data.header.height);
+      validMarkers(data.header.markers);
+      validBed(data.header.bed);
+      validDiscovery(data.header.discovery);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
   }
   const h = data.header;
-  if (h.format !== 1 && h.format !== 2 && h.format !== SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
+  if (!Number.isInteger(h.format) || h.format < 1 || h.format > SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
   if (h.genVersion !== GEN_VERSION && !opts.allowGenMismatch) {
     return {
       ok: false, error: 'gen_version', saveGenVersion: h.genVersion,
@@ -345,5 +417,11 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   game.inventory = Inventory.fromJSON(h.inventory);
   game.time = h.time;
   game.tick = h.tick;
+  // 探索（format 4）；舊格式 = 什麼都沒探索
+  const explored = h.explored ? ExploredMap.decode(fromBase64(h.explored), w.width, w.height) : new ExploredMap(w.width, w.height);
+  game.setExploration(explored, (h.markers ?? []).map((m) => ({ ...m })));
+  if (h.discovery) game.discovery.load(h.discovery);
+  else game.discovery.found.clear();
+  game.bed = h.bed && w.inBounds(h.bed.x, h.bed.y) ? { ...h.bed } : null;
   return { ok: true, game, header: h };
 }
