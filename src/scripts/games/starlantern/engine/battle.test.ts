@@ -345,7 +345,7 @@ describe('skills from the tree (Task 8)', () => {
 });
 
 describe('keystones in battle', () => {
-  it('opening-gauge starts the gauge at +openingGauge, held to 100', () => {
+  it('opening-gauge starts the gauge at least at openingGauge, never stacking on what it carries', () => {
     // Enough talent points for both default keystones; selene's are regen and opening-gauge.
     const party = partyAt(2 * (KEYSTONE_GATE + MAX_KEYSTONES) + 4);
     expect(keystonesOf(party.roster.selene)).toContain('opening-gauge');
@@ -358,8 +358,13 @@ describe('keystones in battle', () => {
       expect(c('selene').keystones).toEqual(keystonesOf(party.roster.selene));
       return [c('selene').limit, c('scarlet').limit];
     };
-    expect(start(0)).toEqual([V.openingGauge, 0]);
-    expect(start(LIMIT_MAX - 1)).toEqual([LIMIT_MAX, LIMIT_MAX - 1]);
+    for (const carried of [0, V.openingGauge - 1, V.openingGauge, V.openingGauge + 1, LIMIT_MAX - 1, LIMIT_MAX]) {
+      const [holder, other] = start(carried);
+      expect(holder, `carried ${carried}`).toBe(Math.max(carried, V.openingGauge));
+      expect(other, `carried ${carried}`).toBe(carried);
+    }
+    // The gauge carries over between fights: fight after fight it stays at the floor, it never climbs.
+    expect(start(start(start(0)[0])[0])[0]).toBe(V.openingGauge);
   });
 
   it('regen heals regenPct of max HP at the end of each round', () => {
@@ -383,6 +388,23 @@ describe('keystones in battle', () => {
     const plain = run([]);
     expect(plain.s.party.map((c) => c.hp)).toEqual([50, 99, 0]);
     expect(draws).toBe(plain.draws);
+  });
+
+  it('regen does not raise a holder the poison tick knocked out in the same round', () => {
+    const p = P('p', { hp: 1, poison: true, keystones: ['regen'] });
+    const s = resolveRound(makeBattle([p, P('q')], [E('e0', { sleep: 5 })]), {}, rng);
+    expect(s.party[0]).toMatchObject({ hp: 0, alive: false });
+    expect(s.log).toContainEqual({ type: 'ko', target: 'p' });
+    expect(s.log.some((e) => e.type === 'heal' && e.target === 'p')).toBe(false);
+  });
+
+  it("a holder's turret shot triggers the holder's TP keystones (the turret is the holder's skill)", () => {
+    const p = P('p', { tp: 0, keystones: ['crit-tp'], x: { crit: 100 }, turret: { power: 50, turns: 2 } });
+    const s = resolveRound(makeBattle([p], [E('e0', { sleep: 5, max: { hp: 9999 } as never })]), {}, rng);
+    const shot = s.log.findIndex((e) => e.type === 'act' && e.label === '砲台');
+    expect(shot).toBeGreaterThanOrEqual(0);
+    expect(s.log.slice(shot)).toContainEqual({ type: 'tp', target: 'p', amount: V.critTp });
+    expect(s.party[0].tp).toBe(V.critTp);
   });
 
   it('a fight with no keystones replays the pre-change baseline', () => {

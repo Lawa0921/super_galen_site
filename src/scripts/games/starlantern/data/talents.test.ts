@@ -52,9 +52,9 @@ describe('talent boards', () => {
     expect(KEYSTONES['kill-tp'].desc).toBe(`擊倒敵人時回復 ${V.killTp} TP`);
     expect(KEYSTONES['weak-tp'].desc).toBe(`打中弱點時回復 ${V.weakTp} TP`);
     expect(KEYSTONES['last-stand'].desc).toBe(`HP 低於 ${Math.round(V.lastStandHp * 100)}% 時，造成的傷害 +${V.lastStandPct}%`);
-    expect(KEYSTONES['opening-gauge'].desc).toBe(`戰鬥開始時絕技量表 +${V.openingGauge}`);
+    expect(KEYSTONES['opening-gauge'].desc).toBe(`戰鬥開始時絕技量表至少為 ${V.openingGauge}`);
     expect(KEYSTONES.regen.desc).toBe(`每回合結束時回復最大 HP 的 ${V.regenPct}%`);
-    expect(KEYSTONES['taunt-guard'].desc).toBe(`挑釁中受到的傷害 −${V.tauntGuardPct}%`);
+    expect(KEYSTONES['taunt-guard'].desc).toBe(`挑釁中受到的攻擊傷害 −${V.tauntGuardPct}%`);
   });
 
   it('normal nodes sit on the 6x4 grid and keystones on row 6', () => {

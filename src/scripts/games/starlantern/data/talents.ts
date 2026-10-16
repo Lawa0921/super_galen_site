@@ -21,9 +21,9 @@ export const KEYSTONES: Record<KeystoneId, { name: string; desc: string }> = {
   'kill-tp': { name: '乘勝', desc: `擊倒敵人時回復 ${V.killTp} TP` },
   'weak-tp': { name: '看破', desc: `打中弱點時回復 ${V.weakTp} TP` },
   'last-stand': { name: '背水', desc: `HP 低於 ${Math.round(V.lastStandHp * 100)}% 時，造成的傷害 +${V.lastStandPct}%` },
-  'opening-gauge': { name: '先機', desc: `戰鬥開始時絕技量表 +${V.openingGauge}` },
+  'opening-gauge': { name: '先機', desc: `戰鬥開始時絕技量表至少為 ${V.openingGauge}` },
   regen: { name: '再生', desc: `每回合結束時回復最大 HP 的 ${V.regenPct}%` },
-  'taunt-guard': { name: '堅守', desc: `挑釁中受到的傷害 −${V.tauntGuardPct}%` },
+  'taunt-guard': { name: '堅守', desc: `挑釁中受到的攻擊傷害 −${V.tauntGuardPct}%` },
 };
 
 /** Multiplier on every TALENT_PER value; tuned later. */

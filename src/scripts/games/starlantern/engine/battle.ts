@@ -86,7 +86,8 @@ export function createBattle(o: {
   const altar = new Map<BuffStat, number>();
   for (const b of o.altar ?? []) altar.set(b.stat, (altar.get(b.stat) ?? 0) + b.pct);
   for (const c of party) for (const [k, pct] of altar) c.max[k] = Math.floor(c.max[k] * (1 + pct / 100));
-  for (const c of party) if (c.keystones.includes('opening-gauge')) c.limit = Math.min(LIMIT_MAX, c.limit + KEYSTONE_VALUES.openingGauge);
+  // opening-gauge is a floor, not a gain: the gauge carries over between fights, so adding would stack fight after fight.
+  for (const c of party) if (c.keystones.includes('opening-gauge')) c.limit = Math.min(LIMIT_MAX, Math.max(c.limit, KEYSTONE_VALUES.openingGauge));
   const counts: Record<string, number> = {};
   for (const id of o.enemyIds) counts[id] = (counts[id] ?? 0) + 1;
   const seen: Record<string, number> = {};
