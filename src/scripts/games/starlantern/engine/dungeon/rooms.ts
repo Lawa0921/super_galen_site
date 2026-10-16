@@ -1,4 +1,5 @@
 import type { ConditionDef } from '../../data/conditions';
+import { ITEMS } from '../../data/items';
 import type { FloorMap, Tile } from '../map';
 import { posKey } from '../map';
 import { pick, type Rng } from '../rng';
@@ -6,7 +7,8 @@ import type { Pos } from '../types';
 import type { GenFloor } from './gen';
 
 export type RoomKind = 'empty' | 'chest' | 'fountain' | 'trap' | 'merchant' | 'altar' | 'elite' | 'vault';
-export interface Content { kind: RoomKind | 'key'; at: Pos; room: number }
+/** `stock` is a merchant's three item ids, drawn once when the floor is filled. */
+export interface Content { kind: RoomKind | 'key'; at: Pos; room: number; stock?: string[] }
 type Placed = Exclude<Content['kind'], 'empty'>;
 
 /** Share of ordinary rooms by kind. Elite and vault are capped at one per floor. */
@@ -17,6 +19,14 @@ const WEIGHTS: [RoomKind, number][] = [
 const TILE: Record<Placed, Tile> = {
   chest: 'chest', fountain: 'fountain', trap: 'trap', merchant: 'merchant', altar: 'altar', elite: 'elite', vault: 'vault', key: 'key',
 };
+
+/** Three distinct buyable items. */
+function drawStock(rng: Rng): string[] {
+  const pool = Object.values(ITEMS).filter((i) => i.price > 0).map((i) => i.id);
+  const out: string[] = [];
+  while (out.length < 3 && pool.length) out.push(...pool.splice(Math.floor(rng() * pool.length), 1));
+  return out;
+}
 
 function rollKind(rng: Rng): RoomKind {
   let r = rng() * WEIGHTS.reduce((s, [, w]) => s + w, 0);
@@ -48,7 +58,7 @@ export function fillRooms(g: GenFloor, rng: Rng, cond: ConditionDef): { map: Flo
     if (!at) return false;
     map.tiles[at.y][at.x] = TILE[kind];
     if (kind === 'chest') map.chests.push(at);
-    contents.push({ kind, at, room });
+    contents.push(kind === 'merchant' ? { kind, at, room, stock: drawStock(rng) } : { kind, at, room });
     return true;
   };
   const placeAnywhere = (kind: Placed) => {

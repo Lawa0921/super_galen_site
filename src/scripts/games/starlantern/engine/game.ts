@@ -2,21 +2,28 @@ import { CONDITIONS } from '../data/conditions';
 import { FLOORS } from '../data/floors';
 import { createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
+import type { Content } from './dungeon/rooms';
 import { advance, danger, type Danger } from './encounter';
+import { altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT, VAULT_PLACEHOLDER } from './events';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
-import { activeIds, awardExp, hasPassive } from './party';
+import { activeIds, awardExp, hasPassive, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { newGame, type GameState } from './state';
-import { addItem, rest as innRest, type TownResult } from './town';
-import type { CharacterId, Pos } from './types';
+import { addItem, buy as townBuy, rest as innRest, type TownResult } from './town';
+import type { CharacterId, Member, Pos } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
 export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp';
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
-  | { kind: 'entrance' } | { kind: 'floor'; floor: number } | { kind: 'chest'; item: string; qty: number };
+  | { kind: 'entrance' } | { kind: 'floor'; floor: number } | { kind: 'chest'; item: string; qty: number }
+  /** Stepped onto a fountain, merchant, altar or vault: the screen offers its choice (useFountain, buy, altar, openVault). */
+  | { kind: 'event'; content: Content }
+  | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number }
+  | { kind: 'key' }
+  | { kind: 'vault'; loot: Record<string, number> };
 export interface BattleEnd {
   outcome: 'win' | 'lose' | 'fled'; exp: number; gold: number; drops: Record<string, number>;
   levelUps: { id: CharacterId; levels: number; learned: string[] }[];
@@ -41,6 +48,8 @@ export class Game {
   facing: Dir = 'down';
   encounter = 0;
   battle: BattleState | null = null;
+  /** The elite tile whose fight is on; it turns to floor on a win. */
+  private eliteAt: Pos | null = null;
   notice: Notice | null = null;
 
   constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState) {
@@ -113,16 +122,113 @@ export class Game {
         this.startBattle(['lanterneater'], true, !this.isStoryDepth(this.floor));
         return { kind: 'boss' };
       case 'chest': return this.openChest() ?? { kind: 'moved' };
-      default: {
-        const mod = (hasPassive(this.state.party, 'encounterDown') ? 0.5 : 1) * CONDITIONS[this.run!.condition].encounterMul;
-        const f = FLOORS[this.terrain() - 1];
-        const g = advance(this.encounter, this.rng, f.rate, mod);
-        this.encounter = g.value;
-        if (!g.encounter) return { kind: 'moved' };
-        this.startBattle(encounterGroup(this.run!.region, this.floor, this.rng), false);
+      case 'fountain': return this.run!.usedFountain ? this.walk() : this.eventHere();
+      case 'altar': return this.run!.opened.has(this.spotId()) ? this.walk() : this.eventHere();
+      case 'merchant': case 'vault': return this.eventHere();
+      case 'trap': return this.springTrap();
+      case 'key': {
+        this.run!.keys.add(this.floor);
+        this.map().tiles[this.pos.y][this.pos.x] = 'floor';
+        return { kind: 'key' };
+      }
+      case 'elite': {
+        const group = eliteGroup(this.run!, this.floor);
+        this.startBattle(group, false, true, group[0]);
+        this.eliteAt = { ...this.pos };
         return { kind: 'battle' };
       }
+      default: return this.walk();
     }
+  }
+
+  /** An ordinary step: fills the encounter gauge and may start a battle. Event tiles never come through here, so one step triggers one thing. */
+  private walk(): MoveResult {
+    const mod = (hasPassive(this.state.party, 'encounterDown') ? 0.5 : 1) * CONDITIONS[this.run!.condition].encounterMul;
+    const f = FLOORS[this.terrain() - 1];
+    const g = advance(this.encounter, this.rng, f.rate, mod);
+    this.encounter = g.value;
+    if (!g.encounter) return { kind: 'moved' };
+    this.startBattle(encounterGroup(this.run!.region, this.floor, this.rng), false);
+    return { kind: 'battle' };
+  }
+
+  private spotId(at: Pos = this.pos): string {
+    return `${this.floor}:${posKey(at)}`;
+  }
+
+  /** The content of `kind` at `at`, only when the party stands on it. */
+  private contentAt(kind: Content['kind'], at: Pos): Content | undefined {
+    if (this.phase !== 'map' || !this.run || this.pos.x !== at.x || this.pos.y !== at.y) return undefined;
+    return floorOf(this.run, this.floor).contents.find((c) => c.kind === kind && c.at.x === at.x && c.at.y === at.y);
+  }
+
+  private eventHere(): MoveResult {
+    const c = floorOf(this.run!, this.floor).contents.find((x) => x.at.x === this.pos.x && x.at.y === this.pos.y);
+    return c ? { kind: 'event', content: c } : this.walk();
+  }
+
+  private livingMembers() {
+    return this.state.party.recruited.map((id) => this.state.party.roster[id]).filter((m) => m.hp > 0);
+  }
+
+  /** A trap hurts every living member (never below 1 HP); poison hurts less but also drains TP. The tile is spent. */
+  private springTrap(): MoveResult {
+    const effect = this.rng() < 0.5 ? 'hurt' : 'poison';
+    const amount = trapDamage(effect, this.floor);
+    for (const m of this.livingMembers()) {
+      m.hp = Math.max(1, m.hp - amount);
+      if (effect === 'poison') m.tp = Math.max(0, m.tp - Math.floor((statsOf(m).tp * POISON_TP_LOSS_PCT) / 100));
+    }
+    this.map().tiles[this.pos.y][this.pos.x] = 'floor';
+    return { kind: 'trap', effect, amount };
+  }
+
+  /** Heal the party's HP and TP by 30% of their maximums; once per run, standing on a fountain. */
+  useFountain(): boolean {
+    if (this.phase !== 'map' || !this.run || this.run.usedFountain || tileAt(this.map(), this.pos) !== 'fountain') return false;
+    for (const m of this.livingMembers()) {
+      const max = statsOf(m);
+      m.hp = Math.min(max.hp, m.hp + Math.floor((max.hp * FOUNTAIN_PCT) / 100));
+      m.tp = Math.min(max.tp, m.tp + Math.floor((max.tp * FOUNTAIN_PCT) / 100));
+    }
+    this.run.usedFountain = true;
+    return true;
+  }
+
+  /** Buy from the merchant the party stands at: only his three items, at the shop price. */
+  buy(merchantAt: Pos, item: string): TownResult {
+    const c = this.contentAt('merchant', merchantAt);
+    if (!c || !c.stock?.includes(item)) return { ok: false, reason: 'invalid' };
+    return this.apply(townBuy(this.state, item));
+  }
+
+  /** Accept or decline the altar the party stands at. Accepting pays its cost and adds its bonus for the whole run; each altar works once. */
+  altar(at: Pos, accept: boolean): boolean {
+    if (!accept || !this.contentAt('altar', at) || this.run!.opened.has(this.spotId(at))) return false;
+    const def = altarAt(this.run!, this.floor, at);
+    const members = this.livingMembers();
+    const loss = (m: Member) => (def.cost.hpPct ? altarHpLoss(statsOf(m).hp, def.cost.hpPct) : 0);
+    if (this.state.gold < (def.cost.gold ?? 0) || members.some((m) => m.hp - loss(m) < 1)) return false;
+    this.state.gold -= def.cost.gold ?? 0;
+    for (const m of members) m.hp -= loss(m);
+    this.run!.altarBuffs.push({ ...def.gain });
+    this.run!.opened.add(this.spotId(at));
+    return true;
+  }
+
+  /** Open the vault the party stands at: needs this floor's key. Pays three chests' worth plus a stand-in for plan 5's rare materials. */
+  openVault(at: Pos): MoveResult | null {
+    if (!this.contentAt('vault', at) || tileAt(this.map(), at) !== 'vault' || !this.run!.keys.has(this.floor)) return null;
+    const loot: Record<string, number> = {};
+    if (FLOORS[this.terrain() - 1].chestLoot.length) {
+      const one = this.rollChest();
+      loot[one.item] = one.qty * VAULT_CHEST_MULT;
+    }
+    // TODO(plan 5): rare materials replace this placeholder.
+    loot[VAULT_PLACEHOLDER.item] = (loot[VAULT_PLACEHOLDER.item] ?? 0) + VAULT_PLACEHOLDER.qty;
+    for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
+    this.map().tiles[at.y][at.x] = 'floor';
+    return { kind: 'vault', loot };
   }
 
   returnToTown(): boolean {
@@ -148,6 +254,8 @@ export class Game {
     if (b.outcome === 'ongoing') return { battle: b, end: null };
     this.battle = null;
     const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [] };
+    const elite = this.eliteAt;
+    this.eliteAt = null;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'));
@@ -156,6 +264,7 @@ export class Game {
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
     this.state.party = awarded.party;
+    if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
     if (b.boss && this.isStoryDepth(this.floor)) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
     else this.phase = 'map';
@@ -206,22 +315,30 @@ export class Game {
     return { kind: 'floor', floor };
   }
 
-  private openChest(): MoveResult | null {
-    const run = this.run!;
-    const id = `${this.floor}:${posKey(this.pos)}`;
-    if (run.opened.has(id)) return null;
-    const table = FLOORS[this.terrain() - 1].chestLoot;
-    if (!table.length) return null;
-    const loot = pick(this.rng, table);
-    const qty = Math.max(1, Math.round(loot.qty * CONDITIONS[run.condition].dropMul));
-    run.opened.add(id);
-    addItem(this.state.inventory, loot.item, qty);
-    return { kind: 'chest', item: loot.item, qty };
+  /** The single place loot enters the party's hands (chests and vaults). */
+  private grant(item: string, qty: number): void {
+    addItem(this.state.inventory, item, qty);
   }
 
-  private startBattle(enemyIds: string[], boss: boolean, scaled = true): void {
-    const scale = scaled && this.run ? { depth: this.floor, region: this.run.region, condition: this.run.condition } : undefined;
-    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale });
+  private rollChest(): { item: string; qty: number } {
+    const loot = pick(this.rng, FLOORS[this.terrain() - 1].chestLoot);
+    return { item: loot.item, qty: Math.max(1, Math.round(loot.qty * CONDITIONS[this.run!.condition].dropMul)) };
+  }
+
+  private openChest(): MoveResult | null {
+    const run = this.run!;
+    const id = this.spotId();
+    if (run.opened.has(id)) return null;
+    if (!FLOORS[this.terrain() - 1].chestLoot.length) return null;
+    const { item, qty } = this.rollChest();
+    run.opened.add(id);
+    this.grant(item, qty);
+    return { kind: 'chest', item, qty };
+  }
+
+  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string): void {
+    const scale = scaled && this.run ? { depth: this.floor, region: this.run.region, condition: this.run.condition, elite } : undefined;
+    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, altar: this.run?.altarBuffs });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
   }
