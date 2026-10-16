@@ -248,11 +248,16 @@
   - `RARITY_RANK`：common 0、magic 1、rare 2、legendary 3、unique 4、set 5。
   - `AFFIX_COUNT = { magic: [1, 2], rare: [3, 4], legendary: [3, 3] }`
   - `ROLL_FLOOR = { common: 0, magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 }`
-  - `AFFIX_SCALE = 1`：唯一的全域倍率，只有 Task 18 可以調整。
+  - `AFFIX_SCALE = 0.8`：唯一的全域倍率，只有 Task 18 可以調整（Task 18 已從 1 調到 0.8）。
+  - `IMPLICIT_PER_ILVL = 0.02`：底材自帶加成每高出底材等級 1 級多 2%（Task 18 加入，與 `AFFIX_SCALE` 同為兩個平衡旋鈕）。
+  - 平衡餘裕很薄，改這兩個旋鈕前先看 `engine/balance.test.ts`：
+    - 測試 10 的 mainline 深度 4 平均 hpLoss 是 0.105，下限 0.10；
+    - 測試 11 最少撐 4 回合，下限 3 回合。
   - `AffixDef { slots: GearSlot[]; lo: [number, number]; hi: [number, number] }`：括號裡是物品等級 1 與 50 時的值。
   - `AFFIXES: Record<AnyStat, AffixDef>`
   - `affixRange(key, ilvl): [number, number]`
     - 在兩點之間線性內插，超過 50 照同一條線往外延伸；
+    - 物品等級低於 1 時當作 1；
     - 最後乘上 `AFFIX_SCALE`。
   - `SLOT_WEIGHT: Record<GearSlot, number>`
   - `SkillMod { hits?; target?; powerPct?; element?; hpCost?; turns?; chance?; extra?: Effect[] }`
