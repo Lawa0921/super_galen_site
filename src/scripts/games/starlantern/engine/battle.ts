@@ -7,11 +7,12 @@ import { ITEMS } from '../data/items';
 import { SKILLS } from '../data/skills';
 import { ULTIMATES } from '../data/ultimates';
 import { stat, dealDamage, type BattleEvent, type Combatant } from './combatant';
-import { hasPassive, statsOf } from './party';
+import { hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { regionTint, scaleEnemy } from './scaling';
+import { depthLevel, homeLevel, regionTint, scaleEnemy } from './scaling';
+import { SECONDARY_KEYS } from './stats';
 import { applyEffect, type EffectContext } from './skills';
-import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, Target } from './types';
+import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, Target } from './types';
 
 export type Action =
   | { kind: 'attack'; target: string }
@@ -47,13 +48,19 @@ const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, turret: nul
 function fromMember(m: Member, cell: number): Combatant {
   const row: Row = rowOfCell(cell);
   const def = CHARACTERS[m.id];
+  const sheet = sheetOf(m);
+  // Only the non-zero secondaries are carried; a missing key reads as 0.
+  const x: Partial<Record<SecondaryKey, number>> = {};
+  for (const k of SECONDARY_KEYS) if (sheet[k]) x[k] = sheet[k];
   return { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
-    row, cell, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0 };
+    row, cell, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0,
+    x, level: m.level, powers: powersOf(m) };
 }
 
-function fromEnemy(d: EnemyDef, key: string, name: string, tint: Combatant['tint']): Combatant {
+function fromEnemy(d: EnemyDef, key: string, name: string, tint: Combatant['tint'], level: number): Combatant {
   const c: Combatant = { ...fresh(), key, side: 'enemy', defId: d.id, name, max: { ...d.stats }, hp: d.stats.hp, tp: d.stats.tp,
-    row: 'front', melee: true, weak: [...d.weak], resist: [...d.resist], boss: !!d.boss, alive: true };
+    row: 'front', melee: true, weak: [...d.weak], resist: [...d.resist], boss: !!d.boss, alive: true,
+    x: { ...(d.sec ?? {}) }, level, powers: [] };
   if (tint) c.tint = tint;
   return c;
 }
@@ -84,7 +91,9 @@ export function createBattle(o: {
     const d = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']) : ENEMIES[id];
     defs[`e${i}`] = d;
     const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
-    return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined);
+    // An enemy is met at the fight's depth level, or at its own home level when the fight has no scale.
+    const level = sc ? depthLevel(sc.depth) : homeLevel(d);
+    return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
   });
   const s: BattleState = {
     round: 0, party, enemies, boss: !!o.boss, inventory: { ...o.inventory }, revealed: structuredClone(o.revealed),

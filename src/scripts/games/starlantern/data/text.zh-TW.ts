@@ -65,6 +65,8 @@ export const T = {
     noLimit: (who: string) => `${who} 的絕技量表還沒滿`,
     escape: (ok: boolean) => (ok ? '成功逃跑了' : '逃跑失敗'),
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
+    miss: (who: string) => `${who} 閃過了攻擊`,
+    crit: '（暴擊）',
   },
   ui2: {
     banner: { encounter: '遭遇！', boss: '頭目出現！', win: '勝利！' },

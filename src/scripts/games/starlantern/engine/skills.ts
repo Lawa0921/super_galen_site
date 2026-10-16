@@ -18,11 +18,15 @@ function gainHp(t: Combatant, amount: number): number {
 export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ctx: EffectContext): void {
   switch (eff.kind) {
     case 'damage': {
-      for (let i = 0; i < (eff.hits ?? 1) && target.alive; i++) {
-        const { amount, mult } = calcDamage(actor, target, eff, ctx.rng);
+      // Multistrike adds one hit, only to a single-hit effect; a chance of 0 draws nothing.
+      const multi = (actor.x.multi ?? 0) / 100;
+      const extra = (eff.hits ?? 1) === 1 && multi > 0 && ctx.rng() < multi ? 1 : 0;
+      for (let i = 0; i < (eff.hits ?? 1) + extra && target.alive; i++) {
+        const { amount, mult, crit, miss } = calcDamage(actor, target, eff, ctx.rng);
+        if (miss) { ctx.log.push({ type: 'miss', target: target.key }); continue; }
         dealDamage(target, amount);
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
-        ctx.log.push({ type: 'damage', target: target.key, amount, element: eff.element, mult });
+        ctx.log.push({ type: 'damage', target: target.key, amount, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
       }
       return;

@@ -1,6 +1,7 @@
 import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
-import type { BuffStat, Element, Row, Stats } from './types';
+import { armorReduction, evadeChance } from './stats';
+import type { BuffStat, Element, Row, SecondaryKey, Stats } from './types';
 
 export interface Buff { stat: BuffStat; pct: number; turns: number }
 
@@ -16,12 +17,19 @@ export interface Combatant {
   limit: number;
   /** Battle-screen colouring of a regional variant (its region's element) or an elite. */
   tint?: Element | 'elite';
+  /** Derived stats in play: a member's sheet secondaries, an enemy's `sec`. A missing key is 0. */
+  x: Partial<Record<SecondaryKey, number>>;
+  /** A member's level; an enemy's level in this fight. Armor and evasion are rated against the attacker's. */
+  level: number;
+  /** Legendary powers worn (members only). */
+  powers: string[];
 }
 
 export type BattleEvent =
   | { type: 'act'; actor: string; label: string; ultimate?: string }
   | { type: 'no-limit'; actor: string }
-  | { type: 'damage'; target: string; amount: number; element: Element; mult: number }
+  | { type: 'damage'; target: string; amount: number; element: Element; mult: number; crit?: boolean }
+  | { type: 'miss'; target: string }
   | { type: 'ko'; target: string }
   | { type: 'heal'; target: string; amount: number }
   | { type: 'tp'; target: string; amount: number }
@@ -58,16 +66,44 @@ export function elementMult(t: Combatant, el: Element): number {
 
 export interface DamageSpec { power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean }
 
-export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng): { amount: number; mult: number } {
+/** Enemies crit for a flat 50% more, whatever critDmg they carry. */
+export const ENEMY_CRIT_DMG = 50;
+
+/** True with chance `p`; a chance of 0 or less draws nothing, so fights without these stats keep their random sequence. */
+const roll = (p: number, rng: Rng): boolean => p > 0 && rng() < p;
+
+/**
+ * One hit: evasion, then the base formula with weakness and row, element bonus and resistance, vuln (weakness hits
+ * only), eliteDmg (elites and bosses), crit, armor and block (physical only), melee / ranged reduction, defending.
+ * Only the variance always draws; every other roll draws only when its chance is above 0.
+ */
+export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng): { amount: number; mult: number; crit: boolean; miss: boolean } {
+  const ax = (k: SecondaryKey): number => a.x[k] ?? 0;
+  const tx = (k: SecondaryKey): number => t.x[k] ?? 0;
+  const el = elementMult(t, spec.element);
+  const evade = t.side === 'party' ? evadeChance(tx('evasion'), a.level) : tx('evasion') / 100;
+  if (roll(evade, rng)) return { amount: 0, mult: el, crit: false, miss: true };
   const atk = stat(a, spec.scale);
   const def = stat(t, spec.scale === 'atk' ? 'def' : 'res');
-  const el = elementMult(t, spec.element);
   let mult = el;
   // Melee weakens with the attacker's distance; the defender's row protects by reach (formation.reachable), not by halving.
   if (spec.melee) mult *= ROW_MELEE[a.row];
-  if (t.defending) mult *= 0.5;
   const base = ((atk * spec.power) / 100) * (60 / (40 + def));
-  return { amount: Math.max(1, Math.floor(base * mult * (0.9 + rng() * 0.2))), mult: el };
+  const variance = 0.9 + rng() * 0.2;
+  // Every factor below is exactly 1 when its stat is absent, so such a hit keeps its old value to the bit.
+  const hitEl = spec.element;
+  if (hitEl !== 'phys') mult *= (1 + ax(`${hitEl}Dmg`) / 100) * (1 - tx(`${hitEl}Res`) / 100);
+  if (t.weak.includes(spec.element)) mult *= 1 + ax('vuln') / 100;
+  if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
+  const crit = roll(ax('crit') / 100, rng);
+  if (crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : ax('critDmg')) / 100;
+  if (hitEl === 'phys') {
+    mult *= 1 - armorReduction(tx('armor'), a.level);
+    if (roll(tx('block') / 100, rng)) mult *= 0.5;
+  }
+  mult *= 1 - tx(spec.melee ? 'meleeDR' : 'rangedDR') / 100;
+  if (t.defending) mult *= 0.5;
+  return { amount: Math.max(1, Math.floor(base * mult * variance)), mult: el, crit, miss: false };
 }
 
 export function dealDamage(t: Combatant, amount: number): void {

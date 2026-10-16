@@ -6,7 +6,8 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
   return log.map((e) => {
     switch (e.type) {
       case 'act': return T.log.act(nameOf(e.actor), e.label);
-      case 'damage': return T.log.damage(nameOf(e.target), e.amount, e.mult);
+      case 'damage': return T.log.damage(nameOf(e.target), e.amount, e.mult) + (e.crit ? T.log.crit : '');
+      case 'miss': return T.log.miss(nameOf(e.target));
       case 'ko': return T.log.ko(nameOf(e.target));
       case 'heal': return T.log.heal(nameOf(e.target), e.amount);
       case 'tp': return T.log.tp(nameOf(e.target), e.amount);

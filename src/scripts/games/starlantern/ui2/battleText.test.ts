@@ -13,4 +13,13 @@ describe('battleLines', () => {
     ];
     expect(battleLines(log, (k) => names[k] ?? k)).toEqual(['絲嘉蕾：攻擊', '苔蘚史萊姆 受到 12 傷害（弱點）', '苔蘚史萊姆 倒下了', '逃跑失敗']);
   });
+
+  it('a crit and a miss are worded', () => {
+    const log: BattleEvent[] = [
+      { type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1, crit: true },
+      { type: 'damage', target: 'e0', amount: 45, element: 'fire', mult: 1.5, crit: true },
+      { type: 'miss', target: 'e0' },
+    ];
+    expect(battleLines(log, () => '苔蘚史萊姆')).toEqual(['苔蘚史萊姆 受到 30 傷害（暴擊）', '苔蘚史萊姆 受到 45 傷害（弱點）（暴擊）', '苔蘚史萊姆 閃過了攻擊']);
+  });
 });

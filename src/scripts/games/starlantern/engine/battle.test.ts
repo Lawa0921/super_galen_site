@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, turnOrder, writeBack } from './battle';
 import { ULTIMATES } from '../data/ultimates';
-import { newParty } from './party';
-import { constRng, makeBattle, makeCombatant } from './testing';
+import { ENEMIES } from '../data/enemies';
+import { newParty, powersOf, sheetOf } from './party';
+import { applyEffect } from './skills';
+import { depthLevel, homeLevel } from './scaling';
+import { SECONDARY_KEYS } from './stats';
+import type { BattleEvent } from './combatant';
+import { constRng, makeBattle, makeCombatant, plainItem } from './testing';
 
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
@@ -19,6 +24,44 @@ describe('createBattle', () => {
     expect(s.party.find((c) => c.key === 'liz')!.alive).toBe(false);
     expect(s.enemies.map((e) => [e.key, e.name])).toEqual([['e0', '苔蘚史萊姆 A'], ['e1', '苔蘚史萊姆 B'], ['e2', '遺跡蝙蝠']]);
     expect(s.outcome).toBe('ongoing');
+  });
+});
+
+describe('derived stats in battle', () => {
+  it("members fight with their sheet's secondaries and level; enemies with the fight's depth level", () => {
+    const party = newParty();
+    const ring = { ...plainItem('copper-ring', 1), affixes: [{ key: 'crit' as const, value: 12 }, { key: 'armor' as const, value: 30 }] };
+    const neck = { ...plainItem('moss-charm', 2), rarity: 'legendary' as const, special: 'lg-scarlet' };
+    party.roster.scarlet = { ...party.roster.scarlet, level: 7, equip: { ring1: ring, neck } };
+    const s = createBattle({ party, enemyIds: ['slime', 'lanterneater'], inventory: {}, revealed: {}, scale: { depth: 3, region: 'mainline' } });
+    const sc = s.party.find((c) => c.key === 'scarlet')!;
+    const sheet = sheetOf(party.roster.scarlet);
+    expect(sc.level).toBe(7);
+    expect(sc.x.crit).toBe(12);
+    expect(sc.x.critDmg).toBe(50);
+    for (const k of SECONDARY_KEYS) expect(sc.x[k] ?? 0, k).toBe(sheet[k]);
+    expect(sc.powers).toEqual(powersOf(party.roster.scarlet));
+    expect(sc.powers).toEqual(['lg-scarlet']);
+    expect(s.party.find((c) => c.key === 'noel')!.level).toBe(1);
+    expect(s.enemies.map((e) => [e.level, e.x, e.powers])).toEqual([[depthLevel(3), {}, []], [depthLevel(3), {}, []]]);
+    // Without a scale, an enemy is met at its home level.
+    const plain = createBattle({ party, enemyIds: ['slime', 'lanterneater'], inventory: {}, revealed: {} });
+    expect(plain.enemies.map((e) => e.level)).toEqual([homeLevel(ENEMIES.slime), homeLevel(ENEMIES.lanterneater)]);
+  });
+
+  it('multi adds one hit only to single-hit effects', () => {
+    const hits = (eff: { hits?: number }, multi: number) => {
+      const log: BattleEvent[] = [];
+      const foe = E('e0', { max: { hp: 9999 } as never });
+      applyEffect(P('p', { x: { multi } }), foe, { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: true, ...eff }, { rng: constRng(0.5), itemBoost: false, revealed: {}, log });
+      return log.filter((e) => e.type === 'damage').length;
+    };
+    expect(hits({}, 100)).toBe(2);
+    expect(hits({ hits: 1 }, 100)).toBe(2);
+    expect(hits({ hits: 2 }, 100)).toBe(2);
+    expect(hits({ hits: 3 }, 100)).toBe(3);
+    expect(hits({}, 40)).toBe(1);   // 0.5 is not under 0.4
+    expect(hits({}, 0)).toBe(1);
   });
 });
 

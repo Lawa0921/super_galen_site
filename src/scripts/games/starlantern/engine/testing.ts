@@ -13,6 +13,7 @@ export function makeCombatant(p: Partial<Combatant> & { key: string; side: Comba
   return {
     defId: p.side === 'enemy' ? 'slime' : 'scarlet', name: p.key, hp: max.hp, tp: max.tp, row: 'front', melee: true,
     weak: [], resist: [], boss: false, alive: true, poison: false, sleep: 0, buffs: [], taunt: 0, turret: null, defending: false, limit: 0,
+    x: {}, level: 1, powers: [],
     ...p, max,
   };
 }
