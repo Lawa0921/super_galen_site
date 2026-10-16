@@ -12,6 +12,8 @@ export const T = {
   CHEST: 24, POT: 25, FLOWER: 26, TALL_GRASS: 27, MUSHROOM: 28, SMALL_ROCK: 29, BUSH: 30,
   PUMPKIN: 31, CACTUS: 32, DEAD_BUSH: 33, SNOW_SHRUB: 34, FERN: 35, VINE: 36,
   GLOW_MUSHROOM: 37, CRYSTAL: 38, STALACTITE: 39, STALAGMITE: 40, COBWEB: 41, BEAM: 42,
+  // ── 迷你生態區 ──
+  MUSHROOM_GRASS: 43,
 } as const;
 export type TileId = (typeof T)[keyof typeof T];
 
@@ -119,6 +121,7 @@ export const TILES: readonly TileDef[] = [
   decor(T.STALAGMITE, 'stalagmite', n('石筍', 'Stalagmite'), 'floor', null, '#707490', { hardness: 0.1 }),
   decor(T.COBWEB, 'cobweb', n('蜘蛛網', 'Cobweb'), 'none', null, '#b4b9c8', { hardness: 0.05, replaceable: true }),
   decor(T.BEAM, 'beam', n('木樑', 'Wooden Beam'), 'none', 'wood', '#7c4c2e', { hardness: 0.5 }),
+  block(T.MUSHROOM_GRASS, 'mushroom_grass', n('蘑菇草', 'Mushroom Grass'), 0.4, 'mud', '#4aaeb0'),
 ];
 
 export const WALLS: readonly WallDef[] = [
@@ -142,7 +145,7 @@ for (const t of TILES) {
   SOLID_LUT[t.id] = t.solid ? 1 : 0;
   BLOCKS_LIGHT_LUT[t.id] = t.blocksLight ? 1 : 0;
   LIGHT_LUT[t.id] = t.light;
-  DECOR_LUT[t.id] = t.id >= T.CHEST || t.id === T.WORKBENCH ? 1 : 0;
+  DECOR_LUT[t.id] = !t.solid && (t.id >= T.CHEST || t.id === T.WORKBENCH) ? 1 : 0;
 }
 
 export function tileDef(id: number): TileDef {

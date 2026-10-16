@@ -5,7 +5,7 @@ import { ITEMS, itemDef, isItemId, type ItemId } from './items';
 import { RECIPES, findRecipe } from './crafting';
 import { potLoot, chestLoot, CHEST_SLOTS } from './loot';
 
-const MATERIALS = ['SILVER_ORE', 'GOLD_ORE', 'CLAY', 'GRAVEL', 'GRANITE', 'MARBLE', 'SANDSTONE', 'SNOW', 'ICE', 'MUD', 'JUNGLE_GRASS', 'STONE_BRICK'] as const;
+const MATERIALS = ['SILVER_ORE', 'GOLD_ORE', 'CLAY', 'GRAVEL', 'GRANITE', 'MARBLE', 'SANDSTONE', 'SNOW', 'ICE', 'MUD', 'JUNGLE_GRASS', 'STONE_BRICK', 'MUSHROOM_GRASS'] as const;
 const DECOR = ['FLOWER', 'TALL_GRASS', 'MUSHROOM', 'SMALL_ROCK', 'BUSH', 'PUMPKIN', 'CACTUS', 'DEAD_BUSH', 'SNOW_SHRUB', 'FERN',
   'VINE', 'GLOW_MUSHROOM', 'CRYSTAL', 'STALACTITE', 'STALAGMITE', 'COBWEB', 'POT', 'CHEST', 'BEAM'] as const;
 
@@ -20,6 +20,7 @@ describe('新 tile', () => {
       expect(d.name.zh.length).toBeGreaterThan(0);
     }
     expect(tileDef(T.JUNGLE_GRASS).drop).toBe('mud');
+    expect(tileDef(T.MUSHROOM_GRASS).drop).toBe('mud');
   });
   it('id 與陣列索引一致、全部 < 256', () => {
     TILES.forEach((t, i) => expect(t.id).toBe(i));

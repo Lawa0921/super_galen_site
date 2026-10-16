@@ -5,7 +5,7 @@ import { ITEMS } from './items';
 import type { Stack } from './inventory';
 
 export const CHEST_SLOTS = 20;
-export type ChestKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern';
+export type ChestKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'sky';
 export interface Drop { item: ItemId; n: number; }
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -41,7 +41,7 @@ export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, d
     slots[k++] = { item, count: Math.min(count, ITEMS[item].maxStack) };
   };
   // 主獎：越深越好的礦
-  const main: ItemId = d > 0.7 && r.chance(2) ? 'gold_ore' : d > 0.45 ? 'silver_ore' : d > 0.2 ? 'iron_ore' : 'copper_ore';
+  const main: ItemId = kind === 'sky' ? (r.chance(2) ? 'gold_ore' : 'silver_ore') : d > 0.7 && r.chance(2) ? 'gold_ore' : d > 0.45 ? 'silver_ore' : d > 0.2 ? 'iron_ore' : 'copper_ore';
   put(main, r.int(6, 14));
   if (kind === 'ruin' || r.chance(3)) put(r.chance(2) ? 'iron_ore' : 'copper_ore', r.int(4, 10));
   put('torch', r.int(6, 20));
@@ -49,7 +49,8 @@ export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, d
   if (r.next() < 0.35 + d * 0.5) put('silver_coin', r.int(1, 4) + Math.floor(d * 6));
   if (kind === 'mineshaft') put('planks', r.int(10, 30));
   if (kind === 'cabin') put(r.chance(2) ? 'mushroom' : 'glow_mushroom', r.int(1, 4));
-  if (kind === 'cavern' || d > 0.5) put('crystal', r.int(1, 4));
+  if (kind === 'cavern' || kind === 'sky' || d > 0.5) put('crystal', r.int(1, 4));
+  if (kind === 'sky') put('silver_coin', r.int(3, 9));
   if (r.chance(5)) put('chest', 1);
   return slots;
 }
