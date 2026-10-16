@@ -10,7 +10,7 @@ import { ULTIMATES } from '../data/ultimates';
 import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { depthLevel, homeLevel, regionTint, scaleEnemy } from './scaling';
+import { depthLevel, empower, homeLevel, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, stackMods, type EffectContext } from './skills';
 import { nodeMods, rankMod } from './progression';
@@ -94,11 +94,12 @@ export function createBattle(o: {
   const enemies = o.enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
-    const d = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']) : ENEMIES[id];
+    const met = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']) : ENEMIES[id];
+    // An enemy is met at the fight's depth level, or at its own home level when the fight has no scale.
+    const level = sc ? depthLevel(sc.depth) : homeLevel(met);
+    const d = empower(met, level);
     defs[`e${i}`] = d;
     const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
-    // An enemy is met at the fight's depth level, or at its own home level when the fight has no scale.
-    const level = sc ? depthLevel(sc.depth) : homeLevel(d);
     return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
   });
   const s: BattleState = {

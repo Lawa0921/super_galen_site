@@ -6,7 +6,7 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, newParty } from './party';
 import { mulberry32 } from './rng';
-import { DEPTH_CLEAR_SHARE, NORMAL_ENEMIES, REGION_DROP_CHANCE, depthClearExp, depthLevel, encounterGroup, scaleEnemy } from './scaling';
+import { DEPTH_CLEAR_SHARE, ENEMY_POWER, NORMAL_ENEMIES, REGION_DROP_CHANCE, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, scaleEnemy } from './scaling';
 import { constRng } from './testing';
 
 const MAIN = REGIONS.mainline;
@@ -160,7 +160,7 @@ describe('createBattle with scale', () => {
 
   it('regional variants carry the scaled numbers, the region element as tint, and letters on duplicates', () => {
     const s = battle(['wolf', 'wolf'], { depth: 6, region: 'blaze' });
-    const w = scaleEnemy(wolf, 6, REGIONS.blaze, false);
+    const w = empower(scaleEnemy(wolf, 6, REGIONS.blaze, false), depthLevel(6));   // ENEMY_POWER comes last
     expect(s.enemies.map((e) => e.name)).toEqual([`${w.name} A`, `${w.name} B`]);
     expect(s.enemies[0].max).toEqual(w.stats);
     expect([s.enemies[0].hp, s.enemies[0].resist, s.enemies[0].weak, s.enemies[0].tint]).toEqual([w.stats.hp, ['fire'], ['ice'], 'fire']);
@@ -237,5 +237,34 @@ describe('depthClearExp', () => {
     const exp = depthClearExp(1000);
     expect(Number.isFinite(exp)).toBe(true);
     expect(exp).toBeGreaterThan(0);
+  });
+});
+
+describe('ENEMY_POWER', () => {
+  it('is 1 up to its start level, then 1 + amount above it', () => {
+    expect(enemyPower(1)).toBe(1);
+    expect(enemyPower(ENEMY_POWER.from)).toBe(1);
+    expect(enemyPower(ENEMY_POWER.from + 1)).toBe(1 + ENEMY_POWER.amount);
+    expect(enemyPower(50)).toBe(1 + ENEMY_POWER.amount);
+    expect(ENEMY_POWER.amount).toBeGreaterThan(0);
+  });
+
+  it("scales every enemy's HP, atk and mag in a fight, bosses included, at the level it is met", () => {
+    const at = (enemyIds: string[], scale?: { depth: number; region: RegionId }) =>
+      createBattle({ party: newParty(), enemyIds, inventory: {}, revealed: {}, ...(scale ? { scale } : {}) }).enemies[0];
+    // The boss is met at its home level without a scale.
+    const boss = at(['lanterneater']);
+    const k = enemyPower(boss.level);
+    expect(k).toBeGreaterThan(1);
+    const d = ENEMIES.lanterneater.stats;
+    expect([boss.max.hp, boss.hp, boss.max.atk, boss.max.mag]).toEqual([Math.round(d.hp * k), Math.round(d.hp * k), Math.round(d.atk * k), Math.round(d.mag * k)]);
+    expect([boss.max.def, boss.max.res, boss.max.spd]).toEqual([d.def, d.res, d.spd]);
+    // A scaled fight: the scaled monster, then the multiplier at the depth level.
+    const deep = at(['slime'], { depth: 4, region: 'mainline' });
+    const sc = scaleEnemy(ENEMIES.slime, 4, REGIONS.mainline, false).stats;
+    const kd = enemyPower(depthLevel(4));
+    expect([deep.max.hp, deep.max.atk, deep.max.def]).toEqual([Math.round(sc.hp * kd), Math.round(sc.atk * kd), sc.def]);
+    // A floor-1 monster at home is untouched.
+    expect(at(['slime']).max).toEqual(ENEMIES.slime.stats);
   });
 });

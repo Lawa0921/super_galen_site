@@ -13,7 +13,7 @@ import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
 import { activeIds, gainExp, MAX_LEVEL, newMember, recruit } from './party';
-import { depthClearExp } from './scaling';
+import { depthClearExp, empower } from './scaling';
 import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/drops';
@@ -380,7 +380,8 @@ describe('battles', () => {
     const g = inMap(3);
     stepOnto(g, g.map().boss!);
     const b = g.battle!.enemies[0];
-    expect([b.name, b.max, b.tint]).toEqual(['燈喰之獸', ENEMIES.lanterneater.stats, undefined]);
+    // Not grown by depth or region; only ENEMY_POWER at its level applies.
+    expect([b.name, b.max, b.tint]).toEqual(['燈喰之獸', empower(ENEMIES.lanterneater, b.level).stats, undefined]);
   });
   it('a region boss is the 燈喰之獸 grown by depth and region', () => {
     const g = new Game(calm(), null);
