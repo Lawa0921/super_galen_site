@@ -19,4 +19,10 @@ describe('fogState', () => {
     expect(fogState(explored, pos, 3, 1)).toBe('memory');
     expect(fogState(explored, pos, 5, 5)).toBe('memory');
   });
+
+  it('with sight 0 (the 濃霧 condition) only the party\'s own cell is in sight; the rest it saw is remembered', () => {
+    expect(fogState(explored, pos, 1, 1, 0)).toBe('visible');
+    expect(fogState(explored, pos, 2, 1, 0)).toBe('memory');
+    expect(fogState(explored, pos, 4, 4, 0)).toBe('hidden');
+  });
 });

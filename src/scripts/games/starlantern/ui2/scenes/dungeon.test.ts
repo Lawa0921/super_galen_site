@@ -4,6 +4,8 @@ import type { Portal } from '../../engine/dungeon/run';
 import { DELTA, tileAt } from '../../engine/map';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
+import { capacity, carried, weightOf } from '../../data/weights';
+import { MATERIALS } from '../../data/materials';
 import { DungeonScene } from './dungeon';
 
 function setup(portal: Portal = { region: 'mainline', condition: 'plain' }) {
@@ -187,5 +189,59 @@ describe('DungeonScene', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('DungeonScene readouts', () => {
+  const kg = (n: number) => String(Math.round(n * 10) / 10);
+
+  it('shows the carried weight above the key hint, yellow over 80% and red when full', () => {
+    const { game, root, s } = setup();
+    const w = root.querySelector('.slx-weight')!;
+    const cap = capacity(game.state.party);
+    expect(w.textContent).toBe(`重量 ${kg(carried(game.state, game.run!))}／${kg(cap)}`);
+    expect(w.classList.contains('slx-weight-heavy')).toBe(false);
+    for (let i = 0; i < 8 && game.move('up').kind === 'moved'; i++);   // to the room's top wall: bumping it refreshes without leaving
+    const mat = Object.keys(MATERIALS).find((id) => weightOf(id) === 0.5)!;
+    const fill = (target: number) => { game.run!.loot.items[mat] = 0; game.run!.loot.items[mat] = Math.ceil((target - carried(game.state, game.run!)) / 0.5); };
+    fill(cap * 0.85);
+    s.onAction('up');   // any step (or bump) refreshes the readout
+    expect(w.textContent).toBe(`重量 ${kg(carried(game.state, game.run!))}／${kg(cap)}`);
+    expect(w.classList.contains('slx-weight-heavy')).toBe(true);
+    expect(w.classList.contains('slx-weight-full')).toBe(false);
+    fill(cap);
+    s.onAction('up');
+    expect(w.classList.contains('slx-weight-full')).toBe(true);
+    expect(w.classList.contains('slx-weight-heavy')).toBe(false);
+  });
+
+  it('keeps the run condition in a corner badge; its description shows on hover or focus and in the field menu', () => {
+    const { root, s, text, pick } = setup({ region: 'mainline', condition: 'fog' });
+    const badge = root.querySelector<HTMLElement>('.slx-condition')!;
+    const tip = root.querySelector<HTMLElement>('.slx-condition-tip')!;
+    expect(badge.textContent).toBe('濃霧');
+    expect(badge.getAttribute('tabindex')).toBe('0');
+    expect(badge.getAttribute('aria-describedby')).toBe(tip.id);
+    expect(tip.getAttribute('role')).toBe('tooltip');
+    expect(tip.textContent).toBe('視野只有自己這一格，遇敵率 -20%');
+    expect(tip.hidden).toBe(true);
+    badge.dispatchEvent(new Event('mouseenter'));
+    expect(tip.hidden).toBe(false);
+    badge.dispatchEvent(new Event('mouseleave'));
+    expect(tip.hidden).toBe(true);
+    badge.dispatchEvent(new Event('focus'));
+    expect(tip.hidden).toBe(false);
+    badge.dispatchEvent(new Event('blur'));
+    expect(tip.hidden).toBe(true);
+    s.onAction('menu');
+    pick('本次狀況');
+    expect(text()).toBe('濃霧：視野只有自己這一格，遇敵率 -20%');
+  });
+
+  it('has a 120×88 minimap canvas in the top-right', () => {
+    const { root } = setup();
+    const c = root.querySelector<HTMLCanvasElement>('canvas.slx-minimap')!;
+    expect([c.width, c.height]).toEqual([120, 88]);
+    expect(c.getAttribute('style')).toBeNull();
   });
 });

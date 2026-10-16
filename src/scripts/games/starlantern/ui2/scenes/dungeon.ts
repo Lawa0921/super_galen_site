@@ -2,6 +2,7 @@ import { CHARACTERS } from '../../data/characters';
 import { CONDITIONS } from '../../data/conditions';
 import { FLOORS } from '../../data/floors';
 import { ITEMS } from '../../data/items';
+import { capacity, carried } from '../../data/weights';
 import { T } from '../../data/text.zh-TW';
 import { floorOf } from '../../engine/dungeon/run';
 import { step, type Dir } from '../../engine/map';
@@ -12,6 +13,7 @@ import type { CharacterId } from '../../engine/types';
 import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
+import { Minimap } from '../minimap';
 import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
@@ -22,6 +24,9 @@ const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
 const CONDITION_BANNER_MS = 2000;
 const FLASH_MS = 450;
+/** The readout turns yellow past this share of the carry limit, red at the limit. */
+const HEAVY_SHARE = 0.8;
+const kg = (n: number) => String(Math.round(n * 10) / 10);
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Labyrinth: map on the Pixi stage, party bar, floor name, encounter lamp, events as dialogue, a field menu. */
@@ -33,6 +38,8 @@ export class DungeonScene implements Scene {
   private floorName!: HTMLElement;
   private pad!: HTMLElement;
   private backEl!: HTMLElement;
+  private weightEl!: HTMLElement;
+  private minimap!: Minimap;
   private layers: Layer[] = [];
   private talk: Dialogue;
   private leaving = false;
@@ -53,7 +60,11 @@ export class DungeonScene implements Scene {
     this.backEl = backControl(() => this.onAction('cancel'));
     this.backEl.hidden = true;
     const hint = el('p', { class: 'slx-keyhint', text: T.ui2.hints.dungeon });
-    this.body = el('div', { class: 'slx-scene slx-dungeon' }, [this.floorName, this.lamp, menuBtn, this.backEl, hint, this.pad, this.bar.el, this.talk.el]);
+    this.weightEl = el('p', { class: 'slx-weight', attrs: { 'aria-live': 'polite' } });
+    this.minimap = new Minimap();
+    this.body = el('div', { class: 'slx-scene slx-dungeon' }, [
+      this.floorName, ...this.conditionBadge(), this.lamp, menuBtn, this.minimap.el, this.backEl, this.weightEl, hint, this.pad, this.bar.el, this.talk.el,
+    ]);
     root.append(this.body);
     this.ctx.stage?.show('map');
     this.refresh();
@@ -97,6 +108,43 @@ export class DungeonScene implements Scene {
       return { key: id, name: CHARACTERS[id].name, hp: m.hp, maxHp: st.hp, tp: m.tp, maxTp: st.tp, limit: m.limit ?? 0, alive: m.hp > 0, row: rowOfCell(p.grid.indexOf(id)) };
     }));
     this.ctx.stage?.mapView.draw(g, { width: 640, height: 296 });
+    this.minimap.draw(g);
+    this.showWeight();
+  }
+
+  /** Carried weight against the limit; refreshed after every step, pick-up, discard and battle (the scene is re-entered). */
+  private showWeight(): void {
+    const g = this.ctx.game;
+    const run = g.run;
+    this.weightEl.hidden = !run;
+    if (!run) return;
+    const w = carried(g.state, run), cap = capacity(g.state.party);
+    this.weightEl.textContent = T.ui2.dungeon.weight(kg(w), kg(cap));
+    this.weightEl.classList.toggle('slx-weight-full', w >= cap);
+    this.weightEl.classList.toggle('slx-weight-heavy', w < cap && w > cap * HEAVY_SHARE);
+  }
+
+  /**
+   * The run condition's corner badge. Its description shows in a tooltip window on hover or keyboard focus; the field
+   * menu also has a 本次狀況 line that says it, for players who only use the game keys.
+   */
+  private conditionBadge(): HTMLElement[] {
+    const run = this.ctx.game.run;
+    if (!run) return [];
+    const c = CONDITIONS[run.condition];
+    const tip = win('slx-condition-tip', [document.createTextNode(c.desc)]);
+    tip.id = 'slx-condition-tip';
+    tip.setAttribute('role', 'tooltip');
+    tip.hidden = true;
+    const badge = win(`slx-condition slx-cond-${c.id}`, [document.createTextNode(c.name)]);
+    badge.setAttribute('tabindex', '0');
+    badge.setAttribute('aria-describedby', tip.id);
+    const show = (on: boolean) => () => { tip.hidden = !on; };
+    badge.addEventListener('mouseenter', show(true));
+    badge.addEventListener('mouseleave', show(false));
+    badge.addEventListener('focus', show(true));
+    badge.addEventListener('blur', show(false));
+    return [badge, tip];
   }
 
   private say(text: string): void {
@@ -243,14 +291,17 @@ export class DungeonScene implements Scene {
     const g = this.ctx.game;
     const d = T.ui2.dungeon;
     const lamps = g.state.inventory['return-lamp'] ?? 0;
+    const cond = g.run ? CONDITIONS[g.run.condition] : null;
     this.list([
       { id: 'status', label: d.status },
       { id: 'items', label: d.items, disabled: this.usableItems().length === 0 },
       { id: 'lamp', label: d.lamp(lamps), disabled: lamps <= 0 },
+      ...(cond ? [{ id: 'condition', label: d.conditionItem(cond.name) }] : []),
       { id: 'settings', label: T.ui2.title.settings },
       { id: 'close', label: d.close },
     ], (it) => {
       if (it.id === 'close') { this.pop(); return; }
+      if (it.id === 'condition' && cond) { this.popAll(); this.say(d.conditionLine(cond.name, cond.desc)); return; }
       if (it.id === 'lamp') { this.askLamp(); return; }
       if (it.id === 'settings') { this.popAll(); this.leaving = true; this.ctx.go('settings'); return; }
       if (it.id === 'items') { this.itemList(); return; }

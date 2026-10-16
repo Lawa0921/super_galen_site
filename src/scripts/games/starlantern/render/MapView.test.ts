@@ -7,6 +7,7 @@ import { floorOf } from '../engine/dungeon/run';
 import { constRng } from '../engine/testing';
 import { fogState } from './fog';
 import { MAP_CELL, MapView, tileColor } from './MapView';
+import { MARKER_GLYPH } from './markers';
 import type { TextureBank } from './textures';
 
 const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
@@ -175,5 +176,88 @@ describe('MapView runs', () => {
     expect(game.map().width).not.toBe(first);
     view.draw(game, { width: 640, height: 296 });
     expect(fogWidth(view)).toBe((game.map().width + 28) * MAP_CELL);
+  });
+});
+
+describe('MapView event markers', () => {
+  const SIZE = { width: 640, height: 296 };
+  /** Every texture but the event art and the chest tile, so markers fall back to text glyphs. */
+  const noEventArt = { get: (u: string) => (u.includes('/tiles/event-') || u.endsWith('-chest.png') ? null : Texture.WHITE), has: () => true } as unknown as TextureBank;
+  const exploreAll = (game: Game) => {
+    const m = game.map();
+    const all: string[] = [];
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) all.push(`${x},${y}`);
+    game.run!.explored[game.floor] = all;
+  };
+  const stepOnto = (game: Game, at: { x: number; y: number }) => {
+    const dir = (['up', 'down', 'left', 'right'] as const).find((d) => !['wall', 'trap'].includes(tileAt(game.map(), { x: at.x - DELTA[d].x, y: at.y - DELTA[d].y })))!;
+    game.pos = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
+    return game.move(dir);
+  };
+
+  it('markers are drawn for seen contents and never for an untriggered trap', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart({ region: 'mainline', condition: 'calm' }, 1);   // 靜謐: one extra trap
+    const contents = floorOf(game.run!, 1).contents;
+    const trap = contents.find((c) => c.kind === 'trap')!;
+    expect(trap).toBeDefined();
+    const view = new MapView(noEventArt);
+    view.draw(game, SIZE);
+    expect(view.markerGlyphs()).toEqual([]);   // nothing seen yet away from the entrance
+    exploreAll(game);
+    view.draw(game, SIZE);
+    const want = contents.filter((c) => c.kind !== 'trap').map((c) => MARKER_GLYPH[c.kind as keyof typeof MARKER_GLYPH]);
+    expect(view.markerGlyphs().sort()).toEqual(want.sort());
+    expect(view.markerGlyphs()).not.toContain('陷');
+    expect(stepOnto(game, trap.at).kind).toBe('trap');
+    view.draw(game, SIZE);
+    expect(view.markerGlyphs()).toContain('陷');
+  });
+
+  it('draws the event art instead of a glyph once it has loaded, and plain floor under every event tile', () => {
+    const urls: string[] = [];
+    const spy = { get: (u: string) => { urls.push(u); return Texture.WHITE; }, has: () => true } as unknown as TextureBank;
+    const game = new Game(constRng(0.99), null);
+    game.depart({ region: 'mainline', condition: 'calm' }, 1);
+    exploreAll(game);
+    const view = new MapView(spy);
+    view.draw(game, SIZE);
+    expect(view.markerGlyphs()).toEqual([]);
+    const labels = view.markerLabels();
+    for (const c of floorOf(game.run!, 1).contents) {
+      if (c.kind === 'trap') expect(labels).not.toContain('event-trap');
+      else if (c.kind !== 'chest') expect(labels).toContain(`event-${c.kind}`);
+    }
+    const tileUrls = urls.filter((u) => /\/tiles\/f\d-/.test(u));
+    expect(tileUrls.some((u) => /-(fountain|trap|merchant|altar|elite|vault|key)\.png$/.test(u))).toBe(false);
+  });
+
+  it('a spent chest shows its open tile and no marker', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(MAIN, 1);
+    const chest = floorOf(game.run!, 1).contents.find((c) => c.kind === 'chest')!.at;
+    exploreAll(game);
+    const view = new MapView(noEventArt);
+    view.draw(game, SIZE);
+    expect(view.markerGlyphs()).toContain('箱');
+    expect(stepOnto(game, chest).kind).toBe('chest');
+    view.draw(game, SIZE);
+    expect(view.markerGlyphs()).not.toContain('箱');
+  });
+});
+
+describe('MapView under 濃霧', () => {
+  it('draws only the party\'s own cell bright; every other seen cell is remembered', () => {
+    const fog = new Game(constRng(0.99), null);
+    fog.depart({ region: 'mainline', condition: 'fog' }, 1);
+    const view = new MapView(bank);
+    view.draw(fog, { width: 640, height: 296 });
+    expect(view.tileCount()).toBeGreaterThan(1);   // the reveal radius is unchanged
+    expect(view.brightCount()).toBe(1);
+    const plain = new Game(constRng(0.99), null);
+    plain.depart(MAIN, 1);
+    const v2 = new MapView(bank);
+    v2.draw(plain, { width: 640, height: 296 });
+    expect(v2.brightCount()).toBeGreaterThan(1);
   });
 });

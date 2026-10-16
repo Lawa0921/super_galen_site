@@ -1,8 +1,10 @@
-import { Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
+import { CONDITIONS } from '../data/conditions';
 import type { Game } from '../engine/game';
 import type { FloorMap, Tile } from '../engine/map';
 import { art, tileKey } from './artPaths';
 import { fogState } from './fog';
+import { MARKER_GLYPH, markersOf, type MarkerKind } from './markers';
 import type { TextureBank } from './textures';
 
 const COLORS: Partial<Record<Tile, number>> = {
@@ -20,6 +22,11 @@ export const MAP_CELL = 48;
 /** Fog reaches this many cells past the map edge so the view never shows bare black around a small floor. */
 const FOG_PAD = 14;
 const HOP_FRAMES = 10;
+/** Tile kinds that stand on plain floor: the floor is drawn under them and a marker on top. */
+const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key']);
+/** Text marker colours: danger in red, everything else in the UI gold. */
+const GLYPH_FILL: Partial<Record<MarkerKind, number>> = { elite: 0xff8a6a, trap: 0xff7a6b };
+const GLYPH_FONT = ['Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', 'sans-serif'];
 
 function dim(color: number): number {
   const r = (color >> 16) & 0xff, g = (color >> 8) & 0xff, b = color & 0xff;
@@ -38,6 +45,11 @@ export class MapView {
   /** Dark gradients along explored cells that border the fog, so the edge fades instead of cutting off. */
   private edges = new Container();
   private edgeTex: Texture | null = null;
+  /** Event markers: art with a gentle bob and glow once published, text glyphs until then. */
+  private marks = new Container();
+  private bobbing: { s: Sprite; y: number; phase: number }[] = [];
+  private clock = 0;
+  private bright = 0;
   private marker = new Container();
   private dot = new Graphics();
   private icon = new Sprite();
@@ -50,7 +62,7 @@ export class MapView {
   /** `calm`: reduced motion, no hop while walking. */
   constructor(private bank: TextureBank | null = null, private calm = false) {
     this.marker.addChild(this.dot, this.icon);
-    this.world.addChild(this.tiles, this.edges, this.marker);
+    this.world.addChild(this.tiles, this.edges, this.marks, this.marker);
     this.root.addChild(this.world);
   }
 
@@ -62,6 +74,21 @@ export class MapView {
   /** Tiles drawn for the cells the party has seen (for tests and diagnostics). */
   tileCount(): number {
     return this.tiles.children.length;
+  }
+
+  /** Cells drawn at full brightness (in sight) on the last draw (for tests). */
+  brightCount(): number {
+    return this.bright;
+  }
+
+  /** Text glyphs of the markers on the last draw (for tests). */
+  markerGlyphs(): string[] {
+    return this.marks.children.filter((c): c is Text => c instanceof Text).map((t) => t.text);
+  }
+
+  /** Labels of the markers on the last draw: `event-<kind>` for art, `glyph-<kind>` for text (for tests). */
+  markerLabels(): string[] {
+    return this.marks.children.map((c) => c.label);
   }
 
   /** Fog edges drawn on the last draw (for tests). */
@@ -79,12 +106,16 @@ export class MapView {
     const fogArrived = this.fogLayer instanceof Graphics && !!this.bank?.get(art.fog);   // the art streamed in after the first draw
     if (fresh || fogArrived) this.layFog(map.width, map.height);
     this.drawn = map;
+    const sight = game.run ? CONDITIONS[game.run.condition].sight : 1;
     for (const s of this.tiles.removeChildren()) s.destroy();
+    this.bright = 0;
     for (let y = 0; y < map.height; y++) {
       for (let x = 0; x < map.width; x++) {
-        const state = fogState(seen, game.pos, x, y);
+        const state = fogState(seen, game.pos, x, y, sight);
         if (state === 'hidden') continue;   // the fog layer underneath shows through
-        const t = map.tiles[y][x];
+        if (state === 'visible') this.bright++;
+        const raw = map.tiles[y][x];
+        const t: Tile = ON_FLOOR.has(raw) ? 'floor' : raw;   // event tiles: floor first, the marker on top
         const opened = t === 'chest' && !!game.run?.opened.has(`${game.floor}:${x},${y}`);
         const wall = t === 'wall' ? this.wallSprite(map, terrain, x, y) : null;
         const tex = wall ? null : this.bank?.get(art.tile(terrain, tileKey(t, opened))) ?? null;
@@ -102,6 +133,7 @@ export class MapView {
     }
     this.drawEdges(game, seen);
     this.drawWallShadows(game, seen);
+    this.drawMarkers(game, seen, sight);
     const tex = this.bank?.get(art.party(game.facing)) ?? null;
     this.dot.clear();
     this.icon.visible = !!tex;
@@ -120,6 +152,40 @@ export class MapView {
     else if (!this.calm && (tx !== this.target.x || ty !== this.target.y)) this.hop = HOP_FRAMES;
     this.target = { x: tx, y: ty };
     this.follow();
+  }
+
+  /** Markers on seen cells: the event art when it has loaded, else a text glyph. A chest's own tile art is its marker. */
+  private drawMarkers(game: Game, seen: ReadonlySet<string>, sight: number): void {
+    for (const c of this.marks.removeChildren()) c.destroy();
+    this.bobbing = [];
+    const cell = MAP_CELL;
+    const chestArt = !!this.bank?.get(art.tile(game.terrain(), 'chest'));
+    for (const m of markersOf(game)) {
+      if (m.kind === 'chest' && chestArt) continue;
+      const memory = fogState(seen, game.pos, m.x, m.y, sight) === 'memory';
+      const cx = m.x * cell + cell / 2, cy = m.y * cell + cell / 2;
+      const tex = m.kind === 'chest' ? null : this.bank?.get(art.eventTile(m.kind)) ?? null;
+      if (tex) {
+        const s = new Sprite(tex);
+        s.anchor.set(0.5);
+        s.width = cell; s.height = cell;
+        s.x = cx; s.y = cy;
+        s.label = `event-${m.kind}`;
+        if (memory) s.tint = MEMORY_TINT;
+        this.marks.addChild(s);
+        this.bobbing.push({ s, y: cy, phase: (m.x * 7 + m.y * 13) % 10 });
+        continue;
+      }
+      const t = new Text({
+        text: MARKER_GLYPH[m.kind],
+        style: { fontFamily: GLYPH_FONT, fontSize: 24, fontWeight: 'bold', fill: GLYPH_FILL[m.kind] ?? 0xe8c46a, stroke: { color: 0x14100a, width: 5 } },
+      });
+      t.anchor.set(0.5);
+      t.x = cx; t.y = cy;
+      t.alpha = memory ? 0.6 : 1;
+      t.label = `glyph-${m.kind}`;
+      this.marks.addChild(t);
+    }
   }
 
   /**
@@ -251,6 +317,13 @@ export class MapView {
     if (Math.abs(this.target.x - this.marker.x) < 0.5) this.marker.x = this.target.x;
     if (Math.abs(this.target.y - this.marker.y) < 0.5) this.marker.y = this.target.y;
     this.hop = Math.max(0, this.hop - dt);
+    this.clock += dt;
+    for (const b of this.bobbing) {
+      if (b.s.destroyed) continue;
+      const w = this.clock * 0.05 + b.phase;
+      b.s.y = this.calm ? b.y : b.y - 2 - Math.sin(w) * 2;
+      b.s.alpha = 0.88 + Math.sin(w * 0.8) * 0.12;
+    }
     const lift = Math.sin((this.hop / HOP_FRAMES) * Math.PI) * MAP_CELL * 0.12;
     this.dot.y = -lift;
     this.icon.y = MAP_CELL * 0.95 - lift;

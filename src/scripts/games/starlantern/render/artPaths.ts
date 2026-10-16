@@ -42,7 +42,12 @@ export const art = {
   window: `${ART_BASE}/ui/window.png`,
   cursor: `${ART_BASE}/ui/cursor.png`,
   fog: `${ART_BASE}/map/fog.png`,
+  /** Event marker art for the map (one cell, transparent). Not in allArtUrls() until the art is approved and published. */
+  eventTile: (k: EventTileKey) => `${ART_BASE}/tiles/event-${k}.png`,
 };
+
+/** Event tiles with art of their own in the art factory; a chest uses its terrain's chest tile instead. */
+export type EventTileKey = 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault' | 'vault-open' | 'key' | 'trap';
 
 export function tileKey(t: Tile, opened: boolean): TileKey {
   return t === 'chest' && opened ? 'chest-open' : t;

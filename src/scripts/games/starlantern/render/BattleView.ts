@@ -1,6 +1,9 @@
-import { ColorMatrixFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Rectangle, Sprite, Text, Texture, type ColorMatrix, type Filter } from 'pixi.js';
+import { GlowFilter, OutlineFilter } from 'pixi-filters';
+import { REGIONS, type RegionId } from '../data/regions';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
+import type { Combatant } from '../engine/combatant';
 import { art, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
 import type { TextureBank } from './textures';
@@ -13,8 +16,45 @@ function colorFor(defId: string): number {
   return PALETTE[h % PALETTE.length];
 }
 
+/** Colours of regional variants: the element's for fire, ice and thunder; by region for the element-less ones. */
+export const TINT_COLORS = {
+  fire: 0xff6a2a, ice: 0x5fe3f2, thunder: 0xffe14a,
+  mire: 0x8fd14f, shade: 0xa274ff, iron: 0x9ba8b8,
+} as const;
+const ELITE_GOLD = 0xffd34d;
+/** How far the colour matrix pulls the sprite toward its tint (the sprite must stay readable). */
+const TINT_MIX = 0.4;
+
+/** The tint colour of an enemy: by element, or for `phys` and elites by the run's region (mire, shade and iron are all `phys`). */
+function tintColor(tint: Combatant['tint'], region: RegionId | undefined): number | null {
+  if (!tint) return null;
+  if (tint === 'fire' || tint === 'ice' || tint === 'thunder') return TINT_COLORS[tint];
+  if (!region || region === 'mainline') return null;
+  const el = REGIONS[region].element;
+  if (el === 'fire' || el === 'ice' || el === 'thunder') return TINT_COLORS[el];
+  return region === 'mire' || region === 'shade' || region === 'iron' ? TINT_COLORS[region] : null;
+}
+
+/** A colour matrix that mixes the sprite toward `color` and lifts its shadows a little, keeping alpha. */
+function tintMatrix(color: number): ColorMatrix {
+  const r = ((color >> 16) & 0xff) / 255, g = ((color >> 8) & 0xff) / 255, b = (color & 0xff) / 255;
+  const k = TINT_MIX, lift = 0.05;
+  return [
+    1 - k + k * r, 0, 0, 0, lift * r,
+    0, 1 - k + k * g, 0, 0, lift * g,
+    0, 0, 1 - k + k * b, 0, lift * b,
+    0, 0, 0, 1, 0,
+  ];
+}
+
 /** One enemy in the picture: its sprite, an HP bar under its name, and its announced next move above its head. */
-interface Slot { box: Container; body: Container; texture: Texture | null; hp: number; max: number; bar: Graphics; intent: Text }
+interface Slot {
+  key: string; box: Container; body: Container; texture: Texture | null; hp: number; max: number; bar: Graphics; intent: Text;
+  name: Text;
+  /** Its regional colour and elite outline: always on; the hit flash and the target highlight are added on top. */
+  base: Filter[];
+  tint: { color: number | null; elite: boolean };
+}
 const BAR_W = 64;
 /** Nothing in the picture may rise above the message window. */
 const TOP_CLEAR = 52;
@@ -35,6 +75,8 @@ export class BattleView {
   private shattering: Promise<void>[] = [];
   private size = { width: 640, height: 360 };
   private lit = new Map<string, ColorMatrixFilter>();
+  /** Tint, glow and outline filters of the current battle, destroyed on the next setup. */
+  private tintFilters: Filter[] = [];
 
   /** Everything in the picture lives here; the shake moves this layer so it adds to the root's push-in. */
   private scene = new Container();
@@ -44,11 +86,16 @@ export class BattleView {
     this.root.addChild(this.scene);
   }
 
-  /** `left` and `bottom` reserve space (command window, party bar) so enemies and their names are never hidden behind them. */
-  setup(state: BattleState, size: { width: number; height: number }, floor: number, left = 0, bottom = 0): void {
+  /**
+   * `left` and `bottom` reserve space (command window, party bar) so enemies and their names are never hidden behind them.
+   * `region`: the run's region, which colours its variants (mire, shade and iron share the `phys` tint).
+   */
+  setup(state: BattleState, size: { width: number; height: number }, floor: number, left = 0, bottom = 0, region?: RegionId): void {
     this.size = size;
     for (const f of this.lit.values()) f.destroy();
     this.lit.clear();
+    for (const f of this.tintFilters) f.destroy();
+    this.tintFilters = [];
     for (const t of this.timers) clearTimeout(t);
     for (const f of this.frames) cancelAnimationFrame(f);
     this.timers.clear();
@@ -87,7 +134,9 @@ export class BattleView {
         const w = Math.min(160, slotW), h = w * 1.2;
         body.addChild(new Graphics().roundRect(-w / 2, -h, w, h, 12).fill(colorFor(e.defId)));
       }
-      const label = new Text({ text: e.name, style: { fill: 0xffffff, fontSize: 14, stroke: { color: 0x000000, width: 3 } } });
+      const elite = e.tint === 'elite';
+      const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
+      const label = new Text({ text: name, style: { fill: 0xffffff, fontSize: 14, stroke: { color: 0x000000, width: 3 } } });
       label.anchor.set(0.5, 0);
       const bar = new Graphics();
       bar.y = 19;
@@ -99,11 +148,50 @@ export class BattleView {
       box.alpha = e.alive ? 1 : 0;
       intent.y = Math.max(TOP_CLEAR - ground, -body.height - 30);
       this.scene.addChild(box);
-      const slot: Slot = { box, body, texture: tex, hp: e.hp, max: e.max.hp, bar, intent };
+      const color = tintColor(e.tint, region);
+      const base = this.tintFor(color, elite);
+      body.filters = base;
+      const slot: Slot = { key: e.key, box, body, texture: tex, hp: e.hp, max: e.max.hp, bar, intent, name: label, base, tint: { color, elite } };
       this.slots.set(e.key, slot);
       this.drawBar(slot);
     });
     if (!this.fast && !this.calm) this.alive(size);
+  }
+
+  /** A regional variant: a colour matrix toward its colour and a soft outer glow. An elite: a gold outline. */
+  private tintFor(color: number | null, elite: boolean): Filter[] {
+    const out: Filter[] = [];
+    if (color !== null) {
+      const m = new ColorMatrixFilter();
+      m.matrix = tintMatrix(color);
+      out.push(m);
+    }
+    if (elite) out.push(new OutlineFilter({ thickness: 2, color: ELITE_GOLD, quality: 0.2 }));
+    if (color !== null) out.push(new GlowFilter({ distance: 12, outerStrength: 2.4, innerStrength: 0, color, alpha: 0.75, quality: 0.3 }));
+    this.tintFilters.push(...out);
+    return out;
+  }
+
+  /** The always-on filters plus the target highlight, if this enemy has it. */
+  private layered(slot: Slot): Filter[] {
+    const lit = this.lit.get(slot.key);
+    return lit ? [...slot.base, lit] : [...slot.base];
+  }
+
+  /** An enemy's tint colour (null: none) and whether it is an elite (for tests). */
+  tintOf(key: string): { color: number | null; elite: boolean } {
+    return { ...(this.slots.get(key)?.tint ?? { color: null, elite: false }) };
+  }
+
+  /** Filters on an enemy's body right now (for tests). */
+  filtersOf(key: string): Filter[] {
+    const f = this.slots.get(key)?.body.filters;
+    return f ? [...(Array.isArray(f) ? f : [f])] : [];
+  }
+
+  /** The name shown under an enemy (for tests). */
+  nameOf(key: string): string {
+    return this.slots.get(key)?.name.text ?? '';
   }
 
   /** Point just above an enemy, in stage coordinates, for the DOM target cursor. */
@@ -160,12 +248,12 @@ export class BattleView {
   private flash(slot: Slot, hard = false): void {
     const f = new ColorMatrixFilter();
     f.brightness(3, false);
-    slot.body.filters = [f];
+    slot.body.filters = [...this.layered(slot), f];
     const x0 = slot.box.x;
     slot.box.x = x0 + (hard ? 14 : 9);
     this.later(50, () => { if (!slot.box.destroyed) slot.box.x = x0 + (hard ? -5 : -3); });
     this.later(100, () => { if (!slot.box.destroyed) slot.box.x = x0; });
-    this.later(110, () => { if (!slot.body.destroyed) slot.body.filters = []; f.destroy(); });
+    this.later(110, () => { if (!slot.body.destroyed) slot.body.filters = this.layered(slot); f.destroy(); });
   }
 
   /** Fire, ice and thunder wash the picture in their colour for a moment; thunder strikes twice. */
@@ -262,16 +350,16 @@ export class BattleView {
     for (const [k, f] of this.lit) {
       if (k === key) continue;
       const slot = this.slots.get(k);
-      if (slot && !slot.body.destroyed) slot.body.filters = [];
-      f.destroy();
       this.lit.delete(k);
+      if (slot && !slot.body.destroyed) slot.body.filters = [...slot.base];
+      f.destroy();
     }
     const slot = key ? this.slots.get(key) : undefined;
     if (!key || !slot || slot.body.destroyed || this.lit.has(key)) return;
     const f = new ColorMatrixFilter();
     f.brightness(1.45, false);
-    slot.body.filters = [f];
     this.lit.set(key, f);
+    slot.body.filters = this.layered(slot);
   }
 
   /** An enemy about to act lunges toward the camera and settles back. */

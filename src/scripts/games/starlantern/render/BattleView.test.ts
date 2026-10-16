@@ -1,9 +1,9 @@
-import { Container, Sprite, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Sprite, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
 import { makeBattle, makeCombatant } from '../engine/testing';
-import { BattleView } from './BattleView';
+import { BattleView, TINT_COLORS } from './BattleView';
 import type { TextureBank } from './textures';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
@@ -139,5 +139,55 @@ describe('BattleView enemy status', () => {
     expect(view.intentText('e0')).toBe('▶ 攻擊 → 絲嘉蕾');
     view.showIntents({});
     expect(view.intentText('e0')).toBe('');
+  });
+});
+
+describe('BattleView regional tints', () => {
+  const enemies = () => [
+    makeCombatant({ key: 'e0', side: 'enemy', name: '熾焰・史萊姆', tint: 'fire' }),
+    makeCombatant({ key: 'e1', side: 'enemy', name: '沼澤・蝙蝠', tint: 'phys' }),
+    makeCombatant({ key: 'e2', side: 'enemy', name: '★精英', tint: 'elite' }),
+    makeCombatant({ key: 'e3', side: 'enemy', name: '史萊姆' }),
+    makeCombatant({ key: 'e4', side: 'enemy', name: '沒有星', tint: 'elite' }),
+  ];
+  const fight = () => makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], enemies());
+
+  it('regional enemies are tinted and elites starred', () => {
+    const view = new BattleView(true, bank);
+    view.setup(fight(), { width: 640, height: 360 }, 1, 0, 0, 'mire');
+    expect(view.tintOf('e0')).toEqual({ color: TINT_COLORS.fire, elite: false });
+    expect(view.tintOf('e1')).toEqual({ color: TINT_COLORS.mire, elite: false });
+    expect(view.tintOf('e2')).toEqual({ color: TINT_COLORS.mire, elite: true });   // an elite of the region keeps its colour
+    expect(view.tintOf('e3')).toEqual({ color: null, elite: false });
+    expect(view.filtersOf('e0')).toHaveLength(2);   // colour matrix + soft outer glow
+    expect(view.filtersOf('e0')[0]).toBeInstanceOf(ColorMatrixFilter);
+    expect(view.filtersOf('e2')).toHaveLength(3);   // + gold outline
+    expect(view.filtersOf('e3')).toHaveLength(0);
+    expect(view.nameOf('e2')).toBe('★精英');        // never a second star
+    expect(view.nameOf('e4')).toBe('★沒有星');
+    expect(view.nameOf('e3')).toBe('史萊姆');
+    // the element-less regions differ by region, not by tint alone
+    view.setup(fight(), { width: 640, height: 360 }, 1, 0, 0, 'shade');
+    expect(view.tintOf('e1').color).toBe(TINT_COLORS.shade);
+    view.setup(fight(), { width: 640, height: 360 }, 1, 0, 0, 'iron');
+    expect(view.tintOf('e1').color).toBe(TINT_COLORS.iron);
+    view.setup(fight(), { width: 640, height: 360 }, 1, 0, 0, 'mainline');
+    expect(view.tintOf('e2')).toEqual({ color: null, elite: true });
+    expect(view.filtersOf('e2')).toHaveLength(1);
+    expect(new Set([TINT_COLORS.fire, TINT_COLORS.ice, TINT_COLORS.thunder, TINT_COLORS.mire, TINT_COLORS.shade, TINT_COLORS.iron]).size).toBe(6);
+  });
+
+  it('the target highlight adds to the tint and gives it back when it moves on', () => {
+    const view = new BattleView(true, bank);
+    view.setup(fight(), { width: 640, height: 360 }, 1, 0, 0, 'blaze');
+    const tint = [...view.filtersOf('e0')];
+    view.highlight('e0');
+    expect(view.filtersOf('e0')).toHaveLength(3);
+    expect(view.filtersOf('e0').slice(0, 2)).toEqual(tint);
+    view.highlight('e3');
+    expect(view.filtersOf('e0')).toEqual(tint);
+    expect(view.filtersOf('e3')).toHaveLength(1);
+    view.highlight(null);
+    expect(view.filtersOf('e3')).toHaveLength(0);
   });
 });
