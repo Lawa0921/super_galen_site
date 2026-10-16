@@ -23,6 +23,8 @@ import { MenuView, backControl, win } from '../widgets';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
 export const BATTLE_LEFT = 150;
+const BANNER_MS = 1100;
+const WIN_MS = 1000;
 /** Height kept clear for the party bar; must match the .slx-partybar box in _starlantern-ui.scss. */
 export const BATTLE_BOTTOM = 66;
 
@@ -73,6 +75,7 @@ export class BattleScene implements Scene {
       this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.floor, BATTLE_LEFT, BATTLE_BOTTOM);
     }
     this.msg.textContent = this.state.enemies.map((e) => e.name).join('、');
+    this.banner(this.state.boss ? T.ui2.banner.boss : T.ui2.banner.encounter, this.state.boss ? 'slx-banner-boss' : '');
     this.startRound();
   }
 
@@ -404,10 +407,25 @@ export class BattleScene implements Scene {
     this.bar.pulse(key, cue === 'acting' ? 'attack' : cue, amount, opts);
   }
 
+  /** A slanted banner across the middle of the screen; it plays over the battle and leaves on its own. */
+  private banner(text: string, cls = '', ms = BANNER_MS): void {
+    const b = el('div', { class: `slx-banner ${cls}`.trim(), attrs: { role: 'status' } }, [el('span', { class: 'slx-banner-text', text })]);
+    this.body.append(b);
+    setTimeout(() => b.remove(), this.ctx.fast ? 0 : ms);
+  }
+
+  /** A win shows 勝利！ first, then the rewards. */
   private showResult(end: BattleEnd): void {
+    if (end.outcome !== 'win' || this.ctx.fast) { this.renderResult(end); return; }
+    this.ctx.sfx.win?.();
+    this.banner(T.ui2.banner.win, 'slx-banner-win', WIN_MS);
+    setTimeout(() => this.renderResult(end, false), WIN_MS);
+  }
+
+  private renderResult(end: BattleEnd, fanfare = true): void {
     const lines: { text: string; up?: boolean }[] = [];
     if (end.outcome === 'win') {
-      this.ctx.sfx.win?.();
+      if (fanfare) this.ctx.sfx.win?.();
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const u of end.levelUps) {

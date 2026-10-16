@@ -62,6 +62,7 @@ export const T = {
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
   },
   ui2: {
+    banner: { encounter: '遭遇！', boss: '頭目出現！', win: '勝利！' },
     hints: {
       title: '↑↓ 選擇　Enter 決定　滑鼠也可以操作',
       town: 'Enter／點擊 決定　Esc／右鍵 返回',

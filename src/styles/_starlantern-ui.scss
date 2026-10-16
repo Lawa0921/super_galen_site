@@ -564,11 +564,12 @@ $slx-battle-left: 150px;
 
 // Animated 4-frame effect over a struck member's face (partyBar pulse fxAnim): the sheet is 400% wide, stepped frame by frame
 .slx-pm-fxa {
-  position: absolute; left: -10px; top: -14px; z-index: 2; width: 68px; height: 68px; pointer-events: none;
+  // larger than the face and centred on the panel, so the blow reads at a glance
+  position: absolute; left: 50%; top: 50%; z-index: 2; width: 104px; height: 104px; margin: -60px 0 0 -52px; pointer-events: none;
   background: no-repeat 0 0 / 400% 100%; image-rendering: pixelated;
   animation: slx-fxa-run 0.28s steps(4, jump-none) forwards, slx-fxa-fade 0.36s ease-in forwards;
 }
-.slx-pm-fxa-pierce { left: -24px; top: 4px; width: 132px; height: 56px; }
+.slx-pm-fxa-pierce { width: 200px; height: 84px; margin: -42px 0 0 -100px; }
 @keyframes slx-fxa-run { from { background-position: 0% 0; } to { background-position: 100% 0; } }
 @keyframes slx-fxa-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 .slx-pm-fxa-slash { background-image: url('/assets/games/starlantern/fx/slash-anim.png'); }
@@ -610,3 +611,24 @@ $slx-battle-left: 150px;
   .slx-enc-bar, .slx-encounter, .slx-picked, .slx-result .slx-levelup { animation: none; }
   .slx-ghost { transition: none; }
 }
+
+// Banners across the middle of the battle: 遭遇！ / 頭目出現！ on arrival, 勝利！ before the rewards
+.slx-banner { position: absolute; left: 0; right: 0; top: 132px; z-index: 45; height: 64px; pointer-events: none; display: grid; place-items: center; overflow: hidden; }
+.slx-banner::before {
+  content: ''; position: absolute; inset: 8px -20px; skew: -14deg 0;
+  background: linear-gradient(90deg, transparent, rgba(10, 14, 34, 0.92) 12%, rgba(10, 14, 34, 0.92) 88%, transparent);
+  border-block: 2px solid $slx-gold;
+  animation: slx-banner-band 1.1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.slx-banner-text {
+  position: relative; font-size: 34px; line-height: 40px; letter-spacing: 6px; color: #fff; skew: -10deg 0;
+  text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 0 14px rgba(232, 196, 106, 0.8);
+  animation: slx-banner-text 1.1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.slx-banner-boss::before { background: linear-gradient(90deg, transparent, rgba(80, 6, 10, 0.94) 12%, rgba(80, 6, 10, 0.94) 88%, transparent); border-color: #ff4a3c; }
+.slx-banner-boss .slx-banner-text { color: #ffd0c8; text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 0 0 16px rgba(255, 60, 40, 0.9); }
+.slx-banner-win::before { background: linear-gradient(90deg, transparent, rgba(60, 44, 8, 0.92) 12%, rgba(60, 44, 8, 0.92) 88%, transparent); }
+.slx-banner-win .slx-banner-text { color: #ffe9a8; font-size: 40px; }
+@keyframes slx-banner-band { 0% { translate: -110% 0; } 18%, 82% { translate: 0 0; } 100% { translate: 110% 0; opacity: 0; } }
+@keyframes slx-banner-text { 0% { scale: 2.4; opacity: 0; } 22% { scale: 1; opacity: 1; } 82% { scale: 1; opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 60px 0; } }
+@media (prefers-reduced-motion: reduce) { .slx-banner::before, .slx-banner-text { animation: none; } }

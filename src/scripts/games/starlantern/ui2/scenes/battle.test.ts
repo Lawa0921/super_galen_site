@@ -128,6 +128,30 @@ describe('BattleScene', () => {
     expect(go).toHaveBeenCalledWith('dungeon');
   });
 
+  it('opens with an encounter banner and closes a win with a victory banner before the results', async () => {
+    vi.useFakeTimers();
+    try {
+      const game = new Game(constRng(0.99), null);
+      game.depart(1); game.encounter = 99; game.move('right');
+      for (const e of game.battle!.enemies) e.hp = 1;
+      const root = document.createElement('div');
+      const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: false });
+      s.enter(root);
+      expect(root.querySelector('.slx-banner')!.textContent).toBe('遭遇！');
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(root.querySelector('.slx-banner')).toBeNull();
+      for (let i = 0; i < 5; i++) s.onAction('down');
+      s.onAction('confirm');
+      for (let t = 0; t < 100 && !root.querySelector('.slx-banner'); t++) await vi.advanceTimersByTimeAsync(50);
+      expect(root.querySelector('.slx-banner')!.textContent).toBe('勝利！');
+      expect(root.querySelector('.slx-result')).toBeNull();          // the banner first, then the rewards
+      await vi.advanceTimersByTimeAsync(1200);
+      expect(root.querySelector('.slx-result')).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('marks level-ups in the results so they stand out', async () => {
     const { s, root } = setup((g) => { for (const e of g.battle!.enemies) e.hp = 1; g.state.party.roster.scarlet.exp = 999; });
     for (let i = 0; i < 5; i++) s.onAction('down');

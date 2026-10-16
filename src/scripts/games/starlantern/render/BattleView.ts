@@ -17,6 +17,8 @@ interface Slot { box: Container; body: Container; texture: Texture | null }
 
 /** Pause on each impact so a hit lands before the next thing happens. */
 const HIT_STOP_MS = 80;
+/** How far an enemy drops in from when a battle opens. */
+const DROP_PX = 28;
 export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko';
 
 export class BattleView {
@@ -83,6 +85,7 @@ export class BattleView {
       this.root.addChild(box);
       this.slots.set(e.key, { box, body, texture: tex });
     });
+    if (!this.fast) this.alive(size);
   }
 
   /** Point just above an enemy, in stage coordinates, for the DOM target cursor. */
@@ -113,7 +116,7 @@ export class BattleView {
         if (slot) {
           this.flash(slot, cue.weak);
           this.popup(slot, String(cue.amount), cue.weak ? 0xffd166 : 0xffffff, cue.weak);
-          if (cue.weak) this.shake(6);
+          if (cue.weak) { this.shake(6); this.punch(); }
         } else void onParty?.(cue.key, 'hit', undefined, cue.amount, { fx: cue.fx, weak: cue.weak });
       }
       if (cue.kind === 'fx' && cue.fx === 'heal') { sfx.heal(); if (!slot && cue.amount !== undefined) void onParty?.(cue.key, 'heal', undefined, cue.amount); }
@@ -122,7 +125,7 @@ export class BattleView {
       if (cue.kind === 'hit') await this.wait(HIT_STOP_MS);   // a beat on impact, once everything for the hit is drawn
       if (cue.kind === 'ko') {
         sfx.ko();
-        if (slot) { this.shake(4); this.shattering.push(this.shatter(slot)); } else void onParty?.(cue.key, 'ko');
+        if (slot) { this.shake(4); this.punch(); this.shattering.push(this.shatter(slot)); } else void onParty?.(cue.key, 'ko');
       }
     }
     await Promise.all(this.shattering);
@@ -157,6 +160,48 @@ export class BattleView {
     this.root.addChild(g);
     steps.slice(1).forEach((a, i) => this.later(50 * (i + 1), () => { if (!g.destroyed) g.alpha = a; }));
     this.later(50 * steps.length, () => { if (!g.destroyed) { this.root.removeChild(g); g.destroy(); } });
+  }
+
+  /**
+   * Keeps the picture alive: enemies drop in one after another, then breathe (a slight squash from the feet) for as long
+   * as the battle lasts. Runs on animation frames that setup() cancels.
+   */
+  private alive(size: { width: number; height: number }): void {
+    void size;
+    const t0 = performance.now();
+    const order = new Map([...this.slots.keys()].map((k, i) => [k, i]));
+    const rest = new Map([...this.slots].map(([k, s]) => [k, s.box.y]));
+    const landing = new Set([...this.slots].filter(([, s]) => s.box.alpha > 0).map(([k]) => k));
+    for (const k of landing) { const s = this.slots.get(k)!; s.box.alpha = 0; s.box.y -= DROP_PX; }
+    const tick = () => {
+      if (!this.root.visible) return;   // the battle is over; the next setup starts a fresh loop
+      const t = (performance.now() - t0) / 1000;
+      for (const [k, s] of this.slots) {
+        if (s.box.destroyed) continue;
+        const n = order.get(k) ?? 0;
+        if (landing.has(k)) {
+          const p = Math.min(1, Math.max(0, (t - n * 0.09) / 0.32));
+          const ease = 1 - (1 - p) ** 3;
+          s.box.alpha = ease;
+          s.box.y = rest.get(k)! - DROP_PX * (1 - ease);
+          if (p >= 1) landing.delete(k);
+        }
+        const b = Math.sin(t * 2.4 + n * 1.7);
+        s.body.scale.set(1 - 0.008 * b, 1 + 0.018 * b);
+      }
+      this.frame(tick);
+    };
+    this.frame(tick);
+  }
+
+  /** A quick push in toward the centre and back, for weak-point hits and knockouts. */
+  private punch(): void {
+    if (this.fast) return;
+    const { width: w, height: h } = this.size;
+    const set = (k: number) => { this.root.scale.set(k); this.root.x = -((k - 1) * w) / 2; this.root.y = -((k - 1) * h) / 2; };
+    set(1.06);
+    this.later(70, () => set(1.03));
+    this.later(140, () => set(1));
   }
 
   /** The enemy under the target cursor glows; null clears it. */
