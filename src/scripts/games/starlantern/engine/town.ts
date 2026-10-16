@@ -1,8 +1,9 @@
 import { EQUIPMENT } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
-import { BAG_SIZE } from './loot/bag';
-import { itemSlot } from './loot/item';
+import { BAG_SIZE, sortBag, type AutoJunk } from './loot/bag';
+import { itemSlot, rollItem, sellPrice } from './loot/item';
+import { mulberry32 } from './rng';
 import { defaultSlotFor, slotsFor, statsOf } from './party';
 import type { GameState } from './state';
 import type { CharacterId, Member, Party, Slot } from './types';
@@ -45,15 +46,55 @@ export function buy(s: GameState, id: string): TownResult {
   if (price === undefined) return fail('invalid');
   if (EQUIPMENT[id] && !isUnlocked(s, id)) return fail('locked');
   if (s.gold < price) return fail('gold');
+  if (EQUIPMENT[id] && s.bag.length >= BAG_SIZE) return fail('full');
   const n = structuredClone(s);
   n.gold -= price;
-  addItem(n.inventory, id, 1);
+  if (EQUIPMENT[id]) addGear(n, id);
+  else addItem(n.inventory, id, 1);
   return { ok: true, state: n };
 }
 
 /** Hands out the next item uid: returns `s.nextUid` and moves it on by one (mutates `s`; call it on a copy). */
 export function mintUid(s: GameState): number {
   return s.nextUid++;
+}
+
+/** Puts a plain common item of gear base `id` at its own level in the bag (mutates `s`; call it on a copy, with room in the bag). */
+export function addGear(s: GameState, id: string): void {
+  s.bag.push(rollItem(mulberry32(0), { uid: mintUid(s), ilvl: EQUIPMENT[id].ilvl, rarity: 'common', base: id }));
+}
+
+/** Sells the bag items `uids` at their sell price. Sold gear never counts toward `sold`, so it unlocks nothing. */
+export function sellGear(s: GameState, uids: number[]): TownResult {
+  if (uids.length === 0 || new Set(uids).size !== uids.length) return fail('invalid');
+  if (uids.some((u) => !s.bag.some((it) => it.uid === u))) return fail('stock');
+  const n = structuredClone(s);
+  n.gold += n.bag.filter((it) => uids.includes(it.uid)).reduce((sum, it) => sum + sellPrice(it), 0);
+  n.bag = n.bag.filter((it) => !uids.includes(it.uid));
+  return { ok: true, state: n };
+}
+
+/** Flips the junk mark on a bag item. */
+export function toggleJunk(s: GameState, uid: number): TownResult {
+  if (!s.bag.some((it) => it.uid === uid)) return fail('stock');
+  const n = structuredClone(s);
+  const it = n.bag.find((x) => x.uid === uid)!;
+  if (it.junk) delete it.junk;
+  else it.junk = true;
+  return { ok: true, state: n };
+}
+
+export function setAutoJunk(s: GameState, mode: AutoJunk): TownResult {
+  if (!['off', 'common', 'magic'].includes(mode)) return fail('invalid');
+  const n = structuredClone(s);
+  n.autoJunk = mode;
+  return { ok: true, state: n };
+}
+
+export function sortBagIn(s: GameState, by: 'rarity' | 'slot' | 'ilvl'): TownResult {
+  const n = structuredClone(s);
+  n.bag = sortBag(n.bag, by);
+  return { ok: true, state: n };
 }
 
 /** Wears the bag item `uid` in `slot` (or its default slot); whatever was there goes back into the bag in its place. */

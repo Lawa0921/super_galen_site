@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { EQUIPMENT } from '../data/equipment';
-import { AFFIXES, RARITIES, SPECIALS } from '../data/gear';
+import { AFFIXES, RARITIES, SETS, SPECIALS } from '../data/gear';
 import { REGIONS } from '../data/regions';
 import { validPortals } from './portals';
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
@@ -8,6 +8,7 @@ import { BAG_SIZE } from './loot/bag';
 import { itemSlot } from './loot/item';
 import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { SAVE_VERSION, type GameState } from './state';
+import { addGear } from './town';
 import type { ItemInstance, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
@@ -62,11 +63,14 @@ function isValid(d: Record<string, unknown>): boolean {
   }
   // Every uid once, bag and worn together, and all of them below nextUid.
   if (new Set(uids).size !== uids.length || uids.some((u) => u >= (d.nextUid as number))) return false;
+  if (!Array.isArray(d.codex) || !d.codex.every((id) => has(SPECIALS, id) || has(SETS, id))) return false;
+  if (!['off', 'common', 'magic'].includes(d.autoJunk as string)) return false;
   const g = d.dungeon;
   if (!isObj(g) || !isObj(g.reached) || typeof g.bossDefeated !== 'boolean') return false;
   const reached = g.reached;
   const regions = Object.keys(REGIONS);
   if (!validPortals(g.portals)) return false;
+  if (!isCounts(g.bossKills) || !Object.keys(g.bossKills as object).every((k) => /^[a-z]+:\d+$/.test(k) && has(REGIONS, k.split(':')[0]))) return false;
   if (Object.keys(reached).length !== regions.length) return false;
   return regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1);
 }
@@ -93,5 +97,21 @@ export function loadGame(storage: SaveStorage): LoadResult {
   if (!isObj(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   if (data.version !== SAVE_VERSION) { backup(storage, raw); return { status: 'version' }; }
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
-  return { status: 'ok', state: data as unknown as GameState };
+  return { status: 'ok', state: convertGearStock(data as unknown as GameState) };
+}
+
+/**
+ * Gear base ids that earlier builds left in `inventory` become common bag items, until the bag is full.
+ * What does not fit stays in `inventory` (nothing is lost) and is tried again on the next load.
+ */
+function convertGearStock(s: GameState): GameState {
+  for (const id of Object.keys(s.inventory)) {
+    if (!has(EQUIPMENT, id)) continue;
+    while (s.inventory[id] > 0 && s.bag.length < BAG_SIZE) {
+      addGear(s, id);
+      s.inventory[id]--;
+    }
+    if (s.inventory[id] === 0) delete s.inventory[id];
+  }
+  return s;
 }

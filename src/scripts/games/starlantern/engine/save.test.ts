@@ -156,3 +156,59 @@ describe('save', () => {
     expect(loadGame(throwing)).toEqual({ status: 'empty' });
   });
 });
+
+describe('save v4 codex, boss kills and auto junk', () => {
+  const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
+    const g = newGame();
+    mut(g);
+    return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  };
+  it('round-trips codex, auto junk and boss kills', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.codex = ['lg-noel', 'set-blaze'];
+    g.autoJunk = 'magic';
+    g.dungeon.bossKills = { 'mainline:5': 3, 'blaze:10': 1 };
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r).toEqual({ status: 'ok', state: g });
+    expect(r.status === 'ok' && r.state.dungeon.bossKills['mainline:5']).toBe(3);
+  });
+  it('a new game starts with an empty codex, junk off and no boss kills', () => {
+    const g = newGame();
+    expect([g.codex, g.autoJunk, g.dungeon.bossKills]).toEqual([[], 'off', {}]);
+  });
+  it('rejects an unknown codex id, a negative boss kill count, a bad auto-junk mode', () => {
+    expect(bad((g) => { g.codex = ['nope']; })).toBe('corrupt');
+    expect(bad((g) => { (g as unknown as Record<string, unknown>).codex = 'lg-noel'; })).toBe('corrupt');
+    expect(bad((g) => { delete (g as Partial<typeof g>).codex; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'mainline:5': -1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'mainline:5': 1.5 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'nowhere:5': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { delete (g.dungeon as Partial<typeof g.dungeon>).bossKills; })).toBe('corrupt');
+    expect(bad((g) => { g.autoJunk = 'all' as never; })).toBe('corrupt');
+    expect(bad((g) => { delete (g as Partial<typeof g>).autoJunk; })).toBe('corrupt');
+    expect(bad((g) => { g.codex = ['lg-noel']; g.autoJunk = 'common'; g.dungeon.bossKills = { 'frost:15': 0 }; })).toBe('ok');
+  });
+  it('turns gear base ids left in the inventory into common bag items on load', () => {
+    const g = newGame();
+    g.inventory = { potion: 2, 'iron-sword': 2, 'copper-ring': 1 };
+    g.bag = [plainItem('thorn-spear', 4)];
+    g.nextUid = 5;
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) }));
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.state.inventory).toEqual({ potion: 2 });
+    expect(r.state.bag.map((it) => [it.uid, it.base, it.rarity])).toEqual([[4, 'thorn-spear', 'common'], [5, 'iron-sword', 'common'], [6, 'iron-sword', 'common'], [7, 'copper-ring', 'common']]);
+    expect(r.state.nextUid).toBe(8);
+  });
+  it('keeps the overflow in the inventory when the bag fills up', () => {
+    const g = newGame();
+    g.bag = Array.from({ length: 59 }, (_, i) => plainItem('thorn-spear', i + 1));
+    g.nextUid = 60;
+    g.inventory = { 'iron-sword': 3 };
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) }));
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.state.bag).toHaveLength(60);
+    expect(r.state.inventory).toEqual({ 'iron-sword': 2 });
+  });
+});

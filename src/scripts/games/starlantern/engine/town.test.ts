@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
-import { buy, equip, innCost, isUnlocked, mintUid, rest, revive, reviveCost, sell, unequip, useFieldItem } from './town';
+import { buy, equip, innCost, isUnlocked, mintUid, rest, revive, reviveCost, sell, sellGear, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
 import { plainItem } from './testing';
 import { BAG_SIZE } from './loot/bag';
+import { sellPrice } from './loot/item';
+import { EQUIPMENT } from '../data/equipment';
 import type { ItemInstance } from './types';
 
 const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(), inventory: inv, gold });
@@ -152,5 +154,53 @@ describe('useFieldItem', () => {
     expect(useFieldItem(s, 'potion', 'liz')).toEqual({ ok: false, reason: 'invalid' });
     expect(useFieldItem({ ...s, inventory: {} }, 'potion', 'noel')).toEqual({ ok: false, reason: 'stock' });
     expect(useFieldItem(s, 'return-lamp', 'noel')).toEqual({ ok: false, reason: 'invalid' });
+  });
+});
+
+describe('buying and selling gear', () => {
+  it('buying a base puts a common item of that base and level in the bag', () => {
+    const s = { ...newGame(), nextUid: 7 };
+    const r = buy(s, 'iron-sword');
+    if (!r.ok) throw new Error('buy failed');
+    expect(r.state.bag).toEqual([{ uid: 7, base: 'iron-sword', rarity: 'common', ilvl: EQUIPMENT['iron-sword'].ilvl, affixes: [], enhance: 0 }]);
+    expect(r.state.nextUid).toBe(8);
+    expect(r.state.gold).toBe(150 - EQUIPMENT['iron-sword'].price);
+    expect(r.state.inventory['iron-sword']).toBeUndefined();
+    expect(s.bag).toEqual([]);
+    expect(s.nextUid).toBe(7);
+  });
+  it('a full bag refuses buying and charges nothing', () => {
+    const s = withBag(Array.from({ length: BAG_SIZE }, (_, i) => plainItem('iron-sword', i + 1)));
+    expect(buy(s, 'iron-sword')).toEqual({ ok: false, reason: 'full' });
+    expect(buy(s, 'potion').ok).toBe(true);   // consumables do not use the bag
+    expect(s.gold).toBe(150);
+  });
+  it('selling gear pays sellPrice and does not count toward unlocks', () => {
+    const rare = { ...plainItem('iron-sword', 1), rarity: 'rare' as const, ilvl: 12 };
+    const s = withBag([rare, plainItem('copper-ring', 2), plainItem('thorn-spear', 3)]);
+    const r = sellGear(s, [1, 3]);
+    if (!r.ok) throw new Error('sell failed');
+    expect(r.state.gold).toBe(150 + sellPrice(rare) + sellPrice(plainItem('thorn-spear', 3)));
+    expect(r.state.bag.map((it) => it.uid)).toEqual([2]);
+    expect(r.state.sold).toEqual({});
+    expect(sellGear(s, [1, 99])).toEqual({ ok: false, reason: 'stock' });
+    expect(sellGear(s, [1, 1])).toEqual({ ok: false, reason: 'invalid' });
+    expect(sellGear(s, [])).toEqual({ ok: false, reason: 'invalid' });
+    expect(s.bag).toHaveLength(3);
+  });
+  it('junk toggles; sorting reorders the bag', () => {
+    const s = withBag([plainItem('copper-ring', 1), { ...plainItem('iron-sword', 2), rarity: 'rare' as const }]);
+    const a = toggleJunk(s, 1);
+    if (!a.ok) throw new Error('toggle failed');
+    expect(a.state.bag[0].junk).toBe(true);
+    const b = toggleJunk(a.state, 1);
+    if (!b.ok) throw new Error('toggle failed');
+    expect(b.state.bag[0].junk).toBeFalsy();
+    expect(toggleJunk(s, 99)).toEqual({ ok: false, reason: 'stock' });
+    const m = setAutoJunk(s, 'magic');
+    expect(m.ok && m.state.autoJunk).toBe('magic');
+    expect(setAutoJunk(s, 'all' as never)).toEqual({ ok: false, reason: 'invalid' });
+    const o = sortBagIn(s, 'rarity');
+    expect(o.ok && o.state.bag.map((it) => it.uid)).toEqual([2, 1]);
   });
 });
