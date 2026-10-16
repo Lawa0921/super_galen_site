@@ -462,6 +462,12 @@ $slx-battle-left: 150px;
 .slx-gear-row { display: grid; grid-template-columns: 48px 1fr; gap: 0 8px; padding: 4px 0; border-bottom: 1px solid #2a2840; }
 .slx-gear-slot { color: $slx-gold; grid-row: span 2; }
 .slx-gear-bonus { color: #8fe08f; font-size: 10px; }
+.slx-rarity-common { color: #d8d4e6; }
+.slx-rarity-magic { color: #6fa8ff; }
+.slx-rarity-rare { color: #f2d45c; }
+.slx-rarity-legendary { color: #ff9a3c; }
+.slx-rarity-unique { color: #c78cff; }
+.slx-rarity-set { color: #6fe0a0; }
 .slx-skill { padding: 3px 0; border-bottom: 1px solid #2a2840; }
 .slx-skill-head { display: flex; gap: 10px; }
 .slx-skill-name { flex: 1; color: $slx-ink; }

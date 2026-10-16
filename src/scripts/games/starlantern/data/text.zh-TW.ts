@@ -8,6 +8,8 @@ const SLOT: Record<Slot, string> = {
 export const T = {
   stat: STAT,
   slot: SLOT,
+  /** Gear kinds, for a base's own slot: a ring is one "戒指" here, "戒指 1" / "戒指 2" only where a member's slots are listed. */
+  slotKind: { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>,
   gold: (n: number) => `${n} G`,
   tabs: { guild: '公會', shop: '商店', inn: '旅館', depart: '出發' },
   shop: {
@@ -187,7 +189,7 @@ export const T = {
     },
     banked: (viaLamp: boolean, list: string) => `${viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。'}帶回了：${list}。`,
     shop: {
-      buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, needs: (text: string) => `需要 ${text}`,
+      buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, bagFull: '背包已滿（60 件）', needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,
       unlocked: (names: string) => `託你的福，現在可以做出 ${names} 了！`, nothing: '沒有可以賣的素材。',
     },

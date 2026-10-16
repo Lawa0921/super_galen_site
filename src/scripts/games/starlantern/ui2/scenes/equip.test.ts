@@ -71,4 +71,16 @@ describe('EquipScene', () => {
     (root.querySelector('.slx-equip-items [data-id="1"]') as HTMLElement).click();
     expect(game.state.party.roster.scarlet.equip.weapon?.base).toBe('iron-sword');
   });
+
+  it('a ring goes to the chosen ring slot', () => {
+    const { root, game } = setup();
+    game.state.bag = [plainItem('copper-ring', 5)];
+    game.state.nextUid = 6;
+    (root.querySelector('.slx-equip-slots [data-id=ring2]') as HTMLElement).click();
+    (root.querySelector('.slx-equip-items [data-id="5"]') as HTMLElement).click();
+    const eq = game.state.party.roster.scarlet.equip;
+    expect(eq.ring2?.base).toBe('copper-ring');
+    expect(eq.ring1).toBeUndefined();
+    expect(game.state.bag).toHaveLength(0);
+  });
 });

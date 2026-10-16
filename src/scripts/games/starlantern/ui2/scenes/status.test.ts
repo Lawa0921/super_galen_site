@@ -111,4 +111,13 @@ describe('StatusScene', () => {
     expect(r.body()).toContain('站位 待命');
     expect(r.body()).not.toContain('%）');
   });
+
+  it('the gear page lists nine slots with rarity classes', () => {
+    const { s, game, root } = setup('scarlet');
+    game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 9), rarity: 'rare' };
+    s.onAction('right');
+    expect(root.querySelectorAll('.slx-tab-gear .slx-gear-row')).toHaveLength(9);
+    expect(root.querySelector('.slx-tab-gear .slx-gear-name')!.classList.contains('slx-rarity-rare')).toBe(true);
+    expect(root.querySelector('.slx-tab-gear .slx-gear-row:nth-child(2) .slx-gear-name')!.classList.contains('slx-rarity-rare')).toBe(false);
+  });
 });

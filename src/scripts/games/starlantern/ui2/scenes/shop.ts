@@ -3,8 +3,9 @@ import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
+import { BAG_SIZE } from '../../engine/loot/bag';
 import { rollItem } from '../../engine/loot/item';
-import { activeIds, defaultSlotFor, slotsFor, statsOf } from '../../engine/party';
+import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
 import { buy, isUnlocked, sell } from '../../engine/town';
 import { art } from '../../render/artPaths';
@@ -35,7 +36,7 @@ export class ShopScene extends FacilityScene {
     return [...Object.values(ITEMS), ...Object.values(EQUIPMENT)].map((g) => {
       const locked = 'slot' in g && !isUnlocked(s, g.id);
       const needs = locked ? (g.unlock ?? []).map((u) => `${MATERIALS[u.mat].name}×${u.qty}`).join('、') : '';
-      return { id: g.id, label: g.name, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${g.price} G  ${T.ui2.shop.owned(s.inventory[g.id] ?? 0)}` };
+      return { id: g.id, label: g.name, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${g.price} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
     });
   }
 
@@ -54,7 +55,7 @@ export class ShopScene extends FacilityScene {
       const d = (Object.keys(eq.bonus) as (keyof typeof now)[]).map((k) => `${T.stat[k]}${after[k] - now[k] >= 0 ? '+' : ''}${after[k] - now[k]}`).join(' ');
       return el('li', { text: `${CHARACTERS[cid].name}　${d}` });
     });
-    return [el('p', { text: `${T.slot[slotsFor(eq.slot)[0]]}　${bonus}` }), el('ul', { class: 'slx-skills' }, rows)];
+    return [el('p', { text: `${T.slotKind[eq.slot]}　${bonus}` }), el('ul', { class: 'slx-skills' }, rows)];
   }
 
   private buyList(): void {
@@ -70,19 +71,28 @@ export class ShopScene extends FacilityScene {
     this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
   }
 
+  /** The town bag (gear) is a different limit from the pack's weight, so it says its own number. */
+  private shopFail(reason: string): void {
+    if (reason === 'full') { this.ctx.sfx.error(); void this.say(T.ui2.shop.bagFull); } else this.fail(reason);
+  }
+
   private askQty(id: string, after: () => void): void {
     const price = ITEMS[id]?.price ?? EQUIPMENT[id]?.price ?? 0;
     const name = ITEMS[id]?.name ?? EQUIPMENT[id]?.name ?? id;
-    const max = Math.min(99, Math.floor(this.ctx.game.state.gold / Math.max(1, price)));
-    if (max < 1) { this.fail('gold'); return; }
+    const st = this.ctx.game.state;
+    const afford = Math.min(99, Math.floor(st.gold / Math.max(1, price)));
+    if (afford < 1) { this.fail('gold'); return; }
+    // Gear goes to the bag, so the box also stops at the free slots.
+    const max = EQUIPMENT[id] ? Math.min(afford, BAG_SIZE - st.bag.length) : afford;
+    if (max < 1) { this.shopFail('full'); return; }
     const q = new QtyView(max, {
       change: () => this.ctx.sfx.cursor(),
       done: (n) => {
         this.pop();
-        let bought = 0;
-        for (let i = 0; i < n; i++) { const r = this.ctx.game.apply(buy(this.ctx.game.state, id)); if (!r.ok) break; bought++; }
+        let bought = 0; let why = 'gold';
+        for (let i = 0; i < n; i++) { const r = this.ctx.game.apply(buy(this.ctx.game.state, id)); if (!r.ok) { why = r.reason; break; } bought++; }
         this.refresh(); after();
-        if (bought) void this.say(T.ui2.shop.bought(name, bought), 'happy'); else this.fail('gold');
+        if (bought) void this.say(T.ui2.shop.bought(name, bought), 'happy'); else this.shopFail(why);
       },
       cancel: () => this.pop(),
     }, price);

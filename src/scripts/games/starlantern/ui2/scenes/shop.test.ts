@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { constRng } from '../../engine/testing';
+import { constRng, plainItem } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { ShopScene } from './shop';
 
@@ -65,5 +65,43 @@ describe('ShopScene', () => {
     const { pick, root } = setup();
     pick('販賣');
     expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('沒有可以賣的素材。');
+  });
+
+  it('buying a base adds it to the bag and the full bag is announced', () => {
+    const { game, pick, s } = setup(1000);
+    pick('購買');
+    pick('鐵劍');
+    s.onAction('confirm');
+    expect(game.state.bag.map((x) => x.base)).toEqual(['iron-sword']);
+    expect(game.state.inventory['iron-sword']).toBeUndefined();
+    expect(game.state.gold).toBe(960);
+
+    const full = setup(1000);
+    full.game.state.bag = Array.from({ length: 60 }, (_, i) => plainItem('iron-sword', 100 + i));
+    full.pick('購買');
+    full.pick('鐵劍');
+    expect(full.sfx.error).toHaveBeenCalled();
+    expect(full.root.querySelector('.slx-talk .slx-text')!.textContent).toBe('背包已滿（60 件）');
+    expect(full.game.state.gold).toBe(1000);
+  });
+
+  it('the quantity box caps at the free bag slots', () => {
+    const { game, pick, s, root } = setup(100000);
+    game.state.bag = Array.from({ length: 58 }, (_, i) => plainItem('iron-sword', 100 + i));
+    pick('購買');
+    pick('鐵劍');
+    s.onAction('up');                           // +10, clamped to the 2 free slots
+    expect(root.querySelector('.slx-qty-n')!.textContent).toBe('× 2');
+    s.onAction('confirm');
+    expect(game.state.bag).toHaveLength(60);
+    expect(game.state.gold).toBe(100000 - 2 * 40);
+  });
+
+  it('does not count leftover gear ids in the inventory as sellable materials', () => {
+    const { game, pick, root } = setup();
+    game.state.inventory = { 'iron-sword': 2 };
+    pick('販賣');
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('沒有可以賣的素材。');
+    expect(game.state.sold['iron-sword']).toBeUndefined();
   });
 });

@@ -72,7 +72,7 @@ const gear: StatusTab = {
       const it = m.equip[slot];
       return el('div', { class: 'slx-gear-row' }, [
         el('span', { class: 'slx-gear-slot', text: T.slot[slot] }),
-        el('span', { class: 'slx-gear-name', text: it ? itemName(it) : T.ui2.status.none }),
+        el('span', { class: it ? `slx-gear-name slx-rarity-${it.rarity}` : 'slx-gear-name', text: it ? itemName(it) : T.ui2.status.none }),
         el('span', { class: 'slx-gear-bonus', text: it ? bonusText(itemStats(it)) : '' }),
       ]);
     }));
