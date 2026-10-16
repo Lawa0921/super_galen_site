@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, turnOrder, writeBack } from './battle';
+import { LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, resolveRound, rewards, skillCost, turnOrder, writeBack } from './battle';
 import { ULTIMATES } from '../data/ultimates';
 import { ENEMIES } from '../data/enemies';
 import { newParty, powersOf, sheetOf } from './party';
 import { applyEffect } from './skills';
 import { depthLevel, homeLevel } from './scaling';
 import { SECONDARY_KEYS } from './stats';
-import type { BattleEvent } from './combatant';
+import { choose, partyAt } from './sim';
+import { dealDamage, type BattleEvent } from './combatant';
 import { constRng, makeBattle, makeCombatant, plainItem } from './testing';
 
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
@@ -218,5 +219,85 @@ describe('ultimate gauge', () => {
     expect(s.party.find((c) => c.key === 'noel')!.limit).toBe(0);
     s.party.find((c) => c.key === 'liz')!.limit = 100;
     expect(writeBack(party, s).roster.liz.limit).toBe(100);
+  });
+});
+
+describe('resource hooks', () => {
+  const sleeper = () => E('e0', { sleep: 3, max: { hp: 999 } as never });
+  it('tpRegen restores TP at the end of the round', () => {
+    const s = resolveRound(makeBattle([P('p', { tp: 5, x: { tpRegen: 3 } }), P('q', { tp: 19, x: { tpRegen: 3 } }), P('r', { tp: 5 })], [sleeper()]),
+      { p: { kind: 'defend' }, q: { kind: 'defend' }, r: { kind: 'defend' } }, rng);
+    expect(s.party.map((c) => c.tp)).toEqual([8, 20, 5]);
+    expect(s.log).toContainEqual({ type: 'tp', target: 'p', amount: 3 });
+    expect(s.log.filter((e) => e.type === 'tp' && e.target === 'r')).toEqual([]);
+    // The fallen regain nothing.
+    const dead = resolveRound(makeBattle([P('p', { tp: 5, x: { tpRegen: 3 } }), P('d', { tp: 0, hp: 0, alive: false, x: { tpRegen: 3 } })], [sleeper()]), { p: { kind: 'defend' } }, rng);
+    expect(dead.party[1].tp).toBe(0);
+  });
+
+  it('tpCost lowers the cost but never to zero', () => {
+    expect(skillCost(P('p'), 'twin-slash')).toBe(4);
+    expect(skillCost(P('p', { x: { tpCost: 50 } }), 'twin-slash')).toBe(2);
+    expect(skillCost(P('p', { x: { tpCost: 50 } }), 'provoke')).toBe(2);           // ceil(1.5)
+    expect(skillCost(P('p', { x: { tpCost: 10 } }), 'rebirth')).toBe(9);           // no float creep past 9
+    expect(skillCost(P('p', { x: { tpCost: 99 } }), 'twin-slash')).toBe(1);
+    expect(skillCost(P('p', { x: { tpCost: 50 } }), 'stealth')).toBe(0);           // a free skill stays free
+    // The round spends the reduced cost, and a member who can pay only the reduced cost may cast.
+    const s = resolveRound(makeBattle([P('p', { tp: 2, x: { tpCost: 50 } })], [sleeper()]), { p: { kind: 'skill', skill: 'twin-slash', target: 'e0' } }, rng);
+    expect(s.party[0].tp).toBe(0);
+    expect(s.log).not.toContainEqual({ type: 'no-tp', actor: 'p' });
+  });
+
+  it('gold and exp find raise rewards', () => {
+    const foes = [E('e0', { defId: 'slime' }), E('e1', { defId: 'bat' })];   // exp 9, gold 9
+    const s = makeBattle([P('p', { x: { goldFind: 50, expBonus: 20 } }), P('dead', { alive: false, hp: 0, x: { goldFind: 100 } })], foes);
+    const r = rewards(s, constRng(0), false);
+    expect([r.gold, r.exp]).toEqual([14, 11]);   // round(13.5), round(10.8)
+    // Each find sums over the living party and stops at 100.
+    const capped = makeBattle([P('p', { x: { goldFind: 80 } }), P('q', { x: { goldFind: 80 } })], foes);
+    expect(rewards(capped, constRng(0), false).gold).toBe(18);
+    // matFind raises each drop chance: 0.7 misses both (0.6, 0.5) until doubled.
+    expect(rewards(makeBattle([P('p', { x: { matFind: 100 } })], foes), constRng(0.7), false).drops).toEqual({ moss: 1, 'bat-wing': 1 });
+    expect(rewards(makeBattle([P('p', { x: { matFind: 30 } })], foes), constRng(0.7), false).drops).toEqual({ moss: 1 });   // 0.78 and 0.65
+    expect(rewards(makeBattle([P('p')], foes), constRng(0), false)).toEqual({ exp: 9, gold: 9, drops: { moss: 1, 'bat-wing': 1 } });
+  });
+
+  it('sleep resistance lowers the chance', () => {
+    const cast = (x: Record<string, number>, status: 'sleep' | 'poison') => {
+      const t = P('t', { x });
+      applyEffect(E('e0'), t, { kind: 'inflict', status, chance: 0.6 }, { rng: constRng(0.5), itemBoost: false, revealed: {}, log: [] });
+      return status === 'sleep' ? t.sleep > 0 : t.poison;
+    };
+    expect(cast({}, 'sleep')).toBe(true);                    // 0.5 < 0.6
+    expect(cast({ sleepRes: 20 }, 'sleep')).toBe(false);     // 0.5 >= 0.48
+    expect(cast({ sleepRes: 10 }, 'sleep')).toBe(true);      // 0.5 < 0.54
+    expect(cast({ poisonRes: 20 }, 'sleep')).toBe(true);     // the other resistance does not apply
+    expect(cast({ poisonRes: 20 }, 'poison')).toBe(false);
+  });
+
+  it('gauge multiplies each gain of the ultimate gauge, rounded down', () => {
+    const hit = P('p', { x: { gauge: 50 } });
+    dealDamage(hit, 10);                                      // floor(10/100*40) = 4, then floor(4 * 1.5)
+    expect(hit.limit).toBe(6);
+    const s = resolveRound(makeBattle([P('p', { x: { gauge: 50 } })], [sleeper()]), { p: { kind: 'defend' } }, rng);
+    expect(s.party[0].limit).toBe(Math.floor(LIMIT_PER_ACTION * 1.5));
+  });
+});
+
+describe('the sim player', () => {
+  it('reads the TP a member actually pays and the skill as a power rewrites it', () => {
+    const party = partyAt(1);
+    const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const noel = s.party.find((c) => c.key === 'noel')!;
+    noel.tp = 2;
+    expect(choose(s, party).noel.kind).toBe('attack');                 // 火之星彈 costs 4
+    noel.x.tpCost = 50;
+    expect(choose(s, party).noel).toEqual({ kind: 'skill', skill: 'fire-star', target: 'e0' });
+    // 三叉刃 makes 雙刃 (60 x 3 = 180) outrank 三連刃 (55 x 3 = 165) for 莉茲 at level 6.
+    const lv6 = partyAt(6);
+    const s6 = createBattle({ party: lv6, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    expect(choose(s6, lv6).liz).toMatchObject({ kind: 'skill', skill: 'triple-slash' });
+    s6.party.find((c) => c.key === 'liz')!.powers = ['lg-liz'];
+    expect(choose(s6, lv6).liz).toMatchObject({ kind: 'skill', skill: 'twin-slash' });
   });
 });

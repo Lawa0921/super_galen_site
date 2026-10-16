@@ -1,8 +1,39 @@
 import { addBuff, calcDamage, dealDamage, stat, SLEEP_TURNS, type BattleEvent, type Combatant } from './combatant';
+import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
-import type { Effect, Element } from './types';
+import type { Effect, Element, SkillDef } from './types';
 
 export interface EffectContext { rng: Rng; itemBoost: boolean; revealed: Record<string, Element[]>; log: BattleEvent[] }
+
+/** A power's percentage of a number: `Math.round(base * pct / 100)`. */
+const pctOf = (base: number, pct: number | undefined): number => (pct === undefined ? base : Math.round((base * pct) / 100));
+
+/**
+ * A skill as a power rewrites it; the original is never touched. `target` and `hpCost` replace the skill's own (an hpCost
+ * of 0 is kept, so the skill costs no HP); `hits` and `element` go to damage; `powerPct` scales damage and heal power,
+ * turret power and buff percent; `turns` goes to every effect that lasts; `chance` goes to inflict effects only; `extra`
+ * is appended as written.
+ */
+export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
+  const effects = def.effects.map((e): Effect => {
+    switch (e.kind) {
+      case 'damage': return {
+        ...e, power: pctOf(e.power, mod.powerPct),
+        ...(mod.element !== undefined ? { element: mod.element } : {}), ...(mod.hits !== undefined ? { hits: mod.hits } : {}),
+      };
+      case 'heal': return { ...e, power: pctOf(e.power, mod.powerPct) };
+      case 'buff': return { ...e, pct: pctOf(e.pct, mod.powerPct), turns: mod.turns ?? e.turns };
+      case 'turret': return { ...e, power: pctOf(e.power, mod.powerPct), turns: mod.turns ?? e.turns };
+      case 'taunt': return { ...e, turns: mod.turns ?? e.turns };
+      case 'inflict': return { ...e, chance: mod.chance ?? e.chance };
+      default: return { ...e };
+    }
+  });
+  const out: SkillDef = { ...def, effects: [...effects, ...(mod.extra ?? []).map((e) => ({ ...e }))] };
+  if (mod.target !== undefined) out.target = mod.target;
+  if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
+  return out;
+}
 
 function reveal(revealed: Record<string, Element[]>, defId: string, el: Element): void {
   const list = revealed[defId] ?? (revealed[defId] = []);
@@ -33,7 +64,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'heal': {
       if (!target.alive) return;
-      const amount = gainHp(target, Math.floor((eff.power / 100) * (stat(actor, 'mag') * 2 + 10)));
+      // The healer's heal bonus multiplies the amount; without it the value is unchanged to the bit.
+      const bonus = 1 + (actor.x.heal ?? 0) / 100;
+      const amount = gainHp(target, Math.floor((eff.power / 100) * (stat(actor, 'mag') * 2 + 10) * bonus));
       ctx.log.push({ type: 'heal', target: target.key, amount });
       return;
     }
@@ -64,7 +97,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'inflict': {
       if (!target.alive) return;
-      if (ctx.rng() < eff.chance * (target.boss ? 0.5 : 1)) {
+      const res = (eff.status === 'poison' ? target.x.poisonRes : target.x.sleepRes) ?? 0;
+      if (ctx.rng() < eff.chance * (target.boss ? 0.5 : 1) * (1 - res / 100)) {
         if (eff.status === 'poison') target.poison = true;
         else target.sleep = SLEEP_TURNS;
         ctx.log.push({ type: 'status', target: target.key, status: eff.status });

@@ -108,8 +108,11 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   return { amount: Math.max(1, Math.floor(base * mult * variance)), mult: el, crit, miss: false };
 }
 
+/** One gain of the ultimate gauge, raised by the member's gauge bonus and rounded down. */
+export const gaugeGain = (c: Combatant, n: number): number => Math.floor(n * (1 + (c.x.gauge ?? 0) / 100));
+
 export function dealDamage(t: Combatant, amount: number): void {
-  if (t.side === 'party' && t.alive && amount > 0) t.limit = Math.min(100, t.limit + Math.max(1, Math.floor((amount / t.max.hp) * 40)));
+  if (t.side === 'party' && t.alive && amount > 0) t.limit = Math.min(100, t.limit + gaugeGain(t, Math.max(1, Math.floor((amount / t.max.hp) * 40))));
   t.hp = Math.max(0, t.hp - amount);
   t.sleep = 0;
   if (t.hp === 0) {

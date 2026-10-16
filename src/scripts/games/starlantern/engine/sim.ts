@@ -2,12 +2,11 @@ import { ENEMIES } from '../data/enemies';
 import { CONDITIONS } from '../data/conditions';
 import { FLOORS } from '../data/floors';
 import { REGIONS } from '../data/regions';
-import { SKILLS } from '../data/skills';
-import { LIMIT_MAX, createBattle, resolveRound, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
+import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
 import { MAX_LEVEL, expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
 import { mulberry32 } from './rng';
 import { scaleEnemy } from './scaling';
-import type { BuffStat, CharacterId, Party } from './types';
+import type { BuffStat, CharacterId, Party, SkillDef } from './types';
 
 type Altar = { stat: BuffStat; pct: number }[];
 
@@ -24,7 +23,7 @@ export function partyAt(level: number): Party {
 }
 
 /** A plain player: ultimate when the gauge is full, heal when someone is under half HP, else the strongest affordable damage skill, else attack. */
-function choose(s: BattleState, party: Party): Record<string, Action> {
+export function choose(s: BattleState, party: Party): Record<string, Action> {
   const out: Record<string, Action> = {};
   const foes = s.enemies.filter((e) => e.alive);
   const hurt = s.party.filter((c) => c.alive && c.hp < c.max.hp / 2).sort((a, b) => a.hp - b.hp)[0];
@@ -32,19 +31,21 @@ function choose(s: BattleState, party: Party): Record<string, Action> {
     const target = foes[0]?.key ?? '';
     const id = c.key as CharacterId;
     if (c.limit >= LIMIT_MAX) { out[c.key] = { kind: 'ultimate', target }; continue; }
-    const skills = learnedSkills(id, party.roster[id].level).filter((sk) => !SKILLS[sk].passive && SKILLS[sk].tp <= c.tp);
-    const heal = skills.find((sk) => SKILLS[sk].effects.some((e) => e.kind === 'heal'));
-    if (hurt && heal) { out[c.key] = { kind: 'skill', skill: heal, target: hurt.key }; continue; }
+    // Each skill as this member casts it (worn powers) and at the TP they pay for it.
+    const skills = learnedSkills(id, party.roster[id].level).map((sk) => skillFor(c, sk))
+      .filter((sk) => !sk.passive && skillCost(c, sk.id) <= c.tp);
+    const heal = skills.find((sk) => sk.effects.some((e) => e.kind === 'heal'));
+    if (hurt && heal) { out[c.key] = { kind: 'skill', skill: heal.id, target: hurt.key }; continue; }
     const dmg = skills
-      .filter((sk) => SKILLS[sk].effects.some((e) => e.kind === 'damage'))
+      .filter((sk) => sk.effects.some((e) => e.kind === 'damage'))
       .sort((a, b) => power(b) - power(a))[0];
-    out[c.key] = dmg ? { kind: 'skill', skill: dmg, target } : { kind: 'attack', target };
+    out[c.key] = dmg ? { kind: 'skill', skill: dmg.id, target } : { kind: 'attack', target };
   }
   return out;
 }
 
-function power(id: string): number {
-  return SKILLS[id].effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
+function power(def: SkillDef): number {
+  return def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
 export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar): { outcome: Outcome; rounds: number; hpLoss: number } {

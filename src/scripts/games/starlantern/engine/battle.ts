@@ -4,15 +4,16 @@ import { CONDITIONS, type ConditionId } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { REGIONS, type RegionId } from '../data/regions';
 import { ITEMS } from '../data/items';
+import { POWERS } from '../data/gear';
 import { SKILLS } from '../data/skills';
 import { ULTIMATES } from '../data/ultimates';
-import { stat, dealDamage, type BattleEvent, type Combatant } from './combatant';
+import { stat, dealDamage, gaugeGain, type BattleEvent, type Combatant } from './combatant';
 import { hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { depthLevel, homeLevel, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
-import { applyEffect, type EffectContext } from './skills';
-import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, Target } from './types';
+import { applyEffect, patchSkill, type EffectContext } from './skills';
+import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
 export type Action =
   | { kind: 'attack'; target: string }
@@ -163,6 +164,28 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
   }
 }
 
+/**
+ * A skill as this combatant casts it: every worn power that names it rewrites it, in the order worn. Added effects
+ * (`extra`) are gathered and appended last, so another power's powerPct never rescales them.
+ */
+export function skillFor(c: Combatant, id: string): SkillDef {
+  const base = SKILLS[id];
+  const mods = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
+  if (!base || !mods.length) return base;
+  let def = base;
+  const extra: Effect[] = [];
+  for (const { extra: more, ...mod } of mods) { def = patchSkill(def, mod); extra.push(...(more ?? [])); }
+  return extra.length ? patchSkill(def, { extra }) : def;
+}
+
+/** TP this combatant pays for a skill: ceil(tp x (1 - tpCost / 100)), at least 1 for a skill that costs TP at all. */
+export function skillCost(c: Combatant, id: string): number {
+  const tp = SKILLS[id]?.tp ?? 0;
+  if (tp <= 0) return 0;
+  // The epsilon keeps a float product such as 9.000000000000002 from costing a point more.
+  return Math.max(1, Math.ceil((tp * (100 - (c.x.tpCost ?? 0))) / 100 - 1e-9));
+}
+
 const skillIsMelee = (effects: Effect[]) => effects.some((e) => e.kind === 'damage' && e.melee);
 
 function chooseEnemyActions(s: BattleState, rng: Rng): Map<string, EnemyAction> {
@@ -205,10 +228,11 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       return;
     }
     case 'skill': {
-      const def = SKILLS[act.skill];
+      const def = skillFor(actor, act.skill);
       if (!def || def.passive) return;
-      if (actor.tp < def.tp) { s.log.push({ type: 'no-tp', actor: actor.key }); return; }
-      actor.tp -= def.tp;
+      const cost = skillCost(actor, act.skill);
+      if (actor.tp < cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return; }
+      actor.tp -= cost;
       if (def.hpCost) actor.hp = Math.max(1, actor.hp - Math.floor(actor.max.hp * def.hpCost));
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
       for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
@@ -256,6 +280,12 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
       s.log.push({ type: 'poison-tick', target: c.key, amount });
       if (!c.alive) s.log.push({ type: 'ko', target: c.key });
     }
+    const regen = Math.floor(c.x.tpRegen ?? 0);
+    if (c.alive && regen > 0 && c.tp < c.max.tp) {
+      const before = c.tp;
+      c.tp = Math.min(c.max.tp, c.tp + regen);
+      s.log.push({ type: 'tp', target: c.key, amount: c.tp - before });
+    }
     c.buffs = c.buffs.map((b) => ({ ...b, turns: b.turns - 1 })).filter((b) => b.turns > 0);
     c.taunt = Math.max(0, c.taunt - 1);
     c.defending = false;
@@ -284,7 +314,7 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
     const act = actor.side === 'party' ? actions[actor.key] : enemyActs.get(actor.key);
     if (act) {
       perform(s, actor, act, ctx, rng);
-      if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + LIMIT_PER_ACTION);
+      if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
     }
     if (checkOutcome(s)) return s;
   }
@@ -315,22 +345,26 @@ export function intentLabel(s: BattleState, key: string): string {
 /**
  * Exp, gold and rolled drops of a won fight. `dropMul` (the run condition's) multiplies how many of each drop that hit
  * comes: the whole part always, the fraction rolled, so 1.5 gives one or two and never rounds down to nothing.
+ * The living party's goldFind, matFind and expBonus are each summed and held to 100: gold and exp are raised by their
+ * sum and rounded, every drop chance by matFind's.
  */
 export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 1): { exp: number; gold: number; drops: Record<string, number> } {
   let exp = 0, gold = 0;
   const drops: Record<string, number> = {};
+  const find = (k: SecondaryKey) => Math.min(100, living(s.party).reduce((n, c) => n + (c.x[k] ?? 0), 0));
+  const matMul = 1 + find('matFind') / 100;
   for (const e of s.enemies) {
     const d = enemyDef(s, e)!;
     exp += d.exp;
     gold += d.gold;
     for (const drop of d.drops) {
-      if (rng() >= Math.min(1, drop.chance * (dropBoost ? 2 : 1))) continue;
+      if (rng() >= Math.min(1, drop.chance * (dropBoost ? 2 : 1) * matMul)) continue;
       const whole = Math.floor(dropMul), part = dropMul - whole;
       const n = whole + (part > 0 && rng() < part ? 1 : 0);
       if (n > 0) drops[drop.mat] = (drops[drop.mat] ?? 0) + n;
     }
   }
-  return { exp, gold, drops };
+  return { exp: Math.round(exp * (1 + find('expBonus') / 100)), gold: Math.round(gold * (1 + find('goldFind') / 100)), drops };
 }
 
 export function writeBack(p: Party, s: BattleState): Party {

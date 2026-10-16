@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
+import type { Combatant } from '../../engine/combatant';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { BattleScene } from './battle';
@@ -116,6 +117,36 @@ describe('BattleScene', () => {
     for (let i = 0; i < 5; i++) s.onAction('down');
     s.onAction('confirm');
     expect(Object.values(submit.mock.calls[0][0]).every((a) => a.kind === 'attack')).toBe(true);
+  });
+
+  it('a legendary that makes 月光 hit all allies skips the target pick', () => {
+    const toSelene = (s: BattleScene) => {
+      for (let i = 0; i < 4; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×4
+      s.onAction('down'); s.onAction('confirm');                                                       // 技能
+      s.onAction('confirm');                                                                           // 月光
+    };
+    const plain = setup();
+    const plainSubmit = vi.spyOn(plain.game, 'submitRound');
+    toSelene(plain.s);
+    expect(plainSubmit).not.toHaveBeenCalled();                                                         // asks whom to heal
+    expect(plain.root.querySelector('.slx-btarget')).not.toBeNull();
+    const crowned = setup((g) => { g.battle!.party.find((c) => c.key === 'selene')!.powers = ['lg-selene']; });
+    const submit = vi.spyOn(crowned.game, 'submitRound');
+    toSelene(crowned.s);
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(submit.mock.calls[0][0].selene).toEqual({ kind: 'skill', skill: 'moonlight', target: undefined });
+  });
+
+  it('the skill list shows the reduced TP cost and greys by it', () => {
+    // 絲嘉蕾 at level 5 knows 鐵壁 (4 TP); she has 3 TP.
+    const wall = (prep: (c: Combatant) => void) => {
+      const { s, root } = setup((g) => { g.state.party.roster.scarlet.level = 5; const c = g.battle!.party[0]; c.tp = 3; prep(c); });
+      s.onAction('down'); s.onAction('confirm');                                                       // 技能
+      const opt = root.querySelector('.slx-bsub [data-id="iron-wall"]')!;
+      return [opt.querySelector('.slx-right')!.textContent, opt.getAttribute('aria-disabled')];
+    };
+    expect(wall(() => {})).toEqual(['4 TP', 'true']);
+    expect(wall((c) => { c.x.tpCost = 25; })).toEqual(['3 TP', 'false']);
   });
 
   it('lists only the drops taken and names what a full pack left behind', async () => {

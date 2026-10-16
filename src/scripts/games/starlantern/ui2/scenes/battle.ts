@@ -6,7 +6,7 @@ import { ITEMS } from '../../data/items';
 import { SKILLS } from '../../data/skills';
 import { T } from '../../data/text.zh-TW';
 import { ULTIMATES } from '../../data/ultimates';
-import { LIMIT_MAX, intentLabel, type Action, type BattleState } from '../../engine/battle';
+import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import type { BattleEnd } from '../../engine/game';
 import { learnedSkills } from '../../engine/party';
@@ -171,14 +171,19 @@ export class BattleScene implements Scene {
       return;
     }
     if (id === 'ultimate') { this.withTarget(ULTIMATES[actor.defId as CharacterId].target, { kind: 'ultimate' }); return; }
-    if (id === 'skill') { this.subList(this.skillItems(actor), (it) => this.withTarget(SKILLS[it.id].target, { kind: 'skill', skill: it.id })); return; }
+    if (id === 'skill') { this.subList(this.skillItems(actor), (it) => this.withTarget(skillFor(actor, it.id).target, { kind: 'skill', skill: it.id })); return; }
     if (id === 'item') this.subList(this.itemItems(), (it) => this.withTarget(ITEMS[it.id].target, { kind: 'item', item: it.id }));
   }
 
   private skillItems(actor: Combatant): MenuItem[] {
     return learnedSkills(actor.key as CharacterId, this.ctx.game.state.party.roster[actor.key as CharacterId]?.level ?? 1)
-      .filter((s) => !SKILLS[s].passive)
-      .map((s) => ({ id: s, label: SKILLS[s].name, right: T.cmd.tp(SKILLS[s].tp), disabled: actor.tp < SKILLS[s].tp, note: SKILLS[s].desc }));
+      // As this member casts them: a worn power may change the target, and tpCost lowers what each costs.
+      .map((s) => skillFor(actor, s))
+      .filter((sk) => !sk.passive)
+      .map((sk) => {
+        const cost = skillCost(actor, sk.id);
+        return { id: sk.id, label: sk.name, right: T.cmd.tp(cost), disabled: actor.tp < cost, note: sk.desc };
+      });
   }
 
   private itemItems(): MenuItem[] {
