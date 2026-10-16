@@ -4028,7 +4028,7 @@
     },
     "scene-shop": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/scene/shop.png",
       "final": "art-factory/starlantern/work/scene-shop/scene-shop.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-shop\\scene-shop-a1.png",
@@ -4041,11 +4041,12 @@
           418,
           235
         ]
-      }
+      },
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "scene-inn": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/scene/inn.png",
       "final": "art-factory/starlantern/work/scene-inn/scene-inn.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-inn\\scene-inn-a1.png",
@@ -4058,11 +4059,12 @@
           418,
           235
         ]
-      }
+      },
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "scene-gate": {
       "kind": "opaque",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/scene/gate.png",
       "final": "art-factory/starlantern/work/scene-gate/scene-gate.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\scene-gate\\scene-gate-a1.png",
@@ -4075,7 +4077,8 @@
           418,
           235
         ]
-      }
+      },
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "npc-guild": {
       "kind": "sprite",
@@ -4133,7 +4136,7 @@
     },
     "npc-shop": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/npc/shop.png",
       "allow_edge": [
         "bottom"
@@ -4156,11 +4159,12 @@
           171
         ]
       },
-      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw"
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "npc-shop-happy": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/npc/shop-happy.png",
       "allow_edge": [
         "bottom"
@@ -4183,11 +4187,12 @@
           171
         ]
       },
-      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw"
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "npc-inn": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/npc/inn.png",
       "allow_edge": [
         "bottom"
@@ -4210,11 +4215,12 @@
           178
         ]
       },
-      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw"
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "npc-inn-happy": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/npc/inn-happy.png",
       "allow_edge": [
         "bottom"
@@ -4237,11 +4243,12 @@
           178
         ]
       },
-      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw"
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "npc-gate": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/npc/gate.png",
       "allow_edge": [
         "bottom"
@@ -4262,11 +4269,12 @@
           188
         ]
       },
-      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw"
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "npc-gate-happy": {
       "kind": "sprite",
-      "status": "qa_passed",
+      "status": "published",
       "runtime": "/assets/games/starlantern/npc/gate-happy.png",
       "allow_edge": [
         "bottom"
@@ -4287,7 +4295,8 @@
           188
         ]
       },
-      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw"
+      "reason": "user 2026-10-16: characters should feel Japanese anime-style (pixel art kept); redraw",
+      "approved_by": "user 2026-10-16: 看起來可以"
     },
     "ui-logo": {
       "kind": "sprite",
