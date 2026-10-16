@@ -32,9 +32,9 @@ function airComponents(r: GenResult, y0: number, y1: number): number[] {
   return sizes;
 }
 
-describe('深度層與洞穴系統', () => {
+describe('深度層與洞穴系統', { timeout: 180_000 }, () => {
   let a: GenResult;
-  beforeAll(() => { a = generateWorld('layers'); });
+  beforeAll(() => { a = generateWorld('layers'); }, 180_000);
 
   it('分界線單調：地表 < 岩層 < 洞穴層 < 熔岩深淵，且各層厚度有起伏', () => {
     const { layers, world } = a;
@@ -180,10 +180,10 @@ describe('深度層與洞穴系統', () => {
   });
 });
 
-describe('生態區的有機形狀', () => {
+describe('生態區的有機形狀', { timeout: 180_000 }, () => {
   const seeds = ['shape-a', 'shape-b'];
   const results: GenResult[] = [];
-  beforeAll(() => { for (const s of seeds) results.push(generateWorld(s)); });
+  beforeAll(() => { for (const s of seeds) results.push(generateWorld(s)); }, 180_000);
 
   /** 某一列上帶該生態區背景牆的格數（= 該深度的寬度） */
   const widthAt = (r: GenResult, walls: number[], y: number): number => {
@@ -240,7 +240,7 @@ describe('生態區的有機形狀', () => {
   });
 });
 
-describe('地表', () => {
+describe('地表', { timeout: 180_000 }, () => {
   it('大山塊（mountains 段）比旁邊高很多；乾湖床、天坑會出現', () => {
     let tallest = 0, beds = 0, sinks = 0;
     for (const sd of ['m1', 'm2', 'm3', 'm4', 'm5']) {
@@ -261,12 +261,14 @@ describe('地表', () => {
   });
 });
 
-describe('確定性', () => {
+describe('確定性', { timeout: 180_000 }, () => {
   it('同 seed 全尺寸兩次生成位元相同（fg / wall / 分界線 / 箱子）', () => {
     const x = generateWorld('det'), y = generateWorld('det');
     expect(hashBytes(x.world.fg, x.world.wall)).toBe(hashBytes(y.world.fg, y.world.wall));
     expect(hashBytes(x.layers.rock, x.layers.deep, x.layers.molten)).toBe(hashBytes(y.layers.rock, y.layers.deep, y.layers.molten));
     expect(JSON.stringify([...x.world.chests])).toBe(JSON.stringify([...y.world.chests]));
     expect(JSON.stringify(x.structures)).toBe(JSON.stringify(y.structures));
+    expect(x.dungeon).toBeTruthy();
+    expect(JSON.stringify(x.dungeon)).toBe(JSON.stringify(y.dungeon));
   });
 });

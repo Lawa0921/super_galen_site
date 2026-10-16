@@ -105,5 +105,5 @@ describe('LightEngine', () => {
     const ms = (performance.now() - t0) / N;
     console.log(`[delve] lighting 130x80+28 margin: ${ms.toFixed(2)} ms/compute`);
     expect(ms).toBeLessThan(25);
-  });
+  }, 120_000); // 先生成一個全尺寸世界：整套測試平行跑時要好幾秒
 });

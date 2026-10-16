@@ -19,7 +19,7 @@ function scene(): DelveGame {
   return g;
 }
 
-describe('存檔格式 3（地城狀態）', () => {
+describe('存檔格式 3（地城狀態）', { timeout: 180_000 }, () => {
   it('格式版本 3', () => {
     expect(SAVE_FORMAT).toBe(3);
     expect(snapshotGame(scene()).header.format).toBe(3);

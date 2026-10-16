@@ -179,7 +179,7 @@ describe('平台與提燈', () => {
   });
 });
 
-describe('真實地城：拿鑰匙一路開到寶藏室', () => {
+describe('真實地城：拿鑰匙一路開到寶藏室', { timeout: 180_000 }, () => {
   it('依生成資訊取得所有地城鑰匙 → 開所有上鎖的門 → 拿金鑰匙 → 開金寶箱拿到符文鎬', () => {
     const g = new DelveGame({ seed: 'alpha' });
     const d = g.dungeon!;

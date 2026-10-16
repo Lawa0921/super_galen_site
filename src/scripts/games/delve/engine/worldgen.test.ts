@@ -30,10 +30,10 @@ describe('tileRunner', () => {
   });
 });
 
-describe('generateWorld', () => {
+describe('generateWorld', { timeout: 180_000 }, () => {
   let a: GenResult;
   let genMs = 0;
-  beforeAll(() => { const t0 = performance.now(); a = generateWorld('alpha'); genMs = performance.now() - t0; });
+  beforeAll(() => { const t0 = performance.now(); a = generateWorld('alpha'); genMs = performance.now() - t0; }, 180_000);
 
   it('預設尺寸 4200×1200', () => {
     expect(WORLD_W).toBe(4200);
@@ -218,9 +218,9 @@ describe('generateWorld', () => {
   });
 });
 
-describe('地形種類與迷你生態區', () => {
+describe('地形種類與迷你生態區', { timeout: 180_000 }, () => {
   let a: GenResult;
-  beforeAll(() => { a = generateWorld('landforms'); });
+  beforeAll(() => { a = generateWorld('landforms'); }, 180_000);
   const LF_BY_BIOME: Record<number, string[]> = {
     [BIOME.FOREST]: ['plains', 'hills', 'mountains', 'valley', 'reserved'],
     [BIOME.DESERT]: ['dunes', 'mesa'],

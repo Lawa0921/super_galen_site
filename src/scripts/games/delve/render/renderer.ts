@@ -54,6 +54,8 @@ export class Renderer {
   zoomOffset = 0;
   private cssW = 1; private cssH = 1;
   stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0 };
+  /** debug：不畫光照遮罩（文件截圖用） */
+  fullbright = false;
 
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
@@ -508,6 +510,7 @@ export class Renderer {
   // 每格 tile 先算暗度（0 = 亮、1 = 全暗），再雙線性取樣到 2 美術 px 的小格，
   // 量化成 LIGHT_LEVELS 階：靠近某階是平台，兩階之間用世界錨定的 4×4 Bayer 抖動 → 復古的階梯式光照。
   private drawLight(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
+    if (this.fullbright) return;
     const g = this.game, w = g.world;
     this.lightAge++;
     if (this.lightDirty || this.lightAge >= LIGHT_EVERY || !this.light) {

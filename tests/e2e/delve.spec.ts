@@ -236,6 +236,61 @@ test.describe('delve', () => {
     await expect(page.locator('#delve-upgrade-new')).toBeVisible();
   });
 
+  test('地城：debug 傳送進地城、右鍵開門、拿地城鑰匙右鍵開上鎖的門（存檔後仍是開的）', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=alpha&autostart=1&fresh=1');
+    await waitGame(page);
+    /** 傳送到門旁（自由區那側）並回傳門中段 tile 在畫面上的座標 */
+    const nearDoor = (locked: boolean): Promise<{ x: number; y: number; sx: number; sy: number }> => page.evaluate(async (locked) => {
+      const d = window.__delveDebug!, g = d.game, w = g.world, dg = g.dungeon;
+      const door = locked ? dg.doors.find((q: { locked: boolean }) => q.locked)
+        : dg.doors.find((q: { x: number; y: number; locked: boolean }) => !q.locked && w.getFg(q.x, q.y) === 53 && w.getFg(q.x - 1, q.y + 2) === 0 && w.getFg(q.x - 2, q.y + 2) === 0 && w.isSolid(q.x - 1, q.y + 3));
+      // 上鎖的門：站在不屬於上鎖房間的那一側
+      let side = -1;
+      if (locked) {
+        const room = dg.rooms.find((r: { locked: boolean; x: number; w: number }) => r.locked && (door.x === r.x - 1 || door.x === r.x + r.w));
+        side = room && door.x === room.x - 1 ? -1 : 1;
+      }
+      g.teleport(door.x + side * 2, door.y + 2);
+      d.handle.renderer.snapCamera();
+      await new Promise((r) => setTimeout(r, 400));
+      const r = d.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
+      const wx = (door.x + 0.5) * 16, wy = (door.y + 1.5) * 16;
+      return { x: door.x, y: door.y, sx: c.left + (wx - r.drawCam.x) * r.zoom, sy: c.top + (wy - r.drawCam.y) * r.zoom };
+    }, locked);
+    const fg = (x: number, y: number): Promise<number> => page.evaluate(([x, y]) => window.__delveDebug!.game.world.getFg(x, y), [x, y]);
+    // 1) 普通的門：右鍵 → 開
+    const a = await nearDoor(false);
+    expect(await fg(a.x, a.y + 1)).toBe(53);
+    await page.mouse.move(a.sx, a.sy);
+    await page.mouse.down({ button: 'right' });
+    await page.waitForTimeout(150);
+    await page.mouse.up({ button: 'right' });
+    await expect.poll(() => fg(a.x, a.y + 1)).toBe(54);
+    for (let k = 0; k < 3; k++) expect(await fg(a.x, a.y + k)).toBe(54);
+    // 2) 上鎖的門：沒鑰匙右鍵 → 還是鎖著、提示；拿到鑰匙再右鍵 → 開、鑰匙少一把
+    const b = await nearDoor(true);
+    expect(await fg(b.x, b.y + 1)).toBe(55);
+    await page.mouse.move(b.sx, b.sy);
+    await page.mouse.down({ button: 'right' }); await page.waitForTimeout(150); await page.mouse.up({ button: 'right' });
+    await expect(page.locator('#delve-toast')).toContainText('鑰匙');
+    expect(await fg(b.x, b.y + 1)).toBe(55);
+    await page.evaluate(() => window.__delveDebug!.game.give('dungeon_key', 2));
+    await page.mouse.down({ button: 'right' }); await page.waitForTimeout(150); await page.mouse.up({ button: 'right' });
+    await expect.poll(() => fg(b.x, b.y + 1)).toBe(54);
+    expect(await page.evaluate(() => window.__delveDebug!.game.inventory.count('dungeon_key'))).toBe(1);
+    // 3) 存檔 → 重新整理 → 繼續：兩扇門都還開著
+    await page.evaluate(() => window.__delveDebug!.save());
+    await page.goto('/games/delve');
+    await page.click('#delve-continue');
+    await waitGame(page);
+    expect(await fg(a.x, a.y + 1)).toBe(54);
+    expect(await fg(b.x, b.y + 1)).toBe(54);
+    expect(await page.evaluate(() => window.__delveDebug!.game.world.keysUsed)).toBe(1);
+    expect(errors).toEqual([]);
+  });
+
   test('遊戲廳卡片連到 /games/delve', async ({ page }) => {
     await page.goto('/games');
     const link = page.locator('a[href="/games/delve"]');

@@ -414,6 +414,14 @@ function build(world: World, o: DungeonOptions, p: Plan, rng: Rng): DungeonInfo 
   hang(cx - 5, towerIn.y, 2, T.LANTERN); hang(cx + 6, towerIn.y, 2, T.LANTERN);
   for (const x of [towerIn.x + 1, towerIn.x + towerIn.w - 2]) if (floorFree(x, gy - 11)) put(x, gy - 11, T.CANDLE);
   tablet(towerIn.x + 3, gy - 1);
+  // 一樓照明：二樓平台下掛吊燈、門邊放蠟燭
+  for (const x of [cx - 6, cx + 6]) if (get(x, gy - 9) === T.AIR && get(x, gy - 10) === T.PLATFORM) { put(x, gy - 9, T.CHAIN); put(x, gy - 8, T.LANTERN); }
+  for (const x of [towerIn.x + 1, towerIn.x + towerIn.w - 2]) if (floorFree(x, gy - 1)) put(x, gy - 1, T.CANDLE);
+  // 整平過的地面重新長草（塔身以外）
+  for (let x = cx - 34; x <= cx + 34; x++) {
+    if (x >= tower.x - 1 && x <= tower.x + tower.w) continue;
+    if (get(x, gy) === T.DIRT && get(x, gy - 1) === T.AIR) put(x, gy, T.GRASS);
+  }
 
   for (const r of rooms) {
     const f = fy(r), mid = Math.floor(cxOf(r));
