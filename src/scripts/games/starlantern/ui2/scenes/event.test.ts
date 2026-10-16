@@ -321,33 +321,50 @@ describe('gear from chests and the vault', () => {
   });
 
   it('a chest picked up after freeing room raises its pillar once', () => {
-    const { game, s, root, pick, sfx } = setup();
+    const { game, s, root, pick, sfx, text } = setup();
     game.state.bag = Array.from({ length: 59 }, (_, i) => gearOf(1000 + i, 'cloth-robe', 'common'));
     game.run!.loot.gear.push(gearOf(7, 'leather-vest', 'common'));   // 59 + 1: full
     const { dir, at } = chestCell(game, true);
     game.run!.gearRolls[`chest:${game.floor}:${at.x},${at.y}`] = gearOf(10, 'wooden-staff', 'magic');
     s.onAction(dir);
-    expect(root.querySelector('.slx-pillar')).toBeNull();   // still on the floor
+    expect(root.querySelector('.slx-pillar')).toBeNull();   // still in the chest
+    expect(root.querySelector('.slx-full')!.textContent).toContain('打開寶箱');   // the materials are paid at once
     pick('皮背心');
     pick('是');
+    expect(text()).toContain('撿起了 木杖・魔法');
     expect(root.querySelectorAll('.slx-pillar.slx-rarity-magic').length).toBe(1);
     expect(sfx.loot).toHaveBeenCalledTimes(1);
     expect(sfx.loot).toHaveBeenCalledWith('magic', 150);
   });
 
-  it('a bag already full from town says the run pack has no gear to throw away, and offers nothing else', () => {
+  it('a bag already full from town still opens the vault and pays its materials; the gear waits, and is taken once a slot is free', () => {
     const { game, s, root, options, pick, plant, text } = setup();
     game.state.bag = Array.from({ length: 60 }, (_, i) => gearOf(1000 + i, 'cloth-robe', 'common'));
-    game.run!.loot.items['old-coin'] = 400;   // too heavy as well: materials still cannot free a bag slot
     game.run!.keys.add(game.floor);
-    const { dir } = plant('vault');
+    const { dir, at } = plant('vault');
+    game.run!.gearRolls[`vault:${game.floor}:${at.x},${at.y}`] = gearOf(55, 'hunter-bow', 'unique');
     s.onAction(dir);
     pick('開啟');
     const box = root.querySelector('.slx-full')!;
+    expect(box.textContent).toContain('打開寶庫');
+    expect(box.textContent).toContain('獵弓・獨特 放不下');
     expect(box.textContent).toContain('冒險背包裡沒有裝備可以丟');
+    expect(box.textContent).not.toContain('回城');   // the labyrinth is new every trip: no coming back for it
     expect(options()).toEqual(['放棄']);
+    expect(Object.keys(game.run!.loot.items).filter((id) => RARE_MATERIALS.includes(id))).toHaveLength(1);
+    expect(game.run!.loot.items['old-coin']).toBe(6);
     pick('放棄');
     expect(text()).toBe('先把它留在原地吧。');
+    s.onAction('confirm');
+    expect(root.querySelector('.slx-pillar')).toBeNull();
+    // A slot freed (here by hand): stepping back onto the vault picks the gear up.
+    game.state.bag.pop();
+    game.pos = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
+    s.onAction(dir);
+    expect(text()).toContain('撿起了 獵弓・獨特');
+    expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([55]);
+    expect(root.querySelectorAll('.slx-pillar.slx-rarity-unique').length).toBe(1);
+    expect(tileAt(game.map(), at)).toBe('floor');
   });
 
   it('a full bag offers run-pack gear to discard, throws away only the chosen piece, and then picks up', () => {
@@ -368,7 +385,7 @@ describe('gear from chests and the vault', () => {
     expect(ask.querySelector('.slx-rarity-magic')!.textContent).toBe('皮背心・魔法');   // the confirm keeps the colour
     pick('是');
     expect(root.querySelector('.slx-full')).toBeNull();
-    expect(text()).toContain('打開寶箱');
+    expect(text()).toContain('撿起了 木杖・稀有');
     expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([7, 9, 10]);
     expect(game.run!.opened.has(`${game.floor}:${at.x},${at.y}`)).toBe(true);
   });

@@ -5,7 +5,7 @@ import type { Content } from '../../engine/dungeon/rooms';
 import { altarAt } from '../../engine/events';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { itemWeight } from '../../engine/loot/item';
-import type { MoveResult } from '../../engine/game';
+import type { FullResult, MoveResult } from '../../engine/game';
 import type { ItemInstance, Pos } from '../../engine/types';
 import { ART_BASE } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
@@ -16,7 +16,7 @@ import { fillRich, gearLabel, gearPart, joinParts } from '../loot';
 import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
 
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
-export type FullResult = Extract<MoveResult, { kind: 'full' }>;
+export type { FullResult } from '../../engine/game';
 export type EventKind = 'fountain' | 'merchant' | 'altar' | 'vault' | 'elite';
 
 /** What an event window needs from the labyrinth screen that hosts it. */
@@ -145,20 +145,31 @@ function openVault(host: EventHost, at: Pos): void {
 
 /**
  * What a chest or the vault gave, after a step or a retry: a line for the loot, the 背包已滿 window again (retrying with
- * `Game.pickUpHere`), or — for a vault that did not open — a line saying why.
+ * `Game.pickUpHere`), or — for a vault that did not open — a line saying why. A chest or vault whose gear did not fit is
+ * still opened: its loot line heads the 背包已滿 window for the gear left waiting in it.
  */
 export function showPickUp(host: EventHost, r: MoveResult | null, vault = false): void {
   const { ctx } = host;
-  if (r?.kind === 'full') { ctx.sfx.error(); host.push(fullLayer(host, r, () => showPickUp(host, ctx.game.pickUpHere(), vault))); return; }
-  if (r?.kind === 'vault') {
+  const full = (f: FullResult, opened?: Rich) => host.push(fullLayer(host, f, () => showPickUp(host, ctx.game.pickUpHere(), vault), opened));
+  if (r?.kind === 'full') { ctx.sfx.error(); full(r); return; }
+  if (r?.kind === 'vault' || r?.kind === 'chest') {
     ctx.sfx.chest?.();
     host.refresh();
-    const parts: RichPart[] = [...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map(gearPart)];
-    host.say(fillRich(T.ui2.event.vault.opened, joinParts(parts)));
-    host.drop(r.gear);
+    const said = r.kind === 'vault'
+      ? fillRich(T.ui2.event.vault.opened, joinParts([...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map(gearPart)]))
+      : chestLine(r);
+    if (r.waiting) { full(r.waiting, said); return; }
+    host.say(said);
+    host.drop(r.kind === 'vault' ? r.gear : r.gear ? [r.gear] : []);
     return;
   }
-  if (r?.kind === 'chest') { ctx.sfx.chest?.(); host.refresh(); host.say(chestLine(r)); host.drop(r.gear ? [r.gear] : []); return; }
+  if (r?.kind === 'pickup') {
+    ctx.sfx.chest?.();
+    host.refresh();
+    host.say(fillRich(T.ui2.event.pickedUp, [gearPart(r.gear)]));
+    host.drop([r.gear]);
+    return;
+  }
   ctx.sfx.error();
   host.say(vault ? T.ui2.event.vault.failed : T.reasons.invalid);
 }
@@ -178,17 +189,19 @@ function carriedItems(host: EventHost): Record<string, number> {
  * - bag slots (`r.bag`, titled 背包已滿（60 件）): only throwing away run-pack gear frees a slot, so when the run pack holds
  *   none, nothing is offered but 放棄.
  * Once both fit, `retry` takes the pick-up (Game.pickUpHere through showPickUp; still not fitting opens this window again);
- * without it the line says to step on it again.
+ * without it the line says to step on it again. `opened` is the loot line of a chest or vault that opened while its gear
+ * stayed behind.
  */
-export function fullLayer(host: EventHost, r: FullResult, retry?: () => void): Layer {
+export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, opened?: Rich): Layer {
   const F = T.ui2.event.full;
   const { ctx } = host;
   const g = ctx.game;
   const gear = g.run?.loot.gear ?? [];
   const stuck = !!r.bag && gear.length === 0;   // no slot can be freed from here
-  const body: HTMLElement[] = [];
+  const body: HTMLElement[] = opened ? [richLine(opened)] : [];
   if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearPart(r.gear)])));
-  if (r.need > 0) body.push(line(F.desc(itemName(r.item), r.qty, Number(fmtWeight(r.need)))));
+  if (r.need > 0 && r.item) body.push(line(F.desc(itemName(r.item), r.qty ?? 1, Number(fmtWeight(r.need)))));
+  else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearPart(r.gear)])));
   body.push(line(stuck ? F.noGear : r.bag ? F.whichGear : F.which, 'slx-event-ask'));
   const held = r.need > 0 && !stuck ? carriedItems(host) : {};
   const items: MenuItem[] = [

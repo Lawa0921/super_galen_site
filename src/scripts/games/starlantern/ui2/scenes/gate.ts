@@ -6,6 +6,7 @@ import { SETS, SPECIALS, codexName, generalLegendaries, regionSpecials } from '.
 import { REGIONS, type RegionId } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
+import { BAG_SIZE } from '../../engine/loot/bag';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
 import { depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art } from '../../render/artPaths';
@@ -41,6 +42,9 @@ function monsterNames(region: RegionId, reached: number): string[] {
 function gearIds(region: RegionId): string[] {
   return [...regionSpecials(region).map((s) => s.id), ...Object.values(SETS).filter((s) => s.region === region).map((s) => s.id)];
 }
+
+/** The departure confirm warns when the town bag has fewer free slots than this. */
+const BAG_LOW = 5;
 
 /** Three portal cards side by side: ←→ or the pointer chooses, Enter or a click goes in. */
 class PortalCards {
@@ -198,6 +202,9 @@ export class GateScene extends FacilityScene {
     // Over the limit before setting out (the consumables alone): say so, but let the party go.
     const now = carried(this.ctx.game.state), cap = capacity(this.ctx.game.state.party);
     if (now > cap) box.view.el.before(el('p', { class: 'slx-confirm-warn', text: T.ui2.gate.heavy(formatWeight(now), formatWeight(cap)) }));
+    // Fewer than BAG_LOW free bag slots: gear that does not fit will have to stay in its chest. Say so, but let the party go.
+    const free = BAG_SIZE - this.ctx.game.state.bag.length;
+    if (free < BAG_LOW) box.view.el.before(el('p', { class: 'slx-confirm-warn', text: T.ui2.gate.bagLow(Math.max(0, free)) }));
     box.view.menu.setCursor(1);
     box.view.render();
     this.push({ el: box.el, onAction: (a) => box.view.onAction(a) });

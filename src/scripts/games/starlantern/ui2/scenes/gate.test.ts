@@ -5,6 +5,7 @@ import { NO_ART, type ArtIndex } from '../../render/textures';
 import { GateScene, portalArt } from './gate';
 import { generalLegendaries } from '../../data/gear';
 import { capacity, carried, formatWeight } from '../../data/weights';
+import { BAG_SIZE } from '../../engine/loot/bag';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
@@ -95,6 +96,24 @@ describe('GateScene: the portal plaza', () => {
     s.onAction('up'); s.onAction('confirm');       // 是
     expect(go).toHaveBeenCalledWith('dungeon');
     expect(game.phase).toBe('map');
+  });
+
+  it('warns before departure when the town bag has fewer than 5 free slots, and still departs', () => {
+    const gear = (n: number) => Array.from({ length: n }, (_, i) => ({ uid: 100 + i, base: 'iron-sword', rarity: 'common' as const, ilvl: 1, affixes: [], enhance: 0 }));
+    const { game, go, s, root } = setup((g) => { g.state.bag = gear(BAG_SIZE - 4); });
+    s.onAction('confirm'); s.onAction('confirm');   // the mainline, depth 1
+    const warn = root.querySelector('.slx-confirm .slx-confirm-warn');
+    expect(warn!.textContent).toBe('背包只剩 4 格空位，放不下的裝備只能先留在寶箱裡');
+    s.onAction('up'); s.onAction('confirm');       // 是
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(game.phase).toBe('map');
+    // A full bag says 0; five free slots say nothing.
+    for (const [n, said] of [[BAG_SIZE, '背包只剩 0 格空位，放不下的裝備只能先留在寶箱裡'], [BAG_SIZE - 5, null]] as const) {
+      const t = setup((g) => { g.state.bag = gear(n); });
+      t.s.onAction('confirm'); t.s.onAction('confirm');
+      expect(t.root.querySelector('.slx-confirm')).not.toBeNull();
+      expect(t.root.querySelector('.slx-confirm .slx-confirm-warn')?.textContent ?? null).toBe(said);
+    }
   });
 
   it('no weight warning when the pack is within the limit', () => {

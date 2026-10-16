@@ -220,7 +220,7 @@ export class DungeonScene implements Scene {
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
       case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
       case 'stairs': s.step?.(); this.refresh(); this.push(stairsLayer(this.host(), r, () => this.descend())); return;
-      case 'chest': showPickUp(this.host(), r); return;
+      case 'chest': case 'pickup': showPickUp(this.host(), r); return;
       case 'event': s.step?.(); this.refresh(); this.push(eventLayer(this.host(), r.content)); return;
       case 'trap':
         s.hit?.();
