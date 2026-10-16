@@ -11,15 +11,25 @@ const SLOTS: Slot[] = ['weapon', 'armor', 'accessory'];
 
 export const expToNext = (level: number): number => Math.floor(14 * level ** 1.3);
 
-export function statsOf(m: Member): Stats {
+/** Where a member's numbers come from; later systems (enchanting, talents) add a source here and the character sheet grows a column. */
+export type StatSource = 'base' | 'growth' | 'gear';
+
+export function statSources(m: Member): { source: StatSource; stats: Partial<Stats> }[] {
   const def = CHARACTERS[m.id];
-  const out = {} as Stats;
-  for (const k of STAT_KEYS) out[k] = def.base[k] + def.growth[k] * (m.level - 1);
+  const growth: Partial<Stats> = {};
+  for (const k of STAT_KEYS) growth[k] = def.growth[k] * (m.level - 1);
+  const gear: Partial<Stats> = {};
   for (const slot of SLOTS) {
-    const id = m.equip[slot];
-    const bonus = id ? EQUIPMENT[id]?.bonus : undefined;
-    if (bonus) for (const k of STAT_KEYS) out[k] += bonus[k] ?? 0;
+    const bonus = m.equip[slot] ? EQUIPMENT[m.equip[slot]!]?.bonus : undefined;
+    if (bonus) for (const k of STAT_KEYS) gear[k] = (gear[k] ?? 0) + (bonus[k] ?? 0);
   }
+  return [{ source: 'base', stats: { ...def.base } }, { source: 'growth', stats: growth }, { source: 'gear', stats: gear }];
+}
+
+export function statsOf(m: Member): Stats {
+  const out = {} as Stats;
+  for (const k of STAT_KEYS) out[k] = 0;
+  for (const part of statSources(m)) for (const k of STAT_KEYS) out[k] += part.stats[k] ?? 0;
   return out;
 }
 

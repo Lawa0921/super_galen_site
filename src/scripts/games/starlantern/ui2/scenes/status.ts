@@ -47,6 +47,7 @@ export class StatusScene implements Scene {
 
   onAction(a: UiAction): void {
     const n = STATUS_TABS.length;
+    if (a !== 'prev' && a !== 'next' && a !== 'cancel' && STATUS_TABS[this.tab].onAction?.(a, this.ctx, this.id)) { this.render(); return; }
     if (a === 'left' || a === 'right') { this.tab = (this.tab + (a === 'right' ? 1 : n - 1)) % n; this.ctx.sfx.cursor(); this.render(); return; }
     if (a === 'prev' || a === 'next') { this.page(a === 'next' ? 1 : -1); return; }
     if (a === 'up' || a === 'down') { this.bodyEl.scrollTop = Math.max(0, this.bodyEl.scrollTop + (a === 'down' ? 32 : -32)); return; }
@@ -79,11 +80,11 @@ export class StatusScene implements Scene {
     if (this.shownId !== this.id) this.drawStandee();
     this.nameEl.replaceChildren(el('span', { class: 'slx-status-title', text: def.title }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` }));
     this.tabsEl.replaceChildren(...STATUS_TABS.map((t, i) => {
-      const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: T.ui2.status.tabs[t.id] ?? t.id, attrs: { role: 'tab', 'data-tab': t.id, 'aria-selected': String(i === this.tab) } });
+      const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: t.label, attrs: { role: 'tab', 'data-tab': t.id, 'aria-selected': String(i === this.tab) } });
       b.addEventListener('click', () => { this.tab = i; this.ctx.sfx.cursor(); this.render(); });
       return b;
     }));
-    this.bodyEl.replaceChildren(STATUS_TABS[this.tab].render(this.ctx.game, this.id));
+    this.bodyEl.replaceChildren(STATUS_TABS[this.tab].render(this.ctx, this.id));
     this.bodyEl.scrollTop = 0;
   }
 }

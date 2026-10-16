@@ -88,9 +88,12 @@ function pickTarget(list: Combatant[], key: string | undefined, rng: Rng): Comba
   return alive.find((c) => c.taunt > 0) ?? pick(rng, alive);
 }
 
-/** Enemies attacking the party are bound by the grid: melee reaches only the front-most standing row. */
+/** Enemies attacking the party are bound by the grid: melee reaches only the front-most standing row; a taunting member is always reachable. */
 function foePool(s: BattleState, actor: Combatant, melee: boolean): Combatant[] {
-  return actor.side === 'enemy' ? reachable(s.party, melee) : s.enemies;
+  if (actor.side !== 'enemy') return s.enemies;
+  const pool = reachable(s.party, melee);
+  const taunter = living(s.party).find((c) => c.taunt > 0);
+  return taunter && !pool.includes(taunter) ? [...pool, taunter] : pool;
 }
 
 function resolveTargets(s: BattleState, actor: Combatant, target: Target | null, chosen: string | undefined, rng: Rng, melee = false): Combatant[] {
@@ -99,6 +102,7 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
   switch (target) {
     case 'enemy': { const t = pickTarget(foePool(s, actor, melee), chosen, rng); return t ? [t] : []; }
     case 'row': case 'column': case 'cross': {
+      if (actor.side === 'party') return living(foes);   // enemies stand in one line: a shape covers them all
       const t = pickTarget(foePool(s, actor, melee), chosen, rng);
       return t ? shapeTargets(foes, t, target) : [];
     }
@@ -126,7 +130,7 @@ function chooseEnemyActions(s: BattleState, rng: Rng): Map<string, EnemyAction> 
     const skills = ENEMIES[e.defId]?.skills ?? [];
     const index = skills.findIndex((sk) => rng() < sk.chance);
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
-    const target = pickTarget(reachable(s.party, melee), undefined, rng)?.key;
+    const target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
     out.set(e.key, index >= 0 ? { kind: 'enemy-skill', index, target } : { kind: 'attack', target });
   }
   return out;

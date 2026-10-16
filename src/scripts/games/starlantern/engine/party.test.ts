@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  rowOfCell, expToNext, statsOf, newMember, newParty, recruit, setFormation, activeIds,
+  rowOfCell, statSources, expToNext, statsOf, newMember, newParty, recruit, setFormation, activeIds,
   learnedSkills, gainExp, awardExp, hasPassive, MAX_LEVEL,
 } from './party';
 
@@ -14,6 +14,17 @@ describe('stats', () => {
   it('starts members at full HP/TP', () => {
     const m = newMember('noel');
     expect([m.level, m.hp, m.tp]).toEqual([1, 28, 30]);
+  });
+});
+
+describe('stat sources', () => {
+  it('splits a member\u2019s numbers by where they come from and adds up to statsOf', () => {
+    const m = { ...newMember('scarlet'), level: 3, equip: { weapon: 'iron-sword' } };
+    const parts = statSources(m);
+    expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear']);
+    const total = statsOf(m);
+    for (const k of ['hp', 'atk', 'def'] as const) expect(parts.reduce((n, p) => n + (p.stats[k] ?? 0), 0)).toBe(total[k]);
+    expect(parts[2].stats.atk).toBeGreaterThan(0);
   });
 });
 

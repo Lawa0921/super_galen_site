@@ -85,7 +85,29 @@ describe('StatusScene', () => {
     expect(root.querySelectorAll('.slx-status-art .slx-mote').length).toBeGreaterThan(0);
   });
 
-  it('has a tab list that new systems can join', () => {
+  it('has a tab list that new systems can join, each carrying its own label and keys', () => {
     expect(STATUS_TABS.map((t) => t.id)).toEqual(['stats', 'gear', 'skills', 'ultimate']);
+    expect(STATUS_TABS.every((t) => t.label.length > 0)).toBe(true);
+    const extra = { id: 'test', label: '測試', onAction: vi.fn(() => true), render: () => document.createElement('div') };
+    STATUS_TABS.push(extra);
+    try {
+      const { s, tab } = setup('scarlet');
+      for (let i = 0; i < 4; i++) s.onAction('right');
+      expect(tab()).toBe('測試');
+      s.onAction('confirm');
+      expect(extra.onAction).toHaveBeenCalledWith('confirm', expect.anything(), 'scarlet');
+    } finally {
+      STATUS_TABS.pop();
+    }
+  });
+
+  it('shows no melee percentage for a member on reserve', () => {
+    const { body } = setup('scarlet');
+    expect(body()).toContain('近戰（100%）');
+    const r = setup('scarlet');
+    r.game.state.party.grid[0] = null;
+    r.s.onAction('next'); r.s.onAction('prev');
+    expect(r.body()).toContain('站位 待命');
+    expect(r.body()).not.toContain('%）');
   });
 });

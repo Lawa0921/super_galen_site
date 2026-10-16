@@ -8,11 +8,6 @@ export const T = {
   slot: SLOT,
   gold: (n: number) => `${n} G`,
   tabs: { guild: '公會', shop: '商店', inn: '旅館', depart: '出發' },
-  guild: {
-    formation: '編隊', front: (i: number) => `前排 ${i}`, back: (i: number) => `後排 ${i}`, none: '（空）',
-    recruit: (title: string, name: string) => `招募 ${title} ${name}`, members: '隊員與裝備', unequipped: '（未裝備）',
-    level: (lv: number) => `Lv ${lv}`,
-  },
   shop: {
     sell: '賣出素材', sellOne: '賣 1 個', sellAll: '全部賣出', buy: '購買', nothing: '沒有可賣的素材',
     needs: (name: string, n: number) => `需賣出 ${name} ×${n}`, price: (name: string, n: number) => `${name}（${n} G）`,
@@ -86,18 +81,20 @@ export const T = {
       hint: '方向鍵 選格　Enter／點擊 放人　Esc 返回',
     },
     status: {
-      tabs: { stats: '能力', gear: '裝備', skills: '技能', ultimate: '絕技' } as Record<string, string>,
-      cols: ['', '基礎', '成長', '裝備', '合計'],
+      tabs: { stats: '能力', gear: '裝備', skills: '技能', ultimate: '絕技' },
+      /** Column titles for statSources; a new source needs one line here. */
+      sources: { base: '基礎', growth: '成長', gear: '裝備' } as Record<string, string>,
+      total: '合計',
       exp: (n: number, next: number) => `經驗 ${n}／${next}`,
       place: (where: string) => `站位 ${where}`,
-      attack: (melee: boolean, pct: number) => (melee ? `攻擊方式 近戰（${pct}%）` : '攻擊方式 遠程／魔法'),
+      attack: (melee: boolean, pct: number | null) => (!melee ? '攻擊方式 遠程／魔法' : pct === null ? '攻擊方式 近戰' : `攻擊方式 近戰（${pct}%）`),
       gauge: (n: number) => `絕技量表 ${n}%`,
       learned: '已習得', at: (lv: number) => `Lv ${lv} 習得`, passive: '被動', tp: (n: number) => `TP ${n}`,
       none: '（未裝備）',
       hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
     },
     equip: {
-      title: '裝備', current: '裝備中', unequip: '卸下', nothing: '沒有可以換上的裝備',
+      title: '裝備', unequip: '卸下', nothing: '沒有可以換上的裝備',
       hint: '↑↓ 選擇　Enter 決定　Q／E 換人　Esc 返回',
     },
     settings: {
@@ -110,6 +107,7 @@ export const T = {
         ['Enter／Space／Z', '決定、推進對話'],
         ['Esc／X／右鍵', '取消、返回'],
         ['C', '迷宮中開啟選單'],
+        ['Q／E', '狀態與裝備畫面換人'],
         ['F11', '全螢幕'],
         ['滑鼠', '點選項目即決定；畫面上的「返回」等同取消'],
       ] as [string, string][],
@@ -141,14 +139,11 @@ export const T = {
     shop: {
       buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,
-      unlocked: (names: string) => `託你的福，現在可以做出 ${names} 了！`, nothing: '沒有可以賣的素材。', canEquip: '能裝備', cannot: '不能裝備',
+      unlocked: (names: string) => `託你的福，現在可以做出 ${names} 了！`, nothing: '沒有可以賣的素材。',
     },
     guild: {
-      formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態', empty: '（空）', unequip: '（卸下）',
-      front: (i: number, name: string) => `前排 ${i}：${name}`, back: (i: number, name: string) => `後排 ${i}：${name}`,
-      slot: (slot: string, name: string) => `${slot}：${name}`, none: '（未裝備）',
-      ask: (name: string) => `要讓 ${name} 加入隊伍嗎？`, recruited: (name: string) => `${name} 加入了隊伍！`, equipped: '裝備好了。', noGear: '這個欄位沒有可以換上的裝備。',
-      learnedAt: (lv: number) => `Lv ${lv} 習得`, ultimate: '絕技', gauge: (n: number) => `量表 ${n}%`,
+      formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態',
+      ask: (name: string) => `要讓 ${name} 加入隊伍嗎？`, recruited: (name: string) => `${name} 加入了隊伍！`,
       roles: {
         noel: '後排。火、冰、雷攻擊；降低敵人能力、毒。', chizuru: '前排。全體攻擊；我方減傷。', liz: '前或後。多段攻擊；降低遇敵、素材掉落加成。',
         sylvie: '後排。單體高傷；先制攻擊、提高逃跑率。', scarlet: '前排。吸引攻擊、替隊友擋傷；消耗 HP 打火屬性大傷害。',

@@ -39,6 +39,23 @@ describe('shapeTargets', () => {
 });
 
 describe('enemy targeting in a round', () => {
+  it('a taunting member draws melee even from a row melee could not reach', () => {
+    for (const r of [0, 0.3, 0.6, 0.99]) {
+      const s = makeBattle([at('front', 1), at('tank', 4, { taunt: 2 })], [makeCombatant({ key: 'e0', side: 'enemy', defId: 'bat' })]);
+      const out = resolveRound(s, { front: { kind: 'defend' }, tank: { kind: 'defend' } }, constRng(r));
+      const hits = out.log.filter((e) => e.type === 'damage').map((e) => (e as { target: string }).target);
+      expect(hits).toEqual(['tank']);
+    }
+  });
+
+  it('a row attack from a melee enemy hits the whole frontmost row and nobody behind it', () => {
+    // 洞窟蜥蜴's 甩尾 is a melee row attack; rng 0 makes it pick the skill
+    const s = makeBattle([at('a', 0), at('b', 2), at('c', 4)], [makeCombatant({ key: 'e0', side: 'enemy', defId: 'lizard' })]);
+    const out = resolveRound(s, { a: { kind: 'defend' }, b: { kind: 'defend' }, c: { kind: 'defend' } }, constRng(0));
+    const hits = out.log.filter((e) => e.type === 'damage').map((e) => (e as { target: string }).target).sort();
+    expect(hits).toEqual(['a', 'b']);
+  });
+
   it('a melee enemy never strikes the back row while the front row stands', () => {
     for (const r of [0, 0.3, 0.6, 0.99]) {
       const s = makeBattle([at('front', 1), at('back', 7)], [makeCombatant({ key: 'e0', side: 'enemy', defId: 'bat' })]);

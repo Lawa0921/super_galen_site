@@ -4,28 +4,25 @@ import { SKILLS } from '../../data/skills';
 import { T } from '../../data/text.zh-TW';
 import { ULTIMATES } from '../../data/ultimates';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
-import { expToNext, learnedSkills, statsOf } from '../../engine/party';
+import { expToNext, learnedSkills, statSources, statsOf } from '../../engine/party';
 import type { CharacterId, Slot, StatKey, Stats } from '../../engine/types';
-import type { Game } from '../../engine/game';
 import { el } from '../../ui/dom';
+import type { UiAction } from '../input';
+import type { SceneCtx } from '../scene';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 export const SLOT_ORDER: Slot[] = ['weapon', 'armor', 'accessory'];
 
+/**
+ * One page of the character sheet. A new system (enchanting, talents, a skill tree) adds an entry to STATUS_TABS:
+ * `render` draws the page; `onAction`, when present, receives keys first (except Q/E and cancel) and returns true
+ * when it used one, after which the sheet redraws the page.
+ */
 export interface StatusTab {
   id: string;
-  /** The page body for one member; tabs are listed in STATUS_TABS, so a new system (enchanting, talents, skill trees) adds one entry. */
-  render(game: Game, id: CharacterId): HTMLElement;
-}
-
-/** Sum of equipment bonuses for one member. */
-export function gearBonus(equip: Partial<Record<Slot, string>>): Partial<Stats> {
-  const out: Partial<Stats> = {};
-  for (const slot of SLOT_ORDER) {
-    const b = equip[slot] ? EQUIPMENT[equip[slot]!]?.bonus : undefined;
-    if (b) for (const [k, v] of Object.entries(b)) out[k as StatKey] = (out[k as StatKey] ?? 0) + (v ?? 0);
-  }
-  return out;
+  label: string;
+  render(ctx: SceneCtx, id: CharacterId): HTMLElement;
+  onAction?(a: UiAction, ctx: SceneCtx, id: CharacterId): boolean;
 }
 
 /** "攻擊+3 防禦+1" for a bonus, or an em dash. */
@@ -37,20 +34,20 @@ const signed = (n: number) => (n ? `${n > 0 ? '+' : ''}${n}` : '—');
 
 const stats: StatusTab = {
   id: 'stats',
-  render(game, id) {
+  label: T.ui2.status.tabs.stats,
+  render(ctx, id) {
     const t = T.ui2.status;
-    const m = game.state.party.roster[id];
+    const m = ctx.game.state.party.roster[id];
     const def = CHARACTERS[id];
     const st = statsOf(m);
-    const gear = gearBonus(m.equip);
-    const cell = game.state.party.grid.indexOf(id);
+    const parts = statSources(m);
+    const cell = ctx.game.state.party.grid.indexOf(id);
     const row = cell >= 0 ? rowOfCell(cell) : null;
-    const head = el('tr', {}, t.cols.map((c) => el('th', { text: c })));
+    // One column per stat source, so a new source shows up here without touching this table.
+    const head = el('tr', {}, [el('th'), ...parts.map((p) => el('th', { text: t.sources[p.source] ?? p.source })), el('th', { text: t.total })]);
     const rows = STAT_ORDER.map((k) => el('tr', { attrs: { 'data-stat': k } }, [
       el('th', { text: T.stat[k] }),
-      el('td', { class: 'slx-base', text: String(def.base[k]) }),
-      el('td', { class: 'slx-growth', text: signed(def.growth[k] * (m.level - 1)) }),
-      el('td', { class: 'slx-gear', text: signed(gear[k] ?? 0) }),
+      ...parts.map((p, i) => el('td', { class: `slx-${p.source}`, text: i === 0 ? String(p.stats[k] ?? 0) : signed(p.stats[k] ?? 0) })),
       el('td', { class: 'slx-total', text: String(st[k]) }),
     ]));
     return el('div', { class: 'slx-tab-stats' }, [
@@ -58,7 +55,7 @@ const stats: StatusTab = {
         el('p', { text: `HP ${m.hp}／${st.hp}　TP ${m.tp}／${st.tp}` }),
         el('p', { text: t.exp(m.exp, expToNext(m.level)) }),
         el('p', { text: t.place(row ? T.ui2.rows[row] : T.ui2.formation.reserve) }),
-        el('p', { text: t.attack(def.melee, Math.round(ROW_MELEE[row ?? 'front'] * 100)) }),
+        el('p', { text: t.attack(def.melee, row ? Math.round(ROW_MELEE[row] * 100) : null) }),
         el('p', { text: t.gauge(m.limit ?? 0) }),
       ]),
       el('table', { class: 'slx-stat-table' }, [el('thead', {}, [head]), el('tbody', {}, rows)]),
@@ -68,8 +65,9 @@ const stats: StatusTab = {
 
 const gear: StatusTab = {
   id: 'gear',
-  render(game, id) {
-    const m = game.state.party.roster[id];
+  label: T.ui2.status.tabs.gear,
+  render(ctx, id) {
+    const m = ctx.game.state.party.roster[id];
     return el('div', { class: 'slx-tab-gear' }, SLOT_ORDER.map((slot) => {
       const eid = m.equip[slot];
       return el('div', { class: 'slx-gear-row' }, [
@@ -83,9 +81,10 @@ const gear: StatusTab = {
 
 const skills: StatusTab = {
   id: 'skills',
-  render(game, id) {
+  label: T.ui2.status.tabs.skills,
+  render(ctx, id) {
     const t = T.ui2.status;
-    const m = game.state.party.roster[id];
+    const m = ctx.game.state.party.roster[id];
     const learned = new Set(learnedSkills(id, m.level));
     return el('div', { class: 'slx-tab-skills' }, CHARACTERS[id].skills.map((sk) => {
       const s = SKILLS[sk];
@@ -103,9 +102,10 @@ const skills: StatusTab = {
 
 const ultimate: StatusTab = {
   id: 'ultimate',
-  render(game, id) {
+  label: T.ui2.status.tabs.ultimate,
+  render(ctx, id) {
     const u = ULTIMATES[id];
-    const m = game.state.party.roster[id];
+    const m = ctx.game.state.party.roster[id];
     return el('div', { class: 'slx-tab-ultimate' }, [
       el('h4', { text: u.name }),
       el('p', { class: 'slx-desc', text: u.desc }),
