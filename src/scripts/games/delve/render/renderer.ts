@@ -15,6 +15,7 @@ import { Background } from './background';
 import { scanTrees, treeKind, TREE_KIND } from './scene';
 import { LIGHT_LEVELS, PLATEAU, bufferSize, clampZoom, quantizeLevel, snapCam, zoomScale } from './lowres';
 import { bayer } from './pixel';
+import { AmbientField, ambientKind, AMBIENT_GLOWS, type AmbientKind } from './ambient';
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
@@ -56,6 +57,11 @@ export class Renderer {
   stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0 };
   /** debug：不畫光照遮罩（文件截圖用） */
   fullbright = false;
+  /** 世界 chunk 有變動（小地圖快取跟著重畫） */
+  onWorldDirty: ((cis: number[]) => void) | null = null;
+  /** 環境粒子 */
+  readonly ambient = new AmbientField();
+  ambientNow: AmbientKind | null = null;
 
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
@@ -190,7 +196,9 @@ export class Renderer {
     this.drawCam = snapCam(this.cam);
     const camX = this.drawCam.x, camY = this.drawCam.y;
 
-    for (const ci of w.drainDirty()) this.pending.add(ci);
+    const dirty = w.drainDirty();
+    for (const ci of dirty) this.pending.add(ci);
+    if (dirty.length) this.onWorldDirty?.(dirty);
     if (this.pending.size) this.lightDirty = true;
 
     const ctx = this.bctx;
@@ -240,7 +248,11 @@ export class Renderer {
     this.drawMiningAndCursor(ctx);
     this.drawPlayer(ctx, dt);
     this.drawParticles(ctx, dt);
+    this.updateAmbient(dt, camX, camY, vw, vh);
+    this.drawAmbient(ctx, false);
     this.drawLight(ctx, camX, camY, vw, vh);
+    this.drawAmbient(ctx, true);
+    this.drawRecall(ctx);
     this.drawGlows(ctx);
 
     // 整數倍放大貼到螢幕：每個美術像素 = scale×scale 裝置像素
@@ -434,8 +446,9 @@ export class Renderer {
     const g = this.game, p = g.player, st = g.getState();
     if (p.vx > 8) this.facing = 1; else if (p.vx < -8) this.facing = -1;
     if (st.mining) this.facing = (st.mining.x + 0.5) * S >= p.x + p.w / 2 ? 1 : -1;
-    const kind = poseKind(p.onGround, p.vx, p.vy);
-    this.walkPhase = kind === 'walk' ? advancePhase(this.walkPhase, p.vx, dt) : 0;
+    // 攀爬：上下移動時用走路的腿部循環，掛著不動時用待機
+    const kind = st.player.climbing ? (Math.abs(p.vy) > 1 || Math.abs(p.vx) > 8 ? 'walk' : 'idle') : poseKind(p.onGround, p.vx, p.vy);
+    this.walkPhase = kind === 'walk' ? advancePhase(this.walkPhase, st.player.climbing ? Math.abs(p.vy) + Math.abs(p.vx) : p.vx, dt) : 0;
     this.swingPhase = st.mining ? (this.swingPhase + dt * SWING_RATE) % 1 : 0;
     let fi: number, local: number;
     if (kind === 'walk') { local = walkFrame(this.walkPhase); fi = FRAME.WALK + local; }
@@ -496,6 +509,58 @@ export class Renderer {
     }
   }
 
+  // ── 環境粒子 ─────────────────────────────────────────
+  private updateAmbient(dt: number, camX: number, camY: number, vw: number, vh: number): void {
+    const g = this.game, w = g.world;
+    if (this.frame % 20 === 1) {
+      const p = g.playerTile(), x = Math.max(0, Math.min(w.width - 1, p.x));
+      const surf = w.surfaceAt(x);
+      this.ambientNow = ambientKind({
+        molten: p.y >= g.layers.molten[x],
+        mushroom: g.discovery.regionsAt(p.x, p.y).some((r) => r.kind === 'mushroom_biome') || this.nearMushroomGrass(p.x, p.y),
+        outdoors: p.y <= surf + 1 && w.getWall(p.x, p.y) === 0,
+        underground: p.y > surf + 4,
+        biome: w.biomeAt(x),
+        sky: g.skyLevel(),
+      });
+    }
+    this.ambient.step(dt, this.ambientNow, { x: camX, y: camY, w: vw, h: vh });
+  }
+  /** 附近（±12 欄、±7 列，隔格取樣）有幾格蘑菇草 → 算在菇林裡 */
+  private nearMushroomGrass(px: number, py: number): boolean {
+    const w = this.game.world;
+    let n = 0;
+    for (let y = py - 7; y <= py + 7; y += 2) for (let x = px - 12; x <= px + 12; x += 2) if (w.getFg(x, y) === T.MUSHROOM_GRASS && ++n >= 4) return true;
+    return false;
+  }
+  private drawAmbient(ctx: CanvasRenderingContext2D, glow: boolean): void {
+    for (const p of this.ambient.particles) {
+      if (AMBIENT_GLOWS[p.kind] !== glow || !AmbientField.visible(p, this.frame)) continue;
+      const x = Math.round(p.x), y = Math.round(p.y);
+      ctx.fillStyle = p.color;
+      switch (p.kind) {
+        case 'snow': ctx.fillRect(x, y, 2, 2); break;           // 2×2 雪片
+        case 'ember': ctx.fillRect(x, y, 1, 2); break;          // 往上飄的短火星
+        case 'firefly': ctx.fillRect(x, y, 2, 2); ctx.fillStyle = '#fff4c0'; ctx.fillRect(x, y, 1, 1); break;
+        case 'spore': ctx.fillRect(x, y, 1, 1); ctx.fillRect(x + 1, y + 1, 1, 1); break;
+        default: ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  /** 傳送石引導：玩家身邊往上飄的青色光點，越接近完成越密 */
+  private drawRecall(ctx: CanvasRenderingContext2D): void {
+    const r = this.game.getState().recall;
+    if (r <= 0) return;
+    const p = this.game.player, cx = Math.round(p.x + p.w / 2), by = Math.round(p.y + p.h);
+    const n = 4 + Math.floor(r * 12), t = this.clock;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + t * 2;
+      const rise = ((t * 30 + i * 13) % 44);
+      ctx.fillStyle = i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#cceaf8' : '#4aaeb0';
+      ctx.fillRect(cx + Math.round(Math.cos(a) * (12 - r * 4)), by - Math.round(rise), 1, 2);
+    }
+  }
+
   private drawGlows(ctx: CanvasRenderingContext2D): void {
     if (!this.torchesSeen.length && !this.coolSeen.length) return;
     const gl = this.sprites.glow, hw = gl.width / 2;
@@ -519,6 +584,8 @@ export class Renderer {
       const extra = g.heldLights();
       const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
       const L = g.computeLight(view, extra);
+      // 戰爭迷霧：畫面上看得到（夠亮）的格算探索過
+      g.revealLit(L, { x: Math.floor(camX / S), y: Math.floor(camY / S), w: Math.ceil(vw / S) + 1, h: Math.ceil(vh / S) + 1 });
       const lx0 = Math.max(L.x0, view.x - 2), ly0 = Math.max(L.y0, view.y - 2);
       const lx1 = Math.min(L.x0 + L.w, view.x + view.w + 2), ly1 = Math.min(L.y0 + L.h, view.y + view.h + 2);
       const lw = Math.max(1, lx1 - lx0), lh = Math.max(1, ly1 - ly0);
