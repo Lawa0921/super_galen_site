@@ -904,6 +904,7 @@ describe('dungeon gear', () => {
     expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(true);
     expect(g.run!.loot.items['old-coin']).toBe(2);   // the materials are paid at once
     expect(g.run!.loot.gear).toEqual([carriedOne]);
+    expect(g.run!.waiting[`1:${posKey(chest)}`]).toEqual(g.run!.gearRolls[`chest:1:${posKey(chest)}`]);   // the map marks this
     // Still full: the gear is still waiting there, the materials are not paid again.
     expect(g.pickUpHere()).toMatchObject({ kind: 'full', need: 0, bag: true, gear });
     expect(stepOnto(g, chest)).toMatchObject({ kind: 'full', bag: true, gear });
@@ -913,6 +914,7 @@ describe('dungeon gear', () => {
     expect(g.pickUpHere()).toEqual({ kind: 'pickup', gear });
     expect(g.run!.loot.gear).toEqual([gear]);
     expect(g.run!.loot.items['old-coin']).toBe(2);
+    expect(g.run!.waiting).toEqual({});
     expect(g.pickUpHere()).toBeNull();   // taken: nothing waits here any more
   });
 

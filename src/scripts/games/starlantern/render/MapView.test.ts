@@ -7,7 +7,8 @@ import { floorOf } from '../engine/dungeon/run';
 import { constRng } from '../engine/testing';
 import { fogState } from './fog';
 import { MAP_CELL, MapView, tileColor } from './MapView';
-import { MARKER_GLYPH } from './markers';
+import { MARKER_GLYPH, markersOf } from './markers';
+import { chestHasGear } from '../engine/loot/drops';
 import type { TextureBank } from './textures';
 
 const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
@@ -250,6 +251,37 @@ describe('MapView event markers', () => {
     view.draw(game, SIZE);
     expect(layer().children).not.toContain(box);
     expect(box.destroyed).toBe(true);
+  });
+
+  it('an opened chest whose gear still waits keeps its 箱 marker, even over the chest tile art; taking the gear removes it', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(MAIN, 1);
+    const m = game.map();
+    let chest: { x: number; y: number } | null = null;
+    for (let y = 1; y < m.height - 1 && !chest; y++) for (let x = 1; x < m.width - 1 && !chest; x++) {
+      if (m.tiles[y][x] !== 'floor' || (x === game.pos.x && y === game.pos.y) || !chestHasGear(game.run!, 1, { x, y })) continue;
+      m.tiles[y][x] = 'chest';
+      floorOf(game.run!, 1).contents.push({ kind: 'chest', at: { x, y }, room: 0 });
+      chest = { x, y };
+    }
+    game.state.bag = Array.from({ length: 60 }, (_, i) => ({ uid: 100 + i, base: 'cloth-robe', rarity: 'common' as const, ilvl: 1, affixes: [], enhance: 0 }));
+    game.state.nextUid = 1000;
+    exploreAll(game);
+    // Chest tile art present (so a shut chest needs no marker), event art absent (so markers are text glyphs).
+    const chestArt = { get: (u: string) => (u.includes('/tiles/event-') ? null : Texture.WHITE), has: () => true } as unknown as TextureBank;
+    const view = new MapView(chestArt);
+    view.draw(game, SIZE);
+    expect(view.markerGlyphs()).not.toContain('箱');
+    const opened = stepOnto(game, chest!);
+    expect(opened).toMatchObject({ kind: 'chest', waiting: { bag: true } });
+    expect(markersOf(game)).toContainEqual({ kind: 'chest', x: chest!.x, y: chest!.y, waiting: true });
+    view.draw(game, SIZE);
+    expect(view.markerGlyphs().filter((g) => g === '箱')).toHaveLength(1);
+    game.state.bag.pop();
+    expect(game.pickUpHere()!.kind).toBe('pickup');
+    expect(markersOf(game).some((k) => k.x === chest!.x && k.y === chest!.y)).toBe(false);
+    view.draw(game, SIZE);
+    expect(view.markerGlyphs()).not.toContain('箱');
   });
 
   it('a spent chest shows its open tile and no marker', () => {

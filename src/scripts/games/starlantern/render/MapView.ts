@@ -157,7 +157,10 @@ export class MapView {
     this.follow();
   }
 
-  /** Markers on seen cells: the event art when it has loaded, else a text glyph. A chest's own tile art is its marker. */
+  /**
+   * Markers on seen cells: the event art when it has loaded, else a text glyph. A shut chest's own tile art is its marker;
+   * an opened chest whose gear still waits keeps a glyph over its open tile.
+   */
   private drawMarkers(game: Game, seen: ReadonlySet<string>, sight: number): void {
     for (const c of this.marks.removeChildren()) if (!(c instanceof Text)) c.destroy();   // glyphs are cached below
     this.bobbing = [];
@@ -165,7 +168,7 @@ export class MapView {
     const cell = MAP_CELL;
     const chestArt = !!this.bank?.get(art.tile(game.terrain(), 'chest'));
     for (const m of markersOf(game)) {
-      if (m.kind === 'chest' && chestArt) continue;
+      if (m.kind === 'chest' && chestArt && !m.waiting) continue;
       const memory = fogState(seen, game.pos, m.x, m.y, sight) === 'memory';
       const cx = m.x * cell + cell / 2, cy = m.y * cell + cell / 2;
       const tex = m.kind === 'chest' ? null : this.bank?.get(art.eventTile(m.kind)) ?? null;

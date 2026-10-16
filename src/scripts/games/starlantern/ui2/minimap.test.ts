@@ -70,6 +70,28 @@ describe('Minimap', () => {
     expect(count(calls, MINIMAP_COLORS.event)).toBe(floorOf(game.run!, 1).contents.filter((c) => c.kind !== 'trap').length);
   });
 
+  it('an opened chest keeps its event dot while its gear waits, and loses it once the gear is taken', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(PLAIN, 1);
+    const map = game.map();
+    const all: string[] = [];
+    for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) all.push(`${x},${y}`);
+    game.run!.explored[1] = all;
+    const chest = floorOf(game.run!, 1).contents.find((c) => c.kind === 'chest')!.at;
+    const { ctx, calls } = fakeCtx();
+    const m = new Minimap(ctx);
+    m.draw(game);
+    const events = count(calls, MINIMAP_COLORS.event);
+    // Open it with its gear left waiting (as a full bag would), then take the gear.
+    game.run!.opened.add(`1:${chest.x},${chest.y}`);
+    game.run!.waiting[`1:${chest.x},${chest.y}`] = { uid: 5, base: 'iron-sword', rarity: 'rare', ilvl: 1, affixes: [], enhance: 0 };
+    m.draw(game);
+    expect(count(calls, MINIMAP_COLORS.event)).toBe(events);
+    delete game.run!.waiting[`1:${chest.x},${chest.y}`];
+    m.draw(game);
+    expect(count(calls, MINIMAP_COLORS.event)).toBe(events - 1);
+  });
+
   it('fits any floor size inside the canvas', () => {
     for (const [w, h] of [[20, 15], [40, 30], [61, 45], [200, 40], [10, 120]]) {
       const { scale, ox, oy } = minimapLayout(w, h);
