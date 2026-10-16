@@ -8,6 +8,7 @@ import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { capacity, carried, formatWeight as kg, weightOf } from '../../data/weights';
 import { MATERIALS } from '../../data/materials';
+import { showPillar } from '../lootFx';
 import { DungeonScene } from './dungeon';
 
 function setup(portal: Portal = { region: 'mainline', condition: 'plain' }, fast = true) {
@@ -331,10 +332,61 @@ describe('DungeonScene loot', () => {
     const { game, s, root, sfx } = setup();
     s.onAction(gearChest(game, gearOf(77, 'iron-sword', 'legendary')));
     expect(root.querySelectorAll('.slx-pillar').length).toBe(1);
-    expect(root.querySelector('.slx-pillar')!.classList.contains('slx-rarity-legendary')).toBe(true);
-    expect(root.querySelector('.slx-pillar')!.classList.contains('slx-pillar-legend')).toBe(true);
+    // It stands on the party's tile: a direct child of the labyrinth screen, which the stylesheet anchors at the party.
+    const p = root.querySelector('.slx-dungeon > .slx-pillar')!;
+    expect(p.classList.contains('slx-rarity-legendary')).toBe(true);
+    expect(p.classList.contains('slx-pillar-legend')).toBe(true);
     expect(sfx.loot).toHaveBeenCalledTimes(1);
-    expect(sfx.loot).toHaveBeenCalledWith('legendary');
+    expect(sfx.loot).toHaveBeenCalledWith('legendary', 150);
+  });
+
+  it('two drops in a row: one pillar and one chime each', () => {
+    const { game, s, root, sfx, text } = setup();
+    s.onAction(gearChest(game, gearOf(81, 'iron-sword', 'rare')));
+    expect(root.querySelectorAll('.slx-pillar.slx-rarity-rare').length).toBe(1);
+    expect(sfx.loot).toHaveBeenCalledTimes(1);
+    s.onAction('confirm');   // close the line
+    expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);
+    s.onAction(gearChest(game, gearOf(82, 'hunter-bow', 'set')));
+    expect(text()).toContain('獵弓');
+    expect(root.querySelectorAll('.slx-pillar').length).toBe(1);   // the second replaced the first
+    expect(root.querySelector('.slx-pillar')!.classList.contains('slx-rarity-set')).toBe(true);
+    expect(sfx.loot).toHaveBeenCalledTimes(2);
+    expect(sfx.loot).toHaveBeenLastCalledWith('set', 150);
+  });
+
+  it('fast mode never spends a key on the legendary moment', () => {
+    const { game, s, root } = setup();
+    s.onAction(gearChest(game, gearOf(83, 'iron-sword', 'legendary')));
+    expect(root.querySelector('.slx-pillar-legend')).not.toBeNull();
+    s.onAction('confirm');
+    expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);   // the key closed the line
+  });
+
+  it('a direction key is never spent on the legendary moment: the party still steps', () => {
+    vi.useFakeTimers();
+    try {
+      const { game, s, root } = setup(undefined, false);
+      const body = root.querySelector<HTMLElement>('.slx-dungeon')!;
+      showPillar(body, 'legendary', false);
+      const dir = (['up', 'down', 'left', 'right'] as const).find((d) => tileAt(game.map(), { x: game.pos.x + DELTA[d].x, y: game.pos.y + DELTA[d].y }) === 'floor')!;
+      const from = { ...game.pos };
+      s.onAction(dir);
+      expect(game.pos).not.toEqual(from);
+      expect(root.querySelector('.slx-pillar-legend')).not.toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('leaving the labyrinth takes the pillar and its timer with it', () => {
+    vi.useFakeTimers();
+    try {
+      const { game, s, root } = setup(undefined, false);
+      s.onAction(gearChest(game, gearOf(84, 'iron-sword', 'legendary')));
+      expect(root.querySelector('.slx-pillar')).not.toBeNull();
+      s.exit();
+      expect(root.querySelector('.slx-pillar')).toBeNull();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
   });
 
   it('a chest of common gear raises no pillar and plays no loot cue', () => {

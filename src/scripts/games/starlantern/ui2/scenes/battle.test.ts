@@ -534,11 +534,53 @@ describe('BattleScene loot and stat cues', () => {
     for (let i = 0; i < 5; i++) s.onAction('down');
     s.onAction('confirm');
     await flush();
-    // Gear left behind is not a drop: the rare piece is the best one won.
+    // Gear left behind is not a drop: the rare piece is the best one won. The pillar stands on the result window.
     expect(root.querySelectorAll('.slx-pillar').length).toBe(1);
-    expect(root.querySelector('.slx-pillar')!.classList.contains('slx-rarity-rare')).toBe(true);
+    expect(root.querySelector('.slx-result > .slx-pillar')!.classList.contains('slx-rarity-rare')).toBe(true);
     expect(loot).toHaveBeenCalledTimes(1);
-    expect(loot).toHaveBeenCalledWith('rare');
+    expect(loot).toHaveBeenCalledWith('rare', 150);
+  });
+
+  it('confirm or cancel skips a legendary moment over the results; other keys pass; the next confirm goes on', async () => {
+    vi.useFakeTimers();
+    try {
+      const game = new Game(constRng(0.99), null);
+      game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+      const root = document.createElement('div');
+      const go = vi.fn();
+      const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), loot: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: false });
+      s.enter(root);
+      const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [gearOf(1, 'iron-sword', 'legendary')], gearLeft: [] };
+      vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+      for (let i = 0; i < 5; i++) s.onAction('down');
+      s.onAction('confirm');
+      await vi.advanceTimersByTimeAsync(1400);   // the win banner, then the results and their input guard
+      expect(root.querySelector('.slx-result > .slx-pillar-legend')).not.toBeNull();
+      s.onAction('down');   // scrolls the lines; not a skip
+      expect(root.querySelector('.slx-pillar-legend')).not.toBeNull();
+      s.onAction('confirm');
+      expect(root.querySelector('.slx-pillar')).toBeNull();
+      expect(go).not.toHaveBeenCalled();   // the key went to the skip
+      s.onAction('confirm');
+      expect(go).toHaveBeenCalledWith('dungeon');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('fast mode never spends a key on the legendary moment', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart({ region: 'mainline', condition: 'plain' }, 1); game.encounter = 99; game.move('right');
+    const root = document.createElement('div');
+    const go = vi.fn();
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), loot: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true });
+    s.enter(root);
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [gearOf(1, 'iron-sword', 'unique')], gearLeft: [] };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    expect(root.querySelector('.slx-pillar-legend')).not.toBeNull();
+    s.onAction('confirm');
+    expect(go).toHaveBeenCalledWith('dungeon');
   });
 
   it('a win with only common gear, or none, raises no pillar and plays no loot cue', async () => {

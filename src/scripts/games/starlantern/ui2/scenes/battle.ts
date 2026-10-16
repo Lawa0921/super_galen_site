@@ -16,7 +16,7 @@ import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
 import { battleLines } from '../battleText';
 import { fillRich, gearLabel, gearPart } from '../loot';
-import { dropMoment, skipPillar } from '../lootFx';
+import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar, type PulseOpts } from '../partyBar';
@@ -83,13 +83,14 @@ export class BattleScene implements Scene {
   }
 
   exit(): void {
+    if (this.body) clearPillars(this.body);
     this.ctx.stage?.show(null);
   }
 
   onAction(a: UiAction): void {
     if (this.busy) return;
-    // Any key ends a legendary drop's moment first (fast mode never waits on it).
-    if (!this.ctx.fast && skipPillar(this.body)) return;
+    // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it).
+    if (!this.ctx.fast && skipPillar(this.body, a)) return;
     if (this.result) {
       // Long results scroll with the keys; the only option is 繼續.
       const lines = this.body.querySelector<HTMLElement>('.slx-result-lines');
@@ -478,8 +479,10 @@ export class BattleScene implements Scene {
     // A held or repeated key must not skip the rewards: accept input after a short beat.
     this.resultReady = !!this.ctx.fast;
     if (!this.resultReady) setTimeout(() => { this.resultReady = true; }, 300);
-    this.body.append(win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { class: l.cls }, typeof l.text === 'string' ? [l.text] : richNodes(l.text)))), this.result.el]));
-    // The gear won (not the gear left behind) raises one pillar, for its best piece.
-    if (end.outcome === 'win') dropMoment(this.ctx, this.body, end.gear);
+    const box = win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { class: l.cls }, typeof l.text === 'string' ? [l.text] : richNodes(l.text)))), this.result.el]);
+    this.body.append(box);
+    // The gear won (not the gear left behind) raises one pillar, for its best piece. It stands on the result window, where
+    // the loot is listed: the defeated enemies are gone by now, and their place is under this window.
+    if (end.outcome === 'win') dropMoment(this.ctx, box, end.gear);
   }
 }

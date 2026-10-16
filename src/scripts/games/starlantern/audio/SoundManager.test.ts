@@ -8,6 +8,7 @@ import { SoundManager } from './SoundManager';
 let made = 0;
 let oscs: number[] = [];
 let noises = 0;
+let starts: number[] = [];
 class FakeParam { value = 1; setValueAtTime(v: number): void { this.value = v; } exponentialRampToValueAtTime(): void {} }
 class FakeNode { connect(n: unknown): unknown { return n; } }
 class FakeAudioContext {
@@ -19,11 +20,11 @@ class FakeAudioContext {
   createGain() { return Object.assign(new FakeNode(), { gain: new FakeParam() }); }
   createOscillator() {
     const frequency = new FakeParam();
-    const osc = Object.assign(new FakeNode(), { type: 'sine', frequency, start: () => { oscs.push(frequency.value); }, stop: () => {} });
+    const osc = Object.assign(new FakeNode(), { type: 'sine', frequency, start: (t: number) => { oscs.push(frequency.value); starts.push(t); }, stop: () => {} });
     return osc;
   }
   createBuffer(_c: number, len: number) { return { getChannelData: () => new Float32Array(len) }; }
-  createBufferSource() { noises += 1; return Object.assign(new FakeNode(), { buffer: null, start: () => {}, stop: () => {} }); }
+  createBufferSource() { noises += 1; return Object.assign(new FakeNode(), { buffer: null, start: (t: number) => { starts.push(t); }, stop: () => {} }); }
   createBiquadFilter() { return Object.assign(new FakeNode(), { type: 'lowpass', frequency: new FakeParam() }); }
   resume(): Promise<void> { return Promise.resolve(); }
 }
@@ -35,7 +36,7 @@ beforeEach(() => {
   saved = w.AudioContext;
   w.AudioContext = FakeAudioContext;
   w.__arcadeAudio = undefined;
-  made = 0; oscs = []; noises = 0;
+  made = 0; oscs = []; noises = 0; starts = [];
 });
 afterEach(() => { w.AudioContext = saved; w.__arcadeAudio = undefined; });
 
@@ -78,5 +79,18 @@ describe('SoundManager.loot', () => {
       expect([...oscs].sort((a, b) => a - b)).toEqual([523, 784, 1047]);
       expect(noises).toBe(1);
     }
+  });
+
+  it('a delay holds the whole chime back, so it follows the chest or vault cue instead of doubling it', () => {
+    const sm = new SoundManager();
+    sm.loot('rare', 150);
+    expect(oscs).toEqual([660, 990]);
+    expect(starts.map((t) => Math.round(t * 1000))).toEqual([150, 260]);
+    starts = [];
+    sm.loot('legendary', 150);
+    expect(Math.min(...starts.map((t) => Math.round(t * 1000)))).toBe(150);   // nothing sounds before the delay
+    starts = [];
+    sm.loot('magic');
+    expect(starts).toEqual([0]);   // no delay: at once
   });
 });

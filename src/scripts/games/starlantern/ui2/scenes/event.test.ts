@@ -317,7 +317,7 @@ describe('gear from chests and the vault', () => {
     expect(root.querySelectorAll('.slx-pillar').length).toBe(1);
     expect(root.querySelector('.slx-pillar')!.classList.contains('slx-rarity-set')).toBe(true);
     expect(sfx.loot).toHaveBeenCalledTimes(1);
-    expect(sfx.loot).toHaveBeenCalledWith('set');
+    expect(sfx.loot).toHaveBeenCalledWith('set', 150);
   });
 
   it('a chest picked up after freeing room raises its pillar once', () => {
@@ -332,7 +332,7 @@ describe('gear from chests and the vault', () => {
     pick('是');
     expect(root.querySelectorAll('.slx-pillar.slx-rarity-magic').length).toBe(1);
     expect(sfx.loot).toHaveBeenCalledTimes(1);
-    expect(sfx.loot).toHaveBeenCalledWith('magic');
+    expect(sfx.loot).toHaveBeenCalledWith('magic', 150);
   });
 
   it('a bag already full from town says the run pack has no gear to throw away, and offers nothing else', () => {

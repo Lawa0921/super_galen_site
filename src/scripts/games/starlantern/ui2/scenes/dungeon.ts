@@ -19,7 +19,7 @@ import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
-import { dropMoment, skipPillar } from '../lootFx';
+import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
@@ -76,13 +76,14 @@ export class DungeonScene implements Scene {
     this.talk.stop();
     for (const t of this.timers) clearTimeout(t);
     this.timers.clear();
+    clearPillars(this.body);
     this.ctx.stage?.show(null);
   }
 
   onAction(a: UiAction): void {
     if (this.leaving) return;
-    // Any key ends a legendary drop's moment first (fast mode never waits on it).
-    if (!this.ctx.fast && skipPillar(this.body)) return;
+    // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it); directions always step.
+    if (!this.ctx.fast && skipPillar(this.body, a)) return;
     if (this.talk.busy()) { this.talk.onAction(a); return; }
     const top = this.layers[this.layers.length - 1];
     if (top && a === 'menu') { this.ctx.sfx.cancel(); this.popAll(); return; }   // C toggles the menu

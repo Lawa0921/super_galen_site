@@ -119,18 +119,20 @@ export class SoundManager {
   /**
    * A gear drop's chime by rarity: magic one note, rare a second one after it, the legend tier (legendary, unique, set) a
    * C-major triad (523/784/1047 Hz) rolled upward with a high shimmer of noise. Common has none. At an effective volume of
-   * 0 (the game's setting or the site-wide sound slider) nothing is built: no AudioContext, no node.
+   * 0 (the game's setting or the site-wide sound slider) nothing is built: no AudioContext, no node. `delayMs` holds the
+   * whole chime back (lootFx: after the chest, vault or win cue).
    */
-  loot(rarity: Rarity): void {
+  loot(rarity: Rarity, delayMs = 0): void {
     if (this.sfxVolume * this.playerVolume <= 0) return;
+    const d = delayMs;
     switch (rarity) {
-      case 'magic': this.blip(660, 160, 'sine', 0.1); break;
-      case 'rare': this.blip(660, 120, 'sine', 0.1); this.blip(990, 220, 'sine', 0.09, undefined, 110); break;
+      case 'magic': this.blip(660, 160, 'sine', 0.1, undefined, d); break;
+      case 'rare': this.blip(660, 120, 'sine', 0.1, undefined, d); this.blip(990, 220, 'sine', 0.09, undefined, d + 110); break;
       case 'legendary': case 'unique': case 'set':
-        this.blip(523, 520, 'triangle', 0.1);
-        this.blip(784, 480, 'triangle', 0.09, undefined, 70);
-        this.blip(1047, 560, 'sine', 0.09, undefined, 140);
-        this.noise(600, 0.05, 'highpass', 6000, 9000, 140);
+        this.blip(523, 520, 'triangle', 0.1, undefined, d);
+        this.blip(784, 480, 'triangle', 0.09, undefined, d + 70);
+        this.blip(1047, 560, 'sine', 0.09, undefined, d + 140);
+        this.noise(600, 0.05, 'highpass', 6000, 9000, d + 140);
         break;
       default: break;
     }
