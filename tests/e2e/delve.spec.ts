@@ -130,6 +130,112 @@ test.describe('delve', () => {
     expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('brandnew');
   });
 
+  test('世界 4200×1200、四個生態區在預期位置（地表材料對得上）', async ({ page }) => {
+    await page.goto('/games/delve?seed=biomes&autostart=1&fresh=1');
+    await waitGame(page);
+    const r = await page.evaluate(() => {
+      const g = window.__delveDebug!.game, w = g.world;
+      const topOf = (x: number): number => { let y = 0; while (y < w.height && ![1, 2, 3, 4, 18, 19, 20, 21, 22, 43].includes(w.fg[y * w.width + x])) y++; return w.fg[y * w.width + x]; };
+      return {
+        size: [w.width, w.height],
+        spawnBiome: w.biomeAt(g.spawn.x),
+        segs: g.biomes.map((b: { biome: number; x0: number; x1: number }) => {
+          const mid = Math.floor((b.x0 + b.x1) / 2);
+          return { biome: b.biome, colBiome: w.biomeAt(mid), top: topOf(mid), x0: b.x0, x1: b.x1 };
+        }),
+        dz: g.dungeonZone,
+      };
+    });
+    expect(r.size).toEqual([4200, 1200]);
+    expect(r.spawnBiome).toBe(0);
+    expect(new Set(r.segs.map((s: { biome: number }) => s.biome))).toEqual(new Set([1, 2, 3]));
+    const want: Record<number, number[]> = { 1: [4, 18], 2: [19, 20], 3: [21, 22] };
+    for (const s of r.segs) {
+      expect(s.colBiome).toBe(s.biome);
+      expect(want[s.biome]).toContain(s.top);
+    }
+    expect(r.dz.x0 < 4200 * 0.12 || r.dz.x1 > 4200 * 0.88).toBe(true);
+  });
+
+  test('箱子：右鍵開箱 → 面板顯示內容 → 全部拿取', async ({ page }) => {
+    await page.goto('/games/delve?seed=chests&autostart=1&fresh=1');
+    await waitGame(page);
+    const before = await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      const cabin = g.structures.find((s: { kind: string }) => s.kind === 'cabin');
+      g.teleport(cabin.chest.x + 1, cabin.chest.y);
+      g.setAim(cabin.chest.x, cabin.chest.y);
+      const slots = g.world.chests.get(g.world.idx(cabin.chest.x, cabin.chest.y));
+      return { n: slots.filter((s: unknown) => s).length, first: slots[0] };
+    });
+    expect(before.n).toBeGreaterThan(0);
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.setUse(true); });
+    await expect(page.locator('#delve-chest')).toBeVisible({ timeout: 5000 });
+    await page.evaluate(() => window.__delveDebug!.game.setUse(false));
+    await expect(page.locator('#delve-inv')).toBeVisible();
+    await expect(page.locator('#delve-chest-grid .delve-slot')).toHaveCount(20);
+    const has0 = await page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first.item);
+    await page.click('#delve-chest-takeall');
+    await expect.poll(() => page.evaluate((it) => window.__delveDebug!.game.inventory.count(it), before.first.item)).toBeGreaterThan(has0);
+    expect(await page.evaluate(() => window.__delveDebug!.game.chestSlots().every((s: unknown) => s === null))).toBe(true);
+    await page.click('#delve-chest-close');
+    await expect(page.locator('#delve-chest')).toBeHidden();
+  });
+
+  test('縮放：- / = 改整數倍率、看到的格子數改變，偏好記在 localStorage', async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto('/games/delve?seed=zoom&autostart=1&fresh=1');
+    await waitGame(page);
+    const view = (): Promise<{ scale: number; w: number }> => page.evaluate(() => {
+      const r = window.__delveDebug!.handle.renderer;
+      return { scale: r.scale, w: r.viewTiles().w };
+    });
+    const v0 = await view();
+    expect(Number.isInteger(v0.scale)).toBe(true);
+    expect(v0.w).toBeGreaterThanOrEqual(60);
+    await page.keyboard.press('Equal');
+    const v1 = await view();
+    expect(v1.scale).toBe(v0.scale + 1);
+    expect(v1.w).toBeLessThan(v0.w);
+    await page.click('#delve-zoom-out');
+    await page.click('#delve-zoom-out');
+    const v2 = await view();
+    expect(v2.scale).toBe(Math.max(1, v0.scale - 1));
+    expect(await page.evaluate(() => localStorage.getItem('delve.zoom'))).toBe(String(v2.scale - v0.scale));
+    await page.reload();
+    await waitGame(page);
+    expect((await view()).scale).toBe(v2.scale);
+  });
+
+  test('舊版（生成器 v1）存檔：中文提示 + 開新世界按鈕', async ({ page }) => {
+    await page.goto('/games/delve');
+    await page.evaluate(async () => {
+      // 手工做一個 v1 存檔（format 1、genVersion 1、沒有 chunk）寫進 IndexedDB
+      const header = { format: 1, genVersion: 1, seed: 'old', width: 1600, height: 500, time: 0, tick: 0, savedAt: 1, player: { x: 0, y: 0, vx: 0, vy: 0 }, inventory: { slots: [], selected: 0 }, chunks: [] };
+      const json = new TextEncoder().encode(JSON.stringify(header));
+      const bytes = new Uint8Array(8 + json.length);
+      bytes.set([0x44, 0x4c, 0x56, 0x53]);
+      new DataView(bytes.buffer).setUint32(4, json.length, true);
+      bytes.set(json, 8);
+      await new Promise<void>((res, rej) => {
+        const req = indexedDB.open('delve', 1);
+        req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains('saves')) req.result.createObjectStore('saves', { keyPath: 'slot' }); };
+        req.onsuccess = () => {
+          const tx = req.result.transaction('saves', 'readwrite');
+          tx.objectStore('saves').put({ slot: 'main', seed: 'old', savedAt: 1, bytes: bytes.length, data: bytes });
+          tx.oncomplete = () => res();
+          tx.onerror = () => rej(tx.error);
+        };
+        req.onerror = () => rej(req.error);
+      });
+    });
+    await page.reload();
+    await expect(page.locator('#delve-continue')).toBeVisible({ timeout: 10000 });
+    await page.click('#delve-continue');
+    await expect(page.locator('#delve-title-msg')).toContainText('舊版地圖產生器');
+    await expect(page.locator('#delve-upgrade-new')).toBeVisible();
+  });
+
   test('遊戲廳卡片連到 /games/delve', async ({ page }) => {
     await page.goto('/games');
     const link = page.locator('a[href="/games/delve"]');

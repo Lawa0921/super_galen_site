@@ -22,6 +22,8 @@ const lang: Language = defaultLang;
       <div class="delve-held" id="delve-held" aria-live="polite"></div>
       <div class="delve-status" id="delve-status"></div>
       <div class="delve-corner">
+        <button class="delve-chip delve-chip--zoom" id="delve-zoom-out" type="button" aria-label="縮小（看到更多格子）">－<kbd class="delve-kbd">-</kbd></button>
+        <button class="delve-chip delve-chip--zoom" id="delve-zoom-in" type="button" aria-label="放大">＋<kbd class="delve-kbd">=</kbd></button>
         <button class="delve-chip" id="delve-inv-btn" type="button">背包<kbd class="delve-kbd">E</kbd></button>
         <button class="delve-chip" id="delve-menu-btn" type="button">選單<kbd class="delve-kbd">Esc</kbd></button>
       </div>
@@ -36,6 +38,16 @@ const lang: Language = defaultLang;
         <h2 class="delve-craft-title">合成</h2>
         <p class="delve-hint" id="delve-station"></p>
         <ul class="delve-recipes" id="delve-recipes"></ul>
+      </section>
+
+      <section class="delve-panel delve-panel--chest" id="delve-chest" hidden aria-label="箱子">
+        <header class="delve-panel-head">
+          <h2>箱子</h2>
+          <button class="delve-x" id="delve-chest-close" type="button" aria-label="關閉箱子">×</button>
+        </header>
+        <p class="delve-hint">點箱子裡的格子拿走；點背包的格子把整堆放進箱子</p>
+        <div class="delve-inv-grid" id="delve-chest-grid"></div>
+        <button class="delve-btn delve-chest-takeall" id="delve-chest-takeall" type="button">全部拿取</button>
       </section>
 
       <div class="delve-touch" aria-hidden="true">
@@ -69,6 +81,10 @@ const lang: Language = defaultLang;
       </div>
     </section>
 
+    <div class="delve-loading" id="delve-loading" hidden role="status" aria-live="polite">
+      <div class="delve-menu-box"><p class="delve-loading-text">生成世界中…</p></div>
+    </div>
+
     <section class="delve-title" id="delve-title">
       <a class="delve-home" href="/games">← ARCADE</a>
       <div class="delve-title-fg">
@@ -85,7 +101,8 @@ const lang: Language = defaultLang;
         </div>
         <input id="delve-import-file" type="file" accept=".delve,application/x-delve-save,application/gzip" hidden />
         <p class="delve-msg" id="delve-title-msg" role="status"></p>
-        <p class="delve-keys">移動 A/D · 跳 Space · 挖 左鍵 · 放置 右鍵 · 換格 1–0/滾輪 · 背包 E</p>
+        <button class="delve-btn delve-btn--main" id="delve-upgrade-new" type="button" hidden>開始新世界</button>
+        <p class="delve-keys">移動 A/D · 跳 Space · 挖 左鍵 · 放置 / 開箱 右鍵 · 換格 1–0/滾輪 · 背包 E · 縮放 - / =</p>
         <p class="delve-keys delve-keys--touch">左下搖桿移動 · 「跳」按鈕跳躍 · 點格子挖掘或放置 · 點快捷欄換格</p>
         <p class="delve-note">存檔留在這個瀏覽器（只有一個存檔位）；已有存檔時開新世界會先詢問是否覆蓋。iOS 等瀏覽器可能清除網站資料，請用選單匯出備份。</p>
       </div>
@@ -278,6 +295,25 @@ const lang: Language = defaultLang;
   .delve-inv-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: calc(var(--px) * 2); }
   .delve-inv-grid .delve-slot { width: 100%; height: auto; aspect-ratio: 1; }
   .delve-craft-title { margin-top: 14px; }
+  .delve-panel--chest { width: min(480px, calc(100vw - 20px)); }
+  .delve-chest-takeall { margin-top: 10px; width: 100%; }
+  /* 箱子面板：寬螢幕放在背包右邊，窄螢幕疊在背包上方 */
+  @media (min-width: 1000px) {
+    .delve-panel--chest { left: calc(min(480px, 100vw - 20px) + 22px); }
+  }
+  @media (max-width: 999px) {
+    .delve[data-chest='1'] .delve-panel--chest { z-index: 5; }
+  }
+  .delve-chip--zoom { padding: 6px 8px; }
+  .delve-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 45;
+    display: grid;
+    place-items: center;
+    background: #120c08;
+  }
+  .delve-loading-text { margin: 0; font-size: 16px; color: var(--gold); text-align: center; text-shadow: var(--text-outline); }
   .delve-recipes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
   .delve-recipe {
     width: 100%;

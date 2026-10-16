@@ -102,3 +102,12 @@ describe('mouseIntent（buttons 位元遮罩 → 挖 / 放）', () => {
     expect(mouseIntent(1 | 4)).toEqual({ mine: true, use: false });
   });
 });
+
+describe('縮放鍵', () => {
+  it('- / = （含數字鍵盤）縮小 / 放大', () => {
+    expect(keyAction('Minus')).toBe('zoomOut');
+    expect(keyAction('NumpadSubtract')).toBe('zoomOut');
+    expect(keyAction('Equal')).toBe('zoomIn');
+    expect(keyAction('NumpadAdd')).toBe('zoomIn');
+  });
+});

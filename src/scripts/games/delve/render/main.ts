@@ -4,6 +4,15 @@ import { FIXED_DT } from '../engine/constants';
 import { Renderer } from './renderer';
 import { Hud } from './hud';
 import { FixedStepper, blockedMessage } from './model';
+import { parseZoomPref } from './lowres';
+
+const ZOOM_KEY = 'delve.zoom';
+function loadZoom(): number {
+  try { return parseZoomPref(globalThis.localStorage?.getItem(ZOOM_KEY)); } catch { return 0; }
+}
+function saveZoom(z: number): void {
+  try { globalThis.localStorage?.setItem(ZOOM_KEY, String(z)); } catch { /* 私密模式等：不記住 */ }
+}
 import { attachControls } from '../input/controls';
 
 export interface FrameStats {
@@ -40,6 +49,7 @@ const WINDOW = 120;
 export function startDelve(opts: StartOptions): DelveHandle {
   const { root, canvas, game } = opts;
   const renderer = new Renderer(canvas, game);
+  renderer.zoomOffset = loadZoom();
   const hud = new Hud(root, game, renderer.atlas);
   const stepper = new FixedStepper(FIXED_DT, 0.25);
   let paused = false;
@@ -54,12 +64,22 @@ export function startDelve(opts: StartOptions): DelveHandle {
     renderer.resize(r.width || window.innerWidth, r.height || window.innerHeight, window.devicePixelRatio || 1);
     renderer.snapCamera();
     // HUD 的像素單位（CSS px）跟著畫面的美術像素大小走：外框 / 圖示都是整數倍
-    root.dataset.px = String(Math.max(1, Math.min(3, Math.round(renderer.zoom))));
+    root.dataset.px = String(Math.max(1, Math.min(3, Math.round(renderer.baseZoom()))));
   };
   resize();
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
   ro?.observe(canvas);
   window.addEventListener('resize', resize);
+
+  const zoom = (d: number): void => {
+    saveZoom(renderer.zoomBy(d));
+    const v = renderer.viewTiles();
+    hud.toast(`縮放 ${renderer.scale}× · 視野 ${v.w}×${v.h} 格`);
+  };
+  const zIn = root.querySelector('#delve-zoom-in'), zOut = root.querySelector('#delve-zoom-out');
+  const onZin = (): void => zoom(1), onZout = (): void => zoom(-1);
+  zIn?.addEventListener('click', onZin);
+  zOut?.addEventListener('click', onZout);
 
   const controls = attachControls({
     game, canvas, root,
@@ -67,7 +87,12 @@ export function startDelve(opts: StartOptions): DelveHandle {
     jumpBtn: root.querySelector<HTMLElement>('#delve-jump'),
     screenToWorld: (sx, sy) => renderer.screenToWorld(sx, sy),
     onInventory: () => hud.toggleInventory(),
-    onMenu: () => { if (hud.inventoryOpen) hud.setInventory(false); else opts.onMenu(); },
+    onMenu: () => {
+      if (game.openChest) game.closeChest();
+      else if (hud.inventoryOpen) hud.setInventory(false);
+      else opts.onMenu();
+    },
+    onZoom: zoom,
     isBlocked: () => paused,
   });
 
@@ -88,7 +113,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
         if (e.type === 'blocked') {
           const m = blockedMessage(e.reason);
           if (m) hud.toast(m);
-        } else invChanged = true;
+        } else if (e.type === 'chest') hud.setChest(e.open);
+        else invChanged = true;
       }
       if (invChanged) hud.refresh();
     }
@@ -129,6 +155,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
       ro?.disconnect();
       window.removeEventListener('resize', resize);
       controls.destroy();
+      zIn?.removeEventListener('click', onZin);
+      zOut?.removeEventListener('click', onZout);
       hud.destroy();
       renderer.destroy();
     },

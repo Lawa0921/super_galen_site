@@ -14,6 +14,8 @@ export interface ControlsOptions {
   screenToWorld: (sx: number, sy: number) => { x: number; y: number };
   onInventory: () => void;
   onMenu: () => void;
+  /** +1 放大 / −1 縮小 */
+  onZoom?: (d: number) => void;
   /** 選單開啟等暫停狀態時忽略遊戲輸入 */
   isBlocked: () => boolean;
 }
@@ -78,6 +80,7 @@ export function attachControls(o: ControlsOptions): Controls {
     if (a === 'menu') { e.preventDefault(); o.onMenu(); return; }
     if (o.isBlocked()) return;
     if (a === 'inventory') { if (!e.repeat) o.onInventory(); e.preventDefault(); return; }
+    if (a === 'zoomIn' || a === 'zoomOut') { if (!e.repeat) o.onZoom?.(a === 'zoomIn' ? 1 : -1); e.preventDefault(); return; }
     if (a === 'left' || a === 'right' || a === 'jump') {
       keys[a] = true; e.preventDefault(); applyMove(); return;
     }

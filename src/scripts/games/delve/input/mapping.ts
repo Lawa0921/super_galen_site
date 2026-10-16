@@ -4,7 +4,7 @@ import { T } from '../engine/tiles';
 import type { Stack } from '../engine/inventory';
 import { HOTBAR_SIZE, TILE_SIZE } from '../engine/constants';
 
-export type KeyAction = 'left' | 'right' | 'jump' | 'inventory' | 'menu';
+export type KeyAction = 'left' | 'right' | 'jump' | 'inventory' | 'menu' | 'zoomIn' | 'zoomOut';
 
 const KEYS: Record<string, KeyAction> = {
   KeyA: 'left', ArrowLeft: 'left',
@@ -12,6 +12,8 @@ const KEYS: Record<string, KeyAction> = {
   Space: 'jump', KeyW: 'jump', ArrowUp: 'jump',
   KeyE: 'inventory',
   Escape: 'menu',
+  Equal: 'zoomIn', NumpadAdd: 'zoomIn',
+  Minus: 'zoomOut', NumpadSubtract: 'zoomOut',
 };
 
 export function keyAction(code: string): KeyAction | null {

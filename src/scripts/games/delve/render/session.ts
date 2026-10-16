@@ -36,6 +36,8 @@ export function bootDelve(root: HTMLElement): Session {
   const confirmMsg = $('#delve-confirm-msg');
   const confirmOk = $<HTMLButtonElement>('#delve-confirm-ok');
   const confirmCancel = $<HTMLButtonElement>('#delve-confirm-cancel');
+  const loading = $('#delve-loading');
+  const upgradeNew = $<HTMLButtonElement>('#delve-upgrade-new');
   if (!canvas || !title || !hudEl || !menu) throw new Error('delve: missing page elements');
 
   let handle: DelveHandle | null = null;
@@ -93,9 +95,18 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
+  /** 世界生成要 ~0.5–1 秒：先顯示「生成世界中」再在下一幀同步生成 */
+  function withLoading(work: () => void): void {
+    if (loading) loading.hidden = false;
+    root.dataset.phase = 'loading';
+    requestAnimationFrame(() => setTimeout(() => {
+      try { work(); } finally { if (loading) loading.hidden = true; }
+    }, 0));
+  }
+
   function startFresh(seed?: string): void {
     const s = (seed ?? seedInput?.value ?? '').trim() || randomSeed();
-    begin(new DelveGame({ seed: s }));
+    withLoading(() => begin(new DelveGame({ seed: s })));
   }
 
   // ── 覆蓋確認對話框（頁內，不用 window.confirm） ──
@@ -126,7 +137,10 @@ export function bootDelve(root: HTMLElement): Session {
   function restoreBytes(bytes: Uint8Array, msgEl: HTMLElement | null): boolean {
     const r = restoreGame(bytes);
     if (!r.ok) {
-      say(msgEl, r.error === 'gen_version' ? `存檔版本不相容（${r.message}）` : `存檔讀取失敗：${r.message}`);
+      if (r.error === 'gen_version') {
+        say(msgEl, `這個存檔是舊版地圖產生器（v${r.saveGenVersion ?? '?'}）做的，新版地圖更大、有新的生態區，舊世界無法繼續。可以先從選單匯出備份，再按下面的按鈕開一個新世界。`);
+        if (upgradeNew && msgEl === titleMsg) upgradeNew.hidden = false;
+      } else say(msgEl, `存檔讀取失敗：${r.message}`);
       return false;
     }
     begin(r.game);
@@ -168,6 +182,7 @@ export function bootDelve(root: HTMLElement): Session {
   });
 
   on($('#delve-new'), 'click', () => void newWorld());
+  on(upgradeNew, 'click', () => { if (upgradeNew) upgradeNew.hidden = true; void newWorld(); });
   on(seedInput, 'keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') void newWorld(); });
   on(confirmOk, 'click', () => { closeConfirm(); startFresh(pendingSeed); });
   on(confirmCancel, 'click', () => closeConfirm());

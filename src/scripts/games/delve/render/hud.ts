@@ -3,7 +3,8 @@ import type { DelveGame } from '../engine/game';
 import { ITEMS } from '../engine/items';
 import { HOTBAR_SIZE, INV_SIZE } from '../engine/constants';
 import { drawIcon, type Atlas } from './textures';
-import { countLabel, depthLabel, formatClock, recipeRows } from './model';
+import { countLabel, depthLabel, formatClock, recipeRows, regionLabel } from './model';
+import { CHEST_SLOTS } from '../engine/loot';
 
 /** 圖示以原生 16×16 烘進小 canvas，由 CSS 以整數倍（image-rendering: pixelated）放大 */
 const ICON_PX = 16;
@@ -17,6 +18,7 @@ const CRAFT_FAIL: Record<string, string> = {
 export class Hud {
   private hotbar: SlotEl[] = [];
   private grid: SlotEl[] = [];
+  private chestGrid: SlotEl[] = [];
   private picked: number | null = null;
   private toastTimer = 0;
   private frame = 0;
@@ -44,6 +46,26 @@ export class Hud {
       g.appendChild(s.btn);
       this.grid.push(s);
     }
+    const cg = this.root.querySelector<HTMLElement>('#delve-chest-grid');
+    if (cg) {
+      cg.replaceChildren();
+      for (let i = 0; i < CHEST_SLOTS; i++) {
+        const s = this.makeSlot(i, '');
+        s.btn.addEventListener('click', () => { this.game.takeChestSlot(i); this.refresh(); });
+        cg.appendChild(s.btn);
+        this.chestGrid.push(s);
+      }
+    }
+    const takeAll = this.root.querySelector('#delve-chest-takeall'), chestClose = this.root.querySelector('#delve-chest-close');
+    const onTakeAll = (): void => {
+      const n = this.game.takeAllFromChest();
+      if (n) this.toast(`拿了 ${n} 樣東西`);
+      this.refresh();
+    };
+    const onChestClose = (): void => this.game.closeChest();
+    takeAll?.addEventListener('click', onTakeAll);
+    chestClose?.addEventListener('click', onChestClose);
+    this.offs.push(() => takeAll?.removeEventListener('click', onTakeAll), () => chestClose?.removeEventListener('click', onChestClose));
     const close = this.root.querySelector('#delve-inv-close');
     const invBtn = this.root.querySelector('#delve-inv-btn');
     const onClose = (): void => this.setInventory(false);
@@ -92,8 +114,8 @@ export class Hud {
     return { btn, ctx: c.getContext('2d'), count, sig: '' };
   }
 
-  private paintSlot(s: SlotEl, i: number, selected: boolean): void {
-    const st = this.game.inventory.slots[i];
+  private paintSlot(s: SlotEl, i: number, selected: boolean, from: (import('../engine/inventory').Stack | null)[] = this.game.inventory.slots): void {
+    const st = from[i] ?? null;
     const sig = st ? `${st.item}:${st.count}` : '';
     if (sig !== s.sig) {
       s.sig = sig;
@@ -106,6 +128,12 @@ export class Hud {
   }
 
   private clickInventory(i: number): void {
+    if (this.game.openChest) {
+      // 開著箱子時：點背包格 = 整堆放進箱子
+      if (!this.game.depositToChest(i)) this.toast('箱子放不下');
+      this.refresh();
+      return;
+    }
     if (this.picked === null) {
       if (!this.game.inventory.slots[i]) return;
       this.picked = i;
@@ -125,10 +153,21 @@ export class Hud {
   }
   toggleInventory(): void { this.setInventory(!this.inventoryOpen); }
 
+  /** 箱子開 / 關（遊戲事件驅動）：開箱時一併打開背包，方便放入 */
+  setChest(open: boolean): void {
+    const el = this.root.querySelector<HTMLElement>('#delve-chest');
+    if (el) el.hidden = !open;
+    this.root.dataset.chest = open ? '1' : '';
+    if (open && !this.inventoryOpen) this.setInventory(true);
+    else this.refresh();
+  }
+
   /** 背包變動後呼叫（事件驅動 + 定期保底） */
   refresh(): void {
     const sel = this.game.inventory.selected;
     for (let i = 0; i < this.hotbar.length; i++) this.paintSlot(this.hotbar[i], i, i === sel);
+    const chest = this.game.chestSlots();
+    if (chest) for (let i = 0; i < this.chestGrid.length; i++) this.paintSlot(this.chestGrid[i], i, false, chest);
     const held = this.game.inventory.selectedStack();
     this.q('#delve-held').textContent = held ? ITEMS[held.item].name.zh : '';
     if (!this.inventoryOpen) return;
@@ -175,7 +214,8 @@ export class Hud {
     this.frame++;
     if (this.frame % 10 === 0) {
       const g = this.game, f = g.feetTile(), w = g.world;
-      this.q('#delve-status').textContent = `${formatClock(g.time)} · ${depthLabel(f.y, w.surfaceAt(f.x), w.cavernY)} · X ${f.x}`;
+      const area = regionLabel(w.biomeAt(f.x), g.structures, f.x, f.y);
+      this.q('#delve-status').textContent = `${formatClock(g.time)} · ${area} · ${depthLabel(f.y, w.surfaceAt(f.x), w.cavernY)} · X ${f.x}`;
     }
     if (this.frame % 30 === 0) this.refresh();
   }
@@ -193,5 +233,6 @@ export class Hud {
     for (const f of this.offs) f();
     this.q('#delve-hotbar').replaceChildren();
     this.q('#delve-inv-grid').replaceChildren();
+    this.root.querySelector('#delve-chest-grid')?.replaceChildren();
   }
 }
