@@ -73,6 +73,18 @@ describe('StatusScene', () => {
     expect(go).toHaveBeenCalledWith('guild');
   });
 
+  it('plays the standee entrance only when the member changes, with an aura in their colour', () => {
+    const { s, root } = setup('scarlet', { has: (u) => u.includes('standee') });
+    const first = root.querySelector('.slx-status-standee');
+    expect(root.querySelector('.slx-status-art')!.classList.contains('slx-aura-scarlet')).toBe(true);
+    s.onAction('right');                                 // another tab: same picture, no replay
+    expect(root.querySelector('.slx-status-standee')).toBe(first);
+    s.onAction('next');                                  // another member: a fresh picture slides in
+    expect(root.querySelector('.slx-status-standee')).not.toBe(first);
+    expect(root.querySelector('.slx-status-art')!.classList.contains('slx-aura-chizuru')).toBe(true);
+    expect(root.querySelectorAll('.slx-status-art .slx-mote').length).toBeGreaterThan(0);
+  });
+
   it('has a tab list that new systems can join', () => {
     expect(STATUS_TABS.map((t) => t.id)).toEqual(['stats', 'gear', 'skills', 'ultimate']);
   });

@@ -364,9 +364,55 @@ $slx-battle-left: 150px;
 
 // Character sheet: large standee left, tabbed pages right
 .slx-status-scene { background: radial-gradient(ellipse at 22% 60%, #2a2f55 0%, #0b0d1c 70%); }
-.slx-status-art { position: absolute; left: 0; bottom: 0; width: 250px; height: 360px; display: grid; place-items: end center; pointer-events: none; }
-.slx-status-standee { height: 330px; image-rendering: pixelated; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7)); }
-.slx-status-plate { left: 10px; top: 10px; width: 226px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 6px; }
+.slx-status-art { position: absolute; left: 0; bottom: 0; width: 250px; height: 360px; display: grid; place-items: end center; overflow: hidden; pointer-events: none; }
+.slx-status-standee {
+  position: relative;
+  height: 330px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 6px currentColor);
+  // slide in with a little overshoot, then breathe
+  animation: slx-standee-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.25) both, slx-standee-float 3.2s ease-in-out 0.5s infinite alternate;
+}
+@keyframes slx-standee-in { from { translate: -60px 0; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+@keyframes slx-standee-float { from { translate: 0 0; } to { translate: 0 -6px; } }
+// Rays and glow sit behind the standee; the aura colour comes from the member class through currentColor.
+.slx-status-rays {
+  position: absolute; left: 50%; top: 42%; width: 520px; height: 520px; margin: -260px 0 0 -260px;
+  background: repeating-conic-gradient(from 0deg, currentColor 0deg 4deg, transparent 4deg 18deg);
+  mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  opacity: 0.22;
+  animation: slx-rays 26s linear infinite;
+}
+@keyframes slx-rays { to { rotate: 360deg; } }
+.slx-status-glow {
+  position: absolute; left: 50%; top: 45%; width: 300px; height: 300px; margin: -150px 0 0 -150px;
+  background: radial-gradient(circle, currentColor 0%, transparent 65%);
+  opacity: 0.32;
+  animation: slx-glow 2.6s ease-in-out infinite alternate;
+}
+@keyframes slx-glow { from { opacity: 0.2; scale: 0.92; } to { opacity: 0.4; scale: 1.05; } }
+.slx-mote { position: absolute; bottom: 20px; width: 3px; height: 3px; background: currentColor; box-shadow: 0 0 4px currentColor; opacity: 0; animation: slx-mote 4s linear infinite; }
+@keyframes slx-mote { 0% { translate: 0 0; opacity: 0; } 15% { opacity: 0.9; } 100% { translate: 12px -280px; opacity: 0; } }
+.slx-mote-0 { left: 30px; animation-delay: 0s; }
+.slx-mote-1 { left: 70px; animation-delay: 1.4s; animation-duration: 5s; }
+.slx-mote-2 { left: 110px; animation-delay: 0.7s; animation-duration: 3.6s; }
+.slx-mote-3 { left: 150px; animation-delay: 2.2s; }
+.slx-mote-4 { left: 190px; animation-delay: 3s; animation-duration: 4.6s; }
+.slx-mote-5 { left: 220px; animation-delay: 1.9s; animation-duration: 3.2s; }
+.slx-aura-scarlet { color: #ff5a3c; }
+.slx-aura-chizuru { color: #ff6f91; }
+.slx-aura-liz { color: #ffb347; }
+.slx-aura-noel { color: #4fd1c5; }
+.slx-aura-selene { color: #b48cff; }
+.slx-aura-sylvie { color: #7bd88f; }
+.slx-aura-safira { color: #ffd166; }
+.slx-aura-bobby { color: #6fa7ff; }
+@media (prefers-reduced-motion: reduce) {
+  .slx-status-standee, .slx-status-rays, .slx-status-glow, .slx-mote { animation: none; }
+  .slx-mote { display: none; }
+}
+// The name plate sits at the feet so the standee's face stays clear.
+.slx-status-plate { left: 10px; bottom: 10px; width: 226px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 6px; }
 .slx-status-name, .slx-equip-name { display: grid; justify-items: center; line-height: 16px; }
 .slx-status-name b, .slx-equip-name b { font-size: 16px; font-weight: normal; color: $slx-gold; }
 .slx-status-title { color: $slx-dim; font-size: 10px; }

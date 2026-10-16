@@ -13,6 +13,8 @@ import { STATUS_TABS } from './statusTabs';
 export class StatusScene implements Scene {
   private id!: CharacterId;
   private tab = 0;
+  /** Member whose picture is up; the entrance plays only when this changes, not on every tab switch. */
+  private shownId: CharacterId | null = null;
   private standee!: HTMLElement;
   private nameEl!: HTMLElement;
   private tabsEl!: HTMLElement;
@@ -58,11 +60,23 @@ export class StatusScene implements Scene {
     this.render();
   }
 
+  /** Light rays and an aura in the member's colour behind the standee, rising motes in front; CSS animates them. */
+  private drawStandee(): void {
+    this.shownId = this.id;
+    const src = this.ctx.art.has(art.standee(this.id)) ? art.standee(this.id) : this.ctx.art.has(art.portrait(this.id, 'normal')) ? art.portrait(this.id, 'normal') : null;
+    this.standee.className = `slx-status-art slx-aura-${this.id}`;
+    this.standee.replaceChildren(
+      el('div', { class: 'slx-status-rays' }),
+      el('div', { class: 'slx-status-glow' }),
+      ...(src ? [el('img', { class: 'slx-status-standee', attrs: { src, alt: CHARACTERS[this.id].name } })] : []),
+      ...[0, 1, 2, 3, 4, 5].map((i) => el('span', { class: `slx-mote slx-mote-${i}`, attrs: { 'aria-hidden': 'true' } })),
+    );
+  }
+
   private render(): void {
     const def = CHARACTERS[this.id];
     const m = this.ctx.game.state.party.roster[this.id];
-    const src = this.ctx.art.has(art.standee(this.id)) ? art.standee(this.id) : this.ctx.art.has(art.portrait(this.id, 'normal')) ? art.portrait(this.id, 'normal') : null;
-    this.standee.replaceChildren(...(src ? [el('img', { class: 'slx-status-standee', attrs: { src, alt: def.name } })] : []));
+    if (this.shownId !== this.id) this.drawStandee();
     this.nameEl.replaceChildren(el('span', { class: 'slx-status-title', text: def.title }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` }));
     this.tabsEl.replaceChildren(...STATUS_TABS.map((t, i) => {
       const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: T.ui2.status.tabs[t.id] ?? t.id, attrs: { role: 'tab', 'data-tab': t.id, 'aria-selected': String(i === this.tab) } });
