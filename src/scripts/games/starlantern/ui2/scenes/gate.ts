@@ -6,7 +6,6 @@ import { SETS, SPECIALS, codexName, generalLegendaries, regionSpecials } from '.
 import { REGIONS, type RegionId } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
-import { specialLines } from '../../engine/compare';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
 import { depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art } from '../../render/artPaths';
@@ -38,9 +37,8 @@ function monsterNames(region: RegionId, reached: number): string[] {
   return [...ids].map((id) => ENEMIES[id]?.name ?? id);
 }
 
-/** Ids a card lists: a region's special items and its set, or the mainline's general legendaries. */
+/** Ids a regional card lists: its special items and its set. */
 function gearIds(region: RegionId): string[] {
-  if (region === 'mainline') return generalLegendaries().map((s) => s.id);
   return [...regionSpecials(region).map((s) => s.id), ...Object.values(SETS).filter((s) => s.region === region).map((s) => s.id)];
 }
 
@@ -66,9 +64,14 @@ class PortalCards {
     const pic = this.ctx.art.has(icon) ? [el('img', { class: known ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src: icon, alt: '' } })] : [];
     const name = known && rarity !== 'set' ? `${codexName(id)}・${T.rarity[rarity]}` : known ? codexName(id) : G.unknownGear(codexName(id));
     const body = [el('span', { class: 'slx-codex-name', text: name })];
-    const first = known ? specialLines(id)[0] : undefined;
-    return el('div', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id } },
-      [...pic, ...body, ...(first ? [el('span', { class: 'slx-codex-line', text: first.text })] : [])]);
+    return el('div', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id } }, [...pic, ...body]);
+  }
+
+  /** The mainline's summary: the general legendaries drop anywhere, so they are counted, not listed as this portal's own. */
+  private generalLine(): HTMLElement {
+    const all = generalLegendaries();
+    const got = all.filter((s) => this.ctx.game.state.codex.includes(s.id)).length;
+    return el('div', { class: 'slx-portal-general', text: T.ui2.gate.general(got, all.length) });
   }
 
   private card(p: Portal, i: number): HTMLElement {
@@ -92,8 +95,10 @@ class PortalCards {
       el('div', { class: 'slx-portal-cond' }, [el('span', { class: 'slx-portal-label', text: G.condition }), el('b', { text: cond.name })]),
       el('div', { class: 'slx-portal-desc', text: cond.desc }),
       el('div', { class: 'slx-portal-drop', text: G.drop(r.material ? MATERIALS[r.material]?.name ?? r.material : G.commonDrop) }),
-      el('div', { class: 'slx-portal-gear' }, [el('div', { class: 'slx-portal-label', text: G.gear }), ...gearIds(p.region).map((id) => this.gearItem(id))]),
-      el('div', { class: 'slx-codex-more', text: G.moreGear, attrs: { hidden: '' } }),
+      ...(p.region === 'mainline' ? [this.generalLine()] : [
+        el('div', { class: 'slx-portal-gear' }, [el('div', { class: 'slx-portal-label', text: G.gear }), ...gearIds(p.region).map((id) => this.gearItem(id))]),
+        el('div', { class: 'slx-codex-more', text: G.moreGear, attrs: { hidden: '' } }),
+      ]),
       el('div', { class: 'slx-portal-depth', text: reached > 0 ? G.deepest(reached) : G.notYet }),
     ]);
     c.setAttribute('role', 'option');
