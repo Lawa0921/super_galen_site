@@ -5,13 +5,14 @@ import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import { compareDelta } from '../../engine/compare';
 import { BAG_SIZE } from '../../engine/loot/bag';
-import { itemName, rollItem, sellPrice } from '../../engine/loot/item';
+import { rollItem, sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
 import { buy, isUnlocked, sell, sellGear } from '../../engine/town';
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
+import { gearLabel } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, QtyView, confirmBox, win } from '../widgets';
@@ -38,8 +39,8 @@ export class ShopScene extends FacilityScene {
     return [...Object.values(ITEMS), ...Object.values(EQUIPMENT)].map((g) => {
       const locked = 'slot' in g && !isUnlocked(s, g.id);
       const needs = locked ? (g.unlock ?? []).map((u) => `${MATERIALS[u.mat].name}×${u.qty}`).join('、') : '';
-      // Every base is a plain (common) piece: the rarity word and colour say so.
-      const gear = 'slot' in g ? { label: T.gearLabel(g.name, T.rarity.common), cls: 'slx-rarity-common' } : { label: g.name };
+      // Every base is a plain (common) piece, which the shared label names without a rarity word; the colour class marks it.
+      const gear = 'slot' in g ? { label: gearLabel(rollItem(mulberry32(0), { uid: 0, ilvl: g.ilvl, rarity: 'common', base: g.id })), cls: 'slx-rarity-common' } : { label: g.name };
       return { id: g.id, ...gear, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${g.price} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
     });
   }
@@ -151,7 +152,7 @@ export class ShopScene extends FacilityScene {
     return [
       { id: 'sell-marked', label: T.ui2.shop.sellMarked(marked), disabled: marked === 0 },
       ...bag.map((it) => ({
-        id: `g${it.uid}`, label: T.gearLabel(itemName(it), T.rarity[it.rarity]), cls: `slx-rarity-${it.rarity}`,
+        id: `g${it.uid}`, label: gearLabel(it), cls: `slx-rarity-${it.rarity}`,
         right: `${it.junk ? `${T.ui2.shop.marked}  ` : ''}${sellPrice(it)} G`,
       })),
     ];

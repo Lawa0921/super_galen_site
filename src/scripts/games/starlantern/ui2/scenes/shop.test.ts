@@ -1,11 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
+import { EQUIPMENT } from '../../data/equipment';
 import { compareDelta } from '../../engine/compare';
 import { Game } from '../../engine/game';
+import { BAG_SIZE } from '../../engine/loot/bag';
 import { sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor } from '../../engine/party';
 import { constRng, plainItem } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { ShopScene } from './shop';
+
+/** The topmost open window of the facility (layers stack in document order). */
+const topLayer = (root: HTMLElement): Element | undefined => [...root.querySelectorAll('.slx-layer')].pop();
 
 function setup(gold = 100) {
   const game = new Game(constRng(0.5), null);
@@ -16,7 +21,7 @@ function setup(gold = 100) {
   s.enter(root);
   s.onAction('confirm');
   const pick = (label: string) => {
-    const layer = root.querySelector('.slx-layer:last-child') ?? root.querySelector('.slx-cmd')!;
+    const layer = topLayer(root) ?? root.querySelector('.slx-cmd')!;
     const o = [...layer.querySelectorAll('[role=option]')].find((x) => x.querySelector('.slx-label')!.textContent === label);
     if (!o) throw new Error(`no ${label}`);
     (o as HTMLElement).click();
@@ -75,18 +80,18 @@ describe('ShopScene', () => {
   it('buying a base adds it to the bag and the full bag is announced', () => {
     const { game, pick, s } = setup(1000);
     pick('購買');
-    pick('鐵劍・普通');
+    pick('鐵劍');
     s.onAction('confirm');
     expect(game.state.bag.map((x) => x.base)).toEqual(['iron-sword']);
     expect(game.state.inventory['iron-sword']).toBeUndefined();
     expect(game.state.gold).toBe(960);
 
     const full = setup(1000);
-    full.game.state.bag = Array.from({ length: 60 }, (_, i) => plainItem('iron-sword', 100 + i));
+    full.game.state.bag = Array.from({ length: BAG_SIZE }, (_, i) => plainItem('iron-sword', 100 + i));
     full.pick('購買');
-    full.pick('鐵劍・普通');
+    full.pick('鐵劍');
     expect(full.sfx.error).toHaveBeenCalled();
-    expect(full.root.querySelector('.slx-talk .slx-text')!.textContent).toBe('背包已滿（60 件）');
+    expect(full.root.querySelector('.slx-talk .slx-text')!.textContent).toBe(`背包已滿（${BAG_SIZE} 件）`);
     expect(full.game.state.gold).toBe(1000);
   });
 
@@ -94,11 +99,11 @@ describe('ShopScene', () => {
     const { game, pick, s, root } = setup(100000);
     game.state.bag = Array.from({ length: 58 }, (_, i) => plainItem('iron-sword', 100 + i));
     pick('購買');
-    pick('鐵劍・普通');
+    pick('鐵劍');
     s.onAction('up');                           // +10, clamped to the 2 free slots
     expect(root.querySelector('.slx-qty-n')!.textContent).toBe('× 2');
     s.onAction('confirm');
-    expect(game.state.bag).toHaveLength(60);
+    expect(game.state.bag).toHaveLength(BAG_SIZE);
     expect(game.state.gold).toBe(100000 - 2 * 40);
   });
 
@@ -123,13 +128,14 @@ describe('ShopScene', () => {
     expect(root.querySelector('.slx-talk .slx-text')!.textContent).toContain('荊棘臂甲');
   });
 
-  it('every base in the buy list carries the common rarity colour and word, and keeps its need text when locked', () => {
+  it('every base in the buy list carries the common colour (the shared label adds no word), and keeps its need text when locked', () => {
     const { pick, root } = setup();
     pick('購買');
     const rows = [...root.querySelectorAll('.slx-layer [role=option]')];
-    const gear = rows.filter((o) => o.querySelector('.slx-label')!.textContent!.endsWith('・普通'));
-    expect(gear.length).toBeGreaterThan(0);
-    for (const o of gear) expect(o.querySelector('.slx-label')!.classList.contains('slx-rarity-common')).toBe(true);
+    const gear = rows.filter((o) => o.querySelector('.slx-label')!.classList.contains('slx-rarity-common'));
+    expect(gear.length).toBeGreaterThan(0);       // the window shows 12 rows; the rest scroll in
+    expect(gear.map((o) => o.getAttribute('data-id'))).toEqual(Object.keys(EQUIPMENT).slice(0, gear.length));
+    for (const o of gear) expect(o.querySelector('.slx-label')!.textContent).not.toContain('普通');
     const locked = rows.find((o) => o.getAttribute('aria-disabled') === 'true')!;
     expect(locked.querySelector('.slx-right')!.textContent).toMatch(/^需要 .+×\d/);
   });
@@ -160,6 +166,31 @@ describe('ShopScene', () => {
     expect(info.querySelector('.slx-cmp-member .slx-up, .slx-cmp-member .slx-down')).toBeTruthy();
   });
 
+  it('shows a stat loss in red when the base replaces a worn weapon', () => {
+    const { game, pick, root } = setup();
+    const lead = activeIds(game.state.party)[0];
+    game.state.party.roster[lead].equip.weapon = plainItem('frost-staff', 1);
+    pick('購買');
+    const row = [...root.querySelectorAll('.slx-layer [role=option]')].find((o) => o.getAttribute('data-id') === 'iron-sword') as HTMLElement;
+    row.dispatchEvent(new Event('pointermove'));
+    const li = root.querySelector('.slx-info .slx-cmp-member')!;
+    expect(li.querySelector('[data-stat=mag]')!.classList.contains('slx-down')).toBe(true);
+    expect(li.querySelector('[data-stat=mag]')!.textContent).toContain('-');
+    expect(li.querySelector('[data-stat=atk]')!.classList.contains('slx-up')).toBe(true);
+  });
+
+  it('says the stats do not change when the base matches what is worn', () => {
+    const { game, pick, root } = setup();
+    const lead = activeIds(game.state.party)[0];
+    game.state.party.roster[lead].equip.weapon = plainItem('iron-sword', 1);
+    pick('購買');
+    const row = [...root.querySelectorAll('.slx-layer [role=option]')].find((o) => o.getAttribute('data-id') === 'iron-sword') as HTMLElement;
+    row.dispatchEvent(new Event('pointermove'));
+    const li = root.querySelector('.slx-info .slx-cmp-member')!;
+    expect(li.textContent).toContain('能力不變');
+    expect(li.querySelector('.slx-up, .slx-down')).toBeNull();
+  });
+
   describe('selling gear', () => {
     const gearBag = (game: Game) => {
       const a = { ...plainItem('iron-sword', 100), rarity: 'rare' as const, ilvl: 5, junk: true };
@@ -168,7 +199,7 @@ describe('ShopScene', () => {
       game.state.bag = [a, b, c];
       return { a, b, c };
     };
-    const rows = (root: HTMLElement) => [...root.querySelectorAll('.slx-layer:last-child [role=option]')];
+    const rows = (root: HTMLElement) => [...(topLayer(root)?.querySelectorAll('[role=option]') ?? [])];
 
     it('lists each bag item with its rarity word, colour and sell price', () => {
       const { game, pick, root } = setup();

@@ -9,6 +9,8 @@ $slx-h: 360px;
 $slx-ink: #f1ead8;
 $slx-dim: #b7ae9a;
 $slx-gold: #e8c46a;
+$slx-up: #8fe08f;
+$slx-down: #ff8a7a;
 // opaque so stacked windows never show the text underneath
 $slx-win: rgb(10, 14, 34);
 
@@ -134,17 +136,16 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-list.slx-depth-2 { translate: 48px 32px; }
 .slx-list.slx-depth-3 { translate: 72px 48px; }
 .slx-shop-list { max-height: none; }
-.slx-shop .slx-info { left: 452px; width: 150px; }
+.slx-shop .slx-info { left: 452px; width: 150px; max-height: 250px; overflow-y: auto; }
 .slx-shop-list { min-width: 266px; }
 .slx-shop-pages { min-width: 120px; }
 // Buy list preview: one line per active member, each changed stat coloured by direction (the arrows come from the words, not the colour).
-.slx-shop .slx-info { max-height: 250px; overflow-y: auto; }
 .slx-cmp-list { list-style: none; padding-left: 0; }
 .slx-cmp-member { margin: 0 0 3px; line-height: 13px; }
 .slx-cmp-member b { margin-right: 6px; color: $slx-gold; font-weight: normal; }
 .slx-cmp-member span { margin-right: 5px; white-space: nowrap; }
-.slx-cmp-member .slx-up { color: #8fe08f; }
-.slx-cmp-member .slx-down { color: #ff8a7a; }
+.slx-cmp-member .slx-up { color: $slx-up; }
+.slx-cmp-member .slx-down { color: $slx-down; }
 
 // Mouse and touch controls
 .slx-back { right: 92px; top: 10px; padding: 2px 10px; cursor: pointer; color: $slx-ink; }
@@ -166,7 +167,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-dungeon::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 58% 62% at 50% 44%, transparent 55%, rgba(3, 4, 10, 0.75) 100%); }
 .slx-floorname { left: 8px; top: 6px; }
 .slx-lamp { right: 8px; top: 6px; padding: 2px 10px; }
-.slx-lamp-green { color: #8fe08f; }
+.slx-lamp-green { color: $slx-up; }
 .slx-lamp-yellow { color: $slx-gold; }
 .slx-lamp-red { color: #ff7a6b; }
 .slx-menu-btn { right: 76px; top: 6px; padding: 2px 10px; cursor: pointer; }
@@ -396,7 +397,7 @@ $slx-battle-left: 150px;
 .slx-formation-count { margin: 0 0 6px; font-size: 14px; }
 .slx-formation-rules { margin: 0; padding-left: 14px; color: $slx-ink; }
 .slx-formation-rules li { margin: 3px 0; }
-.slx-formation-msg { min-height: 16px; margin: 8px 0 0; color: #ff8a7a; }
+.slx-formation-msg { min-height: 16px; margin: 8px 0 0; color: $slx-down; }
 .slx-formation-pick { left: 372px; right: 10px; top: 10px; z-index: 2; }
 .slx-formation-scene > .slx-back, .slx-status-scene > .slx-back, .slx-equip-scene > .slx-back { right: 10px; top: auto; bottom: 10px; }
 
@@ -484,7 +485,7 @@ $slx-battle-left: 150px;
 .slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
 .slx-stat-table tbody th { text-align: left; color: $slx-gold; }
 .slx-stat-table .slx-total { color: #fff; }
-.slx-stat-table .slx-gear { color: #8fe08f; }
+.slx-stat-table .slx-gear { color: $slx-up; }
 .slx-gear-row { display: grid; grid-template-columns: 48px 1fr; gap: 0 8px; padding: 4px 0; border-bottom: 1px solid #2a2840; }
 .slx-gear-slot { color: $slx-gold; grid-row: span 2; }
 .slx-gear-bonus { color: #8fe08f; font-size: 10px; }
@@ -560,17 +561,17 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 @keyframes slx-cell-flash { from { background: rgba(232, 196, 106, 0.55); } }
 @media (prefers-reduced-motion: reduce) { .slx-area-on .slx-cur, .slx-flash { animation: none; } }
 .slx-stat-cell { display: flex; justify-content: space-between; }
-.slx-stat-cell.slx-up .slx-stat-now { color: #8fe08f; }
-.slx-stat-cell.slx-down .slx-stat-now { color: #ff8a7a; }
+.slx-stat-cell.slx-up .slx-stat-now { color: $slx-up; }
+.slx-stat-cell.slx-down .slx-stat-now { color: $slx-down; }
 .slx-item-name { margin-bottom: 2px; line-height: 16px; color: $slx-gold; }
 .slx-item-meta { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 10px; line-height: 12px; color: $slx-dim; }
-.slx-item-junk { margin-top: 2px; font-size: 10px; line-height: 12px; color: #ff8a7a; }
+.slx-item-junk { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-down; }
 .slx-item-lines { margin: 4px 0; padding: 3px 0; border-top: 1px solid #2a2840; border-bottom: 1px solid #2a2840; }
 .slx-line { margin: 0; line-height: 14px; }
 .slx-line-affix { color: #9fc0ff; }
 .slx-line-power { color: #ff9a3c; }
 .slx-line-set { color: $slx-dim; }
-.slx-line-set.slx-line-on { color: #8fe08f; }
+.slx-line-set.slx-line-on { color: $slx-up; }
 .slx-line-off .slx-line-dim { opacity: 0.45; }
 .slx-line-note { display: block; font-size: 10px; line-height: 12px; color: #ffc4a8; }
 .slx-equip-notice { position: absolute; left: 8px; bottom: 18px; margin: 0; font-size: 10px; line-height: 12px; color: #ff8a7a; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
@@ -578,8 +579,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-cmp-head { margin-bottom: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
 .slx-cmp-row { display: flex; justify-content: space-between; gap: 6px; line-height: 14px; }
 .slx-cmp-label { color: $slx-gold; }
-.slx-up .slx-cmp-after { color: #8fe08f; }
-.slx-down .slx-cmp-after { color: #ff8a7a; }
+.slx-up .slx-cmp-after { color: $slx-up; }
+.slx-down .slx-cmp-after { color: $slx-down; }
 .slx-item-detail .slx-hint, .slx-item-detail .slx-desc { margin: 4px 0 0; }
 .slx-bag-menu { left: 96px; top: 96px; min-width: 200px; z-index: 2; }
 
@@ -798,7 +799,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-event p { margin: 0 0 4px; }
 .slx-event-gold { color: $slx-gold; text-align: right; }
 .slx-event-cost { color: #ff9a8a; }
-.slx-event-gain { color: #8fe08f; }
+.slx-event-gain { color: $slx-up; }
 .slx-event-ask { color: $slx-gold; }
 .slx-event-warn { color: #ff7a6b; }
 .slx-confirm-warn { color: #ff7a6b; }
