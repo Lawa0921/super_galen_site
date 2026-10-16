@@ -1,0 +1,385 @@
+---
+/**
+ * /games/delve — DELVE 深掘：2D 沙盒挖掘建造（單機、Canvas2D、程式產生像素材質）。
+ * 引擎在 src/scripts/games/delve/engine（純邏輯），本頁只放標題 / HUD 骨架與樣式。
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+
+const lang: Language = defaultLang;
+---
+
+<BaseLayout title="Dungeon Arcade — DELVE 深掘" description="網頁 2D 沙盒：挖礦、合成、建造，在瀏覽器裡往地底深掘" lang={lang}>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+
+  <main class="delve" id="delve-root" data-phase="title">
+    <canvas id="delve-canvas" class="delve-canvas" aria-label="DELVE 遊戲畫面"></canvas>
+
+    <div class="delve-hud" id="delve-hud" hidden>
+      <div class="delve-hotbar" id="delve-hotbar" role="toolbar" aria-label="快捷欄"></div>
+      <div class="delve-held" id="delve-held" aria-live="polite"></div>
+      <div class="delve-status" id="delve-status"></div>
+      <div class="delve-corner">
+        <button class="delve-chip" id="delve-inv-btn" type="button">背包 E</button>
+        <button class="delve-chip" id="delve-menu-btn" type="button">選單 Esc</button>
+      </div>
+
+      <section class="delve-panel" id="delve-inv" hidden aria-label="背包與合成">
+        <header class="delve-panel-head">
+          <h2>背包</h2>
+          <button class="delve-x" id="delve-inv-close" type="button" aria-label="關閉">×</button>
+        </header>
+        <p class="delve-hint">點一格再點另一格可以搬移 / 交換</p>
+        <div class="delve-inv-grid" id="delve-inv-grid"></div>
+        <h2 class="delve-craft-title">合成</h2>
+        <p class="delve-hint" id="delve-station"></p>
+        <ul class="delve-recipes" id="delve-recipes"></ul>
+      </section>
+
+      <div class="delve-touch" aria-hidden="true">
+        <div class="delve-joy" id="delve-joy"><span class="delve-joy-knob"></span></div>
+        <button class="delve-jump" id="delve-jump" type="button" tabindex="-1">跳</button>
+      </div>
+      <div class="delve-toast" id="delve-toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <section class="delve-menu" id="delve-menu" hidden aria-label="選單">
+      <div class="delve-menu-box">
+        <h2>暫停</h2>
+        <button class="delve-btn" id="delve-resume" type="button">繼續遊戲</button>
+        <button class="delve-btn" id="delve-save" type="button">立即存檔</button>
+        <button class="delve-btn" id="delve-export" type="button">匯出存檔 .delve</button>
+        <button class="delve-btn" id="delve-import-menu" type="button">匯入存檔</button>
+        <a class="delve-btn delve-btn--ghost" href="/games">回遊戲廳</a>
+        <p class="delve-msg" id="delve-menu-msg" role="status"></p>
+        <p class="delve-note">每 30 秒與離開頁面時自動存在這個瀏覽器。瀏覽器（尤其 iOS Safari）可能清除網站資料，重要的世界請匯出備份。</p>
+      </div>
+    </section>
+
+    <section class="delve-title" id="delve-title">
+      <a class="delve-home" href="/games">← ARCADE</a>
+      <div class="delve-title-fg">
+        <h1 class="delve-logo">DELVE<small>深掘</small></h1>
+        <p class="delve-tagline">DIG · CRAFT · BUILD</p>
+        <p class="delve-story">一把木鎬、十支火把。往下挖，找到銅與鐵，打造更好的鎬，看看地底有多深。</p>
+        <label class="delve-seed">種子
+          <input id="delve-seed" type="text" maxlength="32" placeholder="留空＝隨機" autocomplete="off" spellcheck="false" />
+        </label>
+        <div class="delve-title-btns">
+          <button class="delve-btn delve-btn--main" id="delve-new" type="button">新世界</button>
+          <button class="delve-btn" id="delve-continue" type="button" hidden>繼續</button>
+          <button class="delve-btn" id="delve-import" type="button">匯入</button>
+        </div>
+        <input id="delve-import-file" type="file" accept=".delve,application/x-delve-save,application/gzip" hidden />
+        <p class="delve-msg" id="delve-title-msg" role="status"></p>
+        <p class="delve-keys">移動 A/D · 跳 Space · 挖 左鍵 · 放置 右鍵 · 換格 1–0/滾輪 · 背包 E</p>
+        <p class="delve-note">存檔留在這個瀏覽器；新世界會覆蓋舊存檔。iOS 等瀏覽器可能清除網站資料，請用選單匯出備份。</p>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { bootDelve } from '@scripts/games/delve/render/session';
+
+  const root = document.getElementById('delve-root');
+  if (root) {
+    try {
+      bootDelve(root);
+    } catch (err) {
+      console.error('[delve] boot failed', err);
+    }
+  }
+</script>
+
+<style is:global>
+  .delve {
+    --ink: #f4ead2;
+    --dim: #b8ab8c;
+    --panel: rgba(20, 14, 10, 0.86);
+    --edge: #6b4a2a;
+    --gold: #ffcc55;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    overflow: hidden;
+    background: #120c08;
+    color: var(--ink);
+    font-family: 'Press Start 2P', Consolas, monospace;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .delve-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    image-rendering: pixelated;
+    cursor: crosshair;
+  }
+  .delve [hidden] { display: none; }
+  .delve button { font: inherit; color: inherit; }
+
+  /* ── HUD ── */
+  .delve-hud { position: absolute; inset: 0; pointer-events: none; }
+  .delve-hud > * { pointer-events: auto; }
+  .delve-hud > .delve-toast,
+  .delve-hud > .delve-held,
+  .delve-hud > .delve-status { pointer-events: none; }
+
+  .delve-hotbar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: 4px;
+  }
+  .delve-slot {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 2px solid #3a2a1a;
+    background: rgba(30, 22, 16, 0.78);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+  .delve-slot.is-selected { border-color: var(--gold); background: rgba(70, 52, 24, 0.9); }
+  .delve-slot.is-picked { border-color: #7fd4ff; }
+  .delve-slot-icon { width: 32px; height: 32px; image-rendering: pixelated; }
+  .delve-slot-count {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    font-size: 8px;
+    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  }
+  .delve-slot-key { position: absolute; left: 3px; top: 3px; font-size: 6px; color: var(--dim); }
+  .delve-held {
+    position: absolute;
+    top: 62px;
+    left: 12px;
+    font-size: 9px;
+    text-shadow: 1px 1px 0 #000;
+  }
+  .delve-status {
+    position: absolute;
+    top: 78px;
+    left: 12px;
+    font-size: 10px;
+    color: var(--dim);
+    text-shadow: 1px 1px 0 #000;
+  }
+  .delve-corner { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+  .delve-chip {
+    padding: 8px 10px;
+    font-size: 8px;
+    border: 2px solid var(--edge);
+    background: var(--panel);
+    cursor: pointer;
+  }
+  .delve-chip:hover { border-color: var(--gold); }
+
+  .delve-panel {
+    position: absolute;
+    top: 100px;
+    left: 10px;
+    width: min(480px, calc(100vw - 20px));
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding: 12px;
+    border: 2px solid var(--edge);
+    background: var(--panel);
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
+  }
+  .delve-panel h2 { margin: 0; font-size: 11px; color: var(--gold); }
+  .delve-panel-head { display: flex; justify-content: space-between; align-items: center; }
+  .delve-x { width: 28px; height: 28px; border: 2px solid var(--edge); background: transparent; cursor: pointer; }
+  .delve-hint { margin: 8px 0; font-size: 10px; line-height: 1.6; color: var(--dim); }
+  .delve-inv-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+  .delve-inv-grid .delve-slot { width: 100%; height: auto; aspect-ratio: 1; }
+  .delve-craft-title { margin-top: 14px; }
+  .delve-recipes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .delve-recipe {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 4px;
+    align-items: center;
+    padding: 6px;
+    border: 2px solid #3a2a1a;
+    background: rgba(40, 30, 20, 0.7);
+    text-align: left;
+    cursor: pointer;
+    opacity: 0.55;
+  }
+  .delve-recipe .delve-slot-icon { grid-row: span 2; }
+  .delve-recipe.is-ready { opacity: 1; border-color: #8a6a34; }
+  .delve-recipe.is-ready:hover { border-color: var(--gold); }
+  .delve-recipe:disabled { cursor: not-allowed; }
+  .delve-recipe-name { font-size: 11px; }
+  .delve-recipe-need { font-size: 10px; color: var(--dim); line-height: 1.5; }
+
+  .delve-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    transform: translate(-50%, 12px);
+    padding: 8px 12px;
+    font-size: 9px;
+    border: 2px solid var(--edge);
+    background: var(--panel);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .delve-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ── 觸控按鍵（粗指標或首次觸控後顯示） ── */
+  .delve-touch { display: none; }
+  .delve[data-touch='1'] .delve-touch { display: block; }
+  @media (pointer: coarse) {
+    .delve-touch { display: block; }
+  }
+  .delve-joy {
+    --kx: 0px;
+    --ky: 0px;
+    position: absolute;
+    left: 22px;
+    bottom: 28px;
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.28);
+    background: rgba(0, 0, 0, 0.28);
+    touch-action: none;
+  }
+  .delve-joy-knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 52px;
+    height: 52px;
+    margin: -26px 0 0 -26px;
+    border-radius: 50%;
+    background: rgba(255, 220, 150, 0.55);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    transform: translate(var(--kx), var(--ky));
+  }
+  .delve-jump {
+    position: absolute;
+    right: 26px;
+    bottom: 44px;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 204, 85, 0.35);
+    font-size: 12px;
+    touch-action: none;
+  }
+
+  /* ── 選單 ── */
+  .delve-menu {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    background: rgba(5, 3, 2, 0.6);
+  }
+  .delve-menu-box {
+    width: min(340px, calc(100vw - 32px));
+    padding: 18px;
+    display: grid;
+    gap: 8px;
+    border: 3px solid var(--edge);
+    background: #1d140d;
+  }
+  .delve-menu-box h2 { margin: 0 0 6px; font-size: 13px; color: var(--gold); text-align: center; }
+  .delve-btn {
+    display: block;
+    padding: 12px 14px;
+    font-size: 10px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--ink);
+    border: 3px solid var(--edge);
+    background: #2b1d12;
+    cursor: pointer;
+  }
+  .delve-btn:hover,
+  .delve-btn:focus-visible { border-color: var(--gold); background: #3a2716; }
+  .delve-btn--main { background: #6b4a1e; border-color: #c08a3a; }
+  .delve-btn--ghost { background: transparent; }
+  .delve-msg { min-height: 1.2em; margin: 4px 0 0; font-size: 8px; color: #9fe0a0; line-height: 1.6; }
+  .delve-note { margin: 4px 0 0; font-size: 10px; line-height: 1.8; color: var(--dim); }
+
+  /* ── 標題 ── */
+  .delve-title {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    overflow-y: auto;
+    text-align: center;
+    background:
+      linear-gradient(180deg, rgba(10, 8, 20, 0.35), rgba(18, 12, 8, 0.92) 70%),
+      url('/assets/games/delve/card-delve.webp') center 40% / cover no-repeat,
+      #120c08;
+  }
+  .delve-home {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    font-size: 9px;
+    color: var(--dim);
+    text-decoration: none;
+  }
+  .delve-home:hover { color: var(--gold); }
+  .delve-title-fg { max-width: 560px; display: grid; gap: 12px; justify-items: center; }
+  .delve-logo {
+    margin: 0;
+    font-size: clamp(32px, 9vw, 64px);
+    letter-spacing: 6px;
+    color: var(--gold);
+    text-shadow: 4px 4px 0 #6b3a12, 8px 8px 0 rgba(0, 0, 0, 0.45);
+  }
+  .delve-logo small { display: block; margin-top: 12px; font-size: 0.3em; letter-spacing: 10px; color: var(--ink); }
+  .delve-tagline { margin: 0; font-size: 10px; color: #c9e7a8; letter-spacing: 3px; }
+  .delve-story { margin: 0; font-size: 12px; line-height: 2; color: var(--ink); }
+  .delve-seed { display: flex; gap: 10px; align-items: center; font-size: 9px; color: var(--dim); }
+  .delve-seed input {
+    width: 180px;
+    padding: 8px;
+    font: inherit;
+    font-size: 9px;
+    color: var(--ink);
+    border: 2px solid var(--edge);
+    background: #1d140d;
+  }
+  .delve-title-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .delve-keys { margin: 0; font-size: 10px; line-height: 2; color: var(--dim); }
+
+  @media (max-width: 640px) {
+    .delve-hotbar { gap: 2px; left: 6px; top: 6px; }
+    .delve-slot { width: 34px; height: 34px; }
+    .delve-slot-icon { width: 24px; height: 24px; }
+    .delve-slot-key { display: none; }
+    .delve-corner { top: auto; bottom: 150px; right: 10px; flex-direction: column; }
+    .delve-held { top: 46px; left: 8px; }
+    .delve-status { top: 62px; left: 8px; }
+    .delve-panel { top: 84px; left: 10px; max-height: calc(100vh - 260px); }
+  }
+</style>

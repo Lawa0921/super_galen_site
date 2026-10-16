@@ -69,6 +69,24 @@ export class Inventory {
     return true;
   }
 
+  /** 背包 UI 拖放：把 a 格移到 b 格。同物品可堆疊時合併進 b（放不下的留在 a），否則交換。 */
+  swap(a: number, b: number): boolean {
+    const n = this.slots.length;
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a >= n || b >= n || a === b) return false;
+    const sa = this.slots[a], sb = this.slots[b];
+    if (sa && sb && sa.item === sb.item) {
+      const max = ITEMS[sa.item].maxStack;
+      const k = Math.min(sa.count, max - sb.count);
+      if (k > 0) {
+        sb.count += k; sa.count -= k;
+        if (sa.count === 0) this.slots[a] = null;
+        return true;
+      }
+    }
+    this.slots[a] = sb;
+    this.slots[b] = sa;
+    return true;
+  }
   select(i: number): void {
     if (Number.isInteger(i) && i >= 0 && i < HOTBAR_SIZE) this.selected = i;
   }

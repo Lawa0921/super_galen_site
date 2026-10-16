@@ -29,6 +29,20 @@ describe('Inventory', () => {
     expect(inv.slots[0]).toEqual({ item: 'wood_pickaxe', count: 1 });
     expect(inv.slots[1]).toEqual({ item: 'wood_pickaxe', count: 1 });
   });
+  it('swap 交換兩格；同類可堆疊時合併到目標格', () => {
+    const inv = new Inventory();
+    inv.slots[0] = { item: 'dirt', count: 5 };
+    inv.slots[3] = { item: 'stone', count: 2 };
+    expect(inv.swap(0, 3)).toBe(true);
+    expect(inv.slots[0]).toEqual({ item: 'stone', count: 2 });
+    expect(inv.slots[3]).toEqual({ item: 'dirt', count: 5 });
+    inv.slots[5] = { item: 'dirt', count: 7 };
+    inv.swap(5, 3);
+    expect(inv.slots[3]).toEqual({ item: 'dirt', count: 12 });
+    expect(inv.slots[5]).toBeNull();
+    expect(inv.swap(0, 99)).toBe(false);
+    expect(inv.swap(2, 2)).toBe(false);
+  });
   it('背包滿時回傳剩餘數量', () => {
     const inv = new Inventory();
     for (let i = 0; i < INV_SIZE; i++) inv.slots[i] = { item: 'wood_pickaxe', count: 1 };
