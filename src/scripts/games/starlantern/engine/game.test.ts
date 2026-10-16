@@ -7,6 +7,7 @@ import { mulberry32 } from './rng';
 import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
 import type { Pos } from './types';
+import { ENEMIES } from '../data/enemies';
 
 const calm = () => constRng(0.99); // step gain 12 on floor 1, never rolls an early encounter
 const MAIN: Portal = { region: 'mainline', condition: 'plain' };
@@ -279,6 +280,36 @@ describe('battles', () => {
     expect([g.phase, g.state.dungeon.bossDefeated]).toEqual(['map', false]);
     expect(g.map().down).toEqual(at);
     expect(stepOnto(g, at)).toEqual({ kind: 'floor', floor: 6 });
+  });
+  it('the story boss on mainline depth 3 is the plain 燈喰之獸', () => {
+    const g = inMap(3);
+    stepOnto(g, g.map().boss!);
+    const b = g.battle!.enemies[0];
+    expect([b.name, b.max, b.tint]).toEqual(['燈喰之獸', ENEMIES.lanterneater.stats, undefined]);
+  });
+  it('a region boss is the 燈喰之獸 grown by depth and region', () => {
+    const g = new Game(calm(), null);
+    g.state.dungeon.reached.blaze = 5;
+    g.depart({ region: 'blaze', condition: 'plain' }, 5);
+    stepOnto(g, g.map().boss!);
+    const b = g.battle!.enemies[0];
+    expect([b.name, b.tint, b.boss, b.resist, b.weak]).toEqual(['深層・熾焰・燈喰之獸', 'fire', true, ['fire'], ['ice']]);
+    expect(b.max.hp).toBeGreaterThan(ENEMIES.lanterneater.stats.hp);
+  });
+  it('encounters in a region are its variants, and deep mainline foes are 深層', () => {
+    const fight = (region: Portal['region'], depth: number) => {
+      const g = new Game(calm(), null);
+      g.state.dungeon.reached[region] = depth;
+      g.depart({ region, condition: 'plain' }, depth);
+      g.encounter = 999;
+      const open = DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!;
+      expect(g.move(open)).toEqual({ kind: 'battle' });
+      return g.battle!.enemies;
+    };
+    const storm = fight('storm', 1);
+    expect(storm.every((e) => e.name.startsWith('雷鳴・') && e.tint === 'thunder')).toBe(true);
+    expect(fight('mainline', 4).every((e) => e.name.startsWith('深層・') && e.tint === undefined)).toBe(true);
+    expect(fight('mainline', 1).every((e) => !e.name.includes('・'))).toBe(true);
   });
 });
 

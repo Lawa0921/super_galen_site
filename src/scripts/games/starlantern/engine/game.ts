@@ -6,6 +6,7 @@ import { advance, danger, type Danger } from './encounter';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { activeIds, awardExp, hasPassive } from './party';
 import { pick, type Rng } from './rng';
+import { encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { newGame, type GameState } from './state';
 import { addItem, rest as innRest, type TownResult } from './town';
@@ -108,7 +109,8 @@ export class Game {
       case 'down': return this.changeFloor(this.floor + 1);
       case 'entrance': return { kind: 'entrance' };
       case 'boss':
-        this.startBattle(['lanterneater'], true);
+        // The mainline story boss stays as written; every other boss is the 燈喰之獸 grown by depth and region.
+        this.startBattle(['lanterneater'], true, !this.isStoryDepth(this.floor));
         return { kind: 'boss' };
       case 'chest': return this.openChest() ?? { kind: 'moved' };
       default: {
@@ -117,7 +119,7 @@ export class Game {
         const g = advance(this.encounter, this.rng, f.rate, mod);
         this.encounter = g.value;
         if (!g.encounter) return { kind: 'moved' };
-        this.startBattle(pick(this.rng, f.encounters), false);
+        this.startBattle(encounterGroup(this.run!.region, this.floor, this.rng), false);
         return { kind: 'battle' };
       }
     }
@@ -217,8 +219,9 @@ export class Game {
     return { kind: 'chest', item: loot.item, qty };
   }
 
-  private startBattle(enemyIds: string[], boss: boolean): void {
-    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed });
+  private startBattle(enemyIds: string[], boss: boolean, scaled = true): void {
+    const scale = scaled && this.run ? { depth: this.floor, region: this.run.region } : undefined;
+    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
   }

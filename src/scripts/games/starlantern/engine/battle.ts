@@ -1,14 +1,16 @@
 import { reachable, rowOfCell, shapeTargets } from './formation';
 import { CHARACTERS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
+import { REGIONS, type RegionId } from '../data/regions';
 import { ITEMS } from '../data/items';
 import { SKILLS } from '../data/skills';
 import { ULTIMATES } from '../data/ultimates';
 import { stat, dealDamage, type BattleEvent, type Combatant } from './combatant';
 import { hasPassive, statsOf } from './party';
 import { pick, type Rng } from './rng';
+import { regionTint, scaleEnemy } from './scaling';
 import { applyEffect, type EffectContext } from './skills';
-import type { CharacterId, Effect, Element, Member, Party, Row, Target } from './types';
+import type { CharacterId, Effect, Element, EnemyDef, Member, Party, Row, Target } from './types';
 
 export type Action =
   | { kind: 'attack'; target: string }
@@ -25,7 +27,12 @@ export interface BattleState {
   log: BattleEvent[]; outcome: Outcome;
   /** What each enemy will do this round, decided before the player chooses (planEnemies) so the screen can show it. */
   intents?: Record<string, EnemyAction>;
+  /** Each enemy's definition as met in this fight (depth, region, elite), by combatant key; absent means the plain ENEMIES entry. */
+  enemyDefs?: Record<string, EnemyDef>;
 }
+
+/** Depth, region and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
+export interface BattleScale { depth: number; region: RegionId; elite?: string }
 
 export type EnemyAction = { kind: 'attack'; target?: string } | { kind: 'enemy-skill'; index: number; target?: string };
 
@@ -43,29 +50,42 @@ function fromMember(m: Member, cell: number): Combatant {
     row, cell, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0 };
 }
 
-function fromEnemy(id: string, key: string, name: string): Combatant {
-  const d = ENEMIES[id];
-  return { ...fresh(), key, side: 'enemy', defId: id, name, max: { ...d.stats }, hp: d.stats.hp, tp: d.stats.tp,
+function fromEnemy(d: EnemyDef, key: string, name: string, tint: Combatant['tint']): Combatant {
+  const c: Combatant = { ...fresh(), key, side: 'enemy', defId: d.id, name, max: { ...d.stats }, hp: d.stats.hp, tp: d.stats.tp,
     row: 'front', melee: true, weak: [...d.weak], resist: [...d.resist], boss: !!d.boss, alive: true };
+  if (tint) c.tint = tint;
+  return c;
 }
+
+/** An enemy's definition in this fight: the scaled one when the fight has one, else the plain entry. */
+const enemyDef = (s: BattleState, c: Combatant): EnemyDef | undefined => s.enemyDefs?.[c.key] ?? ENEMIES[c.defId];
 
 export function createBattle(o: {
   party: Party; enemyIds: string[]; boss?: boolean; inventory: Record<string, number>; revealed: Record<string, Element[]>;
+  scale?: BattleScale;
 }): BattleState {
   const party: Combatant[] = [];
   o.party.grid.forEach((id, cell) => { if (id) party.push(fromMember(o.party.roster[id], cell)); });
   const counts: Record<string, number> = {};
   for (const id of o.enemyIds) counts[id] = (counts[id] ?? 0) + 1;
   const seen: Record<string, number> = {};
+  const sc = o.scale;
+  const region = sc ? REGIONS[sc.region] : null;
+  const defs: Record<string, EnemyDef> = {};
   const enemies = o.enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
-    const name = counts[id] > 1 ? `${ENEMIES[id].name} ${String.fromCharCode(64 + n)}` : ENEMIES[id].name;
-    return fromEnemy(id, `e${i}`, name);
+    const elite = !!sc && sc.elite === id && n === 1;
+    const d = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite) : ENEMIES[id];
+    defs[`e${i}`] = d;
+    const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
+    return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined);
   });
-  return {
+  const s: BattleState = {
     round: 0, party, enemies, boss: !!o.boss, inventory: { ...o.inventory }, revealed: structuredClone(o.revealed),
     itemBoost: hasPassive(o.party, 'itemBoost'), log: [], outcome: 'ongoing',
   };
+  if (sc) s.enemyDefs = defs;
+  return s;
 }
 
 export function turnOrder(cs: Combatant[], rng: Rng): Combatant[] {
@@ -129,7 +149,7 @@ const skillIsMelee = (effects: Effect[]) => effects.some((e) => e.kind === 'dama
 function chooseEnemyActions(s: BattleState, rng: Rng): Map<string, EnemyAction> {
   const out = new Map<string, EnemyAction>();
   for (const e of living(s.enemies)) {
-    const skills = ENEMIES[e.defId]?.skills ?? [];
+    const skills = enemyDef(s, e)?.skills ?? [];
     const index = skills.findIndex((sk) => rng() < sk.chance);
     const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
     const target = pickTarget(foePool(s, e, melee), undefined, rng)?.key;
@@ -160,7 +180,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       return;
     }
     case 'enemy-skill': {
-      const sk = ENEMIES[actor.defId].skills[act.index];
+      const sk = enemyDef(s, actor)!.skills[act.index];
       s.log.push({ type: 'act', actor: actor.key, label: sk.name });
       for (const t of resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects))) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
       return;
@@ -264,8 +284,9 @@ export function intentLabel(s: BattleState, key: string): string {
   const a = s.intents?.[key];
   if (!a) return '';
   const e = s.enemies.find((x) => x.key === key);
-  const name = a.kind === 'attack' ? '攻擊' : (ENEMIES[e?.defId ?? '']?.skills[a.index]?.name ?? '');
-  const sk = a.kind === 'enemy-skill' ? ENEMIES[e?.defId ?? '']?.skills[a.index] : null;
+  const def = e ? enemyDef(s, e) : undefined;
+  const name = a.kind === 'attack' ? '攻擊' : (def?.skills[a.index]?.name ?? '');
+  const sk = a.kind === 'enemy-skill' ? def?.skills[a.index] : null;
   const single = a.kind === 'attack' || sk?.target === 'enemy' || sk?.target === 'row' || sk?.target === 'column' || sk?.target === 'cross';
   const who = single && a.target ? s.party.find((c) => c.key === a.target)?.name : null;
   const area = sk?.target === 'enemies' ? '（全體）' : sk?.target === 'row' ? '（整排）' : sk?.target === 'column' ? '（整列）' : sk?.target === 'cross' ? '（十字）' : '';
@@ -276,7 +297,7 @@ export function rewards(s: BattleState, rng: Rng, dropBoost: boolean): { exp: nu
   let exp = 0, gold = 0;
   const drops: Record<string, number> = {};
   for (const e of s.enemies) {
-    const d = ENEMIES[e.defId];
+    const d = enemyDef(s, e)!;
     exp += d.exp;
     gold += d.gold;
     for (const drop of d.drops) if (rng() < Math.min(1, drop.chance * (dropBoost ? 2 : 1))) drops[drop.mat] = (drops[drop.mat] ?? 0) + 1;

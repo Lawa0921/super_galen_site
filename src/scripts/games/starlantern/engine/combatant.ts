@@ -14,6 +14,8 @@ export interface Combatant {
   turret: { power: number; turns: number } | null; defending: boolean;
   /** Ultimate gauge, 0–100; enemies keep 0. */
   limit: number;
+  /** Battle-screen colouring of a regional variant (its region's element) or an elite. */
+  tint?: Element | 'elite';
 }
 
 export type BattleEvent =

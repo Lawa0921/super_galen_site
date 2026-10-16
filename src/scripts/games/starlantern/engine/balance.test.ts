@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { FLOORS } from '../data/floors';
 import { expToNext } from './party';
 import { avgExp, fightsToLevel, groupExp, winRate } from './sim';
+import { REGIONS, type RegionId } from '../data/regions';
+import { terrainOf } from './dungeon/run';
+import { mulberry32 } from './rng';
+import { depthLevel, encounterGroup } from './scaling';
 
 const groups = (f: number) => FLOORS[f - 1].encounters;
 
@@ -40,4 +44,18 @@ describe('balance', () => {
     expect(lo).toBeLessThanOrEqual(0.85);
     expect(winRate(13, [['lanterneater']], true).rate).toBeGreaterThanOrEqual(0.7);
   });
+
+  it('7. same depth level, same odds', () => {
+    for (const d of [4, 6, 8, 10]) {
+      const lv = depthLevel(d);
+      const main = winRate(lv, groups(terrainOf('mainline', d)), false, 40, { depth: d, region: 'mainline' });
+      expect(main.rate, `mainline depth ${d}`).toBeGreaterThanOrEqual(0.6);
+      for (const region of Object.keys(REGIONS).filter((r) => r !== 'mainline') as RegionId[]) {
+        const rng = mulberry32(d * 31 + region.length);
+        const gs = Array.from({ length: 4 }, () => encounterGroup(region, d, rng));
+        const r = winRate(lv, gs, false, 20, { depth: d, region });
+        expect(r.rate, `${region} depth ${d}`).toBeGreaterThanOrEqual(0.6);
+      }
+    }
+  }, 60_000);
 });
