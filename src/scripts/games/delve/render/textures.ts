@@ -6,7 +6,8 @@
 import { T, TILES, WALLS } from '../engine/tiles';
 import type { ItemId } from '../engine/items';
 import { TILE_SIZE } from '../engine/constants';
-import { EDGE, FRAME_COLS, MAT, VARIANTS, frameColumn, type Mat } from './autotile';
+import { EDGE, FRAME_COLS, MAT, VARIANTS, DECOR_STYLES, frameColumn, type Mat } from './autotile';
+import { MATERIAL_PAL, PAL2, chestBmp, decorBmp, iconCactus, iconCoins, iconShard, texMaterial, texWall2 } from './decor';
 import { Bmp, INK, bayer, css, h01, hex, mix, ramp, shade, toCanvas, type RGB } from './pixel';
 
 const S = TILE_SIZE;
@@ -33,13 +34,17 @@ const TILE_PAL: Record<number, RGB[]> = {
   [T.DIRT]: PAL.dirt, [T.GRASS]: PAL.dirt, [T.STONE]: PAL.stone, [T.SAND]: PAL.sand,
   [T.PLANKS]: PAL.planks, [T.COPPER_ORE]: PAL.stone, [T.IRON_ORE]: PAL.stone,
   [T.WOOD]: PAL.bark, [T.LEAVES]: PAL.grass, [T.TORCH]: PAL.torch, [T.WORKBENCH]: PAL.planks,
+  ...MATERIAL_PAL,
+};
+const ORE_PAL: Record<number, RGB[]> = {
+  [T.COPPER_ORE]: PAL.copper, [T.IRON_ORE]: PAL.iron, [T.SILVER_ORE]: PAL2.silver, [T.GOLD_ORE]: PAL2.gold,
 };
 
 // ── 圖集版面 ─────────────────────────────────────────────
 const FG_ROW0 = 0;
 const WALL_ROW0 = FG_ROW0 + TILES.length;
 const BLEND_ROW0 = WALL_ROW0 + WALLS.length;  // 3 列：MAT.DIRT/SAND/STONE
-const MISC_ROW = BLEND_ROW0 + 3;              // 裂痕 0..3、草葉 4..6
+const MISC_ROW = BLEND_ROW0 + 3;              // 裂痕 0..3、草葉 4..6、叢林草葉 7..9
 const ICON_ROW = MISC_ROW + 1;
 const ROWS = ICON_ROW + 1;
 
@@ -208,7 +213,7 @@ function oreChunk(b: Bmp, x: number, y: number, w: number, h: number, ore: RGB[]
 
 function texOre(id: number, v: number): Bmp {
   const b = texStone(v);
-  const ore = id === T.COPPER_ORE ? PAL.copper : PAL.iron;
+  const ore = ORE_PAL[id] ?? PAL.iron;
   const seed = 201 + id * 13 + v * 7;
   const spots: [number, number, number, number][] = [
     [[2, 2, 5, 4], [10, 4, 4, 4], [4, 10, 5, 4]],
@@ -248,9 +253,9 @@ function texTile(id: number, v: number): Bmp {
     case T.STONE: return texStone(v);
     case T.SAND: return texSand(v);
     case T.PLANKS: return texPlanks(v);
-    case T.COPPER_ORE: case T.IRON_ORE: return texOre(id, v);
+    case T.COPPER_ORE: case T.IRON_ORE: case T.SILVER_ORE: case T.GOLD_ORE: return texOre(id, v);
     case T.WORKBENCH: return texWorkbench();
-    default: return new Bmp(S, S); // 空氣 / 樹幹 / 樹葉 / 火把：動態繪製
+    default: return texMaterial(id, v) ?? new Bmp(S, S); // 空氣 / 樹幹 / 樹葉 / 火把：動態繪製
   }
 }
 
@@ -282,10 +287,10 @@ function grassDepth(x: number, v: number): number {
   return pat[x & 15];
 }
 
-function frameTile(src: Bmp, mask: number, pal: RGB[], opts: { grass?: boolean; v?: number; ink0?: RGB } = {}): Bmp {
+function frameTile(src: Bmp, mask: number, pal: RGB[], opts: { grass?: boolean; v?: number; ink0?: RGB; gpal?: RGB[] } = {}): Bmp {
   const b = src.clone();
   const w = b.w, h = b.h, v = opts.v ?? 0;
-  const G = PAL.grass;
+  const G = opts.gpal ?? PAL.grass;
   const grassTop = Boolean(opts.grass) && (mask & EDGE.UP) !== 0;
   const dropL = 4 + v, dropR = 5 - (v % 2);
   if (grassTop) {
@@ -400,16 +405,17 @@ function blendStamp(mat: Mat, sideIdx: number, perp: number): Bmp {
 }
 
 // ── 草葉（畫在草地上方那格的底部） ──────────────────────
-function grassBlades(v: number): Bmp {
-  const G = PAL.grass, b = new Bmp(S, S);
+function grassBlades(v: number, jungle = false): Bmp {
+  const G = jungle ? PAL2.jungleGrass : PAL.grass, b = new Bmp(S, S);
   for (let x = 0; x < S; x++) {
-    const r = h01(x, v, 501);
-    const hgt = r > 0.82 ? 3 : r > 0.5 ? 2 : r > 0.25 ? 1 : 0;
+    const r = h01(x, v + (jungle ? 7 : 0), 501);
+    const hgt = jungle ? (r > 0.75 ? 4 : r > 0.45 ? 3 : r > 0.2 ? 2 : 0) : r > 0.82 ? 3 : r > 0.5 ? 2 : r > 0.25 ? 1 : 0;
     for (let k = 0; k < hgt; k++) {
       const y = S - 1 - k;
       b.set(x, y, k === hgt - 1 ? G[5] : G[4]);
     }
   }
+  if (jungle) return b;
   if (v === 2) { b.set(11, 13, G[3]); b.set(11, 12, G[3]); b.set(11, 11, hex('#f2d04a')); b.set(10, 11, hex('#f6e48a')); }
   if (v === 1) { b.set(4, 13, G[3]); b.set(4, 12, hex('#e8789e')); b.set(5, 12, hex('#f4a8c0')); }
   return b;
@@ -538,11 +544,21 @@ function iconBlock(tex: Bmp, pal: RGB[], grass = false): Bmp {
 const ICON_ORDER: ItemId[] = [
   'dirt', 'stone', 'sand', 'wood', 'planks', 'copper_ore', 'iron_ore', 'torch', 'workbench',
   'wood_pickaxe', 'copper_pickaxe', 'iron_pickaxe',
+  'silver_ore', 'gold_ore', 'clay', 'gravel', 'granite', 'marble', 'sandstone', 'snow', 'ice', 'mud', 'stone_brick',
+  'chest', 'pumpkin', 'glow_mushroom', 'mushroom', 'crystal', 'cactus', 'copper_coin', 'silver_coin',
+  'silver_pickaxe', 'gold_pickaxe',
 ];
 export const PICK_METAL: Record<string, RGB[]> = {
   wood_pickaxe: ramp('#2a1810', '#623924', '#7c4c2e', '#966139', '#b07a4b', '#c99660', '#d8ba76'),
   copper_pickaxe: PAL.copper,
   iron_pickaxe: PAL.metal,
+  silver_pickaxe: PAL2.silver,
+  gold_pickaxe: PAL2.gold,
+};
+/** 方塊道具 → 圖示用的 (tile id) */
+const BLOCK_ICON: Partial<Record<ItemId, number>> = {
+  clay: T.CLAY, gravel: T.GRAVEL, granite: T.GRANITE, marble: T.MARBLE, sandstone: T.SANDSTONE,
+  snow: T.SNOW, ice: T.ICE, mud: T.MUD, stone_brick: T.STONE_BRICK,
 };
 function paintIcon(item: ItemId): Bmp {
   switch (item) {
@@ -555,7 +571,21 @@ function paintIcon(item: ItemId): Bmp {
     case 'iron_ore': return iconOre(PAL.iron);
     case 'torch': return iconTorch();
     case 'workbench': return texWorkbench();
-    default: return iconPick(PICK_METAL[item] ?? PAL.metal);
+    case 'silver_ore': return iconOre(PAL2.silver);
+    case 'gold_ore': return iconOre(PAL2.gold);
+    case 'chest': return chestBmp();
+    case 'pumpkin': return decorBmp(T.PUMPKIN, 0);
+    case 'glow_mushroom': return decorBmp(T.GLOW_MUSHROOM, 0);
+    case 'mushroom': return decorBmp(T.MUSHROOM, 0);
+    case 'crystal': return iconShard();
+    case 'cactus': return iconCactus();
+    case 'copper_coin': return iconCoins(false);
+    case 'silver_coin': return iconCoins(true);
+    default: {
+      const tile = BLOCK_ICON[item];
+      if (tile !== undefined) return iconBlock(texMaterial(tile, 0) ?? new Bmp(S, S), TILE_PAL[tile] ?? PAL.stone);
+      return iconPick(PICK_METAL[item] ?? PAL.metal);
+    }
   }
 }
 
@@ -568,7 +598,9 @@ export interface Atlas {
   wall(id: number, variant: number, mask: number): Src;
   /** 材質滲透貼片：mat 滲入、sideIdx 0..3 = 上右下左、perp 見 perpMask */
   blend(mat: Mat, sideIdx: number, perp: number): Src;
-  blades(variant: number): Src;
+  blades(variant: number, jungle?: boolean): Src;
+  /** 裝飾物件 (id, style) */
+  decor(id: number, style: number): Src;
   crack(stage: number): Src;
   icon(item: ItemId): Src;
   /** 粒子用代表色 */
@@ -589,20 +621,31 @@ export function buildAtlas(): Atlas {
 
   for (const t of TILES) {
     const pal = TILE_PAL[t.id] ?? PAL.stone;
+    const styles = t.id === T.WORKBENCH ? 0 : DECOR_STYLES[t.id];
+    if (styles) {
+      // 裝飾物件：一列 = 各 style（欄 c 放 style c % styles）
+      const bm: Bmp[] = [];
+      for (let s = 0; s < styles; s++) bm.push(decorBmp(t.id, s));
+      for (let c = 0; c < FRAME_COLS; c++) put(bm[c % styles], c, FG_ROW0 + t.id);
+      continue;
+    }
     for (let v = 0; v < VARIANTS; v++) {
       const tex = texTile(t.id, v);
       const frameable = t.solid;
+      const jungle = t.id === T.JUNGLE_GRASS, mush = t.id === T.MUSHROOM_GRASS;
+      const gpal = jungle ? PAL2.jungleGrass : mush ? PAL2.mushroomGrass : undefined;
       for (let m = 0; m < 16; m++) {
-        const b = frameable ? frameTile(tex, m, pal, { grass: t.id === T.GRASS, v }) : tex;
+        const b = frameable ? frameTile(tex, m, pal, { grass: t.id === T.GRASS || jungle || mush, v, gpal }) : tex;
         put(b, frameColumn(m, v), FG_ROW0 + t.id);
       }
     }
   }
   for (const w of WALLS) {
     if (w.id === 0) continue;
-    const pal = w.id === 1 ? PAL.dirtWall : PAL.stoneWall;
     for (let v = 0; v < VARIANTS; v++) {
-      const tex = texWall(w.id, v);
+      const extra = w.id > 2 ? texWall2(w.id, v) : null;
+      const pal = extra ? extra.pal : w.id === 1 ? PAL.dirtWall : PAL.stoneWall;
+      const tex = extra ? extra.b : texWall(w.id, v);
       for (let m = 0; m < 16; m++) put(frameWall(tex, m, pal), frameColumn(m, v), WALL_ROW0 + w.id);
     }
   }
@@ -611,15 +654,15 @@ export function buildAtlas(): Atlas {
   }
   for (let s = 0; s < 4; s++) put(crack(s), s, MISC_ROW);
   for (let v = 0; v < 3; v++) put(grassBlades(v), 4 + v, MISC_ROW);
+  for (let v = 0; v < 3; v++) put(grassBlades(v, true), 7 + v, MISC_ROW);
   const iconBmps = new Map<ItemId, Bmp>();
   ICON_ORDER.forEach((item, i) => { const b = paintIcon(item); iconBmps.set(item, b); put(b, i, ICON_ROW); });
 
   const colors: string[] = TILES.map((t) => {
     const pal = TILE_PAL[t.id];
-    if (t.id === T.COPPER_ORE) return css(PAL.copper[3]);
-    if (t.id === T.IRON_ORE) return css(PAL.iron[4]);
+    if (ORE_PAL[t.id]) return css(ORE_PAL[t.id][4]);
     if (t.id === T.LEAVES) return css(PAL.grass[3]);
-    return pal ? css(pal[4]) : '#888888';
+    return pal ? css(pal[4]) : t.color;
   });
   const inks: string[] = TILES.map((t) => css((TILE_PAL[t.id] ?? PAL.stone)[0]));
   return {
@@ -627,7 +670,8 @@ export function buildAtlas(): Atlas {
     tile: (id, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (FG_ROW0 + id) * S }),
     wall: (id, v, mask) => ({ sx: frameColumn(mask, v) * S, sy: (WALL_ROW0 + id) * S }),
     blend: (mat, s, p) => ({ sx: (s * 4 + p) * S, sy: (BLEND_ROW0 + mat - 1) * S }),
-    blades: (v) => ({ sx: (4 + (v % 3)) * S, sy: MISC_ROW * S }),
+    blades: (v, jungle) => ({ sx: ((jungle ? 7 : 4) + (v % 3)) * S, sy: MISC_ROW * S }),
+    decor: (id, style) => ({ sx: (style % FRAME_COLS) * S, sy: (FG_ROW0 + id) * S }),
     crack: (s) => ({ sx: Math.max(0, Math.min(3, s)) * S, sy: MISC_ROW * S }),
     icon: (item) => ({ sx: Math.max(0, ICON_ORDER.indexOf(item)) * S, sy: ICON_ROW * S }),
     tileColor: (id) => colors[id] ?? '#888888',

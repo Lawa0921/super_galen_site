@@ -214,11 +214,11 @@ function torchBmp(frame: number): Bmp {
  * 火光暈（以 'lighter' 加色疊上）：不透明的同心環 + 由內而外變稀的 Bayer 抖動，
  * 每個像素要嘛加一階暖光、要嘛不加 —— 沒有放射狀模糊。
  */
-function glowBmp(): Bmp {
-  const R = 18, b = new Bmp(R * 2, R * 2), hot: RGB = [64, 36, 8], warm: RGB = [36, 18, 4];
+function glowBmp(R = 18, hot: RGB = [64, 36, 8], warm: RGB = [36, 18, 4]): Bmp {
+  const b = new Bmp(R * 2, R * 2), k = 18 / R;
   for (let y = 0; y < R * 2; y++) {
     for (let x = 0; x < R * 2; x++) {
-      const d = Math.hypot(x + 0.5 - R, y + 0.5 - R);
+      const d = Math.hypot(x + 0.5 - R, y + 0.5 - R) * k;
       const t = bayer(x, y);
       if (d < 4) b.set(x, y, hot);
       else if (d < 6) b.set(x, y, t < 0.5 ? hot : warm);
@@ -235,17 +235,26 @@ const TREE_BARK: RGB[][] = [
   PAL.bark,
   ramp('#1c1424', '#2c2838', '#5e5e74', '#858aa0', '#b4b9c8', '#f2e2b0', '#ffffff'),
   ramp('#0c0a12', '#1c1424', '#2a1810', '#472819', '#623924', '#7c4c2e', '#966139'),
+  PAL.bark,
+  // 叢林大樹：深色帶苔的樹皮
+  ramp('#0c0a12', '#16301e', '#2a1810', '#472819', '#623924', '#7c4c2e', '#966139'),
 ];
 const TREE_LEAF: RGB[][] = [
   ramp('#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478'),
   ramp('#16301e', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478', '#fff4c0'),
   ramp('#0c0a12', '#16301e', '#214528', '#1f6474', '#3f7468', '#6a9c88', '#a2c8b0'),
+  ramp('#0c0a12', '#16301e', '#214528', '#3f7468', '#6a9c88', '#a2c8b0', '#cceaf8'),
+  // 叢林：飽和的亮綠
+  ramp('#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478'),
 ];
 type Blob = [number, number, number];
 const CANOPY: Blob[][] = [
   [[-0.3, -0.42, 0.42], [0.3, -0.4, 0.44], [-0.58, 0.02, 0.4], [0.56, 0.0, 0.42], [0, -0.05, 0.6], [-0.34, 0.38, 0.42], [0.34, 0.4, 0.42], [0, 0.5, 0.4]],
   [[-0.2, -0.45, 0.4], [0.28, -0.42, 0.38], [-0.62, -0.05, 0.36], [0.64, -0.02, 0.36], [0, -0.1, 0.5], [-0.38, 0.3, 0.4], [0.4, 0.32, 0.4], [0, 0.42, 0.38]],
   [[0, -0.62, 0.34], [-0.22, -0.3, 0.4], [0.24, -0.28, 0.4], [0, 0, 0.5], [-0.42, 0.3, 0.42], [0.44, 0.32, 0.42], [0, 0.5, 0.44]],
+  [],
+  // 叢林：寬扁的傘形樹冠（左右延伸的葉團）
+  [[-0.62, 0.1, 0.36], [0.64, 0.12, 0.36], [-0.3, -0.25, 0.42], [0.3, -0.22, 0.42], [0, -0.05, 0.5], [-0.82, 0.32, 0.22], [0.84, 0.3, 0.22], [0, 0.32, 0.38]],
 ];
 
 export interface TreeSprite { canvas: HTMLCanvasElement; ax: number; ay: number; }
@@ -253,8 +262,9 @@ export interface TreeSprite { canvas: HTMLCanvasElement; ax: number; ay: number;
 function paintTree(variant: number, h: number, r: number, grounded: boolean): { b: Bmp; ax: number; ay: number } {
   const bark = TREE_BARK[variant], leaf = TREE_LEAF[variant];
   const trunkPx = h * 16;
-  const cw = r > 0 ? (2 * r + 1) * 16 + (variant === 1 ? 10 : variant === 2 ? -8 : 0) : 0;
-  const ch = r > 0 ? Math.round(cw * (variant === 2 ? 1.12 : variant === 1 ? 0.78 : 0.86)) : 0;
+  const jungle = variant === 4;
+  const cw = r > 0 ? (2 * r + 1) * 16 + (variant === 1 ? 10 : variant === 2 ? -8 : jungle ? 24 : 0) : 0;
+  const ch = r > 0 ? Math.round(cw * (variant === 2 ? 1.12 : variant === 1 ? 0.78 : jungle ? 0.5 : 0.86)) : 0;
   const W = Math.max(cw + 8, 44);
   const canopyCy = r > 0 ? ch / 2 + 2 : 0;
   const H = Math.max(trunkPx + 4, Math.round(canopyCy + (trunkPx - 6)) + 4);
@@ -270,7 +280,7 @@ function paintTree(variant: number, h: number, r: number, grounded: boolean): { 
   for (let y = Math.max(0, topY - 4); y < bottom; y++) {
     const t = Math.min(1, (bottom - y) / trunkPx);
     const db = bottom - 1 - y;
-    let wv = 12 - 5 * t;
+    let wv = jungle ? 18 - 6 * t : 12 - 5 * t;
     if (grounded && db < 6) wv += Math.pow(6 - db, 1.5) * 0.75;
     const half = wv / 2;
     const xl = Math.round(cx - half), xr = Math.round(cx + half);
@@ -386,7 +396,80 @@ function paintTree(variant: number, h: number, r: number, grounded: boolean): { 
     }
     can.outline(leaf[0]);
     b.blit(can, 0, 0);
+    if (jungle) {
+      // 從樹冠下緣垂下的藤蔓（成束、帶小葉）
+      const vines = new Bmp(W, H);
+      const strands = 5 + (r > 5 ? 2 : 0);
+      for (let k = 0; k < strands; k++) {
+        const vx = Math.round(ccx - rx * 0.85 + (rx * 1.7 * (k + 0.5)) / strands + (h01(k, 31, seed) - 0.5) * 6);
+        let vy = 0;
+        while (vy < H - 1 && owner[vy * W + vx] < 0) vy++;
+        while (vy < H - 1 && owner[(vy + 1) * W + vx] >= 0) vy++;
+        const len = 10 + Math.floor(h01(k, 33, seed) * 26);
+        for (let i = 1; i <= len && vy + i < H - 6; i++) {
+          const x = vx + (Math.floor((i + k * 2) / 6) % 2);
+          vines.set(x, vy + i, leaf[3]);
+          if (i % 5 === 2) { vines.set(x - 1, vy + i, leaf[4]); vines.set(x + 1, vy + i + 1, leaf[2]); }
+        }
+      }
+      vines.outline(leaf[0]);
+      b.blit(vines, 0, 0);
+    }
   }
+  return { b, ax: cx, ay: H };
+}
+
+/** 雪原松樹：細樹幹 + 層層三角形樹冠，每層上緣積雪 */
+function paintPine(h: number, r: number, grounded: boolean): { b: Bmp; ax: number; ay: number } {
+  const bark = PAL.bark, leaf = TREE_LEAF[3];
+  const snow = ramp('#7f9cc4', '#94c8ee', '#cceaf8', '#ffffff');
+  const trunkPx = h * 16, crownTop = Math.max(4, r * 16 - 4);
+  const W = Math.max(40, (2 * r + 2) * 14), H = trunkPx + crownTop + 4;
+  const b = new Bmp(W, H), cx = W / 2, bottom = H, seed = 300 + h * 7 + r;
+  // 樹幹（只有下段露出）
+  const trunk = new Bmp(W, H);
+  for (let y = bottom - trunkPx; y < bottom; y++) {
+    const db = bottom - 1 - y;
+    let wv = 6 - 2 * ((bottom - y) / trunkPx);
+    if (grounded && db < 4) wv += (4 - db) * 0.8;
+    const xl = Math.round(cx - wv / 2), xr = Math.round(cx + wv / 2);
+    for (let x = xl; x < xr; x++) trunk.set(x, y, bark[x === xl ? 5 : x === xr - 1 ? 2 : 3]);
+  }
+  trunk.outline(INK);
+  b.blit(trunk, 0, 0);
+  // 樹冠：從頂端到樹幹 75% 高度，分 n 層
+  const can = new Bmp(W, H);
+  const top = 2, base = bottom - Math.round(trunkPx * 0.22);
+  const tiers = 3 + Math.floor(h / 4), span = base - top;
+  const maxHalf = W / 2 - 3;
+  for (let k = 0; k < tiers; k++) {
+    const t0 = top + Math.round((span * k) / tiers) - (k ? 4 : 0);
+    const t1 = top + Math.round((span * (k + 1)) / tiers);
+    const half = 5 + ((maxHalf - 5) * (k + 1)) / tiers;
+    for (let y = t0; y < t1; y++) {
+      const f = (y - t0 + 1) / (t1 - t0);
+      let hw = half * (0.35 + 0.65 * f);
+      if (y >= t1 - 2) hw -= (Math.floor(h01(y, k, seed) * 3) % 2) * 2; // 鋸齒下緣
+      for (let x = Math.round(cx - hw); x <= Math.round(cx + hw); x++) {
+        const u = (x - (cx - hw)) / (hw * 2);
+        let c = u < 0.3 ? leaf[3] : u > 0.72 ? leaf[1] : leaf[2];
+        if (y >= t1 - 2) c = leaf[1];
+        can.set(x, y, c);
+      }
+    }
+  }
+  // 積雪：每欄由上往下第一個葉像素 + 其下 1–2 px（左側較厚）
+  for (let x = 0; x < W; x++) {
+    let first = true, run = 0;
+    for (let y = 0; y < H; y++) {
+      const on = can.on(x, y);
+      if (!on) { first = true; run = 0; continue; }
+      if (first) { run = x < cx ? 3 : 2; first = false; }
+      if (run > 0) { can.set(x, y, run === (x < cx ? 3 : 2) ? snow[3] : run === 1 ? snow[1] : snow[2]); run--; }
+    }
+  }
+  can.outline(hex('#0c0a12'));
+  b.blit(can, 0, 0);
   return { b, ax: cx, ay: H };
 }
 
@@ -400,6 +483,8 @@ export class Sprites {
   readonly bodyDy: number[] = [];
   readonly torches: HTMLCanvasElement[] = [];
   readonly glow: HTMLCanvasElement;
+  /** 螢光菇 / 水晶的冷色小光暈 */
+  readonly coolGlow: HTMLCanvasElement;
   private armPrep = new Map<string, Bmp>();
   private armCache = new Map<string, HTMLCanvasElement>();
   private treeCache = new Map<string, TreeSprite>();
@@ -419,6 +504,7 @@ export class Sprites {
     this.body = toCanvas(sheet) as HTMLCanvasElement;
     for (let f = 0; f < FLAME_FRAMES; f++) this.torches.push(toCanvas(torchBmp(f)) as HTMLCanvasElement);
     this.glow = toCanvas(glowBmp(), null, true) as HTMLCanvasElement;
+    this.coolGlow = toCanvas(glowBmp(12, [10, 30, 44], [4, 14, 24]), null, true) as HTMLCanvasElement;
   }
 
   shoulder(back: boolean): { x: number; y: number } { return back ? SHOULDER_BACK : SHOULDER_FRONT; }
@@ -453,7 +539,7 @@ export class Sprites {
     const key = `${variant}:${h}:${r}:${grounded ? 1 : 0}`;
     let t = this.treeCache.get(key);
     if (!t) {
-      const p = paintTree(variant, h, r, grounded);
+      const p = variant === 3 ? paintPine(h, r, grounded) : paintTree(variant, h, r, grounded);
       t = { canvas: toCanvas(p.b) as HTMLCanvasElement, ax: p.ax, ay: p.ay };
       this.treeCache.set(key, t);
     }

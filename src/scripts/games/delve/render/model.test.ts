@@ -2,8 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   clampCamera, followCamera, FixedStepper, visibleChunks, ChunkLRU,
-  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, newWorldPlan, autostartPlan,
-} from './model';
+  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, newWorldPlan, autostartPlan, biomeLabel, regionLabel, biomeBlend } from './model';
 import { Inventory } from '../engine/inventory';
 import { DAY_LENGTH } from '../engine/constants';
 
@@ -175,5 +174,44 @@ describe('新世界 / autostart 覆蓋判斷', () => {
     expect(autostartPlan('?autostart=1', null)).toEqual({ kind: 'start', seed: undefined });
     expect(autostartPlan('?seed=abc&autostart=1', 'old')).toEqual({ kind: 'confirm', seed: 'abc', existing: 'old' });
     expect(autostartPlan('?seed=abc&autostart=1&fresh=1', 'old')).toEqual({ kind: 'start', seed: 'abc' });
+  });
+});
+
+describe('biomeLabel', () => {
+  it('四個生態區的中文名稱', () => {
+    expect(biomeLabel(0)).toBe('森林');
+    expect(biomeLabel(1)).toBe('沙漠');
+    expect(biomeLabel(2)).toBe('雪原');
+    expect(biomeLabel(3)).toBe('叢林');
+    expect(biomeLabel(99)).toBe('森林');
+  });
+  it('地底的迷你生態區優先', () => {
+    const regions = [{ kind: 'mushroom_biome', x: 10, y: 10, w: 20, h: 10 }, { kind: 'crystal_cave', x: 50, y: 50, w: 10, h: 10 }];
+    expect(regionLabel(0, regions, 15, 15)).toBe('螢光菇林');
+    expect(regionLabel(0, regions, 55, 55)).toBe('水晶洞');
+    expect(regionLabel(2, regions, 0, 0)).toBe('雪原');
+  });
+});
+
+describe('biomeBlend（背景生態區過渡，分階）', () => {
+  // 0..99 森林、100..199 沙漠
+  const at = (x: number): number => (x >= 100 && x < 200 ? 1 : 0);
+  it('離邊界很遠 → 純本區（t=0）', () => {
+    expect(biomeBlend(at, 20, 300)).toEqual({ a: 0, b: 0, t: 0 });
+    expect(biomeBlend(at, 150, 300).t).toBe(0);
+  });
+  it('靠近邊界 → 混入另一區，最多一半，且只有 0 / 0.25 / 0.5 三階', () => {
+    const near = biomeBlend(at, 99, 300);
+    expect(near).toEqual({ a: 0, b: 1, t: 0.5 });
+    const mid = biomeBlend(at, 75, 300);
+    expect(mid.b).toBe(1);
+    expect([0.25, 0.5]).toContain(mid.t);
+    const other = biomeBlend(at, 100, 300);
+    expect(other).toEqual({ a: 1, b: 0, t: 0.5 });
+    for (let x = 0; x < 300; x++) expect([0, 0.25, 0.5]).toContain(biomeBlend(at, x, 300).t);
+  });
+  it('跨邊界時 t 單調變化（不跳）', () => {
+    let prev = -1;
+    for (let x = 30; x < 100; x++) { const t = biomeBlend(at, x, 300).t; expect(t).toBeGreaterThanOrEqual(prev); prev = t; }
   });
 });

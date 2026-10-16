@@ -1,6 +1,6 @@
 // scene.test.ts — 樹木掃描（樹幹 / 樹冠半徑 / 變體）與天空時段調色。
 import { describe, it, expect } from 'vitest';
-import { scanTrees, treeVariant, skyColors } from './scene';
+import { scanTrees, treeVariant, skyColors, treeKind, TREE_KIND } from './scene';
 import { T } from '../engine/tiles';
 
 function fakeWorld(rows: string[]): (x: number, y: number) => number {
@@ -75,5 +75,20 @@ describe('skyColors', () => {
     const c = skyColors(0.3);
     expect(c.layers).toHaveLength(3);
     for (const l of c.layers) expect(l).toHaveLength(3);
+  });
+});
+
+describe('treeKind（依樹下地面挑樹種）', () => {
+  it('雪地 → 松樹、叢林草 / 泥巴 → 叢林大樹、其他 → 森林三種', () => {
+    expect(treeKind(T.SNOW, 1)).toBe(TREE_KIND.PINE);
+    expect(treeKind(T.JUNGLE_GRASS, 0)).toBe(TREE_KIND.JUNGLE);
+    expect(treeKind(T.MUD, 2)).toBe(TREE_KIND.JUNGLE);
+    expect(treeKind(T.GRASS, 2)).toBe(2);
+    expect(treeKind(T.DIRT, 0)).toBe(0);
+  });
+  it('scanTrees 回報樹下地面 tile', () => {
+    const cols: Record<string, number> = { '1,5': T.WOOD, '1,4': T.WOOD, '1,3': T.LEAVES, '1,6': T.SNOW };
+    const t = scanTrees((x, y) => cols[`${x},${y}`] ?? T.AIR, 0, 0, 3, 7)[0];
+    expect(t.ground).toBe(T.SNOW);
   });
 });

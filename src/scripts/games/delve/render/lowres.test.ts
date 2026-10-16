@@ -1,17 +1,17 @@
 // lowres.test.ts — 像素完美管線的純邏輯：整數倍率、低解析緩衝尺寸、鏡頭對齊美術像素、光照分階 + 抖動。
 import { describe, it, expect } from 'vitest';
-import { LIGHT_LEVELS, bufferSize, lightLevel, pickScale, quantizeLevel, snapCam, snapPx } from './lowres';
+import { LIGHT_LEVELS, bufferSize, lightLevel, pickScale, quantizeLevel, snapCam, snapPx, zoomScale, clampZoom, parseZoomPref, MAX_ZOOM_OFFSET } from './lowres';
 
-describe('pickScale（裝置 px → 整數倍率，短邊約 440 美術 px）', () => {
-  it('常見桌面解析度', () => {
-    expect(pickScale(1280, 720)).toBe(2);   // 360 美術 px 高
-    expect(pickScale(1920, 1080)).toBe(3);  // 360
-    expect(pickScale(2560, 1440)).toBe(3);  // 480
-    expect(pickScale(3840, 2160)).toBe(5);  // 432
+describe('pickScale（裝置 px → 整數倍率，短邊約 520 美術 px）', () => {
+  it('常見桌面解析度：1080p 看到 60 格寬、720p 40 格寬', () => {
+    expect(pickScale(1280, 720)).toBe(2);   // 640×360 美術 px = 40 格寬
+    expect(pickScale(1920, 1080)).toBe(2);  // 960×540 = 60 格寬
+    expect(pickScale(2560, 1440)).toBe(3);  // 853×480
+    expect(pickScale(3840, 2160)).toBe(4);  // 960×540
   });
   it('直式手機以短邊（寬）為準', () => {
-    expect(pickScale(1170, 2532)).toBe(3);  // 390×844 @3x
-    expect(pickScale(780, 1688)).toBe(2);   // 390×844 @2x
+    expect(pickScale(1170, 2532)).toBe(2);  // 585 美術 px 寬
+    expect(pickScale(780, 1688)).toBe(2);   // 390
   });
   it('永遠是 ≥1 的整數', () => {
     for (const [w, h] of [[1, 1], [300, 200], [1366, 768], [1536, 864], [999, 777], [5000, 3000]]) {
@@ -87,5 +87,33 @@ describe('光照分階', () => {
     const q = quantizeLevel(0.3);
     expect(Math.abs(q * (L - 1) - Math.round(q * (L - 1)))).toBeLessThan(1e-9);
     expect(Math.abs(q - 0.3)).toBeLessThanOrEqual(0.5 / (L - 1) + 1e-9);
+  });
+});
+
+describe('縮放等級（整數倍率）', () => {
+  it('offset 0 = 預設倍率；+ 放大（倍率變大）、− 縮小', () => {
+    expect(zoomScale(1920, 1080, 0)).toBe(2);
+    expect(zoomScale(1920, 1080, 1)).toBe(3);
+    expect(zoomScale(1920, 1080, -1)).toBe(1);
+    expect(zoomScale(3840, 2160, -2)).toBe(2);
+  });
+  it('倍率夾在 1 .. 短邊 / 160（不會放到看不見東西）', () => {
+    expect(zoomScale(1920, 1080, -5)).toBe(1);
+    expect(zoomScale(1920, 1080, 9)).toBe(6);
+    expect(zoomScale(1280, 720, 9)).toBe(4);
+    for (const z of [-4, -1, 0, 2, 4]) expect(Number.isInteger(zoomScale(1366, 768, z))).toBe(true);
+  });
+  it('clampZoom 把 offset 收斂到有效範圍（重複按不會累積）', () => {
+    expect(clampZoom(-7, 1920, 1080)).toBe(-1);
+    expect(clampZoom(7, 1920, 1080)).toBe(4);
+    expect(clampZoom(0, 1920, 1080)).toBe(0);
+  });
+  it('localStorage 偏好解析：壞值回 0', () => {
+    expect(parseZoomPref('1')).toBe(1);
+    expect(parseZoomPref('-2')).toBe(-2);
+    expect(parseZoomPref(null)).toBe(0);
+    expect(parseZoomPref('abc')).toBe(0);
+    expect(parseZoomPref('1.5')).toBe(0);
+    expect(parseZoomPref('99')).toBe(MAX_ZOOM_OFFSET);
   });
 });

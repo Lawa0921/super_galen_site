@@ -4,7 +4,7 @@
 import { bayer } from './pixel';
 
 /** 目標：畫面短邊約多少美術 px */
-export const TARGET_ART_PX = 440;
+export const TARGET_ART_PX = 520;
 
 /** 選出讓短邊最接近 target 美術 px 的整數倍率（≥1）。devW/devH 為裝置像素。 */
 export function pickScale(devW: number, devH: number, target: number = TARGET_ART_PX): number {
@@ -15,6 +15,32 @@ export function pickScale(devW: number, devH: number, target: number = TARGET_AR
     if (err < bestErr) { bestErr = err; best = k; }
   }
   return best;
+}
+
+// ── 縮放：使用者在預設倍率上加減（仍然只用整數倍率，維持像素完美） ──────────
+/** 最小可視短邊（美術 px）：放大上限 = 短邊 / 這個值 */
+export const MIN_VIEW_ART_PX = 160;
+export const MAX_ZOOM_OFFSET = 6;
+
+function scaleRange(devW: number, devH: number): { base: number; max: number } {
+  const side = Math.max(1, Math.min(devW, devH));
+  const base = pickScale(devW, devH);
+  return { base, max: Math.max(base, Math.floor(side / MIN_VIEW_ART_PX)) };
+}
+/** offset > 0 放大（倍率變大、看到的格子變少），< 0 縮小。結果夾在 1..max。 */
+export function zoomScale(devW: number, devH: number, offset: number): number {
+  const { base, max } = scaleRange(devW, devH);
+  return Math.max(1, Math.min(max, base + Math.round(offset)));
+}
+/** 把 offset 收斂到這個畫面有效的範圍 */
+export function clampZoom(offset: number, devW: number, devH: number): number {
+  return zoomScale(devW, devH, offset) - scaleRange(devW, devH).base;
+}
+/** localStorage 字串 → offset（壞值 0） */
+export function parseZoomPref(v: string | null | undefined): number {
+  if (v === null || v === undefined || !/^-?\d+$/.test(v.trim())) return 0;
+  const n = Number(v);
+  return Math.max(-MAX_ZOOM_OFFSET, Math.min(MAX_ZOOM_OFFSET, n));
 }
 
 /** 低解析緩衝尺寸：無條件進位，放大後蓋滿整個畫布（右 / 下多出的部分裁掉）。 */

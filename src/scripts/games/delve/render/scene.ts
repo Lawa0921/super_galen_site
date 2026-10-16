@@ -12,10 +12,20 @@ export interface TreeInfo {
   /** 樹基下方是實心地面（畫樹根） */
   grounded: boolean;
   variant: number;
+  /** 樹基下方的 tile（挑樹種用） */
+  ground: number;
+}
+
+/** 樹種：0–2 森林三種（scene.treeVariant）、3 雪原松樹、4 叢林大樹 */
+export const TREE_KIND = { PINE: 3, JUNGLE: 4 } as const;
+export function treeKind(ground: number, variant: number): number {
+  if (ground === T.SNOW || ground === T.ICE) return TREE_KIND.PINE;
+  if (ground === T.JUNGLE_GRASS || ground === T.MUD) return TREE_KIND.JUNGLE;
+  return variant;
 }
 
 /** 樹幹最高 12 格 + 樹冠：往下多掃這麼多格，讓樹基在視窗外的樹也畫得出來 */
-const SCAN_BELOW = 16;
+const SCAN_BELOW = 26;
 
 export function treeVariant(x: number): number {
   let h = Math.imul(x ^ 0x5bd1e995, 0x27d4eb2d);
@@ -33,9 +43,9 @@ export function scanTrees(get: (x: number, y: number) => number, x0: number, y0:
       let top = y;
       while (get(x, top - 1) === T.WOOD) top--;
       let r = 0;
-      while (r < 6 && get(x, top - 1 - r) === T.LEAVES) r++;
+      while (r < 7 && get(x, top - 1 - r) === T.LEAVES) r++;
       if (top - r - 3 >= y1) continue;
-      out.push({ x, baseY: y, topY: top, leafR: r, grounded: SOLID_LUT[get(x, y + 1)] === 1, variant: treeVariant(x) });
+      out.push({ x, baseY: y, topY: top, leafR: r, grounded: SOLID_LUT[get(x, y + 1)] === 1, variant: treeVariant(x), ground: get(x, y + 1) });
     }
   }
   return out;

@@ -61,3 +61,47 @@ export function grassEdges(tile: number, mask: number): { top: boolean; left: bo
   const top = tile === T.GRASS && (mask & EDGE.UP) !== 0;
   return { top, left: top && (mask & EDGE.LEFT) !== 0, right: top && (mask & EDGE.RIGHT) !== 0 };
 }
+
+// ── 裝飾物件外觀（圖集每個裝飾 tile 一列，欄 = style） ─────────────
+export const CACTUS_STYLE = { MID: 0, TOP: 1, ARM_L: 2, ARM_R: 3, BASE: 4, SINGLE: 5 } as const;
+export const VINE_END = 1;
+/** 每個裝飾 tile 的 style 數（圖集欄數 ≤ FRAME_COLS） */
+export const DECOR_STYLES: Record<number, number> = {
+  [T.CHEST]: 1, [T.POT]: 3, [T.FLOWER]: 12, [T.TALL_GRASS]: 4, [T.MUSHROOM]: 2, [T.SMALL_ROCK]: 3, [T.BUSH]: 3,
+  [T.PUMPKIN]: 2, [T.CACTUS]: 6, [T.DEAD_BUSH]: 3, [T.SNOW_SHRUB]: 3, [T.FERN]: 3, [T.VINE]: 3,
+  [T.GLOW_MUSHROOM]: 3, [T.CRYSTAL]: 8, [T.STALACTITE]: 6, [T.STALAGMITE]: 6, [T.COBWEB]: 2, [T.BEAM]: 1,
+  [T.WORKBENCH]: 1,
+};
+
+function cellHash(x: number, y: number): number {
+  let h = Math.imul(x, 73856093) ^ Math.imul(y, 19349663);
+  h = Math.imul(h ^ (h >>> 15), 2246822519);
+  return (h ^ (h >>> 13)) >>> 0;
+}
+
+/** 裝飾物件在 (x,y) 用哪個 style：依鄰格（仙人掌節、藤蔓尖、水晶朝向…）或座標雜湊。 */
+export function decorStyle(id: number, x: number, y: number, n: Neighbor): number {
+  const h = cellHash(x, y);
+  const solid = (dx: number, dy: number): boolean => SOLID_LUT[n(dx, dy)] === 1;
+  switch (id) {
+    case T.CACTUS: {
+      const up = n(0, -1) === T.CACTUS, dn = n(0, 1) === T.CACTUS;
+      if (!up && !dn) return CACTUS_STYLE.SINGLE;
+      if (!up) return CACTUS_STYLE.TOP;
+      if (!dn) return h % 3 === 0 ? CACTUS_STYLE.ARM_L : h % 3 === 1 ? CACTUS_STYLE.ARM_R : CACTUS_STYLE.BASE;
+      const r = h % 6;
+      return r === 0 ? CACTUS_STYLE.ARM_L : r === 1 ? CACTUS_STYLE.ARM_R : CACTUS_STYLE.MID;
+    }
+    case T.VINE: return n(0, 1) === T.VINE ? (h & 1 ? 2 : 0) : VINE_END;
+    case T.CRYSTAL:
+      if (solid(0, 1)) return h % 3;
+      if (solid(0, -1)) return 3 + (h % 3);
+      if (solid(-1, 0)) return 6;
+      if (solid(1, 0)) return 7;
+      return h % 3;
+    case T.STALACTITE: return (n(0, -1) === T.ICE ? 3 : 0) + (h % 3);
+    case T.STALAGMITE: return (n(0, 1) === T.ICE ? 3 : 0) + (h % 3);
+    case T.COBWEB: return solid(-1, 0) ? 0 : solid(1, 0) ? 1 : h & 1;
+    default: return h % (DECOR_STYLES[id] ?? 1);
+  }
+}

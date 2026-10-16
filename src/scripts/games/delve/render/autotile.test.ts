@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   EDGE, CORNER, edgeMask, innerCornerMask, blendMat, blendOverlay, frameColumn, FRAME_COLS, MAT,
-  grassEdges, isOpen,
+  grassEdges, isOpen, decorStyle, DECOR_STYLES, CACTUS_STYLE, VINE_END,
 } from './autotile';
 import { T } from '../engine/tiles';
 
@@ -98,5 +98,49 @@ describe('grassEdges', () => {
     expect(grassEdges(T.GRASS, EDGE.UP | EDGE.LEFT)).toEqual({ top: true, left: true, right: false });
     expect(grassEdges(T.GRASS, EDGE.RIGHT)).toEqual({ top: false, left: false, right: false });
     expect(grassEdges(T.DIRT, EDGE.UP)).toEqual({ top: false, left: false, right: false });
+  });
+});
+
+describe('decorStyle（裝飾物件的外觀選擇）', () => {
+  const at = (map: Record<string, number>) => (dx: number, dy: number): number => map[`${dx},${dy}`] ?? T.AIR;
+  it('仙人掌：單節 / 頂 / 底 / 中段', () => {
+    expect(decorStyle(T.CACTUS, 0, 0, at({ '0,1': T.SAND }))).toBe(CACTUS_STYLE.SINGLE);
+    expect(decorStyle(T.CACTUS, 0, 0, at({ '0,1': T.CACTUS }))).toBe(CACTUS_STYLE.TOP);
+    expect([CACTUS_STYLE.BASE, CACTUS_STYLE.ARM_L, CACTUS_STYLE.ARM_R]).toContain(decorStyle(T.CACTUS, 0, 0, at({ '0,-1': T.CACTUS, '0,1': T.SAND })));
+    const mid = decorStyle(T.CACTUS, 3, 7, at({ '0,-1': T.CACTUS, '0,1': T.CACTUS }));
+    expect([CACTUS_STYLE.MID, CACTUS_STYLE.ARM_L, CACTUS_STYLE.ARM_R]).toContain(mid);
+  });
+  it('藤蔓：末端用尖端圖', () => {
+    expect(decorStyle(T.VINE, 0, 0, at({ '0,-1': T.MUD }))).toBe(VINE_END);
+    expect(decorStyle(T.VINE, 0, 0, at({ '0,-1': T.MUD, '0,1': T.VINE }))).not.toBe(VINE_END);
+  });
+  it('水晶依附著面朝向：地面 0–2、天花板 3–5、左牆 6、右牆 7', () => {
+    expect(decorStyle(T.CRYSTAL, 5, 5, at({ '0,1': T.STONE }))).toBeLessThan(3);
+    const c = decorStyle(T.CRYSTAL, 5, 5, at({ '0,-1': T.STONE }));
+    expect(c >= 3 && c < 6).toBe(true);
+    expect(decorStyle(T.CRYSTAL, 5, 5, at({ '-1,0': T.STONE }))).toBe(6);
+    expect(decorStyle(T.CRYSTAL, 5, 5, at({ '1,0': T.STONE }))).toBe(7);
+  });
+  it('鐘乳石掛在冰上用冰色（3–5）', () => {
+    expect(decorStyle(T.STALACTITE, 1, 1, at({ '0,-1': T.ICE }))).toBeGreaterThanOrEqual(3);
+    expect(decorStyle(T.STALACTITE, 1, 1, at({ '0,-1': T.STONE }))).toBeLessThan(3);
+    expect(decorStyle(T.STALAGMITE, 1, 1, at({ '0,1': T.ICE }))).toBeGreaterThanOrEqual(3);
+  });
+  it('蜘蛛網朝向實心的那一側', () => {
+    expect(decorStyle(T.COBWEB, 0, 0, at({ '-1,0': T.STONE }))).toBe(0);
+    expect(decorStyle(T.COBWEB, 0, 0, at({ '1,0': T.STONE }))).toBe(1);
+  });
+  it('其他依座標雜湊選，結果穩定且在 DECOR_STYLES 範圍內', () => {
+    for (const id of [T.FLOWER, T.TALL_GRASS, T.MUSHROOM, T.POT, T.FERN, T.BUSH]) {
+      const seen = new Set<number>();
+      for (let x = 0; x < 64; x++) {
+        const s = decorStyle(id, x, 9, at({}));
+        expect(s).toBe(decorStyle(id, x, 9, at({})));
+        expect(s).toBeLessThan(DECOR_STYLES[id]);
+        seen.add(s);
+      }
+      expect(seen.size).toBeGreaterThan(1);
+    }
+    expect(DECOR_STYLES[T.FLOWER]).toBeGreaterThanOrEqual(6);
   });
 });

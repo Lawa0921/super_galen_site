@@ -1,19 +1,19 @@
 // renderer.ts — Canvas2D 場景（全部以原生美術解析度畫進低解析緩衝，最後整數倍放大貼到螢幕）：視差背景 → 地下暗紋 → chunk 快取（牆 + 自動接邊前景 + 材質滲透 + 草葉）
 // → 樹 / 火把（動態）→ 裂痕 / 游標 → 玩家（分件精靈）→ 粒子 → 光照遮罩（8 階 + Bayer 抖動）→ 火光暈。
 import type { DelveGame } from '../engine/game';
-import { BLOCKS_LIGHT_LUT, T, isSolidTile } from '../engine/tiles';
+import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
 import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
 import { buildAtlas, perpMask, type Atlas } from './textures';
-import { ChunkLRU, cameraFocus, followCamera, visibleChunks, type Cam } from './model';
-import { CORNER, EDGE, blendOverlay, edgeMask, innerCornerMask, isOpen, type Neighbor } from './autotile';
+import { ChunkLRU, biomeBlend, cameraFocus, followCamera, visibleChunks, type Cam } from './model';
+import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
 import {
   advancePhase, armAngles, flameFrame, idleFrame, poseKind, swingAngle, walkFrame, SWING_RATE,
 } from './anim';
 import { FRAME, FW, FH, Sprites } from './sprites';
 import { Background } from './background';
-import { scanTrees } from './scene';
-import { LIGHT_LEVELS, PLATEAU, bufferSize, pickScale, quantizeLevel, snapCam } from './lowres';
+import { scanTrees, treeKind, TREE_KIND } from './scene';
+import { LIGHT_LEVELS, PLATEAU, bufferSize, clampZoom, quantizeLevel, snapCam, zoomScale } from './lowres';
 import { bayer } from './pixel';
 
 const S = TILE_SIZE;
@@ -50,6 +50,9 @@ export class Renderer {
   /** 低解析緩衝大小（美術 px） */
   bufW = 1; bufH = 1;
   facing: 1 | -1 = 1;
+  /** 使用者縮放（預設倍率 + offset，整數倍） */
+  zoomOffset = 0;
+  private cssW = 1; private cssH = 1;
   stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0 };
 
   private cache: ChunkLRU<HTMLCanvasElement>;
@@ -74,6 +77,7 @@ export class Renderer {
   private snapNext = true;
   private bg: Background;
   private torchesSeen: { x: number; y: number }[] = [];
+  private coolSeen: { x: number; y: number }[] = [];
   /** 平均地表高度（世界 px），地下背景起點用 */
   private horizonPx: number;
   /** 地表高度前綴和（遠景地平線取鏡頭附近平均） */
@@ -104,12 +108,14 @@ export class Renderer {
   resize(cssW: number, cssH: number, devicePixelRatio: number): void {
     // 不限制 DPR：畫布 = 實際裝置像素，否則瀏覽器會再做一次非整數縮放
     this.dpr = Math.max(0.5, devicePixelRatio || 1);
+    this.cssW = cssW; this.cssH = cssH;
     this.viewW = Math.max(1, cssW);
     this.viewH = Math.max(1, cssH);
     const dw = Math.max(1, Math.round(this.viewW * this.dpr)), dh = Math.max(1, Math.round(this.viewH * this.dpr));
     this.canvas.width = dw;
     this.canvas.height = dh;
-    this.scale = pickScale(dw, dh);
+    this.zoomOffset = clampZoom(this.zoomOffset, dw, dh);
+    this.scale = zoomScale(dw, dh, this.zoomOffset);
     const b = bufferSize(dw, dh, this.scale);
     this.bufW = b.w; this.bufH = b.h;
     this.buf.width = b.w; this.buf.height = b.h;
@@ -122,6 +128,22 @@ export class Renderer {
     }
     this.lightDirty = true;
   }
+
+  /** 改縮放（+1 放大 / −1 縮小），回傳實際生效的 offset */
+  zoomBy(d: number): number {
+    this.zoomOffset += d;
+    this.resize(this.cssW, this.cssH, this.dpr);
+    this.snapCamera();
+    this.invalidateAll();
+    return this.zoomOffset;
+  }
+  /** 預設倍率（不含使用者縮放）換成 CSS px 比例：HUD 像素單位用它，縮放時 HUD 不跟著變 */
+  baseZoom(): number {
+    const dw = Math.round(this.cssW * this.dpr), dh = Math.round(this.cssH * this.dpr);
+    return zoomScale(dw, dh, 0) / this.dpr;
+  }
+  /** 目前視野大小（格） */
+  viewTiles(): { w: number; h: number } { return { w: Math.round(this.bufW / S), h: Math.round(this.bufH / S) }; }
 
   worldViewW(): number { return this.bufW; }
   worldViewH(): number { return this.bufH; }
@@ -177,6 +199,7 @@ export class Renderer {
     this.bg.draw(ctx, {
       viewW: this.bufW, viewH: this.bufH, camX, camY,
       horizonY: this.localHorizon(camX + vw / 2), time: g.time, dayFrac: day,
+      biome: biomeBlend((x) => w.biome[x], (camX + vw / 2) / S, w.width),
     });
 
     ctx.setTransform(1, 0, 0, 1, -camX, -camY);
@@ -282,7 +305,8 @@ export class Renderer {
         const i = y * W + x;
         const f = fg[i];
         if (f === T.AIR || f === T.WOOD || f === T.LEAVES || f === T.TORCH) continue;
-        const s = A.tile(f, variant[i], masks[(y - y0) * CHUNK + (x - x0)]);
+        qx = x; qy = y;
+        const s = isDecor(f) ? A.decor(f, decorStyle(f, x, y, nb)) : A.tile(f, variant[i], masks[(y - y0) * CHUNK + (x - x0)]);
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - y0) * S, S, S);
       }
     }
@@ -318,10 +342,10 @@ export class Renderer {
     for (let y = Math.max(1, y0); y <= yEnd; y++) {
       for (let x = x0; x < x1; x++) {
         const i = y * W + x;
-        if (fg[i] !== T.GRASS) continue;
-        const above = fg[i - W];
-        if (!isOpen(above) || above === T.WORKBENCH) continue;
-        const s = A.blades(variant[i]);
+        const gt = fg[i];
+        if (gt !== T.GRASS && gt !== T.JUNGLE_GRASS) continue;
+        if (fg[i - W] !== T.AIR) continue; // 上面有植物 / 物件時不畫草葉
+        const s = A.blades(variant[i], gt === T.JUNGLE_GRASS);
         ctx.drawImage(img, s.sx, s.sy, S, S, (x - x0) * S, (y - 1 - y0) * S, S, S);
       }
     }
@@ -335,7 +359,8 @@ export class Renderer {
     const ty0 = Math.floor(camY / S) - 1, ty1 = Math.ceil((camY + vh) / S) + 1;
     const trees = scanTrees((x, y) => w.getFg(x, y), Math.max(0, tx0), Math.max(0, ty0), Math.min(w.width, tx1), Math.min(w.height, ty1));
     for (const t of trees) {
-      const sp = this.sprites.tree(t.variant, t.baseY - t.topY + 1, Math.min(4, t.leafR), t.grounded);
+      const kind = treeKind(t.ground, t.variant);
+      const sp = this.sprites.tree(kind, t.baseY - t.topY + 1, Math.min(kind === TREE_KIND.JUNGLE ? 7 : 4, t.leafR), t.grounded);
       const dx = t.x * S + S / 2 - sp.ax, dy = (t.baseY + 1) * S - sp.ay;
       if (dx > camX + vw || dx + sp.canvas.width < camX || dy > camY + vh || dy + sp.canvas.height < camY) continue;
       ctx.drawImage(sp.canvas, Math.round(dx), Math.round(dy));
@@ -346,13 +371,15 @@ export class Renderer {
     const w = this.game.world, W = w.width, fg = w.fg;
     const tx0 = Math.max(0, Math.floor(camX / S) - 1), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
     const ty0 = Math.max(0, Math.floor(camY / S) - 1), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 1);
-    const seen = this.torchesSeen;
-    seen.length = 0;
+    const seen = this.torchesSeen, cool = this.coolSeen;
+    seen.length = 0; cool.length = 0;
     const t = this.clock;
     for (let y = ty0; y < ty1; y++) {
       const row = y * W;
       for (let x = tx0; x < tx1; x++) {
-        if (fg[row + x] !== T.TORCH) continue;
+        const f = fg[row + x];
+        if (f === T.CRYSTAL || f === T.GLOW_MUSHROOM) { cool.push({ x: x * S + 8, y: y * S + 9 }); continue; }
+        if (f !== T.TORCH) continue;
         const c = this.sprites.torches[flameFrame(t, x, y)];
         ctx.drawImage(c, x * S + 3, y * S);
         seen.push({ x: x * S + 8, y: y * S + 6 });
@@ -462,10 +489,12 @@ export class Renderer {
   }
 
   private drawGlows(ctx: CanvasRenderingContext2D): void {
-    if (!this.torchesSeen.length) return;
+    if (!this.torchesSeen.length && !this.coolSeen.length) return;
     const gl = this.sprites.glow, hw = gl.width / 2;
+    const cg = this.sprites.coolGlow, ch = cg.width / 2;
     ctx.globalCompositeOperation = 'lighter';
     for (const t of this.torchesSeen) ctx.drawImage(gl, Math.round(t.x - hw), Math.round(t.y - hw));
+    for (const t of this.coolSeen) ctx.drawImage(cg, Math.round(t.x - ch), Math.round(t.y - ch));
     ctx.globalCompositeOperation = 'source-over';
   }
 
