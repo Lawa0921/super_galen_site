@@ -43,6 +43,13 @@ export class Game {
     return g;
   }
 
+  /** A new game that replaces the save at once: the player agreed to overwrite it, and a wipe must not bring the old run back. */
+  static fresh(rng: Rng, storage: SaveStorage | null): Game {
+    const g = new Game(rng, storage);
+    if (storage) saveGame(storage, g.state);
+    return g;
+  }
+
   map(floor = this.floor): FloorMap {
     return MAPS[floor - 1];
   }

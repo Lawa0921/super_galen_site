@@ -25,6 +25,15 @@ describe('boot', () => {
   it('works without storage', () => {
     expect(Game.boot(calm(), null).phase).toBe('town');
   });
+  it('a fresh game replaces the save at once, so a wipe before the first rest returns to the fresh start', () => {
+    const storage = memoryStorage();
+    const old = Game.boot(calm(), storage);
+    old.state.gold = 9999;
+    old.rest();
+    const g = Game.fresh(calm(), storage);
+    expect(g.state.gold).toBe(150);
+    expect(Game.boot(calm(), storage).state.gold).toBe(150);
+  });
 });
 
 describe('departing', () => {

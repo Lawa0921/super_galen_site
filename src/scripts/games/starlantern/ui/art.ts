@@ -34,8 +34,3 @@ export function standeeImg(index: ArtIndex, cid: string): HTMLImageElement | nul
   const src = art.standee(cid);
   return index.has(src) ? img(src, 'sl-standee') : null;
 }
-
-export function iconImg(index: ArtIndex, id: string): HTMLImageElement | null {
-  const src = art.icon(id);
-  return index.has(src) ? img(src, 'sl-icon') : null;
-}

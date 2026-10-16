@@ -3,8 +3,9 @@ const BASE = 1.0;
 export class SoundManager {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
-  private muted = false;
   private sfxVolume = 1;
+  /** The game's own volume setting; it scales the site-wide arcade volume instead of replacing it. */
+  private playerVolume = 1;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -12,7 +13,7 @@ export class SoundManager {
       this.sfxVolume = w.__arcadeAudio?.sfxVolume ?? 1;
       window.addEventListener('arcade-audio-change', (e) => {
         this.sfxVolume = (e as CustomEvent).detail?.sfxVolume ?? 1;
-        if (this.master) this.master.gain.value = BASE * this.sfxVolume;
+        if (this.master) this.master.gain.value = BASE * this.sfxVolume * this.playerVolume;
       });
     }
   }
@@ -24,7 +25,7 @@ export class SoundManager {
       if (!Ctor) return;
       this.ctx = new Ctor();
       this.master = this.ctx.createGain();
-      this.master.gain.value = BASE * this.sfxVolume;
+      this.master.gain.value = BASE * this.sfxVolume * this.playerVolume;
       this.master.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
@@ -32,17 +33,11 @@ export class SoundManager {
 
   /** Player volume, 0..1 (the settings screen). */
   setVolume(v: number): void {
-    this.sfxVolume = Math.max(0, Math.min(1, v));
-    if (this.master) this.master.gain.value = BASE * this.sfxVolume;
-  }
-
-  toggle(): boolean {
-    this.muted = !this.muted;
-    return this.muted;
+    this.playerVolume = Math.max(0, Math.min(1, v));
+    if (this.master) this.master.gain.value = BASE * this.sfxVolume * this.playerVolume;
   }
 
   private blip(freq: number, durMs: number, type: OscillatorType = 'square', gain = 0.12, freqEnd?: number): void {
-    if (this.muted) return;
     this.ensure();
     if (!this.ctx || !this.master) return;
     const t = this.ctx.currentTime;

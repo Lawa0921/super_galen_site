@@ -166,10 +166,12 @@ export class DungeonScene implements Scene {
       { id: 'status', label: d.status },
       { id: 'items', label: d.items, disabled: this.usableItems().length === 0 },
       { id: 'lamp', label: d.lamp(lamps), disabled: lamps <= 0 },
+      { id: 'settings', label: T.ui2.title.settings },
       { id: 'close', label: d.close },
     ], (it) => {
       if (it.id === 'close') { this.pop(); return; }
       if (it.id === 'lamp') { this.askLamp(); return; }
+      if (it.id === 'settings') { this.popAll(); this.leaving = true; this.ctx.go('settings'); return; }
       if (it.id === 'items') { this.itemList(); return; }
       this.statusList();
     }, 'slx-list slx-field-menu');
@@ -193,7 +195,8 @@ export class DungeonScene implements Scene {
   private usableItems(): MenuItem[] {
     const inv = this.ctx.game.state.inventory;
     return Object.entries(inv)
-      .filter(([id, n]) => n > 0 && (ITEMS[id]?.target === 'ally' || ITEMS[id]?.target === 'deadAlly'))
+      // Status cures do nothing here: members carry no poison or sleep between battles.
+      .filter(([id, n]) => n > 0 && (ITEMS[id]?.target === 'ally' || ITEMS[id]?.target === 'deadAlly') && ITEMS[id].effects.some((e) => e.kind !== 'cure'))
       .map(([id, n]) => ({ id, label: ITEMS[id].name, right: `×${n}` }));
   }
 

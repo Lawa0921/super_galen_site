@@ -36,7 +36,7 @@ export class TitleScene implements Scene {
 
   private pick(id: string): void {
     this.ctx.sfx.confirm();
-    if (id === 'cont') { this.ctx.go('town'); return; }
+    if (id === 'cont') { this.ctx.continueGame?.(); this.ctx.go('town'); return; }
     if (id === 'settings') { this.ctx.go('settings'); return; }
     if (id !== 'new' || this.ask) return;
     if (!this.ctx.hasSave()) { this.ctx.newGame(); this.ctx.go('town'); return; }

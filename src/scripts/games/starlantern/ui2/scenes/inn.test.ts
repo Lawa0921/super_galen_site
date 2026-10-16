@@ -31,6 +31,25 @@ describe('InnScene', () => {
     expect(storage.map.get('starlantern-save')).toBeTruthy();
   });
 
+  it('ignores every key while the night passes, and stops the night timer on exit', async () => {
+    vi.useFakeTimers();
+    const game = new Game(constRng(0.5), memoryStorage());
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new InnScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity, 1000);
+    s.enter(root);
+    s.onAction('confirm');                 // greeting
+    s.onAction('confirm'); s.onAction('up'); s.onAction('confirm');   // 休息 → 是
+    expect(root.querySelector('.slx-night')).not.toBeNull();
+    s.onAction('cancel');
+    s.onAction('confirm');
+    expect(go).not.toHaveBeenCalled();
+    expect(root.querySelector('.slx-confirm')).toBeNull();
+    s.exit();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);   // no line typed onto a scene that has gone
+  });
+
   it('explains when nobody needs reviving', () => {
     const { s, root } = setup();
     s.onAction('down');                    // 復活

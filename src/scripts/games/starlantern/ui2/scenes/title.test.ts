@@ -6,7 +6,7 @@ import { TitleScene } from './title';
 
 const ctx = (hasSave: boolean) => ({
   game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() },
-  go: vi.fn(), hasSave: () => hasSave, newGame: vi.fn(),
+  go: vi.fn(), hasSave: () => hasSave, newGame: vi.fn(), continueGame: vi.fn(),
 });
 
 describe('TitleScene', () => {
@@ -47,10 +47,11 @@ describe('TitleScene', () => {
     expect(c.go).toHaveBeenCalledWith('settings');
   });
 
-  it('continues into town', () => {
+  it('continues from the save into town', () => {
     const c = ctx(true); const root = document.createElement('div');
     const s = new TitleScene(c); s.enter(root);
     s.onAction('confirm');
+    expect(c.continueGame).toHaveBeenCalled();
     expect(c.go).toHaveBeenCalledWith('town');
     expect(c.newGame).not.toHaveBeenCalled();
   });

@@ -37,7 +37,16 @@ test.describe('starlantern', () => {
     expect(await page.evaluate(async () => (await document.fonts.load('12px "Cubic 11"')).length)).toBeGreaterThan(0);
     await page.route('**/Cubic_11.woff2', (r) => r.abort());
     await page.goto('/games/starlantern');
-    await expect(page.locator('#sl-ui')).toBeVisible();
+    await expect(page.locator('.slx-title [role=option]').first()).toHaveText('新遊戲');   // the game itself, not just the loading line
+  });
+
+  test('tells the player when a save could not be read, and starts fresh', async ({ page }) => {
+    await page.goto('/games/starlantern');
+    await page.evaluate(() => localStorage.setItem('starlantern-save', '{broken'));
+    await page.reload();
+    await page.locator('.slx-title [data-id=cont]').click();
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('存檔無法讀取');
+    await expect(page.locator('.slx-gold')).toHaveText('150 G');
   });
 
   test('plays title → town with the keyboard only', async ({ page }) => {

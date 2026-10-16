@@ -3,12 +3,27 @@ import { T } from '../../data/text.zh-TW';
 import { innCost, revive, reviveCost } from '../../engine/town';
 import { el } from '../../ui/dom';
 import { Menu, type MenuItem } from '../menu';
+import type { UiAction } from '../input';
 import type { SceneCtx } from '../scene';
 import { MenuView, confirmBox, win } from '../widgets';
 import { FacilityScene } from './facility';
 
 export class InnScene extends FacilityScene {
+  private nightTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(ctx: SceneCtx, cps?: number, private nightMs = 1200) { super(ctx, 'inn', cps); }
+
+  /** The night veil blocks the pointer; this blocks the keys. */
+  onAction(a: UiAction): void {
+    if (this.nightTimer) return;
+    super.onAction(a);
+  }
+
+  exit(): void {
+    if (this.nightTimer) clearTimeout(this.nightTimer);
+    this.nightTimer = null;
+    super.exit();
+  }
 
   protected commands(): MenuItem[] {
     return [{ id: 'rest', label: T.ui2.inn.rest(innCost(this.ctx.game.state.party)) }, { id: 'revive', label: T.ui2.inn.revive }];
@@ -35,7 +50,9 @@ export class InnScene extends FacilityScene {
   private async night(): Promise<void> {
     const veil = el('div', { class: 'slx-night', text: T.ui2.inn.morning });
     this.root.append(veil);
-    await new Promise((r) => setTimeout(r, this.nightMs));
+    const done = await new Promise<boolean>((r) => { this.nightTimer = setTimeout(() => r(true), this.nightMs); });
+    if (!done) return;
+    this.nightTimer = null;
     veil.remove();
     this.refresh();
     const ok = this.ctx.game.notice === 'saved';

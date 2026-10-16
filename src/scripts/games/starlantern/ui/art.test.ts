@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { art } from '../render/artPaths';
 import { NO_ART } from '../render/textures';
-import { iconImg, portraitImg, showMood, standeeImg } from './art';
+import { portraitImg, showMood, standeeImg } from './art';
 
 const some = (...urls: string[]) => ({ has: (u: string) => urls.includes(u) });
 
@@ -39,8 +39,6 @@ describe('ui art', () => {
   it('returns null when the art is not published', () => {
     expect(portraitImg(NO_ART, 'liz', 50, 50)).toBeNull();
     expect(standeeImg(NO_ART, 'liz')).toBeNull();
-    expect(iconImg(NO_ART, 'potion')).toBeNull();
-    expect(iconImg(some(art.icon('potion')), 'potion')!.className).toBe('sl-icon');
     expect(standeeImg(some(art.standee('liz')), 'liz')!.className).toBe('sl-standee');
   });
 });

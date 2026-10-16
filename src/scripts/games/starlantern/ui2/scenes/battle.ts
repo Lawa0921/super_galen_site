@@ -167,7 +167,10 @@ export class BattleScene implements Scene {
   }
 
   private itemItems(): MenuItem[] {
-    return Object.entries(this.state.inventory).filter(([id, n]) => ITEMS[id]?.battle && n > 0).map(([id, n]) => ({ id, label: ITEMS[id].name, right: `×${n}`, note: ITEMS[id].desc }));
+    // Count what earlier members already plan to use this round, so the last potion is not promised twice.
+    const planned = (id: string) => Object.values(this.actions).filter((a) => a.kind === 'item' && a.item === id).length;
+    return Object.entries(this.state.inventory).map(([id, n]) => [id, n - planned(id)] as const).filter(([id, n]) => ITEMS[id]?.battle && n > 0)
+      .map(([id, n]) => ({ id, label: ITEMS[id].name, right: `×${n}`, note: ITEMS[id].desc }));
   }
 
   private subList(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-bsub'): MenuView {
@@ -186,6 +189,9 @@ export class BattleScene implements Scene {
     const c = v.menu.current();
     this.showNote(c?.note);
     const e = c ? this.state.enemies.findIndex((x) => x.key === c.id) : -1;
+    // An ally target lights that member's panel; anything else keeps the acting member lit.
+    const ally = c && this.state.party.some((x) => x.key === c.id) ? c.id : null;
+    this.updateBar(ally ?? this.actors()[this.index]?.key ?? null);
     if (e < 0) { this.marker.setAttribute('hidden', ''); return; }
     // Height comes from the enemy's sprite (10 px step classes, no inline styles); without a stage the stylesheet default applies.
     const y = this.ctx.stage?.battleView.anchor(c!.id)?.y;
@@ -238,6 +244,7 @@ export class BattleScene implements Scene {
     this.layers.pop()?.el.remove();
     this.marker.setAttribute('hidden', '');
     this.showNote(undefined);
+    this.updateBar(this.actors()[this.index]?.key ?? null);
     const top = this.layers[this.layers.length - 1];
     if (top) top.el.removeAttribute('inert'); else this.cmd.removeAttribute('inert');
     this.syncBack();

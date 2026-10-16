@@ -12,6 +12,8 @@ export interface SceneCtx {
   /** Menu cues are required; game cues are optional so menu-only tests can pass a small fake. */
   sfx: Pick<SoundManager, 'cursor' | 'confirm' | 'cancel' | 'error'> & Partial<Pick<SoundManager, 'bump' | 'step' | 'stairs' | 'chest' | 'encounter' | 'hit' | 'weak' | 'heal' | 'ko' | 'win' | 'lose' | 'ultimate' | 'menu'>>;
   go(name: SceneName): void; hasSave(): boolean; newGame(): void;
+  /** Reload the saved game (title → 繼續); absent in tests that never continue. */
+  continueGame?(): void;
   /** The Pixi layer; null when the renderer could not start (tests, no WebGL). */
   stage?: Stage | null;
   /** Skip animations and pauses (tests: ?fast=1). */

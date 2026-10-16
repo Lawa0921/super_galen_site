@@ -98,6 +98,23 @@ describe('DungeonScene', () => {
     expect(root.querySelector('.slx-status')).toBeNull();
   });
 
+  it('leaves out items that do nothing outside battle', () => {
+    const { game, s, root, pick } = setup();
+    game.state.inventory.antidote = 2;
+    s.onAction('menu');
+    pick('道具');
+    const names = [...root.querySelectorAll('.slx-layer:last-child [role=option] .slx-label')].map((o) => o.textContent);
+    expect(names).toContain('回復藥');
+    expect(names).not.toContain('解毒藥');
+  });
+
+  it('offers settings from the field menu', () => {
+    const { s, go, pick } = setup();
+    s.onAction('menu');
+    pick('設定');
+    expect(go).toHaveBeenCalledWith('settings');
+  });
+
   it('uses a potion from the field menu', () => {
     const { game, s, pick } = setup();
     game.state.party.roster.liz.hp = 3;

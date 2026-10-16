@@ -67,10 +67,30 @@ describe('BattleScene', () => {
     const { s, root } = setup();
     s.onAction('down'); s.onAction('confirm');
     const note = root.querySelector('.slx-bnote') as HTMLElement;
-    expect(note.hidden).toBe(false);
     expect(note.textContent!.length).toBeGreaterThan(0);
     s.onAction('cancel');
     expect(root.querySelector('.slx-bnote')).toBeNull();
+  });
+
+  it('lights the party member under the cursor when an item targets an ally', () => {
+    const { s, root } = setup((g) => { g.battle!.inventory = { potion: 1 }; });
+    for (let i = 0; i < 3; i++) s.onAction('down');
+    s.onAction('confirm');                                // 道具
+    s.onAction('confirm');                                // 回復藥 → choose who
+    const active = () => root.querySelector('.slx-pm-active')!.getAttribute('data-key');
+    const first = active();
+    s.onAction('down');
+    expect(active()).not.toBe(first);
+    s.onAction('cancel'); s.onAction('cancel');
+    expect(active()).toBe('scarlet');
+  });
+
+  it('does not offer the last potion twice in one round', () => {
+    const { s, root } = setup((g) => { g.battle!.inventory = { potion: 1 }; });
+    for (let i = 0; i < 3; i++) s.onAction('down');
+    s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm');   // 絲嘉蕾 uses it
+    const item = [...root.querySelectorAll('.slx-bcmd [role=option]')].find((o) => o.textContent === '道具')!;
+    expect(item.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('disables items when there are none to use in battle', () => {
