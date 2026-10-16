@@ -2,12 +2,17 @@ import type { Game } from '../engine/game';
 import type { SoundManager } from '../audio/SoundManager';
 import type { ArtIndex } from '../render/textures';
 import type { UiAction } from './input';
+import type { Stage } from './stage';
 
 export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate';
 export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void }
 export interface SceneCtx {
   game: Game; art: ArtIndex; sfx: Pick<SoundManager, 'cursor' | 'confirm' | 'cancel' | 'error'>;
   go(name: SceneName): void; hasSave(): boolean; newGame(): void;
+  /** The Pixi layer; null when the renderer could not start (tests, no WebGL). */
+  stage?: Stage | null;
+  /** Skip animations and pauses (tests: ?fast=1). */
+  fast?: boolean;
 }
 
 /** One scene at a time; fades out and in, and drops input while switching so held keys cannot skip a screen. */

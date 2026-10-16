@@ -5,6 +5,7 @@ import { SAVE_KEY } from '../engine/save';
 import { art } from '../render/artPaths';
 import { TextureBank, loadManifest } from '../render/textures';
 import { bindUiInput } from './input';
+import { Stage } from './stage';
 import { Router, type SceneName } from './scene';
 import { TitleScene } from './scenes/title';
 import { TownScene } from './scenes/town';
@@ -21,9 +22,13 @@ export async function mountNext(): Promise<void> {
   const ui = document.getElementById('sl-ui');
   if (!ui) return;
   const storage = safeStorage();
-  let game = Game.boot(mulberry32(Date.now() >>> 0), storage);
+  const q = new URLSearchParams(location.search);
+  const seed = Number(q.get('seed')) || (Date.now() >>> 0);
+  const fast = q.get('fast') === '1';
+  let game = Game.boot(mulberry32(seed), storage);
   const sfx = new SoundManager();
   const bank = new TextureBank();
+  const stage = new Stage(document.getElementById('sl-screen')!, bank, fast);
   const make = (name: SceneName, ctx: Parameters<ConstructorParameters<typeof Router>[1]>[1]) => {
     switch (name) {
       case 'title': return new TitleScene(ctx);
@@ -38,7 +43,8 @@ export async function mountNext(): Promise<void> {
     get game() { return game; },
     art: bank, sfx,
     hasSave: () => { try { return !!storage?.getItem(SAVE_KEY); } catch { return false; } },
-    newGame: () => { game = new Game(mulberry32(Date.now() >>> 0), storage); },
+    newGame: () => { game = new Game(mulberry32(seed), storage); },
+    stage, fast,
   };
   const router = new Router(ui, make, ctx);
   bindUiInput(window, (a) => { sfx.ensure(); router.onAction(a); });
@@ -49,6 +55,7 @@ export async function mountNext(): Promise<void> {
   await bank.preload(menuArt);
   void bank.preload(urls.filter((u) => !menuArt.includes(u)));
   document.getElementById('sl-screen')?.classList.toggle('slx-skinned', bank.has(art.window) && bank.has(art.cursor));
+  (window as unknown as { __starlanternDebug?: unknown }).__starlanternDebug = { get game() { return game; } };
   ui.dataset.ready = 'true';
   await router.go('title');
 }
