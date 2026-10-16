@@ -21,6 +21,14 @@ export interface BattleEnd {
   levelUps: { id: CharacterId; levels: number; learned: string[] }[];
 }
 
+/** Turn a floor's boss tile into stairs down. */
+function openStairs(m: FloorMap): void {
+  if (!m.boss) return;
+  m.tiles[m.boss.y][m.boss.x] = 'down';
+  m.down = m.boss;
+  m.boss = null;
+}
+
 export class Game {
   state: GameState;
   phase: Phase = 'town';
@@ -55,7 +63,10 @@ export class Game {
 
   map(floor = this.floor): FloorMap {
     if (!this.run) throw new Error('no run in progress');
-    return floorOf(this.run, floor).map;
+    const m = floorOf(this.run, floor).map;
+    // Once the story boss is beaten, its room on later mainline runs holds stairs down (a rematch comes later).
+    if (m.boss && this.state.dungeon.bossDefeated && this.isStoryDepth(floor)) openStairs(m);
+    return m;
   }
 
   /** Tile theme (1-3) of the current depth: picks the art, the floor name, the encounter table and the chest loot. */
@@ -97,7 +108,6 @@ export class Game {
       case 'down': return this.changeFloor(this.floor + 1);
       case 'entrance': return { kind: 'entrance' };
       case 'boss':
-        if (this.storyBoss() && this.state.dungeon.bossDefeated) return { kind: 'moved' };
         this.startBattle(['lanterneater'], true);
         return { kind: 'boss' };
       case 'chest': return this.openChest() ?? { kind: 'moved' };
@@ -144,11 +154,9 @@ export class Game {
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
     this.state.party = awarded.party;
-    if (b.boss && this.storyBoss()) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
-    else {
-      if (b.boss) this.openBossStairs();
-      this.phase = 'map';
-    }
+    if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
+    if (b.boss && this.isStoryDepth(this.floor)) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
+    else this.phase = 'map';
     return { battle: b, end: { outcome: 'win', ...rw, levelUps: awarded.results.filter((x) => x.levels > 0) } };
   }
 
@@ -171,18 +179,9 @@ export class Game {
     this.run = null;
   }
 
-  /** The mainline's depth-3 boss: beating it clears the game. */
-  private storyBoss(): boolean {
-    return this.run?.region === 'mainline' && this.floor === 3;
-  }
-
-  /** A beaten region boss leaves stairs down where it stood, so the run can go deeper. */
-  private openBossStairs(): void {
-    const m = this.map();
-    if (!m.boss) return;
-    m.tiles[m.boss.y][m.boss.x] = 'down';
-    m.down = m.boss;
-    m.boss = null;
+  /** The mainline's depth 3 holds the story boss: beating it clears the game. */
+  private isStoryDepth(floor: number): boolean {
+    return this.run?.region === 'mainline' && floor === 3;
   }
 
   private toTown(): void {

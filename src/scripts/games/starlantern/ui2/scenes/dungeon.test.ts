@@ -45,7 +45,7 @@ describe('DungeonScene', () => {
 
   it('bumps into walls and walks on floors', () => {
     const { game, sfx, s } = setup();
-    while (game.move('up').kind === 'moved');   // the entrance sits mid-room: walk up to the room's top wall
+    for (let i = 0; i < 8 && game.move('up').kind === 'moved'; i++);   // the entrance sits mid-room: walk up to the room's top wall
     const at = { ...game.pos };
     s.onAction('up');
     expect(sfx.bump).toHaveBeenCalled();

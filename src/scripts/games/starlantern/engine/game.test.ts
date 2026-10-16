@@ -244,14 +244,29 @@ describe('battles', () => {
   it('the mainline boss is on depth 3 and its defeat clears the game', () => {
     const g = inMap(3);
     expect(g.map().boss).not.toBeNull();
-    expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+    const at = g.map().boss!;
+    expect(stepOnto(g, at)).toEqual({ kind: 'boss' });
     expect(g.battle!.boss).toBe(true);
     for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
     expect(g.submitRound({})!.end!.outcome).toBe('win');
     expect([g.phase, g.state.dungeon.bossDefeated]).toEqual(['clear', true]);
+    expect(g.map().down).toEqual(at);   // the beaten boss leaves stairs down
+    expect(tileAt(g.map(), at)).toBe('down');
     g.restartAfterClear();
     expect(g.phase).toBe('town');
     expect(g.run).toBeNull();
+  });
+  it('once the story boss is beaten, the mainline goes on past depth 3', () => {
+    const g = inMap(3);
+    g.returnToTown();
+    g.state.dungeon.bossDefeated = true;
+    g.depart(MAIN, 3);
+    const m = g.map();
+    expect([m.boss, m.tiles.flat().includes('boss')]).toEqual([null, false]);
+    expect(m.down).not.toBeNull();
+    expect(stepOnto(g, m.down!)).toEqual({ kind: 'floor', floor: 4 });
+    expect([g.floor, g.state.dungeon.reached.mainline, g.phase]).toEqual([4, 4, 'map']);
+    expect(g.map().down).not.toBeNull();
   });
   it('a region boss opens the stairs down instead of clearing the game', () => {
     const g = new Game(calm(), null);
