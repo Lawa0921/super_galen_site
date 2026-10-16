@@ -141,6 +141,7 @@ export const T = {
     },
     gate: {
       choose: '選擇傳送門', floor: (n: number, name?: string) => (name ? `第 ${n} 層 ${name}` : `第 ${n} 層`),
+      suggest: (lv: number) => `建議 Lv ${lv}`,
       depthTitle: '起始深度', deepest: (n: number) => `最深 第 ${n} 層`, notYet: '尚未進入',
       element: (name: string | null) => (name ? `${name}屬性` : '無屬性'),
       traits: { burn: '灼燒', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,
@@ -171,6 +172,10 @@ export const T = {
         poison: (n: number, tp: number) => `毒氣陷阱！全隊受到 ${n} 點傷害${tp > 0 ? `，TP 最多減少 ${tp}` : ''}。`,
       },
       key: '撿到了寶庫的鑰匙。',
+      stairs: {
+        title: (n: number) => `前往第 ${n} 層？`, level: (lv: number) => `建議等級 Lv ${lv}`,
+        warn: '隊伍等級不足，可能會很危險', go: '前往', stay: '留在這層',
+      },
       full: {
         title: '背包已滿', desc: (name: string, qty: number, need: number) => `${name} ×${qty} 放不下（還差重量 ${need}）。`, which: '要丟掉什麼來換？',
         giveUp: '放棄', ask: (name: string, n: number) => `要丟掉 ${name} ×${n} 嗎？`,

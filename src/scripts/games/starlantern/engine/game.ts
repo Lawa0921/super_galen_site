@@ -10,7 +10,7 @@ import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POI
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { activeIds, awardExp, hasPassive, statsOf } from './party';
 import { pick, type Rng } from './rng';
-import { encounterGroup } from './scaling';
+import { depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { rollPortals } from './portals';
 import { newGame, type GameState } from './state';
@@ -26,6 +26,8 @@ export type MoveResult =
   | { kind: 'event'; content: Content }
   | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number; tp: number }
   | { kind: 'key' }
+  /** Stepped onto stairs down: the screen asks first (descend goes). `level` is the next depth's suggested level; `warn` when the party's best is below it. */
+  | { kind: 'stairs'; floor: number; level: number; warn: boolean }
   /** The pack cannot take the pick-up: it stays on the ground (the chest stays shut) until something is discarded. */
   | { kind: 'full'; item: string; qty: number; need: number }
   | { kind: 'vault'; loot: Record<string, number> };
@@ -125,7 +127,7 @@ export class Game {
     this.pos = r.pos;
     this.revealHere();
     switch (r.tile) {
-      case 'down': return this.changeFloor(this.floor + 1);
+      case 'down': return this.stairs();
       case 'entrance': return { kind: 'entrance' };
       case 'boss':
         // The mainline story boss stays as written; every other boss is the 燈喰之獸 grown by depth and region.
@@ -267,6 +269,19 @@ export class Game {
     for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
     this.map().tiles[at.y][at.x] = 'floor';
     return { kind: 'vault', loot };
+  }
+
+  /** Go down the stairs the party stands on; null when not on stairs. */
+  descend(): MoveResult | null {
+    if (this.phase !== 'map' || !this.run || tileAt(this.map(), this.pos) !== 'down') return null;
+    return this.changeFloor(this.floor + 1);
+  }
+
+  private stairs(): MoveResult {
+    const floor = this.floor + 1;
+    const level = depthLevel(floor);
+    const best = Math.max(...activeIds(this.state.party).map((id) => this.state.party.roster[id].level));
+    return { kind: 'stairs', floor, level, warn: best < level };
   }
 
   returnToTown(): boolean {

@@ -5,7 +5,7 @@ import { MATERIALS } from '../../data/materials';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
-import { encounterTable } from '../../engine/scaling';
+import { depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
@@ -132,6 +132,7 @@ export class GateScene extends FacilityScene {
     const items = depths.map((d) => ({
       id: String(d), label: T.ui2.gate.floor(d, p.region === 'mainline' ? FLOORS[terrainOf('mainline', d) - 1].name : undefined),
       icon: this.ctx.art.has(art.bg(terrainOf(p.region, d))) ? art.bg(terrainOf(p.region, d)) : undefined,
+      right: T.ui2.gate.suggest(depthLevel(d)),
     }));
     const v = new MenuView(new Menu(items), {
       pick: (it) => { this.ctx.sfx.confirm(); this.askDepart(p, Number(it.id)); },

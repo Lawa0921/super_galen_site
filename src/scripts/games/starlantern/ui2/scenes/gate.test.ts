@@ -65,6 +65,13 @@ describe('GateScene: the portal plaza', () => {
     expect(depths()).toEqual(['第 1 層 林間遺跡', '第 2 層 水晶洞窟', '第 3 層 星燈神殿']);
   });
 
+  it('shows the suggested level beside each start depth', () => {
+    const { s, root } = setup((g) => { g.state.dungeon.reached.blaze = 12; });
+    s.onAction('right'); s.onAction('confirm');   // 熾焰之地
+    const right = [...root.querySelectorAll('.slx-depths [role=option] .slx-right')].map((o) => o.textContent);
+    expect(right).toEqual(['建議 Lv 2', '建議 Lv 18', '建議 Lv 38']);
+  });
+
   it('departs after a yes with the portal, its condition and the start depth', () => {
     const { game, go, s, root } = setup((g) => { g.state.dungeon.reached.blaze = 5; });
     s.onAction('right'); s.onAction('confirm');    // 熾焰之地

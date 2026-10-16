@@ -284,6 +284,15 @@ test.describe('starlantern', () => {
       await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.encounter = 0; });
       await page.keyboard.press(k);
     }
+    // The stairs ask first: a fresh party is under the suggested level, so the window warns and defaults to staying.
+    const stairs = page.locator('.slx-event-stairs');
+    await expect(stairs.locator('.slx-event-title')).toHaveText('前往第 2 層？');
+    await expect(stairs).toContainText('建議等級 Lv 6');
+    await expect(stairs).toContainText('隊伍等級不足，可能會很危險');
+    await expect(stairs.locator('[aria-selected=true] .slx-label')).toHaveText('留在這層');
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.floor)).toBe(1);
+    await w.choose('.slx-event-stairs', '前往');
+    await expect(stairs).toHaveCount(0);
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.floor)).toBe(2);
     await lampHome(page, w);
     await expect(page.locator('.slx-town .slx-talk')).toContainText('歸還之燈');

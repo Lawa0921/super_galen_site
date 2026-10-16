@@ -18,7 +18,7 @@ import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
-import { eventLayer, showPickUp, type EventHost } from './event';
+import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
@@ -213,6 +213,7 @@ export class DungeonScene implements Scene {
       case 'moved': s.step?.(); break;
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
       case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
+      case 'stairs': s.step?.(); this.refresh(); this.push(stairsLayer(this.host(), r, () => this.descend())); return;
       case 'chest': s.chest?.(); this.refresh(); this.say(T.map.chest(itemName(r.item), r.qty)); return;
       case 'event': s.step?.(); this.refresh(); this.push(eventLayer(this.host(), r.content)); return;
       case 'trap':
@@ -238,6 +239,15 @@ export class DungeonScene implements Scene {
       }
     }
     this.refresh();
+  }
+
+  /** 前往 on the stairs window: go down and name the new floor. */
+  private descend(): void {
+    const r = this.ctx.game.descend();
+    if (r?.kind !== 'floor') { this.refresh(); return; }
+    this.ctx.sfx.stairs?.();
+    this.refresh();
+    this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name));
   }
 
   private push(layer: Layer): void {

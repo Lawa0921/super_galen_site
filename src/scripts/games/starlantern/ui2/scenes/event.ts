@@ -40,7 +40,7 @@ export const eventArt = (k: EventKind | 'vault-open' | 'key' | 'trap') => `${ART
 const fmtWeight = (w: number) => String(Math.round(w * 10) / 10);
 
 /** The common event window: art (once approved), title, body lines and a choice list. Cancel always means leave. */
-function eventWindow(host: EventHost, kind: EventKind | 'full', title: string, body: Node[], items: MenuItem[], pick: (id: string) => void, onLeave?: () => void): Layer {
+function eventWindow(host: EventHost, kind: EventKind | 'full' | 'stairs', title: string, body: Node[], items: MenuItem[], pick: (id: string) => void, onLeave?: () => void, start = 0): Layer {
   const { ctx } = host;
   const leave = onLeave ?? (() => { ctx.sfx.cancel(); host.pop(); });
   const view = new MenuView(new Menu(items), {
@@ -48,7 +48,8 @@ function eventWindow(host: EventHost, kind: EventKind | 'full', title: string, b
     moved: () => ctx.sfx.cursor(),
     cancel: leave,
   }, 6);
-  const art = kind !== 'full' && ctx.art.has(eventArt(kind)) ? [el('img', { class: 'slx-event-art', attrs: { src: eventArt(kind), alt: '' } })] : [];
+  if (start) { view.menu.setCursor(start); view.render(); }
+  const art = kind !== 'full' && kind !== 'stairs' && ctx.art.has(eventArt(kind)) ? [el('img', { class: 'slx-event-art', attrs: { src: eventArt(kind), alt: '' } })] : [];
   const head = el('div', { class: 'slx-event-head' }, [...art, el('span', { class: 'slx-event-title', text: title })]);
   const box = win(`slx-event ${kind === 'full' ? 'slx-full' : `slx-event-${kind}`}`, [head, ...body, view.el]);
   box.setAttribute('role', 'dialog');
@@ -58,6 +59,18 @@ function eventWindow(host: EventHost, kind: EventKind | 'full', title: string, b
 
 const line = (text: string, cls = 'slx-event-text') => el('p', { class: cls, text });
 const leaveItem = (): MenuItem => ({ id: 'leave', label: T.ui2.event.leave });
+
+export type StairsResult = Extract<MoveResult, { kind: 'stairs' }>;
+
+/**
+ * Stairs down: name the next depth and its suggested level, warn an under-level party. 前往 calls `go`; 留在這層 (the
+ * default when warned) closes the window and leaves the party standing on the stairs.
+ */
+export function stairsLayer(host: EventHost, r: StairsResult, go: () => void): Layer {
+  const S = T.ui2.event.stairs;
+  const body = [line(S.level(r.level)), ...(r.warn ? [line(S.warn, 'slx-event-text slx-event-warn')] : [])];
+  return eventWindow(host, 'stairs', S.title(r.floor), body, [{ id: 'go', label: S.go }, { id: 'leave', label: S.stay }], () => { host.popAll(); go(); }, undefined, r.warn ? 1 : 0);
+}
 
 /** The window for a room event the party stepped on (fountain, merchant, altar, vault) or is about to step on (elite). */
 export function eventLayer(host: EventHost, content: Content): Layer {

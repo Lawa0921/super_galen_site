@@ -34,15 +34,65 @@ describe('DungeonScene', () => {
   });
 
   it('names each floor by its terrain, at any depth and in any region', () => {
-    const { game, root, s, text } = setup({ region: 'storm', condition: 'plain' });
+    const { game, root, s, text, pick } = setup({ region: 'storm', condition: 'plain' });
     expect(root.querySelector('.slx-floorname')!.textContent).toBe('第 1 層　星燈神殿');
     const down = game.map().down!;
     const dir = (['up', 'down', 'left', 'right'] as const).find((d) => tileAt(game.map(), { x: down.x - DELTA[d].x, y: down.y - DELTA[d].y }) !== 'wall')!;
     game.pos = { x: down.x - DELTA[dir].x, y: down.y - DELTA[dir].y };
     s.onAction(dir);
+    expect(game.floor).toBe(1);   // the stairs ask first
+    pick('前往');
     expect(game.floor).toBe(2);
     expect(text()).toBe('第 2 層　星燈神殿');
     expect(root.querySelector('.slx-floorname')!.textContent).toBe('第 2 層　星燈神殿');
+  });
+
+  describe('stairs', () => {
+    const toStairs = (t: ReturnType<typeof setup>) => {
+      const down = t.game.map().down!;
+      const dir = (['up', 'down', 'left', 'right'] as const).find((d) => tileAt(t.game.map(), { x: down.x - DELTA[d].x, y: down.y - DELTA[d].y }) !== 'wall')!;
+      t.game.pos = { x: down.x - DELTA[dir].x, y: down.y - DELTA[dir].y };
+      t.s.onAction(dir);
+      return { down, dir };
+    };
+    const win = (root: HTMLElement) => root.querySelector('.slx-event-stairs');
+    const lines = (root: HTMLElement) => [...win(root)!.querySelectorAll('.slx-event-text')].map((e) => e.textContent);
+    const selected = (root: HTMLElement) => win(root)!.querySelector('[aria-selected=true] .slx-label')!.textContent;
+
+    it('asks with the depth and its suggested level, warns an under-level party and defaults to staying', () => {
+      const t = setup();
+      toStairs(t);
+      expect(t.game.floor).toBe(1);
+      expect(win(t.root)!.querySelector('.slx-event-title')!.textContent).toBe('前往第 2 層？');
+      expect(lines(t.root)).toEqual(['建議等級 Lv 6', '隊伍等級不足，可能會很危險']);
+      expect(selected(t.root)).toBe('留在這層');
+      t.s.onAction('confirm');
+      expect([t.game.floor, win(t.root)]).toEqual([1, null]);
+    });
+
+    it('without a warning it defaults to going down', () => {
+      const t = setup();
+      t.game.state.party.roster.scarlet.level = 6;
+      toStairs(t);
+      expect(lines(t.root)).toEqual(['建議等級 Lv 6']);
+      expect(selected(t.root)).toBe('前往');
+      t.s.onAction('confirm');
+      expect(t.game.floor).toBe(2);
+      expect(t.sfx.stairs).toHaveBeenCalled();
+      expect(t.text()).toBe('第 2 層　水晶洞窟');
+    });
+
+    it('staying keeps the party on the stairs with no new prompt until it steps off and back', () => {
+      const t = setup();
+      const { down, dir } = toStairs(t);
+      t.pick('留在這層');
+      expect([t.game.floor, t.game.pos, win(t.root)]).toEqual([1, down, null]);
+      const back = ({ up: 'down', down: 'up', left: 'right', right: 'left' } as const)[dir];
+      t.s.onAction(back);
+      expect(win(t.root)).toBeNull();
+      t.s.onAction(dir);
+      expect(win(t.root)).not.toBeNull();
+    });
   });
 
   it('bumps into walls and walks on floors', () => {
