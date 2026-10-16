@@ -22,6 +22,9 @@ const SLASHERS = new Set<string>(CHARACTER_IDS.filter((id) => !PIERCERS.has(id))
 
 export const art = {
   tile: (floor: number, key: TileKey) => `${ART_BASE}/tiles/f${floor}-${key}.png`,
+  /** Autotiled walls: a seamless top, and a brick face for a wall whose south side looks onto open ground. */
+  wallTop: (floor: number) => `${ART_BASE}/tiles/f${floor}-wall-top.png`,
+  wallFace: (floor: number) => `${ART_BASE}/tiles/f${floor}-wall-face.png`,
   party: (dir: Dir) => `${ART_BASE}/map/party-${dir}.png`,
   bg: (floor: number) => `${ART_BASE}/bg/f${floor}.png`,
   enemy: (id: string) => `${ART_BASE}/enemy/${id}.png`,

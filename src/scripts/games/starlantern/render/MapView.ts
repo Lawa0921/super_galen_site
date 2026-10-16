@@ -49,6 +49,11 @@ export class MapView {
     this.root.addChild(this.world);
   }
 
+  /** Sprites with a given label on the last draw (for tests). */
+  countByLabel(label: string): number {
+    return [...this.tiles.children, ...this.edges.children].filter((c) => c.label === label).length;
+  }
+
   /** Tiles drawn for the cells the party has seen (for tests and diagnostics). */
   tileCount(): number {
     return this.tiles.children.length;
@@ -75,9 +80,11 @@ export class MapView {
         if (state === 'hidden') continue;   // the fog layer underneath shows through
         const t = map.tiles[y][x];
         const opened = t === 'chest' && game.state.dungeon.opened.includes(`${game.floor}:${x},${y}`);
-        const tex = this.bank?.get(art.tile(game.floor, tileKey(t, opened))) ?? null;
-        if (tex) {
-          const s = this.cellSprite(tex, x, y, cell);
+        const wall = t === 'wall' ? this.wallSprite(map, game.floor, x, y) : null;
+        const tex = wall ? null : this.bank?.get(art.tile(game.floor, tileKey(t, opened))) ?? null;
+        if (wall || tex) {
+          const s = wall ?? this.cellSprite(tex!, x, y, cell);
+          if (!wall) s.label = t;
           if (state === 'memory') s.tint = MEMORY_TINT;
           this.tiles.addChild(s);
         } else {
@@ -88,6 +95,7 @@ export class MapView {
       }
     }
     this.drawEdges(game, seen);
+    this.drawWallShadows(game, seen);
     const tex = this.bank?.get(art.party(game.facing)) ?? null;
     this.dot.clear();
     this.icon.visible = !!tex;
@@ -106,6 +114,48 @@ export class MapView {
     else if (!this.calm && (tx !== this.target.x || ty !== this.target.y)) this.hop = HOP_FRAMES;
     this.target = { x: tx, y: ty };
     this.follow();
+  }
+
+  /**
+   * With the autotile art published: a wall whose south neighbour is open ground shows its brick face, any other wall its
+   * seamless top. Without it, null (the single wall tile is drawn instead).
+   */
+  private wallSprite(map: ReturnType<Game['map']>, floor: number, x: number, y: number): Sprite | null {
+    const top = this.bank?.get(art.wallTop(floor)) ?? null;
+    const face = this.bank?.get(art.wallFace(floor)) ?? null;
+    if (!top || !face) return null;
+    const below = y + 1 < map.height ? map.tiles[y + 1][x] : 'wall';
+    const s = this.cellSprite(below === 'wall' ? top : face, x, y, MAP_CELL);
+    s.label = below === 'wall' ? 'wall-top' : 'wall-face';
+    return s;
+  }
+
+  /** Soft shadows on open ground where a wall stands to the north (strong) or to the side (light). */
+  private drawWallShadows(game: Game, seen: ReadonlySet<string>): void {
+    const map = game.map();
+    const cell = MAP_CELL;
+    const tex = this.edgeTexture();
+    const isWall = (x: number, y: number) => x < 0 || y < 0 || x >= map.width || y >= map.height || map.tiles[y][x] === 'wall';
+    const add = (cx: number, cy: number, rot: number, len: number, alpha: number) => {
+      const sp = new Sprite(tex);
+      sp.anchor.set(0.5, 0);
+      sp.width = cell; sp.height = len;
+      sp.rotation = rot;
+      sp.x = cx; sp.y = cy;
+      sp.alpha = alpha;
+      sp.label = 'wall-shadow';
+      if (tex === Texture.WHITE) sp.tint = 0x050812;
+      this.edges.addChildAt(sp, 0);
+    };
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        if (isWall(x, y) || fogState(seen, game.pos, x, y) === 'hidden') continue;
+        const px = x * cell, py = y * cell;
+        if (isWall(x, y - 1)) add(px + cell / 2, py, 0, Math.round(cell * 0.4), 0.55);
+        if (isWall(x - 1, y)) add(px, py + cell / 2, -Math.PI / 2, Math.round(cell * 0.18), 0.35);
+        if (isWall(x + 1, y)) add(px + cell, py + cell / 2, Math.PI / 2, Math.round(cell * 0.18), 0.35);
+      }
+    }
   }
 
   /** A tiny dark-to-clear strip, made once; edges are sprites of it turned to face the fog. */

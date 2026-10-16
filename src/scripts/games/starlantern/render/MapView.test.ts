@@ -76,3 +76,35 @@ describe('MapView late fog art', () => {
     expect(world.children.some((c) => c instanceof TilingSprite)).toBe(true);
   });
 });
+
+describe('MapView wall autotiling', () => {
+  it('draws walls as a continuous top with a brick face only where a wall looks onto open ground, plus a shadow at its foot', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1);
+    const view = new MapView(bank);   // the bank has every texture, including wall-top and wall-face
+    view.draw(game, { width: 640, height: 296 });
+    const map = game.map();
+    const seen = new Set(game.state.dungeon.explored[String(game.floor)] ?? []);
+    const shown = (x: number, y: number) => fogState(seen, game.pos, x, y) !== 'hidden';
+    let faces = 0, tops = 0;
+    for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) {
+      if (!shown(x, y) || map.tiles[y][x] !== 'wall') continue;
+      const below = y + 1 < map.height ? map.tiles[y + 1][x] : 'wall';
+      if (below !== 'wall') faces++; else tops++;
+    }
+    expect(faces).toBeGreaterThan(0);
+    expect(view.countByLabel('wall-face')).toBe(faces);
+    expect(view.countByLabel('wall-top')).toBe(tops);
+    expect(view.countByLabel('wall-shadow')).toBeGreaterThan(0);
+  });
+
+  it('falls back to the single wall tile while the new wall art is not published', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1);
+    const oldBank = { get: (u: string) => (u.includes('wall-top') || u.includes('wall-face') ? null : Texture.WHITE), has: () => true } as unknown as TextureBank;
+    const view = new MapView(oldBank);
+    view.draw(game, { width: 640, height: 296 });
+    expect(view.countByLabel('wall-face')).toBe(0);
+    expect(view.countByLabel('wall')).toBeGreaterThan(0);
+  });
+});
