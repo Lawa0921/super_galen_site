@@ -1,4 +1,4 @@
-import { addBuff, calcDamage, dealDamage, stat, SLEEP_TURNS, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, calcDamage, dealDamage, roll, stat, SLEEP_TURNS, type BattleEvent, type Combatant } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -11,7 +11,7 @@ const pctOf = (base: number, pct: number | undefined): number => (pct === undefi
 /**
  * A skill as a power rewrites it; the original is never touched. `target` and `hpCost` replace the skill's own (an hpCost
  * of 0 is kept, so the skill costs no HP); `hits` and `element` go to damage; `powerPct` scales damage and heal power,
- * turret power and buff percent; `turns` goes to every effect that lasts; `chance` goes to inflict effects only; `extra`
+ * turret power and buff percent; `turns` goes to every effect that lasts; `chance` goes to poison inflicts only; `extra`
  * is appended as written.
  */
 export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
@@ -25,7 +25,7 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       case 'buff': return { ...e, pct: pctOf(e.pct, mod.powerPct), turns: mod.turns ?? e.turns };
       case 'turret': return { ...e, power: pctOf(e.power, mod.powerPct), turns: mod.turns ?? e.turns };
       case 'taunt': return { ...e, turns: mod.turns ?? e.turns };
-      case 'inflict': return { ...e, chance: mod.chance ?? e.chance };
+      case 'inflict': return { ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance };
       default: return { ...e };
     }
   });
@@ -49,9 +49,8 @@ function gainHp(t: Combatant, amount: number): number {
 export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ctx: EffectContext): void {
   switch (eff.kind) {
     case 'damage': {
-      // Multistrike adds one hit, only to a single-hit effect; a chance of 0 draws nothing.
-      const multi = (actor.x.multi ?? 0) / 100;
-      const extra = (eff.hits ?? 1) === 1 && multi > 0 && ctx.rng() < multi ? 1 : 0;
+      // Multistrike adds one hit, only to a single-hit effect; a chance of 0 draws nothing (the one rule, combatant.roll).
+      const extra = (eff.hits ?? 1) === 1 && roll((actor.x.multi ?? 0) / 100, ctx.rng) ? 1 : 0;
       for (let i = 0; i < (eff.hits ?? 1) + extra && target.alive; i++) {
         const { amount, mult, crit, miss } = calcDamage(actor, target, eff, ctx.rng);
         if (miss) { ctx.log.push({ type: 'miss', target: target.key }); continue; }

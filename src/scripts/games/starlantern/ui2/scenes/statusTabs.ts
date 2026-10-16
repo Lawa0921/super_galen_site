@@ -216,8 +216,9 @@ const skills: StatusTab = {
     // The skill as this member casts it: worn powers rewrite it, tpCost lowers its price (the battle rules, Task 9).
     const powers = powersOf(m);
     const caster = { powers, x: { tpCost: sheetOf(m).tpCost } };
-    return el('div', { class: 'slx-tab-skills' }, CHARACTERS[id].skills.map((sk) => {
+    return el('div', { class: 'slx-tab-skills' }, CHARACTERS[id].skills.flatMap((sk) => {
       const s = skillFor(caster, sk);
+      if (!s) return [];
       const changed = powers.map((p) => POWERS[p]).filter((p) => p && p.skill === sk);
       return el('div', { class: learned.has(sk) ? 'slx-skill' : 'slx-skill slx-skill-locked', attrs: { 'data-skill': sk } }, [
         el('div', { class: 'slx-skill-head' }, [

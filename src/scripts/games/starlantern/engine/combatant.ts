@@ -71,7 +71,7 @@ export interface DamageSpec { power: number; element: Element; scale: 'atk' | 'm
 export const ENEMY_CRIT_DMG = 50;
 
 /** True with chance `p`; a chance of 0 or less draws nothing, so fights without these stats keep their random sequence. */
-const roll = (p: number, rng: Rng): boolean => p > 0 && rng() < p;
+export const roll = (p: number, rng: Rng): boolean => p > 0 && rng() < p;
 
 /**
  * One hit: evasion, then the base formula with weakness and row, element bonus and resistance, vuln (weakness hits
@@ -84,7 +84,7 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   const el = elementMult(t, spec.element);
   // An enemy's evasion is a plain percentage, held at the same 50% as a member's rated evasion.
   const evade = t.side === 'party' ? evadeChance(tx('evasion'), a.level) : Math.min(EVADE_MAX, tx('evasion') / 100);
-  if (roll(evade, rng)) return { amount: 0, mult: el, crit: false, miss: true };
+  if (roll(evade, rng)) return { amount: 0, mult: 1, crit: false, miss: true };   // nothing landed: no element multiplier
   const atk = stat(a, spec.scale);
   const def = stat(t, spec.scale === 'atk' ? 'def' : 'res');
   let mult = el;
@@ -94,8 +94,9 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   const variance = 0.9 + rng() * 0.2;
   // Every factor below is exactly 1 when its stat is absent, so such a hit keeps its old value to the bit.
   const hitEl = spec.element;
-  // A negative resistance is a weakness, held at -100 (double damage).
-  if (hitEl !== 'phys') mult *= (1 + ax(`${hitEl}Dmg`) / 100) * (1 - Math.max(-100, tx(`${hitEl}Res`)) / 100);
+  // A negative resistance is a weakness, held at -100 (double damage); above 100 it is held at 100 (no damage), so the factor
+  // never goes negative: a hit never heals, and a negative bonus times an over-100 resistance never multiplies back up.
+  if (hitEl !== 'phys') mult *= (1 + ax(`${hitEl}Dmg`) / 100) * (1 - Math.min(100, Math.max(-100, tx(`${hitEl}Res`))) / 100);
   if (t.weak.includes(spec.element)) mult *= 1 + ax('vuln') / 100;
   if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
   const crit = roll(ax('crit') / 100, rng);

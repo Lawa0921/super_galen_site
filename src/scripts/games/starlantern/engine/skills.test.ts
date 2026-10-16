@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
-import { createBattle, resolveRound, skillFor } from './battle';
+import { createBattle, resolveRound, skillCost, skillFor } from './battle';
 import { POWERS } from '../data/gear';
 import { SKILLS } from '../data/skills';
 import { newParty } from './party';
@@ -130,7 +130,7 @@ describe('patchSkill', () => {
     const spear = { ...plainItem('iron-sword', 1), rarity: 'legendary' as const, special: 'lg-chizuru' };
     party.roster.chizuru = { ...party.roster.chizuru, equip: { weapon: spear } };
     const c = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} }).party.find((x) => x.key === 'chizuru')!;
-    expect(skillFor(c, 'sweep').effects).toEqual([{ kind: 'damage', power: 52, element: 'phys', scale: 'atk', melee: true, hits: 2 }]);
+    expect(skillFor(c, 'sweep')!.effects).toEqual([{ kind: 'damage', power: 52, element: 'phys', scale: 'atk', melee: true, hits: 2 }]);
     expect(skillFor(c, 'pierce')).toBe(SKILLS.pierce);
     const plain = createBattle({ party: newParty(), enemyIds: ['slime'], inventory: {}, revealed: {} }).party.find((x) => x.key === 'chizuru')!;
     expect(skillFor(plain, 'sweep')).toBe(SKILLS.sweep);
@@ -145,8 +145,40 @@ describe('patchSkill', () => {
       { kind: 'damage', power: 204, element: 'thunder', scale: 'atk', melee: false },
       { kind: 'buff', stat: 'def', pct: -20, turns: 3 },
     ];
-    expect(skillFor(party({ powers: ['lg-sylvie', 'storm-thunder-bow'] }), 'aimed-shot').effects).toEqual(want);
-    expect(skillFor(party({ powers: ['storm-thunder-bow', 'lg-sylvie'] }), 'aimed-shot').effects).toEqual(want);
+    expect(skillFor(party({ powers: ['lg-sylvie', 'storm-thunder-bow'] }), 'aimed-shot')!.effects).toEqual(want);
+    expect(skillFor(party({ powers: ['storm-thunder-bow', 'lg-sylvie'] }), 'aimed-shot')!.effects).toEqual(want);
+  });
+});
+
+describe('review fixes', () => {
+  it('a damage effect without multistrike draws one number per hit (the variance) and nothing else', () => {
+    const r = Object.assign(() => { r.n++; return 0.5; }, { n: 0 });
+    applyEffect(party(), enemy({ max: { hp: 999 } as never }), { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: true }, ctx({ rng: r }));
+    expect(r.n).toBe(1);
+    const r3 = Object.assign(() => { r3.n++; return 0.5; }, { n: 0 });
+    applyEffect(party(), enemy({ max: { hp: 999 } as never }), { kind: 'damage', power: 10, element: 'phys', scale: 'atk', melee: true, hits: 3 }, ctx({ rng: r3 }));
+    expect(r3.n).toBe(3);
+  });
+
+  it('a chance mod changes poison inflicts only, never another status in the same skill', () => {
+    const def: SkillDef = {
+      id: 'x', name: 'x', owner: 'noel', learnLevel: 1, tp: 5, target: 'enemy', desc: '',
+      effects: [{ kind: 'inflict', status: 'sleep', chance: 0.4 }, { kind: 'inflict', status: 'poison', chance: 0.5 }],
+    };
+    expect(patchSkill(def, { chance: 1 }).effects).toEqual([
+      { kind: 'inflict', status: 'sleep', chance: 0.4 }, { kind: 'inflict', status: 'poison', chance: 1 },
+    ]);
+  });
+
+  it('skillFor an unknown id is undefined, and a round with it does nothing', () => {
+    expect(skillFor(party(), 'no-such-skill')).toBeUndefined();
+    expect(skillFor(party({ powers: ['lg-sylvie'] }), 'no-such-skill')).toBeUndefined();
+    const r = resolveRound(makeBattle([party()], [enemy({ sleep: 3 })]), { p: { kind: 'skill', skill: 'no-such-skill' } }, constRng(0.5));
+    expect(r.log.some((e) => e.type === 'act' && e.actor === 'p')).toBe(false);
+  });
+
+  it('a tpCost of 100 or more still charges 1 TP', () => {
+    for (const tpCost of [100, 150, 1e6]) expect(skillCost(party({ x: { tpCost } }), 'twin-slash'), String(tpCost)).toBe(1);
   });
 });
 

@@ -176,14 +176,18 @@ export class BattleScene implements Scene {
       return;
     }
     if (id === 'ultimate') { this.withTarget(ULTIMATES[actor.defId as CharacterId].target, { kind: 'ultimate' }); return; }
-    if (id === 'skill') { this.subList(this.skillItems(actor), (it) => this.withTarget(skillFor(actor, it.id).target, { kind: 'skill', skill: it.id })); return; }
+    if (id === 'skill') {
+      // Only known skills are listed (skillItems), so the lookup always finds one; the fallback is never reached.
+      this.subList(this.skillItems(actor), (it) => this.withTarget(skillFor(actor, it.id)?.target ?? 'enemy', { kind: 'skill', skill: it.id }));
+      return;
+    }
     if (id === 'item') this.subList(this.itemItems(), (it) => this.withTarget(ITEMS[it.id].target, { kind: 'item', item: it.id }));
   }
 
   private skillItems(actor: Combatant): MenuItem[] {
     return learnedSkills(actor.key as CharacterId, this.ctx.game.state.party.roster[actor.key as CharacterId]?.level ?? 1)
       // As this member casts them: a worn power may change the target, and tpCost lowers what each costs.
-      .map((s) => skillFor(actor, s))
+      .flatMap((s) => skillFor(actor, s) ?? [])
       .filter((sk) => !sk.passive)
       .map((sk) => {
         const cost = skillCost(actor, sk.id);

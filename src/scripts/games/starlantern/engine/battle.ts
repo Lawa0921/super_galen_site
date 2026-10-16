@@ -166,9 +166,9 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
 
 /**
  * A skill as this combatant casts it: every worn power that names it rewrites it, in the order worn. Added effects
- * (`extra`) are gathered and appended last, so another power's powerPct never rescales them.
+ * (`extra`) are gathered and appended last, so another power's powerPct never rescales them. An unknown id is undefined.
  */
-export function skillFor(c: Pick<Combatant, 'powers'>, id: string): SkillDef {
+export function skillFor(c: Pick<Combatant, 'powers'>, id: string): SkillDef | undefined {
   const base = SKILLS[id];
   const mods = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
   if (!base || !mods.length) return base;

@@ -39,6 +39,19 @@ describe('stats model', () => {
     expect(armorReduction(-5, 2)).toBe(0);
   });
 
+  it('equal armor steps give shrinking gains at every attacker level', () => {
+    for (const lv of [1, 5, 20, 60, 198]) {
+      // Steps of 25 x level, so each level is sampled over the same part of its curve.
+      const v = [0, 1, 2, 3, 4, 5].map((i) => armorReduction(i * 25 * lv, lv));
+      for (let i = 2; i < v.length; i++) {
+        expect(v[i] - v[i - 1], `level ${lv} step ${i}`).toBeLessThan(v[i - 1] - v[i - 2]);
+        expect(v[i], `level ${lv} step ${i}`).toBeGreaterThan(v[i - 1]);
+      }
+      const e = [0, 1, 2, 3, 4].map((i) => evadeChance(i * 10 * lv, lv));
+      for (let i = 2; i < e.length; i++) expect(e[i] - e[i - 1], `evasion level ${lv}`).toBeLessThan(e[i - 1] - e[i - 2]);
+    }
+  });
+
   it('enemy secondaries are zero at home and grow with depth level', () => {
     const home = enemySecondary(2, 2, null);
     for (const k of Object.keys(home) as SecondaryKey[]) expect(home[k] ?? 0).toBe(0);
@@ -59,6 +72,22 @@ describe('stats model', () => {
     for (const v of Object.values(big)) { expect(Number.isFinite(v)).toBe(true); expect(v).toBeGreaterThan(0); }
   });
 
+  it('compensation for crit alone touches only atk and mag', () => {
+    expect(compensation({ crit: 20 })).toEqual({ atk: 1 / 1.1, mag: 1 / 1.1 });
+    expect(compensation({ crit: 1e6 })).toEqual({ atk: 1 / 1.3, mag: 1 / 1.3 });   // held at the 60% cap
+  });
+
+  it('compensation for resistance alone touches only hp, at the mean of the three', () => {
+    const hpOnly = (sec: Parameters<typeof compensation>[0], hp: number) => {
+      const c = compensation(sec);
+      expect(Object.keys(c)).toEqual(['hp']);
+      expect(c.hp).toBeCloseTo(hp, 10);
+    };
+    hpOnly({ fireRes: 30, iceRes: 30, thunderRes: 30 }, 1 - 0.09);
+    hpOnly({ fireRes: 30 }, 1 - 0.03);
+    hpOnly({ fireRes: 1e6, iceRes: 1e6, thunderRes: 1e6 }, 1 - 0.225);   // held at 75
+  });
+
   it('capSheet holds every cap and stays finite at 1e6', () => {
     const s = emptySheet();
     for (const k of Object.keys(s) as AnyStat[]) s[k] = 1e6;
@@ -74,5 +103,7 @@ describe('stats model', () => {
     const all = STAT_CATEGORIES.flatMap((c) => c.keys);
     expect(all).toHaveLength(36);
     expect(new Set(all).size).toBe(36);
+    // The very names, not only the count: every sheet key sits in exactly one category.
+    expect([...all].sort()).toEqual(Object.keys(emptySheet()).sort());
   });
 });

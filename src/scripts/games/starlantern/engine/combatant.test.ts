@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addBuff, calcDamage, dealDamage, stat, MAX_BUFFS, type BattleEvent } from './combatant';
+import { addBuff, calcDamage, dealDamage, roll, stat, MAX_BUFFS, type BattleEvent } from './combatant';
 import { applyEffect } from './skills';
 import { constRng, makeCombatant } from './testing';
 
@@ -109,6 +109,28 @@ describe('calcDamage with derived stats', () => {
     expect(calcDamage(a, { ...t, x: { fireRes: 50 } }, fire, r).amount).toBe(10);
     expect(calcDamage(pyro, { ...t, x: { fireRes: 50 } }, phys, r).amount).toBe(20);
     expect(calcDamage({ ...a, x: { iceDmg: 50 } }, t, fire, r).amount).toBe(20);
+  });
+
+  it('a miss reports a plain multiplier of 1, whatever the element', () => {
+    const blur = { ...t, weak: ['fire' as const], x: { evasion: 50 } };
+    expect(calcDamage(a, blur, fire, seq([0.1, 0.5]))).toEqual({ amount: 0, mult: 1, crit: false, miss: true });
+  });
+
+  it('resistance above 100 is held at 100: a hit never turns into a heal or cancels a negative bonus', () => {
+    const r = constRng(0.5);
+    expect(calcDamage(a, { ...t, x: { fireRes: 150 } }, fire, r).amount).toBe(1);
+    // A negative fire bonus times an over-100 resistance would multiply back to a full hit.
+    expect(calcDamage({ ...a, x: { fireDmg: -200 } }, { ...t, x: { fireRes: 200 } }, fire, r).amount).toBe(1);
+  });
+
+  it('roll draws nothing at a chance of 0 or less, one number otherwise', () => {
+    const r = seq([0.3]);
+    expect(roll(0, r)).toBe(false);
+    expect(roll(-1, r)).toBe(false);
+    expect(r.n).toBe(0);
+    expect(roll(0.5, r)).toBe(true);
+    expect(roll(0.2, r)).toBe(false);
+    expect(r.n).toBe(2);
   });
 
   it('an enemy evades at most half of the hits, like a member', () => {

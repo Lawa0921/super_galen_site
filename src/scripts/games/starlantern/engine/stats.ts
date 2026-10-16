@@ -41,6 +41,8 @@ const CONVERT: Record<PrimaryKey, Partial<Sheet>> = {
   wil: { tp: 1, heal: 1 },
 };
 const AFFINITY_MUL = 1.5;
+// Rounds to 1e-6 so float products such as 0.2 x 1.5 x 10 = 3.0000000000000004 come out as the plain 3 the sheet shows
+// and tests compare; a gear value never carries more than a few decimals, so nothing real is lost.
 const clean = (n: number): number => Math.round(n * 1e6) / 1e6;
 
 export function convertPrimary(p: Partial<Record<PrimaryKey, number>>, affinity: PrimaryKey): Partial<Sheet> {
@@ -77,7 +79,11 @@ const rating = (value: number, attackerLevel: number, max: number): number => {
 };
 /** Share of damage armor removes: armor / (armor + 50 * attacker level), at most 0.75. */
 export const armorReduction = (armor: number, attackerLevel: number): number => rating(armor, attackerLevel, ARMOR_MAX);
-/** Chance to evade: evasion / (evasion + 50 * attacker level), at most 0.5. */
+/**
+ * Chance to evade: evasion / (evasion + 50 * attacker level), at most 0.5. Units: a member's evasion is rating points
+ * (this curve), and the result is a 0-1 fraction; an enemy's evasion is already a percentage (enemySecondary), so
+ * calcDamage divides it by 100 and holds it at the same EVADE_MAX (0.5, i.e. 50%) instead of rating it.
+ */
 export const evadeChance = (value: number, attackerLevel: number): number => rating(value, attackerLevel, EVADE_MAX);
 
 /** Secondaries an enemy gains for being met deeper than the level it was made for (zero at or below home). */

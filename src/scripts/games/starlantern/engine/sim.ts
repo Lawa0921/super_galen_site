@@ -59,7 +59,7 @@ export function choose(s: BattleState, party: Party): Record<string, Action> {
     const id = c.key as CharacterId;
     if (c.limit >= LIMIT_MAX) { out[c.key] = { kind: 'ultimate', target }; continue; }
     // Each skill as this member casts it (worn powers) and at the TP they pay for it.
-    const skills = learnedSkills(id, party.roster[id].level).map((sk) => skillFor(c, sk))
+    const skills = learnedSkills(id, party.roster[id].level).flatMap((sk) => skillFor(c, sk) ?? [])
       .filter((sk) => !sk.passive && skillCost(c, sk.id) <= c.tp);
     const heal = skills.find((sk) => sk.effects.some((e) => e.kind === 'heal'));
     if (hurt && heal) { out[c.key] = { kind: 'skill', skill: heal.id, target: hurt.key }; continue; }
