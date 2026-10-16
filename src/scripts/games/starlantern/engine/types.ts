@@ -1,6 +1,16 @@
 export type Element = 'phys' | 'fire' | 'ice' | 'thunder';
 export type StatKey = 'hp' | 'tp' | 'atk' | 'def' | 'mag' | 'res' | 'spd';
 export type BuffStat = Exclude<StatKey, 'hp' | 'tp'>;
+export type PrimaryKey = 'str' | 'int' | 'agi' | 'wil';
+/** Percent stats are stored in percentage points; armor, evasion and tpRegen are stored as points. */
+export type SecondaryKey =
+  | 'crit' | 'critDmg' | 'vuln' | 'eliteDmg' | 'multi'
+  | 'armor' | 'evasion' | 'block' | 'meleeDR' | 'rangedDR'
+  | 'fireRes' | 'iceRes' | 'thunderRes' | 'fireDmg' | 'iceDmg' | 'thunderDmg' | 'poisonRes' | 'sleepRes'
+  | 'tpRegen' | 'tpCost' | 'gauge' | 'heal'
+  | 'goldFind' | 'matFind' | 'expBonus';
+export type AnyStat = StatKey | PrimaryKey | SecondaryKey;
+export type Sheet = Record<AnyStat, number>;
 export type Stats = Record<StatKey, number>;
 export type Row = 'front' | 'middle' | 'back';
 export type CharacterId = 'noel' | 'chizuru' | 'liz' | 'sylvie' | 'scarlet' | 'selene' | 'safira' | 'bobby';
@@ -27,12 +37,13 @@ export interface SkillDef {
 }
 export interface UltimateDef { id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string }
 export interface CharacterDef {
-  id: CharacterId; title: string; name: string; row: Row; melee: boolean; base: Stats; growth: Stats; skills: string[];
+  id: CharacterId; title: string; name: string; row: Row; melee: boolean; base: Stats; growth: Stats; skills: string[]; affinity: PrimaryKey;
 }
 export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[] }
 export interface EnemyDef {
   id: string; name: string; floor: 1 | 2 | 3; boss?: boolean; stats: Stats; weak: Element[]; resist: Element[];
   exp: number; gold: number; drops: { mat: string; chance: number }[]; skills: EnemySkill[];
+  sec?: Partial<Record<SecondaryKey, number>>;
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

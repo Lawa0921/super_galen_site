@@ -80,4 +80,12 @@ describe('ultimates', () => {
     }
     expect(new Set(CHARACTER_IDS.map((id) => ULTIMATES[id].id)).size).toBe(8);
   });
+  it('every character has an affinity', () => {
+    const keys = ['str', 'int', 'agi', 'wil'];
+    const want = { noel: 'int', chizuru: 'str', liz: 'agi', sylvie: 'agi', scarlet: 'str', selene: 'wil', safira: 'agi', bobby: 'int' };
+    for (const id of CHARACTER_IDS) {
+      expect(keys).toContain(CHARACTERS[id].affinity);
+      expect(CHARACTERS[id].affinity).toBe(want[id as keyof typeof want]);
+    }
+  });
 });

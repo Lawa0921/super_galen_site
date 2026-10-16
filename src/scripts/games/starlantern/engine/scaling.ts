@@ -5,11 +5,11 @@ import { FLOORS } from '../data/floors';
 import type { RegionDef, RegionId } from '../data/regions';
 import { terrainOf } from './dungeon/run';
 import { expToNext } from './party';
+import { depthLevel } from './levels';
 import { pick, type Rng } from './rng';
 import type { Element, EnemyDef, StatKey, Stats } from './types';
 
-/** The party level a depth is tuned for (spec §3.7): 2, 6, 10, 14 … */
-export const depthLevel = (depth: number): number => 2 + 4 * (depth - 1);
+export { depthLevel } from './levels';
 
 /**
  * Depth growth (spec §3.7): a monster is lifted from its home level (the depth level of the floor it was made for) to
