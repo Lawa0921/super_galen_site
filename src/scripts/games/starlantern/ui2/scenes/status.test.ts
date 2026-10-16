@@ -3,6 +3,7 @@ import { Game } from '../../engine/game';
 import { statsOf } from '../../engine/party';
 import type { AnyStat } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
+import { raiseTalent } from '../../engine/progression';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
@@ -170,9 +171,12 @@ describe('StatusScene', () => {
     const head = (root: HTMLElement, cat: string) => root.querySelector(`[data-cat=${cat}] .slx-stat-cat-head`) as HTMLElement;
     const bodyEl = (root: HTMLElement) => root.querySelector('.slx-status-body') as HTMLElement;
 
-    it('six collapsible categories; rows show base, growth, gear, set and primary sources', () => {
+    it('six collapsible categories; rows show base, growth, gear, set, talent and primary sources', () => {
       const { root, game, s } = setup('scarlet');
       game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'str', value: 3 }] };
+      const raised = raiseTalent({ ...game.state.party.roster.scarlet, level: 6 }, 'scarlet-t00');   // scarlet-t00 is str
+      if (!raised.ok) throw new Error(raised.reason);
+      game.state.party.roster.scarlet = raised.member;
       s.onAction('next'); s.onAction('prev');                                // redraw with the new sword
       const cats = [...root.querySelectorAll('section.slx-stat-cat')];
       expect(cats.map((c) => c.getAttribute('data-cat'))).toEqual(STAT_CATEGORIES.map((c) => c.id));
@@ -180,7 +184,8 @@ describe('StatusScene', () => {
       expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false']);
       expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
       const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
-      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '主屬性', '上限', '合計']);
+      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '主屬性', '上限', '合計']);
+      expect(root.querySelector('[data-stat=str] .slx-talent')!.textContent).toMatch(/^\+\d/);
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;
       expect(atk.querySelector('.slx-primary')!.textContent).toMatch(/^\+\d+$/);

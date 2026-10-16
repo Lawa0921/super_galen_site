@@ -1,7 +1,10 @@
 import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, type TreeNode } from '../data/trees';
 import type { SkillMod } from '../data/gear';
 import { SKILLS } from '../data/skills';
-import type { CharacterId, Member } from './types';
+import {
+  BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
+} from '../data/talents';
+import type { AnyStat, CharacterId, Member, Sheet } from './types';
 
 /**
  * Skill-tree rules: points per level, what a member may raise next, and the default build.
@@ -165,11 +168,83 @@ export function defaultTree(id: CharacterId, level: number): Record<string, numb
   return tree;
 }
 
+/*
+ * Talent rules. The board rules live in data/talents.ts (`talentBlocker`); this adds the member's points.
+ */
+
+export type TalentFail = 'unknown' | 'max' | 'points' | 'adjacent' | 'gate' | 'keystones';
+
+const BLOCKER: Record<TalentBlocker, TalentFail> = {
+  unknown: 'unknown', maxed: 'max', adjacency: 'adjacent', gate: 'gate', 'keystone-cap': 'keystones',
+};
+
+/** A talent record that may come from a hostile save, as the board rules read it: anything but a plain object is empty. */
+const talentsOf = (m: Member): Record<string, number> =>
+  typeof m.talents === 'object' && m.talents !== null && !Array.isArray(m.talents) ? m.talents : {};
+
+/** Talent points earned and not spent; ranks on other boards, unknown ids and junk ranks are not spent points. */
+export function talentPointsLeft(m: Member): number {
+  const t = talentsOf(m);
+  return talentPoints(m.level) - boardPoints(m.id, t) - keystoneCount(m.id, t);
+}
+
+/** Why `node` cannot take its next rank, checked in the order of TalentFail; null when it can. Never throws. */
+export function canRaiseTalent(m: Member, node: string): TalentFail | null {
+  const blocker = talentBlocker(m.id, node, talentsOf(m));
+  if (blocker === 'unknown' || blocker === 'maxed') return BLOCKER[blocker];
+  if (talentPointsLeft(m) <= 0) return 'points';
+  return blocker ? BLOCKER[blocker] : null;
+}
+
+/** One more rank in `node`, on a copy; the member passed in is never changed. */
+export function raiseTalent(m: Member, node: string): { ok: true; member: Member } | { ok: false; reason: TalentFail } {
+  const reason = canRaiseTalent(m, node);
+  if (reason) return { ok: false, reason };
+  const t = talentsOf(m);
+  const held = BOARDS[m.id].find((n) => n.id === node)!;
+  return { ok: true, member: { ...m, talents: { ...t, [node]: rankOf(held, t) + 1 } } };
+}
+
+/** What the member's normal talent nodes add: per rank, the node's stat by TALENT_PER[stat] x TALENT_SCALE. */
+export function talentStats(m: Member): Partial<Sheet> {
+  const t = talentsOf(m);
+  const out: Partial<Sheet> = {};
+  for (const n of BOARDS[m.id]) {
+    const r = n.stat ? rankOf(n, t) : 0;
+    if (r > 0) out[n.stat as AnyStat] = (out[n.stat as AnyStat] ?? 0) + r * TALENT_PER[n.stat!]! * TALENT_SCALE;
+  }
+  return out;
+}
+
+/** The keystones a member holds, in board order. */
+export function keystonesOf(m: Member): KeystoneId[] {
+  const t = talentsOf(m);
+  return BOARDS[m.id].filter((n) => n.keystone && rankOf(n, t) > 0).map((n) => n.keystone!);
+}
+
+/**
+ * The talents a member of `level` gets when nobody chose: talentPoints(level) points, one at a time; a keystone of
+ * DEFAULT_KEYSTONES when one can be taken, else the open normal node of lowest (rank, row, col).
+ */
+export function defaultTalents(id: CharacterId, level: number): Record<string, number> {
+  const t: Record<string, number> = {};
+  const keystones = DEFAULT_KEYSTONES[id].map((k) => BOARDS[id].find((n) => n.keystone === k)!);
+  const normal = BOARDS[id].filter((n) => !n.keystone);
+  for (let p = talentPoints(level); p > 0; p--) {
+    const pick = keystones.find((n) => talentBlocker(id, n.id, t) === null)
+      ?? normal.filter((n) => talentBlocker(id, n.id, t) === null)
+        .sort((a, b) => rankOf(a, t) - rankOf(b, t) || a.row - b.row || a.col - b.col)[0];
+    if (!pick) break;
+    t[pick.id] = rankOf(pick, t) + 1;
+  }
+  return t;
+}
+
 // TEMPORARY: removed by plan 5b Task 13 (player spends points)
 /**
- * Spends a member's unspent skill points toward `defaultTree` of their level, so the game keeps teaching skills until
- * the player can spend points. Ranks already held stay; each raise goes through `raiseNode`, so the rules hold.
- * Talent points are not spent: no default talent build exists yet, and talents do nothing until a later task.
+ * Spends a member's unspent skill points toward `defaultTree` of their level and unspent talent points toward
+ * `defaultTalents` of their level, so the game keeps teaching skills and growing talents until the player can spend
+ * points. Ranks already held stay; each raise goes through `raiseNode` / `raiseTalent`, so the rules hold.
  */
 export function autoSpend(m: Member): Member {
   const target = defaultTree(m.id, m.level);
@@ -178,6 +253,16 @@ export function autoSpend(m: Member): Member {
     for (const node of Object.keys(target)) {
       if (nodeRank(m, node) >= target[node]) continue;
       const r = raiseNode(m, node);
+      if (r.ok) { m = r.member; progress = true; }
+    }
+  }
+  const talents = defaultTalents(m.id, m.level);
+  const held = (node: string) => rankOf(BOARDS[m.id].find((n) => n.id === node)!, talentsOf(m));
+  for (let progress = true; progress && talentPointsLeft(m) > 0;) {
+    progress = false;
+    for (const node of Object.keys(talents)) {
+      if (held(node) >= talents[node]) continue;
+      const r = raiseTalent(m, node);
       if (r.ok) { m = r.member; progress = true; }
     }
   }

@@ -139,7 +139,7 @@ export const T = {
     status: {
       tabs: { stats: '能力', gear: '裝備', skills: '技能', ultimate: '絕技' },
       /** Column titles for statSources; a new source needs one line here. */
-      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', primary: '主屬性' } as Record<string, string>,
+      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', primary: '主屬性' } as Record<string, string>,
       total: '合計',
       /** Category headings of the stats page, in STAT_CATEGORIES order. */
       cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,

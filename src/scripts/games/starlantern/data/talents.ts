@@ -87,7 +87,7 @@ for (const c of CHARACTER_IDS) for (const node of BOARDS[c]) TALENT_NODES[node.i
 export type TalentBlocker = 'unknown' | 'maxed' | 'adjacency' | 'gate' | 'keystone-cap';
 
 /** A node's rank: integers in [0, maxRank] only; anything else (string, NaN, negative, fractional, over max) counts as 0. */
-function rankOf(node: TalentNode, ranks: Record<string, number>): number {
+export function rankOf(node: TalentNode, ranks: Record<string, number>): number {
   const r = ranks[node.id];
   return Number.isInteger(r) && r >= 0 && r <= node.maxRank ? r : 0;
 }

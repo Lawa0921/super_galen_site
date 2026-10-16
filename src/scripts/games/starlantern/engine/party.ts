@@ -3,7 +3,7 @@ import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
-import { autoSpend, learnedSkills, newTree, skillPoints, talentPoints } from './progression';
+import { autoSpend, learnedSkills, newTree, skillPoints, talentPoints, talentStats } from './progression';
 import { PARTY_BASE, PRIMARY_KEYS, capSheet, convertPrimary, emptySheet, naturalPrimary } from './stats';
 import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Sheet, Slot, StatKey, Stats } from './types';
 
@@ -27,7 +27,7 @@ export function defaultSlotFor(m: Member, it: ItemInstance): Slot {
 export const expToNext = (level: number): number => Math.floor(14 * level ** 1.3);
 
 /** Where a member's numbers come from; later systems (enchanting, talents) add a source here and the character sheet grows a column. */
-export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'primary';
+export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'talent' | 'primary';
 
 const worn = (m: Member): ItemInstance[] => SLOTS.map((s) => m.equip[s]).filter((it): it is ItemInstance => !!it);
 
@@ -60,7 +60,7 @@ export function powersOf(m: Member): string[] {
 
 export function statSources(m: Member): { source: StatSource; stats: Partial<Sheet> }[] {
   const def = CHARACTERS[m.id];
-  // Natural primaries are shown here but never converted; only gear and set primaries convert.
+  // Natural primaries are shown here but never converted; only gear, set and talent primaries convert.
   const base: Partial<Sheet> = { ...def.base, ...PARTY_BASE, ...naturalPrimary(def, m.level) };
   const growth: Partial<Sheet> = {};
   for (const k of STAT_KEYS) growth[k] = def.growth[k] * (m.level - 1);
@@ -73,14 +73,15 @@ export function statSources(m: Member): { source: StatSource; stats: Partial<She
     if (n >= 2) addInto(set, s.two);
     if (n >= 4) addInto(set, s.four);
   }
+  const talent = talentStats(m);
   const prim: Partial<Record<PrimaryKey, number>> = {};
   for (const k of PRIMARY_KEYS) {
-    const n = (gear[k] ?? 0) + (set[k] ?? 0);
+    const n = (gear[k] ?? 0) + (set[k] ?? 0) + (talent[k] ?? 0);
     if (n) prim[k] = n;
   }
   return [
     { source: 'base', stats: base }, { source: 'growth', stats: growth }, { source: 'gear', stats: gear },
-    { source: 'set', stats: set }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
+    { source: 'set', stats: set }, { source: 'talent', stats: talent }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
   ];
 }
 

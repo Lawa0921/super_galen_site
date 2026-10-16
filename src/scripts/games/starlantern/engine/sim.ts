@@ -7,7 +7,7 @@ import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
 import { MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, newParty, statsOf } from './party';
-import { defaultTree, learnedSkills } from './progression';
+import { defaultTalents, defaultTree, learnedSkills } from './progression';
 import { mulberry32 } from './rng';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
 import { genFloor } from './dungeon/gen';
@@ -18,12 +18,12 @@ import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, SkillDef } fr
 
 type Altar = { stat: BuffStat; pct: number }[];
 
-/** A fresh party with everyone at `level`, held to the real level cap, each with the default build of that level. */
+/** A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that level. */
 export function partyAt(level: number): Party {
   level = Math.min(level, MAX_LEVEL);
   const p = newParty();
   for (const id of Object.keys(p.roster) as CharacterId[]) {
-    const m = { ...newMember(id), level, tree: defaultTree(id, level) };
+    const m = { ...newMember(id), level, tree: defaultTree(id, level), talents: defaultTalents(id, level) };
     const s = statsOf(m);
     p.roster[id] = { ...m, hp: s.hp, tp: s.tp };
   }

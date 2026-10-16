@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-  canRaiseNode, defaultTree, freeNode, learnedSkills, legacyDue, newTree, nodeRank, raiseNode, skillPoints, skillPointsLeft, talentPoints,
-  treeSkills,
+  canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
+  raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills,
 } from './progression';
 import { newMember } from './party';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
+import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE } from '../data/talents';
+import type { AnyStat } from './types';
 import type { CharacterId, Member } from './types';
 
 const ids = Object.keys(TREES) as CharacterId[];
@@ -212,5 +214,104 @@ describe('progression', () => {
     const all = treeSkills('noel');
     expect(all).toHaveLength(9);
     for (const s of ['fire-star', 'ice-star', 'hex', 'thunder-star', 'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement']) expect(all, s).toContain(s);
+  });
+});
+
+/** A talent rank's bonus to `stat`, as the rules compute it: never a literal, so retuning TALENT_SCALE keeps these tests. */
+const per = (stat: AnyStat) => TALENT_PER[stat]! * TALENT_SCALE;
+const tal = (id: CharacterId, level: number, talents: Record<string, number> = {}): Member => ({ ...newMember(id), level, talents });
+/** Raises a talent and returns the new member; fails the test when the raise is refused. */
+const upT = (m: Member, node: string, times = 1): Member => {
+  for (let i = 0; i < times; i++) {
+    const r = raiseTalent(m, node);
+    if (!r.ok) throw new Error(`${node} refused: ${r.reason}`);
+    m = r.member;
+  }
+  return m;
+};
+
+describe('talents', () => {
+  it('row 0 is open; a lower row needs a raised node diagonally or straight above', () => {
+    const lv6 = tal('noel', 6);
+    expect(talentPointsLeft(lv6)).toBe(1);
+    expect(canRaiseTalent(lv6, 'noel-t10')).toBe('adjacent');
+    expect(raiseTalent(lv6, 'noel-t10')).toEqual({ ok: false, reason: 'adjacent' });
+    const one = upT(lv6, 'noel-t00');
+    expect(lv6.talents).toEqual({});                       // the member passed in is untouched
+    expect(one.talents).toEqual({ 'noel-t00': 1 });
+    expect(talentPointsLeft(one)).toBe(0);
+    expect(canRaiseTalent(one, 'noel-t01')).toBe('points');
+    const lv8 = { ...one, level: 8 };                      // one point left
+    expect(canRaiseTalent(lv8, 'noel-t13')).toBe('adjacent');
+    expect(canRaiseTalent(lv8, 'noel-t11')).toBeNull();    // diagonal
+    expect(upT(lv8, 'noel-t10').talents).toEqual({ 'noel-t00': 1, 'noel-t10': 1 });
+  });
+
+  it('a normal node stops at 5', () => {
+    const m = upT(tal('noel', 50), 'noel-t00', 5);
+    expect(canRaiseTalent(m, 'noel-t00')).toBe('max');
+    expect(talentPointsLeft(m)).toBe(talentPoints(50) - 5);
+  });
+
+  it('keystones need 12 board points and nothing else', () => {
+    const eleven = upT(upT(upT(tal('noel', 50), 'noel-t00', 5), 'noel-t01', 5), 'noel-t02', 1);
+    expect(canRaiseTalent(eleven, 'noel-k0')).toBe('gate');
+    expect(upT(upT(eleven, 'noel-t02'), 'noel-k0').talents['noel-k0']).toBe(1);
+    // All 12 on rows 0-1 and nothing near row 5: keystones ignore adjacency.
+    const rows01 = upT(upT(upT(tal('noel', 50), 'noel-t00', 5), 'noel-t01', 5), 'noel-t10', 2);
+    expect(BOARDS.noel.filter((n) => n.row === 5).every((n) => !rows01.talents[n.id])).toBe(true);
+    expect(canRaiseTalent(rows01, 'noel-k0')).toBeNull();
+    expect(keystonesOf(upT(rows01, 'noel-k0'))).toEqual(['weak-tp']);
+  });
+
+  it("at most 2 keystones, and only the character's own", () => {
+    const base = upT(upT(upT(tal('noel', 50), 'noel-t00', 5), 'noel-t01', 5), 'noel-t02', 2);
+    const two = upT(upT(base, 'noel-k0'), 'noel-k1');
+    expect(keystonesOf(two)).toEqual(['weak-tp', 'opening-gauge']);
+    expect(canRaiseTalent(two, 'noel-k2')).toBe('keystones');
+    expect(canRaiseTalent(two, 'noel-k0')).toBe('max');
+    expect(canRaiseTalent(base, 'chizuru-k0')).toBe('unknown');
+    expect(canRaiseTalent(base, 'chizuru-t00')).toBe('unknown');
+    expect(canRaiseTalent(base, 'nope')).toBe('unknown');
+  });
+
+  it('a hostile talent record never throws and junk ranks count as 0', () => {
+    const junk = tal('noel', 8, { 'noel-t00': 'x' as unknown as number, 'noel-t01': -2, 'noel-t02': 1.5, 'chizuru-t00': 5 } as Record<string, number>);
+    expect(talentPointsLeft(junk)).toBe(2);
+    expect(talentStats(junk)).toEqual({});
+    expect(keystonesOf(junk)).toEqual([]);
+    expect(canRaiseTalent(junk, 'noel-t10')).toBe('adjacent');
+    for (const t of [null, undefined, 3, 'x', []] as unknown[]) {
+      const m = { ...tal('noel', 8), talents: t as Record<string, number> };
+      expect(() => [talentPointsLeft(m), talentStats(m), keystonesOf(m), canRaiseTalent(m, 'noel-t00')]).not.toThrow();
+      expect(talentPointsLeft(m)).toBe(2);
+      expect(canRaiseTalent(m, 'noel-t00')).toBeNull();
+    }
+  });
+
+  it('talentStats multiplies per-rank values', () => {
+    const m = upT(tal('noel', 12), 'noel-t00', 3);   // Lv12: 4 points
+    expect(BOARDS.noel.find((n) => n.id === 'noel-t00')!.stat).toBe('int');
+    expect(talentStats(m)).toEqual({ int: 3 * per('int') });
+    expect(talentStats(upT(m, 'noel-t01'))).toEqual({ int: 3 * per('int'), mag: per('mag') });
+    expect(talentStats(tal('noel', 10))).toEqual({});
+  });
+
+  it('defaultTalents spends every point legally with at most the 2 default keystones', () => {
+    for (const id of ids) for (const level of [4, 5, 6, 20, 30, 38, 50]) {
+      const t = defaultTalents(id, level);
+      const label = `${id} Lv${level}`;
+      expect(Object.values(t).reduce((s, r) => s + r, 0), label).toBe(talentPoints(level));
+      const held = BOARDS[id].filter((n) => n.keystone && t[n.id]).map((n) => n.keystone!);
+      expect(held.length, label).toBeLessThanOrEqual(2);
+      for (const k of held) expect(DEFAULT_KEYSTONES[id], label).toContain(k);
+      // Replayed from nothing, one rank at a time: normal nodes by (row, col), keystones last.
+      const order = [...BOARDS[id].filter((n) => !n.keystone).sort((a, b) => a.row - b.row || a.col - b.col), ...BOARDS[id].filter((n) => n.keystone)];
+      let m = tal(id, level);
+      for (const n of order) if (t[n.id]) m = upT(m, n.id, t[n.id]);
+      expect(m.talents, label).toEqual(t);
+      expect(talentPointsLeft(m), label).toBe(0);
+    }
+    expect(keystonesOf(tal('noel', 50, defaultTalents('noel', 50)))).toEqual(DEFAULT_KEYSTONES.noel);
   });
 });

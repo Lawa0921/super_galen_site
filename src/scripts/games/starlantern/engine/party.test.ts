@@ -4,12 +4,16 @@ import {
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
 } from './party';
 import { partyAt } from './sim';
-import { defaultTree, learnedSkills, skillPointsLeft } from './progression';
+import { defaultTalents, defaultTree, learnedSkills, raiseTalent, skillPointsLeft, talentPointsLeft } from './progression';
 import { plainItem } from './testing';
 import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SETS } from '../data/gear';
+import { TALENT_PER, TALENT_SCALE } from '../data/talents';
+import type { AnyStat, Member } from './types';
+
+const per = (stat: AnyStat) => TALENT_PER[stat]! * TALENT_SCALE;
 
 describe('stats', () => {
   it('grows per level and adds equipment', () => {
@@ -28,7 +32,7 @@ describe('stat sources', () => {
   it('splits a member\u2019s numbers by where they come from and adds up to statsOf', () => {
     const m = { ...newMember('scarlet'), level: 3, equip: { weapon: plainItem('iron-sword', 1) } };
     const parts = statSources(m);
-    expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'primary']);
+    expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'primary']);
     const total = statsOf(m);
     for (const k of ['hp', 'atk', 'def'] as const) expect(parts.reduce((n, p) => n + (p.stats[k] ?? 0), 0)).toBe(total[k]);
     expect(parts[2].stats.atk).toBeGreaterThan(0);
@@ -47,6 +51,20 @@ describe('gear instances', () => {
         }
       }
     }
+  });
+  it('talent primaries convert like gear', () => {
+    const before: Member = { ...newMember('noel'), level: 10 };
+    let m = before;
+    for (let i = 0; i < 3; i++) {
+      const r = raiseTalent(m, 'noel-t00');   // noel-t00 is int, noel's affinity
+      if (!r.ok) throw new Error(r.reason);
+      m = r.member;
+    }
+    const parts = Object.fromEntries(statSources(m).map((p) => [p.source, p.stats]));
+    expect(statSources(m).map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'primary']);
+    expect(parts.talent).toEqual({ int: 3 * per('int') });
+    expect(sheetOf(m).mag - sheetOf(before).mag).toBeCloseTo(3 * per('int') * 1.5);   // 1.5: the 5a affinity multiplier
+    expect(parts.base.int).toBe(statSources(before)[0].stats.int);                   // natural int unchanged
   });
   it('gear primaries convert and show as their own source', () => {
     const sword = { ...plainItem('iron-sword', 1), affixes: [{ key: 'str' as const, value: 10 }] };
@@ -213,6 +231,18 @@ describe('skills and passives', () => {
     expect(noel.tree).toEqual(defaultTree('noel', 6));
     expect(skillPointsLeft(noel)).toBe(0);
   });
+  it('a Lv8 member in the real game holds talent ranks (interim auto-spend)', () => {
+    let need = 0;
+    for (let l = 1; l < 8; l++) need += expToNext(l);
+    const p = awardExp(newParty(), need, ['scarlet', 'chizuru', 'liz', 'noel', 'selene']).party;
+    for (const id of ['scarlet', 'noel'] as const) {
+      const m = p.roster[id];
+      expect(m.level, id).toBe(8);
+      expect(m.talents, id).toEqual(defaultTalents(id, 8));
+      expect(Object.values(m.talents).reduce((s, r) => s + r, 0), id).toBe(2);
+      expect(talentPointsLeft(m), id).toBe(0);
+    }
+  });
   it('auto-spend keeps the ranks already held and spends only what is left', () => {
     const own = { ...newMember('noel'), level: 2, tree: { 'fire-star': 1, 'noel-fire-up': 1 } };
     const r = gainExp(own, expToNext(2)).member;   // Lv3: one point left
@@ -224,5 +254,6 @@ describe('skills and passives', () => {
   it('partyAt gives each member the default tree', () => {
     expect(partyAt(10).roster.noel.tree).toEqual(defaultTree('noel', 10));
     for (const id of CHARACTER_IDS) expect(partyAt(6).roster[id].tree, id).toEqual(defaultTree(id, 6));
+    for (const id of CHARACTER_IDS) expect(partyAt(20).roster[id].talents, id).toEqual(defaultTalents(id, 20));
   });
 });
