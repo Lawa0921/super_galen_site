@@ -1,28 +1,71 @@
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
-import { itemName, itemSlot, itemStats } from '../../engine/loot/item';
-import { activeIds, slotsFor, statsOf } from '../../engine/party';
-import { equip, unequip } from '../../engine/town';
-import type { CharacterId, Slot } from '../../engine/types';
+import { compareDelta, itemLines } from '../../engine/compare';
+import { BAG_SIZE, type AutoJunk } from '../../engine/loot/bag';
+import { itemName, itemSlot, itemWeight } from '../../engine/loot/item';
+import { activeIds, defaultSlotFor, slotsFor, statsOf } from '../../engine/party';
+import { equip, setAutoJunk, sortBagIn, toggleJunk, unequip, type TownResult } from '../../engine/town';
+import type { AnyStat, CharacterId, ItemInstance, Slot, Stats } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { gearLabel } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { MenuView, backControl, win } from '../widgets';
-import { SLOT_ORDER, STAT_ORDER, bonusText } from './statusTabs';
+import { STAT_ORDER } from './statusTabs';
 
-/** Equipment: the member's nine slots on the left, what the chosen slot can take on the right, and a before/after comparison below. */
+/** The paper doll, row by row: 項鍊 頭 副手 / 武器 身 手 / 戒指 1 腳 戒指 2. */
+const DOLL: Slot[] = ['neck', 'head', 'offhand', 'weapon', 'body', 'hands', 'ring1', 'feet', 'ring2'];
+const DOLL_COLS = 3;
+const DOLL_ROWS = DOLL.length / DOLL_COLS;
+const BAG_COLS = 10;
+const BAG_ROWS = BAG_SIZE / BAG_COLS;
+const SORTS = ['rarity', 'slot', 'ilvl'] as const;
+const AUTOS: AutoJunk[] = ['off', 'common', 'magic'];
+
+type Area = 'doll' | 'bag';
+
+/** Cells carry text only until gear art exists: the first four characters of the name. */
+const short = (s: string): string => [...s].slice(0, 4).join('');
+const fits = (it: ItemInstance, slot: Slot): boolean => slotsFor(itemSlot(it)).includes(slot);
+
+/**
+ * Equipment: the bag (10 × 6) on the left, the member's paper doll (3 × 3) in the middle, the item under the cursor
+ * with its comparison on the right.
+ *
+ * Keys, the one place they are defined:
+ * - Arrows move inside the focused area and stop at its edges, except Left from the doll's left column (to the bag,
+ *   same row, rightmost cell) and Right from the bag's right column (to the doll, same row, leftmost slot).
+ * - Tab (`swap`) switches area; each area keeps its cursor.
+ * - Enter on a slot makes it the target and moves to the bag, where gear that does not fit it dims.
+ * - Enter on bag gear wears it in the target when it fits, else where `defaultSlotFor` puts it; the target clears.
+ *   Enter on an empty cell with a target takes the target's gear off into the bag.
+ * - C (`menu`) opens the bag menu: sort, auto junk, mark the gear under the bag cursor.
+ * - Q/E change member. Esc closes the menu, then clears the target, then leaves.
+ * - A click is the cursor moving there plus Enter; hovering moves the cursor.
+ */
 export class EquipScene implements Scene {
   private id!: CharacterId;
-  private focus: 'slots' | 'items' = 'slots';
-  private slotCursor = 0;
-  private slotsView!: MenuView;
-  private itemsView: MenuView | null = null;
+  private focus: Area = 'doll';
+  private dollCur = DOLL.indexOf('weapon');
+  private bagCur = 0;
+  private target: Slot | null = null;
+  /** Cells that just changed hands; they flash once. */
+  private flash: { slot: Slot; index: number } | null = null;
+  private menuView: MenuView | null = null;
+  private menuWin: HTMLElement | null = null;
+  private sceneEl!: HTMLElement;
   private head!: HTMLElement;
-  private slotsWin!: HTMLElement;
-  private itemsWin!: HTMLElement;
-  private compare!: HTMLElement;
+  private bagWin!: HTMLElement;
+  private bagCount!: HTMLElement;
+  private dollWin!: HTMLElement;
+  private dollHead!: HTMLElement;
+  private statsWin!: HTMLElement;
+  private detail!: HTMLElement;
+  private keyhint!: HTMLElement;
+  private dollCells: HTMLElement[] = [];
+  private bagCells: HTMLElement[] = [];
 
   constructor(private ctx: SceneCtx) {}
 
@@ -30,50 +73,220 @@ export class EquipScene implements Scene {
     const p = this.ctx.game.state.party;
     this.id = p.recruited.includes(this.ctx.arg as CharacterId) ? (this.ctx.arg as CharacterId) : (activeIds(p)[0] ?? p.recruited[0]);
     this.head = win('slx-equip-head');
-    this.slotsWin = win('slx-equip-slots');
-    this.itemsWin = win('slx-equip-items');
-    this.compare = win('slx-compare');
+
+    this.bagCells = Array.from({ length: BAG_SIZE }, (_, i) => this.cell('bag', i, el('div', { class: 'slx-bag-cell', attrs: { role: 'gridcell', 'data-index': String(i) } })));
+    this.bagCount = el('span', { class: 'slx-bag-count' });
+    const menuBtn = el('span', { class: 'slx-bag-menu-btn', text: T.ui2.equip.menuBtn, attrs: { role: 'button' } });
+    menuBtn.addEventListener('click', () => { if (!menuBtn.closest('[inert]')) this.onAction('menu'); });
+    this.bagWin = win('slx-bag', [
+      el('div', { class: 'slx-area-head' }, [this.bagCount, menuBtn]),
+      el('div', { class: 'slx-bag-grid', attrs: { role: 'grid' } }, this.bagCells),
+    ]);
+
+    this.dollCells = DOLL.map((slot, i) => this.cell('doll', i, el('div', { class: 'slx-doll-slot', attrs: { role: 'gridcell', 'data-slot': slot } })));
+    this.dollHead = el('div', { class: 'slx-area-head' });
+    this.dollWin = win('slx-doll', [this.dollHead, el('div', { class: 'slx-doll-grid', attrs: { role: 'grid' } }, this.dollCells)]);
+    this.statsWin = win('slx-equip-stats');
+    this.detail = win('slx-item-detail');
+    this.keyhint = el('p', { class: 'slx-keyhint' });
+
     const bg = this.ctx.art.has(art.scene('guild')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('guild'), alt: '' } })] : [];
-    root.append(el('div', { class: 'slx-scene slx-equip-scene' }, [
-      ...bg, this.head, this.slotsWin, this.itemsWin, this.compare,
-      el('p', { class: 'slx-keyhint', text: T.ui2.equip.hint }), backControl(() => this.onAction('cancel')),
-    ]));
+    this.sceneEl = el('div', { class: 'slx-scene slx-equip-scene' }, [
+      ...bg, this.head, this.bagWin, this.dollWin, this.statsWin, this.detail, this.keyhint, backControl(() => this.onAction('cancel')),
+    ]);
+    root.append(this.sceneEl);
     this.render();
   }
 
   exit(): void {}
 
   onAction(a: UiAction): void {
-    if (a === 'prev' || a === 'next') { this.page(a === 'next' ? 1 : -1); return; }
-    if (this.focus === 'items') {
-      if (a === 'cancel') { this.ctx.sfx.cancel(); this.focus = 'slots'; this.render(); return; }
-      this.itemsView?.onAction(a);
+    if (this.menuView) {
+      if (a === 'cancel' || a === 'menu') { this.ctx.sfx.cancel(); this.closeMenu(); return; }
+      this.menuView.onAction(a);
       return;
     }
-    if (a === 'cancel') { this.ctx.sfx.cancel(); this.ctx.go(this.ctx.from ?? 'guild'); return; }
-    this.slotsView.onAction(a);
+    switch (a) {
+      case 'prev': case 'next': this.page(a === 'next' ? 1 : -1); return;
+      case 'swap': this.focus = this.focus === 'doll' ? 'bag' : 'doll'; this.ctx.sfx.cursor(); this.render(); return;
+      case 'menu': this.openMenu(); return;
+      case 'confirm': this.pick(); return;
+      case 'cancel':
+        this.ctx.sfx.cancel();
+        if (this.target) { this.dollCur = DOLL.indexOf(this.target); this.target = null; this.focus = 'doll'; this.render(); return; }
+        this.ctx.go(this.ctx.from ?? 'guild');
+        return;
+      case 'up': case 'down': case 'left': case 'right': this.move(a); return;
+      default:
+    }
   }
 
   private get member() { return this.ctx.game.state.party.roster[this.id]; }
-  private get slot(): Slot { return SLOT_ORDER[this.slotCursor]; }
+  private get bag() { return this.ctx.game.state.bag; }
 
-  private page(d: 1 | -1): void {
-    const list = this.ctx.game.state.party.recruited;
-    this.id = list[(list.indexOf(this.id) + d + list.length) % list.length];
-    this.focus = 'slots';
+  /** Pointer wiring for a slot or bag cell: hover moves the cursor there, a click is that plus Enter. */
+  private cell(area: Area, i: number, node: HTMLElement): HTMLElement {
+    const go = () => {
+      if (node.closest('[inert]') || (this.focus === area && this.cursorOf(area) === i)) return false;
+      this.focus = area;
+      if (area === 'doll') this.dollCur = i; else this.bagCur = i;
+      return true;
+    };
+    node.addEventListener('pointermove', () => { if (go()) this.render(); });
+    node.addEventListener('click', () => { if (node.closest('[inert]')) return; go(); this.pick(); });
+    return node;
+  }
+
+  private cursorOf(area: Area): number { return area === 'doll' ? this.dollCur : this.bagCur; }
+
+  private move(a: 'up' | 'down' | 'left' | 'right'): void {
+    const [cols, rows] = this.focus === 'doll' ? [DOLL_COLS, DOLL_ROWS] : [BAG_COLS, BAG_ROWS];
+    const c = this.cursorOf(this.focus);
+    const r = Math.floor(c / cols), col = c % cols;
+    let next = c;
+    if (a === 'up' && r > 0) next = c - cols;
+    if (a === 'down' && r < rows - 1) next = c + cols;
+    if (a === 'left' && col > 0) next = c - 1;
+    if (a === 'right' && col < cols - 1) next = c + 1;
+    if (this.focus === 'doll' && a === 'left' && col === 0) {
+      this.focus = 'bag';
+      this.bagCur = Math.min(r, BAG_ROWS - 1) * BAG_COLS + BAG_COLS - 1;
+    } else if (this.focus === 'bag' && a === 'right' && col === cols - 1) {
+      this.focus = 'doll';
+      this.dollCur = Math.min(r, DOLL_ROWS - 1) * DOLL_COLS;
+    } else if (next === c) {
+      return;                                          // an edge: stay put, no sound
+    } else if (this.focus === 'doll') this.dollCur = next;
+    else this.bagCur = next;
     this.ctx.sfx.cursor();
     this.render();
   }
 
-  /** Bag items that fit the slot (menu id = uid), plus 卸下 when something is worn. */
-  private candidates(): MenuItem[] {
-    const items: MenuItem[] = this.ctx.game.state.bag.filter((it) => slotsFor(itemSlot(it)).includes(this.slot))
-      .map((it) => ({ id: String(it.uid), label: itemName(it), icon: this.ctx.art.has(art.icon(it.base)) ? art.icon(it.base) : undefined }));
-    if (this.member.equip[this.slot]) items.push({ id: '', label: T.ui2.equip.unequip });
-    return items;
+  private page(d: 1 | -1): void {
+    const list = this.ctx.game.state.party.recruited;
+    this.id = list[(list.indexOf(this.id) + d + list.length) % list.length];
+    this.target = null;
+    this.flash = null;
+    this.ctx.sfx.cursor();
+    this.render();
+  }
+
+  private pick(): void {
+    if (this.focus === 'doll') {
+      this.target = DOLL[this.dollCur];
+      this.focus = 'bag';
+      this.ctx.sfx.confirm();
+      this.render();
+      return;
+    }
+    const it = this.bag[this.bagCur];
+    const s = this.ctx.game.state;
+    if (!it) {
+      const t = this.target;
+      if (!t || !this.member.equip[t]) { this.ctx.sfx.error(); return; }
+      this.done(unequip(s, this.id, t), t, s.bag.length);
+      return;
+    }
+    const slot = this.slotFor(it);
+    this.done(equip(s, this.id, it.uid, slot), slot, this.bagCur);
+  }
+
+  /** Where bag gear goes: the target when it fits there, else its default slot. */
+  private slotFor(it: ItemInstance): Slot {
+    return this.target && fits(it, this.target) ? this.target : defaultSlotFor(this.member, it);
+  }
+
+  private done(r: TownResult, slot: Slot, index: number): void {
+    if (!this.ctx.game.apply(r).ok) { this.ctx.sfx.error(); return; }
+    this.ctx.sfx.confirm();
+    this.target = null;
+    this.flash = null;
+    this.render();
+    void this.sceneEl.offsetWidth;                     // restart the flash even on the same cells
+    this.flash = { slot, index };
+    this.render();
+  }
+
+  private openMenu(): void {
+    const t = T.ui2.equip.menu;
+    const auto = this.ctx.game.state.autoJunk;
+    const it = this.bag[this.bagCur];
+    const items: MenuItem[] = [
+      ...SORTS.map((k) => ({ id: `sort-${k}`, label: t.sort[k] })),
+      ...AUTOS.map((k) => ({ id: `auto-${k}`, label: t.auto[k], right: k === auto ? t.current : '' })),
+      { id: 'junk', label: !it ? t.markNone : it.junk ? t.unmark(gearLabel(it)) : t.mark(gearLabel(it)), disabled: !it },
+    ];
+    this.menuView = new MenuView(new Menu(items), { pick: (m) => this.menuPick(m.id), moved: () => this.ctx.sfx.cursor() });
+    this.menuWin = win('slx-bag-menu', [el('div', { class: 'slx-who', text: t.title }), this.menuView.el]);
+    this.sceneEl.append(this.menuWin);
+    this.ctx.sfx.confirm();
+    this.render();
+  }
+
+  private closeMenu(): void {
+    this.menuWin?.remove();
+    this.menuWin = null;
+    this.menuView = null;
+    this.render();
+  }
+
+  private menuPick(id: string): void {
+    const s = this.ctx.game.state;
+    const [kind, arg] = id.split('-') as [string, string];
+    const it = this.bag[this.bagCur];
+    const r = kind === 'sort' ? sortBagIn(s, arg as (typeof SORTS)[number])
+      : kind === 'auto' ? setAutoJunk(s, arg as AutoJunk)
+        : it ? toggleJunk(s, it.uid) : null;
+    if (!r || !this.ctx.game.apply(r).ok) { this.ctx.sfx.error(); return; }
+    this.ctx.sfx.confirm();
+    this.flash = null;
+    this.closeMenu();
   }
 
   private render(): void {
+    const m = this.member;
+    const menuOpen = !!this.menuView;
+    this.sceneEl.dataset.focus = this.focus;
+    for (const w of [this.bagWin, this.dollWin, this.statsWin, this.detail]) w.toggleAttribute('inert', menuOpen);
+    this.bagWin.classList.toggle('slx-area-on', this.focus === 'bag');
+    this.dollWin.classList.toggle('slx-area-on', this.focus === 'doll');
+    this.renderHead();
+
+    this.bagCount.textContent = T.ui2.equip.bag(this.bag.length, BAG_SIZE);
+    this.bagCells.forEach((c, i) => {
+      const it = this.bag[i];
+      const cls = ['slx-bag-cell'];
+      if (it) cls.push(`slx-rarity-${it.rarity}`);
+      if (it?.junk) cls.push('slx-junk');
+      if (it && this.target && !fits(it, this.target)) cls.push('slx-unfit');
+      if (i === this.bagCur) cls.push('slx-cur');
+      if (this.flash?.index === i) cls.push('slx-flash');
+      c.className = cls.join(' ');
+      c.textContent = it ? short(itemName(it)) : '';
+      c.setAttribute('aria-label', it ? gearLabel(it) : T.ui2.equip.emptyCell);
+      c.setAttribute('aria-selected', String(i === this.bagCur));
+    });
+
+    this.dollHead.textContent = this.target ? T.ui2.equip.target(T.slot[this.target]) : T.ui2.equip.dollTitle;
+    this.dollHead.classList.toggle('slx-area-target', !!this.target);
+    this.dollCells.forEach((c, i) => {
+      const slot = DOLL[i];
+      const it = m.equip[slot];
+      const cls = ['slx-doll-slot', it ? `slx-rarity-${it.rarity}` : 'slx-slot-empty'];
+      if (slot === this.target) cls.push('slx-doll-target');
+      if (i === this.dollCur) cls.push('slx-cur');
+      if (this.flash?.slot === slot) cls.push('slx-flash');
+      c.className = cls.join(' ');
+      c.textContent = it ? short(itemName(it)) : T.slot[slot];
+      c.setAttribute('aria-label', it ? T.ui2.equip.worn(T.slot[slot], gearLabel(it)) : T.slot[slot]);
+      c.setAttribute('aria-selected', String(i === this.dollCur));
+    });
+
+    this.keyhint.textContent = this.target ? T.ui2.equip.hintTarget : T.ui2.equip.hint;
+    this.renderDetail();
+  }
+
+  private renderHead(): void {
     const def = CHARACTERS[this.id];
     const m = this.member;
     const face = this.ctx.art.has(art.portrait(this.id, 'normal')) ? [el('img', { class: 'slx-equip-face', attrs: { src: art.portrait(this.id, 'normal'), alt: '' } })] : [];
@@ -81,70 +294,64 @@ export class EquipScene implements Scene {
     this.head.replaceChildren(arrow('◀', 'prev'), ...face,
       el('div', { class: 'slx-equip-name' }, [el('span', { class: 'slx-status-title', text: def.title }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` })]),
       arrow('▶', 'next'), el('span', { class: 'slx-equip-title', text: T.ui2.equip.title }));
-
-    this.slotsView = new MenuView(new Menu(SLOT_ORDER.map((slot) => ({
-      id: slot, label: T.slot[slot], right: m.equip[slot] ? itemName(m.equip[slot]!) : T.ui2.status.none,
-    })), this.slotCursor), {
-      pick: () => this.openItems(),
-      moved: () => { this.slotCursor = this.slotsView.menu.cursor; this.ctx.sfx.cursor(); this.renderItems(); },
-    });
-    this.slotsWin.replaceChildren(this.slotsView.el);
-    this.renderItems();
   }
 
-  private renderItems(): void {
-    const items = this.candidates();
-    const active = this.focus === 'items';
-    this.itemsView = null;
-    const head = el('div', { class: 'slx-who', text: T.slot[this.slot] });
-    if (!items.length) {
-      this.itemsWin.replaceChildren(head, el('p', { class: 'slx-desc', text: T.ui2.equip.nothing }));
-    } else {
-      const v = new MenuView(new Menu(items), {
-        pick: (it) => this.wear(it.id),
-        moved: () => { this.ctx.sfx.cursor(); this.renderCompare(v.menu.current()?.id); },
-      }, 8);
-      this.itemsView = v;
-      this.itemsWin.replaceChildren(head, v.el);
-    }
-    this.itemsWin.toggleAttribute('inert', !active);
-    this.slotsWin.toggleAttribute('inert', active);
-    this.renderCompare(active ? this.itemsView?.menu.current()?.id : undefined);
-  }
-
-  private openItems(): void {
-    this.slotCursor = this.slotsView.menu.cursor;
-    if (!this.candidates().length) { this.ctx.sfx.error(); this.renderItems(); return; }
-    this.ctx.sfx.confirm();
-    this.focus = 'items';
-    this.renderItems();
-  }
-
-  /** Current numbers against the numbers with bag item `id` (a uid) worn ('' = slot emptied, undefined = no change). */
-  private renderCompare(id: string | undefined): void {
+  /** The gear under the cursor: name and rarity word, slot, item level, weight, junk mark, its lines, and for bag gear what wearing it changes. */
+  private renderDetail(): void {
     const m = this.member;
-    const now = statsOf(m);
-    const it = id ? this.ctx.game.state.bag.find((x) => String(x.uid) === id) : undefined;
-    const after = id === undefined ? now : statsOf({ ...m, equip: { ...m.equip, [this.slot]: it } });
-    const rows = STAT_ORDER.map((k) => {
-      const d = after[k] - now[k];
-      return el('div', { class: `slx-cmp-row${d > 0 ? ' slx-up' : d < 0 ? ' slx-down' : ''}`, attrs: { 'data-stat': k } }, [
-        el('span', { class: 'slx-cmp-label', text: T.stat[k] }),
-        el('span', { class: 'slx-cmp-now', text: String(now[k]) }),
-        el('span', { class: 'slx-cmp-arrow', text: d ? '→' : '' }),
-        el('span', { class: 'slx-cmp-after', text: d ? `${after[k]} ${d > 0 ? '▲' : '▼'}` : '' }),
-      ]);
-    });
-    const note = it ? bonusText(itemStats(it)) : '';
-    this.compare.replaceChildren(el('div', { class: 'slx-cmp-grid' }, rows), ...(note ? [el('p', { class: 'slx-desc', text: note })] : []));
+    const onBag = this.focus === 'bag';
+    const slotHere = DOLL[this.dollCur];
+    const it = onBag ? this.bag[this.bagCur] : m.equip[slotHere];
+    const out: HTMLElement[] = [];
+    let after: Stats | null = null;
+    if (!it) {
+      out.push(el('div', { class: 'slx-item-name', text: onBag ? T.ui2.equip.emptyCell : T.slot[slotHere] }));
+      if (!onBag) out.push(el('p', { class: 'slx-desc', text: T.ui2.status.none }), el('p', { class: 'slx-hint', text: T.ui2.equip.pickSlot }));
+      else if (this.target && m.equip[this.target]) out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.takeOff(T.slot[this.target]) }));
+    } else {
+      out.push(
+        el('div', { class: `slx-item-name slx-rarity-${it.rarity}`, text: gearLabel(it) }),
+        el('div', { class: 'slx-item-meta' }, [
+          el('span', { text: T.slotKind[itemSlot(it)] }), el('span', { text: T.gear.ilvl(it.ilvl) }), el('span', { text: T.gear.weight(itemWeight(it)) }),
+        ]),
+      );
+      if (it.junk) out.push(el('div', { class: 'slx-item-junk', text: T.gear.junk }));
+      out.push(el('div', { class: 'slx-item-lines' }, itemLines(it, m).map((l) =>
+        el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}`, text: l.text }))));
+      if (onBag) {
+        const slot = this.slotFor(it);
+        const worn = m.equip[slot];
+        const delta = compareDelta(m, slot, it);
+        after = statsOf({ ...m, equip: { ...m.equip, [slot]: it } });
+        const rows = (Object.keys(T.gear.statName) as AnyStat[]).filter((k) => delta[k]).map((k) => {
+          const d = delta[k]!;
+          return el('div', { class: `slx-cmp-row ${d > 0 ? 'slx-up' : 'slx-down'}`, attrs: { 'data-stat': k } }, [
+            el('span', { class: 'slx-cmp-label', text: T.gear.statName[k] }),
+            el('span', { class: 'slx-cmp-after', text: `${T.ui2.equip.delta(k, d)} ${d > 0 ? '▲' : '▼'}` }),
+          ]);
+        });
+        out.push(el('div', { class: 'slx-cmp' }, [
+          el('div', { class: 'slx-cmp-head', text: T.ui2.equip.versus(worn ? gearLabel(worn) : `${T.slot[slot]}${T.ui2.status.none}`) }),
+          ...(rows.length ? rows : [el('p', { class: 'slx-desc', text: T.ui2.equip.noChange })]),
+        ]));
+      } else {
+        out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.pickSlot }));
+      }
+    }
+    this.detail.replaceChildren(...out);
+    this.detail.scrollTop = 0;
+    this.renderStats(after);
   }
 
-  private wear(id: string): void {
-    const s = this.ctx.game.state;
-    const r = this.ctx.game.apply(id ? equip(s, this.id, Number(id), this.slot) : unequip(s, this.id, this.slot));
-    if (!r.ok) { this.ctx.sfx.error(); return; }
-    this.ctx.sfx.confirm();
-    this.focus = 'slots';
-    this.render();
+  /** The member's numbers now; with bag gear under the cursor, the ones it would change read `now→after`. */
+  private renderStats(after: Stats | null): void {
+    const now = statsOf(this.member);
+    this.statsWin.replaceChildren(...STAT_ORDER.map((k) => {
+      const d = after ? after[k] - now[k] : 0;
+      return el('div', { class: `slx-stat-cell${d > 0 ? ' slx-up' : d < 0 ? ' slx-down' : ''}`, attrs: { 'data-stat': k } }, [
+        el('span', { class: 'slx-cmp-label', text: T.stat[k] }),
+        el('span', { class: 'slx-stat-now', text: d ? `${now[k]}→${after![k]}` : String(now[k]) }),
+      ]);
+    }));
   }
 }

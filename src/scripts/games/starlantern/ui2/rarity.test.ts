@@ -5,8 +5,10 @@ import { T } from '../data/text.zh-TW';
 import { gearLabel } from './loot';
 
 const scss = readFileSync(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss'), 'utf-8');
+/** The `$slx-rarity` map is the one source of rarity colours; `@each` turns it into `.slx-rarity-*`. */
+const rarityMap = scss.match(/\$slx-rarity: \(([^)]*)\);/)?.[1] ?? '';
 const colourOf = (r: string) => {
-  const m = scss.match(new RegExp(`\.slx-rarity-${r} \{ color: #([0-9a-f]{6}); \}`));
+  const m = rarityMap.match(new RegExp(`\\b${r}: #([0-9a-f]{6})\\b`));
   if (!m) throw new Error(`no colour for ${r}`);
   return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
 };
@@ -28,6 +30,13 @@ describe('rarity colours and words', () => {
     expect(dist(unique, legendary)).toBeGreaterThan(40);
     const luma = ([r, g, b]: number[]) => 0.299 * r + 0.587 * g + 0.114 * b;
     expect(luma(unique)).toBeLessThan(luma(rare) - 30);
+  });
+
+  it('colours come from one $slx-rarity map with the plan values, emitted by @each', () => {
+    expect(['common', 'magic', 'rare', 'legendary', 'unique', 'set'].map((r) => colourOf(r).map((v) => v.toString(16).padStart(2, '0')).join('')))
+      .toEqual(['e8e8e8', '6f9cff', 'ffd84a', 'ff9a3c', 'd4af37', '5fd068']);
+    expect(scss).toMatch(/@each \$k, \$c in \$slx-rarity \{\s*\.slx-rarity-#\{\$k\} \{ color: \$c; \}/);
+    expect(scss).not.toMatch(/\.slx-rarity-[a-z]+ \{ color: #/);           // no second, hand-written copy
   });
 
   it('names every rarity but common after the gear name', () => {

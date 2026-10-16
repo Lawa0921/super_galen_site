@@ -129,7 +129,11 @@ test.describe('starlantern', () => {
     await page.locator('.slx-back').click();
     await page.locator('.slx-cmd [data-id=equip]').click();
     await expect(page.locator('.slx-equip-scene')).toBeVisible();
-    await page.locator('.slx-equip-slots [data-id=body]').click();
+    await page.locator('.slx-doll-slot[data-slot=body]').click();
+    await expect(page.locator('.slx-doll-target')).toHaveAttribute('data-slot', 'body');
+    await expect(page.locator('.slx-bag-cell')).toHaveCount(60);
+    await page.locator('.slx-back').click();                       // first 返回 clears the target
+    await expect(page.locator('.slx-doll-target')).toHaveCount(0);
     await page.locator('.slx-back').click();
     await expect(page.locator('.slx-guild')).toBeVisible();
     await page.locator('.slx-back').click();

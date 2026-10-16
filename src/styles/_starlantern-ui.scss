@@ -464,13 +464,11 @@ $slx-battle-left: 150px;
 .slx-gear-row { display: grid; grid-template-columns: 48px 1fr; gap: 0 8px; padding: 4px 0; border-bottom: 1px solid #2a2840; }
 .slx-gear-slot { color: $slx-gold; grid-row: span 2; }
 .slx-gear-bonus { color: #8fe08f; font-size: 10px; }
-.slx-rarity-common { color: #d8d4e6; }
-.slx-rarity-magic { color: #6fa8ff; }
-.slx-rarity-rare { color: #f2d45c; }
-.slx-rarity-legendary { color: #ff9a3c; }
-// Unique is 獨特（金） in spec §4: a deeper, warmer gold than rare's yellow, glowing like the other top rarities.
-.slx-rarity-unique { color: #d4a017; }
-.slx-rarity-set { color: #6fe0a0; }
+// Rarity colours, the one source. Unique is 獨特（金） in spec §4: a deeper, warmer gold than rare's yellow.
+$slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c, unique: #d4af37, set: #5fd068);
+@each $k, $c in $slx-rarity {
+  .slx-rarity-#{$k} { color: $c; }
+}
 .slx-skill { padding: 3px 0; border-bottom: 1px solid #2a2840; }
 .slx-skill-head { display: flex; gap: 10px; }
 .slx-skill-name { flex: 1; color: $slx-ink; }
@@ -480,25 +478,77 @@ $slx-battle-left: 150px;
 .slx-skill-locked .slx-skill-name { color: #6f6a5c; }
 .slx-status-panel .slx-hint, .slx-formation-info .slx-hint { margin-top: 6px; }
 
-// Equipment: slots left, choices right, comparison below the slots
+// Equipment, left to right: the bag (10 × 6), the paper doll (3 × 3) with the member's numbers below, the item detail.
+// Cells are text until gear art exists: the name's first four characters in its rarity colour and frame.
 .slx-equip-scene .slx-keyhint { bottom: 4px; }
-.slx-equip-head { left: 10px; top: 10px; right: 10px; display: flex; align-items: center; gap: 8px; padding: 4px 8px; }
-.slx-equip-face { width: 32px; height: 32px; object-fit: contain; }
+.slx-equip-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
+.slx-equip-face { width: 28px; height: 28px; object-fit: contain; }
 .slx-equip-title { margin-left: auto; font-size: 16px; color: $slx-gold; }
-.slx-equip-slots { left: 10px; top: 76px; width: 260px; }
-.slx-equip-slots .slx-right { color: $slx-ink; }
-.slx-equip-items { left: 304px; top: 76px; right: 10px; max-height: 190px; }
-.slx-equip-items[inert] { opacity: 0.7; }
-.slx-equip-slots[inert] .slx-sel { background: rgba(232, 196, 106, 0.1); }
-.slx-compare { left: 10px; top: 166px; width: 260px; }
-.slx-cmp-grid { display: grid; gap: 1px; }
-.slx-cmp-row { display: grid; grid-template-columns: 48px 40px 20px 1fr; }
+.slx-bag, .slx-doll, .slx-equip-stats { padding: 4px 6px; }
+.slx-bag { left: 6px; top: 50px; }
+.slx-doll { left: 336px; top: 50px; }
+.slx-equip-stats { left: 336px; top: 218px; width: 122px; font-size: 10px; line-height: 14px; }
+.slx-item-detail { left: 490px; right: 6px; top: 50px; bottom: 44px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
+.slx-bag:not(.slx-area-on), .slx-doll:not(.slx-area-on) { border-color: #8a7444; }
+.slx-area-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; line-height: 14px; color: $slx-dim; }
+.slx-area-on .slx-area-head { color: $slx-ink; }
+.slx-area-head.slx-area-target { color: $slx-gold; }
+.slx-bag-menu-btn { padding: 0 6px; border: 1px solid #6e5a2e; border-radius: 2px; color: $slx-ink; cursor: pointer; }
+.slx-bag-menu-btn:hover { color: $slx-gold; border-color: #c9a35a; }
+.slx-bag-grid { display: grid; grid-template-columns: repeat(10, 28px); grid-auto-rows: 28px; gap: 2px; }
+.slx-doll-grid { display: grid; grid-template-columns: repeat(3, 38px); grid-auto-rows: 38px; gap: 4px; }
+.slx-bag-cell, .slx-doll-slot {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #3a3550;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  text-align: center;
+  line-height: 12px;
+  word-break: break-all;
+  cursor: pointer;
+  transition: opacity 0.12s linear;
+}
+.slx-bag-cell[class*='slx-rarity-'], .slx-doll-slot[class*='slx-rarity-'] {
+  border-color: color-mix(in srgb, currentColor 55%, transparent);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.slx-bag-cell.slx-rarity-legendary, .slx-bag-cell.slx-rarity-unique, .slx-bag-cell.slx-rarity-set,
+.slx-doll-slot.slx-rarity-legendary, .slx-doll-slot.slx-rarity-unique, .slx-doll-slot.slx-rarity-set { text-shadow: 0 0 4px currentColor; }
+.slx-doll-slot.slx-slot-empty { color: $slx-dim; border-style: dashed; }
+.slx-bag-cell:hover, .slx-doll-slot:hover { border-color: #c9a35a; }
+.slx-cur { z-index: 1; box-shadow: 0 0 0 1px rgba(232, 196, 106, 0.45); }
+.slx-area-on .slx-cur { box-shadow: 0 0 0 2px $slx-gold, 0 0 8px rgba(232, 196, 106, 0.6); animation: slx-cur-pulse 1.2s ease-in-out infinite; }
+@keyframes slx-cur-pulse { 50% { box-shadow: 0 0 0 2px $slx-gold, 0 0 3px rgba(232, 196, 106, 0.3); } }
+.slx-doll-slot.slx-doll-target { outline: 1px dashed $slx-gold; outline-offset: 2px; }
+.slx-bag-cell.slx-unfit { opacity: 0.28; }
+.slx-bag-cell.slx-junk { color: #8a8494; filter: grayscale(1); opacity: 0.55; text-decoration: line-through; }
+.slx-flash { animation: slx-cell-flash 0.45s ease-out; }
+@keyframes slx-cell-flash { from { background: rgba(232, 196, 106, 0.55); } }
+@media (prefers-reduced-motion: reduce) { .slx-area-on .slx-cur, .slx-flash { animation: none; } }
+.slx-stat-cell { display: flex; justify-content: space-between; }
+.slx-stat-cell.slx-up .slx-stat-now { color: #8fe08f; }
+.slx-stat-cell.slx-down .slx-stat-now { color: #ff8a7a; }
+.slx-item-name { margin-bottom: 2px; line-height: 16px; color: $slx-gold; }
+.slx-item-meta { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-item-junk { margin-top: 2px; font-size: 10px; line-height: 12px; color: #ff8a7a; }
+.slx-item-lines { margin: 4px 0; padding: 3px 0; border-top: 1px solid #2a2840; border-bottom: 1px solid #2a2840; }
+.slx-line { margin: 0; line-height: 14px; }
+.slx-line-affix { color: #9fc0ff; }
+.slx-line-power { color: #ff9a3c; }
+.slx-line-set { color: $slx-dim; }
+.slx-line-set.slx-line-on { color: #8fe08f; }
+.slx-line-lore { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-cmp-head { margin-bottom: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-cmp-row { display: flex; justify-content: space-between; gap: 6px; line-height: 14px; }
 .slx-cmp-label { color: $slx-gold; }
-.slx-cmp-now { text-align: right; }
-.slx-cmp-arrow { text-align: center; color: $slx-dim; }
 .slx-up .slx-cmp-after { color: #8fe08f; }
 .slx-down .slx-cmp-after { color: #ff8a7a; }
-.slx-compare .slx-desc { margin: 4px 0 0; }
+.slx-item-detail .slx-hint, .slx-item-detail .slx-desc { margin: 4px 0 0; }
+.slx-bag-menu { left: 96px; top: 96px; min-width: 200px; z-index: 2; }
 
 // Impact: the whole screen jolts (translate composes with the scale transform), heavy hits redden the edges
 .slx-shake-s { animation: slx-shake-s 0.25s linear 1; }
