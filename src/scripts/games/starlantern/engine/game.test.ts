@@ -563,3 +563,38 @@ describe('fog', () => {
     expect(g.run!.explored[1].length).toBeGreaterThan(1);
   });
 });
+describe('battle drops by region and condition', () => {
+  /** Win one ordinary fight at depth 1 through `portal` and return every material it dropped (taken or left). */
+  const fightOnce = (seed: number, portal: Portal): Record<string, number> => {
+    const g = new Game(mulberry32(seed), null);
+    g.depart(portal, 1);
+    g.encounter = 99;
+    const dir = DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!;
+    expect(g.move(dir).kind).toBe('battle');
+    for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    const end = g.submitRound({})!.end!;
+    const all = { ...end.drops };
+    for (const [id, n] of Object.entries(end.left)) all[id] = (all[id] ?? 0) + n;
+    return all;
+  };
+  const total = (portal: Portal, seeds: number) => {
+    const sum: Record<string, number> = {};
+    for (let seed = 1; seed <= seeds; seed++) for (const [id, n] of Object.entries(fightOnce(seed, portal))) sum[id] = (sum[id] ?? 0) + n;
+    return sum;
+  };
+  it('a regional run drops its region material', () => {
+    expect(total({ region: 'frost', condition: 'plain' }, 60)['frost-heart'] ?? 0).toBeGreaterThan(0);
+    expect(total({ region: 'mire', condition: 'plain' }, 60)['mire-gland'] ?? 0).toBeGreaterThan(0);
+  });
+  it('the mainline never drops a region material', () => {
+    const got = total(MAIN, 60);
+    for (const m of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(got[m] ?? 0, m).toBe(0);
+  });
+  it('豐收 brings measurably more battle materials than 平穩 over the same seeds', () => {
+    const count = (c: Record<string, number>) => Object.values(c).reduce((a, b) => a + b, 0);
+    const plain = count(total({ region: 'mainline', condition: 'plain' }, 80));
+    const bounty = count(total({ region: 'mainline', condition: 'bounty' }, 80));
+    expect(plain).toBeGreaterThan(0);
+    expect(bounty).toBeGreaterThan(plain * 1.25);
+  });
+});

@@ -6,7 +6,7 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { newParty } from './party';
 import { mulberry32 } from './rng';
-import { NORMAL_ENEMIES, depthLevel, encounterGroup, scaleEnemy } from './scaling';
+import { NORMAL_ENEMIES, REGION_DROP_CHANCE, depthLevel, encounterGroup, scaleEnemy } from './scaling';
 import { constRng } from './testing';
 
 const MAIN = REGIONS.mainline;
@@ -31,6 +31,14 @@ describe('scaleEnemy', () => {
       const e = scaleEnemy(ENEMIES[id], d, MAIN, false);
       expect([e.stats, e.exp, e.gold], `${id} at ${d}`).toEqual([ENEMIES[id].stats, ENEMIES[id].exp, ENEMIES[id].gold]);
     }
+  });
+
+  it('a regional monster can also drop its region material; a mainline one cannot', () => {
+    const frost = scaleEnemy(wolf, 1, REGIONS.frost, false);
+    expect(frost.drops).toEqual([...wolf.drops, { mat: 'frost-heart', chance: REGION_DROP_CHANCE }]);
+    expect(REGION_DROP_CHANCE).toBeGreaterThanOrEqual(0.1);
+    expect(REGION_DROP_CHANCE).toBeLessThanOrEqual(0.2);
+    expect(scaleEnemy(wolf, 4, MAIN, false).drops).toEqual(wolf.drops);
   });
 
   it('does not change the definition it was given', () => {

@@ -299,14 +299,23 @@ export function intentLabel(s: BattleState, key: string): string {
   return `${name}${area}${who ? ` → ${who}` : ''}`;
 }
 
-export function rewards(s: BattleState, rng: Rng, dropBoost: boolean): { exp: number; gold: number; drops: Record<string, number> } {
+/**
+ * Exp, gold and rolled drops of a won fight. `dropMul` (the run condition's) multiplies how many of each drop that hit
+ * comes: the whole part always, the fraction rolled, so 1.5 gives one or two and never rounds down to nothing.
+ */
+export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 1): { exp: number; gold: number; drops: Record<string, number> } {
   let exp = 0, gold = 0;
   const drops: Record<string, number> = {};
   for (const e of s.enemies) {
     const d = enemyDef(s, e)!;
     exp += d.exp;
     gold += d.gold;
-    for (const drop of d.drops) if (rng() < Math.min(1, drop.chance * (dropBoost ? 2 : 1))) drops[drop.mat] = (drops[drop.mat] ?? 0) + 1;
+    for (const drop of d.drops) {
+      if (rng() >= Math.min(1, drop.chance * (dropBoost ? 2 : 1))) continue;
+      const whole = Math.floor(dropMul), part = dropMul - whole;
+      const n = whole + (part > 0 && rng() < part ? 1 : 0);
+      if (n > 0) drops[drop.mat] = (drops[drop.mat] ?? 0) + n;
+    }
   }
   return { exp, gold, drops };
 }

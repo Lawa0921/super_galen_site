@@ -119,12 +119,17 @@ describe('resolveRound', () => {
 });
 
 describe('after battle', () => {
+  const seq = (vs: number[]) => { let i = 0; return () => vs[i++ % vs.length]; };
   it('sums rewards and rolls drops, doubled by dropBoost', () => {
     const s = makeBattle([P('p')], [E('e0', { defId: 'slime' }), E('e1', { defId: 'bat' })]);
     expect(rewards(s, constRng(0), false)).toEqual({ exp: 9, gold: 9, drops: { moss: 1, 'bat-wing': 1 } });
     expect(rewards(s, constRng(0.99), false).drops).toEqual({});
     expect(rewards(s, constRng(0.7), false).drops).toEqual({});
     expect(rewards(s, constRng(0.7), true).drops).toEqual({ moss: 1, 'bat-wing': 1 });
+    // A drop-rate multiplier: the whole part always comes, the fraction is rolled (never floored away).
+    expect(rewards(s, constRng(0), false, 1.5).drops).toEqual({ moss: 2, 'bat-wing': 2 });
+    expect(rewards(s, seq([0, 0.9, 0, 0.9]), false, 1.5).drops).toEqual({ moss: 1, 'bat-wing': 1 });
+    expect(rewards(s, constRng(0), false, 2).drops).toEqual({ moss: 2, 'bat-wing': 2 });
   });
   it('writes HP and TP back to the roster', () => {
     const party = newParty();

@@ -312,7 +312,7 @@ export class Game {
     this.eliteAt = null;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
-    const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'));
+    const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'), CONDITIONS[this.run!.condition].dropMul);
     this.run!.loot.gold += rw.gold;
     const taken: Record<string, number> = {};
     const left: Record<string, number> = {};

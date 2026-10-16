@@ -72,6 +72,8 @@ const rewardGrowth = (def: EnemyDef, depth: number): number => {
 
 const ELITE: Partial<Record<StatKey, number>> = { hp: 2.2, atk: 1.3 };
 const ELITE_REWARD = 3;
+/** Chance that a monster met in a random region also drops that region's material (the 主要掉落 on the portal card). */
+export const REGION_DROP_CHANCE = 0.15;
 const DEEP_FROM = 4;
 
 /** Name prefix of a region's variants: 「熾焰・荊棘狼」. */
@@ -121,7 +123,7 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     skills: region.skill ? [...def.skills, region.skill] : [...def.skills],
     exp: Math.round(def.exp * reward * condition.expMul),
     gold: Math.round(def.gold * reward * condition.goldMul),
-    drops: def.drops.map((d) => ({ ...d })),
+    drops: [...def.drops.map((d) => ({ ...d })), ...(regional && region.material ? [{ mat: region.material, chance: REGION_DROP_CHANCE }] : [])],
   };
 }
 
