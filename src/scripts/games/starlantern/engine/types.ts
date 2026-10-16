@@ -32,12 +32,12 @@ export type Effect =
   | { kind: 'turret'; power: number; turns: number };
 
 export interface SkillDef {
-  id: string; name: string; owner: CharacterId; learnLevel?: number; tp: number; hpCost?: number;
+  id: string; name: string; owner: CharacterId; tp: number; hpCost?: number;
   target: Target; effects: Effect[]; passive?: Passive; desc: string;
 }
 export interface UltimateDef { id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string }
 export interface CharacterDef {
-  id: CharacterId; title: string; name: string; row: Row; melee: boolean; base: Stats; growth: Stats; skills: string[]; affinity: PrimaryKey;
+  id: CharacterId; title: string; name: string; row: Row; melee: boolean; base: Stats; growth: Stats; affinity: PrimaryKey;
 }
 export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[] }
 export interface EnemyDef {

@@ -21,20 +21,6 @@ describe('data integrity', () => {
     expect(FLOORS.map((f) => f.id)).toEqual([1, 2, 3]);
   });
 
-  it('gives every character 3–4 owned skills with one usable at level 1', () => {
-    for (const id of CHARACTER_IDS) {
-      const c = CHARACTERS[id];
-      expect(c.id).toBe(id);
-      expect(c.skills.length).toBeGreaterThanOrEqual(3);
-      expect(c.skills.length).toBeLessThanOrEqual(4);
-      for (const s of c.skills) {
-        expect(SKILLS[s], `${id}:${s}`).toBeDefined();
-        expect(SKILLS[s].owner).toBe(id);
-      }
-      expect(c.skills.some((s) => SKILLS[s].learnLevel === 1 && !SKILLS[s].passive)).toBe(true);
-    }
-  });
-
   it('keeps skill ids keyed by their own id and passives effect-free', () => {
     for (const [k, s] of Object.entries(SKILLS)) {
       expect(s.id).toBe(k);

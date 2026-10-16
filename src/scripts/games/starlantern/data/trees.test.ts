@@ -3,7 +3,7 @@ import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TREES, no
 import { CHARACTERS } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
-import { defaultTree, nodeRank, raiseNode } from '../engine/progression';
+import { defaultTree, freeNode, nodeRank, raiseNode } from '../engine/progression';
 import { newMember } from '../engine/party';
 import type { CharacterId, Member } from '../engine/types';
 
@@ -135,17 +135,13 @@ describe('skill trees', () => {
     expect(nodeDesc('sweep')).toBe(SKILLS.sweep.desc);
   });
 
-  it('the old kit is in the tree at its old level', () => {
-    let count = 0;
-    for (const id of ids) {
-      const actives = new Set(TREES[id]!.branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => n.id));
-      for (const s of CHARACTERS[id].skills) {
-        expect(actives.has(s), `${id}:${s}`).toBe(true);
-        expect(LEGACY_LEARN_LEVEL[s], s).toBe(SKILLS[s].learnLevel);
-        count++;
-      }
+  it("every legacy skill is an active node in its owner's tree; level 1 ones are the free node", () => {
+    for (const [skill, old] of Object.entries(LEGACY_LEARN_LEVEL)) {
+      const owner = SKILLS[skill].owner;
+      const actives = new Set(TREES[owner]!.branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => n.id));
+      expect(actives.has(skill), `${owner}:${skill}`).toBe(true);
+      if (old === 1) expect(freeNode(owner), skill).toBe(skill);
     }
-    expect(count).toBe(27);
     expect(Object.keys(LEGACY_LEARN_LEVEL)).toHaveLength(27);
   });
 

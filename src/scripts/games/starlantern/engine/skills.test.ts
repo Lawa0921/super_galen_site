@@ -81,7 +81,7 @@ describe('applyEffect', () => {
 describe('patchSkill', () => {
   it('patchSkill applies every SkillMod field; hpCost 0 is kept', () => {
     const def: SkillDef = {
-      id: 'x', name: 'x', owner: 'noel', learnLevel: 1, tp: 5, hpCost: 0.15, target: 'enemy', desc: '',
+      id: 'x', name: 'x', owner: 'noel', tp: 5, hpCost: 0.15, target: 'enemy', desc: '',
       effects: [
         { kind: 'damage', power: 81, element: 'phys', scale: 'atk', melee: true },
         { kind: 'heal', power: 120 },
@@ -162,7 +162,7 @@ describe('review fixes', () => {
 
   it('a chance mod changes poison inflicts only, never another status in the same skill', () => {
     const def: SkillDef = {
-      id: 'x', name: 'x', owner: 'noel', learnLevel: 1, tp: 5, target: 'enemy', desc: '',
+      id: 'x', name: 'x', owner: 'noel', tp: 5, target: 'enemy', desc: '',
       effects: [{ kind: 'inflict', status: 'sleep', chance: 0.4 }, { kind: 'inflict', status: 'poison', chance: 0.5 }],
     };
     expect(patchSkill(def, { chance: 1 }).effects).toEqual([

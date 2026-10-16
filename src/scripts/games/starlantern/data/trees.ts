@@ -228,7 +228,7 @@ for (const [owner, tree] of Object.entries(TREES) as [CharacterId, TreeDef][]) {
   tree.branches.forEach((b, branch) => b.nodes.forEach((node, tier) => { NODES[node.id] = { node, owner, branch, tier }; }));
 }
 
-/** The old kit's learn levels, copied from the skills' own `learnLevel` (which Task 7 deletes). */
+/** The old kit's learn levels, recorded here when the skills' own `learnLevel` field was removed. */
 export const LEGACY_LEARN_LEVEL: Record<string, number> = {
   'fire-star': 1, 'ice-star': 2, hex: 4, 'thunder-star': 6,
   sweep: 1, ward: 3, pierce: 5,
