@@ -145,7 +145,7 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
 
 /**
  * The enemy side's knob for party progression power that the stat curves miss: skill-tree ranks and mod nodes now
- * (plan 5b Task 8) and talents (Task 9) now, keystones later (Task 10 retunes this same knob). Every enemy in a fight, bosses
+ * (plan 5b Task 8) and talents (Task 9) now, not keystones (Task 10 tuned KEYSTONE_VALUES and left this knob as it was). Every enemy in a fight, bosses
  * included, has its HP, atk and mag multiplied by `enemyPower(level)`, `level` being its level in that fight (the depth
  * level, or its home level without a scale): 1 up to level `from`, then `1 + amount` above it. A step, not a slope: the
  * default tree's bonuses are mostly bought by Lv11-14, and a per-level slope swamps the deep bands (see the Task 8 and

@@ -12,7 +12,7 @@ export type KeystoneId = 'crit-tp' | 'kill-tp' | 'weak-tp' | 'last-stand' | 'ope
 
 /** Knobs; tuned later. Descriptions below are built from these. */
 export const KEYSTONE_VALUES = {
-  critTp: 2, killTp: 3, weakTp: 1, lastStandHp: 0.3, lastStandPct: 25, openingGauge: 25, regenPct: 3, tauntGuardPct: 20,
+  critTp: 3, killTp: 4, weakTp: 2, lastStandHp: 0.3, lastStandPct: 40, openingGauge: 50, regenPct: 12, tauntGuardPct: 30,
 };
 const V = KEYSTONE_VALUES;
 
