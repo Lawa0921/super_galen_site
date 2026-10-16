@@ -1,0 +1,82 @@
+import { describe, expect, it, vi } from 'vitest';
+import { Game } from '../../engine/game';
+import { constRng } from '../../engine/testing';
+import { NO_ART } from '../../render/textures';
+import { DungeonScene } from './dungeon';
+
+function setup() {
+  const game = new Game(constRng(0.99), null);   // 0.99: never an early encounter roll
+  expect(game.depart(1)).toEqual({ ok: true });
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn() };
+  const go = vi.fn();
+  const root = document.createElement('div');
+  const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
+  s.enter(root);
+  const text = () => root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
+  const pick = (label: string) => {
+    const o = [...root.querySelectorAll('.slx-layer:last-child [role=option]')].find((x) => x.querySelector('.slx-label')!.textContent!.startsWith(label));
+    if (!o) throw new Error(`no ${label}`);
+    (o as HTMLElement).click();
+  };
+  return { game, sfx, go, root, s, text, pick };
+}
+
+describe('DungeonScene', () => {
+  it('shows the floor name, a green lamp and the party bar', () => {
+    const { root } = setup();
+    expect(root.querySelector('.slx-floorname')!.textContent).toBe('第 1 層　林間遺跡');
+    expect(root.querySelector('.slx-lamp')!.classList.contains('slx-lamp-green')).toBe(true);
+    expect(root.querySelectorAll('.slx-partybar .slx-pm')).toHaveLength(5);
+  });
+
+  it('bumps into walls and walks on floors', () => {
+    const { game, sfx, s } = setup();
+    const at = { ...game.pos };
+    s.onAction('up');
+    expect(sfx.bump).toHaveBeenCalled();
+    expect(game.pos).toEqual(at);
+    s.onAction('right');
+    expect(game.pos).toEqual({ x: at.x + 1, y: at.y });
+    expect(sfx.step).toHaveBeenCalled();
+  });
+
+  it('enters battle on an encounter and ignores further moves', () => {
+    const { game, go, s, sfx } = setup();
+    game.encounter = 99;
+    s.onAction('right');
+    expect(sfx.encounter).toHaveBeenCalled();
+    expect(go).toHaveBeenCalledWith('battle');
+    const at = { ...game.pos };
+    s.onAction('left');
+    expect(game.pos).toEqual(at);
+  });
+
+  it('asks before returning to town at the entrance', () => {
+    const { game, go, s, root } = setup();
+    s.onAction('right'); s.onAction('left');
+    expect(root.querySelector('.slx-confirm')).not.toBeNull();
+    s.onAction('up');            // 是
+    s.onAction('confirm');
+    expect(game.phase).toBe('town');
+    expect(go).toHaveBeenCalledWith('town');
+  });
+
+  it('opens the field menu and uses the return lamp', () => {
+    const { game, go, s, pick } = setup();
+    s.onAction('menu');
+    pick('歸還之燈');
+    expect(game.state.inventory['return-lamp'] ?? 0).toBe(0);
+    expect(go).toHaveBeenCalledWith('town');
+  });
+
+  it('uses a potion from the field menu', () => {
+    const { game, s, pick } = setup();
+    game.state.party.roster.liz.hp = 3;
+    s.onAction('menu');
+    pick('道具');
+    pick('回復藥');
+    pick('莉茲');
+    expect(game.state.party.roster.liz.hp).toBeGreaterThan(3);
+    expect(game.state.inventory.potion).toBe(2);
+  });
+});

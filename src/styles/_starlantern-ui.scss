@@ -144,3 +144,40 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 @media (prefers-reduced-motion: reduce) { .slx-next { animation: none; } }
 
 .slx-canvas { position: absolute; inset: 0; width: 640px; height: 360px; image-rendering: pixelated; }
+
+// Labyrinth
+.slx-dungeon { background: transparent; }
+.slx-floorname { left: 8px; top: 6px; }
+.slx-lamp { right: 8px; top: 6px; padding: 2px 10px; }
+.slx-lamp-green { color: #8fe08f; }
+.slx-lamp-yellow { color: $slx-gold; }
+.slx-lamp-red { color: #ff7a6b; }
+.slx-menu-btn { right: 76px; top: 6px; padding: 2px 10px; cursor: pointer; }
+.slx-pad { position: absolute; right: 6px; bottom: 70px; width: 84px; height: 84px; }
+.slx-pad > .slx-win { width: 16px; height: 16px; padding: 4px; text-align: center; cursor: pointer; line-height: 16px; }
+.slx-pad-up { left: 28px; top: 0; }
+.slx-pad-down { left: 28px; bottom: 0; }
+.slx-pad-left { left: 0; top: 28px; }
+.slx-pad-right { right: 0; top: 28px; }
+.slx-dungeon .slx-talk { bottom: 70px; }
+.slx-field-menu { left: 12px; top: 40px; }
+
+// Party bar (labyrinth and battle)
+.slx-partybar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 62px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.slx-pm { display: flex; gap: 4px; align-items: center; padding: 3px 4px; background: $slx-win; border: 1px solid #6e5a2e; }
+.slx-pm img { width: 40px; height: 40px; object-fit: contain; }
+.slx-pm-body { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.slx-pm-name { color: $slx-ink; white-space: nowrap; overflow: hidden; }
+.slx-pm-num { color: $slx-dim; font-size: 10px; line-height: 10px; }
+.slx-pm meter { width: 100%; height: 4px; }
+.slx-bar-hp { accent-color: #6fd36f; }
+.slx-bar-tp { accent-color: #6fa7ff; }
+.slx-bar-limit { accent-color: $slx-gold; }
+.slx-bar-full { filter: drop-shadow(0 0 2px $slx-gold); }
+.slx-pm-active { border-color: $slx-gold; box-shadow: 0 0 0 1px $slx-gold; }
+.slx-pm-down { filter: grayscale(1) brightness(0.6); }
+.slx-pm-hit { animation: slx-pm-hit 0.2s steps(2) 1; }
+.slx-pm-acting { animation: slx-pm-act 0.3s ease-out 1; }
+@keyframes slx-pm-hit { 0% { transform: translateX(-2px); filter: brightness(2); } 100% { transform: translateX(2px); } }
+@keyframes slx-pm-act { 0% { transform: translateY(-3px); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .slx-pm-hit, .slx-pm-acting { animation: none; } }

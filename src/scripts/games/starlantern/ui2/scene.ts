@@ -4,10 +4,12 @@ import type { ArtIndex } from '../render/textures';
 import type { UiAction } from './input';
 import type { Stage } from './stage';
 
-export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate';
+export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'dungeon' | 'battle' | 'clear';
 export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void }
 export interface SceneCtx {
-  game: Game; art: ArtIndex; sfx: Pick<SoundManager, 'cursor' | 'confirm' | 'cancel' | 'error'>;
+  game: Game; art: ArtIndex;
+  /** Menu cues are required; game cues are optional so menu-only tests can pass a small fake. */
+  sfx: Pick<SoundManager, 'cursor' | 'confirm' | 'cancel' | 'error'> & Partial<Pick<SoundManager, 'bump' | 'step' | 'stairs' | 'chest' | 'encounter' | 'hit' | 'weak' | 'heal' | 'ko' | 'win' | 'lose' | 'ultimate' | 'menu'>>;
   go(name: SceneName): void; hasSave(): boolean; newGame(): void;
   /** The Pixi layer; null when the renderer could not start (tests, no WebGL). */
   stage?: Stage | null;
