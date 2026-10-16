@@ -26,10 +26,10 @@ export function formatWeight(n: number): string {
   return String(Math.round(n * 10) / 10);
 }
 
-/** Weight on the party's backs: the consumables brought along plus the run pack. */
-export function carried(state: GameState, run: Run): number {
+/** Weight on the party's backs: the consumables brought along plus the run pack (none before departure). */
+export function carried(state: GameState, run?: Run | null): number {
   let w = 0;
   for (const [id, n] of Object.entries(state.inventory)) if (ITEMS[id]) w += n * weightOf(id);
-  for (const [id, n] of Object.entries(run.loot.items)) w += n * weightOf(id);
+  for (const [id, n] of Object.entries(run?.loot.items ?? {})) w += n * weightOf(id);
   return w;
 }

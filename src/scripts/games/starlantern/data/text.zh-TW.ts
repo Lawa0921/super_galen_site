@@ -142,6 +142,7 @@ export const T = {
     gate: {
       choose: '選擇傳送門', floor: (n: number, name?: string) => (name ? `第 ${n} 層 ${name}` : `第 ${n} 層`),
       suggest: (lv: number) => `建議 Lv ${lv}`,
+      heavy: (now: string, cap: string) => `超重！重量 ${now}／${cap}，出發後撿不了任何東西`,
       depthTitle: '起始深度', deepest: (n: number) => `最深 第 ${n} 層`, notYet: '尚未進入',
       element: (name: string | null) => (name ? `${name}屬性` : '無屬性'),
       traits: { burn: '灼燒', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,

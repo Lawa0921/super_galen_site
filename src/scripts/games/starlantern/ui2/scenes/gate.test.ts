@@ -3,6 +3,7 @@ import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { GateScene, portalArt } from './gate';
+import { capacity, carried, formatWeight } from '../../data/weights';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
@@ -82,6 +83,24 @@ describe('GateScene: the portal plaza', () => {
     s.onAction('up'); s.onAction('confirm');       // 是
     expect(go).toHaveBeenCalledWith('dungeon');
     expect([game.phase, game.run!.region, game.run!.condition, game.run!.startDepth, game.floor]).toEqual(['map', 'blaze', 'fog', 5, 5]);
+  });
+
+  it('warns before departure when the consumables brought along are over the weight limit, and still departs', () => {
+    const { game, go, s, root } = setup((g) => { g.state.inventory.potion = 999; });
+    s.onAction('confirm'); s.onAction('confirm');   // the mainline, depth 1
+    const warn = root.querySelector('.slx-confirm .slx-confirm-warn');
+    expect(warn!.textContent).toMatch(/^超重！重量 \d+(\.\d)?／\d+(\.\d)?，出發後撿不了任何東西$/);
+    expect(warn!.textContent).toContain(`重量 ${formatWeight(carried(game.state))}／${formatWeight(capacity(game.state.party))}`);
+    s.onAction('up'); s.onAction('confirm');       // 是
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(game.phase).toBe('map');
+  });
+
+  it('no weight warning when the pack is within the limit', () => {
+    const { s, root } = setup();
+    s.onAction('confirm'); s.onAction('confirm');
+    expect(root.querySelector('.slx-confirm')).not.toBeNull();
+    expect(root.querySelector('.slx-confirm .slx-confirm-warn')).toBeNull();
   });
 
   it('is fully playable with the mouse', () => {

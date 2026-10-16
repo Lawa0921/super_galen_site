@@ -4,6 +4,7 @@ import { FLOORS } from '../../data/floors';
 import { MATERIALS } from '../../data/materials';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
+import { capacity, carried, formatWeight } from '../../data/weights';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
 import { depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art } from '../../render/artPaths';
@@ -150,6 +151,9 @@ export class GateScene extends FacilityScene {
       if (!r.ok) { this.popAll(); this.fail(r.reason); return; }
       this.ctx.go('dungeon');
     });
+    // Over the limit before setting out (the consumables alone): say so, but let the party go.
+    const now = carried(this.ctx.game.state), cap = capacity(this.ctx.game.state.party);
+    if (now > cap) box.view.el.before(el('p', { class: 'slx-confirm-warn', text: T.ui2.gate.heavy(formatWeight(now), formatWeight(cap)) }));
     box.view.menu.setCursor(1);
     box.view.render();
     this.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
