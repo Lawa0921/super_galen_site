@@ -49,7 +49,14 @@ export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;
 }
 export type Slot = 'weapon' | 'armor' | 'accessory';
-export interface EquipDef { id: string; name: string; slot: Slot; price: number; bonus: Partial<Stats>; unlock?: { mat: string; qty: number }[] }
+export type Rarity = 'common' | 'magic' | 'rare' | 'legendary' | 'unique' | 'set';
+export type GearSlot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring';
+export interface EquipDef { id: string; name: string; slot: GearSlot; ilvl: number; price: number; bonus: Partial<Stats>; unlock?: { mat: string; qty: number }[] }
+/** One rolled piece of gear; enhance is always 0 until enhancement exists. */
+export interface ItemInstance {
+  uid: number; base: string; rarity: Rarity; ilvl: number; affixes: { key: AnyStat; value: number }[];
+  special?: string; enhance: number; junk?: boolean;
+}
 export interface MaterialDef { id: string; name: string; price: number }
 export interface FloorDef {
   id: 1 | 2 | 3; name: string; rows: string[]; encounters: string[][]; rate: [number, number]; chestLoot: { item: string; qty: number }[];

@@ -96,7 +96,12 @@ export function allArtUrls(): string[] {
   for (const k of TRAIT_ICON_KEYS) urls.push(art.traitIcon(k));
   for (const k of EVENT_TILE_KEYS) urls.push(art.eventTile(k));
   // Region material icons come with the art batch; until then they are not expected on disk.
-  const NO_ICON_YET = new Set(Object.values(REGIONS).map((r) => r.material));
+  const NO_ICON_YET = new Set<string | null>([
+    ...Object.values(REGIONS).map((r) => r.material),
+    // plan 5a transition: the ten new bases have no icon yet
+    'wooden-buckler', 'crystal-aegis', 'leather-cap', 'scale-helm', 'cloth-gloves',
+    'thorn-gauntlets', 'straw-sandals', 'bat-boots', 'copper-ring', 'star-ring',
+  ]);
   for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) {
     if (!NO_ICON_YET.has(id)) urls.push(art.icon(id));
   }

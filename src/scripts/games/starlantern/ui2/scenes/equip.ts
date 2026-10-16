@@ -1,5 +1,5 @@
 import { CHARACTERS } from '../../data/characters';
-import { EQUIPMENT } from '../../data/equipment';
+import { EQUIPMENT, legacySlot } from '../../data/equipment';
 import { T } from '../../data/text.zh-TW';
 import { activeIds, statsOf } from '../../engine/party';
 import { equip, unequip } from '../../engine/town';
@@ -68,7 +68,7 @@ export class EquipScene implements Scene {
   /** Owned items for the slot, plus 卸下 when something is worn. */
   private candidates(): MenuItem[] {
     const inv = this.ctx.game.state.inventory;
-    const items: MenuItem[] = Object.entries(inv).filter(([eid, n]) => EQUIPMENT[eid]?.slot === this.slot && n > 0)
+    const items: MenuItem[] = Object.entries(inv).filter(([eid, n]) => !!EQUIPMENT[eid] && legacySlot(EQUIPMENT[eid].slot) === this.slot && n > 0)
       .map(([eid, n]) => ({ id: eid, label: EQUIPMENT[eid].name, right: `×${n}`, icon: this.ctx.art.has(art.icon(eid)) ? art.icon(eid) : undefined }));
     if (this.member.equip[this.slot]) items.push({ id: '', label: T.ui2.equip.unequip });
     return items;

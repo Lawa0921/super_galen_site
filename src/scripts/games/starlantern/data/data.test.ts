@@ -3,7 +3,8 @@ import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { SKILLS } from './skills';
 import { ENEMIES } from './enemies';
 import { ITEMS } from './items';
-import { EQUIPMENT } from './equipment';
+import { EQUIPMENT, legacySlot } from './equipment';
+import { GEAR_SLOTS } from './gear';
 import { MATERIALS } from './materials';
 import { FLOORS } from './floors';
 import { ULTIMATES } from './ultimates';
@@ -14,7 +15,7 @@ describe('data integrity', () => {
     const enemies = Object.values(ENEMIES);
     expect(enemies.filter((e) => !e.boss)).toHaveLength(8);
     expect(enemies.filter((e) => e.boss).map((e) => e.id)).toEqual(['lanterneater']);
-    expect(Object.keys(EQUIPMENT)).toHaveLength(15);
+    expect(Object.keys(EQUIPMENT)).toHaveLength(25);
     expect(Object.keys(MATERIALS)).toHaveLength(16);
     expect(FLOORS.map((f) => f.id)).toEqual([1, 2, 3]);
   });
@@ -67,6 +68,24 @@ describe('data integrity', () => {
   it('places every normal enemy in some encounter group', () => {
     const used = new Set(FLOORS.flatMap((f) => f.encounters.flat()));
     for (const e of Object.values(ENEMIES)) if (!e.boss) expect(used.has(e.id), e.id).toBe(true);
+  });
+});
+
+describe('equipment bases', () => {
+  it('every base has a known GearSlot and an ilvl >= 1', () => {
+    for (const e of Object.values(EQUIPMENT)) {
+      expect(GEAR_SLOTS, e.id).toContain(e.slot);
+      expect(e.ilvl, e.id).toBeGreaterThanOrEqual(1);
+    }
+    expect(EQUIPMENT['gear-ring']).toMatchObject({ slot: 'ring', ilvl: 10 });
+    expect(EQUIPMENT['moss-charm']).toMatchObject({ slot: 'neck', ilvl: 2 });
+    expect(EQUIPMENT['scale-mail']).toMatchObject({ slot: 'body', ilvl: 7 });
+    expect(EQUIPMENT['crystal-aegis']).toMatchObject({ slot: 'offhand', ilvl: 8, bonus: { def: 5, res: 3 }, unlock: [{ mat: 'crystal-shell', qty: 4 }] });
+  });
+  it('maps the new slots onto the three legacy slots until plan 5a replaces them', () => {
+    expect(legacySlot('weapon')).toBe('weapon');
+    for (const g of ['body', 'offhand', 'head', 'hands', 'feet'] as const) expect(legacySlot(g)).toBe('armor');
+    for (const g of ['neck', 'ring'] as const) expect(legacySlot(g)).toBe('accessory');
   });
 });
 

@@ -1,4 +1,4 @@
-import { EQUIPMENT } from '../../data/equipment';
+import { EQUIPMENT, legacySlot } from '../../data/equipment';
 import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
 import { CHARACTERS } from '../../data/characters';
@@ -46,11 +46,11 @@ export class ShopScene extends FacilityScene {
     const bonus = Object.entries(eq.bonus).map(([k, v]) => `${T.stat[k as keyof typeof T.stat]}+${v}`).join(' ');
     const rows = activeIds(s.party).map((cid) => {
       const m = s.party.roster[cid];
-      const now = statsOf(m); const after = statsOf({ ...m, equip: { ...m.equip, [eq.slot]: id } });
+      const now = statsOf(m); const after = statsOf({ ...m, equip: { ...m.equip, [legacySlot(eq.slot)]: id } });
       const d = (Object.keys(eq.bonus) as (keyof typeof now)[]).map((k) => `${T.stat[k]}${after[k] - now[k] >= 0 ? '+' : ''}${after[k] - now[k]}`).join(' ');
       return el('li', { text: `${CHARACTERS[cid].name}　${d}` });
     });
-    return [el('p', { text: `${T.slot[eq.slot]}　${bonus}` }), el('ul', { class: 'slx-skills' }, rows)];
+    return [el('p', { text: `${T.slot[legacySlot(eq.slot)]}　${bonus}` }), el('ul', { class: 'slx-skills' }, rows)];
   }
 
   private buyList(): void {

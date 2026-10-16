@@ -524,7 +524,7 @@ describe('run pack', () => {
     expect(carried(g.state, g.run!)).toBe(3 + 2 + 2 + 6 + 8);
     expect(weightOf('moss')).toBe(0.5);
     expect(weightOf('hunter-bow')).toBe(6);
-    expect(weightOf('moss-charm')).toBe(2);
+    expect(weightOf('moss-charm')).toBe(3);
     expect(capacity(g.state.party)).toBeGreaterThan(40);
   });
   it('battle drops with room all go into the pack and are all reported', () => {

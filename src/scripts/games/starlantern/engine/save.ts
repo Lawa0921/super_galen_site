@@ -1,5 +1,5 @@
 import { CHARACTER_IDS } from '../data/characters';
-import { EQUIPMENT } from '../data/equipment';
+import { EQUIPMENT, legacySlot } from '../data/equipment';
 import { REGIONS } from '../data/regions';
 import { validPortals } from './portals';
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
@@ -33,7 +33,10 @@ function isValid(d: Record<string, unknown>): boolean {
     const m = (p.roster as Record<string, unknown>)[id];
     if (!isObj(m) || m.id !== id || !isObj(m.equip)) return false;
     if (m.limit !== undefined && !(typeof m.limit === 'number' && m.limit >= 0 && m.limit <= 100)) return false;
-    for (const [slot, eid] of Object.entries(m.equip)) if (EQUIPMENT[eid as string]?.slot !== slot) return false;
+    for (const [slot, eid] of Object.entries(m.equip)) {
+      const def = EQUIPMENT[eid as string];
+      if (!def || legacySlot(def.slot) !== slot) return false;
+    }
     if (!Number.isInteger(m.level) || (m.level as number) < 1 || (m.level as number) > MAX_LEVEL) return false;
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;
   }

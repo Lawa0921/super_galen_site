@@ -1,4 +1,4 @@
-import { EQUIPMENT } from '../data/equipment';
+import { EQUIPMENT, legacySlot } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
 import { statsOf } from './party';
@@ -54,10 +54,11 @@ export function equip(s: GameState, memberId: CharacterId, equipId: string): Tow
   if ((s.inventory[equipId] ?? 0) <= 0) return fail('stock');
   const n = structuredClone(s);
   const m = n.party.roster[memberId];
-  const prev = m.equip[e.slot];
+  const slot = legacySlot(e.slot);
+  const prev = m.equip[slot];
   if (prev) addItem(n.inventory, prev, 1);
   addItem(n.inventory, equipId, -1);
-  m.equip[e.slot] = equipId;
+  m.equip[slot] = equipId;
   clampToMax(m);
   return { ok: true, state: n };
 }
