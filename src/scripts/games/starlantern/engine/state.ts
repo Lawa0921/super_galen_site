@@ -1,7 +1,7 @@
 import { newParty } from './party';
 import type { Element, Party } from './types';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface DungeonProgress {
   reachedFloor: number;

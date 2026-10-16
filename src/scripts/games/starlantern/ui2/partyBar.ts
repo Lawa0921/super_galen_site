@@ -1,8 +1,12 @@
 import { portraitImg, showMood } from '../ui/art';
 import { el } from '../ui/dom';
+import type { Row } from '../engine/types';
 import type { ArtIndex } from '../render/textures';
 
-export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean }
+const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
+
+/** `row` shows a small 前／中／後 tag so the formation is visible during play. */
+export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row }
 
 /** A drawn bar (a native <meter> cannot be styled reliably); the fill width is a 5% step class, any value above 0 shows at least one step. */
 function bar(value: number, max: number, cls: string): HTMLElement {
@@ -27,7 +31,7 @@ export class PartyBar {
       return el('div', { class: cls, attrs: { 'data-key': m.key } }, [
         ...(face ? [face] : []),
         el('div', { class: 'slx-pm-body' }, [
-          el('span', { class: 'slx-pm-name', text: m.name }),
+          el('span', { class: 'slx-pm-name' }, [m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : [])]),
           el('span', { class: 'slx-pm-num', text: `${m.hp}/${m.maxHp}` }),
           bar(m.hp, m.maxHp, m.hp > 0 && m.hp <= m.maxHp / 4 ? 'slx-bar-hp slx-low' : 'slx-bar-hp'),
           bar(m.tp, m.maxTp, 'slx-bar-tp'),

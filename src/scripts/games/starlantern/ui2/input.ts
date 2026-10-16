@@ -1,10 +1,12 @@
-export type UiAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel' | 'menu' | 'auto';
+/** `prev` / `next` page between party members on the status and equipment screens. */
+export type UiAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel' | 'menu' | 'auto' | 'prev' | 'next';
 
 const KEYS: Record<string, UiAction> = {
   ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down',
   ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right',
   Enter: 'confirm', ' ': 'confirm', z: 'confirm', Z: 'confirm',
   Escape: 'cancel', Backspace: 'cancel', x: 'cancel', X: 'cancel', c: 'menu', C: 'menu',
+  q: 'prev', Q: 'prev', PageUp: 'prev', e: 'next', E: 'next', PageDown: 'next',
 };
 const REPEATABLE = new Set<UiAction>(['up', 'down', 'left', 'right']);
 

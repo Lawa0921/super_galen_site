@@ -13,8 +13,8 @@ describe('createBattle', () => {
     const party = newParty();
     party.roster.liz.hp = 0;
     const s = createBattle({ party, enemyIds: ['slime', 'slime', 'bat'], inventory: { potion: 2 }, revealed: {} });
-    expect(s.party.map((c) => [c.key, c.row])).toEqual([
-      ['scarlet', 'front'], ['chizuru', 'front'], ['liz', 'front'], ['noel', 'back'], ['selene', 'back'],
+    expect(s.party.map((c) => [c.key, c.row, c.cell])).toEqual([
+      ['scarlet', 'front', 0], ['chizuru', 'front', 1], ['liz', 'front', 2], ['noel', 'back', 6], ['selene', 'back', 8],
     ]);
     expect(s.party.find((c) => c.key === 'liz')!.alive).toBe(false);
     expect(s.enemies.map((e) => [e.key, e.name])).toEqual([['e0', '苔蘚史萊姆 A'], ['e1', '苔蘚史萊姆 B'], ['e2', '遺跡蝙蝠']]);

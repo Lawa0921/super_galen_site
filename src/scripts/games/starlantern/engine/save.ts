@@ -1,5 +1,6 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { EQUIPMENT } from '../data/equipment';
+import { GRID_SIZE, MAX_ACTIVE } from './formation';
 import { MAX_LEVEL } from './party';
 import { SAVE_VERSION, type GameState } from './state';
 
@@ -23,8 +24,9 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!isListMap(d.revealed, (x) => ELEMENTS.includes(x as string))) return false;
   const p = d.party;
   if (!isObj(p) || !isObj(p.roster) || !isIdList(p.recruited)) return false;
-  if (!isIdList(p.front, true) || !isIdList(p.back, true) || (p.front as unknown[]).length !== 3 || (p.back as unknown[]).length !== 2) return false;
-  const placed = [...(p.front as unknown[]), ...(p.back as unknown[])].filter((x) => x !== null);
+  if (!isIdList(p.grid, true) || (p.grid as unknown[]).length !== GRID_SIZE) return false;
+  const placed = (p.grid as unknown[]).filter((x) => x !== null);
+  if (!placed.length || placed.length > MAX_ACTIVE) return false;
   if (new Set(placed).size !== placed.length || placed.some((x) => !(p.recruited as unknown[]).includes(x))) return false;
   for (const id of CHARACTER_IDS) {
     const m = (p.roster as Record<string, unknown>)[id];

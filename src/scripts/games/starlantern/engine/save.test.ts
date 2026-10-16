@@ -44,8 +44,10 @@ describe('save', () => {
     expect(bad((g) => { (g.revealed as unknown as Record<string, unknown>).slime = ['lava']; })).toBe('corrupt');
     expect(bad((g) => { (g.dungeon.explored as unknown as Record<string, unknown>)['1'] = 5; })).toBe('corrupt');
     expect(bad((g) => { (g.dungeon.opened as unknown as unknown[]).push(7); })).toBe('corrupt');
-    expect(bad((g) => { g.party.front = ['bobby', null, null]; })).toBe('corrupt');
-    expect(bad((g) => { g.party.front = ['liz', 'liz', null]; })).toBe('corrupt');
+    expect(bad((g) => { g.party.grid[3] = 'bobby'; })).toBe('corrupt');
+    expect(bad((g) => { g.party.grid[3] = 'liz'; })).toBe('corrupt');
+    expect(bad((g) => { g.party.grid = g.party.grid.slice(0, 5); })).toBe('corrupt');
+    expect(bad((g) => { g.party.recruited.push('bobby'); g.party.grid[3] = 'bobby'; })).toBe('corrupt');   // six on the field
     expect(bad((g) => { g.party.roster.liz.equip.weapon = 'nope'; })).toBe('corrupt');
     expect(bad((g) => { g.party.roster.liz.limit = 101; })).toBe('corrupt');
     expect(bad((g) => { (g.party.roster.liz as unknown as Record<string, unknown>).limit = 'full'; })).toBe('corrupt');

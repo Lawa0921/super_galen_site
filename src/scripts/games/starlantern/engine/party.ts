@@ -1,3 +1,4 @@
+import { GRID_SIZE, MAX_ACTIVE } from './formation';
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { EQUIPMENT } from '../data/equipment';
@@ -32,8 +33,7 @@ export function newParty(): Party {
   return {
     roster: Object.fromEntries(CHARACTER_IDS.map((id) => [id, newMember(id)])) as Record<CharacterId, Member>,
     recruited: [...STARTING_RECRUITS],
-    front: ['scarlet', 'chizuru', 'liz'],
-    back: ['noel', 'selene'],
+    grid: ['scarlet', 'chizuru', 'liz', null, null, null, 'noel', null, 'selene'],
   };
 }
 
@@ -41,19 +41,23 @@ export function recruit(p: Party, id: CharacterId): Party {
   return p.recruited.includes(id) ? p : { ...p, recruited: [...p.recruited, id] };
 }
 
+/** Members on the field, front row first, left to right. */
 export function activeIds(p: Party): CharacterId[] {
-  return [...p.front, ...p.back].filter((id): id is CharacterId => id !== null);
+  return p.grid.filter((id): id is CharacterId => id !== null);
 }
 
+export { rowOfCell } from './formation';
+
 export function setFormation(
-  p: Party, front: (CharacterId | null)[], back: (CharacterId | null)[],
-): { ok: true; party: Party } | { ok: false; reason: 'size' | 'not-recruited' | 'duplicate' | 'empty' } {
-  if (front.length !== 3 || back.length !== 2) return { ok: false, reason: 'size' };
-  const ids = [...front, ...back].filter((id): id is CharacterId => id !== null);
+  p: Party, grid: (CharacterId | null)[],
+): { ok: true; party: Party } | { ok: false; reason: 'size' | 'not-recruited' | 'duplicate' | 'empty' | 'too-many' } {
+  if (grid.length !== GRID_SIZE) return { ok: false, reason: 'size' };
+  const ids = grid.filter((id): id is CharacterId => id !== null);
   if (ids.some((id) => !p.recruited.includes(id))) return { ok: false, reason: 'not-recruited' };
   if (new Set(ids).size !== ids.length) return { ok: false, reason: 'duplicate' };
   if (ids.length === 0) return { ok: false, reason: 'empty' };
-  return { ok: true, party: { ...p, front: [...front], back: [...back] } };
+  if (ids.length > MAX_ACTIVE) return { ok: false, reason: 'too-many' };
+  return { ok: true, party: { ...p, grid: [...grid] } };
 }
 
 export function learnedSkills(id: CharacterId, level: number): string[] {

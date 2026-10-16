@@ -18,6 +18,9 @@ import { DungeonScene } from './scenes/dungeon';
 import { BattleScene } from './scenes/battle';
 import { ClearScene } from './scenes/clear';
 import { SettingsScene } from './scenes/settings';
+import { FormationScene } from './scenes/formation';
+import { StatusScene } from './scenes/status';
+import { EquipScene } from './scenes/equip';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -52,6 +55,9 @@ export async function mountNext(): Promise<void> {
       case 'battle': return new BattleScene(ctx);
       case 'clear': return new ClearScene(ctx);
       case 'settings': return new SettingsScene(ctx);
+      case 'formation': return new FormationScene(ctx);
+      case 'status': return new StatusScene(ctx);
+      case 'equip': return new EquipScene(ctx);
     }
   };
   const ctx = {

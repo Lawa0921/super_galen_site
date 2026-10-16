@@ -16,10 +16,11 @@ describe('calcDamage', () => {
     expect(calcDamage(a, { ...t, weak: ['fire'] }, fire, rng)).toEqual({ amount: 30, mult: 1.5 });
     expect(calcDamage(a, { ...t, resist: ['fire'] }, fire, rng)).toEqual({ amount: 10, mult: 0.5 });
   });
-  it('halves melee from or into the back row, but not ranged', () => {
+  it('weakens melee from further back (middle 75%, back 50%), but not ranged', () => {
+    expect(calcDamage({ ...a, row: 'middle' }, t, phys, rng).amount).toBe(15);
     expect(calcDamage({ ...a, row: 'back' }, t, phys, rng).amount).toBe(10);
-    expect(calcDamage(t, { ...a, row: 'back' }, phys, rng).amount).toBe(10);
     expect(calcDamage({ ...a, row: 'back' }, t, { ...phys, melee: false }, rng).amount).toBe(20);
+    expect(calcDamage(t, { ...a, row: 'back' }, phys, rng).amount).toBe(20);   // the row protects by not being reachable, not by halving
   });
   it('halves damage into a defending target', () => {
     expect(calcDamage(a, { ...t, defending: true }, phys, rng).amount).toBe(10);

@@ -337,3 +337,83 @@ $slx-battle-left: 150px;
     text-align: center;
   }
 }
+
+// Party bar row tag
+.slx-pm-row { margin-left: 4px; padding: 0 2px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; vertical-align: 1px; }
+.slx-pm-row-front { color: #ff9a7a; }
+.slx-pm-row-middle { color: $slx-gold; }
+.slx-pm-row-back { color: #8fb8ff; }
+
+// Formation: 3x3 grid on the left (front row on top, nearest the enemies), rules on the right
+.slx-formation-grid { left: 10px; top: 10px; padding: 6px 10px; }
+.slx-formation-row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.slx-row-label { width: 16px; writing-mode: vertical-rl; letter-spacing: 2px; color: $slx-gold; }
+.slx-cell { box-sizing: border-box; width: 96px; height: 96px; display: grid; place-items: center; align-content: center; gap: 2px; border: 1px solid #6e5a2e; background: rgba(255, 255, 255, 0.04); cursor: pointer; }
+.slx-cell:hover { border-color: $slx-gold; }
+.slx-cell-empty { border-style: dashed; color: $slx-dim; }
+.slx-cell-sel { border: 2px solid $slx-gold; background: rgba(232, 196, 106, 0.16); box-shadow: 0 0 6px rgba(232, 196, 106, 0.6); }
+.slx-cell-face { width: 56px; height: 56px; object-fit: contain; }
+.slx-formation-info { left: 372px; top: 10px; right: 10px; bottom: 44px; }
+.slx-formation-info h3, .slx-status-panel h4, .slx-tab-ultimate h4 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-formation-count { margin: 0 0 6px; font-size: 14px; }
+.slx-formation-rules { margin: 0; padding-left: 14px; color: $slx-ink; }
+.slx-formation-rules li { margin: 3px 0; }
+.slx-formation-msg { min-height: 16px; margin: 8px 0 0; color: #ff8a7a; }
+.slx-formation-pick { left: 372px; right: 10px; top: 10px; z-index: 2; }
+.slx-formation-scene > .slx-back, .slx-status-scene > .slx-back, .slx-equip-scene > .slx-back { right: 10px; top: auto; bottom: 10px; }
+
+// Character sheet: large standee left, tabbed pages right
+.slx-status-scene { background: radial-gradient(ellipse at 22% 60%, #2a2f55 0%, #0b0d1c 70%); }
+.slx-status-art { position: absolute; left: 0; bottom: 0; width: 250px; height: 360px; display: grid; place-items: end center; pointer-events: none; }
+.slx-status-standee { height: 330px; image-rendering: pixelated; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7)); }
+.slx-status-plate { left: 10px; top: 10px; width: 226px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 6px; }
+.slx-status-name, .slx-equip-name { display: grid; justify-items: center; line-height: 16px; }
+.slx-status-name b, .slx-equip-name b { font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-status-title { color: $slx-dim; font-size: 10px; }
+.slx-status-arrow { padding: 2px 6px; cursor: pointer; color: $slx-ink; }
+.slx-status-arrow:hover { color: $slx-gold; }
+.slx-status-panel { left: 250px; top: 10px; right: 10px; bottom: 40px; display: flex; flex-direction: column; }
+.slx-tabs { display: flex; gap: 4px; border-bottom: 1px solid #6e5a2e; margin-bottom: 6px; }
+.slx-tab { padding: 2px 10px; cursor: pointer; color: $slx-dim; border-bottom: 2px solid transparent; }
+.slx-tab:hover { color: $slx-ink; }
+.slx-tab-sel { color: $slx-gold; border-bottom-color: $slx-gold; }
+.slx-status-body { flex: 1; overflow-y: auto; }
+.slx-status-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-bottom: 6px; }
+.slx-status-facts p { margin: 1px 0; }
+.slx-stat-table { width: 100%; border-collapse: collapse; }
+.slx-stat-table th, .slx-stat-table td { padding: 1px 6px; text-align: right; font-weight: normal; }
+.slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
+.slx-stat-table tbody th { text-align: left; color: $slx-gold; }
+.slx-stat-table .slx-total { color: #fff; }
+.slx-stat-table .slx-gear { color: #8fe08f; }
+.slx-gear-row { display: grid; grid-template-columns: 48px 1fr; gap: 0 8px; padding: 4px 0; border-bottom: 1px solid #2a2840; }
+.slx-gear-slot { color: $slx-gold; grid-row: span 2; }
+.slx-gear-bonus { color: #8fe08f; font-size: 10px; }
+.slx-skill { padding: 3px 0; border-bottom: 1px solid #2a2840; }
+.slx-skill-head { display: flex; gap: 10px; }
+.slx-skill-name { flex: 1; color: $slx-ink; }
+.slx-skill-cost { color: #6fa7ff; }
+.slx-skill-learn { color: $slx-dim; min-width: 64px; text-align: right; }
+.slx-skill .slx-desc { margin: 1px 0 0; }
+.slx-skill-locked .slx-skill-name { color: #6f6a5c; }
+.slx-status-panel .slx-hint, .slx-formation-info .slx-hint { margin-top: 6px; }
+
+// Equipment: slots left, choices right, comparison below the slots
+.slx-equip-scene .slx-keyhint { bottom: 4px; }
+.slx-equip-head { left: 10px; top: 10px; right: 10px; display: flex; align-items: center; gap: 8px; padding: 4px 8px; }
+.slx-equip-face { width: 32px; height: 32px; object-fit: contain; }
+.slx-equip-title { margin-left: auto; font-size: 16px; color: $slx-gold; }
+.slx-equip-slots { left: 10px; top: 76px; width: 260px; }
+.slx-equip-slots .slx-right { color: $slx-ink; }
+.slx-equip-items { left: 304px; top: 76px; right: 10px; max-height: 190px; }
+.slx-equip-items[inert] { opacity: 0.7; }
+.slx-equip-slots[inert] .slx-sel { background: rgba(232, 196, 106, 0.1); }
+.slx-compare { left: 10px; top: 166px; width: 260px; }
+.slx-cmp-grid { display: grid; gap: 1px; }
+.slx-cmp-row { display: grid; grid-template-columns: 48px 40px 20px 1fr; }
+.slx-cmp-label { color: $slx-gold; }
+.slx-cmp-now { text-align: right; }
+.slx-cmp-arrow { text-align: center; color: $slx-dim; }
+.slx-up .slx-cmp-after { color: #8fe08f; }
+.slx-down .slx-cmp-after { color: #ff8a7a; }
+.slx-compare .slx-desc { margin: 4px 0 0; }

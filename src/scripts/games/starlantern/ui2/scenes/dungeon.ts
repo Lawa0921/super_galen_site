@@ -3,6 +3,7 @@ import { FLOORS } from '../../data/floors';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
 import type { Dir } from '../../engine/map';
+import { rowOfCell } from '../../engine/formation';
 import { activeIds, statsOf } from '../../engine/party';
 import { useFieldItem } from '../../engine/town';
 import type { CharacterId } from '../../engine/types';
@@ -82,7 +83,7 @@ export class DungeonScene implements Scene {
     this.bar.update(activeIds(p).map((id) => {
       const m = p.roster[id];
       const st = statsOf(m);
-      return { key: id, name: CHARACTERS[id].name, hp: m.hp, maxHp: st.hp, tp: m.tp, maxTp: st.tp, limit: m.limit ?? 0, alive: m.hp > 0 };
+      return { key: id, name: CHARACTERS[id].name, hp: m.hp, maxHp: st.hp, tp: m.tp, maxTp: st.tp, limit: m.limit ?? 0, alive: m.hp > 0, row: rowOfCell(p.grid.indexOf(id)) };
     }));
     this.ctx.stage?.mapView.draw(g, { width: 640, height: 296 });
   }
@@ -225,20 +226,6 @@ export class DungeonScene implements Scene {
       const m = p.roster[id];
       const st = statsOf(m);
       return { id, label: `${CHARACTERS[id].name} Lv ${m.level}`, right: `HP ${m.hp}/${st.hp}  TP ${m.tp}/${st.tp}` };
-    }), (it) => this.sheet(it.id as CharacterId));
-  }
-
-  /** One member's numbers; a key or a click closes it. */
-  private sheet(id: CharacterId): void {
-    const m = this.ctx.game.state.party.roster[id];
-    const st = statsOf(m);
-    const sheet = win('slx-status slx-field-status', [
-      el('h3', { text: `${CHARACTERS[id].title} ${CHARACTERS[id].name}　Lv ${m.level}` }),
-      el('p', { text: `HP ${m.hp}/${st.hp}　TP ${m.tp}/${st.tp}　${T.ui2.guild.gauge(m.limit ?? 0)}` }),
-      el('p', { text: (['atk', 'def', 'mag', 'res', 'spd'] as const).map((k) => `${T.stat[k]} ${st[k]}`).join('　') }),
-    ]);
-    const close = () => { this.ctx.sfx.cancel(); this.pop(); };
-    sheet.addEventListener('click', () => { if (!sheet.closest('[inert]')) close(); });
-    this.push({ el: sheet, onAction: (a) => { if (a === 'confirm' || a === 'cancel') close(); return true; } });
+    }), (it) => { this.popAll(); this.leaving = true; this.ctx.go('status', it.id); });
   }
 }

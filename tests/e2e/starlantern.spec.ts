@@ -84,8 +84,9 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-guild')).toBeVisible();
     await closeTalk();
     await page.keyboard.press('Enter');                       // 編隊
-    await expect(page.locator('.slx-formation [role=option]')).toHaveCount(5);
-    await page.keyboard.press('Escape');
+    await expect(page.locator('.slx-formation-scene [data-cell]')).toHaveCount(9);
+    await page.keyboard.press('Escape');                      // back to the guild, no greeting
+    await expect(page.locator('.slx-guild')).toBeVisible();
     await page.keyboard.press('Escape');                      // back to town
     await expect(page.locator('.slx-town')).toBeVisible();
     await closeTalk();
@@ -113,9 +114,24 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-guild')).toBeVisible();
     await talkThrough();
     await page.locator('.slx-cmd [data-id=formation]').click();
-    await expect(page.locator('.slx-formation')).toBeVisible();
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    await page.locator('[data-cell="4"]').click();               // middle row, centre
+    await page.locator('.slx-formation-pick [data-id=liz]').click();
+    await expect(page.locator('[data-cell="4"]')).toContainText('莉茲');
     await page.locator('.slx-back').click();
-    await expect(page.locator('.slx-formation')).toHaveCount(0);
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-cmd [data-id=status]').click();
+    await expect(page.locator('.slx-status-scene')).toBeVisible();
+    await page.locator('[data-tab=skills]').click();
+    await expect(page.locator('.slx-status-body')).toContainText('挑釁');
+    await page.locator('.slx-status-next').click();
+    await expect(page.locator('.slx-status-name')).toContainText('千鶴');
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-cmd [data-id=equip]').click();
+    await expect(page.locator('.slx-equip-scene')).toBeVisible();
+    await page.locator('.slx-equip-slots [data-id=armor]').click();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
     await page.locator('.slx-back').click();
     await expect(page.locator('.slx-town')).toBeVisible();
   });

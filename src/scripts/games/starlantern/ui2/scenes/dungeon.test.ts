@@ -87,15 +87,12 @@ describe('DungeonScene', () => {
     expect(root.querySelector('.slx-layer')).toBeNull();
   });
 
-  it('shows a member sheet from 隊伍狀態 that a click closes', () => {
-    const { s, root, pick } = setup();
+  it('opens the status screen on the member picked from 隊伍狀態', () => {
+    const { s, go, pick } = setup();
     s.onAction('menu');
     pick('隊伍狀態');
     pick('絲嘉蕾');
-    const sheet = root.querySelector('.slx-status') as HTMLElement;
-    expect(sheet.textContent).toContain('攻擊');
-    sheet.click();
-    expect(root.querySelector('.slx-status')).toBeNull();
+    expect(go).toHaveBeenCalledWith('status', 'scarlet');
   });
 
   it('leaves out items that do nothing outside battle', () => {

@@ -22,6 +22,12 @@ describe('PartyBar', () => {
     expect(panels[0].textContent).toContain('30/30');
   });
 
+  it('tags each member with their row', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet', 30, { row: 'front' }), m('noel', 30, { row: 'middle' })]);
+    expect([...bar.el.querySelectorAll('.slx-pm-row')].map((e) => e.textContent)).toEqual(['前', '中']);
+  });
+
   it('turns the HP bar red when a member is low, and shows a sliver for any HP left', () => {
     const bar = new PartyBar(NO_ART);
     bar.update([m('scarlet', 7), m('liz', 1), m('noel', 20)]);

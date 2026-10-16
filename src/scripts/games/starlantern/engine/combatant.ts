@@ -1,3 +1,4 @@
+import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
 import type { BuffStat, Element, Row, Stats } from './types';
 
@@ -6,6 +7,8 @@ export interface Buff { stat: BuffStat; pct: number; turns: number }
 export interface Combatant {
   key: string; side: 'party' | 'enemy'; defId: string; name: string;
   max: Stats; hp: number; tp: number; row: Row; melee: boolean;
+  /** Party grid cell 0-8 (engine/formation.ts); enemies have none. */
+  cell?: number;
   weak: Element[]; resist: Element[]; boss: boolean; alive: boolean;
   poison: boolean; sleep: number; buffs: Buff[]; taunt: number;
   turret: { power: number; turns: number } | null; defending: boolean;
@@ -58,8 +61,8 @@ export function calcDamage(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rn
   const def = stat(t, spec.scale === 'atk' ? 'def' : 'res');
   const el = elementMult(t, spec.element);
   let mult = el;
-  if (spec.melee && a.row === 'back') mult *= 0.5;
-  if (spec.melee && t.row === 'back') mult *= 0.5;
+  // Melee weakens with the attacker's distance; the defender's row protects by reach (formation.reachable), not by halving.
+  if (spec.melee) mult *= ROW_MELEE[a.row];
   if (t.defending) mult *= 0.5;
   const base = ((atk * spec.power) / 100) * (60 / (40 + def));
   return { amount: Math.max(1, Math.floor(base * mult * (0.9 + rng() * 0.2))), mult: el };

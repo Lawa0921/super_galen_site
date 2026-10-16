@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  expToNext, statsOf, newMember, newParty, recruit, setFormation, activeIds,
+  rowOfCell, expToNext, statsOf, newMember, newParty, recruit, setFormation, activeIds,
   learnedSkills, gainExp, awardExp, hasPassive, MAX_LEVEL,
 } from './party';
 
@@ -18,23 +18,27 @@ describe('stats', () => {
 });
 
 describe('formation', () => {
-  it('starts with the spec front/back split', () => {
+  it('starts with three in front and two at the back of a 3x3 grid', () => {
     const p = newParty();
-    expect(p.front).toEqual(['scarlet', 'chizuru', 'liz']);
-    expect(p.back).toEqual(['noel', 'selene']);
-    expect(activeIds(p)).toHaveLength(5);
+    expect(p.grid).toEqual(['scarlet', 'chizuru', 'liz', null, null, null, 'noel', null, 'selene']);
+    expect(activeIds(p)).toEqual(['scarlet', 'chizuru', 'liz', 'noel', 'selene']);
     expect(Object.keys(p.roster)).toHaveLength(8);
   });
-  it('accepts a valid change with empty slots', () => {
-    const r = setFormation(newParty(), ['scarlet', null, 'liz'], ['noel', null]);
-    expect(r.ok && activeIds(r.party)).toEqual(['scarlet', 'liz', 'noel']);
+  it('places members anywhere, front row first in reading order', () => {
+    const r = setFormation(newParty(), [null, 'scarlet', null, 'noel', null, null, null, null, 'liz']);
+    expect(r.ok && activeIds(r.party)).toEqual(['scarlet', 'noel', 'liz']);
+    expect(rowOfCell(0)).toBe('front');
+    expect(rowOfCell(4)).toBe('middle');
+    expect(rowOfCell(8)).toBe('back');
   });
-  it('rejects bad formations', () => {
-    const p = newParty();
-    expect(setFormation(p, ['scarlet', 'liz'], ['noel', null])).toEqual({ ok: false, reason: 'size' });
-    expect(setFormation(p, ['bobby', null, null], [null, null])).toEqual({ ok: false, reason: 'not-recruited' });
-    expect(setFormation(p, ['liz', 'liz', null], [null, null])).toEqual({ ok: false, reason: 'duplicate' });
-    expect(setFormation(p, [null, null, null], [null, null])).toEqual({ ok: false, reason: 'empty' });
+  it('rejects bad formations, including more than five members', () => {
+    const p = recruit(newParty(), 'bobby');
+    const g = (...ids: (string | null)[]) => [...ids, ...Array(9 - ids.length).fill(null)] as never;
+    expect(setFormation(p, ['scarlet', 'liz'] as never)).toEqual({ ok: false, reason: 'size' });
+    expect(setFormation(p, g('sylvie'))).toEqual({ ok: false, reason: 'not-recruited' });
+    expect(setFormation(p, g('liz', 'liz'))).toEqual({ ok: false, reason: 'duplicate' });
+    expect(setFormation(p, g())).toEqual({ ok: false, reason: 'empty' });
+    expect(setFormation(p, g('scarlet', 'chizuru', 'liz', 'noel', 'selene', 'bobby'))).toEqual({ ok: false, reason: 'too-many' });
   });
   it('recruits once', () => {
     const p = recruit(newParty(), 'bobby');

@@ -97,7 +97,7 @@ export class BattleScene implements Scene {
   private updateBar(active: string | null): void {
     this.bar.update(this.state.party.map((c) => {
       const v = (!this.revealed.has(c.key) && this.before?.get(c.key)) || c;
-      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive };
+      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row };
     }), active);
   }
 

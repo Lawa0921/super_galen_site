@@ -1,3 +1,4 @@
+import { reachable, rowOfCell, shapeTargets } from './formation';
 import { CHARACTERS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
 import { ITEMS } from '../data/items';
@@ -7,7 +8,7 @@ import { stat, dealDamage, type BattleEvent, type Combatant } from './combatant'
 import { hasPassive, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { applyEffect, type EffectContext } from './skills';
-import type { CharacterId, Element, Member, Party, Row, Target } from './types';
+import type { CharacterId, Effect, Element, Member, Party, Row, Target } from './types';
 
 export type Action =
   | { kind: 'attack'; target: string }
@@ -33,10 +34,11 @@ export const LIMIT_PER_HIT_SCALE = 40;
 
 const fresh = () => ({ poison: false, sleep: 0, buffs: [], taunt: 0, turret: null, defending: false, limit: 0 });
 
-function fromMember(m: Member, row: Row): Combatant {
+function fromMember(m: Member, cell: number): Combatant {
+  const row: Row = rowOfCell(cell);
   const def = CHARACTERS[m.id];
   return { ...fresh(), key: m.id, side: 'party', defId: m.id, name: def.name, max: statsOf(m), hp: m.hp, tp: m.tp,
-    row, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0 };
+    row, cell, melee: def.melee, weak: [], resist: [], boss: false, alive: m.hp > 0, limit: m.limit ?? 0 };
 }
 
 function fromEnemy(id: string, key: string, name: string): Combatant {
@@ -49,8 +51,7 @@ export function createBattle(o: {
   party: Party; enemyIds: string[]; boss?: boolean; inventory: Record<string, number>; revealed: Record<string, Element[]>;
 }): BattleState {
   const party: Combatant[] = [];
-  for (const id of o.party.front) if (id) party.push(fromMember(o.party.roster[id], 'front'));
-  for (const id of o.party.back) if (id) party.push(fromMember(o.party.roster[id], 'back'));
+  o.party.grid.forEach((id, cell) => { if (id) party.push(fromMember(o.party.roster[id], cell)); });
   const counts: Record<string, number> = {};
   for (const id of o.enemyIds) counts[id] = (counts[id] ?? 0) + 1;
   const seen: Record<string, number> = {};
@@ -87,11 +88,20 @@ function pickTarget(list: Combatant[], key: string | undefined, rng: Rng): Comba
   return alive.find((c) => c.taunt > 0) ?? pick(rng, alive);
 }
 
-function resolveTargets(s: BattleState, actor: Combatant, target: Target | null, chosen: string | undefined, rng: Rng): Combatant[] {
+/** Enemies attacking the party are bound by the grid: melee reaches only the front-most standing row. */
+function foePool(s: BattleState, actor: Combatant, melee: boolean): Combatant[] {
+  return actor.side === 'enemy' ? reachable(s.party, melee) : s.enemies;
+}
+
+function resolveTargets(s: BattleState, actor: Combatant, target: Target | null, chosen: string | undefined, rng: Rng, melee = false): Combatant[] {
   const allies = actor.side === 'party' ? s.party : s.enemies;
   const foes = actor.side === 'party' ? s.enemies : s.party;
   switch (target) {
-    case 'enemy': { const t = pickTarget(foes, chosen, rng); return t ? [t] : []; }
+    case 'enemy': { const t = pickTarget(foePool(s, actor, melee), chosen, rng); return t ? [t] : []; }
+    case 'row': case 'column': case 'cross': {
+      const t = pickTarget(foePool(s, actor, melee), chosen, rng);
+      return t ? shapeTargets(foes, t, target) : [];
+    }
     case 'enemies': return living(foes);
     case 'ally': {
       const t = allies.find((c) => c.key === chosen && c.alive)
@@ -108,12 +118,15 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
   }
 }
 
+const skillIsMelee = (effects: Effect[]) => effects.some((e) => e.kind === 'damage' && e.melee);
+
 function chooseEnemyActions(s: BattleState, rng: Rng): Map<string, EnemyAction> {
   const out = new Map<string, EnemyAction>();
   for (const e of living(s.enemies)) {
     const skills = ENEMIES[e.defId]?.skills ?? [];
     const index = skills.findIndex((sk) => rng() < sk.chance);
-    const target = pickTarget(s.party, undefined, rng)?.key;
+    const melee = index >= 0 ? skillIsMelee(skills[index].effects) : e.melee;
+    const target = pickTarget(reachable(s.party, melee), undefined, rng)?.key;
     out.set(e.key, index >= 0 ? { kind: 'enemy-skill', index, target } : { kind: 'attack', target });
   }
   return out;
@@ -134,7 +147,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     applyEffect(actor, t, { kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: actor.melee }, ctx);
   switch (act.kind) {
     case 'attack': {
-      const t = pickTarget(actor.side === 'party' ? s.enemies : s.party, act.target, rng);
+      const t = pickTarget(foePool(s, actor, actor.melee), act.target, rng);
       if (!t) return;
       s.log.push({ type: 'act', actor: actor.key, label: '攻擊' });
       physical(t);
@@ -143,7 +156,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     case 'enemy-skill': {
       const sk = ENEMIES[actor.defId].skills[act.index];
       s.log.push({ type: 'act', actor: actor.key, label: sk.name });
-      for (const t of resolveTargets(s, actor, sk.target, act.target, rng)) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
+      for (const t of resolveTargets(s, actor, sk.target, act.target, rng, skillIsMelee(sk.effects))) for (const eff of sk.effects) applyEffect(actor, t, eff, ctx);
       return;
     }
     case 'skill': {

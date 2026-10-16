@@ -22,7 +22,7 @@ export const T = {
   reasons: {
     gold: '金錢不足', locked: '尚未解鎖', stock: '數量不足', invalid: '無法執行', phase: '現在不能這麼做',
     'party-down': '出戰成員全部倒下，無法出發', size: '編隊格數錯誤', 'not-recruited': '尚未招募',
-    duplicate: '同一人不能重複上陣', empty: '至少要有一人出戰',
+    duplicate: '同一人不能重複上陣', empty: '至少要有一人出戰', 'too-many': '最多只能 5 人上陣',
   } as Record<string, string>,
   notices: {
     'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……已回到上次住宿的時間點',
@@ -73,6 +73,33 @@ export const T = {
       dungeon: '方向鍵／WASD 移動　C 選單　Esc／右鍵 返回',
     },
     title: { newGame: '新遊戲', cont: '繼續', settings: '設定', overwrite: '已有存檔，開始新遊戲會覆蓋它。要繼續嗎？' },
+    rows: { front: '前排', middle: '中排', back: '後排' },
+    formation: {
+      title: '編隊', count: (n: number, max: number) => `上陣 ${n}／${max}`, empty: '空位', reserve: '待命', remove: '移出隊伍',
+      who: '要放誰到這一格？',
+      rules: [
+        '近戰攻擊力：前排 100%、中排 75%、後排 50%。',
+        '遠程與魔法攻擊不受站位影響。',
+        '近戰敵人只會攻擊最前面有人站著的一排。',
+        '敵人的範圍技能會打中整排、整列或十字範圍。',
+      ],
+      hint: '方向鍵 選格　Enter／點擊 放人　Esc 返回',
+    },
+    status: {
+      tabs: { stats: '能力', gear: '裝備', skills: '技能', ultimate: '絕技' } as Record<string, string>,
+      cols: ['', '基礎', '成長', '裝備', '合計'],
+      exp: (n: number, next: number) => `經驗 ${n}／${next}`,
+      place: (where: string) => `站位 ${where}`,
+      attack: (melee: boolean, pct: number) => (melee ? `攻擊方式 近戰（${pct}%）` : '攻擊方式 遠程／魔法'),
+      gauge: (n: number) => `絕技量表 ${n}%`,
+      learned: '已習得', at: (lv: number) => `Lv ${lv} 習得`, passive: '被動', tp: (n: number) => `TP ${n}`,
+      none: '（未裝備）',
+      hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
+    },
+    equip: {
+      title: '裝備', current: '裝備中', unequip: '卸下', nothing: '沒有可以換上的裝備',
+      hint: '↑↓ 選擇　Enter 決定　Q／E 換人　Esc 返回',
+    },
     settings: {
       title: '設定', volume: '音效音量', speed: '文字速度', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
       speeds: { slow: '慢', mid: '中', fast: '快', instant: '立即' } as Record<'slow' | 'mid' | 'fast' | 'instant', string>,

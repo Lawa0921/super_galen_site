@@ -3,11 +3,12 @@ import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
-import type { Scene, SceneCtx } from '../scene';
+import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
 import { Dialogue, MenuView, backControl, win } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate';
+const RETURNING: SceneName[] = ['formation', 'status', 'equip', 'settings'];
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Shared facility screen: scene art, NPC bust, place sign, gold, command window, dialogue and a stack of sub-windows. */
@@ -44,7 +45,8 @@ export abstract class FacilityScene implements Scene {
       ...bg, ...(this.npc ? [this.npc] : []), win('slx-place', [document.createTextNode(f.place)]), this.gold, this.back, this.cmdWin, this.stage, this.talk.el,
     ]));
     this.refresh();
-    void this.say(f.greet[Math.floor(this.ctx.game.rng() * f.greet.length)]);
+    // Coming back from one of the guild's own screens (or settings) is not a new visit: no greeting.
+    if (!RETURNING.includes(this.ctx.from ?? 'town')) void this.say(f.greet[Math.floor(this.ctx.game.rng() * f.greet.length)]);
   }
 
   exit(): void {
@@ -66,8 +68,9 @@ export abstract class FacilityScene implements Scene {
 
   protected refresh(): void {
     this.gold.textContent = `${this.ctx.game.state.gold} G`;
-    const keep = this.view?.menu.cursor ?? 0;
     const items = [...this.commands(), { id: 'leave', label: T.ui2.facility.leave }];
+    // First draw after coming back from a sub-screen: start on the command that opened it.
+    const keep = this.view?.menu.cursor ?? Math.max(0, items.findIndex((it) => it.id === this.ctx.from));
     this.view = new MenuView(new Menu(items, keep), {
       pick: (it) => { this.ctx.sfx.confirm(); if (it.id === 'leave') this.leave(); else this.onCommand(it.id); },
       moved: () => this.ctx.sfx.cursor(),

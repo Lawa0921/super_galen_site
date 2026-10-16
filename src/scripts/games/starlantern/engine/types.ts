@@ -2,10 +2,11 @@ export type Element = 'phys' | 'fire' | 'ice' | 'thunder';
 export type StatKey = 'hp' | 'tp' | 'atk' | 'def' | 'mag' | 'res' | 'spd';
 export type BuffStat = Exclude<StatKey, 'hp' | 'tp'>;
 export type Stats = Record<StatKey, number>;
-export type Row = 'front' | 'back';
+export type Row = 'front' | 'middle' | 'back';
 export type CharacterId = 'noel' | 'chizuru' | 'liz' | 'sylvie' | 'scarlet' | 'selene' | 'safira' | 'bobby';
 /** Who an action hits, seen from the actor's side. */
-export type Target = 'enemy' | 'enemies' | 'ally' | 'allies' | 'self' | 'deadAlly';
+/** `row`, `column` and `cross` are enemy area attacks shaped on the party grid around one chosen member. */
+export type Target = 'enemy' | 'enemies' | 'ally' | 'allies' | 'self' | 'deadAlly' | 'row' | 'column' | 'cross';
 export type Passive = 'encounterDown' | 'dropBoost' | 'itemBoost';
 export interface Pos { x: number; y: number }
 
@@ -45,5 +46,6 @@ export interface FloorDef {
 /** `limit` is the ultimate gauge (0–100); older saves omit it. */
 export interface Member { id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, string>>; limit?: number }
 export interface Party {
-  roster: Record<CharacterId, Member>; recruited: CharacterId[]; front: (CharacterId | null)[]; back: (CharacterId | null)[];
+  /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */
+  roster: Record<CharacterId, Member>; recruited: CharacterId[]; grid: (CharacterId | null)[];
 }
