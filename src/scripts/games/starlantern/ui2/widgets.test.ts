@@ -270,6 +270,38 @@ describe('MenuView pointer scrolling', () => {
     expect(v.el.querySelector('[data-id=r3]')).not.toBeNull();
   });
 
+  const wheel = (v: MenuView, deltaY: number, deltaMode = 0) => {
+    const e = new WheelEvent('wheel', { deltaY, deltaMode, cancelable: true });
+    v.el.dispatchEvent(e);
+    return e.defaultPrevented;
+  };
+  const shown = (v: MenuView) => [...v.el.querySelectorAll('.slx-opt')].map((li) => li.getAttribute('data-id'));
+
+  it('lets the wheel through at an edge: only a list that can move takes the wheel', () => {
+    const v = new MenuView(long(), { pick: vi.fn() }, 6);
+    expect(wheel(v, -100)).toBe(false);                       // already at the top
+    expect(shown(v)[0]).toBe('r0');
+    expect(wheel(v, 100)).toBe(true);
+    for (let i = 0; i < 5; i++) wheel(v, 100);
+    expect(shown(v).at(-1)).toBe('r9');
+    expect(wheel(v, 100)).toBe(false);                        // already at the bottom
+    const short = new MenuView(new Menu([{ id: 'a', label: 'a' }]), { pick: vi.fn() }, 6);
+    expect(wheel(short, 100)).toBe(false);                    // nothing to scroll
+  });
+
+  it('adds up small trackpad deltas: one row per notch-sized sum, not one per event', () => {
+    const v = new MenuView(long(), { pick: vi.fn() }, 6);
+    for (let i = 0; i < 10; i++) wheel(v, 10);                // one 100px gesture in ten pieces
+    expect(shown(v)[0]).toBe('r1');
+    for (let i = 0; i < 9; i++) wheel(v, 10);
+    expect(shown(v)[0]).toBe('r1');                           // 90px: not yet a row
+    wheel(v, -10);                                            // turning back drops what had gathered
+    wheel(v, 10);
+    expect(shown(v)[0]).toBe('r1');
+    wheel(v, 3, 1);                                           // a mouse in line mode: three lines are one notch
+    expect(shown(v)[0]).toBe('r2');
+  });
+
   it('ignores marker clicks and the wheel under an inert window', () => {
     const wrap = document.createElement('div');
     const v = new MenuView(long(), { pick: vi.fn() }, 6);

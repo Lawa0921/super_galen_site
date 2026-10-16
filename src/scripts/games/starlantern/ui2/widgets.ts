@@ -27,10 +27,17 @@ export function win(cls: string, children: Node[] = []): HTMLElement {
   return el('div', { class: `slx-win ${cls}` }, children);
 }
 
+/** Wheel travel, in pixels, that scrolls a list by one row: about one mouse-wheel notch. */
+const WHEEL_STEP = 100;
+/** Pixels per wheel unit by deltaMode: pixels, lines (three lines make a notch), pages (one row each). */
+const WHEEL_UNIT = [1, WHEEL_STEP / 3, WHEEL_STEP];
+
 export class MenuView {
   readonly el: HTMLElement;
   private list: HTMLElement;
   private top = 0;
+  /** Wheel travel gathered toward the next row, so a trackpad's many small deltas move one row per notch-sized sum. */
+  private wheelAcc = 0;
 
   /** `rows` limits how many options are on screen; the window scrolls to keep the cursor visible. */
   constructor(readonly menu: Menu, private on: { pick(item: MenuItem): void; moved?(): void; cancel?(): void }, private rows = Infinity) {
@@ -38,11 +45,25 @@ export class MenuView {
     this.el = this.list;
     // Mouse and touch reach every row of a long list: the wheel scrolls it, and the ▲/▼ markers are clickable.
     this.list.addEventListener('wheel', (e) => {
-      if (this.locked() || this.rows >= this.menu.items.length || !e.deltaY) return;
+      if (this.locked() || !e.deltaY) return;
+      const d = e.deltaY > 0 ? 1 : -1;
+      // At an edge (or with nothing to scroll) the wheel is left alone, so the page can have it.
+      if (!this.canScroll(d)) { this.wheelAcc = 0; return; }
       e.preventDefault();
-      this.scrollBy(e.deltaY > 0 ? 1 : -1);
+      if (Math.sign(this.wheelAcc) === -d) this.wheelAcc = 0;   // turning back drops what had gathered
+      this.wheelAcc += e.deltaY * (WHEEL_UNIT[e.deltaMode] ?? 1);
+      while (Math.abs(this.wheelAcc) >= WHEEL_STEP && this.canScroll(d)) {
+        this.wheelAcc -= d * WHEEL_STEP;
+        this.scrollBy(d);
+      }
     }, { passive: false });
     this.render();
+  }
+
+  /** Whether the visible window can move by `d` rows. */
+  private canScroll(d: 1 | -1): boolean {
+    const n = this.menu.items.length;
+    return this.rows < n && (d < 0 ? this.top > 0 : this.top < n - this.rows);
   }
 
   /** Move the visible window by `d` rows; the cursor follows into view when it would fall outside. */
