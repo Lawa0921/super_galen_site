@@ -62,8 +62,14 @@ export interface MaterialDef { id: string; name: string; price: number }
 export interface FloorDef {
   id: 1 | 2 | 3; name: string; rows: string[]; encounters: string[][]; rate: [number, number]; chestLoot: { item: string; qty: number }[];
 }
-/** `limit` is the ultimate gauge (0–100); older saves omit it. */
-export interface Member { id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, ItemInstance>>; limit?: number }
+/**
+ * `limit` is the ultimate gauge (0–100); older saves omit it.
+ * `tree` holds skill-tree ranks by node id (see engine/progression.ts); `talents` holds talent-board ranks by node id.
+ */
+export interface Member {
+  id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, ItemInstance>>; limit?: number;
+  tree: Record<string, number>; talents: Record<string, number>;
+}
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */
   roster: Record<CharacterId, Member>; recruited: CharacterId[]; grid: (CharacterId | null)[];

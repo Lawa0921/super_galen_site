@@ -6,7 +6,7 @@ import { rollPortals } from './portals';
 import { mulberry32, type Rng } from './rng';
 import type { Element, ItemInstance, Party } from './types';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export interface DungeonProgress {
   /** Deepest depth reached in each region; 1 until a run goes deeper. Runs start at 1 or a multiple of 5 up to this. */

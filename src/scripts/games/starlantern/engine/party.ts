@@ -3,6 +3,7 @@ import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
+import { newTree } from './progression';
 import { PARTY_BASE, PRIMARY_KEYS, capSheet, convertPrimary, emptySheet, naturalPrimary } from './stats';
 import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Sheet, Slot, StatKey, Stats } from './types';
 
@@ -99,7 +100,7 @@ export function statsOf(m: Member): Stats {
 }
 
 export function newMember(id: CharacterId): Member {
-  const m: Member = { id, level: 1, exp: 0, hp: 0, tp: 0, equip: {} };
+  const m: Member = { id, level: 1, exp: 0, hp: 0, tp: 0, equip: {}, tree: newTree(id), talents: {} };
   const s = statsOf(m);
   return { ...m, hp: s.hp, tp: s.tp };
 }

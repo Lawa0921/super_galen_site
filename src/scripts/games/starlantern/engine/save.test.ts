@@ -123,6 +123,17 @@ describe('save', () => {
     expect(saveGame(st, g)).toBe(true);
     expect(loadGame(st)).toEqual({ status: 'ok', state: g });
   });
+  it('a version-4 save reports version', () => {
+    const g = newGame();
+    const roster = Object.fromEntries(Object.entries(g.party.roster).map(([id, m]) => {
+      const { tree: _t, talents: _a, ...rest } = m;
+      return [id, rest];
+    }));
+    const raw = JSON.stringify({ ...g, version: 4, party: { ...g.party, roster } });
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st)).toEqual({ status: 'version' });
+    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+  });
   it('a version-3 save reports version', () => {
     const { bag: _b, nextUid: _n, ...rest } = newGame();
     const raw = JSON.stringify({ ...rest, version: 3 });

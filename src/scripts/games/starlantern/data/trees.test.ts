@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, nodeDesc, nodeName } from './trees';
+import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TREES, nodeDesc, nodeName } from './trees';
 import { CHARACTERS } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
-import type { CharacterId } from '../engine/types';
+import { defaultTree, nodeRank, raiseNode } from '../engine/progression';
+import { newMember } from '../engine/party';
+import type { CharacterId, Member } from '../engine/types';
 
 const ids = Object.keys(TREES) as CharacterId[];
 const allNodes = () => ids.flatMap((id) => TREES[id]!.branches.flatMap((b) => b.nodes));
@@ -35,23 +37,10 @@ describe('skill trees', () => {
   });
 
   it('the default build learns every legacy skill by its old level', () => {
-    const skillPoints = (L: number) => (L <= 4 ? L - 1 : 3 + Math.floor((L - 3) / 2));
-    for (const id of ids) {
-      const tree = TREES[id]!;
-      const legacy = tree.branches.flatMap((b, bi) => b.nodes.map((n, tier) => ({ n, bi, tier })))
-        .filter(({ n }) => n.kind === 'active' && LEGACY_LEARN_LEVEL[n.id] !== undefined);
-      for (const { n } of legacy) {
-        const L = LEGACY_LEARN_LEVEL[n.id];
-        // Cheapest build holding every legacy skill of level <= L: per branch, climb to the deepest such tier.
-        let cost = 0;
-        tree.branches.forEach((_, bi) => {
-          const deepest = Math.max(-1, ...legacy.filter((x) => x.bi === bi && LEGACY_LEARN_LEVEL[x.n.id] <= L).map((x) => x.tier));
-          if (deepest < 0 || (bi === 0 && deepest === 0)) return;
-          const free = bi === 0 ? 1 : 0;
-          cost += Math.max(deepest - free, TIER_GATE[deepest]) + 1;
-        });
-        expect(skillPoints(L), `${id}:${n.id} at level ${L}`).toBeGreaterThanOrEqual(cost);
-      }
+    // The point model and the build order live in engine/progression; this checks the data fits them.
+    for (const [skill, old] of Object.entries(LEGACY_LEARN_LEVEL)) {
+      const owner = NODES[skill].owner;
+      expect(defaultTree(owner, old)[skill] ?? 0, `${owner}:${skill} at level ${old}`).toBeGreaterThanOrEqual(1);
     }
   });
 
@@ -115,11 +104,16 @@ describe('skill trees', () => {
   });
 
   it('every tier is reachable', () => {
+    // Climb each branch alone at Lv50, tier by tier to max rank, with the engine's own rules.
     for (const id of ids) {
-      TREES[id]!.branches.forEach((b, bi) => {
-        for (let t = 0; t < 5; t++) {
-          const below = b.nodes.slice(0, t).reduce((s, n) => s + n.maxRank, 0) - (bi === 0 && t > 0 ? 1 : 0);
-          expect(below, `${id}:${b.name} tier ${t}`).toBeGreaterThanOrEqual(TIER_GATE[t]);
+      TREES[id]!.branches.forEach((b) => {
+        let m: Member = { ...newMember(id), level: 50 };
+        for (const n of b.nodes) {
+          while (nodeRank(m, n.id) < n.maxRank) {
+            const r = raiseNode(m, n.id);
+            if (!r.ok) throw new Error(`${id}:${b.name} ${n.id} refused: ${r.reason}`);
+            m = r.member;
+          }
         }
       });
     }
