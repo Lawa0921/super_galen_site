@@ -1,13 +1,16 @@
-import { EQUIPMENT, legacySlot } from '../data/equipment';
+import { EQUIPMENT } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
-import { statsOf } from './party';
+import { BAG_SIZE } from './loot/bag';
+import { itemSlot } from './loot/item';
+import { defaultSlotFor, slotsFor, statsOf } from './party';
 import type { GameState } from './state';
 import type { CharacterId, Member, Party, Slot } from './types';
 
-export type TownResult = { ok: true; state: GameState } | { ok: false; reason: 'gold' | 'locked' | 'stock' | 'invalid' };
+type FailReason = 'gold' | 'locked' | 'stock' | 'invalid' | 'full';
+export type TownResult = { ok: true; state: GameState } | { ok: false; reason: FailReason };
 
-const fail = (reason: 'gold' | 'locked' | 'stock' | 'invalid'): TownResult => ({ ok: false, reason });
+const fail = (reason: FailReason): TownResult => ({ ok: false, reason });
 
 export function addItem(inv: Record<string, number>, id: string, qty: number): void {
   const n = (inv[id] ?? 0) + qty;
@@ -48,28 +51,40 @@ export function buy(s: GameState, id: string): TownResult {
   return { ok: true, state: n };
 }
 
-export function equip(s: GameState, memberId: CharacterId, equipId: string): TownResult {
-  const e = EQUIPMENT[equipId];
-  if (!e) return fail('invalid');
-  if ((s.inventory[equipId] ?? 0) <= 0) return fail('stock');
+/** Hands out the next item uid: returns `s.nextUid` and moves it on by one (mutates `s`; call it on a copy). */
+export function mintUid(s: GameState): number {
+  return s.nextUid++;
+}
+
+/** Wears the bag item `uid` in `slot` (or its default slot); whatever was there goes back into the bag in its place. */
+export function equip(s: GameState, memberId: CharacterId, uid: number, slot?: Slot): TownResult {
+  const m = s.party.roster[memberId];
+  if (!m) return fail('invalid');
+  const i = s.bag.findIndex((it) => it.uid === uid);
+  if (i < 0) return fail('stock');
+  const it = s.bag[i];
+  if (!EQUIPMENT[it.base]) return fail('invalid');
+  const target = slot ?? defaultSlotFor(m, it);
+  if (!slotsFor(itemSlot(it)).includes(target)) return fail('invalid');
   const n = structuredClone(s);
-  const m = n.party.roster[memberId];
-  const slot = legacySlot(e.slot);
-  const prev = m.equip[slot];
-  if (prev) addItem(n.inventory, prev, 1);
-  addItem(n.inventory, equipId, -1);
-  m.equip[slot] = equipId;
-  clampToMax(m);
+  const nm = n.party.roster[memberId];
+  const prev = nm.equip[target];
+  const [wearing] = prev ? n.bag.splice(i, 1, prev) : n.bag.splice(i, 1);
+  nm.equip[target] = wearing;
+  clampToMax(nm);
   return { ok: true, state: n };
 }
 
+/** Takes off what is in `slot` and puts it in the bag; a full bag refuses, so nothing is ever lost. */
 export function unequip(s: GameState, memberId: CharacterId, slot: Slot): TownResult {
-  const prev = s.party.roster[memberId].equip[slot];
+  const prev = s.party.roster[memberId]?.equip[slot];
   if (!prev) return fail('invalid');
+  if (s.bag.length >= BAG_SIZE) return fail('full');
   const n = structuredClone(s);
   const m = n.party.roster[memberId];
+  const it = m.equip[slot]!;
   delete m.equip[slot];
-  addItem(n.inventory, prev, 1);
+  n.bag.push(it);
   clampToMax(m);
   return { ok: true, state: n };
 }

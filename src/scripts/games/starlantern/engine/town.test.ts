@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
-import { buy, equip, innCost, isUnlocked, rest, revive, reviveCost, sell, unequip, useFieldItem } from './town';
+import { buy, equip, innCost, isUnlocked, mintUid, rest, revive, reviveCost, sell, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
+import { plainItem } from './testing';
+import { BAG_SIZE } from './loot/bag';
+import type { ItemInstance } from './types';
 
 const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(), inventory: inv, gold });
+const withBag = (bag: ItemInstance[]) => ({ ...newGame(), bag, nextUid: Math.max(0, ...bag.map((it) => it.uid)) + 1 });
 
 describe('shop', () => {
   it('sells materials for gold and records the sale', () => {
@@ -40,25 +44,62 @@ describe('shop', () => {
 });
 
 describe('equipment', () => {
-  it('equips from inventory and returns the old piece', () => {
-    const a = equip(withInv({ 'iron-sword': 1, 'thorn-spear': 1 }), 'scarlet', 'iron-sword');
+  it('equips from the bag and returns the old piece', () => {
+    const a = equip(withBag([plainItem('iron-sword', 1), plainItem('thorn-spear', 2)]), 'scarlet', 1);
     if (!a.ok) throw new Error('equip failed');
-    expect(a.state.party.roster.scarlet.equip.weapon).toBe('iron-sword');
-    expect(a.state.inventory['iron-sword'] ?? 0).toBe(0);
-    const b = equip(a.state, 'scarlet', 'thorn-spear');
-    expect(b.ok && b.state.inventory['iron-sword']).toBe(1);
+    expect(a.state.party.roster.scarlet.equip.weapon?.base).toBe('iron-sword');
+    expect(a.state.bag.map((it) => it.uid)).toEqual([2]);
+    const b = equip(a.state, 'scarlet', 2);
+    expect(b.ok && b.state.bag.map((it) => it.base)).toEqual(['iron-sword']);
   });
   it('refuses missing stock and unknown gear', () => {
-    expect(equip(withInv({}), 'scarlet', 'iron-sword')).toEqual({ ok: false, reason: 'stock' });
-    expect(equip(withInv({ potion: 1 }), 'scarlet', 'potion')).toEqual({ ok: false, reason: 'invalid' });
+    expect(equip(withBag([]), 'scarlet', 1)).toEqual({ ok: false, reason: 'stock' });
+    expect(equip(withBag([plainItem('iron-sword', 1)]), 'nobody' as never, 1)).toEqual({ ok: false, reason: 'invalid' });
   });
   it('unequips and clamps HP to the new maximum', () => {
-    const a = equip(withInv({ 'moss-charm': 1 }), 'scarlet', 'moss-charm');
+    const a = equip(withBag([plainItem('moss-charm', 1)]), 'scarlet', 1);
     if (!a.ok) throw new Error('equip failed');
     a.state.party.roster.scarlet.hp = 63;
-    const b = unequip(a.state, 'scarlet', 'accessory');
-    expect(b.ok && [b.state.party.roster.scarlet.hp, b.state.inventory['moss-charm']]).toEqual([48, 1]);
-    expect(unequip(b.ok ? b.state : a.state, 'scarlet', 'accessory')).toEqual({ ok: false, reason: 'invalid' });
+    const b = unequip(a.state, 'scarlet', 'neck');
+    expect(b.ok && [b.state.party.roster.scarlet.hp, b.state.bag.map((it) => it.base)]).toEqual([48, ['moss-charm']]);
+    expect(unequip(b.ok ? b.state : a.state, 'scarlet', 'neck')).toEqual({ ok: false, reason: 'invalid' });
+  });
+  it('equip swaps through the bag; rings use defaultSlotFor unless a slot is given', () => {
+    const r = (uid: number) => plainItem('copper-ring', uid);
+    let s = withBag([r(1), r(2), r(3), plainItem('iron-sword', 4)]);
+    const step = (res: ReturnType<typeof equip>) => { if (!res.ok) throw new Error(res.reason); return res.state; };
+    s = step(equip(s, 'liz', 1));
+    s = step(equip(s, 'liz', 2));
+    expect([s.party.roster.liz.equip.ring1?.uid, s.party.roster.liz.equip.ring2?.uid]).toEqual([1, 2]);
+    s = step(equip(s, 'liz', 3));                                 // both full: ring1 is swapped
+    expect([s.party.roster.liz.equip.ring1?.uid, s.party.roster.liz.equip.ring2?.uid]).toEqual([3, 2]);
+    expect(s.bag.map((it) => it.uid).sort()).toEqual([1, 4]);
+    s = step(equip(s, 'liz', 1, 'ring2'));                        // the chosen slot is swapped
+    expect([s.party.roster.liz.equip.ring1?.uid, s.party.roster.liz.equip.ring2?.uid]).toEqual([3, 1]);
+    expect(s.bag.map((it) => it.uid).sort()).toEqual([2, 4]);
+    expect(equip(s, 'liz', 4, 'ring1')).toEqual({ ok: false, reason: 'invalid' });   // a sword is not a ring
+    expect(equip(s, 'liz', 2, 'neck')).toEqual({ ok: false, reason: 'invalid' });
+  });
+  it('one uid cannot be worn twice', () => {
+    const s = withBag([plainItem('copper-ring', 7)]);
+    const a = equip(s, 'liz', 7, 'ring1');
+    if (!a.ok) throw new Error('equip failed');
+    expect(equip(a.state, 'liz', 7, 'ring2')).toEqual({ ok: false, reason: 'stock' });
+    expect(equip(a.state, 'noel', 7)).toEqual({ ok: false, reason: 'stock' });
+    expect(a.state.party.roster.liz.equip.ring2).toBeUndefined();
+  });
+  it('a full bag refuses unequip', () => {
+    const fill = Array.from({ length: BAG_SIZE }, (_, i) => plainItem('iron-sword', 100 + i));
+    const a = equip(withBag([plainItem('moss-charm', 1), ...fill.slice(1)]), 'scarlet', 1);
+    if (!a.ok) throw new Error('equip failed');
+    a.state.bag.push(fill[0]);
+    expect(a.state.bag).toHaveLength(BAG_SIZE);
+    expect(unequip(a.state, 'scarlet', 'neck')).toEqual({ ok: false, reason: 'full' });
+    expect(a.state.party.roster.scarlet.equip.neck?.uid).toBe(1);
+  });
+  it('mints uids in order', () => {
+    const s = withBag([]);
+    expect([mintUid(s), mintUid(s), s.nextUid]).toEqual([1, 2, 3]);
   });
 });
 

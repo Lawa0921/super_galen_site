@@ -1,5 +1,12 @@
 import type { BattleState } from './battle';
 import type { Combatant } from './combatant';
+import { EQUIPMENT } from '../data/equipment';
+import type { ItemInstance } from './types';
+
+/** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
+export function plainItem(base: string, uid: number): ItemInstance {
+  return { uid, base, rarity: 'common', ilvl: EQUIPMENT[base].ilvl, affixes: [], enhance: 0 };
+}
 
 export function makeCombatant(p: Partial<Combatant> & { key: string; side: Combatant['side'] }): Combatant {
   const max = { hp: 100, tp: 20, atk: 20, def: 20, mag: 20, res: 20, spd: 10, ...p.max };

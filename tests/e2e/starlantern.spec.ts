@@ -129,7 +129,7 @@ test.describe('starlantern', () => {
     await page.locator('.slx-back').click();
     await page.locator('.slx-cmd [data-id=equip]').click();
     await expect(page.locator('.slx-equip-scene')).toBeVisible();
-    await page.locator('.slx-equip-slots [data-id=armor]').click();
+    await page.locator('.slx-equip-slots [data-id=body]').click();
     await page.locator('.slx-back').click();
     await expect(page.locator('.slx-guild')).toBeVisible();
     await page.locator('.slx-back').click();

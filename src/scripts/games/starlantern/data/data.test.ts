@@ -3,7 +3,8 @@ import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { SKILLS } from './skills';
 import { ENEMIES } from './enemies';
 import { ITEMS } from './items';
-import { EQUIPMENT, legacySlot } from './equipment';
+import { EQUIPMENT } from './equipment';
+import { slotsFor } from '../engine/party';
 import { GEAR_SLOTS } from './gear';
 import { MATERIALS } from './materials';
 import { FLOORS } from './floors';
@@ -82,10 +83,9 @@ describe('equipment bases', () => {
     expect(EQUIPMENT['scale-mail']).toMatchObject({ slot: 'body', ilvl: 7 });
     expect(EQUIPMENT['crystal-aegis']).toMatchObject({ slot: 'offhand', ilvl: 8, bonus: { def: 5, res: 3 }, unlock: [{ mat: 'crystal-shell', qty: 4 }] });
   });
-  it('maps the new slots onto the three legacy slots until plan 5a replaces them', () => {
-    expect(legacySlot('weapon')).toBe('weapon');
-    for (const g of ['body', 'offhand', 'head', 'hands', 'feet'] as const) expect(legacySlot(g)).toBe('armor');
-    for (const g of ['neck', 'ring'] as const) expect(legacySlot(g)).toBe('accessory');
+  it('every base can be worn somewhere, rings in either ring slot', () => {
+    for (const e of Object.values(EQUIPMENT)) expect(slotsFor(e.slot).length, e.id).toBeGreaterThan(0);
+    expect(slotsFor('ring')).toEqual(['ring1', 'ring2']);
   });
 });
 

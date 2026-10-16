@@ -1,9 +1,11 @@
-import { EQUIPMENT, legacySlot } from '../../data/equipment';
+import { EQUIPMENT } from '../../data/equipment';
 import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
-import { activeIds, statsOf } from '../../engine/party';
+import { rollItem } from '../../engine/loot/item';
+import { activeIds, defaultSlotFor, slotsFor, statsOf } from '../../engine/party';
+import { mulberry32 } from '../../engine/rng';
 import { buy, isUnlocked, sell } from '../../engine/town';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -44,13 +46,15 @@ export class ShopScene extends FacilityScene {
     const eq = EQUIPMENT[id];
     if (!eq) return [];
     const bonus = Object.entries(eq.bonus).map(([k, v]) => `${T.stat[k as keyof typeof T.stat]}+${v}`).join(' ');
+    // A temporary plain piece of the base (commons roll no affixes, so any seed gives the same item).
+    const temp = rollItem(mulberry32(0), { uid: 0, ilvl: eq.ilvl, rarity: 'common', base: id });
     const rows = activeIds(s.party).map((cid) => {
       const m = s.party.roster[cid];
-      const now = statsOf(m); const after = statsOf({ ...m, equip: { ...m.equip, [legacySlot(eq.slot)]: id } });
+      const now = statsOf(m); const after = statsOf({ ...m, equip: { ...m.equip, [defaultSlotFor(m, temp)]: temp } });
       const d = (Object.keys(eq.bonus) as (keyof typeof now)[]).map((k) => `${T.stat[k]}${after[k] - now[k] >= 0 ? '+' : ''}${after[k] - now[k]}`).join(' ');
       return el('li', { text: `${CHARACTERS[cid].name}　${d}` });
     });
-    return [el('p', { text: `${T.slot[legacySlot(eq.slot)]}　${bonus}` }), el('ul', { class: 'slx-skills' }, rows)];
+    return [el('p', { text: `${T.slot[slotsFor(eq.slot)[0]]}　${bonus}` }), el('ul', { class: 'slx-skills' }, rows)];
   }
 
   private buyList(): void {

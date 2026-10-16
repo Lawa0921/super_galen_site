@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
-import { constRng } from '../../engine/testing';
+import { constRng, plainItem } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { GuildScene } from './guild';
 
 function setup(from?: 'formation' | 'status') {
   const game = new Game(constRng(0.5), null);
   game.state.gold = 1000;
-  game.state.inventory['iron-sword'] = 1;
+  game.state.bag = [plainItem('iron-sword', 1)];
+  game.state.nextUid = 2;
   const root = document.createElement('div');
   const go = vi.fn();
   const s = new GuildScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from }, Infinity);

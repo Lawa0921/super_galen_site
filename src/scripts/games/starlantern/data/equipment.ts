@@ -1,10 +1,4 @@
-import type { EquipDef, GearSlot, Slot } from '../engine/types';
-
-/** Plan 5a transition: the old three-slot model. Task 4 deletes this with every caller. */
-export function legacySlot(g: GearSlot): Slot {
-  if (g === 'weapon') return 'weapon';
-  return g === 'neck' || g === 'ring' ? 'accessory' : 'armor';
-}
+import type { EquipDef } from '../engine/types';
 
 const LIST: EquipDef[] = [
   { id: 'wooden-staff', name: '木杖', slot: 'weapon', ilvl: 1, price: 30, bonus: { mag: 3 } },

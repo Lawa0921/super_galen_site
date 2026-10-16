@@ -1,7 +1,7 @@
 import { CHARACTERS } from '../../data/characters';
-import { EQUIPMENT, legacySlot } from '../../data/equipment';
 import { T } from '../../data/text.zh-TW';
-import { activeIds, statsOf } from '../../engine/party';
+import { itemName, itemSlot, itemStats } from '../../engine/loot/item';
+import { activeIds, slotsFor, statsOf } from '../../engine/party';
 import { equip, unequip } from '../../engine/town';
 import type { CharacterId, Slot } from '../../engine/types';
 import { art } from '../../render/artPaths';
@@ -12,7 +12,7 @@ import type { Scene, SceneCtx } from '../scene';
 import { MenuView, backControl, win } from '../widgets';
 import { SLOT_ORDER, STAT_ORDER, bonusText } from './statusTabs';
 
-/** Equipment: the member's three slots on the left, what the chosen slot can take on the right, and a before/after comparison below. */
+/** Equipment: the member's nine slots on the left, what the chosen slot can take on the right, and a before/after comparison below. */
 export class EquipScene implements Scene {
   private id!: CharacterId;
   private focus: 'slots' | 'items' = 'slots';
@@ -65,11 +65,10 @@ export class EquipScene implements Scene {
     this.render();
   }
 
-  /** Owned items for the slot, plus 卸下 when something is worn. */
+  /** Bag items that fit the slot (menu id = uid), plus 卸下 when something is worn. */
   private candidates(): MenuItem[] {
-    const inv = this.ctx.game.state.inventory;
-    const items: MenuItem[] = Object.entries(inv).filter(([eid, n]) => !!EQUIPMENT[eid] && legacySlot(EQUIPMENT[eid].slot) === this.slot && n > 0)
-      .map(([eid, n]) => ({ id: eid, label: EQUIPMENT[eid].name, right: `×${n}`, icon: this.ctx.art.has(art.icon(eid)) ? art.icon(eid) : undefined }));
+    const items: MenuItem[] = this.ctx.game.state.bag.filter((it) => slotsFor(itemSlot(it)).includes(this.slot))
+      .map((it) => ({ id: String(it.uid), label: itemName(it), icon: this.ctx.art.has(art.icon(it.base)) ? art.icon(it.base) : undefined }));
     if (this.member.equip[this.slot]) items.push({ id: '', label: T.ui2.equip.unequip });
     return items;
   }
@@ -84,7 +83,7 @@ export class EquipScene implements Scene {
       arrow('▶', 'next'), el('span', { class: 'slx-equip-title', text: T.ui2.equip.title }));
 
     this.slotsView = new MenuView(new Menu(SLOT_ORDER.map((slot) => ({
-      id: slot, label: T.slot[slot], right: m.equip[slot] ? EQUIPMENT[m.equip[slot]!].name : T.ui2.status.none,
+      id: slot, label: T.slot[slot], right: m.equip[slot] ? itemName(m.equip[slot]!) : T.ui2.status.none,
     })), this.slotCursor), {
       pick: () => this.openItems(),
       moved: () => { this.slotCursor = this.slotsView.menu.cursor; this.ctx.sfx.cursor(); this.renderItems(); },
@@ -121,11 +120,12 @@ export class EquipScene implements Scene {
     this.renderItems();
   }
 
-  /** Current numbers against the numbers with `eid` worn ('' = slot emptied, undefined = no change). */
-  private renderCompare(eid: string | undefined): void {
+  /** Current numbers against the numbers with bag item `id` (a uid) worn ('' = slot emptied, undefined = no change). */
+  private renderCompare(id: string | undefined): void {
     const m = this.member;
     const now = statsOf(m);
-    const after = eid === undefined ? now : statsOf({ ...m, equip: { ...m.equip, [this.slot]: eid || undefined } });
+    const it = id ? this.ctx.game.state.bag.find((x) => String(x.uid) === id) : undefined;
+    const after = id === undefined ? now : statsOf({ ...m, equip: { ...m.equip, [this.slot]: it } });
     const rows = STAT_ORDER.map((k) => {
       const d = after[k] - now[k];
       return el('div', { class: `slx-cmp-row${d > 0 ? ' slx-up' : d < 0 ? ' slx-down' : ''}`, attrs: { 'data-stat': k } }, [
@@ -135,13 +135,13 @@ export class EquipScene implements Scene {
         el('span', { class: 'slx-cmp-after', text: d ? `${after[k]} ${d > 0 ? '▲' : '▼'}` : '' }),
       ]);
     });
-    const note = eid ? bonusText(EQUIPMENT[eid].bonus) : '';
+    const note = it ? bonusText(itemStats(it)) : '';
     this.compare.replaceChildren(el('div', { class: 'slx-cmp-grid' }, rows), ...(note ? [el('p', { class: 'slx-desc', text: note })] : []));
   }
 
-  private wear(eid: string): void {
+  private wear(id: string): void {
     const s = this.ctx.game.state;
-    const r = this.ctx.game.apply(eid ? equip(s, this.id, eid) : unequip(s, this.id, this.slot));
+    const r = this.ctx.game.apply(id ? equip(s, this.id, Number(id), this.slot) : unequip(s, this.id, this.slot));
     if (!r.ok) { this.ctx.sfx.error(); return; }
     this.ctx.sfx.confirm();
     this.focus = 'slots';

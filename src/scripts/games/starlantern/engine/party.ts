@@ -1,36 +1,100 @@
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SKILLS } from '../data/skills';
-import { EQUIPMENT } from '../data/equipment';
-import type { CharacterId, Member, Party, Passive, Slot, StatKey, Stats } from './types';
+import { SETS, SPECIALS } from '../data/gear';
+import { itemSlot, itemStats } from './loot/item';
+import { PARTY_BASE, PRIMARY_KEYS, capSheet, convertPrimary, emptySheet, naturalPrimary } from './stats';
+import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Sheet, Slot, StatKey, Stats } from './types';
 
 /** Level cap; deep floors (depthLevel 2 + 4 per depth) need room past 20. Progression design §6. */
 export const MAX_LEVEL = 50;
 export const STARTING_RECRUITS: CharacterId[] = ['scarlet', 'chizuru', 'liz', 'noel', 'selene'];
 const STAT_KEYS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
-const SLOTS: Slot[] = ['weapon', 'armor', 'accessory'];
+export const SLOTS: Slot[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring1', 'ring2'];
+
+/** The member slots a piece of this gear slot may go in. */
+export function slotsFor(g: GearSlot): Slot[] {
+  return g === 'ring' ? ['ring1', 'ring2'] : [g];
+}
+
+/** Where an item goes when no slot is chosen. The ring rule lives only here: the first empty ring slot, else ring1. */
+export function defaultSlotFor(m: Member, it: ItemInstance): Slot {
+  const slots = slotsFor(itemSlot(it));
+  return slots.find((s) => !m.equip[s]) ?? slots[0];
+}
 
 export const expToNext = (level: number): number => Math.floor(14 * level ** 1.3);
 
 /** Where a member's numbers come from; later systems (enchanting, talents) add a source here and the character sheet grows a column. */
-export type StatSource = 'base' | 'growth' | 'gear';
+export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'primary';
 
-export function statSources(m: Member): { source: StatSource; stats: Partial<Stats> }[] {
-  const def = CHARACTERS[m.id];
-  const growth: Partial<Stats> = {};
-  for (const k of STAT_KEYS) growth[k] = def.growth[k] * (m.level - 1);
-  const gear: Partial<Stats> = {};
-  for (const slot of SLOTS) {
-    const bonus = m.equip[slot] ? EQUIPMENT[m.equip[slot]!]?.bonus : undefined;
-    if (bonus) for (const k of STAT_KEYS) gear[k] = (gear[k] ?? 0) + (bonus[k] ?? 0);
+const worn = (m: Member): ItemInstance[] => SLOTS.map((s) => m.equip[s]).filter((it): it is ItemInstance => !!it);
+
+function addInto(out: Partial<Sheet>, add: Partial<Sheet>): void {
+  for (const [k, v] of Object.entries(add) as [AnyStat, number][]) out[k] = (out[k] ?? 0) + v;
+}
+
+/** Pieces worn of each set; the same set piece worn twice (two rings) counts once. */
+export function setCounts(m: Member): Record<string, number> {
+  const seen = new Set<string>();
+  const out: Record<string, number> = {};
+  for (const it of worn(m)) {
+    const set = it.special ? SPECIALS[it.special]?.set : undefined;
+    if (!set || seen.has(it.special!)) continue;
+    seen.add(it.special!);
+    out[set] = (out[set] ?? 0) + 1;
   }
-  return [{ source: 'base', stats: { ...def.base } }, { source: 'growth', stats: growth }, { source: 'gear', stats: gear }];
+  return out;
+}
+
+/** Legendary powers of the worn gear, each once. */
+export function powersOf(m: Member): string[] {
+  const out: string[] = [];
+  for (const it of worn(m)) {
+    const p = it.special ? SPECIALS[it.special]?.power : undefined;
+    if (p && !out.includes(p)) out.push(p);
+  }
+  return out;
+}
+
+export function statSources(m: Member): { source: StatSource; stats: Partial<Sheet> }[] {
+  const def = CHARACTERS[m.id];
+  // Natural primaries are shown here but never converted; only gear and set primaries convert.
+  const base: Partial<Sheet> = { ...def.base, ...PARTY_BASE, ...naturalPrimary(def, m.level) };
+  const growth: Partial<Sheet> = {};
+  for (const k of STAT_KEYS) growth[k] = def.growth[k] * (m.level - 1);
+  const gear: Partial<Sheet> = {};
+  for (const it of worn(m)) addInto(gear, itemStats(it));
+  const set: Partial<Sheet> = {};
+  for (const [id, n] of Object.entries(setCounts(m))) {
+    const s = SETS[id];
+    if (!s) continue;
+    if (n >= 2) addInto(set, s.two);
+    if (n >= 4) addInto(set, s.four);
+  }
+  const prim: Partial<Record<PrimaryKey, number>> = {};
+  for (const k of PRIMARY_KEYS) {
+    const n = (gear[k] ?? 0) + (set[k] ?? 0);
+    if (n) prim[k] = n;
+  }
+  return [
+    { source: 'base', stats: base }, { source: 'growth', stats: growth }, { source: 'gear', stats: gear },
+    { source: 'set', stats: set }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
+  ];
+}
+
+/** Every source added up, then held to the caps. */
+export function sheetOf(m: Member): Sheet {
+  const out = emptySheet();
+  for (const part of statSources(m)) addInto(out, part.stats);
+  return capSheet(out);
 }
 
 export function statsOf(m: Member): Stats {
+  const sheet = sheetOf(m);
   const out = {} as Stats;
-  for (const k of STAT_KEYS) out[k] = 0;
-  for (const part of statSources(m)) for (const k of STAT_KEYS) out[k] += part.stats[k] ?? 0;
+  // Rounded down; the epsilon keeps a float sum such as 7.9999999 from losing a point.
+  for (const k of STAT_KEYS) out[k] = Math.floor(sheet[k] + 1e-9);
   return out;
 }
 

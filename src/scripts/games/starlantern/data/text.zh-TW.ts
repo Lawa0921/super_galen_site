@@ -1,7 +1,9 @@
 import type { BuffStat, Slot, StatKey } from '../engine/types';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
-const SLOT: Record<Slot, string> = { weapon: '武器', armor: '防具', accessory: '飾品' };
+const SLOT: Record<Slot, string> = {
+  weapon: '武器', offhand: '副手', head: '頭部', body: '身體', hands: '手部', feet: '腳部', neck: '項鍊', ring1: '戒指 1', ring2: '戒指 2',
+};
 
 export const T = {
   stat: STAT,
@@ -85,7 +87,7 @@ export const T = {
     status: {
       tabs: { stats: '能力', gear: '裝備', skills: '技能', ultimate: '絕技' },
       /** Column titles for statSources; a new source needs one line here. */
-      sources: { base: '基礎', growth: '成長', gear: '裝備' } as Record<string, string>,
+      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', primary: '主屬性' } as Record<string, string>,
       total: '合計',
       exp: (n: number, next: number) => `經驗 ${n}／${next}`,
       place: (where: string) => `站位 ${where}`,

@@ -2,13 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { EQUIPMENT } from '../../data/equipment';
 import { Game } from '../../engine/game';
 import { statsOf } from '../../engine/party';
-import { constRng } from '../../engine/testing';
+import { constRng, plainItem } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { EquipScene } from './equip';
 
 function setup(arg = 'scarlet') {
   const game = new Game(constRng(0.5), null);
-  game.state.inventory = { 'iron-sword': 2 };
+  game.state.bag = [plainItem('iron-sword', 1)];
+  game.state.nextUid = 2;
   const go = vi.fn();
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
   const root = document.createElement('div');
@@ -21,7 +22,7 @@ function setup(arg = 'scarlet') {
 }
 
 describe('EquipScene', () => {
-  it('lists the three slots and previews what the slot under the cursor can take', () => {
+  it('lists the nine slots and previews what the slot under the cursor can take', () => {
     const { slots, items, root } = setup();
     expect(slots()[0]).toContain('武器');
     expect(slots()[0]).toContain('（未裝備）');
@@ -38,8 +39,8 @@ describe('EquipScene', () => {
     expect(cmp('atk')).toContain(String(before + gain));
     expect(cmp('atk')).toContain('▲');
     s.onAction('confirm');                               // equip 鐵劍
-    expect(game.state.party.roster.scarlet.equip.weapon).toBe('iron-sword');
-    expect(game.state.inventory['iron-sword']).toBe(1);
+    expect(game.state.party.roster.scarlet.equip.weapon?.base).toBe('iron-sword');
+    expect(game.state.bag).toHaveLength(0);
   });
 
   it('can take an item off and says when a slot has nothing to offer', () => {
@@ -49,7 +50,7 @@ describe('EquipScene', () => {
     expect(items()).toContain('卸下');
     s.onAction('down'); s.onAction('confirm');           // 卸下
     expect(game.state.party.roster.scarlet.equip.weapon).toBeUndefined();
-    s.onAction('down');                                  // 防具
+    s.onAction('down');                                  // 副手
     expect(root.querySelector('.slx-equip-items')!.textContent).toContain('沒有可以換上的裝備');
   });
 
@@ -67,7 +68,7 @@ describe('EquipScene', () => {
   it('works with the mouse: click a slot, then an item', () => {
     const { root, game } = setup();
     (root.querySelector('.slx-equip-slots [data-id=weapon]') as HTMLElement).click();
-    (root.querySelector('.slx-equip-items [data-id="iron-sword"]') as HTMLElement).click();
-    expect(game.state.party.roster.scarlet.equip.weapon).toBe('iron-sword');
+    (root.querySelector('.slx-equip-items [data-id="1"]') as HTMLElement).click();
+    expect(game.state.party.roster.scarlet.equip.weapon?.base).toBe('iron-sword');
   });
 });

@@ -48,7 +48,8 @@ export interface EnemyDef {
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;
 }
-export type Slot = 'weapon' | 'armor' | 'accessory';
+/** Where a member wears gear: one place per gear slot, except rings, which have two. */
+export type Slot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring1' | 'ring2';
 export type Rarity = 'common' | 'magic' | 'rare' | 'legendary' | 'unique' | 'set';
 export type GearSlot = 'weapon' | 'offhand' | 'head' | 'body' | 'hands' | 'feet' | 'neck' | 'ring';
 export interface EquipDef { id: string; name: string; slot: GearSlot; ilvl: number; price: number; bonus: Partial<Stats>; unlock?: { mat: string; qty: number }[] }
@@ -62,7 +63,7 @@ export interface FloorDef {
   id: 1 | 2 | 3; name: string; rows: string[]; encounters: string[][]; rate: [number, number]; chestLoot: { item: string; qty: number }[];
 }
 /** `limit` is the ultimate gauge (0–100); older saves omit it. */
-export interface Member { id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, string>>; limit?: number }
+export interface Member { id: CharacterId; level: number; exp: number; hp: number; tp: number; equip: Partial<Record<Slot, ItemInstance>>; limit?: number }
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */
   roster: Record<CharacterId, Member>; recruited: CharacterId[]; grid: (CharacterId | null)[];

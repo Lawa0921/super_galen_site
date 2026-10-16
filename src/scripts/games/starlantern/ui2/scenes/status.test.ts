@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { statsOf } from '../../engine/party';
-import { constRng } from '../../engine/testing';
+import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS } from './statusTabs';
@@ -9,8 +9,9 @@ import { StatusScene } from './status';
 
 function setup(arg?: string, artIndex: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
-  game.state.inventory['iron-sword'] = 1;
-  game.state.party.roster.scarlet.equip.weapon = 'iron-sword';
+  game.state.bag = [plainItem('iron-sword', 1)];
+  game.state.party.roster.scarlet.equip.weapon = plainItem('iron-sword', 2);
+  game.state.nextUid = 3;
   const go = vi.fn();
   const root = document.createElement('div');
   const s = new StatusScene({ game, art: artIndex, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from: 'guild', arg });
