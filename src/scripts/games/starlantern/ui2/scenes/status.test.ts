@@ -410,6 +410,7 @@ describe('StatusScene', () => {
     game.state.party.roster.noel.equip.neck = { ...plainItem('moss-charm', 7), rarity: 'legendary', special: 'frost-bloom-neck' };
     s.onAction('right');
     const power = () => root.querySelector('.slx-tab-gear .slx-gear-power')!;
+    expect(power().querySelector('.slx-line-note')!.textContent).toBe(T.gear.notLearned);   // the same note element as the equip page
     expect(power().textContent).toContain(T.gear.notLearned);
     expect(power().classList.contains('slx-line-off')).toBe(false);
     game.state.party.roster.noel.tree = { 'fire-star': 1, 'ice-star': 1 };

@@ -204,11 +204,11 @@ const gear: StatusTab = {
         el('span', { class: 'slx-gear-slot', text: T.slot[slot] }),
         el('span', { class: it ? `slx-gear-name slx-rarity-${it.rarity}` : 'slx-gear-name', text: it ? gearLabel(it) : T.ui2.status.none }),
         el('span', { class: 'slx-gear-bonus', text: stat }),
-        // Outside the member's tree: dimmed. In the tree but not learned yet: says so, at full colour.
-        ...(power ? [el('span', {
-          class: power.usable === false ? 'slx-gear-power slx-line-off' : 'slx-gear-power',
-          text: power.usable && power.learned === false ? `${power.text}${T.gear.notLearned}` : power.text,
-        })] : []),
+        // Outside the member's tree: dimmed. In the tree but not learned yet: at full colour, with the equip page's note.
+        ...(power ? [el('span', { class: power.usable === false ? 'slx-gear-power slx-line-off' : 'slx-gear-power' }, [
+          power.text,
+          ...(power.usable && power.learned === false ? [el('span', { class: 'slx-line-note', text: T.gear.notLearned })] : []),
+        ])] : []),
       ]);
     }));
   },

@@ -122,3 +122,22 @@ export function defaultTree(id: CharacterId, level: number): Record<string, numb
   }
   return tree;
 }
+
+// TEMPORARY: removed by plan 5b Task 13 (player spends points)
+/**
+ * Spends a member's unspent skill points toward `defaultTree` of their level, so the game keeps teaching skills until
+ * the player can spend points. Ranks already held stay; each raise goes through `raiseNode`, so the rules hold.
+ * Talent points are not spent: no default talent build exists yet, and talents do nothing until a later task.
+ */
+export function autoSpend(m: Member): Member {
+  const target = defaultTree(m.id, m.level);
+  for (let progress = true; progress && skillPointsLeft(m) > 0;) {
+    progress = false;
+    for (const node of Object.keys(target)) {
+      if (nodeRank(m, node) >= target[node]) continue;
+      const r = raiseNode(m, node);
+      if (r.ok) { m = r.member; progress = true; }
+    }
+  }
+  return m;
+}

@@ -54,6 +54,13 @@ describe('skill trees', () => {
     expect(Object.keys(NODES).sort()).toEqual([...all].sort());
   });
 
+  it("an active node's id is its skill id, so a skill id finds its node (statusTabs and nodeRank rely on it)", () => {
+    for (const n of allNodes().filter((x) => x.kind === 'active')) {
+      expect(n.id, n.skill).toBe(n.skill);
+      expect(NODES[n.skill].node, n.skill).toBe(n);
+    }
+  });
+
   it('active nodes are skills of their owner; mod nodes name an active node of the same tree', () => {
     for (const id of ids) {
       const nodes = TREES[id]!.branches.flatMap((b) => b.nodes);

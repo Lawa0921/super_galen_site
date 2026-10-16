@@ -3,7 +3,7 @@ import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
-import { learnedSkills, newTree, skillPoints, talentPoints } from './progression';
+import { autoSpend, learnedSkills, newTree, skillPoints, talentPoints } from './progression';
 import { PARTY_BASE, PRIMARY_KEYS, capSheet, convertPrimary, emptySheet, naturalPrimary } from './stats';
 import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Sheet, Slot, StatKey, Stats } from './types';
 
@@ -136,7 +136,7 @@ export function setFormation(
   return { ok: true, party: { ...p, grid: [...grid] } };
 }
 
-/** Skill and talent points a level-up earns; they are spent elsewhere, so the tree is never changed here. */
+/** Skill and talent points a level-up earns. */
 export type Points = { skill: number; talent: number };
 
 export function gainExp(m: Member, amount: number): { member: Member; levels: number; points: Points } {
@@ -153,7 +153,8 @@ export function gainExp(m: Member, amount: number): { member: Member; levels: nu
   next.hp = m.hp > 0 ? Math.min(after.hp, m.hp + after.hp - before.hp) : 0;
   next.tp = Math.min(after.tp, m.tp + after.tp - before.tp);
   const points = { skill: skillPoints(level) - skillPoints(m.level), talent: talentPoints(level) - talentPoints(m.level) };
-  return { member: next, levels: level - m.level, points };
+  // TEMPORARY: removed by plan 5b Task 13 (player spends points)
+  return { member: level > m.level ? autoSpend(next) : next, levels: level - m.level, points };
 }
 
 /** What one member got from an exp award: levels gained (0 when none) and the points they brought. */
