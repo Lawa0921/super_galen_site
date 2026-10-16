@@ -154,7 +154,7 @@ export function gainExp(m: Member, amount: number): { member: Member; levels: nu
   next.hp = m.hp > 0 ? Math.min(after.hp, m.hp + after.hp - before.hp) : 0;
   next.tp = Math.min(after.tp, m.tp + after.tp - before.tp);
   const points = { skill: skillPoints(level) - skillPoints(m.level), talent: talentPoints(level) - talentPoints(m.level) };
-  // TEMPORARY: removed by plan 5b Task 13 (player spends points)
+  // TEMPORARY: talents only, removed by Task 14 (the player spends talent points)
   return { member: level > m.level ? autoSpend(next) : next, levels: level - m.level, points };
 }
 

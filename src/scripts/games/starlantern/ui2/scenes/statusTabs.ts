@@ -1,12 +1,13 @@
 import { CHARACTERS } from '../../data/characters';
 import { POWERS } from '../../data/gear';
-import { NODES } from '../../data/trees';
+import { SKILLS } from '../../data/skills';
+import { ACTIVE_RANK_PCT, NODES, TREES, type TreeNode } from '../../data/trees';
 import { T } from '../../data/text.zh-TW';
 import { ULTIMATES } from '../../data/ultimates';
 import { skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
-import { learnedSkills, nodeRank } from '../../engine/progression';
+import { canRaiseNode, freeNode, learnedSkills, nodeRank, rankMod, skillPointsLeft, type RaiseFail } from '../../engine/progression';
 import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import type { AnyStat, CharacterId, Slot, StatKey, Stats } from '../../engine/types';
@@ -14,6 +15,7 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { gearLabel } from '../loot';
 import type { SceneCtx } from '../scene';
+import { cancelSpend, pressSpend, type SpendState } from '../spendPress';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 export const SLOT_ORDER: Slot[] = SLOTS;
@@ -23,7 +25,8 @@ export const SLOT_ORDER: Slot[] = SLOTS;
  * `render` draws the page; for pointer input, `redraw(change)` applies `change` and draws the page again, both only
  * while the sheet is open. `onAction`, when present, receives keys first (except Q/E and cancel) and returns true when
  * it used one, after which the sheet redraws the page. `shown`, when present, runs once the page is on screen (after
- * the scroll position is restored). `hint` replaces the sheet's key hint while the tab is up.
+ * the scroll position is restored). `leave`, when present, runs when the page goes away: another tab or another member
+ * is drawn, or the sheet closes. `hint` replaces the sheet's key hint while the tab is up.
  */
 export interface StatusTab {
   id: string;
@@ -32,6 +35,7 @@ export interface StatusTab {
   render(ctx: SceneCtx, id: CharacterId, redraw: (change?: () => void) => void): HTMLElement;
   onAction?(a: UiAction, ctx: SceneCtx, id: CharacterId): boolean;
   shown?(body: HTMLElement): void;
+  leave?(): void;
 }
 
 /** "攻擊+3 防禦+1" for a bonus, or an em dash. */
@@ -243,6 +247,174 @@ const skills: StatusTab = {
   },
 };
 
+/**
+ * Node cursor, the press waiting for its confirmation and the last refusal of the tree page. The cursor is kept for the
+ * session like the stats page's; a waiting press and a refusal are dropped whenever the cursor moves, the member
+ * changes or the page goes away (`settle`).
+ */
+const treeView: { cur: string; spend: SpendState; msg: string; reveal: boolean; top: number } = { cur: '', spend: { pending: null }, msg: '', reveal: false, top: 0 };
+
+/** Back to the first-visit state: the cursor on the first node, nothing pending. */
+export function resetTreeView(): void {
+  treeView.cur = '';
+  treeView.reveal = false;
+  leaveTree();
+}
+
+function settle(): void {
+  cancelSpend(treeView.spend);
+  treeView.msg = '';
+}
+
+/** The page went away: drop a waiting press, and the next visit starts with the columns at the top. */
+function leaveTree(): void {
+  settle();
+  treeView.top = 0;
+}
+
+/** Every node of the member's tree in cursor order: branch 0 tiers 0-4, then branch 1, then branch 2. */
+const treeOrder = (id: CharacterId): string[] => TREES[id].branches.flatMap((b) => b.nodes.map((n) => n.id));
+
+type NodeKind = keyof typeof T.ui2.tree.kind;
+function kindOf(n: TreeNode, tier: number): NodeKind {
+  if (tier === 4) return 'ultimate';
+  if (n.kind === 'mod') return 'mod';
+  return SKILLS[n.skill]?.passive ? 'passive' : 'active';
+}
+const nodeName = (n: TreeNode) => (n.kind === 'active' ? SKILLS[n.skill]?.name ?? n.id : n.name ?? n.id);
+
+/** Moves the tree cursor to `node`, dropping a waiting press when the cursor actually moves. */
+function moveTree(node: string): boolean {
+  if (treeView.cur === node) return false;
+  treeView.cur = node;
+  settle();
+  return true;
+}
+
+/** Enter (or a second click) on the cursor's node: the two-press spend, through the Game so the spend is saved. */
+function pressTree(ctx: SceneCtx, id: CharacterId): void {
+  const node = treeView.cur;
+  const r = pressSpend(treeView.spend, node, () => canRaiseNode(ctx.game.state.party.roster[id], node), () => { ctx.game.raiseNode(id, node); }, ctx.sfx);
+  treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : T.ui2.tree.reason[r.refused as RaiseFail] ?? '';
+}
+
+/** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
+function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
+  const t = T.ui2.tree;
+  const m = ctx.game.state.party.roster[id];
+  const { node: n, tier } = NODES[treeView.cur];
+  const rank = nodeRank(m, n.id);
+  const head = [el('span', { class: 'slx-tree-info-name', text: nodeName(n) }), el('span', { text: t.kind[kindOf(n, tier)] }), el('span', { text: T.ui2.status.rank(rank, n.maxRank) })];
+  let desc = n.desc ?? '';
+  const change: HTMLElement[] = [];
+  if (n.kind === 'active') {
+    // The skill as this member casts it: tree ranks and worn powers, at the TP they pay (as on the skills page).
+    const caster = { powers: powersOf(m), ranks: { ...m.tree }, x: { tpCost: sheetOf(m).tpCost } };
+    const s = skillFor(caster, n.skill);
+    if (s) {
+      head.push(el('span', { class: 'slx-tree-use', text: s.passive ? T.ui2.status.passive : `${T.ui2.status.targets[s.target]}　${T.ui2.status.tp(skillCost(caster, n.skill))}` }));
+      desc = s.desc;
+    }
+    // What a further rank scales, by the engine's own rule; a skill with nothing to scale shows no line.
+    const scaled = rankMod({ [n.skill]: 2 }, n.skill);
+    if (rank > 0 && rank < n.maxRank && scaled) {
+      change.push(el('span', { class: 'slx-tree-next', text: t.next(scaled.powerPct !== undefined ? 'power' : 'buff', ACTIVE_RANK_PCT[rank - 1], ACTIVE_RANK_PCT[rank]) }));
+    }
+  } else {
+    change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? t.mod(n.mods![rank - 1]) : t.none) }));
+    if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(t.mod(n.mods![rank])) }));
+  }
+  return el('div', { class: 'slx-tree-info' }, [
+    el('p', { class: 'slx-tree-info-head' }, head),
+    el('p', { class: 'slx-desc', text: desc }),
+    ...(change.length ? [el('p', { class: 'slx-tree-change' }, change)] : []),
+    ...(treeView.msg ? [el('p', { class: 'slx-tree-msg', text: treeView.msg, attrs: { role: 'status' } })] : []),
+  ]);
+}
+
+const tree: StatusTab = {
+  id: 'tree',
+  label: T.ui2.status.tabs.tree,
+  hint: T.ui2.status.hintTree,
+  render(ctx, id, redraw) {
+    const t = T.ui2.tree;
+    const m = ctx.game.state.party.roster[id];
+    if (!treeOrder(id).includes(treeView.cur)) {
+      treeView.cur = treeOrder(id)[0];
+      settle();
+    }
+    const branches = TREES[id].branches;
+    const capstone = branches.map((b) => b.nodes[4]).find((n) => nodeRank(m, n.id) > 0);
+    const cols = branches.map((b, bi) => {
+      // Points put into the branch: its ranks, less branch 0's free first rank.
+      const spent = b.nodes.reduce((s, n) => s + nodeRank(m, n.id), 0) - (bi === 0 ? Math.min(1, nodeRank(m, freeNode(id))) : 0);
+      return el('section', { class: 'slx-tree-branch', attrs: { 'data-branch': String(bi) } }, [
+        el('h5', { class: 'slx-tree-branch-name', text: t.branch(b.name, spent) }),
+        ...b.nodes.map((n, tier) => {
+          const rank = nodeRank(m, n.id);
+          const why = canRaiseNode(m, n.id);
+          const state = rank > 0 ? 'slx-node-learned' : why ? 'slx-node-locked' : 'slx-node-open';
+          const row = el('div', {
+            class: `slx-skill slx-tree-node ${state}${treeView.cur === n.id ? ' slx-row-cur' : ''}`,
+            attrs: { 'data-node': n.id, role: 'button' },
+          }, [
+            el('div', { class: 'slx-skill-head' }, [
+              el('span', { class: 'slx-skill-name', text: nodeName(n) }),
+              el('span', { class: 'slx-skill-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
+            ]),
+            el('div', { class: 'slx-tree-node-foot' }, [
+              el('span', { class: 'slx-tree-kind', text: t.kind[kindOf(n, tier)] }),
+              el('span', { class: 'slx-tree-state', text: why ? t.reason[why] : t.open }),
+            ]),
+          ]);
+          // The first click moves the cursor here; a click on the cursor's node is Enter.
+          row.addEventListener('click', () => {
+            if (locked(row)) return;
+            redraw(() => {
+              if (moveTree(n.id)) ctx.sfx.cursor();
+              else pressTree(ctx, id);
+            });
+          });
+          return row;
+        }),
+      ]);
+    });
+    // The columns scroll on their own above the fixed notes; a redraw keeps where they were (see `shown`).
+    const colsEl = el('div', { class: 'slx-tree-cols' }, cols);
+    colsEl.addEventListener('scroll', () => { treeView.top = colsEl.scrollTop; });
+    return el('div', { class: 'slx-tab-tree' }, [
+      el('div', { class: 'slx-tree-top' }, [
+        el('span', { class: 'slx-tree-left', text: t.left(skillPointsLeft(m)) }),
+        el('span', { class: 'slx-tree-capstone', text: capstone ? t.capstone(nodeName(capstone)) : t.noCapstone }),
+      ]),
+      colsEl,
+      treeNotes(ctx, id),
+    ]);
+  },
+  onAction(a, ctx, id) {
+    if (a === 'up' || a === 'down') {
+      const list = treeOrder(id);
+      const i = Math.max(0, list.indexOf(treeView.cur));
+      if (moveTree(list[Math.max(0, Math.min(list.length - 1, i + (a === 'down' ? 1 : -1)))])) ctx.sfx.cursor();
+      treeView.reveal = true;
+      return true;
+    }
+    if (a === 'confirm') {
+      pressTree(ctx, id);
+      return true;
+    }
+    return false;
+  },
+  leave: leaveTree,
+  shown(body) {
+    const cols = body.querySelector<HTMLElement>('.slx-tree-cols');
+    if (cols) cols.scrollTop = treeView.top;
+    if (!treeView.reveal) return;
+    treeView.reveal = false;
+    body.querySelector('.slx-tree-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+  },
+};
+
 const ultimate: StatusTab = {
   id: 'ultimate',
   label: T.ui2.status.tabs.ultimate,
@@ -257,4 +429,4 @@ const ultimate: StatusTab = {
   },
 };
 
-export const STATUS_TABS: StatusTab[] = [stats, gear, skills, ultimate];
+export const STATUS_TABS: StatusTab[] = [stats, gear, skills, tree, ultimate];

@@ -51,6 +51,7 @@ export class StatusScene implements Scene {
 
   exit(): void {
     this.closed = true;
+    if (this.drawn) STATUS_TABS[this.drawn.tab].leave?.();
   }
 
   onAction(a: UiAction): void {
@@ -95,6 +96,7 @@ export class StatusScene implements Scene {
     }));
     const tab = STATUS_TABS[this.tab];
     const same = this.drawn?.tab === this.tab && this.drawn.id === this.id;
+    if (this.drawn && !same) STATUS_TABS[this.drawn.tab]?.leave?.();
     const top = this.bodyEl.scrollTop;
     this.hintEl.textContent = tab.hint ?? T.ui2.status.hint;
     this.bodyEl.replaceChildren(tab.render(this.ctx, this.id, (change) => {

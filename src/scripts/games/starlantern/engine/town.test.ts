@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
 import { buy, equip, innCost, isUnlocked, respec, respecCost, rest, revive, reviveCost, sell, sellGear, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
-import { autoSpend, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
+import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
 import { plainItem } from './testing';
 import { BAG_SIZE, mintUid } from './loot/bag';
@@ -209,8 +209,8 @@ describe('buying and selling gear', () => {
 
 describe('respec', () => {
   const lv10 = (): Member => ({ ...newGame().party.roster.scarlet, level: 10, tree: newTree('scarlet'), talents: {} });
-  /** A Lv10 Scarlet who has spent every skill and talent point (the temporary auto-spend does it). */
-  const spent = (): Member => autoSpend(lv10());
+  /** A Lv10 Scarlet who has spent every skill and talent point, on the default build. */
+  const spent = (): Member => ({ ...lv10(), tree: defaultTree('scarlet', 10), talents: defaultTalents('scarlet', 10) });
   /** A Lv10 Scarlet whose only spent point is one rank of an hp talent. */
   const hpOnly = (): Member => {
     const r = raiseTalent(lv10(), 'scarlet-t01');

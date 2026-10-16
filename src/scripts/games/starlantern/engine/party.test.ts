@@ -4,7 +4,7 @@ import {
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
 } from './party';
 import { partyAt } from './sim';
-import { defaultTalents, defaultTree, learnedSkills, raiseTalent, skillPointsLeft, talentPointsLeft } from './progression';
+import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPointsLeft } from './progression';
 import { plainItem } from './testing';
 import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
@@ -221,15 +221,16 @@ describe('skills and passives', () => {
     expect(one(5)).toEqual({ skill: 0, talent: 1 });
     expect(one(6)).toEqual({ skill: 1, talent: 0 });
   });
-  it('a Lv6 noel in the real game knows her legacy skills (interim auto-spend)', () => {
+  it('a Lv6 noel in the real game keeps her skill points for the player to spend', () => {
     let need = 0;
     for (let l = 1; l < 6; l++) need += expToNext(l);
     const p = awardExp(newParty(), need, ['scarlet', 'chizuru', 'liz', 'noel', 'selene']).party;
     const noel = p.roster.noel;
     expect(noel.level).toBe(6);
-    for (const s of ['fire-star', 'ice-star', 'hex', 'thunder-star']) expect(learnedSkills(noel), s).toContain(s);
-    expect(noel.tree).toEqual(defaultTree('noel', 6));
-    expect(skillPointsLeft(noel)).toBe(0);
+    expect(noel.tree).toEqual(newTree('noel'));
+    expect(learnedSkills(noel)).toEqual(['fire-star']);
+    expect(skillPointsLeft(noel)).toBe(skillPoints(6));
+    expect(skillPointsLeft(noel)).toBe(4);
   });
   it('a Lv8 member in the real game holds talent ranks (interim auto-spend)', () => {
     let need = 0;
@@ -243,13 +244,19 @@ describe('skills and passives', () => {
       expect(talentPointsLeft(m), id).toBe(0);
     }
   });
-  it('auto-spend keeps the ranks already held and spends only what is left', () => {
+  it('a level-up spends no skill point: the tree stays as the player left it', () => {
     const own = { ...newMember('noel'), level: 2, tree: { 'fire-star': 1, 'noel-fire-up': 1 } };
     const r = gainExp(own, expToNext(2)).member;   // Lv3: one point left
-    expect(r.tree['noel-fire-up']).toBe(1);
-    expect(r.tree['ice-star']).toBe(1);             // the old skill that is due comes first
-    expect(skillPointsLeft(r)).toBe(0);
-    expect(gainExp(own, 0).member.tree).toEqual(own.tree);   // no level-up: nothing spent
+    expect(r.level).toBe(3);
+    expect(r.tree).toEqual(own.tree);
+    expect(skillPointsLeft(r)).toBe(1);
+    let need = 0;
+    for (let l = 2; l < 10; l++) need += expToNext(l);
+    const far = gainExp(own, need).member;          // several levels at once
+    expect(far.level).toBe(10);
+    expect(far.tree).toEqual(own.tree);
+    expect(skillPointsLeft(far)).toBe(skillPoints(10) - 1);
+    expect(far.talents).toEqual(defaultTalents('noel', 10));   // talents are still spent for now (until Task 14)
   });
   it('partyAt gives each member the default tree', () => {
     expect(partyAt(10).roster.noel.tree).toEqual(defaultTree('noel', 10));

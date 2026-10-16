@@ -7,11 +7,11 @@ import { raiseTalent } from '../../engine/progression';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
-import { STATUS_TABS, resetStatsView } from './statusTabs';
+import { STATUS_TABS, resetStatsView, resetTreeView } from './statusTabs';
 import { StatusScene } from './status';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
-import { NODES } from '../../data/trees';
+import { NODES, TREES } from '../../data/trees';
 
 /** A shown number back to a number: the minus sign reads as a minus. */
 const num = (t: string | null) => Number((t ?? '').replace('−', '-'));
@@ -23,12 +23,13 @@ function setup(arg?: string, artIndex: ArtIndex = NO_ART) {
   game.state.nextUid = 3;
   const go = vi.fn();
   const root = document.createElement('div');
-  const s = new StatusScene({ game, art: artIndex, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from: 'guild', arg });
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+  const s = new StatusScene({ game, art: artIndex, sfx, go, hasSave: () => false, newGame: vi.fn(), from: 'guild', arg });
   s.enter(root);
   const body = () => root.querySelector('.slx-status-body')!.textContent!;
   const tab = () => root.querySelector('.slx-tab-sel')!.textContent;
   const name = () => root.querySelector('.slx-status-name')!.textContent!;
-  return { game, go, root, s, body, tab, name };
+  return { game, go, root, s, body, tab, name, sfx };
 }
 
 describe('StatusScene', () => {
@@ -60,7 +61,7 @@ describe('StatusScene', () => {
     (root.querySelector('[data-tab=ultimate]') as HTMLElement).click();
     expect(tab()).toBe('絕技');
     expect(body()).toContain('流星燈火');
-    s.onAction('left'); s.onAction('left'); s.onAction('left');
+    s.onAction('left'); s.onAction('left'); s.onAction('left'); s.onAction('left');
     expect(tab()).toBe('能力');
     s.onAction('left');                                   // wraps
     expect(tab()).toBe('絕技');
@@ -98,13 +99,13 @@ describe('StatusScene', () => {
   });
 
   it('has a tab list that new systems can join, each carrying its own label and keys', () => {
-    expect(STATUS_TABS.map((t) => t.id)).toEqual(['stats', 'gear', 'skills', 'ultimate']);
+    expect(STATUS_TABS.map((t) => t.id)).toEqual(['stats', 'gear', 'skills', 'tree', 'ultimate']);
     expect(STATUS_TABS.every((t) => t.label.length > 0)).toBe(true);
     const extra = { id: 'test', label: '測試', onAction: vi.fn(() => true), render: () => document.createElement('div') };
     STATUS_TABS.push(extra);
     try {
       const { s, tab } = setup('scarlet');
-      for (let i = 0; i < 4; i++) s.onAction('right');
+      for (let i = 0; i < 5; i++) s.onAction('right');
       expect(tab()).toBe('測試');
       s.onAction('confirm');
       expect(extra.onAction).toHaveBeenCalledWith('confirm', expect.anything(), 'scarlet');
@@ -265,12 +266,16 @@ describe('StatusScene', () => {
       expect(crit.classList.contains('slx-zero')).toBe(true);
     });
 
-    it('only the stats tab offers Enter to fold in its key hint', () => {
-      const { root, s } = setup('scarlet');
+    it('only the stats tab offers Enter to fold in its key hint, and the tree tab Enter to spend', () => {
+      const { root, s, tab } = setup('scarlet');
       const hint = () => root.querySelector('.slx-status-panel .slx-hint')!.textContent!;
       expect(hint()).toContain('Enter 摺疊');
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 4; i++) {
         s.onAction('right');
+        if (tab() === '技能樹') {
+          expect(hint()).toBe(T.ui2.status.hintTree);
+          continue;
+        }
         expect(hint()).not.toContain('Enter');
         expect(hint()).toContain('↑↓ 捲動');
       }
@@ -439,5 +444,206 @@ describe('StatusScene', () => {
     const off = other.root.querySelector('.slx-tab-gear .slx-gear-power')!;
     expect(off.classList.contains('slx-line-off')).toBe(true);
     expect(off.textContent).not.toContain(T.gear.notLearned);
+  });
+
+  it('the tabs read 能力 裝備 技能 技能樹 絕技', () => {
+    const { root } = setup('noel');
+    expect([...root.querySelectorAll('.slx-tab')].map((t) => t.textContent)).toEqual(['能力', '裝備', '技能', '技能樹', '絕技']);
+  });
+
+  describe('the tree tab', () => {
+    beforeEach(() => resetTreeView());
+
+    /** Noel at `level` with `tree`, on the tree tab. */
+    const onTree = (level: number, tree: Record<string, number> = { 'fire-star': 1 }) => {
+      const r = setup('noel');
+      r.game.state.party.roster.noel = { ...r.game.state.party.roster.noel, level, tree, talents: {} };
+      r.s.onAction('right'); r.s.onAction('right'); r.s.onAction('right');
+      expect(r.tab()).toBe('技能樹');
+      const node = (id: string) => r.root.querySelector(`.slx-tree-node[data-node="${id}"]`) as HTMLElement;
+      const cur = () => r.root.querySelector('.slx-tree-node.slx-row-cur')?.getAttribute('data-node');
+      const msg = () => r.root.querySelector('.slx-tree-msg')?.textContent ?? '';
+      const info = () => r.root.querySelector('.slx-tree-info')!.textContent!;
+      const noel = () => r.game.state.party.roster.noel;
+      return { ...r, node, cur, msg, info, noel };
+    };
+    const down = (s: StatusScene, n: number) => { for (let i = 0; i < n; i++) s.onAction('down'); };
+    /** Noel's nodes in cursor order: branch 0 tiers 0-4, then branch 1, then branch 2. */
+    const order = TREES.noel.branches.flatMap((b) => b.nodes.map((n) => n.id));
+
+    it('the tree tab shows three branches, the points left and each node\'s rank', () => {
+      const { root, body, node, game } = onTree(2);
+      expect(body()).toContain('剩餘技能點 1');
+      const heads = [...root.querySelectorAll('.slx-tree-branch-name')].map((h) => h.textContent);
+      expect(heads).toHaveLength(3);
+      expect(heads[0]).toContain('火');
+      expect(heads[1]).toContain('冰');
+      expect(heads[2]).toContain('雷咒');
+      expect(root.querySelectorAll('.slx-tree-node')).toHaveLength(15);
+      expect(node('fire-star').textContent).toContain('1／3');
+      expect(node('fire-star').classList.contains('slx-node-learned')).toBe(true);
+      expect(node('ice-star').textContent).toContain('0／3');
+      expect(node('ice-star').classList.contains('slx-node-open')).toBe(true);
+      expect(node('ice-star').textContent).toContain(T.ui2.tree.kind.active);
+      expect(node('noel-fire-up').textContent).toContain(T.ui2.tree.kind.mod);
+      expect(node('inferno').textContent).toContain(T.ui2.tree.kind.ultimate);
+      expect(node('flame-wave').classList.contains('slx-node-locked')).toBe(true);
+      expect(node('flame-wave').textContent).toContain(T.ui2.tree.reason.req);
+      expect(game.state.party.roster.noel.tree).toEqual({ 'fire-star': 1 });   // drawing spends nothing
+    });
+
+    it('Enter twice spends one point; then Enter on the same node is refused at once', () => {
+      const { s, game, cur, msg, noel, sfx, body, node } = onTree(2);
+      const spy = vi.spyOn(game, 'raiseNode');
+      down(s, 5);
+      expect(cur()).toBe('ice-star');
+      s.onAction('confirm');
+      expect(noel().tree['ice-star']).toBeUndefined();
+      expect(msg()).toBe(T.ui2.tree.pending);
+      s.onAction('confirm');
+      expect(noel().tree['ice-star']).toBe(1);
+      expect(spy).toHaveBeenCalledWith('noel', 'ice-star');   // through the Game, which saves
+      expect(body()).toContain('剩餘技能點 0');
+      expect(node('ice-star').textContent).toContain('1／3');
+      expect(msg()).not.toBe(T.ui2.tree.pending);
+      sfx.error.mockClear();
+      s.onAction('confirm');
+      expect(noel().tree['ice-star']).toBe(1);
+      expect(sfx.error).toHaveBeenCalledTimes(1);
+      expect(msg()).toBe(T.ui2.tree.reason.points);
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('a locked node shows its reason on the first press and is never armed', () => {
+      const { s, cur, msg, noel, sfx } = onTree(2);
+      down(s, 2);
+      expect(cur()).toBe('flame-wave');
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.tree.reason.req);
+      expect(sfx.error).toHaveBeenCalledTimes(1);
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.tree.reason.req);
+      expect(noel().tree).toEqual({ 'fire-star': 1 });
+    });
+
+    it('every refusal has its own words', () => {
+      for (const k of ['unknown', 'max', 'points', 'req', 'gate', 'capstone'] as const) expect(T.ui2.tree.reason[k].length, k).toBeGreaterThan(0);
+      expect(new Set(Object.values(T.ui2.tree.reason)).size).toBe(6);
+    });
+
+    it('moving the cursor cancels a pending raise', () => {
+      const { s, cur, msg, noel } = onTree(2);
+      down(s, 5);
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.tree.pending);
+      s.onAction('up');
+      expect(msg()).toBe('');
+      s.onAction('down');
+      expect(cur()).toBe('ice-star');
+      s.onAction('confirm');                                   // armed afresh, not raised
+      expect(noel().tree['ice-star']).toBeUndefined();
+      expect(msg()).toBe(T.ui2.tree.pending);
+    });
+
+    it('paging to another member cancels a pending raise', () => {
+      const { s, msg, noel, cur } = onTree(2);
+      down(s, 5);
+      s.onAction('confirm');
+      s.onAction('next'); s.onAction('prev');
+      expect(msg()).toBe('');
+      expect(cur()).toBe('fire-star');                          // another tree: the cursor starts over
+      down(s, 5);
+      s.onAction('confirm');
+      expect(noel().tree['ice-star']).toBeUndefined();
+    });
+
+    it('the keyboard reaches every node, branch by branch', () => {
+      const { s, cur } = onTree(2);
+      const seen = [cur()];
+      for (let i = 0; i < 14; i++) { s.onAction('down'); seen.push(cur()); }
+      expect(seen).toEqual(order);
+      s.onAction('down');
+      expect(cur()).toBe(order[14]);                            // held at the last node
+      for (let i = 0; i < 20; i++) s.onAction('up');
+      expect(cur()).toBe(order[0]);
+    });
+
+    it('left and right still switch tabs on the tree tab', () => {
+      const { s, tab } = onTree(2);
+      s.onAction('right');
+      expect(tab()).toBe('絕技');
+      s.onAction('left');
+      expect(tab()).toBe('技能樹');
+      s.onAction('left');
+      expect(tab()).toBe('技能');
+    });
+
+    it('a click moves the cursor and a second click raises', () => {
+      const { node, cur, msg, noel } = onTree(2);
+      node('ice-star').click();
+      expect(cur()).toBe('ice-star');
+      expect(noel().tree['ice-star']).toBeUndefined();
+      expect(msg()).toBe('');
+      node('ice-star').click();
+      expect(msg()).toBe(T.ui2.tree.pending);
+      node('ice-star').click();
+      expect(noel().tree['ice-star']).toBe(1);
+    });
+
+    it('mouse and touch reach every node', () => {
+      const { node, cur } = onTree(2);
+      for (const id of order) {
+        node(id).click();
+        expect(cur()).toBe(id);
+      }
+    });
+
+    it('the notes show an active node\'s target, TP and next rank, and a modifier\'s rewrites', () => {
+      const { node, info } = onTree(10, { 'fire-star': 2 });
+      node('fire-star').click();
+      expect(info()).toContain(T.ui2.status.targets.enemy);
+      expect(info()).toContain(T.ui2.status.tp(SKILLS['fire-star'].tp));
+      expect(info()).toContain(SKILLS['fire-star'].desc);
+      expect(info()).toContain(T.ui2.tree.next('power', 110, 120));
+      node('noel-fire-up').click();
+      expect(info()).toContain(NODES['noel-fire-up'].node.desc!);
+      expect(info()).toContain(T.ui2.tree.now(T.ui2.tree.none));
+      expect(info()).toContain(T.ui2.tree.nextMod('威力 110%'));
+      node('noel-wave-up').click();
+      expect(info()).toContain(T.ui2.tree.nextMod('TP −1'));
+    });
+
+    it('every modifier rank reads as a summary', () => {
+      expect(T.ui2.tree.mod({ powerPct: 120 })).toBe('威力 120%');
+      expect(T.ui2.tree.mod({ tpDelta: -2 })).toBe('TP −2');
+      expect(T.ui2.tree.mod({ turns: 5 })).toBe('持續 5 回合');
+      expect(T.ui2.tree.mod({ chance: 0.7 })).toBe('毒機率 70%');
+      expect(T.ui2.tree.mod({ hpCost: 0.06 })).toBe('HP 消耗 6%');
+      for (const info of Object.values(NODES)) for (const m of info.node.mods ?? []) expect(T.ui2.tree.mod(m), info.node.id).not.toBe('');
+    });
+
+    it('a taken capstone is named, and the other capstones say why they are shut', () => {
+      const tree = {
+        'fire-star': 1, 'noel-fire-up': 1, 'flame-wave': 3, 'noel-wave-up': 3, inferno: 1,
+        'ice-star': 3, 'noel-ice-up': 3, 'frost-bind': 1, 'noel-bind-up': 1,
+      };
+      const { s, body, node, msg, noel, cur } = onTree(50, tree);
+      expect(body()).toContain(T.ui2.tree.capstone(SKILLS.inferno.name));
+      expect(node('inferno').classList.contains('slx-node-learned')).toBe(true);
+      expect(node('blizzard').classList.contains('slx-node-locked')).toBe(true);
+      expect(node('blizzard').textContent).toContain(T.ui2.tree.reason.capstone);
+      down(s, 9);
+      expect(cur()).toBe('blizzard');
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.tree.reason.capstone);
+      expect(noel().tree.blizzard).toBeUndefined();
+      node('inferno').click(); node('inferno').click();
+      expect(msg()).toBe(T.ui2.tree.reason.max);
+    });
+
+    it('with no capstone taken, the line says so', () => {
+      const { body } = onTree(2);
+      expect(body()).toContain(T.ui2.tree.noCapstone);
+    });
   });
 });

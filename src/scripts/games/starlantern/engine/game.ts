@@ -14,6 +14,7 @@ import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMat
 import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { activeIds, awardExp, hasPassive, statsOf, type LevelUp } from './party';
+import { raiseNode, type RaiseFail } from './progression';
 import { pick, type Rng } from './rng';
 import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
@@ -516,6 +517,22 @@ export class Game {
     const r = this.apply(townRespec(this.state, id));
     if (r.ok) this.notice = this.storage && saveGame(this.storage, this.state) ? 'saved' : 'save-failed';
     return r;
+  }
+
+  /**
+   * One skill point into a recruited member's tree node (the rules: progression `raiseNode`). In town the spend is saved
+   * at once, so it never waits for the inn; a run is never saved mid-labyrinth, so in the labyrinth the spend counts at
+   * once and is saved with the rest of the run's progress (levels and exp) at the next town save. Only a failed save
+   * leaves a notice: a spend is too small a thing to announce.
+   */
+  raiseNode(id: CharacterId, node: string): { ok: true } | { ok: false; reason: RaiseFail | 'invalid' } {
+    if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
+    const r = raiseNode(this.state.party.roster[id], node);
+    if (!r.ok) return r;
+    const party = this.state.party;
+    this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return { ok: true };
   }
 
   apply(r: TownResult): TownResult {

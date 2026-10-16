@@ -1,4 +1,6 @@
+import type { RaiseFail } from '../engine/progression';
 import type { StatCategory } from '../engine/stats';
+import type { SkillMod } from './gear';
 import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
@@ -137,7 +139,7 @@ export const T = {
       hint: '方向鍵 選格　Enter／點擊 放人　Esc 返回',
     },
     status: {
-      tabs: { stats: '能力', gear: '裝備', skills: '技能', ultimate: '絕技' },
+      tabs: { stats: '能力', gear: '裝備', skills: '技能', tree: '技能樹', ultimate: '絕技' },
       /** Column titles for statSources; a new source needs one line here. */
       sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', primary: '主屬性' } as Record<string, string>,
       total: '合計',
@@ -160,6 +162,42 @@ export const T = {
       hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
       /** The stats tab's own keys: a row cursor and folding. */
       hintStats: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 摺疊　Esc 返回',
+      /** The tree tab's own keys: a node cursor and the two-press spend. */
+      hintTree: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 投點　Esc 返回',
+    },
+    /** The status screen's skill-tree tab. */
+    tree: {
+      left: (n: number) => `剩餘技能點 ${n}`,
+      /** A branch heading: its name and the points put into it. */
+      branch: (name: string, n: number) => `${name}（${n} 點）`,
+      kind: { active: '主動', mod: '強化', passive: '被動', ultimate: '終極' },
+      /** A node that can take its next rank now. */
+      open: '可投點',
+      /** Why a node cannot take its next rank (progression canRaiseNode). */
+      reason: {
+        unknown: '無法投點', max: '已達最高等級', points: '點數不足', req: '需先學會上一階',
+        gate: '分支點數不足', capstone: '已選其他終極',
+      } as Record<RaiseFail, string>,
+      pending: '再按一次 Enter 投入 1 點',
+      capstone: (name: string) => `終極技：${name}`,
+      noCapstone: '終極技：未選（限選一個）',
+      /** What the next rank of an active node scales: power for damage and heals, the percent for a pure buff or debuff. */
+      next: (what: 'power' | 'buff', a: number, b: number) => `下一級：${what === 'power' ? '威力' : '效果'} ${a}% → ${b}%`,
+      now: (text: string) => `目前：${text}`,
+      nextMod: (text: string) => `下一級：${text}`,
+      none: '未投入',
+      /** A modifier rank's rewrite in short, e.g. 「威力 120%」「TP −2」「持續 5 回合」. */
+      mod: (m: SkillMod): string => [
+        m.powerPct !== undefined ? `威力 ${m.powerPct}%` : '',
+        m.powerDelta !== undefined ? `威力 ${signed(m.powerDelta)}%` : '',
+        m.buffPct !== undefined ? `效果 ${m.buffPct}%` : '',
+        m.tpDelta !== undefined ? `TP ${signed(m.tpDelta)}` : '',
+        m.hpCost !== undefined ? `HP 消耗 ${Math.round(m.hpCost * 100)}%` : '',
+        m.turns !== undefined ? `持續 ${m.turns} 回合` : '',
+        m.turnsDelta !== undefined ? `持續 ${signed(m.turnsDelta)} 回合` : '',
+        m.chance !== undefined ? `毒機率 ${Math.round(m.chance * 100)}%` : '',
+        m.hits !== undefined ? `${m.hits} 段` : '',
+      ].filter(Boolean).join('、'),
     },
     equip: {
       title: '裝備',

@@ -285,22 +285,13 @@ export function validBuild(id: CharacterId, level: number, tree: unknown, talent
 /** The build back to its start: the free first rank held, nothing else spent, so every point is available again. */
 export const resetBuild = (m: Member): Member => ({ ...m, tree: newTree(m.id), talents: {} });
 
-// TEMPORARY: removed by plan 5b Task 13 (player spends points)
+// TEMPORARY: talents only, removed by Task 14 (the player spends talent points)
 /**
- * Spends a member's unspent skill points toward `defaultTree` of their level and unspent talent points toward
- * `defaultTalents` of their level, so the game keeps teaching skills and growing talents until the player can spend
- * points. Ranks already held stay; each raise goes through `raiseNode` / `raiseTalent`, so the rules hold.
+ * Spends a member's unspent talent points toward `defaultTalents` of their level, so talents keep growing until the
+ * player can spend them. Skill points are never spent here: the player spends them on the status screen's tree tab.
+ * Ranks already held stay; each raise goes through `raiseTalent`, so the rules hold.
  */
 export function autoSpend(m: Member): Member {
-  const target = defaultTree(m.id, m.level);
-  for (let progress = true; progress && skillPointsLeft(m) > 0;) {
-    progress = false;
-    for (const node of Object.keys(target)) {
-      if (nodeRank(m, node) >= target[node]) continue;
-      const r = raiseNode(m, node);
-      if (r.ok) { m = r.member; progress = true; }
-    }
-  }
   const talents = defaultTalents(m.id, m.level);
   const held = (node: string) => rankOf(BOARDS[m.id].find((n) => n.id === node)!, talentsOf(m));
   for (let progress = true; progress && talentPointsLeft(m) > 0;) {

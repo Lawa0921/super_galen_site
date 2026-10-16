@@ -1178,3 +1178,41 @@ describe('respec', () => {
   });
 });
 });
+
+describe('spending a skill point', () => {
+  const lv2 = (g: Game) => { g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 2 }; };
+  it('saves the spend in town: a reload keeps the new rank', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage);
+    lv2(g);
+    expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
+    expect(g.state.party.roster.noel.tree).toEqual({ 'fire-star': 1, 'ice-star': 1 });
+    const back = Game.boot(calm(), storage);
+    expect(back.notice).toBeNull();
+    expect(back.state.party.roster.noel.tree).toEqual({ 'fire-star': 1, 'ice-star': 1 });
+  });
+  it('reports a failed save without losing the spend', () => {
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } });
+    lv2(g);
+    expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
+    expect([g.notice, g.state.party.roster.noel.tree['ice-star']]).toEqual(['save-failed', 1]);
+  });
+  it('a refused spend changes and saves nothing, and says why', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage);
+    expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: false, reason: 'points' });   // Lv1: no point yet
+    lv2(g);
+    expect(g.raiseNode('noel', 'flame-wave')).toEqual({ ok: false, reason: 'req' });
+    expect(g.raiseNode('sylvie', 'aimed-shot')).toEqual({ ok: false, reason: 'invalid' });   // not recruited
+    expect(g.state.party.roster.noel.tree).toEqual({ 'fire-star': 1 });
+    expect(storage.map.has(SAVE_KEY)).toBe(false);
+  });
+  it('in the labyrinth the spend counts at once but is not saved mid-run', () => {
+    const storage = memoryStorage();
+    const g = inMap(1, calm(), storage);
+    lv2(g);
+    expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
+    expect(g.state.party.roster.noel.tree['ice-star']).toBe(1);
+    expect([g.notice, storage.map.has(SAVE_KEY)]).toEqual([null, false]);
+  });
+});
