@@ -88,8 +88,29 @@ describe('save', () => {
     expect(bad((g) => { g.bag = Array.from({ length: 60 }, (_, i) => plainItem('iron-sword', 10 + i)); g.nextUid = 100; })).toBe('ok');
     expect(bad((g) => { g.nextUid = 4; })).toBe('corrupt');
     expect(bad((g) => { g.nextUid = 4.5; })).toBe('corrupt');
+    expect(bad((g) => { g.bag = []; g.party.roster.liz.equip = {}; g.nextUid = -1; })).toBe('corrupt');
+    expect(bad((g) => { g.bag = []; g.party.roster.liz.equip = {}; g.nextUid = 0; })).toBe('corrupt');
+    expect(bad((g) => { g.nextUid = 2 ** 53; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].ilvl = 1e300; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].ilvl = 1000; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[0].ilvl = 999; })).toBe('ok');
     expect(bad((g) => { delete (g as Partial<typeof g>).bag; })).toBe('corrupt');
     expect(bad((g) => { delete (g as Partial<typeof g>).nextUid; })).toBe('corrupt');
+  });
+  it('round-trips a filled bag and worn gear intact', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.bag = [
+      { ...plainItem('iron-sword', 1), rarity: 'rare', ilvl: 12, affixes: [{ key: 'crit', value: 3 }, { key: 'str', value: 7 }], junk: true },
+      { ...plainItem('copper-ring', 2), rarity: 'set', ilvl: 20, special: 'set-blaze-ring', affixes: [{ key: 'fireDmg', value: 9 }] },
+    ];
+    g.party.roster.liz.equip = {
+      weapon: { ...plainItem('iron-sword', 3), rarity: 'legendary', ilvl: 30, special: 'lg-liz', affixes: [{ key: 'atk', value: 11 }] },
+      ring2: plainItem('copper-ring', 4),
+    };
+    g.nextUid = 5;
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
   });
   it('a version-3 save reports version', () => {
     const { bag: _b, nextUid: _n, ...rest } = newGame();

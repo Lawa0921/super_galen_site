@@ -55,6 +55,7 @@ describe('equipment', () => {
   it('refuses missing stock and unknown gear', () => {
     expect(equip(withBag([]), 'scarlet', 1)).toEqual({ ok: false, reason: 'stock' });
     expect(equip(withBag([plainItem('iron-sword', 1)]), 'nobody' as never, 1)).toEqual({ ok: false, reason: 'invalid' });
+    expect(equip(withBag([{ ...plainItem('iron-sword', 1), base: 'nope' }]), 'scarlet', 1)).toEqual({ ok: false, reason: 'invalid' });
   });
   it('unequips and clamps HP to the new maximum', () => {
     const a = equip(withBag([plainItem('moss-charm', 1)]), 'scarlet', 1);

@@ -23,12 +23,14 @@ const isIdList = (v: unknown, nullable = false) =>
   Array.isArray(v) && v.every((x) => (nullable && x === null) || CHARACTER_IDS.includes(x));
 const ELEMENTS = ['phys', 'fire', 'ice', 'thunder'];
 const isListMap = (v: unknown, ok: (x: unknown) => boolean) => isObj(v) && Object.values(v).every((l) => Array.isArray(l) && l.every(ok));
+/** Far above any depth the game reaches (a depth-50 boss drops item level 202); bounds hostile saves. */
+const MAX_ILVL = 999;
 const has = (o: object, k: unknown) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 
 /** One piece of gear: a known base, rarity, affix keys and special, with sane numbers. */
 function isItem(v: unknown): v is ItemInstance {
   if (!isObj(v) || !isCount(v.uid) || !has(EQUIPMENT, v.base) || !RARITIES.includes(v.rarity as never)) return false;
-  if (!Number.isInteger(v.ilvl) || (v.ilvl as number) < 1 || !isCount(v.enhance)) return false;
+  if (!Number.isInteger(v.ilvl) || (v.ilvl as number) < 1 || (v.ilvl as number) > MAX_ILVL || !isCount(v.enhance)) return false;
   if (v.special !== undefined && !has(SPECIALS, v.special)) return false;
   if (v.junk !== undefined && typeof v.junk !== 'boolean') return false;
   return Array.isArray(v.affixes) && v.affixes.every((a) => isObj(a) && has(AFFIXES, a.key) && Number.isFinite(a.value));
@@ -44,7 +46,7 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!placed.length || placed.length > MAX_ACTIVE) return false;
   if (new Set(placed).size !== placed.length || placed.some((x) => !(p.recruited as unknown[]).includes(x))) return false;
   if (!Array.isArray(d.bag) || d.bag.length > BAG_SIZE || !d.bag.every(isItem)) return false;
-  if (!Number.isInteger(d.nextUid)) return false;
+  if (!Number.isSafeInteger(d.nextUid) || (d.nextUid as number) < 1) return false;
   const uids: number[] = (d.bag as ItemInstance[]).map((it) => it.uid);
   for (const id of CHARACTER_IDS) {
     const m = (p.roster as Record<string, unknown>)[id];
