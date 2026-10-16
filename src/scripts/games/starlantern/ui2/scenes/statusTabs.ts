@@ -40,6 +40,8 @@ export function bonusText(b: Partial<Stats>): string {
 
 /** A source column's change: signed with the minus sign (T.signed), or an em dash for none. */
 const signed = (n: number) => (n ? T.signed(n) : '—');
+/** The base column's own value: no plus sign, but the minus sign (T.signed) when it is negative. */
+const base = (n: number) => (n < 0 ? T.signed(n) : String(n));
 
 /**
  * The display rule for the stats page. The seven base stats are whole numbers (battle floors them, see statsOf); every
@@ -111,7 +113,7 @@ const stats: StatusTab = {
         const now = floorShown(k, raw);
         const d = Math.round((now - before) * 10) / 10;
         before = now;
-        return el('td', { class: `slx-${p.source}`, text: i === 0 ? (d < 0 ? T.signed(d) : String(d)) : signed(d) });
+        return el('td', { class: `slx-${p.source}`, text: i === 0 ? base(d) : signed(d) });
       });
       // Any clamp in capSheet (a cap today, a floor tomorrow) shows here: the sheet differs from the plain sum.
       const capped = sheet[k] !== raw;
