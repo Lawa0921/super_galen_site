@@ -191,11 +191,36 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-bar-full { box-shadow: 0 0 3px $slx-gold; }
 .slx-pm-active { border-color: $slx-gold; box-shadow: 0 0 0 1px $slx-gold; }
 .slx-pm-down { filter: grayscale(1) brightness(0.6); }
-.slx-pm-hit { animation: slx-pm-hit 0.2s steps(2) 1; }
-.slx-pm-acting { animation: slx-pm-act 0.3s ease-out 1; }
-@keyframes slx-pm-hit { 0% { transform: translateX(-2px); filter: brightness(2); } 100% { transform: translateX(2px); } }
-@keyframes slx-pm-act { 0% { transform: translateY(-3px); } 100% { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .slx-pm-hit, .slx-pm-acting { animation: none; } }
+// Party panel feedback (ui2/partyBar.ts pulse): a hard shake with a red flash for hits, a green glow for heals,
+// a sink for knockouts, a lift for acting, and the number that caused it rising off the panel.
+.slx-pm { position: relative; }
+.slx-pm-hit { animation: slx-pm-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1; }
+.slx-pm-hit::after, .slx-pm-heal::after { content: ''; position: absolute; inset: 0; pointer-events: none; animation: slx-pm-flash 0.4s ease-out forwards; }
+.slx-pm-hit::after { background: rgba(255, 50, 40, 0.6); }
+.slx-pm-heal::after { background: rgba(110, 230, 140, 0.45); }
+.slx-pm-hit img { animation: slx-pm-recoil 0.4s ease-out 1; }
+.slx-pm-heal { box-shadow: 0 0 10px #6fe08f; }
+.slx-pm-acting { animation: slx-pm-act 0.4s ease-out 1; box-shadow: 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.8); }
+.slx-pm-ko { animation: slx-pm-ko 0.45s ease-in 1 forwards; }
+@keyframes slx-pm-shake {
+  0% { translate: 0 0; } 10% { translate: -7px 2px; } 25% { translate: 6px -2px; } 40% { translate: -5px 1px; }
+  55% { translate: 4px 0; } 70% { translate: -2px 0; } 85% { translate: 1px 0; } 100% { translate: 0 0; }
+}
+@keyframes slx-pm-flash { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slx-pm-recoil { 0% { scale: 1.25; filter: brightness(2.2) saturate(0.4); } 100% { scale: 1; filter: none; } }
+@keyframes slx-pm-act { 0% { translate: 0 0; } 35% { translate: 0 -8px; } 100% { translate: 0 0; } }
+@keyframes slx-pm-ko { 0% { translate: 0 0; } 30% { translate: 0 -4px; } 100% { translate: 0 6px; filter: grayscale(1) brightness(0.5); } }
+.slx-pm-pop {
+  position: absolute; right: 8px; top: -6px; z-index: 3;
+  font-size: 20px; line-height: 20px; color: #ff5a4a; pointer-events: none;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  animation: slx-pm-pop 0.9s ease-out forwards;
+}
+.slx-pm-pop-heal { color: #6fe08f; }
+@keyframes slx-pm-pop { 0% { scale: 1.8; translate: 0 6px; opacity: 1; } 20% { scale: 1; translate: 0 0; } 70% { opacity: 1; } 100% { translate: 0 -16px; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .slx-pm-hit, .slx-pm-acting, .slx-pm-ko, .slx-pm-hit img, .slx-pm-pop { animation: none; }
+}
 
 // Battle
 .slx-battle { background: transparent; }

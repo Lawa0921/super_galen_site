@@ -1,4 +1,5 @@
 import type { SoundManager } from '../../audio/SoundManager';
+import type { PartyCue } from '../../render/BattleView';
 import { CHARACTERS } from '../../data/characters';
 import { ITEMS } from '../../data/items';
 import { SKILLS } from '../../data/skills';
@@ -49,6 +50,7 @@ export class BattleScene implements Scene {
   /** Party values from before the round, shown until each member's own hit plays. */
   private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'>> | null = null;
   private revealed = new Set<string>();
+  private actLine = '';
 
   constructor(private ctx: SceneCtx) {
     this.bar = new PartyBar(ctx.art);
@@ -289,7 +291,9 @@ export class BattleScene implements Scene {
     const names = new Map([...r.battle.party, ...r.battle.enemies].map((c) => [c.key, c.name]));
     const lines = battleLines(r.battle.log, (k) => names.get(k) ?? k);
     try {
-      await Promise.all([this.playLines(lines), this.ctx.stage?.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name, amount) => this.onParty(key, cue, name, amount))]);
+      // With a stage, each line is shown by the playback itself at the moment its event is drawn.
+      if (this.ctx.stage) await this.ctx.stage.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name, amount) => this.onParty(key, cue, name, amount), (i) => this.showLine(lines, r.battle.log, i));
+      else await this.playLines(lines);
     } catch (err) {
       // A broken animation must never strand the player: log it and carry on with the round's result.
       console.error('[starlantern] battle playback failed', err);
@@ -303,6 +307,12 @@ export class BattleScene implements Scene {
     else this.startRound();
   }
 
+  /** Message window: the action on top, what it did underneath. */
+  private showLine(lines: string[], log: BattleState['log'], i: number): void {
+    if (log[i]?.type === 'act') { this.actLine = lines[i]; this.msg.textContent = lines[i]; return; }
+    this.msg.textContent = this.actLine ? `${this.actLine}\n${lines[i]}` : lines[i];
+  }
+
   private async playLines(lines: string[]): Promise<void> {
     if (this.ctx.fast) { this.msg.textContent = lines.slice(-2).join('\n'); return; }
     for (const line of lines) {
@@ -311,7 +321,7 @@ export class BattleScene implements Scene {
     }
   }
 
-  private async onParty(key: string, cue: 'acting' | 'hit' | 'ultimate', name?: string, amount?: number): Promise<void> {
+  private async onParty(key: string, cue: PartyCue, name?: string, amount?: number): Promise<void> {
     if (cue === 'ultimate') {
       this.ctx.sfx.ultimate?.();
       const ult = art.portrait(key, 'ultimate');
@@ -319,13 +329,17 @@ export class BattleScene implements Scene {
       await playCutIn(this.cutin, { name: name ?? '', portrait, fast: !!this.ctx.fast });
       return;
     }
-    if (cue === 'hit') {
-      // Take each hit off the pre-round value as it plays; without an amount, show the round's result.
-      const shown = this.before?.get(key);
-      if (shown && amount !== undefined) { shown.hp = Math.max(0, shown.hp - amount); shown.alive = shown.hp > 0; } else this.revealed.add(key);
+    const shown = this.before?.get(key);
+    if (cue === 'hit' || cue === 'heal') {
+      // Take each hit off (or add each heal to) the pre-round value as it plays; without an amount, show the round's result.
+      const max = this.state.party.find((c) => c.key === key)?.max.hp ?? 0;
+      if (shown && amount !== undefined) {
+        shown.hp = cue === 'hit' ? Math.max(0, shown.hp - amount) : Math.min(max, shown.hp + amount);
+        shown.alive = shown.hp > 0;
+      } else this.revealed.add(key);
       this.updateBar(null);
     }
-    this.bar.pulse(key, cue === 'acting' ? 'attack' : 'hit');
+    this.bar.pulse(key, cue === 'acting' ? 'attack' : cue, amount);
   }
 
   private showResult(end: BattleEnd): void {

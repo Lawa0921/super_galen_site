@@ -15,6 +15,8 @@ function colorFor(defId: string): number {
 
 interface Slot { box: Container; body: Container; texture: Texture | null }
 
+export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko';
+
 export class BattleView {
   readonly root = new Container();
   private slots = new Map<string, Slot>();
@@ -83,12 +85,15 @@ export class BattleView {
     return { x: slot.box.x, y: slot.box.y - slot.body.height };
   }
 
+  /** Party members are drawn by the DOM party bar; these cues tell it what to show. */
   async play(
     state: BattleState, sfx: SoundManager,
-    onParty?: (key: string, cue: 'acting' | 'hit' | 'ultimate', name?: string, amount?: number) => void | Promise<void>,
+    onParty?: (key: string, cue: PartyCue, name?: string, amount?: number) => void | Promise<void>,
+    onLine?: (index: number) => void,
   ): Promise<void> {
     for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null)) {
       if (cue.kind === 'wait') { await this.wait(cue.ms); continue; }
+      if (cue.kind === 'line') { onLine?.(cue.index); continue; }
       const slot = this.slots.get(cue.key);
       if (cue.kind === 'ultimate') { if (!slot) await onParty?.(cue.key, 'ultimate', cue.name); continue; }
       if (cue.kind === 'act') { if (!slot) void onParty?.(cue.key, 'acting'); continue; }
@@ -97,9 +102,9 @@ export class BattleView {
         if (slot) { this.flash(slot); this.popup(slot, String(cue.amount), cue.weak ? 0xffd166 : 0xffffff); }
         else void onParty?.(cue.key, 'hit', undefined, cue.amount);
       }
-      if (cue.kind === 'fx' && cue.fx === 'heal') sfx.heal();
+      if (cue.kind === 'fx' && cue.fx === 'heal') { sfx.heal(); if (!slot && cue.amount !== undefined) void onParty?.(cue.key, 'heal', undefined, cue.amount); }
       if ((cue.kind === 'hit' || cue.kind === 'fx') && cue.fx && slot) this.effect(slot, cue.fx);
-      if (cue.kind === 'ko') { sfx.ko(); if (slot) this.shattering.push(this.shatter(slot)); }
+      if (cue.kind === 'ko') { sfx.ko(); if (slot) this.shattering.push(this.shatter(slot)); else void onParty?.(cue.key, 'ko'); }
     }
     await Promise.all(this.shattering);
     this.shattering = [];

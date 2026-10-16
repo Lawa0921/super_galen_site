@@ -247,6 +247,27 @@ describe('BattleScene sound and failure safety', () => {
     expect(seen).toEqual([`${max - 5}/${max}`, `${max - 12}/${max}`]);
   });
 
+  it('shows each message line at the moment its event plays, keeping the action above its result', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    const root = document.createElement('div');
+    const seen: string[] = [];
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
+      play: async (end: { log: { type: string }[] }, _fx: unknown, _on: unknown, onLine: (i: number) => void) => {
+        const act = end.log.findIndex((e) => e.type === 'act');
+        onLine(act); seen.push(root.querySelector('.slx-msg')!.textContent!);
+        onLine(act + 1); seen.push(root.querySelector('.slx-msg')!.textContent!);
+      } } };
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');                                   // 全員攻擊
+    await flush();
+    expect(seen[0]).toMatch(/：攻擊$/);                      // only the action so far
+    expect(seen[1].split('\n')).toHaveLength(2);           // action, then what it did
+    expect(seen[1].split('\n')[0]).toBe(seen[0]);
+  });
+
   it('puts the target arrow just above the enemy under the cursor', () => {
     const game = new Game(constRng(0.99), null);
     game.depart(1); game.encounter = 99; game.move('right');

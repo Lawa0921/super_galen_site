@@ -13,12 +13,13 @@ describe('battleCues', () => {
       { type: 'damage', target: 'scarlet', amount: 4, element: 'phys', mult: 1 },
       { type: 'ko', target: 'e0' },
     ];
+    // each event's message line is cued together with its picture, so the text never runs ahead of the screen
     expect(battleCues(log, defIdOf)).toEqual([
-      { kind: 'act', key: 'sylvie' }, { kind: 'wait', ms: 260 },
-      { kind: 'hit', key: 'e0', amount: 12, weak: true, fx: 'pierce' }, { kind: 'wait', ms: 160 },
-      { kind: 'act', key: 'e0' }, { kind: 'wait', ms: 260 },
-      { kind: 'hit', key: 'scarlet', amount: 4, weak: false, fx: 'strike' }, { kind: 'wait', ms: 160 },
-      { kind: 'ko', key: 'e0' }, { kind: 'wait', ms: 160 },
+      { kind: 'line', index: 0 }, { kind: 'act', key: 'sylvie' }, { kind: 'wait', ms: 420 },
+      { kind: 'line', index: 1 }, { kind: 'hit', key: 'e0', amount: 12, weak: true, fx: 'pierce' }, { kind: 'wait', ms: 320 },
+      { kind: 'line', index: 2 }, { kind: 'act', key: 'e0' }, { kind: 'wait', ms: 420 },
+      { kind: 'line', index: 3 }, { kind: 'hit', key: 'scarlet', amount: 4, weak: false, fx: 'strike' }, { kind: 'wait', ms: 320 },
+      { kind: 'line', index: 4 }, { kind: 'ko', key: 'e0' }, { kind: 'wait', ms: 320 },
     ]);
   });
 
@@ -29,10 +30,15 @@ describe('battleCues', () => {
       { type: 'resist', target: 'e0' },
     ];
     expect(battleCues(log, defIdOf)).toEqual([
-      { kind: 'act', key: 'scarlet' }, { kind: 'wait', ms: 260 },
-      { kind: 'fx', key: 'scarlet', fx: 'buff' }, { kind: 'wait', ms: 160 },
-      { kind: 'wait', ms: 160 },
+      { kind: 'line', index: 0 }, { kind: 'act', key: 'scarlet' }, { kind: 'wait', ms: 420 },
+      { kind: 'line', index: 1 }, { kind: 'fx', key: 'scarlet', fx: 'buff' }, { kind: 'wait', ms: 320 },
+      { kind: 'line', index: 2 }, { kind: 'wait', ms: 320 },
     ]);
+  });
+
+  it('carries the amount of a heal so a party face can show it', () => {
+    const log: BattleEvent[] = [{ type: 'act', actor: 'scarlet', label: '回復藥' }, { type: 'heal', target: 'scarlet', amount: 60 }];
+    expect(battleCues(log, defIdOf)).toContainEqual({ kind: 'fx', key: 'scarlet', fx: 'heal', amount: 60 });
   });
 });
 
@@ -42,8 +48,8 @@ describe('ultimate cue', () => {
       { type: 'act', actor: 'scarlet', label: '紅蓮劫火', ultimate: 'ult-scarlet' },
       { type: 'damage', target: 'e0', amount: 99, element: 'fire', mult: 1 },
     ];
-    expect(battleCues(log, defIdOf).slice(0, 3)).toEqual([
-      { kind: 'ultimate', key: 'scarlet', name: '紅蓮劫火' }, { kind: 'act', key: 'scarlet' }, { kind: 'wait', ms: 260 },
+    expect(battleCues(log, defIdOf).slice(0, 4)).toEqual([
+      { kind: 'ultimate', key: 'scarlet', name: '紅蓮劫火' }, { kind: 'line', index: 0 }, { kind: 'act', key: 'scarlet' }, { kind: 'wait', ms: 420 },
     ]);
   });
 });

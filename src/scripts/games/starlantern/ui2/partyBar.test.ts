@@ -46,4 +46,30 @@ describe('PartyBar', () => {
     bar.pulse('scarlet', 'hit');
     expect(img()).toBe(art.portrait('scarlet', 'hit'));
   });
+
+  it('shows a damage or heal number on the panel and marks a knockout', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet'), m('liz')]);
+    bar.pulse('scarlet', 'hit', 24);
+    const panel = (k: string) => bar.el.querySelector(`[data-key=${k}]`)!;
+    expect(panel('scarlet').classList.contains('slx-pm-hit')).toBe(true);
+    expect(panel('scarlet').querySelector('.slx-pm-pop')!.textContent).toBe('-24');
+    bar.pulse('liz', 'heal', 60);
+    expect(panel('liz').querySelector('.slx-pm-pop-heal')!.textContent).toBe('+60');
+    bar.pulse('liz', 'ko');
+    expect(panel('liz').classList.contains('slx-pm-ko')).toBe(true);
+  });
+
+  it('updates panels in place, so a shake or number already playing is not cut off', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet'), m('liz')]);
+    const before = bar.el.querySelector('[data-key=scarlet]');
+    bar.pulse('scarlet', 'hit', 5);
+    bar.update([m('scarlet', 25), m('liz', 20)]);
+    const after = bar.el.querySelector('[data-key=scarlet]')!;
+    expect(after).toBe(before);
+    expect(after.classList.contains('slx-pm-hit')).toBe(true);
+    expect(after.querySelector('.slx-pm-pop')).not.toBeNull();
+    expect(after.textContent).toContain('25/30');
+  });
 });
