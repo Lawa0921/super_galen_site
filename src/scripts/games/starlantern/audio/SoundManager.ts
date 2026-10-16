@@ -55,6 +55,46 @@ export class SoundManager {
     osc.stop(end);
   }
 
+  /** Filtered white noise: the body of slashes, flames, cracks and whooshes. */
+  private noise(durMs: number, gain: number, filter: BiquadFilterType, freq: number, freqEnd?: number, delayMs = 0): void {
+    this.ensure();
+    if (!this.ctx || !this.master) return;
+    const t = this.ctx.currentTime + delayMs / 1000;
+    const end = t + durMs / 1000;
+    const len = Math.max(1, Math.floor(this.ctx.sampleRate * durMs / 1000));
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const f = this.ctx.createBiquadFilter();
+    f.type = filter;
+    f.frequency.setValueAtTime(freq, t);
+    if (freqEnd) f.frequency.exponentialRampToValueAtTime(freqEnd, end);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, end);
+    src.connect(f); f.connect(g); g.connect(this.master);
+    src.start(t);
+    src.stop(end);
+  }
+
+  /** Each attack effect has its own sound on impact (render/artPaths FxKey). */
+  element(fx: string): void {
+    switch (fx) {
+      case 'slash': this.noise(120, 0.22, 'highpass', 2400, 6000); break;
+      case 'pierce': this.noise(90, 0.18, 'bandpass', 3200); this.blip(1400, 70, 'square', 0.05, 500); break;
+      case 'strike': this.noise(110, 0.25, 'lowpass', 700, 150); break;
+      case 'fire': this.noise(380, 0.2, 'lowpass', 1600, 300); this.blip(110, 300, 'sawtooth', 0.06, 70); break;
+      case 'ice': this.blip(1760, 160, 'sine', 0.07); this.blip(2350, 220, 'sine', 0.05); this.noise(160, 0.08, 'highpass', 5000); break;
+      case 'thunder': this.noise(60, 0.3, 'highpass', 1800); this.noise(420, 0.22, 'lowpass', 900, 120, 40); break;
+      default: break;
+    }
+  }
+
+  /** The whoosh of an action cut-in sliding across the screen. */
+  cutin(): void { this.noise(220, 0.16, 'bandpass', 600, 3000); this.blip(660, 90, 'square', 0.05, 1320); }
+
   step(): void { this.blip(180, 40, 'triangle', 0.06); }
   bump(): void { this.blip(90, 70, 'square', 0.08); }
   stairs(): void { this.blip(330, 160, 'triangle', 0.1, 660); }

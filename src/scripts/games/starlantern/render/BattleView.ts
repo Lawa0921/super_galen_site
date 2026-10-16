@@ -1,7 +1,7 @@
 import { ColorMatrixFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
-import { art } from './artPaths';
+import { art, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
 import type { TextureBank } from './textures';
 
@@ -15,6 +15,8 @@ function colorFor(defId: string): number {
 
 interface Slot { box: Container; body: Container; texture: Texture | null }
 
+/** Pause on each impact so a hit lands before the next thing happens. */
+const HIT_STOP_MS = 80;
 export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko';
 
 export class BattleView {
@@ -88,7 +90,7 @@ export class BattleView {
   /** Party members are drawn by the DOM party bar; these cues tell it what to show. */
   async play(
     state: BattleState, sfx: SoundManager,
-    onParty?: (key: string, cue: PartyCue, name?: string, amount?: number) => void | Promise<void>,
+    onParty?: (key: string, cue: PartyCue, name?: string, amount?: number, extra?: { fx: FxKey | null; weak: boolean }) => void | Promise<void>,
     onLine?: (index: number) => void,
   ): Promise<void> {
     for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null)) {
@@ -96,15 +98,26 @@ export class BattleView {
       if (cue.kind === 'line') { onLine?.(cue.index); continue; }
       const slot = this.slots.get(cue.key);
       if (cue.kind === 'ultimate') { if (!slot) await onParty?.(cue.key, 'ultimate', cue.name); continue; }
-      if (cue.kind === 'act') { if (!slot) void onParty?.(cue.key, 'acting'); continue; }
+      if (cue.kind === 'act') {
+        if (slot) await this.lunge(slot); else void onParty?.(cue.key, 'acting');
+        continue;
+      }
       if (cue.kind === 'hit') {
         if (cue.weak) sfx.weak(); else sfx.hit();
-        if (slot) { this.flash(slot); this.popup(slot, String(cue.amount), cue.weak ? 0xffd166 : 0xffffff); }
-        else void onParty?.(cue.key, 'hit', undefined, cue.amount);
+        if (cue.fx) sfx.element?.(cue.fx);
+        if (slot) {
+          this.flash(slot, cue.weak);
+          this.popup(slot, String(cue.amount), cue.weak ? 0xffd166 : 0xffffff, cue.weak);
+          if (cue.weak) this.shake(6);
+        } else void onParty?.(cue.key, 'hit', undefined, cue.amount, { fx: cue.fx, weak: cue.weak });
       }
       if (cue.kind === 'fx' && cue.fx === 'heal') { sfx.heal(); if (!slot && cue.amount !== undefined) void onParty?.(cue.key, 'heal', undefined, cue.amount); }
       if ((cue.kind === 'hit' || cue.kind === 'fx') && cue.fx && slot) this.effect(slot, cue.fx);
-      if (cue.kind === 'ko') { sfx.ko(); if (slot) this.shattering.push(this.shatter(slot)); else void onParty?.(cue.key, 'ko'); }
+      if (cue.kind === 'hit') await this.wait(HIT_STOP_MS);   // a beat on impact, once everything for the hit is drawn
+      if (cue.kind === 'ko') {
+        sfx.ko();
+        if (slot) { this.shake(4); this.shattering.push(this.shatter(slot)); } else void onParty?.(cue.key, 'ko');
+      }
     }
     await Promise.all(this.shattering);
     this.shattering = [];
@@ -114,14 +127,45 @@ export class BattleView {
     }
   }
 
-  private flash(slot: Slot): void {
+  /** White flash and a knock back; harder on a weak point. */
+  private flash(slot: Slot, hard = false): void {
     const f = new ColorMatrixFilter();
     f.brightness(3, false);
     slot.body.filters = [f];
     const x0 = slot.box.x;
-    slot.box.x = x0 + 6;
-    this.later(60, () => { slot.box.x = x0; });
-    this.later(90, () => { slot.body.filters = []; f.destroy(); });
+    slot.box.x = x0 + (hard ? 14 : 9);
+    this.later(50, () => { if (!slot.box.destroyed) slot.box.x = x0 + (hard ? -5 : -3); });
+    this.later(100, () => { if (!slot.box.destroyed) slot.box.x = x0; });
+    this.later(110, () => { if (!slot.body.destroyed) slot.body.filters = []; f.destroy(); });
+  }
+
+  /** An enemy about to act lunges toward the camera and settles back. */
+  private lunge(slot: Slot): Promise<void> {
+    if (this.fast || slot.box.destroyed) return Promise.resolve();
+    const y0 = slot.box.y;
+    const total = 14;
+    let frame = 0;
+    return new Promise((resolve) => {
+      const tick = () => {
+        if (slot.box.destroyed) { resolve(); return; }
+        frame++;
+        const t = Math.sin((frame / total) * Math.PI);   // out and back
+        slot.box.scale.set(1 + 0.18 * t);
+        slot.box.y = y0 + 16 * t;
+        if (frame < total) { this.frame(tick); return; }
+        slot.box.scale.set(1);
+        slot.box.y = y0;
+        resolve();
+      };
+      this.frame(tick);
+    });
+  }
+
+  /** Jolt the whole battle picture for a few frames. */
+  private shake(px: number): void {
+    if (this.fast) return;
+    const steps = [px, -px, px * 0.6, -px * 0.6, px * 0.3, 0];
+    steps.forEach((x, i) => this.later(i * 30, () => { this.root.x = x; }));
   }
 
   private effect(slot: Slot, key: Parameters<typeof art.fx>[0]): void {
@@ -171,12 +215,25 @@ export class BattleView {
     this.frames.add(id);
   }
 
-  private popup(slot: Slot, text: string, color: number): void {
-    const t = new Text({ text, style: { fill: color, fontSize: 22, fontWeight: 'bold', stroke: { color: 0x000000, width: 4 } } });
+  private popup(slot: Slot, text: string, color: number, weak = false): void {
+    const t = new Text({ text, style: { fill: color, fontSize: weak ? 32 : 26, fontWeight: 'bold', stroke: { color: 0x000000, width: 5 } } });
     t.anchor.set(0.5);
     t.y = -slot.body.height - 12;
+    t.scale.set(1.6);
     slot.box.addChild(t);
-    this.later(500, () => { slot.box.removeChild(t); t.destroy(); });
+    const parts: Text[] = [t];
+    if (weak) {
+      const tag = new Text({ text: '弱點！', style: { fill: 0xffd166, fontSize: 14, fontWeight: 'bold', stroke: { color: 0x7a1a10, width: 4 } } });
+      tag.anchor.set(0.5);
+      tag.y = t.y - 26;
+      slot.box.addChild(tag);
+      parts.push(tag);
+    }
+    // A new battle may have torn the sprites down before these run.
+    this.later(40, () => { if (!t.destroyed) t.scale.set(1.2); });
+    this.later(80, () => { if (!t.destroyed) t.scale.set(1); });
+    this.later(200, () => { if (!t.destroyed) t.y -= 4; });
+    this.later(600, () => { for (const x of parts) if (!x.destroyed) { slot.box.removeChild(x); x.destroy(); } });
   }
 
   private later(ms: number, fn: () => void): void {

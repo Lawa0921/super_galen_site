@@ -60,6 +60,23 @@ describe('PartyBar', () => {
     expect(panel('liz').classList.contains('slx-pm-ko')).toBe(true);
   });
 
+  it('lays the attack effect over the face, enlarges heavy numbers and calls out weak hits', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet')]);
+    bar.pulse('scarlet', 'hit', 30, { fx: '/fx/slash.png', heavy: true, weak: true });
+    const panel = bar.el.querySelector('[data-key=scarlet]')!;
+    expect(panel.querySelector('.slx-pm-fx')!.getAttribute('src')).toBe('/fx/slash.png');
+    expect(panel.querySelector('.slx-pm-pop')!.classList.contains('slx-pm-pop-big')).toBe(true);
+    expect(panel.querySelector('.slx-pm-weak')!.textContent).toBe('弱點！');
+  });
+
+  it('keeps a low-HP member\'s panel flashing a warning', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet', 6), m('liz', 30), m('noel', 0)]);
+    const danger = (k: string) => bar.el.querySelector(`[data-key=${k}]`)!.classList.contains('slx-pm-danger');
+    expect([danger('scarlet'), danger('liz'), danger('noel')]).toEqual([true, false, false]);
+  });
+
   it('updates panels in place, so a shake or number already playing is not cut off', () => {
     const bar = new PartyBar(NO_ART);
     bar.update([m('scarlet'), m('liz')]);

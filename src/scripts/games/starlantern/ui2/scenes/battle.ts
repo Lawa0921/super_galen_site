@@ -1,5 +1,6 @@
 import type { SoundManager } from '../../audio/SoundManager';
 import type { PartyCue } from '../../render/BattleView';
+import type { FxKey } from '../../render/artPaths';
 import { CHARACTERS } from '../../data/characters';
 import { ITEMS } from '../../data/items';
 import { SKILLS } from '../../data/skills';
@@ -16,7 +17,7 @@ import { playCutIn } from '../../ui/cutin';
 import { battleLines } from '../battleText';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
-import { PartyBar } from '../partyBar';
+import { PartyBar, type PulseOpts } from '../partyBar';
 import type { Scene, SceneCtx } from '../scene';
 import { MenuView, backControl, win } from '../widgets';
 
@@ -51,6 +52,7 @@ export class BattleScene implements Scene {
   private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'>> | null = null;
   private revealed = new Set<string>();
   private actLine = '';
+  private cutins = 0;
 
   constructor(private ctx: SceneCtx) {
     this.bar = new PartyBar(ctx.art);
@@ -271,7 +273,7 @@ export class BattleScene implements Scene {
     const s = this.ctx.sfx;
     // Bind each cue to its owner: SoundManager methods use `this`.
     const call = (k: 'hit' | 'weak' | 'heal' | 'ko' | 'ultimate') => () => { s[k]?.call(s); };
-    return { hit: call('hit'), weak: call('weak'), heal: call('heal'), ko: call('ko'), ultimate: call('ultimate') } as unknown as SoundManager;
+    return { hit: call('hit'), weak: call('weak'), heal: call('heal'), ko: call('ko'), ultimate: call('ultimate'), element: (fx: string) => { s.element?.call(s, fx); } } as unknown as SoundManager;
   }
 
   private async submit(): Promise<void> {
@@ -292,7 +294,7 @@ export class BattleScene implements Scene {
     const lines = battleLines(r.battle.log, (k) => names.get(k) ?? k);
     try {
       // With a stage, each line is shown by the playback itself at the moment its event is drawn.
-      if (this.ctx.stage) await this.ctx.stage.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name, amount) => this.onParty(key, cue, name, amount), (i) => this.showLine(lines, r.battle.log, i));
+      if (this.ctx.stage) await this.ctx.stage.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name, amount, extra) => this.onParty(key, cue, name, amount, extra), (i) => this.showLine(lines, r.battle.log, i));
       else await this.playLines(lines);
     } catch (err) {
       // A broken animation must never strand the player: log it and carry on with the round's result.
@@ -307,9 +309,46 @@ export class BattleScene implements Scene {
     else this.startRound();
   }
 
+  /** The whole screen jolts when the party is hit; a heavy hit also reddens its edges. */
+  private impact(heavy: boolean): void {
+    const screen = this.root.closest<HTMLElement>('.slx-screen') ?? this.root;
+    screen.classList.remove('slx-shake-s', 'slx-shake-l');
+    void screen.offsetWidth;
+    screen.classList.add(heavy ? 'slx-shake-l' : 'slx-shake-s');
+    setTimeout(() => screen.classList.remove('slx-shake-s', 'slx-shake-l'), 450);
+    if (!heavy) return;
+    const v = el('div', { class: 'slx-vignette', attrs: { 'aria-hidden': 'true' } });
+    this.body.append(v);
+    setTimeout(() => v.remove(), 600);
+  }
+
+  /**
+   * P5R-style flourish when a party member acts: an eye strip for a plain attack, a slanted bust with the move's name for
+   * anything else, entering from a different edge each time. Defending stays quiet; ultimates have their own full cut-in.
+   */
+  private actionCutIn(actorKey: string, label: string, ultimate: boolean): void {
+    const actor = this.state.party.find((c) => c.key === actorKey);
+    if (!actor || ultimate || label === T.cmd.defend) return;
+    const id = actor.defId;
+    const eyes = label === T.cmd.attack;
+    const pos = eyes ? (this.cutins % 2 ? 'bottom' : 'top') : (this.cutins % 2 ? 'right' : 'left');
+    this.cutins++;
+    const face = this.ctx.art.has(art.portrait(id, 'attack')) ? art.portrait(id, 'attack') : art.portrait(id, 'normal');
+    const pic = !eyes && this.ctx.art.has(art.standee(id)) ? art.standee(id) : face;
+    const c = el('div', { class: `slx-acut slx-acut-${eyes ? 'eyes' : 'bust'} slx-acut-${pos} slx-aura-${id}`, attrs: { 'aria-hidden': 'true' } }, [
+      el('div', { class: 'slx-acut-band' }),
+      el('div', { class: 'slx-acut-pic' }, this.ctx.art.has(pic) ? [el('img', { attrs: { src: pic, alt: '' } })] : []),
+      ...(eyes ? [] : [el('span', { class: 'slx-acut-label', text: label })]),
+    ]);
+    this.body.append(c);
+    this.ctx.sfx.cutin?.();
+    setTimeout(() => c.remove(), this.ctx.fast ? 0 : 760);
+  }
+
   /** Message window: the action on top, what it did underneath. */
   private showLine(lines: string[], log: BattleState['log'], i: number): void {
-    if (log[i]?.type === 'act') { this.actLine = lines[i]; this.msg.textContent = lines[i]; return; }
+    const ev = log[i];
+    if (ev?.type === 'act') { this.actLine = lines[i]; this.msg.textContent = lines[i]; this.actionCutIn(ev.actor, ev.label, !!ev.ultimate); return; }
     this.msg.textContent = this.actLine ? `${this.actLine}\n${lines[i]}` : lines[i];
   }
 
@@ -321,7 +360,7 @@ export class BattleScene implements Scene {
     }
   }
 
-  private async onParty(key: string, cue: PartyCue, name?: string, amount?: number): Promise<void> {
+  private async onParty(key: string, cue: PartyCue, name?: string, amount?: number, extra?: { fx: FxKey | null; weak: boolean }): Promise<void> {
     if (cue === 'ultimate') {
       this.ctx.sfx.ultimate?.();
       const ult = art.portrait(key, 'ultimate');
@@ -339,7 +378,15 @@ export class BattleScene implements Scene {
       } else this.revealed.add(key);
       this.updateBar(null);
     }
-    this.bar.pulse(key, cue === 'acting' ? 'attack' : cue, amount);
+    let opts: PulseOpts = {};
+    if (cue === 'hit') {
+      const max = this.state.party.find((c) => c.key === key)?.max.hp ?? 1;
+      const heavy = !!extra?.weak || (amount ?? 0) >= max / 4;
+      this.impact(heavy);
+      const fx = extra?.fx ? art.fx(extra.fx) : null;
+      opts = { heavy, weak: extra?.weak, fx: fx && this.ctx.art.has(fx) ? fx : undefined };
+    }
+    this.bar.pulse(key, cue === 'acting' ? 'attack' : cue, amount, opts);
   }
 
   private showResult(end: BattleEnd): void {

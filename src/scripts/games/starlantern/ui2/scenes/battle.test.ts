@@ -268,6 +268,63 @@ describe('BattleScene sound and failure safety', () => {
     expect(seen[1].split('\n')[0]).toBe(seen[0]);
   });
 
+  it('shakes the whole screen and reddens its edges on a heavy hit to the party, lightly on a small one', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    const screen = document.createElement('div');
+    screen.className = 'slx-screen';
+    const root = document.createElement('div');
+    screen.append(root);
+    const key = game.battle!.party[0].key;
+    const max = game.battle!.party[0].max.hp;
+    const seen: { shake: string; vignette: boolean; fx: string | null }[] = [];
+    const look = () => seen.push({
+      shake: [...screen.classList].find((c) => c.startsWith('slx-shake')) ?? '',
+      vignette: !!root.querySelector('.slx-vignette'),
+      fx: root.querySelector(`.slx-pm[data-key="${key}"] .slx-pm-fx`)?.getAttribute('src') ?? null,
+    });
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
+      play: async (_s: unknown, _fx: unknown, on: (k: string, cue: string, name?: string, amount?: number, extra?: unknown) => Promise<void>) => {
+        await on(key, 'hit', undefined, 1, { fx: 'slash', weak: false }); look();
+        await on(key, 'hit', undefined, Math.ceil(max / 3), { fx: 'fire', weak: false }); look();
+      } } };
+    const fxArt = { has: (u: string) => u.includes('/fx/') };
+    const s = new BattleScene({ game, art: fxArt, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    await flush();
+    expect(seen[0]).toMatchObject({ shake: 'slx-shake-s', vignette: false });
+    expect(seen[0].fx).toContain('slash');
+    expect(seen[1]).toMatchObject({ shake: 'slx-shake-l', vignette: true });
+  });
+
+  it('throws a P5R-style cut-in for party actions: an eye strip for attacks, a bust for skills, none for defending or enemies', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    const root = document.createElement('div');
+    const cutin = vi.fn();
+    const seen: (string | null)[] = [];
+    const look = () => { const c = root.querySelector('.slx-acut'); seen.push(c ? `${c.className}|${c.textContent}` : null); c?.remove(); };
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
+      play: async (end: { log: { type: string; actor?: string; label?: string }[] }, _fx: unknown, _on: unknown, onLine: (i: number) => void) => {
+        end.log.push({ type: 'act', actor: 'scarlet', label: '攻擊' }, { type: 'act', actor: 'scarlet', label: '挑釁' },
+          { type: 'act', actor: 'scarlet', label: '防禦' }, { type: 'act', actor: 'e0', label: '攻擊' });
+        const n = end.log.length;
+        for (const i of [n - 4, n - 3, n - 2, n - 1]) { onLine(i); look(); }
+      } } };
+    const s = new BattleScene({ game, art: { has: () => true }, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), cutin }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    await flush();
+    expect(seen[0]).toMatch(/slx-acut-eyes/);
+    expect(seen[1]).toMatch(/slx-acut-bust/);
+    expect(seen[1]).toContain('挑釁');
+    expect(seen[1]).toMatch(/slx-aura-scarlet/);
+    expect(seen[2]).toBeNull();
+    expect(seen[3]).toBeNull();
+    expect(cutin).toHaveBeenCalledTimes(2);
+  });
+
   it('puts the target arrow just above the enemy under the cursor', () => {
     const game = new Game(constRng(0.99), null);
     game.depart(1); game.encounter = 99; game.move('right');

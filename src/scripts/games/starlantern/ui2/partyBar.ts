@@ -8,6 +8,8 @@ const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row }
 export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko';
+/** `fx` is an effect image laid over the face; `heavy` enlarges the number; `weak` calls out a weak-point hit. */
+export interface PulseOpts { fx?: string; heavy?: boolean; weak?: boolean }
 
 /** A drawn bar (a native <meter> cannot be styled reliably); the fill width is a 5% step class, any value above 0 shows at least one step. */
 function bar(value: number, max: number, cls: string): HTMLElement {
@@ -41,7 +43,8 @@ export class PartyBar {
       const p = this.panels.get(m.key) ?? this.create(m);
       p.member = m;
       const transient = TRANSIENT.filter((c) => p.el.classList.contains(c));
-      p.el.className = ['slx-pm', m.key === active ? 'slx-pm-active' : '', m.alive ? '' : 'slx-pm-down', ...transient].filter(Boolean).join(' ');
+      const danger = m.alive && m.hp > 0 && m.hp <= m.maxHp / 4;
+      p.el.className = ['slx-pm', m.key === active ? 'slx-pm-active' : '', m.alive ? '' : 'slx-pm-down', danger ? 'slx-pm-danger' : '', ...transient].filter(Boolean).join(' ');
       if (!transient.length) this.resetFace(p);
       p.body.replaceChildren(
         el('span', { class: 'slx-pm-name' }, [m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : [])]),
@@ -58,7 +61,7 @@ export class PartyBar {
   }
 
   /** A momentary face, shake or glow, and the number that caused it. */
-  pulse(key: string, mood: PulseMood, amount?: number): void {
+  pulse(key: string, mood: PulseMood, amount?: number, opts: PulseOpts = {}): void {
     const p = this.panels.get(key);
     if (!p) return;
     if (p.face) showMood(this.art, p.face, mood === 'heal' ? 'normal' : mood === 'ko' ? 'down' : mood);
@@ -72,11 +75,15 @@ export class PartyBar {
       p.el.classList.remove(cls);
       this.resetFace(p);
     }, PULSE_MS);
+    const extras: HTMLElement[] = [];
+    if (opts.fx) extras.push(el('img', { class: 'slx-pm-fx', attrs: { src: opts.fx, alt: '', 'aria-hidden': 'true' } }));
     if (amount !== undefined && (mood === 'hit' || mood === 'heal')) {
-      const pop = el('span', { class: mood === 'heal' ? 'slx-pm-pop slx-pm-pop-heal' : 'slx-pm-pop', text: `${mood === 'heal' ? '+' : '-'}${amount}`, attrs: { 'aria-hidden': 'true' } });
-      p.el.append(pop);
-      setTimeout(() => pop.remove(), POP_MS);
+      const cls = ['slx-pm-pop', mood === 'heal' ? 'slx-pm-pop-heal' : '', opts.heavy ? 'slx-pm-pop-big' : ''].filter(Boolean).join(' ');
+      extras.push(el('span', { class: cls, text: `${mood === 'heal' ? '+' : '-'}${amount}`, attrs: { 'aria-hidden': 'true' } }));
     }
+    if (opts.weak) extras.push(el('span', { class: 'slx-pm-weak', text: '弱點！', attrs: { 'aria-hidden': 'true' } }));
+    p.el.append(...extras);
+    setTimeout(() => { for (const x of extras) x.remove(); }, POP_MS);
   }
 
   private create(m: BarMember): Panel {

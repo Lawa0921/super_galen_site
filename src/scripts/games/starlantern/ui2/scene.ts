@@ -11,7 +11,7 @@ export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(
 export interface SceneCtx {
   game: Game; art: ArtIndex;
   /** Menu cues are required; game cues are optional so menu-only tests can pass a small fake. */
-  sfx: Pick<SoundManager, 'cursor' | 'confirm' | 'cancel' | 'error'> & Partial<Pick<SoundManager, 'bump' | 'step' | 'stairs' | 'chest' | 'encounter' | 'hit' | 'weak' | 'heal' | 'ko' | 'win' | 'lose' | 'ultimate' | 'menu'>>;
+  sfx: Pick<SoundManager, 'cursor' | 'confirm' | 'cancel' | 'error'> & Partial<Pick<SoundManager, 'bump' | 'step' | 'stairs' | 'chest' | 'encounter' | 'hit' | 'weak' | 'heal' | 'ko' | 'win' | 'lose' | 'ultimate' | 'menu' | 'element' | 'cutin'>>;
   /** `arg` hands the next scene one value, e.g. which member the status screen opens on. */
   go(name: SceneName, arg?: string): void; hasSave(): boolean; newGame(): void;
   /** Reload the saved game (title → 繼續); absent in tests that never continue. */
