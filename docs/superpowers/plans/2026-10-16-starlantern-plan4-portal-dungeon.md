@@ -203,11 +203,18 @@
 **Interfaces:**
 - 戰鬥勝利得到的掉落和金幣、寶箱、寶庫的內容，都先放進 `run.loot`。平安回城時（走回入口或用歸還之燈）再併入 `state.inventory` 和 `state.gold`。
 - 消耗品例外：寶箱開出的回復藥等消耗品直接放進 `state.inventory`，因為要在冒險中使用。
+- 重量：
+  - `data/weights.ts` 用 `export function weightOf(id: string): number`。數值：`ITEMS` 是 1；`MATERIALS` 是 0.5（雜物 `old-coin` 是 1）；`EQUIPMENT` 依欄位，weapon 6、armor 8、accessory 2。
+  - `export function capacity(party: Party): number`：回傳 `40 + 上陣成員 statsOf().atk 合計 × 0.5`，計畫 5 再改成力量。
+  - `export function carried(state: GameState, run: Run): number`：身上的消耗品加上冒險背包裡的東西。
+  - 撿起會超重時，`MoveResult` 回傳 `{ kind: 'full'; item: string; qty: number }`，不會自動放進背包。`Game.discard(id: string, qty: number)` 讓玩家丟掉東西來騰出空間，再撿一次。
 - `wipe()`：保留經驗與等級；清空 `run.loot`；`state.gold` 改成 `Math.floor(state.gold * 0.75)`；`phase` 設為 town；`notice` 設為 `'wipe'`；不讀存檔。
 - `BattleEnd` 和 `MoveResult` 不變；`Notice` 新增 `'banked'`，回城時提示帶回了什麼。
 
 - [ ] **Step 1：寫失敗的測試**
   - `loot waits in the run pack and is banked on return`。
+  - `picking up past the weight limit reports full and keeps the item on the ground; discarding makes room`。
+  - `carried weight counts the consumables brought along and the run pack`。
   - `a wipe keeps levels, drops the run pack and a quarter of the gold, and does not reload the save`：存檔中故意放不同的數值，證明沒有讀回。
   - Review Focus 3：`departing again after a wipe starts with an empty pack and charges no second penalty`。
 - [ ] **Step 2–4：先確認測試失敗，再實作，最後確認通過**
@@ -270,6 +277,7 @@
 - `Minimap`：DOM `<canvas>`，放在右上角、選單按鈕下方，大小 120×88。
   - 畫出已探索的格子、自己的位置、已發現的樓梯與事件。
   - 依 Global Constraints，繪圖只用 canvas 2D API，不寫行內樣式。
+- 迷宮畫面左下、提示列上方常駐顯示重量「32.5／60」。超過 80% 時變黃，滿了變紅；收到 `full` 時開啟「背包已滿」視窗，可以選擇丟棄或放棄。
 - `slx-condition` 角標顯示本次狀況名稱，滑鼠移上去時顯示說明。
 - 戰鬥中，`Combatant.tint` 讓敵人套上屬性色調，精英加上金色描邊和★。色調用 ColorMatrixFilter 和外光暈，是程式效果。
 
