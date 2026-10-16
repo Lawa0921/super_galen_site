@@ -229,12 +229,20 @@ export class Game {
     return true;
   }
 
-  /** Buy from the merchant the party stands at: only his three items, at the shop price; gear needs a bag slot, anything else carry weight. */
+  /**
+   * Buy from the merchant the party stands at: only his three items, at the shop price, and only what fits. Gear goes into
+   * the run pack like chest gear (weight and a bag slot), so a wipe loses it like any other run loot.
+   */
   buy(merchantAt: Pos, item: string): TownResult | { ok: false; reason: 'full' } {
     const c = this.contentAt('merchant', merchantAt);
     if (!c || !c.stock?.includes(item)) return { ok: false, reason: 'invalid' };
-    if (EQUIPMENT[item] ? !this.bagHasRoom(1) : this.shortBy({ [item]: 1 }) > 0) return { ok: false, reason: 'full' };
-    return this.apply(townBuy(this.state, item));
+    const e = EQUIPMENT[item];
+    const probe: ItemInstance | undefined = e ? { uid: 0, base: item, rarity: 'common', ilvl: e.ilvl, affixes: [], enhance: 0 } : undefined;
+    if (probe ? this.wontFit({}, [probe]) : this.shortBy({ [item]: 1 }) > 0) return { ok: false, reason: 'full' };
+    const r = this.apply(townBuy(this.state, item));
+    // The town buy puts gear in the bag; in the labyrinth it belongs in the run pack.
+    if (r.ok && probe) this.pack(this.state.bag.pop()!);
+    return r;
   }
 
   /** Try again to take what lies under the party (a chest, or the vault) after the pack was too full; null when nothing is here. */
@@ -282,7 +290,7 @@ export class Game {
     const short = this.wontFit(loot, [gear]);
     if (short) {
       const [item, qty] = Object.entries(loot)[0];
-      return { kind: 'full', item, qty, ...short, gear };
+      return { kind: 'full', item, qty, ...short, gear: this.junkMarked(gear) };
     }
     for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
     const taken = this.pack(gear);
@@ -392,7 +400,8 @@ export class Game {
 
   /**
    * Gear a won fight drops, all from the loot rng: a boss its two pieces (a repeat kill of the same region and depth rolls
-   * on repeat odds), an elite one piece and a rare material, and an ordinary fight a GEAR_CHANCE.monster roll per monster.
+   * on repeat odds); an elite one piece and a rare material, and then each escort rolls like an ordinary monster; and an
+   * ordinary fight a GEAR_CHANCE.monster roll per monster. An elite fight never pays less than an ordinary one.
    */
   private battleGear(b: BattleState, elite: boolean): { gear: ItemInstance[]; rare?: string } {
     const run = this.run!;
@@ -403,16 +412,19 @@ export class Game {
       kills[key] = (kills[key] ?? 0) + 1;
       return { gear };
     }
+    const gear: ItemInstance[] = [];
+    let rare: string | undefined;
     if (elite) {
       const rng = lootRng(run);
-      return { gear: [rollGear(rng, this.dropCtx('elite'))], rare: rollRareMaterial(rng) };
+      gear.push(rollGear(rng, this.dropCtx('elite')));
+      rare = rollRareMaterial(rng);
     }
-    const gear: ItemInstance[] = [];
-    for (let i = 0; i < b.enemies.length; i++) {
+    // In an elite fight the first enemy is the elite; the rest are escorts.
+    for (let i = elite ? 1 : 0; i < b.enemies.length; i++) {
       const rng = lootRng(run);
       if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster')));
     }
-    return { gear };
+    return { gear, rare };
   }
 
   private dropCtx(source: DropSource): DropCtx {
@@ -507,9 +519,14 @@ export class Game {
     return bag ? { need: Math.max(0, need), bag: true } : { need };
   }
 
+  /** Gear as it would be picked up now: marked by the auto-junk setting. */
+  private junkMarked(it: ItemInstance): ItemInstance {
+    return applyAutoJunk(it, this.state.autoJunk);
+  }
+
   /** Puts picked-up gear into the run pack, marked by the auto-junk setting; returns what went in. */
   private pack(it: ItemInstance): ItemInstance {
-    const taken = applyAutoJunk(it, this.state.autoJunk);
+    const taken = this.junkMarked(it);
     this.run!.loot.gear.push(taken);
     return taken;
   }
@@ -542,7 +559,7 @@ export class Game {
     const { item, qty } = this.rollChest(`chest:${id}`);
     const gear = chestHasGear(run, this.floor, this.pos) ? this.fixedGear(`chest:${id}`, 'chest') : undefined;
     const short = this.wontFit({ [item]: qty }, gear ? [gear] : []);
-    if (short) return { kind: 'full', item, qty, ...short, ...(gear ? { gear } : {}) };
+    if (short) return { kind: 'full', item, qty, ...short, ...(gear ? { gear: this.junkMarked(gear) } : {}) };
     run.opened.add(id);
     this.grant(item, qty);
     if (!gear) return { kind: 'chest', item, qty };

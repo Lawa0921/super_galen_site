@@ -699,13 +699,34 @@ describe('dungeon gear', () => {
     expect(g.battle!.enemies[0].tint).toBe('elite');
     const end = killAll(g);
     expect(end.outcome).toBe('win');
-    expect(end.gear).toHaveLength(1);
+    expect(end.gear.length).toBeGreaterThanOrEqual(1);   // the elite piece first, then whatever the escorts dropped
     expect(end.gear[0].rarity).not.toBe('common');
     expect(end.gear[0].ilvl).toBe(itemLevel(1, 'elite'));
+    for (const it of end.gear.slice(1)) expect(it.ilvl).toBe(itemLevel(1, 'monster'));
     expect(end.gearLeft).toEqual([]);
-    expect(packed(g)).toEqual([end.gear[0].uid]);
+    expect(packed(g)).toEqual(end.gear.map((it) => it.uid));
     expect(rareCount(end.drops)).toBe(1);
     expect(rareCount(g.run!.loot.items)).toBe(1);
+  });
+
+  it('in an elite fight each escort still rolls monster gear on its own loot draw', () => {
+    let escorts = 0; let escortPieces = 0; let fights = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      const g = inMap(1, mulberry32(seed));
+      stepOnto(g, plantAt(g, 'elite'));
+      const n = g.battle!.enemies.length;
+      if (n < 2) continue;
+      fights++;
+      const draws = g.run!.lootDraws;
+      const end = killAll(g);
+      expect(g.run!.lootDraws - draws).toBe(1 + (n - 1));   // one for the elite piece and rare material, one per escort
+      expect(end.gear[0].ilvl).toBe(itemLevel(1, 'elite'));
+      escorts += n - 1;
+      escortPieces += end.gear.filter((it) => it.ilvl === itemLevel(1, 'monster')).length;
+    }
+    expect(fights).toBeGreaterThan(20);
+    expect(escortPieces).toBeGreaterThan(0);
+    expect(escortPieces / escorts).toBeLessThan(GEAR_CHANCE.monster + 0.08);
   });
 
   it('a boss drops rare-or-better; the same region and depth again passes bossRepeat', () => {
@@ -884,13 +905,38 @@ describe('dungeon gear', () => {
   });
 
   it('picked-up gear follows the auto-junk setting', () => {
-    const g = inMap(1);
-    g.state.autoJunk = 'magic';
-    stepOnto(g, plantAt(g, 'elite'));
-    const end = killAll(g);
-    const it = g.run!.loot.gear[0];
-    expect(it.uid).toBe(end.gear[0].uid);
-    expect(it.junk).toBe(it.rarity === 'magic' ? true : undefined);
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 200 && seen.size < 2; seed++) {
+      const g = inMap(1, mulberry32(seed));
+      g.state.autoJunk = 'magic';
+      stepOnto(g, plantAt(g, 'elite'));
+      const end = killAll(g);
+      const it = g.run!.loot.gear[0];
+      expect(it.uid).toBe(end.gear[0].uid);
+      const junked = it.rarity === 'common' || it.rarity === 'magic';
+      expect(it.junk).toBe(junked ? true : undefined);
+      seen.add(junked ? 'junk' : 'kept');
+    }
+    expect([...seen].sort()).toEqual(['junk', 'kept']);   // both branches really ran
+  });
+
+  it('the gear in a full result already carries its auto-junk mark', () => {
+    let checked = 0;
+    for (let seed = 1; seed <= 200 && !checked; seed++) {
+      const g = inMap(1, mulberry32(seed));
+      g.state.autoJunk = 'magic';
+      const chest = chestWhere(g, true);
+      g.state.bag = Array.from({ length: BAG_SIZE }, (_, i) => gearItem(1000 + i));
+      const full = stepOnto(g, chest) as Extract<MoveResult, { kind: 'full' }>;
+      expect(full).toMatchObject({ kind: 'full', bag: true });
+      if (full.gear!.rarity !== 'common' && full.gear!.rarity !== 'magic') continue;
+      checked++;
+      expect(full.gear!.junk).toBe(true);
+      g.state.bag = [];
+      const r = stepOnto(g, chest) as Extract<MoveResult, { kind: 'chest' }>;
+      expect(r.gear).toEqual(full.gear);   // shown exactly as it is picked up
+    }
+    expect(checked).toBe(1);
   });
 
   it('Game.mintUid hands out the next uid', () => {
@@ -931,18 +977,37 @@ describe('dungeon gear', () => {
     expect(roll()).toEqual(roll());
   });
 
-  it('the merchant checks bag room for gear and weight for everything else', () => {
+  it('merchant gear goes into the run pack and needs both carry weight and a bag slot, like chest gear', () => {
     const g = inMap(1);
     const at = { ...g.pos };
     floorOf(g.run!, g.floor).contents.push({ kind: 'merchant', at, room: 0, stock: ['iron-sword', 'potion'] });
     g.state.gold = 9999;
-    g.run!.loot.items['star-stone'] = Math.ceil((capacity(g.state.party) - carried(g.state, g.run!)) * 2) + 2;   // over the limit
+    const room = () => capacity(g.state.party) - carried(g.state, g.run!);
+    g.run!.loot.items['star-stone'] = Math.ceil(room() * 2) + 2;   // over the limit
     expect(g.buy(at, 'potion')).toEqual({ ok: false, reason: 'full' });
-    expect(g.buy(at, 'iron-sword').ok).toBe(true);   // gear goes to the bag, which has room
-    expect(g.state.bag.map((it) => it.base)).toEqual(['iron-sword']);
-    g.state.bag = Array.from({ length: BAG_SIZE - 1 }, (_, i) => gearItem(1000 + i));
-    g.run!.loot.gear = [gearItem(901)];
+    expect(g.buy(at, 'iron-sword')).toEqual({ ok: false, reason: 'full' });   // gear weighs too
     g.run!.loot.items = {};
+    const gold = g.state.gold;
+    expect(g.buy(at, 'iron-sword').ok).toBe(true);
+    expect(g.state.gold).toBe(gold - 40);
+    expect(g.state.bag).toEqual([]);   // not straight into the town bag
+    expect(g.run!.loot.gear.map((it) => it.base)).toEqual(['iron-sword']);
+    expect(carried(g.state, g.run!)).toBe(carried(g.state, null) + itemWeight(g.run!.loot.gear[0]));
+    g.state.bag = Array.from({ length: BAG_SIZE - 1 }, (_, i) => gearItem(1000 + i));
     expect(g.buy(at, 'iron-sword')).toEqual({ ok: false, reason: 'full' });   // 59 in the bag and 1 in the run pack
+    expect(g.run!.loot.gear).toHaveLength(1);
+  });
+
+  it('merchant gear is lost on a wipe like any other run loot', () => {
+    const g = inMap(1, mulberry32(1));
+    const at = { ...g.pos };
+    floorOf(g.run!, g.floor).contents.push({ kind: 'merchant', at, room: 0, stock: ['iron-sword'] });
+    g.state.gold = 9999;
+    expect(g.buy(at, 'iron-sword').ok).toBe(true);
+    g.encounter = 99;
+    expect(g.move('right')).toEqual({ kind: 'battle' });
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(g.submitRound({})!.end!.outcome).toBe('lose');
+    expect([g.run, g.state.bag]).toEqual([null, []]);
   });
 });
