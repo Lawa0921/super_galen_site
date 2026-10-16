@@ -36,6 +36,9 @@ describe('GateScene: the portal plaza', () => {
     expect(blaze.querySelector('.slx-portal-monsters')!.textContent).toContain('苔蘚史萊姆');
     expect(blaze.querySelector('.slx-portal-cond')!.textContent).toContain('濃霧');
     expect(blaze.querySelector('.slx-portal-gear')!.textContent).toBe('限定裝備：？？？');
+    expect(blaze.querySelector('.slx-portal-drop')!.textContent).toBe('主要掉落：火焰核');
+    expect(cards()[2].querySelector('.slx-portal-drop')!.textContent).toBe('主要掉落：鋼鐵碎片');
+    expect(cards()[0].querySelector('.slx-portal-drop')!.textContent).toBe('主要掉落：一般素材');
     // Before the art is approved there is no picture and no stand-in shape: words only.
     expect(root.querySelector('.slx-portals img')).toBeNull();
   });

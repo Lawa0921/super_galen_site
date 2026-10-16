@@ -1,6 +1,7 @@
 import { CONDITIONS } from '../../data/conditions';
 import { ENEMIES } from '../../data/enemies';
 import { FLOORS } from '../../data/floors';
+import { MATERIALS } from '../../data/materials';
 import { REGIONS, type RegionId } from '../../data/regions';
 import { T } from '../../data/text.zh-TW';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
@@ -67,6 +68,7 @@ class PortalCards {
       el('div', { class: 'slx-portal-monsters', text: monsterNames(p.region, reached).join('、') }),
       el('div', { class: 'slx-portal-cond' }, [el('span', { class: 'slx-portal-label', text: G.condition }), el('b', { text: cond.name })]),
       el('div', { class: 'slx-portal-desc', text: cond.desc }),
+      el('div', { class: 'slx-portal-drop', text: G.drop(r.material ? MATERIALS[r.material]?.name ?? r.material : G.commonDrop) }),
       el('div', { class: 'slx-portal-gear', text: G.gear }),
       el('div', { class: 'slx-portal-depth', text: reached > 0 ? G.deepest(reached) : G.notYet }),
     ]);

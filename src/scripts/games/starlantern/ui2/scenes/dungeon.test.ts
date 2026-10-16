@@ -173,4 +173,19 @@ describe('DungeonScene', () => {
     expect(banner.textContent).toContain('視野只有自己這一格');
     expect(mk('battle').querySelector('.slx-banner')).toBeNull();
   });
+
+  it('leaves no banner or flash timer running after exit', () => {
+    vi.useFakeTimers();
+    try {
+      const game = new Game(constRng(0.99), null);
+      game.depart({ region: 'blaze', condition: 'fog' }, 1);
+      const s = new DungeonScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: false, from: 'gate' }, Infinity);
+      s.enter(document.createElement('div'));
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      s.exit();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

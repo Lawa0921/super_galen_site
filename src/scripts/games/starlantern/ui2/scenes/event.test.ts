@@ -7,6 +7,7 @@ import { DELTA, tileAt, type Dir, type Tile } from '../../engine/map';
 import { statsOf } from '../../engine/party';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
+import { ITEMS } from '../../data/items';
 import { DungeonScene } from './dungeon';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
@@ -80,6 +81,32 @@ describe('EventLayer', () => {
     expect(game.state.inventory.potion).toBe(before + 2);
     expect(game.state.gold).toBe(110);
     expect(root.querySelector('.slx-event-merchant .slx-event-gold')!.textContent).toContain('110 G');
+  });
+
+  it('the merchant refuses a purchase the pack cannot carry', () => {
+    const { game, s, pick, plant, text, sfx } = setup();
+    game.state.gold = 999;
+    game.run!.loot.items['old-coin'] = 400;
+    const inv = { ...game.state.inventory };
+    const { dir } = plant('merchant', { stock: ['potion', 'ether', 'antidote'] });
+    s.onAction(dir);
+    pick('回復藥');
+    expect(sfx.error).toHaveBeenCalled();
+    expect(text()).toBe('背包已滿');
+    expect(game.state.gold).toBe(999);
+    expect(game.state.inventory).toEqual(inv);
+  });
+
+  it('says so when the vault does not open', () => {
+    const { game, s, pick, plant, text, sfx, layer } = setup();
+    game.run!.keys.add(game.floor);
+    const { dir } = plant('vault');
+    s.onAction(dir);
+    game.run!.keys.delete(game.floor);   // the key is gone by the time the player chooses
+    pick('開啟');
+    expect(sfx.error).toHaveBeenCalled();
+    expect(layer()).toBeNull();
+    expect(text()).toBe('寶庫打不開。需要這一層的鑰匙。');
   });
 
   it('the merchant says when the gold runs short', () => {
@@ -182,13 +209,27 @@ describe('the full pack window', () => {
     expect(box.textContent).toContain('背包已滿');
     expect(options()).toContain('古代銀幣');
     expect(options()[options().length - 1]).toBe('放棄');
+    const { item, qty } = game.run!.rolls[`chest:${game.floor}:${at.x},${at.y}`];
+    const held = () => (ITEMS[item] ? game.state.inventory[item] : game.run!.loot.items[item]) ?? 0;
+    const before = item === 'old-coin' ? 0 : held();
     pick('古代銀幣');
     expect(root.querySelector('.slx-layer:last-child')!.textContent).toContain('丟掉');
     pick('是');
-    expect(game.run!.loot.items['old-coin']).toBeLessThan(400);
     expect(root.querySelector('.slx-full')).toBeNull();
-    expect(text().length).toBeGreaterThan(0);
     expect(game.pos).toEqual(at);
+    // Room was made: the chest is picked up at once and its contents land in the bag (consumables) or the run pack.
+    expect(text()).toContain('打開寶箱');
+    if (item !== 'old-coin') expect(held()).toBe(before + qty);
+    expect(game.run!.opened.has(`${game.floor}:${at.x},${at.y}`)).toBe(true);
+  });
+
+  it('leaves weightless entries out of the discard list', () => {
+    const { game, s, options, plant } = setup();
+    game.run!.loot.items['old-coin'] = 400;
+    game.run!.loot.items.moss = 0;
+    const { dir } = plant('chest');
+    s.onAction(dir);
+    expect(options()).not.toContain('發光苔');
   });
 
   it('giving up leaves the pick-up where it is', () => {

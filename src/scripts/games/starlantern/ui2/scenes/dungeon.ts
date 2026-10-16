@@ -16,7 +16,7 @@ import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
-import { eventLayer, fullLayer, type EventHost } from './event';
+import { eventLayer, showPickUp, type EventHost } from './event';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
@@ -36,6 +36,8 @@ export class DungeonScene implements Scene {
   private layers: Layer[] = [];
   private talk: Dialogue;
   private leaving = false;
+  /** Banner and flash removals; cleared on exit so none outlives the scene. */
+  private timers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
     this.bar = new PartyBar(ctx.art);
@@ -60,6 +62,8 @@ export class DungeonScene implements Scene {
 
   exit(): void {
     this.talk.stop();
+    for (const t of this.timers) clearTimeout(t);
+    this.timers.clear();
     this.ctx.stage?.show(null);
   }
 
@@ -110,14 +114,19 @@ export class DungeonScene implements Scene {
       el('span', { class: 'slx-banner-sub', text: c.desc }),
     ]);
     this.body.append(b);
-    setTimeout(() => b.remove(), this.ctx.fast ? 0 : CONDITION_BANNER_MS);
+    this.later(() => b.remove(), this.ctx.fast ? 0 : CONDITION_BANNER_MS);
   }
 
   /** A short red flash over the whole screen (a trap went off). */
   private flash(): void {
     const f = el('div', { class: 'slx-flash-hurt', attrs: { 'aria-hidden': 'true' } });
     this.body.append(f);
-    setTimeout(() => f.remove(), this.ctx.fast ? 0 : FLASH_MS);
+    this.later(() => f.remove(), this.ctx.fast ? 0 : FLASH_MS);
+  }
+
+  private later(fn: () => void, ms: number): void {
+    const t = setTimeout(() => { this.timers.delete(t); fn(); }, ms);
+    this.timers.add(t);
   }
 
   /** The labyrinth's side of an event window. */
@@ -167,7 +176,7 @@ export class DungeonScene implements Scene {
         this.say(r.effect === 'hurt' ? T.ui2.event.trap.hurt(r.amount) : T.ui2.event.trap.poison(r.amount, r.tp));
         return;
       case 'key': s.chest?.(); this.refresh(); this.say(T.ui2.event.key); return;
-      case 'full': s.error(); this.refresh(); this.push(fullLayer(this.host(), r)); return;
+      case 'full': this.refresh(); showPickUp(this.host(), r); return;
       case 'battle': case 'boss': {
         s.encounter?.();
         this.leaving = true;

@@ -213,11 +213,21 @@ export class Game {
     return true;
   }
 
-  /** Buy from the merchant the party stands at: only his three items, at the shop price. */
-  buy(merchantAt: Pos, item: string): TownResult {
+  /** Buy from the merchant the party stands at: only his three items, at the shop price, and only what the pack can carry. */
+  buy(merchantAt: Pos, item: string): TownResult | { ok: false; reason: 'full' } {
     const c = this.contentAt('merchant', merchantAt);
     if (!c || !c.stock?.includes(item)) return { ok: false, reason: 'invalid' };
+    if (this.shortBy({ [item]: 1 }) > 0) return { ok: false, reason: 'full' };
     return this.apply(townBuy(this.state, item));
+  }
+
+  /** Try again to take what lies under the party (a chest, or the vault) after the pack was too full; null when nothing is here. */
+  pickUpHere(): MoveResult | null {
+    if (this.phase !== 'map' || !this.run) return null;
+    const t = tileAt(this.map(), this.pos);
+    if (t === 'chest') return this.openChest();
+    if (t === 'vault') return this.openVault(this.pos);
+    return null;
   }
 
   /** Accept or decline the altar the party stands at. Accepting pays its cost and adds its bonus for the whole run; each altar works once. */

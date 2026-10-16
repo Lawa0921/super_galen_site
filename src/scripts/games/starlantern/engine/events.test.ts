@@ -292,3 +292,42 @@ describe('one step triggers one thing', () => {
     expect([k.phase, k.encounter]).toEqual(['map', 99]);
   });
 });
+
+describe('fix round 1: weight at the merchant, picking up again', () => {
+  it('a merchant purchase that would pass the carry limit is refused and changes nothing', () => {
+    const g = gameWith('merchant');
+    const c = contentOf(g, 'merchant');
+    stepOnto(g, c.at);
+    g.state.gold = 9999;
+    g.run!.loot.items['old-coin'] = Math.ceil(capacity(g.state.party) - carried(g.state, g.run!));   // exactly full
+    const id = c.stock![0];
+    const inv = { ...g.state.inventory };
+    expect(g.buy(c.at, id)).toEqual({ ok: false, reason: 'full' });
+    expect(g.state.gold).toBe(9999);
+    expect(g.state.inventory).toEqual(inv);
+  });
+
+  it('pickUpHere re-tries the chest under the party once there is room', () => {
+    const g = gameWith('chest');
+    const at = g.map().chests[0];
+    g.run!.loot.items['old-coin'] = 999;
+    const r = stepOnto(g, at);
+    expect(r.kind).toBe('full');
+    expect(g.pickUpHere()).toMatchObject({ kind: 'full' });   // still no room
+    g.run!.loot.items['old-coin'] = 0;
+    const { item, qty } = r as Extract<MoveResult, { kind: 'full' }>;
+    const before = (ITEMS[item] ? g.state.inventory[item] : g.run!.loot.items[item]) ?? 0;
+    expect(g.pickUpHere()).toEqual({ kind: 'chest', item, qty });
+    expect((ITEMS[item] ? g.state.inventory[item] : g.run!.loot.items[item]) ?? 0).toBe(before + qty);
+    expect(g.pickUpHere()).toBeNull();   // opened: nothing left here
+  });
+
+  it('pickUpHere opens the vault under the party, and is null on plain floor', () => {
+    const g = gameWith('vault');
+    const c = contentOf(g, 'vault');
+    g.run!.keys.add(1);
+    stepOnto(g, c.at);
+    expect(g.pickUpHere()).toMatchObject({ kind: 'vault' });
+    expect(g.pickUpHere()).toBeNull();
+  });
+});

@@ -113,28 +113,40 @@ export function eventLayer(host: EventHost, content: Content): Layer {
 }
 
 function openVault(host: EventHost, at: Pos): void {
-  const r = host.ctx.game.openVault(at);
   host.popAll();
-  if (!r) { host.ctx.sfx.error(); host.say(T.reasons.invalid); return; }
-  if (r.kind === 'full') { host.push(fullLayer(host, r, () => openVault(host, at))); return; }
-  if (r.kind !== 'vault') return;
-  host.ctx.sfx.chest?.();
-  host.refresh();
-  host.say(T.ui2.event.vault.opened(Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`).join('、')));
+  showPickUp(host, host.ctx.game.openVault(at), true);
 }
 
-/** Everything the party carries that can be thrown away: the run pack and the consumables brought along, by item. */
+/**
+ * What a chest or the vault gave, after a step or a retry: a line for the loot, the 背包已滿 window again (retrying with
+ * `Game.pickUpHere`), or — for a vault that did not open — a line saying why.
+ */
+export function showPickUp(host: EventHost, r: MoveResult | null, vault = false): void {
+  const { ctx } = host;
+  if (r?.kind === 'full') { ctx.sfx.error(); host.push(fullLayer(host, r, () => showPickUp(host, ctx.game.pickUpHere(), vault))); return; }
+  if (r?.kind === 'vault') {
+    ctx.sfx.chest?.();
+    host.refresh();
+    host.say(T.ui2.event.vault.opened(Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`).join('、')));
+    return;
+  }
+  if (r?.kind === 'chest') { ctx.sfx.chest?.(); host.refresh(); host.say(T.map.chest(itemName(r.item), r.qty)); return; }
+  ctx.sfx.error();
+  host.say(vault ? T.ui2.event.vault.failed : T.reasons.invalid);
+}
+
+/** Everything the party carries that weighs something and can be thrown away: the run pack and the consumables brought along, by item. */
 function carriedItems(host: EventHost): Record<string, number> {
   const g = host.ctx.game;
   const out: Record<string, number> = {};
-  for (const [id, n] of Object.entries(g.run?.loot.items ?? {})) if (n > 0) out[id] = n;
-  for (const [id, n] of Object.entries(g.state.inventory)) if (n > 0 && ITEMS[id]) out[id] = (out[id] ?? 0) + n;
+  for (const [id, n] of Object.entries(g.run?.loot.items ?? {})) if (n > 0 && weightOf(id) > 0) out[id] = n;
+  for (const [id, n] of Object.entries(g.state.inventory)) if (n > 0 && ITEMS[id] && weightOf(id) > 0) out[id] = (out[id] ?? 0) + n;
   return out;
 }
 
 /**
  * 背包已滿: the pick-up stays where it is. Pick something to throw away (enough of it to make room, after a yes), or give up.
- * Once there is room, `retry` takes the pick-up (the vault); a chest is picked up by stepping on it again.
+ * Once there is room, `retry` takes the pick-up (Game.pickUpHere through showPickUp); without it the line says to step on it again.
  */
 export function fullLayer(host: EventHost, r: FullResult, retry?: () => void): Layer {
   const F = T.ui2.event.full;

@@ -15,7 +15,7 @@ export const T = {
   inn: { rest: (cost: number) => `住宿並存檔（${cost} G）`, revive: (name: string, cost: number) => `復活 ${name}（${cost} G）` },
   departTo: (n: number, name: string) => `前往第 ${n} 層：${name}`,
   reasons: {
-    gold: '金錢不足', locked: '尚未解鎖', stock: '數量不足', invalid: '無法執行', phase: '現在不能這麼做',
+    gold: '金錢不足', full: '背包已滿', locked: '尚未解鎖', stock: '數量不足', invalid: '無法執行', phase: '現在不能這麼做',
     'party-down': '出戰成員全部倒下，無法出發', size: '編隊格數錯誤', 'not-recruited': '尚未招募',
     duplicate: '同一人不能重複上陣', empty: '至少要有一人出戰', 'too-many': '最多只能 5 人上陣',
   } as Record<string, string>,
@@ -143,6 +143,7 @@ export const T = {
       traits: { burn: '灼燒', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,
       noTrait: '無特性', weak: (els: string) => `弱 ${els}`, resist: (els: string) => `抗 ${els}`,
       monsters: '怪物', condition: '本次狀況', gear: '限定裝備：？？？',
+      drop: (name: string) => `主要掉落：${name}`, commonDrop: '一般素材',
       ask: (region: string, n: number, cond: string) => `要從第 ${n} 層進入「${region}」嗎？\n本次狀況：${cond}`,
       banner: (cond: string) => `本次狀況　${cond}`,
       hint: '←→ 選擇　Enter／點擊 決定　Esc／右鍵 返回',
@@ -159,7 +160,7 @@ export const T = {
       },
       vault: {
         title: '寶庫', locked: '厚重的寶庫上了鎖。需要這一層的鑰匙。', ready: '用這一層的鑰匙可以打開寶庫。', open: '開啟',
-        opened: (list: string) => `打開寶庫：${list}`,
+        opened: (list: string) => `打開寶庫：${list}`, failed: '寶庫打不開。需要這一層的鑰匙。',
       },
       elite: { title: '精英怪', desc: '房間中央有一隻強大的敵人（★）。', ask: '要挑戰嗎？', fight: '挑戰' },
       trap: {
