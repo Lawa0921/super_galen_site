@@ -12,8 +12,8 @@ export interface AltarDef {
 }
 
 /**
- * Altars. Each bonus is small (8-10%, at most one altar per room and rooms hold other things too), so even a run that finds
- * several stays inside the balance bands (balance.test.ts is unchanged and still green); the price is paid at once.
+ * Altars. Each bonus is small (8-10%) and a run's total per stat is capped (ALTAR_STAT_CAP_PCT); the balance test stacks the cap
+ * to check fights stay inside the bands. The price is paid at once.
  * Run-long buffs are applied as a percentage on the party's max stats at the start of every battle (createBattle `altar`).
  */
 export const ALTARS: AltarDef[] = [
@@ -23,6 +23,9 @@ export const ALTARS: AltarDef[] = [
   { id: 'veil', text: '靜心之幕：獻上 60 金幣，全隊魔防在本趟永久提升。', cost: { gold: 60 }, gain: { stat: 'res', pct: 10 } },
   { id: 'wind', text: '疾風之羽：獻上一成的生命，全隊速度在本趟永久提升。', cost: { hpPct: 10 }, gain: { stat: 'spd', pct: 8 } },
 ];
+
+/** A run's altar bonus in one stat never passes this; an altar that would is refused. */
+export const ALTAR_STAT_CAP_PCT = 30;
 
 /** Which altar stands at a spot: fixed by the run seed, the depth and the position. */
 export function altarAt(run: Run, depth: number, at: Pos): AltarDef {

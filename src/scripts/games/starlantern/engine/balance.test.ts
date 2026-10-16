@@ -4,6 +4,7 @@ import { expToNext } from './party';
 import { avgExp, fightsToLevel, groupExp, winRate } from './sim';
 import { REGIONS, type RegionId } from '../data/regions';
 import type { BattleScale } from './battle';
+import { ALTAR_STAT_CAP_PCT } from './events';
 import { depthLevel, encounterTable } from './scaling';
 
 const groups = (f: number) => FLOORS[f - 1].encounters;
@@ -72,6 +73,16 @@ describe('balance', () => {
     for (const d of [2, 4, 8]) for (const g of encounterTable('mainline', d)) {
       const r = winRate(depthLevel(d), [g], false, 40, { depth: d, region: 'mainline', elite: g[0] });
       expect(r.rate, `elite ${g.join('+')} at depth ${d}`).toBeGreaterThanOrEqual(0.6);
+    }
+  });
+
+  it('9. a party with the altar cap reached on every stat is not trivialised below the band', () => {
+    const stacked = (['atk', 'def', 'mag', 'res', 'spd'] as const).map((stat) => ({ stat, pct: ALTAR_STAT_CAP_PCT }));
+    for (const d of [4, 8]) {
+      const scale = { depth: d, region: 'mainline' as const };
+      const r = winRate(depthLevel(d), encounterTable('mainline', d), false, 40, scale, stacked);
+      expect(r.rate, `depth ${d}`).toBeGreaterThanOrEqual(0.85);
+      expect(r.hpLoss, `depth ${d}`).toBeGreaterThanOrEqual(0.1);
     }
   });
 });

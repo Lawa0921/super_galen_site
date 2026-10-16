@@ -4,7 +4,7 @@ import { createBattle, planEnemies, resolveRound, rewards, writeBack, type Actio
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { advance, danger, type Danger } from './encounter';
-import { altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT, VAULT_PLACEHOLDER } from './events';
+import { ALTAR_STAT_CAP_PCT, altarAt, altarHpLoss, eliteGroup, FOUNTAIN_PCT, POISON_TP_LOSS_PCT, trapDamage, VAULT_CHEST_MULT, VAULT_PLACEHOLDER } from './events';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { activeIds, awardExp, hasPassive, statsOf } from './party';
 import { pick, type Rng } from './rng';
@@ -21,7 +21,7 @@ export type MoveResult =
   | { kind: 'entrance' } | { kind: 'floor'; floor: number } | { kind: 'chest'; item: string; qty: number }
   /** Stepped onto a fountain, merchant, altar or vault: the screen offers its choice (useFountain, buy, altar, openVault). */
   | { kind: 'event'; content: Content }
-  | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number }
+  | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number; tp: number }
   | { kind: 'key' }
   | { kind: 'vault'; loot: Record<string, number> };
 export interface BattleEnd {
@@ -171,16 +171,24 @@ export class Game {
     return this.state.party.recruited.map((id) => this.state.party.roster[id]).filter((m) => m.hp > 0);
   }
 
-  /** A trap hurts every living member (never below 1 HP); poison hurts less but also drains TP. The tile is spent. */
+  /**
+   * A trap hurts every living member (never below 1 HP) and is spent. Poison hurts less but also drains 20% of max TP:
+   * members carry no lasting status outside battle, so "poison" is HP damage plus a TP drain. `tp` is the largest drain dealt (0 for hurt).
+   */
   private springTrap(): MoveResult {
     const effect = this.rng() < 0.5 ? 'hurt' : 'poison';
     const amount = trapDamage(effect, this.floor);
+    let tp = 0;
     for (const m of this.livingMembers()) {
       m.hp = Math.max(1, m.hp - amount);
-      if (effect === 'poison') m.tp = Math.max(0, m.tp - Math.floor((statsOf(m).tp * POISON_TP_LOSS_PCT) / 100));
+      if (effect === 'poison') {
+        const drain = Math.min(m.tp, Math.floor((statsOf(m).tp * POISON_TP_LOSS_PCT) / 100));
+        m.tp -= drain;
+        tp = Math.max(tp, drain);
+      }
     }
     this.map().tiles[this.pos.y][this.pos.x] = 'floor';
-    return { kind: 'trap', effect, amount };
+    return { kind: 'trap', effect, amount, tp };
   }
 
   /** Heal the party's HP and TP by 30% of their maximums; once per run, standing on a fountain. */
@@ -192,6 +200,7 @@ export class Game {
       m.tp = Math.min(max.tp, m.tp + Math.floor((max.tp * FOUNTAIN_PCT) / 100));
     }
     this.run.usedFountain = true;
+    this.map().tiles[this.pos.y][this.pos.x] = 'floor';   // a spent fountain leaves no marker
     return true;
   }
 
@@ -209,10 +218,14 @@ export class Game {
     const members = this.livingMembers();
     const loss = (m: Member) => (def.cost.hpPct ? altarHpLoss(statsOf(m).hp, def.cost.hpPct) : 0);
     if (this.state.gold < (def.cost.gold ?? 0) || members.some((m) => m.hp - loss(m) < 1)) return false;
+    // Run-long bonuses are capped per stat (ALTAR_STAT_CAP_PCT): an altar that would pass the cap is refused.
+    const held = this.run!.altarBuffs.filter((b) => b.stat === def.gain.stat).reduce((n, b) => n + b.pct, 0);
+    if (held + def.gain.pct > ALTAR_STAT_CAP_PCT) return false;
     this.state.gold -= def.cost.gold ?? 0;
     for (const m of members) m.hp -= loss(m);
     this.run!.altarBuffs.push({ ...def.gain });
     this.run!.opened.add(this.spotId(at));
+    this.map().tiles[at.y][at.x] = 'floor';   // an accepted altar is spent
     return true;
   }
 
@@ -260,10 +273,11 @@ export class Game {
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'));
     this.state.gold += rw.gold;
-    for (const [mat, n] of Object.entries(rw.drops)) addItem(this.state.inventory, mat, n);
+    for (const [mat, n] of Object.entries(rw.drops)) this.grant(mat, n);
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
     this.state.party = awarded.party;
+    // TODO(plan 5): elites always drop a rare material
     if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
     if (b.boss && this.isStoryDepth(this.floor)) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
@@ -315,7 +329,7 @@ export class Game {
     return { kind: 'floor', floor };
   }
 
-  /** The single place loot enters the party's hands (chests and vaults). */
+  /** The single place loot enters the party's hands (chests, vaults and battle drops); Task 6 redirects it to run.loot. */
   private grant(item: string, qty: number): void {
     addItem(this.state.inventory, item, qty);
   }

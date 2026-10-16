@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ALTARS, altarAt } from './events';
+import { ALTARS, ALTAR_STAT_CAP_PCT, POISON_TP_LOSS_PCT, VAULT_CHEST_MULT, VAULT_PLACEHOLDER, altarAt, trapDamage } from './events';
+import { FLOORS } from '../data/floors';
 import { createBattle } from './battle';
 import { Game, type MoveResult } from './game';
 import { DELTA, posKey, tileAt, type Dir } from './map';
@@ -32,6 +33,8 @@ const stepOnto = (g: Game, at: Pos): MoveResult => {
   }
   throw new Error(`no way onto ${posKey(at)}`);
 };
+/** Make the game's rng answer `v` from now on (traps roll hurt below 0.5, poison above). */
+const rig = (g: Game, v: number) => { (g as unknown as { rng: () => number }).rng = () => v; };
 const members = (g: Game) => g.state.party.recruited.map((id) => g.state.party.roster[id]);
 
 describe('fountain', () => {
@@ -58,31 +61,45 @@ describe('fountain', () => {
     stepOnto(g, at);
     g.useFountain();
     expect(down.hp).toBe(0);
+    expect(tileAt(g.map(), at)).toBe('floor');
     expect(stepOnto(g, at)).toEqual({ kind: 'moved' });
   });
 });
 
 describe('trap', () => {
-  it('a trap hurts or poisons and is spent afterwards', () => {
+  it('a hurt trap takes HP from every living member, leaves TP, and is spent afterwards', () => {
     const g = gameWith('trap');
+    rig(g, 0.1);
     const at = contentOf(g, 'trap').at;
-    const before = members(g).map((m) => m.hp);
+    const before = members(g).map((m) => ({ hp: m.hp, tp: m.tp }));
     const r = stepOnto(g, at);
-    expect(r).toMatchObject({ kind: 'trap' });
-    if (r.kind !== 'trap') throw new Error('unreachable');
-    expect(['hurt', 'poison']).toContain(r.effect);
-    expect(r.amount).toBeGreaterThan(0);
-    members(g).forEach((m, i) => { expect(m.hp).toBeLessThan(before[i]); expect(m.hp).toBeGreaterThanOrEqual(1); });
+    expect(r).toEqual({ kind: 'trap', effect: 'hurt', amount: trapDamage('hurt', 1), tp: 0 });
+    members(g).forEach((m, i) => expect([m.hp, m.tp]).toEqual([Math.max(1, before[i].hp - trapDamage('hurt', 1)), before[i].tp]));
     expect(tileAt(g.map(), at)).toBe('floor');
     const after = members(g).map((m) => m.hp);
     expect(stepOnto(g, at)).toEqual({ kind: 'moved' });
     expect(members(g).map((m) => m.hp)).toEqual(after);
   });
-  it('never kills: a member at 1 HP stays at 1', () => {
+  it('a poison trap hurts less and drains 20% of max TP, and the result reports both', () => {
     const g = gameWith('trap');
-    for (const m of members(g)) m.hp = 1;
-    stepOnto(g, contentOf(g, 'trap').at);
-    expect(members(g).every((m) => m.hp === 1)).toBe(true);
+    rig(g, 0.9);
+    const before = members(g).map((m) => ({ hp: m.hp, tp: m.tp }));
+    const r = stepOnto(g, contentOf(g, 'trap').at);
+    expect(trapDamage('poison', 1)).toBeLessThan(trapDamage('hurt', 1));
+    const drains = members(g).map((m, i) => before[i].tp - m.tp);
+    members(g).forEach((m, i) => expect(m.hp).toBe(Math.max(1, before[i].hp - trapDamage('poison', 1))));
+    members(g).forEach((m, i) => expect(drains[i]).toBe(Math.min(before[i].tp, Math.floor((statsOf(m).tp * POISON_TP_LOSS_PCT) / 100))));
+    expect(Math.max(...drains)).toBeGreaterThan(0);
+    expect(r).toEqual({ kind: 'trap', effect: 'poison', amount: trapDamage('poison', 1), tp: Math.max(...drains) });
+  });
+  it('never kills, and TP never goes below 0', () => {
+    for (const v of [0.1, 0.9]) {
+      const g = gameWith('trap');
+      rig(g, v);
+      for (const m of members(g)) { m.hp = 1; m.tp = 0; }
+      stepOnto(g, contentOf(g, 'trap').at);
+      expect(members(g).every((m) => m.hp === 1 && m.tp === 0)).toBe(true);
+    }
   });
 });
 
@@ -152,6 +169,20 @@ describe('altar', () => {
     expect(paid).toBe(!def.cost.gold && !def.cost.hpPct);
     expect(g.run!.altarBuffs).toEqual([]);
   });
+  it('refuses an altar whose bonus would pass the per-stat cap, and accepts one that reaches it exactly', () => {
+    const g = gameWith('altar');
+    const at = contentOf(g, 'altar').at;
+    stepOnto(g, at);
+    const { gain } = altarAt(g.run!, g.floor, at);
+    g.state.gold = 9999;
+    g.run!.altarBuffs = [{ stat: gain.stat, pct: ALTAR_STAT_CAP_PCT - gain.pct + 1 }];
+    expect(g.altar(at, true)).toBe(false);
+    expect([g.state.gold, tileAt(g.map(), at)]).toEqual([9999, 'altar']);
+    g.run!.altarBuffs = [{ stat: gain.stat, pct: ALTAR_STAT_CAP_PCT - gain.pct }];
+    expect(g.altar(at, true)).toBe(true);
+    expect(g.run!.altarBuffs.filter((b) => b.stat === gain.stat).reduce((n, b) => n + b.pct, 0)).toBe(ALTAR_STAT_CAP_PCT);
+    expect(tileAt(g.map(), at)).toBe('floor');
+  });
   it('createBattle applies altar buffs to the party only', () => {
     const g = gameWith('altar');
     const base = createBattle({ party: g.state.party, enemyIds: ['slime'], inventory: {}, revealed: {} });
@@ -175,8 +206,11 @@ describe('vault', () => {
     expect(tileAt(g.map(), key)).toBe('floor');
     stepOnto(g, vault);
     const coins = g.state.inventory['old-coin'] ?? 0;
-    expect(g.openVault(vault)).toEqual({ kind: 'vault', loot: { 'old-coin': 6 + 5 } });   // 3 x the floor-1 chest (2) plus the placeholder 5
-    expect(g.state.inventory['old-coin']).toBe(coins + 11);
+    const chest = FLOORS[0].chestLoot[0];   // depth 1 is terrain 1, plain condition
+    const expected = chest.qty * VAULT_CHEST_MULT + (chest.item === VAULT_PLACEHOLDER.item ? VAULT_PLACEHOLDER.qty : 0);
+    const r = g.openVault(vault);
+    expect(r).toEqual({ kind: 'vault', loot: { [chest.item]: expected, ...(chest.item === VAULT_PLACEHOLDER.item ? {} : { [VAULT_PLACEHOLDER.item]: VAULT_PLACEHOLDER.qty }) } });
+    expect(g.state.inventory['old-coin']).toBe(coins + (chest.item === VAULT_PLACEHOLDER.item ? expected : VAULT_PLACEHOLDER.qty));
     expect(tileAt(g.map(), vault)).toBe('floor');
     expect(g.openVault(vault)).toBeNull();
   });
@@ -232,6 +266,14 @@ describe('one step triggers one thing', () => {
     t.encounter = 99;
     expect(stepOnto(t, contentOf(t, 'trap').at)).toMatchObject({ kind: 'trap' });
     expect([t.phase, t.encounter]).toEqual(['map', 99]);
+    const v = gameWith('vault', 'key');
+    v.encounter = 99;
+    expect(stepOnto(v, contentOf(v, 'vault').at)).toMatchObject({ kind: 'event' });
+    expect([v.phase, v.encounter]).toEqual(['map', 99]);
+    const e = gameWith('elite');
+    e.encounter = 99;
+    expect(stepOnto(e, contentOf(e, 'elite').at)).toEqual({ kind: 'battle' });
+    expect([e.phase, e.encounter, e.battle!.enemies[0].tint]).toEqual(['battle', 99, 'elite']);   // the elite fight, not a second random one
     const k = gameWith('key');
     k.encounter = 99;
     expect(stepOnto(k, contentOf(k, 'key').at)).toEqual({ kind: 'key' });

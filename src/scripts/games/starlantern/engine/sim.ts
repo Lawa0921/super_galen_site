@@ -7,7 +7,9 @@ import { LIMIT_MAX, createBattle, resolveRound, type Action, type BattleScale, t
 import { MAX_LEVEL, expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
 import { mulberry32 } from './rng';
 import { scaleEnemy } from './scaling';
-import type { CharacterId, Party } from './types';
+import type { BuffStat, CharacterId, Party } from './types';
+
+type Altar = { stat: BuffStat; pct: number }[];
 
 /** A fresh party with everyone at `level`, held to the real level cap. */
 export function partyAt(level: number): Party {
@@ -45,9 +47,9 @@ function power(id: string): number {
   return SKILLS[id].effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
-export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale): { outcome: Outcome; rounds: number; hpLoss: number } {
+export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed: number, scale?: BattleScale, altar?: Altar): { outcome: Outcome; rounds: number; hpLoss: number } {
   const rng = mulberry32(seed);
-  let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale });
+  let s = createBattle({ party, enemyIds, boss, inventory: {}, revealed: {}, scale, altar });
   const maxHp = s.party.reduce((n, c) => n + c.max.hp, 0);
   let rounds = 0;
   while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), rng); rounds++; }
@@ -55,10 +57,10 @@ export function simBattle(party: Party, enemyIds: string[], boss: boolean, seed:
   return { outcome: s.outcome, rounds, hpLoss: 1 - left / maxHp };
 }
 
-export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale): { rate: number; hpLoss: number } {
+export function winRate(level: number, groups: string[][], boss: boolean, seeds = 40, scale?: BattleScale, altar?: Altar): { rate: number; hpLoss: number } {
   let wins = 0, loss = 0, n = 0;
   for (const g of groups) for (let k = 1; k <= seeds; k++) {
-    const r = simBattle(partyAt(level), g, boss, k * 7919, scale);
+    const r = simBattle(partyAt(level), g, boss, k * 7919, scale, altar);
     n++; loss += r.hpLoss; if (r.outcome === 'win') wins++;
   }
   return { rate: wins / n, hpLoss: loss / n };

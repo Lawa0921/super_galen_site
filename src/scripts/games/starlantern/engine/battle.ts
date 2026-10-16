@@ -69,12 +69,9 @@ export function createBattle(o: {
 }): BattleState {
   const party: Combatant[] = [];
   o.party.grid.forEach((id, cell) => { if (id) party.push(fromMember(o.party.roster[id], cell)); });
-  for (const c of party) {
-    for (const stat of new Set((o.altar ?? []).map((x) => x.stat))) {
-      const pct = o.altar!.filter((x) => x.stat === stat).reduce((n, x) => n + x.pct, 0);
-      c.max[stat] = Math.floor(c.max[stat] * (1 + pct / 100));
-    }
-  }
+  const altar = new Map<BuffStat, number>();
+  for (const b of o.altar ?? []) altar.set(b.stat, (altar.get(b.stat) ?? 0) + b.pct);
+  for (const c of party) for (const [k, pct] of altar) c.max[k] = Math.floor(c.max[k] * (1 + pct / 100));
   const counts: Record<string, number> = {};
   for (const id of o.enemyIds) counts[id] = (counts[id] ?? 0) + 1;
   const seen: Record<string, number> = {};
