@@ -205,12 +205,12 @@ describe('vault', () => {
     expect(g.run!.keys.has(1)).toBe(true);
     expect(tileAt(g.map(), key)).toBe('floor');
     stepOnto(g, vault);
-    const coins = g.state.inventory['old-coin'] ?? 0;
+    const coins = g.run!.loot.items['old-coin'] ?? 0;
     const chest = FLOORS[0].chestLoot[0];   // depth 1 is terrain 1, plain condition
     const expected = chest.qty * VAULT_CHEST_MULT + (chest.item === VAULT_PLACEHOLDER.item ? VAULT_PLACEHOLDER.qty : 0);
     const r = g.openVault(vault);
     expect(r).toEqual({ kind: 'vault', loot: { [chest.item]: expected, ...(chest.item === VAULT_PLACEHOLDER.item ? {} : { [VAULT_PLACEHOLDER.item]: VAULT_PLACEHOLDER.qty }) } });
-    expect(g.state.inventory['old-coin']).toBe(coins + (chest.item === VAULT_PLACEHOLDER.item ? expected : VAULT_PLACEHOLDER.qty));
+    expect(g.run!.loot.items['old-coin']).toBe(coins + (chest.item === VAULT_PLACEHOLDER.item ? expected : VAULT_PLACEHOLDER.qty));
     expect(tileAt(g.map(), vault)).toBe('floor');
     expect(g.openVault(vault)).toBeNull();
   });

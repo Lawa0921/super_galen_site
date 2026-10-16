@@ -20,8 +20,8 @@ export const T = {
     duplicate: '同一人不能重複上陣', empty: '至少要有一人出戰', 'too-many': '最多只能 5 人上陣',
   } as Record<string, string>,
   notices: {
-    'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……已回到上次住宿的時間點',
-    saved: '已存檔', 'save-failed': '存檔失敗：瀏覽器不允許儲存', lamp: '歸還之燈的光芒把隊伍帶回了城鎮。',
+    'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……冒險背包遺失在迷宮裡，身上的金幣也少了四分之一。',
+    saved: '已存檔', 'save-failed': '存檔失敗：瀏覽器不允許儲存', lamp: '歸還之燈的光芒把隊伍帶回了城鎮。', banked: '平安回城，冒險背包裡的戰利品已經入庫。',
   },
   map: {
     returnTown: '回城', lamp: (n: number) => `歸還之燈 ×${n}`,

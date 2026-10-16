@@ -6,6 +6,7 @@ import { constRng, memoryStorage } from './testing';
 import { mulberry32 } from './rng';
 import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
+import { capacity, carried, weightOf } from '../data/weights';
 import type { Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 
@@ -142,10 +143,10 @@ describe('moving', () => {
     const g = inMap(1);
     const chest = contentOf(g, 'chest')!.at;
     expect(stepOnto(g, chest)).toEqual({ kind: 'chest', item: 'old-coin', qty: 2 });
-    expect(g.state.inventory['old-coin']).toBe(2);
+    expect(g.run!.loot.items['old-coin']).toBe(2);
     expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(true);
     expect(stepOnto(g, chest)).toEqual({ kind: 'moved' });
-    expect(g.state.inventory['old-coin']).toBe(2);
+    expect(g.run!.loot.items['old-coin']).toBe(2);
   });
   it('a chest gives the terrain loot times the run condition drop rate', () => {
     const g = new Game(calm(), null);
@@ -215,7 +216,7 @@ describe('battles', () => {
     expect(r.end!.outcome).toBe('win');
     expect(g.phase).toBe('map');
     expect(g.battle).toBeNull();
-    expect(g.state.gold).toBe(gold + r.end!.gold);
+    expect([g.state.gold, g.run!.loot.gold]).toEqual([gold, r.end!.gold]);
     const sc = g.state.party.roster.scarlet; // a floor-1 fight gives < 60 exp, so at most one level-up (15 exp)
     expect(sc.exp + (sc.level - 1) * 15).toBe(r.end!.exp);
   });
@@ -225,22 +226,40 @@ describe('battles', () => {
     expect(r.end).toBeNull();
     expect(g.phase).toBe('battle');
   });
-  it('reloads the inn save on a wipe', () => {
+  it('a wipe keeps levels, drops the run pack and a quarter of the gold, and does not reload the save', () => {
     const storage = memoryStorage();
     saveGame(storage, { ...newGame(), gold: 999 });
     const g = startBattle(1, storage);
+    g.state.gold = 200;
+    g.state.party.roster.scarlet.level = 4;
+    g.run!.loot.items['moss'] = 3;
+    g.run!.loot.gold = 80;
     for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
     const r = g.submitRound({})!;
     expect(r.end!.outcome).toBe('lose');
-    expect([g.phase, g.notice, g.state.gold]).toEqual(['town', 'wipe', 999]);
+    expect([g.phase, g.notice, g.state.gold, g.state.party.roster.scarlet.level]).toEqual(['town', 'wipe', 150, 4]);
+    expect(g.state.inventory['moss']).toBeUndefined();
     expect(g.run).toBeNull();
   });
-  it('starts over when wiping without a save', () => {
+  it('a wipe without a save keeps the state too (no reset to 150)', () => {
     const g = startBattle();
     g.state.gold = 5;
     for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
     g.submitRound({});
-    expect([g.phase, g.state.gold]).toEqual(['town', 150]);
+    expect([g.phase, g.state.gold]).toEqual(['town', 3]);
+  });
+  it('departing again after a wipe starts with an empty pack and charges no second penalty', () => {
+    const g = startBattle();
+    g.state.gold = 200;
+    g.run!.loot.items['moss'] = 3;
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    g.submitRound({});
+    expect(g.state.gold).toBe(150);
+    g.state.party.roster.scarlet.hp = 10;
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect([g.run!.loot, g.state.gold]).toEqual([{ items: {}, gold: 0 }, 150]);
+    expect(g.returnToTown()).toBe(true);
+    expect(g.state.gold).toBe(150);
   });
   it('the mainline boss is on depth 3 and its defeat clears the game', () => {
     const g = inMap(3);
@@ -340,5 +359,79 @@ describe('inn', () => {
     g.state.gold = 0;
     expect(g.rest()).toEqual({ ok: false, reason: 'gold' });
     expect(storage.map.has(SAVE_KEY)).toBe(false);
+  });
+});
+
+describe('run pack', () => {
+  it('loot waits in the run pack and is banked on return', () => {
+    const g = inMap(1);
+    const chest = contentOf(g, 'chest')!.at;
+    stepOnto(g, chest);
+    g.run!.loot.gold = 30;
+    expect([g.run!.loot.items['old-coin'], g.state.inventory['old-coin'], g.state.gold]).toEqual([2, undefined, 150]);
+    stepOnto(g, g.map().entrance);
+    expect(g.returnToTown()).toBe(true);
+    expect([g.state.inventory['old-coin'], g.state.gold, g.notice]).toEqual([2, 180, 'banked']);
+    expect(g.banked).toEqual({ items: { 'old-coin': 2 }, gold: 30 });
+  });
+  it('the return lamp banks the pack too', () => {
+    const g = inMap(1);
+    g.run!.loot.items.moss = 2;
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect([g.state.inventory.moss, g.notice]).toEqual([2, 'banked']);
+  });
+  it('consumables from a chest go straight to the inventory', () => {
+    const g = new Game(calm(), null);
+    g.state.dungeon.reached.mainline = 3;
+    g.depart(MAIN, 2);
+    const chest = contentOf(g, 'chest')!.at;
+    expect(stepOnto(g, chest)).toEqual({ kind: 'chest', item: 'ether', qty: 2 });
+    expect([g.state.inventory.ether, g.run!.loot.items.ether]).toEqual([2, undefined]);
+  });
+  it('picking up past the weight limit reports full and keeps the item on the ground; discarding makes room', () => {
+    const g = inMap(1);
+    const cap = capacity(g.state.party);
+    g.run!.loot.items['star-stone'] = Math.floor((cap - carried(g.state, g.run!)) * 2) - 1;   // 0.5 each: room for under 1 more
+    const chest = contentOf(g, 'chest')!.at;
+    const before = { ...g.run!.loot.items };
+    expect(stepOnto(g, chest)).toEqual({ kind: 'full', item: 'old-coin', qty: 2 });
+    expect(g.run!.loot.items).toEqual(before);
+    expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(false);
+    expect(g.discard('star-stone', 10)).toBe(10);
+    expect(stepOnto(g, chest)).toEqual({ kind: 'chest', item: 'old-coin', qty: 2 });
+    expect(g.run!.loot.items['old-coin']).toBe(2);
+  });
+  it('discard takes from the run pack first, then consumables, and never more than held', () => {
+    const g = inMap(1);
+    g.run!.loot.items.potion = 1;
+    g.state.inventory.potion = 2;
+    expect(g.discard('potion', 2)).toBe(2);
+    expect([g.run!.loot.items.potion, g.state.inventory.potion]).toEqual([undefined, 1]);
+    expect(g.discard('potion', 5)).toBe(1);
+    expect(g.discard('nothing', 1)).toBe(0);
+  });
+  it('carried weight counts the consumables brought along and the run pack', () => {
+    const g = inMap(1);
+    g.state.inventory = { potion: 3, moss: 10 };   // stored materials stay home
+    g.run!.loot.items = { 'old-coin': 2, moss: 4, 'iron-sword': 1, 'cloth-robe': 1 };
+    expect(carried(g.state, g.run!)).toBe(3 + 2 + 2 + 6 + 8);
+    expect(weightOf('moss')).toBe(0.5);
+    expect(weightOf('hunter-bow')).toBe(6);
+    expect(weightOf('moss-charm')).toBe(2);
+    expect(capacity(g.state.party)).toBeGreaterThan(40);
+  });
+  it('battle drops past the limit are left behind and reported', () => {
+    const g = new Game(mulberry32(1), null);
+    g.depart(MAIN, 1);
+    g.encounter = 99;
+    g.move('right');
+    g.run!.loot.items['star-stone'] = Math.floor(capacity(g.state.party) * 2);   // exactly full
+    for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    const end = g.submitRound({})!.end!;
+    const dropped = Object.values(end.drops).reduce((a, b) => a + b, 0);
+    expect(dropped).toBeGreaterThan(0);
+    expect(end.left).toEqual(end.drops);
+    expect(Object.keys(g.run!.loot.items)).toEqual(['star-stone']);
   });
 });

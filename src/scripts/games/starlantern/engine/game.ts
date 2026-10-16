@@ -1,4 +1,6 @@
 import { CONDITIONS } from '../data/conditions';
+import { ITEMS } from '../data/items';
+import { capacity, carried, weightOf } from '../data/weights';
 import { FLOORS } from '../data/floors';
 import { createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
@@ -15,7 +17,7 @@ import { addItem, buy as townBuy, rest as innRest, type TownResult } from './tow
 import type { CharacterId, Member, Pos } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
-export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp';
+export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked';
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
   | { kind: 'entrance' } | { kind: 'floor'; floor: number } | { kind: 'chest'; item: string; qty: number }
@@ -23,10 +25,14 @@ export type MoveResult =
   | { kind: 'event'; content: Content }
   | { kind: 'trap'; effect: 'hurt' | 'poison'; amount: number; tp: number }
   | { kind: 'key' }
+  /** The pack cannot take the pick-up: it stays on the ground (the chest stays shut) until something is discarded. */
+  | { kind: 'full'; item: string; qty: number }
   | { kind: 'vault'; loot: Record<string, number> };
 export interface BattleEnd {
   outcome: 'win' | 'lose' | 'fled'; exp: number; gold: number; drops: Record<string, number>;
   levelUps: { id: CharacterId; levels: number; learned: string[] }[];
+  /** Drops that did not fit in the pack and were left behind. */
+  left: Record<string, number>;
 }
 
 /** Turn a floor's boss tile into stairs down. */
@@ -51,6 +57,8 @@ export class Game {
   /** The elite tile whose fight is on; it turns to floor on a win. */
   private eliteAt: Pos | null = null;
   notice: Notice | null = null;
+  /** What the last safe return brought home; the town screen shows it, then clears it. */
+  banked: { items: Record<string, number>; gold: number } | null = null;
 
   constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState) {
     this.state = state ?? newGame();
@@ -239,6 +247,10 @@ export class Game {
     }
     // TODO(plan 5): rare materials replace this placeholder.
     loot[VAULT_PLACEHOLDER.item] = (loot[VAULT_PLACEHOLDER.item] ?? 0) + VAULT_PLACEHOLDER.qty;
+    if (!this.fits(loot)) {
+      const [item, qty] = Object.entries(loot)[0];
+      return { kind: 'full', item, qty };
+    }
     for (const [item, qty] of Object.entries(loot)) this.grant(item, qty);
     this.map().tiles[at.y][at.x] = 'floor';
     return { kind: 'vault', loot };
@@ -257,6 +269,22 @@ export class Game {
     return true;
   }
 
+  /** Throw away up to `qty` of an item: the run pack first, then the consumables brought along. Returns how many went. */
+  discard(id: string, qty: number): number {
+    const run = this.run;
+    if (!run || !Number.isInteger(qty) || qty <= 0) return 0;
+    let left = qty;
+    const fromPack = Math.min(left, run.loot.items[id] ?? 0);
+    addItem(run.loot.items, id, -fromPack);
+    left -= fromPack;
+    if (ITEMS[id]) {
+      const fromBag = Math.min(left, this.state.inventory[id] ?? 0);
+      addItem(this.state.inventory, id, -fromBag);
+      left -= fromBag;
+    }
+    return qty - left;
+  }
+
   submitRound(actions: Record<string, Action>): { battle: BattleState; end: BattleEnd | null } | null {
     if (this.phase !== 'battle' || !this.battle) return null;
     const b = resolveRound(this.battle, actions, this.rng);
@@ -266,14 +294,20 @@ export class Game {
     this.state.party = writeBack(this.state.party, b);
     if (b.outcome === 'ongoing') return { battle: b, end: null };
     this.battle = null;
-    const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [] };
+    const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {} };
     const elite = this.eliteAt;
     this.eliteAt = null;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'));
-    this.state.gold += rw.gold;
-    for (const [mat, n] of Object.entries(rw.drops)) this.grant(mat, n);
+    this.run!.loot.gold += rw.gold;
+    const left: Record<string, number> = {};
+    for (const [mat, n] of Object.entries(rw.drops)) {
+      const room = Math.max(0, Math.floor((capacity(this.state.party) - carried(this.state, this.run!)) / weightOf(mat)));
+      const take = Math.min(n, room);
+      if (take > 0) this.grant(mat, take);
+      if (take < n) left[mat] = n - take;
+    }
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
     this.state.party = awarded.party;
@@ -282,7 +316,7 @@ export class Game {
     if (b.boss) openStairs(this.map());   // a beaten boss leaves stairs down where it stood, so the run can go deeper
     if (b.boss && this.isStoryDepth(this.floor)) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
     else this.phase = 'map';
-    return { battle: b, end: { outcome: 'win', ...rw, levelUps: awarded.results.filter((x) => x.levels > 0) } };
+    return { battle: b, end: { outcome: 'win', ...rw, levelUps: awarded.results.filter((x) => x.levels > 0), left } };
   }
 
   rest(): TownResult {
@@ -309,7 +343,16 @@ export class Game {
     return this.run?.region === 'mainline' && floor === 3;
   }
 
+  /** A safe return: what the run pack holds now counts, and the town is told what came home. */
   private toTown(): void {
+    const loot = this.run?.loot;
+    this.banked = null;
+    if (loot && (loot.gold > 0 || Object.keys(loot.items).length)) {
+      for (const [id, n] of Object.entries(loot.items)) addItem(this.state.inventory, id, n);
+      this.state.gold += loot.gold;
+      this.banked = { items: { ...loot.items }, gold: loot.gold };
+      this.notice = 'banked';
+    }
     this.phase = 'town';
     this.encounter = 0;
     this.run = null;
@@ -329,9 +372,15 @@ export class Game {
     return { kind: 'floor', floor };
   }
 
-  /** The single place loot enters the party's hands (chests, vaults and battle drops); Task 6 redirects it to run.loot. */
+  /** The single place loot enters the party's hands: consumables go to the inventory for use on the road, the rest into the run pack. */
   private grant(item: string, qty: number): void {
-    addItem(this.state.inventory, item, qty);
+    addItem(ITEMS[item] ? this.state.inventory : this.run!.loot.items, item, qty);
+  }
+
+  /** Whether the whole of `loot`, taken together, fits under the weight limit. */
+  private fits(loot: Record<string, number>): boolean {
+    const add = Object.entries(loot).reduce((w, [id, n]) => w + n * weightOf(id), 0);
+    return carried(this.state, this.run!) + add <= capacity(this.state.party);
   }
 
   private rollChest(): { item: string; qty: number } {
@@ -345,6 +394,7 @@ export class Game {
     if (run.opened.has(id)) return null;
     if (!FLOORS[this.terrain() - 1].chestLoot.length) return null;
     const { item, qty } = this.rollChest();
+    if (!this.fits({ [item]: qty })) return { kind: 'full', item, qty };
     run.opened.add(id);
     this.grant(item, qty);
     return { kind: 'chest', item, qty };
@@ -358,8 +408,9 @@ export class Game {
   }
 
   private wipe(): void {
-    const r = this.storage ? loadGame(this.storage) : { status: 'empty' as const };
-    this.state = r.status === 'ok' ? r.state : newGame();
+    // Levels and exp stay, the run pack is lost and a quarter of the gold goes; the inn save is not read back.
+    this.state.gold = Math.floor(this.state.gold * 0.75);
+    this.banked = null;
     this.phase = 'town';
     this.run = null;
     this.encounter = 0;
