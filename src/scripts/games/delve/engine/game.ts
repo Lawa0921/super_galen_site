@@ -25,13 +25,14 @@ export interface DelveOptions {
   height?: number;
 }
 
-export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied';
+export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest';
 export type DelveEvent =
   | { type: 'mine'; x: number; y: number; tile: number; item: ItemId | null }
   | { type: 'place'; x: number; y: number; tile: number; item: ItemId }
   | { type: 'craft'; recipe: string; item: ItemId; n: number }
   | { type: 'blocked'; action: 'mine' | 'place'; reason: BlockReason; x: number; y: number }
-  | { type: 'select'; slot: number };
+  | { type: 'select'; slot: number }
+  | { type: 'chest'; open: boolean; x: number; y: number };
 
 export interface MiningState { x: number; y: number; elapsed: number; need: number; }
 
@@ -48,6 +49,8 @@ export interface DelveState {
   inventory: (Stack | null)[];
   mining: { x: number; y: number; progress: number } | null;
   nearWorkbench: boolean;
+  /** 開著的箱子 */
+  chest: { x: number; y: number } | null;
 }
 
 /** 徒手（背包沒有鎬）時的挖掘能力 */
@@ -78,6 +81,10 @@ export class DelveGame {
   private miningHeld = false;
   private useHeld = false;
   private placeCooldown = 0;
+  /** 這次按住 use 已經用來開過箱子（按住不會一直重開 / 放置） */
+  private useConsumed = false;
+  /** 目前開著的箱子（tile 座標） */
+  openChest: { x: number; y: number } | null = null;
   private mining: MiningState | null = null;
   private events: DelveEvent[] = [];
   private lastBlocked = '';
@@ -107,7 +114,10 @@ export class DelveGame {
   /** 游標所指世界 px 座標（renderer 換算好鏡頭偏移後傳入） */
   setAimWorld(px: number, py: number): void { this.setAim(px / TILE_SIZE, py / TILE_SIZE); }
   setMining(held: boolean): void { this.miningHeld = held; if (!held) this.mining = null; }
-  setUse(held: boolean): void { this.useHeld = held; if (!held) this.placeCooldown = 0; }
+  setUse(held: boolean): void {
+    this.useHeld = held;
+    if (!held) { this.placeCooldown = 0; this.useConsumed = false; }
+  }
   selectSlot(i: number): void {
     const before = this.inventory.selected;
     this.inventory.select(i);
@@ -122,7 +132,14 @@ export class DelveGame {
     if (this.miningHeld) this.updateMining(dt);
     if (this.placeCooldown > 0) this.placeCooldown -= dt;
     if (this.useHeld && this.placeCooldown <= 0) {
-      if (this.tryPlace(this.aim.x, this.aim.y)) this.placeCooldown = PLACE_COOLDOWN;
+      const { x, y } = this.aim;
+      if (this.world.getFg(x, y) === T.CHEST) {
+        if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
+      } else if (!this.useConsumed && this.tryPlace(x, y)) this.placeCooldown = PLACE_COOLDOWN;
+    }
+    if (this.openChest) {
+      const { x, y } = this.openChest;
+      if (this.world.getFg(x, y) !== T.CHEST || !this.canReach(x, y, REACH_TILES + 1.5)) this.closeChest();
     }
   }
 
@@ -134,7 +151,9 @@ export class DelveGame {
     const def = tileDef(id);
     const pick = this.currentPick();
     if (def.minTier > pick.tier) { this.block('mine', 'tier', x, y); this.mining = null; return; }
-    if (!this.planBreak(x, y).fits) { this.block('mine', 'full', x, y); this.mining = null; return; }
+    const plan = this.planBreak(x, y);
+    if (plan.chest) { this.block('mine', 'chest', x, y); this.mining = null; return; }
+    if (!plan.fits) { this.block('mine', 'full', x, y); this.mining = null; return; }
     const need = def.hardness / pick.speed;
     if (!this.mining || this.mining.x !== x || this.mining.y !== y) this.mining = { x, y, elapsed: 0, need };
     this.mining.need = need; // 換鎬即時生效
@@ -162,7 +181,7 @@ export class DelveGame {
    * 預先算出挖 (x,y) 會連帶移除的所有格（本格 + 倒下的樹 + 失去支撐的火把 / 植物 / 藤蔓…）與總掉落物，
    * 以及背包是否放得下全部掉落物。不修改世界。
    */
-  private planBreak(x: number, y: number): { tiles: [number, number][]; drops: Map<ItemId, number>; fits: boolean } {
+  private planBreak(x: number, y: number): { tiles: [number, number][]; drops: Map<ItemId, number>; fits: boolean; chest: boolean } {
     const w = this.world;
     const tiles: [number, number][] = [];
     const gone = new Set<number>();
@@ -175,7 +194,7 @@ export class DelveGame {
       for (const d of this.dropsFor(w.getFg(tx, ty), tx, ty)) drops.set(d.item, (drops.get(d.item) ?? 0) + d.n);
     };
     const id = w.getFg(x, y);
-    if (id === T.AIR || !w.inBounds(x, y)) return { tiles, drops, fits: true };
+    if (id === T.AIR || !w.inBounds(x, y)) return { tiles, drops, fits: true, chest: false };
     take(x, y);
     if (id === T.WOOD) this.fellTree(x, y, take, gone);
     // 失去支撐的物件（以「移除後」的世界判斷支撐）
@@ -203,13 +222,21 @@ export class DelveGame {
         if (!supported(nx, ny, nid)) take(nx, ny);
       }
     }
-    return { tiles, drops, fits: this.inventory.canAddAll(drops) };
+    // 有東西的箱子不能被挖掉（也不能因為挖掉它下面的地而掉落）——避免吞掉內容
+    const chest = tiles.some(([tx, ty]) => w.getFg(tx, ty) === T.CHEST && !this.chestEmpty(tx, ty));
+    return { tiles, drops, fits: this.inventory.canAddAll(drops), chest };
+  }
+
+  private chestEmpty(x: number, y: number): boolean {
+    const c = this.world.chests.get(this.world.idx(x, y));
+    return !c || c.every((s) => s === null);
   }
 
   /** 移除 tile 並把掉落物放進背包；處理砍樹與支撐。掉落物放不下時整個動作拒絕（full）。回傳是否有挖掉。 */
   private breakTile(x: number, y: number): boolean {
     const plan = this.planBreak(x, y);
     if (!plan.tiles.length) return false;
+    if (plan.chest) { this.block('mine', 'chest', x, y); return false; }
     if (!plan.fits) { this.block('mine', 'full', x, y); return false; }
     for (const [tx, ty] of plan.tiles) {
       const tid = this.world.getFg(tx, ty);
@@ -305,10 +332,10 @@ export class DelveGame {
     return { x: Math.floor((p.x + p.w / 2) / TILE_SIZE), y: Math.floor((p.y + p.h - 0.001) / TILE_SIZE) };
   }
   /** 玩家中心到 tile 中心的距離 ≤ REACH_TILES 格 */
-  canReach(tx: number, ty: number): boolean {
+  canReach(tx: number, ty: number, reach: number = REACH_TILES): boolean {
     const c = this.playerCenter();
     const dx = (tx + 0.5) * TILE_SIZE - c.x, dy = (ty + 0.5) * TILE_SIZE - c.y;
-    const r = REACH_TILES * TILE_SIZE;
+    const r = reach * TILE_SIZE;
     return dx * dx + dy * dy <= r * r;
   }
   /** 玩家中心 tile 的 STATION_RANGE 格（Chebyshev）內有工作台 */
@@ -330,6 +357,73 @@ export class DelveGame {
       if (out) this.events.push({ type: 'craft', recipe: recipeId, item: out.item, n: out.n });
     }
     return r;
+  }
+
+  // ── 箱子 ───────────────────────────────────────────────
+  /** 與 (x,y) 互動：目前只有箱子（開箱）。回傳是否有互動。 */
+  interact(x: number, y: number): boolean {
+    if (this.world.getFg(x, y) !== T.CHEST) return false;
+    if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+    if (this.openChest && this.openChest.x === x && this.openChest.y === y) return true;
+    if (this.openChest) this.closeChest();
+    this.openChest = { x, y };
+    this.events.push({ type: 'chest', open: true, x, y });
+    return true;
+  }
+  closeChest(): void {
+    if (!this.openChest) return;
+    const { x, y } = this.openChest;
+    this.openChest = null;
+    this.events.push({ type: 'chest', open: false, x, y });
+  }
+  /** 開著的箱子內容（直接參照，請用下列方法修改） */
+  chestSlots(): (Stack | null)[] | null {
+    if (!this.openChest) return null;
+    return this.world.chests.get(this.world.idx(this.openChest.x, this.openChest.y)) ?? null;
+  }
+  /** 把箱子第 i 格拿進背包（放不下的留在箱子） */
+  takeChestSlot(i: number): boolean {
+    const slots = this.chestSlots(), c = this.openChest;
+    const st = slots?.[i];
+    if (!slots || !c || !st) return false;
+    const left = this.inventory.add(st.item, st.count);
+    if (left === st.count) { this.block('mine', 'full', c.x, c.y); return false; }
+    if (left > 0) st.count = left; else slots[i] = null;
+    this.world.markModified(c.x, c.y);
+    return true;
+  }
+  /** 全部拿取，回傳拿到的道具總數 */
+  takeAllFromChest(): number {
+    const slots = this.chestSlots();
+    if (!slots) return 0;
+    let moved = 0;
+    for (let i = 0; i < slots.length; i++) {
+      const st = slots[i];
+      if (!st) continue;
+      const before = st.count;
+      this.takeChestSlot(i);
+      moved += before - (slots[i]?.count ?? 0);
+    }
+    return moved;
+  }
+  /** 把背包第 invSlot 格整堆放進箱子（先疊到同種堆，再放空格） */
+  depositToChest(invSlot: number): boolean {
+    const slots = this.chestSlots(), c = this.openChest;
+    const st = this.inventory.slots[invSlot];
+    if (!slots || !c || !st) return false;
+    const max = ITEMS[st.item].maxStack;
+    let left = st.count;
+    for (const s of slots) {
+      if (left <= 0) break;
+      if (s && s.item === st.item && s.count < max) { const k = Math.min(left, max - s.count); s.count += k; left -= k; }
+    }
+    for (let i = 0; i < slots.length && left > 0; i++) {
+      if (slots[i] === null) { const k = Math.min(left, max); slots[i] = { item: st.item, count: k }; left -= k; }
+    }
+    if (left === st.count) return false;
+    if (left > 0) st.count = left; else this.inventory.slots[invSlot] = null;
+    this.world.markModified(c.x, c.y);
+    return true;
   }
 
   /** 計算視窗（tile 座標）+ 外框的光照。 */
@@ -359,6 +453,7 @@ export class DelveGame {
       inventory: this.inventory.toJSON().slots,
       mining: this.mining ? { x: this.mining.x, y: this.mining.y, progress: Math.min(1, this.mining.elapsed / this.mining.need) } : null,
       nearWorkbench: this.nearWorkbench(),
+      chest: this.openChest ? { ...this.openChest } : null,
     };
   }
 

@@ -162,3 +162,60 @@ describe('損毀存檔驗證', () => {
     expect(restoreGame(serializeGame(modified())).ok).toBe(true);
   });
 });
+
+describe('箱子存檔（format 2）', () => {
+  function chestGame(): DelveGame {
+    const g = new DelveGame({ seed: 'chest-save', ...SMALL });
+    g.world.setFg(40, 20, T.CHEST);
+    g.world.chests.get(g.world.idx(40, 20))![2] = { item: 'silver_coin', count: 9 };
+    g.world.setFg(120, 70, T.CHEST);
+    g.world.chests.get(g.world.idx(120, 70))![0] = { item: 'crystal', count: 3 };
+    return g;
+  }
+  it('箱子內容 roundtrip', () => {
+    const g = chestGame();
+    const r = restoreGame(serializeGame(g));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.game.world.chests.get(r.game.world.idx(40, 20))![2]).toEqual({ item: 'silver_coin', count: 9 });
+    expect(r.game.world.chests.get(r.game.world.idx(120, 70))![0]).toEqual({ item: 'crystal', count: 3 });
+    expect(snapshotGame(r.game).header.chests).toEqual(snapshotGame(g).header.chests);
+    expect(SAVE_FORMAT).toBe(2);
+  });
+  it('生成的箱子被拿空：存檔後仍是空的；被挖掉：還原後也不在', () => {
+    const g = new DelveGame({ seed: 'chest-save', ...SMALL });
+    g.world.setFg(40, 20, T.CHEST);
+    g.world.chests.get(g.world.idx(40, 20))![0] = { item: 'torch', count: 4 };
+    g.world.modifiedChunks.clear(); // 假裝是世界生成的箱子
+    // 拿空（只改箱子內容，不改 tile）
+    g.world.chests.get(g.world.idx(40, 20))![0] = null;
+    g.world.markModified(40, 20);
+    g.world.setFg(120, 70, T.CHEST);
+    g.world.setFg(120, 70, T.AIR);
+    const snap = snapshotGame(g);
+    expect(snap.header.chests?.find((c) => c.i === g.world.idx(40, 20))?.slots.every((s) => s === null)).toBe(true);
+    const r = restoreGame(encodeSave(snap));
+    if (!r.ok) throw new Error('restore failed');
+    expect(r.game.world.chests.has(r.game.world.idx(120, 70))).toBe(false);
+  });
+  it('還原時：被修改 chunk 裡、世界生成的箱子以存檔內容為準', () => {
+    const g = chestGame();
+    const bytes = serializeGame(g);
+    const r = restoreGame(bytes);
+    if (!r.ok) throw new Error('restore failed');
+    for (const [i, slots] of r.game.world.chests) expect(r.game.world.fg[i], `chest at ${i}`).toBe(T.CHEST), void slots;
+  });
+  it('箱子裡的壞道具 → format 錯誤', () => {
+    const snap = snapshotGame(chestGame());
+    (snap.header.chests![0].slots as unknown[])[0] = { item: 'nope', count: 1 };
+    expect(restoreGame(encodeSave(snap))).toMatchObject({ ok: false, error: 'format' });
+  });
+  it('舊版（format 1、生成器 v1）存檔 → gen_version 錯誤（提示開新世界）', () => {
+    const snap = snapshotGame(new DelveGame({ seed: 'old', ...SMALL }));
+    snap.header.format = 1;
+    snap.header.genVersion = 1;
+    delete (snap.header as { chests?: unknown }).chests;
+    const r = restoreGame(encodeSave(snap));
+    expect(r).toMatchObject({ ok: false, error: 'gen_version', saveGenVersion: 1 });
+  });
+});

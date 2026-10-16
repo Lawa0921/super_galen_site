@@ -121,6 +121,7 @@ const BLOCKED: Record<BlockReason, string | null> = {
   body: '不能放在自己身上',
   support: '需要相鄰方塊或背牆支撐',
   occupied: null,
+  chest: '箱子裡還有東西，先拿空才能挖',
 };
 // ── 新世界 / 存檔覆蓋流程（單一存檔槽） ──────────────────
 /** 已有存檔時新世界要先確認；force（使用者已確認 / fresh=1）直接開始。 */

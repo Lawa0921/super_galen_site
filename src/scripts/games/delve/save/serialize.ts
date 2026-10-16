@@ -1,6 +1,7 @@
 // serialize.ts — 純函式存檔（不碰 IndexedDB / DOM）。
-// 存「seed + 生成器版本 + 被修改 chunk 的 fg/wall + 玩家 + 背包 + 時間」；
-// 載入時用 seed 重新生成，再覆蓋被修改的 chunk。
+// 存「seed + 生成器版本 + 被修改 chunk 的 fg/wall + 那些 chunk 裡的箱子內容 + 玩家 + 背包 + 時間」；
+// 載入時用 seed 重新生成，再覆蓋被修改的 chunk（chunk 內的箱子以存檔為準）。
+// format 1（M1）沒有 chests；format 2 起 header.chests = [{ i: tile index, slots }]。
 //
 // 二進位格式（little-endian）：
 //   [0..4)  magic "DLVS"
@@ -9,12 +10,13 @@
 //   之後依 header.chunks 順序，每個 chunk：fg CHUNK*CHUNK bytes + wall CHUNK*CHUNK bytes（越界格補 0）
 import { DelveGame } from '../engine/game';
 import type { World } from '../engine/world';
-import { Inventory, type InventoryJSON } from '../engine/inventory';
+import { Inventory, type InventoryJSON, type Stack } from '../engine/inventory';
+import { CHEST_SLOTS } from '../engine/loot';
 import { CHUNK, GEN_VERSION, INV_SIZE } from '../engine/constants';
-import { TILES, WALLS } from '../engine/tiles';
+import { T, TILES, WALLS } from '../engine/tiles';
 import { ITEMS, isItemId } from '../engine/items';
 
-export const SAVE_FORMAT = 1;
+export const SAVE_FORMAT = 2;
 export const CHUNK_BYTES = CHUNK * CHUNK * 2;
 const MAGIC = [0x44, 0x4c, 0x56, 0x53]; // "DLVS"
 const MAX_DIM = 8192;
@@ -33,7 +35,10 @@ export interface SaveHeader {
   inventory: InventoryJSON;
   /** 已排序的 chunk index（cy*chunksX+cx） */
   chunks: number[];
+  /** 被修改 chunk 裡的箱子（依 i 排序）；format 1 沒有 */
+  chests?: ChestSave[];
 }
+export interface ChestSave { i: number; slots: (Stack | null)[]; }
 export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
 export interface SaveData { header: SaveHeader; chunks: Map<number, ChunkPayload>; }
 
@@ -105,6 +110,14 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
   const chunks = new Map<number, ChunkPayload>();
   for (const ci of list) chunks.set(ci, readChunk(w, ci));
   const p = game.player;
+  const mod = w.modifiedChunks;
+  const chests: ChestSave[] = [];
+  for (const [i, slots] of w.chests) {
+    const x = i % w.width, y = (i - x) / w.width;
+    if (!mod.has(w.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK)))) continue;
+    chests.push({ i, slots: slots.map((st) => (st ? { item: st.item, count: st.count } : null)) });
+  }
+  chests.sort((a, b) => a.i - b.i);
   return {
     header: {
       format: SAVE_FORMAT,
@@ -118,6 +131,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       player: { x: p.x, y: p.y, vx: p.vx, vy: p.vy },
       inventory: game.inventory.toJSON(),
       chunks: list,
+      chests,
     },
     chunks,
   };
@@ -152,6 +166,27 @@ function validateChunk(ci: number, c: ChunkPayload): void {
     if (c.fg[i] >= TILES.length) throw new SaveFormatError(`chunk ${ci}: unknown tile ${c.fg[i]}`);
     if (c.wall[i] >= WALLS.length) throw new SaveFormatError(`chunk ${ci}: unknown wall ${c.wall[i]}`);
   }
+}
+
+function validStack(st: unknown, where: string): Stack | null {
+  if (st === null) return null;
+  const o = st as { item?: unknown; count?: unknown };
+  if (!o || typeof o !== 'object' || !isItemId(o.item) || typeof o.count !== 'number'
+    || !Number.isInteger(o.count) || o.count < 1 || o.count > ITEMS[o.item].maxStack) {
+    throw new SaveFormatError(where);
+  }
+  return { item: o.item, count: o.count };
+}
+
+function validChests(v: unknown): ChestSave[] {
+  if (v === undefined) return [];
+  if (!Array.isArray(v)) throw new SaveFormatError('chests');
+  return v.map((c, k) => {
+    const o = c as { i?: unknown; slots?: unknown } | null;
+    if (!o || typeof o !== 'object' || !Number.isInteger(o.i) || (o.i as number) < 0
+      || !Array.isArray(o.slots) || o.slots.length > CHEST_SLOTS) throw new SaveFormatError(`chest ${k}`);
+    return { i: o.i as number, slots: o.slots.map((st, j) => validStack(st, `chest ${k} slot ${j}`)) };
+  });
 }
 
 /** 背包欄位驗證：每格為 null 或 { 已知道具, 1..maxStack 的整數 }；不合法即視為存檔損毀。 */
@@ -198,6 +233,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     player: { x: h.player.x, y: h.player.y, vx: isNum(h.player.vx) ? h.player.vx : 0, vy: isNum(h.player.vy) ? h.player.vy : 0 },
     inventory: validInventory(h.inventory),
     chunks: h.chunks as number[],
+    chests: validChests(h.chests),
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
   if (bytes.length !== need) throw new SaveFormatError(`payload size ${bytes.length} != ${need}`);
@@ -213,6 +249,31 @@ export function decodeSave(bytes: Uint8Array): SaveData {
   return { header, chunks };
 }
 
+/** 被修改 chunk 裡：丟掉世界生成的箱子，依 tile 重建空箱，再套用存檔內容。 */
+function restoreChests(w: World, chunks: readonly number[], saved: readonly ChestSave[]): void {
+  const mod = new Set(chunks);
+  const chunkOf = (i: number): number => {
+    const x = i % w.width, y = (i - x) / w.width;
+    return w.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK));
+  };
+  for (const i of [...w.chests.keys()]) if (mod.has(chunkOf(i))) w.chests.delete(i);
+  for (const ci of mod) {
+    const { cx, cy } = w.chunkCoords(ci);
+    for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) {
+      for (let x = cx * CHUNK; x < Math.min(w.width, (cx + 1) * CHUNK); x++) {
+        const i = y * w.width + x;
+        if (w.fg[i] === T.CHEST) w.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
+      }
+    }
+  }
+  for (const c of saved) {
+    if (c.i >= w.fg.length || w.fg[c.i] !== T.CHEST || !mod.has(chunkOf(c.i))) continue;
+    const slots = new Array<Stack | null>(CHEST_SLOTS).fill(null);
+    c.slots.forEach((st, k) => { slots[k] = st ? { ...st } : null; });
+    w.chests.set(c.i, slots);
+  }
+}
+
 export function serializeGame(game: DelveGame, now?: number): Uint8Array {
   return encodeSave(snapshotGame(game, now));
 }
@@ -225,12 +286,13 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     if (!(input instanceof Uint8Array)) {
       for (const [ci, c] of data.chunks) validateChunk(ci, c);
       validInventory(data.header.inventory);
+      validChests(data.header.chests);
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
   }
   const h = data.header;
-  if (h.format !== SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
+  if (h.format !== 1 && h.format !== SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
   if (h.genVersion !== GEN_VERSION && !opts.allowGenMismatch) {
     return {
       ok: false, error: 'gen_version', saveGenVersion: h.genVersion,
@@ -249,6 +311,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     const c = data.chunks.get(ci);
     if (c) writeChunk(w, ci, c);
   }
+  restoreChests(w, h.chunks, h.chests ?? []);
   w.markAllDirty();
   game.player.x = h.player.x;
   game.player.y = h.player.y;

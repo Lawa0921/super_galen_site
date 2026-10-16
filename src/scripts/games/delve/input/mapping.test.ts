@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   keyAction, slotForKey, wheelSlot, moveAxis, joystick, touchIntent, screenToTile, mouseIntent,
 } from './mapping';
+import { T } from '../engine/tiles';
 
 describe('keyAction', () => {
   it('A/D/方向鍵移動、Space/W/↑ 跳、E 背包、Esc 選單', () => {
@@ -74,6 +75,11 @@ describe('touchIntent', () => {
     expect(touchIntent({ item: 'wood_pickaxe', count: 1 })).toBe('mine');
     expect(touchIntent({ item: 'wood', count: 1 })).toBe('mine');
     expect(touchIntent(null)).toBe('mine');
+  });
+  it('點到箱子 → use（開箱），不論手上拿什麼', () => {
+    expect(touchIntent({ item: 'dirt', count: 3 }, T.CHEST)).toBe('use');
+    expect(touchIntent(null, T.CHEST)).toBe('use');
+    expect(touchIntent({ item: 'dirt', count: 3 }, T.STONE)).toBe('place');
   });
 });
 

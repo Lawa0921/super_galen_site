@@ -1,6 +1,13 @@
 // world.ts — 固定大小 tile 世界。每層一個 typed array（row-major：i = y*width + x）。
 import { CHUNK } from './constants';
 import { SOLID_LUT, T } from './tiles';
+import type { Stack } from './inventory';
+import { CHEST_SLOTS } from './loot';
+
+export type ChestSlots = (Stack | null)[];
+/** 生態區（每欄地表所屬；地下的過渡邊界另有起伏） */
+export const BIOME = { FOREST: 0, DESERT: 1, SNOW: 2, JUNGLE: 3 } as const;
+export type BiomeId = (typeof BIOME)[keyof typeof BIOME];
 
 export class World {
   readonly width: number;
@@ -17,6 +24,10 @@ export class World {
   surface: Int16Array;
   /** 洞穴層（岩層大洞窟）起始 y */
   cavernY = 0;
+  /** 每欄地表的生態區（BIOME） */
+  readonly biome: Uint8Array;
+  /** 箱子內容：key = tile index（y*width+x） */
+  readonly chests = new Map<number, ChestSlots>();
   /** 需重畫的 chunk（render 用，drainDirty 取走） */
   private readonly dirty = new Set<number>();
   /** 生成後被改過的 chunk（存檔 diff 用） */
@@ -30,6 +41,7 @@ export class World {
     this.wall = new Uint8Array(n);
     this.variant = new Uint8Array(n);
     this.surface = new Int16Array(width);
+    this.biome = new Uint8Array(width);
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         let h = Math.imul(x, 374761393) + Math.imul(y, 668265263);
@@ -70,10 +82,23 @@ export class World {
   setFg(x: number, y: number, id: number): boolean {
     if (!this.inBounds(x, y)) return false;
     const i = y * this.width + x;
-    if (this.fg[i] === id) return false;
+    const old = this.fg[i];
+    if (old === id) return false;
     this.fg[i] = id;
+    if (old === T.CHEST) this.chests.delete(i);
+    if (id === T.CHEST && !this.chests.has(i)) this.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
     this.touch(x, y);
     return true;
+  }
+  /** (x,y) 的 chunk 標為已修改（箱子內容變動等不改 tile 的修改；不需重畫） */
+  markModified(x: number, y: number): void {
+    if (!this.inBounds(x, y)) return;
+    this.modifiedChunks.add(this.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK)));
+  }
+  /** 第 x 欄地表的生態區 */
+  biomeAt(x: number): number {
+    if (this.width === 0) return BIOME.FOREST;
+    return this.biome[Math.max(0, Math.min(this.width - 1, Math.floor(x)))];
   }
   setWall(x: number, y: number, id: number): boolean {
     if (!this.inBounds(x, y)) return false;

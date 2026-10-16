@@ -1,5 +1,6 @@
 // mapping.ts — 純輸入映射（無 DOM）：鍵盤代碼 → 動作、滾輪換格、虛擬搖桿數學、觸控意圖、螢幕 → tile。
 import { ITEMS } from '../engine/items';
+import { T } from '../engine/tiles';
 import type { Stack } from '../engine/inventory';
 import { HOTBAR_SIZE, TILE_SIZE } from '../engine/constants';
 
@@ -61,8 +62,9 @@ export function mouseIntent(buttons: number): { mine: boolean; use: boolean } {
   return { mine: (buttons & 1) !== 0, use: (buttons & 2) !== 0 };
 }
 
-/** 觸控點格子時：手持可放置的方塊 → place，否則 mine。 */
-export function touchIntent(held: Stack | null): 'place' | 'mine' {
+/** 觸控點格子時：點到箱子 → use（開箱）；手持可放置的方塊 → place，否則 mine。 */
+export function touchIntent(held: Stack | null, aimTile: number = T.AIR): 'place' | 'mine' | 'use' {
+  if (aimTile === T.CHEST) return 'use';
   if (held && ITEMS[held.item]?.place !== undefined) return 'place';
   return 'mine';
 }

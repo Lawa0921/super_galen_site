@@ -118,7 +118,9 @@ export function attachControls(o: ControlsOptions): Controls {
     touchAim = { id: e.pointerId, x: p.x, y: p.y };
     capture(canvas, e.pointerId);
     aimAt(p.x, p.y);
-    if (touchIntent(game.inventory.selectedStack()) === 'place') game.setUse(true);
+    const aim = game.getState().aim;
+    const intent = touchIntent(game.inventory.selectedStack(), game.world.getFg(aim.x, aim.y));
+    if (intent === 'place' || intent === 'use') game.setUse(true);
     else game.setMining(true);
     e.preventDefault();
   });
