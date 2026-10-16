@@ -240,8 +240,8 @@ export class Game {
     const probe: ItemInstance | undefined = e ? { uid: 0, base: item, rarity: 'common', ilvl: e.ilvl, affixes: [], enhance: 0 } : undefined;
     if (probe ? this.wontFit({}, [probe]) : this.shortBy({ [item]: 1 }) > 0) return { ok: false, reason: 'full' };
     const r = this.apply(townBuy(this.state, item));
-    // The town buy puts gear in the bag; in the labyrinth it belongs in the run pack.
-    if (r.ok && probe) this.pack(this.state.bag.pop()!);
+    // The town buy puts gear in the bag; in the labyrinth it belongs in the run pack. Bought gear is never auto-junked.
+    if (r.ok && probe) this.run!.loot.gear.push(this.state.bag.pop()!);
     return r;
   }
 

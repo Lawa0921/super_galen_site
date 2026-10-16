@@ -711,7 +711,7 @@ describe('dungeon gear', () => {
 
   it('in an elite fight each escort still rolls monster gear on its own loot draw', () => {
     let escorts = 0; let escortPieces = 0; let fights = 0;
-    for (let seed = 1; seed <= 400; seed++) {
+    for (let seed = 1; seed <= 1500; seed++) {
       const g = inMap(1, mulberry32(seed));
       stepOnto(g, plantAt(g, 'elite'));
       const n = g.battle!.enemies.length;
@@ -724,9 +724,9 @@ describe('dungeon gear', () => {
       escorts += n - 1;
       escortPieces += end.gear.filter((it) => it.ilvl === itemLevel(1, 'monster')).length;
     }
-    expect(fights).toBeGreaterThan(20);
-    expect(escortPieces).toBeGreaterThan(0);
-    expect(escortPieces / escorts).toBeLessThan(GEAR_CHANCE.monster + 0.08);
+    expect(escorts).toBeGreaterThan(400);
+    expect(escortPieces / escorts).toBeGreaterThan(GEAR_CHANCE.monster - 0.04);
+    expect(escortPieces / escorts).toBeLessThan(GEAR_CHANCE.monster + 0.04);
   });
 
   it('a boss drops rare-or-better; the same region and depth again passes bossRepeat', () => {
@@ -996,6 +996,18 @@ describe('dungeon gear', () => {
     g.state.bag = Array.from({ length: BAG_SIZE - 1 }, (_, i) => gearItem(1000 + i));
     expect(g.buy(at, 'iron-sword')).toEqual({ ok: false, reason: 'full' });   // 59 in the bag and 1 in the run pack
     expect(g.run!.loot.gear).toHaveLength(1);
+  });
+
+  it('gear the player pays for is never marked as junk', () => {
+    const g = inMap(1);
+    const at = { ...g.pos };
+    floorOf(g.run!, g.floor).contents.push({ kind: 'merchant', at, room: 0, stock: ['iron-sword'] });
+    g.state.gold = 9999;
+    g.state.autoJunk = 'common';
+    expect(g.buy(at, 'iron-sword').ok).toBe(true);
+    expect(g.run!.loot.gear).toHaveLength(1);
+    expect(g.run!.loot.gear[0].rarity).toBe('common');
+    expect(g.run!.loot.gear[0].junk).toBeUndefined();
   });
 
   it('merchant gear is lost on a wipe like any other run loot', () => {
