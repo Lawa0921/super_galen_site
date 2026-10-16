@@ -35,6 +35,82 @@ export function bayer(x: number, y: number): number { return (BAYER[(y & 3) * 4 
 /** 全域描邊色（帶紫的近黑） */
 export const INK: RGB = hex('#1c1424');
 
+// ── 統一色票（50 色）：所有 tile / 精靈 / 背景 / 天空最後都吸附到這裡 ──────────
+export const PALETTE_HEX = [
+  // 冷灰（描邊、石頭、金屬、雲影）
+  '#0c0a12', '#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490', '#858aa0', '#b4b9c8', '#ffffff',
+  // 棕（土、木、樹皮、靴、頭髮）
+  '#2a1810', '#472819', '#623924', '#7c4c2e', '#966139', '#b07a4b', '#c99660',
+  // 沙
+  '#d8ba76', '#f2e2b0',
+  // 草綠
+  '#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478',
+  // 霧綠（遠景、深色樹）
+  '#3f7468', '#6a9c88', '#a2c8b0',
+  // 青（上衣）
+  '#1f6474', '#2c8692', '#4aaeb0',
+  // 天空
+  '#18204a', '#2c4486', '#3e74c4', '#5c9ce0', '#94c8ee', '#cceaf8', '#7f9cc4',
+  // 靛 / 紫（夜、黃昏、褲子）
+  '#2c2450', '#463c78', '#7a5a8c', '#b8788e',
+  // 暖（火、銅、日）
+  '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0',
+  // 膚
+  '#d98f66', '#f2b888',
+] as const;
+export const PALETTE: RGB[] = PALETTE_HEX.map(hex);
+
+export function luma(c: RGB): number { return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; }
+/** redmean 加權距離平方（比純 RGB 更接近人眼） */
+function dist2(a: RGB, b: RGB): number {
+  const rm = (a[0] + b[0]) / 2, dr = a[0] - b[0], dg = a[1] - b[1], db = a[2] - b[2];
+  return (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
+}
+const SNAP_CACHE = new Map<number, RGB>();
+const PAL_SET = new Set(PALETTE.map((c) => (c[0] << 16) | (c[1] << 8) | c[2]));
+export function inPalette(c: RGB): boolean { return PAL_SET.has((c[0] << 16) | (c[1] << 8) | c[2]); }
+/** 最近的色票色 */
+export function snap(c: RGB): RGB {
+  const key = (c[0] << 16) | (c[1] << 8) | c[2];
+  let r = SNAP_CACHE.get(key);
+  if (!r) {
+    let best = PALETTE[0], bd = Infinity;
+    for (const p of PALETTE) { const d = dist2(c, p); if (d < bd) { bd = d; best = p; } }
+    r = best;
+    SNAP_CACHE.set(key, r);
+  }
+  return r;
+}
+/**
+ * 色票上往暗（dir<0）或往亮（dir>0）的最近一階：優先挑亮度差 ≥ NUDGE_MIN 的顏色（避免挑到只是換色相的灰），
+ * 沒有就退而求其次；完全沒有更暗 / 更亮就回傳自己。
+ */
+const NUDGE_MIN = 15;
+export function nudge(c: RGB, dir: number): RGB {
+  const s = snap(c), ls = luma(s);
+  const pick = (minStep: number): RGB | null => {
+    let best: RGB | null = null, bd = Infinity;
+    for (const p of PALETTE) {
+      const step = (luma(p) - ls) * (dir < 0 ? -1 : 1);
+      if (step <= 0 || step < minStep) continue;
+      const d = dist2(s, p);
+      if (d < bd) { bd = d; best = p; }
+    }
+    return best;
+  };
+  return pick(NUDGE_MIN) ?? pick(0) ?? s;
+}
+/** 把點陣吸附到色票：不透明像素換成最近色，任何 alpha>0 一律變成完全不透明 */
+export function snapBmp(b: Bmp): Bmp {
+  const px = b.px;
+  for (let i = 0; i < px.length; i++) {
+    const v = px[i];
+    if (!(v >>> 24)) { px[i] = 0; continue; }
+    px[i] = Bmp.pack(snap(Bmp.unpack(v)));
+  }
+  return b;
+}
+
 /** RGBA 點陣（每像素一個 uint32，0 = 透明）。 */
 export class Bmp {
   readonly px: Uint32Array;
@@ -165,8 +241,9 @@ export function rotate(big: Bmp, px: number, py: number, rad: number, size: numb
   return o;
 }
 
-/** Bmp → canvas（瀏覽器端） */
-export function toCanvas(b: Bmp, into?: { ctx: CanvasRenderingContext2D; x: number; y: number }): HTMLCanvasElement | null {
+/** Bmp → canvas（瀏覽器端）。預設先吸附到統一色票（raw = true 則原樣輸出，例如加色光暈）。 */
+export function toCanvas(b: Bmp, into?: { ctx: CanvasRenderingContext2D; x: number; y: number } | null, raw = false): HTMLCanvasElement | null {
+  if (!raw) b = snapBmp(b.clone());
   const bytes = new Uint8ClampedArray(b.w * b.h * 4);
   bytes.set(new Uint8Array(b.px.buffer, b.px.byteOffset, b.px.byteLength));
   const img = new ImageData(bytes, b.w, b.h);

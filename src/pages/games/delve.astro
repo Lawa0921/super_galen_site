@@ -12,7 +12,7 @@ const lang: Language = defaultLang;
 <BaseLayout title="Dungeon Arcade — DELVE 深掘" description="網頁 2D 沙盒：挖礦、合成、建造，在瀏覽器裡往地底深掘" lang={lang}>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap" />
 
   <main class="delve" id="delve-root" data-phase="title">
     <canvas id="delve-canvas" class="delve-canvas" aria-label="DELVE 遊戲畫面"></canvas>
@@ -108,20 +108,32 @@ const lang: Language = defaultLang;
 
 <style is:global>
   .delve {
-    --ink: #f4ead2;
-    --dim: #b8ab8c;
-    --panel: rgba(20, 14, 10, 0.86);
-    --edge: #6b4a2a;
-    --gold: #ffcc55;
-    /* 中文字：Press Start 2P 沒有 CJK 字形，HUD 文字改用易讀的中文字體與較大字級 */
-    --cjk: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', 'Hiragino Sans', system-ui, sans-serif;
+    /* 全部取自遊戲的統一色票（render/pixel.ts） */
+    --ink: #f2e2b0;
+    --dim: #b07a4b;
+    --gold: #ffd86a;
+    --outline: #0c0a12;
+    /* 像素單位：main.ts 依畫面美術像素大小設 data-px（1–3） */
+    --px: 2px;
+    /* 斜面外框（左上亮、右下暗）＋ 1 單位黑描邊 */
+    --bv-hi: #966139;
+    --bv-lo: #2a1810;
+    --bv-bg: #472819;
+    /* 中文：DotGothic16 點陣字（16px 原生格），缺字時退回系統字 */
+    --cjk: 'DotGothic16', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    --pixel: 'Press Start 2P', 'DotGothic16', monospace;
+    /* 1px 實心描邊（不模糊） */
+    --text-outline: 1px 0 0 var(--outline), -1px 0 0 var(--outline), 0 1px 0 var(--outline), 0 -1px 0 var(--outline),
+      1px 1px 0 var(--outline), -1px -1px 0 var(--outline), 1px -1px 0 var(--outline), -1px 1px 0 var(--outline);
     position: fixed;
     inset: 0;
     z-index: 50;
     overflow: hidden;
     background: #120c08;
     color: var(--ink);
-    font-family: 'Press Start 2P', Consolas, monospace;
+    font-family: var(--cjk);
+    font-size: 16px;
+    -webkit-font-smoothing: none;
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
@@ -136,7 +148,26 @@ const lang: Language = defaultLang;
     image-rendering: pixelated;
     cursor: crosshair;
   }
+  .delve[data-px='1'] { --px: 1px; }
+  .delve[data-px='3'] { --px: 3px; }
   .delve [hidden] { display: none; }
+
+  /* ── 像素外框：同一套斜面（實心 border + 無模糊外描邊） ── */
+  .delve-slot,
+  .delve-chip,
+  .delve-panel,
+  .delve-x,
+  .delve-recipe,
+  .delve-toast,
+  .delve-menu-box,
+  .delve-btn,
+  .delve-seed input {
+    border: var(--px) solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    border-radius: 0;
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 var(--px) var(--outline);
+  }
   .delve button { font: inherit; color: inherit; }
 
   /* ── HUD ── */
@@ -151,67 +182,76 @@ const lang: Language = defaultLang;
     top: 10px;
     left: 10px;
     display: flex;
-    gap: 4px;
+    gap: calc(var(--px) * 3);
   }
   .delve-slot {
+    --bv-hi: #623924;
+    --bv-bg: #2a1810;
+    --bv-lo: #1c1424;
     position: relative;
-    width: 44px;
-    height: 44px;
+    width: calc(var(--px) * 22);
+    height: calc(var(--px) * 22);
     padding: 0;
-    border: 2px solid #3a2a1a;
-    background: rgba(30, 22, 16, 0.78);
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.05);
     cursor: pointer;
     display: grid;
     place-items: center;
   }
-  .delve-slot.is-selected { border-color: var(--gold); background: rgba(70, 52, 24, 0.9); }
-  .delve-slot.is-picked { border-color: #7fd4ff; }
-  .delve-slot-icon { width: 32px; height: 32px; image-rendering: pixelated; }
+  .delve-slot.is-selected { --bv-hi: #fff4c0; --bv-lo: #e8701c; --bv-bg: #623924; }
+  .delve-slot.is-picked { --bv-hi: #cceaf8; --bv-lo: #2c4486; --bv-bg: #18204a; }
+  .delve-slot-icon { width: calc(var(--px) * 16); height: calc(var(--px) * 16); image-rendering: pixelated; }
   .delve-slot-count {
     position: absolute;
-    right: 3px;
-    bottom: 3px;
+    right: 1px;
+    bottom: 1px;
+    font-family: var(--pixel);
     font-size: 8px;
-    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+    line-height: 8px;
+    color: #ffffff;
+    text-shadow: var(--text-outline);
   }
-  .delve-slot-key { position: absolute; left: 3px; top: 3px; font-size: 6px; color: var(--dim); }
+  .delve-slot-key {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    font-family: var(--pixel);
+    font-size: 8px;
+    line-height: 8px;
+    color: var(--dim);
+    text-shadow: var(--text-outline);
+  }
   .delve-held {
     position: absolute;
-    top: 60px;
+    top: calc(var(--px) * 22 + 18px);
     left: 12px;
-    font-family: var(--cjk);
-    font-size: 13px;
-    font-weight: 700;
-    text-shadow: 1px 1px 0 #000;
+    font-size: 16px;
+    text-shadow: var(--text-outline);
   }
   .delve-status {
     position: absolute;
-    top: 80px;
+    top: calc(var(--px) * 22 + 40px);
     left: 12px;
-    font-family: var(--cjk);
-    font-size: 13px;
-    font-variant-numeric: tabular-nums;
+    font-size: 16px;
     color: var(--ink);
-    text-shadow: 1px 1px 0 #000, 0 0 3px #000;
+    text-shadow: var(--text-outline);
   }
-  .delve-corner { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+  .delve-corner { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; }
   .delve-chip {
     display: flex;
     gap: 6px;
     align-items: center;
     padding: 6px 10px;
-    font-family: var(--cjk);
-    font-size: 13px;
-    border: 2px solid var(--edge);
-    background: var(--panel);
+    font-size: 16px;
     cursor: pointer;
   }
-  .delve-chip:hover { border-color: var(--gold); }
+  .delve-chip:hover,
+  .delve-x:hover,
+  .delve-btn:hover,
+  .delve-btn:focus-visible,
+  .delve-recipe.is-ready:hover { --bv-hi: #fff4c0; --bv-lo: #a83a10; }
   .delve-kbd {
-    font-family: 'Press Start 2P', Consolas, monospace;
-    font-size: 7px;
-    color: var(--dim);
+    font-family: var(--pixel);
+    font-size: 8px;
+    color: #d8ba76;
   }
   .delve-keys--touch { display: none; }
   /* 觸控裝置：不顯示鍵盤提示 */
@@ -224,21 +264,18 @@ const lang: Language = defaultLang;
 
   .delve-panel {
     position: absolute;
-    top: 100px;
+    top: calc(var(--px) * 22 + 68px);
     left: 10px;
     width: min(480px, calc(100vw - 20px));
     max-height: calc(100vh - 120px);
     overflow-y: auto;
     padding: 12px;
-    border: 2px solid var(--edge);
-    background: var(--panel);
-    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
   }
-  .delve-panel h2 { margin: 0; font-size: 11px; color: var(--gold); }
+  .delve-panel h2 { margin: 0; font-size: 16px; font-weight: 400; color: var(--gold); text-shadow: var(--text-outline); }
   .delve-panel-head { display: flex; justify-content: space-between; align-items: center; }
-  .delve-x { width: 28px; height: 28px; border: 2px solid var(--edge); background: transparent; cursor: pointer; }
-  .delve-hint { margin: 8px 0; font-size: 10px; line-height: 1.6; color: var(--dim); }
-  .delve-inv-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+  .delve-x { width: 32px; height: 32px; padding: 0; font-family: var(--pixel); font-size: 16px; cursor: pointer; }
+  .delve-hint { margin: 8px 0; font-size: 16px; line-height: 1.5; color: #d8ba76; }
+  .delve-inv-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: calc(var(--px) * 2); }
   .delve-inv-grid .delve-slot { width: 100%; height: auto; aspect-ratio: 1; }
   .delve-craft-title { margin-top: 14px; }
   .delve-recipes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
@@ -251,18 +288,20 @@ const lang: Language = defaultLang;
     row-gap: 4px;
     align-items: center;
     padding: 6px;
-    border: 2px solid #3a2a1a;
-    background: rgba(40, 30, 20, 0.7);
+    --bv-hi: #472819;
+    --bv-bg: #2a1810;
+    --bv-lo: #1c1424;
+    color: #966139;
     text-align: left;
     cursor: pointer;
-    opacity: 0.55;
   }
-  .delve-recipe .delve-slot-icon { grid-row: span 2; }
-  .delve-recipe.is-ready { opacity: 1; border-color: #8a6a34; }
-  .delve-recipe.is-ready:hover { border-color: var(--gold); }
+  .delve-recipe .delve-slot-icon { grid-row: span 2; width: 32px; height: 32px; }
+  .delve-recipe.is-ready { --bv-hi: #966139; --bv-bg: #472819; --bv-lo: #2a1810; color: var(--ink); }
   .delve-recipe:disabled { cursor: not-allowed; }
-  .delve-recipe-name { font-size: 11px; }
-  .delve-recipe-need { font-size: 10px; color: var(--dim); line-height: 1.5; }
+  .delve-recipe:disabled .delve-slot-icon { filter: grayscale(1) brightness(0.6); }
+  .delve-recipe-name { font-size: 16px; }
+  .delve-recipe-need { font-size: 16px; color: #b07a4b; line-height: 1.25; }
+  .delve-recipe.is-ready .delve-recipe-need { color: #d8ba76; }
 
   .delve-toast {
     position: absolute;
@@ -270,12 +309,9 @@ const lang: Language = defaultLang;
     bottom: 26px;
     transform: translate(-50%, 12px);
     padding: 8px 12px;
-    font-family: var(--cjk);
-    font-size: 13px;
-    border: 2px solid var(--edge);
-    background: var(--panel);
+    font-size: 16px;
     opacity: 0;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity 0.2s steps(2), transform 0.2s steps(2);
   }
   .delve-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 
@@ -319,7 +355,7 @@ const lang: Language = defaultLang;
     border-radius: 50%;
     border: 3px solid rgba(255, 255, 255, 0.4);
     background: rgba(255, 204, 85, 0.35);
-    font-size: 12px;
+    font-size: 16px;
     touch-action: none;
   }
 
@@ -336,28 +372,23 @@ const lang: Language = defaultLang;
     width: min(340px, calc(100vw - 32px));
     padding: 18px;
     display: grid;
-    gap: 8px;
-    border: 3px solid var(--edge);
-    background: #1d140d;
+    gap: 10px;
+    --bv-bg: #2a1810;
   }
-  .delve-menu-box h2 { margin: 0 0 6px; font-size: 13px; color: var(--gold); text-align: center; }
+  .delve-menu-box h2 { margin: 0 0 6px; font-size: 16px; font-weight: 400; color: var(--gold); text-align: center; text-shadow: var(--text-outline); }
   .delve-btn {
     display: block;
-    padding: 12px 14px;
-    font-size: 10px;
+    padding: 10px 14px;
+    font-size: 16px;
     text-align: center;
     text-decoration: none;
     color: var(--ink);
-    border: 3px solid var(--edge);
-    background: #2b1d12;
     cursor: pointer;
   }
-  .delve-btn:hover,
-  .delve-btn:focus-visible { border-color: var(--gold); background: #3a2716; }
-  .delve-btn--main { background: #6b4a1e; border-color: #c08a3a; }
-  .delve-btn--ghost { background: transparent; }
-  .delve-msg { min-height: 1.2em; margin: 4px 0 0; font-size: 8px; color: #9fe0a0; line-height: 1.6; }
-  .delve-note { margin: 4px 0 0; font-size: 10px; line-height: 1.8; color: var(--dim); }
+  .delve-btn--main { --bv-hi: #ffd86a; --bv-bg: #a83a10; --bv-lo: #6c1e14; color: #ffffff; text-shadow: var(--text-outline); }
+  .delve-btn--ghost { --bv-bg: #1c1424; }
+  .delve-msg { min-height: 1.2em; margin: 4px 0 0; font-size: 16px; color: #93cc50; line-height: 1.4; }
+  .delve-note { margin: 4px 0 0; font-size: 16px; line-height: 1.5; color: #b07a4b; }
 
   /* ── 覆蓋確認 ── */
   .delve-confirm {
@@ -369,12 +400,11 @@ const lang: Language = defaultLang;
     padding: 16px;
     background: rgba(5, 3, 2, 0.72);
   }
-  .delve-confirm-msg { margin: 0; font-family: var(--cjk); font-size: 14px; line-height: 1.7; color: var(--ink); }
-  .delve-confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
-  .delve-confirm .delve-btn { font-family: var(--cjk); font-size: 14px; }
-  .delve-btn--danger { background: #6a1f17; border-color: #c0503a; }
+  .delve-confirm-msg { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink); }
+  .delve-confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .delve-btn--danger { --bv-hi: #e8701c; --bv-bg: #6c1e14; --bv-lo: #1c1424; }
   .delve-btn--danger:hover,
-  .delve-btn--danger:focus-visible { background: #8a2a1f; border-color: var(--gold); }
+  .delve-btn--danger:focus-visible { --bv-hi: #fff4c0; --bv-bg: #a83a10; }
 
   /* ── 標題 ── */
   .delve-title {
@@ -396,46 +426,52 @@ const lang: Language = defaultLang;
     position: absolute;
     top: 14px;
     left: 14px;
-    font-size: 9px;
-    color: var(--dim);
+    font-family: var(--pixel);
+    font-size: 8px;
+    color: #d8ba76;
     text-decoration: none;
   }
   .delve-home:hover { color: var(--gold); }
   .delve-title-fg { max-width: 560px; display: grid; gap: 12px; justify-items: center; }
   .delve-logo {
     margin: 0;
-    font-size: clamp(32px, 9vw, 64px);
-    letter-spacing: 6px;
+    font-family: var(--pixel);
+    font-size: 64px;
+    font-weight: 400;
+    letter-spacing: 8px;
     color: var(--gold);
-    text-shadow: 4px 4px 0 #6b3a12, 8px 8px 0 rgba(0, 0, 0, 0.45);
+    text-shadow: 4px 4px 0 #a83a10, 8px 8px 0 var(--outline);
   }
-  .delve-logo small { display: block; margin-top: 12px; font-size: 0.3em; letter-spacing: 10px; color: var(--ink); }
-  .delve-tagline { margin: 0; font-size: 10px; color: #c9e7a8; letter-spacing: 3px; }
-  .delve-story { margin: 0; font-size: 12px; line-height: 2; color: var(--ink); }
-  .delve-seed { display: flex; gap: 10px; align-items: center; font-size: 9px; color: var(--dim); }
+  .delve-logo small { display: block; margin-top: 16px; font-family: var(--cjk); font-size: 32px; letter-spacing: 16px; color: var(--ink); }
+  .delve-tagline { margin: 0; font-family: var(--pixel); font-size: 8px; color: #c2e478; letter-spacing: 4px; text-shadow: var(--text-outline); }
+  .delve-story { margin: 0; font-size: 16px; line-height: 1.6; color: var(--ink); text-shadow: var(--text-outline); }
+  .delve-seed { display: flex; gap: 10px; align-items: center; font-size: 16px; color: #d8ba76; }
   .delve-seed input {
     width: 180px;
-    padding: 8px;
+    padding: 6px 8px;
     font: inherit;
-    font-size: 9px;
+    font-size: 16px;
     color: var(--ink);
-    border: 2px solid var(--edge);
-    background: #1d140d;
+    --bv-hi: #1c1424;
+    --bv-lo: #966139;
+    --bv-bg: #1c1424;
   }
-  .delve-title-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-  .delve-keys { margin: 0; font-size: 10px; line-height: 2; color: var(--dim); }
+  .delve-title-btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .delve-keys { margin: 0; font-size: 16px; line-height: 1.6; color: #d8ba76; text-shadow: var(--text-outline); }
 
   @media (max-width: 640px) {
     .delve-hotbar { gap: 2px; left: 6px; top: 6px; }
-    .delve-slot { width: 34px; height: 34px; }
-    .delve-slot-icon { width: 24px; height: 24px; }
+    .delve-slot { --px: 2px; width: 36px; height: 36px; }
+    .delve-slot-icon { width: 16px; height: 16px; }
+    .delve-hotbar .delve-slot-icon { width: 32px; height: 32px; }
     .delve-slot-key { display: none; }
+    .delve-logo { font-size: 32px; }
     /* 背包 / 選單移到右上角（快捷欄下方一列），不擋畫面中右側 */
     .delve-corner { top: 46px; right: 6px; gap: 4px; }
-    .delve-chip { padding: 5px 8px; font-size: 12px; }
-    .delve-held { top: 46px; left: 8px; font-size: 12px; }
-    .delve-status { top: 64px; left: 8px; font-size: 12px; }
+    .delve-chip { padding: 4px 8px; }
+    .delve-held { top: 48px; left: 8px; }
+    .delve-status { top: 70px; left: 8px; }
     /* 背包面板在角落按鈕與狀態列下方，不覆蓋它們 */
-    .delve-panel { top: 88px; left: 6px; width: calc(100vw - 12px); max-height: calc(100vh - 260px); }
+    .delve-panel { top: 100px; left: 6px; width: calc(100vw - 12px); max-height: calc(100vh - 260px); }
   }
 </style>

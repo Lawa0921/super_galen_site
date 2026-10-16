@@ -1,7 +1,8 @@
 // background.ts — 分層視差背景（全部以原生像素烘焙，繪製時整數倍放大）：
 //   天空（時段漸層 + 抖動色帶）→ 星星 → 日 / 月 → 飄雲 → 遠山 / 中丘 / 近林剪影（依時段重新上色）
 //   以及地下背景（土層 / 岩層兩種暗紋，依深度淡入）。
-import { Bmp, bayer, h01, hex, mix, shade, toCanvas, type RGB } from './pixel';
+import { Bmp, bayer, h01, hex, mix, nudge, snap, toCanvas, type RGB } from './pixel';
+import { snapPx } from './lowres';
 import { skyColors, type SkyColors } from './scene';
 
 const STRIP_W = 640;
@@ -28,7 +29,7 @@ class IndexedLayer {
     for (let i = 0; i < n; i++) {
       const k = this.idx[i], o = i * 4;
       if (!k) { d[o + 3] = 0; continue; }
-      const c = pal[k];
+      const c = snap(pal[k]);
       d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
     }
     this.ctx.putImageData(this.img, 0, 0);
@@ -61,7 +62,7 @@ function buildMountains(seed: number): IndexedLayer {
     for (let y = Math.max(0, top); y < H; y++) {
       const depth = y - top;
       let k = slope > 0.15 ? 2 : 1;                        // 朝左（受光）的坡 / 背光坡
-      if (slope < -0.6 && depth > 1 && depth < 26 && bayer(x, y) > 0.55) k = 3; // 背光坡加深（抖動）
+      if (slope < -0.6 && depth > 1 && depth < 22) k = 3; // 背光坡：實心暗面（不撒點）
       if (depth > 34) k = 1;
       if (depth < snow) k = slope > 0.15 ? 5 : 4;          // 雪
       L.idx[y * STRIP_W + x] = k;
@@ -86,9 +87,9 @@ function buildHills(seed: number): IndexedLayer {
     for (let y = Math.max(0, top); y < H; y++) {
       const depth = y - top;
       let k = 1;
+      // 受光坡頂一道 2px 實心亮邊；深處一條實心暗帶（不用點狀抖動，剪影更乾淨）
       if (depth < 2) k = slope >= 0 ? 2 : 1;
-      else if (depth < 8 && slope > 0 && bayer(x, y) > 0.4) k = 2;
-      if (depth > 30 && bayer(x, y) > 0.5) k = 3;
+      if (depth > 36) k = 3;
       L.idx[y * STRIP_W + x] = k;
     }
   }
@@ -136,22 +137,22 @@ function buildForest(seed: number): IndexedLayer {
 }
 
 function sunBmp(): Bmp {
-  const R = 26, b = new Bmp(R * 2, R * 2), core = hex('#fffbe4'), mid = hex('#ffec9a'), rim = hex('#ffd462');
+  const R = 22, b = new Bmp(R * 2, R * 2), core = hex('#fff4c0'), mid = hex('#ffd86a'), rim = hex('#ffa93a'), halo = hex('#fff4c0');
   for (let y = 0; y < R * 2; y++) for (let x = 0; x < R * 2; x++) {
     const d = Math.hypot(x + 0.5 - R, y + 0.5 - R);
+    // 實心日輪 + 不透明的抖動光環（沒有半透明）
     if (d < 13) b.set(x, y, d < 10 ? core : mid);
     else if (d < 14) b.set(x, y, rim);
-    else if (d < 18) b.set(x, y, mid, 70);
-    else if (d < 22 && bayer(x, y) > 0.5) b.set(x, y, mid, 50);
-    else if (d < R && bayer(x, y) > 0.85) b.set(x, y, mid, 40);
+    // 外圈一道 1px 的斷續光環
+    else if (d >= 16 && d < 17 && bayer(x, y) > 0.5) b.set(x, y, halo);
   }
   return b;
 }
 function moonBmp(): Bmp {
-  const N = 32, b = new Bmp(N, N), lit = hex('#f2f4fa'), mid = hex('#cfd5e4'), dark = hex('#a3abc2'), glow = hex('#c8d4ff');
+  const N = 32, b = new Bmp(N, N), lit = hex('#f2f4fa'), mid = hex('#cfd5e4'), dark = hex('#a3abc2'), glow = hex('#7f9cc4');
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const d = Math.hypot(x + 0.5 - 16, y + 0.5 - 16);
-    if (d > 10) { if (d < 14 && bayer(x, y) > 0.7) b.set(x, y, glow, 40); continue; }
+    if (d > 10) { if (d < 13 && bayer(x, y) > 0.875) b.set(x, y, glow); continue; }
     const c = d > 9 ? mid : lit;
     b.set(x, y, c);
   }
@@ -164,13 +165,16 @@ function moonBmp(): Bmp {
   }
   return b;
 }
-function starsBmp(seed: number): Bmp {
-  const W = 320, H = 180, b = new Bmp(W, H), w = hex('#ffffff'), bl = hex('#c8d8ff'), y = hex('#fff0c0');
+/** 星空（不透明）：level 0..3，每顆星有自己的出現門檻 → 黎明 / 黃昏時星星一顆顆消失，而不是整片變淡 */
+function starsBmp(seed: number, level: number): Bmp {
+  const W = 320, H = 180, b = new Bmp(W, H), w = hex('#ffffff'), bl = hex('#94c8ee'), y = hex('#fff4c0'), dim = hex('#7f9cc4');
   for (let i = 0; i < 70; i++) {
+    const th = h01(i, 4, seed);
+    if (th * 4 >= level) continue;
     const x = Math.floor(h01(i, 1, seed) * W), yy = Math.floor(h01(i, 2, seed) * H);
-    const r = h01(i, 3, seed), c = r > 0.66 ? w : r > 0.33 ? bl : y;
-    b.set(x, yy, c, 120 + Math.floor(h01(i, 4, seed) * 135));
-    if (r > 0.93) { b.set(x - 1, yy, c, 110); b.set(x + 1, yy, c, 110); b.set(x, yy - 1, c, 110); b.set(x, yy + 1, c, 110); }
+    const r = h01(i, 3, seed), c = th > 0.6 ? dim : r > 0.66 ? w : r > 0.33 ? bl : y;
+    b.set(x, yy, c);
+    if (r > 0.93) { b.set(x - 1, yy, dim); b.set(x + 1, yy, dim); b.set(x, yy - 1, dim); b.set(x, yy + 1, dim); }
   }
   return b;
 }
@@ -200,8 +204,8 @@ function cloudLayer(i: number): IndexedLayer {
   return L;
 }
 
-/** 地下背景暗紋（64×64 可平鋪）：大塊岩面 + 縫 */
-function caveBackdrop(rock: boolean): HTMLCanvasElement {
+/** 地下背景暗紋（64×64 可平鋪）：大塊岩面 + 縫。keep < 1 時以 2×2 Bayer 挖空（淡入用，不用半透明） */
+function caveBackdrop(rock: boolean, keep = 1): HTMLCanvasElement {
   const N = 64, b = new Bmp(N, N);
   const pal = rock
     ? [hex('#0b0b11'), hex('#121219'), hex('#181821'), hex('#1e1e29')]
@@ -218,24 +222,24 @@ function caveBackdrop(rock: boolean): HTMLCanvasElement {
     let k = 2;
     if (e < 1.2) k = 0;
     else if (e < 3) k = (x - cx) + (y - cy) < 0 ? 3 : 1;
+    if (keep < 1 && bayer(x >> 1, y >> 1) >= keep) continue;
     b.set(x, y, pal[k]);
   }
   return toCanvas(b) as HTMLCanvasElement;
 }
 
 export interface BgView {
-  /** CSS px 視窗大小 */
+  /** 低解析緩衝大小（美術 px = 世界 px） */
   viewW: number; viewH: number;
-  /** 每個美術像素佔多少裝置像素 */
-  unit: number; dpr: number;
+  /** 已對齊整數的鏡頭左上角（世界 px） */
   camX: number; camY: number;
-  /** 世界視窗大小（美術像素） */
-  vw: number; vh: number;
   /** 地平線（世界 px，地表線） */
   horizonY: number;
   time: number;
   dayFrac: number;
 }
+
+const BLACK: RGB = [0, 0, 0];
 
 export class Background {
   private mountains: IndexedLayer;
@@ -244,11 +248,17 @@ export class Background {
   private clouds: IndexedLayer[] = [];
   private sun = toCanvas(sunBmp()) as HTMLCanvasElement;
   private moon = toCanvas(moonBmp()) as HTMLCanvasElement;
-  private stars: HTMLCanvasElement;
+  /** stars[level-1]：level 1..4 顆數遞增 */
+  private stars: HTMLCanvasElement[] = [];
   private skyStrip = document.createElement('canvas');
   private skyKey = '';
+  /** 圖樣快取：每幀重建 CanvasPattern 很貴（會複製來源畫布） */
+  private skyPat: CanvasPattern | null = null;
+  private ugPats: (CanvasPattern | null)[] | null = null;
   readonly dirtCave = caveBackdrop(false);
   readonly rockCave = caveBackdrop(true);
+  /** 土層淡入：4 階 Bayer 挖空的同一張紋理 */
+  private dirtFade = [0.2, 0.4, 0.6, 0.8].map((k) => caveBackdrop(false, k));
   private cloudSeed: number;
 
   constructor(seed: number) {
@@ -256,24 +266,23 @@ export class Background {
     this.hills = buildHills(seed + 1);
     this.forest = buildForest((seed % 1000) / 100 + 1);
     for (let i = 0; i < 5; i++) this.clouds.push(cloudLayer(i));
-    this.stars = toCanvas(starsBmp(seed)) as HTMLCanvasElement;
+    for (let l = 1; l <= 4; l++) this.stars.push(toCanvas(starsBmp(seed, l)) as HTMLCanvasElement);
     this.cloudSeed = seed;
   }
 
-  /** 螢幕座標（裝置 px）繪製天空與遠景；呼叫前 transform 為 identity */
+  /** 在低解析緩衝（identity transform，1 單位 = 1 美術 px）畫天空與遠景 */
   draw(ctx: CanvasRenderingContext2D, v: BgView): void {
     const sky = skyColors(v.dayFrac);
-    const u = v.unit;
-    const W = Math.ceil(v.viewW * v.dpr), Hh = Math.ceil(v.viewH * v.dpr);
-    this.drawSky(ctx, sky, u, W, Hh, v);
+    const W = v.viewW, Hh = v.viewH;
     ctx.imageSmoothingEnabled = false;
-    // 星星
-    if (sky.stars > 0.01) {
-      ctx.globalAlpha = sky.stars;
-      const sw = this.stars.width * u, sh = this.stars.height * u;
-      const ox = -((v.camX * 0.02 * u) % sw);
-      for (let y = 0; y < Hh * 0.75; y += sh) for (let x = ox - sw; x < W; x += sw) ctx.drawImage(this.stars, Math.round(x), Math.round(y), sw, sh);
-      ctx.globalAlpha = 1;
+    this.drawSky(ctx, sky, W, Hh);
+    // 星星：依亮度挑 1..4 層（每顆星不透明，只有出現 / 不出現）
+    const sl = Math.round(sky.stars * 4);
+    if (sl > 0) {
+      const st = this.stars[sl - 1];
+      const sw = st.width, sh = st.height;
+      const ox = -(((snapPx(v.camX * 0.02) % sw) + sw) % sw);
+      for (let y = 0; y < Hh * 0.75; y += sh) for (let x = ox; x < W; x += sw) ctx.drawImage(st, x, y);
     }
     // 日 / 月
     const d = v.dayFrac;
@@ -282,97 +291,105 @@ export class Background {
     const a = Math.min(1, Math.max(0, arc));
     const bx = W * (0.1 + 0.8 * a), by = Hh * (0.46 - 0.34 * Math.sin(Math.PI * a));
     const img = sunUp ? this.sun : this.moon;
-    ctx.drawImage(img, Math.round(bx - (img.width * u) / 2), Math.round(by - (img.height * u) / 2), img.width * u, img.height * u);
-    // 雲
-    const ckey = sky.cloud.join(',');
-    const cpal: RGB[] = [[0, 0, 0], shade(sky.cloud, 0.78), shade(sky.cloud, 0.9), mix(sky.cloud, [255, 255, 255], 0.35)];
-    const span = W / u + 240;
+    ctx.drawImage(img, snapPx(bx - img.width / 2), snapPx(by - img.height / 2));
+    // 雲：色票上的三階（暗底 / 中 / 亮頂），完全不透明
+    const base = snap(sky.cloud);
+    const cpal: RGB[] = [BLACK, nudge(base, -1), base, nudge(base, 1)];
+    const ckey = cpal.map((c) => c.join()).join('|');
+    const span = W + 240;
     for (let i = 0; i < this.clouds.length; i++) {
       const c = this.clouds[i];
-      c.paint(cpal.map((q) => mix(q, sky.top, 0.12)) as RGB[], ckey);
+      c.paint(cpal, ckey);
       const speed = 3 + i * 1.3;
-      const base = h01(i, 1, this.cloudSeed) * span;
-      const cx = (((base + v.time * speed - v.camX * 0.04) % span) + span) % span - 120;
-      const cy = 18 + h01(i, 2, this.cloudSeed) * (Hh / u) * 0.28 + i * 7;
-      ctx.globalAlpha = 0.92 - sky.stars * 0.45;
-      ctx.drawImage(c.canvas, Math.round(cx * u), Math.round(cy * u), c.w * u, c.h * u);
+      const b0 = h01(i, 1, this.cloudSeed) * span;
+      const cx = (((b0 + v.time * speed - v.camX * 0.04) % span) + span) % span - 120;
+      const cy = 18 + h01(i, 2, this.cloudSeed) * Hh * 0.28 + i * 7;
+      ctx.drawImage(c.canvas, snapPx(cx), snapPx(cy));
     }
-    ctx.globalAlpha = 1;
-    // 三層視差剪影
-    const midY = v.camY + v.vh / 2;
-    const layerY = (f: number, lift: number): number => (v.vh / 2 + (v.horizonY - midY) * f - lift) * u;
-    const L = sky.layers;
-    const tint = (c: RGB, k: number): RGB => shade(c, k);
-    const k3 = `${L[0].join()}|${L[1].join()}|${L[2].join()}`;
-    this.mountains.paint([[0, 0, 0], L[0], mix(L[0], sky.bottom, 0.32), tint(L[0], 0.88), mix(L[0], [255, 255, 255], 0.55), mix(L[0], [255, 255, 255], 0.75)], 'm' + k3);
-    this.hills.paint([[0, 0, 0], L[1], mix(L[1], sky.bottom, 0.25), tint(L[1], 0.9)], 'h' + k3);
-    this.forest.paint([[0, 0, 0], L[2], mix(L[2], sky.bottom, 0.18)], 'f' + k3);
-    this.layer(ctx, this.mountains, 0.12, layerY(0.22, 30), L[0], u, W, Hh, v);
-    this.layer(ctx, this.hills, 0.28, layerY(0.42, 22), L[1], u, W, Hh, v);
-    this.layer(ctx, this.forest, 0.5, layerY(0.62, -14), L[2], u, W, Hh, v);
+    // 三層視差剪影（每層色票：基色 + 色票上相鄰的亮 / 暗階）
+    const midY = v.camY + (v.viewH / 2);
+    const layerY = (f: number, lift: number): number => snapPx((v.viewH / 2) + (v.horizonY - midY) * f - lift);
+    const L = sky.layers.map(snap) as [RGB, RGB, RGB];
+    const bottom = snap(sky.bottom);
+    const lite = (c: RGB, toward: RGB): RGB => { const m = snap(mix(c, toward, 0.4)); return m === c ? nudge(c, 1) : m; };
+    const k3 = `${L[0].join()}|${L[1].join()}|${L[2].join()}|${bottom.join()}`;
+    const snowA = nudge(nudge(L[0], 1), 1), snowB = snap([255, 255, 255]);
+    this.mountains.paint([BLACK, L[0], lite(L[0], bottom), nudge(L[0], -1), snowA, snowB], 'm' + k3);
+    this.hills.paint([BLACK, L[1], lite(L[1], bottom), nudge(L[1], -1)], 'h' + k3);
+    this.forest.paint([BLACK, L[2], lite(L[2], bottom)], 'f' + k3);
+    this.layer(ctx, this.mountains, 0.12, layerY(0.22, 30), L[0], W, Hh, v);
+    this.layer(ctx, this.hills, 0.28, layerY(0.42, 22), L[1], W, Hh, v);
+    this.layer(ctx, this.forest, 0.5, layerY(0.62, -14), L[2], W, Hh, v);
   }
 
-  private drawSky(ctx: CanvasRenderingContext2D, sky: SkyColors, u: number, W: number, Hh: number, v: BgView): void {
-    // 12 段色帶 + 段間 2px 抖動，烘成 4 px 寬的條帶後橫向重複
-    const rows = Math.max(1, Math.ceil(Hh / u));
-    const key = `${sky.top.join()}|${sky.bottom.join()}|${rows}`;
+  private drawSky(ctx: CanvasRenderingContext2D, sky: SkyColors, W: number, Hh: number): void {
+    // 12 段色帶，每段吸附到色票；相鄰色不同時段間以 2 列 Bayer 抖動銜接。烘成 4 px 寬的條帶後橫向重複
+    const rows = Math.max(1, Hh);
+    const bands = 12;
+    const cols: RGB[] = [];
+    for (let k = 0; k <= bands; k++) cols.push(snap(mix(sky.top, sky.bottom, k / bands)));
+    const key = `${cols.map((c) => c.join()).join('|')}|${rows}`;
     if (key !== this.skyKey) {
       this.skyKey = key;
-      const b = new Bmp(4, rows), bands = 12;
+      const b = new Bmp(4, rows);
       for (let y = 0; y < rows; y++) {
         const t = Math.pow(y / Math.max(1, rows - 1), 1.25) * bands;
         for (let x = 0; x < 4; x++) {
           const f = t - Math.floor(t);
           const band = Math.floor(t) + (f > 0.8 && bayer(x, y) < (f - 0.8) * 5 ? 1 : 0);
-          b.set(x, y, mix(sky.top, sky.bottom, Math.min(bands, band) / bands));
+          b.set(x, y, cols[Math.min(bands, band)]);
         }
       }
       this.skyStrip = toCanvas(b) as HTMLCanvasElement;
+      this.skyPat = null;
     }
-    const pat = ctx.createPattern(this.skyStrip, 'repeat-x');
-    ctx.imageSmoothingEnabled = false;
+    if (!this.skyPat) this.skyPat = ctx.createPattern(this.skyStrip, 'repeat-x');
+    const pat = this.skyPat;
     if (pat) {
-      ctx.save();
-      ctx.scale(u, u);
       ctx.fillStyle = pat;
-      ctx.fillRect(0, 0, W / u + 1, rows);
-      ctx.restore();
+      ctx.fillRect(0, 0, W, rows);
     } else {
-      ctx.fillStyle = `rgb(${sky.top.join(',')})`;
+      ctx.fillStyle = `rgb(${cols[0].join(',')})`;
       ctx.fillRect(0, 0, W, Hh);
     }
-    void v;
   }
 
-  private layer(ctx: CanvasRenderingContext2D, L: IndexedLayer, factor: number, bottomY: number, fill: RGB, u: number, W: number, Hh: number, v: BgView): void {
-    const top = Math.round(bottomY - L.h * u);
+  private layer(ctx: CanvasRenderingContext2D, L: IndexedLayer, factor: number, bottomY: number, fill: RGB, W: number, Hh: number, v: BgView): void {
+    const top = bottomY - L.h;
     if (top > Hh) return;
-    const sw = L.w * u;
-    const off = -(((v.camX * factor * u) % sw) + sw) % sw;
-    for (let x = off; x < W; x += sw) ctx.drawImage(L.canvas, Math.round(x), top, sw, L.h * u);
-    const b = Math.round(bottomY);
-    if (b < Hh) { ctx.fillStyle = `rgb(${fill.join(',')})`; ctx.fillRect(0, b, W, Hh - b); }
+    const sw = L.w;
+    const off = -(((snapPx(v.camX * factor) % sw) + sw) % sw);
+    for (let x = off; x < W; x += sw) ctx.drawImage(L.canvas, x, top);
+    if (bottomY < Hh) { ctx.fillStyle = `rgb(${fill.join(',')})`; ctx.fillRect(0, bottomY, W, Hh - bottomY); }
   }
 
-  /** 世界座標下畫地下背景（呼叫端已設好世界 transform）：y0 起淡入，cavernY 起換岩層紋 */
-  drawUnderground(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number, y0: number, cavernY: number): void {
+  /**
+   * 世界座標下畫地下背景（呼叫端已設好世界 transform）。逐 tile 欄從「該欄地表 + depth」開始，
+   * 前 64 px 用 4 階 Bayer 挖空淡入（不用半透明），cavernY 起換岩層紋。
+   */
+  drawUnderground(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number,
+    colTop: (tx: number) => number, tile: number, cavernY: number): void {
     const bottom = camY + vh + 1;
-    if (bottom <= y0) return;
-    const fade = 64;
-    const drawBand = (img: HTMLCanvasElement, from: number, to: number, alpha: number): void => {
+    const fade = 64, step = fade / 4;
+    if (!this.ugPats) this.ugPats = [...this.dirtFade, this.dirtCave, this.rockCave].map((img) => ctx.createPattern(img, 'repeat'));
+    const pats = this.ugPats;
+    // 視差 0.5：圖樣隨鏡頭半速移動（對齊整數美術 px）
+    const m = new DOMMatrix([1, 0, 0, 1, snapPx(camX * 0.5), snapPx(camY * 0.5)]);
+    for (const p of pats) p?.setTransform(m);
+    const band = (pi: number, x: number, from: number, to: number): void => {
       const a = Math.max(from, camY), b2 = Math.min(to, bottom);
-      if (b2 <= a) return;
-      const pat = ctx.createPattern(img, 'repeat');
-      if (!pat) return;
-      // 視差 0.5：圖樣隨鏡頭半速移動
-      pat.setTransform(new DOMMatrix([1, 0, 0, 1, Math.round(camX * 0.5), Math.round(camY * 0.5)]));
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = pat;
-      ctx.fillRect(Math.floor(camX), a, vw + 2, b2 - a);
+      const p = pats[pi];
+      if (b2 <= a || !p) return;
+      ctx.fillStyle = p;
+      ctx.fillRect(x, a, tile, b2 - a);
     };
-    for (let i = 0; i < 4; i++) drawBand(this.dirtCave, y0 + (i * fade) / 4, y0 + ((i + 1) * fade) / 4, (i + 1) / 5);
-    drawBand(this.dirtCave, y0 + fade, cavernY, 1);
-    drawBand(this.rockCave, cavernY, Infinity, 1);
-    ctx.globalAlpha = 1;
+    const tx0 = Math.floor(camX / tile), tx1 = Math.ceil((camX + vw) / tile);
+    for (let tx = tx0; tx <= tx1; tx++) {
+      const y0 = snapPx(colTop(tx)), x = tx * tile;
+      if (y0 >= bottom) continue;
+      for (let i = 0; i < 4; i++) band(i, x, y0 + i * step, Math.min(cavernY, y0 + (i + 1) * step));
+      band(4, x, y0 + fade, cavernY);
+      band(5, x, Math.max(y0, cavernY), Infinity);
+    }
   }
 }

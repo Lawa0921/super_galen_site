@@ -53,6 +53,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
     const r = canvas.getBoundingClientRect();
     renderer.resize(r.width || window.innerWidth, r.height || window.innerHeight, window.devicePixelRatio || 1);
     renderer.snapCamera();
+    // HUD 的像素單位（CSS px）跟著畫面的美術像素大小走：外框 / 圖示都是整數倍
+    root.dataset.px = String(Math.max(1, Math.min(3, Math.round(renderer.zoom))));
   };
   resize();
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;

@@ -5,7 +5,8 @@ import { HOTBAR_SIZE, INV_SIZE } from '../engine/constants';
 import { drawIcon, type Atlas } from './textures';
 import { countLabel, depthLabel, formatClock, recipeRows } from './model';
 
-const ICON_PX = 32;
+/** 圖示以原生 16×16 烘進小 canvas，由 CSS 以整數倍（image-rendering: pixelated）放大 */
+const ICON_PX = 16;
 
 interface SlotEl { btn: HTMLButtonElement; ctx: CanvasRenderingContext2D | null; count: HTMLElement; sig: string; }
 

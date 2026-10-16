@@ -55,11 +55,12 @@ export interface SkyColors {
 }
 
 interface Key { d: number; top: string; bottom: string; layers: [string, string, string]; stars: number; cloud: string; }
-// 夜間顏色偏亮：光照遮罩會在夜裡把整個戶外（含天空）壓暗約 44%
-const NIGHT: Omit<Key, 'd'> = { top: '#141e4c', bottom: '#34407a', layers: ['#303c6c', '#232c54', '#141a38'], stars: 1, cloud: '#46528e' };
-const DAWN: Omit<Key, 'd'> = { top: '#3b4a8a', bottom: '#f2a476', layers: ['#7a6a92', '#4e4a70', '#2a2842'], stars: 0.2, cloud: '#f4c0a0' };
-const DAY: Omit<Key, 'd'> = { top: '#4f93dc', bottom: '#c2e5f6', layers: ['#a2c0da', '#7aa898', '#4c7c64'], stars: 0, cloud: '#ffffff' };
-const DUSK: Omit<Key, 'd'> = { top: '#4a4a8c', bottom: '#f08a5a', layers: ['#8c6286', '#5a4262', '#2c2238'], stars: 0.1, cloud: '#f6a882' };
+// 全部取自統一色票（pixel.ts）；時段之間的插值結果在繪製時再吸附回色票 → 天色是一階一階地變。
+// 夜間顏色偏亮：光照遮罩會在夜裡把整個戶外（含天空）壓暗
+const NIGHT: Omit<Key, 'd'> = { top: '#18204a', bottom: '#2c4486', layers: ['#463c78', '#2c2450', '#18204a'], stars: 1, cloud: '#463c78' };
+const DAWN: Omit<Key, 'd'> = { top: '#2c4486', bottom: '#f2b888', layers: ['#7a5a8c', '#463c78', '#2c2450'], stars: 0.2, cloud: '#f2b888' };
+const DAY: Omit<Key, 'd'> = { top: '#3e74c4', bottom: '#cceaf8', layers: ['#7f9cc4', '#6a9c88', '#3f7468'], stars: 0, cloud: '#ffffff' };
+const DUSK: Omit<Key, 'd'> = { top: '#463c78', bottom: '#d98f66', layers: ['#b8788e', '#7a5a8c', '#2c2450'], stars: 0.1, cloud: '#ffa93a' };
 const KEYS: Key[] = [
   { d: 0, ...NIGHT }, { d: 0.19, ...NIGHT }, { d: 0.235, ...DAWN }, { d: 0.3, ...DAY },
   { d: 0.7, ...DAY }, { d: 0.765, ...DUSK }, { d: 0.81, ...NIGHT }, { d: 1, ...NIGHT },

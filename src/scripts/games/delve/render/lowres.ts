@@ -1,0 +1,54 @@
+// lowres.ts — 像素完美管線的純邏輯（無 DOM）：
+//   世界先以原生美術解析度畫進低解析緩衝，再以「整數倍」放大貼到螢幕（每個美術像素 = N×N 裝置像素）。
+//   鏡頭內部保持平滑，繪製時對齊整數美術像素；光照分成 LIGHT_LEVELS 階，階與階之間用 4×4 Bayer 抖動。
+import { bayer } from './pixel';
+
+/** 目標：畫面短邊約多少美術 px */
+export const TARGET_ART_PX = 440;
+
+/** 選出讓短邊最接近 target 美術 px 的整數倍率（≥1）。devW/devH 為裝置像素。 */
+export function pickScale(devW: number, devH: number, target: number = TARGET_ART_PX): number {
+  const side = Math.max(1, Math.min(devW, devH));
+  let best = 1, bestErr = Infinity;
+  for (let k = 1; k <= 16; k++) {
+    const err = Math.abs(side / k - target);
+    if (err < bestErr) { bestErr = err; best = k; }
+  }
+  return best;
+}
+
+/** 低解析緩衝尺寸：無條件進位，放大後蓋滿整個畫布（右 / 下多出的部分裁掉）。 */
+export function bufferSize(devW: number, devH: number, k: number): { w: number; h: number } {
+  return { w: Math.max(1, Math.ceil(devW / k)), h: Math.max(1, Math.ceil(devH / k)) };
+}
+
+/** 對齊整數美術像素（避免 -0） */
+export function snapPx(v: number): number { return Math.round(v) + 0; }
+
+export function snapCam(c: { x: number; y: number }): { x: number; y: number } {
+  return { x: snapPx(c.x), y: snapPx(c.y) };
+}
+
+/** 光照階數（含全亮與全暗） */
+export const LIGHT_LEVELS = 8;
+/** 離階多近就視為平台、不抖動（0..0.5） */
+export const PLATEAU = 0.3;
+
+/**
+ * 暗度 a（0 = 全亮、1 = 全暗）→ 階索引 0..levels-1。靠近某階時是平台；
+ * 兩階之間的過渡帶用 4×4 Bayer（以世界座標 x,y 取樣，畫面移動時圖樣不閃爍）。
+ */
+export function lightLevel(a: number, x: number, y: number, levels: number = LIGHT_LEVELS): number {
+  const v = Math.max(0, Math.min(1, a)) * (levels - 1);
+  const fl = Math.floor(v), f = v - fl;
+  if (fl >= levels - 1) return levels - 1;
+  if (f < PLATEAU) return fl;
+  if (f > 1 - PLATEAU) return fl + 1;
+  const t = (f - PLATEAU) / (1 - 2 * PLATEAU);
+  return bayer(x, y) < t ? fl + 1 : fl;
+}
+
+/** 整體（例如晝夜）亮度直接吸附到最近的階，避免大面積抖動 */
+export function quantizeLevel(a: number, levels: number = LIGHT_LEVELS): number {
+  return Math.round(Math.max(0, Math.min(1, a)) * (levels - 1)) / (levels - 1);
+}

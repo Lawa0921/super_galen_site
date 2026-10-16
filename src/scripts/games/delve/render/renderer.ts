@@ -1,5 +1,5 @@
-// renderer.ts — Canvas2D 場景：視差背景 → 地下暗紋 → chunk 快取（牆 + 自動接邊前景 + 材質滲透 + 草葉）
-// → 樹 / 火把（動態）→ 裂痕 / 游標 → 玩家（分件精靈）→ 粒子 → 光照遮罩 → 火光暈。
+// renderer.ts — Canvas2D 場景（全部以原生美術解析度畫進低解析緩衝，最後整數倍放大貼到螢幕）：視差背景 → 地下暗紋 → chunk 快取（牆 + 自動接邊前景 + 材質滲透 + 草葉）
+// → 樹 / 火把（動態）→ 裂痕 / 游標 → 玩家（分件精靈）→ 粒子 → 光照遮罩（8 階 + Bayer 抖動）→ 火光暈。
 import type { DelveGame } from '../engine/game';
 import { BLOCKS_LIGHT_LUT, T, isSolidTile } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
@@ -13,13 +13,22 @@ import {
 import { FRAME, FW, FH, Sprites } from './sprites';
 import { Background } from './background';
 import { scanTrees } from './scene';
+import { LIGHT_LEVELS, PLATEAU, bufferSize, pickScale, quantizeLevel, snapCam } from './lowres';
+import { bayer } from './pixel';
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
 /** 每幀最多重畫幾個「已在快取裡」的 dirty chunk（看得到但沒快取的一律立即畫） */
 const REDRAW_BUDGET = 4;
 const LIGHT_EVERY = 4;
+/** 光照遮罩每格 tile 切幾格（16 / 8 = 每格 2 美術 px） */
+const LSUB = 8;
+/** 4×4 Bayer 門檻（同 pixel.bayer） */
+const BAYER_T = Float32Array.from({ length: 16 }, (_, i) => bayer(i & 3, i >> 2));
 const SIDE_D: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+/** 游標四角：(是否右側, 是否下側, 水平延伸方向, 垂直延伸方向) */
+const CURSOR_CORNERS: [number, number, number, number][] = [[0, 0, 1, 1], [1, 0, -1, 1], [0, 1, 1, -1], [1, 1, -1, -1]];
 
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: string; }
 
@@ -29,17 +38,29 @@ export class Renderer {
   readonly atlas: Atlas;
   readonly sprites: Sprites;
   readonly ctx: CanvasRenderingContext2D;
+  /** 平滑鏡頭（內部計算用）；繪製時用對齊整數美術 px 的 drawCam */
   cam: Cam = { x: 0, y: 0 };
-  /** 世界 px → CSS px 縮放 */
+  drawCam: Cam = { x: 0, y: 0 };
+  /** 世界 px（= 美術 px）→ CSS px 縮放 = scale / dpr */
   zoom = 1;
+  /** 每個美術像素佔幾個裝置像素（整數） */
+  scale = 1;
+  /** CSS px 視窗 */
   viewW = 0; viewH = 0; dpr = 1;
+  /** 低解析緩衝大小（美術 px） */
+  bufW = 1; bufH = 1;
   facing: 1 | -1 = 1;
   stats: RenderStats = { chunksDrawn: 0, cached: 0, lightMs: 0 };
 
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
   private pending = new Set<number>();
+  private buf = document.createElement('canvas');
+  private bctx: CanvasRenderingContext2D;
   private lightCanvas = document.createElement('canvas');
+  private lightA = new Float32Array(0);
+  /** 每格是否「戶外」：戶外的暗用夜空藍（色票 #18204a），地下用近黑（#0c0a12） */
+  private lightOut = new Uint8Array(0);
   private lightCtx: CanvasRenderingContext2D;
   private lightImg: ImageData | null = null;
   private light: { x0: number; y0: number; w: number; h: number } | null = null;
@@ -61,8 +82,10 @@ export class Renderer {
   constructor(readonly canvas: HTMLCanvasElement, readonly game: DelveGame) {
     const ctx = canvas.getContext('2d', { alpha: false });
     const lctx = this.lightCanvas.getContext('2d');
-    if (!ctx || !lctx) throw new Error('2d context unavailable');
+    const bctx = this.buf.getContext('2d', { alpha: false });
+    if (!ctx || !lctx || !bctx) throw new Error('2d context unavailable');
     this.ctx = ctx;
+    this.bctx = bctx;
     this.lightCtx = lctx;
     this.atlas = buildAtlas();
     this.sprites = new Sprites((item) => this.atlas.iconBmp(item));
@@ -79,13 +102,18 @@ export class Renderer {
   }
 
   resize(cssW: number, cssH: number, devicePixelRatio: number): void {
-    this.dpr = Math.min(2, Math.max(1, devicePixelRatio || 1));
+    // 不限制 DPR：畫布 = 實際裝置像素，否則瀏覽器會再做一次非整數縮放
+    this.dpr = Math.max(0.5, devicePixelRatio || 1);
     this.viewW = Math.max(1, cssW);
     this.viewH = Math.max(1, cssH);
-    this.canvas.width = Math.round(this.viewW * this.dpr);
-    this.canvas.height = Math.round(this.viewH * this.dpr);
-    const minSide = Math.min(this.viewW, this.viewH);
-    this.zoom = Math.min(2, Math.max(1, Math.floor((minSide / 700) * 2) / 2));
+    const dw = Math.max(1, Math.round(this.viewW * this.dpr)), dh = Math.max(1, Math.round(this.viewH * this.dpr));
+    this.canvas.width = dw;
+    this.canvas.height = dh;
+    this.scale = pickScale(dw, dh);
+    const b = bufferSize(dw, dh, this.scale);
+    this.bufW = b.w; this.bufH = b.h;
+    this.buf.width = b.w; this.buf.height = b.h;
+    this.zoom = this.scale / this.dpr;
     const vis = (Math.ceil(this.worldViewW() / CPX) + 1) * (Math.ceil(this.worldViewH() / CPX) + 1);
     if (vis + 8 > this.cache.capacity) {
       const old = this.cache;
@@ -95,12 +123,12 @@ export class Renderer {
     this.lightDirty = true;
   }
 
-  worldViewW(): number { return this.viewW / this.zoom; }
-  worldViewH(): number { return this.viewH / this.zoom; }
+  worldViewW(): number { return this.bufW; }
+  worldViewH(): number { return this.bufH; }
 
-  /** CSS px（相對 canvas）→ 世界 px */
+  /** CSS px（相對 canvas）→ 世界 px（以畫面上實際看到的對齊後鏡頭換算） */
   screenToWorld(sx: number, sy: number): { x: number; y: number } {
-    return { x: this.cam.x + sx / this.zoom, y: this.cam.y + sy / this.zoom };
+    return { x: this.drawCam.x + sx / this.zoom, y: this.drawCam.y + sy / this.zoom };
   }
 
   snapCamera(): void { this.snapNext = true; }
@@ -134,25 +162,27 @@ export class Renderer {
     const pc = g.playerCenter();
     this.cam = followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext);
     this.snapNext = false;
-    // 對齊裝置像素，避免 chunk 接縫
-    const unit = this.dpr * this.zoom;
-    const camX = Math.round(this.cam.x * unit) / unit, camY = Math.round(this.cam.y * unit) / unit;
+    // 繪製時對齊整數美術 px：精靈 / chunk / 視差層都落在像素格上，不會閃爍
+    this.drawCam = snapCam(this.cam);
+    const camX = this.drawCam.x, camY = this.drawCam.y;
 
     for (const ci of w.drainDirty()) this.pending.add(ci);
     if (this.pending.size) this.lightDirty = true;
 
-    const ctx = this.ctx;
+    const ctx = this.bctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
     let day = (g.time % DAY_LENGTH) / DAY_LENGTH;
     if (day < 0) day += 1;
     this.bg.draw(ctx, {
-      viewW: this.viewW, viewH: this.viewH, unit, dpr: this.dpr, camX, camY, vw, vh,
+      viewW: this.bufW, viewH: this.bufH, camX, camY,
       horizonY: this.localHorizon(camX + vw / 2), time: g.time, dayFrac: day,
     });
 
-    ctx.setTransform(unit, 0, 0, unit, -camX * unit, -camY * unit);
-    ctx.imageSmoothingEnabled = false;
-    this.bg.drawUnderground(ctx, camX, camY, vw, vh, this.horizonPx + 8 * S, w.cavernY * S);
+    ctx.setTransform(1, 0, 0, 1, -camX, -camY);
+    const surf = w.surface;
+    this.bg.drawUnderground(ctx, camX, camY, vw, vh,
+      (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, w.cavernY * S);
 
     const r = visibleChunks(camX, camY, vw, vh, CPX, w.chunksX, w.chunksY);
     let budget = REDRAW_BUDGET, drawn = 0;
@@ -187,6 +217,12 @@ export class Renderer {
     this.drawParticles(ctx, dt);
     this.drawLight(ctx, camX, camY, vw, vh);
     this.drawGlows(ctx);
+
+    // 整數倍放大貼到螢幕：每個美術像素 = scale×scale 裝置像素
+    const out = this.ctx;
+    out.setTransform(1, 0, 0, 1, 0, 0);
+    out.imageSmoothingEnabled = false;
+    out.drawImage(this.buf, 0, 0, this.bufW, this.bufH, 0, 0, this.bufW * this.scale, this.bufH * this.scale);
   }
 
   /** 鏡頭附近 ±80 欄的平均地表（世界 px） */
@@ -335,9 +371,18 @@ export class Renderer {
     const { x, y } = st.aim;
     if (!g.world.inBounds(x, y)) return;
     const ok = g.canReach(x, y);
-    ctx.strokeStyle = ok ? 'rgba(255,255,255,0.85)' : 'rgba(255,70,70,0.85)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x * S + 0.5, y * S + 0.5, S - 1, S - 1);
+    // 像素角括號：四個 L 形角（1px 亮線 + 右下 1px 暗影），沒有半透明
+    const px = x * S, py = y * S, n = 4;
+    const corners = (c: string, o: number): void => {
+      ctx.fillStyle = c;
+      for (const [cx, cy, sx, sy] of CURSOR_CORNERS) {
+        const x0 = px + cx * (S - 1), y0 = py + cy * (S - 1);
+        ctx.fillRect((sx > 0 ? x0 : x0 - n + 1) + o, y0 + o, n, 1);
+        ctx.fillRect(x0 + o, (sy > 0 ? y0 : y0 - n + 1) + o, 1, n);
+      }
+    };
+    corners('#0c0a12', 1);
+    corners(ok ? '#ffffff' : '#e8701c', 0);
   }
 
   /** 背包裡最好的鎬（挖掘時手上顯示它） */
@@ -425,6 +470,8 @@ export class Renderer {
   }
 
   // ── 光照 ─────────────────────────────────────────────
+  // 每格 tile 先算暗度（0 = 亮、1 = 全暗），再雙線性取樣到 2 美術 px 的小格，
+  // 量化成 LIGHT_LEVELS 階：靠近某階是平台，兩階之間用世界錨定的 4×4 Bayer 抖動 → 復古的階梯式光照。
   private drawLight(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
     const g = this.game, w = g.world;
     this.lightAge++;
@@ -438,19 +485,20 @@ export class Renderer {
       const lx0 = Math.max(L.x0, view.x - 2), ly0 = Math.max(L.y0, view.y - 2);
       const lx1 = Math.min(L.x0 + L.w, view.x + view.w + 2), ly1 = Math.min(L.y0 + L.h, view.y + view.h + 2);
       const lw = Math.max(1, lx1 - lx0), lh = Math.max(1, ly1 - ly0);
-      if (this.lightCanvas.width !== lw || this.lightCanvas.height !== lh || !this.lightImg) {
-        this.lightCanvas.width = lw; this.lightCanvas.height = lh;
-        this.lightImg = this.lightCtx.createImageData(lw, lh);
+      const cw = lw * LSUB, chh = lh * LSUB;
+      if (this.lightCanvas.width !== cw || this.lightCanvas.height !== chh || !this.lightImg) {
+        this.lightCanvas.width = cw; this.lightCanvas.height = chh;
+        this.lightImg = this.lightCtx.createImageData(cw, chh);
       }
-      const d = this.lightImg.data, surf = w.surfaceY, W = w.width;
-      // 戶外（天空可見）的格：依晝夜整體壓暗，讓夜裡的樹、角色、天空一起變暗
-      const skyA = Math.round((1 - g.skyLevel()) * 0.5 * 255);
+      if (this.lightA.length < lw * lh) { this.lightA = new Float32Array(lw * lh); this.lightOut = new Uint8Array(lw * lh); }
+      const A = this.lightA, OUT = this.lightOut, surf = w.surfaceY, W = w.width;
+      // 戶外（天空可見）的格：依晝夜整體壓暗，直接吸附到某一階（不會整片抖動）
+      const skyA = quantizeLevel((1 - g.skyLevel()) * 0.5);
       for (let y = 0; y < lh; y++) {
         const ty = ly0 + y;
         const dyp = ty - pt.y;
         for (let x = 0; x < lw; x++) {
           const tx = lx0 + x;
-          const o = (y * lw + x) * 4;
           let a: number;
           const wi = ty * W + tx;
           if (ty <= surf && !BLOCKS_LIGHT_LUT[w.fg[wi]] && w.wall[wi] === 0) a = -1; // 開放天空
@@ -462,7 +510,45 @@ export class Renderer {
             const cap = 0.82 + 0.15 * Math.min(1, Math.max(0, (dist - 3) / 10));
             a = Math.max(0, Math.min(cap, 1 - l * 1.08));
           }
-          d[o] = 6; d[o + 1] = 4; d[o + 2] = 14; d[o + 3] = a < 0 ? skyA : Math.max(skyA, Math.round(a * 255));
+          A[y * lw + x] = a < 0 ? skyA : Math.max(skyA, a);
+          OUT[y * lw + x] = a < 0 ? 1 : 0;
+        }
+      }
+      // 取樣表（只跟 x 或 y 有關）：小格中心 → tile 中心座標系的雙線性權重
+      const top = LIGHT_LEVELS - 1;
+      const ox = lx0 * LSUB, oy = ly0 * LSUB;
+      const X0 = new Int32Array(cw), X1 = new Int32Array(cw), WX = new Float32Array(cw);
+      for (let x = 0; x < cw; x++) {
+        const fx = (x + 0.5) / LSUB - 0.5;
+        const x0 = Math.max(0, Math.min(lw - 1, Math.floor(fx)));
+        X0[x] = x0; X1[x] = Math.min(lw - 1, x0 + 1); WX[x] = Math.max(0, Math.min(1, fx - x0));
+      }
+      // 每階的 RGBA（地下近黑、戶外夜空藍），以 uint32 一次寫入
+      const pix = new Uint32Array(this.lightImg.data.buffer);
+      const caveC = new Uint32Array(LIGHT_LEVELS), skyC = new Uint32Array(LIGHT_LEVELS);
+      for (let k = 0; k < LIGHT_LEVELS; k++) {
+        const al = Math.round((k / top) * 255);
+        caveC[k] = ((al << 24) | (18 << 16) | (10 << 8) | 12) >>> 0;
+        skyC[k] = ((al << 24) | (74 << 16) | (32 << 8) | 24) >>> 0;
+      }
+      for (let y = 0; y < chh; y++) {
+        const fy = (y + 0.5) / LSUB - 0.5;
+        const y0 = Math.max(0, Math.min(lh - 1, Math.floor(fy))), y1 = Math.min(lh - 1, y0 + 1);
+        const wy = Math.max(0, Math.min(1, fy - y0));
+        const r0 = y0 * lw, r1 = y1 * lw, rn = wy < 0.5 ? r0 : r1;
+        const brow = ((oy + y) & 3) * 4, row = y * cw;
+        for (let x = 0; x < cw; x++) {
+          const x0 = X0[x], x1 = X1[x], wx = WX[x];
+          const a0 = A[r0 + x0] + (A[r0 + x1] - A[r0 + x0]) * wx;
+          const a1 = A[r1 + x0] + (A[r1 + x1] - A[r1 + x0]) * wx;
+          const v = (a0 + (a1 - a0) * wy) * top;
+          // 與 lowres.lightLevel 相同的分階（內聯以免每格呼叫函式）
+          let lv = v | 0;
+          const f = v - lv;
+          if (lv >= top) lv = top;
+          else if (f > 1 - PLATEAU) lv++;
+          else if (f >= PLATEAU && BAYER_T[brow + ((ox + x) & 3)] < (f - PLATEAU) / (1 - 2 * PLATEAU)) lv++;
+          pix[row + x] = OUT[rn + (wx < 0.5 ? x0 : x1)] ? skyC[lv] : caveC[lv];
         }
       }
       this.lightCtx.putImageData(this.lightImg, 0, 0);
@@ -473,9 +559,8 @@ export class Renderer {
     }
     const lm = this.light;
     if (!lm) return;
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(this.lightCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
     ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.lightCanvas, lm.x0 * S, lm.y0 * S, lm.w * S, lm.h * S);
   }
 
   destroy(): void {

@@ -1,6 +1,6 @@
 // pixel.test.ts — 點陣工具：描邊、scale2x、RotSprite 旋轉。
 import { describe, it, expect } from 'vitest';
-import { Bmp, scale2x, rotPrep, rotate, INK, bayer } from './pixel';
+import { Bmp, scale2x, rotPrep, rotate, INK, bayer, PALETTE, snap, snapBmp, nudge, inPalette, luma } from './pixel';
 
 const RED: [number, number, number] = [200, 30, 30];
 
@@ -59,5 +59,51 @@ describe('bayer', () => {
     const s = new Set<number>();
     for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { const v = bayer(x, y); expect(v).toBeGreaterThan(0); expect(v).toBeLessThan(1); s.add(v); }
     expect(s.size).toBe(16);
+  });
+});
+
+describe('統一色票', () => {
+  it('32–50 色、不重複、INK 在色票內', () => {
+    expect(PALETTE.length).toBeGreaterThanOrEqual(32);
+    expect(PALETTE.length).toBeLessThanOrEqual(50);
+    expect(new Set(PALETTE.map((c) => c.join())).size).toBe(PALETTE.length);
+    expect(inPalette(INK)).toBe(true);
+  });
+  it('snap：色票內的顏色不變；任意顏色都吸附到色票上的最近色', () => {
+    for (const c of PALETTE) expect(snap(c)).toEqual(c);
+    for (const c of [[0, 0, 0], [255, 255, 255], [120, 80, 200], [30, 160, 90], [250, 128, 10]] as [number, number, number][]) {
+      expect(inPalette(snap(c))).toBe(true);
+    }
+    // 接近純白 → 白
+    expect(snap([250, 252, 251])).toEqual([255, 255, 255]);
+  });
+  it('snapBmp：只改不透明像素、輸出全部在色票內、透明保持透明且不產生半透明', () => {
+    const b = new Bmp(4, 4);
+    b.set(0, 0, [123, 45, 67]);
+    b.set(1, 0, [10, 200, 10], 128);
+    b.set(2, 0, [200, 200, 30]);
+    snapBmp(b);
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
+      const a = b.alpha(x, y);
+      if (x <= 2 && y === 0) {
+        expect(a).toBe(255);
+        expect(inPalette(b.get(x, y))).toBe(true);
+      } else expect(a).toBe(0);
+    }
+  });
+  it('nudge：往暗 / 往亮一階，結果在色票內且確實不同', () => {
+    for (const c of PALETTE) {
+      const d = nudge(c, -1), l = nudge(c, 1);
+      expect(inPalette(d)).toBe(true);
+      expect(inPalette(l)).toBe(true);
+      expect(luma(d)).toBeLessThanOrEqual(luma(c));
+      expect(luma(l)).toBeGreaterThanOrEqual(luma(c));
+    }
+    const mid: [number, number, number] = PALETTE[Math.floor(PALETTE.length / 2)];
+    expect(nudge(mid, -1)).not.toEqual(mid);
+    // 霧綠往暗要留在綠 / 青色系，不能跳到亮度幾乎一樣的藍灰
+    const d = nudge([0x6a, 0x9c, 0x88], -1);
+    expect(luma([0x6a, 0x9c, 0x88]) - luma(d)).toBeGreaterThanOrEqual(15);
+    expect(d[1]).toBeGreaterThan(d[0]);
   });
 });

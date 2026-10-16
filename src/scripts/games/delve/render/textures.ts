@@ -13,19 +13,20 @@ const S = TILE_SIZE;
 export { VARIANTS };
 
 // ── 色票（由暗到亮；[0] 為該材質的描邊色） ─────────────────
+// 全部取自 pixel.ts 的統一色票（[0] = 描邊 / 最暗）
 export const PAL = {
-  dirt: ramp('#2a1610', '#472819', '#623924', '#7c4c2e', '#966139', '#b07a4b', '#c99660'),
+  dirt: ramp('#2a1810', '#472819', '#623924', '#7c4c2e', '#966139', '#b07a4b', '#c99660'),
   grass: ramp('#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478'),
-  stone: ramp('#1d1c28', '#32323e', '#484856', '#5f606d', '#787a86', '#9395a0', '#b3b5bd'),
-  sand: ramp('#4c3822', '#7d6034', '#a6844a', '#c4a15f', '#d8ba76', '#e8d192', '#f5e6b6'),
-  planks: ramp('#2c180e', '#51301b', '#744725', '#946033', '#b07a44', '#ca995b', '#dfb777'),
-  copper: ramp('#3a1a10', '#6c3018', '#a04e29', '#ca7139', '#e69857', '#f5c384', '#fff1d2'),
-  iron: ramp('#2a2832', '#575160', '#857a82', '#a99c9a', '#c8bcb2', '#e2d8ce', '#fbf6ee'),
-  bark: ramp('#22130b', '#3c2313', '#57351d', '#734929', '#8f6038', '#ab7b4c', '#c69966'),
-  dirtWall: ramp('#0f0906', '#1b110c', '#26180f', '#311f15', '#3c271b', '#4a3123', '#573b2b'),
-  stoneWall: ramp('#0b0b10', '#15151c', '#1e1e27', '#282832', '#33333f', '#3f3f4d', '#4b4b5a'),
-  torch: ramp('#3a1206', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0', '#ffffff'),
-  metal: ramp('#24242c', '#4a4c58', '#767a86', '#a4a8b2', '#d0d4da', '#f2f4f6', '#ffffff'),
+  stone: ramp('#1c1424', '#2c2838', '#423f54', '#5e5e74', '#707490', '#858aa0', '#b4b9c8'),
+  sand: ramp('#623924', '#966139', '#b07a4b', '#c99660', '#d8ba76', '#f2e2b0', '#fff4c0'),
+  planks: ramp('#2a1810', '#472819', '#623924', '#7c4c2e', '#966139', '#b07a4b', '#c99660'),
+  copper: ramp('#2a1810', '#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#f2b888', '#fff4c0'),
+  iron: ramp('#1c1424', '#623924', '#b07a4b', '#d98f66', '#f2b888', '#f2e2b0', '#ffffff'),
+  bark: ramp('#1c1424', '#2a1810', '#472819', '#623924', '#7c4c2e', '#966139', '#b07a4b'),
+  dirtWall: ramp('#0c0a12', '#1c1424', '#1c1424', '#2a1810', '#2a1810', '#472819', '#472819'),
+  stoneWall: ramp('#0c0a12', '#1c1424', '#1c1424', '#2c2838', '#2c2838', '#423f54', '#423f54'),
+  torch: ramp('#6c1e14', '#a83a10', '#e8701c', '#ffa93a', '#ffd86a', '#fff4c0', '#ffffff'),
+  metal: ramp('#1c1424', '#423f54', '#5e5e74', '#858aa0', '#b4b9c8', '#ffffff', '#ffffff'),
 };
 
 const TILE_PAL: Record<number, RGB[]> = {
@@ -104,8 +105,6 @@ function texDirt(v: number, pal = PAL.dirt): Bmp {
       if (y > 13) break;
     }
   }
-  // 深色碎點
-  for (let k = 0; k < 3; k++) b.set(Math.floor(h01(k, 11, seed) * S), Math.floor(h01(k, 12, seed) * S), pal[1]);
   return b;
 }
 
@@ -154,9 +153,10 @@ function texSand(v: number): Bmp {
       b.set(x, y, r < 1 ? pal[3] : r < 2 ? pal[5] : pal[4]);
     }
   }
-  for (let k = 0; k < 5; k++) {
-    const x = Math.floor(h01(k, 1, seed) * S), y = Math.floor(h01(k, 2, seed) * S);
-    b.set(x, y, k % 2 ? pal[2] : pal[6]);
+  // 兩顆 2px 砂粒（成簇，不撒單點雜訊）
+  for (let k = 0; k < 2; k++) {
+    const x = Math.floor(h01(k, 1, seed) * 14), y = Math.floor(h01(k, 2, seed) * S);
+    b.set(x, y, pal[k ? 2 : 6]); b.set(x + 1, y, pal[k ? 2 : 6]);
   }
   return b;
 }
@@ -423,14 +423,15 @@ function crack(stage: number): Bmp {
     [4, 4, 1, 6], [12, 6, 15, 3], [6, 12, 3, 15], [13, 12, 15, 15], [4, 4, 5, 1], [12, 6, 11, 1],
   ];
   const n = 2 + stage * 2 + (stage === 3 ? 2 : 0);
-  const dark = INK, lite = hex('#fff8e0');
+  // 不透明的 1px 暗線 + 右下 1px 深色陰影（不用半透明）
+  const dark = INK, lip = hex('#0c0a12');
   for (let k = 0; k < n && k < lines.length; k++) {
     const [x0, y0, x1, y1] = lines[k];
     const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
     for (let i = 0; i <= steps; i++) {
       const x = Math.round(x0 + ((x1 - x0) * i) / steps), y = Math.round(y0 + ((y1 - y0) * i) / steps);
-      if (!b.on(x + 1, y + 1)) b.set(x + 1, y + 1, lite, 70);
-      b.set(x, y, dark, 215);
+      if (stage >= 2 && !b.on(x + 1, y + 1) && (i & 1)) b.set(x + 1, y + 1, lip);
+      b.set(x, y, dark);
     }
   }
   return b;
@@ -539,7 +540,7 @@ const ICON_ORDER: ItemId[] = [
   'wood_pickaxe', 'copper_pickaxe', 'iron_pickaxe',
 ];
 export const PICK_METAL: Record<string, RGB[]> = {
-  wood_pickaxe: ramp('#2a170c', '#5a3a20', '#7e5530', '#a07040', '#bf8c54', '#d8aa70', '#ecc890'),
+  wood_pickaxe: ramp('#2a1810', '#623924', '#7c4c2e', '#966139', '#b07a4b', '#c99660', '#d8ba76'),
   copper_pickaxe: PAL.copper,
   iron_pickaxe: PAL.metal,
 };

@@ -3,30 +3,30 @@
 //     烘成一張表；前後手臂連同手上的鎬以 RotSprite 旋轉、依角度量化後延遲快取。
 //   · 樹：三種樹（橡樹 / 白樺 / 深綠），錐形帶樹皮紋的樹幹、根部外擴、側枝、多團球狀樹冠，依 (種類,高,冠) 快取。
 //   · 火把：4 格火焰 + 階梯式光暈。
-import { Bmp, INK, h01, hex, mix, ramp, rotPrep, rotate, shade, toCanvas, type RGB } from './pixel';
+import { Bmp, INK, bayer, h01, hex, mix, ramp, rotPrep, rotate, shade, toCanvas, type RGB } from './pixel';
 import { ARM_STEPS, WALK_FRAMES, IDLE_FRAMES, FLAME_FRAMES, angleIndex } from './anim';
 import { PAL, PICK_METAL } from './textures';
 import type { ItemId } from '../engine/items';
 
 // ── 可自訂外觀（之後的角色客製化用） ─────────────────────
 export const SKIN_TONES: RGB[][] = [
-  ramp('#6e3a2a', '#b06a4c', '#d98f66', '#f2b888', '#ffdcb4'),
+  ramp('#623924', '#b07a4b', '#d98f66', '#f2b888', '#fff4c0'),
   ramp('#4a2418', '#7e4430', '#a8623e', '#c88250', '#e0a470'),
   ramp('#2c140c', '#52281a', '#734026', '#935a34', '#b07848'),
 ];
 export const HAIR_COLORS: RGB[][] = [
-  ramp('#1e100a', '#3a2012', '#5a361c', '#7c4e28', '#9c6a38'),
+  ramp('#1c1424', '#2a1810', '#472819', '#623924', '#7c4c2e'),
   ramp('#141018', '#24202c', '#363244', '#4c4860', '#66627c'),
   ramp('#3a1a08', '#7a3a12', '#b05a1c', '#d8802c', '#f0a850'),
 ];
 export interface Look { skin: number; hair: number; }
 export const DEFAULT_LOOK: Look = { skin: 0, hair: 0 };
 
-const SHIRT = ramp('#0f2a36', '#174656', '#1f6474', '#2c8692', '#4aaeb0', '#86d6cc');
-const PANTS = ramp('#141026', '#221c3e', '#312a5a', '#433b78', '#5a5296');
-const BOOTS = ramp('#140c08', '#2c1a10', '#46301e', '#644630', '#82623e');
-const BELT = ramp('#1c120a', '#3a2614', '#5a3c20');
-const BUCKLE = hex('#e0b44c');
+const SHIRT = ramp('#0c0a12', '#1f6474', '#1f6474', '#2c8692', '#4aaeb0', '#a2c8b0');
+const PANTS = ramp('#0c0a12', '#1c1424', '#2c2450', '#463c78', '#7a5a8c');
+const BOOTS = ramp('#0c0a12', '#2a1810', '#472819', '#623924', '#7c4c2e');
+const BELT = ramp('#1c1424', '#2a1810', '#472819');
+const BUCKLE = hex('#ffd86a');
 
 export const FW = 32;
 export const FH = 48;
@@ -210,13 +210,21 @@ function torchBmp(frame: number): Bmp {
   out.blit(fl, 0, 0);
   return out;
 }
+/**
+ * 火光暈（以 'lighter' 加色疊上）：不透明的同心環 + 由內而外變稀的 Bayer 抖動，
+ * 每個像素要嘛加一階暖光、要嘛不加 —— 沒有放射狀模糊。
+ */
 function glowBmp(): Bmp {
-  const R = 20, b = new Bmp(R * 2, R * 2), c = hex('#ffb050');
+  const R = 18, b = new Bmp(R * 2, R * 2), hot: RGB = [64, 36, 8], warm: RGB = [36, 18, 4];
   for (let y = 0; y < R * 2; y++) {
     for (let x = 0; x < R * 2; x++) {
       const d = Math.hypot(x + 0.5 - R, y + 0.5 - R);
-      const a = d < 5 ? 70 : d < 10 ? 44 : d < 15 ? 24 : d < R ? 10 : 0;
-      if (a) b.set(x, y, c, a);
+      const t = bayer(x, y);
+      if (d < 4) b.set(x, y, hot);
+      else if (d < 6) b.set(x, y, t < 0.5 ? hot : warm);
+      else if (d < 10) b.set(x, y, warm);
+      else if (d < 13 && t < 0.5) b.set(x, y, warm);
+      else if (d < 16 && t < 0.125) b.set(x, y, warm);
     }
   }
   return b;
@@ -225,13 +233,13 @@ function glowBmp(): Bmp {
 // ── 樹 ─────────────────────────────────────────────────
 const TREE_BARK: RGB[][] = [
   PAL.bark,
-  ramp('#2a2622', '#4e4842', '#7a726a', '#a49c92', '#c8c0b4', '#e4ded2', '#f6f2ea'),
-  ramp('#1a100a', '#2e1c12', '#44291a', '#5a3824', '#714a30', '#8a5e40', '#a07450'),
+  ramp('#1c1424', '#2c2838', '#5e5e74', '#858aa0', '#b4b9c8', '#f2e2b0', '#ffffff'),
+  ramp('#0c0a12', '#1c1424', '#2a1810', '#472819', '#623924', '#7c4c2e', '#966139'),
 ];
 const TREE_LEAF: RGB[][] = [
-  ramp('#10261a', '#183a22', '#24562a', '#357232', '#4f9038', '#74b045', '#a6d466'),
-  ramp('#1c2c14', '#2e4a1c', '#486a22', '#66882a', '#88a832', '#b0c84a', '#dae880'),
-  ramp('#0a2024', '#103432', '#184c40', '#22684c', '#36845a', '#56a26c', '#88c48a'),
+  ramp('#16301e', '#214528', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478'),
+  ramp('#16301e', '#2d672e', '#468a34', '#67ab3c', '#93cc50', '#c2e478', '#fff4c0'),
+  ramp('#0c0a12', '#16301e', '#214528', '#1f6474', '#3f7468', '#6a9c88', '#a2c8b0'),
 ];
 type Blob = [number, number, number];
 const CANOPY: Blob[][] = [
@@ -366,13 +374,13 @@ function paintTree(variant: number, h: number, r: number, grounded: boolean): { 
         let v = 0.58 - 0.42 * (nx * 0.62 + ny * 0.78);
         const gy = (y - ccy) / ry;
         if (!tuft) v -= Math.max(0, gy) * 0.22;
-        v += (h01(x >> 1, y >> 1, seed + 17) - 0.5) * 0.1;
+        v += (h01(x >> 2, y >> 2, seed + 17) - 0.5) * 0.06;
         // 葉團分隔：鄰格屬於「較後面」的團 → 暗縫
         const up = y > 0 ? owner[(y - 1) * W + x] : -1, lf = x > 0 ? owner[y * W + x - 1] : -1;
         const sep = !tuft && ((up >= 0 && up !== o && up < 100 && blobs[up][1] < blobs[o][1]) || (lf >= 0 && lf !== o && lf < 100 && Math.abs(blobs[lf][1] - blobs[o][1]) < 0.2 && blobs[lf][0] < blobs[o][0]));
         let k = v > 0.86 ? 5 : v > 0.64 ? 4 : v > 0.42 ? 3 : v > 0.24 ? 2 : 1;
         if (sep) k = Math.max(1, Math.min(k, 2));
-        if (k >= 4 && v > 0.8 && h01(x, y, seed + 29) > 0.96) k = 6;
+        if (k >= 4 && v > 0.8 && h01(x >> 1, y, seed + 29) > 0.97) k = 6;
         can.set(x, y, leaf[k]);
       }
     }
@@ -410,7 +418,7 @@ export class Sprites {
     add(FRAME.FALL, 'fall', 0);
     this.body = toCanvas(sheet) as HTMLCanvasElement;
     for (let f = 0; f < FLAME_FRAMES; f++) this.torches.push(toCanvas(torchBmp(f)) as HTMLCanvasElement);
-    this.glow = toCanvas(glowBmp()) as HTMLCanvasElement;
+    this.glow = toCanvas(glowBmp(), null, true) as HTMLCanvasElement;
   }
 
   shoulder(back: boolean): { x: number; y: number } { return back ? SHOULDER_BACK : SHOULDER_FRONT; }
