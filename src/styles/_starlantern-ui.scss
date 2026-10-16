@@ -106,7 +106,9 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-opt { display: flex; align-items: center; gap: 4px; }
 .slx-ico { width: 12px; height: 12px; object-fit: contain; }
 .slx-right { margin-left: auto; padding-left: 12px; color: $slx-dim; }
-.slx-qty { left: 300px; top: 150px; min-width: 70px; text-align: center; }
+.slx-qty { left: 6px; top: 190px; width: 120px; text-align: center; }
+.slx-qty-row { display: flex; justify-content: center; gap: 2px; }
+.slx-qty-total { margin-left: 10px; color: $slx-gold; }
 
 .slx-list { left: 150px; top: 56px; min-width: 170px; max-height: 240px; overflow: hidden; }
 .slx-list .slx-ico { width: 16px; height: 16px; }
@@ -115,6 +117,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-desc { color: $slx-dim; margin: 2px 0; }
 .slx-status { left: 150px; top: 40px; width: 360px; min-height: 220px; }
 .slx-status img { float: right; height: 150px; }
+.slx-status { cursor: pointer; }
 .slx-status h3 { margin: 0 0 4px; font-size: 12px; font-weight: normal; color: $slx-gold; }
 .slx-status p { margin: 2px 0; }
 .slx-skills { margin: 4px 0; padding-left: 14px; }
@@ -132,6 +135,10 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 // Interface fixes after the first facility screenshots
 .slx-more { list-style: none; text-align: center; font-size: 8px; line-height: 10px; color: $slx-dim; }
 .slx-layer.slx-confirm { left: 50%; top: 45%; }
+.slx-list.slx-depth-1 { translate: 24px 16px; }
+.slx-list.slx-depth-2 { translate: 48px 32px; }
+.slx-list.slx-depth-3 { translate: 72px 48px; }
+.slx-shop-list { max-height: none; }
 .slx-shop .slx-info { left: 452px; width: 150px; }
 .slx-shop-list { min-width: 266px; }
 
@@ -143,6 +150,8 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-next { position: absolute; right: 10px; bottom: 4px; color: $slx-gold; font-size: 8px; animation: slx-blink 0.8s steps(2) infinite; }
 @keyframes slx-blink { 50% { opacity: 0; } }
 .slx-qty-down, .slx-qty-up, .slx-qty-n { cursor: pointer; }
+.slx-qty-down:hover, .slx-qty-up:hover, .slx-qty-n:hover { color: $slx-gold; }
+.slx-talk:hover .slx-next { color: #fff; }
 @media (prefers-reduced-motion: reduce) { .slx-next { animation: none; } }
 
 .slx-canvas { position: absolute; inset: 0; width: 640px; height: 360px; image-rendering: pixelated; }
@@ -155,14 +164,19 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-lamp-yellow { color: $slx-gold; }
 .slx-lamp-red { color: #ff7a6b; }
 .slx-menu-btn { right: 76px; top: 6px; padding: 2px 10px; cursor: pointer; }
-.slx-pad { position: absolute; right: 6px; bottom: 70px; width: 84px; height: 84px; }
-.slx-pad > .slx-win { width: 16px; height: 16px; padding: 4px; text-align: center; cursor: pointer; line-height: 16px; }
-.slx-pad-up { left: 28px; top: 0; }
-.slx-pad-down { left: 28px; bottom: 0; }
-.slx-pad-left { left: 0; top: 28px; }
-.slx-pad-right { right: 0; top: 28px; }
-.slx-dungeon .slx-talk { bottom: 70px; }
-.slx-field-menu { left: 12px; top: 40px; }
+.slx-pad { position: absolute; right: 6px; bottom: 70px; width: 108px; height: 108px; }
+.slx-pad > .slx-win { box-sizing: border-box; width: 36px; height: 36px; padding: 0; display: grid; place-items: center; cursor: pointer; }
+.slx-pad-up { left: 36px; top: 0; }
+.slx-pad-down { left: 36px; top: 72px; }
+.slx-pad-left { left: 0; top: 36px; }
+.slx-pad-right { left: 72px; top: 36px; }
+.slx-pad > .slx-win:hover, .slx-menu-btn:hover { color: $slx-gold; }
+.slx-dungeon .slx-talk { bottom: 70px; right: 124px; }
+.slx-field-menu { left: 12px; top: 50px; }
+.slx-dungeon > .slx-back { right: 140px; top: 6px; }
+.slx-field-status { left: 50%; top: 50px; width: 380px; min-height: 0; translate: -50% 0; cursor: pointer; }
+.slx-keyhint { position: absolute; left: 8px; bottom: 68px; margin: 0; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
+.slx-title .slx-keyhint, .slx-town .slx-keyhint { bottom: 6px; }
 
 // Party bar (labyrinth and battle)
 .slx-partybar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 62px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
@@ -171,11 +185,14 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-pm-body { display: grid; gap: 1px; min-width: 0; flex: 1; }
 .slx-pm-name { color: $slx-ink; white-space: nowrap; overflow: hidden; }
 .slx-pm-num { color: $slx-dim; font-size: 10px; line-height: 10px; }
-.slx-pm meter { width: 100%; height: 4px; }
-.slx-bar-hp { accent-color: #6fd36f; }
-.slx-bar-tp { accent-color: #6fa7ff; }
-.slx-bar-limit { accent-color: $slx-gold; }
-.slx-bar-full { filter: drop-shadow(0 0 2px $slx-gold); }
+.slx-bar { display: block; height: 4px; background: #2a2b38; box-shadow: inset 0 0 0 1px #000; }
+.slx-fill { display: block; height: 100%; }
+@for $k from 0 through 20 { .slx-fill-#{$k} { width: $k * 5%; } }
+.slx-bar-hp .slx-fill { background: #6fd36f; }
+.slx-bar-hp.slx-low .slx-fill { background: #ff6b5b; }
+.slx-bar-tp .slx-fill { background: #6fa7ff; }
+.slx-bar-limit .slx-fill { background: $slx-gold; }
+.slx-bar-full { box-shadow: 0 0 3px $slx-gold; }
 .slx-pm-active { border-color: $slx-gold; box-shadow: 0 0 0 1px $slx-gold; }
 .slx-pm-down { filter: grayscale(1) brightness(0.6); }
 .slx-pm-hit { animation: slx-pm-hit 0.2s steps(2) 1; }
@@ -192,6 +209,11 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-bsub { right: 6px; top: 64px; min-width: 200px; }
 .slx-bsub .slx-right { min-width: 40px; text-align: right; }
 .slx-result { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
+// Many level-ups can outgrow the screen: the lines scroll, 繼續 always stays on screen.
+.slx-result-lines { max-height: 250px; overflow-y: auto; }
+// The target list sits over the (inert) command window so it never hides the enemies on the right.
+.slx-bsub.slx-btarget { right: auto; left: 6px; top: 96px; min-width: 132px; }
+.slx-bsub:not(.slx-btarget):has(~ .slx-btarget) { visibility: hidden; }
 .slx-result h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
 .slx-result p { margin: 1px 0; }
 .slx-target { position: absolute; top: 118px; width: 12px; margin-left: -6px; text-align: center; color: $slx-gold; animation: slx-bob 0.6s ease-in-out infinite alternate; }
@@ -204,6 +226,8 @@ $slx-battle-left: 150px;
     .slx-target-#{$n}-#{$i} { left: $slx-battle-left + (640px - $slx-battle-left) * ($i + 1) / ($n + 1); }
   }
 }
+// Arrow height from the enemy's own sprite (battle.ts: slx-ty-{y / 10}).
+@for $k from 4 through 30 { .slx-ty-#{$k} { top: $k * 10px - 20px; } }
 @media (prefers-reduced-motion: reduce) { .slx-target { animation: none; } }
 
 // Ultimate cut-in (timings match CUTIN_MS = 1200 in ui/cutin.ts)
@@ -229,13 +253,14 @@ $slx-battle-left: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4vw;
+  gap: 24px;
   // wider than the screen so the tilted edges stay off-screen; offset by half the overflow to stay centred
   position: absolute;
-  left: -20vw;
-  top: 33vh;
-  width: 140vw;
-  height: 34vh;
+  // percentages of the 640x360 screen (not vw/vh): the screen is scaled as a whole
+  left: -20%;
+  top: 33%;
+  width: 140%;
+  height: 34%;
   background: linear-gradient(90deg, rgba(120, 20, 30, 0.95), rgba(217, 160, 70, 0.95) 50%, rgba(120, 20, 30, 0.95));
   border-block: 4px solid $slx-gold;
   transform: rotate(-8deg);
@@ -245,7 +270,7 @@ $slx-battle-left: 150px;
 .sl-cutin__name {
   transform: rotate(8deg);
   color: #fff;
-  font-size: clamp(28px, 6vw, 64px);
+  font-size: 36px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-shadow: 0 3px 0 #000, 0 0 18px rgba(255, 200, 120, 0.8);
@@ -284,7 +309,7 @@ $slx-battle-left: 150px;
 
 // Battle: 返回 under the message line; the description of the skill or item under the cursor covers the message line
 .slx-battle .slx-back { right: auto; left: 6px; top: 64px; }
-.slx-bnote { left: 8px; right: 8px; top: 6px; min-height: 36px; color: $slx-gold; }
+.slx-bnote { left: 8px; right: 8px; top: 6px; min-height: 36px; color: $slx-gold; background-color: #0a0e22; }
 
 // Settings
 .slx-bg-dim { filter: brightness(0.45); }
@@ -296,3 +321,17 @@ $slx-battle-left: 150px;
 .slx-keys p { margin: 2px 0; display: flex; gap: 12px; }
 .slx-keys b { min-width: 120px; font-weight: normal; color: $slx-gold; }
 .slx-keys .slx-hint { display: block; text-align: center; }
+
+// Phones held upright get a 640x360 screen shrunk to about a third: ask for landscape.
+@media (orientation: portrait) and (max-width: 600px) {
+  .slx-body::before {
+    content: '請將裝置轉為橫向，畫面會更大更好讀';
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    color: $slx-ink;
+    font: 14px/20px 'Cubic 11', sans-serif;
+    text-align: center;
+  }
+}

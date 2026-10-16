@@ -10,7 +10,7 @@ import { addItem, rest as innRest, type TownResult } from './town';
 import type { CharacterId, Pos } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
-export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed';
+export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp';
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
   | { kind: 'entrance' } | { kind: 'floor'; floor: number } | { kind: 'chest'; item: string; qty: number };

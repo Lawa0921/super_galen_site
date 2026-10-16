@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
@@ -79,6 +79,17 @@ describe('BattleScene', () => {
     expect(item.getAttribute('aria-disabled')).toBe('true');
   });
 
+  it('全員攻擊 keeps what earlier members already chose and attacks with the rest', () => {
+    const { game, s } = setup();
+    const submit = vi.spyOn(game, 'submitRound');
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');   // 絲嘉蕾: 防禦
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');                                           // 全員攻擊 for the rest
+    const sent = Object.values(submit.mock.calls[0][0]);
+    expect(sent[0].kind).toBe('defend');
+    expect(sent.slice(1).every((a) => a.kind === 'attack')).toBe(true);
+  });
+
   it('全員攻擊 sends an attack for everyone at once', () => {
     const { game, s } = setup();
     const submit = vi.spyOn(game, 'submitRound');
@@ -111,6 +122,7 @@ describe('BattleScene', () => {
 });
 
 describe('BattleScene sound and failure safety', () => {
+  afterEach(() => vi.useRealTimers());
   it('calls sound methods on their own object (a real SoundManager uses this)', async () => {
     class Sfx { hits = 0; cursor() {} confirm() {} cancel() {} error() {} hit() { this.hits++; } }
     const sfx = new Sfx();
@@ -126,6 +138,68 @@ describe('BattleScene sound and failure safety', () => {
     await flush();
     expect(sfx.hits).toBe(1);
     expect(root.querySelector('.slx-result')).not.toBeNull();
+  });
+
+  it('updates the HP of a member the moment they are hit, and hides the command window while the round plays', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    for (const e of game.battle!.enemies) { e.max.atk = 999; e.max.spd = 99; }
+    const root = document.createElement('div');
+    let seen = '';
+    let expected = '';
+    let before = '';
+    let cmdHidden = false;
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
+      play: async (end: { party: { key: string; hp: number; max: { hp: number } }[] }, _fx: unknown, on: (k: string, cue: string) => Promise<void>) => {
+        const hurt = end.party.find((c) => c.hp < c.max.hp)!;   // whoever the enemies hit this round
+        const key = hurt.key;
+        before = root.querySelector(`.slx-pm[data-key="${key}"] .slx-pm-num`)!.textContent!;
+        expected = `${hurt.hp}/${hurt.max.hp}`;
+        await on(key, 'hit');
+        seen = root.querySelector(`.slx-pm[data-key="${key}"] .slx-pm-num`)!.textContent!;
+        cmdHidden = (root.querySelector('.slx-bcmd') as HTMLElement).hidden;
+      } } };
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    await flush();
+    expect(expected).not.toBe(before);   // the hit really lands this round
+    expect(seen).toBe(expected);
+    expect(cmdHidden).toBe(true);
+  });
+
+  it('ignores input for a moment after the results appear, so a held key cannot skip them', async () => {
+    vi.useFakeTimers();
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    for (const e of game.battle!.enemies) e.hp = 1;
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: false });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    for (let t = 0; t < 100 && !root.querySelector('.slx-result'); t++) await vi.advanceTimersByTimeAsync(50);
+    s.onAction('confirm');
+    expect(go).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(400);
+    s.onAction('confirm');
+    expect(go).toHaveBeenCalledWith('dungeon');
+    vi.useRealTimers();
+  });
+
+  it('puts the target arrow just above the enemy under the cursor', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), play: vi.fn(), anchor: (k: string) => ({ x: 300, y: k === 'e0' ? 200 : 140 }) } };
+    const root = document.createElement('div');
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    s.onAction('confirm');                                   // 攻擊: pick a target
+    const marker = root.querySelector('.slx-target') as HTMLElement;
+    expect(marker.classList.contains('slx-ty-20')).toBe(true);
+    s.onAction('down');
+    expect(marker.classList.contains('slx-ty-14')).toBe(true);
   });
 
   it('unlocks the screen and offers commands again if playback throws', async () => {

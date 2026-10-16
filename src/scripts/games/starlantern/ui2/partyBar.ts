@@ -4,8 +4,14 @@ import type { ArtIndex } from '../render/textures';
 
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean }
 
-function bar(value: number, max: number, cls: string): HTMLMeterElement {
-  return el('meter', { class: cls, attrs: { min: '0', max: String(Math.max(1, max)), value: String(value) } });
+/** A drawn bar (a native <meter> cannot be styled reliably); the fill width is a 5% step class, any value above 0 shows at least one step. */
+function bar(value: number, max: number, cls: string): HTMLElement {
+  const m = Math.max(1, max);
+  const v = Math.max(0, Math.min(m, value));
+  const step = v <= 0 ? 0 : Math.max(1, Math.round((v / m) * 20));
+  return el('span', { class: `slx-bar ${cls}`, attrs: { role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(m), 'aria-valuenow': String(v) } }, [
+    el('span', { class: `slx-fill slx-fill-${step}` }),
+  ]);
 }
 
 /** The five member panels along the bottom of the labyrinth and battle screens. */
@@ -23,7 +29,7 @@ export class PartyBar {
         el('div', { class: 'slx-pm-body' }, [
           el('span', { class: 'slx-pm-name', text: m.name }),
           el('span', { class: 'slx-pm-num', text: `${m.hp}/${m.maxHp}` }),
-          bar(m.hp, m.maxHp, 'slx-bar-hp'),
+          bar(m.hp, m.maxHp, m.hp > 0 && m.hp <= m.maxHp / 4 ? 'slx-bar-hp slx-low' : 'slx-bar-hp'),
           bar(m.tp, m.maxTp, 'slx-bar-tp'),
           bar(m.limit, 100, m.limit >= 100 ? 'slx-bar-limit slx-bar-full' : 'slx-bar-limit'),
         ]),

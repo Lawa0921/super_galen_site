@@ -24,7 +24,7 @@ export class TitleScene implements Scene {
     const bg = this.ctx.art.has(art.scene('title')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('title'), alt: '' } })] : [];
     const logo = this.ctx.art.has(art.logo) ? el('img', { class: 'slx-logo', attrs: { src: art.logo, alt: '星燈迷宮' } }) : el('h1', { class: 'slx-logo-text', text: '星燈迷宮' });
     this.menuWin = win('slx-title-menu', [this.view.el]);
-    root.append(el('div', { class: 'slx-scene slx-title' }, [...bg, logo, this.menuWin]));
+    root.append(el('div', { class: 'slx-scene slx-title' }, [...bg, logo, this.menuWin, el('p', { class: 'slx-keyhint', text: T.ui2.hints.title })]));
   }
 
   exit(): void {}

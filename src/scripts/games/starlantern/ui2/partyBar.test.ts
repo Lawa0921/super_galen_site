@@ -13,10 +13,22 @@ describe('PartyBar', () => {
     expect(panels.map((p) => (p as HTMLElement).dataset.key)).toEqual(['scarlet', 'liz', 'noel']);
     expect(panels[2].classList.contains('slx-pm-active')).toBe(true);
     expect(panels[1].classList.contains('slx-pm-down')).toBe(true);
-    const hp = panels[0].querySelector('meter.slx-bar-hp')!;   // happy-dom does not reflect meter properties; read attributes
-    expect([hp.getAttribute('value'), hp.getAttribute('max')]).toEqual(['30', '30']);
-    expect(panels[0].querySelector('meter.slx-bar-limit')).not.toBeNull();
+    const hp = panels[0].querySelector('.slx-bar-hp')!;
+    expect(hp.getAttribute('role')).toBe('meter');
+    expect([hp.getAttribute('aria-valuenow'), hp.getAttribute('aria-valuemax')]).toEqual(['30', '30']);
+    expect(hp.querySelector('.slx-fill-20')).not.toBeNull();
+    expect(panels[0].querySelector('.slx-bar-limit .slx-fill-8')).not.toBeNull();   // 40 of 100
+    expect(panels[1].querySelector('.slx-bar-hp .slx-fill-0')).not.toBeNull();
     expect(panels[0].textContent).toContain('30/30');
+  });
+
+  it('turns the HP bar red when a member is low, and shows a sliver for any HP left', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet', 7), m('liz', 1), m('noel', 20)]);
+    const hp = (k: string) => bar.el.querySelector(`[data-key=${k}] .slx-bar-hp`)!;
+    expect(hp('scarlet').classList.contains('slx-low')).toBe(true);
+    expect(hp('noel').classList.contains('slx-low')).toBe(false);
+    expect(hp('liz').querySelector('.slx-fill-1')).not.toBeNull();
   });
 
   it('uses the mood portrait and swaps it briefly on a pulse', () => {

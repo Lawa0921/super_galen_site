@@ -81,7 +81,7 @@ export class ShopScene extends FacilityScene {
         if (bought) void this.say(T.ui2.shop.bought(name, bought), 'happy'); else this.fail('gold');
       },
       cancel: () => this.pop(),
-    });
+    }, price);
     this.push({ el: q.el, onAction: (a) => q.onAction(a) });
   }
 
@@ -107,7 +107,7 @@ export class ShopScene extends FacilityScene {
             void this.say(fresh.length ? T.ui2.shop.unlocked(fresh.join('、')) : T.ui2.shop.sold(it.label, n, this.ctx.game.state.gold - gold), 'happy');
           },
           cancel: () => this.pop(),
-        });
+        }, MATERIALS[it.id].price);
         this.push({ el: q.el, onAction: (a) => q.onAction(a) });
       },
       moved: () => this.ctx.sfx.cursor(),

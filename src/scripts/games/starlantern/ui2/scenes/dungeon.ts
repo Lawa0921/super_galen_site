@@ -12,7 +12,7 @@ import { Menu, type MenuItem } from '../menu';
 import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
-import { Dialogue, MenuView, confirmBox, win } from '../widgets';
+import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
@@ -25,6 +25,7 @@ export class DungeonScene implements Scene {
   private lamp!: HTMLElement;
   private floorName!: HTMLElement;
   private pad!: HTMLElement;
+  private backEl!: HTMLElement;
   private layers: Layer[] = [];
   private talk: Dialogue;
   private leaving = false;
@@ -40,7 +41,10 @@ export class DungeonScene implements Scene {
     this.lamp = win('slx-lamp');
     this.pad = el('div', { class: 'slx-pad' }, DIRS.map((d) => this.tapper(`slx-pad-${d}`, T.map.dirs[d], d)));
     const menuBtn = this.tapper('slx-menu-btn', T.ui2.dungeon.menuHint, 'menu');
-    this.body = el('div', { class: 'slx-scene slx-dungeon' }, [this.floorName, this.lamp, menuBtn, this.pad, this.bar.el, this.talk.el]);
+    this.backEl = backControl(() => this.onAction('cancel'));
+    this.backEl.hidden = true;
+    const hint = el('p', { class: 'slx-keyhint', text: T.ui2.hints.dungeon });
+    this.body = el('div', { class: 'slx-scene slx-dungeon' }, [this.floorName, this.lamp, menuBtn, this.backEl, hint, this.pad, this.bar.el, this.talk.el]);
     root.append(this.body);
     this.ctx.stage?.show('map');
     this.refresh();
@@ -55,6 +59,7 @@ export class DungeonScene implements Scene {
     if (this.leaving) return;
     if (this.talk.busy()) { this.talk.onAction(a); return; }
     const top = this.layers[this.layers.length - 1];
+    if (top && a === 'menu') { this.ctx.sfx.cancel(); this.popAll(); return; }   // C toggles the menu
     if (top) { top.onAction(a); return; }
     if (a === 'up' || a === 'down' || a === 'left' || a === 'right') { this.move(a); return; }
     if (a === 'menu' || a === 'cancel') this.openMenu();
@@ -108,7 +113,7 @@ export class DungeonScene implements Scene {
   }
 
   private push(layer: Layer): void {
-    layer.el.classList.add('slx-layer');
+    layer.el.classList.add('slx-layer', `slx-depth-${this.layers.length}`);
     this.layers.push(layer);
     this.body.append(layer.el);
     this.syncInert();
@@ -129,16 +134,18 @@ export class DungeonScene implements Scene {
     const lock = (e: HTMLElement, on: boolean) => (on ? e.setAttribute('inert', '') : e.removeAttribute('inert'));
     const busy = this.talk.busy();
     lock(this.pad, busy || this.layers.length > 0);
+    lock(this.backEl, busy);
+    this.backEl.hidden = this.layers.length === 0;
     this.layers.forEach((l, i) => lock(l.el, busy || i < this.layers.length - 1));
   }
 
-  private list(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-list'): void {
+  private list(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-list', title?: string): void {
     const v = new MenuView(new Menu(items), {
       pick: (it) => { this.ctx.sfx.confirm(); pick(it); },
       moved: () => this.ctx.sfx.cursor(),
       cancel: () => { this.ctx.sfx.cancel(); this.pop(); },
     }, 10);
-    this.push({ el: win(cls, [v.el]), onAction: (a) => v.onAction(a) });
+    this.push({ el: win(cls, [...(title ? [el('div', { class: 'slx-who', text: title })] : []), v.el]), onAction: (a) => v.onAction(a) });
   }
 
   private askTown(): void {
@@ -162,13 +169,25 @@ export class DungeonScene implements Scene {
       { id: 'close', label: d.close },
     ], (it) => {
       if (it.id === 'close') { this.pop(); return; }
-      if (it.id === 'lamp') {
-        if (g.useReturnLamp()) { this.popAll(); this.leaving = true; this.ctx.go('town'); }
-        return;
-      }
+      if (it.id === 'lamp') { this.askLamp(); return; }
       if (it.id === 'items') { this.itemList(); return; }
       this.statusList();
     }, 'slx-list slx-field-menu');
+  }
+
+  private askLamp(): void {
+    const g = this.ctx.game;
+    const box = confirmBox(T.ui2.dungeon.askLamp, (yes) => {
+      this.pop();
+      if (!yes || !g.useReturnLamp()) return;
+      g.notice = 'lamp';
+      this.popAll();
+      this.leaving = true;
+      this.ctx.go('town');
+    });
+    box.view.menu.setCursor(1);
+    box.view.render();
+    this.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
   }
 
   private usableItems(): MenuItem[] {
@@ -193,7 +212,7 @@ export class DungeonScene implements Scene {
         this.ctx.sfx.heal?.();
         this.refresh();
         this.say(T.ui2.dungeon.used(it.label, who.label));
-      });
+      }, 'slx-list', T.ui2.dungeon.who(it.label));
     });
   }
 
@@ -203,6 +222,20 @@ export class DungeonScene implements Scene {
       const m = p.roster[id];
       const st = statsOf(m);
       return { id, label: `${CHARACTERS[id].name} Lv ${m.level}`, right: `HP ${m.hp}/${st.hp}  TP ${m.tp}/${st.tp}` };
-    }), () => {});
+    }), (it) => this.sheet(it.id as CharacterId));
+  }
+
+  /** One member's numbers; a key or a click closes it. */
+  private sheet(id: CharacterId): void {
+    const m = this.ctx.game.state.party.roster[id];
+    const st = statsOf(m);
+    const sheet = win('slx-status slx-field-status', [
+      el('h3', { text: `${CHARACTERS[id].title} ${CHARACTERS[id].name}　Lv ${m.level}` }),
+      el('p', { text: `HP ${m.hp}/${st.hp}　TP ${m.tp}/${st.tp}　${T.ui2.guild.gauge(m.limit ?? 0)}` }),
+      el('p', { text: (['atk', 'def', 'mag', 'res', 'spd'] as const).map((k) => `${T.stat[k]} ${st[k]}`).join('　') }),
+    ]);
+    const close = () => { this.ctx.sfx.cancel(); this.pop(); };
+    sheet.addEventListener('click', () => { if (!sheet.closest('[inert]')) close(); });
+    this.push({ el: sheet, onAction: (a) => { if (a === 'confirm' || a === 'cancel') close(); return true; } });
   }
 }

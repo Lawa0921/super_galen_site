@@ -71,6 +71,29 @@ describe('GuildScene', () => {
     expect(game.state.party.roster.scarlet.equip.weapon).toBe('iron-sword');
   });
 
+  it('after equipping, 返回 steps back to the member list instead of jumping to the commands', () => {
+    const { pick, s, root, opts } = setup();
+    pick('裝備'); pick('絲嘉蕾'); pick('武器：（未裝備）'); pick('鐵劍');
+    s.onAction('confirm');                                   // the 'equipped' line
+    expect(opts()).toContain('武器：鐵劍');
+    s.onAction('cancel');
+    expect(opts()).toContain('絲嘉蕾');
+    expect(root.querySelectorAll('.slx-layer')).toHaveLength(1);
+  });
+
+  it('says there is nothing to equip rather than a stock error', () => {
+    const { pick, root } = setup();
+    pick('裝備'); pick('絲嘉蕾'); pick('防具：（未裝備）');
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toContain('沒有可以換上的');
+  });
+
+  it('closes the status sheet with a click', () => {
+    const { pick, root } = setup();
+    pick('狀態'); pick('諾艾兒');
+    (root.querySelector('.slx-status') as HTMLElement).click();
+    expect(root.querySelector('.slx-status')).toBeNull();
+  });
+
   it('shows a status sheet with skills and the ultimate', () => {
     const { pick, root } = setup();
     pick('狀態');

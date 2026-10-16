@@ -26,7 +26,7 @@ export const T = {
   } as Record<string, string>,
   notices: {
     'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……已回到上次住宿的時間點',
-    saved: '已存檔', 'save-failed': '存檔失敗：瀏覽器不允許儲存',
+    saved: '已存檔', 'save-failed': '存檔失敗：瀏覽器不允許儲存', lamp: '歸還之燈的光芒把隊伍帶回了城鎮。',
   },
   map: {
     returnTown: '回城', lamp: (n: number) => `歸還之燈 ×${n}`,
@@ -67,6 +67,11 @@ export const T = {
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
   },
   ui2: {
+    hints: {
+      title: '↑↓ 選擇　Enter 決定　滑鼠也可以操作',
+      town: 'Enter／點擊 決定　Esc／右鍵 返回',
+      dungeon: '方向鍵／WASD 移動　C 選單　Esc／右鍵 返回',
+    },
     title: { newGame: '新遊戲', cont: '繼續', settings: '設定', overwrite: '已有存檔，開始新遊戲會覆蓋它。要繼續嗎？' },
     settings: {
       title: '設定', volume: '音效音量', speed: '文字速度', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
@@ -98,7 +103,7 @@ export const T = {
     },
     dungeon: {
       status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',
-      noItems: '沒有可以使用的道具。', used: (item: string, who: string) => `${who} 使用了${item}。`, menuHint: '選單',
+      noItems: '沒有可以使用的道具。', askLamp: '要使用歸還之燈回到城鎮嗎？', who: (item: string) => `${item}要給誰使用？`, used: (item: string, who: string) => `${who} 使用了${item}。`, menuHint: '選單',
     },
     inn: {
       rest: (cost: number) => `休息（${cost} G）`, revive: '復活', ask: (cost: number) => `住一晚要 ${cost} G，要休息嗎？`,
@@ -115,7 +120,7 @@ export const T = {
       formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態', empty: '（空）', unequip: '（卸下）',
       front: (i: number, name: string) => `前排 ${i}：${name}`, back: (i: number, name: string) => `後排 ${i}：${name}`,
       slot: (slot: string, name: string) => `${slot}：${name}`, none: '（未裝備）',
-      ask: (name: string) => `要讓 ${name} 加入隊伍嗎？`, recruited: (name: string) => `${name} 加入了隊伍！`, equipped: '裝備好了。',
+      ask: (name: string) => `要讓 ${name} 加入隊伍嗎？`, recruited: (name: string) => `${name} 加入了隊伍！`, equipped: '裝備好了。', noGear: '這個欄位沒有可以換上的裝備。',
       learnedAt: (lv: number) => `Lv ${lv} 習得`, ultimate: '絕技', gauge: (n: number) => `量表 ${n}%`,
       roles: {
         noel: '後排。火、冰、雷攻擊；降低敵人能力、毒。', chizuru: '前排。全體攻擊；我方減傷。', liz: '前或後。多段攻擊；降低遇敵、素材掉落加成。',

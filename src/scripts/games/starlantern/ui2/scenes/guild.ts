@@ -127,11 +127,12 @@ export class GuildScene extends FacilityScene {
     const items: MenuItem[] = Object.entries(s.inventory).filter(([eid, n]) => EQUIPMENT[eid]?.slot === slot && n > 0)
       .map(([eid, n]) => ({ id: eid, label: EQUIPMENT[eid].name, icon: this.ctx.art.has(art.icon(eid)) ? art.icon(eid) : undefined, right: `${delta(eid)} ×${n}` }));
     if (m.equip[slot]) items.push({ id: '', label: T.ui2.guild.unequip, right: delta(null) });
-    if (!items.length) { this.fail('stock'); return; }
+    if (!items.length) { this.ctx.sfx.error(); void this.say(T.ui2.guild.noGear); return; }
     this.list(items, (it) => {
       const r = this.ctx.game.apply(it.id ? equip(s, id, it.id) : unequip(s, id, slot));
-      this.popAll();
-      if (!r.ok) { this.fail(r.reason); return; }
+      if (!r.ok) { this.popAll(); this.fail(r.reason); return; }
+      // Replace the gear and slot lists with fresh slots; the member list stays underneath for 返回.
+      this.pop(true); this.pop(true);
       void this.say(T.ui2.guild.equipped, 'happy');
       this.slots(id);
     });
@@ -153,6 +154,7 @@ export class GuildScene extends FacilityScene {
       el('p', { text: `${g.ultimate}：${u.name}（${g.gauge(m.limit ?? 0)}）` }),
       el('p', { class: 'slx-desc', text: u.desc }),
     ]);
+    sheet.addEventListener('click', () => { if (!sheet.closest('[inert]')) this.pop(); });
     this.push({ el: sheet, onAction: (a) => { if (a === 'cancel' || a === 'confirm') { this.pop(); return true; } return false; } });
   }
 }

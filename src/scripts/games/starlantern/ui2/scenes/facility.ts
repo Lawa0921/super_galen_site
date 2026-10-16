@@ -82,16 +82,16 @@ export abstract class FacilityScene implements Scene {
   }
 
   protected push(layer: Layer): void {
-    layer.el.classList.add('slx-layer');
+    layer.el.classList.add('slx-layer', `slx-depth-${this.layers.length}`);
     this.layers.push(layer);
     this.stage.append(layer.el);
     this.syncInert();
   }
 
-  protected pop(): void {
+  protected pop(silent = false): void {
     const l = this.layers.pop();
     l?.el.remove();
-    this.ctx.sfx.cancel();
+    if (!silent) this.ctx.sfx.cancel();
     this.syncInert();
   }
 

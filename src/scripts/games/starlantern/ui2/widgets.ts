@@ -35,7 +35,8 @@ export class MenuView {
         el('span', { class: 'slx-label', text: item.label }),
         ...(item.right !== undefined ? [el('span', { class: 'slx-right', text: item.right })] : []),
       ]);
-      li.addEventListener('pointerenter', () => {
+      // pointermove, not pointerenter: a window that opens under a resting mouse must not steal the keyboard cursor.
+      li.addEventListener('pointermove', () => {
         if (this.locked()) return;
         const before = this.menu.cursor;
         if (this.menu.setCursor(i) && this.menu.cursor !== before) { this.render(); this.on.moved?.(); }
@@ -146,11 +147,14 @@ export class QtyView {
   readonly el: HTMLElement;
   qty = 1;
   private label = el('span', { class: 'slx-qty-n' });
+  private total = el('span', { class: 'slx-qty-total' });
 
-  constructor(private max: number, private on: { change(qty: number): void; done(qty: number): void; cancel(): void }) {
+  /** With a unit price the window also shows the total. */
+  constructor(private max: number, private on: { change(qty: number): void; done(qty: number): void; cancel(): void }, private price?: number) {
     const down = el('span', { class: 'slx-qty-down', text: '◀ ' });
     const up = el('span', { class: 'slx-qty-up', text: ' ▶' });
-    this.el = win('slx-qty', [down, this.label, up]);
+    const row = el('div', { class: 'slx-qty-row' }, [down, this.label, up, ...(price !== undefined ? [this.total] : [])]);
+    this.el = win('slx-qty', [row, el('p', { class: 'slx-hint', text: '◀▶ ±1　▲▼ ±10　點數字 決定' })]);
     // Mouse: the arrows step by one, the number confirms.
     const tap = (a: UiAction) => () => { if (!this.el.closest('[inert]')) this.onAction(a); };
     down.addEventListener('click', tap('left'));
@@ -171,7 +175,10 @@ export class QtyView {
     return false;
   }
 
-  private show(): void { this.label.textContent = `× ${this.qty}`; }
+  private show(): void {
+    this.label.textContent = `× ${this.qty}`;
+    if (this.price !== undefined) this.total.textContent = `${this.price * this.qty} G`;
+  }
 }
 
 /** On-screen 返回 for mouse and touch players; the owner treats it as the cancel key. */

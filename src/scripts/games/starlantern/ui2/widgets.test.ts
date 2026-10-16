@@ -19,11 +19,19 @@ describe('MenuView', () => {
     expect(v.el.querySelector('button, select')).toBeNull();
   });
 
+  it('ignores a resting pointer that a newly opened window appears under', () => {
+    const pick = vi.fn();
+    const v = new MenuView(mk(), { pick });
+    v.el.querySelectorAll('[role=option]')[2].dispatchEvent(new Event('pointerenter'));
+    v.onAction('confirm');
+    expect(pick).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }));
+  });
+
   it('follows the pointer, so Enter confirms the hovered option', () => {
     const pick = vi.fn();
     const v = new MenuView(mk(), { pick });
     const opts = v.el.querySelectorAll('[role=option]');
-    opts[2].dispatchEvent(new Event('pointerenter'));
+    opts[2].dispatchEvent(new Event('pointermove'));
     v.onAction('confirm');
     expect(pick).toHaveBeenCalledWith(expect.objectContaining({ id: 'c' }));
     opts[1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -105,7 +113,7 @@ describe('MenuView pointer guard', () => {
     const v = new MenuView(mk(), { pick });
     const host = document.createElement('div'); host.append(v.el); host.setAttribute('inert', '');
     const opts = v.el.querySelectorAll('[role=option]');
-    opts[2].dispatchEvent(new Event('pointerenter'));
+    opts[2].dispatchEvent(new Event('pointermove'));
     (opts[2] as HTMLElement).click();
     expect(pick).not.toHaveBeenCalled();
     expect(v.menu.cursor).toBe(0);
@@ -135,6 +143,14 @@ describe('QtyView', () => {
     expect(q.el.textContent).toContain('2');
     q.onAction('confirm'); expect(done).toHaveBeenCalledWith(2);
     q.onAction('cancel'); expect(cancel).toHaveBeenCalled();
+  });
+
+  it('shows the total price and how to use it when given a unit price', () => {
+    const q = new QtyView(10, { change: vi.fn(), done: vi.fn(), cancel: vi.fn() }, 20);
+    expect(q.el.querySelector('.slx-qty-total')!.textContent).toBe('20 G');
+    q.onAction('right');
+    expect(q.el.querySelector('.slx-qty-total')!.textContent).toBe('40 G');
+    expect(q.el.querySelector('.slx-hint')!.textContent).toContain('±10');
   });
 });
 

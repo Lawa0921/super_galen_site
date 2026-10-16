@@ -33,6 +33,7 @@ export class TownScene implements Scene {
       win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]),
       (this.menuWin = win('slx-town-menu', [this.view.el])),
       (this.backEl = backControl(() => this.onAction('cancel'))),
+      el('p', { class: 'slx-keyhint', text: T.ui2.hints.town }),
       this.talk.el,
     ]));
     const notice = this.ctx.game.notice;

@@ -61,12 +61,41 @@ describe('DungeonScene', () => {
     expect(go).toHaveBeenCalledWith('town');
   });
 
-  it('opens the field menu and uses the return lamp', () => {
-    const { game, go, s, pick } = setup();
+  it('asks before using the return lamp, then tells the town about it', () => {
+    const { game, go, s, pick, root } = setup();
     s.onAction('menu');
     pick('歸還之燈');
+    expect(go).not.toHaveBeenCalled();
+    expect(root.querySelector('.slx-confirm [aria-selected=true]')!.textContent).toBe('否');
+    pick('是');
     expect(game.state.inventory['return-lamp'] ?? 0).toBe(0);
+    expect(game.notice).toBe('lamp');
     expect(go).toHaveBeenCalledWith('town');
+  });
+
+  it('closes windows with the mouse: a 返回 control appears while a window is open, C closes the menu too', () => {
+    const { s, root } = setup();
+    const back = root.querySelector('.slx-dungeon > .slx-back') as HTMLElement;
+    expect(back.hidden).toBe(true);
+    s.onAction('menu');
+    expect(back.hidden).toBe(false);
+    back.click();
+    expect(root.querySelector('.slx-layer')).toBeNull();
+    expect(back.hidden).toBe(true);
+    s.onAction('menu');
+    s.onAction('menu');
+    expect(root.querySelector('.slx-layer')).toBeNull();
+  });
+
+  it('shows a member sheet from 隊伍狀態 that a click closes', () => {
+    const { s, root, pick } = setup();
+    s.onAction('menu');
+    pick('隊伍狀態');
+    pick('絲嘉蕾');
+    const sheet = root.querySelector('.slx-status') as HTMLElement;
+    expect(sheet.textContent).toContain('攻擊');
+    sheet.click();
+    expect(root.querySelector('.slx-status')).toBeNull();
   });
 
   it('uses a potion from the field menu', () => {

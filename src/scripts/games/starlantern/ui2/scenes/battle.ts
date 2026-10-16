@@ -21,6 +21,8 @@ import { MenuView, backControl, win } from '../widgets';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
 export const BATTLE_LEFT = 150;
+/** Height kept clear for the party bar; must match the .slx-partybar box in _starlantern-ui.scss. */
+export const BATTLE_BOTTOM = 66;
 
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 type Pending = { kind: 'attack' } | { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'ultimate' };
@@ -43,6 +45,10 @@ export class BattleScene implements Scene {
   private actions: Record<string, Action> = {};
   private busy = false;
   private result: MenuView | null = null;
+  private resultReady = false;
+  /** Party values from before the round, shown until each member's own hit plays. */
+  private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'>> | null = null;
+  private revealed = new Set<string>();
 
   constructor(private ctx: SceneCtx) {
     this.bar = new PartyBar(ctx.art);
@@ -60,7 +66,7 @@ export class BattleScene implements Scene {
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
-      this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.floor, BATTLE_LEFT);
+      this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.floor, BATTLE_LEFT, BATTLE_BOTTOM);
     }
     this.msg.textContent = this.state.enemies.map((e) => e.name).join('、');
     this.startRound();
@@ -72,7 +78,7 @@ export class BattleScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.busy) return;
-    if (this.result) { this.result.onAction(a); return; }
+    if (this.result) { if (this.resultReady) this.result.onAction(a); return; }
     const top = this.layers[this.layers.length - 1];
     if (top) { top.onAction(a); return; }
     this.view?.onAction(a);
@@ -83,9 +89,10 @@ export class BattleScene implements Scene {
   }
 
   private updateBar(active: string | null): void {
-    this.bar.update(this.state.party.map((c) => ({
-      key: c.key, name: c.name, hp: c.hp, maxHp: c.max.hp, tp: c.tp, maxTp: c.max.tp, limit: c.limit, alive: c.alive,
-    })), active);
+    this.bar.update(this.state.party.map((c) => {
+      const v = (!this.revealed.has(c.key) && this.before?.get(c.key)) || c;
+      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive };
+    }), active);
   }
 
   private startRound(): void {
@@ -138,7 +145,7 @@ export class BattleScene implements Scene {
     if (id === 'escape') { this.choose({ kind: 'escape' }); return; }
     if (id === 'auto') {
       const target = this.state.enemies.find((e) => e.alive)?.key ?? 'e0';
-      for (const c of this.actors()) this.actions[c.key] = { kind: 'attack', target };
+      for (const c of this.actors()) this.actions[c.key] ??= { kind: 'attack', target };   // keep earlier members' choices
       void this.submit();
       return;
     }
@@ -174,7 +181,10 @@ export class BattleScene implements Scene {
     this.showNote(c?.note);
     const e = c ? this.state.enemies.findIndex((x) => x.key === c.id) : -1;
     if (e < 0) { this.marker.setAttribute('hidden', ''); return; }
-    this.marker.className = `slx-target slx-target-${this.state.enemies.length}-${e}`;
+    // Height comes from the enemy's sprite (10 px step classes, no inline styles); without a stage the stylesheet default applies.
+    const y = this.ctx.stage?.battleView.anchor(c!.id)?.y;
+    const ty = y === undefined ? '' : ` slx-ty-${Math.max(4, Math.min(30, Math.round(y / 10)))}`;
+    this.marker.className = `slx-target slx-target-${this.state.enemies.length}-${e}${ty}`;
     this.marker.removeAttribute('hidden');
   }
 
@@ -255,9 +265,13 @@ export class BattleScene implements Scene {
     this.syncBack();
     this.root.setAttribute('inert', '');
     this.cmd.replaceChildren();
+    this.cmd.hidden = true;
     this.view = null;
+    this.before = new Map(this.state.party.map((c) => [c.key, { hp: c.hp, tp: c.tp, limit: c.limit, alive: c.alive }]));
+    this.revealed.clear();
+    this.updateBar(null);
     const r = this.ctx.game.submitRound(this.actions);
-    if (!r) { this.busy = false; this.root.removeAttribute('inert'); this.renderCommands(); return; }
+    if (!r) { this.busy = false; this.before = null; this.cmd.hidden = false; this.root.removeAttribute('inert'); this.renderCommands(); return; }
     this.state = r.battle;
     const names = new Map([...r.battle.party, ...r.battle.enemies].map((c) => [c.key, c.name]));
     const lines = battleLines(r.battle.log, (k) => names.get(k) ?? k);
@@ -267,8 +281,10 @@ export class BattleScene implements Scene {
       // A broken animation must never strand the player: log it and carry on with the round's result.
       console.error('[starlantern] battle playback failed', err);
     }
+    this.before = null;
     this.updateBar(null);
     this.busy = false;
+    this.cmd.hidden = false;
     this.root.removeAttribute('inert');
     if (r.end) this.showResult(r.end);
     else this.startRound();
@@ -290,6 +306,7 @@ export class BattleScene implements Scene {
       await playCutIn(this.cutin, { name: name ?? '', portrait, fast: !!this.ctx.fast });
       return;
     }
+    if (cue === 'hit') { this.revealed.add(key); this.updateBar(null); }
     this.bar.pulse(key, cue === 'acting' ? 'attack' : 'hit');
   }
 
@@ -314,6 +331,9 @@ export class BattleScene implements Scene {
         else this.ctx.go('dungeon');
       },
     });
-    this.body.append(win('slx-result', [el('h3', { text: title }), ...lines.map((l) => el('p', { text: l })), this.result.el]));
+    // A held or repeated key must not skip the rewards: accept input after a short beat.
+    this.resultReady = !!this.ctx.fast;
+    if (!this.resultReady) setTimeout(() => { this.resultReady = true; }, 300);
+    this.body.append(win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { text: l }))), this.result.el]));
   }
 }

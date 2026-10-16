@@ -146,7 +146,11 @@ test.describe('starlantern next ui', () => {
     await expect(page.locator('.slx-dungeon')).toBeVisible();
     await key('c');
     await choose('.slx-field-menu', '歸還之燈');
-    await expect(page.locator('.slx-town')).toBeVisible(); await closeTalk();
+    await expect(page.locator('.slx-dungeon .slx-confirm')).toContainText('歸還之燈');
+    await key('ArrowUp'); await key('Enter');                                                     // 是
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('歸還之燈');
+    await closeTalk();
     await choose('.slx-town', '旅館');
     await expect(page.locator('.slx-inn')).toBeVisible(); await closeTalk();
     await key('Enter'); await key('ArrowUp'); await key('Enter');

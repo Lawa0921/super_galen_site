@@ -26,8 +26,8 @@ export class BattleView {
 
   constructor(private fast = false, private bank: TextureBank | null = null) {}
 
-  /** `left` reserves space on the left (the command window) so enemies are never hidden behind it. */
-  setup(state: BattleState, size: { width: number; height: number }, floor: number, left = 0): void {
+  /** `left` and `bottom` reserve space (command window, party bar) so enemies and their names are never hidden behind them. */
+  setup(state: BattleState, size: { width: number; height: number }, floor: number, left = 0, bottom = 0): void {
     for (const t of this.timers) clearTimeout(t);
     for (const f of this.frames) cancelAnimationFrame(f);
     this.timers.clear();
@@ -49,11 +49,13 @@ export class BattleView {
     }
     const n = state.enemies.length;
     const slotW = (size.width - left) / (n + 1);
+    const usable = size.height - bottom;
+    const ground = bottom > 0 ? usable - 20 : size.height * 0.85;   // 20 px under the feet for the name
     state.enemies.forEach((e, i) => {
       const box = new Container();
       const body = new Container();
       const tex = this.bank?.get(art.enemy(e.defId)) ?? null;
-      const maxH = size.height * (e.boss ? 0.7 : 0.45);
+      const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
       if (tex) {
         const s = new Sprite(tex);
         const k = Math.min(maxH / tex.height, (slotW * 0.9) / tex.width);
@@ -67,7 +69,7 @@ export class BattleView {
       label.anchor.set(0.5, 0);
       box.addChild(body, label);
       box.x = left + slotW * (i + 1);
-      box.y = size.height * 0.85;
+      box.y = ground;
       box.alpha = e.alive ? 1 : 0;
       this.root.addChild(box);
       this.slots.set(e.key, { box, body, texture: tex });

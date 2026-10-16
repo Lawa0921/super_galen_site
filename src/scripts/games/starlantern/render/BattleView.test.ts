@@ -62,3 +62,13 @@ describe('BattleView left inset', () => {
     expect(view.anchor('e0')!.x).toBeCloseTo(160 + (640 - 160) / 2, 0);
   });
 });
+
+describe('BattleView bottom inset', () => {
+  it('stands enemies and their names above the party bar', () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const box = enemyBox(view);
+    expect(box.y + 18).toBeLessThanOrEqual(360 - 66);
+    expect(view.anchor('e0')!.y).toBeGreaterThan(60);   // below the message line
+  });
+});
