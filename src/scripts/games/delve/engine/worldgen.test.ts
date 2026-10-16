@@ -1,9 +1,9 @@
 // worldgen.test.ts
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, tileRunner, type GenResult } from './worldgen';
-import { World } from './world';
+import { World, BIOME } from './world';
 import { Rng } from './rng';
-import { T, W, isSolidTile } from './tiles';
+import { T, W, isSolidTile, tileDef } from './tiles';
 import { WORLD_W, WORLD_H, PLAYER_H, TILE_SIZE } from './constants';
 
 function hashBytes(...arrs: Uint8Array[]): number {
@@ -32,66 +32,146 @@ describe('tileRunner', () => {
 
 describe('generateWorld', () => {
   let a: GenResult;
-  beforeAll(() => { a = generateWorld('alpha'); });
+  let genMs = 0;
+  beforeAll(() => { const t0 = performance.now(); a = generateWorld('alpha'); genMs = performance.now() - t0; });
 
-  it('預設尺寸 1600×500', () => {
+  it('預設尺寸 4200×1200', () => {
+    expect(WORLD_W).toBe(4200);
+    expect(WORLD_H).toBe(1200);
     expect(a.world.width).toBe(WORLD_W);
     expect(a.world.height).toBe(WORLD_H);
   });
-  it('同 seed → 位元相同；不同 seed → 不同', () => {
-    const b = generateWorld('alpha');
-    expect(hashBytes(b.world.fg, b.world.wall)).toBe(hashBytes(a.world.fg, a.world.wall));
-    expect(b.spawn).toEqual(a.spawn);
-    const c = generateWorld('beta');
-    expect(hashBytes(c.world.fg, c.world.wall)).not.toBe(hashBytes(a.world.fg, a.world.wall));
+  it('效能：4200×1200 生成 < 1.5 秒（node）', () => {
+    console.log(`[delve] worldgen 4200x1200: ${genMs.toFixed(0)} ms`);
+    expect(genMs).toBeLessThan(1500);
   });
-  it('出生點：腳下是實心地面、身體所在格為空', () => {
+  it('同 seed → 位元相同（含箱子）；不同 seed → 不同', () => {
+    const o = { width: 1200, height: 400 };
+    const x = generateWorld('alpha', o), b = generateWorld('alpha', o), c = generateWorld('beta', o);
+    expect(hashBytes(b.world.fg, b.world.wall)).toBe(hashBytes(x.world.fg, x.world.wall));
+    expect(b.spawn).toEqual(x.spawn);
+    expect(JSON.stringify([...b.world.chests])).toBe(JSON.stringify([...x.world.chests]));
+    expect(hashBytes(c.world.fg, c.world.wall)).not.toBe(hashBytes(x.world.fg, x.world.wall));
+  });
+  it('出生點：森林、靠中央；腳下是實心地面、身體所在格為空', () => {
     const { world, spawn } = a;
     expect(isSolidTile(world.getFg(spawn.x, spawn.y + 1))).toBe(true);
     const bodyTiles = Math.ceil(PLAYER_H / TILE_SIZE);
     for (let dy = 0; dy < bodyTiles; dy++) {
       for (let dx = -1; dx <= 1; dx++) expect(isSolidTile(world.getFg(spawn.x + dx, spawn.y - dy))).toBe(false);
     }
-    expect(spawn.x).toBeGreaterThan(WORLD_W * 0.4);
-    expect(spawn.x).toBeLessThan(WORLD_W * 0.6);
+    expect(spawn.x).toBeGreaterThan(WORLD_W * 0.45);
+    expect(spawn.x).toBeLessThan(WORLD_W * 0.55);
+    expect(world.biomeAt(spawn.x)).toBe(BIOME.FOREST);
   });
-  it('地表以下有洞穴（大量空氣）', () => {
+  it('四個生態區都有，左右分布；每區地表是該區材料', () => {
+    const { world, biomes } = a;
+    const kinds = new Set(biomes.map((b) => b.biome));
+    for (const b of [BIOME.DESERT, BIOME.SNOW, BIOME.JUNGLE]) expect(kinds.has(b)).toBe(true);
+    const top: Record<number, number[]> = {
+      [BIOME.DESERT]: [T.SAND], [BIOME.SNOW]: [T.SNOW, T.ICE], [BIOME.JUNGLE]: [T.JUNGLE_GRASS, T.MUD],
+    };
+    for (const seg of biomes) {
+      let ok = 0, n = 0;
+      for (let x = seg.x0 + 20; x < seg.x1 - 20; x++) {
+        n++;
+        expect(world.biomeAt(x)).toBe(seg.biome);
+        if (top[seg.biome].includes(world.getFg(x, a.surface[x]))) ok++;
+      }
+      expect(ok / n, `biome ${seg.biome}`).toBeGreaterThan(0.85);
+      expect(seg.x1 - seg.x0).toBeGreaterThan(WORLD_W * 0.06);
+      // 不覆蓋出生帶
+      expect(seg.x1 < WORLD_W * 0.42 || seg.x0 > WORLD_W * 0.58).toBe(true);
+    }
+  });
+  it('生態區地下有自己的背景牆', () => {
+    const { world, biomes } = a;
+    const want: Record<number, number[]> = {
+      [BIOME.DESERT]: [W.SANDSTONE_WALL], [BIOME.SNOW]: [W.SNOW_WALL, W.ICE_WALL], [BIOME.JUNGLE]: [W.MUD_WALL],
+    };
+    for (const seg of biomes) {
+      const x = Math.floor((seg.x0 + seg.x1) / 2);
+      let ok = 0, n = 0;
+      for (let y = a.surface[x] + 10; y < a.surface[x] + 80; y++) { n++; if (want[seg.biome].includes(world.getWall(x, y))) ok++; }
+      expect(ok / n, `biome ${seg.biome}`).toBeGreaterThan(0.6);
+    }
+  });
+  it('新材料：銀、金（金比銀深）、黏土、碎石、花崗岩、大理石、砂岩、冰、泥巴', () => {
+    const { world } = a;
+    const cnt = new Map<number, number>(), sumY = new Map<number, number>();
+    for (let i = 0; i < world.fg.length; i++) {
+      const t = world.fg[i];
+      cnt.set(t, (cnt.get(t) ?? 0) + 1);
+      sumY.set(t, (sumY.get(t) ?? 0) + Math.floor(i / world.width));
+    }
+    for (const t of [T.SILVER_ORE, T.GOLD_ORE, T.CLAY, T.GRAVEL, T.GRANITE, T.MARBLE, T.SANDSTONE, T.ICE, T.MUD, T.SNOW, T.JUNGLE_GRASS]) {
+      expect(cnt.get(t) ?? 0, `tile ${t}`).toBeGreaterThan(300);
+    }
+    const avg = (t: number): number => (sumY.get(t) ?? 0) / (cnt.get(t) ?? 1);
+    expect(avg(T.GOLD_ORE)).toBeGreaterThan(avg(T.SILVER_ORE));
+    expect(avg(T.SILVER_ORE)).toBeGreaterThan(avg(T.COPPER_ORE));
+    expect(cnt.get(T.STONE) ?? 0).toBeGreaterThan(500000);
+  });
+  it('裝飾物件全都有生成，並且都有正確支撐', () => {
+    const { world } = a;
+    const decor = [T.FLOWER, T.TALL_GRASS, T.MUSHROOM, T.SMALL_ROCK, T.BUSH, T.PUMPKIN, T.CACTUS, T.DEAD_BUSH,
+      T.SNOW_SHRUB, T.FERN, T.VINE, T.GLOW_MUSHROOM, T.CRYSTAL, T.STALACTITE, T.STALAGMITE, T.COBWEB, T.POT, T.BEAM, T.CHEST];
+    const cnt = new Map<number, number>();
+    const WW = world.width;
+    const bad: string[] = [];
+    for (let i = WW; i < world.fg.length - WW; i++) {
+      const t = world.fg[i];
+      cnt.set(t, (cnt.get(t) ?? 0) + 1);
+      const sup = tileDef(t).support;
+      const below = world.fg[i + WW], above = world.fg[i - WW];
+      if (sup === 'floor' && !(isSolidTile(below) || (t === T.CACTUS && below === T.CACTUS))) bad.push(`floor ${t} @${i % WW},${Math.floor(i / WW)}`);
+      if (sup === 'ceiling' && !(isSolidTile(above) || (t === T.VINE && (above === T.VINE || above === T.LEAVES)))) bad.push(`ceil ${t} @${i % WW},${Math.floor(i / WW)}`);
+    }
+    expect(bad.slice(0, 10)).toEqual([]);
+    for (const t of decor) expect(cnt.get(t) ?? 0, `decor ${t}`).toBeGreaterThan(t === T.PUMPKIN || t === T.CHEST ? 5 : 30);
+  });
+  it('結構：地下小屋（工作台 + 箱子 + 火把）、礦坑（木樑 + 火把）、地表遺跡、大洞窟', () => {
+    const { world, structures } = a;
+    const kind = (k: string): typeof structures => structures.filter((s) => s.kind === k);
+    expect(kind('cabin').length).toBeGreaterThanOrEqual(8);
+    expect(kind('mineshaft').length).toBeGreaterThanOrEqual(4);
+    expect(kind('ruin').length).toBeGreaterThanOrEqual(1);
+    expect(kind('cavern').length).toBeGreaterThanOrEqual(5);
+    const inRect = (s: { x: number; y: number; w: number; h: number }, t: number): number => {
+      let n = 0;
+      for (let y = s.y; y < s.y + s.h; y++) for (let x = s.x; x < s.x + s.w; x++) if (world.getFg(x, y) === t) n++;
+      return n;
+    };
+    for (const c of kind('cabin')) {
+      expect(inRect(c, T.WORKBENCH)).toBe(1);
+      expect(inRect(c, T.CHEST)).toBe(1);
+      expect(inRect(c, T.TORCH)).toBeGreaterThanOrEqual(1);
+      expect(inRect(c, T.PLANKS)).toBeGreaterThan(10);
+    }
+    for (const m of kind('mineshaft')) expect(inRect(m, T.BEAM)).toBeGreaterThan(4);
+    for (const r of kind('ruin')) expect(inRect(r, T.STONE_BRICK)).toBeGreaterThan(10);
+  });
+  it('每個箱子都有對應內容、非空', () => {
+    const { world } = a;
+    let n = 0;
+    for (let i = 0; i < world.fg.length; i++) {
+      if (world.fg[i] !== T.CHEST) continue;
+      n++;
+      const c = world.chests.get(i);
+      expect(c).toBeDefined();
+      expect(c!.some((s) => s !== null)).toBe(true);
+    }
+    expect(n).toBe(world.chests.size);
+    expect(n).toBeGreaterThan(8);
+  });
+  it('洞穴、地表以上無牆', () => {
     const { world } = a;
     let air = 0, total = 0;
-    for (let y = world.surfaceY + 20; y < world.height - 5; y++) {
-      for (let x = 0; x < world.width; x++) { total++; if (world.fg[world.idx(x, y)] === T.AIR) air++; }
+    for (let y = world.surfaceY + 20; y < world.height - 5; y += 3) {
+      for (let x = 0; x < world.width; x += 3) { total++; if (world.fg[world.idx(x, y)] === T.AIR) air++; }
     }
     expect(air / total).toBeGreaterThan(0.03);
     expect(air / total).toBeLessThan(0.5);
-  });
-  it('有銅礦與鐵礦，且鐵礦平均比銅礦深', () => {
-    const { world } = a;
-    let cu = 0, fe = 0, cuY = 0, feY = 0;
-    for (let i = 0; i < world.fg.length; i++) {
-      const y = Math.floor(i / world.width);
-      if (world.fg[i] === T.COPPER_ORE) { cu++; cuY += y; }
-      if (world.fg[i] === T.IRON_ORE) { fe++; feY += y; }
-    }
-    expect(cu).toBeGreaterThan(200);
-    expect(fe).toBeGreaterThan(100);
-    expect(feY / fe).toBeGreaterThan(cuY / cu);
-    expect(cuY / cu).toBeGreaterThan(world.surfaceY);
-  });
-  it('有石頭、草地、沙、樹與背景牆', () => {
-    const { world } = a;
-    const count = new Map<number, number>();
-    for (let i = 0; i < world.fg.length; i++) count.set(world.fg[i], (count.get(world.fg[i]) ?? 0) + 1);
-    expect(count.get(T.STONE) ?? 0).toBeGreaterThan(50000);
-    expect(count.get(T.GRASS) ?? 0).toBeGreaterThan(500);
-    expect(count.get(T.SAND) ?? 0).toBeGreaterThan(50);
-    expect(count.get(T.WOOD) ?? 0).toBeGreaterThan(50);
-    expect(count.get(T.LEAVES) ?? 0).toBeGreaterThan(50);
-    let walls = 0;
-    for (let i = 0; i < world.wall.length; i++) if (world.wall[i] !== W.NONE) walls++;
-    expect(walls).toBeGreaterThan(100000);
-  });
-  it('地表以上空氣無牆（天空可見），最上排為空氣', () => {
-    const { world } = a;
     for (let x = 0; x < world.width; x++) {
       expect(world.fg[world.idx(x, 0)]).toBe(T.AIR);
       expect(world.wall[world.idx(x, 0)]).toBe(W.NONE);
@@ -99,19 +179,33 @@ describe('generateWorld', () => {
     expect(world.surfaceY).toBeGreaterThan(50);
     expect(world.surfaceY).toBeLessThan(world.height / 2);
   });
+  it('地形起伏：地表高度有足夠變化（山、谷、懸崖）', () => {
+    let maxStep = 0, lo = 1e9, hi = 0;
+    for (let x = 1; x < a.surface.length; x++) {
+      maxStep = Math.max(maxStep, Math.abs(a.world.surface[x] - a.world.surface[x - 1]));
+      lo = Math.min(lo, a.world.surface[x]); hi = Math.max(hi, a.world.surface[x]);
+    }
+    expect(maxStep).toBeGreaterThanOrEqual(4);
+    expect(hi - lo).toBeGreaterThan(60);
+  });
+  it('有樹（森林 / 雪地松樹 / 叢林大樹）', () => {
+    const { world, biomes } = a;
+    const trunkIn = (x0: number, x1: number): number => {
+      let n = 0;
+      for (let x = x0; x < x1; x++) for (let y = 1; y < world.surfaceY + 40; y++) if (world.getFg(x, y) === T.WOOD && world.getFg(x, y + 1) !== T.WOOD) n++;
+      return n;
+    };
+    expect(trunkIn(Math.floor(WORLD_W * 0.42), Math.floor(WORLD_W * 0.58))).toBeGreaterThan(10);
+    for (const s of biomes) if (s.biome === BIOME.SNOW || s.biome === BIOME.JUNGLE) expect(trunkIn(s.x0, s.x1)).toBeGreaterThan(10);
+  });
   it('生成後 modifiedChunks 為空', () => {
     expect(a.world.modifiedChunks.size).toBe(0);
   });
-  it('效能：1600×500 生成遠小於 2 秒', () => {
-    const t0 = performance.now();
-    generateWorld('perf');
-    const ms = performance.now() - t0;
-    console.log(`[delve] worldgen 1600x500: ${ms.toFixed(1)} ms`);
-    expect(ms).toBeLessThan(2000);
-  });
-  it('可指定較小尺寸', () => {
-    const r = generateWorld('small', { width: 200, height: 120 });
-    expect(r.world.width).toBe(200);
-    expect(isSolidTile(r.world.getFg(r.spawn.x, r.spawn.y + 1))).toBe(true);
+  it('可指定較小尺寸（不丟例外、出生點站得住）', () => {
+    for (const [w, h] of [[200, 120], [160, 100], [96, 64]]) {
+      const r = generateWorld('small', { width: w, height: h });
+      expect(r.world.width).toBe(w);
+      expect(isSolidTile(r.world.getFg(r.spawn.x, r.spawn.y + 1))).toBe(true);
+    }
   });
 });

@@ -1,8 +1,8 @@
 // constants.ts — DELVE 共用常數（單位：tile 或 px；時間單位：秒）。
 export const TILE_SIZE = 16;
 export const CHUNK = 32;
-export const WORLD_W = 1600;
-export const WORLD_H = 500;
+export const WORLD_W = 4200;
+export const WORLD_H = 1200;
 /** 世界生成器版本：改 worldgen 輸出時 +1，舊存檔會被判定不相容。 */
 export const GEN_VERSION = 2;
 export const FIXED_DT = 1 / 60;

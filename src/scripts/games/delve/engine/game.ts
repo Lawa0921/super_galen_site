@@ -7,7 +7,7 @@
 //   const light = game.computeLight(viewRectInTiles);
 //   for (const e of game.drainEvents()) playSfx(e);
 import { World } from './world';
-import { generateWorld } from './worldgen';
+import { generateWorld, type BiomeSegment, type Structure } from './worldgen';
 import { T, tileDef, isSolidTile } from './tiles';
 import { ITEMS, type ItemId, type PickStats } from './items';
 import { potLoot, type Drop } from './loot';
@@ -68,6 +68,9 @@ export class DelveGame {
   readonly seed: string;
   readonly world: World;
   readonly spawn: { x: number; y: number };
+  /** 世界生成資訊（debug / e2e / 小地圖用） */
+  readonly biomes: readonly BiomeSegment[];
+  readonly structures: readonly Structure[];
   player: Body;
   inventory: Inventory;
   /** 遊戲內經過秒數（日夜循環用） */
@@ -96,6 +99,8 @@ export class DelveGame {
     const gen = generateWorld(this.seed, { width: opts.width, height: opts.height });
     this.world = gen.world;
     this.spawn = gen.spawn;
+    this.biomes = gen.biomes;
+    this.structures = gen.structures;
     this.player = makeBody(0, 0);
     this.teleport(this.spawn.x, this.spawn.y);
     this.inventory = starterInventory();
