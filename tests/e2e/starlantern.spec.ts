@@ -196,4 +196,99 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-town .slx-gold')).toHaveText(`${gold} G`);
     expect(errors).toEqual([]);
   });
+
+  /** Shared walkers for the portal-run tests. */
+  type Dbg = { __starlanternDebug: { game: any } };
+  const setup = async (page: Page, seed: number) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    await page.goto(`/games/starlantern?seed=${seed}&fast=1`);
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    const key = (k: string) => page.keyboard.press(k);
+    const closeTalk = async () => { for (let i = 0; i < 6 && (await page.locator('.slx-talk').isVisible()); i++) await key('z'); };
+    const choose = async (scope: string, label: string) => {
+      for (let i = 0; i < 12; i++) {
+        const cur = (await page.locator(`${scope} [aria-selected=true] .slx-label`).first().textContent()) ?? '';
+        if (cur.startsWith(label)) break;
+        await key('ArrowDown');
+      }
+      await key('Enter');
+    };
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
+    await key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible(); await closeTalk();
+    return { errors, key, closeTalk, choose };
+  };
+  const depart = async (page: Page, w: Awaited<ReturnType<typeof setup>>) => {
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 選擇傳送門
+    await expect(page.locator('.slx-portal')).toHaveCount(3);
+    await w.key('Enter'); await w.key('Enter');             // the mainline card, depth 1
+    await w.key('ArrowUp'); await w.key('Enter');           // 是
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+  };
+  const lampHome = async (page: Page, w: Awaited<ReturnType<typeof setup>>) => {
+    await w.closeTalk();
+    await w.key('c');
+    await w.choose('.slx-field-menu', '歸還之燈');
+    await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+  };
+
+  test('each departure is a new dungeon', async ({ page }) => {
+    const w = await setup(page, 11);
+    const floors: string[] = [];
+    for (let run = 0; run < 2; run++) {
+      await depart(page, w);
+      floors.push(await page.evaluate(() => JSON.stringify((window as unknown as Dbg).__starlanternDebug.game.map().tiles)));
+      await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.state.inventory['return-lamp'] = 1; });   // the new game starts with one lamp only
+      await lampHome(page, w); await w.closeTalk();
+    }
+    expect(floors[0]).not.toBe(floors[1]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('a portal run reaches depth 2 and banks the loot', async ({ page }) => {
+    const w = await setup(page, 5);
+    await depart(page, w);
+    // Plan a path of plain floor from the entrance to the stairs down inside the page (BFS over the live map).
+    const keys: string[] = await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const m = g.map();
+      const D: [string, number, number][] = [['ArrowUp', 0, -1], ['ArrowDown', 0, 1], ['ArrowLeft', -1, 0], ['ArrowRight', 1, 0]];
+      const prev = new Map<string, { from: string; k: string } | null>([[`${g.pos.x},${g.pos.y}`, null]]);
+      const q = [{ ...g.pos }];
+      while (q.length) {
+        const p = q.shift()!;
+        for (const [k, dx, dy] of D) {
+          const n = { x: p.x + dx, y: p.y + dy }, id = `${n.x},${n.y}`;
+          const t = m.tiles[n.y]?.[n.x];
+          if (!t || prev.has(id) || !['floor', 'door', 'down'].includes(t)) continue;
+          prev.set(id, { from: `${p.x},${p.y}`, k });
+          if (t === 'down') {
+            const out: string[] = [];
+            for (let c: string | undefined = id; c && prev.get(c); c = prev.get(c)!.from) out.unshift(prev.get(c)!.k);
+            return out;
+          }
+          q.push(n);
+        }
+      }
+      return [];
+    });
+    expect(keys.length).toBeGreaterThan(0);
+    await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.run.loot.items['star-stone'] = 2; });
+    for (const k of keys) {
+      await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.encounter = 0; });
+      await page.keyboard.press(k);
+    }
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.floor)).toBe(2);
+    await lampHome(page, w);
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('歸還之燈');
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('星紋石 ×2');
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.inventory['star-stone'])).toBe(2);
+    expect(w.errors).toEqual([]);
+  });
 });
