@@ -29,6 +29,7 @@ html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; back
   user-select: none;
 }
 .slx-ui { position: absolute; inset: 0; }
+.slx-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: $slx-dim; }
 
 // Integer scales when the window has room; below 640x360 shrink proportionally.
 @each $k in 2, 3, 4, 5, 6 {
@@ -38,7 +39,7 @@ html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; back
 }
 // Sass cannot divide viewport units by pixels, so step down in 5% increments: each rule applies once the
 // window is smaller than the previous step, and later (smaller) steps win.
-$slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
+$slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3;
 @for $i from 2 through length($slx-steps) {
   $prev: nth($slx-steps, $i - 1);
   @media (max-width: $slx-w * $prev - 1px), (max-height: $slx-h * $prev - 1px) {
@@ -55,7 +56,8 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
   padding: 6px 8px;
   animation: slx-open 0.12s ease-out;
 }
-@keyframes slx-open { from { transform: scaleY(0.2); opacity: 0; } to { transform: none; opacity: 1; } }
+// `scale` (not `transform`) so the opening animation keeps a window's own centring translate.
+@keyframes slx-open { from { scale: 1 0.2; opacity: 0; } to { scale: 1 1; opacity: 1; } }
 .slx-menu { list-style: none; margin: 0; padding: 0; }
 .slx-opt { position: relative; padding: 2px 8px 2px 16px; cursor: pointer; }
 .slx-opt[aria-disabled='true'] { color: #6f6a5c; cursor: default; }

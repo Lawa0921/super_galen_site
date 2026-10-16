@@ -94,14 +94,15 @@ export class Dialogue {
     this.name.hidden = !name;
     this.el.hidden = false;
     this.next.setAttribute('hidden', '');
-    if (!Number.isFinite(this.charsPerSecond)) { this.text.textContent = text; this.next.removeAttribute('hidden'); }
+    if (!Number.isFinite(this.charsPerSecond)) this.complete();
     else {
       let n = 0;
       this.text.textContent = '';
+      this.el.setAttribute('aria-busy', 'true');
       this.timer = setInterval(() => {
         n += 1;
         this.text.textContent = [...this.full].slice(0, n).join('');
-        if (n >= [...this.full].length) { this.stop(); this.next.removeAttribute('hidden'); }
+        if (n >= [...this.full].length) this.complete();
       }, 1000 / this.charsPerSecond);
     }
     return new Promise((r) => { this.resolve = r; });
@@ -109,13 +110,21 @@ export class Dialogue {
 
   onAction(a: UiAction): boolean {
     if (!this.resolve || a !== 'confirm') return false;
-    if (this.timer) { this.stop(); this.text.textContent = this.full; this.next.removeAttribute('hidden'); return true; }
+    if (this.timer) { this.complete(); return true; }
     const r = this.resolve;
     this.resolve = null;
     this.el.hidden = true;
     this.onClose?.();
     r();
     return true;
+  }
+
+  /** Whole line on screen: the ▼ mark shows and screen readers (aria-busy off) read it once. */
+  private complete(): void {
+    this.stop();
+    this.text.textContent = this.full;
+    this.next.removeAttribute('hidden');
+    this.el.setAttribute('aria-busy', 'false');
   }
 
   /** Stops typing; owners call it on exit so no timer outlives the scene. */

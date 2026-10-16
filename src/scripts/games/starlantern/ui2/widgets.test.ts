@@ -60,6 +60,15 @@ describe('Dialogue', () => {
     expect(d.busy()).toBe(false);
   });
 
+  it('marks the line busy while it types, so screen readers read it once when complete', async () => {
+    vi.useFakeTimers();
+    const d = new Dialogue(20);
+    void d.say('', '暮霧又濃了些。');
+    expect(d.el.getAttribute('aria-busy')).toBe('true');
+    d.onAction('confirm');
+    expect(d.el.getAttribute('aria-busy')).toBe('false');
+  });
+
   it('settles a line that a newer line replaces, so nothing waits forever', async () => {
     const d = new Dialogue(Infinity);
     const first = vi.fn();
