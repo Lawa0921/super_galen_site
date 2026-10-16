@@ -101,6 +101,8 @@ export function allArtUrls(): string[] {
     // plan 5a transition: the ten new bases have no icon yet
     'wooden-buckler', 'crystal-aegis', 'leather-cap', 'scale-helm', 'cloth-gloves',
     'thorn-gauntlets', 'straw-sandals', 'bat-boots', 'copper-ring', 'star-ring',
+    // plan 5a: rare materials have no icon yet
+    'star-tear', 'king-scale',
   ]);
   for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) {
     if (!NO_ICON_YET.has(id)) urls.push(art.icon(id));

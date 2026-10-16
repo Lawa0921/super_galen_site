@@ -11,6 +11,8 @@ const LIST: MaterialDef[] = [
   { id: 'dusk-cloth', name: '暮影布', price: 32 },
   { id: 'old-coin', name: '古代銀幣', price: 40 },
   { id: 'ancient-gear', name: '古代齒輪', price: 60 },
+  { id: 'star-tear', name: '星燈之淚', price: 80 },
+  { id: 'king-scale', name: '王者之鱗', price: 100 },
   { id: 'blaze-core', name: '火焰核', price: 0 },
   { id: 'frost-heart', name: '霜之心', price: 0 },
   { id: 'storm-stone', name: '雷鳴石', price: 0 },
