@@ -3,6 +3,7 @@ import { ENEMIES } from '../data/enemies';
 import { EQUIPMENT } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
+import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
@@ -75,8 +76,11 @@ export function allArtUrls(): string[] {
   for (const s of ['title', 'town', 'guild', 'shop', 'inn', 'gate'] as const) urls.push(art.scene(s));
   for (const n of ['guild', 'shop', 'inn', 'gate'] as const) urls.push(art.npc(n, 'normal'), art.npc(n, 'happy'));
   urls.push(art.logo, art.window, art.cursor);
-  // Region materials (price 0) have no icon art yet; they join the list when the art lands.
-  for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.values(MATERIALS).filter((m) => m.price > 0).map((m) => m.id), ...Object.keys(EQUIPMENT)]) urls.push(art.icon(id));
+  // Region material icons come with the art batch; until then they are not expected on disk.
+  const NO_ICON_YET = new Set(Object.values(REGIONS).map((r) => r.material));
+  for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) {
+    if (!NO_ICON_YET.has(id)) urls.push(art.icon(id));
+  }
   return urls;
 }
 

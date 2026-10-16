@@ -17,6 +17,7 @@ describe('artPaths', () => {
     expect(urls).toHaveLength(197);
     expect(new Set(urls).size).toBe(197);
     expect(urls).toContain(art.fxAnim('thunder'));
+    for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).not.toContain(art.icon(id));
     expect(urls).toContain(art.window);
     expect(urls).toContain(art.npc('gate', 'happy'));
     expect(urls).toContain(`${ART_BASE}/map/fog.png`);
