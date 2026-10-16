@@ -372,7 +372,7 @@ export class Game {
 
   private revealHere(): void {
     const run = this.run!;
-    run.explored[this.floor] = reveal(run.explored[this.floor] ?? [], this.map(), this.pos);
+    run.explored[this.floor] = reveal(run.explored[this.floor] ?? [], this.map(), this.pos, CONDITIONS[run.condition].sight);
   }
 
   private changeFloor(floor: number): MoveResult {

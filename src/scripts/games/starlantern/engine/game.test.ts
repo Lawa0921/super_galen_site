@@ -536,3 +536,19 @@ describe('run pack', () => {
     expect(Object.keys(g.run!.loot.items)).toEqual(['star-stone']);
   });
 });
+
+describe('fog', () => {
+  it('a fog run sees only the cell the party stands on', () => {
+    const g = new Game(calm(), null);
+    g.depart({ region: 'mainline', condition: 'fog' }, 1);
+    const start = { ...g.pos };
+    expect(g.run!.explored[1]).toEqual([posKey(start)]);
+    const dir = DIRS.find((d) => tileAt(g.map(), { x: start.x + DELTA[d].x, y: start.y + DELTA[d].y }) === 'floor')!;
+    expect(g.move(dir).kind).toBe('moved');
+    expect([...g.run!.explored[1]].sort()).toEqual([posKey(start), posKey(g.pos)].sort());
+  });
+  it('a clear run still sees the cells around the party', () => {
+    const g = inMap(1);
+    expect(g.run!.explored[1].length).toBeGreaterThan(1);
+  });
+});
