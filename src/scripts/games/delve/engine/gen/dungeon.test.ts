@@ -180,7 +180,12 @@ describe('地城', { timeout: 180_000 }, () => {
         // 上方 6 格內有天花板 → 這是頂層（或旁邊就是出口）
         let ceiling = false;
         for (let yy = y - 1; yy >= y - 6; yy--) if (SOLID_LUT[w.getFg(x, yy)]) { ceiling = true; break; }
-        if (!next && higher && !ceiling) expect.fail(`platform gap above ${x},${y}`);
+        // 和地板齊平的豎井口（平台這列左右接著實心地板、地板上方是房間）：站在地板上，不是攀爬缺口
+        let x0 = x, x1 = x;
+        while (isP(x0 - 1, y)) x0--;
+        while (isP(x1 + 1, y)) x1++;
+        const floorHatch = [x0 - 1, x1 + 1].some((fx) => SOLID_LUT[w.getFg(fx, y)] === 1 && SOLID_LUT[w.getFg(fx, y - 1)] !== 1);
+        if (!next && higher && !ceiling && !floorHatch) expect.fail(`platform gap above ${x},${y}`);
       }
     }
   });

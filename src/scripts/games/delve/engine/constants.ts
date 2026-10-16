@@ -4,7 +4,7 @@ export const CHUNK = 32;
 export const WORLD_W = 4200;
 export const WORLD_H = 1200;
 /** 世界生成器版本：改 worldgen 輸出時 +1，舊存檔會被判定不相容。 */
-export const GEN_VERSION = 3;
+export const GEN_VERSION = 4;
 export const FIXED_DT = 1 / 60;
 
 // 玩家物理（px/s、px/s²）。值參考泰拉每 tick 數值 ×60 換算後自行調整。

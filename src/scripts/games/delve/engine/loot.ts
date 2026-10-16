@@ -5,7 +5,9 @@ import { ITEMS } from './items';
 import type { Stack } from './inventory';
 
 export const CHEST_SLOTS = 20;
-export type ChestKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'sky' | 'dungeon' | 'treasure';
+export type ChestKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'sky' | 'dungeon' | 'treasure'
+  /** 密室（裂紋石後面）/ 難到達處的珍寶箱：比一般箱子好 */
+  | 'secret' | 'relic';
 export interface Drop { item: ItemId; n: number; }
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -41,6 +43,15 @@ export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, d
     slots[k++] = { item, count: Math.min(count, ITEMS[item].maxStack) };
   };
   if (kind === 'dungeon' || kind === 'treasure') return dungeonLoot(r, kind, slots);
+  if (kind === 'secret' || kind === 'relic') {
+    put(d > 0.5 || r.chance(2) ? 'gold_ore' : 'silver_ore', r.int(8, 18));
+    put('silver_coin', r.int(6, 16) + Math.floor(d * 20));
+    put('crystal', r.int(2, 6));
+    put('rope', r.int(12, 30));
+    put('torch', r.int(10, 25));
+    if (kind === 'relic') put('obsidian', r.int(4, 10));
+    return slots;
+  }
   // 主獎：越深越好的礦
   const main: ItemId = kind === 'sky' ? (r.chance(2) ? 'gold_ore' : 'silver_ore') : d > 0.7 && r.chance(2) ? 'gold_ore' : d > 0.45 ? 'silver_ore' : d > 0.2 ? 'iron_ore' : 'copper_ore';
   put(main, r.int(6, 14));

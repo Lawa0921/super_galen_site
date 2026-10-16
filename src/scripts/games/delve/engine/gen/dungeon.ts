@@ -10,7 +10,9 @@
 //      額外的密室）各自只用一條走廊接到自由區，入口處是上鎖的門。
 //   5. 鑰匙：上鎖的門數 = 地城鑰匙數，全部放在「不經過任何上鎖的門就到得了」的房間（箱子或陶罐裡）→ 任何開門順序都解得開；
 //      金鑰匙放在上鎖的神殿裡，寶藏室的金寶箱要用它開。
-//   6. 施工：先把所有房間 / 走廊外擴 4 格填滿地城磚（磚殼），再挖空內部、鋪背景牆、放平台 / 門 / 家具 / 裝飾 / 箱子。
+//   6. 施工：先把整個地城範圍（外接框，邊緣帶雜訊）填回天然岩層——把生成時穿過預留區的天然洞穴補掉，
+//      房間之間不會再被洞穴打穿；再把所有房間 / 走廊外擴 SHELL 格填滿地城磚（厚磚殼），挖空內部、鋪背景牆、
+//      放平台 / 門 / 家具 / 裝飾 / 箱子。
 import type { World } from '../world';
 import { Rng, subSeed } from '../rng';
 import { T, SOLID_LUT } from '../tiles';
@@ -26,6 +28,8 @@ export interface DungeonOptions {
   surface: Int16Array;
   color: { key: string; brick: number; wall: number };
   depthFrac: (x: number, y: number) => number;
+  /** (x,y) 的天然岩層（fg tile, 背景牆）：施工前用來把預留區裡的天然洞穴補實 */
+  natural?: (x: number, y: number) => [number, number];
 }
 export type RoomKind = 'entry' | 'hall' | 'shaft' | 'library' | 'prison' | 'shrine' | 'treasure' | 'vault' | 'chamber';
 /** 房間內部（不含磚殼）；地板（腳踩的那列）= y + h − 1，實心地板在 y + h */
@@ -51,7 +55,8 @@ export interface DungeonInfo {
   treasureChest: { x: number; y: number };
   /** 所有門（頂端 tile） */
   doors: { x: number; y: number; locked: boolean }[];
-  tablets: { x: number; y: number; id: number }[];
+  /** 古碑：site = 擺放位置（塔內 / 神殿 / 寶藏室），worldgen 依此對應碑文 id */
+  tablets: { x: number; y: number; id: number; site: 'tower' | 'shrine' | 'treasure' }[];
   /** 所有地城箱子（含寶箱） */
   chests: { x: number; y: number; room: number }[];
   /** 平台格數（統計 / 測試用） */
@@ -61,15 +66,18 @@ export interface DungeonInfo {
 interface Rect { x: number; y: number; w: number; h: number; }
 const overlap = (a: Rect, b: Rect, m = 0): boolean =>
   a.x - m < b.x + b.w && a.x + a.w + m > b.x && a.y - m < b.y + b.h && a.y + a.h + m > b.y;
-const SHELL = 4;
+/** 磚殼厚度（地圖上看得出是厚牆） */
+const SHELL = 6;
+/** 房間之間的最小間距（兩側磚殼 + 一點天然岩） */
+const ROOM_GAP = SHELL * 2 + 3;
 
 interface Shaft { x: number; y0: number; y1: number; lowerFloor: number; upperFloor: number; }
 interface Route { rects: Rect[]; shaft: Shaft | null; doorB: { x: number; y: number }; doorA: { x: number; y: number } | null; len: number; }
 
 const SIZES: Record<RoomKind, [number, number, number, number]> = {
   // wMin, wMax, hMin, hMax（內部）
-  entry: [26, 34, 9, 11], hall: [28, 44, 6, 7], shaft: [8, 10, 22, 32], library: [20, 28, 10, 12],
-  prison: [22, 30, 8, 8], shrine: [16, 20, 10, 12], treasure: [16, 20, 9, 10], vault: [10, 14, 7, 8], chamber: [14, 22, 8, 12],
+  entry: [30, 38, 9, 11], hall: [36, 58, 6, 8], shaft: [8, 10, 22, 32], library: [22, 32, 10, 12],
+  prison: [24, 34, 8, 8], shrine: [18, 22, 10, 12], treasure: [18, 24, 9, 10], vault: [10, 14, 7, 8], chamber: [16, 26, 8, 12],
 };
 
 const fy = (r: DungeonRoom): number => r.y + r.h - 1;
@@ -101,7 +109,7 @@ function planDungeon(world: World, o: DungeonOptions, rng: Rng): Plan | null {
   for (let x = cx - 16; x <= cx + 16; x++) cols.push(surface[Math.max(0, Math.min(world.width - 1, x))]);
   cols.sort((a, b) => a - b);
   const gy = cols[Math.floor(cols.length / 2)];
-  const X0 = zone.x0 + 6, X1 = zone.x1 - 6;
+  const X0 = zone.x0 + SHELL + 3, X1 = zone.x1 - SHELL - 3;
   const Y0 = gy + 20, Y1 = zone.y1 - 6;
   if (Y1 - Y0 < 160) return null;
   const rooms: DungeonRoom[] = [];
@@ -110,7 +118,7 @@ function planDungeon(world: World, o: DungeonOptions, rng: Rng): Plan | null {
     return [rng.int(s[0], s[1] + 1), rng.int(s[2], s[3] + 1)];
   };
   const fits = (r: Rect): boolean => r.x >= X0 && r.x + r.w <= X1 && r.y >= Y0 && r.y + r.h <= Y1
-    && rooms.every((q) => !overlap(q, r, 10));
+    && rooms.every((q) => !overlap(q, r, ROOM_GAP));
   // 入口大廳：塔正下方
   {
     const [w, h] = size('entry');
@@ -126,7 +134,9 @@ function planDungeon(world: World, o: DungeonOptions, rng: Rng): Plan | null {
     }
     if (!ok) return null;
   }
-  const required: RoomKind[] = ['shrine', 'library', 'prison', 'vault', 'shaft', 'hall', 'shaft', 'hall', 'chamber', 'library', 'hall', 'chamber', 'shaft', 'chamber', 'hall', 'chamber', 'prison', 'chamber'];
+  const required: RoomKind[] = ['shrine', 'library', 'prison', 'vault', 'shaft', 'hall', 'shaft', 'hall', 'chamber', 'library', 'hall', 'chamber',
+    'shaft', 'chamber', 'hall', 'chamber', 'prison', 'chamber', 'hall', 'chamber', 'shaft', 'hall', 'chamber', 'library', 'hall', 'chamber',
+    'prison', 'chamber', 'hall', 'chamber', 'shaft', 'hall', 'chamber', 'library', 'chamber', 'hall'];
   for (const kind of required) {
     for (let t = 0; t < 80; t++) {
       const [w, h] = size(kind);
@@ -148,11 +158,12 @@ function planDungeon(world: World, o: DungeonOptions, rng: Rng): Plan | null {
     const s = cxOf(A) < cxOf(B) ? -1 : 1;
     const doorX = s < 0 ? B.x - 1 : B.x + B.w;
     const fB = fy(B), fA = fy(A);
-    const kMin = B.locked ? 7 : 2, kMax = B.locked ? 14 : 12;
+    const kMin = B.locked ? SHELL + 3 : 2, kMax = B.locked ? SHELL + 10 : 14;
     for (let tries = 0; tries < 6; tries++) {
       const k = rng.int(kMin, kMax + 1);
       const tx = s < 0 ? doorX - k - 3 : doorX + k;
       if (tx < X0 - 2 || tx + 3 > X1 + 2) continue;
+      // 走廊（含磚殼）要留在預留區內
       const rects: Rect[] = [];
       const lx0 = Math.min(doorX, tx), lx1 = Math.max(doorX, tx + 3);
       rects.push({ x: lx0, y: fB - 3, w: lx1 - lx0 + 1, h: 4 });
@@ -182,10 +193,10 @@ function planDungeon(world: World, o: DungeonOptions, rng: Rng): Plan | null {
       // 不得穿過其他房間；上鎖房間外圍再留 6 格（磚殼不被打穿）
       let bad = false;
       for (const r of rects) {
-        if (r.x < X0 - 3 || r.x + r.w > X1 + 3 || r.y < Y0 - 6 || r.y + r.h > Y1 + 4) { bad = true; break; }
+        if (r.x - SHELL < zone.x0 || r.x + r.w + SHELL > zone.x1 || r.y < Y0 - 6 || r.y + r.h > Y1 + 4) { bad = true; break; }
         for (const q of rooms) {
           if (q === A || q === B) continue;
-          if (overlap(r, q, q.locked ? 7 : 2)) { bad = true; break; }
+          if (overlap(r, q, q.locked ? SHELL + 3 : 2)) { bad = true; break; }
         }
         if (bad) break;
       }
@@ -302,10 +313,41 @@ function build(world: World, o: DungeonOptions, p: Plan, rng: Rng): DungeonInfo 
   const interiors: Rect[] = rooms.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h }));
   for (const e of p.edges) interiors.push(...e.route.rects);
   interiors.push(entryShaft);
-  // 1) 磚殼（塔身 + 每個房間 / 走廊外擴 SHELL）
   const fillRect = (r: Rect, t: number, wl: number): void => {
     for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) { if (inB(x, y)) { fg[y * W + x] = t; wall[y * W + x] = wl; } }
   };
+  // 0) 把地城範圍填回天然岩層（邊緣 6–14 格帶雜訊，與外面的洞穴自然銜接）：房間之間不會有天然洞穴穿過
+  if (o.natural) {
+    let ux0 = W, uy0 = H, ux1 = 0, uy1 = 0;
+    for (const r of interiors) {
+      ux0 = Math.min(ux0, r.x); uy0 = Math.min(uy0, r.y); ux1 = Math.max(ux1, r.x + r.w); uy1 = Math.max(uy1, r.y + r.h);
+    }
+    const pad = SHELL + 10;
+    ux0 = Math.max(o.zone.x0, ux0 - pad); ux1 = Math.min(o.zone.x1, ux1 + pad);
+    uy0 = Math.max(gy + 6, uy0 - pad); uy1 = Math.min(H - 8, uy1 + pad);
+    const jit = (a: number, b: number): number => {
+      let h = Math.imul(a, 374761393) ^ Math.imul(b, 668265263) ^ 0x5bd1e995;
+      h = Math.imul(h ^ (h >>> 13), 1274126177);
+      return ((h ^ (h >>> 16)) >>> 0) % 1000 / 1000;
+    };
+    /** 粗格（8 格）上的值雜訊，雙線性內插 → 0..1 */
+    const edgeN = (x: number, y: number): number => {
+      const gx = Math.floor(x / 8), gy2 = Math.floor(y / 8), fx = x / 8 - gx, fy2 = y / 8 - gy2;
+      const a = jit(gx, gy2), b = jit(gx + 1, gy2), c = jit(gx, gy2 + 1), d = jit(gx + 1, gy2 + 1);
+      return a + (b - a) * fx + (c - a) * fy2 + (a - b - c + d) * fx * fy2;
+    };
+    for (let y = uy0; y < uy1; y++) {
+      for (let x = ux0; x < ux1; x++) {
+        const e = Math.min(x - ux0, ux1 - 1 - x, y - uy0, uy1 - 1 - y);
+        if (e < 6 + edgeN(x, y) * 8) continue;
+        const i = y * W + x;
+        if (SOLID_LUT[fg[i]] === 1 && wall[i] !== 0) continue;
+        const [t, wl] = o.natural(x, y);
+        fg[i] = t; wall[i] = wl;
+      }
+    }
+  }
+  // 1) 磚殼（塔身 + 每個房間 / 走廊外擴 SHELL）
   for (const r of interiors) fillRect({ x: r.x - SHELL, y: r.y - SHELL, w: r.w + SHELL * 2, h: r.h + SHELL * 2 }, BR, BW);
   fillRect(tower, BR, BW);
   fillRect({ x: tower.x - 1, y: gy, w: tower.w + 2, h: 5 }, BR, BW); // 塔基
@@ -406,14 +448,16 @@ function build(world: World, o: DungeonOptions, p: Plan, rng: Rng): DungeonInfo 
       else if (v < 0.8) hang(x, r.y, rng.int(1, 3), 0);
     }
   };
-  const tablets: { x: number; y: number; id: number }[] = [];
-  const tablet = (x: number, y: number): void => { if (get(x, y) === T.AIR && SOLID_LUT[get(x, y + 1)] === 1) { put(x, y, T.LORE_TABLET); tablets.push({ x, y, id: tablets.length }); } };
+  const tablets: DungeonInfo['tablets'] = [];
+  const tablet = (x: number, y: number, site: 'tower' | 'shrine' | 'treasure'): void => {
+    if (get(x, y) === T.AIR && SOLID_LUT[get(x, y + 1)] === 1) { put(x, y, T.LORE_TABLET); tablets.push({ x, y, id: tablets.length, site }); }
+  };
 
   // 塔內
   for (const x of [towerIn.x + 2, towerIn.x + towerIn.w - 3]) banner(x, towerIn.y);
   hang(cx - 5, towerIn.y, 2, T.LANTERN); hang(cx + 6, towerIn.y, 2, T.LANTERN);
   for (const x of [towerIn.x + 1, towerIn.x + towerIn.w - 2]) if (floorFree(x, gy - 11)) put(x, gy - 11, T.CANDLE);
-  tablet(towerIn.x + 3, gy - 1);
+  tablet(towerIn.x + 3, gy - 1, 'tower');
   // 一樓照明：二樓平台下掛吊燈、門邊放蠟燭
   for (const x of [cx - 6, cx + 6]) if (get(x, gy - 9) === T.AIR && get(x, gy - 10) === T.PLATFORM) { put(x, gy - 9, T.CHAIN); put(x, gy - 8, T.LANTERN); }
   for (const x of [towerIn.x + 1, towerIn.x + towerIn.w - 2]) if (floorFree(x, gy - 1)) put(x, gy - 1, T.CANDLE);
@@ -443,7 +487,8 @@ function build(world: World, o: DungeonOptions, p: Plan, rng: Rng): DungeonInfo 
             if (k === 2 && rng.chance(2) && get(x, f - hgt) === T.AIR) put(x, f - hgt, T.CANDLE);
           }
         }
-        const balcony = f - 5, bx1 = r.x + Math.floor(r.w * 0.55);
+        // 陽台離地板 4 格：從地板（或從地板開上來的豎井頂）跳得上去
+        const balcony = f - 4, bx1 = r.x + Math.floor(r.w * 0.55);
         if (r.h >= 10) {
           for (let x = r.x; x < bx1; x++) plat(x, balcony);
           for (let x = r.x + 1; x < bx1 - 2; x++) if ((x - r.x) % 4 !== 0 && get(x, balcony - 1) === T.AIR) {
@@ -477,7 +522,7 @@ function build(world: World, o: DungeonOptions, p: Plan, rng: Rng): DungeonInfo 
         // 祭壇：兩階磚台 + 古碑 + 兩側蠟燭、旗幟、吊燈
         for (let x = mid - 4; x <= mid + 4; x++) put(x, f, BR);
         for (let x = mid - 2; x <= mid + 2; x++) put(x, f - 1, BR);
-        tablet(mid, f - 2);
+        tablet(mid, f - 2, 'shrine');
         for (const x of [mid - 2, mid + 2]) if (get(x, f - 2) === T.AIR) put(x, f - 2, T.CANDLE);
         for (const x of [mid - 4, mid + 4]) if (get(x, f - 1) === T.AIR) put(x, f - 1, T.CANDLE);
         banner(r.x + 2, r.y); banner(r.x + r.w - 3, r.y);
@@ -488,6 +533,7 @@ function build(world: World, o: DungeonOptions, p: Plan, rng: Rng): DungeonInfo 
         for (let x = mid - 3; x <= mid + 3; x++) put(x, f, BR);
         for (const x of [mid - 6, mid - 5, mid + 5, mid + 6]) addPot(x, f, r.id);
         for (const x of [mid - 3, mid + 3]) if (get(x, f - 1) === T.AIR) put(x, f - 1, T.CANDLE);
+        tablet(r.x + 2, f, 'treasure');
         banner(r.x + 1, r.y); banner(r.x + r.w - 2, r.y); banner(mid - 5, r.y); banner(mid + 5, r.y);
         hang(mid, r.y, 2, T.LANTERN);
         break;

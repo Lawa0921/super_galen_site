@@ -15,6 +15,9 @@ import { chestLoot, type ChestKind } from './loot';
 import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from './noise';
 import { carveChamber, carveNetwork, carveNoiseTunnels, perlinWorm, carveDisc, paintBlob, noisePockets, fillTinyPockets } from './gen/caves';
 import { generateDungeon, type DungeonInfo } from './gen/dungeon';
+import { LORE_SITES, type LoreSite } from './lore';
+import type { ItemId } from './items';
+import type { Stack } from './inventory';
 
 export interface GenOptions { width?: number; height?: number; }
 export interface GenBands {
@@ -22,7 +25,7 @@ export interface GenBands {
 }
 export interface BiomeSegment { biome: BiomeId; x0: number; x1: number; }
 export type StructureKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'chasm' | 'ravine' | 'frozen_lake'
-  | 'mushroom_biome' | 'crystal_cave' | 'sky_island' | 'lake_bed' | 'sinkhole' | 'dungeon';
+  | 'mushroom_biome' | 'crystal_cave' | 'sky_island' | 'lake_bed' | 'sinkhole' | 'dungeon' | 'secret_room';
 /** 每欄的深度層分界（第一個屬於該層的 y） */
 export interface GenLayers { rock: Int16Array; deep: Int16Array; molten: Int16Array; }
 /** 地表地形種類（依生態區挑）；reserved = 預留給地城的平地 */
@@ -55,6 +58,10 @@ export interface GenResult {
   layers: GenLayers;
   /** 地城（房間圖、門、鑰匙、寶箱）；世界太小放不下時 null */
   dungeon: DungeonInfo | null;
+  /** 所有古碑（含地城裡的）：id = 碑文編號（lore.ts） */
+  tablets: { x: number; y: number; id: number }[];
+  /** 放在難到達處的珍寶（獨特道具）箱子 */
+  relics: { x: number; y: number; item: ItemId; where: string }[];
 }
 
 export interface RunnerOptions {
@@ -220,7 +227,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
   // ── 海灘 + 地城預留區（一側海灘內側） ─────────────────────────
   const beachW = Math.max(4, Math.round(width * 0.015));
   const dungeonLeft = subSeed(seed, 'dungeon').chance(2);
-  const dzW = Math.max(8, Math.round(width * 0.06));
+  const dzW = Math.max(8, Math.round(width * 0.1));
   const dzX0 = dungeonLeft ? beachW + 4 : width - beachW - 4 - dzW, dzX1 = dzX0 + dzW;
   const inDz = (x: number, m = 0): boolean => x >= dzX0 - m && x < dzX1 + m;
   mark('生態區 ────────');
@@ -552,7 +559,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
   const deepY = deepTop + Math.floor((moltenTop - deepTop) * 0.5);
   const dungeonZone: ReservedZone = {
     x0: dzX0, x1: dzX1, y0: Math.max(2, surfaceLow - 40),
-    y1: Math.min(height - 2, Math.max(rockHigh + 40, cavernY + Math.floor((moltenTop - cavernY) * 0.55))), side: dungeonLeft ? 'left' : 'right',
+    y1: Math.min(height - 2, Math.max(rockHigh + 40, cavernY + Math.floor((moltenTop - cavernY) * 0.32))), side: dungeonLeft ? 'left' : 'right',
   };
   const occupied: Rect[] = [{ x: dzX0, y: dungeonZone.y0, w: dzW, h: dungeonZone.y1 - dungeonZone.y0 }];
   const structures: Structure[] = [];
@@ -868,6 +875,10 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
         if (cy + ry >= height - 4 || cy - ry < 4) continue;
         if (mush && (colBiome[cx] !== BIOME.FOREST || colBiome[Math.max(0, cx - rx)] !== BIOME.FOREST || colBiome[Math.min(width - 1, cx + rx)] !== BIOME.FOREST)) continue;
         if (inDz(cx - rx, 20) || inDz(cx + rx, 20) || occupied.some((o) => overlap(o, rect, 10))) continue;
+        // 已經大半是空洞（例如落在巨大洞室裡）的位置不要：菇林 / 晶洞需要岩體來長蘑菇草 / 大理石殼
+        let open = 0;
+        for (let y = rect.y; y < rect.y + rect.h; y += 2) for (let x = rect.x; x < rect.x + rect.w; x += 2) if (!isSolid(get(x, y))) open++;
+        if (open * 4 > rect.w * rect.h * 0.45) continue;
         for (let c = 0; c < (mush ? 9 : 5); c++) {
           tileRunner(world, rng, cx + rng.int(-Math.floor(rx * 0.65), Math.floor(rx * 0.65) + 1), cy + rng.int(-Math.floor(ry * 0.45), Math.floor(ry * 0.45) + 1),
             mush ? rng.int(16, 27) : rng.int(14, 23), rng.int(20, 50), -1, { speedY: rng.range(-0.3, 0.3) });
@@ -1090,6 +1101,42 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       }
     }
   })();
+  mark('密室：礦坑盡頭的裂紋石假牆');
+  // ── 密室：部分礦坑的盡頭是兩格厚的裂紋石（一敲就碎），後面是一間小密室（珍寶箱 + 陶罐 + 微光水晶） ──
+  const secretRooms: Structure[] = [];
+  (() => {
+    const rng = subSeed(seed, 'secret-rooms');
+    const shafts = structures.filter((s) => s.kind === 'mineshaft');
+    for (const st of shafts) {
+      if (secretRooms.length >= 5) break;
+      const yTop = st.y + 1, rw = rng.int(8, 13), rh = 6;
+      for (const right of rng.chance(2) ? [true, false] : [false, true]) {
+        const plug0 = right ? st.x + st.w : st.x - 2;
+        const rx0 = right ? st.x + st.w + 2 : st.x - 2 - rw;
+        const ry0 = yTop - 2;
+        const shell: Rect = { x: rx0 - 2, y: ry0 - 2, w: rw + 4, h: rh + 5 };
+        const outer: Rect = right ? { x: plug0, y: ry0 - 2, w: rw + 4, h: rh + 5 } : { x: shell.x, y: ry0 - 2, w: rw + 4, h: rh + 5 };
+        if (!free(outer, 0) || shell.x < 4 || shell.x + shell.w > width - 4) continue;
+        for (let y = shell.y; y < shell.y + shell.h; y++) for (let x = Math.min(shell.x, plug0); x < Math.max(shell.x + shell.w, plug0 + 2); x++) {
+          put(x, y, T.STONE); putWall(x, y, W.STONE_WALL);
+        }
+        for (let y = ry0; y < ry0 + rh; y++) for (let x = rx0; x < rx0 + rw; x++) { put(x, y, T.AIR); putWall(x, y, W.PLANK_WALL); }
+        for (let x = rx0; x < rx0 + rw; x++) put(x, ry0 + rh, T.PLANKS);
+        for (let y = yTop; y < yTop + 4; y++) for (let k = 0; k < 2; k++) put(plug0 + k, y, T.CRACKED_STONE);
+        const floorY = ry0 + rh - 1;
+        const cx = right ? rx0 + rw - 3 : rx0 + 2;
+        addChest(cx, floorY, 'secret');
+        for (let k = 0; k < 2; k++) { const px = rx0 + 1 + rng.int(0, rw - 2); if (get(px, floorY) === T.AIR && Math.abs(px - cx) > 1) put(px, floorY, T.POT); }
+        put(right ? rx0 : rx0 + rw - 1, ry0, T.COBWEB);
+        put(rx0 + Math.floor(rw / 2), ry0, T.CRYSTAL);
+        const r: Structure = { kind: 'secret_room', x: rx0, y: ry0, w: rw, h: rh, chest: { x: cx, y: floorY } };
+        occupied.push(outer, shell);
+        structures.push(r);
+        secretRooms.push(r);
+        break;
+      }
+    }
+  })();
   mark('廢棄小屋：木板外殼 +');
   // ── 廢棄小屋：木板外殼 + 木板牆 + 工作台 + 箱子 + 火把，兩側門口接一小段坑道 ──
   (() => {
@@ -1194,6 +1241,8 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     seed: seedStr, zone: dungeonZone, surface,
     color: DUNGEON_COLORS[subSeed(seed, 'dungeon-color').int(0, DUNGEON_COLORS.length)],
     depthFrac,
+    natural: (x, y) => y < rockLine[x] ? [T.DIRT, W.DIRT_WALL] : y < deepLine[x] ? [T.STONE, W.STONE_WALL]
+      : y < moltenLine[x] ? [T.DEEP_STONE, W.DEEP_STONE_WALL] : [T.BASALT, W.BASALT_WALL],
   });
   if (dungeon) structures.push({ kind: 'dungeon', ...dungeon.bbox });
   remeasure();
@@ -1395,9 +1444,130 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
       }
     }
   })();
+  mark('珍寶箱 + 古碑');
+  // ── 珍寶（獨特道具）放在難到達的地方 + 古碑（14 篇碑文各放在主題地點） ──────────
+  const relics: GenResult['relics'] = [];
+  const tablets: GenResult['tablets'] = [];
+  (() => {
+    const rng = subSeed(seed, 'relics');
+    /** 在 r 裡找一格地板：空氣、正下方實心（非平台 / 地城磚）、上方空氣、不在地城裡 */
+    const findFloor = (r: Rect, tries = 600, allowDungeon = false): { x: number; y: number } | null => {
+      for (let t = 0; t < tries; t++) {
+        const x = rng.int(Math.max(2, r.x), Math.max(Math.max(2, r.x) + 1, Math.min(width - 2, r.x + r.w)));
+        const y = rng.int(Math.max(2, r.y), Math.max(Math.max(2, r.y) + 1, Math.min(height - 3, r.y + r.h)));
+        const i = y * WW + x;
+        if (fg[i] !== T.AIR || fg[i - WW] !== T.AIR || !isSolid(fg[i + WW])) continue;
+        if (!allowDungeon && wall[i] >= W.DUNGEON_WALL_BLUE) continue;
+        if (fg[i + WW] === T.DOOR_CLOSED || fg[i + WW] === T.DOOR_LOCKED || fg[i - 1] === T.CHEST || fg[i + 1] === T.CHEST) continue;
+        return { x, y };
+      }
+      return null;
+    };
+    const chestSlots = (x: number, y: number): (Stack | null)[] | undefined => world.chests.get(y * WW + x);
+    const addTo = (slots: (Stack | null)[] | undefined, item: ItemId): boolean => {
+      if (!slots) return false;
+      const k = slots.findIndex((s) => s === null);
+      slots[k >= 0 ? k : slots.length - 1] = { item, count: 1 };
+      return true;
+    };
+    const caverns = structures.filter((s) => s.kind === 'cavern');
+    const relicChest = (item: ItemId, where: string, spot: { x: number; y: number } | null): boolean => {
+      if (!spot) return false;
+      addChest(spot.x, spot.y, 'relic');
+      addTo(chestSlots(spot.x, spot.y), item);
+      relics.push({ x: spot.x, y: spot.y, item, where });
+      return true;
+    };
+    const fallback = (item: ItemId): void => {
+      for (const c of caverns) if (relicChest(item, 'cavern', findFloor(c))) return;
+    };
+    // 跳躍靴：浮空島的箱子
+    const island = structures.find((s) => s.kind === 'sky_island' && s.chest);
+    if (island?.chest && addTo(chestSlots(island.chest.x, island.chest.y), 'jump_boots')) relics.push({ ...island.chest, item: 'jump_boots', where: 'sky_island' });
+    else fallback('jump_boots');
+    // 疾行靴：最深的裂谷谷底
+    const chasms = structures.filter((s) => s.kind === 'chasm').sort((a, b) => b.h - a.h);
+    let ok = false;
+    for (const c of chasms) if (!ok) ok = relicChest('swift_boots', 'chasm', findFloor({ x: c.x, y: c.y + c.h - 24, w: c.w, h: 34 }));
+    if (!ok) fallback('swift_boots');
+    // 夜視護符：熔岩深淵的地板（離出生點遠一點）
+    let moltenSpot: { x: number; y: number } | null = null;
+    for (let t = 0; t < 40 && !moltenSpot; t++) {
+      const x = rng.int(60, width - 60);
+      if (Math.abs(x - sx) < width * 0.15 || inDz(x, 20)) continue;
+      moltenSpot = findFloor({ x: x - 30, y: moltenLine[x] + 4, w: 60, h: height - 10 - moltenLine[x] }, 200);
+    }
+    if (!relicChest('night_amulet', 'molten', moltenSpot)) fallback('night_amulet');
+    // 磁石：第一間密室的箱子
+    const sr = secretRooms[0];
+    if (sr?.chest && addTo(chestSlots(sr.chest.x, sr.chest.y), 'magnet')) relics.push({ ...sr.chest, item: 'magnet', where: 'secret_room' });
+    else fallback('magnet');
+    // 指南針 / 深度計：離出生點最近的兩間小屋箱子（早期就拿得到的導航工具，非獨特）
+    const cabins = structures.filter((s) => s.kind === 'cabin' && s.chest).sort((a, b) => Math.abs(a.x - sx) - Math.abs(b.x - sx));
+    if (cabins[0]?.chest) addTo(chestSlots(cabins[0].chest.x, cabins[0].chest.y), 'compass');
+    if (cabins[1]?.chest) addTo(chestSlots(cabins[1].chest.x, cabins[1].chest.y), 'depth_meter');
+
+    // ── 古碑 ──
+    const used = new Set<number>();
+    const place = (id: number, spot: { x: number; y: number } | null): boolean => {
+      if (!spot || used.has(id)) return false;
+      if (fg[spot.y * WW + spot.x] !== T.LORE_TABLET) put(spot.x, spot.y, T.LORE_TABLET);
+      tablets.push({ x: spot.x, y: spot.y, id });
+      used.add(id);
+      return true;
+    };
+    const firstOf = (kind: string): Structure | undefined => structures.find((s) => s.kind === kind);
+    const segOf = (b: BiomeId): BiomeSegment | undefined => biomes.find((s) => s.biome === b);
+    const near = (p: { x: number; y: number } | null | undefined, rx: number, ry: number): Rect | null => (p ? { x: p.x - rx, y: p.y - ry, w: rx * 2, h: ry * 2 } : null);
+    const spotFor = (site: LoreSite): { x: number; y: number } | null => {
+      switch (site) {
+        case 'spawn': {
+          for (let dx = 14; dx < 60; dx++) {
+            for (const x of [sx + dx, sx - dx]) {
+              const gy = surface[x], ai = (gy - 1) * WW + x;
+              if (gy < 3 || !isSolid(fg[gy * WW + x]) || fg[ai - WW] !== T.AIR || fg[ai - 2 * WW] !== T.AIR) continue;
+              if (fg[ai] !== T.AIR && fg[ai] !== T.TALL_GRASS && fg[ai] !== T.FLOWER && fg[ai] !== T.BUSH) continue;
+              if (fg[ai - 1] === T.WOOD || fg[ai + 1] === T.WOOD) continue;
+              fg[ai] = T.AIR;
+              return { x, y: gy - 1 };
+            }
+          }
+          return null;
+        }
+        case 'secret': return sr ? findFloor({ x: sr.x, y: sr.y, w: sr.w, h: sr.h }) : null;
+        case 'cabin': { const c = cabins[0]; return c ? findFloor({ x: c.x + 1, y: c.y, w: c.w - 2, h: c.h }) : null; }
+        case 'crystal': { const c = firstOf('crystal_cave'); return c ? findFloor(c) : null; }
+        case 'mushroom': { const c = firstOf('mushroom_biome'); return c ? findFloor(c) : null; }
+        case 'sky': { const c = island; return c ? findFloor({ x: c.x, y: c.y, w: c.w, h: c.h }) : null; }
+        case 'molten': return moltenSpot ? findFloor(near(moltenSpot, 20, 6)!) : null;
+        case 'mineshaft': { const c = firstOf('mineshaft'); return c ? findFloor({ x: c.x, y: c.y, w: c.w, h: c.h }) : null; }
+        case 'snow': case 'desert': {
+          const s = segOf(site === 'snow' ? BIOME.SNOW : BIOME.DESERT);
+          if (!s) return null;
+          const mx = Math.floor((s.x0 + s.x1) / 2);
+          return findFloor({ x: s.x0 + 10, y: rockLine[mx], w: s.x1 - s.x0 - 20, h: Math.max(10, deepLine[mx] - rockLine[mx]) }, 1200);
+        }
+        case 'ruin': { const c = firstOf('ruin'); return c ? findFloor(c) : null; }
+        default: return null; // 地城：用地城自己的古碑
+      }
+    };
+    LORE_SITES.forEach((site, id) => {
+      if (site.startsWith('dungeon_')) {
+        const t = dungeon?.tablets.find((q) => `dungeon_${q.site}` === site);
+        if (t) place(id, t);
+        return;
+      }
+      place(id, spotFor(site));
+    });
+    // 地城裡沒用到的古碑：拿掉（每篇碑文只出現一次）
+    for (const t of dungeon?.tablets ?? []) if (!tablets.some((q) => q.x === t.x && q.y === t.y)) put(t.x, t.y, T.AIR);
+    // 找不到主題地點的碑文：放在大洞窟的地板
+    LORE_SITES.forEach((_, id) => { for (const c of caverns) if (!used.has(id)) place(id, findFloor(c)); });
+  })();
+
   mark('每欄地表的生態區 ───');
   // ── 每欄地表的生態區 ──────────────────────────────────────
   world.biome.set(colBiome);
   mark('end');
-  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon };
+  return { world, spawn, surface, bands, biomes, structures, landforms, dungeonZone, layers, dungeon, tablets, relics };
 }
