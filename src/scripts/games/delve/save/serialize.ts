@@ -10,7 +10,9 @@
 import { DelveGame } from '../engine/game';
 import type { World } from '../engine/world';
 import { Inventory, type InventoryJSON } from '../engine/inventory';
-import { CHUNK, GEN_VERSION } from '../engine/constants';
+import { CHUNK, GEN_VERSION, INV_SIZE } from '../engine/constants';
+import { TILES, WALLS } from '../engine/tiles';
+import { ITEMS, isItemId } from '../engine/items';
 
 export const SAVE_FORMAT = 1;
 export const CHUNK_BYTES = CHUNK * CHUNK * 2;
@@ -142,6 +144,36 @@ export function encodeSave(data: SaveData): Uint8Array {
 
 function isNum(v: unknown): v is number { return typeof v === 'number' && Number.isFinite(v); }
 
+/** chunk 內每格 fg / wall id 必須是已知 TILES / WALLS（variant 不存檔，由座標雜湊重算）。 */
+function validateChunk(ci: number, c: ChunkPayload): void {
+  const half = CHUNK * CHUNK;
+  if (c.fg.length < half || c.wall.length < half) throw new SaveFormatError(`chunk ${ci}: short payload`);
+  for (let i = 0; i < half; i++) {
+    if (c.fg[i] >= TILES.length) throw new SaveFormatError(`chunk ${ci}: unknown tile ${c.fg[i]}`);
+    if (c.wall[i] >= WALLS.length) throw new SaveFormatError(`chunk ${ci}: unknown wall ${c.wall[i]}`);
+  }
+}
+
+/** 背包欄位驗證：每格為 null 或 { 已知道具, 1..maxStack 的整數 }；不合法即視為存檔損毀。 */
+function validInventory(v: unknown): InventoryJSON {
+  if (v === undefined) return { slots: [], selected: 0 };
+  const o = v as { slots?: unknown; selected?: unknown } | null;
+  if (!o || typeof o !== 'object' || !Array.isArray(o.slots) || o.slots.length > INV_SIZE) {
+    throw new SaveFormatError('inventory');
+  }
+  const slots = o.slots.map((s, i) => {
+    if (s === null) return null;
+    const st = s as { item?: unknown; count?: unknown };
+    if (!st || typeof st !== 'object' || !isItemId(st.item) || typeof st.count !== 'number'
+      || !Number.isInteger(st.count) || st.count < 1 || st.count > ITEMS[st.item].maxStack) {
+      throw new SaveFormatError(`inventory slot ${i}`);
+    }
+    return { item: st.item, count: st.count };
+  });
+  const selected = typeof o.selected === 'number' && Number.isInteger(o.selected) ? o.selected : 0;
+  return { slots, selected };
+}
+
 export function decodeSave(bytes: Uint8Array): SaveData {
   if (bytes.length < 8) throw new SaveFormatError('too short');
   for (let i = 0; i < 4; i++) if (bytes[i] !== MAGIC[i]) throw new SaveFormatError('bad magic');
@@ -164,7 +196,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     format: h.format, genVersion: h.genVersion, seed: h.seed, width: h.width, height: h.height,
     time: h.time, tick: h.tick, savedAt: isNum(h.savedAt) ? h.savedAt : 0,
     player: { x: h.player.x, y: h.player.y, vx: isNum(h.player.vx) ? h.player.vx : 0, vy: isNum(h.player.vy) ? h.player.vy : 0 },
-    inventory: (h.inventory ?? { slots: [], selected: 0 }) as InventoryJSON,
+    inventory: validInventory(h.inventory),
     chunks: h.chunks as number[],
   };
   const need = 8 + len + header.chunks.length * CHUNK_BYTES;
@@ -173,7 +205,9 @@ export function decodeSave(bytes: Uint8Array): SaveData {
   const half = CHUNK * CHUNK;
   let off = 8 + len;
   for (const ci of header.chunks) {
-    chunks.set(ci, { fg: bytes.slice(off, off + half), wall: bytes.slice(off + half, off + CHUNK_BYTES) });
+    const c = { fg: bytes.slice(off, off + half), wall: bytes.slice(off + half, off + CHUNK_BYTES) };
+    validateChunk(ci, c);
+    chunks.set(ci, c);
     off += CHUNK_BYTES;
   }
   return { header, chunks };
@@ -188,6 +222,10 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   let data: SaveData;
   try {
     data = input instanceof Uint8Array ? decodeSave(input) : input;
+    if (!(input instanceof Uint8Array)) {
+      for (const [ci, c] of data.chunks) validateChunk(ci, c);
+      validInventory(data.header.inventory);
+    }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
   }

@@ -13,6 +13,10 @@ export class World {
   readonly chunksY: number;
   /** 地表層 y（worldSurface）：此線以上、無牆、非擋光的格會發天空光 */
   surfaceY = 0;
+  /** 每欄生成時的地表高度（地形 pass 的第一個實心格 y；之後玩家挖掘不改變）。HUD 深度用。 */
+  surface: Int16Array;
+  /** 洞穴層（岩層大洞窟）起始 y */
+  cavernY = 0;
   /** 需重畫的 chunk（render 用，drainDirty 取走） */
   private readonly dirty = new Set<number>();
   /** 生成後被改過的 chunk（存檔 diff 用） */
@@ -25,6 +29,7 @@ export class World {
     this.fg = new Uint8Array(n);
     this.wall = new Uint8Array(n);
     this.variant = new Uint8Array(n);
+    this.surface = new Int16Array(width);
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         let h = Math.imul(x, 374761393) + Math.imul(y, 668265263);
@@ -40,6 +45,12 @@ export class World {
     return x >= 0 && y >= 0 && x < this.width && y < this.height;
   }
   idx(x: number, y: number): number { return y * this.width + x; }
+  /** 第 x 欄的地表高度（越界夾到邊欄）。 */
+  surfaceAt(x: number): number {
+    if (this.width === 0) return this.surfaceY;
+    const cx = Math.max(0, Math.min(this.width - 1, Math.floor(x)));
+    return this.surface[cx];
+  }
 
   getFg(x: number, y: number): number {
     if (!this.inBounds(x, y)) return T.STONE;

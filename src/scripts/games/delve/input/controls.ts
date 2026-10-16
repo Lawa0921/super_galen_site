@@ -1,7 +1,7 @@
 // controls.ts — DOM 輸入：鍵盤、滑鼠、滾輪、觸控（Pointer Events）→ DelveGame。destroy() 清掉所有監聽。
 import type { DelveGame } from '../engine/game';
 import { TILE_SIZE } from '../engine/constants';
-import { keyAction, slotForKey, wheelSlot, moveAxis, joystick, touchIntent } from './mapping';
+import { keyAction, slotForKey, wheelSlot, moveAxis, joystick, touchIntent, mouseIntent } from './mapping';
 
 export interface ControlsOptions {
   game: DelveGame;
@@ -37,6 +37,15 @@ export function attachControls(o: ControlsOptions): Controls {
   let joyUp = false;
   let jumpTouch = false;
   let mouse: { x: number; y: number } | null = null;
+  /** 上次套用的滑鼠 buttons 遮罩（和弦：按住左鍵時再按右鍵只會觸發 pointermove） */
+  let mouseButtons = 0;
+  const applyMouseButtons = (buttons: number): void => {
+    if (buttons === mouseButtons) return;
+    const prev = mouseIntent(mouseButtons), next = mouseIntent(buttons);
+    mouseButtons = buttons;
+    if (next.mine !== prev.mine) game.setMining(next.mine);
+    if (next.use !== prev.use) game.setUse(next.use);
+  };
   let touchAim: { id: number; x: number; y: number } | null = null;
   const offs: (() => void)[] = [];
   const on = <K extends keyof HTMLElementEventMap>(
@@ -83,6 +92,7 @@ export function attachControls(o: ControlsOptions): Controls {
     keys.left = keys.right = keys.jump = false;
     joyMove = null; joyUp = false; jumpTouch = false;
     touchAim = null;
+    mouseButtons = 0;
     applyMove();
     game.setMining(false);
     game.setUse(false);
@@ -98,8 +108,7 @@ export function attachControls(o: ControlsOptions): Controls {
       mouse = p;
       capture(canvas, e.pointerId);
       aimAt(p.x, p.y);
-      if (e.button === 0) game.setMining(true);
-      else if (e.button === 2) game.setUse(true);
+      applyMouseButtons(e.buttons);
       e.preventDefault();
       return;
     }
@@ -115,13 +124,16 @@ export function attachControls(o: ControlsOptions): Controls {
   });
   on(canvas, 'pointermove', (e: PointerEvent) => {
     const p = local(e);
-    if (e.pointerType === 'mouse') { mouse = p; return; }
+    if (e.pointerType === 'mouse') {
+      mouse = p;
+      if (!o.isBlocked()) applyMouseButtons(e.buttons);
+      return;
+    }
     if (touchAim && touchAim.id === e.pointerId) { touchAim.x = p.x; touchAim.y = p.y; aimAt(p.x, p.y); }
   });
   const endPointer = (e: PointerEvent): void => {
     if (e.pointerType === 'mouse') {
-      if (e.button === 0 || e.type !== 'pointerup') game.setMining(false);
-      if (e.button === 2 || e.type !== 'pointerup') game.setUse(false);
+      applyMouseButtons(e.type === 'pointerup' ? e.buttons : 0);
       return;
     }
     if (touchAim && touchAim.id === e.pointerId) {

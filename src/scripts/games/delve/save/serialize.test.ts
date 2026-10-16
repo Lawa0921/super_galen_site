@@ -105,12 +105,16 @@ describe('save serialize', () => {
     snap.header.width = -5;
     expect(restoreGame(encodeSave(snap))).toMatchObject({ ok: false, error: 'size' });
   });
-  it('背包內容在 JSON 層被驗證（壞項目丟棄）', () => {
+  it('背包內容在 JSON 層被驗證（壞項目 → 存檔損毀）', () => {
     const snap = snapshotGame(modified());
     (snap.header.inventory.slots as unknown[])[0] = { item: 'hacked', count: 5 };
-    const r = restoreGame(encodeSave(snap));
-    if (!r.ok) throw new Error('restore failed');
-    expect(r.game.inventory.slots[0]).toBeNull();
+    expect(restoreGame(encodeSave(snap))).toMatchObject({ ok: false, error: 'format' });
+  });
+  it('已解碼的 SaveData 直接還原時也驗證 tile id', () => {
+    const snap = snapshotGame(modified());
+    const first = snap.chunks.values().next().value!;
+    first.fg[0] = 250;
+    expect(restoreGame(snap)).toMatchObject({ ok: false, error: 'format' });
   });
 });
 
@@ -124,5 +128,37 @@ describe('diffChunks', () => {
   });
   it('尺寸不同丟錯', () => {
     expect(() => diffChunks(new World(10, 10), new World(11, 10))).toThrow();
+  });
+});
+
+describe('損毀存檔驗證', () => {
+  function payloadOffset(bytes: Uint8Array): number {
+    return 8 + new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true);
+  }
+  it('未知 fg tile id → format', () => {
+    const bytes = serializeGame(modified());
+    bytes[payloadOffset(bytes) + 3] = 200;
+    const r = restoreGame(bytes);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('format');
+  });
+  it('未知 wall id → format', () => {
+    const bytes = serializeGame(modified());
+    bytes[payloadOffset(bytes) + CHUNK * CHUNK + 7] = 99;
+    const r = restoreGame(bytes);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe('format');
+  });
+  it('背包含未知道具或不合法數量 → format', () => {
+    for (const bad of [{ item: 'diamond', count: 1 }, { item: 'dirt', count: -3 }, { item: 'dirt', count: 1.5 }, 'x']) {
+      const d = snapshotGame(modified());
+      d.header.inventory = { slots: [bad as never], selected: 0 };
+      const r = restoreGame(encodeSave(d));
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toBe('format');
+    }
+  });
+  it('正常存檔仍可還原', () => {
+    expect(restoreGame(serializeGame(modified())).ok).toBe(true);
   });
 });

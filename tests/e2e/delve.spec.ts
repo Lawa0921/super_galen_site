@@ -47,20 +47,20 @@ test.describe('delve', () => {
   });
 
   test('同一個 seed 兩次載入世界相同', async ({ page }) => {
-    await page.goto('/games/delve?seed=abc&autostart=1');
+    await page.goto('/games/delve?seed=abc&autostart=1&fresh=1');
     await waitGame(page);
     const a = await worldHash(page);
-    await page.goto('/games/delve?seed=abc&autostart=1');
+    await page.goto('/games/delve?seed=abc&autostart=1&fresh=1');
     await waitGame(page);
     const b = await worldHash(page);
     expect(a).toBe(b);
-    await page.goto('/games/delve?seed=abd&autostart=1');
+    await page.goto('/games/delve?seed=abd&autostart=1&fresh=1');
     await waitGame(page);
     expect(await worldHash(page)).not.toBe(a);
   });
 
   test('瞄準腳下並按住挖掘 → 背包泥土增加', async ({ page }) => {
-    await page.goto('/games/delve?seed=mine&autostart=1');
+    await page.goto('/games/delve?seed=mine&autostart=1&fresh=1');
     await waitGame(page);
     // 等玩家落地
     await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
@@ -85,7 +85,7 @@ test.describe('delve', () => {
   });
 
   test('存檔 → 重新整理 → 繼續，修改的格子還在', async ({ page }) => {
-    await page.goto('/games/delve?seed=savetest&autostart=1');
+    await page.goto('/games/delve?seed=savetest&autostart=1&fresh=1');
     await waitGame(page);
     const spot = await page.evaluate(async () => {
       const d = window.__delveDebug!;
@@ -103,6 +103,31 @@ test.describe('delve', () => {
     const fg = await page.evaluate(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y), spot);
     expect(fg).toBe(7);
     expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('savetest');
+  });
+
+  test('已有存檔時新世界先詢問覆蓋（取消保留、覆蓋才換世界）；autostart 沒 fresh=1 不覆蓋', async ({ page }) => {
+    await page.goto('/games/delve?seed=keepme&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => window.__delveDebug!.save());
+    // autostart 沒 fresh=1：跳出確認，不直接開局
+    await page.goto('/games/delve?seed=other&autostart=1');
+    await expect(page.locator('#delve-confirm')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#delve-confirm-msg')).toContainText('keepme');
+    await page.click('#delve-confirm-cancel');
+    await expect(page.locator('#delve-confirm')).toBeHidden();
+    await expect(page.locator('#delve-title')).toBeVisible();
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    // 標題「新世界」→ 取消 → 存檔還在
+    await page.fill('#delve-seed', 'brandnew');
+    await page.click('#delve-new');
+    await expect(page.locator('#delve-confirm')).toBeVisible();
+    await page.click('#delve-confirm-cancel');
+    await expect(page.locator('#delve-continue')).toContainText('keepme');
+    // 再按一次 → 覆蓋
+    await page.click('#delve-new');
+    await page.click('#delve-confirm-ok');
+    await waitGame(page);
+    expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('brandnew');
   });
 
   test('遊戲廳卡片連到 /games/delve', async ({ page }) => {

@@ -53,6 +53,8 @@ export interface DelveState {
 const HAND: PickStats = { speed: 0.35, tier: 1 };
 /** 起始時間：清晨天亮後 */
 const START_TIME = DAY_LENGTH * 0.3;
+/** 同一個 blocked 提示重複出現的最短間隔（秒） */
+const BLOCK_REPEAT = 1.8;
 
 export class DelveGame {
   static readonly TILE_SIZE = TILE_SIZE;
@@ -78,6 +80,7 @@ export class DelveGame {
   private mining: MiningState | null = null;
   private events: DelveEvent[] = [];
   private lastBlocked = '';
+  private lastBlockedAt = -Infinity;
   private readonly lightEngine = new LightEngine();
 
   constructor(opts: DelveOptions = {}) {
@@ -98,7 +101,7 @@ export class DelveGame {
   /** 游標所指 tile 座標 */
   setAim(tx: number, ty: number): void {
     const x = Math.floor(tx), y = Math.floor(ty);
-    if (x !== this.aim.x || y !== this.aim.y) { this.aim = { x, y }; this.mining = null; }
+    if (x !== this.aim.x || y !== this.aim.y) { this.aim = { x, y }; this.mining = null; this.lastBlocked = ''; }
   }
   /** 游標所指世界 px 座標（renderer 換算好鏡頭偏移後傳入） */
   setAimWorld(px: number, py: number): void { this.setAim(px / TILE_SIZE, py / TILE_SIZE); }
@@ -130,7 +133,7 @@ export class DelveGame {
     const def = tileDef(id);
     const pick = this.currentPick();
     if (def.minTier > pick.tier) { this.block('mine', 'tier', x, y); this.mining = null; return; }
-    if (def.drop && !this.inventory.canAdd(def.drop, 1)) { this.block('mine', 'full', x, y); this.mining = null; return; }
+    if (!this.planBreak(x, y).fits) { this.block('mine', 'full', x, y); this.mining = null; return; }
     const need = def.hardness / pick.speed;
     if (!this.mining || this.mining.x !== x || this.mining.y !== y) this.mining = { x, y, elapsed: 0, need };
     this.mining.need = need; // 換鎬即時生效
@@ -141,43 +144,69 @@ export class DelveGame {
     }
   }
 
-  /** 移除 tile 並把掉落物放進背包；處理砍樹與支撐。回傳是否有挖掉。 */
+  /**
+   * 預先算出挖 (x,y) 會連帶移除的所有格（本格 + 倒下的樹 + 失去支撐的火把 / 工作台）與總掉落物，
+   * 以及背包是否放得下全部掉落物。不修改世界。
+   */
+  private planBreak(x: number, y: number): { tiles: [number, number][]; drops: Map<ItemId, number>; fits: boolean } {
+    const w = this.world;
+    const tiles: [number, number][] = [];
+    const gone = new Set<number>();
+    const drops = new Map<ItemId, number>();
+    const take = (tx: number, ty: number): void => {
+      const k = w.idx(tx, ty);
+      if (gone.has(k)) return;
+      gone.add(k);
+      tiles.push([tx, ty]);
+      const drop = tileDef(w.getFg(tx, ty)).drop;
+      if (drop) drops.set(drop, (drops.get(drop) ?? 0) + 1);
+    };
+    const id = w.getFg(x, y);
+    if (id === T.AIR || !w.inBounds(x, y)) return { tiles, drops, fits: true };
+    take(x, y);
+    if (id === T.WOOD) this.fellTree(x, y, take, gone);
+    // 失去支撐的火把 / 工作台（以「移除後」的世界判斷支撐）
+    const solidAfter = (tx: number, ty: number): boolean =>
+      isSolidTile(w.getFg(tx, ty)) && !(w.inBounds(tx, ty) && gone.has(w.idx(tx, ty)));
+    for (let k = 0; k < tiles.length; k++) {
+      const [rx, ry] = tiles[k];
+      for (const [nx, ny] of [[rx - 1, ry], [rx + 1, ry], [rx, ry - 1], [rx, ry + 1]] as const) {
+        if (!w.inBounds(nx, ny) || gone.has(w.idx(nx, ny))) continue;
+        if (!tileDef(w.getFg(nx, ny)).needsSupport) continue;
+        const supported = w.getWall(nx, ny) !== 0 || solidAfter(nx - 1, ny) || solidAfter(nx + 1, ny)
+          || solidAfter(nx, ny - 1) || solidAfter(nx, ny + 1);
+        if (!supported) take(nx, ny);
+      }
+    }
+    return { tiles, drops, fits: this.inventory.canAddAll(drops) };
+  }
+
+  /** 移除 tile 並把掉落物放進背包；處理砍樹與支撐。掉落物放不下時整個動作拒絕（full）。回傳是否有挖掉。 */
   private breakTile(x: number, y: number): boolean {
-    const id = this.world.getFg(x, y);
-    if (id === T.AIR || !this.world.inBounds(x, y)) return false;
-    const removed: [number, number][] = [];
-    const remove = (tx: number, ty: number): void => {
+    const plan = this.planBreak(x, y);
+    if (!plan.tiles.length) return false;
+    if (!plan.fits) { this.block('mine', 'full', x, y); return false; }
+    for (const [tx, ty] of plan.tiles) {
       const tid = this.world.getFg(tx, ty);
       const drop = tileDef(tid).drop;
       this.world.setFg(tx, ty, T.AIR);
       if (drop) this.inventory.add(drop, 1);
       this.events.push({ type: 'mine', x: tx, y: ty, tile: tid, item: drop });
-      removed.push([tx, ty]);
-    };
-    remove(x, y);
-    if (id === T.WOOD) this.fellTree(x, y, remove);
-    // 失去支撐的火把 / 工作台掉落
-    for (let k = 0; k < removed.length; k++) {
-      const [rx, ry] = removed[k];
-      for (const [nx, ny] of [[rx - 1, ry], [rx + 1, ry], [rx, ry - 1], [rx, ry + 1]] as const) {
-        const nid = this.world.getFg(nx, ny);
-        if (this.world.inBounds(nx, ny) && tileDef(nid).needsSupport && !this.hasSupport(nx, ny)) remove(nx, ny);
-      }
     }
     return true;
   }
 
-  /** 樹幹被砍：連帶移除上方相連的樹幹與樹葉（4 鄰、不往下、水平 ±4 格） */
-  private fellTree(x: number, y: number, remove: (tx: number, ty: number) => void): void {
+  /** 樹幹被砍：連帶收集上方相連的樹幹與樹葉（4 鄰、不往下、水平 ±4 格） */
+  private fellTree(x: number, y: number, take: (tx: number, ty: number) => void, gone: Set<number>): void {
     const stack: [number, number][] = [[x, y - 1], [x - 1, y], [x + 1, y]];
     let guard = 0;
     while (stack.length && guard++ < 400) {
       const [tx, ty] = stack.pop()!;
       if (ty > y || Math.abs(tx - x) > 4) continue;
+      if (!this.world.inBounds(tx, ty) || gone.has(this.world.idx(tx, ty))) continue;
       const tid = this.world.getFg(tx, ty);
       if (tid !== T.WOOD && tid !== T.LEAVES) continue;
-      if (!this.world.inBounds(tx, ty)) continue;
-      remove(tx, ty);
+      take(tx, ty);
       stack.push([tx, ty - 1], [tx - 1, ty], [tx + 1, ty]);
     }
   }
@@ -212,8 +241,10 @@ export class DelveGame {
 
   private block(action: 'mine' | 'place', reason: BlockReason, x: number, y: number): void {
     const key = `${action}:${reason}:${x}:${y}`;
-    if (key === this.lastBlocked) return;
+    // 同一格同原因只提示一次；換瞄準格（setAim 清掉）或超過 BLOCK_REPEAT 秒後可再提示
+    if (key === this.lastBlocked && this.time - this.lastBlockedAt < BLOCK_REPEAT) return;
     this.lastBlocked = key;
+    this.lastBlockedAt = this.time;
     this.events.push({ type: 'blocked', action, reason, x, y });
   }
 
@@ -228,6 +259,11 @@ export class DelveGame {
   playerTile(): { x: number; y: number } {
     const c = this.playerCenter();
     return { x: Math.floor(c.x / TILE_SIZE), y: Math.floor(c.y / TILE_SIZE) };
+  }
+  /** 玩家腳底所在 tile（x 取中心欄；站在地面上時 y+1 為地面） */
+  feetTile(): { x: number; y: number } {
+    const p = this.player;
+    return { x: Math.floor((p.x + p.w / 2) / TILE_SIZE), y: Math.floor((p.y + p.h - 0.001) / TILE_SIZE) };
   }
   /** 玩家中心到 tile 中心的距離 ≤ REACH_TILES 格 */
   canReach(tx: number, ty: number): boolean {

@@ -56,6 +56,11 @@ export function joystick(dx: number, dy: number, radius: number, dead = 0.25): J
   return { x, y, knobX, knobY, moveX, up: y < -0.7 };
 }
 
+/** 滑鼠 PointerEvent.buttons 位元遮罩 → 挖（左鍵 1）/ 放（右鍵 2）。可同時按（和弦）。 */
+export function mouseIntent(buttons: number): { mine: boolean; use: boolean } {
+  return { mine: (buttons & 1) !== 0, use: (buttons & 2) !== 0 };
+}
+
 /** 觸控點格子時：手持可放置的方塊 → place，否則 mine。 */
 export function touchIntent(held: Stack | null): 'place' | 'mine' {
   if (held && ITEMS[held.item]?.place !== undefined) return 'place';

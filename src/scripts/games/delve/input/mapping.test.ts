@@ -1,7 +1,7 @@
 // mapping.test.ts — 純輸入映射（鍵盤、滾輪、搖桿、觸控意圖、螢幕→tile）。
 import { describe, it, expect } from 'vitest';
 import {
-  keyAction, slotForKey, wheelSlot, moveAxis, joystick, touchIntent, screenToTile,
+  keyAction, slotForKey, wheelSlot, moveAxis, joystick, touchIntent, screenToTile, mouseIntent,
 } from './mapping';
 
 describe('keyAction', () => {
@@ -83,5 +83,16 @@ describe('screenToTile', () => {
     expect(screenToTile(17, 31, 0, 0)).toEqual({ x: 1, y: 1 });
     expect(screenToTile(10, 10, 100, 200)).toEqual({ x: 6, y: 13 });
     expect(screenToTile(-1, 0, 0, 0)).toEqual({ x: -1, y: 0 });
+  });
+});
+
+describe('mouseIntent（buttons 位元遮罩 → 挖 / 放）', () => {
+  it('左鍵挖、右鍵放、和弦兩者皆按', () => {
+    expect(mouseIntent(0)).toEqual({ mine: false, use: false });
+    expect(mouseIntent(1)).toEqual({ mine: true, use: false });
+    expect(mouseIntent(2)).toEqual({ mine: false, use: true });
+    expect(mouseIntent(3)).toEqual({ mine: true, use: true });
+    expect(mouseIntent(4)).toEqual({ mine: false, use: false }); // 中鍵忽略
+    expect(mouseIntent(1 | 4)).toEqual({ mine: true, use: false });
   });
 });

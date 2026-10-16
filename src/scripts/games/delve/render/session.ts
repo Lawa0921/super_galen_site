@@ -5,6 +5,7 @@ import {
   saveSlot, loadSlot, listSlots, startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB,
 } from '../save/storage';
 import { startDelve, type DelveHandle } from './main';
+import { autostartPlan, newWorldPlan } from './model';
 
 const SLOT = 'main';
 
@@ -31,6 +32,10 @@ export function bootDelve(root: HTMLElement): Session {
   const seedInput = $<HTMLInputElement>('#delve-seed');
   const fileInput = $<HTMLInputElement>('#delve-import-file');
   const continueBtn = $<HTMLButtonElement>('#delve-continue');
+  const confirmEl = $('#delve-confirm');
+  const confirmMsg = $('#delve-confirm-msg');
+  const confirmOk = $<HTMLButtonElement>('#delve-confirm-ok');
+  const confirmCancel = $<HTMLButtonElement>('#delve-confirm-cancel');
   if (!canvas || !title || !hudEl || !menu) throw new Error('delve: missing page elements');
 
   let handle: DelveHandle | null = null;
@@ -78,9 +83,44 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
-  function newWorld(seed?: string): void {
+  /** 目前存檔槽的種子；沒有存檔 / 無 IndexedDB 時 null */
+  async function existingSeed(): Promise<string | null> {
+    if (!hasIndexedDB()) return null;
+    try {
+      return (await listSlots()).find((m) => m.slot === SLOT)?.seed ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  function startFresh(seed?: string): void {
     const s = (seed ?? seedInput?.value ?? '').trim() || randomSeed();
     begin(new DelveGame({ seed: s }));
+  }
+
+  // ── 覆蓋確認對話框（頁內，不用 window.confirm） ──
+  let pendingSeed: string | undefined;
+  let lastFocus: HTMLElement | null = null;
+  function askOverwrite(existing: string, seed: string | undefined): void {
+    if (!confirmEl) return;
+    pendingSeed = seed;
+    say(confirmMsg, `這個瀏覽器已有一個存檔（種子 ${existing}）。開新世界會覆蓋它，舊世界無法復原。要先匯出備份的話請按取消，進入「繼續」後從選單匯出。`);
+    lastFocus = document.activeElement as HTMLElement | null;
+    confirmEl.hidden = false;
+    root.dataset.confirm = '1';
+    confirmCancel?.focus();
+  }
+  function closeConfirm(): void {
+    if (!confirmEl) return;
+    confirmEl.hidden = true;
+    delete root.dataset.confirm;
+    lastFocus?.focus?.();
+  }
+
+  async function newWorld(seed?: string): Promise<void> {
+    const existing = await existingSeed();
+    if (newWorldPlan(existing, false) === 'confirm') askOverwrite(existing as string, seed);
+    else startFresh(seed);
   }
 
   function restoreBytes(bytes: Uint8Array, msgEl: HTMLElement | null): boolean {
@@ -127,8 +167,13 @@ export function bootDelve(root: HTMLElement): Session {
       .finally(() => { if (fileInput) fileInput.value = ''; });
   });
 
-  on($('#delve-new'), 'click', () => newWorld());
-  on(seedInput, 'keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') newWorld(); });
+  on($('#delve-new'), 'click', () => void newWorld());
+  on(seedInput, 'keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') void newWorld(); });
+  on(confirmOk, 'click', () => { closeConfirm(); startFresh(pendingSeed); });
+  on(confirmCancel, 'click', () => closeConfirm());
+  on(confirmEl, 'keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Escape') { e.stopPropagation(); closeConfirm(); }
+  });
   on(continueBtn, 'click', () => void continueGame());
   on($('#delve-import'), 'click', () => { importFrom = titleMsg; fileInput?.click(); });
   on($('#delve-resume'), 'click', () => setMenu(false));
@@ -150,9 +195,14 @@ export function bootDelve(root: HTMLElement): Session {
     }).catch(() => { /* 私密模式等：沒有存檔功能 */ });
   }
 
-  // e2e / 深連結：?seed=xxx&autostart=1
-  const qs = new URLSearchParams(location.search);
-  if (qs.get('autostart') === '1') newWorld(qs.get('seed') ?? undefined);
+  // e2e / 深連結：?seed=xxx&autostart=1[&fresh=1]。已有存檔時，沒有 fresh=1 不會直接覆蓋（改為詢問）。
+  if (new URLSearchParams(location.search).get('autostart') === '1') {
+    void existingSeed().then((existing) => {
+      const plan = autostartPlan(location.search, existing);
+      if (plan.kind === 'start') startFresh(plan.seed);
+      else if (plan.kind === 'confirm') askOverwrite(plan.existing, plan.seed);
+    });
+  }
 
   return {
     destroy(): void {

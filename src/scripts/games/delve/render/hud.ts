@@ -173,8 +173,8 @@ export class Hud {
   tick(): void {
     this.frame++;
     if (this.frame % 10 === 0) {
-      const g = this.game, t = g.playerTile();
-      this.q('#delve-status').textContent = `${formatClock(g.time)} · ${depthLabel(t.y, g.world.surfaceY)} · X ${t.x}`;
+      const g = this.game, f = g.feetTile(), w = g.world;
+      this.q('#delve-status').textContent = `${formatClock(g.time)} · ${depthLabel(f.y, w.surfaceAt(f.x), w.cavernY)} · X ${f.x}`;
     }
     if (this.frame % 30 === 0) this.refresh();
   }

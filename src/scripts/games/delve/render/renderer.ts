@@ -4,7 +4,7 @@ import { T, isSolidTile, WALLS } from '../engine/tiles';
 import { ITEMS } from '../engine/items';
 import { TILE_SIZE, CHUNK } from '../engine/constants';
 import { buildAtlas, hex, mix, type Atlas } from './textures';
-import { ChunkLRU, followCamera, visibleChunks, type Cam } from './model';
+import { ChunkLRU, cameraFocus, followCamera, visibleChunks, type Cam } from './model';
 
 const S = TILE_SIZE;
 const CPX = CHUNK * S;
@@ -110,9 +110,8 @@ export class Renderer {
     const worldW = w.width * S, worldH = w.height * S;
     const vw = this.worldViewW(), vh = this.worldViewH();
     const pc = g.playerCenter();
-    // 直式螢幕：玩家放低一點，多看天空/地表
-    const lift = Math.max(0, vh - vw) * 0.18;
-    this.cam = followCamera(this.cam, { x: pc.x, y: pc.y - 24 - lift }, vw, vh, worldW, worldH, dt, this.snapNext);
+    // 玩家在畫面中央略偏下（直式不再大幅上抬，避免大半畫面是天空）
+    this.cam = followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext);
     this.snapNext = false;
     // 對齊裝置像素，避免 chunk 接縫
     const unit = this.dpr * this.zoom;

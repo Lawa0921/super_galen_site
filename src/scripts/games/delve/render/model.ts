@@ -25,6 +25,16 @@ export function followCamera(
   return clampCamera(cam.x + (goal.x - cam.x) * a, cam.y + (goal.y - cam.y) * a, viewW, viewH, worldW, worldH);
 }
 
+/**
+ * 鏡頭要置中的世界座標。玩家放在畫面中央略偏下（約 54%）；直式螢幕不再大幅上抬，
+ * 避免畫面大半是天空——上方被 HUD 蓋住，下方是要挖的地面。
+ */
+export function cameraFocus(pc: Cam, viewW: number, viewH: number): Cam {
+  const portrait = viewH > viewW;
+  const below = viewH * (portrait ? 0.05 : 0.04);
+  return { x: pc.x, y: pc.y - below };
+}
+
 /** 固定步長累加器：advance(幀秒數) 回傳本幀應執行幾個模擬步。 */
 export class FixedStepper {
   private acc = 0;
@@ -93,10 +103,14 @@ export function formatClock(time: number): string {
   return `${hh}:${mm}`;
 }
 
-/** 玩家所在 tile 列相對地表線的描述。地表線附近 ±4 格算「地表」。 */
-export function depthLabel(tileY: number, surfaceY: number): string {
-  const d = tileY - surfaceY;
-  if (d <= 4) return '地表';
+/**
+ * 玩家深度描述。feetY = 玩家腳底所在 tile 列；surfaceAtCol = 玩家所在欄的地表高度（第一個實心格 y）；
+ * cavernY = 洞穴層起點。站在地表上時 feetY = surfaceAtCol - 1（深度 0）。
+ */
+export function depthLabel(feetY: number, surfaceAtCol: number, cavernY: number): string {
+  const d = feetY + 1 - surfaceAtCol;
+  if (d <= 0) return '地表';
+  if (feetY >= cavernY) return `洞穴層 · 地下 ${d} 格`;
   return `地下 ${d} 格`;
 }
 
@@ -108,6 +122,28 @@ const BLOCKED: Record<BlockReason, string | null> = {
   support: '需要相鄰方塊或背牆支撐',
   occupied: null,
 };
+// ── 新世界 / 存檔覆蓋流程（單一存檔槽） ──────────────────
+/** 已有存檔時新世界要先確認；force（使用者已確認 / fresh=1）直接開始。 */
+export function newWorldPlan(existingSeed: string | null, force: boolean): 'start' | 'confirm' {
+  return existingSeed !== null && !force ? 'confirm' : 'start';
+}
+
+export type AutostartPlan =
+  | { kind: 'none' }
+  | { kind: 'start'; seed: string | undefined }
+  | { kind: 'confirm'; seed: string | undefined; existing: string };
+
+/** ?autostart=1[&seed=x][&fresh=1]：有存檔且沒有 fresh=1 時不得直接覆蓋。 */
+export function autostartPlan(search: string, existingSeed: string | null): AutostartPlan {
+  const qs = new URLSearchParams(search);
+  if (qs.get('autostart') !== '1') return { kind: 'none' };
+  const seed = qs.get('seed') ?? undefined;
+  if (newWorldPlan(existingSeed, qs.get('fresh') === '1') === 'confirm') {
+    return { kind: 'confirm', seed, existing: existingSeed as string };
+  }
+  return { kind: 'start', seed };
+}
+
 export function blockedMessage(reason: BlockReason): string | null { return BLOCKED[reason] ?? null; }
 
 export function countLabel(s: Stack | null): string {

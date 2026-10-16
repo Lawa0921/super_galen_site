@@ -287,3 +287,89 @@ describe('debug helpers', () => {
     expect(g.world.modifiedChunks.size).toBe(1);
   });
 });
+
+/** 把背包塞滿 wood_pickaxe，只留 slot keep 給 stack */
+function fillInv(g: DelveGame, keep: { item: 'wood' | 'stone' | 'torch'; count: number }[]): void {
+  for (let i = 0; i < g.inventory.slots.length; i++) g.inventory.slots[i] = { item: 'wood_pickaxe', count: 1 };
+  keep.forEach((k, i) => { g.inventory.slots[i] = { ...k }; });
+}
+
+describe('掉落物放不下時拒絕（不吞道具）', () => {
+  it('砍樹：總木材放不下 → full 事件、樹保持原狀', () => {
+    const g = arena();
+    for (let y = 54; y < 60; y++) g.world.setFg(62, y, T.WOOD); // 6 段
+    fillInv(g, [{ item: 'wood', count: 999 - 3 }]); // 只剩 3 格空間
+    g.setAim(62, 59); g.setMining(true);
+    runFor(g, 3);
+    for (let y = 54; y < 60; y++) expect(g.world.getFg(62, y)).toBe(T.WOOD);
+    expect(g.inventory.count('wood')).toBe(996);
+    expect(g.drainEvents().some((e) => e.type === 'blocked' && e.reason === 'full')).toBe(true);
+  });
+  it('砍樹：剛好放得下就照常倒', () => {
+    const g = arena();
+    for (let y = 54; y < 60; y++) g.world.setFg(62, y, T.WOOD);
+    fillInv(g, [{ item: 'wood', count: 999 - 6 }]);
+    g.setAim(62, 59); g.setMining(true);
+    runFor(g, 3);
+    expect(g.world.getFg(62, 54)).toBe(T.AIR);
+    expect(g.inventory.count('wood')).toBe(999);
+  });
+  it('失去支撐的火把放不下 → 整個動作拒絕', () => {
+    const g = arena();
+    g.world.setFg(63, 59, T.STONE);
+    g.world.setFg(64, 59, T.TORCH);
+    g.world.setFg(64, 60, T.AIR);
+    fillInv(g, [{ item: 'stone', count: 5 }, { item: 'torch', count: 999 }]);
+    expect(g.mineInstant(63, 59)).toBe(false);
+    expect(g.world.getFg(63, 59)).toBe(T.STONE);
+    expect(g.world.getFg(64, 59)).toBe(T.TORCH);
+    expect(g.inventory.count('torch')).toBe(999);
+    expect(g.drainEvents().some((e) => e.type === 'blocked' && e.reason === 'full')).toBe(true);
+  });
+});
+
+describe('blocked 提示可重現', () => {
+  const reachEvents = (g: DelveGame): number =>
+    g.drainEvents().filter((e) => e.type === 'blocked' && e.reason === 'reach').length;
+  it('同一格持續被擋只提示一次；換格再回來會再提示', () => {
+    const g = arena();
+    g.setMining(true);
+    g.setAim(60 + REACH_TILES + 4, 60);
+    runFor(g, 0.5);
+    expect(reachEvents(g)).toBe(1);
+    g.setAim(60 + REACH_TILES + 5, 60);
+    runFor(g, 0.1);
+    g.setAim(60 + REACH_TILES + 4, 60);
+    runFor(g, 0.1);
+    expect(reachEvents(g)).toBe(2);
+  });
+  it('同一格按住超過冷卻時間會再提示一次', () => {
+    const g = arena();
+    g.setMining(true);
+    g.setAim(60 + REACH_TILES + 4, 60);
+    runFor(g, 0.5);
+    expect(reachEvents(g)).toBe(1);
+    runFor(g, 2);
+    expect(reachEvents(g)).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('地表高度（深度顯示用）', () => {
+  it('world.surfaceAt 給出每欄生成時的地表高度，且各欄不同', () => {
+    const g = new DelveGame({ seed: 'surf', ...SMALL });
+    const w = g.world;
+    const sp = g.spawn;
+    expect(w.surfaceAt(sp.x)).toBe(sp.y + 1);
+    const set = new Set<number>();
+    for (let x = 0; x < w.width; x++) set.add(w.surfaceAt(x));
+    expect(set.size).toBeGreaterThan(1);
+    expect(w.cavernY).toBeGreaterThan(w.surfaceAt(sp.x));
+    // 挖洞不改變地表高度
+    g.mineInstant(sp.x, sp.y + 1);
+    expect(w.surfaceAt(sp.x)).toBe(sp.y + 1);
+  });
+  it('feetTile：站在地表時腳底格 = 地表 - 1', () => {
+    const g = new DelveGame({ seed: 'surf', ...SMALL });
+    expect(g.feetTile()).toEqual({ x: g.spawn.x, y: g.spawn.y });
+  });
+});

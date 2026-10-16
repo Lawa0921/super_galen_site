@@ -139,6 +139,8 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
     rockLow = Math.min(rockLow, rockLine[x]); rockHigh = Math.max(rockHigh, rockLine[x]);
   }
   world.surfaceY = Math.min(height - 1, surfaceHigh + 10);
+  world.cavernY = Math.min(height - 1, rockHigh);
+  world.surface.set(surface); // 洞穴挖穿前的地形地表（之後會重新量 surface，但 HUD 深度用這份）
   const bands: GenBands = { surfaceLow, surfaceHigh, rockLow, rockHigh };
   const bottom = height - 1;
   const yIn = (rng: Rng, lo: number, hi: number): number => rng.int(Math.min(lo, hi - 1), Math.max(lo + 1, hi));
@@ -236,6 +238,7 @@ export function generateWorld(seed: string | number, opts: GenOptions = {}): Gen
   for (let dx = -1; dx <= 1; dx++) {
     const x = sx + dx;
     if (fg[groundY * width + x] === T.AIR) fg[groundY * width + x] = T.DIRT;
+    world.surface[x] = groundY;
     for (let dy = 1; dy <= 4; dy++) {
       const y = groundY - dy;
       if (y >= 0) fg[y * width + x] = T.AIR;

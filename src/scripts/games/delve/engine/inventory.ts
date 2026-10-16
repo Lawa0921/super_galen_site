@@ -40,6 +40,14 @@ export class Inventory {
     return room >= n;
   }
 
+  /** 一組道具是否能全部放進背包（模擬依序加入，彼此會搶空格）。 */
+  canAddAll(items: ReadonlyMap<ItemId, number>): boolean {
+    const sim = new Inventory();
+    sim.slots = this.slots.map((s) => (s ? { ...s } : null));
+    for (const [item, n] of items) if (sim.add(item, n) > 0) return false;
+    return true;
+  }
+
   count(item: ItemId): number {
     let c = 0;
     for (const s of this.slots) if (s && s.item === item) c += s.count;

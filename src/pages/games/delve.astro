@@ -22,8 +22,8 @@ const lang: Language = defaultLang;
       <div class="delve-held" id="delve-held" aria-live="polite"></div>
       <div class="delve-status" id="delve-status"></div>
       <div class="delve-corner">
-        <button class="delve-chip" id="delve-inv-btn" type="button">背包 E</button>
-        <button class="delve-chip" id="delve-menu-btn" type="button">選單 Esc</button>
+        <button class="delve-chip" id="delve-inv-btn" type="button">背包<kbd class="delve-kbd">E</kbd></button>
+        <button class="delve-chip" id="delve-menu-btn" type="button">選單<kbd class="delve-kbd">Esc</kbd></button>
       </div>
 
       <section class="delve-panel" id="delve-inv" hidden aria-label="背包與合成">
@@ -58,6 +58,17 @@ const lang: Language = defaultLang;
       </div>
     </section>
 
+    <section class="delve-confirm" id="delve-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="delve-confirm-title" aria-describedby="delve-confirm-msg">
+      <div class="delve-menu-box">
+        <h2 id="delve-confirm-title">覆蓋存檔？</h2>
+        <p class="delve-confirm-msg" id="delve-confirm-msg"></p>
+        <div class="delve-confirm-btns">
+          <button class="delve-btn" id="delve-confirm-cancel" type="button">取消</button>
+          <button class="delve-btn delve-btn--danger" id="delve-confirm-ok" type="button">覆蓋</button>
+        </div>
+      </div>
+    </section>
+
     <section class="delve-title" id="delve-title">
       <a class="delve-home" href="/games">← ARCADE</a>
       <div class="delve-title-fg">
@@ -75,7 +86,8 @@ const lang: Language = defaultLang;
         <input id="delve-import-file" type="file" accept=".delve,application/x-delve-save,application/gzip" hidden />
         <p class="delve-msg" id="delve-title-msg" role="status"></p>
         <p class="delve-keys">移動 A/D · 跳 Space · 挖 左鍵 · 放置 右鍵 · 換格 1–0/滾輪 · 背包 E</p>
-        <p class="delve-note">存檔留在這個瀏覽器；新世界會覆蓋舊存檔。iOS 等瀏覽器可能清除網站資料，請用選單匯出備份。</p>
+        <p class="delve-keys delve-keys--touch">左下搖桿移動 · 「跳」按鈕跳躍 · 點格子挖掘或放置 · 點快捷欄換格</p>
+        <p class="delve-note">存檔留在這個瀏覽器（只有一個存檔位）；已有存檔時開新世界會先詢問是否覆蓋。iOS 等瀏覽器可能清除網站資料，請用選單匯出備份。</p>
       </div>
     </section>
   </main>
@@ -101,6 +113,8 @@ const lang: Language = defaultLang;
     --panel: rgba(20, 14, 10, 0.86);
     --edge: #6b4a2a;
     --gold: #ffcc55;
+    /* 中文字：Press Start 2P 沒有 CJK 字形，HUD 文字改用易讀的中文字體與較大字級 */
+    --cjk: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', 'Hiragino Sans', system-ui, sans-serif;
     position: fixed;
     inset: 0;
     z-index: 50;
@@ -164,28 +178,49 @@ const lang: Language = defaultLang;
   .delve-slot-key { position: absolute; left: 3px; top: 3px; font-size: 6px; color: var(--dim); }
   .delve-held {
     position: absolute;
-    top: 62px;
+    top: 60px;
     left: 12px;
-    font-size: 9px;
+    font-family: var(--cjk);
+    font-size: 13px;
+    font-weight: 700;
     text-shadow: 1px 1px 0 #000;
   }
   .delve-status {
     position: absolute;
-    top: 78px;
+    top: 80px;
     left: 12px;
-    font-size: 10px;
-    color: var(--dim);
-    text-shadow: 1px 1px 0 #000;
+    font-family: var(--cjk);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    text-shadow: 1px 1px 0 #000, 0 0 3px #000;
   }
   .delve-corner { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
   .delve-chip {
-    padding: 8px 10px;
-    font-size: 8px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 10px;
+    font-family: var(--cjk);
+    font-size: 13px;
     border: 2px solid var(--edge);
     background: var(--panel);
     cursor: pointer;
   }
   .delve-chip:hover { border-color: var(--gold); }
+  .delve-kbd {
+    font-family: 'Press Start 2P', Consolas, monospace;
+    font-size: 7px;
+    color: var(--dim);
+  }
+  .delve-keys--touch { display: none; }
+  /* 觸控裝置：不顯示鍵盤提示 */
+  @media (pointer: coarse) {
+    .delve-kbd,
+    .delve-keys { display: none; }
+    .delve-keys.delve-keys--touch { display: block; }
+  }
+  .delve[data-touch='1'] .delve-kbd { display: none; }
 
   .delve-panel {
     position: absolute;
@@ -235,7 +270,8 @@ const lang: Language = defaultLang;
     bottom: 26px;
     transform: translate(-50%, 12px);
     padding: 8px 12px;
-    font-size: 9px;
+    font-family: var(--cjk);
+    font-size: 13px;
     border: 2px solid var(--edge);
     background: var(--panel);
     opacity: 0;
@@ -323,6 +359,23 @@ const lang: Language = defaultLang;
   .delve-msg { min-height: 1.2em; margin: 4px 0 0; font-size: 8px; color: #9fe0a0; line-height: 1.6; }
   .delve-note { margin: 4px 0 0; font-size: 10px; line-height: 1.8; color: var(--dim); }
 
+  /* ── 覆蓋確認 ── */
+  .delve-confirm {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgba(5, 3, 2, 0.72);
+  }
+  .delve-confirm-msg { margin: 0; font-family: var(--cjk); font-size: 14px; line-height: 1.7; color: var(--ink); }
+  .delve-confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .delve-confirm .delve-btn { font-family: var(--cjk); font-size: 14px; }
+  .delve-btn--danger { background: #6a1f17; border-color: #c0503a; }
+  .delve-btn--danger:hover,
+  .delve-btn--danger:focus-visible { background: #8a2a1f; border-color: var(--gold); }
+
   /* ── 標題 ── */
   .delve-title {
     position: absolute;
@@ -377,9 +430,12 @@ const lang: Language = defaultLang;
     .delve-slot { width: 34px; height: 34px; }
     .delve-slot-icon { width: 24px; height: 24px; }
     .delve-slot-key { display: none; }
-    .delve-corner { top: auto; bottom: 150px; right: 10px; flex-direction: column; }
-    .delve-held { top: 46px; left: 8px; }
-    .delve-status { top: 62px; left: 8px; }
-    .delve-panel { top: 84px; left: 10px; max-height: calc(100vh - 260px); }
+    /* 背包 / 選單移到右上角（快捷欄下方一列），不擋畫面中右側 */
+    .delve-corner { top: 46px; right: 6px; gap: 4px; }
+    .delve-chip { padding: 5px 8px; font-size: 12px; }
+    .delve-held { top: 46px; left: 8px; font-size: 12px; }
+    .delve-status { top: 64px; left: 8px; font-size: 12px; }
+    /* 背包面板在角落按鈕與狀態列下方，不覆蓋它們 */
+    .delve-panel { top: 88px; left: 6px; width: calc(100vw - 12px); max-height: calc(100vh - 260px); }
   }
 </style>

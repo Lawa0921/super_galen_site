@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   clampCamera, followCamera, FixedStepper, visibleChunks, ChunkLRU,
-  formatClock, depthLabel, blockedMessage, recipeRows, countLabel,
+  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, newWorldPlan, autostartPlan,
 } from './model';
 import { Inventory } from '../engine/inventory';
 import { DAY_LENGTH } from '../engine/constants';
@@ -97,10 +97,16 @@ describe('HUD 文字', () => {
     expect(formatClock(DAY_LENGTH * 0.75)).toBe('18:00');
     expect(formatClock(DAY_LENGTH * 1.25)).toBe('06:00');
   });
-  it('depthLabel', () => {
-    expect(depthLabel(100, 140)).toBe('地表');
-    expect(depthLabel(141, 140)).toBe('地表');
-    expect(depthLabel(160, 140)).toBe('地下 20 格');
+  it('depthLabel：以玩家所在欄的地表高度計算（腳底格）', () => {
+    // 腳底格 = 地表 - 1 → 站在地表上
+    expect(depthLabel(139, 140, 220)).toBe('地表');
+    // 在地表上方（山坡上、樹上）也算地表
+    expect(depthLabel(100, 140, 220)).toBe('地表');
+    expect(depthLabel(149, 140, 220)).toBe('地下 10 格');
+    // 同樣的 y，在較低的欄位仍是地表（不能用全世界 surfaceY）
+    expect(depthLabel(149, 150, 220)).toBe('地表');
+    // 進入洞穴層
+    expect(depthLabel(229, 140, 220)).toBe('洞穴層 · 地下 90 格');
   });
   it('blockedMessage：occupied 不提示', () => {
     expect(blockedMessage('reach')).toMatch(/太遠/);
@@ -133,5 +139,41 @@ describe('recipeRows', () => {
     expect(cp.missing).toBe(false);
     const near = recipeRows(inv, true);
     expect(near.find((r) => r.id === 'copper_pickaxe')!.craftable).toBe(true);
+  });
+});
+
+describe('cameraFocus（直式螢幕讓玩家在中間偏下、多看地面）', () => {
+  const ratio = (vw: number, vh: number): number => {
+    const pc = { x: 5000, y: 3000 };
+    const f = cameraFocus(pc, vw, vh);
+    return (pc.y - (f.y - vh / 2)) / vh; // 玩家在畫面中的縱向比例
+  };
+  it('橫式：玩家略低於中央', () => {
+    const r = ratio(640, 360);
+    expect(r).toBeGreaterThan(0.5);
+    expect(r).toBeLessThan(0.6);
+  });
+  it('直式：玩家在中間偏下，但不會掉到下 1/3（不再大半是天空）', () => {
+    const r = ratio(195, 422);
+    expect(r).toBeGreaterThan(0.5);
+    expect(r).toBeLessThan(0.6);
+  });
+  it('x 置中', () => {
+    expect(cameraFocus({ x: 77, y: 0 }, 195, 422).x).toBe(77);
+  });
+});
+
+describe('新世界 / autostart 覆蓋判斷', () => {
+  it('沒有存檔直接開始；有存檔要確認；force 直接開始', () => {
+    expect(newWorldPlan(null, false)).toBe('start');
+    expect(newWorldPlan('old', false)).toBe('confirm');
+    expect(newWorldPlan('old', true)).toBe('start');
+  });
+  it('autostart：沒參數不動作；有存檔且無 fresh=1 要確認', () => {
+    expect(autostartPlan('', null)).toEqual({ kind: 'none' });
+    expect(autostartPlan('?seed=abc&autostart=1', null)).toEqual({ kind: 'start', seed: 'abc' });
+    expect(autostartPlan('?autostart=1', null)).toEqual({ kind: 'start', seed: undefined });
+    expect(autostartPlan('?seed=abc&autostart=1', 'old')).toEqual({ kind: 'confirm', seed: 'abc', existing: 'old' });
+    expect(autostartPlan('?seed=abc&autostart=1&fresh=1', 'old')).toEqual({ kind: 'start', seed: 'abc' });
   });
 });
