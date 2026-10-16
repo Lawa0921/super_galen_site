@@ -65,6 +65,23 @@ FX = {
     'thunder': 'a jagged yellow lightning bolt strike', 'heal': 'rising green and white sparkles with a small plus sign', 'buff': 'an upward golden arrow with sparkles',
 }
 
+# Animated effects: four frames per effect (wind-up, impact, spread, fade), generated as one strip.
+FX_ANIM = {
+    'slash': ('a thin bright glint line appearing at the upper right', 'a wide crescent sword arc slicing diagonally, white-hot core with a pale cyan edge', 'the arc bursting into a sharp X-shaped slash flash with flying white shards', 'thin fading arc fragments and a few small sparkles'),
+    'pierce': ('a small converging point of light with short speed lines', 'a long straight thrust streak piercing horizontally with a star burst at the tip', 'the star burst opening into a ring of sharp spikes while the streak thins', 'scattered small diamond-shaped sparks and a broken thin line'),
+    'strike': ('a small compressed white impact flash', 'a huge jagged starburst impact with thick radiating lines', 'an expanding shockwave ring with rock-like debris chunks flying outward', 'a thin broken ring and a few small dust puffs'),
+    'fire': ('a small ember spark igniting', 'a big explosion of orange and red flames with a yellow-white core', 'flames billowing outward into tongues of fire with flying embers', 'thin dark smoke wisps and a few small dying embers'),
+    'ice': ('a few small frost crystals forming in a ring', 'a cluster of large jagged pale blue ice shards erupting upward', 'the ice shards shattering outward into sharp fragments with frosty puffs', 'small glittering ice flakes drifting down'),
+    'thunder': ('a crackle of small electric sparks at the top', 'a thick jagged yellow-white lightning bolt striking straight down', 'a bright electric burst at the impact point with branching sparks', 'fading thin static zigzags and a few sparks'),
+    'heal': ('a few small green glimmers rising from below', 'a bright column of green and white light with a big plus-shaped sparkle', 'many green and white sparkles and small plus signs spiralling upward', 'a few faint twinkles fading near the top'),
+    'buff': ('a golden ring of light forming at the bottom', 'a bright upward golden arrow surge with a radiant aura', 'golden rings and sparkles rising and spreading outward', 'a few small golden twinkles fading near the top'),
+}
+
+# Per-effect additions after a rejected attempt (heal a1: faded grey-pink speckles that blend into the magenta key).
+FX_ANIM_NOTE = {
+    'heal': ' Every pixel is a solid, fully opaque, saturated green, white or pale yellow; fading is shown only by fewer and smaller sparkles, never by greyish, pinkish or translucent-looking pixels. No grey dust or speckle noise.',
+}
+
 
 # Target art-pixel heights per category; scarlet's approved sprites set the standee (283) and portrait (115) scale.
 HEIGHT = {'npc': 180, 'logo': 90, 'cursor': 12, 'standee': 280, 'portrait': 115, 'party': 32, 'enemy': 64, 'boss': 150, 'icon': 32, 'fx': 64}
@@ -151,6 +168,9 @@ def jobs():
     for k, desc in FX.items():
         write(f'fx-{k}', f'Single pixel art battle effect of {desc}, bold flat shapes, no soft glow gradients, no transparency, 16-bit JRPG style, strict square pixel grid, about 64 art pixels tall. Centred on a perfectly flat solid pure magenta #FF00FF background with empty space around it. No text.')
         out.append(dict(id=f'fx-{k}', images=[], kind='sprite', height=HEIGHT['fx']))
+    for k, (f1, f2, f3, f4) in FX_ANIM.items():
+        write(f'fx-{k}-anim', f'A horizontal animation strip of four pixel art battle effect frames for a classic Japanese 16-bit console RPG: {FX[k]}. Exactly four frames in one row, left to right, each frame alone in its own equal-width cell, separated by wide empty gutters of perfectly flat solid pure magenta #FF00FF, with a magenta margin around the whole strip; nothing touches the image edges and no frame overlaps another. Frame 1 (wind-up): {f1}. Frame 2 (impact): {f2}. Frame 3 (spread): {f3}. Frame 4 (fade): {f4}. The four frames are one effect playing in place: same scale, same centre point in every cell; the impact frame is the biggest, about 64 art pixels tall. Powerful, high-contrast, punchy effect with a strong sense of light: glow is drawn as two or three hard-edged stepped colour bands around a bright white-hot core, with no soft gradients, no blur and no semi-transparency. Keep the colours and motif of the attached earlier single-frame effect but make it bolder. Strict square pixel grid, crisp dark outline where needed, limited palette, no anti-aliasing. The design must be original. No text, no numbers, no cell borders, no grid lines.{FX_ANIM_NOTE.get(k, "")}')
+        out.append(dict(id=f'fx-{k}-anim', images=[newest(f'fx-{k}')], kind='fx-anim', frames=4, height=HEIGHT['fx']))
     # --- Game UI (plan 3): scenes, NPC busts, logo, window frame, cursor ---
     bg1, anchor_char = newest('bg-f1'), newest('char-scarlet-standee')
     SCENE = 'Match the pixel art style, palette and pixel density of the attached approved backdrop. 16:9 pixel art scene, 16-bit JRPG style, strict square pixel grid, limited palette, no anti-aliasing, no blur. No people, no text, no letters, no signs with writing. Fill the whole canvas edge to edge.'
@@ -220,6 +240,7 @@ def main():
             continue
         args = ['--id', aid, '--raw', str(raw), '--kind', job['kind']]
         if job['kind'] in ('tile-sheet', 'icon-sheet'): args += ['--cols', '3' if job['kind'] == 'tile-sheet' else '5', '--rows', '3' if job['kind'] == 'tile-sheet' else '4', '--ids', ','.join(job['parts'])]
+        if job['kind'] == 'fx-anim': args += ['--frames', str(job['frames'])]
         if job.get('block'): args += ['--block', str(job['block'])]
         if job.get('height'): args += ['--height', str(job['height'])]
         p = subprocess.run(proc + args, cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')

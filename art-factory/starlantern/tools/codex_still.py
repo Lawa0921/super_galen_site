@@ -29,6 +29,11 @@ def codex_command(prompt, images=(), codex='codex'):
     return argv + [prompt]
 
 
+def hidden_window():
+    """Windows: run codex (an npm .cmd shim) without opening a console window; no-op elsewhere."""
+    return {'creationflags': 0x08000000} if sys.platform == 'win32' else {}  # CREATE_NO_WINDOW
+
+
 def newest_generated(since, root=GENERATED):
     found = [p for p in Path(root).rglob('*.png') if p.stat().st_mtime >= since] if Path(root).exists() else []
     return max(found, key=lambda p: p.stat().st_mtime) if found else None
@@ -43,7 +48,8 @@ def run_codex(prompt, workdir, name, images=(), runner=subprocess.run, codex=Non
     argv = codex_command(full, images, codex or shutil.which('codex') or 'codex')
     start = time.time()
     with open(workdir/f'{Path(name).stem}.codex.log', 'w', encoding='utf-8') as log:
-        proc = runner(argv, cwd=str(workdir), stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, timeout=timeout)
+        proc = runner(argv, cwd=str(workdir), stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, timeout=timeout,
+                      **hidden_window())
     out = workdir/name
     if not out.exists():
         fallback = newest_generated(start - 2, generated_root)  # 2 s slack for file-time granularity

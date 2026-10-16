@@ -1,4 +1,4 @@
-import json
+import json, sys
 from pathlib import Path
 import numpy as np
 import pytest
@@ -264,3 +264,122 @@ def test_default_defringe_keeps_real_purples_and_pinks_on_the_edge():
     assert all(out[2, x, 3] == 255 for x in (3, 5, 7, 9))
     rgba[2, 11] = (230, 40, 220, 255)               # near-magenta fringe is still removed by default
     assert np.asarray(A.defringe(Image.fromarray(rgba, 'RGBA')))[2, 11, 3] == 0
+
+
+# --- Animated battle effects (fx-anim): one codex strip of 4 frames -> one transparent sheet of equal cells ---
+
+def fx_strip(gaps=(60, 60, 60), sizes=((20, 20), (40, 50), (60, 70), (30, 30)), w=None, h=120, colors=None):
+    """Four blobs left to right on magenta, separated by the given gutter widths, vertically centred."""
+    colors = colors or [(250, 240, 120), (250, 160, 40), (220, 60, 20), (120, 40, 20)]
+    w = w or 20 + sum(s[0] for s in sizes) + sum(gaps) + 20
+    arr = np.zeros((h, w, 3), np.uint8); arr[:] = M; x = 20
+    for k, ((bw, bh), c) in enumerate(zip(sizes, colors)):
+        y0 = (h - bh) // 2; arr[y0:y0 + bh, x:x + bw] = c; x += bw + (gaps[k] if k < len(gaps) else 0)
+    return Image.fromarray(arr, 'RGB')
+
+
+def test_split_frames_cuts_at_the_widest_magenta_gutters():
+    # frame 3 has an internal 10 px gap (scattered sparks); the three 60 px gutters still win
+    img = fx_strip(); arr = np.asarray(img).copy()
+    arr[55:60, 200:210] = M
+    spans = A.split_frames(Image.fromarray(arr, 'RGB'), 4)
+    assert len(spans) == 4 and spans[0][0] == 0 and spans[-1][1] == img.width
+    assert all(a[1] == b[0] for a, b in zip(spans, spans[1:]))
+
+
+def test_split_frames_rejects_a_strip_with_too_few_gutters():
+    with pytest.raises(ValueError):
+        A.split_frames(fx_strip(gaps=(60, 0, 60), sizes=((20, 20), (40, 50), (60, 70), (30, 30))), 4)
+
+
+def test_process_fx_anim_builds_equal_cells_with_one_shared_scale(tmp_path):
+    raw = tmp_path / 'raw.png'; fx_strip().resize((fx_strip().width * 4, 480), Image.NEAREST).save(raw)
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'fx-fire-anim', raw, 'fx-anim', workdir=tmp_path / 'w', frames=4, height=35)['fx-fire-anim']
+    assert q['pass'], q
+    sheet = Image.open(tmp_path / 'w' / 'fx-fire-anim.png')
+    fw, fh = q['frame_size']
+    assert sheet.size == (fw * 4, fh) and q['frames'] == 4
+    assert q['block'] == 8                       # tallest frame 280 raw px / 35 art px, shared by every frame
+    a = np.asarray(sheet)[..., 3]
+    assert set(np.unique(a)) <= {0, 255}
+    for k in range(4):                           # every cell holds art and leaves a clear border
+        cell = a[:, k * fw:(k + 1) * fw]
+        assert cell.any() and not cell[0].any() and not cell[-1].any() and not cell[:, 0].any() and not cell[:, -1].any()
+    e = reg.get('fx-fire-anim')
+    assert e['status'] == 'qa_passed' and e['kind'] == 'fx-anim' and e['frames'] == 4
+    assert e['runtime'] == '/assets/games/starlantern/fx/fire-anim.png'
+
+
+def test_process_fx_anim_keeps_each_frame_anchored_to_its_cell():
+    # The same blob drawn lower in frame 2 must stay lower after processing (no per-frame re-centring).
+    img = fx_strip(sizes=((20, 20),) * 4); arr = np.asarray(img).copy()
+    x2 = 20 + 20 + 60; arr[:, x2:x2 + 20] = M; arr[80:100, x2:x2 + 20] = (250, 160, 40)
+    frames, block, _ = A.fx_frames(Image.fromarray(arr, 'RGB'), 4, height=None, block=1)
+    tops = [np.flatnonzero(np.asarray(f)[..., 3].any(axis=1))[0] for f in frames]
+    assert tops[1] > tops[0] and tops[0] == tops[2] == tops[3]
+
+
+def test_process_fx_anim_fails_identical_frames_and_canvas_cuts(tmp_path):
+    same = fx_strip(sizes=((30, 30),) * 4, colors=[(250, 200, 60)] * 4)
+    raw = tmp_path / 'same.png'; same.save(raw); reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'fx-x-anim', raw, 'fx-anim', workdir=tmp_path / 'w', frames=4, block=2)['fx-x-anim']
+    assert not q['pass'] and 'frames identical' in q['reasons']
+    arr = np.asarray(fx_strip()).copy(); arr[0:70, 20:40] = (250, 240, 120)        # frame 1 runs off the top
+    raw2 = tmp_path / 'cut.png'; Image.fromarray(arr, 'RGB').save(raw2)
+    q2 = A.process(reg, 'fx-y-anim', raw2, 'fx-anim', workdir=tmp_path / 'w2', frames=4, block=2)['fx-y-anim']
+    assert not q2['pass'] and 'subject cut by the canvas edge' in q2['reasons']
+    assert reg.get('fx-x-anim')['status'] == 'qa_failed'
+
+
+def test_process_fx_anim_runs_alpha_qa_on_the_whole_sheet(tmp_path):
+    raw = tmp_path / 'r.png'; fx_strip().save(raw); reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'fx-z-anim', raw, 'fx-anim', workdir=tmp_path / 'w', frames=4, block=2)['fx-z-anim']
+    assert {'residue', 'semi', 'edge', 'holes', 'per_frame_edge'} <= set(q) and q['pass']
+
+
+def test_codex_runs_without_a_console_window(tmp_path):
+    import codex_still as C
+    seen = {}
+    def runner(argv, **kw):
+        seen.update(kw); return type('P', (), {'returncode': 0})()
+    C.run_codex('draw', tmp_path, 'x.png', runner=runner, codex='codex', generated_root=tmp_path / 'none')
+    if sys.platform == 'win32':
+        assert seen['creationflags'] & 0x08000000      # CREATE_NO_WINDOW
+    assert seen['stdin'] is not None
+
+
+def test_batch_has_one_fx_anim_job_per_effect_with_its_old_still_as_reference():
+    import batch
+    jobs = {j['id']: j for j in batch.jobs() if j['kind'] == 'fx-anim'}
+    assert sorted(jobs) == sorted(f'fx-{k}-anim' for k in batch.FX)
+    for k in batch.FX:
+        j = jobs[f'fx-{k}-anim']
+        assert j['frames'] == 4 and j['height'] == batch.HEIGHT['fx']
+        text = (batch.PROMPTS / f'fx-{k}-anim.txt').read_text(encoding='utf-8')
+        assert '#FF00FF' in text and 'four' in text.lower() and 'no text' in text.lower()
+
+
+def test_magenta_blend_finds_pixels_mixed_with_the_key_next_to_their_source_colour():
+    rgba = np.zeros((6, 8, 4), np.uint8); rgba[1:5, 1:7] = (255, 230, 0, 255)       # yellow bolt
+    rgba[2, 3] = (243, 89, 152, 255)            # ~60% magenta + yellow: blend
+    rgba[2, 5] = (60, 30, 70, 255); rgba[3, 5] = (89, 36, 94, 255)                 # real dark purple smoke
+    m = A.magenta_blend(Image.fromarray(rgba, 'RGBA'))
+    assert m[2, 3] and not m[3, 5] and not m[2, 5] and m.sum() == 1
+
+
+def test_deblend_restores_the_source_colour_and_clears_the_qa_count():
+    rgba = np.zeros((6, 8, 4), np.uint8); rgba[1:5, 1:7] = (40, 200, 40, 255)
+    rgba[2, 2] = (146, 90, 146, 255); rgba[2, 3] = (150, 100, 150, 255)             # two-pixel pink cluster in green
+    out = np.asarray(A.deblend(Image.fromarray(rgba, 'RGBA')))
+    assert tuple(out[2, 2, :3]) == (40, 200, 40) and tuple(out[2, 3, :3]) == (40, 200, 40)
+    assert not A.magenta_blend(Image.fromarray(out, 'RGBA')).any()
+
+
+def test_process_fx_anim_fails_leftover_magenta_blend(tmp_path):
+    arr = np.asarray(fx_strip()).copy()
+    arr[30:34, 130:134] = (150, 95, 150)        # an isolated pink speck: no source colour to restore it to
+    arr[29, 129:135] = (40, 40, 40); arr[34, 129:135] = (40, 40, 40); arr[30:34, 129] = (40, 40, 40); arr[30:34, 134] = (40, 40, 40)
+    raw = tmp_path / 'r.png'; Image.fromarray(arr, 'RGB').save(raw); reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'fx-b-anim', raw, 'fx-anim', workdir=tmp_path / 'w', frames=4, block=1)['fx-b-anim']
+    assert q['tint'] > 0 and 'magenta tint' in q['reasons'] and not q['pass']

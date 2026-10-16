@@ -142,6 +142,142 @@ def seam_score(img):
     return float((np.abs(a[:, 0] - a[:, -1]).mean() + np.abs(a[0] - a[-1]).mean()) / 2)
 
 
+_SHIFTS = [(dy, dx) for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx]
+
+
+def _magenta_ward(rgb, m=30):
+    c = rgb.astype(np.int16); return (c[..., 0] - c[..., 1] >= m) & (c[..., 2] - c[..., 1] >= m)
+
+
+def _blend_fit(arr, t_range=(0.2, 0.95), max_res=20.0):
+    """For every opaque magenta-ward pixel, the best opaque non-magenta-ward 8-neighbour C such that the pixel is
+    t*magenta + (1-t)*C (an anti-aliased blend with the key). Returns (mask, source colours)."""
+    rgb = arr[..., :3].astype(np.float32); op = arr[..., 3] == 255
+    cand = op & _magenta_ward(arr[..., :3]); src_ok = op & ~_magenta_ward(arr[..., :3])
+    h, w = op.shape; best = np.full((h, w), np.inf, np.float32); src = np.zeros((h, w, 3), np.float32)
+    pad = np.pad(rgb, ((1, 1), (1, 1), (0, 0))); okp = np.pad(src_ok, 1)
+    M = np.array([255, 0, 255], np.float32)
+    for dy, dx in _SHIFTS:
+        C = pad[1 + dy:1 + dy + h, 1 + dx:1 + dx + w]; ok = okp[1 + dy:1 + dy + h, 1 + dx:1 + dx + w]
+        d = M - C; t = ((rgb - C) * d).sum(-1) / np.maximum((d * d).sum(-1), 1)
+        res = np.sqrt(((C + t[..., None] * d - rgb) ** 2).sum(-1))
+        good = cand & ok & (t >= t_range[0]) & (t <= t_range[1]) & (res <= max_res) & (res < best)
+        best[good] = res[good]; src[good] = C[good]
+    return np.isfinite(best), src
+
+
+def magenta_blend(img):
+    """Opaque pixels that are an anti-aliased mix of the magenta key and a neighbouring subject colour."""
+    return _blend_fit(np.asarray(img.convert('RGBA')))[0]
+
+
+def magenta_tint(rgb):
+    """Bright pinkish pixels (red and blue both high and well above green): what is left of magenta after cutout."""
+    c = np.asarray(rgb).astype(np.int16)
+    return (c[..., 0] >= 130) & (c[..., 2] >= 110) & _magenta_ward(c, 40)
+
+
+def deblend(img, passes=3):
+    """Replace magenta blends with the neighbouring colour they were mixed from (repeats to peel thicker clusters)."""
+    arr = np.asarray(img.convert('RGBA')).copy()
+    for _ in range(passes):
+        mask, src = _blend_fit(arr)
+        if not mask.any(): break
+        arr[mask, :3] = np.round(src[mask]).astype(np.uint8)
+    return Image.fromarray(arr, 'RGBA')
+
+
+def clear_edge_tint(img, passes=2):
+    """Pinkish tint pixels that touch transparency are key fringe on effects: make them transparent."""
+    arr = np.asarray(img.convert('RGBA')).copy()
+    for _ in range(passes):
+        clear = arr[..., 3] == 0; touch = np.zeros_like(clear)
+        touch[1:] |= clear[:-1]; touch[:-1] |= clear[1:]; touch[:, 1:] |= clear[:, :-1]; touch[:, :-1] |= clear[:, 1:]
+        hit = touch & ~clear & magenta_tint(arr[..., :3])
+        if not hit.any(): break
+        arr[hit] = 0
+    return Image.fromarray(arr, 'RGBA')
+
+
+def split_frames(img, n):
+    """Column spans of n animation frames laid out left to right, cut at the n-1 widest magenta gutters.
+
+    Spans cover the whole width and meet at gutter midpoints, so each frame keeps its position inside its cell.
+    Small gaps inside a frame (scattered sparks) lose to the wider gutters between frames.
+    """
+    rgb = np.asarray(img.convert('RGB')); fg = ~(_near_magenta(rgb, 45) | _magenta_tint(rgb))
+    runs = _runs(fg.any(axis=0))
+    gaps = [(runs[k + 1][0] - runs[k][1], runs[k][1], runs[k + 1][0]) for k in range(len(runs) - 1)]
+    if len(gaps) < n - 1: raise ValueError(f'expected {n} frames, found at most {len(gaps) + 1}')
+    cuts = sorted((a + b) // 2 for _, a, b in sorted(gaps, reverse=True)[:n - 1])
+    edges = [0] + cuts + [rgb.shape[1]]
+    return list(zip(edges[:-1], edges[1:]))
+
+
+def fx_frames(img, n, height=None, block=None):
+    """Cut a raw effect strip into n transparent frames that share one scale, one canvas and one anchor.
+
+    Each frame is centred on its cell, all frames are cropped to the union of their subjects (so motion inside the
+    cell is preserved), then downscaled with the same block. Returns (frames, block, source_frames_rgb).
+    """
+    img = img.convert('RGB'); spans = split_frames(img, n); cw = max(b - a for a, b in spans)
+    src = []
+    for a, b in spans:
+        canvas = Image.new('RGB', (cw, img.height), (255, 0, 255))
+        canvas.paste(img.crop((a, 0, b, img.height)), ((cw - (b - a)) // 2, 0)); src.append(canvas)
+    cuts = [cutout(c) for c in src]
+    boxes = [c.getbbox() for c in cuts if c.getbbox()]
+    if not boxes: raise ValueError('no foreground in any frame')
+    box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+    if block is None:
+        block = max(1, round((box[3] - box[1]) / height)) if height else 1
+    frames, sources = [], []
+    for cut, s in zip(cuts, src):
+        w, h = box[2] - box[0] + 2 * block, box[3] - box[1] + 2 * block
+        pad = Image.new('RGBA', (w, h)); pad.paste(cut.crop(box), (block, block))
+        spad = Image.new('RGB', (w, h), (255, 0, 255)); spad.paste(s.crop(box), (block, block))
+        frames.append(clear_edge_tint(deblend(defringe(to_art_pixels(pad, block))))); sources.append(to_art_pixels(spad, block))
+    return frames, block, sources
+
+
+def _process_fx_anim(reg, aid, raw, img, workdir, frames=4, height=None, block=None):
+    entry = reg.data['assets'].get(aid, {})
+    cells, block, sources = fx_frames(img, frames, height, block)
+    fw, fh = cells[0].size
+    sheet = Image.new('RGBA', (fw * frames, fh)); hint_sheet = Image.new('RGB', (fw * frames, fh), (255, 0, 255))
+    for k, (c, s) in enumerate(zip(cells, sources)):
+        sheet.paste(c, (k * fw, 0)); hint_sheet.paste(s, (k * fw, 0))
+    hint = _near_magenta(np.asarray(hint_sheet), 30)
+    qa = alpha_qa(sheet, entry.get('allow_holes', 0), hint, entry.get('allow_residue', 0))
+    arrs = [np.asarray(c) for c in cells]
+    border = np.zeros((fh, fw), bool); border[0, :] = border[-1, :] = True; border[:, 0] = border[:, -1] = True
+    qa['per_frame_edge'] = int(sum(((a[..., 3] == 255) & border).sum() for a in arrs))
+    if qa['per_frame_edge']: qa['reasons'].append('frame touches its cell edge')
+    sa = np.asarray(sheet); op = sa[..., 3] == 255
+    qa['blend'] = int(magenta_blend(sheet).sum()); qa['tint'] = int((op & magenta_tint(sa[..., :3])).sum())
+    if qa['blend'] + qa['tint'] > entry.get('allow_tint', 0): qa['reasons'].append('magenta tint')
+    if any(not a[..., 3].any() for a in arrs): qa['reasons'].append('empty frame')
+    diffs = [float((np.abs(x.astype(np.int16) - y).max(axis=-1) > 0).mean()) for x, y in zip(arrs, arrs[1:])]
+    qa['frame_diff'] = [round(d, 4) for d in diffs]
+    if any(d < 0.02 for d in diffs): qa['reasons'].append('frames identical')
+    bbox = cutout(img).getbbox()
+    if bbox and (bbox[0] == 0 or bbox[1] == 0 or bbox[2] == img.width or bbox[3] == img.height):
+        qa['reasons'].append('subject cut by the canvas edge')
+    qa['pass'] = not qa['reasons']
+    qa.update(block=block, size=list(sheet.size), frames=frames, frame_size=[fw, fh])
+    workdir = Path(workdir); out = workdir / f'{aid}.png'; sheet.save(out)
+    for k, c in enumerate(cells): c.save(workdir / f'{aid}-f{k}.png')
+    (workdir / f'{aid}.qa.json').write_text(json.dumps(qa, indent=2), encoding='utf-8')
+    repo = ROOT.parents[1]
+    final_path = out.relative_to(repo).as_posix() if out.is_relative_to(repo) else str(out)
+    extra = {}
+    if 'runtime' not in entry and aid.startswith('fx-') and aid.endswith('-anim'):
+        extra['runtime'] = f'{BASE}fx/{aid[3:]}.png'
+    reg.set(aid, kind='fx-anim', frames=frames, frame_size=[fw, fh], final=final_path, raw=str(raw), qa=qa,
+            status='qa_passed' if qa['pass'] else 'qa_failed', **extra)
+    return qa
+
+
 class Registry:
     def __init__(self, path):
         self.path = Path(path)
@@ -186,10 +322,12 @@ class Registry:
         out.write_text(json.dumps({'version': 1, 'urls': urls}, indent=2) + '\n', encoding='utf-8')
 
 
-def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, block=None, height=None):
+def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, block=None, height=None, frames=4):
     """Postprocess one raw codex PNG into final file(s) under art-factory/starlantern/work/<aid>/ and record QA."""
     workdir = Path(workdir or ROOT / 'work' / aid); workdir.mkdir(parents=True, exist_ok=True)
     img = Image.open(raw).convert('RGB')
+    if kind == 'fx-anim':
+        return {aid: _process_fx_anim(reg, aid, raw, img, workdir, frames, height, block)}
     if kind in ('tile-sheet', 'icon-sheet'):
         cells = slice_grid(img, cols, rows, trim=kind == 'tile-sheet')
         targets = ids or []
@@ -243,7 +381,8 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='sl_art'); sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('process'); p.add_argument('--id', required=True); p.add_argument('--raw', required=True, type=Path)
-    p.add_argument('--kind', required=True, choices=['sprite', 'opaque', 'tile-sheet', 'icon-sheet'])
+    p.add_argument('--kind', required=True, choices=['sprite', 'opaque', 'tile-sheet', 'icon-sheet', 'fx-anim'])
+    p.add_argument('--frames', type=int, default=4, help='fx-anim: number of animation frames in the raw strip')
     p.add_argument('--ids'); p.add_argument('--cols', type=int); p.add_argument('--rows', type=int)
     p.add_argument('--block', type=int, help='art-pixel size override when grid detection misreads painterly art')
     p.add_argument('--height', type=int, help='target art-pixel height for sprites; sets the block from the subject height')
@@ -254,7 +393,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
     reg = Registry(ROOT / 'registry.json'); public = ROOT.parents[1] / 'public'
     if args.cmd == 'process':
-        out = process(reg, args.id, args.raw, args.kind, args.ids.split(',') if args.ids else None, args.cols, args.rows, block=args.block, height=args.height)
+        out = process(reg, args.id, args.raw, args.kind, args.ids.split(',') if args.ids else None, args.cols, args.rows, block=args.block, height=args.height, frames=args.frames)
         print(json.dumps(out, ensure_ascii=False)); return 0 if all(q['pass'] for q in out.values()) else 1
     if args.cmd == 'approve': reg.approve(args.id)
     if args.cmd == 'reject': reg.reject(args.id, args.reason, public)

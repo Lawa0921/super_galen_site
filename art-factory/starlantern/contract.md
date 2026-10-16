@@ -26,6 +26,7 @@
 | 敵人 | `enemy-<eid>` | `/assets/games/starlantern/enemy/<eid>.png` | 透明 | 高 48–112；頭目 120–200 |
 | 圖示 | `icon-<id>` | `/assets/games/starlantern/icon/<id>.png` | 透明 | 24×24 方框內 |
 | 特效 | `fx-<key>` | `/assets/games/starlantern/fx/<key>.png` | 透明 | 高 32–96 |
+| 特效動畫 | `fx-<key>-anim` | `/assets/games/starlantern/fx/<key>-anim.png`（橫向 4 格等寬，CSS `steps(4)` 播放） | 透明 | 每格同尺寸，最大格高約 64 |
 | 介面框 | `ui-frame` | `/assets/games/starlantern/ui/frame.png` | 不透明 | 48×48，角 16 |
 
 圖塊表（每層一張 3×3）順序：wall、floor、door ／ up、down、chest ／ chest-open、entrance、boss。
@@ -39,7 +40,13 @@
 - 敵人：`Pixel art monster sprite of <敵人描述>, facing the viewer, full body, 16-bit JRPG battle sprite, crisp 1px dark outline, flat pure magenta #FF00FF background, no text.`
 - 圖示表：`A 5 by 4 grid of twenty small pixel art RPG icons separated by thick flat pure magenta #FF00FF gutters, each icon on magenta, in this order left to right, top to bottom: <清單>. No text.`
 - 特效：`Single pixel art battle effect of <效果>, bold shapes, no soft glow gradients, flat pure magenta #FF00FF background, no text.`
+- 特效動畫：一張橫向 4 格 strip（起手 → 爆發 → 擴散 → 消散），格間留寬 magenta 槽，四格同比例、同中心；發光用 2–3 層硬邊色階表現，不用柔和漸層或半透明。附該效果的舊單格特效原圖當配色參考。完整句子由 `batch.py` 的 `FX_ANIM` 產生。
 - 介面框：`A 48 by 48 pixel art UI panel frame, dark navy fill, ornate brass border 16 pixels wide with star-lantern motif corners, edges designed to repeat, fills the canvas edge to edge, no text.`
+
+## 特效動畫（fx-anim）
+- 生成：`python art-factory/starlantern/tools/batch.py --only=fx-<key>-anim`（codex 在背景、無主控台視窗執行）。
+- 後處理：`sl_art.py process --kind fx-anim --frames 4 --height 64`。以 n−1 條最寬的 magenta 槽切格；每格依所在格子置中，取四格主體的聯集外框，全部用同一個 block 縮成美術像素，所以格內的位移與大小變化都保留。輸出橫向等寬 sheet（`<id>.png`）與單格（`<id>-f<k>.png`）。
+- QA：整張 sheet 跑一般透明素材 QA（殘色、半透明、碰邊、洞警告），另外檢查：每格不得碰到自己的格邊、不得有空格、相鄰兩格差異須 ≥ 2%（`frames identical`）、主體不得被原圖畫布切到。
 
 ## 地形與敵人描述
 - f1 林間遺跡：mossy forest ruins, green and grey stone, roots, soft daylight.

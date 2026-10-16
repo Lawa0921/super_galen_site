@@ -1,0 +1,29 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 10,
+  "per_frame_edge": 0,
+  "blend": 0,
+  "tint": 0,
+  "frame_diff": [
+    0.4369,
+    0.4865,
+    0.3089
+  ],
+  "block": 8,
+  "size": [
+    276,
+    70
+  ],
+  "frames": 4,
+  "frame_size": [
+    69,
+    70
+  ]
+}

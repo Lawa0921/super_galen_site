@@ -4374,6 +4374,369 @@
       },
       "approved_by": "user 2026-10-15: 看起來不錯 套用並實作看看",
       "defringe": "strong"
+    },
+    "fx-slash-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        58,
+        63
+      ],
+      "final": "art-factory/starlantern/work/fx-slash-anim/fx-slash-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-slash-anim\\fx-slash-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.1861,
+          0.3697,
+          0.2811
+        ],
+        "block": 8,
+        "size": [
+          232,
+          63
+        ],
+        "frames": 4,
+        "frame_size": [
+          58,
+          63
+        ]
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/slash-anim.png"
+    },
+    "fx-pierce-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        158,
+        66
+      ],
+      "final": "art-factory/starlantern/work/fx-pierce-anim/fx-pierce-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-pierce-anim\\fx-pierce-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.2479,
+          0.294,
+          0.1155
+        ],
+        "block": 5,
+        "size": [
+          632,
+          66
+        ],
+        "frames": 4,
+        "frame_size": [
+          158,
+          66
+        ]
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/pierce-anim.png"
+    },
+    "fx-strike-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        62,
+        66
+      ],
+      "final": "art-factory/starlantern/work/fx-strike-anim/fx-strike-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-strike-anim\\fx-strike-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.4621,
+          0.5002,
+          0.2532
+        ],
+        "block": 8,
+        "size": [
+          248,
+          66
+        ],
+        "frames": 4,
+        "frame_size": [
+          62,
+          66
+        ]
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/strike-anim.png"
+    },
+    "fx-fire-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        69,
+        70
+      ],
+      "final": "art-factory/starlantern/work/fx-fire-anim/fx-fire-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-fire-anim\\fx-fire-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.4369,
+          0.4865,
+          0.3089
+        ],
+        "block": 8,
+        "size": [
+          276,
+          70
+        ],
+        "frames": 4,
+        "frame_size": [
+          69,
+          70
+        ]
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/fire-anim.png"
+    },
+    "fx-ice-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        67,
+        68
+      ],
+      "final": "art-factory/starlantern/work/fx-ice-anim/fx-ice-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-ice-anim\\fx-ice-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.4346,
+          0.52,
+          0.2965
+        ],
+        "block": 8,
+        "size": [
+          268,
+          68
+        ],
+        "frames": 4,
+        "frame_size": [
+          67,
+          68
+        ]
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/ice-anim.png"
+    },
+    "fx-thunder-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        47,
+        69
+      ],
+      "final": "art-factory/starlantern/work/fx-thunder-anim/fx-thunder-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-thunder-anim\\fx-thunder-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.1779,
+          0.2547,
+          0.1428
+        ],
+        "block": 9,
+        "size": [
+          188,
+          69
+        ],
+        "frames": 4,
+        "frame_size": [
+          47,
+          69
+        ]
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/thunder-anim.png"
+    },
+    "fx-heal-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        36,
+        67
+      ],
+      "final": "art-factory/starlantern/work/fx-heal-anim/fx-heal-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-heal-anim\\fx-heal-anim-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 17,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.4225,
+          0.4726,
+          0.2098
+        ],
+        "block": 9,
+        "size": [
+          144,
+          67
+        ],
+        "frames": 4,
+        "frame_size": [
+          36,
+          67
+        ]
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/heal-anim.png",
+      "rejected_attempts": [
+        {
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-heal-anim\\fx-heal-anim-a1.png",
+          "reason": "magenta tint 3 px left after deblend; faded grey-pink speckles (46 tiny holes) read as dirty noise on the dark background",
+          "qa": {
+            "pass": false,
+            "reasons": [
+              "magenta tint"
+            ],
+            "warnings": [
+              "enclosed holes"
+            ],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 46,
+            "per_frame_edge": 0,
+            "blend": 0,
+            "tint": 3,
+            "frame_diff": [
+              0.3579,
+              0.4083,
+              0.2112
+            ],
+            "block": 9,
+            "size": [
+              124,
+              64
+            ],
+            "frames": 4,
+            "frame_size": [
+              31,
+              64
+            ]
+          }
+        }
+      ]
+    },
+    "fx-buff-anim": {
+      "kind": "fx-anim",
+      "frames": 4,
+      "frame_size": [
+        50,
+        66
+      ],
+      "final": "art-factory/starlantern/work/fx-buff-anim/fx-buff-anim.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\fx-buff-anim\\fx-buff-anim-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "per_frame_edge": 0,
+        "blend": 0,
+        "tint": 0,
+        "frame_diff": [
+          0.5206,
+          0.5394,
+          0.3482
+        ],
+        "block": 8,
+        "size": [
+          200,
+          66
+        ],
+        "frames": 4,
+        "frame_size": [
+          50,
+          66
+        ]
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/fx/buff-anim.png"
     }
   }
 }
