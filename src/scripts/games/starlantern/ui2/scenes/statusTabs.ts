@@ -426,9 +426,9 @@ const talentView: { cur: string; spend: SpendState; msg: string; reveal: boolean
 
 /** Back to the first-visit state: the cursor on the first node, nothing pending. */
 export function resetTalentView(): void {
+  leaveTalent();
   talentView.cur = '';
   talentView.reveal = false;
-  leaveTalent();
 }
 
 function settleTalent(): void {
@@ -436,10 +436,24 @@ function settleTalent(): void {
   talentView.msg = '';
 }
 
-/** The page went away: drop a waiting press, and the next visit starts with the board at the top. */
+/**
+ * The page went away: drop a waiting press. The next visit starts with the board at the top and then brings the kept
+ * cursor's node into view (`shown`), so a cursor on a low row or a keystone is never left off-screen.
+ */
 function leaveTalent(): void {
   settleTalent();
   talentView.top = 0;
+  talentView.reveal = true;
+}
+
+/** How far one click on the board's ▲/▼ scrolls it: about one row of nodes. */
+const TALENT_STEP = 40;
+
+/** ▲ while more of the board is above, ▼ while more is below; neither when it fits (as the equip detail panel's). */
+function talentCues(board: HTMLElement, up: HTMLElement, down: HTMLElement): void {
+  const room = Math.max(0, board.scrollHeight - board.clientHeight);
+  up.hidden = !(room > 1 && board.scrollTop > 0);
+  down.hidden = !(room > 1 && board.scrollTop < room - 1);
 }
 
 /** The member's talent nodes in cursor order: row 0 columns 0-3, row 1, ... row 5, then the keystones (BOARDS order). */
@@ -516,11 +530,8 @@ const talent: StatusTab = {
           el('span', { class: 'slx-talent-name', text: key ? key.name : T.gear.statName[n.stat!] }),
           el('span', { class: 'slx-talent-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
         ]),
-        ...(key ? [el('p', { class: 'slx-talent-desc', text: key.desc })] : []),
-        el('div', { class: 'slx-talent-foot' }, [
-          ...(key ? [] : [el('span', { class: 'slx-talent-per', text: t.per(n.stat!, perRank(n)) })]),
-          el('span', { class: 'slx-talent-state', text: why ? t.reason[why] : t.open }),
-        ]),
+        el('p', { class: key ? 'slx-talent-desc' : 'slx-talent-per', text: key ? key.desc : t.per(n.stat!, perRank(n)) }),
+        el('p', { class: 'slx-talent-state', text: why ? t.reason[why] : t.open }),
       ]);
       // The first click moves the cursor here; a click on the cursor's node is Enter.
       node.addEventListener('click', () => {
@@ -532,23 +543,42 @@ const talent: StatusTab = {
       });
       return node;
     };
-    // Each row lines up under the one above, so a node's three neighbours above (adjacency) sit right over it.
-    const rows = Array.from({ length: BOARD_ROWS }, (_, r) =>
-      el('div', { class: 'slx-talent-row', attrs: { 'data-row': String(r) } }, BOARDS[id].filter((n) => !n.keystone && n.row === r).map(cell)));
-    // The board scrolls on its own above the fixed notes; a redraw keeps where it was (see `shown`).
+    // Each row is labelled by its tier and lines up under the one above, so a node's three neighbours above
+    // (adjacency) sit right over it.
+    const rows = Array.from({ length: BOARD_ROWS }, (_, r) => el('div', { class: 'slx-talent-row', attrs: { 'data-row': String(r) } }, [
+      el('span', { class: 'slx-talent-tier', text: t.tier(r + 1) }),
+      ...BOARDS[id].filter((n) => !n.keystone && n.row === r).map(cell),
+    ]));
+    // The board scrolls on its own above the fixed notes; a redraw keeps where it was (see `shown`). The ▲/▼ cues on
+    // its frame show while more is hidden that way, and a click (or tap) on one scrolls it.
     const board = el('div', { class: 'slx-talent-board' }, [
       ...rows,
       el('h5', { class: 'slx-talent-keys-head', text: t.keysHead }),
       el('div', { class: 'slx-talent-keys' }, BOARDS[id].filter((n) => n.keystone).map(cell)),
     ]);
-    board.addEventListener('scroll', () => { talentView.top = board.scrollTop; });
+    const cue = (cls: string, text: string, d: 1 | -1) => {
+      const c = el('span', { class: `slx-more ${cls}`, text, attrs: { 'aria-hidden': 'true', hidden: '' } });
+      c.addEventListener('click', () => {
+        if (locked(c)) return;
+        board.scrollTop = Math.max(0, Math.min(board.scrollHeight - board.clientHeight, board.scrollTop + d * TALENT_STEP));
+        talentView.top = board.scrollTop;
+        talentCues(board, up, down);
+      });
+      return c;
+    };
+    const up = cue('slx-more-up', '▲', -1);
+    const down = cue('slx-more-down', '▼', 1);
+    board.addEventListener('scroll', () => {
+      talentView.top = board.scrollTop;
+      talentCues(board, up, down);
+    });
     return el('div', { class: 'slx-tab-talent' }, [
       el('div', { class: 'slx-talent-top' }, [
         el('span', { class: 'slx-talent-left', text: t.left(talentPointsLeft(m)) }),
         el('span', { class: 'slx-talent-count', text: t.keystones(keystonesOf(m).length) }),
         el('span', { class: 'slx-talent-gate', text: t.board(boardPoints(id, held)) }),
       ]),
-      board,
+      el('div', { class: 'slx-talent-frame' }, [up, board, down]),
       talentNotes(ctx, id),
     ]);
   },
@@ -569,10 +599,14 @@ const talent: StatusTab = {
   leave: leaveTalent,
   shown(body) {
     const board = body.querySelector<HTMLElement>('.slx-talent-board');
-    if (board) board.scrollTop = talentView.top;
-    if (!talentView.reveal) return;
-    talentView.reveal = false;
-    body.querySelector('.slx-talent-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+    if (!board) return;
+    board.scrollTop = talentView.top;
+    if (talentView.reveal) {
+      talentView.reveal = false;
+      board.querySelector('.slx-talent-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+      talentView.top = board.scrollTop;
+    }
+    talentCues(board, body.querySelector<HTMLElement>('.slx-tab-talent .slx-more-up')!, body.querySelector<HTMLElement>('.slx-tab-talent .slx-more-down')!);
   },
 };
 

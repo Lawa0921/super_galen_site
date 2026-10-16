@@ -442,4 +442,52 @@ test.describe('starlantern', () => {
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.loot.gear.map((it: any) => it.rarity))).toContain('rare');
     expect(w.errors).toEqual([]);
   });
+
+  test('the talent board shows the cursor\'s node at both ends, and its scroll cues follow the hidden rows', async ({ page }) => {
+    const w = await setup(page, 7);
+    await page.locator('.slx-town [data-id=guild]').click();
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.evaluate(() => {
+      const m = (window as unknown as Dbg).__starlanternDebug.game.state.party.roster.noel;
+      m.level = 50; m.talents = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 1 };
+    });
+    await page.locator('.slx-guild [data-id=status]').click();
+    for (let i = 0; i < 8 && !((await page.locator('.slx-status-name').textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
+    await page.locator('[data-tab=talent]').click();
+    const board = page.locator('.slx-talent-board');
+    const cur = page.locator('.slx-talent-node.slx-row-cur');
+    /** The cursor's node lies wholly inside the board's visible box. */
+    const inView = async () => {
+      const [b, c] = [(await board.boundingBox())!, (await cur.boundingBox())!];
+      return c.y >= b.y - 0.5 && c.y + c.height <= b.y + b.height + 0.5;
+    };
+    const up = page.locator('.slx-tab-talent .slx-more-up');
+    const down = page.locator('.slx-tab-talent .slx-more-down');
+
+    // The top end: the first node, rows hidden below.
+    await expect(cur).toHaveAttribute('data-node', 'noel-t00');
+    expect(await inView()).toBe(true);
+    await expect(up).toBeHidden();
+    await expect(down).toBeVisible();
+    await expect(page.locator('.slx-talent-row[data-row="0"] .slx-talent-tier')).toHaveText('第1列');
+
+    // The bottom end: the last keystone, rows hidden above.
+    for (let i = 0; i < 26; i++) await w.key('ArrowDown');
+    await expect(cur).toHaveAttribute('data-node', 'noel-k2');
+    expect(await inView()).toBe(true);
+    await expect(up).toBeVisible();
+    await expect(down).toBeHidden();
+
+    // Away and back: the kept cursor is brought into view again.
+    await page.locator('[data-tab=ultimate]').click();
+    await page.locator('[data-tab=talent]').click();
+    await expect(cur).toHaveAttribute('data-node', 'noel-k2');
+    expect(await inView()).toBe(true);
+
+    // The ▲ cue scrolls the board back up by mouse or touch.
+    for (let i = 0; i < 12 && (await up.isVisible()); i++) await up.click();
+    await expect(up).toBeHidden();
+    expect(await board.evaluate((b) => b.scrollTop)).toBe(0);
+    expect(w.errors).toEqual([]);
+  });
 });

@@ -906,5 +906,74 @@ describe('StatusScene', () => {
       s.onAction('left');
       expect(tab()).toBe('技能樹');
     });
+
+    it('each board row is labelled by its tier, and a shut node says what it needs', () => {
+      const { root, node } = onTalent(6);
+      const rows = [...root.querySelectorAll('.slx-talent-row')];
+      expect(rows.map((r) => r.querySelector('.slx-talent-tier')!.textContent)).toEqual([1, 2, 3, 4, 5, 6].map((r) => T.ui2.talent.tier(r)));
+      expect(T.ui2.talent.reason.adjacent).toBe('需相鄰上一列');
+      expect(node('noel-t10').textContent).toContain('需相鄰上一列');
+    });
+
+    describe('the board\'s scroll cues', () => {
+      const cue = (root: HTMLElement, d: 'up' | 'down') => root.querySelector<HTMLElement>(`.slx-tab-talent .slx-more-${d}`)!;
+      const board = (root: HTMLElement) => root.querySelector<HTMLElement>('.slx-talent-board')!;
+      let sh: ReturnType<typeof vi.spyOn>;
+      let ch: ReturnType<typeof vi.spyOn>;
+      beforeEach(() => {
+        sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+        ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+      });
+      afterEach(() => { sh.mockRestore(); ch.mockRestore(); });
+
+      it('a board that fits shows no cue', () => {
+        sh.mockReturnValue(80); ch.mockReturnValue(100);
+        const { root } = onTalent(6);
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([true, true]);
+      });
+
+      it('a board that overflows shows ▼ at the top, ▲ at the bottom, and the cues scroll it when clicked', () => {
+        sh.mockReturnValue(300); ch.mockReturnValue(100);
+        const { root } = onTalent(6);
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([true, false]);
+        expect([cue(root, 'up').textContent, cue(root, 'down').textContent]).toEqual(['▲', '▼']);
+        cue(root, 'down').click();
+        expect(board(root).scrollTop).toBeGreaterThan(0);
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, false]);
+        for (let i = 0; i < 20; i++) cue(root, 'down').click();
+        expect(board(root).scrollTop).toBe(200);                 // held at the bottom
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, true]);
+        for (let i = 0; i < 20; i++) cue(root, 'up').click();
+        expect(board(root).scrollTop).toBe(0);
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([true, false]);
+      });
+
+      it('a scroll by wheel or touch updates the cues', () => {
+        sh.mockReturnValue(300); ch.mockReturnValue(100);
+        const { root } = onTalent(6);
+        board(root).scrollTop = 200;
+        board(root).dispatchEvent(new Event('scroll'));
+        expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, true]);
+      });
+    });
+
+    it('coming back to the tab brings the cursor\'s node into view', () => {
+      const into = vi.fn();
+      const had = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
+      Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, writable: true, value: into });
+      try {
+        const { s, cur, root } = onTalent(6);
+        down(s, 26);
+        expect(cur()).toBe('noel-k2');
+        into.mockClear();
+        s.onAction('right'); s.onAction('left');                 // away and back: the board was reset to the top
+        expect(cur()).toBe('noel-k2');
+        expect(into).toHaveBeenCalled();
+        expect(into.mock.contexts.at(-1)).toBe(root.querySelector('.slx-talent-node[data-node="noel-k2"]'));
+      } finally {
+        if (had) Object.defineProperty(Element.prototype, 'scrollIntoView', had);
+        else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+      }
+    });
   });
 });

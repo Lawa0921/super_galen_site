@@ -540,20 +540,28 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-talent-left { color: $slx-gold; }
 .slx-talent-count { color: $slx-ink; }
 .slx-talent-gate { flex-basis: 100%; color: $slx-dim; }
+.slx-talent-frame { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .slx-talent-board { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
-.slx-talent-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
-.slx-talent-node { min-width: 0; padding: 1px 0 1px 2px; cursor: pointer; }
-.slx-talent-row .slx-talent-node + .slx-talent-node { padding-left: 1px; border-left: 1px solid #2a2840; }
+/* The board's scroll cues sit just outside its right corners (beside the gate line and the notes), so they never cover a node. */
+.slx-talent-frame .slx-more { position: absolute; right: 0; z-index: 1; padding: 0 3px; background: $slx-win; }
+.slx-talent-frame .slx-more-up { top: -12px; }
+.slx-talent-frame .slx-more-down { bottom: -12px; }
+.slx-talent-frame .slx-more[hidden] { display: none; }
+.slx-talent-row { display: grid; grid-template-columns: 12px repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
+/* The tier label reads top to bottom beside the row's three text lines. */
+.slx-talent-tier { writing-mode: vertical-rl; text-orientation: upright; font-size: 10px; line-height: 12px; color: $slx-dim; text-align: center; align-self: center; }
+.slx-talent-node { min-width: 0; padding: 1px 2px; cursor: pointer; }
+.slx-talent-row .slx-talent-node { border-left: 1px solid #2a2840; }
 .slx-talent-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; line-height: 14px; }
 .slx-talent-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slx-talent-rank { flex: none; font-size: 10px; color: $slx-dim; }
 .slx-talent-node:hover .slx-talent-name { color: #fff; }
-.slx-talent-foot { display: flex; justify-content: space-between; gap: 0; font-size: 10px; line-height: 12px; white-space: nowrap; }
-.slx-talent-per { flex: none; color: $slx-dim; }
-.slx-talent-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.slx-talent-node p { margin: 0; }
+.slx-talent-per { font-size: 10px; line-height: 12px; color: $slx-dim; white-space: nowrap; }
+.slx-talent-state { font-size: 10px; line-height: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slx-talent-keys-head { margin: 2px 0 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; }
 .slx-talent-keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 6px; }
-.slx-talent-desc { margin: 0; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-talent-desc { font-size: 10px; line-height: 12px; color: $slx-dim; }
 .slx-node-learned .slx-talent-state { color: $slx-up; }
 .slx-node-open .slx-talent-state { color: #6fa7ff; }
 .slx-node-maxed .slx-talent-state { color: $slx-gold; }

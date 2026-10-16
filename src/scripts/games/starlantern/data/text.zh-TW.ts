@@ -175,7 +175,7 @@ export const T = {
       board: (n: number) => (n >= KEYSTONE_GATE ? `盤面已投 ${n} 點・可選關鍵天賦` : `盤面已投 ${n} 點・${KEYSTONE_GATE} 點後可選關鍵天賦`),
       keystones: (k: number) => `關鍵天賦 ${k}／${MAX_KEYSTONES}`,
       keysHead: `關鍵天賦（限選 ${MAX_KEYSTONES} 個）`,
-      /** A normal node's bonus per rank, e.g. 「+2／級」; a percent stat carries its sign. */
+      /** A normal node's bonus per rank, e.g. 「+2／級」; a percent stat carries a % sign. */
       per: (key: AnyStat, v: number) => `${signed(v)}${POINT_STATS.includes(key) ? '' : '%'}／級`,
       /** The notes for a normal node: 「智力 +2／級（目前 +4）」. */
       note: (stat: string, key: AnyStat, v: number, now: number) => {
@@ -184,13 +184,15 @@ export const T = {
       },
       keystone: '關鍵天賦',
       row: (r: number) => `第 ${r} 列`,
+      /** A board row's label beside its nodes, read top to bottom: 「第1列」. */
+      tier: (r: number) => `第${r}列`,
       /** The adjacency rule, under a normal node's notes while it is shut by it. */
       adjacentRule: '上一列的左上、正上或右上格至少投入 1 點後才能投點',
       /** A node that can take its next rank now. */
       open: '可投點',
       /** Why a node cannot take its next rank (progression canRaiseTalent). */
       reason: {
-        unknown: '無法投點', max: '已滿級', points: '點數不足', adjacent: '未相連',
+        unknown: '無法投點', max: '已滿級', points: '點數不足', adjacent: '需相鄰上一列',
         gate: `盤面需 ${KEYSTONE_GATE} 點`, keystones: `已選滿 ${MAX_KEYSTONES} 個`,
       } as Record<TalentFail, string>,
       pending: '再按一次 Enter 投入 1 點',
