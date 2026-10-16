@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CONDITIONS } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
 import { REGIONS, type RegionId } from '../data/regions';
@@ -92,8 +93,33 @@ describe('scaleEnemy', () => {
   });
 
   it('rewards rise with depth', () => {
-    expect(scaleEnemy(wolf, 4, MAIN, false).exp).toBe(Math.round(wolf.exp * 1.15 ** 3));
+    expect(scaleEnemy(wolf, 4, MAIN, false).exp).toBeGreaterThan(wolf.exp);
     expect(scaleEnemy(wolf, 10, MAIN, false).gold).toBeGreaterThan(scaleEnemy(wolf, 4, MAIN, false).gold);
+  });
+
+  it('grows a monster from its home level: unchanged at or above home, lifted below it', () => {
+    const golem = ENEMIES.golem;
+    for (const d of [1, 2, 3]) expect(scaleEnemy(golem, d, MAIN, false).stats, `golem at ${d}`).toEqual(golem.stats);
+    const slime3 = scaleEnemy(ENEMIES.slime, 3, REGIONS.frost, false);
+    expect(slime3.stats.hp).toBeGreaterThan(ENEMIES.slime.stats.hp * 2);
+    expect(slime3.exp).toBeGreaterThan(ENEMIES.slime.exp);
+    // the same depth lifts a shallow monster more than a deep one
+    const lift = (id: string) => scaleEnemy(ENEMIES[id], 6, MAIN, false).stats.atk / ENEMIES[id].stats.atk;
+    expect(lift('slime')).toBeGreaterThan(lift('golem'));
+  });
+
+  it('run conditions: 兇暴 hits 20% harder and gives 30% more exp, 星落 gives 50% more gold, 平穩 changes nothing', () => {
+    for (const d of [1, 6]) {
+      const plain = scaleEnemy(wolf, d, REGIONS.blaze, false);
+      expect(scaleEnemy(wolf, d, REGIONS.blaze, false, CONDITIONS.plain)).toEqual(plain);
+      const fierce = scaleEnemy(wolf, d, REGIONS.blaze, false, CONDITIONS.fierce);
+      expect([fierce.stats.atk, fierce.stats.mag, fierce.stats.hp]).toEqual([Math.round(plain.stats.atk * 1.2), Math.round(plain.stats.mag * 1.2), plain.stats.hp]);
+      expect(fierce.gold).toBe(plain.gold);
+      expect(Math.abs(fierce.exp - plain.exp * 1.3), `exp at ${d}`).toBeLessThanOrEqual(1);   // rounded once, from the unrounded value
+      const star = scaleEnemy(wolf, d, REGIONS.blaze, false, CONDITIONS.starfall);
+      expect([star.exp, star.stats]).toEqual([plain.exp, plain.stats]);
+      expect(Math.abs(star.gold - plain.gold * 1.5), `gold at ${d}`).toBeLessThanOrEqual(1);
+    }
   });
 });
 
@@ -107,6 +133,13 @@ describe('createBattle with scale', () => {
     expect(s.enemies.map((e) => e.name)).toEqual([`${w.name} A`, `${w.name} B`]);
     expect(s.enemies[0].max).toEqual(w.stats);
     expect([s.enemies[0].hp, s.enemies[0].resist, s.enemies[0].weak, s.enemies[0].tint]).toEqual([w.stats.hp, ['fire'], ['ice'], 'fire']);
+  });
+
+  it('carries the run condition into the fight', () => {
+    const s = battle(['wolf'], { depth: 1, region: 'mainline', condition: 'fierce' });
+    expect(s.enemies[0].max.atk).toBe(Math.round(wolf.stats.atk * 1.2));
+    for (const e of s.enemies) { e.alive = false; e.hp = 0; }
+    expect(rewards(s, constRng(0.99), false).exp).toBe(Math.round(wolf.exp * 1.3));
   });
 
   it('element-less regions tint phys; mainline enemies are not tinted', () => {

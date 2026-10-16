@@ -220,7 +220,7 @@ export class Game {
   }
 
   private startBattle(enemyIds: string[], boss: boolean, scaled = true): void {
-    const scale = scaled && this.run ? { depth: this.floor, region: this.run.region } : undefined;
+    const scale = scaled && this.run ? { depth: this.floor, region: this.run.region, condition: this.run.condition } : undefined;
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';

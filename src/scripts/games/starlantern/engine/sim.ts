@@ -1,9 +1,12 @@
 import { ENEMIES } from '../data/enemies';
+import { CONDITIONS } from '../data/conditions';
 import { FLOORS } from '../data/floors';
+import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { LIMIT_MAX, createBattle, resolveRound, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
 import { expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
 import { mulberry32 } from './rng';
+import { scaleEnemy } from './scaling';
 import type { CharacterId, Party } from './types';
 
 export function partyAt(level: number): Party {
@@ -59,8 +62,11 @@ export function winRate(level: number, groups: string[][], boss: boolean, seeds 
   return { rate: wins / n, hpLoss: loss / n };
 }
 
-export function groupExp(g: string[]): number {
-  return g.reduce((n, id) => n + ENEMIES[id].exp, 0);
+/** Exp of one group; with `scale`, as met at that depth and region (no elite). */
+export function groupExp(g: string[], scale?: BattleScale): number {
+  if (!scale) return g.reduce((n, id) => n + ENEMIES[id].exp, 0);
+  const cond = CONDITIONS[scale.condition ?? 'plain'];
+  return g.reduce((n, id) => n + scaleEnemy(ENEMIES[id], scale.depth, REGIONS[scale.region], false, cond).exp, 0);
 }
 
 export function avgExp(floor: number): number {

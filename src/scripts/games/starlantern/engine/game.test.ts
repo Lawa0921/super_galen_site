@@ -296,6 +296,14 @@ describe('battles', () => {
     expect([b.name, b.tint, b.boss, b.resist, b.weak]).toEqual(['深層・熾焰・燈喰之獸', 'fire', true, ['fire'], ['ice']]);
     expect(b.max.hp).toBeGreaterThan(ENEMIES.lanterneater.stats.hp);
   });
+  it('the run condition reaches the fight: 兇暴 enemies hit harder', () => {
+    const g = new Game(calm(), null);
+    g.depart({ region: 'mainline', condition: 'fierce' }, 1);
+    g.encounter = 999;
+    const open = DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!;
+    expect(g.move(open)).toEqual({ kind: 'battle' });
+    for (const e of g.battle!.enemies) expect(e.max.atk, e.defId).toBe(Math.round(ENEMIES[e.defId].stats.atk * 1.2));
+  });
   it('encounters in a region are its variants, and deep mainline foes are 深層', () => {
     const fight = (region: Portal['region'], depth: number) => {
       const g = new Game(calm(), null);

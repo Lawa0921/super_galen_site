@@ -3,9 +3,8 @@ import { FLOORS } from '../data/floors';
 import { expToNext } from './party';
 import { avgExp, fightsToLevel, groupExp, winRate } from './sim';
 import { REGIONS, type RegionId } from '../data/regions';
-import { terrainOf } from './dungeon/run';
-import { mulberry32 } from './rng';
-import { depthLevel, encounterGroup } from './scaling';
+import type { BattleScale } from './battle';
+import { depthLevel, encounterTable } from './scaling';
 
 const groups = (f: number) => FLOORS[f - 1].encounters;
 
@@ -46,16 +45,33 @@ describe('balance', () => {
   });
 
   it('7. same depth level, same odds', () => {
+    const band = (r: { rate: number; hpLoss: number }, label: string) => {
+      expect(r.rate, label).toBeGreaterThanOrEqual(0.85);
+      expect(r.hpLoss, label).toBeGreaterThanOrEqual(0.1);
+      expect(r.hpLoss, label).toBeLessThanOrEqual(0.45);
+    };
+    const pace = (gs: string[][], scale: BattleScale, lv: number, label: string) => {
+      const n = fightsToLevel(gs.reduce((t, g) => t + groupExp(g, scale), 0) / gs.length, lv, lv + 4);
+      expect(n, label).toBeGreaterThanOrEqual(10);
+      expect(n, label).toBeLessThanOrEqual(18);
+    };
     for (const d of [4, 6, 8, 10]) {
       const lv = depthLevel(d);
-      const main = winRate(lv, groups(terrainOf('mainline', d)), false, 40, { depth: d, region: 'mainline' });
-      expect(main.rate, `mainline depth ${d}`).toBeGreaterThanOrEqual(0.6);
-      for (const region of Object.keys(REGIONS).filter((r) => r !== 'mainline') as RegionId[]) {
-        const rng = mulberry32(d * 31 + region.length);
-        const gs = Array.from({ length: 4 }, () => encounterGroup(region, d, rng));
-        const r = winRate(lv, gs, false, 20, { depth: d, region });
-        expect(r.rate, `${region} depth ${d}`).toBeGreaterThanOrEqual(0.6);
+      for (const region of Object.keys(REGIONS) as RegionId[]) {
+        const scale = { depth: d, region };
+        const gs = encounterTable(region, d);
+        const label = `${region} depth ${d}`;
+        band(winRate(lv, gs, false, region === 'mainline' ? 40 : 20, scale), label);
+        pace(gs, scale, lv, label);
       }
     }
-  }, 60_000);
+    for (const d of [2, 3]) band(winRate(depthLevel(d), encounterTable('blaze', d), false, 20, { depth: d, region: 'blaze' }), `blaze depth ${d}`);
+  }, 120_000);
+
+  it('8. a party at the depth level beats an elite of that depth', () => {
+    for (const d of [2, 4, 8]) for (const g of encounterTable('mainline', d)) {
+      const r = winRate(depthLevel(d), [g], false, 40, { depth: d, region: 'mainline', elite: g[0] });
+      expect(r.rate, `elite ${g.join('+')} at depth ${d}`).toBeGreaterThanOrEqual(0.6);
+    }
+  });
 });

@@ -1,5 +1,6 @@
 import { reachable, rowOfCell, shapeTargets } from './formation';
 import { CHARACTERS } from '../data/characters';
+import { CONDITIONS, type ConditionId } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { REGIONS, type RegionId } from '../data/regions';
 import { ITEMS } from '../data/items';
@@ -31,8 +32,8 @@ export interface BattleState {
   enemyDefs?: Record<string, EnemyDef>;
 }
 
-/** Depth, region and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
-export interface BattleScale { depth: number; region: RegionId; elite?: string }
+/** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
+export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId }
 
 export type EnemyAction = { kind: 'attack'; target?: string } | { kind: 'enemy-skill'; index: number; target?: string };
 
@@ -75,7 +76,7 @@ export function createBattle(o: {
   const enemies = o.enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
-    const d = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite) : ENEMIES[id];
+    const d = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']) : ENEMIES[id];
     defs[`e${i}`] = d;
     const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
     return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined);
