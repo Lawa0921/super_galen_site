@@ -272,7 +272,7 @@ export const T = {
       },
       full: {
         title: '背包已滿', desc: (name: string, qty: number, need: number) => `${name} ×${qty} 放不下（還差重量 ${need}）。`, which: '要丟掉什麼來換？',
-        giveUp: '放棄', ask: (name: string, n: number) => `要丟掉 ${name} ×${n} 嗎？`,
+        keep: '先留在這裡', ask: (name: string, n: number) => `要丟掉 ${name} ×${n} 嗎？`,
         freed: '空出位置了。再走上寶箱一次就能撿起來。', left: '先把它留在原地吧。',
         bagTitle: (n: number) => `背包已滿（${n} 件）`, bagDesc: (name: string) => `${name} 放不下：背包沒有空位了。`,
         whichGear: '要丟掉哪件裝備來騰出空位？', askGear: (name: string) => `要丟掉 ${name} 嗎？`,

@@ -207,9 +207,9 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
   const items: MenuItem[] = [
     ...(stuck || !(r.bag || r.need > 0) ? [] : gear).map((it) => ({ id: `gear:${it.uid}`, label: gearLabel(it), cls: `slx-rarity-${it.rarity}` })),
     ...Object.entries(held).map(([id, n]) => ({ id, label: itemName(id), right: `×${n}` })),
-    { id: 'leave', label: F.giveUp },
+    { id: 'leave', label: F.keep },   // leaving it destroys nothing: it stays in the chest, the vault or on the ground
   ];
-  const giveUp = () => { ctx.sfx.cancel(); host.pop(); host.say(F.left); };
+  const leaveIt = () => { ctx.sfx.cancel(); host.pop(); host.say(F.left); };
   return eventWindow(host, 'full', r.bag ? F.bagTitle(BAG_SIZE) : F.title, body, items, (id) => {
     const piece = gear.find((it) => `gear:${it.uid}` === id);
     const n = piece ? 1 : Math.min(held[id], Math.ceil(r.need / weightOf(id)));
@@ -234,5 +234,5 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
     box.view.menu.setCursor(1);
     box.view.render();
     host.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
-  }, giveUp);
+  }, leaveIt);
 }

@@ -212,7 +212,7 @@ describe('the full pack window', () => {
     const box = root.querySelector('.slx-full')!;
     expect(box.textContent).toContain('背包已滿');
     expect(options()).toContain('古代銀幣');
-    expect(options()[options().length - 1]).toBe('放棄');
+    expect(options()[options().length - 1]).toBe('先留在這裡');
     const { item, qty } = game.run!.rolls[`chest:${game.floor}:${at.x},${at.y}`];
     const held = () => (ITEMS[item] ? game.state.inventory[item] : game.run!.loot.items[item]) ?? 0;
     const before = item === 'old-coin' ? 0 : held();
@@ -241,7 +241,7 @@ describe('the full pack window', () => {
     game.run!.loot.items['old-coin'] = 400;
     const { dir } = plant('chest');
     s.onAction(dir);
-    pick('放棄');
+    pick('先留在這裡');
     expect(root.querySelector('.slx-full')).toBeNull();
     expect(game.run!.loot.items['old-coin']).toBe(400);
   });
@@ -350,10 +350,11 @@ describe('gear from chests and the vault', () => {
     expect(box.textContent).toContain('獵弓・獨特 放不下');
     expect(box.textContent).toContain('冒險背包裡沒有裝備可以丟');
     expect(box.textContent).not.toContain('回城');   // the labyrinth is new every trip: no coming back for it
-    expect(options()).toEqual(['放棄']);
+    expect(options()).toEqual(['先留在這裡']);
+    expect(box.textContent).not.toContain('放棄');   // leaving it there destroys nothing
     expect(Object.keys(game.run!.loot.items).filter((id) => RARE_MATERIALS.includes(id))).toHaveLength(1);
     expect(game.run!.loot.items['old-coin']).toBe(6);
-    pick('放棄');
+    pick('先留在這裡');
     expect(text()).toBe('先把它留在原地吧。');
     s.onAction('confirm');
     expect(root.querySelector('.slx-pillar')).toBeNull();
@@ -377,7 +378,7 @@ describe('gear from chests and the vault', () => {
     const box = root.querySelector('.slx-full')!;
     expect(box.querySelector('.slx-event-title')!.textContent).toBe('背包已滿（60 件）');
     expect(box.querySelector('.slx-rarity-rare')!.textContent).toBe('木杖・稀有');   // what is waiting to be picked up
-    expect(options()).toEqual(['鐵劍・傳說', '皮背心・魔法', '獵弓', '放棄']);
+    expect(options()).toEqual(['鐵劍・傳說', '皮背心・魔法', '獵弓', '先留在這裡']);
     expect(box.querySelector('[data-id="gear:8"] .slx-label')!.classList.contains('slx-rarity-magic')).toBe(true);
     pick('皮背心');
     const ask = root.querySelector('.slx-layer:last-child')!;
@@ -397,7 +398,7 @@ describe('gear from chests and the vault', () => {
     // Step on once to roll the chest, then load the pack so it is over by at most 1 (one coin) with the chest.
     game.run!.loot.items['old-coin'] = 400;
     s.onAction(dir);
-    pick('放棄');
+    pick('先留在這裡');
     s.onAction('confirm');
     game.pos = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
     const { item, qty } = game.run!.rolls[`chest:${game.floor}:${at.x},${at.y}`];
