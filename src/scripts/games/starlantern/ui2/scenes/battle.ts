@@ -22,8 +22,6 @@ import { MenuView, win } from '../widgets';
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 type Pending = { kind: 'attack' } | { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'ultimate' };
 
-const noop = () => {};
-
 /** Battle: message line on top, party bar below, a command window per member, target picking, playback and results. */
 export class BattleScene implements Scene {
   private root!: HTMLElement;
@@ -220,7 +218,9 @@ export class BattleScene implements Scene {
 
   private sfxAdapter(): SoundManager {
     const s = this.ctx.sfx;
-    return { hit: s.hit ?? noop, weak: s.weak ?? noop, heal: s.heal ?? noop, ko: s.ko ?? noop, ultimate: s.ultimate ?? noop } as unknown as SoundManager;
+    // Bind each cue to its owner: SoundManager methods use `this`.
+    const call = (k: 'hit' | 'weak' | 'heal' | 'ko' | 'ultimate') => () => { s[k]?.call(s); };
+    return { hit: call('hit'), weak: call('weak'), heal: call('heal'), ko: call('ko'), ultimate: call('ultimate') } as unknown as SoundManager;
   }
 
   private async submit(): Promise<void> {
@@ -234,7 +234,12 @@ export class BattleScene implements Scene {
     this.state = r.battle;
     const names = new Map([...r.battle.party, ...r.battle.enemies].map((c) => [c.key, c.name]));
     const lines = battleLines(r.battle.log, (k) => names.get(k) ?? k);
-    await Promise.all([this.playLines(lines), this.ctx.stage?.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name) => this.onParty(key, cue, name))]);
+    try {
+      await Promise.all([this.playLines(lines), this.ctx.stage?.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name) => this.onParty(key, cue, name))]);
+    } catch (err) {
+      // A broken animation must never strand the player: log it and carry on with the round's result.
+      console.error('[starlantern] battle playback failed', err);
+    }
     this.updateBar(null);
     this.busy = false;
     this.root.removeAttribute('inert');

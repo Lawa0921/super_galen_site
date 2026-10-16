@@ -101,4 +101,58 @@ test.describe('starlantern next ui', () => {
     await page.locator('.slx-back').click();
     await expect(page.locator('.slx-town')).toBeVisible();
   });
+
+  test('plays the whole loop: depart, fight, return with the lamp, rest, reload and continue', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/starlantern-next?seed=7&fast=1');
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    const key = (k: string) => page.keyboard.press(k);
+    const closeTalk = async () => { for (let i = 0; i < 6 && (await page.locator('.slx-talk').isVisible()); i++) await key('z'); };
+    const choose = async (scope: string, label: string) => {
+      for (let i = 0; i < 12; i++) {
+        const cur = (await page.locator(`${scope} [aria-selected=true] .slx-label`).first().textContent()) ?? '';
+        if (cur.startsWith(label)) break;
+        await key('ArrowDown');
+      }
+      await key('Enter');
+    };
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
+    await key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible(); await closeTalk();
+    await choose('.slx-town', '迷宮入口');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await closeTalk();
+    await key('Enter');                                    // 選擇樓層
+    await key('Enter');                                    // 第 1 層
+    await key('ArrowUp'); await key('Enter');              // 是
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await expect(page.locator('.slx-partybar .slx-pm')).toHaveCount(5);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await key('Enter');   // stepping on the return point asks; default 否
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) { await key('ArrowUp'); await key('Enter'); }   // 全員攻擊 (last item)
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-result')).toContainText('勝利');
+    await key('Enter');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await key('c');
+    await choose('.slx-field-menu', '歸還之燈');
+    await expect(page.locator('.slx-town')).toBeVisible(); await closeTalk();
+    await choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await closeTalk();
+    await key('Enter'); await key('ArrowUp'); await key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+    const gold = await page.evaluate(() => (window as unknown as { __starlanternDebug: { game: { state: { gold: number } } } }).__starlanternDebug.game.state.gold);
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await key('Enter');
+    await expect(page.locator('.slx-town .slx-gold')).toHaveText(`${gold} G`);
+    expect(errors).toEqual([]);
+  });
 });
