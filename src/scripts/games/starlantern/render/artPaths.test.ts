@@ -14,11 +14,15 @@ describe('artPaths', () => {
 
   it('lists one url per asset with no duplicates', () => {
     const urls = allArtUrls();
-    expect(urls).toHaveLength(197);
-    expect(new Set(urls).size).toBe(197);
+    expect(urls).toHaveLength(219);
+    expect(new Set(urls).size).toBe(219);
     expect(urls).toContain(art.fxAnim('thunder'));
     for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).not.toContain(art.icon(id));
     expect(urls).toContain(art.window);
+    expect(urls).toContain(art.portalPlaza);
+    expect(urls).toContain(art.portalCard('mainline'));
+    expect(urls).toContain(art.traitIcon('shade'));
+    expect(urls).toContain(art.eventTile('vault-open'));
     expect(urls).toContain(art.npc('gate', 'happy'));
     expect(urls).toContain(`${ART_BASE}/map/fog.png`);
     for (const id of CHARACTER_IDS) expect(urls).toContain(art.standee(id));

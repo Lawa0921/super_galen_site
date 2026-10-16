@@ -122,7 +122,8 @@ def test_seeded_registry_covers_every_runtime_asset():
     reg = seed_registry.build()
     assets = reg['assets']
     runtime = [a['runtime'] for a in assets.values() if 'runtime' in a]
-    assert len(runtime) == 183 and len(set(runtime)) == 183
+    # 183 original + published wall tops/faces and fx animations = 189
+    assert len(runtime) == 189 and len(set(runtime)) == 189
     assert assets['npc-guild-happy']['runtime'] == '/assets/games/starlantern/npc/guild-happy.png'
     assert assets['scene-title']['runtime'] == '/assets/games/starlantern/scene/title.png'
     for m in ('attack', 'hit', 'dying', 'down', 'ultimate'):
@@ -132,7 +133,7 @@ def test_seeded_registry_covers_every_runtime_asset():
     assert all(r.startswith(A.BASE) for r in runtime)
     assert assets['tile-f2-chest-open']['runtime'] == '/assets/games/starlantern/tiles/f2-chest-open.png'
     assert assets['sheet-icons-1']['parts'][0] == 'icon-fire-star'
-    assert len(assets['sheet-icons-3']['parts']) == 17
+    assert len(assets['sheet-icons-3']['parts']) == 23
 
 
 def test_cutout_removes_magenta_tinted_fringe_but_keeps_pinks_and_purples():

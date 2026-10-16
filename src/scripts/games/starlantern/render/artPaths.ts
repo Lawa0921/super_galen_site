@@ -38,19 +38,27 @@ export const art = {
   frame: `${ART_BASE}/ui/frame.png`,
   scene: (id: 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate') => `${ART_BASE}/scene/${id}.png`,
   npc: (id: 'guild' | 'shop' | 'inn' | 'gate', mood: 'normal' | 'happy') => `${ART_BASE}/npc/${id}${mood === 'happy' ? '-happy' : ''}.png`,
+  portalPlaza: `${ART_BASE}/scene/portal-plaza.png`,
+  portalCard: (k: PortalCardKey) => `${ART_BASE}/portal/${k}.png`,
+  traitIcon: (k: TraitIconKey) => `${ART_BASE}/icon/trait-${k}.png`,
   logo: `${ART_BASE}/ui/logo.png`,
   window: `${ART_BASE}/ui/window.png`,
   cursor: `${ART_BASE}/ui/cursor.png`,
   fog: `${ART_BASE}/map/fog.png`,
-  /** Event marker art for the map (one cell, transparent). Not in allArtUrls() until the art is approved and published. */
+  /** Event marker art for the map (one cell, transparent). */
   eventTile: (k: EventTileKey) => `${ART_BASE}/tiles/event-${k}.png`,
 };
 
 /** Event tiles with art of their own in the art factory; a chest uses its terrain's chest tile instead. */
 export type EventTileKey = 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault'
-  // reserved: opened vault art (published in the art batch; an opened vault turns to floor today, so nothing draws it yet)
+  // opened vault art (an opened vault turns to floor today, so nothing draws it yet, but it is published)
   | 'vault-open'
   | 'key' | 'trap';
+export type PortalCardKey = 'mainline' | 'blaze' | 'frost' | 'storm' | 'mire' | 'shade' | 'iron';
+export type TraitIconKey = 'fire' | 'ice' | 'thunder' | 'poison' | 'shade' | 'iron';
+export const PORTAL_CARD_KEYS: PortalCardKey[] = ['mainline', 'blaze', 'frost', 'storm', 'mire', 'shade', 'iron'];
+export const TRAIT_ICON_KEYS: TraitIconKey[] = ['fire', 'ice', 'thunder', 'poison', 'shade', 'iron'];
+export const EVENT_TILE_KEYS: EventTileKey[] = ['fountain', 'merchant', 'altar', 'elite', 'vault', 'vault-open', 'key', 'trap'];
 
 export function tileKey(t: Tile, opened: boolean): TileKey {
   return t === 'chest' && opened ? 'chest-open' : t;
@@ -83,7 +91,10 @@ export function allArtUrls(): string[] {
   urls.push(art.frame);
   for (const s of ['title', 'town', 'guild', 'shop', 'inn', 'gate'] as const) urls.push(art.scene(s));
   for (const n of ['guild', 'shop', 'inn', 'gate'] as const) urls.push(art.npc(n, 'normal'), art.npc(n, 'happy'));
-  urls.push(art.logo, art.window, art.cursor);
+  urls.push(art.logo, art.window, art.cursor, art.portalPlaza);
+  for (const k of PORTAL_CARD_KEYS) urls.push(art.portalCard(k));
+  for (const k of TRAIT_ICON_KEYS) urls.push(art.traitIcon(k));
+  for (const k of EVENT_TILE_KEYS) urls.push(art.eventTile(k));
   // Region material icons come with the art batch; until then they are not expected on disk.
   const NO_ICON_YET = new Set(Object.values(REGIONS).map((r) => r.material));
   for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS), ...Object.keys(EQUIPMENT)]) {
