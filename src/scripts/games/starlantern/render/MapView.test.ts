@@ -60,3 +60,19 @@ describe('MapView fog edge', () => {
     expect(view.edgeCount()).toBeGreaterThan(0);
   });
 });
+
+describe('MapView late fog art', () => {
+  it('swaps the plain fog for the fog art once it has loaded', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1);
+    let loaded = false;
+    const lateBank = { get: (u: string) => (u.includes('/map/fog') && !loaded ? null : Texture.WHITE), has: () => true } as unknown as TextureBank;
+    const view = new MapView(lateBank);
+    view.draw(game, { width: 640, height: 296 });
+    const world = view.root.children[0] as unknown as { children: unknown[] };
+    expect(world.children.some((c) => c instanceof TilingSprite)).toBe(false);
+    loaded = true;
+    view.draw(game, { width: 640, height: 296 });
+    expect(world.children.some((c) => c instanceof TilingSprite)).toBe(true);
+  });
+});

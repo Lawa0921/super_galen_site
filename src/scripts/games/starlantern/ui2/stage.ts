@@ -20,8 +20,9 @@ export class Stage {
     canvas.width = STAGE_W;
     canvas.height = STAGE_H;
     screen.insertBefore(canvas, screen.querySelector('#sl-ui'));
-    this.mapView = new MapView(bank);
-    this.battleView = new BattleView(fast, bank);
+    const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.mapView = new MapView(bank, calm);
+    this.battleView = new BattleView(fast, bank, calm);
     this.show(null);
     this.app = create(canvas).then((app) => {
       app.stage.addChild(this.mapView.root, this.battleView.root);

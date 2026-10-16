@@ -92,6 +92,21 @@ describe('PartyBar', () => {
     }
   });
 
+  it('keeps the draining ghost when another update arrives mid-drain', async () => {
+    vi.useFakeTimers();
+    try {
+      const bar = new PartyBar(NO_ART);
+      bar.update([m('scarlet', 30), m('liz', 30)]);
+      bar.update([m('scarlet', 10), m('liz', 30)]);
+      await vi.advanceTimersByTimeAsync(400);
+      const ghost = bar.el.querySelector('[data-key=scarlet] .slx-ghost');
+      bar.update([m('scarlet', 10), m('liz', 20)]);
+      expect(bar.el.querySelector('[data-key=scarlet] .slx-ghost')).toBe(ghost);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps a low-HP member\'s panel flashing a warning', () => {
     const bar = new PartyBar(NO_ART);
     bar.update([m('scarlet', 6), m('liz', 30), m('noel', 0)]);

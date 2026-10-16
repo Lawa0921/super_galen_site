@@ -22,6 +22,17 @@ function stepOf(value: number, max: number): number {
   return v <= 0 ? 0 : Math.max(1, Math.round((v / m) * 20));
 }
 
+/** Point an existing bar at a new value without rebuilding it. */
+function setBar(b: HTMLElement, value: number, max: number, cls: string): void {
+  const m = Math.max(1, max);
+  const v = Math.max(0, Math.min(m, value));
+  b.className = `slx-bar ${cls}`;
+  b.setAttribute('aria-valuemax', String(m));
+  b.setAttribute('aria-valuenow', String(v));
+  const fill = b.querySelector<HTMLElement>('.slx-fill');
+  if (fill) fill.className = `slx-fill slx-fill-${stepOf(v, m)}`;
+}
+
 function bar(value: number, max: number, cls: string): HTMLElement {
   const m = Math.max(1, max);
   const v = Math.max(0, Math.min(m, value));
@@ -37,8 +48,10 @@ const PULSE_MS = 450;
 const POP_MS = 900;
 
 /** `ghost` is HP just lost, still drawn white behind the bar until it drains (GHOST_MS). */
-interface Panel { el: HTMLElement; body: HTMLElement; face: HTMLImageElement | null; member: BarMember; until: number; ghost: number | null; drain: ReturnType<typeof setTimeout> | null }
+interface Panel { el: HTMLElement; body: HTMLElement; face: HTMLImageElement | null; member: BarMember; until: number; ghost: number | null; drain: ReturnType<typeof setTimeout> | null; shrinking?: boolean }
 const GHOST_MS = 350;
+/** Matches the .slx-ghost width transition. */
+const GHOST_DRAIN_MS = 460;
 
 /** The five member panels along the bottom of the labyrinth and battle screens. */
 export class PartyBar {
@@ -61,13 +74,7 @@ export class PartyBar {
       const danger = m.alive && m.hp > 0 && m.hp <= m.maxHp / 4;
       p.el.className = ['slx-pm', m.key === active ? 'slx-pm-active' : '', m.alive ? '' : 'slx-pm-down', danger ? 'slx-pm-danger' : '', ...transient].filter(Boolean).join(' ');
       if (!transient.length) this.resetFace(p);
-      p.body.replaceChildren(
-        el('span', { class: 'slx-pm-name' }, [m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : [])]),
-        el('span', { class: 'slx-pm-num', text: `${m.hp}/${m.maxHp}` }),
-        this.hpBar(p),
-        bar(m.tp, m.maxTp, 'slx-bar-tp'),
-        bar(m.limit, 100, m.limit >= 100 ? 'slx-bar-limit slx-bar-full' : 'slx-bar-limit'),
-      );
+      this.fillBody(p);
       return p.el;
     });
     // Re-inserting a panel would restart its animation; only reorder when the order really changed.
@@ -111,12 +118,25 @@ export class PartyBar {
     return p;
   }
 
-  /** HP bar with the white ghost of what was just lost, when there is one. */
-  private hpBar(p: Panel): HTMLElement {
+  /**
+   * Name, numbers and bars. Built once per panel, then only their text, classes and values change, so a ghost that is
+   * draining (a CSS width transition) is never replaced mid-way.
+   */
+  private fillBody(p: Panel): void {
     const m = p.member;
-    const b = bar(m.hp, m.maxHp, m.hp > 0 && m.hp <= m.maxHp / 4 ? 'slx-bar-hp slx-low' : 'slx-bar-hp');
-    if (p.ghost !== null && p.ghost > m.hp) b.prepend(el('span', { class: `slx-ghost slx-fill-${stepOf(p.ghost, m.maxHp)}` }));
-    return b;
+    if (!p.body.firstChild) {
+      p.body.append(el('span', { class: 'slx-pm-name' }), el('span', { class: 'slx-pm-num' }), bar(0, 1, 'slx-bar-hp'), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'));
+    }
+    const [name, num, hp, tp, limit] = [...p.body.children] as HTMLElement[];
+    name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
+    num.textContent = `${m.hp}/${m.maxHp}`;
+    setBar(hp, m.hp, m.maxHp, m.hp > 0 && m.hp <= m.maxHp / 4 ? 'slx-bar-hp slx-low' : 'slx-bar-hp');
+    setBar(tp, m.tp, m.maxTp, 'slx-bar-tp');
+    setBar(limit, m.limit, 100, m.limit >= 100 ? 'slx-bar-limit slx-bar-full' : 'slx-bar-limit');
+    let ghost = hp.querySelector<HTMLElement>('.slx-ghost');
+    if (p.ghost !== null && p.ghost > m.hp) {
+      if (!ghost) { ghost = el('span', { class: `slx-ghost slx-fill-${stepOf(p.ghost, m.maxHp)}` }); hp.prepend(ghost); }
+    } else if (ghost && !p.drain && !p.shrinking) ghost.remove();
   }
 
   /** Start (or extend) the ghost from `from` HP; after a beat it drains to the current value (a width transition). */
@@ -127,7 +147,11 @@ export class PartyBar {
       p.drain = null;
       p.ghost = null;
       const g = p.el.querySelector('.slx-ghost');
-      if (g) g.className = `slx-ghost slx-fill-${stepOf(p.member.hp, p.member.maxHp)}`;
+      if (!g) return;
+      // Shrink to the current HP (CSS transition), then drop it.
+      g.className = `slx-ghost slx-fill-${stepOf(p.member.hp, p.member.maxHp)}`;
+      p.shrinking = true;
+      setTimeout(() => { p.shrinking = false; if (!p.drain) g.remove(); }, GHOST_DRAIN_MS);
     }, GHOST_MS);
   }
 

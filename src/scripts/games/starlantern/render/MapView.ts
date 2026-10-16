@@ -42,7 +42,8 @@ export class MapView {
   private hop = 0;
   private floor = 0;
 
-  constructor(private bank: TextureBank | null = null) {
+  /** `calm`: reduced motion, no hop while walking. */
+  constructor(private bank: TextureBank | null = null, private calm = false) {
     this.marker.addChild(this.dot, this.icon);
     this.world.addChild(this.tiles, this.edges, this.marker);
     this.root.addChild(this.world);
@@ -64,7 +65,8 @@ export class MapView {
     const cell = MAP_CELL;
     const seen = new Set(game.state.dungeon.explored[String(game.floor)] ?? []);
     const fresh = this.floor !== game.floor || !this.fogLayer;   // first draw or a new floor: no slide from elsewhere
-    if (fresh) this.layFog(map.width, map.height);
+    const fogArrived = this.fogLayer instanceof Graphics && !!this.bank?.get(art.fog);   // the art streamed in after the first draw
+    if (fresh || fogArrived) this.layFog(map.width, map.height);
     this.floor = game.floor;
     for (const s of this.tiles.removeChildren()) s.destroy();
     for (let y = 0; y < map.height; y++) {
@@ -101,7 +103,7 @@ export class MapView {
     const tx = game.pos.x * cell, ty = game.pos.y * cell;
     const far = fresh || Math.abs(tx - this.marker.x) > cell * 1.5 || Math.abs(ty - this.marker.y) > cell * 1.5;
     if (far) { this.marker.x = tx; this.marker.y = ty; }
-    else if (tx !== this.target.x || ty !== this.target.y) this.hop = HOP_FRAMES;
+    else if (!this.calm && (tx !== this.target.x || ty !== this.target.y)) this.hop = HOP_FRAMES;
     this.target = { x: tx, y: ty };
     this.follow();
   }

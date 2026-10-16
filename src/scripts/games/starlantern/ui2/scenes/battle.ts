@@ -55,6 +55,7 @@ export class BattleScene implements Scene {
   private revealed = new Set<string>();
   private actLine = '';
   private cutins = 0;
+  private shakeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private ctx: SceneCtx) {
     this.bar = new PartyBar(ctx.art);
@@ -326,7 +327,9 @@ export class BattleScene implements Scene {
     screen.classList.remove('slx-shake-s', 'slx-shake-l');
     void screen.offsetWidth;
     screen.classList.add(heavy ? 'slx-shake-l' : 'slx-shake-s');
-    setTimeout(() => screen.classList.remove('slx-shake-s', 'slx-shake-l'), 450);
+    // A newer shake owns the clean-up: an older timer must not cut it short.
+    if (this.shakeTimer) clearTimeout(this.shakeTimer);
+    this.shakeTimer = setTimeout(() => { this.shakeTimer = null; screen.classList.remove('slx-shake-s', 'slx-shake-l'); }, 450);
     if (!heavy) return;
     const v = el('div', { class: 'slx-vignette', attrs: { 'aria-hidden': 'true' } });
     this.body.append(v);

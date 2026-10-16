@@ -32,7 +32,13 @@ export class BattleView {
   private size = { width: 640, height: 360 };
   private lit = new Map<string, ColorMatrixFilter>();
 
-  constructor(private fast = false, private bank: TextureBank | null = null) {}
+  /** Everything in the picture lives here; the shake moves this layer so it adds to the root's push-in. */
+  private scene = new Container();
+
+  /** `calm`: the player prefers reduced motion; no shake, push-in, lunges, flashes or breathing. */
+  constructor(private fast = false, private bank: TextureBank | null = null, private calm = false) {
+    this.root.addChild(this.scene);
+  }
 
   /** `left` and `bottom` reserve space (command window, party bar) so enemies and their names are never hidden behind them. */
   setup(state: BattleState, size: { width: number; height: number }, floor: number, left = 0, bottom = 0): void {
@@ -44,7 +50,8 @@ export class BattleView {
     this.timers.clear();
     this.frames.clear();
     this.shattering = [];
-    for (const c of this.root.removeChildren()) c.destroy({ children: true });
+    for (const c of this.scene.removeChildren()) c.destroy({ children: true });
+    this.root.scale.set(1); this.root.x = 0; this.root.y = 0; this.scene.x = 0;
     this.slots.clear();
     this.defIds.clear();
     for (const c of [...state.party, ...state.enemies]) this.defIds.set(c.key, c.defId);
@@ -54,9 +61,9 @@ export class BattleView {
       const k = Math.max(size.width / bg.width, size.height / bg.height);
       s.scale.set(k);
       s.x = (size.width - bg.width * k) / 2; s.y = (size.height - bg.height * k) / 2;
-      this.root.addChild(s);
+      this.scene.addChild(s);
     } else {
-      this.root.addChild(new Graphics().rect(0, 0, size.width, size.height).fill(0x141826));
+      this.scene.addChild(new Graphics().rect(0, 0, size.width, size.height).fill(0x141826));
     }
     const n = state.enemies.length;
     const slotW = (size.width - left) / (n + 1);
@@ -82,10 +89,10 @@ export class BattleView {
       box.x = left + slotW * (i + 1);
       box.y = ground;
       box.alpha = e.alive ? 1 : 0;
-      this.root.addChild(box);
+      this.scene.addChild(box);
       this.slots.set(e.key, { box, body, texture: tex });
     });
-    if (!this.fast) this.alive(size);
+    if (!this.fast && !this.calm) this.alive(size);
   }
 
   /** Point just above an enemy, in stage coordinates, for the DOM target cursor. */
@@ -150,6 +157,7 @@ export class BattleView {
 
   /** Fire, ice and thunder wash the picture in their colour for a moment; thunder strikes twice. */
   private elementFlash(fx: FxKey | null): void {
+    if (this.calm) return;   // full-screen flashes are what reduced motion exists to avoid
     const color = fx === 'fire' ? 0xff7a1a : fx === 'ice' ? 0x7fe0ff : fx === 'thunder' ? 0xffffff : null;
     if (color === null) return;
     const g = new Graphics().rect(0, 0, this.size.width, this.size.height).fill(color);
@@ -157,9 +165,9 @@ export class BattleView {
     g.blendMode = 'add';
     const steps = fx === 'thunder' ? [0.7, 0.1, 0.55, 0.05] : [0.4, 0.25, 0.1];
     g.alpha = steps[0];
-    this.root.addChild(g);
+    this.scene.addChild(g);
     steps.slice(1).forEach((a, i) => this.later(50 * (i + 1), () => { if (!g.destroyed) g.alpha = a; }));
-    this.later(50 * steps.length, () => { if (!g.destroyed) { this.root.removeChild(g); g.destroy(); } });
+    this.later(50 * steps.length, () => { if (!g.destroyed) { this.scene.removeChild(g); g.destroy(); } });
   }
 
   /**
@@ -196,7 +204,7 @@ export class BattleView {
 
   /** A quick push in toward the centre and back, for weak-point hits and knockouts. */
   private punch(): void {
-    if (this.fast) return;
+    if (this.fast || this.calm) return;
     const { width: w, height: h } = this.size;
     const set = (k: number) => { this.root.scale.set(k); this.root.x = -((k - 1) * w) / 2; this.root.y = -((k - 1) * h) / 2; };
     set(1.06);
@@ -223,7 +231,7 @@ export class BattleView {
 
   /** An enemy about to act lunges toward the camera and settles back. */
   private lunge(slot: Slot): Promise<void> {
-    if (this.fast || slot.box.destroyed) return Promise.resolve();
+    if (this.fast || this.calm || slot.box.destroyed) return Promise.resolve();
     const y0 = slot.box.y;
     const total = 14;
     let frame = 0;
@@ -245,9 +253,9 @@ export class BattleView {
 
   /** Jolt the whole battle picture for a few frames. */
   private shake(px: number): void {
-    if (this.fast) return;
+    if (this.fast || this.calm) return;
     const steps = [px, -px, px * 0.6, -px * 0.6, px * 0.3, 0];
-    steps.forEach((x, i) => this.later(i * 30, () => { this.root.x = x; }));
+    steps.forEach((x, i) => this.later(i * 30, () => { if (!this.scene.destroyed) this.scene.x = x; }));
   }
 
   /**

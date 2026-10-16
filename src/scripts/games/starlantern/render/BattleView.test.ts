@@ -10,7 +10,7 @@ const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unkno
 const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
 const battle = (log: BattleState['log']): BattleState =>
   makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], [makeCombatant({ key: 'e0', side: 'enemy' })], { log });
-const enemyBox = (view: BattleView) => view.root.children.find((c) => c instanceof Container && !(c instanceof Sprite) && c.children.length > 0) as Container;
+const enemyBox = (view: BattleView) => (view.root.children[0] as Container).children.find((c) => c instanceof Container && !(c instanceof Sprite) && c.children.length > 0) as Container;
 
 describe('BattleView', () => {
   it('lets the final shatter finish before playback resolves', async () => {
@@ -78,11 +78,11 @@ describe('BattleView element flash', () => {
     const fire = new BattleView(false, bank);
     fire.setup(battle([]), { width: 640, height: 360 }, 1);
     void fire.play(battle([{ type: 'damage', target: 'e0', amount: 5, element: 'fire', mult: 1 }]), sfx);   // no act line, so no read pause first
-    expect(fire.root.children.some((c) => c.label === 'flash')).toBe(true);
+    expect((fire.root.children[0] as Container).children.some((c) => c.label === 'flash')).toBe(true);
     const plain = new BattleView(false, bank);
     plain.setup(battle([]), { width: 640, height: 360 }, 1);
     void plain.play(battle([{ type: 'damage', target: 'e0', amount: 5, element: 'phys', mult: 1 }]), sfx);
-    expect(plain.root.children.some((c) => c.label === 'flash')).toBe(false);
+    expect((plain.root.children[0] as Container).children.some((c) => c.label === 'flash')).toBe(false);
   });
 });
 
@@ -95,5 +95,28 @@ describe('BattleView animated effects', () => {
     const anim = box.children.find((c) => c.label === 'fx-anim') as Sprite;
     expect(anim).toBeDefined();
     expect(anim.texture.frame.width).toBeCloseTo(Texture.WHITE.width / 4, 5);
+  });
+});
+
+describe('BattleView reduced motion', () => {
+  it('skips the full-screen flash and the camera moves when the player asked for less motion', () => {
+    const view = new BattleView(false, bank, true);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    void view.play(battle([{ type: 'damage', target: 'e0', amount: 5, element: 'thunder', mult: 1.5 }]), sfx);
+    expect((view.root.children[0] as Container).children.some((c) => c.label === 'flash')).toBe(false);
+    expect(view.root.scale.x).toBe(1);
+  });
+});
+
+describe('BattleView camera', () => {
+  it('keeps the push-in centred while the screen shakes', async () => {
+    const view = new BattleView(false, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    void view.play(battle([{ type: 'damage', target: 'e0', amount: 5, element: 'phys', mult: 1.5 }]), sfx);
+    await new Promise((r) => setTimeout(r, 10));
+    const k = view.root.scale.x;
+    expect(k).toBeGreaterThan(1);
+    // the shake moves an inner layer, so the root's offset still matches its scale
+    expect(view.root.x).toBeCloseTo(-((k - 1) * 640) / 2, 5);
   });
 });
