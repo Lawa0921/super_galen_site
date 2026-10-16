@@ -260,6 +260,7 @@ export function validBuild(id: CharacterId, level: number, tree: unknown, talent
   const ownTalent = (k: string) => has(TALENT_NODES, k) && TALENT_NODES[k].owner === id;
   if (!shapeOk(tree, ownNode, (k) => NODES[k].node.maxRank) || !shapeOk(talents, ownTalent, (k) => TALENT_NODES[k].node.maxRank)) return false;
   if (!has(tree, freeNode(id))) return false;
+  // The rules read only id, level, tree and talents of a member, so the rest is neutral; revisit if a rule ever reads gear.
   let m: Member = { id, level, exp: 0, hp: 0, tp: 0, equip: {}, tree: newTree(id), talents: {} };
   for (let progress = true; progress;) {
     progress = false;

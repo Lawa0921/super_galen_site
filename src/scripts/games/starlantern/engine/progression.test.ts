@@ -4,6 +4,7 @@ import {
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, validBuild,
 } from './progression';
 import { newMember } from './party';
+import { mulberry32 } from './rng';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
 import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE } from '../data/talents';
 import type { AnyStat } from './types';
@@ -329,6 +330,30 @@ describe('validBuild', () => {
     expect(validBuild('liz', 4, tree, { 'liz-t00': 1 })).toBe(false); // Lv4 has no talent points
     expect(validBuild('liz', 6, tree, { 'liz-t00': 1 })).toBe(true);
     expect(validBuild('liz', 6, tree, {})).toBe(true);
+  });
+  it('accepts a build whatever the key order, deepest nodes and keystones first', () => {
+    const rev = (o: Record<string, number>) => Object.fromEntries(Object.entries(o).reverse());
+    for (const id of ids) {
+      expect(validBuild(id, 50, rev(defaultTree(id, 50)), rev(defaultTalents(id, 50))), id).toBe(true);
+    }
+  });
+  it('accepts random legal builds with their keys shuffled', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const rnd = mulberry32(seed);
+      const id = ids[seed % ids.length];
+      let m = at(id, 1 + Math.floor(rnd() * 50));
+      const nodes = TREES[id].branches.flatMap((b) => b.nodes.map((n) => n.id));
+      const talents = BOARDS[id].map((n) => n.id);
+      for (let i = 0; i < 400; i++) {
+        const t = rnd() < 0.5;
+        const pool = t ? talents : nodes;
+        const node = pool[Math.floor(rnd() * pool.length)];
+        const r = t ? raiseTalent(m, node) : raiseNode(m, node);
+        if (r.ok) m = r.member;
+      }
+      const shuffle = (o: Record<string, number>) => Object.fromEntries(Object.entries(o).sort(() => rnd() - 0.5));
+      expect(validBuild(id, m.level, shuffle(m.tree), shuffle(m.talents)), `seed ${seed}`).toBe(true);
+    }
   });
   it('rejects shapes that are not a build', () => {
     const t = newTree('liz');

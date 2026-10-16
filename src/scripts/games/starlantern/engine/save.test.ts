@@ -287,7 +287,12 @@ describe('save v5 skill trees and talents', () => {
     expect(status(lv(50, { [free]: 0 }))).toBe('corrupt');                                      // rank 0
     expect(status(lv(2, { [free]: 1, [liz[1].nodes[0].id]: 1, [liz[2].nodes[0].id]: 1 }))).toBe('corrupt'); // overspent
     expect(status(lv(50, { [liz[1].nodes[0].id]: 1 }))).toBe('corrupt');                        // free node missing
-    expect(status(lv(50, { ...defaultTree('liz', 50), [liz[0].nodes[4].id]: 1, [liz[1].nodes[4].id]: 1 }))).toBe('corrupt'); // two ultimates
+    // 17 points each way at Lv50 (26 earned): only the one-ultimate rule tells the two builds apart.
+    const b0 = { 'twin-slash': 3, 'triple-slash': 2, 'liz-twin-up': 2, 'liz-triple-up': 2, 'shadow-flurry': 1 };
+    const b1 = { stealth: 1, 'treasure-sense': 1, 'smoke-bomb': 3, 'liz-smoke-up': 3 };
+    expect(status(lv(50, { ...b0, ...b1, 'fortune-strike': 1 }))).toBe('corrupt');             // two ultimates
+    expect(status(lv(50, { ...b0, ...b1 }))).toBe('ok');                                        // one ultimate
+    expect(status(lv(50, { ...b1, 'twin-slash': 3, 'triple-slash': 2, 'liz-twin-up': 2, 'liz-triple-up': 2, 'fortune-strike': 1 }))).toBe('ok');
     expect(status(lv(50, { [free]: 1 }, { 'liz-t30': 1 }))).toBe('corrupt');                    // not adjacent
     expect(status(lv(50, { [free]: 1 }, { 'liz-t00': 5, 'liz-t01': 5, 'liz-t02': 5, 'liz-k0': 1, 'liz-k1': 1, 'liz-k2': 1 }))).toBe('corrupt'); // three keystones
     expect(status((g) => { delete (g.party.roster.liz as Partial<typeof g.party.roster.liz>).tree; })).toBe('corrupt');
