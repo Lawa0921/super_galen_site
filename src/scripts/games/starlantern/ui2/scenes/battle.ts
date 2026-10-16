@@ -1,9 +1,7 @@
 import type { SoundManager } from '../../audio/SoundManager';
 import type { HitExtra, PartyCue } from '../../render/BattleView';
 import type { FxKey } from '../../render/artPaths';
-import { CHARACTERS } from '../../data/characters';
 import { ITEMS } from '../../data/items';
-import { SKILLS } from '../../data/skills';
 import { T } from '../../data/text.zh-TW';
 import { ULTIMATES } from '../../data/ultimates';
 import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
@@ -14,7 +12,7 @@ import type { CharacterId, Target } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
-import { battleLines } from '../battleText';
+import { battleLines, levelUpLines } from '../battleText';
 import { fillRich, gearLabel, gearPart } from '../loot';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
@@ -464,11 +462,7 @@ export class BattleScene implements Scene {
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });
-      for (const u of end.levelUps) {
-        const who = CHARACTERS[u.id].name;
-        lines.push({ text: T.battle.levelUp(who, this.ctx.game.state.party.roster[u.id].level), cls: 'slx-levelup' });
-        for (const s of u.learned) lines.push({ text: T.battle.learned(who, SKILLS[s].name), cls: 'slx-levelup' });
-      }
+      lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
     this.result = new MenuView(new Menu([{ id: 'ok', label: T.battle.cont }]), {

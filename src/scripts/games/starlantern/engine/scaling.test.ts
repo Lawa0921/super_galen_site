@@ -4,9 +4,9 @@ import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
 import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
-import { newParty } from './party';
+import { expToNext, newParty } from './party';
 import { mulberry32 } from './rng';
-import { NORMAL_ENEMIES, REGION_DROP_CHANCE, depthLevel, encounterGroup, scaleEnemy } from './scaling';
+import { DEPTH_CLEAR_SHARE, NORMAL_ENEMIES, REGION_DROP_CHANCE, depthClearExp, depthLevel, encounterGroup, scaleEnemy } from './scaling';
 import { constRng } from './testing';
 
 const MAIN = REGIONS.mainline;
@@ -224,5 +224,18 @@ describe('encounterGroup', () => {
       for (const id of encounterGroup('blaze', 1, rng)) expect(ENEMIES[id].floor, id).toBe(1);
       for (const id of encounterGroup('blaze', 2, rng)) expect(ENEMIES[id].floor, id).toBeLessThanOrEqual(2);
     }
+  });
+});
+
+describe('depthClearExp', () => {
+  it('depthClearExp is DEPTH_CLEAR_SHARE of four levels at the depth level', () => {
+    expect(depthClearExp(1)).toBe(Math.round(DEPTH_CLEAR_SHARE * (expToNext(2) + expToNext(3) + expToNext(4) + expToNext(5))));
+    expect(depthClearExp(10)).toBeGreaterThan(depthClearExp(4));
+  });
+
+  it('depthClearExp stays finite at depth 1000', () => {
+    const exp = depthClearExp(1000);
+    expect(Number.isFinite(exp)).toBe(true);
+    expect(exp).toBeGreaterThan(0);
   });
 });

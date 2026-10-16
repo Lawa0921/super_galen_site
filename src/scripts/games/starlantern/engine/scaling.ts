@@ -64,6 +64,18 @@ const need = (from: number, to: number): number => {
   for (let l = from; l < to; l++) n += expToNext(l);
   return n;
 };
+/** Share of four levels at a depth's level paid for clearing it (taking its stairs down). */
+export const DEPTH_CLEAR_SHARE = 0.6;
+
+/**
+ * Exp for clearing a depth, paid when the party takes the stairs down: DEPTH_CLEAR_SHARE of the four levels at the
+ * depth level, so one clear of a depth (fights and this together) lands near the next depth's suggested level (balance test 12).
+ */
+export function depthClearExp(depth: number): number {
+  const lv = depthLevel(depth);
+  return Math.round(DEPTH_CLEAR_SHARE * need(lv, lv + 4));
+}
+
 const rewardGrowth = (def: EnemyDef, depth: number): number => {
   const lv = depthLevel(depth);
   if (lv <= homeLevel(def)) return 1;

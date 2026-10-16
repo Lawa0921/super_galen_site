@@ -13,9 +13,9 @@ import { applyAutoJunk, BAG_SIZE, mintUid } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMaterial, type DropCtx } from './loot/drops';
 import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
-import { activeIds, awardExp, hasPassive, statsOf } from './party';
+import { activeIds, awardExp, hasPassive, statsOf, type LevelUp } from './party';
 import { pick, type Rng } from './rng';
-import { depthLevel, encounterGroup } from './scaling';
+import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
 import { rollPortals } from './portals';
 import { newGame, type GameState } from './state';
@@ -26,7 +26,9 @@ export type Phase = 'town' | 'map' | 'battle' | 'clear';
 export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked';
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
-  | { kind: 'entrance' } | { kind: 'floor'; floor: number }
+  | { kind: 'entrance' }
+  /** A new floor; `clear` is the depth-clear exp paid for the floor left by the stairs (descend), with who levelled up. */
+  | { kind: 'floor'; floor: number; clear?: { exp: number; levelUps: LevelUp[] } }
   /**
    * A chest's materials, and its gear when it holds any (`chestHasGear`). Gear that does not fit stays in the opened chest:
    * `waiting` says why (as a `full` result), and `pickUpHere` takes it once there is room.
@@ -53,7 +55,7 @@ export type FullResult = { kind: 'full'; item?: string; qty?: number; need: numb
 export interface BattleEnd {
   /** `drops` lists only what went into the party's hands. */
   outcome: 'win' | 'lose' | 'fled'; exp: number; gold: number; drops: Record<string, number>;
-  levelUps: { id: CharacterId; levels: number; learned: string[] }[];
+  levelUps: LevelUp[];
   /** Drops that did not fit in the pack and were left behind. */
   left: Record<string, number>;
   /** Gear that went into the run pack, and gear left behind for want of weight or bag room. */
@@ -348,10 +350,17 @@ export class Game {
     return { kind: 'full', item, qty, need: this.shortBy(loot, withGear), ...(gear ? { gear: this.junkMarked(gear) } : {}) };
   }
 
-  /** Go down the stairs the party stands on; null when not on stairs. */
+  /**
+   * Go down the stairs the party stands on; null when not on stairs. Taking the stairs clears the floor left behind:
+   * its depth-clear exp goes out as a fight's does (the bench gets half, the downed nothing).
+   */
   descend(): MoveResult | null {
     if (this.phase !== 'map' || !this.run || tileAt(this.map(), this.pos) !== 'down') return null;
-    return this.changeFloor(this.floor + 1);
+    const exp = Math.round(depthClearExp(this.floor) * CONDITIONS[this.run.condition].expMul);
+    const standing = activeIds(this.state.party).filter((id) => this.state.party.roster[id].hp > 0);
+    const awarded = awardExp(this.state.party, exp, standing);
+    this.state.party = awarded.party;
+    return { ...this.changeFloor(this.floor + 1), clear: { exp, levelUps: awarded.results.filter((x) => x.levels > 0) } };
   }
 
   private stairs(): MoveResult {
@@ -538,7 +547,7 @@ export class Game {
     run.explored[this.floor] = reveal(run.explored[this.floor] ?? [], this.map(), this.pos, CONDITIONS[run.condition].sight);
   }
 
-  private changeFloor(floor: number): MoveResult {
+  private changeFloor(floor: number): { kind: 'floor'; floor: number } {
     const region = this.run!.region;
     this.floor = floor;
     this.pos = { ...this.map().entrance };

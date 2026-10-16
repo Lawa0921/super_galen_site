@@ -70,6 +70,7 @@ export const T = {
     returnTown: '回城', lamp: (n: number) => `歸還之燈 ×${n}`,
     danger: { green: '安全', yellow: '注意', red: '危險' },
     floor: (n: number, name: string) => `第 ${n} 層　${name}`,
+    cleared: (exp: number) => `踏破獎勵：經驗值 +${exp}`,
     chest: (name: string, qty: number) => `打開寶箱：${name} ×${qty}`,
     dirs: { up: '↑', down: '↓', left: '←', right: '→' },
   },

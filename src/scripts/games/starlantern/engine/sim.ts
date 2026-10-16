@@ -6,10 +6,14 @@ import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
-import { MAX_LEVEL, SLOTS, expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
+import { MAX_LEVEL, SLOTS, expToNext, gainExp, learnedSkills, newMember, newParty, statsOf } from './party';
 import { mulberry32 } from './rng';
-import { scaleEnemy } from './scaling';
-import type { BuffStat, CharacterId, GearSlot, Party, Rarity, SkillDef } from './types';
+import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
+import { genFloor } from './dungeon/gen';
+import { terrainOf } from './dungeon/run';
+import { advance } from './encounter';
+import { DELTA, posKey, tileAt, type FloorMap } from './map';
+import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, SkillDef } from './types';
 
 type Altar = { stat: BuffStat; pct: number }[];
 
@@ -112,4 +116,69 @@ export function fightsToLevel(exp: number, from: number, to: number): number {
   let need = 0;
   for (let l = from; l < to; l++) need += expToNext(l);
   return Math.ceil(need / exp);
+}
+
+/** Every open cell's BFS distance from `from` (only walls block). */
+function bfs(map: FloorMap, from: Pos): Map<string, number> {
+  const dist = new Map([[posKey(from), 0]]);
+  const queue = [from];
+  for (let i = 0; i < queue.length; i++) {
+    const p = queue[i];
+    for (const d of Object.values(DELTA)) {
+      const n = { x: p.x + d.x, y: p.y + d.y };
+      if (tileAt(map, n) === 'wall' || dist.has(posKey(n))) continue;
+      dist.set(posKey(n), dist.get(posKey(p))! + 1);
+      queue.push(n);
+    }
+  }
+  return dist;
+}
+
+/**
+ * Encounters met clearing one mainline depth on foot (balance test 12): `rooms` walks to the nearest unvisited room
+ * centre (ties to the lower room id) until all are visited, then to the stairs; `direct` walks straight to the stairs.
+ * Each step fills the encounter gauge once at the depth's rate.
+ */
+export function clearFights(depth: number, seed: number, route: 'rooms' | 'direct'): number {
+  const { map, rooms } = genFloor(seed, { depth, boss: false });
+  const rate = FLOORS[terrainOf('mainline', depth) - 1].rate;
+  const rng = mulberry32(seed);
+  const centre = (r: (typeof rooms)[number]): Pos => ({ x: r.x + Math.floor(r.w / 2), y: r.y + Math.floor(r.h / 2) });
+  let pos = map.entrance, gauge = 0, fights = 0;
+  const walkTo = (to: Pos) => {
+    const steps = bfs(map, pos).get(posKey(to))!;
+    for (let i = 0; i < steps; i++) {
+      const g = advance(gauge, rng, rate, 1);
+      gauge = g.value;
+      if (g.encounter) fights++;
+    }
+    pos = to;
+  };
+  if (route === 'rooms') {
+    const left = new Set(rooms.map((r) => r.id));
+    while (left.size) {
+      const dist = bfs(map, pos);
+      const next = rooms.filter((r) => left.has(r.id))
+        .sort((a, b) => dist.get(posKey(centre(a)))! - dist.get(posKey(centre(b)))! || a.id - b.id)[0];
+      walkTo(centre(next));
+      left.delete(next.id);
+    }
+  }
+  walkTo(map.down!);
+  return fights;
+}
+
+/**
+ * The level a lone member reaches by clearing one mainline depth (its fights by `clearFights`, averaged over 40 maps,
+ * at the depth's average group exp, plus the depth-clear exp), from Lv1 at depth 1 and from the depth level deeper.
+ */
+export function depthPace(depth: number, route: 'rooms' | 'direct'): number {
+  const start = depth === 1 ? 1 : depthLevel(depth);
+  let fights = 0;
+  for (let k = 1; k <= 40; k++) fights += clearFights(depth, k * 7919, route);
+  fights /= 40;
+  const table = encounterTable('mainline', depth);
+  const perFight = table.reduce((n, g) => n + groupExp(g, { depth, region: 'mainline' }), 0) / table.length;
+  const exp = Math.round(fights * perFight) + depthClearExp(depth);
+  return gainExp({ ...newMember('noel'), level: start }, exp).member.level;
 }

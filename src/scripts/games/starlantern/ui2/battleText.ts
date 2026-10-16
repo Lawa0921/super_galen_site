@@ -1,5 +1,9 @@
+import { CHARACTERS } from '../data/characters';
+import { SKILLS } from '../data/skills';
 import { T } from '../data/text.zh-TW';
 import type { BattleEvent } from '../engine/combatant';
+import type { LevelUp } from '../engine/party';
+import type { Party } from '../engine/types';
 
 /** One line of battle narration per event, for the message window. */
 export function battleLines(log: BattleEvent[], nameOf: (key: string) => string): string[] {
@@ -25,4 +29,15 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'poison-tick': return T.log.poison(nameOf(e.target), e.amount);
     }
   });
+}
+
+/** A line per member who levelled up (at their level now in `party`), then a line per skill they learned. */
+export function levelUpLines(ups: LevelUp[], party: Party): { text: string; cls: 'slx-levelup' }[] {
+  const lines: { text: string; cls: 'slx-levelup' }[] = [];
+  for (const u of ups) {
+    const who = CHARACTERS[u.id].name;
+    lines.push({ text: T.battle.levelUp(who, party.roster[u.id].level), cls: 'slx-levelup' });
+    for (const s of u.learned) lines.push({ text: T.battle.learned(who, SKILLS[s].name), cls: 'slx-levelup' });
+  }
+  return lines;
 }

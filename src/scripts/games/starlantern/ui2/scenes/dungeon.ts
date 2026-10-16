@@ -19,6 +19,7 @@ import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
+import { levelUpLines } from '../battleText';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
 
@@ -151,9 +152,10 @@ export class DungeonScene implements Scene {
     return [badge, tip];
   }
 
-  private say(text: string | Rich): void {
-    void this.talk.say('', text);
+  private say(text: string | Rich): Promise<void> {
+    const shown = this.talk.say('', text);
     this.syncInert();
+    return shown;
   }
 
   /** Fresh from the plaza: the run condition crosses the screen once (the corner badge keeps it on screen afterwards). */
@@ -247,13 +249,17 @@ export class DungeonScene implements Scene {
     this.refresh();
   }
 
-  /** 前往 on the stairs window: go down and name the new floor. */
+  /** 前往 on the stairs window: go down and name the new floor, then pay the depth-clear exp in a second line. */
   private descend(): void {
     const r = this.ctx.game.descend();
     if (r?.kind !== 'floor') { this.refresh(); return; }
     this.ctx.sfx.stairs?.();
     this.refresh();
-    this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name));
+    const named = this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name));
+    const clear = r.clear;
+    if (!clear) return;
+    const lines = [T.map.cleared(clear.exp), ...levelUpLines(clear.levelUps, this.ctx.game.state.party).map((l) => l.text)];
+    void named.then(() => this.say(lines.join('\n')));
   }
 
   private push(layer: Layer): void {

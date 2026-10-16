@@ -298,6 +298,12 @@ test.describe('starlantern', () => {
     await w.choose('.slx-event-stairs', '前往');
     await expect(stairs).toHaveCount(0);
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.floor)).toBe(2);
+    // The floor name first, then the depth-clear reward in a second message.
+    const talk = page.locator('.slx-dungeon .slx-talk .slx-text');
+    await expect(talk).toContainText('第 2 層');
+    for (let i = 0; i < 4 && !((await talk.textContent()) ?? '').includes('踏破獎勵'); i++) await w.key('z');
+    await expect(talk).toContainText('踏破獎勵：經驗值 +');
+    await w.closeTalk();
     await lampHome(page, w);
     await expect(page.locator('.slx-town .slx-talk')).toContainText('歸還之燈');
     await expect(page.locator('.slx-town .slx-talk')).toContainText('星紋石 ×2');

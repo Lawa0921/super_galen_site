@@ -96,6 +96,18 @@ describe('DungeonScene', () => {
       t.s.onAction(dir);
       expect(win(t.root)).not.toBeNull();
     });
+
+    it('after the floor name, a second message pays the clear exp', async () => {
+      const t = setup();
+      toStairs(t);
+      t.pick('前往');
+      expect(t.game.floor).toBe(2);
+      expect(t.text()).toBe('第 2 層　水晶洞窟');
+      t.s.onAction('confirm');
+      await Promise.resolve();
+      expect(t.text()).toContain('踏破獎勵：經驗值 +');
+      expect(t.text()).toContain('升到 Lv');
+    });
   });
 
   it('bumps into walls and walks on floors', () => {

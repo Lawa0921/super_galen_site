@@ -156,12 +156,15 @@ export function gainExp(m: Member, amount: number): { member: Member; levels: nu
   return { member: next, levels: level - m.level, learned: learnedSkills(m.id, level).filter((s) => !had.has(s)) };
 }
 
+/** What one member got from an exp award: levels gained (0 when none) and skills learned on the way. */
+export type LevelUp = { id: CharacterId; levels: number; learned: string[] };
+
 export function awardExp(
   p: Party, amount: number, survivors: CharacterId[],
-): { party: Party; results: { id: CharacterId; levels: number; learned: string[] }[] } {
+): { party: Party; results: LevelUp[] } {
   const active = activeIds(p);
   const roster = { ...p.roster };
-  const results: { id: CharacterId; levels: number; learned: string[] }[] = [];
+  const results: LevelUp[] = [];
   for (const id of p.recruited) {
     const share = !active.includes(id) ? Math.floor(amount / 2) : survivors.includes(id) ? amount : 0;
     if (share <= 0) continue;

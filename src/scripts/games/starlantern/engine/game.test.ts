@@ -12,7 +12,9 @@ import type { Pos } from './types';
 import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { SETS } from '../data/gear';
-import { activeIds } from './party';
+import { activeIds, gainExp, MAX_LEVEL, newMember, recruit } from './party';
+import { depthClearExp } from './scaling';
+import { CONDITIONS } from '../data/conditions';
 import { BAG_SIZE } from './loot/bag';
 import { chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear } from './loot/drops';
 import { itemLevel, itemWeight, rollItem } from './loot/item';
@@ -196,7 +198,7 @@ describe('moving', () => {
   it('stairs go one deeper and never back', () => {
     const g = new Game(calm(), null);
     g.depart(MAIN, 1);
-    expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
     expect([g.floor, g.pos, g.state.dungeon.reached.mainline]).toEqual([2, g.map().entrance, 2]);
     const m = g.map();
     expect(m.up).toBeNull();
@@ -207,7 +209,7 @@ describe('moving', () => {
   it('a random region keeps going past depth 3', () => {
     const g = new Game(calm(), null);
     g.depart({ region: 'storm', condition: 'plain' }, 1);
-    for (const d of [2, 3, 4, 5]) expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: d });
+    for (const d of [2, 3, 4, 5]) expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: d });
     expect(g.state.dungeon.reached.storm).toBe(5);
     expect(g.map().boss).not.toBeNull();
     expect(g.map().down).toBeNull();
@@ -358,7 +360,7 @@ describe('battles', () => {
     const m = g.map();
     expect([m.boss, m.tiles.flat().includes('boss')]).toEqual([null, false]);
     expect(m.down).not.toBeNull();
-    expect(downstairs(g, m.down!)).toEqual({ kind: 'floor', floor: 4 });
+    expect(downstairs(g, m.down!)).toMatchObject({ kind: 'floor', floor: 4 });
     expect([g.floor, g.state.dungeon.reached.mainline, g.phase]).toEqual([4, 4, 'map']);
     expect(g.map().down).not.toBeNull();
   });
@@ -372,7 +374,7 @@ describe('battles', () => {
     expect(g.submitRound({})!.end!.outcome).toBe('win');
     expect([g.phase, g.state.dungeon.bossDefeated]).toEqual(['map', false]);
     expect(g.map().down).toEqual(at);
-    expect(downstairs(g, at)).toEqual({ kind: 'floor', floor: 6 });
+    expect(downstairs(g, at)).toMatchObject({ kind: 'floor', floor: 6 });
   });
   it('the story boss on mainline depth 3 is the plain 燈喰之獸', () => {
     const g = inMap(3);
@@ -669,7 +671,7 @@ describe('stairs ask before going down', () => {
     g.depart(MAIN, 1);
     expect(g.descend()).toBeNull();   // standing on the entrance
     stepOnto(g, g.map().down!);
-    expect(g.descend()).toEqual({ kind: 'floor', floor: 2 });
+    expect(g.descend()).toMatchObject({ kind: 'floor', floor: 2 });
     expect([g.floor, g.pos]).toEqual([2, g.map().entrance]);
   });
   it('declining keeps the party on the stairs; stepping off and back asks again', () => {
@@ -1072,5 +1074,45 @@ describe('dungeon gear', () => {
     for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
     expect(g.submitRound({})!.end!.outcome).toBe('lose');
     expect([g.run, g.state.bag]).toEqual([null, []]);
+  });
+});
+
+describe('depth-clear exp', () => {
+  it('descending pays the depth-clear exp: full to the standing, half to the bench, none to the downed', () => {
+    const g = new Game(calm(), null);
+    g.state.party = recruit(g.state.party, 'sylvie');
+    g.depart(MAIN, 1);
+    const p = g.state.party;
+    expect(activeIds(p)).not.toContain('sylvie');
+    p.roster.selene.hp = 0;
+    const r = downstairs(g, g.map().down!);
+    if (r?.kind !== 'floor' || !r.clear) throw new Error('no clear');
+    const exp = depthClearExp(1);
+    expect(r.clear.exp).toBe(exp);
+    const q = g.state.party.roster;
+    expect(q.scarlet.level).toBeGreaterThan(1);
+    expect(r.clear.levelUps.map((u) => u.id)).toContain('scarlet');
+    expect(r.clear.levelUps.every((u) => u.levels > 0)).toBe(true);
+    const bench = gainExp(newMember('sylvie'), Math.floor(exp / 2)).member;   // half the clear exp, from Lv1 with 0 exp
+    expect([q.sylvie.level, q.sylvie.exp]).toEqual([bench.level, bench.exp]);
+    expect([q.selene.level, q.selene.exp]).toEqual([1, 0]);
+  });
+
+  it('the fierce condition multiplies the clear exp', () => {
+    const g = new Game(calm(), null);
+    g.depart({ region: 'mainline', condition: 'fierce' }, 1);
+    const r = downstairs(g, g.map().down!);
+    if (r?.kind !== 'floor' || !r.clear) throw new Error('no clear');
+    expect(r.clear.exp).toBe(Math.round(depthClearExp(1) * CONDITIONS.fierce.expMul));
+  });
+
+  it('descending at Lv50 grants nothing and does not throw', () => {
+    const g = new Game(calm(), null);
+    g.depart(MAIN, 1);
+    for (const id of g.state.party.recruited) g.state.party.roster[id].level = MAX_LEVEL;
+    const r = downstairs(g, g.map().down!);
+    if (r?.kind !== 'floor' || !r.clear) throw new Error('no clear');
+    expect(r.clear.levelUps).toEqual([]);
+    for (const id of g.state.party.recruited) expect([id, g.state.party.roster[id].level, g.state.party.roster[id].exp]).toEqual([id, MAX_LEVEL, 0]);
   });
 });

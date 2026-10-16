@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FLOORS } from '../data/floors';
 import { SLOTS, expToNext } from './party';
-import { avgExp, fightsToLevel, groupExp, kitParty, simBattle, winRate } from './sim';
+import { avgExp, depthPace, fightsToLevel, groupExp, kitParty, simBattle, winRate } from './sim';
 import { REGIONS, type RegionId } from '../data/regions';
 import type { BattleScale } from './battle';
 import { ALTAR_STAT_CAP_PCT } from './events';
@@ -112,6 +112,16 @@ describe('balance', () => {
     for (const d of [5, 10]) for (let seed = 1; seed <= 20; seed++) {
       const r = simBattle(kitParty(depthLevel(d), d, seed, 'rare'), ['lanterneater'], true, seed, { depth: d, region: 'mainline' });
       expect(r.rounds, `depth ${d} seed ${seed}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("12. one clear of a depth lands near the next depth's level", () => {
+    for (const d of [1, 2, 3, 4, 5, 6, 8, 10]) {
+      const next = depthLevel(d + 1);
+      const rooms = depthPace(d, 'rooms');
+      expect(rooms, `depth ${d} rooms`).toBeGreaterThanOrEqual(next - 1);
+      expect(rooms, `depth ${d} rooms`).toBeLessThanOrEqual(next + 1);
+      expect(depthPace(d, 'direct'), `depth ${d} direct`).toBeGreaterThanOrEqual(next - 2);
     }
   });
 });
