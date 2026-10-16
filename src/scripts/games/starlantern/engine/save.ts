@@ -34,13 +34,18 @@ const isBossKey = (k: string): boolean => {
   return !!m && has(REGIONS, m[1]) && Number(m[2]) >= 1 && Number(m[2]) <= MAX_DEPTH;
 };
 
+/** The largest affix value a save may hold, either sign: far above any roll, low enough that sums stay finite. */
+const MAX_AFFIX = 10000;
+/** The largest nextUid a save may hold: far below Number.MAX_SAFE_INTEGER, so minting can never leave the safe range. */
+const MAX_UID = 1e9;
+
 /** One piece of gear: a known base, rarity, affix keys and special, with sane numbers. */
 function isItem(v: unknown): v is ItemInstance {
   if (!isObj(v) || !isCount(v.uid) || !has(EQUIPMENT, v.base) || !RARITIES.includes(v.rarity as never)) return false;
   if (!Number.isInteger(v.ilvl) || (v.ilvl as number) < 1 || (v.ilvl as number) > MAX_ILVL || !isCount(v.enhance)) return false;
   if (v.special !== undefined && !has(SPECIALS, v.special)) return false;
   if (v.junk !== undefined && typeof v.junk !== 'boolean') return false;
-  return Array.isArray(v.affixes) && v.affixes.every((a) => isObj(a) && has(AFFIXES, a.key) && Number.isFinite(a.value));
+  return Array.isArray(v.affixes) && v.affixes.every((a) => isObj(a) && has(AFFIXES, a.key) && Number.isFinite(a.value) && Math.abs(a.value as number) <= MAX_AFFIX);
 }
 
 function isValid(d: Record<string, unknown>): boolean {
@@ -53,7 +58,7 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!placed.length || placed.length > MAX_ACTIVE) return false;
   if (new Set(placed).size !== placed.length || placed.some((x) => !(p.recruited as unknown[]).includes(x))) return false;
   if (!Array.isArray(d.bag) || d.bag.length > BAG_SIZE || !d.bag.every(isItem)) return false;
-  if (!Number.isSafeInteger(d.nextUid) || (d.nextUid as number) < 1) return false;
+  if (!Number.isSafeInteger(d.nextUid) || (d.nextUid as number) < 1 || (d.nextUid as number) > MAX_UID) return false;
   const uids: number[] = (d.bag as ItemInstance[]).map((it) => it.uid);
   for (const id of CHARACTER_IDS) {
     const m = (p.roster as Record<string, unknown>)[id];

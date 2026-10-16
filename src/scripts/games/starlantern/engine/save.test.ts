@@ -79,6 +79,13 @@ describe('save', () => {
     expect(bad((g) => { g.bag[0].base = 'nope'; })).toBe('corrupt');
     expect(bad((g) => { g.bag[1].affixes[0].key = 'luck' as never; })).toBe('corrupt');
     expect(bad((g) => { g.bag[1].affixes[0].value = 'big' as never; })).toBe('corrupt');
+    // Affix values are held to |v| <= 10000: two huge armor affixes would sum to Infinity and make damage NaN.
+    expect(bad((g) => { g.bag[1].affixes[0].value = 1e308; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[1].affixes[0].value = 10001; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[1].affixes[0].value = -10001; })).toBe('corrupt');
+    expect(bad((g) => { g.bag[1].affixes[0].value = 10000; })).toBe('ok');
+    expect(bad((g) => { g.bag[1].affixes[0].value = -10000; })).toBe('ok');
+    expect(bad((g) => { g.party.roster.liz.equip = { ring2: { ...plainItem('copper-ring', 3), affixes: [{ key: 'armor', value: 1e308 }] } }; })).toBe('corrupt');
     expect(bad((g) => { g.bag[0].rarity = 'mythic' as never; })).toBe('corrupt');
     expect(bad((g) => { g.bag[0].special = 'nope'; })).toBe('corrupt');
     expect(bad((g) => { g.party.roster.liz.equip = { weapon: plainItem('copper-ring', 3) }; })).toBe('corrupt');   // a ring in the weapon slot
@@ -91,6 +98,10 @@ describe('save', () => {
     expect(bad((g) => { g.bag = []; g.party.roster.liz.equip = {}; g.nextUid = -1; })).toBe('corrupt');
     expect(bad((g) => { g.bag = []; g.party.roster.liz.equip = {}; g.nextUid = 0; })).toBe('corrupt');
     expect(bad((g) => { g.nextUid = 2 ** 53; })).toBe('corrupt');
+    // nextUid is held to 1e9, far below the safe-integer edge, so a pick-up can never mint an unsaveable uid.
+    expect(bad((g) => { g.nextUid = 1e9 + 1; })).toBe('corrupt');
+    expect(bad((g) => { g.nextUid = 2 ** 53 - 1; })).toBe('corrupt');
+    expect(bad((g) => { g.nextUid = 1e9; })).toBe('ok');
     expect(bad((g) => { g.bag[0].ilvl = 1e300; })).toBe('corrupt');
     expect(bad((g) => { g.bag[0].ilvl = 1000; })).toBe('corrupt');
     expect(bad((g) => { g.bag[0].ilvl = 999; })).toBe('ok');
