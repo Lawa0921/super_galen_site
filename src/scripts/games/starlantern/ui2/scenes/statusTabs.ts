@@ -533,8 +533,11 @@ const talent: StatusTab = {
           el('span', { class: 'slx-talent-name', text: key ? key.name : T.gear.statName[n.stat!] }),
           el('span', { class: 'slx-talent-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
         ]),
-        el('p', { class: key ? 'slx-talent-desc' : 'slx-talent-per', text: key ? key.desc : t.per(n.stat!, perRank(n)) }),
-        el('p', { class: 'slx-talent-state', text: why ? t.reason[why] : t.open }),
+        // Two lines a cell so more rows fit; a keystone's rule is in the notes under the board.
+        el('div', { class: 'slx-talent-sub' }, [
+          ...(key ? [] : [el('span', { class: 'slx-talent-per', text: t.per(n.stat!, perRank(n)) })]),
+          el('span', { class: 'slx-talent-state', text: t.cell[why ?? 'open'] }),
+        ]),
       ]);
       // The first click moves the cursor here; a click on the cursor's node is Enter.
       node.addEventListener('click', () => {

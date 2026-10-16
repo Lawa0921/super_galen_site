@@ -211,7 +211,7 @@ describe('StatusScene', () => {
       expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
       const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
       expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '主屬性', '上限', '合計']);
-      expect(root.querySelector('[data-stat=str] .slx-talent')!.textContent).toMatch(/^\+\d/);
+      expect(root.querySelector('[data-stat=str] .slx-talent')!.textContent).toBe(T.signed(TALENT_PER.str! * TALENT_SCALE));
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;
       expect(atk.querySelector('.slx-primary')!.textContent).toMatch(/^\+\d+$/);
@@ -775,11 +775,29 @@ describe('StatusScene', () => {
       expect(node('noel-t00').textContent).toContain('0／5');
       expect(node('noel-t00').classList.contains('slx-node-open')).toBe(true);
       expect(node('noel-t10').classList.contains('slx-node-locked')).toBe(true);
-      expect(node('noel-t10').textContent).toContain(T.ui2.talent.reason.adjacent);
+      expect(node('noel-t10').textContent).toContain(T.ui2.talent.cell.adjacent);
       expect(node('noel-k0').textContent).toContain(KEYSTONES['weak-tp'].name);
-      expect(node('noel-k0').textContent).toContain(KEYSTONES['weak-tp'].desc);
       expect(node('noel-k0').textContent).toContain('0／1');
       expect(game.state.party.roster.noel.talents).toEqual({});   // drawing spends nothing
+    });
+
+    it("each cell is two lines, name and rank then bonus and state; a keystone's rule is in the notes", () => {
+      const { node, info } = onTalent(6);
+      for (const id of ['noel-t00', 'noel-t10', 'noel-k0']) {
+        expect([...node(id).children].map((l) => l.className), id).toEqual(['slx-talent-head', 'slx-talent-sub']);
+      }
+      const sub = (id: string, cls: string) => node(id).querySelector(`.slx-talent-sub .${cls}`)?.textContent;
+      expect([sub('noel-t00', 'slx-talent-per'), sub('noel-t00', 'slx-talent-state')]).toEqual(['+2／級', T.ui2.talent.cell.open]);
+      expect([sub('noel-t10', 'slx-talent-per'), sub('noel-t10', 'slx-talent-state')]).toEqual(['+3%／級', T.ui2.talent.cell.adjacent]);   // 雷電傷害
+      expect(sub('noel-k0', 'slx-talent-state')).toBe(T.ui2.talent.cell.gate);
+      // A cell has room for 3 wide characters beside the bonus (the gate's number aside); the notes give the full reason.
+      for (const [k, v] of Object.entries(T.ui2.talent.cell)) expect(v.replace(/\d/g, '').length, k).toBeLessThanOrEqual(3);
+      expect(Object.keys(T.ui2.talent.cell).sort()).toEqual(['open', ...Object.keys(T.ui2.talent.reason)].sort());
+      node('noel-t10').click();
+      expect(info()).toContain(T.ui2.talent.reason.adjacent);
+      expect(node('noel-k0').textContent).not.toContain(KEYSTONES['weak-tp'].desc);
+      node('noel-k0').click();
+      expect(info()).toContain(KEYSTONES['weak-tp'].desc);
     });
 
     it('Lv5 has no talent points: Enter shows the reason at once and changes nothing', () => {
@@ -820,7 +838,7 @@ describe('StatusScene', () => {
       expect(top()).toContain(T.ui2.talent.board(11));
       expect(top()).toContain('12 點後可選關鍵天賦');
       expect(node('noel-k0').classList.contains('slx-node-locked')).toBe(true);
-      expect(node('noel-k0').textContent).toContain(T.ui2.talent.reason.gate);
+      expect(node('noel-k0').textContent).toContain(T.ui2.talent.cell.gate);
       node('noel-k0').click();                                  // moves the cursor
       node('noel-k0').click();                                  // a press: refused at once
       expect(msg()).toBe(T.ui2.talent.reason.gate);
@@ -837,7 +855,7 @@ describe('StatusScene', () => {
       expect(node('noel-k0').classList.contains('slx-node-learned')).toBe(true);
       expect(node('noel-k0').textContent).toContain('1／1');
       expect(node('noel-k2').classList.contains('slx-node-locked')).toBe(true);
-      expect(node('noel-k2').textContent).toContain(T.ui2.talent.reason.keystones);
+      expect(node('noel-k2').textContent).toContain(T.ui2.talent.cell.keystones);
       down(s, 26);
       expect(cur()).toBe('noel-k2');
       s.onAction('confirm');
@@ -846,11 +864,11 @@ describe('StatusScene', () => {
 
     it('with no points left a shut node shows its structural reason, an open one 點數不足', () => {
       const { node } = onTalent(6, { 'noel-t00': 1 });
-      expect(node('noel-t13').textContent).toContain(T.ui2.talent.reason.adjacent);
-      expect(node('noel-t13').textContent).not.toContain(T.ui2.talent.reason.points);
-      expect(node('noel-k0').textContent).toContain(T.ui2.talent.reason.gate);
-      expect(node('noel-t01').textContent).toContain(T.ui2.talent.reason.points);
-      expect(node('noel-t11').textContent).toContain(T.ui2.talent.reason.points);   // diagonal below a raised node
+      expect(node('noel-t13').textContent).toContain(T.ui2.talent.cell.adjacent);
+      expect(node('noel-t13').textContent).not.toContain(T.ui2.talent.cell.points);
+      expect(node('noel-k0').textContent).toContain(T.ui2.talent.cell.gate);
+      expect(node('noel-t01').textContent).toContain(T.ui2.talent.cell.points);
+      expect(node('noel-t11').textContent).toContain(T.ui2.talent.cell.points);   // diagonal below a raised node
     });
 
     it('every refusal has its own words', () => {
@@ -932,11 +950,13 @@ describe('StatusScene', () => {
     });
 
     it('each board row is labelled by its tier, and a shut node says what it needs', () => {
-      const { root, node } = onTalent(6);
+      const { root, node, info } = onTalent(6);
       const rows = [...root.querySelectorAll('.slx-talent-row')];
       expect(rows.map((r) => r.querySelector('.slx-talent-tier')!.textContent)).toEqual([1, 2, 3, 4, 5, 6].map((r) => T.ui2.talent.tier(r)));
       expect(T.ui2.talent.reason.adjacent).toBe('需相鄰上一列');
-      expect(node('noel-t10').textContent).toContain('需相鄰上一列');
+      expect(node('noel-t10').textContent).toContain(T.ui2.talent.cell.adjacent);
+      node('noel-t10').click();
+      expect(info()).toContain('需相鄰上一列');
     });
 
     describe('the board\'s scroll cues', () => {
