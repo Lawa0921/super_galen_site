@@ -57,3 +57,15 @@ describe('TownScene mouse', () => {
     expect(go).toHaveBeenCalledWith('title');
   });
 });
+
+describe('TownScene notices', () => {
+  it('tells the player about a wipe before anything else and clears the notice', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'wipe';
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('全滅……已回到上次住宿的時間點');
+    expect(game.notice).toBeNull();
+  });
+});

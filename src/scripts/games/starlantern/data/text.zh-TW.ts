@@ -90,7 +90,7 @@ export const T = {
       morning: '──隔天早上', saved: '已存檔。', saveFailed: '存檔失敗了……瀏覽器不允許儲存。',
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
     },
-    gate: { choose: '選擇樓層', floor: (n: number, name: string) => `第 ${n} 層 ${name}`, locked: '尚未到達', soon: '迷宮畫面在下一階段開放，敬請期待。' },
+    gate: { choose: '選擇樓層', floor: (n: number, name: string) => `第 ${n} 層 ${name}`, locked: '尚未到達', soon: '迷宮畫面在下一階段開放，敬請期待。', ask: (n: number, name: string) => `要前往第 ${n} 層 ${name} 嗎？` },
     shop: {
       buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,

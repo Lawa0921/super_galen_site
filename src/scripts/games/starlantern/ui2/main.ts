@@ -15,6 +15,7 @@ import { InnScene } from './scenes/inn';
 import { GateScene } from './scenes/gate';
 import { DungeonScene } from './scenes/dungeon';
 import { BattleScene } from './scenes/battle';
+import { ClearScene } from './scenes/clear';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -41,7 +42,7 @@ export async function mountNext(): Promise<void> {
       case 'gate': return new GateScene(ctx);
       case 'dungeon': return new DungeonScene(ctx);
       case 'battle': return new BattleScene(ctx);
-      default: throw new Error(`scene ${name} is not built yet`);
+      case 'clear': return new ClearScene(ctx);
     }
   };
   const ctx = {

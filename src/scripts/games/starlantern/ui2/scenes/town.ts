@@ -31,7 +31,10 @@ export class TownScene implements Scene {
       (this.backEl = backControl(() => this.onAction('cancel'))),
       this.talk.el,
     ]));
-    void this.speak(t.place.split(' ').pop() ?? '', t.lines[Math.floor(this.ctx.game.rng() * t.lines.length)]);
+    const notice = this.ctx.game.notice;
+    this.ctx.game.notice = null;
+    if (notice) void this.speak('', T.notices[notice]);
+    else void this.speak(t.place.split(' ').pop() ?? '', t.lines[Math.floor(this.ctx.game.rng() * t.lines.length)]);
   }
 
   exit(): void {}

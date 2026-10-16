@@ -273,3 +273,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
   .sl-cutin__band { transform: rotate(-8deg); }
 }
 
+// Ending
+.slx-clear-card { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 360px; text-align: center; padding: 14px 18px; }
+.slx-clear-card h2 { margin: 0 0 8px; font-size: 20px; font-weight: normal; color: $slx-gold; }
+.slx-clear-card p { margin: 0 0 10px; }
