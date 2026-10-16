@@ -1,6 +1,6 @@
 import { Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
 import type { Game } from '../engine/game';
-import type { Tile } from '../engine/map';
+import type { FloorMap, Tile } from '../engine/map';
 import { art, tileKey } from './artPaths';
 import { fogState } from './fog';
 import type { TextureBank } from './textures';
@@ -44,7 +44,8 @@ export class MapView {
   private target = { x: 0, y: 0 };
   private view = { width: 640, height: 296 };
   private hop = 0;
-  private floor = 0;
+  /** The floor drawn last: a different one (next depth or a new run) lays a new fog and skips the slide. */
+  private drawn: FloorMap | null = null;
 
   /** `calm`: reduced motion, no hop while walking. */
   constructor(private bank: TextureBank | null = null, private calm = false) {
@@ -72,20 +73,21 @@ export class MapView {
     this.view = size;
     const map = game.map();
     const cell = MAP_CELL;
-    const seen = new Set(game.state.dungeon.explored[String(game.floor)] ?? []);
-    const fresh = this.floor !== game.floor || !this.fogLayer;   // first draw or a new floor: no slide from elsewhere
+    const seen = new Set(game.run?.explored[game.floor] ?? []);
+    const terrain = game.terrain();
+    const fresh = this.drawn !== map || !this.fogLayer;   // first draw or a new floor: no slide from elsewhere
     const fogArrived = this.fogLayer instanceof Graphics && !!this.bank?.get(art.fog);   // the art streamed in after the first draw
     if (fresh || fogArrived) this.layFog(map.width, map.height);
-    this.floor = game.floor;
+    this.drawn = map;
     for (const s of this.tiles.removeChildren()) s.destroy();
     for (let y = 0; y < map.height; y++) {
       for (let x = 0; x < map.width; x++) {
         const state = fogState(seen, game.pos, x, y);
         if (state === 'hidden') continue;   // the fog layer underneath shows through
         const t = map.tiles[y][x];
-        const opened = t === 'chest' && game.state.dungeon.opened.includes(`${game.floor}:${x},${y}`);
-        const wall = t === 'wall' ? this.wallSprite(map, game.floor, x, y) : null;
-        const tex = wall ? null : this.bank?.get(art.tile(game.floor, tileKey(t, opened))) ?? null;
+        const opened = t === 'chest' && !!game.run?.opened.has(`${game.floor}:${x},${y}`);
+        const wall = t === 'wall' ? this.wallSprite(map, terrain, x, y) : null;
+        const tex = wall ? null : this.bank?.get(art.tile(terrain, tileKey(t, opened))) ?? null;
         if (wall || tex) {
           const s = wall ?? this.cellSprite(tex!, x, y, cell);
           if (!wall) s.label = t;
@@ -124,9 +126,9 @@ export class MapView {
    * With the autotile art published: a wall whose south neighbour is open ground shows its brick face, any other wall its
    * seamless top. Without it, null (the single wall tile is drawn instead).
    */
-  private wallSprite(map: ReturnType<Game['map']>, floor: number, x: number, y: number): Sprite | null {
-    const top = this.bank?.get(art.wallTop(floor)) ?? null;
-    const face = this.bank?.get(art.wallFace(floor)) ?? null;
+  private wallSprite(map: FloorMap, terrain: number, x: number, y: number): Sprite | null {
+    const top = this.bank?.get(art.wallTop(terrain)) ?? null;
+    const face = this.bank?.get(art.wallFace(terrain)) ?? null;
     if (!top || !face) return null;
     const below = y + 1 < map.height ? map.tiles[y + 1][x] : 'wall';
     const s = this.cellSprite(below === 'wall' ? top : face, x, y, MAP_CELL);

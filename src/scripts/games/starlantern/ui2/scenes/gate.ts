@@ -1,5 +1,6 @@
 import { FLOORS } from '../../data/floors';
 import { T } from '../../data/text.zh-TW';
+import { terrainOf } from '../../engine/dungeon/run';
 import { art } from '../../render/artPaths';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
@@ -13,12 +14,17 @@ export class GateScene extends FacilityScene {
     return [{ id: 'floors', label: T.ui2.gate.choose }];
   }
 
+  /** Mainline floors only, until the portal plaza replaces this screen: every floor reached is a shortcut. */
   protected onCommand(): void {
-    const reached = this.ctx.game.state.dungeon.reachedFloor;
-    const items = FLOORS.map((f) => ({
-      id: String(f.id), label: T.ui2.gate.floor(f.id, f.name), disabled: f.id > reached,
-      icon: this.ctx.art.has(art.bg(f.id)) ? art.bg(f.id) : undefined, right: f.id > reached ? T.ui2.gate.locked : '',
-    }));
+    const reached = this.ctx.game.state.dungeon.reached.mainline;
+    const depths = Array.from({ length: Math.max(FLOORS.length, reached) }, (_, i) => i + 1);
+    const items = depths.map((d) => {
+      const t = terrainOf('mainline', d);
+      return {
+        id: String(d), label: T.ui2.gate.floor(d, FLOORS[t - 1].name), disabled: d > reached,
+        icon: this.ctx.art.has(art.bg(t)) ? art.bg(t) : undefined, right: d > reached ? T.ui2.gate.locked : '',
+      };
+    });
     const v = new MenuView(new Menu(items), {
       pick: (it) => { this.ctx.sfx.confirm(); this.askDepart(Number(it.id)); },
       moved: () => this.ctx.sfx.cursor(),
@@ -28,10 +34,10 @@ export class GateScene extends FacilityScene {
   }
 
   private askDepart(n: number): void {
-    const box = confirmBox(T.ui2.gate.ask(n, FLOORS[n - 1].name), (yes) => {
+    const box = confirmBox(T.ui2.gate.ask(n, FLOORS[terrainOf('mainline', n) - 1].name), (yes) => {
       this.pop();
       if (!yes) return;
-      const r = this.ctx.game.depart(n);
+      const r = this.ctx.game.depart({ region: 'mainline', condition: 'plain' }, n);
       if (!r.ok) { this.popAll(); this.fail(r.reason); return; }
       this.ctx.go('dungeon');
     });

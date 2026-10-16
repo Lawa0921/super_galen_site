@@ -8,7 +8,7 @@ describe('save', () => {
     const st = memoryStorage();
     const g = newGame();
     g.gold = 777;
-    g.dungeon.explored['1'] = ['1,1'];
+    g.dungeon.reached.blaze = 10;
     expect(saveGame(st, g)).toBe(true);
     expect(loadGame(st)).toEqual({ status: 'ok', state: g });
   });
@@ -42,8 +42,12 @@ describe('save', () => {
     };
     expect(bad((g) => { (g.revealed as unknown as Record<string, unknown>).slime = 5; })).toBe('corrupt');
     expect(bad((g) => { (g.revealed as unknown as Record<string, unknown>).slime = ['lava']; })).toBe('corrupt');
-    expect(bad((g) => { (g.dungeon.explored as unknown as Record<string, unknown>)['1'] = 5; })).toBe('corrupt');
-    expect(bad((g) => { (g.dungeon.opened as unknown as unknown[]).push(7); })).toBe('corrupt');
+    expect(bad((g) => { (g.dungeon.reached as unknown as Record<string, unknown>).blaze = 'deep'; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.reached.blaze = 0; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.reached.mainline = 2.5; })).toBe('corrupt');
+    expect(bad((g) => { delete (g.dungeon.reached as Partial<typeof g.dungeon.reached>).iron; })).toBe('corrupt');
+    expect(bad((g) => { (g.dungeon.reached as unknown as Record<string, unknown>).nowhere = 3; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.reached.storm = 40; })).toBe('ok');
     expect(bad((g) => { g.party.grid[3] = 'bobby'; })).toBe('corrupt');
     expect(bad((g) => { g.party.grid[3] = 'liz'; })).toBe('corrupt');
     expect(bad((g) => { g.party.grid = g.party.grid.slice(0, 5); })).toBe('corrupt');

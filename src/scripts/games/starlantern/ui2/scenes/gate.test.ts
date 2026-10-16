@@ -18,7 +18,7 @@ function setup(prep?: (g: Game) => void) {
 
 describe('GateScene', () => {
   it('lists reached floors and locks the rest', () => {
-    const { root } = setup((g) => { g.state.dungeon.reachedFloor = 2; });
+    const { root } = setup((g) => { g.state.dungeon.reached.mainline = 2; });
     const cards = [...root.querySelectorAll('.slx-floors [role=option]')];
     expect(cards.map((c) => c.getAttribute('aria-disabled'))).toEqual(['false', 'false', 'true']);
     expect(cards[0].querySelector('.slx-label')!.textContent).toBe('第 1 層 林間遺跡');
@@ -31,6 +31,15 @@ describe('GateScene', () => {
     s.onAction('up'); s.onAction('confirm');     // 是
     expect(game.phase).toBe('map');
     expect(go).toHaveBeenCalledWith('dungeon');
+    expect([game.run!.region, game.run!.condition, game.floor]).toEqual(['mainline', 'plain', 1]);
+  });
+
+  it('departs from a deeper reached floor as a mainline shortcut', () => {
+    const { game, s, root } = setup((g) => { g.state.dungeon.reached.mainline = 3; });
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');   // 第 3 層
+    expect(root.querySelector('.slx-confirm')!.textContent).toContain('第 3 層');
+    s.onAction('up'); s.onAction('confirm');
+    expect([game.phase, game.floor, game.run!.startDepth]).toEqual(['map', 3, 3]);
   });
 
   it('explains when nobody can fight', () => {

@@ -1,5 +1,6 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { EQUIPMENT } from '../data/equipment';
+import { REGIONS } from '../data/regions';
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
 import { MAX_LEVEL } from './party';
 import { SAVE_VERSION, type GameState } from './state';
@@ -16,7 +17,6 @@ const isCounts = (v: unknown) => isObj(v) && Object.values(v).every(isCount);
 const isIdList = (v: unknown, nullable = false) =>
   Array.isArray(v) && v.every((x) => (nullable && x === null) || CHARACTER_IDS.includes(x));
 const ELEMENTS = ['phys', 'fire', 'ice', 'thunder'];
-const isStrings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'string');
 const isListMap = (v: unknown, ok: (x: unknown) => boolean) => isObj(v) && Object.values(v).every((l) => Array.isArray(l) && l.every(ok));
 
 function isValid(d: Record<string, unknown>): boolean {
@@ -37,8 +37,11 @@ function isValid(d: Record<string, unknown>): boolean {
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;
   }
   const g = d.dungeon;
-  if (!isObj(g) || !Number.isInteger(g.reachedFloor) || (g.reachedFloor as number) < 1 || (g.reachedFloor as number) > 3) return false;
-  return isListMap(g.explored, (x) => typeof x === 'string') && isStrings(g.opened) && typeof g.bossDefeated === 'boolean';
+  if (!isObj(g) || !isObj(g.reached) || typeof g.bossDefeated !== 'boolean') return false;
+  const reached = g.reached;
+  const regions = Object.keys(REGIONS);
+  if (Object.keys(reached).length !== regions.length) return false;
+  return regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1);
 }
 
 export function saveGame(storage: SaveStorage, s: GameState): boolean {

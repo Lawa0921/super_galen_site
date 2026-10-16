@@ -1,17 +1,41 @@
 import { describe, it, expect } from 'vitest';
-import { Game } from './game';
+import { Game, type MoveResult } from './game';
 import { SAVE_KEY, saveGame } from './save';
 import { newGame } from './state';
 import { constRng, memoryStorage } from './testing';
 import { mulberry32 } from './rng';
+import { DELTA, posKey, tileAt, type Dir } from './map';
+import { floorOf, type Portal } from './dungeon/run';
+import type { Pos } from './types';
 
 const calm = () => constRng(0.99); // step gain 12 on floor 1, never rolls an early encounter
+const MAIN: Portal = { region: 'mainline', condition: 'plain' };
+const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const inMap = (floor = 1, rng = calm(), storage = memoryStorage()) => {
   const g = new Game(rng, storage);
-  g.state.dungeon.reachedFloor = 3;
-  expect(g.depart(floor)).toEqual({ ok: true });
+  g.state.dungeon.reached.mainline = 3;
+  expect(g.depart(MAIN, floor)).toEqual({ ok: true });
   return g;
 };
+/** Stand on an open cell next to `at` and step onto it. */
+const stepOnto = (g: Game, at: Pos): MoveResult => {
+  for (const dir of DIRS) {
+    const from = { x: at.x - DELTA[dir].x, y: at.y - DELTA[dir].y };
+    if (tileAt(g.map(), from) !== 'wall') { g.pos = from; return g.move(dir); }
+  }
+  throw new Error(`no way onto ${posKey(at)}`);
+};
+/** Stand on an open cell with a wall in some direction; returns that direction. */
+const nextToWall = (g: Game, prefer: Dir[] = DIRS): Dir => {
+  const m = g.map();
+  for (const dir of prefer) for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+    if (m.tiles[y][x] === 'wall' || tileAt(m, { x: x + DELTA[dir].x, y: y + DELTA[dir].y }) !== 'wall') continue;
+    g.pos = { x, y };
+    return dir;
+  }
+  throw new Error('no wall');
+};
+const contentOf = (g: Game, kind: string) => floorOf(g.run!, g.floor).contents.find((c) => c.kind === kind);
 
 describe('boot', () => {
   it('starts a new game in town on an empty slot', () => {
@@ -39,25 +63,57 @@ describe('boot', () => {
 describe('departing', () => {
   it('turns to face the move direction even when blocked, and faces down on departure', () => {
     const g = new Game(calm(), null);
-    expect(g.depart(1)).toEqual({ ok: true });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
     expect(g.facing).toBe('down');
-    g.move('up'); // the entrance on floor 1 has a wall above it
+    nextToWall(g, ['up']);
+    expect(g.move('up')).toEqual({ kind: 'blocked' });
     expect(g.facing).toBe('up');
     g.move('right');
     expect(g.facing).toBe('right');
   });
   it('enters a reached floor at its entrance and reveals around it', () => {
     const g = inMap(1);
-    expect([g.phase, g.pos]).toEqual(['map', { x: 1, y: 1 }]);
-    expect(g.state.dungeon.explored['1']).toContain('2,2');
+    const e = g.map().entrance;
+    expect([g.phase, g.pos]).toEqual(['map', e]);
+    expect(g.run!.explored[1]).toContain(posKey({ x: e.x + 1, y: e.y + 1 }));
     expect(g.onEntrance()).toBe(true);
   });
   it('refuses unreached floors and a downed party', () => {
     const g = new Game(calm(), null);
-    expect(g.depart(2)).toEqual({ ok: false, reason: 'locked' });
+    expect(g.depart(MAIN, 2)).toEqual({ ok: false, reason: 'locked' });
     for (const id of ['scarlet', 'chizuru', 'liz', 'noel', 'selene'] as const) g.state.party.roster[id].hp = 0;
-    expect(g.depart(1)).toEqual({ ok: false, reason: 'party-down' });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: false, reason: 'party-down' });
     expect(g.phase).toBe('town');
+    expect(g.run).toBeNull();
+  });
+  it('departing twice gives different floors', () => {
+    const g = new Game(mulberry32(3), null);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    const first = g.run!;
+    const tiles = g.map().tiles;
+    expect(g.returnToTown()).toBe(true);
+    expect(g.run).toBeNull();
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.run!.seed).not.toBe(first.seed);
+    expect(g.map().tiles).not.toEqual(tiles);
+    expect(Object.keys(g.run!.explored)).toEqual(['1']);   // a new run remembers nothing of the last one
+  });
+  it('start depth cannot exceed the region\'s deepest reached, and must be 1 or a multiple of 5', () => {
+    const g = new Game(calm(), null);
+    const blaze: Portal = { region: 'blaze', condition: 'plain' };
+    g.state.dungeon.reached.blaze = 12;
+    const tryAt = (p: Portal, d: number) => {
+      const r = g.depart(p, d);
+      if (r.ok) { expect([g.floor, g.run!.startDepth, g.run!.region]).toEqual([d, d, p.region]); g.returnToTown(); }
+      return r.ok;
+    };
+    expect([1, 5, 10].map((d) => tryAt(blaze, d))).toEqual([true, true, true]);
+    expect([0, 2, 3, 15, 7].map((d) => tryAt(blaze, d))).toEqual([false, false, false, false, false]);
+    expect(g.depart(blaze, 15)).toEqual({ ok: false, reason: 'locked' });
+    expect(tryAt({ region: 'frost', condition: 'plain' }, 5)).toBe(false);   // frost was never reached past 1
+    expect(tryAt(MAIN, 2)).toBe(false);
+    g.state.dungeon.reached.mainline = 3;
+    expect([1, 2, 3, 4].map((d) => tryAt(MAIN, d))).toEqual([true, true, true, false]);   // the mainline keeps its shortcuts
   });
 });
 
@@ -67,7 +123,7 @@ describe('moving', () => {
   });
   it('is blocked by walls without filling the gauge', () => {
     const g = inMap(1);
-    expect(g.move('up')).toEqual({ kind: 'blocked' });
+    expect(g.move(nextToWall(g))).toEqual({ kind: 'blocked' });
     expect(g.encounter).toBe(0);
   });
   it('fills the gauge on floor tiles and starts a battle at the cap', () => {
@@ -75,28 +131,45 @@ describe('moving', () => {
     expect(g.move('right')).toEqual({ kind: 'moved' });
     expect(g.encounter).toBe(12);
     g.encounter = 99;
-    expect(g.move('right')).toEqual({ kind: 'battle' });
+    const open = DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!;
+    expect(g.move(open)).toEqual({ kind: 'battle' });
     expect(g.phase).toBe('battle');
     expect(g.battle!.enemies.every((e) => e.defId !== 'lanterneater')).toBe(true);
     expect(g.move('right')).toEqual({ kind: 'ignored' });
   });
   it('opens a chest once', () => {
     const g = inMap(1);
-    g.pos = { x: 3, y: 4 };
-    expect(g.move('up')).toEqual({ kind: 'chest', item: 'old-coin', qty: 2 });
+    const chest = contentOf(g, 'chest')!.at;
+    expect(stepOnto(g, chest)).toEqual({ kind: 'chest', item: 'old-coin', qty: 2 });
     expect(g.state.inventory['old-coin']).toBe(2);
-    g.move('down');
-    expect(g.move('up')).toEqual({ kind: 'moved' });
+    expect(g.run!.opened.has(`1:${posKey(chest)}`)).toBe(true);
+    expect(stepOnto(g, chest)).toEqual({ kind: 'moved' });
     expect(g.state.inventory['old-coin']).toBe(2);
   });
-  it('takes stairs down and back up', () => {
+  it('a chest gives the terrain loot times the run condition drop rate', () => {
     const g = new Game(calm(), null);
-    g.depart(1);
-    g.pos = { x: 13, y: 8 };
-    expect(g.move('down')).toEqual({ kind: 'floor', floor: 2 });
-    expect([g.floor, g.pos, g.state.dungeon.reachedFloor]).toEqual([2, { x: 1, y: 1 }, 2]);
-    expect(g.move('right')).toEqual({ kind: 'floor', floor: 1 });
-    expect([g.floor, g.pos]).toEqual([1, { x: 13, y: 9 }]);
+    g.depart({ region: 'mainline', condition: 'bounty' }, 1);
+    expect(stepOnto(g, contentOf(g, 'chest')!.at)).toEqual({ kind: 'chest', item: 'old-coin', qty: 3 });   // 2 x 1.5
+  });
+  it('stairs go one deeper and never back', () => {
+    const g = new Game(calm(), null);
+    g.depart(MAIN, 1);
+    expect(stepOnto(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
+    expect([g.floor, g.pos, g.state.dungeon.reached.mainline]).toEqual([2, g.map().entrance, 2]);
+    const m = g.map();
+    expect(m.up).toBeNull();
+    expect(m.tiles.flat()).not.toContain('up');
+    expect(stepOnto(g, m.entrance)).toEqual({ kind: 'entrance' });   // the way in is the way home, not back up
+    expect(g.floor).toBe(2);
+  });
+  it('a random region keeps going past depth 3', () => {
+    const g = new Game(calm(), null);
+    g.depart({ region: 'storm', condition: 'plain' }, 1);
+    for (const d of [2, 3, 4, 5]) expect(stepOnto(g, g.map().down!)).toEqual({ kind: 'floor', floor: d });
+    expect(g.state.dungeon.reached.storm).toBe(5);
+    expect(g.map().boss).not.toBeNull();
+    expect(g.map().down).toBeNull();
+    expect(g.run!.floors.has(4)).toBe(true);
   });
   it('halves the gauge gain with stealth', () => {
     const g = inMap(1);
@@ -120,7 +193,7 @@ describe('returning to town', () => {
     g.move('right');
     expect(g.useReturnLamp()).toBe(true);
     expect([g.phase, g.state.inventory['return-lamp'] ?? 0]).toEqual(['town', 0]);
-    g.depart(1);
+    g.depart(MAIN, 1);
     expect(g.useReturnLamp()).toBe(false);
   });
 });
@@ -159,6 +232,7 @@ describe('battles', () => {
     const r = g.submitRound({})!;
     expect(r.end!.outcome).toBe('lose');
     expect([g.phase, g.notice, g.state.gold]).toEqual(['town', 'wipe', 999]);
+    expect(g.run).toBeNull();
   });
   it('starts over when wiping without a save', () => {
     const g = startBattle();
@@ -167,16 +241,29 @@ describe('battles', () => {
     g.submitRound({});
     expect([g.phase, g.state.gold]).toEqual(['town', 150]);
   });
-  it('clears the game after the boss', () => {
+  it('the mainline boss is on depth 3 and its defeat clears the game', () => {
     const g = inMap(3);
-    g.pos = { x: 9, y: 11 };
-    expect(g.move('right')).toEqual({ kind: 'boss' });
+    expect(g.map().boss).not.toBeNull();
+    expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
     expect(g.battle!.boss).toBe(true);
     for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
     expect(g.submitRound({})!.end!.outcome).toBe('win');
     expect([g.phase, g.state.dungeon.bossDefeated]).toEqual(['clear', true]);
     g.restartAfterClear();
     expect(g.phase).toBe('town');
+    expect(g.run).toBeNull();
+  });
+  it('a region boss opens the stairs down instead of clearing the game', () => {
+    const g = new Game(calm(), null);
+    g.state.dungeon.reached.iron = 5;
+    g.depart({ region: 'iron', condition: 'plain' }, 5);
+    const at = g.map().boss!;
+    expect(stepOnto(g, at)).toEqual({ kind: 'boss' });
+    for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    expect(g.submitRound({})!.end!.outcome).toBe('win');
+    expect([g.phase, g.state.dungeon.bossDefeated]).toEqual(['map', false]);
+    expect(g.map().down).toEqual(at);
+    expect(stepOnto(g, at)).toEqual({ kind: 'floor', floor: 6 });
   });
 });
 

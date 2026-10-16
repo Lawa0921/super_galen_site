@@ -76,7 +76,7 @@ export class DungeonScene implements Scene {
 
   private refresh(): void {
     const g = this.ctx.game;
-    this.floorName.textContent = T.map.floor(g.floor, FLOORS[g.floor - 1].name);
+    this.floorName.textContent = T.map.floor(g.floor, FLOORS[g.terrain() - 1].name);
     const d = g.danger();
     this.lamp.className = `slx-win slx-lamp slx-lamp-${d}`;
     this.lamp.textContent = T.map.danger[d];
@@ -102,7 +102,7 @@ export class DungeonScene implements Scene {
       case 'blocked': s.bump?.(); break;
       case 'moved': s.step?.(); break;
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
-      case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[r.floor - 1].name)); return;
+      case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
       case 'chest': s.chest?.(); this.refresh(); this.say(T.map.chest(itemName(r.item), r.qty)); return;
       case 'battle': case 'boss': {
         s.encounter?.();

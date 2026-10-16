@@ -73,7 +73,7 @@ export class BattleScene implements Scene {
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
-      this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.floor, BATTLE_LEFT, BATTLE_BOTTOM);
+      this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.terrain(), BATTLE_LEFT, BATTLE_BOTTOM);
     }
     this.msg.textContent = this.state.enemies.map((e) => e.name).join('、');
     this.banner(this.state.boss ? T.ui2.banner.boss : T.ui2.banner.encounter, this.state.boss ? 'slx-banner-boss' : '');

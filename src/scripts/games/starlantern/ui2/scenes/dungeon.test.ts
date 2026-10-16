@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
+import type { Portal } from '../../engine/dungeon/run';
+import { DELTA, tileAt } from '../../engine/map';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { DungeonScene } from './dungeon';
 
-function setup() {
+function setup(portal: Portal = { region: 'mainline', condition: 'plain' }) {
   const game = new Game(constRng(0.99), null);   // 0.99: never an early encounter roll
-  expect(game.depart(1)).toEqual({ ok: true });
+  expect(game.depart(portal, 1)).toEqual({ ok: true });
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), stairs: vi.fn(), chest: vi.fn(), encounter: vi.fn() };
   const go = vi.fn();
   const root = document.createElement('div');
@@ -29,8 +31,21 @@ describe('DungeonScene', () => {
     expect(root.querySelectorAll('.slx-partybar .slx-pm')).toHaveLength(5);
   });
 
+  it('names each floor by its terrain, at any depth and in any region', () => {
+    const { game, root, s, text } = setup({ region: 'storm', condition: 'plain' });
+    expect(root.querySelector('.slx-floorname')!.textContent).toBe('第 1 層　星燈神殿');
+    const down = game.map().down!;
+    const dir = (['up', 'down', 'left', 'right'] as const).find((d) => tileAt(game.map(), { x: down.x - DELTA[d].x, y: down.y - DELTA[d].y }) !== 'wall')!;
+    game.pos = { x: down.x - DELTA[dir].x, y: down.y - DELTA[dir].y };
+    s.onAction(dir);
+    expect(game.floor).toBe(2);
+    expect(text()).toBe('第 2 層　星燈神殿');
+    expect(root.querySelector('.slx-floorname')!.textContent).toBe('第 2 層　星燈神殿');
+  });
+
   it('bumps into walls and walks on floors', () => {
     const { game, sfx, s } = setup();
+    while (game.move('up').kind === 'moved');   // the entrance sits mid-room: walk up to the room's top wall
     const at = { ...game.pos };
     s.onAction('up');
     expect(sfx.bump).toHaveBeenCalled();
@@ -55,7 +70,7 @@ describe('DungeonScene', () => {
     vi.useFakeTimers();
     try {
       const game = new Game(constRng(0.99), null);
-      game.depart(1);
+      game.depart({ region: 'mainline', condition: 'plain' }, 1);
       game.encounter = 99;
       const go = vi.fn();
       const root = document.createElement('div');

@@ -1,7 +1,9 @@
+import { CONDITIONS } from '../data/conditions';
 import { FLOORS } from '../data/floors';
 import { createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
+import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import { advance, danger, type Danger } from './encounter';
-import { parseFloor, posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
+import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { activeIds, awardExp, hasPassive } from './party';
 import { pick, type Rng } from './rng';
 import { loadGame, saveGame, type SaveStorage } from './save';
@@ -19,11 +21,12 @@ export interface BattleEnd {
   levelUps: { id: CharacterId; levels: number; learned: string[] }[];
 }
 
-const MAPS: FloorMap[] = FLOORS.map((f) => parseFloor(f.rows));
-
 export class Game {
   state: GameState;
   phase: Phase = 'town';
+  /** The current run, from departure until back in town. */
+  run: Run | null = null;
+  /** Current depth of the run. */
   floor = 1;
   pos: Pos = { x: 0, y: 0 };
   facing: Dir = 'down';
@@ -51,7 +54,13 @@ export class Game {
   }
 
   map(floor = this.floor): FloorMap {
-    return MAPS[floor - 1];
+    if (!this.run) throw new Error('no run in progress');
+    return floorOf(this.run, floor).map;
+  }
+
+  /** Tile theme (1-3) of the current depth: picks the art, the floor name, the encounter table and the chest loot. */
+  terrain(floor = this.floor): 1 | 2 | 3 {
+    return terrainOf(this.run?.region ?? 'mainline', floor);
   }
 
   danger(): Danger {
@@ -62,11 +71,13 @@ export class Game {
     return this.phase === 'map' && tileAt(this.map(), this.pos) === 'entrance';
   }
 
-  depart(floor: number): { ok: true } | { ok: false; reason: 'locked' | 'party-down' | 'phase' } {
+  /** Start a new run through a gate: a fresh labyrinth every time. */
+  depart(portal: Portal, startDepth: number): { ok: true } | { ok: false; reason: 'locked' | 'party-down' | 'phase' } {
     if (this.phase !== 'town') return { ok: false, reason: 'phase' };
-    if (floor < 1 || floor > this.state.dungeon.reachedFloor) return { ok: false, reason: 'locked' };
+    if (!startDepths(portal.region, this.state.dungeon.reached[portal.region]).includes(startDepth)) return { ok: false, reason: 'locked' };
     if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return { ok: false, reason: 'party-down' };
-    this.floor = floor;
+    this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth);
+    this.floor = startDepth;
     this.pos = { ...this.map().entrance };
     this.facing = 'down';
     this.encounter = 0;
@@ -83,20 +94,20 @@ export class Game {
     this.pos = r.pos;
     this.revealHere();
     switch (r.tile) {
-      case 'down': return this.changeFloor(this.floor + 1, 'entrance');
-      case 'up': return this.changeFloor(this.floor - 1, 'down');
+      case 'down': return this.changeFloor(this.floor + 1);
       case 'entrance': return { kind: 'entrance' };
       case 'boss':
-        if (this.state.dungeon.bossDefeated) return { kind: 'moved' };
+        if (this.storyBoss() && this.state.dungeon.bossDefeated) return { kind: 'moved' };
         this.startBattle(['lanterneater'], true);
         return { kind: 'boss' };
       case 'chest': return this.openChest() ?? { kind: 'moved' };
       default: {
-        const mod = hasPassive(this.state.party, 'encounterDown') ? 0.5 : 1;
-        const g = advance(this.encounter, this.rng, FLOORS[this.floor - 1].rate, mod);
+        const mod = (hasPassive(this.state.party, 'encounterDown') ? 0.5 : 1) * CONDITIONS[this.run!.condition].encounterMul;
+        const f = FLOORS[this.terrain() - 1];
+        const g = advance(this.encounter, this.rng, f.rate, mod);
         this.encounter = g.value;
         if (!g.encounter) return { kind: 'moved' };
-        this.startBattle(pick(this.rng, FLOORS[this.floor - 1].encounters), false);
+        this.startBattle(pick(this.rng, f.encounters), false);
         return { kind: 'battle' };
       }
     }
@@ -133,8 +144,11 @@ export class Game {
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
     this.state.party = awarded.party;
-    if (b.boss) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
-    else this.phase = 'map';
+    if (b.boss && this.storyBoss()) { this.state.dungeon.bossDefeated = true; this.phase = 'clear'; }
+    else {
+      if (b.boss) this.openBossStairs();
+      this.phase = 'map';
+    }
     return { battle: b, end: { outcome: 'win', ...rw, levelUps: awarded.results.filter((x) => x.levels > 0) } };
   }
 
@@ -152,37 +166,56 @@ export class Game {
   }
 
   restartAfterClear(): void {
-    if (this.phase === 'clear') this.phase = 'town';
+    if (this.phase !== 'clear') return;
+    this.phase = 'town';
+    this.run = null;
+  }
+
+  /** The mainline's depth-3 boss: beating it clears the game. */
+  private storyBoss(): boolean {
+    return this.run?.region === 'mainline' && this.floor === 3;
+  }
+
+  /** A beaten region boss leaves stairs down where it stood, so the run can go deeper. */
+  private openBossStairs(): void {
+    const m = this.map();
+    if (!m.boss) return;
+    m.tiles[m.boss.y][m.boss.x] = 'down';
+    m.down = m.boss;
+    m.boss = null;
   }
 
   private toTown(): void {
     this.phase = 'town';
     this.encounter = 0;
+    this.run = null;
   }
 
   private revealHere(): void {
-    const key = String(this.floor);
-    this.state.dungeon.explored[key] = reveal(this.state.dungeon.explored[key] ?? [], this.map(), this.pos);
+    const run = this.run!;
+    run.explored[this.floor] = reveal(run.explored[this.floor] ?? [], this.map(), this.pos);
   }
 
-  private changeFloor(floor: number, at: 'entrance' | 'down'): MoveResult {
+  private changeFloor(floor: number): MoveResult {
+    const region = this.run!.region;
     this.floor = floor;
-    const m = this.map();
-    this.pos = { ...(at === 'entrance' ? m.entrance : m.down ?? m.entrance) };
-    this.state.dungeon.reachedFloor = Math.max(this.state.dungeon.reachedFloor, floor);
+    this.pos = { ...this.map().entrance };
+    this.state.dungeon.reached[region] = Math.max(this.state.dungeon.reached[region], floor);
     this.revealHere();
     return { kind: 'floor', floor };
   }
 
   private openChest(): MoveResult | null {
+    const run = this.run!;
     const id = `${this.floor}:${posKey(this.pos)}`;
-    if (this.state.dungeon.opened.includes(id)) return null;
-    const index = this.map().chests.findIndex((c) => c.x === this.pos.x && c.y === this.pos.y);
-    const loot = FLOORS[this.floor - 1].chestLoot[index];
-    if (!loot) return null;
-    this.state.dungeon.opened.push(id);
-    addItem(this.state.inventory, loot.item, loot.qty);
-    return { kind: 'chest', item: loot.item, qty: loot.qty };
+    if (run.opened.has(id)) return null;
+    const table = FLOORS[this.terrain() - 1].chestLoot;
+    if (!table.length) return null;
+    const loot = pick(this.rng, table);
+    const qty = Math.max(1, Math.round(loot.qty * CONDITIONS[run.condition].dropMul));
+    run.opened.add(id);
+    addItem(this.state.inventory, loot.item, qty);
+    return { kind: 'chest', item: loot.item, qty };
   }
 
   private startBattle(enemyIds: string[], boss: boolean): void {
@@ -195,6 +228,7 @@ export class Game {
     const r = this.storage ? loadGame(this.storage) : { status: 'empty' as const };
     this.state = r.status === 'ok' ? r.state : newGame();
     this.phase = 'town';
+    this.run = null;
     this.encounter = 0;
     this.notice = 'wipe';
   }
