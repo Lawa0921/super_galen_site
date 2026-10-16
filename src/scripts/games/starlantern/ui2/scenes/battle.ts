@@ -78,7 +78,13 @@ export class BattleScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.busy) return;
-    if (this.result) { if (this.resultReady) this.result.onAction(a); return; }
+    if (this.result) {
+      // Long results scroll with the keys; the only option is 繼續.
+      const lines = this.body.querySelector<HTMLElement>('.slx-result-lines');
+      if (lines && (a === 'up' || a === 'down')) { lines.scrollTop = Math.max(0, lines.scrollTop + (a === 'down' ? 48 : -48)); return; }
+      if (this.resultReady) this.result.onAction(a);
+      return;
+    }
     const top = this.layers[this.layers.length - 1];
     if (top) { top.onAction(a); return; }
     this.view?.onAction(a);
@@ -276,7 +282,7 @@ export class BattleScene implements Scene {
     const names = new Map([...r.battle.party, ...r.battle.enemies].map((c) => [c.key, c.name]));
     const lines = battleLines(r.battle.log, (k) => names.get(k) ?? k);
     try {
-      await Promise.all([this.playLines(lines), this.ctx.stage?.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name) => this.onParty(key, cue, name))]);
+      await Promise.all([this.playLines(lines), this.ctx.stage?.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name, amount) => this.onParty(key, cue, name, amount))]);
     } catch (err) {
       // A broken animation must never strand the player: log it and carry on with the round's result.
       console.error('[starlantern] battle playback failed', err);
@@ -284,7 +290,7 @@ export class BattleScene implements Scene {
     this.before = null;
     this.updateBar(null);
     this.busy = false;
-    this.cmd.hidden = false;
+    this.cmd.hidden = !!r.end;
     this.root.removeAttribute('inert');
     if (r.end) this.showResult(r.end);
     else this.startRound();
@@ -298,7 +304,7 @@ export class BattleScene implements Scene {
     }
   }
 
-  private async onParty(key: string, cue: 'acting' | 'hit' | 'ultimate', name?: string): Promise<void> {
+  private async onParty(key: string, cue: 'acting' | 'hit' | 'ultimate', name?: string, amount?: number): Promise<void> {
     if (cue === 'ultimate') {
       this.ctx.sfx.ultimate?.();
       const ult = art.portrait(key, 'ultimate');
@@ -306,7 +312,12 @@ export class BattleScene implements Scene {
       await playCutIn(this.cutin, { name: name ?? '', portrait, fast: !!this.ctx.fast });
       return;
     }
-    if (cue === 'hit') { this.revealed.add(key); this.updateBar(null); }
+    if (cue === 'hit') {
+      // Take each hit off the pre-round value as it plays; without an amount, show the round's result.
+      const shown = this.before?.get(key);
+      if (shown && amount !== undefined) { shown.hp = Math.max(0, shown.hp - amount); shown.alive = shown.hp > 0; } else this.revealed.add(key);
+      this.updateBar(null);
+    }
     this.bar.pulse(key, cue === 'acting' ? 'attack' : 'hit');
   }
 
@@ -325,6 +336,7 @@ export class BattleScene implements Scene {
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
     this.result = new MenuView(new Menu([{ id: 'ok', label: T.battle.cont }]), {
       pick: () => {
+        if (!this.resultReady) return;   // clicks too, not just keys
         this.ctx.sfx.confirm();
         if (end.outcome === 'lose') this.ctx.go('town');
         else if (this.ctx.game.phase === 'clear') this.ctx.go('clear');

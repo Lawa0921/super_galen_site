@@ -181,11 +181,50 @@ describe('BattleScene sound and failure safety', () => {
     s.onAction('confirm');
     for (let t = 0; t < 100 && !root.querySelector('.slx-result'); t++) await vi.advanceTimersByTimeAsync(50);
     s.onAction('confirm');
+    (root.querySelector('.slx-result [role=option]') as HTMLElement).click();   // the mouse is held back too
     expect(go).not.toHaveBeenCalled();
+    expect((root.querySelector('.slx-bcmd') as HTMLElement).hidden).toBe(true);   // no empty command window behind the results
     await vi.advanceTimersByTimeAsync(400);
     s.onAction('confirm');
     expect(go).toHaveBeenCalledWith('dungeon');
     vi.useRealTimers();
+  });
+
+  it('scrolls long results with the up and down keys', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    for (const e of game.battle!.enemies) e.hp = 1;
+    const root = document.createElement('div');
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: true });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const lines = root.querySelector('.slx-result-lines') as HTMLElement;
+    s.onAction('down');
+    expect(lines.scrollTop).toBeGreaterThan(0);
+    s.onAction('up');
+    expect(lines.scrollTop).toBe(0);
+  });
+
+  it('takes each hit off the shown HP in turn when the amount is known', async () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(1); game.encounter = 99; game.move('right');
+    const root = document.createElement('div');
+    const key = game.battle!.party[0].key;
+    const max = game.battle!.party[0].max.hp;
+    const seen: string[] = [];
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null,
+      play: async (_s: unknown, _fx: unknown, on: (k: string, cue: string, name?: string, amount?: number) => Promise<void>) => {
+        const num = () => root.querySelector(`.slx-pm[data-key="${key}"] .slx-pm-num`)!.textContent!;
+        await on(key, 'hit', undefined, 5); seen.push(num());
+        await on(key, 'hit', undefined, 7); seen.push(num());
+      } } };
+    const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
+    s.enter(root);
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    await flush();
+    expect(seen).toEqual([`${max - 5}/${max}`, `${max - 12}/${max}`]);
   });
 
   it('puts the target arrow just above the enemy under the cursor', () => {

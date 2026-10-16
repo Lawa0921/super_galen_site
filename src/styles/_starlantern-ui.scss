@@ -9,8 +9,8 @@ $slx-h: 360px;
 $slx-ink: #f1ead8;
 $slx-dim: #b7ae9a;
 $slx-gold: #e8c46a;
-// nearly opaque so stacked windows never show the text underneath
-$slx-win: rgba(10, 14, 34, 0.96);
+// opaque so stacked windows never show the text underneath
+$slx-win: rgb(10, 14, 34);
 
 html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; background: #000; }
 // place-content centres the 640px track even when the window is narrower, so scale() shrinks around the window centre.
@@ -106,7 +106,8 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-opt { display: flex; align-items: center; gap: 4px; }
 .slx-ico { width: 12px; height: 12px; object-fit: contain; }
 .slx-right { margin-left: auto; padding-left: 12px; color: $slx-dim; }
-.slx-qty { left: 6px; top: 190px; width: 120px; text-align: center; }
+.slx-qty { left: 6px; top: 190px; width: 112px; text-align: center; }
+.slx-qty .slx-hint { white-space: pre-line; }
 .slx-qty-row { display: flex; justify-content: center; gap: 2px; }
 .slx-qty-total { margin-left: 10px; color: $slx-gold; }
 
@@ -177,6 +178,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-field-status { left: 50%; top: 50px; width: 380px; min-height: 0; translate: -50% 0; cursor: pointer; }
 .slx-keyhint { position: absolute; left: 8px; bottom: 68px; margin: 0; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
 .slx-title .slx-keyhint, .slx-town .slx-keyhint { bottom: 6px; }
+.slx-town:has(> .slx-talk:not([hidden])) .slx-keyhint { visibility: hidden; }
 
 // Party bar (labyrinth and battle)
 .slx-partybar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 62px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
@@ -213,7 +215,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-result-lines { max-height: 250px; overflow-y: auto; }
 // The target list sits over the (inert) command window so it never hides the enemies on the right.
 .slx-bsub.slx-btarget { right: auto; left: 6px; top: 96px; min-width: 132px; }
-.slx-bsub:not(.slx-btarget):has(~ .slx-btarget) { visibility: hidden; }
+.slx-bsub:not(.slx-btarget):has(~ .slx-btarget), .slx-bcmd:has(~ .slx-btarget) { visibility: hidden; }
 .slx-result h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
 .slx-result p { margin: 1px 0; }
 .slx-target { position: absolute; top: 118px; width: 12px; margin-left: -6px; text-align: center; color: $slx-gold; animation: slx-bob 0.6s ease-in-out infinite alternate; }

@@ -154,7 +154,7 @@ export class QtyView {
     const down = el('span', { class: 'slx-qty-down', text: '◀ ' });
     const up = el('span', { class: 'slx-qty-up', text: ' ▶' });
     const row = el('div', { class: 'slx-qty-row' }, [down, this.label, up, ...(price !== undefined ? [this.total] : [])]);
-    this.el = win('slx-qty', [row, el('p', { class: 'slx-hint', text: '◀▶ ±1　▲▼ ±10　點數字 決定' })]);
+    this.el = win('slx-qty', [row, el('p', { class: 'slx-hint', text: '◀▶ ±1　▲▼ ±10\n點數字 決定' })]);
     // Mouse: the arrows step by one, the number confirms.
     const tap = (a: UiAction) => () => { if (!this.el.closest('[inert]')) this.onAction(a); };
     down.addEventListener('click', tap('left'));
