@@ -65,4 +65,52 @@ describe('InnScene', () => {
     s.onAction('confirm');                       // 莉茲
     expect(game.state.party.roster.liz.hp).toBeGreaterThan(0);
   });
+
+  it('the inn offers 休息, 復活 and 重置配點', () => {
+    const { opts } = setup();
+    expect(opts()).toEqual(['休息（20 G）', '復活', '重置配點', '離開']);
+  });
+
+  it('重置配點 lists members with their price and resets after a yes', async () => {
+    const { game, s, root, opts } = setup();
+    game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };
+    const gold = game.state.gold;
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');   // 重置配點
+    const rows = [...root.querySelectorAll('.slx-list [role=option]')];
+    expect(rows.map((r) => r.querySelector('.slx-label')!.textContent)).toContain('絲嘉蕾');
+    expect(rows[0].textContent).toContain('25 G');
+    const at = rows.findIndex((r) => r.textContent!.includes('絲嘉蕾'));
+    for (let i = 0; i < at; i++) s.onAction('down');
+    s.onAction('confirm');                                           // 絲嘉蕾
+    expect(root.querySelector('.slx-confirm')!.textContent).toContain('25 G');
+    expect(game.state.party.roster.scarlet.talents).toEqual({ 'scarlet-t01': 1 });   // not before the yes
+    s.onAction('up'); s.onAction('confirm');                         // 是
+    expect(game.state.party.roster.scarlet.talents).toEqual({});
+    expect(game.state.gold).toBe(gold - 25);
+    await vi.waitFor(() => expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('絲嘉蕾的配點已重置，點數可以重新分配了。'));
+    expect(opts().length).toBe(4);
+  });
+
+  it('no leaves everything as it was', () => {
+    const { game, s, root } = setup();
+    game.state.party.roster.scarlet.talents = { 'scarlet-t01': 1 };
+    const gold = game.state.gold;
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');
+    const rows = [...root.querySelectorAll('.slx-list [role=option]')];
+    const at = rows.findIndex((r) => r.textContent!.includes('絲嘉蕾'));
+    for (let i = 0; i < at; i++) s.onAction('down');
+    s.onAction('confirm');
+    s.onAction('confirm');                                           // cursor starts on 否
+    expect(game.state.party.roster.scarlet.talents).toEqual({ 'scarlet-t01': 1 });
+    expect(game.state.gold).toBe(gold);
+  });
+
+  it('explains when a member has nothing to reset, and when gold is short', async () => {
+    const { game, s, root } = setup();
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');
+    s.onAction('confirm');                                           // first member, nothing spent
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('還沒有配過點，不需要重置。');
+    expect(root.querySelector('.slx-confirm')).toBeNull();
+    expect(game.state.gold).toBe(150);
+  });
 });

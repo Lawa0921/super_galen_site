@@ -233,6 +233,9 @@ export const T = {
     },
     inn: {
       rest: (cost: number) => `休息（${cost} G）`, revive: '復活', ask: (cost: number) => `住一晚要 ${cost} G，要休息嗎？`,
+      respec: '重置配點', askRespec: (name: string, cost: number) => `要重置${name}的技能樹與天賦嗎？
+需要 ${cost} G，點數會全部退回。`,
+      respecDone: (name: string) => `${name}的配點已重置，點數可以重新分配了。`, nothingToReset: '還沒有配過點，不需要重置。',
       morning: '──隔天早上', saved: '已存檔。', saveFailed: '存檔失敗了……瀏覽器不允許儲存。',
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
     },

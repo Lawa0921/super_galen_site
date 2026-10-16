@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { newGame } from './state';
-import { buy, equip, innCost, isUnlocked, rest, revive, reviveCost, sell, sellGear, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
+import { buy, equip, innCost, isUnlocked, respec, respecCost, rest, revive, reviveCost, sell, sellGear, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
 import { statsOf } from './party';
+import { autoSpend, newTree, raiseTalent, skillPointsLeft, talentPointsLeft } from './progression';
+import type { Member } from './types';
 import { plainItem } from './testing';
 import { BAG_SIZE, mintUid } from './loot/bag';
 import { sellPrice } from './loot/item';
@@ -202,5 +204,66 @@ describe('buying and selling gear', () => {
     expect(setAutoJunk(s, 'all' as never)).toEqual({ ok: false, reason: 'invalid' });
     const o = sortBagIn(s, 'rarity');
     expect(o.ok && o.state.bag.map((it) => it.uid)).toEqual([2, 1]);
+  });
+});
+
+describe('respec', () => {
+  const lv10 = (): Member => ({ ...newGame().party.roster.scarlet, level: 10, tree: newTree('scarlet'), talents: {} });
+  /** A Lv10 Scarlet who has spent every skill and talent point (the temporary auto-spend does it). */
+  const spent = (): Member => autoSpend(lv10());
+  /** A Lv10 Scarlet whose only spent point is one rank of an hp talent. */
+  const hpOnly = (): Member => {
+    const r = raiseTalent(lv10(), 'scarlet-t01');
+    if (!r.ok) throw new Error('no hp talent');
+    return r.member;
+  };
+  const gameWith = (m: Member, gold: number) => {
+    const s = newGame();
+    s.party.roster.scarlet = m;
+    s.gold = gold;
+    return s;
+  };
+
+  it('respec costs 25 G per level and refunds every point', () => {
+    const m = spent();
+    expect(Object.keys(m.tree).length).toBeGreaterThan(1);
+    expect(Object.keys(m.talents).length).toBeGreaterThan(0);
+    expect(skillPointsLeft(m)).toBe(0);
+    const r = respec(gameWith(m, 300), 'scarlet');
+    if (!r.ok) throw new Error('respec failed');
+    const after = r.state.party.roster.scarlet;
+    expect(respecCost(10)).toBe(250);
+    expect(r.state.gold).toBe(300 - respecCost(10));
+    expect(after.tree).toEqual(newTree('scarlet'));
+    expect(after.talents).toEqual({});
+    expect(skillPointsLeft(after)).toBeGreaterThan(0);
+    expect(talentPointsLeft(after)).toBe(talentPointsLeft(lv10()));
+  });
+  it('respec clamps HP and TP to the lower maximum', () => {
+    const m = hpOnly();
+    m.hp = statsOf(m).hp; m.tp = statsOf(m).tp;
+    const r = respec(gameWith(m, 300), 'scarlet');
+    if (!r.ok) throw new Error('respec failed');
+    const after = r.state.party.roster.scarlet;
+    expect(statsOf(after).hp).toBeLessThan(m.hp);
+    expect(after.hp).toBe(statsOf(after).hp);
+    expect(after.tp).toBeLessThanOrEqual(statsOf(after).tp);
+  });
+  it('respec is refused without gold or with nothing spent, and costs nothing then', () => {
+    const m = spent();
+    const poor = gameWith(m, 249);
+    expect(respec(poor, 'scarlet')).toEqual({ ok: false, reason: 'gold' });
+    expect(poor.gold).toBe(249);
+    expect(poor.party.roster.scarlet.talents).toEqual(m.talents);
+    const fresh = newGame();
+    expect(respec(fresh, 'scarlet')).toEqual({ ok: false, reason: 'invalid' });
+    expect(fresh.gold).toBe(150);
+    expect(respec(gameWith(m, 999), 'nobody' as never)).toEqual({ ok: false, reason: 'invalid' });
+  });
+  it('skill ranks alone, without talents, count as spent', () => {
+    const m = { ...spent(), talents: {} };
+    const r = respec(gameWith(m, 300), 'scarlet');
+    expect(r.ok && r.state.party.roster.scarlet.tree).toEqual(newTree('scarlet'));
+    expect(respec(gameWith(hpOnly(), 300), 'scarlet').ok).toBe(true);   // talents alone count too
   });
 });

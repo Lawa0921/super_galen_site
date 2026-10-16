@@ -282,6 +282,9 @@ export function validBuild(id: CharacterId, level: number, tree: unknown, talent
     && Object.keys(talents).length === Object.keys(m.talents).length && Object.keys(talents).every((k) => m.talents[k] === talents[k]);
 }
 
+/** The build back to its start: the free first rank held, nothing else spent, so every point is available again. */
+export const resetBuild = (m: Member): Member => ({ ...m, tree: newTree(m.id), talents: {} });
+
 // TEMPORARY: removed by plan 5b Task 13 (player spends points)
 /**
  * Spends a member's unspent skill points toward `defaultTree` of their level and unspent talent points toward

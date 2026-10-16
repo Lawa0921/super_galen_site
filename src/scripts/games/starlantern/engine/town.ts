@@ -3,6 +3,7 @@ import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
 import { addGear, BAG_SIZE, sortBag, type AutoJunk } from './loot/bag';
 import { itemSlot, sellPrice } from './loot/item';
+import { resetBuild, newTree } from './progression';
 import { defaultSlotFor, slotsFor, statsOf } from './party';
 import type { GameState } from './state';
 import type { CharacterId, Member, Party, Slot } from './types';
@@ -150,6 +151,32 @@ export function revive(s: GameState, memberId: CharacterId): TownResult {
   n.gold -= cost;
   n.party.roster[memberId].hp = st.hp;
   n.party.roster[memberId].tp = st.tp;
+  return { ok: true, state: n };
+}
+
+/** Whether the member holds anything beyond the free first rank. */
+export function hasSpent(m: Member): boolean {
+  const fresh = newTree(m.id);
+  return Object.keys(m.talents).length > 0
+    || Object.keys(m.tree).length !== Object.keys(fresh).length || Object.keys(fresh).some((k) => m.tree[k] !== fresh[k]);
+}
+
+export const respecCost = (level: number): number => 25 * level;
+
+/**
+ * Resets a member's skill tree and talents together for gold. Refused when nothing has been spent, or when the member is
+ * unknown. The points come back unspent; HP and TP are held to the new maximum.
+ */
+export function respec(s: GameState, memberId: CharacterId): TownResult {
+  const m = s.party.roster[memberId];
+  if (!m) return fail('invalid');
+  if (!hasSpent(m)) return fail('invalid');
+  const cost = respecCost(m.level);
+  if (s.gold < cost) return fail('gold');
+  const n = structuredClone(s);
+  n.gold -= cost;
+  n.party.roster[memberId] = resetBuild(n.party.roster[memberId]);
+  clampToMax(n.party.roster[memberId]);
   return { ok: true, state: n };
 }
 
