@@ -1,8 +1,8 @@
 // world.ts — 固定大小 tile 世界。每層一個 typed array（row-major：i = y*width + x）。
 import { CHUNK } from './constants';
-import { SOLID_LUT, T } from './tiles';
+import { SOLID_LUT, PLATFORM_LUT, T } from './tiles';
 import type { Stack } from './inventory';
-import { CHEST_SLOTS } from './loot';
+import { CHEST_SLOTS, type Drop } from './loot';
 
 export type ChestSlots = (Stack | null)[];
 /** 生態區（每欄地表所屬；地下的過渡邊界另有起伏） */
@@ -32,6 +32,12 @@ export class World {
   readonly biome: Uint8Array;
   /** 箱子內容：key = tile index（y*width+x） */
   readonly chests = new Map<number, ChestSlots>();
+  /** 生成時指定的陶罐額外掉落（地城鑰匙），key = tile index；由 seed 重算、不存檔 */
+  readonly potDrops = new Map<number, Drop[]>();
+  /** 已用金鑰匙打開的金寶箱（tile index）——存檔內容 */
+  readonly unlocked = new Set<number>();
+  /** 累計用掉的鑰匙數（存檔內容） */
+  keysUsed = 0;
   /** 需重畫的 chunk（render 用，drainDirty 取走） */
   private readonly dirty = new Set<number>();
   /** 生成後被改過的 chunk（存檔 diff 用） */
@@ -83,14 +89,20 @@ export class World {
     return SOLID_LUT[this.fg[y * this.width + x]] === 1;
   }
 
+  /** 單向平台（物理用） */
+  isPlatform(x: number, y: number): boolean {
+    if (!this.inBounds(x, y)) return false;
+    return PLATFORM_LUT[this.fg[y * this.width + x]] === 1;
+  }
+
   setFg(x: number, y: number, id: number): boolean {
     if (!this.inBounds(x, y)) return false;
     const i = y * this.width + x;
     const old = this.fg[i];
     if (old === id) return false;
     this.fg[i] = id;
-    if (old === T.CHEST) this.chests.delete(i);
-    if (id === T.CHEST && !this.chests.has(i)) this.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
+    if ((old === T.CHEST || old === T.LOCKED_CHEST) && id !== T.CHEST && id !== T.LOCKED_CHEST) this.chests.delete(i);
+    if ((id === T.CHEST || id === T.LOCKED_CHEST) && !this.chests.has(i)) this.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
     this.touch(x, y);
     return true;
   }

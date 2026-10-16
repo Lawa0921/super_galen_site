@@ -5,7 +5,11 @@ import {
   AIR_ACCEL, JUMP_SPEED, JUMP_HOLD, STEP_MAX, SUBSTEP_PX,
 } from './constants';
 
-export interface SolidQuery { isSolid(tx: number, ty: number): boolean; }
+export interface SolidQuery {
+  isSolid(tx: number, ty: number): boolean;
+  /** 單向平台（只有從上方落下時擋住）；省略 = 沒有平台 */
+  isPlatform?(tx: number, ty: number): boolean;
+}
 
 export interface Body {
   /** 左上角（px） */
@@ -18,7 +22,11 @@ export interface Body {
 }
 
 export interface PlayerMotion { jumpTimer: number; jumpWasHeld: boolean; }
-export interface MoveControl { moveX: number; jump: boolean; }
+export interface MoveControl {
+  moveX: number; jump: boolean;
+  /** 按住「下」：穿過單向平台往下掉 */
+  drop?: boolean;
+}
 export interface MoveResult { hitX: boolean; hitY: boolean; stepped: boolean; }
 
 const EPS = 1e-6;
@@ -36,8 +44,23 @@ export function overlapsSolid(q: SolidQuery, x: number, y: number, w: number, h:
   return false;
 }
 
-/** 依 vx/vy 移動 body 一個 dt，處理碰撞與 step-up。會改寫 body。 */
-export function moveBody(q: SolidQuery, b: Body, dt: number, allowStep = b.onGround): MoveResult {
+/** 腳底剛好在第 row 列頂端（row*S）時，身體水平範圍下方有沒有平台 */
+function platformUnder(q: SolidQuery, b: Body, row: number): boolean {
+  if (!q.isPlatform) return false;
+  const tx0 = Math.floor(b.x / S), tx1 = Math.floor((b.x + b.w - EPS) / S);
+  for (let tx = tx0; tx <= tx1; tx++) if (q.isPlatform(tx, row)) return true;
+  return false;
+}
+
+/** 腳底是否正好站在某一列的平台頂上 */
+export function onPlatform(q: SolidQuery, b: Body): boolean {
+  const feet = b.y + b.h;
+  const row = Math.round(feet / S);
+  return Math.abs(feet - row * S) < 0.01 && platformUnder(q, b, row);
+}
+
+/** 依 vx/vy 移動 body 一個 dt，處理碰撞、單向平台與 step-up。會改寫 body。 */
+export function moveBody(q: SolidQuery, b: Body, dt: number, allowStep = b.onGround, drop = false): MoveResult {
   const res: MoveResult = { hitX: false, hitY: false, stepped: false };
   // ── X 軸 ──
   const dx = b.vx * dt;
@@ -77,6 +100,15 @@ export function moveBody(q: SolidQuery, b: Body, dt: number, allowStep = b.onGro
     const sdy = dy / n;
     for (let i = 0; i < n; i++) {
       const ny = b.y + sdy;
+      // 單向平台：往下移動、腳底從某列頂端之上（含剛好在頂端）跨進該列 → 停在頂端（按住「下」時不擋）
+      if (sdy > 0 && !drop && q.isPlatform) {
+        const feet = b.y + b.h, nfeet = feet + sdy;
+        const row = Math.floor((nfeet - EPS) / S), top = row * S;
+        if (feet <= top + 0.01 && nfeet > top && platformUnder(q, b, row) && !overlapsSolid(q, b.x, top - b.h, b.w, b.h)) {
+          b.y = top - b.h; b.vy = 0; res.hitY = true;
+          break;
+        }
+      }
       if (!overlapsSolid(q, b.x, ny, b.w, b.h)) { b.y = ny; continue; }
       if (sdy > 0) {
         const row = Math.floor((ny + b.h - EPS) / S);
@@ -89,7 +121,7 @@ export function moveBody(q: SolidQuery, b: Body, dt: number, allowStep = b.onGro
       break;
     }
   }
-  b.onGround = b.vy >= 0 && overlapsSolid(q, b.x, b.y + 1, b.w, b.h);
+  b.onGround = b.vy >= 0 && (overlapsSolid(q, b.x, b.y + 1, b.w, b.h) || (!drop && onPlatform(q, b)));
   return res;
 }
 
@@ -114,7 +146,7 @@ export function stepPlayer(q: SolidQuery, b: Body, m: PlayerMotion, ctl: MoveCon
   }
   if (m.jumpTimer <= 0) b.vy = Math.min(MAX_FALL, b.vy + GRAVITY * dt);
 
-  const res = moveBody(q, b, dt);
+  const res = moveBody(q, b, dt, b.onGround, ctl.drop ?? false);
   if (res.hitY && b.vy === 0 && !b.onGround) m.jumpTimer = 0; // 撞頭
   // step-up 視覺偏移平滑歸零
   if (b.gfxOffY > 0) b.gfxOffY = Math.max(0, b.gfxOffY - 120 * dt);
