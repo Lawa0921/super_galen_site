@@ -1,12 +1,13 @@
 import { CHARACTERS } from '../../data/characters';
 import { POWERS } from '../../data/gear';
-import { SKILLS } from '../../data/skills';
+import { NODES } from '../../data/trees';
 import { T } from '../../data/text.zh-TW';
 import { ULTIMATES } from '../../data/ultimates';
 import { skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
-import { SLOTS, expToNext, learnedSkills, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
+import { learnedSkills, nodeRank } from '../../engine/progression';
+import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import type { AnyStat, CharacterId, Slot, StatKey, Stats } from '../../engine/types';
 import { el } from '../../ui/dom';
@@ -203,7 +204,11 @@ const gear: StatusTab = {
         el('span', { class: 'slx-gear-slot', text: T.slot[slot] }),
         el('span', { class: it ? `slx-gear-name slx-rarity-${it.rarity}` : 'slx-gear-name', text: it ? gearLabel(it) : T.ui2.status.none }),
         el('span', { class: 'slx-gear-bonus', text: stat }),
-        ...(power ? [el('span', { class: power.usable === false ? 'slx-gear-power slx-line-off' : 'slx-gear-power', text: power.text })] : []),
+        // Outside the member's tree: dimmed. In the tree but not learned yet: says so, at full colour.
+        ...(power ? [el('span', {
+          class: power.usable === false ? 'slx-gear-power slx-line-off' : 'slx-gear-power',
+          text: power.usable && power.learned === false ? `${power.text}${T.gear.notLearned}` : power.text,
+        })] : []),
       ]);
     }));
   },
@@ -215,20 +220,20 @@ const skills: StatusTab = {
   render(ctx, id) {
     const t = T.ui2.status;
     const m = ctx.game.state.party.roster[id];
-    const learned = new Set(learnedSkills(id, m.level));
     // The skill as this member casts it: worn powers rewrite it, tpCost lowers its price (the battle rules, Task 9).
     const powers = powersOf(m);
     const caster = { powers, x: { tpCost: sheetOf(m).tpCost } };
-    return el('div', { class: 'slx-tab-skills' }, CHARACTERS[id].skills.flatMap((sk) => {
+    // Only what the member has learned, each with its rank in the tree.
+    return el('div', { class: 'slx-tab-skills' }, learnedSkills(m).flatMap((sk) => {
       const s = skillFor(caster, sk);
       if (!s) return [];
       const changed = powers.map((p) => POWERS[p]).filter((p) => p && p.skill === sk);
-      return el('div', { class: learned.has(sk) ? 'slx-skill' : 'slx-skill slx-skill-locked', attrs: { 'data-skill': sk } }, [
+      return el('div', { class: 'slx-skill', attrs: { 'data-skill': sk } }, [
         el('div', { class: 'slx-skill-head' }, [
           el('span', { class: 'slx-skill-name', text: s.name }),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
           el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(skillCost(caster, sk)) }),
-          el('span', { class: 'slx-skill-learn', text: learned.has(sk) ? t.learned : t.at(SKILLS[sk].learnLevel ?? 1) }),
+          el('span', { class: 'slx-skill-rank', text: t.rank(nodeRank(m, sk), NODES[sk].node.maxRank) }),
         ]),
         el('p', { class: 'slx-desc', text: s.desc }),
         ...changed.map((p) => el('p', { class: 'slx-skill-power', text: p.text })),

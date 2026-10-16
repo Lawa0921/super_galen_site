@@ -502,9 +502,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-skill-head { display: flex; gap: 10px; }
 .slx-skill-name { flex: 1; color: $slx-ink; }
 .slx-skill-cost { color: #6fa7ff; }
-.slx-skill-learn { color: $slx-dim; min-width: 64px; text-align: right; }
+.slx-skill-rank { color: $slx-dim; min-width: 40px; text-align: right; }
 .slx-skill .slx-desc { margin: 1px 0 0; }
-.slx-skill-locked .slx-skill-name { color: #6f6a5c; }
 .slx-skill-target { color: $slx-dim; }
 .slx-skill-power { margin: 1px 0 0; color: #ff9a3c; font-size: 10px; }
 .slx-status-panel .slx-hint, .slx-formation-info .slx-hint { margin-top: 6px; }

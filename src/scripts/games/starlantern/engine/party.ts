@@ -3,7 +3,7 @@ import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
-import { newTree } from './progression';
+import { learnedSkills, newTree, skillPoints, talentPoints } from './progression';
 import { PARTY_BASE, PRIMARY_KEYS, capSheet, convertPrimary, emptySheet, naturalPrimary } from './stats';
 import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Sheet, Slot, StatKey, Stats } from './types';
 
@@ -136,11 +136,10 @@ export function setFormation(
   return { ok: true, party: { ...p, grid: [...grid] } };
 }
 
-export function learnedSkills(id: CharacterId, level: number): string[] {
-  return CHARACTERS[id].skills.filter((s) => (SKILLS[s].learnLevel ?? 1) <= level);
-}
+/** Skill and talent points a level-up earns; they are spent elsewhere, so the tree is never changed here. */
+export type Points = { skill: number; talent: number };
 
-export function gainExp(m: Member, amount: number): { member: Member; levels: number; learned: string[] } {
+export function gainExp(m: Member, amount: number): { member: Member; levels: number; points: Points } {
   let level = m.level;
   let exp = m.exp + amount;
   while (level < MAX_LEVEL && exp >= expToNext(level)) {
@@ -153,12 +152,12 @@ export function gainExp(m: Member, amount: number): { member: Member; levels: nu
   const after = statsOf(next);
   next.hp = m.hp > 0 ? Math.min(after.hp, m.hp + after.hp - before.hp) : 0;
   next.tp = Math.min(after.tp, m.tp + after.tp - before.tp);
-  const had = new Set(learnedSkills(m.id, m.level));
-  return { member: next, levels: level - m.level, learned: learnedSkills(m.id, level).filter((s) => !had.has(s)) };
+  const points = { skill: skillPoints(level) - skillPoints(m.level), talent: talentPoints(level) - talentPoints(m.level) };
+  return { member: next, levels: level - m.level, points };
 }
 
-/** What one member got from an exp award: levels gained (0 when none) and skills learned on the way. */
-export type LevelUp = { id: CharacterId; levels: number; learned: string[] };
+/** What one member got from an exp award: levels gained (0 when none) and the points they brought. */
+export type LevelUp = { id: CharacterId; levels: number; points: Points };
 
 export function awardExp(
   p: Party, amount: number, survivors: CharacterId[],
@@ -171,7 +170,7 @@ export function awardExp(
     if (share <= 0) continue;
     const r = gainExp(roster[id], share);
     roster[id] = r.member;
-    results.push({ id, levels: r.levels, learned: r.learned });
+    results.push({ id, levels: r.levels, points: r.points });
   }
   return { party: { ...p, roster }, results };
 }
@@ -179,6 +178,6 @@ export function awardExp(
 export function hasPassive(p: Party, passive: Passive): boolean {
   return activeIds(p).some((id) => {
     const m = p.roster[id];
-    return m.hp > 0 && learnedSkills(id, m.level).some((s) => SKILLS[s].passive === passive);
+    return m.hp > 0 && learnedSkills(m).some((s) => SKILLS[s].passive === passive);
   });
 }

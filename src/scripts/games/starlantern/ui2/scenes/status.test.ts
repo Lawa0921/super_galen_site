@@ -8,6 +8,7 @@ import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView } from './statusTabs';
 import { StatusScene } from './status';
+import { T } from '../../data/text.zh-TW';
 
 /** A shown number back to a number: the minus sign reads as a minus. */
 const num = (t: string | null) => Number((t ?? '').replace('−', '-'));
@@ -388,5 +389,39 @@ describe('StatusScene', () => {
     expect(fire().querySelector('.slx-skill-power')!.textContent).toContain('火之星彈改為打全體');
     expect(fire().querySelector('.slx-skill-cost')!.textContent).toBe('TP 2');
     expect(body()).toContain('TP 2');
+  });
+
+  it('the skills tab lists only learned skills with their rank', () => {
+    const { root, s, game, body } = setup('noel');
+    s.onAction('right'); s.onAction('right');
+    expect(body()).toContain('火之星彈');
+    expect(root.querySelector('[data-skill=fire-star] .slx-skill-rank')!.textContent).toBe('1／3');
+    expect(body()).not.toContain('冰之星彈');
+    expect(root.querySelector('[data-skill=ice-star]')).toBeNull();
+    game.state.party.roster.noel.tree = { 'fire-star': 2, 'ice-star': 1, 'noel-fire-up': 1 };
+    s.onAction('next'); s.onAction('prev');
+    expect(root.querySelector('[data-skill=fire-star] .slx-skill-rank')!.textContent).toBe('2／3');
+    expect(root.querySelector('[data-skill=ice-star] .slx-skill-rank')!.textContent).toBe('1／3');
+    expect(root.querySelector('[data-skill=noel-fire-up]')).toBeNull();   // a mod node is not a skill of its own
+  });
+
+  it('the gear tab marks a power the member has not learned as 尚未習得', () => {
+    const { root, s, game } = setup('noel');
+    game.state.party.roster.noel.equip.neck = { ...plainItem('moss-charm', 7), rarity: 'legendary', special: 'frost-bloom-neck' };
+    s.onAction('right');
+    const power = () => root.querySelector('.slx-tab-gear .slx-gear-power')!;
+    expect(power().textContent).toContain(T.gear.notLearned);
+    expect(power().classList.contains('slx-line-off')).toBe(false);
+    game.state.party.roster.noel.tree = { 'fire-star': 1, 'ice-star': 1 };
+    s.onAction('next'); s.onAction('prev');
+    expect(power().textContent).not.toContain(T.gear.notLearned);
+    expect(power().classList.contains('slx-line-off')).toBe(false);
+    // Outside her tree: dimmed, and not called unlearned.
+    const other = setup('scarlet');
+    other.game.state.party.roster.scarlet.equip.neck = { ...plainItem('moss-charm', 7), rarity: 'legendary', special: 'frost-bloom-neck' };
+    other.s.onAction('right');
+    const off = other.root.querySelector('.slx-tab-gear .slx-gear-power')!;
+    expect(off.classList.contains('slx-line-off')).toBe(true);
+    expect(off.textContent).not.toContain(T.gear.notLearned);
   });
 });

@@ -1,5 +1,4 @@
 import { CHARACTERS } from '../data/characters';
-import { SKILLS } from '../data/skills';
 import { T } from '../data/text.zh-TW';
 import type { BattleEvent } from '../engine/combatant';
 import type { LevelUp } from '../engine/party';
@@ -31,13 +30,13 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
   });
 }
 
-/** A line per member who levelled up (at their level now in `party`), then a line per skill they learned. */
+/** A line per member who levelled up (at their level now in `party`), then a line for the points it brought. */
 export function levelUpLines(ups: LevelUp[], party: Party): { text: string; cls: 'slx-levelup' }[] {
   const lines: { text: string; cls: 'slx-levelup' }[] = [];
   for (const u of ups) {
     const who = CHARACTERS[u.id].name;
     lines.push({ text: T.battle.levelUp(who, party.roster[u.id].level), cls: 'slx-levelup' });
-    for (const s of u.learned) lines.push({ text: T.battle.learned(who, SKILLS[s].name), cls: 'slx-levelup' });
+    if (u.points.skill > 0 || u.points.talent > 0) lines.push({ text: T.battle.points(who, u.points.skill, u.points.talent), cls: 'slx-levelup' });
   }
   return lines;
 }

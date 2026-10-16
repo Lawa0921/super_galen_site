@@ -69,6 +69,19 @@ describe('itemLines', () => {
     expect(power({ ...newMember('scarlet'), equip: {} }).usable).toBe(false);
     expect(power().usable).toBeUndefined();                                // no wearer: nothing to judge
   });
+  it('a power in the tree but not learned is usable and marked not learned', () => {
+    const neck = rollItem(mulberry32(6), { uid: 6, ilvl: 10, rarity: 'legendary', special: 'frost-bloom-neck' });   // ice-star
+    const gloves = rollItem(mulberry32(5), { uid: 5, ilvl: 10, rarity: 'legendary', special: 'lg-bobby' });       // turret
+    const power = (it: ItemInstance, m?: Member) => itemLines(it, m).find((l) => l.kind === 'power')!;
+    const noel = power(neck, newMember('noel'));
+    expect([noel.usable, noel.learned]).toEqual([true, false]);
+    const taught = power(neck, { ...newMember('noel'), tree: { 'fire-star': 1, 'ice-star': 1 } });
+    expect([taught.usable, taught.learned]).toEqual([true, true]);
+    const bobby = power(gloves, newMember('bobby'));
+    expect([bobby.usable, bobby.learned]).toEqual([true, true]);
+    expect(power(gloves, newMember('scarlet')).usable).toBe(false);
+    expect(power(gloves).learned).toBeUndefined();                       // no wearer: nothing to judge
+  });
 
   it('shows the power and the lore of a legendary', () => {
     const lg = rollItem(mulberry32(3), { uid: 3, ilvl: 10, rarity: 'legendary', special: 'mire-whisper-gloves' });

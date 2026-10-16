@@ -7,7 +7,7 @@ import { ULTIMATES } from '../../data/ultimates';
 import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import type { BattleEnd } from '../../engine/game';
-import { learnedSkills } from '../../engine/party';
+import { learnedSkills } from '../../engine/progression';
 import type { CharacterId, Target } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
@@ -183,7 +183,8 @@ export class BattleScene implements Scene {
   }
 
   private skillItems(actor: Combatant): MenuItem[] {
-    return learnedSkills(actor.key as CharacterId, this.ctx.game.state.party.roster[actor.key as CharacterId]?.level ?? 1)
+    const m = this.ctx.game.state.party.roster[actor.key as CharacterId];
+    return (m ? learnedSkills(m) : [])
       // As this member casts them: a worn power may change the target, and tpCost lowers what each costs.
       .flatMap((s) => skillFor(actor, s) ?? [])
       .filter((sk) => !sk.passive)

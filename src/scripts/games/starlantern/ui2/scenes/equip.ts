@@ -435,12 +435,15 @@ export class EquipScene implements Scene {
         ]));
       }
       if (it.junk) out.push(el('div', { class: 'slx-item-junk', text: T.gear.junk }));
-      // A power whose skill the viewed member lacks is dimmed and says so.
+      // A power whose skill is outside the viewed member's tree is dimmed and says so; one in the tree but not learned
+      // yet only says so.
       out.push(el('div', { class: 'slx-item-lines' }, itemLines(it, m).map((l) =>
         l.usable === false
           // Only the power text dims; the note stays at full contrast so the reason reads clearly.
           ? el('p', { class: `slx-line slx-line-${l.kind} slx-line-off` }, [el('span', { class: 'slx-line-dim', text: l.text }), el('span', { class: 'slx-line-note', text: T.gear.cannotUse })])
-          : el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}`, text: l.text }))));
+          : l.usable && l.learned === false
+            ? el('p', { class: `slx-line slx-line-${l.kind}` }, [el('span', { text: l.text }), el('span', { class: 'slx-line-note', text: T.gear.notLearned })])
+            : el('p', { class: `slx-line slx-line-${l.kind}${l.active ? ' slx-line-on' : ''}`, text: l.text }))));
       if (!onBag) out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.pickSlot }));
     }
     this.detailBody.replaceChildren(...out);

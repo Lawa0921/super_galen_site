@@ -35,6 +35,14 @@ function rankIn(tree: unknown, node: string): number {
 
 export const nodeRank = (m: Member, node: string): number => rankIn(m.tree, node);
 
+/** Every active node's skill in the character's tree (passives too), in tree order: branch 0 tiers 0-4, then branch 1, then 2. */
+export const treeSkills = (id: CharacterId): string[] =>
+  TREES[id].branches.flatMap((b) => b.nodes.filter((n) => n.kind === 'active').map((n) => n.skill));
+
+/** The skills a member knows: the active nodes they hold at rank 1 or more, in tree order. */
+export const learnedSkills = (m: Member): string[] =>
+  TREES[m.id].branches.flatMap((b) => b.nodes.filter((n) => n.kind === 'active' && rankIn(m.tree, n.id) > 0).map((n) => n.skill));
+
 /** Ranks held in the character's own nodes; ids of other trees or unknown ids are ignored. */
 function ranksHeld(id: CharacterId, tree: unknown): number {
   let n = 0;

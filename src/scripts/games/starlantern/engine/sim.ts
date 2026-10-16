@@ -6,7 +6,8 @@ import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LIMIT_MAX, createBattle, resolveRound, skillCost, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
-import { MAX_LEVEL, SLOTS, expToNext, gainExp, learnedSkills, newMember, newParty, statsOf } from './party';
+import { MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, newParty, statsOf } from './party';
+import { defaultTree, learnedSkills } from './progression';
 import { mulberry32 } from './rng';
 import { depthClearExp, encounterTable, scaleEnemy } from './scaling';
 import { genFloor } from './dungeon/gen';
@@ -17,12 +18,12 @@ import type { BuffStat, CharacterId, GearSlot, Party, Pos, Rarity, SkillDef } fr
 
 type Altar = { stat: BuffStat; pct: number }[];
 
-/** A fresh party with everyone at `level`, held to the real level cap. */
+/** A fresh party with everyone at `level`, held to the real level cap, each with the default build of that level. */
 export function partyAt(level: number): Party {
   level = Math.min(level, MAX_LEVEL);
   const p = newParty();
   for (const id of Object.keys(p.roster) as CharacterId[]) {
-    const m = { ...newMember(id), level };
+    const m = { ...newMember(id), level, tree: defaultTree(id, level) };
     const s = statsOf(m);
     p.roster[id] = { ...m, hp: s.hp, tp: s.tp };
   }
@@ -63,7 +64,7 @@ export function choose(s: BattleState, party: Party): Record<string, Action> {
     const id = c.key as CharacterId;
     if (c.limit >= LIMIT_MAX) { out[c.key] = { kind: 'ultimate', target }; continue; }
     // Each skill as this member casts it (worn powers) and at the TP they pay for it.
-    const skills = learnedSkills(id, party.roster[id].level).flatMap((sk) => skillFor(c, sk) ?? [])
+    const skills = learnedSkills(party.roster[id]).flatMap((sk) => skillFor(c, sk) ?? [])
       .filter((sk) => !sk.passive && skillCost(c, sk.id) <= c.tp);
     const heal = skills.find((sk) => sk.effects.some((e) => e.kind === 'heal'));
     if (hurt && heal) { out[c.key] = { kind: 'skill', skill: heal.id, target: hurt.key }; continue; }

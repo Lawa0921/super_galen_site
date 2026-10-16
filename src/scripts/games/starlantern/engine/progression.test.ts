@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  canRaiseNode, defaultTree, freeNode, legacyDue, newTree, nodeRank, raiseNode, skillPoints, skillPointsLeft, talentPoints,
+  canRaiseNode, defaultTree, freeNode, learnedSkills, legacyDue, newTree, nodeRank, raiseNode, skillPoints, skillPointsLeft, talentPoints,
+  treeSkills,
 } from './progression';
 import { newMember } from './party';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
@@ -197,5 +198,19 @@ describe('progression', () => {
       const open = Object.keys(NODES).filter((n) => NODES[n].owner === id && canRaiseNode(next, n) === null);
       expect(open.length, id).toBeGreaterThan(0);
     }
+  });
+
+  it('learnedSkills follows the tree, in tree order', () => {
+    expect(learnedSkills(newMember('liz'))).toEqual(['twin-slash']);
+    expect(learnedSkills(at('liz', 10, { 'twin-slash': 1, stealth: 1, quickstep: 2 }))).toEqual(['twin-slash', 'stealth', 'quickstep']);
+    // Tree order, not the order of the record; mod nodes and ids of other trees are not skills of this member.
+    expect(learnedSkills(at('liz', 10, { quickstep: 1, stealth: 1, 'twin-slash': 1, 'fire-star': 1 }))).toEqual(['twin-slash', 'stealth', 'quickstep']);
+    expect(learnedSkills(at('noel', 10, { 'fire-star': 1, 'noel-fire-up': 2, 'ice-star': 0 }))).toEqual(['fire-star']);
+  });
+
+  it("treeSkills('noel') has the 4 old skills and 5 new ones", () => {
+    const all = treeSkills('noel');
+    expect(all).toHaveLength(9);
+    for (const s of ['fire-star', 'ice-star', 'hex', 'thunder-star', 'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement']) expect(all, s).toContain(s);
   });
 });

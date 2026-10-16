@@ -45,6 +45,8 @@ export const T = {
     /** The base bonus line, set apart from rolled affixes on the same stat. */
     implicit: (text: string) => `基礎 ${text}`,
     cannotUse: '此角色無法發動',
+    /** A power whose skill is in the wearer's tree but not learned yet. */
+    notLearned: '（尚未習得）',
     setBonus: (n: number, text: string) => `${n} 件：${text}`,
     setFour: '（同時擁有 2 件效果）',
     junk: '已標為垃圾',
@@ -83,7 +85,10 @@ export const T = {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
     exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`, drop: (name: string, n: number) => `${name} ×${n}`,
     leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
-    levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`, learned: (name: string, skill: string) => `${name} 學會了「${skill}」`,
+    levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`,
+    /** Points a level-up brought; the talent part only when there is one. */
+    points: (name: string, skill: number, talent: number) =>
+      skill === 0 && talent > 0 ? `${name} 獲得天賦點 ${talent}` : `${name} 獲得技能點 ${skill}${talent > 0 ? `、天賦點 ${talent}` : ''}`,
     weak: (els: string) => `已知弱點：${els}`,
     /** Words that pop over a struck enemy or member. */
     pop: { miss: 'MISS', crit: '暴擊！', weak: '弱點！', resist: '抗性', tp: (n: number) => `+${n} TP` },
@@ -150,7 +155,7 @@ export const T = {
       place: (where: string) => `站位 ${where}`,
       attack: (melee: boolean, pct: number | null) => (!melee ? '攻擊方式 遠程／魔法' : pct === null ? '攻擊方式 近戰' : `攻擊方式 近戰（${pct}%）`),
       gauge: (n: number) => `絕技量表 ${n}%`,
-      learned: '已習得', at: (lv: number) => `Lv ${lv} 習得`, passive: '被動', tp: (n: number) => `TP ${n}`,
+      rank: (r: number, max: number) => `${r}／${max}`, passive: '被動', tp: (n: number) => `TP ${n}`,
       none: '（未裝備）',
       hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
       /** The stats tab's own keys: a row cursor and folding. */

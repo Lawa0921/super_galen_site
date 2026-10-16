@@ -385,6 +385,16 @@ describe('EquipScene', () => {
     expect(line.querySelector('.slx-line-dim .slx-line-note')).toBeNull();
     expect(line.querySelector(':scope > .slx-line-note')!.textContent).toBe(T.gear.cannotUse);
   });
+
+  it('a power the wearer has not learned yet shows 尚未習得 and is not dimmed', () => {
+    const { press, detail } = setup((g) => { g.state.bag = [gear('moss-charm', 2, 'legendary', { special: 'frost-bloom-neck' })]; }, 'noel');
+    press('swap');                                                     // 霜華頸鍊 (ice-star) on a fresh 諾艾爾
+    const line = detail().querySelector('.slx-line-power')!;
+    expect(line.classList.contains('slx-line-off')).toBe(false);
+    expect(line.querySelector('.slx-line-dim')).toBeNull();
+    expect(line.querySelector('.slx-line-note')!.textContent).toBe(T.gear.notLearned);
+    expect(line.textContent).not.toContain(T.gear.cannotUse);
+  });
 });
 
 describe('EquipScene detail panel', () => {

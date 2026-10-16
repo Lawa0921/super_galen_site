@@ -1,12 +1,15 @@
-import { CHARACTERS } from '../data/characters';
 import { POWERS, SETS, SPECIALS } from '../data/gear';
 import { T } from '../data/text.zh-TW';
 import { implicitStats } from './loot/item';
 import { setCounts, sheetOf } from './party';
+import { learnedSkills, treeSkills } from './progression';
 import type { AnyStat, ItemInstance, Member, Sheet, Slot } from './types';
 
-/** `active`: a set bonus the wearer has reached. `usable`: whether the wearer's kit has a power's skill (only with a wearer). */
-export interface ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore'; text: string; active?: boolean; usable?: boolean }
+/**
+ * `active`: a set bonus the wearer has reached. Only with a wearer, on a power: `usable` when the power's skill is in the
+ * wearer's tree (learned or still to learn), `learned` when the wearer knows it now.
+ */
+export interface ItemLine { kind: 'implicit' | 'affix' | 'power' | 'set' | 'lore'; text: string; active?: boolean; usable?: boolean; learned?: boolean }
 
 const EPS = 1e-6;
 
@@ -54,7 +57,10 @@ export function specialLines(id: string, wearer?: Member): ItemLine[] {
   if (!sp) return setLines(id);
   const out: ItemLine[] = [];
   const power = sp.power ? POWERS[sp.power] : undefined;
-  if (power) out.push({ kind: 'power', text: power.text, ...(wearer ? { usable: CHARACTERS[wearer.id].skills.includes(power.skill) } : {}) });
+  if (power) {
+    const judged = wearer ? { usable: treeSkills(wearer.id).includes(power.skill), learned: learnedSkills(wearer).includes(power.skill) } : {};
+    out.push({ kind: 'power', text: power.text, ...judged });
+  }
   if (sp.set) out.push(...setLines(sp.set, wearer ? setCounts(wearer)[sp.set] ?? 0 : undefined));
   out.push({ kind: 'lore', text: sp.lore });
   return out;

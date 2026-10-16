@@ -139,9 +139,9 @@ describe('BattleScene', () => {
   });
 
   it('the skill list shows the reduced TP cost and greys by it', () => {
-    // 絲嘉蕾 at level 5 knows 鐵壁 (4 TP); she has 3 TP.
+    // 絲嘉蕾 with 鐵壁 in her tree knows it (4 TP); she has 3 TP.
     const wall = (prep: (c: Combatant) => void) => {
-      const { s, root } = setup((g) => { g.state.party.roster.scarlet.level = 5; const c = g.battle!.party[0]; c.tp = 3; prep(c); });
+      const { s, root } = setup((g) => { g.state.party.roster.scarlet.tree = { provoke: 1, 'iron-wall': 1 }; const c = g.battle!.party[0]; c.tp = 3; prep(c); });
       s.onAction('down'); s.onAction('confirm');                                                       // 技能
       const opt = root.querySelector('.slx-bsub [data-id="iron-wall"]')!;
       return [opt.querySelector('.slx-right')!.textContent, opt.getAttribute('aria-disabled')];
@@ -162,6 +162,30 @@ describe('BattleScene', () => {
     expect(lines).toContain('背包已滿，留下了 蝙蝠翼膜 ×2');
     expect(lines).toContain('背包已滿，留下了 荊棘牙 ×1');
     expect(lines).not.toContain('蝙蝠翼膜 ×2');
+  });
+
+  it('the result lists the points a level-up brings', async () => {
+    const { game, s, root } = setup();
+    game.state.party.roster.noel.level = 6;
+    game.state.party.roster.liz.level = 5;
+    game.state.party.roster.chizuru.level = 8;
+    const levelUps = [
+      { id: 'noel' as const, levels: 2, points: { skill: 1, talent: 1 } },
+      { id: 'liz' as const, levels: 1, points: { skill: 1, talent: 0 } },
+      { id: 'chizuru' as const, levels: 1, points: { skill: 0, talent: 1 } },
+    ];
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps, left: {}, gear: [], gearLeft: [] };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+    expect(lines).toEqual([
+      '經驗值 +5', '金錢 +7',
+      '諾艾兒 升到 Lv 6', '諾艾兒 獲得技能點 1、天賦點 1',
+      '莉茲 升到 Lv 5', '莉茲 獲得技能點 1',
+      '千鶴 升到 Lv 8', '千鶴 獲得天賦點 1',
+    ]);
   });
 
   it('shows no left-behind line when everything fit', async () => {

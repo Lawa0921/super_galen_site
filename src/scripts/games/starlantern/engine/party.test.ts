@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   rowOfCell, statSources, expToNext, statsOf, newMember, newParty, recruit, setFormation, activeIds,
-  learnedSkills, gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
+  gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
 } from './party';
 import { partyAt } from './sim';
+import { defaultTree } from './progression';
 import { plainItem } from './testing';
 import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
@@ -136,11 +137,11 @@ describe('experience', () => {
     expect(expToNext(1)).toBe(14);
     expect(expToNext(2)).toBe(34);
   });
-  it('levels up, carries over, raises current HP by the gain and learns skills', () => {
+  it('levels up, carries over, raises current HP by the gain and gains points', () => {
     const r = gainExp(newMember('noel'), 14 + 34 + 3);
     expect([r.member.level, r.member.exp, r.levels]).toEqual([3, 3, 2]);
     expect(r.member.hp).toBe(28 + 8);
-    expect(r.learned).toEqual(['ice-star']);
+    expect(r.points).toEqual({ skill: 2, talent: 0 });
   });
   it('keeps a downed member at 0 HP', () => {
     expect(gainExp({ ...newMember('liz'), hp: 0 }, 100).member.hp).toBe(0);
@@ -171,16 +172,34 @@ describe('experience', () => {
 });
 
 describe('skills and passives', () => {
-  it('learns by level', () => {
-    expect(learnedSkills('liz', 1)).toEqual(['twin-slash']);
-    expect(learnedSkills('liz', 4)).toEqual(['twin-slash', 'stealth', 'treasure-sense']);
-  });
-  it('only counts living active members who learned the passive', () => {
+  it('hasPassive needs the learned node, not the level', () => {
     const p = newParty();
+    p.roster.liz.level = 10;
     expect(hasPassive(p, 'encounterDown')).toBe(false);
-    p.roster.liz.level = 2;
+    p.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
     expect(hasPassive(p, 'encounterDown')).toBe(true);
     p.roster.liz.hp = 0;
     expect(hasPassive(p, 'encounterDown')).toBe(false);
+  });
+  it('hasPassive only counts members on the field', () => {
+    const p = newParty();
+    p.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
+    p.grid = p.grid.map((id) => (id === 'liz' ? null : id));
+    expect(hasPassive(p, 'encounterDown')).toBe(false);
+  });
+  it('gainExp reports the points gained', () => {
+    const from = (level: number) => ({ ...newMember('noel'), level });
+    let need = 0;
+    for (let l = 4; l < 6; l++) need += expToNext(l);
+    const r = gainExp(from(4), need);
+    expect(r.levels).toBe(2);
+    expect(r.points).toEqual({ skill: 1, talent: 1 });
+    expect(r.member.tree).toEqual(from(4).tree);   // points are earned here, never spent
+    expect(gainExp(from(MAX_LEVEL), 1000).points).toEqual({ skill: 0, talent: 0 });
+    expect(gainExp(from(4), 0).points).toEqual({ skill: 0, talent: 0 });
+  });
+  it('partyAt gives each member the default tree', () => {
+    expect(partyAt(10).roster.noel.tree).toEqual(defaultTree('noel', 10));
+    for (const id of CHARACTER_IDS) expect(partyAt(6).roster[id].tree, id).toEqual(defaultTree(id, 6));
   });
 });

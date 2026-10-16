@@ -217,7 +217,7 @@ describe('moving', () => {
   });
   it('halves the gauge gain with stealth', () => {
     const g = inMap(1);
-    g.state.party.roster.liz.level = 2;
+    g.state.party.roster.liz.tree = { 'twin-slash': 1, stealth: 1 };
     g.move('right');
     expect(g.encounter).toBe(6);
   });
