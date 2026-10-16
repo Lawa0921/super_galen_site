@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { statsOf } from '../../engine/party';
+import { STAT_CATEGORIES } from '../../engine/stats';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
-import { STATUS_TABS } from './statusTabs';
+import { STATUS_TABS, resetStatsView } from './statusTabs';
 import { StatusScene } from './status';
 
 function setup(arg?: string, artIndex: ArtIndex = NO_ART) {
@@ -23,6 +24,8 @@ function setup(arg?: string, artIndex: ArtIndex = NO_ART) {
 }
 
 describe('StatusScene', () => {
+  beforeEach(() => resetStatsView());
+
   it('opens on the member it was given, with a large standee and the stats tab', () => {
     const { root, name, tab, body, game } = setup('scarlet', { has: (u) => u === art.standee('scarlet') });
     expect(name()).toContain('絲嘉蕾');
@@ -119,5 +122,160 @@ describe('StatusScene', () => {
     expect(root.querySelectorAll('.slx-tab-gear .slx-gear-row')).toHaveLength(9);
     expect(root.querySelector('.slx-tab-gear .slx-gear-name')!.classList.contains('slx-rarity-rare')).toBe(true);
     expect(root.querySelector('.slx-tab-gear .slx-gear-row:nth-child(2) .slx-gear-name')!.classList.contains('slx-rarity-rare')).toBe(false);
+  });
+
+  it('the gear page names each slot and shows the rarity word and the item lines, like the equip page', () => {
+    const { s, game, root } = setup('scarlet');
+    game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 9), rarity: 'rare', affixes: [{ key: 'crit', value: 4 }] };
+    s.onAction('right');
+    const rows = [...root.querySelectorAll('.slx-tab-gear .slx-gear-row')];
+    expect(rows.map((r) => r.querySelector('.slx-gear-slot')!.textContent)).toEqual(['武器', '副手', '頭部', '身體', '手部', '腳部', '項鍊', '戒指 1', '戒指 2']);
+    expect(rows[0].querySelector('.slx-gear-name')!.textContent).toContain('・稀有');
+    expect(rows[0].querySelector('.slx-gear-bonus')!.textContent).toContain('暴擊率 +4%');   // a secondary affix, from itemLines
+    expect(rows[1].querySelector('.slx-gear-name')!.textContent).toBe('（未裝備）');
+  });
+
+  describe('the stats tab', () => {
+    const stub = vi.fn();
+    beforeEach(() => { stub.mockClear(); HTMLElement.prototype.scrollIntoView = stub; });
+    afterEach(() => { delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView; });
+
+    const cur = (root: HTMLElement) => root.querySelector('.slx-row-cur');
+    const head = (root: HTMLElement, cat: string) => root.querySelector(`[data-cat=${cat}] .slx-stat-cat-head`) as HTMLElement;
+    const bodyEl = (root: HTMLElement) => root.querySelector('.slx-status-body') as HTMLElement;
+
+    it('six collapsible categories; rows show base, growth, gear, set and primary sources', () => {
+      const { root, game, s } = setup('scarlet');
+      game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'str', value: 3 }] };
+      s.onAction('next'); s.onAction('prev');                                // redraw with the new sword
+      const cats = [...root.querySelectorAll('section.slx-stat-cat')];
+      expect(cats.map((c) => c.getAttribute('data-cat'))).toEqual(STAT_CATEGORIES.map((c) => c.id));
+      expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.textContent)).toEqual(['主屬性', '攻擊', '防禦', '元素', '資源', '其他'].map((n) => expect.stringContaining(n)));
+      expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false']);
+      expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
+      const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
+      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '主屬性', '合計']);
+      // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
+      const atk = root.querySelector('[data-stat=atk]')!;
+      expect(atk.querySelector('.slx-primary')!.textContent).toMatch(/^\+\d+$/);
+      const parts = [...atk.querySelectorAll('td:not(.slx-total)')].map((td) => (td.textContent === '—' ? 0 : Number(td.textContent)));
+      const total = statsOf(game.state.party.roster.scarlet).atk;
+      expect(atk.querySelector('.slx-total')!.textContent).toBe(String(total));
+      expect(parts.reduce((a, b) => a + b, 0)).toBe(total);
+      expect(root.querySelector('[data-stat=str] .slx-gear')!.textContent).toBe('+3');
+      expect(root.querySelector('[data-stat=eliteDmg]')!.classList.contains('slx-zero')).toBe(true);
+      expect(root.querySelector('[data-stat=atk]')!.classList.contains('slx-zero')).toBe(false);
+      expect(root.querySelector('[data-stat=critDmg] .slx-total')!.textContent).toBe('50%');
+    });
+
+    it('fractions show to one place and still add up; a capped total says so', () => {
+      const { root, game, s } = setup('scarlet');
+      game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+      s.onAction('next'); s.onAction('prev');
+      const crit = root.querySelector('[data-stat=crit]')!;
+      expect(crit.querySelector('.slx-primary')!.textContent).toBe('+0.6');  // 3 agi x 0.2
+      expect(crit.querySelector('.slx-total')!.textContent).toContain('60%');
+      expect(crit.querySelector('.slx-total')!.classList.contains('slx-capped')).toBe(true);
+    });
+
+    it('up/down move the row cursor across headers and rows and keep it in view', () => {
+      const { root, s } = setup('scarlet');
+      expect(cur(root)).toBe(head(root, 'primary'));
+      s.onAction('down');
+      expect(cur(root)!.getAttribute('data-stat')).toBe('str');
+      expect(stub).toHaveBeenCalledWith({ block: 'nearest' });
+      expect(stub.mock.contexts.at(-1)).toBe(cur(root));
+      for (let i = 0; i < 4; i++) s.onAction('down');                        // int, agi, wil, then the next header
+      expect(cur(root)).toBe(head(root, 'attack'));
+      s.onAction('up');
+      expect(cur(root)!.getAttribute('data-stat')).toBe('wil');
+      for (let i = 0; i < 10; i++) s.onAction('down');                       // the attack header and its 8 rows, then the folded defense header
+      expect(cur(root)).toBe(head(root, 'defense'));
+      s.onAction('down');                                                    // defense is folded: straight on to element
+      expect(cur(root)).toBe(head(root, 'element'));
+    });
+
+    it('Enter on a header folds or opens it; other keys are not used', () => {
+      const { root, s } = setup('scarlet');
+      s.onAction('confirm');
+      expect(head(root, 'primary').getAttribute('aria-expanded')).toBe('false');
+      expect(root.querySelector('[data-stat=str]')).toBeNull();
+      expect(cur(root)).toBe(head(root, 'primary'));
+      s.onAction('confirm');
+      expect(root.querySelector('[data-stat=str]')).not.toBeNull();
+      s.onAction('down');
+      s.onAction('confirm');                                                 // on a row Enter does nothing
+      expect(head(root, 'primary').getAttribute('aria-expanded')).toBe('true');
+      expect(STATUS_TABS[0].onAction!('confirm', {} as never, 'scarlet')).toBe(false);
+      expect(STATUS_TABS[0].onAction!('menu' as never, {} as never, 'scarlet')).toBe(false);
+    });
+
+    it('folding keeps the scroll position', () => {
+      const { root, s } = setup('scarlet');
+      bodyEl(root).scrollTop = 120;
+      s.onAction('confirm');
+      expect(head(root, 'primary').getAttribute('aria-expanded')).toBe('false');
+      expect(bodyEl(root).scrollTop).toBe(120);
+    });
+
+    it('a new tab or a new member starts at the top', () => {
+      const { root, s } = setup('scarlet');
+      bodyEl(root).scrollTop = 120;
+      s.onAction('next');
+      expect(bodyEl(root).scrollTop).toBe(0);
+      bodyEl(root).scrollTop = 120;
+      s.onAction('right');
+      expect(bodyEl(root).scrollTop).toBe(0);
+    });
+
+    it('other tabs still scroll the body with up/down', () => {
+      const { root, s } = setup('noel');
+      s.onAction('right'); s.onAction('right');
+      s.onAction('down');
+      expect(bodyEl(root).scrollTop).toBe(32);
+      s.onAction('up');
+      expect(bodyEl(root).scrollTop).toBe(0);
+    });
+
+    it('fold state survives paging to another member', () => {
+      const { root, s } = setup('scarlet');
+      s.onAction('confirm');                                                 // fold primary
+      s.onAction('down');                                                    // cursor to the attack header
+      s.onAction('next');
+      expect(head(root, 'primary').getAttribute('aria-expanded')).toBe('false');
+      expect(cur(root)).toBe(head(root, 'attack'));
+      s.onAction('prev');
+      expect(head(root, 'primary').getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('mouse and touch reach every header and row', () => {
+      const { root } = setup('scarlet');
+      head(root, 'defense').click();
+      expect(head(root, 'defense').getAttribute('aria-expanded')).toBe('true');
+      expect(cur(root)).toBe(head(root, 'defense'));
+      const row = root.querySelector('[data-stat=armor]') as HTMLElement;
+      row.dispatchEvent(new Event('pointermove'));
+      expect(cur(root)!.getAttribute('data-stat')).toBe('armor');
+      (root.querySelector('[data-stat=hp]') as HTMLElement).click();
+      expect(cur(root)!.getAttribute('data-stat')).toBe('hp');
+      head(root, 'defense').click();
+      expect(head(root, 'defense').getAttribute('aria-expanded')).toBe('false');
+    });
+  });
+
+  it('the skills tab shows each skill as this member casts it: a worn power changes its target, tpCost its price', () => {
+    const { root, s, game, body } = setup('noel');
+    s.onAction('right'); s.onAction('right');
+    const fire = () => root.querySelector('[data-skill=fire-star]')!;
+    expect(fire().querySelector('.slx-skill-target')!.textContent).toBe('敵方單體');
+    expect(fire().querySelector('.slx-skill-cost')!.textContent).toBe('TP 4');
+    const noel = game.state.party.roster.noel;
+    noel.equip.ring1 = { ...plainItem('moss-charm', 7), rarity: 'legendary', special: 'lg-noel' };
+    noel.equip.neck = { ...plainItem('moss-charm', 8), affixes: [{ key: 'tpCost', value: 50 }] };
+    s.onAction('next'); s.onAction('prev');
+    expect(fire().querySelector('.slx-skill-target')!.textContent).toBe('敵方全體');
+    expect(fire().querySelector('.slx-skill-power')!.textContent).toContain('火之星彈改為打全體');
+    expect(fire().querySelector('.slx-skill-cost')!.textContent).toBe('TP 2');
+    expect(body()).toContain('TP 2');
   });
 });

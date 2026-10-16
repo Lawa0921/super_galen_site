@@ -168,7 +168,7 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
  * A skill as this combatant casts it: every worn power that names it rewrites it, in the order worn. Added effects
  * (`extra`) are gathered and appended last, so another power's powerPct never rescales them.
  */
-export function skillFor(c: Combatant, id: string): SkillDef {
+export function skillFor(c: Pick<Combatant, 'powers'>, id: string): SkillDef {
   const base = SKILLS[id];
   const mods = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
   if (!base || !mods.length) return base;
@@ -179,7 +179,7 @@ export function skillFor(c: Combatant, id: string): SkillDef {
 }
 
 /** TP this combatant pays for a skill: ceil(tp x (1 - tpCost / 100)), at least 1 for a skill that costs TP at all. */
-export function skillCost(c: Combatant, id: string): number {
+export function skillCost(c: Pick<Combatant, 'x'>, id: string): number {
   const tp = SKILLS[id]?.tp ?? 0;
   if (tp <= 0) return 0;
   // The epsilon keeps a float product such as 9.000000000000002 from costing a point more.

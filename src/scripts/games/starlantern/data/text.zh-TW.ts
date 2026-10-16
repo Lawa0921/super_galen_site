@@ -1,4 +1,5 @@
-import type { AnyStat, BuffStat, Rarity, Slot, StatKey } from '../engine/types';
+import type { StatCategory } from '../engine/stats';
+import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
 const SLOT: Record<Slot, string> = {
@@ -129,13 +130,23 @@ export const T = {
       /** Column titles for statSources; a new source needs one line here. */
       sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', primary: '主屬性' } as Record<string, string>,
       total: '合計',
+      /** Category headings of the stats page, in STAT_CATEGORIES order. */
+      cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,
+      /** A sheet total: points read bare, every other stat as a percent. */
+      value: (key: AnyStat, v: number) => `${v}${POINT_STATS.includes(key) ? '' : '%'}`,
+      /** A total held down by its cap. */
+      capped: (text: string) => `${text}（上限）`,
+      targets: {
+        enemy: '敵方單體', enemies: '敵方全體', ally: '我方單體', allies: '我方全體', self: '自身', deadAlly: '倒下的隊友',
+        row: '敵方一排', column: '敵方一列', cross: '十字範圍',
+      } as Record<Target, string>,
       exp: (n: number, next: number) => `經驗 ${n}／${next}`,
       place: (where: string) => `站位 ${where}`,
       attack: (melee: boolean, pct: number | null) => (!melee ? '攻擊方式 遠程／魔法' : pct === null ? '攻擊方式 近戰' : `攻擊方式 近戰（${pct}%）`),
       gauge: (n: number) => `絕技量表 ${n}%`,
       learned: '已習得', at: (lv: number) => `Lv ${lv} 習得`, passive: '被動', tp: (n: number) => `TP ${n}`,
       none: '（未裝備）',
-      hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
+      hint: '←→ 分頁　Q／E 換人　↑↓ 選擇／捲動　Enter 摺疊　Esc 返回',
     },
     equip: {
       title: '裝備',

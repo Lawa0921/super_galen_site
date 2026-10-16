@@ -455,7 +455,22 @@ $slx-battle-left: 150px;
 .slx-status-body { flex: 1; overflow-y: auto; }
 .slx-status-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-bottom: 6px; }
 .slx-status-facts p { margin: 1px 0; }
-.slx-stat-table { width: 100%; border-collapse: collapse; }
+.slx-stat-cat { margin-bottom: 2px; }
+.slx-stat-cat-head { position: relative; padding: 2px 6px 2px 18px; cursor: pointer; color: $slx-gold; border-bottom: 1px solid #3a3550; }
+.slx-stat-cat-head::before { content: '▸'; position: absolute; left: 5px; color: $slx-dim; }
+.slx-stat-cat-head[aria-expanded='true']::before { content: '▾'; }
+.slx-stat-cat-head:hover { color: #fff; }
+.slx-row-cur { background: linear-gradient(90deg, rgba(232, 196, 106, 0.22), transparent); box-shadow: inset 2px 0 0 $slx-gold; }
+.slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
+.slx-stat-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 4px; }
+.slx-stat-table th:first-child { width: 22%; }
+.slx-stat-table thead th { white-space: nowrap; font-size: 10px; }
+.slx-stat-table tbody tr { cursor: pointer; }
+.slx-stat-table .slx-zero th, .slx-stat-table .slx-zero td { color: #5f5a6e; }
+.slx-stat-table .slx-zero.slx-row-cur th { color: $slx-ink; }
+.slx-stat-table .slx-set { color: #5fd068; }
+.slx-stat-table .slx-primary { color: #6fa7ff; }
+.slx-stat-table .slx-capped { color: #ffb36b; }
 .slx-stat-table th, .slx-stat-table td { padding: 1px 6px; text-align: right; font-weight: normal; }
 .slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
 .slx-stat-table tbody th { text-align: left; color: $slx-gold; }
@@ -464,6 +479,8 @@ $slx-battle-left: 150px;
 .slx-gear-row { display: grid; grid-template-columns: 48px 1fr; gap: 0 8px; padding: 4px 0; border-bottom: 1px solid #2a2840; }
 .slx-gear-slot { color: $slx-gold; grid-row: span 2; }
 .slx-gear-bonus { color: #8fe08f; font-size: 10px; }
+.slx-gear-power { grid-column: 2; color: #ff9a3c; font-size: 10px; }
+.slx-gear-power.slx-line-off { color: $slx-dim; }
 // Rarity colours, the one source. Unique is 獨特（金） in spec §4: a deeper, warmer gold than rare's yellow.
 $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c, unique: #d4af37, set: #5fd068);
 @each $k, $c in $slx-rarity {
@@ -476,6 +493,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-skill-learn { color: $slx-dim; min-width: 64px; text-align: right; }
 .slx-skill .slx-desc { margin: 1px 0 0; }
 .slx-skill-locked .slx-skill-name { color: #6f6a5c; }
+.slx-skill-target { color: $slx-dim; }
+.slx-skill-power { margin: 1px 0 0; color: #ff9a3c; font-size: 10px; }
 .slx-status-panel .slx-hint, .slx-formation-info .slx-hint { margin-top: 6px; }
 
 // Equipment, left to right: the bag (10 × 6), the paper doll (3 × 3) with the member's numbers below, the item detail.

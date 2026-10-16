@@ -15,6 +15,8 @@ export class StatusScene implements Scene {
   private tab = 0;
   /** Member whose picture is up; the entrance plays only when this changes, not on every tab switch. */
   private shownId: CharacterId | null = null;
+  /** Page last drawn; a redraw of the same page keeps its scroll position, a new tab or member starts at the top. */
+  private drawn: { tab: number; id: CharacterId } | null = null;
   private standee!: HTMLElement;
   private nameEl!: HTMLElement;
   private tabsEl!: HTMLElement;
@@ -84,7 +86,12 @@ export class StatusScene implements Scene {
       b.addEventListener('click', () => { this.tab = i; this.ctx.sfx.cursor(); this.render(); });
       return b;
     }));
-    this.bodyEl.replaceChildren(STATUS_TABS[this.tab].render(this.ctx, this.id));
-    this.bodyEl.scrollTop = 0;
+    const tab = STATUS_TABS[this.tab];
+    const same = this.drawn?.tab === this.tab && this.drawn.id === this.id;
+    const top = this.bodyEl.scrollTop;
+    this.bodyEl.replaceChildren(tab.render(this.ctx, this.id, () => this.render()));
+    this.bodyEl.scrollTop = same ? top : 0;
+    this.drawn = { tab: this.tab, id: this.id };
+    tab.shown?.(this.bodyEl);
   }
 }
