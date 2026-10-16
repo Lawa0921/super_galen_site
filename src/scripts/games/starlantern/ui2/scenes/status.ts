@@ -17,6 +17,9 @@ export class StatusScene implements Scene {
   private shownId: CharacterId | null = null;
   /** Page last drawn; a redraw of the same page keeps its scroll position, a new tab or member starts at the top. */
   private drawn: { tab: number; id: CharacterId } | null = null;
+  /** Set on exit: a stale redraw (a click on a node of the closed sheet) does nothing. */
+  private closed = false;
+  private hintEl!: HTMLElement;
   private standee!: HTMLElement;
   private nameEl!: HTMLElement;
   private tabsEl!: HTMLElement;
@@ -36,16 +39,19 @@ export class StatusScene implements Scene {
     this.nameEl = el('div', { class: 'slx-status-name' });
     this.tabsEl = el('div', { class: 'slx-tabs', attrs: { role: 'tablist' } });
     this.bodyEl = el('div', { class: 'slx-status-body', attrs: { role: 'tabpanel' } });
+    this.hintEl = el('p', { class: 'slx-hint' });
     root.append(el('div', { class: 'slx-scene slx-status-scene' }, [
       this.standee,
       win('slx-status-plate', [arrow('slx-status-prev', '◀', 'prev'), this.nameEl, arrow('slx-status-next', '▶', 'next')]),
-      win('slx-status-panel', [this.tabsEl, this.bodyEl, el('p', { class: 'slx-hint', text: T.ui2.status.hint })]),
+      win('slx-status-panel', [this.tabsEl, this.bodyEl, this.hintEl]),
       backControl(() => this.onAction('cancel')),
     ]));
     this.render();
   }
 
-  exit(): void {}
+  exit(): void {
+    this.closed = true;
+  }
 
   onAction(a: UiAction): void {
     const n = STATUS_TABS.length;
@@ -77,6 +83,7 @@ export class StatusScene implements Scene {
   }
 
   private render(): void {
+    if (this.closed) return;
     const def = CHARACTERS[this.id];
     const m = this.ctx.game.state.party.roster[this.id];
     if (this.shownId !== this.id) this.drawStandee();
@@ -89,7 +96,12 @@ export class StatusScene implements Scene {
     const tab = STATUS_TABS[this.tab];
     const same = this.drawn?.tab === this.tab && this.drawn.id === this.id;
     const top = this.bodyEl.scrollTop;
-    this.bodyEl.replaceChildren(tab.render(this.ctx, this.id, () => this.render()));
+    this.hintEl.textContent = tab.hint ?? T.ui2.status.hint;
+    this.bodyEl.replaceChildren(tab.render(this.ctx, this.id, (change) => {
+      if (this.closed) return;
+      change?.();
+      this.render();
+    }));
     this.bodyEl.scrollTop = same ? top : 0;
     this.drawn = { tab: this.tab, id: this.id };
     tab.shown?.(this.bodyEl);

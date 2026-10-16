@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { statsOf } from '../../engine/party';
+import type { AnyStat } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
@@ -154,7 +155,7 @@ describe('StatusScene', () => {
       expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false']);
       expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
       const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
-      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '主屬性', '合計']);
+      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '主屬性', '上限', '合計']);
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;
       expect(atk.querySelector('.slx-primary')!.textContent).toMatch(/^\+\d+$/);
@@ -168,14 +169,102 @@ describe('StatusScene', () => {
       expect(root.querySelector('[data-stat=critDmg] .slx-total')!.textContent).toBe('50%');
     });
 
-    it('fractions show to one place and still add up; a capped total says so', () => {
-      const { root, game, s } = setup('scarlet');
-      game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+    /** The number in each source cell and the 上限 cell (an em dash is 0), and the shown total without its unit. */
+    const nums = (tr: Element) => {
+      const parts = [...tr.querySelectorAll('td:not(.slx-total)')].map((td) => (td.textContent === '—' ? 0 : Number(td.textContent)));
+      return { parts, sum: parts.reduce((a, b) => a + b, 0), total: Number(tr.querySelector('.slx-total')!.textContent!.replace('%', '')) };
+    };
+    const wear = (s: StatusScene, game: Game, affixes: { key: AnyStat; value: number }[]) => {
+      game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes };
       s.onAction('next'); s.onAction('prev');
+    };
+
+    it('a capped total shows the cut in its 上限 column, and the columns still add up', () => {
+      const { root, game, s } = setup('scarlet');
+      wear(s, game, [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }]);  // 70.6% crit, cap 60
       const crit = root.querySelector('[data-stat=crit]')!;
       expect(crit.querySelector('.slx-primary')!.textContent).toBe('+0.6');  // 3 agi x 0.2
-      expect(crit.querySelector('.slx-total')!.textContent).toContain('60%');
+      expect(crit.querySelector('.slx-cap')!.textContent).toBe('-10.6');
+      expect(crit.querySelector('.slx-total')!.textContent).toBe('60%');
       expect(crit.querySelector('.slx-total')!.classList.contains('slx-capped')).toBe(true);
+      const n = nums(crit);
+      expect(n.sum).toBeCloseTo(n.total, 9);
+      expect(n.total).toBe(60);
+      expect(root.querySelector('[data-stat=atk] .slx-cap')!.textContent).toBe('—');   // uncapped rows leave it empty
+    });
+
+    it('a negative source floors the running sum, so the parts still add up', () => {
+      const { root, game, s } = setup('scarlet');
+      wear(s, game, [{ key: 'str', value: -1 }]);                           // affinity str: -1.5 atk
+      const atk = root.querySelector('[data-stat=atk]')!;
+      expect(atk.querySelector('.slx-primary')!.textContent).toBe('-2');     // 18 -> 16.5, shown 16
+      const n = nums(atk);
+      expect(n.total).toBe(statsOf(game.state.party.roster.scarlet).atk);
+      expect(n.sum).toBe(n.total);
+      expect(root.querySelector('[data-stat=str] .slx-gear')!.textContent).toBe('-1');
+    });
+
+    it('a mixed-sign row that totals 0 is shown as a zero row', () => {
+      const { root, game, s } = setup('scarlet');
+      wear(s, game, [{ key: 'str', value: -1 }, { key: 'armor', value: 3 }]);  // gear +3 armor, primary -3 armor
+      head(root, 'defense').click();
+      const armor = root.querySelector('[data-stat=armor]')!;
+      expect(armor.querySelector('.slx-gear')!.textContent).toBe('+3');
+      expect(armor.querySelector('.slx-primary')!.textContent).toBe('-3');
+      expect(armor.querySelector('.slx-total')!.textContent).toBe('0');
+      expect(armor.classList.contains('slx-zero')).toBe(true);
+      expect(nums(armor).sum).toBe(0);
+    });
+
+    it('a fractional row: the parts add up to the shown total, not to rounded parts', () => {
+      const { root, game, s } = setup('scarlet');
+      wear(s, game, [{ key: 'crit', value: 0.35 }, { key: 'agi', value: 4 }]);  // 0.35 + 0.8 = 1.15, shown 1.1
+      const crit = root.querySelector('[data-stat=crit]')!;
+      expect(crit.querySelector('.slx-gear')!.textContent).toBe('+0.3');
+      expect(crit.querySelector('.slx-primary')!.textContent).toBe('+0.8');
+      expect(crit.querySelector('.slx-total')!.textContent).toBe('1.1%');
+      const n = nums(crit);
+      expect(n.sum).toBeCloseTo(n.total, 9);
+    });
+
+    it('a total that floors to zero is dimmed like one', () => {
+      const { root, game, s } = setup('scarlet');
+      wear(s, game, [{ key: 'crit', value: 0.04 }]);
+      const crit = root.querySelector('[data-stat=crit]')!;
+      expect(crit.querySelector('.slx-total')!.textContent).toBe('0%');
+      expect(crit.classList.contains('slx-zero')).toBe(true);
+    });
+
+    it('only the stats tab offers Enter to fold in its key hint', () => {
+      const { root, s } = setup('scarlet');
+      const hint = () => root.querySelector('.slx-status-panel .slx-hint')!.textContent!;
+      expect(hint()).toContain('Enter 摺疊');
+      for (let i = 0; i < 3; i++) {
+        s.onAction('right');
+        expect(hint()).not.toContain('Enter');
+        expect(hint()).toContain('↑↓ 捲動');
+      }
+      s.onAction('right');
+      expect(hint()).toContain('Enter 摺疊');
+    });
+
+    it('a stale click on a closed sheet changes nothing', () => {
+      const { root, s } = setup('scarlet');
+      const stale = head(root, 'primary');
+      s.exit();
+      stale.click();
+      expect(stale.getAttribute('aria-expanded')).toBe('true');
+      const fresh = setup('scarlet');
+      expect(head(fresh.root, 'primary').getAttribute('aria-expanded')).toBe('true');   // the shared fold state is untouched
+    });
+
+    it('moving back to the first heading brings the facts above it into view', () => {
+      const { root, s } = setup('scarlet');
+      s.onAction('down');
+      bodyEl(root).scrollTop = 120;
+      s.onAction('up');
+      expect(cur(root)).toBe(head(root, 'primary'));
+      expect(bodyEl(root).scrollTop).toBe(0);
     });
 
     it('up/down move the row cursor across headers and rows and keep it in view', () => {

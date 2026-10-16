@@ -134,8 +134,8 @@ export const T = {
       cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,
       /** A sheet total: points read bare, every other stat as a percent. */
       value: (key: AnyStat, v: number) => `${v}${POINT_STATS.includes(key) ? '' : '%'}`,
-      /** A total held down by its cap. */
-      capped: (text: string) => `${text}（上限）`,
+      /** Column of the cut a cap takes off a total (an em dash when the stat is under its cap). */
+      capCol: '上限',
       targets: {
         enemy: '敵方單體', enemies: '敵方全體', ally: '我方單體', allies: '我方全體', self: '自身', deadAlly: '倒下的隊友',
         row: '敵方一排', column: '敵方一列', cross: '十字範圍',
@@ -146,7 +146,9 @@ export const T = {
       gauge: (n: number) => `絕技量表 ${n}%`,
       learned: '已習得', at: (lv: number) => `Lv ${lv} 習得`, passive: '被動', tp: (n: number) => `TP ${n}`,
       none: '（未裝備）',
-      hint: '←→ 分頁　Q／E 換人　↑↓ 選擇／捲動　Enter 摺疊　Esc 返回',
+      hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
+      /** The stats tab's own keys: a row cursor and folding. */
+      hintStats: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 摺疊　Esc 返回',
     },
     equip: {
       title: '裝備',

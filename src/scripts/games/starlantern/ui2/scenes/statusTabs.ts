@@ -19,14 +19,16 @@ export const SLOT_ORDER: Slot[] = SLOTS;
 
 /**
  * One page of the character sheet. A new system (enchanting, talents, a skill tree) adds an entry to STATUS_TABS:
- * `render` draws the page (`redraw` asks the sheet to draw it again, for pointer input); `onAction`, when present,
- * receives keys first (except Q/E and cancel) and returns true when it used one, after which the sheet redraws the page;
- * `shown`, when present, runs once the page is on screen (after the scroll position is restored).
+ * `render` draws the page; for pointer input, `redraw(change)` applies `change` and draws the page again, both only
+ * while the sheet is open. `onAction`, when present, receives keys first (except Q/E and cancel) and returns true when
+ * it used one, after which the sheet redraws the page. `shown`, when present, runs once the page is on screen (after
+ * the scroll position is restored). `hint` replaces the sheet's key hint while the tab is up.
  */
 export interface StatusTab {
   id: string;
   label: string;
-  render(ctx: SceneCtx, id: CharacterId, redraw: () => void): HTMLElement;
+  hint?: string;
+  render(ctx: SceneCtx, id: CharacterId, redraw: (change?: () => void) => void): HTMLElement;
   onAction?(a: UiAction, ctx: SceneCtx, id: CharacterId): boolean;
   shown?(body: HTMLElement): void;
 }
@@ -41,7 +43,8 @@ const signed = (n: number) => (n ? `${n > 0 ? '+' : ''}${n}` : '—');
 /**
  * The display rule for the stats page. The seven base stats are whole numbers (battle floors them, see statsOf); every
  * other stat shows to one decimal place, floored. Each source column shows how far it moves the running floored sum,
- * so the columns of a row always add up to its total. A capped total shows the cap and says so; its columns are uncapped.
+ * so the columns of a row always add up to its total. A capped stat adds a 上限 column holding the cut (negative), so
+ * its columns add up to the capped total too. Zero rows are dimmed by the shown total.
  */
 const WHOLE = new Set<AnyStat>(STAT_ORDER);
 function floorShown(k: AnyStat, v: number): number {
@@ -84,6 +87,7 @@ function point(node: HTMLElement, key: string): void {
 const stats: StatusTab = {
   id: 'stats',
   label: T.ui2.status.tabs.stats,
+  hint: T.ui2.status.hintStats,
   render(ctx, id, redraw) {
     const t = T.ui2.status;
     const m = ctx.game.state.party.roster[id];
@@ -108,13 +112,15 @@ const stats: StatusTab = {
         before = now;
         return el('td', { class: `slx-${p.source}`, text: i === 0 ? String(d) : signed(d) });
       });
-      const capped = sheet[k] < raw - 1e-9;
+      // Any clamp in capSheet (a cap today, a floor tomorrow) shows here: the sheet differs from the plain sum.
+      const capped = sheet[k] !== raw;
       const total = WHOLE.has(k) ? st[k as StatKey] : floorShown(k, sheet[k]);
-      const totalText = t.value(k, total);
-      const tr = el('tr', { class: `${Math.abs(sheet[k]) < 1e-9 ? 'slx-zero' : ''}${curCls(key)}`.trim(), attrs: { 'data-stat': k } }, [
+      const cut = capped ? Math.round((total - before) * 10) / 10 : 0;
+      const tr = el('tr', { class: `${total === 0 ? 'slx-zero' : ''}${curCls(key)}`.trim(), attrs: { 'data-stat': k } }, [
         el('th', { text: T.gear.statName[k] }),
         ...cells,
-        el('td', { class: capped ? 'slx-total slx-capped' : 'slx-total', text: capped ? t.capped(totalText) : totalText }),
+        el('td', { class: 'slx-cap', text: signed(cut) }),
+        el('td', { class: capped ? 'slx-total slx-capped' : 'slx-total', text: t.value(k, total) }),
       ]);
       tr.addEventListener('pointermove', () => point(tr, key));
       tr.addEventListener('click', () => point(tr, key));
@@ -128,14 +134,15 @@ const stats: StatusTab = {
       head.addEventListener('pointermove', () => point(head, key));
       head.addEventListener('click', () => {
         if (locked(head)) return;
-        view.cur = key;
-        toggle(c.id);
-        ctx.sfx.cursor();
-        redraw();
+        redraw(() => {
+          view.cur = key;
+          toggle(c.id);
+          ctx.sfx.cursor();
+        });
       });
       const table = open
         ? [el('table', { class: 'slx-stat-table' }, [
-          el('thead', {}, [el('tr', {}, [el('th'), ...parts.map((p) => el('th', { text: t.sources[p.source] ?? p.source })), el('th', { text: t.total })])]),
+          el('thead', {}, [el('tr', {}, [el('th'), ...parts.map((p) => el('th', { text: t.sources[p.source] ?? p.source })), el('th', { text: t.capCol }), el('th', { text: t.total })])]),
           el('tbody', {}, c.keys.map(statRow)),
         ])]
         : [];
