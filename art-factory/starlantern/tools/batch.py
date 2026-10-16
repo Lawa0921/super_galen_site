@@ -115,6 +115,49 @@ UI_NPCS = {
 }
 
 
+# Auto-tiling walls (wall-top tiles in x and y, wall-face tiles in x). Theme words follow the approved f<n> wall/floor.
+WALLS = {
+    1: ('mossy forest ruins', 'rough grey-green ruin stones packed tightly together, patches of bright moss, small leaves and thin roots creeping across the stones',
+        'grey-green ruin stone bricks in straight horizontal courses with moss in the joints and a few hanging leaves'),
+    2: ('dark blue crystal cave', 'dark blue-black cave rock with uneven cracks and small clusters of glowing cyan crystal shards scattered across it',
+        'dark blue-black layered cave rock in rough horizontal bands with a few small glowing cyan crystals embedded in it'),
+    3: ('ancient star temple', 'deep violet stone slabs laid in an irregular pattern with a few small gold star studs, no straight lines along the tile edges',
+        'deep violet temple stone blocks in straight horizontal courses with a thin gold inlay line running straight across'),
+}
+TILES = REPO / 'public/assets/games/starlantern/tiles'
+WALL_SIZE = 62  # art pixels; matches the approved f<n>-floor / f<n>-wall tiles
+
+
+def tile_ref(name, scale=8):
+    """Nearest-upscaled copy of a runtime tile (outside the repo) so codex can read its pixels as a style reference."""
+    from PIL import Image
+    out = RAW / 'tile-refs' / f'{name}-x{scale}.png'
+    if not out.exists():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        im = Image.open(TILES / f'{name}.png').convert('RGB'); im.resize((im.width * scale, im.height * scale), Image.NEAREST).save(out)
+    return out
+
+
+def wall_jobs():
+    out = []
+    for n, (place, top, face) in WALLS.items():
+        style = (f'Match the pixel density, palette, colour values, lighting (light from upper left) and shading of the attached approved wall and floor tiles of this {place} area; '
+                 f'the wall must stay clearly darker and more solid than the floor tile so walls and walkways read apart. 16-bit JRPG style, strict square pixel grid, limited palette, no anti-aliasing, no blur. No text.')
+        tid, fid = f'tile-f{n}-wall-top', f'tile-f{n}-wall-face'
+        write(tid, f'One square top-down pixel art map tile of the flat top surface of a thick dungeon wall in a {place}, seen from directly above: {top}. '
+                   f'This is a seamless repeating texture: it must tile perfectly when the same tile is placed to its left, right, top and bottom, so every stone, crack and moss patch runs off one edge and continues on the opposite edge. '
+                   f'No border, no frame, no outline around the tile, no rim, no edge highlight or edge shadow, no corner ornaments, nothing centred. Fill the whole square edge to edge, about {WALL_SIZE} by {WALL_SIZE} art pixels. {style}')
+        write(fid, f'One square pixel art map tile of the vertical south-facing front of a thick dungeon wall in a {place}, as seen in a top-down JRPG map where the wall face stands toward the viewer: {face}. '
+                   f'It must tile seamlessly left and right: the courses run straight across and continue off both side edges, with no pillar, no side border and no vertical line at the left or right edge. '
+                   f'Top edge: a thin capstone lip whose colours continue directly from the first attached image (the wall-top texture), because this tile sits right below it. '
+                   f'Bottom edge: the foot of the wall, a slightly darker base course with a thin dark contact shadow along the very bottom; do not draw any floor. '
+                   f'Fill the whole square edge to edge, about {WALL_SIZE} by {WALL_SIZE} art pixels. {style}')
+        refs = [tile_ref(f'f{n}-wall'), tile_ref(f'f{n}-floor')]
+        out += [dict(id=tid, images=refs, kind='tile-wrap', wrap='xy', size=WALL_SIZE),
+                dict(id=fid, images=[('dep', tid)] + refs, kind='tile-wrap', wrap='x', size=WALL_SIZE, dep=tid)]
+    return out
+
+
 def newest(aid):
     files = sorted((RAW / aid).glob(f'{aid}-a*.png'), key=lambda p: p.stat().st_mtime)
     files = [f for f in files if not f.stem.endswith('-magenta')]
@@ -192,7 +235,7 @@ def jobs():
     out.append(dict(id='ui-cursor', images=[], kind='sprite', height=HEIGHT['cursor']))
     write('ui-frame', 'A square pixel art UI panel frame, 48 by 48 art pixels: dark navy fill, ornate brass border 16 art pixels wide with small star-lantern motifs in the four corners, the straight edge segments between the corners are plain and designed to repeat, fills the canvas edge to edge. 16-bit JRPG menu window style, strict square pixel grid, limited palette, no anti-aliasing. No text.')
     out.append(dict(id='ui-frame', images=[], kind='opaque'))
-    return out
+    return out + wall_jobs()
 
 
 def status(reg, aid):
@@ -241,6 +284,7 @@ def main():
         args = ['--id', aid, '--raw', str(raw), '--kind', job['kind']]
         if job['kind'] in ('tile-sheet', 'icon-sheet'): args += ['--cols', '3' if job['kind'] == 'tile-sheet' else '5', '--rows', '3' if job['kind'] == 'tile-sheet' else '4', '--ids', ','.join(job['parts'])]
         if job['kind'] == 'fx-anim': args += ['--frames', str(job['frames'])]
+        if job['kind'] == 'tile-wrap': args += ['--wrap', job['wrap'], '--size', str(job['size'])]
         if job.get('block'): args += ['--block', str(job['block'])]
         if job.get('height'): args += ['--height', str(job['height'])]
         p = subprocess.run(proc + args, cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')

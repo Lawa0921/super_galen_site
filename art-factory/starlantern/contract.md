@@ -22,6 +22,7 @@
 | 頭貼 | `char-<cid>-portrait`、`char-<cid>-portrait-hurt` | `/assets/games/starlantern/char/<cid>-portrait.png`、`-portrait-hurt.png` | 透明 | 48×48 方框內 |
 | 地圖隊伍 | `map-party-<dir>` | `/assets/games/starlantern/map/party-<dir>.png` | 透明 | 高 20–28 |
 | 圖塊 | `tile-f<n>-<tile>` | `/assets/games/starlantern/tiles/f<n>-<tile>.png` | 不透明 | 32×32 |
+| 可拼接牆 | `tile-f<n>-wall-top`、`tile-f<n>-wall-face` | `/assets/games/starlantern/tiles/f<n>-wall-top.png`、`f<n>-wall-face.png` | 不透明 | 62×62（同該層 floor），見「可拼接牆」 |
 | 戰鬥背景 | `bg-f<n>` | `/assets/games/starlantern/bg/f<n>.png` | 不透明 | 寬 320–480，16:9 |
 | 敵人 | `enemy-<eid>` | `/assets/games/starlantern/enemy/<eid>.png` | 透明 | 高 48–112；頭目 120–200 |
 | 圖示 | `icon-<id>` | `/assets/games/starlantern/icon/<id>.png` | 透明 | 24×24 方框內 |
@@ -47,6 +48,20 @@
 - 生成：`python art-factory/starlantern/tools/batch.py --only=fx-<key>-anim`（codex 在背景、無主控台視窗執行）。
 - 後處理：`sl_art.py process --kind fx-anim --frames 4 --height 64`。以 n−1 條最寬的 magenta 槽切格；每格依所在格子置中，取四格主體的聯集外框，全部用同一個 block 縮成美術像素，所以格內的位移與大小變化都保留。輸出橫向等寬 sheet（`<id>.png`）與單格（`<id>-f<k>.png`）。
 - QA：整張 sheet 跑一般透明素材 QA（殘色、半透明、碰邊、洞警告），另外檢查：每格不得碰到自己的格邊、不得有空格、相鄰兩格差異須 ≥ 2%（`frames identical`）、主體不得被原圖畫布切到。
+
+## 可拼接牆（tile-wrap：wall-top / wall-face）
+- 用途：取代每格自帶石框的 `f<n>-wall`。地圖規則：牆格畫 `wall-top`；若該牆格南側鄰格是地板，改畫 `wall-face`；地板格畫 `floor`。
+- id 與 runtime：`tile-f<n>-wall-top` → `/assets/games/starlantern/tiles/f<n>-wall-top.png`；`tile-f<n>-wall-face` → `/assets/games/starlantern/tiles/f<n>-wall-face.png`。登錄表 `kind: tile-wrap`，`wrap: xy`（牆頂，四邊重複）或 `wrap: x`（牆面，只左右重複）。
+- 規格：不透明、62×62 美術像素（與該層 floor / wall 相同密度）；牆頂不得有外框、邊線、角落裝飾；牆面上緣是接在牆頂下方的蓋石、下緣是牆腳與接地陰影，不畫地板。
+- 生成：`python art-factory/starlantern/tools/batch.py --only=tile-f<n>-wall-`。參考圖是該層已發布的 `f<n>-wall.png`、`f<n>-floor.png` 以最近鄰放大 8 倍的複本（放在 `raw/tile-refs/`，不進 repo）；牆面另外以同層牆頂原圖為第一張參考圖（`dep`），所以牆頂通過 QA 後才產牆面。
+- 後處理（`sl_art.py process --kind tile-wrap --wrap xy|x --size 62`）：原圖取置中正方形，以 `邊長 / 62` 為 block 取每格中心像素，縮成 62×62。
+- 無縫修補（確定性，只在需要時做）：任一要求軸的原始接縫比值 > 1.25 時，該軸改取 62+6 個美術像素，再做「重疊裁切」（image quilting 式，`make_seamless`）：輸出第 i 列 = 原圖第 6+i 列；最後 6 列裡，每一欄在最小誤差路徑（相鄰欄的切點最多差 1 列）選出的切點 c 之下改用原圖開頭的第 c..5 列，所以接縫處（輸出最後一列接回第一列）就是原圖本來相鄰的兩列，接縫移到圖內一條沿紋理走的隱藏切線。只搬像素、不混色，不產生新顏色；該軸內容約壓縮 9%。qa.json 記錄 `raw_seam`（修補前）、`seamless_fix`（`overlap-cut` 或 `none`）、`fixed_axes` 與 `cut.<軸>.cut_ratio`（隱藏切線的平均色差 ÷ 圖內相鄰像素平均色差）。
+  - 不用邊緣羽化（兩側鏡像混色）：f3 牆頂試過，混色後吸附色盤會在接縫留下一條看得見的異色帶，雖然接縫比值是 0。
+- QA（機械）：
+  - `seam`：把圖 2×2 平鋪（只左右重複的牆面做 1×3），量接縫兩側那一對欄（列）的平均 RGB 差 `seam`，以及單張圖內所有相鄰欄（列）的平均差 `interior`；`ratio = seam / interior`，每個要求軸都須 ≤ 1.25，否則 `visible seam`。
+  - `frame`：要求軸上，最外 1–3 px 外圈的平均亮度與內部（去掉外 4 px）平均亮度的最大差，須 ≤ 16，否則 `edge frame`（抓自帶外框、邊線的圖；這種圖兩邊彼此相同，接縫比值看不出來）。牆面只檢查左右，上緣蓋石與牆腳不算外框。
+  - `top_join`（僅記錄，不擋）：牆頂最後一列與同層牆面第一列的平均差，對牆面內相鄰列平均差的比值，供審核頁參考接合是否自然。
+- 審核頁：`tmp/starlantern/review-walls/index.html`（`python art-factory/starlantern/tools/review_walls.py` 產生），每層一個 7×5 迷宮示範新舊並排、放大 3 倍，附牆頂 2×2、牆面 1×3 平鋪預覽與 QA 數字。登錄表狀態最多到 `qa_passed`，核准與發布由使用者在審核頁確認後另行執行。
 
 ## 地形與敵人描述
 - f1 林間遺跡：mossy forest ruins, green and grey stone, roots, soft daylight.

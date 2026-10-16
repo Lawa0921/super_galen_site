@@ -142,6 +142,127 @@ def seam_score(img):
     return float((np.abs(a[:, 0] - a[:, -1]).mean() + np.abs(a[0] - a[-1]).mean()) / 2)
 
 
+SEAM_RATIO_MAX = 1.25   # tile-wrap: seam step / mean neighbour step inside the tile
+OVERLAP = 6             # tile-wrap: art pixels consumed by the overlap cut on a repaired axis
+FRAME_MAX = 16.0        # tile-wrap: luminance gap between the outer 1-3 px ring and the interior on a wrapped axis
+
+
+def wrap_seam(img, axes):
+    """Seam strength of a repeating tile, measured on the tiled preview (2x2 when y wraps, 1x3 when only x wraps).
+
+    For each axis: `seam` is the mean RGB step across the joint between two copies, `interior` the mean step between
+    neighbouring columns (x) or rows (y) inside one tile, `ratio` = seam / interior (about 1 = invisible joint).
+    """
+    a = np.asarray(img.convert('RGB'), np.float32); h, w = a.shape[:2]
+    tiled = np.tile(a, (2, 2, 1)) if 'y' in axes else np.tile(a, (1, 3, 1))
+    out = {}
+    for ax in 'xy':
+        if ax not in axes: continue
+        if ax == 'x': seam, inner = np.abs(tiled[:h, w - 1] - tiled[:h, w]).mean(), np.abs(np.diff(a, axis=1)).mean()
+        else: seam, inner = np.abs(tiled[h - 1, :w] - tiled[h, :w]).mean(), np.abs(np.diff(a, axis=0)).mean()
+        out[ax] = {'seam': round(float(seam), 3), 'interior': round(float(inner), 3), 'ratio': round(float(seam / max(inner, 1e-6)), 3)}
+    return out
+
+
+def _lum(a):
+    return a[..., 0] * 0.299 + a[..., 1] * 0.587 + a[..., 2] * 0.114
+
+
+def edge_frame(img, axes):
+    """Per wrapped axis, the largest luminance gap between the outer 1-3 px ring (both sides) and the interior.
+
+    A tile drawn with its own border shows up here even when both edges match each other (a low seam ratio).
+    """
+    lum = _lum(np.asarray(img.convert('RGB'), np.float32)); out = {}
+    for ax in 'xy':
+        if ax not in axes: continue
+        prof = lum.mean(axis=0) if ax == 'x' else lum.mean(axis=1)
+        inner = prof[4:-4].mean()
+        out[ax] = round(float(max(abs(np.r_[prof[:r], prof[-r:]].mean() - inner) for r in (1, 2, 3))), 3)
+    return out
+
+
+def _cut_rows(a, k):
+    """Wrap a tile vertically by consuming a k-row overlap (image-quilting style, no blending).
+
+    Output row i is source row k + i. In the last k output rows (source rows h-k..h-1) each column switches, at a cut
+    row c in 1..k-1 chosen by a minimum-error path, to the source's first rows (0..k-1): above the cut it continues the
+    rows above it, below the cut it runs into output row 0 (= source row k) exactly as the source did. Every pixel is a
+    source pixel. Returns (rows, mean cut step / mean neighbour step inside the tile).
+    """
+    A = a.astype(np.float32); h, w = A.shape[:2]; cs = np.arange(1, k)
+    cost = np.abs(A[h - k + cs - 1] - A[cs]).mean(-1)          # step across the cut if column switches at row c
+    acc = cost.copy(); back = np.zeros(cost.shape, np.int64); n = len(cs)
+    for x in range(1, w):
+        prev = np.stack([np.r_[np.inf, acc[:-1, x - 1]], acc[:, x - 1], np.r_[acc[1:, x - 1], np.inf]])
+        j = prev.argmin(0); back[:, x] = np.arange(n) + j - 1; acc[:, x] += prev[j, np.arange(n)]
+    path = np.empty(w, np.int64); path[-1] = int(acc[:, -1].argmin())
+    for x in range(w - 1, 0, -1): path[x - 1] = back[path[x], x]
+    out = a[k:h].copy()
+    for x, ci in enumerate(path):
+        c = int(cs[ci]); out[h - 2 * k + c:h - k, x] = a[c:k, x]
+    inner = np.abs(np.diff(A, axis=0)).mean()
+    return out, float(cost[path, np.arange(w)].mean() / max(inner, 1e-6))
+
+
+def make_seamless(img, axes, overlap=6):
+    """Deterministic overlap cut on each axis in `axes` (y first, then x); the tile shrinks by `overlap` on each.
+
+    Returns (image, {axis: {'overlap': k, 'cut_ratio': r}}); cut_ratio is the mean colour step along the hidden cut
+    relative to the tile's own neighbour steps (about 1 = the cut reads like any other pixel boundary).
+    """
+    a = np.asarray(img.convert('RGB')); info = {}
+    if 'y' in axes:
+        a, r = _cut_rows(a, overlap); info['y'] = {'overlap': overlap, 'cut_ratio': round(r, 3)}
+    if 'x' in axes:
+        t, r = _cut_rows(a.transpose(1, 0, 2), overlap); a = t.transpose(1, 0, 2); info['x'] = {'overlap': overlap, 'cut_ratio': round(r, 3)}
+    return Image.fromarray(np.ascontiguousarray(a), 'RGB'), info
+
+
+def _sample(img, w, h):
+    """Centre-sample an image to w x h art pixels (nearest, no new colours)."""
+    a = np.asarray(img); H, W = a.shape[:2]
+    ys = np.minimum(((np.arange(h) + 0.5) * H / h).astype(int), H - 1); xs = np.minimum(((np.arange(w) + 0.5) * W / w).astype(int), W - 1)
+    return Image.fromarray(a[ys][:, xs], img.mode)
+
+
+def _final_path(final):
+    p = Path(final); return p if p.is_absolute() else ROOT.parents[1] / p
+
+
+def _process_tile_wrap(reg, aid, raw, img, workdir, wrap='xy', size=62):
+    """Opaque repeating tile: centre-square crop, sample to size x size art pixels, seam/frame QA, feather if needed."""
+    s = min(img.size); x0, y0 = (img.width - s) // 2, (img.height - s) // 2
+    sq = img.crop((x0, y0, x0 + s, y0 + s)).convert('RGB')
+    raw_seam = wrap_seam(_sample(sq, size, size), wrap)
+    bad = ''.join(ax for ax, m in raw_seam.items() if m['ratio'] > SEAM_RATIO_MAX)
+    if bad:
+        # Sample the repaired axes OVERLAP pixels longer, then the overlap cut brings them back to `size`.
+        final, cut = make_seamless(_sample(sq, size + OVERLAP * ('x' in bad), size + OVERLAP * ('y' in bad)), bad, OVERLAP)
+    else:
+        final, cut = _sample(sq, size, size), {}
+    qa = {'raw_seam': raw_seam, 'seamless_fix': 'overlap-cut' if bad else 'none', 'fixed_axes': bad, 'cut': cut,
+          'seam': wrap_seam(final, wrap), 'frame': edge_frame(final, wrap), 'reasons': []}
+    if any(m['ratio'] > SEAM_RATIO_MAX for m in qa['seam'].values()): qa['reasons'].append('visible seam')
+    if any(v > FRAME_MAX for v in qa['frame'].values()): qa['reasons'].append('edge frame')
+    if aid.endswith('-wall-face'):
+        top = reg.data['assets'].get(aid[:-len('-wall-face')] + '-wall-top', {}).get('final')
+        if top and _final_path(top).exists():
+            t = np.asarray(Image.open(_final_path(top)).convert('RGB'), np.float32); f = np.asarray(final, np.float32)
+            if t.shape == f.shape:
+                join, inner = np.abs(t[-1] - f[0]).mean(), np.abs(np.diff(f, axis=0)).mean()
+                qa['top_join'] = {'seam': round(float(join), 3), 'interior': round(float(inner), 3), 'ratio': round(float(join / max(inner, 1e-6)), 3)}
+    qa['pass'] = not qa['reasons']; qa.update(size=list(final.size), block=round(s / size, 3), wrap=wrap)
+    workdir = Path(workdir); out = workdir / f'{aid}.png'; final.save(out)
+    (workdir / f'{aid}.qa.json').write_text(json.dumps(qa, indent=2), encoding='utf-8')
+    repo = ROOT.parents[1]
+    final_path = out.relative_to(repo).as_posix() if out.is_relative_to(repo) else str(out)
+    extra = {'runtime': f'{BASE}tiles/{aid[5:]}.png'} if aid.startswith('tile-') else {}
+    reg.set(aid, kind='tile-wrap', wrap=wrap, final=final_path, raw=str(raw), qa=qa,
+            status='qa_passed' if qa['pass'] else 'qa_failed', **extra)
+    return qa
+
+
 _SHIFTS = [(dy, dx) for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx]
 
 
@@ -322,10 +443,12 @@ class Registry:
         out.write_text(json.dumps({'version': 1, 'urls': urls}, indent=2) + '\n', encoding='utf-8')
 
 
-def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, block=None, height=None, frames=4):
+def process(reg, aid, raw, kind, ids=None, cols=None, rows=None, workdir=None, block=None, height=None, frames=4, wrap='xy', size=62):
     """Postprocess one raw codex PNG into final file(s) under art-factory/starlantern/work/<aid>/ and record QA."""
     workdir = Path(workdir or ROOT / 'work' / aid); workdir.mkdir(parents=True, exist_ok=True)
     img = Image.open(raw).convert('RGB')
+    if kind == 'tile-wrap':
+        return {aid: _process_tile_wrap(reg, aid, raw, img, workdir, wrap, size)}
     if kind == 'fx-anim':
         return {aid: _process_fx_anim(reg, aid, raw, img, workdir, frames, height, block)}
     if kind in ('tile-sheet', 'icon-sheet'):
@@ -381,7 +504,9 @@ def _finish(reg, aid, img, kind, workdir, raw, block=None, height=None):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='sl_art'); sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('process'); p.add_argument('--id', required=True); p.add_argument('--raw', required=True, type=Path)
-    p.add_argument('--kind', required=True, choices=['sprite', 'opaque', 'tile-sheet', 'icon-sheet', 'fx-anim'])
+    p.add_argument('--kind', required=True, choices=['sprite', 'opaque', 'tile-sheet', 'icon-sheet', 'fx-anim', 'tile-wrap'])
+    p.add_argument('--wrap', default='xy', choices=['xy', 'x'], help='tile-wrap: axes the tile must repeat on')
+    p.add_argument('--size', type=int, default=62, help='tile-wrap: output size in art pixels (square)')
     p.add_argument('--frames', type=int, default=4, help='fx-anim: number of animation frames in the raw strip')
     p.add_argument('--ids'); p.add_argument('--cols', type=int); p.add_argument('--rows', type=int)
     p.add_argument('--block', type=int, help='art-pixel size override when grid detection misreads painterly art')
@@ -393,7 +518,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
     reg = Registry(ROOT / 'registry.json'); public = ROOT.parents[1] / 'public'
     if args.cmd == 'process':
-        out = process(reg, args.id, args.raw, args.kind, args.ids.split(',') if args.ids else None, args.cols, args.rows, block=args.block, height=args.height, frames=args.frames)
+        out = process(reg, args.id, args.raw, args.kind, args.ids.split(',') if args.ids else None, args.cols, args.rows, block=args.block, height=args.height, frames=args.frames, wrap=args.wrap, size=args.size)
         print(json.dumps(out, ensure_ascii=False)); return 0 if all(q['pass'] for q in out.values()) else 1
     if args.cmd == 'approve': reg.approve(args.id)
     if args.cmd == 'reject': reg.reject(args.id, args.reason, public)

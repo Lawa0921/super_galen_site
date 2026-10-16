@@ -4745,6 +4745,292 @@
       "status": "published",
       "runtime": "/assets/games/starlantern/fx/buff-anim.png",
       "approved_by": "user 2026-10-16: 都可以 先套用上去"
+    },
+    "tile-f1-wall-top": {
+      "kind": "tile-wrap",
+      "wrap": "xy",
+      "final": "art-factory/starlantern/work/tile-f1-wall-top/tile-f1-wall-top.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f1-wall-top\\tile-f1-wall-top-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 20.113,
+            "interior": 23.79,
+            "ratio": 0.845
+          },
+          "y": {
+            "seam": 19.425,
+            "interior": 25.944,
+            "ratio": 0.749
+          }
+        },
+        "seamless_fix": "none",
+        "fixed_axes": "",
+        "cut": {},
+        "seam": {
+          "x": {
+            "seam": 20.113,
+            "interior": 23.79,
+            "ratio": 0.845
+          },
+          "y": {
+            "seam": 19.425,
+            "interior": 25.944,
+            "ratio": 0.749
+          }
+        },
+        "frame": {
+          "x": 1.676,
+          "y": 6.19
+        },
+        "reasons": [],
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "xy"
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall-top.png"
+    },
+    "tile-f2-wall-top": {
+      "kind": "tile-wrap",
+      "wrap": "xy",
+      "final": "art-factory/starlantern/work/tile-f2-wall-top/tile-f2-wall-top.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f2-wall-top\\tile-f2-wall-top-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 25.14,
+            "interior": 27.489,
+            "ratio": 0.915
+          },
+          "y": {
+            "seam": 16.145,
+            "interior": 23.583,
+            "ratio": 0.685
+          }
+        },
+        "seamless_fix": "none",
+        "fixed_axes": "",
+        "cut": {},
+        "seam": {
+          "x": {
+            "seam": 25.14,
+            "interior": 27.489,
+            "ratio": 0.915
+          },
+          "y": {
+            "seam": 16.145,
+            "interior": 23.583,
+            "ratio": 0.685
+          }
+        },
+        "frame": {
+          "x": 3.005,
+          "y": 4.813
+        },
+        "reasons": [],
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "xy"
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f2-wall-top.png"
+    },
+    "tile-f3-wall-top": {
+      "kind": "tile-wrap",
+      "wrap": "xy",
+      "final": "art-factory/starlantern/work/tile-f3-wall-top/tile-f3-wall-top.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f3-wall-top\\tile-f3-wall-top-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 9.011,
+            "interior": 16.539,
+            "ratio": 0.545
+          },
+          "y": {
+            "seam": 34.247,
+            "interior": 15.918,
+            "ratio": 2.151
+          }
+        },
+        "seamless_fix": "overlap-cut",
+        "fixed_axes": "y",
+        "cut": {
+          "y": {
+            "overlap": 6,
+            "cut_ratio": 0.615
+          }
+        },
+        "seam": {
+          "x": {
+            "seam": 8.306,
+            "interior": 16.113,
+            "ratio": 0.516
+          },
+          "y": {
+            "seam": 11.914,
+            "interior": 15.075,
+            "ratio": 0.79
+          }
+        },
+        "frame": {
+          "x": 3.079,
+          "y": 1.433
+        },
+        "reasons": [],
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "xy"
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall-top.png"
+    },
+    "tile-f1-wall-face": {
+      "kind": "tile-wrap",
+      "wrap": "x",
+      "final": "art-factory/starlantern/work/tile-f1-wall-face/tile-f1-wall-face.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f1-wall-face\\tile-f1-wall-face-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 14.226,
+            "interior": 17.602,
+            "ratio": 0.808
+          }
+        },
+        "seamless_fix": "none",
+        "fixed_axes": "",
+        "cut": {},
+        "seam": {
+          "x": {
+            "seam": 14.226,
+            "interior": 17.602,
+            "ratio": 0.808
+          }
+        },
+        "frame": {
+          "x": 4.391
+        },
+        "reasons": [],
+        "top_join": {
+          "seam": 27.79,
+          "interior": 22.156,
+          "ratio": 1.254
+        },
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "x"
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f1-wall-face.png"
+    },
+    "tile-f2-wall-face": {
+      "kind": "tile-wrap",
+      "wrap": "x",
+      "final": "art-factory/starlantern/work/tile-f2-wall-face/tile-f2-wall-face.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f2-wall-face\\tile-f2-wall-face-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 16.366,
+            "interior": 24.215,
+            "ratio": 0.676
+          }
+        },
+        "seamless_fix": "none",
+        "fixed_axes": "",
+        "cut": {},
+        "seam": {
+          "x": {
+            "seam": 16.366,
+            "interior": 24.215,
+            "ratio": 0.676
+          }
+        },
+        "frame": {
+          "x": 5.439
+        },
+        "reasons": [],
+        "top_join": {
+          "seam": 32.608,
+          "interior": 20.086,
+          "ratio": 1.623
+        },
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "x"
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f2-wall-face.png"
+    },
+    "tile-f3-wall-face": {
+      "kind": "tile-wrap",
+      "wrap": "x",
+      "final": "art-factory/starlantern/work/tile-f3-wall-face/tile-f3-wall-face.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\tile-f3-wall-face\\tile-f3-wall-face-a1.png",
+      "qa": {
+        "raw_seam": {
+          "x": {
+            "seam": 19.844,
+            "interior": 12.167,
+            "ratio": 1.631
+          }
+        },
+        "seamless_fix": "overlap-cut",
+        "fixed_axes": "x",
+        "cut": {
+          "x": {
+            "overlap": 6,
+            "cut_ratio": 0.316
+          }
+        },
+        "seam": {
+          "x": {
+            "seam": 11.559,
+            "interior": 11.059,
+            "ratio": 1.045
+          }
+        },
+        "frame": {
+          "x": 0.935
+        },
+        "reasons": [],
+        "top_join": {
+          "seam": 14.796,
+          "interior": 20.546,
+          "ratio": 0.72
+        },
+        "pass": true,
+        "size": [
+          62,
+          62
+        ],
+        "block": 20.226,
+        "wrap": "x"
+      },
+      "status": "qa_passed",
+      "runtime": "/assets/games/starlantern/tiles/f3-wall-face.png"
     }
   }
 }

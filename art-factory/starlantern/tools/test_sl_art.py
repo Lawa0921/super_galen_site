@@ -383,3 +383,110 @@ def test_process_fx_anim_fails_leftover_magenta_blend(tmp_path):
     raw = tmp_path / 'r.png'; Image.fromarray(arr, 'RGB').save(raw); reg = A.Registry(tmp_path / 'r.json')
     q = A.process(reg, 'fx-b-anim', raw, 'fx-anim', workdir=tmp_path / 'w', frames=4, block=1)['fx-b-anim']
     assert q['tint'] > 0 and 'magenta tint' in q['reasons'] and not q['pass']
+
+
+# --- tile-wrap: auto-tiling wall tops (wrap x and y) and wall faces (wrap x) ---
+
+def noise_tile(w=40, h=40, seed=1, wrap=True):
+    """Smooth sine texture at art-pixel scale; wrap=True uses whole periods so opposite edges continue each other."""
+    rng = np.random.default_rng(seed); y, x = np.mgrid[0:h, 0:w].astype(float)
+    arr = np.full((h, w, 3), 90.0)
+    for c in range(3):
+        for _ in range(3):
+            kx, ky = rng.integers(1, 4, 2) * (1.0 if wrap else 1.37); ph = rng.uniform(0, 2 * np.pi)
+            arr[..., c] += 12 * np.sin(2 * np.pi * (kx * x / w + ky * y / h) + ph)
+    return Image.fromarray(np.clip(np.round(arr), 0, 255).astype(np.uint8), 'RGB')
+
+
+def test_wrap_seam_is_low_for_a_periodic_tile_and_high_for_a_mismatched_edge():
+    good = A.wrap_seam(noise_tile(), 'xy')
+    assert set(good) == {'x', 'y'}
+    assert good['x']['ratio'] <= A.SEAM_RATIO_MAX and good['y']['ratio'] <= A.SEAM_RATIO_MAX
+    bad = A.wrap_seam(noise_tile(wrap=False), 'xy')
+    assert bad['x']['ratio'] > 2 and bad['y']['ratio'] > 2
+    assert bad['x']['seam'] > good['x']['seam']
+
+
+def test_wrap_seam_only_measures_the_requested_axes():
+    assert set(A.wrap_seam(noise_tile(), 'x')) == {'x'}
+
+
+def test_edge_frame_flags_a_border_ring_but_not_plain_texture():
+    assert max(A.edge_frame(noise_tile(), 'xy').values()) < 16
+    arr = np.asarray(noise_tile()).copy(); arr[0, :] = arr[-1, :] = arr[:, 0] = arr[:, -1] = (5, 5, 5)
+    framed = A.edge_frame(Image.fromarray(arr, 'RGB'), 'xy')
+    assert framed['x'] >= 16 and framed['y'] >= 16
+    # A wall face only wraps in x: its distinct top lip and base must not count as a frame.
+    arr2 = np.asarray(noise_tile()).copy(); arr2[:3] = (230, 230, 200); arr2[-3:] = (5, 5, 5)
+    assert A.edge_frame(Image.fromarray(arr2, 'RGB'), 'x')['x'] < 16
+
+
+def test_make_seamless_cuts_an_overlap_so_the_tile_wraps_without_new_colours():
+    src = noise_tile(48, 48, wrap=False)
+    fixed, info = A.make_seamless(src, 'xy', overlap=6)
+    assert fixed.size == (42, 42)                       # the overlap is consumed on each repaired axis
+    m = A.wrap_seam(fixed, 'xy')
+    assert m['x']['ratio'] <= A.SEAM_RATIO_MAX and m['y']['ratio'] <= A.SEAM_RATIO_MAX
+    before = {tuple(c) for c in np.asarray(src).reshape(-1, 3)}
+    after = {tuple(c) for c in np.asarray(fixed).reshape(-1, 3)}
+    assert after <= before                              # a cut, never a blend: no new colours
+    assert set(info) == {'x', 'y'} and all(v['cut_ratio'] >= 0 for v in info.values())
+
+
+def test_make_seamless_keeps_the_body_of_the_tile_unchanged():
+    src = np.asarray(noise_tile(48, 48, wrap=False))
+    fixed, _ = A.make_seamless(Image.fromarray(src, 'RGB'), 'y', overlap=6)
+    out = np.asarray(fixed)
+    assert out.shape == (42, 48, 3)
+    assert (out[:30] == src[6:36]).all()                # rows outside the overlap are the source rows, shifted
+
+
+def test_make_seamless_x_only_keeps_the_height_and_the_top_and_bottom_rows():
+    src = np.asarray(noise_tile(48, 48, wrap=False)); fixed, info = A.make_seamless(Image.fromarray(src, 'RGB'), 'x', overlap=6)
+    out = np.asarray(fixed)
+    assert out.shape == (48, 42, 3) and set(info) == {'x'}
+    assert (out[:, :30] == src[:, 6:36]).all()
+
+
+def _wrap_raw(tmp_path, tile, scale=6, name='raw.png'):
+    raw = tmp_path / name; tile.resize((tile.width * scale, tile.height * scale), Image.NEAREST).save(raw); return raw
+
+
+def test_process_tile_wrap_downscales_to_the_tile_size_and_records_seam_qa(tmp_path):
+    raw = _wrap_raw(tmp_path, noise_tile(62, 62))
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'tile-f1-wall-top', raw, 'tile-wrap', workdir=tmp_path / 'w', wrap='xy', size=62)['tile-f1-wall-top']
+    out = Image.open(tmp_path / 'w' / 'tile-f1-wall-top.png')
+    assert out.size == (62, 62) and out.mode == 'RGB'
+    assert set(q['seam']) == {'x', 'y'} and 'raw_seam' in q and 'frame' in q
+    e = reg.get('tile-f1-wall-top')
+    assert e['kind'] == 'tile-wrap' and e['wrap'] == 'xy'
+    assert e['runtime'] == '/assets/games/starlantern/tiles/f1-wall-top.png'
+    assert e['status'] in ('qa_passed', 'qa_failed')
+
+
+def test_process_tile_wrap_repairs_a_bad_seam_and_reports_the_method(tmp_path):
+    raw = _wrap_raw(tmp_path, noise_tile(62, 62, seed=3, wrap=False))
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'tile-f2-wall-face', raw, 'tile-wrap', workdir=tmp_path / 'w', wrap='x', size=62)['tile-f2-wall-face']
+    assert q['raw_seam']['x']['ratio'] > A.SEAM_RATIO_MAX
+    assert q['seamless_fix'] == 'overlap-cut' and q['seam']['x']['ratio'] <= A.SEAM_RATIO_MAX
+    assert q['size'] == [62, 62] and 'x' in q['cut']
+    assert set(q['seam']) == {'x'} and q['pass']
+    assert reg.get('tile-f2-wall-face')['status'] == 'qa_passed'
+
+
+def test_process_tile_wrap_fails_a_framed_wall_top(tmp_path):
+    arr = np.asarray(noise_tile(62, 62)).copy(); arr[:2, :] = arr[-2:, :] = arr[:, :2] = arr[:, -2:] = (250, 240, 200)
+    raw = _wrap_raw(tmp_path, Image.fromarray(arr, 'RGB'))
+    reg = A.Registry(tmp_path / 'r.json')
+    q = A.process(reg, 'tile-f3-wall-top', raw, 'tile-wrap', workdir=tmp_path / 'w', wrap='xy', size=62)['tile-f3-wall-top']
+    assert not q['pass'] and 'edge frame' in q['reasons']
+    assert reg.get('tile-f3-wall-top')['status'] == 'qa_failed'
+
+
+def test_process_tile_wrap_records_the_join_with_the_wall_top_above(tmp_path):
+    reg = A.Registry(tmp_path / 'r.json')
+    A.process(reg, 'tile-f1-wall-top', _wrap_raw(tmp_path, noise_tile(62, 62), name='t.png'), 'tile-wrap', workdir=tmp_path / 'w', wrap='xy', size=62)
+    q = A.process(reg, 'tile-f1-wall-face', _wrap_raw(tmp_path, noise_tile(62, 62, seed=2), name='f.png'), 'tile-wrap', workdir=tmp_path / 'w2', wrap='x', size=62)['tile-f1-wall-face']
+    assert 'top_join' in q and q['top_join']['ratio'] >= 0
