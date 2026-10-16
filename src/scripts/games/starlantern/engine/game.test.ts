@@ -4,6 +4,7 @@ import { SAVE_KEY, saveGame } from './save';
 import { newGame } from './state';
 import { constRng, memoryStorage } from './testing';
 import { mulberry32 } from './rng';
+import { validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
 import { capacity, carried, weightOf } from '../data/weights';
@@ -240,6 +241,40 @@ describe('battles', () => {
     expect([g.phase, g.notice, g.state.gold, g.state.party.roster.scarlet.level]).toEqual(['town', 'wipe', 150, 4]);
     expect(g.state.inventory['moss']).toBeUndefined();
     expect(g.run).toBeNull();
+  });
+  it('portals are rerolled on return and kept across a save and reload', () => {
+    const storage = memoryStorage();
+    const g = new Game(mulberry32(5), storage);
+    expect(validPortals(g.state.dungeon.portals)).toBe(true);
+    const seen = new Set([JSON.stringify(g.state.dungeon.portals)]);
+    g.state.inventory['return-lamp'] = 20;
+    g.state.dungeon.reached.mainline = 3;
+    for (let i = 0; i < 8; i++) {   // lamp return
+      expect(g.depart(g.state.dungeon.portals[0], 1)).toEqual({ ok: true });
+      expect(g.useReturnLamp()).toBe(true);
+      seen.add(JSON.stringify(g.state.dungeon.portals));
+      expect(validPortals(g.state.dungeon.portals)).toBe(true);
+    }
+    expect(seen.size).toBeGreaterThan(1);
+    // entrance return rerolls too
+    const beforeEntrance = JSON.stringify(g.state.dungeon.portals);
+    g.depart(g.state.dungeon.portals[0], 1);
+    expect(g.returnToTown()).toBe(true);
+    expect(JSON.stringify(g.state.dungeon.portals)).not.toBe(beforeEntrance);
+    // kept across a save and reload
+    saveGame(storage, g.state);
+    const h = Game.boot(mulberry32(99), storage);
+    expect(h.phase).toBe('town');
+    expect(h.state.dungeon.portals).toEqual(g.state.dungeon.portals);
+  });
+  it('a wipe rerolls the portals too', () => {
+    const g = startBattle();
+    const before = JSON.stringify(g.state.dungeon.portals);
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('town');
+    expect(validPortals(g.state.dungeon.portals)).toBe(true);
+    expect(JSON.stringify(g.state.dungeon.portals)).not.toBe(before);
   });
   it('a wipe without a save keeps the state too (no reset to 150)', () => {
     const g = startBattle();

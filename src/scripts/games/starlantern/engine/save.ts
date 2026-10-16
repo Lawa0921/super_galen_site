@@ -1,6 +1,7 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { EQUIPMENT } from '../data/equipment';
 import { REGIONS } from '../data/regions';
+import { validPortals } from './portals';
 import { GRID_SIZE, MAX_ACTIVE } from './formation';
 import { MAX_LEVEL } from './party';
 import { SAVE_VERSION, type GameState } from './state';
@@ -40,6 +41,7 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!isObj(g) || !isObj(g.reached) || typeof g.bossDefeated !== 'boolean') return false;
   const reached = g.reached;
   const regions = Object.keys(REGIONS);
+  if (!validPortals(g.portals)) return false;
   if (Object.keys(reached).length !== regions.length) return false;
   return regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1);
 }

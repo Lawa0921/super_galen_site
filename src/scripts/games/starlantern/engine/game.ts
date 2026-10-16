@@ -12,6 +12,7 @@ import { activeIds, awardExp, hasPassive, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
+import { rollPortals } from './portals';
 import { newGame, type GameState } from './state';
 import { addItem, buy as townBuy, rest as innRest, type TownResult } from './town';
 import type { CharacterId, Member, Pos } from './types';
@@ -61,7 +62,7 @@ export class Game {
   banked: { items: Record<string, number>; gold: number; viaLamp: boolean } | null = null;
 
   constructor(readonly rng: Rng, readonly storage: SaveStorage | null, state?: GameState) {
-    this.state = state ?? newGame();
+    this.state = state ?? newGame(rng);
   }
 
   static boot(rng: Rng, storage: SaveStorage | null): Game {
@@ -356,6 +357,7 @@ export class Game {
     this.phase = 'town';
     this.encounter = 0;
     this.run = null;
+    this.state.dungeon.portals = rollPortals(this.rng);
   }
 
   private revealHere(): void {
@@ -422,5 +424,6 @@ export class Game {
     this.run = null;
     this.encounter = 0;
     this.notice = 'wipe';
+    this.state.dungeon.portals = rollPortals(this.rng);
   }
 }

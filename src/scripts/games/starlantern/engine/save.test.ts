@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { BACKUP_KEY, SAVE_KEY, loadGame, saveGame } from './save';
 import { newGame } from './state';
+import { rollPortals } from './portals';
+import { mulberry32 } from './rng';
 import { memoryStorage } from './testing';
 
 describe('save', () => {
@@ -60,6 +62,37 @@ describe('save', () => {
     expect(bad((g) => { delete g.party.roster.liz.limit; })).toBe('ok');
     expect(bad((g) => { g.party.roster.liz.level = 35; })).toBe('ok');
     expect(bad((g) => { g.party.roster.liz.level = 51; })).toBe('corrupt');
+  });
+  it('a v2 save loads as a version reset (backed up), not corrupt', () => {
+    const { portals: _p, ...dungeon } = newGame().dungeon;
+    const raw = JSON.stringify({ ...newGame(), version: 2, dungeon });
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st)).toEqual({ status: 'version' });
+    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+  });
+  it('save validation rejects a bad region or depth', () => {
+    const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
+      const g = newGame();
+      mut(g);
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(bad((g) => { g.dungeon.portals[1].region = 'nowhere' as never; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.portals[2].condition = 'rain' as never; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.portals[0].region = 'blaze'; })).toBe('corrupt');   // mainline must be first
+    expect(bad((g) => { g.dungeon.portals[2] = { ...g.dungeon.portals[1] }; })).toBe('corrupt');   // two different regions
+    expect(bad((g) => { g.dungeon.portals = g.dungeon.portals.slice(0, 2); })).toBe('corrupt');
+    expect(bad((g) => { delete (g.dungeon as Partial<typeof g.dungeon>).portals; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.reached.frost = 0; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.reached.frost = 7.5; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.reached.frost = 7; })).toBe('ok');
+  });
+  it('a saved game keeps its portals across a reload', () => {
+    const st = memoryStorage();
+    const g = newGame(mulberry32(42));
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.dungeon.portals).toEqual(g.dungeon.portals);
+    expect(g.dungeon.portals).toEqual(rollPortals(mulberry32(42)));
   });
   it('survives storage that throws (private mode)', () => {
     const throwing = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } };
