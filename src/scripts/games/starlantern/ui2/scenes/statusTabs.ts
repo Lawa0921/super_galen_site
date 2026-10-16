@@ -35,10 +35,11 @@ export interface StatusTab {
 
 /** "攻擊+3 防禦+1" for a bonus, or an em dash. */
 export function bonusText(b: Partial<Stats>): string {
-  return STAT_ORDER.filter((k) => b[k]).map((k) => `${T.stat[k]}${b[k]! > 0 ? '+' : ''}${b[k]}`).join(' ') || '—';
+  return STAT_ORDER.filter((k) => b[k]).map((k) => `${T.stat[k]}${T.signed(b[k]!)}`).join(' ') || '—';
 }
 
-const signed = (n: number) => (n ? `${n > 0 ? '+' : ''}${n}` : '—');
+/** A source column's change: signed with the minus sign (T.signed), or an em dash for none. */
+const signed = (n: number) => (n ? T.signed(n) : '—');
 
 /**
  * The display rule for the stats page. The seven base stats are whole numbers (battle floors them, see statsOf); every
@@ -110,7 +111,7 @@ const stats: StatusTab = {
         const now = floorShown(k, raw);
         const d = Math.round((now - before) * 10) / 10;
         before = now;
-        return el('td', { class: `slx-${p.source}`, text: i === 0 ? String(d) : signed(d) });
+        return el('td', { class: `slx-${p.source}`, text: i === 0 ? (d < 0 ? T.signed(d) : String(d)) : signed(d) });
       });
       // Any clamp in capSheet (a cap today, a floor tomorrow) shows here: the sheet differs from the plain sum.
       const capped = sheet[k] !== raw;

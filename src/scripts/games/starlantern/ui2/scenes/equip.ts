@@ -27,6 +27,10 @@ const AUTOS: AutoJunk[] = ['off', 'common', 'magic'];
 type Area = 'doll' | 'bag';
 
 /** Cells carry text only until gear art exists: the first four characters of the name. */
+/** How far one click on the detail panel's ▲/▼ scrolls it: three lines. */
+const DETAIL_STEP = 36;
+/** Pixels per wheel unit by deltaMode (pixels, lines, pages), for the detail panel. */
+const WHEEL_UNIT = [1, 12, DETAIL_STEP];
 const short = (s: string): string => [...s].slice(0, 4).join('');
 const fits = (it: ItemInstance, slot: Slot): boolean => slotsFor(itemSlot(it)).includes(slot);
 
@@ -69,6 +73,10 @@ export class EquipScene implements Scene {
   private dollHead!: HTMLElement;
   private statsWin!: HTMLElement;
   private detail!: HTMLElement;
+  /** The detail panel's scrolling content and its ▲/▼ cues (shown only while there is more that way). */
+  private detailBody!: HTMLElement;
+  private detailUp!: HTMLElement;
+  private detailDown!: HTMLElement;
   private keyhint!: HTMLElement;
   private noticeEl!: HTMLElement;
   private dollCells: HTMLElement[] = [];
@@ -94,7 +102,22 @@ export class EquipScene implements Scene {
     this.dollHead = el('div', { class: 'slx-area-head' });
     this.dollWin = win('slx-doll', [this.dollHead, el('div', { class: 'slx-doll-grid', attrs: { role: 'grid' } }, this.dollCells)]);
     this.statsWin = win('slx-equip-stats');
-    this.detail = win('slx-item-detail');
+    this.detailBody = el('div', { class: 'slx-item-detail-body' });
+    const cue = (cls: string, text: string, d: 1 | -1) => {
+      const c = el('span', { class: `slx-more ${cls}`, text, attrs: { 'aria-hidden': 'true', hidden: '' } });
+      c.addEventListener('click', () => { if (!c.closest('[inert]')) this.scrollDetail(d * DETAIL_STEP); });
+      return c;
+    };
+    this.detailUp = cue('slx-more-up', '▲', -1);
+    this.detailDown = cue('slx-more-down', '▼', 1);
+    // The wheel scrolls the panel while it can move that way; at an end (or when it fits) the page may have the wheel.
+    this.detailBody.addEventListener('wheel', (e) => {
+      if (this.detailBody.closest('[inert]') || !e.deltaY || !this.canScrollDetail(e.deltaY > 0 ? 1 : -1)) return;
+      e.preventDefault();
+      this.scrollDetail(e.deltaY * (WHEEL_UNIT[e.deltaMode] ?? 1));
+    }, { passive: false });
+    this.detailBody.addEventListener('scroll', () => this.detailCues());
+    this.detail = win('slx-item-detail', [this.detailUp, this.detailBody, this.detailDown]);
     this.keyhint = el('p', { class: 'slx-keyhint' });
     this.noticeEl = el('p', { class: 'slx-equip-notice', attrs: { 'aria-live': 'polite' } });
 
@@ -382,16 +405,43 @@ export class EquipScene implements Scene {
           ]);
         });
         out.push(el('div', { class: 'slx-cmp' }, [
-          el('div', { class: 'slx-cmp-head', text: T.ui2.equip.versus(worn ? gearLabel(worn) : `${T.slot[slot]}${T.ui2.status.none}`) }),
+          // The worn piece by name in its rarity colour (the word itself would push the heading onto a second line).
+          worn
+            ? el('div', { class: 'slx-cmp-head' }, [T.ui2.equip.versusLabel, el('span', { class: `slx-rarity-${worn.rarity}`, text: itemName(worn) })])
+            : el('div', { class: 'slx-cmp-head', text: T.ui2.equip.versusEmpty(T.slot[slot]) }),
           ...(rows.length ? rows : [el('p', { class: 'slx-desc', text: T.ui2.equip.noChange })]),
         ]));
       } else {
         out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.pickSlot }));
       }
     }
-    this.detail.replaceChildren(...out);
-    this.detail.scrollTop = 0;
+    this.detailBody.replaceChildren(...out);
+    this.detailBody.scrollTop = 0;
+    this.detailCues();
     this.renderStats(after);
+  }
+
+  /** How far the detail content can scroll (0 when it fits). */
+  private detailRoom(): number {
+    const b = this.detailBody;
+    return Math.max(0, b.scrollHeight - b.clientHeight);
+  }
+
+  private canScrollDetail(d: 1 | -1): boolean {
+    const room = this.detailRoom();
+    return room > 1 && (d < 0 ? this.detailBody.scrollTop > 0 : this.detailBody.scrollTop < room - 1);
+  }
+
+  /** Scroll the detail content by `px`, held between its top and bottom. */
+  private scrollDetail(px: number): void {
+    this.detailBody.scrollTop = Math.max(0, Math.min(this.detailRoom(), this.detailBody.scrollTop + px));
+    this.detailCues();
+  }
+
+  /** ▲ while there is more above, ▼ while there is more below; neither when the content fits. */
+  private detailCues(): void {
+    this.detailUp.hidden = !this.canScrollDetail(-1);
+    this.detailDown.hidden = !this.canScrollDetail(1);
   }
 
   /** The member's numbers now; with bag gear under the cursor, the ones it would change read `now→after`. */

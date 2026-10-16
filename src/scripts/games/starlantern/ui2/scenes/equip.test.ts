@@ -158,7 +158,8 @@ describe('EquipScene', () => {
     press('right');                                                    // the copper ring against a star ring
     const rows = detail().querySelectorAll('.slx-cmp-row');
     expect([...rows].map((r) => r.getAttribute('data-stat')).sort()).toEqual(['atk', 'hp', 'mag']);
-    expect(detail().querySelector('.slx-cmp-row.slx-down[data-stat=atk]')!.textContent).toContain('-4');
+    expect(detail().querySelector('.slx-cmp-row.slx-down[data-stat=atk]')!.textContent).toContain('−4');   // the minus sign
+    expect(detail().textContent).not.toMatch(/-\d/);
     expect(detail().querySelector('.slx-cmp-row.slx-up[data-stat=hp]')!.textContent).toContain('+8');
     expect(detail().textContent).not.toContain(T.gear.junk);
   });
@@ -297,7 +298,8 @@ describe('EquipScene', () => {
       g.state.bag = [gear('star-ring', 5, 'rare')];
     });
     press('down', 'right', 'right', 'confirm');                        // target 戒指 2 (defaultSlotFor would say 戒指 1)
-    expect(detail().querySelector('.slx-cmp-head')!.textContent).toContain('星紋戒・魔法');
+    expect(detail().querySelector('.slx-cmp-head')!.textContent).toBe('比較：星紋戒');
+    expect(detail().querySelector('.slx-cmp-head .slx-rarity-magic')!.textContent).toBe('星紋戒');   // the magic one in 戒指 2
     press('confirm');
     expect(worn().ring2?.uid).toBe(5);
     expect(worn().ring1?.uid).toBe(7);
@@ -382,5 +384,68 @@ describe('EquipScene', () => {
     expect(line.querySelector('.slx-line-dim')!.textContent).toBe('砲台持續 5 回合');
     expect(line.querySelector('.slx-line-dim .slx-line-note')).toBeNull();
     expect(line.querySelector(':scope > .slx-line-note')!.textContent).toBe(T.gear.cannotUse);
+  });
+});
+
+describe('EquipScene detail panel', () => {
+  /** Opens the scene with the bag cursor on a piece that is compared against the worn weapon. */
+  const onBag = (prep?: (g: Game) => void) => {
+    const r = setup((g) => { g.state.party.roster.scarlet.equip.weapon = plainItem('iron-sword', 9); g.state.bag = [plainItem('star-saber', 1), plainItem('leather-cap', 2)]; prep?.(g); });
+    r.press('swap');
+    return r;
+  };
+  const cue = (r: ReturnType<typeof setup>, d: 'up' | 'down') => r.detail().querySelector<HTMLElement>(`.slx-more-${d}`)!;
+  const body = (r: ReturnType<typeof setup>) => r.detail().querySelector<HTMLElement>('.slx-item-detail-body')!;
+
+  it('the compare heading is short: the worn piece by name, or the slot marked empty', () => {
+    const r = onBag();
+    expect(r.detail().querySelector('.slx-cmp-head')!.textContent).toBe('比較：鐵劍');
+    expect(r.detail().querySelector('.slx-cmp-head')!.textContent).toBe(T.ui2.equip.versus('鐵劍'));
+    r.press('right');                                                   // the cap: nothing worn on the head
+    expect(r.detail().querySelector('.slx-cmp-head')!.textContent).toBe('比較：頭部（空）');
+  });
+
+  it('a panel that fits shows no scroll cue and leaves the wheel alone', () => {
+    const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+    const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+    try {
+      sh.mockReturnValue(80); ch.mockReturnValue(100);
+      const r = onBag();
+      expect([cue(r, 'up').hidden, cue(r, 'down').hidden]).toEqual([true, true]);
+      const e = new WheelEvent('wheel', { deltaY: 100, cancelable: true });
+      body(r).dispatchEvent(e);
+      expect(e.defaultPrevented).toBe(false);
+    } finally { sh.mockRestore(); ch.mockRestore(); }
+  });
+
+  it('a panel that overflows shows ▼, scrolls by wheel and by the clickable cues, and shows ▲ once scrolled', () => {
+    const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+    const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+    try {
+      sh.mockReturnValue(300); ch.mockReturnValue(100);
+      const r = onBag();
+      const b = body(r);
+      expect([cue(r, 'up').hidden, cue(r, 'down').hidden]).toEqual([true, false]);
+      expect(cue(r, 'down').textContent).toBe('▼');
+      cue(r, 'down').click();
+      expect(b.scrollTop).toBeGreaterThan(0);
+      expect(cue(r, 'up').hidden).toBe(false);
+      const wheel = new WheelEvent('wheel', { deltaY: 100, cancelable: true });
+      const before = b.scrollTop;
+      b.dispatchEvent(wheel);
+      expect(wheel.defaultPrevented).toBe(true);
+      expect(b.scrollTop).toBeGreaterThan(before);
+      for (let i = 0; i < 20; i++) cue(r, 'down').click();
+      expect(b.scrollTop).toBe(200);                                    // held at the bottom
+      expect(cue(r, 'down').hidden).toBe(true);
+      const atEnd = new WheelEvent('wheel', { deltaY: 100, cancelable: true });
+      b.dispatchEvent(atEnd);
+      expect(atEnd.defaultPrevented).toBe(false);                       // nothing more to scroll: the page may have it
+      for (let i = 0; i < 20; i++) cue(r, 'up').click();
+      expect(b.scrollTop).toBe(0);
+      expect(cue(r, 'up').hidden).toBe(true);
+      r.press('right');                                                 // another piece starts at the top again
+      expect(b.isConnected ? b.scrollTop : body(r).scrollTop).toBe(0);
+    } finally { sh.mockRestore(); ch.mockRestore(); }
   });
 });

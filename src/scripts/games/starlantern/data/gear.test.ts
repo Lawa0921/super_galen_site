@@ -151,6 +151,15 @@ describe('specials', () => {
     expect(SETS['set-iron'].two).toEqual({ meleeDR: 10 });
   });
 
+  it('signed numbers write a minus as the minus sign, everywhere a stat change is shown', () => {
+    expect([T.signed(5), T.signed(-3), T.signed(0), T.signed(-0.4)]).toEqual(['+5', '−3', '0', '−0.4']);
+    expect(T.ui2.equip.delta('atk', -4)).toBe('−4');
+    expect(T.ui2.equip.delta('crit', -0.44)).toBe('−0.4%');
+    expect(T.ui2.equip.delta('atk', 11)).toBe('+11');
+    expect(T.gear.affix('str', -1)).toBe('力量 −1');
+    expect(T.gear.affix('crit', 5)).toBe('暴擊率 +5%');
+  });
+
   it('stat names cover every stat, the base ones shared with T.stat', () => {
     expect(Object.keys(T.gear.statName).sort()).toEqual(Object.keys(AFFIXES).sort());
     for (const [k, v] of Object.entries(T.stat)) expect(T.gear.statName[k as AnyStat], k).toBe(v);

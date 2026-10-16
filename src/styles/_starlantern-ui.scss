@@ -517,7 +517,13 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-bag { left: 6px; top: 50px; }
 .slx-doll { left: 336px; top: 50px; }
 .slx-equip-stats { left: 336px; top: 218px; width: 122px; font-size: 10px; line-height: 14px; }
-.slx-item-detail { left: 490px; right: 6px; top: 50px; bottom: 44px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
+.slx-item-detail { left: 490px; right: 6px; top: 50px; bottom: 44px; display: flex; flex-direction: column; }
+.slx-item-detail-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
+/* The detail panel's scroll cues sit on its frame, over the content's corner, so showing one never shifts the lines. */
+.slx-item-detail .slx-more { position: absolute; right: 10px; padding: 0 2px; background: $slx-win; }
+.slx-item-detail .slx-more-up { top: 1px; }
+.slx-item-detail .slx-more-down { bottom: 1px; }
+.slx-item-detail .slx-more[hidden] { display: none; }
 .slx-bag:not(.slx-area-on), .slx-doll:not(.slx-area-on) { border-color: #8a7444; }
 .slx-area-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; line-height: 14px; color: $slx-dim; }
 .slx-area-on .slx-area-head { color: $slx-ink; }

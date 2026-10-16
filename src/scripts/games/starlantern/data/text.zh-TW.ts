@@ -21,10 +21,14 @@ const STAT_NAME: Record<AnyStat, string> = {
 /** Stats that read as points; every other stat reads as a percent. */
 const POINT_STATS: AnyStat[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd', 'str', 'int', 'agi', 'wil', 'armor', 'evasion', 'tpRegen'];
 
+/** A stat change as shown to the player: `+5`, `−3` (the minus sign U+2212, never a hyphen), `0`. */
+const signed = (v: number): string => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0');
+
 /** The homecoming sentence, alone or ahead of what came home. */
 const home = (viaLamp: boolean) => (viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。');
 
 export const T = {
+  signed,
   stat: STAT,
   slot: SLOT,
   /** Gear kinds, for a base's own slot: a ring is one "戒指" here, "戒指 1" / "戒指 2" only where a member's slots are listed. */
@@ -36,7 +40,7 @@ export const T = {
   gear: {
     rarity: RARITY,
     statName: STAT_NAME,
-    affix: (key: AnyStat, value: number) => `${STAT_NAME[key]} +${value}${POINT_STATS.includes(key) ? '' : '%'}`,
+    affix: (key: AnyStat, value: number) => `${STAT_NAME[key]} ${signed(value)}${POINT_STATS.includes(key) ? '' : '%'}`,
     ilvl: (n: number) => `物品等級 ${n}`,
     /** The base bonus line, set apart from rolled affixes on the same stat. */
     implicit: (text: string) => `基礎 ${text}`,
@@ -158,14 +162,17 @@ export const T = {
       menuBtn: '選單',
       target: (slot: string) => `目標：${slot}`,
       worn: (slot: string, name: string) => `${slot}：${name}`,
-      versus: (name: string) => `與 ${name} 比較`,
+      /** The compare heading, short enough for one line: the worn piece's name, or the slot marked empty. */
+      versusLabel: '比較：',
+      versus: (name: string) => `比較：${name}`,
+      versusEmpty: (slot: string) => `比較：${slot}（空）`,
       noChange: '能力不變',
       takeOff: (slot: string) => `Enter 卸下${slot}的裝備`,
       pickSlot: 'Enter 選這一格，再到背包挑裝備',
       emptyCell: '空格',
       full: '背包已滿，無法卸下。先整理背包吧。',
       /** The number of a comparison row: `+11`, `-3%`. */
-      delta: (key: AnyStat, v: number) => `${v > 0 ? '+' : ''}${Math.round(v * 10) / 10}${POINT_STATS.includes(key) ? '' : '%'}`,
+      delta: (key: AnyStat, v: number) => `${signed(Math.round(v * 10) / 10)}${POINT_STATS.includes(key) ? '' : '%'}`,
       menu: {
         title: '背包選單',
         sort: { rarity: '排序：依稀有度', slot: '排序：依欄位', ilvl: '排序：依物品等級' },

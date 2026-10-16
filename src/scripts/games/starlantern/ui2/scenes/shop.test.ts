@@ -175,7 +175,8 @@ describe('ShopScene', () => {
     row.dispatchEvent(new Event('pointermove'));
     const li = root.querySelector('.slx-info .slx-cmp-member')!;
     expect(li.querySelector('[data-stat=mag]')!.classList.contains('slx-down')).toBe(true);
-    expect(li.querySelector('[data-stat=mag]')!.textContent).toContain('-');
+    expect(li.querySelector('[data-stat=mag]')!.textContent).toMatch(/魔力−\d/);          // the minus sign, not a hyphen
+    expect(li.textContent).not.toMatch(/-\d/);
     expect(li.querySelector('[data-stat=atk]')!.classList.contains('slx-up')).toBe(true);
   });
 

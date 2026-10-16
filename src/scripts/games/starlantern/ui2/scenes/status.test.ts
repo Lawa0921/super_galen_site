@@ -9,6 +9,9 @@ import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView } from './statusTabs';
 import { StatusScene } from './status';
 
+/** A shown number back to a number: the minus sign reads as a minus. */
+const num = (t: string | null) => Number((t ?? '').replace('−', '-'));
+
 function setup(arg?: string, artIndex: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
   game.state.bag = [plainItem('iron-sword', 1)];
@@ -178,7 +181,7 @@ describe('StatusScene', () => {
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;
       expect(atk.querySelector('.slx-primary')!.textContent).toMatch(/^\+\d+$/);
-      const parts = [...atk.querySelectorAll('td:not(.slx-total)')].map((td) => (td.textContent === '—' ? 0 : Number(td.textContent)));
+      const parts = [...atk.querySelectorAll('td:not(.slx-total)')].map((td) => (td.textContent === '—' ? 0 : num(td.textContent)));
       const total = statsOf(game.state.party.roster.scarlet).atk;
       expect(atk.querySelector('.slx-total')!.textContent).toBe(String(total));
       expect(parts.reduce((a, b) => a + b, 0)).toBe(total);
@@ -190,7 +193,7 @@ describe('StatusScene', () => {
 
     /** The number in each source cell and the 上限 cell (an em dash is 0), and the shown total without its unit. */
     const nums = (tr: Element) => {
-      const parts = [...tr.querySelectorAll('td:not(.slx-total)')].map((td) => (td.textContent === '—' ? 0 : Number(td.textContent)));
+      const parts = [...tr.querySelectorAll('td:not(.slx-total)')].map((td) => (td.textContent === '—' ? 0 : num(td.textContent)));
       return { parts, sum: parts.reduce((a, b) => a + b, 0), total: Number(tr.querySelector('.slx-total')!.textContent!.replace('%', '')) };
     };
     const wear = (s: StatusScene, game: Game, affixes: { key: AnyStat; value: number }[]) => {
@@ -203,7 +206,7 @@ describe('StatusScene', () => {
       wear(s, game, [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }]);  // 70.6% crit, cap 60
       const crit = root.querySelector('[data-stat=crit]')!;
       expect(crit.querySelector('.slx-primary')!.textContent).toBe('+0.6');  // 3 agi x 0.2
-      expect(crit.querySelector('.slx-cap')!.textContent).toBe('-10.6');
+      expect(crit.querySelector('.slx-cap')!.textContent).toBe('−10.6');
       expect(crit.querySelector('.slx-total')!.textContent).toBe('60%');
       expect(crit.querySelector('.slx-total')!.classList.contains('slx-capped')).toBe(true);
       const n = nums(crit);
@@ -216,11 +219,11 @@ describe('StatusScene', () => {
       const { root, game, s } = setup('scarlet');
       wear(s, game, [{ key: 'str', value: -1 }]);                           // affinity str: -1.5 atk
       const atk = root.querySelector('[data-stat=atk]')!;
-      expect(atk.querySelector('.slx-primary')!.textContent).toBe('-2');     // 18 -> 16.5, shown 16
+      expect(atk.querySelector('.slx-primary')!.textContent).toBe('−2');     // 18 -> 16.5, shown 16
       const n = nums(atk);
       expect(n.total).toBe(statsOf(game.state.party.roster.scarlet).atk);
       expect(n.sum).toBe(n.total);
-      expect(root.querySelector('[data-stat=str] .slx-gear')!.textContent).toBe('-1');
+      expect(root.querySelector('[data-stat=str] .slx-gear')!.textContent).toBe('−1');
     });
 
     it('a mixed-sign row that totals 0 is shown as a zero row', () => {
@@ -229,7 +232,7 @@ describe('StatusScene', () => {
       head(root, 'defense').click();
       const armor = root.querySelector('[data-stat=armor]')!;
       expect(armor.querySelector('.slx-gear')!.textContent).toBe('+3');
-      expect(armor.querySelector('.slx-primary')!.textContent).toBe('-3');
+      expect(armor.querySelector('.slx-primary')!.textContent).toBe('−3');
       expect(armor.querySelector('.slx-total')!.textContent).toBe('0');
       expect(armor.classList.contains('slx-zero')).toBe(true);
       expect(nums(armor).sum).toBe(0);
