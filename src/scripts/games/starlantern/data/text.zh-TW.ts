@@ -1,6 +1,7 @@
-import type { RaiseFail } from '../engine/progression';
+import type { RaiseFail, TalentFail } from '../engine/progression';
 import type { StatCategory } from '../engine/stats';
 import type { SkillMod } from './gear';
+import { KEYSTONE_GATE, MAX_KEYSTONES } from './talents';
 import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
@@ -88,9 +89,11 @@ export const T = {
     exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`, drop: (name: string, n: number) => `${name} ×${n}`,
     leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
     levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`,
-    /** Points a level-up brought, pointing to where skill points are spent; the talent part only when there is one. */
+    /** Points a level-up brought, each pointing to the status tab where it is spent; the talent part only when there is one. */
     points: (name: string, skill: number, talent: number) =>
-      skill === 0 && talent > 0 ? `${name} 獲得天賦點 ${talent}` : `${name} 獲得技能點 ${skill}（狀態→技能樹）${talent > 0 ? `、天賦點 ${talent}` : ''}`,
+      skill === 0 && talent > 0
+        ? `${name} 獲得天賦點 ${talent}（狀態→天賦）`
+        : `${name} 獲得技能點 ${skill}（狀態→技能樹）${talent > 0 ? `、天賦點 ${talent}（狀態→天賦）` : ''}`,
     weak: (els: string) => `已知弱點：${els}`,
     /** Words that pop over a struck enemy or member. */
     pop: { miss: 'MISS', crit: '暴擊！', weak: '弱點！', resist: '抗性', tp: (n: number) => `+${n} TP` },
@@ -139,7 +142,7 @@ export const T = {
       hint: '方向鍵 選格　Enter／點擊 放人　Esc 返回',
     },
     status: {
-      tabs: { stats: '能力', gear: '裝備', skills: '技能', tree: '技能樹', ultimate: '絕技' },
+      tabs: { stats: '能力', gear: '裝備', skills: '技能', tree: '技能樹', talent: '天賦', ultimate: '絕技' },
       /** Column titles for statSources; a new source needs one line here. */
       sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', primary: '主屬性' } as Record<string, string>,
       total: '合計',
@@ -162,8 +165,37 @@ export const T = {
       hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
       /** The stats tab's own keys: a row cursor and folding. */
       hintStats: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 摺疊　Esc 返回',
-      /** The tree tab's own keys: a node cursor and the two-press spend. */
+      /** The tree and talent tabs' own keys: a node cursor and the two-press spend. */
       hintTree: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 投點　Esc 返回',
+    },
+    /** The status screen's talent tab. */
+    talent: {
+      left: (n: number) => `剩餘天賦點 ${n}`,
+      /** Points on the board's normal nodes, against the keystone gate. */
+      board: (n: number) => (n >= KEYSTONE_GATE ? `盤面已投 ${n} 點・可選關鍵天賦` : `盤面已投 ${n} 點・${KEYSTONE_GATE} 點後可選關鍵天賦`),
+      keystones: (k: number) => `關鍵天賦 ${k}／${MAX_KEYSTONES}`,
+      keysHead: `關鍵天賦（限選 ${MAX_KEYSTONES} 個）`,
+      /** A normal node's bonus per rank, e.g. 「+2／級」; a percent stat carries its sign. */
+      per: (key: AnyStat, v: number) => `${signed(v)}${POINT_STATS.includes(key) ? '' : '%'}／級`,
+      /** The notes for a normal node: 「智力 +2／級（目前 +4）」. */
+      note: (stat: string, key: AnyStat, v: number, now: number) => {
+        const unit = POINT_STATS.includes(key) ? '' : '%';
+        return `${stat} ${signed(v)}${unit}／級（目前 ${now ? signed(now) : '+0'}${unit}）`;
+      },
+      keystone: '關鍵天賦',
+      row: (r: number) => `第 ${r} 列`,
+      /** The adjacency rule, under a normal node's notes while it is shut by it. */
+      adjacentRule: '上一列的左上、正上或右上格至少投入 1 點後才能投點',
+      /** A node that can take its next rank now. */
+      open: '可投點',
+      /** Why a node cannot take its next rank (progression canRaiseTalent). */
+      reason: {
+        unknown: '無法投點', max: '已滿級', points: '點數不足', adjacent: '未相連',
+        gate: `盤面需 ${KEYSTONE_GATE} 點`, keystones: `已選滿 ${MAX_KEYSTONES} 個`,
+      } as Record<TalentFail, string>,
+      pending: '再按一次 Enter 投入 1 點',
+      /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
+      failed: '現在無法投點',
     },
     /** The status screen's skill-tree tab. */
     tree: {

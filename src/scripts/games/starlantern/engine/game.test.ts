@@ -1216,3 +1216,48 @@ describe('spending a skill point', () => {
     expect([g.notice, storage.map.has(SAVE_KEY)]).toEqual([null, false]);
   });
 });
+
+describe('spending a talent point', () => {
+  const lv6 = (g: Game) => { g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 6 }; };
+  it('saves the spend in town: a reload keeps the new rank', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage);
+    lv6(g);
+    expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
+    expect(g.state.party.roster.noel.talents).toEqual({ 'noel-t00': 1 });
+    const back = Game.boot(calm(), storage);
+    expect(back.notice).toBeNull();
+    expect(back.state.party.roster.noel.talents).toEqual({ 'noel-t00': 1 });
+  });
+  it('reports a failed save without losing the spend', () => {
+    const g = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } });
+    lv6(g);
+    expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
+    expect([g.notice, g.state.party.roster.noel.talents['noel-t00']]).toEqual(['save-failed', 1]);
+  });
+  it('a refused spend changes and saves nothing, and says why', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage);
+    expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: false, reason: 'points' });   // Lv1: no talent point yet
+    lv6(g);
+    expect(g.raiseTalent('noel', 'noel-t10')).toEqual({ ok: false, reason: 'adjacent' });
+    expect(g.raiseTalent('sylvie', 'sylvie-t00')).toEqual({ ok: false, reason: 'invalid' });   // not recruited
+    expect(g.state.party.roster.noel.talents).toEqual({});
+    expect(storage.map.has(SAVE_KEY)).toBe(false);
+  });
+  it('in the labyrinth the spend counts at once but is not saved mid-run', () => {
+    const storage = memoryStorage();
+    const g = inMap(1, calm(), storage);
+    lv6(g);
+    expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: true });
+    expect(g.state.party.roster.noel.talents['noel-t00']).toBe(1);
+    expect([g.notice, storage.map.has(SAVE_KEY)]).toEqual([null, false]);
+  });
+  it('is refused in battle', () => {
+    const g = new Game(calm(), null);
+    lv6(g);
+    g.phase = 'battle';
+    expect(g.raiseTalent('noel', 'noel-t00')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.state.party.roster.noel.talents).toEqual({});
+  });
+});

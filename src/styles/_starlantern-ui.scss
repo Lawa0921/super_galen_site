@@ -535,6 +535,35 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c
 .slx-tree-now { color: $slx-ink; }
 .slx-tree-next { color: $slx-up; }
 .slx-tree-msg { color: #ffb36b; }
+.slx-tab-talent { height: 100%; display: flex; flex-direction: column; }
+.slx-talent-top { flex: none; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; line-height: 14px; white-space: nowrap; }
+.slx-talent-left { color: $slx-gold; }
+.slx-talent-count { color: $slx-ink; }
+.slx-talent-gate { flex-basis: 100%; color: $slx-dim; }
+.slx-talent-board { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
+.slx-talent-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
+.slx-talent-node { min-width: 0; padding: 1px 0 1px 2px; cursor: pointer; }
+.slx-talent-row .slx-talent-node + .slx-talent-node { padding-left: 1px; border-left: 1px solid #2a2840; }
+.slx-talent-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; line-height: 14px; }
+.slx-talent-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slx-talent-rank { flex: none; font-size: 10px; color: $slx-dim; }
+.slx-talent-node:hover .slx-talent-name { color: #fff; }
+.slx-talent-foot { display: flex; justify-content: space-between; gap: 0; font-size: 10px; line-height: 12px; white-space: nowrap; }
+.slx-talent-per { flex: none; color: $slx-dim; }
+.slx-talent-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.slx-talent-keys-head { margin: 2px 0 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; }
+.slx-talent-keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 6px; }
+.slx-talent-desc { margin: 0; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-node-learned .slx-talent-state { color: $slx-up; }
+.slx-node-open .slx-talent-state { color: #6fa7ff; }
+.slx-node-maxed .slx-talent-state { color: $slx-gold; }
+.slx-node-locked .slx-talent-name, .slx-node-locked .slx-talent-rank, .slx-node-locked .slx-talent-state { color: #77718a; }
+.slx-talent-info { flex: none; min-height: 45px; margin-top: 1px; padding-top: 2px; border-top: 1px solid #3a3550; line-height: 14px; }
+.slx-talent-info p { margin: 0; }
+.slx-talent-info-head { display: flex; flex-wrap: wrap; gap: 0 10px; color: $slx-dim; }
+.slx-talent-info-name { color: $slx-gold; }
+.slx-talent-now { color: $slx-ink; }
+.slx-talent-msg { color: #ffb36b; }
 .slx-status-panel .slx-hint, .slx-formation-info .slx-hint { margin-top: 6px; }
 
 // Equipment, left to right: the bag (10 × 6), the paper doll (3 × 3) with the member's numbers below, the item detail.

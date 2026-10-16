@@ -14,7 +14,7 @@ import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMat
 import { itemWeight, type DropSource } from './loot/item';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { activeIds, awardExp, hasPassive, statsOf, type LevelUp } from './party';
-import { raiseNode, type RaiseFail } from './progression';
+import { raiseNode, raiseTalent, type RaiseFail, type TalentFail } from './progression';
 import { pick, type Rng } from './rng';
 import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
@@ -528,6 +528,20 @@ export class Game {
   raiseNode(id: CharacterId, node: string): { ok: true } | { ok: false; reason: RaiseFail | 'invalid' } {
     if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
     const r = raiseNode(this.state.party.roster[id], node);
+    if (!r.ok) return r;
+    const party = this.state.party;
+    this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return { ok: true };
+  }
+
+  /**
+   * One talent point into a recruited member's board node (the rules: progression `raiseTalent`). Saved like `raiseNode`:
+   * at once in town; in the labyrinth the spend counts at once and is saved at the next town save.
+   */
+  raiseTalent(id: CharacterId, node: string): { ok: true } | { ok: false; reason: TalentFail | 'invalid' } {
+    if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
+    const r = raiseTalent(this.state.party.roster[id], node);
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };

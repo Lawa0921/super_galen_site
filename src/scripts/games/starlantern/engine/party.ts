@@ -3,7 +3,7 @@ import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { SKILLS } from '../data/skills';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
-import { autoSpend, learnedSkills, newTree, skillPoints, talentPoints, talentStats } from './progression';
+import { learnedSkills, newTree, skillPoints, talentPoints, talentStats } from './progression';
 import { PARTY_BASE, PRIMARY_KEYS, capSheet, convertPrimary, emptySheet, naturalPrimary } from './stats';
 import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Sheet, Slot, StatKey, Stats } from './types';
 
@@ -154,8 +154,8 @@ export function gainExp(m: Member, amount: number): { member: Member; levels: nu
   next.hp = m.hp > 0 ? Math.min(after.hp, m.hp + after.hp - before.hp) : 0;
   next.tp = Math.min(after.tp, m.tp + after.tp - before.tp);
   const points = { skill: skillPoints(level) - skillPoints(m.level), talent: talentPoints(level) - talentPoints(m.level) };
-  // TEMPORARY: talents only, removed by Task 14 (the player spends talent points)
-  return { member: level > m.level ? autoSpend(next) : next, levels: level - m.level, points };
+  // Points are never spent here: the player spends them on the status screen's tree and talent tabs.
+  return { member: next, levels: level - m.level, points };
 }
 
 /** What one member got from an exp award: levels gained (0 when none) and the points they brought. */

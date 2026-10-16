@@ -260,6 +260,9 @@ describe('talents', () => {
     expect(one.talents).toEqual({ 'noel-t00': 1 });
     expect(talentPointsLeft(one)).toBe(0);
     expect(canRaiseTalent(one, 'noel-t01')).toBe('points');
+    // No point left: a node that is shut anyway says why it is shut, not that the points ran out.
+    expect(canRaiseTalent(one, 'noel-t13')).toBe('adjacent');
+    expect(canRaiseTalent(one, 'noel-k0')).toBe('gate');
     const lv8 = { ...one, level: 8 };                      // one point left
     expect(canRaiseTalent(lv8, 'noel-t13')).toBe('adjacent');
     expect(canRaiseTalent(lv8, 'noel-t11')).toBeNull();    // diagonal
@@ -288,6 +291,7 @@ describe('talents', () => {
     const two = upT(upT(base, 'noel-k0'), 'noel-k1');
     expect(keystonesOf(two)).toEqual(['weak-tp', 'opening-gauge']);
     expect(canRaiseTalent(two, 'noel-k2')).toBe('keystones');
+    expect(canRaiseTalent({ ...two, level: 26 }, 'noel-k2')).toBe('keystones');   // 14 spent of 11 earned: still the cap first
     expect(canRaiseTalent(two, 'noel-k0')).toBe('max');
     expect(canRaiseTalent(base, 'chizuru-k0')).toBe('unknown');
     expect(canRaiseTalent(base, 'chizuru-t00')).toBe('unknown');

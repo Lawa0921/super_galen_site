@@ -1,13 +1,16 @@
 import { CHARACTERS } from '../../data/characters';
 import { POWERS } from '../../data/gear';
 import { SKILLS } from '../../data/skills';
+import { BOARDS, BOARD_ROWS, KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
 import { ACTIVE_RANK_PCT, NODES, TREES, type TreeNode } from '../../data/trees';
 import { T } from '../../data/text.zh-TW';
 import { ULTIMATES } from '../../data/ultimates';
 import { skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
-import { canRaiseNode, freeNode, learnedSkills, nodeRank, rankMod, skillPointsLeft } from '../../engine/progression';
+import {
+  canRaiseNode, canRaiseTalent, freeNode, keystonesOf, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft,
+} from '../../engine/progression';
 import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import type { AnyStat, CharacterId, Slot, StatKey, Stats } from '../../engine/types';
@@ -414,6 +417,165 @@ const tree: StatusTab = {
   },
 };
 
+/**
+ * Node cursor, waiting press and last refusal of the talent page; kept and dropped exactly as the tree page's
+ * (`treeView`): the cursor for the session, a waiting press and a refusal until the cursor moves, the member changes or
+ * the page goes away.
+ */
+const talentView: { cur: string; spend: SpendState; msg: string; reveal: boolean; top: number } = { cur: '', spend: { pending: null }, msg: '', reveal: false, top: 0 };
+
+/** Back to the first-visit state: the cursor on the first node, nothing pending. */
+export function resetTalentView(): void {
+  talentView.cur = '';
+  talentView.reveal = false;
+  leaveTalent();
+}
+
+function settleTalent(): void {
+  cancelSpend(talentView.spend);
+  talentView.msg = '';
+}
+
+/** The page went away: drop a waiting press, and the next visit starts with the board at the top. */
+function leaveTalent(): void {
+  settleTalent();
+  talentView.top = 0;
+}
+
+/** The member's talent nodes in cursor order: row 0 columns 0-3, row 1, ... row 5, then the keystones (BOARDS order). */
+const talentOrder = (id: CharacterId): string[] => BOARDS[id].map((n) => n.id);
+
+/** A saved talent record as the board rules read it: anything but a plain object is empty (as progression reads it). */
+const heldTalents = (t: unknown): Record<string, number> =>
+  (typeof t === 'object' && t !== null && !Array.isArray(t) ? t as Record<string, number> : {});
+
+/** A normal node's bonus per rank, as the sheet adds it (progression talentStats). */
+const perRank = (n: TalentNode): number => Math.round(TALENT_PER[n.stat!]! * TALENT_SCALE * 10) / 10;
+
+/** Moves the talent cursor to `node`, dropping a waiting press when the cursor actually moves. */
+function moveTalent(node: string): boolean {
+  if (talentView.cur === node) return false;
+  talentView.cur = node;
+  settleTalent();
+  return true;
+}
+
+/** Enter (or a second click) on the cursor's node: the shared two-press spend, through the Game so the spend is saved. */
+function pressTalent(ctx: SceneCtx, id: CharacterId): void {
+  const t = T.ui2.talent;
+  const node = talentView.cur;
+  const r = pressSpend(talentView.spend, node, () => canRaiseTalent(ctx.game.state.party.roster[id], node), () => ctx.game.raiseTalent(id, node).ok, ctx.sfx);
+  talentView.msg = r === 'armed' ? t.pending : r === 'raised' ? '' : r === 'failed' ? t.failed : t.reason[r.refused];
+}
+
+/** The notes under the board for the cursor's node: its bonus per rank and what it gives now, or the keystone's effect. */
+function talentNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
+  const t = T.ui2.talent;
+  const m = ctx.game.state.party.roster[id];
+  const n = BOARDS[id].find((x) => x.id === talentView.cur)!;
+  const rank = rankOf(n, heldTalents(m.talents));
+  const why = canRaiseTalent(m, n.id);
+  const key = n.keystone ? KEYSTONES[n.keystone] : null;
+  const name = key ? key.name : T.gear.statName[n.stat!];
+  const per = key ? 0 : perRank(n);
+  return el('div', { class: 'slx-talent-info' }, [
+    el('p', { class: 'slx-talent-info-head' }, [
+      el('span', { class: 'slx-talent-info-name', text: name }),
+      el('span', { text: key ? t.keystone : t.row(n.row + 1) }),
+      el('span', { text: T.ui2.status.rank(rank, n.maxRank) }),
+      el('span', { class: 'slx-talent-state', text: why ? t.reason[why] : t.open }),
+    ]),
+    key
+      ? el('p', { class: 'slx-desc', text: key.desc })
+      : el('p', { class: 'slx-talent-now', text: t.note(name, n.stat!, per, Math.round(per * rank * 10) / 10) }),
+    ...(why === 'adjacent' ? [el('p', { class: 'slx-desc', text: t.adjacentRule })] : []),
+    ...(talentView.msg ? [el('p', { class: 'slx-talent-msg', text: talentView.msg, attrs: { role: 'status' } })] : []),
+  ]);
+}
+
+const talent: StatusTab = {
+  id: 'talent',
+  label: T.ui2.status.tabs.talent,
+  hint: T.ui2.status.hintTree,
+  render(ctx, id, redraw) {
+    const t = T.ui2.talent;
+    const m = ctx.game.state.party.roster[id];
+    const held = heldTalents(m.talents);
+    // Another member's board: the cursor starts over (a waiting press was already dropped by `leave`).
+    if (!talentOrder(id).includes(talentView.cur)) talentView.cur = talentOrder(id)[0];
+    const cell = (n: TalentNode) => {
+      const rank = rankOf(n, held);
+      const why = canRaiseTalent(m, n.id);
+      const state = rank > 0 ? 'slx-node-learned' : why ? 'slx-node-locked' : 'slx-node-open';
+      const key = n.keystone ? KEYSTONES[n.keystone] : null;
+      const node = el('div', {
+        class: `slx-talent-node ${state}${rank >= n.maxRank ? ' slx-node-maxed' : ''}${talentView.cur === n.id ? ' slx-row-cur' : ''}`,
+        attrs: { 'data-node': n.id, role: 'button' },
+      }, [
+        el('div', { class: 'slx-talent-head' }, [
+          el('span', { class: 'slx-talent-name', text: key ? key.name : T.gear.statName[n.stat!] }),
+          el('span', { class: 'slx-talent-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
+        ]),
+        ...(key ? [el('p', { class: 'slx-talent-desc', text: key.desc })] : []),
+        el('div', { class: 'slx-talent-foot' }, [
+          ...(key ? [] : [el('span', { class: 'slx-talent-per', text: t.per(n.stat!, perRank(n)) })]),
+          el('span', { class: 'slx-talent-state', text: why ? t.reason[why] : t.open }),
+        ]),
+      ]);
+      // The first click moves the cursor here; a click on the cursor's node is Enter.
+      node.addEventListener('click', () => {
+        if (locked(node)) return;
+        redraw(() => {
+          if (moveTalent(n.id)) ctx.sfx.cursor();
+          else pressTalent(ctx, id);
+        });
+      });
+      return node;
+    };
+    // Each row lines up under the one above, so a node's three neighbours above (adjacency) sit right over it.
+    const rows = Array.from({ length: BOARD_ROWS }, (_, r) =>
+      el('div', { class: 'slx-talent-row', attrs: { 'data-row': String(r) } }, BOARDS[id].filter((n) => !n.keystone && n.row === r).map(cell)));
+    // The board scrolls on its own above the fixed notes; a redraw keeps where it was (see `shown`).
+    const board = el('div', { class: 'slx-talent-board' }, [
+      ...rows,
+      el('h5', { class: 'slx-talent-keys-head', text: t.keysHead }),
+      el('div', { class: 'slx-talent-keys' }, BOARDS[id].filter((n) => n.keystone).map(cell)),
+    ]);
+    board.addEventListener('scroll', () => { talentView.top = board.scrollTop; });
+    return el('div', { class: 'slx-tab-talent' }, [
+      el('div', { class: 'slx-talent-top' }, [
+        el('span', { class: 'slx-talent-left', text: t.left(talentPointsLeft(m)) }),
+        el('span', { class: 'slx-talent-count', text: t.keystones(keystonesOf(m).length) }),
+        el('span', { class: 'slx-talent-gate', text: t.board(boardPoints(id, held)) }),
+      ]),
+      board,
+      talentNotes(ctx, id),
+    ]);
+  },
+  onAction(a, ctx, id) {
+    if (a === 'up' || a === 'down') {
+      const list = talentOrder(id);
+      const i = Math.max(0, list.indexOf(talentView.cur));
+      if (moveTalent(list[Math.max(0, Math.min(list.length - 1, i + (a === 'down' ? 1 : -1)))])) ctx.sfx.cursor();
+      talentView.reveal = true;
+      return true;
+    }
+    if (a === 'confirm') {
+      pressTalent(ctx, id);
+      return true;
+    }
+    return false;
+  },
+  leave: leaveTalent,
+  shown(body) {
+    const board = body.querySelector<HTMLElement>('.slx-talent-board');
+    if (board) board.scrollTop = talentView.top;
+    if (!talentView.reveal) return;
+    talentView.reveal = false;
+    body.querySelector('.slx-talent-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+  },
+};
+
 const ultimate: StatusTab = {
   id: 'ultimate',
   label: T.ui2.status.tabs.ultimate,
@@ -428,4 +590,4 @@ const ultimate: StatusTab = {
   },
 };
 
-export const STATUS_TABS: StatusTab[] = [stats, gear, skills, tree, ultimate];
+export const STATUS_TABS: StatusTab[] = [stats, gear, skills, tree, talent, ultimate];

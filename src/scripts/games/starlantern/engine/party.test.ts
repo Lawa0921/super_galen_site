@@ -4,7 +4,7 @@ import {
   gainExp, awardExp, hasPassive, MAX_LEVEL, SLOTS, slotsFor, defaultSlotFor, sheetOf, setCounts, powersOf,
 } from './party';
 import { partyAt } from './sim';
-import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPointsLeft } from './progression';
+import { defaultTalents, defaultTree, learnedSkills, newTree, raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft } from './progression';
 import { plainItem } from './testing';
 import { rollItem } from './loot/item';
 import { mulberry32 } from './rng';
@@ -232,19 +232,18 @@ describe('skills and passives', () => {
     expect(skillPointsLeft(noel)).toBe(skillPoints(6));
     expect(skillPointsLeft(noel)).toBe(4);
   });
-  it('a Lv8 member in the real game holds talent ranks (interim auto-spend)', () => {
+  it('a Lv8 member in the real game keeps her talent points for the player to spend', () => {
     let need = 0;
     for (let l = 1; l < 8; l++) need += expToNext(l);
     const p = awardExp(newParty(), need, ['scarlet', 'chizuru', 'liz', 'noel', 'selene']).party;
     for (const id of ['scarlet', 'noel'] as const) {
       const m = p.roster[id];
       expect(m.level, id).toBe(8);
-      expect(m.talents, id).toEqual(defaultTalents(id, 8));
-      expect(Object.values(m.talents).reduce((s, r) => s + r, 0), id).toBe(2);
-      expect(talentPointsLeft(m), id).toBe(0);
+      expect(m.talents, id).toEqual({});
+      expect(talentPointsLeft(m), id).toBe(2);
     }
   });
-  it('a level-up spends no skill point: the tree stays as the player left it', () => {
+  it('a level-up spends no point: the tree and the talents stay as the player left them', () => {
     const own = { ...newMember('noel'), level: 2, tree: { 'fire-star': 1, 'noel-fire-up': 1 } };
     const r = gainExp(own, expToNext(2)).member;   // Lv3: one point left
     expect(r.level).toBe(3);
@@ -256,7 +255,8 @@ describe('skills and passives', () => {
     expect(far.level).toBe(10);
     expect(far.tree).toEqual(own.tree);
     expect(skillPointsLeft(far)).toBe(skillPoints(10) - 1);
-    expect(far.talents).toEqual(defaultTalents('noel', 10));   // talents are still spent for now (until Task 14)
+    expect(far.talents).toEqual({});
+    expect(talentPointsLeft(far)).toBe(talentPoints(10));
   });
   it('partyAt gives each member the default tree', () => {
     expect(partyAt(10).roster.noel.tree).toEqual(defaultTree('noel', 10));

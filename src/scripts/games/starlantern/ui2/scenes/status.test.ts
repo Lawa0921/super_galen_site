@@ -7,11 +7,12 @@ import { raiseTalent } from '../../engine/progression';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
-import { STATUS_TABS, resetStatsView, resetTreeView } from './statusTabs';
+import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView } from './statusTabs';
 import { StatusScene } from './status';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
 import { NODES, TREES } from '../../data/trees';
+import { BOARDS, KEYSTONES, TALENT_PER, TALENT_SCALE } from '../../data/talents';
 
 /** A shown number back to a number: the minus sign reads as a minus. */
 const num = (t: string | null) => Number((t ?? '').replace('−', '-'));
@@ -61,7 +62,7 @@ describe('StatusScene', () => {
     (root.querySelector('[data-tab=ultimate]') as HTMLElement).click();
     expect(tab()).toBe('絕技');
     expect(body()).toContain('流星燈火');
-    s.onAction('left'); s.onAction('left'); s.onAction('left'); s.onAction('left');
+    s.onAction('left'); s.onAction('left'); s.onAction('left'); s.onAction('left'); s.onAction('left');
     expect(tab()).toBe('能力');
     s.onAction('left');                                   // wraps
     expect(tab()).toBe('絕技');
@@ -99,13 +100,13 @@ describe('StatusScene', () => {
   });
 
   it('has a tab list that new systems can join, each carrying its own label and keys', () => {
-    expect(STATUS_TABS.map((t) => t.id)).toEqual(['stats', 'gear', 'skills', 'tree', 'ultimate']);
+    expect(STATUS_TABS.map((t) => t.id)).toEqual(['stats', 'gear', 'skills', 'tree', 'talent', 'ultimate']);
     expect(STATUS_TABS.every((t) => t.label.length > 0)).toBe(true);
     const extra = { id: 'test', label: '測試', onAction: vi.fn(() => true), render: () => document.createElement('div') };
     STATUS_TABS.push(extra);
     try {
       const { s, tab } = setup('scarlet');
-      for (let i = 0; i < 5; i++) s.onAction('right');
+      for (let i = 0; i < STATUS_TABS.length - 1; i++) s.onAction('right');
       expect(tab()).toBe('測試');
       s.onAction('confirm');
       expect(extra.onAction).toHaveBeenCalledWith('confirm', expect.anything(), 'scarlet');
@@ -270,9 +271,9 @@ describe('StatusScene', () => {
       const { root, s, tab } = setup('scarlet');
       const hint = () => root.querySelector('.slx-status-panel .slx-hint')!.textContent!;
       expect(hint()).toContain('Enter 摺疊');
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 5; i++) {
         s.onAction('right');
-        if (tab() === '技能樹') {
+        if (tab() === '技能樹' || tab() === '天賦') {
           expect(hint()).toBe(T.ui2.status.hintTree);
           continue;
         }
@@ -446,9 +447,9 @@ describe('StatusScene', () => {
     expect(off.textContent).not.toContain(T.gear.notLearned);
   });
 
-  it('the tabs read 能力 裝備 技能 技能樹 絕技', () => {
+  it('the tabs read 能力 裝備 技能 技能樹 天賦 絕技', () => {
     const { root } = setup('noel');
-    expect([...root.querySelectorAll('.slx-tab')].map((t) => t.textContent)).toEqual(['能力', '裝備', '技能', '技能樹', '絕技']);
+    expect([...root.querySelectorAll('.slx-tab')].map((t) => t.textContent)).toEqual(['能力', '裝備', '技能', '技能樹', '天賦', '絕技']);
   });
 
   describe('the tree tab', () => {
@@ -623,7 +624,7 @@ describe('StatusScene', () => {
     it('left and right still switch tabs on the tree tab', () => {
       const { s, tab } = onTree(2);
       s.onAction('right');
-      expect(tab()).toBe('絕技');
+      expect(tab()).toBe('天賦');
       s.onAction('left');
       expect(tab()).toBe('技能樹');
       s.onAction('left');
@@ -709,6 +710,201 @@ describe('StatusScene', () => {
     it('with no capstone taken, the line says so', () => {
       const { body } = onTree(2);
       expect(body()).toContain(T.ui2.tree.noCapstone);
+    });
+  });
+
+  describe('the talent tab', () => {
+    beforeEach(() => resetTalentView());
+
+    /** Noel at `level` with `talents`, on the talent tab. */
+    const onTalent = (level: number, talents: Record<string, number> = {}) => {
+      const r = setup('noel');
+      r.game.state.party.roster.noel = { ...r.game.state.party.roster.noel, level, talents };
+      for (let i = 0; i < 4; i++) r.s.onAction('right');
+      expect(r.tab()).toBe('天賦');
+      const node = (id: string) => r.root.querySelector(`.slx-talent-node[data-node="${id}"]`) as HTMLElement;
+      const cur = () => r.root.querySelector('.slx-talent-node.slx-row-cur')?.getAttribute('data-node');
+      const msg = () => r.root.querySelector('.slx-talent-msg')?.textContent ?? '';
+      const info = () => r.root.querySelector('.slx-talent-info')!.textContent!;
+      const top = () => r.root.querySelector('.slx-talent-top')!.textContent!;
+      const noel = () => r.game.state.party.roster.noel;
+      return { ...r, node, cur, msg, info, top, noel };
+    };
+    const down = (s: StatusScene, n: number) => { for (let i = 0; i < n; i++) s.onAction('down'); };
+    /** Noel's talent nodes in cursor order: row 0 columns 0-3, row 1, ... row 5, then the keystones. */
+    const order = BOARDS.noel.map((n) => n.id);
+    /** 11 points on noel's board: one short of the keystone gate. */
+    const eleven = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 1 };
+
+    it('the talent tab draws the 6x4 board and the keystone row', () => {
+      const { root, node, top, game } = onTalent(6);
+      const rows = [...root.querySelectorAll('.slx-talent-row')];
+      expect(rows).toHaveLength(6);
+      expect(rows.every((r) => r.querySelectorAll('.slx-talent-node').length === 4)).toBe(true);
+      expect(root.querySelectorAll('.slx-talent-node[data-node]')).toHaveLength(27);
+      expect(root.querySelectorAll('.slx-talent-keys .slx-talent-node')).toHaveLength(3);
+      expect(top()).toContain('剩餘天賦點 1');
+      expect(top()).toContain('關鍵天賦 0／2');
+      expect(top()).toContain(T.ui2.talent.board(0));
+      expect(node('noel-t00').textContent).toContain(T.gear.statName.int);
+      expect(node('noel-t00').textContent).toContain('+2／級');
+      expect(node('noel-t00').textContent).toContain('0／5');
+      expect(node('noel-t00').classList.contains('slx-node-open')).toBe(true);
+      expect(node('noel-t10').classList.contains('slx-node-locked')).toBe(true);
+      expect(node('noel-t10').textContent).toContain(T.ui2.talent.reason.adjacent);
+      expect(node('noel-k0').textContent).toContain(KEYSTONES['weak-tp'].name);
+      expect(node('noel-k0').textContent).toContain(KEYSTONES['weak-tp'].desc);
+      expect(node('noel-k0').textContent).toContain('0／1');
+      expect(game.state.party.roster.noel.talents).toEqual({});   // drawing spends nothing
+    });
+
+    it('Lv5 has no talent points: Enter shows the reason at once and changes nothing', () => {
+      const { s, msg, noel, sfx, cur, game } = onTalent(5);
+      const spy = vi.spyOn(game, 'raiseTalent');
+      expect(cur()).toBe('noel-t00');
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.talent.reason.points);
+      expect(sfx.error).toHaveBeenCalledTimes(1);
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.talent.reason.points);
+      expect(noel().talents).toEqual({});
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('Lv6: Enter twice on a row-0 node raises it to 1／5 and the stats tab shows it in the 天賦 column', () => {
+      const { s, root, msg, noel, node, top, game, tab } = onTalent(6);
+      for (let i = 0; i < 4; i++) s.onAction('left');
+      expect(tab()).toBe('能力');
+      expect(root.querySelector('[data-stat=int] .slx-talent')!.textContent).toBe('—');
+      for (let i = 0; i < 4; i++) s.onAction('right');
+      const spy = vi.spyOn(game, 'raiseTalent');
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.talent.pending);
+      expect(noel().talents).toEqual({});
+      s.onAction('confirm');
+      expect(spy).toHaveBeenCalledWith('noel', 'noel-t00');   // through the Game, which saves
+      expect(noel().talents).toEqual({ 'noel-t00': 1 });
+      expect(node('noel-t00').textContent).toContain('1／5');
+      expect(top()).toContain('剩餘天賦點 0');
+      expect(top()).toContain(T.ui2.talent.board(1));
+      for (let i = 0; i < 4; i++) s.onAction('left');
+      expect(root.querySelector('[data-stat=int] .slx-talent')!.textContent).toBe(T.signed(TALENT_PER.int! * TALENT_SCALE));
+    });
+
+    it('a keystone stays locked under 12 board points, with the reason shown', () => {
+      const { node, msg, noel, top } = onTalent(50, eleven);
+      expect(top()).toContain(T.ui2.talent.board(11));
+      expect(top()).toContain('12 點後可選關鍵天賦');
+      expect(node('noel-k0').classList.contains('slx-node-locked')).toBe(true);
+      expect(node('noel-k0').textContent).toContain(T.ui2.talent.reason.gate);
+      node('noel-k0').click();                                  // moves the cursor
+      node('noel-k0').click();                                  // a press: refused at once
+      expect(msg()).toBe(T.ui2.talent.reason.gate);
+      expect(noel().talents).toEqual(eleven);
+      node('noel-t02').click(); node('noel-t02').click(); node('noel-t02').click();
+      expect(noel().talents['noel-t02']).toBe(2);
+      expect(top()).toContain(T.ui2.talent.board(12));
+      expect(node('noel-k0').classList.contains('slx-node-open')).toBe(true);
+    });
+
+    it('two keystones taken: the count reads 2／2 and the third says why it is shut', () => {
+      const { node, top, s, msg, cur } = onTalent(50, { ...eleven, 'noel-t02': 2, 'noel-k0': 1, 'noel-k1': 1 });
+      expect(top()).toContain('關鍵天賦 2／2');
+      expect(node('noel-k0').classList.contains('slx-node-learned')).toBe(true);
+      expect(node('noel-k0').textContent).toContain('1／1');
+      expect(node('noel-k2').classList.contains('slx-node-locked')).toBe(true);
+      expect(node('noel-k2').textContent).toContain(T.ui2.talent.reason.keystones);
+      down(s, 26);
+      expect(cur()).toBe('noel-k2');
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.talent.reason.keystones);
+    });
+
+    it('with no points left a shut node shows its structural reason, an open one 點數不足', () => {
+      const { node } = onTalent(6, { 'noel-t00': 1 });
+      expect(node('noel-t13').textContent).toContain(T.ui2.talent.reason.adjacent);
+      expect(node('noel-t13').textContent).not.toContain(T.ui2.talent.reason.points);
+      expect(node('noel-k0').textContent).toContain(T.ui2.talent.reason.gate);
+      expect(node('noel-t01').textContent).toContain(T.ui2.talent.reason.points);
+      expect(node('noel-t11').textContent).toContain(T.ui2.talent.reason.points);   // diagonal below a raised node
+    });
+
+    it('every refusal has its own words', () => {
+      for (const k of ['unknown', 'max', 'points', 'adjacent', 'gate', 'keystones'] as const) expect(T.ui2.talent.reason[k].length, k).toBeGreaterThan(0);
+      expect(new Set(Object.values(T.ui2.talent.reason)).size).toBe(6);
+    });
+
+    it('the keyboard reaches every node, row by row and then the keystones', () => {
+      const { s, cur } = onTalent(6);
+      const seen = [cur()];
+      for (let i = 0; i < order.length - 1; i++) { s.onAction('down'); seen.push(cur()); }
+      expect(seen).toEqual(order);
+      s.onAction('down');
+      expect(cur()).toBe('noel-k2');                            // held at the last node
+      for (let i = 0; i < 40; i++) s.onAction('up');
+      expect(cur()).toBe('noel-t00');
+    });
+
+    it('mouse and touch reach every node; a click moves, a second arms and a third raises', () => {
+      const { node, cur, msg, noel } = onTalent(6);
+      for (const id of order) {
+        node(id).click();
+        expect(cur()).toBe(id);
+      }
+      node('noel-t01').click();
+      expect(msg()).toBe('');
+      node('noel-t01').click();
+      expect(msg()).toBe(T.ui2.talent.pending);
+      node('noel-t01').click();
+      expect(noel().talents).toEqual({ 'noel-t01': 1 });
+    });
+
+    it('moving the cursor, switching tabs or paging drops a pending press', () => {
+      const { s, msg, noel, name } = onTalent(6);
+      s.onAction('confirm');
+      expect(msg()).toBe(T.ui2.talent.pending);
+      s.onAction('down'); s.onAction('up');
+      expect(msg()).toBe('');
+      s.onAction('confirm');                                    // armed afresh, not raised
+      expect(noel().talents).toEqual({});
+      s.onAction('right'); s.onAction('left');
+      expect(msg()).toBe('');
+      s.onAction('confirm');
+      expect(noel().talents).toEqual({});
+      s.onAction('next');
+      expect(name()).not.toContain('諾艾兒');
+      expect(msg()).toBe('');
+    });
+
+    it('a spend the Game turns down is not shown as spent', () => {
+      const { s, game, msg, noel, sfx, top } = onTalent(6);
+      s.onAction('confirm');
+      game.phase = 'battle';                                    // the Game refuses spends here
+      sfx.confirm.mockClear();
+      s.onAction('confirm');
+      expect(noel().talents).toEqual({});
+      expect(sfx.confirm).not.toHaveBeenCalled();
+      expect(msg()).toBe(T.ui2.talent.failed);
+      expect(top()).toContain('剩餘天賦點 1');
+    });
+
+    it('the notes show a node\'s bonus per rank and what it gives now, and a keystone\'s effect', () => {
+      const { node, info } = onTalent(10, { 'noel-t00': 2 });
+      node('noel-t00').click();
+      expect(info()).toContain('智力 +2／級（目前 +4）');
+      node('noel-k1').click();
+      expect(info()).toContain(KEYSTONES['opening-gauge'].name);
+      expect(info()).toContain(KEYSTONES['opening-gauge'].desc);
+    });
+
+    it('left and right still switch tabs on the talent tab', () => {
+      const { s, tab } = onTalent(6);
+      s.onAction('right');
+      expect(tab()).toBe('絕技');
+      s.onAction('left');
+      expect(tab()).toBe('天賦');
+      s.onAction('left');
+      expect(tab()).toBe('技能樹');
     });
   });
 });

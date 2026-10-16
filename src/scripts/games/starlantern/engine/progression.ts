@@ -176,7 +176,11 @@ export function defaultTree(id: CharacterId, level: number): Record<string, numb
  * Talent rules. The board rules live in data/talents.ts (`talentBlocker`); this adds the member's points.
  */
 
-export type TalentFail = 'unknown' | 'max' | 'points' | 'adjacent' | 'gate' | 'keystones';
+/**
+ * Why a talent node cannot take its next rank, in the order they are checked: the structural reasons first (as RaiseFail),
+ * so a member with no points left still learns what stands in the way; 'points' only for a node that is otherwise open.
+ */
+export type TalentFail = 'unknown' | 'max' | 'adjacent' | 'gate' | 'keystones' | 'points';
 
 const BLOCKER: Record<TalentBlocker, TalentFail> = {
   unknown: 'unknown', maxed: 'max', adjacency: 'adjacent', gate: 'gate', 'keystone-cap': 'keystones',
@@ -195,9 +199,8 @@ export function talentPointsLeft(m: Member): number {
 /** Why `node` cannot take its next rank, checked in the order of TalentFail; null when it can. Never throws. */
 export function canRaiseTalent(m: Member, node: string): TalentFail | null {
   const blocker = talentBlocker(m.id, node, talentsOf(m));
-  if (blocker === 'unknown' || blocker === 'maxed') return BLOCKER[blocker];
-  if (talentPointsLeft(m) <= 0) return 'points';
-  return blocker ? BLOCKER[blocker] : null;
+  if (blocker) return BLOCKER[blocker];
+  return talentPointsLeft(m) <= 0 ? 'points' : null;
 }
 
 /** One more rank in `node`, on a copy; the member passed in is never changed. */
@@ -288,23 +291,3 @@ export function validBuild(id: CharacterId, level: number, tree: unknown, talent
 
 /** The build back to its start: the free first rank held, nothing else spent, so every point is available again. */
 export const resetBuild = (m: Member): Member => ({ ...m, tree: newTree(m.id), talents: {} });
-
-// TEMPORARY: talents only, removed by Task 14 (the player spends talent points)
-/**
- * Spends a member's unspent talent points toward `defaultTalents` of their level, so talents keep growing until the
- * player can spend them. Skill points are never spent here: the player spends them on the status screen's tree tab.
- * Ranks already held stay; each raise goes through `raiseTalent`, so the rules hold.
- */
-export function autoSpend(m: Member): Member {
-  const talents = defaultTalents(m.id, m.level);
-  const held = (node: string) => rankOf(BOARDS[m.id].find((n) => n.id === node)!, talentsOf(m));
-  for (let progress = true; progress && talentPointsLeft(m) > 0;) {
-    progress = false;
-    for (const node of Object.keys(talents)) {
-      if (held(node) >= talents[node]) continue;
-      const r = raiseTalent(m, node);
-      if (r.ok) { m = r.member; progress = true; }
-    }
-  }
-  return m;
-}
