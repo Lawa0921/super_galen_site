@@ -50,4 +50,12 @@ describe('Router input timing', () => {
     expect(log).toEqual(['enter title', 'title:confirm']);
     expect(root.hasAttribute('inert')).toBe(false);
   });
+
+  it('tells the new scene which scene it came from', async () => {
+    const seen: (string | undefined)[] = [];
+    const r = new Router(document.createElement('div'), (n, ctx) => { seen.push(ctx.from); return fake([], n); }, {} as never, 0);
+    await r.go('title');
+    await r.go('settings');
+    expect(seen).toEqual([undefined, 'title']);
+  });
 });

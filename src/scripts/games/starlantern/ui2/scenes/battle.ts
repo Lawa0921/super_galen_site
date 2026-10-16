@@ -17,7 +17,7 @@ import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar } from '../partyBar';
 import type { Scene, SceneCtx } from '../scene';
-import { MenuView, win } from '../widgets';
+import { MenuView, backControl, win } from '../widgets';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
 export const BATTLE_LEFT = 150;
@@ -33,6 +33,8 @@ export class BattleScene implements Scene {
   private cmd!: HTMLElement;
   private marker!: HTMLElement;
   private cutin!: HTMLElement;
+  private backEl!: HTMLElement;
+  private note: HTMLElement | null = null;
   private bar: PartyBar;
   private layers: Layer[] = [];
   private view: MenuView | null = null;
@@ -53,7 +55,8 @@ export class BattleScene implements Scene {
     this.cmd = win('slx-bcmd');
     this.marker = el('div', { class: 'slx-target', text: '▼', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.cutin = el('div', { class: 'sl-cutin', attrs: { hidden: '', 'aria-hidden': 'true' } });
-    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.marker, this.bar.el, this.cmd, this.cutin]);
+    this.backEl = backControl(() => this.onAction('cancel'));
+    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin]);
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
@@ -113,6 +116,12 @@ export class BattleScene implements Scene {
       cancel: () => this.back(),
     });
     this.cmd.replaceChildren(el('div', { class: 'slx-who', text: T.cmd.choose(actor.name) }), this.view.el);
+    this.syncBack();
+  }
+
+  /** 返回 shows only when cancel would do something: close a sub-list or go back to the previous member. */
+  private syncBack(): void {
+    this.backEl.hidden = this.busy || !!this.result || (this.layers.length === 0 && this.index === 0);
   }
 
   private back(): void {
@@ -145,7 +154,7 @@ export class BattleScene implements Scene {
   }
 
   private itemItems(): MenuItem[] {
-    return Object.entries(this.state.inventory).filter(([id, n]) => ITEMS[id]?.battle && n > 0).map(([id, n]) => ({ id, label: ITEMS[id].name, right: `×${n}` }));
+    return Object.entries(this.state.inventory).filter(([id, n]) => ITEMS[id]?.battle && n > 0).map(([id, n]) => ({ id, label: ITEMS[id].name, right: `×${n}`, note: ITEMS[id].desc }));
   }
 
   private subList(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-bsub'): MenuView {
@@ -156,11 +165,13 @@ export class BattleScene implements Scene {
     }, 6);
     this.pushLayer({ el: win(cls, [v.el]), onAction: (a) => v.onAction(a) });
     this.onSubMoved(v);
+    v.el.addEventListener('pointerover', () => this.onSubMoved(v));
     return v;
   }
 
   private onSubMoved(v: MenuView): void {
     const c = v.menu.current();
+    this.showNote(c?.note);
     const e = c ? this.state.enemies.findIndex((x) => x.key === c.id) : -1;
     if (e < 0) { this.marker.setAttribute('hidden', ''); return; }
     this.marker.className = `slx-target slx-target-${this.state.enemies.length}-${e}`;
@@ -204,19 +215,31 @@ export class BattleScene implements Scene {
     this.body.append(l.el);
     this.cmd.setAttribute('inert', '');
     this.layers.forEach((x, i) => (i < this.layers.length - 1 ? x.el.setAttribute('inert', '') : x.el.removeAttribute('inert')));
+    this.syncBack();
   }
 
   private popLayer(): void {
     this.layers.pop()?.el.remove();
     this.marker.setAttribute('hidden', '');
+    this.showNote(undefined);
     const top = this.layers[this.layers.length - 1];
     if (top) top.el.removeAttribute('inert'); else this.cmd.removeAttribute('inert');
+    this.syncBack();
   }
 
   private clearLayers(): void {
     while (this.layers.length) this.layers.pop()!.el.remove();
     this.marker.setAttribute('hidden', '');
+    this.showNote(undefined);
     this.cmd.removeAttribute('inert');
+    this.syncBack();
+  }
+
+  /** One-line description of the skill or item under the cursor, under the sub-list. */
+  private showNote(text: string | undefined): void {
+    if (!text) { this.note?.remove(); this.note = null; return; }
+    if (!this.note) { this.note = win('slx-bnote'); this.body.append(this.note); }
+    this.note.textContent = text;
   }
 
   private sfxAdapter(): SoundManager {
@@ -229,6 +252,7 @@ export class BattleScene implements Scene {
   private async submit(): Promise<void> {
     if (this.busy) return;
     this.busy = true;
+    this.syncBack();
     this.root.setAttribute('inert', '');
     this.cmd.replaceChildren();
     this.view = null;

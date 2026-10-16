@@ -48,6 +48,31 @@ describe('BattleScene', () => {
     expect(heading()).toBe('絲嘉蕾 的行動');
   });
 
+  it('offers a 返回 control only when there is something to go back to', () => {
+    const { s, root, heading } = setup();
+    const back = root.querySelector('.slx-back') as HTMLElement;
+    expect(back.hidden).toBe(true);
+    s.onAction('down'); s.onAction('confirm');                        // 技能 opens a sub-list
+    expect(back.hidden).toBe(false);
+    back.click();
+    expect(root.querySelector('.slx-bsub')).toBeNull();
+    expect(back.hidden).toBe(true);
+    s.onAction('down'); s.onAction('confirm');                        // 防禦: next member
+    expect(back.hidden).toBe(false);
+    back.click();
+    expect(heading()).toBe('絲嘉蕾 的行動');
+  });
+
+  it('describes the skill under the cursor', () => {
+    const { s, root } = setup();
+    s.onAction('down'); s.onAction('confirm');
+    const note = root.querySelector('.slx-bnote') as HTMLElement;
+    expect(note.hidden).toBe(false);
+    expect(note.textContent!.length).toBeGreaterThan(0);
+    s.onAction('cancel');
+    expect(root.querySelector('.slx-bnote')).toBeNull();
+  });
+
   it('disables items when there are none to use in battle', () => {
     const { root } = setup((g) => { g.state.inventory = {}; g.battle!.inventory = {}; });
     const item = [...root.querySelectorAll('.slx-bcmd [role=option]')].find((o) => o.textContent === '道具')!;

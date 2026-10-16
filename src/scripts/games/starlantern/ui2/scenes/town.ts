@@ -4,7 +4,8 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
-import { Dialogue, MenuView, backControl, win } from '../widgets';
+import { textCps } from '../settings';
+import { Dialogue, MenuView, backControl, confirmBox, win } from '../widgets';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'settings'] as const;
 
@@ -13,15 +14,18 @@ export class TownScene implements Scene {
   private menuWin!: HTMLElement;
   private backEl!: HTMLElement;
   private talk: Dialogue;
+  private root!: HTMLElement;
+  private ask: MenuView | null = null;
 
-  constructor(private ctx: SceneCtx, charsPerSecond = 30) {
+  constructor(private ctx: SceneCtx, charsPerSecond = textCps(ctx)) {
     this.talk = new Dialogue(charsPerSecond, () => { this.menuWin?.removeAttribute('inert'); this.backEl?.removeAttribute('inert'); });
   }
 
   enter(root: HTMLElement): void {
+    this.root = root;
     const t = T.ui2.town;
     const menu = new Menu(FACILITIES.map((id) => ({ id, label: t.facilities[id] })));
-    this.view = new MenuView(menu, { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.ctx.go('title'); } });
+    this.view = new MenuView(menu, { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
     const bg = this.ctx.art.has(art.scene('town')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('town'), alt: '' } })] : [];
     root.append(el('div', { class: 'slx-scene slx-town' }, [
       ...bg,
@@ -37,11 +41,30 @@ export class TownScene implements Scene {
     else void this.speak(t.place.split(' ').pop() ?? '', t.lines[Math.floor(this.ctx.game.rng() * t.lines.length)]);
   }
 
-  exit(): void {}
+  exit(): void { this.talk.stop(); }
 
   onAction(a: UiAction): void {
     if (this.talk.busy()) { this.talk.onAction(a); return; }
+    if (this.ask) { this.ask.onAction(a); return; }
     this.view.onAction(a);
+  }
+
+  /** Leaving for the title drops unsaved progress, so it is a question with 否 as the default. */
+  private askTitle(): void {
+    if (this.ask) return;
+    const box = confirmBox(T.ui2.town.toTitle, (yes) => {
+      box.el.remove();
+      this.ask = null;
+      this.menuWin.removeAttribute('inert');
+      this.backEl.removeAttribute('inert');
+      if (yes) this.ctx.go('title');
+    });
+    box.view.menu.setCursor(1);
+    box.view.render();
+    this.ask = box.view;
+    this.menuWin.setAttribute('inert', '');
+    this.backEl.setAttribute('inert', '');
+    this.root.querySelector('.slx-town')!.append(box.el);
   }
 
   /** The menu ignores the pointer while a line is on screen, matching the keyboard. */
@@ -53,7 +76,7 @@ export class TownScene implements Scene {
 
   private pick(id: string, label: string): void {
     this.ctx.sfx.confirm();
-    if (id === 'guild' || id === 'shop' || id === 'inn' || id === 'gate') { this.ctx.go(id); return; }
+    if (id === 'guild' || id === 'shop' || id === 'inn' || id === 'gate' || id === 'settings') { this.ctx.go(id); return; }
     void this.speak('', T.ui2.town.soon(label));
   }
 }

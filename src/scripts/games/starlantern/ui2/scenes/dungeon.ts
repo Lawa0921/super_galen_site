@@ -10,6 +10,7 @@ import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar } from '../partyBar';
+import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, confirmBox, win } from '../widgets';
 
@@ -28,7 +29,7 @@ export class DungeonScene implements Scene {
   private talk: Dialogue;
   private leaving = false;
 
-  constructor(private ctx: SceneCtx, cps = 30) {
+  constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
     this.bar = new PartyBar(ctx.art);
     this.talk = new Dialogue(cps, () => this.syncInert());
   }
@@ -46,6 +47,7 @@ export class DungeonScene implements Scene {
   }
 
   exit(): void {
+    this.talk.stop();
     this.ctx.stage?.show(null);
   }
 

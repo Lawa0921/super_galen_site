@@ -24,6 +24,7 @@ export async function toggleFullscreen(el: HTMLElement): Promise<void> {
 /** Keyboard and right-click to UI actions. Held confirm/cancel keys do not repeat, so a held key cannot skip dialogue. */
 export function bindUiInput(target: Window, handler: (a: UiAction) => void): () => void {
   const onKey = (e: KeyboardEvent) => {
+    if (e.ctrlKey || e.altKey || e.metaKey) return;   // browser shortcuts (copy, tab switching, zoom) stay the browser's
     if (e.key === 'F11') { e.preventDefault(); void toggleFullscreen(document.getElementById('sl-screen') ?? document.documentElement); return; }
     const a = uiActionFor(e.key);
     if (!a) return;

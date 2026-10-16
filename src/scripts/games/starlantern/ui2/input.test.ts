@@ -25,6 +25,17 @@ describe('bindUiInput', () => {
     expect(handler).toHaveBeenCalledTimes(2);
   });
 
+  it('leaves browser shortcuts with Ctrl, Alt or Meta alone', () => {
+    const handler = vi.fn();
+    const off = bindUiInput(window, handler);
+    const e = new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, cancelable: true });
+    window.dispatchEvent(e);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, cancelable: true }));
+    expect(handler).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+    off();
+  });
+
   it('treats a right click as cancel', () => {
     const handler = vi.fn();
     const off = bindUiInput(window, handler);

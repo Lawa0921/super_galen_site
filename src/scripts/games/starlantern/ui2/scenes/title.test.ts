@@ -39,6 +39,14 @@ describe('TitleScene', () => {
     expect(c.go).toHaveBeenCalledWith('town');
   });
 
+  it('opens settings', () => {
+    const c = ctx(false); const root = document.createElement('div');
+    const s = new TitleScene(c); s.enter(root);
+    expect(root.querySelector('[data-id=settings]')!.getAttribute('aria-disabled')).toBe('false');
+    (root.querySelector('[data-id=settings]') as HTMLElement).click();
+    expect(c.go).toHaveBeenCalledWith('settings');
+  });
+
   it('continues into town', () => {
     const c = ctx(true); const root = document.createElement('div');
     const s = new TitleScene(c); s.enter(root);

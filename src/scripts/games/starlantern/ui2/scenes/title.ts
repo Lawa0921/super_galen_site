@@ -18,7 +18,7 @@ export class TitleScene implements Scene {
     this.root = root;
     const t = T.ui2.title;
     const menu = new Menu([
-      { id: 'new', label: t.newGame }, { id: 'cont', label: t.cont, disabled: !this.ctx.hasSave() }, { id: 'settings', label: t.settings, disabled: true },
+      { id: 'new', label: t.newGame }, { id: 'cont', label: t.cont, disabled: !this.ctx.hasSave() }, { id: 'settings', label: t.settings },
     ], this.ctx.hasSave() ? 1 : 0);
     this.view = new MenuView(menu, { pick: (it) => this.pick(it.id), moved: () => this.ctx.sfx.cursor() });
     const bg = this.ctx.art.has(art.scene('title')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('title'), alt: '' } })] : [];
@@ -37,6 +37,7 @@ export class TitleScene implements Scene {
   private pick(id: string): void {
     this.ctx.sfx.confirm();
     if (id === 'cont') { this.ctx.go('town'); return; }
+    if (id === 'settings') { this.ctx.go('settings'); return; }
     if (id !== 'new' || this.ask) return;
     if (!this.ctx.hasSave()) { this.ctx.newGame(); this.ctx.go('town'); return; }
     const box = confirmBox(T.ui2.title.overwrite, (yes) => {

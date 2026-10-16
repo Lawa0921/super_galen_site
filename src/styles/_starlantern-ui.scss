@@ -187,7 +187,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5;
 .slx-msg { left: 8px; right: 8px; top: 6px; min-height: 36px; white-space: pre-line; }
 .slx-bcmd { left: 6px; bottom: 70px; min-width: 132px; }
 .slx-who { color: $slx-gold; margin-bottom: 2px; }
-.slx-bsub { right: 6px; top: 48px; min-width: 200px; }
+.slx-bsub { right: 6px; top: 64px; min-width: 200px; }
 .slx-bsub .slx-right { min-width: 40px; text-align: right; }
 .slx-result { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
 .slx-result h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
@@ -279,3 +279,18 @@ $slx-battle-left: 150px;
 .slx-clear-card { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 360px; text-align: center; padding: 14px 18px; }
 .slx-clear-card h2 { margin: 0 0 8px; font-size: 20px; font-weight: normal; color: $slx-gold; }
 .slx-clear-card p { margin: 0 0 10px; }
+
+// Battle: 返回 under the message line; the description of the skill or item under the cursor covers the message line
+.slx-battle .slx-back { right: auto; left: 6px; top: 64px; }
+.slx-bnote { left: 8px; right: 8px; top: 6px; min-height: 36px; color: $slx-gold; }
+
+// Settings
+.slx-bg-dim { filter: brightness(0.45); }
+.slx-settings { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
+.slx-settings h3, .slx-keys h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-settings .slx-right { min-width: 90px; text-align: right; color: $slx-ink; }
+.slx-hint { margin: 6px 0 0; color: $slx-dim; font-size: 10px; line-height: 12px; }
+.slx-keys { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 340px; cursor: pointer; }
+.slx-keys p { margin: 2px 0; display: flex; gap: 12px; }
+.slx-keys b { min-width: 120px; font-weight: normal; color: $slx-gold; }
+.slx-keys .slx-hint { display: block; text-align: center; }

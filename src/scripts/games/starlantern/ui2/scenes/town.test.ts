@@ -16,7 +16,7 @@ describe('TownScene', () => {
     expect(root.querySelector('.slx-talk .slx-text')!.textContent!.length).toBeGreaterThan(0);
   });
 
-  it('enters a facility, keeps settings as a not-yet line, and returns to title on cancel', () => {
+  it('enters a facility or settings, and asks before returning to the title on cancel', () => {
     const go = vi.fn();
     const root = document.createElement('div');
     const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
@@ -26,9 +26,14 @@ describe('TownScene', () => {
     expect(go).toHaveBeenCalledWith('guild');
     for (let i = 0; i < 4; i++) s.onAction('down');
     s.onAction('confirm');               // 設定
-    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toContain('設定');
-    s.onAction('confirm');
+    expect(go).toHaveBeenCalledWith('settings');
     s.onAction('cancel');
+    expect(root.querySelector('.slx-confirm')!.textContent).toContain('標題');
+    expect(root.querySelector('.slx-confirm [aria-selected=true]')!.textContent).toBe('否');
+    s.onAction('confirm');               // 否
+    expect(root.querySelector('.slx-confirm')).toBeNull();
+    expect(go).not.toHaveBeenCalledWith('title');
+    s.onAction('cancel'); s.onAction('up'); s.onAction('confirm');
     expect(go).toHaveBeenCalledWith('title');
   });
 });
@@ -47,13 +52,14 @@ describe('TownScene pointer', () => {
 });
 
 describe('TownScene mouse', () => {
-  it('has a 返回 control that goes back to the title once the greeting is closed', () => {
+  it('has a 返回 control that asks before going back to the title once the greeting is closed', () => {
     const go = vi.fn();
     const root = document.createElement('div');
     const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
     s.enter(root);
     (root.querySelector('.slx-talk') as HTMLElement).click();
     (root.querySelector('.slx-back') as HTMLElement).click();
+    (root.querySelector('.slx-confirm [data-id=yes]') as HTMLElement).click();
     expect(go).toHaveBeenCalledWith('title');
   });
 });

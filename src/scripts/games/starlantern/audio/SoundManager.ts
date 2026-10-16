@@ -30,6 +30,12 @@ export class SoundManager {
     if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
 
+  /** Player volume, 0..1 (the settings screen). */
+  setVolume(v: number): void {
+    this.sfxVolume = Math.max(0, Math.min(1, v));
+    if (this.master) this.master.gain.value = BASE * this.sfxVolume;
+  }
+
   toggle(): boolean {
     this.muted = !this.muted;
     return this.muted;

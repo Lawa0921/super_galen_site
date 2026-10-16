@@ -4,6 +4,7 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
+import { textCps } from '../settings';
 import { Dialogue, MenuView, backControl, win } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate';
@@ -23,7 +24,7 @@ export abstract class FacilityScene implements Scene {
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
   private talking = false;
 
-  constructor(protected ctx: SceneCtx, protected id: FacilityId, cps = 30) {
+  constructor(protected ctx: SceneCtx, protected id: FacilityId, cps = textCps(ctx)) {
     this.talk = new Dialogue(cps, () => { this.talking = false; this.syncInert(); });
   }
 
@@ -47,6 +48,7 @@ export abstract class FacilityScene implements Scene {
   }
 
   exit(): void {
+    this.talk.stop();
     if (this.moodTimer) clearTimeout(this.moodTimer);
     this.moodTimer = null;
   }

@@ -60,6 +60,16 @@ describe('Dialogue', () => {
     expect(d.busy()).toBe(false);
   });
 
+  it('settles a line that a newer line replaces, so nothing waits forever', async () => {
+    const d = new Dialogue(Infinity);
+    const first = vi.fn();
+    void d.say('', '一').then(first);
+    void d.say('', '二');
+    await Promise.resolve();
+    expect(first).toHaveBeenCalled();
+    expect(d.el.querySelector('.slx-text')!.textContent).toBe('二');
+  });
+
   it('ignores input when idle and shows text at once when the speed is instant', async () => {
     const d = new Dialogue(Infinity);
     expect(d.onAction('confirm')).toBe(false);

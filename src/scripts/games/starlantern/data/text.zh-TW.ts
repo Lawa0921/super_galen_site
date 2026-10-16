@@ -68,11 +68,26 @@ export const T = {
   },
   ui2: {
     title: { newGame: '新遊戲', cont: '繼續', settings: '設定', overwrite: '已有存檔，開始新遊戲會覆蓋它。要繼續嗎？' },
+    settings: {
+      title: '設定', volume: '音效音量', speed: '文字速度', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
+      speeds: { slow: '慢', mid: '中', fast: '快', instant: '立即' } as Record<'slow' | 'mid' | 'fast' | 'instant', string>,
+      hint: '←→ 調整　點擊 切換　Esc／右鍵 返回',
+      close: '點擊或按 Enter／Esc 關閉',
+      keyList: [
+        ['方向鍵／WASD', '移動游標、在迷宮中行走'],
+        ['Enter／Space／Z', '決定、推進對話'],
+        ['Esc／X／右鍵', '取消、返回'],
+        ['C', '迷宮中開啟選單'],
+        ['F11', '全螢幕'],
+        ['滑鼠', '點選項目即決定；畫面上的「返回」等同取消'],
+      ] as [string, string][],
+    },
     town: {
       place: '邊境小鎮 露米亞',
       facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '迷宮入口', settings: '設定' },
       lines: ['暮霧又濃了些。冒險者們，今天要往哪裡去？', '聽說迷宮深處有星燈的光。', '補給品記得在出發前備齊。'],
       soon: (name: string) => `${name}的新介面正在製作中，下一階段開放。`,
+      toTitle: '要回到標題畫面嗎？上次在旅館存檔之後的進度不會保留。',
     },
     facility: {
       guild: { place: '冒險者公會', npc: '安娜', greet: ['歡迎回來，要整頓隊伍嗎？', '今天也請平安歸來。'] },

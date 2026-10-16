@@ -2,9 +2,10 @@ import type { Game } from '../engine/game';
 import type { SoundManager } from '../audio/SoundManager';
 import type { ArtIndex } from '../render/textures';
 import type { UiAction } from './input';
+import type { SettingsStore } from './settings';
 import type { Stage } from './stage';
 
-export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'dungeon' | 'battle' | 'clear';
+export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'dungeon' | 'battle' | 'clear' | 'settings';
 export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void }
 export interface SceneCtx {
   game: Game; art: ArtIndex;
@@ -15,6 +16,11 @@ export interface SceneCtx {
   stage?: Stage | null;
   /** Skip animations and pauses (tests: ?fast=1). */
   fast?: boolean;
+  /** Player settings (volume, text speed); absent in tests means defaults. */
+  settings?: SettingsStore | null;
+  /** The scene shown before this one, so settings can return to it. */
+  from?: SceneName;
+  fullscreen?(): Promise<void> | void;
 }
 
 /** One scene at a time; fades out and in, and drops input while switching so held keys cannot skip a screen. */
@@ -35,7 +41,7 @@ export class Router {
     await this.wait();
     this.scene?.exit();
     this.root.replaceChildren();
-    this.scene = this.make(name, { ...this.ctx, go: (n) => { void this.go(n); } });
+    this.scene = this.make(name, { ...this.ctx, from: this.name ?? undefined, go: (n) => { void this.go(n); } });
     this.name = name;
     this.scene.enter(this.root);
     // Input is dropped only while the old scene fades out; once the new one is on screen it responds during its fade-in.

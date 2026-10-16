@@ -4,7 +4,8 @@ import { mulberry32 } from '../engine/rng';
 import { SAVE_KEY } from '../engine/save';
 import { art } from '../render/artPaths';
 import { TextureBank, loadManifest } from '../render/textures';
-import { bindUiInput } from './input';
+import { bindUiInput, toggleFullscreen } from './input';
+import { loadSettings, saveSettings, type Settings } from './settings';
 import { Stage } from './stage';
 import { Router, type SceneName } from './scene';
 import { TitleScene } from './scenes/title';
@@ -16,6 +17,7 @@ import { GateScene } from './scenes/gate';
 import { DungeonScene } from './scenes/dungeon';
 import { BattleScene } from './scenes/battle';
 import { ClearScene } from './scenes/clear';
+import { SettingsScene } from './scenes/settings';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -30,6 +32,12 @@ export async function mountNext(): Promise<void> {
   const fast = q.get('fast') === '1';
   let game = Game.boot(mulberry32(seed), storage);
   const sfx = new SoundManager();
+  let settings: Settings = loadSettings(storage);
+  sfx.setVolume(settings.volume / 100);
+  const settingsStore = {
+    get: () => settings,
+    set: (s: Settings) => { settings = s; sfx.setVolume(s.volume / 100); saveSettings(storage, s); },
+  };
   const bank = new TextureBank();
   const stage = new Stage(document.getElementById('sl-screen')!, bank, fast);
   const make = (name: SceneName, ctx: Parameters<ConstructorParameters<typeof Router>[1]>[1]) => {
@@ -43,6 +51,7 @@ export async function mountNext(): Promise<void> {
       case 'dungeon': return new DungeonScene(ctx);
       case 'battle': return new BattleScene(ctx);
       case 'clear': return new ClearScene(ctx);
+      case 'settings': return new SettingsScene(ctx);
     }
   };
   const ctx = {
@@ -51,6 +60,8 @@ export async function mountNext(): Promise<void> {
     hasSave: () => { try { return !!storage?.getItem(SAVE_KEY); } catch { return false; } },
     newGame: () => { game = new Game(mulberry32(seed), storage); },
     stage, fast,
+    settings: settingsStore,
+    fullscreen: () => toggleFullscreen(document.getElementById('sl-screen') ?? document.documentElement),
   };
   const router = new Router(ui, make, ctx);
   bindUiInput(window, (a) => { sfx.ensure(); router.onAction(a); });

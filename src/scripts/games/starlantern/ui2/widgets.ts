@@ -85,6 +85,10 @@ export class Dialogue {
 
   say(name: string, text: string): Promise<void> {
     this.stop();
+    // A newer line replaces the old one: settle the old promise so nothing awaits it forever.
+    const old = this.resolve;
+    this.resolve = null;
+    old?.();
     this.full = text;
     this.name.textContent = name;
     this.name.hidden = !name;
@@ -114,7 +118,8 @@ export class Dialogue {
     return true;
   }
 
-  private stop(): void {
+  /** Stops typing; owners call it on exit so no timer outlives the scene. */
+  stop(): void {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
   }

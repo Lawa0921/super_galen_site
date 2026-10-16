@@ -49,6 +49,9 @@ test.describe('starlantern next ui', () => {
     await page.keyboard.press('ArrowDown');
     await expect(page.locator('.slx-town [aria-selected=true]')).toHaveText('道具店');
     await page.keyboard.press('Escape');
+    await expect(page.locator('.slx-town .slx-confirm')).toContainText('標題');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
     await expect(page.locator('.slx-title')).toBeVisible();
     expect(await page.locator('#sl-screen button, #sl-screen select').count()).toBe(0);
   });
