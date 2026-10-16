@@ -58,6 +58,8 @@ describe('save', () => {
     expect(bad((g) => { (g.party.roster.liz as unknown as Record<string, unknown>).limit = 'full'; })).toBe('corrupt');
     expect(bad((g) => { g.party.roster.liz.limit = 60; })).toBe('ok');
     expect(bad((g) => { delete g.party.roster.liz.limit; })).toBe('ok');
+    expect(bad((g) => { g.party.roster.liz.level = 35; })).toBe('ok');
+    expect(bad((g) => { g.party.roster.liz.level = 51; })).toBe('corrupt');
   });
   it('survives storage that throws (private mode)', () => {
     const throwing = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } };

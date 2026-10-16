@@ -4,7 +4,8 @@ import { SKILLS } from '../data/skills';
 import { EQUIPMENT } from '../data/equipment';
 import type { CharacterId, Member, Party, Passive, Slot, StatKey, Stats } from './types';
 
-export const MAX_LEVEL = 20;
+/** Level cap; deep floors (depthLevel 2 + 4 per depth) need room past 20. Progression design §6. */
+export const MAX_LEVEL = 50;
 export const STARTING_RECRUITS: CharacterId[] = ['scarlet', 'chizuru', 'liz', 'noel', 'selene'];
 const STAT_KEYS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 const SLOTS: Slot[] = ['weapon', 'armor', 'accessory'];

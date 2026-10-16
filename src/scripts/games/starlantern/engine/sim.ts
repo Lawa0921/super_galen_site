@@ -4,12 +4,14 @@ import { FLOORS } from '../data/floors';
 import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { LIMIT_MAX, createBattle, resolveRound, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
-import { expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
+import { MAX_LEVEL, expToNext, learnedSkills, newMember, newParty, statsOf } from './party';
 import { mulberry32 } from './rng';
 import { scaleEnemy } from './scaling';
 import type { CharacterId, Party } from './types';
 
+/** A fresh party with everyone at `level`, held to the real level cap. */
 export function partyAt(level: number): Party {
+  level = Math.min(level, MAX_LEVEL);
   const p = newParty();
   for (const id of Object.keys(p.roster) as CharacterId[]) {
     const m = { ...newMember(id), level };

@@ -3,6 +3,7 @@ import {
   rowOfCell, statSources, expToNext, statsOf, newMember, newParty, recruit, setFormation, activeIds,
   learnedSkills, gainExp, awardExp, hasPassive, MAX_LEVEL,
 } from './party';
+import { partyAt } from './sim';
 
 describe('stats', () => {
   it('grows per level and adds equipment', () => {
@@ -75,6 +76,17 @@ describe('experience', () => {
   it('stops at the level cap', () => {
     const r = gainExp(newMember('liz'), 10_000_000);
     expect([r.member.level, r.member.exp]).toEqual([MAX_LEVEL, 0]);
+  });
+  it('levels past 20, up to the cap of 50 that deep floors need', () => {
+    expect(MAX_LEVEL).toBe(50);
+    let need = 0;
+    for (let l = 20; l < 30; l++) need += expToNext(l);
+    const r = gainExp({ ...newMember('liz'), level: 20 }, need + 5);
+    expect([r.member.level, r.member.exp, r.levels]).toEqual([30, 5, 10]);
+  });
+  it('the balance sim fields a party no higher than the cap', () => {
+    expect(Object.values(partyAt(60).roster).every((m) => m.level === MAX_LEVEL)).toBe(true);
+    expect(partyAt(38).roster.liz.level).toBe(38);
   });
   it('gives survivors full, the bench half, and downed actives nothing', () => {
     const p = recruit(newParty(), 'sylvie');
