@@ -4,6 +4,9 @@ import { newGame } from './state';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
 import { memoryStorage, plainItem } from './testing';
+import { defaultTalents, defaultTree } from './progression';
+import { BOARDS } from '../data/talents';
+import { TREES } from '../data/trees';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -242,5 +245,54 @@ describe('save v4 codex, boss kills and auto junk', () => {
     if (r.status !== 'ok') throw new Error(r.status);
     expect(r.state.bag).toHaveLength(60);
     expect(r.state.inventory).toEqual({ 'iron-sword': 2 });
+  });
+});
+
+describe('save v5 skill trees and talents', () => {
+  const status = (mut: (g: ReturnType<typeof newGame>) => void) => {
+    const g = newGame();
+    mut(g);
+    return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  };
+  const liz = TREES.liz.branches;
+  it('a member built at Lv20 round-trips', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    const m = g.party.roster.liz;
+    m.level = 20;
+    m.tree = defaultTree('liz', 20);
+    m.talents = defaultTalents('liz', 20);
+    saveGame(st, g);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+  it('a full Lv50 default build round-trips', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    for (const m of Object.values(g.party.roster)) {
+      m.level = 50;
+      m.tree = defaultTree(m.id, 50);
+      m.talents = defaultTalents(m.id, 50);
+    }
+    saveGame(st, g);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+  it('save validation rejects a broken build', () => {
+    const lv = (level: number, tree: Record<string, number>, talents: Record<string, number> = {}) => (g: ReturnType<typeof newGame>) => {
+      Object.assign(g.party.roster.liz, { level, tree, talents });
+    };
+    const free = liz[0].nodes[0].id;
+    expect(status(lv(10, { ...defaultTree('liz', 10) }))).toBe('ok');
+    expect(status(lv(10, { ...defaultTree('liz', 10), nope: 1 }))).toBe('corrupt');            // unknown node
+    expect(status(lv(50, { [free]: 4 }))).toBe('corrupt');                                      // rank 4
+    expect(status(lv(50, { [free]: 0 }))).toBe('corrupt');                                      // rank 0
+    expect(status(lv(2, { [free]: 1, [liz[1].nodes[0].id]: 1, [liz[2].nodes[0].id]: 1 }))).toBe('corrupt'); // overspent
+    expect(status(lv(50, { [liz[1].nodes[0].id]: 1 }))).toBe('corrupt');                        // free node missing
+    expect(status(lv(50, { ...defaultTree('liz', 50), [liz[0].nodes[4].id]: 1, [liz[1].nodes[4].id]: 1 }))).toBe('corrupt'); // two ultimates
+    expect(status(lv(50, { [free]: 1 }, { 'liz-t30': 1 }))).toBe('corrupt');                    // not adjacent
+    expect(status(lv(50, { [free]: 1 }, { 'liz-t00': 5, 'liz-t01': 5, 'liz-t02': 5, 'liz-k0': 1, 'liz-k1': 1, 'liz-k2': 1 }))).toBe('corrupt'); // three keystones
+    expect(status((g) => { delete (g.party.roster.liz as Partial<typeof g.party.roster.liz>).tree; })).toBe('corrupt');
+    expect(status((g) => { delete (g.party.roster.liz as Partial<typeof g.party.roster.liz>).talents; })).toBe('corrupt');
+    expect(status((g) => { g.party.roster.liz.level = 2.5; })).toBe('corrupt');
+    expect(BOARDS.liz.filter((n) => n.keystone).length).toBeGreaterThanOrEqual(2);
   });
 });

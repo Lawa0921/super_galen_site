@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
-  raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills,
+  raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, validBuild,
 } from './progression';
 import { newMember } from './party';
 import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
@@ -313,5 +313,44 @@ describe('talents', () => {
       expect(talentPointsLeft(m), label).toBe(0);
     }
     expect(keystonesOf(tal('noel', 50, defaultTalents('noel', 50)))).toEqual(DEFAULT_KEYSTONES.noel);
+  });
+});
+
+describe('validBuild', () => {
+  const b0 = (id: CharacterId, i: number) => TREES[id].branches[i].nodes[0].id;
+  it('accepts every default build', () => {
+    for (const id of ids) for (const level of [1, 10, 30, 50]) {
+      expect(validBuild(id, level, defaultTree(id, level), defaultTalents(id, level)), `${id} Lv${level}`).toBe(true);
+    }
+  });
+  it('accepts the fresh build and a partly spent one, in any key order', () => {
+    expect(validBuild('liz', 1, newTree('liz'), {})).toBe(true);
+    const tree = { [b0('liz', 2)]: 1, [freeNode('liz')]: 2 };
+    expect(validBuild('liz', 4, tree, { 'liz-t00': 1 })).toBe(false); // Lv4 has no talent points
+    expect(validBuild('liz', 6, tree, { 'liz-t00': 1 })).toBe(true);
+    expect(validBuild('liz', 6, tree, {})).toBe(true);
+  });
+  it('rejects shapes that are not a build', () => {
+    const t = newTree('liz');
+    for (const bad of [undefined, null, 5, 'x', [], [1]]) {
+      expect(validBuild('liz', 50, bad, {})).toBe(false);
+      expect(validBuild('liz', 50, t, bad)).toBe(false);
+    }
+    expect(validBuild('liz', 50, { ...t, nope: 1 }, {})).toBe(false);
+    expect(validBuild('liz', 50, JSON.parse('{"__proto__":1}'), {})).toBe(false);
+    expect(validBuild('liz', 50, { ...t, [b0('noel', 0)]: 1 }, {})).toBe(false); // another character's node
+    for (const r of [0, -1, 1.5, NaN, Infinity, '1', null, 4]) expect(validBuild('liz', 50, { [freeNode('liz')]: r }, {}), String(r)).toBe(false);
+    expect(validBuild('liz', 50, {}, {})).toBe(false); // free node missing
+    expect(validBuild('liz', 50, { [b0('liz', 1)]: 1 }, {})).toBe(false);
+    expect(validBuild('liz', 50, t, { 'liz-t00': 6 })).toBe(false);
+    expect(validBuild('liz', 50, t, { 'liz-t00': 0 })).toBe(false);
+    expect(validBuild('liz', 50, t, JSON.parse('{"__proto__":1}'))).toBe(false);
+    for (const level of [1.5, NaN, Infinity, '10' as unknown as number]) expect(validBuild('liz', level, t, {})).toBe(false);
+  });
+  it('rejects builds the rules would not allow', () => {
+    expect(validBuild('liz', 2, { [freeNode('liz')]: 1, [b0('liz', 1)]: 1, [b0('liz', 2)]: 1 }, {})).toBe(false); // overspent
+    expect(validBuild('liz', 50, defaultTree('liz', 50), { 'liz-t30': 1 })).toBe(false); // not adjacent
+    expect(validBuild('liz', 50, newTree('liz'), { 'liz-t00': 1, 'liz-t01': 1, 'liz-t02': 1 })).toBe(true);
+    expect(validBuild('liz', 50, newTree('liz'), { 'liz-k0': 1 })).toBe(false); // keystone gate
   });
 });

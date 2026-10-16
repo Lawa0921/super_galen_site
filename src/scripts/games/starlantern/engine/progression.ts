@@ -2,7 +2,7 @@ import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE
 import type { SkillMod } from '../data/gear';
 import { SKILLS } from '../data/skills';
 import {
-  BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
+  BOARDS, DEFAULT_KEYSTONES, TALENT_NODES, TALENT_PER, TALENT_SCALE, boardPoints, keystoneCount, rankOf, talentBlocker, type KeystoneId, type TalentBlocker,
 } from '../data/talents';
 import type { AnyStat, CharacterId, Member, Sheet } from './types';
 
@@ -238,6 +238,47 @@ export function defaultTalents(id: CharacterId, level: number): Record<string, n
     t[pick.id] = rankOf(pick, t) + 1;
   }
   return t;
+}
+
+/** A plain record whose every key passes `known` and whose every value is an integer from 1 up to `max(key)`. */
+function shapeOk(v: unknown, known: (k: string) => boolean, max: (k: string) => number): v is Record<string, number> {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return false;
+  return Object.entries(v).every(([k, r]) => known(k) && Number.isInteger(r) && (r as number) >= 1 && (r as number) <= max(k));
+}
+
+/**
+ * Whether a saved build is one a player could have reached: a whole level, ranks in range on the character's own nodes
+ * with the free node held, and then the build replayed from empty (`newTree`, no talents) through `canRaiseNode` /
+ * `canRaiseTalent`, one point at a time, until both equal what was saved. The replay applies the points, adjacency,
+ * gate, ultimate and keystone rules, so they live only above. The rules never get harder after a raise (apart from the
+ * ultimate and keystone caps, which a legal build respects), so the order of the replay does not matter.
+ * Never throws, for any input.
+ */
+export function validBuild(id: CharacterId, level: number, tree: unknown, talents: unknown): boolean {
+  if (!Number.isInteger(level) || level < 1) return false;
+  const ownNode = (k: string) => has(NODES, k) && NODES[k].owner === id;
+  const ownTalent = (k: string) => has(TALENT_NODES, k) && TALENT_NODES[k].owner === id;
+  if (!shapeOk(tree, ownNode, (k) => NODES[k].node.maxRank) || !shapeOk(talents, ownTalent, (k) => TALENT_NODES[k].node.maxRank)) return false;
+  if (!has(tree, freeNode(id))) return false;
+  let m: Member = { id, level, exp: 0, hp: 0, tp: 0, equip: {}, tree: newTree(id), talents: {} };
+  for (let progress = true; progress;) {
+    progress = false;
+    for (const node of Object.keys(tree)) {
+      if (nodeRank(m, node) >= tree[node]) continue;
+      const r = raiseNode(m, node);
+      if (r.ok) { m = r.member; progress = true; }
+    }
+  }
+  for (let progress = true; progress;) {
+    progress = false;
+    for (const node of Object.keys(talents)) {
+      if ((m.talents[node] ?? 0) >= talents[node]) continue;
+      const r = raiseTalent(m, node);
+      if (r.ok) { m = r.member; progress = true; }
+    }
+  }
+  return Object.keys(tree).length === Object.keys(m.tree).length && Object.keys(tree).every((k) => m.tree[k] === tree[k])
+    && Object.keys(talents).length === Object.keys(m.talents).length && Object.keys(talents).every((k) => m.talents[k] === talents[k]);
 }
 
 // TEMPORARY: removed by plan 5b Task 13 (player spends points)

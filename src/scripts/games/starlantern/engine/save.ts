@@ -7,6 +7,7 @@ import { GRID_SIZE, MAX_ACTIVE } from './formation';
 import { addGear, BAG_SIZE } from './loot/bag';
 import { itemSlot } from './loot/item';
 import { MAX_LEVEL, SLOTS, slotsFor } from './party';
+import { validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import type { ItemInstance, Slot } from './types';
 
@@ -71,6 +72,7 @@ function isValid(d: Record<string, unknown>): boolean {
     }
     if (!Number.isInteger(m.level) || (m.level as number) < 1 || (m.level as number) > MAX_LEVEL) return false;
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;
+    if (!validBuild(id, m.level as number, m.tree, m.talents)) return false;
   }
   // Every uid once, bag and worn together, and all of them below nextUid.
   if (new Set(uids).size !== uids.length || uids.some((u) => u >= (d.nextUid as number))) return false;
